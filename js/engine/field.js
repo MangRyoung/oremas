@@ -10,11 +10,13 @@ window.OM_FIELD=(()=>{
  const ko=k=>{const st=(DB().states||{}).st||{};return (st[k]&&st[k].ko)||k};
  const typesOf=m=>(m.teraActive&&m.teraEn&&m.teraEn!=='-')?[m.teraEn]:(m.types||[]).filter(t=>t&&t!=='-');
  const frac=(m,n,d)=>Math.max(1,Math.floor(m.hp.max*n/d));
- const dmg=(m,v,lines,why)=>{const d=Math.min(m.hp.cur,v);if(d<=0)return 0;m.hp.cur-=d;lines.push(`${m.name} ${why} −${d} (HP ${m.hp.cur}/${m.hp.max})`);return d};
+ const dmg=(m,v,lines,why)=>{if(noind(m,'')){lines.push(`${m.name} ${why} — 비례 대미지를 받지 않는다`);return 0}const floor=noind(m,'noko')?1:0;const d=Math.max(0,Math.min(m.hp.cur-floor,v));if(d<=0){if(floor)lines.push(`${m.name} ${why} — 비례 대미지로는 빈사가 되지 않는다`);return 0}m.hp.cur-=d;lines.push(`${m.name} ${why} −${d} (HP ${m.hp.cur}/${m.hp.max})`);return d};
  const heal=(m,v,lines,why)=>{if(has(m,'HealBlock')){lines.push(`${m.name} ${why} — 「회복봉인」이라 회복하지 못함`);return 0}const h=Math.min(v,m.hp.max-m.hp.cur);if(h<=0){lines.push(`${m.name} ${why} — HP 가득이라 회복 없음`);return 0}m.hp.cur+=h;lines.push(`${m.name} ${why} +${h} (HP ${m.hp.cur}/${m.hp.max})`);return h};
  const ABN=['Poison','Toxic','Burn','Paralysis','Freeze','Sleep','Comatose'];
  const isAbn=m=>ABN.some(k=>has(m,k));
- const grounded=m=>!(typesOf(m).includes('Flying')||has(m,'MagnetRise')||has(m,'Telekinesis')||has(m,'Fly')||/부유/.test(m.ability||''));
+ const FX=()=>window.OM_FX;
+ const grounded=m=>!(typesOf(m).includes('Flying')||has(m,'MagnetRise')||has(m,'Telekinesis')||has(m,'Fly')||/부유/.test(m.ability||'')||(FX()&&FX().floating(m)));
+ const noind=(m,k)=>!!(FX()&&FX().noind(m,k));
  const rankDown=(m,k,n)=>{m.rank=m.rank||{};m.rank[k]=Math.max(-6,Math.min(6,(+m.rank[k]||0)+n))};
  const setState=(m,k,count)=>{m.states=m.states||{};if(m.states[k])return false;const st=((DB().states||{}).st||{})[k]||{};m.states[k]=count!=null?count:(st.min<1000?st.min:1000);return true};
  const clearState=(m,k)=>{if(m.states)delete m.states[k]};
@@ -61,7 +63,8 @@ window.OM_FIELD=(()=>{
  const HAZ=[{k:'압정뿌리기',c:'A',kind:'spike'},{k:'독압정',c:'A',kind:'tspike'},{k:'지뢰원',c:'A',f:4,once:1,d:'「HP」 1/4'},{k:'끈적끈적네트',c:'A',kind:'net'},{k:'기뢰',c:'A',kind:'mine',once:1},{k:'트램펄린',c:'B',kind:'bounce',once:1},{k:'스텔스록',c:'B',ty:'Rock'},{k:'불기둥',c:'B',ty:'Fire'},{k:'장미원',c:'B',kind:'rose',f:8},{k:'가시원',c:'B',ty:'Grass'},{k:'얼음꼬챙이',c:'B',ty:'Ice'},{k:'전기발판',c:'B',ty:'Electric'},{k:'아이스번',c:'B',kind:'iceburn'},{k:'저주의묘',c:'B',st:'Curse'},{k:'악의소굴',c:'B',st:'Knave'},{k:'전파탑',c:'B',st:'Electrify'}];
  const RM={장미원:{t:['Bug'],g:0,v:'갉아먹었다'},가시원:{t:['Bug'],g:0,v:'갉아먹었다'},얼음꼬챙이:{t:['Fire'],g:0,v:'녹여 없앴다'},전기발판:{t:['Ground'],g:0,v:'접지시켰다'},아이스번:{t:['Fire','Ice'],g:0,v:'치웠다'},독압정:{t:['Poison'],g:1,v:'흡수했다'},기뢰:{t:['Ground'],g:1,v:'접지시켰다'},불기둥:{t:['Water'],g:0,v:'꺼트렸다'}};
  function hazardsOnEntry(m,field,slotsOpp){const lines=[];const f=field||{};const objs=(f.objects||{})[m.side]||{};const gd=grounded(m);const boots=/통굽부츠/.test(m.item||'');const ty=typesOf(m);const removed=[];let forced=false;
-  for(const h of HAZ){const n=+objs[h.k]||0;if(n<=0)continue;
+  if(noind(m,'hazard')&&Object.keys(objs).some(k=>+objs[k]>0)){lines.push(`${m.name} 설치기를 무시한다`);return {lines,removed,forced}}
+  for(const h of HAZ){const n=+objs[h.k]||0;if(n<=0)continue;if(noind(m,'hazdmg')&&(h.ty||h.kind==='spike'||h.f)){lines.push(`${m.name} 「${h.k}」 비례 대미지를 받지 않는다`);continue}
    const rm=RM[h.k];let rmHit='';if(rm){rmHit=rm.t.find(t=>ty.includes(t))||'';if(rmHit&&rm.g&&!gd)rmHit=''}
    if(rmHit){lines.push(`${m.name}(${rmHit})이(가) 「${h.k}」을(를) ${rm.v}`);delete objs[h.k];removed.push(h.k);continue}
    if(boots){lines.push(`${m.name} 「통굽부츠」라 「${h.k}」 영향 없음`);continue}

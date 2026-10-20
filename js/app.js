@@ -52,7 +52,7 @@ async function openRoom(id,gm){
  const st=await DBS().getState(id);ST.state=(st&&st.data)||{};ST.v=(st&&st.v)||0;
  ST.log=await DBS().getLogTail(id,200);ST.lastLogId=ST.log.length?ST.log[ST.log.length-1].id:0;
  renderRoom();
- ST.unsub=DBS().subscribe(id,{onEvent:p=>{if(window.OM_RP_UI&&p&&p.t==='typing')window.OM_RP_UI.onTyping(p)},onState:(d,v)=>{if(v>=ST.v){ST.state=d;ST.v=v;renderScene()}},onLog:r=>{if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;renderLog(true);if(window.OM_RP_UI)window.OM_RP_UI.onChat(r)}},
+ ST.unsub=DBS().subscribe(id,{onEvent:p=>{if(window.OM_RP_UI&&p&&p.t==='typing')window.OM_RP_UI.onTyping(p);if(window.OM_CUTIN&&p&&p.t==='cutin')window.OM_CUTIN.onEvent(p)},onState:(d,v)=>{if(v>=ST.v){ST.state=d;ST.v=v;renderScene()}},onLog:r=>{if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;renderLog(true);if(window.OM_RP_UI)window.OM_RP_UI.onChat(r)}},
   onStatus:s=>{const el=$('#conn');if(el){el.textContent=s==='SUBSCRIBED'?'● 실시간':'○ '+s;el.style.color=s==='SUBSCRIBED'?'var(--acc2)':'var(--mute)'}}});
  if(ST.role){pollWhispers();ST.wtimer=setInterval(pollWhispers,4000)}
  if(!ST.role)openSeatPicker()}
@@ -67,7 +67,7 @@ function renderRoom(){
    ${ST.role==='gm'?'<span class="badge gm">GM</span>':ST.role==='seat'?`<span class="badge seat">${esc(ST.name)}</span>`:'<span class="badge">관전</span>'}
    <span class="tabs" id="sceneTabs"></span>
    <span class="sp"></span><span id="conn" class="small muted">○ 연결 중</span>
-   ${ST.role?'<button class="btn sm" id="skillBtn">스킬 체크</button><button class="btn sm" id="deckBtn">덱</button>':''}<button class="btn sm" id="dbBtn">DB</button><button class="btn sm" id="copyLink">플레이어 링크</button>
+   ${ST.role?'<button class="btn sm" id="skillBtn">스킬 체크</button><button class="btn sm" id="deckBtn">덱</button>':''}<button class="btn sm" id="dbBtn">DB</button><button class="btn sm" id="rmBtn" title="레디메이드 (자동화 효과 사전)">레디메이드</button><button class="btn sm" id="copyLink">플레이어 링크</button>
    ${ST.role==='gm'?'<button class="btn sm" id="copyGm">GM 링크</button><button class="btn sm" id="roomSet">방 설정</button>':'<button class="btn sm" id="seatBtn">자리</button><button class="btn sm ghost" id="roomSet" title="소리 크기">소리</button>'}
   </div>
   <div class="body"><div class="scene" id="scene"></div><div class="resizer" id="resizer" title="끌어서 채팅 창 너비 조절"></div>
@@ -77,7 +77,7 @@ function renderRoom(){
  $('#copyLink').onclick=()=>copy(roomLink(ST.room),'플레이어 링크를 복사했다');
  const sk=$('#skillBtn');if(sk)sk.onclick=()=>window.OM_SKILL_UI.open();
  const dk=$('#deckBtn');if(dk)dk.onclick=()=>window.OM_DECK_UI.open();
- $('#dbBtn').onclick=()=>window.OM_DB_UI.open({kind:'trait'});
+ $('#dbBtn').onclick=()=>window.OM_DB_UI.open({kind:'trait'});if($('#rmBtn'))$('#rmBtn').onclick=()=>window.OM_FX_UI.openRm('');
  const clock=()=>{const el=$('#pclock');if(el){const d=new Date();el.textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}};clock();clearInterval(ST.clockT);ST.clockT=setInterval(clock,15000);
  if(ST.role==='gm'){$('#copyGm').onclick=()=>copy(gmLink(ST.room,ST.secret),'GM 링크를 복사했다 (아무에게도 주지 말 것)');$('#roomSet').onclick=openRoomSettings}
  else {$('#seatBtn').onclick=openSeatPicker;$('#roomSet').onclick=openRoomSettings}

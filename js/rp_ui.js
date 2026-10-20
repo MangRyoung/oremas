@@ -44,6 +44,7 @@ window.OM_RP_UI=(()=>{
   if(key.startsWith('npc:')){const name=key.slice(4);const n=Object.values((ST.state.graph||{}).nodes||{}).find(x=>x.name===name);return n?{key,name:n.name,img:n.img,stands:n.stands||[],active:n.standActive||0,kind:'npc',id:n.id}:{key,name,img:'',stands:[],active:0,kind:'npc',id:''}}
   const t=((ST.state.roster||{}).trainers||{})[key];if(!t)return null;return {key,name:t.name,img:t.image,stands:t.stands||[],active:t.standActive||0,kind:'pc',id:key}}
  function standSrc(c){if(!c)return '';const s=(c.stands||[])[c.active]||(c.stands||[])[0];return (s&&s.src)||c.img||''}
+ function standKind(c){if(!c)return '';const st=(c.stands||[])[c.active]||(c.stands||[])[0];return st&&st.kind?st.kind:''}
  function standPoint(c){const s=(c.stands||[])[c.active]||(c.stands||[])[0];return s&&+s.point||0}
  function speakerKey(row){const d=row.data||{};if(d.as){const t=Object.values((A().ST.state.roster||{}).trainers||{}).find(x=>x.name===d.as);return t?t.id:'npc:'+d.as}if(d.from&&d.from!=='gm')return d.from;return ''}
  /* 화자 자리: 첫 화자는 가운데, 다음 화자는 왼쪽·오른쪽을 채운다. 마지막 대사 뒤 STAND_TTL 이 지나면 사라진다 (로그 시각 기준이라 모두 같은 결과) */
@@ -64,7 +65,7 @@ window.OM_RP_UI=(()=>{
   const r=R();const bg=r.bg||{};const cap=r.caption||{};const manual=r.stage||{};
   const slots={};for(const s of SLOTS){const m=manual[s];slots[s]=m&&m.key?m.key:STAGE.slots[s]}
   const lastChat=[...(A().ST.log||[])].reverse().find(x=>x.kind==='chat'&&x.data&&x.data.t);
-  const line=(name,text)=>{const m=String(text).match(/^\*(.+)\*$/s);return `<div class="dname"><span>${esc(name)}</span></div><div class="dtext ${m?'narr':''}">${m?esc(m[1]):'"'+esc(text)+'"'}</div>`};
+  const line=(name,text)=>{const m=String(text).match(/^\*(.+)\*$/s);return `<div class="dname"><span>${esc(name)}</span></div><div class="dtext ${m?'narr':''}">${m?esc(m[1]):(/^["“「『].*["”」』]$/s.test(String(text).trim())?esc(String(text).trim()):'"'+esc(text)+'"')}</div>`};
   const showDlg=cap.text||(lastChat&&Date.now()-(Date.parse(lastChat.at)||0)<STAND_TTL*2);
   const dlgHtml=cap.text?line(cap.name||'',cap.text):(showDlg?line(lastChat.data.as||(charOf(speakerKey(lastChat))||{}).name||lastChat.who,lastChat.data.t):'');
   const ST=A().ST;const speakers=gm()?[{key:'gm',name:'GM (나레이션)'},...Object.values((ST.state.graph||{}).nodes||{}).map(n=>({key:'npc:'+n.name,name:n.name})),...Object.values((ST.state.roster||{}).trainers||{}).map(t=>({key:'as:'+t.name,name:t.name+' (PC)'}))]:(ST.seat?[{key:'me',name:(charOf(ST.seat)||{}).name||ST.name}]:[]);
@@ -88,11 +89,12 @@ window.OM_RP_UI=(()=>{
   const inp=$('#rpline',el);if(inp){inp.value=SPK.draft||'';inp.oninput=()=>{SPK.draft=inp.value;typingPing()};inp.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)sendLine()};$('#rpsend',el).onclick=sendLine;if(SPK.focus){inp.focus();SPK.focus=false}}
   bindMap(el);tickBanner();syncBgm();scheduleExpire();drawTyping()}
  /* 스탠딩 DOM 을 키로 맞춘다: 새로 선 것만 등장 애니메이션, 자리 바뀜·표정 바뀜은 제자리에서 */
- function syncStands(box,slots,manual){const want={};for(const s of SLOTS){const c=charOf(slots[s]);const src=standSrc(c);if(c&&src)want[s]={key:c.key,src,name:c.name,point:standPoint(c),flip:!!(manual[s]||{}).flip,on:STAGE.active===c.key||!STAGE.active}}
+ function syncStands(box,slots,manual){const want={};for(const s of SLOTS){const c=charOf(slots[s]);const src=standSrc(c);if(c&&src)want[s]={key:c.key,src,name:c.name,point:standPoint(c),kind:standKind(c),flip:!!(manual[s]||{}).flip,on:STAGE.active===c.key||!STAGE.active}}
   [...box.children].forEach(ch=>{const s=ch.dataset.slot;if(!want[s]||want[s].key!==ch.dataset.key){ch.classList.add('out');setTimeout(()=>ch.remove(),350)}});
   for(const s of SLOTS){const w=want[s];if(!w)continue;let ch=[...box.children].find(x=>x.dataset.slot===s&&x.dataset.key===w.key&&!x.classList.contains('out'));
    if(!ch){ch=document.createElement('div');ch.dataset.slot=s;ch.dataset.key=w.key;ch.className=`stand ${s} in`;ch.innerHTML=`<img alt=""><div class="stname"></div>`;box.appendChild(ch)}
-   const img=ch.querySelector('img');if(img.getAttribute('src')!==w.src)img.src=w.src;img.style.transform=w.flip?'scaleX(-1)':'';ch.style.marginBottom=(-w.point)+'px';ch.querySelector('.stname').textContent=w.name;
+   const img=ch.querySelector('img');if(img.getAttribute('src')!==w.src){img.src=w.src;ch.classList.remove('portrait');img.onload=()=>{const k=w.kind||(img.naturalHeight/Math.max(1,img.naturalWidth)<1.45?'portrait':'stand');ch.classList.toggle('portrait',k==='portrait')}}
+   if(w.kind)ch.classList.toggle('portrait',w.kind==='portrait');img.style.transform=w.flip?'scaleX(-1)':'';ch.style.marginBottom=ch.classList.contains('portrait')?'':(-w.point)+'px';ch.querySelector('.stname').textContent=w.name;
    ch.classList.toggle('on',w.on);ch.classList.toggle('off',!w.on)}}
  /* ----- 입력 중 표시: 저장 없이 방송 ----- */
  const TYPING={last:0,who:{},t:null};
@@ -263,7 +265,13 @@ window.OM_RP_UI=(()=>{
     <div class="row"><button class="btn sm" data-gc="stageok">자리 적용</button><button class="btn sm ghost" data-gc="stageclear">무대 비우기</button></div>
     <div class="sec">스탠딩 관리</div><div class="row"><select id="gsc" style="flex:1">${chars.map(c=>`<option value="${esc(c.key)}">${esc(c.name)}</option>`).join('')}</select><button class="btn sm" data-gc="stands">표정·스탠딩 편집</button></div>
     <div class="sec">자막</div><div class="row"><input type="text" id="gcn" value="${esc((r.caption||{}).name||'')}" placeholder="이름" style="width:120px"><input type="text" id="gct" value="${esc((r.caption||{}).fixed?(r.caption.text||''):'')}" placeholder="고정 자막 (비우면 채팅이 자막)" style="flex:1"><button class="btn sm" data-gc="cap">고정</button><button class="btn sm ghost" data-gc="capx">풀기</button></div>`}
-  else{const SG=seList();body=`<div class="sec">효과음 <span class="note">누르면 모두에게 한 번 · 배틀의 명중/급소/빗나감/빈사/주사위/공개는 자동</span></div>${Object.keys(SG).sort().map(g=>`<div class="small dim" style="margin:6px 0 2px">${esc(g)}</div><div class="row" style="flex-wrap:wrap;gap:4px">${Object.keys(SG[g]).map(n=>`<button class="chip" data-gc="se" data-n="${esc(n)}">${esc(n)}</button>`).join('')}</div>`).join('')}<div class="row" style="margin-top:6px"><input type="text" id="gseu" placeholder="효과음 직링크 (mp3/wav)" style="flex:1"><button class="btn sm" data-gc="seurl">울리기</button></div>
+  else{const SG=seList();const CI=(R().cutin)||{};body=`<div class="sec">컷인 · 연출 <span class="note">맵툴 배틀 연출 설정</span></div>
+    <div class="row" style="flex-wrap:wrap;gap:8px"><label>시합 개시 <select id="gci_start"><option value="vs" ${(CI.start||'vs')==='vs'?'selected':''}>일반 (VS 컷인)</option><option value="warn" ${CI.start==='warn'?'selected':''}>경고 (위험 등장)</option><option value="off" ${CI.start==='off'?'selected':''}>끄기</option></select></label>
+     <label>지시·포텐셜 컷인 <select id="gci_on"><option value="1" ${String(CI.on)!=='0'?'selected':''}>켜기</option><option value="0" ${String(CI.on)==='0'?'selected':''}>끄기</option></select></label>
+     <label>크기 <input type="number" class="n xs" id="gci_sc" value="${CI.sc||70}" min="40" max="120"></label><label>위치 <select id="gci_pos"><option value="mid" ${(CI.pos||'mid')==='mid'?'selected':''}>가운데</option><option value="top" ${CI.pos==='top'?'selected':''}>위</option><option value="bot" ${CI.pos==='bot'?'selected':''}>아래</option></select></label>
+     <label>경고 제목 <input type="text" id="gci_wt" value="${esc(CI.warnTitle||'')}" placeholder="강적 출현" style="width:120px"></label><button class="btn sm" data-gc="cisave">저장</button></div>
+    <div class="row" style="margin-top:6px;gap:6px"><button class="btn sm" data-gc="cutvs">VS 컷인 지금</button><button class="btn sm" data-gc="cutwarn">경고 연출 지금</button><button class="btn sm" data-gc="cuttest">컷인 시험</button></div>
+    <div class="sec">효과음 <span class="note">누르면 모두에게 한 번 · 배틀의 명중/급소/빗나감/빈사/주사위/공개는 자동</span></div>${Object.keys(SG).sort().map(g=>`<div class="small dim" style="margin:6px 0 2px">${esc(g)}</div><div class="row" style="flex-wrap:wrap;gap:4px">${Object.keys(SG[g]).map(n=>`<button class="chip" data-gc="se" data-n="${esc(n)}">${esc(n)}</button>`).join('')}</div>`).join('')}<div class="row" style="margin-top:6px"><input type="text" id="gseu" placeholder="효과음 직링크 (mp3/wav)" style="flex:1"><button class="btn sm" data-gc="seurl">울리기</button></div>
     <div class="sec">중앙 이미지</div><div class="row"><input type="text" id="gci" placeholder="그림 주소" style="flex:1"><label class="btn sm">파일<input type="file" accept="image/*" id="gcif" hidden></label><button class="btn sm" data-gc="center">띄우기</button><button class="btn sm ghost" data-gc="centerx">내리기</button></div>
     <div class="sec">채팅 명령</div><table class="t small"><tr><td><code>/as 이름 말</code></td><td>그 인물로 말하기 (관계도의 NPC 면 스탠딩·아바타가 따라온다)</td></tr><tr><td><code>/s 라벨</code></td><td>내 표정(스탠딩) 바꾸기</td></tr><tr><td><code>/img 주소</code></td><td>채팅에 그림</td></tr><tr><td><code>/r 1d100</code></td><td>주사위</td></tr><tr><td><code>/w 이름 말</code></td><td>귓속말 (GM 은 GM)</td></tr><tr><td><code>/clear</code></td><td>무대의 스탠딩 모두 내리기 (GM)</td></tr></table>
     <div class="sec">귓속말</div><div class="row"><select id="gwto">${Object.entries(ST.state.seats||{}).map(([k,v])=>`<option value="${esc(k)}">${esc((((ST.state.roster||{}).trainers||{})[k]||{}).name||k)} (${esc(v.name)})</option>`).join('')}</select><input type="text" id="gwt" placeholder="메시지" style="flex:1"><button class="btn sm" data-gc="whisper">보내기</button></div>`}
@@ -295,6 +303,9 @@ window.OM_RP_UI=(()=>{
    if(k==='capx'){await A().set(['rp','caption'],null);return re()}
    if(k==='center'){const u=$('#gci',md).value.trim();if(!u)return;await A().set(['rp','center'],{src:u,at:Date.now()});return re()}
    if(k==='se'){unlocked=true;return playSe(b.dataset.n)}
+   if(k==='cisave'){const ci=Object.assign({},R().cutin||{},{start:$('#gci_start',md).value,on:$('#gci_on',md).value,sc:+$('#gci_sc',md).value||70,pos:$('#gci_pos',md).value,warnTitle:$('#gci_wt',md).value.trim()});await A().set(['rp','cutin'],ci);return A().toast('연출 설정을 저장했다')}
+   if(k==='cutvs'||k==='cutwarn'){const B=window.OM_BATTLE_UI;if(!B||!B.startCut)return;unlocked=true;return B.startCut(k==='cutvs'?'vs':'warn')}
+   if(k==='cuttest'){unlocked=true;return window.OM_CUTIN&&window.OM_CUTIN.fire({tok:'gm',src:'',tag:'GM',ment:'『컷인 시험』'})}
    if(k==='seurl'){const u=$('#gseu',md).value.trim();if(!u)return;unlocked=true;return playSe(u)}
    if(k==='centerx'){await A().set(['rp','center'],null);return re()}
    if(k==='whisper'){const to=$('#gwto',md).value,t=$('#gwt',md).value.trim();if(!to||!t)return;await DBS().addLog(ST.room,ST.secret,'whisper',ST.name,{t,to,toName:(((ST.state.roster||{}).trainers||{})[to]||{}).name||to});$('#gwt',md).value='';A().toast('보냈다');return}};
