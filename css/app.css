@@ -980,3 +980,26 @@ body.resizing{user-select:none;cursor:col-resize}
 .ph-memo{padding:0 12px 12px;display:flex;flex-direction:column;gap:4px;align-items:flex-end}.ph-memo textarea{width:100%;font-size:13px}
 .skwrap .chip.on{background:var(--yel2);color:#1a1400;border-color:var(--yel2)}
 .skpenline span{display:inline-flex;align-items:center;gap:4px}
+
+/* 휴대폰 문자 · 아래 띠 */
+.ph-head.green{background:#0f4a2e}
+.ph-app i{position:relative}.ph-badge{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;border-radius:9px;background:var(--red);color:#fff;font-size:11px;font-style:normal;display:flex;align-items:center;justify-content:center;padding:0 5px;border:2px solid #000}
+.ph-badge.inline{position:static;display:inline-flex;margin-left:6px;vertical-align:middle;border:0;height:16px;min-width:16px}
+.ph-av.ph-room{display:flex;align-items:center;justify-content:center;font-style:normal;font-size:20px}
+.ph-sms{flex:1;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:8px;background:repeating-linear-gradient(135deg,transparent 0 18px,rgba(255,255,255,.02) 18px 20px)}
+.ph-day{text-align:center;font-size:11px;color:var(--mute);margin:4px 0}
+.ph-msg{display:flex;gap:8px;align-items:flex-end}.ph-msg.me{flex-direction:row-reverse}.ph-av.sm{width:32px;height:32px}
+.ph-mb{max-width:78%;display:flex;flex-direction:column;gap:2px}.ph-msg.me .ph-mb{align-items:flex-end}
+.ph-mn{font-size:11px;color:#ccc}.ph-mt{font-size:10px;color:var(--mute)}
+.ph-bub{background:#fff;color:#111;padding:6px 10px;font-size:13.5px;line-height:1.4;border:2px solid #000;box-shadow:3px 3px 0 #000;clip-path:polygon(0 0,100% 0,100% calc(100% - 6px),calc(100% - 6px) 100%,0 100%)}
+.ph-msg.me .ph-bub{background:var(--red);color:#fff;box-shadow:-3px 3px 0 #000;clip-path:polygon(0 0,100% 0,100% 100%,6px 100%,0 calc(100% - 6px))}
+.ph-at{color:#a05a00;font-weight:700}.ph-msg.me .ph-at{color:#ffe36b}
+.ph-smsin{display:flex;align-items:center;gap:6px;padding:8px;border-top:1px solid var(--line2);background:#0e0e10}.ph-smsin input{flex:1;min-width:0}
+.mebar{display:flex;align-items:center;gap:10px;margin-top:8px;padding:6px 10px;background:#0e0e10;border:1px solid var(--line2);border-left:4px solid var(--red);flex-wrap:wrap}
+.meid{display:flex;align-items:center;gap:8px;min-width:150px}.meid b{font-family:var(--lab);color:#fff;font-size:14px;display:block}.meid small{color:var(--mute);font-size:11px}.meid .bad{color:var(--red)}.meid .warn{color:var(--yel2)}
+.mebtns{display:flex;gap:4px}
+.memons{display:flex;gap:6px;flex-wrap:wrap;flex:1}
+.memon{display:flex;flex-direction:column;align-items:center;width:52px;cursor:pointer;gap:2px}.memon i{width:36px;height:36px;border-radius:50%;background:#2a2b31 center/cover no-repeat;border:2px solid #000}.memon.ko i{filter:grayscale(1) brightness(.5)}.memon.tired i{border-color:var(--yel2)}
+.memon .mhp{width:44px;height:4px;background:#2a2b31}.memon .mhp b{display:block;height:100%;background:var(--ok)}.memon .mhp.mid b{background:var(--yel2)}.memon .mhp.low b{background:var(--red)}
+.memon small{font-size:10px;color:#ccc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52px}
+.melast{font-size:11.5px;color:#ccc;max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--mono)}

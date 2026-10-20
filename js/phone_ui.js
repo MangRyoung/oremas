@@ -31,14 +31,43 @@ window.OM_PHONE_UI=(()=>{
   const md=A().openModal(`<div class="phone-shell"><div class="phone-dev"><div class="ph-status"><span>${esc(t?t.name:'—')}</span><span class="sp"></span><span>${esc(today().slice(5).replace('-','/'))}</span><span class="ph-bat">▮▮▮</span></div><div class="ph-screen" id="phScreen"></div><div class="ph-home"><button class="ph-hb" data-ph="home" title="홈"></button></div></div><button class="btn ghost ph-close" data-x>닫기</button></div>`);
   md.classList.add('phone-modal');draw(md)}
  function draw(md){md=md||$('.modal');const el=$('#phScreen',md);if(!el)return;const t=owner();
-  el.innerHTML=PH.screen==='contacts'?contacts(t):PH.screen==='conf'?confidants(t):PH.screen==='cal'?calendar(t):home(t);
-  bind(md)}
+  el.innerHTML=PH.screen==='contacts'?contacts(t):PH.screen==='conf'?confidants(t):PH.screen==='cal'?calendar(t):PH.screen==='sms'?smsRooms(t):PH.screen==='smsroom'?smsRoom(t):home(t);
+  bind(md);if(PH.screen==='smsroom'){const lg=$('.ph-sms',md);if(lg)lg.scrollTop=lg.scrollHeight;markSeen(PH.room)}}
  const re=()=>draw();
  /* ----- 홈 ----- */
- function home(t){const T=trs();const apps=[['contacts','📞','연락처',1],['conf','🤝','협력자',1],['cal','📅','캘린더',1],['sms','💬','문자',0],['web','🌐','인터넷',0],['tube','▶','영상',0]];
+ function home(t){const T=trs();const un=unreadAll();const apps=[['contacts','📞','연락처',1],['sms','💬','문자',1,un],['conf','🤝','협력자',1],['cal','📅','캘린더',1],['web','🌐','인터넷',0],['tube','▶','영상',0]];
   return `<div class="ph-wall"><div class="ph-clock"><b>${esc(dateKo(today()))}</b><small>${esc(cal().phase||'')}${cal().weather?' '+esc(cal().weather):''}</small></div>
    ${gm()?`<div class="ph-owner"><span class="small dim">누구의 휴대폰</span><select id="phOwner">${Object.values(T).map(x=>`<option value="${x.id}" ${x.id===PH.tid?'selected':''}>${esc(x.name)}</option>`).join('')}</select></div>`:''}
-   <div class="ph-apps">${apps.map(([k,ic,n,on])=>`<button class="ph-app ${on?'':'off'}" data-ph="${on?k:''}" ${on?'':'title="아직 준비 중"'}><i>${ic}</i><span>${n}</span></button>`).join('')}</div></div>`}
+   <div class="ph-apps">${apps.map(([k,ic,n,on,bd])=>`<button class="ph-app ${on?'':'off'}" data-ph="${on?k:''}" ${on?'':'title="아직 준비 중"'}><i>${ic}${bd?`<em class="ph-badge">${bd}</em>`:''}</i><span>${n}</span></button>`).join('')}</div></div>`}
+ /* ----- 문자: 캐릭터끼리의 톡 (로그 kind chat + data.sms=방). 방은 rp.sms.rooms (GM) + 기본 「파티」 ----- */
+ const SEEN_KEY='om_sms_seen';
+ function rooms(){const r=((A().ST.state.rp||{}).sms||{}).rooms||[];return [{id:'party',name:'파티',members:[]},...r.filter(x=>x&&x.id)]}
+ function smsLogs(room){return (A().ST.log||[]).filter(r=>r.kind==='chat'&&r.data&&r.data.sms&&(!room||r.data.sms===room))}
+ function seen(){try{return JSON.parse(localStorage.getItem(SEEN_KEY)||'{}')}catch(e){return {}}}
+ function markSeen(room){const l=smsLogs(room);if(!l.length)return;const s=seen();s[room]=l[l.length-1].id;try{localStorage.setItem(SEEN_KEY,JSON.stringify(s))}catch(e){}}
+ function unread(room){const s=seen();const last=+s[room]||0;return smsLogs(room).filter(r=>r.id>last).length}
+ function unreadAll(){return rooms().reduce((a,r)=>a+unread(r.id),0)}
+ function spk(){const R=window.OM_RP_UI;if(R&&R.curSpeaker)return R.curSpeaker();const ST=A().ST;return gm()?{key:'gm',name:'GM',img:''}:{key:'me',name:ST.name||'',img:''}}
+ function smsRooms(t){const rs=rooms();return `<div class="ph-head green"><button class="ph-back" data-ph="home">‹</button><div><b>문자</b><small>캐릭터끼리의 톡 · 로그에는 안 보인다</small></div>${gm()?'<button class="btn xs" data-ph="smsnew">＋ 방</button>':''}</div>
+   <div class="ph-list">${rs.map(r=>{const L=smsLogs(r.id);const last=L[L.length-1];const u=unread(r.id);return `<div class="ph-item" data-ph="smsopen" data-room="${esc(r.id)}"><i class="ph-av ph-room">${r.id==='party'?'👥':'💬'}</i><div class="ph-it"><b>${esc(r.name)}${u?` <em class="ph-badge inline">${u}</em>`:''}</b><small>${last?esc((last.data.as||last.who)+': '+String(last.data.t||'').slice(0,40)):'아직 대화가 없다'}</small></div>${gm()&&r.id!=='party'?`<button class="btn xs ghost" data-ph="smsdel" data-room="${esc(r.id)}">✕</button>`:''}</div>`}).join('')}</div>`}
+ function smsRoom(t){const r=rooms().find(x=>x.id===PH.room)||rooms()[0];PH.room=r.id;const L=smsLogs(r.id);const meKey=spk().key;const R=window.OM_RP_UI;let lastDay='';
+  const rows=L.map(x=>{const d=x.data;const at=new Date(x.at);const day=isNaN(at)?'':`${at.getMonth()+1}/${at.getDate()}`;const hm=isNaN(at)?'':`${String(at.getHours()).padStart(2,'0')}:${String(at.getMinutes()).padStart(2,'0')}`;let head='';if(day&&day!==lastDay){lastDay=day;head=`<div class="ph-day">${day}</div>`}
+   const mine=d.k===meKey;const img=d.k&&R&&R.imgOfKey?R.imgOfKey(d.k):'';const name=d.as||x.who;
+   const txt=esc(d.t||'').replace(/@([^\s@]+)/g,'<span class="ph-at">@$1</span>');
+   return head+`<div class="ph-msg ${mine?'me':''}">${mine?'':`<i class="ph-av sm" style="${img?`background-image:url('${esc(img)}')`:''}"></i>`}<div class="ph-mb"><small class="ph-mn">${esc(name)}</small><div class="ph-bub">${txt}</div><small class="ph-mt">${hm}</small></div></div>`}).join('');
+  const S=spk();
+  return `<div class="ph-head green"><button class="ph-back" data-ph="sms">‹</button><div><b>${esc(r.name)}</b><small>${L.length}개의 메시지</small></div></div>
+   <div class="ph-sms">${rows||'<div class="ph-empty">첫 메시지를 보내 봐</div>'}</div>
+   ${A().ST.role?`<div class="ph-smsin"><i class="ph-av sm" title="${esc(S.name)}" style="${S.img?`background-image:url('${esc(S.img)}')`:''}"></i><input type="text" id="smsIn" placeholder="${esc(S.name)} 으로 보내기 · @이름"><button class="btn pri sm" data-ph="smssend">➤</button></div>`:''}`}
+ async function smsSend(md){const inp=$('#smsIn',md);if(!inp)return;const t=inp.value.trim();if(!t)return;inp.value='';const S=spk();const ST=A().ST;
+  try{await window.OM_STORE.addLog(ST.room,ST.secret,'chat',S.name||ST.name||'',{t,sms:PH.room,as:S.name,k:S.key})}catch(e){A().toast('보내지 못했다: '+e.message)}}
+ /* 새 문자가 오면 (내 것이 아니면) 알림을 띄우고, 열려 있으면 다시 그린다 */
+ function onSms(row){const d=row.data||{};const md=$('.modal.phone-modal');const openHere=md&&PH.screen==='smsroom'&&PH.room===d.sms;
+  if(openHere){draw(md);return}
+  const mine=d.k===spk().key;if(!mine)A().toast(`💬 ${d.as||row.who}: ${String(d.t||'').slice(0,60)}`);
+  try{if(!mine&&window.OM_RP_UI)window.OM_RP_UI.playSe('Ping')}catch(e){}
+  if(md&&PH.screen==='sms')draw(md);A().renderScene()}
+ function newRoom(){const name=prompt('방 이름');if(name==null||!name.trim())return;const rs=(((A().ST.state.rp||{}).sms||{}).rooms||[]).slice();rs.push({id:'r'+Date.now().toString(36),name:name.trim()});return A().set(['rp','sms','rooms'],rs).then(()=>{PH.screen='sms';draw()})}
  /* ----- 연락처: 파티원 (로스터 트레이너) ----- */
  function contacts(t){const T=trs();const seats=A().ST.state.seats||{};
   return `<div class="ph-head"><button class="ph-back" data-ph="home">‹</button><div><b>연락처</b><small>같은 방 파티원 · 누르면 시트를 본다</small></div></div>
@@ -77,7 +106,11 @@ window.OM_PHONE_UI=(()=>{
  /* ----- 묶기 ----- */
  function bind(md){const t=owner();
   md.querySelectorAll('[data-ph]').forEach(b=>b.onclick=async()=>{const k=b.dataset.ph;if(!k)return;
-   if(['home','contacts','conf','cal'].includes(k)){PH.screen=k;return re()}
+   if(['home','contacts','conf','cal','sms'].includes(k)){PH.screen=k;return re()}
+   if(k==='smsopen'){PH.room=b.dataset.room;PH.screen='smsroom';return re()}
+   if(k==='smssend')return smsSend(md);
+   if(k==='smsnew')return newRoom();
+   if(k==='smsdel'){if(!confirm('이 방을 지울까? (메시지는 로그에 남는다)'))return;const rs=(((A().ST.state.rp||{}).sms||{}).rooms||[]).filter(x=>x.id!==b.dataset.room);await A().set(['rp','sms','rooms'],rs);return re()}
    if(k==='sheet'){A().closeModal();if(window.OM_SHEET_UI)window.OM_SHEET_UI.UI.tid=b.dataset.tid;A().view='sheet';return A().renderScene()}
    if(k==='conf1'){if(gm())return editConf(b.dataset.e);const g=G();const e=g.edges[b.dataset.e];return A().toast(e?`${esc(e.label||'관계')} · 레벨 ${+e.rank||0}${e.shock?' · ⚡ 쇼크':''}`:'')}
    if(k==='confadd')return addConf();
@@ -86,6 +119,7 @@ window.OM_PHONE_UI=(()=>{
    if(k==='caldel'){const tid=PH.tid;const pd=phoneData(tid);const day=today();const log=Object.assign({},pd.log||{});log[day]=(log[day]||[]).filter((x,i)=>i!==+b.dataset.i);await savePhone(tid,{log});return re()}
    if(k==='memosave'){await savePhone(PH.tid,{memo:$('#cs_memo',md).value});return A().toast('저장했다')}
    if(k==='rest'){const K=window.OM_SKILL_UI;if(!K)return;const kd=b.dataset.k;const nm=RESTS.find(x=>x[0]===kd);if(!confirm(`「${nm[1]} (${nm[2]})」 회복을 할까? — ${t?t.name:''} 와 소지 포켓몬`))return;A().closeModal();await K.applyRest(kd,[PH.tid],{by:(t?t.name:'')+' · 휴대폰'});return open('cal')}});
-  const own=$('#phOwner',md);if(own)own.onchange=()=>{PH.tid=own.value;re()}}
- return {open};
+  const own=$('#phOwner',md);if(own)own.onchange=()=>{PH.tid=own.value;re()};
+  const si=$('#smsIn',md);if(si){si.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)smsSend(md)};si.focus()}}
+ return {open,onSms,unreadAll};
 })();

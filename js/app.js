@@ -142,6 +142,7 @@ function renderLog(scroll){
  el.innerHTML=ST.log.map(r=>{const d=r.data||{};const k=r.kind;const t=fmtTime(r.at);
   if(k==='sys')return `<div class="msg sys"><div class="bub">${esc(d.t)}</div></div>`;
   if(k==='chat'&&d.clear)return `<div class="msg sys"><div class="bub">무대를 비웠다</div></div>`;
+  if(k==='chat'&&d.sms)return '';
   if(k==='chat'&&!d.t&&!d.img)return '';
   if(k==='battle'){const card=battleCard(d);if(card)return `<div class="msg battle card">${card}<span class="time">${t}</span></div>`}
   const mine=!d.as&&((ST.role==='gm'&&d.from==='gm')||(ST.role==='seat'&&d.from===ST.seat));
