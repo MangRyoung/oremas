@@ -1221,6 +1221,9 @@ label.ph-item input[type=checkbox]{width:16px;height:16px;flex:none}
 .ivt.ed{row-gap:2px;column-gap:3px}
 .ivt.ed input{width:100%;min-width:0;box-sizing:border-box;text-align:center;font-family:var(--mono);font-size:13px;padding:1px 0;border:1px solid #444;background:#fff;color:#111}
 .ivc .ivh .btn.on{background:var(--red);color:#fff;border-color:var(--red)}
+.ivc.big{border-color:#c98a00;box-shadow:3px 3px 0 #c98a00;background:#fff8e0}
+.ivc.big.on{background:#ffe3e8;border-color:var(--red);box-shadow:3px 3px 0 var(--red)}
+.ivlg.big{background:var(--yel2);color:#000;border:1px solid #000}
 .ivmod{font-size:10px;background:#333;color:#fff;padding:0 5px}
 .ivlg{padding:0 4px;border-radius:3px;font-family:var(--mono)}
 .ivnow{display:flex;align-items:center;gap:10px;background:var(--panel2);padding:6px 10px;margin-top:4px}
