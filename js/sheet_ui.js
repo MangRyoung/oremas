@@ -51,7 +51,7 @@ window.OM_SHEET_UI=(()=>{
   const base=t.base||{};
   const tiles=[['포켓몬',mons.length],['메인',base['메인']??'-'],['통솔점',base['통솔점']??'-'],['분배레벨',base['분배레벨']??'-'],['할인점',base['「기술 할인점」']??'-'],['1/시',base['【1/시】']??'-']];
   return `<div class="hero">
-    <div class="hpic" style="${t.image?`background-image:url('${t.image}')`:''}">${t.image?'':'<span>사진</span>'}</div>
+    <div class="hpic" style="${t.image?`background-image:url('${cssu(t.image)}')`:''}">${t.image?'':'<span>사진</span>'}</div>
     <div class="hmain"><div class="hname">${E?`<input type="text" data-te="name" value="${esc(t.name)}">`:esc(t.name)}</div>
      <div class="hbadges">${['육성','지시','통솔','능력'].map(k=>E?`<label class="hb">${k} <select data-te="rank_${k}">${['',...RANKS,'B-','A-','AA-'].map(r=>`<option value="${r}" ${(t.ranks||{})[k]===r?'selected':''}>${r||'-'}</option>`).join('')}</select></label>`:`<span class="hb">${k} <b>${esc((t.ranks||{})[k]||'-')}</b></span>`).join('')}${t.solo?'<span class="hb">1인 기준</span>':''}</div>
      ${E?`<div class="row small" style="margin-top:6px"><label>사진 주소 <input type="text" data-te="image" value="${esc(t.image&&!t.image.startsWith('data:')?t.image:'')}" placeholder="https://… (비우면 그대로)" style="width:320px"></label><label class="btn xs">파일 올리기<input type="file" accept="image/*" data-up="tr" data-id="${t.id}" hidden></label></div>`:''}</div>
@@ -64,7 +64,7 @@ window.OM_SHEET_UI=(()=>{
  function charTab(c,t,E){
   const d=t.detail||{};const st=t.stands||[];const act=+t.standActive||0;
   const standSec=`<div class="spanel"><div class="sh">스탠딩 <span class="note">무대에 서는 전신 그림 · 제작기에서 넣으면 「제작기 동기화」로 따라온다</span><span class="sp"></span>${canEdit(c,t.id)?`<button class="btn sm" data-act="stands">표정·스탠딩 편집</button>`:''}</div>
-   ${st.length?`<div class="stgrid">${st.map((s,i)=>`<div class="stcard ${i===act?'on':''}"><div class="sth" style="${s.src?`background-image:url('${esc(s.src)}')`:''}"></div><b>${esc(s.label||'기본')}</b>${i===act?' <span class="tag me">기본</span>':''}</div>`).join('')}</div>`:`<div class="small dim">아직 없다 — 초상(위 그림)으로 선다</div>`}</div>`;
+   ${st.length?`<div class="stgrid">${st.map((s,i)=>`<div class="stcard ${i===act?'on':''}"><div class="sth" style="${s.src?`background-image:url('${cssu(s.src)}')`:''}"></div><b>${esc(s.label||'기본')}</b>${i===act?' <span class="tag me">기본</span>':''}</div>`).join('')}</div>`:`<div class="small dim">아직 없다 — 초상(위 그림)으로 선다</div>`}</div>`;
   return standSec+`<div class="spanel two">
    <div><div class="sh">자질</div><table class="t">${['육성','지시','통솔','능력'].map(k=>`<tr><th style="width:60px">${k} ${esc((t.ranks||{})[k]||'-')}</th><td>${E?`<input type="text" data-te="detail_${k}" value="${esc(d[k]||'')}" style="width:100%">`:esc(d[k]||'')}</td></tr>`).join('')}</table>
     <div class="sh" style="margin-top:12px">고유 포텐셜</div>${(t.unique||[]).length?`<table class="t">${t.unique.map((u,i)=>`<tr><th style="width:140px;white-space:normal">${E?`<input type="text" data-te="uniq_name_${i}" value="${esc(u.name)}" style="width:100%">`:esc(u.name)}${u.name?uniqAutoBtn(u,i):''}</th><td class="pre small">${E?`<textarea data-te="uniq_eff_${i}" rows="3" style="width:100%">${esc(u.eff)}</textarea>`:esc(u.eff)}</td></tr>`).join('')}</table>`:'<div class="dim small">없음</div>'}${E?`<button class="btn xs" data-act="adduniq">+ 고유</button>`:''}</div>
@@ -73,7 +73,7 @@ window.OM_SHEET_UI=(()=>{
 
  function pokeTab(c,t,mons,E){
   const m=mons.find(x=>x.id===UI.mid);
-  const strip=`<div class="pstrip">${mons.map(x=>`<div class="pcard ${x.id===UI.mid?'on':''}" data-pick="${x.id}"><div class="ppic" style="${x.image?`background-image:url('${x.image}')`:''}"></div><div class="pn">${esc(x.name)}</div><div class="pl">Lv.${x.lv} ${x.partner?'<span class="tag">파트너</span>':''}</div></div>`).join('')}
+  const strip=`<div class="pstrip">${mons.map(x=>`<div class="pcard ${x.id===UI.mid?'on':''}" data-pick="${x.id}"><div class="ppic" style="${x.image?`background-image:url('${cssu(x.image)}')`:''}"></div><div class="pn">${esc(x.name)}</div><div class="pl">Lv.${x.lv} ${x.partner?'<span class="tag">파트너</span>':''}</div></div>`).join('')}
    ${E?`<button class="btn sm ghost" data-act="addmon">+ 포켓몬</button>`:''}</div>`;
   if(!m)return strip+'<div class="empty">포켓몬이 없다.</div>';
   const eff=TYPES18.map(ty=>({ty,v:S().effect(ty,m.teraActive&&m.teraEn!=='-'?[m.teraEn]:m.types)}));
@@ -81,7 +81,7 @@ window.OM_SHEET_UI=(()=>{
   const sheetHp=m.sheetHp==null?m.hp.max:Math.min(m.sheetHp,m.hp.max);
   const traitNames=Object.keys(DB().traits||{}),itemNames=Object.keys(DB().items||{}),moveNames=Object.keys(DB().moves||{});
   return strip+`<div class="pview">
-   <div class="pportrait"><div class="ppbig" style="${m.image?`background-image:url('${m.image}')`:''}">${m.image?'':'<span>그림 없음</span>'}</div><div class="ppname">${esc(m.role||'')}${m.pride?' · 프라이드 '+esc(m.pride):''}</div>
+   <div class="pportrait"><div class="ppbig" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}">${m.image?'':'<span>그림 없음</span>'}</div><div class="ppname">${esc(m.role||'')}${m.pride?' · 프라이드 '+esc(m.pride):''}</div>
     ${E?`<input type="text" data-me="image" value="${esc(m.image&&!m.image.startsWith('data:')?m.image:'')}" placeholder="그림 주소 https://… (비우면 그대로)" style="width:100%;margin-top:6px"><label class="btn xs" style="margin-top:6px">파일 올리기<input type="file" accept="image/*" data-up="mon" data-id="${m.id}" hidden></label>`:''}</div>
    <div class="pinfo">
     <div class="plv">Lv <b>${m.lv}</b> <span class="dim small">기본 ${S().baseLevel((t.ranks||{})['육성'])} ${m.dist?(m.dist>0?'+':'')+m.dist:''}</span></div>

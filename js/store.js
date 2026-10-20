@@ -2,6 +2,8 @@
    방(om_rooms) · 상태(om_state) · 로그(om_log) · 비밀(om_secret) 을 다룬다.
    쓰기는 전부 RPC(schema.sql 의 om_* 함수)로 간다. 비밀값(GM 또는 좌석)은 호출 때마다 같이 보낸다. */
 "use strict";
+/* 그림 주소를 style="background-image:url('…')" 에 넣을 때 쓰는 전역 도우미: 따옴표·괄호·꺾쇠·역슬래시·공백을 %XX 로 바꿔 속성·CSS 문자열을 못 깨게 한다 (주소로서는 같은 뜻) */
+function cssu(s){return String(s??'').replace(/[\s"'()\\<>]/g,c=>'%'+c.charCodeAt(0).toString(16).padStart(2,'0').toUpperCase())}
 window.OM_STORE=(()=>{
  const cfg=()=>window.OM_CONFIG||{};
  let client=null;

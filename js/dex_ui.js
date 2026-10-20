@@ -35,7 +35,7 @@ window.OM_DEX_UI=(()=>{
    return `<div class="dxpots">${L.map(p=>`<div class="dxp"><div class="pn"><b>${esc(N(p.name))}</b>${p.kind?`<small>${esc(p.kind)}</small>`:''}</div><div class="pe">${esc(N(p.eff||''))}</div></div>`).join('')||'<div class="dim small">없음</div>'}</div>`};
   const shown=!!(m.seen||m.entry);const nameOk=full||sc.length||shown;
   const md=A().openModal(`<div class="mhead"><h2>${esc(full?m.name:(has('type')||has('move')||has('trait')||m.seen||m.entry?m.name:'???'))} <span class="small dim">도감 정보</span></h2><span class="sp"></span>${nz?'<span class="tag" style="background:#5a2330">◆ 노이즈 차단 — 데이터 일부가 손상됨</span>':''}${!full&&sc.length?`<span class="tag" style="background:#2b3140;color:#f1c75b">◇ 부분 해석 — ${sc.map(p=>(PARTS.find(x=>x[0]===p)||[])[1]).join('·')}</span>`:''}<button class="btn ghost" data-x>닫기</button></div>
-   <div class="dxhead"><div class="dxpic" style="${m.image&&nameOk?`background-image:url('${m.image}')`:''}"></div>
+   <div class="dxhead"><div class="dxpic" style="${m.image&&nameOk?`background-image:url('${cssu(m.image)}')`:''}"></div>
     <div class="dxinfo"><div class="dxname">${nameOk?esc(N(m.name)):'<span class="dim">비공개</span>'}<span class="lv">Lv.${esc(m.lv)}</span>${typeRow()}</div>
      <div class="dxrow"><span class="k">특성</span><span>${trait()}</span></div>${full?`<div class="dxrow"><span class="k">소지품</span><span>${esc(m.item||'-')}${m.itemEff?` <span class="small dim">${esc(m.itemEff)}</span>`:''}</span></div>`:''}
      ${full?`<div class="dxrow"><span class="k">종족치</span>${stats()}</div>`:`<div class="dxrow"><span class="k">종족치</span>${PHs}</div>`}

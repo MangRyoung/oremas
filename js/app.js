@@ -129,8 +129,8 @@ function copy(t,msg){navigator.clipboard.writeText(t).then(()=>toast(msg),()=>pr
 async function set(path,value){try{
   /* 서버의 jsonb_set 은 중간 키가 없으면 조용히 실패한다 — 옛 schema 를 쓰는 방이어도 되게 부모를 먼저 만든다 */
   if(path&&path.length>1&&ST.role==='gm'){let o=ST.state;for(let i=0;i<path.length-1;i++){if(typeof o[path[i]]!=='object'||o[path[i]]===null){await DBS().setState(ST.room,ST.secret,path.slice(0,i+1),{});o[path[i]]={}}o=o[path[i]]}}
-  /* 좌석: 중간 상자가 없으면(예: pub/나 가 아직 없음) 있는 부모까지 올라가 통째로 쓴다 — 허용 경로 안이면 서버가 받아 준다 */
-  let wpath=path,wval=value;if(path&&path.length>2&&ST.role!=='gm'){let o=ST.state[path[0]];for(let i=1;o&&i<path.length-1;i++){if(typeof o[path[i]]!=='object'||o[path[i]]===null){let nv=value;for(let j=path.length-1;j>i;j--){nv={[path[j]]:nv}}wpath=path.slice(0,i+1);wval=nv;break}o=o[path[i]]}}
+  /* 좌석도 경로 그대로 쓴다 — 중간 상자는 서버 om_jset 이 만들어 준다. (2026-10-20: 예전엔 부모까지 올라가 통째로 썼는데, 서버에 이미 있던 칸을 덮을 수 있고 권한 검사의 NULL 구멍에 기대고 있어서 뺐다) */
+  let wpath=path,wval=value;
   const v=await DBS().setState(ST.room,ST.secret,wpath,wval);
   /* 낙관적 반영: 실시간이 오기 전에 화면부터 */
   if(path&&path.length){let o=ST.state;for(let i=0;i<path.length-1;i++){if(typeof o[path[i]]!=='object'||o[path[i]]==null)o[path[i]]={};o=o[path[i]]}
@@ -142,7 +142,7 @@ async function sysLog(t,kind,extra){const k=kind||'sys';const data=Object.assign
 const TAGCOL={'고유':'#7b4fd6','전용':'#1f6fd1','포텐셜':'#7b4fd6','특성':'#2f8f5b','소지품':'#c7651a','지령':'#1f6fd1','명령':'#e3101f','공개':'#d6a23b','스킬 체크':'#2b8fa8','모두 공개':'#d6a23b','공격':'#c8362b','전달':'#8a4b2a','효과':'#555'};
 function battleCard(d){const t=String(d.t||'');const m=t.match(/^【([^】]+)】\s*([^\n]*)\n?([\s\S]*)$/);if(!m)return '';const tag=m[1],title=m[2],body=m[3].trim();const col=TAGCOL[tag]||'#555';
  const lines=body.split('\n').filter(Boolean).map(l=>`<div class="bl ${/실패|차단|없|않/.test(l)?'neg':/\+\d|회복|성공|→/.test(l)?'pos':''}">${esc(l)}</div>`).join('');
- return `<div class="bcard" style="--tc:${col}"><div class="bch">${d.img?`<span class="bcav" style="background-image:url('${esc(d.img)}')"></span>`:''}<span class="bctag">${esc(tag)}</span><b>${esc(title)}</b>${d.mid?`<span class="sp"></span><button class="btn xs ghost bcfx" data-lmid="${esc(d.mid)}" title="이 포켓몬의 포텐셜 창 — 발동 중인 효과를 ✕ 로 해제">효과</button>`:''}</div>${d.eff?`<div class="bceff">${esc(d.eff)}</div>`:''}${lines?`<div class="bcb">${lines}</div>`:''}</div>`}
+ return `<div class="bcard" style="--tc:${col}"><div class="bch">${d.img?`<span class="bcav" style="background-image:url('${cssu(d.img)}')"></span>`:''}<span class="bctag">${esc(tag)}</span><b>${esc(title)}</b>${d.mid?`<span class="sp"></span><button class="btn xs ghost bcfx" data-lmid="${esc(d.mid)}" title="이 포켓몬의 포텐셜 창 — 발동 중인 효과를 ✕ 로 해제">효과</button>`:''}</div>${d.eff?`<div class="bceff">${esc(d.eff)}</div>`:''}${lines?`<div class="bcb">${lines}</div>`:''}</div>`}
 
 /* 대사 화자 이름: as 가 있으면 그것, 좌석의 세션 대사(예전 줄)는 그 좌석 캐릭터 이름, 잡담·그 밖은 남긴 이름 그대로 */
 function chatName(r){const d=r.data||{};if(d.as)return d.as;if(r.kind==='chat'&&!isOoc(r)&&!d.sms&&d.from&&d.from!=='gm'){const t=((ST.state.roster||{}).trainers||{})[d.from];if(t&&t.name)return t.name}return r.who||''}
@@ -190,7 +190,7 @@ function renderLog(scroll){
   const who=k==='whisper'?`${esc(r.who)} → ${esc(d.toName||d.to)}`:esc(chatName(r));
   const av=avatarOf(r);
   const lf=k==='chat'&&!isOoc(r)?lineFmt(d):{narr:false,text:String(d.t||'')};
-  return `<div class="msg ${k} ${mine?'me':''} ${lf.narr?'narr':''}"><div class="av" style="${av?`background-image:url('${av}')`:''}"></div><div class="bub"><span class="who">${who}</span>${d.img?`<a href="${esc(d.img)}" target="_blank" rel="noopener"><img class="cimg" src="${esc(d.img)}" alt=""></a>`:''}${esc(lf.text)}</div><span class="time">${t}</span></div>`}).join('');
+  return `<div class="msg ${k} ${mine?'me':''} ${lf.narr?'narr':''}"><div class="av" style="${av?`background-image:url('${cssu(av)}')`:''}"></div><div class="bub"><span class="who">${who}</span>${d.img?`<a href="${esc(d.img)}" target="_blank" rel="noopener"><img class="cimg" src="${esc(d.img)}" alt=""></a>`:''}${esc(lf.text)}</div><span class="time">${t}</span></div>`}).join('');
  el.querySelectorAll('[data-lmid]').forEach(bt=>bt.onclick=()=>{if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.action)window.OM_BATTLE_UI.action({act:'pots',mid:bt.dataset.lmid})});
  if(!el.innerHTML&&CHAN.cur==='o')el.innerHTML='<div class="msg sys"><div class="bub">잡담 창 — 여기서 한 말은 세션 로그·무대에 나오지 않는다</div></div>';chanDots();
  if(scroll!==false)el.scrollTop=el.scrollHeight}
@@ -203,10 +203,10 @@ const VIEWS=[['rp','RP'],['battle','배틀'],['sheet','시트'],['graph','관계
 const PRES={who:{},t:null,last:0};
 function myId(){return ST.role==='gm'?'gm':ST.role==='seat'?('s:'+ST.seat):('v:'+(ST.vid||(ST.vid=Math.random().toString(36).slice(2,8))))}
 function sayHello(force){const now=Date.now();if(!force&&now-PRES.last<20000)return;PRES.last=now;try{DBS().broadcast({t:'hello',id:myId(),name:ST.role==='gm'?'GM':(ST.name||'관전'),role:ST.role||'view',seat:ST.seat||'',at:now})}catch(e){}}
-function onHello(p){if(!p||!p.id||p.id===myId())return;const isNew=!PRES.who[p.id];PRES.who[p.id]={name:p.name,role:p.role,seat:p.seat,at:Date.now()};drawPresence();if(isNew)setTimeout(()=>sayHello(true),300+Math.random()*700)}
+function onHello(p){if(!p||!p.id||p.id===myId())return;const isNew=!PRES.who[p.id];PRES.who[String(p.id).slice(0,40)]={name:String(p.name||'').slice(0,40),role:['gm','seat','view'].includes(p.role)?p.role:'view',seat:String(p.seat||'').slice(0,40),at:Date.now()};drawPresence();if(isNew)setTimeout(()=>sayHello(true),300+Math.random()*700)}
 function drawPresence(){const el=$('#presence');if(!el)return;const now=Date.now();const list=[{id:myId(),name:ST.role==='gm'?'GM':(ST.name||'관전'),role:ST.role||'view',seat:ST.seat||'',me:true},...Object.entries(PRES.who).filter(([k,v])=>now-v.at<70000).map(([k,v])=>Object.assign({id:k},v))];
  const trs=(ST.state.roster||{}).trainers||{};const nm=x=>x.role==='gm'?'GM':x.role==='seat'?`${esc(x.name)}${trs[x.seat]?' <small>'+esc(trs[x.seat].name)+'</small>':''}`:esc(x.name||'관전');
- el.innerHTML=`<span class="pcount" title="${list.map(x=>x.name).join(', ')}">● ${list.length}</span>${list.map(x=>`<span class="pwho ${x.role} ${x.me?'me':''}">${nm(x)}</span>`).join('')}`}
+ el.innerHTML=`<span class="pcount" title="${esc(list.map(x=>x.name).join(', '))}">● ${list.length}</span>${list.map(x=>`<span class="pwho ${x.role} ${x.me?'me':''}">${nm(x)}</span>`).join('')}`}
 function startPresence(){sayHello(true);clearInterval(PRES.t);PRES.t=setInterval(()=>{sayHello(false);drawPresence()},25000)}
 /* GM 이 보고 있으면 로스터 트레이너마다 관계도 노드가 있게 맞춘다 (좌석이 제 파티를 가져왔을 때 — 좌석은 graph 를 못 쓰니까) */
 /* 트레이너마다 한 번만 (graph.auto[tid]) — GM 이 지운 노드는 다시 만들지 않는다 */
@@ -304,7 +304,7 @@ function openMon(mid){
  const potCard=(p,kind)=>`<div class="dxp ${p.ph?"ph":""}"><div class="pn"><b>${esc(p.name)}</b>${kind||p.kind?`<small>${esc(kind||p.kind)}</small>`:''}${p.ph?'<small>(미정)</small>':''}<span class="sp"></span>${p.ph?'':an('pot',p.name)}</div>${p.ph?'':`<div class="pe">${esc(p.eff||'')}</div>`}</div>`;
  const pots=(m.pots||[]).filter(p=>p&&p.name);const uniq=(tr.unique||[]).filter(u=>u&&u.name);
  const md=openModal(`<div class="mhead"><h2>${esc(m.name)} <span class="small muted">상세</span></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-  <div class="dxhead"><div class="dxpic" style="${m.image?`background-image:url('${m.image}')`:''}"></div>
+  <div class="dxhead"><div class="dxpic" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div>
    <div class="dxinfo"><div class="dxname">${esc(m.name)}<span class="lv">Lv.${m.lv}</span><span class="small muted">${esc(tr.name)}</span><span class="row" style="gap:4px;display:inline-flex">${m.types.filter(t=>t!=='-').map(typeChip).join('')}</span>${m.tera&&m.tera!=='-'?`<span class="badge">테라 ${esc(m.tera)}</span>`:''}${m.role?`<span class="badge">${esc(m.role)}</span>`:''}${m.pride?`<span class="badge">프라이드 ${esc(m.pride)}</span>`:''}</div>
     <div class="dxhp"><div class="hpbar ${pct<=25?'low':pct<=50?'mid':''}"><i style="width:${pct}%"></i></div><span class="mono">${full?m.hp.cur+' / '+m.hp.max:pct+'%'}</span></div>
     <div class="dxrow"><span class="k">특성</span><span><b>${esc(m.ability||'-')}</b>${an('trait',m.ability)}<div class="dbmini">${effHtml('trait',m.ability,m.abilityEff)}</div></span></div>
@@ -354,12 +354,12 @@ function buildLogHtml(rows,o){const esc2=x=>String(x??'').replace(/&/g,'&amp;').
   if(k==='sys'||(k==='chat'&&d.clear)){out.push(`<div class="m sys"><div class="bub">${esc2(d.clear?'무대를 비웠다':d.t)}</div></div>`);continue}
   if(k==='battle'){const t=String(d.t||'');const m=t.match(/^【([^】]+)】\s*([^\n]*)\n?([\s\S]*)$/);
    if(m){const col=TAGCOL[m[1]]||'#555';const lines=m[3].trim().split('\n').filter(Boolean).map(l=>`<div class="bl ${/실패|차단|없|않/.test(l)?'neg':/\+\d|회복|성공|→/.test(l)?'pos':''}">${esc2(l)}</div>`).join('');
-    out.push(`<div class="m"><div class="av ${(+o.pav>0)&&d.img?'':'none'}" style="${(+o.pav>0)&&d.img?`background-image:url('${esc2(d.img)}')`:''}"></div><div class="card" style="--tc:${col}"><span class="tag">${esc2(m[1])}</span><b>${esc2(m[2])}</b>${d.eff?`<div class="eff">${esc2(d.eff)}</div>`:''}${lines}</div><span class="tm">${hm}</span></div>`);continue}
+    out.push(`<div class="m"><div class="av ${(+o.pav>0)&&d.img?'':'none'}" style="${(+o.pav>0)&&d.img?`background-image:url('${cssu(d.img)}')`:''}"></div><div class="card" style="--tc:${col}"><span class="tag">${esc2(m[1])}</span><b>${esc2(m[2])}</b>${d.eff?`<div class="eff">${esc2(d.eff)}</div>`:''}${lines}</div><span class="tm">${hm}</span></div>`);continue}
    out.push(`<div class="m sys"><div class="bub">${esc2(t)}</div></div>`);continue}
   if(!d.t&&!d.img)continue;
   const lf=k==='chat'&&!isOoc(r)?lineFmt(d):{narr:false,text:String(d.t||'')};const narr=o.narr&&lf.narr;const text=lf.narr?lf.text:String(d.t||'');
   const who=k==='whisper'?`${r.who} → ${d.toName||d.to||''}`:chatName(r);const av=(+o.pav>0)?avatarOf(r):'';
-  out.push(`<div class="m ${k} ${narr?'narr':''} ${isOoc(r)&&o.oocm!=='only'?'ooc':''}"><div class="av ${av?'':'none'}" style="${av?`background-image:url('${esc2(av)}')`:''}"></div><div class="bub"><span class="who">${esc2(who)}</span>${o.img&&d.img?`<a href="${esc2(d.img)}" target="_blank"><img src="${esc2(d.img)}" alt=""></a>`:''}${esc2(text)}</div><span class="tm">${hm}</span></div>`)}
+  out.push(`<div class="m ${k} ${narr?'narr':''} ${isOoc(r)&&o.oocm!=='only'?'ooc':''}"><div class="av ${av?'':'none'}" style="${av?`background-image:url('${cssu(av)}')`:''}"></div><div class="bub"><span class="who">${esc2(who)}</span>${o.img&&d.img?`<a href="${esc2(d.img)}" target="_blank"><img src="${esc2(d.img)}" alt=""></a>`:''}${esc2(text)}</div><span class="tm">${hm}</span></div>`)}
  /* 다른 도구(맵툴 로그 정리기)가 그대로 읽을 수 있게 원본 줄 · 초상 · 트레이너 이름을 JSON 으로 함께 넣는다 */
  const por={};for(const r of rows){const d=r.data||{};const nm=String(chatName(r)).trim();if(nm&&por[nm]===undefined){const u=avatarOf(r);por[nm]=u||''}}
  const tn={};for(const t of Object.values((ST.state.roster||{}).trainers||{}))if(t&&t.id)tn[t.id]=t.name;

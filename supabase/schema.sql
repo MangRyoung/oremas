@@ -195,7 +195,7 @@ begin
       elsif p_path[2] in ('trainers','res') then return p_path[3] = w;
       elsif p_path[2] = 'hist' and len = 2 then
         -- 기록은 덧붙이기만 (끝의 한 줄 말고는 원래 있던 줄이어야 한다)
-        if jsonb_typeof(n) <> 'array' then return false; end if;
+        if coalesce(jsonb_typeof(n),'') <> 'array' then return false; end if;
         return coalesce((select bool_and(coalesce(o,'[]'::jsonb) @> jsonb_build_array(e)) from jsonb_array_elements(n) with ordinality as x(e, i) where i < jsonb_array_length(n)), true);
       else return false; end if;
     elsif p_path[1] = 'battle' then
@@ -229,7 +229,7 @@ begin
     return false;   -- 상자 자리에 상자 아닌 값은 거절
   end if;
   for k in select jsonb_object_keys(coalesce(o,'{}'::jsonb)) union select jsonb_object_keys(case when jsonb_typeof(n) = 'object' then n else '{}'::jsonb end) loop
-    if not public.om_chk(p_mode, w, p_path || k, case when jsonb_typeof(o) = 'object' then o->k end, case when jsonb_typeof(n) = 'object' then n->k end, d, seats) then return false; end if;
+    if public.om_chk(p_mode, w, p_path || k, case when jsonb_typeof(o) = 'object' then o->k end, case when jsonb_typeof(n) = 'object' then n->k end, d, seats) is not true then return false; end if;   -- NULL(판단 못 함)도 거절
   end loop;
   return true;
 end $$;
@@ -246,25 +246,25 @@ begin
   newv := case when p_value is null or jsonb_typeof(p_value) = 'null' then null else p_value end;
   if w = 'gm' and cur #>> '{rp,gmHands}' = 'false' then
     select array_agg(a.seat) into seats from om_auth a where a.room = p_room and a.role = 'seat';
-    if not public.om_chk('fair', w, coalesce(p_path, '{}'::text[]), oldv, newv, cur, coalesce(seats, '{}'::text[])) then
+    if public.om_chk('fair', w, coalesce(p_path, '{}'::text[]), oldv, newv, cur, coalesce(seats, '{}'::text[])) is not true then
       raise exception '이 방은 GM 도 플레이어의 지시·준비를 바꿀 수 없다 (방 설정): %', array_to_string(p_path, '/');
     end if;
   end if;
   if w <> 'gm' and cur #>> '{rp,seatOwn}' = 'true' then
-    if not public.om_chk('seat', w, coalesce(p_path, '{}'::text[]), oldv, newv, cur, '{}'::text[]) then
+    if public.om_chk('seat', w, coalesce(p_path, '{}'::text[]), oldv, newv, cur, '{}'::text[]) is not true then
       raise exception '이 방은 자기 것만 바꿀 수 있다 (방 설정): %', array_to_string(p_path, '/');
     end if;
   end if;
   if w <> 'gm' then
     if p_path is null or array_length(p_path,1) < 1 then raise exception '좌석은 전체를 바꿀 수 없습니다'; end if;
     if array_length(p_path,1) < 2 and p_path[1] not in ('battle','ready') then raise exception '좌석은 전체를 바꿀 수 없습니다'; end if;
-    if not ((p_path[1] = 'seats' and p_path[2] = w) or (p_path[1] = 'ready') or (p_path[1] = 'pub' and p_path[2] = w)   -- ready: 지시 완료 표시 (턴이 넘어갈 때 비운다)
+    if ((p_path[1] = 'seats' and p_path[2] = w) or (p_path[1] = 'ready') or (p_path[1] = 'pub' and p_path[2] = w)   -- ready: 지시 완료 표시 (턴이 넘어갈 때 비운다)
             or (p_path[1] = 'battle')   -- 배틀 전체: 포켓몬 HP·랭크·상태, 필드, 지시 공개, 턴·페이즈, 파티 불러오기 … 플레이어끼리 모의전을 할 수 있게 (신뢰 기반, 맵툴과 같음)
             or (p_path[1] = 'roster' and p_path[2] = 'trainers' and p_path[3] = w)   -- 내 시트
             or (p_path[1] = 'skill' and p_path[2] in ('trainers','res','hist'))        -- 스킬 체크 자원·결과 (지침·돌봄·커버는 남의 칸도 건드린다 · 신뢰 기반)
             or (p_path[1] = 'dex' and p_path[2] = w)                                    -- 내 도감
             or (p_path[1] = 'roster' and p_path[2] = 'mons' and array_length(p_path,1) >= 3
-                and (coalesce((select s.data#>>array['roster','mons',p_path[3],'tid'] from om_state s where s.room = p_room), p_value->>'tid') = w))) then  -- 내 포켓몬
+                and (coalesce((select s.data#>>array['roster','mons',p_path[3],'tid'] from om_state s where s.room = p_room), p_value->>'tid') = w))) is not true then  -- 내 포켓몬 · (2026-10-20) is not true: 경로가 짧아 NULL 이 나와도 통과시키지 않는다
       raise exception '이 좌석이 바꿀 수 없는 곳입니다: %', array_to_string(p_path, '/');
     end if;
   end if;
@@ -380,4 +380,4 @@ drop policy if exists "oremas img delete" on storage.objects;
 create policy "oremas img read"   on storage.objects for select to anon, authenticated using (bucket_id = 'oremas');
 create policy "oremas img insert" on storage.objects for insert to anon, authenticated with check (bucket_id = 'oremas');
 create policy "oremas img update" on storage.objects for update to anon, authenticated using (bucket_id = 'oremas') with check (bucket_id = 'oremas');
-create policy "oremas img delete" on storage.objects for delete to anon, authenticated using (bucket_id = 'oremas');
+-- (2026-10-20) 그림 지우기 정책은 두지 않는다 — 두 앱 모두 그림을 지우지 않고, 링크만 아는 사람이 남의 그림을 지우지 못하게. 위의 drop 이 예전 정책을 없앤다.
