@@ -118,7 +118,7 @@ async function sysLog(t,kind,extra){try{await DBS().addLog(ST.room,ST.secret,kin
 const TAGCOL={'포텐셜':'#7b4fd6','특성':'#2f8f5b','소지품':'#c7651a','지령':'#1f6fd1','명령':'#e3101f','공개':'#d6a23b','스킬 체크':'#2b8fa8','모두 공개':'#d6a23b'};
 function battleCard(d){const t=String(d.t||'');const m=t.match(/^【([^】]+)】\s*([^\n]*)\n?([\s\S]*)$/);if(!m)return '';const tag=m[1],title=m[2],body=m[3].trim();const col=TAGCOL[tag]||'#555';
  const lines=body.split('\n').filter(Boolean).map(l=>`<div class="bl ${/실패|차단|없|않/.test(l)?'neg':/\+\d|회복|성공|→/.test(l)?'pos':''}">${esc(l)}</div>`).join('');
- return `<div class="bcard" style="--tc:${col}"><div class="bch">${d.img?`<span class="bcav" style="background-image:url('${esc(d.img)}')"></span>`:''}<span class="bctag">${esc(tag)}</span><b>${esc(title)}</b></div>${d.eff?`<div class="bceff">${esc(d.eff)}</div>`:''}${lines?`<div class="bcb">${lines}</div>`:''}</div>`}
+ return `<div class="bcard" style="--tc:${col}"><div class="bch">${d.img?`<span class="bcav" style="background-image:url('${esc(d.img)}')"></span>`:''}<span class="bctag">${esc(tag)}</span><b>${esc(title)}</b>${d.mid?`<span class="sp"></span><button class="btn xs ghost bcfx" data-lmid="${esc(d.mid)}" title="이 포켓몬의 포텐셜 창 — 발동 중인 효과를 ✕ 로 해제">효과</button>`:''}</div>${d.eff?`<div class="bceff">${esc(d.eff)}</div>`:''}${lines?`<div class="bcb">${lines}</div>`:''}</div>`}
 
 /* ---------- 채팅 ---------- */
 async function sendChat(){
@@ -148,6 +148,7 @@ function renderLog(scroll){
   const who=k==='whisper'?`${esc(r.who)} → ${esc(d.toName||d.to)}`:esc(r.who);
   const av=avatarOf(r);
   return `<div class="msg ${k} ${mine?'me':''}"><div class="av" style="${av?`background-image:url('${av}')`:''}"></div><div class="bub"><span class="who">${who}</span>${d.img?`<a href="${esc(d.img)}" target="_blank" rel="noopener"><img class="cimg" src="${esc(d.img)}" alt=""></a>`:''}${esc(d.t)}</div><span class="time">${t}</span></div>`}).join('');
+ el.querySelectorAll('[data-lmid]').forEach(bt=>bt.onclick=()=>{if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.action)window.OM_BATTLE_UI.action({act:'pots',mid:bt.dataset.lmid})});
  if(scroll!==false)el.scrollTop=el.scrollHeight}
 
 /* ---------- 씬 ---------- */
@@ -228,22 +229,28 @@ function openMon(mid){
  const K=S().STATS_KO;
  const stat6=full?`<div class="stat6">${m.stats.map((v,i)=>`<div><b>${K[i]}</b><span class="v">${v}</span><div class="small muted">${esc(m.ranks[i])} · ${m.base[i]}</div></div>`).join('')}</div>`
   :`<div class="stat6">${m.ranks.map((v,i)=>`<div><b>${K[i]}</b><span class="v">${esc(v)}</span></div>`).join('')}</div>`;
- const hpRow=ST.role==='gm'?`<div class="row" style="margin:10px 0"><b>HP</b><input type="number" id="hpd" placeholder="±" style="width:90px"><button class="btn sm" id="hpDmg">대미지</button><button class="btn sm" id="hpHeal">회복</button><button class="btn sm ghost" id="hpFull">전부 회복</button><span class="small muted">(임시 조작. 계산은 1단계에서)</span></div>`:'';
+ const an=(kind,name)=>(full&&name&&name!=='-')?` <button class="btn xs ghost anb" data-an="${esc(kind)}" data-ann="${esc(name)}" title="로그에 출력">📢 출력</button>`:'';
+ const hpRow=(ST.role==='gm'||full)?`<div class="row" style="margin:10px 0;flex-wrap:wrap;gap:6px"><b>HP</b><input type="text" id="hpd" placeholder="숫자 · 1/8" style="width:90px" title="숫자 또는 분수(최대 HP 기준)"><button class="btn sm" id="hpDmg">대미지</button><button class="btn sm" id="hpHeal">회복</button><button class="btn sm ghost" id="hpFull">전부 회복</button>
+  <span class="qs">${['1/16','1/8','1/4','1/3','1/2'].map(f=>`<button class="btn xs" data-hpf="${f}" title="최대 HP 의 ${f} 대미지">−${f}</button>`).join('')}<button class="btn xs ghost" id="hpWin">「HP」 창</button></span><span class="small muted">비례는 최대 HP 기준</span></div>`:'';
  const md=openModal(`<div class="mhead"><div class="pic" style="width:56px;height:56px;border-radius:8px;background:#0e1118 center/cover no-repeat;${m.image?`background-image:url('${m.image}')`:''}"></div>
    <div><h2>${esc(m.name)} <span class="small muted">Lv.${m.lv} · ${esc(tr.name)}</span></h2><div>${m.types.filter(t=>t!=='-').map(typeChip).join(' ')} ${m.tera!=='-'?`<span class="small muted">테라스탈 ${esc(m.tera)}</span>`:''} ${m.role?`<span class="badge">${esc(m.role)}</span>`:''} ${m.pride?`<span class="badge">프라이드 ${esc(m.pride)}</span>`:''}</div></div>
    <span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
   <div class="row small muted" style="margin-bottom:8px">HP <b class="mono" style="color:var(--fg)">${full?m.hp.cur+' / '+m.hp.max:Math.round(m.hp.cur/m.hp.max*100)+'%'}</b></div>
   ${stat6}${hpRow}
-  <table class="t" style="margin-top:10px"><tr><th style="width:80px">특성</th><td><b>${esc(m.ability||'-')}</b><div class="dbmini">${window.OM_DB_UI.effectHtml('trait',m.ability)||`<span class="small dim">${esc(m.abilityEff)}</span>`}</div></td></tr>
-  <tr><th>소지품</th><td><b>${esc(m.item||'-')}</b><div class="dbmini">${window.OM_DB_UI.effectHtml('item',m.item)||`<span class="small dim">${esc(m.itemEff)}</span>`}</div></td></tr></table>
+  <table class="t" style="margin-top:10px"><tr><th style="width:80px">특성</th><td><b>${esc(m.ability||'-')}</b>${an('trait',m.ability)}<div class="dbmini">${window.OM_DB_UI.effectHtml('trait',m.ability)||`<span class="small dim">${esc(m.abilityEff)}</span>`}</div></td></tr>
+  <tr><th>소지품</th><td><b>${esc(m.item||'-')}</b>${an('item',m.item)}<div class="dbmini">${window.OM_DB_UI.effectHtml('item',m.item)||`<span class="small dim">${esc(m.itemEff)}</span>`}</div></td></tr></table>
   <h3 style="margin:12px 0 6px;font-size:14px">기술 ${m.moves.length}</h3>
   <table class="t"><tr><th>이름</th><th>타입</th><th>분류</th><th>위력</th><th>명중</th><th>범위</th><th>우선</th><th>효과</th></tr>
    ${m.moves.map(mv=>`<tr><td class="nw"><b>${esc(mv.name)}</b>${mv.half?' <span class="small muted">½</span>':''}${mv.missing?' <span class="small" style="color:var(--red)">DB 없음</span>':''}</td><td class="nw">${typeChip(mv.typeEn)}</td><td class="nw">${esc(mv.cat)}</td><td class="mono">${mv.pow||'-'}</td><td class="mono">${mv.acc||'필중'}</td><td class="nw">${esc(mv.range)}</td><td class="mono">${mv.prio||0}</td><td class="pre small eff">${esc(mv.eff)}</td></tr>`).join('')}</table>
-  ${m.pots.length?`<h3 style="margin:12px 0 6px;font-size:14px">포텐셜 ${m.pots.length}</h3><table class="t">${m.pots.map(p=>`<tr${p.ph?' style="opacity:.45"':''}><th style="width:140px;white-space:normal">${esc(p.name)}${p.ph?' <span class="small">(미정)</span>':''}<div class="small muted">${esc(p.kind)}</div></th><td class="pre small">${p.ph?'':esc(p.eff)}</td></tr>`).join('')}</table>`:''}
-  ${m.excl?`<h3 style="margin:12px 0 6px;font-size:14px">전용 포텐셜</h3><table class="t"><tr><th style="width:140px">${esc(m.excl.name)}</th><td class="pre small">${esc(m.excl.eff)}</td></tr>${(m.exclX||[]).map(x=>`<tr><th>${esc(x.name)}</th><td class="pre small">${esc(x.eff)}</td></tr>`).join('')}</table>`:''}
+  ${m.pots.length?`<h3 style="margin:12px 0 6px;font-size:14px">포텐셜 ${m.pots.length}</h3><table class="t">${m.pots.map(p=>`<tr${p.ph?' style="opacity:.45"':''}><th style="width:140px;white-space:normal">${esc(p.name)}${p.ph?' <span class="small">(미정)</span>':''}<div class="small muted">${esc(p.kind)}</div></th><td class="pre small">${p.ph?'':esc(p.eff)+an('pot',p.name)}</td></tr>`).join('')}</table>`:''}
+  ${m.excl?`<h3 style="margin:12px 0 6px;font-size:14px">전용 포텐셜</h3><table class="t"><tr><th style="width:140px">${esc(m.excl.name)}</th><td class="pre small">${esc(m.excl.eff)}${an('pot',m.excl.name)}</td></tr>${(m.exclX||[]).map(x=>`<tr><th>${esc(x.name)}</th><td class="pre small">${esc(x.eff)}${an('pot',x.name)}</td></tr>`).join('')}</table>`:''}
   ${full&&m.memo?`<h3 style="margin:12px 0 6px;font-size:14px">메모</h3><div class="pre small muted">${esc(m.memo)}</div>`:''}`);
- if(ST.role==='gm'){const ap=async(cur,msg)=>{cur=Math.max(0,Math.min(m.hp.max,cur));closeModal();if(await set(['battle','mons',mid,'hp','cur'],cur))sysLog(`${m.name} ${msg} → HP ${cur}/${m.hp.max}`,'battle')};
-  $('#hpDmg',md).onclick=()=>{const d=+$('#hpd',md).value||0;if(d)ap(m.hp.cur-d,`에게 ${d} 대미지`)};$('#hpHeal',md).onclick=()=>{const d=+$('#hpd',md).value||0;if(d)ap(m.hp.cur+d,`${d} 회복`)};$('#hpFull',md).onclick=()=>ap(m.hp.max,'전부 회복')}}
+ if(ST.role==='gm'||full){const amt=v=>{v=String(v||'').trim();const f=v.match(/^(\d+)\s*\/\s*(\d+)$/);if(f)return Math.max(1,Math.floor(m.hp.max*+f[1]/+f[2]));return Math.max(0,Math.floor(+v||0))};
+  const ap=async(cur,msg)=>{cur=Math.max(0,Math.min(m.hp.max,cur));closeModal();const nh=Object.assign({},m.hp,{cur,latest:m.hp.cur});if(await set(['battle','mons',mid,'hp'],nh))sysLog(`${m.name} ${msg} → HP ${cur}/${m.hp.max}${cur<=0?' · 빈사!':''}`,'battle')};
+  $('#hpDmg',md).onclick=()=>{const v=$('#hpd',md).value;const d=amt(v);if(d)ap(m.hp.cur-d,`에게 ${d} 대미지${/\//.test(v)?' ('+v.trim()+')':''}`)};$('#hpHeal',md).onclick=()=>{const v=$('#hpd',md).value;const d=amt(v);if(d)ap(m.hp.cur+d,`${d} 회복${/\//.test(v)?' ('+v.trim()+')':''}`)};$('#hpFull',md).onclick=()=>ap(m.hp.max,'전부 회복');
+  md.querySelectorAll('[data-an]').forEach(bt=>bt.onclick=()=>{if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.action){window.OM_BATTLE_UI.action({act:'announce',mid,kind:bt.dataset.an,pot:bt.dataset.ann});bt.textContent='📢 출력됨';bt.disabled=true}});
+  md.querySelectorAll('[data-hpf]').forEach(bt=>bt.onclick=()=>{const f=bt.dataset.hpf;ap(m.hp.cur-amt(f),`비례 대미지 ${f} (−${amt(f)})`)});
+  const hw=$('#hpWin',md);if(hw)hw.onclick=()=>{closeModal();if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.openHp)window.OM_BATTLE_UI.openHp(mid)}}}
 
 /* ---------- 좌석 ---------- */
 function openSeatPicker(){
