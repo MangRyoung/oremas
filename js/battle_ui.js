@@ -509,7 +509,8 @@ window.OM_BATTLE_UI=(()=>{
   else if(how==='free'){if((+t.orderCount[ck]||0)<=0)return A().toast('남은 횟수가 없어 임의 발동할 수 없다');t.orderCount[ck]=(+t.orderCount[ck]||0)-1;if(OO().styles(t).tc===7){const o=kind==='command'?(key==='attack'?'command_defense':'command_attack'):'';if(o)t.orderCount[o]=Math.max(0,(+t.orderCount[o]||0)-1)}tag='【임의】'}
   else if(how==='force'){if(!c.gm)return;tag='【강제】'}
   const f=fieldOf(b);const fx=applyOrder(b.mons,f,t,name,mid);
-  if(!fx.length&&FX()){const a=FX().rm(name);if(a&&a.ops&&a.ops.length&&!a.manual){const r=await FX().run(a.ops,uiCtx(b,m,name,m.entry));fx.push(...r.lines)}}
+  if(!fx.length&&FX()){const a=FX().rm(name)||FX().rm(String(name).replace(/\s*[:：]\s*/,' / '));if(a&&a.ops&&a.ops.length&&!a.manual){const r=await FX().run(a.ops,uiCtx(b,m,name,m.entry));fx.push(...r.lines)}}
+  if(!fx.length)fx.push(`「${name}」 — 손으로 처리`);
   A().closeModal();
   const okT=await A().setDiff(['battle','trainers',tid],b0.trainers[tid],t,1);if(!okT)return;if(String(((A().ST.state.rp||{}).cutin||{}).ord)!=='0')cutFire('t:'+tid,trainerImg(t),`${t.name}의 지시!`,`『${name}』`,t.side==='left'?'#1f6fd1':'#e3101f');b.trainers[tid]=b0.trainers[tid];await saveBattle(b0,b,f);await A().set(['battle','cmds',tid,'fired',mid,kind],key);
   const oeff=(FX()&&FX().rm&&(FX().rm(name)||{}).text)||'';
@@ -551,15 +552,15 @@ window.OM_BATTLE_UI=(()=>{
    if(!tgt)return out;
    if(pre==='전개'){tgt.mod=tgt.mod||{};tgt.mod[k]=(+tgt.mod[k]||1)*2;tgt.tempMod=tgt.tempMod||{};tgt.tempMod[k]=(+tgt.tempMod[k]||1)*2;out.push(`${tgt.name} ${st} ×2`);return out}
    tempRank(tgt,k,1);out.push(`${tgt.name} ${st} +1`);return out}
-  if((m=n.match(/^(검|방패|관|잔|날개)의 영창$/))){const k={검:'attack',방패:'defense',관:'specialattack',잔:'specialdefense',날개:'speed'}[m[1]];for(const a of allies)tempRank(a,k,1);out.push(`아군 전체 ${STAT_KO[k]} +1`);return out}
+  if((m=n.match(/^(검|방패|관|잔|날개|촛불|장막)의 영창$/))){const k={검:'attack',방패:'defense',관:'specialattack',잔:'specialdefense',날개:'speed',촛불:'accuracy',장막:'evasion'}[m[1]];for(const a of allies)tempRank(a,k,1);out.push(`아군 전체 ${STAT_KO[k]} +1`);return out}
   if(n==='물리결계'||n==='특수결계'){f.objects[t.side]=f.objects[t.side]||{};f.objects[t.side][n==='물리결계'?'리플렉터':'빛의장막']=3;out.push(`${SIDE_KO[t.side]} ${n==='물리결계'?'리플렉터':'빛의장막'} 3T`);return out}
   if(n==='치유의 법계'){for(const a of allies){const v=Math.max(1,Math.floor(a.hp.max/4));a.hp.cur=Math.min(a.hp.max,a.hp.cur+v)}out.push('아군 전체 HP 1/4 회복');return out}
   if(n==='정화의 법계'){const db=(DB().states||{}).st||{};let c=0;for(const a of allies){for(const k in (a.states||{})){if(db[k]&&db[k].neg){delete a.states[k];c++}}}out.push(`아군 상태 이상 ${c}개 해제`);return out}
-  if(n==='주인의 호령'){out.push('주인의 호령 — 효과는 손으로 (강화 1.5 또는 HP 1/2)');return out}
+  if(/^주인의 호령\s*[:：]\s*회복$/.test(n)){if(!tgt){out.push('「주인의 호령 : 회복」 (대상 없음)');return out}const v=Math.max(1,Math.floor(tgt.hp.max/3));const h=Math.min(v,tgt.hp.max-tgt.hp.cur);tgt.hp.cur+=h;const cured=[];for(const k of ['Poison','Toxic','Burn','Paralysis','Freeze','Sleep'])if((tgt.states||{})[k]){delete tgt.states[k];cured.push(k)}out.push(`${tgt.name} HP +${h} (1/3)${cured.length?` · 상태 이상 ${cured.length}개 치유`:''}`);return out}   /* 「능력」(강화 1.5배)은 레디메이드 「주인의 호령 / 능력」이 돈다 */
   /* 4식: 플래그 */
   const FLAG={'버텨라!':'endure','맞춰라!':'surehit','물러나!':'dodgePhys','피해라!':'dodgeSpec','바꿔라!':'swap','돌아와!':'return','지킬 수 없다!':'hitPhys','피할 수 없다!':'hitSpec','버틸 수 없다!':'noEndure','맞출 수 없다!':'acc0','주인의 칙령':'dodgeOnce','파계':'nullify','윤회의 법계':'rebirth'};
   if(FLAG[n]){if(tgt){tgt.flags=tgt.flags||{};tgt.flags[FLAG[n]]=1;out.push(`${tgt.name} 「${n}」`)}else out.push(`「${n}」 (대상 없음)`);return out}
-  out.push(`「${n}」 — 손으로 처리`);return out}
+  return out}   /* 여기서 모르는 지시는 fireOrder 가 레디메이드를 찾아 보고, 그래도 없으면 「손으로 처리」를 붙인다 (점검 3-3) */
 
  /* ----- 행동 순서 ----- */
  async function computeOrder(){const c=ctx();if(!c.mgr)return;const b=c.b;const f=fieldOf(b);const iceUsed=[];

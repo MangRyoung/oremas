@@ -50,7 +50,7 @@ async function openRoom(id,gm){
  const app=$('#app');app.innerHTML='<div class="lobby muted">방에 들어가는 중…</div>';
  let row;try{row=await DBS().getRoom(id)}catch(e){app.innerHTML=`<div class="lobby">방을 읽지 못했다: ${esc(e.message)}<br><a href="#">로비로</a></div>`;return}
  if(!row){app.innerHTML='<div class="lobby">그런 방이 없다. <a href="#">로비로</a></div>';return}
- ST.room=id;ST.roomRow=row;if(window.OM_BATTLE_UI)window.OM_BATTLE_UI.resetLocal();ST.role=null;ST.secret='';ST.seat='';ST.name='';
+ ST.room=id;ST.roomRow=row;ST._sub=false;if(window.OM_BATTLE_UI)window.OM_BATTLE_UI.resetLocal();ST.role=null;ST.secret='';ST.seat='';ST.name='';
  const seatInfo=LS.get('om_seat_'+id,null);
  if(gm){const w=await DBS().whoami(id,gm);if(w==='gm'){ST.role='gm';ST.secret=gm;ST.name='GM';remember(id,row.name,gm)}else toast('GM 비밀값이 맞지 않는다')}
  if(!ST.role&&seatInfo&&seatInfo.secret){const w=await DBS().whoami(id,seatInfo.secret);if(w&&w!=='gm'){ST.role='seat';ST.secret=seatInfo.secret;ST.seat=w;ST.name=seatInfo.name||w}}
@@ -61,9 +61,28 @@ async function openRoom(id,gm){
  ST.log=await DBS().getLogTail(id,200);ST.lastLogId=ST.log.length?ST.log[ST.log.length-1].id:0;
  renderRoom();
  ST.unsub=DBS().subscribe(id,{onEvent:p=>{if(p&&p.t==='hello')onHello(p);if(window.OM_RP_UI&&p&&p.t==='typing')window.OM_RP_UI.onTyping(p);if(window.OM_CUTIN&&p&&p.t==='cutin')window.OM_CUTIN.onEvent(p)},onState:(d,v)=>{if(v>=ST.v){ST.state=d;ST.v=v;renderScene();if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.watch)window.OM_BATTLE_UI.watch().catch(e=>console.warn(e))}},onLog:r=>{if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;renderLog(true);notifyLog(r);mobNote(r);if(window.OM_RP_UI)window.OM_RP_UI.onChat(r)}},
-  onStatus:s=>{const el=$('#conn');if(el){el.textContent=s==='SUBSCRIBED'?'● 실시간':'○ '+s;el.style.color=s==='SUBSCRIBED'?'var(--acc2)':'var(--mute)'}if(s==='SUBSCRIBED')startPresence()}});
+  onStatus:s=>{const el=$('#conn');if(el){el.textContent=s==='SUBSCRIBED'?'● 실시간':'○ '+s;el.style.color=s==='SUBSCRIBED'?'var(--acc2)':'var(--mute)'}if(s==='SUBSCRIBED'){startPresence();if(ST._sub)resync('재연결');ST._sub=true}}});
  if(ST.role){pollWhispers();ST.wtimer=setInterval(pollWhispers,4000)}
  if(!ST.role)openSeatPicker()}
+
+/* 실시간이 끊겼다 다시 붙거나(노트북 절전 · 폰 백그라운드) 창이 다시 보이면, 그사이 놓친 로그와 상태를 다시 읽는다 (점검 3-9) */
+let RESYNC=null;
+function resync(why){if(!ST.room)return Promise.resolve();if(RESYNC)return RESYNC;const room=ST.room;
+ RESYNC=(async()=>{try{
+  const fresh=[];for(let i=0;i<20;i++){const rows=await DBS().getLog(room,ST.lastLogId,500);if(ST.room!==room)return;
+   for(const r of rows)if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;fresh.push(r)}
+   if(rows.length<500)break}
+  const got=fresh.length;
+  if(got){renderLog(true);
+   /* 놓친 줄은 무대 기록에만 넣고, 무대 자막·효과음은 마지막 한 줄만 (한꺼번에 울리지 않게) */
+   const R=window.OM_RP_UI;if(R){if(got>1&&R.feedLog)R.feedLog(fresh.slice(0,-1));R.onChat(fresh[got-1])}}
+  const st=await DBS().getState(room);if(ST.room!==room)return;
+  const newer=!!(st&&(st.v||0)>ST.v);if(newer){ST.state=st.data||{};ST.v=st.v;renderScene();if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.watch)window.OM_BATTLE_UI.watch().catch(e=>console.warn(e))}
+  if(ST.role)pollWhispers();
+  if(got||newer)console.info('[오레마스] 다시 맞춤',why,got+'줄')}
+ catch(e){console.warn('[오레마스] 다시 맞추기 실패',e)}finally{RESYNC=null}})();return RESYNC}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&ST.room)resync('다시 보임')});
+window.addEventListener('online',()=>{if(ST.room)resync('온라인')});
 
 async function pollWhispers(){try{const ws=await DBS().whispers(ST.room,ST.secret,ST.lastWhisper);if(!ws||!ws.length)return;ws.forEach(w=>{ST.lastWhisper=Math.max(ST.lastWhisper,w.id);if(!ST.log.find(x=>x.id===w.id))ST.log.push(w)});ST.log.sort((a,b)=>a.id-b.id);renderLog(true)}catch(e){}}
 

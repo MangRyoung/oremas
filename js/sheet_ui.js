@@ -23,6 +23,11 @@ window.OM_SHEET_UI=(()=>{
 
  /* ---------- 렌더 ---------- */
  function render(el){
+  /* 글을 치는 중이면 다시 그리지 않는다 — 남의 변경이 올 때마다 입력칸이 새로 생겨 포커스·조합 중 한글이 날아갔다 (점검 3-8). 칸을 벗어나면 그때 다시 그린다 */
+  const ae=document.activeElement;
+  if(el&&ae&&el.contains(ae)&&ae.id!=='addmove'&&(ae.tagName==='TEXTAREA'||(ae.tagName==='INPUT'&&!/^(checkbox|radio|button|file|range|color)$/i.test(ae.type)))&&el.querySelector('.sheet, [data-te], [data-me], [data-mg]')){
+   if(!ae._omb){ae._omb=1;ae.addEventListener('blur',()=>setTimeout(()=>A().renderScene(),0),{once:true})}
+   return}
   const c=ctx();const trs=c.r.trainers||{};const ids=Object.keys(trs).filter(id=>canSee(c,id)).sort((a,b)=>(trs[a].ord||0)-(trs[b].ord||0)||trs[a].name.localeCompare(trs[b].name));
   if(!ids.includes(UI.tid))UI.tid=ids.includes(c.seat)?c.seat:(ids[0]||'');
   const t=trs[UI.tid];
