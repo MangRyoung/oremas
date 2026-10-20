@@ -122,13 +122,14 @@ window.OM_BATTLE_UI=(()=>{
  /* 변칙 위력 기술 (맵툴 get_special_move_power 를 옮김): 이름 → (def)=>{pow, note, fixed} */
  const SPMAP={헤비봄버:'heavy',머슬봄버:'heavy',때려부수기:'heavy',메테오퍼니셔:'heavy',아쿠아스탬프:'heavy',록스탬프:'heavy',히트스탬프:'heavy',질주:'ball',마하비행:'ball',앞지르기:'ball',일렉트릭볼:'ball',드래곤에너지:'spout',해수스파우팅:'spout',분화:'spout',기사회생:'flail',바둥바둥:'flail',플레임블래스트:'flail',스완송:'flail',하드프레스:'press',묵사발:'crush',쥐어짜기:'crush',안다리걸기:'grass',풀묶기:'grass',자이로볼:'gyro',매그니튜드:'mag',엘렉키슬롯:'mag',프레젠트:'present',사이코웨이브:'psywave'};
  function specialPowFor(name,atk){const k=SPMAP[String(name||'').trim()];if(!k)return null;
-  const spd=m=>{let v=B().statValue(m,'speed');if((m.states||{}).Paralysis)v=v/2;return v};const ladder=(x,steps,start)=>{let p=start;for(const [t,v] of steps)if(x>t)p=v;return p};
+  const sv=(m,k)=>+B().statValue(m,k).value||0;   /* statValue 는 {value,rank,…} 를 돌려준다 — 숫자만 */
+  const spd=m=>{let v=sv(m,'speed');if((m.states||{}).Paralysis)v=v/2;return v};const ladder=(x,steps,start)=>{let p=start;for(const [t,v] of steps)if(x>t)p=v;return p};
   const hpR=m=>m.hp.max>0?m.hp.cur/m.hp.max:0;
   if(k==='mag'){const r=1+Math.floor(Math.random()*256);let p=10;for(const [t,v] of [[25,30],[76,50],[153,70],[204,90],[229,110],[242,150]])if(r>=t)p=v;return ()=>({pow:p,note:`변칙 위력 ${name}: 판정 ${r}/256 → 위력 ${p}`})}
   if(k==='present'){const r=1+Math.floor(Math.random()*100);const p=r>90?120:r>60?80:r>20?40:null;return ()=>p?{pow:p,note:`변칙 위력 ${name}: 판정 ${r} → 위력 ${p}`}:{pow:0,fixed:1,note:`변칙 위력 ${name}: 판정 ${r} → 대상 HP 1/2 회복 (손으로)`}}
   if(k==='psywave'){const r=Math.floor(Math.random()*11)+5;const v=Math.max(1,Math.floor((+atk.lv||1)*r/10));return ()=>({pow:0,fixed:1,note:`${name}: 고정 대미지 ${v} (Lv ${atk.lv} × ${r/10}) — HP 조작으로 적용`})}
   return def=>{let p,why='';
-   if(k==='heavy'){const a=B().statValue(atk,'defense'),d=B().statValue(def,'defense');const x=d>0?a/d:0;p=ladder(x,[[1,60],[1.5,80],[2,100],[2.5,120]],40);why=`방어 ${Math.floor(a)}/${Math.floor(d)}`}
+   if(k==='heavy'){const a=sv(atk,'defense'),d=sv(def,'defense');const x=d>0?a/d:0;p=ladder(x,[[1,60],[1.5,80],[2,100],[2.5,120]],40);why=`방어 ${Math.floor(a)}/${Math.floor(d)}`}
    else if(k==='ball'){const a=spd(atk),d=spd(def);const x=d>0?a/d:0;p=ladder(x,[[1,60],[2,80],[3,120],[4,150]],40);why=`스피드 ${Math.floor(a)}/${Math.floor(d)}`}
    else if(k==='gyro'){const a=spd(atk),d=spd(def);p=a>0?Math.floor(Math.max(1,Math.min(150,25*d/a+1))):1;why=`스피드 ${Math.floor(a)} vs ${Math.floor(d)}`}
    else if(k==='spout'){p=Math.max(1,Math.floor(150*hpR(atk)));why=`자신 HP ${atk.hp.cur}/${atk.hp.max}`}
