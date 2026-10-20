@@ -22,6 +22,7 @@ window.OM_CUTIN=(()=>{
   let K=parseFloat(C.sc);if(!(K>0))K=70;K=Math.max(40,Math.min(120,K))/100;
   /* 세로로 긴 폰 화면: 크기가 vh 기준이라 너무 커진다 → 화면 비율만큼 줄인다 */
   {const ar=innerWidth/Math.max(1,innerHeight);if(ar<1.2)K*=Math.max(.45,Math.min(1,ar*1.1))}
+  {const pc=window.OM_PREFS?+window.OM_PREFS.get().cutin:100;if(pc>0)K*=pc/100}   /* 내 설정 「컷인」 크기 */
   const POS=C.pos||'mid',DIM=String(C.dim)==='0'?0:1,DUR=parseFloat(C.dur);const END=DUR>0?DUR:(dual?3.6:3.1);
   const r=root('p5');r.className='p5';r.style.setProperty('--end',END+'s');
   let h=DIM?'<div class="p-dim"></div>':'';h+='<div class="p-shake">';
@@ -39,6 +40,7 @@ window.OM_CUTIN=(()=>{
  function showFire(c){const now=Date.now();let list=[c];
   if(lastFire&&now-lastFire.t<2500&&lastFire.c.tok!==c.tok){list=[lastFire.c,c];lastFire=null}else lastFire={t:now,c};
   fireLocal(list)}
+ function preview(){fireLocal([{tok:'pv',src:'',tag:'미리 보기',ment:'『컷인 크기』',color:'#e4002b'}])}
  function fire(c){c=c||{};se(c.se||'cut');showFire(c);DBS().broadcast({t:'cutin',k:'fire',c,se:c.se||'cut'})}
 
  /* ----- VS 시합 개시 / 경고 ----- */
@@ -59,5 +61,5 @@ window.OM_CUTIN=(()=>{
  function phase(text,sub){phaseLocal(text,sub);DBS().broadcast({t:'cutin',k:'phase',text,sub})}
 
  function onEvent(p){if(!p||p.t!=='cutin')return;if(p.k==='fire'){se(p.se||'cut');if(p.c)showFire(p.c);else if(p.list)fireLocal(p.list)}else if(p.k==='vs'){se('cut');vsLocal(p)}else if(p.k==='raid'){se('cut');raidLocal(p.D)}else if(p.k==='phase')phaseLocal(p.text,p.sub)}
- return {fire,vs,raid,phase,onEvent,fireLocal,vsLocal,raidLocal};
+ return {preview,fire,vs,raid,phase,onEvent,fireLocal,vsLocal,raidLocal};
 })();

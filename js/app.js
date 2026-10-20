@@ -12,7 +12,7 @@ const ALARM_KEY='om_alarm';function alarm(){const d={chat:1,sms:1,typing:1};try{
 function setAlarm(k,v){const a=alarm();a[k]=v?1:0;try{localStorage.setItem(ALARM_KEY,JSON.stringify(a))}catch(e){}if(!a.typing&&window.OM_RP_UI&&window.OM_RP_UI.drawTyping)window.OM_RP_UI.drawTyping()}
 const isMineLog=r=>{const d=(r&&r.data)||{};return d.from===(ST.role==='gm'?'gm':ST.seat)};
 let titleT=null;function flashTitle(msg){if(!document.hidden)return;const base=document.title.replace(/^\(.*?\) /,'');document.title=`(${msg}) ${base}`;clearTimeout(titleT);const back=()=>{document.title=base;document.removeEventListener('visibilitychange',back)};document.addEventListener('visibilitychange',back);titleT=setTimeout(back,60000)}
-function notifyLog(r){if(!r||r.kind!=='chat'||!r.data||r.data.sms||!(r.data.t))return;if(isMineLog(r))return;if(r.at&&Date.now()-new Date(r.at).getTime()>15000)return;if(!alarm().chat)return;try{if(window.OM_RP_UI)window.OM_RP_UI.playSe('Ping',true)}catch(e){}flashTitle('새 메시지')}
+function notifyLog(r){if(!r||r.kind!=='chat'||!r.data||r.data.sms||!(r.data.t))return;if(isMineLog(r))return;if(r.at&&Date.now()-new Date(r.at).getTime()>15000)return;if(!alarm().chat)return;try{if(window.OM_PREFS)window.OM_PREFS.notify('chat');else if(window.OM_RP_UI)window.OM_RP_UI.playSe('Ping',true)}catch(e){}flashTitle('새 메시지')}   /* 부드러운 알림음 · 화면을 보고 있으면 울리지 않는다 (내 설정) */
 let toastT=null;function toast(m){if(window.OM_REPORT_UI)window.OM_REPORT_UI.note('toast',m);const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2400)}
 function fmtTime(s){const d=new Date(s);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
 function typeChip(en){const c=S().typeColor(en);return `<span class="type" style="background:${c.bg};color:${c.fg}">${esc(S().typeKo(en))}</span>`}
@@ -105,7 +105,7 @@ const isMobile=()=>window.matchMedia('(max-width:760px)').matches;
 function mobMode(m){MOB.mode=m;document.body.classList.toggle('m-chat',m==='chat');document.querySelectorAll('#mbar [data-m]').forEach(b=>b.classList.toggle('on',b.dataset.m===m));if(m==='chat'){MOB.unread=0;mobBadge();const l=$('#log');if(l)l.scrollTop=l.scrollHeight}}
 function mobBadge(){const e=$('#mUnread');if(!e)return;e.textContent=MOB.unread>99?'99+':MOB.unread;e.style.display=MOB.unread?'':'none'}
 function mobNote(r){if(!isMobile()||MOB.mode==='chat')return;const d=(r&&r.data)||{};if(r.kind==='chat'&&(d.sms||(!d.t&&!d.img)))return;if(isMineLog(r))return;MOB.unread++;mobBadge()}
-function openMobMenu(){const items=[['skillBtn','스킬 체크'],['dexBtn','도감'],['deckBtn','덱'],['dbBtn','DB'],['rmBtn','레디메이드'],['copyLink','플레이어 링크'],['copyGm','GM 링크'],['seatBtn','자리'],['roomSet',ST.role==='gm'?'방 설정':'소리 · 알림'],['saveLog','로그 저장'],['presence','내 이름']].filter(([id])=>$('#'+id));
+function openMobMenu(){const items=[['skillBtn','스킬 체크'],['dexBtn','도감'],['deckBtn','덱'],['dbBtn','DB'],['rmBtn','레디메이드'],['copyLink','플레이어 링크'],['copyGm','GM 링크'],['seatBtn','자리'],['roomSet','⚙ 설정'],['saveLog','로그 저장'],['presence','내 이름']].filter(([id])=>$('#'+id));
  const m=openModal(`<div class="mhead"><h2>메뉴</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="mmenu">${items.map(([id,l])=>`<button class="btn" data-mm="${id}">${esc(l)}</button>`).join('')}</div><div class="small dim" style="margin-top:10px">접속 중: ${esc(($('#presence')||{}).textContent||'')}</div>`);
  m.querySelectorAll('[data-mm]').forEach(b=>b.onclick=()=>{closeModal();const t=$('#'+b.dataset.mm);if(t)t.click()})}
 function bindMobile(){const bar=$('#mbar');if(!bar)return;bar.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;if(k==='menu')return openMobMenu();if(k==='phone'){if(window.OM_PHONE_UI)window.OM_PHONE_UI.open('home');return}mobMode(k)});mobMode(MOB.mode)}
@@ -118,7 +118,7 @@ function renderRoom(){
    <span class="tabs" id="sceneTabs"></span>
    <span class="sp"></span><span id="typingTop" class="typingtop"></span><span id="presence" class="presence" title="지금 접속 중인 사람 · 누르면 내 이름"></span><span id="conn" class="small muted">○ 연결 중</span>
    ${ST.role?`<button class="btn sm ${window.OM_SKILL_UI&&window.OM_SKILL_UI.pending()?'pri':''}" id="skillBtn">스킬 체크${window.OM_SKILL_UI&&window.OM_SKILL_UI.pending()?' !':''}</button>${ST.role==='seat'?'<button class="btn sm" id="dexBtn" title="포켓몬 도감 · 해석 관리">도감</button>':''}<button class="btn sm" id="deckBtn">덱</button>`:''}<button class="btn sm" id="dbBtn">DB</button><button class="btn sm" id="rmBtn" title="레디메이드 (자동화 효과 사전)">레디메이드</button><button class="btn sm" id="copyLink">플레이어 링크</button>
-   ${ST.role==='gm'?'<button class="btn sm" id="copyGm">GM 링크</button><button class="btn sm" id="roomSet">방 설정</button>':'<button class="btn sm" id="seatBtn">자리</button><button class="btn sm ghost" id="roomSet" title="소리 크기">소리</button>'}
+   ${ST.role==='gm'?'<button class="btn sm" id="copyGm">GM 링크</button><button class="btn sm" id="roomSet">⚙ 설정</button>':'<button class="btn sm" id="seatBtn">자리</button><button class="btn sm ghost" id="roomSet" title="내 설정 — 소리·알림·글자·이미지·단축키">⚙ 설정</button>'}
   </div>
   <div class="body"><div class="scene" id="scene"></div><div class="resizer" id="resizer" title="끌어서 채팅 창 너비 조절"></div>
    <div class="side" id="side"><div class="phone"><div class="pbar"><span>●●●</span><span class="ptime" id="pclock"></span></div><div class="ptitle"><span class="plogs">${ST.role==='gm'?'<button class="btn xs ghost plog" id="clearLog" title="로그 비우기">🧹 비우기</button>':''}<button class="btn xs ghost plog" id="saveLog" title="채팅 로그를 파일로 저장">💾 로그</button></span>${esc(r.name||r.id)}<small>${ST.role==='gm'?'GM':ST.role==='seat'?esc(ST.name):'관전'} · 오레마스</small></div><div class="ctabs" id="ctabs"><button type="button" data-ch="s">세션</button><button type="button" data-ch="o">잡담<i class="cdot"></i></button></div><div class="log" id="log"></div>
@@ -132,8 +132,8 @@ function renderRoom(){
  const dk=$('#deckBtn');if(dk)dk.onclick=()=>window.OM_DECK_UI.open();
  $('#dbBtn').onclick=()=>window.OM_DB_UI.open({kind:'trait'});if($('#rmBtn'))$('#rmBtn').onclick=()=>window.OM_FX_UI.openRm('');
  const clock=()=>{const el=$('#pclock');if(el){const d=new Date();el.textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}};clock();clearInterval(ST.clockT);ST.clockT=setInterval(clock,15000);
- if(ST.role==='gm'){$('#copyGm').onclick=()=>copy(gmLink(ST.room,ST.secret),'GM 링크를 복사했다 (아무에게도 주지 말 것)');$('#roomSet').onclick=openRoomSettings}
- else {$('#seatBtn').onclick=openSeatPicker;$('#roomSet').onclick=openRoomSettings}
+ if(ST.role==='gm'){$('#copyGm').onclick=()=>copy(gmLink(ST.room,ST.secret),'GM 링크를 복사했다 (아무에게도 주지 말 것)');$('#roomSet').onclick=()=>openRoomSettings()}
+ else {$('#seatBtn').onclick=openSeatPicker;$('#roomSet').onclick=()=>openRoomSettings()}
  $('#chatSend').onclick=sendChat;bindChatAs();$('#ctabs').querySelectorAll('[data-ch]').forEach(b=>b.onclick=()=>setChan(b.dataset.ch));setChan(CHAN.cur,true);$('#chatIn').onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)sendChat()};$('#chatIn').oninput=()=>{if(window.OM_RP_UI&&window.OM_RP_UI.typingPing)window.OM_RP_UI.typingPing(CHAN.cur==='o')};
  /* 채팅 창 너비: 끌어서 조절, 브라우저에 기억 */
  try{const w=+localStorage.getItem('om_sidew');if(w>=260)$('#side').style.width=w+'px'}catch(e){}
@@ -467,41 +467,33 @@ function openSeatPicker(){
 
 const PCT_LABELS=['드물게','저확률','중확률','고확률'];
 function pctBase(l){const F=window.OM_FX;return F&&F.percentBase?Math.round(F.percentBase(l)):({드물게:10,저확률:30,중확률:50,고확률:60}[l]||100)}
-function openRoomSettings(){
- const r=ST.roomRow;const isGm=ST.role==='gm';const m=openModal(`<div class="mhead"><h2>${isGm?'방 설정':'소리'}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-  ${isGm?`<div class="row"><label>방 이름</label><input type="text" id="rn" value="${esc(r.name)}" style="flex:1"><button class="btn pri" id="rnSave">저장</button></div>
-  <p class="small muted" style="margin-top:12px">방 id <span class="mono">${esc(r.id)}</span></p>`:''}
-  <div class="sec" style="margin-top:12px">보기 (이 브라우저에서만)</div>
-  <div class="row"><label style="width:70px">글씨 크기</label><input type="range" min="80" max="140" step="5" id="uiScale" value="${UI.scale}" style="flex:1"><span class="mono small" id="uiScaleV"></span></div>
-  <div class="row"><label style="width:70px">채팅 글씨</label><input type="range" min="11" max="20" step="1" id="uiChat" value="${UI.chat}" style="flex:1"><span class="mono small" id="uiChatV"></span></div>
-  <div class="row"><label style="width:70px">대사 글씨</label><input type="range" min="16" max="34" step="1" id="uiDlg" value="${UI.dlg}" style="flex:1"><span class="mono small" id="uiDlgV"></span></div>
-  <div class="row"><label style="width:70px">채팅 초상</label><input type="range" min="24" max="72" step="2" id="uiAv" value="${UI.av||40}" style="flex:1"><span class="mono small" id="uiAvV"></span></div>
-  <div class="row" style="flex-wrap:wrap;gap:8px"><label style="width:70px">본문 폰트</label><select id="uiFont">${UI_FONTS.map(([k,n])=>`<option value="${k}" ${UI.font===k?'selected':''}>${n}</option>`).join('')}</select><label>제목 폰트</label><select id="uiHead">${UI_HEADS.map(([k,n])=>`<option value="${k}" ${UI.head===k?'selected':''}>${n}</option>`).join('')}</select><button class="btn xs ghost" id="uiReset">기본으로</button></div>
-  <div class="sec" style="margin-top:12px">소리 (이 브라우저에서만)</div>
-  <div class="row"><label style="width:70px">BGM</label><input type="range" min="0" max="1" step="0.05" id="volBgm" value="${(()=>{try{return localStorage.getItem('om_vol')??0.5}catch(e){return 0.5}})()}" style="flex:1"><span class="mono small" id="volBgmV"></span></div>
-  <div class="row"><label style="width:70px">효과음</label><input type="range" min="0" max="1" step="0.05" id="volSe" value="${(()=>{try{return localStorage.getItem('om_vol_se')??0.7}catch(e){return 0.7}})()}" style="flex:1"><span class="mono small" id="volSeV"></span><button class="btn xs ghost" id="volSeTest">시험</button></div>
-  <div class="sec" style="margin-top:12px">알림 (이 브라우저에서만)</div>
-  <div class="row" style="flex-wrap:wrap;gap:14px"><label class="small"><input type="checkbox" data-alarm="chat" ${alarm().chat?'checked':''}> 채팅이 올라오면 소리</label><label class="small"><input type="checkbox" data-alarm="sms" ${alarm().sms?'checked':''}> 문자가 오면 소리·알림</label><label class="small"><input type="checkbox" data-alarm="typing" ${alarm().typing?'checked':''}> 입력 중 표시</label></div>
-  ${isGm?`<div class="sec" style="margin-top:12px">배틀</div><div class="row"><label class="small"><input type="checkbox" id="plBattle" ${(ST.state.rp||{}).plBattle!==false?'checked':''}> 플레이어도 배틀을 진행할 수 있다 (파티 불러오기 · 시합 개시 · 턴 진행 · 필드 — 모의전용. 상대 지시 엿보기 · 강제 · 모두 공개는 GM 만)</label></div>
-  <div class="row"><label class="small"><input type="checkbox" id="seatOwn" ${(ST.state.rp||{}).seatOwn===true?'checked':''}> 플레이어는 자기 것만 바꿀 수 있다 — 자기 트레이너·포켓몬·지시·스킬 칸만. 턴·페이즈·필드·남의 HP·랭크·부상은 GM 만 (켜면 위 「플레이어도 배틀 진행」은 꺼진 것과 같다)</label></div>
-  <div class="sec" style="margin-top:12px">확률 표식</div>
-  <div class="row" style="flex-wrap:wrap;gap:10px">${PCT_LABELS.map(l=>{const base=pctBase(l);const cur=((ST.state.rp||{}).pct||{})[l];return `<label class="small" style="display:inline-flex;align-items:center;gap:4px">${l} <input type="number" min="0" max="100" step="1" data-pct="${l}" value="${cur!=null&&cur!==''?esc(String(cur)):''}" placeholder="${base}" style="width:64px">%</label>`}).join('')}<button class="btn xs pri" id="pctSave">저장</button><button class="btn xs ghost" id="pctReset">기본값으로</button></div>
-  <p class="small muted" style="margin:2px 0 0">효과 글의 「드물게·저확률·중확률·고확률」 판정에 쓰는 %. 비운 칸은 기본값(흐린 숫자)을 쓴다. 이 방에만 적용된다.</p>
-  <div class="row"><label class="small"><input type="checkbox" id="gmHands" ${(ST.state.rp||{}).gmHands===false?'checked':''}> GM 도 플레이어의 지시·상태를 건드리지 않는다 — 플레이어의 지시·준비는 그 플레이어만 쓰고 연다, 플레이어 포켓몬의 HP·랭크·상태 창은 주인만 연다 (턴 종료 같은 자동 처리는 그대로)</label></div>`:''}
-  <div class="row"><button class="btn sm" id="seatMgr">자리 관리</button></div>`);
- m.querySelectorAll('[data-alarm]').forEach(c=>c.onchange=()=>setAlarm(c.dataset.alarm,c.checked));
- const us=$('#uiScale',m),uc=$('#uiChat',m),ud=$('#uiDlg',m),uf=$('#uiFont',m),uh=$('#uiHead',m),ua=$('#uiAv',m);const showUi=()=>{$('#uiScaleV',m).textContent=us.value+'%';$('#uiChatV',m).textContent=uc.value+'px';$('#uiDlgV',m).textContent=ud.value+'px';$('#uiAvV',m).textContent=ua.value+'px'};showUi();
-const pb=$('#plBattle',m);if(pb)pb.onchange=async()=>{await set(['rp','plBattle'],pb.checked);toast(pb.checked?'플레이어도 배틀을 진행할 수 있다':'배틀 진행은 GM 만')};
+/* 설정 창: 「내 설정」(OM_PREFS — 소리·알림·글자·이미지·단축키, 이 기기에서만) · 「방 설정」(GM — 방 이름·배틀·확률·자리) */
+let SET_TAB='me';
+function openRoomSettings(tab){
+ const r=ST.roomRow;const isGm=ST.role==='gm';if(typeof tab==='string')SET_TAB=tab;if(!isGm)SET_TAB='me';const rp=ST.state.rp||{};
+ const card=(ic,ttl,body,sub)=>`<section class="pf-card"><header><i>${ic}</i><b>${ttl}</b>${sub?`<small>${sub}</small>`:''}</header>${body}</section>`;
+ const sw=(id,on,label,sub)=>`<label class="pf-sw"><input type="checkbox" id="${id}" ${on?'checked':''}><i></i><span><b>${label}</b>${sub?`<small>${sub}</small>`:''}</span></label>`;
+ const room=isGm?`<div class="pf">
+  ${card('🏠','방',`<div class="pf-sel"><span class="pf-lb">방 이름</span><input type="text" id="rn" value="${esc(r.name)}"><button class="btn xs pri" id="rnSave">저장</button></div><div class="pf-note">방 id <span class="mono">${esc(r.id)}</span></div>`)}
+  ${card('⚔','배틀',`${sw('plBattle',rp.plBattle!==false,'플레이어도 배틀 진행','파티 불러오기 · 시합 개시 · 턴 진행 · 필드 (모의전용). 엿보기 · 강제 · 모두 공개는 GM 만')}
+   ${sw('seatOwn',rp.seatOwn===true,'플레이어는 자기 것만','자기 트레이너·포켓몬·지시·스킬 칸만. 턴·필드·남의 HP 는 GM 만 (켜면 위 칸은 꺼진 것과 같다)')}
+   ${sw('gmHands',rp.gmHands===false,'GM 불간섭','플레이어의 지시·준비·HP·랭크·상태 창은 주인만 (자동 처리는 그대로)')}`)}
+  ${card('🎲','확률 표식',`<div class="pf-pct">${PCT_LABELS.map(l=>{const base=pctBase(l);const cur=(rp.pct||{})[l];return `<label><span>${l}</span><input type="number" min="0" max="100" step="1" data-pct="${l}" value="${cur!=null&&cur!==''?esc(String(cur)):''}" placeholder="${base}"><em>%</em></label>`}).join('')}</div>
+   <div class="row" style="margin-top:8px"><button class="btn xs pri" id="pctSave">저장</button><button class="btn xs ghost" id="pctReset">기본값으로</button></div><div class="pf-note">효과 글의 「드물게·저확률·중확률·고확률」 판정 %. 비운 칸은 흐린 기본값. 이 방에만.</div>`)}
+  ${card('🪑','자리',`<div class="row"><button class="btn sm" id="seatMgr">자리 관리</button></div>`)}</div>`:'';
+ const m=openModal(`<div class="mhead"><h2>설정</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+  <div class="pf-tabs"><button data-stab="me" class="${SET_TAB==='me'?'on':''}"><span>내 설정</span></button>${isGm?`<button data-stab="room" class="${SET_TAB==='room'?'on':''}"><span>방 설정</span></button>`:`<button class="ghost" id="seatMgr2"><span>자리 바꾸기</span></button>`}</div>
+  <div id="setBody" class="pf-host">${SET_TAB==='room'&&isGm?room:(window.OM_PREFS?window.OM_PREFS.html():'')}</div>`);
+ m.classList.add('setmodal');
+ m.querySelectorAll('[data-stab]').forEach(b=>b.onclick=()=>{SET_TAB=b.dataset.stab;openRoomSettings()});
+ const s2=$('#seatMgr2',m);if(s2)s2.onclick=()=>{closeModal();openSeatPicker()};
+ if(SET_TAB==='me'||!isGm){const host=$('#setBody',m);if(window.OM_PREFS)window.OM_PREFS.bind(host);return}
+ const pb=$('#plBattle',m);if(pb)pb.onchange=async()=>{await set(['rp','plBattle'],pb.checked);toast(pb.checked?'플레이어도 배틀을 진행할 수 있다':'배틀 진행은 GM 만')};
  const so=$('#seatOwn',m);if(so)so.onchange=async()=>{await set(['rp','seatOwn'],so.checked);sysLog(so.checked?'방 설정: 플레이어는 자기 것만 바꿀 수 있다':'방 설정: 「자기 것만」을 껐다');toast(so.checked?'플레이어는 자기 것만':'「자기 것만」 끔')};
  const ps=$('#pctSave',m);if(ps)ps.onclick=async()=>{const o={};let bad='';m.querySelectorAll('[data-pct]').forEach(x=>{const v=x.value.trim();if(v==='')return;const n=+v;if(!isFinite(n)||n<0||n>100){bad=x.dataset.pct;return}o[x.dataset.pct]=Math.round(n)});if(bad)return toast(`「${bad}」 은 0~100 사이 숫자로 적어 줘`);
   const has=Object.keys(o).length;if(!await set(['rp','pct'],has?o:null))return;sysLog('방 설정: 확률 — '+PCT_LABELS.map(l=>`${l} ${o[l]!=null?o[l]:pctBase(l)}%`).join(' · '));toast('확률을 저장했다')};
  const pr=$('#pctReset',m);if(pr)pr.onclick=async()=>{if(!await set(['rp','pct'],null))return;m.querySelectorAll('[data-pct]').forEach(x=>x.value='');sysLog('방 설정: 확률을 기본값으로 — '+PCT_LABELS.map(l=>`${l} ${pctBase(l)}%`).join(' · '));toast('기본값으로 돌렸다')};
  const gh=$('#gmHands',m);if(gh)gh.onchange=async()=>{await set(['rp','gmHands'],gh.checked?false:null);sysLog(gh.checked?'방 설정: GM 도 플레이어의 지시·상태를 건드리지 않는다':'방 설정: 「GM 불간섭」을 껐다');toast(gh.checked?'GM 불간섭 켬':'GM 불간섭 끔')};
- const saveUi=()=>{UI.scale=+us.value;UI.chat=+uc.value;UI.dlg=+ud.value;UI.av=+ua.value;UI.font=uf.value;UI.head=uh.value;try{localStorage.setItem('om_ui',JSON.stringify(UI))}catch(e){}applyUi();showUi()};[us,uc,ud,ua].forEach(el=>el.oninput=saveUi);uf.onchange=saveUi;uh.onchange=saveUi;
- $('#uiReset',m).onclick=()=>{Object.assign(UI,UI_DEF);us.value=UI.scale;uc.value=UI.chat;ud.value=UI.dlg;uf.value=UI.font;uh.value=UI.head;saveUi()};
- const vb=$('#volBgm',m),vs=$('#volSe',m);const show=()=>{$('#volBgmV',m).textContent=Math.round(vb.value*100)+'%';$('#volSeV',m).textContent=Math.round(vs.value*100)+'%'};show();
- vb.oninput=()=>{show();if(window.OM_RP_UI)window.OM_RP_UI.setVolume('bgm',+vb.value)};vs.oninput=()=>{show();if(window.OM_RP_UI)window.OM_RP_UI.setVolume('se',+vs.value)};
- $('#volSeTest',m).onclick=()=>{if(window.OM_RP_UI)window.OM_RP_UI.playSe('Ping2',true)};
  const rs=$('#rnSave',m);if(rs)rs.onclick=async()=>{try{await DBS().roomUpdate(ST.room,ST.secret,$('#rn',m).value.trim(),null);ST.roomRow.name=$('#rn',m).value.trim();remember(ST.room,ST.roomRow.name,ST.secret);closeModal();renderRoom()}catch(e){toast(e.message)}};
  $('#seatMgr',m).onclick=()=>{closeModal();openSeatPicker()}}
 
@@ -513,6 +505,6 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
 /* 이름으로 기본 초상 찾기: 그림이 따로 없으면 같은 이름의 로스터 트레이너 → 포켓몬 → 관계도 노드의 그림을 쓴다 */
 function portraitOf(name,img){if(img)return img;if(!name)return '';const ro=ST.state.roster||{};const t=Object.values(ro.trainers||{}).find(x=>x.name===name);if(t&&t.image)return t.image;const m=Object.values(ro.mons||{}).find(x=>x.name===name&&x.image);if(m)return m.image;const n=Object.values((ST.state.graph||{}).nodes||{}).find(x=>x.name===name&&x.img);return n?n.img:''}
-window.OM_APP={ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,openMon,openLoadParty,loadFromRoster,loadMaker,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,get view(){return VIEW},set view(v){VIEW=v}};
+window.OM_APP={UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,openMon,openLoadParty,loadFromRoster,loadMaker,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,get view(){return VIEW},set view(v){VIEW=v}};
 route();
 })();
