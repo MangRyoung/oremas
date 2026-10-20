@@ -37,6 +37,10 @@ window.OM_SHEET_UI=(()=>{
   el.querySelectorAll('[data-auto]').forEach(bt=>bt.onclick=()=>{const mm=c.r.mons[UI.mid];if(!mm)return;const name=bt.dataset.name;const pot=[...(mm.pots||[]),mm.excl,...(mm.exclX||[])].find(p=>p&&p.name===name);
    window.OM_FX_UI.openEditor({mon:mm,kind:bt.dataset.auto,name,text:pot?pot.eff:(bt.dataset.auto==='trait'?mm.abilityEff:mm.itemEff),save:async auto=>{const nm=JSON.parse(JSON.stringify(c.r.mons[UI.mid]));nm.auto=nm.auto||{};const key=String(name).replace(/『|』/g,'');if(auto)nm.auto[key]=auto;else delete nm.auto[key];await A().set(['roster','mons',UI.mid],nm);
     const bm=((A().ST.state.battle||{}).mons||{})[UI.mid];if(bm){await A().set(['battle','mons',UI.mid,'auto'],nm.auto)}A().toast(auto?'구문을 저장했다':'구문을 지웠다');A().renderScene()}})});
+  /* 트레이너 고유 포텐셜의 구문 */
+  el.querySelectorAll('[data-uauto]').forEach(bt=>bt.onclick=()=>{const i=+bt.dataset.uauto;const tt=c.r.trainers[UI.tid];const u=(tt.unique||[])[i];if(!u)return;const fake={name:tt.name,auto:u.auto?{[u.name]:u.auto}:{},tid:''};
+   window.OM_FX_UI.openEditor({mon:fake,kind:'pot',name:u.name,text:u.eff||'',save:async auto=>{const nt=JSON.parse(JSON.stringify(c.r.trainers[UI.tid]));nt.unique[i]=Object.assign({},nt.unique[i]);if(auto)nt.unique[i].auto=auto;else delete nt.unique[i].auto;await A().set(['roster','trainers',UI.tid],nt);
+    const btr=((A().ST.state.battle||{}).trainers||{})[UI.tid];if(btr){await A().set(['battle','trainers',UI.tid,'unique'],nt.unique)}A().toast(auto?'구문을 저장했다':'구문을 지웠다');A().renderScene()}})});
  }
 
  function trainerView(c,t){
@@ -58,10 +62,10 @@ window.OM_SHEET_UI=(()=>{
  function charTab(c,t,E){
   const d=t.detail||{};const st=t.stands||[];const act=+t.standActive||0;
   const standSec=`<div class="spanel"><div class="sh">스탠딩 <span class="note">무대에 서는 전신 그림 · 제작기에서 넣으면 「제작기 동기화」로 따라온다</span><span class="sp"></span>${canEdit(c,t.id)?`<button class="btn sm" data-act="stands">표정·스탠딩 편집</button>`:''}</div>
-   <div class="stgrid">${st.map((s,i)=>`<div class="stcard ${i===act?'on':''}"><div class="sth" style="${s.src?`background-image:url('${esc(s.src)}')`:''}"></div><b>${esc(s.label||'기본')}</b>${i===act?' <span class="tag me">기본</span>':''}</div>`).join('')||`<div class="small dim">아직 없다 — 초상(위 그림)으로 선다</div>`}</div></div>`;
+   ${st.length?`<div class="stgrid">${st.map((s,i)=>`<div class="stcard ${i===act?'on':''}"><div class="sth" style="${s.src?`background-image:url('${esc(s.src)}')`:''}"></div><b>${esc(s.label||'기본')}</b>${i===act?' <span class="tag me">기본</span>':''}</div>`).join('')}</div>`:`<div class="small dim">아직 없다 — 초상(위 그림)으로 선다</div>`}</div>`;
   return standSec+`<div class="spanel two">
    <div><div class="sh">자질</div><table class="t">${['육성','지시','통솔','능력'].map(k=>`<tr><th style="width:60px">${k} ${esc((t.ranks||{})[k]||'-')}</th><td>${E?`<input type="text" data-te="detail_${k}" value="${esc(d[k]||'')}" style="width:100%">`:esc(d[k]||'')}</td></tr>`).join('')}</table>
-    <div class="sh" style="margin-top:12px">고유 포텐셜</div>${(t.unique||[]).length?`<table class="t">${t.unique.map((u,i)=>`<tr><th style="width:140px;white-space:normal">${E?`<input type="text" data-te="uniq_name_${i}" value="${esc(u.name)}" style="width:100%">`:esc(u.name)}</th><td class="pre small">${E?`<textarea data-te="uniq_eff_${i}" rows="3" style="width:100%">${esc(u.eff)}</textarea>`:esc(u.eff)}</td></tr>`).join('')}</table>`:'<div class="dim small">없음</div>'}${E?`<button class="btn xs" data-act="adduniq">+ 고유</button>`:''}</div>
+    <div class="sh" style="margin-top:12px">고유 포텐셜</div>${(t.unique||[]).length?`<table class="t">${t.unique.map((u,i)=>`<tr><th style="width:140px;white-space:normal">${E?`<input type="text" data-te="uniq_name_${i}" value="${esc(u.name)}" style="width:100%">`:esc(u.name)}${u.name?uniqAutoBtn(u,i):''}</th><td class="pre small">${E?`<textarea data-te="uniq_eff_${i}" rows="3" style="width:100%">${esc(u.eff)}</textarea>`:esc(u.eff)}</td></tr>`).join('')}</table>`:'<div class="dim small">없음</div>'}${E?`<button class="btn xs" data-act="adduniq">+ 고유</button>`:''}</div>
    <div><div class="sh">메모</div>${E?`<textarea data-te="memo" rows="12" style="width:100%">${esc(t.memo||'')}</textarea>`:`<div class="pre small">${esc(t.memo||'')||'<span class="dim">없음</span>'}</div>`}</div>
   </div>`}
 
@@ -107,6 +111,8 @@ window.OM_SHEET_UI=(()=>{
    <div class="small dim" style="margin-top:6px">분배레벨 합: ${mons.reduce((a,m)=>a+(+m.dist||0),0)} / ${esc(String((t.base||{})['분배레벨']??'-'))}</div></div>`}
 
  /* 자동화 구문 버튼: 레디메이드 자동 / 이 포켓몬의 구문 / 없음 */
+ function uniqAutoBtn(u,i){const K=window.OM_FX;if(!K)return '';const has=u.auto&&u.auto.ops&&u.auto.ops.length;const base=K.rm(u.name);const rmHas=base&&base.ops&&base.ops.length&&!base.manual;
+  return `<div class="small" style="margin-top:2px"><button class="btn xs ${has?'pri':rmHas?'':'ghost'}" data-uauto="${i}" title="${esc(has?K.unparse(u.auto.ops).join(' / '):rmHas?'레디메이드 자동: '+K.unparse(base.ops).join(' / '):'자동화 없음 — 구문을 써 넣을 수 있다')}">${has?'구문 ✓':rmHas?'자동':'구문'}</button></div>`}
  function autoBtn(m,kind,name,E){const K=window.OM_FX;if(!K)return '';const own=(m.auto||{})[String(name).replace(/『|』/g,'')];const base=K.autoOf(Object.assign({},m,{auto:{}}),kind,name);const has=own&&own.ops&&own.ops.length;const rmHas=base&&base.ops&&base.ops.length&&!base.manual;
   return `<div class="small" style="margin-top:2px"><button class="btn xs ${has?'pri':rmHas?'':'ghost'}" data-auto="${esc(kind)}" data-name="${esc(name)}" title="${esc(has?K.unparse(own.ops).join(' / '):rmHas?'레디메이드 자동: '+K.unparse(base.ops).join(' / '):'자동화 없음 — 구문을 써 넣을 수 있다')}">${has?'구문 ✓':rmHas?'자동':'구문'}</button></div>`}
  function battleTab(c,t,mons,E){

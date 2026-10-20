@@ -23,14 +23,15 @@ window.OM_FX=(()=>{
  function stEn(kor){kor=String(kor||'').trim();const st=stDB();if(st[kor])return kor;for(const k in st)if(st[k].ko===kor)return k;return ''}
  const typesOf=m=>(m.teraActive&&m.teraEn&&m.teraEn!=='-')?[m.teraEn]:(m.types||[]).filter(t=>t&&t!=='-');
  const frac=(base,v)=>{v=String(v||'').trim();const m=v.match(/^(\d+)\s*\/\s*(\d+)$/);if(m)return Math.max(1,Math.floor(base*+m[1]/+m[2]));const n=+v;return isNaN(n)?0:Math.floor(n)};
- const fx=m=>{m.fx=m.fx||{mods:[],noind:[],prio:[],immune:[],nodrop:[],roles:[]};for(const k of ['mods','noind','prio','immune','nodrop','roles'])m.fx[k]=m.fx[k]||[];return m.fx};
+ const fx=m=>{m.fx=m.fx||{mods:[],noind:[],prio:[],immune:[],nodrop:[],roles:[]};for(const k of ['mods','noind','prio','immune','nodrop','roles','mults'])m.fx[k]=m.fx[k]||[];return m.fx};
  const alive=m=>m&&m.hp&&m.hp.cur>0;
 
  /* ===== 레디메이드 찾기: 방 덮어쓰기(dbx.rm) → 기본 ===== */
- function rmAll(){const base=DB().readymade||{};const ov=(((window.OM_APP||{}).ST||{}).state||{}).dbx;const o=(ov&&ov.rm)||{};return Object.assign({},base,o)}
+ function rmAll(){const base=DB().readymade||{};const ov=(((window.OM_APP||{}).ST||{}).state||{}).dbx;const o=(ov&&ov.rm)||{};const all=Object.assign({},base,o);for(const k in all)if(all[k]&&all[k].deleted)delete all[k];return all}
  function rm(name){if(!name)return null;const all=rmAll();name=String(name).replace(/『|』/g,'').trim();return all[name]||null}
  /* 포켓몬의 포텐셜/특성/소지품에 붙은 자동화: 개별 구문(m.auto[name]) → 레디메이드 */
  function autoOf(m,kind,name){name=String(name||'').replace(/『|』/g,'').trim();const own=(m&&m.auto||{})[name];if(own&&own.ops)return Object.assign({name,src:'own'},own);
+  if(kind==='pot'&&m&&m.tid){const bt=(((window.OM_APP||{}).ST||{}).state||{}).battle;const tr=bt&&bt.trainers&&bt.trainers[m.tid];const u=tr&&(tr.unique||[]).find(x=>x&&String(x.name||'').replace(/『|』/g,'').trim()===name);if(u&&u.auto&&u.auto.ops&&u.auto.ops.length)return Object.assign({name,src:'unique'},u.auto)}
   const key=kind==='trait'?'특성 : '+name:kind==='item'?'소지품 : '+name:name;const r=rm(key)||(kind!=='pot'?rm(name):null);if(!r)return null;return Object.assign({name,src:'rm',key},r)}
 
  /* ===== 대상 고르기 ===== */
@@ -74,17 +75,17 @@ window.OM_FX=(()=>{
      case 'etc':{const f=field(b);if(!op.e){f.etc={};L.push('필드의 상태 초기화')}else{f.etc[op.e]=+op.count||5;L.push(`「${op.e}」 ${op.count>=1000?'계속':op.count+'턴'}`)}break}
      case 'object':{const f=field(b);const side=op.side==='enemy'?(self.side==='left'?'right':'left'):self.side;f.objects[side]=f.objects[side]||{};const cur=+f.objects[side][op.o]||0;
        if(op.o==='압정뿌리기'||op.o==='독압정'){const mx=op.o==='압정뿌리기'?3:2;f.objects[side][op.o]=Math.min(mx,cur+1);L.push(`${side==='left'?'좌측':'우측'} 「${op.o}」 ${f.objects[side][op.o]}겹`)}else{f.objects[side][op.o]=+op.count||5;L.push(`${side==='left'?'좌측':'우측'} 「${op.o}」 ${op.count>=1000?'계속':op.count+'턴'}`)}break}
-     case 'type':{const ts=await targets(b,self,op.tgt||'self',ctx);for(const m of ts){if(op.mode==='reset'){if(m.typesOrig){m.types=m.typesOrig;delete m.typesOrig}L.push(`${m.name} 타입 원래대로`);continue}m.typesOrig=m.typesOrig||m.types.slice();
+     case 'type':{const ts=await targets(b,self,op.tgt||'self',ctx);for(const m of ts){if(op.mode==='reset'){if(m.typesOrig){m.types=m.typesOrig;delete m.typesOrig}L.push(`${m.name} 타입 원래대로`);continue}m.typesOrig=m.typesOrig||m.types.slice();m.typesBy=name;
        const add=(op.types||[]).map(t=>KO_TYPE[t]||t);if(op.mode==='set')m.types=add;else m.types=[...new Set([...m.types.filter(t=>t!=='-'),...add])];L.push(`${m.name} 타입 ${op.mode==='set'?'→':'+'} ${add.map(t=>TYPE_KO[t]||t).join('/')}`)}break}
-     case 'trait':{const ts=await targets(b,self,op.tgt||'enemy1',ctx);for(const m of ts){if(op.mode==='reset'){if(m.abilityOrig!=null){m.ability=m.abilityOrig;delete m.abilityOrig}L.push(`${m.name} 특성 원래대로`);continue}if(m.abilityOrig==null)m.abilityOrig=m.ability||'';m.ability=op.tn;L.push(`${m.name} 특성 → 「${op.tn}」`)}break}
+     case 'trait':{const ts=await targets(b,self,op.tgt||'enemy1',ctx);for(const m of ts){if(op.mode==='reset'){if(m.abilityOrig!=null){m.ability=m.abilityOrig;delete m.abilityOrig}L.push(`${m.name} 특성 원래대로`);continue}if(m.abilityOrig==null)m.abilityOrig=m.ability||'';m.abilityBy=name;m.ability=op.tn;L.push(`${m.name} 특성 → 「${op.tn}」`)}break}
      case 'noind':{const ts=await targets(b,self,op.tgt||'self',ctx);for(const m of ts){const F=fx(m);const key=name+' ← '+self.name;if(op.mode==='off'){F.noind=F.noind.filter(e=>e.key!==key)}else if(op.mode==='clear'){F.noind=F.noind.filter(e=>e.kind!==(op.kind||''))}else{F.noind=F.noind.filter(e=>e.key!==key);F.noind.push({key,name,kind:op.kind||'',until:op.turns>0?(+b.turn||0)+op.turns-1:-1})}L.push(`${m.name} ${op.mode==='on'?'':'해제 — '}${NOIND_KO[op.kind||'']}`)}break}
      case 'prio':{const ts=await targets(b,self,op.tgt||'self',ctx);for(const m of ts){const F=fx(m);const key=name+' ← '+self.name;if(op.mode==='off'){F.prio=F.prio.filter(e=>e.key!==key)}else{F.prio=F.prio.filter(e=>e.key!==key);F.prio.push({key,name,v:+op.v||0,mode:op.mode||'add',cat:op.cat||'all',type:op.type||'',tag:op.tag||'',turn:op.dur==='turn'?(+b.turn||0):-1})}L.push(`${m.name} 우선도 ${op.mode==='set'?'= ':(op.v>0?'+':'')}${op.v} (${op.type?(TYPE_KO[op.type]||op.type)+' 타입 ':''}${op.cat&&op.cat!=='all'?op.cat+' ':''}${op.tag?'「'+op.tag+'」 ':''}기술${op.dur==='turn'?' · 이번 턴':''})`)}break}
      case 'immune':{const ts=await targets(b,self,op.tgt||'self',ctx);for(const m of ts){const F=fx(m);const key=name+' ← '+self.name;F.immune=F.immune.filter(e=>e.key!==key);if(op.mode!=='off')F.immune.push({key,name,states:op.states||[]});L.push(`${m.name} 「${(op.states||[]).map(stKo).join('」「')}」 면역${op.mode==='off'?' 해제':''}`)}break}
      case 'nodrop':{const ts=await targets(b,self,op.tgt||'self',ctx);for(const m of ts){const F=fx(m);const key=name+' ← '+self.name;F.nodrop=F.nodrop.filter(e=>e.key!==key);if(op.mode!=='off')F.nodrop.push({key,name,st:op.st||'',until:op.turns>0?(+b.turn||0)+op.turns-1:-1,ytype:op.ytype||'',ro:op.ro||[]});L.push(`${m.name} ${op.st?STAT_KO[op.st]+' ':'능력 '}감소 무시${op.mode==='off'?' 해제':''}`)}break}
-     case 'ignoreup':{const F=fx(self);F.ignoreUp=op.on?{dir:op.dir||'atk',scope:op.scope||'both',ro:op.ro||[]}:null;L.push(`${self.name} ${op.dir==='recv'?'받을 때 상대의':'공격할 때 상대의'} ${({def:'방어',eva:'회피',atk:'공격',both:'방어·회피'})[op.scope]||'능력'} 상승 무시${op.on?'':' 해제'}`);break}
-     case 'float':{const ts=await targets(b,self,op.tgt||'self',ctx);for(const m of ts){const F=fx(m);F.float=op.mode==='off'?null:{until:op.turns>0?(+b.turn||0)+op.turns-1:-1};L.push(`${m.name} 하늘 위${op.mode==='off'?' 해제':''}`)}break}
-     case 'role':{const F=fx(self);if(op.mode==='clear')F.roles=[];else if(op.mode==='remove')F.roles=F.roles.filter(r=>!(op.roles||[]).includes(r));else F.roles=[...new Set([...F.roles,...(op.roles||[])])];L.push(`${self.name} 역할 취급: ${F.roles.join('·')||'없음'}`);break}
-     case 'pursuit':{self.flags=self.flags||{};self.flags.pursuit=!!op.on;L.push(`${self.name} 다음 기술에 「따라가때리기」${op.on?'':' 해제'}`);break}
+     case 'ignoreup':{const F=fx(self);F.ignoreUp=op.on?{dir:op.dir||'atk',scope:op.scope||'both',ro:op.ro||[],name}:null;L.push(`${self.name} ${op.dir==='recv'?'받을 때 상대의':'공격할 때 상대의'} ${({def:'방어',eva:'회피',atk:'공격',both:'방어·회피'})[op.scope]||'능력'} 상승 무시${op.on?'':' 해제'}`);break}
+     case 'float':{const ts=await targets(b,self,op.tgt||'self',ctx);for(const m of ts){const F=fx(m);F.float=op.mode==='off'?null:{until:op.turns>0?(+b.turn||0)+op.turns-1:-1,name};L.push(`${m.name} 하늘 위${op.mode==='off'?' 해제':''}`)}break}
+     case 'role':{const F=fx(self);if(op.mode==='clear')F.roles=[];else if(op.mode==='remove')F.roles=F.roles.filter(r=>!(op.roles||[]).includes(r));else F.roles=[...new Set([...F.roles,...(op.roles||[])])];F.rolesBy=F.roles.length?name:'';L.push(`${self.name} 역할 취급: ${F.roles.join('·')||'없음'}`);break}
+     case 'pursuit':{self.flags=self.flags||{};self.flags.pursuit=!!op.on;if(op.on)self.flags.pursuitBy=name;else delete self.flags.pursuitBy;L.push(`${self.name} 다음 기술에 「따라가때리기」${op.on?'':' 해제'}`);break}
      case 'resetstates':{const ts=await targets(b,self,op.tgt||'self',ctx);for(const m of ts){const list=op.group==='condition_abnormal'?ABN:NEG;const c=[];for(const k of list)if((m.states||{})[k]){delete m.states[k];c.push(stKo(k))}L.push(`${m.name} ${c.length?'「'+c.join('」「')+'」 해제':'해제할 상태 없음'}`)}break}
      case 'raid':{self.raid=Object.assign({},self.raid||{},{segments:+op.x||(self.raid||{}).segments||0,floor:op.floor,cure:op.cure,cstat:op.cstat,rup:op.rup});L.push(`${self.name} 레이드 배틀 설정 (구간 ${self.raid.segments||'?'})`);break}
      case 'dex':{const ts=await targets(b,self,'enemy1',ctx);const tg=ts[0];L.push(`「${name}」 데이터 해석${tg?' → '+tg.name:''}`);if(tg&&window.OM_DEX_UI&&ctx.viewer!==undefined)setTimeout(()=>window.OM_DEX_UI.analyze(ctx.viewer||self.tid,tg.id,{forced:true,free:true}),400);break}
@@ -100,7 +101,8 @@ window.OM_FX=(()=>{
     if(k==='critical_buff'){m.critBuff=(+m.critBuff||0)+v;parts.push(`급소 방호 ${v>0?'+':''}${v}`);continue}
     m.rank=m.rank||{};const lim=k==='critical'?4:6;const before=+m.rank[k]||0;const after=Math.max(-lim,Math.min(lim,before+v));m.rank[k]=after;if(op.temp){m.tempRank=m.tempRank||{};m.tempRank[k]=(+m.tempRank[k]||0)+(after-before)}
     parts.push(`${STAT_KO[k]} ${v>0?'+':''}${v}${after!==before+v?' (한계 '+after+')':''}`)}
-   else{m.mod=m.mod||{};m.mod[k]=Math.round(((+m.mod[k]||1)*v)*1000)/1000;if(op.temp){m.tempMod=m.tempMod||{};m.tempMod[k]=Math.round(((+m.tempMod[k]||1)*v)*1000)/1000}parts.push(`${STAT_KO[k]} ×${v}`)}}
+   else{m.mod=m.mod||{};m.mod[k]=Math.round(((+m.mod[k]||1)*v)*1000)/1000;if(op.temp){m.tempMod=m.tempMod||{};m.tempMod[k]=Math.round(((+m.tempMod[k]||1)*v)*1000)/1000}parts.push(`${STAT_KO[k]} ×${v}`);
+    /* 배율 출처를 남겨서 나중에 해제할 수 있게 */ const F=fx(m);const key=name+' ← '+self.name;let e=F.mults.find(x=>x.key===key);if(!e){e={key,name,stats:{},temp:!!op.temp};F.mults.push(e)}e.stats[k]=Math.round(((+e.stats[k]||1)*v)*1000)/1000}}
   if(parts.length)L.push(`${m.name} 「${name}」 ${parts.join(' · ')}${op.temp?' (턴 종료까지)':''}`);return L}
  function setState(m,en,count,forced,self,name){if(!en)return `${m.name} 모르는 상태`;m.states=m.states||{};if(m.states[en])return `${m.name} 이미 「${stKo(en)}」`;
   if(!forced){const im=immuneHit(m,en);if(im)return `${m.name} 「${stKo(en)}」 면역 (${im})`;if(ABN.includes(en)&&ABN.some(k=>m.states[k]))return `${m.name} 이미 상태 이상이라 「${stKo(en)}」이 되지 않음`;
@@ -148,13 +150,24 @@ window.OM_FX=(()=>{
  /* ===== 포켓몬 카드에 보여 줄 효과 칩 ===== */
  function chips(m){const out=[];for(const e of liveMods(m))out.push({t:`${e.kind==='boost'?'강화':'완화'} ×${e.v}`,title:modDesc(e),id:'mods:'+e.key,name:e.name});for(const e of (m.fx&&m.fx.noind)||[])out.push({t:'비례 무시',title:e.name+' — '+NOIND_KO[e.kind||''],id:'noind:'+e.key,name:e.name});
   for(const e of (m.fx&&m.fx.prio)||[])out.push({t:`우선도 ${e.mode==='set'?'=':(e.v>0?'+':'')}${e.v}`,title:e.name,id:'prio:'+e.key,name:e.name});for(const e of (m.fx&&m.fx.immune)||[])out.push({t:'면역 '+e.states.map(stKo).join('·'),title:e.name,id:'immune:'+e.key,name:e.name});
-  for(const e of (m.fx&&m.fx.nodrop)||[])out.push({t:(e.st?STAT_KO[e.st]+' ':'')+'감소 무시',title:e.name,id:'nodrop:'+e.key,name:e.name});if(m.fx&&m.fx.ignoreUp)out.push({t:'강화 무시',title:'상대의 능력 상승 무시',id:'ignoreUp',name:'강화 무시'});if(floating(m))out.push({t:'하늘 위',title:'땅 위 효과를 받지 않는다',id:'float',name:'하늘 위'});
-  if(m.fx&&m.fx.roles&&m.fx.roles.length)out.push({t:'역할 '+m.fx.roles.join('·'),title:'역할 취급',id:'roles',name:'역할 취급'});if(m.typesOrig)out.push({t:'타입 변경',title:'원래 '+m.typesOrig.map(t=>TYPE_KO[t]||t).join('/'),id:'types',name:'타입 변경'});if(m.abilityOrig!=null)out.push({t:'특성 변경',title:'원래 '+(m.abilityOrig||'없음'),id:'ability',name:'특성 변경'});
-  if(m.flags&&m.flags.pursuit)out.push({t:'추격',title:'따라가때리기(Pursuit) — 다음 기술: 상대가 교대하려 하면 교대 전에 먼저 때린다. 턴 종료에 풀린다',id:'pursuit',name:'추격'});return out}
+  for(const e of (m.fx&&m.fx.nodrop)||[])out.push({t:(e.st?STAT_KO[e.st]+' ':'')+'감소 무시',title:e.name,id:'nodrop:'+e.key,name:e.name});for(const e of (m.fx&&m.fx.mults)||[])out.push({t:'배율 '+multLabel(e.stats),title:e.name+' — '+Object.entries(e.stats).map(([k,v])=>(STAT_KO[k]||k)+' ×'+v).join(' · ')+(e.temp?' (턴 종료까지)':''),id:'mults:'+e.key,name:e.name});
+  if(m.fx&&m.fx.ignoreUp)out.push({t:'강화 무시',title:(m.fx.ignoreUp.name||'')+' — 상대의 능력 상승 무시',id:'ignoreUp',name:m.fx.ignoreUp.name||'강화 무시'});if(floating(m))out.push({t:'하늘 위',title:((m.fx&&m.fx.float&&m.fx.float.name)||'')+' — 땅 위 효과를 받지 않는다',id:'float',name:(m.fx&&m.fx.float&&m.fx.float.name)||'하늘 위'});
+  if(m.fx&&m.fx.roles&&m.fx.roles.length)out.push({t:'역할 '+m.fx.roles.join('·'),title:(m.fx.rolesBy||'')+' 역할 취급',id:'roles',name:m.fx.rolesBy||'역할 취급'});if(m.typesOrig)out.push({t:'타입 변경',title:(m.typesBy||'')+' — 원래 '+m.typesOrig.map(t=>TYPE_KO[t]||t).join('/'),id:'types',name:m.typesBy||'타입 변경'});if(m.abilityOrig!=null)out.push({t:'특성 변경',title:(m.abilityBy||'')+' — 원래 '+(m.abilityOrig||'없음'),id:'ability',name:m.abilityBy||'특성 변경'});
+  if(m.flags&&m.flags.pursuit)out.push({t:'추격',title:(m.flags.pursuitBy||'')+' — 따라가때리기(Pursuit): 다음 기술에서 상대가 교대하려 하면 교대 전에 먼저 때린다. 턴 종료에 풀린다',id:'pursuit',name:m.flags.pursuitBy||'추격'});return out}
+ /* 배율 칩 짧은 글: 5능력이 같은 값이면 「능력 ×1.33」, 나머지는 따로 */
+ function multLabel(st){const five=['attack','defense','specialattack','specialdefense','speed'];const out=[];const v5=five.map(k=>st[k]);if(v5.every(v=>v!=null)&&v5.every(v=>v===v5[0])){out.push('능력 ×'+v5[0]);for(const k in st)if(!five.includes(k))out.push((STAT_KO[k]||k)+' ×'+st[k])}else{const by={};for(const k in st)(by[st[k]]=by[st[k]]||[]).push(STAT_KO[k]||k);for(const v in by)out.push(by[v].map(x=>x.replace('스피드','스')).join('·')+' ×'+v)}return out.join(' ')}
+ /* 출처(포텐셜 이름) 가 같은 효과를 한꺼번에 해제 — 디스럽터처럼 여러 효과가 묶인 것 */
+ function removeByName(m,name){const F=fx(m);let n=0;for(const k of ['mods','noind','prio','immune','nodrop']){const b=F[k].length;F[k]=F[k].filter(e=>e.name!==name);n+=b-F[k].length}
+  for(const e of F.mults.filter(e=>e.name===name)){unmult(m,e);n++}F.mults=F.mults.filter(e=>e.name!==name);
+  if(F.ignoreUp&&F.ignoreUp.name===name){F.ignoreUp=null;n++}if(F.float&&F.float.name===name){F.float=null;n++}if(F.roles.length&&F.rolesBy===name){F.roles=[];F.rolesBy='';n++}
+  if(m.typesOrig&&m.typesBy===name){m.types=m.typesOrig;delete m.typesOrig;delete m.typesBy;n++}if(m.abilityOrig!=null&&m.abilityBy===name){m.ability=m.abilityOrig;delete m.abilityOrig;delete m.abilityBy;n++}
+  if(m.flags&&m.flags.pursuit&&m.flags.pursuitBy===name){delete m.flags.pursuit;delete m.flags.pursuitBy;n++}return n}
+ function unmult(m,e){m.mod=m.mod||{};for(const k in e.stats){const v=+e.stats[k]||1;m.mod[k]=Math.round(((+m.mod[k]||1)/v)*1000)/1000;if(Math.abs(m.mod[k]-1)<0.002)delete m.mod[k];if(e.temp&&m.tempMod&&m.tempMod[k]!=null){m.tempMod[k]=Math.round(((+m.tempMod[k]||1)/v)*1000)/1000;if(Math.abs(m.tempMod[k]-1)<0.002)delete m.tempMod[k]}}}
  /* 효과 하나 해제 (id 는 chips 의 id) */
  function remove(m,id){const F=fx(m);const [kind,key]=id.split(/:(.+)/);if(['mods','noind','prio','immune','nodrop'].includes(kind)){F[kind]=F[kind].filter(e=>e.key!==key);return true}
+  if(kind==='mults'){const e=F.mults.find(x=>x.key===key);if(e)unmult(m,e);F.mults=F.mults.filter(x=>x.key!==key);return true}
   if(kind==='ignoreUp'){F.ignoreUp=null;return true}if(kind==='float'){F.float=null;return true}if(kind==='roles'){F.roles=[];return true}if(kind==='types'){if(m.typesOrig){m.types=m.typesOrig;delete m.typesOrig}return true}if(kind==='ability'){if(m.abilityOrig!=null){m.ability=m.abilityOrig;delete m.abilityOrig}return true}if(kind==='pursuit'){if(m.flags)delete m.flags.pursuit;return true}return false}
- function removeAll(m){const F=fx(m);F.mods=[];F.noind=[];F.prio=[];F.immune=[];F.nodrop=[];F.ignoreUp=null;F.float=null;F.roles=[];if(m.typesOrig){m.types=m.typesOrig;delete m.typesOrig}if(m.abilityOrig!=null){m.ability=m.abilityOrig;delete m.abilityOrig}if(m.flags)delete m.flags.pursuit}
+ function removeAll(m){const F=fx(m);for(const e of F.mults)unmult(m,e);F.mults=[];F.mods=[];F.noind=[];F.prio=[];F.immune=[];F.nodrop=[];F.ignoreUp=null;F.float=null;F.roles=[];if(m.typesOrig){m.types=m.typesOrig;delete m.typesOrig}if(m.abilityOrig!=null){m.ability=m.abilityOrig;delete m.abilityOrig}if(m.flags){delete m.flags.pursuit;delete m.flags.pursuitBy}if(m.typesBy)delete m.typesBy;if(m.abilityBy)delete m.abilityBy;F.rolesBy=''}
 
  /* ===== 발동 시점·확률 (효과 글의 표식) ===== */
  function timing(text){const t=String(text||'');const out={entry:/【등장】/.test(t),passive:/【상시】/.test(t),turnEnd:/【턴 종료】|턴 종료 시/.test(t),pre:/【선행】/.test(t),uses:(t.match(/【(\d+)\/시】/)||[])[1]||'',percent:''};
@@ -241,5 +254,5 @@ window.OM_FX=(()=>{
   return L}
  /* 사람이 읽는 설명 (미리보기·로그) */
  function describe(ops){return unparse(ops)}
- return {rm,rmAll,autoOf,run,attackMods,consume,prioOf,turnEnd,chips,remove,removeAll,timing,percentOf,parse,unparse,describe,noind,floating,immuneHit,nodropHit,liveMods,modDesc,TGT_KO,STAT_KO,TYPE_KO,NEG,ABN,stEn,stKo};
+ return {rm,rmAll,autoOf,run,attackMods,consume,prioOf,turnEnd,chips,remove,removeAll,removeByName,timing,percentOf,parse,unparse,describe,noind,floating,immuneHit,nodropHit,liveMods,modDesc,TGT_KO,STAT_KO,TYPE_KO,NEG,ABN,stEn,stKo};
 })();

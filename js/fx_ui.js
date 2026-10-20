@@ -114,13 +114,22 @@ window.OM_FX_UI=(()=>{
 
  /* ===== 레디메이드 DB 창 ===== */
  function openRm(q){const K=FX();const all=K.rmAll();const names=Object.keys(all).sort((a,b)=>a.localeCompare(b,'ko'));const gm=A().ST.role==='gm';
-  const md=A().openModal(`<div class="mhead"><h2>레디메이드 DB <span class="small dim">${names.length}</span></h2><span class="sp"></span>${gm?'<button class="btn sm" id="rmnew">새로</button>':''}<button class="btn ghost" data-x>닫기</button></div>
+  const md=A().openModal(`<div class="mhead"><h2>레디메이드 DB <span class="small dim">${names.length}</span></h2><span class="sp"></span>${gm?'<button class="btn sm" id="rmnew">새로</button><button class="btn sm ghost" id="rmsync" title="제작기의 레디메이드 DB 수정을 이 방에 가져온다">제작기 새로고침</button>':''}<button class="btn ghost" data-x>닫기</button></div>
    <div class="row"><input type="text" id="rmq" placeholder="이름 · 효과 검색" value="${esc(q||'')}" style="flex:1"><label class="small"><input type="checkbox" id="rmauto" checked> 자동화 있는 것만</label></div><div id="rmlist" class="dblist" style="max-height:60vh;overflow:auto;margin-top:6px"></div>`);
   const draw=()=>{const qq=$('#rmq',md).value.trim().toLowerCase();const onlyAuto=$('#rmauto',md).checked;const ov=((A().ST.state.dbx||{}).rm)||{};
    const rows=names.filter(n=>{const r=all[n];if(onlyAuto&&(!r.ops||!r.ops.length||r.manual))return false;return !qq||n.toLowerCase().includes(qq)||String(r.text||'').toLowerCase().includes(qq)}).slice(0,200);
-   $('#rmlist',md).innerHTML=rows.map(n=>{const r=all[n];return `<div class="rmrow"><div class="row"><b>${esc(n)}</b>${ov[n]?'<span class="tag">방 수정</span>':''}${r.manual?'<span class="tag" style="background:#555">손으로</span>':''}<span class="sp"></span>${gm?`<button class="btn xs" data-rmedit="${esc(n)}">수정</button>`:''}</div><div class="small dim" style="white-space:pre-wrap">${esc(r.text||'')}</div>${r.ops&&r.ops.length?`<pre class="pm small">${esc(K.unparse(r.ops).join('\n'))}</pre>`:''}</div>`}).join('')||'<div class="dim small">없음</div>';
+   $('#rmlist',md).innerHTML=rows.map(n=>{const r=all[n];return `<div class="rmrow"><div class="row"><b>${esc(n)}</b>${ov[n]?'<span class="tag">'+(ov[n].src==='maker'?'제작기':'방 수정')+'</span>':''}${r.manual?'<span class="tag" style="background:#555">손으로</span>':''}<span class="sp"></span>${gm?`<button class="btn xs" data-rmedit="${esc(n)}">수정</button>`:''}</div><div class="small dim" style="white-space:pre-wrap">${esc(r.text||'')}</div>${r.ops&&r.ops.length?`<pre class="pm small">${esc(K.unparse(r.ops).join('\n'))}</pre>`:''}</div>`}).join('')||'<div class="dim small">없음</div>';
    md.querySelectorAll('[data-rmedit]').forEach(b=>b.onclick=()=>editRm(b.dataset.rmedit))};
-  draw();$('#rmq',md).addEventListener('input',draw);$('#rmauto',md).onchange=draw;const nb=$('#rmnew',md);if(nb)nb.onclick=()=>editRm('');}
+  draw();$('#rmq',md).addEventListener('input',draw);$('#rmauto',md).onchange=draw;const nb=$('#rmnew',md);if(nb)nb.onclick=()=>editRm('');const sy=$('#rmsync',md);if(sy)sy.onclick=()=>syncRm(()=>{A().closeModal();openRm($('#rmq',md)?$('#rmq',md).value:'')});}
+ /* 제작기 dbedit(kind 'rm') → dbx.rm. 방에서 직접 고친 것(src 'room')은 건드리지 않는다 */
+ async function syncRm(done){A().toast('제작기에서 읽는 중…');let rows;try{rows=await window.OM_STORE.makerDocs('dbedit')}catch(e){return A().toast('읽지 못했다: '+e.message)}
+  const K=FX();const dbx=JSON.parse(JSON.stringify(A().ST.state.dbx||{}));dbx.rm=dbx.rm||{};let n=0;const base=(window.OM_DB||{}).readymade||{};
+  for(const r of rows||[]){const d=r.data||{};if(d.kind!=='rm'||!d.key)continue;const cur=dbx.rm[d.key]||{};if(cur.src==='room')continue;
+   if(d.deleted){if(base[d.key]&&!cur.deleted){dbx.rm[d.key]={deleted:1,src:'maker'};n++}continue}
+   const row=d.row||[];const text=String(row[1]||''),dsl=String(row[2]||''),manual=row[3]==='O';const ops=K.parse(dsl).ops;const b=base[d.key];
+   if(b&&b.text===text&&K.unparse(b.ops||[]).join('\n')===dsl&&!!b.manual===manual&&!cur.src)continue;
+   const v={text,ops,src:'maker'};if(manual)v.manual=1;if(JSON.stringify(Object.assign({},cur,{src:''}))===JSON.stringify(Object.assign({},v,{src:''})))continue;dbx.rm[d.key]=v;n++}
+  dbx.at=Date.now();await A().set(['dbx'],dbx);A().toast(`제작기에서 레디메이드 ${n}개 가져왔다`);if(done)done()}
  function editRm(name){const K=FX();const all=K.rmAll();const r=all[name]||{text:'',ops:[]};A().closeModal();
   const md=A().openModal(`<div class="mhead"><h2>레디메이드 ${name?'수정':'새로'}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    <div class="row"><label>이름 <input type="text" id="rmn" value="${esc(name)}" ${name?'readonly':''} style="width:260px"></label></div>
@@ -128,7 +137,7 @@ window.OM_FX_UI=(()=>{
    <div class="sec">구문</div><textarea id="rmd" rows="6" style="width:100%;font-family:var(--mono);font-size:13px">${esc(K.unparse(r.ops||[]).join('\n'))}</textarea><div id="rmp" class="small" style="white-space:pre-wrap;margin-top:4px"></div>
    <div class="row" style="margin-top:10px">${name&&((A().ST.state.dbx||{}).rm||{})[name]?'<button class="btn ghost" id="rmreset">기본으로</button>':''}<span class="sp"></span><button class="btn pri" id="rmsave">저장 (방)</button></div>`);
   const prev=()=>{const p=K.parse($('#rmd',md).value);$('#rmp',md).innerHTML=esc(K.unparse(p.ops).join('\n'))+(p.errs.length?`\n<span style="color:var(--red)">모르는 줄: ${esc(p.errs.join(' / '))}</span>`:'')};prev();$('#rmd',md).addEventListener('input',prev);
-  $('#rmsave',md).onclick=async()=>{const n=$('#rmn',md).value.trim();if(!n)return A().toast('이름이 필요하다');const p=K.parse($('#rmd',md).value);const ov=Object.assign({},(A().ST.state.dbx||{}).rm||{});ov[n]={text:$('#rmt',md).value,ops:p.ops};A().closeModal();await A().set(['dbx','rm'],ov);A().toast('저장했다');openRm(n)};
+  $('#rmsave',md).onclick=async()=>{const n=$('#rmn',md).value.trim();if(!n)return A().toast('이름이 필요하다');const p=K.parse($('#rmd',md).value);const ov=Object.assign({},(A().ST.state.dbx||{}).rm||{});ov[n]={text:$('#rmt',md).value,ops:p.ops,src:'room'};A().closeModal();await A().set(['dbx','rm'],ov);A().toast('저장했다');openRm(n)};
   const rs=$('#rmreset',md);if(rs)rs.onclick=async()=>{const ov=Object.assign({},(A().ST.state.dbx||{}).rm||{});delete ov[name];A().closeModal();await A().set(['dbx','rm'],ov);openRm(name)}}
  return {openEditor,openRm,HELP};
 })();
