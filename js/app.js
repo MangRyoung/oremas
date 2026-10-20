@@ -33,17 +33,22 @@ function renderLobby(){
  const app=$('#app');const mine=LS.get('om_rooms',[]);
  app.innerHTML=`<div class="lobby">
   <div class="brand">오레마스 <small>망켓몬 배틀 · 세션 툴</small></div>
+  ${recent(mine)}
   <div class="card"><h2>방 만들기 (GM)</h2>
    <div class="row"><input type="text" id="newName" placeholder="방 이름 (예: 무진)" style="flex:1"><button class="btn pri" id="mk">만들기</button></div>
    <p class="small muted">방을 만들면 플레이어용 링크와 GM용 링크가 나온다. GM 링크는 아무에게도 주지 말 것.</p></div>
   <div class="card"><h2>방 들어가기</h2>
    <div class="row"><input type="text" id="joinId" placeholder="방 링크 또는 방 id" style="flex:1"><button class="btn" id="join">입장</button></div></div>
-  ${mine.length?`<div class="card"><h2>내 방</h2><ul class="rooms">${mine.map(r=>`<li><b>${esc(r.name||r.id)}</b><span class="mono small muted">${esc(r.id)}</span><span class="sp"></span>${r.gm?'<span class="badge gm">GM</span>':''}<a class="btn sm" href="${esc(r.gm?gmLink(r.id,r.gm):roomLink(r.id))}">열기</a></li>`).join('')}</ul></div>`:''}
+  ${mine.length?'':'<p class="hint">들어간 방은 이 기기에 기억해 두고 맨 위에 「최근 방」으로 보여 준다.</p>'}
  </div>`;
+ app.querySelectorAll('[data-rmdel]').forEach(b=>b.onclick=e=>{e.preventDefault();const id=b.dataset.rmdel;if(!confirm('이 기기의 최근 방 목록에서 뺄까? (방은 그대로 있다)'))return;LS.set('om_rooms',LS.get('om_rooms',[]).filter(r=>r.id!==id));renderLobby()});
  $('#mk').onclick=async()=>{const name=$('#newName').value.trim()||'새 방';const sec=rnd(24);
   try{const id=await DBS().createRoom(name,sec);remember(id,name,sec);location.hash='r='+id+'&gm='+sec}catch(e){toast('방을 만들지 못했다: '+e.message)}};
  $('#join').onclick=()=>{const v=$('#joinId').value.trim();const m=v.match(/#?r=([a-z0-9]+)(?:&gm=([a-z0-9]+))?/)||[null,v];if(!m[1])return toast('방 id 를 넣어 줘');location.hash='r='+m[1]+(m[2]?'&gm='+m[2]:'')}}
-function remember(id,name,gm){const L=LS.get('om_rooms',[]).filter(r=>r.id!==id);L.unshift({id,name,gm:gm||(LS.get('om_rooms',[]).find(r=>r.id===id)||{}).gm||''});LS.set('om_rooms',L.slice(0,20))}
+function remember(id,name,gm){const L=LS.get('om_rooms',[]).filter(r=>r.id!==id);L.unshift({id,name,gm:gm||(LS.get('om_rooms',[]).find(r=>r.id===id)||{}).gm||'',at:Date.now()});LS.set('om_rooms',L.slice(0,20))}
+/* 로비 맨 위: 최근 들어간 방 (이 기기에만 기억) */
+function ago(t){if(!t)return '';const m=Math.floor((Date.now()-t)/60000);if(m<1)return '방금';if(m<60)return m+'분 전';const h=Math.floor(m/60);if(h<24)return h+'시간 전';const d=Math.floor(h/24);return d<7?d+'일 전':new Date(t).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'})}
+function recent(mine){if(!mine.length)return '';return `<div class="card"><h2>최근 방</h2><ul class="rooms">${mine.map(r=>`<li><b>${esc(r.name||r.id)}</b>${r.at?`<span class="when">${esc(ago(r.at))}</span>`:''}<span class="sp"></span>${r.gm?'<span class="badge gm">GM</span>':''}<a class="btn sm ${r===mine[0]?'pri':''}" href="${esc(r.gm?gmLink(r.id,r.gm):roomLink(r.id))}">들어가기</a><button class="rmdel" type="button" data-rmdel="${esc(r.id)}" title="목록에서 빼기" aria-label="목록에서 빼기">✕</button></li>`).join('')}</ul></div>`}
 
 /* ---------- 방 ---------- */
 async function openRoom(id,gm){

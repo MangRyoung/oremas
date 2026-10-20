@@ -1401,3 +1401,28 @@ label.ph-item input[type=checkbox]{width:16px;height:16px;flex:none}
 .ph-setwrap .pf-lb{font-size:12.5px}
 .ph-setwrap .pf-keys{grid-template-columns:1fr}
 @media (max-width:760px){.pf-sl{grid-template-columns:70px 1fr 42px auto}.pf-chips{margin-left:0}.pf-tabs button{padding:5px 12px}}
+/* ===== 2026-10-21 UI: HP 움직임 · 소지품 말줄임 · 폰 「⋯」 · 지시 입력 버튼 · 로비 ===== */
+.hpbar{position:relative}
+.hpbar i{position:relative;z-index:1;transition:width .55s cubic-bezier(.3,.7,.3,1),background-color .3s}
+.hpbar .ghost{position:absolute;left:0;top:0;bottom:0;background:#ff6b6b;opacity:.8;transition:width .5s ease .55s}
+@media (prefers-reduced-motion:reduce){.hpbar i,.hpbar .ghost{transition:none}}
+.pot{max-width:100%;min-width:0}
+.pot .potn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.mbtns .mmore{display:none}
+@media (max-width:760px){
+ .mbtns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
+ .pot .potk{display:none}
+ .mbtns .btn{min-height:32px;justify-content:center;padding:0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+ .mbtns .mmore{display:inline-flex;font-size:16px;letter-spacing:.05em}
+ .mbtns:not(.open) .mx{display:none}
+ .mbtns.open .mmore{background:#222;color:#fff}
+}
+.cmdfab{display:none}
+@media (max-width:760px){
+ .cmdfab{display:flex;position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:30;align-items:center;gap:6px;padding:11px 16px;border:2px solid #000;background:var(--yel2,var(--yel));color:#111;font:600 15px var(--lab,inherit);box-shadow:3px 3px 0 #000;cursor:pointer;opacity:0;transform:translateY(16px);pointer-events:none;transition:opacity .2s,transform .2s}
+ .cmdfab.on{opacity:1;transform:none;pointer-events:auto}
+}
+.lobby .brand small{display:block;margin:10px 0 0;font-size:15px}
+.rooms .when{font-size:11px;color:var(--mute)}
+.rooms .rmdel{background:none;border:0;color:var(--mute);cursor:pointer;font-size:15px;padding:2px 6px}
+.lobby .hint{color:var(--mute);font-size:13px}
