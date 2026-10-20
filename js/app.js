@@ -126,7 +126,7 @@ function renderRoom(){
 function copy(t,msg){navigator.clipboard.writeText(t).then(()=>toast(msg),()=>prompt('복사해서 쓰기',t))}
 
 /* ---------- 상태 쓰기 ---------- */
-async function set(path,value){try{
+async function setRaw(path,value){
   /* 서버의 jsonb_set 은 중간 키가 없으면 조용히 실패한다 — 옛 schema 를 쓰는 방이어도 되게 부모를 먼저 만든다 */
   if(path&&path.length>1&&ST.role==='gm'){let o=ST.state;for(let i=0;i<path.length-1;i++){if(typeof o[path[i]]!=='object'||o[path[i]]===null){await DBS().setState(ST.room,ST.secret,path.slice(0,i+1),{});o[path[i]]={}}o=o[path[i]]}}
   /* 좌석도 경로 그대로 쓴다 — 중간 상자는 서버 om_jset 이 만들어 준다. (2026-10-20: 예전엔 부모까지 올라가 통째로 썼는데, 서버에 이미 있던 칸을 덮을 수 있고 권한 검사의 NULL 구멍에 기대고 있어서 뺐다) */
@@ -135,7 +135,20 @@ async function set(path,value){try{
   /* 낙관적 반영: 실시간이 오기 전에 화면부터 */
   if(path&&path.length){let o=ST.state;for(let i=0;i<path.length-1;i++){if(typeof o[path[i]]!=='object'||o[path[i]]==null)o[path[i]]={};o=o[path[i]]}
    if(value===null||value===undefined)delete o[path[path.length-1]];else o[path[path.length-1]]=value}else ST.state=value||{};
-  ST.v=Math.max(ST.v,v||0);renderScene();return true}catch(e){toast('저장 실패: '+e.message);return false}}
+  ST.v=Math.max(ST.v,v||0)}
+async function set(path,value){try{await setRaw(path,value);renderScene();return true}catch(e){toast('저장 실패: '+e.message);return false}}
+/* 바뀐 칸만 쓴다 (점검 2-4 · 3-18) — 읽어서 고친 사본을 통째로 쓰면, 그 사이 남이 바꾼 칸이 지워진다.
+   before = 사본을 뜰 때의 모습, after = 고친 사본. depth 단계까지 내려가 바뀐 칸만 쓰고, 그 아래(배열 포함)는 통째로 */
+const sameJ=(a,b)=>JSON.stringify(a===undefined?null:a)===JSON.stringify(b===undefined?null:b);
+const isObj=v=>!!v&&typeof v==='object'&&!Array.isArray(v);
+function diffOps(path,before,after,depth,out){out=out||[];if(sameJ(before,after))return out;
+ if(!(depth>0)||!isObj(before)||!isObj(after)){out.push([path,after===undefined?null:after]);return out}
+ for(const k of new Set([...Object.keys(before),...Object.keys(after)]))diffOps(path.concat(k),before[k],after[k],depth-1,out);
+ return out}
+/* 여러 칸을 차례로 쓰고 화면은 한 번만. 하나가 막혀도 나머지는 쓴다 (실패 알림은 첫 번째 것만) */
+async function setMany(ops){let ok=true,msg='';for(const [p,v] of ops){try{await setRaw(p,v)}catch(e){ok=false;if(!msg)msg=e.message}}
+ if(ops.length)renderScene();if(msg)toast('저장 실패: '+msg);return ok}
+function setDiff(path,before,after,depth){return setMany(diffOps(path,before,after,depth==null?1:depth))}
 /* 좌석은 서버가 'battle' 로그를 막을 수 있다(옛 schema) — 그러면 'chat' + bat 표시로 다시 써서 채팅 창에는 배틀 카드로 보이게 한다 */
 async function sysLog(t,kind,extra){const k=kind||'sys';const data=Object.assign({t},extra||{});try{await DBS().addLog(ST.room,ST.secret,k,ST.name,data)}catch(e){if(ST.role==='seat'&&k!=='chat'){try{await DBS().addLog(ST.room,ST.secret,'chat',ST.name,Object.assign({},data,{bat:k}));return}catch(e2){}}console.warn('로그를 남기지 못했다',e);toast('로그를 남기지 못했다: '+e.message)}}
 /* 배틀 로그 카드: 「【포텐셜】 이름 『효과』」 꼴의 글은 머리띠 + 본문 카드로 */
@@ -235,8 +248,8 @@ function renderScene(){reconcileNodes();
 /* ---------- 배틀 씬 → battle_ui.js ---------- */
 function B(){return ST.state.battle||{}}
 function renderBattle(el){window.OM_BATTLE_UI.render(el)}
-async function unloadTrainer(tid){const b=B();if(!confirm('이 트레이너와 파티를 배틀에서 뺄까?'))return;const nb=JSON.parse(JSON.stringify(b));for(const s of ['left','right']){if(nb.sides&&nb.sides[s])nb.sides[s].trainers=(nb.sides[s].trainers||[]).filter(x=>x!==tid)}
- delete (nb.trainers||{})[tid];for(const k in nb.mons||{})if(nb.mons[k].tid===tid)delete nb.mons[k];if(nb.cmds)delete nb.cmds[tid];await set(['battle'],nb)}
+async function unloadTrainer(tid){const b=B();if(!confirm('이 트레이너와 파티를 배틀에서 뺄까?'))return;const b0=JSON.parse(JSON.stringify(b)),nb=JSON.parse(JSON.stringify(b0));for(const s of ['left','right']){if(nb.sides&&nb.sides[s])nb.sides[s].trainers=(nb.sides[s].trainers||[]).filter(x=>x!==tid)}
+ delete (nb.trainers||{})[tid];for(const k in nb.mons||{})if(nb.mons[k].tid===tid)delete nb.mons[k];if(nb.cmds)delete nb.cmds[tid];await setDiff(['battle'],b0,nb,3)}
 
 /* ---------- 파티 불러오기: 로스터(시트) → 배틀 ---------- */
 let MK=null;
@@ -255,16 +268,17 @@ async function loadFromRoster(tid,side){
  const r=roster();const t=r.trainers[tid];if(!t)return toast('로스터에 없는 트레이너다');
  const trainer=JSON.parse(JSON.stringify(t));const mons=(t.pids||[]).map(id=>r.mons[id]).filter(Boolean).map(x=>JSON.parse(JSON.stringify(x)));
  if(!mons.length&&!confirm('이 트레이너는 포켓몬이 없다. 그래도 불러올까?'))return;
- const nb=JSON.parse(JSON.stringify(B()));nb.sides=nb.sides||{left:{trainers:[]},right:{trainers:[]}};nb.sides.left=nb.sides.left||{trainers:[]};nb.sides.right=nb.sides.right||{trainers:[]};
+ const b0=JSON.parse(JSON.stringify(B())),nb=JSON.parse(JSON.stringify(b0));nb.sides=nb.sides||{left:{trainers:[]},right:{trainers:[]}};nb.sides.left=nb.sides.left||{trainers:[]};nb.sides.right=nb.sides.right||{trainers:[]};
  nb.trainers=nb.trainers||{};nb.mons=nb.mons||{};nb.turn=nb.turn||0;nb.phase=nb.phase||0;nb.mode=nb.mode||2;nb.field=nb.field||{};nb.cmds=nb.cmds||{};nb.order=nb.order||[];
  for(const s of ['left','right'])nb.sides[s].trainers=nb.sides[s].trainers.filter(x=>x!==trainer.id);
  nb.sides[side].trainers.push(trainer.id);trainer.side=side;nb.trainers[trainer.id]=trainer;
  for(const k in nb.mons)if(nb.mons[k].tid===trainer.id)delete nb.mons[k];
  mons.forEach((mon,i)=>{mon.side=side;mon.slot=i;mon.entry='';mon.started=false;mon.rank={attack:0,defense:0,specialattack:0,specialdefense:0,speed:0,accuracy:0,evasion:0,critical:0};mon.mod={};mon.states={};mon.teraActive=false;
   mon.hp={max:mon.stats[0],cur:mon.sheetHp==null?mon.stats[0]:Math.min(mon.sheetHp,mon.stats[0])};nb.mons[mon.id]=mon});
- let ok;if(ST.role==='gm')ok=await set(['battle'],nb);
- else{if(tid!==ST.seat)return toast('내 트레이너만 올릴 수 있다');const cur=B();const nm=Object.assign({},cur.mons||{});for(const k in nm)if(nm[k].tid===tid)delete nm[k];for(const mon of mons)nm[mon.id]=nb.mons[mon.id];
-  ok=await set(['battle','trainers',tid],trainer);if(ok)ok=await set(['battle','mons'],nm);for(const s of ['left','right']){const a=((cur.sides||{})[s]||{}).trainers||[];const want=nb.sides[s].trainers;if(ok&&JSON.stringify(a)!==JSON.stringify(want))ok=await set(['battle','sides',s,'trainers'],want)}}
+ /* 바뀐 칸만 쓴다 (점검 3-18) — 트레이너 → 진영 → 포켓몬 순. 좌석은 자기 트레이너·포켓몬·진영 칸만 (턴·필드 같은 기본값은 GM 만) */
+ if(ST.role!=='gm'&&tid!==ST.seat)return toast('내 트레이너만 올릴 수 있다');
+ const rk={trainers:0,sides:1,mons:2};let ops=diffOps(['battle'],b0,nb,3);if(ST.role!=='gm')ops=ops.filter(o=>o[0][1] in rk);
+ ops.sort((x,y)=>(rk[x[0][1]]??3)-(rk[y[0][1]]??3));const ok=await setMany(ops);
  if(ok){toast(`${trainer.name} 파티 ${mons.length}체를 불러왔다`);sysLog(`${trainer.name} (${side==='left'?'좌측':'우측'}) 파티 등록 · ${mons.length}체`,'battle');VIEW='battle';renderScene()}}
 
 /* ---------- 알까기 (개체값) ---------- */
@@ -280,9 +294,9 @@ function openHatch(tid){
  const chosen={};
  m.querySelectorAll('.card').forEach(c=>{c.querySelectorAll('[data-iv]').forEach(bt=>bt.onclick=()=>{c.querySelectorAll('[data-iv]').forEach(x=>x.classList.remove('on'));bt.classList.add('on');chosen[c.dataset.mid]=+bt.dataset.iv});
   $('[data-re]',c).onclick=()=>{const mon=list.find(x=>x.id===c.dataset.mid);mon._rolls=S().hatch(count);delete chosen[mon.id];const box=$('.ivs',c);box.innerHTML=mon._rolls.map((r,i)=>`<button class="btn" data-iv="${i}">${r.join('/')} <span class="muted">합 ${S().ivSum(r)}</span></button>`).join('');box.querySelectorAll('[data-iv]').forEach(bt=>bt.onclick=()=>{box.querySelectorAll('[data-iv]').forEach(x=>x.classList.remove('on'));bt.classList.add('on');chosen[mon.id]=+bt.dataset.iv})}});
- $('#ivApply',m).onclick=async()=>{const nb=JSON.parse(JSON.stringify(B()));let n=0;
+ $('#ivApply',m).onclick=async()=>{const b0=JSON.parse(JSON.stringify(B())),nb=JSON.parse(JSON.stringify(b0));let n=0;
   for(const mon of list){if(chosen[mon.id]==null)continue;const iv=mon._rolls[chosen[mon.id]];const t=nb.mons[mon.id];const full=t.hp.cur>=t.hp.max;t.iv=iv;t.stats=S().statsOf(t.base,iv,t.ev,t.lv);const oldMax=t.hp.max;t.hp.max=t.stats[0];t.hp.cur=full?t.hp.max:Math.max(1,Math.min(t.hp.max,t.hp.cur+t.hp.max-oldMax));n++}
-  closeModal();if(n&&await set(['battle','mons'],nb.mons))toast(n+'체의 개체값을 적용했다')}}
+  closeModal();if(n&&await setDiff(['battle','mons'],b0.mons,nb.mons,2))toast(n+'체의 개체값을 적용했다')}}
 
 /* ---------- 포켓몬 상세 ---------- */
 /* 상성 칩 묶음 (도감과 같은 꼴) */
@@ -456,6 +470,6 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
 /* 이름으로 기본 초상 찾기: 그림이 따로 없으면 같은 이름의 로스터 트레이너 → 포켓몬 → 관계도 노드의 그림을 쓴다 */
 function portraitOf(name,img){if(img)return img;if(!name)return '';const ro=ST.state.roster||{};const t=Object.values(ro.trainers||{}).find(x=>x.name===name);if(t&&t.image)return t.image;const m=Object.values(ro.mons||{}).find(x=>x.name===name&&x.image);if(m)return m.image;const n=Object.values((ST.state.graph||{}).nodes||{}).find(x=>x.name===name&&x.img);return n?n.img:''}
-window.OM_APP={ST,set,sysLog,openModal,closeModal,toast,typeChip,renderScene,openMon,openLoadParty,loadFromRoster,loadMaker,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,get view(){return VIEW},set view(v){VIEW=v}};
+window.OM_APP={ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,openMon,openLoadParty,loadFromRoster,loadMaker,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,get view(){return VIEW},set view(v){VIEW=v}};
 route();
 })();

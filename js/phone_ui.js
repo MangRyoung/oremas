@@ -22,7 +22,9 @@ window.OM_PHONE_UI=(()=>{
  function owner(){const T=trs();if(gm()){if(PH.tid&&PH.tid.startsWith('n:')){const n=(G().nodes||{})[PH.tid.slice(2)];if(n)return {id:PH.tid,name:n.name,image:por(n.name,n.img),npc:true,nid:n.id,kind:n.kind}}if(!PH.tid||!T[PH.tid])PH.tid=Object.keys(T)[0]||'';return T[PH.tid]||null}PH.tid=A().ST.seat;return T[PH.tid]||null}
  const canWrite=()=>gm()||(A().ST.seat&&A().ST.seat===PH.tid);
  const phoneData=tid=>(((A().ST.state.pub||{})[tid]||{}).phone)||{log:{},memo:'',contacts:[],notes:[]};
- async function savePhone(tid,patch){const cur=Object.assign({log:{},memo:'',contacts:[],notes:[]},phoneData(tid));Object.assign(cur,patch);await A().set(['pub',tid,'phone'],cur)}
+ /* 바뀐 칸만 쓴다 (점검 3-18) — 휴대폰 전체를 쓰면 다른 창에서 동시에 고친 메모·연락처·일정이 지워진다. 처음이면 통째로 */
+ async function savePhone(tid,patch){const old=((A().ST.state.pub||{})[tid]||{}).phone;const cur=Object.assign({log:{},memo:'',contacts:[],notes:[]},JSON.parse(JSON.stringify(old||{})));const before=JSON.parse(JSON.stringify(cur));Object.assign(cur,patch);
+  if(!old)return A().set(['pub',tid,'phone'],cur);return A().setDiff(['pub',tid,'phone'],before,cur,2)}
  const por=(name,img)=>A().portraitOf?A().portraitOf(name,img):(img||'');
  const av=(name,img,cls)=>{const u=por(name,img);return `<i class="ph-av ${cls||''}" style="${u?`background-image:url('${cssu(u)}')`:''}"></i>`};
  const today=()=>cal().today||new Date().toISOString().slice(0,10);

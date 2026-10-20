@@ -13,6 +13,9 @@ window.OM_SHEET_UI=(()=>{
  const rnd=n=>{const a=new Uint8Array(n||6);crypto.getRandomValues(a);return Array.from(a,b=>'abcdefghijklmnopqrstuvwxyz0123456789'[b%36]).join('')};
 
  function ctx(){const ST=A().ST;const r=ST.state.roster||{trainers:{},mons:{}};return {ST,r,gm:ST.role==='gm',seat:ST.seat}}
+ /* 바뀐 칸만 쓴다 (점검 3-18) — src = 사본을 뜬 원본, n = 고친 사본. 시트를 통째로 쓰면 그 사이 남이 고친 칸이 지워진다 */
+ const putMon=(id,src,n)=>A().setDiff(['roster','mons',id],src,n,1);
+ const putTr=(id,src,n)=>A().setDiff(['roster','trainers',id],src,n,1);
  function canEdit(c,tid){return c.gm||(!!tid&&tid===c.seat)}
  /* 볼 수 있는 시트: GM 은 전부, 좌석은 내 것 + 휴대폰 연락처의 파티원(같은 방 코드 · 공유 켠 사람) */
  function canSee(c,tid){if(c.gm)return true;if(!c.seat)return false;if(tid===c.seat)return true;const ph=id=>((((c.ST.state.pub||{})[id]||{}).phone)||{});const my=String(ph(c.seat).room||'').trim();if(!my)return false;const o=ph(tid);return String(o.room||'').trim()===my&&o.share!==false}
@@ -37,11 +40,11 @@ window.OM_SHEET_UI=(()=>{
   bindAuto(el,c);bindEdits(el,c)}
  function bindAuto(el,c){if(!el||!window.OM_FX_UI)return;const t=c.r.trainers[UI.tid];if(!t||!canEdit(c,t.id))return;
   el.querySelectorAll('[data-auto]').forEach(bt=>bt.onclick=()=>{const mm=c.r.mons[UI.mid];if(!mm)return;const name=bt.dataset.name;const pot=[...(mm.pots||[]),mm.excl,...(mm.exclX||[])].find(p=>p&&p.name===name);
-   window.OM_FX_UI.openEditor({mon:mm,kind:bt.dataset.auto,name,text:pot?pot.eff:(bt.dataset.auto==='trait'?mm.abilityEff:mm.itemEff),save:async auto=>{const nm=JSON.parse(JSON.stringify(c.r.mons[UI.mid]));nm.auto=nm.auto||{};const key=String(name).replace(/『|』/g,'');if(auto)nm.auto[key]=auto;else delete nm.auto[key];await A().set(['roster','mons',UI.mid],nm);
+   window.OM_FX_UI.openEditor({mon:mm,kind:bt.dataset.auto,name,text:pot?pot.eff:(bt.dataset.auto==='trait'?mm.abilityEff:mm.itemEff),save:async auto=>{const src=c.r.mons[UI.mid];const nm=JSON.parse(JSON.stringify(src));nm.auto=nm.auto||{};const key=String(name).replace(/『|』/g,'');if(auto)nm.auto[key]=auto;else delete nm.auto[key];await putMon(UI.mid,src,nm);
     const bm=((A().ST.state.battle||{}).mons||{})[UI.mid];if(bm){await A().set(['battle','mons',UI.mid,'auto'],nm.auto)}A().toast(auto?'구문을 저장했다':'구문을 지웠다');A().renderScene()}})});
   /* 트레이너 고유 포텐셜의 구문 */
   el.querySelectorAll('[data-uauto]').forEach(bt=>bt.onclick=()=>{const i=+bt.dataset.uauto;const tt=c.r.trainers[UI.tid];const u=(tt.unique||[])[i];if(!u)return;const fake={name:tt.name,auto:u.auto?{[u.name]:u.auto}:{},tid:''};
-   window.OM_FX_UI.openEditor({mon:fake,kind:'pot',name:u.name,text:u.eff||'',save:async auto=>{const nt=JSON.parse(JSON.stringify(c.r.trainers[UI.tid]));nt.unique[i]=Object.assign({},nt.unique[i]);if(auto)nt.unique[i].auto=auto;else delete nt.unique[i].auto;await A().set(['roster','trainers',UI.tid],nt);
+   window.OM_FX_UI.openEditor({mon:fake,kind:'pot',name:u.name,text:u.eff||'',save:async auto=>{const src=c.r.trainers[UI.tid];const nt=JSON.parse(JSON.stringify(src));nt.unique[i]=Object.assign({},nt.unique[i]);if(auto)nt.unique[i].auto=auto;else delete nt.unique[i].auto;await putTr(UI.tid,src,nt);
     const btr=((A().ST.state.battle||{}).trainers||{})[UI.tid];if(btr){await A().set(['battle','trainers',UI.tid,'unique'],nt.unique)}A().toast(auto?'구문을 저장했다':'구문을 지웠다');A().renderScene()}})});
  }
 
@@ -108,8 +111,8 @@ window.OM_SHEET_UI=(()=>{
  function growTab(c,t,mons,E){
   return `<div class="spanel"><div class="sh">레벨</div>
    <div class="small dim" style="margin-bottom:6px">기본 레벨은 육성 ${esc((t.ranks||{})['육성']||'-')} → ${S().baseLevel((t.ranks||{})['육성'])}. 분배레벨 ${esc(String((t.base||{})['분배레벨']??'-'))} 안에서 포켓몬마다 보정을 나눈다. 실수치 = floor(종족치×2×Lv/100) + 5 (HP 는 + Lv + 10).</div>
-   <table class="t"><tr><th>포켓몬</th><th>Lv</th><th>보정</th><th>실수치 (HP/공/방/특공/특방/스피드)</th></tr>
-   ${mons.map(m=>`<tr><td class="nw"><b>${esc(m.name)}</b></td><td class="mono">${m.lv}</td><td>${E?`<input type="number" class="n" data-mg="dist" data-mid="${m.id}" value="${m.dist||0}">`:(m.dist||0)}</td><td class="mono small">${m.stats.join(' / ')}</td></tr>`).join('')}</table>
+   <table class="t"><tr><th>포켓몬</th><th>Lv</th><th>보정</th><th>개체값 <span class="dim small">(알까기 · 육성 ${esc((t.ranks||{})['육성']||'-')} → ${S().hatchCount(t)}회)</span></th><th>실수치 (HP/공/방/특공/특방/스피드)</th></tr>
+   ${mons.map(m=>`<tr><td class="nw"><b>${esc(m.name)}</b></td><td class="mono">${m.lv}</td><td>${E?`<input type="number" class="n" data-mg="dist" data-mid="${m.id}" value="${m.dist||0}">`:(m.dist||0)}</td><td class="nw"><span class="mono small">${(m.iv||[]).length?esc(m.iv.join('/'))+' <span class="dim">합 '+S().ivSum(m.iv)+'</span>':'<span class="dim">없음</span>'}</span>${canEdit(c,t.id)?` <button class="btn xs" data-act="hatch" data-mid="${m.id}">🥚 알까기</button>`:''}</td><td class="mono small">${m.stats.join(' / ')}</td></tr>`).join('')}</table>
    <div class="small dim" style="margin-top:6px">분배레벨 합: ${mons.reduce((a,m)=>a+(+m.dist||0),0)} / ${esc(String((t.base||{})['분배레벨']??'-'))}</div></div>`}
 
  /* 자동화 구문 버튼: 레디메이드 자동 / 이 포켓몬의 구문 / 없음 */
@@ -128,24 +131,24 @@ window.OM_SHEET_UI=(()=>{
     ${E?`<ol class="porder">${mons.map((m,i)=>`<li>${esc(m.name)} <button class="btn xs ghost" data-act="mvup" data-i="${i}">↑</button><button class="btn xs ghost" data-act="mvdn" data-i="${i}">↓</button> <label class="small"><input type="checkbox" data-me-partner="${m.id}" ${m.partner?'checked':''}> 파트너</label></li>`).join('')}</ol>`:`<ol class="porder">${mons.map(m=>`<li>${esc(m.name)}${m.partner?' <span class="tag">파트너</span>':''}</li>`).join('')}</ol>`}</div></div>`}
 
  /* ---------- 편집 바인딩 (변경 즉시 저장) ---------- */
- let saveT=null;const pending={tr:null,mon:null};
+ let saveT=null;const pending={tr:null,mon:null,tr0:null,mon0:null,g0:null};
  function bindEdits(el,c){
   const t=c.r.trainers[UI.tid];if(!t||!UI.edit||!canEdit(c,t.id))return;
   const m=c.r.mons[UI.mid];
   const queue=()=>{clearTimeout(saveT);saveT=setTimeout(flush,500)};
-  el.querySelectorAll('[data-te]').forEach(inp=>inp.addEventListener('input',()=>{const nt=pending.tr||(pending.tr=JSON.parse(JSON.stringify(t)));applyTr(nt,inp.dataset.te,inp.value);queue()}));
-  const op=el.querySelector('#opanel');if(op)window.OM_ORDERS.bind(op,()=>pending.tr||c.r.trainers[UI.tid],async nt=>{pending.tr=null;await A().set(['roster','trainers',nt.id],nt);A().renderScene()});
-  if(m){el.querySelectorAll('[data-me]').forEach(inp=>inp.addEventListener('input',()=>{const nm=pending.mon||(pending.mon=JSON.parse(JSON.stringify(m)));applyMon(nm,inp.dataset.me,inp.value,t);queue()}));
-   el.querySelectorAll('[data-db]').forEach(bt=>bt.onclick=()=>{const k=bt.dataset.meTarget;const inp=el.querySelector(`[data-me="${k}"]`);window.OM_DB_UI.open({kind:bt.dataset.db,sel:inp.value,q:'',pick:async name=>{const nm=JSON.parse(JSON.stringify(c.r.mons[m.id]||m));applyMon(nm,k,name,t);await A().set(['roster','mons',m.id],nm);A().renderScene()}})});
-   el.querySelectorAll('[data-me-partner]').forEach(cb=>cb.addEventListener('change',async()=>{const mid=cb.dataset.mePartner;const nm=JSON.parse(JSON.stringify(c.r.mons[mid]));nm.partner=cb.checked;await A().set(['roster','mons',mid],nm)}));
-   const addMove=async n=>{if(!n)return;if(!(DB().moves||{})[n]&&!confirm(`「${n}」은 기술 DB에 없다. 그래도 넣을까?`))return;const nm=JSON.parse(JSON.stringify(c.r.mons[UI.mid]));nm.moves=nm.moves.filter(x=>x.name!=='발버둥'||nm.moves.length>1);nm.moves.push(I().move(n,false));await A().set(['roster','mons',UI.mid],nm)};
+  el.querySelectorAll('[data-te]').forEach(inp=>inp.addEventListener('input',()=>{if(!pending.tr){pending.tr0=JSON.parse(JSON.stringify(t));pending.tr=JSON.parse(JSON.stringify(t))}const nt=pending.tr;applyTr(nt,inp.dataset.te,inp.value);queue()}));
+  const op=el.querySelector('#opanel');if(op)window.OM_ORDERS.bind(op,()=>pending.tr||c.r.trainers[UI.tid],async nt=>{const src=pending.tr0||c.r.trainers[UI.tid];pending.tr=null;pending.tr0=null;await putTr(nt.id,src,nt);A().renderScene()});
+  if(m){el.querySelectorAll('[data-me]').forEach(inp=>inp.addEventListener('input',()=>{if(!pending.mon){pending.mon0=JSON.parse(JSON.stringify(m));pending.mon=JSON.parse(JSON.stringify(m))}const nm=pending.mon;applyMon(nm,inp.dataset.me,inp.value,t);queue()}));
+   el.querySelectorAll('[data-db]').forEach(bt=>bt.onclick=()=>{const k=bt.dataset.meTarget;const inp=el.querySelector(`[data-me="${k}"]`);window.OM_DB_UI.open({kind:bt.dataset.db,sel:inp.value,q:'',pick:async name=>{const src=c.r.mons[m.id]||m;const nm=JSON.parse(JSON.stringify(src));applyMon(nm,k,name,t);await putMon(m.id,src,nm);A().renderScene()}})});
+   el.querySelectorAll('[data-me-partner]').forEach(cb=>cb.addEventListener('change',async()=>{const mid=cb.dataset.mePartner;await A().set(['roster','mons',mid,'partner'],cb.checked)}));
+   const addMove=async n=>{if(!n)return;if(!(DB().moves||{})[n]&&!confirm(`「${n}」은 기술 DB에 없다. 그래도 넣을까?`))return;const src=c.r.mons[UI.mid];const nm=JSON.parse(JSON.stringify(src));nm.moves=nm.moves.filter(x=>x.name!=='발버둥'||nm.moves.length>1);nm.moves.push(I().move(n,false));await putMon(UI.mid,src,nm)};
    const am=$('#addmove',el);if(am)am.addEventListener('keydown',async e=>{if(e.key!=='Enter'||e.isComposing)return;e.preventDefault();addMove(am.value.trim())});
    const amd=$('#addmovedb',el);if(amd)amd.onclick=()=>window.OM_DB_UI.open({kind:'move',sel:am.value.trim(),pick:n=>addMove(n)});
    el.querySelectorAll('[data-mvdb]').forEach(b=>b.onclick=()=>window.OM_DB_UI.open({kind:'move',sel:b.dataset.mvdb}))}
-  el.querySelectorAll('[data-mg]').forEach(inp=>inp.addEventListener('input',()=>{const mid=inp.dataset.mid;const src=c.r.mons[mid];if(!src)return;pending.g=pending.g||{};const nm=pending.g[mid]||(pending.g[mid]=JSON.parse(JSON.stringify(src)));const [k,i]=inp.dataset.mg.split('_');
+  el.querySelectorAll('[data-mg]').forEach(inp=>inp.addEventListener('input',()=>{const mid=inp.dataset.mid;const src=c.r.mons[mid];if(!src)return;pending.g=pending.g||{};pending.g0=pending.g0||{};if(!pending.g[mid]){pending.g0[mid]=JSON.parse(JSON.stringify(src));pending.g[mid]=JSON.parse(JSON.stringify(src))}const nm=pending.g[mid];const [k,i]=inp.dataset.mg.split('_');
    if(k==='dist')nm.dist=+inp.value||0;recalc(nm,t);queue()}));
-  async function flush(){const jobs=[];if(pending.tr){jobs.push(A().set(['roster','trainers',pending.tr.id],pending.tr));pending.tr=null}if(pending.mon){jobs.push(A().set(['roster','mons',pending.mon.id],pending.mon));pending.mon=null}
-   if(pending.g){for(const mid in pending.g)jobs.push(A().set(['roster','mons',mid],pending.g[mid]));pending.g=null}await Promise.all(jobs)}}
+  async function flush(){const jobs=[];if(pending.tr){jobs.push(putTr(pending.tr.id,pending.tr0,pending.tr));pending.tr=null;pending.tr0=null}if(pending.mon){jobs.push(putMon(pending.mon.id,pending.mon0,pending.mon));pending.mon=null;pending.mon0=null}
+   if(pending.g){for(const mid in pending.g)jobs.push(putMon(mid,(pending.g0||{})[mid],pending.g[mid]));pending.g=null;pending.g0=null}await Promise.all(jobs)}}
  function applyTr(t,k,v){
   if(k==='name')t.name=v;else if(k==='image'){if(v)t.image=v}else if(k==='memo')t.memo=v;else if(k.startsWith('rank_')){t.ranks=t.ranks||{};t.ranks[k.slice(5)]=v}
   else if(k.startsWith('detail_')){t.detail=t.detail||{};t.detail[k.slice(7)]=v}else if(k==='orderStyle')t.orderStyle=+v;else if(k==='commandStyle'){t.commandStyle=+v;t.orderStyle=window.OM_ORDERS.tordOf(+v)}
@@ -167,17 +170,18 @@ window.OM_SHEET_UI=(()=>{
    case 'import':return openImport();
    case 'newtr':{const id='t'+rnd(7);const nt={id,name:'새 트레이너',image:'',ranks:{육성:'C',지시:'C',통솔:'C',능력:'C'},base:{},detail:{},unique:[],pids:[],solo:false,ord:Object.keys(c.r.trainers).length,src:'new'};await A().set(['roster','trainers',id],nt);UI.tid=id;UI.edit=true;A().renderScene();return}
    case 'toggleedit':UI.edit=!UI.edit;A().renderScene();return;
+   case 'hatch':return openHatch(d.mid);
    case 'stands':return window.OM_RP_UI.openStands(t.id);
    case 'refresh':return refreshFromMaker(d.tid);
    case 'deltr':if(!c.gm&&t.id!==c.seat)return A().toast('내 시트만 지울 수 있다');if(!confirm(`${t.name} 와 파티를 로스터에서 지울까?`))return;
-    if(c.gm){const r=JSON.parse(JSON.stringify(c.r));for(const id of (t.pids||[]))delete r.mons[id];delete r.trainers[t.id];await A().set(['roster'],r)}
-    else{/* 좌석: 허용 경로로 하나씩 — 내 포켓몬, 내 트레이너 */for(const id of (t.pids||[]))if(c.r.mons[id])await A().set(['roster','mons',id],null);await A().set(['roster','trainers',t.id],null)}
+    /* GM 도 좌석처럼 하나씩 지운다 — 로스터를 통째로 쓰면 그 사이 남이 고친 시트가 지워진다 (점검 2-4) */
+    {for(const id of (t.pids||[]))if(c.r.mons[id])await A().set(['roster','mons',id],null);await A().set(['roster','trainers',t.id],null)}
     UI.tid='';A().renderScene();return
    case 'addmon':{if(!t||!canEdit(c,t.id))return;const id='m'+rnd(7);const nm=I().pokemon({id,data:{data:{id,name:'새 포켓몬',t1:'노말',base:['50','50','50','50','50','50'],moves:[]}}},t);nm.src='new';await A().set(['roster','mons',id],nm);await A().set(['roster','trainers',t.id,'pids'],[...(t.pids||[]),id]);UI.mid=id;A().renderScene();return}
    case 'delmon':{const m=c.r.mons[d.mid];if(!m||!confirm(`${m.name} 을 지울까?`))return;await A().set(['roster','trainers',t.id,'pids'],(t.pids||[]).filter(x=>x!==d.mid));await A().set(['roster','mons',d.mid],null);UI.mid='';A().renderScene();return}
-   case 'delmove':{const m=c.r.mons[UI.mid];const nm=JSON.parse(JSON.stringify(m));nm.moves.splice(+d.i,1);if(!nm.moves.length)nm.moves=[I().move('발버둥',false)];await A().set(['roster','mons',UI.mid],nm);return}
-   case 'addpot':{const m=c.r.mons[UI.mid];const nm=JSON.parse(JSON.stringify(m));nm.pots.push({name:'',kind:'',eff:''});await A().set(['roster','mons',UI.mid],nm);return}
-   case 'adduniq':{const nt=JSON.parse(JSON.stringify(t));nt.unique=nt.unique||[];nt.unique.push({name:'',eff:''});await A().set(['roster','trainers',t.id],nt);return}
+   case 'delmove':{const m=c.r.mons[UI.mid];const nm=JSON.parse(JSON.stringify(m));nm.moves.splice(+d.i,1);if(!nm.moves.length)nm.moves=[I().move('발버둥',false)];await putMon(UI.mid,m,nm);return}
+   case 'addpot':{const m=c.r.mons[UI.mid];const nm=JSON.parse(JSON.stringify(m));nm.pots.push({name:'',kind:'',eff:''});await putMon(UI.mid,m,nm);return}
+   case 'adduniq':{const nt=JSON.parse(JSON.stringify(t));nt.unique=nt.unique||[];nt.unique.push({name:'',eff:''});await putTr(t.id,t,nt);return}
    case 'mvup':case 'mvdn':{const p=[...(t.pids||[])];const i=+d.i,j=d.act==='mvup'?i-1:i+1;if(j<0||j>=p.length)return;[p[i],p[j]]=[p[j],p[i]];await A().set(['roster','trainers',t.id,'pids'],p);return}
    case 'tobattle':return A().loadFromRoster(d.tid,d.side)}}
 
@@ -204,17 +208,14 @@ window.OM_SHEET_UI=(()=>{
  async function importTrainer(tdoc,pokeDocs,keep,asId){const c=ctx();const {trainer,mons}=I().party(tdoc,pokeDocs);
   if(!asId){const dup=Object.values(c.r.trainers||{}).find(x=>x.mkId===tdoc.id&&x.id!==tdoc.id);if(dup)asId=dup.id}
   if(asId){trainer.mkId=tdoc.id;trainer.id=asId;for(const m of mons)m.tid=asId}
-  await hostImages(c.ST.room,trainer,mons);const r=JSON.parse(JSON.stringify(c.r));const old=r.trainers[trainer.id];
+  const r0=JSON.parse(JSON.stringify(c.r));await hostImages(c.ST.room,trainer,mons);const r=JSON.parse(JSON.stringify(r0));const old=r.trainers[trainer.id];
   trainer.ord=old?old.ord:Object.keys(r.trainers).length;trainer.src='maker';if(old){for(const k of ['orderStyle','commandStyle','orderCount','orderBase','orderPreset','orderType'])if(old[k]!=null)trainer[k]=old[k];trainer.memo=old.memo;const rs=window.OM_ORDERS.resync(trainer);if(rs)Object.assign(trainer,rs)}
   if(!trainer.orderCount)Object.assign(trainer,window.OM_ORDERS.auto(trainer,'assoc',1));if(old){if(old.image&&!trainer.image)trainer.image=old.image;if(!(trainer.stands||[]).length&&(old.stands||[]).length){trainer.stands=old.stands;trainer.standActive=old.standActive}else{for(const s of trainer.stands||[]){const o=(old.stands||[]).find(x=>x.src===s.src);if(!s.kind&&o&&o.kind)s.kind=o.kind}}}
   for(const id of ((old&&old.pids)||[]))if(!trainer.pids.includes(id))delete r.mons[id];
   for(const m of mons){const om=r.mons[m.id];m.src='maker';if(om&&keep){m.iv=om.iv;m.item=om.item||m.item;m.itemEff=om.itemEff||m.itemEff;m.sheetHp=om.sheetHp;m.dist=om.dist;m.ev=om.ev;if(om.image&&!m.image)m.image=om.image;if(!(m.stands||[]).length&&(om.stands||[]).length){m.stands=om.stands;m.standActive=om.standActive||0}recalc(m,trainer)}r.mons[m.id]=m}
   r.trainers[trainer.id]=trainer;
-  if(c.gm)await A().set(['roster'],r);
-  else{/* 좌석: 허용된 경로로 하나씩 — 내 트레이너, 내 포켓몬(없어진 것은 지운다) */
-   for(const id of ((old&&old.pids)||[]))if(!trainer.pids.includes(id)&&c.r.mons[id])await A().set(['roster','mons',id],null);
-   for(const m of mons)await A().set(['roster','mons',m.id],r.mons[m.id]);
-   await A().set(['roster','trainers',trainer.id],trainer)}
+  /* 바뀐 칸만 쓴다 (점검 2-4) — GM 도 로스터를 통째로 쓰지 않는다. 그림을 올리는 사이 남이 고친 시트가 지워지지 않게 */
+  await A().setMany(A().diffOps(['roster'],r0,r,3));
   await ensureNode(trainer);
   A().toast(`${trainer.name} 파티 ${mons.length}체를 ${old?'갱신했다':'가져왔다'}`)}
  /* 관계도 노드: 같은 이름이 없으면 PC/NPC 구분대로 만든다 (휴대폰 협력자 · 연락처가 쓴다). 좌석은 graph 를 못 쓰니 GM 일 때만 */
@@ -226,11 +227,11 @@ window.OM_SHEET_UI=(()=>{
  /* 알까기 */
  function openHatch(mid){const c=ctx();const m=c.r.mons[mid];const t=c.r.trainers[m.tid]||c.r.trainers[UI.tid];if(!m||!canEdit(c,t.id))return;const count=S().hatchCount(t);let rolls=S().hatch(count);let chosen=-1;
   const md=A().openModal(`<div class="mhead"><h2>알까기 — ${esc(m.name)}</h2><span class="small dim">육성 ${esc((t.ranks||{})['육성']||'-')} → ${count}회</span><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-   <div class="small dim">지금: ${m.iv.join('/')} (합 ${S().ivSum(m.iv)})</div><div class="ivs" id="ivbox" style="margin-top:6px"></div>
+   <div class="small dim">지금: ${(m.iv||[]).length?m.iv.join('/')+' (합 '+S().ivSum(m.iv)+')':'없음'}</div><div class="ivs" id="ivbox" style="margin-top:6px"></div>
    <div class="row" style="margin-top:12px"><button class="btn ghost" id="ivre">다시 굴림</button><span class="sp"></span><button class="btn pri" id="ivok">적용</button></div>`);
   const draw=()=>{$('#ivbox',md).innerHTML=rolls.map((r,i)=>`<button class="btn ${chosen===i?'on':''}" data-iv="${i}">${r.join('/')} <span class="dim">합 ${S().ivSum(r)}</span></button>`).join('');md.querySelectorAll('[data-iv]').forEach(b=>b.onclick=()=>{chosen=+b.dataset.iv;draw()})};draw();
   $('#ivre',md).onclick=()=>{rolls=S().hatch(count);chosen=-1;draw()};
-  $('#ivok',md).onclick=async()=>{if(chosen<0)return A().toast('하나 골라 줘');const nm=JSON.parse(JSON.stringify(m));nm.iv=rolls[chosen];recalc(nm,t);A().closeModal();if(await A().set(['roster','mons',mid],nm))A().sysLog(`${m.name} 알까기 → ${nm.iv.join('/')} (합 ${S().ivSum(nm.iv)})`)}}
+  $('#ivok',md).onclick=async()=>{if(chosen<0)return A().toast('하나 골라 줘');const nm=JSON.parse(JSON.stringify(m));nm.iv=rolls[chosen];recalc(nm,t);A().closeModal();if(await putMon(mid,m,nm))A().sysLog(`${m.name} 알까기 → ${nm.iv.join('/')} (합 ${S().ivSum(nm.iv)})`)}}
 
  return {render,UI,importTrainer};
 })();

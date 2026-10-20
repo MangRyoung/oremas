@@ -52,9 +52,10 @@ window.OM_SKILL_UI=(()=>{
  const sdb=()=>((DB().states||{}).st)||{};
  const stKo=k=>(sdb()[k]||{}).ko||k;
  const stList=()=>Object.keys(sdb()).filter(k=>k!=='Dead').map(k=>[k,sdb()[k].ko||k,!!sdb()[k].abn]);
- async function setT(tid,patch){const cur=tsk(tid);const n=Object.assign(cur,patch);await A().set(['skill','trainers',tid],n);return n}
+ /* 바뀐 칸만 쓴다 (점검 3-18) — 통째로 쓰면 그 사이 남이 바꾼 칸이 지워진다. 처음이면 통째로 */
+ async function setT(tid,patch){const had=!!(st().trainers||{})[tid];const cur=tsk(tid);const before=JSON.parse(JSON.stringify(cur));const n=Object.assign(cur,patch);if(had)await A().setDiff(['skill','trainers',tid],before,n,1);else await A().set(['skill','trainers',tid],n);return n}
  /* 로스터 포켓몬을 고치고 배틀 쪽도 맞춘다 */
- async function putMon(mid,fn){const m=mons()[mid];if(!m)return null;const nm=JSON.parse(JSON.stringify(m));fn(nm);await A().set(['roster','mons',mid],nm);const bm=bmons()[mid];if(bm){const nb=JSON.parse(JSON.stringify(bm));fn(nb);await A().set(['battle','mons',mid],nb)}return nm}
+ async function putMon(mid,fn){const m=JSON.parse(JSON.stringify(mons()[mid]||null));if(!m)return null;const nm=JSON.parse(JSON.stringify(m));fn(nm);await A().setDiff(['roster','mons',mid],m,nm,1);const bm=JSON.parse(JSON.stringify(bmons()[mid]||null));if(bm){const nb=JSON.parse(JSON.stringify(bm));fn(nb);await A().setDiff(['battle','mons',mid],bm,nb,1)}return nm}
  async function hpLoss(tid,mid,fracs,why){const m=mons()[mid];if(!m)return '';const loss=frac(m.hp.max,fracs);if(!loss)return '';await putMon(mid,x=>{x.hp.cur=Math.max(0,x.hp.cur-loss)});return `${m.name} HP −${loss} (${why})`}
  async function injure(tid,pickMid){const t=trs()[tid];const k=tsk(tid);const inj=Math.min(2,(+k.inj||0)+1);await setT(tid,{inj});const line=await hpLoss(tid,pickMid,inj>=2?cfg().hp2:cfg().hp1,inj>=2?'중상':'부상');return {inj,line:`${t.name} ${inj>=2?'「중상」':'「부상」'}${line?' · '+line:''}`}}
  function pickMon(tid,title,sub){return new Promise(res=>{const ms=Object.values(mons()).filter(m=>m.tid===tid&&m.hp.cur>0);if(!ms.length)return res(null);
@@ -79,7 +80,7 @@ window.OM_SKILL_UI=(()=>{
     if(sub.st){x.states=x.states||{};const sd=sdb()[sub.st]||{};x.states[sub.st]=+sub.cnt>0?+sub.cnt:(sd.min<1000?sd.min:1000);L.push(`${nm} 「${stKo(sub.st)}」`)}
     const rk=Object.entries(sub.rk).filter(([k,v])=>+v);if(rk.length){x.rank=x.rank||{};for(const [k,v] of rk){x.rank[k]=Math.max(-6,Math.min(6,(+x.rank[k]||0)+ +v))}L.push(`${nm} `+rk.map(([k,v])=>(RK.find(r=>r[0]===k)||[k,k])[1]+(v>0?'+':'')+v).join(' '))}})}}
   const bt=((A().ST.state.battle||{}).trainers||{})[tid];
-  if(+sub.oo>0||+sub.oc>0){if(bt){const nt=JSON.parse(JSON.stringify(bt));nt.orderCount=nt.orderCount||{};const cut=(pre,n)=>{let left=n;for(const k of Object.keys(nt.orderCount).filter(k=>k.startsWith(pre)).sort()){while(left>0&&(+nt.orderCount[k]||0)>0){nt.orderCount[k]--;left--}}return n-left};const a=cut('order_',+sub.oo||0),b=cut('command_',+sub.oc||0);await A().set(['battle','trainers',tid],nt);if(a)L.push(`4식 −${a}`);if(b)L.push(`6령 −${b}`)}else L.push(`4식/6령 차감은 배틀에 트레이너가 없어 손으로 (${sub.oo||0}/${sub.oc||0})`)}
+  if(+sub.oo>0||+sub.oc>0){if(bt){const nt=JSON.parse(JSON.stringify(bt));nt.orderCount=nt.orderCount||{};const cut=(pre,n)=>{let left=n;for(const k of Object.keys(nt.orderCount).filter(k=>k.startsWith(pre)).sort()){while(left>0&&(+nt.orderCount[k]||0)>0){nt.orderCount[k]--;left--}}return n-left};const a=cut('order_',+sub.oo||0),b=cut('command_',+sub.oc||0);await A().setDiff(['battle','trainers',tid],bt,nt,2);if(a)L.push(`4식 −${a}`);if(b)L.push(`6령 −${b}`)}else L.push(`4식/6령 차감은 배틀에 트레이너가 없어 손으로 (${sub.oo||0}/${sub.oc||0})`)}
   if(+sub.pot.n>0){let n=+sub.pot.n;let done=0;const uniq=(bt&&bt.unique)||[];
    for(const m of Object.values(bmons()).filter(m=>m.tid===tid)){if(n<=0)break;const all=[...(m.pots||[]),m.excl,...(m.exclX||[]),...uniq].filter(p=>p&&p.name&&/【(\d+)\/시】/.test(p.eff||''));const u=Object.assign({},m.potUses||{});let ch=false;
     for(const p of all){if(n<=0)break;if(sub.pot.name&&p.name!==sub.pot.name)continue;const max=+(String(p.eff||'').match(/【(\d+)\/시】/)||[0,0])[1];const cur=u[p.name]==null?max:+u[p.name];if(cur>0){u[p.name]=cur-1;n--;done++;ch=true}}
@@ -102,7 +103,7 @@ window.OM_SKILL_UI=(()=>{
    if(bt[tid]&&R.ord_n&&R.ord_n!=='0'){const nt=JSON.parse(JSON.stringify(bt[tid]));nt.orderCount=nt.orderCount||{};const OO=window.OM_ORDERS;
     if(R.ord_n==='all'){try{nt.orderCount=OO.fill(nt,OO.styles(nt))}catch(e){for(const kk in nt.orderCount)nt.orderCount[kk]=nt.orderBase||1}lines.push('4식 6령 전부 회복')}
     else{let n=+R.ord_n;for(const kk of Object.keys(nt.orderCount).sort()){while(n>0&&(+nt.orderCount[kk]||0)<(nt.orderBase||1)){nt.orderCount[kk]++;n--}}lines.push(`4식 6령 +${+R.ord_n-n}`)}
-    await A().set(['battle','trainers',tid],nt)}
+    await A().setDiff(['battle','trainers',tid],bt[tid],nt,2)}
    const patch={};if(+R.tired)patch.tired=[];if(+R.care)patch.care=0;if(+R.inou)patch.inou=0;if(+R.inj_n>0)patch.inj=Math.max(0,(+k.inj||0)-(+R.inj_n));
    if(Object.keys(patch).length)await setT(tid,patch);
    const tl=[];if(+R.tired&&k.tired.length)tl.push('지침 해제');if(+R.care)tl.push('돌봄');if(+R.inou)tl.push('이능');if(+R.inj_n>0&&k.inj)tl.push(`${k.inj>=2?'중상':'부상'} → ${patch.inj>=2?'중상':patch.inj===1?'부상':'건강'}`);if(tl.length)lines.push(tl.join(' · '));
