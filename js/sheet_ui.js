@@ -113,11 +113,13 @@ window.OM_SHEET_UI=(()=>{
      <div class="sh" style="margin-top:12px">메모</div>${E?`<textarea data-me="memo" rows="6" style="width:100%">${esc(m.memo||'')}</textarea>`:`<div class="pre small">${esc(m.memo||'')||'<span class="dim">없음</span>'}</div>`}
      ${E?`<div class="row" style="margin-top:8px"><button class="btn xs ghost danger" data-act="delmon" data-mid="${m.id}">이 포켓몬 삭제</button></div>`:''}</div></div>`}
 
+ /* 개체값 6칸 — 알까기 창과 같은 모양 (능력치 이름 · 0–1 빨강 · 30–31 노랑) */
+ const ivGrid=iv=>`<div class="ivt">${STATS_KO.map(k=>`<span>${k}</span>`).join('')}${iv.map(v=>`<b class="${v<=1?'lo':v>=30?'hi':''}">${v}</b>`).join('')}</div>`;
  function growTab(c,t,mons,E){
   return `<div class="spanel"><div class="sh">레벨</div>
    <div class="small dim" style="margin-bottom:6px">기본 레벨은 육성 ${esc((t.ranks||{})['육성']||'-')} → ${S().baseLevel((t.ranks||{})['육성'])}. 분배레벨 ${esc(String((t.base||{})['분배레벨']??'-'))} 안에서 포켓몬마다 보정을 나눈다. 실수치 = floor(종족치×2×Lv/100) + 5 (HP 는 + Lv + 10).</div>
    <table class="t"><tr><th>포켓몬</th><th>Lv</th><th>보정</th><th>개체값 <span class="dim small">(알까기 · 육성 ${esc((t.ranks||{})['육성']||'-')} → ${S().hatchCount(t)}회)</span></th><th>실수치 (HP/공/방/특공/특방/스피드)</th></tr>
-   ${mons.map(m=>`<tr><td class="nw"><b>${esc(m.name)}</b></td><td class="mono">${m.lv}</td><td>${E?`<input type="number" class="n" data-mg="dist" data-mid="${m.id}" value="${m.dist||0}">`:(m.dist||0)}</td><td class="nw"><span class="mono small">${(m.iv||[]).length?esc(m.iv.join('/'))+' <span class="dim">합 '+S().ivSum(m.iv)+'</span>':'<span class="dim">없음</span>'}</span>${canEdit(c,t.id)?` <button class="btn xs" data-act="hatch" data-mid="${m.id}">🥚 알까기</button>`:''}</td><td class="mono small">${m.stats.join(' / ')}</td></tr>`).join('')}</table>
+   ${mons.map(m=>`<tr><td class="nw"><b>${esc(m.name)}</b></td><td class="mono">${m.lv}</td><td>${E?`<input type="number" class="n" data-mg="dist" data-mid="${m.id}" value="${m.dist||0}">`:(m.dist||0)}</td><td class="nw"><div class="ivrow">${(m.iv||[]).length?ivGrid(m.iv)+`<span class="ivsm ${S().ivSum(m.iv)>130?'big':''}">합 <b>${S().ivSum(m.iv)}</b></span>`:'<span class="small dim">없음</span>'}${canEdit(c,t.id)?`<button class="btn xs" data-act="hatch" data-mid="${m.id}">🥚 알까기</button>`:''}</div></td><td class="mono small">${m.stats.join(' / ')}</td></tr>`).join('')}</table>
    <div class="small dim" style="margin-top:6px">분배레벨 합: ${mons.reduce((a,m)=>a+(+m.dist||0),0)} / ${esc(String((t.base||{})['분배레벨']??'-'))}</div></div>`}
 
  /* 자동화 구문 버튼: 레디메이드 자동 / 이 포켓몬의 구문 / 없음 */

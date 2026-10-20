@@ -1274,3 +1274,9 @@ label.ph-item input[type=checkbox]{width:16px;height:16px;flex:none}
  .rptact input[type=text]{flex-basis:100%;order:-1}
 }
 @media (min-width:761px){.top .tabs{flex-shrink:0}.top .tabs button{white-space:nowrap;padding:2px 12px}.top .btn{white-space:nowrap}.top{flex-wrap:wrap;row-gap:4px}}
+/* 시트 레벨 표의 개체값 — 알까기 창과 같은 6칸 (합 130 초과는 노란 테두리) */
+.ivrow{display:flex;align-items:center;justify-content:flex-start;gap:10px}
+.ivrow .ivt{min-width:240px;color:#eee;column-gap:4px}.ivrow .ivt span{color:#aaa}
+.ivrow .ivsm{flex:none;display:inline-flex;align-items:baseline;gap:4px;width:auto;height:auto;margin:0;font-size:12px;color:var(--mute);white-space:nowrap}.ivrow .ivsm b{color:var(--fg);font-family:var(--mono)}
+.ivrow .ivsm.big{padding:0 5px;border:1px solid #c98a00}
+@media (max-width:760px){.ivrow{flex-wrap:wrap;gap:4px 8px}.ivrow .ivt{min-width:200px}}
