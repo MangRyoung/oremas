@@ -1563,3 +1563,10 @@ label.tgc:has(input:focus-visible){outline:2px solid var(--yel)}
 .bca .bct{display:block;color:var(--mute);font-size:11px}.bca .warn{color:var(--yel2)}
 .bcp{display:flex;flex-wrap:wrap;gap:2px}.bcp .rk{font-size:10px;padding:0 4px}
 .bcu{padding:2px 4px}
+.bside>summary{list-style:none;cursor:pointer}.bside>summary::-webkit-details-marker{display:none}
+.bsh .bsum{display:none;font-family:var(--body,inherit);letter-spacing:0;color:var(--fg2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+@media (max-width:760px){
+ .bside>summary::before{content:'▸';margin-right:2px}.bside[open]>summary::before{content:'▾'}
+ .bside:not([open]) .bsh{border-bottom:0;padding-bottom:0}.bside:not([open]) .bsum{display:block;flex:1}
+ .bc{grid-template-columns:24px minmax(0,1fr)}.bc .bop{width:24px;height:24px}
+}

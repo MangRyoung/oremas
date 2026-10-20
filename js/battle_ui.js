@@ -173,7 +173,10 @@ window.OM_BATTLE_UI=(()=>{
     return `<div class="bc"><span class="bop" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></span><div class="bcb"><div class="bcn"><i>${String(m.entry).toUpperCase()}</i>${esc(m.name)}</div>${body}</div></div>`};
    const up=own&&cur&&(cur.upots||[]).length?`<div class="bcp bcu">${cur.upots.map(n=>`<span class="rk fxc">고유 『${esc(n)}』</span>`).join('')}</div>`:'';
    return `<div class="bct1"><div class="bth"><b>${esc(t.name)}</b><span class="sp"></span>${tag}</div>${mons.map(row).join('')||'<div class="small dim">필드에 포켓몬이 없다</div>'}${up}</div>`}).join('');
-  return `<div class="bside" data-bside="${side}"><div class="bsh"><span>지시 현황</span><span class="sp"></span><b>TURN ${+b.turn||0}</b></div>${blocks}</div>`}
+  /* 폰: 벤치와 배틀 칸 사이를 밀어내지 않게 접어 두고 요약만 (열고 닫은 건 기억) */
+  const ph1=window.matchMedia&&matchMedia('(max-width:760px)').matches;UIC.bside=UIC.bside||{};const open=!ph1||UIC.bside[side];
+  const sum=ids.map(tid=>`${esc(trs[tid].name)} ${(b.cmds||{})[tid]?'공개됨':ready[tid]?'READY':'입력 중'}`).join(' · ');
+  return `<details class="bside" data-bside="${side}" ${open?'open':''}><summary class="bsh"><span>지시 현황</span><small class="bsum">${sum}</small><span class="sp"></span><b>TURN ${+b.turn||0}</b></summary>${blocks}</details>`}
  function fieldStrip(c,f){const w=f.weather.type,t=f.terrain.type;
   const ic=(name,label,cnt,kind)=>{const im=fimg(name);return `<div class="fic ${kind}" title="${esc(label)}">${im?`<img src="${esc(im)}" alt="">`:'<span class="fnoimg"></span>'}<span><small>${({w:'날씨',t:'필드',r:'룸',e:'필드의 상태'})[kind]||''}</small><b>${esc(label)}</b>${cnt?`<em>${cnt>=1000?'∞':cnt+'T'}</em>`:''}</span></div>`};
   const mid=[w?ic(W_IMG[w],w,f.weather.count,'w'):'',t?ic(T_IMG[t],t,f.terrain.count,'t'):'',...ROOMS.filter(r=>(f.rooms||{})[r]>0).map(r=>ic(T_IMG[r],r,f.rooms[r],'r')),...ETC.filter(r=>(f.etc||{})[r]>0).map(r=>ic(T_IMG[r],r,f.etc[r],'e'))].filter(Boolean).join('');
@@ -326,7 +329,7 @@ window.OM_BATTLE_UI=(()=>{
   return `<form id="cmdForm" class="cmdpanel" onsubmit="return false"><div id="peekbox"></div><div class="cmdtitle">지시 입력 <span class="dim small">${phase===0?'지시 준비 페이즈':'지금은 '+['','턴 개시','행동 순서','행동 처리','','턴 종료'][phase]+' — 입력은 저장만 된다'}</span></div>${blocks}</form>`}
  function fsum(L){L=(L||[]).filter(Boolean);return L.length?L.map(n=>esc(n)).join(' · '):'—'}
  /* 지시를 고칠 때마다 벤치 아래 지시 현황도 */
- function refreshSide(c){document.querySelectorAll('[data-bside]').forEach(el=>{const tmp=document.createElement('div');tmp.innerHTML=sidePanel(c,el.dataset.bside,c.ST.state.ready||{});if(tmp.firstElementChild)el.replaceWith(tmp.firstElementChild)})}
+ function refreshSide(c){document.querySelectorAll('[data-bside]').forEach(el=>{const tmp=document.createElement('div');tmp.innerHTML=sidePanel(c,el.dataset.bside,c.ST.state.ready||{});if(tmp.firstElementChild)el.replaceWith(tmp.firstElementChild)});document.querySelectorAll('[data-bside]').forEach(el=>el.ontoggle=()=>{UIC.bside=UIC.bside||{};UIC.bside[el.dataset.bside]=el.open})}
  function rerenderCmd(){const old=$('#cmdForm');if(!old)return;const c=ctx();const tmp=document.createElement('div');tmp.innerHTML=cmdPanel(c,c.ST.state.ready||{});const nf=tmp.firstElementChild;if(!nf){old.remove();return}old.replaceWith(nf);refreshSide(c);nf.querySelectorAll('[data-act]').forEach(bt=>bt.onclick=()=>action(bt.dataset));bindCmdForm(nf,c)}
  function bindCmdForm(form,c){
   form.querySelectorAll('.cmdt').forEach(blk=>{const tid=blk.dataset.tid;const cur=CMD[tid];const mid=UIC.tab[tid];const x=cur.mons[mid];
