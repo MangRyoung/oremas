@@ -97,8 +97,10 @@ window.OM_BATTLE=(()=>{
    const av=statValue(atk,atkStat,{ignore:crit&&(o.ignoreAtk===0||o.ignoreAtk===2||o.ignoreAtk===4)?-1:o.ignoreAtk,rank:crit&&+((atk.rank||{})[atkStat]||0)<0?0:undefined,mod:crit&&+((atk.mod||{})[atkStat]||1)<1?1:undefined});
    let A=av.value*(o.scarf&&atkStat==='speed'?1.5:1);
    if(has(atk,'Paralysis')&&atkStat==='speed')A*=(+C().campaign.value_paralysis||0.5);
-   const dv=statValue(def,defStat,{ignore:crit?0:o.ignoreDef,mod:((def.mod||{})[defStat]||1)*(o.choiceDef?1.5:1)*(o.tailwindDef&&defStat==='speed'?2:1)*(o.swampDef&&defStat==='speed'?0.25:1)});
-   let D=dv.value;if(has(def,'Paralysis')&&defStat==='speed')D*=(+C().campaign.value_paralysis||0.5);
+   /* 원더룸: 방어·특방 실수치만 맞바꾸고 랭크·배율은 원래 능력 것을 쓴다 */
+   const wS=o.wonder&&(defStat==='defense'||defStat==='specialdefense')?(defStat==='defense'?'specialdefense':'defense'):defStat;
+   const dv=statValue(def,wS,{ignore:crit?0:o.ignoreDef,rank:+((def.rank||{})[defStat]||0),mod:((def.mod||{})[defStat]||1)*(o.choiceDef?1.5:1)*(o.tailwindDef&&defStat==='speed'?2:1)*(o.swampDef&&defStat==='speed'?0.25:1)});
+   let D=dv.value*num(o.defMul,1);if(has(def,'Paralysis')&&defStat==='speed')D*=(+C().campaign.value_paralysis||0.5);
    const wallCur=crit?1:wall;
    const base=floor(floor(L*Pc*A/50)/D)*(M*wallCur)+2;
    let m2=1;if(crit)m2*=critValue;if(o.lifeOrb)m2*=1.3;

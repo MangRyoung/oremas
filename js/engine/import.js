@@ -48,7 +48,16 @@ window.OM_IMPORT=(()=>{
    exclX:(d.exclX||[]).filter(x=>x&&x.name).map(x=>({name:x.name,eff:brN(x.eff||'')})),
    role:roleOf(d),pride:d.pride||'',egg:[d.egg1||'-',d.egg2||'-'],partner:!!d.partner,image:d.image||'',stands:standsOf(d.stands),standActive:+d.standActive||0,memo:d.memo||'',
    auto:(()=>{const out={};const src=d.auto||{};for(const k in src){const dsl=String(src[k]||'').trim();if(!dsl)continue;const r=window.OM_FX?window.OM_FX.parse(dsl):{ops:[]};out[String(k).replace(/『|』/g,'')]={dsl,ops:r.ops}}return out})(),
-   rank:{attack:0,defense:0,specialattack:0,specialdefense:0,speed:0,accuracy:0,evasion:0,critical:0},states:{},forms:null}}
+   rank:{attack:0,defense:0,specialattack:0,specialdefense:0,speed:0,accuracy:0,evasion:0,critical:0},states:{},forms:formsOf(d,base,L)}}
+
+ /* 폼체인지·메가진화 (제작기 시트 forms): 비운 칸은 원래 값 */
+ function formsOf(d,base0,L){const out=(d.forms||[]).filter(f=>f&&(f.name||f.ability||(f.base||[]).some(v=>v!==''))).map(f=>{
+   const base=Array.from({length:6},(_,i)=>{const v=(f.base||[])[i];return v===''||v==null?base0[i]:nz(v)});
+   const tko=[f.t1,f.t2].map(x=>x&&x!=='-'?x:'-');const keepT=tko.every(x=>x==='-');
+   const ab=f.ability||'';const abil=ab?((DB().traits||{})[ab]||{}):null;
+   return {name:f.name||'',kind:f.kind||'폼체인지',typesKo:keepT?null:[...tko,'-'],types:keepT?null:[...tko,'-'].map(S().typeEn),
+    ability:ab,abilityEff:abil?brN(abil.multi||abil.single||''):null,base,image:f.image||'',cond:f.cond||'',revert:!!f.revert}});
+  return out.length?out:null}
 
  /* 역할 포텐셜(00.x. 역할)에서 역할 이름 */
  function roleOf(d){const P=(DB().maker||{}).pots||[];
