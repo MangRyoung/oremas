@@ -172,8 +172,23 @@ function setDiff(path,before,after,depth){return setMany(diffOps(path,before,aft
 async function sysLog(t,kind,extra){const k=kind||'sys';const data=Object.assign({t},extra||{});try{await DBS().addLog(ST.room,ST.secret,k,ST.name,data)}catch(e){if(ST.role==='seat'&&k!=='chat'){try{await DBS().addLog(ST.room,ST.secret,'chat',ST.name,Object.assign({},data,{bat:k}));return}catch(e2){}}console.warn('로그를 남기지 못했다',e);toast('로그를 남기지 못했다: '+e.message)}}
 /* 배틀 로그 카드: 「【포텐셜】 이름 『효과』」 꼴의 글은 머리띠 + 본문 카드로 */
 const TAGCOL={'고유':'#7b4fd6','전용':'#1f6fd1','포텐셜':'#7b4fd6','특성':'#2f8f5b','소지품':'#c7651a','지령':'#1f6fd1','명령':'#e3101f','공개':'#d6a23b','스킬 체크':'#2b8fa8','모두 공개':'#d6a23b','공격':'#c8362b','전달':'#8a4b2a','효과':'#555'};
+/* 【공격】 카드 본문: 「→ 대상: 명중 34/80 · 급소 3/24 · 대미지 120 · 상성 ×2」 줄을 대상마다 배지로, 들여쓴 줄(판정·부가효과)은 아래 작은 글씨로 */
+function atkLines(body){const out=[];for(const raw of body.split('\n')){if(!raw.trim())continue;
+  if(/^\s{2,}/.test(raw)){const t=raw.trim();out.push(`<div class="atsub ${/발동!|확정/.test(t)?'ok':/불발|받지 않음/.test(t)?'no':''}">${esc(t)}</div>`);continue}
+  const m=raw.match(/^→\s*([^:]+):\s*(.*)$/);if(!m){out.push(`<div class="bl">${esc(raw)}</div>`);continue}
+  const parts=m[2].split(' · ');const chips=[];let dmg='';
+  for(const p of parts){let x;
+   if((x=p.match(/^명중\s+(\d+)\/(\d+)/)))chips.push(`<span class="atc hit">명중 <small>${x[1]}/${x[2]}</small></span>`);
+   else if((x=p.match(/^빗나감\s+(\d+)\/(\d+)/)))chips.push(`<span class="atc miss">빗나감 <small>${x[1]}/${x[2]}</small></span>`);
+   else if(p==='필중')chips.push(`<span class="atc hit">필중</span>`);
+   else if(/^급소 /.test(p)){const isC=/급소!/.test(p.slice(3));chips.push(`<span class="atc ${isC?'crit':'nocrit'}">${isC?'급소!':'급소 X'} <small>${esc(p.slice(3).replace(/급소!/g,'').replace(/[()]/g,''))}</small></span>`)}
+   else if((x=p.match(/^대미지\s+(\d+)(.*)$/)))dmg=`<span class="atdmg">${x[1]}<small>${esc(x[2].trim())}</small></span>`;
+   else if((x=p.match(/^상성\s+×([\d.]+)/))){const v=+x[1];chips.push(`<span class="atc ${v>1?'sup':v===0?'imm':v<1?'weak':''}">상성 ×${x[1]}</span>`)}
+   else chips.push(`<span class="atc">${esc(p)}</span>`)}
+  out.push(`<div class="atrow"><b class="attg">${esc(m[1].trim())}</b><span class="atchips">${chips.join('')}</span>${dmg}</div>`)}
+ return out.join('')}
 function battleCard(d){const t=String(d.t||'');const m=t.match(/^【([^】]+)】\s*([^\n]*)\n?([\s\S]*)$/);if(!m)return '';const tag=m[1],title=m[2],body=m[3].trim();const col=TAGCOL[tag]||'#555';
- const lines=body.split('\n').filter(Boolean).map(l=>`<div class="bl ${/실패|차단|없|않/.test(l)?'neg':/\+\d|회복|성공|→/.test(l)?'pos':''}">${esc(l)}</div>`).join('');
+ const lines=tag==='공격'?atkLines(body):body.split('\n').filter(Boolean).map(l=>`<div class="bl ${/실패|차단|없|않/.test(l)?'neg':/\+\d|회복|성공|→/.test(l)?'pos':''}">${esc(l)}</div>`).join('');
  return `<div class="bcard" style="--tc:${col}"><div class="bch">${d.img?`<span class="bcav" style="background-image:url('${cssu(d.img)}')"></span>`:''}<span class="bctag">${esc(tag)}</span><b>${esc(title)}</b>${d.mid?`<span class="sp"></span><button class="btn xs ghost bcfx" data-lmid="${esc(d.mid)}" title="이 포켓몬의 포텐셜 창 — 발동 중인 효과를 ✕ 로 해제">효과</button>`:''}</div>${d.eff?`<div class="bceff">${esc(d.eff)}</div>`:''}${lines?`<div class="bcb">${lines}</div>`:''}</div>`}
 
 /* 대사 화자 이름: as 가 있으면 그것, 좌석의 세션 대사(예전 줄)는 그 좌석 캐릭터 이름, 잡담·그 밖은 남긴 이름 그대로 */

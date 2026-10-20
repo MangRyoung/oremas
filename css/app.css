@@ -1328,3 +1328,13 @@ label.ph-item input[type=checkbox]{width:16px;height:16px;flex:none}
  .dxpots{grid-template-columns:1fr}
  .dxmv td.eff{min-width:0}
 }
+/* 【공격】 로그 카드: 대상마다 명중·급소·상성 배지 + 큰 대미지 숫자 */
+.atrow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:5px 0;border-top:1px solid #23242a}.atrow:first-child{border-top:0}
+.attg{font-size:13.5px;color:#fff;min-width:0}
+.atchips{display:flex;gap:4px;flex-wrap:wrap;flex:1;min-width:0}
+.atc{font-size:11.5px;padding:1px 7px;border-radius:999px;background:#26272d;color:#ddd;white-space:nowrap}.atc small{font-family:var(--mono);font-size:10.5px;opacity:.75;margin-left:2px}
+.atc.hit{background:#163a26;color:#7fe0a5}.atc.miss{background:#3a1218;color:#ff8c9b}
+.atc.crit{background:#ffd84a;color:#000;font-weight:700}.atc.nocrit{background:#1d1e23;color:#888}
+.atc.sup{background:#5a2a10;color:#ffb27a}.atc.weak{background:#1d2a3a;color:#8fb8ff}.atc.imm{background:#222;color:#777;text-decoration:line-through}
+.atdmg{margin-left:auto;font-family:var(--mono);font-weight:700;font-size:20px;color:#fff;line-height:1}.atdmg small{font-size:10.5px;color:var(--mute);margin-left:3px;font-weight:400}
+.atsub{font-size:11.5px;color:var(--mute);padding:0 0 3px 10px}.atsub.ok{color:#7fe0a5}.atsub.no{color:#888}
