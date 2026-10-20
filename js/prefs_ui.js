@@ -10,7 +10,7 @@ window.OM_PREFS=(()=>{
  const ACTS=[['chat','채팅 입력칸으로','/'],['phone','휴대폰 열기','p'],['settings','내 설정 열기',','],['bgm','BGM 정지 · 다시','m'],['vRp','RP 화면','1'],['vBattle','배틀 화면','2'],['vSheet','시트 화면','3'],['vGraph','관계도 화면','4'],['vCal','캘린더 화면','5'],
   /* 배틀 화면에서만 (g:'b') · 공격·상태 창이 열려 있을 때만 (g:'m') — battle_ui hotkey */
   ['bProgress','턴 진행 ▶','n','b'],['bNext','다음 행동 ▶',']','b'],['bPrev','이전 행동 ◀','[','b'],['bAttack','지금 차례 공격','a','b'],['bHp','지금 차례 HP','h','b'],['bEdit','지금 차례 랭크·상태','s','b'],
-  ['bCmd','지시 입력으로','c','b'],['bReady','준비 완료 · 취소','y','b'],['bFire','4식 6령','q','b'],['bReveal','모두 공개 (GM)','o','b'],['bField','필드','f','b'],['bTurnEnd','턴 종료 처리','e','b'],
+  ['bCmd','지시 입력으로','c','b'],['bReady','준비 완료 · 취소','y','b'],['bFire','포텐셜 발동','q','b'],['bReveal','모두 공개 (GM)','o','b'],['bField','필드','f','b'],['bTurnEnd','턴 종료 처리','e','b'],
   ['mRoll','공격 창 굴리기','r','m'],['mApply','공격·상태 창 적용','Enter','m']];
  const KGRP=[['','일반'],['b','배틀','배틀 화면에서 · 「지금 차례」= 행동 순서의 지금 칸'],['m','배틀 창','공격·상태 창이 열려 있을 때']];
  const DEF={keysOn:1,bgmMute:0,seMute:0,alertVol:0.35,alertSound:'soft',quiet:1,stand:100,cutin:100,keys:Object.fromEntries(ACTS.map(a=>[a[0],a[2]]))};
