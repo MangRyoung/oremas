@@ -1127,3 +1127,16 @@ label.ph-item input[type=checkbox]{width:16px;height:16px;flex:none}
  .ttabs,.tabs2,.stabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.ttabs .ttab,.tabs2 .tab2,.stabs>*{flex:none;white-space:nowrap;writing-mode:horizontal-tb}
  .ttabs .btn,.tabs2 .btn{white-space:nowrap}
 }
+@media (max-width:760px){
+ .fstrip{grid-template-columns:1fr;gap:6px;padding:6px 8px}.fmid{text-align:center}.fobjs.rgt{justify-content:flex-start}
+ .fieldcol,.bwrap,.scene>*{max-width:100%;min-width:0}
+ .scene{overflow-x:hidden}
+ .area .alab{font-size:11px}
+ .bigcard,.bcard,.pc{max-width:100%}
+}
+@media (max-width:760px){
+ /* 무대: 지역 이름은 왼쪽 위, 버튼 줄은 그 아래 오른쪽으로 내려 겹치지 않게 */
+ .bgname{top:8px;left:8px;font-size:13px;padding:3px 22px 3px 10px;max-width:calc(100% - 16px);white-space:nowrap}
+ .rpbtns{top:40px;right:8px;left:8px;justify-content:flex-end}
+ .typing{top:auto;bottom:auto}
+}
