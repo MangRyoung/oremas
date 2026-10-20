@@ -1300,3 +1300,6 @@ label.ph-item input[type=checkbox]{width:16px;height:16px;flex:none}
  .t tr.mobx .ivrow .ivt{min-width:0;flex:1 1 220px}
  .t tr.mobx .ivrow{flex-wrap:wrap}
 }
+/* GM 채팅 화자 고르기 */
+.side .inbox #chatAs{flex:0 1 110px;min-width:0;max-width:40%;border-radius:999px;border:0;padding:6px 8px;background:#000;color:#fff;font-size:13px}
+.side.ooc .inbox #chatAs{display:none}
