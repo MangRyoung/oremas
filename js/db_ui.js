@@ -38,7 +38,7 @@ window.OM_DB_UI=(()=>{
   $('#dbkinds',md).innerHTML=KINDS.map(([k,n])=>`<button class="tab2 ${UI.kind===k?'on':''}" data-kind="${k}">${n} <small>${all(k).length}</small></button>`).join('');
   $('#dbkinds',md).querySelectorAll('[data-kind]').forEach(b=>b.onclick=()=>{UI.kind=b.dataset.kind;UI.tag='';UI.sel='';UI.lim=200;render()});
   $('#dbtitle',md).textContent=(UI.pick?'고르기 — ':'')+KINDS.find(x=>x[0]===UI.kind)[1];
-  const tb=$('#dbtools',md);if(tb){tb.innerHTML=A().ST.role==='gm'?`${UI.kind!=='state'?'<button class="btn sm" id="dbnew">+ 새로</button>':''}<button class="btn sm ghost" id="dbsync" title="제작기(dbedit)의 특성·포텐셜 변경을 이 방 DB 에 가져온다">제작기 새로고침</button>`:'';const nw=$('#dbnew',md);if(nw)nw.onclick=()=>openEdit(UI.kind,'',true);const sy=$('#dbsync',md);if(sy)sy.onclick=syncMaker}
+  const tb=$('#dbtools',md);if(tb){tb.innerHTML=A().ST.role==='gm'?`${UI.kind!=='state'?'<button class="btn sm" id="dbnew">+ 새로</button>':''}<button class="btn sm ghost" id="dbsync" title="제작기(dbedit)의 특성·포텐셜·상태 변화 변경을 이 방 DB 에 가져온다">제작기 새로고침</button>`:'';const nw=$('#dbnew',md);if(nw)nw.onclick=()=>openEdit(UI.kind,'',true);const sy=$('#dbsync',md);if(sy)sy.onclick=syncMaker}
   const cnt={};all(UI.kind).forEach(r=>r.tags.forEach(t=>{const b=t.replace(/\s*\(.*\)$/,'');cnt[b]=(cnt[b]||0)+1}));
   const top=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]).slice(0,14);
   $('#dbtags',md).innerHTML=top.map(t=>`<button class="chip ${UI.tag===t?'on':''}" data-tag="${esc(t)}">${esc(t)} <small>${cnt[t]}</small></button>`).join('');
@@ -79,19 +79,28 @@ window.OM_DB_UI=(()=>{
    if(kind==='move'){rec.name=n;rec.typeEn=window.OM_STATS.typeEn(rec.type);rec.cat=rec.cat||'변화';rec.range=rec.range||'1체';rec.contact=rec.contact||'X';rec.tags=String(rec.tag||'').split(/\s+/).filter(Boolean)}
    rec.src='room';A().closeModal();await A().set(['dbx',kind,n],rec);await A().set(['dbx','at'],Date.now());UI.sel=n;if(document.querySelector('.dbmodal'))refresh();else open({kind,sel:n})}}
  let BASE=null,appliedAt=null;
- function applyOverride(dbx){const d=DB();if(!BASE)BASE={traits:Object.assign({},d.traits),items:Object.assign({},d.items),moves:Object.assign({},d.moves),pots:((d.maker||{}).pots||[]).slice()};
+ function applyOverride(dbx){const d=DB();if(!BASE)BASE={traits:Object.assign({},d.traits),items:Object.assign({},d.items),moves:Object.assign({},d.moves),pots:((d.maker||{}).pots||[]).slice(),states:d.states?JSON.parse(JSON.stringify(d.states)):null};
   const at=(dbx||{}).at||0;if(at===appliedAt&&appliedAt!==null)return;appliedAt=at;dbx=dbx||{};
   const merge=(base,ov)=>{const out=Object.assign({},base);for(const k in ov||{}){if(ov[k]&&ov[k].del)delete out[k];else out[k]=Object.assign({},base[k]||{},ov[k])}return out};
   d.traits=merge(BASE.traits,dbx.trait);d.items=merge(BASE.items,dbx.item);d.moves=merge(BASE.moves,dbx.move);
   const pots=BASE.pots.filter(p=>!((dbx.pot||{})[p[1]]));for(const n in dbx.pot||{}){const o=dbx.pot[n];if(o.del)continue;const row=[o.group||'99. 기타',n,o.eff||'',o.note||''];row.src=o.src;const i=BASE.pots.findIndex(p=>p[1]===n);if(i>=0)pots.splice(Math.min(i,pots.length),0,row);else pots.push(row)}
-  if(d.maker)d.maker.pots=pots;for(const k in CACHE)CACHE[k]=null}
+  if(d.maker)d.maker.pots=pots;
+  /* 상태 변화: 제작기 상태 변화 DB 에서 고친 상태(dbx.st[키] = {e, group} | {del}). 같은 그룹이면 자리를 지킨다 */
+  if(BASE.states){const S0=BASE.states,so=dbx.st||{};const st=Object.assign({},S0.st);const groups=(S0.groups||[]).map(g=>({l:g.l,s:g.s.slice()}));let hidden=(S0.hidden||[]).slice();
+   for(const k in so){const o=so[k]||{};let kept=false;for(const g of groups){const i=g.s.indexOf(k);if(i<0)continue;if(!o.del&&g.l===o.group){kept=true;continue}g.s.splice(i,1)}if(o.del||!(o.group&&o.group!=='(숨김)'))hidden=hidden.filter(x=>x!==k);
+    if(o.del){delete st[k];continue}st[k]=Object.assign({},o.e||{});if(kept)continue;if(o.group&&o.group!=='(숨김)'){let g=groups.find(x=>x.l===o.group);if(!g)groups.push(g={l:o.group,s:[]});g.s.push(k)}else if(!hidden.includes(k))hidden.push(k)}
+   d.states=Object.assign({},S0,{groups:groups.filter(g=>g.s.length),hidden,st})}
+  for(const k in CACHE)CACHE[k]=null}
  /* 제작기의 dbedit (특성 abil · 포텐셜 pots) 를 이 방 DB 에 가져온다 */
  async function syncMaker(){A().toast('제작기에서 읽는 중…');let rows;try{rows=await window.OM_STORE.makerDocs('dbedit')}catch(e){return A().toast('읽지 못했다: '+e.message)}
-  const dbx=JSON.parse(JSON.stringify(A().ST.state.dbx||{}));dbx.trait=dbx.trait||{};dbx.pot=dbx.pot||{};let n=0;
+  const dbx=JSON.parse(JSON.stringify(A().ST.state.dbx||{}));dbx.trait=dbx.trait||{};dbx.pot=dbx.pot||{};dbx.st=dbx.st||{};let n=0,ns=0;
+  for(const k in dbx.st)if(dbx.st[k]&&dbx.st[k].src==='maker')delete dbx.st[k];/* 제작기 것은 매번 새로 받는다 (원래대로 되돌린 상태도 따라가게) */
+  const num=v=>{const x=+v;return v===''||v==null||isNaN(x)?0:x};
   for(const r of rows||[]){const d=r.data||{};const row=d.row||[];if(!d.key)continue;
    if(d.kind==='abil'){const cur=(dbx.trait[d.key]||{});if(cur.src==='room')continue;const eff=String(row[2]||'');const base=BASE&&BASE.traits[d.key];if(base&&base.multi===eff&&!cur.src)continue;dbx.trait[d.key]={multi:eff,single:(base&&base.single)||eff,cost:row[0]||'',src:'maker'};n++}
+   else if(d.kind==='st'){if((dbx.st[d.key]||{}).src==='room')continue;if(d.deleted){dbx.st[d.key]={del:1,src:'maker'};ns++;continue}const r=row;dbx.st[d.key]={group:String(r[2]||''),e:{ko:r[1]||d.key,min:num(r[3]),max:num(r[4]),roll:r[5]||'',prog:r[6]||'turn',abn:r[7]==='O'?1:0,neg:r[8]==='O'?1:0,bat:r[9]==='O'?1:0,desc:String(r[10]||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean),memo:r[11]||''},src:'maker'};ns++}
    else if(d.kind==='pots'){const cur=(dbx.pot[d.key]||{});if(cur.src==='room')continue;const base=BASE&&BASE.pots.find(p=>p[1]===d.key);if(base&&base[2]===row[2]&&!cur.src)continue;dbx.pot[d.key]={group:row[0]||'',eff:row[2]||'',note:row[3]||'',src:'maker'};n++}}
-  dbx.at=Date.now();await A().set(['dbx'],dbx);A().toast(`제작기에서 ${n}개 가져왔다 (특성·포텐셜)`);refresh()}
+  dbx.at=Date.now();await A().set(['dbx'],dbx);A().toast(`제작기에서 ${n}개 가져왔다 (특성·포텐셜)${ns?` · 상태 변화 ${ns}개`:''}`);refresh()}
  /* 시트·배틀에서 쓰는 한 줄 요약 (특성/소지품 이름 → 효과 문구 HTML) */
  function effectHtml(kind,name){const d=DB();if(kind==='trait'){const v=(d.traits||{})[name];return v?pretty(v.multi||v.single):''}if(kind==='item'){const v=(d.items||{})[name];return v?pretty(v.eff):''}return ''}
  return {open,pretty,effectHtml,applyOverride,syncMaker};
