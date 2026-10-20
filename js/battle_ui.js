@@ -462,10 +462,15 @@ window.OM_BATTLE_UI=(()=>{
   const nb0=snap(c.b),nb=snap(nb0);const L=outReset(nb,nb.mons[mid],{batton});await saveMon(nb0.mons[mid],mid,nb.mons[mid]);if(batton)await A().set(['battle','trainers',m.tid,'batton'],nb.trainers[m.tid].batton);
   A().sysLog(`${m.name} ${opt.forced?'강제 퇴장':'퇴장'}${L.length?'\n'+L.join('\n'):''}`,'battle')}
  /* 강제 교대 (맵툴 change_forced): 배턴터치 없이 나가고, 벤치에서 아무 포켓몬이나 같은 에리어로 */
- async function forcedSwitch(mid){const c=ctx();const b=c.b;const m=b.mons[mid];if(!m||!canEdit(c,m)||!m.entry)return;
-  const bench=Object.values(b.mons).filter(x=>x.tid===m.tid&&!x.entry&&!x.pend&&x.hp.cur>0&&x.id!==mid);if(!bench.length)return A().toast('교대할 포켓몬이 벤치에 없다');
-  const area=m.entry;const pick=bench[Math.floor(Math.random()*bench.length)];
-  await exitMon(mid,{forced:true});A().sysLog(`강제 교대 → ${pick.name}`,'battle');await enterMon(pick.id,area,{forced:true})}
+ async function forcedSwitch(mid,opt){opt=opt||{};const c=ctx();const b=c.b;const m=b.mons[mid];if(!m||!(canEdit(c,m)||(opt.sys&&c.mgr))||!m.entry)return false;
+  const bench=Object.values(b.mons).filter(x=>x.tid===m.tid&&!x.entry&&!x.pend&&x.hp.cur>0&&x.id!==mid);if(!bench.length){A().toast('교대할 포켓몬이 벤치에 없다');if(opt.sys)A().sysLog(`${m.name} 강제 교대 — 벤치에 나올 포켓몬이 없다`,'battle');return false}
+  const must=bench.filter(x=>/강제 교대로 반드시 선택/.test(String(x.abilityEff||'')));   /* 방위라인·벤치가드 */
+  const area=m.entry;const pool=must.length?must:bench;const pick=pool[Math.floor(Math.random()*pool.length)];
+  await exitMon(mid,{forced:true,sys:opt.sys});A().sysLog(`${m.name} 강제 교대 → ${pick.name}${must.length?' (「'+pick.ability+'」로 반드시 선택)':''}`,'battle');await enterMon(pick.id,area,{forced:true,sys:opt.sys});return true}
+ /* 강제 교대를 막는 것: 효과 엔진의 「교대 무시」, 뿌리박기·다이맥스, 특성 글(받지 않는다·무효화). 포텐셜 글(횟수 제한)은 물어본다 */
+ async function switchGuard(m){if(FX()&&FX().noind(m,'switch'))return FX().noindName(m,'switch')||'교대 무시';const st=m.states||{};if(st.Ingrain)return '뿌리박기';if(st.Dynamax)return '다이맥스';
+  const re=/강제 교대[^.\n]*?(받지 않|무효)/;if(m.ability&&re.test(String(m.abilityEff||'')))return '특성 : '+m.ability;
+  for(const p of potSrc(m))if(re.test(String(p.eff||''))&&confirm(`${m.name}의 「${p.name}」로 강제 교대를 막을까?\n${String(p.eff||'').replace(/<br\s*\/?>/g,' ').slice(0,120)}`))return p.name;return ''}
 
  /* ----- 지시 저장 · 준비 · 공개 ----- */
  function cleanCmd(cur){const out={mons:{},detail:cur.detail||'',upots:cur.upots||[]};for(const k in cur.mons){const x=cur.mons[k];out.mons[k]={move:x.move,switch:x.switch,targets:x.targets||[],prio:x.prio||{},ochg:x.ochg||{},order:x.order||'',command:x.command||'',pots:x.pots||[]}}return out}
@@ -614,6 +619,8 @@ window.OM_BATTLE_UI=(()=>{
   if(FLAG[n]){if(tgt){tgt.flags=tgt.flags||{};tgt.flags[FLAG[n]]=1;out.push(`${tgt.name} 「${n}」`)}else out.push(`「${n}」 (대상 없음)`);return out}
   return out}   /* 여기서 모르는 지시는 fireOrder 가 레디메이드를 찾아 보고, 그래도 없으면 「손으로 처리」를 붙인다 (점검 3-3) */
 
+ /* 따라가때리기 기술: 기술 태그·효과 글, 또는 효과 엔진이 붙인 「추격」 */
+ function isPursuit(mv,m){if(!mv)return false;if((m&&m.flags||{}).pursuit)return true;if((mv.tags||[]).some(t=>/따라가때리기/.test(t))||/따라가때리기/.test(String(mv.tag||'')))return true;return /교대할 때 2배의 위력|교대하는 대상에게 명중/.test(String(mv.eff||''))}
  /* ----- 행동 순서 ----- */
  async function computeOrder(){const c=ctx();if(!c.mgr)return;const b=c.b;const f=fieldOf(b);const iceUsed=[];
   const slots=allEntered(b);if(!slots.length)return A().toast('등장한 포켓몬이 없다');
@@ -624,11 +631,13 @@ window.OM_BATTLE_UI=(()=>{
    return {slot:s.slot,mon:s.mon,cmd:{change:x.move==='switch',priorityMap:prioMap,orderMap},prioMod,started:!!s.mon.started,scarf:s.mon.item==='구애스카프',tailwind:(objs['순풍']||0)>0,swamp:(objs['습원']||0)>0}});
   const rows=B().turnOrder(entries,{trick:((f.rooms||{})['트릭룸']||0)>0});
   const order=rows.map(r=>{const x=(((b.cmds||{})[r.mon.tid]||{}).mons||{})[r.mon.id]||{};const mv=(x.move!==''&&x.move!=='switch'&&x.move!=null)?(r.mon.moves||[])[+x.move]:null;
-   return {slot:r.slot,mid:r.mon.id,name:r.mon.name,side:r.mon.side,change:r.change,started:r.started,order:r.order,prio:r.prio,speed:r.speed,dice:r.dice,move:mv?mv.name:(x.move==='switch'?'교대':''),moveType:mv?mv.typeEn:'',targets:x.targets||[],pursuit:mv?mv.name==='추격':false}});
+   return {slot:r.slot,mid:r.mon.id,name:r.mon.name,side:r.mon.side,change:r.change,started:r.started,order:r.order,prio:r.prio,speed:r.speed,dice:r.dice,move:mv?mv.name:(x.move==='switch'?'교대':''),moveType:mv?mv.typeEn:'',targets:x.targets||[],pursuit:isPursuit(mv,r.mon)}});
   /* 추격: 교대하는 대상을 노리면 교대보다 먼저 때린다 */
   const notes=[];if(((f.rooms||{})['트릭룸']||0)>0)notes.push('「트릭룸」이 시공간을 뒤틀었다! (스피드 역순)');
   for(const m of iceUsed)notes.push(`${m.name} 「아이스번」 — 이번 기술 우선도 −1`);
-  for(const o of order)if(o.pursuit)for(const t of o.targets){const v=order.find(z=>z.slot===t);if(v&&v.change)notes.push(`${o.name}의 「추격」 — 교대하려는 ${v.name}을(를) 먼저 때린다!`)}
+  /* 따라가때리기: 교대하려는 대상을 노리면 그 교대 바로 앞으로 끌어당기고, 그 공격은 위력 2배 (공격 창이 pursuitHit 를 본다) */
+  for(const o of order.filter(z=>z.pursuit))for(const t of o.targets){const v=order.find(z=>z.slot===t&&z.change);if(!v)continue;const i=order.indexOf(o),j=order.indexOf(v);
+   if(i>j){order.splice(i,1);order.splice(j,0,o)}o.pursuitHit=v.mid;notes.push(`${o.name}의 「${o.move}」 — 교대하려는 ${v.name}을(를) 먼저 때린다! (위력 2배)`);break}
   for(const m of iceUsed)await A().set(['battle','mons',m.id,'prioDown'],null);
   await A().set(['battle','order'],order);await A().set(['battle','orderIdx'],0);await A().set(['battle','orderNotes'],notes);await A().set(['battle','phase'],2);
   cutPhase('행동 순서','');A().sysLog('행동 순서\n'+order.map((o,i)=>`${i+1}. ${o.name} (${o.change?'교대 · ':''}${o.order!==20?'순서 '+o.order+' · ':''}${o.prio?'우선 '+o.prio+' · ':''}스피드 ${Math.round(o.speed)} · d${o.dice})`).join('\n'),'battle')}
@@ -956,7 +965,7 @@ window.OM_BATTLE_UI=(()=>{
   const syncBoard=()=>{md.querySelectorAll('[data-at]').forEach(t=>{const cb=md.querySelector(`[data-t="${t.dataset.at}"]`);t.classList.toggle('on',!!(cb&&cb.checked));const tk=t.querySelector('.tk');if(tk)tk.textContent=cb&&cb.checked?'✓':''})};
   md.querySelectorAll('[data-at]').forEach(t=>t.onclick=()=>{const cb=md.querySelector(`[data-t="${t.dataset.at}"]`);if(cb){cb.checked=!cb.checked;syncBoard()}});
   md.querySelectorAll('[data-amv]').forEach(cd=>cd.onclick=()=>{mvSel.value=cd.dataset.amv;md.querySelectorAll('[data-amv]').forEach(q=>q.classList.toggle('on',q===cd));syncMove()});
-  const syncMove=()=>{const mv=(atk.moves||[])[+mvSel.value]||{};$('#apow',md).value=mv.pow||0;{const a=moveAuto(mv);$('#acritforce',md).checked=!!(a&&a.critSure)}$('#amef',md).textContent=(SPMAP[String(mv.name||'').trim()]?'【변칙 위력 — 대상마다 자동 계산】 ':'')+(mv.eff||'');const wm=WEATHER_MUL[f.weather.type]||{};$('#aweather',md).value=wm[mv.typeEn]!=null?wm[mv.typeEn]:1;
+  const syncMove=()=>{const mv=(atk.moves||[])[+mvSel.value]||{};$('#apow',md).value=mv.pow||0;{const oe=(b.order||[]).find(o=>o.mid===mid&&o.pursuitHit);const pv=oe&&b.mons[oe.pursuitHit];if(oe&&pv&&pv.entry&&isPursuit(mv,atk)&&String(mv.name)===String(oe.move)){$('#apow',md).value=(+mv.pow||0)*2;setTimeout(()=>{const e2=$('#amef',md);if(e2)e2.textContent='【따라가때리기 — 교대하려는 '+pv.name+'에게 위력 2배】 '+e2.textContent},0)}}{const a=moveAuto(mv);$('#acritforce',md).checked=!!(a&&a.critSure)}$('#amef',md).textContent=(SPMAP[String(mv.name||'').trim()]?'【변칙 위력 — 대상마다 자동 계산】 ':'')+(mv.eff||'');const wm=WEATHER_MUL[f.weather.type]||{};$('#aweather',md).value=wm[mv.typeEn]!=null?wm[mv.typeEn]:1;
    let fm=1;const ft=f.terrain.type;if(ft==='그래스필드'&&mv.typeEn==='Grass')fm=1.3;if(ft==='일렉트릭필드'&&mv.typeEn==='Electric')fm=1.3;if(ft==='사이코필드'&&mv.typeEn==='Psychic')fm=1.3;if(ft==='미스트필드'&&mv.typeEn==='Dragon')fm=0.5;$('#afield',md).value=fm;
    const dflt=defaultTargets(b,mid,String(mvSel.value));if(x.move==null||x.move===''||+x.move!==+mvSel.value){md.querySelectorAll('[data-t]').forEach(cb=>cb.checked=dflt.includes(cb.dataset.t))}syncBoard()};
   mvSel.onchange=syncMove;syncMove();
@@ -1001,7 +1010,7 @@ window.OM_BATTLE_UI=(()=>{
     A().sysLog(`【공격】 ${atk.name} 『${mv.name}』 ${esc(mv.type||'')} ${mv.cat||''}${+g('apow').value?' 위력 '+g('apow').value:''}
 ${L.join('\n')}${once.length?'\n'+once.map(x=>'· '+x.line).join('\n'):''}`,'battle',{mid:atk.id,img:atk.image||''})}
    const agRow=(x,key,who)=>x.g&&x.ok?`<label class="small agr"><input type="checkbox" data-ag="${key}" checked> ${who?esc(who)+' · ':''}${esc(x.line)}</label>`:`<div class="small" style="color:${x.ok?'var(--ok)':'var(--mute)'}">${who?esc(who)+' · ':''}${esc(x.line)}</div>`;
-   const extra=MAU?[...(MAU.recoil?[`반동 ${MAU.recoil.basis==='max'?'최대 HP':'가한 대미지'} ${MAU.recoil.frac}${MAU.recoil.when==='miss'?' (모두 빗나갔을 때)':''}`]:[]),...(MAU.drain?[`드레인 ${MAU.drain}`]:[]),...(MAU.selfFaint?['사용 후 자신 빈사']:[])]:[];
+   const extra=MAU?[...(MAU.recoil?[`반동 ${MAU.recoil.basis==='max'?'최대 HP':'가한 대미지'} ${MAU.recoil.frac}${MAU.recoil.when==='miss'?' (모두 빗나갔을 때)':''}`]:[]),...(MAU.drain?[`드레인 ${MAU.drain}`]:[]),...(MAU.selfFaint?['사용 후 자신 빈사']:[]),...(MAU.forceSwitch?['맞은 대상 강제 교대 (흡반·뿌리박기 등은 막힘)']:[]),...(MAU.selfSwitch?[MAU.selfSwitch==='batton'?'배턴터치로 교대':'명중 후 임의 교대']:[])]:[];
    $('#ares',md).innerHTML=`${res.some(r=>(r.sec||[]).length)||once.length||extra.length||(MAU0&&MAU0.notes.length)?`<div class="card agc" style="margin:0 0 6px;padding:6px 10px"><b class="small">판정 · 부가효과</b> <span class="small dim">${MAU?'(체크된 것은 「적용」 때 자동으로 들어간다)':'(부가효과 발동은 손으로 적용)'}</span>${res.map((r,i)=>(r.sec||[]).map((x,j)=>agRow(x,'t'+i+'_'+j,r.def.name)).join('')).join('')}${once.map((x,j)=>agRow(x,'o'+j,atk.name)).join('')}${extra.map((t,j)=>`<label class="small agr"><input type="checkbox" data-agx="${j}" checked> ${esc(atk.name)} · ${esc(t)}</label>`).join('')}${MAU0&&MAU0.notes.length?`<div class="small" style="color:var(--yel2);margin-top:3px">손으로: ${MAU0.notes.map(esc).join(' · ')}</div>`:''}</div>`:''}<table class="t"><tr><th>대상</th><th>명중</th><th>급소</th><th>대미지(상성 전)</th><th>상성</th><th>보정</th><th>최종</th></tr>${res.map((r,i)=>`<tr>
     <td class="nw"><div class="row" style="gap:6px;flex-wrap:nowrap"><div class="ti sm" style="${r.def.image?`background-image:url('${cssu(r.def.image)}')`:''}"></div><div><b>${esc(r.def.name)}</b><div class="small dim">HP ${r.def.hp.cur}/${r.def.hp.max}</div>${r.mods&&r.mods.names.length?`<div class="small" style="color:var(--yel2)">${r.mods.names.map(x=>esc(x.txt)).join('<br>')}</div>`:''}</div></div></td>
     <td>${r.acc.sure?'필중':(r.acc.hit?'<b style="color:var(--ok)">명중</b>':'<b style="color:var(--red)">빗나감</b>')+`<div class="small dim">${r.acc.note?esc(r.acc.note):r.acc.roll+' / '+r.acc.target}</div>`}</td>
@@ -1030,7 +1039,7 @@ ${L.join('\n')}${once.length?'\n'+once.map(x=>'· '+x.line).join('\n'):''}`,'bat
     if(FX()&&r.mods)FX().consume(nb,r.mods.names);
     lines.push(`→ ${def.name}: ${hitTxt} ${crit?'급소! ':''}${r.hits.length>1?r.hits.length+'회 ':''}대미지 ${def.lastHit.total} ×${r.eff.value}${r.guard&&r.guard!==1?' 완화 ×'+r.guard:''} ≈ ${r.hp?r.hp.final:0} — 받는 쪽이 「HP」에서 적용`)}
    if($('#alife',md).checked&&dealtAny){const a=nb.mons[mid];const rec=Math.max(1,Math.floor(a.hp.max/10));a.hp.latest=a.hp.cur;a.hp.cur=Math.max(0,a.hp.cur-rec);lines.push(`${atk.name} 생명의구슬 반동 −${rec} → ${a.hp.cur}`);if(a.hp.cur<=0){a.entry='';lines.push(`${a.name}은(는) 쓰러졌다!`)}}
-   if(RESULT.auto&&FX()){const AU=RESULT.auto,a=nb.mons[mid];const ck2=k=>{const el=md.querySelector(`[data-ag="${k}"]`);return !!(el&&el.checked)};const ckx=t=>{const ex=[...(AU.recoil?['recoil']:[]),...(AU.drain?['drain']:[]),...(AU.selfFaint?['faint']:[])];const el=md.querySelector(`[data-agx="${ex.indexOf(t)}"]`);return !!(el&&el.checked)};
+   if(RESULT.auto&&FX()){const AU=RESULT.auto,a=nb.mons[mid];const ck2=k=>{const el=md.querySelector(`[data-ag="${k}"]`);return !!(el&&el.checked)};const ckx=t=>{const ex=[...(AU.recoil?['recoil']:[]),...(AU.drain?['drain']:[]),...(AU.selfFaint?['faint']:[]),...(AU.forceSwitch?['fsw']:[]),...(AU.selfSwitch?['ssw']:[])];const el=md.querySelector(`[data-agx="${ex.indexOf(t)}"]`);return !!(el&&el.checked)};
     const runOps=async(ops,def)=>{const map=def?tgtFor(atk,def):(o=>o);const cx=Object.assign({},uiCtx(nb,a,RESULT.mv.name),def?{pick:list=>list.find(x=>x.id===def.id)||null}:{});const r=await FX().run(ops.map(map),cx);lines.push(...r.lines)};
     for(const [j,x] of (RESULT.once||[]).entries())if(x.ok&&ck2('o'+j))await runOps(x.ops,null);
     for(const [i,r] of RESULT.targets.entries())for(const [j,x] of (r.sec||[]).entries())if(x.g&&x.ok&&ck2('t'+i+'_'+j)){const d=nb.mons[r.def.id];if(d)await runOps(x.ops,d)}
@@ -1041,7 +1050,15 @@ ${L.join('\n')}${once.length?'\n'+once.map(x=>'· '+x.line).join('\n'):''}`,'bat
     if(AU.selfFaint&&ckx('faint')&&a.hp.cur>0){a.hp.latest=a.hp.cur;a.hp.cur=0;lines.push(`${a.name} 「${RESULT.mv.name}」 사용 후 빈사`)}
     for(const id in nb.mons){const x=nb.mons[id];if(x.entry&&x.hp.cur<=0){x.entry='';lines.push(`${x.name}은(는) 쓰러졌다!`)}}}
    nb.mons[mid].lastDealt={total:RESULT.targets.filter(r=>r.acc.hit&&r.dmg).reduce((a,r)=>a+(r.hp?r.hp.final:0),0),targets:RESULT.targets.filter(r=>r.acc.hit&&r.dmg).map(r=>r.def.name).join(', '),at:Date.now()};
-   A().closeModal();if(await saveBattle(nb0,nb))A().sysLog(`【전달】 ${atk.name} 『${RESULT.mv.name}』\n${lines.join('\n')}`,'battle',{mid:atk.id,img:atk.image||''})}}
+   const AU2=RESULT.auto;const xck=t=>{if(!AU2)return false;const ex=[...(AU2.recoil?['recoil']:[]),...(AU2.drain?['drain']:[]),...(AU2.selfFaint?['faint']:[]),...(AU2.forceSwitch?['fsw']:[]),...(AU2.selfSwitch?['ssw']:[])];const el=md.querySelector(`[data-agx="${ex.indexOf(t)}"]`);return !!(el&&el.checked)};
+   const doF=AU2&&AU2.forceSwitch&&xck('fsw'),doS=AU2&&AU2.selfSwitch&&xck('ssw');
+   A().closeModal();if(!await saveBattle(nb0,nb))return;A().sysLog(`【전달】 ${atk.name} 『${RESULT.mv.name}』\n${lines.join('\n')}`,'battle',{mid:atk.id,img:atk.image||''});
+   /* 교대는 저장 뒤에 (퇴장·등장이 각자 저장한다) */
+   if(doF)for(const r of RESULT.targets){if(!r.acc.hit||r.def.id===mid)continue;const d=ctx().b.mons[r.def.id];if(!d||!d.entry||d.hp.cur<=0)continue;const g=await switchGuard(d);
+    if(g){A().sysLog(`${d.name} 강제 교대를 받지 않는다 (${g})`,'battle');continue}
+    const c2=ctx();if(canEdit(c2,d)||c2.mgr)await forcedSwitch(d.id,{sys:true});else A().sysLog(`${d.name} 강제 교대 — 상대나 GM 이 「퇴장 → 강제 교대」로 처리`,'battle')}
+   if(doS&&RESULT.targets.some(r=>r.acc.hit)){const a=ctx().b.mons[mid];if(a&&a.entry&&a.hp.cur>0){const bench=Object.values(ctx().b.mons).filter(x=>x.tid===a.tid&&!x.entry&&!x.pend&&x.hp.cur>0&&x.id!==mid);
+    if(!bench.length)A().sysLog(`${a.name} 교대할 포켓몬이 벤치에 없다`,'battle');else{const pk=await uiCtx(ctx().b,a,RESULT.mv.name).pick(bench,'교대해 들어올 포켓몬');if(pk){const area=a.entry;await exitMon(mid,{noAsk:true,batton:AU2.selfSwitch==='batton',sys:true});await enterMon(pk.id,area,{sys:true})}}}}}}
 
  /* 상세 창용: 지금 걸린 것 (읽기 전용) */
  function nowParts(m){return {rank:rankChips(m),state:stateChips(m),fx:flagChips(m)+(FX()?FX().chips(m).map(ch=>`<span class="rk fxc" title="${esc(ch.title)}">${esc(ch.t)}</span>`).join(''):'')}}
