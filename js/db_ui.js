@@ -55,11 +55,14 @@ window.OM_DB_UI=(()=>{
  function drawDetail(){const md=$('.modal');if(!md)return;const r=all(UI.kind).find(x=>x.name===UI.sel);const el=$('#dbdetail',md);
   if(!r){el.innerHTML='<div class="empty">왼쪽에서 고르면 여기 자세히 나온다</div>';return}
   const isGm=A().ST.role==='gm';const ov=((A().ST.state.dbx||{})[UI.kind]||{})[r.name];
-  el.innerHTML=`<div class="dbcard"><div class="dbth">${r.img?`<img src="${esc(r.img)}">`:''}${r.type?A().typeChip(r.type):''}<b>${esc(r.name)}</b><span class="sp"></span>${r.tags.map(t=>`<span class="dbtag">${esc(t)}</span>`).join('')}</div><div class="dbtb">${r.html}</div><div class="dbfoot">${isGm&&UI.kind!=='state'?`<button class="btn sm ghost" id="dbedit">수정</button><button class="btn sm ghost" id="dbdup">사본</button>${ov?'<button class="btn sm ghost" id="dbrevert">기본으로</button>':''}<button class="btn sm ghost danger" id="dbdel">삭제</button>`:''}<span class="sp"></span>${UI.pick?`<button class="btn pri" id="dbpick">이 걸로</button>`:''}</div></div>`;
+  el.innerHTML=`<div class="dbcard"><div class="dbth">${r.img?`<img src="${esc(r.img)}">`:''}${r.type?A().typeChip(r.type):''}<b>${esc(r.name)}</b><span class="sp"></span>${r.tags.map(t=>`<span class="dbtag">${esc(t)}</span>`).join('')}</div><div class="dbtb">${r.html}${UI.kind==='move'?mvAuto(r.name):''}</div><div class="dbfoot">${isGm&&UI.kind!=='state'?`<button class="btn sm ghost" id="dbedit">수정</button><button class="btn sm ghost" id="dbdup">사본</button>${ov?'<button class="btn sm ghost" id="dbrevert">기본으로</button>':''}<button class="btn sm ghost danger" id="dbdel">삭제</button>`:''}<span class="sp"></span>${UI.pick?`<button class="btn pri" id="dbpick">이 걸로</button>`:''}</div></div>`;
   const p=$('#dbpick',md);if(p)p.onclick=choose;
   const e=$('#dbedit',md);if(e)e.onclick=()=>openEdit(UI.kind,r.name,false);const du=$('#dbdup',md);if(du)du.onclick=()=>openEdit(UI.kind,r.name,true);
   const rv=$('#dbrevert',md);if(rv)rv.onclick=async()=>{await A().set(['dbx',UI.kind,r.name],null);await A().set(['dbx','at'],Date.now());refresh()};
   const dl=$('#dbdel',md);if(dl)dl.onclick=async()=>{if(!confirm(`「${r.name}」을 이 방의 DB 에서 지울까? (기본 DB 는 그대로, 「기본으로」로 되돌릴 수 있다)`))return;await A().set(['dbx',UI.kind,r.name],{del:1});await A().set(['dbx','at'],Date.now());UI.sel='';refresh()}}
+ /* 기술 자동화 요약 (제작기 moveauto): 공격 창 「적용」 때 자동으로 들어가는 것 / 손으로 할 것 */
+ function mvAuto(name){const MA=window.OM_MOVEAUTO,rec=recOf('move',name);if(!MA||!rec)return '';const a=MA.parse(rec);if(!a)return '';const on=MA.auto(a);if(!on&&!a.notes.length)return '';
+  return `<div class="dbauto">${on?`<div><b>⚙ 자동</b> ${esc(MA.describe(a))}</div>`:''}${a.notes.length?`<div class="dim"><b>✋ 손으로</b> ${a.notes.map(esc).join(' · ')}</div>`:''}</div>`}
  function refresh(){applyOverride(A().ST.state.dbx);CACHE[UI.kind]=null;render()}
  function choose(){const r=all(UI.kind).find(x=>x.name===UI.sel);if(!r)return;const f=UI.pick;A().closeModal();if(f)f(r.name,r)}
  /* ----- 수정 (GM): 방 상태 dbx[kind][name] 에 덮어쓰기 → 모두에게 실시간 반영 ----- */
