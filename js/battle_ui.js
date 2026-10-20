@@ -26,7 +26,7 @@ window.OM_BATTLE_UI=(()=>{
 
  /* ---------- 상태 읽기 도우미 ---------- */
  function ctx(){const ST=A().ST;const b=ST.state.battle||{};return {ST,b,role:ST.role,seat:ST.seat,gm:ST.role==='gm'}}
- function mode(b){return Math.max(1,Math.min(3,+b.mode||1))}
+ function mode(b){return Math.max(1,Math.min(3,+b.mode||2))}  /* 기본 더블(2:2) */
  function entered(b,side){const out={};for(const a of AREAS.slice(0,mode(b))){const m=Object.values(b.mons||{}).find(x=>x.side===side&&x.entry===a&&x.hp.cur>0);out[a]=m||null}return out}
  function allEntered(b){const out=[];for(const s of SIDES){const e=entered(b,s);for(const a in e)if(e[a])out.push({slot:slotOf(s,a),side:s,area:a,mon:e[a]})}return out}
  function myTrainers(c){const trs=c.b.trainers||{};if(c.gm)return Object.keys(trs);return c.seat&&trs[c.seat]?[c.seat]:[]}
@@ -67,7 +67,7 @@ window.OM_BATTLE_UI=(()=>{
    const cmdDone=!!(b.cmds||{})[tid];const rd=!!ready[tid];
    return `<div class="trainer"><div class="tpic" style="${t.image?`background-image:url('${t.image}')`:''}"></div><div class="tinfo"><div class="tn">${esc(t.name)}${tid===c.seat?' <span class="tag me">ME</span>':''}${rd?' <span class="tag ok">READY</span>':cmdDone?' <span class="tag">공개됨</span>':''}</div>
      <div class="tr">${['육성','지시','통솔','능력'].map(k=>`${k} <b>${esc(t.ranks[k]||'-')}</b>`).join(' · ')} · ${o?`<span class="who">${esc(o.name)}</span>`:'<span class="dim">빈 자리</span>'}</div></div>
-     ${c.gm?`<button class="btn xs ghost" data-act="iv" data-tid="${tid}">알까기</button><button class="btn xs ghost" data-act="orders" data-tid="${tid}">지령</button><button class="btn xs ghost danger" data-act="unload" data-tid="${tid}">빼기</button>`:''}</div>
+     ${c.gm?`<button class="btn xs ghost" data-act="orders" data-tid="${tid}">지령</button><button class="btn xs ghost danger" data-act="unload" data-tid="${tid}">빼기</button>`:''}</div>
     <div class="bench">${mons.map(m=>benchCard(c,m)).join('')||'<div class="dim small">포켓몬 없음</div>'}</div>`}).join('');
   return `<div class="sideBox ${side}"><div class="shead"><span class="sname">${SIDE_KO[side]}</span><span class="sp"></span>${c.gm?`<button class="btn xs" data-act="load" data-side="${side}">+ 파티</button>`:''}</div>
    <div class="areas">${areas}</div>${bench||'<div class="aempty">트레이너 없음</div>'}</div>`}
@@ -175,11 +175,18 @@ window.OM_BATTLE_UI=(()=>{
    case 'turnend':return turnEnd();
    case 'resetcmd':if(!confirm('공개된 지시와 준비 상태를 지울까?'))return;CMD={};await A().set(['battle','cmds'],{});await A().set(['ready'],{});return}}
 
- async function enterMon(mid){const c=ctx();const b=c.b;const m=b.mons[mid];if(!m||!canEdit(c,m))return;
-  const ent=entered(b,m.side);const free=AREAS.slice(0,mode(b)).filter(a=>!ent[a]);
-  let area=free[0];
-  if(mode(b)>1){const pick=prompt(`에리어를 골라 줘 (${AREAS.slice(0,mode(b)).map(a=>a.toUpperCase()).join('/')})${free.length?' · 빈 자리: '+free.map(a=>a.toUpperCase()).join(','):''}`,(area||'a').toUpperCase());if(pick==null)return;area=pick.trim().toLowerCase()}
-  if(!AREAS.slice(0,mode(b)).includes(area))return A().toast('그런 에리어가 없다');
+ /* 등장: 더블(2:2)이 기본. 트레이너가 둘이면 첫 트레이너 A, 둘째 B 가 기본 자리. 빈 자리가 아니면 고른다. */
+ async function enterMon(mid,area){const c=ctx();const b=c.b;const m=b.mons[mid];if(!m||!canEdit(c,m))return;
+  const ent=entered(b,m.side);const areas=AREAS.slice(0,mode(b));
+  if(!area){const tids=((b.sides||{})[m.side]||{}).trainers||[];const pref=areas[Math.min(tids.indexOf(m.tid),areas.length-1)]||areas[0];
+   const free=areas.filter(a=>!ent[a]);
+   if(areas.length===1)area=areas[0];
+   else if(!ent[pref])area=pref;
+   else if(free.length)area=free[0];
+   else{const md=A().openModal(`<div class="mhead"><h2>${esc(m.name)} 등장 — 에리어</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+     <div class="row">${areas.map(a=>`<button class="btn ${ent[a]?'ghost':'pri'}" data-area="${a}">${a.toUpperCase()}${ent[a]?' · '+esc(ent[a].name)+' 과 교대':' · 빈 자리'}</button>`).join('')}</div>`);
+    md.querySelectorAll('[data-area]').forEach(bt=>bt.onclick=()=>{A().closeModal();enterMon(mid,bt.dataset.area)});return}}
+  if(!areas.includes(area))return A().toast('그런 에리어가 없다');
   const occ=ent[area];
   if(occ&&occ.id!==mid){await A().set(['battle','mons',occ.id,'entry'],'')}
   const started=(+b.phase||0)!==0;
@@ -343,7 +350,7 @@ window.OM_BATTLE_UI=(()=>{
     res.push({slot,def,acc,hits,dmg,eff,stab,hp,guard:1,manual:1})}
    RESULT={mv,targets:res,moveTypes};
    $('#ares',md).innerHTML=`<table class="t"><tr><th>대상</th><th>명중</th><th>급소</th><th>대미지(상성 전)</th><th>상성</th><th>보정</th><th>최종</th></tr>${res.map((r,i)=>`<tr>
-    <td><b>${esc(r.def.name)}</b><div class="small dim">HP ${r.def.hp.cur}/${r.def.hp.max}</div></td>
+    <td class="nw"><b>${esc(r.def.name)}</b><div class="small dim">HP ${r.def.hp.cur}/${r.def.hp.max}</div></td>
     <td>${r.acc.sure?'필중':(r.acc.hit?'<b style="color:var(--ok)">명중</b>':'<b style="color:var(--red)">빗나감</b>')+`<div class="small dim">${r.acc.roll} / ${r.acc.target}</div>`}</td>
     <td>${r.hits.map(h=>h.v===2?`<b style="color:var(--red)">급소</b>`:'-').join('<br>')}<div class="small dim">${r.hits.map(h=>h.cr.roll+'/'+h.cr.chance).join('<br>')}</div></td>
     <td>${r.dmg?`<b class="mono">${r.dmg.total}</b> <span class="small dim">(${r.dmg.min}~${r.dmg.max}${r.hits.length>1?' · '+r.hits.length+'회':''})</span>`:'-'}</td>

@@ -110,11 +110,21 @@ function renderLog(scroll){
 
 /* ---------- 씬 ---------- */
 function scene(){return ST.state.scene||'rp'}
+let VIEW='';let lastScene='';
+const VIEWS=[['rp','RP'],['battle','배틀'],['sheet','시트'],['graph','관계도'],['calendar','캘린더']];
 function renderScene(){
- const tabs=$('#sceneTabs');if(tabs){const cur=scene();tabs.innerHTML=[['rp','RP'],['battle','배틀']].map(([k,n])=>`<button data-s="${k}" class="${cur===k?'on':''}" ${ST.role==='gm'?'':'disabled'}>${n}</button>`).join('');
-  tabs.querySelectorAll('button').forEach(b=>b.onclick=()=>set(['scene'],b.dataset.s))}
+ /* GM 이 무대(RP/배틀)를 바꾸면 모두 그쪽으로 따라간다. 그 밖의 탭(시트·관계도·캘린더)은 각자 본다 */
+ if(scene()!==lastScene){lastScene=scene();VIEW=scene()}
+ if(!VIEW)VIEW=scene();
+ const tabs=$('#sceneTabs');if(tabs){tabs.innerHTML=VIEWS.map(([k,n])=>`<button data-s="${k}" class="${VIEW===k?'on':''} ${scene()===k?'stage':''}" title="${scene()===k?'지금 무대':''}">${n}</button>`).join('')+(ST.role==='gm'?`<button class="btn xs ghost" id="stageBtn" title="모두를 이 탭으로 부른다">무대로</button>`:'');
+  tabs.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>{VIEW=b.dataset.s;renderScene()});
+  const sb=$('#stageBtn');if(sb)sb.onclick=()=>{if(VIEW==='rp'||VIEW==='battle')set(['scene'],VIEW);else toast('무대는 RP 나 배틀만 될 수 있어')}}
  const el=$('#scene');if(!el)return;
- if(scene()==='battle')renderBattle(el);else el.innerHTML=`<div class="rp"><div style="text-align:center">RP 씬<br><span class="small">배경·스탠딩·BGM·지도·덱 창은 3단계에서 들어온다</span></div></div>`}
+ if(VIEW==='battle')renderBattle(el);
+ else if(VIEW==='sheet')window.OM_SHEET_UI.render(el);
+ else if(VIEW==='graph')window.OM_GRAPH_UI.render(el);
+ else if(VIEW==='calendar')window.OM_CAL_UI.render(el);
+ else el.innerHTML=`<div class="rp"><div style="text-align:center">RP 씬<br><span class="small">배경·스탠딩·BGM·지도·덱 창은 3단계에서 들어온다</span></div></div>`}
 
 /* ---------- 배틀 씬 → battle_ui.js ---------- */
 function B(){return ST.state.battle||{}}
@@ -122,29 +132,31 @@ function renderBattle(el){window.OM_BATTLE_UI.render(el)}
 async function unloadTrainer(tid){const b=B();if(!confirm('이 트레이너와 파티를 배틀에서 뺄까?'))return;const nb=JSON.parse(JSON.stringify(b));for(const s of ['left','right']){if(nb.sides&&nb.sides[s])nb.sides[s].trainers=(nb.sides[s].trainers||[]).filter(x=>x!==tid)}
  delete (nb.trainers||{})[tid];for(const k in nb.mons||{})if(nb.mons[k].tid===tid)delete nb.mons[k];if(nb.cmds)delete nb.cmds[tid];await set(['battle'],nb)}
 
-/* ---------- 파티 불러오기 (제작기 docs) ---------- */
+/* ---------- 파티 불러오기: 로스터(시트) → 배틀 ---------- */
 let MK=null;
 async function loadMaker(force){if(MK&&!force)return MK;toast('제작기 시트를 읽는 중…');const [trs,pks,fos]=await Promise.all([DBS().makerDocs('trainers'),DBS().makerDocs('pokemon'),DBS().makerDocs('folders')]);
  MK={trainers:trs,pokemon:pks,folders:fos};return MK}
+function roster(){return ST.state.roster||{trainers:{},mons:{}}}
 async function openLoadParty(side){
- let mk;try{mk=await loadMaker()}catch(e){return toast('제작기 DB를 읽지 못했다: '+e.message)}
- const fold=new Map(mk.folders.map(f=>[f.id,(f.data||{}).name||f.id]));
- const list=mk.trainers.map(t=>({id:t.id,d:(t.data&&t.data.data)||{},ord:(t.data||{}).ord||0})).sort((a,b)=>(fold.get(a.d.folder)||'').localeCompare(fold.get(b.d.folder)||'')||a.ord-b.ord);
- const m=openModal(`<div class="mhead"><h2>${side==='left'?'좌측':'우측'} 진영에 파티 불러오기</h2><span class="sp"></span><button class="btn sm ghost" id="mkRefresh">새로 읽기</button><button class="btn ghost" data-x>닫기</button></div>
-  <input type="text" id="tq" placeholder="트레이너 이름으로 찾기" style="width:100%;margin-bottom:8px">
-  <ul class="pick" id="tl">${list.map(t=>`<li data-id="${t.id}"><span class="small muted" style="min-width:90px">${esc(fold.get(t.d.folder)||'-')}</span><b>${esc(t.d.name||'(이름 없음)')}</b><span class="small muted">${esc(['육성','지시','통솔','능력'].map(k=>k+' '+((t.d.ranks||{})[k]||'-')).join(' · '))} · ${(t.d.pids||[]).length}체</span><span class="sp"></span><button class="btn sm pri" data-pick="${t.id}">불러오기</button></li>`).join('')}</ul>`);
- $('#mkRefresh',m).onclick=async()=>{await loadMaker(true);closeModal();openLoadParty(side)};
- $('#tq',m).oninput=e=>{const q=e.target.value.trim();m.querySelectorAll('#tl li').forEach(li=>li.style.display=!q||li.textContent.includes(q)?'':'none')};
- m.querySelectorAll('[data-pick]').forEach(btn=>btn.onclick=async()=>{
-  const tdoc=mk.trainers.find(t=>t.id===btn.dataset.pick);const {trainer,mons}=I().party(tdoc,mk.pokemon);
-  if(!mons.length&&!confirm('이 트레이너는 포켓몬이 없다. 그래도 불러올까?'))return;
-  const nb=JSON.parse(JSON.stringify(B()));nb.sides=nb.sides||{left:{trainers:[]},right:{trainers:[]}};nb.sides.left=nb.sides.left||{trainers:[]};nb.sides.right=nb.sides.right||{trainers:[]};
-  nb.trainers=nb.trainers||{};nb.mons=nb.mons||{};nb.turn=nb.turn||0;nb.phase=nb.phase||0;nb.mode=nb.mode||1;nb.field=nb.field||{};nb.cmds=nb.cmds||{};nb.order=nb.order||[];
-  for(const s of ['left','right'])nb.sides[s].trainers=nb.sides[s].trainers.filter(x=>x!==trainer.id);
-  nb.sides[side].trainers.push(trainer.id);trainer.side=side;nb.trainers[trainer.id]=trainer;
-  for(const k in nb.mons)if(nb.mons[k].tid===trainer.id)delete nb.mons[k];
-  mons.forEach((mon,i)=>{mon.side=side;mon.slot=i;mon.entry='';mon.started=false;nb.mons[mon.id]=mon});
-  closeModal();if(await set(['battle'],nb)){toast(`${trainer.name} 파티 ${mons.length}체를 불러왔다`);sysLog(`${trainer.name} (${side==='left'?'좌측':'우측'}) 파티 등록 · ${mons.length}체`,'battle')}})}
+ const r=roster();const ids=Object.keys(r.trainers).sort((a,b)=>(r.trainers[a].ord||0)-(r.trainers[b].ord||0));
+ const inB=B().trainers||{};
+ const m=openModal(`<div class="mhead"><h2>${side==='left'?'좌측':'우측'} 진영에 파티 불러오기</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+  ${ids.length?`<ul class="pick">${ids.map(id=>{const t=r.trainers[id];const n=(t.pids||[]).length;return `<li><b>${esc(t.name)}</b><span class="small muted">${esc(['육성','지시','통솔','능력'].map(k=>k+' '+((t.ranks||{})[k]||'-')).join(' · '))} · ${n}체</span><span class="sp"></span>${inB[id]?'<span class="tag">배틀에 있음</span>':''}<button class="btn sm pri" data-pick="${id}">불러오기</button></li>`}).join('')}</ul>`:'<div class="empty">로스터가 비어 있다.</div>'}
+  <div class="row" style="margin-top:10px"><span class="small muted">트레이너는 「시트」 탭에서 제작기에서 가져오거나 새로 만든다.</span><span class="sp"></span><button class="btn sm" id="goSheet">시트 탭으로</button></div>`);
+ $('#goSheet',m).onclick=()=>{closeModal();VIEW='sheet';renderScene()};
+ m.querySelectorAll('[data-pick]').forEach(btn=>btn.onclick=async()=>{closeModal();await loadFromRoster(btn.dataset.pick,side)})}
+async function loadFromRoster(tid,side){
+ const r=roster();const t=r.trainers[tid];if(!t)return toast('로스터에 없는 트레이너다');
+ const trainer=JSON.parse(JSON.stringify(t));const mons=(t.pids||[]).map(id=>r.mons[id]).filter(Boolean).map(x=>JSON.parse(JSON.stringify(x)));
+ if(!mons.length&&!confirm('이 트레이너는 포켓몬이 없다. 그래도 불러올까?'))return;
+ const nb=JSON.parse(JSON.stringify(B()));nb.sides=nb.sides||{left:{trainers:[]},right:{trainers:[]}};nb.sides.left=nb.sides.left||{trainers:[]};nb.sides.right=nb.sides.right||{trainers:[]};
+ nb.trainers=nb.trainers||{};nb.mons=nb.mons||{};nb.turn=nb.turn||0;nb.phase=nb.phase||0;nb.mode=nb.mode||2;nb.field=nb.field||{};nb.cmds=nb.cmds||{};nb.order=nb.order||[];
+ for(const s of ['left','right'])nb.sides[s].trainers=nb.sides[s].trainers.filter(x=>x!==trainer.id);
+ nb.sides[side].trainers.push(trainer.id);trainer.side=side;nb.trainers[trainer.id]=trainer;
+ for(const k in nb.mons)if(nb.mons[k].tid===trainer.id)delete nb.mons[k];
+ mons.forEach((mon,i)=>{mon.side=side;mon.slot=i;mon.entry='';mon.started=false;mon.rank={attack:0,defense:0,specialattack:0,specialdefense:0,speed:0,accuracy:0,evasion:0,critical:0};mon.mod={};mon.states={};mon.teraActive=false;
+  mon.hp={max:mon.stats[0],cur:mon.sheetHp==null?mon.stats[0]:Math.min(mon.sheetHp,mon.stats[0])};nb.mons[mon.id]=mon});
+ if(await set(['battle'],nb)){toast(`${trainer.name} 파티 ${mons.length}체를 불러왔다`);sysLog(`${trainer.name} (${side==='left'?'좌측':'우측'}) 파티 등록 · ${mons.length}체`,'battle');VIEW='battle';renderScene()}}
 
 /* ---------- 알까기 (개체값) ---------- */
 function openHatch(tid){
@@ -180,8 +192,8 @@ function openMon(mid){
   <tr><th>소지품</th><td><b>${esc(m.item||'-')}</b><div class="pre small">${esc(m.itemEff)}</div></td></tr></table>
   <h3 style="margin:12px 0 6px;font-size:14px">기술 ${m.moves.length}</h3>
   <table class="t"><tr><th>이름</th><th>타입</th><th>분류</th><th>위력</th><th>명중</th><th>범위</th><th>우선</th><th>효과</th></tr>
-   ${m.moves.map(mv=>`<tr><td><b>${esc(mv.name)}</b>${mv.half?' <span class="small muted">½</span>':''}${mv.missing?' <span class="small" style="color:var(--red)">DB 없음</span>':''}</td><td>${typeChip(mv.typeEn)}</td><td>${esc(mv.cat)}</td><td class="mono">${mv.pow||'-'}</td><td class="mono">${mv.acc||'필중'}</td><td>${esc(mv.range)}</td><td class="mono">${mv.prio||0}</td><td class="pre small">${esc(mv.eff)}</td></tr>`).join('')}</table>
-  ${m.pots.length?`<h3 style="margin:12px 0 6px;font-size:14px">포텐셜 ${m.pots.length}</h3><table class="t">${m.pots.map(p=>`<tr${p.ph?' style="opacity:.45"':''}><th style="width:140px">${esc(p.name)}${p.ph?' <span class="small">(미정)</span>':''}<div class="small muted">${esc(p.kind)}</div></th><td class="pre small">${p.ph?'':esc(p.eff)}</td></tr>`).join('')}</table>`:''}
+   ${m.moves.map(mv=>`<tr><td class="nw"><b>${esc(mv.name)}</b>${mv.half?' <span class="small muted">½</span>':''}${mv.missing?' <span class="small" style="color:var(--red)">DB 없음</span>':''}</td><td class="nw">${typeChip(mv.typeEn)}</td><td class="nw">${esc(mv.cat)}</td><td class="mono">${mv.pow||'-'}</td><td class="mono">${mv.acc||'필중'}</td><td class="nw">${esc(mv.range)}</td><td class="mono">${mv.prio||0}</td><td class="pre small eff">${esc(mv.eff)}</td></tr>`).join('')}</table>
+  ${m.pots.length?`<h3 style="margin:12px 0 6px;font-size:14px">포텐셜 ${m.pots.length}</h3><table class="t">${m.pots.map(p=>`<tr${p.ph?' style="opacity:.45"':''}><th style="width:140px;white-space:normal">${esc(p.name)}${p.ph?' <span class="small">(미정)</span>':''}<div class="small muted">${esc(p.kind)}</div></th><td class="pre small">${p.ph?'':esc(p.eff)}</td></tr>`).join('')}</table>`:''}
   ${m.excl?`<h3 style="margin:12px 0 6px;font-size:14px">전용 포텐셜</h3><table class="t"><tr><th style="width:140px">${esc(m.excl.name)}</th><td class="pre small">${esc(m.excl.eff)}</td></tr>${(m.exclX||[]).map(x=>`<tr><th>${esc(x.name)}</th><td class="pre small">${esc(x.eff)}</td></tr>`).join('')}</table>`:''}
   ${full&&m.memo?`<h3 style="margin:12px 0 6px;font-size:14px">메모</h3><div class="pre small muted">${esc(m.memo)}</div>`:''}`);
  if(ST.role==='gm'){const ap=async(cur,msg)=>{cur=Math.max(0,Math.min(m.hp.max,cur));closeModal();if(await set(['battle','mons',mid,'hp','cur'],cur))sysLog(`${m.name} ${msg} → HP ${cur}/${m.hp.max}`,'battle')};
@@ -213,6 +225,6 @@ function openModal(html){closeModal();const bg=document.createElement('div');bg.
 function closeModal(){document.querySelectorAll('.modalbg').forEach(x=>x.remove())}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
-window.OM_APP={ST,set,sysLog,openModal,closeModal,toast,typeChip,renderScene,openMon,openLoadParty,unloadTrainer,openHatch,esc};
+window.OM_APP={ST,set,sysLog,openModal,closeModal,toast,typeChip,renderScene,openMon,openLoadParty,loadFromRoster,loadMaker,unloadTrainer,openHatch,esc,get view(){return VIEW},set view(v){VIEW=v}};
 route();
 })();
