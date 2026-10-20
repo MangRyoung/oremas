@@ -1484,3 +1484,7 @@ label.tgc:has(input:focus-visible){outline:2px solid var(--yel)}
  .stt{min-width:58px}
 }
 .stt:not(.on) .n.xs{display:none}
+/* ===== 2026-10-22 배틀 단축키 묶음 ===== */
+.pf-kgrp{display:flex;align-items:baseline;gap:8px;margin:12px 0 6px;padding-top:8px;border-top:1px dashed #333}
+.pf-kgrp b{font-size:13px;white-space:nowrap}.pf-kgrp small{font-size:11px;color:var(--mute)}
+.pf-key.dup .pf-cap{background:var(--yel)}

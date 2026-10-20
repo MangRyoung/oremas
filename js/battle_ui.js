@@ -1220,6 +1220,32 @@ ${L.join('\n')}${once.length?'\n'+once.map(x=>'· '+x.line).join('\n'):''}`,'bat
     if(!bench.length)A().sysLog(`${a.name} 교대할 포켓몬이 벤치에 없다`,'battle');else{const pk=await uiCtx(ctx().b,a,RESULT.mv.name).pick(bench,'교대해 들어올 포켓몬');if(pk){const area=a.entry;await exitMon(mid,{noAsk:true,batton:AU2.selfSwitch==='batton',sys:true});await enterMon(pk.id,area,{sys:true})}}}}}}
 
  /* 상세 창용: 지금 걸린 것 (읽기 전용) */
+ /* ---------- 단축키 (prefs_ui 「배틀」 묶음에서 부른다). 처리했으면 true ----------
+    「지금 차례」 = 행동 순서의 지금 칸, 없으면 내가 고칠 수 있는 첫 등장 포켓몬 */
+ function nowMon(c){const b=c.b;const o=(b.order||[])[+b.orderIdx||0];if((+b.phase||0)>=2&&o&&b.mons[o.mid]&&canEdit(c,b.mons[o.mid]))return b.mons[o.mid];
+  const mine=allEntered(b).map(s=>s.mon).filter(m=>canEdit(c,m));return mine[0]||null}
+ function hotkey(act){const c=ctx();const b=c.b;const md=document.querySelector('.modalbg');
+  const click=sel=>{const e=md&&md.querySelector(sel);if(e&&!e.disabled){e.click();return true}return false};
+  if(act==='mRoll')return click('#aroll');
+  if(act==='mApply')return click('#aapply')||click('#esave');
+  if(!b.trainers||!Object.keys(b.trainers).length){A().toast('배틀에 나온 트레이너가 없다');return true}
+  const mgrOnly=()=>{if(!c.mgr)A().toast('배틀 진행 권한이 없다');return c.mgr};
+  const mySeat=()=>{const t=myTrainers(c);if(t.length===1)return t[0];A().toast(t.length?'트레이너가 여럿이라 단축키로는 고를 수 없다':'내 트레이너가 없다');return null};
+  const onMon=a=>{const m=nowMon(c);if(!m){A().toast('고를 포켓몬이 없다');return true}action({act:a,mid:m.id});return true};
+  switch(act){
+   case 'bProgress':if(mgrOnly())progressTurn();return true;
+   case 'bNext':if(mgrOnly()){if(!(b.order||[]).length)A().toast('행동 순서가 아직 없다');else action({act:'onext'})}return true;
+   case 'bPrev':if(mgrOnly())action({act:'oprev'});return true;
+   case 'bAttack':return onMon('attack');
+   case 'bHp':return onMon('hp');
+   case 'bEdit':return onMon('edit');
+   case 'bCmd':{const f=document.getElementById('cmdForm');if(f)f.scrollIntoView({behavior:'smooth',block:'start'});else A().toast('지시 입력 칸이 없다');return true}
+   case 'bReady':{const t=mySeat();if(t)toggleReady(t);return true}
+   case 'bFire':{const t=mySeat();if(t)openFire(t);return true}
+   case 'bReveal':if(!c.gm)A().toast('모두 공개는 GM 만');else if((+b.phase||0)!==1)A().toast('턴 개시·공개 페이즈에서만');else reveal();return true;
+   case 'bField':if(mgrOnly())openField();return true;
+   case 'bTurnEnd':if(mgrOnly()&&confirm('턴 마무리(턴 가장 마지막 → 턴 종료 → 턴 종료 이후)로 갈까?'))endFlow();return true}
+  return false}
  function nowParts(m){return {rank:rankChips(m),state:stateChips(m),fx:flagChips(m)+(FX()?FX().chips(m).map(ch=>`<span class="rk fxc" title="${esc(ch.title)}">${esc(ch.t)}</span>`).join(''):'')}}
- return {render,nowParts,watch,ctx,entered,allEntered,fieldOf,futureFire,trapWarn,resetLocal:()=>{CMD={}},startCut:(m)=>battleStartCut(ctx().b,m),openHp,action};
+ return {render,nowParts,watch,ctx,entered,allEntered,fieldOf,futureFire,trapWarn,resetLocal:()=>{CMD={}},startCut:(m)=>battleStartCut(ctx().b,m),openHp,action,hotkey};
 })();
