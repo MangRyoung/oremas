@@ -10,7 +10,7 @@ window.OM_FIELD=(()=>{
  const ko=k=>{const st=(DB().states||{}).st||{};return (st[k]&&st[k].ko)||k};
  const typesOf=m=>(m.teraActive&&m.teraEn&&m.teraEn!=='-')?[m.teraEn]:(m.types||[]).filter(t=>t&&t!=='-');
  const frac=(m,n,d)=>Math.max(1,Math.floor(m.hp.max*n/d));
- const dmg=(m,v,lines,why)=>{if(noind(m,'')){lines.push(`${m.name} ${why} — 비례 대미지를 받지 않는다`);return 0}const floor=noind(m,'noko')?1:0;const d=Math.max(0,Math.min(m.hp.cur-floor,v));if(d<=0){if(floor)lines.push(`${m.name} ${why} — 비례 대미지로는 빈사가 되지 않는다`);return 0}m.hp.cur-=d;lines.push(`${m.name} ${why} −${d} (HP ${m.hp.cur}/${m.hp.max})`);return d};
+ const dmg=(m,v,lines,why)=>{v=+v;if(!isFinite(v))return 0;if(noind(m,'')){lines.push(`${m.name} ${why} — 비례 대미지를 받지 않는다`);return 0}const floor=noind(m,'noko')?1:0;const d=Math.max(0,Math.min(m.hp.cur-floor,v));if(d<=0){if(floor)lines.push(`${m.name} ${why} — 비례 대미지로는 빈사가 되지 않는다`);return 0}m.hp.cur-=d;lines.push(`${m.name} ${why} −${d} (HP ${m.hp.cur}/${m.hp.max})`);return d};
  const heal=(m,v,lines,why)=>{if(has(m,'HealBlock')){lines.push(`${m.name} ${why} — 「회복봉인」이라 회복하지 못함`);return 0}const h=Math.min(v,m.hp.max-m.hp.cur);if(h<=0){lines.push(`${m.name} ${why} — HP 가득이라 회복 없음`);return 0}m.hp.cur+=h;lines.push(`${m.name} ${why} +${h} (HP ${m.hp.cur}/${m.hp.max})`);return h};
  const ABN=['Poison','Toxic','Burn','Paralysis','Freeze','Sleep','Comatose'];
  const isAbn=m=>ABN.some(k=>has(m,k));
@@ -45,7 +45,7 @@ window.OM_FIELD=(()=>{
    if(st.Poison)dmg(m,frac(m,1,8),lines,'「독」 1/8');if(st.Burn)dmg(m,frac(m,1,16),lines,'「화상」 1/16');
    if(st.Nightmare&&sleeping)dmg(m,frac(m,1,4),lines,'「악몽」 1/4');if(st.Curse)dmg(m,frac(m,1,4),lines,'「저주」 1/4');if(st.Bind)dmg(m,frac(m,1,8),lines,'「바인드」 1/8');
    if(st.SaltCure){const ty=typesOf(m);const sw=ty.includes('Steel')||ty.includes('Water');dmg(m,sw?frac(m,1,6):frac(m,1,8),lines,`「소금절이」 ${sw?'1/6':'1/8'}`)}
-   if(st.ThunderCage){const mul=B().effectiveness(['Electric'],m,{});if(mul>0)dmg(m,Math.max(1,Math.floor(m.hp.max/8*mul)),lines,`「썬더프리즌」 전기 1/8 ×${mul}`);else lines.push(`${m.name} 「썬더프리즌」 전기 타입 효과가 없음`)}
+   if(st.ThunderCage){const mul=B().effectiveness(['Electric'],m,{}).value;if(mul>0)dmg(m,Math.max(1,Math.floor(m.hp.max/8*mul)),lines,`「썬더프리즌」 전기 1/8 ×${mul}`);else lines.push(`${m.name} 「썬더프리즌」 전기 타입 효과가 없음`)}
    if(st.OctoLock){rankDown(m,'defense',-1);rankDown(m,'specialdefense',-1);lines.push(`${m.name} 「문어굳히기」 방어·특방 −1`)}
    if(st.SyrupBomb){m.syrupN=(+m.syrupN||0)+1;rankDown(m,'speed',-1);lines.push(`${m.name} 「물엿범벅」 스피드 −1 (${m.syrupN}/3)`);if(m.syrupN>=3){clearState(m,'SyrupBomb');m.syrupN=0}}
    if(st.DeathCount){const c=+st.DeathCount||0;if(c<=1){lines.push(`${m.name} 「죽음의카운트」 0 · 「빈사」`);m.hp.cur=0;dead.push(m.id)}else lines.push(`${m.name} 「죽음의카운트」 ${c-1}`)}
@@ -69,7 +69,7 @@ window.OM_FIELD=(()=>{
    if(rmHit){lines.push(`${m.name}(${rmHit})이(가) 「${h.k}」을(를) ${rm.v}`);delete objs[h.k];removed.push(h.k);continue}
    if(boots){lines.push(`${m.name} 「통굽부츠」라 「${h.k}」 영향 없음`);continue}
    if(h.c==='A'&&!gd){lines.push(`${m.name} 땅 위가 아니라 「${h.k}」 영향 없음`);continue}
-   if(h.ty){const mul=B().effectiveness([h.ty],m,{});if(mul<=0){lines.push(`${m.name} 「${h.k}」 효과가 없음`);continue}dmg(m,Math.max(1,Math.floor(m.hp.max/8*mul)),lines,`「${h.k}」 1/8 ×${mul}`);continue}
+   if(h.ty){const mul=B().effectiveness([h.ty],m,{}).value;if(mul<=0){lines.push(`${m.name} 「${h.k}」 효과가 없음`);continue}dmg(m,Math.max(1,Math.floor(m.hp.max/8*mul)),lines,`「${h.k}」 1/8 ×${mul}`);continue}
    if(h.kind==='spike'){const layers=Math.min(3,Math.max(1,n));const d=10-2*layers;dmg(m,frac(m,1,d),lines,`「압정뿌리기」(${layers}층) 1/${d}`);continue}
    if(h.kind==='tspike'){if(ty.includes('Poison')||ty.includes('Steel')){lines.push(`${m.name} 독·강철 타입이라 「독압정」 영향 없음`);continue}if(isAbn(m)){lines.push(`${m.name} 이미 상태 이상이라 「독압정」 영향 없음`);continue}const k=n>=2?'Toxic':'Poison';setState(m,k);lines.push(`${m.name} 「독압정」 → 「${ko(k)}」`);continue}
    if(h.kind==='net'){rankDown(m,'speed',-1);lines.push(`${m.name} 「끈적끈적네트」 스피드 −1`);continue}
