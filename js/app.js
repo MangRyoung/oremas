@@ -52,7 +52,7 @@ async function openRoom(id,gm){
  const st=await DBS().getState(id);ST.state=(st&&st.data)||{};ST.v=(st&&st.v)||0;
  ST.log=await DBS().getLogTail(id,200);ST.lastLogId=ST.log.length?ST.log[ST.log.length-1].id:0;
  renderRoom();
- ST.unsub=DBS().subscribe(id,{onState:(d,v)=>{if(v>=ST.v){ST.state=d;ST.v=v;renderScene()}},onLog:r=>{if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;renderLog(true)}},
+ ST.unsub=DBS().subscribe(id,{onState:(d,v)=>{if(v>=ST.v){ST.state=d;ST.v=v;renderScene()}},onLog:r=>{if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;renderLog(true);if(window.OM_RP_UI)window.OM_RP_UI.onChat(r)}},
   onStatus:s=>{const el=$('#conn');if(el){el.textContent=s==='SUBSCRIBED'?'● 실시간':'○ '+s;el.style.color=s==='SUBSCRIBED'?'var(--acc2)':'var(--mute)'}}});
  if(ST.role){pollWhispers();ST.wtimer=setInterval(pollWhispers,4000)}
  if(!ST.role)openSeatPicker()}
@@ -67,7 +67,7 @@ function renderRoom(){
    ${ST.role==='gm'?'<span class="badge gm">GM</span>':ST.role==='seat'?`<span class="badge seat">${esc(ST.name)}</span>`:'<span class="badge">관전</span>'}
    <span class="tabs" id="sceneTabs"></span>
    <span class="sp"></span><span id="conn" class="small muted">○ 연결 중</span>
-   ${ST.role?'<button class="btn sm" id="skillBtn">스킬 체크</button>':''}<button class="btn sm" id="copyLink">플레이어 링크</button>
+   ${ST.role?'<button class="btn sm" id="skillBtn">스킬 체크</button><button class="btn sm" id="deckBtn">덱</button>':''}<button class="btn sm" id="copyLink">플레이어 링크</button>
    ${ST.role==='gm'?'<button class="btn sm" id="copyGm">GM 링크</button><button class="btn sm" id="roomSet">방 설정</button>':'<button class="btn sm" id="seatBtn">자리</button>'}
   </div>
   <div class="body"><div class="scene" id="scene"></div>
@@ -76,6 +76,7 @@ function renderRoom(){
   </div></div>`;
  $('#copyLink').onclick=()=>copy(roomLink(ST.room),'플레이어 링크를 복사했다');
  const sk=$('#skillBtn');if(sk)sk.onclick=()=>window.OM_SKILL_UI.open();
+ const dk=$('#deckBtn');if(dk)dk.onclick=()=>window.OM_DECK_UI.open();
  const clock=()=>{const el=$('#pclock');if(el){const d=new Date();el.textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}};clock();clearInterval(ST.clockT);ST.clockT=setInterval(clock,15000);
  if(ST.role==='gm'){$('#copyGm').onclick=()=>copy(gmLink(ST.room,ST.secret),'GM 링크를 복사했다 (아무에게도 주지 말 것)');$('#roomSet').onclick=openRoomSettings}
  else $('#seatBtn').onclick=openSeatPicker;
@@ -129,7 +130,9 @@ function renderScene(){
  else if(VIEW==='sheet')window.OM_SHEET_UI.render(el);
  else if(VIEW==='graph')window.OM_GRAPH_UI.render(el);
  else if(VIEW==='calendar')window.OM_CAL_UI.render(el);
- else el.innerHTML=`<div class="rp"><div style="text-align:center">RP 씬<br><span class="small">배경·스탠딩·BGM·지도·덱 창은 3단계에서 들어온다</span></div></div>`}
+ else window.OM_RP_UI.render(el);
+ if(window.OM_RP_UI)window.OM_RP_UI.onState();
+ if(window.OM_DECK_UI&&ST.role==='gm')window.OM_DECK_UI.absorb()}
 
 /* ---------- 배틀 씬 → battle_ui.js ---------- */
 function B(){return ST.state.battle||{}}

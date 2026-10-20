@@ -396,3 +396,48 @@ html,body{font-size:15px;line-height:1.55}
 .obj{background:#1a1b20;border:1px solid var(--line2);padding:0 8px}.obj b{color:var(--yel2)}
 .stc{display:inline-flex;align-items:center;gap:3px}.stc img{width:16px;height:16px;object-fit:contain}
 .stat6 .bs{font-family:var(--mono);font-size:13px;color:var(--fg2)}
+
+/* ---------- RP 씬 / 덱 ---------- */
+.stat6 div{border-bottom:0;border-top:2px solid var(--line2)}
+.rpstage{position:relative;height:100%;min-height:420px;background:#0d0e11 center/cover no-repeat;border:1px solid var(--line);overflow:hidden}
+.rpstage::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.55),transparent 45%);pointer-events:none}
+.stand{position:absolute;bottom:96px;height:78%;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;z-index:1}
+.stand img{max-height:100%;max-width:38vw;object-fit:contain;filter:drop-shadow(0 6px 12px rgba(0,0,0,.6))}
+.stand.left{left:4%}.stand.center{left:50%;transform:translateX(-50%)}.stand.right{right:4%}
+.stname{font-family:var(--head);font-size:14px;letter-spacing:.08em;background:var(--red);color:#fff;padding:0 12px;clip-path:var(--slant);margin-top:-14px;position:relative}
+.caption{position:absolute;left:4%;right:4%;bottom:14px;z-index:2;background:rgba(14,15,18,.92);border:1px solid var(--line2);border-left:5px solid var(--red);padding:10px 16px;font-size:16px;line-height:1.5}
+.caption .cname{font-family:var(--lab);color:var(--yel2);font-size:13px;letter-spacing:.08em;margin-bottom:2px}
+.caption .ctext{white-space:pre-wrap;color:var(--fg)}
+.bgname{position:absolute;left:0;top:12px;z-index:2;background:#000;color:#fff;font-family:var(--lab);font-size:13px;letter-spacing:.1em;padding:2px 14px 2px 10px;clip-path:polygon(0 0,100% 0,calc(100% - 8px) 100%,0 100%)}
+.rpbtns{position:absolute;right:8px;top:8px;z-index:6;display:flex;gap:4px}
+.mapov{position:absolute;inset:0;z-index:4;background:rgba(10,10,12,.96);display:flex;flex-direction:column;padding:8px;gap:6px;overflow:auto}
+.mapwrap{position:relative;width:100%;max-height:calc(100% - 60px);margin:0 auto}
+.mapwrap img{width:100%;height:100%;object-fit:contain;display:block}
+.loc{position:absolute;transform:translate(-50%,-100%);display:flex;flex-direction:column;align-items:center;cursor:pointer;z-index:1}
+.loc .ln{width:22px;height:22px;border-radius:50%;background:var(--red);color:#fff;font-family:var(--lab);font-size:12px;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.6)}
+.loc .lt{font-size:11px;background:rgba(0,0,0,.8);color:#fff;padding:0 5px;white-space:nowrap;margin-top:1px}
+.loc.hid .ln{background:#444;border-color:#777}.loc.hid .lt{display:none}
+.loc.party .ln{background:var(--yel2);color:#000;animation:pulse 1.2s infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(240,200,74,.7)}50%{box-shadow:0 0 0 8px rgba(240,200,74,0)}}
+.maplist{display:flex;flex-wrap:wrap;gap:4px;font-size:12px}.maplist .chip.on{background:var(--yel2);color:#000}
+.banner{position:fixed;left:0;right:0;top:18%;z-index:999;background:var(--bc,#d9243f);color:#fff;padding:14px 8%;clip-path:polygon(0 0,100% 10%,100% 100%,0 90%);box-shadow:0 10px 30px rgba(0,0,0,.6);animation:bannerin .35s ease-out;pointer-events:none}
+.banner .bt{font-family:var(--head);font-size:34px;letter-spacing:.08em;line-height:1.1}
+.banner .bm{font-size:16px;margin-top:4px;opacity:.95}
+@keyframes bannerin{from{transform:translateX(-30px);opacity:0}to{transform:none;opacity:1}}
+.dkgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.dkpc{background:var(--panel);border:1px solid var(--line);padding:8px}.dkpc.mine{border-color:var(--red)}
+.dkh{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:16px}
+.dkres .dkr,.dkhearts .dkr{display:flex;align-items:center;gap:6px;margin:3px 0;font-size:13px}.dkr>span:first-child{width:72px;color:var(--fg2)}
+.keys i,.mad i{display:inline-block;width:14px;height:14px;margin-right:2px;background:#2a2b31;border:1px solid var(--line2)}
+.keys i{clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)}.keys i.on{background:#cfd6e0}
+.mad i.on{background:var(--red)}.mad i.th{border-color:var(--yel2)}
+.hearts i{font-style:normal;color:#555;margin-right:2px}.hearts i.on{color:var(--red2)}
+.dkcards{display:flex;flex-direction:column;gap:4px;margin:8px 0}
+.dkc{background:#15161a;border-left:3px solid var(--line2);padding:4px 8px;font-size:12px;display:flex;flex-wrap:wrap;gap:2px 8px;align-items:center}
+.dkc.battle{border-left-color:var(--red)}.dkc.skill{border-left-color:var(--blue)}.dkc.rest{border-left-color:var(--ok)}
+.dkc .dkn{font-size:13px;color:var(--fg);flex:1}.dkc .dke{width:100%;color:var(--fg2)}.dkc .btn{padding:1px 12px;min-width:0;width:auto}
+.dkparty{display:flex;align-items:center;gap:14px;flex-wrap:wrap;background:var(--panel);border:1px solid var(--line2);padding:6px 10px;margin-bottom:8px}
+.dkparty .dkr{margin:0}
+.dkcards.row{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px;margin:0 0 10px}
+.dkc.out{opacity:.45}
+.dkuse{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0}

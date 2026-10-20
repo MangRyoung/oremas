@@ -54,5 +54,16 @@ window.OM_STORE=(()=>{
    if(r.error)throw err(r.error);const rows=r.data||[];out.push(...rows);if(rows.length<PAGE)break;from+=PAGE}
   return out}
 
- return {createRoom,getRoom,whoami,claimSeat,roomUpdate,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs};
+
+ /* ----- 이미지 올리기 (Storage 버킷 oremas). dataUrl(base64) 또는 Blob → 공개 주소 ----- */
+ async function uploadImage(path,src){
+  let blob=src;
+  if(typeof src==='string'){const r=await fetch(src);blob=await r.blob()}
+  const ext=(blob.type||'').includes('png')?'png':(blob.type||'').includes('webp')?'webp':(blob.type||'').includes('gif')?'gif':'jpg';
+  const full=path+'.'+ext;
+  const r=await sb().storage.from('oremas').upload(full,blob,{upsert:true,contentType:blob.type||'image/jpeg',cacheControl:'3600'});
+  if(r.error){const m=String(r.error.message||r.error);if(/bucket not found|NoSuchBucket/i.test(m))throw new Error('그림 저장소(버킷 oremas)가 아직 없다 — Supabase SQL Editor 에서 supabase/schema.sql 을 다시 실행해 줘');throw err(r.error)}
+  return sb().storage.from('oremas').getPublicUrl(full).data.publicUrl+'?v='+Date.now().toString(36)}
+
+ return {uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs};
 })();

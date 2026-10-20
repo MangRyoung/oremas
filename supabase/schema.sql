@@ -238,3 +238,18 @@ grant execute on function public.om_secret_get(text,text,text) to anon, authenti
 grant execute on function public.om_room_update(text,text,text,jsonb) to anon, authenticated;
 revoke execute on function public.om_hash(text) from anon, authenticated;
 revoke execute on function public.om_who(text,text) from anon, authenticated;
+
+-- ---------- 이미지 저장소 (Storage) ----------
+-- 제작기 시트의 그림은 base64 로 들어 있어서, 방 상태에 그대로 넣으면 실시간 동기화가 무거워진다.
+-- 시트로 가져올 때 이 버킷에 올리고 주소만 저장한다. 공개 버킷, 링크를 아는 사람은 누구나 올릴 수 있다 (제작기와 같은 '전원 자유').
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+  values ('oremas', 'oremas', true, 5242880, array['image/jpeg','image/png','image/webp','image/gif'])
+  on conflict (id) do update set public = true, file_size_limit = 5242880, allowed_mime_types = array['image/jpeg','image/png','image/webp','image/gif'];
+drop policy if exists "oremas img read"   on storage.objects;
+drop policy if exists "oremas img insert" on storage.objects;
+drop policy if exists "oremas img update" on storage.objects;
+drop policy if exists "oremas img delete" on storage.objects;
+create policy "oremas img read"   on storage.objects for select to anon, authenticated using (bucket_id = 'oremas');
+create policy "oremas img insert" on storage.objects for insert to anon, authenticated with check (bucket_id = 'oremas');
+create policy "oremas img update" on storage.objects for update to anon, authenticated using (bucket_id = 'oremas') with check (bucket_id = 'oremas');
+create policy "oremas img delete" on storage.objects for delete to anon, authenticated using (bucket_id = 'oremas');
