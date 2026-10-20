@@ -1140,3 +1140,30 @@ label.ph-item input[type=checkbox]{width:16px;height:16px;flex:none}
  .rpbtns{top:40px;right:8px;left:8px;justify-content:flex-end}
  .typing{top:auto;bottom:auto}
 }
+@media (max-width:760px){
+ /* 배틀 에리어: 좌 A | 우 A / 좌 B | 우 B 두 열, 카드는 압축 */
+ .fgrid{grid-template-columns:1fr 1fr;gap:14px 6px;padding:12px 6px 6px;row-gap:16px}
+ .fgrid .area{min-height:92px;padding:6px 5px 5px;margin-top:4px}
+ .fgrid .area .alab{font-size:11px;top:-9px;left:4px;padding:0 6px}
+ .fgrid .aempty{padding:12px 4px;font-size:11px}.fgrid .aempty br{display:none}.fgrid .aempty .small{display:none}
+ .mon.big{display:grid;grid-template-columns:44px 1fr;gap:4px 6px;padding:5px}
+ .mon.big .pic{width:44px;height:44px;grid-row:1/3}
+ .mon.big .minfo{min-width:0}
+ .mon.big .nm{font-size:13px;flex-wrap:wrap;gap:3px}.mon.big .nm .lv{font-size:11px}.mon.big .nm .dexb{padding:0 5px;font-size:10px}
+ .mon.big .ty .type{font-size:10px;padding:0 5px}
+ .hpbar{height:6px;margin:3px 0 1px}.hpnum{font-size:11px}
+ .mon.big .rks{gap:2px}.mon.big .rk{font-size:10px;padding:0 4px}
+ .mon.big .mbtns,.mon.big .potline,.mon.big .cmdcard,.mon.big .revealrow,.mon.big .incoming{grid-column:1/3}
+ .mbtns .btn.xs{padding:2px 6px;font-size:11px;min-height:24px}
+ .potline{font-size:11px}.potline .btn.xs{padding:1px 5px;font-size:10px;min-height:22px}
+ .fgrid .area .mon.big{height:auto}
+}
+@media (max-width:760px){
+ .pots{gap:3px}.pot{font-size:10px;padding:1px 4px;gap:3px;max-width:100%}.pot>span:first-child,.pot>b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:92px}
+ .pot .btn{padding:0 5px;font-size:10px;min-height:20px;line-height:18px;white-space:nowrap}
+ .mon.big .mbtns{gap:3px}.mon.big .mbtns .btn.xs{flex:1 1 30%;padding:2px 4px;text-align:center}
+}
+@media (max-width:760px){
+ .mon.big .mbtns{display:grid;grid-template-columns:1fr 1fr;gap:3px}.mon.big .mbtns .btn.xs{flex:none;white-space:nowrap;padding:3px 2px;font-size:10.5px;overflow:hidden;text-overflow:ellipsis;min-height:24px;line-height:16px}
+ .mon.big .rks{display:flex;flex-wrap:wrap}
+}
