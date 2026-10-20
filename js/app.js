@@ -52,8 +52,8 @@ async function openRoom(id,gm){
  const st=await DBS().getState(id);ST.state=(st&&st.data)||{};ST.v=(st&&st.v)||0;
  ST.log=await DBS().getLogTail(id,200);ST.lastLogId=ST.log.length?ST.log[ST.log.length-1].id:0;
  renderRoom();
- ST.unsub=DBS().subscribe(id,{onEvent:p=>{if(window.OM_RP_UI&&p&&p.t==='typing')window.OM_RP_UI.onTyping(p);if(window.OM_CUTIN&&p&&p.t==='cutin')window.OM_CUTIN.onEvent(p)},onState:(d,v)=>{if(v>=ST.v){ST.state=d;ST.v=v;renderScene()}},onLog:r=>{if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;renderLog(true);if(window.OM_RP_UI)window.OM_RP_UI.onChat(r)}},
-  onStatus:s=>{const el=$('#conn');if(el){el.textContent=s==='SUBSCRIBED'?'● 실시간':'○ '+s;el.style.color=s==='SUBSCRIBED'?'var(--acc2)':'var(--mute)'}}});
+ ST.unsub=DBS().subscribe(id,{onEvent:p=>{if(p&&p.t==='hello')onHello(p);if(window.OM_RP_UI&&p&&p.t==='typing')window.OM_RP_UI.onTyping(p);if(window.OM_CUTIN&&p&&p.t==='cutin')window.OM_CUTIN.onEvent(p)},onState:(d,v)=>{if(v>=ST.v){ST.state=d;ST.v=v;renderScene()}},onLog:r=>{if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;renderLog(true);if(window.OM_RP_UI)window.OM_RP_UI.onChat(r)}},
+  onStatus:s=>{const el=$('#conn');if(el){el.textContent=s==='SUBSCRIBED'?'● 실시간':'○ '+s;el.style.color=s==='SUBSCRIBED'?'var(--acc2)':'var(--mute)'}if(s==='SUBSCRIBED')startPresence()}});
  if(ST.role){pollWhispers();ST.wtimer=setInterval(pollWhispers,4000)}
  if(!ST.role)openSeatPicker()}
 
@@ -79,7 +79,7 @@ function renderRoom(){
    <a href="#" class="muted small" title="로비">오레마스</a><span class="name">${esc(r.name||r.id)}</span>
    ${ST.role==='gm'?'<span class="badge gm">GM</span>':ST.role==='seat'?`<span class="badge seat">${esc(ST.name)}</span>`:'<span class="badge">관전</span>'}
    <span class="tabs" id="sceneTabs"></span>
-   <span class="sp"></span><span id="conn" class="small muted">○ 연결 중</span>
+   <span class="sp"></span><span id="presence" class="presence" title="지금 접속 중인 사람"></span><span id="conn" class="small muted">○ 연결 중</span>
    ${ST.role?`<button class="btn sm ${window.OM_SKILL_UI&&window.OM_SKILL_UI.pending()?'pri':''}" id="skillBtn">스킬 체크${window.OM_SKILL_UI&&window.OM_SKILL_UI.pending()?' !':''}</button>${ST.role==='seat'?'<button class="btn sm" id="dexBtn" title="포켓몬 도감 · 해석 관리">도감</button>':''}<button class="btn sm" id="deckBtn">덱</button>`:''}<button class="btn sm" id="dbBtn">DB</button><button class="btn sm" id="rmBtn" title="레디메이드 (자동화 효과 사전)">레디메이드</button><button class="btn sm" id="copyLink">플레이어 링크</button>
    ${ST.role==='gm'?'<button class="btn sm" id="copyGm">GM 링크</button><button class="btn sm" id="roomSet">방 설정</button>':'<button class="btn sm" id="seatBtn">자리</button><button class="btn sm ghost" id="roomSet" title="소리 크기">소리</button>'}
   </div>
@@ -155,7 +155,17 @@ function renderLog(scroll){
 function scene(){return ST.state.scene||'rp'}
 let VIEW='';let lastScene='';
 const VIEWS=[['rp','RP'],['battle','배틀'],['sheet','시트'],['graph','관계도'],['calendar','캘린더']];
+/* ---------- 접속 중인 사람 (브로드캐스트 인사: 25초마다 · 새로 온 사람에게 답인사) ---------- */
+const PRES={who:{},t:null,last:0};
+function myId(){return ST.role==='gm'?'gm':ST.role==='seat'?('s:'+ST.seat):('v:'+(ST.vid||(ST.vid=Math.random().toString(36).slice(2,8))))}
+function sayHello(force){const now=Date.now();if(!force&&now-PRES.last<20000)return;PRES.last=now;try{DBS().broadcast({t:'hello',id:myId(),name:ST.role==='gm'?'GM':(ST.name||'관전'),role:ST.role||'view',seat:ST.seat||'',at:now})}catch(e){}}
+function onHello(p){if(!p||!p.id||p.id===myId())return;const isNew=!PRES.who[p.id];PRES.who[p.id]={name:p.name,role:p.role,seat:p.seat,at:Date.now()};drawPresence();if(isNew)setTimeout(()=>sayHello(true),300+Math.random()*700)}
+function drawPresence(){const el=$('#presence');if(!el)return;const now=Date.now();const list=[{id:myId(),name:ST.role==='gm'?'GM':(ST.name||'관전'),role:ST.role||'view',seat:ST.seat||'',me:true},...Object.entries(PRES.who).filter(([k,v])=>now-v.at<70000).map(([k,v])=>Object.assign({id:k},v))];
+ const trs=(ST.state.roster||{}).trainers||{};const nm=x=>x.role==='gm'?'GM':x.role==='seat'?`${esc(x.name)}${trs[x.seat]?' <small>'+esc(trs[x.seat].name)+'</small>':''}`:esc(x.name||'관전');
+ el.innerHTML=`<span class="pcount" title="${list.map(x=>x.name).join(', ')}">● ${list.length}</span>${list.map(x=>`<span class="pwho ${x.role} ${x.me?'me':''}">${nm(x)}</span>`).join('')}`}
+function startPresence(){sayHello(true);clearInterval(PRES.t);PRES.t=setInterval(()=>{sayHello(false);drawPresence()},25000)}
 function renderScene(){
+ try{drawPresence()}catch(e){}
  try{const skb=$('#skillBtn');if(skb&&window.OM_SKILL_UI){const p=window.OM_SKILL_UI.pending();skb.classList.toggle('pri',p);skb.textContent='스킬 체크'+(p?' !':'')}}catch(e){}
  if(window.OM_DB_UI)window.OM_DB_UI.applyOverride(ST.state.dbx);
  /* GM 이 무대(RP/배틀)를 바꾸면 모두 그쪽으로 따라간다. 그 밖의 탭(시트·관계도·캘린더)은 각자 본다 */
@@ -223,6 +233,11 @@ function openHatch(tid){
   closeModal();if(n&&await set(['battle','mons'],nb.mons))toast(n+'체의 개체값을 적용했다')}}
 
 /* ---------- 포켓몬 상세 ---------- */
+/* 상성 칩 묶음 (도감과 같은 꼴) */
+function weakHtml(m){const TYPES=['Normal','Fire','Water','Electric','Grass','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'];const Bt=window.OM_BATTLE;if(!Bt)return '';
+ const rows=TYPES.map(t=>{const e=Bt.effectiveness([t],m,{});return [t,e&&typeof e==='object'?+e.value:+e]}).filter(x=>x[1]!==1);
+ const G=[[4,'×4','w4'],[2,'×2','w2'],[0.5,'×½','r2'],[0.25,'×¼','r4'],[0,'×0','r0']].map(([v,l,c])=>{const ch=rows.filter(x=>x[1]===v).map(x=>typeChip(x[0])).join('');return ch?`<div class="dxw ${c}"><i>${l}</i>${ch}</div>`:''}).join('');
+ return `<div class="dxweak">${G||'<span class="dim small">약점·내성 없음</span>'}</div>`}
 function openMon(mid){
  const b=B();const m=(b.mons||{})[mid];if(!m)return;const tr=(b.trainers||{})[m.tid]||{name:''};
  const full=ST.role==='gm'||ST.seat===m.tid;
@@ -241,7 +256,7 @@ function openMon(mid){
     <div class="dxrow"><span class="k">특성</span><span><b>${esc(m.ability||'-')}</b>${an('trait',m.ability)}<div class="dbmini">${effHtml('trait',m.ability,m.abilityEff)}</div></span></div>
     <div class="dxrow"><span class="k">소지품</span><span><b>${esc(m.item||'-')}</b>${an('item',m.item)}<div class="dbmini">${effHtml('item',m.item,m.itemEff)}</div></span></div>
     <div class="dxrow"><span class="k">능력</span>${stat6}</div>
-    ${hpRow}</div></div>
+    ${hpRow}</div><div class="dxside"><div class="k">상성</div>${weakHtml(m)}</div></div>
   <div class="sec">기술 <span class="note">${m.moves.length}개</span></div>
   <table class="t dxmv"><tr><th>이름</th><th>타입</th><th>분류</th><th>위력</th><th>명중</th><th>범위</th><th>우선</th><th>효과</th></tr>
    ${m.moves.map(mv=>`<tr><td class="nw"><b>${esc(mv.name)}</b>${mv.half?' <span class="small muted">½</span>':''}${mv.missing?' <span class="small" style="color:var(--red)">DB 없음</span>':''}</td><td class="nw">${typeChip(mv.typeEn)}</td><td class="nw">${esc(mv.cat)}</td><td class="mono">${mv.pow||'-'}</td><td class="mono">${mv.acc||'필중'}</td><td class="nw">${esc(mv.range)}</td><td class="mono">${mv.prio||0}</td><td class="small eff">${esc(mv.eff)}</td></tr>`).join('')}</table>
