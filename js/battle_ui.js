@@ -176,7 +176,7 @@ window.OM_BATTLE_UI=(()=>{
  function uniqList(t){return ((t&&t.unique)||[]).filter(u=>u&&u.name).map(u=>{const mm=String(u.eff||'').match(/【(\d+)\/시】/);const max=mm?+mm[1]:null;const left=max==null?null:(((t.uUses||{})[u.name]==null)?max:+(t.uUses||{})[u.name]);return {p:u,kind:'고유',max,left}})}
  function potList(m){const out=[];const src=potSrc(m);
   for(const p of src){const mm=String(p.eff||'').match(/【(\d+)\/시】/);if(mm)out.push({name:p.name,max:+mm[1]})}return out}
- function potLine(c,m){const L=potList(m);const full=canEdit(c,m);const u=m.potUses||{};const Lnames=new Set(L.map(p=>p.name));
+ function potLine(c,m){const full=canEdit(c,m);const L=potList(m).filter(p=>full||!isExcl(m,p));   /* 전용 포텐셜은 주인(과 GM)만 본다 */const u=m.potUses||{};const Lnames=new Set(L.map(p=>p.name));
   /* 횟수 없는 자동화(포텐셜·특성·소지품) 도 「발동」 버튼으로 */
   const extra=[];if(FX()&&full){const src=potSrc(m).filter(p=>!Lnames.has(p.name));
    for(const p of src){const a=FX().autoOf(m,'pot',p.name);if(a&&a.ops&&a.ops.length&&!a.manual)extra.push(['pot',p.name])}
