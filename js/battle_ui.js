@@ -31,7 +31,7 @@ window.OM_BATTLE_UI=(()=>{
  const IMG=()=>((DB().img)||{state:{},field:{}});
  const W_IMG={맑음:'weather_Sunny',비:'weather_Rainy',모래바람:'weather_Sandstorm',싸라기눈:'weather_Snowstorm',눈:'weather_Snow',짙은안개:'weather_FoggyMist',밤:'weather_Night',별하늘:'weather_StarryNight',큰가뭄:'weather_Sunny_extreme',폭우:'weather_Rainy_extreme',난기류:'weather_StrongWinds',극한:'weather_Snow_extreme',깊은밤:'weather_Night_extreme'};
  const T_IMG={그래스필드:'field_object_grass',일렉트릭필드:'field_object_electric',미스트필드:'field_object_mist',사이코필드:'field_object_psycho',트릭룸:'room_trick',매직룸:'room_magic',원더룸:'room_wonder',블랙룸:'room_black',중력:'object_gravity',물놀이:'object_watersport',흙놀이:'object_mudsport'};
- const fimg=k=>IMG().field[k]?`img/field/${IMG().field[k]}`:'';const simg=k=>IMG().state[k]?`img/state/${IMG().state[k]}`:'';
+ const fimg=k=>IMG().field[k]?`img/field/${IMG().field[k]}`:'';const simg=k=>{const v=((((DB().states||{}).st||{})[k])||{}).img||IMG().state[k];return !v?'':/^(https?:|data:image\/)/.test(v)?v:`img/state/${v}`};/* 제작기 상태 변화 DB 의 아이콘이 먼저 */
 
  /* ---------- 상태 읽기 도우미 ---------- */
  /* mgr: 배틀 진행 권한 — GM, 그리고 방 설정 「플레이어도 배틀 진행」이 켜져 있으면 자리에 앉은 사람 모두 (모의전). 비밀(상대 지시 엿보기·강제·모두 공개)은 여전히 GM 만 */
@@ -484,7 +484,7 @@ window.OM_BATTLE_UI=(()=>{
  /* 강제 교대를 막는 것: 효과 엔진의 「교대 무시」, 뿌리박기·다이맥스, 특성 글(받지 않는다·무효화). 포텐셜 글(횟수 제한)은 물어본다 */
  /* 교대 제한: 검은눈빛·조이기 등. 고스트 · 아름다운허물 · 「반드시 교대할 수 있다」 효과는 예외. 경고만 하고 막지는 않는다 */
  const TRAPS={MeanLook:'검은눈빛',Bind:'조이기',ThunderCage:'썬더프리즌',Ingrain:'뿌리박기',OctoLock:'문어굳히기',NoRetreat:'배수의진',Block:'블록'};
- const FREESW=/반드시\s*교대할?\s*수\s*있/;
+ const FREESW=/반드시\s*(임의\s*)?교대할?\s*수\s*있/;
  function trapWarn(m){const st=m.states||{};const hit=Object.keys(TRAPS).filter(k=>st[k]).map(k=>TRAPS[k]);if(!hit.length)return null;
   if(tysOf(m).includes('Ghost'))return {hit,free:'고스트 타입'};const it=IT(m);if(it==='아름다운허물')return {hit,free:'아름다운허물'};
   if(it&&FREESW.test(String(m.itemEff||'')))return {hit,free:it};if(m.ability&&FREESW.test(String(m.abilityEff||'')))return {hit,free:'특성 : '+m.ability};
