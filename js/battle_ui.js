@@ -73,7 +73,7 @@ window.OM_BATTLE_UI=(()=>{
    <span class="sp"></span>${window.OM_RP_UI&&window.OM_RP_UI.bgmWidgetHtml?window.OM_RP_UI.bgmWidgetHtml():''}
    ${c.mgr?`<div class="gmrow"><label>에리어 <select data-act="mode">${[1,2,3].map(n=>`<option value="${n}" ${mode(b)===n?'selected':''}>${n}</option>`).join('')}</select></label>
     ${!b.started?`<button class="btn sm pri" data-act="start" title="연출(VS/경고)과 함께 시합을 시작한다. 동시 내밀기가 켜져 있으면 예약한 포켓몬이 한꺼번에 나온다">시합 개시</button>`:''}<label class="small" title="켜면 「등장」 대신 「내밀기 예약」을 하고, GM 의 「시합 개시」·「내밀기 실행」 때 양쪽이 동시에 나온다"><input type="checkbox" data-act="simul" ${b.simul?'checked':''}> 동시 내밀기</label>${b.simul?pendStatus(b):''}${b.simul&&b.started&&Object.values(b.mons||{}).some(m=>m.pend)?`<button class="btn sm" data-act="pendgo">내밀기 실행 (${Object.values(b.mons||{}).filter(m=>m.pend).length})</button>`:''}
-    <button class="btn sm pri" data-act="progress" title="지시 준비 → 턴 개시 → 행동 순서 → 행동 처리 → 턴 종료 → 다음 턴">턴 진행 ▶ ${['턴 개시','행동 순서','행동 처리','','','턴 종료'][+b.phase||0]||''}</button>${c.gm&&(+b.phase||0)===1?'<button class="btn sm ghost" data-act="reveal" title="아직 안 연 지시를 한꺼번에">모두 공개</button>':''}<button class="btn sm" data-act="field">필드</button>
+    <button class="btn sm pri" data-act="progress" title="지시 준비 → 턴 개시 → 행동 순서 → 행동 처리 → 턴 종료 → 다음 턴">턴 진행 ▶ ${['턴 개시','행동 순서','행동 처리','','','턴 종료'][+b.phase||0]||''}</button>${c.gm&&(+b.phase||0)===1?'<button class="btn sm ghost" data-act="reveal" title="아직 안 연 지시를 한꺼번에">모두 공개</button>':''}<button class="btn sm" data-act="field">필드</button>${c.gm?`<button class="btn sm ${c.fair?'pri':'ghost'}" data-act="gmhands" title="켜면 GM 도 PL 처럼 플레이어의 지시·준비·HP·상태를 건드리지 않는다 (방 설정 「GM 불간섭」과 같음)">${c.fair?'PL 권한 중 ↩ GM':'PL 권한으로'}</button>`:''}
     <button class="btn sm ghost" data-act="resetcmd">지시 초기화</button><button class="btn sm ghost danger" data-act="clear">배틀 비우기</button>
     ${Object.entries(c.ST.state.pub||{}).filter(([k,v])=>v&&v.time).map(([k,v])=>`<span class="chip" style="border-color:var(--yel)">타임 요청: ${esc((b.trainers[k]||{}).name||k)} → ${esc(monName(b,v.time.mid))} <button class="btn xs pri" data-act="timeok" data-seat="${k}">허가</button></span>`).join('')}</div>`:''}
   </div>
@@ -94,6 +94,15 @@ window.OM_BATTLE_UI=(()=>{
  document.addEventListener('click',e=>{const t=e.target.closest('.mvdb');if(!t)return;e.stopPropagation();e.preventDefault();if(document.querySelector('.modalbg')&&!document.querySelector('.dbmodal'))return;window.OM_DB_UI.open({kind:'move',sel:t.dataset.mvdb})},true);
 
  /* 턴 개시 뒤 맨 위: 지시 공개 UI (맵툴 open_command). 자기 것(GM 은 모두)은 버튼, 남의 것은 현황. 지령·명령은 공개하지 않고 「4식 6령」 창에서 발동한다 */
+ /* 급소 소지품: 초점렌즈·예리한손톱 C+1, 럭키펀치(럭키) C+2, 받는 쪽 방검조끼 C-2 — 맵툴처럼 자동 */
+ function itemCrit(atk,def){let v=0;const ai=atk.item||'',di=def.item||'';if(ai==='초점렌즈'||ai==='예리한손톱')v+=1;if(ai==='럭키펀치'&&/럭키/.test(atk.species||atk.name||''))v+=2;if(di==='방검조끼')v-=2;return v}
+ /* 기술 부가효과 굴림: 효과 글의 「N할 …」마다 1d10 ≤ N 이면 발동. 10할은 굴리지 않고 확정. 하늘의은총 ×2, 받는 쪽 은밀망토면 없음. 적용은 손으로 */
+ function secRolls(atk,def,mv){const t=String(mv.eff||'');const out=[];const re=/(\d+)할\s*(?:의\s*확률로\s*|로\s*)?([^.。\n]*)/g;let m;
+  while((m=re.exec(t))){let n=+m[1];const what=m[2].trim()||'추가 효과';if(atk.ability==='하늘의은총')n=Math.min(10,n*2);
+   if(def.item==='은밀망토'){out.push({ok:false,line:`부가효과 ${m[1]}할 ${what} — 은밀망토로 받지 않음`});continue}
+   if(n>=10){out.push({ok:true,line:`부가효과 10할 ${what} — 확정`});continue}
+   const r=1+Math.floor(Math.random()*10);const ok=r<=n;out.push({ok,line:`부가효과 ${n}할 ${what} — 굴림 ${r}/${n} ${ok?'발동!':'불발'}`})}
+  return out}
  /* 동시 내밀기 현황: 진영마다 예약 수 / 에리어 수. 양쪽 다 차면 「완료」 */
  function pendCount(b,side){const ids=((b.sides||{})[side]||{}).trainers||[];const ms=Object.values(b.mons||{}).filter(m=>ids.includes(m.tid));const need=Math.min(mode(b),ms.filter(m=>m.hp.cur>0).length);return {n:ms.filter(m=>m.pend).length,need}}
  function pendStatus(b){const L=pendCount(b,'left'),R=pendCount(b,'right');const done=L.need>0&&R.need>0&&L.n>=L.need&&R.n>=R.need;return `<span class="chip ${done?'on':''}" title="동시 내밀기 예약">예약 좌 ${L.n}/${L.need} · 우 ${R.n}/${R.need}${done?' — 완료!':''}</span>`}
@@ -184,8 +193,10 @@ window.OM_BATTLE_UI=(()=>{
    if(m.item){const a=FX().autoOf(m,'item',m.item);if(a&&a.ops&&a.ops.length&&!a.manual&&!FX().timing(a.text).entry)extra.push(['item',m.item])}}
   const sp=full?specialPots(m).filter(s=>!Lnames.has(s.p.name)&&!extra.some(([k,n])=>k==='pot'&&n===s.p.name)):[];
   const spHtml=sp.length?`<div class="pots sppots">${sp.map(s=>`<span class="pot sp ${s.kind==='고유'?'uq':'ex'}" title="${esc(String(s.p.eff||'').replace(/<br\s*\/?>/g,' ').slice(0,300))}"><em>${s.kind}</em>${esc(s.p.name)}${s.max!=null?` <b>${s.left}/${s.max}</b>`:''}${spBtn(m,s)}</span>`).join('')}</div>`:'';
-  if(!L.length&&!extra.length)return spHtml;
-  return `<div class="pots">${L.map(p=>{const left=u[p.name]==null?p.max:+u[p.name];const a=FX()&&FX().autoOf(m,'pot',p.name);const spk=(potSrc(m).find(q=>q.name===p.name)||{}).unique?'고유':isExcl(m,p)?'전용':'';return `<span class="pot ${left<=0?'off':''} ${a&&a.ops&&a.ops.length&&!a.manual?'auto':''} ${spk?'sp '+(spk==='고유'?'uq':'ex'):''}" title="${esc(p.name)}${a&&a.ops&&a.ops.length?' · 자동: '+esc(FX().unparse(a.ops).join(' / ')):''}">${spk?`<em>${spk}</em>`:''}${esc(p.name)} <b>${left}/${p.max}</b>${full&&left>0?`<button class="btn xs" data-act="usepot" data-mid="${m.id}" data-pot="${esc(p.name)}">사용</button>`:''}${full&&left<p.max?`<button class="btn xs ghost" data-act="restorepot" data-mid="${m.id}" data-pot="${esc(p.name)}">+</button>`:''}</span>`}).join('')}${extra.map(([k,n])=>{const a=FX().autoOf(m,k,n);return `<span class="pot auto" title="${esc(n)} · ${esc(FX().unparse(a.ops).join(' / '))}">${k==='trait'?'특성 ':k==='item'?'소지품 ':''}${esc(n)}<button class="btn xs" data-act="fireauto" data-mid="${m.id}" data-kind="${k}" data-pot="${esc(n)}">발동</button></span>`}).join('')}</div>${spHtml}`}
+  /* 자동화가 없는 소지품도 「📢 발동」으로 로그에 표시 */
+  const itemAnn=full&&m.item&&m.item!=='-'&&!extra.some(([k])=>k==='item')?`<span class="pot" title="${esc(String(m.itemEff||'').replace(/<br\s*\/?>/g,' ').slice(0,300))}">소지품 ${esc(m.item)}<button class="btn xs" data-act="announce" data-mid="${m.id}" data-kind="item" data-pot="${esc(m.item)}" title="효과를 로그에 출력 (자동화 없음)">📢 발동</button></span>`:'';
+  if(!L.length&&!extra.length)return (itemAnn?`<div class="pots">${itemAnn}</div>`:'')+spHtml;
+  return `<div class="pots">${L.map(p=>{const left=u[p.name]==null?p.max:+u[p.name];const a=FX()&&FX().autoOf(m,'pot',p.name);const spk=(potSrc(m).find(q=>q.name===p.name)||{}).unique?'고유':isExcl(m,p)?'전용':'';return `<span class="pot ${left<=0?'off':''} ${a&&a.ops&&a.ops.length&&!a.manual?'auto':''} ${spk?'sp '+(spk==='고유'?'uq':'ex'):''}" title="${esc(p.name)}${a&&a.ops&&a.ops.length?' · 자동: '+esc(FX().unparse(a.ops).join(' / ')):''}">${spk?`<em>${spk}</em>`:''}${esc(p.name)} <b>${left}/${p.max}</b>${full&&left>0?`<button class="btn xs" data-act="usepot" data-mid="${m.id}" data-pot="${esc(p.name)}">사용</button>`:''}${full&&left<p.max?`<button class="btn xs ghost" data-act="restorepot" data-mid="${m.id}" data-pot="${esc(p.name)}">+</button>`:''}</span>`}).join('')}${extra.map(([k,n])=>{const a=FX().autoOf(m,k,n);return `<span class="pot auto" title="${esc(n)} · ${esc(FX().unparse(a.ops).join(' / '))}">${k==='trait'?'특성 ':k==='item'?'소지품 ':''}${esc(n)}<button class="btn xs" data-act="fireauto" data-mid="${m.id}" data-kind="${k}" data-pot="${esc(n)}">발동</button></span>`}).join('')}${itemAnn}</div>${spHtml}`}
  function cmdOf(b,m){const cm=(b.cmds||{})[m.tid];if(!cm||!cm.mons||!cm.mons[m.id])return '';const x=cm.mons[m.id];
   const parts=[];if(x.move==='switch')parts.push(`<b>교대</b> → ${esc(monName(b,x.switch))}`);else if(x.move!=null&&x.move!==''){const mv=(m.moves||[])[+x.move];parts.push(`<b>${esc(mv?mv.name:'?')}</b>${mv?' '+typeChip(mv.typeEn):''}`);if(x.targets&&x.targets.length)parts.push('→ '+x.targets.map(s=>slotName(b,s)).join(', '))}
   if(x.prio&&Object.values(x.prio).some(v=>v!==''&&+v!==0))parts.push('우선도 '+Object.entries(x.prio).filter(([k,v])=>v!==''&&+v!==0).map(([k,v])=>slotName(b,k)+' '+v).join(', '));
@@ -298,6 +309,7 @@ window.OM_BATTLE_UI=(()=>{
    case 'clear':if(!confirm('배틀 상태를 전부 비울까? (좌석은 남는다)'))return;CMD={};return A().set(['battle'],{turn:0,phase:0,mode:mode(b),sides:{left:{trainers:[]},right:{trainers:[]}},trainers:{},mons:{},field:{},cmds:{},order:[]});
    case 'iv':return A().openHatch(d.tid);
    case 'mode':return A().set(['battle','mode'],+val);
+   case 'gmhands':{if(!c.gm)return;const on=!c.fair;await A().set(['rp','gmHands'],on?false:null);A().sysLog(on?'GM 이 PL 권한으로 전환 — 플레이어의 지시·상태를 건드리지 않는다':'GM 권한으로 복귀','battle');return}   /* 방 설정 「GM 불간섭」과 같은 값 */
    case 'field':return openField();
    case 'orders':return openOrders(d.tid);
    case 'dexmgr':{if(!(c.gm||d.tid===c.seat))return;return window.OM_DEX_UI&&window.OM_DEX_UI.openMgr(d.tid)}
@@ -911,7 +923,7 @@ window.OM_BATTLE_UI=(()=>{
     const effPre=mv.cat==='변화'?null:B().effectiveness(moveTypes,def,{multiMode:+g('amulti').value,atkTypes,force:g('aforce').value===''?null:+g('aforce').value,floating:(def.states||{}).MagnetRise||(def.states||{}).Telekinesis||(FX()&&FX().floating(def))});
     const mods=FX()?FX().attackMods(atk,def,Object.assign(moveQuery(atk,def,mv,moveTypes,effPre?effPre.value:1,!multiTarget),{stab:!!(effPre&&effPre.stab)})):{boost:1,guard:1,cg:0,cr:0,cx:'',names:[]};
     const iu=(atk.fx||{}).ignoreUp,iuD=(def.fx||{}).ignoreUp;let igDef=+g('aigdef').value,igAtk=+g('aigatk').value;if(iu&&iu.dir==='atk'&&igDef===-1&&(iu.scope==='def'||iu.scope==='both'||iu.scope==='eva'))igDef=0;if(iuD&&iuD.dir==='recv'&&igAtk===-1&&(iuD.scope==='atk'||iuD.scope==='both'))igAtk=0;
-    let hits=[];if(acc.hit){const cnt=n('ahits')||B().multiHits(mv,{skillLink:ck('askill')});const stage=B().critStage(atk,def,{input:n('acrit'),order:n('acritord')+(mods.cr||0)-(mods.cg||0)});
+    let hits=[];if(acc.hit){const cnt=n('ahits')||B().multiHits(mv,{skillLink:ck('askill')});const stage=B().critStage(atk,def,{input:n('acrit'),order:n('acritord')+(mods.cr||0)-(mods.cg||0)+itemCrit(atk,def)});
      for(let i=0;i<cnt;i++){const cr=mods.cx==='none'?{crit:false,roll:0,chance:0}:B().critical(stage,{type:+g('acrittype').value,forced:ck('acritforce')||mods.cx==='sure'});hits.push({v:cr.crit?2:1,cr,stage})}}
     const objs=(f.objects||{})[side]||{};const wall={};for(const k in WALLS)if(objs[k]>0)wall[WALLS[k]]=1;
     const dmg=mv.cat==='변화'||!(+g('apow').value)?null:B().damage(atk,def,Object.assign({},mv,{pow:+g('apow').value}),{hits:hits.map(h=>h.v),free1:n('afree1')*(mods.boost||1),free2:n('afree2'),item1:n('aitem1'),item2:n('aitem2'),trait:n('atrait'),weather:n('aweather'),fieldMul:n('afield'),helping:ck('ahelp'),charge:ck('acharge'),lifeOrb:ck('alife'),multiTarget,wall,wallSize:mode(b)>=2?2:1,atkStat:g('aatk').value||undefined,defStat:g('adef').value||undefined,ignoreAtk:igAtk,ignoreDef:igDef,watersport:(f.etc||{})['물놀이']>0,mudsport:(f.etc||{})['흙놀이']>0,scarf:atk.item==='구애스카프',choiceDef:['구애머리띠','구애안경'].includes(def.item||'')&&false,tailwindDef:((f.objects||{})[side]||{})['순풍']>0,swampDef:((f.objects||{})[side]||{})['습원']>0});
@@ -919,15 +931,15 @@ window.OM_BATTLE_UI=(()=>{
     const stab=eff?eff.stab:false;
     const guard0=(DF.endure?0.5:1)*(mods.guard||1);const endure0=!!DF.endure&&!AF.noEndure;
     const hp=dmg?B().hpDamage(def,dmg.total,eff.value,{stab,adaptability:ck('aadapt'),expertBelt:ck('abelt'),guard:guard0,endure:endure0,hpFloor:raidFloor(def)}):null;
-    res.push({slot,def,acc,hits,dmg,eff,stab,hp,guard:guard0,endure:endure0,manual:1,mods})}
+    res.push({slot,def,acc,hits,dmg,eff,stab,hp,guard:guard0,endure:endure0,manual:1,mods,sec:acc.hit?secRolls(atk,def,mv):[]})}
    RESULT={mv,targets:res,moveTypes};
    { /* 굴린 시점에 로그로 (자속·보정 같은 공격 쪽 내부 정보는 빼고) */
     const L=res.map(r=>{const hit=r.acc.sure?'필중':r.acc.hit?`명중 ${r.acc.roll}/${r.acc.target}`:`빗나감 ${r.acc.roll}/${r.acc.target}`;if(!r.acc.hit)return `→ ${r.def.name}: ${hit}`;
      const cr=r.hits.length?r.hits.map(h=>h.v===2?`급소!(${h.cr.roll}/${h.cr.chance})`:`${h.cr.roll}/${h.cr.chance}`).join(' · '):'';
-     const am=atkMul(r);return `→ ${r.def.name}: ${hit}${cr?' · 급소 '+cr:''}${r.dmg?` · 대미지 ${Math.floor(r.dmg.total*am)}${r.hits.length>1?' ('+r.hits.length+'회)':''} · 상성 ×${r.eff.value}`:' (변화기)'}`});
+     const am=atkMul(r);return `→ ${r.def.name}: ${hit}${cr?' · 급소 '+cr:''}${r.dmg?` · 대미지 ${Math.floor(r.dmg.total*am)}${r.hits.length>1?' ('+r.hits.length+'회)':''} · 상성 ×${r.eff.value}`:' (변화기)'}${(r.sec||[]).map(x=>'\n   '+x.line).join('')}`});
     A().sysLog(`【공격】 ${atk.name} 『${mv.name}』 ${esc(mv.type||'')} ${mv.cat||''}${+g('apow').value?' 위력 '+g('apow').value:''}
 ${L.join('\n')}`,'battle',{mid:atk.id,img:atk.image||''})}
-   $('#ares',md).innerHTML=`<table class="t"><tr><th>대상</th><th>명중</th><th>급소</th><th>대미지(상성 전)</th><th>상성</th><th>보정</th><th>최종</th></tr>${res.map((r,i)=>`<tr>
+   $('#ares',md).innerHTML=`${res.some(r=>(r.sec||[]).length)?`<div class="card" style="margin:0 0 6px;padding:6px 10px"><b class="small">부가효과 굴림</b> <span class="small dim">(발동한 것은 손으로 적용)</span>${res.map(r=>(r.sec||[]).map(x=>`<div class="small" style="color:${x.ok?'var(--ok)':'var(--mute)'}">${esc(r.def.name)} · ${esc(x.line)}</div>`).join('')).join('')}</div>`:''}<table class="t"><tr><th>대상</th><th>명중</th><th>급소</th><th>대미지(상성 전)</th><th>상성</th><th>보정</th><th>최종</th></tr>${res.map((r,i)=>`<tr>
     <td class="nw"><div class="row" style="gap:6px;flex-wrap:nowrap"><div class="ti sm" style="${r.def.image?`background-image:url('${cssu(r.def.image)}')`:''}"></div><div><b>${esc(r.def.name)}</b><div class="small dim">HP ${r.def.hp.cur}/${r.def.hp.max}</div>${r.mods&&r.mods.names.length?`<div class="small" style="color:var(--yel2)">${r.mods.names.map(x=>esc(x.txt)).join('<br>')}</div>`:''}</div></div></td>
     <td>${r.acc.sure?'필중':(r.acc.hit?'<b style="color:var(--ok)">명중</b>':'<b style="color:var(--red)">빗나감</b>')+`<div class="small dim">${r.acc.note?esc(r.acc.note):r.acc.roll+' / '+r.acc.target}</div>`}</td>
     <td>${r.hits.map(h=>h.v===2?`<b style="color:var(--red)">급소</b>`:'-').join('<br>')}<div class="small dim">${r.hits.map(h=>h.cr.roll+'/'+h.cr.chance).join('<br>')}</div></td>
