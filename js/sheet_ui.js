@@ -23,8 +23,8 @@ window.OM_SHEET_UI=(()=>{
   const t=trs[UI.tid];
   el.innerHTML=`<div class="sheet">
    <div class="ttabs">${ids.map(id=>`<button class="ttab ${id===UI.tid?'on':''}" data-tid="${id}">${esc(trs[id].name)}${id===c.seat?' <span class="tag me">ME</span>':''}</button>`).join('')}
-    <span class="sp"></span>${c.gm?`<button class="btn sm" data-act="import">제작기에서 가져오기</button><button class="btn sm ghost" data-act="newtr">+ 새 트레이너</button>`:''}</div>
-   ${t?trainerView(c,t):'<div class="empty">아직 트레이너가 없다.'+(c.gm?' 「제작기에서 가져오기」로 시작한다.':' GM 이 가져오면 여기에 나온다.')+'</div>'}
+    <span class="sp"></span>${c.gm?`<button class="btn sm" data-act="import">제작기에서 가져오기</button><button class="btn sm ghost" data-act="newtr">+ 새 트레이너</button>`:(c.seat?`<button class="btn sm ${trs[c.seat]?'ghost':'pri'}" data-act="import" title="제작기에 있는 내 트레이너를 내 자리로 가져온다">${trs[c.seat]?'내 파티 다시 불러오기':'내 파티 불러오기'}</button>`:'')}</div>
+   ${t?trainerView(c,t):'<div class="empty">아직 트레이너가 없다.'+(c.gm?' 「제작기에서 가져오기」로 시작한다.':(c.seat?' 「내 파티 불러오기」로 제작기의 트레이너를 가져온다.':' 자리에 앉은 뒤 「내 파티 불러오기」.'))+'</div>'}
   </div>`;
   el.querySelectorAll('.ttab').forEach(b=>b.onclick=()=>{UI.tid=b.dataset.tid;UI.mid='';A().renderScene()});
   el.querySelectorAll('[data-act]').forEach(b=>{if(b.tagName==='SELECT'||b.tagName==='INPUT')return;b.onclick=e=>{e.stopPropagation();action(b.dataset)}});
@@ -177,7 +177,7 @@ window.OM_SHEET_UI=(()=>{
    case 'tobattle':return A().loadFromRoster(d.tid,d.side)}}
 
  /* 제작기 → 로스터 */
- async function openImport(){const c=ctx();if(!c.gm)return;
+ async function openImport(){const c=ctx();if(!c.gm&&!c.seat)return;
   let mk;try{mk=await A().loadMaker()}catch(e){return A().toast('제작기 DB를 읽지 못했다: '+e.message)}
   const fold=new Map(mk.folders.map(f=>[f.id,(f.data||{}).name||f.id]));
   const list=mk.trainers.map(t=>({id:t.id,d:(t.data&&t.data.data)||{},ord:(t.data||{}).ord||0})).sort((a,b)=>(fold.get(a.d.folder)||'').localeCompare(fold.get(b.d.folder)||'')||a.ord-b.ord);
@@ -186,19 +186,33 @@ window.OM_SHEET_UI=(()=>{
    <ul class="pick" id="tl">${list.map(t=>`<li data-id="${t.id}"><span class="small dim" style="min-width:90px">${esc(fold.get(t.d.folder)||'-')}</span><b>${esc(t.d.name||'(이름 없음)')}</b><span class="small dim">${esc(['육성','지시','통솔','능력'].map(k=>k+' '+((t.d.ranks||{})[k]||'-')).join(' · '))} · ${(t.d.pids||[]).length}체</span><span class="sp"></span>${c.r.trainers[t.id]?'<span class="tag">있음</span>':''}<button class="btn sm pri" data-pick="${t.id}">가져오기</button></li>`).join('')}</ul>`);
   $('#mkRefresh',md).onclick=async()=>{await A().loadMaker(true);A().closeModal();openImport()};
   $('#tq',md).oninput=e=>{const q=e.target.value.trim();md.querySelectorAll('#tl li').forEach(li=>li.style.display=!q||li.textContent.includes(q)?'':'none')};
-  md.querySelectorAll('[data-pick]').forEach(bt=>bt.onclick=async()=>{const tdoc=mk.trainers.find(t=>t.id===bt.dataset.pick);await importTrainer(tdoc,mk.pokemon,false);A().closeModal();UI.tid=tdoc.id;UI.tab='poke';A().renderScene()})}
+  md.querySelectorAll('[data-pick]').forEach(bt=>bt.onclick=async()=>{const tdoc=mk.trainers.find(t=>t.id===bt.dataset.pick);const asId=c.gm?'':c.seat;if(!c.gm&&c.r.trainers[c.seat]&&!confirm(`내 자리의 「${c.r.trainers[c.seat].name}」를 「${(tdoc.data&&tdoc.data.data||{}).name||''}」로 바꿀까? (HP·랭크·메모는 새로 시작)`))return;await importTrainer(tdoc,mk.pokemon,false,asId);A().closeModal();UI.tid=asId||tdoc.id;UI.tab='poke';A().renderScene()})}
  /* base64 그림은 저장소에 올리고 주소로 바꾼다 (방 상태를 가볍게) */
  async function hostImages(room,trainer,mons){const jobs=[];
   const up=async(obj,path)=>{if(!obj.image||!obj.image.startsWith('data:'))return;try{obj.image=await DBS().uploadImage(path,obj.image)}catch(e){console.warn('이미지 올리기 실패',e);obj.image=obj.image.length<150000?obj.image:'';A().toast('그림을 올리지 못했다 (Storage 설정을 확인): '+e.message)}};
   jobs.push(up(trainer,`rooms/${room}/t_${trainer.id}`));for(const m of mons)jobs.push(up(m,`rooms/${room}/m_${m.id}`));await Promise.all(jobs)}
- async function importTrainer(tdoc,pokeDocs,keep){const c=ctx();const {trainer,mons}=I().party(tdoc,pokeDocs);await hostImages(c.ST.room,trainer,mons);const r=JSON.parse(JSON.stringify(c.r));const old=r.trainers[trainer.id];
+ /* asId: 좌석이 제 자리로 가져올 때 — 트레이너 id 를 좌석 id 로 바꾸고 제작기 id 는 mkId 에 둔다 (새로고침용). GM 이 같은 제작기 트레이너를 또 가져오면 그 자리를 다시 쓴다 */
+ async function importTrainer(tdoc,pokeDocs,keep,asId){const c=ctx();const {trainer,mons}=I().party(tdoc,pokeDocs);
+  if(!asId){const dup=Object.values(c.r.trainers||{}).find(x=>x.mkId===tdoc.id&&x.id!==tdoc.id);if(dup)asId=dup.id}
+  if(asId){trainer.mkId=tdoc.id;trainer.id=asId;for(const m of mons)m.tid=asId}
+  await hostImages(c.ST.room,trainer,mons);const r=JSON.parse(JSON.stringify(c.r));const old=r.trainers[trainer.id];
   trainer.ord=old?old.ord:Object.keys(r.trainers).length;trainer.src='maker';if(old){for(const k of ['orderStyle','commandStyle','orderCount','orderBase','orderPreset','orderType'])if(old[k]!=null)trainer[k]=old[k];trainer.memo=old.memo;const rs=window.OM_ORDERS.resync(trainer);if(rs)Object.assign(trainer,rs)}
   if(!trainer.orderCount)Object.assign(trainer,window.OM_ORDERS.auto(trainer,'assoc',1));if(old){if(old.image&&!trainer.image)trainer.image=old.image;if(!(trainer.stands||[]).length&&(old.stands||[]).length){trainer.stands=old.stands;trainer.standActive=old.standActive}}
   for(const id of ((old&&old.pids)||[]))if(!trainer.pids.includes(id))delete r.mons[id];
   for(const m of mons){const om=r.mons[m.id];m.src='maker';if(om&&keep){m.iv=om.iv;m.item=om.item||m.item;m.itemEff=om.itemEff||m.itemEff;m.sheetHp=om.sheetHp;m.dist=om.dist;m.ev=om.ev;if(om.image&&!m.image)m.image=om.image;recalc(m,trainer)}r.mons[m.id]=m}
-  r.trainers[trainer.id]=trainer;await A().set(['roster'],r);A().toast(`${trainer.name} 파티 ${mons.length}체를 ${old?'갱신했다':'가져왔다'}`)}
+  r.trainers[trainer.id]=trainer;
+  if(c.gm)await A().set(['roster'],r);
+  else{/* 좌석: 허용된 경로로 하나씩 — 내 트레이너, 내 포켓몬(없어진 것은 지운다) */
+   for(const id of ((old&&old.pids)||[]))if(!trainer.pids.includes(id)&&c.r.mons[id])await A().set(['roster','mons',id],null);
+   for(const m of mons)await A().set(['roster','mons',m.id],r.mons[m.id]);
+   await A().set(['roster','trainers',trainer.id],trainer)}
+  await ensureNode(trainer);
+  A().toast(`${trainer.name} 파티 ${mons.length}체를 ${old?'갱신했다':'가져왔다'}`)}
+ /* 관계도 노드: 같은 이름이 없으면 PC/NPC 구분대로 만든다 (휴대폰 협력자 · 연락처가 쓴다). 좌석은 graph 를 못 쓰니 GM 일 때만 */
+ async function ensureNode(trainer){const c=ctx();if(!c.gm)return;const g=c.ST.state.graph||{nodes:{},edges:{}};const nodes=g.nodes||{};if(Object.values(nodes).some(n=>n.name===trainer.name))return;const i=Object.keys(nodes).length;
+  await A().set(['graph','nodes','t_'+trainer.id],{id:'t_'+trainer.id,name:trainer.name,kind:trainer.kind==='npc'?'npc':'pc',img:'',note:'',x:120+(i%6)*140,y:120+Math.floor(i/6)*140,stands:[],standActive:0})}
  async function refreshFromMaker(tid){const c=ctx();const t=c.r.trainers[tid];if(!t)return;if(t.src==='new')return A().toast('제작기에서 온 트레이너가 아니다');
-  let mk;try{mk=await A().loadMaker(true)}catch(e){return A().toast(e.message)}const tdoc=mk.trainers.find(x=>x.id===tid);if(!tdoc)return A().toast('제작기에 이 트레이너가 없다');await importTrainer(tdoc,mk.pokemon,true);A().renderScene()}
+  let mk;try{mk=await A().loadMaker(true)}catch(e){return A().toast(e.message)}const tdoc=mk.trainers.find(x=>x.id===(t.mkId||tid));if(!tdoc)return A().toast('제작기에 이 트레이너가 없다');await importTrainer(tdoc,mk.pokemon,true,t.mkId?tid:'');A().renderScene()}
 
  /* 알까기 */
  function openHatch(mid){const c=ctx();const m=c.r.mons[mid];const t=c.r.trainers[m.tid]||c.r.trainers[UI.tid];if(!m||!canEdit(c,t.id))return;const count=S().hatchCount(t);let rolls=S().hatch(count);let chosen=-1;

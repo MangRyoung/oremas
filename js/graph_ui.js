@@ -14,10 +14,10 @@ window.OM_GRAPH_UI=(()=>{
 
  function render(el){
   const g=G();const nodes=g.nodes||{},edges=g.edges||{};
-  const nodeSvg=Object.values(nodes).map(n=>{const r=n.kind==='pc'?30:n.kind==='org'?26:22;
+  const nodeSvg=Object.values(nodes).map(n=>{const r=n.kind==='pc'?30:n.kind==='org'?26:22;const nimg=A().portraitOf(n.name,n.img);
    return `<g class="gn ${n.kind||'npc'}" data-n="${n.id}" transform="translate(${n.x||0},${n.y||0})" style="cursor:${gm()?'grab':'pointer'}">
     ${n.kind==='org'?`<rect x="${-r}" y="${-r}" width="${r*2}" height="${r*2}" transform="rotate(45)" fill="#111" stroke="${n.color||'#fff'}" stroke-width="3"/>`:`<circle r="${r+4}" fill="${n.kind==='pc'?'var(--red)':'#fff'}"/><circle r="${r}" fill="#222"/>`}
-    ${n.img?`<clipPath id="cp_${n.id}"><circle r="${r-1}"/></clipPath><image href="${esc(n.img)}" x="${-r}" y="${-r}" width="${r*2}" height="${r*2}" clip-path="url(#cp_${n.id})" preserveAspectRatio="xMidYMid slice"/>`:`<text y="6" text-anchor="middle" font-size="16" fill="#fff" font-family="var(--lab)">${esc((n.name||'?').slice(0,2))}</text>`}
+    ${nimg?`<clipPath id="cp_${n.id}"><circle r="${r-1}"/></clipPath><image href="${esc(nimg)}" x="${-r}" y="${-r}" width="${r*2}" height="${r*2}" clip-path="url(#cp_${n.id})" preserveAspectRatio="xMidYMid slice"/>`:`<text y="6" text-anchor="middle" font-size="16" fill="#fff" font-family="var(--lab)">${esc((n.name||'?').slice(0,2))}</text>`}
     <g transform="translate(0,${r+16})"><rect x="-60" y="-11" width="120" height="20" fill="#000" stroke="${n.kind==='pc'?'var(--red)':'#fff'}" stroke-width="2" transform="skewX(-8)"/><text y="4" text-anchor="middle" font-size="12" fill="#fff" font-family="var(--lab)">${esc(n.name||'')}</text></g></g>`}).join('');
   const edgeSvg=Object.values(edges).map(e=>{const a=nodes[e.a],b=nodes[e.b];if(!a||!b)return '';const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;const w=1+Math.min(5,+e.rank||0);
    return `<g class="ge" data-e="${e.id}"><line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${e.shock?'var(--red)':'#fff'}" stroke-width="${w}" ${e.shock?'stroke-dasharray="8 5"':''} opacity=".85"/>
@@ -45,12 +45,12 @@ window.OM_GRAPH_UI=(()=>{
  function openNode(id){const n=G().nodes[id];if(!n)return;if(gm())return editNode(id);
   const links=Object.values(G().edges||{}).filter(e=>e.a===id||e.b===id).map(e=>{const o=G().nodes[e.a===id?e.b:e.a];return `<li>${esc(o?o.name:'?')} <span class="tag">R${+e.rank||0}</span> ${e.shock?'⚡':''} <span class="small dim">${esc(e.label||'')}</span></li>`}).join('');
   A().openModal(`<div class="mhead"><h2>${esc(n.name)} <span class="small dim">${KIND[n.kind]||''}</span></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-   <div class="row" style="align-items:flex-start">${n.img?`<img src="${esc(n.img)}" style="width:96px;height:96px;object-fit:cover;border:2px solid #fff">`:''}<div class="pre small" style="flex:1">${esc(n.note||'')||'<span class="dim">메모 없음</span>'}</div></div>
+   <div class="row" style="align-items:flex-start">${A().portraitOf(n.name,n.img)?`<img src="${esc(A().portraitOf(n.name,n.img))}" style="width:96px;height:96px;object-fit:cover;border:2px solid #fff">`:''}<div class="pre small" style="flex:1">${esc(n.note||'')||'<span class="dim">메모 없음</span>'}</div></div>
    <div class="sh" style="margin-top:10px">관계</div><ul class="small">${links||'<li class="dim">없음</li>'}</ul>`)}
  function editNode(id){const g=G();const n=id?g.nodes[id]:{id:'n'+rnd(6),name:'',kind:'npc',x:Math.round((200-V.x)/V.k),y:Math.round((200-V.y)/V.k),img:'',note:''};
   const md=A().openModal(`<div class="mhead"><h2>${id?'노드 수정':'노드 추가'}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    <div class="row"><label>이름 <input type="text" id="nn" value="${esc(n.name)}"></label><label>종류 <select id="nk">${Object.entries(KIND).map(([k,v])=>`<option value="${k}" ${n.kind===k?'selected':''}>${v}</option>`).join('')}</select></label></div>
-   <div class="row" style="margin-top:6px"><label style="flex:1">그림 주소 <input type="text" id="ni" value="${esc(n.img||'')}" style="flex:1"></label></div>
+   <div class="row" style="margin-top:6px"><label style="flex:1">그림 주소 <input type="text" id="ni" value="${esc(n.img||'')}" style="flex:1" placeholder="비우면 같은 이름의 트레이너·포켓몬 초상을 쓴다"></label></div>
    <div style="margin-top:6px"><textarea id="nt" rows="5" style="width:100%" placeholder="메모 (모두가 본다)">${esc(n.note||'')}</textarea></div>
    <div class="row" style="margin-top:10px">${id?`<button class="btn sm ghost danger" id="ndel">삭제</button>`:''}<span class="sp"></span><button class="btn pri" id="nok">저장</button></div>`);
   $('#nok',md).onclick=async()=>{const nn=Object.assign({},n,{name:$('#nn',md).value.trim()||'?',kind:$('#nk',md).value,img:$('#ni',md).value.trim(),note:$('#nt',md).value});A().closeModal();await A().set(['graph','nodes',nn.id],nn)};
@@ -64,5 +64,5 @@ window.OM_GRAPH_UI=(()=>{
   $('#eok',md).onclick=async()=>{const ne={id:e.id,a:$('#ea',md).value,b:$('#eb',md).value,rank:+$('#er',md).value||0,label:$('#el',md).value.trim(),shock:$('#es',md).checked};if(ne.a===ne.b)return A().toast('같은 노드끼리는 안 된다');A().closeModal();await A().set(['graph','edges',ne.id],ne)};
   const del=$('#edel',md);if(del)del.onclick=async()=>{A().closeModal();await A().set(['graph','edges',id],null)}}
 
- return {render};
+ return {render,editNode};
 })();

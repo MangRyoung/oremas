@@ -1003,3 +1003,23 @@ body.resizing{user-select:none;cursor:col-resize}
 .memon .mhp{width:44px;height:4px;background:#2a2b31}.memon .mhp b{display:block;height:100%;background:var(--ok)}.memon .mhp.mid b{background:var(--yel2)}.memon .mhp.low b{background:var(--red)}
 .memon small{font-size:10px;color:#ccc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:52px}
 .melast{font-size:11.5px;color:#ccc;max-width:360px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--mono)}
+/* 휴대폰 — 메모장 · 연락처 추가 */
+.ph-note{display:flex;flex-direction:column;gap:6px;padding:10px 12px}.ph-note input,.ph-note textarea{width:100%;font-size:14px}.ph-note textarea{font-family:inherit;line-height:1.5;resize:vertical}
+.ph-item.ph-noteit{border-left:4px solid var(--yel2)}
+label.ph-item input[type=checkbox]{width:16px;height:16px;flex:none}
+
+/* 위쪽 바 가운데 「입력 중」 */
+.typingtop{display:none;font-size:12px;color:#ddd;background:rgba(0,0,0,.5);padding:2px 10px;border-left:3px solid var(--yel2);margin-right:10px;white-space:nowrap}.typingtop .dots i{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--yel2);margin-right:2px;animation:blink 1.2s infinite}.typingtop .dots i:nth-child(2){animation-delay:.2s}.typingtop .dots i:nth-child(3){animation-delay:.4s}
+/* 휴대폰 — 방 코드 · 관계 편집 · 일상 전체 */
+.ph-room{padding:4px 12px 8px;display:flex;flex-direction:column;gap:6px}.ph-room input[type=text]{flex:1;font-size:13px}
+.ph-ced{display:flex;flex-direction:column;gap:3px;flex:none}.ph-ced .btn{min-width:30px;padding:2px 6px}
+.ph-item.conf.editing{cursor:default}.ph-item.conf .ph-shock{display:block;margin-top:2px;font-size:11px}
+.ph-foot{padding:8px 12px 12px}
+.ph-tots{display:flex;flex-wrap:wrap;gap:6px;padding:10px 12px 4px}.ph-tot{font-size:11px;background:#141518;border:1px solid var(--line2);padding:2px 8px;color:#ddd}.ph-tot b{font-family:var(--lab);color:var(--yel2);margin-right:4px}.ph-tot.z{opacity:.45}
+.ph-dayblk{border:1px solid var(--line2);background:#101114}.ph-dayh{display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:#1a1b22;font-size:12px}.ph-dayh small{color:var(--mute)}
+
+.phone .ptitle{position:relative}.phone .ptitle .plog{position:absolute;right:10px;top:8px;font-size:11px;color:#fff;border-color:rgba(255,255,255,.5)}
+.presence{cursor:pointer}
+
+.ph-dayblk .ph-logrow{display:grid;grid-template-columns:auto 1fr auto;align-items:center;border:0;border-bottom:1px solid var(--line2);padding:6px 10px}.ph-dayblk .ph-logrow small{grid-column:1/3}.ph-dayblk .ph-logrow .btn{grid-column:3;grid-row:1}
+.ph-log .ph-logrow{display:grid;grid-template-columns:auto 1fr auto;align-items:center}.ph-log .ph-logrow small{grid-column:1/3}.ph-log .ph-logrow .btn{grid-column:3;grid-row:1}

@@ -7,6 +7,12 @@ const $=(s,r)=>(r||document).querySelector(s);
 const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const rnd=n=>{const a=new Uint8Array(n||18);crypto.getRandomValues(a);return Array.from(a,b=>'abcdefghijklmnopqrstuvwxyz0123456789'[b%36]).join('')};
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+/* 알림 (이 브라우저에서만): 채팅 소리 · 문자 소리 · 입력 중 표시 — 방 설정에서 켜고 끈다 */
+const ALARM_KEY='om_alarm';function alarm(){const d={chat:1,sms:1,typing:1};try{return Object.assign(d,JSON.parse(localStorage.getItem(ALARM_KEY)||'{}'))}catch(e){return d}}
+function setAlarm(k,v){const a=alarm();a[k]=v?1:0;try{localStorage.setItem(ALARM_KEY,JSON.stringify(a))}catch(e){}if(!a.typing&&window.OM_RP_UI&&window.OM_RP_UI.drawTyping)window.OM_RP_UI.drawTyping()}
+const isMineLog=r=>{const d=(r&&r.data)||{};return d.from===(ST.role==='gm'?'gm':ST.seat)};
+let titleT=null;function flashTitle(msg){if(!document.hidden)return;const base=document.title.replace(/^\(.*?\) /,'');document.title=`(${msg}) ${base}`;clearTimeout(titleT);const back=()=>{document.title=base;document.removeEventListener('visibilitychange',back)};document.addEventListener('visibilitychange',back);titleT=setTimeout(back,60000)}
+function notifyLog(r){if(!r||r.kind!=='chat'||!r.data||r.data.sms||!(r.data.t))return;if(isMineLog(r))return;if(r.at&&Date.now()-new Date(r.at).getTime()>15000)return;if(!alarm().chat)return;try{if(window.OM_RP_UI)window.OM_RP_UI.playSe('Ping',true)}catch(e){}flashTitle('새 메시지')}
 let toastT=null;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2400)}
 function fmtTime(s){const d=new Date(s);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
 function typeChip(en){const c=S().typeColor(en);return `<span class="type" style="background:${c.bg};color:${c.fg}">${esc(S().typeKo(en))}</span>`}
@@ -48,11 +54,13 @@ async function openRoom(id,gm){
  const seatInfo=LS.get('om_seat_'+id,null);
  if(gm){const w=await DBS().whoami(id,gm);if(w==='gm'){ST.role='gm';ST.secret=gm;ST.name='GM';remember(id,row.name,gm)}else toast('GM 비밀값이 맞지 않는다')}
  if(!ST.role&&seatInfo&&seatInfo.secret){const w=await DBS().whoami(id,seatInfo.secret);if(w&&w!=='gm'){ST.role='seat';ST.secret=seatInfo.secret;ST.seat=w;ST.name=seatInfo.name||w}}
- if(!ST.role)remember(id,row.name,'');
+ if(!ST.role){remember(id,row.name,'');ST.name=LS.get('om_name_'+id,'')||''}
  const st=await DBS().getState(id);ST.state=(st&&st.data)||{};ST.v=(st&&st.v)||0;
+ /* GM 이 방을 열면 좌석이 쓸 상자(roster · pub · graph · skill · dex)를 먼저 만들어 둔다 — 서버의 jsonb_set 은 부모가 없으면 조용히 실패하니까 */
+ if(ST.role==='gm'){const need={roster:{trainers:{},mons:{}},pub:{},graph:{nodes:{},edges:{}},skill:{},dex:{},rp:{}};for(const k in need){if(typeof ST.state[k]!=='object'||ST.state[k]===null){try{const v=await DBS().setState(id,ST.secret,[k],need[k]);ST.state[k]=need[k];ST.v=Math.max(ST.v,v||0)}catch(e){}}else if(k==='roster'){for(const kk of ['trainers','mons'])if(typeof ST.state.roster[kk]!=='object'||ST.state.roster[kk]===null){try{const v=await DBS().setState(id,ST.secret,['roster',kk],{});ST.state.roster[kk]={};ST.v=Math.max(ST.v,v||0)}catch(e){}}}}}
  ST.log=await DBS().getLogTail(id,200);ST.lastLogId=ST.log.length?ST.log[ST.log.length-1].id:0;
  renderRoom();
- ST.unsub=DBS().subscribe(id,{onEvent:p=>{if(p&&p.t==='hello')onHello(p);if(window.OM_RP_UI&&p&&p.t==='typing')window.OM_RP_UI.onTyping(p);if(window.OM_CUTIN&&p&&p.t==='cutin')window.OM_CUTIN.onEvent(p)},onState:(d,v)=>{if(v>=ST.v){ST.state=d;ST.v=v;renderScene()}},onLog:r=>{if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;renderLog(true);if(window.OM_RP_UI)window.OM_RP_UI.onChat(r)}},
+ ST.unsub=DBS().subscribe(id,{onEvent:p=>{if(p&&p.t==='hello')onHello(p);if(window.OM_RP_UI&&p&&p.t==='typing')window.OM_RP_UI.onTyping(p);if(window.OM_CUTIN&&p&&p.t==='cutin')window.OM_CUTIN.onEvent(p)},onState:(d,v)=>{if(v>=ST.v){ST.state=d;ST.v=v;renderScene()}},onLog:r=>{if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;renderLog(true);notifyLog(r);if(window.OM_RP_UI)window.OM_RP_UI.onChat(r)}},
   onStatus:s=>{const el=$('#conn');if(el){el.textContent=s==='SUBSCRIBED'?'● 실시간':'○ '+s;el.style.color=s==='SUBSCRIBED'?'var(--acc2)':'var(--mute)'}if(s==='SUBSCRIBED')startPresence()}});
  if(ST.role){pollWhispers();ST.wtimer=setInterval(pollWhispers,4000)}
  if(!ST.role)openSeatPicker()}
@@ -79,22 +87,23 @@ function renderRoom(){
    <a href="#" class="muted small" title="로비">오레마스</a><span class="name">${esc(r.name||r.id)}</span>
    ${ST.role==='gm'?'<span class="badge gm">GM</span>':ST.role==='seat'?`<span class="badge seat">${esc(ST.name)}</span>`:'<span class="badge">관전</span>'}
    <span class="tabs" id="sceneTabs"></span>
-   <span class="sp"></span><span id="presence" class="presence" title="지금 접속 중인 사람"></span><span id="conn" class="small muted">○ 연결 중</span>
+   <span class="sp"></span><span id="typingTop" class="typingtop"></span><span id="presence" class="presence" title="지금 접속 중인 사람 · 누르면 내 이름"></span><span id="conn" class="small muted">○ 연결 중</span>
    ${ST.role?`<button class="btn sm ${window.OM_SKILL_UI&&window.OM_SKILL_UI.pending()?'pri':''}" id="skillBtn">스킬 체크${window.OM_SKILL_UI&&window.OM_SKILL_UI.pending()?' !':''}</button>${ST.role==='seat'?'<button class="btn sm" id="dexBtn" title="포켓몬 도감 · 해석 관리">도감</button>':''}<button class="btn sm" id="deckBtn">덱</button>`:''}<button class="btn sm" id="dbBtn">DB</button><button class="btn sm" id="rmBtn" title="레디메이드 (자동화 효과 사전)">레디메이드</button><button class="btn sm" id="copyLink">플레이어 링크</button>
    ${ST.role==='gm'?'<button class="btn sm" id="copyGm">GM 링크</button><button class="btn sm" id="roomSet">방 설정</button>':'<button class="btn sm" id="seatBtn">자리</button><button class="btn sm ghost" id="roomSet" title="소리 크기">소리</button>'}
   </div>
   <div class="body"><div class="scene" id="scene"></div><div class="resizer" id="resizer" title="끌어서 채팅 창 너비 조절"></div>
-   <div class="side" id="side"><div class="phone"><div class="pbar"><span>●●●</span><span class="ptime" id="pclock"></span></div><div class="ptitle">${esc(r.name||r.id)}<small>${ST.role==='gm'?'GM':ST.role==='seat'?esc(ST.name):'관전'} · 오레마스</small></div><div class="log" id="log"></div>
+   <div class="side" id="side"><div class="phone"><div class="pbar"><span>●●●</span><span class="ptime" id="pclock"></span></div><div class="ptitle"><button class="btn xs ghost plog" id="saveLog" title="채팅 로그를 파일로 저장">💾 로그</button>${esc(r.name||r.id)}<small>${ST.role==='gm'?'GM':ST.role==='seat'?esc(ST.name):'관전'} · 오레마스</small></div><div class="log" id="log"></div>
     <div class="inbox"><input type="text" id="chatIn" placeholder="${ST.role?'메시지 · /r 1d100 · /w 이름 메시지':'자리에 앉으면 말할 수 있다'}" ${ST.role?'':'disabled'}><button class="btn" id="chatSend" ${ST.role?'':'disabled'}>➤</button></div></div></div>
   </div></div>`;
  $('#copyLink').onclick=()=>copy(roomLink(ST.room),'플레이어 링크를 복사했다');
+ const sl=$('#saveLog');if(sl)sl.onclick=openSaveLog;const pr=$('#presence');if(pr)pr.onclick=()=>{if(ST.role==='gm')return;openNick()};
  const sk=$('#skillBtn');if(sk)sk.onclick=()=>window.OM_SKILL_UI.open();const dxb=$('#dexBtn');if(dxb)dxb.onclick=()=>window.OM_DEX_UI.openMgr(ST.seat);
  const dk=$('#deckBtn');if(dk)dk.onclick=()=>window.OM_DECK_UI.open();
  $('#dbBtn').onclick=()=>window.OM_DB_UI.open({kind:'trait'});if($('#rmBtn'))$('#rmBtn').onclick=()=>window.OM_FX_UI.openRm('');
  const clock=()=>{const el=$('#pclock');if(el){const d=new Date();el.textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}};clock();clearInterval(ST.clockT);ST.clockT=setInterval(clock,15000);
  if(ST.role==='gm'){$('#copyGm').onclick=()=>copy(gmLink(ST.room,ST.secret),'GM 링크를 복사했다 (아무에게도 주지 말 것)');$('#roomSet').onclick=openRoomSettings}
  else {$('#seatBtn').onclick=openSeatPicker;$('#roomSet').onclick=openRoomSettings}
- $('#chatSend').onclick=sendChat;$('#chatIn').onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)sendChat()};
+ $('#chatSend').onclick=sendChat;$('#chatIn').onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)sendChat()};$('#chatIn').oninput=()=>{if(window.OM_RP_UI&&window.OM_RP_UI.typingPing)window.OM_RP_UI.typingPing()};
  /* 채팅 창 너비: 끌어서 조절, 브라우저에 기억 */
  try{const w=+localStorage.getItem('om_sidew');if(w>=260)$('#side').style.width=w+'px'}catch(e){}
  $('#resizer').onpointerdown=e=>{const side=$('#side');const sx=e.clientX,sw=side.getBoundingClientRect().width;e.preventDefault();document.body.classList.add('resizing');
@@ -108,7 +117,9 @@ function copy(t,msg){navigator.clipboard.writeText(t).then(()=>toast(msg),()=>pr
 async function set(path,value){try{
   /* 서버의 jsonb_set 은 중간 키가 없으면 조용히 실패한다 — 옛 schema 를 쓰는 방이어도 되게 부모를 먼저 만든다 */
   if(path&&path.length>1&&ST.role==='gm'){let o=ST.state;for(let i=0;i<path.length-1;i++){if(typeof o[path[i]]!=='object'||o[path[i]]===null){await DBS().setState(ST.room,ST.secret,path.slice(0,i+1),{});o[path[i]]={}}o=o[path[i]]}}
-  const v=await DBS().setState(ST.room,ST.secret,path,value);
+  /* 좌석: 중간 상자가 없으면(예: pub/나 가 아직 없음) 있는 부모까지 올라가 통째로 쓴다 — 허용 경로 안이면 서버가 받아 준다 */
+  let wpath=path,wval=value;if(path&&path.length>1&&ST.role!=='gm'){let o=ST.state;for(let i=0;i<path.length-1;i++){if(typeof o[path[i]]!=='object'||o[path[i]]===null){let nv=value;for(let j=path.length-1;j>i;j--){nv={[path[j]]:nv}}wpath=path.slice(0,i+1);wval=nv;break}o=o[path[i]]}}
+  const v=await DBS().setState(ST.room,ST.secret,wpath,wval);
   /* 낙관적 반영: 실시간이 오기 전에 화면부터 */
   if(path&&path.length){let o=ST.state;for(let i=0;i<path.length-1;i++){if(typeof o[path[i]]!=='object'||o[path[i]]==null)o[path[i]]={};o=o[path[i]]}
    if(value===null||value===undefined)delete o[path[path.length-1]];else o[path[path.length-1]]=value}else ST.state=value||{};
@@ -165,7 +176,10 @@ function drawPresence(){const el=$('#presence');if(!el)return;const now=Date.now
  const trs=(ST.state.roster||{}).trainers||{};const nm=x=>x.role==='gm'?'GM':x.role==='seat'?`${esc(x.name)}${trs[x.seat]?' <small>'+esc(trs[x.seat].name)+'</small>':''}`:esc(x.name||'관전');
  el.innerHTML=`<span class="pcount" title="${list.map(x=>x.name).join(', ')}">● ${list.length}</span>${list.map(x=>`<span class="pwho ${x.role} ${x.me?'me':''}">${nm(x)}</span>`).join('')}`}
 function startPresence(){sayHello(true);clearInterval(PRES.t);PRES.t=setInterval(()=>{sayHello(false);drawPresence()},25000)}
-function renderScene(){
+/* GM 이 보고 있으면 로스터 트레이너마다 관계도 노드가 있게 맞춘다 (좌석이 제 파티를 가져왔을 때 — 좌석은 graph 를 못 쓰니까) */
+let reconT=null;function reconcileNodes(){if(ST.role!=='gm')return;clearTimeout(reconT);reconT=setTimeout(async()=>{const trs=(ST.state.roster||{}).trainers||{};const g=ST.state.graph||{};const nodes=g.nodes||{};if(!ST.state.graph)return;const have=new Set(Object.values(nodes).map(n=>n.name));let i=Object.keys(nodes).length;
+ for(const t of Object.values(trs)){if(!t||!t.name||have.has(t.name))continue;have.add(t.name);const id='t_'+t.id;await set(['graph','nodes',id],{id,name:t.name,kind:t.kind==='npc'?'npc':'pc',img:'',note:'',x:120+(i%6)*140,y:120+Math.floor(i/6)*140,stands:[],standActive:0});i++}},800)}
+function renderScene(){reconcileNodes();
  try{drawPresence()}catch(e){}
  try{const skb=$('#skillBtn');if(skb&&window.OM_SKILL_UI){const p=window.OM_SKILL_UI.pending();skb.classList.toggle('pri',p);skb.textContent='스킬 체크'+(p?' !':'')}}catch(e){}
  if(window.OM_DB_UI)window.OM_DB_UI.applyOverride(ST.state.dbx);
@@ -274,15 +288,35 @@ function openMon(mid){
   const hw=$('#hpWin',md);if(hw)hw.onclick=()=>{closeModal();if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.openHp)window.OM_BATTLE_UI.openHp(mid)}}}
 
 /* ---------- 좌석 ---------- */
+/* 관전자도 이름을 정해 접속자 칸에 보이게 */
+function openNick(){const m=openModal(`<div class="mhead"><h2>내 이름</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small muted">접속자 칸과 입력 중 표시에 이 이름이 보인다. 자리에 앉으면 그 자리 이름을 따른다.</p><div class="row"><input type="text" id="nickIn" value="${esc(ST.name||'')}" placeholder="닉네임" style="flex:1"><button class="btn pri" id="nickOk">저장</button></div>${ST.role?'':'<div class="row" style="margin-top:8px"><button class="btn sm" id="nickSeat">자리에 앉기</button></div>'}`);
+ const ok=async()=>{const n=$('#nickIn',m).value.trim();if(!n)return toast('이름을 적어 줘');ST.name=n;LS.set('om_name_'+ST.room,n);if(ST.role==='seat'){const info=LS.get('om_seat_'+ST.room,null);if(info){info.name=n;LS.set('om_seat_'+ST.room,info);try{await DBS().claimSeat(ST.room,ST.seat,ST.secret,n)}catch(e){}}}closeModal();sayHello(true);drawPresence();renderRoom();toast(`이제 「${n}」로 보인다`)};
+ $('#nickOk',m).onclick=ok;$('#nickIn',m).onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)ok()};const ns=$('#nickSeat',m);if(ns)ns.onclick=()=>{closeModal();openSeatPicker()}}
+/* 로그 저장: 방의 전체 로그를 HTML(보기 좋게) 또는 TXT 로 내려받는다 */
+async function fetchAllLog(){const out=[];let after=0;for(let i=0;i<200;i++){const rows=await DBS().getLog(ST.room,after,1000);if(!rows||!rows.length)break;out.push(...rows);after=rows[rows.length-1].id;if(rows.length<1000)break}return out}
+function logLine(r){const d=r.data||{};const t=String(d.t||'');const who=d.as||r.who||'';if(r.kind==='chat'&&d.sms)return {k:'sms',who,t:'[문자] '+t};if(r.kind==='whisper')return {k:'whisper',who,t:'[귓속말] '+t};if(r.kind==='dice')return {k:'dice',who,t};if(r.kind==='chat')return {k:'chat',who,t:d.img?t+' [그림] '+d.img:t};return {k:r.kind||'sys',who,t}}
+function openSaveLog(){const m=openModal(`<div class="mhead"><h2>로그 저장</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+ <p class="small muted">방의 전체 로그를 파일로 내려받는다. 비공개 귓속말은 서버에 내 것만 있으니 내 것만 들어간다.</p>
+ <div class="row" style="flex-wrap:wrap;gap:10px"><label class="small"><input type="checkbox" id="lg_chat" checked> 대화</label><label class="small"><input type="checkbox" id="lg_dice" checked> 주사위</label><label class="small"><input type="checkbox" id="lg_battle" checked> 배틀 · 시스템</label><label class="small"><input type="checkbox" id="lg_sms"> 문자</label><label class="small"><input type="checkbox" id="lg_whisper"> 귓속말</label></div>
+ <div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn" id="lg_txt">TXT 로</button><button class="btn pri" id="lg_html">HTML 로</button></div>`);
+ const go=async fmt=>{const want={chat:$('#lg_chat',m).checked,dice:$('#lg_dice',m).checked,battle:$('#lg_battle',m).checked,sms:$('#lg_sms',m).checked,whisper:$('#lg_whisper',m).checked};toast('로그를 읽는 중…');let rows;try{rows=await fetchAllLog()}catch(e){return toast('읽지 못했다: '+e.message)}
+  const keep=rows.map(r=>Object.assign(logLine(r),{at:r.at,id:r.id})).filter(x=>{if(x.k==='chat')return want.chat;if(x.k==='dice')return want.dice;if(x.k==='sms')return want.sms;if(x.k==='whisper')return want.whisper;return want.battle}).filter(x=>x.t.trim());
+  const tm=x=>{const d=new Date(x.at);return isNaN(d)?'':`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`};
+  const name=(ST.roomRow&&ST.roomRow.name||ST.room).replace(/[\\/:*?"<>|]/g,'_');const stamp=new Date().toISOString().slice(0,10);let blob,fn;
+  if(fmt==='txt'){blob=new Blob(['\ufeff'+keep.map(x=>`[${tm(x)}] ${x.who?x.who+': ':''}${x.t}`).join('\n')],{type:'text/plain;charset=utf-8'});fn=`${name}_로그_${stamp}.txt`}
+  else{const css='body{background:#111;color:#eee;font-family:"Noto Sans KR",sans-serif;font-size:14px;padding:20px;max-width:900px;margin:auto}h1{font-size:20px;border-bottom:3px solid #d9243f;padding-bottom:6px}.r{display:flex;gap:10px;padding:4px 0;border-bottom:1px solid #222}.r .tm{color:#777;font-size:11px;min-width:110px;font-family:monospace}.r .w{color:#f5d000;min-width:90px;font-weight:700}.r .t{white-space:pre-wrap;flex:1}.dice .t{color:#9ad}.sms .t{color:#8e8}.whisper .t{color:#c9f}.sys .t,.battle .t{color:#bbb;font-size:13px}';
+   const esc2=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');blob=new Blob([`<!doctype html><html lang="ko"><meta charset="utf-8"><title>${esc2(name)} 로그</title><style>${css}</style><h1>${esc2(name)} <small style="color:#888;font-size:12px">${stamp} · ${keep.length}줄</small></h1>${keep.map(x=>`<div class="r ${x.k}"><span class="tm">${tm(x)}</span><span class="w">${esc2(x.who)}</span><span class="t">${esc2(x.t)}</span></div>`).join('')}</html>`],{type:'text/html;charset=utf-8'});fn=`${name}_로그_${stamp}.html`}
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fn;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);closeModal();toast(`${keep.length}줄을 저장했다`)};
+ $('#lg_txt',m).onclick=()=>go('txt');$('#lg_html',m).onclick=()=>go('html')}
 function openSeatPicker(){
- const b=B();const trs=b.trainers||{};const seats=ST.state.seats||{};const ids=Object.keys(trs);
+ const b=B();const ro=(ST.state.roster||{}).trainers||{};const trs=Object.assign({},ro,b.trainers||{});const seats=ST.state.seats||{};const ids=Object.keys(trs);const free=Object.keys(seats).filter(id=>!trs[id]);
  const m=openModal(`<div class="mhead"><h2>자리 고르기</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-  <p class="small muted">GM 이 파티를 불러오면 트레이너마다 자리가 생긴다. 한 번 앉은 자리는 이 브라우저에 기억되고, 남이 앉을 수 없다. 자리를 옮기려면 GM 이 비워 줘야 한다.</p>
-  <div class="row" style="margin-bottom:8px"><label>내 이름</label><input type="text" id="seatName" value="${esc(ST.name&&ST.name!=='GM'?ST.name:'')}" placeholder="플레이어 이름"></div>
-  ${ids.length?`<ul class="pick">${ids.map(id=>{const t=trs[id];const o=seats[id];const mine=ST.seat===id;return `<li><b>${esc(t.name)}</b><span class="badge ${t.side}">${t.side==='left'?'좌측':'우측'}</span><span class="small muted">${o?(mine?'내 자리':'앉은 사람: '+esc(o.name)):'빈 자리'}</span><span class="sp"></span>${mine?'<span class="badge seat">나</span>':o?'':`<button class="btn sm pri" data-seat="${id}">앉기</button>`}${ST.role==='gm'&&o?`<button class="btn sm ghost danger" data-free="${id}">비우기</button>`:''}</li>`}).join('')}</ul>`:'<div class="empty">아직 자리가 없다. GM 이 파티를 불러오면 생긴다.</div>'}`);
+  <p class="small muted">이름을 적고 앉으면 된다. 앉은 뒤 시트 탭에서 「내 파티 불러오기」로 제작기의 트레이너를 가져온다. GM 이 먼저 불러온 트레이너가 있으면 그 자리에 바로 앉을 수도 있다. 한 번 앉은 자리는 이 브라우저에 기억되고, 남이 앉을 수 없다 (옮기려면 GM 이 비워 준다).</p>
+  <div class="row" style="margin-bottom:8px"><label>내 이름</label><input type="text" id="seatName" value="${esc(ST.name&&ST.name!=='GM'?ST.name:'')}" placeholder="플레이어 이름" style="flex:1">${ST.role==='seat'?'':'<button class="btn pri" data-seat="new">새 자리에 앉기</button>'}</div>
+  ${ids.length||free.length?`<ul class="pick">${ids.map(id=>{const t=trs[id];const o=seats[id];const mine=ST.seat===id;return `<li><b>${esc(t.name)}</b>${t.side?`<span class="badge ${t.side}">${t.side==='left'?'좌측':'우측'}</span>`:''}<span class="small muted">${o?(mine?'내 자리':'앉은 사람: '+esc(o.name)):'빈 자리'}</span><span class="sp"></span>${mine?'<span class="badge seat">나</span>':o?'':(ST.role==='seat'?'':`<button class="btn sm pri" data-seat="${id}">앉기</button>`)}${ST.role==='gm'&&o?`<button class="btn sm ghost danger" data-free="${id}">비우기</button>`:''}</li>`}).join('')}${free.map(id=>{const o=seats[id];const mine=ST.seat===id;return `<li><b>${esc(o.name||id)}</b><span class="small muted">${mine?'내 자리 · 아직 파티 없음':'아직 파티 없음'}</span><span class="sp"></span>${mine?'<span class="badge seat">나</span>':''}${ST.role==='gm'?`<button class="btn sm ghost danger" data-free="${id}">비우기</button>`:''}</li>`}).join('')}</ul>`:'<div class="empty">아직 아무도 없다. 이름을 적고 「새 자리에 앉기」.</div>'}`);
  m.querySelectorAll('[data-seat]').forEach(bt=>bt.onclick=async()=>{const name=$('#seatName',m).value.trim();if(!name)return toast('이름을 적어 줘');
-  const info=LS.get('om_seat_'+ST.room,null);const secret=(info&&info.secret)||rnd(24);
-  try{const ok=await DBS().claimSeat(ST.room,bt.dataset.seat,secret,name);if(!ok)return toast('누군가 먼저 앉은 자리다');LS.set('om_seat_'+ST.room,{seat:bt.dataset.seat,secret,name});closeModal();location.reload()}catch(e){toast('앉지 못했다: '+e.message)}});
+  LS.set('om_name_'+ST.room,name);const info=LS.get('om_seat_'+ST.room,null);const secret=(info&&info.secret)||rnd(24);const seatId=bt.dataset.seat==='new'?('p'+rnd(8).toLowerCase()):bt.dataset.seat;bt.dataset.seat=seatId;
+  try{const ok=await DBS().claimSeat(ST.room,seatId,secret,name);if(!ok)return toast('누군가 먼저 앉은 자리다');LS.set("om_seat_"+ST.room,{seat:bt.dataset.seat,secret,name});closeModal();route()}catch(e){toast('앉지 못했다: '+e.message)}});
  m.querySelectorAll('[data-free]').forEach(bt=>bt.onclick=async()=>{try{await DBS().claimSeat(ST.room,bt.dataset.free,ST.secret,null);closeModal();toast('자리를 비웠다')}catch(e){toast(e.message)}})}
 
 function openRoomSettings(){
@@ -297,7 +331,10 @@ function openRoomSettings(){
   <div class="sec" style="margin-top:12px">소리 (이 브라우저에서만)</div>
   <div class="row"><label style="width:70px">BGM</label><input type="range" min="0" max="1" step="0.05" id="volBgm" value="${(()=>{try{return localStorage.getItem('om_vol')??0.5}catch(e){return 0.5}})()}" style="flex:1"><span class="mono small" id="volBgmV"></span></div>
   <div class="row"><label style="width:70px">효과음</label><input type="range" min="0" max="1" step="0.05" id="volSe" value="${(()=>{try{return localStorage.getItem('om_vol_se')??0.7}catch(e){return 0.7}})()}" style="flex:1"><span class="mono small" id="volSeV"></span><button class="btn xs ghost" id="volSeTest">시험</button></div>
+  <div class="sec" style="margin-top:12px">알림 (이 브라우저에서만)</div>
+  <div class="row" style="flex-wrap:wrap;gap:14px"><label class="small"><input type="checkbox" data-alarm="chat" ${alarm().chat?'checked':''}> 채팅이 올라오면 소리</label><label class="small"><input type="checkbox" data-alarm="sms" ${alarm().sms?'checked':''}> 문자가 오면 소리·알림</label><label class="small"><input type="checkbox" data-alarm="typing" ${alarm().typing?'checked':''}> 입력 중 표시</label></div>
   <div class="row"><button class="btn sm" id="seatMgr">자리 관리</button></div>`);
+ m.querySelectorAll('[data-alarm]').forEach(c=>c.onchange=()=>setAlarm(c.dataset.alarm,c.checked));
  const us=$('#uiScale',m),uc=$('#uiChat',m),ud=$('#uiDlg',m),uf=$('#uiFont',m),uh=$('#uiHead',m);const showUi=()=>{$('#uiScaleV',m).textContent=us.value+'%';$('#uiChatV',m).textContent=uc.value+'px';$('#uiDlgV',m).textContent=ud.value+'px'};showUi();
  const saveUi=()=>{UI.scale=+us.value;UI.chat=+uc.value;UI.dlg=+ud.value;UI.font=uf.value;UI.head=uh.value;try{localStorage.setItem('om_ui',JSON.stringify(UI))}catch(e){}applyUi();showUi()};[us,uc,ud].forEach(el=>el.oninput=saveUi);uf.onchange=saveUi;uh.onchange=saveUi;
  $('#uiReset',m).onclick=()=>{Object.assign(UI,UI_DEF);us.value=UI.scale;uc.value=UI.chat;ud.value=UI.dlg;uf.value=UI.font;uh.value=UI.head;saveUi()};
@@ -313,6 +350,8 @@ function openModal(html){closeModal();const bg=document.createElement('div');bg.
 function closeModal(){document.querySelectorAll('.modalbg').forEach(x=>x.remove())}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
-window.OM_APP={ST,set,sysLog,openModal,closeModal,toast,typeChip,renderScene,openMon,openLoadParty,loadFromRoster,loadMaker,unloadTrainer,openHatch,esc,get view(){return VIEW},set view(v){VIEW=v}};
+/* 이름으로 기본 초상 찾기: 그림이 따로 없으면 같은 이름의 로스터 트레이너 → 포켓몬 → 관계도 노드의 그림을 쓴다 */
+function portraitOf(name,img){if(img)return img;if(!name)return '';const ro=ST.state.roster||{};const t=Object.values(ro.trainers||{}).find(x=>x.name===name);if(t&&t.image)return t.image;const m=Object.values(ro.mons||{}).find(x=>x.name===name&&x.image);if(m)return m.image;const n=Object.values((ST.state.graph||{}).nodes||{}).find(x=>x.name===name&&x.img);return n?n.img:''}
+window.OM_APP={ST,set,sysLog,openModal,closeModal,toast,typeChip,renderScene,openMon,openLoadParty,loadFromRoster,loadMaker,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,get view(){return VIEW},set view(v){VIEW=v}};
 route();
 })();
