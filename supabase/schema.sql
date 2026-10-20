@@ -90,6 +90,7 @@ begin
   select role, seat into r from om_auth where room = p_room and hash = om_hash(p_secret) limit 1;
   if not found then return null; end if;
   if r.role = 'gm' then return 'gm'; end if;
+  if r.role <> 'seat' or lower(r.seat) = 'gm' then return null; end if;  -- 좌석 id 가 'gm' 이면 GM 으로 오해하지 않게 막는다
   return r.seat;
 end $$;
 
@@ -119,6 +120,7 @@ returns boolean language plpgsql security definer set search_path = public as $$
 declare cur om_auth%rowtype; w text;
 begin
   if p_seat is null or p_seat = '' then raise exception '좌석 id 가 없습니다'; end if;
+  if lower(p_seat) = 'gm' then raise exception '이 좌석 id 는 쓸 수 없습니다'; end if;  -- 'gm' 좌석으로 GM 권한을 얻지 못하게
   w := om_who(p_room, p_secret);
   select * into cur from om_auth where room = p_room and role = 'seat' and seat = p_seat;
   if w = 'gm' then
@@ -237,7 +239,7 @@ end $$;
 create or replace function public.om_room_update(p_room text, p_secret text, p_name text, p_settings jsonb)
 returns boolean language plpgsql security definer set search_path = public as $$
 begin
-  if om_who(p_room, p_secret) <> 'gm' then raise exception 'GM 만 바꿀 수 있습니다'; end if;
+  if om_who(p_room, p_secret) is distinct from 'gm' then raise exception 'GM 만 바꿀 수 있습니다'; end if;  -- <> 는 비밀값이 틀려 null 일 때 통과해 버린다
   update om_rooms set name = coalesce(p_name, name), settings = coalesce(p_settings, settings) where id = p_room;
   return true;
 end $$;
@@ -265,6 +267,10 @@ grant execute on function public.om_secret_get(text,text,text) to anon, authenti
 grant execute on function public.om_room_update(text,text,text,jsonb) to anon, authenticated;
 revoke execute on function public.om_hash(text) from anon, authenticated;
 revoke execute on function public.om_who(text,text) from anon, authenticated;
+
+-- 2026-10-20: 예전 스키마에서 'gm' 이라는 좌석 id 로 앉아 GM 권한을 얻은 기록을 지운다 (정상 좌석 id 는 'p…' 나 트레이너 id 라 'gm' 일 수 없다)
+delete from public.om_auth where role = 'seat' and lower(seat) = 'gm';
+update public.om_state set data = data #- array['seats','gm'] where data #> array['seats','gm'] is not null;
 
 -- ---------- 이미지 저장소 (Storage) ----------
 -- 제작기 시트의 그림은 base64 로 들어 있어서, 방 상태에 그대로 넣으면 실시간 동기화가 무거워진다.

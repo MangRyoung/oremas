@@ -29,6 +29,7 @@ GitHub Pages 정적 사이트 + Supabase(제작기와 같은 프로젝트). 설�
 | `js/battle_ui.js` | 배틀 씬 — 에리어 엔트리 · 지시 입력(비밀) · 준비 · 공개 · 행동 순서 · 공격 다이얼로그 · 랭크/상태/소지품 · 날씨/필드/룸/설치기 · 턴 종료 |
 | `js/engine/battle.js` | 배틀 계산 — 행동 순서 · 명중 · 급소 · 대미지 · 상성(복합) · 피격 · 비례 대미지 (맵툴 수식 그대로, 순수 함수) |
 | `data/*.js` | 맵툴 캠페인에서 변환한 DB — 기술 1,756 · 특성 995 · 소지품 308 · 상태 102 · 상성표 · 상수 / `maker.js` 는 제작기 표(레벨·등급·포텐셜) |
+| (fx) | 레디메이드 자동화 4파일(`states.js` · `readymade.js` · `fx.js` · `fx_ui.js`)은 제작기 `https://mangryoung.github.io/mangketmon-maker/js/fx/` 에서 불러온다 (`index.html`). 고칠 때는 **제작기 저장소 `js/fx/` 만** 고친다. 이 저장소의 `data/states.js` · `data/readymade.js` · `js/engine/fx.js` · `js/fx_ui.js` 는 예전 사본이라 쓰지 않는다 |
 | `supabase/schema.sql` | 테이블·정책·RPC 함수 |
 
 ## 처음 설정 (한 번만)
