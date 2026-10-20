@@ -177,8 +177,10 @@ function drawPresence(){const el=$('#presence');if(!el)return;const now=Date.now
  el.innerHTML=`<span class="pcount" title="${list.map(x=>x.name).join(', ')}">● ${list.length}</span>${list.map(x=>`<span class="pwho ${x.role} ${x.me?'me':''}">${nm(x)}</span>`).join('')}`}
 function startPresence(){sayHello(true);clearInterval(PRES.t);PRES.t=setInterval(()=>{sayHello(false);drawPresence()},25000)}
 /* GM 이 보고 있으면 로스터 트레이너마다 관계도 노드가 있게 맞춘다 (좌석이 제 파티를 가져왔을 때 — 좌석은 graph 를 못 쓰니까) */
-let reconT=null;function reconcileNodes(){if(ST.role!=='gm')return;clearTimeout(reconT);reconT=setTimeout(async()=>{const trs=(ST.state.roster||{}).trainers||{};const g=ST.state.graph||{};const nodes=g.nodes||{};if(!ST.state.graph)return;const have=new Set(Object.values(nodes).map(n=>n.name));let i=Object.keys(nodes).length;
- for(const t of Object.values(trs)){if(!t||!t.name||have.has(t.name))continue;have.add(t.name);const id='t_'+t.id;await set(['graph','nodes',id],{id,name:t.name,kind:t.kind==='npc'?'npc':'pc',img:'',note:'',x:120+(i%6)*140,y:120+Math.floor(i/6)*140,stands:[],standActive:0});i++}},800)}
+/* 트레이너마다 한 번만 (graph.auto[tid]) — GM 이 지운 노드는 다시 만들지 않는다 */
+let reconT=null;function reconcileNodes(){if(ST.role!=='gm')return;clearTimeout(reconT);reconT=setTimeout(async()=>{const trs=(ST.state.roster||{}).trainers||{};const g=ST.state.graph;if(!g)return;const nodes=g.nodes||{};const auto=g.auto||{};const have=new Set(Object.values(nodes).map(n=>n.name));let i=Object.keys(nodes).length;
+ for(const t of Object.values(trs)){if(!t||!t.name||auto[t.id])continue;if(!have.has(t.name)){have.add(t.name);const id='t_'+t.id;await set(['graph','nodes',id],{id,name:t.name,kind:t.kind==='npc'?'npc':'pc',img:'',note:'',x:120+(i%6)*140,y:120+Math.floor(i/6)*140,stands:[],standActive:0});i++}
+  if(!g.auto)await set(['graph','auto'],{});await set(['graph','auto',t.id],1)}},800)}
 function renderScene(){reconcileNodes();
  try{drawPresence()}catch(e){}
  try{const skb=$('#skillBtn');if(skb&&window.OM_SKILL_UI){const p=window.OM_SKILL_UI.pending();skb.classList.toggle('pri',p);skb.textContent='스킬 체크'+(p?' !':'')}}catch(e){}

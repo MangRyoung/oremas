@@ -93,8 +93,23 @@ window.OM_PHONE_UI=(()=>{
  function onSms(row){const d=row.data||{};const md=$('.modal.phone-modal');const openHere=md&&PH.screen==='smsroom'&&PH.room===d.sms;
   if(openHere){draw(md);return}
   const isMine=A().isMineLog?A().isMineLog(row):d.cid===myCid();const room=roomOf(d.sms);const al=A().alarm?A().alarm().sms:1;
-  if(!isMine&&room&&al&&!d.room){A().toast(`📱 문자 · ${d.as||row.who}: ${String(d.t||'').slice(0,60)}`);try{if(window.OM_RP_UI)window.OM_RP_UI.playSe('Ping',true)}catch(e){}}
+  if(!isMine&&room&&al&&!d.room&&d.t){popSms(row,room);try{if(window.OM_RP_UI)window.OM_RP_UI.playSe('Ping',true)}catch(e){}}
   if(md&&PH.screen==='sms')draw(md);A().renderScene()}
+ /* 문자 알림: 왼쪽 아래에서 휴대폰이 올라오고 알림 카드가 뜬다. 여러 개면 위로 쌓이고(최대 3), 누르면 그 방이 열린다. 6초 뒤 내려간다 */
+ const POP={list:[],t:null};
+ function popSms(row,room){const d=row.data||{};const name=d.as||row.who||'';const img=d.cid?cidImg(d.cid):'';
+  POP.list.unshift({id:row.id,room:room.id,rname:room.kind==='dm'?'':room.name,name,img,t:String(d.t||''),at:Date.now()});POP.list=POP.list.slice(0,3);
+  let el=document.getElementById('smsPop');if(!el){el=document.createElement('div');el.id='smsPop';el.className='smspop';document.body.appendChild(el)}
+  const now=new Date();const hm=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+  el.innerHTML=`<div class="sp-phone"><div class="sp-notch"></div><div class="sp-clock">${hm}</div>
+   <div class="sp-cards">${POP.list.map((x,i)=>`<button class="sp-card ${i?'old':''}" data-room="${esc(x.room)}"><div class="sp-app"><i>💬</i><span>문자${x.rname?' · '+esc(x.rname):''}</span><em>${(Date.now()-x.at)<60000?'지금':Math.round((Date.now()-x.at)/60000)+'분 전'}</em></div><div class="sp-body"><i class="sp-av" style="${x.img?`background-image:url('${esc(x.img)}')`:''}">${x.img?'':esc((x.name||'?').slice(0,1))}</i><div><b>${esc(x.name)}</b><p>${esc(x.t.length>70?x.t.slice(0,70)+'…':x.t)}</p></div></div></button>`).join('')}</div>
+   <div class="sp-dock"><span>📞</span><span>💬</span><span>🤝</span><span>📅</span></div></div><button class="sp-x" title="닫기">✕</button>`;
+  el.classList.remove('show','buzz');void el.offsetWidth;el.classList.add('show','buzz');
+  el.querySelectorAll('.sp-card').forEach(b=>b.onclick=()=>{hidePop(true);PH.room=b.dataset.room;PH.screen='smsroom';open('smsroom')});
+  el.querySelector('.sp-x').onclick=e=>{e.stopPropagation();hidePop(true)};
+  el.onmouseenter=()=>clearTimeout(POP.t);el.onmouseleave=()=>{clearTimeout(POP.t);POP.t=setTimeout(hidePop,2500)};
+  clearTimeout(POP.t);POP.t=setTimeout(hidePop,6000)}
+ function hidePop(clear){const el=document.getElementById('smsPop');if(el)el.classList.remove('show','buzz');if(clear)POP.list=[];else setTimeout(()=>{if(!(el&&el.classList.contains('show')))POP.list=[]},500)}
  /* 새 문자: 연락처에서 한 사람 고르면 1:1, 여럿 고르고 이름을 적으면 새 방 */
  function contactsForSms(){const me=myCid();const out=new Map();const put=(cid,name,sub)=>{if(cid&&cid!==me&&!out.has(cid))out.set(cid,{cid,name,sub})};
   const pd=phoneData(PH.tid);const my=roomOf2(PH.tid);
@@ -233,5 +248,5 @@ window.OM_PHONE_UI=(()=>{
   const sh=$('#ph_share',md);if(sh)sh.onchange=async()=>{await savePhone(PH.tid,{share:sh.checked});A().toast(sh.checked?'방에 공유한다':'비공개로 바꿨다')};
   const rin=$('#ph_room',md);if(rin)rin.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing){const b=md.querySelector('[data-ph=roomgo]');if(b)b.click()}};
   const si=$('#smsIn',md);if(si){si.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)smsSend(md)};si.focus()}}
- return {open,onSms,unreadAll};
+ return {open,onSms,unreadAll,popSms};
 })();
