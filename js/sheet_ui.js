@@ -14,17 +14,19 @@ window.OM_SHEET_UI=(()=>{
 
  function ctx(){const ST=A().ST;const r=ST.state.roster||{trainers:{},mons:{}};return {ST,r,gm:ST.role==='gm',seat:ST.seat}}
  function canEdit(c,tid){return c.gm||(!!tid&&tid===c.seat)}
+ /* 볼 수 있는 시트: GM 은 전부, 좌석은 내 것 + 휴대폰 연락처의 파티원(같은 방 코드 · 공유 켠 사람) */
+ function canSee(c,tid){if(c.gm)return true;if(!c.seat)return false;if(tid===c.seat)return true;const ph=id=>((((c.ST.state.pub||{})[id]||{}).phone)||{});const my=String(ph(c.seat).room||'').trim();if(!my)return false;const o=ph(tid);return String(o.room||'').trim()===my&&o.share!==false}
  const typeChip=en=>A().typeChip(en);
 
  /* ---------- 렌더 ---------- */
  function render(el){
-  const c=ctx();const trs=c.r.trainers||{};const ids=Object.keys(trs).sort((a,b)=>(trs[a].ord||0)-(trs[b].ord||0)||trs[a].name.localeCompare(trs[b].name));
+  const c=ctx();const trs=c.r.trainers||{};const ids=Object.keys(trs).filter(id=>canSee(c,id)).sort((a,b)=>(trs[a].ord||0)-(trs[b].ord||0)||trs[a].name.localeCompare(trs[b].name));
   if(!ids.includes(UI.tid))UI.tid=ids.includes(c.seat)?c.seat:(ids[0]||'');
   const t=trs[UI.tid];
   el.innerHTML=`<div class="sheet">
    <div class="ttabs">${ids.map(id=>`<button class="ttab ${id===UI.tid?'on':''}" data-tid="${id}">${esc(trs[id].name)}${id===c.seat?' <span class="tag me">ME</span>':''}</button>`).join('')}
     <span class="sp"></span>${c.gm?`<button class="btn sm" data-act="import">제작기에서 가져오기</button><button class="btn sm ghost" data-act="newtr">+ 새 트레이너</button>`:(c.seat?`<button class="btn sm ${trs[c.seat]?'ghost':'pri'}" data-act="import" title="제작기에 있는 내 트레이너를 내 자리로 가져온다">${trs[c.seat]?'내 파티 다시 불러오기':'내 파티 불러오기'}</button>`:'')}</div>
-   ${t?trainerView(c,t):'<div class="empty">아직 트레이너가 없다.'+(c.gm?' 「제작기에서 가져오기」로 시작한다.':(c.seat?' 「내 파티 불러오기」로 제작기의 트레이너를 가져온다.':' 자리에 앉은 뒤 「내 파티 불러오기」.'))+'</div>'}
+   ${t?trainerView(c,t):'<div class="empty">아직 트레이너가 없다.'+(c.gm?' 「제작기에서 가져오기」로 시작한다.':(c.seat?' 「내 파티 불러오기」로 제작기의 트레이너를 가져온다. 남의 시트는 휴대폰 연락처에서 같은 방 코드로 들어와야 보인다.':' 자리에 앉은 뒤 「내 파티 불러오기」.'))+'</div>'}
   </div>`;
   el.querySelectorAll('.ttab').forEach(b=>b.onclick=()=>{UI.tid=b.dataset.tid;UI.mid='';A().renderScene()});
   el.querySelectorAll('[data-act]').forEach(b=>{if(b.tagName==='SELECT'||b.tagName==='INPUT')return;b.onclick=e=>{e.stopPropagation();action(b.dataset)}});
