@@ -3,5 +3,6 @@
 window.OM_CONFIG={
   supabaseUrl:"https://jsnvqcvwspxzfnhdethl.supabase.co",
   supabaseKey:"sb_publishable_HDcgWnb1QS1P6GOiBPqdAA_yBJNhU7R",
-  makerTable:"docs"   /* 제작기 시트 테이블 (읽기만) */
+  makerTable:"docs",   /* 제작기 시트 테이블 (읽기만) */
+  organizerUrl:"https://mangryoung.github.io/maptool-log/"   /* 맵툴 로그 정리기 — 「💾 로그 → 정리기에서 열기」 */
 };
