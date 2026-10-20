@@ -103,6 +103,24 @@ window.OM_BATTLE_UI=(()=>{
    if(n>=10){out.push({ok:true,line:`부가효과 10할 ${what} — 확정`});continue}
    const r=1+Math.floor(Math.random()*10);const ok=r<=n;out.push({ok,line:`부가효과 ${n}할 ${what} — 굴림 ${r}/${n} ${ok?'발동!':'불발'}`})}
   return out}
+ /* 변칙 위력 기술 (맵툴 get_special_move_power 를 옮김): 이름 → (def)=>{pow, note, fixed} */
+ const SPMAP={헤비봄버:'heavy',머슬봄버:'heavy',때려부수기:'heavy',메테오퍼니셔:'heavy',아쿠아스탬프:'heavy',록스탬프:'heavy',히트스탬프:'heavy',질주:'ball',마하비행:'ball',앞지르기:'ball',일렉트릭볼:'ball',드래곤에너지:'spout',해수스파우팅:'spout',분화:'spout',기사회생:'flail',바둥바둥:'flail',플레임블래스트:'flail',스완송:'flail',하드프레스:'press',묵사발:'crush',쥐어짜기:'crush',안다리걸기:'grass',풀묶기:'grass',자이로볼:'gyro',매그니튜드:'mag',엘렉키슬롯:'mag',프레젠트:'present',사이코웨이브:'psywave'};
+ function specialPowFor(name,atk){const k=SPMAP[String(name||'').trim()];if(!k)return null;
+  const spd=m=>{let v=B().statValue(m,'speed');if((m.states||{}).Paralysis)v=v/2;return v};const ladder=(x,steps,start)=>{let p=start;for(const [t,v] of steps)if(x>t)p=v;return p};
+  const hpR=m=>m.hp.max>0?m.hp.cur/m.hp.max:0;
+  if(k==='mag'){const r=1+Math.floor(Math.random()*256);let p=10;for(const [t,v] of [[25,30],[76,50],[153,70],[204,90],[229,110],[242,150]])if(r>=t)p=v;return ()=>({pow:p,note:`변칙 위력 ${name}: 판정 ${r}/256 → 위력 ${p}`})}
+  if(k==='present'){const r=1+Math.floor(Math.random()*100);const p=r>90?120:r>60?80:r>20?40:null;return ()=>p?{pow:p,note:`변칙 위력 ${name}: 판정 ${r} → 위력 ${p}`}:{pow:0,fixed:1,note:`변칙 위력 ${name}: 판정 ${r} → 대상 HP 1/2 회복 (손으로)`}}
+  if(k==='psywave'){const r=Math.floor(Math.random()*11)+5;const v=Math.max(1,Math.floor((+atk.lv||1)*r/10));return ()=>({pow:0,fixed:1,note:`${name}: 고정 대미지 ${v} (Lv ${atk.lv} × ${r/10}) — HP 조작으로 적용`})}
+  return def=>{let p,why='';
+   if(k==='heavy'){const a=B().statValue(atk,'defense'),d=B().statValue(def,'defense');const x=d>0?a/d:0;p=ladder(x,[[1,60],[1.5,80],[2,100],[2.5,120]],40);why=`방어 ${Math.floor(a)}/${Math.floor(d)}`}
+   else if(k==='ball'){const a=spd(atk),d=spd(def);const x=d>0?a/d:0;p=ladder(x,[[1,60],[2,80],[3,120],[4,150]],40);why=`스피드 ${Math.floor(a)}/${Math.floor(d)}`}
+   else if(k==='gyro'){const a=spd(atk),d=spd(def);p=a>0?Math.floor(Math.max(1,Math.min(150,25*d/a+1))):1;why=`스피드 ${Math.floor(a)} vs ${Math.floor(d)}`}
+   else if(k==='spout'){p=Math.max(1,Math.floor(150*hpR(atk)));why=`자신 HP ${atk.hp.cur}/${atk.hp.max}`}
+   else if(k==='flail'){const x=atk.hp.max>0?Math.floor(atk.hp.cur*48/atk.hp.max):0;p=20;for(const [t,v] of [[32,40],[16,80],[9,100],[4,150],[1,200]])if(x<t)p=v;why=`자신 HP ${atk.hp.cur}/${atk.hp.max}`}
+   else if(k==='press'){p=def.hp.cur>0?Math.max(1,Math.floor(100*hpR(def))):1;why=`대상 HP ${def.hp.cur}/${def.hp.max}`}
+   else if(k==='crush'){p=def.hp.cur>0?Math.max(1,Math.floor(120*hpR(def))):1;why=`대상 HP ${def.hp.cur}/${def.hp.max}`}
+   else if(k==='grass'){const bh=+((def.base||[])[0])||0;p=20;for(const [t,v] of [[60,40],[90,80],[120,100],[150,120]])if(bh>=t)p=v;why=`대상 HP 종족치 ${bh}`}
+   return {pow:p,note:`변칙 위력 ${name}: ${why} → 위력 ${p}`}}}
  /* 동시 내밀기 현황: 진영마다 예약 수 / 에리어 수. 양쪽 다 차면 「완료」 */
  function pendCount(b,side){const ids=((b.sides||{})[side]||{}).trainers||[];const ms=Object.values(b.mons||{}).filter(m=>ids.includes(m.tid));const need=Math.min(mode(b),ms.filter(m=>m.hp.cur>0).length);return {n:ms.filter(m=>m.pend).length,need}}
  function pendStatus(b){const L=pendCount(b,'left'),R=pendCount(b,'right');const done=L.need>0&&R.need>0&&L.n>=L.need&&R.n>=R.need;return `<span class="chip ${done?'on':''}" title="동시 내밀기 예약">예약 좌 ${L.n}/${L.need} · 우 ${R.n}/${R.need}${done?' — 완료!':''}</span>`}
@@ -154,7 +172,7 @@ window.OM_BATTLE_UI=(()=>{
  function stateChips(m){const st=m.states||{};const db=(DB().states||{}).st||{};return Object.keys(st).filter(k=>st[k]).map(k=>{const im=simg(k);return `<span class="stc ${db[k]&&db[k].abn?'abn':''}" title="${esc((db[k]&&db[k].desc||[]).join(' '))}">${im?`<img src="${esc(im)}" alt="">`:''}${esc(db[k]?db[k].ko:k)}${+st[k]>1&&+st[k]<1000?' '+st[k]:''}</span>`}).join('')}
  function bigCard(c,m,slot){const full=canEdit(c,m);const cmd=cmdOf(c.b,m);
   return `<div class="mon big ${m.hp.cur<=0?'fainted':''}" data-mon="${m.id}"><div class="pic" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div>
-   <div class="minfo"><div class="nm">${esc(m.name)}<span class="lv">Lv.${m.lv}</span>${((!full&&c.seat)||c.gm)?`<button class="btn xs ghost dexb" data-act="dex" data-mid="${m.id}" title="도감 정보 · 해석">도감</button>`:''}${(!full&&c.seat&&(c.b.trainers[c.seat]||{}).side!==m.side&&(+c.b.phase||0)===0)||c.gm&&!full?`<button class="btn xs ghost dexb" data-act="time" data-mid="${m.id}" title="「타임」 — 상대 지시의 꼴 엿보기">타임</button>`:''}</div><div class="ty">${m.types.filter(t=>t!=='-').map(typeChip).join('')}${m.teraActive?`<span class="rk up">테라 ${esc(m.tera)}</span>`:''}</div>
+   <div class="minfo"><div class="nm">${esc(m.name)}<span class="lv">Lv.${m.lv}</span>${((!full&&c.seat)||c.gm)?`<button class="btn xs ghost dexb" data-act="dex" data-mid="${m.id}" title="도감 정보 · 해석">도감</button>`:''}${full&&mode(c.b)>=2&&m.hp.cur>0?`<button class="btn xs ghost dexb" data-act="areaswap" data-mid="${m.id}" title="같은 편 다른 에리어와 자리 바꾸기 (사이드체인지 등)">⇄ 에리어</button>`:''}${(!full&&c.seat&&(c.b.trainers[c.seat]||{}).side!==m.side&&(+c.b.phase||0)===0)||c.gm&&!full?`<button class="btn xs ghost dexb" data-act="time" data-mid="${m.id}" title="「타임」 — 상대 지시의 꼴 엿보기">타임</button>`:''}</div><div class="ty">${m.types.filter(t=>t!=='-').map(typeChip).join('')}${m.teraActive?`<span class="rk up">테라 ${esc(m.tera)}</span>`:''}</div>
    ${hpBar(m,full)}<div class="rks">${rankChips(m)}${stateChips(m)}${flagChips(m)}${FX()?FX().chips(m).map(ch=>`<span class="rk fxc ${full?'rm':''}" title="${esc(ch.title)}${full?' — 눌러서 해제':''}" ${full?`data-act="fxoff" data-mid="${m.id}" data-fx="${esc(ch.id)}" data-nm="${esc(ch.name)}"`:''}>${esc(ch.t)}${full?' ✕':''}</span>`).join(''):''}</div>
    ${cmd?`<div class="cmdcard">${cmd}</div>`:(((+c.b.phase||0)>=1&&full&&m.hp.cur>0)?`<div class="revealrow"><button class="btn sm pri" data-act="revealmon" data-tid="${m.tid}" data-mid="${m.id}">지시 공개 (에리어 ${String(m.entry).toUpperCase()})</button></div>`:'')}
    ${potLine(c,m)}
@@ -310,6 +328,7 @@ window.OM_BATTLE_UI=(()=>{
    case 'iv':return A().openHatch(d.tid);
    case 'mode':return A().set(['battle','mode'],+val);
    case 'gmhands':{if(!c.gm)return;const on=!c.fair;await A().set(['rp','gmHands'],on?false:null);A().sysLog(on?'GM 이 PL 권한으로 전환 — 플레이어의 지시·상태를 건드리지 않는다':'GM 권한으로 복귀','battle');return}   /* 방 설정 「GM 불간섭」과 같은 값 */
+   case 'areaswap':return areaSwap(d.mid);
    case 'field':return openField();
    case 'orders':return openOrders(d.tid);
    case 'dexmgr':{if(!(c.gm||d.tid===c.seat))return;return window.OM_DEX_UI&&window.OM_DEX_UI.openMgr(d.tid)}
@@ -363,6 +382,14 @@ window.OM_BATTLE_UI=(()=>{
    case 'resetcmd':if(!confirm('공개된 지시와 준비 상태를 지울까?'))return;CMD={};await A().set(['battle','cmds'],{});await A().set(['ready'],{});return}}
 
  /* 등장: 더블(2:2)이 기본. 트레이너가 둘이면 첫 트레이너 A, 둘째 B 가 기본 자리. 빈 자리가 아니면 고른다. */
+ /* 에리어 교대: 같은 편의 다른 에리어로 자리만 옮긴다(교체 아님 — 랭크·상태 그대로). 그 자리에 있던 포켓몬은 내 자리로 */
+ async function areaSwap(mid,to){const c=ctx();const b=c.b;const m=b.mons[mid];if(!m||!m.entry||!canEdit(c,m))return;const areas=AREAS.slice(0,mode(b)).filter(a=>a!==m.entry);if(!areas.length)return;const ent=entered(b,m.side);
+  if(!to){if(areas.length===1)to=areas[0];else{const md=A().openModal(`<div class="mhead"><h2>${esc(m.name)} 에리어 교대</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="small dim" style="margin-bottom:8px">지금 ${String(m.entry).toUpperCase()} — 옮길 자리를 고른다. 있던 포켓몬은 ${String(m.entry).toUpperCase()} 로 온다.</div>
+    <div class="row">${areas.map(a=>`<button class="btn pri" data-area="${a}">${a.toUpperCase()}${ent[a]?' · '+esc(ent[a].name)+' 와 자리 바꿈':' · 빈 자리'}</button>`).join('')}</div>`);
+    md.querySelectorAll('[data-area]').forEach(bt=>bt.onclick=()=>{A().closeModal();areaSwap(mid,bt.dataset.area)});return}}
+  const from=m.entry;const occ=ent[to];const other=occ||Object.values(b.mons||{}).find(x=>x.side===m.side&&x.entry===to&&x.id!==mid);
+  await A().set(['battle','mons',mid,'entry'],to);if(other)await A().set(['battle','mons',other.id,'entry'],from);
+  A().sysLog(`${m.name} 에리어 교대 ${from.toUpperCase()} → ${to.toUpperCase()}${other?` · ${other.name} → ${from.toUpperCase()}`:''}`,'battle')}
  async function enterMon(mid,area,opt){opt=opt||{};const c=ctx();const b=c.b;const m=b.mons[mid];if(!m||!(canEdit(c,m)||(opt.sys&&c.mgr)))return;
   const ent=entered(b,m.side);const areas=AREAS.slice(0,mode(b));
   if(!area){const tids=((b.sides||{})[m.side]||{}).trainers||[];const pref=areas[Math.min(tids.indexOf(m.tid),areas.length-1)]||areas[0];
@@ -897,7 +924,7 @@ window.OM_BATTLE_UI=(()=>{
   const syncBoard=()=>{md.querySelectorAll('[data-at]').forEach(t=>{const cb=md.querySelector(`[data-t="${t.dataset.at}"]`);t.classList.toggle('on',!!(cb&&cb.checked));const tk=t.querySelector('.tk');if(tk)tk.textContent=cb&&cb.checked?'✓':''})};
   md.querySelectorAll('[data-at]').forEach(t=>t.onclick=()=>{const cb=md.querySelector(`[data-t="${t.dataset.at}"]`);if(cb){cb.checked=!cb.checked;syncBoard()}});
   md.querySelectorAll('[data-amv]').forEach(cd=>cd.onclick=()=>{mvSel.value=cd.dataset.amv;md.querySelectorAll('[data-amv]').forEach(q=>q.classList.toggle('on',q===cd));syncMove()});
-  const syncMove=()=>{const mv=(atk.moves||[])[+mvSel.value]||{};$('#apow',md).value=mv.pow||0;$('#amef',md).textContent=mv.eff||'';const wm=WEATHER_MUL[f.weather.type]||{};$('#aweather',md).value=wm[mv.typeEn]!=null?wm[mv.typeEn]:1;
+  const syncMove=()=>{const mv=(atk.moves||[])[+mvSel.value]||{};$('#apow',md).value=mv.pow||0;$('#amef',md).textContent=(SPMAP[String(mv.name||'').trim()]?'【변칙 위력 — 대상마다 자동 계산】 ':'')+(mv.eff||'');const wm=WEATHER_MUL[f.weather.type]||{};$('#aweather',md).value=wm[mv.typeEn]!=null?wm[mv.typeEn]:1;
    let fm=1;const ft=f.terrain.type;if(ft==='그래스필드'&&mv.typeEn==='Grass')fm=1.3;if(ft==='일렉트릭필드'&&mv.typeEn==='Electric')fm=1.3;if(ft==='사이코필드'&&mv.typeEn==='Psychic')fm=1.3;if(ft==='미스트필드'&&mv.typeEn==='Dragon')fm=0.5;$('#afield',md).value=fm;
    const dflt=defaultTargets(b,mid,String(mvSel.value));if(x.move==null||x.move===''||+x.move!==+mvSel.value){md.querySelectorAll('[data-t]').forEach(cb=>cb.checked=dflt.includes(cb.dataset.t))}syncBoard()};
   mvSel.onchange=syncMove;syncMove();
@@ -913,7 +940,7 @@ window.OM_BATTLE_UI=(()=>{
    const g=id=>$('#'+id,md);const n=id=>+g(id).value;const ck=id=>g(id).checked;
    const moveTypes=String(mv.type||'').split(/[()/,]/).map(t=>t.trim()).filter(Boolean).map(S().typeEn);
    const atkTypes=atk.teraActive&&atk.teraEn!=='-'?[...atk.types,atk.teraEn]:atk.types;
-   const res=[];const multiTarget=targets.length>1;
+   const res=[];const multiTarget=targets.length>1;const SPW=specialPowFor(mv.name,atk);   /* 변칙 위력 기술: 대상마다 위력 자동 (매그니튜드 같은 무작위는 한 번만 굴림) */
    for(const slot of targets){const [side,area]=slot.split('_');const def=entered(b,side)[area];if(!def)continue;
     const AF=atk.flags||{},DF=def.flags||{};const phys=mv.cat==='물리',spec=mv.cat==='특수';
     const sure=ck('asure')||AF.surehit||(phys&&AF.hitPhys)||(spec&&AF.hitSpec);
@@ -926,12 +953,13 @@ window.OM_BATTLE_UI=(()=>{
     let hits=[];if(acc.hit){const cnt=n('ahits')||B().multiHits(mv,{skillLink:ck('askill')});const stage=B().critStage(atk,def,{input:n('acrit'),order:n('acritord')+(mods.cr||0)-(mods.cg||0)+itemCrit(atk,def)});
      for(let i=0;i<cnt;i++){const cr=mods.cx==='none'?{crit:false,roll:0,chance:0}:B().critical(stage,{type:+g('acrittype').value,forced:ck('acritforce')||mods.cx==='sure'});hits.push({v:cr.crit?2:1,cr,stage})}}
     const objs=(f.objects||{})[side]||{};const wall={};for(const k in WALLS)if(objs[k]>0)wall[WALLS[k]]=1;
-    const dmg=mv.cat==='변화'||!(+g('apow').value)?null:B().damage(atk,def,Object.assign({},mv,{pow:+g('apow').value}),{hits:hits.map(h=>h.v),free1:n('afree1')*(mods.boost||1),free2:n('afree2'),item1:n('aitem1'),item2:n('aitem2'),trait:n('atrait'),weather:n('aweather'),fieldMul:n('afield'),helping:ck('ahelp'),charge:ck('acharge'),lifeOrb:ck('alife'),multiTarget,wall,wallSize:mode(b)>=2?2:1,atkStat:g('aatk').value||undefined,defStat:g('adef').value||undefined,ignoreAtk:igAtk,ignoreDef:igDef,watersport:(f.etc||{})['물놀이']>0,mudsport:(f.etc||{})['흙놀이']>0,scarf:atk.item==='구애스카프',choiceDef:['구애머리띠','구애안경'].includes(def.item||'')&&false,tailwindDef:((f.objects||{})[side]||{})['순풍']>0,swampDef:((f.objects||{})[side]||{})['습원']>0});
+    const spw=SPW?SPW(def):null;const powT=spw&&spw.pow!=null?spw.pow:+g('apow').value;
+    const dmg=mv.cat==='변화'||!powT||(spw&&spw.fixed)?null:B().damage(atk,def,Object.assign({},mv,{pow:powT}),{hits:hits.map(h=>h.v),free1:n('afree1')*(mods.boost||1),free2:n('afree2'),item1:n('aitem1'),item2:n('aitem2'),trait:n('atrait'),weather:n('aweather'),fieldMul:n('afield'),helping:ck('ahelp'),charge:ck('acharge'),lifeOrb:ck('alife'),multiTarget,wall,wallSize:mode(b)>=2?2:1,atkStat:g('aatk').value||undefined,defStat:g('adef').value||undefined,ignoreAtk:igAtk,ignoreDef:igDef,watersport:(f.etc||{})['물놀이']>0,mudsport:(f.etc||{})['흙놀이']>0,scarf:atk.item==='구애스카프',choiceDef:['구애머리띠','구애안경'].includes(def.item||'')&&false,tailwindDef:((f.objects||{})[side]||{})['순풍']>0,swampDef:((f.objects||{})[side]||{})['습원']>0});
     const eff=dmg?B().effectiveness(moveTypes,def,{multiMode:+g('amulti').value,atkTypes,force:g('aforce').value===''?null:+g('aforce').value,floating:(def.states||{}).MagnetRise||(def.states||{}).Telekinesis||(FX()&&FX().floating(def))}):null;
     const stab=eff?eff.stab:false;
     const guard0=(DF.endure?0.5:1)*(mods.guard||1);const endure0=!!DF.endure&&!AF.noEndure;
     const hp=dmg?B().hpDamage(def,dmg.total,eff.value,{stab,adaptability:ck('aadapt'),expertBelt:ck('abelt'),guard:guard0,endure:endure0,hpFloor:raidFloor(def)}):null;
-    res.push({slot,def,acc,hits,dmg,eff,stab,hp,guard:guard0,endure:endure0,manual:1,mods,sec:acc.hit?secRolls(atk,def,mv):[]})}
+    res.push({slot,def,acc,hits,dmg,eff,stab,hp,guard:guard0,endure:endure0,manual:1,mods,spw,sec:[...(spw&&acc.hit?[{ok:true,line:spw.note}]:[]),...(acc.hit?secRolls(atk,def,mv):[])]})}
    RESULT={mv,targets:res,moveTypes};
    { /* 굴린 시점에 로그로 (자속·보정 같은 공격 쪽 내부 정보는 빼고) */
     const L=res.map(r=>{const hit=r.acc.sure?'필중':r.acc.hit?`명중 ${r.acc.roll}/${r.acc.target}`:`빗나감 ${r.acc.roll}/${r.acc.target}`;if(!r.acc.hit)return `→ ${r.def.name}: ${hit}`;
@@ -939,7 +967,7 @@ window.OM_BATTLE_UI=(()=>{
      const am=atkMul(r);return `→ ${r.def.name}: ${hit}${cr?' · 급소 '+cr:''}${r.dmg?` · 대미지 ${Math.floor(r.dmg.total*am)}${r.hits.length>1?' ('+r.hits.length+'회)':''} · 상성 ×${r.eff.value}`:' (변화기)'}${(r.sec||[]).map(x=>'\n   '+x.line).join('')}`});
     A().sysLog(`【공격】 ${atk.name} 『${mv.name}』 ${esc(mv.type||'')} ${mv.cat||''}${+g('apow').value?' 위력 '+g('apow').value:''}
 ${L.join('\n')}`,'battle',{mid:atk.id,img:atk.image||''})}
-   $('#ares',md).innerHTML=`${res.some(r=>(r.sec||[]).length)?`<div class="card" style="margin:0 0 6px;padding:6px 10px"><b class="small">부가효과 굴림</b> <span class="small dim">(발동한 것은 손으로 적용)</span>${res.map(r=>(r.sec||[]).map(x=>`<div class="small" style="color:${x.ok?'var(--ok)':'var(--mute)'}">${esc(r.def.name)} · ${esc(x.line)}</div>`).join('')).join('')}</div>`:''}<table class="t"><tr><th>대상</th><th>명중</th><th>급소</th><th>대미지(상성 전)</th><th>상성</th><th>보정</th><th>최종</th></tr>${res.map((r,i)=>`<tr>
+   $('#ares',md).innerHTML=`${res.some(r=>(r.sec||[]).length)?`<div class="card" style="margin:0 0 6px;padding:6px 10px"><b class="small">판정 · 부가효과</b> <span class="small dim">(부가효과 발동은 손으로 적용)</span>${res.map(r=>(r.sec||[]).map(x=>`<div class="small" style="color:${x.ok?'var(--ok)':'var(--mute)'}">${esc(r.def.name)} · ${esc(x.line)}</div>`).join('')).join('')}</div>`:''}<table class="t"><tr><th>대상</th><th>명중</th><th>급소</th><th>대미지(상성 전)</th><th>상성</th><th>보정</th><th>최종</th></tr>${res.map((r,i)=>`<tr>
     <td class="nw"><div class="row" style="gap:6px;flex-wrap:nowrap"><div class="ti sm" style="${r.def.image?`background-image:url('${cssu(r.def.image)}')`:''}"></div><div><b>${esc(r.def.name)}</b><div class="small dim">HP ${r.def.hp.cur}/${r.def.hp.max}</div>${r.mods&&r.mods.names.length?`<div class="small" style="color:var(--yel2)">${r.mods.names.map(x=>esc(x.txt)).join('<br>')}</div>`:''}</div></div></td>
     <td>${r.acc.sure?'필중':(r.acc.hit?'<b style="color:var(--ok)">명중</b>':'<b style="color:var(--red)">빗나감</b>')+`<div class="small dim">${r.acc.note?esc(r.acc.note):r.acc.roll+' / '+r.acc.target}</div>`}</td>
     <td>${r.hits.map(h=>h.v===2?`<b style="color:var(--red)">급소</b>`:'-').join('<br>')}<div class="small dim">${r.hits.map(h=>h.cr.roll+'/'+h.cr.chance).join('<br>')}</div></td>
