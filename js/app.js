@@ -226,26 +226,30 @@ function openHatch(tid){
 function openMon(mid){
  const b=B();const m=(b.mons||{})[mid];if(!m)return;const tr=(b.trainers||{})[m.tid]||{name:''};
  const full=ST.role==='gm'||ST.seat===m.tid;
- const K=S().STATS_KO;
- const stat6=full?`<div class="stat6">${m.stats.map((v,i)=>`<div><b>${K[i]}</b><span class="v">${esc(m.ranks[i])} · ${m.base[i]}</span><div class="small muted" title="실수치">${v}</div></div>`).join('')}</div>`
-  :`<div class="stat6">${m.ranks.map((v,i)=>`<div><b>${K[i]}</b><span class="v">${esc(v)}</span></div>`).join('')}</div>`;
+ const K=S().STATS_KO;const pct=Math.round(m.hp.cur/m.hp.max*100);
+ const stat6=`<div class="dxst wide">${m.ranks.map((r,i)=>`<div><small>${K[i]}</small><b>${esc(r)}</b>${full?`<em title="종족치 · 실수치">${m.base[i]} · ${m.stats[i]}</em>`:''}</div>`).join('')}</div>`;
  const an=(kind,name)=>(full&&name&&name!=='-')?` <button class="btn xs ghost anb" data-an="${esc(kind)}" data-ann="${esc(name)}" title="로그에 출력">📢 출력</button>`:'';
- const hpRow=(ST.role==='gm'||full)?`<div class="row" style="margin:10px 0;flex-wrap:wrap;gap:6px"><b>HP</b><input type="text" id="hpd" placeholder="숫자 · 1/8" style="width:90px" title="숫자 또는 분수(최대 HP 기준)"><button class="btn sm" id="hpDmg">대미지</button><button class="btn sm" id="hpHeal">회복</button><button class="btn sm ghost" id="hpFull">전부 회복</button>
-  <span class="qs">${['1/16','1/8','1/4','1/3','1/2'].map(f=>`<button class="btn xs" data-hpf="${f}" title="최대 HP 의 ${f} 대미지">−${f}</button>`).join('')}<button class="btn xs ghost" id="hpWin">「HP」 창</button></span><span class="small muted">비례는 최대 HP 기준</span></div>`:'';
- const md=openModal(`<div class="mhead"><div class="pic" style="width:56px;height:56px;border-radius:8px;background:#0e1118 center/cover no-repeat;${m.image?`background-image:url('${m.image}')`:''}"></div>
-   <div><h2>${esc(m.name)} <span class="small muted">Lv.${m.lv} · ${esc(tr.name)}</span></h2><div>${m.types.filter(t=>t!=='-').map(typeChip).join(' ')} ${m.tera!=='-'?`<span class="small muted">테라스탈 ${esc(m.tera)}</span>`:''} ${m.role?`<span class="badge">${esc(m.role)}</span>`:''} ${m.pride?`<span class="badge">프라이드 ${esc(m.pride)}</span>`:''}</div></div>
-   <span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-  <div class="row small muted" style="margin-bottom:8px">HP <b class="mono" style="color:var(--fg)">${full?m.hp.cur+' / '+m.hp.max:Math.round(m.hp.cur/m.hp.max*100)+'%'}</b></div>
-  ${stat6}${hpRow}
-  <table class="t" style="margin-top:10px"><tr><th style="width:80px">특성</th><td><b>${esc(m.ability||'-')}</b>${an('trait',m.ability)}<div class="dbmini">${window.OM_DB_UI.effectHtml('trait',m.ability)||`<span class="small dim">${esc(m.abilityEff)}</span>`}</div></td></tr>
-  <tr><th>소지품</th><td><b>${esc(m.item||'-')}</b>${an('item',m.item)}<div class="dbmini">${window.OM_DB_UI.effectHtml('item',m.item)||`<span class="small dim">${esc(m.itemEff)}</span>`}</div></td></tr></table>
-  <h3 style="margin:12px 0 6px;font-size:14px">기술 ${m.moves.length}</h3>
-  <table class="t"><tr><th>이름</th><th>타입</th><th>분류</th><th>위력</th><th>명중</th><th>범위</th><th>우선</th><th>효과</th></tr>
-   ${m.moves.map(mv=>`<tr><td class="nw"><b>${esc(mv.name)}</b>${mv.half?' <span class="small muted">½</span>':''}${mv.missing?' <span class="small" style="color:var(--red)">DB 없음</span>':''}</td><td class="nw">${typeChip(mv.typeEn)}</td><td class="nw">${esc(mv.cat)}</td><td class="mono">${mv.pow||'-'}</td><td class="mono">${mv.acc||'필중'}</td><td class="nw">${esc(mv.range)}</td><td class="mono">${mv.prio||0}</td><td class="pre small eff">${esc(mv.eff)}</td></tr>`).join('')}</table>
-  ${m.pots.length?`<h3 style="margin:12px 0 6px;font-size:14px">포텐셜 ${m.pots.length}</h3><table class="t">${m.pots.map(p=>`<tr${p.ph?' style="opacity:.45"':''}><th style="width:140px;white-space:normal">${esc(p.name)}${p.ph?' <span class="small">(미정)</span>':''}<div class="small muted">${esc(p.kind)}</div></th><td class="pre small">${p.ph?'':esc(p.eff)+an('pot',p.name)}</td></tr>`).join('')}</table>`:''}
-  ${m.excl?`<h3 style="margin:12px 0 6px;font-size:14px">전용 포텐셜</h3><table class="t"><tr><th style="width:140px">${esc(m.excl.name)}</th><td class="pre small">${esc(m.excl.eff)}${an('pot',m.excl.name)}</td></tr>${(m.exclX||[]).map(x=>`<tr><th>${esc(x.name)}</th><td class="pre small">${esc(x.eff)}${an('pot',x.name)}</td></tr>`).join('')}</table>`:''}
-  ${(tr.unique||[]).filter(u=>u&&u.name).length?`<h3 style="margin:12px 0 6px;font-size:14px">고유 포텐셜 <span class="small muted">${esc(tr.name)}</span></h3><table class="t">${tr.unique.filter(u=>u&&u.name).map(u=>`<tr><th style="width:140px;white-space:normal">${esc(u.name)}</th><td class="pre small">${esc(u.eff||'')}${an('pot',u.name)}</td></tr>`).join('')}</table>`:''}
-  ${full&&m.memo?`<h3 style="margin:12px 0 6px;font-size:14px">메모</h3><div class="pre small muted">${esc(m.memo)}</div>`:''}`);
+ const hpRow=full?`<div class="hpq"><span class="k">HP 조작</span><input type="text" id="hpd" placeholder="숫자 · 1/8" title="숫자 또는 분수(최대 HP 기준)"><button class="btn sm" id="hpDmg">대미지</button><button class="btn sm" id="hpHeal">회복</button><button class="btn sm ghost" id="hpFull">전부 회복</button>
+  <span class="qs">${['1/16','1/8','1/4','1/3','1/2'].map(f=>`<button class="btn xs" data-hpf="${f}" title="최대 HP 의 ${f} 대미지">−${f}</button>`).join('')}</span><span class="sp"></span><button class="btn xs ghost" id="hpWin" title="완화 배율·반동·드레인 계산 창">「HP」 창</button></div>`:'';
+ const effHtml=(kind,name,fallback)=>window.OM_DB_UI.effectHtml(kind,name)||`<span class="small dim">${esc(fallback||'')}</span>`;
+ const potCard=(p,kind)=>`<div class="dxp ${p.ph?"ph":""}"><div class="pn"><b>${esc(p.name)}</b>${kind||p.kind?`<small>${esc(kind||p.kind)}</small>`:''}${p.ph?'<small>(미정)</small>':''}<span class="sp"></span>${p.ph?'':an('pot',p.name)}</div>${p.ph?'':`<div class="pe">${esc(p.eff||'')}</div>`}</div>`;
+ const pots=(m.pots||[]).filter(p=>p&&p.name);const uniq=(tr.unique||[]).filter(u=>u&&u.name);
+ const md=openModal(`<div class="mhead"><h2>${esc(m.name)} <span class="small muted">상세</span></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+  <div class="dxhead"><div class="dxpic" style="${m.image?`background-image:url('${m.image}')`:''}"></div>
+   <div class="dxinfo"><div class="dxname">${esc(m.name)}<span class="lv">Lv.${m.lv}</span><span class="small muted">${esc(tr.name)}</span><span class="row" style="gap:4px;display:inline-flex">${m.types.filter(t=>t!=='-').map(typeChip).join('')}</span>${m.tera&&m.tera!=='-'?`<span class="badge">테라 ${esc(m.tera)}</span>`:''}${m.role?`<span class="badge">${esc(m.role)}</span>`:''}${m.pride?`<span class="badge">프라이드 ${esc(m.pride)}</span>`:''}</div>
+    <div class="dxhp"><div class="hpbar ${pct<=25?'low':pct<=50?'mid':''}"><i style="width:${pct}%"></i></div><span class="mono">${full?m.hp.cur+' / '+m.hp.max:pct+'%'}</span></div>
+    <div class="dxrow"><span class="k">특성</span><span><b>${esc(m.ability||'-')}</b>${an('trait',m.ability)}<div class="dbmini">${effHtml('trait',m.ability,m.abilityEff)}</div></span></div>
+    <div class="dxrow"><span class="k">소지품</span><span><b>${esc(m.item||'-')}</b>${an('item',m.item)}<div class="dbmini">${effHtml('item',m.item,m.itemEff)}</div></span></div>
+    <div class="dxrow"><span class="k">능력</span>${stat6}</div>
+    ${hpRow}</div></div>
+  <div class="sec">기술 <span class="note">${m.moves.length}개</span></div>
+  <table class="t dxmv"><tr><th>이름</th><th>타입</th><th>분류</th><th>위력</th><th>명중</th><th>범위</th><th>우선</th><th>효과</th></tr>
+   ${m.moves.map(mv=>`<tr><td class="nw"><b>${esc(mv.name)}</b>${mv.half?' <span class="small muted">½</span>':''}${mv.missing?' <span class="small" style="color:var(--red)">DB 없음</span>':''}</td><td class="nw">${typeChip(mv.typeEn)}</td><td class="nw">${esc(mv.cat)}</td><td class="mono">${mv.pow||'-'}</td><td class="mono">${mv.acc||'필중'}</td><td class="nw">${esc(mv.range)}</td><td class="mono">${mv.prio||0}</td><td class="small eff">${esc(mv.eff)}</td></tr>`).join('')}</table>
+  ${pots.length?`<div class="sec">포텐셜 <span class="note">${pots.filter(p=>!p.ph).length}</span></div><div class="dxpots">${pots.map(p=>potCard(p)).join('')}</div>`:''}
+  ${m.excl||(m.exclX||[]).length?`<div class="sec">전용 포텐셜</div><div class="dxpots">${[...(m.excl?[m.excl]:[]),...(m.exclX||[])].map(p=>potCard(p,'전용')).join('')}</div>`:''}
+  ${uniq.length?`<div class="sec">고유 포텐셜 <span class="note">${esc(tr.name)}</span></div><div class="dxpots">${uniq.map(u=>potCard(u,'고유')).join('')}</div>`:''}
+  ${full&&m.memo?`<div class="sec">메모</div><div class="pre small muted">${esc(m.memo)}</div>`:''}`);
+ md.classList.add('wide');
  if(ST.role==='gm'||full){const amt=v=>{v=String(v||'').trim();const f=v.match(/^(\d+)\s*\/\s*(\d+)$/);if(f)return Math.max(1,Math.floor(m.hp.max*+f[1]/+f[2]));return Math.max(0,Math.floor(+v||0))};
   const ap=async(cur,msg)=>{cur=Math.max(0,Math.min(m.hp.max,cur));closeModal();const nh=Object.assign({},m.hp,{cur,latest:m.hp.cur});if(await set(['battle','mons',mid,'hp'],nh))sysLog(`${m.name} ${msg} → HP ${cur}/${m.hp.max}${cur<=0?' · 빈사!':''}`,'battle')};
   $('#hpDmg',md).onclick=()=>{const v=$('#hpd',md).value;const d=amt(v);if(d)ap(m.hp.cur-d,`에게 ${d} 대미지${/\//.test(v)?' ('+v.trim()+')':''}`)};$('#hpHeal',md).onclick=()=>{const v=$('#hpd',md).value;const d=amt(v);if(d)ap(m.hp.cur+d,`${d} 회복${/\//.test(v)?' ('+v.trim()+')':''}`)};$('#hpFull',md).onclick=()=>ap(m.hp.max,'전부 회복');

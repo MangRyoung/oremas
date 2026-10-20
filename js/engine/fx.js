@@ -55,7 +55,7 @@ window.OM_FX=(()=>{
      case 'choice':{let idx=[0];if(ctx.choose)idx=await ctx.choose(op.opts.map(o=>o.label),op.opts.some(o=>o.multi));if(!idx||!idx.length){stop=true;break}
        for(const i of idx){const o=op.opts[i];if(!o)continue;L.push(`▶ ${o.label}`);const r=await run(o.ops,ctx);L.push(...r.lines)}break}
      case 'rank':case 'mult':{const ts=await targets(b,self,op.tgt,ctx);for(const m of ts)L.push(...applyStats(m,op,self,name));break}
-     case 'reset':{const ts=await targets(b,self,op.tgt||'self',ctx);for(const m of ts){if(op.what!=='mult'){m.rank={};delete m.tempRank}if(op.what!=='rank'){m.mod={};delete m.tempMod}L.push(`${m.name} ${op.what==='rank'?'랭크':op.what==='mult'?'배율':'랭크·배율'} 초기화`)}break}
+     case 'reset':{const ts=await targets(b,self,op.tgt||'self',ctx);for(const m of ts){if(op.what!=='mult'){m.rank={};delete m.tempRank}if(op.what!=='rank'){m.mod={};delete m.tempMod;if(m.fx)m.fx.mults=[]}L.push(`${m.name} ${op.what==='rank'?'랭크':op.what==='mult'?'배율':'랭크·배율'} 초기화`)}break}
      case 'boost':case 'guard':{const ts=await targets(b,self,op.tgt,ctx);for(const m of ts){const F=fx(m);const key=name+' ← '+self.name;if(op.remove){F.mods=F.mods.filter(e=>e.key!==key);L.push(`${m.name} 「${name}」 ${op.k==='boost'?'위력 강화':'위력 완화'} 해제`);continue}
        const e={key,name,kind:op.k,v:+op.v||1,types:op.types||[],cat:op.cat||'all',eff:op.eff||'all',rng:op.rng||'all',uses:op.uses==null?-1:+op.uses,turn:op.turn?(+b.turn||0):-1,until:op.tl>0?(+b.turn||0)+op.tl-1:-1,ro:op.ro||[],st:op.st||'',tg:op.tg||[],sb:op.sb||'',pmin:+op.pmin||0,pmax:+op.pmax||0,cg:+op.cg||0,cr:+op.cr||0,cx:op.cx||'',eg:op.eg||'',src:self.name};
        F.mods=F.mods.filter(x=>x.key!==key);F.mods.push(e);L.push(`${m.name} ${modDesc(e)}`)}break}

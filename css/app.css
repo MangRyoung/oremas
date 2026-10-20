@@ -887,7 +887,8 @@ body.resizing{user-select:none;cursor:col-resize}
 .dxname{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-family:var(--head);font-size:20px;color:#fff}.dxname .lv{font-family:var(--mono);font-size:12px;color:var(--mute)}
 .dxrow{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.4}.dxrow .k{flex:none;width:48px;font-family:var(--lab);font-size:11px;color:var(--mute);padding-top:3px;letter-spacing:.06em}
 .dxst{display:grid;grid-template-columns:repeat(6,minmax(44px,1fr));gap:4px;flex:1;max-width:420px}.dxst div{background:#000;border-bottom:2px solid var(--red);text-align:center;padding:2px 4px}.dxst small{display:block;font-size:10px;color:var(--mute);font-family:var(--lab)}.dxst b{font-family:var(--mono);font-size:15px;color:#fff}
-.dxweak{display:flex;flex-wrap:wrap;gap:6px 14px;flex:1}.dxw{display:inline-flex;align-items:center;gap:4px}.dxw i{font-style:normal;font-family:var(--lab);font-size:11px;padding:0 6px;color:#fff;background:#444}.dxw.w4 i{background:#b3261e}.dxw.w2 i{background:#d6672a}.dxw.r2 i{background:#2f8f5b}.dxw.r4 i{background:#1f7a4d}.dxw.r0 i{background:#3b5bd6}
+.dxside{flex:none;width:200px;border-left:1px solid var(--line);padding-left:12px;display:flex;flex-direction:column;gap:6px}.dxside>.k{font-family:var(--lab);font-size:11px;color:var(--mute);letter-spacing:.06em}
+.dxweak{display:flex;flex-direction:column;gap:6px}.dxw{display:flex;align-items:flex-start;gap:4px;flex-wrap:wrap}.dxw i{flex:none;min-width:30px;text-align:center}.dxw i{font-style:normal;font-family:var(--lab);font-size:11px;padding:0 6px;color:#fff;background:#444}.dxw.w4 i{background:#b3261e}.dxw.w2 i{background:#d6672a}.dxw.r2 i{background:#2f8f5b}.dxw.r4 i{background:#1f7a4d}.dxw.r0 i{background:#3b5bd6}
 .dexph.sm{display:inline-block;padding:0 8px;font-size:12px}
 .dxmv td.eff{white-space:pre-wrap;min-width:260px}
 .dxpots{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:6px}.dxp{background:#141518;border:1px solid var(--line);border-left:3px solid #7b4fd6;padding:6px 10px}.dxp .pn{display:flex;align-items:baseline;gap:6px}.dxp .pn b{font-family:var(--lab);color:#fff}.dxp .pn small{color:var(--mute);font-size:11px}.dxp .pe{font-size:12.5px;line-height:1.45;white-space:pre-wrap;color:#d8dbe3;margin-top:2px}
@@ -902,3 +903,11 @@ body.resizing{user-select:none;cursor:col-resize}
 .spk.dragging{opacity:.4}.spk.over{outline:2px solid var(--yel2)}.spkbar.over{background:#15161a}
 .spkdrop{flex:none;display:flex;align-items:center;padding:4px 10px;border:1px dashed var(--line2);color:var(--mute);font-size:12px;min-height:60px}.spkdrop.over{border-color:var(--yel2);color:var(--yel2)}
 .spkbar.sub{border-left:3px solid var(--yel2);padding-left:8px;margin-top:4px;align-items:center}.spkbar.sub .fname{font-family:var(--lab);color:var(--yel2);padding:0 6px;white-space:nowrap}
+
+/* 포켓몬 상세 창 (도감과 같은 꼴) */
+.dxst.wide{max-width:none}.dxst.wide em{display:block;font-style:normal;font-family:var(--mono);font-size:10.5px;color:var(--mute)}
+.dxhp{display:flex;align-items:center;gap:10px}.dxhp .hpbar{flex:1;max-width:320px}.dxhp .mono{font-size:14px;color:#fff}
+.hpq{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:#0e0e10;border:1px solid var(--line);padding:6px 8px;margin-top:2px}.hpq .k{font-family:var(--lab);font-size:11px;color:var(--mute);letter-spacing:.06em;margin-right:4px}.hpq input{width:90px}.hpq .qs{display:inline-flex;gap:4px}
+.dxp .pn .sp{flex:1}.dxp .pn .anb{margin-left:0}
+.dxrow .dbmini{margin-top:2px}
+.dxp.ph{opacity:.45;border-left-color:#444}
