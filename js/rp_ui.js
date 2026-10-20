@@ -69,7 +69,7 @@ window.OM_RP_UI=(()=>{
   feedLog(A().ST.log||[]);expire();
   const r=R();const bg=r.bg||{};const cap=r.caption||{};const manual=r.stage||{};
   const slots={};for(const s of SLOTS){const m=manual[s];slots[s]=m&&m.key?m.key:STAGE.slots[s]}
-  const cutId=+((A().ST.state.rp||{}).logClearAt)||0;const lastChat=[...(A().ST.log||[])].reverse().find(x=>x.id>cutId&&x.kind==='chat'&&x.data&&x.data.t&&!x.data.sms&&!x.data.bat);
+  const cutId=+((A().ST.state.rp||{}).logClearAt)||0;const lastChat=[...(A().ST.log||[])].reverse().find(x=>x.id>cutId&&x.kind==='chat'&&x.data&&x.data.t&&!x.data.sms&&!x.data.bat&&x.data.ch!=='ooc');
   const line=(name,text)=>{const m=String(text).match(/^\*(.+)\*$/s);return `<div class="dname"><span>${esc(name)}</span></div><div class="dtext ${m?'narr':''}">${m?esc(m[1]):(/^["“「『].*["”」』]$/s.test(String(text).trim())?esc(String(text).trim()):'"'+esc(text)+'"')}</div>`};
   const showDlg=cap.text||(lastChat&&Date.now()-(Date.parse(lastChat.at)||0)<STAND_TTL*2);
   const dlgHtml=cap.text?line(cap.name||'',cap.text):(showDlg?line(lastChat.data.as||(charOf(speakerKey(lastChat))||{}).name||lastChat.who,lastChat.data.t):'');
@@ -108,11 +108,12 @@ window.OM_RP_UI=(()=>{
  /* ----- 입력 중 표시: 저장 없이 방송 ----- */
  const TYPING={last:0,who:{},t:null};
  /* 입력 중: 내 것은 바로 화면에(브로드캐스트는 나한테 안 돌아오니까), 남에게는 2.5초에 한 번 보낸다 */
- function typingPing(){const now=Date.now();const c=speakerChar();const who=c?c.name:(A().ST.role==='gm'?'GM':A().ST.name);const me=A().ST.role==='gm'?'gm':A().ST.seat;if(!me)return;TYPING.who[me+'|'+who]={who,at:now,me:true,from:me};drawTyping();clearTimeout(TYPING.t);TYPING.t=setTimeout(drawTyping,4200);if(now-TYPING.last<2500)return;TYPING.last=now;DBS().broadcast({t:'typing',who,from:me,at:now})}
+ /* ooc: 잡담 탭에서 치는 중 — 위쪽 표시에만 나오고 무대에는 안 나온다 */
+ function typingPing(ooc){ooc=ooc===true;const now=Date.now();const c=ooc?null:speakerChar();const who=c?c.name:(A().ST.role==='gm'?'GM':A().ST.name);const me=A().ST.role==='gm'?'gm':A().ST.seat;if(!me)return;TYPING.who[me+'|'+who+(ooc?'|o':'')]={who,at:now,me:true,from:me,ooc};drawTyping();clearTimeout(TYPING.t);TYPING.t=setTimeout(drawTyping,4200);if(now-TYPING.last<2500)return;TYPING.last=now;DBS().broadcast({t:'typing',who,from:me,at:now,ooc})}
  function typingStop(){const me=A().ST.role==='gm'?'gm':A().ST.seat;for(const k in TYPING.who)if(TYPING.who[k].me)delete TYPING.who[k];TYPING.last=0;drawTyping()}
  /* 남의 입력 중: 같은 사람이 창 두 개나 다른 인물로 치면 따로 보인다 (from|who 로 키) */
- function onTyping(p){if(!p||!p.from)return;const me=A().ST.role==='gm'?'gm':A().ST.seat;const key=p.from+'|'+(p.who||'');if(p.from===me&&TYPING.who[key]&&TYPING.who[key].me)return;TYPING.who[key]={who:p.who,at:Date.now(),from:p.from};drawTyping();clearTimeout(TYPING.t);TYPING.t=setTimeout(drawTyping,4200)}
- function drawTyping(){const now=Date.now();const on=!A().alarm||A().alarm().typing;const names=on?[...new Set(Object.values(TYPING.who).filter(x=>now-x.at<4000).sort((a,b)=>(a.me?1:0)-(b.me?1:0)).map(x=>x.me?x.who+' (나)':x.who))]:[];const html=names.length?`<span class="dots"><i></i><i></i><i></i></span> ${esc(names.join(', '))} 입력 중…`:'';for(const id of ['typing','typingTop']){const el=document.getElementById(id);if(!el)continue;el.innerHTML=html;el.style.display=names.length?(id==='typingTop'?'inline-block':''):'none'}}
+ function onTyping(p){if(!p||!p.from)return;const me=A().ST.role==='gm'?'gm':A().ST.seat;const key=p.from+'|'+(p.who||'')+(p.ooc?'|o':'');if(p.from===me&&TYPING.who[key]&&TYPING.who[key].me)return;TYPING.who[key]={who:p.who,at:Date.now(),from:p.from,ooc:!!p.ooc};drawTyping();clearTimeout(TYPING.t);TYPING.t=setTimeout(drawTyping,4200)}
+ function drawTyping(){const now=Date.now();const on=!A().alarm||A().alarm().typing;const live=on?Object.values(TYPING.who).filter(x=>now-x.at<4000).sort((a,b)=>(a.me?1:0)-(b.me?1:0)):[];for(const id of ['typing','typingTop']){const el=document.getElementById(id);if(!el)continue;const names=[...new Set(live.filter(x=>id==='typingTop'||!x.ooc).map(x=>(x.me?x.who+' (나)':x.who)+(x.ooc&&id==='typingTop'?' · 잡담':'')))];const html=names.length?`<span class="dots"><i></i><i></i><i></i></span> ${esc(names.join(', '))} 입력 중…`:'';el.innerHTML=html;el.style.display=names.length?(id==='typingTop'?'inline-block':''):'none'}}
  const SPK={key:'',draft:'',focus:false,folder:''};
  /* ----- 화자 목록: 토큰이 있는 모든 개체 (GM · NPC(관계도) · PC(로스터) · 포켓몬(로스터)). 정리는 rp.spk = {order:[키|'f:폴더id'], folders:{id:{name,keys:[]}}, hidden:{키:1}} ----- */
  function allSpeakers(){const ST=A().ST;const out=[{key:'gm',name:'GM (나레이션)'}];
@@ -234,11 +235,12 @@ window.OM_RP_UI=(()=>{
    if(k==='url'){const u=$('#qbgu',md).value.trim();if(!u)return;A().closeModal();return A().set(['rp','bg'],{src:u,name:$('#qbgn',md).value.trim(),at:Date.now()})}})}
  function quickBgm(){const md=A().openModal(`<div class="mhead"><h2>BGM</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div id="bgmpanel">${bgmPanelHtml()}</div>`);md.classList.add('wide');const re=()=>{const el=$('#bgmpanel');if(!el)return;el.innerHTML=bgmPanelHtml();bindBgmPanel(md,re)};bindBgmPanel(md,re)}
  /* ----- 대화 기록 ----- */
- function openLog(){const ST=A().ST;const rows=(ST.log||[]).filter(x=>x.kind==='chat'&&x.data&&!x.data.bat&&!x.data.sms&&(x.data.t||x.data.img));
+ let logOoc=false;
+ function openLog(){const ST=A().ST;const isO=x=>x.data.ch==='ooc';const rows=(ST.log||[]).filter(x=>x.kind==='chat'&&x.data&&!x.data.bat&&!x.data.sms&&(x.data.t||x.data.img)&&(logOoc||!isO(x)));
   const name=x=>x.data.as||(charOf(speakerKey(x))||{}).name||x.who;const tm=x=>{const d=new Date(x.at);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
-  const md=A().openModal(`<div class="mhead"><h2>대화 기록</h2><span class="small dim">${rows.length}줄</span><span class="sp"></span><button class="btn sm ghost" id="lgcopy">글로 복사</button><button class="btn sm ghost" id="lgdl">파일로</button><button class="btn ghost" data-x>닫기</button></div>
-   <div class="rplog">${rows.map(x=>{const m=String(x.data.t||'').match(/^\*(.+)\*$/s);return `<div class="rl ${m?'narr':''}"><span class="rt">${tm(x)}</span><b class="rn">${esc(name(x))}</b><span class="rx">${x.data.img?`<a href="${esc(x.data.img)}" target="_blank" rel="noopener">[그림]</a> `:''}${m?esc(m[1]):esc(x.data.t)}</span></div>`}).join('')||'<div class="empty">아직 대화가 없다</div>'}</div>`);
-  md.classList.add('wide');const text=rows.map(x=>`[${tm(x)}] ${name(x)}: ${x.data.t||x.data.img||''}`).join('\n');
+  const md=A().openModal(`<div class="mhead"><h2>대화 기록</h2><span class="small dim">${rows.length}줄</span><span class="sp"></span><label class="small" title="잡담 탭에서 한 말도 같이 보이고, 복사·파일에도 들어간다"><input type="checkbox" id="lgooc" ${logOoc?'checked':''}> 잡담 포함</label><button class="btn sm ghost" id="lgcopy">글로 복사</button><button class="btn sm ghost" id="lgdl">파일로</button><button class="btn ghost" data-x>닫기</button></div>
+   <div class="rplog">${rows.map(x=>{const m=String(x.data.t||'').match(/^\*(.+)\*$/s);return `<div class="rl ${m?'narr':''}"><span class="rt">${tm(x)}</span><b class="rn">${esc(name(x))}${isO(x)?' <small class="dim">· 잡담</small>':''}</b><span class="rx">${x.data.img?`<a href="${esc(x.data.img)}" target="_blank" rel="noopener">[그림]</a> `:''}${m?esc(m[1]):esc(x.data.t)}</span></div>`}).join('')||'<div class="empty">아직 대화가 없다</div>'}</div>`);
+  md.classList.add('wide');$('#lgooc',md).onchange=e=>{logOoc=e.target.checked;A().closeModal();openLog()};const text=rows.map(x=>`[${tm(x)}] ${isO(x)?'[잡담] ':''}${name(x)}: ${x.data.t||x.data.img||''}`).join('\n');
   $('#lgcopy',md).onclick=()=>navigator.clipboard.writeText(text).then(()=>A().toast('복사했다'),()=>prompt('복사해서 쓰기',text));
   $('#lgdl',md).onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/plain'}));a.download=`대화기록_${ST.room}_${new Date().toISOString().slice(0,10)}.txt`;a.click()};
   const lg=md.querySelector('.rplog');lg.scrollTop=lg.scrollHeight}
