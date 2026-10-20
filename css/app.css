@@ -1569,3 +1569,5 @@ label.tgc:has(input:focus-visible){outline:2px solid var(--yel)}
  .bside:not([open]) .bsh{border-bottom:0;padding-bottom:0}.bside:not([open]) .bsum{display:block;flex:1}
  .bc{grid-template-columns:24px minmax(0,1fr)}.bc .bop{width:24px;height:24px}
 }
+/* 10-22 「PL 권한으로」는 조작판 둘째 줄 오른쪽 끝 (BGM 칸 바로 아래) */
+.gmrow .gmh{margin-left:auto}
