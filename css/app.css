@@ -1545,3 +1545,11 @@ label.tgc:has(input:focus-visible){outline:2px solid var(--yel)}
 .br{display:flex;align-items:center;gap:6px;padding:4px 6px;background:#16171b;border-left:3px solid var(--line2);font-size:12px}
 .br.left{border-left-color:var(--left)}.br.right{border-left-color:var(--right)}.brn{font-weight:700}
 .bsn{margin-top:6px;padding:0 2px}
+/* 10-22 퇴장(특수)는 소지품 줄 오른쪽 빈 곳(퇴장 바로 위)으로. 폰은 그대로 「⋯」 안 */
+.potwrap{display:flex;align-items:flex-end;gap:6px;min-width:0}
+.potwrap>.potcol{flex:1;min-width:0}
+.potwrap>.exup{flex:none;margin-top:4px}
+.mon.big .mbtns .exdn{display:none}
+.mon.big .mbtns .exit1{margin-left:auto}
+.potcol:empty{display:none}.potwrap>.exup{margin-left:auto}
+@media (max-width:760px){.potwrap>.exup{display:none}.mon.big .mbtns.open .exdn{display:inline-flex}.mon.big .mbtns .exit1{margin-left:0}}
