@@ -182,10 +182,14 @@ window.OM_SHEET_UI=(()=>{
    case 'tobattle':return A().loadFromRoster(d.tid,d.side)}}
 
  /* 제작기 → 로스터 */
+ /* 제작기 서명(mkm_me: 이름 + 비밀구) → 해시. 제작기와 같은 사이트(mangryoung.github.io)라 localStorage 를 같이 쓴다 */
+ async function makerMe(){try{const o=JSON.parse(localStorage.getItem('mkm_me')||'null');if(!o||!o.secret||!(window.crypto&&crypto.subtle))return '';const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('mkm:'+String(o.secret)));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('').slice(0,24)}catch(e){return ''}}
  async function openImport(){const c=ctx();if(!c.gm&&!c.seat)return;
   let mk;try{mk=await A().loadMaker()}catch(e){return A().toast('제작기 DB를 읽지 못했다: '+e.message)}
   const fold=new Map(mk.folders.map(f=>[f.id,(f.data||{}).name||f.id]));
-  const list=mk.trainers.map(t=>({id:t.id,d:(t.data&&t.data.data)||{},ord:(t.data||{}).ord||0})).sort((a,b)=>(fold.get(a.d.folder)||'').localeCompare(fold.get(b.d.folder)||'')||a.ord-b.ord);
+  /* 제작기에서 비공개로 둔 트레이너·폴더는 GM 과 만든 사람(같은 브라우저의 제작기 서명)에게만 보인다 */
+  const me=await makerMe();const fpriv=new Map(mk.folders.map(f=>[f.id,f.data||{}]));const see=o=>!o||!o.priv||c.gm||!!(me&&o.owner===me);
+  const list=mk.trainers.map(t=>({id:t.id,d:(t.data&&t.data.data)||{},ord:(t.data||{}).ord||0})).filter(t=>see(t.d)&&see(fpriv.get(t.d.folder))).sort((a,b)=>(fold.get(a.d.folder)||'').localeCompare(fold.get(b.d.folder)||'')||a.ord-b.ord);
   const md=A().openModal(`<div class="mhead"><h2>제작기에서 가져오기</h2><span class="sp"></span><button class="btn sm ghost" id="mkRefresh">새로 읽기</button><button class="btn ghost" data-x>닫기</button></div>
    <input type="text" id="tq" placeholder="트레이너 이름으로 찾기" style="width:100%;margin-bottom:8px">
    <ul class="pick" id="tl">${list.map(t=>`<li data-id="${t.id}"><span class="small dim" style="min-width:90px">${esc(fold.get(t.d.folder)||'-')}</span><b>${esc(t.d.name||'(이름 없음)')}</b><span class="small dim">${esc(['육성','지시','통솔','능력'].map(k=>k+' '+((t.d.ranks||{})[k]||'-')).join(' · '))} · ${(t.d.pids||[]).length}체</span><span class="sp"></span>${c.r.trainers[t.id]?'<span class="tag">있음</span>':''}<button class="btn sm pri" data-pick="${t.id}">가져오기</button></li>`).join('')}</ul>`);
@@ -204,7 +208,7 @@ window.OM_SHEET_UI=(()=>{
   trainer.ord=old?old.ord:Object.keys(r.trainers).length;trainer.src='maker';if(old){for(const k of ['orderStyle','commandStyle','orderCount','orderBase','orderPreset','orderType'])if(old[k]!=null)trainer[k]=old[k];trainer.memo=old.memo;const rs=window.OM_ORDERS.resync(trainer);if(rs)Object.assign(trainer,rs)}
   if(!trainer.orderCount)Object.assign(trainer,window.OM_ORDERS.auto(trainer,'assoc',1));if(old){if(old.image&&!trainer.image)trainer.image=old.image;if(!(trainer.stands||[]).length&&(old.stands||[]).length){trainer.stands=old.stands;trainer.standActive=old.standActive}else{for(const s of trainer.stands||[]){const o=(old.stands||[]).find(x=>x.src===s.src);if(!s.kind&&o&&o.kind)s.kind=o.kind}}}
   for(const id of ((old&&old.pids)||[]))if(!trainer.pids.includes(id))delete r.mons[id];
-  for(const m of mons){const om=r.mons[m.id];m.src='maker';if(om&&keep){m.iv=om.iv;m.item=om.item||m.item;m.itemEff=om.itemEff||m.itemEff;m.sheetHp=om.sheetHp;m.dist=om.dist;m.ev=om.ev;if(om.image&&!m.image)m.image=om.image;recalc(m,trainer)}r.mons[m.id]=m}
+  for(const m of mons){const om=r.mons[m.id];m.src='maker';if(om&&keep){m.iv=om.iv;m.item=om.item||m.item;m.itemEff=om.itemEff||m.itemEff;m.sheetHp=om.sheetHp;m.dist=om.dist;m.ev=om.ev;if(om.image&&!m.image)m.image=om.image;if(!(m.stands||[]).length&&(om.stands||[]).length){m.stands=om.stands;m.standActive=om.standActive||0}recalc(m,trainer)}r.mons[m.id]=m}
   r.trainers[trainer.id]=trainer;
   if(c.gm)await A().set(['roster'],r);
   else{/* 좌석: 허용된 경로로 하나씩 — 내 트레이너, 내 포켓몬(없어진 것은 지운다) */

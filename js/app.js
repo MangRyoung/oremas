@@ -144,6 +144,12 @@ function battleCard(d){const t=String(d.t||'');const m=t.match(/^【([^】]+)】
  const lines=body.split('\n').filter(Boolean).map(l=>`<div class="bl ${/실패|차단|없|않/.test(l)?'neg':/\+\d|회복|성공|→/.test(l)?'pos':''}">${esc(l)}</div>`).join('');
  return `<div class="bcard" style="--tc:${col}"><div class="bch">${d.img?`<span class="bcav" style="background-image:url('${esc(d.img)}')"></span>`:''}<span class="bctag">${esc(tag)}</span><b>${esc(title)}</b>${d.mid?`<span class="sp"></span><button class="btn xs ghost bcfx" data-lmid="${esc(d.mid)}" title="이 포켓몬의 포텐셜 창 — 발동 중인 효과를 ✕ 로 해제">효과</button>`:''}</div>${d.eff?`<div class="bceff">${esc(d.eff)}</div>`:''}${lines?`<div class="bcb">${lines}</div>`:''}</div>`}
 
+/* ---------- 대사 / 지문 판정 ----------
+   새 규칙(nf:1 이 붙은 줄): 그냥 치면 지문, "…" “…” 「…」 『…』 로 감싸면 대사. *…* 도 여전히 지문.
+   옛 줄(nf 없음): 예전처럼 *…* 만 지문, 나머지는 대사 (따옴표가 없으면 무대에서 붙여 준다) */
+function lineFmt(d){d=d||{};const raw=String(d.t||'');const t=raw.trim();const m=t.match(/^\*(.+)\*$/s);if(m)return {narr:true,text:m[1]};
+ if(/^["“「『].*["”」』]$/s.test(t))return {narr:false,text:t,q:true};if(d.nf)return {narr:true,text:raw};return {narr:false,text:raw,q:false}}
+window.OM_LINE=lineFmt;
 /* ---------- 채팅 ---------- */
 /* 세션 / 잡담 대화창: 잡담 탭에서 보낸 말은 data.ch='ooc' 로 남고 세션 탭 · 무대 · 로그 정리기의 세션 로그에서 빠진다 (정리기에서는 OOC) */
 const CHAN={cur:(()=>{try{return localStorage.getItem('om_chan')==='o'?'o':'s'}catch(e){return 's'}})(),seen:{s:0,o:0}};
@@ -154,17 +160,17 @@ function chanDots(){const tb=$('#ctabs');if(!tb)return;const last={s:0,o:0};for(
  if(CHAN.room!==ST.room){CHAN.room=ST.room;CHAN.seen={s:last.s,o:last.o}}   /* 방에 들어올 때까지의 줄은 읽은 것으로 */
  CHAN.seen[CHAN.cur]=Math.max(CHAN.seen[CHAN.cur],last[CHAN.cur]);tb.querySelectorAll('[data-ch]').forEach(b=>b.classList.toggle('new',b.dataset.ch!==CHAN.cur&&last[b.dataset.ch]>CHAN.seen[b.dataset.ch]))}
 async function sendChat(){
- const inp=$('#chatIn');const t=inp.value.trim();if(!t)return;const ch=CHAN.cur==='o'?{ch:'ooc'}:{};inp.value='';if(window.OM_RP_UI&&window.OM_RP_UI.typingStop)window.OM_RP_UI.typingStop();
+ const inp=$('#chatIn');const t=inp.value.trim();if(!t)return;const ch=CHAN.cur==='o'?{ch:'ooc'}:{};const nf=CHAN.cur==='o'?{}:{nf:1};inp.value='';if(window.OM_RP_UI&&window.OM_RP_UI.typingStop)window.OM_RP_UI.typingStop();
  try{
   let m;
   if((m=t.match(/^\/r(?:oll)?\s+(.+)$/i))){const r=roll(m[1]);if(!r)return toast('주사위 식을 모르겠다 (예: 1d100, 2d6+3)');await DBS().addLog(ST.room,ST.secret,'dice',ST.name,Object.assign({t:`${m[1]} → ${r.text} = ${r.total}`,total:r.total},ch))}
   else if((m=t.match(/^\/w\s+(\S+)\s+(.+)$/))){const to=resolveSeat(m[1]);if(!to)return toast('그런 자리가 없다: '+m[1]);await DBS().addLog(ST.room,ST.secret,'whisper',ST.name,{t:m[2],to,toName:m[1]});pollWhispers()}
-  else if((m=t.match(/^\/as\s+(\S+)\s+(.+)$/))){if(ST.role!=='gm')return toast('/as 는 GM 만');await DBS().addLog(ST.room,ST.secret,'chat',m[1],{t:m[2],as:m[1]})}
+  else if((m=t.match(/^\/as\s+(\S+)\s+(.+)$/))){if(ST.role!=='gm')return toast('/as 는 GM 만');await DBS().addLog(ST.room,ST.secret,'chat',m[1],{t:m[2],as:m[1],nf:1})}
   else if((m=t.match(/^\/s\s+(.+)$/))){await window.OM_RP_UI.setMyStand(m[1].trim())}
   else if((m=t.match(/^\/img\s+(\S+)$/))){await DBS().addLog(ST.room,ST.secret,'chat',ST.name,Object.assign({t:'',img:m[1]},ch))}
   else if(/^\/clear$/.test(t)){if(ST.role!=='gm')return toast('/clear 는 GM 만');await DBS().addLog(ST.room,ST.secret,'chat',ST.name,{t:'',clear:1})}
   else if(t.startsWith('/'))return toast('모르는 명령이야: /r /w /as /s /img /clear');
-  else await DBS().addLog(ST.room,ST.secret,'chat',ST.name,Object.assign({t},ch))
+  else await DBS().addLog(ST.room,ST.secret,'chat',ST.name,Object.assign({t},ch,nf))
  }catch(e){toast('보내지 못했다: '+e.message)}}
 function resolveSeat(n){if(n==='GM'||n==='gm')return 'gm';const seats=ST.state.seats||{};for(const k in seats)if(seats[k]&&(seats[k].name===n||k===n))return k;const trs=(ST.state.battle||{}).trainers||{};for(const k in trs)if(trs[k].name===n)return k;return null}
 function roll(expr){const m=String(expr).replace(/\s/g,'').match(/^(\d*)d(\d+)([+-]\d+)?$/i);if(!m)return null;const n=Math.min(+m[1]||1,100),f=+m[2],mod=+(m[3]||0);if(f<1)return null;const rs=[];for(let i=0;i<n;i++)rs.push(1+Math.floor(Math.random()*f));const total=rs.reduce((a,b)=>a+b,0)+mod;return {total,text:'['+rs.join(',')+']'+(mod?(mod>0?'+':'')+mod:'')}}
@@ -181,7 +187,8 @@ function renderLog(scroll){
   const mine=!d.as&&((ST.role==='gm'&&d.from==='gm')||(ST.role==='seat'&&d.from===ST.seat));
   const who=k==='whisper'?`${esc(r.who)} → ${esc(d.toName||d.to)}`:esc(r.who);
   const av=avatarOf(r);
-  return `<div class="msg ${k} ${mine?'me':''}"><div class="av" style="${av?`background-image:url('${av}')`:''}"></div><div class="bub"><span class="who">${who}</span>${d.img?`<a href="${esc(d.img)}" target="_blank" rel="noopener"><img class="cimg" src="${esc(d.img)}" alt=""></a>`:''}${esc(d.t)}</div><span class="time">${t}</span></div>`}).join('');
+  const lf=k==='chat'&&!isOoc(r)?lineFmt(d):{narr:false,text:String(d.t||'')};
+  return `<div class="msg ${k} ${mine?'me':''} ${lf.narr?'narr':''}"><div class="av" style="${av?`background-image:url('${av}')`:''}"></div><div class="bub"><span class="who">${who}</span>${d.img?`<a href="${esc(d.img)}" target="_blank" rel="noopener"><img class="cimg" src="${esc(d.img)}" alt=""></a>`:''}${esc(lf.text)}</div><span class="time">${t}</span></div>`}).join('');
  el.querySelectorAll('[data-lmid]').forEach(bt=>bt.onclick=()=>{if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.action)window.OM_BATTLE_UI.action({act:'pots',mid:bt.dataset.lmid})});
  if(!el.innerHTML&&CHAN.cur==='o')el.innerHTML='<div class="msg sys"><div class="bub">잡담 창 — 여기서 한 말은 세션 로그·무대에 나오지 않는다</div></div>';chanDots();
  if(scroll!==false)el.scrollTop=el.scrollHeight}
@@ -348,13 +355,13 @@ function buildLogHtml(rows,o){const esc2=x=>String(x??'').replace(/&/g,'&amp;').
     out.push(`<div class="m"><div class="av ${(+o.pav>0)&&d.img?'':'none'}" style="${(+o.pav>0)&&d.img?`background-image:url('${esc2(d.img)}')`:''}"></div><div class="card" style="--tc:${col}"><span class="tag">${esc2(m[1])}</span><b>${esc2(m[2])}</b>${d.eff?`<div class="eff">${esc2(d.eff)}</div>`:''}${lines}</div><span class="tm">${hm}</span></div>`);continue}
    out.push(`<div class="m sys"><div class="bub">${esc2(t)}</div></div>`);continue}
   if(!d.t&&!d.img)continue;
-  const narr=o.narr&&/^\*(.+)\*$/s.test(String(d.t||''));const text=narr?String(d.t).replace(/^\*(.+)\*$/s,'$1'):String(d.t||'');
+  const lf=k==='chat'&&!isOoc(r)?lineFmt(d):{narr:false,text:String(d.t||'')};const narr=o.narr&&lf.narr;const text=lf.narr?lf.text:String(d.t||'');
   const who=k==='whisper'?`${r.who} → ${d.toName||d.to||''}`:(d.as||r.who||'');const av=(+o.pav>0)?avatarOf(r):'';
   out.push(`<div class="m ${k} ${narr?'narr':''} ${isOoc(r)&&o.oocm!=='only'?'ooc':''}"><div class="av ${av?'':'none'}" style="${av?`background-image:url('${esc2(av)}')`:''}"></div><div class="bub"><span class="who">${esc2(who)}</span>${o.img&&d.img?`<a href="${esc2(d.img)}" target="_blank"><img src="${esc2(d.img)}" alt=""></a>`:''}${esc2(text)}</div><span class="tm">${hm}</span></div>`)}
  /* 다른 도구(맵툴 로그 정리기)가 그대로 읽을 수 있게 원본 줄 · 초상 · 트레이너 이름을 JSON 으로 함께 넣는다 */
  const por={};for(const r of rows){const d=r.data||{};const nm=(d.as||r.who||'').trim();if(nm&&por[nm]===undefined){const u=avatarOf(r);por[nm]=u||''}}
  const tn={};for(const t of Object.values((ST.state.roster||{}).trainers||{}))if(t&&t.id)tn[t.id]=t.name;
- const pack=JSON.stringify({v:1,room:ST.room,name,exported:new Date().toISOString(),por,trainers:tn,rows:rows.map(r=>({id:r.id,at:r.at,kind:r.kind,who:r.who,data:r.data}))}).replace(/</g,'\\u003c');
+ const pack=JSON.stringify({v:1,room:ST.room,name,exported:new Date().toISOString(),por,trainers:tn,rows:rows.map(r=>{let data=r.data;if(r.kind==='chat'&&data&&data.nf&&data.t&&!isOoc(r)){const f=lineFmt(data);if(f.narr&&!/^\*.+\*$/s.test(String(data.t).trim()))data=Object.assign({},data,{t:'*'+String(data.t).trim()+'*'})}return {id:r.id,at:r.at,kind:r.kind,who:r.who,data}})}).replace(/</g,'\\u003c');
  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="generator" content="oremas"><title>${esc2(name)} 로그</title><style>${css}</style></head><body><div class="wrap"><h1>${esc2(name)}${o.oocm==='only'?' · 잡담':''}<small>${stamp} · ${rows.length}줄 · 오레마스</small></h1>${out.join('\n')}</div><script type="application/json" id="oremas-log">${pack}</script></body></html>`}
 function openSaveLog(){const o=logSaveCfg();const ck=(id,l,on)=>`<label class="small" style="display:inline-flex;align-items:center;gap:5px"><input type="checkbox" data-ls="${id}" ${on?'checked':''}> ${l}</label>`;
  const m=openModal(`<div class="mhead"><h2>로그 저장</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
@@ -365,7 +372,7 @@ function openSaveLog(){const o=logSaveCfg();const ck=(id,l,on)=>`<label class="s
  <div class="row" style="flex-wrap:wrap;gap:12px">${[['off','넣지 않기 (세션만)'],['with','함께 넣기'],['only','잡담만 따로']].map(([v,l])=>`<label class="small" style="display:inline-flex;align-items:center;gap:5px"><input type="radio" name="lg_oocm" value="${v}" ${o.oocm===v?'checked':''}> ${l}</label>`).join('')}</div>
  <p class="small muted" style="margin:4px 0 0">「함께 넣기」는 잡담 줄을 점선 말풍선 · [잡담] 표시로 구분한다. 「잡담만 따로」는 위의 「넣을 것」과 상관없이 잡담 탭 줄만 모은다.</p>
  <div class="sec" style="margin-top:10px">보기 (HTML)</div>
- <div class="row" style="flex-wrap:wrap;gap:12px">${ck('img','올린 그림',o.img)}${ck('days','날짜 구분선',o.days)}${ck('narr','*지문* 은 기울임',o.narr)}</div>
+ <div class="row" style="flex-wrap:wrap;gap:12px">${ck('img','올린 그림',o.img)}${ck('days','날짜 구분선',o.days)}${ck('narr','지문은 기울임',o.narr)}</div>
  <div class="row" style="flex-wrap:wrap;gap:12px;margin-top:6px"><label class="small">포트레이트 <select data-lsv="pav"><option value="0" ${+o.pav===0?'selected':''}>없음</option><option value="28" ${+o.pav===28?'selected':''}>작게</option><option value="36" ${+o.pav===36?'selected':''}>보통</option><option value="52" ${+o.pav===52?'selected':''}>크게</option><option value="72" ${+o.pav===72?'selected':''}>아주 크게</option></select></label><label class="small">모양 <select data-lsv="pshape"><option value="round" ${o.pshape!=='square'?'selected':''}>둥글게</option><option value="square" ${o.pshape==='square'?'selected':''}>네모</option></select></label></div>
  <div class="row" style="flex-wrap:wrap;gap:12px;margin-top:6px"><label class="small">테마 <select data-lsv="theme"><option value="dark" ${o.theme!=='light'?'selected':''}>어둡게</option><option value="light" ${o.theme==='light'?'selected':''}>밝게</option></select></label><label class="small">글씨 <select data-lsv="size">${[13,14,15,16,17,18,20].map(v=>`<option value="${v}" ${+o.size===v?'selected':''}>${v}px</option>`).join('')}</select></label></div>
  <div class="row" style="margin-top:12px">${(window.OM_CONFIG||{}).organizerUrl?`<a class="btn" id="lg_org" target="_blank" rel="noopener" href="${esc((window.OM_CONFIG||{}).organizerUrl)}?oremas=${encodeURIComponent(ST.room)}" title="맵툴 로그 정리기에서 이 방 로그를 바로 연다 (초상·주사위·배틀 카드 그대로)">정리기에서 열기 ↗</a>`:''}<span class="sp"></span><button class="btn" id="lg_txt">TXT 로</button><button class="btn pri" id="lg_html">HTML 로</button></div>`);
@@ -399,6 +406,8 @@ function openSeatPicker(){
   try{const ok=await DBS().claimSeat(ST.room,seatId,secret,name);if(!ok)return toast('누군가 먼저 앉은 자리다');LS.set("om_seat_"+ST.room,{seat:bt.dataset.seat,secret,name});closeModal();route()}catch(e){toast('앉지 못했다: '+e.message)}});
  m.querySelectorAll('[data-free]').forEach(bt=>bt.onclick=async()=>{try{await DBS().claimSeat(ST.room,bt.dataset.free,ST.secret,null);closeModal();toast('자리를 비웠다')}catch(e){toast(e.message)}})}
 
+const PCT_LABELS=['드물게','저확률','중확률','고확률'];
+function pctBase(l){const F=window.OM_FX;return F&&F.percentBase?Math.round(F.percentBase(l)):({드물게:10,저확률:30,중확률:50,고확률:60}[l]||100)}
 function openRoomSettings(){
  const r=ST.roomRow;const isGm=ST.role==='gm';const m=openModal(`<div class="mhead"><h2>${isGm?'방 설정':'소리'}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
   ${isGm?`<div class="row"><label>방 이름</label><input type="text" id="rn" value="${esc(r.name)}" style="flex:1"><button class="btn pri" id="rnSave">저장</button></div>
@@ -416,12 +425,18 @@ function openRoomSettings(){
   <div class="row" style="flex-wrap:wrap;gap:14px"><label class="small"><input type="checkbox" data-alarm="chat" ${alarm().chat?'checked':''}> 채팅이 올라오면 소리</label><label class="small"><input type="checkbox" data-alarm="sms" ${alarm().sms?'checked':''}> 문자가 오면 소리·알림</label><label class="small"><input type="checkbox" data-alarm="typing" ${alarm().typing?'checked':''}> 입력 중 표시</label></div>
   ${isGm?`<div class="sec" style="margin-top:12px">배틀</div><div class="row"><label class="small"><input type="checkbox" id="plBattle" ${(ST.state.rp||{}).plBattle!==false?'checked':''}> 플레이어도 배틀을 진행할 수 있다 (파티 불러오기 · 시합 개시 · 턴 진행 · 필드 — 모의전용. 상대 지시 엿보기 · 강제 · 모두 공개는 GM 만)</label></div>
   <div class="row"><label class="small"><input type="checkbox" id="seatOwn" ${(ST.state.rp||{}).seatOwn===true?'checked':''}> 플레이어는 자기 것만 바꿀 수 있다 — 자기 트레이너·포켓몬·지시·스킬 칸만. 턴·페이즈·필드·남의 HP·랭크·부상은 GM 만 (켜면 위 「플레이어도 배틀 진행」은 꺼진 것과 같다)</label></div>
+  <div class="sec" style="margin-top:12px">확률 표식</div>
+  <div class="row" style="flex-wrap:wrap;gap:10px">${PCT_LABELS.map(l=>{const base=pctBase(l);const cur=((ST.state.rp||{}).pct||{})[l];return `<label class="small" style="display:inline-flex;align-items:center;gap:4px">${l} <input type="number" min="0" max="100" step="1" data-pct="${l}" value="${cur!=null&&cur!==''?esc(String(cur)):''}" placeholder="${base}" style="width:64px">%</label>`}).join('')}<button class="btn xs pri" id="pctSave">저장</button><button class="btn xs ghost" id="pctReset">기본값으로</button></div>
+  <p class="small muted" style="margin:2px 0 0">효과 글의 「드물게·저확률·중확률·고확률」 판정에 쓰는 %. 비운 칸은 기본값(흐린 숫자)을 쓴다. 이 방에만 적용된다.</p>
   <div class="row"><label class="small"><input type="checkbox" id="gmHands" ${(ST.state.rp||{}).gmHands===false?'checked':''}> GM 도 플레이어의 지시·상태를 건드리지 않는다 — 플레이어의 지시·준비는 그 플레이어만 쓰고 연다, 플레이어 포켓몬의 HP·랭크·상태 창은 주인만 연다 (턴 종료 같은 자동 처리는 그대로)</label></div>`:''}
   <div class="row"><button class="btn sm" id="seatMgr">자리 관리</button></div>`);
  m.querySelectorAll('[data-alarm]').forEach(c=>c.onchange=()=>setAlarm(c.dataset.alarm,c.checked));
  const us=$('#uiScale',m),uc=$('#uiChat',m),ud=$('#uiDlg',m),uf=$('#uiFont',m),uh=$('#uiHead',m),ua=$('#uiAv',m);const showUi=()=>{$('#uiScaleV',m).textContent=us.value+'%';$('#uiChatV',m).textContent=uc.value+'px';$('#uiDlgV',m).textContent=ud.value+'px';$('#uiAvV',m).textContent=ua.value+'px'};showUi();
 const pb=$('#plBattle',m);if(pb)pb.onchange=async()=>{await set(['rp','plBattle'],pb.checked);toast(pb.checked?'플레이어도 배틀을 진행할 수 있다':'배틀 진행은 GM 만')};
  const so=$('#seatOwn',m);if(so)so.onchange=async()=>{await set(['rp','seatOwn'],so.checked);sysLog(so.checked?'방 설정: 플레이어는 자기 것만 바꿀 수 있다':'방 설정: 「자기 것만」을 껐다');toast(so.checked?'플레이어는 자기 것만':'「자기 것만」 끔')};
+ const ps=$('#pctSave',m);if(ps)ps.onclick=async()=>{const o={};let bad='';m.querySelectorAll('[data-pct]').forEach(x=>{const v=x.value.trim();if(v==='')return;const n=+v;if(!isFinite(n)||n<0||n>100){bad=x.dataset.pct;return}o[x.dataset.pct]=Math.round(n)});if(bad)return toast(`「${bad}」 은 0~100 사이 숫자로 적어 줘`);
+  const has=Object.keys(o).length;if(!await set(['rp','pct'],has?o:null))return;sysLog('방 설정: 확률 — '+PCT_LABELS.map(l=>`${l} ${o[l]!=null?o[l]:pctBase(l)}%`).join(' · '));toast('확률을 저장했다')};
+ const pr=$('#pctReset',m);if(pr)pr.onclick=async()=>{if(!await set(['rp','pct'],null))return;m.querySelectorAll('[data-pct]').forEach(x=>x.value='');sysLog('방 설정: 확률을 기본값으로 — '+PCT_LABELS.map(l=>`${l} ${pctBase(l)}%`).join(' · '));toast('기본값으로 돌렸다')};
  const gh=$('#gmHands',m);if(gh)gh.onchange=async()=>{await set(['rp','gmHands'],gh.checked?false:null);sysLog(gh.checked?'방 설정: GM 도 플레이어의 지시·상태를 건드리지 않는다':'방 설정: 「GM 불간섭」을 껐다');toast(gh.checked?'GM 불간섭 켬':'GM 불간섭 끔')};
  const saveUi=()=>{UI.scale=+us.value;UI.chat=+uc.value;UI.dlg=+ud.value;UI.av=+ua.value;UI.font=uf.value;UI.head=uh.value;try{localStorage.setItem('om_ui',JSON.stringify(UI))}catch(e){}applyUi();showUi()};[us,uc,ud,ua].forEach(el=>el.oninput=saveUi);uf.onchange=saveUi;uh.onchange=saveUi;
  $('#uiReset',m).onclick=()=>{Object.assign(UI,UI_DEF);us.value=UI.scale;uc.value=UI.chat;ud.value=UI.dlg;uf.value=UI.font;uh.value=UI.head;saveUi()};

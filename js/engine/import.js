@@ -7,11 +7,13 @@ window.OM_IMPORT=(()=>{
  const nz=v=>v===''||v==null?0:+v;
  /* 제작기 템플릿의 빈 칸 이름(역할 포텐셜, 종족 포텐셜①, 익스펜션 : ○○ …)은 아직 안 정한 자리 */
  const isPh=n=>/(포텐셜[①-④]?$)|○○/.test(String(n||''));
+ /* 스탠딩 [{label,src,point,kind?}] — 트레이너·포켓몬 같은 모양 */
+ const standsOf=a=>(Array.isArray(a)?a:[]).filter(x=>x&&x.src).map(x=>Object.assign({label:x.label||'기본',src:x.src,point:+x.point||0},x.kind==='stand'||x.kind==='portrait'?{kind:x.kind}:{}));
 
  /* 제작기 트레이너 문서 → 배틀 트레이너 */
  function trainer(doc){
   const d=(doc.data&&doc.data.data)||doc.data||doc;
-  return {id:doc.id||d.id,name:d.name||'트레이너',kind:d.kind==='npc'?'npc':'pc',image:d.image||'',stands:(Array.isArray(d.stands)?d.stands:[]).filter(x=>x&&x.src).map(x=>Object.assign({label:x.label||'기본',src:x.src,point:+x.point||0},x.kind==='stand'||x.kind==='portrait'?{kind:x.kind}:{})),standActive:+d.standActive||0,
+  return {id:doc.id||d.id,name:d.name||'트레이너',kind:d.kind==='npc'?'npc':'pc',image:d.image||'',stands:standsOf(d.stands),standActive:+d.standActive||0,
    ranks:Object.assign({육성:'',지시:'',통솔:'',능력:''},d.ranks||{}),base:d.base||{},detail:d.detail||{},
    unique:(d.unique||[]).filter(u=>u&&u.name).map(u=>{const o={name:u.name,eff:brN(u.eff||'')};const dsl=String(u.auto||'').trim();if(dsl){const r=window.OM_FX?window.OM_FX.parse(dsl):{ops:[]};o.auto={dsl,ops:r.ops}}return o}),
    pids:d.pids||[],solo:!!d.solo,folder:d.folder||''}}
@@ -28,7 +30,7 @@ window.OM_IMPORT=(()=>{
   const d=(doc.data&&doc.data.data)||doc.data||doc;
   const L=S().levelOf(tr,d);
   const base=Array.from({length:6},(_,i)=>nz((d.base||[])[i]));
-  const ev=[0,0,0,0,0,0];  /* 개체값·노력치는 쓰지 않는다 (망령 결정 2026-10-20) */
+  const ev=[0,0,0,0,0,0];  /* 개체값·노력치는 쓰지 않는다 */
   iv=[0,0,0,0,0,0];
   const stats=S().statsOf(base,iv,ev,L);
   const tko=[d.t1,d.t2,d.t3].map(x=>x&&x!=='-'?x:'-');
@@ -44,7 +46,7 @@ window.OM_IMPORT=(()=>{
    moves:(()=>{const mv=(d.moves||[]).filter(m=>m&&m.name).map(m=>move(m.name,m.half));return mv.length?mv:[move('발버둥',false)]})(),
    pots,excl:d.excl&&d.excl.name&&d.excl.name!=='전용 포텐셜'?{name:d.excl.name,eff:brN(d.excl.eff||'')}:null,
    exclX:(d.exclX||[]).filter(x=>x&&x.name).map(x=>({name:x.name,eff:brN(x.eff||'')})),
-   role:roleOf(d),pride:d.pride||'',egg:[d.egg1||'-',d.egg2||'-'],partner:!!d.partner,image:d.image||'',memo:d.memo||'',
+   role:roleOf(d),pride:d.pride||'',egg:[d.egg1||'-',d.egg2||'-'],partner:!!d.partner,image:d.image||'',stands:standsOf(d.stands),standActive:+d.standActive||0,memo:d.memo||'',
    auto:(()=>{const out={};const src=d.auto||{};for(const k in src){const dsl=String(src[k]||'').trim();if(!dsl)continue;const r=window.OM_FX?window.OM_FX.parse(dsl):{ops:[]};out[String(k).replace(/『|』/g,'')]={dsl,ops:r.ops}}return out})(),
    rank:{attack:0,defense:0,specialattack:0,specialdefense:0,speed:0,accuracy:0,evasion:0,critical:0},states:{},forms:null}}
 

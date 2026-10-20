@@ -23,6 +23,10 @@ window.OM_RP_UI=(()=>{
  const DEFAULT_LOCS=[{"n":1,"name":"무진 중고등학교","x":591,"y":162},{"n":2,"name":"무연고 묘지","x":213,"y":145},{"n":3,"name":"숲 속의 폐가","x":313,"y":294},{"n":4,"name":"등불 교회","x":74,"y":867},{"n":5,"name":"무진포 (어선·항구)","x":349,"y":996},{"n":6,"name":"철물점 겸 고물상","x":378,"y":886},{"n":7,"name":"무진 경찰서","x":557,"y":778},{"n":8,"name":"마을회관 (대피소)","x":679,"y":629},{"n":9,"name":"무진 요양병원","x":511,"y":552},{"n":10,"name":"구(舊) 도서관","x":650,"y":389},{"n":11,"name":"흑익단 사무소","x":981,"y":316},{"n":12,"name":"무진 대학교","x":1157,"y":98},{"n":13,"name":"연구소","x":1562,"y":105},{"n":14,"name":"허수아비 헛간","x":1688,"y":466},{"n":15,"name":"자경단 초소","x":1398,"y":467},{"n":16,"name":"고문서 번역소","x":1108,"y":644},{"n":17,"name":"눈먼 갈매기 술집","x":1005,"y":749},{"n":18,"name":"수렵 총포사","x":1313,"y":752},{"n":19,"name":"검은모래 해변 (낡은 매점)","x":1723,"y":1014}];
  const DEFAULT_NOTICES=[{id:'n_open',name:'씬 오픈',title:'씬 오픈',ment:'',color:'#5fd38d'},{id:'n_change',name:'씬 전환',title:'씬 전환',ment:'',color:'#6cb6ff'},{id:'n_soon',name:'씬 종료 예고',title:'곧 씬이 종료됩니다',ment:'',color:'#f2a65a'},{id:'n_end',name:'씬 종료',title:'씬 종료',ment:'',color:'#ff6b6b',bgm:'stop'},{id:'n_bstart',name:'배틀 개시',title:'배틀 개시',ment:'',color:'#ff4f6d'},{id:'n_bend',name:'배틀 종료',title:'배틀 종료',ment:'',color:'#9aa4b8'},{id:'n_warn',name:'플레이 시작 경고',title:'플레이 시작',ment:'플레이가 곧 시작됩니다\n채팅을 잠시 멈춰 주세요.',color:'#f1c75b'},{id:'n_attend',name:'출석 체크',title:'출석 체크',ment:'출석,,,체크핢...',color:'#7ee0d8'}];
  let audio=null,lastBgm='',unlocked=false,bannerT=null,lastBanner=0,mapOpen=false,vol=0.5;
+ /* 브라우저는 사용자가 한 번 누르기 전엔 소리를 막는다 — 새로고침 뒤 화면 어디든 처음 누르면(키 입력 포함) 바로 소리를 켠다. 「끄기」를 누른 사람은 다시 켜지 않는다 */
+ let userMuted=false;
+ const autoUnlock=()=>{if(unlocked||userMuted)return;try{if(!A()||!A().ST||!A().ST.room)return;unlocked=true;if((R().bgm||{}).src){syncBgm(true);setTimeout(()=>{if(A().view==='rp')A().renderScene()},0)}}catch(e){}};
+ document.addEventListener('click',autoUnlock,true);document.addEventListener('keydown',autoUnlock,true);
  try{vol=+(localStorage.getItem('om_vol')||0.5)}catch(e){}
  /* 무대 위 화자 자리: 로그를 차례로 먹여서 모두 같은 결과가 나온다 */
  const STAGE={slots:{left:null,center:null,right:null},last:{},active:null,seen:0};
@@ -70,9 +74,10 @@ window.OM_RP_UI=(()=>{
   const r=R();const bg=r.bg||{};const cap=r.caption||{};const manual=r.stage||{};
   const slots={};for(const s of SLOTS){const m=manual[s];slots[s]=m&&m.key?m.key:STAGE.slots[s]}
   const cutId=+((A().ST.state.rp||{}).logClearAt)||0;const lastChat=[...(A().ST.log||[])].reverse().find(x=>x.id>cutId&&x.kind==='chat'&&x.data&&x.data.t&&!x.data.sms&&!x.data.bat&&x.data.ch!=='ooc');
-  const line=(name,text)=>{const m=String(text).match(/^\*(.+)\*$/s);return `<div class="dname"><span>${esc(name)}</span></div><div class="dtext ${m?'narr':''}">${m?esc(m[1]):(/^["“「『].*["”」』]$/s.test(String(text).trim())?esc(String(text).trim()):'"'+esc(text)+'"')}</div>`};
+  const LF=window.OM_LINE||(d=>({narr:false,text:String(d.t||''),q:true}));
+  const line=(name,d)=>{const f=LF(d);return `<div class="dname"><span>${esc(name)}</span></div><div class="dtext ${f.narr?'narr':''}">${f.narr?esc(f.text):(f.q?esc(f.text.trim()):'"'+esc(f.text)+'"')}</div>`};
   const showDlg=cap.text||(lastChat&&Date.now()-(Date.parse(lastChat.at)||0)<STAND_TTL*2);
-  const dlgHtml=cap.text?line(cap.name||'',cap.text):(showDlg?line(lastChat.data.as||(charOf(speakerKey(lastChat))||{}).name||lastChat.who,lastChat.data.t):'');
+  const dlgHtml=cap.text?line(cap.name||'',{t:cap.text}):(showDlg?line(lastChat.data.as||(charOf(speakerKey(lastChat))||{}).name||lastChat.who,lastChat.data):'');
   const ST=A().ST;const speakers=gm()?allSpeakers():(ST.seat?[{key:'me',name:(charOf(ST.seat)||{}).name||ST.name},...Object.values((ST.state.roster||{}).mons||{}).filter(m=>m.tid===ST.seat).map(m=>({key:'pm:'+m.id,name:m.name+' (포켓몬)'}))]:[]);
   if(gm()&&!SPK.key)SPK.key='gm';if(!gm()&&(!SPK.key||SPK.key==='gm'))SPK.key='me';
   /* 뼈대는 한 번만 — 스탠딩이 매번 다시 그려져 애니메이션이 되풀이되지 않게 */
@@ -86,8 +91,13 @@ window.OM_RP_UI=(()=>{
   $('#mapov',el).innerHTML=mapOpen?mapOverlay():'';
   const dlg=$('#dlg',el);if(dlgHtml){if(dlg.dataset.k!==dlgHtml){dlg.innerHTML=dlgHtml;dlg.dataset.k=dlgHtml;dlg.classList.remove('pop');void dlg.offsetWidth;dlg.classList.add('pop')}dlg.style.display=''}else{dlg.style.display='none';dlg.dataset.k=''}
   syncStands($('#stands',el),slots,manual);
-  $('#rpunder',el).innerHTML=`${gm()?spkBarHtml(speakers):(speakers.length>1?`<div class="spkbar">${speakers.map(x=>{const c=x.key==='me'?charOf(ST.seat):charOf(x.key);const av=c?(standSrc(c)||c.img):'';return spkChip(x.key,x.name,av,SPK.key===x.key||(!SPK.key&&x.key==='me'))}).join('')}<button class="spk add" data-rp="spkedit" title="고른 인물의 표정·스탠딩"><i>✎</i><span>표정</span></button></div>`:'')}
-  ${speakers.length?`<div class="rpinput"><select id="rpspk">${speakers.map(x=>`<option value="${esc(x.key)}" ${SPK.key===x.key?'selected':''}>${esc(x.name)}</option>`).join('')}</select><input type="text" id="rpline" placeholder="대사 입력 후 Enter · *지문* · @표정 대사" autocomplete="off"><button class="btn pri" id="rpsend">보내기</button></div><div class="small dim rphint">${gm()?'고른 인물로 말하면 그 인물의 스탠딩이 선다 · 「@웃음 대사」처럼 @등록명으로 표정을 바꾸며 말한다':'스탠딩 그림이 아직 없으면 시트 그림(초상)으로 선다 — 「표정」에서 전신 그림을 넣고, 「@웃음 대사」로 표정을 바꾸며 말한다'}</div>`:'<div class="small dim rphint">자리에 앉으면 여기서 대사를 칠 수 있다</div>'}${meBarHtml()}`;
+  /* 무대 아래: 칸마다 바뀐 것만 다시 그린다 — 대사 입력칸은 그대로 두어야 치는 중에 끊기지 않는다 (한글 조합·포커스 유지) */
+  const barH=`${gm()?spkBarHtml(speakers):(speakers.length>1?`<div class="spkbar">${speakers.map(x=>{const c=x.key==='me'?charOf(ST.seat):charOf(x.key);const av=c?(standSrc(c)||c.img):'';return spkChip(x.key,x.name,av,SPK.key===x.key||(!SPK.key&&x.key==='me'))}).join('')}<button class="spk add" data-rp="spkedit" title="고른 인물의 표정·스탠딩"><i>✎</i><span>표정</span></button></div>`:'')}`;
+  const inH=speakers.length?`<div class="rpinput"><select id="rpspk">${speakers.map(x=>`<option value="${esc(x.key)}">${esc(x.name)}</option>`).join('')}</select><input type="text" id="rpline" placeholder="그냥 치면 지문 · &quot;대사&quot; 는 따옴표로 · @표정 &quot;대사&quot;" autocomplete="off"><button class="btn pri" id="rpsend">보내기</button></div><div class="small dim rphint">${gm()?'그냥 치면 지문, "…" 「…」 로 감싸면 대사 · 고른 인물로 말하면 그 인물의 스탠딩이 선다 · 「@웃음 "대사"」처럼 @등록명으로 표정을 바꾸며 말한다':'그냥 치면 지문, "…" 「…」 로 감싸면 대사 · 스탠딩 그림이 아직 없으면 시트 그림(초상)으로 선다 — 「표정」에서 전신 그림을 넣고, 「@웃음 "대사"」로 표정을 바꾸며 말한다'}</div>`:'<div class="small dim rphint">자리에 앉으면 여기서 대사를 칠 수 있다</div>';
+  const under=$('#rpunder',el);if(!$('#rpu_in',under))under.innerHTML='<div id="rpu_bar"></div><div id="rpu_in"></div><div id="rpu_me"></div>';
+  const setH=(id,h)=>{const bx=$('#'+id,under);if(bx._h===h)return false;bx.innerHTML=h;bx._h=h;return true};
+  const hadFocus=!!(document.activeElement&&document.activeElement.id==='rpline');setH('rpu_bar',barH);const inNew=setH('rpu_in',inH);if(inNew&&hadFocus)SPK.focus=true;setH('rpu_me',meBarHtml());
+  {const s=$('#rpspk',el);if(s&&SPK.key&&[...s.options].some(o=>o.value===SPK.key)&&s.value!==SPK.key)s.value=SPK.key}
   const bindRp=root=>root.querySelectorAll('[data-rp]').forEach(b=>b.onclick=()=>{if(b.dataset.rp==='mon'){const ST=A().ST;const bm=((ST.state.battle||{}).mons||{})[b.dataset.mid];if(bm)return A().openMon(b.dataset.mid);const m=((ST.state.roster||{}).mons||{})[b.dataset.mid];if(m&&window.OM_SHEET_UI){window.OM_SHEET_UI.UI.tid=m.tid;window.OM_SHEET_UI.UI.mid=m.id;window.OM_SHEET_UI.UI.tab='poke';A().view='sheet';A().renderScene()}return}act(b.dataset.rp)});bindRp(el);
   const refreshMeBar=()=>{const old=el.querySelector('.mebar');if(!old)return;const tmp=document.createElement('div');tmp.innerHTML=meBarHtml();const nw=tmp.firstElementChild;if(nw){old.replaceWith(nw);bindRp(nw)}};
   const spk=$('#rpspk',el);if(spk)spk.onchange=()=>{SPK.key=spk.value;el.querySelectorAll('.spk[data-spk]').forEach(b=>b.classList.toggle('on',b.dataset.spk===SPK.key))};
@@ -95,7 +105,7 @@ window.OM_RP_UI=(()=>{
   if(spk){const o=spk.onchange;spk.onchange=()=>{o&&o();refreshMeBar()}}
   el.querySelectorAll('.spk[data-fold]').forEach(b=>b.onclick=()=>{SPK.folder=SPK.folder===b.dataset.fold?'':b.dataset.fold;A().renderScene()});const fc=el.querySelector('[data-fclose]');if(fc)fc.onclick=()=>{SPK.folder='';A().renderScene()};
   bindSpkDrag(el);
-  const inp=$('#rpline',el);if(inp){inp.value=SPK.draft||'';inp.oninput=()=>{SPK.draft=inp.value;typingPing()};inp.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)sendLine()};$('#rpsend',el).onclick=sendLine;if(SPK.focus){inp.focus();SPK.focus=false}}
+  const inp=$('#rpline',el);if(inp&&inNew){inp.value=SPK.draft||'';inp.oninput=()=>{SPK.draft=inp.value;typingPing()};inp.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)sendLine()};$('#rpsend',el).onclick=sendLine}if(inp&&SPK.focus){inp.focus();SPK.focus=false}
   bindMap(el);tickBanner();syncBgm();scheduleExpire();drawTyping()}
  /* 스탠딩 DOM 을 키로 맞춘다: 새로 선 것만 등장 애니메이션, 자리 바뀜·표정 바뀜은 제자리에서 */
  function syncStands(box,slots,manual){const want={};for(const s of SLOTS){const c=charOf(slots[s]);const src=standSrc(c);if(c&&src)want[s]={key:c.key,src,name:c.name,point:standPoint(c),kind:standKind(c),flip:!!(manual[s]||{}).flip,on:STAGE.active===c.key||!STAGE.active}}
@@ -113,7 +123,7 @@ window.OM_RP_UI=(()=>{
  function typingStop(){const me=A().ST.role==='gm'?'gm':A().ST.seat;for(const k in TYPING.who)if(TYPING.who[k].me)delete TYPING.who[k];TYPING.last=0;drawTyping()}
  /* 남의 입력 중: 같은 사람이 창 두 개나 다른 인물로 치면 따로 보인다 (from|who 로 키) */
  function onTyping(p){if(!p||!p.from)return;const me=A().ST.role==='gm'?'gm':A().ST.seat;const key=p.from+'|'+(p.who||'')+(p.ooc?'|o':'');if(p.from===me&&TYPING.who[key]&&TYPING.who[key].me)return;TYPING.who[key]={who:p.who,at:Date.now(),from:p.from,ooc:!!p.ooc};drawTyping();clearTimeout(TYPING.t);TYPING.t=setTimeout(drawTyping,4200)}
- function drawTyping(){const now=Date.now();const on=!A().alarm||A().alarm().typing;const live=on?Object.values(TYPING.who).filter(x=>now-x.at<4000).sort((a,b)=>(a.me?1:0)-(b.me?1:0)):[];for(const id of ['typing','typingTop']){const el=document.getElementById(id);if(!el)continue;const names=[...new Set(live.filter(x=>id==='typingTop'||!x.ooc).map(x=>(x.me?x.who+' (나)':x.who)+(x.ooc&&id==='typingTop'?' · 잡담':'')))];const html=names.length?`<span class="dots"><i></i><i></i><i></i></span> ${esc(names.join(', '))} 입력 중…`:'';el.innerHTML=html;el.style.display=names.length?(id==='typingTop'?'inline-block':''):'none'}}
+ function drawTyping(){const now=Date.now();const on=!A().alarm||A().alarm().typing;const live=on?Object.values(TYPING.who).filter(x=>now-x.at<4000).sort((a,b)=>(a.me?1:0)-(b.me?1:0)):[];{const st=document.getElementById('typing');if(st){st.innerHTML='';st.style.display='none'}}for(const id of ['typingTop']){const el=document.getElementById(id);if(!el)continue;const names=[...new Set(live.map(x=>(x.me?x.who+' (나)':x.who)+(x.ooc&&id==='typingTop'?' · 잡담':'')))];const html=names.length?`<span class="dots"><i></i><i></i><i></i></span> ${esc(names.join(', '))} 입력 중…`:'';el.innerHTML=html;el.style.display=names.length?(id==='typingTop'?'inline-block':''):'none'}}
  const SPK={key:'',draft:'',focus:false,folder:''};
  /* ----- 화자 목록: 토큰이 있는 모든 개체 (GM · NPC(관계도) · PC(로스터) · 포켓몬(로스터)). 정리는 rp.spk = {order:[키|'f:폴더id'], folders:{id:{name,keys:[]}}, hidden:{키:1}} ----- */
  function allSpeakers(){const ST=A().ST;const out=[{key:'gm',name:'GM (나레이션)'}];
@@ -182,18 +192,18 @@ window.OM_RP_UI=(()=>{
  async function sendLine(){const ST=A().ST;const inp=$('#rpline');if(!inp)return;let t=inp.value.trim();if(!t)return;inp.value='';SPK.draft='';SPK.focus=true;typingStop();
   try{if(t.startsWith('/')){const ci=$('#chatIn');if(ci){ci.value=t;$('#chatSend').click()}return}
    let m;if((m=t.match(/^@(\S+)\s*([\s\S]*)$/))){const ok=await setStandByLabel(speakerChar(),m[1]);if(!ok)return;t=m[2].trim();if(!t){A().toast(`표정: ${m[1]}`);return}}
-   if(ST.role==='gm'){if(SPK.key==='gm')await DBS().addLog(ST.room,ST.secret,'chat',ST.name,{t});else{const c=charOf(SPK.key);const name=c?c.name:SPK.key.replace(/^(npc|as|pm):/,'');await DBS().addLog(ST.room,ST.secret,'chat',name,{t,as:name,k:SPK.key})}}
-   else if(SPK.key&&SPK.key.startsWith('pm:')){const c=charOf(SPK.key);await DBS().addLog(ST.room,ST.secret,'chat',c?c.name:ST.name,{t,as:c?c.name:'',k:SPK.key})}
-   else await DBS().addLog(ST.room,ST.secret,'chat',ST.name,{t})}catch(e){A().toast('보내지 못했다: '+e.message)}}
+   if(ST.role==='gm'){if(SPK.key==='gm')await DBS().addLog(ST.room,ST.secret,'chat',ST.name,{t,nf:1});else{const c=charOf(SPK.key);const name=c?c.name:SPK.key.replace(/^(npc|as|pm):/,'');await DBS().addLog(ST.room,ST.secret,'chat',name,{t,as:name,k:SPK.key,nf:1})}}
+   else if(SPK.key&&SPK.key.startsWith('pm:')){const c=charOf(SPK.key);await DBS().addLog(ST.room,ST.secret,'chat',c?c.name:ST.name,{t,as:c?c.name:'',k:SPK.key,nf:1})}
+   else await DBS().addLog(ST.room,ST.secret,'chat',ST.name,{t,nf:1})}catch(e){A().toast('보내지 못했다: '+e.message)}}
  function act(k){
   if(k==='map'){mapOpen=!mapOpen;return A().renderScene()}
   if(k==='deck')return window.OM_DECK_UI.open();
   if(k==='phone')return window.OM_PHONE_UI&&window.OM_PHONE_UI.open();
   if(k==='roll')return window.OM_SKILL_UI&&window.OM_SKILL_UI.open();
   if(k==='talk'){const ST=A().ST;if(ST.role==='seat'){SPK.key='me'}else{const t=meTrainer();if(t)SPK.key='as:'+t.name}A().renderScene();const inp=$('#rpline');if(inp)inp.focus();return}
-  if(k==='sound'){unlocked=true;syncBgm(true);A().renderScene();return}
+  if(k==='sound'){userMuted=false;unlocked=true;syncBgm(true);A().renderScene();return}
   if(k==='bgmstop'){if(!confirm('BGM 을 모두에게 정지할까?'))return;A().set(['rp','bgm'],null);return}
-  if(k==='mute'){unlocked=false;if(audio){audio.pause();audio=null}lastBgm='';A().renderScene();return}
+  if(k==='mute'){userMuted=true;unlocked=false;if(audio){audio.pause();audio=null}lastBgm='';A().renderScene();return}
   if(k==='gm')return openConsole();
   if(k==='centerx')return A().set(['rp','center'],null);
   if(k==='stand')return openMyStand();
@@ -239,7 +249,7 @@ window.OM_RP_UI=(()=>{
  function openLog(){const ST=A().ST;const isO=x=>x.data.ch==='ooc';const rows=(ST.log||[]).filter(x=>x.kind==='chat'&&x.data&&!x.data.bat&&!x.data.sms&&(x.data.t||x.data.img)&&(logOoc||!isO(x)));
   const name=x=>x.data.as||(charOf(speakerKey(x))||{}).name||x.who;const tm=x=>{const d=new Date(x.at);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
   const md=A().openModal(`<div class="mhead"><h2>대화 기록</h2><span class="small dim">${rows.length}줄</span><span class="sp"></span><label class="small" title="잡담 탭에서 한 말도 같이 보이고, 복사·파일에도 들어간다"><input type="checkbox" id="lgooc" ${logOoc?'checked':''}> 잡담 포함</label><button class="btn sm ghost" id="lgcopy">글로 복사</button><button class="btn sm ghost" id="lgdl">파일로</button><button class="btn ghost" data-x>닫기</button></div>
-   <div class="rplog">${rows.map(x=>{const m=String(x.data.t||'').match(/^\*(.+)\*$/s);return `<div class="rl ${m?'narr':''}"><span class="rt">${tm(x)}</span><b class="rn">${esc(name(x))}${isO(x)?' <small class="dim">· 잡담</small>':''}</b><span class="rx">${x.data.img?`<a href="${esc(x.data.img)}" target="_blank" rel="noopener">[그림]</a> `:''}${m?esc(m[1]):esc(x.data.t)}</span></div>`}).join('')||'<div class="empty">아직 대화가 없다</div>'}</div>`);
+   <div class="rplog">${rows.map(x=>{const f=isO(x)?{narr:false,text:String(x.data.t||'')}:(window.OM_LINE?window.OM_LINE(x.data):{narr:false,text:String(x.data.t||'')});return `<div class="rl ${f.narr?'narr':''}"><span class="rt">${tm(x)}</span><b class="rn">${esc(name(x))}${isO(x)?' <small class="dim">· 잡담</small>':''}</b><span class="rx">${x.data.img?`<a href="${esc(x.data.img)}" target="_blank" rel="noopener">[그림]</a> `:''}${esc(f.text)}</span></div>`}).join('')||'<div class="empty">아직 대화가 없다</div>'}</div>`);
   md.classList.add('wide');$('#lgooc',md).onchange=e=>{logOoc=e.target.checked;A().closeModal();openLog()};const text=rows.map(x=>`[${tm(x)}] ${isO(x)?'[잡담] ':''}${name(x)}: ${x.data.t||x.data.img||''}`).join('\n');
   $('#lgcopy',md).onclick=()=>navigator.clipboard.writeText(text).then(()=>A().toast('복사했다'),()=>prompt('복사해서 쓰기',text));
   $('#lgdl',md).onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/plain'}));a.download=`대화기록_${ST.room}_${new Date().toISOString().slice(0,10)}.txt`;a.click()};
@@ -538,7 +548,7 @@ window.OM_RP_UI=(()=>{
  function bgmWidgetHtml(){const now=R().bgm||{};const G=bgmGroups();return `<div class="bgmw"><span class="eq ${now.src?'':'off'} ${gm()?'lk':''}" ${gm()?'data-bw="open"':''}>♪</span><span class="bt ${gm()?'lk':''}" ${gm()?'data-bw="open"':''} title="${esc(now.title?(now.group?gshort(now.group)+' - ':'')+now.title:'재생 중인 곡 없음')}${gm()?' — 누르면 BGM 고르기':''}">${esc(now.title||'BGM 없음')}</span><input type="range" min="0" max="1" step="0.05" value="${vol}" data-bw="vol" title="내 음량">${!unlocked&&now.src?'<button class="btn xs pri" data-bw="sound" title="브라우저가 소리를 막아서 한 번 눌러야 들린다">소리 켜기</button>':''}${gm()?`${now.group&&G[now.group]?`<button class="btn xs ghost" data-bw="rand" title="같은 그룹에서 다른 곡">⟳</button>`:''}${now.src?'<button class="btn xs ghost" data-bw="stop" title="모두에게 정지">■</button>':''}<button class="btn xs" data-bw="open" title="BGM 고르기 (모두에게)">BGM</button>`:''}</div>`}
  function bindBgmWidget(root){root.querySelectorAll('[data-bw]').forEach(el=>{const k=el.dataset.bw;
   if(k==='vol'){el.oninput=()=>setVolume('bgm',+el.value);return}
-  el.onclick=async()=>{if(k==='sound'){unlocked=true;syncBgm(true);return A().renderScene()}if(k==='open')return quickBgm();
+  el.onclick=async()=>{if(k==='sound'){userMuted=false;unlocked=true;syncBgm(true);return A().renderScene()}if(k==='open')return quickBgm();
    if(k==='stop'){await A().set(['rp','bgm'],null);return}
    if(k==='rand'){const now=R().bgm||{};const G=bgmGroups();const ss=Object.keys(G[now.group]||{});if(!ss.length)return;let pick=ss[Math.floor(Math.random()*ss.length)];if(ss.length>1&&pick===now.title)pick=ss[(ss.indexOf(pick)+1)%ss.length];pvStop();await playAll(now.group,pick)}}})}
  /* ----- 아래 띠: 내 캐릭터 · 굴림(스킬 체크) · 폰 · 대화(장면 등장) · 소지 포켓몬 현황 ----- */

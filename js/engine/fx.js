@@ -172,7 +172,9 @@ window.OM_FX=(()=>{
  /* ===== 발동 시점·확률 (효과 글의 표식) ===== */
  function timing(text){const t=String(text||'');const out={entry:/【등장】/.test(t),passive:/【상시】/.test(t),turnEnd:/【턴 종료】|턴 종료 시/.test(t),pre:/【선행】/.test(t),uses:(t.match(/【(\d+)\/시】/)||[])[1]||'',percent:''};
   for(const [k,v] of [['드물게','드물게'],['저확률','저확률'],['중확률','중확률'],['고확률','고확률']])if(t.includes(k))out.percent=v;return out}
- function percentOf(label){const C=(DB().const||{}).campaign||{};const v=C['percent_'+label];if(v==null||v==='')return {드물게:10,저확률:30,중확률:50,고확률:60}[label]||100;return +v>1?+v:+v*100}
+ /* 확률 표식 → %: 방 설정(rp.pct)이 있으면 그것, 없으면 룰 DB(const campaign.percent_*), 그것도 없으면 기본값 */
+ function percentBase(label){const C=(DB().const||{}).campaign||{};const v=C['percent_'+label];if(v==null||v==='')return {드물게:10,저확률:30,중확률:50,고확률:60}[label]||100;return +v>1?+v:+v*100}
+ function percentOf(label){const R=((((window.OM_APP||{}).ST||{}).state||{}).rp||{}).pct||{};const rv=R[label];if(rv!=null&&rv!==''&&isFinite(+rv))return Math.max(0,Math.min(100,+rv));return percentBase(label)}
 
  /* ===== 한국어 구문 ↔ op ===== */
  const TGT_WORDS=Object.keys(KO_TGT).sort((a,b)=>b.length-a.length);
@@ -254,5 +256,5 @@ window.OM_FX=(()=>{
   return L}
  /* 사람이 읽는 설명 (미리보기·로그) */
  function describe(ops){return unparse(ops)}
- return {rm,rmAll,autoOf,run,attackMods,consume,prioOf,turnEnd,chips,remove,removeAll,removeByName,timing,percentOf,parse,unparse,describe,noind,floating,immuneHit,nodropHit,liveMods,modDesc,TGT_KO,STAT_KO,TYPE_KO,NEG,ABN,stEn,stKo};
+ return {rm,rmAll,autoOf,run,attackMods,consume,prioOf,turnEnd,chips,remove,removeAll,removeByName,timing,percentOf,percentBase,parse,unparse,describe,noind,floating,immuneHit,nodropHit,liveMods,modDesc,TGT_KO,STAT_KO,TYPE_KO,NEG,ABN,stEn,stKo};
 })();
