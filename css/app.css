@@ -1290,3 +1290,13 @@ label.ph-item input[type=checkbox]{width:16px;height:16px;flex:none}
  .bstat.fold .gmrow>*:not([data-act=progress]):not([data-act=start]):not([data-act=pendgo]):not(.chip){display:none}
  .bstat.fold .gmrow{width:100%;display:flex;gap:6px;flex-wrap:wrap}
 }
+/* 시트 표 모바일: 넓은 칸(기술 효과 · 개체값 · 실수치)은 아랫줄(.mobx)로 내려 전체 폭으로 보인다 */
+.t tr.mobx{display:none}
+@media (max-width:760px){
+ .t .deskc{display:none}
+ .t tr.mobx{display:table-row}
+ .t tr:has(+tr.mobx)>td{border-bottom:none;padding-bottom:2px}
+ .t tr.mobx>td{padding-top:0}
+ .t tr.mobx .ivrow .ivt{min-width:0;flex:1 1 220px}
+ .t tr.mobx .ivrow{flex-wrap:wrap}
+}
