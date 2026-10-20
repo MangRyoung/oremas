@@ -123,7 +123,7 @@ window.OM_SHEET_UI=(()=>{
   return `<div class="spanel two"><div><div class="sh">지령·명령 <span class="note">4식 6령 — 맵툴 trainer_mgr 와 같은 표</span></div>
     <div id="opanel">${OO.panel(t,E)}</div></div>
    <div><div class="sh">배틀</div><div class="small dim" style="margin-bottom:8px">${inB?'지금 배틀에 들어가 있다. 시트를 고쳤으면 다시 보내야 반영된다 (HP·상태는 배틀 쪽이 따로).':'배틀 씬으로 보내면 이 시트의 레벨·개체값·기술이 그대로 들어간다.'}</div>
-    ${c.gm?`<div class="row"><button class="btn" data-act="tobattle" data-tid="${t.id}" data-side="left">좌측 진영으로</button><button class="btn" data-act="tobattle" data-tid="${t.id}" data-side="right">우측 진영으로</button></div>`:'<div class="dim small">보내기는 GM 이 한다.</div>'}
+    ${c.gm||(t.id===A().ST.seat&&((A().ST.state.rp||{}).plBattle!==false||(A().ST.state.rp||{}).seatOwn===true))?`<div class="row"><button class="btn" data-act="tobattle" data-tid="${t.id}" data-side="left">좌측 진영으로</button><button class="btn" data-act="tobattle" data-tid="${t.id}" data-side="right">우측 진영으로</button></div>`:'<div class="dim small">보내기는 GM 이 한다.</div>'}
     <div class="sh" style="margin-top:14px">파티 순서</div><div class="small dim">첫 칸이 파트너(대표 각성체).</div>
     ${E?`<ol class="porder">${mons.map((m,i)=>`<li>${esc(m.name)} <button class="btn xs ghost" data-act="mvup" data-i="${i}">↑</button><button class="btn xs ghost" data-act="mvdn" data-i="${i}">↓</button> <label class="small"><input type="checkbox" data-me-partner="${m.id}" ${m.partner?'checked':''}> 파트너</label></li>`).join('')}</ol>`:`<ol class="porder">${mons.map(m=>`<li>${esc(m.name)}${m.partner?' <span class="tag">파트너</span>':''}</li>`).join('')}</ol>`}</div></div>`}
 
@@ -202,7 +202,7 @@ window.OM_SHEET_UI=(()=>{
   if(asId){trainer.mkId=tdoc.id;trainer.id=asId;for(const m of mons)m.tid=asId}
   await hostImages(c.ST.room,trainer,mons);const r=JSON.parse(JSON.stringify(c.r));const old=r.trainers[trainer.id];
   trainer.ord=old?old.ord:Object.keys(r.trainers).length;trainer.src='maker';if(old){for(const k of ['orderStyle','commandStyle','orderCount','orderBase','orderPreset','orderType'])if(old[k]!=null)trainer[k]=old[k];trainer.memo=old.memo;const rs=window.OM_ORDERS.resync(trainer);if(rs)Object.assign(trainer,rs)}
-  if(!trainer.orderCount)Object.assign(trainer,window.OM_ORDERS.auto(trainer,'assoc',1));if(old){if(old.image&&!trainer.image)trainer.image=old.image;if(!(trainer.stands||[]).length&&(old.stands||[]).length){trainer.stands=old.stands;trainer.standActive=old.standActive}}
+  if(!trainer.orderCount)Object.assign(trainer,window.OM_ORDERS.auto(trainer,'assoc',1));if(old){if(old.image&&!trainer.image)trainer.image=old.image;if(!(trainer.stands||[]).length&&(old.stands||[]).length){trainer.stands=old.stands;trainer.standActive=old.standActive}else{for(const s of trainer.stands||[]){const o=(old.stands||[]).find(x=>x.src===s.src);if(!s.kind&&o&&o.kind)s.kind=o.kind}}}
   for(const id of ((old&&old.pids)||[]))if(!trainer.pids.includes(id))delete r.mons[id];
   for(const m of mons){const om=r.mons[m.id];m.src='maker';if(om&&keep){m.iv=om.iv;m.item=om.item||m.item;m.itemEff=om.itemEff||m.itemEff;m.sheetHp=om.sheetHp;m.dist=om.dist;m.ev=om.ev;if(om.image&&!m.image)m.image=om.image;recalc(m,trainer)}r.mons[m.id]=m}
   r.trainers[trainer.id]=trainer;

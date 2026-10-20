@@ -34,13 +34,19 @@ window.OM_BATTLE_UI=(()=>{
  /* ---------- 상태 읽기 도우미 ---------- */
  /* mgr: 배틀 진행 권한 — GM, 그리고 방 설정 「플레이어도 배틀 진행」이 켜져 있으면 자리에 앉은 사람 모두 (모의전). 비밀(상대 지시 엿보기·강제·모두 공개)은 여전히 GM 만 */
  function plBattle(){const rp=A().ST.state.rp||{};return rp.plBattle!==false}
- function ctx(){const ST=A().ST;const b=ST.state.battle||{};const gm=ST.role==='gm';return {ST,b,role:ST.role,seat:ST.seat,gm,mgr:gm||(ST.role==='seat'&&plBattle())}}
+ /* 방 설정 (GM 이 rp 에 둔다, 서버 om_set_state 가 같은 값으로 막는다)
+    strict = rp.seatOwn  : 플레이어는 자기 트레이너·포켓몬·지시만 바꾼다 → 배틀 진행(턴·페이즈·필드)은 GM 만
+    fair   = rp.gmHands===false : GM 도 플레이어의 지시·준비를 바꾸지 않고, 플레이어 포켓몬의 HP·랭크·상태 창을 열지 않는다 (자동 처리는 그대로) */
+ function ctx(){const ST=A().ST;const b=ST.state.battle||{};const gm=ST.role==='gm';const rp=ST.state.rp||{};const strict=rp.seatOwn===true,fair=rp.gmHands===false;
+  return {ST,b,role:ST.role,seat:ST.seat,gm,strict,fair,mgr:gm||(ST.role==='seat'&&plBattle()&&!strict)}}
+ function seatOwned(c,tid){return !!tid&&!!((c.ST.state.seats||{})[tid])}
+ const turnKey=b=>String(+b.turn||0);
  function mode(b){return Math.max(1,Math.min(3,+b.mode||2))}  /* 기본 더블(2:2) */
  function entered(b,side){const out={};for(const a of AREAS.slice(0,mode(b))){const m=Object.values(b.mons||{}).find(x=>x.side===side&&x.entry===a&&x.hp.cur>0);out[a]=m||null}return out}
  function allEntered(b){const out=[];for(const s of SIDES){const e=entered(b,s);for(const a in e)if(e[a])out.push({slot:slotOf(s,a),side:s,area:a,mon:e[a]})}return out}
  /* 내 지시 칸 · 내 포켓몬 편집은 GM 과 그 자리의 주인만 — 모의전 권한(mgr)과는 별개 */
- function myTrainers(c){const trs=c.b.trainers||{};if(c.gm)return Object.keys(trs);return c.seat&&trs[c.seat]?[c.seat]:[]}
- function canEdit(c,mon){return c.gm||(mon&&mon.tid===c.seat)}
+ function myTrainers(c){const trs=c.b.trainers||{};if(c.gm)return Object.keys(trs).filter(t=>!(c.fair&&seatOwned(c,t)));return c.seat&&trs[c.seat]?[c.seat]:[]}
+ function canEdit(c,mon){if(mon&&mon.tid===c.seat&&c.role==='seat')return true;return c.gm&&!(c.fair&&mon&&seatOwned(c,mon.tid))}
  function skPend(c,tid){try{const K=c.ST.state.skill||{};const O=K.offer;if(!O)return false;const R=(K.res||{})[tid];return !(R&&R.offerId===O.id)}catch(e){return false}}
  function fieldOf(b){return Object.assign({weather:{type:'',count:0},terrain:{type:'',count:0},rooms:{},etc:{},objects:{left:{},right:{}}},b.field||{})}
  function typeChip(en){return A().typeChip(en)}
@@ -126,7 +132,7 @@ window.OM_BATTLE_UI=(()=>{
  function rankChips(m){const r=m.rank||{};const out=[];for(const k of ['attack','defense','specialattack','specialdefense','speed','accuracy','evasion','critical']){const v=+r[k]||0;if(v)out.push(`<span class="rk ${v>0?'up':'dn'}">${STAT_KO[k]}${v>0?'+':''}${v}</span>`)}
   const md=m.mod||{};for(const k in md){const v=+md[k];if(v&&v!==1)out.push(`<span class="rk ${v>1?'up':'dn'}">${STAT_KO[k]||k}×${v}</span>`)}return out.join('')}
  const FLAG_KO={endure:'버텨라!',surehit:'맞춰라!',dodgePhys:'물러나!',dodgeSpec:'피해라!',swap:'바꿔라!',return:'돌아와!',hitPhys:'지킬 수 없다!',hitSpec:'피할 수 없다!',noEndure:'버틸 수 없다!',acc0:'맞출 수 없다!',dodgeOnce:'주인의 칙령',nullify:'파계',rebirth:'윤회의 법계'};
- function flagChips(m){return Object.keys(m.flags||{}).filter(k=>m.flags[k]&&FLAG_KO[k]).map(k=>`<span class="rk flag">${esc(FLAG_KO[k]||k)}</span>`).join('')}
+ function flagChips(m){return Object.keys(m.flags||{}).filter(k=>m.flags[k]&&FLAG_KO[k]).map(k=>`<span class="rk flag">${esc(FLAG_KO[k]||k)}</span>`).join('')+(m.prioDown?'<span class="rk flag" title="아이스번 — 다음 기술 우선도 −1">우선도 −1</span>':'')}
  function stateChips(m){const st=m.states||{};const db=(DB().states||{}).st||{};return Object.keys(st).filter(k=>st[k]).map(k=>{const im=simg(k);return `<span class="stc ${db[k]&&db[k].abn?'abn':''}" title="${esc((db[k]&&db[k].desc||[]).join(' '))}">${im?`<img src="${im}" alt="">`:''}${esc(db[k]?db[k].ko:k)}${+st[k]>1&&+st[k]<1000?' '+st[k]:''}</span>`}).join('')}
  function bigCard(c,m,slot){const full=canEdit(c,m);const cmd=cmdOf(c.b,m);
   return `<div class="mon big ${m.hp.cur<=0?'fainted':''}" data-mon="${m.id}"><div class="pic" style="${m.image?`background-image:url('${m.image}')`:''}"></div>
@@ -262,8 +268,15 @@ window.OM_BATTLE_UI=(()=>{
   if(p===0){await A().set(['battle','cmds'],{});await A().set(['ready'],{});await A().set(['battle','order'],[]);await A().set(['battle','phase'],0);A().sysLog('페이즈: 지시 준비 — 지시를 입력하고 「준비 완료」','battle');return}
   if(p===1){const tids=Object.keys(b.trainers||{});const ready=c.ST.state.ready||{};const seats=c.ST.state.seats||{};const notReady=tids.filter(t=>seats[t]&&!ready[t]);if(notReady.length&&!confirm(`아직 준비 완료가 아닌 트레이너: ${notReady.map(t=>b.trainers[t].name).join(', ')}\n그래도 턴을 개시할까?`))return;
    if(!b.started){await startBattle();if(!ctx().b.started)return;await new Promise(r=>setTimeout(r,2600))}
-   await A().set(['ready'],{});await A().set(['battle','cmds'],{});await A().set(['battle','phase'],1);await preCharge();cutPhase('턴 개시',`TURN ${(+b.turn||0)+1} · 지시 공개`);A().sysLog('턴 개시 — 위의 「지시 공개」에서 에리어마다 연다','battle');return}
-  if(p===2){const left=unrevealed(b);if(left.length){if(!confirm(`아직 안 연 지시가 있다: ${left.join(', ')}\n한꺼번에 열고 행동 순서로 갈까?`))return;await reveal()}return computeOrder()}
+   await A().set(['ready'],{});await A().set(['battle','cmds'],{});await A().set(['battle','host'],c.gm?'gm':c.seat);await A().set(['battle','phase'],1);await preCharge();cutPhase('턴 개시',`TURN ${(+b.turn||0)+1} · 지시 공개`);A().sysLog('턴 개시 — 위의 「지시 공개」에서 에리어마다 연다','battle');return}
+  if(p===2){const left=unrevealed(b);if(left.length){
+    /* GM(보통): 비밀 지시를 읽어 한꺼번에 연다 */
+    if(c.gm&&!c.fair){if(!confirm(`아직 안 연 지시가 있다: ${left.join(', ')}\n한꺼번에 열고 행동 순서로 갈까?`))return;await reveal();return computeOrder()}
+    /* 모의전 진행자 · GM 불간섭: 남의 비밀 지시는 못 읽으니 각자의 화면에 「공개 요청」을 보낸다. GM 은 NPC 것만 연다 */
+    if(c.gm)await reveal(true);const left2=unrevealed(ctx().b);if(!left2.length)return computeOrder();
+    if(String(ctx().b.revealReq||'')===turnKey(b)){if(!confirm(`아직 안 연 지시: ${left2.join(', ')}\n(그 플레이어가 접속해 있지 않을 수 있다)\n그대로 행동 순서를 계산할까?`))return;return computeOrder()}
+    await A().set(['battle','host'],c.gm?'gm':c.seat);await A().set(['battle','revealReq'],turnKey(b));A().sysLog(`지시 공개 요청 — 각자의 화면이 남은 지시를 연다 (${left2.join(', ')}). 모두 열리면 행동 순서로 넘어간다`,'battle');watch();return}
+   return computeOrder()}
   if(p===3){await A().set(['battle','orderIdx'],0);await A().set(['battle','phase'],3);cutPhase('행동 처리','순서대로 공격');A().sysLog('행동 처리 — 순서대로 「공격」, 끝나면 「다음 행동 ▶」','battle');return}
   if(p===5)return turnEnd()}
  function unrevealed(b){const out=[];for(const tid in b.trainers||{}){const t=b.trainers[tid];const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid&&m.entry&&m.hp.cur>0);for(const m of mons)if(!revealed(b,tid,m.id))out.push(`${t.name} ${String(m.entry).toUpperCase()}`)}return out}
@@ -376,7 +389,7 @@ window.OM_BATTLE_UI=(()=>{
   if(FX()){const n=FX().chips(m).length;FX().removeAll(m);if(n)L.push(`${m.name} 발동 중인 효과 ${n}개 해제`)}
   m.rank={};delete m.tempRank;m.mod={};delete m.tempMod;delete m.critBuff;if(m.fx)m.fx.mults=[];
   const gone=[];for(const k in (m.states||{})){if(!m.states[k])continue;const d=st[k]||{};if(d.abn||k==='Grudge'||k==='Dead')continue;delete m.states[k];gone.push(d.ko||k)}
-  delete m.flags;delete m.fxDone;if(m.tera!=null)m.teraActive=false;m.entry='';
+  delete m.flags;delete m.prioDown;delete m.fxDone;if(m.tera!=null)m.teraActive=false;m.entry='';
   if(gone.length)L.push(`${m.name} 상태 해제: ${gone.join('·')}`);return L}
  function applyBatton(nb,m){const t=nb.trainers[m.tid];const bt=t&&t.batton;if(!bt)return [];delete t.batton;m.rank=Object.assign({},bt.rank||{});m.states=Object.assign({},m.states||{},bt.states||{});if(bt.critBuff)m.critBuff=bt.critBuff;
   const st=(DB().states||{}).st||{};const rk=Object.entries(m.rank).filter(([k,v])=>+v).map(([k,v])=>(FX()?FX().STAT_KO[k]:k)+(v>0?'+':'')+v);const ss=Object.keys(bt.states||{}).map(k=>(st[k]||{}).ko||k);
@@ -414,13 +427,26 @@ window.OM_BATTLE_UI=(()=>{
   await putShape(tid,rd);
   await A().set(path,rd?null:true);A().sysLog(`${((c.b.trainers||{})[tid]||{}).name||tid} ${rd?'준비 해제':'준비 완료'}`,'battle')}
  /* 턴 개시: 선행 입력한 지령·명령의 횟수를 미리 깎는다 (맵툴 set_turn_start). 주인의 호령(tc 7)은 능력·회복이 횟수를 같이 쓴다 */
- async function preCharge(){const c=ctx();if(!c.gm)return;const b=c.b;let rows;try{rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd')}catch(e){return}
-  const trs=JSON.parse(JSON.stringify(b.trainers||{}));let any=false;
-  for(const r of rows||[]){const t=trs[r.id];if(!t||!r.data)continue;t.orderCount=t.orderCount||{};const tc=OO().styles(t).tc;
-   for(const mid in (r.data.mons||{})){const m=b.mons[mid];if(!m||!m.entry||m.hp.cur<=0)continue;const x=r.data.mons[mid];
-    if(x.order){const k='order_'+x.order;t.orderCount[k]=Math.max(0,(+t.orderCount[k]||0)-1);any=true}
-    if(x.command){if(tc===7){t.orderCount.command_attack=Math.max(0,(+t.orderCount.command_attack||0)-1);t.orderCount.command_defense=Math.max(0,(+t.orderCount.command_defense||0)-1)}else{const k='command_'+x.command;t.orderCount[k]=Math.max(0,(+t.orderCount[k]||0)-1)}any=true}}}
+ function chargeOne(t,data,b){t.orderCount=t.orderCount||{};const tc=OO().styles(t).tc;
+  for(const mid in (data.mons||{})){const m=b.mons[mid];if(!m||!m.entry||m.hp.cur<=0)continue;const x=data.mons[mid];
+   if(x.order){const k='order_'+x.order;t.orderCount[k]=Math.max(0,(+t.orderCount[k]||0)-1)}
+   if(x.command){if(tc===7){t.orderCount.command_attack=Math.max(0,(+t.orderCount.command_attack||0)-1);t.orderCount.command_defense=Math.max(0,(+t.orderCount.command_defense||0)-1)}else{const k='command_'+x.command;t.orderCount[k]=Math.max(0,(+t.orderCount[k]||0)-1)}}}}
+ async function preCharge(){const c=ctx();const b=c.b;const key=turnKey(b);
+  if(!c.gm)return selfCharge();
+  let rows;try{rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd')}catch(e){return}
+  const trs=JSON.parse(JSON.stringify(ctx().b.trainers||{}));let any=false;
+  for(const r of rows||[]){const t=trs[r.id];if(!t||!r.data||t.pcTurn===key)continue;if(c.fair&&seatOwned(c,r.id))continue;chargeOne(t,r.data,b);t.pcTurn=key;any=true}
   if(any)await A().set(['battle','trainers'],trs)}
+ /* 좌석: 내 지시의 선입력분은 내 화면이 깎는다 (모의전 · GM 불간섭 · GM 이 없을 때) */
+ const BUSY={},SENT={};
+ async function selfCharge(){const c=ctx();const b=c.b;const tid=c.seat;const t=(b.trainers||{})[tid];if(c.role!=='seat'||!t)return;const key=turnKey(b);if(t.pcTurn===key||BUSY.pc===key)return;BUSY.pc=key;
+  const cm=await myCmd(c,tid,true);const t2=JSON.parse(JSON.stringify((ctx().b.trainers||{})[tid]||t));if(t2.pcTurn===key)return;if(cm)chargeOne(t2,cm,ctx().b);t2.pcTurn=key;await A().set(['battle','trainers',tid],t2)}
+ /* 상태가 바뀔 때마다 (app.js onState): 턴 개시면 내 선입력 차감, 공개 요청이 오면 내 남은 지시를 연다, 진행자는 자동으로 넘긴다 */
+ async function watch(){const c=ctx();const b=c.b;if((+b.phase||0)!==1)return;
+  if(c.role==='seat'&&c.seat&&(b.trainers||{})[c.seat]){await selfCharge();
+   const key=turnKey(b);if(String(b.revealReq||'')===key&&!BUSY.rv){const mine=Object.values(b.mons||{}).filter(m=>m.tid===c.seat&&m.entry&&m.hp.cur>0&&!revealed(b,c.seat,m.id)&&!SENT[key+':'+m.id]);
+    if(mine.length){BUSY.rv=1;try{for(const m of mine){if(revealed(ctx().b,c.seat,m.id))continue;SENT[key+':'+m.id]=1;await revealOne(c.seat,m.id,true)}}finally{BUSY.rv=0}}}}
+  autoAdvance()}
  /* ----- 4식 6령 발동 창 (맵툴 order_mgr / order_run): 선행 발동 · 임의 발동 · 강제 ----- */
  function openFire(tid){const c=ctx();const b=c.b;const t=(b.trainers||{})[tid];if(!t)return;if(!c.gm&&c.seat!==tid)return;
   const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid&&m.entry&&m.hp.cur>0).sort((x,y)=>x.entry.localeCompare(y.entry));if(!mons.length)return A().toast('필드에 포켓몬이 없다');
@@ -490,19 +516,20 @@ window.OM_BATTLE_UI=(()=>{
   if(x.move===''||x.move==null)return `${t.name} · ${m.name}: (행동 없음)`;const mv=(m.moves||[])[+x.move]||{};
   return `${t.name} · ${m.name} (${SIDE_KO[m.side]} ${String(m.entry).toUpperCase()}): 「${mv.name||'?'}」 ${mv.type||''}·${mv.cat||''} · 위력 ${mv.pow||'-'} · 명중 ${mv.acc||'-'}${mv.prio?' · 우선도 '+mv.prio:''}${x.targets&&x.targets.length?' → '+x.targets.map(sl=>slotName(b,sl).replace(/<[^>]+>/g,'')).join(', '):''}${mv.eff&&mv.eff!=='-'?'\n   '+mv.eff:''}`}
  let autoT=null;
- function autoAdvance(){const c=ctx();if(!c.gm)return;const b=c.b;if((+b.phase||0)!==1)return;if(unrevealed(b).length)return;clearTimeout(autoT);autoT=setTimeout(async()=>{const c2=ctx();if((+c2.b.phase||0)!==1||unrevealed(c2.b).length)return;A().sysLog('지시가 모두 공개됐다 — 행동 순서로','battle');await computeOrder()},800)}
- async function revealOne(tid,part){const c=ctx();const b=c.b;const t=(b.trainers||{})[tid];if(!t)return;if(!c.gm&&c.seat!==tid)return A().toast('내 지시만 공개할 수 있다');
-  const cm=await myCmd(c,tid);if(!cm)return;
+ function autoAdvance(){const c=ctx();const b=c.b;if(!c.mgr)return;const me=c.gm?'gm':c.seat;if((b.host||'gm')!==me)return;if((+b.phase||0)!==1)return;if(unrevealed(b).length)return;clearTimeout(autoT);autoT=setTimeout(async()=>{const c2=ctx();if((+c2.b.phase||0)!==1||unrevealed(c2.b).length)return;A().sysLog('지시가 모두 공개됐다 — 행동 순서로','battle');await computeOrder()},800)}
+ async function revealOne(tid,part,quiet){const c=ctx();const b=c.b;const t=(b.trainers||{})[tid];if(!t)return;if(!c.gm&&c.seat!==tid)return A().toast('내 지시만 공개할 수 있다');
+  if(c.gm&&c.fair&&seatOwned(c,tid))return A().toast('GM 불간섭 설정 — 플레이어의 지시는 그 플레이어가 연다');
+  const cm=await myCmd(c,tid,quiet);if(!cm)return;
   const m=b.mons[part];if(!m)return;if(revealed(b,tid,part))return;const x=pubMon((cm.mons||{})[part]);
   await A().set(['battle','cmds',tid,'mons',part],x);if(cm.detail&&!((b.cmds||{})[tid]||{}).detail)await A().set(['battle','cmds',tid,'detail'],cm.detail);A().sysLog('【공개】 '+revealCardText(b,t,m,x),'battle')}
- async function reveal(){const c=ctx();if(!c.gm)return;const b=c.b;
+ async function reveal(npcOnly){const c=ctx();if(!c.gm)return;const b=c.b;npcOnly=npcOnly||c.fair;
   let rows;try{rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd')}catch(e){return A().toast('지시를 읽지 못했다: '+e.message)}
-  const cmds={};(rows||[]).forEach(r=>{if((b.trainers||{})[r.id])cmds[r.id]=r.data});
-  if(!Object.keys(cmds).length)return A().toast('저장된 지시가 없다');
-  const already=b.cmds||{};const out={};
+  const cmds={};(rows||[]).forEach(r=>{if((b.trainers||{})[r.id]&&!(npcOnly&&seatOwned(c,r.id)))cmds[r.id]=r.data});
+  if(!Object.keys(cmds).length){if(!npcOnly)A().toast('저장된 지시가 없다');return}
+  const already=b.cmds||{};const out={};if(npcOnly)for(const tid in already)if(seatOwned(c,tid))out[tid]=already[tid];
   for(const tid in cmds){const cm=cmds[tid];const al=already[tid]||{};const o={mons:{},detail:cm.detail||'',fired:al.fired||{}};for(const mid in (cm.mons||{})){const m=b.mons[mid];if(!m||!m.entry)continue;o.mons[mid]=al.mons&&al.mons[mid]?al.mons[mid]:pubMon(cm.mons[mid])}out[tid]=o}
   await A().set(['battle','cmds'],out);await A().set(['battle','phase'],Math.max(1,+b.phase||0));
-  const lines=[];for(const tid in out){const t=b.trainers[tid];const cm=out[tid];
+  const lines=[];for(const tid in out){if(!cmds[tid])continue;const t=b.trainers[tid];const cm=out[tid];
    for(const mid in cm.mons){const m=b.mons[mid];if(!m||!m.entry)continue;if(already[tid]&&already[tid].mons&&already[tid].mons[mid])continue;lines.push(revealCardText(b,t,m,cm.mons[mid]))}
    if(cm.detail)lines.push(`${t.name}: ${cm.detail}`)}
   if(lines.length)A().sysLog('【모두 공개】\n'+lines.join('\n'),'battle')}
@@ -530,11 +557,11 @@ window.OM_BATTLE_UI=(()=>{
   out.push(`「${n}」 — 손으로 처리`);return out}
 
  /* ----- 행동 순서 ----- */
- async function computeOrder(){const c=ctx();if(!c.mgr)return;const b=c.b;const f=fieldOf(b);
+ async function computeOrder(){const c=ctx();if(!c.mgr)return;const b=c.b;const f=fieldOf(b);const iceUsed=[];
   const slots=allEntered(b);if(!slots.length)return A().toast('등장한 포켓몬이 없다');
   const entries=slots.map(s=>{const cm=((b.cmds||{})[s.mon.tid]||{}).mons||{};const x=cm[s.mon.id]||{};
    const prioMap={},orderMap={};for(const k in (x.prio||{}))if(x.prio[k]!=='')prioMap[k]=+x.prio[k];for(const k in (x.ochg||{}))if(x.ochg[k]!=='')orderMap[k]=+x.ochg[k];
-   let prioMod=0;if(x.move!==''&&x.move!=='switch'&&x.move!=null){const mv=(s.mon.moves||[])[+x.move];if(mv)prioMod+=FX()?FX().prioOf(s.mon,mv):(+mv.prio||0)}
+   let prioMod=0;if(x.move!==''&&x.move!=='switch'&&x.move!=null){const mv=(s.mon.moves||[])[+x.move];if(mv)prioMod+=FX()?FX().prioOf(s.mon,mv):(+mv.prio||0);if(mv&&s.mon.prioDown){prioMod-=1;iceUsed.push(s.mon)}}
    const objs=(f.objects||{})[s.side]||{};
    return {slot:s.slot,mon:s.mon,cmd:{change:x.move==='switch',priorityMap:prioMap,orderMap},prioMod,started:!!s.mon.started,scarf:s.mon.item==='구애스카프',tailwind:(objs['순풍']||0)>0,swamp:(objs['습원']||0)>0}});
   const rows=B().turnOrder(entries,{trick:((f.rooms||{})['트릭룸']||0)>0});
@@ -542,7 +569,9 @@ window.OM_BATTLE_UI=(()=>{
    return {slot:r.slot,mid:r.mon.id,name:r.mon.name,side:r.mon.side,change:r.change,started:r.started,order:r.order,prio:r.prio,speed:r.speed,dice:r.dice,move:mv?mv.name:(x.move==='switch'?'교대':''),moveType:mv?mv.typeEn:'',targets:x.targets||[],pursuit:mv?mv.name==='추격':false}});
   /* 추격: 교대하는 대상을 노리면 교대보다 먼저 때린다 */
   const notes=[];if(((f.rooms||{})['트릭룸']||0)>0)notes.push('「트릭룸」이 시공간을 뒤틀었다! (스피드 역순)');
+  for(const m of iceUsed)notes.push(`${m.name} 「아이스번」 — 이번 기술 우선도 −1`);
   for(const o of order)if(o.pursuit)for(const t of o.targets){const v=order.find(z=>z.slot===t);if(v&&v.change)notes.push(`${o.name}의 「추격」 — 교대하려는 ${v.name}을(를) 먼저 때린다!`)}
+  for(const m of iceUsed)await A().set(['battle','mons',m.id,'prioDown'],null);
   await A().set(['battle','order'],order);await A().set(['battle','orderIdx'],0);await A().set(['battle','orderNotes'],notes);await A().set(['battle','phase'],2);
   cutPhase('행동 순서','');A().sysLog('행동 순서\n'+order.map((o,i)=>`${i+1}. ${o.name} (${o.change?'교대 · ':''}${o.order!==20?'순서 '+o.order+' · ':''}${o.prio?'우선 '+o.prio+' · ':''}스피드 ${Math.round(o.speed)} · d${o.dice})`).join('\n'),'battle')}
 
@@ -810,7 +839,7 @@ window.OM_BATTLE_UI=(()=>{
  function battleStartCut(b,force){const cfg=((A().ST.state.rp||{}).cutin)||{};const mode=force||cfg.start||'vs';if(mode==='off'||!CUT())return;
   const sideData=side=>{const ids=((b.sides||{})[side]||{}).trainers||[];const t=(b.trainers||{})[ids[0]];const mons=Object.values(b.mons||{}).filter(m=>ids.includes(m.tid)).sort((x,y)=>(x.slot||0)-(y.slot||0));
    if(!t&&!mons.length)return null;return {img:t?trainerImg(t):(mons[0]||{}).image||'',t:t?t.name:'야생의 '+(mons[0]||{}).name,sub:t?['육성','지시','통솔','능력'].map(k=>k+' '+((t.ranks||{})[k]||'-')).join('·'):'',balls:mons.slice(0,6).map(m=>m.hp.cur>0?1:0),mons:mons.slice(0,6).map(m=>({img:(!c_gm_or_seen(m))?'':m.image,name:(!c_gm_or_seen(m))?'비공개':m.name}))}};
-  function c_gm_or_seen(m){return true}
+  function c_gm_or_seen(m){return !!(m.entry||m.seen)}   /* 지금 나와 있거나 한 번 나온 포켓몬만 그림·이름, 나머지는 볼 */
   const boss=Object.values(b.mons||{}).find(m=>m.raid&&+m.raid.segments>0);
   if(mode==='warn'||boss){const bm=boss||Object.values(b.mons||{}).find(m=>m.side==='right'&&m.entry);if(bm){CUT().raid({img:bm.image,n:bm.name,title:cfg.warnTitle||(boss?'레이드 배틀 : '+boss.raid.segments:'강적 출현'),tape:cfg.warnTape||('⚠ WARNING ⚠ '+(cfg.warnTitle||(boss?'레이드 보스 출현':'강적 출현'))),nohp:cfg.warnHp?0:1,x:boss?boss.raid.segments:0,hp:Math.round(bm.hp.cur/bm.hp.max*100),ph:boss?boss.raid.phase||1:0,label:boss?'RAID BATTLE':'BATTLE'});return}}
   const L=sideData('left'),R=sideData('right');if(L&&R)CUT().vs(L,R)}/* 효과음은 로그를 보고 rp_ui 가 울린다 (모두 같은 로그를 받으니 좌석도 들린다) */
@@ -919,5 +948,5 @@ ${L.join('\n')}`,'battle',{mid:atk.id,img:atk.image||''})}
    nb.mons[mid].lastDealt={total:RESULT.targets.filter(r=>r.acc.hit&&r.dmg).reduce((a,r)=>a+(r.hp?r.hp.final:0),0),targets:RESULT.targets.filter(r=>r.acc.hit&&r.dmg).map(r=>r.def.name).join(', '),at:Date.now()};
    A().closeModal();if(await A().set(['battle','mons'],nb.mons))A().sysLog(`【전달】 ${atk.name} 『${RESULT.mv.name}』\n${lines.join('\n')}`,'battle',{mid:atk.id,img:atk.image||''})}}
 
- return {render,ctx,entered,allEntered,fieldOf,resetLocal:()=>{CMD={}},startCut:(m)=>battleStartCut(ctx().b,m),openHp,action};
+ return {render,watch,ctx,entered,allEntered,fieldOf,resetLocal:()=>{CMD={}},startCut:(m)=>battleStartCut(ctx().b,m),openHp,action};
 })();

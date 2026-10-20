@@ -76,7 +76,7 @@ window.OM_FIELD=(()=>{
    if(h.kind==='mine'){if(isAbn(m)||ty.includes('Electric')){lines.push(`${m.name} 「기뢰」 영향 없음`)}else{setState(m,'Paralysis');lines.push(`${m.name} 「기뢰」 → 「마비」`)}delete objs[h.k];removed.push(h.k);continue}
    if(h.kind==='bounce'){forced=true;lines.push(`${m.name} 「트램펄린」 — 강제 교대!`);delete objs[h.k];removed.push(h.k);continue}
    if(h.kind==='rose'){const d=frac(m,1,8);const got=dmg(m,d,lines,'「장미원」 1/8 드레인');const opp=slotsOpp&&slotsOpp[m.entry];if(got>0&&opp&&opp.hp.cur>0)heal(opp,got,lines,'「장미원」');continue}
-   if(h.kind==='iceburn'){m.flags=m.flags||{};m.flags.prioDown=1;lines.push(`${m.name} 「아이스번」 다음 기술에 「우선도 : -1」`);continue}
+   if(h.kind==='iceburn'){m.prioDown=1;   /* flags 는 턴 종료에 지워지니 따로 둔다 — 행동 순서(computeOrder)가 다음 기술에 −1 하고 지운다 */lines.push(`${m.name} 「아이스번」 다음 기술에 「우선도 : -1」`);continue}
    if(h.st){if(setState(m,h.st))lines.push(`${m.name} 「${h.k}」 → 「${ko(h.st)}」`);continue}
    if(h.f){dmg(m,frac(m,1,h.f),lines,`「${h.k}」 1/${h.f}`);if(h.once){delete objs[h.k];removed.push(h.k)}}}
   return {lines,removed,forced}}

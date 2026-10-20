@@ -60,7 +60,7 @@ async function openRoom(id,gm){
  if(ST.role==='gm'){const need={roster:{trainers:{},mons:{}},pub:{},ready:{},graph:{nodes:{},edges:{}},skill:{},dex:{},rp:{},battle:{}};for(const k in need){if(typeof ST.state[k]!=='object'||ST.state[k]===null){try{const v=await DBS().setState(id,ST.secret,[k],need[k]);ST.state[k]=need[k];ST.v=Math.max(ST.v,v||0)}catch(e){}}else if(k==='roster'){for(const kk of ['trainers','mons'])if(typeof ST.state.roster[kk]!=='object'||ST.state.roster[kk]===null){try{const v=await DBS().setState(id,ST.secret,['roster',kk],{});ST.state.roster[kk]={};ST.v=Math.max(ST.v,v||0)}catch(e){}}}}}
  ST.log=await DBS().getLogTail(id,200);ST.lastLogId=ST.log.length?ST.log[ST.log.length-1].id:0;
  renderRoom();
- ST.unsub=DBS().subscribe(id,{onEvent:p=>{if(p&&p.t==='hello')onHello(p);if(window.OM_RP_UI&&p&&p.t==='typing')window.OM_RP_UI.onTyping(p);if(window.OM_CUTIN&&p&&p.t==='cutin')window.OM_CUTIN.onEvent(p)},onState:(d,v)=>{if(v>=ST.v){ST.state=d;ST.v=v;renderScene()}},onLog:r=>{if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;renderLog(true);notifyLog(r);mobNote(r);if(window.OM_RP_UI)window.OM_RP_UI.onChat(r)}},
+ ST.unsub=DBS().subscribe(id,{onEvent:p=>{if(p&&p.t==='hello')onHello(p);if(window.OM_RP_UI&&p&&p.t==='typing')window.OM_RP_UI.onTyping(p);if(window.OM_CUTIN&&p&&p.t==='cutin')window.OM_CUTIN.onEvent(p)},onState:(d,v)=>{if(v>=ST.v){ST.state=d;ST.v=v;renderScene();if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.watch)window.OM_BATTLE_UI.watch().catch(e=>console.warn(e))}},onLog:r=>{if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;renderLog(true);notifyLog(r);mobNote(r);if(window.OM_RP_UI)window.OM_RP_UI.onChat(r)}},
   onStatus:s=>{const el=$('#conn');if(el){el.textContent=s==='SUBSCRIBED'?'● 실시간':'○ '+s;el.style.color=s==='SUBSCRIBED'?'var(--acc2)':'var(--mute)'}if(s==='SUBSCRIBED')startPresence()}});
  if(ST.role){pollWhispers();ST.wtimer=setInterval(pollWhispers,4000)}
  if(!ST.role)openSeatPicker()}
@@ -102,7 +102,7 @@ function renderRoom(){
    ${ST.role==='gm'?'<button class="btn sm" id="copyGm">GM 링크</button><button class="btn sm" id="roomSet">방 설정</button>':'<button class="btn sm" id="seatBtn">자리</button><button class="btn sm ghost" id="roomSet" title="소리 크기">소리</button>'}
   </div>
   <div class="body"><div class="scene" id="scene"></div><div class="resizer" id="resizer" title="끌어서 채팅 창 너비 조절"></div>
-   <div class="side" id="side"><div class="phone"><div class="pbar"><span>●●●</span><span class="ptime" id="pclock"></span></div><div class="ptitle"><span class="plogs">${ST.role==='gm'?'<button class="btn xs ghost plog" id="clearLog" title="로그 비우기">🧹 비우기</button>':''}<button class="btn xs ghost plog" id="saveLog" title="채팅 로그를 파일로 저장">💾 로그</button></span>${esc(r.name||r.id)}<small>${ST.role==='gm'?'GM':ST.role==='seat'?esc(ST.name):'관전'} · 오레마스</small></div><div class="log" id="log"></div>
+   <div class="side" id="side"><div class="phone"><div class="pbar"><span>●●●</span><span class="ptime" id="pclock"></span></div><div class="ptitle"><span class="plogs">${ST.role==='gm'?'<button class="btn xs ghost plog" id="clearLog" title="로그 비우기">🧹 비우기</button>':''}<button class="btn xs ghost plog" id="saveLog" title="채팅 로그를 파일로 저장">💾 로그</button></span>${esc(r.name||r.id)}<small>${ST.role==='gm'?'GM':ST.role==='seat'?esc(ST.name):'관전'} · 오레마스</small></div><div class="ctabs" id="ctabs"><button type="button" data-ch="s">세션</button><button type="button" data-ch="o">잡담<i class="cdot"></i></button></div><div class="log" id="log"></div>
     <div class="inbox"><input type="text" id="chatIn" placeholder="${ST.role?'메시지 · /r 1d100 · /w 이름 메시지':'자리에 앉으면 말할 수 있다'}" ${ST.role?'':'disabled'}><button class="btn" id="chatSend" ${ST.role?'':'disabled'}>➤</button></div></div></div>
   </div>
   <div class="mbar" id="mbar"><button data-m="scene" class="on"><i>🎭</i><span>무대</span></button><button data-m="chat"><i>💬</i><span>채팅</span><em id="mUnread" class="mbadge" style="display:none"></em></button><button data-m="phone"><i>📱</i><span>휴대폰</span></button><button data-m="menu"><i>☰</i><span>메뉴</span></button></div></div>`;
@@ -115,7 +115,7 @@ function renderRoom(){
  const clock=()=>{const el=$('#pclock');if(el){const d=new Date();el.textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}};clock();clearInterval(ST.clockT);ST.clockT=setInterval(clock,15000);
  if(ST.role==='gm'){$('#copyGm').onclick=()=>copy(gmLink(ST.room,ST.secret),'GM 링크를 복사했다 (아무에게도 주지 말 것)');$('#roomSet').onclick=openRoomSettings}
  else {$('#seatBtn').onclick=openSeatPicker;$('#roomSet').onclick=openRoomSettings}
- $('#chatSend').onclick=sendChat;$('#chatIn').onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)sendChat()};$('#chatIn').oninput=()=>{if(window.OM_RP_UI&&window.OM_RP_UI.typingPing)window.OM_RP_UI.typingPing()};
+ $('#chatSend').onclick=sendChat;$('#ctabs').querySelectorAll('[data-ch]').forEach(b=>b.onclick=()=>setChan(b.dataset.ch));setChan(CHAN.cur,true);$('#chatIn').onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)sendChat()};$('#chatIn').oninput=()=>{if(window.OM_RP_UI&&window.OM_RP_UI.typingPing)window.OM_RP_UI.typingPing()};
  /* 채팅 창 너비: 끌어서 조절, 브라우저에 기억 */
  try{const w=+localStorage.getItem('om_sidew');if(w>=260)$('#side').style.width=w+'px'}catch(e){}
  $('#resizer').onpointerdown=e=>{const side=$('#side');const sx=e.clientX,sw=side.getBoundingClientRect().width;e.preventDefault();document.body.classList.add('resizing');
@@ -145,18 +145,26 @@ function battleCard(d){const t=String(d.t||'');const m=t.match(/^【([^】]+)】
  return `<div class="bcard" style="--tc:${col}"><div class="bch">${d.img?`<span class="bcav" style="background-image:url('${esc(d.img)}')"></span>`:''}<span class="bctag">${esc(tag)}</span><b>${esc(title)}</b>${d.mid?`<span class="sp"></span><button class="btn xs ghost bcfx" data-lmid="${esc(d.mid)}" title="이 포켓몬의 포텐셜 창 — 발동 중인 효과를 ✕ 로 해제">효과</button>`:''}</div>${d.eff?`<div class="bceff">${esc(d.eff)}</div>`:''}${lines?`<div class="bcb">${lines}</div>`:''}</div>`}
 
 /* ---------- 채팅 ---------- */
+/* 세션 / 잡담 대화창: 잡담 탭에서 보낸 말은 data.ch='ooc' 로 남고 세션 탭 · 무대 · 로그 정리기의 세션 로그에서 빠진다 (정리기에서는 OOC) */
+const CHAN={cur:(()=>{try{return localStorage.getItem('om_chan')==='o'?'o':'s'}catch(e){return 's'}})(),seen:{s:0,o:0}};
+const isOoc=r=>!!(r&&r.data&&r.data.ch==='ooc');
+function setChan(ch,quiet){CHAN.cur=ch==='o'?'o':'s';try{localStorage.setItem('om_chan',CHAN.cur)}catch(e){}const tb=$('#ctabs');if(tb)tb.querySelectorAll('[data-ch]').forEach(b=>b.classList.toggle('on',b.dataset.ch===CHAN.cur));
+ const inp=$('#chatIn');if(inp&&ST.role)inp.placeholder=CHAN.cur==='o'?'잡담 · 세션 로그에 남지 않는다':'메시지 · /r 1d100 · /w 이름 메시지';const side=$('#side');if(side)side.classList.toggle('ooc',CHAN.cur==='o');if(!quiet)renderLog(true)}
+function chanDots(){const tb=$('#ctabs');if(!tb)return;const last={s:0,o:0};for(const r of ST.log){if(r.kind!=='chat'&&r.kind!=='dice')continue;if(r.data&&(r.data.sms||r.data.bat))continue;const c=isOoc(r)?'o':'s';last[c]=Math.max(last[c],r.id)}
+ if(CHAN.room!==ST.room){CHAN.room=ST.room;CHAN.seen={s:last.s,o:last.o}}   /* 방에 들어올 때까지의 줄은 읽은 것으로 */
+ CHAN.seen[CHAN.cur]=Math.max(CHAN.seen[CHAN.cur],last[CHAN.cur]);tb.querySelectorAll('[data-ch]').forEach(b=>b.classList.toggle('new',b.dataset.ch!==CHAN.cur&&last[b.dataset.ch]>CHAN.seen[b.dataset.ch]))}
 async function sendChat(){
- const inp=$('#chatIn');const t=inp.value.trim();if(!t)return;inp.value='';if(window.OM_RP_UI&&window.OM_RP_UI.typingStop)window.OM_RP_UI.typingStop();
+ const inp=$('#chatIn');const t=inp.value.trim();if(!t)return;const ch=CHAN.cur==='o'?{ch:'ooc'}:{};inp.value='';if(window.OM_RP_UI&&window.OM_RP_UI.typingStop)window.OM_RP_UI.typingStop();
  try{
   let m;
-  if((m=t.match(/^\/r(?:oll)?\s+(.+)$/i))){const r=roll(m[1]);if(!r)return toast('주사위 식을 모르겠다 (예: 1d100, 2d6+3)');await DBS().addLog(ST.room,ST.secret,'dice',ST.name,{t:`${m[1]} → ${r.text} = ${r.total}`,total:r.total})}
+  if((m=t.match(/^\/r(?:oll)?\s+(.+)$/i))){const r=roll(m[1]);if(!r)return toast('주사위 식을 모르겠다 (예: 1d100, 2d6+3)');await DBS().addLog(ST.room,ST.secret,'dice',ST.name,Object.assign({t:`${m[1]} → ${r.text} = ${r.total}`,total:r.total},ch))}
   else if((m=t.match(/^\/w\s+(\S+)\s+(.+)$/))){const to=resolveSeat(m[1]);if(!to)return toast('그런 자리가 없다: '+m[1]);await DBS().addLog(ST.room,ST.secret,'whisper',ST.name,{t:m[2],to,toName:m[1]});pollWhispers()}
   else if((m=t.match(/^\/as\s+(\S+)\s+(.+)$/))){if(ST.role!=='gm')return toast('/as 는 GM 만');await DBS().addLog(ST.room,ST.secret,'chat',m[1],{t:m[2],as:m[1]})}
   else if((m=t.match(/^\/s\s+(.+)$/))){await window.OM_RP_UI.setMyStand(m[1].trim())}
-  else if((m=t.match(/^\/img\s+(\S+)$/))){await DBS().addLog(ST.room,ST.secret,'chat',ST.name,{t:'',img:m[1]})}
+  else if((m=t.match(/^\/img\s+(\S+)$/))){await DBS().addLog(ST.room,ST.secret,'chat',ST.name,Object.assign({t:'',img:m[1]},ch))}
   else if(/^\/clear$/.test(t)){if(ST.role!=='gm')return toast('/clear 는 GM 만');await DBS().addLog(ST.room,ST.secret,'chat',ST.name,{t:'',clear:1})}
   else if(t.startsWith('/'))return toast('모르는 명령이야: /r /w /as /s /img /clear');
-  else await DBS().addLog(ST.room,ST.secret,'chat',ST.name,{t})
+  else await DBS().addLog(ST.room,ST.secret,'chat',ST.name,Object.assign({t},ch))
  }catch(e){toast('보내지 못했다: '+e.message)}}
 function resolveSeat(n){if(n==='GM'||n==='gm')return 'gm';const seats=ST.state.seats||{};for(const k in seats)if(seats[k]&&(seats[k].name===n||k===n))return k;const trs=(ST.state.battle||{}).trainers||{};for(const k in trs)if(trs[k].name===n)return k;return null}
 function roll(expr){const m=String(expr).replace(/\s/g,'').match(/^(\d*)d(\d+)([+-]\d+)?$/i);if(!m)return null;const n=Math.min(+m[1]||1,100),f=+m[2],mod=+(m[3]||0);if(f<1)return null;const rs=[];for(let i=0;i<n;i++)rs.push(1+Math.floor(Math.random()*f));const total=rs.reduce((a,b)=>a+b,0)+mod;return {total,text:'['+rs.join(',')+']'+(mod?(mod>0?'+':'')+mod:'')}}
@@ -164,7 +172,7 @@ function avatarOf(r){const d=r.data||{};if(d.k&&window.OM_RP_UI&&window.OM_RP_UI
 function renderLog(scroll){
  const el=$('#log');if(!el)return;
  const cut=+((ST.state.rp||{}).logClearAt)||0;
- el.innerHTML=ST.log.filter(r=>r.id>cut).map(r=>{const d=r.data||{};const k=(r.kind==='chat'&&d.bat)?d.bat:r.kind;const t=fmtTime(r.at);
+ el.innerHTML=ST.log.filter(r=>r.id>cut&&(CHAN.cur==='o'?isOoc(r):!isOoc(r))).map(r=>{const d=r.data||{};const k=(r.kind==='chat'&&d.bat)?d.bat:r.kind;const t=fmtTime(r.at);
   if(k==='sys')return `<div class="msg sys"><div class="bub">${esc(d.t)}</div></div>`;
   if(k==='chat'&&d.clear)return `<div class="msg sys"><div class="bub">무대를 비웠다</div></div>`;
   if(k==='chat'&&d.sms)return '';
@@ -175,6 +183,7 @@ function renderLog(scroll){
   const av=avatarOf(r);
   return `<div class="msg ${k} ${mine?'me':''}"><div class="av" style="${av?`background-image:url('${av}')`:''}"></div><div class="bub"><span class="who">${who}</span>${d.img?`<a href="${esc(d.img)}" target="_blank" rel="noopener"><img class="cimg" src="${esc(d.img)}" alt=""></a>`:''}${esc(d.t)}</div><span class="time">${t}</span></div>`}).join('');
  el.querySelectorAll('[data-lmid]').forEach(bt=>bt.onclick=()=>{if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.action)window.OM_BATTLE_UI.action({act:'pots',mid:bt.dataset.lmid})});
+ if(!el.innerHTML&&CHAN.cur==='o')el.innerHTML='<div class="msg sys"><div class="bub">잡담 창 — 여기서 한 말은 세션 로그·무대에 나오지 않는다</div></div>';chanDots();
  if(scroll!==false)el.scrollTop=el.scrollHeight}
 
 /* ---------- 씬 ---------- */
@@ -244,7 +253,10 @@ async function loadFromRoster(tid,side){
  for(const k in nb.mons)if(nb.mons[k].tid===trainer.id)delete nb.mons[k];
  mons.forEach((mon,i)=>{mon.side=side;mon.slot=i;mon.entry='';mon.started=false;mon.rank={attack:0,defense:0,specialattack:0,specialdefense:0,speed:0,accuracy:0,evasion:0,critical:0};mon.mod={};mon.states={};mon.teraActive=false;
   mon.hp={max:mon.stats[0],cur:mon.sheetHp==null?mon.stats[0]:Math.min(mon.sheetHp,mon.stats[0])};nb.mons[mon.id]=mon});
- if(await set(['battle'],nb)){toast(`${trainer.name} 파티 ${mons.length}체를 불러왔다`);sysLog(`${trainer.name} (${side==='left'?'좌측':'우측'}) 파티 등록 · ${mons.length}체`,'battle');VIEW='battle';renderScene()}}
+ let ok;if(ST.role==='gm')ok=await set(['battle'],nb);
+ else{if(tid!==ST.seat)return toast('내 트레이너만 올릴 수 있다');const cur=B();const nm=Object.assign({},cur.mons||{});for(const k in nm)if(nm[k].tid===tid)delete nm[k];for(const mon of mons)nm[mon.id]=nb.mons[mon.id];
+  ok=await set(['battle','trainers',tid],trainer);if(ok)ok=await set(['battle','mons'],nm);for(const s of ['left','right']){const a=((cur.sides||{})[s]||{}).trainers||[];const want=nb.sides[s].trainers;if(ok&&JSON.stringify(a)!==JSON.stringify(want))ok=await set(['battle','sides',s,'trainers'],want)}}
+ if(ok){toast(`${trainer.name} 파티 ${mons.length}체를 불러왔다`);sysLog(`${trainer.name} (${side==='left'?'좌측':'우측'}) 파티 등록 · ${mons.length}체`,'battle');VIEW='battle';renderScene()}}
 
 /* ---------- 알까기 (개체값) ---------- */
 function openHatch(tid){
@@ -312,7 +324,7 @@ function openNick(){const m=openModal(`<div class="mhead"><h2>내 이름</h2><sp
 /* 로그 저장: 방의 전체 로그를 HTML(아바타 · 그림 · 배틀 카드 · 날짜 구분) 또는 TXT 로. 설정은 om_logsave 에 기억 */
 async function fetchAllLog(){const out=[];let after=0;for(let i=0;i<200;i++){const rows=await DBS().getLog(ST.room,after,1000);if(!rows||!rows.length)break;out.push(...rows);after=rows[rows.length-1].id;if(rows.length<1000)break}return out}
 function logKind(r){const d=r.data||{};if(r.kind==='chat'&&d.bat)return d.bat==='battle'?'battle':'sys';if(r.kind==='chat'&&d.sms)return 'sms';if(r.kind==='whisper')return 'whisper';if(r.kind==='dice')return 'dice';if(r.kind==='chat')return 'chat';if(r.kind==='battle')return 'battle';return 'sys'}
-const LOGSAVE_KEY='om_logsave';function logSaveCfg(){const d={chat:1,dice:1,battle:1,sms:0,whisper:0,av:1,img:1,days:1,theme:'dark',size:15,narr:1,pav:36,pshape:'round',pside:'left'};try{return Object.assign(d,JSON.parse(localStorage.getItem(LOGSAVE_KEY)||'{}'))}catch(e){return d}}
+const LOGSAVE_KEY='om_logsave';function logSaveCfg(){const d={chat:1,dice:1,battle:1,sms:0,whisper:0,ooc:0,av:1,img:1,days:1,theme:'dark',size:15,narr:1,pav:36,pshape:'round',pside:'left'};try{return Object.assign(d,JSON.parse(localStorage.getItem(LOGSAVE_KEY)||'{}'))}catch(e){return d}}
 function buildLogHtml(rows,o){const esc2=x=>String(x??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
  const name=(ST.roomRow&&ST.roomRow.name)||ST.room;const stamp=new Date().toISOString().slice(0,10);
  const dark=o.theme!=='light';const C=dark?{bg:'#101114',card:'#17181d',line:'#2a2b31',fg:'#ececec',mute:'#8a8f99',me:'#2a1d1f',sys:'#1c1d22'}:{bg:'#f6f3ec',card:'#ffffff',line:'#d9d4c8',fg:'#1a1a1f',mute:'#6a7179',me:'#fff1f1',sys:'#efece4'};
@@ -325,7 +337,7 @@ function buildLogHtml(rows,o){const esc2=x=>String(x??'').replace(/&/g,'&amp;').
  .bub img{display:block;max-width:360px;max-height:360px;border-radius:8px;margin:4px 0}
  .narr .bub{font-style:italic;color:${C.mute};background:transparent;border-style:dashed}
  .sys{justify-content:center}.sys .bub{font-size:12px;color:${C.mute};background:${C.sys};border-radius:999px;padding:3px 12px}
- .dice .bub{border-left:4px solid #3b8bd6}.whisper .bub{border-left:4px solid #9b6bd6;opacity:.9}.sms .bub{border-left:4px solid #2f8f5b}.sms .who::before{content:"📱 "}
+ .ooc .bub{opacity:.75;border-style:dashed}.ooc .who::after{content:" · 잡담";font-weight:400;color:${C.mute}}.dice .bub{border-left:4px solid #3b8bd6}.whisper .bub{border-left:4px solid #9b6bd6;opacity:.9}.sms .bub{border-left:4px solid #2f8f5b}.sms .who::before{content:"📱 "}
  .card{border:1px solid ${C.line};border-left:5px solid var(--tc);background:${C.card};padding:8px 12px;border-radius:6px;max-width:78%;line-height:1.5}.card .tag{display:inline-block;font-size:11px;background:var(--tc);color:#fff;padding:1px 7px;border-radius:3px;margin-right:6px}.card b{font-size:14px}.card .eff{color:${C.mute};font-size:12px;margin-top:4px;white-space:pre-wrap}.card .bl{font-size:13px}.card .bl.pos{color:#3aa65d}.card .bl.neg{color:#d9243f}`;
  let lastDay='';const out=[];
  for(const r of rows){const d=r.data||{};const k=logKind(r);const at=new Date(r.at);const dayKey=isNaN(at)?'':`${at.getFullYear()}.${String(at.getMonth()+1).padStart(2,'0')}.${String(at.getDate()).padStart(2,'0')}`;const hm=isNaN(at)?'':`${String(at.getHours()).padStart(2,'0')}:${String(at.getMinutes()).padStart(2,'0')}`;
@@ -338,7 +350,7 @@ function buildLogHtml(rows,o){const esc2=x=>String(x??'').replace(/&/g,'&amp;').
   if(!d.t&&!d.img)continue;
   const narr=o.narr&&/^\*(.+)\*$/s.test(String(d.t||''));const text=narr?String(d.t).replace(/^\*(.+)\*$/s,'$1'):String(d.t||'');
   const who=k==='whisper'?`${r.who} → ${d.toName||d.to||''}`:(d.as||r.who||'');const av=(+o.pav>0)?avatarOf(r):'';
-  out.push(`<div class="m ${k} ${narr?'narr':''}"><div class="av ${av?'':'none'}" style="${av?`background-image:url('${esc2(av)}')`:''}"></div><div class="bub"><span class="who">${esc2(who)}</span>${o.img&&d.img?`<a href="${esc2(d.img)}" target="_blank"><img src="${esc2(d.img)}" alt=""></a>`:''}${esc2(text)}</div><span class="tm">${hm}</span></div>`)}
+  out.push(`<div class="m ${k} ${narr?'narr':''} ${isOoc(r)?'ooc':''}"><div class="av ${av?'':'none'}" style="${av?`background-image:url('${esc2(av)}')`:''}"></div><div class="bub"><span class="who">${esc2(who)}</span>${o.img&&d.img?`<a href="${esc2(d.img)}" target="_blank"><img src="${esc2(d.img)}" alt=""></a>`:''}${esc2(text)}</div><span class="tm">${hm}</span></div>`)}
  /* 다른 도구(맵툴 로그 정리기)가 그대로 읽을 수 있게 원본 줄 · 초상 · 트레이너 이름을 JSON 으로 함께 넣는다 */
  const por={};for(const r of rows){const d=r.data||{};const nm=(d.as||r.who||'').trim();if(nm&&por[nm]===undefined){const u=avatarOf(r);por[nm]=u||''}}
  const tn={};for(const t of Object.values((ST.state.roster||{}).trainers||{}))if(t&&t.id)tn[t.id]=t.name;
@@ -348,7 +360,7 @@ function openSaveLog(){const o=logSaveCfg();const ck=(id,l,on)=>`<label class="s
  const m=openModal(`<div class="mhead"><h2>로그 저장</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
  <p class="small muted">방의 전체 로그를 파일로 내려받는다. 설정은 이 브라우저에 기억된다.</p>
  <div class="sec">넣을 것</div>
- <div class="row" style="flex-wrap:wrap;gap:12px">${ck('chat','대화',o.chat)}${ck('dice','주사위',o.dice)}${ck('battle','배틀 · 시스템',o.battle)}${ck('sms','문자',o.sms)}${ck('whisper','귓속말 (내 것만)',o.whisper)}</div>
+ <div class="row" style="flex-wrap:wrap;gap:12px">${ck('chat','대화',o.chat)}${ck('dice','주사위',o.dice)}${ck('battle','배틀 · 시스템',o.battle)}${ck('sms','문자',o.sms)}${ck('whisper','귓속말 (내 것만)',o.whisper)}${ck('ooc','잡담 창',o.ooc)}</div>
  <div class="sec" style="margin-top:10px">보기 (HTML)</div>
  <div class="row" style="flex-wrap:wrap;gap:12px">${ck('img','올린 그림',o.img)}${ck('days','날짜 구분선',o.days)}${ck('narr','*지문* 은 기울임',o.narr)}</div>
  <div class="row" style="flex-wrap:wrap;gap:12px;margin-top:6px"><label class="small">포트레이트 <select data-lsv="pav"><option value="0" ${+o.pav===0?'selected':''}>없음</option><option value="28" ${+o.pav===28?'selected':''}>작게</option><option value="36" ${+o.pav===36?'selected':''}>보통</option><option value="52" ${+o.pav===52?'selected':''}>크게</option><option value="72" ${+o.pav===72?'selected':''}>아주 크게</option></select></label><label class="small">모양 <select data-lsv="pshape"><option value="round" ${o.pshape!=='square'?'selected':''}>둥글게</option><option value="square" ${o.pshape==='square'?'selected':''}>네모</option></select></label></div>
@@ -356,10 +368,10 @@ function openSaveLog(){const o=logSaveCfg();const ck=(id,l,on)=>`<label class="s
  <div class="row" style="margin-top:12px">${(window.OM_CONFIG||{}).organizerUrl?`<a class="btn" id="lg_org" target="_blank" rel="noopener" href="${esc((window.OM_CONFIG||{}).organizerUrl)}?oremas=${encodeURIComponent(ST.room)}" title="맵툴 로그 정리기에서 이 방 로그를 바로 연다 (초상·주사위·배틀 카드 그대로)">정리기에서 열기 ↗</a>`:''}<span class="sp"></span><button class="btn" id="lg_txt">TXT 로</button><button class="btn pri" id="lg_html">HTML 로</button></div>`);
  const read=()=>{const c=logSaveCfg();m.querySelectorAll('[data-ls]').forEach(x=>c[x.dataset.ls]=x.checked?1:0);m.querySelectorAll('[data-lsv]').forEach(x=>c[x.dataset.lsv]=x.value);try{localStorage.setItem(LOGSAVE_KEY,JSON.stringify(c))}catch(e){}return c};
  const go=async fmt=>{const c=read();toast('로그를 읽는 중…');let rows;try{rows=await fetchAllLog()}catch(e){return toast('읽지 못했다: '+e.message)}
-  const keep=rows.filter(r=>{const k=logKind(r);if(k==='chat')return c.chat;if(k==='dice')return c.dice;if(k==='sms')return c.sms;if(k==='whisper')return c.whisper;return c.battle});
+  const keep=rows.filter(r=>{const k=logKind(r);if(isOoc(r))return !!c.ooc;if(k==='chat')return c.chat;if(k==='dice')return c.dice;if(k==='sms')return c.sms;if(k==='whisper')return c.whisper;return c.battle});
   const name=((ST.roomRow&&ST.roomRow.name)||ST.room).replace(/[\\/:*?"<>|]/g,'_');const stamp=new Date().toISOString().slice(0,10);let blob,fn;
   if(fmt==='txt'){const tm=r=>{const d=new Date(r.at);return isNaN(d)?'':`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`};
-   const lines=keep.map(r=>{const d=r.data||{};const k=logKind(r);const who=k==='whisper'?`${r.who} → ${d.toName||d.to||''}`:(d.as||r.who||'');const t=d.clear?'무대를 비웠다':String(d.t||'')+(d.img?' [그림] '+d.img:'');if(!t.trim())return '';return `[${tm(r)}] ${k==='sms'?'[문자] ':k==='whisper'?'[귓속말] ':''}${who?who+': ':''}${t}`}).filter(Boolean);
+   const lines=keep.map(r=>{const d=r.data||{};const k=logKind(r);const who=k==='whisper'?`${r.who} → ${d.toName||d.to||''}`:(d.as||r.who||'');const t=d.clear?'무대를 비웠다':String(d.t||'')+(d.img?' [그림] '+d.img:'');if(!t.trim())return '';return `[${tm(r)}] ${isOoc(r)?'[잡담] ':''}${k==='sms'?'[문자] ':k==='whisper'?'[귓속말] ':''}${who?who+': ':''}${t}`}).filter(Boolean);
    blob=new Blob(['﻿'+lines.join('\n')],{type:'text/plain;charset=utf-8'});fn=`${name}_로그_${stamp}.txt`}
   else{blob=new Blob([buildLogHtml(keep,c)],{type:'text/html;charset=utf-8'});fn=`${name}_로그_${stamp}.html`}
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fn;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);closeModal();toast(`${keep.length}줄을 저장했다`)};
@@ -399,11 +411,15 @@ function openRoomSettings(){
   <div class="row"><label style="width:70px">효과음</label><input type="range" min="0" max="1" step="0.05" id="volSe" value="${(()=>{try{return localStorage.getItem('om_vol_se')??0.7}catch(e){return 0.7}})()}" style="flex:1"><span class="mono small" id="volSeV"></span><button class="btn xs ghost" id="volSeTest">시험</button></div>
   <div class="sec" style="margin-top:12px">알림 (이 브라우저에서만)</div>
   <div class="row" style="flex-wrap:wrap;gap:14px"><label class="small"><input type="checkbox" data-alarm="chat" ${alarm().chat?'checked':''}> 채팅이 올라오면 소리</label><label class="small"><input type="checkbox" data-alarm="sms" ${alarm().sms?'checked':''}> 문자가 오면 소리·알림</label><label class="small"><input type="checkbox" data-alarm="typing" ${alarm().typing?'checked':''}> 입력 중 표시</label></div>
-  ${isGm?`<div class="sec" style="margin-top:12px">배틀</div><div class="row"><label class="small"><input type="checkbox" id="plBattle" ${(ST.state.rp||{}).plBattle!==false?'checked':''}> 플레이어도 배틀을 진행할 수 있다 (파티 불러오기 · 시합 개시 · 턴 진행 · 필드 — 모의전용. 상대 지시 엿보기 · 강제 · 모두 공개는 GM 만)</label></div>`:''}
+  ${isGm?`<div class="sec" style="margin-top:12px">배틀</div><div class="row"><label class="small"><input type="checkbox" id="plBattle" ${(ST.state.rp||{}).plBattle!==false?'checked':''}> 플레이어도 배틀을 진행할 수 있다 (파티 불러오기 · 시합 개시 · 턴 진행 · 필드 — 모의전용. 상대 지시 엿보기 · 강제 · 모두 공개는 GM 만)</label></div>
+  <div class="row"><label class="small"><input type="checkbox" id="seatOwn" ${(ST.state.rp||{}).seatOwn===true?'checked':''}> 플레이어는 자기 것만 바꿀 수 있다 — 자기 트레이너·포켓몬·지시·스킬 칸만. 턴·페이즈·필드·남의 HP·랭크·부상은 GM 만 (켜면 위 「플레이어도 배틀 진행」은 꺼진 것과 같다)</label></div>
+  <div class="row"><label class="small"><input type="checkbox" id="gmHands" ${(ST.state.rp||{}).gmHands===false?'checked':''}> GM 도 플레이어의 지시·상태를 건드리지 않는다 — 플레이어의 지시·준비는 그 플레이어만 쓰고 연다, 플레이어 포켓몬의 HP·랭크·상태 창은 주인만 연다 (턴 종료 같은 자동 처리는 그대로)</label></div>`:''}
   <div class="row"><button class="btn sm" id="seatMgr">자리 관리</button></div>`);
  m.querySelectorAll('[data-alarm]').forEach(c=>c.onchange=()=>setAlarm(c.dataset.alarm,c.checked));
  const us=$('#uiScale',m),uc=$('#uiChat',m),ud=$('#uiDlg',m),uf=$('#uiFont',m),uh=$('#uiHead',m),ua=$('#uiAv',m);const showUi=()=>{$('#uiScaleV',m).textContent=us.value+'%';$('#uiChatV',m).textContent=uc.value+'px';$('#uiDlgV',m).textContent=ud.value+'px';$('#uiAvV',m).textContent=ua.value+'px'};showUi();
 const pb=$('#plBattle',m);if(pb)pb.onchange=async()=>{await set(['rp','plBattle'],pb.checked);toast(pb.checked?'플레이어도 배틀을 진행할 수 있다':'배틀 진행은 GM 만')};
+ const so=$('#seatOwn',m);if(so)so.onchange=async()=>{await set(['rp','seatOwn'],so.checked);sysLog(so.checked?'방 설정: 플레이어는 자기 것만 바꿀 수 있다':'방 설정: 「자기 것만」을 껐다');toast(so.checked?'플레이어는 자기 것만':'「자기 것만」 끔')};
+ const gh=$('#gmHands',m);if(gh)gh.onchange=async()=>{await set(['rp','gmHands'],gh.checked?false:null);sysLog(gh.checked?'방 설정: GM 도 플레이어의 지시·상태를 건드리지 않는다':'방 설정: 「GM 불간섭」을 껐다');toast(gh.checked?'GM 불간섭 켬':'GM 불간섭 끔')};
  const saveUi=()=>{UI.scale=+us.value;UI.chat=+uc.value;UI.dlg=+ud.value;UI.av=+ua.value;UI.font=uf.value;UI.head=uh.value;try{localStorage.setItem('om_ui',JSON.stringify(UI))}catch(e){}applyUi();showUi()};[us,uc,ud,ua].forEach(el=>el.oninput=saveUi);uf.onchange=saveUi;uh.onchange=saveUi;
  $('#uiReset',m).onclick=()=>{Object.assign(UI,UI_DEF);us.value=UI.scale;uc.value=UI.chat;ud.value=UI.dlg;uf.value=UI.font;uh.value=UI.head;saveUi()};
  const vb=$('#volBgm',m),vs=$('#volSe',m);const show=()=>{$('#volBgmV',m).textContent=Math.round(vb.value*100)+'%';$('#volSeV',m).textContent=Math.round(vs.value*100)+'%'};show();

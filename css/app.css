@@ -1177,3 +1177,12 @@ label.ph-item input[type=checkbox]{width:16px;height:16px;flex:none}
 .upre{margin:4px 0 6px;padding:4px 8px;border:1px dashed #7b4fd6;background:rgba(123,79,214,.08)}.upre.ro{opacity:.7;pointer-events:none}
 .firerow.pre{outline:1px solid var(--yel2)}
 .pot.sp em{white-space:nowrap;flex:none}.tuq .pot{white-space:nowrap}
+
+/* 세션 / 잡담 대화창 탭 */
+.ctabs{display:flex;border-bottom:3px solid #000;background:#000}
+.ctabs button{flex:1;font:inherit;font-size:12px;font-weight:700;padding:5px 0;border:0;background:#2a2a2a;color:#bbb;cursor:pointer;position:relative;letter-spacing:.06em}
+.ctabs button.on{background:var(--red);color:#fff}
+.ctabs .cdot{display:none;position:absolute;top:5px;right:calc(50% - 26px);width:7px;height:7px;border-radius:50%;background:#f5d000}
+.ctabs button.new .cdot{display:block}
+.side.ooc .log{background-image:repeating-linear-gradient(45deg,rgba(127,127,127,.05) 0 10px,transparent 10px 20px)}
+.side.ooc .inbox{background:#3a3a3a}
