@@ -351,6 +351,12 @@ function weakHtml(m){const TYPES=['Normal','Fire','Water','Electric','Grass','Ic
  const rows=TYPES.map(t=>{const e=Bt.effectiveness([t],m,{});return [t,e&&typeof e==='object'?+e.value:+e]}).filter(x=>x[1]!==1);
  const G=[[4,'×4','w4'],[2,'×2','w2'],[0.5,'×½','r2'],[0.25,'×¼','r4'],[0,'×0','r0']].map(([v,l,c])=>{const ch=rows.filter(x=>x[1]===v).map(x=>typeChip(x[0])).join('');return ch?`<div class="dxw ${c}"><i>${l}</i>${ch}</div>`:''}).join('');
  return `<div class="dxweak">${G||'<span class="dim small">약점·내성 없음</span>'}</div>`}
+/* 상세 창용 큰 상성판: 약점 · 내성 두 칸, 배율 띠 + 큰 타입 칩 */
+function affHtml(m){const TYPES=['Normal','Fire','Water','Electric','Grass','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'];const Bt=window.OM_BATTLE;if(!Bt)return '';
+ const rows=TYPES.map(t=>{const e=Bt.effectiveness([t],m,{});return [t,e&&typeof e==='object'?+e.value:+e]}).filter(x=>x[1]!==1);
+ const grp=list=>list.map(([v,l,c])=>{const ch=rows.filter(x=>x[1]===v).map(x=>typeChip(x[0])).join('');return ch?`<div class="afr ${c}"><i>${l}</i><div class="afc">${ch}</div></div>`:''}).join('');
+ const W=grp([[4,'×4','w4'],[2,'×2','w2']]),R=grp([[0.5,'×½','r2'],[0.25,'×¼','r4'],[0,'×0','r0']]);
+ return `<div class="aff"><div class="afcol wk"><div class="afh">약점</div>${W||'<div class="afnone">없음</div>'}</div><div class="afcol rs"><div class="afh">내성 · 무효</div>${R||'<div class="afnone">없음</div>'}</div></div>`}
 function openMon(mid){
  const b=B();const m=(b.mons||{})[mid];if(!m)return;const tr=(b.trainers||{})[m.tid]||{name:''};
  const full=ST.role==='gm'||ST.seat===m.tid;
@@ -368,11 +374,11 @@ function openMon(mid){
   <div class="dxhead"><div class="dxpic" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div>
    <div class="dxinfo"><div class="dxname">${esc(m.name)}<span class="lv">Lv.${m.lv}</span><span class="small muted">${esc(tr.name)}</span><span class="row" style="gap:4px;display:inline-flex">${m.types.filter(t=>t!=='-').map(typeChip).join('')}</span>${m.tera&&m.tera!=='-'?`<span class="badge">테라 ${esc(m.tera)}</span>`:''}${m.role?`<span class="badge">${esc(m.role)}</span>`:''}${m.pride?`<span class="badge">프라이드 ${esc(m.pride)}</span>`:''}</div>
     <div class="dxhp"><div class="hpbar ${pct<=25?'low':pct<=50?'mid':''}"><i style="width:${pct}%"></i></div><span class="mono">${full?m.hp.cur+' / '+m.hp.max:pct+'%'}</span></div>
-    ${(()=>{const U=window.OM_BATTLE_UI;if(!U||!U.nowParts||!m.entry)return '';const P=U.nowParts(m);const row=(k,h)=>`<div class="dxrow dxnow"><span class="k">${k}</span><div class="rks">${h||'<span class="small dim">없음</span>'}</div></div>`;return row('랭크·배율',P.rank)+row('상태',P.state)+row('효과',P.fx)})()}
     <div class="dxrow"><span class="k">특성</span><span><b>${esc(m.ability||'-')}</b>${an('trait',m.ability)}<div class="dbmini">${effHtml('trait',m.ability,m.abilityEff)}</div></span></div>
     <div class="dxrow"><span class="k">소지품</span><span><b>${esc(m.item||'-')}</b>${an('item',m.item)}<div class="dbmini">${effHtml('item',m.item,m.itemEff)}</div></span></div>
-    <div class="dxrow"><span class="k">능력</span>${stat6}</div>
-    ${hpRow}</div><div class="dxside"><div class="k">상성</div>${weakHtml(m)}</div></div>
+   </div><div class="dxside dxnowc">${(()=>{const U=window.OM_BATTLE_UI;if(!U||!U.nowParts||!m.entry)return '<div class="k">랭크 · 상태</div><div class="small dim">필드에 나와 있지 않다</div>';const P=U.nowParts(m);const row=(k,h)=>`<div class="dxnow"><div class="k">${k}</div><div class="rks">${h||'<span class="small dim">없음</span>'}</div></div>`;return row('랭크 · 배율',P.rank)+row('상태',P.state)+row('효과',P.fx)})()}</div></div>
+  <div class="dxlow"><div class="dxabil"><div class="k">능력</div>${stat6}</div><div class="dxaffw"><div class="k">상성</div>${affHtml(m)}</div></div>
+  ${hpRow}
   <div class="sec">기술 <span class="note">${m.moves.length}개</span></div>
   <table class="t dxmv"><tr><th>이름</th><th>타입</th><th>분류</th><th>위력</th><th>명중</th><th>범위</th><th>우선</th><th>효과</th></tr>
    ${m.moves.map(mv=>`<tr><td class="nw"><b>${esc(mv.name)}</b>${mv.half?' <span class="small muted">½</span>':''}${mv.missing?' <span class="small" style="color:var(--red)">DB 없음</span>':''}</td><td class="nw">${typeChip(mv.typeEn)}</td><td class="nw">${esc(mv.cat)}</td><td class="mono">${mv.pow||'-'}</td><td class="mono">${mv.acc||'필중'}</td><td class="nw">${esc(mv.range)}</td><td class="mono">${mv.prio||0}</td><td class="small eff">${esc(mv.eff)}</td></tr>`).join('')}</table>

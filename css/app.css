@@ -1488,3 +1488,30 @@ label.tgc:has(input:focus-visible){outline:2px solid var(--yel)}
 .pf-kgrp{display:flex;align-items:baseline;gap:8px;margin:12px 0 6px;padding-top:8px;border-top:1px dashed #333}
 .pf-kgrp b{font-size:13px;white-space:nowrap}.pf-kgrp small{font-size:11px;color:var(--mute)}
 .pf-key.dup .pf-cap{background:var(--yel)}
+/* ===== 2026-10-22 포켓몬 상세: 오른쪽 = 랭크·상태, 아래 줄 = 능력 | 큰 상성판 ===== */
+.dxside.dxnowc{width:260px;gap:10px}
+.dxnowc .k{font-family:var(--lab);font-size:11px;color:var(--mute);letter-spacing:.06em;margin-bottom:3px}
+.dxnowc .rks{display:flex;flex-wrap:wrap;gap:3px}.dxnowc .rk{font-size:11.5px;padding:1px 6px}
+.dxlow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;margin-top:8px}
+.dxlow>div{background:#111216;border:1px solid var(--line2);padding:8px 10px;min-width:0}
+.dxlow .k{font-family:var(--lab);font-size:11px;color:var(--mute);letter-spacing:.06em;margin-bottom:6px}
+.dxabil .dxst.wide{max-width:none;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.dxabil .dxst div{padding:5px 4px}.dxabil .dxst b{font-size:18px}.dxabil .dxst small{font-size:11px}
+.aff{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.afcol{display:flex;flex-direction:column;gap:7px;min-width:0}
+.afh{font-size:12px;font-weight:700;padding-bottom:3px;border-bottom:2px solid #555;color:#ddd}
+.afcol.wk .afh{border-color:#d6672a;color:#ffb27a}.afcol.rs .afh{border-color:#2f8f5b;color:#8fe0b0}
+.afr{display:flex;align-items:flex-start;gap:6px}
+.afr i{flex:none;min-width:34px;text-align:center;font-style:normal;font-family:var(--mono);font-size:13px;font-weight:700;color:#fff;background:#444;padding:2px 4px;line-height:20px}
+.afr.w4 i{background:#b3261e}.afr.w2 i{background:#d6672a}.afr.r2 i{background:#2f8f5b}.afr.r4 i{background:#1f7a4d}.afr.r0 i{background:#3a3f8f}
+.afc{display:flex;flex-wrap:wrap;gap:4px;min-width:0}
+.afc .type{font-size:13.5px;line-height:24px;padding:0 10px;margin:0}
+.afnone{font-size:12px;color:var(--mute)}
+.dxlow+.hpq{margin-top:8px}
+@media (max-width:760px){.dxlow{grid-template-columns:1fr}.dxside.dxnowc{width:auto}}
+/* 배틀 카드 포텐셜 칩: 글자가 한 자씩 세로로 접히지 않게 — 이름은 한 줄(넘치면 …), 칩·점·버튼은 줄지 않게 */
+.pots{align-items:flex-start}
+.pot{flex:0 1 auto}
+.pot>em,.pot>.pips,.pot>.btn,.pot>button,.pot>.small{flex:none}
+.pot>.potn{flex:0 1 auto}
+.pf-keywrap.off{opacity:.4;pointer-events:none}

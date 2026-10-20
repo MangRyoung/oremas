@@ -13,7 +13,7 @@ window.OM_PREFS=(()=>{
   ['bCmd','지시 입력으로','c','b'],['bReady','준비 완료 · 취소','y','b'],['bFire','4식 6령','q','b'],['bReveal','모두 공개 (GM)','o','b'],['bField','필드','f','b'],['bTurnEnd','턴 종료 처리','e','b'],
   ['mRoll','공격 창 굴리기','r','m'],['mApply','공격·상태 창 적용','Enter','m']];
  const KGRP=[['','일반'],['b','배틀','배틀 화면에서 · 「지금 차례」= 행동 순서의 지금 칸'],['m','배틀 창','공격·상태 창이 열려 있을 때']];
- const DEF={bgmMute:0,seMute:0,alertVol:0.35,alertSound:'soft',quiet:1,stand:100,cutin:100,keys:Object.fromEntries(ACTS.map(a=>[a[0],a[2]]))};
+ const DEF={keysOn:1,bgmMute:0,seMute:0,alertVol:0.35,alertSound:'soft',quiet:1,stand:100,cutin:100,keys:Object.fromEntries(ACTS.map(a=>[a[0],a[2]]))};
  let P=load();
  function load(){let o={};try{o=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(e){}const p=Object.assign({},DEF,o);p.keys=Object.assign({},DEF.keys,o.keys||{});return p}
  function save(){try{localStorage.setItem(KEY,JSON.stringify(P))}catch(e){}apply()}
@@ -49,7 +49,7 @@ window.OM_PREFS=(()=>{
   if(act==='bgm'){setBgmMute(!P.bgmMute);app.toast(P.bgmMute?'BGM 정지':'BGM 다시');return}
   const V={vRp:'rp',vBattle:'battle',vSheet:'sheet',vGraph:'graph',vCal:'calendar'}[act];if(V){app.view=V;app.renderScene()}}
  document.addEventListener('keydown',e=>{if(capturing){e.preventDefault();e.stopPropagation();const done=capturing;capturing=null;if(e.key!=='Escape'){P.keys[done.act]=e.key==='Backspace'||e.key==='Delete'?'':(e.key.length===1?e.key.toLowerCase():e.key);save()}done.redraw();return}
-  if(e.ctrlKey||e.metaKey||e.altKey||e.isComposing||typing(e))return;
+  if(!P.keysOn||e.ctrlKey||e.metaKey||e.altKey||e.isComposing||typing(e))return;
   const k=e.key.length===1?e.key.toLowerCase():e.key;const modal=!!document.querySelector('.modalbg');const app=A();const inBattle=!!app&&app.view==='battle';
   /* 같은 키가 여러 묶음에 있어도 지금 쓸 수 있는 것만: 창이 열려 있으면 「배틀 창」과 내 설정, 아니면 일반 + (배틀 화면이면) 배틀 */
   const ok=a=>a[3]==='m'?modal&&inBattle:modal?a[0]==='settings':a[3]==='b'?inBattle:true;
@@ -89,9 +89,10 @@ window.OM_PREFS=(()=>{
    ${sl('stand','무대 스탠딩',50,150,5,P.stand,'%')}
    ${sl('cutin','컷인',50,150,5,P.cutin,'%',`<button class="pf-mute" data-pfb="cutTest" title="미리 보기">▶</button>`)}</section>
   <section class="pf-card"><header><i>⌨</i><b>단축키</b><small>키보드가 있을 때 · 입력칸 밖에서</small></header>
-   ${KGRP.map(([g,gn,gs])=>`${g?`<div class="pf-kgrp"><b>${gn}</b>${gs?`<small>${gs}</small>`:''}</div>`:''}<div class="pf-keys">${ACTS.filter(a=>(a[3]||'')===g).map(([k,n])=>`<div class="pf-key ${dup(k)?'dup':''}"><span>${n}</span><button class="pf-cap ${capturing&&capturing.act===k?'rec':''}" data-pfk="${k}" ${dup(k)?'title="같은 묶음에 같은 키가 있다 — 위의 것만 동작"':''}>${capturing&&capturing.act===k?'키를 눌러 줘…':esc(keyName(P.keys[k]))}</button></div>`).join('')}</div>`).join('')}
+   ${sw('keysOn',P.keysOn,'단축키 쓰기','끄면 아래 키가 모두 멈춘다 (설정은 남는다)')}
+   <div class="pf-keywrap ${P.keysOn?'':'off'}">   ${KGRP.map(([g,gn,gs])=>`${g?`<div class="pf-kgrp"><b>${gn}</b>${gs?`<small>${gs}</small>`:''}</div>`:''}<div class="pf-keys">${ACTS.filter(a=>(a[3]||'')===g).map(([k,n])=>`<div class="pf-key ${dup(k)?'dup':''}"><span>${n}</span><button class="pf-cap ${capturing&&capturing.act===k?'rec':''}" data-pfk="${k}" ${dup(k)?'title="같은 묶음에 같은 키가 있다 — 위의 것만 동작"':''}>${capturing&&capturing.act===k?'키를 눌러 줘…':esc(keyName(P.keys[k]))}</button></div>`).join('')}</div>`).join('')}
    <div class="pf-note">칸을 누르고 키를 누르면 바뀐다 · Backspace 지우기 · Esc 취소 · 노란 칸은 겹친 키</div>
-   <div class="pf-foot"><button class="btn xs ghost" data-pfb="keyreset">단축키만 기본으로</button></div></section>
+   <div class="pf-foot"><button class="btn xs ghost" data-pfb="keyreset">단축키만 기본으로</button></div></div></section>
   <div class="pf-foot"><button class="btn xs ghost" data-pfb="reset">모두 기본으로</button></div></div>`}
  function bind(root,redraw){const R=()=>{if(redraw)redraw();else{root.innerHTML=html({compact:root.classList.contains('cmp')||!!root.closest('.ph-screen')});bind(root)}};
   const app=A();const UI=app&&app.UI;
@@ -100,7 +101,7 @@ window.OM_PREFS=(()=>{
    if(k==='bgm'){if(RP())RP().setVolume('bgm',v)}else if(k==='se'){if(RP())RP().setVolume('se',v)}else if(k==='alertVol'){P.alertVol=v;save()}else if(k==='stand'||k==='cutin'){P[k]=v;save()}else setUi(k,v)});
   root.querySelectorAll('input[type=range][data-pf="alertVol"]').forEach(el=>el.onchange=()=>alert('test',true));
   root.querySelectorAll('select[data-pf]').forEach(el=>el.onchange=()=>setUi(el.dataset.pf,el.value));
-  root.querySelectorAll('input[type=checkbox][data-pf]').forEach(el=>el.onchange=()=>{const k=el.dataset.pf;if(k==='quiet'){P.quiet=el.checked?1:0;save();return}if(k.startsWith('al_')&&app&&app.setAlarm)app.setAlarm(k.slice(3),el.checked)});
+  root.querySelectorAll('input[type=checkbox][data-pf]').forEach(el=>el.onchange=()=>{const k=el.dataset.pf;if(k==='quiet'){P.quiet=el.checked?1:0;save();return}if(k==='keysOn'){P.keysOn=el.checked?1:0;save();return R()}if(k.startsWith('al_')&&app&&app.setAlarm)app.setAlarm(k.slice(3),el.checked)});
   root.querySelectorAll('[data-pfs]').forEach(el=>el.onclick=()=>{P.alertSound=el.dataset.pfs;save();alert('test',true);R()});
   root.querySelectorAll('[data-pfb]').forEach(el=>el.onclick=()=>{const k=el.dataset.pfb;
    if(k==='bgmMute'){setBgmMute(!P.bgmMute);return R()}if(k==='seMute'){setSeMute(!P.seMute);return R()}if(k==='alertTest')return alert('test',true);
