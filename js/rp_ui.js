@@ -30,8 +30,14 @@ window.OM_RP_UI=(()=>{
  function gm(){return A().ST.role==='gm'}
  function mapS(){const m=R().map||{};return {locs:m.locs&&m.locs.length?m.locs:DEFAULT_LOCS,vis:m.vis||{},party:m.party||{n:0,vis:1},routes:m.routes||[],npcs:m.npcs||[],ann:m.ann==null?1:m.ann,reveal:m.reveal==null?1:m.reveal}}
  function notices(){return (R().notices&&R().notices.length)?R().notices:DEFAULT_NOTICES}
- function bgOf(k){for(const g of DB().bg||[])for(const i of g.i)if(i.k===k)return Object.assign({g:g.n},i);return null}
- function bgmUrl(g,s){const b=DB().bgm||{};const p=((b.groups||{})[g]||{})[s];return p?(/^https?:/.test(p)?p:b.base+p):''}
+ function bgGroups(){return R().bgList||DB().bg||[]}
+ function bgOf(k){for(const g of bgGroups())for(const i of g.i)if(i.k===k)return Object.assign({g:g.n},i);return null}
+ /* 브금 목록 = 기본 목록 + 방에서 더한 것 − 방에서 지운 것 (rp.bgmX = {add:{g:{s:url}}, del:{"g":1, "g\u0001s":1}}) */
+ function bgmGroups(){const b=DB().bgm||{groups:{}};const X=R().bgmX||{};const del=X.del||{};const out={};
+  for(const g in b.groups){if(del[g])continue;out[g]={};for(const s in b.groups[g]){if(del[g+'\u0001'+s])continue;out[g][s]=b.groups[g][s]}}
+  for(const g in X.add||{}){if(del[g])continue;out[g]=out[g]||{};for(const s in X.add[g]){if(del[g+'\u0001'+s])continue;out[g][s]=X.add[g][s]}}
+  for(const g in out)if(!Object.keys(out[g]).length&&!(X.add||{})[g])delete out[g];return out}
+ function bgmUrl(g,s){const b=DB().bgm||{};const p=(bgmGroups()[g]||{})[s];return p?(/^https?:/.test(p)?p:b.base+p):''}
 
  /* ----- 화자(스탠딩) ----- */
  function charOf(key){const ST=A().ST;if(!key)return null;
@@ -161,20 +167,22 @@ window.OM_RP_UI=(()=>{
  function openConsole(tab){if(tab)GC.tab=tab;const r=R();const ST=A().ST;
   const TABS=[['bg','배경'],['bgm','음악'],['notice','공지'],['map','지도'],['stage','무대·스탠딩'],['etc','연출']];
   let body='';
-  if(GC.tab==='bg'){const groups=DB().bg||[];if(!GC.bgGroup&&groups.length)GC.bgGroup=groups[0].n;const g=groups.find(x=>x.n===GC.bgGroup)||groups[0]||{i:[]};const cur=(r.bg||{}).src;
-   body=`<div class="row" style="margin-bottom:8px"><div class="curbg" style="${cur?`background-image:url('${esc(cur)}')`:''}"></div><div><small class="dim">현재 배경</small><br><b>${esc((r.bg||{}).name||'없음')}</b></div><span class="sp"></span><button class="btn sm ghost" data-gc="bgx">배경 지우기</button></div>
+  if(GC.tab==='bg'){const groups=bgGroups();if(!GC.bgGroup&&groups.length)GC.bgGroup=groups[0].n;const g=groups.find(x=>x.n===GC.bgGroup)||groups[0]||{i:[]};const cur=(r.bg||{}).src;
+   body=`<div class="row" style="margin-bottom:8px"><div class="curbg" style="${cur?`background-image:url('${esc(cur)}')`:''}"></div><div><small class="dim">현재 배경</small><br><b>${esc((r.bg||{}).name||'없음')}</b></div><span class="sp"></span><button class="btn sm" data-gc="bgmgr">배경 관리</button><button class="btn sm ghost" data-gc="bgx">배경 지우기</button></div>
     ${(r.recentBg||[]).length?`<div class="sec">최근</div><div class="bgchips">${r.recentBg.map(k=>{const b=bgOf(k);return b?`<div class="bgchip ${cur===b.src?'cur':''}" data-gc="bg" data-k="${esc(k)}"><i style="background-image:url('${b.src}')"></i>${esc(b.l)}</div>`:''}).join('')}</div>`:''}
     <div class="sec">그룹</div><div class="tabs2 wrap">${groups.map(x=>`<button class="tab2 ${x.n===g.n?'on':''}" data-gc="bgg" data-g="${esc(x.n)}">${esc(x.n)} <small>${x.i.filter(i=>i.src).length}</small></button>`).join('')}</div>
     <div class="bggrid">${g.i.map(it=>it.src?`<div class="bgt ${cur===it.src?'cur':''}" data-gc="bg" data-k="${esc(it.k)}"><img src="${it.src}" loading="lazy" alt=""><span>${esc(it.l)}</span></div>`:'').join('')}</div>
     <div class="sec">직접 넣기</div><div class="row"><input type="text" id="gbg" placeholder="그림 주소 https://…" style="flex:1"><input type="text" id="gbgn" placeholder="장소 이름" style="width:160px"><label class="btn sm">파일<input type="file" accept="image/*" id="gbgf" hidden></label><button class="btn sm" data-gc="bgurl">적용</button></div>`}
-  else if(GC.tab==='bgm'){const B=DB().bgm||{groups:{}};const gs=Object.keys(B.groups).sort();if(!GC.bgmGroup)GC.bgmGroup=gs[0]||'';const q=GC.bgmQ.trim().toLowerCase();const now=r.bgm||{};
-   const list=q?gs.flatMap(g=>Object.keys(B.groups[g]).filter(s=>(g+' '+s).toLowerCase().includes(q)).map(s=>({g,s}))):Object.keys(B.groups[GC.bgmGroup]||{}).map(s=>({g:GC.bgmGroup,s}));
-   body=`<div class="row" style="margin-bottom:8px"><div class="eq ${now.src?'':'off'}">♪</div><div style="flex:1"><small class="dim">지금 재생</small><br><b>${esc(now.title||'재생 중인 곡 없음')}</b></div><label class="small">내 음량 <input type="range" min="0" max="1" step="0.05" value="${vol}" id="gvol"></label><button class="btn sm ghost danger" data-gc="stop">정지</button></div>
-    ${(r.recentBgm||[]).length?`<div class="sec">최근</div><div class="row" style="flex-wrap:wrap">${r.recentBgm.map(x=>`<button class="chip ${now.title===x.s?'on':''}" data-gc="play" data-g="${esc(x.g)}" data-s="${esc(x.s)}">${esc(x.s)}</button>`).join('')}</div>`:''}
-    <div class="row" style="margin-top:8px"><select id="gbmg" style="flex:1" ${q?'disabled':''}>${gs.map(g=>`<option value="${esc(g)}" ${g===GC.bgmGroup?'selected':''}>${esc(g)} (${Object.keys(B.groups[g]).length})</option>`).join('')}</select><input type="text" id="gbmq" placeholder="전체에서 찾기" value="${esc(GC.bgmQ)}" style="width:200px"></div>
-    <div class="songlist">${list.slice(0,300).map(x=>`<div class="song ${now.title===x.s?'cur':''}" data-gc="play" data-g="${esc(x.g)}" data-s="${esc(x.s)}"><b>${esc(x.s)}</b>${q?`<small class="dim"> ${esc(x.g)}</small>`:''}</div>`).join('')||'<div class="empty small">없다</div>'}${list.length>300?`<div class="small dim">${list.length-300}곡 더 — 검색어를 좁혀 줘</div>`:''}</div>
-    <div class="sec">직접 넣기</div><div class="row"><input type="text" id="gmu" placeholder="mp3 직링크 (Dropbox 는 dl.dropboxusercontent.com)" style="flex:1"><input type="text" id="gmt" placeholder="제목" style="width:160px"><button class="btn sm" data-gc="playurl">재생</button></div>
-    <div class="small dim" style="margin-top:4px">플레이어 화면에서는 「소리 켜기」를 한 번 눌러야 들린다 (브라우저 자동재생 제한). 음량은 각자 조절.</div>`}
+  else if(GC.tab==='bgm'){const G=bgmGroups();const gs=Object.keys(G).sort();if(GC.bgmGroup&&!gs.includes(GC.bgmGroup))GC.bgmGroup='';const q=GC.bgmQ.trim().toLowerCase();const now=r.bgm||{};const gn=g=>String(g).replace(/^[0-9.]+\s*/,'');
+   const list=[];for(const g of gs){if(GC.bgmGroup&&g!==GC.bgmGroup&&!q)continue;for(const sname of Object.keys(G[g]).sort()){if(q&&!(gn(g)+' '+sname).toLowerCase().includes(q))continue;list.push({g,s:sname})}}
+   body=`<div class="np"><div class="eq ${now.src?'':'off'}">♪</div><div style="flex:1;min-width:0"><small class="dim">지금 재생 (모두에게)</small><br><b>${esc(now.title?(now.group?gn(now.group)+' - ':'')+now.title:'재생 중인 곡 없음')}</b>${PV.title?`<br><small style="color:var(--yel2)">미리듣기: ${esc(PV.title)}</small>`:''}</div><label class="small">내 음량 <input type="range" min="0" max="1" step="0.05" value="${vol}" id="gvol"></label><button class="btn sm" data-gc="rand" ${GC.bgmGroup?'':'disabled'}>${GC.bgmGroup?'「'+esc(gn(GC.bgmGroup))+'」 랜덤':'그룹을 고르면 랜덤'}</button>${PV.audio?'<button class="btn sm ghost" data-gc="pvstop">미리듣기 정지</button>':''}<button class="btn sm ghost danger" data-gc="stop">정지</button></div>
+    ${(r.recentBgm||[]).length?`<div class="sec">최근 재생</div><div class="row" style="flex-wrap:wrap">${r.recentBgm.map(x=>`<button class="chip ${now.title===x.s&&now.group===x.g?'on':''}" data-gc="play" data-g="${esc(x.g)}" data-s="${esc(x.s)}">${esc(x.s)} <small class="dim">${esc(gn(x.g))}</small></button>`).join('')}</div>`:''}
+    <div class="sec">곡 목록 <span class="note">▶ 는 나만 미리듣기 · 제목을 누르면 모두에게 재생</span><span class="sp"></span><button class="btn xs" data-gc="gadd">＋ 그룹</button>${GC.bgmGroup?`<button class="btn xs ghost" data-gc="gren">그룹 이름</button><button class="btn xs ghost danger" data-gc="gdel">그룹 삭제</button>`:''}${Object.keys((r.bgmX||{}).del||{}).length?`<button class="btn xs ghost" data-gc="undel">지운 것 되살리기</button>`:''}</div>
+    <div class="row" style="margin:0 0 6px"><input type="text" id="gbmq" placeholder="곡 · 그룹 검색" value="${esc(GC.bgmQ)}" style="flex:1"></div>
+    <div class="gtabs"><button class="gt ${GC.bgmGroup?'':'on'}" data-gc="bgmg" data-g="">전체</button>${gs.map(g=>`<button class="gt ${g===GC.bgmGroup?'on':''}" data-gc="bgmg" data-g="${esc(g)}">${esc(gn(g))}<em>${Object.keys(G[g]).length}</em></button>`).join('')}</div>
+    <div class="songlist">${list.slice(0,400).map(x=>{const on=now.title===x.s&&now.group===x.g;return `<div class="song ${on?'cur':''}"><button class="pv ${PV.g===x.g&&PV.s===x.s?'on':''}" data-gc="pv" data-g="${esc(x.g)}" data-s="${esc(x.s)}" title="나만 미리듣기">▶</button><b class="sn" data-gc="play" data-g="${esc(x.g)}" data-s="${esc(x.s)}">${esc(x.s)}</b>${(!GC.bgmGroup||q)?`<small class="dim">${esc(gn(x.g))}</small>`:''}${on?'<em class="nowtag">재생 중</em>':''}<span class="sp"></span><button class="btn xs ghost" data-gc="sedit" data-g="${esc(x.g)}" data-s="${esc(x.s)}">수정</button><button class="btn xs ghost danger" data-gc="sdel" data-g="${esc(x.g)}" data-s="${esc(x.s)}">×</button></div>`}).join('')||'<div class="empty small">'+(q?'검색 결과가 없다':'곡이 없다')+'</div>'}${list.length>400?`<div class="small dim">${list.length-400}곡 더 — 그룹을 고르거나 검색어를 좁혀 줘</div>`:''}</div>
+    <div class="sec">곡 추가${GC.bgmGroup?' → 「'+esc(GC.bgmGroup)+'」':' <span class="note">그룹을 먼저 골라 줘</span>'}</div><div class="row"><input type="text" id="gmt" placeholder="제목" style="width:200px"><input type="text" id="gmu" placeholder="mp3 주소 (Dropbox 공유 링크도 됨 — 직링크로 바꿔 준다)" style="flex:1"><button class="btn sm" data-gc="sadd" ${GC.bgmGroup?'':'disabled'}>추가</button><button class="btn sm ghost" data-gc="playurl" title="목록에 넣지 않고 바로 재생">바로 재생</button></div>
+    <div class="small dim" style="margin-top:4px">플레이어 화면에서는 「소리 켜기」를 한 번 눌러야 들린다 (브라우저 자동재생 제한). 음량은 각자 조절. 기본 목록은 파일에 있고 여기서 더하거나 지운 것만 방에 저장된다.</div>`}
   else if(GC.tab==='notice'){const ns=notices();
    body=`<div class="row" style="margin-bottom:8px"><span class="small">멘트 바꿔 보내기</span><input type="text" id="gsub" placeholder="비우면 공지에 저장된 멘트" style="flex:1"></div>
     <div class="ngrid">${ns.map((n,i)=>`<button class="nact" data-gc="note" data-i="${i}"><i style="background:${esc(n.color)}"></i><span>${esc(n.name)}${n.bgm==='stop'?'<small>BGM 정지</small>':''}</span></button>`).join('')}<button class="nact" data-gc="cut"><i style="background:#5b6278"></i><span>절취선<small>가로줄</small></span></button></div>
@@ -201,10 +209,22 @@ window.OM_RP_UI=(()=>{
    if(k==='bgg'){GC.bgGroup=b.dataset.g;return re()}
    if(k==='bg'){const it=bgOf(b.dataset.k);if(!it)return;await A().set(['rp','bg'],{src:it.src,name:it.l,at:Date.now()});const rec=[b.dataset.k,...(r.recentBg||[]).filter(x=>x!==b.dataset.k)].slice(0,8);await A().set(['rp','recentBg'],rec);return re()}
    if(k==='bgx'){await A().set(['rp','bg'],null);return re()}
+   if(k==='bgmgr')return openBgMgr();
    if(k==='bgurl'){const u=$('#gbg',md).value.trim();if(!u)return;await A().set(['rp','bg'],{src:u,name:$('#gbgn',md).value.trim(),at:Date.now()});return re()}
-   if(k==='stop'){await A().set(['rp','bgm'],null);return re()}
-   if(k==='play'){const g=b.dataset.g,s=b.dataset.s;const u=bgmUrl(g,s);if(!u)return;unlocked=true;await A().set(['rp','bgm'],{src:u,title:s,group:g,at:Date.now()});const rec=[{g,s},...(r.recentBgm||[]).filter(x=>!(x.g===g&&x.s===s))].slice(0,10);await A().set(['rp','recentBgm'],rec);syncBgm(true);return re()}
-   if(k==='playurl'){const u=$('#gmu',md).value.trim();if(!u)return;unlocked=true;await A().set(['rp','bgm'],{src:u,title:$('#gmt',md).value.trim()||u.split('/').pop(),at:Date.now()});syncBgm(true);return re()}
+   if(k==='stop'){pvStop();await A().set(['rp','bgm'],null);return re()}
+   if(k==='bgmg'){GC.bgmGroup=b.dataset.g;GC.bgmQ='';return re()}
+   if(k==='play'){const g=b.dataset.g,s=b.dataset.s;pvStop();return playAll(g,s,re)}
+   if(k==='rand'){const G=bgmGroups();const ss=Object.keys(G[GC.bgmGroup]||{});if(!ss.length)return;const s=ss[Math.floor(Math.random()*ss.length)];pvStop();return playAll(GC.bgmGroup,s,re)}
+   if(k==='pv'){const g=b.dataset.g,s=b.dataset.s;if(PV.g===g&&PV.s===s){pvStop();return re()}pvStop();const u=bgmUrl(g,s);if(!u)return;PV.audio=new Audio(u);PV.audio.volume=vol;PV.audio.play().catch(()=>A().toast('재생하지 못했다'));PV.g=g;PV.s=s;PV.title=s;if(audio)audio.pause();return re()}
+   if(k==='pvstop'){pvStop();syncBgm(true);return re()}
+   if(k==='playurl'){const u=direct($('#gmu',md).value);if(!u)return;unlocked=true;pvStop();await A().set(['rp','bgm'],{src:u,title:$('#gmt',md).value.trim()||u.split('/').pop(),at:Date.now()});syncBgm(true);return re()}
+   if(k==='sadd'){const g=GC.bgmGroup;const t=$('#gmt',md).value.trim(),u=direct($('#gmu',md).value);if(!g)return A().toast('그룹을 먼저 골라 줘');if(!t||!u)return A().toast('제목과 주소가 필요해');const X=bgmX();X.add[g]=X.add[g]||{};X.add[g][t]=u;delete X.del[g+'\u0001'+t];await A().set(['rp','bgmX'],X);return re()}
+   if(k==='sedit'){const g=b.dataset.g,s0=b.dataset.s;const G=bgmGroups();const t=prompt('제목',s0);if(t==null||!t.trim())return;const u=prompt('주소',G[g][s0]);if(u==null||!u.trim())return;const X=bgmX();if(X.add[g]&&X.add[g][s0])delete X.add[g][s0];else X.del[g+'\u0001'+s0]=1;X.add[g]=X.add[g]||{};X.add[g][t.trim()]=direct(u);delete X.del[g+'\u0001'+t.trim()];await A().set(['rp','bgmX'],X);return re()}
+   if(k==='sdel'){const g=b.dataset.g,s0=b.dataset.s;const X=bgmX();if(X.add[g]&&X.add[g][s0])delete X.add[g][s0];else X.del[g+'\u0001'+s0]=1;await A().set(['rp','bgmX'],X);return re()}
+   if(k==='gadd'){const n=prompt('새 그룹 이름 (예: 700. 무진)');if(!n||!n.trim())return;const X=bgmX();X.add[n.trim()]=X.add[n.trim()]||{};delete X.del[n.trim()];GC.bgmGroup=n.trim();await A().set(['rp','bgmX'],X);return re()}
+   if(k==='gren'){const g=GC.bgmGroup;const n=prompt('그룹 이름',g);if(!n||!n.trim()||n.trim()===g)return;const X=bgmX();X.add[n.trim()]=Object.assign({},X.add[n.trim()]||{},bgmGroups()[g]);X.del[g]=1;GC.bgmGroup=n.trim();await A().set(['rp','bgmX'],X);return re()}
+   if(k==='gdel'){const g=GC.bgmGroup;if(!confirm(`「${g}」 그룹을 목록에서 지울까?`))return;const X=bgmX();X.del[g]=1;delete X.add[g];GC.bgmGroup='';await A().set(['rp','bgmX'],X);return re()}
+   if(k==='undel'){const X=bgmX();X.del={};await A().set(['rp','bgmX'],X);return re()}
    if(k==='note'){const n=notices()[+b.dataset.i];const sub=$('#gsub',md).value.trim();A().closeModal();await fireNotice(n,sub);return}
    if(k==='cut'){A().closeModal();await A().sysLog('────────────────────');return}
    if(k==='nsave'){const rows=[...md.querySelectorAll('#ntab tr')].map((tr,i)=>({id:'n'+i,name:tr.querySelector('[data-nn]').value.trim(),title:tr.querySelector('[data-nt]').value.trim(),ment:tr.querySelector('[data-nm]').value,color:tr.querySelector('[data-nc]').value,bgm:tr.querySelector('[data-nb]').value})).filter(x=>x.name);await A().set(['rp','notices'],rows);return re()}
@@ -227,9 +247,38 @@ window.OM_RP_UI=(()=>{
    if(b.type==='checkbox')b.onchange=h;else b.onclick=h});
   const vr=$('#gvol',md);if(vr)vr.oninput=()=>{vol=+vr.value;try{localStorage.setItem('om_vol',vol)}catch(e){}if(audio)audio.volume=vol};
   const bq=$('#gbmq',md);if(bq){bq.oninput=()=>{GC.bgmQ=bq.value;const pos=bq.selectionStart;re();const nb=$('#gbmq');if(nb){nb.focus();nb.setSelectionRange(pos,pos)}}}
-  const bg=$('#gbmg',md);if(bg)bg.onchange=()=>{GC.bgmGroup=bg.value;re()};
   const up=async(inp,target)=>{const f=inp.files[0];if(!f)return;A().toast('올리는 중…');try{const url=await DBS().uploadImage(`rooms/${ST.room}/rp_${Date.now().toString(36)}`,f);$(target,md).value=url;A().toast('올렸다 — 적용/띄우기를 눌러')}catch(e){A().toast(e.message)}};
   const f1=$('#gbgf',md);if(f1)f1.onchange=()=>up(f1,'#gbg');const f2=$('#gcif',md);if(f2)f2.onchange=()=>up(f2,'#gci')}
+ /* ----- 배경 관리 (맵툴 배경 관리 창): 그룹·그림 추가/이름/삭제/순서, 방 상태 rp.bgList 에 통째로 저장 ----- */
+ const BGM_UI={g:0};
+ function openBgMgr(){const groups=JSON.parse(JSON.stringify(bgGroups()));const ST=A().ST;if(BGM_UI.g>=groups.length)BGM_UI.g=0;const g=groups[BGM_UI.g];
+  const md=A().openModal(`<div class="mhead"><h2>배경 관리</h2><span class="sp"></span><button class="btn sm ghost" data-bm="reset">기본 목록으로</button><button class="btn ghost" data-x>닫기</button></div>
+   <div class="mmcols"><div><div class="sec">그룹 <span class="sp"></span><button class="btn xs" data-bm="gadd">+ 그룹</button></div>
+    <div class="mmlist">${groups.map((x,i)=>`<div class="mml ${i===BGM_UI.g?'on':''}" style="cursor:pointer" data-bm="gsel" data-i="${i}"><span class="nm"><b>${esc(x.n)}</b> <small class="dim">${x.i.length}장</small></span><button class="btn xs ghost" data-bm="gren" data-i="${i}">이름</button><button class="btn xs ghost" data-bm="gup" data-i="${i}">↑</button><button class="btn xs ghost" data-bm="gdn" data-i="${i}">↓</button><button class="btn xs ghost danger" data-bm="gdel" data-i="${i}">×</button></div>`).join('')||'<div class="empty small">그룹이 없다</div>'}</div></div>
+   <div>${g?`<div class="sec">「${esc(g.n)}」의 그림</div><div class="mmlist">${g.i.map((it,i)=>`<div class="mml"><i class="bgth" style="${it.src?`background-image:url('${esc(it.src)}')`:''}"></i><span class="nm"><b>${esc(it.l)}</b><br><small class="dim">${esc(it.src||'(없음)')}</small></span><button class="btn xs ghost" data-bm="iedit" data-i="${i}">수정</button><button class="btn xs ghost" data-bm="iup" data-i="${i}">↑</button><button class="btn xs ghost" data-bm="idn" data-i="${i}">↓</button><button class="btn xs ghost danger" data-bm="idel" data-i="${i}">×</button></div>`).join('')||'<div class="empty small">그림이 없다</div>'}</div>
+    <div class="sec">그림 추가</div><div class="row"><input type="text" id="bm_l" placeholder="이름" style="width:120px"><input type="text" id="bm_u" placeholder="그림 주소 https://…" style="flex:1"><label class="btn sm">파일<input type="file" accept="image/*" id="bm_f" hidden></label><button class="btn sm pri" data-bm="iadd">추가</button></div><div class="small dim">파일을 올리면 Supabase 저장소에 들어가고 주소가 채워진다.</div>`:''}</div></div>`);
+  md.classList.add('wide');
+  const save=async(gs)=>{await A().set(['rp','bgList'],gs);openBgMgr()};
+  md.querySelectorAll('[data-bm]').forEach(b=>b.onclick=async e=>{if(b.dataset.bm!=='gsel')e.stopPropagation();const k=b.dataset.bm;const i=+b.dataset.i;
+   if(k==='gsel'){BGM_UI.g=i;return openBgMgr()}
+   if(k==='reset'){if(!confirm('방에서 고친 배경 목록을 버리고 기본 목록으로 돌릴까?'))return;await A().set(['rp','bgList'],null);return openBgMgr()}
+   if(k==='gadd'){const n=prompt('새 그룹 이름');if(!n||!n.trim())return;groups.push({n:n.trim(),i:[]});BGM_UI.g=groups.length-1;return save(groups)}
+   if(k==='gren'){const n=prompt('그룹 이름',groups[i].n);if(!n||!n.trim())return;groups[i].n=n.trim();return save(groups)}
+   if(k==='gdel'){if(!confirm(`「${groups[i].n}」 그룹(${groups[i].i.length}장)을 지울까?`))return;groups.splice(i,1);BGM_UI.g=0;return save(groups)}
+   if(k==='gup'&&i>0){[groups[i-1],groups[i]]=[groups[i],groups[i-1]];BGM_UI.g=i-1;return save(groups)}
+   if(k==='gdn'&&i<groups.length-1){[groups[i+1],groups[i]]=[groups[i],groups[i+1]];BGM_UI.g=i+1;return save(groups)}
+   if(k==='iadd'){const u=$('#bm_u',md).value.trim(),l=$('#bm_l',md).value.trim();if(!u)return A().toast('그림 주소가 필요해');const key=(g.n+'_'+(l||u.split('/').pop())).replace(/\s+/g,'_');g.i.push({k:key,l:l||key,src:u});return save(groups)}
+   if(k==='iedit'){const it=g.i[i];const l=prompt('이름',it.l);if(l==null)return;const u=prompt('그림 주소',it.src||'');if(u==null)return;it.l=l.trim()||it.l;it.src=u.trim();return save(groups)}
+   if(k==='idel'){g.i.splice(i,1);return save(groups)}
+   if(k==='iup'&&i>0){[g.i[i-1],g.i[i]]=[g.i[i],g.i[i-1]];return save(groups)}
+   if(k==='idn'&&i<g.i.length-1){[g.i[i+1],g.i[i]]=[g.i[i],g.i[i+1]];return save(groups)}});
+  const f=$('#bm_f',md);if(f)f.onchange=async()=>{const file=f.files[0];if(!file)return;A().toast('올리는 중…');try{$('#bm_u',md).value=await DBS().uploadImage(`rooms/${ST.room}/bg_${Date.now().toString(36)}`,file);if(!$('#bm_l',md).value)$('#bm_l',md).value=file.name.replace(/\.[^.]+$/,'');A().toast('올렸다 — 추가를 눌러')}catch(e){A().toast(e.message)}}}
+ /* 브금 미리듣기(나만) · 모두에게 재생 · 방 차이 저장 */
+ const PV={audio:null,g:'',s:'',title:''};
+ function pvStop(){if(PV.audio){PV.audio.pause();PV.audio=null}PV.g='';PV.s='';PV.title=''}
+ function bgmX(){const X=JSON.parse(JSON.stringify(R().bgmX||{}));X.add=X.add||{};X.del=X.del||{};return X}
+ function direct(u){u=String(u||'').trim();const m=u.match(/^https?:\/\/(?:www\.)?dropbox\.com\/(scl\/fi\/[^?]+|s\/[^?]+)(\?.*)?$/);if(m){const q=(m[2]||'').replace(/[?&]dl=\d/,'').replace(/^&/,'?');return 'https://dl.dropboxusercontent.com/'+m[1]+(q==='?'?'':q)}return u}
+ async function playAll(g,s,re){const u=bgmUrl(g,s);if(!u)return A().toast('주소가 없다');unlocked=true;await A().set(['rp','bgm'],{src:u,title:s,group:g,at:Date.now()});const rec=[{g,s},...(R().recentBgm||[]).filter(x=>!(x.g===g&&x.s===s))].slice(0,10);await A().set(['rp','recentBgm'],rec);syncBgm(true);if(re)re()}
  async function fireNotice(n,sub){const ment=sub||n.ment||'';await A().set(['rp','banner'],{title:n.title||n.name,text:ment,color:n.color||'#d9243f',at:Date.now()});await A().sysLog(`[${n.title||n.name}]${ment?' '+ment.replace(/\n/g,' '):''}`);if(n.bgm==='stop')await A().set(['rp','bgm'],null)}
 
  /* ----- 스탠딩(표정) 편집: 트레이너는 로스터에, NPC 는 관계도 노드에 ----- */

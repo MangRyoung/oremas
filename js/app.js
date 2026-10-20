@@ -92,7 +92,10 @@ function renderRoom(){
 function copy(t,msg){navigator.clipboard.writeText(t).then(()=>toast(msg),()=>prompt('복사해서 쓰기',t))}
 
 /* ---------- 상태 쓰기 ---------- */
-async function set(path,value){try{const v=await DBS().setState(ST.room,ST.secret,path,value);
+async function set(path,value){try{
+  /* 서버의 jsonb_set 은 중간 키가 없으면 조용히 실패한다 — 옛 schema 를 쓰는 방이어도 되게 부모를 먼저 만든다 */
+  if(path&&path.length>1){let o=ST.state;for(let i=0;i<path.length-1;i++){if(typeof o[path[i]]!=='object'||o[path[i]]===null){await DBS().setState(ST.room,ST.secret,path.slice(0,i+1),{});o[path[i]]={}}o=o[path[i]]}}
+  const v=await DBS().setState(ST.room,ST.secret,path,value);
   /* 낙관적 반영: 실시간이 오기 전에 화면부터 */
   if(path&&path.length){let o=ST.state;for(let i=0;i<path.length-1;i++){if(typeof o[path[i]]!=='object'||o[path[i]]==null)o[path[i]]={};o=o[path[i]]}
    if(value===null||value===undefined)delete o[path[path.length-1]];else o[path[path.length-1]]=value}else ST.state=value||{};
@@ -133,6 +136,7 @@ function scene(){return ST.state.scene||'rp'}
 let VIEW='';let lastScene='';
 const VIEWS=[['rp','RP'],['battle','배틀'],['sheet','시트'],['graph','관계도'],['calendar','캘린더']];
 function renderScene(){
+ if(window.OM_DB_UI)window.OM_DB_UI.applyOverride(ST.state.dbx);
  /* GM 이 무대(RP/배틀)를 바꾸면 모두 그쪽으로 따라간다. 그 밖의 탭(시트·관계도·캘린더)은 각자 본다 */
  if(scene()!==lastScene){lastScene=scene();VIEW=scene()}
  if(!VIEW)VIEW=scene();

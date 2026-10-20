@@ -7,7 +7,7 @@ window.OM_DB_UI=(()=>{
  const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
  const $=(s,r)=>(r||document).querySelector(s);
  const CIRC='①②③④⑤⑥⑦⑧⑨⑩';
- const KINDS=[['trait','특성'],['item','소지품'],['move','기술'],['state','상태 변화']];
+ const KINDS=[['trait','특성'],['item','소지품'],['move','기술'],['pot','포텐셜'],['state','상태 변화']];
  function pretty(t,opt){opt=opt||{};if(!t)return '<span class="dim small">효과 없음</span>';
   return String(t).split(/<br\s*\/?>|\n/i).filter(l=>l.trim()!=='').map(ln=>{const c=ln.charAt(0);const num=CIRC.includes(c)?c:'';let body=num?ln.slice(1):ln;
    body=esc(body).replace(/【([^】]+)】/g,'<span class="dbtag">$1</span>').replace(/「([^」]+)」/g,'<b class="dbq">「$1」</b>').replace(/(\d+할)/g,'<b class="dbn">$1</b>');
@@ -16,11 +16,13 @@ window.OM_DB_UI=(()=>{
  /* 종류별 레코드 → {name, summary(목록용 한 줄), tags, html(상세), search(검색 대상 문자열)} */
  function rows(kind){const d=DB();const S=window.OM_STATS;
   if(kind==='trait')return Object.entries(d.traits||{}).map(([n,v])=>({name:n,summary:String(v.multi||v.single||'').replace(/<br\s*\/?>/gi,' ').replace(/^[①-⑩]/,''),tags:tagsOf((v.multi||'')+(v.single||'')),search:n+' '+(v.multi||'')+' '+(v.single||''),
-    html:`<div class="dbsec">배틀 효과</div><div class="dbbody">${pretty(v.multi)}</div>${v.single&&v.single!==v.multi?`<div class="dbsec">룰북 문구</div><div class="dbbody">${pretty(v.single)}</div>`:''}${v.entry&&v.entry.on?`<div class="dbsec">등장 대사</div><div class="dbbody dim small">${esc(v.entry.t)}</div>`:''}`}));
+    html:`${v.src?`<div class="row small" style="margin-bottom:6px"><span class="chip" style="border-color:var(--yel2)">${esc(v.src==='maker'?'제작기에서':'방에서 고침')}</span>${v.cost?`<span class="chip">비용 ${esc(v.cost)}</span>`:''}</div>`:''}<div class="dbsec">배틀 효과</div><div class="dbbody">${pretty(v.multi)}</div>${v.single&&v.single!==v.multi?`<div class="dbsec">룰북 문구</div><div class="dbbody">${pretty(v.single)}</div>`:''}${v.entry&&v.entry.on?`<div class="dbsec">등장 대사</div><div class="dbbody dim small">${esc(v.entry.t)}</div>`:''}`}));
   if(kind==='item')return Object.entries(d.items||{}).map(([n,v])=>({name:n,summary:String(v.eff||'').replace(/<br\s*\/?>/gi,' '),tags:tagsOf(v.eff).concat(v.note&&v.note!=='-'&&v.note.length<=8?[v.note]:[]),search:n+' '+(v.eff||'')+' '+(v.note||''),
     html:`<div class="dbsec">효과</div><div class="dbbody">${pretty(v.eff)}</div><div class="row small" style="margin-top:8px"><span class="chip">소켓 ${esc(v.sock||'-')}</span>${v.note&&v.note!=='-'?`<span class="chip" style="border-color:var(--yel2)">${esc(v.note)}</span>`:''}</div>${v.entry&&v.entry.on?`<div class="dbsec">발동 대사</div><div class="dbbody dim small">${esc(v.entry.t)}</div>`:''}`}));
   if(kind==='move')return Object.values(d.moves||{}).map(v=>({name:v.name,summary:`${v.type} · ${v.cat} · 위력 ${v.pow||'-'} · 명중 ${v.acc||'-'} · ${v.range}${v.eff&&v.eff!=='-'?' · '+v.eff:''}`,tags:(v.tags||[]).map(t=>t.replace(/^#/,'')),search:v.name+' '+(v.eff||'')+' '+(v.tags||[]).join(' ')+' '+(v.en||'')+' '+(v.ja||''),type:v.typeEn,
     html:`<div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:8px">${A().typeChip(v.typeEn)}<span class="chip">${esc(v.cat)}</span><span class="chip">위력 <b>${esc(v.pow||'-')}</b></span><span class="chip">명중 <b>${esc(v.acc||'-')}</b></span><span class="chip">${esc(v.range)}</span>${v.contact==='O'?'<span class="chip">접촉</span>':''}${+v.prio?`<span class="chip">우선도 ${v.prio>0?'+':''}${v.prio}</span>`:''}${v.max>1?`<span class="chip">${v.min}~${v.max}회</span>`:''}<span class="chip">소켓 ${esc(v.sock||'-')}</span></div><div class="dbsec">효과</div><div class="dbbody">${pretty(v.eff==='-'?'':v.eff,{dot:false})}</div>${v.note&&v.note!=='-'?`<div class="dbsec">비고</div><div class="dbbody small">${pretty(v.note,{dot:false})}</div>`:''}<div class="small dim" style="margin-top:8px">${esc(v.atk)} → ${esc(v.def)} · ${esc(v.gen||'')} · ${esc(v.en||'')} ${esc(v.ja||'')}</div>`}));
+  if(kind==='pot'){return ((d.maker||{}).pots||[]).map((p,i)=>({name:p[1],group:p[0],summary:String(p[2]||'').replace(/\n/g,' '),tags:[String(p[0]||'').replace(/^[\d.]+\s*/,'')].concat(tagsOf(p[2])).concat(p.src==='maker'?['제작기']:[]),search:p[0]+' '+p[1]+' '+(p[2]||'')+' '+(p[3]||''),
+    html:`<div class="row small" style="margin-bottom:6px"><span class="chip">${esc(p[0])}</span>${p.src?`<span class="chip" style="border-color:var(--yel2)">${esc(p.src==='maker'?'제작기에서':'방에서 고침')}</span>`:''}</div><div class="dbsec">효과</div><div class="dbbody">${pretty(p[2])}</div>${p[3]?`<div class="dbsec">비고</div><div class="dbbody small">${pretty(p[3],{dot:false})}</div>`:''}`}))}
   if(kind==='state'){const st=(d.states||{}).st||{};const groups=(d.states||{}).groups||[];const gOf={};groups.forEach(g=>g.s.forEach(k=>gOf[k]=g.l));const im=(d.img||{}).state||{};
    return Object.entries(st).map(([k,v])=>({name:v.ko||k,key:k,summary:(v.desc||[]).join(' '),tags:[...new Set([gOf[k]||'기타'].concat(v.abn?['상태 이상']:[],v.neg?['불리']:[]))],search:k+' '+(v.ko||'')+' '+(v.desc||[]).join(' '),img:im[k]?'img/state/'+im[k]:'',
     html:`<div class="row" style="gap:8px;align-items:center;margin-bottom:8px">${im[k]?`<img src="img/state/${im[k]}" style="width:40px;height:40px;object-fit:contain">`:''}<span class="chip">${esc(gOf[k]||'기타')}</span>${v.prog==='turn'?'<span class="chip">턴 감소</span>':''}${v.max&&v.max<1000?`<span class="chip">${v.min===v.max?v.max+'턴':v.min+'~'+v.max+'턴'}</span>`:''}<span class="small dim">${esc(k)}</span></div><div class="dbsec">설명</div><div class="dbbody">${pretty((v.desc||[]).join('\n'),{dot:false})}</div>${v.memo?`<div class="dbsec">메모</div><div class="dbbody small">${esc(v.memo)}</div>`:''}`}))}
@@ -28,7 +30,7 @@ window.OM_DB_UI=(()=>{
  const CACHE={};function all(kind){if(!CACHE[kind])CACHE[kind]=rows(kind).sort((a,b)=>a.name.localeCompare(b.name,'ko'));return CACHE[kind]}
  const UI={kind:'trait',q:'',tag:'',sel:'',lim:200,pick:null};
  function open(o){o=o||{};UI.kind=o.kind||'trait';UI.pick=o.pick||null;UI.q=o.q||'';UI.tag='';UI.lim=200;UI.sel=o.sel||'';
-  const md=A().openModal(`<div class="mhead"><h2 id="dbtitle">DB</h2><span class="tabs2" id="dbkinds"></span><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="dbwrap"><div class="dbleft"><input type="text" id="dbq" placeholder="이름·효과로 찾기" autocomplete="off"><div class="dbtags" id="dbtags"></div><div class="dblist" id="dblist"></div></div><div class="dbright" id="dbdetail"></div></div>`,{wide:true});
+  const md=A().openModal(`<div class="mhead"><h2 id="dbtitle">DB</h2><span class="tabs2" id="dbkinds"></span><span class="sp"></span><span id="dbtools" class="row"></span><button class="btn ghost" data-x>닫기</button></div><div class="dbwrap"><div class="dbleft"><input type="text" id="dbq" placeholder="이름·효과로 찾기" autocomplete="off"><div class="dbtags" id="dbtags"></div><div class="dblist" id="dblist"></div></div><div class="dbright" id="dbdetail"></div></div>`,{wide:true});
   md.classList.add('dbmodal');
   $('#dbq',md).oninput=e=>{UI.q=e.target.value;UI.lim=200;drawList()};
   render();const q=$('#dbq',md);q.value=UI.q;setTimeout(()=>q.focus(),50)}
@@ -36,6 +38,7 @@ window.OM_DB_UI=(()=>{
   $('#dbkinds',md).innerHTML=KINDS.map(([k,n])=>`<button class="tab2 ${UI.kind===k?'on':''}" data-kind="${k}">${n} <small>${all(k).length}</small></button>`).join('');
   $('#dbkinds',md).querySelectorAll('[data-kind]').forEach(b=>b.onclick=()=>{UI.kind=b.dataset.kind;UI.tag='';UI.sel='';UI.lim=200;render()});
   $('#dbtitle',md).textContent=(UI.pick?'고르기 — ':'')+KINDS.find(x=>x[0]===UI.kind)[1];
+  const tb=$('#dbtools',md);if(tb){tb.innerHTML=A().ST.role==='gm'?`${UI.kind!=='state'?'<button class="btn sm" id="dbnew">+ 새로</button>':''}<button class="btn sm ghost" id="dbsync" title="제작기(dbedit)의 특성·포텐셜 변경을 이 방 DB 에 가져온다">제작기 새로고침</button>`:'';const nw=$('#dbnew',md);if(nw)nw.onclick=()=>openEdit(UI.kind,'',true);const sy=$('#dbsync',md);if(sy)sy.onclick=syncMaker}
   const cnt={};all(UI.kind).forEach(r=>r.tags.forEach(t=>{const b=t.replace(/\s*\(.*\)$/,'');cnt[b]=(cnt[b]||0)+1}));
   const top=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]).slice(0,14);
   $('#dbtags',md).innerHTML=top.map(t=>`<button class="chip ${UI.tag===t?'on':''}" data-tag="${esc(t)}">${esc(t)} <small>${cnt[t]}</small></button>`).join('');
@@ -51,10 +54,42 @@ window.OM_DB_UI=(()=>{
   drawDetail()}
  function drawDetail(){const md=$('.modal');if(!md)return;const r=all(UI.kind).find(x=>x.name===UI.sel);const el=$('#dbdetail',md);
   if(!r){el.innerHTML='<div class="empty">왼쪽에서 고르면 여기 자세히 나온다</div>';return}
-  el.innerHTML=`<div class="dbcard"><div class="dbth">${r.img?`<img src="${r.img}">`:''}${r.type?A().typeChip(r.type):''}<b>${esc(r.name)}</b><span class="sp"></span>${r.tags.map(t=>`<span class="dbtag">${esc(t)}</span>`).join('')}</div><div class="dbtb">${r.html}</div>${UI.pick?`<div class="dbfoot"><button class="btn pri" id="dbpick">이 걸로</button></div>`:''}</div>`;
-  const p=$('#dbpick',md);if(p)p.onclick=choose}
+  const isGm=A().ST.role==='gm';const ov=((A().ST.state.dbx||{})[UI.kind]||{})[r.name];
+  el.innerHTML=`<div class="dbcard"><div class="dbth">${r.img?`<img src="${r.img}">`:''}${r.type?A().typeChip(r.type):''}<b>${esc(r.name)}</b><span class="sp"></span>${r.tags.map(t=>`<span class="dbtag">${esc(t)}</span>`).join('')}</div><div class="dbtb">${r.html}</div><div class="dbfoot">${isGm&&UI.kind!=='state'?`<button class="btn sm ghost" id="dbedit">수정</button><button class="btn sm ghost" id="dbdup">사본</button>${ov?'<button class="btn sm ghost" id="dbrevert">기본으로</button>':''}<button class="btn sm ghost danger" id="dbdel">삭제</button>`:''}<span class="sp"></span>${UI.pick?`<button class="btn pri" id="dbpick">이 걸로</button>`:''}</div></div>`;
+  const p=$('#dbpick',md);if(p)p.onclick=choose;
+  const e=$('#dbedit',md);if(e)e.onclick=()=>openEdit(UI.kind,r.name,false);const du=$('#dbdup',md);if(du)du.onclick=()=>openEdit(UI.kind,r.name,true);
+  const rv=$('#dbrevert',md);if(rv)rv.onclick=async()=>{await A().set(['dbx',UI.kind,r.name],null);await A().set(['dbx','at'],Date.now());refresh()};
+  const dl=$('#dbdel',md);if(dl)dl.onclick=async()=>{if(!confirm(`「${r.name}」을 이 방의 DB 에서 지울까? (기본 DB 는 그대로, 「기본으로」로 되돌릴 수 있다)`))return;await A().set(['dbx',UI.kind,r.name],{del:1});await A().set(['dbx','at'],Date.now());UI.sel='';refresh()}}
+ function refresh(){applyOverride(A().ST.state.dbx);CACHE[UI.kind]=null;render()}
  function choose(){const r=all(UI.kind).find(x=>x.name===UI.sel);if(!r)return;const f=UI.pick;A().closeModal();if(f)f(r.name,r)}
+ /* ----- 수정 (GM): 방 상태 dbx[kind][name] 에 덮어쓰기 → 모두에게 실시간 반영 ----- */
+ const FIELDS={trait:[['multi','배틀 효과 (①②③ 줄바꿈)','area'],['single','룰북 문구','area'],['cost','비용','text']],item:[['eff','효과','area'],['sock','소켓','text'],['note','비고','text']],move:[['type','타입','text'],['cat','분류 (물리/특수/변화)','text'],['pow','위력','num'],['acc','명중','num'],['range','범위','text'],['contact','접촉 (O/X)','text'],['prio','우선도','num'],['min','연속 최소','num'],['max','연속 최대','num'],['tag','태그','text'],['eff','효과','area'],['note','비고','area']],pot:[['group','분류 (예: 00.1. 역할)','text'],['eff','효과','area'],['note','비고','area']]};
+ function recOf(kind,name){const d=DB();if(kind==='trait')return (d.traits||{})[name];if(kind==='item')return (d.items||{})[name];if(kind==='move')return (d.moves||{})[name];if(kind==='pot'){const p=((d.maker||{}).pots||[]).find(x=>x[1]===name);return p?{group:p[0],eff:p[2],note:p[3]}:null}return null}
+ function openEdit(kind,name,dup){const base=name?recOf(kind,name):null;const cur=Object.assign({},base||{});if(kind==='move'&&base)cur.type=base.type;
+  const fs=FIELDS[kind]||[];const nm=dup?(name?name+' (사본)':''):name;
+  const md=A().openModal(`<div class="mhead"><h2>${name&&!dup?'수정':'새로 만들기'} — ${KINDS.find(x=>x[0]===kind)[1]}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+   <div class="row" style="margin-bottom:6px"><b style="width:110px">이름</b><input type="text" id="ed_name" value="${esc(nm)}" style="flex:1" ${name&&!dup?'readonly':''}></div>
+   ${fs.map(([k,l,t])=>`<div class="row" style="margin-bottom:6px;align-items:flex-start"><b style="width:110px;padding-top:6px">${l}</b>${t==='area'?`<textarea data-ed="${k}" rows="4" style="flex:1">${esc(String(cur[k]==null?'':cur[k]).replace(/<br\s*\/?>/gi,'\n'))}</textarea>`:`<input type="${t==='num'?'number':'text'}" data-ed="${k}" value="${esc(cur[k]==null?'':cur[k])}" style="${t==='num'?'width:90px':'flex:1'}">`}</div>`).join('')}
+   <div class="small dim">【태그】 「강조」 ①②③ 을 그대로 쓰면 맵툴처럼 꾸며진다. 저장하면 이 방의 모두에게 바로 반영된다 (기본 DB 파일은 그대로).</div>
+   <div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn pri" id="ed_ok">저장</button></div>`);
+  $('#ed_ok',md).onclick=async()=>{const n=$('#ed_name',md).value.trim();if(!n)return A().toast('이름이 필요해');const rec={};fs.forEach(([k,l,t])=>{const v=md.querySelector(`[data-ed="${k}"]`).value;rec[k]=t==='num'?(v===''?'':+v):v});
+   if(kind==='move'){rec.name=n;rec.typeEn=window.OM_STATS.typeEn(rec.type);rec.cat=rec.cat||'변화';rec.range=rec.range||'1체';rec.contact=rec.contact||'X';rec.tags=String(rec.tag||'').split(/\s+/).filter(Boolean)}
+   rec.src='room';A().closeModal();await A().set(['dbx',kind,n],rec);await A().set(['dbx','at'],Date.now());UI.sel=n;if(document.querySelector('.dbmodal'))refresh();else open({kind,sel:n})}}
+ let BASE=null,appliedAt=null;
+ function applyOverride(dbx){const d=DB();if(!BASE)BASE={traits:Object.assign({},d.traits),items:Object.assign({},d.items),moves:Object.assign({},d.moves),pots:((d.maker||{}).pots||[]).slice()};
+  const at=(dbx||{}).at||0;if(at===appliedAt&&appliedAt!==null)return;appliedAt=at;dbx=dbx||{};
+  const merge=(base,ov)=>{const out=Object.assign({},base);for(const k in ov||{}){if(ov[k]&&ov[k].del)delete out[k];else out[k]=Object.assign({},base[k]||{},ov[k])}return out};
+  d.traits=merge(BASE.traits,dbx.trait);d.items=merge(BASE.items,dbx.item);d.moves=merge(BASE.moves,dbx.move);
+  const pots=BASE.pots.filter(p=>!((dbx.pot||{})[p[1]]));for(const n in dbx.pot||{}){const o=dbx.pot[n];if(o.del)continue;const row=[o.group||'99. 기타',n,o.eff||'',o.note||''];row.src=o.src;const i=BASE.pots.findIndex(p=>p[1]===n);if(i>=0)pots.splice(Math.min(i,pots.length),0,row);else pots.push(row)}
+  if(d.maker)d.maker.pots=pots;for(const k in CACHE)CACHE[k]=null}
+ /* 제작기의 dbedit (특성 abil · 포텐셜 pots) 를 이 방 DB 에 가져온다 */
+ async function syncMaker(){A().toast('제작기에서 읽는 중…');let rows;try{rows=await window.OM_STORE.makerDocs('dbedit')}catch(e){return A().toast('읽지 못했다: '+e.message)}
+  const dbx=JSON.parse(JSON.stringify(A().ST.state.dbx||{}));dbx.trait=dbx.trait||{};dbx.pot=dbx.pot||{};let n=0;
+  for(const r of rows||[]){const d=r.data||{};const row=d.row||[];if(!d.key)continue;
+   if(d.kind==='abil'){const cur=(dbx.trait[d.key]||{});if(cur.src==='room')continue;const eff=String(row[2]||'');const base=BASE&&BASE.traits[d.key];if(base&&base.multi===eff&&!cur.src)continue;dbx.trait[d.key]={multi:eff,single:(base&&base.single)||eff,cost:row[0]||'',src:'maker'};n++}
+   else if(d.kind==='pots'){const cur=(dbx.pot[d.key]||{});if(cur.src==='room')continue;const base=BASE&&BASE.pots.find(p=>p[1]===d.key);if(base&&base[2]===row[2]&&!cur.src)continue;dbx.pot[d.key]={group:row[0]||'',eff:row[2]||'',note:row[3]||'',src:'maker'};n++}}
+  dbx.at=Date.now();await A().set(['dbx'],dbx);A().toast(`제작기에서 ${n}개 가져왔다 (특성·포텐셜)`);refresh()}
  /* 시트·배틀에서 쓰는 한 줄 요약 (특성/소지품 이름 → 효과 문구 HTML) */
  function effectHtml(kind,name){const d=DB();if(kind==='trait'){const v=(d.traits||{})[name];return v?pretty(v.multi||v.single):''}if(kind==='item'){const v=(d.items||{})[name];return v?pretty(v.eff):''}return ''}
- return {open,pretty,effectHtml};
+ return {open,pretty,effectHtml,applyOverride,syncMaker};
 })();

@@ -145,6 +145,18 @@ end $$;
 
 -- 상태 바꾸기. p_path 가 비어 있으면 전체 교체, 아니면 jsonb_set(경로, 값). 값이 null 이면 그 경로 삭제.
 -- GM 은 어디든, 좌석은 seats/<내 좌석>, ready/<내 좌석>, pub/<내 좌석>, battle/mons/… 만 (나머지는 함수가 막는다).
+-- 중간 키가 없어도 만들면서 넣는 jsonb_set (jsonb_set 은 부모가 없으면 조용히 아무것도 안 바꾼다)
+create or replace function public.om_jset(p_data jsonb, p_path text[], p_value jsonb)
+returns jsonb language plpgsql immutable as $$
+declare d jsonb := coalesce(p_data, '{}'::jsonb); i int; sub text[];
+begin
+  for i in 1 .. array_length(p_path,1) - 1 loop
+    sub := p_path[1:i];
+    if jsonb_typeof(d #> sub) is distinct from 'object' then d := jsonb_set(d, sub, '{}'::jsonb, true); end if;
+  end loop;
+  return jsonb_set(d, p_path, p_value, true);
+end $$;
+
 create or replace function public.om_set_state(p_room text, p_secret text, p_path text[], p_value jsonb)
 returns bigint language plpgsql security definer set search_path = public as $$
 declare w text; nv bigint;
@@ -166,7 +178,7 @@ begin
   elsif p_value is null or jsonb_typeof(p_value) = 'null' then
     update om_state set data = data #- p_path, v = v + 1 where room = p_room returning v into nv;
   else
-    update om_state set data = jsonb_set(data, p_path, p_value, true), v = v + 1 where room = p_room returning v into nv;
+    update om_state set data = public.om_jset(data, p_path, p_value), v = v + 1 where room = p_room returning v into nv;
   end if;
   return nv;
 end $$;
