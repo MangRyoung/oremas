@@ -92,7 +92,7 @@ window.OM_BATTLE_UI=(()=>{
  function benchRow(c,side,ready){const b=c.b;const ids=((b.sides||{})[side]||{}).trainers||[];const trs=b.trainers||{};const seats=c.ST.state.seats||{};
   const items=ids.map(tid=>{const t=trs[tid]||{name:'?',ranks:{}};const o=seats[tid];const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid).sort((x,y)=>(x.slot||0)-(y.slot||0));const cmdDone=!!(b.cmds||{})[tid];const rd=!!ready[tid];
    return `<div class="tblock"><div class="trainer"><div class="tpic" style="${t.image?`background-image:url('${t.image}')`:''}"></div><div class="tinfo"><div class="tn">${esc(t.name)}${tid===c.seat?' <span class="tag me">ME</span>':''}${rd?' <span class="tag ok">READY</span>':cmdDone?' <span class="tag">공개됨</span>':''}</div>
-     <div class="rk4">${['육성','지시','통솔','능력'].map(k=>`<span><small>${k}</small><b>${esc(t.ranks[k]||'-')}</b></span>`).join('')}</div><div class="tr">${o?`<span class="who">${esc(o.name)}</span>`:'<span class="dim">빈 자리</span>'}</div></div>
+     <div class="rk4">${['육성','지시','통솔','능력'].map(k=>`<span><small>${k}</small><b>${esc(t.ranks[k]||'-')}</b></span>`).join('')}</div>${o?`<div class="tr"><span class="who">${esc(o.name)}</span></div>`:''}</div>
      </div><div class="tbtns">${((c.gm||tid===c.seat)&&mons.some(m=>m.entry))?`<button class="btn xs" data-act="fire" data-tid="${tid}" title="지령·명령 발동 창">4식 6령</button>`:''}${(c.gm||tid===c.seat)?`<button class="btn xs ghost" data-act="dexmgr" data-tid="${tid}" title="도감 · 데이터 해석">해석</button><button class="btn xs ghost ${skPend(c,tid)?'pri':''}" data-act="skillp" data-tid="${tid}" title="스킬 체크 · 묘수 · 돌봄">묘수</button>`:''}${c.gm?`<button class="btn xs ghost" data-act="orders" data-tid="${tid}" title="지령·명령 설정 · 빼기">지령 설정</button>`:''}</div>
     <div class="bench">${mons.map(m=>benchCard(c,m)).join('')||'<div class="dim small">포켓몬 없음</div>'}</div></div>`}).join('');
   return `<div class="bcol ${side}"><div class="shead"><span class="sname">${SIDE_KO[side]} 벤치</span><span class="sp"></span>${c.gm?`<button class="btn xs" data-act="load" data-side="${side}">+ 파티</button>`:''}</div>${items||'<div class="aempty small">트레이너 없음'+(c.gm?' — 「+ 파티」':'')+'</div>'}</div>`}
@@ -514,7 +514,6 @@ window.OM_BATTLE_UI=(()=>{
      <div class="kv"><span>공격한 포켓몬</span><b>${esc(lh.from)}</b><span>기술</span><b>${esc(lh.move)} ${esc(lh.moveType)} <span style="color:var(--yel2)">×${lh.eff}</span>${lh.crit?' <span style="color:var(--red)">급소</span>':''}${lh.hits>1?' · '+lh.hits+'회':''}</b><span>기본 대미지</span><b style="font-size:15px;color:#ff9b9b">${lh.total} <span class="dim small">(${lh.min}~${lh.max})</span></b><span>위력 완화</span><b>${lh.guard&&lh.guard!==1?'×'+lh.guard:'없음'}${lh.guardNote?` <span class="small dim">${esc(lh.guardNote)}</span>`:''} <span class="note">자동 반영</span></b></div>
      <div class="hgrid"><label>대미지 보정 <input type="number" step="0.01" class="n" id="h_mod" value="1" title="방호·완화·역할 보정 등 배율"></label>
       <label>최종 상성 <select id="h_eff">${EFFS.map(v=>`<option value="${v}" ${v===+lh.eff?'selected':''}>×${v}</option>`).join('')}</select></label>
-      <label>타입 일치 <select id="h_stab"><option value="n" ${!lh.stab?'selected':''}>비일치 (1배)</option><option value="s" ${lh.stab?'selected':''}>일치 (1.5배)</option><option value="a">적응력 (2배)</option></select></label>
       <label><input type="checkbox" id="h_berry"> 반감열매</label><label><input type="checkbox" id="h_endure" ${lh.endure?'checked':''}> 버티기 (HP 1 남김)</label>
       <label>고정 대미지 <input type="text" class="n" id="h_forced" placeholder="-1 = 계산값" value="-1" title="숫자 또는 분수(1/8)를 넣으면 그 값으로"></label>
       ${fl?`<label class="small" style="color:var(--yel)">레이드 배리어 하한 ${fl}</label>`:''}</div>
@@ -532,11 +531,11 @@ window.OM_BATTLE_UI=(()=>{
     <div class="spx"><b>◆ 드레인</b><span class="small dim">직전에 입힌 대미지의 비율 ${m.lastDealt?`(${m.lastDealt.total})`:'(기록 없음)'}</span><span class="qs">${['1/2','3/4','1/1'].map(x=>`<button class="btn xs" data-hp="drain" data-v="${x}" ${m.lastDealt?'':'disabled'}>${x}</button>`).join('')}</span></div>
     <div class="spx"><b>★ 희망사항</b><span class="small dim">최대 「HP」 1/2</span><span class="qs"><button class="btn xs" data-hp="heal" data-v="1/2">회복</button></span></div></div>`}`);
   md.querySelectorAll('[data-hpt]').forEach(bt=>bt.onclick=()=>{A().closeModal();openHp(mid,bt.dataset.hpt)});
-  const calc=()=>{if(!lh)return null;const g=id=>$('#'+id,md);const forced=g('h_forced').value.trim();const st=g('h_stab').value;
+  const calc=()=>{if(!lh)return null;const g=id=>$('#'+id,md);const forced=g('h_forced').value.trim();
    if(forced!==''&&forced!=='-1'){const v=parseAmt(forced,m.hp.max);return {final:Math.min(v,m.hp.cur),after:Math.max(0,m.hp.cur-v)}}
-   const r=B().hpDamage(m,lh.total,+g('h_eff').value,{stab:st!=='n',adaptability:st==='a',guard:lh.guard||1,manual:+g('h_mod').value||1,berryHalf:g('h_berry').checked,endure:g('h_endure').checked,hpFloor:fl});return r};
+   const r=B().hpDamage(m,lh.total,+g('h_eff').value,{stab:false,guard:lh.guard||1,manual:+g('h_mod').value||1,berryHalf:g('h_berry').checked,endure:g('h_endure').checked,hpFloor:fl});return r};
   const prev=()=>{const r=calc();const el=$('#h_prev',md);if(el&&r)el.textContent=`−${r.final} → HP ${r.after}/${m.hp.max}${r.after<=0?' 빈사':''}`};prev();
-  md.querySelectorAll('#h_mod,#h_eff,#h_stab,#h_berry,#h_endure,#h_forced').forEach(el=>{el.addEventListener('input',prev);el.addEventListener('change',prev)});
+  md.querySelectorAll('#h_mod,#h_eff,#h_berry,#h_endure,#h_forced').forEach(el=>{el.addEventListener('input',prev);el.addEventListener('change',prev)});
   const apply=async(delta,why,opt)=>{opt=opt||{};const nb=JSON.parse(JSON.stringify(ctx().b));const x=nb.mons[mid];x.hp.latest=x.hp.cur;
    if(delta<0){let v=-delta;if(opt.floor&&x.hp.cur-v<opt.floor)v=Math.max(0,x.hp.cur-opt.floor);x.hp.cur=Math.max(0,x.hp.cur-v);x.hpOdd=!x.hpOdd;delta=-v}else{const h=Math.min(delta,x.hp.max-x.hp.cur);x.hp.cur+=h;delta=h}
    if(opt.clearHit)delete x.lastHit;let line=`${x.name} ${why} ${delta>0?'+':''}${delta} → HP ${x.hp.cur}/${x.hp.max}`;
@@ -652,6 +651,8 @@ window.OM_BATTLE_UI=(()=>{
    if(tm.entry){await fireAuto(mid,kind,name,{quiet:true})}
    else if(tm.passive){const cur=ctx().b.mons[mid];if(cur&&(cur.fxDone||{})[name])continue;if(await fireAuto(mid,kind,name,{quiet:true,noRoll:true})){const d=Object.assign({},(ctx().b.mons[mid]||{}).fxDone||{});d[name]=1;await A().set(['battle','mons',mid,'fxDone'],d)}}}}
  /* 공격 창에서 쓸 조건 */
+ /* 공격 쪽 배율(자속·적응력·달인의띠): 받는 쪽에는 숫자에 녹여서만 보낸다 */
+ function atkMul(r,md){const ck=id=>{const el=md?$('#'+id,md):document.getElementById(id);return !!(el&&el.checked)};return (r.stab?(ck('aadapt')?2:1.5):1)*(ck('abelt')&&r.eff&&r.eff.value>1?1.2:1)}
  function moveQuery(atk,def,mv,moveTypes,eff,single){return {types:moveTypes,cat:mv.cat,eff:eff,single:single,stab:!!(eff&&eff.stab),tags:String(mv.tag||'').split(/[,/·\s]+/).filter(x=>x&&x!=='-'),pow:+mv.pow||0}}
  /* 컷인에 쓸 트레이너 그림: 표정(스탠딩) → 시트 그림 */
  function trainerImg(t){if(!t)return '';const st=(t.stands||[]);const a=st[+t.standActive||0]||st[0];return (a&&a.src)||t.image||''}
@@ -735,6 +736,12 @@ window.OM_BATTLE_UI=(()=>{
     const hp=dmg?B().hpDamage(def,dmg.total,eff.value,{stab,adaptability:ck('aadapt'),expertBelt:ck('abelt'),guard:guard0,endure:endure0,hpFloor:raidFloor(def)}):null;
     res.push({slot,def,acc,hits,dmg,eff,stab,hp,guard:guard0,endure:endure0,manual:1,mods})}
    RESULT={mv,targets:res,moveTypes};
+   { /* 굴린 시점에 로그로 (자속·보정 같은 공격 쪽 내부 정보는 빼고) */
+    const L=res.map(r=>{const hit=r.acc.sure?'필중':r.acc.hit?`명중 ${r.acc.roll}/${r.acc.target}`:`빗나감 ${r.acc.roll}/${r.acc.target}`;if(!r.acc.hit)return `→ ${r.def.name}: ${hit}`;
+     const cr=r.hits.length?r.hits.map(h=>h.v===2?`급소!(${h.cr.roll}/${h.cr.chance})`:`${h.cr.roll}/${h.cr.chance}`).join(' · '):'';
+     const am=atkMul(r);return `→ ${r.def.name}: ${hit}${cr?' · 급소 '+cr:''}${r.dmg?` · 대미지 ${Math.floor(r.dmg.total*am)}${r.hits.length>1?' ('+r.hits.length+'회)':''} · 상성 ×${r.eff.value}`:' (변화기)'}`});
+    A().sysLog(`【공격】 ${atk.name} 『${mv.name}』 ${esc(mv.type||'')} ${mv.cat||''}${+g('apow').value?' 위력 '+g('apow').value:''}
+${L.join('\n')}`,'battle',{mid:atk.id,img:atk.image||''})}
    $('#ares',md).innerHTML=`<table class="t"><tr><th>대상</th><th>명중</th><th>급소</th><th>대미지(상성 전)</th><th>상성</th><th>보정</th><th>최종</th></tr>${res.map((r,i)=>`<tr>
     <td class="nw"><div class="row" style="gap:6px;flex-wrap:nowrap"><div class="ti sm" style="${r.def.image?`background-image:url('${r.def.image}')`:''}"></div><div><b>${esc(r.def.name)}</b><div class="small dim">HP ${r.def.hp.cur}/${r.def.hp.max}</div>${r.mods&&r.mods.names.length?`<div class="small" style="color:var(--yel2)">${r.mods.names.map(x=>esc(x.txt)).join('<br>')}</div>`:''}</div></div></td>
     <td>${r.acc.sure?'필중':(r.acc.hit?'<b style="color:var(--ok)">명중</b>':'<b style="color:var(--red)">빗나감</b>')+`<div class="small dim">${r.acc.note?esc(r.acc.note):r.acc.roll+' / '+r.acc.target}</div>`}</td>
@@ -758,12 +765,13 @@ window.OM_BATTLE_UI=(()=>{
     if(!r.acc.hit){lines.push(`→ ${def.name}: ${hitTxt}`);continue}
     if(!r.dmg){lines.push(`→ ${def.name}: ${hitTxt} (변화기)`);continue}
     const crit=r.hits.some(h=>h.v===2);dealtAny=true;
-    def.lastHit={from:atk.name,fromId:atk.id,move:RESULT.mv.name,moveType:RESULT.mv.type||'',eff:r.eff.value,effType:r.eff.type||'',stab:!!r.stab,total:r.dmg.total,min:r.dmg.min,max:r.dmg.max,hits:r.hits.length,crit,guard:r.guard,guardNote:(r.mods&&r.mods.names.filter(x=>x.who===def.id).map(x=>x.txt).join(' · '))||'',endure:r.endure,expect:r.hp?r.hp.final:0,at:Date.now(),turn:+nb.turn||0};
+    const am=atkMul(r,md);
+    def.lastHit={from:atk.name,fromId:atk.id,move:RESULT.mv.name,moveType:RESULT.mv.type||'',eff:r.eff.value,effType:r.eff.type||'',total:Math.floor(r.dmg.total*am),min:Math.floor(r.dmg.min*am),max:Math.floor(r.dmg.max*am),hits:r.hits.length,crit,guard:r.guard,guardNote:(r.mods&&r.mods.names.filter(x=>x.who===def.id).map(x=>x.txt).join(' · '))||'',endure:r.endure,expect:r.hp?r.hp.final:0,at:Date.now(),turn:+nb.turn||0};
     if(FX()&&r.mods)FX().consume(nb,r.mods.names);
-    lines.push(`→ ${def.name}: ${hitTxt} ${crit?'급소! ':''}${r.hits.length>1?r.hits.length+'회 ':''}대미지 ${r.dmg.total} (${r.dmg.min}~${r.dmg.max}) ×${r.eff.value}${r.stab?'×자속':''} ≈ ${r.hp?r.hp.final:0} — 받는 쪽이 「HP」에서 적용`)}
+    lines.push(`→ ${def.name}: ${hitTxt} ${crit?'급소! ':''}${r.hits.length>1?r.hits.length+'회 ':''}대미지 ${def.lastHit.total} ×${r.eff.value}${r.guard&&r.guard!==1?' 완화 ×'+r.guard:''} ≈ ${r.hp?r.hp.final:0} — 받는 쪽이 「HP」에서 적용`)}
    if($('#alife',md).checked&&dealtAny){const a=nb.mons[mid];const rec=Math.max(1,Math.floor(a.hp.max/10));a.hp.latest=a.hp.cur;a.hp.cur=Math.max(0,a.hp.cur-rec);lines.push(`${atk.name} 생명의구슬 반동 −${rec} → ${a.hp.cur}`);if(a.hp.cur<=0){a.entry='';lines.push(`${a.name}은(는) 쓰러졌다!`)}}
    nb.mons[mid].lastDealt={total:RESULT.targets.filter(r=>r.acc.hit&&r.dmg).reduce((a,r)=>a+(r.hp?r.hp.final:0),0),targets:RESULT.targets.filter(r=>r.acc.hit&&r.dmg).map(r=>r.def.name).join(', '),at:Date.now()};
-   A().closeModal();if(await A().set(['battle','mons'],nb.mons))A().sysLog(`${atk.name}의 ${RESULT.mv.name}!\n${lines.join('\n')}`,'battle')}}
+   A().closeModal();if(await A().set(['battle','mons'],nb.mons))A().sysLog(`【전달】 ${atk.name} 『${RESULT.mv.name}』\n${lines.join('\n')}`,'battle',{mid:atk.id,img:atk.image||''})}}
 
  return {render,ctx,entered,allEntered,fieldOf,resetLocal:()=>{CMD={}},startCut:(m)=>battleStartCut(ctx().b,m),openHp,action};
 })();

@@ -115,7 +115,7 @@ async function set(path,value){try{
   ST.v=Math.max(ST.v,v||0);renderScene();return true}catch(e){toast('저장 실패: '+e.message);return false}}
 async function sysLog(t,kind,extra){try{await DBS().addLog(ST.room,ST.secret,kind||'sys',ST.name,Object.assign({t},extra||{}))}catch(e){}}
 /* 배틀 로그 카드: 「【포텐셜】 이름 『효과』」 꼴의 글은 머리띠 + 본문 카드로 */
-const TAGCOL={'포텐셜':'#7b4fd6','특성':'#2f8f5b','소지품':'#c7651a','지령':'#1f6fd1','명령':'#e3101f','공개':'#d6a23b','스킬 체크':'#2b8fa8','모두 공개':'#d6a23b'};
+const TAGCOL={'포텐셜':'#7b4fd6','특성':'#2f8f5b','소지품':'#c7651a','지령':'#1f6fd1','명령':'#e3101f','공개':'#d6a23b','스킬 체크':'#2b8fa8','모두 공개':'#d6a23b','공격':'#c8362b','전달':'#8a4b2a','효과':'#555'};
 function battleCard(d){const t=String(d.t||'');const m=t.match(/^【([^】]+)】\s*([^\n]*)\n?([\s\S]*)$/);if(!m)return '';const tag=m[1],title=m[2],body=m[3].trim();const col=TAGCOL[tag]||'#555';
  const lines=body.split('\n').filter(Boolean).map(l=>`<div class="bl ${/실패|차단|없|않/.test(l)?'neg':/\+\d|회복|성공|→/.test(l)?'pos':''}">${esc(l)}</div>`).join('');
  return `<div class="bcard" style="--tc:${col}"><div class="bch">${d.img?`<span class="bcav" style="background-image:url('${esc(d.img)}')"></span>`:''}<span class="bctag">${esc(tag)}</span><b>${esc(title)}</b>${d.mid?`<span class="sp"></span><button class="btn xs ghost bcfx" data-lmid="${esc(d.mid)}" title="이 포켓몬의 포텐셜 창 — 발동 중인 효과를 ✕ 로 해제">효과</button>`:''}</div>${d.eff?`<div class="bceff">${esc(d.eff)}</div>`:''}${lines?`<div class="bcb">${lines}</div>`:''}</div>`}
