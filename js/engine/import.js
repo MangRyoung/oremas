@@ -36,7 +36,7 @@ window.OM_IMPORT=(()=>{
   const tko=[d.t1,d.t2,d.t3].map(x=>x&&x!=='-'?x:'-');
   const pots=[];
   (d.pots||[]).forEach((n,i)=>{if(!n||n==='-')return;const row=((DB().maker||{}).pots||[]).find(r=>r[1]===n);
-   pots.push({name:String(n).replace(/『|』/g,''),kind:(d.potKind||[])[i]||(row?row[0]:''),eff:brN((d.potEff||[])[i]||(row?row[2]:'')),ph:isPh(n)})});
+   pots.push({slot:i,name:String(n).replace(/『|』/g,''),kind:(d.potKind||[])[i]||(row?row[0]:''),eff:brN((d.potEff||[])[i]||(row?row[2]:'')),ph:isPh(n)})});
   const abil=(DB().traits||{})[d.ability]||{};
   const item=(DB().items||{})[d.item]||{};
   return {id:doc.id||d.id,tid:tr?tr.id:(doc.data&&doc.data.tid)||'',name:d.name||'',gender:d.gender||'-',lv:L,dist:nz(d.dist),
@@ -51,12 +51,13 @@ window.OM_IMPORT=(()=>{
    rank:{attack:0,defense:0,specialattack:0,specialdefense:0,speed:0,accuracy:0,evasion:0,critical:0},states:{},forms:formsOf(d,base,L)}}
 
  /* 폼체인지·메가진화 (제작기 시트 forms): 비운 칸은 원래 값 */
- function formsOf(d,base0,L){const out=(d.forms||[]).filter(f=>f&&(f.name||f.ability||(f.base||[]).some(v=>v!==''))).map(f=>{
+ function formsOf(d,base0,L){const out=(d.forms||[]).filter(f=>f&&(f.name||f.ability||(f.base||[]).some(v=>v!=='')||(f.pots||[]).some(x=>x&&x.name))).map(f=>{
    const base=Array.from({length:6},(_,i)=>{const v=(f.base||[])[i];return v===''||v==null?base0[i]:nz(v)});
    const tko=[f.t1,f.t2].map(x=>x&&x!=='-'?x:'-');const keepT=tko.every(x=>x==='-');
    const ab=f.ability||'';const abil=ab?((DB().traits||{})[ab]||{}):null;
    return {name:f.name||'',kind:f.kind||'폼체인지',typesKo:keepT?null:[...tko,'-'],types:keepT?null:[...tko,'-'].map(S().typeEn),
-    ability:ab,abilityEff:abil?brN(abil.multi||abil.single||''):null,base,image:f.image||'',cond:f.cond||'',revert:!!f.revert}});
+    ability:ab,abilityEff:abil?brN(abil.multi||abil.single||''):null,base,image:f.image||'',cond:f.cond||'',revert:!!f.revert,
+    pots:(f.pots||[]).filter(x=>x&&x.name).map(x=>{const row=((DB().maker||{}).pots||[]).find(r=>r[1]===x.name);return {slot:+x.slot||0,name:String(x.name).replace(/『|』/g,''),kind:row?row[0]:'',eff:brN(x.eff||(row?row[2]:''))}})}});
   return out.length?out:null}
 
  /* 역할 포텐셜(00.x. 역할)에서 역할 이름 */
