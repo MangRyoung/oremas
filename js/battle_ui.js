@@ -51,7 +51,7 @@ window.OM_BATTLE_UI=(()=>{
    <div class="phases">${phases.map(([p,n])=>`<button class="ph ${(+b.phase||0)===p?'on':''}" data-phase="${p}" ${c.gm?'':'disabled'}>${n}</button>`).join('')}</div>
    <span class="sp"></span>
    ${c.gm?`<div class="gmrow"><label>에리어 <select data-act="mode">${[1,2,3].map(n=>`<option value="${n}" ${mode(b)===n?'selected':''}>${n}</option>`).join('')}</select></label>
-    <button class="btn sm" data-act="reveal">지시 공개</button><button class="btn sm" data-act="order">행동 순서</button><button class="btn sm" data-act="turnend">턴 종료 처리</button><button class="btn sm" data-act="field">필드</button>
+    <button class="btn sm" data-act="turnstart">턴 개시</button><button class="btn sm ghost" data-act="reveal" title="아직 안 연 지시를 한꺼번에">모두 공개</button><button class="btn sm" data-act="order">행동 순서</button><button class="btn sm" data-act="turnend">턴 종료 처리</button><button class="btn sm" data-act="field">필드</button>
     <button class="btn sm ghost" data-act="resetcmd">지시 초기화</button><button class="btn sm ghost danger" data-act="clear">배틀 비우기</button>
     ${Object.entries(c.ST.state.pub||{}).filter(([k,v])=>v&&v.time).map(([k,v])=>`<span class="chip" style="border-color:var(--yel)">타임 요청: ${esc((b.trainers[k]||{}).name||k)} → ${esc(monName(b,v.time.mid))} <button class="btn xs pri" data-act="timeok" data-seat="${k}">허가</button></span>`).join('')}</div>`:''}
   </div>
@@ -134,20 +134,23 @@ window.OM_BATTLE_UI=(()=>{
   if(cm.detail)parts.push(`<span class="dim">${esc(cm.detail)}</span>`);
   return parts.join(' ')}
  function slotName(b,slot){const [side,area]=String(slot).split('_');const m=entered(b,side)[area];return `${SIDE_KO[side]||side}${(area||'').toUpperCase()}${m?'('+esc(m.name)+')':''}`}
- function orderName(b,tid,kind,key){const t=(b.trainers||{})[tid]||{};const style=+(t.orderStyle||0);
-  if(kind==='order'){const names=csv(lists()['list_order_'+style]);const i=ORDER_KEYS.indexOf(key);return names[i]||key}
-  const names=csv(lists()['list_command_'+style]);const i=COMMAND_KEYS.indexOf(key);return names[i]||key}
+ const OO=()=>window.OM_ORDERS;
+ function orderName(b,tid,kind,key){const t=(b.trainers||{})[tid]||{};return kind==='order'?OO().orderName(t,key):OO().commandName(t,key)}
 
- function orderBox(c){const b=c.b;if(!b.order||!b.order.length)return '';
-  return `<div class="orderbox"><div class="olab">행동 순서</div>${b.order.map((o,i)=>`<span class="ord ${o.side}"><b>${i+1}</b> ${esc(o.name)} <span class="dim small">${o.change?'교대':''}${o.order!==20?' 순서'+o.order:''}${o.prio?' 우선'+o.prio:''} ${Math.round(o.speed)}</span></span>`).join('')}</div>`}
+ /* 행동 순서 띠 (맵툴 print_turn_order 꼴: 초상 줄 + 「교대 등장」「통상 교대」「우선도」「순서값」 줄) + 지금 행동 중인 칸 */
+ function orderBox(c){const b=c.b;if(!b.order||!b.order.length)return '';const cur=+b.orderIdx||0;
+  const cap=o=>{if(!o.started)return '「교대 등장」';if(o.change)return '「통상 교대」';if(o.order!==20)return '「'+esc(orderValueName(o.order))+'」';return '「우선도 : '+(o.prio>0?'+':'')+o.prio+'」'};
+  return `<div class="orderbox"><div class="ohead"><span class="olab">행동 순서</span><span class="small dim">${(b.orderNotes||[]).length?esc((b.orderNotes||[]).join(' · ')):'스피드 순 · 초상을 누르면 그 차례로'}</span><span class="sp"></span>${c.gm?`<button class="btn xs ghost" data-act="oprev">◀</button><span class="small">${Math.min(cur+1,b.order.length)} / ${b.order.length}</span><button class="btn xs pri" data-act="onext">다음 행동 ▶</button>`:''}</div>
+   <div class="ostrip">${b.order.map((o,i)=>{const m=(b.mons||{})[o.mid]||{};const dead=m.hp&&m.hp.cur<=0;return `<div class="ocard ${o.side} ${i===cur?'now':i<cur?'done':''} ${dead?'dead':''}" data-act="ojump" data-i="${i}" title="${esc(o.name)} · 스피드 ${Math.round(o.speed)} · d${o.dice}"><span class="onum">${i+1}</span><div class="opt" style="${m.image?`background-image:url('${m.image}')`:''}"></div><b class="onm">${esc(o.name)}</b><span class="ocap">${cap(o)}</span>${o.move?`<span class="omv">${o.moveType?typeChip(o.moveType):''}${esc(o.move)}</span>`:''}<span class="osp">S ${Math.round(Math.abs(o.speed))} · d${o.dice}</span></div>`}).join('')}</div></div>`}
+ function orderValueName(v){return ({40:'가장 먼저',30:'상대보다 먼저',20:'일반',10:'상대보다 나중에',0:'가장 나중에'})[v]||('순서 '+v)}
 
  /* ---------- 지시 입력 패널 ---------- */
  let CMD={};  /* 편집 중인 내 지시 {tid:{mons:{},order:{},command:{},detail}} */
  /* ---------- 지시 입력 패널 (맵툴 cmd_ui 와 같은 구성: 포켓몬 탭 → 기술 카드 → 대상 보드 → 지령 풀 → 요약) ---------- */
  const UIC={tab:{}};  /* tid → 선택된 mid */
  function moveCard(mv,i,on,extra){const col=S().typeColor(mv.typeEn);return `<div class="mv ${on?'on':''}" style="background:${col.bg};color:${col.fg}" ${extra||''}><div class="mn">${esc(mv.name)} <i class="mvdb" data-mvdb="${esc(mv.name)}" title="기술 DB">?</i></div><div class="mm">${esc(mv.cat)} · 위력 ${mv.pow||'-'} · 명중 ${mv.acc||'필중'}${mv.prio?' · 우선 '+mv.prio:''}</div><div class="mr">${esc(mv.range)}</div></div>`}
- function tile(m,side,area,on,cls,extra){if(!m)return `<div class="tg none ${cls||''}"><span class="tn"><small>${SIDE_KO[side]} ${area.toUpperCase()} 빈 자리</small></span></div>`;const pct=Math.max(0,Math.min(100,Math.round(m.hp.cur/m.hp.max*100)));
-  return `<div class="tg ${cls||''} ${on?'on':''}" ${extra||''}><div class="ti" style="${m.image?`background-image:url('${m.image}')`:''}"></div><div class="tn"><b>${esc(m.name)}</b><small>${SIDE_KO[side]} ${area.toUpperCase()} · ${m.types.filter(t=>t!=='-').map(typeChip).join('')}</small><div class="hpb ${pct<=25?'low':pct<=50?'mid':''}"><i style="width:${pct}%"></i></div></div><span class="tk">${on?'✓':''}</span></div>`}
+ function tile(m,side,area,on,cls,extra){if(!m)return `<div class="ttile none ${cls||''}"><span class="tn"><small>${SIDE_KO[side]} ${area.toUpperCase()} 빈 자리</small></span></div>`;const pct=Math.max(0,Math.min(100,Math.round(m.hp.cur/m.hp.max*100)));
+  return `<div class="ttile ${cls||''} ${on?'on':''}" ${extra||''}><div class="ti" style="${m.image?`background-image:url('${m.image}')`:''}"></div><div class="tn"><b>${esc(m.name)}</b><small>${SIDE_KO[side]} ${area.toUpperCase()} · ${m.types.filter(t=>t!=='-').map(typeChip).join('')}</small><div class="hpb ${pct<=25?'low':pct<=50?'mid':''}"><i style="width:${pct}%"></i></div></div><span class="tk">${on?'✓':''}</span></div>`}
  /* 대상판: 열 = 좌측/우측, 행 = 에리어 (무대와 같은 배치). 아군 열은 초록, 상대 열은 빨강 */
  function board(b,mySide,isOn,attr,allowSelf){const ent={left:entered(b,'left'),right:entered(b,'right')};const cls=s=>s===mySide?'al':'en';
   const head=SIDES.map(s=>`<div class="bl ${cls(s)}">${SIDE_KO[s]}${s===mySide?' (아군)':' (상대)'}</div>`).join('');
@@ -161,20 +164,21 @@ window.OM_BATTLE_UI=(()=>{
    if(!mons.find(m=>m.id===UIC.tab[tid]))UIC.tab[tid]=mons[0].id;const m=mons.find(x=>x.id===UIC.tab[tid]);
    mons.forEach(mm=>{cur.mons[mm.id]=cur.mons[mm.id]||{move:'',switch:'',targets:[],prio:{},ochg:{}}});
    const x=cur.mons[m.id];const bench=Object.values(b.mons||{}).filter(mm=>mm.tid===tid&&!mm.entry&&mm.hp.cur>0);
-   const style=+(t.orderStyle||0);const oNames=csv(lists()['list_order_'+style]);const cNames=csv(lists()['list_command_'+style]);const cnt=t.orderCount||{};
+   const oNames=OO().orderNames(t);const cNames=OO().commandNames(t);const OKEYS=OO().orderKeys(t);const CKEYS=OO().commandKeys(t);const cnt=t.orderCount||{};
    const summ=mons.map(mm=>{const xx=cur.mons[mm.id];if(xx.move==='switch')return `${mm.name}: 교대 → ${monName(b,xx.switch)||'?'}`;if(xx.move===''||xx.move==null)return `${mm.name}: <span class="warn">행동 없음</span>`;const mv=(mm.moves||[])[+xx.move];return `${mm.name}: <b>${mv?esc(mv.name):'?'}</b>${xx.targets.length?' → '+xx.targets.map(sl=>slotName(b,sl)).join(', '):' <span class="warn">대상 없음</span>'}`}).join(' · ');
    const isSwitch=x.move==='switch';const mvSel=!isSwitch&&x.move!==''?(m.moves||[])[+x.move]:null;
+   const revealBar=phase>=1?`<div class="revealbar"><span class="olab">지시 공개</span>${mons.map(mm=>revealed(b,tid,mm.id)?`<span class="chip on">${String(mm.entry).toUpperCase()} ${esc(mm.name)} ✓</span>`:`<button class="btn sm pri" data-act="revealmon" data-tid="${tid}" data-mid="${mm.id}">에리어 ${String(mm.entry).toUpperCase()} : ${esc(mm.name)}</button>`).join('')}${revealed(b,tid,'orders')?'<span class="chip on">지령·명령 ✓</span>':`<button class="btn sm" data-act="revealord" data-tid="${tid}">지령·명령 공개</button>`}<span class="small dim">맵툴처럼 하나씩 연다</span></div>`:'';
    return `<div class="cmdt" data-tid="${tid}">
-    <div class="cmdhead"><b>${esc(t.name)}</b> 지시 ${ready[tid]?'<span class="tag ok">READY</span>':''}<span class="sp"></span><button class="btn xs ghost" data-act="cmdload" data-tid="${tid}">저장된 지시 불러오기</button></div>
+    <div class="cmdhead"><b>${esc(t.name)}</b> 지시 ${ready[tid]?'<span class="tag ok">READY</span>':''}<span class="sp"></span><button class="btn xs ghost" data-act="cmdload" data-tid="${tid}">저장된 지시 불러오기</button></div>${revealBar}
     <div class="tabs2">${mons.map(mm=>{const xx=cur.mons[mm.id];const mv=xx.move!==''&&xx.move!=='switch'?(mm.moves||[])[+xx.move]:null;return `<div class="tab2 ${mm.id===m.id?'on':''}" data-ctab="${mm.id}"><div class="pic" style="${mm.image?`background-image:url('${mm.image}')`:''}"></div><div><b>${esc(mm.name)}</b><small>${xx.move==='switch'?'교대 → '+esc(monName(b,xx.switch)||'?'):mv?esc(mv.name):'미정'}</small></div></div>`}).join('')}</div>
     <div class="pane">
      <div class="sec">행동 <span class="seg"><span class="${!isSwitch?'on':''}" data-seg="move">기술</span><span class="${isSwitch?'on':''}" data-seg="switch">교대</span></span><span class="note">에리어 ${m.entry.toUpperCase()}</span></div>
      ${isSwitch?`<div class="pg">${bench.length?bench.map(bm=>`<div class="pc ${x.switch===bm.id?'on':''}" data-sw="${bm.id}"><div class="pic" style="${bm.image?`background-image:url('${bm.image}')`:''}"></div><div><b>${esc(bm.name)}</b><div class="small dim">${bm.hp.cur}/${bm.hp.max}</div></div></div>`).join(''):'<div class="dim small">교대할 포켓몬이 없다</div>'}</div>`
      :`<div class="mvg">${(m.moves||[]).map((mv,i)=>moveCard(mv,i,String(x.move)===String(i),`data-mv="${i}"`)).join('')}</div>${mvSel?`<div class="mef">${esc(mvSel.eff||'')}${mvSel.tag&&mvSel.tag!=='-'?` <span class="dim">[${esc(mvSel.tag)}]</span>`:''}</div>`:''}
       ${mvSel?`<div class="sec">대상 <span class="note">범위 ${esc(mvSel.range)} — 누르면 바꿀 수 있다</span></div>${board(b,m.side,(slot)=>x.targets.includes(slot),(slot)=>`data-tgt="${slot}"`)}`:''}`}
-     <div class="sec">지령 <span class="note">4식 · 선행 입력</span></div><div class="pool">${ORDER_KEYS.map((k,i)=>oNames[i]?`<div class="oc ${cur.order.type===k?'mine':''} ${(cnt['order_'+k]??1)<=0?'dis':''}" data-ord="${k}"><b>${esc(oNames[i])}</b><small>남은 ${cnt['order_'+k]??1}${cur.order.type===k&&cur.order.target?' · → '+esc(monName(b,cur.order.target)):''}</small></div>`:'').join('')}</div>
+     <div class="sec">지령 <span class="note">4식 · 선행 입력</span></div><div class="pool">${OKEYS.map((k,i)=>oNames[i]?`<div class="oc ${cur.order.type===k?'mine':''} ${(cnt['order_'+k]??1)<=0?'dis':''}" data-ord="${k}"><b>${esc(oNames[i])}</b><small>남은 ${cnt['order_'+k]??1}${cur.order.type===k&&cur.order.target?' · → '+esc(monName(b,cur.order.target)):''}</small></div>`:'').join('')}</div>
      ${cur.order.type?`<div class="row small" style="margin:4px 0 0 2px">대상: ${mons.map(mm=>`<span class="tgl ${cur.order.target===mm.id?'on':''}" data-ordt="${mm.id}">${esc(mm.name)}</span>`).join('')}</div>`:''}
-     <div class="sec">명령 <span class="note">6령</span></div><div class="pool">${COMMAND_KEYS.map((k,i)=>cNames[i]?`<div class="oc ${cur.command.type===k?'mine':''} ${(cnt['command_'+k]??1)<=0?'dis':''}" data-cmd="${k}"><b>${esc(cNames[i])}</b><small>남은 ${cnt['command_'+k]??1}${cur.command.type===k&&cur.command.target?' · → '+esc(monName(b,cur.command.target)):''}</small></div>`:'').join('')}</div>
+     <div class="sec">명령 <span class="note">6령</span></div><div class="pool">${CKEYS.map((k,i)=>cNames[i]?`<div class="oc ${cur.command.type===k?'mine':''} ${(cnt['command_'+k]??1)<=0?'dis':''}" data-cmd="${k}"><b>${esc(cNames[i])}</b><small>남은 ${cnt['command_'+k]??1}${cur.command.type===k&&cur.command.target?' · → '+esc(monName(b,cur.command.target)):''}</small></div>`:'').join('')}</div>
      ${cur.command.type?`<div class="row small" style="margin:4px 0 0 2px">대상: ${mons.map(mm=>`<span class="tgl ${cur.command.target===mm.id?'on':''}" data-cmdt="${mm.id}">${esc(mm.name)}</span>`).join('')}</div>`:''}
      <details class="adv"><summary>우선도 · 행동 순서 변경 (${esc(m.name)})</summary><div class="tgts">${allEntered(b).map(s=>`<label class="tg2">${s.area.toUpperCase()} ${esc(s.mon.name)} 우선 <input type="number" class="n" data-f="prio" data-mid="${m.id}" data-slot="${s.slot}" value="${x.prio[s.slot]??''}" placeholder="0"> 순서 <input type="number" class="n" data-f="ochg" data-mid="${m.id}" data-slot="${s.slot}" value="${x.ochg[s.slot]??''}" placeholder="20"></label>`).join('')}</div></details>
      <div class="row" style="margin-top:6px"><input type="text" data-f="detail" value="${esc(cur.detail)}" placeholder="상세 (포텐셜 선언, 자유 메모)" style="flex:1"></div>
@@ -230,6 +234,12 @@ window.OM_BATTLE_UI=(()=>{
    case 'cmdload':return loadCmd(d.tid);
    case 'reveal':return reveal();
    case 'order':return computeOrder();
+   case 'turnstart':{await A().set(['ready'],{});await A().set(['battle','cmds'],{});await A().set(['battle','phase'],1);A().sysLog('턴 개시 — 각자 지시를 공개하세요 (에리어마다 「공개」)','battle');return}
+   case 'revealmon':return revealOne(d.tid,d.mid);
+   case 'revealord':return revealOne(d.tid,'orders');
+   case 'onext':{const n=Math.min((c.b.order||[]).length,(+c.b.orderIdx||0)+1);await A().set(['battle','orderIdx'],n);if(n<(c.b.order||[]).length)A().sysLog(`▶ ${c.b.order[n].name}의 행동`,'battle');else A().sysLog('행동 순서 끝 — 턴 종료 처리로','battle');return}
+   case 'oprev':{await A().set(['battle','orderIdx'],Math.max(0,(+c.b.orderIdx||0)-1));return}
+   case 'ojump':{if(!c.gm)return;await A().set(['battle','orderIdx'],+d.i);return}
    case 'turnend':return turnEnd();
    case 'resetcmd':if(!confirm('공개된 지시와 준비 상태를 지울까?'))return;CMD={};await A().set(['battle','cmds'],{});await A().set(['ready'],{});return}}
 
@@ -261,16 +271,35 @@ window.OM_BATTLE_UI=(()=>{
   if(!rd){const ok=await saveCmd(tid,true);if(!ok)return}
   const path=c.gm?['ready',tid]:['ready',c.seat];
   await A().set(path,rd?null:true);A().sysLog(`${((c.b.trainers||{})[tid]||{}).name||tid} ${rd?'준비 해제':'준비 완료'}`,'battle')}
+ /* 맵툴 open_command 처럼 에리어(포켓몬) 하나씩 공개한다. 좌석은 자기 것만, GM 은 아무 것이나 */
+ function revealed(b,tid,part){const cm=((b.cmds||{})[tid]||{});return part==='orders'?!!cm.revealedOrders:!!((cm.mons||{})[part])}
+ async function myCmd(c,tid){let rows;try{rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd')}catch(e){A().toast('지시를 읽지 못했다: '+e.message);return null}const r=(rows||[]).find(x=>x.id===tid);if(!r){A().toast('저장된 지시가 없다 — 먼저 「저장」');return null}return r.data}
+ function revealCardText(b,t,m,x){if(x.move==='switch')return `${t.name} · ${m.name} (${slotName(b,m.side+'_'+m.entry).replace(/<[^>]+>/g,'')}): 「교대」 → ${monName(b,x.switch)}`;
+  if(x.move===''||x.move==null)return `${t.name} · ${m.name}: (행동 없음)`;const mv=(m.moves||[])[+x.move]||{};
+  return `${t.name} · ${m.name} (${SIDE_KO[m.side]} ${String(m.entry).toUpperCase()}): 「${mv.name||'?'}」 ${mv.type||''}·${mv.cat||''} · 위력 ${mv.pow||'-'} · 명중 ${mv.acc||'-'}${mv.prio?' · 우선도 '+mv.prio:''}${x.targets&&x.targets.length?' → '+x.targets.map(sl=>slotName(b,sl).replace(/<[^>]+>/g,'')).join(', '):''}${mv.eff&&mv.eff!=='-'?'\n   '+mv.eff:''}`}
+ async function revealOne(tid,part){const c=ctx();const b=c.b;const t=(b.trainers||{})[tid];if(!t)return;if(!c.gm&&c.seat!==tid)return A().toast('내 지시만 공개할 수 있다');
+  const cm=await myCmd(c,tid);if(!cm)return;
+  if(part==='orders'){if(revealed(b,tid,'orders'))return;
+   const trs=JSON.parse(JSON.stringify(b.trainers||{}));const mons=JSON.parse(JSON.stringify(b.mons||{}));const f=fieldOf(JSON.parse(JSON.stringify(b)));const fx=[];const tt=trs[tid];tt.orderCount=tt.orderCount||{};
+   if(cm.order&&cm.order.type){const k='order_'+cm.order.type;tt.orderCount[k]=(tt.orderCount[k]??1)-1;fx.push(...applyOrder(mons,f,tt,orderName(b,tid,'order',cm.order.type),cm.order.target))}
+   if(cm.command&&cm.command.type){const k='command_'+cm.command.type;tt.orderCount[k]=(tt.orderCount[k]??1)-1;fx.push(...applyOrder(mons,f,tt,orderName(b,tid,'command',cm.command.type),cm.command.target))}
+   await A().set(['battle','trainers',tid],tt);if(cm.order&&cm.order.type||cm.command&&cm.command.type){await A().set(['battle','mons'],mons);await A().set(['battle','field'],f)}
+   await A().set(['battle','cmds',tid,'order'],cm.order||{});await A().set(['battle','cmds',tid,'command'],cm.command||{});await A().set(['battle','cmds',tid,'detail'],cm.detail||'');await A().set(['battle','cmds',tid,'revealedOrders'],true);
+   const lines=[];if(cm.order&&cm.order.type)lines.push(`${t.name} 지령 「${orderName(b,tid,'order',cm.order.type)}」 → ${monName(b,cm.order.target)}`);if(cm.command&&cm.command.type)lines.push(`${t.name} 명령 「${orderName(b,tid,'command',cm.command.type)}」 → ${monName(b,cm.command.target)}`);if(cm.detail)lines.push(`${t.name}: ${cm.detail}`);if(fx.length)lines.push('— 효과: '+fx.join(' / '));
+   A().sysLog('【공개】 '+(lines.length?lines.join('\n'):t.name+' — 지령·명령 없음'),'battle');return}
+  const m=b.mons[part];if(!m)return;if(revealed(b,tid,part))return;const x=(cm.mons||{})[part]||{move:'',targets:[]};
+  await A().set(['battle','cmds',tid,'mons',part],x);A().sysLog('【공개】 '+revealCardText(b,t,m,x),'battle')}
  async function reveal(){const c=ctx();if(!c.gm)return;const b=c.b;
   let rows;try{rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd')}catch(e){return A().toast('지시를 읽지 못했다: '+e.message)}
   const cmds={};(rows||[]).forEach(r=>{if((b.trainers||{})[r.id])cmds[r.id]=r.data});
   if(!Object.keys(cmds).length)return A().toast('저장된 지시가 없다');
+  const already=b.cmds||{};for(const tid in cmds){const cm=cmds[tid];const al=already[tid]||{};if(al.revealedOrders){cm.order={};cm.command={};cm.detail='';cm._ordersDone=true}for(const mid in (al.mons||{})){if(cm.mons)cm.mons[mid]=al.mons[mid]}}
   /* 지령·명령 횟수 차감 + 효과 자동 적용 */
   const trs=JSON.parse(JSON.stringify(b.trainers||{}));const mons=JSON.parse(JSON.stringify(b.mons||{}));const f=fieldOf(JSON.parse(JSON.stringify(b)));const fx=[];
-  for(const tid in cmds){const t=trs[tid];if(!t)continue;t.orderCount=t.orderCount||{};const cm=cmds[tid];
+  for(const tid in cmds){const t=trs[tid];if(!t)continue;t.orderCount=t.orderCount||{};const cm=cmds[tid];cm.revealedOrders=true;
    if(cm.order&&cm.order.type){const k='order_'+cm.order.type;t.orderCount[k]=(t.orderCount[k]??1)-1;fx.push(...applyOrder(mons,f,t,orderName(b,tid,'order',cm.order.type),cm.order.target))}
    if(cm.command&&cm.command.type){const k='command_'+cm.command.type;t.orderCount[k]=(t.orderCount[k]??1)-1;fx.push(...applyOrder(mons,f,t,orderName(b,tid,'command',cm.command.type),cm.command.target))}}
-  await A().set(['battle','trainers'],trs);await A().set(['battle','mons'],mons);await A().set(['battle','field'],f);await A().set(['battle','cmds'],cmds);await A().set(['ready'],{});await A().set(['battle','phase'],1);
+  await A().set(['battle','trainers'],trs);await A().set(['battle','mons'],mons);await A().set(['battle','field'],f);await A().set(['battle','cmds'],cmds);await A().set(['battle','phase'],Math.max(1,+b.phase||0));
   /* 로그 카드 */
   const lines=[];for(const tid in cmds){const t=trs[tid];const cm=cmds[tid];
    for(const mid in cm.mons){const m=b.mons[mid];if(!m||!m.entry)continue;const x=cm.mons[mid];let s='';
@@ -280,7 +309,7 @@ window.OM_BATTLE_UI=(()=>{
    if(cm.command&&cm.command.type)lines.push(`${t.name} 명령 「${orderName(b,tid,'command',cm.command.type)}」 → ${monName(b,cm.command.target)}`);
    if(cm.detail)lines.push(`${t.name}: ${cm.detail}`)}
   if(fx.length)lines.push('— 지령 효과: '+fx.join(' / '));
-  A().sysLog('지시 공개\n'+lines.join('\n'),'battle')}
+  A().sysLog('【모두 공개】\n'+lines.join('\n'),'battle')}
 
  /* 지령·명령 효과 (Lib:readymade 의 지령 레디메이드와 같은 내용). 랭크는 임시(턴 종료 해제). 플래그는 flags 에 두고 공격 창이 읽는다 */
  const STATWORD={공격:'attack',방어:'defense',특공:'specialattack',특방:'specialdefense',민첩:'speed',저격:'accuracy',회피:'evasion',스피드:'speed',명중:'accuracy'};
@@ -313,8 +342,12 @@ window.OM_BATTLE_UI=(()=>{
    const objs=(f.objects||{})[s.side]||{};
    return {slot:s.slot,mon:s.mon,cmd:{change:x.move==='switch',priorityMap:prioMap,orderMap},prioMod,started:!!s.mon.started,scarf:s.mon.item==='구애스카프',tailwind:(objs['순풍']||0)>0,swamp:(objs['습원']||0)>0}});
   const rows=B().turnOrder(entries,{trick:((f.rooms||{})['트릭룸']||0)>0});
-  const order=rows.map(r=>({slot:r.slot,mid:r.mon.id,name:r.mon.name,side:r.mon.side,change:r.change,order:r.order,prio:r.prio,speed:r.speed,dice:r.dice}));
-  await A().set(['battle','order'],order);await A().set(['battle','phase'],2);
+  const order=rows.map(r=>{const x=(((b.cmds||{})[r.mon.tid]||{}).mons||{})[r.mon.id]||{};const mv=(x.move!==''&&x.move!=='switch'&&x.move!=null)?(r.mon.moves||[])[+x.move]:null;
+   return {slot:r.slot,mid:r.mon.id,name:r.mon.name,side:r.mon.side,change:r.change,started:r.started,order:r.order,prio:r.prio,speed:r.speed,dice:r.dice,move:mv?mv.name:(x.move==='switch'?'교대':''),moveType:mv?mv.typeEn:'',targets:x.targets||[],pursuit:mv?mv.name==='추격':false}});
+  /* 추격: 교대하는 대상을 노리면 교대보다 먼저 때린다 */
+  const notes=[];if(((f.rooms||{})['트릭룸']||0)>0)notes.push('「트릭룸」이 시공간을 뒤틀었다! (스피드 역순)');
+  for(const o of order)if(o.pursuit)for(const t of o.targets){const v=order.find(z=>z.slot===t);if(v&&v.change)notes.push(`${o.name}의 「추격」 — 교대하려는 ${v.name}을(를) 먼저 때린다!`)}
+  await A().set(['battle','order'],order);await A().set(['battle','orderIdx'],0);await A().set(['battle','orderNotes'],notes);await A().set(['battle','phase'],2);
   A().sysLog('행동 순서\n'+order.map((o,i)=>`${i+1}. ${o.name} (${o.change?'교대 · ':''}${o.order!==20?'순서 '+o.order+' · ':''}${o.prio?'우선 '+o.prio+' · ':''}스피드 ${Math.round(o.speed)} · d${o.dice})`).join('\n'),'battle')}
 
  /* ----- 턴 종료 ----- */
@@ -395,16 +428,16 @@ window.OM_BATTLE_UI=(()=>{
    A().closeModal();if(await A().set(['battle','field'],nf))A().sysLog(`필드 갱신: ${[nf.weather.type&&'날씨 '+nf.weather.type+' '+nf.weather.count+'T',nf.terrain.type&&nf.terrain.type+' '+nf.terrain.count+'T',...Object.entries(nf.rooms).map(([k,v])=>k+' '+v+'T'),...Object.entries(nf.etc).map(([k,v])=>k+' '+v+'T'),...SIDES.flatMap(s=>Object.entries(nf.objects[s]).map(([k,v])=>SIDE_KO[s]+' '+k+' '+v))].filter(Boolean).join(' · ')||'없음'}`,'battle')}}
 
  /* ---------- 지령 설정 (GM) ---------- */
- function openOrders(tid){const c=ctx();if(!c.gm)return;const t=c.b.trainers[tid];if(!t)return;const cnt=t.orderCount||{};const style=+(t.orderStyle||0);
-  const md=A().openModal(`<div class="mhead"><h2>${esc(t.name)} 지령·명령</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-   <div class="row"><label>계열 <select id="ostyle">${[['0','협회식 (4식 6령)'],['1','방해 지령'],['2','교회식 (십계)'],['3','야생']].map(([v,n])=>`<option value="${v}" ${style===+v?'selected':''}>${n}</option>`).join('')}</select></label></div>
-   <div class="row" style="margin-top:8px;align-items:flex-start"><div><div class="stgl">지령 남은 횟수</div>${ORDER_KEYS.map((k,i)=>`<label class="row">${esc(csv(lists()['list_order_'+style])[i]||k)} <input type="number" class="n" data-oc="order_${k}" value="${cnt['order_'+k]??1}"></label>`).join('')}</div>
-    <div><div class="stgl">명령 남은 횟수</div>${COMMAND_KEYS.map((k,i)=>`<label class="row">${esc(csv(lists()['list_command_'+style])[i]||k)} <input type="number" class="n" data-oc="command_${k}" value="${cnt['command_'+k]??1}"></label>`).join('')}</div></div>
+ function openOrders(tid){const c=ctx();if(!c.gm)return;const t=c.b.trainers[tid];if(!t)return;const cnt=t.orderCount||{};const st=OO().styles(t);
+  const md=A().openModal(`<div class="mhead"><h2>${esc(t.name)} 지령·명령 (4식 6령)</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+   <div class="row"><label>명령 계열 <select id="ostyle">${OO().commandStyles().map((n,i)=>`<option value="${i}" ${st.tc===i?'selected':''}>${esc(n)}</option>`).join('')}</select></label><label>지령 계열 <b id="otord">${esc(OO().orderStyles()[st.tord]||'')}</b></label><label>횟수 <input type="number" class="n" id="onn" value="${Math.max(0,...Object.values(cnt).map(Number).filter(x=>!isNaN(x)),1)}"></label><button class="btn sm" id="omake" title="모든 항목을 이 횟수로 만들고, 계열 조합에서 못 쓰는 항목은 0">일괄 제작</button></div>
+   <div class="row" style="margin-top:8px;align-items:flex-start"><div><div class="stgl">지령 남은 횟수</div>${OO().orderKeys(t).map((k,i)=>`<label class="row">${esc(OO().orderNames(t)[i]||k)} <input type="number" class="n" data-oc="order_${k}" value="${cnt['order_'+k]??1}"></label>`).join('')}</div>
+    <div><div class="stgl">명령 남은 횟수</div>${OO().commandKeys(t).map((k,i)=>`<label class="row">${esc(OO().commandNames(t)[i]||k)} <input type="number" class="n" data-oc="command_${k}" value="${cnt['command_'+k]??1}"></label>`).join('')}</div></div>
+   <div class="small dim" style="margin-top:6px">계열을 바꾸면 「일괄 제작」으로 다시 만들어야 항목이 맞는다. 항목별 숫자는 그대로 고쳐 「적용」.</div>
    <div class="row" style="margin-top:12px"><span class="sp"></span><button class="btn pri" id="osave">적용</button></div>`);
-  $('#ostyle',md).onchange=()=>{/* 계열이 바뀌면 이름만 바뀌므로 다시 연다 */};
-  $('#osave',md).onclick=async()=>{const nt=JSON.parse(JSON.stringify(t));nt.orderStyle=+$('#ostyle',md).value;nt.orderCount={};md.querySelectorAll('[data-oc]').forEach(i=>nt.orderCount[i.dataset.oc]=+i.value||0);A().closeModal();await A().set(['battle','trainers',tid],nt)}}
-
- /* 레이드 배리어: 최대 HP × k/X 자리마다 하한. 깨진 것(broken) 아래로 내려간다 */
+  $('#ostyle',md).onchange=()=>{$('#otord',md).textContent=OO().orderStyles()[OO().tordOf($('#ostyle',md).value)]||''};
+  $('#omake',md).onclick=async()=>{const mk=OO().make(t,$('#ostyle',md).value,$('#onn',md).value);A().closeModal();await A().set(['battle','trainers',tid,'commandStyle'],mk.commandStyle);await A().set(['battle','trainers',tid,'orderStyle'],mk.orderStyle);await A().set(['battle','trainers',tid,'orderCount'],mk.orderCount);A().sysLog(`${t.name} 지령·명령 제작: 「${OO().commandStyles()[mk.commandStyle]}」 · ${$('#onn',md).value}회`,'battle');openOrders(tid)};
+  $('#osave',md).onclick=async()=>{const nc=Object.assign({},cnt);md.querySelectorAll('[data-oc]').forEach(i=>nc[i.dataset.oc]=+i.value||0);const tc=+$('#ostyle',md).value;A().closeModal();await A().set(['battle','trainers',tid,'commandStyle'],tc);await A().set(['battle','trainers',tid,'orderStyle'],OO().tordOf(tc));await A().set(['battle','trainers',tid,'orderCount'],nc)}}
  function raidFloor(m){if(!m||!m.raid||!(+m.raid.segments>0))return 0;const X=+m.raid.segments,br=+m.raid.broken||0;let fl=0;for(let k=X-1-br;k>=1;k--){const v=Math.floor(m.hp.max*k/X);if(v<m.hp.cur){fl=v;break}}return fl}
  /* ---------- 공격 ---------- */
  function openAttack(mid){const c=ctx();const b=c.b;const atk=b.mons[mid];if(!atk||!canEdit(c,atk))return;const f=fieldOf(b);

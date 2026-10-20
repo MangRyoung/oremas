@@ -51,8 +51,10 @@ window.OM_SHEET_UI=(()=>{
    ${UI.tab==='char'?charTab(c,t,E):UI.tab==='poke'?pokeTab(c,t,mons,E):UI.tab==='grow'?growTab(c,t,mons,E):battleTab(c,t,mons,E)}`}
 
  function charTab(c,t,E){
-  const d=t.detail||{};
-  return `<div class="spanel two">
+  const d=t.detail||{};const st=t.stands||[];const act=+t.standActive||0;
+  const standSec=`<div class="spanel"><div class="sh">스탠딩 <span class="note">무대에 서는 전신 그림 · 제작기에서 넣으면 「제작기 동기화」로 따라온다</span><span class="sp"></span>${canEdit(c,t.id)?`<button class="btn sm" data-act="stands">표정·스탠딩 편집</button>`:''}</div>
+   <div class="stgrid">${st.map((s,i)=>`<div class="stcard ${i===act?'on':''}"><div class="sth" style="${s.src?`background-image:url('${esc(s.src)}')`:''}"></div><b>${esc(s.label||'기본')}</b>${i===act?' <span class="tag me">기본</span>':''}</div>`).join('')||`<div class="small dim">아직 없다 — 초상(위 그림)으로 선다</div>`}</div></div>`;
+  return standSec+`<div class="spanel two">
    <div><div class="sh">자질</div><table class="t">${['육성','지시','통솔','능력'].map(k=>`<tr><th style="width:60px">${k} ${esc((t.ranks||{})[k]||'-')}</th><td>${E?`<input type="text" data-te="detail_${k}" value="${esc(d[k]||'')}" style="width:100%">`:esc(d[k]||'')}</td></tr>`).join('')}</table>
     <div class="sh" style="margin-top:12px">고유 포텐셜</div>${(t.unique||[]).length?`<table class="t">${t.unique.map((u,i)=>`<tr><th style="width:140px;white-space:normal">${E?`<input type="text" data-te="uniq_name_${i}" value="${esc(u.name)}" style="width:100%">`:esc(u.name)}</th><td class="pre small">${E?`<textarea data-te="uniq_eff_${i}" rows="3" style="width:100%">${esc(u.eff)}</textarea>`:esc(u.eff)}</td></tr>`).join('')}</table>`:'<div class="dim small">없음</div>'}${E?`<button class="btn xs" data-act="adduniq">+ 고유</button>`:''}</div>
    <div><div class="sh">메모</div>${E?`<textarea data-te="memo" rows="12" style="width:100%">${esc(t.memo||'')}</textarea>`:`<div class="pre small">${esc(t.memo||'')||'<span class="dim">없음</span>'}</div>`}</div>
@@ -100,13 +102,13 @@ window.OM_SHEET_UI=(()=>{
    <div class="small dim" style="margin-top:6px">분배레벨 합: ${mons.reduce((a,m)=>a+(+m.dist||0),0)} / ${esc(String((t.base||{})['분배레벨']??'-'))}</div></div>`}
 
  function battleTab(c,t,mons,E){
-  const lists=(DB().const||{}).lists||{};const csv=s=>String(s||'').split(',').map(x=>x.trim()).filter(Boolean);
-  const style=+(t.orderStyle||0);const cnt=t.orderCount||{};const OK=['retreat','dodge','endure','return','snipe'],CK=['attack','defense','specialattack','specialdefense','speed','heal','snipe','evasion'];
+  const OO=window.OM_ORDERS;const st=OO.styles(t);const cnt=t.orderCount||{};const OKEYS=OO.orderKeys(t),CKEYS=OO.commandKeys(t),oN=OO.orderNames(t),cN=OO.commandNames(t);
   const inB=!!((A().ST.state.battle||{}).trainers||{})[t.id];
-  return `<div class="spanel two"><div><div class="sh">지령·명령</div>
-    <div class="row"><label>계열 ${E?`<select data-te="orderStyle">${[['0','협회식 (4식 6령)'],['1','방해 지령'],['2','교회식 (십계)'],['3','야생']].map(([v,n])=>`<option value="${v}" ${style===+v?'selected':''}>${n}</option>`).join('')}</select>`:['협회식','방해','교회식','야생'][style]}</label></div>
-    <div class="row" style="margin-top:6px;align-items:flex-start;gap:20px"><div>${OK.map((k,i)=>{const n=csv(lists['list_order_'+style])[i];return n?`<div class="row small">${esc(n)} ${E?`<input type="number" class="n xs" data-te="oc_order_${k}" value="${cnt['order_'+k]??1}">`:`<b>${cnt['order_'+k]??1}</b>`}</div>`:''}).join('')}</div>
-     <div>${CK.map((k,i)=>{const n=csv(lists['list_command_'+style])[i];return n?`<div class="row small">${esc(n)} ${E?`<input type="number" class="n xs" data-te="oc_command_${k}" value="${cnt['command_'+k]??1}">`:`<b>${cnt['command_'+k]??1}</b>`}</div>`:''}).join('')}</div></div></div>
+  return `<div class="spanel two"><div><div class="sh">지령·명령 <span class="note">4식 6령 — 명령 계열을 고르면 지령 계열이 따라온다</span></div>
+    <div class="row"><label>명령 계열 ${E?`<select data-te="commandStyle">${OO.commandStyles().map((n,i)=>`<option value="${i}" ${st.tc===i?'selected':''}>${esc(n)}</option>`).join('')}</select>`:`<b>${esc(OO.commandStyles()[st.tc]||'')}</b>`}</label><label>지령 계열 <b>${esc(OO.orderStyles()[st.tord]||'')}</b></label></div>
+    ${E?`<div class="row" style="margin-top:6px"><label>횟수 <input type="number" class="n xs" id="omk_n" value="${Math.max(0,...Object.values(cnt).map(Number).filter(x=>!isNaN(x)),1)}"></label><button class="btn sm" data-act="ordmake" title="모든 항목을 이 횟수로 만들고, 계열 조합에서 못 쓰는 항목은 0 (맵툴 「제작」)">일괄 제작</button><span class="small dim">그 뒤 항목별로 고칠 수 있다</span></div>`:''}
+    <div class="row" style="margin-top:6px;align-items:flex-start;gap:20px"><div>${OKEYS.map((k,i)=>{const n=oN[i];return n?`<div class="row small">${esc(n)} ${E?`<input type="number" class="n xs" data-te="oc_order_${k}" value="${cnt['order_'+k]??1}">`:`<b>${cnt['order_'+k]??1}</b>`}</div>`:''}).join('')}</div>
+     <div>${CKEYS.map((k,i)=>{const n=cN[i];return n?`<div class="row small">${esc(n)} ${E?`<input type="number" class="n xs" data-te="oc_command_${k}" value="${cnt['command_'+k]??1}">`:`<b>${cnt['command_'+k]??1}</b>`}</div>`:''}).join('')}</div></div></div>
    <div><div class="sh">배틀</div><div class="small dim" style="margin-bottom:8px">${inB?'지금 배틀에 들어가 있다. 시트를 고쳤으면 다시 보내야 반영된다 (HP·상태는 배틀 쪽이 따로).':'배틀 씬으로 보내면 이 시트의 레벨·개체값·기술이 그대로 들어간다.'}</div>
     ${c.gm?`<div class="row"><button class="btn" data-act="tobattle" data-tid="${t.id}" data-side="left">좌측 진영으로</button><button class="btn" data-act="tobattle" data-tid="${t.id}" data-side="right">우측 진영으로</button></div>`:'<div class="dim small">보내기는 GM 이 한다.</div>'}
     <div class="sh" style="margin-top:14px">파티 순서</div><div class="small dim">첫 칸이 파트너(대표 각성체).</div>
@@ -132,7 +134,7 @@ window.OM_SHEET_UI=(()=>{
    if(pending.g){for(const mid in pending.g)jobs.push(A().set(['roster','mons',mid],pending.g[mid]));pending.g=null}await Promise.all(jobs)}}
  function applyTr(t,k,v){
   if(k==='name')t.name=v;else if(k==='image'){if(v)t.image=v}else if(k==='memo')t.memo=v;else if(k.startsWith('rank_')){t.ranks=t.ranks||{};t.ranks[k.slice(5)]=v}
-  else if(k.startsWith('detail_')){t.detail=t.detail||{};t.detail[k.slice(7)]=v}else if(k==='orderStyle')t.orderStyle=+v;else if(k.startsWith('oc_')){t.orderCount=t.orderCount||{};t.orderCount[k.slice(3)]=+v||0}
+  else if(k.startsWith('detail_')){t.detail=t.detail||{};t.detail[k.slice(7)]=v}else if(k==='orderStyle')t.orderStyle=+v;else if(k==='commandStyle'){t.commandStyle=+v;t.orderStyle=window.OM_ORDERS.tordOf(+v)}else if(k.startsWith('oc_')){t.orderCount=t.orderCount||{};t.orderCount[k.slice(3)]=+v||0}
   else if(k.startsWith('uniq_')){const [,f,i]=k.split('_');t.unique=t.unique||[];t.unique[+i]=t.unique[+i]||{name:'',eff:''};t.unique[+i][f]=v}}
  function applyMon(m,k,v,t){
   if(k==='name')m.name=v;else if(k==='image'){if(v)m.image=v}else if(k==='memo')m.memo=v;else if(k==='sheetHp')m.sheetHp=Math.max(0,Math.min(m.hp.max,+v||0));
@@ -150,6 +152,8 @@ window.OM_SHEET_UI=(()=>{
    case 'import':return openImport();
    case 'newtr':{const id='t'+rnd(7);const nt={id,name:'새 트레이너',image:'',ranks:{육성:'C',지시:'C',통솔:'C',능력:'C'},base:{},detail:{},unique:[],pids:[],solo:false,ord:Object.keys(c.r.trainers).length,src:'new'};await A().set(['roster','trainers',id],nt);UI.tid=id;UI.edit=true;A().renderScene();return}
    case 'toggleedit':UI.edit=!UI.edit;A().renderScene();return;
+   case 'stands':return window.OM_RP_UI.openStands(t.id);
+   case 'ordmake':{const OO=window.OM_ORDERS;const st=OO.styles(t);const nn=+(($('#omk_n')||{}).value||1);const mk=OO.make(t,st.tc,nn);const nt=JSON.parse(JSON.stringify(t));Object.assign(nt,mk);await A().set(['roster','trainers',t.id],nt);A().toast(`「${OO.commandStyles()[st.tc]}」 · ${nn}회로 만들었다`);A().renderScene();return}
    case 'refresh':return refreshFromMaker(d.tid);
    case 'deltr':if(!confirm(`${t.name} 와 파티를 로스터에서 지울까?`))return;{const r=JSON.parse(JSON.stringify(c.r));for(const id of (t.pids||[]))delete r.mons[id];delete r.trainers[t.id];await A().set(['roster'],r);UI.tid='';A().renderScene();return}
    case 'addmon':{if(!t||!canEdit(c,t.id))return;const id='m'+rnd(7);const nm=I().pokemon({id,data:{data:{id,name:'새 포켓몬',t1:'노말',base:['50','50','50','50','50','50'],moves:[]}}},t);nm.src='new';await A().set(['roster','mons',id],nm);await A().set(['roster','trainers',t.id,'pids'],[...(t.pids||[]),id]);UI.mid=id;A().renderScene();return}
@@ -176,7 +180,7 @@ window.OM_SHEET_UI=(()=>{
   const up=async(obj,path)=>{if(!obj.image||!obj.image.startsWith('data:'))return;try{obj.image=await DBS().uploadImage(path,obj.image)}catch(e){console.warn('이미지 올리기 실패',e);obj.image=obj.image.length<150000?obj.image:'';A().toast('그림을 올리지 못했다 (Storage 설정을 확인): '+e.message)}};
   jobs.push(up(trainer,`rooms/${room}/t_${trainer.id}`));for(const m of mons)jobs.push(up(m,`rooms/${room}/m_${m.id}`));await Promise.all(jobs)}
  async function importTrainer(tdoc,pokeDocs,keep){const c=ctx();const {trainer,mons}=I().party(tdoc,pokeDocs);await hostImages(c.ST.room,trainer,mons);const r=JSON.parse(JSON.stringify(c.r));const old=r.trainers[trainer.id];
-  trainer.ord=old?old.ord:Object.keys(r.trainers).length;trainer.src='maker';if(old){trainer.orderStyle=old.orderStyle;trainer.orderCount=old.orderCount;trainer.memo=old.memo;if(old.image&&!trainer.image)trainer.image=old.image}
+  trainer.ord=old?old.ord:Object.keys(r.trainers).length;trainer.src='maker';if(old){trainer.orderStyle=old.orderStyle;trainer.orderCount=old.orderCount;trainer.memo=old.memo;if(old.image&&!trainer.image)trainer.image=old.image;if(!(trainer.stands||[]).length&&(old.stands||[]).length){trainer.stands=old.stands;trainer.standActive=old.standActive}}
   for(const id of ((old&&old.pids)||[]))if(!trainer.pids.includes(id))delete r.mons[id];
   for(const m of mons){const om=r.mons[m.id];m.src='maker';if(om&&keep){m.iv=om.iv;m.item=om.item||m.item;m.itemEff=om.itemEff||m.itemEff;m.sheetHp=om.sheetHp;m.dist=om.dist;m.ev=om.ev;if(om.image&&!m.image)m.image=om.image;recalc(m,trainer)}r.mons[m.id]=m}
   r.trainers[trainer.id]=trainer;await A().set(['roster'],r);A().toast(`${trainer.name} 파티 ${mons.length}체를 ${old?'갱신했다':'가져왔다'}`)}

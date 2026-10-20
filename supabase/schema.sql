@@ -167,6 +167,9 @@ begin
     if p_path is null or array_length(p_path,1) < 2 then raise exception '좌석은 전체를 바꿀 수 없습니다'; end if;
     if not ((p_path[1] = 'seats' and p_path[2] = w) or (p_path[1] = 'ready' and p_path[2] = w) or (p_path[1] = 'pub' and p_path[2] = w)
             or (p_path[1] = 'battle' and p_path[2] = 'mons')   -- 포켓몬 HP·랭크·상태는 공개 정보라 좌석도 고칠 수 있다 (신뢰 기반, 맵툴과 같음)
+            or (p_path[1] = 'battle' and p_path[2] = 'field')  -- 지령 효과(결계 등)를 공개할 때
+            or (p_path[1] = 'battle' and p_path[2] = 'cmds' and p_path[3] = w)      -- 내 지시 공개
+            or (p_path[1] = 'battle' and p_path[2] = 'trainers' and p_path[3] = w)  -- 내 지령·명령 횟수
             or (p_path[1] = 'roster' and p_path[2] = 'trainers' and p_path[3] = w)   -- 내 시트
             or (p_path[1] = 'roster' and p_path[2] = 'mons' and array_length(p_path,1) >= 3
                 and (coalesce((select s.data#>>array['roster','mons',p_path[3],'tid'] from om_state s where s.room = p_room), p_value->>'tid') = w))) then  -- 내 포켓몬

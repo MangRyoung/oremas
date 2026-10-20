@@ -67,12 +67,14 @@ window.OM_RP_UI=(()=>{
    ${stands}${capHtml}
    ${bg.name?`<div class="bgname">${esc(bg.name)}</div>`:''}
    ${r.center&&r.center.src?`<div class="centerimg"><img src="${esc(r.center.src)}" alt="">${gm()?'<button class="btn xs" data-rp="centerx">닫기</button>':''}</div>`:''}
-   <div class="rpbtns"><button class="btn sm ${mapOpen?'pri':''}" data-rp="map">${mapOpen?'지도 닫기':'지도'}</button><button class="btn sm" data-rp="deck">덱</button><button class="btn sm ghost" data-rp="stand">표정</button>${r.bgm&&r.bgm.src?`<button class="btn sm ghost" data-rp="sound" title="${esc(r.bgm.title||'')}">${unlocked?'♪ '+esc(r.bgm.title||'BGM'):'소리 켜기'}</button>`:''}${gm()?`<button class="btn sm pri" data-rp="gm">GM 콘솔</button>`:''}</div>
+   <div class="rpbtns">${gm()?`<button class="btn sm" data-rp="qbg" title="배경 바꾸기">🖼 배경</button><button class="btn sm" data-rp="qbgm" title="BGM 바꾸기">♪ BGM</button>`:''}<button class="btn sm" data-rp="log" title="대화 기록">📜 기록</button><button class="btn sm ${mapOpen?'pri':''}" data-rp="map">${mapOpen?'지도 닫기':'지도'}</button><button class="btn sm" data-rp="deck">덱</button><button class="btn sm ghost" data-rp="stand">표정</button>${r.bgm&&r.bgm.src?`<button class="btn sm ghost" data-rp="sound" title="${esc(r.bgm.title||'')}">${unlocked?'♪ '+esc(r.bgm.title||'BGM'):'소리 켜기'}</button>`:''}${gm()?`<button class="btn sm pri" data-rp="gm">GM 콘솔</button>`:''}</div>
    ${mapOpen?mapOverlay():''}
   </div>
+  ${gm()?`<div class="spkbar">${speakers.map(x=>{const c=x.key==='gm'?null:(x.key.startsWith('as:')?charOf((Object.values((ST.state.roster||{}).trainers||{}).find(t=>t.name===x.key.slice(3))||{}).id):charOf(x.key));const av=c?(standSrc(c)||c.img):'';return `<button class="spk ${SPK.key===x.key?'on':''}" data-spk="${esc(x.key)}" title="${esc(x.name)}"><i style="${av?`background-image:url('${esc(av)}')`:''}">${av?'':'GM'}</i><span>${esc(x.name.replace(/ \((PC|NPC)\)$/,''))}</span></button>`}).join('')}<button class="spk add" data-rp="npcadd" title="인물 추가 (관계도에 NPC 로 들어간다)"><i>＋</i><span>인물</span></button><button class="spk add" data-rp="spkedit" title="고른 인물의 표정·스탠딩"><i>✎</i><span>표정</span></button></div>`:''}
   ${speakers.length?`<div class="rpinput"><select id="rpspk">${speakers.map(x=>`<option value="${esc(x.key)}" ${SPK.key===x.key?'selected':''}>${esc(x.name)}</option>`).join('')}</select><input type="text" id="rpline" placeholder="대사 입력 후 Enter · *지문*" autocomplete="off"><button class="btn pri" id="rpsend">보내기</button></div><div class="small dim rphint">${gm()?'GM 이 고른 인물로 말하면 그 인물의 스탠딩이 선다 · 표정은 「표정」 또는 /s 라벨':'스탠딩 그림이 아직 없으면 시트 그림(초상)으로 선다 — 「표정」에서 전신 그림을 넣어 줘'}</div>`:'<div class="small dim rphint">자리에 앉으면 여기서 대사를 칠 수 있다</div>'}</div>`;
   el.querySelectorAll('[data-rp]').forEach(b=>b.onclick=()=>act(b.dataset.rp));
-  const spk=$('#rpspk',el);if(spk)spk.onchange=()=>{SPK.key=spk.value};
+  const spk=$('#rpspk',el);if(spk)spk.onchange=()=>{SPK.key=spk.value;el.querySelectorAll('.spk[data-spk]').forEach(b=>b.classList.toggle('on',b.dataset.spk===SPK.key))};
+  el.querySelectorAll('.spk[data-spk]').forEach(b=>b.onclick=()=>{SPK.key=b.dataset.spk;if(spk)spk.value=SPK.key;el.querySelectorAll('.spk[data-spk]').forEach(x=>x.classList.toggle('on',x===b));const inp=$('#rpline',el);if(inp)inp.focus()});
   const inp=$('#rpline',el);if(inp){inp.value=SPK.draft||'';inp.oninput=()=>{SPK.draft=inp.value};inp.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)sendLine()};$('#rpsend',el).onclick=sendLine;if(SPK.focus){inp.focus();SPK.focus=false}}
   bindMap(el);tickBanner();syncBgm()}
  const SPK={key:'',draft:'',focus:false};
@@ -86,7 +88,65 @@ window.OM_RP_UI=(()=>{
   if(k==='sound'){unlocked=true;syncBgm(true);A().renderScene();return}
   if(k==='gm')return openConsole();
   if(k==='centerx')return A().set(['rp','center'],null);
-  if(k==='stand')return openMyStand()}
+  if(k==='stand')return openMyStand();
+  if(k==='qbg')return quickBg();
+  if(k==='npcadd')return addNpcQuick();
+  if(k==='spkedit'){const key=SPK.key;if(!key||key==='gm')return A().toast('먼저 인물을 골라 줘');const ST=A().ST;const real=key.startsWith('as:')?(Object.values((ST.state.roster||{}).trainers||{}).find(t=>t.name===key.slice(3))||{}).id:key;return openStands(real)}
+  if(k==='qbgm')return quickBgm();
+  if(k==='log')return openLog()}
+ /* 인물 빠른 추가: 관계도에 NPC 노드로 들어간다 (이름 · 초상 · 스탠딩) */
+ function addNpcQuick(){const ST=A().ST;
+  const md=A().openModal(`<div class="mhead"><h2>인물 추가</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+   <div class="row" style="margin-bottom:6px"><b style="width:80px">이름</b><input type="text" id="na_n" style="flex:1" placeholder="예: 유현"></div>
+   <div class="row" style="margin-bottom:6px"><b style="width:80px">초상</b><input type="text" id="na_i" style="flex:1" placeholder="그림 주소 (채팅 아바타·지도 칩)"><label class="btn sm">파일<input type="file" accept="image/*" id="na_if" hidden></label></div>
+   <div class="row" style="margin-bottom:6px"><b style="width:80px">스탠딩</b><input type="text" id="na_s" style="flex:1" placeholder="전신 그림 주소 (비우면 초상으로 선다)"><label class="btn sm">파일<input type="file" accept="image/*" id="na_sf" hidden></label></div>
+   <div class="small dim">관계도 탭에 NPC 로 들어가고, 여기 화자 줄에 바로 뜬다. 표정을 더 넣으려면 「✎ 표정」.</div>
+   <div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn pri" id="na_ok">추가</button></div>`);
+  const up=async(fi,ti,tag)=>{const f=fi.files[0];if(!f)return;A().toast('올리는 중…');try{$(ti,md).value=await DBS().uploadImage(`rooms/${ST.room}/${tag}_${Date.now().toString(36)}`,f);A().toast('올렸다')}catch(e){A().toast(e.message)}};
+  $('#na_if',md).onchange=()=>up($('#na_if',md),'#na_i','npc');$('#na_sf',md).onchange=()=>up($('#na_sf',md),'#na_s','st_npc');
+  $('#na_ok',md).onclick=async()=>{const n=$('#na_n',md).value.trim();if(!n)return A().toast('이름이 필요해');const nodes=(ST.state.graph||{}).nodes||{};if(Object.values(nodes).some(x=>x.name===n))return A().toast('같은 이름의 인물이 이미 있다');
+   const id='n'+Date.now().toString(36);const i=Object.keys(nodes).length;const st=$('#na_s',md).value.trim();
+   await A().set(['graph','nodes',id],{id,name:n,kind:'npc',img:$('#na_i',md).value.trim(),x:120+(i%6)*140,y:120+Math.floor(i/6)*140,stands:st?[{label:'기본',src:st,point:0}]:[],standActive:0});
+   SPK.key='npc:'+n;A().closeModal();A().renderScene();A().toast(`${n} 추가 — 관계도에도 들어갔다`)}}
+ /* ----- 빠른 배경 / BGM 고르기 (무대 위 버튼) ----- */
+ const QB={g:''};
+ function quickBg(){const r=R();const groups=bgGroups();if(!QB.g||!groups.find(x=>x.n===QB.g))QB.g=groups[0]?groups[0].n:'';const g=groups.find(x=>x.n===QB.g)||{i:[]};const cur=(r.bg||{}).src;
+  const md=A().openModal(`<div class="mhead"><h2>배경</h2><span class="sp"></span><button class="btn sm ghost" data-q="bgx">배경 없음</button><button class="btn sm ghost" data-q="mgr">관리</button><button class="btn ghost" data-x>닫기</button></div>
+   ${(r.recentBg||[]).length?`<div class="bgchips" style="margin-bottom:8px">${r.recentBg.map(k=>{const b=bgOf(k);return b?`<div class="bgchip ${cur===b.src?'cur':''}" data-q="bg" data-k="${esc(k)}"><i style="background-image:url('${b.src}')"></i>${esc(b.l)}</div>`:''}).join('')}</div>`:''}
+   <div class="gtabs">${groups.map(x=>`<button class="gt ${x.n===QB.g?'on':''}" data-q="g" data-g="${esc(x.n)}">${esc(x.n)}<em>${x.i.filter(i=>i.src).length}</em></button>`).join('')}</div>
+   <div class="bggrid" style="max-height:56vh">${g.i.map(it=>it.src?`<div class="bgt ${cur===it.src?'cur':''}" data-q="bg" data-k="${esc(it.k)}"><img src="${it.src}" loading="lazy" alt=""><span>${esc(it.l)}</span></div>`:'').join('')}</div>
+   <div class="row" style="margin-top:8px"><input type="text" id="qbgu" placeholder="또는 그림 주소 https://…" style="flex:1"><input type="text" id="qbgn" placeholder="장소 이름" style="width:140px"><button class="btn sm" data-q="url">적용</button></div>`);
+  md.classList.add('wide');
+  md.querySelectorAll('[data-q]').forEach(b=>b.onclick=async()=>{const k=b.dataset.q;
+   if(k==='g'){QB.g=b.dataset.g;return quickBg()}
+   if(k==='bg'){const it=bgOf(b.dataset.k);if(!it)return;A().closeModal();await A().set(['rp','bg'],{src:it.src,name:it.l,at:Date.now()});await A().set(['rp','recentBg'],[b.dataset.k,...(r.recentBg||[]).filter(x=>x!==b.dataset.k)].slice(0,8));return}
+   if(k==='bgx'){A().closeModal();return A().set(['rp','bg'],null)}
+   if(k==='mgr')return openBgMgr();
+   if(k==='url'){const u=$('#qbgu',md).value.trim();if(!u)return;A().closeModal();return A().set(['rp','bg'],{src:u,name:$('#qbgn',md).value.trim(),at:Date.now()})}})}
+ function quickBgm(){const r=R();const G=bgmGroups();const gs=Object.keys(G).sort();const now=r.bgm||{};const gn=g=>String(g).replace(/^[0-9.]+\s*/,'');const q=(QB.q||'').trim().toLowerCase();
+  const list=[];for(const g of gs){if(QB.bg&&g!==QB.bg&&!q)continue;for(const sn of Object.keys(G[g]).sort()){if(q&&!(gn(g)+' '+sn).toLowerCase().includes(q))continue;list.push({g,s:sn})}}
+  const md=A().openModal(`<div class="mhead"><h2>BGM</h2><span class="sp"></span>${now.src?`<span class="small" style="color:var(--yel2)">♪ ${esc(now.title||'')}</span>`:''}<button class="btn sm ghost danger" data-q="stop">정지</button><button class="btn sm ghost" data-q="mgr">관리</button><button class="btn ghost" data-x>닫기</button></div>
+   ${(r.recentBgm||[]).length?`<div class="row" style="flex-wrap:wrap;margin-bottom:8px">${r.recentBgm.map(x=>`<button class="chip ${now.title===x.s&&now.group===x.g?'on':''}" data-q="play" data-g="${esc(x.g)}" data-s="${esc(x.s)}">${esc(x.s)} <small class="dim">${esc(gn(x.g))}</small></button>`).join('')}</div>`:''}
+   <div class="row" style="margin-bottom:6px"><input type="text" id="qbq" placeholder="곡 · 그룹 검색" value="${esc(QB.q||'')}" style="flex:1"></div>
+   <div class="gtabs"><button class="gt ${QB.bg?'':'on'}" data-q="g" data-g="">전체</button>${gs.map(g=>`<button class="gt ${g===QB.bg?'on':''}" data-q="g" data-g="${esc(g)}">${esc(gn(g))}<em>${Object.keys(G[g]).length}</em></button>`).join('')}</div>
+   <div class="songlist" style="max-height:46vh">${list.slice(0,400).map(x=>`<div class="song ${now.title===x.s&&now.group===x.g?'cur':''}"><button class="pv ${PV.g===x.g&&PV.s===x.s?'on':''}" data-q="pv" data-g="${esc(x.g)}" data-s="${esc(x.s)}" title="나만 미리듣기">▶</button><b class="sn" data-q="play" data-g="${esc(x.g)}" data-s="${esc(x.s)}">${esc(x.s)}</b>${(!QB.bg||q)?`<small class="dim">${esc(gn(x.g))}</small>`:''}</div>`).join('')||'<div class="empty small">없다</div>'}</div>`);
+  md.classList.add('wide');
+  const qi=$('#qbq',md);qi.oninput=()=>{QB.q=qi.value;const pos=qi.selectionStart;quickBgm();const n=$('#qbq');if(n){n.focus();n.setSelectionRange(pos,pos)}};
+  md.querySelectorAll('[data-q]').forEach(b=>b.onclick=async()=>{const k=b.dataset.q;
+   if(k==='g'){QB.bg=b.dataset.g;QB.q='';return quickBgm()}
+   if(k==='play'){pvStop();A().closeModal();return playAll(b.dataset.g,b.dataset.s)}
+   if(k==='pv'){const g=b.dataset.g,sn=b.dataset.s;if(PV.g===g&&PV.s===sn){pvStop();syncBgm(true);return quickBgm()}pvStop();const u=bgmUrl(g,sn);if(!u)return;PV.audio=new Audio(u);PV.audio.volume=vol;PV.audio.play().catch(()=>A().toast('재생하지 못했다'));PV.g=g;PV.s=sn;PV.title=sn;if(audio)audio.pause();return quickBgm()}
+   if(k==='stop'){pvStop();A().closeModal();return A().set(['rp','bgm'],null)}
+   if(k==='mgr')return openConsole('bgm')})}
+ /* ----- 대화 기록 ----- */
+ function openLog(){const ST=A().ST;const rows=(ST.log||[]).filter(x=>x.kind==='chat'&&x.data&&(x.data.t||x.data.img));
+  const name=x=>x.data.as||(charOf(speakerKey(x))||{}).name||x.who;const tm=x=>{const d=new Date(x.at);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
+  const md=A().openModal(`<div class="mhead"><h2>대화 기록</h2><span class="small dim">${rows.length}줄</span><span class="sp"></span><button class="btn sm ghost" id="lgcopy">글로 복사</button><button class="btn sm ghost" id="lgdl">파일로</button><button class="btn ghost" data-x>닫기</button></div>
+   <div class="rplog">${rows.map(x=>{const m=String(x.data.t||'').match(/^\*(.+)\*$/s);return `<div class="rl ${m?'narr':''}"><span class="rt">${tm(x)}</span><b class="rn">${esc(name(x))}</b><span class="rx">${x.data.img?`<a href="${esc(x.data.img)}" target="_blank" rel="noopener">[그림]</a> `:''}${m?esc(m[1]):esc(x.data.t)}</span></div>`}).join('')||'<div class="empty">아직 대화가 없다</div>'}</div>`);
+  md.classList.add('wide');const text=rows.map(x=>`[${tm(x)}] ${name(x)}: ${x.data.t||x.data.img||''}`).join('\n');
+  $('#lgcopy',md).onclick=()=>navigator.clipboard.writeText(text).then(()=>A().toast('복사했다'),()=>prompt('복사해서 쓰기',text));
+  $('#lgdl',md).onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/plain'}));a.download=`대화기록_${ST.room}_${new Date().toISOString().slice(0,10)}.txt`;a.click()};
+  const lg=md.querySelector('.rplog');lg.scrollTop=lg.scrollHeight}
 
  /* ----- 지도 ----- */
  function mapOverlay(){const M=mapS();const W=MAP_IMG.w,H=MAP_IMG.h;const px=(x,y)=>`left:${x/W*100}%;top:${y/H*100}%`;const isGm=gm();const hid=n=>M.vis[n]==1;
@@ -125,7 +185,7 @@ window.OM_RP_UI=(()=>{
     ${M.routes.length?M.routes.map((r,i)=>`<div class="mml ${r.vis?'':'hid'}"><i class="sw" style="background:${RCOL[r.color]||'#888'}"></i><span class="nm">${esc(r.name||'')}<small class="dim"> ${r.seq.map(n=>n+'.'+locName(n)).join(' → ')}</small></span><button class="btn xs" data-mm="rvis" data-i="${i}">${r.vis?'숨기기':'보이기'}</button><button class="btn xs ghost danger" data-mm="rdel" data-i="${i}">×</button></div>`).join(''):'<div class="empty small">그려진 루트가 없다</div>'}</div></div>`;
   const pics=[...Object.values((ST.state.graph||{}).nodes||{}).map(n=>({name:n.name,img:n.img||''})),...Object.values((ST.state.roster||{}).trainers||{}).map(t=>({name:t.name,img:t.image||''}))];
   const pcTab=`<div class="mmcols"><div><div class="sec">파티 현재 위치</div>
-    <div class="pcard"><div class="ppin static"><span>PC</span></div><div style="flex:1"><small class="dim">지금 있는 곳</small><br><b>${M.party.n?M.party.n+'. '+esc(locName(M.party.n)):'—'}</b> ${M.party.vis?'<span class="chip on">플레이어에게 보임</span>':'<span class="chip">핀 숨김 (GM만)</span>'}</div><button class="btn sm ${M.party.vis?'':'pri'}" data-mm="pvis">${M.party.vis?'핀 숨기기':'핀 보이기'}</button></div>
+    <div class="partycard"><div class="ppin static"><span>PC</span></div><div style="flex:1"><small class="dim">지금 있는 곳</small><br><b>${M.party.n?M.party.n+'. '+esc(locName(M.party.n)):'—'}</b> ${M.party.vis?'<span class="chip on">플레이어에게 보임</span>':'<span class="chip">핀 숨김 (GM만)</span>'}</div><button class="btn sm ${M.party.vis?'':'pri'}" data-mm="pvis">${M.party.vis?'핀 숨기기':'핀 보이기'}</button></div>
     <label class="small"><input type="checkbox" data-mm="reveal" ${M.reveal?'checked':''}> 가려진 장소로 이동하면 그 장소도 함께 공개</label>
     <div class="small dim" style="margin:6px 0">장소를 누르면 핀이 그곳으로 옮겨진다${M.ann?' (채팅에 알림)':''}</div>
     <div class="lgrid">${M.locs.map(l=>`<button class="lb ${M.party.n===l.n?'cur':''} ${M.vis[l.n]==1?'hid':''}" data-mm="pmove" data-n="${l.n}"><span class="no">${l.n}</span>${esc(l.name)}</button>`).join('')}</div></div>
@@ -189,7 +249,7 @@ window.OM_RP_UI=(()=>{
     <div class="sec">공지 관리</div><table class="t" id="ntab">${ns.map((n,i)=>`<tr><td><input type="text" data-nn value="${esc(n.name)}" style="width:110px"></td><td><input type="text" data-nt value="${esc(n.title)}" style="width:130px"></td><td><input type="text" data-nm value="${esc(n.ment)}" style="width:100%" placeholder="멘트"></td><td><input type="color" data-nc value="${esc(n.color)}"></td><td><select data-nb><option value="" ${!n.bgm?'selected':''}>BGM 그대로</option><option value="stop" ${n.bgm==='stop'?'selected':''}>BGM 정지</option></select></td><td><button class="btn xs ghost danger" data-gc="ndel" data-i="${i}">×</button></td></tr>`).join('')}</table>
     <div class="row" style="margin-top:6px"><button class="btn xs ghost" data-gc="nadd">+ 공지</button><button class="btn xs ghost" data-gc="nreset">기본값</button><span class="sp"></span><button class="btn sm pri" data-gc="nsave">저장</button></div>`}
   else if(GC.tab==='map'){const M=mapS();const locName=n=>(M.locs.find(x=>x.n===n)||{}).name||'';
-   body=`<div class="pcard"><div class="ppin static"><span>PC</span></div><div style="flex:1"><small class="dim">파티 현재 위치${M.party.vis?' · 플레이어에게 보임':' · 핀 숨김'}</small><br><b>${M.party.n?M.party.n+'. '+esc(locName(M.party.n)):'—'}</b></div></div>
+   body=`<div class="partycard"><div class="ppin static"><span>PC</span></div><div style="flex:1"><small class="dim">파티 현재 위치${M.party.vis?' · 플레이어에게 보임':' · 핀 숨김'}</small><br><b>${M.party.n?M.party.n+'. '+esc(locName(M.party.n)):'—'}</b></div></div>
     <div class="row" style="margin:8px 0"><select id="gml" style="flex:1">${M.locs.map(l=>`<option value="${l.n}" ${l.n===M.party.n?'selected':''}>${l.n}. ${esc(l.name)}${M.vis[l.n]==1?' (가림)':''}</option>`).join('')}</select><button class="btn sm pri" data-gc="pmove">파티 이동</button><button class="btn sm" data-gc="pvis">${M.party.vis?'핀 숨기기':'핀 보이기'}</button></div>
     <label class="small"><input type="checkbox" data-gc="reveal" ${M.reveal?'checked':''}> 가려진 장소면 함께 공개</label> · <span class="small dim">${M.locs.filter(l=>M.vis[l.n]!=1).length}/${M.locs.length} 장소 공개</span>
     <div class="row" style="margin-top:10px"><button class="btn sm" data-gc="mapmgr">지도 관리 열기</button><button class="btn sm ghost" data-gc="mapopen">${mapOpen?'지도 닫기':'무대에 지도 열기'}</button></div>`}

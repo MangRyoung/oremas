@@ -11,7 +11,7 @@ window.OM_IMPORT=(()=>{
  /* 제작기 트레이너 문서 → 배틀 트레이너 */
  function trainer(doc){
   const d=(doc.data&&doc.data.data)||doc.data||doc;
-  return {id:doc.id||d.id,name:d.name||'트레이너',image:d.image||'',
+  return {id:doc.id||d.id,name:d.name||'트레이너',image:d.image||'',stands:(Array.isArray(d.stands)?d.stands:[]).filter(x=>x&&x.src).map(x=>({label:x.label||'기본',src:x.src,point:+x.point||0})),standActive:+d.standActive||0,
    ranks:Object.assign({육성:'',지시:'',통솔:'',능력:''},d.ranks||{}),base:d.base||{},detail:d.detail||{},
    unique:(d.unique||[]).filter(u=>u&&u.name).map(u=>({name:u.name,eff:brN(u.eff||'')})),
    pids:d.pids||[],solo:!!d.solo,folder:d.folder||''}}
