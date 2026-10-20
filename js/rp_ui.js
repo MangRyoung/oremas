@@ -107,13 +107,16 @@ window.OM_RP_UI=(()=>{
    ch.classList.toggle('on',w.on);ch.classList.toggle('off',!w.on)}}
  /* ----- 입력 중 표시: 저장 없이 방송 ----- */
  const TYPING={last:0,who:{},t:null};
- function typingPing(){const now=Date.now();if(now-TYPING.last<2500)return;TYPING.last=now;const c=speakerChar();DBS().broadcast({t:'typing',who:c?c.name:(A().ST.role==='gm'?'GM':A().ST.name),from:A().ST.role==='gm'?'gm':A().ST.seat,at:now})}
+ /* 입력 중: 내 것은 바로 화면에(브로드캐스트는 나한테 안 돌아오니까), 남에게는 2.5초에 한 번 보낸다 */
+ function typingPing(){const now=Date.now();const c=speakerChar();const who=c?c.name:(A().ST.role==='gm'?'GM':A().ST.name);const me=A().ST.role==='gm'?'gm':A().ST.seat;if(!me)return;TYPING.who[me]={who,at:now,me:true};drawTyping();clearTimeout(TYPING.t);TYPING.t=setTimeout(drawTyping,4200);if(now-TYPING.last<2500)return;TYPING.last=now;DBS().broadcast({t:'typing',who,from:me,at:now})}
+ function typingStop(){const me=A().ST.role==='gm'?'gm':A().ST.seat;delete TYPING.who[me];TYPING.last=0;drawTyping()}
  function onTyping(p){if(!p||!p.from)return;const me=A().ST.role==='gm'?'gm':A().ST.seat;if(p.from===me)return;TYPING.who[p.from]={who:p.who,at:Date.now()};drawTyping();clearTimeout(TYPING.t);TYPING.t=setTimeout(drawTyping,4200)}
- function drawTyping(){const now=Date.now();const on=!A().alarm||A().alarm().typing;const names=on?Object.values(TYPING.who).filter(x=>now-x.at<4000).map(x=>x.who):[];const html=names.length?`<span class="dots"><i></i><i></i><i></i></span> ${esc(names.join(', '))} 입력 중…`:'';for(const id of ['typing','typingTop']){const el=document.getElementById(id);if(!el)continue;el.innerHTML=html;el.style.display=names.length?(id==='typingTop'?'inline-block':''):'none'}}
+ function drawTyping(){const now=Date.now();const on=!A().alarm||A().alarm().typing;const names=on?Object.values(TYPING.who).filter(x=>now-x.at<4000).sort((a,b)=>(a.me?1:0)-(b.me?1:0)).map(x=>x.me?x.who+' (나)':x.who):[];const html=names.length?`<span class="dots"><i></i><i></i><i></i></span> ${esc(names.join(', '))} 입력 중…`:'';for(const id of ['typing','typingTop']){const el=document.getElementById(id);if(!el)continue;el.innerHTML=html;el.style.display=names.length?(id==='typingTop'?'inline-block':''):'none'}}
  const SPK={key:'',draft:'',focus:false,folder:''};
  /* ----- 화자 목록: 토큰이 있는 모든 개체 (GM · NPC(관계도) · PC(로스터) · 포켓몬(로스터)). 정리는 rp.spk = {order:[키|'f:폴더id'], folders:{id:{name,keys:[]}}, hidden:{키:1}} ----- */
  function allSpeakers(){const ST=A().ST;const out=[{key:'gm',name:'GM (나레이션)'}];
-  for(const n of Object.values((ST.state.graph||{}).nodes||{}))out.push({key:'npc:'+n.name,name:n.name,kind:'npc'});
+  const trNames=new Set(Object.values((ST.state.roster||{}).trainers||{}).map(t=>t.name));
+  for(const n of Object.values((ST.state.graph||{}).nodes||{})){if(trNames.has(n.name)||n.kind==='org')continue;out.push({key:'npc:'+n.name,name:n.name,kind:'npc'})}
   for(const t of Object.values((ST.state.roster||{}).trainers||{}))out.push({key:'as:'+t.name,name:t.name+' (PC)',kind:'pc'});
   for(const m of Object.values((ST.state.roster||{}).mons||{})){const t=((ST.state.roster||{}).trainers||{})[m.tid];out.push({key:'pm:'+m.id,name:m.name+(t?' · '+t.name:''),kind:'pm'})}
   return out}
@@ -167,7 +170,7 @@ window.OM_RP_UI=(()=>{
  /* @등록명 → 그 표정으로 바꾼다 (뒤에 대사가 있으면 바꾸고 바로 말한다) */
  async function setStandByLabel(c,label){if(!c)return false;const i=(c.stands||[]).findIndex(s=>(s.label||'')===label);if(i<0){A().toast(`「${label}」 표정이 없다${c.stands.length?': '+c.stands.map(s=>s.label).join(', '):' — 「표정」에서 먼저 넣어 줘'}`);return false}
   if(c.kind==='pc')await A().set(['roster','trainers',c.id,'standActive'],i);else if(c.kind==='pm')await A().set(['roster','mons',c.id,'standActive'],i);else{if(!c.id)return false;await A().set(['graph','nodes',c.id,'standActive'],i)}return true}
- async function sendLine(){const ST=A().ST;const inp=$('#rpline');if(!inp)return;let t=inp.value.trim();if(!t)return;inp.value='';SPK.draft='';SPK.focus=true;TYPING.last=0;
+ async function sendLine(){const ST=A().ST;const inp=$('#rpline');if(!inp)return;let t=inp.value.trim();if(!t)return;inp.value='';SPK.draft='';SPK.focus=true;typingStop();
   try{if(t.startsWith('/')){const ci=$('#chatIn');if(ci){ci.value=t;$('#chatSend').click()}return}
    let m;if((m=t.match(/^@(\S+)\s*([\s\S]*)$/))){const ok=await setStandByLabel(speakerChar(),m[1]);if(!ok)return;t=m[2].trim();if(!t){A().toast(`표정: ${m[1]}`);return}}
    if(ST.role==='gm'){if(SPK.key==='gm')await DBS().addLog(ST.room,ST.secret,'chat',ST.name,{t});else{const c=charOf(SPK.key);const name=c?c.name:SPK.key.replace(/^(npc|as|pm):/,'');await DBS().addLog(ST.room,ST.secret,'chat',name,{t,as:name,k:SPK.key})}}
@@ -535,5 +538,5 @@ window.OM_RP_UI=(()=>{
    <div class="mebtns"><button class="btn sm ${pend?'pri':''}" data-rp="roll" title="스킬 체크 창">🎲 굴림${pend?' !':''}</button><button class="btn sm" data-rp="phone" title="휴대폰">📱 폰</button><button class="btn sm ghost" data-rp="talk" title="${t?t.name+' (으)로 말하기 — 무대에 선다':'대사 입력'}">💬 대화</button></div>
    <div class="memons">${mons.map(m=>{const b=bm[m.id];const hp=b?b.hp:m.hp;const pct=Math.max(0,Math.min(100,Math.round(hp.cur/hp.max*100)));const tired=t&&K&&(K.tsk(t.id).tired||[]).includes(m.id);return `<div class="memon ${hp.cur<=0?'ko':''} ${tired?'tired':''}" data-rp="mon" data-mid="${m.id}" title="${esc(m.name)} HP ${hp.cur}/${hp.max}${b&&b.entry?' · 무대 '+String(b.entry).toUpperCase():''}${tired?' · 지침':''}"><i style="${m.image?`background-image:url('${esc(m.image)}')`:''}"></i><div class="mhp ${pct<=25?'low':pct<=50?'mid':''}"><b style="width:${pct}%"></b></div><small>${esc(m.name)}</small></div>`}).join('')}</div>
    ${lastDice?`<div class="melast" title="${esc(lastDice.data.t||'')}">🎲 ${esc((lastDice.who||'')+' · '+String(lastDice.data.t||'').split('\n').slice(-2).join(' · '))}</div>`:''}</div>`}
- return {render,onChat,onState,onTyping,typingPing,drawTyping,mapData:mapS,openConsole,openStands,setMyStand,charOf,playSe,setVolume,bgmWidgetHtml,bindBgmWidget,imgOfKey:k=>{const c=charOf(k);return c?(c.img||standSrc(c)):''},curSpeaker:()=>{const ST=A().ST;const c=speakerChar();if(c)return {key:c.key,name:c.name,img:c.img||standSrc(c)};return gm()?{key:'gm',name:'GM',img:''}:{key:'me',name:ST.name||'',img:''}}};
+ return {render,onChat,onState,onTyping,typingPing,typingStop,drawTyping,mapData:mapS,openConsole,openStands,setMyStand,charOf,playSe,setVolume,bgmWidgetHtml,bindBgmWidget,imgOfKey:k=>{const c=charOf(k);return c?(c.img||standSrc(c)):''},curSpeaker:()=>{const ST=A().ST;const c=speakerChar();if(c)return {key:c.key,name:c.name,img:c.img||standSrc(c)};return gm()?{key:'gm',name:'GM',img:''}:{key:'me',name:ST.name||'',img:''}}};
 })();

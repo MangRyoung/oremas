@@ -133,7 +133,7 @@ function battleCard(d){const t=String(d.t||'');const m=t.match(/^【([^】]+)】
 
 /* ---------- 채팅 ---------- */
 async function sendChat(){
- const inp=$('#chatIn');const t=inp.value.trim();if(!t)return;inp.value='';
+ const inp=$('#chatIn');const t=inp.value.trim();if(!t)return;inp.value='';if(window.OM_RP_UI&&window.OM_RP_UI.typingStop)window.OM_RP_UI.typingStop();
  try{
   let m;
   if((m=t.match(/^\/r(?:oll)?\s+(.+)$/i))){const r=roll(m[1]);if(!r)return toast('주사위 식을 모르겠다 (예: 1d100, 2d6+3)');await DBS().addLog(ST.room,ST.secret,'dice',ST.name,{t:`${m[1]} → ${r.text} = ${r.total}`,total:r.total})}
@@ -292,20 +292,54 @@ function openMon(mid){
 function openNick(){const m=openModal(`<div class="mhead"><h2>내 이름</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small muted">접속자 칸과 입력 중 표시에 이 이름이 보인다. 자리에 앉으면 그 자리 이름을 따른다.</p><div class="row"><input type="text" id="nickIn" value="${esc(ST.name||'')}" placeholder="닉네임" style="flex:1"><button class="btn pri" id="nickOk">저장</button></div>${ST.role?'':'<div class="row" style="margin-top:8px"><button class="btn sm" id="nickSeat">자리에 앉기</button></div>'}`);
  const ok=async()=>{const n=$('#nickIn',m).value.trim();if(!n)return toast('이름을 적어 줘');ST.name=n;LS.set('om_name_'+ST.room,n);if(ST.role==='seat'){const info=LS.get('om_seat_'+ST.room,null);if(info){info.name=n;LS.set('om_seat_'+ST.room,info);try{await DBS().claimSeat(ST.room,ST.seat,ST.secret,n)}catch(e){}}}closeModal();sayHello(true);drawPresence();renderRoom();toast(`이제 「${n}」로 보인다`)};
  $('#nickOk',m).onclick=ok;$('#nickIn',m).onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)ok()};const ns=$('#nickSeat',m);if(ns)ns.onclick=()=>{closeModal();openSeatPicker()}}
-/* 로그 저장: 방의 전체 로그를 HTML(보기 좋게) 또는 TXT 로 내려받는다 */
+/* 로그 저장: 방의 전체 로그를 HTML(아바타 · 그림 · 배틀 카드 · 날짜 구분) 또는 TXT 로. 설정은 om_logsave 에 기억 */
 async function fetchAllLog(){const out=[];let after=0;for(let i=0;i<200;i++){const rows=await DBS().getLog(ST.room,after,1000);if(!rows||!rows.length)break;out.push(...rows);after=rows[rows.length-1].id;if(rows.length<1000)break}return out}
-function logLine(r){const d=r.data||{};const t=String(d.t||'');const who=d.as||r.who||'';if(r.kind==='chat'&&d.sms)return {k:'sms',who,t:'[문자] '+t};if(r.kind==='whisper')return {k:'whisper',who,t:'[귓속말] '+t};if(r.kind==='dice')return {k:'dice',who,t};if(r.kind==='chat')return {k:'chat',who,t:d.img?t+' [그림] '+d.img:t};return {k:r.kind||'sys',who,t}}
-function openSaveLog(){const m=openModal(`<div class="mhead"><h2>로그 저장</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
- <p class="small muted">방의 전체 로그를 파일로 내려받는다. 비공개 귓속말은 서버에 내 것만 있으니 내 것만 들어간다.</p>
- <div class="row" style="flex-wrap:wrap;gap:10px"><label class="small"><input type="checkbox" id="lg_chat" checked> 대화</label><label class="small"><input type="checkbox" id="lg_dice" checked> 주사위</label><label class="small"><input type="checkbox" id="lg_battle" checked> 배틀 · 시스템</label><label class="small"><input type="checkbox" id="lg_sms"> 문자</label><label class="small"><input type="checkbox" id="lg_whisper"> 귓속말</label></div>
- <div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn" id="lg_txt">TXT 로</button><button class="btn pri" id="lg_html">HTML 로</button></div>`);
- const go=async fmt=>{const want={chat:$('#lg_chat',m).checked,dice:$('#lg_dice',m).checked,battle:$('#lg_battle',m).checked,sms:$('#lg_sms',m).checked,whisper:$('#lg_whisper',m).checked};toast('로그를 읽는 중…');let rows;try{rows=await fetchAllLog()}catch(e){return toast('읽지 못했다: '+e.message)}
-  const keep=rows.map(r=>Object.assign(logLine(r),{at:r.at,id:r.id})).filter(x=>{if(x.k==='chat')return want.chat;if(x.k==='dice')return want.dice;if(x.k==='sms')return want.sms;if(x.k==='whisper')return want.whisper;return want.battle}).filter(x=>x.t.trim());
-  const tm=x=>{const d=new Date(x.at);return isNaN(d)?'':`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`};
-  const name=(ST.roomRow&&ST.roomRow.name||ST.room).replace(/[\\/:*?"<>|]/g,'_');const stamp=new Date().toISOString().slice(0,10);let blob,fn;
-  if(fmt==='txt'){blob=new Blob(['\ufeff'+keep.map(x=>`[${tm(x)}] ${x.who?x.who+': ':''}${x.t}`).join('\n')],{type:'text/plain;charset=utf-8'});fn=`${name}_로그_${stamp}.txt`}
-  else{const css='body{background:#111;color:#eee;font-family:"Noto Sans KR",sans-serif;font-size:14px;padding:20px;max-width:900px;margin:auto}h1{font-size:20px;border-bottom:3px solid #d9243f;padding-bottom:6px}.r{display:flex;gap:10px;padding:4px 0;border-bottom:1px solid #222}.r .tm{color:#777;font-size:11px;min-width:110px;font-family:monospace}.r .w{color:#f5d000;min-width:90px;font-weight:700}.r .t{white-space:pre-wrap;flex:1}.dice .t{color:#9ad}.sms .t{color:#8e8}.whisper .t{color:#c9f}.sys .t,.battle .t{color:#bbb;font-size:13px}';
-   const esc2=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');blob=new Blob([`<!doctype html><html lang="ko"><meta charset="utf-8"><title>${esc2(name)} 로그</title><style>${css}</style><h1>${esc2(name)} <small style="color:#888;font-size:12px">${stamp} · ${keep.length}줄</small></h1>${keep.map(x=>`<div class="r ${x.k}"><span class="tm">${tm(x)}</span><span class="w">${esc2(x.who)}</span><span class="t">${esc2(x.t)}</span></div>`).join('')}</html>`],{type:'text/html;charset=utf-8'});fn=`${name}_로그_${stamp}.html`}
+function logKind(r){const d=r.data||{};if(r.kind==='chat'&&d.sms)return 'sms';if(r.kind==='whisper')return 'whisper';if(r.kind==='dice')return 'dice';if(r.kind==='chat')return 'chat';if(r.kind==='battle')return 'battle';return 'sys'}
+const LOGSAVE_KEY='om_logsave';function logSaveCfg(){const d={chat:1,dice:1,battle:1,sms:0,whisper:0,av:1,img:1,days:1,theme:'dark',size:15,narr:1};try{return Object.assign(d,JSON.parse(localStorage.getItem(LOGSAVE_KEY)||'{}'))}catch(e){return d}}
+function buildLogHtml(rows,o){const esc2=x=>String(x??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+ const name=(ST.roomRow&&ST.roomRow.name)||ST.room;const stamp=new Date().toISOString().slice(0,10);
+ const dark=o.theme!=='light';const C=dark?{bg:'#101114',card:'#17181d',line:'#2a2b31',fg:'#ececec',mute:'#8a8f99',me:'#2a1d1f',sys:'#1c1d22'}:{bg:'#f6f3ec',card:'#ffffff',line:'#d9d4c8',fg:'#1a1a1f',mute:'#6a7179',me:'#fff1f1',sys:'#efece4'};
+ const css=`body{background:${C.bg};color:${C.fg};font-family:"Noto Sans KR","Malgun Gothic",sans-serif;font-size:${+o.size||15}px;margin:0;padding:24px 16px 60px}
+ .wrap{max-width:860px;margin:auto}h1{font-size:22px;margin:0 0 4px;border-bottom:3px solid #d9243f;padding-bottom:8px}h1 small{font-size:12px;color:${C.mute};font-weight:400;margin-left:8px}
+ .day{text-align:center;margin:22px 0 10px;color:${C.mute};font-size:12px;letter-spacing:.08em}.day span{background:${C.card};border:1px solid ${C.line};padding:3px 12px;border-radius:999px}
+ .m{display:flex;gap:10px;align-items:flex-start;margin:8px 0}.m.me{flex-direction:row-reverse}.av{width:36px;height:36px;border-radius:50%;flex:none;background:${C.line} center/cover no-repeat;border:2px solid ${C.line}}.av.none{visibility:hidden}
+ .bub{background:${C.card};border:1px solid ${C.line};padding:8px 12px;border-radius:4px 14px 14px 14px;max-width:78%;white-space:pre-wrap;line-height:1.55}.me .bub{border-radius:14px 4px 14px 14px;background:${C.me}}
+ .who{display:block;font-size:12px;color:#f5d000;font-weight:700;margin-bottom:2px}.tm{font-size:11px;color:${C.mute};align-self:flex-end;white-space:nowrap}
+ .bub img{display:block;max-width:360px;max-height:360px;border-radius:8px;margin:4px 0}
+ .narr .bub{font-style:italic;color:${C.mute};background:transparent;border-style:dashed}
+ .sys{justify-content:center}.sys .bub{font-size:12px;color:${C.mute};background:${C.sys};border-radius:999px;padding:3px 12px}
+ .dice .bub{border-left:4px solid #3b8bd6}.whisper .bub{border-left:4px solid #9b6bd6;opacity:.9}.sms .bub{border-left:4px solid #2f8f5b}.sms .who::before{content:"📱 "}
+ .card{border:1px solid ${C.line};border-left:5px solid var(--tc);background:${C.card};padding:8px 12px;border-radius:6px;max-width:78%;line-height:1.5}.card .tag{display:inline-block;font-size:11px;background:var(--tc);color:#fff;padding:1px 7px;border-radius:3px;margin-right:6px}.card b{font-size:14px}.card .eff{color:${C.mute};font-size:12px;margin-top:4px;white-space:pre-wrap}.card .bl{font-size:13px}.card .bl.pos{color:#3aa65d}.card .bl.neg{color:#d9243f}`;
+ let lastDay='';const out=[];
+ for(const r of rows){const d=r.data||{};const k=logKind(r);const at=new Date(r.at);const dayKey=isNaN(at)?'':`${at.getFullYear()}.${String(at.getMonth()+1).padStart(2,'0')}.${String(at.getDate()).padStart(2,'0')}`;const hm=isNaN(at)?'':`${String(at.getHours()).padStart(2,'0')}:${String(at.getMinutes()).padStart(2,'0')}`;
+  if(o.days&&dayKey&&dayKey!==lastDay){lastDay=dayKey;out.push(`<div class="day"><span>${dayKey}</span></div>`)}
+  if(k==='sys'||(k==='chat'&&d.clear)){out.push(`<div class="m sys"><div class="bub">${esc2(d.clear?'무대를 비웠다':d.t)}</div></div>`);continue}
+  if(k==='battle'){const t=String(d.t||'');const m=t.match(/^【([^】]+)】\s*([^\n]*)\n?([\s\S]*)$/);
+   if(m){const col=TAGCOL[m[1]]||'#555';const lines=m[3].trim().split('\n').filter(Boolean).map(l=>`<div class="bl ${/실패|차단|없|않/.test(l)?'neg':/\+\d|회복|성공|→/.test(l)?'pos':''}">${esc2(l)}</div>`).join('');
+    out.push(`<div class="m"><div class="av ${o.av&&d.img?'':'none'}" style="${o.av&&d.img?`background-image:url('${esc2(d.img)}')`:''}"></div><div class="card" style="--tc:${col}"><span class="tag">${esc2(m[1])}</span><b>${esc2(m[2])}</b>${d.eff?`<div class="eff">${esc2(d.eff)}</div>`:''}${lines}</div><span class="tm">${hm}</span></div>`);continue}
+   out.push(`<div class="m sys"><div class="bub">${esc2(t)}</div></div>`);continue}
+  if(!d.t&&!d.img)continue;
+  const narr=o.narr&&/^\*(.+)\*$/s.test(String(d.t||''));const text=narr?String(d.t).replace(/^\*(.+)\*$/s,'$1'):String(d.t||'');
+  const who=k==='whisper'?`${r.who} → ${d.toName||d.to||''}`:(d.as||r.who||'');const av=o.av?avatarOf(r):'';
+  out.push(`<div class="m ${k} ${narr?'narr':''}"><div class="av ${av?'':'none'}" style="${av?`background-image:url('${esc2(av)}')`:''}"></div><div class="bub"><span class="who">${esc2(who)}</span>${o.img&&d.img?`<a href="${esc2(d.img)}" target="_blank"><img src="${esc2(d.img)}" alt=""></a>`:''}${esc2(text)}</div><span class="tm">${hm}</span></div>`)}
+ return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc2(name)} 로그</title><style>${css}</style></head><body><div class="wrap"><h1>${esc2(name)}<small>${stamp} · ${rows.length}줄 · 오레마스</small></h1>${out.join('\n')}</div></body></html>`}
+function openSaveLog(){const o=logSaveCfg();const ck=(id,l,on)=>`<label class="small" style="display:inline-flex;align-items:center;gap:5px"><input type="checkbox" data-ls="${id}" ${on?'checked':''}> ${l}</label>`;
+ const m=openModal(`<div class="mhead"><h2>로그 저장</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+ <p class="small muted">방의 전체 로그를 파일로 내려받는다. 설정은 이 브라우저에 기억된다.</p>
+ <div class="sec">넣을 것</div>
+ <div class="row" style="flex-wrap:wrap;gap:12px">${ck('chat','대화',o.chat)}${ck('dice','주사위',o.dice)}${ck('battle','배틀 · 시스템',o.battle)}${ck('sms','문자',o.sms)}${ck('whisper','귓속말 (내 것만)',o.whisper)}</div>
+ <div class="sec" style="margin-top:10px">보기 (HTML)</div>
+ <div class="row" style="flex-wrap:wrap;gap:12px">${ck('av','아바타',o.av)}${ck('img','올린 그림',o.img)}${ck('days','날짜 구분선',o.days)}${ck('narr','*지문* 은 기울임',o.narr)}</div>
+ <div class="row" style="flex-wrap:wrap;gap:12px;margin-top:6px"><label class="small">테마 <select data-lsv="theme"><option value="dark" ${o.theme!=='light'?'selected':''}>어둡게</option><option value="light" ${o.theme==='light'?'selected':''}>밝게</option></select></label><label class="small">글씨 <select data-lsv="size">${[13,14,15,16,17,18,20].map(v=>`<option value="${v}" ${+o.size===v?'selected':''}>${v}px</option>`).join('')}</select></label></div>
+ <div class="row" style="margin-top:12px"><span class="sp"></span><button class="btn" id="lg_txt">TXT 로</button><button class="btn pri" id="lg_html">HTML 로</button></div>`);
+ const read=()=>{const c=logSaveCfg();m.querySelectorAll('[data-ls]').forEach(x=>c[x.dataset.ls]=x.checked?1:0);m.querySelectorAll('[data-lsv]').forEach(x=>c[x.dataset.lsv]=x.value);try{localStorage.setItem(LOGSAVE_KEY,JSON.stringify(c))}catch(e){}return c};
+ const go=async fmt=>{const c=read();toast('로그를 읽는 중…');let rows;try{rows=await fetchAllLog()}catch(e){return toast('읽지 못했다: '+e.message)}
+  const keep=rows.filter(r=>{const k=logKind(r);if(k==='chat')return c.chat;if(k==='dice')return c.dice;if(k==='sms')return c.sms;if(k==='whisper')return c.whisper;return c.battle});
+  const name=((ST.roomRow&&ST.roomRow.name)||ST.room).replace(/[\\/:*?"<>|]/g,'_');const stamp=new Date().toISOString().slice(0,10);let blob,fn;
+  if(fmt==='txt'){const tm=r=>{const d=new Date(r.at);return isNaN(d)?'':`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`};
+   const lines=keep.map(r=>{const d=r.data||{};const k=logKind(r);const who=k==='whisper'?`${r.who} → ${d.toName||d.to||''}`:(d.as||r.who||'');const t=d.clear?'무대를 비웠다':String(d.t||'')+(d.img?' [그림] '+d.img:'');if(!t.trim())return '';return `[${tm(r)}] ${k==='sms'?'[문자] ':k==='whisper'?'[귓속말] ':''}${who?who+': ':''}${t}`}).filter(Boolean);
+   blob=new Blob(['﻿'+lines.join('\n')],{type:'text/plain;charset=utf-8'});fn=`${name}_로그_${stamp}.txt`}
+  else{blob=new Blob([buildLogHtml(keep,c)],{type:'text/html;charset=utf-8'});fn=`${name}_로그_${stamp}.html`}
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fn;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);closeModal();toast(`${keep.length}줄을 저장했다`)};
  $('#lg_txt',m).onclick=()=>go('txt');$('#lg_html',m).onclick=()=>go('html')}
 function openSeatPicker(){
