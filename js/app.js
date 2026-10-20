@@ -67,14 +67,16 @@ function renderRoom(){
    ${ST.role==='gm'?'<span class="badge gm">GM</span>':ST.role==='seat'?`<span class="badge seat">${esc(ST.name)}</span>`:'<span class="badge">관전</span>'}
    <span class="tabs" id="sceneTabs"></span>
    <span class="sp"></span><span id="conn" class="small muted">○ 연결 중</span>
-   <button class="btn sm" id="copyLink">플레이어 링크</button>
+   ${ST.role?'<button class="btn sm" id="skillBtn">스킬 체크</button>':''}<button class="btn sm" id="copyLink">플레이어 링크</button>
    ${ST.role==='gm'?'<button class="btn sm" id="copyGm">GM 링크</button><button class="btn sm" id="roomSet">방 설정</button>':'<button class="btn sm" id="seatBtn">자리</button>'}
   </div>
   <div class="body"><div class="scene" id="scene"></div>
-   <div class="side"><div class="log" id="log"></div>
-    <div class="inbox"><input type="text" id="chatIn" placeholder="${ST.role?'메시지 · /r 1d100 · /w 이름 메시지':'자리에 앉으면 말할 수 있다'}" ${ST.role?'':'disabled'}><button class="btn" id="chatSend" ${ST.role?'':'disabled'}>보내기</button></div></div>
+   <div class="side"><div class="phone"><div class="pbar"><span>●●●</span><span class="ptime" id="pclock"></span></div><div class="ptitle">${esc(r.name||r.id)}<small>${ST.role==='gm'?'GM':ST.role==='seat'?esc(ST.name):'관전'} · 오레마스</small></div><div class="log" id="log"></div>
+    <div class="inbox"><input type="text" id="chatIn" placeholder="${ST.role?'메시지 · /r 1d100 · /w 이름 메시지':'자리에 앉으면 말할 수 있다'}" ${ST.role?'':'disabled'}><button class="btn" id="chatSend" ${ST.role?'':'disabled'}>➤</button></div></div></div>
   </div></div>`;
  $('#copyLink').onclick=()=>copy(roomLink(ST.room),'플레이어 링크를 복사했다');
+ const sk=$('#skillBtn');if(sk)sk.onclick=()=>window.OM_SKILL_UI.open();
+ const clock=()=>{const el=$('#pclock');if(el){const d=new Date();el.textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}};clock();clearInterval(ST.clockT);ST.clockT=setInterval(clock,15000);
  if(ST.role==='gm'){$('#copyGm').onclick=()=>copy(gmLink(ST.room,ST.secret),'GM 링크를 복사했다 (아무에게도 주지 말 것)');$('#roomSet').onclick=openRoomSettings}
  else $('#seatBtn').onclick=openSeatPicker;
  $('#chatSend').onclick=sendChat;$('#chatIn').onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)sendChat()};
@@ -100,12 +102,15 @@ async function sendChat(){
  }catch(e){toast('보내지 못했다: '+e.message)}}
 function resolveSeat(n){if(n==='GM'||n==='gm')return 'gm';const seats=ST.state.seats||{};for(const k in seats)if(seats[k]&&(seats[k].name===n||k===n))return k;const trs=(ST.state.battle||{}).trainers||{};for(const k in trs)if(trs[k].name===n)return k;return null}
 function roll(expr){const m=String(expr).replace(/\s/g,'').match(/^(\d*)d(\d+)([+-]\d+)?$/i);if(!m)return null;const n=Math.min(+m[1]||1,100),f=+m[2],mod=+(m[3]||0);if(f<1)return null;const rs=[];for(let i=0;i<n;i++)rs.push(1+Math.floor(Math.random()*f));const total=rs.reduce((a,b)=>a+b,0)+mod;return {total,text:'['+rs.join(',')+']'+(mod?(mod>0?'+':'')+mod:'')}}
+function avatarOf(r){const d=r.data||{};const from=d.from;const b=ST.state.battle||{};const ro=ST.state.roster||{trainers:{}};const t=(b.trainers||{})[from]||(ro.trainers||{})[from];if(t&&t.image)return t.image;return ''}
 function renderLog(scroll){
  const el=$('#log');if(!el)return;
- el.innerHTML=ST.log.map(r=>{const d=r.data||{};const k=r.kind;
-  if(k==='sys')return `<div class="msg sys"><span class="time">${fmtTime(r.at)}</span>${esc(d.t)}</div>`;
+ el.innerHTML=ST.log.map(r=>{const d=r.data||{};const k=r.kind;const t=fmtTime(r.at);
+  if(k==='sys')return `<div class="msg sys"><div class="bub">${esc(d.t)}</div></div>`;
+  const mine=(ST.role==='gm'&&d.from==='gm')||(ST.role==='seat'&&d.from===ST.seat);
   const who=k==='whisper'?`${esc(r.who)} → ${esc(d.toName||d.to)}`:esc(r.who);
-  return `<div class="msg ${k}"><span class="time">${fmtTime(r.at)}</span><span class="who">${who}</span>${esc(d.t)}</div>`}).join('');
+  const av=avatarOf(r);
+  return `<div class="msg ${k} ${mine?'me':''}"><div class="av" style="${av?`background-image:url('${av}')`:''}"></div><div class="bub"><span class="who">${who}</span>${esc(d.t)}</div><span class="time">${t}</span></div>`}).join('');
  if(scroll!==false)el.scrollTop=el.scrollHeight}
 
 /* ---------- 씬 ---------- */
