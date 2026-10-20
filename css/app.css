@@ -441,3 +441,43 @@ html,body{font-size:15px;line-height:1.55}
 .dkcards.row{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px;margin:0 0 10px}
 .dkc.out{opacity:.45}
 .dkuse{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0}
+/* ---------- 무대: 좌측 A | 우측 A / 좌측 B | 우측 B ---------- */
+.benches{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.benches .tblock{flex-direction:column}.benches .tblock .trainer{width:auto}
+.agrid{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;background:var(--panel);border:2px solid #000;outline:1px solid var(--line2);padding:14px 10px 10px}
+.ahead{font-family:var(--lab);letter-spacing:.2em;color:#fff;text-align:center;padding:2px 0;clip-path:var(--slant)}
+.ahead.left{background:var(--left)}.ahead.right{background:var(--right)}
+.agrid .area{min-height:130px;border-style:solid;border-width:1px 1px 1px 4px}
+.agrid .area.left{border-left-color:var(--left)}.agrid .area.right{border-left-color:var(--right)}
+.agrid .area .alab.left{background:var(--left)}.agrid .area .alab.right{background:var(--right)}
+.board.grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 10px}
+.board.grid .bl{width:auto;padding:2px 0}
+.fobjs .olab{font-size:11px;padding:0 8px}
+@media (max-width:900px){.benches,.agrid{grid-template-columns:1fr}.ahead{display:none}}
+/* ---------- DB 창 (특성·소지품·기술·상태) ---------- */
+.modal.dbmodal{width:min(1180px,100%);height:88vh;display:flex;flex-direction:column}
+.dbmodal .mhead .tabs2{margin:0 0 0 12px;flex:0 1 460px}
+.dbmodal .tab2{padding:4px 10px;white-space:nowrap}
+.dbwrap{display:grid;grid-template-columns:380px 1fr;gap:12px;flex:1;min-height:0}
+.dbleft{display:flex;flex-direction:column;min-height:0;gap:6px}
+.dbleft input{width:100%;font-size:15px;padding:6px 10px}
+.dbtags{display:flex;flex-wrap:wrap;gap:4px}.dbtags .chip{cursor:pointer;font-size:11px}.dbtags .chip.on{background:var(--yel2);color:#000;border-color:var(--yel2)}
+.dblist{flex:1;overflow:auto;display:flex;flex-direction:column;gap:4px;padding-right:4px}
+.dbi{background:#15161a;border:1px solid var(--line);border-left:3px solid var(--line2);padding:5px 9px;cursor:pointer}
+.dbi:hover{border-color:var(--fg2)}.dbi.on{border-color:var(--yel2);border-left-color:var(--yel2);background:#26220f}
+.dbi .dbh{display:flex;align-items:center;gap:5px;flex-wrap:wrap}.dbi .dbh b{font-size:14px;color:#fff}.dbi .dbh img{width:18px;height:18px;object-fit:contain}
+.dbi .dbe{font-size:11.5px;color:var(--mute);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dbtag{display:inline-block;font-size:11px;font-weight:bold;padding:0 7px;background:#1f2a4a;color:#bfcdff;margin-right:2px;clip-path:var(--slant)}
+.dbtag.sm{font-size:10px;padding:0 5px}
+.dbq{color:#ffe08a;font-weight:normal}.dbn{color:#8fe0a8;font-weight:normal}
+.dbright{overflow:auto;min-height:0}
+.dbcard{background:#141518;border:1px solid var(--line2);height:100%;display:flex;flex-direction:column}
+.dbth{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:2px solid var(--red);flex-wrap:wrap}.dbth b{font-size:20px;color:#fff;font-family:var(--head)}.dbth img{width:28px;height:28px;object-fit:contain}
+.dbtb{padding:10px 14px;flex:1;overflow:auto}
+.dbsec{font-size:12px;font-weight:bold;color:var(--yel2);margin:10px 0 4px;letter-spacing:.05em}.dbsec:first-child{margin-top:0}
+.dbbody{background:#0f1014;border:1px solid var(--line);padding:6px 10px}
+.dbl{display:flex;gap:8px;font-size:14px;line-height:1.7;padding:2px 0}.dbl+.dbl{border-top:1px dashed #26272d}
+.dbl i{font-style:normal;color:var(--yel2);font-weight:bold;flex:0 0 auto}.dbl i.nn{color:#5b6278}
+.dbfoot{padding:8px 14px;border-top:1px solid var(--line);display:flex;justify-content:flex-end}
+.dbmini{margin-top:3px}.dbmini .dbl{font-size:12.5px;line-height:1.5;padding:1px 0;color:var(--fg2)}
+@media (max-width:900px){.dbwrap{grid-template-columns:1fr}.dbright{max-height:45%}}

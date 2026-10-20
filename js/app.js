@@ -67,7 +67,7 @@ function renderRoom(){
    ${ST.role==='gm'?'<span class="badge gm">GM</span>':ST.role==='seat'?`<span class="badge seat">${esc(ST.name)}</span>`:'<span class="badge">관전</span>'}
    <span class="tabs" id="sceneTabs"></span>
    <span class="sp"></span><span id="conn" class="small muted">○ 연결 중</span>
-   ${ST.role?'<button class="btn sm" id="skillBtn">스킬 체크</button><button class="btn sm" id="deckBtn">덱</button>':''}<button class="btn sm" id="copyLink">플레이어 링크</button>
+   ${ST.role?'<button class="btn sm" id="skillBtn">스킬 체크</button><button class="btn sm" id="deckBtn">덱</button>':''}<button class="btn sm" id="dbBtn">DB</button><button class="btn sm" id="copyLink">플레이어 링크</button>
    ${ST.role==='gm'?'<button class="btn sm" id="copyGm">GM 링크</button><button class="btn sm" id="roomSet">방 설정</button>':'<button class="btn sm" id="seatBtn">자리</button>'}
   </div>
   <div class="body"><div class="scene" id="scene"></div>
@@ -77,6 +77,7 @@ function renderRoom(){
  $('#copyLink').onclick=()=>copy(roomLink(ST.room),'플레이어 링크를 복사했다');
  const sk=$('#skillBtn');if(sk)sk.onclick=()=>window.OM_SKILL_UI.open();
  const dk=$('#deckBtn');if(dk)dk.onclick=()=>window.OM_DECK_UI.open();
+ $('#dbBtn').onclick=()=>window.OM_DB_UI.open({kind:'trait'});
  const clock=()=>{const el=$('#pclock');if(el){const d=new Date();el.textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}};clock();clearInterval(ST.clockT);ST.clockT=setInterval(clock,15000);
  if(ST.role==='gm'){$('#copyGm').onclick=()=>copy(gmLink(ST.room,ST.secret),'GM 링크를 복사했다 (아무에게도 주지 말 것)');$('#roomSet').onclick=openRoomSettings}
  else $('#seatBtn').onclick=openSeatPicker;
@@ -196,8 +197,8 @@ function openMon(mid){
    <span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
   <div class="row small muted" style="margin-bottom:8px">HP <b class="mono" style="color:var(--fg)">${full?m.hp.cur+' / '+m.hp.max:Math.round(m.hp.cur/m.hp.max*100)+'%'}</b></div>
   ${stat6}${hpRow}
-  <table class="t" style="margin-top:10px"><tr><th style="width:80px">특성</th><td><b>${esc(m.ability||'-')}</b><div class="pre small">${esc(m.abilityEff)}</div></td></tr>
-  <tr><th>소지품</th><td><b>${esc(m.item||'-')}</b><div class="pre small">${esc(m.itemEff)}</div></td></tr></table>
+  <table class="t" style="margin-top:10px"><tr><th style="width:80px">특성</th><td><b>${esc(m.ability||'-')}</b><div class="dbmini">${window.OM_DB_UI.effectHtml('trait',m.ability)||`<span class="small dim">${esc(m.abilityEff)}</span>`}</div></td></tr>
+  <tr><th>소지품</th><td><b>${esc(m.item||'-')}</b><div class="dbmini">${window.OM_DB_UI.effectHtml('item',m.item)||`<span class="small dim">${esc(m.itemEff)}</span>`}</div></td></tr></table>
   <h3 style="margin:12px 0 6px;font-size:14px">기술 ${m.moves.length}</h3>
   <table class="t"><tr><th>이름</th><th>타입</th><th>분류</th><th>위력</th><th>명중</th><th>범위</th><th>우선</th><th>효과</th></tr>
    ${m.moves.map(mv=>`<tr><td class="nw"><b>${esc(mv.name)}</b>${mv.half?' <span class="small muted">½</span>':''}${mv.missing?' <span class="small" style="color:var(--red)">DB 없음</span>':''}</td><td class="nw">${typeChip(mv.typeEn)}</td><td class="nw">${esc(mv.cat)}</td><td class="mono">${mv.pow||'-'}</td><td class="mono">${mv.acc||'필중'}</td><td class="nw">${esc(mv.range)}</td><td class="mono">${mv.prio||0}</td><td class="pre small eff">${esc(mv.eff)}</td></tr>`).join('')}</table>
