@@ -1550,6 +1550,16 @@ label.tgc:has(input:focus-visible){outline:2px solid var(--yel)}
 .potwrap>.potcol{flex:1;min-width:0}
 .potwrap>.exup{flex:none;margin-top:4px}
 .mon.big .mbtns .exdn{display:none}
-.mon.big .mbtns .exit1{margin-left:auto}
 .potcol:empty{display:none}.potwrap>.exup{margin-left:auto}
-@media (max-width:760px){.potwrap>.exup{display:none}.mon.big .mbtns.open .exdn{display:inline-flex}.mon.big .mbtns .exit1{margin-left:0}}
+@media (max-width:760px){.potwrap>.exup{display:none}.mon.big .mbtns.open .exdn{display:inline-flex}}
+/* 10-22 벤치 아래 = 그 진영의 지시 현황 */
+.bct1{margin-top:6px;display:flex;flex-direction:column;gap:3px}
+.bth{display:flex;align-items:center;gap:6px;font-size:12px;padding:0 2px}
+.bc{display:grid;grid-template-columns:30px minmax(0,1fr);gap:6px;align-items:start;padding:4px;background:#16171b;border-left:3px solid var(--line2)}
+.bcol.left .bc{border-left-color:var(--left)}.bcol.right .bc{border-left-color:var(--right)}
+.bcb{min-width:0;display:flex;flex-direction:column;gap:2px}
+.bcn{font-size:11px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.bcn i{font-style:normal;font-family:var(--mono);background:#2a2b30;color:#fff;padding:0 4px;margin-right:4px}
+.bca{font-size:12px;line-height:1.35;word-break:keep-all}.bca b{color:#fff}.bca .type{margin-left:4px;font-size:10px;transform:none}
+.bca .bct{display:block;color:var(--mute);font-size:11px}.bca .warn{color:var(--yel2)}
+.bcp{display:flex;flex-wrap:wrap;gap:2px}.bcp .rk{font-size:10px;padding:0 4px}
+.bcu{padding:2px 4px}

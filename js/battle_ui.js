@@ -90,7 +90,7 @@ window.OM_BATTLE_UI=(()=>{
   {const fb=el.querySelector('[data-bfold]');if(fb)fb.onclick=()=>{BFOLD.open=!BFOLD.open;try{localStorage.setItem('om_bfold',BFOLD.open?'1':'0')}catch(e){}const bs=fb.closest('.bstat');bs.classList.toggle('fold',!BFOLD.open);fb.textContent=BFOLD.open?'접기 ▴':'펼치기 ▾'}}
   el.querySelectorAll('[data-act]').forEach(bt=>{if(bt.tagName==='SELECT')bt.onchange=()=>action(bt.dataset,bt.value);else if(bt.type==='checkbox')bt.onchange=()=>action(bt.dataset,bt.checked);else bt.onclick=()=>action(bt.dataset)});
   el.querySelectorAll('[data-mon]').forEach(cd=>cd.onclick=e=>{if(e.target.closest('[data-act]'))return;A().openMon(cd.dataset.mon)});
-  const form=$('#cmdForm',el);if(form)bindCmdForm(form,c);cmdFab(form)}
+  const form=$('#cmdForm',el);if(form)bindCmdForm(form,c);cmdFab(form);refreshSide(c)}
  /* 폰: 카드 「⋯」로 나머지 버튼 펼치기 */
  document.addEventListener('click',e=>{const t=e.target.closest('[data-mmore]');if(!t)return;e.stopPropagation();const box=t.closest('.mbtns');const on=box.classList.toggle('open');t.setAttribute('aria-expanded',on?'true':'false')},true);
  /* 폰: 지시 입력 칸이 화면 밖이면 아래에 「지시 입력」 버튼을 띄워 바로 내려간다 */
@@ -157,15 +157,23 @@ window.OM_BATTLE_UI=(()=>{
      <div class="rk4">${['육성','지시','통솔','능력'].map(k=>`<span><small>${k}</small><b>${esc(t.ranks[k]||'-')}</b></span>`).join('')}</div>${o?`<div class="tr"><span class="who">${esc(o.name)}</span></div>`:''}</div>
      </div>${(()=>{const U=uniqList(t);const own=c.gm||tid===c.seat;return U.length?`<div class="tuq">${U.map(x=>`<span class="pot sp uq" title="${esc(String(x.p.eff||'').replace(/<br\s*\/?>/g,' ').slice(0,300))}"><em>고유</em>${esc(x.p.name)}${x.max!=null?' '+pips(x.left,x.max):''}${own?(x.left!==null&&x.left<=0?'<small class="dim">다 씀</small>':`<button class="btn xs pri" data-act="ufire" data-tid="${tid}" data-pot="${esc(x.p.name)}" title="고유 포텐셜 발동 — 대상 포켓몬을 고른다">발동</button>`):''}</span>`).join('')}</div>`:''})()}<div class="tbtns">${((c.gm||tid===c.seat)&&mons.some(m=>m.entry))?`<button class="btn xs" data-act="fire" data-tid="${tid}" title="지령·명령 · 고유·전용 포텐셜 발동 창">포텐셜 발동</button>`:''}${(c.gm||tid===c.seat)?`<button class="btn xs ghost" data-act="dexmgr" data-tid="${tid}" title="도감 · 데이터 해석">해석</button><button class="btn xs ghost ${myosuGlow(c,tid)?'pri':''}" data-act="skillp" data-tid="${tid}" title="「타임」 — 상대가 준비를 마치면 지시의 꼴(교대/기술)을 엿본다">묘수</button>`:''}${(c.gm||tid===c.seat)?`<button class="btn xs ghost" data-act="orders" data-tid="${tid}" title="지령·명령 · 고유·전용 포텐셜 횟수 설정 · 빼기">포텐셜 설정</button>`:''}</div>
     <div class="bench">${mons.map(m=>benchCard(c,m)).join('')||'<div class="dim small">포켓몬 없음</div>'}</div></div>`}).join('');
-  const mySide=c.mgr?'left':((b.trainers||{})[c.seat]||{}).side||'left';
-  return `<div class="bcol ${side}"><div class="shead"><span class="sname">${SIDE_KO[side]} 벤치</span><span class="sp"></span>${c.mgr?`<button class="btn xs" data-act="load" data-side="${side}">+ 파티</button>`:''}</div>${items||'<div class="aempty small">트레이너 없음'+(c.mgr?' — 「+ 파티」':'')+'</div>'}${side===mySide?sidePanel(c,ready):''}</div>`}
- /* 벤치 아래 빈 곳: 행동 순서(세로) — 순서가 없을 땐 지시 준비 현황. 아래 큰 행동 순서 띠까지 내려가지 않아도 보인다 */
- function sidePanel(c,ready){const b=c.b;const ph=+b.phase||0;const trs=b.trainers||{};const tids=Object.keys(trs);if(!tids.length)return '';
-  if((b.order||[]).length&&ph>=2){const cur=+b.orderIdx||0;
-   return `<div class="bside"><div class="bsh"><span>행동 순서</span><span class="sp"></span><b>${Math.min(cur+1,b.order.length)} / ${b.order.length}</b></div><div class="bord">${b.order.map((o,i)=>{const m=(b.mons||{})[o.mid]||{};const dead=m.hp&&m.hp.cur<=0;const pct=m.hp?Math.max(0,Math.round(m.hp.cur/m.hp.max*100)):0;
-    return `<div class="bo ${o.side} ${i===cur?'now':i<cur?'done':''} ${dead?'dead':''}" ${c.mgr?`data-act="ojump" data-i="${i}"`:''} title="${esc(o.name)} · 스피드 ${Math.round(o.speed)}"><span class="bon">${i+1}</span><span class="bop" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></span><span class="bot"><b>${esc(o.name)}</b><small>${o.change?'교대':o.move?esc(o.move):'-'}</small><i class="bhp"><i style="width:${pct}%"></i></i></span></div>`}).join('')}</div>${c.mgr?`<div class="bsf"><button class="btn xs ghost" data-act="oprev">◀</button><button class="btn xs pri" data-act="onext">다음 행동 ▶</button></div>`:''}</div>`}
-  const seats=c.ST.state.seats||{};
-  return `<div class="bside"><div class="bsh"><span>${ph===0?'지시 준비':'지시 공개'}</span><span class="sp"></span><b>TURN ${b.turn||0}</b></div><div class="brd">${tids.map(t=>{const rd=!!ready[t];const op=!!(b.cmds||{})[t];return `<div class="br ${trs[t].side||''}"><span class="brn">${esc(trs[t].name)}</span><span class="small dim">${seats[t]?esc(seats[t].name):'NPC'}</span><span class="sp"></span>${ph===0?(rd?'<span class="tag ok">READY</span>':'<span class="tag">입력 중</span>'):(op?'<span class="tag ok">공개됨</span>':'<span class="tag">대기</span>')}</div>`}).join('')}</div><div class="small dim bsn">${ph===0?'모두 준비하면 「턴 진행 ▶」':ph===1?'에리어마다 공개 → 행동 순서':'행동 순서가 정해지면 여기 세로로 보인다'}</div></div>`}
+  return `<div class="bcol ${side}"><div class="shead"><span class="sname">${SIDE_KO[side]} 벤치</span><span class="sp"></span>${c.mgr?`<button class="btn xs" data-act="load" data-side="${side}">+ 파티</button>`:''}</div>${items||'<div class="aempty small">트레이너 없음'+(c.mgr?' — 「+ 파티」':'')+'</div>'}${sidePanel(c,side,ready)}</div>`}
+ /* 벤치 아래 빈 곳: 그 진영이 입력해 둔 지시 현황. 내 트레이너(GM 은 볼 수 있는 것 전부)는 편집 중인 지시를, 남의 것은 공개된 만큼만 */
+ function sidePanel(c,side,ready){const b=c.b;const trs=b.trainers||{};const ids=(((b.sides||{})[side]||{}).trainers||[]).filter(t=>trs[t]);if(!ids.length)return '';
+  const mine=myTrainers(c);const ph=+b.phase||0;
+  const blocks=ids.map(tid=>{const t=trs[tid];const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid&&m.entry&&m.hp.cur>0).sort((x,y)=>x.entry.localeCompare(y.entry));
+   const rd=!!ready[tid];const pub=(b.cmds||{})[tid];const own=mine.includes(tid);const cur=own?CMD[tid]:null;
+   const tag=pub?'<span class="tag ok">공개됨</span>':rd?'<span class="tag ok">READY</span>':'<span class="tag">입력 중</span>';
+   const row=m=>{let body;
+    if(own&&cur){const xx=(cur.mons||{})[m.id]||{};const pre=[xx.order?OO().orderName(t,xx.order):'',xx.command?OO().commandName(t,xx.command):''].filter(Boolean);
+     let act;if(xx.move==='switch')act=`<b>교대</b> → ${esc(monName(b,xx.switch)||'?')}`;else if(xx.move===''||xx.move==null)act='<span class="warn">행동 없음</span>';else{const mv=(m.moves||[])[+xx.move];act=`<b>${mv?esc(mv.name):'?'}</b>${mv?typeChip(mv.typeEn):''}${(xx.targets||[]).length?`<span class="bct">→ ${xx.targets.map(sl=>esc(slotName(b,sl))).join(', ')}</span>`:'<span class="warn"> 대상 없음</span>'}`}
+     body=`<div class="bca">${act}</div>${pre.length||(xx.pots||[]).length?`<div class="bcp">${pre.map(n=>`<span class="rk up">선행 『${esc(n)}』</span>`).join('')}${(xx.pots||[]).map(n=>`<span class="rk fxc">『${esc(n)}』</span>`).join('')}</div>`:''}`}
+    else if(pub&&pub.mons&&pub.mons[m.id])body=`<div class="bca">${cmdOf(b,m)}</div>`;
+    else body=`<div class="bca dim">${rd?'입력 완료 · 비공개':'입력 중'}</div>`;
+    return `<div class="bc"><span class="bop" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></span><div class="bcb"><div class="bcn"><i>${String(m.entry).toUpperCase()}</i>${esc(m.name)}</div>${body}</div></div>`};
+   const up=own&&cur&&(cur.upots||[]).length?`<div class="bcp bcu">${cur.upots.map(n=>`<span class="rk fxc">고유 『${esc(n)}』</span>`).join('')}</div>`:'';
+   return `<div class="bct1"><div class="bth"><b>${esc(t.name)}</b><span class="sp"></span>${tag}</div>${mons.map(row).join('')||'<div class="small dim">필드에 포켓몬이 없다</div>'}${up}</div>`}).join('');
+  return `<div class="bside" data-bside="${side}"><div class="bsh"><span>지시 현황</span><span class="sp"></span><b>TURN ${+b.turn||0}</b></div>${blocks}</div>`}
  function fieldStrip(c,f){const w=f.weather.type,t=f.terrain.type;
   const ic=(name,label,cnt,kind)=>{const im=fimg(name);return `<div class="fic ${kind}" title="${esc(label)}">${im?`<img src="${esc(im)}" alt="">`:'<span class="fnoimg"></span>'}<span><small>${({w:'날씨',t:'필드',r:'룸',e:'필드의 상태'})[kind]||''}</small><b>${esc(label)}</b>${cnt?`<em>${cnt>=1000?'∞':cnt+'T'}</em>`:''}</span></div>`};
   const mid=[w?ic(W_IMG[w],w,f.weather.count,'w'):'',t?ic(T_IMG[t],t,f.terrain.count,'t'):'',...ROOMS.filter(r=>(f.rooms||{})[r]>0).map(r=>ic(T_IMG[r],r,f.rooms[r],'r')),...ETC.filter(r=>(f.etc||{})[r]>0).map(r=>ic(T_IMG[r],r,f.etc[r],'e'))].filter(Boolean).join('');
@@ -317,7 +325,9 @@ window.OM_BATTLE_UI=(()=>{
   loadPeek().then(pk=>{const el=document.getElementById('peekbox');if(!el||!pk)return;if(pk.turn!==(ctx().b.turn||0))return;el.innerHTML=`<div class="chip" style="border-color:var(--yel);padding:4px 10px">타임 결과 · ${esc(pk.name)}: <b>${esc(pk.text)}</b></div>`});
   return `<form id="cmdForm" class="cmdpanel" onsubmit="return false"><div id="peekbox"></div><div class="cmdtitle">지시 입력 <span class="dim small">${phase===0?'지시 준비 페이즈':'지금은 '+['','턴 개시','행동 순서','행동 처리','','턴 종료'][phase]+' — 입력은 저장만 된다'}</span></div>${blocks}</form>`}
  function fsum(L){L=(L||[]).filter(Boolean);return L.length?L.map(n=>esc(n)).join(' · '):'—'}
- function rerenderCmd(){const old=$('#cmdForm');if(!old)return;const c=ctx();const tmp=document.createElement('div');tmp.innerHTML=cmdPanel(c,c.ST.state.ready||{});const nf=tmp.firstElementChild;if(!nf){old.remove();return}old.replaceWith(nf);nf.querySelectorAll('[data-act]').forEach(bt=>bt.onclick=()=>action(bt.dataset));bindCmdForm(nf,c)}
+ /* 지시를 고칠 때마다 벤치 아래 지시 현황도 */
+ function refreshSide(c){document.querySelectorAll('[data-bside]').forEach(el=>{const tmp=document.createElement('div');tmp.innerHTML=sidePanel(c,el.dataset.bside,c.ST.state.ready||{});if(tmp.firstElementChild)el.replaceWith(tmp.firstElementChild)})}
+ function rerenderCmd(){const old=$('#cmdForm');if(!old)return;const c=ctx();const tmp=document.createElement('div');tmp.innerHTML=cmdPanel(c,c.ST.state.ready||{});const nf=tmp.firstElementChild;if(!nf){old.remove();return}old.replaceWith(nf);refreshSide(c);nf.querySelectorAll('[data-act]').forEach(bt=>bt.onclick=()=>action(bt.dataset));bindCmdForm(nf,c)}
  function bindCmdForm(form,c){
   form.querySelectorAll('.cmdt').forEach(blk=>{const tid=blk.dataset.tid;const cur=CMD[tid];const mid=UIC.tab[tid];const x=cur.mons[mid];
    blk.querySelectorAll('[data-fold]').forEach(d=>d.addEventListener('toggle',()=>{UIC.fold[d.dataset.fold]=d.open}));
