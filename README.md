@@ -233,3 +233,4 @@ GitHub Pages 정적 사이트 + Supabase(제작기와 같은 프로젝트). 설�
 
 ## 맵툴 로그 정리기 연동
 - `OM_CONFIG.organizerUrl` (기본 https://mangryoung.github.io/maptool-log/). 「💾 로그」 창의 **정리기에서 열기 ↗** 가 `?oremas=방ID` 로 정리기를 열어 이 방 로그를 바로 불러온다(대사 · 지문 · 주사위 · 배틀 카드 · 초상).
+- 「💾 로그 → HTML」 파일에는 원본 줄 · 초상 · 트레이너 이름이 `<script type="application/json" id="oremas-log">` 로 함께 들어간다(`<meta name="generator" content="oremas">`). 맵툴 로그 정리기가 이걸 읽어 그대로 살린다.

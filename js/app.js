@@ -339,7 +339,11 @@ function buildLogHtml(rows,o){const esc2=x=>String(x??'').replace(/&/g,'&amp;').
   const narr=o.narr&&/^\*(.+)\*$/s.test(String(d.t||''));const text=narr?String(d.t).replace(/^\*(.+)\*$/s,'$1'):String(d.t||'');
   const who=k==='whisper'?`${r.who} → ${d.toName||d.to||''}`:(d.as||r.who||'');const av=(+o.pav>0)?avatarOf(r):'';
   out.push(`<div class="m ${k} ${narr?'narr':''}"><div class="av ${av?'':'none'}" style="${av?`background-image:url('${esc2(av)}')`:''}"></div><div class="bub"><span class="who">${esc2(who)}</span>${o.img&&d.img?`<a href="${esc2(d.img)}" target="_blank"><img src="${esc2(d.img)}" alt=""></a>`:''}${esc2(text)}</div><span class="tm">${hm}</span></div>`)}
- return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc2(name)} 로그</title><style>${css}</style></head><body><div class="wrap"><h1>${esc2(name)}<small>${stamp} · ${rows.length}줄 · 오레마스</small></h1>${out.join('\n')}</div></body></html>`}
+ /* 다른 도구(맵툴 로그 정리기)가 그대로 읽을 수 있게 원본 줄 · 초상 · 트레이너 이름을 JSON 으로 함께 넣는다 */
+ const por={};for(const r of rows){const d=r.data||{};const nm=(d.as||r.who||'').trim();if(nm&&por[nm]===undefined){const u=avatarOf(r);por[nm]=u||''}}
+ const tn={};for(const t of Object.values((ST.state.roster||{}).trainers||{}))if(t&&t.id)tn[t.id]=t.name;
+ const pack=JSON.stringify({v:1,room:ST.room,name,exported:new Date().toISOString(),por,trainers:tn,rows:rows.map(r=>({id:r.id,at:r.at,kind:r.kind,who:r.who,data:r.data}))}).replace(/</g,'\\u003c');
+ return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="generator" content="oremas"><title>${esc2(name)} 로그</title><style>${css}</style></head><body><div class="wrap"><h1>${esc2(name)}<small>${stamp} · ${rows.length}줄 · 오레마스</small></h1>${out.join('\n')}</div><script type="application/json" id="oremas-log">${pack}</script></body></html>`}
 function openSaveLog(){const o=logSaveCfg();const ck=(id,l,on)=>`<label class="small" style="display:inline-flex;align-items:center;gap:5px"><input type="checkbox" data-ls="${id}" ${on?'checked':''}> ${l}</label>`;
  const m=openModal(`<div class="mhead"><h2>로그 저장</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
  <p class="small muted">방의 전체 로그를 파일로 내려받는다. 설정은 이 브라우저에 기억된다.</p>
