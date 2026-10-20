@@ -171,6 +171,8 @@ begin
             or (p_path[1] = 'battle' and p_path[2] = 'cmds' and p_path[3] = w)      -- 내 지시 공개
             or (p_path[1] = 'battle' and p_path[2] = 'trainers' and p_path[3] = w)  -- 내 지령·명령 횟수
             or (p_path[1] = 'roster' and p_path[2] = 'trainers' and p_path[3] = w)   -- 내 시트
+            or (p_path[1] = 'skill' and p_path[2] in ('trainers','res','hist'))        -- 스킬 체크 자원·결과 (지침·돌봄·커버는 남의 칸도 건드린다 · 신뢰 기반)
+            or (p_path[1] = 'dex' and p_path[2] = w)                                    -- 내 도감
             or (p_path[1] = 'roster' and p_path[2] = 'mons' and array_length(p_path,1) >= 3
                 and (coalesce((select s.data#>>array['roster','mons',p_path[3],'tid'] from om_state s where s.room = p_room), p_value->>'tid') = w))) then  -- 내 포켓몬
       raise exception '이 좌석이 바꿀 수 없는 곳입니다: %', array_to_string(p_path, '/');

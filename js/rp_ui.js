@@ -267,7 +267,9 @@ window.OM_RP_UI=(()=>{
     <div class="sec">자막</div><div class="row"><input type="text" id="gcn" value="${esc((r.caption||{}).name||'')}" placeholder="이름" style="width:120px"><input type="text" id="gct" value="${esc((r.caption||{}).fixed?(r.caption.text||''):'')}" placeholder="고정 자막 (비우면 채팅이 자막)" style="flex:1"><button class="btn sm" data-gc="cap">고정</button><button class="btn sm ghost" data-gc="capx">풀기</button></div>`}
   else{const SG=seList();const CI=(R().cutin)||{};body=`<div class="sec">컷인 · 연출 <span class="note">맵툴 배틀 연출 설정</span></div>
     <div class="row" style="flex-wrap:wrap;gap:8px"><label>시합 개시 <select id="gci_start"><option value="vs" ${(CI.start||'vs')==='vs'?'selected':''}>일반 (VS 컷인)</option><option value="warn" ${CI.start==='warn'?'selected':''}>경고 (위험 등장)</option><option value="off" ${CI.start==='off'?'selected':''}>끄기</option></select></label>
-     <label>지시·포텐셜 컷인 <select id="gci_on"><option value="1" ${String(CI.on)!=='0'?'selected':''}>켜기</option><option value="0" ${String(CI.on)==='0'?'selected':''}>끄기</option></select></label>
+     <label>컷인 전체 <select id="gci_on"><option value="1" ${String(CI.on)!=='0'?'selected':''}>켜기</option><option value="0" ${String(CI.on)==='0'?'selected':''}>끄기</option></select></label>
+     <label>지령·명령 컷인 <select id="gci_ord"><option value="1" ${String(CI.ord)!=='0'?'selected':''}>켜기</option><option value="0" ${String(CI.ord)==='0'?'selected':''}>끄기</option></select></label>
+     <label>포텐셜 컷인 <select id="gci_pot"><option value="excl" ${(CI.pot||'excl')==='excl'?'selected':''}>전용·고유만</option><option value="all" ${CI.pot==='all'?'selected':''}>모두</option><option value="none" ${CI.pot==='none'?'selected':''}>끄기</option></select></label>
      <label>크기 <input type="number" class="n xs" id="gci_sc" value="${CI.sc||70}" min="40" max="120"></label><label>위치 <select id="gci_pos"><option value="mid" ${(CI.pos||'mid')==='mid'?'selected':''}>가운데</option><option value="top" ${CI.pos==='top'?'selected':''}>위</option><option value="bot" ${CI.pos==='bot'?'selected':''}>아래</option></select></label>
      <label>경고 제목 <input type="text" id="gci_wt" value="${esc(CI.warnTitle||'')}" placeholder="강적 출현" style="width:120px"></label><button class="btn sm" data-gc="cisave">저장</button></div>
     <div class="row" style="margin-top:6px;gap:6px"><button class="btn sm" data-gc="cutvs">VS 컷인 지금</button><button class="btn sm" data-gc="cutwarn">경고 연출 지금</button><button class="btn sm" data-gc="cuttest">컷인 시험</button></div>
@@ -303,7 +305,7 @@ window.OM_RP_UI=(()=>{
    if(k==='capx'){await A().set(['rp','caption'],null);return re()}
    if(k==='center'){const u=$('#gci',md).value.trim();if(!u)return;await A().set(['rp','center'],{src:u,at:Date.now()});return re()}
    if(k==='se'){unlocked=true;return playSe(b.dataset.n)}
-   if(k==='cisave'){const ci=Object.assign({},R().cutin||{},{start:$('#gci_start',md).value,on:$('#gci_on',md).value,sc:+$('#gci_sc',md).value||70,pos:$('#gci_pos',md).value,warnTitle:$('#gci_wt',md).value.trim()});await A().set(['rp','cutin'],ci);return A().toast('연출 설정을 저장했다')}
+   if(k==='cisave'){const ci=Object.assign({},R().cutin||{},{start:$('#gci_start',md).value,on:$('#gci_on',md).value,ord:$('#gci_ord',md).value,pot:$('#gci_pot',md).value,sc:+$('#gci_sc',md).value||70,pos:$('#gci_pos',md).value,warnTitle:$('#gci_wt',md).value.trim()});await A().set(['rp','cutin'],ci);return A().toast('연출 설정을 저장했다')}
    if(k==='cutvs'||k==='cutwarn'){const B=window.OM_BATTLE_UI;if(!B||!B.startCut)return;unlocked=true;return B.startCut(k==='cutvs'?'vs':'warn')}
    if(k==='cuttest'){unlocked=true;return window.OM_CUTIN&&window.OM_CUTIN.fire({tok:'gm',src:'',tag:'GM',ment:'『컷인 시험』'})}
    if(k==='seurl'){const u=$('#gseu',md).value.trim();if(!u)return;unlocked=true;return playSe(u)}

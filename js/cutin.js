@@ -23,11 +23,11 @@ window.OM_CUTIN=(()=>{
   const r=root('p5');r.className='p5';r.style.setProperty('--end',END+'s');
   let h=DIM?'<div class="p-dim"></div>':'';h+='<div class="p-shake">';
   list.forEach((c,i)=>{const left=!dual||i===0;const rh=(dual?26:30)*K;const ctr=dual?(i===0?50-20*Math.max(K,.75):50+20*Math.max(K,.75)):(POS==='top'?28:POS==='bot'?72:50);const cw=(dual?30:38)*K;
-   const big=String(c.ment||c.name||'');let fs=dual?8.5:9.5;if(big.length>8)fs=fs*8/big.length;if(fs<3.5)fs=3.5;fs*=K;
+   const big=String(c.ment||c.name||'');let fs=dual?10:11.5;if(big.length>8)fs=fs*8/big.length;if(fs<5)fs=5;fs*=K;
    h+=`<div class="p-row" style="--rh:${rh}vh;--ry:${ctr-rh/2}vh;--rot:${dual?-5:-7}deg;--org:${left?'0%':'100%'};--d0:${i*.45}s;${c.color?`--pc:${esc(c.color)}`:''}">
     <div class="p-red">${jag(c.color||'#e3101f','#fff',3,10)}</div><div class="p-blk">${jag('#111','#fff',5,22)}</div>
     <div class="p-card ${left?'':'rv'}" style="--cw:${cw}vh;${left?'left':'right'}:22vw;--cx:${left?-60:60}vw"><div class="bk"></div><div class="fr"><div class="ib">${c.src?`<img src="${esc(c.src)}" alt="">`:''}</div><div class="sl"></div></div></div>
-    <div class="p-txt" style="${left?'left':'right'}:calc(22vw + ${cw*1.05}vh + ${7*K}vw);text-align:${left?'left':'right'};--tx:${left?50:-50}vw;--ts:${(dual?2.4:3)*K}vh;--fs:${fs}vh">${c.tag?`<div class="p-tag">${esc(c.tag)}</div>`:''}<div class="p-big"><span class="b2">${esc(big)}</span><span class="b3">${esc(big)}</span><span class="b1">${esc(big)}</span><span class="b0">${esc(big)}</span></div></div></div>`});
+    <div class="p-txt" style="${left?'left':'right'}:calc(22vw + ${cw*1.05}vh + ${7*K}vw);text-align:${left?'left':'right'};--tx:${left?50:-50}vw;--ts:${(dual?3:3.8)*K}vh;--fs:${fs}vh">${c.tag?`<div class="p-tag">${esc(c.tag)}</div>`:''}<div class="p-big"><span class="b2">${esc(big)}</span><span class="b3">${esc(big)}</span><span class="b1">${esc(big)}</span><span class="b0">${esc(big)}</span></div></div></div>`});
   if(dual)h+=`<div class="p-zig" style="height:${12*K}vh;margin-top:${-6*K}vh">${zig()}</div><div class="p-vs" style="font-size:${9*K}vh">VS</div>`;
   h+='</div><div class="p-flash"></div>';r.innerHTML=h;
   setTimeout(()=>{if(r.parentNode)r.remove()},(END+.45)*1000)}
