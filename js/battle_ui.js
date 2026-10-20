@@ -316,7 +316,7 @@ window.OM_BATTLE_UI=(()=>{
     await A().set(['battle','host'],c.gm?'gm':c.seat);await A().set(['battle','revealReq'],turnKey(b));A().sysLog(`지시 공개 요청 — 각자의 화면이 남은 지시를 연다 (${left2.join(', ')}). 모두 열리면 행동 순서로 넘어간다`,'battle');watch();return}
    return computeOrder()}
   if(p===3){await A().set(['battle','orderIdx'],0);await A().set(['battle','phase'],3);cutPhase('행동 처리','순서대로 공격');A().sysLog('행동 처리 — 순서대로 「공격」, 끝나면 「다음 행동 ▶」','battle');return}
-  if(p===5)return turnEnd()}
+  if(p===5)return endFlow()}
  function unrevealed(b){const out=[];for(const tid in b.trainers||{}){const t=b.trainers[tid];const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid&&m.entry&&m.hp.cur>0);for(const m of mons)if(!revealed(b,tid,m.id))out.push(`${t.name} ${String(m.entry).toUpperCase()}`)}return out}
  async function progressTurn(){const c=ctx();if(!c.mgr)return;const p=+c.b.phase||0;const next={0:1,1:2,2:3,3:5,5:0}[p];if(next==null)return;return setPhase(next)}
  async function action(d,val){
@@ -375,10 +375,10 @@ window.OM_BATTLE_UI=(()=>{
    case 'turnstart':{await A().set(['ready'],{});await A().set(['battle','cmds'],{});await A().set(['battle','phase'],1);A().sysLog('턴 개시 — 각자 지시를 공개하세요 (에리어마다 「공개」)','battle');return}
    case 'revealmon':return revealOne(d.tid,d.mid);
    case 'fire':return openFire(d.tid);
-   case 'onext':{const n=Math.min((c.b.order||[]).length,(+c.b.orderIdx||0)+1);await A().set(['battle','orderIdx'],n);if((+c.b.phase||0)===2)await A().set(['battle','phase'],3);if(n<(c.b.order||[]).length)A().sysLog(`▶ ${c.b.order[n].name}의 행동`,'battle');else{A().sysLog('행동 순서 끝 — 턴 종료 처리','battle');if(confirm('행동이 모두 끝났다. 턴 종료 처리를 할까? (비례 대미지·지속 턴·임시 랭크 해제·턴 +1)'))await turnEnd()}return}
+   case 'onext':{const n=Math.min((c.b.order||[]).length,(+c.b.orderIdx||0)+1);await A().set(['battle','orderIdx'],n);if((+c.b.phase||0)===2)await A().set(['battle','phase'],3);if(n<(c.b.order||[]).length)A().sysLog(`▶ ${c.b.order[n].name}의 행동`,'battle');else{A().sysLog('행동 순서 끝 — 턴 종료 처리','battle');if(confirm('행동이 모두 끝났다. 턴 마무리(턴 가장 마지막 → 턴 종료 → 턴 종료 이후)로 갈까?'))await endFlow()}return}
    case 'oprev':{await A().set(['battle','orderIdx'],Math.max(0,(+c.b.orderIdx||0)-1));return}
    case 'ojump':{if(!c.mgr)return;await A().set(['battle','orderIdx'],+d.i);return}
-   case 'turnend':return turnEnd();
+   case 'turnend':return endFlow();
    case 'resetcmd':if(!confirm('공개된 지시와 준비 상태를 지울까?'))return;CMD={};await A().set(['battle','cmds'],{});await A().set(['ready'],{});return}}
 
  /* 등장: 더블(2:2)이 기본. 트레이너가 둘이면 첫 트레이너 A, 둘째 B 가 기본 자리. 빈 자리가 아니면 고른다. */
@@ -625,6 +625,29 @@ window.OM_BATTLE_UI=(()=>{
   cutPhase('행동 순서','');A().sysLog('행동 순서\n'+order.map((o,i)=>`${i+1}. ${o.name} (${o.change?'교대 · ':''}${o.order!==20?'순서 '+o.order+' · ':''}${o.prio?'우선 '+o.prio+' · ':''}스피드 ${Math.round(o.speed)} · d${o.dice})`).join('\n'),'battle')}
 
  /* ----- 턴 종료 ----- */
+ /* 턴 마무리: 「턴 가장 마지막」 → (턴 종료 처리) → 「턴 종료 이후」. 그 타이밍이 적힌 포텐셜(필드의 포켓몬 · 그 트레이너 고유)이 있으면 단계마다 발동을 묻고, 없으면 그냥 넘어간다 */
+ const END_T={last:/가장\s*마지막/,end:/턴\s*종료\s*(시|때|시점|에)|턴\s*종료\s*마다/,after:/턴\s*종료\s*(이후|후|뒤)/};
+ function endCands(b,step){const out=[];const ok=t=>{t=String(t||'');if(step==='end'&&END_T.after.test(t)&&!END_T.end.test(t.replace(END_T.after,'')))return false;return END_T[step].test(t)};
+  for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0)continue;for(const p of potSrc(m))if(ok(p.eff))out.push({m,kind:'pot',name:p.name,eff:p.eff,tag:isExcl(m,p)?'전용':'포텐셜'})}
+  const seen=new Set();for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0||seen.has(m.tid))continue;seen.add(m.tid);const t=(b.trainers||{})[m.tid];for(const x of uniqList(t))if(ok(x.p.eff))out.push({m,kind:'uq',name:x.p.name,eff:x.p.eff,tag:'고유',t})}
+  return out}
+ async function endFlow(){const c=ctx();if(!c.mgr)return;
+  const STEP={last:'턴 가장 마지막',end:'턴 종료',after:'턴 종료 이후'};
+  const ask=(step,btnLabel)=>new Promise(res=>{const L=endCands(ctx().b,step);if(!L.length)return res(true);
+   const md=A().openModal(`<div class="mhead"><h2>${STEP[step]}</h2><span class="sp"></span></div><div class="small dim" style="margin-bottom:8px">이 타이밍이 적힌 포텐셜이다. 쓸 것만 「발동」 — 안 쓰면 그냥 넘어간다.</div>
+    <div class="firelist">${L.map((x,i)=>`<div class="firerow"><b class="fnm"><span class="tag ${x.kind==='uq'?'uqt':'ext'}">${x.tag}</span> 『${esc(x.name)}』</b><span class="small dim">${esc(x.kind==='uq'?x.t.name:x.m.name)} (${String(x.m.entry).toUpperCase()})</span><span class="sp"></span><button class="btn sm pri" data-ef="${i}">발동</button><div class="small" style="flex-basis:100%;white-space:pre-wrap;color:var(--fg2)">${esc(String(x.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,300))}</div></div>`).join('')}</div>
+    <div class="row" style="margin-top:10px;justify-content:flex-end"><button class="btn" data-ec>그만두기</button><button class="btn pri" data-en>${btnLabel} ▶</button></div>`);
+   md.querySelectorAll('[data-ef]').forEach(bt=>bt.onclick=async()=>{const x=L[+bt.dataset.ef];bt.disabled=true;bt.textContent='발동함';
+    if(x.kind==='uq'){A().sysLog(`【고유】 ${x.t.name} 『${x.name}』 (${STEP[step]})`,'battle',{mid:x.m.id,img:x.t.image||'',eff:String(x.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,400)});return}
+    const a=FX()&&FX().autoOf(x.m,'pot',x.name);if(a&&a.ops&&a.ops.length&&!a.manual){A().closeModal();await fireAuto(x.m.id,'pot',x.name);return res(null)}
+    A().sysLog(`【${x.tag}】 ${x.m.name} 『${x.name}』 (${STEP[step]})`,'battle',{mid:x.m.id,img:x.m.image||'',eff:String(x.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,400)})});
+   md.querySelector('[data-en]').onclick=()=>{A().closeModal();res(true)};md.querySelector('[data-ec]').onclick=()=>{A().closeModal();res(false)}});
+  /* 자동화 발동(창이 닫힘) 뒤에는 같은 단계를 다시 물어 남은 것을 고르게 한다 */
+  const stepLoop=async(step,lab)=>{for(;;){const r=await ask(step,lab);if(r===null)continue;return r}};
+  if(!await stepLoop('last','턴 종료로'))return;
+  if(!await stepLoop('end','턴 종료 처리'))return;
+  await turnEnd();
+  await stepLoop('after','다음 턴 지시 준비로')}
  async function turnEnd(){const c=ctx();if(!c.mgr)return;const b0=snap(c.b),b=snap(b0);const f=fieldOf(b);const db=(DB().states||{}).st||{};const lines=[];
   if(F()){const slots={};for(const s of SIDES){const e=entered(b,s);for(const a in e)slots[s+'_'+a]=e[a]}
    const r1=F().turnEndStates(b.mons,slots);lines.push(...r1.lines);const r2=F().turnEndField(b.mons,f);lines.push(...r2.lines);
