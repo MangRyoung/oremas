@@ -1048,3 +1048,82 @@ label.ph-item input[type=checkbox]{width:16px;height:16px;flex:none}
 .sp-x{position:absolute;top:-10px;right:-10px;width:26px;height:26px;border-radius:50%;background:#0b0b0d;color:#fff;border:2px solid #d9243f;cursor:pointer;font-size:12px;z-index:4;display:none}.smspop.show .sp-x{display:block}
 /* 관계도 끌기 */
 #gsvg{touch-action:none;user-select:none}#gsvg.panning{cursor:grabbing}.gn.dragging{cursor:grabbing!important;filter:drop-shadow(0 6px 10px rgba(0,0,0,.6))}.gn,.gel{transition:none}
+
+/* ===== 모바일 (폭 760px 이하) ===== */
+.mbar{display:none}
+@media (max-width:760px){
+ html,body{font-size:14px}
+ body{height:100dvh}
+ #app{height:100dvh;display:flex;flex-direction:column}
+ .room{height:100dvh;display:flex;flex-direction:column}
+ /* 위쪽 바: 이름 줄 + 탭 줄, 버튼들은 메뉴로 */
+ .top{flex-wrap:wrap;gap:6px;padding:6px 10px;row-gap:4px}
+ .top>a.muted{display:none}
+ .top .name{font-size:17px;max-width:40vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .top .tabs{order:10;flex-basis:100%;margin:2px 0 0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:3px 2px 4px}
+ .top .tabs::-webkit-scrollbar{display:none}
+ .top .tabs button{flex:none;padding:4px 12px;font-size:14px}
+ .top .btn{display:none}
+ .top #conn{display:none}
+ .presence{max-width:46vw;margin-left:auto;margin-right:0}
+ .typingtop{order:11;flex-basis:100%;margin:0;font-size:11px;padding:1px 8px}
+ /* 몸통: 무대 또는 채팅 하나만 */
+ .body{flex-direction:column;flex:1;min-height:0;padding-bottom:58px}
+ .resizer{display:none}
+ .scene{padding:8px 8px 12px}
+ .side{display:none;width:auto;height:auto;flex:1;min-height:0;padding:6px 6px 0;border:0}
+ body.m-chat .scene{display:none}
+ body.m-chat .side{display:flex}
+ .phone{border-radius:16px}
+ .side .inbox{padding:8px}
+ /* 아래 바 */
+ .mbar{display:flex;position:fixed;left:0;right:0;bottom:0;height:58px;background:#000;border-top:3px solid var(--red);z-index:40;padding-bottom:env(safe-area-inset-bottom)}
+ .mbar button{flex:1;background:transparent;border:0;color:#aaa;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-family:var(--lab);font-size:11px;position:relative;cursor:pointer}
+ .mbar button i{font-style:normal;font-size:20px;line-height:1}
+ .mbar button.on{color:#fff}.mbar button.on::after{content:"";position:absolute;top:0;left:22%;right:22%;height:3px;background:var(--yel2)}
+ .mbadge{position:absolute;top:6px;right:calc(50% - 22px);min-width:17px;height:17px;border-radius:9px;background:var(--red);color:#fff;font-size:10px;font-style:normal;display:flex;align-items:center;justify-content:center;padding:0 4px}
+ .mmenu{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mmenu .btn{padding:12px 8px;font-size:15px}
+ /* 모달: 꽉 채우기 */
+ .modalbg{padding:0;align-items:stretch}
+ .modal,.modal.wide{width:100%;max-width:100%;max-height:100dvh;height:100dvh;border:0;box-shadow:none;padding:12px 12px 70px;border-radius:0}
+ .modal .mhead{position:sticky;top:-12px;background:var(--panel);z-index:3;padding-top:4px}
+ .modal.phone-modal{height:auto;padding:0;background:transparent}
+ .phone-shell{height:100dvh;justify-content:center;gap:0}
+ .phone-dev{width:100vw;max-width:100vw;height:100dvh;border-radius:0;border:0;box-shadow:none;font-size:14px}
+ .ph-close{position:fixed;top:8px;right:8px;z-index:5}
+ /* 무대 */
+ .rpstage{aspect-ratio:auto;min-height:52vh;max-height:60vh}
+ .stand img{max-width:42vw;max-height:52vh}
+ .dlg{font-size:14px}
+ .rpbtns{gap:4px;flex-wrap:wrap;justify-content:flex-end}.rpbtns .btn{padding:3px 7px;font-size:12px}
+ .rpinput{flex-wrap:wrap}.rpinput select{flex:1 1 100%}.rpinput input{flex:1 1 60%}
+ .rphint{display:none}
+ .spk{min-width:62px}
+ .mebar{flex-wrap:wrap}.memons{flex-basis:100%;overflow-x:auto}
+ /* 배틀 */
+ .benches,.fgrid,.arena{grid-template-columns:1fr}
+ .ahead{display:none}
+ .bwrap{padding:4px}
+ .bstat{flex-wrap:wrap;gap:4px}
+ .bgmw{flex-basis:100%}
+ .bgrid{grid-template-columns:1fr 1fr}
+ /* 폼 */
+ input[type=text],input[type=number],select,textarea{font-size:16px}
+ .btn{min-height:34px}
+ .btn.xs{min-height:26px}
+ table{font-size:12px}
+ .tabs2{flex-wrap:wrap}
+ .ttabs{overflow-x:auto;flex-wrap:nowrap}
+ .smspop{left:8px}.sp-phone{width:230px;height:360px}
+ .typing{top:4px;font-size:11px}
+}
+@media (max-width:760px){
+ .hero{flex-wrap:wrap;padding:10px 12px}.hmain{flex:1 1 100%;min-width:0}.hname{font-size:28px;word-break:keep-all}.hbadges{flex-wrap:wrap}
+ .hero .rks,.hero .hstats{flex-wrap:wrap;justify-content:flex-start}
+ .spanel.two,.pview{grid-template-columns:1fr}
+ .spkbar{flex-wrap:nowrap}
+}
+@media (max-width:760px){
+ .ttabs,.tabs2,.stabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}.ttabs .ttab,.tabs2 .tab2,.stabs>*{flex:none;white-space:nowrap;writing-mode:horizontal-tb}
+ .ttabs .btn,.tabs2 .btn{white-space:nowrap}
+}
