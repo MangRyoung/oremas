@@ -22,16 +22,17 @@ window.OM_CAL_UI=(()=>{
   const todayS=c.today||ymd(today);
   const upcoming=Object.keys(ev).filter(k=>k>=todayS).sort().slice(0,8).flatMap(k=>(ev[k]||[]).map(e=>({date:k,...e})));
   el.innerHTML=`<div class="cal">
-   <div class="calhead"><div class="caltoday"><div class="cd">${esc(todayS.slice(5).replace('-','/'))}</div><div class="cw">${WD[(parse(todayS)||today).getDay()]}</div><div class="cwx">${esc(c.weather||'')}</div></div>
+   <div class="calhead"><div class="caltoday"><div class="cd">${esc(todayS.slice(5).replace('-','/'))}</div><div class="cw">${WD[(parse(todayS)||today).getDay()]}</div><div class="cwx">${esc(c.weather||'')}</div>${c.phase?`<div class="cph">${esc(c.phase)}</div>`:''}</div>
     <div class="caltitle"><div class="small dim">MONTHLY SCHEDULE</div><div class="cm">${vy}.<b>${pad(vm)}</b></div></div><span class="sp"></span>
     <div class="row"><button class="btn xs" data-c="prev">‹</button><button class="btn xs" data-c="now">오늘</button><button class="btn xs" data-c="next">›</button></div>
-    ${gm()?`<div class="row" style="margin-left:12px"><button class="btn xs ghost" data-c="day-">오늘 −1</button><button class="btn xs ghost" data-c="day+">오늘 +1</button><select id="cwsel">${['',...WEATHERS].map(w=>`<option value="${w}" ${c.weather===w?'selected':''}>${w||'날씨'}</option>`).join('')}</select><button class="btn xs" data-c="add">+ 일정</button></div>`:''}</div>
+    ${gm()?`<div class="row" style="margin-left:12px"><button class="btn xs ghost" data-c="day-">오늘 −1</button><button class="btn xs ghost" data-c="day+">오늘 +1</button><select id="cwsel">${['',...WEATHERS].map(w=>`<option value="${w}" ${c.weather===w?'selected':''}>${w||'날씨'}</option>`).join('')}</select><select id="cpsel" title="밤낮">${['','아침','점심','오후','저녁','밤','심야'].map(w=>`<option value="${w}" ${(c.phase||'')===w?'selected':''}>${w||'밤낮'}</option>`).join('')}</select><button class="btn xs" data-c="add">+ 일정</button></div>`:''}</div>
    <div class="calbody"><div class="calgrid">${WD.map((w,i)=>`<div class="cwd ${i===0?'sun':i===6?'sat':''}">${w}</div>`).join('')}
     ${cells.map(d=>{const k=ymd(d);const out=d.getMonth()!==vm-1;const list=ev[k]||[];return `<div class="ccell ${out?'out':''} ${k===todayS?'today':''} ${d.getDay()===0?'sun':d.getDay()===6?'sat':''}" data-d="${k}"><div class="cn">${d.getDate()}${k===todayS?'<span class="tt">TODAY</span>':''}</div>${list.map(e=>`<div class="cev" data-e="${e.id}" data-d="${k}" style="border-color:${(KINDS[e.k]||KINDS.memo)[1]}">${esc(e.t)}</div>`).join('')}</div>`}).join('')}</div>
     <div class="calside"><div class="small dim">MISSION &amp; EVENTS</div><div class="cup">UPCOMING <b>EVENTS</b></div><div class="small dim" style="margin-bottom:8px">${upcoming.length} scheduled</div>
      ${upcoming.length?upcoming.map(e=>`<div class="cupi" data-e="${e.id}" data-d="${e.date}"><span class="cupd">${esc(e.date.slice(5).replace('-','/'))}</span><span class="tag" style="border-color:${(KINDS[e.k]||KINDS.memo)[1]}">${(KINDS[e.k]||KINDS.memo)[0]}</span> ${esc(e.t)}</div>`).join(''):'<div class="empty small">예정된 일정이 없어</div>'}</div></div></div>`;
   el.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>ctl(b.dataset.c));
   const ws=$('#cwsel',el);if(ws)ws.onchange=()=>A().set(['calendar','weather'],ws.value);
+  const ps=$('#cpsel',el);if(ps)ps.onchange=async()=>{await A().set(['calendar','phase'],ps.value);if(ps.value)A().sysLog(`시간대: ${ps.value}`)};
   el.querySelectorAll('.cev,.cupi').forEach(x=>x.onclick=e=>{e.stopPropagation();openEvent(x.dataset.d,x.dataset.e)});
   if(gm())el.querySelectorAll('.ccell').forEach(x=>x.ondblclick=()=>openEvent(x.dataset.d,null))}
  async function ctl(k){const c=C();const [vy,vm]=view.split('-').map(Number);

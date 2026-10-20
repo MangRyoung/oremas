@@ -40,12 +40,16 @@ window.OM_STORE=(()=>{
  async function secretGet(room,secret,kind){return rpc('om_secret_get',{p_room:room,p_secret:secret,p_kind:kind})}
 
  /* ----- 실시간 ----- */
- function subscribe(room,{onState,onLog,onStatus}){
+ let CH=null;
+ function subscribe(room,{onState,onLog,onStatus,onEvent}){
   const ch=sb().channel('om:'+room)
    .on('postgres_changes',{event:'*',schema:'public',table:'om_state',filter:'room=eq.'+room},p=>{if(onState&&p.new)onState(p.new.data,p.new.v)})
    .on('postgres_changes',{event:'INSERT',schema:'public',table:'om_log',filter:'room=eq.'+room},p=>{if(onLog&&p.new)onLog(p.new)})
+   .on('broadcast',{event:'ev'},p=>{if(onEvent&&p.payload)onEvent(p.payload)})
    .subscribe(st=>{if(onStatus)onStatus(st)});
-  return ()=>{try{sb().removeChannel(ch)}catch(e){}}}
+  CH=ch;return ()=>{try{sb().removeChannel(ch)}catch(e){}if(CH===ch)CH=null}}
+ /* 저장하지 않는 신호 (입력 중 표시 등): 같은 방의 모두에게 바로 */
+ function broadcast(payload){if(!CH)return;try{CH.send({type:'broadcast',event:'ev',payload})}catch(e){}}
 
  /* ----- 제작기 시트 (읽기) ----- */
  async function makerDocs(kind){
@@ -65,5 +69,5 @@ window.OM_STORE=(()=>{
   if(r.error){const m=String(r.error.message||r.error);if(/bucket not found|NoSuchBucket/i.test(m))throw new Error('그림 저장소(버킷 oremas)가 아직 없다 — Supabase SQL Editor 에서 supabase/schema.sql 을 다시 실행해 줘');throw err(r.error)}
   return sb().storage.from('oremas').getPublicUrl(full).data.publicUrl+'?v='+Date.now().toString(36)}
 
- return {uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs};
+ return {broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs};
 })();

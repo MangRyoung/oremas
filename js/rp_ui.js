@@ -46,40 +46,67 @@ window.OM_RP_UI=(()=>{
  function standSrc(c){if(!c)return '';const s=(c.stands||[])[c.active]||(c.stands||[])[0];return (s&&s.src)||c.img||''}
  function standPoint(c){const s=(c.stands||[])[c.active]||(c.stands||[])[0];return s&&+s.point||0}
  function speakerKey(row){const d=row.data||{};if(d.as){const t=Object.values((A().ST.state.roster||{}).trainers||{}).find(x=>x.name===d.as);return t?t.id:'npc:'+d.as}if(d.from&&d.from!=='gm')return d.from;return ''}
- function feedLog(rows){for(const r of rows){if(r.id<=STAGE.seen)continue;STAGE.seen=r.id;if(r.kind!=='chat')continue;const d=r.data||{};if(d.clear){STAGE.slots={left:null,center:null,right:null};STAGE.active=null;continue}
-   const k=speakerKey(r);if(!k||!d.t)continue;STAGE.last[k]=r.id;STAGE.active=k;
+ /* 화자 자리: 첫 화자는 가운데, 다음 화자는 왼쪽·오른쪽을 채운다. 마지막 대사 뒤 STAND_TTL 이 지나면 사라진다 (로그 시각 기준이라 모두 같은 결과) */
+ const STAND_TTL=40000;
+ function feedLog(rows){for(const r of rows){if(r.id<=STAGE.seen)continue;STAGE.seen=r.id;if(r.kind!=='chat')continue;const d=r.data||{};const at=Date.parse(r.at)||Date.now();
+   if(d.clear){STAGE.slots={left:null,center:null,right:null};STAGE.active=null;continue}
+   const k=speakerKey(r);if(!k||!d.t)continue;expire(at);STAGE.last[k]=at;STAGE.active=k;
    if(Object.values(STAGE.slots).includes(k))continue;
-   const free=['left','right','center'].find(s=>!STAGE.slots[s]);if(free){STAGE.slots[free]=k;continue}
+   const free=['center','left','right'].find(s=>!STAGE.slots[s]);if(free){STAGE.slots[free]=k;continue}
    const oldest=SLOTS.slice().sort((a,b)=>(STAGE.last[STAGE.slots[a]]||0)-(STAGE.last[STAGE.slots[b]]||0))[0];STAGE.slots[oldest]=k}}
+ function expire(now){now=now||Date.now();for(const s of SLOTS){const k=STAGE.slots[s];if(k&&now-(STAGE.last[k]||0)>STAND_TTL){STAGE.slots[s]=null;if(STAGE.active===k)STAGE.active=null}}}
+ let expT=null;
+ function scheduleExpire(){clearTimeout(expT);const keys=Object.values(STAGE.slots).filter(Boolean);if(!keys.length)return;const next=Math.min(...keys.map(k=>(STAGE.last[k]||0)+STAND_TTL))-Date.now();expT=setTimeout(()=>{if(A().view==='rp')A().renderScene()},Math.max(200,next+50))}
 
  /* ----- 무대 ----- */
  function render(el){
-  feedLog(A().ST.log||[]);
+  feedLog(A().ST.log||[]);expire();
   const r=R();const bg=r.bg||{};const cap=r.caption||{};const manual=r.stage||{};
   const slots={};for(const s of SLOTS){const m=manual[s];slots[s]=m&&m.key?m.key:STAGE.slots[s]}
-  const stands=SLOTS.map(s=>{const c=charOf(slots[s]);const src=standSrc(c);if(!c||!src)return '';const on=STAGE.active===c.key||!STAGE.active;return `<div class="stand ${s} ${on?'on':'off'}" style="margin-bottom:${-standPoint(c)}px"><img src="${esc(src)}" alt="" style="${(manual[s]||{}).flip?'transform:scaleX(-1)':''}"><div class="stname">${esc(c.name)}</div></div>`}).join('');
   const lastChat=[...(A().ST.log||[])].reverse().find(x=>x.kind==='chat'&&x.data&&x.data.t);
-  const line=(name,text)=>{const m=String(text).match(/^\*(.+)\*$/s);return `<div class="dlg"><div class="dname"><span>${esc(name)}</span></div><div class="dtext ${m?'narr':''}">${m?esc(m[1]):'"'+esc(text)+'"'}</div></div>`};
-  const capHtml=cap.text?line(cap.name||'',cap.text):(lastChat?line(lastChat.data.as||(charOf(speakerKey(lastChat))||{}).name||lastChat.who,lastChat.data.t):'');
+  const line=(name,text)=>{const m=String(text).match(/^\*(.+)\*$/s);return `<div class="dname"><span>${esc(name)}</span></div><div class="dtext ${m?'narr':''}">${m?esc(m[1]):'"'+esc(text)+'"'}</div>`};
+  const showDlg=cap.text||(lastChat&&Date.now()-(Date.parse(lastChat.at)||0)<STAND_TTL*2);
+  const dlgHtml=cap.text?line(cap.name||'',cap.text):(showDlg?line(lastChat.data.as||(charOf(speakerKey(lastChat))||{}).name||lastChat.who,lastChat.data.t):'');
   const ST=A().ST;const speakers=gm()?[{key:'gm',name:'GM (나레이션)'},...Object.values((ST.state.graph||{}).nodes||{}).map(n=>({key:'npc:'+n.name,name:n.name})),...Object.values((ST.state.roster||{}).trainers||{}).map(t=>({key:'as:'+t.name,name:t.name+' (PC)'}))]:(ST.seat?[{key:'me',name:(charOf(ST.seat)||{}).name||ST.name}]:[]);
   if(gm()&&!SPK.key)SPK.key='gm';
-  el.innerHTML=`<div class="rpwrap"><div class="rpstage" id="rpstage" style="${bg.src?`background-image:url('${esc(bg.src)}')`:''}">
-   ${stands}${capHtml}
-   ${bg.name?`<div class="bgname">${esc(bg.name)}</div>`:''}
-   ${r.center&&r.center.src?`<div class="centerimg"><img src="${esc(r.center.src)}" alt="">${gm()?'<button class="btn xs" data-rp="centerx">닫기</button>':''}</div>`:''}
-   <div class="rpbtns">${gm()?`<button class="btn sm" data-rp="qbg" title="배경 바꾸기">🖼 배경</button><button class="btn sm" data-rp="qbgm" title="BGM 바꾸기">♪ BGM</button>`:''}<button class="btn sm" data-rp="log" title="대화 기록">📜 기록</button><button class="btn sm ${mapOpen?'pri':''}" data-rp="map">${mapOpen?'지도 닫기':'지도'}</button><button class="btn sm" data-rp="deck">덱</button><button class="btn sm ghost" data-rp="stand">표정</button>${r.bgm&&r.bgm.src?`<button class="btn sm ghost" data-rp="sound" title="${esc(r.bgm.title||'')}">${unlocked?'♪ '+esc(r.bgm.title||'BGM'):'소리 켜기'}</button>`:''}${gm()?`<button class="btn sm pri" data-rp="gm">GM 콘솔</button>`:''}</div>
-   ${mapOpen?mapOverlay():''}
-  </div>
-  ${gm()?`<div class="spkbar">${speakers.map(x=>{const c=x.key==='gm'?null:(x.key.startsWith('as:')?charOf((Object.values((ST.state.roster||{}).trainers||{}).find(t=>t.name===x.key.slice(3))||{}).id):charOf(x.key));const av=c?(standSrc(c)||c.img):'';return `<button class="spk ${SPK.key===x.key?'on':''}" data-spk="${esc(x.key)}" title="${esc(x.name)}"><i style="${av?`background-image:url('${esc(av)}')`:''}">${av?'':'GM'}</i><span>${esc(x.name.replace(/ \((PC|NPC)\)$/,''))}</span></button>`}).join('')}<button class="spk add" data-rp="npcadd" title="인물 추가 (관계도에 NPC 로 들어간다)"><i>＋</i><span>인물</span></button><button class="spk add" data-rp="spkedit" title="고른 인물의 표정·스탠딩"><i>✎</i><span>표정</span></button></div>`:''}
-  ${speakers.length?`<div class="rpinput"><select id="rpspk">${speakers.map(x=>`<option value="${esc(x.key)}" ${SPK.key===x.key?'selected':''}>${esc(x.name)}</option>`).join('')}</select><input type="text" id="rpline" placeholder="대사 입력 후 Enter · *지문*" autocomplete="off"><button class="btn pri" id="rpsend">보내기</button></div><div class="small dim rphint">${gm()?'GM 이 고른 인물로 말하면 그 인물의 스탠딩이 선다 · 표정은 「표정」 또는 /s 라벨':'스탠딩 그림이 아직 없으면 시트 그림(초상)으로 선다 — 「표정」에서 전신 그림을 넣어 줘'}</div>`:'<div class="small dim rphint">자리에 앉으면 여기서 대사를 칠 수 있다</div>'}</div>`;
+  /* 뼈대는 한 번만 — 스탠딩이 매번 다시 그려져 애니메이션이 되풀이되지 않게 */
+  let stage=$('#rpstage',el);
+  if(!stage){el.innerHTML=`<div class="rpwrap"><div class="rpstage" id="rpstage"><div class="stands" id="stands"></div><div class="dlg" id="dlg"></div><div class="typing" id="typing"></div><div id="bgname"></div><div id="centerimg"></div><div class="rpbtns" id="rpbtns"></div><div id="mapov"></div></div><div id="rpunder"></div></div>`;stage=$('#rpstage',el)}
+  stage.style.backgroundImage=bg.src?`url('${bg.src}')`:'';
+  const cal=ST.state.calendar||{};const dt=cal.today?(()=>{const d=new Date(cal.today+'T00:00:00');return {md:cal.today.slice(5).replace('-','/'),wd:['일','월','화','수','목','금','토'][d.getDay()]}})():null;
+  $('#bgname',el).innerHTML=`<div class="stagetags">${dt?`<div class="daytag" ${gm()?'data-rp="phase" title="눌러서 시간대 바꾸기"':''}><b>${esc(dt.md)}</b><i>${dt.wd}</i>${cal.weather?`<em>${esc(cal.weather)}</em>`:''}${cal.phase?`<span class="phase ${({아침:'morning',저녁:'evening',밤:'night',심야:'night'})[cal.phase]||''}">${esc(cal.phase)}</span>`:''}</div>`:''}${bg.name?`<div class="bgname">${esc(bg.name)}</div>`:''}</div>`;
+  $('#centerimg',el).innerHTML=r.center&&r.center.src?`<div class="centerimg"><img src="${esc(r.center.src)}" alt="">${gm()?'<button class="btn xs" data-rp="centerx">닫기</button>':''}</div>`:'';
+  $('#rpbtns',el).innerHTML=`${gm()?`<button class="btn sm" data-rp="qbg" title="배경 바꾸기">🖼 배경</button><button class="btn sm" data-rp="qbgm" title="BGM 바꾸기">♪ BGM</button>`:''}<button class="btn sm" data-rp="log" title="대화 기록">📜 기록</button><button class="btn sm ${mapOpen?'pri':''}" data-rp="map">${mapOpen?'지도 닫기':'지도'}</button><button class="btn sm" data-rp="deck">덱</button><button class="btn sm ghost" data-rp="stand">표정</button>${r.bgm&&r.bgm.src?`<button class="btn sm ghost" data-rp="sound" title="${esc(r.bgm.title||'')}">${unlocked?'♪ '+esc(r.bgm.title||'BGM'):'소리 켜기'}</button>`:''}${gm()?`<button class="btn sm pri" data-rp="gm">GM 콘솔</button>`:''}`;
+  $('#mapov',el).innerHTML=mapOpen?mapOverlay():'';
+  const dlg=$('#dlg',el);if(dlgHtml){if(dlg.dataset.k!==dlgHtml){dlg.innerHTML=dlgHtml;dlg.dataset.k=dlgHtml;dlg.classList.remove('pop');void dlg.offsetWidth;dlg.classList.add('pop')}dlg.style.display=''}else{dlg.style.display='none';dlg.dataset.k=''}
+  syncStands($('#stands',el),slots,manual);
+  $('#rpunder',el).innerHTML=`${gm()?`<div class="spkbar">${speakers.map(x=>{const c=x.key==='gm'?null:(x.key.startsWith('as:')?charOf((Object.values((ST.state.roster||{}).trainers||{}).find(t=>t.name===x.key.slice(3))||{}).id):charOf(x.key));const av=c?(standSrc(c)||c.img):'';return `<button class="spk ${SPK.key===x.key?'on':''}" data-spk="${esc(x.key)}" title="${esc(x.name)}"><i style="${av?`background-image:url('${esc(av)}')`:''}">${av?'':'GM'}</i><span>${esc(x.name.replace(/ \((PC|NPC)\)$/,''))}</span></button>`}).join('')}<button class="spk add" data-rp="npcadd" title="인물 추가 (관계도에 NPC 로 들어간다)"><i>＋</i><span>인물</span></button><button class="spk add" data-rp="spkedit" title="고른 인물의 표정·스탠딩"><i>✎</i><span>표정</span></button></div>`:''}
+  ${speakers.length?`<div class="rpinput"><select id="rpspk">${speakers.map(x=>`<option value="${esc(x.key)}" ${SPK.key===x.key?'selected':''}>${esc(x.name)}</option>`).join('')}</select><input type="text" id="rpline" placeholder="대사 입력 후 Enter · *지문* · @표정 대사" autocomplete="off"><button class="btn pri" id="rpsend">보내기</button></div><div class="small dim rphint">${gm()?'고른 인물로 말하면 그 인물의 스탠딩이 선다 · 「@웃음 대사」처럼 @등록명으로 표정을 바꾸며 말한다':'스탠딩 그림이 아직 없으면 시트 그림(초상)으로 선다 — 「표정」에서 전신 그림을 넣고, 「@웃음 대사」로 표정을 바꾸며 말한다'}</div>`:'<div class="small dim rphint">자리에 앉으면 여기서 대사를 칠 수 있다</div>'}`;
   el.querySelectorAll('[data-rp]').forEach(b=>b.onclick=()=>act(b.dataset.rp));
   const spk=$('#rpspk',el);if(spk)spk.onchange=()=>{SPK.key=spk.value;el.querySelectorAll('.spk[data-spk]').forEach(b=>b.classList.toggle('on',b.dataset.spk===SPK.key))};
   el.querySelectorAll('.spk[data-spk]').forEach(b=>b.onclick=()=>{SPK.key=b.dataset.spk;if(spk)spk.value=SPK.key;el.querySelectorAll('.spk[data-spk]').forEach(x=>x.classList.toggle('on',x===b));const inp=$('#rpline',el);if(inp)inp.focus()});
-  const inp=$('#rpline',el);if(inp){inp.value=SPK.draft||'';inp.oninput=()=>{SPK.draft=inp.value};inp.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)sendLine()};$('#rpsend',el).onclick=sendLine;if(SPK.focus){inp.focus();SPK.focus=false}}
-  bindMap(el);tickBanner();syncBgm()}
+  const inp=$('#rpline',el);if(inp){inp.value=SPK.draft||'';inp.oninput=()=>{SPK.draft=inp.value;typingPing()};inp.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)sendLine()};$('#rpsend',el).onclick=sendLine;if(SPK.focus){inp.focus();SPK.focus=false}}
+  bindMap(el);tickBanner();syncBgm();scheduleExpire();drawTyping()}
+ /* 스탠딩 DOM 을 키로 맞춘다: 새로 선 것만 등장 애니메이션, 자리 바뀜·표정 바뀜은 제자리에서 */
+ function syncStands(box,slots,manual){const want={};for(const s of SLOTS){const c=charOf(slots[s]);const src=standSrc(c);if(c&&src)want[s]={key:c.key,src,name:c.name,point:standPoint(c),flip:!!(manual[s]||{}).flip,on:STAGE.active===c.key||!STAGE.active}}
+  [...box.children].forEach(ch=>{const s=ch.dataset.slot;if(!want[s]||want[s].key!==ch.dataset.key){ch.classList.add('out');setTimeout(()=>ch.remove(),350)}});
+  for(const s of SLOTS){const w=want[s];if(!w)continue;let ch=[...box.children].find(x=>x.dataset.slot===s&&x.dataset.key===w.key&&!x.classList.contains('out'));
+   if(!ch){ch=document.createElement('div');ch.dataset.slot=s;ch.dataset.key=w.key;ch.className=`stand ${s} in`;ch.innerHTML=`<img alt=""><div class="stname"></div>`;box.appendChild(ch)}
+   const img=ch.querySelector('img');if(img.getAttribute('src')!==w.src)img.src=w.src;img.style.transform=w.flip?'scaleX(-1)':'';ch.style.marginBottom=(-w.point)+'px';ch.querySelector('.stname').textContent=w.name;
+   ch.classList.toggle('on',w.on);ch.classList.toggle('off',!w.on)}}
+ /* ----- 입력 중 표시: 저장 없이 방송 ----- */
+ const TYPING={last:0,who:{},t:null};
+ function typingPing(){const now=Date.now();if(now-TYPING.last<2500)return;TYPING.last=now;const c=speakerChar();DBS().broadcast({t:'typing',who:c?c.name:(A().ST.role==='gm'?'GM':A().ST.name),from:A().ST.role==='gm'?'gm':A().ST.seat,at:now})}
+ function onTyping(p){if(!p||!p.from)return;const me=A().ST.role==='gm'?'gm':A().ST.seat;if(p.from===me)return;TYPING.who[p.from]={who:p.who,at:Date.now()};drawTyping();clearTimeout(TYPING.t);TYPING.t=setTimeout(drawTyping,4200)}
+ function drawTyping(){const el=$('#typing');if(!el)return;const now=Date.now();const names=Object.values(TYPING.who).filter(x=>now-x.at<4000).map(x=>x.who);el.innerHTML=names.length?`<span class="dots"><i></i><i></i><i></i></span> ${esc(names.join(', '))} 입력 중…`:'';el.style.display=names.length?'':'none'}
  const SPK={key:'',draft:'',focus:false};
- async function sendLine(){const ST=A().ST;const inp=$('#rpline');if(!inp)return;const t=inp.value.trim();if(!t)return;inp.value='';SPK.draft='';SPK.focus=true;
+ function speakerChar(){const ST=A().ST;if(ST.role!=='gm')return charOf(ST.seat);const k=SPK.key;if(!k||k==='gm')return null;if(k.startsWith('as:'))return charOf((Object.values((ST.state.roster||{}).trainers||{}).find(t=>t.name===k.slice(3))||{}).id);return charOf(k)}
+ /* @등록명 → 그 표정으로 바꾼다 (뒤에 대사가 있으면 바꾸고 바로 말한다) */
+ async function setStandByLabel(c,label){if(!c)return false;const i=(c.stands||[]).findIndex(s=>(s.label||'')===label);if(i<0){A().toast(`「${label}」 표정이 없다${c.stands.length?': '+c.stands.map(s=>s.label).join(', '):' — 「표정」에서 먼저 넣어 줘'}`);return false}
+  if(c.kind==='pc')await A().set(['roster','trainers',c.id,'standActive'],i);else{if(!c.id)return false;await A().set(['graph','nodes',c.id,'standActive'],i)}return true}
+ async function sendLine(){const ST=A().ST;const inp=$('#rpline');if(!inp)return;let t=inp.value.trim();if(!t)return;inp.value='';SPK.draft='';SPK.focus=true;TYPING.last=0;
   try{if(t.startsWith('/')){const ci=$('#chatIn');if(ci){ci.value=t;$('#chatSend').click()}return}
+   let m;if((m=t.match(/^@(\S+)\s*([\s\S]*)$/))){const ok=await setStandByLabel(speakerChar(),m[1]);if(!ok)return;t=m[2].trim();if(!t){A().toast(`표정: ${m[1]}`);return}}
    if(ST.role==='gm'){if(SPK.key==='gm')await DBS().addLog(ST.room,ST.secret,'chat',ST.name,{t});else{const name=SPK.key.replace(/^(npc|as):/,'');await DBS().addLog(ST.room,ST.secret,'chat',name,{t,as:name})}}
    else await DBS().addLog(ST.room,ST.secret,'chat',ST.name,{t})}catch(e){A().toast('보내지 못했다: '+e.message)}}
  function act(k){
@@ -90,6 +117,7 @@ window.OM_RP_UI=(()=>{
   if(k==='centerx')return A().set(['rp','center'],null);
   if(k==='stand')return openMyStand();
   if(k==='qbg')return quickBg();
+  if(k==='phase'){const PH=['아침','점심','오후','저녁','밤','심야'];const cur=(A().ST.state.calendar||{}).phase||'';const n=PH[(PH.indexOf(cur)+1)%PH.length];return A().set(['calendar','phase'],n).then(()=>A().sysLog(`시간대: ${n}`))}
   if(k==='npcadd')return addNpcQuick();
   if(k==='spkedit'){const key=SPK.key;if(!key||key==='gm')return A().toast('먼저 인물을 골라 줘');const ST=A().ST;const real=key.startsWith('as:')?(Object.values((ST.state.roster||{}).trainers||{}).find(t=>t.name===key.slice(3))||{}).id:key;return openStands(real)}
   if(k==='qbgm')return quickBgm();
@@ -123,21 +151,7 @@ window.OM_RP_UI=(()=>{
    if(k==='bgx'){A().closeModal();return A().set(['rp','bg'],null)}
    if(k==='mgr')return openBgMgr();
    if(k==='url'){const u=$('#qbgu',md).value.trim();if(!u)return;A().closeModal();return A().set(['rp','bg'],{src:u,name:$('#qbgn',md).value.trim(),at:Date.now()})}})}
- function quickBgm(){const r=R();const G=bgmGroups();const gs=Object.keys(G).sort();const now=r.bgm||{};const gn=g=>String(g).replace(/^[0-9.]+\s*/,'');const q=(QB.q||'').trim().toLowerCase();
-  const list=[];for(const g of gs){if(QB.bg&&g!==QB.bg&&!q)continue;for(const sn of Object.keys(G[g]).sort()){if(q&&!(gn(g)+' '+sn).toLowerCase().includes(q))continue;list.push({g,s:sn})}}
-  const md=A().openModal(`<div class="mhead"><h2>BGM</h2><span class="sp"></span>${now.src?`<span class="small" style="color:var(--yel2)">♪ ${esc(now.title||'')}</span>`:''}<button class="btn sm ghost danger" data-q="stop">정지</button><button class="btn sm ghost" data-q="mgr">관리</button><button class="btn ghost" data-x>닫기</button></div>
-   ${(r.recentBgm||[]).length?`<div class="row" style="flex-wrap:wrap;margin-bottom:8px">${r.recentBgm.map(x=>`<button class="chip ${now.title===x.s&&now.group===x.g?'on':''}" data-q="play" data-g="${esc(x.g)}" data-s="${esc(x.s)}">${esc(x.s)} <small class="dim">${esc(gn(x.g))}</small></button>`).join('')}</div>`:''}
-   <div class="row" style="margin-bottom:6px"><input type="text" id="qbq" placeholder="곡 · 그룹 검색" value="${esc(QB.q||'')}" style="flex:1"></div>
-   <div class="gtabs"><button class="gt ${QB.bg?'':'on'}" data-q="g" data-g="">전체</button>${gs.map(g=>`<button class="gt ${g===QB.bg?'on':''}" data-q="g" data-g="${esc(g)}">${esc(gn(g))}<em>${Object.keys(G[g]).length}</em></button>`).join('')}</div>
-   <div class="songlist" style="max-height:46vh">${list.slice(0,400).map(x=>`<div class="song ${now.title===x.s&&now.group===x.g?'cur':''}"><button class="pv ${PV.g===x.g&&PV.s===x.s?'on':''}" data-q="pv" data-g="${esc(x.g)}" data-s="${esc(x.s)}" title="나만 미리듣기">▶</button><b class="sn" data-q="play" data-g="${esc(x.g)}" data-s="${esc(x.s)}">${esc(x.s)}</b>${(!QB.bg||q)?`<small class="dim">${esc(gn(x.g))}</small>`:''}</div>`).join('')||'<div class="empty small">없다</div>'}</div>`);
-  md.classList.add('wide');
-  const qi=$('#qbq',md);qi.oninput=()=>{QB.q=qi.value;const pos=qi.selectionStart;quickBgm();const n=$('#qbq');if(n){n.focus();n.setSelectionRange(pos,pos)}};
-  md.querySelectorAll('[data-q]').forEach(b=>b.onclick=async()=>{const k=b.dataset.q;
-   if(k==='g'){QB.bg=b.dataset.g;QB.q='';return quickBgm()}
-   if(k==='play'){pvStop();A().closeModal();return playAll(b.dataset.g,b.dataset.s)}
-   if(k==='pv'){const g=b.dataset.g,sn=b.dataset.s;if(PV.g===g&&PV.s===sn){pvStop();syncBgm(true);return quickBgm()}pvStop();const u=bgmUrl(g,sn);if(!u)return;PV.audio=new Audio(u);PV.audio.volume=vol;PV.audio.play().catch(()=>A().toast('재생하지 못했다'));PV.g=g;PV.s=sn;PV.title=sn;if(audio)audio.pause();return quickBgm()}
-   if(k==='stop'){pvStop();A().closeModal();return A().set(['rp','bgm'],null)}
-   if(k==='mgr')return openConsole('bgm')})}
+ function quickBgm(){const md=A().openModal(`<div class="mhead"><h2>BGM</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div id="bgmpanel">${bgmPanelHtml()}</div>`);md.classList.add('wide');const re=()=>{const el=$('#bgmpanel');if(!el)return;el.innerHTML=bgmPanelHtml();bindBgmPanel(md,re)};bindBgmPanel(md,re)}
  /* ----- 대화 기록 ----- */
  function openLog(){const ST=A().ST;const rows=(ST.log||[]).filter(x=>x.kind==='chat'&&x.data&&(x.data.t||x.data.img));
   const name=x=>x.data.as||(charOf(speakerKey(x))||{}).name||x.who;const tm=x=>{const d=new Date(x.at);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
@@ -233,16 +247,7 @@ window.OM_RP_UI=(()=>{
     <div class="sec">그룹</div><div class="tabs2 wrap">${groups.map(x=>`<button class="tab2 ${x.n===g.n?'on':''}" data-gc="bgg" data-g="${esc(x.n)}">${esc(x.n)} <small>${x.i.filter(i=>i.src).length}</small></button>`).join('')}</div>
     <div class="bggrid">${g.i.map(it=>it.src?`<div class="bgt ${cur===it.src?'cur':''}" data-gc="bg" data-k="${esc(it.k)}"><img src="${it.src}" loading="lazy" alt=""><span>${esc(it.l)}</span></div>`:'').join('')}</div>
     <div class="sec">직접 넣기</div><div class="row"><input type="text" id="gbg" placeholder="그림 주소 https://…" style="flex:1"><input type="text" id="gbgn" placeholder="장소 이름" style="width:160px"><label class="btn sm">파일<input type="file" accept="image/*" id="gbgf" hidden></label><button class="btn sm" data-gc="bgurl">적용</button></div>`}
-  else if(GC.tab==='bgm'){const G=bgmGroups();const gs=Object.keys(G).sort();if(GC.bgmGroup&&!gs.includes(GC.bgmGroup))GC.bgmGroup='';const q=GC.bgmQ.trim().toLowerCase();const now=r.bgm||{};const gn=g=>String(g).replace(/^[0-9.]+\s*/,'');
-   const list=[];for(const g of gs){if(GC.bgmGroup&&g!==GC.bgmGroup&&!q)continue;for(const sname of Object.keys(G[g]).sort()){if(q&&!(gn(g)+' '+sname).toLowerCase().includes(q))continue;list.push({g,s:sname})}}
-   body=`<div class="np"><div class="eq ${now.src?'':'off'}">♪</div><div style="flex:1;min-width:0"><small class="dim">지금 재생 (모두에게)</small><br><b>${esc(now.title?(now.group?gn(now.group)+' - ':'')+now.title:'재생 중인 곡 없음')}</b>${PV.title?`<br><small style="color:var(--yel2)">미리듣기: ${esc(PV.title)}</small>`:''}</div><label class="small">내 음량 <input type="range" min="0" max="1" step="0.05" value="${vol}" id="gvol"></label><button class="btn sm" data-gc="rand" ${GC.bgmGroup?'':'disabled'}>${GC.bgmGroup?'「'+esc(gn(GC.bgmGroup))+'」 랜덤':'그룹을 고르면 랜덤'}</button>${PV.audio?'<button class="btn sm ghost" data-gc="pvstop">미리듣기 정지</button>':''}<button class="btn sm ghost danger" data-gc="stop">정지</button></div>
-    ${(r.recentBgm||[]).length?`<div class="sec">최근 재생</div><div class="row" style="flex-wrap:wrap">${r.recentBgm.map(x=>`<button class="chip ${now.title===x.s&&now.group===x.g?'on':''}" data-gc="play" data-g="${esc(x.g)}" data-s="${esc(x.s)}">${esc(x.s)} <small class="dim">${esc(gn(x.g))}</small></button>`).join('')}</div>`:''}
-    <div class="sec">곡 목록 <span class="note">▶ 는 나만 미리듣기 · 제목을 누르면 모두에게 재생</span><span class="sp"></span><button class="btn xs" data-gc="gadd">＋ 그룹</button>${GC.bgmGroup?`<button class="btn xs ghost" data-gc="gren">그룹 이름</button><button class="btn xs ghost danger" data-gc="gdel">그룹 삭제</button>`:''}${Object.keys((r.bgmX||{}).del||{}).length?`<button class="btn xs ghost" data-gc="undel">지운 것 되살리기</button>`:''}</div>
-    <div class="row" style="margin:0 0 6px"><input type="text" id="gbmq" placeholder="곡 · 그룹 검색" value="${esc(GC.bgmQ)}" style="flex:1"></div>
-    <div class="gtabs"><button class="gt ${GC.bgmGroup?'':'on'}" data-gc="bgmg" data-g="">전체</button>${gs.map(g=>`<button class="gt ${g===GC.bgmGroup?'on':''}" data-gc="bgmg" data-g="${esc(g)}">${esc(gn(g))}<em>${Object.keys(G[g]).length}</em></button>`).join('')}</div>
-    <div class="songlist">${list.slice(0,400).map(x=>{const on=now.title===x.s&&now.group===x.g;return `<div class="song ${on?'cur':''}"><button class="pv ${PV.g===x.g&&PV.s===x.s?'on':''}" data-gc="pv" data-g="${esc(x.g)}" data-s="${esc(x.s)}" title="나만 미리듣기">▶</button><b class="sn" data-gc="play" data-g="${esc(x.g)}" data-s="${esc(x.s)}">${esc(x.s)}</b>${(!GC.bgmGroup||q)?`<small class="dim">${esc(gn(x.g))}</small>`:''}${on?'<em class="nowtag">재생 중</em>':''}<span class="sp"></span><button class="btn xs ghost" data-gc="sedit" data-g="${esc(x.g)}" data-s="${esc(x.s)}">수정</button><button class="btn xs ghost danger" data-gc="sdel" data-g="${esc(x.g)}" data-s="${esc(x.s)}">×</button></div>`}).join('')||'<div class="empty small">'+(q?'검색 결과가 없다':'곡이 없다')+'</div>'}${list.length>400?`<div class="small dim">${list.length-400}곡 더 — 그룹을 고르거나 검색어를 좁혀 줘</div>`:''}</div>
-    <div class="sec">곡 추가${GC.bgmGroup?' → 「'+esc(GC.bgmGroup)+'」':' <span class="note">그룹을 먼저 골라 줘</span>'}</div><div class="row"><input type="text" id="gmt" placeholder="제목" style="width:200px"><input type="text" id="gmu" placeholder="mp3 주소 (Dropbox 공유 링크도 됨 — 직링크로 바꿔 준다)" style="flex:1"><button class="btn sm" data-gc="sadd" ${GC.bgmGroup?'':'disabled'}>추가</button><button class="btn sm ghost" data-gc="playurl" title="목록에 넣지 않고 바로 재생">바로 재생</button></div>
-    <div class="small dim" style="margin-top:4px">플레이어 화면에서는 「소리 켜기」를 한 번 눌러야 들린다 (브라우저 자동재생 제한). 음량은 각자 조절. 기본 목록은 파일에 있고 여기서 더하거나 지운 것만 방에 저장된다.</div>`}
+  else if(GC.tab==='bgm'){body=bgmPanelHtml()}
   else if(GC.tab==='notice'){const ns=notices();
    body=`<div class="row" style="margin-bottom:8px"><span class="small">멘트 바꿔 보내기</span><input type="text" id="gsub" placeholder="비우면 공지에 저장된 멘트" style="flex:1"></div>
     <div class="ngrid">${ns.map((n,i)=>`<button class="nact" data-gc="note" data-i="${i}"><i style="background:${esc(n.color)}"></i><span>${esc(n.name)}${n.bgm==='stop'?'<small>BGM 정지</small>':''}</span></button>`).join('')}<button class="nact" data-gc="cut"><i style="background:#5b6278"></i><span>절취선<small>가로줄</small></span></button></div>
@@ -258,7 +263,8 @@ window.OM_RP_UI=(()=>{
     <div class="row"><button class="btn sm" data-gc="stageok">자리 적용</button><button class="btn sm ghost" data-gc="stageclear">무대 비우기</button></div>
     <div class="sec">스탠딩 관리</div><div class="row"><select id="gsc" style="flex:1">${chars.map(c=>`<option value="${esc(c.key)}">${esc(c.name)}</option>`).join('')}</select><button class="btn sm" data-gc="stands">표정·스탠딩 편집</button></div>
     <div class="sec">자막</div><div class="row"><input type="text" id="gcn" value="${esc((r.caption||{}).name||'')}" placeholder="이름" style="width:120px"><input type="text" id="gct" value="${esc((r.caption||{}).fixed?(r.caption.text||''):'')}" placeholder="고정 자막 (비우면 채팅이 자막)" style="flex:1"><button class="btn sm" data-gc="cap">고정</button><button class="btn sm ghost" data-gc="capx">풀기</button></div>`}
-  else{body=`<div class="sec">중앙 이미지</div><div class="row"><input type="text" id="gci" placeholder="그림 주소" style="flex:1"><label class="btn sm">파일<input type="file" accept="image/*" id="gcif" hidden></label><button class="btn sm" data-gc="center">띄우기</button><button class="btn sm ghost" data-gc="centerx">내리기</button></div>
+  else{const SG=seList();body=`<div class="sec">효과음 <span class="note">누르면 모두에게 한 번 · 배틀의 명중/급소/빗나감/빈사/주사위/공개는 자동</span></div>${Object.keys(SG).sort().map(g=>`<div class="small dim" style="margin:6px 0 2px">${esc(g)}</div><div class="row" style="flex-wrap:wrap;gap:4px">${Object.keys(SG[g]).map(n=>`<button class="chip" data-gc="se" data-n="${esc(n)}">${esc(n)}</button>`).join('')}</div>`).join('')}<div class="row" style="margin-top:6px"><input type="text" id="gseu" placeholder="효과음 직링크 (mp3/wav)" style="flex:1"><button class="btn sm" data-gc="seurl">울리기</button></div>
+    <div class="sec">중앙 이미지</div><div class="row"><input type="text" id="gci" placeholder="그림 주소" style="flex:1"><label class="btn sm">파일<input type="file" accept="image/*" id="gcif" hidden></label><button class="btn sm" data-gc="center">띄우기</button><button class="btn sm ghost" data-gc="centerx">내리기</button></div>
     <div class="sec">채팅 명령</div><table class="t small"><tr><td><code>/as 이름 말</code></td><td>그 인물로 말하기 (관계도의 NPC 면 스탠딩·아바타가 따라온다)</td></tr><tr><td><code>/s 라벨</code></td><td>내 표정(스탠딩) 바꾸기</td></tr><tr><td><code>/img 주소</code></td><td>채팅에 그림</td></tr><tr><td><code>/r 1d100</code></td><td>주사위</td></tr><tr><td><code>/w 이름 말</code></td><td>귓속말 (GM 은 GM)</td></tr><tr><td><code>/clear</code></td><td>무대의 스탠딩 모두 내리기 (GM)</td></tr></table>
     <div class="sec">귓속말</div><div class="row"><select id="gwto">${Object.entries(ST.state.seats||{}).map(([k,v])=>`<option value="${esc(k)}">${esc((((ST.state.roster||{}).trainers||{})[k]||{}).name||k)} (${esc(v.name)})</option>`).join('')}</select><input type="text" id="gwt" placeholder="메시지" style="flex:1"><button class="btn sm" data-gc="whisper">보내기</button></div>`}
   const md=A().openModal(`<div class="mhead"><h2>GM 콘솔</h2><span class="tabs2" style="margin:0 0 0 14px;flex:0 1 560px">${TABS.map(([k,n])=>`<button class="tab2 ${GC.tab===k?'on':''}" data-gc="tab" data-t="${k}">${n}</button>`).join('')}</span><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="gcbody">${body}</div>`);
@@ -271,20 +277,6 @@ window.OM_RP_UI=(()=>{
    if(k==='bgx'){await A().set(['rp','bg'],null);return re()}
    if(k==='bgmgr')return openBgMgr();
    if(k==='bgurl'){const u=$('#gbg',md).value.trim();if(!u)return;await A().set(['rp','bg'],{src:u,name:$('#gbgn',md).value.trim(),at:Date.now()});return re()}
-   if(k==='stop'){pvStop();await A().set(['rp','bgm'],null);return re()}
-   if(k==='bgmg'){GC.bgmGroup=b.dataset.g;GC.bgmQ='';return re()}
-   if(k==='play'){const g=b.dataset.g,s=b.dataset.s;pvStop();return playAll(g,s,re)}
-   if(k==='rand'){const G=bgmGroups();const ss=Object.keys(G[GC.bgmGroup]||{});if(!ss.length)return;const s=ss[Math.floor(Math.random()*ss.length)];pvStop();return playAll(GC.bgmGroup,s,re)}
-   if(k==='pv'){const g=b.dataset.g,s=b.dataset.s;if(PV.g===g&&PV.s===s){pvStop();return re()}pvStop();const u=bgmUrl(g,s);if(!u)return;PV.audio=new Audio(u);PV.audio.volume=vol;PV.audio.play().catch(()=>A().toast('재생하지 못했다'));PV.g=g;PV.s=s;PV.title=s;if(audio)audio.pause();return re()}
-   if(k==='pvstop'){pvStop();syncBgm(true);return re()}
-   if(k==='playurl'){const u=direct($('#gmu',md).value);if(!u)return;unlocked=true;pvStop();await A().set(['rp','bgm'],{src:u,title:$('#gmt',md).value.trim()||u.split('/').pop(),at:Date.now()});syncBgm(true);return re()}
-   if(k==='sadd'){const g=GC.bgmGroup;const t=$('#gmt',md).value.trim(),u=direct($('#gmu',md).value);if(!g)return A().toast('그룹을 먼저 골라 줘');if(!t||!u)return A().toast('제목과 주소가 필요해');const X=bgmX();X.add[g]=X.add[g]||{};X.add[g][t]=u;delete X.del[g+'\u0001'+t];await A().set(['rp','bgmX'],X);return re()}
-   if(k==='sedit'){const g=b.dataset.g,s0=b.dataset.s;const G=bgmGroups();const t=prompt('제목',s0);if(t==null||!t.trim())return;const u=prompt('주소',G[g][s0]);if(u==null||!u.trim())return;const X=bgmX();if(X.add[g]&&X.add[g][s0])delete X.add[g][s0];else X.del[g+'\u0001'+s0]=1;X.add[g]=X.add[g]||{};X.add[g][t.trim()]=direct(u);delete X.del[g+'\u0001'+t.trim()];await A().set(['rp','bgmX'],X);return re()}
-   if(k==='sdel'){const g=b.dataset.g,s0=b.dataset.s;const X=bgmX();if(X.add[g]&&X.add[g][s0])delete X.add[g][s0];else X.del[g+'\u0001'+s0]=1;await A().set(['rp','bgmX'],X);return re()}
-   if(k==='gadd'){const n=prompt('새 그룹 이름 (예: 700. 무진)');if(!n||!n.trim())return;const X=bgmX();X.add[n.trim()]=X.add[n.trim()]||{};delete X.del[n.trim()];GC.bgmGroup=n.trim();await A().set(['rp','bgmX'],X);return re()}
-   if(k==='gren'){const g=GC.bgmGroup;const n=prompt('그룹 이름',g);if(!n||!n.trim()||n.trim()===g)return;const X=bgmX();X.add[n.trim()]=Object.assign({},X.add[n.trim()]||{},bgmGroups()[g]);X.del[g]=1;GC.bgmGroup=n.trim();await A().set(['rp','bgmX'],X);return re()}
-   if(k==='gdel'){const g=GC.bgmGroup;if(!confirm(`「${g}」 그룹을 목록에서 지울까?`))return;const X=bgmX();X.del[g]=1;delete X.add[g];GC.bgmGroup='';await A().set(['rp','bgmX'],X);return re()}
-   if(k==='undel'){const X=bgmX();X.del={};await A().set(['rp','bgmX'],X);return re()}
    if(k==='note'){const n=notices()[+b.dataset.i];const sub=$('#gsub',md).value.trim();A().closeModal();await fireNotice(n,sub);return}
    if(k==='cut'){A().closeModal();await A().sysLog('────────────────────');return}
    if(k==='nsave'){const rows=[...md.querySelectorAll('#ntab tr')].map((tr,i)=>({id:'n'+i,name:tr.querySelector('[data-nn]').value.trim(),title:tr.querySelector('[data-nt]').value.trim(),ment:tr.querySelector('[data-nm]').value,color:tr.querySelector('[data-nc]').value,bgm:tr.querySelector('[data-nb]').value})).filter(x=>x.name);await A().set(['rp','notices'],rows);return re()}
@@ -302,11 +294,13 @@ window.OM_RP_UI=(()=>{
    if(k==='cap'){await A().set(['rp','caption'],{name:$('#gcn',md).value.trim(),text:$('#gct',md).value.trim(),at:Date.now(),fixed:true});return re()}
    if(k==='capx'){await A().set(['rp','caption'],null);return re()}
    if(k==='center'){const u=$('#gci',md).value.trim();if(!u)return;await A().set(['rp','center'],{src:u,at:Date.now()});return re()}
+   if(k==='se'){unlocked=true;return playSe(b.dataset.n)}
+   if(k==='seurl'){const u=$('#gseu',md).value.trim();if(!u)return;unlocked=true;return playSe(u)}
    if(k==='centerx'){await A().set(['rp','center'],null);return re()}
    if(k==='whisper'){const to=$('#gwto',md).value,t=$('#gwt',md).value.trim();if(!to||!t)return;await DBS().addLog(ST.room,ST.secret,'whisper',ST.name,{t,to,toName:(((ST.state.roster||{}).trainers||{})[to]||{}).name||to});$('#gwt',md).value='';A().toast('보냈다');return}};
    if(b.type==='checkbox')b.onchange=h;else b.onclick=h});
   const vr=$('#gvol',md);if(vr)vr.oninput=()=>{vol=+vr.value;try{localStorage.setItem('om_vol',vol)}catch(e){}if(audio)audio.volume=vol};
-  const bq=$('#gbmq',md);if(bq){bq.oninput=()=>{GC.bgmQ=bq.value;const pos=bq.selectionStart;re();const nb=$('#gbmq');if(nb){nb.focus();nb.setSelectionRange(pos,pos)}}}
+  if(GC.tab==='bgm')bindBgmPanel(md,re);
   const up=async(inp,target)=>{const f=inp.files[0];if(!f)return;A().toast('올리는 중…');try{const url=await DBS().uploadImage(`rooms/${ST.room}/rp_${Date.now().toString(36)}`,f);$(target,md).value=url;A().toast('올렸다 — 적용/띄우기를 눌러')}catch(e){A().toast(e.message)}};
   const f1=$('#gbgf',md);if(f1)f1.onchange=()=>up(f1,'#gbg');const f2=$('#gcif',md);if(f2)f2.onchange=()=>up(f2,'#gci')}
  /* ----- 배경 관리 (맵툴 배경 관리 창): 그룹·그림 추가/이름/삭제/순서, 방 상태 rp.bgList 에 통째로 저장 ----- */
@@ -333,6 +327,41 @@ window.OM_RP_UI=(()=>{
    if(k==='iup'&&i>0){[g.i[i-1],g.i[i]]=[g.i[i],g.i[i-1]];return save(groups)}
    if(k==='idn'&&i<g.i.length-1){[g.i[i+1],g.i[i]]=[g.i[i],g.i[i+1]];return save(groups)}});
   const f=$('#bm_f',md);if(f)f.onchange=async()=>{const file=f.files[0];if(!file)return;A().toast('올리는 중…');try{$('#bm_u',md).value=await DBS().uploadImage(`rooms/${ST.room}/bg_${Date.now().toString(36)}`,file);if(!$('#bm_l',md).value)$('#bm_l',md).value=file.name.replace(/\.[^.]+$/,'');A().toast('올렸다 — 추가를 눌러')}catch(e){A().toast(e.message)}}}
+ /* ----- BGM 패널 (맵툴 Lib:bgm 정리판과 같은 꼴): 홈 = 띠(장면/배틀/분위기)별 그룹 타일 → 그룹 = 곡 줄 · 검색 · ▶ 미리듣기 · 모두에게 재생 · ⟳ 다른 곡 ----- */
+ const BG={g:'',q:''};
+ const gshort=g=>String(g).replace(/^[0-9.]+\s*/,'');
+ function bgmMeta(g){const M=(DB().bgm||{}).meta||{};return M[g]||{b:'',d:''}}
+ function bgmPanelHtml(){const r=R();const G=bgmGroups();const gs=Object.keys(G).sort();if(BG.g&&!gs.includes(BG.g))BG.g='';const now=r.bgm||{};const q=BG.q.trim().toLowerCase();const bands=((DB().bgm||{}).bands||['장면','배틀','분위기']).concat(['']);
+  const row=(g,sn,withGroup)=>{const on=now.title===sn&&now.group===g;return `<div class="song ${on?'cur':''}"><button class="pv ${PV.g===g&&PV.s===sn?'on':''}" data-bq="pv" data-g="${esc(g)}" data-s="${esc(sn)}" title="나만 미리듣기">▶</button><span class="sn" data-bq="play" data-g="${esc(g)}" data-s="${esc(sn)}"><b>${esc(sn)}</b>${withGroup?`<small class="dim"> ${esc(gshort(g))}</small>`:''}${on?'<em class="nowtag">재생 중</em>':''}</span><span class="sp"></span><button class="btn xs pri" data-bq="play" data-g="${esc(g)}" data-s="${esc(sn)}">모두에게 재생</button>${withGroup?'':`<button class="btn xs ghost" data-bq="sedit" data-g="${esc(g)}" data-s="${esc(sn)}" title="곡 수정">✎</button><button class="btn xs ghost danger" data-bq="sdel" data-g="${esc(g)}" data-s="${esc(sn)}" title="곡 삭제">✕</button>`}</div>`};
+  let head='',list='';
+  const bar=`<div class="np"><div class="eq ${now.src?'':'off'}">♪</div><div style="flex:1;min-width:0"><small class="dim">지금 재생 (모두에게)</small><br><b>${esc(now.title?(now.group?gshort(now.group)+' - ':'')+now.title:'재생 중인 곡 없음')}</b>${PV.title?`<br><small style="color:var(--yel2)">미리듣기: ${esc(PV.title)}</small>`:''}</div><label class="small">내 음량 <input type="range" min="0" max="1" step="0.05" value="${vol}" id="gvol"></label>${now.group&&G[now.group]?`<button class="btn sm" data-bq="rand" data-g="${esc(now.group)}" title="같은 그룹에서 다른 곡">⟳ 다른 곡</button>`:''}${PV.audio?'<button class="btn sm ghost" data-bq="pvstop">미리듣기 정지</button>':''}<button class="btn sm ghost danger" data-bq="stop">■ 정지</button></div>`;
+  if(!BG.g){const tot=gs.reduce((a,g)=>a+Object.keys(G[g]).length,0);
+   head=`<div class="sec"><b>그룹 ${gs.length}개 · ${tot}곡</b><span class="note">▶ 랜덤은 그 그룹에서 아무 곡이나 모두에게</span><span class="sp"></span>${Object.keys((r.bgmX||{}).del||{}).length?'<button class="btn xs ghost" data-bq="undel">지운 것 되살리기</button>':''}<button class="btn xs" data-bq="gadd">＋ 그룹 추가</button></div><div class="row" style="margin-bottom:6px"><input type="text" id="bgq" placeholder="전체 곡 검색 (곡 이름 일부나 그룹 이름)" value="${esc(BG.q)}" style="flex:1"></div>`;
+   if(q){let n=0;for(const g of gs){const gm=gshort(g).toLowerCase().includes(q);for(const sn of Object.keys(G[g]).sort()){if(n>=150)break;if(gm||sn.toLowerCase().includes(q)){list+=row(g,sn,true);n++}}}list=`<div class="songlist" style="max-height:56vh">${list||'<div class="empty small">찾는 곡이 없다</div>'}${n>=150?'<div class="small dim">150곡까지만 — 검색어를 더 적어 줘</div>':''}</div>`}
+   else{for(const b of bands){const tiles=gs.filter(g=>bgmMeta(g).b===b).map(g=>{const m=bgmMeta(g);const on=now.group===g;return `<div class="btile ${on?'on':''}"><a class="tn" data-bq="open" data-g="${esc(g)}">${esc(gshort(g))}</a><div class="td">${esc(m.d||'')}</div><div class="ta"><button class="btn xs pri" data-bq="rand" data-g="${esc(g)}">▶ 랜덤 재생</button><a class="tc" data-bq="open" data-g="${esc(g)}">${Object.keys(G[g]).length}곡 ▸</a><span class="sp"></span><button class="btn xs ghost" data-bq="gren" data-g="${esc(g)}" title="그룹 이름 변경">✎</button><button class="btn xs ghost danger" data-bq="gdel" data-g="${esc(g)}" title="그룹 삭제">✕</button></div></div>`}).join('');if(tiles)list+=`<div class="band b_${{장면:'scene',배틀:'battle',분위기:'mood'}[b]||'etc'}"><h4>${esc(b||'그 밖의 그룹')}</h4><div class="bgrid">${tiles}</div></div>`}
+    if(!gs.length)list='<div class="empty">아직 그룹이 없다 — ＋ 그룹 추가</div>'}}
+  else{const g=BG.g;const S=Object.keys(G[g]||{}).sort();const m=bgmMeta(g);
+   head=`<div class="sec gh"><a class="back" data-bq="home">◂ 그룹 목록</a><div style="flex:1;min-width:0"><b>${esc(gshort(g))} <span class="small dim">${S.length}곡</span></b><div class="small dim">${esc(m.d||'')}</div></div><button class="btn sm pri" data-bq="rand" data-g="${esc(g)}">▶ 랜덤 재생</button><button class="btn sm" data-bq="sadd" data-g="${esc(g)}">＋ 곡 추가</button></div><div class="row" style="margin-bottom:6px"><input type="text" id="bgq" placeholder="이 그룹에서 곡 검색" value="${esc(BG.q)}" style="flex:1"></div>`;
+   const rows=S.filter(sn=>!q||sn.toLowerCase().includes(q)).map(sn=>row(g,sn,false)).join('');list=`<div class="songlist" style="max-height:56vh">${rows||'<div class="empty small">'+(S.length?'찾는 곡이 없다':'이 그룹엔 아직 곡이 없다')+'</div>'}</div>`}
+  return bar+head+list+`<div class="small dim" style="margin-top:6px">플레이어 화면에서는 「소리 켜기」를 한 번 눌러야 들린다. 음량은 각자. 기본 목록은 파일에 있고 여기서 더하거나 지운 것만 방에 저장된다.</div>`}
+ function bindBgmPanel(md,re){const G=bgmGroups();
+  const vr=$('#gvol',md);if(vr)vr.oninput=()=>{vol=+vr.value;try{localStorage.setItem('om_vol',vol)}catch(e){}if(audio)audio.volume=vol;if(PV.audio)PV.audio.volume=vol};
+  const qi=$('#bgq',md);if(qi)qi.oninput=()=>{BG.q=qi.value;const pos=qi.selectionStart;re();const n=$('#bgq');if(n){n.focus();n.setSelectionRange(pos,pos)}};
+  md.querySelectorAll('[data-bq]').forEach(b=>b.onclick=async()=>{const k=b.dataset.bq;const g=b.dataset.g,sn=b.dataset.s;
+   if(k==='home'){BG.g='';BG.q='';return re()}
+   if(k==='open'){BG.g=g;BG.q='';return re()}
+   if(k==='play'){pvStop();await playAll(g,sn);return re()}
+   if(k==='rand'){const ss=Object.keys(G[g]||{});if(!ss.length)return;const now=R().bgm||{};let pick=ss[Math.floor(Math.random()*ss.length)];if(ss.length>1&&pick===now.title)pick=ss[(ss.indexOf(pick)+1)%ss.length];pvStop();await playAll(g,pick);return re()}
+   if(k==='pv'){if(PV.g===g&&PV.s===sn){pvStop();syncBgm(true);return re()}pvStop();const u=bgmUrl(g,sn);if(!u)return;PV.audio=new Audio(u);PV.audio.volume=vol;PV.audio.play().catch(()=>A().toast('재생하지 못했다'));PV.g=g;PV.s=sn;PV.title=sn;if(audio)audio.pause();return re()}
+   if(k==='pvstop'){pvStop();syncBgm(true);return re()}
+   if(k==='stop'){pvStop();await A().set(['rp','bgm'],null);return re()}
+   if(k==='sadd'){const t=prompt('곡 제목');if(!t||!t.trim())return;const u=prompt('주소 (Dropbox 공유 링크도 됨)');if(!u||!u.trim())return;const X=bgmX();X.add[g]=X.add[g]||{};X.add[g][t.trim()]=direct(u);delete X.del[g+'\u0001'+t.trim()];await A().set(['rp','bgmX'],X);return re()}
+   if(k==='sedit'){const t=prompt('곡 제목',sn);if(t==null||!t.trim())return;const u=prompt('주소',G[g][sn]);if(u==null||!u.trim())return;const X=bgmX();if(X.add[g]&&X.add[g][sn])delete X.add[g][sn];else X.del[g+'\u0001'+sn]=1;X.add[g]=X.add[g]||{};X.add[g][t.trim()]=direct(u);delete X.del[g+'\u0001'+t.trim()];await A().set(['rp','bgmX'],X);return re()}
+   if(k==='sdel'){if(!confirm(`「${sn}」 곡을 지울까?`))return;const X=bgmX();if(X.add[g]&&X.add[g][sn])delete X.add[g][sn];else X.del[g+'\u0001'+sn]=1;await A().set(['rp','bgmX'],X);return re()}
+   if(k==='gadd'){const n=prompt('새 그룹 이름 (예: 20. 무진 · 항구)');if(!n||!n.trim())return;const X=bgmX();X.add[n.trim()]=X.add[n.trim()]||{};delete X.del[n.trim()];await A().set(['rp','bgmX'],X);return re()}
+   if(k==='gren'){const n=prompt('그룹 이름',g);if(!n||!n.trim()||n.trim()===g)return;const X=bgmX();X.add[n.trim()]=Object.assign({},X.add[n.trim()]||{},G[g]);X.del[g]=1;await A().set(['rp','bgmX'],X);return re()}
+   if(k==='gdel'){if(!confirm(`「${gshort(g)}」 그룹(${Object.keys(G[g]||{}).length}곡)을 목록에서 지울까?`))return;const X=bgmX();X.del[g]=1;delete X.add[g];if(BG.g===g)BG.g='';await A().set(['rp','bgmX'],X);return re()}
+   if(k==='undel'){const X=bgmX();X.del={};await A().set(['rp','bgmX'],X);return re()}})}
  /* 브금 미리듣기(나만) · 모두에게 재생 · 방 차이 저장 */
  const PV={audio:null,g:'',s:'',title:''};
  function pvStop(){if(PV.audio){PV.audio.pause();PV.audio=null}PV.g='';PV.s='';PV.title=''}
@@ -360,6 +389,18 @@ window.OM_RP_UI=(()=>{
  /* 채팅 /s 라벨 */
  async function setMyStand(label){const ST=A().ST;if(ST.role==='gm')return A().toast('GM 은 콘솔 → 무대·스탠딩에서 바꿔');const c=charOf(ST.seat);if(!c)return;const i=c.stands.findIndex(s=>(s.label||'')===label);if(i<0)return A().toast('그런 표정이 없다: '+c.stands.map(s=>s.label).join(', '));await A().set(['roster','trainers',c.id,'standActive'],i);A().toast(`표정: ${label}`)}
 
+ /* ----- 효과음: rp.se={name,src,at} 가 바뀌면 모두 한 번 울린다. 음량은 각자 (om_vol_se) ----- */
+ let volSe=0.7,lastSe=0;try{volSe=+(localStorage.getItem('om_vol_se')??0.7)}catch(e){}
+ function seUrl(name){const G=(DB().se||{}).groups||{};for(const g in G)if(G[g][name])return G[g][name];return ''}
+ function seList(){const G=(DB().se||{}).groups||{};return G}
+ function playSe(name,localOnly){const u=/^https?:/.test(name)?name:seUrl(name);if(!u)return;if(localOnly){const a=new Audio(u);a.volume=volSe;a.play().catch(()=>{});return}A().set(['rp','se'],{name,src:u,at:Date.now()})}
+ /* 로그를 보고 자동 효과음: 주사위 → dice, 지시 공개 → Draw, 턴 개시 → Ping2, 공격 명중 → Blow, 급소 → cut_critical, 빗나감 → evasion, 빈사 → Dead */
+ let seenLog=new Set();
+ function autoSe(row){if(!row||!row.id||seenLog.has(row.id))return;seenLog.add(row.id);if(seenLog.size>500)seenLog=new Set([...seenLog].slice(-200));if(row.at&&Date.now()-new Date(row.at).getTime()>15000)return;if(!unlocked)return;
+  const t=String((row.data||{}).t||'');let n='';if(row.kind==='dice')n='dice';else if(row.kind==='battle'){if(/^【공개】/.test(t))n='Draw';else if(/^턴 개시/.test(t))n='Ping2';else if(/급소!/.test(t))n='cut_critical';else if(/명중\(|필중/.test(t))n='Blow';else if(/빗나감/.test(t))n='evasion';else if(/풀이 죽어|잠자고|저려서|얼어붙어|홀딱 반해|스스로를 공격/.test(t))n='Ping'}
+  const dead=/빈사!|쓰러졌다!/.test(t);if(!n&&!dead)return;if(n)playSe(n,true);if(dead)setTimeout(()=>playSe('Dead',true),n?700:0)}
+ function syncSe(){const se=R().se;if(!se||!se.at||se.at===lastSe)return;lastSe=se.at;if(Date.now()-se.at>8000)return;if(!unlocked&&!gm())return;try{const a=new Audio(se.src);a.volume=volSe;a.play().catch(()=>{})}catch(e){}}
+ function setVolume(kind,v){if(kind==='se'){volSe=v;try{localStorage.setItem('om_vol_se',v)}catch(e){}}else{vol=v;try{localStorage.setItem('om_vol',v)}catch(e){}if(audio)audio.volume=v;if(PV.audio)PV.audio.volume=v}}
  /* ----- 배너 / BGM / 상태 변화 ----- */
  function tickBanner(){const b=R().banner;if(!b||!b.at||b.at===lastBanner||Date.now()-b.at>15000)return;lastBanner=b.at;
   const el=document.createElement('div');el.className='banner';el.style.setProperty('--bc',b.color||'#d9243f');el.innerHTML=`<div class="bt">${esc(b.title||'')}</div>${b.text?`<div class="bm">${esc(b.text).replace(/\n/g,'<br>')}</div>`:''}`;document.body.appendChild(el);
@@ -368,7 +409,7 @@ window.OM_RP_UI=(()=>{
   if(!src){if(audio){audio.pause();audio=null}lastBgm='';return}
   if(!unlocked)return;
   if(src!==lastBgm||force){if(audio)audio.pause();audio=new Audio(src);audio.loop=true;audio.volume=vol;audio.play().catch(()=>{});lastBgm=src}}
- function onChat(row){feedLog([row]);if(A().view==='rp'&&row.kind==='chat'&&row.data&&(row.data.t||row.data.clear))A().renderScene()}
- function onState(){tickBanner();syncBgm()}
- return {render,onChat,onState,mapData:mapS,openConsole,openStands,setMyStand,charOf};
+ function onChat(row){autoSe(row);feedLog([row]);if(row.kind==='chat'&&row.data){delete TYPING.who[row.data.from];}if(A().view==='rp'&&row.kind==='chat'&&row.data&&(row.data.t||row.data.clear))A().renderScene()}
+ function onState(){tickBanner();syncBgm();syncSe()}
+ return {render,onChat,onState,onTyping,mapData:mapS,openConsole,openStands,setMyStand,charOf,playSe,setVolume};
 })();

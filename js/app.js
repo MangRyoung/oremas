@@ -52,7 +52,7 @@ async function openRoom(id,gm){
  const st=await DBS().getState(id);ST.state=(st&&st.data)||{};ST.v=(st&&st.v)||0;
  ST.log=await DBS().getLogTail(id,200);ST.lastLogId=ST.log.length?ST.log[ST.log.length-1].id:0;
  renderRoom();
- ST.unsub=DBS().subscribe(id,{onState:(d,v)=>{if(v>=ST.v){ST.state=d;ST.v=v;renderScene()}},onLog:r=>{if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;renderLog(true);if(window.OM_RP_UI)window.OM_RP_UI.onChat(r)}},
+ ST.unsub=DBS().subscribe(id,{onEvent:p=>{if(window.OM_RP_UI&&p&&p.t==='typing')window.OM_RP_UI.onTyping(p)},onState:(d,v)=>{if(v>=ST.v){ST.state=d;ST.v=v;renderScene()}},onLog:r=>{if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;renderLog(true);if(window.OM_RP_UI)window.OM_RP_UI.onChat(r)}},
   onStatus:s=>{const el=$('#conn');if(el){el.textContent=s==='SUBSCRIBED'?'● 실시간':'○ '+s;el.style.color=s==='SUBSCRIBED'?'var(--acc2)':'var(--mute)'}}});
  if(ST.role){pollWhispers();ST.wtimer=setInterval(pollWhispers,4000)}
  if(!ST.role)openSeatPicker()}
@@ -68,7 +68,7 @@ function renderRoom(){
    <span class="tabs" id="sceneTabs"></span>
    <span class="sp"></span><span id="conn" class="small muted">○ 연결 중</span>
    ${ST.role?'<button class="btn sm" id="skillBtn">스킬 체크</button><button class="btn sm" id="deckBtn">덱</button>':''}<button class="btn sm" id="dbBtn">DB</button><button class="btn sm" id="copyLink">플레이어 링크</button>
-   ${ST.role==='gm'?'<button class="btn sm" id="copyGm">GM 링크</button><button class="btn sm" id="roomSet">방 설정</button>':'<button class="btn sm" id="seatBtn">자리</button>'}
+   ${ST.role==='gm'?'<button class="btn sm" id="copyGm">GM 링크</button><button class="btn sm" id="roomSet">방 설정</button>':'<button class="btn sm" id="seatBtn">자리</button><button class="btn sm ghost" id="roomSet" title="소리 크기">소리</button>'}
   </div>
   <div class="body"><div class="scene" id="scene"></div><div class="resizer" id="resizer" title="끌어서 채팅 창 너비 조절"></div>
    <div class="side" id="side"><div class="phone"><div class="pbar"><span>●●●</span><span class="ptime" id="pclock"></span></div><div class="ptitle">${esc(r.name||r.id)}<small>${ST.role==='gm'?'GM':ST.role==='seat'?esc(ST.name):'관전'} · 오레마스</small></div><div class="log" id="log"></div>
@@ -80,7 +80,7 @@ function renderRoom(){
  $('#dbBtn').onclick=()=>window.OM_DB_UI.open({kind:'trait'});
  const clock=()=>{const el=$('#pclock');if(el){const d=new Date();el.textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}};clock();clearInterval(ST.clockT);ST.clockT=setInterval(clock,15000);
  if(ST.role==='gm'){$('#copyGm').onclick=()=>copy(gmLink(ST.room,ST.secret),'GM 링크를 복사했다 (아무에게도 주지 말 것)');$('#roomSet').onclick=openRoomSettings}
- else $('#seatBtn').onclick=openSeatPicker;
+ else {$('#seatBtn').onclick=openSeatPicker;$('#roomSet').onclick=openRoomSettings}
  $('#chatSend').onclick=sendChat;$('#chatIn').onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)sendChat()};
  /* 채팅 창 너비: 끌어서 조절, 브라우저에 기억 */
  try{const w=+localStorage.getItem('om_sidew');if(w>=260)$('#side').style.width=w+'px'}catch(e){}
@@ -238,11 +238,17 @@ function openSeatPicker(){
  m.querySelectorAll('[data-free]').forEach(bt=>bt.onclick=async()=>{try{await DBS().claimSeat(ST.room,bt.dataset.free,ST.secret,null);closeModal();toast('자리를 비웠다')}catch(e){toast(e.message)}})}
 
 function openRoomSettings(){
- const r=ST.roomRow;const m=openModal(`<div class="mhead"><h2>방 설정</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-  <div class="row"><label>방 이름</label><input type="text" id="rn" value="${esc(r.name)}" style="flex:1"><button class="btn pri" id="rnSave">저장</button></div>
-  <p class="small muted" style="margin-top:12px">방 id <span class="mono">${esc(r.id)}</span></p>
+ const r=ST.roomRow;const isGm=ST.role==='gm';const m=openModal(`<div class="mhead"><h2>${isGm?'방 설정':'소리'}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+  ${isGm?`<div class="row"><label>방 이름</label><input type="text" id="rn" value="${esc(r.name)}" style="flex:1"><button class="btn pri" id="rnSave">저장</button></div>
+  <p class="small muted" style="margin-top:12px">방 id <span class="mono">${esc(r.id)}</span></p>`:''}
+  <div class="sec" style="margin-top:12px">소리 (이 브라우저에서만)</div>
+  <div class="row"><label style="width:70px">BGM</label><input type="range" min="0" max="1" step="0.05" id="volBgm" value="${(()=>{try{return localStorage.getItem('om_vol')??0.5}catch(e){return 0.5}})()}" style="flex:1"><span class="mono small" id="volBgmV"></span></div>
+  <div class="row"><label style="width:70px">효과음</label><input type="range" min="0" max="1" step="0.05" id="volSe" value="${(()=>{try{return localStorage.getItem('om_vol_se')??0.7}catch(e){return 0.7}})()}" style="flex:1"><span class="mono small" id="volSeV"></span><button class="btn xs ghost" id="volSeTest">시험</button></div>
   <div class="row"><button class="btn sm" id="seatMgr">자리 관리</button></div>`);
- $('#rnSave',m).onclick=async()=>{try{await DBS().roomUpdate(ST.room,ST.secret,$('#rn',m).value.trim(),null);ST.roomRow.name=$('#rn',m).value.trim();remember(ST.room,ST.roomRow.name,ST.secret);closeModal();renderRoom()}catch(e){toast(e.message)}};
+ const vb=$('#volBgm',m),vs=$('#volSe',m);const show=()=>{$('#volBgmV',m).textContent=Math.round(vb.value*100)+'%';$('#volSeV',m).textContent=Math.round(vs.value*100)+'%'};show();
+ vb.oninput=()=>{show();if(window.OM_RP_UI)window.OM_RP_UI.setVolume('bgm',+vb.value)};vs.oninput=()=>{show();if(window.OM_RP_UI)window.OM_RP_UI.setVolume('se',+vs.value)};
+ $('#volSeTest',m).onclick=()=>{if(window.OM_RP_UI)window.OM_RP_UI.playSe('Ping2',true)};
+ const rs=$('#rnSave',m);if(rs)rs.onclick=async()=>{try{await DBS().roomUpdate(ST.room,ST.secret,$('#rn',m).value.trim(),null);ST.roomRow.name=$('#rn',m).value.trim();remember(ST.room,ST.roomRow.name,ST.secret);closeModal();renderRoom()}catch(e){toast(e.message)}};
  $('#seatMgr',m).onclick=()=>{closeModal();openSeatPicker()}}
 
 /* ---------- 모달 ---------- */

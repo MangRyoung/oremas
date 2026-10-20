@@ -595,3 +595,112 @@ body.resizing{user-select:none;cursor:col-resize}
 .spk.on{border-color:var(--yel2);color:#fff}.spk.on i{border-color:var(--yel2)}
 .spk.add{border-style:dashed}.spk.add i{background:#1f2028;font-size:18px}
 .spk span{max-width:70px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.revealrow{margin-top:4px}
+.revealstat{display:flex;flex-wrap:wrap;align-items:center;gap:10px;background:#1a1208;border:1px solid var(--yel2);padding:6px 10px;margin-bottom:8px;font-size:13px}
+.revealstat .rs{display:inline-flex;align-items:center;gap:4px}.revealstat .rs i{font-style:normal;background:#2a2b31;color:#999;padding:0 7px;border:1px solid var(--line2)}.revealstat .rs i.ok{background:var(--ok);color:#000;border-color:var(--ok)}
+/* BGM 패널 (띠별 그룹 타일) */
+.band{margin:8px 0 12px}.band h4{margin:0 0 6px;font-family:var(--lab);letter-spacing:.1em;font-size:12px;color:var(--mute);padding-left:8px;border-left:3px solid var(--line2)}
+.band.b_scene h4{border-color:#5fd38d;color:#9ff0c0}.band.b_battle h4{border-color:#ff6b6b;color:#ffb0b8}.band.b_mood h4{border-color:#7f9bff;color:#bfcdff}
+.bgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:6px}
+.btile{background:#15161a;border:1px solid var(--line);border-left:3px solid var(--line2);padding:8px 10px}.btile.on{border-color:var(--yel2);background:#26220f}
+.band.b_scene .btile{border-left-color:#5fd38d}.band.b_battle .btile{border-left-color:#ff6b6b}.band.b_mood .btile{border-left-color:#7f9bff}
+.btile .tn{font-size:15px;color:#fff;cursor:pointer;font-weight:bold}.btile .tn:hover{color:var(--yel2)}.btile .td{font-size:11.5px;color:var(--mute);margin:2px 0 6px;min-height:16px}
+.btile .ta{display:flex;align-items:center;gap:4px}.btile .tc{font-size:12px;color:var(--fg2);cursor:pointer;margin-left:4px}.btile .tc:hover{color:var(--yel2)}
+.sec.gh{display:flex;align-items:center;gap:10px}.back{cursor:pointer;color:var(--fg2);font-size:13px}.back:hover{color:var(--yel2)}
+.song .sn{flex:1;min-width:0;cursor:pointer}.song .sn b{font-weight:normal;color:#fff}.song .sn:hover b{color:var(--yel2)}
+.stt img{width:18px;height:18px;object-fit:contain;margin-right:1px}
+.stt.abn{border-color:#4a2630}.stt.abn.on{border-color:var(--red)}
+/* 무대 애니메이션 · 입력 중 */
+.stands{position:absolute;inset:0;pointer-events:none}
+.stand.in{animation:standin .45s cubic-bezier(.2,.8,.2,1)}
+.stand.out{animation:standout .3s forwards}
+@keyframes standin{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
+.stand.center.in{animation:standinc .45s cubic-bezier(.2,.8,.2,1)}
+@keyframes standinc{from{opacity:0;transform:translateX(-50%) translateY(30px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes standout{to{opacity:0;transform:translateY(20px)}}
+.stand.center.out{animation:standoutc .3s forwards}
+@keyframes standoutc{to{opacity:0;transform:translateX(-50%) translateY(20px)}}
+.dlg.pop{animation:dlgpop .25s ease-out}
+@keyframes dlgpop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.typing{position:absolute;left:3%;bottom:calc(4% + 150px);z-index:4;background:rgba(0,0,0,.75);color:#ddd;font-size:13px;padding:3px 10px;border-left:3px solid var(--yel2)}
+.typing .dots i{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--yel2);margin-right:2px;animation:blink 1.2s infinite}.typing .dots i:nth-child(2){animation-delay:.2s}.typing .dots i:nth-child(3){animation-delay:.4s}
+@keyframes blink{0%,80%,100%{opacity:.2}40%{opacity:1}}
+
+/* ---------- 무대 왼쪽 위: 날짜·요일·시간대 태그 + 배경 이름 (참고 이미지 모양) ---------- */
+.stagetags{position:absolute;left:10px;top:12px;z-index:3;display:flex;flex-direction:column;align-items:flex-start;gap:6px;pointer-events:none}
+.stagetags .bgname{position:static;top:auto;left:auto;transform:skewX(-8deg);clip-path:none;border:2px solid #fff;box-shadow:3px 3px 0 rgba(0,0,0,.6)}
+.stagetags .bgname{font-size:15px}
+.daytag{display:inline-flex;align-items:baseline;gap:6px;background:#000;color:#fff;border:2px solid #fff;padding:3px 14px 3px 10px;transform:skewX(-8deg);box-shadow:3px 3px 0 rgba(0,0,0,.6);font-family:var(--head);line-height:1;pointer-events:auto}
+.daytag[data-rp]{cursor:pointer}.daytag[data-rp]:hover{background:#222}
+.daytag b{font-size:24px;letter-spacing:.02em;font-weight:900}
+.daytag i{font-style:normal;font-size:14px;opacity:.85;border-left:1px solid rgba(255,255,255,.5);padding-left:6px}
+.daytag em{font-style:normal;font-size:12px;opacity:.75}
+.daytag .phase{background:#e2302c;color:#fff;font-size:13px;font-weight:800;padding:3px 9px;margin-left:4px;transform:skewX(0);letter-spacing:.08em}
+.daytag .phase.night{background:#2b3a8f}.daytag .phase.evening{background:#c7651a}.daytag .phase.morning{background:#2f8f5b}
+
+/* ---------- 무대 압축: 벤치를 진영 양 옆에 ---------- */
+.stadium{display:grid;grid-template-columns:250px minmax(0,1fr) 250px;gap:8px;align-items:start}
+.fieldcol{display:flex;flex-direction:column;gap:8px;min-width:0}
+.fgrid{padding:10px 8px 8px;gap:8px 10px}
+.fgrid .area{min-height:112px}
+.ahead{padding:1px 0;font-size:14px}
+.mon.big{padding:6px;gap:6px}.mon.big .pic{width:60px;height:60px}.mon.big .nm{font-size:15px}
+.bcol{background:var(--bg2);border:1px dashed var(--line2);padding:6px 8px;min-width:0}
+.bcol .shead{margin-bottom:4px}.bcol .sname{font-family:var(--lab);font-size:13px}
+.bcol .tblock{display:block;margin:0 0 8px}
+.bcol .trainer{width:auto;margin:0 0 4px;padding:4px 6px;flex-wrap:wrap;gap:6px}
+.bcol .trainer .tpic{width:32px;height:32px}.bcol .trainer .tn{font-size:13px}.bcol .trainer .tr{font-size:11px;line-height:1.3}
+.bcol .tbtns{display:flex;flex-wrap:wrap;gap:4px;margin:2px 0 4px}
+.bcol .bench{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.bcol .tblock .bench .mon.small{display:flex;flex-direction:column;gap:2px;width:auto;padding:3px 4px;box-shadow:none;min-width:0}
+.bcol .tblock .bench .mon.small .btop{display:flex;align-items:center;gap:4px;min-width:0}
+.bcol .tblock .bench .mon.small .pic{width:30px;height:30px;margin:0;flex:none;clip-path:none;aspect-ratio:auto}
+.bcol .tblock .bench .mon.small .nm{font-size:11px;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.bcol .tblock .bench .mon.small .ty{display:none}
+.bcol .tblock .bench .mon.small .hpbar{height:4px;margin:0}.bcol .tblock .bench .mon.small .hpnum{font-size:10px;line-height:1.1}
+.bcol .tblock .bench .mon.small.onfield{outline:2px solid var(--yel2)}
+.bcol .tblock .bench .mon.small .btn.xs{padding:0 6px;min-width:0;white-space:nowrap;font-size:11px;width:100%}
+@media (max-width:1180px){.stadium{grid-template-columns:1fr}.bcol .bench{grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}}
+/* 공개 UI (맨 위) */
+.revealstat .rs.my{background:#2e2810;border:1px solid var(--yel2);padding:2px 8px}
+.revealstat .rs .btn.xs{padding:1px 8px}
+/* 준비 완료 잠금 */
+.cmdt.locked .pane.ro{pointer-events:none;opacity:.55}
+.cmdt.locked .cmdhead .tag.ok{margin-right:6px}
+/* 4식 6령 발동 창 */
+.firepre{margin:8px 0 2px;padding:6px 10px;background:#1a1208;border:1px solid var(--yel2)}
+.firelist{display:flex;flex-direction:column;gap:4px}
+.firerow{display:flex;align-items:center;gap:8px;background:#141518;border:1px solid var(--line);padding:4px 10px}
+.firerow .fnm{font-family:var(--lab);color:#fff}.firerow .fcnt{font-size:12px;color:var(--mute)}.firerow .fcnt b{color:var(--yel2)}
+.firerow.pre{border-color:var(--yel2);background:#2e2810}.firerow.done{opacity:.5}
+/* 받은 피해 판정 · HP 창 */
+.incoming{background:#2b1414;border:1px solid var(--red);color:#ffd0d0;font-size:12px;padding:3px 8px;margin:4px 0;display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.hphead{display:flex;gap:10px;align-items:center;margin:6px 0 8px}.hphead .ti{width:56px;height:56px;flex:none;background:#1a1b20 center/cover no-repeat}
+.hphead .hpbar{height:10px}
+.modal .card{margin-top:10px;padding:10px 12px;clip-path:none}.modal .card.hit{border-color:var(--red)}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;font-size:13px}.kv>span{color:var(--mute)}
+.hgrid{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;align-items:center;font-size:13px}
+.qs{display:flex;flex-wrap:wrap;gap:4px;align-items:center}.qs .btn small{color:var(--mute);margin-left:3px}
+.spx{display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:5px 0;border-top:1px dashed var(--line)}.spx:first-of-type{border-top:0}.spx>b{min-width:120px}
+.modal .tabs{display:flex;gap:4px;margin:6px 0}.modal .tb{flex:1;background:#141518;border:1px solid var(--line);color:var(--fg2);padding:6px;cursor:pointer;font-family:var(--lab)}.modal .tb.on{background:#26272d;border-color:var(--yel2);color:#fff}
+/* 지령·명령 패널 (맵툴 trainer_mgr) */
+.opanel{font-size:13px}
+.ogrp{background:#141518;border:1px solid var(--line);padding:8px 10px;margin-top:8px}
+.ogh{display:flex;align-items:center;gap:8px;margin-bottom:6px}.ogh .gk{font-family:var(--lab);font-size:10px;letter-spacing:.15em;background:var(--blue);color:#fff;padding:0 6px}.ogh .gk.c{background:var(--red)}
+.ogh .exc{margin-left:auto;font-size:11px;color:var(--yel2);border:1px solid var(--yel2);padding:0 6px}
+.ogrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:6px}
+.oc2{display:flex;align-items:center;gap:6px;background:#1a1b20;border:1px solid var(--line2);padding:4px 8px}
+.oc2.zero{opacity:.55}.oc2.ex{border-color:var(--yel2)}
+.oc2 .nm{flex:1;min-width:0;font-family:var(--lab);color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.oc2 .nm small{display:block;font-family:var(--body);font-size:10.5px;color:var(--mute)}
+.oc2 select.mini{max-width:110px;font-size:11px;padding:1px 4px}
+.oc2 .kchip{font-size:11px;color:var(--mute)}.oc2 .kchip.x{color:var(--yel2)}
+.oc2 .step{display:inline-flex;align-items:center;gap:2px}.oc2 .step button{width:22px;height:22px;background:#26272d;border:1px solid var(--line);color:#fff;cursor:pointer}.oc2 .step b{min-width:22px;text-align:center;color:var(--yel2)}
+.oc2 .cntv{color:var(--yel2);min-width:20px;text-align:right}
+.bcol .mon.small .tag{background:var(--yel2);color:#000;font-size:10px;padding:0 5px;transform:none;clip-path:none}
+.bcol .trainer{flex-wrap:nowrap;align-items:flex-start}
+.bcol .trainer .tinfo{flex:1;min-width:0}
+.bcol .trainer .tn{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rk4{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;margin:3px 0 2px}
+.rk4 span{display:flex;flex-direction:column;align-items:center;background:#15161a;border:1px solid var(--line2);padding:1px 0;line-height:1.1}
+.rk4 small{font-size:9px;color:var(--mute)}.rk4 b{font-family:var(--lab);font-size:12px;color:var(--yel2)}
+.bcol .trainer .tr{font-size:11px}
