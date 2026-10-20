@@ -13,7 +13,7 @@ function setAlarm(k,v){const a=alarm();a[k]=v?1:0;try{localStorage.setItem(ALARM
 const isMineLog=r=>{const d=(r&&r.data)||{};return d.from===(ST.role==='gm'?'gm':ST.seat)};
 let titleT=null;function flashTitle(msg){if(!document.hidden)return;const base=document.title.replace(/^\(.*?\) /,'');document.title=`(${msg}) ${base}`;clearTimeout(titleT);const back=()=>{document.title=base;document.removeEventListener('visibilitychange',back)};document.addEventListener('visibilitychange',back);titleT=setTimeout(back,60000)}
 function notifyLog(r){if(!r||r.kind!=='chat'||!r.data||r.data.sms||!(r.data.t))return;if(isMineLog(r))return;if(r.at&&Date.now()-new Date(r.at).getTime()>15000)return;if(!alarm().chat)return;try{if(window.OM_RP_UI)window.OM_RP_UI.playSe('Ping',true)}catch(e){}flashTitle('새 메시지')}
-let toastT=null;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2400)}
+let toastT=null;function toast(m){if(window.OM_REPORT_UI)window.OM_REPORT_UI.note('toast',m);const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2400)}
 function fmtTime(s){const d=new Date(s);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
 function typeChip(en){const c=S().typeColor(en);return `<span class="type" style="background:${c.bg};color:${c.fg}">${esc(S().typeKo(en))}</span>`}
 
@@ -230,7 +230,7 @@ function renderLog(scroll){
 /* ---------- 씬 ---------- */
 function scene(){return ST.state.scene||'rp'}
 let VIEW='';let lastScene='';
-const VIEWS=[['rp','RP'],['battle','배틀'],['sheet','시트'],['graph','관계도'],['calendar','캘린더']];
+const VIEWS=[['rp','RP'],['battle','배틀'],['sheet','시트'],['graph','관계도'],['calendar','캘린더'],['report','제보']];
 /* ---------- 접속 중인 사람 (브로드캐스트 인사: 25초마다 · 새로 온 사람에게 답인사) ---------- */
 const PRES={who:{},t:null,last:0};
 function myId(){return ST.role==='gm'?'gm':ST.role==='seat'?('s:'+ST.seat):('v:'+(ST.vid||(ST.vid=Math.random().toString(36).slice(2,8))))}
@@ -249,17 +249,19 @@ function renderScene(){reconcileNodes();
  try{drawPresence()}catch(e){}
  try{const skb=$('#skillBtn');if(skb&&window.OM_SKILL_UI){const p=window.OM_SKILL_UI.pending();skb.classList.toggle('pri',p);skb.textContent='스킬 체크'+(p?' !':'')}}catch(e){}
  if(window.OM_DB_UI)window.OM_DB_UI.applyOverride(ST.state.dbx);
- /* GM 이 무대(RP/배틀)를 바꾸면 모두 그쪽으로 따라간다. 그 밖의 탭(시트·관계도·캘린더)은 각자 본다 */
+ /* GM 이 무대(RP/배틀)를 바꾸면 모두 그쪽으로 따라간다. 그 밖의 탭(시트·관계도·캘린더·제보)은 각자 본다 */
  if(scene()!==lastScene){lastScene=scene();VIEW=scene()}
  if(!VIEW)VIEW=scene();
  const tabs=$('#sceneTabs');if(tabs){tabs.innerHTML=VIEWS.map(([k,n])=>`<button data-s="${k}" class="${VIEW===k?'on':''} ${scene()===k?'stage':''}" title="${scene()===k?'지금 무대':''}">${n}</button>`).join('')+(ST.role==='gm'?`<button class="btn xs ghost" id="stageBtn" title="모두를 이 탭으로 부른다">무대로</button>`:'');
   tabs.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>{VIEW=b.dataset.s;renderScene()});
   const sb=$('#stageBtn');if(sb)sb.onclick=()=>{if(VIEW==='rp'||VIEW==='battle')set(['scene'],VIEW);else toast('무대는 RP 나 배틀만 될 수 있어')}}
  const el=$('#scene');if(!el)return;
+ if(VIEW!=='report')ST.lastView=VIEW;
  if(VIEW==='battle')renderBattle(el);
  else if(VIEW==='sheet')window.OM_SHEET_UI.render(el);
  else if(VIEW==='graph')window.OM_GRAPH_UI.render(el);
  else if(VIEW==='calendar')window.OM_CAL_UI.render(el);
+ else if(VIEW==='report')window.OM_REPORT_UI.render(el);
  else window.OM_RP_UI.render(el);
  if(window.OM_RP_UI)window.OM_RP_UI.onState();
  if(window.OM_DECK_UI&&ST.role==='gm')window.OM_DECK_UI.absorb()}
