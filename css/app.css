@@ -1303,3 +1303,7 @@ label.ph-item input[type=checkbox]{width:16px;height:16px;flex:none}
 /* GM 채팅 화자 고르기 */
 .side .inbox #chatAs{flex:0 1 110px;min-width:0;max-width:40%;border-radius:999px;border:0;padding:6px 8px;background:#000;color:#fff;font-size:13px}
 .side.ooc .inbox #chatAs{display:none}
+/* 배틀 로그 카드 제목: 굵은 제목 글꼴(Black Han Sans)은 작은 크기에서 한글이 뭉개져 번져 보였다 → 본문 글꼴 굵게로 또렷하게 */
+.bch b{font-family:var(--font);font-weight:700;font-size:14px;line-height:1.45;letter-spacing:0;color:#fff;word-break:keep-all;overflow-wrap:anywhere}
+.bch{align-items:flex-start;background:linear-gradient(90deg,color-mix(in srgb,var(--tc) 28%,#0c0c0e),#15161a 85%)}
+.bch .bctag{margin-top:2px}
