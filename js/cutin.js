@@ -19,7 +19,10 @@ window.OM_CUTIN=(()=>{
 
  /* ----- 발동 컷인 (P5 꼴) ----- */
  function fireLocal(list){const C=cfg();if(String(C.on)==='0')return;list=(list||[]).slice(0,2);if(!list.length)return;const dual=list.length>1;
-  let K=parseFloat(C.sc);if(!(K>0))K=70;K=Math.max(40,Math.min(120,K))/100;const POS=C.pos||'mid',DIM=String(C.dim)==='0'?0:1,DUR=parseFloat(C.dur);const END=DUR>0?DUR:(dual?3.6:3.1);
+  let K=parseFloat(C.sc);if(!(K>0))K=70;K=Math.max(40,Math.min(120,K))/100;
+  /* 세로로 긴 폰 화면: 크기가 vh 기준이라 너무 커진다 → 화면 비율만큼 줄인다 */
+  {const ar=innerWidth/Math.max(1,innerHeight);if(ar<1.2)K*=Math.max(.45,Math.min(1,ar*1.1))}
+  const POS=C.pos||'mid',DIM=String(C.dim)==='0'?0:1,DUR=parseFloat(C.dur);const END=DUR>0?DUR:(dual?3.6:3.1);
   const r=root('p5');r.className='p5';r.style.setProperty('--end',END+'s');
   let h=DIM?'<div class="p-dim"></div>':'';h+='<div class="p-shake">';
   list.forEach((c,i)=>{const left=!dual||i===0;const rh=(dual?26:30)*K;const ctr=dual?(i===0?50-20*Math.max(K,.75):50+20*Math.max(K,.75)):(POS==='top'?28:POS==='bot'?72:50);const cw=(dual?30:38)*K;

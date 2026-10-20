@@ -339,7 +339,7 @@ function openMon(mid){
  const K=S().STATS_KO;const pct=Math.round(m.hp.cur/m.hp.max*100);
  const stat6=`<div class="dxst wide">${m.ranks.map((r,i)=>`<div><small>${K[i]}</small><b>${esc(r)}</b>${full?`<em title="종족치 · 실수치">${m.base[i]} · ${m.stats[i]}</em>`:''}</div>`).join('')}</div>`;
  const an=(kind,name)=>(full&&name&&name!=='-')?` <button class="btn xs ghost anb" data-an="${esc(kind)}" data-ann="${esc(name)}" title="로그에 출력">📢 출력</button>`:'';
- const hpRow=full?`<div class="hpq"><span class="k">HP 조작</span><input type="text" id="hpd" placeholder="숫자 · 1/8" title="숫자 또는 분수(최대 HP 기준)"><button class="btn sm" id="hpDmg">대미지</button><button class="btn sm" id="hpHeal">회복</button><button class="btn sm ghost" id="hpFull">전부 회복</button>
+ const hpRow=full?`<div class="hpq"><span class="k">HP 조작</span><input type="text" id="hpd" placeholder="숫자 · 1/8" title="숫자 또는 분수(최대 HP 기준)"><button class="btn sm hpdmg" id="hpDmg">대미지</button><button class="btn sm hpheal" id="hpHeal">회복</button><button class="btn sm ghost hpheal2" id="hpFull">전부 회복</button>
   <span class="qs">${['1/16','1/8','1/4','1/3','1/2'].map(f=>`<button class="btn xs" data-hpf="${f}" title="최대 HP 의 ${f} 대미지">−${f}</button>`).join('')}</span><span class="sp"></span><button class="btn xs ghost" id="hpWin" title="완화 배율·반동·드레인 계산 창">「HP」 창</button></div>`:'';
  const effHtml=(kind,name,fallback)=>window.OM_DB_UI.effectHtml(kind,name)||`<span class="small dim">${esc(fallback||'')}</span>`;
  const potCard=(p,kind)=>`<div class="dxp ${p.ph?"ph":""}"><div class="pn"><b>${esc(p.name)}</b>${kind||p.kind?`<small>${esc(kind||p.kind)}</small>`:''}${p.ph?'<small>(미정)</small>':''}<span class="sp"></span>${p.ph?'':an('pot',p.name)}</div>${p.ph?'':`<div class="pe">${esc(p.eff||'')}</div>`}</div>`;

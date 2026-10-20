@@ -1307,3 +1307,8 @@ label.ph-item input[type=checkbox]{width:16px;height:16px;flex:none}
 .bch b{font-family:var(--font);font-weight:700;font-size:14px;line-height:1.45;letter-spacing:0;color:#fff;word-break:keep-all;overflow-wrap:anywhere}
 .bch{align-items:flex-start;background:linear-gradient(90deg,color-mix(in srgb,var(--tc) 28%,#0c0c0e),#15161a 85%)}
 .bch .bctag{margin-top:2px}
+/* HP 조작: 대미지는 빨강 · 회복은 초록으로 구분 */
+.btn.hpdmg{background:#d9243f;color:#fff;border-color:#000}.btn.hpdmg:hover{background:#ff3355}
+.btn.hpheal{background:#2f9e5b;color:#fff;border-color:#000}.btn.hpheal:hover{background:#38b86a}
+.btn.hpheal2{color:#5fd28d;border-color:#2f9e5b}
+.hpq .qs .btn{background:#3a1218;color:#ffb3bd;border-color:#d9243f}
