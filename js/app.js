@@ -348,6 +348,7 @@ function openMon(mid){
   <div class="dxhead"><div class="dxpic" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div>
    <div class="dxinfo"><div class="dxname">${esc(m.name)}<span class="lv">Lv.${m.lv}</span><span class="small muted">${esc(tr.name)}</span><span class="row" style="gap:4px;display:inline-flex">${m.types.filter(t=>t!=='-').map(typeChip).join('')}</span>${m.tera&&m.tera!=='-'?`<span class="badge">테라 ${esc(m.tera)}</span>`:''}${m.role?`<span class="badge">${esc(m.role)}</span>`:''}${m.pride?`<span class="badge">프라이드 ${esc(m.pride)}</span>`:''}</div>
     <div class="dxhp"><div class="hpbar ${pct<=25?'low':pct<=50?'mid':''}"><i style="width:${pct}%"></i></div><span class="mono">${full?m.hp.cur+' / '+m.hp.max:pct+'%'}</span></div>
+    ${(()=>{const U=window.OM_BATTLE_UI;if(!U||!U.nowParts||!m.entry)return '';const P=U.nowParts(m);const row=(k,h)=>`<div class="dxrow dxnow"><span class="k">${k}</span><div class="rks">${h||'<span class="small dim">없음</span>'}</div></div>`;return row('랭크·배율',P.rank)+row('상태',P.state)+row('효과',P.fx)})()}
     <div class="dxrow"><span class="k">특성</span><span><b>${esc(m.ability||'-')}</b>${an('trait',m.ability)}<div class="dbmini">${effHtml('trait',m.ability,m.abilityEff)}</div></span></div>
     <div class="dxrow"><span class="k">소지품</span><span><b>${esc(m.item||'-')}</b>${an('item',m.item)}<div class="dbmini">${effHtml('item',m.item,m.itemEff)}</div></span></div>
     <div class="dxrow"><span class="k">능력</span>${stat6}</div>

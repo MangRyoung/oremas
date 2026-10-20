@@ -1021,5 +1021,7 @@ ${L.join('\n')}`,'battle',{mid:atk.id,img:atk.image||''})}
    nb.mons[mid].lastDealt={total:RESULT.targets.filter(r=>r.acc.hit&&r.dmg).reduce((a,r)=>a+(r.hp?r.hp.final:0),0),targets:RESULT.targets.filter(r=>r.acc.hit&&r.dmg).map(r=>r.def.name).join(', '),at:Date.now()};
    A().closeModal();if(await saveBattle(nb0,nb))A().sysLog(`【전달】 ${atk.name} 『${RESULT.mv.name}』\n${lines.join('\n')}`,'battle',{mid:atk.id,img:atk.image||''})}}
 
- return {render,watch,ctx,entered,allEntered,fieldOf,resetLocal:()=>{CMD={}},startCut:(m)=>battleStartCut(ctx().b,m),openHp,action};
+ /* 상세 창용: 지금 걸린 것 (읽기 전용) */
+ function nowParts(m){return {rank:rankChips(m),state:stateChips(m),fx:flagChips(m)+(FX()?FX().chips(m).map(ch=>`<span class="rk fxc" title="${esc(ch.title)}">${esc(ch.t)}</span>`).join(''):'')}}
+ return {render,nowParts,watch,ctx,entered,allEntered,fieldOf,resetLocal:()=>{CMD={}},startCut:(m)=>battleStartCut(ctx().b,m),openHp,action};
 })();

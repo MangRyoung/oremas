@@ -1312,3 +1312,19 @@ label.ph-item input[type=checkbox]{width:16px;height:16px;flex:none}
 .btn.hpheal{background:#2f9e5b;color:#fff;border-color:#000}.btn.hpheal:hover{background:#38b86a}
 .btn.hpheal2{color:#5fd28d;border-color:#2f9e5b}
 .hpq .qs .btn{background:#3a1218;color:#ffb3bd;border-color:#d9243f}
+/* 포켓몬 상세 창: 지금 걸린 것 · 모바일 배치 */
+.dxnow .rks{display:flex;flex-wrap:wrap;gap:4px;flex:1;min-width:0}.dxnow{align-items:center}
+@media (max-width:760px){
+ .dxhead{flex-wrap:wrap;gap:10px;padding:8px}
+ .dxpic{width:88px;height:88px}
+ .dxinfo{flex:1 1 calc(100% - 100px);min-width:0}
+ .dxname{font-size:18px}
+ .dxside{width:auto;flex:1 1 100%;border-left:0;border-top:1px solid var(--line);padding:8px 0 0}
+ .dxside .dxw{flex-wrap:wrap}
+ .dxrow{flex-wrap:wrap;gap:4px 8px}.dxrow .k{width:auto;min-width:40px}
+ .dxrow>span:not(.k),.dxrow>div{flex:1 1 200px;min-width:0}
+ .dxst,.dxst.wide{grid-template-columns:repeat(3,1fr);max-width:none;width:100%}
+ .hpq input{width:80px}
+ .dxpots{grid-template-columns:1fr}
+ .dxmv td.eff{min-width:0}
+}
