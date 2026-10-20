@@ -853,3 +853,11 @@ body.resizing{user-select:none;cursor:col-resize}
 /* 행동 순서 가운데 */
 .ostrip{justify-content:center;flex-wrap:wrap}
 .ocard{flex:0 0 132px}
+
+/* ---------- 보기 설정이 쓰는 변수 ---------- */
+:root{--chatfs:13px;--dlgfs:22px}
+.msg .bub{font-size:var(--chatfs)}.msg.battle .bub{font-size:calc(var(--chatfs) - .5px)}.bcb{font-size:calc(var(--chatfs) - .5px)}
+.dtext{font-size:var(--dlgfs)}
+
+.rk.fxc.rm{cursor:pointer}.rk.fxc.rm:hover{background:#3a2020;border-color:var(--red);color:#ffd0d0}
+.potlist th{vertical-align:top}.potlist td.pre{max-width:520px}

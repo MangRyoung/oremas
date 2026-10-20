@@ -146,10 +146,15 @@ window.OM_FX=(()=>{
   if(gone.length)L.push(`${m.name} 「${gone.join('」「')}」 끝`)}return L}
 
  /* ===== 포켓몬 카드에 보여 줄 효과 칩 ===== */
- function chips(m){const out=[];for(const e of liveMods(m))out.push({t:`${e.kind==='boost'?'강화':'완화'} ×${e.v}`,title:modDesc(e)});for(const e of (m.fx&&m.fx.noind)||[])out.push({t:'비례 무시',title:e.name+' — '+NOIND_KO[e.kind||'']});
-  for(const e of (m.fx&&m.fx.prio)||[])out.push({t:`우선도 ${e.mode==='set'?'=':(e.v>0?'+':'')}${e.v}`,title:e.name});for(const e of (m.fx&&m.fx.immune)||[])out.push({t:'면역 '+e.states.map(stKo).join('·'),title:e.name});
-  for(const e of (m.fx&&m.fx.nodrop)||[])out.push({t:(e.st?STAT_KO[e.st]+' ':'')+'감소 무시',title:e.name});if(m.fx&&m.fx.ignoreUp)out.push({t:'강화 무시',title:'상대의 능력 상승 무시'});if(floating(m))out.push({t:'하늘 위',title:'땅 위 효과를 받지 않는다'});
-  if(m.fx&&m.fx.roles&&m.fx.roles.length)out.push({t:'역할 '+m.fx.roles.join('·'),title:'역할 취급'});if(m.typesOrig)out.push({t:'타입 변경',title:'원래 '+m.typesOrig.map(t=>TYPE_KO[t]||t).join('/')});if(m.abilityOrig!=null)out.push({t:'특성 변경',title:'원래 '+(m.abilityOrig||'없음')});return out}
+ function chips(m){const out=[];for(const e of liveMods(m))out.push({t:`${e.kind==='boost'?'강화':'완화'} ×${e.v}`,title:modDesc(e),id:'mods:'+e.key,name:e.name});for(const e of (m.fx&&m.fx.noind)||[])out.push({t:'비례 무시',title:e.name+' — '+NOIND_KO[e.kind||''],id:'noind:'+e.key,name:e.name});
+  for(const e of (m.fx&&m.fx.prio)||[])out.push({t:`우선도 ${e.mode==='set'?'=':(e.v>0?'+':'')}${e.v}`,title:e.name,id:'prio:'+e.key,name:e.name});for(const e of (m.fx&&m.fx.immune)||[])out.push({t:'면역 '+e.states.map(stKo).join('·'),title:e.name,id:'immune:'+e.key,name:e.name});
+  for(const e of (m.fx&&m.fx.nodrop)||[])out.push({t:(e.st?STAT_KO[e.st]+' ':'')+'감소 무시',title:e.name,id:'nodrop:'+e.key,name:e.name});if(m.fx&&m.fx.ignoreUp)out.push({t:'강화 무시',title:'상대의 능력 상승 무시',id:'ignoreUp',name:'강화 무시'});if(floating(m))out.push({t:'하늘 위',title:'땅 위 효과를 받지 않는다',id:'float',name:'하늘 위'});
+  if(m.fx&&m.fx.roles&&m.fx.roles.length)out.push({t:'역할 '+m.fx.roles.join('·'),title:'역할 취급',id:'roles',name:'역할 취급'});if(m.typesOrig)out.push({t:'타입 변경',title:'원래 '+m.typesOrig.map(t=>TYPE_KO[t]||t).join('/'),id:'types',name:'타입 변경'});if(m.abilityOrig!=null)out.push({t:'특성 변경',title:'원래 '+(m.abilityOrig||'없음'),id:'ability',name:'특성 변경'});
+  if(m.flags&&m.flags.pursuit)out.push({t:'따라가때리기',title:'다음 기술',id:'pursuit',name:'따라가때리기'});return out}
+ /* 효과 하나 해제 (id 는 chips 의 id) */
+ function remove(m,id){const F=fx(m);const [kind,key]=id.split(/:(.+)/);if(['mods','noind','prio','immune','nodrop'].includes(kind)){F[kind]=F[kind].filter(e=>e.key!==key);return true}
+  if(kind==='ignoreUp'){F.ignoreUp=null;return true}if(kind==='float'){F.float=null;return true}if(kind==='roles'){F.roles=[];return true}if(kind==='types'){if(m.typesOrig){m.types=m.typesOrig;delete m.typesOrig}return true}if(kind==='ability'){if(m.abilityOrig!=null){m.ability=m.abilityOrig;delete m.abilityOrig}return true}if(kind==='pursuit'){if(m.flags)delete m.flags.pursuit;return true}return false}
+ function removeAll(m){const F=fx(m);F.mods=[];F.noind=[];F.prio=[];F.immune=[];F.nodrop=[];F.ignoreUp=null;F.float=null;F.roles=[];if(m.typesOrig){m.types=m.typesOrig;delete m.typesOrig}if(m.abilityOrig!=null){m.ability=m.abilityOrig;delete m.abilityOrig}if(m.flags)delete m.flags.pursuit}
 
  /* ===== 발동 시점·확률 (효과 글의 표식) ===== */
  function timing(text){const t=String(text||'');const out={entry:/【등장】/.test(t),passive:/【상시】/.test(t),turnEnd:/【턴 종료】|턴 종료 시/.test(t),pre:/【선행】/.test(t),uses:(t.match(/【(\d+)\/시】/)||[])[1]||'',percent:''};
@@ -236,5 +241,5 @@ window.OM_FX=(()=>{
   return L}
  /* 사람이 읽는 설명 (미리보기·로그) */
  function describe(ops){return unparse(ops)}
- return {rm,rmAll,autoOf,run,attackMods,consume,prioOf,turnEnd,chips,timing,percentOf,parse,unparse,describe,noind,floating,immuneHit,nodropHit,liveMods,modDesc,TGT_KO,STAT_KO,TYPE_KO,NEG,ABN,stEn,stKo};
+ return {rm,rmAll,autoOf,run,attackMods,consume,prioOf,turnEnd,chips,remove,removeAll,timing,percentOf,parse,unparse,describe,noind,floating,immuneHit,nodropHit,liveMods,modDesc,TGT_KO,STAT_KO,TYPE_KO,NEG,ABN,stEn,stKo};
 })();

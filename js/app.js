@@ -59,6 +59,19 @@ async function openRoom(id,gm){
 
 async function pollWhispers(){try{const ws=await DBS().whispers(ST.room,ST.secret,ST.lastWhisper);if(!ws||!ws.length)return;ws.forEach(w=>{ST.lastWhisper=Math.max(ST.lastWhisper,w.id);if(!ST.log.find(x=>x.id===w.id))ST.log.push(w)});ST.log.sort((a,b)=>a.id-b.id);renderLog(true)}catch(e){}}
 
+/* ---------- 보기 설정: 글씨 크기·채팅/대사 글씨·폰트 (브라우저마다) ---------- */
+const UI_FONTS=[['plex','IBM Plex Sans KR (기본)'],['noto','Noto Sans KR'],['nanum','나눔고딕'],['gothica1','Gothic A1'],['gowun','고운돋움'],['pretendard','Pretendard'],['myeongjo','나눔명조'],['system','시스템 기본']];
+const UI_HEADS=[['bhs','Black Han Sans (기본)'],['dohyeon','Do Hyeon'],['jua','주아'],['gugi','구기'],['same','본문과 같게']];
+const UI_FONT_CSS={plex:"'IBM Plex Sans KR','Noto Sans KR',system-ui,sans-serif",noto:"'Noto Sans KR',system-ui,sans-serif",nanum:"'Nanum Gothic','나눔고딕',system-ui,sans-serif",gothica1:"'Gothic A1',system-ui,sans-serif",gowun:"'Gowun Dodum',system-ui,sans-serif",pretendard:"Pretendard,'Pretendard Variable',system-ui,sans-serif",myeongjo:"'Nanum Myeongjo','나눔명조',serif",system:"system-ui,'Malgun Gothic','Apple SD Gothic Neo',sans-serif"};
+const UI_HEAD_CSS={bhs:"'Black Han Sans','Do Hyeon'",dohyeon:"'Do Hyeon'",jua:"'Jua'",gugi:"'Gugi'"};
+const UI_GFONT={noto:'Noto+Sans+KR:wght@400;500;700',nanum:'Nanum+Gothic:wght@400;700',gothica1:'Gothic+A1:wght@400;500;700',gowun:'Gowun+Dodum',myeongjo:'Nanum+Myeongjo:wght@400;700',jua:'Jua',gugi:'Gugi'};
+const UI_DEF={scale:100,chat:13,dlg:22,font:'plex',head:'bhs'};
+const UI=Object.assign({},UI_DEF,(()=>{try{return JSON.parse(localStorage.getItem('om_ui')||'{}')}catch(e){return {}}})());
+function loadFont(key){const g=UI_GFONT[key];if(!g)return;const id='gf_'+key;if(document.getElementById(id))return;if(key==='pretendard'){return}const l=document.createElement('link');l.id=id;l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family='+g+'&display=swap';document.head.appendChild(l)}
+function applyUi(){const r=document.documentElement.style;loadFont(UI.font);loadFont(UI.head);if(UI.font==='pretendard'&&!document.getElementById('gf_pretendard')){const l=document.createElement('link');l.id='gf_pretendard';l.rel='stylesheet';l.href='https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css';document.head.appendChild(l)}
+ r.setProperty('--font',UI_FONT_CSS[UI.font]||UI_FONT_CSS.plex);const h=UI.head==='same'?'var(--font)':(UI_HEAD_CSS[UI.head]||UI_HEAD_CSS.bhs)+',var(--font)';r.setProperty('--head',h);r.setProperty('--lab',UI.head==='same'?'var(--font)':"'Do Hyeon',var(--font)");
+ r.setProperty('--chatfs',UI.chat+'px');r.setProperty('--dlgfs',UI.dlg+'px');document.body.style.zoom=UI.scale/100}
+applyUi();
 function renderRoom(){
  const app=$('#app');const r=ST.roomRow;
  app.innerHTML=`<div class="room">
@@ -248,10 +261,18 @@ function openRoomSettings(){
  const r=ST.roomRow;const isGm=ST.role==='gm';const m=openModal(`<div class="mhead"><h2>${isGm?'방 설정':'소리'}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
   ${isGm?`<div class="row"><label>방 이름</label><input type="text" id="rn" value="${esc(r.name)}" style="flex:1"><button class="btn pri" id="rnSave">저장</button></div>
   <p class="small muted" style="margin-top:12px">방 id <span class="mono">${esc(r.id)}</span></p>`:''}
+  <div class="sec" style="margin-top:12px">보기 (이 브라우저에서만)</div>
+  <div class="row"><label style="width:70px">글씨 크기</label><input type="range" min="80" max="140" step="5" id="uiScale" value="${UI.scale}" style="flex:1"><span class="mono small" id="uiScaleV"></span></div>
+  <div class="row"><label style="width:70px">채팅 글씨</label><input type="range" min="11" max="20" step="1" id="uiChat" value="${UI.chat}" style="flex:1"><span class="mono small" id="uiChatV"></span></div>
+  <div class="row"><label style="width:70px">대사 글씨</label><input type="range" min="16" max="34" step="1" id="uiDlg" value="${UI.dlg}" style="flex:1"><span class="mono small" id="uiDlgV"></span></div>
+  <div class="row" style="flex-wrap:wrap;gap:8px"><label style="width:70px">본문 폰트</label><select id="uiFont">${UI_FONTS.map(([k,n])=>`<option value="${k}" ${UI.font===k?'selected':''}>${n}</option>`).join('')}</select><label>제목 폰트</label><select id="uiHead">${UI_HEADS.map(([k,n])=>`<option value="${k}" ${UI.head===k?'selected':''}>${n}</option>`).join('')}</select><button class="btn xs ghost" id="uiReset">기본으로</button></div>
   <div class="sec" style="margin-top:12px">소리 (이 브라우저에서만)</div>
   <div class="row"><label style="width:70px">BGM</label><input type="range" min="0" max="1" step="0.05" id="volBgm" value="${(()=>{try{return localStorage.getItem('om_vol')??0.5}catch(e){return 0.5}})()}" style="flex:1"><span class="mono small" id="volBgmV"></span></div>
   <div class="row"><label style="width:70px">효과음</label><input type="range" min="0" max="1" step="0.05" id="volSe" value="${(()=>{try{return localStorage.getItem('om_vol_se')??0.7}catch(e){return 0.7}})()}" style="flex:1"><span class="mono small" id="volSeV"></span><button class="btn xs ghost" id="volSeTest">시험</button></div>
   <div class="row"><button class="btn sm" id="seatMgr">자리 관리</button></div>`);
+ const us=$('#uiScale',m),uc=$('#uiChat',m),ud=$('#uiDlg',m),uf=$('#uiFont',m),uh=$('#uiHead',m);const showUi=()=>{$('#uiScaleV',m).textContent=us.value+'%';$('#uiChatV',m).textContent=uc.value+'px';$('#uiDlgV',m).textContent=ud.value+'px'};showUi();
+ const saveUi=()=>{UI.scale=+us.value;UI.chat=+uc.value;UI.dlg=+ud.value;UI.font=uf.value;UI.head=uh.value;try{localStorage.setItem('om_ui',JSON.stringify(UI))}catch(e){}applyUi();showUi()};[us,uc,ud].forEach(el=>el.oninput=saveUi);uf.onchange=saveUi;uh.onchange=saveUi;
+ $('#uiReset',m).onclick=()=>{Object.assign(UI,UI_DEF);us.value=UI.scale;uc.value=UI.chat;ud.value=UI.dlg;uf.value=UI.font;uh.value=UI.head;saveUi()};
  const vb=$('#volBgm',m),vs=$('#volSe',m);const show=()=>{$('#volBgmV',m).textContent=Math.round(vb.value*100)+'%';$('#volSeV',m).textContent=Math.round(vs.value*100)+'%'};show();
  vb.oninput=()=>{show();if(window.OM_RP_UI)window.OM_RP_UI.setVolume('bgm',+vb.value)};vs.oninput=()=>{show();if(window.OM_RP_UI)window.OM_RP_UI.setVolume('se',+vs.value)};
  $('#volSeTest',m).onclick=()=>{if(window.OM_RP_UI)window.OM_RP_UI.playSe('Ping2',true)};
