@@ -57,7 +57,7 @@ async function openRoom(id,gm){
  if(!ST.role){remember(id,row.name,'');ST.name=LS.get('om_name_'+id,'')||''}
  const st=await DBS().getState(id);ST.state=(st&&st.data)||{};ST.v=(st&&st.v)||0;
  /* GM 이 방을 열면 좌석이 쓸 상자(roster · pub · graph · skill · dex)를 먼저 만들어 둔다 — 서버의 jsonb_set 은 부모가 없으면 조용히 실패하니까 */
- if(ST.role==='gm'){const need={roster:{trainers:{},mons:{}},pub:{},graph:{nodes:{},edges:{}},skill:{},dex:{},rp:{}};for(const k in need){if(typeof ST.state[k]!=='object'||ST.state[k]===null){try{const v=await DBS().setState(id,ST.secret,[k],need[k]);ST.state[k]=need[k];ST.v=Math.max(ST.v,v||0)}catch(e){}}else if(k==='roster'){for(const kk of ['trainers','mons'])if(typeof ST.state.roster[kk]!=='object'||ST.state.roster[kk]===null){try{const v=await DBS().setState(id,ST.secret,['roster',kk],{});ST.state.roster[kk]={};ST.v=Math.max(ST.v,v||0)}catch(e){}}}}}
+ if(ST.role==='gm'){const need={roster:{trainers:{},mons:{}},pub:{},ready:{},graph:{nodes:{},edges:{}},skill:{},dex:{},rp:{},battle:{}};for(const k in need){if(typeof ST.state[k]!=='object'||ST.state[k]===null){try{const v=await DBS().setState(id,ST.secret,[k],need[k]);ST.state[k]=need[k];ST.v=Math.max(ST.v,v||0)}catch(e){}}else if(k==='roster'){for(const kk of ['trainers','mons'])if(typeof ST.state.roster[kk]!=='object'||ST.state.roster[kk]===null){try{const v=await DBS().setState(id,ST.secret,['roster',kk],{});ST.state.roster[kk]={};ST.v=Math.max(ST.v,v||0)}catch(e){}}}}}
  ST.log=await DBS().getLogTail(id,200);ST.lastLogId=ST.log.length?ST.log[ST.log.length-1].id:0;
  renderRoom();
  ST.unsub=DBS().subscribe(id,{onEvent:p=>{if(p&&p.t==='hello')onHello(p);if(window.OM_RP_UI&&p&&p.t==='typing')window.OM_RP_UI.onTyping(p);if(window.OM_CUTIN&&p&&p.t==='cutin')window.OM_CUTIN.onEvent(p)},onState:(d,v)=>{if(v>=ST.v){ST.state=d;ST.v=v;renderScene()}},onLog:r=>{if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;renderLog(true);notifyLog(r);mobNote(r);if(window.OM_RP_UI)window.OM_RP_UI.onChat(r)}},
@@ -73,12 +73,12 @@ const UI_HEADS=[['bhs','Black Han Sans (기본)'],['dohyeon','Do Hyeon'],['jua',
 const UI_FONT_CSS={plex:"'IBM Plex Sans KR','Noto Sans KR',system-ui,sans-serif",noto:"'Noto Sans KR',system-ui,sans-serif",nanum:"'Nanum Gothic','나눔고딕',system-ui,sans-serif",gothica1:"'Gothic A1',system-ui,sans-serif",gowun:"'Gowun Dodum',system-ui,sans-serif",pretendard:"Pretendard,'Pretendard Variable',system-ui,sans-serif",myeongjo:"'Nanum Myeongjo','나눔명조',serif",system:"system-ui,'Malgun Gothic','Apple SD Gothic Neo',sans-serif"};
 const UI_HEAD_CSS={bhs:"'Black Han Sans','Do Hyeon'",dohyeon:"'Do Hyeon'",jua:"'Jua'",gugi:"'Gugi'"};
 const UI_GFONT={noto:'Noto+Sans+KR:wght@400;500;700',nanum:'Nanum+Gothic:wght@400;700',gothica1:'Gothic+A1:wght@400;500;700',gowun:'Gowun+Dodum',myeongjo:'Nanum+Myeongjo:wght@400;700',jua:'Jua',gugi:'Gugi'};
-const UI_DEF={scale:100,chat:13,dlg:22,font:'plex',head:'bhs'};
+const UI_DEF={scale:100,chat:13,dlg:22,av:40,font:'plex',head:'bhs'};
 const UI=Object.assign({},UI_DEF,(()=>{try{return JSON.parse(localStorage.getItem('om_ui')||'{}')}catch(e){return {}}})());
 function loadFont(key){const g=UI_GFONT[key];if(!g)return;const id='gf_'+key;if(document.getElementById(id))return;if(key==='pretendard'){return}const l=document.createElement('link');l.id=id;l.rel='stylesheet';l.href='https://fonts.googleapis.com/css2?family='+g+'&display=swap';document.head.appendChild(l)}
 function applyUi(){const r=document.documentElement.style;loadFont(UI.font);loadFont(UI.head);if(UI.font==='pretendard'&&!document.getElementById('gf_pretendard')){const l=document.createElement('link');l.id='gf_pretendard';l.rel='stylesheet';l.href='https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css';document.head.appendChild(l)}
  r.setProperty('--font',UI_FONT_CSS[UI.font]||UI_FONT_CSS.plex);const h=UI.head==='same'?'var(--font)':(UI_HEAD_CSS[UI.head]||UI_HEAD_CSS.bhs)+',var(--font)';r.setProperty('--head',h);r.setProperty('--lab',UI.head==='same'?'var(--font)':"'Do Hyeon',var(--font)");
- r.setProperty('--chatfs',UI.chat+'px');r.setProperty('--dlgfs',UI.dlg+'px');document.body.style.zoom=window.matchMedia('(max-width:760px)').matches?1:UI.scale/100}
+ r.setProperty('--chatfs',UI.chat+'px');r.setProperty('--chatav',(UI.av||40)+'px');r.setProperty('--dlgfs',UI.dlg+'px');document.body.style.zoom=window.matchMedia('(max-width:760px)').matches?1:UI.scale/100}
 applyUi();
 /* ---------- 모바일 (폭 760px 이하): 무대/채팅을 아래 바로 오가고, 위쪽 버튼들은 ☰ 메뉴에 모은다 ---------- */
 const MOB={mode:'scene',unread:0};
@@ -130,7 +130,7 @@ async function set(path,value){try{
   /* 서버의 jsonb_set 은 중간 키가 없으면 조용히 실패한다 — 옛 schema 를 쓰는 방이어도 되게 부모를 먼저 만든다 */
   if(path&&path.length>1&&ST.role==='gm'){let o=ST.state;for(let i=0;i<path.length-1;i++){if(typeof o[path[i]]!=='object'||o[path[i]]===null){await DBS().setState(ST.room,ST.secret,path.slice(0,i+1),{});o[path[i]]={}}o=o[path[i]]}}
   /* 좌석: 중간 상자가 없으면(예: pub/나 가 아직 없음) 있는 부모까지 올라가 통째로 쓴다 — 허용 경로 안이면 서버가 받아 준다 */
-  let wpath=path,wval=value;if(path&&path.length>1&&ST.role!=='gm'){let o=ST.state;for(let i=0;i<path.length-1;i++){if(typeof o[path[i]]!=='object'||o[path[i]]===null){let nv=value;for(let j=path.length-1;j>i;j--){nv={[path[j]]:nv}}wpath=path.slice(0,i+1);wval=nv;break}o=o[path[i]]}}
+  let wpath=path,wval=value;if(path&&path.length>2&&ST.role!=='gm'){let o=ST.state[path[0]];for(let i=1;o&&i<path.length-1;i++){if(typeof o[path[i]]!=='object'||o[path[i]]===null){let nv=value;for(let j=path.length-1;j>i;j--){nv={[path[j]]:nv}}wpath=path.slice(0,i+1);wval=nv;break}o=o[path[i]]}}
   const v=await DBS().setState(ST.room,ST.secret,wpath,wval);
   /* 낙관적 반영: 실시간이 오기 전에 화면부터 */
   if(path&&path.length){let o=ST.state;for(let i=0;i<path.length-1;i++){if(typeof o[path[i]]!=='object'||o[path[i]]==null)o[path[i]]={};o=o[path[i]]}
@@ -376,16 +376,19 @@ function openRoomSettings(){
   <div class="row"><label style="width:70px">글씨 크기</label><input type="range" min="80" max="140" step="5" id="uiScale" value="${UI.scale}" style="flex:1"><span class="mono small" id="uiScaleV"></span></div>
   <div class="row"><label style="width:70px">채팅 글씨</label><input type="range" min="11" max="20" step="1" id="uiChat" value="${UI.chat}" style="flex:1"><span class="mono small" id="uiChatV"></span></div>
   <div class="row"><label style="width:70px">대사 글씨</label><input type="range" min="16" max="34" step="1" id="uiDlg" value="${UI.dlg}" style="flex:1"><span class="mono small" id="uiDlgV"></span></div>
+  <div class="row"><label style="width:70px">채팅 초상</label><input type="range" min="24" max="72" step="2" id="uiAv" value="${UI.av||40}" style="flex:1"><span class="mono small" id="uiAvV"></span></div>
   <div class="row" style="flex-wrap:wrap;gap:8px"><label style="width:70px">본문 폰트</label><select id="uiFont">${UI_FONTS.map(([k,n])=>`<option value="${k}" ${UI.font===k?'selected':''}>${n}</option>`).join('')}</select><label>제목 폰트</label><select id="uiHead">${UI_HEADS.map(([k,n])=>`<option value="${k}" ${UI.head===k?'selected':''}>${n}</option>`).join('')}</select><button class="btn xs ghost" id="uiReset">기본으로</button></div>
   <div class="sec" style="margin-top:12px">소리 (이 브라우저에서만)</div>
   <div class="row"><label style="width:70px">BGM</label><input type="range" min="0" max="1" step="0.05" id="volBgm" value="${(()=>{try{return localStorage.getItem('om_vol')??0.5}catch(e){return 0.5}})()}" style="flex:1"><span class="mono small" id="volBgmV"></span></div>
   <div class="row"><label style="width:70px">효과음</label><input type="range" min="0" max="1" step="0.05" id="volSe" value="${(()=>{try{return localStorage.getItem('om_vol_se')??0.7}catch(e){return 0.7}})()}" style="flex:1"><span class="mono small" id="volSeV"></span><button class="btn xs ghost" id="volSeTest">시험</button></div>
   <div class="sec" style="margin-top:12px">알림 (이 브라우저에서만)</div>
   <div class="row" style="flex-wrap:wrap;gap:14px"><label class="small"><input type="checkbox" data-alarm="chat" ${alarm().chat?'checked':''}> 채팅이 올라오면 소리</label><label class="small"><input type="checkbox" data-alarm="sms" ${alarm().sms?'checked':''}> 문자가 오면 소리·알림</label><label class="small"><input type="checkbox" data-alarm="typing" ${alarm().typing?'checked':''}> 입력 중 표시</label></div>
+  ${isGm?`<div class="sec" style="margin-top:12px">배틀</div><div class="row"><label class="small"><input type="checkbox" id="plBattle" ${(ST.state.rp||{}).plBattle!==false?'checked':''}> 플레이어도 배틀을 진행할 수 있다 (파티 불러오기 · 시합 개시 · 턴 진행 · 필드 — 모의전용. 상대 지시 엿보기 · 강제 · 모두 공개는 GM 만)</label></div>`:''}
   <div class="row"><button class="btn sm" id="seatMgr">자리 관리</button></div>`);
  m.querySelectorAll('[data-alarm]').forEach(c=>c.onchange=()=>setAlarm(c.dataset.alarm,c.checked));
- const us=$('#uiScale',m),uc=$('#uiChat',m),ud=$('#uiDlg',m),uf=$('#uiFont',m),uh=$('#uiHead',m);const showUi=()=>{$('#uiScaleV',m).textContent=us.value+'%';$('#uiChatV',m).textContent=uc.value+'px';$('#uiDlgV',m).textContent=ud.value+'px'};showUi();
- const saveUi=()=>{UI.scale=+us.value;UI.chat=+uc.value;UI.dlg=+ud.value;UI.font=uf.value;UI.head=uh.value;try{localStorage.setItem('om_ui',JSON.stringify(UI))}catch(e){}applyUi();showUi()};[us,uc,ud].forEach(el=>el.oninput=saveUi);uf.onchange=saveUi;uh.onchange=saveUi;
+ const us=$('#uiScale',m),uc=$('#uiChat',m),ud=$('#uiDlg',m),uf=$('#uiFont',m),uh=$('#uiHead',m),ua=$('#uiAv',m);const showUi=()=>{$('#uiScaleV',m).textContent=us.value+'%';$('#uiChatV',m).textContent=uc.value+'px';$('#uiDlgV',m).textContent=ud.value+'px';$('#uiAvV',m).textContent=ua.value+'px'};showUi();
+const pb=$('#plBattle',m);if(pb)pb.onchange=async()=>{await set(['rp','plBattle'],pb.checked);toast(pb.checked?'플레이어도 배틀을 진행할 수 있다':'배틀 진행은 GM 만')};
+ const saveUi=()=>{UI.scale=+us.value;UI.chat=+uc.value;UI.dlg=+ud.value;UI.av=+ua.value;UI.font=uf.value;UI.head=uh.value;try{localStorage.setItem('om_ui',JSON.stringify(UI))}catch(e){}applyUi();showUi()};[us,uc,ud,ua].forEach(el=>el.oninput=saveUi);uf.onchange=saveUi;uh.onchange=saveUi;
  $('#uiReset',m).onclick=()=>{Object.assign(UI,UI_DEF);us.value=UI.scale;uc.value=UI.chat;ud.value=UI.dlg;uf.value=UI.font;uh.value=UI.head;saveUi()};
  const vb=$('#volBgm',m),vs=$('#volSe',m);const show=()=>{$('#volBgmV',m).textContent=Math.round(vb.value*100)+'%';$('#volSeV',m).textContent=Math.round(vs.value*100)+'%'};show();
  vb.oninput=()=>{show();if(window.OM_RP_UI)window.OM_RP_UI.setVolume('bgm',+vb.value)};vs.oninput=()=>{show();if(window.OM_RP_UI)window.OM_RP_UI.setVolume('se',+vs.value)};

@@ -505,7 +505,7 @@ window.OM_RP_UI=(()=>{
  let volSe=0.7,lastSe=0;try{volSe=+(localStorage.getItem('om_vol_se')??0.7)}catch(e){}
  function seUrl(name){const G=(DB().se||{}).groups||{};for(const g in G)if(G[g][name])return G[g][name];return ''}
  function seList(){const G=(DB().se||{}).groups||{};return G}
- function playSe(name,localOnly){const u=/^https?:/.test(name)?name:seUrl(name);if(!u)return;if(localOnly){const a=new Audio(u);a.volume=volSe;a.play().catch(()=>{});return}A().set(['rp','se'],{name,src:u,at:Date.now()})}
+ function playSe(name,localOnly){const u=/^https?:/.test(name)?name:seUrl(name);if(!u)return;if(!gm())localOnly=true;/* 좌석은 rp 를 못 쓰니 내 쪽에서만 울린다 */if(localOnly){const a=new Audio(u);a.volume=volSe;a.play().catch(()=>{});return}A().set(['rp','se'],{name,src:u,at:Date.now()})}
  /* 로그를 보고 자동 효과음: 주사위 → dice, 지시 공개 → Draw, 턴 개시 → Ping2, 공격 명중 → Blow, 급소 → cut_critical, 빗나감 → evasion, 빈사 → Dead */
  let seenLog=new Set();
  function autoSe(row){if(!row||!row.id||seenLog.has(row.id))return;seenLog.add(row.id);if(seenLog.size>500)seenLog=new Set([...seenLog].slice(-200));if(row.at&&Date.now()-new Date(row.at).getTime()>15000)return;if(!unlocked)return;

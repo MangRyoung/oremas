@@ -164,12 +164,10 @@ begin
   w := om_who(p_room, p_secret);
   if w is null then raise exception '권한이 없습니다'; end if;
   if w <> 'gm' then
-    if p_path is null or array_length(p_path,1) < 2 then raise exception '좌석은 전체를 바꿀 수 없습니다'; end if;
-    if not ((p_path[1] = 'seats' and p_path[2] = w) or (p_path[1] = 'ready' and p_path[2] = w) or (p_path[1] = 'pub' and p_path[2] = w)
-            or (p_path[1] = 'battle' and p_path[2] = 'mons')   -- 포켓몬 HP·랭크·상태는 공개 정보라 좌석도 고칠 수 있다 (신뢰 기반, 맵툴과 같음)
-            or (p_path[1] = 'battle' and p_path[2] = 'field')  -- 지령 효과(결계 등)를 공개할 때
-            or (p_path[1] = 'battle' and p_path[2] = 'cmds' and p_path[3] = w)      -- 내 지시 공개
-            or (p_path[1] = 'battle' and p_path[2] = 'trainers' and p_path[3] = w)  -- 내 지령·명령 횟수
+    if p_path is null or array_length(p_path,1) < 1 then raise exception '좌석은 전체를 바꿀 수 없습니다'; end if;
+    if array_length(p_path,1) < 2 and p_path[1] not in ('battle','ready') then raise exception '좌석은 전체를 바꿀 수 없습니다'; end if;
+    if not ((p_path[1] = 'seats' and p_path[2] = w) or (p_path[1] = 'ready') or (p_path[1] = 'pub' and p_path[2] = w)   -- ready: 지시 완료 표시 (턴이 넘어갈 때 비운다)
+            or (p_path[1] = 'battle')   -- 배틀 전체: 포켓몬 HP·랭크·상태, 필드, 지시 공개, 턴·페이즈, 파티 불러오기 … 플레이어끼리 모의전을 할 수 있게 (신뢰 기반, 맵툴과 같음)
             or (p_path[1] = 'roster' and p_path[2] = 'trainers' and p_path[3] = w)   -- 내 시트
             or (p_path[1] = 'skill' and p_path[2] in ('trainers','res','hist'))        -- 스킬 체크 자원·결과 (지침·돌봄·커버는 남의 칸도 건드린다 · 신뢰 기반)
             or (p_path[1] = 'dex' and p_path[2] = w)                                    -- 내 도감

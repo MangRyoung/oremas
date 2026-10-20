@@ -306,7 +306,7 @@ html,body{font-size:15px;line-height:1.55}
 .phone .ptitle small{display:block;font-family:var(--lab);font-size:11px;opacity:.85;letter-spacing:0}
 .side .log{background:#101014 radial-gradient(#1c1c22 1px,transparent 1px);background-size:12px 12px;padding:10px 12px}
 .msg{border:0;padding:4px 0;display:flex;gap:8px;align-items:flex-end}
-.msg .av{width:30px;height:30px;border-radius:8px;background:#222 center/cover no-repeat;flex:none;border:1px solid #333}
+.msg .av{width:var(--chatav,40px);height:var(--chatav,40px);border-radius:10px;background:#222 center/cover no-repeat;flex:none;border:1px solid #333}
 .msg .bub{background:#fff;color:#111;padding:6px 10px;border-radius:12px 12px 12px 3px;max-width:82%;position:relative;box-shadow:2px 2px 0 var(--red)}
 .msg .bub .who{display:block;font-size:11px;color:#555;border:0;padding:0;margin:0 0 2px}
 .msg.me{flex-direction:row-reverse}.msg.me .bub{background:var(--red);color:#fff;border-radius:12px 12px 3px 12px;box-shadow:2px 2px 0 #fff}
