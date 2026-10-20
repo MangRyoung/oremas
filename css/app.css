@@ -1545,13 +1545,12 @@ label.tgc:has(input:focus-visible){outline:2px solid var(--yel)}
 .br{display:flex;align-items:center;gap:6px;padding:4px 6px;background:#16171b;border-left:3px solid var(--line2);font-size:12px}
 .br.left{border-left-color:var(--left)}.br.right{border-left-color:var(--right)}.brn{font-weight:700}
 .bsn{margin-top:6px;padding:0 2px}
-/* 10-22 퇴장(특수)는 소지품 줄 오른쪽 빈 곳(퇴장 바로 위)으로. 폰은 그대로 「⋯」 안 */
-.potwrap{display:flex;align-items:flex-end;gap:6px;min-width:0}
-.potwrap>.potcol{flex:1;min-width:0}
-.potwrap>.exup{flex:none;margin-top:4px}
-.mon.big .mbtns .exdn{display:none}
-.potcol:empty{display:none}.potwrap>.exup{margin-left:auto}
-@media (max-width:760px){.potwrap>.exup{display:none}.mon.big .mbtns.open .exdn{display:inline-flex}}
+/* 10-22 퇴장(특수)는 「(특수)」로 줄여 퇴장 바로 옆 — 줄이 밀리지 않게 버튼 줄은 한 줄 */
+.mon.big .mbtns .exdn{margin-left:-2px;padding-left:5px;padding-right:5px}
+.exg{display:inline-flex;gap:0;white-space:nowrap}
+@media (min-width:761px){.mon.big .mbtns{gap:3px}.mon.big .mbtns .btn.xs{padding:1px 6px}}
+@media (max-width:760px){.exg{display:contents}}
+
 /* 10-22 벤치 아래 = 그 진영의 지시 현황 */
 .bct1{margin-top:6px;display:flex;flex-direction:column;gap:3px}
 .bth{display:flex;align-items:center;gap:6px;font-size:12px;padding:0 2px}
