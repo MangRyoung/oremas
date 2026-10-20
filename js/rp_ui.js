@@ -135,6 +135,19 @@ window.OM_RP_UI=(()=>{
   return out}
  function spkConf(){const c=R().spk||{};return {order:Array.isArray(c.order)?c.order.slice():[],folders:Object.assign({},c.folders||{}),hidden:Object.assign({},c.hidden||{})}}
  async function saveSpk(c){await A().set(['rp','spk'],c)}
+ /* 트레이너별 폴더: 트레이너(as:이름) + 그 포켓몬(pm:id) 을 트레이너 이름 폴더에 담는다. 폴더에는 tid 를 남겨 다음 불러오기 때 같은 폴더를 다시 쓴다.
+    이미 다른 폴더에 넣어 둔 칩·숨긴 칩은 건드리지 않는다 (손으로 정리한 건 그대로). 돌려줌: 옮긴 칩 수 */
+ function folderTrainer(C,t){const ST=A().ST;const mons=Object.values((ST.state.roster||{}).mons||{}).filter(m=>m.tid===t.id);
+  const keys=['as:'+t.name,...mons.map(m=>'pm:'+m.id)];
+  const fOf=k=>Object.keys(C.folders).find(id=>(C.folders[id].keys||[]).includes(k));
+  let id=Object.keys(C.folders).find(x=>C.folders[x].tid===t.id);
+  const loose=keys.filter(k=>!fOf(k)&&!C.hidden[k]);if(!loose.length)return 0;
+  if(!id){id='f'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);C.folders[id]={name:t.name||'트레이너',keys:[],tid:t.id};
+   const at=C.order.indexOf(loose[0]);if(at>=0)C.order.splice(at,0,'f:'+id);else C.order.push('f:'+id)}
+  else C.folders[id]=Object.assign({},C.folders[id],{keys:[...(C.folders[id].keys||[])]});
+  C.order=C.order.filter(x=>!loose.includes(x));C.folders[id].keys.push(...loose);return loose.length}
+ async function autoFolder(tid){if(A().ST.role!=='gm')return;const t=((A().ST.state.roster||{}).trainers||{})[tid];if(!t)return;const C=spkConf();if(folderTrainer(C,t))await saveSpk(C)}
+ async function autoFolderAll(){const C=spkConf();let n=0;for(const t of Object.values((A().ST.state.roster||{}).trainers||{}))n+=folderTrainer(C,t);if(n)await saveSpk(C);return n}
  /* 모바일(760px 이하): 화자 칩 줄은 무대 아래에 깔지 않고 무대 버튼 줄 맨 앞(배경 왼쪽) 「🎭 화자」 버튼으로 여는 팝업에 담는다 (css .rpspkbtn · #rpunder.spkpop).
    칩 줄(#rpu_bar)은 그대로 다시 그려지고, 팝업은 #rpunder 의 클래스만 바꾼다. 화자 칩을 누르면 닫는다 */
 function bindSpkPop(under){const MQ=matchMedia('(max-width:760px)');const close=()=>under.classList.remove('spkpop');
@@ -173,13 +186,14 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  function openSpkMgr(){const C=spkConf();const sp=allSpeakers().filter(x=>x.key!=='gm');const fOf=k=>Object.keys(C.folders).find(id=>(C.folders[id].keys||[]).includes(k))||'';
   const md=A().openModal(`<div class="mhead"><h2>화자 정리</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    <div class="small dim" style="margin-bottom:8px">무대 아래 칩을 끌어서 순서를 바꾸고, 폴더 칩이나 「＋📁」에 놓으면 폴더에 들어간다. 여기서는 숨기기와 폴더 이름을 다룬다. 「＋ 인물」로 넣은 인물은 「지우기」로 없앤다(관계도에서도 빠진다) — PC·포켓몬은 캐릭터 시트에서 지운다.</div>
-   <div class="sec">폴더 <span class="note">${Object.keys(C.folders).length}</span><span class="sp"></span><button class="btn xs" data-sm="fadd">＋ 폴더</button></div>
+   <div class="sec">폴더 <span class="note">${Object.keys(C.folders).length}</span><span class="sp"></span><button class="btn xs" data-sm="fadd">＋ 폴더</button><button class="btn xs ghost" data-sm="fauto" title="아직 폴더에 없는 트레이너·포켓몬을 트레이너 이름 폴더로 묶는다 (손으로 넣은 건 그대로)">트레이너별로 묶기</button></div>
    ${Object.entries(C.folders).map(([id,f])=>`<div class="mml"><span class="nm">📁 <b>${esc(f.name)}</b> <small class="dim">${(f.keys||[]).length}명</small></span><button class="btn xs ghost" data-sm="fren" data-id="${id}">이름</button><button class="btn xs ghost danger" data-sm="fdel" data-id="${id}" title="폴더만 없애고 안의 인물은 밖으로">폴더 풀기</button></div>`).join('')||'<div class="empty small">폴더가 없다</div>'}
    <div class="sec" style="margin-top:10px">인물 · 포켓몬 <span class="note">${sp.length}</span><span class="sp"></span><label class="small"><input type="checkbox" id="smq_pm" checked> 포켓몬 보이기</label></div>
    <div class="mmlist" style="max-height:44vh;overflow:auto">${sp.map(x=>{const c=charOf(x.key);const av=c?(standSrc(c)||c.img):'';const f=fOf(x.key);return `<div class="mml ${C.hidden[x.key]?'hid':''}" data-smk="${esc(x.kind||'')}"><i class="tpic sm" style="${av?`background-image:url('${cssu(av)}')`:''}"></i><span class="nm">${esc(x.name)}${f?` <small class="dim">📁 ${esc(C.folders[f].name)}</small>`:''}</span><select data-sm="fmove" data-k="${esc(x.key)}"><option value="">(바깥)</option>${Object.entries(C.folders).map(([id,ff])=>`<option value="${id}" ${f===id?'selected':''}>${esc(ff.name)}</option>`).join('')}</select><button class="btn xs ${C.hidden[x.key]?'pri':'ghost'}" data-sm="hide" data-k="${esc(x.key)}">${C.hidden[x.key]?'보이기':'숨기기'}</button>${x.kind==='npc'?`<button class="btn xs ghost danger" data-sm="ndel" data-k="${esc(x.key)}" title="이 인물을 없앤다 — 관계도에서도 빠진다">지우기</button>`:`<span class="btn xs ghost" style="visibility:hidden" aria-hidden="true">지우기</span>`}</div>`}).join('')}</div>`);
   md.classList.add('wide');const re=()=>{A().closeModal();openSpkMgr()};
   const pmck=$('#smq_pm',md);pmck.onchange=()=>md.querySelectorAll('[data-smk="pm"]').forEach(r=>r.style.display=pmck.checked?'':'none');
   md.querySelectorAll('[data-sm]').forEach(b=>{const h=async()=>{const k=b.dataset.sm;const C=spkConf();
+   if(k==='fauto'){const n=await autoFolderAll();A().toast(n?`${n}개를 트레이너 폴더로 묶었다`:'묶을 칩이 없다');return re()}
    if(k==='fadd'){const name=prompt('폴더 이름','새 폴더');if(name==null)return;const id='f'+Date.now().toString(36);C.folders[id]={name:name.trim()||'폴더',keys:[]};C.order.push('f:'+id);await saveSpk(C);return re()}
    if(k==='fren'){const f=C.folders[b.dataset.id];const name=prompt('폴더 이름',f.name);if(name==null||!name.trim())return;f.name=name.trim();await saveSpk(C);return re()}
    if(k==='fdel'){const f=C.folders[b.dataset.id];if(!confirm(`「${f.name}」 폴더를 풀까? (안의 인물은 바깥으로)`))return;C.order=C.order.filter(x=>x!=='f:'+b.dataset.id);C.order.push(...(f.keys||[]));delete C.folders[b.dataset.id];if(SPK.folder===b.dataset.id)SPK.folder='';await saveSpk(C);return re()}
@@ -574,5 +588,5 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    <div class="mebtns"><button class="btn sm ${pend?'pri':''}" data-rp="roll" title="스킬 체크 창">🎲 굴림${pend?' !':''}</button><button class="btn sm" data-rp="phone" title="휴대폰">📱 폰</button><button class="btn sm ghost" data-rp="talk" title="${t?t.name+' (으)로 말하기 — 무대에 선다':'대사 입력'}">💬 대화</button></div>
    <div class="memons">${mons.map(m=>{const b=bm[m.id];const hp=b?b.hp:m.hp;const pct=Math.max(0,Math.min(100,Math.round(hp.cur/hp.max*100)));const tired=t&&K&&(K.tsk(t.id).tired||[]).includes(m.id);return `<div class="memon ${hp.cur<=0?'ko':''} ${tired?'tired':''}" data-rp="mon" data-mid="${m.id}" title="${esc(m.name)} HP ${hp.cur}/${hp.max}${b&&b.entry?' · 무대 '+String(b.entry).toUpperCase():''}${tired?' · 지침':''}"><i style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></i><div class="mhp ${pct<=25?'low':pct<=50?'mid':''}"><b style="width:${pct}%"></b></div><small>${esc(m.name)}</small></div>`}).join('')}</div>
    ${lastDice?`<div class="melast" title="${esc(lastDice.data.t||'')}">🎲 ${esc((lastDice.who||'')+' · '+String(lastDice.data.t||'').split('\n').slice(-2).join(' · '))}</div>`:''}</div>`}
- return {bgmMuted,seUrlOf:seUrl,render,allSpeakers,onChat,feedLog,onState,onTyping,typingPing,typingStop,drawTyping,mapData:mapS,openConsole,openStands,setMyStand,charOf,playSe,setVolume,bgmWidgetHtml,bindBgmWidget,imgOfKey:k=>{const c=charOf(k);return c?(c.img||standSrc(c)):''},curSpeaker:()=>{const ST=A().ST;const c=speakerChar();if(c)return {key:c.key,name:c.name,img:c.img||standSrc(c)};return gm()?{key:'gm',name:'GM',img:''}:{key:'me',name:ST.name||'',img:''}}};
+ return {autoFolder,bgmMuted,seUrlOf:seUrl,render,allSpeakers,onChat,feedLog,onState,onTyping,typingPing,typingStop,drawTyping,mapData:mapS,openConsole,openStands,setMyStand,charOf,playSe,setVolume,bgmWidgetHtml,bindBgmWidget,imgOfKey:k=>{const c=charOf(k);return c?(c.img||standSrc(c)):''},curSpeaker:()=>{const ST=A().ST;const c=speakerChar();if(c)return {key:c.key,name:c.name,img:c.img||standSrc(c)};return gm()?{key:'gm',name:'GM',img:''}:{key:'me',name:ST.name||'',img:''}}};
 })();

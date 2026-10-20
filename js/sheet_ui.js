@@ -228,6 +228,7 @@ window.OM_SHEET_UI=(()=>{
   /* 바뀐 칸만 쓴다 (점검 2-4) — GM 도 로스터를 통째로 쓰지 않는다. 그림을 올리는 사이 남이 고친 시트가 지워지지 않게 */
   await A().setMany(A().diffOps(['roster'],r0,r,3));
   await ensureNode(trainer);
+  try{if(window.OM_RP_UI&&window.OM_RP_UI.autoFolder)await window.OM_RP_UI.autoFolder(trainer.id)}catch(e){console.warn('화자 폴더',e)}   /* 화자 칩: 트레이너 폴더로 묶기 */
   A().toast(`${trainer.name} 파티 ${mons.length}체를 ${old?'갱신했다':'가져왔다'}`)}
  /* 관계도 노드: 같은 이름이 없으면 PC/NPC 구분대로 만든다 (휴대폰 협력자 · 연락처가 쓴다). 좌석은 graph 를 못 쓰니 GM 일 때만 */
  async function ensureNode(trainer){const c=ctx();if(!c.gm)return;const g=c.ST.state.graph||{nodes:{},edges:{}};const nodes=g.nodes||{};if(Object.values(nodes).some(n=>n.name===trainer.name))return;const i=Object.keys(nodes).length;
