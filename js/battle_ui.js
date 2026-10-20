@@ -56,11 +56,9 @@ window.OM_BATTLE_UI=(()=>{
     ${Object.entries(c.ST.state.pub||{}).filter(([k,v])=>v&&v.time).map(([k,v])=>`<span class="chip" style="border-color:var(--yel)">타임 요청: ${esc((b.trainers[k]||{}).name||k)} → ${esc(monName(b,v.time.mid))} <button class="btn xs pri" data-act="timeok" data-seat="${k}">허가</button></span>`).join('')}</div>`:''}
   </div>
   <div class="stadium">
-   ${benchRow(c,top,ready)}
-   ${areaRow(c,top)}
+   ${areaGrid(c)}
    ${fieldStrip(c,f)}
-   ${areaRow(c,mySide)}
-   ${benchRow(c,mySide,ready)}
+   <div class="benches">${benchRow(c,'left',ready)}${benchRow(c,'right',ready)}</div>
   </div>
   ${orderBox(c)}
   ${cmdPanel(c,ready)}`;
@@ -69,6 +67,10 @@ window.OM_BATTLE_UI=(()=>{
   el.querySelectorAll('[data-mon]').forEach(cd=>cd.onclick=e=>{if(e.target.closest('[data-act]'))return;A().openMon(cd.dataset.mon)});
   const form=$('#cmdForm',el);if(form)bindCmdForm(form,c)}
 
+ /* 좌측 A | 우측 A / 좌측 B | 우측 B … 열 = 진영, 행 = 에리어 */
+ function areaGrid(c){const b=c.b;const ent={left:entered(b,'left'),right:entered(b,'right')};const ids={left:((b.sides||{}).left||{}).trainers||[],right:((b.sides||{}).right||{}).trainers||[]};
+  const cell=(side,a)=>{const m=ent[side][a];const slot=slotOf(side,a);return `<div class="area ${side} ${m?'':'empty'}" data-slot="${slot}"><div class="alab ${side}">${SIDE_KO[side]} ${a.toUpperCase()}</div>${m?bigCard(c,m,slot):`<div class="aempty">빈 자리${c.gm||ids[side].includes(c.seat)?'<br><span class="small">벤치에서 「등장」</span>':''}</div>`}</div>`};
+  return `<div class="agrid"><div class="ahead left">${SIDE_KO.left}</div><div class="ahead right">${SIDE_KO.right}</div>${AREAS.slice(0,mode(b)).map(a=>cell('left',a)+cell('right',a)).join('')}</div>`}
  function areaRow(c,side){const b=c.b;const ent=entered(b,side);const ids=((b.sides||{})[side]||{}).trainers||[];
   return `<div class="arow ${side}"><div class="alabel ${side}">${SIDE_KO[side]}</div>${AREAS.slice(0,mode(b)).map(a=>{const m=ent[a];const slot=slotOf(side,a);
    return `<div class="area ${m?'':'empty'}" data-slot="${slot}"><div class="alab">${a.toUpperCase()}</div>${m?bigCard(c,m,slot):`<div class="aempty">빈 자리${c.gm||ids.includes(c.seat)?'<br><span class="small">벤치에서 「등장」</span>':''}</div>`}</div>`}).join('')}</div>`}
@@ -83,8 +85,7 @@ window.OM_BATTLE_UI=(()=>{
   const ic=(name,label,cnt)=>{const im=fimg(name);return `<div class="fic" title="${esc(label)}">${im?`<img src="${im}" alt="">`:'<span class="fnoimg"></span>'}<span>${esc(label)}${cnt?` <b>${cnt}T</b>`:''}</span></div>`};
   const mid=[w?ic(W_IMG[w],w,f.weather.count):'',t?ic(T_IMG[t],t,f.terrain.count):'',...ROOMS.filter(r=>(f.rooms||{})[r]>0).map(r=>ic(T_IMG[r],r,f.rooms[r])),...ETC.filter(r=>(f.etc||{})[r]>0).map(r=>ic(T_IMG[r],r,f.etc[r]))].filter(Boolean).join('');
   const objs=side=>Object.entries((f.objects||{})[side]||{}).filter(([k,v])=>v>0).map(([k,v])=>`<span class="obj">${esc(k)} <b>${v}</b></span>`).join('');
-  const mySide=c.gm?'left':((c.b.trainers||{})[c.seat]||{}).side||'left';const top=mySide==='left'?'right':'left';
-  return `<div class="fstrip"><div class="fobjs top">${objs(top)||'<span class="dim small">설치물 없음</span>'}</div><div class="fmid">${mid||'<span class="dim small">날씨·필드 없음</span>'}${c.gm?'<button class="btn xs" data-act="field">필드</button>':''}</div><div class="fobjs bottom">${objs(mySide)||'<span class="dim small">설치물 없음</span>'}</div></div>`}
+  return `<div class="fstrip"><div class="fobjs top"><span class="olab left">좌측 설치물</span>${objs('left')||'<span class="dim small">없음</span>'}</div><div class="fmid">${mid||'<span class="dim small">날씨·필드 없음</span>'}${c.gm?'<button class="btn xs" data-act="field">필드</button>':''}</div><div class="fobjs bottom">${objs('right')||'<span class="dim small">없음</span>'}<span class="olab right">우측 설치물</span></div></div>`}
  function sideBox(c,side,ready){
   const b=c.b;const ids=((b.sides||{})[side]||{}).trainers||[];const trs=b.trainers||{};const seats=c.ST.state.seats||{};
   const ent=entered(b,side);
@@ -146,9 +147,11 @@ window.OM_BATTLE_UI=(()=>{
  function moveCard(mv,i,on,extra){const col=S().typeColor(mv.typeEn);return `<div class="mv ${on?'on':''}" style="background:${col.bg};color:${col.fg}" ${extra||''}><div class="mn">${esc(mv.name)}</div><div class="mm">${esc(mv.cat)} · 위력 ${mv.pow||'-'} · 명중 ${mv.acc||'필중'}${mv.prio?' · 우선 '+mv.prio:''}</div><div class="mr">${esc(mv.range)}</div></div>`}
  function tile(m,side,area,on,cls,extra){if(!m)return `<div class="tg none ${cls||''}"><span class="tn"><small>${area.toUpperCase()} 빈 자리</small></span></div>`;const pct=Math.max(0,Math.min(100,Math.round(m.hp.cur/m.hp.max*100)));
   return `<div class="tg ${cls||''} ${on?'on':''}" ${extra||''}><div class="ti" style="${m.image?`background-image:url('${m.image}')`:''}"></div><div class="tn"><b>${esc(m.name)}</b><small>${area.toUpperCase()} · ${m.types.filter(t=>t!=='-').map(typeChip).join('')}</small><div class="hpb ${pct<=25?'low':pct<=50?'mid':''}"><i style="width:${pct}%"></i></div></div><span class="tk">${on?'✓':''}</span></div>`}
- function board(b,mySide,isOn,attr,allowSelf){const out=[];for(const side of [mySide==='left'?'right':'left',mySide]){const ent=entered(b,side);const cls=side===mySide?'al':'en';
-   out.push(`<div class="br"><div class="bl ${cls}">${side===mySide?'아군':'상대'}</div>${AREAS.slice(0,mode(b)).map(a=>{const m=ent[a];const slot=slotOf(side,a);return tile(m,side,a,m&&isOn(slot,m),cls,m?attr(slot,m):'')}).join('')}</div>`)}
-  return `<div class="board">${out.join('')}</div>`}
+ /* 대상판: 열 = 좌측/우측, 행 = 에리어 (무대와 같은 배치). 아군 열은 초록, 상대 열은 빨강 */
+ function board(b,mySide,isOn,attr,allowSelf){const ent={left:entered(b,'left'),right:entered(b,'right')};const cls=s=>s===mySide?'al':'en';
+  const head=SIDES.map(s=>`<div class="bl ${cls(s)}">${SIDE_KO[s]}${s===mySide?' (아군)':' (상대)'}</div>`).join('');
+  const rows=AREAS.slice(0,mode(b)).map(a=>SIDES.map(s=>{const m=ent[s][a];const slot=slotOf(s,a);return tile(m,s,a,m&&isOn(slot,m),cls(s),m?attr(slot,m):'')}).join('')).join('');
+  return `<div class="board grid">${head}${rows}</div>`}
  function cmdPanel(c,ready){
   const b=c.b;const tids=myTrainers(c);if(!tids.length)return '';
   const phase=+b.phase||0;
