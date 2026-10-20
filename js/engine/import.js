@@ -41,7 +41,7 @@ window.OM_IMPORT=(()=>{
    typesKo:tko,types:tko.map(S().typeEn),tera:d.tera&&d.tera!=='-'?d.tera:'-',teraEn:d.tera&&d.tera!=='-'?S().typeEn(d.tera):'-',
    ability:d.ability||'',abilityEff:brN(abil.multi||abil.single||''),item:d.item||'',itemEff:brN(item.eff||''),
    base,ranks:base.map(S().gradeOf),iv,ev,stats,hp:{max:stats[0],cur:stats[0]},
-   moves:(d.moves||[]).filter(m=>m&&m.name).map(m=>move(m.name,m.half)),
+   moves:(()=>{const mv=(d.moves||[]).filter(m=>m&&m.name).map(m=>move(m.name,m.half));return mv.length?mv:[move('발버둥',false)]})(),
    pots,excl:d.excl&&d.excl.name&&d.excl.name!=='전용 포텐셜'?{name:d.excl.name,eff:brN(d.excl.eff||'')}:null,
    exclX:(d.exclX||[]).filter(x=>x&&x.name).map(x=>({name:x.name,eff:brN(x.eff||'')})),
    role:roleOf(d),pride:d.pride||'',egg:[d.egg1||'-',d.egg2||'-'],partner:!!d.partner,image:(d.image&&d.image.length<120000)?d.image:'',memo:d.memo||'',

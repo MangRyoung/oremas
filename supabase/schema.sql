@@ -137,12 +137,14 @@ begin
     return false; -- 남의 자리
   end if;
   update om_state set data = jsonb_set(data, array['seats', p_seat], jsonb_build_object('name', coalesce(p_name,''), 'at', now()), true), v = v + 1 where room = p_room;
-  insert into om_log(room, kind, who, data) values (p_room, 'sys', '', jsonb_build_object('t', coalesce(p_name,'누군가') || ' 님이 「' || p_seat || '」 자리에 앉았다.'));
+  insert into om_log(room, kind, who, data)
+    select p_room, 'sys', '', jsonb_build_object('t', coalesce(p_name,'누군가') || ' 님이 「' || coalesce(s.data#>>array['battle','trainers',p_seat,'name'], p_seat) || '」 자리에 앉았다.')
+    from om_state s where s.room = p_room;
   return true;
 end $$;
 
 -- 상태 바꾸기. p_path 가 비어 있으면 전체 교체, 아니면 jsonb_set(경로, 값). 값이 null 이면 그 경로 삭제.
--- GM 은 어디든, 좌석은 seats/<내 좌석>/… 과 battle/cmd_ready/<내 좌석> 만 (나머지는 함수가 막는다).
+-- GM 은 어디든, 좌석은 seats/<내 좌석>, ready/<내 좌석>, pub/<내 좌석>, battle/mons/… 만 (나머지는 함수가 막는다).
 create or replace function public.om_set_state(p_room text, p_secret text, p_path text[], p_value jsonb)
 returns bigint language plpgsql security definer set search_path = public as $$
 declare w text; nv bigint;
@@ -151,7 +153,8 @@ begin
   if w is null then raise exception '권한이 없습니다'; end if;
   if w <> 'gm' then
     if p_path is null or array_length(p_path,1) < 2 then raise exception '좌석은 전체를 바꿀 수 없습니다'; end if;
-    if not ((p_path[1] = 'seats' and p_path[2] = w) or (p_path[1] = 'ready' and p_path[2] = w) or (p_path[1] = 'pub' and p_path[2] = w)) then
+    if not ((p_path[1] = 'seats' and p_path[2] = w) or (p_path[1] = 'ready' and p_path[2] = w) or (p_path[1] = 'pub' and p_path[2] = w)
+            or (p_path[1] = 'battle' and p_path[2] = 'mons')) then  -- 포켓몬 HP·랭크·상태는 공개 정보라 좌석도 고칠 수 있다 (신뢰 기반, 맵툴과 같음)
       raise exception '이 좌석이 바꿀 수 없는 곳입니다: %', array_to_string(p_path, '/');
     end if;
   end if;

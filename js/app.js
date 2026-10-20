@@ -44,7 +44,7 @@ async function openRoom(id,gm){
  const app=$('#app');app.innerHTML='<div class="lobby muted">방에 들어가는 중…</div>';
  let row;try{row=await DBS().getRoom(id)}catch(e){app.innerHTML=`<div class="lobby">방을 읽지 못했다: ${esc(e.message)}<br><a href="#">로비로</a></div>`;return}
  if(!row){app.innerHTML='<div class="lobby">그런 방이 없다. <a href="#">로비로</a></div>';return}
- ST.room=id;ST.roomRow=row;ST.role=null;ST.secret='';ST.seat='';ST.name='';
+ ST.room=id;ST.roomRow=row;if(window.OM_BATTLE_UI)window.OM_BATTLE_UI.resetLocal();ST.role=null;ST.secret='';ST.seat='';ST.name='';
  const seatInfo=LS.get('om_seat_'+id,null);
  if(gm){const w=await DBS().whoami(id,gm);if(w==='gm'){ST.role='gm';ST.secret=gm;ST.name='GM';remember(id,row.name,gm)}else toast('GM 비밀값이 맞지 않는다')}
  if(!ST.role&&seatInfo&&seatInfo.secret){const w=await DBS().whoami(id,seatInfo.secret);if(w&&w!=='gm'){ST.role='seat';ST.secret=seatInfo.secret;ST.seat=w;ST.name=seatInfo.name||w}}
@@ -116,41 +116,11 @@ function renderScene(){
  const el=$('#scene');if(!el)return;
  if(scene()==='battle')renderBattle(el);else el.innerHTML=`<div class="rp"><div style="text-align:center">RP 씬<br><span class="small">배경·스탠딩·BGM·지도·덱 창은 3단계에서 들어온다</span></div></div>`}
 
-/* ---------- 배틀 씬 (0단계: 파티 표시 · HP · 좌석) ---------- */
+/* ---------- 배틀 씬 → battle_ui.js ---------- */
 function B(){return ST.state.battle||{}}
-function renderBattle(el){
- const b=B();const trs=b.trainers||{};const mons=b.mons||{};const seats=ST.state.seats||{};
- const sideHtml=side=>{const ids=((b.sides||{})[side]||{}).trainers||[];
-  return `<div class="sideBox ${side}"><h3>${side==='left'?'좌측':'우측'} 진영 <span class="badge ${side}">${ids.length}명</span><span class="sp"></span>${ST.role==='gm'?`<button class="btn sm" data-act="load" data-side="${side}">+ 파티 불러오기</button>`:''}</h3>
-   ${ids.length?ids.map(tid=>{const t=trs[tid]||{name:'?'};const owner=seats[tid];const mine=ST.seat===tid;
-    const list=Object.values(mons).filter(m=>m.tid===tid).sort((a,b)=>(a.slot||0)-(b.slot||0));
-    return `<div class="trainer">${t.image?`<img src="${t.image}" alt="">`:'<div class="noimg"></div>'}<div><div class="tn">${esc(t.name)} ${mine?'<span class="badge seat">나</span>':''}</div>
-     <div class="tr">육성 ${esc(t.ranks.육성||'-')} · 지시 ${esc(t.ranks.지시||'-')} · 통솔 ${esc(t.ranks.통솔||'-')} · 능력 ${esc(t.ranks.능력||'-')} ${owner?`· <span style="color:var(--acc2)">${esc(owner.name)}</span>`:'· <span class="muted">빈 자리</span>'}</div></div><span class="sp"></span>
-     ${ST.role==='gm'?`<button class="btn sm ghost" data-act="iv" data-tid="${tid}" title="개체값 알까기">알까기</button><button class="btn sm ghost danger" data-act="unload" data-tid="${tid}">빼기</button>`:''}</div>
-     <div class="mons">${list.map(m=>monCard(m,mine||ST.role==='gm')).join('')||'<div class="empty small">포켓몬 없음</div>'}</div>`}).join(''):'<div class="empty">아직 트레이너가 없다'+(ST.role==='gm'?'. 「파티 불러오기」로 제작기 시트에서 가져온다':'')+'</div>'}</div>`};
- el.innerHTML=`<div class="bstat"><span class="turn">턴 ${b.turn||0}</span><span class="muted">페이즈: ${esc(phaseName(b.phase))}</span><span class="sp"></span>
-   ${ST.role==='gm'?`<button class="btn sm" data-act="turn+">턴 +1</button><button class="btn sm ghost" data-act="turn0">턴 초기화</button><button class="btn sm ghost danger" data-act="clear">배틀 비우기</button>`:''}</div>
-  <div class="sides">${sideHtml('left')}${sideHtml('right')}</div>`;
- el.querySelectorAll('[data-act]').forEach(btn=>btn.onclick=()=>action(btn.dataset));
- el.querySelectorAll('.mon').forEach(c=>c.onclick=()=>openMon(c.dataset.mid))}
-function phaseName(p){return ({0:'지시 준비',1:'턴 개시',1.5:'지령 공개',2:'행동 순서',3:'가장 마지막',4:'턴 종료 준비',5:'턴 종료 이후'})[p??0]||'-'}
-function monCard(m,full){
- const hp=m.hp||{max:1,cur:1};const pct=Math.max(0,Math.min(100,Math.round(hp.cur/hp.max*100)));const cls=pct<=25?'low':pct<=50?'mid':'';
- const sts=Object.keys(m.states||{}).filter(k=>m.states[k]);
- return `<div class="mon ${hp.cur<=0?'fainted':''}" data-mid="${m.id}"><div class="pic" style="${m.image?`background-image:url('${m.image}')`:''}">${m.image?'':'●'}</div>
-  <div class="nm">${esc(m.name)}</div><div class="lv">Lv.${m.lv} ${m.types.filter(t=>t!=='-').map(typeChip).join(' ')}</div>
-  <div class="hpbar ${cls}"><i style="width:${pct}%"></i></div><div class="hpnum">${full?`${hp.cur} / ${hp.max}`:pct+'%'}</div>
-  ${sts.length?`<div class="states">${sts.map(s=>`<span>${esc(s)}</span>`).join('')}</div>`:''}</div>`}
-
-async function action(d){
- const b=B();
- if(d.act==='load')return openLoadParty(d.side);
- if(d.act==='unload'){if(!confirm('이 트레이너와 파티를 배틀에서 뺄까?'))return;const nb=JSON.parse(JSON.stringify(b));for(const s of ['left','right']){if(nb.sides&&nb.sides[s])nb.sides[s].trainers=(nb.sides[s].trainers||[]).filter(x=>x!==d.tid)}
-  delete (nb.trainers||{})[d.tid];for(const k in nb.mons||{})if(nb.mons[k].tid===d.tid)delete nb.mons[k];await set(['battle'],nb);return}
- if(d.act==='clear'){if(!confirm('배틀 상태를 전부 비울까? (좌석은 남는다)'))return;await set(['battle'],{turn:0,phase:0,sides:{left:{trainers:[]},right:{trainers:[]}},trainers:{},mons:{}});return}
- if(d.act==='turn+'){await set(['battle','turn'],(b.turn||0)+1);sysLog(`턴 ${(b.turn||0)+1} 개시`,'battle');return}
- if(d.act==='turn0'){await set(['battle','turn'],0);return}
- if(d.act==='iv')return openHatch(d.tid)}
+function renderBattle(el){window.OM_BATTLE_UI.render(el)}
+async function unloadTrainer(tid){const b=B();if(!confirm('이 트레이너와 파티를 배틀에서 뺄까?'))return;const nb=JSON.parse(JSON.stringify(b));for(const s of ['left','right']){if(nb.sides&&nb.sides[s])nb.sides[s].trainers=(nb.sides[s].trainers||[]).filter(x=>x!==tid)}
+ delete (nb.trainers||{})[tid];for(const k in nb.mons||{})if(nb.mons[k].tid===tid)delete nb.mons[k];if(nb.cmds)delete nb.cmds[tid];await set(['battle'],nb)}
 
 /* ---------- 파티 불러오기 (제작기 docs) ---------- */
 let MK=null;
@@ -169,11 +139,11 @@ async function openLoadParty(side){
   const tdoc=mk.trainers.find(t=>t.id===btn.dataset.pick);const {trainer,mons}=I().party(tdoc,mk.pokemon);
   if(!mons.length&&!confirm('이 트레이너는 포켓몬이 없다. 그래도 불러올까?'))return;
   const nb=JSON.parse(JSON.stringify(B()));nb.sides=nb.sides||{left:{trainers:[]},right:{trainers:[]}};nb.sides.left=nb.sides.left||{trainers:[]};nb.sides.right=nb.sides.right||{trainers:[]};
-  nb.trainers=nb.trainers||{};nb.mons=nb.mons||{};nb.turn=nb.turn||0;nb.phase=nb.phase||0;
+  nb.trainers=nb.trainers||{};nb.mons=nb.mons||{};nb.turn=nb.turn||0;nb.phase=nb.phase||0;nb.mode=nb.mode||1;nb.field=nb.field||{};nb.cmds=nb.cmds||{};nb.order=nb.order||[];
   for(const s of ['left','right'])nb.sides[s].trainers=nb.sides[s].trainers.filter(x=>x!==trainer.id);
   nb.sides[side].trainers.push(trainer.id);trainer.side=side;nb.trainers[trainer.id]=trainer;
   for(const k in nb.mons)if(nb.mons[k].tid===trainer.id)delete nb.mons[k];
-  mons.forEach((mon,i)=>{mon.side=side;mon.slot=i;nb.mons[mon.id]=mon});
+  mons.forEach((mon,i)=>{mon.side=side;mon.slot=i;mon.entry='';mon.started=false;nb.mons[mon.id]=mon});
   closeModal();if(await set(['battle'],nb)){toast(`${trainer.name} 파티 ${mons.length}체를 불러왔다`);sysLog(`${trainer.name} (${side==='left'?'좌측':'우측'}) 파티 등록 · ${mons.length}체`,'battle')}})}
 
 /* ---------- 알까기 (개체값) ---------- */
@@ -243,5 +213,6 @@ function openModal(html){closeModal();const bg=document.createElement('div');bg.
 function closeModal(){document.querySelectorAll('.modalbg').forEach(x=>x.remove())}
 document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
+window.OM_APP={ST,set,sysLog,openModal,closeModal,toast,typeChip,renderScene,openMon,openLoadParty,unloadTrainer,openHatch,esc};
 route();
 })();
