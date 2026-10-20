@@ -1280,3 +1280,13 @@ label.ph-item input[type=checkbox]{width:16px;height:16px;flex:none}
 .ivrow .ivsm{flex:none;display:inline-flex;align-items:baseline;gap:4px;width:auto;height:auto;margin:0;font-size:12px;color:var(--mute);white-space:nowrap}.ivrow .ivsm b{color:var(--fg);font-family:var(--mono)}
 .ivrow .ivsm.big{padding:0 5px;border:1px solid #c98a00}
 @media (max-width:760px){.ivrow{flex-wrap:wrap;gap:4px 8px}.ivrow .ivt{min-width:200px}}
+/* 모바일 배틀 조작판 접기 (battle_ui BFOLD) */
+.bstat .phnow,.bstat .bfold{display:none}
+@media (max-width:760px){
+ .bstat .bfold{display:inline-flex;margin-left:auto}
+ .bstat.fold{gap:8px}
+ .bstat.fold .phnow{display:inline;font-family:var(--lab);font-size:14px;color:#fff}
+ .bstat.fold .phases,.bstat.fold .bgmw,.bstat.fold>.sp{display:none}
+ .bstat.fold .gmrow>*:not([data-act=progress]):not([data-act=start]):not([data-act=pendgo]):not(.chip){display:none}
+ .bstat.fold .gmrow{width:100%;display:flex;gap:6px;flex-wrap:wrap}
+}
