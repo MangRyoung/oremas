@@ -54,7 +54,7 @@ window.OM_RP_UI=(()=>{
  function speakerKey(row){const d=row.data||{};if(d.as){const t=Object.values((A().ST.state.roster||{}).trainers||{}).find(x=>x.name===d.as);return t?t.id:'npc:'+d.as}if(d.from&&d.from!=='gm')return d.from;return ''}
  /* 화자 자리: 첫 화자는 가운데, 다음 화자는 왼쪽·오른쪽을 채운다. 마지막 대사 뒤 STAND_TTL 이 지나면 사라진다 (로그 시각 기준이라 모두 같은 결과) */
  const STAND_TTL=40000;
- function feedLog(rows){for(const r of rows){if(r.id<=STAGE.seen)continue;STAGE.seen=r.id;if(r.kind!=='chat')continue;const d=r.data||{};if(d.sms)continue;const at=Date.parse(r.at)||Date.now();
+ function feedLog(rows){for(const r of rows){if(r.id<=STAGE.seen)continue;STAGE.seen=r.id;if(r.kind!=='chat')continue;const d=r.data||{};if(d.sms||d.bat)continue;const at=Date.parse(r.at)||Date.now();
    if(d.clear){STAGE.slots={left:null,center:null,right:null};STAGE.active=null;continue}
    const k=speakerKey(r);if(!k||!d.t)continue;expire(at);STAGE.last[k]=at;STAGE.active=k;
    if(Object.values(STAGE.slots).includes(k))continue;
@@ -69,7 +69,7 @@ window.OM_RP_UI=(()=>{
   feedLog(A().ST.log||[]);expire();
   const r=R();const bg=r.bg||{};const cap=r.caption||{};const manual=r.stage||{};
   const slots={};for(const s of SLOTS){const m=manual[s];slots[s]=m&&m.key?m.key:STAGE.slots[s]}
-  const cutId=+((A().ST.state.rp||{}).logClearAt)||0;const lastChat=[...(A().ST.log||[])].reverse().find(x=>x.id>cutId&&x.kind==='chat'&&x.data&&x.data.t&&!x.data.sms);
+  const cutId=+((A().ST.state.rp||{}).logClearAt)||0;const lastChat=[...(A().ST.log||[])].reverse().find(x=>x.id>cutId&&x.kind==='chat'&&x.data&&x.data.t&&!x.data.sms&&!x.data.bat);
   const line=(name,text)=>{const m=String(text).match(/^\*(.+)\*$/s);return `<div class="dname"><span>${esc(name)}</span></div><div class="dtext ${m?'narr':''}">${m?esc(m[1]):(/^["“「『].*["”」』]$/s.test(String(text).trim())?esc(String(text).trim()):'"'+esc(text)+'"')}</div>`};
   const showDlg=cap.text||(lastChat&&Date.now()-(Date.parse(lastChat.at)||0)<STAND_TTL*2);
   const dlgHtml=cap.text?line(cap.name||'',cap.text):(showDlg?line(lastChat.data.as||(charOf(speakerKey(lastChat))||{}).name||lastChat.who,lastChat.data.t):'');
@@ -227,7 +227,7 @@ window.OM_RP_UI=(()=>{
    if(k==='url'){const u=$('#qbgu',md).value.trim();if(!u)return;A().closeModal();return A().set(['rp','bg'],{src:u,name:$('#qbgn',md).value.trim(),at:Date.now()})}})}
  function quickBgm(){const md=A().openModal(`<div class="mhead"><h2>BGM</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div id="bgmpanel">${bgmPanelHtml()}</div>`);md.classList.add('wide');const re=()=>{const el=$('#bgmpanel');if(!el)return;el.innerHTML=bgmPanelHtml();bindBgmPanel(md,re)};bindBgmPanel(md,re)}
  /* ----- 대화 기록 ----- */
- function openLog(){const ST=A().ST;const rows=(ST.log||[]).filter(x=>x.kind==='chat'&&x.data&&(x.data.t||x.data.img));
+ function openLog(){const ST=A().ST;const rows=(ST.log||[]).filter(x=>x.kind==='chat'&&x.data&&!x.data.bat&&!x.data.sms&&(x.data.t||x.data.img));
   const name=x=>x.data.as||(charOf(speakerKey(x))||{}).name||x.who;const tm=x=>{const d=new Date(x.at);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
   const md=A().openModal(`<div class="mhead"><h2>대화 기록</h2><span class="small dim">${rows.length}줄</span><span class="sp"></span><button class="btn sm ghost" id="lgcopy">글로 복사</button><button class="btn sm ghost" id="lgdl">파일로</button><button class="btn ghost" data-x>닫기</button></div>
    <div class="rplog">${rows.map(x=>{const m=String(x.data.t||'').match(/^\*(.+)\*$/s);return `<div class="rl ${m?'narr':''}"><span class="rt">${tm(x)}</span><b class="rn">${esc(name(x))}</b><span class="rx">${x.data.img?`<a href="${esc(x.data.img)}" target="_blank" rel="noopener">[그림]</a> `:''}${m?esc(m[1]):esc(x.data.t)}</span></div>`}).join('')||'<div class="empty">아직 대화가 없다</div>'}</div>`);
@@ -521,7 +521,7 @@ window.OM_RP_UI=(()=>{
   if(!src){if(audio){audio.pause();audio=null}lastBgm='';return}
   if(!unlocked)return;
   if(src!==lastBgm||force){if(audio)audio.pause();audio=new Audio(src);audio.loop=true;audio.volume=vol;audio.play().catch(()=>{});lastBgm=src}}
- function onChat(row){if(row.kind==='chat'&&row.data&&row.data.sms){if(window.OM_PHONE_UI)window.OM_PHONE_UI.onSms(row);return}autoSe(row);feedLog([row]);if(row.kind==='chat'&&row.data){const nm=row.data.as||row.who;for(const k in TYPING.who)if(TYPING.who[k].from===row.data.from&&(!nm||TYPING.who[k].who===nm))delete TYPING.who[k];}if(A().view==='rp'&&row.kind==='chat'&&row.data&&(row.data.t||row.data.clear))A().renderScene()}
+ function onChat(row){if(row.kind==='chat'&&row.data&&row.data.bat){autoSe(Object.assign({},row,{kind:row.data.bat}));return}if(row.kind==='chat'&&row.data&&row.data.sms){if(window.OM_PHONE_UI)window.OM_PHONE_UI.onSms(row);return}autoSe(row);feedLog([row]);if(row.kind==='chat'&&row.data){const nm=row.data.as||row.who;for(const k in TYPING.who)if(TYPING.who[k].from===row.data.from&&(!nm||TYPING.who[k].who===nm))delete TYPING.who[k];}if(A().view==='rp'&&row.kind==='chat'&&row.data&&(row.data.t||row.data.clear))A().renderScene()}
  function onState(){tickBanner();syncBgm();syncSe()}
  /* 배틀 상단용 작은 BGM 위젯: 지금 곡 · 내 음량 · (GM) 다른 곡/BGM 창 · (플레이어) 소리 켜기 */
  function bgmWidgetHtml(){const now=R().bgm||{};const G=bgmGroups();return `<div class="bgmw"><span class="eq ${now.src?'':'off'} ${gm()?'lk':''}" ${gm()?'data-bw="open"':''}>♪</span><span class="bt ${gm()?'lk':''}" ${gm()?'data-bw="open"':''} title="${esc(now.title?(now.group?gshort(now.group)+' - ':'')+now.title:'재생 중인 곡 없음')}${gm()?' — 누르면 BGM 고르기':''}">${esc(now.title||'BGM 없음')}</span><input type="range" min="0" max="1" step="0.05" value="${vol}" data-bw="vol" title="내 음량">${!unlocked&&now.src?'<button class="btn xs pri" data-bw="sound" title="브라우저가 소리를 막아서 한 번 눌러야 들린다">소리 켜기</button>':''}${gm()?`${now.group&&G[now.group]?`<button class="btn xs ghost" data-bw="rand" title="같은 그룹에서 다른 곡">⟳</button>`:''}${now.src?'<button class="btn xs ghost" data-bw="stop" title="모두에게 정지">■</button>':''}<button class="btn xs" data-bw="open" title="BGM 고르기 (모두에게)">BGM</button>`:''}</div>`}

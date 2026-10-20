@@ -136,7 +136,8 @@ async function set(path,value){try{
   if(path&&path.length){let o=ST.state;for(let i=0;i<path.length-1;i++){if(typeof o[path[i]]!=='object'||o[path[i]]==null)o[path[i]]={};o=o[path[i]]}
    if(value===null||value===undefined)delete o[path[path.length-1]];else o[path[path.length-1]]=value}else ST.state=value||{};
   ST.v=Math.max(ST.v,v||0);renderScene();return true}catch(e){toast('저장 실패: '+e.message);return false}}
-async function sysLog(t,kind,extra){try{await DBS().addLog(ST.room,ST.secret,kind||'sys',ST.name,Object.assign({t},extra||{}))}catch(e){}}
+/* 좌석은 서버가 'battle' 로그를 막을 수 있다(옛 schema) — 그러면 'chat' + bat 표시로 다시 써서 채팅 창에는 배틀 카드로 보이게 한다 */
+async function sysLog(t,kind,extra){const k=kind||'sys';const data=Object.assign({t},extra||{});try{await DBS().addLog(ST.room,ST.secret,k,ST.name,data)}catch(e){if(ST.role==='seat'&&k!=='chat'){try{await DBS().addLog(ST.room,ST.secret,'chat',ST.name,Object.assign({},data,{bat:k}));return}catch(e2){}}console.warn('로그를 남기지 못했다',e);toast('로그를 남기지 못했다: '+e.message)}}
 /* 배틀 로그 카드: 「【포텐셜】 이름 『효과』」 꼴의 글은 머리띠 + 본문 카드로 */
 const TAGCOL={'고유':'#7b4fd6','전용':'#1f6fd1','포텐셜':'#7b4fd6','특성':'#2f8f5b','소지품':'#c7651a','지령':'#1f6fd1','명령':'#e3101f','공개':'#d6a23b','스킬 체크':'#2b8fa8','모두 공개':'#d6a23b','공격':'#c8362b','전달':'#8a4b2a','효과':'#555'};
 function battleCard(d){const t=String(d.t||'');const m=t.match(/^【([^】]+)】\s*([^\n]*)\n?([\s\S]*)$/);if(!m)return '';const tag=m[1],title=m[2],body=m[3].trim();const col=TAGCOL[tag]||'#555';
@@ -163,7 +164,7 @@ function avatarOf(r){const d=r.data||{};if(d.k&&window.OM_RP_UI&&window.OM_RP_UI
 function renderLog(scroll){
  const el=$('#log');if(!el)return;
  const cut=+((ST.state.rp||{}).logClearAt)||0;
- el.innerHTML=ST.log.filter(r=>r.id>cut).map(r=>{const d=r.data||{};const k=r.kind;const t=fmtTime(r.at);
+ el.innerHTML=ST.log.filter(r=>r.id>cut).map(r=>{const d=r.data||{};const k=(r.kind==='chat'&&d.bat)?d.bat:r.kind;const t=fmtTime(r.at);
   if(k==='sys')return `<div class="msg sys"><div class="bub">${esc(d.t)}</div></div>`;
   if(k==='chat'&&d.clear)return `<div class="msg sys"><div class="bub">무대를 비웠다</div></div>`;
   if(k==='chat'&&d.sms)return '';
@@ -271,6 +272,8 @@ function weakHtml(m){const TYPES=['Normal','Fire','Water','Electric','Grass','Ic
 function openMon(mid){
  const b=B();const m=(b.mons||{})[mid];if(!m)return;const tr=(b.trainers||{})[m.tid]||{name:''};
  const full=ST.role==='gm'||ST.seat===m.tid;
+ /* 내 것이 아니면 상세 창 대신 도감 — 해석한 만큼만 보인다 (같은 편은 도감 규칙대로 전부) */
+ if(!full&&window.OM_DEX_UI)return window.OM_DEX_UI.open(mid,ST.seat||'_view');
  const K=S().STATS_KO;const pct=Math.round(m.hp.cur/m.hp.max*100);
  const stat6=`<div class="dxst wide">${m.ranks.map((r,i)=>`<div><small>${K[i]}</small><b>${esc(r)}</b>${full?`<em title="종족치 · 실수치">${m.base[i]} · ${m.stats[i]}</em>`:''}</div>`).join('')}</div>`;
  const an=(kind,name)=>(full&&name&&name!=='-')?` <button class="btn xs ghost anb" data-an="${esc(kind)}" data-ann="${esc(name)}" title="로그에 출력">📢 출력</button>`:'';
@@ -291,8 +294,7 @@ function openMon(mid){
   <table class="t dxmv"><tr><th>이름</th><th>타입</th><th>분류</th><th>위력</th><th>명중</th><th>범위</th><th>우선</th><th>효과</th></tr>
    ${m.moves.map(mv=>`<tr><td class="nw"><b>${esc(mv.name)}</b>${mv.half?' <span class="small muted">½</span>':''}${mv.missing?' <span class="small" style="color:var(--red)">DB 없음</span>':''}</td><td class="nw">${typeChip(mv.typeEn)}</td><td class="nw">${esc(mv.cat)}</td><td class="mono">${mv.pow||'-'}</td><td class="mono">${mv.acc||'필중'}</td><td class="nw">${esc(mv.range)}</td><td class="mono">${mv.prio||0}</td><td class="small eff">${esc(mv.eff)}</td></tr>`).join('')}</table>
   ${pots.length?`<div class="sec">포텐셜 <span class="note">${pots.filter(p=>!p.ph).length}</span></div><div class="dxpots">${pots.map(p=>potCard(p)).join('')}</div>`:''}
-  ${m.excl||(m.exclX||[]).length?`<div class="sec">전용 포텐셜</div><div class="dxpots">${[...(m.excl?[m.excl]:[]),...(m.exclX||[])].map(p=>potCard(p,'전용')).join('')}</div>`:''}
-  ${uniq.length?`<div class="sec">고유 포텐셜 <span class="note">${esc(tr.name)}</span></div><div class="dxpots">${uniq.map(u=>potCard(u,'고유')).join('')}</div>`:''}
+  <div class="sec">전용 포텐셜 <span class="note">${esc(m.name)}</span></div>${m.excl||(m.exclX||[]).length?`<div class="dxpots">${[...(m.excl?[m.excl]:[]),...(m.exclX||[])].map(p=>potCard(p,'전용')).join('')}</div>`:'<div class="small dim" style="padding:4px 2px">전용 포텐셜이 없다</div>'}
   ${full&&m.memo?`<div class="sec">메모</div><div class="pre small muted">${esc(m.memo)}</div>`:''}`);
  md.classList.add('wide');
  if(ST.role==='gm'||full){const amt=v=>{v=String(v||'').trim();const f=v.match(/^(\d+)\s*\/\s*(\d+)$/);if(f)return Math.max(1,Math.floor(m.hp.max*+f[1]/+f[2]));return Math.max(0,Math.floor(+v||0))};
@@ -309,7 +311,7 @@ function openNick(){const m=openModal(`<div class="mhead"><h2>내 이름</h2><sp
  $('#nickOk',m).onclick=ok;$('#nickIn',m).onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)ok()};const ns=$('#nickSeat',m);if(ns)ns.onclick=()=>{closeModal();openSeatPicker()}}
 /* 로그 저장: 방의 전체 로그를 HTML(아바타 · 그림 · 배틀 카드 · 날짜 구분) 또는 TXT 로. 설정은 om_logsave 에 기억 */
 async function fetchAllLog(){const out=[];let after=0;for(let i=0;i<200;i++){const rows=await DBS().getLog(ST.room,after,1000);if(!rows||!rows.length)break;out.push(...rows);after=rows[rows.length-1].id;if(rows.length<1000)break}return out}
-function logKind(r){const d=r.data||{};if(r.kind==='chat'&&d.sms)return 'sms';if(r.kind==='whisper')return 'whisper';if(r.kind==='dice')return 'dice';if(r.kind==='chat')return 'chat';if(r.kind==='battle')return 'battle';return 'sys'}
+function logKind(r){const d=r.data||{};if(r.kind==='chat'&&d.bat)return d.bat==='battle'?'battle':'sys';if(r.kind==='chat'&&d.sms)return 'sms';if(r.kind==='whisper')return 'whisper';if(r.kind==='dice')return 'dice';if(r.kind==='chat')return 'chat';if(r.kind==='battle')return 'battle';return 'sys'}
 const LOGSAVE_KEY='om_logsave';function logSaveCfg(){const d={chat:1,dice:1,battle:1,sms:0,whisper:0,av:1,img:1,days:1,theme:'dark',size:15,narr:1,pav:36,pshape:'round',pside:'left'};try{return Object.assign(d,JSON.parse(localStorage.getItem(LOGSAVE_KEY)||'{}'))}catch(e){return d}}
 function buildLogHtml(rows,o){const esc2=x=>String(x??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
  const name=(ST.roomRow&&ST.roomRow.name)||ST.room;const stamp=new Date().toISOString().slice(0,10);

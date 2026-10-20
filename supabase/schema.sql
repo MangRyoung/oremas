@@ -193,7 +193,7 @@ declare w text; nid bigint;
 begin
   w := om_who(p_room, p_secret);
   if w is null then raise exception '권한이 없습니다'; end if;
-  if w <> 'gm' and p_kind not in ('chat','whisper','dice') then raise exception '좌석은 이 종류의 로그를 쓸 수 없습니다'; end if;
+  if w <> 'gm' and p_kind not in ('chat','whisper','dice','battle') then raise exception '좌석은 이 종류의 로그를 쓸 수 없습니다'; end if;  -- battle: 플레이어가 발동한 효과 · 공격 · 포텐셜 카드
   insert into om_log(room, kind, who, data) values (p_room, coalesce(p_kind,'chat'), coalesce(p_who,''), coalesce(p_data,'{}'::jsonb) || jsonb_build_object('from', w))
   returning id into nid;
   return nid;

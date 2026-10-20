@@ -97,7 +97,7 @@ window.OM_BATTLE_UI=(()=>{
   const items=ids.map(tid=>{const t=trs[tid]||{name:'?',ranks:{}};const o=seats[tid];const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid).sort((x,y)=>(x.slot||0)-(y.slot||0));const cmdDone=!!(b.cmds||{})[tid];const rd=!!ready[tid];
    return `<div class="tblock"><div class="trainer"><div class="tpic" style="${t.image?`background-image:url('${t.image}')`:''}"></div><div class="tinfo"><div class="tn">${esc(t.name)}${tid===c.seat?' <span class="tag me">ME</span>':''}${rd?' <span class="tag ok">READY</span>':cmdDone?' <span class="tag">공개됨</span>':''}</div>
      <div class="rk4">${['육성','지시','통솔','능력'].map(k=>`<span><small>${k}</small><b>${esc(t.ranks[k]||'-')}</b></span>`).join('')}</div>${o?`<div class="tr"><span class="who">${esc(o.name)}</span></div>`:''}</div>
-     </div>${(()=>{const U=uniqList(t);return U.length?`<div class="tuq">${U.map(x=>`<span class="pot sp uq" title="${esc(String(x.p.eff||'').replace(/<br\s*\/?>/g,' ').slice(0,300))}"><em>고유</em>${esc(x.p.name)}${x.max!=null?` <b>${x.left}/${x.max}</b>`:''}</span>`).join('')}</div>`:''})()}<div class="tbtns">${((c.gm||tid===c.seat)&&mons.some(m=>m.entry))?`<button class="btn xs" data-act="fire" data-tid="${tid}" title="지령·명령 발동 창">4식 6령</button>`:''}${(c.gm||tid===c.seat)?`<button class="btn xs ghost" data-act="dexmgr" data-tid="${tid}" title="도감 · 데이터 해석">해석</button><button class="btn xs ghost ${myosuGlow(c,tid)?'pri':''}" data-act="skillp" data-tid="${tid}" title="「타임」 — 상대가 준비를 마치면 지시의 꼴(교대/기술)을 엿본다">묘수</button>`:''}${(c.gm||tid===c.seat)?`<button class="btn xs ghost" data-act="orders" data-tid="${tid}" title="지령·명령 설정 · 빼기">지령 설정</button>`:''}</div>
+     </div>${(()=>{const U=uniqList(t);const own=c.gm||tid===c.seat;return U.length?`<div class="tuq">${U.map(x=>`<span class="pot sp uq" title="${esc(String(x.p.eff||'').replace(/<br\s*\/?>/g,' ').slice(0,300))}"><em>고유</em>${esc(x.p.name)}${x.max!=null?` <b>${x.left}/${x.max}</b>`:''}${own?(x.left!==null&&x.left<=0?'<small class="dim">다 씀</small>':`<button class="btn xs pri" data-act="ufire" data-tid="${tid}" data-pot="${esc(x.p.name)}" title="고유 포텐셜 발동 — 대상 포켓몬을 고른다">발동</button>`):''}</span>`).join('')}</div>`:''})()}<div class="tbtns">${((c.gm||tid===c.seat)&&mons.some(m=>m.entry))?`<button class="btn xs" data-act="fire" data-tid="${tid}" title="지령·명령 발동 창">4식 6령</button>`:''}${(c.gm||tid===c.seat)?`<button class="btn xs ghost" data-act="dexmgr" data-tid="${tid}" title="도감 · 데이터 해석">해석</button><button class="btn xs ghost ${myosuGlow(c,tid)?'pri':''}" data-act="skillp" data-tid="${tid}" title="「타임」 — 상대가 준비를 마치면 지시의 꼴(교대/기술)을 엿본다">묘수</button>`:''}${(c.gm||tid===c.seat)?`<button class="btn xs ghost" data-act="orders" data-tid="${tid}" title="지령·명령 설정 · 빼기">지령 설정</button>`:''}</div>
     <div class="bench">${mons.map(m=>benchCard(c,m)).join('')||'<div class="dim small">포켓몬 없음</div>'}</div></div>`}).join('');
   return `<div class="bcol ${side}"><div class="shead"><span class="sname">${SIDE_KO[side]} 벤치</span><span class="sp"></span>${c.mgr?`<button class="btn xs" data-act="load" data-side="${side}">+ 파티</button>`:''}</div>${items||'<div class="aempty small">트레이너 없음'+(c.mgr?' — 「+ 파티」':'')+'</div>'}</div>`}
  function fieldStrip(c,f){const w=f.weather.type,t=f.terrain.type;
@@ -130,14 +130,14 @@ window.OM_BATTLE_UI=(()=>{
  function stateChips(m){const st=m.states||{};const db=(DB().states||{}).st||{};return Object.keys(st).filter(k=>st[k]).map(k=>{const im=simg(k);return `<span class="stc ${db[k]&&db[k].abn?'abn':''}" title="${esc((db[k]&&db[k].desc||[]).join(' '))}">${im?`<img src="${im}" alt="">`:''}${esc(db[k]?db[k].ko:k)}${+st[k]>1&&+st[k]<1000?' '+st[k]:''}</span>`}).join('')}
  function bigCard(c,m,slot){const full=canEdit(c,m);const cmd=cmdOf(c.b,m);
   return `<div class="mon big ${m.hp.cur<=0?'fainted':''}" data-mon="${m.id}"><div class="pic" style="${m.image?`background-image:url('${m.image}')`:''}"></div>
-   <div class="minfo"><div class="nm">${esc(m.name)}<span class="lv">Lv.${m.lv}</span>${((!full&&c.seat)||c.mgr)?`<button class="btn xs ghost dexb" data-act="dex" data-mid="${m.id}" title="도감 정보 · 해석">도감</button>`:''}${(!full&&c.seat&&(c.b.trainers[c.seat]||{}).side!==m.side&&(+c.b.phase||0)===0)||c.mgr&&!full?`<button class="btn xs ghost dexb" data-act="time" data-mid="${m.id}" title="「타임」 — 상대 지시의 꼴 엿보기">타임</button>`:''}</div><div class="ty">${m.types.filter(t=>t!=='-').map(typeChip).join('')}${m.teraActive?`<span class="rk up">테라 ${esc(m.tera)}</span>`:''}</div>
+   <div class="minfo"><div class="nm">${esc(m.name)}<span class="lv">Lv.${m.lv}</span>${((!full&&c.seat)||c.gm)?`<button class="btn xs ghost dexb" data-act="dex" data-mid="${m.id}" title="도감 정보 · 해석">도감</button>`:''}${(!full&&c.seat&&(c.b.trainers[c.seat]||{}).side!==m.side&&(+c.b.phase||0)===0)||c.gm&&!full?`<button class="btn xs ghost dexb" data-act="time" data-mid="${m.id}" title="「타임」 — 상대 지시의 꼴 엿보기">타임</button>`:''}</div><div class="ty">${m.types.filter(t=>t!=='-').map(typeChip).join('')}${m.teraActive?`<span class="rk up">테라 ${esc(m.tera)}</span>`:''}</div>
    ${hpBar(m,full)}<div class="rks">${rankChips(m)}${stateChips(m)}${flagChips(m)}${FX()?FX().chips(m).map(ch=>`<span class="rk fxc ${full?'rm':''}" title="${esc(ch.title)}${full?' — 눌러서 해제':''}" ${full?`data-act="fxoff" data-mid="${m.id}" data-fx="${esc(ch.id)}" data-nm="${esc(ch.name)}"`:''}>${esc(ch.t)}${full?' ✕':''}</span>`).join(''):''}</div>
    ${cmd?`<div class="cmdcard">${cmd}</div>`:(((+c.b.phase||0)>=1&&full&&m.hp.cur>0)?`<div class="revealrow"><button class="btn sm pri" data-act="revealmon" data-tid="${m.tid}" data-mid="${m.id}">지시 공개 (에리어 ${String(m.entry).toUpperCase()})</button></div>`:'')}
    ${potLine(c,m)}
    ${m.lastHit&&full?`<div class="incoming"><b>피해 판정 받음</b> ${esc(m.lastHit.from)}의 「${esc(m.lastHit.move)}」 ${m.lastHit.total}×${m.lastHit.eff}${m.lastHit.crit?' 급소':''} ≈ ${m.lastHit.expect} <button class="btn xs pri" data-act="hp" data-mid="${m.id}">피해 적용</button></div>`:''}
    <div class="mbtns">${full?`<button class="btn xs" data-act="attack" data-mid="${m.id}">공격</button><button class="btn xs ${m.lastHit?'pri':''}" data-act="hp" data-mid="${m.id}">HP</button><button class="btn xs" data-act="pots" data-mid="${m.id}" title="포텐셜 목록 · 출력 · 발동 · 해제">포텐셜</button><button class="btn xs" data-act="edit" data-mid="${m.id}">랭크·상태</button><button class="btn xs ghost" data-act="exit" data-mid="${m.id}" title="바로 퇴장 (랭크·배율·효과 정리)">퇴장</button><button class="btn xs ghost" data-act="exitx" data-mid="${m.id}" title="배턴터치 퇴장 · 강제 교대">퇴장(특수)</button>`:''}</div></div></div>`}
  /* 비공개: 아직 한 번도 나오지 않은 상대 포켓몬은 이름·그림·타입을 숨긴다 (맵툴 「비공개」 토큰) */
- function secret(c,m){if(c.mgr||!m)return false;if(m.seen||m.entry)return false;const my=(c.b.trainers||{})[c.seat];return !my||my.side!==m.side}
+ function secret(c,m){if(c.gm||!m)return false;if(m.seen||m.entry)return false;const my=(c.b.trainers||{})[c.seat];return !my||my.side!==m.side}
  function benchCard(c,m){const full=canEdit(c,m);const out=!!m.entry;const sec=secret(c,m);
   if(sec)return `<div class="mon small secret"><div class="btop"><div class="pic"></div><div class="nm">비공개</div></div><div class="hpbar"><i style="width:100%"></i></div><div class="hpnum">?</div></div>`;
   return `<div class="mon small ${m.hp.cur<=0?'fainted':''} ${out?'onfield':''}" data-mon="${m.id}">
@@ -278,7 +278,7 @@ window.OM_BATTLE_UI=(()=>{
    case 'mode':return A().set(['battle','mode'],+val);
    case 'field':return openField();
    case 'orders':return openOrders(d.tid);
-   case 'dexmgr':{if(!(c.mgr||d.tid===c.seat))return;return window.OM_DEX_UI&&window.OM_DEX_UI.openMgr(d.tid)}
+   case 'dexmgr':{if(!(c.gm||d.tid===c.seat))return;return window.OM_DEX_UI&&window.OM_DEX_UI.openMgr(d.tid)}
    case 'skillp':{if(!(c.mgr||d.tid===c.seat))return;return openMyosu(d.tid)}
    case 'skillck':{if(!(c.mgr||d.tid===c.seat))return;return window.OM_SKILL_UI&&window.OM_SKILL_UI.openPlayer(d.tid)}
    case 'enter':return enterMon(d.mid);
@@ -299,7 +299,7 @@ window.OM_BATTLE_UI=(()=>{
     return A().sysLog(`【${({pot:'포텐셜',trait:'특성',item:'소지품'})[kind]}】 ${m.name} 『${src.name}』`,'battle',{mid:m.id,img:m.image||'',eff:String(src.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,400)})}
    case 'objects':return openObjects(d.side);
    case 'turnset':{if(!c.mgr)return;const v=prompt('턴 번호',String(b.turn||0));if(v==null)return;const n=Math.max(0,parseInt(v,10)||0);await A().set(['battle','turn'],n);return A().sysLog(`턴을 ${n}(으)로 맞췄다`,'battle')}
-   case 'dex':return window.OM_DEX_UI&&window.OM_DEX_UI.open(d.mid,c.mgr?'':c.seat);
+   case 'dex':return window.OM_DEX_UI&&window.OM_DEX_UI.open(d.mid,c.gm?'':(c.seat||'_view'));
    case 'attack':return openAttack(d.mid);
    case 'usepot':case 'restorepot':{const m=b.mons[d.mid];if(!m||!canEdit(c,m))return;const L=potList(m);const p=L.find(x=>x.name===d.pot);if(!p)return;const u=Object.assign({},m.potUses||{});const cur=u[p.name]==null?p.max:+u[p.name];u[p.name]=d.act==='usepot'?Math.max(0,cur-1):Math.min(p.max,cur+1);if(d.act==='usepot'&&wantCut(m,p.name))cutFire('m:'+m.id,m.image,m.name,`『${p.name}』`,m.side==='left'?'#1f6fd1':'#e3101f');
     await A().set(['battle','mons',d.mid,'potUses'],u);
@@ -313,6 +313,7 @@ window.OM_BATTLE_UI=(()=>{
    case 'myosu':return openMyosu(d.tid);
    case 'timeok':return grantTime(d.seat);
    case 'cmdsave':return saveCmd(d.tid,false);
+   case 'ufire':return openUfire(d.tid,d.pot);
    case 'ready':return toggleReady(d.tid);
    case 'cmdload':return loadCmd(d.tid);
    case 'reveal':return reveal();
@@ -438,25 +439,38 @@ window.OM_BATTLE_UI=(()=>{
    <div class="small dim" style="margin-top:8px">선행 발동 : 지시 입력에서 선행 입력한 것을 그 순간 발동 (턴 개시 때 횟수를 깎았다) · 임의 발동 : 남은 횟수 1을 써서 지금 발동 · 강제 : GM 이 횟수와 상관없이</div>`);
   md.querySelectorAll('[data-ftab]').forEach(el=>el.onclick=()=>{UIC.fire[tid]=el.dataset.ftab;A().closeModal();openFire(tid)});
   /* 선행 입력 읽기 (주인·GM 만 읽을 수 있다) */
-  myCmd(c,tid).then(cm=>{const pre=$('#firepre',md);if(!pre)return;const x=cm&&cm.mons&&cm.mons[m.id]||{};const parts=[];
+  myCmd(c,tid,true).then(cm=>{const pre=$('#firepre',md);if(!pre)return;const x=cm&&cm.mons&&cm.mons[m.id]||{};const parts=[];
    for(const kind of ['order','command']){const k=x[kind];if(!k)continue;const nm=kind==='order'?OO().orderName(t,k):OO().commandName(t,k);parts.push(`${kind==='order'?'지령':'명령'} 『${esc(nm)}』${fired[kind]===k?' (발동함)':''}`);
     const bt=md.querySelector(`[data-fire="pre"][data-kind="${kind}"][data-k="${k}"]`);if(bt&&ph>=1&&fired[kind]!==k)bt.hidden=false;const row=md.querySelector(`.firerow[data-kind="${kind}"][data-fk="${k}"]`);if(row)row.classList.add('pre')}
    const fp=fired.pot||{};for(const [sk,list] of [['uq',(cm&&cm.upots)||[]],['ex',x.pots||[]]])for(const n of list){const key=(sk==='uq'?'u:':'e:')+n;const bt=md.querySelector(`[data-sfire="pre"][data-sk="${sk}"][data-sn="${CSS.escape(n)}"]`);if(!bt)continue;parts.push(`${sk==='uq'?'고유':'전용'} 『${esc(n)}』${fp[key]?' (발동함)':''}`);if(ph>=1&&!fp[key])bt.hidden=false;const r=bt.closest('.firerow');if(r)r.classList.add('pre')}
    pre.innerHTML=`${esc(m.name)} (에리어 ${m.entry.toUpperCase()}) 선행 입력: ${parts.join(' · ')||'<span class="dim">없음</span>'}${ph<1?' <span class="dim">— 턴 개시 뒤에 발동할 수 있다</span>':''}`}).catch(()=>{});
   md.querySelectorAll('[data-fire]').forEach(bt=>bt.onclick=()=>fireOrder(tid,m.id,bt.dataset.kind,bt.dataset.k,bt.dataset.fire));
   md.querySelectorAll('[data-sfire]').forEach(bt=>bt.onclick=()=>fireSpecial(tid,m.id,bt.dataset.sk,bt.dataset.sn,bt.dataset.sfire))}
+ /* 트레이너 칸의 고유 「발동」: 대상(필드의 내 포켓몬 · 없으면 대상 없이) · 선행/임의/강제 를 고른다 */
+ async function openUfire(tid,name){const c=ctx();const b=c.b;const t=(b.trainers||{})[tid];if(!t)return;if(!c.gm&&c.seat!==tid)return;const x=uniqList(t).find(q=>q.p.name===name);if(!x)return;
+  const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid&&m.entry&&m.hp.cur>0).sort((p,q)=>p.entry.localeCompare(q.entry));const ph=+b.phase||0;
+  const md=A().openModal(`<div class="mhead"><h2><span class="tag uqt">고유</span> 『${esc(name)}』</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+   <div class="small" style="margin-bottom:8px;white-space:pre-wrap">${esc(String(x.p.eff||'').replace(/<br\s*\/?>/g,'\n'))}</div>
+   <div class="small dim">${esc(t.name)} · ${x.max!=null?`남은 ${x.left}/${x.max}`:'횟수 없음'}</div>
+   <div class="sec">대상</div><div class="pool">${mons.map((m,i)=>`<div class="oc ${i===0?'mine':''}" data-ut="${m.id}"><b>${esc(m.name)}</b><small>에리어 ${m.entry.toUpperCase()}</small></div>`).join('')}<div class="oc ${mons.length?'':'mine'}" data-ut=""><b>대상 없음</b><small>트레이너만</small></div></div>
+   <div class="small dim" id="upre" style="margin-top:6px">선행 입력 확인 중…</div>
+   <div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn pri" data-uf="pre" hidden>선행 발동</button><button class="btn" data-uf="free" ${x.left===null||x.left>0?'':'disabled'}>임의 발동</button>${c.gm?'<button class="btn ghost" data-uf="force">강제</button>':''}</div>`);
+  let tgt=mons[0]?mons[0].id:'';md.querySelectorAll('[data-ut]').forEach(el=>el.onclick=()=>{tgt=el.dataset.ut;md.querySelectorAll('[data-ut]').forEach(o=>o.classList.toggle('mine',o===el))});
+  md.querySelectorAll('[data-uf]').forEach(bt=>bt.onclick=()=>fireSpecial(tid,tgt,'uq',name,bt.dataset.uf));
+  try{const rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd');const r=(rows||[]).find(q=>q.id===tid);const cm=r&&(r.data||r.v||r.value||r);const up=(cm&&cm.upots)||[];const el=$('#upre',md);if(el)el.textContent=up.includes(name)?'이번 턴에 선행 입력했다':'선행 입력 안 함';if(up.includes(name)&&ph>=1){const p=md.querySelector('[data-uf=pre]');if(p)p.hidden=false}}catch(e){const el=$('#upre',md);if(el)el.textContent=''}}
  /* 고유(트레이너) · 전용 포텐셜 발동: 선행(지시에서 선행 입력한 것) · 임의 · 강제(GM). 횟수는 발동할 때 1 깎는다(강제 제외). 자동화가 있으면 대상 포켓몬에 걸고, 없으면 효과를 로그 카드로 */
- async function fireSpecial(tid,mid,sk,name,how){const c=ctx();const b=c.b;const t=(b.trainers||{})[tid];const m=(b.mons||{})[mid];if(!t||!m)return;if(!c.gm&&c.seat!==tid)return;if(how==='force'&&!c.gm)return;
+ async function fireSpecial(tid,mid,sk,name,how){const c=ctx();const b=c.b;const t=(b.trainers||{})[tid];const m=(b.mons||{})[mid]||null;if(!t||(!m&&sk!=='uq'))return;if(!c.gm&&c.seat!==tid)return;if(how==='force'&&!c.gm)return;
   const x=sk==='uq'?uniqList(t).find(q=>q.p.name===name):specialPots(m).find(q=>q.p.name===name);if(!x)return;
   if(how!=='force'&&x.left!==null&&x.left<=0)return A().toast('남은 횟수가 없다');
-  A().closeModal();const tag=how==='pre'?'【선행】':how==='free'?'【임의】':'【강제】';
+  A().closeModal();const tag=how==='pre'?'【선행】':how==='free'?'【임의】':'【강제】';const LB=sk==='uq'?'고유':'전용';
   if(how!=='force'&&x.max!=null){if(sk==='uq'){const uu=Object.assign({},t.uUses||{});uu[name]=Math.max(0,x.left-1);await A().set(['battle','trainers',tid,'uUses'],uu)}else{const uu=Object.assign({},m.potUses||{});uu[name]=Math.max(0,x.left-1);await A().set(['battle','mons',mid,'potUses'],uu)}}
-  await A().set(['battle','cmds',tid,'fired',mid,'pot',(sk==='uq'?'u:':'e:')+name],1);
+  await A().set(['battle','cmds',tid,'fired',m?mid:'_t','pot',(sk==='uq'?'u:':'e:')+name],1);
   if(sk==='uq'){if(String(((A().ST.state.rp||{}).cutin||{}).ord)!=='0')cutFire('t:'+tid,trainerImg(t),`${t.name}의 고유!`,`『${name}』`,t.side==='left'?'#1f6fd1':'#e3101f')}else if(wantCut(m,name))cutFire('m:'+m.id,m.image,m.name,`『${name}』`,m.side==='left'?'#1f6fd1':'#e3101f');
   const left=x.max!=null?` 【${how==='force'?x.left:Math.max(0,x.left-1)}/${x.max}】`:'';
-  const a=FX()&&FX().autoOf(m,'pot',name);
-  if(a&&a.ops&&a.ops.length&&!a.manual){await fireAuto(mid,'pot',name,{quiet:true,head:`【${sk==='uq'?'고유':'전용'}】 ${sk==='uq'?t.name:m.name} 『${name}』${left}${tag}${sk==='uq'?` → ${m.name} (에리어 ${String(m.entry).toUpperCase()})`:''}`,img:sk==='uq'?trainerImg(t):(m.image||'')});return}
-  A().sysLog(`【${sk==='uq'?'고유':'전용'}】 ${sk==='uq'?t.name:m.name} 『${name}』${left}${tag}${sk==='uq'?`\n대상: ${m.name} (에리어 ${String(m.entry).toUpperCase()})`:''}`,'battle',{mid:m.id,img:sk==='uq'?trainerImg(t):(m.image||''),eff:String(x.p.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,400)})}
+  const who=sk==='uq'?t.name:m.name;const tgt=sk==='uq'?(m?` → ${m.name} (에리어 ${String(m.entry).toUpperCase()})`:''):'';const img=sk==='uq'?trainerImg(t):(m.image||'');
+  const a=m&&FX()&&FX().autoOf(m,'pot',name);
+  if(a&&a.ops&&a.ops.length&&!a.manual){await fireAuto(mid,'pot',name,{quiet:true,head:`【${LB}】 ${who} 『${name}』${left}${tag}${tgt}`,img,eff:String(x.p.eff||'')});return}
+  A().sysLog(`【${LB}】 ${who} 『${name}』${left}${tag}${tgt?'\n대상:'+tgt.replace(' →',''):''}`,'battle',{mid:m?m.id:'',img,eff:String(x.p.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,400)})}
  async function fireOrder(tid,mid,kind,key,how){const c=ctx();const b=JSON.parse(JSON.stringify(c.b));const t=b.trainers[tid];const m=b.mons[mid];if(!t||!m)return;
   const name=kind==='order'?OO().orderName(t,key):OO().commandName(t,key);const ck=(kind==='order'?'order_':'command_')+key;t.orderCount=t.orderCount||{};
   let tag='';
@@ -467,10 +481,11 @@ window.OM_BATTLE_UI=(()=>{
   if(!fx.length&&FX()){const a=FX().rm(name);if(a&&a.ops&&a.ops.length&&!a.manual){const r=await FX().run(a.ops,uiCtx(b,m,name,m.entry));fx.push(...r.lines)}}
   A().closeModal();
   const okT=await A().set(['battle','trainers',tid],t);if(!okT)return;if(String(((A().ST.state.rp||{}).cutin||{}).ord)!=='0')cutFire('t:'+tid,trainerImg(t),`${t.name}의 지시!`,`『${name}』`,t.side==='left'?'#1f6fd1':'#e3101f');await A().set(['battle','mons'],b.mons);await A().set(['battle','field'],f);await A().set(['battle','cmds',tid,'fired',mid,kind],key);
-  A().sysLog(`【${kind==='order'?'지령':'명령'}】 ${t.name}의 지시! 『${name}』 → ${m.name} (에리어 ${String(m.entry).toUpperCase()}) 【${Math.max(0,+t.orderCount[ck]||0)}/시】${tag}${fx.length?'\n'+fx.join('\n'):''}`,'battle')}
+  const oeff=(FX()&&FX().rm&&(FX().rm(name)||{}).text)||'';
+  A().sysLog(`【${kind==='order'?'지령':'명령'}】 ${t.name}의 지시! 『${name}』 → ${m.name} (에리어 ${String(m.entry).toUpperCase()}) 【${Math.max(0,+t.orderCount[ck]||0)}/시】${tag}${fx.length?'\n'+fx.join('\n'):''}`,'battle',{mid:m.id,img:trainerImg(t),eff:String(oeff).replace(/<br\s*\/?>/g,'\n').slice(0,400)})}
  /* 맵툴 open_command 처럼 에리어(포켓몬) 하나씩 공개한다. 좌석은 자기 것만, GM 은 아무 것이나 */
  function revealed(b,tid,part){const cm=((b.cmds||{})[tid]||{});return part==='orders'?!!cm.revealedOrders:!!((cm.mons||{})[part])}
- async function myCmd(c,tid){let rows;try{rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd')}catch(e){A().toast('지시를 읽지 못했다: '+e.message);return null}const r=(rows||[]).find(x=>x.id===tid);if(!r){A().toast('저장된 지시가 없다 — 먼저 「저장」');return null}return r.data}
+ async function myCmd(c,tid,quiet){let rows;try{rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd')}catch(e){if(!quiet)A().toast('지시를 읽지 못했다: '+e.message);return null}const r=(rows||[]).find(x=>x.id===tid);if(!r){if(!quiet)A().toast('저장된 지시가 없다 — 먼저 「저장」');return null}return r.data}
  function revealCardText(b,t,m,x){if(x.move==='switch')return `${t.name} · ${m.name} (${slotName(b,m.side+'_'+m.entry).replace(/<[^>]+>/g,'')}): 「교대」 → ${monName(b,x.switch)}`;
   if(x.move===''||x.move==null)return `${t.name} · ${m.name}: (행동 없음)`;const mv=(m.moves||[])[+x.move]||{};
   return `${t.name} · ${m.name} (${SIDE_KO[m.side]} ${String(m.entry).toUpperCase()}): 「${mv.name||'?'}」 ${mv.type||''}·${mv.cat||''} · 위력 ${mv.pow||'-'} · 명중 ${mv.acc||'-'}${mv.prio?' · 우선도 '+mv.prio:''}${x.targets&&x.targets.length?' → '+x.targets.map(sl=>slotName(b,sl).replace(/<[^>]+>/g,'')).join(', '):''}${mv.eff&&mv.eff!=='-'?'\n   '+mv.eff:''}`}
@@ -774,7 +789,7 @@ window.OM_BATTLE_UI=(()=>{
   const r=await FX().run(auto.ops,uiCtx(nb,m,name,opt.area));L.push(...r.lines);
   const f=fieldOf(nb);for(const id in nb.mons){const x=nb.mons[id];if(x.entry&&x.hp.cur<=0){x.entry='';L.push(`${x.name}은(는) 쓰러졌다!`)}}
   if(!await A().set(['battle','mons'],nb.mons))return false;await A().set(['battle','field'],f);
-  A().sysLog(opt.head?`${opt.head}${L.length?'\n'+L.join('\n'):''}`:`【${({pot:'포텐셜',trait:'특성',item:'소지품',order:'지령'})[kind]||'효과'}】 ${m.name} 『${name}』${L.length?'\n'+L.join('\n'):''}`,'battle',{mid:m.id,img:opt.img!=null?opt.img:(m.image||''),eff:String(auto.text||(kind==='trait'?m.abilityEff:kind==='item'?m.itemEff:((potSrc(m).find(p=>p&&p.name===name)||{}).eff))||'').replace(/<br\s*\/?>/g,'\n').slice(0,300)});return true}
+  A().sysLog(opt.head?`${opt.head}${L.length?'\n'+L.join('\n'):''}`:`【${({pot:'포텐셜',trait:'특성',item:'소지품',order:'지령'})[kind]||'효과'}】 ${m.name} 『${name}』${L.length?'\n'+L.join('\n'):''}`,'battle',{mid:m.id,img:opt.img!=null?opt.img:(m.image||''),eff:String(opt.eff||auto.text||(kind==='trait'?m.abilityEff:kind==='item'?m.itemEff:((potSrc(m).find(p=>p&&p.name===name)||{}).eff))||'').replace(/<br\s*\/?>/g,'\n').slice(0,300)});return true}
  /* 등장·상시 자동 발동: 글에 【등장】/【상시】 표식이 있는 특성·소지품·포텐셜 */
  async function autoOnEntry(mid){const c=ctx();const m=c.b.mons[mid];if(!m||!FX())return;const list=[];
   if(m.ability)list.push(['trait',m.ability]);if(m.item)list.push(['item',m.item]);for(const p of [...(m.pots||[]),...(m.excl?[m.excl]:[]),...(m.exclX||[])])if(p&&p.name&&!p.ph)list.push(['pot',p.name]);
