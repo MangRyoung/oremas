@@ -1525,3 +1525,23 @@ label.tgc:has(input:focus-visible){outline:2px solid var(--yel)}
 .dxlow .dxnow .k{margin-bottom:4px}
 .dxlow .dxnowc .rks{display:flex;flex-wrap:wrap;gap:4px}.dxlow .dxnowc .rk{font-size:12.5px;padding:2px 8px}
 @media (max-width:760px){.dxside.dxaffs{width:auto}}
+/* 10-22 벤치 아래: 행동 순서 세로 · 지시 준비 현황 */
+.bside{margin-top:8px;background:#0e0f12;border:1px solid var(--line2);padding:6px}
+.bsh{display:flex;align-items:center;gap:6px;font-family:var(--lab);font-size:11px;letter-spacing:.08em;color:var(--mute);padding:0 2px 5px;border-bottom:1px solid var(--line)}
+.bsh b{font-family:var(--mono);color:#fff;font-size:11px}
+.bord{display:flex;flex-direction:column;gap:3px;margin-top:5px;max-height:420px;overflow:auto}
+.bo{display:grid;grid-template-columns:20px 30px minmax(0,1fr);align-items:center;gap:6px;padding:3px 4px;background:#16171b;border-left:3px solid var(--line2);cursor:default}
+.bo[data-act]{cursor:pointer}.bo.left{border-left-color:var(--left)}.bo.right{border-left-color:var(--right)}
+.bo.now{background:#2a2510;box-shadow:inset 0 0 0 1px var(--yel2)}.bo.now .bon{background:var(--yel2);color:#000}
+.bo.done{opacity:.45}.bo.dead{opacity:.3;filter:grayscale(1)}
+.bon{font-family:var(--mono);font-size:11px;text-align:center;background:#2a2b30;color:#fff;line-height:18px}
+.bop{width:30px;height:30px;background:#222 center/cover no-repeat}
+.bot{display:flex;flex-direction:column;min-width:0;line-height:1.2}
+.bot b{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bot small{font-size:10.5px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bhp{display:block;height:3px;background:#333;margin-top:2px}.bhp>i{display:block;height:100%;background:#3ecf6e}
+.bsf{display:flex;gap:4px;margin-top:6px}.bsf .btn{flex:1;justify-content:center}
+.brd{display:flex;flex-direction:column;gap:3px;margin-top:5px}
+.br{display:flex;align-items:center;gap:6px;padding:4px 6px;background:#16171b;border-left:3px solid var(--line2);font-size:12px}
+.br.left{border-left-color:var(--left)}.br.right{border-left-color:var(--right)}.brn{font-weight:700}
+.bsn{margin-top:6px;padding:0 2px}
