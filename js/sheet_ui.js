@@ -208,7 +208,7 @@ window.OM_SHEET_UI=(()=>{
  async function importTrainer(tdoc,pokeDocs,keep,asId){const c=ctx();const {trainer,mons}=I().party(tdoc,pokeDocs);
   if(!asId){const dup=Object.values(c.r.trainers||{}).find(x=>x.mkId===tdoc.id&&x.id!==tdoc.id);if(dup)asId=dup.id}
   if(asId){trainer.mkId=tdoc.id;trainer.id=asId;for(const m of mons)m.tid=asId}
-  const r0=JSON.parse(JSON.stringify(c.r));await hostImages(c.ST.room,trainer,mons);const r=JSON.parse(JSON.stringify(r0));const old=r.trainers[trainer.id];
+  const r0=JSON.parse(JSON.stringify(c.r));r0.trainers=r0.trainers||{};r0.mons=r0.mons||{};await hostImages(c.ST.room,trainer,mons);const r=JSON.parse(JSON.stringify(r0));const old=r.trainers[trainer.id];
   trainer.ord=old?old.ord:Object.keys(r.trainers).length;trainer.src='maker';if(old){for(const k of ['orderStyle','commandStyle','orderCount','orderBase','orderPreset','orderType'])if(old[k]!=null)trainer[k]=old[k];trainer.memo=old.memo;const rs=window.OM_ORDERS.resync(trainer);if(rs)Object.assign(trainer,rs)}
   if(!trainer.orderCount)Object.assign(trainer,window.OM_ORDERS.auto(trainer,'assoc',1));if(old){if(old.image&&!trainer.image)trainer.image=old.image;if(!(trainer.stands||[]).length&&(old.stands||[]).length){trainer.stands=old.stands;trainer.standActive=old.standActive}else{for(const s of trainer.stands||[]){const o=(old.stands||[]).find(x=>x.src===s.src);if(!s.kind&&o&&o.kind)s.kind=o.kind}}}
   for(const id of ((old&&old.pids)||[]))if(!trainer.pids.includes(id))delete r.mons[id];
@@ -224,14 +224,31 @@ window.OM_SHEET_UI=(()=>{
  async function refreshFromMaker(tid){const c=ctx();const t=c.r.trainers[tid];if(!t)return;if(t.src==='new')return A().toast('제작기에서 온 트레이너가 아니다');
   let mk;try{mk=await A().loadMaker(true)}catch(e){return A().toast(e.message)}const tdoc=mk.trainers.find(x=>x.id===(t.mkId||tid));if(!tdoc)return A().toast('제작기에 이 트레이너가 없다');await importTrainer(tdoc,mk.pokemon,true,t.mkId?tid:'');A().renderScene()}
 
- /* 알까기 */
- function openHatch(mid){const c=ctx();const m=c.r.mons[mid];const t=c.r.trainers[m.tid]||c.r.trainers[UI.tid];if(!m||!canEdit(c,t.id))return;const count=S().hatchCount(t);let rolls=S().hatch(count);let chosen=-1;
-  const md=A().openModal(`<div class="mhead"><h2>알까기 — ${esc(m.name)}</h2><span class="small dim">육성 ${esc((t.ranks||{})['육성']||'-')} → ${count}회</span><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-   <div class="small dim">지금: ${(m.iv||[]).length?m.iv.join('/')+' (합 '+S().ivSum(m.iv)+')':'없음'}</div><div class="ivs" id="ivbox" style="margin-top:6px"></div>
-   <div class="row" style="margin-top:12px"><button class="btn ghost" id="ivre">다시 굴림</button><span class="sp"></span><button class="btn pri" id="ivok">적용</button></div>`);
-  const draw=()=>{$('#ivbox',md).innerHTML=rolls.map((r,i)=>`<button class="btn ${chosen===i?'on':''}" data-iv="${i}">${r.join('/')} <span class="dim">합 ${S().ivSum(r)}</span></button>`).join('');md.querySelectorAll('[data-iv]').forEach(b=>b.onclick=()=>{chosen=+b.dataset.iv;draw()})};draw();
-  $('#ivre',md).onclick=()=>{rolls=S().hatch(count);chosen=-1;draw()};
-  $('#ivok',md).onclick=async()=>{if(chosen<0)return A().toast('하나 골라 줘');const nm=JSON.parse(JSON.stringify(m));nm.iv=rolls[chosen];recalc(nm,t);A().closeModal();if(await putMon(mid,m,nm))A().sysLog(`${m.name} 알까기 → ${nm.iv.join('/')} (합 ${S().ivSum(nm.iv)})`)}}
+ /* 알까기 — 후보마다 능력치 이름과 값, 0–1 / 30–31 표시, 개별 다시 굴림 · 개별 수정(✎) · 추가 굴림. 전부 다시 굴림과 합 130 넘는 후보 다시 굴림은 한 번 더 묻는다 */
+ function openHatch(mid){const c=ctx();const m=c.r.mons[mid];const t=c.r.trainers[m.tid]||c.r.trainers[UI.tid];if(!m||!canEdit(c,t.id))return;const count=S().hatchCount(t);let rolls=S().hatch(count);let chosen=-1,editing=-1;const used={extra:0,one:0,all:0,edit:0};const edited=new Set();const BIG=130;
+  const cell=v=>`<b class="${v<=1?'lo':v>=30?'hi':''}">${v}</b>`;
+  const ivTable=iv=>`<div class="ivt">${STATS_KO.map(k=>`<span>${k}</span>`).join('')}${iv.map(cell).join('')}</div>`;
+  const ivEdit=(iv,i)=>`<div class="ivt ed">${STATS_KO.map(k=>`<span>${k}</span>`).join('')}${iv.map((v,k)=>`<input type="number" min="0" max="31" value="${v}" data-ivi="${i}" data-ivk="${k}">`).join('')}</div>`;
+  const md=A().openModal(`<div class="mhead"><h2>알까기 — ${esc(m.name)}</h2><span class="small dim" id="ivcnt"></span><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+   <div class="ivnow"><span class="small dim">지금</span>${(m.iv||[]).length?ivTable(m.iv)+`<span class="small">합 <b>${S().ivSum(m.iv)}</b></span>`:'<span class="small dim">없음</span>'}</div>
+   <div class="small dim" style="margin:6px 0">하나를 눌러 고른다 · <b class="ivlg lo">0–1</b> 낮음 · <b class="ivlg hi">30–31</b> 높음 · 🎲 = 그 후보만 다시 굴림 · ✎ = 값 고치기 (0–31)</div>
+   <div class="ivgrid" id="ivbox"></div>
+   <div class="row" style="margin-top:12px"><button class="btn ghost" id="ivre">전부 다시 굴림</button><button class="btn ghost" id="ivadd">+ 추가 굴림</button><span class="sp"></span><button class="btn pri" id="ivok">적용</button></div>`);
+  const draw=()=>{$('#ivcnt',md).textContent=`육성 ${(t.ranks||{})['육성']||'-'} → ${count}회${used.extra?' + 추가 '+used.extra+'회':''}`;
+   $('#ivbox',md).innerHTML=rolls.map((r,i)=>{const sum=S().ivSum(r);return `<div class="ivc ${chosen===i?'on':''}" data-iv="${i}"><div class="ivh"><span class="dim">#${i+1}</span><span class="sp"></span>${edited.has(i)?'<span class="ivmod">수정됨</span>':''}<span class="ivsum ${sum>BIG?'big':''}">합 ${sum}</span><button class="btn xs ghost" data-ivr="${i}" title="이 후보만 다시 굴림">🎲</button><button class="btn xs ghost ${editing===i?'on':''}" data-ive="${i}" title="${editing===i?'고치기 끝':'이 후보 값 고치기'}">${editing===i?'✓':'✎'}</button></div>${editing===i?ivEdit(r,i):ivTable(r)}</div>`}).join('');
+   md.querySelectorAll('[data-iv]').forEach(b=>b.onclick=()=>{chosen=+b.dataset.iv;draw()});
+   md.querySelectorAll('[data-ivr]').forEach(b=>b.onclick=e=>{e.stopPropagation();const i=+b.dataset.ivr;const sum=S().ivSum(rolls[i]);
+    if(sum>BIG&&!confirm(`#${i+1} 은 합 ${sum} — ${BIG} 넘는 후보다. 정말 다시 굴릴까?`))return;rolls[i]=S().rollIv();used.one++;edited.delete(i);if(editing===i)editing=-1;if(chosen===i)chosen=-1;draw()});
+   md.querySelectorAll('[data-ive]').forEach(b=>b.onclick=e=>{e.stopPropagation();const i=+b.dataset.ive;editing=editing===i?-1:i;draw();if(editing===i){const f=md.querySelector(`[data-ivi="${i}"]`);f&&f.select()}});
+   md.querySelectorAll('[data-ivi]').forEach(f=>{f.onclick=e=>e.stopPropagation();
+    f.onchange=()=>{const i=+f.dataset.ivi,k=+f.dataset.ivk;let v=Math.round(+f.value);if(!isFinite(v))v=0;v=Math.max(0,Math.min(31,v));if(rolls[i][k]!==v){rolls[i]=rolls[i].slice();rolls[i][k]=v;if(!edited.has(i)){edited.add(i);used.edit++}}draw();const n=md.querySelector(`[data-ivi="${i}"][data-ivk="${k+1}"]`);n&&n.select()};
+    f.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();f.onchange()}}})};draw();
+  $('#ivre',md).onclick=()=>{const big=rolls.filter(r=>S().ivSum(r)>BIG).length;
+   if(!confirm(`후보 ${rolls.length}개가 전부 새로 바뀐다.${big?`\n합 ${BIG} 넘는 후보 ${big}개도 같이 사라진다.`:''}\n정말 다시 굴릴까?`))return;rolls=S().hatch(count+used.extra);used.all++;chosen=-1;editing=-1;edited.clear();draw()};
+  $('#ivadd',md).onclick=()=>{rolls.push(S().rollIv());used.extra++;draw();const g=$('#ivbox',md);g.lastElementChild&&g.lastElementChild.scrollIntoView({block:'nearest'})};
+  $('#ivok',md).onclick=async()=>{if(chosen<0)return A().toast('하나 골라 줘');const nm=JSON.parse(JSON.stringify(m));nm.iv=rolls[chosen];recalc(nm,t);A().closeModal();
+   const note=[used.extra?`추가 ${used.extra}회`:'',used.one?`개별 다시 굴림 ${used.one}회`:'',used.all?`전부 다시 굴림 ${used.all}회`:'',edited.has(chosen)?'고른 후보는 손으로 고침':used.edit?`다른 후보 ${used.edit}개 손으로 고침`:''].filter(Boolean).join(' · ');
+   if(await putMon(mid,m,nm))A().sysLog(`${m.name} 알까기 → ${nm.iv.join('/')} (합 ${S().ivSum(nm.iv)})${note?' · '+note:''}`)}}
 
  return {render,UI,importTrainer};
 })();

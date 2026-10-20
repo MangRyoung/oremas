@@ -1202,3 +1202,26 @@ label.ph-item input[type=checkbox]{width:16px;height:16px;flex:none}
  .dname{font-size:15px;padding:1px 16px 1px 10px;top:3px}
  .dtext{font-size:15px;line-height:1.45;min-height:44px;max-height:5.6em;overflow-y:auto;padding:7px 14px;border-top-width:1.5px}
 }
+
+/* 알까기 후보 (2026-10-20) */
+.ivgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px;max-height:56vh;overflow:auto;padding:2px 4px 4px 2px}
+.ivc{background:#fff;color:#111;border:2px solid #000;padding:6px 8px;cursor:pointer;box-shadow:3px 3px 0 #000}
+.ivc:hover{box-shadow:3px 3px 0 var(--red)}
+.ivc.on{background:#ffe3e8;border-color:var(--red);box-shadow:3px 3px 0 var(--red)}
+.ivc .ivh{display:flex;align-items:center;gap:6px;font-size:12px;margin-bottom:3px}
+.ivc .ivh .dim{color:#777}
+.ivc .ivh .btn{color:#111;border-color:#222;padding:0 6px}
+.ivsum{font-family:var(--mono);font-weight:700}
+.ivsum.big{background:var(--yel2);color:#000;padding:0 6px;border:1px solid #000}
+.ivt{display:grid;grid-template-columns:repeat(6,1fr);text-align:center;font-family:var(--mono);font-size:13px;row-gap:1px}
+.ivt span{font-size:10px;color:#777;font-family:var(--lab)}
+.ivt b{font-weight:600;border-radius:3px}
+.ivt b.lo,.ivlg.lo{background:#ffd0d0;color:#b00000}
+.ivt b.hi,.ivlg.hi{background:#ffe08a;color:#6b4800}
+.ivt.ed{row-gap:2px;column-gap:3px}
+.ivt.ed input{width:100%;min-width:0;box-sizing:border-box;text-align:center;font-family:var(--mono);font-size:13px;padding:1px 0;border:1px solid #444;background:#fff;color:#111}
+.ivc .ivh .btn.on{background:var(--red);color:#fff;border-color:var(--red)}
+.ivmod{font-size:10px;background:#333;color:#fff;padding:0 5px}
+.ivlg{padding:0 4px;border-radius:3px;font-family:var(--mono)}
+.ivnow{display:flex;align-items:center;gap:10px;background:var(--panel2);padding:6px 10px;margin-top:4px}
+.ivnow .ivt{min-width:260px;color:#eee}.ivnow .ivt span{color:#aaa}
