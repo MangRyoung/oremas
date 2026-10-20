@@ -1518,3 +1518,10 @@ label.tgc:has(input:focus-visible){outline:2px solid var(--yel)}
 /* 포텐셜 설정 창: 고유 · 전용 횟수 */
 .ogh .gk.uq{background:#7b4fd6}.ogh .gk.ex{background:#1f6fd1}
 #spcnt .step b small{font-size:10px;margin-left:1px}
+/* 10-22 망령: 상성은 오른쪽 위(세로로 쌓기), 랭크·상태는 아래 넓은 칸 */
+.dxside.dxaffs{width:300px;gap:8px}
+.dxaffs .aff{grid-template-columns:1fr;gap:10px}
+.dxlow>.dxnowc{display:flex;flex-direction:column;gap:10px}
+.dxlow .dxnow .k{margin-bottom:4px}
+.dxlow .dxnowc .rks{display:flex;flex-wrap:wrap;gap:4px}.dxlow .dxnowc .rk{font-size:12.5px;padding:2px 8px}
+@media (max-width:760px){.dxside.dxaffs{width:auto}}
