@@ -102,13 +102,13 @@ function renderRoom(){
    ${ST.role==='gm'?'<button class="btn sm" id="copyGm">GM 링크</button><button class="btn sm" id="roomSet">방 설정</button>':'<button class="btn sm" id="seatBtn">자리</button><button class="btn sm ghost" id="roomSet" title="소리 크기">소리</button>'}
   </div>
   <div class="body"><div class="scene" id="scene"></div><div class="resizer" id="resizer" title="끌어서 채팅 창 너비 조절"></div>
-   <div class="side" id="side"><div class="phone"><div class="pbar"><span>●●●</span><span class="ptime" id="pclock"></span></div><div class="ptitle"><button class="btn xs ghost plog" id="saveLog" title="채팅 로그를 파일로 저장">💾 로그</button>${esc(r.name||r.id)}<small>${ST.role==='gm'?'GM':ST.role==='seat'?esc(ST.name):'관전'} · 오레마스</small></div><div class="log" id="log"></div>
+   <div class="side" id="side"><div class="phone"><div class="pbar"><span>●●●</span><span class="ptime" id="pclock"></span></div><div class="ptitle"><span class="plogs">${ST.role==='gm'?'<button class="btn xs ghost plog" id="clearLog" title="로그 비우기">🧹 비우기</button>':''}<button class="btn xs ghost plog" id="saveLog" title="채팅 로그를 파일로 저장">💾 로그</button></span>${esc(r.name||r.id)}<small>${ST.role==='gm'?'GM':ST.role==='seat'?esc(ST.name):'관전'} · 오레마스</small></div><div class="log" id="log"></div>
     <div class="inbox"><input type="text" id="chatIn" placeholder="${ST.role?'메시지 · /r 1d100 · /w 이름 메시지':'자리에 앉으면 말할 수 있다'}" ${ST.role?'':'disabled'}><button class="btn" id="chatSend" ${ST.role?'':'disabled'}>➤</button></div></div></div>
   </div>
   <div class="mbar" id="mbar"><button data-m="scene" class="on"><i>🎭</i><span>무대</span></button><button data-m="chat"><i>💬</i><span>채팅</span><em id="mUnread" class="mbadge" style="display:none"></em></button><button data-m="phone"><i>📱</i><span>휴대폰</span></button><button data-m="menu"><i>☰</i><span>메뉴</span></button></div></div>`;
  $('#copyLink').onclick=()=>copy(roomLink(ST.room),'플레이어 링크를 복사했다');
  bindMobile();
- const sl=$('#saveLog');if(sl)sl.onclick=openSaveLog;const pr=$('#presence');if(pr)pr.onclick=()=>{if(ST.role==='gm')return;openNick()};
+ const sl=$('#saveLog');if(sl)sl.onclick=openSaveLog;const cl=$('#clearLog');if(cl)cl.onclick=openClearLog;const pr=$('#presence');if(pr)pr.onclick=()=>{if(ST.role==='gm')return;openNick()};
  const sk=$('#skillBtn');if(sk)sk.onclick=()=>window.OM_SKILL_UI.open();const dxb=$('#dexBtn');if(dxb)dxb.onclick=()=>window.OM_DEX_UI.openMgr(ST.seat);
  const dk=$('#deckBtn');if(dk)dk.onclick=()=>window.OM_DECK_UI.open();
  $('#dbBtn').onclick=()=>window.OM_DB_UI.open({kind:'trait'});if($('#rmBtn'))$('#rmBtn').onclick=()=>window.OM_FX_UI.openRm('');
@@ -138,7 +138,7 @@ async function set(path,value){try{
   ST.v=Math.max(ST.v,v||0);renderScene();return true}catch(e){toast('저장 실패: '+e.message);return false}}
 async function sysLog(t,kind,extra){try{await DBS().addLog(ST.room,ST.secret,kind||'sys',ST.name,Object.assign({t},extra||{}))}catch(e){}}
 /* 배틀 로그 카드: 「【포텐셜】 이름 『효과』」 꼴의 글은 머리띠 + 본문 카드로 */
-const TAGCOL={'포텐셜':'#7b4fd6','특성':'#2f8f5b','소지품':'#c7651a','지령':'#1f6fd1','명령':'#e3101f','공개':'#d6a23b','스킬 체크':'#2b8fa8','모두 공개':'#d6a23b','공격':'#c8362b','전달':'#8a4b2a','효과':'#555'};
+const TAGCOL={'고유':'#7b4fd6','전용':'#1f6fd1','포텐셜':'#7b4fd6','특성':'#2f8f5b','소지품':'#c7651a','지령':'#1f6fd1','명령':'#e3101f','공개':'#d6a23b','스킬 체크':'#2b8fa8','모두 공개':'#d6a23b','공격':'#c8362b','전달':'#8a4b2a','효과':'#555'};
 function battleCard(d){const t=String(d.t||'');const m=t.match(/^【([^】]+)】\s*([^\n]*)\n?([\s\S]*)$/);if(!m)return '';const tag=m[1],title=m[2],body=m[3].trim();const col=TAGCOL[tag]||'#555';
  const lines=body.split('\n').filter(Boolean).map(l=>`<div class="bl ${/실패|차단|없|않/.test(l)?'neg':/\+\d|회복|성공|→/.test(l)?'pos':''}">${esc(l)}</div>`).join('');
  return `<div class="bcard" style="--tc:${col}"><div class="bch">${d.img?`<span class="bcav" style="background-image:url('${esc(d.img)}')"></span>`:''}<span class="bctag">${esc(tag)}</span><b>${esc(title)}</b>${d.mid?`<span class="sp"></span><button class="btn xs ghost bcfx" data-lmid="${esc(d.mid)}" title="이 포켓몬의 포텐셜 창 — 발동 중인 효과를 ✕ 로 해제">효과</button>`:''}</div>${d.eff?`<div class="bceff">${esc(d.eff)}</div>`:''}${lines?`<div class="bcb">${lines}</div>`:''}</div>`}
@@ -162,7 +162,8 @@ function roll(expr){const m=String(expr).replace(/\s/g,'').match(/^(\d*)d(\d+)([
 function avatarOf(r){const d=r.data||{};if(d.k&&window.OM_RP_UI&&window.OM_RP_UI.imgOfKey){const u=window.OM_RP_UI.imgOfKey(d.k);if(u)return u}if(d.as){const tr=Object.values((ST.state.roster||{}).trainers||{}).find(x=>x.name===d.as);if(tr&&tr.image)return tr.image;const n=Object.values((ST.state.graph||{}).nodes||{}).find(x=>x.name===d.as);return n&&n.img||''}const from=d.from;const b=ST.state.battle||{};const ro=ST.state.roster||{trainers:{}};const t=(b.trainers||{})[from]||(ro.trainers||{})[from];if(t&&t.image)return t.image;return ''}
 function renderLog(scroll){
  const el=$('#log');if(!el)return;
- el.innerHTML=ST.log.map(r=>{const d=r.data||{};const k=r.kind;const t=fmtTime(r.at);
+ const cut=+((ST.state.rp||{}).logClearAt)||0;
+ el.innerHTML=ST.log.filter(r=>r.id>cut).map(r=>{const d=r.data||{};const k=r.kind;const t=fmtTime(r.at);
   if(k==='sys')return `<div class="msg sys"><div class="bub">${esc(d.t)}</div></div>`;
   if(k==='chat'&&d.clear)return `<div class="msg sys"><div class="bub">무대를 비웠다</div></div>`;
   if(k==='chat'&&d.sms)return '';
@@ -357,6 +358,15 @@ function openSaveLog(){const o=logSaveCfg();const ck=(id,l,on)=>`<label class="s
   else{blob=new Blob([buildLogHtml(keep,c)],{type:'text/html;charset=utf-8'});fn=`${name}_로그_${stamp}.html`}
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fn;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);closeModal();toast(`${keep.length}줄을 저장했다`)};
  $('#lg_txt',m).onclick=()=>go('txt');$('#lg_html',m).onclick=()=>go('html')}
+/* 로그 비우기 (GM): 「화면 비우기」는 모두의 채팅 창에서 지금까지를 숨긴다 (기록은 남아 로그 저장으로 받을 수 있다). 「완전히 지우기」는 서버에서 지운다 */
+function openClearLog(){if(ST.role!=='gm')return;const cut=+((ST.state.rp||{}).logClearAt)||0;
+ const m=openModal(`<div class="mhead"><h2>로그 비우기</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+  <div class="row" style="align-items:flex-start;gap:12px;flex-wrap:wrap"><div style="flex:1;min-width:240px"><div class="sec">화면 비우기</div><p class="small muted">모두의 채팅 창에서 지금까지의 로그를 숨긴다. 기록은 남아서 「💾 로그」로 받을 수 있고, 되돌릴 수 있다. 휴대폰 문자는 그대로.</p><div class="row"><button class="btn pri" id="lc_view">화면 비우기</button>${cut?'<button class="btn ghost" id="lc_undo">다시 보이기</button>':''}</div></div>
+  <div style="flex:1;min-width:240px"><div class="sec">완전히 지우기</div><p class="small muted">서버에서 로그를 지운다. <b>되돌릴 수 없다.</b> 먼저 로그를 저장해 두길.</p><label class="small"><input type="checkbox" id="lc_sms" checked> 휴대폰 문자는 남기기</label><div class="row" style="margin-top:6px"><button class="btn" id="lc_save">💾 먼저 저장</button><button class="btn danger" id="lc_hard">완전히 지우기</button></div></div></div>`);
+ $('#lc_view',m).onclick=async()=>{await set(['rp','logClearAt'],ST.lastLogId||0);closeModal();renderLog(true);toast('채팅 창을 비웠다 — 기록은 남아 있다')};
+ const un=$('#lc_undo',m);if(un)un.onclick=async()=>{await set(['rp','logClearAt'],0);closeModal();renderLog(true);toast('지난 로그를 다시 보인다')};
+ $('#lc_save',m).onclick=()=>{closeModal();openSaveLog()};
+ $('#lc_hard',m).onclick=async()=>{if(!confirm('서버에서 로그를 완전히 지울까? 되돌릴 수 없다.'))return;const before=ST.lastLogId||0;try{const keep=$('#lc_sms',m).checked;const n=await DBS().logClear(ST.room,ST.secret,keep);ST.log=ST.log.filter(r=>r.id>before||(keep&&r.kind==='chat'&&r.data&&r.data.sms));await set(['rp','logClearAt'],0);closeModal();renderLog(true);toast(`로그 ${n||0}줄을 지웠다`)}catch(e){toast('지우지 못했다: '+e.message+' — supabase/schema.sql 을 다시 실행했는지 확인')}}}
 function openSeatPicker(){
  const b=B();const ro=(ST.state.roster||{}).trainers||{};const trs=Object.assign({},ro,b.trainers||{});const seats=ST.state.seats||{};const ids=Object.keys(trs);const free=Object.keys(seats).filter(id=>!trs[id]);
  const m=openModal(`<div class="mhead"><h2>자리 고르기</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>

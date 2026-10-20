@@ -58,7 +58,7 @@ window.OM_SHEET_UI=(()=>{
     <div class="tiles">${tiles.map(([k,v])=>`<div class="tile"><b>${esc(String(v))}</b><span>${k}</span></div>`).join('')}</div>
    </div>
    <div class="stabs"><button class="stab ${UI.tab==='char'?'on':''}" data-stab="char">캐릭터</button><button class="stab ${UI.tab==='poke'?'on':''}" data-stab="poke">포켓몬</button><button class="stab ${UI.tab==='grow'?'on':''}" data-stab="grow">성장</button><button class="stab ${UI.tab==='battle'?'on':''}" data-stab="battle">전투</button>
-    <span class="sp"></span>${ed?`<button class="btn sm ${UI.edit?'pri':''}" data-act="toggleedit">${UI.edit?'편집 끝':'✎ 편집'}</button>`:''}${c.gm?`<button class="btn sm ghost" data-act="refresh" data-tid="${t.id}" title="제작기 시트에서 다시 읽어 온다 (개체값·소지품·HP는 유지)">제작기 동기화</button><button class="btn sm ghost danger" data-act="deltr" data-tid="${t.id}">삭제</button>`:''}</div>
+    <span class="sp"></span>${ed?`<button class="btn sm ${UI.edit?'pri':''}" data-act="toggleedit">${UI.edit?'편집 끝':'✎ 편집'}</button>`:''}${(c.gm||t.id===c.seat)?`<button class="btn sm ghost" data-act="refresh" data-tid="${t.id}" title="제작기 시트에서 다시 읽어 온다 (개체값·소지품·HP는 유지)">제작기 동기화</button><button class="btn sm ghost danger" data-act="deltr" data-tid="${t.id}">삭제</button>`:''}</div>
    ${UI.tab==='char'?charTab(c,t,E):UI.tab==='poke'?pokeTab(c,t,mons,E):UI.tab==='grow'?growTab(c,t,mons,E):battleTab(c,t,mons,E)}`}
 
  function charTab(c,t,E){
@@ -169,7 +169,10 @@ window.OM_SHEET_UI=(()=>{
    case 'toggleedit':UI.edit=!UI.edit;A().renderScene();return;
    case 'stands':return window.OM_RP_UI.openStands(t.id);
    case 'refresh':return refreshFromMaker(d.tid);
-   case 'deltr':if(!confirm(`${t.name} 와 파티를 로스터에서 지울까?`))return;{const r=JSON.parse(JSON.stringify(c.r));for(const id of (t.pids||[]))delete r.mons[id];delete r.trainers[t.id];await A().set(['roster'],r);UI.tid='';A().renderScene();return}
+   case 'deltr':if(!c.gm&&t.id!==c.seat)return A().toast('내 시트만 지울 수 있다');if(!confirm(`${t.name} 와 파티를 로스터에서 지울까?`))return;
+    if(c.gm){const r=JSON.parse(JSON.stringify(c.r));for(const id of (t.pids||[]))delete r.mons[id];delete r.trainers[t.id];await A().set(['roster'],r)}
+    else{/* 좌석: 허용 경로로 하나씩 — 내 포켓몬, 내 트레이너 */for(const id of (t.pids||[]))if(c.r.mons[id])await A().set(['roster','mons',id],null);await A().set(['roster','trainers',t.id],null)}
+    UI.tid='';A().renderScene();return
    case 'addmon':{if(!t||!canEdit(c,t.id))return;const id='m'+rnd(7);const nm=I().pokemon({id,data:{data:{id,name:'새 포켓몬',t1:'노말',base:['50','50','50','50','50','50'],moves:[]}}},t);nm.src='new';await A().set(['roster','mons',id],nm);await A().set(['roster','trainers',t.id,'pids'],[...(t.pids||[]),id]);UI.mid=id;A().renderScene();return}
    case 'delmon':{const m=c.r.mons[d.mid];if(!m||!confirm(`${m.name} 을 지울까?`))return;await A().set(['roster','trainers',t.id,'pids'],(t.pids||[]).filter(x=>x!==d.mid));await A().set(['roster','mons',d.mid],null);UI.mid='';A().renderScene();return}
    case 'delmove':{const m=c.r.mons[UI.mid];const nm=JSON.parse(JSON.stringify(m));nm.moves.splice(+d.i,1);if(!nm.moves.length)nm.moves=[I().move('발버둥',false)];await A().set(['roster','mons',UI.mid],nm);return}

@@ -1167,3 +1167,13 @@ label.ph-item input[type=checkbox]{width:16px;height:16px;flex:none}
  .mon.big .mbtns{display:grid;grid-template-columns:1fr 1fr;gap:3px}.mon.big .mbtns .btn.xs{flex:none;white-space:nowrap;padding:3px 2px;font-size:10.5px;overflow:hidden;text-overflow:ellipsis;min-height:24px;line-height:16px}
  .mon.big .rks{display:flex;flex-wrap:wrap}
 }
+
+/* 고유 · 전용 포텐셜 */
+.pots.sppots{margin-top:3px}.pot.sp{background:#f1ecff;border-color:#8a6fd6;color:#2a1d55}.pot.sp.ex{background:#e8f6ff;border-color:#3b8bd6;color:#0f2c45}
+.pot.sp em{font-style:normal;font-size:9px;font-weight:700;color:#fff;background:#7b4fd6;padding:0 4px;border-radius:2px;margin-right:2px}.pot.sp.ex em{background:#1f6fd1}
+.tag.uqt{background:#7b4fd6;color:#fff}.tag.ext{background:#1f6fd1;color:#fff}
+.phone .ptitle .plogs{position:absolute;right:10px;top:8px;display:flex;gap:4px}.phone .ptitle .plogs .plog{position:static}
+.tuq{display:flex;flex-wrap:wrap;gap:3px;padding:3px 6px}.tuq .pot{font-size:10.5px}
+.upre{margin:4px 0 6px;padding:4px 8px;border:1px dashed #7b4fd6;background:rgba(123,79,214,.08)}.upre.ro{opacity:.7;pointer-events:none}
+.firerow.pre{outline:1px solid var(--yel2)}
+.pot.sp em{white-space:nowrap;flex:none}.tuq .pot{white-space:nowrap}

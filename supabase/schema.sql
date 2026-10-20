@@ -247,6 +247,18 @@ grant execute on function public.om_whoami(text,text) to anon, authenticated;
 grant execute on function public.om_claim_seat(text,text,text,text) to anon, authenticated;
 grant execute on function public.om_set_state(text,text,text[],jsonb) to anon, authenticated;
 grant execute on function public.om_log_add(text,text,text,text,jsonb) to anon, authenticated;
+-- 로그 완전 삭제 (GM 만). p_keep_sms = true 면 휴대폰 문자는 남긴다. 지운 줄 수를 돌려준다
+create or replace function public.om_log_clear(p_room text, p_secret text, p_keep_sms boolean)
+returns integer language plpgsql security definer set search_path = public as $$
+declare n integer;
+begin
+  if om_who(p_room, p_secret) is distinct from 'gm' then raise exception 'GM 만 로그를 지울 수 있습니다'; end if;
+  delete from om_log where room = p_room and not (coalesce(p_keep_sms,true) and kind = 'chat' and data ? 'sms');
+  get diagnostics n = row_count;
+  insert into om_log(room, kind, who, data) values (p_room, 'sys', '', jsonb_build_object('t', 'GM 이 로그를 지웠다.'));
+  return n;
+end $$;
+grant execute on function public.om_log_clear(text,text,boolean) to anon, authenticated;
 grant execute on function public.om_whispers(text,text,bigint) to anon, authenticated;
 grant execute on function public.om_secret_put(text,text,text,text,jsonb) to anon, authenticated;
 grant execute on function public.om_secret_get(text,text,text) to anon, authenticated;
