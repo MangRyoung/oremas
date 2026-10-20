@@ -30,6 +30,8 @@ window.OM_SHEET_UI=(()=>{
   el.querySelectorAll('[data-act]').forEach(b=>{if(b.tagName==='SELECT'||b.tagName==='INPUT')return;b.onclick=e=>{e.stopPropagation();action(b.dataset)}});
   el.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{UI.mid=b.dataset.pick;A().renderScene()});
   el.querySelectorAll('[data-stab]').forEach(b=>b.onclick=()=>{UI.tab=b.dataset.stab;A().renderScene()});
+  el.querySelectorAll('[data-up]').forEach(inp=>inp.onchange=async()=>{const f=inp.files[0];if(!f)return;if(f.size>5*1024*1024)return A().toast('5MB 이하만');A().toast('그림을 올리는 중…');
+   try{const url=await DBS().uploadImage(`rooms/${c.ST.room}/${inp.dataset.up==='tr'?'t_':'m_'}${inp.dataset.id}`,f);await A().set(['roster',inp.dataset.up==='tr'?'trainers':'mons',inp.dataset.id,'image'],url);A().toast('올렸다')}catch(e){A().toast('올리지 못했다: '+e.message)}});
   bindEdits(el,c)}
 
  function trainerView(c,t){
@@ -41,7 +43,7 @@ window.OM_SHEET_UI=(()=>{
     <div class="hpic" style="${t.image?`background-image:url('${t.image}')`:''}">${t.image?'':'<span>사진</span>'}</div>
     <div class="hmain"><div class="hname">${E?`<input type="text" data-te="name" value="${esc(t.name)}">`:esc(t.name)}</div>
      <div class="hbadges">${['육성','지시','통솔','능력'].map(k=>E?`<label class="hb">${k} <select data-te="rank_${k}">${['',...RANKS,'B-','A-','AA-'].map(r=>`<option value="${r}" ${(t.ranks||{})[k]===r?'selected':''}>${r||'-'}</option>`).join('')}</select></label>`:`<span class="hb">${k} <b>${esc((t.ranks||{})[k]||'-')}</b></span>`).join('')}${t.solo?'<span class="hb">1인 기준</span>':''}</div>
-     ${E?`<div class="row small" style="margin-top:6px"><label>사진 주소 <input type="text" data-te="image" value="${esc(t.image&&!t.image.startsWith('data:')?t.image:'')}" placeholder="https://… (비우면 그대로)" style="width:320px"></label></div>`:''}</div>
+     ${E?`<div class="row small" style="margin-top:6px"><label>사진 주소 <input type="text" data-te="image" value="${esc(t.image&&!t.image.startsWith('data:')?t.image:'')}" placeholder="https://… (비우면 그대로)" style="width:320px"></label><label class="btn xs">파일 올리기<input type="file" accept="image/*" data-up="tr" data-id="${t.id}" hidden></label></div>`:''}</div>
     <div class="tiles">${tiles.map(([k,v])=>`<div class="tile"><b>${esc(String(v))}</b><span>${k}</span></div>`).join('')}</div>
    </div>
    <div class="stabs"><button class="stab ${UI.tab==='char'?'on':''}" data-stab="char">캐릭터</button><button class="stab ${UI.tab==='poke'?'on':''}" data-stab="poke">포켓몬</button><button class="stab ${UI.tab==='grow'?'on':''}" data-stab="grow">성장</button><button class="stab ${UI.tab==='battle'?'on':''}" data-stab="battle">전투</button>
@@ -67,7 +69,7 @@ window.OM_SHEET_UI=(()=>{
   const traitNames=Object.keys(DB().traits||{}),itemNames=Object.keys(DB().items||{}),moveNames=Object.keys(DB().moves||{});
   return strip+`<div class="pview">
    <div class="pportrait"><div class="ppbig" style="${m.image?`background-image:url('${m.image}')`:''}">${m.image?'':'<span>그림 없음</span>'}</div><div class="ppname">${esc(m.role||'')}${m.pride?' · 프라이드 '+esc(m.pride):''}</div>
-    ${E?`<input type="text" data-me="image" value="${esc(m.image&&!m.image.startsWith('data:')?m.image:'')}" placeholder="그림 주소 https://… (비우면 그대로)" style="width:100%;margin-top:6px">`:''}</div>
+    ${E?`<input type="text" data-me="image" value="${esc(m.image&&!m.image.startsWith('data:')?m.image:'')}" placeholder="그림 주소 https://… (비우면 그대로)" style="width:100%;margin-top:6px"><label class="btn xs" style="margin-top:6px">파일 올리기<input type="file" accept="image/*" data-up="mon" data-id="${m.id}" hidden></label>`:''}</div>
    <div class="pinfo">
     <div class="plv">Lv <b>${m.lv}</b> <span class="dim small">기본 ${S().baseLevel((t.ranks||{})['육성'])} ${m.dist?(m.dist>0?'+':'')+m.dist:''}</span></div>
     <div class="pbig">${E?`<input type="text" data-me="name" value="${esc(m.name)}">`:esc(m.name)}</div>
@@ -77,7 +79,7 @@ window.OM_SHEET_UI=(()=>{
     <div class="typerow">${eff.map(e=>{const col=S().typeColor(e.ty);return `<div class="tcell ${e.v!==1?'mark':''}" title="${esc(S().typeKo(e.ty))} ×${e.v}"><span class="tch" style="background:${col.bg};color:${col.fg}">${esc(S().typeKo(e.ty).slice(0,1))}</span><span class="tlab ${e.v>1?'weak':e.v<1?'res':''}">${lab(e.v)||'·'}</span></div>`}).join('')}</div>
     <div class="phpl"><span>HP</span><span class="sp"></span><b class="mono">${sheetHp}</b><span class="dim">/${m.hp.max}</span>${E?`<input type="number" class="n" data-me="sheetHp" value="${sheetHp}">`:''}</div>
     <div class="hpbar ${sheetHp/m.hp.max<=0.25?'low':sheetHp/m.hp.max<=0.5?'mid':''}" style="transform:none"><i style="width:${Math.round(sheetHp/m.hp.max*100)}%"></i></div>
-    <div class="stat6" style="margin-top:10px">${m.stats.map((v,i)=>`<div><b>${STATS_KO[i]}</b><span class="v">${v}</span><div class="small dim">${esc(m.ranks[i])} · ${E?`<input type="number" class="n xs" data-me="base_${i}" value="${m.base[i]}">`:m.base[i]}</div><div class="small dim">개 ${m.iv[i]} / 노 ${m.ev[i]||0}</div></div>`).join('')}</div>
+    <div class="stat6" style="margin-top:10px">${m.stats.map((v,i)=>`<div><b>${STATS_KO[i]}</b><span class="v">${esc(m.ranks[i])}</span><div class="bs">${E?`<input type="number" class="n xs" data-me="base_${i}" value="${m.base[i]}">`:m.base[i]}</div><div class="small dim">실수치 ${v}</div></div>`).join('')}</div>
     <table class="t" style="margin-top:10px"><tr><th style="width:70px">특성</th><td>${E?`<input type="text" data-me="ability" list="traitlist" value="${esc(m.ability)}" style="width:100%"><datalist id="traitlist">${traitNames.map(n=>`<option value="${esc(n)}">`).join('')}</datalist>`:`<b>${esc(m.ability||'-')}</b>`}<div class="pre small dim">${esc(m.abilityEff)}</div></td></tr>
      <tr><th>소지품</th><td>${E?`<input type="text" data-me="item" list="itemlist2" value="${esc(m.item||'')}" style="width:100%"><datalist id="itemlist2">${itemNames.map(n=>`<option value="${esc(n)}">`).join('')}</datalist>`:`<b>${esc(m.item||'-')}</b>`}<div class="pre small dim">${esc(m.itemEff)}</div></td></tr></table>
    </div></div>
@@ -91,14 +93,10 @@ window.OM_SHEET_UI=(()=>{
      ${E?`<div class="row" style="margin-top:8px"><button class="btn xs ghost danger" data-act="delmon" data-mid="${m.id}">이 포켓몬 삭제</button></div>`:''}</div></div>`}
 
  function growTab(c,t,mons,E){
-  const cnt=S().hatchCount(t);const ev=(DB().maker||{}).ev||[];const evMax=(ev.find(r=>r[0]===(t.ranks||{})['육성'])||ev.find(r=>r[0]===S().strip((t.ranks||{})['육성']))||[0,0])[1];
-  return `<div class="spanel"><div class="sh">레벨 · 개체값 · 노력치</div>
-   <div class="small dim" style="margin-bottom:6px">기본 레벨은 육성 ${esc((t.ranks||{})['육성']||'-')} → ${S().baseLevel((t.ranks||{})['육성'])}. 분배레벨 ${esc(String((t.base||{})['분배레벨']??'-'))} 안에서 포켓몬마다 보정을 나눈다. 알까기는 육성 랭크 기준 ${cnt}회 굴려 하나를 고른다 (맵툴 reroll_iv). 노력치 상한 ${esc(String(evMax))}.</div>
-   <table class="t"><tr><th>포켓몬</th><th>Lv</th><th>보정</th><th>개체값 (합)</th><th>노력치 (합)</th><th></th></tr>
-   ${mons.map(m=>`<tr><td class="nw"><b>${esc(m.name)}</b></td><td class="mono">${m.lv}</td><td>${E?`<input type="number" class="n" data-mg="dist" data-mid="${m.id}" value="${m.dist||0}">`:(m.dist||0)}</td>
-    <td class="mono">${E?[0,1,2,3,4,5].map(i=>`<input type="number" class="n xs" data-mg="iv_${i}" data-mid="${m.id}" value="${m.iv[i]}" min="0" max="31">`).join(''):m.iv.join('/')} <span class="dim">(${S().ivSum(m.iv)})</span> ${E?`<button class="btn xs" data-act="hatch" data-mid="${m.id}">알까기</button>`:''}</td>
-    <td class="mono">${E?[0,1,2,3,4,5].map(i=>`<input type="number" class="n xs" data-mg="ev_${i}" data-mid="${m.id}" value="${m.ev[i]||0}" min="0">`).join(''):(m.ev||[]).join('/')} <span class="dim">(${(m.ev||[]).reduce((a,b)=>a+(+b||0),0)})</span></td>
-    <td class="small dim">${m.stats.join('/')}</td></tr>`).join('')}</table>
+  return `<div class="spanel"><div class="sh">레벨</div>
+   <div class="small dim" style="margin-bottom:6px">기본 레벨은 육성 ${esc((t.ranks||{})['육성']||'-')} → ${S().baseLevel((t.ranks||{})['육성'])}. 분배레벨 ${esc(String((t.base||{})['분배레벨']??'-'))} 안에서 포켓몬마다 보정을 나눈다. 실수치 = floor(종족치×2×Lv/100) + 5 (HP 는 + Lv + 10).</div>
+   <table class="t"><tr><th>포켓몬</th><th>Lv</th><th>보정</th><th>실수치 (HP/공/방/특공/특방/스피드)</th></tr>
+   ${mons.map(m=>`<tr><td class="nw"><b>${esc(m.name)}</b></td><td class="mono">${m.lv}</td><td>${E?`<input type="number" class="n" data-mg="dist" data-mid="${m.id}" value="${m.dist||0}">`:(m.dist||0)}</td><td class="mono small">${m.stats.join(' / ')}</td></tr>`).join('')}</table>
    <div class="small dim" style="margin-top:6px">분배레벨 합: ${mons.reduce((a,m)=>a+(+m.dist||0),0)} / ${esc(String((t.base||{})['분배레벨']??'-'))}</div></div>`}
 
  function battleTab(c,t,mons,E){
@@ -125,7 +123,7 @@ window.OM_SHEET_UI=(()=>{
    el.querySelectorAll('[data-me-partner]').forEach(cb=>cb.addEventListener('change',async()=>{const mid=cb.dataset.mePartner;const nm=JSON.parse(JSON.stringify(c.r.mons[mid]));nm.partner=cb.checked;await A().set(['roster','mons',mid],nm)}));
    const am=$('#addmove',el);if(am)am.addEventListener('keydown',async e=>{if(e.key!=='Enter'||e.isComposing)return;e.preventDefault();const n=am.value.trim();if(!n)return;if(!(DB().moves||{})[n]&&!confirm(`「${n}」은 기술 DB에 없다. 그래도 넣을까?`))return;const nm=JSON.parse(JSON.stringify(c.r.mons[UI.mid]));nm.moves=nm.moves.filter(x=>x.name!=='발버둥'||nm.moves.length>1);nm.moves.push(I().move(n,false));await A().set(['roster','mons',UI.mid],nm)})}
   el.querySelectorAll('[data-mg]').forEach(inp=>inp.addEventListener('input',()=>{const mid=inp.dataset.mid;const src=c.r.mons[mid];if(!src)return;pending.g=pending.g||{};const nm=pending.g[mid]||(pending.g[mid]=JSON.parse(JSON.stringify(src)));const [k,i]=inp.dataset.mg.split('_');
-   if(k==='dist')nm.dist=+inp.value||0;if(k==='iv')nm.iv[+i]=Math.max(0,Math.min(31,+inp.value||0));if(k==='ev')nm.ev[+i]=Math.max(0,+inp.value||0);recalc(nm,t);queue()}));
+   if(k==='dist')nm.dist=+inp.value||0;recalc(nm,t);queue()}));
   async function flush(){const jobs=[];if(pending.tr){jobs.push(A().set(['roster','trainers',pending.tr.id],pending.tr));pending.tr=null}if(pending.mon){jobs.push(A().set(['roster','mons',pending.mon.id],pending.mon));pending.mon=null}
    if(pending.g){for(const mid in pending.g)jobs.push(A().set(['roster','mons',mid],pending.g[mid]));pending.g=null}await Promise.all(jobs)}}
  function applyTr(t,k,v){
@@ -155,7 +153,6 @@ window.OM_SHEET_UI=(()=>{
    case 'delmove':{const m=c.r.mons[UI.mid];const nm=JSON.parse(JSON.stringify(m));nm.moves.splice(+d.i,1);if(!nm.moves.length)nm.moves=[I().move('발버둥',false)];await A().set(['roster','mons',UI.mid],nm);return}
    case 'addpot':{const m=c.r.mons[UI.mid];const nm=JSON.parse(JSON.stringify(m));nm.pots.push({name:'',kind:'',eff:''});await A().set(['roster','mons',UI.mid],nm);return}
    case 'adduniq':{const nt=JSON.parse(JSON.stringify(t));nt.unique=nt.unique||[];nt.unique.push({name:'',eff:''});await A().set(['roster','trainers',t.id],nt);return}
-   case 'hatch':return openHatch(d.mid);
    case 'mvup':case 'mvdn':{const p=[...(t.pids||[])];const i=+d.i,j=d.act==='mvup'?i-1:i+1;if(j<0||j>=p.length)return;[p[i],p[j]]=[p[j],p[i]];await A().set(['roster','trainers',t.id,'pids'],p);return}
    case 'tobattle':return A().loadFromRoster(d.tid,d.side)}}
 
@@ -170,7 +167,11 @@ window.OM_SHEET_UI=(()=>{
   $('#mkRefresh',md).onclick=async()=>{await A().loadMaker(true);A().closeModal();openImport()};
   $('#tq',md).oninput=e=>{const q=e.target.value.trim();md.querySelectorAll('#tl li').forEach(li=>li.style.display=!q||li.textContent.includes(q)?'':'none')};
   md.querySelectorAll('[data-pick]').forEach(bt=>bt.onclick=async()=>{const tdoc=mk.trainers.find(t=>t.id===bt.dataset.pick);await importTrainer(tdoc,mk.pokemon,false);A().closeModal();UI.tid=tdoc.id;UI.tab='poke';A().renderScene()})}
- async function importTrainer(tdoc,pokeDocs,keep){const c=ctx();const {trainer,mons}=I().party(tdoc,pokeDocs);const r=JSON.parse(JSON.stringify(c.r));const old=r.trainers[trainer.id];
+ /* base64 그림은 저장소에 올리고 주소로 바꾼다 (방 상태를 가볍게) */
+ async function hostImages(room,trainer,mons){const jobs=[];
+  const up=async(obj,path)=>{if(!obj.image||!obj.image.startsWith('data:'))return;try{obj.image=await DBS().uploadImage(path,obj.image)}catch(e){console.warn('이미지 올리기 실패',e);obj.image=obj.image.length<150000?obj.image:'';A().toast('그림을 올리지 못했다 (Storage 설정을 확인): '+e.message)}};
+  jobs.push(up(trainer,`rooms/${room}/t_${trainer.id}`));for(const m of mons)jobs.push(up(m,`rooms/${room}/m_${m.id}`));await Promise.all(jobs)}
+ async function importTrainer(tdoc,pokeDocs,keep){const c=ctx();const {trainer,mons}=I().party(tdoc,pokeDocs);await hostImages(c.ST.room,trainer,mons);const r=JSON.parse(JSON.stringify(c.r));const old=r.trainers[trainer.id];
   trainer.ord=old?old.ord:Object.keys(r.trainers).length;trainer.src='maker';if(old){trainer.orderStyle=old.orderStyle;trainer.orderCount=old.orderCount;trainer.memo=old.memo;if(old.image&&!trainer.image)trainer.image=old.image}
   for(const id of ((old&&old.pids)||[]))if(!trainer.pids.includes(id))delete r.mons[id];
   for(const m of mons){const om=r.mons[m.id];m.src='maker';if(om&&keep){m.iv=om.iv;m.item=om.item||m.item;m.itemEff=om.itemEff||m.itemEff;m.sheetHp=om.sheetHp;m.dist=om.dist;m.ev=om.ev;if(om.image&&!m.image)m.image=om.image;recalc(m,trainer)}r.mons[m.id]=m}

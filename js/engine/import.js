@@ -11,7 +11,7 @@ window.OM_IMPORT=(()=>{
  /* 제작기 트레이너 문서 → 배틀 트레이너 */
  function trainer(doc){
   const d=(doc.data&&doc.data.data)||doc.data||doc;
-  return {id:doc.id||d.id,name:d.name||'트레이너',image:(d.image&&d.image.length<120000)?d.image:'',
+  return {id:doc.id||d.id,name:d.name||'트레이너',image:d.image||'',
    ranks:Object.assign({육성:'',지시:'',통솔:'',능력:''},d.ranks||{}),base:d.base||{},detail:d.detail||{},
    unique:(d.unique||[]).filter(u=>u&&u.name).map(u=>({name:u.name,eff:brN(u.eff||'')})),
    pids:d.pids||[],solo:!!d.solo,folder:d.folder||''}}
@@ -28,8 +28,8 @@ window.OM_IMPORT=(()=>{
   const d=(doc.data&&doc.data.data)||doc.data||doc;
   const L=S().levelOf(tr,d);
   const base=Array.from({length:6},(_,i)=>nz((d.base||[])[i]));
-  const ev=Array.from({length:6},(_,i)=>nz((d.ev||[])[i]));
-  iv=iv||[0,0,0,0,0,0];
+  const ev=[0,0,0,0,0,0];  /* 개체값·노력치는 쓰지 않는다 (망령 결정 2026-10-20) */
+  iv=[0,0,0,0,0,0];
   const stats=S().statsOf(base,iv,ev,L);
   const tko=[d.t1,d.t2,d.t3].map(x=>x&&x!=='-'?x:'-');
   const pots=[];
@@ -44,7 +44,7 @@ window.OM_IMPORT=(()=>{
    moves:(()=>{const mv=(d.moves||[]).filter(m=>m&&m.name).map(m=>move(m.name,m.half));return mv.length?mv:[move('발버둥',false)]})(),
    pots,excl:d.excl&&d.excl.name&&d.excl.name!=='전용 포텐셜'?{name:d.excl.name,eff:brN(d.excl.eff||'')}:null,
    exclX:(d.exclX||[]).filter(x=>x&&x.name).map(x=>({name:x.name,eff:brN(x.eff||'')})),
-   role:roleOf(d),pride:d.pride||'',egg:[d.egg1||'-',d.egg2||'-'],partner:!!d.partner,image:(d.image&&d.image.length<120000)?d.image:'',memo:d.memo||'',
+   role:roleOf(d),pride:d.pride||'',egg:[d.egg1||'-',d.egg2||'-'],partner:!!d.partner,image:d.image||'',memo:d.memo||'',
    rank:{attack:0,defense:0,specialattack:0,specialdefense:0,speed:0,accuracy:0,evasion:0,critical:0},states:{},forms:null}}
 
  /* 역할 포텐셜(00.x. 역할)에서 역할 이름 */

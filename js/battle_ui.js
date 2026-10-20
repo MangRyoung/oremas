@@ -23,6 +23,10 @@ window.OM_BATTLE_UI=(()=>{
  const slotOf=(side,area)=>side+'_'+area;
  const lists=()=>((DB().const||{}).lists||{});
  const csv=s=>String(s||'').split(',').map(x=>x.trim()).filter(Boolean);
+ const IMG=()=>((DB().img)||{state:{},field:{}});
+ const W_IMG={맑음:'weather_Sunny',비:'weather_Rainy',모래바람:'weather_Sandstorm',싸라기눈:'weather_Snowstorm',눈:'weather_Snow',짙은안개:'weather_FoggyMist',밤:'weather_Night',별하늘:'weather_StarryNight',큰가뭄:'weather_Sunny_extreme',폭우:'weather_Rainy_extreme',난기류:'weather_StrongWinds',극한:'weather_Snow_extreme',깊은밤:'weather_Night_extreme'};
+ const T_IMG={그래스필드:'field_object_grass',일렉트릭필드:'field_object_electric',미스트필드:'field_object_mist',사이코필드:'field_object_psycho',트릭룸:'room_trick',매직룸:'room_magic',원더룸:'room_wonder',블랙룸:'room_black',중력:'object_gravity',물놀이:'object_watersport',흙놀이:'object_mudsport'};
+ const fimg=k=>IMG().field[k]?`img/field/${IMG().field[k]}`:'';const simg=k=>IMG().state[k]?`img/state/${IMG().state[k]}`:'';
 
  /* ---------- 상태 읽기 도우미 ---------- */
  function ctx(){const ST=A().ST;const b=ST.state.battle||{};return {ST,b,role:ST.role,seat:ST.seat,gm:ST.role==='gm'}}
@@ -40,18 +44,24 @@ window.OM_BATTLE_UI=(()=>{
   const c=ctx();const b=c.b;const f=fieldOf(b);const ready=c.ST.state.ready||{};
   const phases=[[0,'지시 준비'],[1,'턴 개시·공개'],[2,'행동 순서'],[3,'행동 처리'],[5,'턴 종료']];
   const chips=[f.weather.type?`날씨 ${f.weather.type}${f.weather.count?' '+f.weather.count+'T':''}`:'',f.terrain.type?`${f.terrain.type}${f.terrain.count?' '+f.terrain.count+'T':''}`:'',...ROOMS.filter(r=>(f.rooms||{})[r]>0).map(r=>`${r} ${f.rooms[r]}T`),...ETC.filter(r=>(f.etc||{})[r]>0).map(r=>`${r} ${f.etc[r]}T`)].filter(Boolean);
+  const mySide=c.gm?'left':((b.trainers||{})[c.seat]||{}).side||'left';const top=mySide==='left'?'right':'left';
   el.innerHTML=`
   <div class="bstat">
    <div class="turn"><span class="tlab">TURN</span><span class="tnum">${b.turn||0}</span></div>
    <div class="phases">${phases.map(([p,n])=>`<button class="ph ${(+b.phase||0)===p?'on':''}" data-phase="${p}" ${c.gm?'':'disabled'}>${n}</button>`).join('')}</div>
    <span class="sp"></span>
-   <div class="fchips">${chips.map(x=>`<span class="chip">${esc(x)}</span>`).join('')||'<span class="chip dim">날씨·필드 없음</span>'}${c.gm?'<button class="btn sm" data-act="field">필드</button>':''}</div>
    ${c.gm?`<div class="gmrow"><label>에리어 <select data-act="mode">${[1,2,3].map(n=>`<option value="${n}" ${mode(b)===n?'selected':''}>${n}</option>`).join('')}</select></label>
-    <button class="btn sm" data-act="reveal">지시 공개</button><button class="btn sm" data-act="order">행동 순서</button><button class="btn sm" data-act="turnend">턴 종료 처리</button>
+    <button class="btn sm" data-act="reveal">지시 공개</button><button class="btn sm" data-act="order">행동 순서</button><button class="btn sm" data-act="turnend">턴 종료 처리</button><button class="btn sm" data-act="field">필드</button>
     <button class="btn sm ghost" data-act="resetcmd">지시 초기화</button><button class="btn sm ghost danger" data-act="clear">배틀 비우기</button>
     ${Object.entries(c.ST.state.pub||{}).filter(([k,v])=>v&&v.time).map(([k,v])=>`<span class="chip" style="border-color:var(--yel)">타임 요청: ${esc((b.trainers[k]||{}).name||k)} → ${esc(monName(b,v.time.mid))} <button class="btn xs pri" data-act="timeok" data-seat="${k}">허가</button></span>`).join('')}</div>`:''}
   </div>
-  <div class="arena">${SIDES.map(side=>sideBox(c,side,ready)).join('')}</div>
+  <div class="stadium">
+   ${benchRow(c,top,ready)}
+   ${areaRow(c,top)}
+   ${fieldStrip(c,f)}
+   ${areaRow(c,mySide)}
+   ${benchRow(c,mySide,ready)}
+  </div>
   ${orderBox(c)}
   ${cmdPanel(c,ready)}`;
   el.querySelectorAll('[data-phase]').forEach(bt=>bt.onclick=()=>setPhase(+bt.dataset.phase));
@@ -59,6 +69,22 @@ window.OM_BATTLE_UI=(()=>{
   el.querySelectorAll('[data-mon]').forEach(cd=>cd.onclick=e=>{if(e.target.closest('[data-act]'))return;A().openMon(cd.dataset.mon)});
   const form=$('#cmdForm',el);if(form)bindCmdForm(form,c)}
 
+ function areaRow(c,side){const b=c.b;const ent=entered(b,side);const ids=((b.sides||{})[side]||{}).trainers||[];
+  return `<div class="arow ${side}"><div class="alabel ${side}">${SIDE_KO[side]}</div>${AREAS.slice(0,mode(b)).map(a=>{const m=ent[a];const slot=slotOf(side,a);
+   return `<div class="area ${m?'':'empty'}" data-slot="${slot}"><div class="alab">${a.toUpperCase()}</div>${m?bigCard(c,m,slot):`<div class="aempty">빈 자리${c.gm||ids.includes(c.seat)?'<br><span class="small">벤치에서 「등장」</span>':''}</div>`}</div>`}).join('')}</div>`}
+ function benchRow(c,side,ready){const b=c.b;const ids=((b.sides||{})[side]||{}).trainers||[];const trs=b.trainers||{};const seats=c.ST.state.seats||{};
+  const items=ids.map(tid=>{const t=trs[tid]||{name:'?',ranks:{}};const o=seats[tid];const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid).sort((x,y)=>(x.slot||0)-(y.slot||0));const cmdDone=!!(b.cmds||{})[tid];const rd=!!ready[tid];
+   return `<div class="tblock"><div class="trainer"><div class="tpic" style="${t.image?`background-image:url('${t.image}')`:''}"></div><div class="tinfo"><div class="tn">${esc(t.name)}${tid===c.seat?' <span class="tag me">ME</span>':''}${rd?' <span class="tag ok">READY</span>':cmdDone?' <span class="tag">공개됨</span>':''}</div>
+     <div class="tr">${['육성','지시','통솔','능력'].map(k=>`${k} <b>${esc(t.ranks[k]||'-')}</b>`).join(' · ')} · ${o?`<span class="who">${esc(o.name)}</span>`:'<span class="dim">빈 자리</span>'}</div></div>
+     ${c.gm?`<button class="btn xs ghost" data-act="orders" data-tid="${tid}">지령</button><button class="btn xs ghost danger" data-act="unload" data-tid="${tid}">빼기</button>`:''}</div>
+    <div class="bench">${mons.map(m=>benchCard(c,m)).join('')||'<div class="dim small">포켓몬 없음</div>'}</div></div>`}).join('');
+  return `<div class="brow ${side}"><div class="shead"><span class="sname">${SIDE_KO[side]} 벤치</span><span class="sp"></span>${c.gm?`<button class="btn xs" data-act="load" data-side="${side}">+ 파티</button>`:''}</div>${items||'<div class="aempty small">트레이너 없음'+(c.gm?' — 「+ 파티」로 로스터에서 불러온다':'')+'</div>'}</div>`}
+ function fieldStrip(c,f){const w=f.weather.type,t=f.terrain.type;
+  const ic=(name,label,cnt)=>{const im=fimg(name);return `<div class="fic" title="${esc(label)}">${im?`<img src="${im}" alt="">`:'<span class="fnoimg"></span>'}<span>${esc(label)}${cnt?` <b>${cnt}T</b>`:''}</span></div>`};
+  const mid=[w?ic(W_IMG[w],w,f.weather.count):'',t?ic(T_IMG[t],t,f.terrain.count):'',...ROOMS.filter(r=>(f.rooms||{})[r]>0).map(r=>ic(T_IMG[r],r,f.rooms[r])),...ETC.filter(r=>(f.etc||{})[r]>0).map(r=>ic(T_IMG[r],r,f.etc[r]))].filter(Boolean).join('');
+  const objs=side=>Object.entries((f.objects||{})[side]||{}).filter(([k,v])=>v>0).map(([k,v])=>`<span class="obj">${esc(k)} <b>${v}</b></span>`).join('');
+  const mySide=c.gm?'left':((c.b.trainers||{})[c.seat]||{}).side||'left';const top=mySide==='left'?'right':'left';
+  return `<div class="fstrip"><div class="fobjs top">${objs(top)||'<span class="dim small">설치물 없음</span>'}</div><div class="fmid">${mid||'<span class="dim small">날씨·필드 없음</span>'}${c.gm?'<button class="btn xs" data-act="field">필드</button>':''}</div><div class="fobjs bottom">${objs(mySide)||'<span class="dim small">설치물 없음</span>'}</div></div>`}
  function sideBox(c,side,ready){
   const b=c.b;const ids=((b.sides||{})[side]||{}).trainers||[];const trs=b.trainers||{};const seats=c.ST.state.seats||{};
   const ent=entered(b,side);
@@ -79,7 +105,7 @@ window.OM_BATTLE_UI=(()=>{
   const md=m.mod||{};for(const k in md){const v=+md[k];if(v&&v!==1)out.push(`<span class="rk ${v>1?'up':'dn'}">${STAT_KO[k]||k}×${v}</span>`)}return out.join('')}
  const FLAG_KO={endure:'버텨라!',surehit:'맞춰라!',dodgePhys:'물러나!',dodgeSpec:'피해라!',swap:'바꿔라!',return:'돌아와!',hitPhys:'지킬 수 없다!',hitSpec:'피할 수 없다!',noEndure:'버틸 수 없다!',acc0:'맞출 수 없다!',dodgeOnce:'주인의 칙령',nullify:'파계',rebirth:'윤회의 법계'};
  function flagChips(m){return Object.keys(m.flags||{}).filter(k=>m.flags[k]).map(k=>`<span class="rk flag">${esc(FLAG_KO[k]||k)}</span>`).join('')}
- function stateChips(m){const st=m.states||{};const db=(DB().states||{}).st||{};return Object.keys(st).filter(k=>st[k]).map(k=>`<span class="stc ${db[k]&&db[k].abn?'abn':''}">${esc(db[k]?db[k].ko:k)}${+st[k]>1&&+st[k]<1000?' '+st[k]:''}</span>`).join('')}
+ function stateChips(m){const st=m.states||{};const db=(DB().states||{}).st||{};return Object.keys(st).filter(k=>st[k]).map(k=>{const im=simg(k);return `<span class="stc ${db[k]&&db[k].abn?'abn':''}" title="${esc((db[k]&&db[k].desc||[]).join(' '))}">${im?`<img src="${im}" alt="">`:''}${esc(db[k]?db[k].ko:k)}${+st[k]>1&&+st[k]<1000?' '+st[k]:''}</span>`}).join('')}
  function bigCard(c,m,slot){const full=canEdit(c,m);const cmd=cmdOf(c.b,m);
   return `<div class="mon big ${m.hp.cur<=0?'fainted':''}" data-mon="${m.id}"><div class="pic" style="${m.image?`background-image:url('${m.image}')`:''}"></div>
    <div class="minfo"><div class="nm">${esc(m.name)}<span class="lv">Lv.${m.lv}</span></div><div class="ty">${m.types.filter(t=>t!=='-').map(typeChip).join('')}${m.teraActive?`<span class="rk up">테라 ${esc(m.tera)}</span>`:''}</div>
@@ -115,43 +141,57 @@ window.OM_BATTLE_UI=(()=>{
 
  /* ---------- 지시 입력 패널 ---------- */
  let CMD={};  /* 편집 중인 내 지시 {tid:{mons:{},order:{},command:{},detail}} */
+ /* ---------- 지시 입력 패널 (맵툴 cmd_ui 와 같은 구성: 포켓몬 탭 → 기술 카드 → 대상 보드 → 지령 풀 → 요약) ---------- */
+ const UIC={tab:{}};  /* tid → 선택된 mid */
+ function moveCard(mv,i,on,extra){const col=S().typeColor(mv.typeEn);return `<div class="mv ${on?'on':''}" style="background:${col.bg};color:${col.fg}" ${extra||''}><div class="mn">${esc(mv.name)}</div><div class="mm">${esc(mv.cat)} · 위력 ${mv.pow||'-'} · 명중 ${mv.acc||'필중'}${mv.prio?' · 우선 '+mv.prio:''}</div><div class="mr">${esc(mv.range)}</div></div>`}
+ function tile(m,side,area,on,cls,extra){if(!m)return `<div class="tg none ${cls||''}"><span class="tn"><small>${area.toUpperCase()} 빈 자리</small></span></div>`;const pct=Math.max(0,Math.min(100,Math.round(m.hp.cur/m.hp.max*100)));
+  return `<div class="tg ${cls||''} ${on?'on':''}" ${extra||''}><div class="ti" style="${m.image?`background-image:url('${m.image}')`:''}"></div><div class="tn"><b>${esc(m.name)}</b><small>${area.toUpperCase()} · ${m.types.filter(t=>t!=='-').map(typeChip).join('')}</small><div class="hpb ${pct<=25?'low':pct<=50?'mid':''}"><i style="width:${pct}%"></i></div></div><span class="tk">${on?'✓':''}</span></div>`}
+ function board(b,mySide,isOn,attr,allowSelf){const out=[];for(const side of [mySide==='left'?'right':'left',mySide]){const ent=entered(b,side);const cls=side===mySide?'al':'en';
+   out.push(`<div class="br"><div class="bl ${cls}">${side===mySide?'아군':'상대'}</div>${AREAS.slice(0,mode(b)).map(a=>{const m=ent[a];const slot=slotOf(side,a);return tile(m,side,a,m&&isOn(slot,m),cls,m?attr(slot,m):'')}).join('')}</div>`)}
+  return `<div class="board">${out.join('')}</div>`}
  function cmdPanel(c,ready){
   const b=c.b;const tids=myTrainers(c);if(!tids.length)return '';
   const phase=+b.phase||0;
-  const blocks=tids.map(tid=>{const t=(b.trainers||{})[tid]||{};const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid&&m.entry&&m.hp.cur>0);if(!mons.length)return '';
+  const blocks=tids.map(tid=>{const t=(b.trainers||{})[tid]||{};const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid&&m.entry&&m.hp.cur>0).sort((x,y)=>x.entry.localeCompare(y.entry));if(!mons.length)return '';
    const cur=CMD[tid]||(CMD[tid]={mons:{},order:{},command:{},detail:''});
-   const slots=allEntered(b);const bench=Object.values(b.mons||{}).filter(m=>m.tid===tid&&!m.entry&&m.hp.cur>0);
+   if(!mons.find(m=>m.id===UIC.tab[tid]))UIC.tab[tid]=mons[0].id;const m=mons.find(x=>x.id===UIC.tab[tid]);
+   mons.forEach(mm=>{cur.mons[mm.id]=cur.mons[mm.id]||{move:'',switch:'',targets:[],prio:{},ochg:{}}});
+   const x=cur.mons[m.id];const bench=Object.values(b.mons||{}).filter(mm=>mm.tid===tid&&!mm.entry&&mm.hp.cur>0);
    const style=+(t.orderStyle||0);const oNames=csv(lists()['list_order_'+style]);const cNames=csv(lists()['list_command_'+style]);const cnt=t.orderCount||{};
-   return `<div class="cmdt" data-tid="${tid}"><div class="cmdhead"><b>${esc(t.name)}</b> 지시 ${ready[tid]?'<span class="tag ok">READY</span>':''}<span class="sp"></span>
-     <button class="btn xs ghost" data-act="cmdload" data-tid="${tid}">저장된 지시 불러오기</button></div>
-    ${mons.map(m=>{const x=cur.mons[m.id]||(cur.mons[m.id]={move:'',switch:'',targets:[],prio:{},ochg:{}});const mv=x.move!==''&&x.move!=='switch'?(m.moves||[])[+x.move]:null;
-     return `<div class="cmdmon"><div class="cmdname">${esc(m.name)} <span class="dim small">에리어 ${m.entry.toUpperCase()}</span></div>
-      <label>행동 <select data-f="move" data-mid="${m.id}"><option value="">-</option>${(m.moves||[]).map((mv,i)=>`<option value="${i}" ${String(x.move)===String(i)?'selected':''}>${esc(mv.name)} (${esc(mv.type)} ${mv.pow||'-'}/${mv.acc||'필중'})</option>`).join('')}<option value="switch" ${x.move==='switch'?'selected':''}>교대</option></select></label>
-      ${x.move==='switch'?`<label>교대 상대 <select data-f="switch" data-mid="${m.id}"><option value="">-</option>${bench.map(bm=>`<option value="${bm.id}" ${x.switch===bm.id?'selected':''}>${esc(bm.name)}</option>`).join('')}</select></label>`:''}
-      ${mv?`<div class="tgts">대상 ${slots.map(s=>`<label class="tg ${s.side}"><input type="checkbox" data-f="target" data-mid="${m.id}" value="${s.slot}" ${x.targets.includes(s.slot)?'checked':''}>${s.area.toUpperCase()} ${esc(s.mon.name)}</label>`).join('')}<span class="dim small">범위 ${esc(mv.range)}</span></div>`:''}
-      <details class="adv"><summary>우선도·행동 순서 변경</summary><div class="tgts">${slots.map(s=>`<label class="tg">${s.area.toUpperCase()} ${esc(s.mon.name)} 우선 <input type="number" class="n" data-f="prio" data-mid="${m.id}" data-slot="${s.slot}" value="${x.prio[s.slot]??''}" placeholder="0"> 순서 <input type="number" class="n" data-f="ochg" data-mid="${m.id}" data-slot="${s.slot}" value="${x.ochg[s.slot]??''}" placeholder="20"></label>`).join('')}</div></details></div>`}).join('')}
-    <div class="cmdrow"><label>지령 <select data-f="order"><option value="">-</option>${ORDER_KEYS.map((k,i)=>oNames[i]?`<option value="${k}" ${cur.order.type===k?'selected':''}>${esc(oNames[i])} (${cnt['order_'+k]??1})</option>`:'').join('')}</select></label>
-     <label>대상 <select data-f="orderTarget"><option value="">-</option>${mons.map(m=>`<option value="${m.id}" ${cur.order.target===m.id?'selected':''}>${esc(m.name)}</option>`).join('')}</select></label>
-     <label>명령 <select data-f="command"><option value="">-</option>${COMMAND_KEYS.map((k,i)=>cNames[i]?`<option value="${k}" ${cur.command.type===k?'selected':''}>${esc(cNames[i])} (${cnt['command_'+k]??1})</option>`:'').join('')}</select></label>
-     <label>대상 <select data-f="commandTarget"><option value="">-</option>${mons.map(m=>`<option value="${m.id}" ${cur.command.target===m.id?'selected':''}>${esc(m.name)}</option>`).join('')}</select></label></div>
-    <div class="cmdrow"><input type="text" data-f="detail" value="${esc(cur.detail)}" placeholder="상세 (포텐셜 선언, 자유 메모)" style="flex:1">
-     <button class="btn" data-act="cmdsave" data-tid="${tid}">저장</button><button class="btn pri" data-act="ready" data-tid="${tid}">${ready[tid]?'준비 해제':'준비 완료'}</button></div></div>`}).join('');
+   const summ=mons.map(mm=>{const xx=cur.mons[mm.id];if(xx.move==='switch')return `${mm.name}: 교대 → ${monName(b,xx.switch)||'?'}`;if(xx.move===''||xx.move==null)return `${mm.name}: <span class="warn">행동 없음</span>`;const mv=(mm.moves||[])[+xx.move];return `${mm.name}: <b>${mv?esc(mv.name):'?'}</b>${xx.targets.length?' → '+xx.targets.map(sl=>slotName(b,sl)).join(', '):' <span class="warn">대상 없음</span>'}`}).join(' · ');
+   const isSwitch=x.move==='switch';const mvSel=!isSwitch&&x.move!==''?(m.moves||[])[+x.move]:null;
+   return `<div class="cmdt" data-tid="${tid}">
+    <div class="cmdhead"><b>${esc(t.name)}</b> 지시 ${ready[tid]?'<span class="tag ok">READY</span>':''}<span class="sp"></span><button class="btn xs ghost" data-act="cmdload" data-tid="${tid}">저장된 지시 불러오기</button></div>
+    <div class="tabs2">${mons.map(mm=>{const xx=cur.mons[mm.id];const mv=xx.move!==''&&xx.move!=='switch'?(mm.moves||[])[+xx.move]:null;return `<div class="tab2 ${mm.id===m.id?'on':''}" data-ctab="${mm.id}"><div class="pic" style="${mm.image?`background-image:url('${mm.image}')`:''}"></div><div><b>${esc(mm.name)}</b><small>${xx.move==='switch'?'교대 → '+esc(monName(b,xx.switch)||'?'):mv?esc(mv.name):'미정'}</small></div></div>`}).join('')}</div>
+    <div class="pane">
+     <div class="sec">행동 <span class="seg"><span class="${!isSwitch?'on':''}" data-seg="move">기술</span><span class="${isSwitch?'on':''}" data-seg="switch">교대</span></span><span class="note">에리어 ${m.entry.toUpperCase()}</span></div>
+     ${isSwitch?`<div class="pg">${bench.length?bench.map(bm=>`<div class="pc ${x.switch===bm.id?'on':''}" data-sw="${bm.id}"><div class="pic" style="${bm.image?`background-image:url('${bm.image}')`:''}"></div><div><b>${esc(bm.name)}</b><div class="small dim">${bm.hp.cur}/${bm.hp.max}</div></div></div>`).join(''):'<div class="dim small">교대할 포켓몬이 없다</div>'}</div>`
+     :`<div class="mvg">${(m.moves||[]).map((mv,i)=>moveCard(mv,i,String(x.move)===String(i),`data-mv="${i}"`)).join('')}</div>${mvSel?`<div class="mef">${esc(mvSel.eff||'')}${mvSel.tag&&mvSel.tag!=='-'?` <span class="dim">[${esc(mvSel.tag)}]</span>`:''}</div>`:''}
+      ${mvSel?`<div class="sec">대상 <span class="note">범위 ${esc(mvSel.range)} — 누르면 바꿀 수 있다</span></div>${board(b,m.side,(slot)=>x.targets.includes(slot),(slot)=>`data-tgt="${slot}"`)}`:''}`}
+     <div class="sec">지령 <span class="note">4식 · 선행 입력</span></div><div class="pool">${ORDER_KEYS.map((k,i)=>oNames[i]?`<div class="oc ${cur.order.type===k?'mine':''} ${(cnt['order_'+k]??1)<=0?'dis':''}" data-ord="${k}"><b>${esc(oNames[i])}</b><small>남은 ${cnt['order_'+k]??1}${cur.order.type===k&&cur.order.target?' · → '+esc(monName(b,cur.order.target)):''}</small></div>`:'').join('')}</div>
+     ${cur.order.type?`<div class="row small" style="margin:4px 0 0 2px">대상: ${mons.map(mm=>`<span class="tgl ${cur.order.target===mm.id?'on':''}" data-ordt="${mm.id}">${esc(mm.name)}</span>`).join('')}</div>`:''}
+     <div class="sec">명령 <span class="note">6령</span></div><div class="pool">${COMMAND_KEYS.map((k,i)=>cNames[i]?`<div class="oc ${cur.command.type===k?'mine':''} ${(cnt['command_'+k]??1)<=0?'dis':''}" data-cmd="${k}"><b>${esc(cNames[i])}</b><small>남은 ${cnt['command_'+k]??1}${cur.command.type===k&&cur.command.target?' · → '+esc(monName(b,cur.command.target)):''}</small></div>`:'').join('')}</div>
+     ${cur.command.type?`<div class="row small" style="margin:4px 0 0 2px">대상: ${mons.map(mm=>`<span class="tgl ${cur.command.target===mm.id?'on':''}" data-cmdt="${mm.id}">${esc(mm.name)}</span>`).join('')}</div>`:''}
+     <details class="adv"><summary>우선도 · 행동 순서 변경 (${esc(m.name)})</summary><div class="tgts">${allEntered(b).map(s=>`<label class="tg2">${s.area.toUpperCase()} ${esc(s.mon.name)} 우선 <input type="number" class="n" data-f="prio" data-mid="${m.id}" data-slot="${s.slot}" value="${x.prio[s.slot]??''}" placeholder="0"> 순서 <input type="number" class="n" data-f="ochg" data-mid="${m.id}" data-slot="${s.slot}" value="${x.ochg[s.slot]??''}" placeholder="20"></label>`).join('')}</div></details>
+     <div class="row" style="margin-top:6px"><input type="text" data-f="detail" value="${esc(cur.detail)}" placeholder="상세 (포텐셜 선언, 자유 메모)" style="flex:1"></div>
+    </div>
+    <div class="cfoot"><div class="sum">${summ}</div><button class="btn" data-act="cmdsave" data-tid="${tid}">저장</button><button class="btn pri" data-act="ready" data-tid="${tid}">${ready[tid]?'준비 해제':'준비 완료'}</button></div></div>`}).join('');
   if(!blocks.trim())return '';
   loadPeek().then(pk=>{const el=document.getElementById('peekbox');if(!el||!pk)return;if(pk.turn!==(ctx().b.turn||0))return;el.innerHTML=`<div class="chip" style="border-color:var(--yel);padding:4px 10px">타임 결과 · ${esc(pk.name)}: <b>${esc(pk.text)}</b></div>`});
   return `<form id="cmdForm" class="cmdpanel" onsubmit="return false"><div id="peekbox"></div><div class="cmdtitle">지시 입력 <span class="dim small">${phase===0?'지시 준비 페이즈':'지금은 '+['','턴 개시','행동 순서','행동 처리','','턴 종료'][phase]+' — 입력은 저장만 된다'}</span></div>${blocks}</form>`}
  function rerenderCmd(){const old=$('#cmdForm');if(!old)return;const c=ctx();const tmp=document.createElement('div');tmp.innerHTML=cmdPanel(c,c.ST.state.ready||{});const nf=tmp.firstElementChild;if(!nf){old.remove();return}old.replaceWith(nf);nf.querySelectorAll('[data-act]').forEach(bt=>bt.onclick=()=>action(bt.dataset));bindCmdForm(nf,c)}
  function bindCmdForm(form,c){
-  form.querySelectorAll('[data-f]').forEach(el=>{const tid=el.closest('.cmdt').dataset.tid;const cur=CMD[tid];
-   const h=()=>{const f=el.dataset.f,mid=el.dataset.mid;
-    if(f==='move'){cur.mons[mid].move=el.value;cur.mons[mid].targets=defaultTargets(c.b,mid,el.value);rerenderCmd();return}
-    if(f==='switch')cur.mons[mid].switch=el.value;
-    if(f==='target'){const t=cur.mons[mid].targets;const i=t.indexOf(el.value);if(el.checked&&i<0)t.push(el.value);if(!el.checked&&i>=0)t.splice(i,1)}
-    if(f==='prio')cur.mons[mid].prio[el.dataset.slot]=el.value;
-    if(f==='ochg')cur.mons[mid].ochg[el.dataset.slot]=el.value;
-    if(f==='order')cur.order.type=el.value;if(f==='orderTarget')cur.order.target=el.value;
-    if(f==='command')cur.command.type=el.value;if(f==='commandTarget')cur.command.target=el.value;
-    if(f==='detail')cur.detail=el.value};
-   el.addEventListener('change',h);if(el.type==='text'||el.type==='number')el.addEventListener('input',h)})}
+  form.querySelectorAll('.cmdt').forEach(blk=>{const tid=blk.dataset.tid;const cur=CMD[tid];const mid=UIC.tab[tid];const x=cur.mons[mid];
+   blk.querySelectorAll('[data-ctab]').forEach(el=>el.onclick=()=>{UIC.tab[tid]=el.dataset.ctab;rerenderCmd()});
+   blk.querySelectorAll('[data-seg]').forEach(el=>el.onclick=()=>{if(el.dataset.seg==='switch'){x.move='switch';x.targets=[]}else{x.move='';x.targets=[]}rerenderCmd()});
+   blk.querySelectorAll('[data-mv]').forEach(el=>el.onclick=()=>{x.move=el.dataset.mv;x.targets=defaultTargets(c.b,mid,el.dataset.mv);rerenderCmd()});
+   blk.querySelectorAll('[data-sw]').forEach(el=>el.onclick=()=>{x.switch=el.dataset.sw;rerenderCmd()});
+   blk.querySelectorAll('[data-tgt]').forEach(el=>el.onclick=()=>{const s=el.dataset.tgt;const i=x.targets.indexOf(s);if(i>=0)x.targets.splice(i,1);else x.targets.push(s);rerenderCmd()});
+   blk.querySelectorAll('[data-ord]').forEach(el=>el.onclick=()=>{if(el.classList.contains('dis'))return;cur.order.type=cur.order.type===el.dataset.ord?'':el.dataset.ord;if(cur.order.type&&!cur.order.target)cur.order.target=mid;rerenderCmd()});
+   blk.querySelectorAll('[data-ordt]').forEach(el=>el.onclick=()=>{cur.order.target=el.dataset.ordt;rerenderCmd()});
+   blk.querySelectorAll('[data-cmd]').forEach(el=>el.onclick=()=>{if(el.classList.contains('dis'))return;cur.command.type=cur.command.type===el.dataset.cmd?'':el.dataset.cmd;if(cur.command.type&&!cur.command.target)cur.command.target=mid;rerenderCmd()});
+   blk.querySelectorAll('[data-cmdt]').forEach(el=>el.onclick=()=>{cur.command.target=el.dataset.cmdt;rerenderCmd()});
+   blk.querySelectorAll('[data-f]').forEach(el=>{const h=()=>{const f=el.dataset.f;const xm=cur.mons[el.dataset.mid]||x;if(f==='prio')xm.prio[el.dataset.slot]=el.value;if(f==='ochg')xm.ochg[el.dataset.slot]=el.value;if(f==='detail')cur.detail=el.value};el.addEventListener('input',h);el.addEventListener('change',h)})})}
  function defaultTargets(b,mid,moveIdx){const m=b.mons[mid];if(!m||moveIdx===''||moveIdx==='switch')return [];const mv=(m.moves||[])[+moveIdx];if(!mv)return [];
   const slots=allEntered(b);const my=slots.find(s=>s.mon.id===mid);const r=String(mv.range||'');
   const enemies=slots.filter(s=>s.side!==m.side),allies=slots.filter(s=>s.side===m.side&&s.mon.id!==mid);
@@ -366,9 +406,11 @@ window.OM_BATTLE_UI=(()=>{
   const x=(((b.cmds||{})[atk.tid]||{}).mons||{})[mid]||{};const slots=allEntered(b);
   const defMoveIdx=x.move!==''&&x.move!=='switch'&&x.move!=null?+x.move:0;
   const md=A().openModal(`<div class="mhead"><h2>공격 — ${esc(atk.name)}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-   <div class="row"><label>기술 <select id="amove">${(atk.moves||[]).map((mv,i)=>`<option value="${i}" ${i===defMoveIdx?'selected':''}>${esc(mv.name)} (${esc(mv.type)} ${esc(mv.cat)} ${mv.pow||'-'}/${mv.acc||'필중'})</option>`).join('')}</select></label>
-    <label>위력 <input type="number" class="n" id="apow"></label><label>명중 배율 <input type="number" step="0.01" class="n" id="aacc" value="1"></label></div>
-   <div class="tgts" style="margin:6px 0">대상 ${slots.filter(s=>s.mon.id!==mid||true).map(s=>`<label class="tg ${s.side}"><input type="checkbox" data-t="${s.slot}" ${(x.targets||[]).includes(s.slot)?'checked':''}>${s.area.toUpperCase()} ${esc(s.mon.name)}</label>`).join('')}</div>
+   <select id="amove" hidden>${(atk.moves||[]).map((mv,i)=>`<option value="${i}" ${i===defMoveIdx?'selected':''}>${esc(mv.name)}</option>`).join('')}</select>
+   <div class="sec">기술</div><div class="mvg" id="amvg">${(atk.moves||[]).map((mv,i)=>moveCard(mv,i,i===defMoveIdx,`data-amv="${i}"`)).join('')}</div>
+   <div class="row small" style="margin-top:6px"><label>위력 <input type="number" class="n" id="apow"></label><label>명중 배율 <input type="number" step="0.01" class="n" id="aacc" value="1"></label><span id="amef" class="dim"></span></div>
+   <div class="sec">대상 <span class="note">누르면 고르고 푼다</span></div><div id="aboard">${board(b,atk.side,(slot)=>(x.targets||[]).includes(slot),(slot)=>`data-at="${slot}"`)}</div>
+   <div hidden>${slots.map(s=>`<input type="checkbox" data-t="${s.slot}" ${(x.targets||[]).includes(s.slot)?'checked':''}>`).join('')}</div>
    <details class="adv" open><summary>보정</summary><div class="agrid">
     <label>급소 +<input type="number" class="n" id="acrit" value="0" title="입력 보정"></label><label>급소 지시보정 <input type="number" class="n" id="acritord" value="0"></label><label>급소 표 <select id="acrittype"><option value="0">0 (기본)</option><option value="2">2</option><option value="1">1</option></select></label>
     <label><input type="checkbox" id="acritforce"> 급소 확정</label>
@@ -386,9 +428,13 @@ window.OM_BATTLE_UI=(()=>{
    </div></details>
    <div id="ares"></div>
    <div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn" id="aroll">굴리기</button><button class="btn pri" id="aapply" disabled>적용</button></div>`);
-  const mvSel=$('#amove',md);const syncMove=()=>{const mv=(atk.moves||[])[+mvSel.value]||{};$('#apow',md).value=mv.pow||0;const wm=WEATHER_MUL[f.weather.type]||{};$('#aweather',md).value=wm[mv.typeEn]!=null?wm[mv.typeEn]:1;
+  const mvSel=$('#amove',md);
+  const syncBoard=()=>{md.querySelectorAll('[data-at]').forEach(t=>{const cb=md.querySelector(`[data-t="${t.dataset.at}"]`);t.classList.toggle('on',!!(cb&&cb.checked));const tk=t.querySelector('.tk');if(tk)tk.textContent=cb&&cb.checked?'✓':''})};
+  md.querySelectorAll('[data-at]').forEach(t=>t.onclick=()=>{const cb=md.querySelector(`[data-t="${t.dataset.at}"]`);if(cb){cb.checked=!cb.checked;syncBoard()}});
+  md.querySelectorAll('[data-amv]').forEach(cd=>cd.onclick=()=>{mvSel.value=cd.dataset.amv;md.querySelectorAll('[data-amv]').forEach(q=>q.classList.toggle('on',q===cd));syncMove()});
+  const syncMove=()=>{const mv=(atk.moves||[])[+mvSel.value]||{};$('#apow',md).value=mv.pow||0;$('#amef',md).textContent=mv.eff||'';const wm=WEATHER_MUL[f.weather.type]||{};$('#aweather',md).value=wm[mv.typeEn]!=null?wm[mv.typeEn]:1;
    let fm=1;const ft=f.terrain.type;if(ft==='그래스필드'&&mv.typeEn==='Grass')fm=1.3;if(ft==='일렉트릭필드'&&mv.typeEn==='Electric')fm=1.3;if(ft==='사이코필드'&&mv.typeEn==='Psychic')fm=1.3;if(ft==='미스트필드'&&mv.typeEn==='Dragon')fm=0.5;$('#afield',md).value=fm;
-   const dflt=defaultTargets(b,mid,String(mvSel.value));if(x.move==null||x.move===''||+x.move!==+mvSel.value){md.querySelectorAll('[data-t]').forEach(cb=>cb.checked=dflt.includes(cb.dataset.t))}};
+   const dflt=defaultTargets(b,mid,String(mvSel.value));if(x.move==null||x.move===''||+x.move!==+mvSel.value){md.querySelectorAll('[data-t]').forEach(cb=>cb.checked=dflt.includes(cb.dataset.t))}syncBoard()};
   mvSel.onchange=syncMove;syncMove();
   let RESULT=null;
   $('#aroll',md).onclick=()=>{
@@ -414,7 +460,7 @@ window.OM_BATTLE_UI=(()=>{
     res.push({slot,def,acc,hits,dmg,eff,stab,hp,guard:guard0,endure:endure0,manual:1})}
    RESULT={mv,targets:res,moveTypes};
    $('#ares',md).innerHTML=`<table class="t"><tr><th>대상</th><th>명중</th><th>급소</th><th>대미지(상성 전)</th><th>상성</th><th>보정</th><th>최종</th></tr>${res.map((r,i)=>`<tr>
-    <td class="nw"><b>${esc(r.def.name)}</b><div class="small dim">HP ${r.def.hp.cur}/${r.def.hp.max}</div></td>
+    <td class="nw"><div class="row" style="gap:6px;flex-wrap:nowrap"><div class="ti sm" style="${r.def.image?`background-image:url('${r.def.image}')`:''}"></div><div><b>${esc(r.def.name)}</b><div class="small dim">HP ${r.def.hp.cur}/${r.def.hp.max}</div></div></div></td>
     <td>${r.acc.sure?'필중':(r.acc.hit?'<b style="color:var(--ok)">명중</b>':'<b style="color:var(--red)">빗나감</b>')+`<div class="small dim">${r.acc.note?esc(r.acc.note):r.acc.roll+' / '+r.acc.target}</div>`}</td>
     <td>${r.hits.map(h=>h.v===2?`<b style="color:var(--red)">급소</b>`:'-').join('<br>')}<div class="small dim">${r.hits.map(h=>h.cr.roll+'/'+h.cr.chance).join('<br>')}</div></td>
     <td>${r.dmg?`<b class="mono">${r.dmg.total}</b> <span class="small dim">(${r.dmg.min}~${r.dmg.max}${r.hits.length>1?' · '+r.hits.length+'회':''})</span>`:'-'}</td>
