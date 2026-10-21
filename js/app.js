@@ -158,7 +158,7 @@ async function openRoom(id,gm,asPl){
  ST.room=id;ST.roomRow=row;ST._sub=false;if(window.OM_BATTLE_UI)window.OM_BATTLE_UI.resetLocal();ST.role=null;ST.secret='';ST.seat='';ST.name='';
  const seatInfo=LS.get('om_seat_'+id,null);const tok=ACCT.tok();
  /* 계정으로: 방 권한(GM · PL 자리)을 서버가 정한다. 「PL 로」(asPl) 는 예전 방식으로 */
- if(!gm&&tok&&!asPl){let w=null;try{w=await DBS().whoami(id,'u:'+tok)}catch(e){}
+ if(!gm&&tok&&!asPl){let w=null;try{await DBS().acct.join(tok,id)}catch(e){}/* 10-24 망령: 로그인해서 들어오면 기본 PL 권한 (patch_2026-10-24_PL기본.sql) */try{w=await DBS().whoami(id,'u:'+tok)}catch(e){}
   if(w==='gm'){ST.role='gm';ST.secret='u:'+tok;ST.name='GM';ST.gmNick=LS.get('om_gmnick_'+id,'')||(ACCT.get()||{}).name||LS.get('om_nick','')||'';remember(id,row.name,'')}
   else if(w){ST.role='seat';ST.secret='u:'+tok;ST.seat=w;ST.name=LS.get('om_name_'+id,'')||(ACCT.get()||{}).name||w}}
  if(gm){const w=await DBS().whoami(id,gm);if(w==='gm'){ST.role='gm';ST.secret=gm;ST.name='GM';ST.gmNick=LS.get('om_gmnick_'+id,'')||LS.get('om_nick','')||'';remember(id,row.name,gm)}else toast('GM 비밀값이 맞지 않는다')}
