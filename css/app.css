@@ -2223,3 +2223,29 @@ span.iedit{display:inline-block;min-width:3em}
 .ev-form .ev-flash{background:rgba(255,255,255,.7)}
 .ev-form .ev-txt{bottom:60px;animation:evTxt 1.7s 1.6s both}
 .ev-form .ev-t2{font-size:52px}
+/* 시트 위 띠: 소지 포켓몬 3×2 (1 3 5 / 2 4 6) 큼직하게 + 오른쪽에 큰 배틀 배치 */
+.hero .hparty{flex-direction:row;align-items:center;justify-content:center;gap:22px}
+.hero .hpmons{display:grid;grid-auto-flow:column;grid-template-rows:repeat(2,auto);gap:8px 12px;flex-wrap:initial}
+.hero .hpm{width:84px}.hero .hpmi{width:72px;height:72px;font-size:22px}.hero .hpmn{max-width:84px;font-size:12px}
+.hero .hpbtn{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:210px;flex:none}
+.hero .hpbl{grid-column:1/-1;text-align:center;font-size:15px;padding:6px 10px}
+.hero .hpbtn .btn{font-size:16px;font-weight:800;padding:16px 8px;min-height:60px}
+@media (min-width:761px){.hero .hpmons{flex-wrap:initial}.hero .hpm{width:84px}.hero .hpmi{width:72px;height:72px}.hero .hpmn{max-width:84px}}
+@media (max-width:760px){.hero .hparty{flex-direction:column;gap:10px}.hero .hpm{width:64px}.hero .hpmi{width:56px;height:56px;font-size:17px}.hero .hpmn{max-width:64px;font-size:10.5px}.hero .hpbtn{width:100%;max-width:340px}.hero .hpbtn .btn{padding:12px 8px;min-height:0}}
+/* 지도 관리 · 지도 그림 탭 */
+.mmcols.mmimg{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr)}
+.mapprev.big{aspect-ratio:16/9;border-radius:6px}
+.mmhist{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:6px}
+.mmh{padding:0;border:1px solid var(--line2);background:#000;cursor:pointer;display:flex;flex-direction:column;border-radius:4px;overflow:hidden}
+.mmh i{display:block;aspect-ratio:16/10;background:#0e0e10 center/cover no-repeat}.mmh small{font-size:10px;color:var(--mute);padding:2px 4px}
+.mmh:hover{border-color:var(--yel2)}
+@media (max-width:760px){.mmcols.mmimg{grid-template-columns:1fr}}
+/* 배경 창 · GM 목록 고치기 */
+.qbmain{min-width:0;display:flex;flex-direction:column;gap:8px}
+.qbgh{display:flex;align-items:center;gap:6px;padding:0 2px}.qbgh b{font-size:15px}
+.qbn.add{color:var(--mute);border-left-color:transparent;margin-top:4px;border-top:1px dashed var(--line)}
+.qbx{position:absolute;top:6px;right:6px;display:flex;gap:3px;opacity:0;transition:opacity .12s}
+.qbt:hover .qbx,.qbt:focus-within .qbx{opacity:1}
+.qbx i{font-style:normal;width:24px;height:24px;display:grid;place-items:center;background:rgba(0,0,0,.75);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:4px;font-size:12px;cursor:pointer}
+.qbx i:hover{background:var(--yel2);color:#000}.qbx i[data-e=del]:hover{background:var(--red);color:#fff}
+@media (hover:none){.qbx{opacity:1}}

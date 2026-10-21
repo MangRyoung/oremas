@@ -261,37 +261,50 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    SPK.key='npc:'+n;A().closeModal();A().renderScene();A().toast(`${n} 추가 — 관계도에도 들어갔다`)}}
  /* ----- 빠른 배경 / BGM 고르기 (무대 위 버튼) ----- */
  const QB={g:''};
- function quickBg(){const r=R();const groups=bgGroups();const ST=A().ST;
+ /* 배경 창 하나에서 고르기 + (GM) 목록 고치기: 그룹 추가·이름·순서·삭제, 썸네일 위 ✎ ◀ ▶ ×, 끌어 놓은 그림은 지금 그룹에 들어간다 */
+ function quickBg(){const r=R();const groups=JSON.parse(JSON.stringify(bgGroups()));const isGm=gm();
   const recent=(r.recentBg||[]).map(bgOf).filter(x=>x&&x.src);const RC='★최근';
   if(!QB.g||(QB.g===RC&&!recent.length)||(QB.g!==RC&&!groups.find(x=>x.n===QB.g)))QB.g=recent.length?RC:(groups[0]?groups[0].n:'');
-  const cur=r.bg||null;
+  const cur=r.bg||null;const gi=groups.findIndex(x=>x.n===QB.g);const G=gi>=0?groups[gi]:null;
   const nav=[...(recent.length?[{n:RC,c:recent.length,l:'최근'}]:[]),...groups.map(x=>({n:x.n,c:x.i.filter(i=>i.src).length,l:x.n}))];
-  const md=A().openModal(`<div class="mhead"><h2>배경</h2><span class="sp"></span><button class="btn sm ghost" data-q="mgr">목록 관리</button><button class="btn ghost" data-x>닫기</button></div>
-   <div class="qbtop"><div class="qbcur" style="${cur&&cur.src?`background-image:url('${cssu(cur.src)}')`:''}"><span>${cur&&cur.src?`<small>지금</small><b>${esc(cur.name||'이름 없는 배경')}</b>`:'<small>지금</small><b>배경 없음</b>'}</span></div>
-    <div class="qbtopr"><input type="search" id="qbq" placeholder="배경 이름으로 찾기 (모든 그룹)" value="${esc(QB.q||'')}"><button class="btn sm ghost" data-q="bgx" ${cur?'':'disabled'}>배경 없애기</button></div></div>
-   <div class="qbcols"><nav class="qbnav">${nav.map(x=>`<button class="qbn ${x.n===QB.g&&!QB.q?'on':''}" data-q="g" data-g="${esc(x.n)}"><span>${esc(x.l)}</span><em>${x.c}</em></button>`).join('')}</nav>
-    <div class="qbgrid" id="qbgrid"></div></div>
-   <div class="qbadd"><div class="updz sm" id="qb_dz"><b>새 그림 끌어 놓기</b><span>클릭 · Ctrl+V</span><input type="file" accept="image/*" hidden></div>
+  const md=A().openModal(`<div class="mhead"><h2>배경</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+   <div class="qbtop"><div class="qbcur" style="${cur&&cur.src?`background-image:url('${cssu(cur.src)}')`:''}"><span><small>지금</small><b>${esc(cur&&cur.src?(cur.name||'이름 없는 배경'):'배경 없음')}</b></span></div>
+    <div class="qbtopr"><input type="search" id="qbq" placeholder="배경 이름으로 찾기 (모든 그룹)" value="${esc(QB.q||'')}"><div class="row" style="justify-content:flex-end">${isGm&&r.bgList?'<button class="btn xs ghost" data-q="reset" title="방에서 고친 목록을 버리고 기본 목록으로">기본 목록으로</button>':''}<button class="btn sm ghost" data-q="bgx" ${cur?'':'disabled'}>배경 없애기</button></div></div></div>
+   <div class="qbcols"><nav class="qbnav">${nav.map(x=>`<button class="qbn ${x.n===QB.g&&!QB.q?'on':''}" data-q="g" data-g="${esc(x.n)}"><span>${esc(x.l)}</span><em>${x.c}</em></button>`).join('')}${isGm?'<button class="qbn add" data-q="gadd"><span>＋ 그룹</span></button>':''}</nav>
+    <div class="qbmain">${isGm&&G&&!QB.q?`<div class="qbgh"><b>${esc(G.n)}</b><span class="dim small">${G.i.length}장</span><span class="sp"></span><button class="btn xs ghost" data-q="gren">이름</button><button class="btn xs ghost" data-q="gup" title="그룹 위로">↑</button><button class="btn xs ghost" data-q="gdn" title="그룹 아래로">↓</button><button class="btn xs ghost danger" data-q="gdel">그룹 삭제</button></div>`:''}<div class="qbgrid" id="qbgrid"></div></div></div>
+   <div class="qbadd"><div class="updz sm" id="qb_dz"><b>새 그림 끌어 놓기</b><span>여러 장 · 클릭 · Ctrl+V</span><input type="file" accept="image/*" multiple hidden></div>
     <div class="qbaddr"><div class="row"><input type="text" id="qbgu" placeholder="또는 그림 주소 https://…" style="flex:1"><input type="text" id="qbgn" placeholder="장소 이름" style="width:130px"><button class="btn sm pri" data-q="url">적용</button></div>
-    ${ST.role==='gm'&&QB.g!==RC&&groups.find(x=>x.n===QB.g)?`<label class="small dim"><input type="checkbox" id="qbsave" ${QB.save?'checked':''}> 「${esc(QB.g)}」 그룹에도 넣어 두기</label>`:''}</div></div>`);
+    <div class="small dim">${isGm&&G?`새 그림은 「${esc(G.n)}」 그룹에 들어가고, 한 장이면 바로 배경이 된다. 썸네일에 마우스를 올리면 ✎ 이름 · ◀ ▶ 순서 · × 삭제.`:'한 장이면 바로 배경이 된다.'}</div></div></div>`);
   md.classList.add('wide','qbmodal');
+  const saveGs=async()=>{await A().set(['rp','bgList'],groups);quickBg()};
   const items=()=>{const q=(QB.q||'').trim().toLowerCase();if(q){const out=[];for(const g of groups)for(const it of g.i)if(it.src&&(it.l||'').toLowerCase().includes(q))out.push(Object.assign({g:g.n},it));return out}
-   if(QB.g===RC)return recent;const g=groups.find(x=>x.n===QB.g);return g?g.i.filter(i=>i.src):[]};
-  const draw=()=>{const xs=items();const q=(QB.q||'').trim();$('#qbgrid',md).innerHTML=xs.map(it=>{const on=cur&&cur.src===it.src;return `<button class="qbt ${on?'on':''}" data-k="${esc(it.k)}" title="${esc(it.l)}"><img src="${esc(it.src)}" loading="lazy" alt=""><span class="qbl">${esc(it.l)}${q&&it.g?`<small>${esc(it.g)}</small>`:''}</span>${on?'<em>사용 중</em>':''}</button>`}).join('')||`<div class="empty small">${q?'찾는 배경이 없다':'이 그룹에 그림이 없다 — 「목록 관리」에서 넣어 줘'}</div>`;
-   $('#qbgrid',md).querySelectorAll('.qbt').forEach(b=>b.onclick=()=>useBg(b.dataset.k))};
+   if(QB.g===RC)return recent;return G?G.i.filter(i=>i.src):[]};
+  const draw=()=>{const xs=items();const q=(QB.q||'').trim();const ed=isGm&&G&&QB.g!==RC&&!q;
+   $('#qbgrid',md).innerHTML=xs.map(it=>{const on=cur&&cur.src===it.src;return `<div class="qbt ${on?'on':''}" data-k="${esc(it.k)}" title="${esc(it.l)}" role="button" tabindex="0"><img src="${esc(it.src)}" loading="lazy" alt=""><span class="qbl">${esc(it.l)}${q&&it.g?`<small>${esc(it.g)}</small>`:''}</span>${on?'<em>사용 중</em>':''}${ed?`<span class="qbx"><i data-e="ren" title="이름">✎</i><i data-e="l" title="앞으로">◀</i><i data-e="r" title="뒤로">▶</i><i data-e="del" title="지우기">×</i></span>`:''}</div>`}).join('')||`<div class="empty small">${q?'찾는 배경이 없다':'이 그룹에 그림이 없다 — 아래에 끌어 놓아 줘'}</div>`;
+   $('#qbgrid',md).querySelectorAll('.qbt').forEach(b=>{b.onclick=e=>{const x=e.target.closest('[data-e]');if(x){e.stopPropagation();return editIt(b.dataset.k,x.dataset.e)}useBg(b.dataset.k)};b.onkeydown=e=>{if(e.key==='Enter')useBg(b.dataset.k)}})};
+  const editIt=async(k,op)=>{if(!G)return;const i=G.i.findIndex(x=>x.k===k);if(i<0)return;const it=G.i[i];
+   if(op==='ren'){const l=prompt('배경 이름',it.l);if(l==null||!l.trim())return;it.l=l.trim();return saveGs()}
+   if(op==='del'){if(!confirm(`「${it.l}」 배경을 목록에서 지울까?`))return;G.i.splice(i,1);return saveGs()}
+   const j=op==='l'?i-1:i+1;if(j<0||j>=G.i.length)return;[G.i[i],G.i[j]]=[G.i[j],G.i[i]];return saveGs()};
   const useBg=async k=>{const it=bgOf(k);if(!it)return;A().closeModal();await A().set(['rp','bg'],{src:it.src,name:it.l,at:Date.now()});await A().set(['rp','recentBg'],[k,...(r.recentBg||[]).filter(x=>x!==k)].slice(0,12))};
-  const useUrl=async(u,name)=>{if(!u)return;const sv=$('#qbsave',md);let key='';
-   if(sv&&sv.checked){const gs=JSON.parse(JSON.stringify(groups));const g=gs.find(x=>x.n===QB.g);if(g){const l=name||'새 배경';key=(g.n+'_'+l+'_'+Date.now().toString(36)).replace(/\s+/g,'_');g.i.push({k:key,l,src:u});await A().set(['rp','bgList'],gs)}}
-   A().closeModal();await A().set(['rp','bg'],{src:u,name,at:Date.now()});if(key)await A().set(['rp','recentBg'],[key,...(r.recentBg||[])].slice(0,12))};
+  const addTo=(src,l)=>{if(!isGm||!G||QB.g===RC)return '';const key=(G.n+'_'+l+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,4)).replace(/\s+/g,'_');G.i.push({k:key,l:l||'새 배경',src});return key};
+  const useUrl=async(u,name)=>{if(!u)return;const key=addTo(u,name);if(key)await A().set(['rp','bgList'],groups);A().closeModal();await A().set(['rp','bg'],{src:u,name,at:Date.now()});if(key)await A().set(['rp','recentBg'],[key,...(r.recentBg||[])].slice(0,12))};
   draw();
-  const qi=$('#qbq',md);qi.oninput=()=>{QB.q=qi.value;md.querySelectorAll('.qbn').forEach(b=>b.classList.toggle('on',!QB.q.trim()&&b.dataset.g===QB.g));draw()};
-  const sv=$('#qbsave',md);if(sv)sv.onchange=()=>{QB.save=sv.checked};
-  bindDz(md,'#qb_dz',async fs=>{const f=fs[0];const u=await upImg(f,'bg');const nm=$('#qbgn',md).value.trim()||stLabel(f.name&&f.name!=='image.png'?f.name:'');return useUrl(u,nm==='기본'?'':nm)});
+  const qi=$('#qbq',md);qi.oninput=()=>{QB.q=qi.value;md.querySelectorAll('.qbn[data-g]').forEach(b=>b.classList.toggle('on',!QB.q.trim()&&b.dataset.g===QB.g));draw()};
+  bindDz(md,'#qb_dz',async fs=>{const nm0=$('#qbgn',md).value.trim();const lab=f=>nm0&&fs.length===1?nm0:(f.name&&f.name!=='image.png'?stLabel(f.name):'새 배경');
+   if(fs.length===1){const u=await upImg(fs[0],'bg');return useUrl(u,lab(fs[0]))}
+   if(!isGm||!G||QB.g===RC)return A().toast('여러 장은 그룹을 고른 뒤에 넣어 줘');for(const f of fs){const u=await upImg(f,'bg');addTo(u,lab(f))}A().toast(`배경 ${fs.length}장 추가`);return saveGs()},true);
   md.querySelectorAll('[data-q]').forEach(b=>b.onclick=async()=>{const k=b.dataset.q;
    if(k==='g'){QB.g=b.dataset.g;QB.q='';return quickBg()}
    if(k==='bgx'){A().closeModal();return A().set(['rp','bg'],null)}
-   if(k==='mgr')return openBgMgr();
-   if(k==='url')return useUrl($('#qbgu',md).value.trim(),$('#qbgn',md).value.trim())})}
+   if(k==='url')return useUrl($('#qbgu',md).value.trim(),$('#qbgn',md).value.trim());
+   if(k==='reset'){if(!confirm('방에서 고친 배경 목록을 버리고 기본 목록으로 돌릴까?'))return;await A().set(['rp','bgList'],null);return quickBg()}
+   if(k==='gadd'){const n=prompt('새 그룹 이름');if(!n||!n.trim())return;if(groups.some(x=>x.n===n.trim()))return A().toast('같은 이름의 그룹이 있다');groups.push({n:n.trim(),i:[]});QB.g=n.trim();QB.q='';return saveGs()}
+   if(!G)return;
+   if(k==='gren'){const n=prompt('그룹 이름',G.n);if(!n||!n.trim()||n.trim()===G.n)return;if(groups.some(x=>x.n===n.trim()))return A().toast('같은 이름의 그룹이 있다');G.n=n.trim();QB.g=G.n;return saveGs()}
+   if(k==='gdel'){if(!confirm(`「${G.n}」 그룹(${G.i.length}장)을 지울까?`))return;groups.splice(gi,1);QB.g='';return saveGs()}
+   if(k==='gup'&&gi>0){[groups[gi-1],groups[gi]]=[groups[gi],groups[gi-1]];return saveGs()}
+   if(k==='gdn'&&gi<groups.length-1){[groups[gi+1],groups[gi]]=[groups[gi],groups[gi+1]];return saveGs()}})}
  function quickBgm(){const md=A().openModal(`<div class="mhead"><h2>BGM</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div id="bgmpanel">${bgmPanelHtml()}</div>`);md.classList.add('wide');const re=()=>{const el=$('#bgmpanel');if(!el)return;el.innerHTML=bgmPanelHtml();bindBgmPanel(md,re)};bindBgmPanel(md,re)}
  /* ----- 대화 기록 ----- */
  let logOoc=false;
@@ -363,21 +376,23 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
     <div class="sec" style="margin-top:10px">배치된 인물 <span class="dim small">${M.npcs.length}명</span><span class="sp"></span>${M.npcs.length?'<button class="btn xs ghost danger" data-mm="nclr">모두 빼기</button>':''}</div>
     ${M.npcs.length?M.npcs.map((n,i)=>`<div class="mml ${n.vis?'':'hid'}"><i class="tpic sm" style="${n.img?`background-image:url('${cssu(n.img)}')`:''}"></i><span class="nm">${esc(n.name)}<small class="dim"> ${n.vis?'공개':'숨김'}</small></span><select data-mm="nmove" data-i="${i}">${M.locs.map(l=>`<option value="${l.n}" ${l.n===n.n?'selected':''}>${l.n}. ${esc(l.name)}</option>`).join('')}</select><button class="btn xs ${n.vis?'':'pri'}" data-mm="nvis" data-i="${i}">${n.vis?'숨기기':'공개'}</button><button class="btn xs ghost danger" data-mm="ndel" data-i="${i}">빼기</button></div>`).join(''):'<div class="empty small">배치된 인물이 없다</div>'}</div></div>`;
   const mi=(R().map||{}).img;const isMujin=mapIsMujin();
-  const imgTab=`<div class="mmcols"><div><div class="sec">지금 지도</div>
-    <div class="mapprev" style="${M.img?`background-image:url('${cssu(M.img.src)}')`:''}">${M.img?'':'<span class="dim">지도 없음</span>'}</div>
-    <div class="small dim" style="margin-top:4px">${M.img?`${isMujin?'무진 기본 지도':'방에서 올린 지도'} · ${M.img.w}×${M.img.h}`:'지도가 없다 — 오른쪽에서 올려 줘'}</div>
-    <div class="row" style="margin-top:8px;flex-wrap:wrap;gap:6px"><button class="btn sm ${isMujin?'':'ghost'}" data-mm="mujin">무진 기본 지도 쓰기</button><button class="btn sm ghost danger" data-mm="noimg">지도 비우기</button><button class="btn sm ghost danger" data-mm="wipeall">핀·루트·인물 모두 지우기</button></div></div>
-   <div><div class="sec">지도 올리기</div>
-    <div class="row"><input type="text" id="mm_url" placeholder="그림 주소 (https://…)" style="flex:1"><button class="btn sm" data-mm="url">주소로 적용</button></div>
-    <div class="row" style="margin-top:6px"><label class="btn sm">파일 올리기<input type="file" id="mm_file" accept="image/*" hidden></label><span class="small dim">jpg · png · webp (5MB 까지) — 올리면 바로 적용</span></div>
-    <div class="small dim" style="margin-top:10px">핀은 무대 지도에서 「📍 핀 찍기」를 켜고 그림을 누르면 꽂히고, 핀을 끌면 옮겨진다. 지도를 바꾸면 핀 좌표는 새 그림 크기에 맞춰 비율로 남는다.</div></div></div>`;
+  const hist=((R().mapHist)||[]).filter(h=>h&&h.src&&!(M.img&&M.img.src===h.src));
+  const imgTab=`<div class="mmcols mmimg"><div><div class="sec">지금 지도 <span class="dim small">${M.img?`${isMujin?'무진 기본 지도':'올린 지도'} · ${M.img.w}×${M.img.h} · 장소 ${M.locs.length}곳`:''}</span></div>
+    <div class="mapprev big" style="${M.img?`background-image:url('${cssu(M.img.src)}')`:''}">${M.img?'':'<span class="dim">지도가 없다 — 오른쪽에 그림을 끌어 놓아 줘</span>'}</div>
+    <div class="small dim" style="margin-top:8px">핀은 무대 지도에서 「📍 핀 찍기」를 켜고 그림을 누르면 꽂히고, 핀을 끌면 옮겨진다. 지도를 바꾸면 핀 좌표는 새 그림 크기에 맞춰 비율로 남는다.</div></div>
+   <div><div class="sec">지도 바꾸기</div>
+    <div class="updz" id="mm_dz" style="min-height:110px"><b>지도 그림을 끌어 놓기</b><span>클릭해서 고르기 · Ctrl+V 붙여넣기 · 올리면 바로 적용</span><input type="file" accept="image/*" hidden></div>
+    <div class="row" style="margin-top:8px"><input type="text" id="mm_url" placeholder="또는 그림 주소 (https://…)" style="flex:1"><button class="btn sm" data-mm="url">적용</button></div>
+    ${hist.length?`<div class="sec" style="margin-top:12px">전에 쓴 지도 <span class="dim small">눌러서 되돌리기</span></div><div class="mmhist">${hist.map((h,i)=>`<button class="mmh" data-mm="hist" data-i="${i}" title="${h.w}×${h.h}"><i style="background-image:url('${cssu(h.src)}')"></i><small>${h.w}×${h.h}</small></button>`).join('')}</div>`:''}
+    <div class="sec" style="margin-top:14px">정리</div><div class="row" style="flex-wrap:wrap;gap:6px"><button class="btn sm ghost danger" data-mm="noimg">지도 비우기</button><button class="btn sm ghost danger" data-mm="wipeall">핀·루트·인물 모두 지우기</button></div></div></div>`;
   const md=A().openModal(`<div class="mhead"><h2>지도 관리</h2><span class="tabs2" style="margin:0 0 0 14px;flex:0 1 520px"><button class="tab2 ${MM.tab==='img'?'on':''}" data-mm="tab" data-t="img">지도 그림 <small>${M.img?(isMujin?'무진':'올린 그림'):'없음'}</small></button><button class="tab2 ${MM.tab==='loc'?'on':''}" data-mm="tab" data-t="loc">장소 · 루트 <small>${M.locs.filter(l=>M.vis[l.n]!=1).length}/${M.locs.length} 공개</small></button><button class="tab2 ${MM.tab==='pc'?'on':''}" data-mm="tab" data-t="pc">파티 위치 · 인물 <small>${M.party.n?M.party.n+'. '+esc(locName(M.party.n)):''}</small></button></span><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>${MM.tab==='pc'?pcTab:MM.tab==='img'?imgTab:locTab}`);
-  const applyImg=async src=>{A().toast('그림 크기를 재는 중…');const im=new Image();im.onload=async()=>{const nw=im.naturalWidth||1000,nh=im.naturalHeight||700;const ow=(M.img||{}).w,oh=(M.img||{}).h;let locs=M.locs;if(ow&&oh&&(ow!==nw||oh!==nh))locs=locs.map(l=>Object.assign({},l,{x:Math.round(l.x/ow*nw),y:Math.round(l.y/oh*nh)}));await saveMap({img:{src,w:nw,h:nh},preset:'',locs});A().toast('지도를 바꿨다');openMapMgr('img')};im.onerror=()=>A().toast('그림을 불러오지 못했다');im.src=src};
-  const fi=$('#mm_file',md);if(fi)fi.onchange=async()=>{const f=fi.files[0];if(!f)return;A().toast('올리는 중…');try{const u=await DBS().uploadImage(`rooms/${ST.room}/map_${Date.now().toString(36)}`,f);await applyImg(u)}catch(e){A().toast(e.message)}};
+  const applyImg=async src=>{A().toast('그림 크기를 재는 중…');const im=new Image();im.onload=async()=>{const nw=im.naturalWidth||1000,nh=im.naturalHeight||700;const ow=(M.img||{}).w,oh=(M.img||{}).h;let locs=M.locs;if(ow&&oh&&(ow!==nw||oh!==nh))locs=locs.map(l=>Object.assign({},l,{x:Math.round(l.x/ow*nw),y:Math.round(l.y/oh*nh)}));await saveMap({img:{src,w:nw,h:nh},preset:'',locs});const H=[...(M.img&&M.img.src&&M.img.src!==src?[M.img]:[]),...((R().mapHist)||[])].filter((h,i,arr)=>h&&h.src&&h.src!==src&&arr.findIndex(x=>x.src===h.src)===i).slice(0,8);await A().set(['rp','mapHist'],H);A().toast('지도를 바꿨다');openMapMgr('img')};im.onerror=()=>A().toast('그림을 불러오지 못했다');im.src=src};
+  if($('#mm_dz',md))bindDz(md,'#mm_dz',async fs=>{await applyImg(await upImg(fs[0],'map'))});
   md.classList.add('wide');
   md.querySelectorAll('[data-mm]').forEach(b=>{const h=async()=>{const k=b.dataset.mm;const re=()=>openMapMgr();
    if(k==='tab'){MM.tab=b.dataset.t;return re()}
    if(k==='url'){const u=$('#mm_url',md).value.trim();if(!u)return;return applyImg(u)}
+   if(k==='hist'){const h=hist[+b.dataset.i];if(h)return applyImg(h.src);return}
    if(k==='mujin'){if(!confirm('무진 기본 지도를 쓸까? (핀이 없으면 기본 장소 목록이 들어간다)'))return;await saveMap({img:null,preset:'mujin',locs:M.locs.length&&!isMujin?M.locs:[]});return re()}
    if(k==='noimg'){if(!confirm('지도를 비울까? (핀·루트·인물은 남는다)'))return;await saveMap({img:null,preset:'none'});return re()}
    if(k==='wipeall'){if(!confirm('핀·루트·인물을 모두 지울까?'))return;await saveMap({locs:[],vis:{},routes:[],npcs:[],party:{n:0,vis:1},preset:(R().map||{}).preset||((R().map||{}).img?'':'none')});return re()}
@@ -452,7 +467,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(k==='bgg'){GC.bgGroup=b.dataset.g;return re()}
    if(k==='bg'){const it=bgOf(b.dataset.k);if(!it)return;await A().set(['rp','bg'],{src:it.src,name:it.l,at:Date.now()});const rec=[b.dataset.k,...(r.recentBg||[]).filter(x=>x!==b.dataset.k)].slice(0,8);await A().set(['rp','recentBg'],rec);return re()}
    if(k==='bgx'){await A().set(['rp','bg'],null);return re()}
-   if(k==='bgmgr')return openBgMgr();
+   if(k==='bgmgr')return quickBg();
    if(k==='bgurl'){const u=$('#gbg',md).value.trim();if(!u)return;await A().set(['rp','bg'],{src:u,name:$('#gbgn',md).value.trim(),at:Date.now()});return re()}
    if(k==='note'){const n=notices()[+b.dataset.i];const sub=$('#gsub',md).value.trim();A().closeModal();await fireNotice(n,sub);return}
    if(k==='cut'){A().closeModal();await A().sysLog('────────────────────');return}
@@ -482,30 +497,6 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   const vr=$('#gvol',md);if(vr)vr.oninput=()=>{vol=+vr.value;try{localStorage.setItem('om_vol',vol)}catch(e){}if(audio)audio.volume=vol};
   if(GC.tab==='bgm')bindBgmPanel(md,re);
   if($('#gbgdz',md))bindDz(md,'#gbgdz',async fs=>{$('#gbg',md).value=await upImg(fs[0],'rp');A().toast('올렸다 — 적용을 눌러')});if($('#gcidz',md))bindDz(md,'#gcidz',async fs=>{$('#gci',md).value=await upImg(fs[0],'rp');A().toast('올렸다 — 띄우기를 눌러')})}
- /* ----- 배경 관리 (맵툴 배경 관리 창): 그룹·그림 추가/이름/삭제/순서, 방 상태 rp.bgList 에 통째로 저장 ----- */
- const BGM_UI={g:0};
- function openBgMgr(){const groups=JSON.parse(JSON.stringify(bgGroups()));const ST=A().ST;if(BGM_UI.g>=groups.length)BGM_UI.g=0;const g=groups[BGM_UI.g];
-  const md=A().openModal(`<div class="mhead"><h2>배경 관리</h2><span class="sp"></span><button class="btn sm ghost" data-bm="reset">기본 목록으로</button><button class="btn ghost" data-x>닫기</button></div>
-   <div class="mmcols"><div><div class="sec">그룹 <span class="sp"></span><button class="btn xs" data-bm="gadd">+ 그룹</button></div>
-    <div class="mmlist">${groups.map((x,i)=>`<div class="mml ${i===BGM_UI.g?'on':''}" style="cursor:pointer" data-bm="gsel" data-i="${i}"><span class="nm"><b>${esc(x.n)}</b> <small class="dim">${x.i.length}장</small></span><button class="btn xs ghost" data-bm="gren" data-i="${i}">이름</button><button class="btn xs ghost" data-bm="gup" data-i="${i}">↑</button><button class="btn xs ghost" data-bm="gdn" data-i="${i}">↓</button><button class="btn xs ghost danger" data-bm="gdel" data-i="${i}">×</button></div>`).join('')||'<div class="empty small">그룹이 없다</div>'}</div></div>
-   <div>${g?`<div class="sec">「${esc(g.n)}」의 그림</div><div class="mmlist">${g.i.map((it,i)=>`<div class="mml"><i class="bgth" style="${it.src?`background-image:url('${cssu(it.src)}')`:''}"></i><span class="nm"><b>${esc(it.l)}</b><br><small class="dim">${esc(it.src||'(없음)')}</small></span><button class="btn xs ghost" data-bm="iedit" data-i="${i}">수정</button><button class="btn xs ghost" data-bm="iup" data-i="${i}">↑</button><button class="btn xs ghost" data-bm="idn" data-i="${i}">↓</button><button class="btn xs ghost danger" data-bm="idel" data-i="${i}">×</button></div>`).join('')||'<div class="empty small">그림이 없다</div>'}</div>
-    <div class="sec">그림 추가</div><div class="row"><input type="text" id="bm_l" placeholder="이름" style="width:120px"><input type="text" id="bm_u" placeholder="그림 주소 https://…" style="flex:1"><button class="btn sm pri" data-bm="iadd">추가</button></div><div class="updz" id="bm_dz" style="margin-top:8px"><b>그림 여러 장을 끌어 놓기</b><span>클릭해서 고르기 · Ctrl+V · 파일 이름이 배경 이름이 된다</span><input type="file" accept="image/*" multiple hidden></div>`:''}</div></div>`);
-  md.classList.add('wide');
-  const save=async(gs)=>{await A().set(['rp','bgList'],gs);openBgMgr()};
-  md.querySelectorAll('[data-bm]').forEach(b=>b.onclick=async e=>{if(b.dataset.bm!=='gsel')e.stopPropagation();const k=b.dataset.bm;const i=+b.dataset.i;
-   if(k==='gsel'){BGM_UI.g=i;return openBgMgr()}
-   if(k==='reset'){if(!confirm('방에서 고친 배경 목록을 버리고 기본 목록으로 돌릴까?'))return;await A().set(['rp','bgList'],null);return openBgMgr()}
-   if(k==='gadd'){const n=prompt('새 그룹 이름');if(!n||!n.trim())return;groups.push({n:n.trim(),i:[]});BGM_UI.g=groups.length-1;return save(groups)}
-   if(k==='gren'){const n=prompt('그룹 이름',groups[i].n);if(!n||!n.trim())return;groups[i].n=n.trim();return save(groups)}
-   if(k==='gdel'){if(!confirm(`「${groups[i].n}」 그룹(${groups[i].i.length}장)을 지울까?`))return;groups.splice(i,1);BGM_UI.g=0;return save(groups)}
-   if(k==='gup'&&i>0){[groups[i-1],groups[i]]=[groups[i],groups[i-1]];BGM_UI.g=i-1;return save(groups)}
-   if(k==='gdn'&&i<groups.length-1){[groups[i+1],groups[i]]=[groups[i],groups[i+1]];BGM_UI.g=i+1;return save(groups)}
-   if(k==='iadd'){const u=$('#bm_u',md).value.trim(),l=$('#bm_l',md).value.trim();if(!u)return A().toast('그림 주소가 필요해');const key=(g.n+'_'+(l||u.split('/').pop())).replace(/\s+/g,'_');g.i.push({k:key,l:l||key,src:u});return save(groups)}
-   if(k==='iedit'){const it=g.i[i];const l=prompt('이름',it.l);if(l==null)return;const u=prompt('그림 주소',it.src||'');if(u==null)return;it.l=l.trim()||it.l;it.src=u.trim();return save(groups)}
-   if(k==='idel'){g.i.splice(i,1);return save(groups)}
-   if(k==='iup'&&i>0){[g.i[i-1],g.i[i]]=[g.i[i],g.i[i-1]];return save(groups)}
-   if(k==='idn'&&i<g.i.length-1){[g.i[i+1],g.i[i]]=[g.i[i],g.i[i+1]];return save(groups)}});
-  if(g)bindDz(md,'#bm_dz',async fs=>{let n=0;for(const f of fs){const u=await upImg(f,'bg');const l=(f.name&&f.name!=='image.png')?stLabel(f.name):'새 배경 '+(g.i.length+1);g.i.push({k:(g.n+'_'+l+'_'+Date.now().toString(36)).replace(/\s+/g,'_'),l,src:u});n++}A().toast(`배경 ${n}장 추가`);await save(groups)},true)}
  /* ----- BGM 패널 (맵툴 Lib:bgm 정리판과 같은 꼴): 홈 = 띠(장면/배틀/분위기)별 그룹 타일 → 그룹 = 곡 줄 · 검색 · ▶ 미리듣기 · 모두에게 재생 · ⟳ 다른 곡 ----- */
  const BG={g:'',q:''};
  const gshort=g=>String(g).replace(/^[0-9.]+\s*/,'');
