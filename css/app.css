@@ -2648,3 +2648,6 @@ span.iedit{display:inline-block;min-width:3em}
 .admt select{background:var(--panel);border:1px solid var(--line2);padding:3px 6px}
 .fbulk{flex-wrap:wrap;gap:6px;margin:0 0 8px;padding:6px 8px;background:var(--bg2);border:1px dashed var(--line2)}
 .pick .fsel{width:18px;height:18px;flex:none;accent-color:var(--red);cursor:pointer}
+.updz.mini.gbdz{position:relative;isolation:isolate}
+.updz.mini.gbdz::before{content:'';position:absolute;inset:6%;background:var(--defbub) center/contain no-repeat;opacity:.38;z-index:-1}
+.updz.mini.gbdz.fx::before{transform:scaleX(-1)}
