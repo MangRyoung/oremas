@@ -185,7 +185,10 @@ window.OM_BATTLE_UI=(()=>{
     else body=`<div class="bca dim">${rd?'입력 완료 · 비공개':'입력 중'}</div>`;
     return `<div class="bc"><span class="bop" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></span><div class="bcb"><div class="bcn"><i>${String(m.entry).toUpperCase()}</i>${esc(m.name)}</div>${body}</div></div>`};
    const up=own&&cur&&(cur.upots||[]).length?`<div class="bcp bcu">${cur.upots.map(n=>`<span class="rk fxc">고유 『${esc(n)}』</span>`).join('')}</div>`:'';
-   return `<div class="bct1"><div class="bth"><b>${esc(t.name)}</b><span class="sp"></span>${tag}</div>${mons.map(row).join('')||'<div class="small dim">필드에 포켓몬이 없다</div>'}${up}</div>`}).join('');
+   /* 10-21 망령: A·B(·C) 칸은 늘 같은 자리에 (비거나 쓰러져도 줄이 빠져서 밀리지 않게). 같은 진영의 다른 트레이너가 쓰는 칸만 뺀다 */
+   const ent=entered(b,side);const slotsT=AREAS.slice(0,mode(b)).filter(a=>!ent[a]||ent[a].tid===tid||ids.length===1);
+   const rows=slotsT.map(a=>{const m=mons.find(x=>x.entry===a);return m?row(m):`<div class="bc empty"><span class="bop"></span><div class="bcb"><div class="bcn"><i>${a.toUpperCase()}</i>빈 자리</div><div class="bca dim">—</div></div></div>`});
+   return `<div class="bct1"><div class="bth"><b>${esc(t.name)}</b><span class="sp"></span>${tag}</div>${rows.join('')}${up}</div>`}).join('');
   /* 폰: 벤치와 배틀 칸 사이를 밀어내지 않게 접어 두고 요약만 (열고 닫은 건 기억) */
   const ph1=window.matchMedia&&matchMedia('(max-width:760px)').matches;UIC.bside=UIC.bside||{};const open=!ph1||UIC.bside[side];
   const sum=ids.map(tid=>`${esc(trs[tid].name)} ${(b.cmds||{})[tid]?'공개됨':ready[tid]?'READY':'입력 중'}`).join(' · ');

@@ -2560,3 +2560,6 @@ span.iedit{display:inline-block;min-width:3em}
 /* 접촉 표시 (10-21) */
 .mv .mr .mct{font-weight:700;text-decoration:underline;text-underline-offset:2px}
 .mvs span.ct b{color:#ffb35c}
+/* 지시 현황: 칸 고정 (10-21) */
+.bc{min-height:44px}.bc.empty{opacity:.45}.bc.empty .bop{background:#222328}
+.bca{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
