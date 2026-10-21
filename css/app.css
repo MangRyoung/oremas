@@ -2445,7 +2445,7 @@ span.iedit{display:inline-block;min-width:3em}
 .bubslot .updz{min-height:70px}
 .bubslot small{color:var(--mute);font-size:11px;text-align:center}
 .bubpv{aspect-ratio:9/4;background:#333 center/contain no-repeat;border:1px solid var(--line2)}
-@media (max-width:760px){.dlg.skin,.dlg.skin.sc,.dlg.skin.sl,.dlg.skin.sr,.dlg.skin.sl.mid{left:2%;right:auto;width:96%}.dlg.skin .dtext{font-size:14px}.bubslots{grid-template-columns:1fr}}
+@media (max-width:760px){.dlg.skin,.dlg.skin.sc,.dlg.skin.sl,.dlg.skin.sr,.dlg.skin.sl.mid{left:2%;right:auto;width:96%}.bubslots{grid-template-columns:1fr}}
 .gd-list{overflow-x:hidden;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--red) transparent;padding-right:6px}
 .gd-list::-webkit-scrollbar{width:4px;height:0}.gd-list::-webkit-scrollbar-thumb{background:var(--red)}.gd-list::-webkit-scrollbar-track{background:transparent}
 .gd-ch.on{margin-right:6px}
@@ -2653,3 +2653,15 @@ span.iedit{display:inline-block;min-width:3em}
 .updz.mini.gbdz::before{content:'';position:absolute;inset:6%;background:var(--defbub) center/contain no-repeat;opacity:.38;z-index:-1}
 .updz.mini.gbdz.fx::before{transform:scaleX(-1)}
 @media (max-width:760px){.dlg.skin.sc.nl,.dlg.skin.sc.nr{left:2%}}
+/* 10-23 망령: 폰 무대 — 대사창은 조금 낮고 넓게, 글자는 화면 폭에 맞춰 크게, 이름표는 작게 */
+@media (max-width:760px){
+ .dlg.skin,.dlg.skin.sc,.dlg.skin.sl,.dlg.skin.sr,.dlg.skin.sl.mid,.dlg.skin.sm,.dlg.skin.sc.nl,.dlg.skin.sc.nr{left:1.5%;right:auto;width:97%;aspect-ratio:5/2}
+ .dlg.skin .dtext{font-size:calc(clamp(16px,4.7vw,21px) * var(--bubfs,1));line-height:1.3}
+ .dlg.skin.sc .dtext{left:14%;right:13%;top:21%;bottom:19%}
+ .dlg.skin.sm .dtext{left:13%;right:12%;top:19%;bottom:27%}
+ .dlg.skin.sl .dtext{left:31%;right:12%;top:25%;bottom:27%}
+ .dlg.skin.sr .dtext{left:12%;right:31%;top:25%;bottom:27%}
+ .dlg.skin .dname{font-size:15px}
+ .dlg.skin.sm .dname,.dlg.skin.sc .dname{bottom:79%}
+ .dlg.skin.sl .dname,.dlg.skin.sr .dname{bottom:73%}
+}
