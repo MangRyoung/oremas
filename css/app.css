@@ -2006,3 +2006,4 @@ span.iedit{display:inline-block;min-width:3em}
 .dxpots.dxpc{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px}
 .dxpc .potc .anb{margin-left:0}
 @media (max-width:760px){.dxmvg,.dxpots.dxpc{grid-template-columns:1fr}}
+.bcol .shead2{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin:-2px 0 6px}.bcol .shead2>*{white-space:nowrap;flex:none}.bcol .shead2>.sp{flex:1}.bcol .shead2 .simtg{margin-right:0}
