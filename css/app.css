@@ -2725,3 +2725,7 @@ span.iedit{display:inline-block;min-width:3em}
 .akauto{color:#7fe0a5}.akbtn{color:var(--yel,#f0c84a)}
 .akman{margin-top:6px}.akman>div{padding:2px 0 2px 8px}
 @media (max-width:760px){.akr{grid-template-columns:auto 1fr}.akr .akw{grid-column:1/-1;justify-self:start}}
+
+/* 10-24 망령: 무대 우상단 탭 접기 — ›/☰ 버튼, 접으면 화자 · 소리 · GM 콘솔(과 열린 지도 닫기)만 남는다 */
+.rpbtns.fold .rpt{display:none}
+.rpbtns .rpfoldb{padding-left:8px;padding-right:8px;min-width:0}

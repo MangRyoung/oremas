@@ -29,6 +29,7 @@ window.OM_RP_UI=(()=>{
  const autoUnlock=()=>{if(unlocked||userMuted)return;try{if(!A()||!A().ST||!A().ST.room)return;unlocked=true;if((R().bgm||{}).src){syncBgm(true);setTimeout(()=>{if(A().view==='rp')A().renderScene()},0)}}catch(e){}};
  document.addEventListener('click',autoUnlock,true);document.addEventListener('keydown',autoUnlock,true);
  try{vol=+(localStorage.getItem('om_vol')||0.5)}catch(e){}
+ let rpFold=false;try{rpFold=!!localStorage.getItem('om_rpfold')}catch(e){}   // 무대 우상단 탭(배경·BGM·기록·지도·덱·휴대폰·표정) 접기 — 내 브라우저에만
  /* 무대 위 화자 자리: 로그를 차례로 먹여서 모두 같은 결과가 나온다 */
  const STAGE={slots:{left:null,center:null,right:null},last:{},active:null,seen:0};
  function R(){return A().ST.state.rp||{}}
@@ -94,7 +95,7 @@ window.OM_RP_UI=(()=>{
   const cal=ST.state.calendar||{};const dt=cal.today?(()=>{const d=new Date(cal.today+'T00:00:00');return {md:cal.today.slice(5).replace('-','/'),wd:['일','월','화','수','목','금','토'][d.getDay()]}})():null;
   $('#bgname',el).innerHTML=`<div class="stagetags">${dt?`<div class="daytag" ${gm()?'data-rp="phase" title="눌러서 시간대 바꾸기"':''}><b>${esc(dt.md)}</b><i>${dt.wd}</i>${cal.weather?`<em>${esc(cal.weather)}</em>`:''}${cal.phase?`<span class="phase ${({아침:'morning',저녁:'evening',밤:'night',심야:'night'})[cal.phase]||''}">${esc(cal.phase)}</span>`:''}</div>`:''}${bg.name?`<div class="bgname">${esc(bg.name)}</div>`:''}</div>`;
   $('#centerimg',el).innerHTML=r.center&&r.center.src?`<div class="centerimg"><img src="${esc(r.center.src)}" alt="">${gm()?'<button class="btn xs" data-rp="centerx">닫기</button>':''}</div>`:'';
-  $('#rpbtns',el).innerHTML=`<span id="typingRp" class="typingslot ${TYPING_HTML?'on':''}">${TYPING_HTML}</span><button class="btn sm rpspkbtn" data-rp="spkpop" title="화자 · 인물 · 표정">🎭 화자</button>${gm()?`<button class="btn sm" data-rp="qbg" title="배경 바꾸기">🖼 배경</button><button class="btn sm" data-rp="qbgm" title="BGM 바꾸기">♪ BGM</button>`:''}<button class="btn sm" data-rp="log" title="대화 기록">📜 기록</button><button class="btn sm ${mapOpen?'pri':''}" data-rp="map">${mapOpen?'지도 닫기':'지도'}</button><button class="btn sm" data-rp="deck">덱</button><button class="btn sm" data-rp="phone" title="휴대폰 — 연락처 · 협력자 · 캘린더">📱 휴대폰</button><button class="btn sm ghost" data-rp="stand">표정</button>${r.bgm&&r.bgm.src?(unlocked?`<button class="btn sm ghost" data-rp="${gm()?'bgmstop':'mute'}" title="${esc(r.bgm.title||'')}${gm()?' — 누르면 모두에게 정지':' — 누르면 내 소리만 끄기'}">♪ ${esc(r.bgm.title||'BGM')} ■</button>`:`<button class="btn sm ghost" data-rp="sound" title="${esc(r.bgm.title||'')}">소리 켜기</button>`):''}${gm()?`<button class="btn sm pri" data-rp="gm">GM 콘솔</button>`:''}`;
+  $('#rpbtns',el).classList.toggle('fold',rpFold);$('#rpbtns',el).innerHTML=`<span id="typingRp" class="typingslot ${TYPING_HTML?'on':''}">${TYPING_HTML}</span><button class="btn sm rpspkbtn" data-rp="spkpop" title="화자 · 인물 · 표정">🎭 화자</button><button class="btn sm rpfoldb" data-rp="fold" title="${rpFold?'탭 펼치기 (배경 · BGM · 기록 · 지도 …)':'탭 접기'}">${rpFold?'☰':'›'}</button>${gm()?`<button class="btn sm rpt" data-rp="qbg" title="배경 바꾸기">🖼 배경</button><button class="btn sm rpt" data-rp="qbgm" title="BGM 바꾸기">♪ BGM</button>`:''}<button class="btn sm rpt" data-rp="log" title="대화 기록">📜 기록</button><button class="btn sm ${mapOpen?'pri':'rpt'}" data-rp="map">${mapOpen?'지도 닫기':'지도'}</button><button class="btn sm rpt" data-rp="deck">덱</button><button class="btn sm rpt" data-rp="phone" title="휴대폰 — 연락처 · 협력자 · 캘린더">📱 휴대폰</button><button class="btn sm ghost rpt" data-rp="stand">표정</button>${r.bgm&&r.bgm.src?(unlocked?`<button class="btn sm ghost" data-rp="${gm()?'bgmstop':'mute'}" title="${esc(r.bgm.title||'')}${gm()?' — 누르면 모두에게 정지':' — 누르면 내 소리만 끄기'}">♪ ${esc(r.bgm.title||'BGM')} ■</button>`:`<button class="btn sm ghost" data-rp="sound" title="${esc(r.bgm.title||'')}">소리 켜기</button>`):''}${gm()?`<button class="btn sm pri" data-rp="gm">GM 콘솔</button>`:''}`;
   $('#mapov',el).innerHTML=mapOpen?mapOverlay():'';
   /* 그림 말풍선 (rp.bubble) — 대사 전용: 말하는 사람이 왼쪽 자리면 꼬리 왼쪽 그림을 그 오른편에, 오른쪽이면 반대, 가운데·무대 밖이면 꼬리 왼쪽 그림을 화면 가운데 오른편에(mid).
      지문(비문)·고정 자막은 꼬리 없는 그림 — 그게 없으면 기본 검은 띠 */
@@ -275,6 +276,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    else if(SPK.key&&SPK.key.startsWith('pm:')){const c=charOf(SPK.key);await DBS().addLog(ST.room,ST.secret,'chat',c?c.name:ST.name,{t,as:c?c.name:'',k:SPK.key,nf:1})}
    else{const c=charOf(ST.seat);const nm=c?c.name:ST.name;await DBS().addLog(ST.room,ST.secret,'chat',nm,c?{t,as:nm,k:ST.seat,nf:1}:{t,nf:1})}}catch(e)   /* 좌석이 자기 캐릭터로 말하면 캐릭터 이름으로 남긴다 (플레이어 닉 X) */{A().toast('보내지 못했다: '+e.message)}}
  function act(k){
+  if(k==='fold'){rpFold=!rpFold;try{localStorage.setItem('om_rpfold',rpFold?'1':'')}catch(e){}return A().renderScene()}
   if(k==='map'){mapOpen=!mapOpen;return A().renderScene()}
   if(k==='deck')return window.OM_DECK_UI.open();
   if(k==='phone')return window.OM_PHONE_UI&&window.OM_PHONE_UI.open();
