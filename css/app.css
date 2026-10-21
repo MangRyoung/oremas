@@ -1866,3 +1866,19 @@ span.qe{display:inline-block;min-width:1.5em}
 .pote .pkl{display:flex;gap:6px;white-space:normal}
 .pote .pkl+.pkl{margin-top:3px}
 .pote .pkl i{font-style:normal;flex:none;color:var(--ph,#3fc7c0);font-weight:700;min-width:1.1em}
+/* 10-21 망령: 기술 카드 (읽기 쉽게) */
+.mvg{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:8px}
+.mvc{background:#18191d;border:1px solid var(--line2);border-left:5px solid var(--tc,#666);padding:8px 12px 10px;display:flex;flex-direction:column;gap:6px}
+.mvh{display:flex;align-items:center;gap:8px}
+.mvh .type{flex:none}
+.mvh .mvn{font-family:var(--lab);font-size:16px;color:#fff}
+.mvcat{flex:none;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid}
+.mvcat.c-p{color:#ff9a6b;border-color:#ff9a6b}.mvcat.c-s{color:#8ab8ff;border-color:#8ab8ff}.mvcat.c-x{color:#c9c9c9;border-color:#777}
+.mvs{display:grid;grid-template-columns:repeat(4,1fr);gap:4px}
+.mvs span{display:flex;flex-direction:column;align-items:center;background:#0f1013;padding:3px 0}
+.mvs small{font-size:10px;color:var(--mute)}
+.mvs b{font-family:var(--mono);font-size:14px;color:#fff}
+.mvs span.hot b{color:var(--yel2)}
+.mve{font-size:13.5px;line-height:1.6;color:#e4e3de;word-break:keep-all;white-space:pre-wrap}
+.mve .ptqt{color:#ffd56b;font-weight:600}.mve .ptbk{color:#7cc8ff;font-weight:700}
+.mve .pkl{display:flex;gap:6px;white-space:normal}.mve .pkl i{font-style:normal;flex:none;color:var(--tc);font-weight:700}
