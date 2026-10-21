@@ -507,7 +507,7 @@ window.OM_BATTLE_UI=(()=>{
    case 'turnstart':{await A().set(['ready'],{});await A().set(['battle','cmds'],{});await A().set(['battle','phase'],1);A().sysLog('턴 개시 — 각자 지시를 공개하세요 (에리어마다 「공개」)','battle');return}
    case 'revealmon':return revealOne(d.tid,d.mid);
    case 'fire':return openFire(d.tid);
-   case 'onext':{const n=Math.min((c.b.order||[]).length,(+c.b.orderIdx||0)+1);await A().set(['battle','orderIdx'],n);if((+c.b.phase||0)===2)await A().set(['battle','phase'],3);if(n<(c.b.order||[]).length)A().sysLog(`▶ ${c.b.order[n].name}의 행동`,'battle');else{A().sysLog('행동 순서 끝 — 턴 종료 처리','battle');if(confirm('행동이 모두 끝났다. 턴 마무리(턴 가장 마지막 → 턴 종료 → 턴 종료 이후)로 갈까?'))await endFlow()}return}
+   case 'onext':{const n=Math.min((c.b.order||[]).length,(+c.b.orderIdx||0)+1);await A().set(['battle','orderIdx'],n);if((+c.b.phase||0)===2)await A().set(['battle','phase'],3);if(n<(c.b.order||[]).length)A().sysLog(`▶ ${c.b.order[n].name}의 행동`,'battle');else{if((+c.b.orderIdx||0)<n)A().sysLog('행동 순서 끝 — 턴 종료 처리','battle');if(c.b.endq&&c.b.endq.step)return endFlow();if(confirm('행동이 모두 끝났다. 턴 마무리(턴 가장 마지막 → 턴 종료 → 턴 종료 이후)로 갈까?'))await endFlow()}return}
    case 'oprev':{await A().set(['battle','orderIdx'],Math.max(0,(+c.b.orderIdx||0)-1));return}
    case 'ojump':{if(!c.mgr)return;await A().set(['battle','orderIdx'],+d.i);return}
    case 'turnend':return endFlow();
@@ -797,7 +797,8 @@ window.OM_BATTLE_UI=(()=>{
  const endMine=(c,tid)=>c.role==='seat'?tid===c.seat:(c.gm&&!seatOwned(c,tid));
  const endDone=(b,tid)=>{const q=b.endq||{};return ((b.cmds||{})[tid]||{}).ed===q.key+':'+q.step};
  const EFIRED={};
- async function endFlow(){const c=ctx();if(!c.mgr)return;const q=c.b.endq;if(q&&q.step){A().toast(`${END_STEP[q.step]} 확인 중 — 아래 칸에서 각자 「다음」`);return}
+ async function endFlow(){const c=ctx();if(!c.mgr)return;const q=c.b.endq;if(q&&q.step){const wait=(q.need||[]).filter(t=>!endDone(c.b,t)&&endCands(c.b,q.step).some(x=>x.m.tid===t)).map(t=>(c.b.trainers[t]||{}).name||'?');
+   if(confirm(`${END_STEP[q.step]} 확인 중이다${wait.length?' (기다리는 중: '+wait.join(' · ')+')':''}.\n기다리지 않고 바로 넘길까?`))return endAdvance(true);return}
   await A().set(['battle','host'],c.gm?'gm':c.seat);await endStep('last')}
  async function endStep(step){for(;;){const b=ctx().b;const L=endCands(b,step);const need=[...new Set(L.map(x=>x.m.tid))];
    if(need.length){const key=String(Date.now());await A().set(['battle','endq'],{key,step,need});A().sysLog(`【${END_STEP[step]}】 포텐셜 확인 — ${need.map(t=>(b.trainers[t]||{}).name||'?').join(' · ')} (각자 쓸 것을 고르고 「다음」)`,'battle');return}
@@ -805,11 +806,12 @@ window.OM_BATTLE_UI=(()=>{
    if(step==='end'){await turnEnd();step='after';continue}
    await A().set(['battle','endq'],null);return}}
  /* 진행하는 화면: 모두 「다음」을 눌렀으면 다음 단계로 */
- async function endAdvance(force){const c=ctx();const b=c.b;const q=b.endq;if(!q||!q.step||!c.mgr)return;const me=c.gm?'gm':c.seat;if((b.host||'gm')!==me)return;
-  if(!force&&!(q.need||[]).every(t=>endDone(b,t)))return;if(BUSY.end===q.key)return;BUSY.end=q.key;
+ async function endAdvance(force){const c=ctx();const b=c.b;const q=b.endq;if(!q||!q.step||!c.mgr)return;const me=c.gm?'gm':c.seat;if(!force&&(b.host||'gm')!==me)return;   /* 넘기기(force)는 진행 화면이 아니어도 된다 — 진행하던 좌석이 나가도 막히지 않게 */
+  /* 고를 것이 없어진 트레이너(그 포켓몬이 쓰러졌거나 물러남)는 끝낸 것으로 본다 */
+  const L=endCands(b,q.step);if(!force&&!(q.need||[]).every(t=>endDone(b,t)||!L.some(x=>x.m.tid===t)))return;if(BUSY.end===q.key)return;BUSY.end=q.key;
   try{await A().set(['battle','endq'],null);if(q.step==='last')await endStep('end');else if(q.step==='end'){await turnEnd();await endStep('after')}}finally{BUSY.end=''}}
  function endPanel(c){const b=c.b;const q=b.endq;if(!q||!q.step)return '';const L=endCands(b,q.step);const btn=q.step==='end'?'턴 종료 처리':q.step==='last'?'턴 종료로':'다음 턴으로';
-  const rows=(q.need||[]).map(tid=>{const t=(b.trainers||{})[tid]||{};const mine=endMine(c,tid);const dn=endDone(b,tid);const my=mine?L.filter(x=>x.m.tid===tid):[];
+  const rows=(q.need||[]).map(tid=>{const t=(b.trainers||{})[tid]||{};const mine=endMine(c,tid);const dn=endDone(b,tid)||!L.some(x=>x.m.tid===tid);const my=mine?L.filter(x=>x.m.tid===tid):[];
    return `<div class="eqrow ${dn?'done':''} ${mine?'mine':''}"><div class="eqh"><b>${esc(t.name||'?')}</b>${dn?'<span class="tag ok">✓ 끝냄</span>':mine?'':'<span class="small dim">고르는 중…</span>'}<span class="sp"></span>${mine&&!dn?`<button class="btn sm pri" data-act="edone" data-tid="${tid}">${btn} ▶</button>`:''}</div>
     ${my.map(x=>{const i=L.indexOf(x);const fk=q.key+':'+q.step+':'+x.m.id+':'+x.name;return `<div class="firerow"><b class="fnm"><span class="tag ${x.kind==='uq'?'uqt':'ext'}">${x.tag}</span> 『${esc(x.name)}』</b><span class="small dim">${esc(x.kind==='uq'?x.t.name:x.m.name)} (${String(x.m.entry).toUpperCase()})</span><span class="sp"></span>${dn?'':`<button class="btn xs ${EFIRED[fk]?'ghost':'pri'}" data-act="efire" data-i="${i}" ${EFIRED[fk]?'disabled':''}>${EFIRED[fk]?'발동함':'발동'}</button>`}<div class="small" style="flex-basis:100%;white-space:pre-wrap;color:var(--fg2)">${esc(String(x.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,300))}</div></div>`}).join('')}</div>`}).join('');
   return `<div class="endq"><div class="ohead"><span class="olab">${END_STEP[q.step]}</span><span class="small dim">이 타이밍이 적힌 포텐셜 — 주인만 본다. 쓸 것만 「발동」, 다 골랐으면 「${btn}」. 모두 누르면 넘어간다</span><span class="sp"></span>${c.mgr?'<button class="btn xs ghost" data-act="eskip" title="안 누른 사람을 기다리지 않고 넘긴다">기다리지 않고 넘기기</button>':''}</div>${rows}</div>`}
