@@ -416,5 +416,5 @@ window.OM_SHEET_UI=(()=>{
    const note=[used.extra?`추가 ${used.extra}회`:'',used.one?`개별 다시 굴림 ${used.one}회`:'',used.all?`전부 다시 굴림 ${used.all}회`:'',edited.has(chosen)?'고른 후보는 손으로 고침':used.edit?`다른 후보 ${used.edit}개 손으로 고침`:''].filter(Boolean).join(' · ');
    if(await putMon(mid,m,nm))A().sysLog(`${m.name} 알까기 → ${nm.iv.join('/')} (합 ${S().ivSum(nm.iv)})${note?' · '+note:''}`)}}
 
- return {render,UI,importTrainer};
+ return {render,UI,importTrainer,potFmt,potKind,POT_HUE};
 })();
