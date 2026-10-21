@@ -14,71 +14,11 @@ window.OM_ITEMS=(()=>{
  const ABN=['Poison','Toxic','Burn','Paralysis','Freeze','Sleep'];
  const stEn=k=>(FX()&&FX().stEn?FX().stEn(k):'')||'';
  const frac=(max,f)=>{const m=String(f).match(/^(\d+)\/(\d+)$/);return m?Math.max(1,Math.floor(max*+m[1]/+m[2])):Math.max(1,+f||0)};
- const SKIP=new Set(['생명의구슬','달인의띠','구애스카프','광각렌즈']);   /* 공격 창에 따로 칸이 있는 것 */
 
- /* ----- 효과 글 → 규칙 ----- */
+ /* ----- 규칙: 소지품 DB 의 「구문」(auto)이 있으면 구문, 없으면 효과 글을 읽는다 (js/engine/itemrule.js, 10-24 망령: 제작기 소지품 DB 에 구문을 넣는 방식) ----- */
  const CACHE={};
- function rule(name){name=nm(name);if(!name)return null;if(CACHE[name]!==undefined)return CACHE[name];
-  const e=String(((DB().items||{})[name]||{}).eff||'').replace(/<br\s*\/?>/g,' ');const r={name,eff:e,once:/소모품/.test(e)||name==='멘탈허브'};let x;
-  const only=e.match(/^((?:「[^」]+」)+)\s*전용/);if(only)r.only=[...only[1].matchAll(/「([^」]+)」/g)].map(a=>a[1]);
-  if(!SKIP.has(name)){
-   /* 공격 쪽 위력 */
-   if((x=e.match(/「([^」]+)」 기술의 대미지를 강화\((\d+(?:\.\d+)?)배\)/)))r.atk={types:x[1].split('/').map(tEn),v:+x[2]};
-   else if((x=e.match(/「단일기 : ([^」]+)」의 위력을 강화\((\d+(?:\.\d+)?)배\)/)))r.atk={types:[tEn(x[1])],v:+x[2],single:1};
-   else if((x=e.match(/「(물리기|특수기)」의 대미지를 강화\((\d+(?:\.\d+)?)배\)/)))r.atk={cat:x[1]==='물리기'?'물리':'특수',v:+x[2]};
-   else if(!/이하일 때|이상일 때/.test(e)&&((x=e.match(/「([^」]+)」(?:을|를) 강화\((\d+(?:\.\d+)?)배\)/))||(x=e.match(/「([^」]+)」(?:을|를) (\d+(?:\.\d+)?)배로 만든다/)))){
-    const ks=x[1].split('/').map(k=>KO_STAT[k.trim()]).filter(Boolean);const v=+x[2];
-    if(ks.includes('attack')&&ks.includes('specialattack'))r.atk={v};else if(ks.includes('attack'))r.atk={cat:'물리',v};else if(ks.includes('specialattack'))r.atk={cat:'특수',v};
-    if(ks.includes('defense')&&ks.includes('specialdefense'))r.guard={v:1/v};else if(ks.includes('defense'))r.guard={cat:'물리',v:1/v};else if(ks.includes('specialdefense'))r.guard={cat:'특수',v:1/v}}}
-  /* 급소 */
-  if((x=e.match(/급소에 맞기 쉬워진다\(C\+(\d)\)/)))r.crit=+x[1];if((x=e.match(/급소에 맞기 어려워진다\(C-(\d)\)/)))r.critGuard=+x[1];
-  /* 받는 쪽: 무효 · 반감 · 버티기 */
-  if((x=e.match(/「([^」]+)」 기술을 무효화/)))r.immune=[tEn(x[1])];
-  if((x=e.match(/「상성 : 2~8배」인 「([^」]+)」 기술로 받을 대미지를 반감/)))r.resist={type:tEn(x[1]),se:1};
-  else if((x=e.match(/「HP : 가득」일 때 「(물리기|특수기)」로 받을 대미지를 반감/)))r.resist={cat:x[1]==='물리기'?'물리':'특수',full:1};
-  else if(/「전체기」로 받을 대미지를 반감/.test(e))r.resist={multi:1};
-  else if((x=e.match(/「([^」]+)」 기술로 받을 대미지를 반감/)))r.resist={type:tEn(x[1])};
-  if(/「HP : 가득」일 때 기술 대미지로 「빈사」/.test(e))r.sash='full';else if((x=e.match(/(\d)할로 기술 대미지로 「빈사」/)))r.sash=+x[1]*10;
-  /* HP 열매 */
-  if((x=e.match(/「HP : (\d+\/\d+) 이하」일 때 (.+)$/))&&!/명중률/.test(x[2])){const h={frac:x[1]};const t=x[2];let y;
-   if((y=t.match(/「HP」를 (\d+\/\d+)만큼 회복/)))h.heal=y[1];else if((y=t.match(/「HP」를 「?(\d+)」?만큼 회복/)))h.heal=+y[1];
-   if((y=t.match(/「(공격|방어|특공|특방|스피드) : \+(\d)」/)))h.stats={[KO_STAT[y[1]]]:+y[2]};
-   if((y=t.match(/「(?:예리 : )?C ?:? ?\+(\d)」/)))h.stats={critical:+y[1]};
-   if((y=t.match(/「무작위한 능력치 : \+(\d)」/)))h.random=+y[1];
-   if(h.heal||h.stats||h.random)r.hp=h}
-  /* 치유 */
-  if(/치유한다/.test(e)){const before=e.split('치유한다')[0];const sts=[...before.matchAll(/「([^」]+)」/g)].map(a=>stEn(a[1])).filter(Boolean);if(/모든 상태 이상/.test(e))sts.push(...ABN);if(sts.length)r.cure=[...new Set(sts)]}
-  /* 필드 · 룸 · 날씨 */
-  if((x=e.match(/「필드 : ([^」]+)」일 때 「(방어|특방|공격|특공|스피드) : \+(\d)」/)))r.seed={terrain:x[1],stats:{[KO_STAT[x[2]]]:+x[3]}};
-  if((x=e.match(/「(트릭룸|원더룸|매직룸)」이 전개되어 있을 때 「(\S+) : ([+-]\d)」/)))r.room={room:x[1],stats:{[KO_STAT[x[2]]]:+x[3]}};
-  if(/「필드의 상태 : 날씨」일 때 「날씨」를 해제/.test(e))r.clearW=1;if(/「필드의 상태 : 필드」일 때 「필드」를 철거/.test(e))r.clearT=1;
-  if(/능력 : -」가 되었을 때 해당 능력을 초기화/.test(e))r.white=1;
-  /* 맞았을 때 */
-  const hit=[];
-  if(/「상성 : 2~8배」인 기술을 받으면 「공격\/특공 : \+2」/.test(e))hit.push({se:1,stats:{attack:2,specialattack:2}});
-  else if((x=e.match(/「([^」]+)」 기술을 받으면 「(\S+) : \+(\d)」/)))hit.push({type:tEn(x[1]),stats:{[KO_STAT[x[2]]]:+x[3]}});
-  if((x=e.match(/「(물리기|특수기)」를 받았을 때 「(\S+) : \+(\d)」/)))hit.push({cat:x[1]==='물리기'?'물리':'특수',stats:{[KO_STAT[x[2]]]:+x[3]}});
-  if((x=e.match(/「(물리기|특수기)」를 받았을 때 대상에게 (\d+\/\d+)의 비례 대미지/)))hit.push({cat:x[1]==='물리기'?'물리':'특수',back:x[2]});
-  if((x=e.match(/「접촉기」를 받으면 대상에게 (\d+\/\d+)의 비례 대미지/)))hit.push({contact:1,back:x[1]});
-  if((x=e.match(/「접촉기」를 받았을 때 대상을 「타입 : ([^」]+)」/)))hit.push({contact:1,setType:tEn(x[1])});
-  if((x=e.match(/「접촉기」를 받았을 때 대상을 「특성 : ([^」]+)」/)))hit.push({contact:1,setTrait:x[1]});
-  if((x=e.match(/공격을 받으면 대상에게 「가장 높은 능력 : -(\d)」/)))hit.push({yellow:+x[1]});
-  if(/공격을 받으면 대상을 강제 교대/.test(e))hit.push({note:'공격한 포켓몬을 강제 교대시킨다 (「퇴장 → 강제 교대」로)'});
-  if(/공격을 받으면 임의 교대/.test(e))hit.push({note:'임의 교대할 수 있다 (「퇴장」 → 벤치에서 등장)'});
-  if(/공격을 받으면 파괴된다/.test(e))hit.push({pop:1});
-  if(/「접촉기」를 받으면 대상에게로 옮겨간다/.test(e))hit.push({contact:1,move:1});
-  if(hit.length)r.hit=hit;
-  /* 턴 종료 */
-  if((x=e.match(/턴 종료 시 「HP」를 (\d+\/\d+)만큼 회복/)))r.te={heal:x[1]};
-  if(/「타입 : 독」 : 턴 종료 시 (\d+\/\d+)만큼 「HP」회복/.test(e)){x=e.match(/「타입 : 독」 : 턴 종료 시 (\d+\/\d+)만큼.*?(\d+\/\d+)만큼 비례 대미지/);if(x)r.te={sludge:1,heal:x[1],dmg:x[2]}}
-  if((x=e.match(/턴 종료 시 「(화상|맹독|독)」 상태가 된다/)))r.te={st:stEn(x[1])};
-  if((x=e.match(/매 턴 종료 시 (\d+\/\d+)의 비례 대미지를 입는다/)))r.te={dmg:x[1]};
-  /* 쓴 쪽 */
-  if((x=e.match(/공격이 명중했을 때 자신의 「HP」를 (\d+\/\d+)만큼 회복/)))r.onDeal={heal:x[1]};
-  if((x=e.match(/「([^」]+)」 기술이 명중했을 때 자신의 「(\S+) : \+(\d)」/)))r.onDeal={tag:x[1],stats:{[KO_STAT[x[2]]]:+x[3]}};
-  if((x=e.match(/명중 판정에 의해서 명중하지 않았을 때 「(\S+) : \+(\d)」/)))r.onMiss={stats:{[KO_STAT[x[1]]]:+x[2]}};
-  if((x=e.match(/「(\d)할 : 풀죽음」을 부여/)))r.flinch=+x[1]*10;
-  return CACHE[name]=r}
+ function rule(name){name=nm(name);if(!name)return null;const it=(DB().items||{})[name]||{};const e=String(it.eff||'').replace(/<br\s*\/?>/g,' ');const ck=name+'\u0001'+(it.auto||'')+'\u0001'+e;
+  if(CACHE[name]&&CACHE[name].ck===ck)return CACHE[name].r;const IR=window.OM_ITEMRULE;const r=Object.assign(IR?IR.ruleOf(name,it):{},{name,eff:e});r.once=!!r.once;CACHE[name]={ck,r};return r}
  /* 그 포켓몬이 지금 쓰는 소지품 규칙 (전용 소지품은 종족이 맞을 때만) */
  function of(m){const n=itemOf(m);if(!n)return null;const r=rule(n);if(!r)return null;if(r.only&&!r.only.some(o=>String(m.species||'').includes(o)||String(m.name||'').includes(o)||String(m.form||'').includes(o)))return null;return r}
 
