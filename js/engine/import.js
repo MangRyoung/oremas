@@ -8,6 +8,8 @@ window.OM_IMPORT=(()=>{
  /* 제작기 템플릿의 빈 칸 이름(역할 포텐셜, 종족 포텐셜①, 익스펜션 : ○○ …)은 아직 안 정한 자리 */
  const isPh=n=>/(포텐셜[①-④]?$)|○○/.test(String(n||''));
  /* 스탠딩 [{label,src,point,kind?}] — 트레이너·포켓몬 같은 모양 */
+ /* 필드 전개 [{type,name,loc,img,eff,count,color}] — 트레이너·포켓몬 같은 모양 (stage_ui) */
+ const fieldsOf=a=>(Array.isArray(a)?a:[]).filter(x=>x&&x.name).map(x=>({type:[0,1,2].includes(+x.type)?+x.type:0,name:String(x.name),loc:x.loc||'',img:x.img||'',eff:brN(x.eff||''),count:+x.count>0?+x.count:-1,color:x.color||''}));
  const standsOf=a=>(Array.isArray(a)?a:[]).filter(x=>x&&x.src).map(x=>Object.assign({label:x.label||'기본',src:x.src,point:+x.point||0},x.kind==='stand'||x.kind==='portrait'?{kind:x.kind}:{}));
 
  /* 제작기 트레이너 문서 → 배틀 트레이너 */
@@ -16,7 +18,7 @@ window.OM_IMPORT=(()=>{
   return {id:doc.id||d.id,name:d.name||'트레이너',kind:d.kind==='npc'?'npc':'pc',image:d.image||'',stands:standsOf(d.stands),standActive:+d.standActive||0,
    ranks:Object.assign({육성:'',지시:'',통솔:'',능력:''},d.ranks||{}),base:d.base||{},detail:d.detail||{},
    unique:(d.unique||[]).filter(u=>u&&u.name).map(u=>{const o={name:u.name,eff:brN(u.eff||'')};const dsl=String(u.auto||'').trim();if(dsl){const r=window.OM_FX?window.OM_FX.parse(dsl):{ops:[]};o.auto={dsl,ops:r.ops}}return o}),
-   pids:d.pids||[],solo:!!d.solo,folder:d.folder||''}}
+   pids:d.pids||[],solo:!!d.solo,folder:d.folder||'',fields:fieldsOf(d.fields)}}
 
  /* 기술 이름 → 배틀용 기술 (기술 DB 복사) */
  function move(name,half){
@@ -48,7 +50,7 @@ window.OM_IMPORT=(()=>{
    exclX:(d.exclX||[]).filter(x=>x&&x.name).map(x=>({name:x.name,eff:brN(x.eff||'')})),
    role:roleOf(d),pride:d.pride||'',egg:[d.egg1||'-',d.egg2||'-'],partner:!!d.partner,image:d.image||'',stands:standsOf(d.stands),standActive:+d.standActive||0,memo:d.memo||'',
    auto:(()=>{const out={};const src=d.auto||{};for(const k in src){const dsl=String(src[k]||'').trim();if(!dsl)continue;const r=window.OM_FX?window.OM_FX.parse(dsl):{ops:[]};out[String(k).replace(/『|』/g,'')]={dsl,ops:r.ops}}return out})(),
-   rank:{attack:0,defense:0,specialattack:0,specialdefense:0,speed:0,accuracy:0,evasion:0,critical:0},states:{},forms:formsOf(d,base,L)}}
+   fields:fieldsOf(d.fields),rank:{attack:0,defense:0,specialattack:0,specialdefense:0,speed:0,accuracy:0,evasion:0,critical:0},states:{},forms:formsOf(d,base,L)}}
 
  /* 폼체인지·메가진화 (제작기 시트 forms): 비운 칸은 원래 값 */
  function formsOf(d,base0,L){const out=(d.forms||[]).filter(f=>f&&(f.name||f.ability||(f.base||[]).some(v=>v!=='')||(f.pots||[]).some(x=>x&&x.name))).map(f=>{

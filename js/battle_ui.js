@@ -70,17 +70,17 @@ window.OM_BATTLE_UI=(()=>{
    <div class="turn ${c.mgr?'clickable':''}" ${c.mgr?'data-act="turnset" title="눌러서 턴 번호 조정"':''}><span class="tlab">TURN</span><span class="tnum">${b.turn||0}</span></div>
    <span class="phnow">${esc((phases.find(([p])=>p===(+b.phase||0))||[,''])[1])}</span><button class="btn sm ghost bfold" data-bfold title="조작판 펼치기 · 접기">${BFOLD.open?'접기 ▴':'펼치기 ▾'}</button>
    <div class="phases">${phases.map(([p,n])=>`<button class="ph ${(+b.phase||0)===p?'on':''}" data-phase="${p}" ${c.mgr?'':'disabled'}>${n}</button>`).join('')}</div>
-   <span class="sp"></span>${window.OM_RP_UI&&window.OM_RP_UI.bgmWidgetHtml?window.OM_RP_UI.bgmWidgetHtml():''}
+   <span class="sp"></span>${window.OM_RP_UI&&window.OM_RP_UI.bgmWidgetHtml?window.OM_RP_UI.bgmWidgetHtml():''}${!c.mgr&&window.OM_STAGE_UI&&c.seat&&(b.trainers||{})[c.seat]?'<button class="btn sm" data-act="stagemgr" title="내 트레이너 · 포켓몬의 필드 · 스타디움 · 이계를 펼친다">필드 전개</button>':''}
    ${c.mgr?`<div class="gmrow"><label>에리어 <select data-act="mode">${[1,2,3].map(n=>`<option value="${n}" ${mode(b)===n?'selected':''}>${n}</option>`).join('')}</select></label>
     ${!b.started?`<button class="btn sm pri" data-act="start" title="연출(VS/경고)과 함께 시합을 시작한다. 동시 내밀기가 켜져 있으면 예약한 포켓몬이 한꺼번에 나온다">시합 개시</button>`:''}<label class="small" title="켜면 「등장」 대신 「내밀기 예약」을 하고, GM 의 「시합 개시」·「내밀기 실행」 때 양쪽이 동시에 나온다"><input type="checkbox" data-act="simul" ${b.simul?'checked':''}> 동시 내밀기</label>${b.simul?pendStatus(b):''}${b.simul&&b.started&&Object.values(b.mons||{}).some(m=>m.pend)?`<button class="btn sm" data-act="pendgo">내밀기 실행 (${Object.values(b.mons||{}).filter(m=>m.pend).length})</button>`:''}
-    <button class="btn sm pri" data-act="progress" title="지시 준비 → 턴 개시 → 행동 순서 → 행동 처리 → 턴 종료 → 다음 턴">턴 진행 ▶ ${['턴 개시','행동 순서','행동 처리','','','턴 종료'][+b.phase||0]||''}</button>${c.gm&&(+b.phase||0)===1?'<button class="btn sm ghost" data-act="reveal" title="아직 안 연 지시를 한꺼번에">모두 공개</button>':''}<button class="btn sm" data-act="field">필드</button>
+    <button class="btn sm pri" data-act="progress" title="지시 준비 → 턴 개시 → 행동 순서 → 행동 처리 → 턴 종료 → 다음 턴">턴 진행 ▶ ${['턴 개시','행동 순서','행동 처리','','','턴 종료'][+b.phase||0]||''}</button>${c.gm&&(+b.phase||0)===1?'<button class="btn sm ghost" data-act="reveal" title="아직 안 연 지시를 한꺼번에">모두 공개</button>':''}<button class="btn sm" data-act="field" title="날씨 · 그래스필드 등 · 룸 · 필드의 상태">필드</button>${window.OM_STAGE_UI?'<button class="btn sm" data-act="stagemgr" title="트레이너 · 포켓몬이 각자 가진 필드 · 스타디움 · 이계를 펼친다">필드 전개</button>':''}
     <button class="btn sm ghost" data-act="resetcmd">지시 초기화</button>${c.gm?'<button class="btn sm" data-act="result" title="HP·빈사·상태 이상·포텐셜 횟수·쓴 소지품을 시트에 돌려준다">결과 정리</button>':''}<button class="btn sm ghost danger" data-act="clear">배틀 비우기</button>${c.gm?`<button class="btn sm gmh ${c.fair?'pri':'ghost'}" data-act="gmhands" title="켜면 GM 도 PL 처럼 플레이어의 지시·준비·HP·상태를 건드리지 않는다 (방 설정 「GM 불간섭」과 같음)">${c.fair?'PL 권한 중 ↩ GM':'PL 권한으로'}</button>`:''}
     ${Object.entries(c.ST.state.pub||{}).filter(([k,v])=>v&&v.time).map(([k,v])=>`<span class="chip" style="border-color:var(--yel)">타임 요청: ${esc((b.trainers[k]||{}).name||k)} → ${esc(monName(b,v.time.mid))} <button class="btn xs pri" data-act="timeok" data-seat="${k}">허가</button></span>`).join('')}</div>`:''}
   </div>
   ${revealStrip(c,ready)}
   <div class="stadium">
    ${benchRow(c,'left',ready)}
-   <div class="fieldcol">${areaGrid(c)}${fieldStrip(c,f)}</div>
+   <div class="fieldcol ${f.stage&&f.stage.name?'staged':''}"${window.OM_STAGE_UI?window.OM_STAGE_UI.bgStyle(f):''}>${areaGrid(c)}${window.OM_STAGE_UI?window.OM_STAGE_UI.chip(c,f):''}${fieldStrip(c,f)}</div>
    ${benchRow(c,'right',ready)}
   </div>
   ${orderBox(c)}
@@ -217,7 +217,7 @@ window.OM_BATTLE_UI=(()=>{
    ${cmd?`<div class="cmdcard">${cmd}</div>`:(((+c.b.phase||0)>=1&&full&&m.hp.cur>0)?`<div class="revealrow"><button class="btn sm pri" data-act="revealmon" data-tid="${m.tid}" data-mid="${m.id}">지시 공개 (에리어 ${String(m.entry).toUpperCase()})</button></div>`:'')}
    ${potLine(c,m)}
    ${m.lastHit&&full?`<div class="incoming"><b>피해 판정 받음</b> ${esc(m.lastHit.from)}의 「${esc(m.lastHit.move)}」 ${m.lastHit.total}×${m.lastHit.eff}${m.lastHit.crit?' 급소':''} ≈ ${m.lastHit.expect} <button class="btn xs pri" data-act="hp" data-mid="${m.id}">피해 적용</button></div>`:''}
-   <div class="mbtns">${full?`<button class="btn xs" data-act="attack" data-mid="${m.id}">공격</button><button class="btn xs ${m.lastHit?'pri':''}" data-act="hp" data-mid="${m.id}">HP</button><button class="btn xs mmore" type="button" data-mmore aria-label="버튼 더 보기" aria-expanded="false">⋯</button><button class="btn xs mx" data-act="pots" data-mid="${m.id}" title="포텐셜 목록 · 출력 · 발동 · 해제">포텐셜</button><button class="btn xs mx" data-act="edit" data-mid="${m.id}">랭크·상태</button>${(m.forms||[]).length?`<button class="btn xs mx ${m.form0?'pri':''}" data-act="form" data-mid="${m.id}" title="폼체인지 · 메가진화 · 원래대로">${m.form0?'✦ '+esc(((m.forms||[])[m.formIdx]||{}).kind||'폼'):'✦ 폼'}</button>`:''}<span class="exg"><button class="btn xs ghost mx exit1" data-act="exit" data-mid="${m.id}" title="바로 퇴장 (랭크·배율·효과 정리)">퇴장</button><button class="btn xs ghost mx exdn" data-act="exitx" data-mid="${m.id}" title="퇴장(특수) — 배턴터치 퇴장 · 강제 교대">(특수)</button></span>`:''}</div></div></div>`}
+   <div class="mbtns">${full?`<button class="btn xs" data-act="attack" data-mid="${m.id}">공격</button><button class="btn xs ${m.lastHit?'pri':''}" data-act="hp" data-mid="${m.id}">HP</button><button class="btn xs mmore" type="button" data-mmore aria-label="버튼 더 보기" aria-expanded="false">⋯</button><button class="btn xs mx" data-act="pots" data-mid="${m.id}" title="포텐셜 목록 · 출력 · 발동 · 해제">포텐셜</button><button class="btn xs mx" data-act="edit" data-mid="${m.id}">랭크·상태</button>${(formsOf(m).length||m.form0)?`<button class="btn xs mx ${m.form0?'pri':''}" data-act="form" data-mid="${m.id}" title="폼체인지 · 메가진화 · 원래대로">${m.form0?'✦ '+esc(((m.forms||[])[m.formIdx]||{}).kind||'폼'):'✦ 폼'}</button>`:''}<span class="exg"><button class="btn xs ghost mx exit1" data-act="exit" data-mid="${m.id}" title="바로 퇴장 (랭크·배율·효과 정리)">퇴장</button><button class="btn xs ghost mx exdn" data-act="exitx" data-mid="${m.id}" title="퇴장(특수) — 배턴터치 퇴장 · 강제 교대">(특수)</button></span>`:''}</div></div></div>`}
  /* 비공개: 아직 한 번도 나오지 않은 상대 포켓몬은 이름·그림·타입을 숨긴다 (맵툴 「비공개」 토큰) */
  function secret(c,m){if(c.gm||!m)return false;if(m.seen||m.entry)return false;const my=(c.b.trainers||{})[c.seat];return !my||my.side!==m.side}
  function benchCard(c,m){const full=canEdit(c,m);const out=!!m.entry;const sec=secret(c,m);
@@ -386,6 +386,8 @@ window.OM_BATTLE_UI=(()=>{
    case 'gmhands':{if(!c.gm)return;const on=!c.fair;await A().set(['rp','gmHands'],on?false:null);A().sysLog(on?'GM 이 PL 권한으로 전환 — 플레이어의 지시·상태를 건드리지 않는다':'GM 권한으로 복귀','battle');return}   /* 방 설정 「GM 불간섭」과 같은 값 */
    case 'areaswap':return areaSwap(d.mid);
    case 'field':return openField();
+   case 'stage':return window.OM_STAGE_UI&&window.OM_STAGE_UI.info();
+   case 'stagemgr':return window.OM_STAGE_UI&&window.OM_STAGE_UI.open();
    case 'orders':return openOrders(d.tid);
    case 'dexmgr':{if(!(c.gm||d.tid===c.seat))return;return window.OM_DEX_UI&&window.OM_DEX_UI.openMgr(d.tid)}
    case 'skillp':{if(!(c.mgr||d.tid===c.seat))return;return openMyosu(d.tid)}
@@ -757,6 +759,7 @@ window.OM_BATTLE_UI=(()=>{
   const dec=(o,k)=>{if(o[k]>0){o[k]--;if(o[k]<=0){delete o[k];return true}}return false};
   if(f.weather.type&&f.weather.count>0){f.weather.count--;if(f.weather.count<=0){lines.push(`날씨 ${f.weather.type} 끝`);f.weather={type:'',count:0}}}
   if(f.terrain.type&&f.terrain.count>0){f.terrain.count--;if(f.terrain.count<=0){lines.push(`${f.terrain.type} 끝`);f.terrain={type:'',count:0}}}
+  if(window.OM_STAGE_UI)lines.push(...window.OM_STAGE_UI.turnEnd(b,f));
   for(const k of ROOMS)if(dec(f.rooms,k))lines.push(`${k} 끝`);for(const k of ETC)if(dec(f.etc,k))lines.push(`${k} 끝`);
   for(const s of SIDES){f.objects[s]=f.objects[s]||{};for(const k in f.objects[s])if(dec(f.objects[s],k))lines.push(`${SIDE_KO[s]} ${k} 끝`)}
   b.field=f;b.cmds={};b.order=[];b.phase=0;b.turn=(+b.turn||0)+1;CMD={};
@@ -952,17 +955,19 @@ window.OM_BATTLE_UI=(()=>{
    if(!ops.length)return A().toast('반영할 것이 없다');A().closeModal();if(!await A().setMany(ops))return;
    A().sysLog(`【배틀 결과】 시트에 반영\n${L.join('\n')}`,'battle');A().toast('시트에 반영했다');
    if($('#rsclear',md).checked){CMD={};await A().set(['battle'],{turn:0,phase:0,mode:mode(b),sides:{left:{trainers:[]},right:{trainers:[]}},trainers:{},mons:{},field:{},cmds:{},order:[]})}}}
- function openForm(mid){const c=ctx();const b=c.b;const m=b.mons[mid];if(!m||!canEdit(c,m)||!(m.forms||[]).length)return;
+ /* 폼 목록은 시트(로스터) 쪽을 먼저 — 오레마스 시트에서 고친 폼이 바로 따라온다 (빌려 온 파티는 rid) */
+ function formsOf(m){const rm=((A().ST.state.roster||{}).mons||{})[m.rid||m.id];return rm?(rm.forms||[]):(m.forms||[])}
+ function openForm(mid){const c=ctx();const b=c.b;const m=b.mons[mid];if(!m||!canEdit(c,m))return;const forms=formsOf(m);if(!forms.length&&!m.form0)return;
   const cur=m.form0?m.formIdx:-1;const o=m.form0||m;const usedMega=Object.values(b.mons).some(x=>x.tid===m.tid&&x.megaUsed&&x.id!==mid);
   const row=(k,f)=>{const ty=f?(f.types||o.types):o.types;const base=f?f.base:o.base;const img=f?(f.image||o.image):o.image;
    return `<label class="firerow ${k===cur?'dis':''}" data-fm="${k}"><div class="row" style="gap:8px;flex-wrap:nowrap"><div class="ti sm" style="${img?`background-image:url('${cssu(img)}')`:''}"></div><div><b>${esc(f?f.name||o.name:o.name)}</b> <span class="small dim">${f?esc(f.kind||'폼체인지'):'원래 모습'}${k===cur?' · 지금':''}</span>
     <div class="small">${(ty||[]).filter(x=>x&&x!=='-').map(x=>esc(S().typeKo(x))).join('/')} · 특성 ${esc((f&&f.ability)||o.ability||'-')} · ${['H','A','B','C','D','S'].map((x,i)=>x+(base||[])[i]).join(' ')}</div>${f&&(f.pots||[]).length?`<div class="small">포텐셜 ${f.pots.map(x=>{const op=(o.pots||m.pots||[]).find(p=>p.slot===x.slot);return (op?esc(op.name)+'→':'+')+'「'+esc(x.name)+'」'}).join(' · ')}</div>`:''}${f&&f.cond?`<div class="small" style="color:var(--yel2)">${esc(f.cond)}</div>`:''}${f&&f.kind==='메가진화'&&usedMega?'<div class="small" style="color:var(--red)">이 트레이너는 이번 배틀에서 이미 메가진화를 썼다</div>':''}</div></div></label>`};
   const md=A().openModal(`<div class="mhead"><h2>${esc(m.name)} — 폼체인지</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-   <div class="firelist">${m.form0?row(-1,null):''}${m.forms.map((f,k)=>row(k,f)).join('')}</div>
+   <div class="firelist">${m.form0?row(-1,null):''}${forms.map((f,k)=>row(k,f)).join('')}</div>
    <div class="small dim" style="margin-top:6px">랭크·상태는 그대로. 최대 HP 가 바뀌면 그 차이만큼 지금 HP 도 바뀐다. 「교대하면 돌아옴」 폼은 퇴장 때 원래 모습으로.</div>`);
-  md.querySelectorAll('[data-fm]').forEach(el=>el.onclick=async()=>{const k=+el.dataset.fm;if(k===cur)return;const f=m.forms[k];
+  md.querySelectorAll('[data-fm]').forEach(el=>el.onclick=async()=>{const k=+el.dataset.fm;if(k===cur)return;const f=forms[k];
    if(f&&f.kind==='메가진화'&&usedMega&&!confirm('이 트레이너는 이번 배틀에서 이미 메가진화를 썼다. 그래도 할까?'))return;
-   A().closeModal();const nb0=snap(),nb=snap(nb0);const x=nb.mons[mid];if(!x)return;const L=formSet(x,k);if(f&&f.kind==='메가진화')x.megaUsed=true;
+   A().closeModal();const nb0=snap(),nb=snap(nb0);const x=nb.mons[mid];if(!x)return;x.forms=JSON.parse(JSON.stringify(forms));const L=formSet(x,k);if(f&&f.kind==='메가진화')x.megaUsed=true;
    if(!await saveBattle(nb0,nb))return;A().sysLog(`【${f?f.kind||'폼체인지':'폼 복귀'}】 ${L.join('\n')}`,'battle',{mid,img:x.image||''});
    if(f)cutFire('m:'+mid,x.image,`${m.name}의 ${f.kind||'폼체인지'}!`,`→ 「${x.name}」`,x.side==='left'?'#1f6fd1':'#e3101f');
    /* 새 특성의 등장·상시 구문은 바로 */
@@ -1027,7 +1032,7 @@ window.OM_BATTLE_UI=(()=>{
   $('#fsave',md).onclick=async()=>{const wt=pickOf('fw'),tt=pickOf('ft');const cnt=id=>{const v=$('#'+id+'c',md).value.trim();return +v||0};
    const nf={weather:{type:wt,count:wt?cnt('fw'):0},terrain:{type:tt,count:tt?cnt('ft'):0},rooms:{},etc:{},objects:{}};
    md.querySelectorAll('[data-fgv]').forEach(i=>{if(+i.value>0)nf[i.dataset.fgv][i.dataset.fk]=+i.value});
-   nf.objects=JSON.parse(JSON.stringify(f.objects||{left:{},right:{}}));const tl=v=>(v>=1000||!v)?'':' '+v+'T';
+   nf.objects=JSON.parse(JSON.stringify(f.objects||{left:{},right:{}}));if(f.stage)nf.stage=f.stage;const tl=v=>(v>=1000||!v)?'':' '+v+'T';
    A().closeModal();if(await A().setDiff(['battle','field'],f,nf,2))A().sysLog(`필드 갱신: ${[nf.weather.type&&'날씨 '+nf.weather.type+tl(nf.weather.count),nf.terrain.type&&nf.terrain.type+tl(nf.terrain.count),...Object.entries(nf.rooms).map(([k,v])=>k+tl(v)),...Object.entries(nf.etc).map(([k,v])=>k+tl(v)),...SIDES.flatMap(s=>Object.entries(nf.objects[s]||{}).map(([k,v])=>SIDE_KO[s]+' '+k+tl(v)))].filter(Boolean).join(' · ')||'없음'}`,'battle')}}
 
  /* 진영별 설치기: 분류별 칩, 누르면 기본 지속으로 놓고, 다시 누르면 치운다. 숫자는 겹/턴 */

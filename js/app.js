@@ -290,8 +290,9 @@ function renderScene(){reconcileNodes();
  else if(VIEW==='report')window.OM_REPORT_UI.render(el);
  else window.OM_RP_UI.render(el);
  if(window.OM_RP_UI)window.OM_RP_UI.onState();
- if(window.OM_DECK_UI&&ST.role==='gm')window.OM_DECK_UI.absorb();
- if(window.OM_PHONE_UI&&window.OM_PHONE_UI.refresh)window.OM_PHONE_UI.refresh()}
+ if(window.OM_DECK_UI){if(ST.role==='gm')window.OM_DECK_UI.absorb();else if(window.OM_DECK_UI.onAck)window.OM_DECK_UI.onAck()}
+ if(window.OM_PHONE_UI&&window.OM_PHONE_UI.refresh)window.OM_PHONE_UI.refresh();
+ if(window.OM_STAGE_UI)window.OM_STAGE_UI.onState()}
 
 /* ---------- 배틀 씬 → battle_ui.js ---------- */
 function B(){return ST.state.battle||{}}
@@ -379,12 +380,12 @@ function openMon(mid){
  const pots=(m.pots||[]).filter(p=>p&&p.name);const uniq=(tr.unique||[]).filter(u=>u&&u.name);
  const md=openModal(`<div class="mhead"><h2>${esc(m.name)} <span class="small muted">상세</span></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
   <div class="dxhead"><div class="dxpic" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div>
-   <div class="dxinfo"><div class="dxname">${esc(m.name)}<span class="lv">Lv.${m.lv}</span><span class="small muted">${esc(tr.name)}</span><span class="row ${full?'dxed':''}" ${full?'data-ed="types" title="눌러서 타입 바꾸기"':''} style="gap:4px;display:inline-flex">${m.types.filter(t=>t!=='-').map(typeChip).join('')}</span>${full?`<button class="btn xs ghost" data-ed="types" title="타입 · 종족치 · 특성 · 소지품 바꾸기">✎ 변경</button>`:''}${m.tera&&m.tera!=='-'?`<span class="badge">테라 ${esc(m.tera)}</span>`:''}${m.role?`<span class="badge">${esc(m.role)}</span>`:''}${m.pride?`<span class="badge">프라이드 ${esc(m.pride)}</span>`:''}</div>
+   <div class="dxinfo"><div class="dxname">${esc(m.name)}<span class="lv">Lv.${m.lv}</span><span class="small muted">${esc(tr.name)}</span><span class="row ${full?'dxed':''}" ${full?'data-ed="types" title="눌러서 타입 바꾸기"':''} style="gap:4px;display:inline-flex">${m.types.filter(t=>t!=='-').map(typeChip).join('')}</span>${full?`<button class="btn xs ghost" data-ed="types" title="18 타입 단추로 타입 바꾸기">타입 변경</button>${m.typesOrig?'<button class="btn xs ghost" data-ed="types0" title="원래 타입으로">원래대로</button>':''}`:''}${m.tera&&m.tera!=='-'?`<span class="badge">테라 ${esc(m.tera)}</span>`:''}${m.role?`<span class="badge">${esc(m.role)}</span>`:''}${m.pride?`<span class="badge">프라이드 ${esc(m.pride)}</span>`:''}</div>
     <div class="dxhp"><div class="hpbar ${pct<=25?'low':pct<=50?'mid':''}"><i style="width:${pct}%"></i></div><span class="mono">${full?m.hp.cur+' / '+m.hp.max:pct+'%'}</span></div>
-    <div class="dxrow"><span class="k">특성</span><span><b class="${full?'dxed':''}" ${full?'data-ed="ability" title="눌러서 특성 바꾸기"':''}>${esc(m.ability||'-')}</b>${m.abilityOrig!=null?`<span class="small dim"> (원래 ${esc(m.abilityOrig||'없음')})</span>`:''}${an('trait',m.ability)}<div class="dbmini">${effHtml('trait',m.ability,m.abilityEff)}</div></span></div>
-    <div class="dxrow"><span class="k">소지품</span><span><b class="${full?'dxed':''}" ${full?'data-ed="item" title="눌러서 소지품 바꾸기"':''}>${esc(m.item||'-')}</b>${an('item',m.item)}<div class="dbmini">${effHtml('item',m.item,m.itemEff)}</div></span></div>
+    <div class="dxrow"><span class="k">특성</span><span><b class="${full?'dxed':''}" ${full?'data-ed="ability" title="눌러서 특성 바꾸기"':''}>${esc(m.ability||'-')}</b>${m.abilityOrig!=null?`<span class="small dim"> (원래 ${esc(m.abilityOrig||'없음')})</span>`:''}${full?`<button class="btn xs ghost" data-ed="ability" title="특성 DB 에서 골라 바꾸기">특성 변경</button>${m.abilityOrig!=null?'<button class="btn xs ghost" data-ed="ability0">원래대로</button>':''}`:''}${an('trait',m.ability)}<div class="dbmini">${effHtml('trait',m.ability,m.abilityEff)}</div></span></div>
+    <div class="dxrow"><span class="k">소지품</span><span><b class="${full?'dxed':''}" ${full?'data-ed="item" title="눌러서 소지품 바꾸기"':''}>${esc(m.item||'-')}</b>${full?`<button class="btn xs ghost" data-ed="item" title="소지품 DB 에서 골라 지니게 하기">착용</button>${m.item?'<button class="btn xs ghost" data-ed="item0" title="소지품 떼기">떼기</button>':''}`:''}${an('item',m.item)}<div class="dbmini">${effHtml('item',m.item,m.itemEff)}</div></span></div>
    </div><div class="dxside dxaffs"><div class="k">상성</div>${affHtml(m)}</div></div>
-  <div class="dxlow"><div class="dxabil ${full?'dxed':''}" ${full?'data-ed="base" title="눌러서 종족치 바꾸기"':''}><div class="k">능력</div>${stat6}</div><div class="dxnowc">${(()=>{const U=window.OM_BATTLE_UI;if(!U||!U.nowParts||!m.entry)return '<div class="k">랭크 · 상태</div><div class="small dim">필드에 나와 있지 않다</div>';const P=U.nowParts(m);const row=(k,h)=>`<div class="dxnow"><div class="k">${k}</div><div class="rks">${h||'<span class="small dim">없음</span>'}</div></div>`;return row('랭크 · 배율',P.rank)+row('상태',P.state)+row('효과',P.fx)})()}</div></div>
+  <div class="dxlow"><div class="dxabil ${full?'dxed':''}" ${full?'data-ed="base" title="눌러서 종족치 바꾸기"':''}><div class="k">능력${full?' <button class="btn xs ghost" data-ed="base" title="랭크 한 단계씩 ▲▼ 또는 수치 입력">종족치 변경</button>':''}</div>${stat6}</div><div class="dxnowc">${(()=>{const U=window.OM_BATTLE_UI;if(!U||!U.nowParts||!m.entry)return '<div class="k">랭크 · 상태</div><div class="small dim">필드에 나와 있지 않다</div>';const P=U.nowParts(m);const row=(k,h)=>`<div class="dxnow"><div class="k">${k}</div><div class="rks">${h||'<span class="small dim">없음</span>'}</div></div>`;return row('랭크 · 배율',P.rank)+row('상태',P.state)+row('효과',P.fx)})()}</div></div>
   ${hpRow}
   <div class="sec">기술 <span class="note">${m.moves.length}개</span></div>
   <table class="t dxmv"><tr><th>이름</th><th>타입</th><th>분류</th><th>위력</th><th>명중</th><th>범위</th><th>우선</th><th>효과</th></tr>
@@ -393,7 +394,7 @@ function openMon(mid){
   <div class="sec">전용 포텐셜 <span class="note">${esc(m.name)}</span></div>${m.excl||(m.exclX||[]).length?`<div class="dxpots">${[...(m.excl?[m.excl]:[]),...(m.exclX||[])].map(p=>potCard(p,'전용')).join('')}</div>`:'<div class="small dim" style="padding:4px 2px">전용 포텐셜이 없다</div>'}
   ${full&&m.memo?`<div class="sec">메모</div><div class="pre small muted">${esc(m.memo)}</div>`:''}`);
  md.classList.add('wide');
- md.querySelectorAll('[data-ed]').forEach(el=>el.onclick=e=>{e.stopPropagation();openMonEdit(mid,el.dataset.ed)});
+ md.querySelectorAll('[data-ed]').forEach(el=>el.onclick=e=>{e.stopPropagation();monChange(mid,el.dataset.ed)});
  if(ST.role==='gm'||full){const amt=v=>{v=String(v||'').trim();const f=v.match(/^(\d+)\s*\/\s*(\d+)$/);if(f)return Math.max(1,Math.floor(m.hp.max*+f[1]/+f[2]));return Math.max(0,Math.floor(+v||0))};
   const ap=async(cur,msg)=>{cur=Math.max(0,Math.min(m.hp.max,cur));closeModal();const nh=Object.assign({},m.hp,{cur,latest:m.hp.cur});if(await set(['battle','mons',mid,'hp'],nh))sysLog(`${m.name} ${msg} → HP ${cur}/${m.hp.max}${cur<=0?' · 빈사!':''}`,'battle')};
   $('#hpDmg',md).onclick=()=>{const v=$('#hpd',md).value;const d=amt(v);if(d)ap(m.hp.cur-d,`에게 ${d} 대미지${/\//.test(v)?' ('+v.trim()+')':''}`)};$('#hpHeal',md).onclick=()=>{const v=$('#hpd',md).value;const d=amt(v);if(d)ap(m.hp.cur+d,`${d} 회복${/\//.test(v)?' ('+v.trim()+')':''}`)};$('#hpFull',md).onclick=()=>ap(m.hp.max,'전부 회복');
@@ -433,6 +434,24 @@ function openMonEdit(mid,focus){
   const ni=it.value.trim();if(ni!==(x.item||'')){const FX=window.OM_FX;if(FX&&x.item)FX.removeByName(x,x.item);x.item=ni;x.itemEff=String((((D.items||{})[ni])||{}).eff||'');L.push(ni?`소지품 → 「${ni}」`:'소지품 비움')}
   return L});
  const f={types:'[data-et="0"]',base:'[data-eb="0"]',ability:'#edAb',item:'#edIt'}[focus];const fe=f&&$(f,md);if(fe){fe.focus();if(fe.select)fe.select()}}
+
+/* 배틀 상세의 바꾸기 (망령 10-21): 타입 = 18 타입 단추 창 · 종족치 = 랭크 ▲▼ 창 · 특성 · 소지품 = DB 창. 지금 배틀의 이 포켓몬만 (시트는 그대로).
+   타입 · 특성은 효과(fx)의 「변경」과 같은 꼴(typesOrig · abilityOrig)로 남겨 원래대로 돌릴 수 있다 */
+function monChange(mid,kind){const m=(B().mons||{})[mid];if(!m)return;const D=window.OM_DB||{};const P=window.OM_PICK;const ko=t=>t&&t!=='-'?S().typeKo(t):'-';
+ const save=async fn=>{const m0=JSON.parse(JSON.stringify(B().mons[mid])),x=JSON.parse(JSON.stringify(m0));const L=fn(x);if(L.length&&await setDiff(['battle','mons',mid],m0,x)){sysLog(`${m0.name} ${L.join(' · ')}`,'battle');toast('바꿨다')}openMon(mid)};
+ const setTypes=(x,nt)=>{if(!x.typesOrig){x.typesOrig=x.types.slice();x.typesBy='직접 변경'}x.types=nt;x.typesKo=nt.map(ko);if(x.typesOrig.join()===nt.join()){delete x.typesOrig;delete x.typesBy}return '타입 → '+(nt.filter(t=>t!=='-').map(ko).join('/')||'없음')};
+ const setAb=(x,na)=>{const FX=window.OM_FX;if(FX&&x.ability)FX.removeByName(x,x.ability);if(x.abilityOrig==null){x.abilityOrig=x.ability||'';x.abilityBy='직접 변경'}x.ability=na;const a=((D.traits||{})[na])||{};x.abilityEff=String(a.multi||a.single||'').replace(/<br\s*\/?>/gi,'\n');if(x.abilityOrig===na){delete x.abilityOrig;delete x.abilityBy}return `특성 → 「${na||'없음'}」`};
+ const setIt=(x,ni)=>{const FX=window.OM_FX;if(FX&&x.item)FX.removeByName(x,x.item);x.item=ni;x.itemEff=String((((D.items||{})[ni])||{}).eff||'');return ni?`소지품 → 「${ni}」`:'소지품 뗌'};
+ if(!P)return openMonEdit(mid,kind);
+ switch(kind){
+  case 'types':return P.types(m.types,{title:m.name+' — 타입 변경',orig:m.typesOrig,note:'지금 배틀의 이 포켓몬만 바뀐다 (시트는 그대로). 효과 칸에 「변경」으로 남는다.'},nt=>save(x=>nt.join()===x.types.slice(0,3).concat(['-','-','-']).slice(0,3).join()?[]:[setTypes(x,nt)]));
+  case 'types0':return save(x=>{if(!x.typesOrig)return [];x.types=x.typesOrig;x.typesKo=x.types.map(ko);delete x.typesOrig;delete x.typesBy;return ['타입 원래대로']});
+  case 'base':return P.base(m.base,{title:m.name+' — 종족치 변경',lv:m.lv,iv:m.iv,ev:m.ev,note:'지금 배틀의 이 포켓몬만 (시트는 그대로). 최대 HP 가 바뀌면 그 차이만큼 지금 HP 도.'},nb=>save(x=>{if(nb.join()===x.base.join())return [];const full=x.hp.cur>=x.hp.max,oldMax=x.hp.max;x.base=nb;x.ranks=nb.map(S().gradeOf);x.stats=S().statsOf(nb,x.iv,x.ev,x.lv);x.hp.max=x.stats[0];x.hp.cur=x.hp.cur<=0?0:full?x.hp.max:Math.max(1,Math.min(x.hp.max,x.hp.cur+x.hp.max-oldMax));return ['종족치 → '+nb.join('/')]}));
+  case 'ability':return window.OM_DB_UI.open({kind:'trait',sel:m.ability||'',pick:n=>save(x=>n===(x.ability||'')?[]:[setAb(x,n)])});
+  case 'ability0':return save(x=>{if(x.abilityOrig==null)return [];const o=x.abilityOrig;const L=setAb(x,o);delete x.abilityOrig;delete x.abilityBy;return [`특성 원래대로 「${o||'없음'}」`]});
+  case 'item':return window.OM_DB_UI.open({kind:'item',sel:m.item||'',pick:n=>save(x=>n===(x.item||'')?[]:[setIt(x,n)])});
+  case 'item0':if(!confirm(`「${m.item}」을(를) 뗄까?`))return;return save(x=>x.item?[setIt(x,'')]:[]);
+  default:return openMonEdit(mid,kind)}}
 
 /* ---------- 좌석 ---------- */
 /* 관전자도 이름을 정해 접속자 칸에 보이게 */
