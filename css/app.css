@@ -2665,3 +2665,22 @@ span.iedit{display:inline-block;min-width:3em}
  .dlg.skin.sm .dname,.dlg.skin.sc .dname{bottom:79%}
  .dlg.skin.sl .dname,.dlg.skin.sr .dname{bottom:73%}
 }
+/* 10-23 망령: 대사창 · 지문 상자 위치 (rp.bubble.st.dx/dy · nx/ny → --dlgdx… 숫자, 무대 폭·높이의 %). 오른쪽 화자 말풍선도 left 기준으로 바꿔 margin-left 로 같이 움직인다 */
+.dlg:not(.skin){bottom:calc(4% + var(--dlgdy,0) * 1%);translate:calc(var(--dlgdx,0) * 1.064%) 0}
+.dlg:not(.skin):has(.dtext.narr){bottom:calc(4% + var(--dlgny,0) * 1%);translate:calc(var(--dlgnx,0) * 1.064%) 0}
+.dlg.skin.sr{right:auto;left:calc(79% - var(--bubw,min(52%,740px)))}
+.dlg.skin:not(.sc){bottom:calc(9% + var(--dlgdy,0) * 1%);margin-left:calc(var(--dlgdx,0) * 1%)}
+.dlg.skin.sc{bottom:calc(1% + var(--dlgny,0) * 1%);margin-left:calc(var(--dlgnx,0) * 1%)}
+@media (max-width:760px){.dlg.skin:not(.sc),.dlg.skin.sc,.dlg:not(.skin){margin-left:0;translate:none}}
+.gbpos{margin-top:10px}
+.gbph{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
+.gbpst{position:relative;aspect-ratio:16/10;max-width:640px;background:#222 center/cover no-repeat;border:2px solid var(--line2);overflow:hidden;touch-action:none}
+.gbpbox{position:absolute;aspect-ratio:9/4;background:center/100% 100% no-repeat;cursor:grab;user-select:none;display:flex;align-items:center;justify-content:center;touch-action:none}
+.gbpbox.drag{cursor:grabbing;outline:2px dashed var(--yel2);outline-offset:2px}
+.gbpbox .gbpn{position:absolute;left:8%;top:6%;background:#000;color:#fff;border:2px solid #fff;font:700 11px var(--lab);padding:0 8px}
+.gbpbox .gbpt{color:#fff;font-weight:700;font-size:12px;padding:0 16%;text-align:center;transform:rotate(-2.5deg)}
+.stscale{gap:8px;align-items:center;margin:0 0 8px}
+@media (max-width:760px){.dlg.skin.sr{left:1.5%}}
+.gbpsel{display:inline-flex;gap:4px}
+.gbpst .gbpbox{opacity:.35;pointer-events:none;z-index:1}
+.gbpst.seld #gbp_d,.gbpst.seln #gbp_n{opacity:1;pointer-events:auto;z-index:2}

@@ -51,11 +51,11 @@ window.OM_RP_UI=(()=>{
 
  /* ----- 화자(스탠딩) ----- */
  function charOf(key){const ST=A().ST;if(!key)return null;
-  if(key==='gm'){const g=R().gmSt||{};return {key,name:'GM',img:gmImg(),stands:g.stands||[],active:g.standActive||0,kind:'gm',id:'gm'}}
-  if(key.startsWith('pm:')){const mid=key.slice(3);const m=((ST.state.roster||{}).mons||{})[mid];if(!m)return null;return {key,name:m.name,img:m.image||'',stands:m.stands||[],active:m.standActive||0,kind:'pm',id:mid,tid:m.tid}}
+  if(key==='gm'){const g=R().gmSt||{};return {key,name:'GM',img:gmImg(),stands:g.stands||[],active:g.standActive||0,scale:g.standScale||0,kind:'gm',id:'gm'}}
+  if(key.startsWith('pm:')){const mid=key.slice(3);const m=((ST.state.roster||{}).mons||{})[mid];if(!m)return null;return {key,name:m.name,img:m.image||'',stands:m.stands||[],active:m.standActive||0,scale:m.standScale||0,kind:'pm',id:mid,tid:m.tid}}
   if(key.startsWith('as:')){const t=Object.values((ST.state.roster||{}).trainers||{}).find(x=>x.name===key.slice(3));return t?charOf(t.id):null}
-  if(key.startsWith('npc:')){const name=key.slice(4);const n=Object.values((ST.state.graph||{}).nodes||{}).find(x=>x.name===name);return n?{key,name:n.name,img:A().portraitOf(n.name,n.img),stands:n.stands||[],active:n.standActive||0,kind:'npc',id:n.id}:{key,name,img:A().portraitOf(name,''),stands:[],active:0,kind:'npc',id:''}}
-  const t=((ST.state.roster||{}).trainers||{})[key];if(!t)return null;return {key,name:t.name,img:t.image,stands:t.stands||[],active:t.standActive||0,kind:'pc',id:key}}
+  if(key.startsWith('npc:')){const name=key.slice(4);const n=Object.values((ST.state.graph||{}).nodes||{}).find(x=>x.name===name);return n?{key,name:n.name,img:A().portraitOf(n.name,n.img),stands:n.stands||[],active:n.standActive||0,scale:n.standScale||0,kind:'npc',id:n.id}:{key,name,img:A().portraitOf(name,''),stands:[],active:0,kind:'npc',id:''}}
+  const t=((ST.state.roster||{}).trainers||{})[key];if(!t)return null;return {key,name:t.name,img:t.image,stands:t.stands||[],active:t.standActive||0,scale:t.standScale||0,kind:'pc',id:key}}
  function standSrc(c){if(!c)return '';const s=(c.stands||[])[c.active]||(c.stands||[])[0];return (s&&s.src)||c.img||''}
  function standKind(c){if(!c)return '';const st=(c.stands||[])[c.active]||(c.stands||[])[0];return st&&st.kind?st.kind:''}
  function standPoint(c){const s=(c.stands||[])[c.active]||(c.stands||[])[0];return s&&+s.point||0}
@@ -128,12 +128,14 @@ window.OM_RP_UI=(()=>{
   const inp=$('#rpline',el);if(inp&&inNew){inp.value=SPK.draft||'';inp.oninput=()=>{SPK.draft=inp.value;typingPing()};inp.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)sendLine()};$('#rpsend',el).onclick=sendLine}if(inp&&SPK.focus){inp.focus();SPK.focus=false}
   bindMap(el);tickBanner();syncBgm();scheduleExpire();drawTyping()}
  /* 스탠딩 DOM 을 키로 맞춘다: 새로 선 것만 등장 애니메이션, 자리 바뀜·표정 바뀜은 제자리에서 */
- function syncStands(box,slots,manual){const want={};for(const s of SLOTS){const c=charOf(slots[s]);const src=standSrc(c);if(c&&src)want[s]={key:c.key,src,name:c.name,point:standPoint(c),kind:standKind(c),flip:!!(manual[s]||{}).flip,on:STAGE.active===c.key||!STAGE.active}}
+ /* 스탠딩 크기 (인물마다 standScale %, 10-23 망령) — 발밑 기준으로 키우고 줄인다 */
+ function standTf(img,flip,scale){const k=scale&&+scale!==100?+scale/100:1;img.style.transformOrigin='50% 100%';img.style.transform=(flip?'scaleX(-1) ':'')+(k!==1?`scale(${k})`:'')}
+ function syncStands(box,slots,manual){const want={};for(const s of SLOTS){const c=charOf(slots[s]);const src=standSrc(c);if(c&&src)want[s]={key:c.key,src,name:c.name,point:standPoint(c),kind:standKind(c),scale:+c.scale||0,flip:!!(manual[s]||{}).flip,on:STAGE.active===c.key||!STAGE.active}}
   [...box.children].forEach(ch=>{const s=ch.dataset.slot;if(!want[s]||want[s].key!==ch.dataset.key){ch.classList.add('out');setTimeout(()=>ch.remove(),350)}});
   for(const s of SLOTS){const w=want[s];if(!w)continue;let ch=[...box.children].find(x=>x.dataset.slot===s&&x.dataset.key===w.key&&!x.classList.contains('out'));
    if(!ch){ch=document.createElement('div');ch.dataset.slot=s;ch.dataset.key=w.key;ch.className=`stand ${s} in`;ch.innerHTML=`<img alt=""><div class="stname"></div>`;box.appendChild(ch)}
    const img=ch.querySelector('img');if(img.getAttribute('src')!==w.src){img.src=w.src;ch.classList.remove('portrait');img.onload=()=>{const k=ch.dataset.kind||(img.naturalHeight/Math.max(1,img.naturalWidth)<1.45?'portrait':'stand');ch.classList.toggle('portrait',k==='portrait')}}
-   ch.dataset.kind=w.kind||'';if(w.kind)ch.classList.toggle('portrait',w.kind==='portrait');else if(img.complete&&img.naturalWidth)ch.classList.toggle('portrait',img.naturalHeight/img.naturalWidth<1.45);img.style.transform=w.flip?'scaleX(-1)':'';ch.style.marginBottom=ch.classList.contains('portrait')?'':(-w.point)+'px';ch.querySelector('.stname').textContent=w.name;
+   ch.dataset.kind=w.kind||'';if(w.kind)ch.classList.toggle('portrait',w.kind==='portrait');else if(img.complete&&img.naturalWidth)ch.classList.toggle('portrait',img.naturalHeight/img.naturalWidth<1.45);standTf(img,w.flip,w.scale);ch.style.marginBottom=ch.classList.contains('portrait')?'':(-w.point)+'px';ch.querySelector('.stname').textContent=w.name;
    ch.classList.toggle('on',w.on);ch.classList.toggle('off',!w.on)}}
  /* ----- 입력 중 표시: 저장 없이 방송 ----- */
  const TYPING={last:0,who:{},t:null};
@@ -526,9 +528,12 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
     ${(()=>{const st=bb.st||{};return `<div class="gbst"><label>글꼴 <select id="gbf">${BUB_FONTS.map(([v,l])=>`<option value="${v}" ${(st.font||'')===v?'selected':''}>${esc(l)}</option>`).join('')}</select></label>
      <label>글자 크기 <input type="range" id="gbs" min="60" max="170" step="5" value="${st.fs||100}"><b id="gbs_v">${st.fs||100}%</b></label>
      <label>상자 크기 <input type="range" id="gbw" min="30" max="85" step="1" value="${st.w||52}"><b id="gbw_v">${st.w||52}%</b></label>
-     <label>글자 위치 <input type="range" id="gby" min="-12" max="12" step="1" value="${st.y||0}"><b id="gby_v">${st.y>0?'+':''}${st.y||0}</b></label>
      <label>굵기 <select id="gbb">${[['','굵게 (기본)'],['400','보통'],['500','중간'],['900','아주 굵게']].map(([v,l])=>`<option value="${v}" ${String(st.wt||'')===v?'selected':''}>${l}</option>`).join('')}</select></label>
-     <button class="btn xs ghost" data-gc="bubst0">원래대로</button></div><div class="small dim">글꼴 · 글자 크기 · 굵기는 기본 띠와 그림 말풍선 모두에, 상자 크기 · 글자 위치는 그림 말풍선에. 움직이면 무대에 바로 미리 보이고 손을 떼면 모두에게 저장된다.</div>`})()}`}
+     <button class="btn xs ghost" data-gc="bubst0">원래대로</button></div>
+     ${(()=>{/* 10-23 망령: 예시 무대에서 대사창 · 지문 상자를 끌어서 옮긴다 (st.dx/dy · nx/ny = 무대 폭·높이의 %) */const bgs=(r.bg||{}).src;const w=st.w||52;const u=k=>new URL('img/bubble/'+k+'.svg?v=3',location.href).href;
+      const box=(id,lab,txt,src,x,y,b0)=>`<div class="gbpbox" id="${id}" style="width:${w}%;left:calc(${50-w/2}% + ${x||0}%);bottom:calc(${b0}% + ${y||0}%);background-image:url('${cssu(src)}')"><span class="gbpn">${lab}</span><span class="gbpt">${txt}</span></div>`;
+      return `<div class="gbpos"><div class="gbph"><b>대사창 · 지문 상자 위치</b><span class="small dim">예시 상자를 끌어서 옮기면 무대에 바로 보이고, 손을 떼면 저장 · 대사창은 가운데 화자 기준 (좌우 화자도 같은 만큼 움직인다)</span><span class="sp"></span><span class="gbpsel"><button class="btn xs pri" data-gbp="d">대사창 옮기기</button><button class="btn xs ghost" data-gbp="n">지문 상자 옮기기</button></span><button class="btn xs ghost" id="gbp0">위치만 원래대로</button></div>
+       <div class="gbpst seld" id="gbpst" style=""${bgs?`background-image:url('${cssu(bgs)}')`:''}">${box('gbp_d','대사','"이 상자를 끌어서 옮긴다"',(bb.on&&bb.m)||u('mid'),st.dx,st.dy,9)}${box('gbp_n','지문','이건 지문 상자',(bb.on&&bb.c)||u('plain'),st.nx,st.ny,1)}</div></div>`})()}<div class="small dim">글꼴 · 글자 크기 · 굵기는 기본 띠와 그림 말풍선 모두에, 상자 크기는 그림 말풍선에, 대사창 · 지문 상자 높이는 둘 다에 (무대 높이의 %, + 는 위로). 움직이면 무대에 바로 미리 보이고 손을 떼면 모두에게 저장된다.</div>`})()}`}
   else if(GC.tab==='etc'){const CI=R().cutin||{};const sel=(id,cur,opts)=>`<select id="${id}" data-ci>${opts.map(([v,l])=>`<option value="${v}" ${String(cur)===v?'selected':''}>${l}</option>`).join('')}</select>`;
    body=`${sec('컷인 · 연출','고치면 바로 저장')}<div class="gcform">
      <label><span>시합 개시</span>${sel('gci_start',CI.start||'vs',[['vs','일반 (VS 컷인)'],['warn','경고 (위험 등장)'],['off','끄기']])}</label>
@@ -588,16 +593,25 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(k==='whisper'){const to=$('#gwto',md).value,t=$('#gwt',md).value.trim();if(!to||!t)return;await DBS().addLog(ST.room,ST.secret,'whisper',ST.name,{t,to,toName:(((ST.state.roster||{}).trainers||{})[to]||{}).name||to});$('#gwt',md).value='';A().toast('보냈다');return}};
    if(b.type==='checkbox')b.onchange=h;else b.onclick=h});
   if(GC.tab==='bgm')bindBgmPanel(md,re);
-  if($('#gbf',md)){const rd=()=>({font:$('#gbf',md).value||null,fs:+$('#gbs',md).value===100?null:+$('#gbs',md).value,w:+$('#gbw',md).value===52?null:+$('#gbw',md).value,y:+$('#gby',md).value||null,wt:$('#gbb',md).value||null});
-   const live=()=>{const v=rd();$('#gbs_v',md).textContent=(v.fs||100)+'%';$('#gbw_v',md).textContent=(v.w||52)+'%';$('#gby_v',md).textContent=(v.y>0?'+':'')+(v.y||0);const d=document.getElementById('dlg');if(d)bubStyle(d,v)};
+  if($('#gbf',md)){const st0=(R().bubble||{}).st||{};const POS={dx:+st0.dx||0,dy:+st0.dy||0,nx:+st0.nx||0,ny:+st0.ny||0};const rd=()=>({font:$('#gbf',md).value||null,fs:+$('#gbs',md).value===100?null:+$('#gbs',md).value,w:+$('#gbw',md).value===52?null:+$('#gbw',md).value,dx:POS.dx||null,dy:POS.dy||null,nx:POS.nx||null,ny:POS.ny||null,wt:$('#gbb',md).value||null});
+   const live=()=>{const v=rd();$('#gbs_v',md).textContent=(v.fs||100)+'%';$('#gbw_v',md).textContent=(v.w||52)+'%';const d=document.getElementById('dlg');if(d)bubStyle(d,v)};
    const save=async()=>{live();const v=rd();for(const k in v)if(v[k]==null)delete v[k];await A().set(['rp','bubble','st'],Object.keys(v).length?v:null)};
-   ['#gbs','#gbw','#gby'].forEach(q=>{const e=$(q,md);e.oninput=live;e.onchange=save});['#gbf','#gbb'].forEach(q=>$(q,md).onchange=save)}
+   ['#gbs','#gbw'].forEach(q=>{const e=$(q,md);e.oninput=live;e.onchange=save});
+   /* 예시 무대 끌기 */
+   const pst=$('#gbpst',md);const drag=(id,kx,ky,b0)=>{const el=$(id,md);if(!el)return;el.onpointerdown=e=>{e.preventDefault();el.setPointerCapture(e.pointerId);const R=pst.getBoundingClientRect();const sx=e.clientX,sy=e.clientY,x0=POS[kx]||0,y0=POS[ky]||0;el.classList.add('drag');
+     const clamp=(v,a,b)=>Math.max(a,Math.min(b,Math.round(v*2)/2));const w=+$('#gbw',md).value||52;
+     el.onpointermove=ev=>{POS[kx]=clamp(x0+(ev.clientX-sx)/R.width*100,-(50-w/2)-2,50-w/2+2);POS[ky]=clamp(y0-(ev.clientY-sy)/R.height*100,-b0-6,80);el.style.left=`calc(${50-w/2}% + ${POS[kx]}%)`;el.style.bottom=`calc(${b0}% + ${POS[ky]}%)`;live()};
+     el.onpointerup=el.onpointercancel=()=>{el.onpointermove=null;el.onpointerup=null;el.classList.remove('drag');save()}}};
+   drag('#gbp_d','dx','dy',9);drag('#gbp_n','nx','ny',1);
+   md.querySelectorAll('[data-gbp]').forEach(b=>b.onclick=()=>{const k=b.dataset.gbp;pst.classList.toggle('seld',k==='d');pst.classList.toggle('seln',k==='n');md.querySelectorAll('[data-gbp]').forEach(x=>{x.classList.toggle('pri',x===b);x.classList.toggle('ghost',x!==b)})});
+   $('#gbp0',md).onclick=()=>{POS.dx=POS.dy=POS.nx=POS.ny=0;save().then(re)};
+   $('#gbw',md).addEventListener('input',()=>{const w=+$('#gbw',md).value||52;[['#gbp_d','dx'],['#gbp_n','nx']].forEach(([id,k])=>{const el=$(id,md);if(el){el.style.width=w+'%';el.style.left=`calc(${50-w/2}% + ${POS[k]||0}%)`}})});['#gbf','#gbb'].forEach(q=>$(q,md).onchange=save)}
   for(const k of ['c','l','m','r'])if($('#bub_'+k,md))bindDz(md,'#bub_'+k,async fs=>{const u=await upImg(fs[0],'bub_'+k);await A().set(['rp','bubble',k],u);if(!(R().bubble||{}).on)await A().set(['rp','bubble','on'],true);re()});
   if($('#gcidz',md))bindDz(md,'#gcidz',async fs=>{const u=await upImg(fs[0],'rp');await A().set(['rp','center'],{src:u,at:Date.now()});re()})}
- /* 대사 상자 글꼴 · 글자 크기 · 상자 크기 · 굵기 · 글자 위치 (rp.bubble.st, GM 콘솔 무대 탭, 10-21 망령) */
+ /* 대사 상자 글꼴 · 글자 크기 · 상자 크기 · 굵기 · 대사창/지문 상자 높이 (rp.bubble.st, GM 콘솔 무대 탭, 10-21 · 10-23 망령: 글자 위치 대신 상자 위치) */
  const BUB_FONTS=[['','기본 (화면 글꼴)'],['bhs','Black Han Sans'],['dohyeon','Do Hyeon'],['jua','주아'],['gugi','구기'],['plex','IBM Plex Sans KR'],['noto','Noto Sans KR'],['nanum','나눔고딕'],['gothica1','Gothic A1'],['gowun','고운돋움'],['pretendard','Pretendard'],['myeongjo','나눔명조']];
  function bubStyle(el,st){st=st||{};const S=(k,v)=>{if(v===''||v==null)el.style.removeProperty(k);else el.style.setProperty(k,v)};
-  S('--bubfont',st.font&&A().fontCss?A().fontCss(st.font):'');S('--bubfs',st.fs&&+st.fs!==100?String(st.fs/100):'');S('--bubw',st.w?st.w+'%':'');S('--bubwt',st.wt||'');S('--buby',st.y?st.y+'%':'')}
+  S('--bubfont',st.font&&A().fontCss?A().fontCss(st.font):'');S('--bubfs',st.fs&&+st.fs!==100?String(st.fs/100):'');S('--bubw',st.w?st.w+'%':'');S('--bubwt',st.wt||'');for(const k of ['dx','dy','nx','ny'])S('--dlg'+k,st[k]?String(+st[k]):'')}
  /* ----- BGM 패널 (맵툴 Lib:bgm 정리판과 같은 꼴): 홈 = 띠(장면/배틀/분위기)별 그룹 타일 → 그룹 = 곡 줄 · 검색 · ▶ 미리듣기 · 모두에게 재생 · ⟳ 다른 곡 ----- */
  const BG={g:'',q:''};
  const gshort=g=>String(g).replace(/^[0-9.]+\s*/,'');
@@ -673,6 +687,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    ${canEdit?`<div class="stdz" id="st_dz"><div class="stdzt"><b>그림을 여기로 끌어 놓기</b><span class="small dim">여러 장·폴더째로 된다 · 파일 이름이 라벨 · 같은 라벨은 그림만 바뀐다 · Ctrl+V 로 붙여넣기도</span></div>
     <div class="row stdzb"><label class="btn sm pri">파일 고르기<input type="file" accept="image/*" multiple id="st_f" hidden></label><label class="btn sm">폴더 올리기<input type="file" webkitdirectory directory multiple id="st_d" hidden></label><span class="sp"></span>${kindSel('id="st_k" title="새로 올리는 그림의 모양"','')}</div>
     <div class="stprog" id="st_pg" hidden><i></i><span></span></div></div>`:''}
+   ${canEdit?`<div class="row stscale"><b>스탠딩 크기</b><input type="range" id="st_sc" min="40" max="200" step="5" value="${c.scale||100}" style="flex:1"><b id="st_sc_v">${c.scale||100}%</b><button class="btn xs ghost" id="st_sc0">원래대로</button></div><div class="small dim" style="margin:-4px 0 8px">이 인물의 모든 표정에 같이 적용 · 발밑 기준 · 움직이면 무대에 바로 보이고 손을 떼면 저장</div>`:''}
    <div class="stxg">${cur.map(card).join('')||'<div class="empty small">아직 스탠딩이 없다 — 시트 그림(초상)을 쓴다</div>'}</div>
    ${canEdit?`<details class="stmore"><summary>그림 주소로 추가</summary><div class="row"><input type="text" id="st_l" placeholder="라벨" style="width:120px"><input type="text" id="st_u" placeholder="그림 주소 (투명 PNG 전신 권장)" style="flex:1"><button class="btn sm" data-st="add">추가</button></div></details>`:''}
    <details class="stmore"><summary>도움말</summary><div class="small dim">채팅할 때 「사용 중」인 스탠딩이 무대에 선다. 없으면 초상(시트 그림)을 쓴다. 그림을 누르면 그 표정으로 바뀌고, 채팅에서 <code>/s 라벨</code> 로도 바꿀 수 있다. 숫자 칸은 보정 — 위로 올릴 px (음수면 내림). 모양: 「스탠딩」은 틀 없이 전신으로, 「초상」은 네모 틀 안에 선다 (「자동」은 그림 비율로 정한다).</div></details>`);
@@ -697,6 +712,9 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    md.addEventListener('drop',async e=>{e.preventDefault();depth=0;dz.classList.remove('over');addFiles(await dropImgs(e.dataTransfer))});
    $('#st_f',md).onchange=e=>addFiles([...e.target.files]);$('#st_d',md).onchange=e=>addFiles([...e.target.files]);
    const onPaste=e=>{if(!md.isConnected)return document.removeEventListener('paste',onPaste);const fs=[...((e.clipboardData||{}).files||[])].filter(isImg);if(!fs.length)return;e.preventDefault();addFiles(fs.map((f,k)=>new File([f],(f.name&&f.name!=='image.png'?f.name:`붙여넣기${cur.length+k+1}.png`),{type:f.type})))};document.addEventListener('paste',onPaste);
+   {const sc=$('#st_sc',md),sv=$('#st_sc_v',md);const live=v=>{sv.textContent=v+'%';document.querySelectorAll('#stands .stand').forEach(ch=>{if(ch.dataset.key===c.key){const im=ch.querySelector('img');if(im)standTf(im,/scaleX\(-1\)/.test(im.style.transform),v)}})};
+    const put=async v=>{if(!okPath())return;await A().set([...path,'standScale'],+v===100?null:+v)};
+    sc.oninput=()=>live(+sc.value);sc.onchange=()=>put(+sc.value);$('#st_sc0',md).onclick=()=>{sc.value=100;live(100);put(100)}}
    md.querySelectorAll('[data-sl]').forEach(inp=>inp.onchange=()=>{const i=+inp.dataset.sl;cur[i]=Object.assign({},cur[i],{label:inp.value.trim()||'기본'});save(false)});
    md.querySelectorAll('[data-sp]').forEach(inp=>inp.onchange=()=>{const i=+inp.dataset.sp;cur[i]=Object.assign({},cur[i],{point:+inp.value||0});save(false)});
    md.querySelectorAll('[data-stk]').forEach(sel=>sel.onchange=()=>{const i=+sel.dataset.stk;const s=Object.assign({},cur[i]);if(sel.value)s.kind=sel.value;else delete s.kind;cur[i]=s;save(true)});
