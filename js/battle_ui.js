@@ -713,7 +713,7 @@ window.OM_BATTLE_UI=(()=>{
   if(x.move===''||x.move==null)return `${t.name} · ${m.name}: (행동 없음)`;const mv=(m.moves||[])[+x.move]||{};
   return `${t.name} · ${m.name} (${SIDE_KO[m.side]} ${String(m.entry).toUpperCase()}): 「${mv.name||'?'}」 ${mv.type||''}·${mv.cat||''} · 위력 ${mv.pow||'-'} · 명중 ${mv.acc||'-'}${mv.prio?' · 우선도 '+mv.prio:''}${x.targets&&x.targets.length?' → '+x.targets.map(sl=>slotName(b,sl).replace(/<[^>]+>/g,'')).join(', '):''}${mv.eff&&mv.eff!=='-'?'\n   '+mv.eff:''}`}
  let autoT=null;
- function autoAdvance(){const c=ctx();const b=c.b;if(!c.mgr)return;const me=c.gm?'gm':c.seat;if((b.host||'gm')!==me)return;if((+b.phase||0)!==1)return;if(unrevealed(b).length)return;clearTimeout(autoT);autoT=setTimeout(async()=>{const c2=ctx();if((+c2.b.phase||0)!==1||unrevealed(c2.b).length)return;A().sysLog('지시가 모두 공개됐다','battle');await stepTurn()},800)}
+ function autoAdvance(){const c=ctx();const b=c.b;if(!c.mgr)return;const me=c.gm?'gm':c.seat;if((b.host||'gm')!==me)return;if((+b.phase||0)!==1||b.tstep)return;if(unrevealed(b).length)return;clearTimeout(autoT);autoT=setTimeout(async()=>{const c2=ctx();if((+c2.b.phase||0)!==1||c2.b.tstep||unrevealed(c2.b).length)return;A().sysLog('지시가 모두 공개됐다','battle');await stepTurn()},800)}
  async function revealOne(tid,part,quiet){const c=ctx();const b=c.b;const t=(b.trainers||{})[tid];if(!t)return;if(!c.gm&&c.seat!==tid)return A().toast('내 지시만 공개할 수 있다');
   if(c.gm&&c.fair&&seatOwned(c,tid))return A().toast('GM 불간섭 설정 — 플레이어의 지시는 그 플레이어가 연다');
   const cm=await myCmd(c,tid,quiet);if(!cm)return;
