@@ -2601,3 +2601,21 @@ span.iedit{display:inline-block;min-width:3em}
 .dlg:not(.skin) .dtext:not(.narr){font-weight:var(--bubwt,inherit)}
 .gbst{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin:10px 0 4px;font-size:12.5px}
 .gbst label{display:flex;align-items:center;gap:6px}.gbst input[type=range]{width:120px}.gbst b{font-family:var(--mono);min-width:38px;color:#fff}
+/* 배틀 알림 모양 (10-21) — 페이즈 띠 · 행동 순서 표 · 차례 · 한 줄 알림 */
+.msg.battle.sysc{align-items:flex-end;justify-content:center}
+.sysph{flex:1;min-width:0;display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px;padding:7px 14px;background:linear-gradient(90deg,#c8102e,#7a0b1d 70%,#2a0b10);color:#fff;clip-path:polygon(0 0,100% 0,calc(100% - 10px) 100%,0 100%);border-left:4px solid #fff}
+.sysph .sphl{font-family:var(--head);font-size:17px;letter-spacing:.04em}.sysph .spht{font-family:var(--mono);font-size:14px;color:#ffd84a}
+.sysph small{flex-basis:100%;font-size:11.5px;color:#ffd9de;line-height:1.45}
+.sysord{flex:1;min-width:0;background:#15161a;border:1px solid #2a2b31;border-left:4px solid #d6a23b}
+.sysoh{font-family:var(--lab);font-size:12px;letter-spacing:.08em;color:#d6a23b;padding:5px 10px 3px;border-bottom:1px solid #2a2b31}
+.sysor{display:flex;align-items:center;gap:8px;padding:4px 10px;font-size:13px;border-bottom:1px solid #1d1e23}.sysor:last-child{border-bottom:0}
+.sysor i{font-style:normal;font-family:var(--mono);font-weight:800;width:20px;height:20px;display:grid;place-items:center;background:#2a2b31;color:#fff;font-size:12px}
+.sysor.left i{background:#1f6fd1}.sysor.right i{background:#e3101f}
+.sysor .soav{width:26px;height:26px;flex:none;background:#0d0e11 center/cover no-repeat;border:1px solid #2a2b31}
+.sysor b{color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.sysor .socap{font-size:11px;color:#d6a23b;white-space:nowrap}.sysor .sosp{font-family:var(--mono);font-size:11.5px;color:#9a9ba2}
+.systurn{flex:1;text-align:center;font-size:12.5px;color:#cfd0d6;padding:3px 0;border-top:1px dashed #3a3b42;border-bottom:1px dashed #3a3b42}.systurn b{color:#fff}
+.syspill{margin:0 auto;max-width:92%;font-size:12px;color:#c9cad0;background:#1b1c21;border:1px solid #2c2d33;border-radius:999px;padding:3px 12px;text-align:center}
+.cpf{display:flex;flex-direction:column;gap:8px}.cpf label{display:flex;align-items:center;gap:8px;font-size:13px}.cpf input[type=range]{width:160px}.cpf b{font-family:var(--mono);color:#fff}
+.cpf input[type=color]{width:44px;height:26px;padding:0;border:1px solid var(--line2);background:none}
+.cpv{background:#0e0f12;padding:10px;border:1px solid var(--line2)}.cpv .msg{margin:0}

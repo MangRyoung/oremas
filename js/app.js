@@ -132,13 +132,13 @@ function renderRoom(){
    ${ST.role==='gm'?`<a class="btn sm ghost" href="${esc(roomLink(ST.room)+'&pl=1')}" title="이 방에 플레이어로 다시 들어간다 (자리·PL 닉)">PL 로</a>`:((LS.get('om_rooms',[]).find(x=>x.id===ST.room)||{}).gm?`<a class="btn sm ghost" href="${esc(gmLink(ST.room,(LS.get('om_rooms',[]).find(x=>x.id===ST.room)||{}).gm))}" title="이 기기에 GM 링크가 있다 — GM 으로 다시 들어간다">GM 으로</a>`:'')}${ST.role==='gm'?'<button class="btn sm" id="copyGm">GM 링크</button><button class="btn sm" id="roomSet">⚙ 설정</button>':'<button class="btn sm" id="seatBtn">자리</button><button class="btn sm ghost" id="roomSet" title="내 설정 — 소리·알림·글자·이미지·단축키">⚙ 설정</button>'}
   </div>
   <div class="body"><div class="scene" id="scene"></div><div class="resizer" id="resizer" title="끌어서 채팅 창 너비 조절"></div>
-   <div class="side" id="side"><div class="phone"><div class="pbar"><span>●●●</span><span class="ptime" id="pclock"></span></div><div class="ptitle"><span class="plogs">${ST.role==='gm'?'<button class="btn xs ghost plog" id="clearLog" title="로그 비우기">🧹 비우기</button>':''}<button class="btn xs ghost plog" id="saveLog" title="채팅 로그를 파일로 저장">💾 로그</button></span>${esc(r.name||r.id)}<small>${ST.role==='gm'?'GM':ST.role==='seat'?esc(ST.name):'관전'} · 오레마스</small></div><div class="ctabs" id="ctabs"><button type="button" data-ch="s">세션</button><button type="button" data-ch="o">잡담<i class="cdot"></i></button></div><div class="log" id="log"></div>
+   <div class="side" id="side"><div class="phone"><div class="pbar"><span>●●●</span><span class="ptime" id="pclock"></span></div><div class="ptitle"><span class="plogs">${ST.role==='gm'?'<button class="btn xs ghost plog" id="clearLog" title="로그 비우기">🧹 비우기</button>':''}<button class="btn xs ghost plog" id="saveLog" title="채팅 로그를 파일로 저장">💾 로그</button><button class="btn xs ghost plog" id="chatPrefs" title="채팅 설정 — 글자 크기 · 내 글자색 · 닉네임 색">⚙</button></span>${esc(r.name||r.id)}<small>${ST.role==='gm'?'GM':ST.role==='seat'?esc(ST.name):'관전'} · 오레마스</small></div><div class="ctabs" id="ctabs"><button type="button" data-ch="s">세션</button><button type="button" data-ch="o">잡담<i class="cdot"></i></button></div><div class="log" id="log"></div>
     <div class="inbox">${ST.role==='gm'?'<select id="chatAs" title="누구로 말할지 (세션 탭) — 배틀 화면에서도 인물로 말할 수 있다"><option value="gm">GM</option></select>':''}<input type="text" id="chatIn" placeholder="${ST.role?'메시지 · /r 1d100 · /w 이름 메시지':'자리에 앉으면 말할 수 있다'}" ${ST.role?'':'disabled'}><button class="btn" id="chatSend" ${ST.role?'':'disabled'}>➤</button></div></div></div>
   </div>
   <div class="mbar" id="mbar"><button data-m="scene" class="on"><i>🎭</i><span>무대</span></button><button data-m="chat"><i>💬</i><span>채팅</span><em id="mUnread" class="mbadge" style="display:none"></em></button><button data-m="phone"><i>📱</i><span>휴대폰</span></button><button data-m="top" title="맨 위로"><i>▲</i><span>맨 위</span></button><button data-m="menu"><i>☰</i><span>메뉴</span></button></div></div>`;
  $('#copyLink').onclick=()=>copy(roomLink(ST.room),'플레이어 링크를 복사했다');
  bindMobile();
- const sl=$('#saveLog');if(sl)sl.onclick=openSaveLog;const cl=$('#clearLog');if(cl)cl.onclick=openClearLog;const pr=$('#presence');if(pr)pr.onclick=()=>{openNick()};
+ const sl=$('#saveLog');if(sl)sl.onclick=openSaveLog;const cpf=$('#chatPrefs');if(cpf)cpf.onclick=openChatPrefs;const cl=$('#clearLog');if(cl)cl.onclick=openClearLog;const pr=$('#presence');if(pr)pr.onclick=()=>{openNick()};
  const sk=$('#skillBtn');if(sk)sk.onclick=()=>window.OM_SKILL_UI.open();const dxb=$('#dexBtn');if(dxb)dxb.onclick=()=>window.OM_DEX_UI.openMgr(ST.seat);
  const dk=$('#deckBtn');if(dk)dk.onclick=()=>window.OM_DECK_UI.open();
  $('#dbBtn').onclick=()=>window.OM_DB_UI.open({kind:'trait'});if($('#rmBtn'))$('#rmBtn').onclick=()=>window.OM_FX_UI.openRm('');
@@ -203,6 +203,15 @@ function atkLines(body){const out=[];for(const raw of body.split('\n')){if(!raw.
 /* 10-21 망령: HP 가 바뀐 줄 (data.hp = {prev,cur,max,d,why,faint}) — 큰 숫자 · 깎인 만큼 빗금 친 HP 바 */
 function hpCard(d){const h=d.hp;const P=v=>v>0?Math.max(1,Math.round(v/h.max*100)):0;const a=P(h.prev),b=P(h.cur);const dmg=h.cur<h.prev;const col=dmg?'#d23a3a':'#2f9a5b';const lo=Math.min(a,b),hi=Math.max(a,b);const cls=b<=25?'low':b<=50?'mid':'';
  return `<div class="bcard hpc ${dmg?'dmg':'heal'} ${h.faint?'faint':''}" style="--tc:${col}"><div class="hpcr">${d.img?`<span class="hpcav" style="background-image:url('${cssu(d.img)}')"></span>`:''}<div class="hpcm"><div class="hpct"><b>${esc(h.name||'')}</b><span class="hpcn">${dmg?'−':'+'}${Math.abs(h.cur-h.prev)}</span></div><div class="hpcbar ${cls}"><i style="width:${lo}%"></i><em class="${dmg?'cut':'gain'}" style="left:${lo}%;width:${hi-lo}%"></em></div><div class="hpcs"><span>HP ${h.prev} → <b>${h.cur}</b> / ${h.max}</span><span class="hpcp">${b}%</span></div>${h.why?`<div class="hpcw">${esc(h.why)}</div>`:''}${String(d.t||'').split('\n').slice(2).filter(l=>l&&!/쓰러졌다!$/.test(l)).map(l=>`<div class="hpcw x">${esc(l)}</div>`).join('')}</div></div>${h.faint?`<div class="hpcf">${esc(h.name||'')}은(는) 쓰러졌다!</div>`:''}</div>`}
+/* 10-21 망령: 【…】 꼴이 아닌 배틀 알림도 모양을 갖춘다 — 페이즈 띠 · 행동 순서 표 · 차례 표시 · 한 줄 알림 */
+const PH_RE=[[/^시합 개시!\s*—\s*(TURN \d+)\s*\n?([\s\S]*)$/,'시합 개시'],[/^턴 개시\s*—\s*(TURN \d+)\s*\n?([\s\S]*)$/,'턴 개시'],[/^턴 개시\s*—\s*()([\s\S]*)$/,'턴 개시'],[/^페이즈: 지시 준비\s*—\s*()([\s\S]*)$/,'지시 준비'],[/^행동 처리\s*—\s*()([\s\S]*)$/,'행동 처리'],[/^행동 순서 끝\s*—\s*()([\s\S]*)$/,'행동 순서 끝'],[/^동시 내밀기!\s*()([\s\S]*)$/,'동시 내밀기!']];
+function sysCard(d){const t=String(d.t||'');if(!t)return '';
+ for(const [re,lab] of PH_RE){const m=t.match(re);if(m)return `<div class="sysph"><span class="sphl">${esc(lab)}</span>${m[1]?`<b class="spht">${esc(m[1])}</b>`:''}${m[2].trim()?`<small>${esc(m[2].trim()).replace(/\n/g,'<br>')}</small>`:''}</div>`}
+ if(/^행동 순서\n/.test(t)){const rows=(d.ord&&d.ord.length)?d.ord:t.split('\n').slice(1).map(l=>{const m=l.match(/^(\d+)\.\s*(.+?)\s*\((.*)\)\s*$/);if(!m)return null;const sp=(m[3].match(/스피드\s*(\d+)/)||[])[1];return {n:m[2],cap:m[3].replace(/\s*·?\s*스피드\s*\d+/,'').replace(/\s*·?\s*d\d+/,'').replace(/·\s*$/,'').trim(),s:sp}}).filter(Boolean);
+  return `<div class="sysord"><div class="sysoh">행동 순서</div>${rows.map((r,i)=>`<div class="sysor ${r.side||''}"><i>${i+1}</i>${r.img?`<span class="soav" style="background-image:url('${cssu(r.img)}')"></span>`:''}<b>${esc(r.n)}</b>${r.cap?`<span class="socap">${esc(r.cap)}</span>`:''}<span class="sp"></span>${r.s!=null&&r.s!==''?`<span class="sosp">S ${esc(r.s)}</span>`:''}</div>`).join('')}</div>`}
+ const mt=t.match(/^▶\s*(.+?)의 행동\s*$/);if(mt)return `<div class="systurn">▶ <b>${esc(mt[1])}</b>의 차례</div>`;
+ if(!/\n/.test(t))return `<div class="syspill">${esc(t)}</div>`;
+ const L=t.split('\n');return `<div class="bcard"><div class="bch"><b>${esc(L[0])}</b></div><div class="bcb">${L.slice(1).filter(Boolean).map(l=>`<div class="bl">${esc(l)}</div>`).join('')}</div></div>`}
 function battleCard(d){if(d.hp&&d.hp.max)return hpCard(d);const t=String(d.t||'');const m=t.match(/^【([^】]+)】\s*([^\n]*)\n?([\s\S]*)$/);if(!m)return '';const tag=m[1],title=m[2],body=m[3].trim();const col=TAGCOL[tag]||(/^턴 \d+ 종료$/.test(tag)?'#3b6fb0':'#555');
  const lines=tag==='공격'?atkLines(body):body.split('\n').filter(Boolean).map(l=>/^▸ /.test(l)?`<div class="bsec">${esc(l.slice(2))}</div>`:`<div class="bl ${/실패|차단|없|않/.test(l)?'neg':/\+\d|회복|성공|→/.test(l)?'pos':''}">${esc(l)}</div>`).join('');
  return `<div class="bcard" style="--tc:${col}"><div class="bch">${d.img?`<span class="bcav" style="background-image:url('${cssu(d.img)}')"></span>`:''}<span class="bctag">${esc(tag)}</span><b>${esc(title)}</b>${d.mid?`<span class="sp"></span><button class="btn xs ghost bcfx" data-lmid="${esc(d.mid)}" title="이 포켓몬의 포텐셜 창 — 발동 중인 효과를 ✕ 로 해제">효과</button>`:''}</div>${d.eff?`<div class="bceff">${esc(d.eff)}</div>`:''}${lines?`<div class="bcb">${lines}</div>`:''}</div>`}
@@ -229,8 +238,26 @@ function bindChatAs(){const s=$('#chatAs');if(!s)return;
  const fill=()=>{const R=window.OM_RP_UI;const list=R&&R.allSpeakers?R.allSpeakers():[{key:'gm',name:'GM'}];const cur=ST.chatAs||'gm';
   s.innerHTML=list.map(x=>`<option value="${esc(x.key)}">${esc(x.key==='gm'?'GM':x.name)}</option>`).join('');s.value=list.some(x=>x.key===cur)?cur:'gm';ST.chatAs=s.value};
  fill();s.addEventListener('pointerdown',fill);s.addEventListener('focus',fill);s.onchange=()=>{ST.chatAs=s.value;const i=$('#chatIn');if(i)i.focus()}}
+/* ---------- 채팅 설정 (10-21 망령): 글자 크기 · 프로필 크기는 내 화면만, 내 글자색 · 닉네임 색 · 말풍선 색은 보내는 줄에 실려 모두에게 ---------- */
+const HEX=v=>/^#[0-9a-f]{6}$/i.test(String(v||''))?String(v):'';
+function chatSty(){try{const o=JSON.parse(localStorage.getItem('om_chatsty')||'{}');const x={};for(const k of ['tc','nc','bc'])if(HEX(o[k]))x[k]=o[k];return x}catch(e){return {}}}
+function styAttr(d){const y=d&&d.sty;if(!y)return {bub:'',who:''};const tc=HEX(y.tc),nc=HEX(y.nc),bc=HEX(y.bc);return {bub:(tc?`color:${tc};`:'')+(bc?`background:${bc};`:''),who:nc?`color:${nc};border-left-color:${nc};`:''}}
+function openChatPrefs(){const y=chatSty();const md=openModal(`<div class="mhead"><h2>채팅 설정</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+ <div class="cpf"><div class="sec">내 화면</div>
+  <label>글자 크기 <input type="range" id="cp_fs" min="11" max="22" step="1" value="${UI.chat}"><b id="cp_fs_v">${UI.chat}px</b></label>
+  <label>프로필 크기 <input type="range" id="cp_av" min="24" max="72" step="2" value="${UI.av||40}"><b id="cp_av_v">${UI.av||40}px</b></label>
+  <div class="sec">내 말 (모두에게 보인다 · 이제부터 보내는 줄에)</div>
+  ${[['tc','글자색','#111111'],['nc','닉네임 색','#ffffff'],['bc','말풍선 색','#ffffff']].map(([k,l,dv])=>`<label>${l} <input type="color" id="cp_${k}" value="${y[k]||dv}"><label class="small"><input type="checkbox" id="cp_${k}_on" ${y[k]?'checked':''}> 쓰기</label></label>`).join('')}
+  <div class="cpv"><div class="msg chat"><div class="av"></div><div class="bub" id="cp_pv"><span class="who" id="cp_pvw">${esc(ST.name||'나')}</span>미리보기 — 이렇게 보인다</div></div></div>
+  <div class="row"><button class="btn sm ghost" id="cp_reset">원래대로</button><span class="sp"></span><button class="btn sm pri" id="cp_ok">저장</button></div></div>`);
+ const g=id=>$('#'+id,md);
+ const rd=()=>{const o={};for(const k of ['tc','nc','bc'])if(g('cp_'+k+'_on').checked)o[k]=g('cp_'+k).value;return o};
+ const pv=()=>{const a=styAttr({sty:rd()});g('cp_pv').setAttribute('style',a.bub);g('cp_pvw').setAttribute('style',a.who);g('cp_fs_v').textContent=g('cp_fs').value+'px';g('cp_av_v').textContent=g('cp_av').value+'px';UI.chat=+g('cp_fs').value;UI.av=+g('cp_av').value;applyUi()};
+ md.querySelectorAll('input').forEach(i=>{i.oninput=pv;i.onchange=pv});['tc','nc','bc'].forEach(k=>g('cp_'+k).addEventListener('input',()=>{g('cp_'+k+'_on').checked=true;pv()}));pv();
+ g('cp_reset').onclick=()=>{for(const k of ['tc','nc','bc'])g('cp_'+k+'_on').checked=false;g('cp_fs').value=UI_DEF.chat;g('cp_av').value=UI_DEF.av;pv()};
+ g('cp_ok').onclick=()=>{try{localStorage.setItem('om_chatsty',JSON.stringify(rd()));localStorage.setItem('om_ui',JSON.stringify(UI))}catch(e){}closeModal();toast('채팅 설정을 저장했다');renderLog&&renderLog()}}
 async function sendChat(){
- const inp=$('#chatIn');const t=inp.value.trim();if(!t)return;const ch=CHAN.cur==='o'?{ch:'ooc'}:{};const nf=CHAN.cur==='o'?{}:{nf:1};inp.value='';if(window.OM_RP_UI&&window.OM_RP_UI.typingStop)window.OM_RP_UI.typingStop();
+ const inp=$('#chatIn');const t=inp.value.trim();if(!t)return;const SY=chatSty();const ch=Object.assign(CHAN.cur==='o'?{ch:'ooc'}:{},Object.keys(SY).length?{sty:SY}:{});const nf=CHAN.cur==='o'?{}:{nf:1};inp.value='';if(window.OM_RP_UI&&window.OM_RP_UI.typingStop)window.OM_RP_UI.typingStop();
  try{
   let m;
   if((m=t.match(/^\/r(?:oll)?\s+(.+)$/i))){const r=roll(m[1]);if(!r)return toast('주사위 식을 모르겠다 (예: 1d100, 2d6+3)');await DBS().addLog(ST.room,ST.secret,'dice',ST.name,Object.assign({t:`${m[1]} → ${r.text} = ${r.total}`,total:r.total},ch))}
@@ -254,12 +281,13 @@ function renderLog(scroll){
   if(k==='chat'&&d.clear)return `<div class="msg sys"><div class="bub">무대를 비웠다</div></div>`;
   if(k==='chat'&&d.sms)return '';
   if(k==='chat'&&!d.t&&!d.img)return '';
-  if(k==='battle'){const card=battleCard(d);if(card)return `<div class="msg battle card">${card}<span class="time">${t}</span></div>`}
+  if(k==='battle'){const card=battleCard(d);if(card)return `<div class="msg battle card">${card}<span class="time">${t}</span></div>`;const sc=sysCard(d);if(sc)return `<div class="msg battle sysc">${sc}<span class="time">${t}</span></div>`}
   const mine=(ST.role==='gm'&&d.from==='gm'&&!d.as&&(!d.gmn||d.gmn===ST.gmNick))||(ST.role==='seat'&&d.from===ST.seat&&(!d.as||d.k===ST.seat));
   const who=k==='whisper'?`${esc(r.who)} → ${esc(d.toName||d.to)}`:esc(chatName(r));
   const av=avatarOf(r);
   const lf=k==='chat'&&!isOoc(r)?lineFmt(d):{narr:false,text:String(d.t||'')};
-  return `<div class="msg ${k} ${mine?'me':''} ${lf.narr?'narr':''}"><div class="av" style="${av?`background-image:url('${cssu(av)}')`:''}"></div><div class="bub"><span class="who">${who}</span>${d.img?`<a href="${esc(d.img)}" target="_blank" rel="noopener"><img class="cimg" src="${esc(d.img)}" alt=""></a>`:''}${esc(lf.text)}</div><span class="time">${t}</span></div>`}).join('');
+  const sa=styAttr(d);
+  return `<div class="msg ${k} ${mine?'me':''} ${lf.narr?'narr':''}"><div class="av" style="${av?`background-image:url('${cssu(av)}')`:''}"></div><div class="bub" style="${sa.bub}"><span class="who" style="${sa.who}">${who}</span>${d.img?`<a href="${esc(d.img)}" target="_blank" rel="noopener"><img class="cimg" src="${esc(d.img)}" alt=""></a>`:''}${esc(lf.text)}</div><span class="time">${t}</span></div>`}).join('');
  el.querySelectorAll('[data-lmid]').forEach(bt=>bt.onclick=()=>{if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.action)window.OM_BATTLE_UI.action({act:'pots',mid:bt.dataset.lmid})});
  if(!el.innerHTML&&CHAN.cur==='o')el.innerHTML='<div class="msg sys"><div class="bub">잡담 창 — 여기서 한 말은 세션 로그·무대에 나오지 않는다</div></div>';chanDots();
  if(scroll!==false)el.scrollTop=el.scrollHeight}
