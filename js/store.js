@@ -19,6 +19,11 @@ window.OM_STORE=(()=>{
  async function createRoom(name,gmSecret){return rpc('om_create_room',{p_name:name,p_gm_secret:gmSecret})}
  async function getRoom(id){const r=await sb().from('om_rooms').select('*').eq('id',id).maybeSingle();if(r.error)throw err(r.error);return r.data}
  async function whoami(room,secret){return rpc('om_whoami',{p_room:room,p_secret:secret||''})}
+ /* 계정 (2026-10-23): 아이디 · 비밀번호 로그인 → 로그인 표(token). 방에서는 비밀값 자리에 'u:'+token 을 쓴다 (supabase/patch_2026-10-23_계정.sql) */
+ const acct={signup:(id,pw,name)=>rpc('om_signup',{p_id:id,p_pw:pw,p_name:name||''}),login:(id,pw,dev)=>rpc('om_login',{p_id:id,p_pw:pw,p_device:dev||''}),logout:t=>rpc('om_logout',{p_token:t}),
+  me:t=>rpc('om_me',{p_token:t}),meUpdate:(t,name,oldPw,newPw)=>rpc('om_me_update',{p_token:t,p_name:name??null,p_old:oldPw??null,p_new:newPw??null}),roomNew:(t,name)=>rpc('om_room_new',{p_token:t,p_name:name}),
+  adminList:t=>rpc('om_admin_list',{p_token:t}),adminMember:(t,uid,room,role,seat)=>rpc('om_admin_member',{p_token:t,p_uid:uid,p_room:room,p_role:role??null,p_seat:seat??null}),
+  adminUser:(t,uid,o)=>rpc('om_admin_user',{p_token:t,p_uid:uid,p_admin:o.admin??null,p_pw:o.pw??null,p_delete:!!o.del})};
  async function claimSeat(room,seat,secret,name){return rpc('om_claim_seat',{p_room:room,p_seat:seat,p_secret:secret,p_name:name})}
  async function roomUpdate(room,secret,name,settings){return rpc('om_room_update',{p_room:room,p_secret:secret,p_name:name??null,p_settings:settings??null})}
 
@@ -72,5 +77,5 @@ window.OM_STORE=(()=>{
   if(r.error){const m=String(r.error.message||r.error);if(/bucket not found|NoSuchBucket/i.test(m))throw new Error('그림 저장소(버킷 oremas)가 아직 없다 — Supabase SQL Editor 에서 supabase/schema.sql 을 다시 실행해 줘');throw err(r.error)}
   return sb().storage.from('oremas').getPublicUrl(full).data.publicUrl+'?v='+Date.now().toString(36)}
 
- return {logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs};
+ return {acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs};
 })();

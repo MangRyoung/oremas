@@ -7,6 +7,12 @@ const $=(s,r)=>(r||document).querySelector(s);
 const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const rnd=n=>{const a=new Uint8Array(n||18);crypto.getRandomValues(a);return Array.from(a,b=>'abcdefghijklmnopqrstuvwxyz0123456789'[b%36]).join('')};
 const LS={get(k,d){try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+/* 계정 로그인 (2026-10-23): 로그인 표(token)는 「로그인 유지」면 localStorage, 아니면 sessionStorage(창을 닫으면 로그아웃). 방에서는 비밀값 자리에 'u:'+token */
+const ACCT={get(){try{return JSON.parse(localStorage.getItem('om_acct')||sessionStorage.getItem('om_acct')||'null')}catch(e){return null}},
+ kept(){try{return !!localStorage.getItem('om_acct')}catch(e){return false}},
+ set(a,keep){try{localStorage.removeItem('om_acct');sessionStorage.removeItem('om_acct');if(a)(keep?localStorage:sessionStorage).setItem('om_acct',JSON.stringify(a))}catch(e){}},
+ tok(){const a=ACCT.get();return (a&&a.token)||''}};
+const acctErr=e=>{const m=String((e&&e.message)||e||'');return /om_(login|signup|me|admin|room_new|logout)|Could not find the function|PGRST202|schema cache/i.test(m)?'서버에 계정 기능이 아직 없다 — Supabase SQL Editor 에서 supabase/patch_2026-10-23_계정.sql 을 실행해 줘':m};
 /* 알림 (이 브라우저에서만): 채팅 소리 · 문자 소리 · 입력 중 표시 — 방 설정에서 켜고 끈다 */
 const ALARM_KEY='om_alarm';function alarm(){const d={chat:1,sms:1,typing:1};try{return Object.assign(d,JSON.parse(localStorage.getItem(ALARM_KEY)||'{}'))}catch(e){return d}}
 function setAlarm(k,v){const a=alarm();a[k]=v?1:0;try{localStorage.setItem(ALARM_KEY,JSON.stringify(a))}catch(e){}if(!a.typing&&window.OM_RP_UI&&window.OM_RP_UI.drawTyping)window.OM_RP_UI.drawTyping()}
@@ -26,8 +32,97 @@ window.addEventListener('hashchange',()=>route());
 async function route(){
  const p=params();
  if(ST.unsub){ST.unsub();ST.unsub=null}clearInterval(ST.wtimer);
- if(!p.r){renderLobby();return}
- await openRoom(p.r,p.pl?'':(p.gm||''))}
+ if(!p.r){if(p.lobby!=null)renderLobby();else if(ACCT.tok())renderHome();else renderLogin();return}
+ await openRoom(p.r,p.pl?'':(p.gm||''),!!p.pl)}
+
+/* ---------- 로그인 · 내 계정 홈 · 계정 관리 ---------- */
+function renderLogin(msg,o){
+ o=o||{};const app=$('#app');let mode='in';
+ const draw=()=>{app.innerHTML=`<div class="lobby">
+  <div class="brand">오레마스 <small>망켓몬 배틀 · 세션 툴</small></div>
+  <div class="card login"><div class="lgtabs"><button type="button" data-lm="in" class="${mode==='in'?'on':''}">로그인</button><button type="button" data-lm="up" class="${mode==='up'?'on':''}">가입</button></div>
+   ${msg?`<p class="lgmsg">${esc(msg)}</p>`:''}
+   <form id="lgForm" autocomplete="on">
+   <label class="lgf"><span>아이디</span><input type="text" id="lgId" name="username" autocomplete="username" autocapitalize="off" spellcheck="false" placeholder="영문 소문자 · 숫자 3~20자"></label>
+   ${mode==='up'?'<label class="lgf"><span>이름</span><input type="text" id="lgName" placeholder="방에서 보일 이름 (나중에 바꿀 수 있다)"></label>':''}
+   <label class="lgf"><span>비밀번호</span><input type="password" id="lgPw" name="password" autocomplete="${mode==='up'?'new-password':'current-password'}" placeholder="4자 이상"></label>
+   ${mode==='up'?'<label class="lgf"><span>비밀번호 확인</span><input type="password" id="lgPw2" autocomplete="new-password"></label>':''}
+   <label class="lgkeep"><input type="checkbox" id="lgKeep" ${LS.get('om_keep',true)?'checked':''}> 이 기기에서 로그인 유지</label>
+   <button class="btn pri lgok" id="lgOk" type="submit">${mode==='up'?'가입하고 들어가기':'로그인'}</button></form>
+   <p class="small muted">${mode==='up'?'처음 가입한 계정이 관리자가 된다. 관리자는 계정 목록을 보고 방마다 GM · PL 권한을 준다.':'공용 PC 라면 「로그인 유지」를 끄고 들어가자 — 창을 닫으면 로그아웃된다.'}</p></div>
+  ${o.room?(o.noGuest?'':`<p class="hint"><a href="#" id="lgGuest">로그인 없이 이 방으로 (예전 방식)</a></p>`):'<p class="hint"><a href="#lobby">예전 방식(방 링크 · GM 링크)으로 들어가기</a></p>'}
+ </div>`;
+  app.querySelectorAll('[data-lm]').forEach(b=>b.onclick=()=>{mode=b.dataset.lm;draw()});
+  const g=$('#lgGuest');if(g)g.onclick=e=>{e.preventDefault();try{sessionStorage.setItem('om_guest_'+o.room,'1')}catch(x){}route()};
+  $('#lgForm').onsubmit=async e=>{e.preventDefault();const id=$('#lgId').value.trim().toLowerCase(),pw=$('#lgPw').value,keep=$('#lgKeep').checked;LS.set('om_keep',keep);
+   if(!id||!pw)return toast('아이디와 비밀번호를 적어 줘');
+   const bt=$('#lgOk');bt.disabled=true;
+   try{if(mode==='up'){if(pw!==$('#lgPw2').value){bt.disabled=false;return toast('비밀번호 확인이 다르다')}await DBS().acct.signup(id,pw,$('#lgName').value.trim()||id)}
+    const dev=((navigator.userAgentData&&navigator.userAgentData.platform)||navigator.platform||'')+' · '+(/Mobi/i.test(navigator.userAgent)?'모바일':'PC');
+    const token=await DBS().acct.login(id,pw,dev);if(!token){bt.disabled=false;return toast('아이디나 비밀번호가 맞지 않는다')}
+    let me=null;try{me=await DBS().acct.me(token)}catch(x){}
+    ACCT.set({token,uid:id,name:(me&&me.name)||id,admin:!!(me&&me.admin)},keep);toast(`${(me&&me.name)||id} 로 로그인했다`);route()}
+   catch(x){bt.disabled=false;toast(acctErr(x))}}};
+ draw()}
+async function renderHome(){
+ const app=$('#app');app.innerHTML='<div class="lobby muted">내 계정을 불러오는 중…</div>';
+ const a=ACCT.get();let me;
+ try{me=await DBS().acct.me(a.token)}catch(e){app.innerHTML=`<div class="lobby"><p>계정 정보를 읽지 못했다: ${esc(acctErr(e))}</p><p><a href="#lobby">예전 방식으로 들어가기</a> · <a href="#" id="hmOut">로그아웃</a></p></div>`;$('#hmOut').onclick=e=>{e.preventDefault();ACCT.set(null);route()};return}
+ if(!me){ACCT.set(null);return renderLogin('로그인이 끝났다 (30일 동안 안 들어왔거나 비밀번호가 바뀌었다) — 다시 로그인해 줘')}
+ ACCT.set(Object.assign(a,{uid:me.uid,name:me.name,admin:!!me.admin}),ACCT.kept());
+ const rooms=me.rooms||[],mine=LS.get('om_rooms',[]).filter(r=>!rooms.some(x=>x.id===r.id));
+ app.innerHTML=`<div class="lobby">
+  <div class="brand">오레마스 <small>망켓몬 배틀 · 세션 툴</small></div>
+  <div class="card acct"><div class="row"><b class="anm">${esc(me.name)}</b><span class="mono small muted">@${esc(me.uid)}</span>${me.admin?'<span class="badge gm">관리자</span>':''}<span class="sp"></span>${me.admin?'<button class="btn sm pri" id="hmAdmin">계정 관리</button>':''}<button class="btn sm" id="hmMe">내 계정</button><button class="btn sm ghost" id="hmOut">로그아웃</button></div>
+   <p class="small muted">${ACCT.kept()?'이 기기에서 로그인 유지 중 (30일 동안 안 들어오면 끝난다)':'창을 닫으면 로그아웃된다'}</p></div>
+  <div class="card"><h2>내 방</h2>${rooms.length?`<ul class="rooms">${rooms.map(r=>`<li><b>${esc(r.name||r.id)}</b><span class="badge ${r.role==='gm'?'gm':'seat'}">${r.role==='gm'?'GM':'PL'}</span>${r.role==='pl'&&!r.seat?'<span class="small muted">자리 아직</span>':''}<span class="sp"></span><a class="btn sm pri" href="#r=${esc(r.id)}">들어가기</a></li>`).join('')}</ul>`:'<div class="empty">아직 권한이 있는 방이 없다. 방 링크로 들어가 자리에 앉거나, 관리자에게 방 권한을 받으면 여기 생긴다.</div>'}</div>
+  <div class="card"><h2>방 만들기 (GM)</h2>
+   <div class="row"><input type="text" id="newName" placeholder="방 이름 (예: 무진)" style="flex:1"><button class="btn pri" id="mk">만들기</button></div>
+   <p class="small muted">만든 계정이 그 방의 GM 이 된다. 플레이어에게는 방 링크만 주면 된다 — 들어와서 로그인하고 자리에 앉는다.</p></div>
+  <div class="card"><h2>방 들어가기</h2>
+   <div class="row"><input type="text" id="joinId" placeholder="방 링크 또는 방 id" style="flex:1"><button class="btn" id="join">입장</button></div></div>
+  ${mine.length?recent(mine).replace('<h2>최근 방</h2>','<h2>이 기기의 최근 방 <small class="muted">(예전 링크)</small></h2>'):''}
+ </div>`;
+ $('#hmOut').onclick=async e=>{e.preventDefault();if(!confirm('이 기기에서 로그아웃할까?'))return;try{await DBS().acct.logout(a.token)}catch(x){}ACCT.set(null);route()};
+ $('#hmMe').onclick=()=>openMe(me);const ad=$('#hmAdmin');if(ad)ad.onclick=()=>openAdmin();
+ app.querySelectorAll('[data-rmdel]').forEach(b=>b.onclick=e=>{e.preventDefault();const id=b.dataset.rmdel;if(!confirm('이 기기의 최근 방 목록에서 뺄까? (방은 그대로 있다)'))return;LS.set('om_rooms',LS.get('om_rooms',[]).filter(r=>r.id!==id));renderHome()});
+ $('#mk').onclick=async()=>{const name=$('#newName').value.trim()||'새 방';try{const id=await DBS().acct.roomNew(a.token,name);location.hash='r='+id}catch(e){toast('방을 만들지 못했다: '+acctErr(e))}};
+ $('#join').onclick=()=>{const v=$('#joinId').value.trim();const m=v.match(/#?r=([a-z0-9]+)(?:&gm=([a-z0-9]+))?/)||[null,v];if(!m[1])return toast('방 id 를 넣어 줘');location.hash='r='+m[1]+(m[2]?'&gm='+m[2]:'')}}
+function openMe(me){
+ const a=ACCT.get();
+ const m=openModal(`<div class="mhead"><h2>내 계정</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+  <div class="pf"><section class="pf-card"><header><i>👤</i><b>이름</b><small>방에 들어갔을 때 기본 이름</small></header><div class="pf-sel"><input type="text" id="meName" value="${esc(me.name)}"><button class="btn xs pri" id="meNameOk">저장</button></div><div class="pf-note">아이디 <span class="mono">${esc(me.uid)}</span> 는 바꿀 수 없다</div></section>
+  <section class="pf-card"><header><i>🔑</i><b>비밀번호 바꾸기</b><small>바꾸면 다른 기기의 로그인은 끊긴다</small></header>
+   <label class="lgf"><span>지금 비밀번호</span><input type="password" id="meOld" autocomplete="current-password"></label><label class="lgf"><span>새 비밀번호</span><input type="password" id="meNew" autocomplete="new-password"></label><label class="lgf"><span>새 비밀번호 확인</span><input type="password" id="meNew2" autocomplete="new-password"></label>
+   <button class="btn sm pri" id="mePwOk">바꾸기</button></section></div>`);
+ $('#meNameOk',m).onclick=async()=>{const n=$('#meName',m).value.trim();if(!n)return toast('이름을 적어 줘');try{await DBS().acct.meUpdate(a.token,n,null,null);closeModal();toast('이름을 바꿨다');renderHome()}catch(e){toast(acctErr(e))}};
+ $('#mePwOk',m).onclick=async()=>{const o=$('#meOld',m).value,n=$('#meNew',m).value;if(n!==$('#meNew2',m).value)return toast('새 비밀번호 확인이 다르다');if(n.length<4)return toast('비밀번호는 4자 이상');try{await DBS().acct.meUpdate(a.token,null,o,n);closeModal();toast('비밀번호를 바꿨다')}catch(e){toast(acctErr(e))}}}
+/* 관리자: 계정 목록 · 방마다 GM/PL 권한 · 관리자 · 비밀번호 초기화 · 지우기 · 방의 「계정 전용」 */
+let ADM={sel:'',tab:'users'};
+async function openAdmin(){
+ const t=ACCT.tok();let d;try{d=await DBS().acct.adminList(t)}catch(e){return toast(acctErr(e))}
+ const users=d.users||[],rooms=d.rooms||[],me=(ACCT.get()||{}).uid;if(!users.some(u=>u.uid===ADM.sel))ADM.sel=(users[0]||{}).uid||'';
+ const u=users.find(x=>x.uid===ADM.sel);const roleOf=rid=>((u&&u.rooms)||[]).find(x=>x.room===rid)||null;
+ const when=s=>s?ago(new Date(s).getTime()):'—';
+ const m=openModal(`<div class="mhead"><h2>계정 관리</h2><span class="small muted">${users.length}명 · 방 ${rooms.length}개</span><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+  <div class="pf-tabs"><button data-atab="users" class="${ADM.tab==='users'?'on':''}"><span>계정 · 권한</span></button><button data-atab="rooms" class="${ADM.tab==='rooms'?'on':''}"><span>방</span></button></div>
+  ${ADM.tab==='users'?`<div class="adm"><ul class="admu">${users.map(x=>`<li data-u="${esc(x.uid)}" class="${x.uid===ADM.sel?'on':''}"><b>${esc(x.name)}</b><span class="mono small muted">@${esc(x.uid)}</span>${x.admin?'<span class="badge gm">관리자</span>':''}<span class="sp"></span><span class="admr">${(x.rooms||[]).map(r=>`<span class="badge ${r.role==='gm'?'gm':'seat'}">${esc(r.name||r.room)} ${r.role==='gm'?'GM':'PL'}</span>`).join('')}</span><span class="when">${esc(when(x.last_at))}</span></li>`).join('')}</ul>
+   ${u?`<div class="adme"><div class="row"><b>${esc(u.name)}</b><span class="mono small muted">@${esc(u.uid)} · 가입 ${esc(when(u.created_at))}</span><span class="sp"></span>
+     <label class="lgkeep"><input type="checkbox" id="admAdm" ${u.admin?'checked':''} ${u.uid===me?'disabled title="자기 관리자 권한은 뺄 수 없다"':''}> 관리자</label></div>
+    <table class="admt"><thead><tr><th>방</th><th>권한</th><th>자리</th></tr></thead><tbody>${rooms.map(r=>{const x=roleOf(r.id);return `<tr><td>${esc(r.name||r.id)}${r.accountOnly?' <span class="badge">계정 전용</span>':''}</td><td><select data-arole="${esc(r.id)}"><option value="">없음${u.admin?' (관리자라 GM)':''}</option><option value="gm" ${x&&x.role==='gm'?'selected':''}>GM</option><option value="pl" ${x&&x.role==='pl'?'selected':''}>PL</option></select></td><td class="small muted">${x&&x.role==='pl'?(x.seat?esc(x.seat):'아직'):''}</td></tr>`}).join('')||'<tr><td colspan="3" class="muted">방이 없다</td></tr>'}</tbody></table>
+    <div class="pf-note">PL 권한만 주면 그 사람이 방에 들어와 자리를 고른다. 자리를 옮기게 하려면 방의 「자리 관리」에서 비운다.</div>
+    <div class="row" style="margin-top:10px"><button class="btn sm" id="admPw">비밀번호 초기화</button>${u.uid===me?'':'<button class="btn sm ghost danger" id="admDel">계정 지우기</button>'}</div></div>`:'<div class="empty">아직 계정이 없다</div>'}</div>`
+  :`<div class="adm"><table class="admt"><thead><tr><th>방</th><th>계정 전용</th><th></th></tr></thead><tbody>${rooms.map(r=>`<tr><td><b>${esc(r.name||r.id)}</b> <span class="mono small muted">${esc(r.id)}</span></td><td><label class="lgkeep"><input type="checkbox" data-aonly="${esc(r.id)}" ${r.accountOnly?'checked':''}> 로그인해야 들어간다</label></td><td><a class="btn xs" href="#r=${esc(r.id)}">들어가기</a></td></tr>`).join('')}</tbody></table>
+   <div class="pf-note">「계정 전용」을 켜면 로그인해야 들어오고, 「계정 · 권한」에서 PL 을 준 계정만 자리에 앉는다. 예전 방 링크 · GM 링크 · 이 기기에 기억된 자리로는 권한이 안 생긴다 (관리자는 언제나 GM). 끈 방은 로그인한 누구나 앉을 수 있다.</div></div>`}`);
+ m.classList.add('setmodal');
+ m.querySelectorAll('[data-atab]').forEach(b=>b.onclick=()=>{ADM.tab=b.dataset.atab;openAdmin()});
+ m.querySelectorAll('[data-u]').forEach(li=>li.onclick=()=>{ADM.sel=li.dataset.u;openAdmin()});
+ const run=async(f,ok)=>{try{await f();if(ok)toast(ok)}catch(e){toast(acctErr(e))}openAdmin()};
+ m.querySelectorAll('[data-arole]').forEach(s=>s.onchange=()=>run(()=>DBS().acct.adminMember(t,u.uid,s.dataset.arole,s.value||null,null),`${u.name} — ${s.selectedOptions[0].textContent}`));
+ const aa=$('#admAdm',m);if(aa)aa.onchange=()=>run(()=>DBS().acct.adminUser(t,u.uid,{admin:aa.checked}),aa.checked?`${u.name} 에게 관리자를 줬다`:`${u.name} 의 관리자를 뺐다`);
+ const ap=$('#admPw',m);if(ap)ap.onclick=()=>{const pw=prompt(`${u.name} (@${u.uid}) 의 새 비밀번호 (4자 이상) — 그 계정의 모든 기기 로그인이 끊긴다`);if(pw==null)return;if(pw.length<4)return toast('비밀번호는 4자 이상');run(()=>DBS().acct.adminUser(t,u.uid,{pw}),'비밀번호를 바꿨다 — 본인에게 알려 줘')};
+ const ad=$('#admDel',m);if(ad)ad.onclick=()=>{if(!confirm(`${u.name} (@${u.uid}) 계정을 지울까? 방 권한도 같이 사라진다 (방에 남은 트레이너 · 로그는 그대로).`))return;ADM.sel='';run(()=>DBS().acct.adminUser(t,u.uid,{del:true}),'계정을 지웠다')};
+ m.querySelectorAll('[data-aonly]').forEach(c=>c.onchange=()=>run(async()=>{const row=await DBS().getRoom(c.dataset.aonly);const s=Object.assign({},(row&&row.settings)||{},{accountOnly:c.checked});await DBS().roomUpdate(c.dataset.aonly,'u:'+t,null,s)},c.checked?'계정 전용으로 바꿨다':'예전 링크도 다시 된다'))}
 
 /* ---------- 로비 ---------- */
 function renderLobby(){
@@ -43,6 +138,7 @@ function renderLobby(){
   <div class="card"><h2>방 들어가기</h2>
    <div class="row"><input type="text" id="joinId" placeholder="방 링크 또는 방 id" style="flex:1"><button class="btn" id="join">입장</button></div></div>
   ${mine.length?'':'<p class="hint">들어간 방은 이 기기에 기억해 두고 맨 위에 「최근 방」으로 보여 준다.</p>'}
+  <p class="hint"><a href="#">← 계정으로 로그인</a></p>
  </div>`;
  {const ni=$('#lbNick'),save=()=>{LS.set('om_nick',ni.value.trim());toast(ni.value.trim()?`닉네임: ${ni.value.trim()}`:'닉네임을 비웠다')};$('#lbNickOk').onclick=save;ni.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)save()}}
  app.querySelectorAll('[data-rmdel]').forEach(b=>b.onclick=e=>{e.preventDefault();const id=b.dataset.rmdel;if(!confirm('이 기기의 최근 방 목록에서 뺄까? (방은 그대로 있다)'))return;LS.set('om_rooms',LS.get('om_rooms',[]).filter(r=>r.id!==id));renderLobby()});
@@ -55,15 +151,21 @@ function ago(t){if(!t)return '';const m=Math.floor((Date.now()-t)/60000);if(m<1)
 function recent(mine){if(!mine.length)return '';return `<div class="card"><h2>최근 방</h2><ul class="rooms">${mine.map(r=>`<li><b>${esc(r.name||r.id)}</b>${r.at?`<span class="when">${esc(ago(r.at))}</span>`:''}<span class="sp"></span>${r.gm?`<a class="btn sm ${r===mine[0]?'pri':''}" href="${esc(gmLink(r.id,r.gm))}" title="GM 권한으로 들어간다">GM 으로</a><a class="btn sm ghost" href="${esc(roomLink(r.id)+'&pl=1')}" title="GM 링크가 있어도 플레이어로 — 자리에 앉아 PL 닉으로 논다">PL 로</a>`:`<a class="btn sm ${r===mine[0]?'pri':''}" href="${esc(roomLink(r.id))}">들어가기</a>`}<button class="rmdel" type="button" data-rmdel="${esc(r.id)}" title="목록에서 빼기" aria-label="목록에서 빼기">✕</button></li>`).join('')}</ul></div>`}
 
 /* ---------- 방 ---------- */
-async function openRoom(id,gm){
+async function openRoom(id,gm,asPl){
  const app=$('#app');app.innerHTML='<div class="lobby muted">방에 들어가는 중…</div>';
  let row;try{row=await DBS().getRoom(id)}catch(e){app.innerHTML=`<div class="lobby">방을 읽지 못했다: ${esc(e.message)}<br><a href="#">로비로</a></div>`;return}
  if(!row){app.innerHTML='<div class="lobby">그런 방이 없다. <a href="#">로비로</a></div>';return}
  ST.room=id;ST.roomRow=row;ST._sub=false;if(window.OM_BATTLE_UI)window.OM_BATTLE_UI.resetLocal();ST.role=null;ST.secret='';ST.seat='';ST.name='';
- const seatInfo=LS.get('om_seat_'+id,null);
+ const seatInfo=LS.get('om_seat_'+id,null);const tok=ACCT.tok();
+ /* 계정으로: 방 권한(GM · PL 자리)을 서버가 정한다. 「PL 로」(asPl) 는 예전 방식으로 */
+ if(!gm&&tok&&!asPl){let w=null;try{w=await DBS().whoami(id,'u:'+tok)}catch(e){}
+  if(w==='gm'){ST.role='gm';ST.secret='u:'+tok;ST.name='GM';ST.gmNick=LS.get('om_gmnick_'+id,'')||(ACCT.get()||{}).name||LS.get('om_nick','')||'';remember(id,row.name,'')}
+  else if(w){ST.role='seat';ST.secret='u:'+tok;ST.seat=w;ST.name=LS.get('om_name_'+id,'')||(ACCT.get()||{}).name||w}}
  if(gm){const w=await DBS().whoami(id,gm);if(w==='gm'){ST.role='gm';ST.secret=gm;ST.name='GM';ST.gmNick=LS.get('om_gmnick_'+id,'')||LS.get('om_nick','')||'';remember(id,row.name,gm)}else toast('GM 비밀값이 맞지 않는다')}
  if(!ST.role&&seatInfo&&seatInfo.secret){const w=await DBS().whoami(id,seatInfo.secret);if(w&&w!=='gm'){ST.role='seat';ST.secret=seatInfo.secret;ST.seat=w;ST.name=seatInfo.name||w}}
- if(!ST.role){remember(id,row.name,'');ST.name=LS.get('om_name_'+id,'')||LS.get('om_nick','')||''}
+ if(!ST.role&&!tok&&!gm){const only=!!((row.settings||{}).accountOnly);let guest=false;try{guest=!!sessionStorage.getItem('om_guest_'+id)}catch(e){}
+  if(only||!guest){renderLogin(only?`「${row.name||id}」 은 계정 전용 방이다 — 로그인해야 들어갈 수 있다`:`「${row.name||id}」 에 들어가려면 로그인`,{room:id,noGuest:only});return}}
+ if(!ST.role){remember(id,row.name,'');ST.name=LS.get('om_name_'+id,'')||(tok&&!asPl&&(ACCT.get()||{}).name)||LS.get('om_nick','')||''}
  const st=await DBS().getState(id);ST.state=(st&&st.data)||{};ST.v=(st&&st.v)||0;
  /* GM 이 방을 열면 좌석이 쓸 상자(roster · pub · graph · skill · dex)를 먼저 만들어 둔다 — 서버의 jsonb_set 은 부모가 없으면 조용히 실패하니까 */
  if(ST.role==='gm'){const need={roster:{trainers:{},mons:{}},pub:{},ready:{},graph:{nodes:{},edges:{}},skill:{},dex:{},rp:{},battle:{}};for(const k in need){if(typeof ST.state[k]!=='object'||ST.state[k]===null){try{const v=await DBS().setState(id,ST.secret,[k],need[k]);ST.state[k]=need[k];ST.v=Math.max(ST.v,v||0)}catch(e){}}else if(k==='roster'){for(const kk of ['trainers','mons'])if(typeof ST.state.roster[kk]!=='object'||ST.state.roster[kk]===null){try{const v=await DBS().setState(id,ST.secret,['roster',kk],{});ST.state.roster[kk]={};ST.v=Math.max(ST.v,v||0)}catch(e){}}}}}
@@ -129,7 +231,7 @@ function renderRoom(){
    <span class="tabs" id="sceneTabs"></span>
    <span class="sp"></span><span id="typingTop" class="typingtop"></span><span id="presence" class="presence" title="지금 접속 중인 사람 · 누르면 내 이름"></span><span id="conn" class="small muted">○ 연결 중</span>
    ${ST.role?`<button class="btn sm ${window.OM_SKILL_UI&&window.OM_SKILL_UI.pending()?'pri':''}" id="skillBtn">스킬 체크${window.OM_SKILL_UI&&window.OM_SKILL_UI.pending()?' !':''}</button>${ST.role==='seat'?'<button class="btn sm" id="dexBtn" title="포켓몬 도감 · 해석 관리">도감</button>':''}`:''}<button class="btn sm" id="dbBtn">DB</button><button class="btn sm" id="rmBtn" title="레디메이드 (자동화 효과 사전)">레디메이드</button><button class="btn sm" id="copyLink">플레이어 링크</button>
-   ${ST.role==='gm'?`<a class="btn sm ghost" href="${esc(roomLink(ST.room)+'&pl=1')}" title="이 방에 플레이어로 다시 들어간다 (자리·PL 닉)">PL 로</a>`:((LS.get('om_rooms',[]).find(x=>x.id===ST.room)||{}).gm?`<a class="btn sm ghost" href="${esc(gmLink(ST.room,(LS.get('om_rooms',[]).find(x=>x.id===ST.room)||{}).gm))}" title="이 기기에 GM 링크가 있다 — GM 으로 다시 들어간다">GM 으로</a>`:'')}${ST.role==='gm'?'<button class="btn sm" id="copyGm">GM 링크</button><button class="btn sm" id="roomSet">⚙ 설정</button>':'<button class="btn sm" id="seatBtn">자리</button><button class="btn sm ghost" id="roomSet" title="내 설정 — 소리·알림·글자·이미지·단축키">⚙ 설정</button>'}
+   ${ST.role==='gm'?`<a class="btn sm ghost" href="${esc(roomLink(ST.room)+'&pl=1')}" title="이 방에 플레이어로 다시 들어간다 (자리·PL 닉)">PL 로</a>`:((LS.get('om_rooms',[]).find(x=>x.id===ST.room)||{}).gm?`<a class="btn sm ghost" href="${esc(gmLink(ST.room,(LS.get('om_rooms',[]).find(x=>x.id===ST.room)||{}).gm))}" title="이 기기에 GM 링크가 있다 — GM 으로 다시 들어간다">GM 으로</a>`:'')}${ST.role==='gm'?(String(ST.secret).startsWith('u:')?'':'<button class="btn sm" id="copyGm">GM 링크</button>')+'<button class="btn sm" id="roomSet">⚙ 설정</button>':'<button class="btn sm" id="seatBtn">자리</button><button class="btn sm ghost" id="roomSet" title="내 설정 — 소리·알림·글자·이미지·단축키">⚙ 설정</button>'}
   </div>
   <div class="body"><div class="scene" id="scene"></div><div class="resizer" id="resizer" title="끌어서 채팅 창 너비 조절"></div>
    <div class="side" id="side"><div class="phone"><div class="pbar"><span>●●●</span><span class="ptime" id="pclock"></span></div><div class="ptitle"><span class="plogs">${ST.role==='gm'?'<button class="btn xs ghost plog" id="clearLog" title="로그 비우기">🧹 비우기</button>':''}<button class="btn xs ghost plog" id="saveLog" title="채팅 로그를 파일로 저장">💾 로그</button><button class="btn xs ghost plog" id="chatPrefs" title="채팅 설정 — 글자 크기 · 내 글자색 · 닉네임 색">⚙ 채팅 설정</button></span>${esc(r.name||r.id)}<small>${ST.role==='gm'?'GM':ST.role==='seat'?esc(ST.name):'관전'} · 오레마스</small></div><div class="ctabs" id="ctabs"><button type="button" data-ch="s">세션</button><button type="button" data-ch="o">잡담<i class="cdot"></i></button></div><div class="log" id="log"></div>
@@ -143,7 +245,7 @@ function renderRoom(){
  const dk=$('#deckBtn');if(dk)dk.onclick=()=>window.OM_DECK_UI.open();
  $('#dbBtn').onclick=()=>window.OM_DB_UI.open({kind:'trait'});if($('#rmBtn'))$('#rmBtn').onclick=()=>window.OM_FX_UI.openRm('');
  const clock=()=>{const el=$('#pclock');if(el){const d=new Date();el.textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}};clock();clearInterval(ST.clockT);ST.clockT=setInterval(clock,15000);
- if(ST.role==='gm'){$('#copyGm').onclick=()=>copy(gmLink(ST.room,ST.secret),'GM 링크를 복사했다 (아무에게도 주지 말 것)');$('#roomSet').onclick=()=>openRoomSettings()}
+ if(ST.role==='gm'){if($('#copyGm'))$('#copyGm').onclick=()=>copy(gmLink(ST.room,ST.secret),'GM 링크를 복사했다 (아무에게도 주지 말 것)');$('#roomSet').onclick=()=>openRoomSettings()}
  else {$('#seatBtn').onclick=openSeatPicker;$('#roomSet').onclick=()=>openRoomSettings()}
  $('#chatSend').onclick=sendChat;bindChatAs();$('#ctabs').querySelectorAll('[data-ch]').forEach(b=>b.onclick=()=>setChan(b.dataset.ch));setChan(CHAN.cur,true);$('#chatIn').onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)sendChat()};$('#chatIn').oninput=()=>{if(window.OM_RP_UI&&window.OM_RP_UI.typingPing)window.OM_RP_UI.typingPing(CHAN.cur==='o')};
  /* 채팅 창 너비: 끌어서 조절, 브라우저에 기억 */
@@ -506,7 +608,7 @@ function monChange(mid,kind){const m=(B().mons||{})[mid];if(!m)return;const D=wi
 /* ---------- 좌석 ---------- */
 /* 관전자도 이름을 정해 접속자 칸에 보이게 */
 function openNick(){const isG=ST.role==='gm';const m=openModal(`<div class="mhead"><h2>${isG?'GM 닉네임':'내 이름'}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small muted">${isG?'GM 이 여럿일 때 접속자 칸 · 입력 중 표시 · 채팅에 「GM · 닉」으로 보인다.':'접속자 칸과 입력 중 표시에 이 이름이 보인다. 자리에 앉으면 그 자리 이름을 따른다.'}</p><div class="row"><input type="text" id="nickIn" value="${esc(isG?(ST.gmNick||''):(ST.name||''))}" placeholder="닉네임" style="flex:1"><button class="btn pri" id="nickOk">저장</button></div>${ST.role?'':'<div class="row" style="margin-top:8px"><button class="btn sm" id="nickSeat">자리에 앉기</button></div>'}`);
- const ok=async()=>{const n=$('#nickIn',m).value.trim();if(isG){ST.gmNick=n;LS.set('om_gmnick_'+ST.room,n);closeModal();sayHello(true);drawPresence();return toast(n?`이제 「GM · ${n}」로 보인다`:'GM 닉을 비웠다')}if(!n)return toast('이름을 적어 줘');ST.name=n;LS.set('om_name_'+ST.room,n);if(ST.role==='seat'){const info=LS.get('om_seat_'+ST.room,null);if(info){info.name=n;LS.set('om_seat_'+ST.room,info);try{await DBS().claimSeat(ST.room,ST.seat,ST.secret,n)}catch(e){}}}closeModal();sayHello(true);drawPresence();renderRoom();toast(`이제 「${n}」로 보인다`)};
+ const ok=async()=>{const n=$('#nickIn',m).value.trim();if(isG){ST.gmNick=n;LS.set('om_gmnick_'+ST.room,n);closeModal();sayHello(true);drawPresence();return toast(n?`이제 「GM · ${n}」로 보인다`:'GM 닉을 비웠다')}if(!n)return toast('이름을 적어 줘');ST.name=n;LS.set('om_name_'+ST.room,n);if(ST.role==='seat'){const info=LS.get('om_seat_'+ST.room,null);if(String(ST.secret).startsWith('u:')){try{await DBS().claimSeat(ST.room,ST.seat,ST.secret,n)}catch(e){}}else if(info){info.name=n;LS.set('om_seat_'+ST.room,info);try{await DBS().claimSeat(ST.room,ST.seat,ST.secret,n)}catch(e){}}}closeModal();sayHello(true);drawPresence();renderRoom();toast(`이제 「${n}」로 보인다`)};
  $('#nickOk',m).onclick=ok;$('#nickIn',m).onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)ok()};const ns=$('#nickSeat',m);if(ns)ns.onclick=()=>{closeModal();openSeatPicker()}}
 /* 로그 저장: 방의 전체 로그를 HTML(아바타 · 그림 · 배틀 카드 · 날짜 구분) 또는 TXT 로. 설정은 om_logsave 에 기억 */
 async function fetchAllLog(){const out=[];let after=0;for(let i=0;i<200;i++){const rows=await DBS().getLog(ST.room,after,1000);if(!rows||!rows.length)break;out.push(...rows);after=rows[rows.length-1].id;if(rows.length<1000)break}return out}
@@ -582,8 +684,8 @@ function openSeatPicker(){
   <div class="row" style="margin-bottom:8px"><label>내 이름</label><input type="text" id="seatName" value="${esc(ST.name&&ST.name!=='GM'?ST.name:'')}" placeholder="플레이어 이름" style="flex:1">${ST.role==='seat'?'':'<button class="btn pri" data-seat="new">새 자리에 앉기</button>'}</div>
   ${ids.length||free.length?`<ul class="pick">${ids.map(id=>{const t=trs[id];const o=seats[id];const mine=ST.seat===id;return `<li><b>${esc(t.name)}</b>${t.side?`<span class="badge ${t.side}">${t.side==='left'?'좌측':'우측'}</span>`:''}<span class="small muted">${o?(mine?'내 자리':'앉은 사람: '+esc(o.name)):'빈 자리'}</span><span class="sp"></span>${mine?'<span class="badge seat">나</span>':o?'':(ST.role==='seat'?'':`<button class="btn sm pri" data-seat="${id}">앉기</button>`)}${ST.role==='gm'&&o?`<button class="btn sm ghost danger" data-free="${id}">비우기</button>`:''}</li>`}).join('')}${free.map(id=>{const o=seats[id];const mine=ST.seat===id;return `<li><b>${esc(o.name||id)}</b><span class="small muted">${mine?'내 자리 · 아직 파티 없음':'아직 파티 없음'}</span><span class="sp"></span>${mine?'<span class="badge seat">나</span>':''}${ST.role==='gm'?`<button class="btn sm ghost danger" data-free="${id}">비우기</button>`:''}</li>`}).join('')}</ul>`:'<div class="empty">아직 아무도 없다. 이름을 적고 「새 자리에 앉기」.</div>'}`);
  m.querySelectorAll('[data-seat]').forEach(bt=>bt.onclick=async()=>{const name=$('#seatName',m).value.trim();if(!name)return toast('이름을 적어 줘');
-  LS.set('om_name_'+ST.room,name);const info=LS.get('om_seat_'+ST.room,null);const secret=(info&&info.secret)||rnd(24);const seatId=bt.dataset.seat==='new'?('p'+rnd(8).toLowerCase()):bt.dataset.seat;bt.dataset.seat=seatId;
-  try{const ok=await DBS().claimSeat(ST.room,seatId,secret,name);if(!ok)return toast('누군가 먼저 앉은 자리다');LS.set("om_seat_"+ST.room,{seat:bt.dataset.seat,secret,name});closeModal();route()}catch(e){toast('앉지 못했다: '+e.message)}});
+  LS.set('om_name_'+ST.room,name);const info=LS.get('om_seat_'+ST.room,null);const tok=!params().pl&&ACCT.tok();const secret=tok?'u:'+tok:((info&&info.secret)||rnd(24));const seatId=bt.dataset.seat==='new'?('p'+rnd(8).toLowerCase()):bt.dataset.seat;bt.dataset.seat=seatId;
+  try{const ok=await DBS().claimSeat(ST.room,seatId,secret,name);if(!ok)return toast('누군가 먼저 앉은 자리다');if(!tok)LS.set("om_seat_"+ST.room,{seat:bt.dataset.seat,secret,name});closeModal();route()}catch(e){toast('앉지 못했다: '+e.message)}});
  m.querySelectorAll('[data-free]').forEach(bt=>bt.onclick=async()=>{try{await DBS().claimSeat(ST.room,bt.dataset.free,ST.secret,null);closeModal();toast('자리를 비웠다')}catch(e){toast(e.message)}})}
 
 const PCT_LABELS=['드물게','저확률','중확률','고확률'];
@@ -602,7 +704,8 @@ function openRoomSettings(tab){
    ${sw('gmHands',rp.gmHands===false,'GM 불간섭 (GM 도 플레이어처럼)','플레이어가 배틀에 올린 트레이너의 지시 · 준비 · HP · 랭크 · 상태는 그 플레이어만. GM 이 직접 불러온 파티와 NPC 는 GM 이 그대로 지시하고 턴도 진행한다 (자동 처리는 그대로)')}`)})()}
   ${card('🎲','확률 표식',`<div class="pf-pct">${PCT_LABELS.map(l=>{const base=pctBase(l);const cur=(rp.pct||{})[l];return `<label><span>${l}</span><input type="number" min="0" max="100" step="1" data-pct="${l}" value="${cur!=null&&cur!==''?esc(String(cur)):''}" placeholder="${base}"><em>%</em></label>`}).join('')}</div>
    <div class="row" style="margin-top:8px"><button class="btn xs pri" id="pctSave">저장</button><button class="btn xs ghost" id="pctReset">기본값으로</button></div><div class="pf-note">효과 글의 「드물게·저확률·중확률·고확률」 판정 %. 비운 칸은 흐린 기본값. 이 방에만.</div>`)}
-  ${card('🪑','자리',`<div class="row"><button class="btn sm" id="seatMgr">자리 관리</button></div>`)}</div>`:'';
+  ${card('🪑','자리',`<div class="row"><button class="btn sm" id="seatMgr">자리 관리</button></div>`)}
+  ${card('🔐','입장',`${sw('acctOnly',!!((r.settings||{}).accountOnly),'계정 전용 방','켜면 로그인해야 들어오고, 관리자가 PL 권한을 준 계정만 자리에 앉는다. 예전 방 링크 · GM 링크 · 기기에 기억된 자리는 안 먹힌다 (관리자는 언제나 GM)')}<div class="pf-note">GM · PL 권한은 로비의 「계정 관리」(관리자)에서 준다. 끈 방에서는 로그인한 누구나 들어와 자리에 앉을 수 있고, 앉으면 그 자리가 계정에 붙는다 (PL 권한이 저절로 생긴다).</div>`)}</div>`:'';
  const m=openModal(`<div class="mhead"><h2>설정</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
   <div class="pf-tabs"><button data-stab="me" class="${SET_TAB==='me'?'on':''}"><span>내 설정</span></button>${isGm?`<button data-stab="room" class="${SET_TAB==='room'?'on':''}"><span>방 설정</span></button>`:`<button class="ghost" id="seatMgr2"><span>자리 바꾸기</span></button>`}</div>
   <div id="setBody" class="pf-host">${SET_TAB==='room'&&isGm?room:(window.OM_PREFS?window.OM_PREFS.html():'')}</div>`);
@@ -619,6 +722,8 @@ function openRoomSettings(tab){
   const has=Object.keys(o).length;if(!await set(['rp','pct'],has?o:null))return;sysLog('방 설정: 확률 — '+PCT_LABELS.map(l=>`${l} ${o[l]!=null?o[l]:pctBase(l)}%`).join(' · '));toast('확률을 저장했다')};
  const pr=$('#pctReset',m);if(pr)pr.onclick=async()=>{if(!await set(['rp','pct'],null))return;m.querySelectorAll('[data-pct]').forEach(x=>x.value='');sysLog('방 설정: 확률을 기본값으로 — '+PCT_LABELS.map(l=>`${l} ${pctBase(l)}%`).join(' · '));toast('기본값으로 돌렸다')};
  const gh=$('#gmHands',m);if(gh)gh.onchange=async()=>{await set(['rp','gmHands'],gh.checked?false:null);sysLog(gh.checked?'방 설정: GM 도 플레이어의 지시·상태를 건드리지 않는다':'방 설정: 「GM 불간섭」을 껐다');toast(gh.checked?'GM 불간섭 켬':'GM 불간섭 끔')};
+ const ao=$('#acctOnly',m);if(ao)ao.onchange=async()=>{if(ao.checked&&!String(ST.secret).startsWith('u:')&&!confirm('지금 GM 링크(예전 방식)로 들어와 있다. 켜면 이 링크로는 GM 이 안 된다 — 관리자 계정이나 이 방 GM 권한이 있는 계정으로 다시 들어와야 한다. 켤까?')){ao.checked=false;return}
+  const s=Object.assign({},r.settings||{},{accountOnly:ao.checked});try{await DBS().roomUpdate(ST.room,ST.secret,null,s);r.settings=s;sysLog(ao.checked?'방 설정: 계정 전용 방 (로그인한 계정만)':'방 설정: 「계정 전용」을 껐다');toast(ao.checked?'계정 전용 방':'예전 링크도 다시 된다')}catch(e){ao.checked=!ao.checked;toast(e.message)}};
  const rs=$('#rnSave',m);if(rs)rs.onclick=async()=>{try{await DBS().roomUpdate(ST.room,ST.secret,$('#rn',m).value.trim(),null);ST.roomRow.name=$('#rn',m).value.trim();remember(ST.room,ST.roomRow.name,ST.secret);closeModal();renderRoom()}catch(e){toast(e.message)}};
  $('#seatMgr',m).onclick=()=>{closeModal();openSeatPicker()}}
 
