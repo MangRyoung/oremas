@@ -44,7 +44,7 @@ const FX=()=>window.OM_FX;
    /* 희망사항: 건 턴은 표시만, 다음 턴 종료에 1/2 */
    if(st.Wish){if(!m.wishWait){m.wishWait=1;lines.push(`${m.name} 「희망사항」 다음 턴 종료 시 1/2 회복`)}else{m.wishWait=0;heal(m,frac(m,1,2),lines,'「희망사항」');clearState(m,'Wish')}}
    if(st.AquaRing)heal(m,frac(m,1,8),lines,'「아쿠아링」');if(st.Ingrain)heal(m,frac(m,1,16),lines,'「뿌리박기」');if(st.Chant)heal(m,frac(m,1,16),lines,'「환희의노래」');
-   if(st.LeechSeed){const from=m.seedFrom||((m.side==='left'?'right':'left')+'_'+m.entry);const to=slots[from];if(!to||to.hp.cur<=0)lines.push(`${m.name} 「씨뿌리기」 씨를 뿌린 에리어에 포켓몬이 없어 건너뜀`);else{const v=frac(m,1,8);const d=dmg(m,v,lines,'「씨뿌리기」 드레인');if(d>0)heal(to,d,lines,`「씨뿌리기」(${m.name})`)}}
+   if(st.LeechSeed){const from=m.seedFrom||((m.side==='left'?'right':'left')+'_'+m.entry);const to=slots[from];if(!to||to.hp.cur<=0)lines.push(`${m.name} 「씨뿌리기」 씨를 뿌린 ${String(from).split('_')[1].toUpperCase()} 에리어에 포켓몬이 없어 회복 없음`);else{const v=frac(m,1,8);const d=dmg(m,v,lines,'「씨뿌리기」 드레인');if(d>0)heal(to,d,lines,`「씨뿌리기」(${m.name})`)}}
    if(st.Toxic){m.toxicN=Math.min(15,(+m.toxicN||0)+1);dmg(m,frac(m,m.toxicN,16),lines,`「맹독」 ${m.toxicN}/16`)}else m.toxicN=0;
    if(st.Poison)dmg(m,frac(m,1,8),lines,'「독」 1/8');if(st.Burn)dmg(m,frac(m,1,16),lines,'「화상」 1/16');
    if(st.Nightmare&&sleeping)dmg(m,frac(m,1,4),lines,'「악몽」 1/4');if(st.Curse)dmg(m,frac(m,1,4),lines,'「저주」 1/4');if(st.Bind)dmg(m,frac(m,1,8),lines,'「바인드」 1/8');

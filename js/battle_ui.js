@@ -1081,7 +1081,7 @@ window.OM_BATTLE_UI=(()=>{
    if(nm.fx&&nm.fx.mults){nm.fx.mults=nm.fx.mults.map(e=>{const st={};for(const k in e.stats)if((+nm.mod[k]||1)===(+(m.mod||{})[k]||1))st[k]=e.stats[k];return Object.assign({},e,{stats:st})}).filter(e=>Object.keys(e.stats).length)}
    const er=$('#eraid',md);if(er){const X=+er.value||0;if(!X)delete nm.raid;else if(!nm.raid||nm.raid.segments!==X)nm.raid={segments:X,broken:0,phase:1}}
    if($('#etemp',md).checked){nm.tempRank=nm.tempRank||{};for(const k in delta)nm.tempRank[k]=(+nm.tempRank[k]||0)+delta[k]}
-   nm.states={};md.querySelectorAll('[data-st]').forEach(cb=>{if(!cb.checked)return;const k=cb.dataset.st;const ci=md.querySelector(`[data-stc="${k}"]`);const d=sdb.st[k]||{};nm.states[k]=ci&&ci.value!==''?+ci.value:(d.min||1)});
+   nm.states={};md.querySelectorAll('[data-st]').forEach(cb=>{if(!cb.checked)return;const k=cb.dataset.st;const ci=md.querySelector(`[data-stc="${k}"]`);const d=sdb.st[k]||{};nm.states[k]=ci&&ci.value!==''?+ci.value:(d.min||1)});if(nm.states.LeechSeed&&!(m.states||{}).LeechSeed){const sf=seedSrc(b,m);if(sf)nm.seedFrom=sf;else delete nm.seedFrom}
    if(nm.hp.cur<=0)nm.entry='';
    A().closeModal();if(await saveMon(m,mid,nm)){const ch=[];for(const k in STAT_KO){const a=+m.rank[k]||0,b2=+rank[k]||0;if(a!==b2)ch.push(`${STAT_KO[k]} ${a}→${b2>0?'+':''}${b2}`)}
     const sa=Object.keys(m.states||{}).filter(k=>m.states[k]),sb=Object.keys(nm.states);const on=sb.filter(k=>!sa.includes(k)).map(k=>(sdb.st[k]||{}).ko||k),off=sa.filter(k=>!sb.includes(k)).map(k=>(sdb.st[k]||{}).ko||k);
@@ -1375,6 +1375,8 @@ ${L.join('\n')}${once.length?'\n'+once.map(x=>'· '+x.line).join('\n'):''}`,'bat
  function nowFlush(mid){const q=LOGQ[mid];if(!q)return;clearTimeout(q.t);delete LOGQ[mid];const m=(ctx().b.mons||{})[mid];if(!m)return;const ch=[];
   for(const k of NOW_K){const a=+q.r0[k]||0,b2=+(m.rank||{})[k]||0;if(a!==b2)ch.push(`${STAT_KO[k]} 랭크 ${fmtR(a)} → ${fmtR(b2)}`);const x=+q.m0[k]||1,y=+(m.mod||{})[k]||1;if(x!==y)ch.push(`${STAT_KO[k]} 배율 ×${x} → ×${y}`)}
   if(ch.length)A().sysLog(`【랭크·배율】 ${m.name}\n${ch.join('\n')}`,'battle',{mid,img:m.image||''})}
+ /* 손으로 붙인 「씨뿌리기」: 지금 행동 중인 상대 포켓몬의 에리어를 씨 뿌린 곳으로 (없으면 정면) */
+ function seedSrc(b,m){const o=(b.order||[])[+b.orderIdx||0];const a=o&&(b.mons||{})[o.mid];return a&&a.side!==m.side&&a.entry&&(+b.phase||0)>=2?a.side+'_'+a.entry:null}
  const stDesc=k=>((((DB().states||{}).st||{})[k])||{}).desc||[];const stName=k=>((((DB().states||{}).st||{})[k])||{}).ko||k;
  function nowEditHtml(m,full,o){o=o||{};const r=m.rank||{},md=m.mod||{};const sdb=(DB().states||{}).st||{};const st=m.states||{};
   const cell=k=>{const v=+r[k]||0,x=+md[k]||1;return `<button type="button" class="dxrk ${v>0?'up':v<0?'dn':''} ${x>1?'mup':x<1?'mdn':''} ${o.sel===k?'sel':''}" ${full?`data-nrk="${k}"`:'disabled'}><small>${STAT_KO[k]}${k==='critical'?' (C)':''}</small><b>${fmtR(v)}</b><em>×${x}</em></button>`};
@@ -1415,7 +1417,7 @@ ${L.join('\n')}${once.length?'\n'+once.map(x=>'· '+x.line).join('\n'):''}`,'bat
    box.querySelectorAll('[data-nst]').forEach(inp=>inp.onchange=async()=>{const m=mon(),k=inp.dataset.nst;const v=Math.round(+inp.value);const c=v>0?Math.min(v,999):1000;if(+(m.states||{})[k]===c)return;
     await A().set(P('states'),Object.assign({},m.states||{},{[k]:c}));A().sysLog(`【상태】 ${m.name}의 「${stName(k)}」 남은 턴 → ${c<1000?c+'턴':'계속'}`,'battle',{mid,img:m.image||''});redraw()});
    bindAdd()};
-  const bindAdd=()=>box.querySelectorAll('[data-nsadd1]').forEach(b=>b.onclick=async()=>{const m=mon(),k=b.dataset.nsadd1;const d=((DB().states||{}).st||{})[k]||{};const n=Math.round(+o.n);const c=n>0?Math.min(n,999):d.min&&d.min<1000?d.min:(d.min||1000);const ns=Object.assign({},m.states||{},{[k]:c});await A().set(P('states'),ns);
+  const bindAdd=()=>box.querySelectorAll('[data-nsadd1]').forEach(b=>b.onclick=async()=>{const m=mon(),k=b.dataset.nsadd1;const d=((DB().states||{}).st||{})[k]||{};const n=Math.round(+o.n);const c=n>0?Math.min(n,999):d.min&&d.min<1000?d.min:(d.min||1000);const ns=Object.assign({},m.states||{},{[k]:c});await A().set(P('states'),ns);if(k==='LeechSeed')await A().set(P('seedFrom'),seedSrc(ctx().b,m));
     const ds=stDesc(k);A().sysLog(`【상태】 ${m.name} 「${stName(k)}」${c<1000?` (${c}턴)`:''}${ds.length?'\n'+ds.join('\n'):''}`,'battle',{mid,img:m.image||''});o.pk=false;o.q='';o.n='';redraw()});
   bind()}
  function nowParts(m){return {rank:rankChips(m),state:stateChips(m),fx:flagChips(m)+(FX()?FX().chips(m).map(ch=>`<span class="rk fxc" title="${esc(ch.title)}">${esc(ch.t)}</span>`).join(''):'')}}
