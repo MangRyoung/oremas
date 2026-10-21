@@ -36,13 +36,13 @@ window.OM_PHONE_UI=(()=>{
   const md=A().openModal(`<div class="phone-shell"><div class="phone-dev"><div class="ph-status"><span>${esc(t?t.name:'—')}</span><span class="sp"></span><span>${esc(today().slice(5).replace('-','/'))}</span><span class="ph-bat">▮▮▮</span></div><div class="ph-screen" id="phScreen"></div><div class="ph-home"><button class="ph-hb" data-ph="home" title="홈"></button></div></div><button class="btn ghost ph-close" data-x>닫기</button></div>`);
   md.classList.add('phone-modal');draw(md)}
  function draw(md){md=md||$('.modal');const el=$('#phScreen',md);if(!el)return;const t=owner();
-  el.innerHTML=PH.screen==='contacts'?contacts(t):PH.screen==='conf'?confidants(t):PH.screen==='cal'?calendar(t):PH.screen==='sms'?smsRooms(t):PH.screen==='smsroom'?smsRoom(t):PH.screen==='notes'?notes(t):PH.screen==='note1'?noteEdit(t):PH.screen==='callog'?calLog(t):PH.screen==='set'?settings():home(t);
-  bind(md);if(PH.screen==='set'){const r=$('#phPrefs',md);if(r&&window.OM_PREFS)window.OM_PREFS.bind(r)}if(PH.screen==='smsroom'){const lg=$('.ph-sms',md);if(lg)lg.scrollTop=lg.scrollHeight;markSeen(PH.room)}}
+  el.innerHTML=PH.screen==='contacts'?contacts(t):PH.screen==='conf'?confidants(t):PH.screen==='cal'?calendar(t):PH.screen==='sms'?smsRooms(t):PH.screen==='smsroom'?smsRoom(t):PH.screen==='notes'?notes(t):PH.screen==='note1'?noteEdit(t):PH.screen==='callog'?calLog(t):PH.screen==='set'?settings():PH.screen==='deck'&&window.OM_DECK_UI?window.OM_DECK_UI.phone(t,canWrite()):home(t);
+  bind(md);if(PH.screen==='deck'&&window.OM_DECK_UI)window.OM_DECK_UI.bindPhone(md,re,t);if(PH.screen==='set'){const r=$('#phPrefs',md);if(r&&window.OM_PREFS)window.OM_PREFS.bind(r)}if(PH.screen==='smsroom'){const lg=$('.ph-sms',md);if(lg)lg.scrollTop=lg.scrollHeight;markSeen(PH.room)}}
  const re=()=>draw();
  /* ----- 설정: 내 환경 설정 (OM_PREFS 판을 휴대폰 크기로) ----- */
  function settings(){return `<div class="ph-head set"><button class="ph-back" data-ph="home">‹</button><div><b>설정</b><small>이 기기에서만 · 나만 적용</small></div></div><div class="ph-setwrap"><div id="phPrefs" class="pf-host cmp">${window.OM_PREFS?window.OM_PREFS.html({compact:true}):'<div class="dim">설정을 불러오지 못했다</div>'}</div></div>`}
  /* ----- 홈 ----- */
- function home(t){const T=trs();const un=unreadAll();const apps=[['contacts','📞','연락처',1],['sms','💬','문자',1,un],['conf','🤝','협력자',1],['cal','📅','캘린더',1],['notes','📝','메모장',1],['set','⚙️','설정',1]];
+ function home(t){const T=trs();const un=unreadAll();const apps=[['contacts','📞','연락처',1],['sms','💬','문자',1,un],['conf','🤝','협력자',1],['cal','📅','캘린더',1],['notes','📝','메모장',1],['deck','🃏','덱',!!window.OM_DECK_UI],['set','⚙️','설정',1]];
   return `<div class="ph-wall"><div class="ph-clock"><b>${esc(dateKo(today()))}</b><small>${esc(cal().phase||'')}${cal().weather?' '+esc(cal().weather):''}</small></div>
    ${gm()?`<div class="ph-owner"><span class="small dim">누구의 휴대폰</span><select id="phOwner">${Object.values(T).map(x=>`<option value="${x.id}" ${x.id===PH.tid?'selected':''}>${esc(x.name)}</option>`).join('')}${Object.values(G().nodes||{}).filter(n=>n.kind!=='org'&&!Object.values(T).some(x=>x.name===n.name)).map(n=>`<option value="n:${esc(n.id)}" ${'n:'+n.id===PH.tid?'selected':''}>${esc(n.name)} (관계도)</option>`).join('')}</select></div>`:''}
    <div class="ph-apps">${apps.map(([k,ic,n,on,bd])=>`<button class="ph-app ${on?'':'off'}" data-ph="${on?k:''}" ${on?'':'title="아직 준비 중"'}><i>${ic}${bd?`<em class="ph-badge">${bd}</em>`:''}</i><span>${n}</span></button>`).join('')}</div></div>`}
@@ -224,7 +224,7 @@ window.OM_PHONE_UI=(()=>{
  /* ----- 묶기 ----- */
  function bind(md){const t=owner();
   md.querySelectorAll('[data-ph]').forEach(b=>b.onclick=async(e)=>{if(e&&e.stopPropagation)e.stopPropagation();const k=b.dataset.ph;if(!k)return;
-   if(['home','contacts','conf','cal','sms','notes','callog','set'].includes(k)){PH.screen=k;return re()}
+   if(['home','contacts','conf','cal','sms','notes','callog','set','deck'].includes(k)){PH.screen=k;return re()}
    if(k==='caldel2'){const pd=phoneData(PH.tid);const log=Object.assign({},pd.log||{});log[b.dataset.d]=(log[b.dataset.d]||[]).filter((x,i)=>i!==+b.dataset.i);if(!log[b.dataset.d].length)delete log[b.dataset.d];await savePhone(PH.tid,{log});return re()}
    if(k==='noteadd'){PH.note='';PH.screen='note1';return re()}
    if(k==='note1'){PH.note=b.dataset.id;PH.screen='note1';return re()}
@@ -256,5 +256,7 @@ window.OM_PHONE_UI=(()=>{
   const sh=$('#ph_share',md);if(sh)sh.onchange=async()=>{await savePhone(PH.tid,{share:sh.checked});A().toast(sh.checked?'방에 공유한다':'비공개로 바꿨다')};
   const rin=$('#ph_room',md);if(rin)rin.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing){const b=md.querySelector('[data-ph=roomgo]');if(b)b.click()}};
   const si=$('#smsIn',md);if(si){si.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)smsSend(md)};si.focus()}}
- return {open,onSms,unreadAll,popSms};
+ /* 상태가 바뀌면 열린 화면 중 남이 바꾸는 것(덱)만 다시 그린다 — 입력 중이면 건드리지 않는다 */
+ let rfT=0;function refresh(){if(PH.screen!=='deck')return;clearTimeout(rfT);rfT=setTimeout(()=>{const md=$('.modal.phone-modal');if(!md)return;const a=document.activeElement;if(a&&md.contains(a)&&a.matches('input,textarea,select'))return;draw(md)},60)}
+ return {open,onSms,unreadAll,popSms,refresh};
 })();

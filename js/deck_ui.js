@@ -28,7 +28,8 @@ window.OM_DECK_UI=(()=>{
  function pcIds(){const ST=A().ST;const trs=(ST.state.roster||{}).trainers||{};const seats=ST.state.seats||{};return Object.keys(trs).filter(id=>seats[id]||id===ST.seat||((D().pcs||{})[id])||(trs[id].pc))}
  function npcList(){const ST=A().ST;return D().npcs||Object.values((ST.state.graph||{}).nodes||{}).filter(n=>n.kind==='npc').map(n=>n.name)}
 
- function open(){
+ function open(){if(window.OM_PHONE_UI)return window.OM_PHONE_UI.open('deck');return openOld()}
+ function openOld(){
   const ST=A().ST;const trs=(ST.state.roster||{}).trainers||{};const ids=pcIds();const c=cfg();const npcs=npcList();const party=c.scope==='party';
   const keyRow=(k,who)=>`<div class="dkr"><span>은열쇠</span><div class="keys">${Array.from({length:c.keyMax},(_,i)=>`<i class="${i<k?'on':''}"></i>`).join('')}</div><b>${k}/${c.keyMax}</b>${gm()?`<button class="btn xs ghost" data-dk="keys" data-id="${who}" data-d="-1">−</button><button class="btn xs ghost" data-dk="keys" data-id="${who}" data-d="1">＋</button>`:''}</div>`;
   const md=A().openModal(`<div class="mhead"><h2>덱 — 은열쇠 · 광기 · 마음 칸</h2><span class="sp"></span>${gm()?'<button class="btn sm ghost" id="dkreset">새 부 (카드 리셋)</button><button class="btn sm ghost" id="dkcfg">설정</button>':''}<button class="btn ghost" data-x>닫기</button></div>
@@ -56,14 +57,15 @@ window.OM_DECK_UI=(()=>{
   const rs=$('#dkreset',md);if(rs)rs.onclick=async()=>{if(!confirm('새 부: 카드 사용 횟수를 모두 되돌릴까? (은열쇠·광기는 그대로)'))return;await A().set(['deck','uses'],null);A().sysLog('덱: 새 부 — 카드 리셋');reopen()}}
  function clamp(v,mx){return Math.max(0,Math.min(mx,v))}
  function reopen(){A().closeModal();open()}
+ function back(ph){A().closeModal();if(ph&&window.OM_PHONE_UI)window.OM_PHONE_UI.open('deck');else open()}
  /* GM 이 실제로 반영: 은열쇠 또는 광기, 카드 횟수, 로그 */
  async function applyUse(id,cd){const c=cfg();const trs=(A().ST.state.roster||{}).trainers||{};const name=(trs[id]||{}).name||id;let msg;
   if(c.scope==='party'){const k=partyKeys();if(k>0){await A().set(['deck','party','keys'],k-1);msg=`파티 은열쇠 −1 (남은 ${k-1})`}}
-  else{const p=pcOf(id);if(p.keys>0){p.keys--;await A().set(['deck','pcs',id],p);msg=`은열쇠 −1 (남은 ${p.keys})`}}
-  if(!msg){const p=pcOf(id);p.mad=clamp(p.mad+1,c.madMax);await A().set(['deck','pcs',id],p);const th=c.thresholds.find(x=>x.t===p.mad);msg=`은열쇠가 없어 광기 +1 (${p.mad})${th?' — '+th.x:''}`}
-  const u=Object.assign({},D().uses||{});u[cd.id]=(u[cd.id]||0)+1;await A().set(['deck','uses'],u);
+  else{const p=pcOf(id);if(p.keys>0){p.keys--;await A().set(['deck','pcs',id,'keys'],p.keys);msg=`은열쇠 −1 (남은 ${p.keys})`}}
+  if(!msg){const p=pcOf(id);p.mad=clamp(p.mad+1,c.madMax);await A().set(['deck','pcs',id,'mad'],p.mad);const th=c.thresholds.find(x=>x.t===p.mad);msg=`은열쇠가 없어 광기 +1 (${p.mad})${th?' — '+th.x:''}`}
+  await A().set(['deck','uses',cd.id],((D().uses||{})[cd.id]||0)+1);
   A().sysLog(`${name} 『${cd.name}』 사용 — ${msg} · 카드 남은 ${left(cd)}/${cd.q||1}`,'battle')}
- function openCfg(){const c=cfg();const d=D();
+ function openCfg(ph){const c=cfg();const d=D();
   const md=A().openModal(`<div class="mhead"><h2>덱 설정</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    <div class="row"><label>은열쇠 단위 <select id="csc"><option value="party" ${c.scope==='party'?'selected':''}>파티 공용</option><option value="pc" ${c.scope==='pc'?'selected':''}>PC 개인</option></select></label><label>시작 <input type="number" class="n" id="cks" value="${c.keyStart}"></label><label>최대 <input type="number" class="n" id="ckm" value="${c.keyMax}"></label><label>광기 최대 <input type="number" class="n" id="cmm" value="${c.madMax}"></label></div>
    <div class="sec">광기 단계 <span class="note">숫자 = 설명, 한 줄에 하나</span></div><textarea id="cth" rows="4" style="width:100%">${esc(c.thresholds.map(x=>x.t+' = '+x.x).join('\n'))}</textarea>
@@ -73,12 +75,69 @@ window.OM_DECK_UI=(()=>{
   $('#cok',md).onclick=async()=>{const th=$('#cth',md).value.split('\n').map(l=>{const m=l.match(/^\s*(\d+)\s*[=:：]\s*(.*)$/);return m?{t:+m[1],x:m[2].trim()}:null}).filter(Boolean).sort((a,b)=>a.t-b.t);
    const nc={scope:$('#csc',md).value,keyStart:+$('#cks',md).value||0,keyMax:+$('#ckm',md).value||3,madMax:+$('#cmm',md).value||9,thresholds:th.length?th:DEFAULT_CFG.thresholds};
    const rows=[...md.querySelectorAll('#ctab tr')].map((tr,i)=>({id:'k'+(i+1),name:tr.querySelector('[data-cn]').value.trim(),tag:tr.querySelector('[data-ct]').value.trim(),kind:tr.querySelector('[data-ck]').value,q:+tr.querySelector('[data-cqn]').value||1,eff:tr.querySelector('[data-ce]').value.trim()})).filter(x=>x.name);
-   const npcs=$('#cnp',md).value.split(',').map(x=>x.trim()).filter(Boolean);A().closeModal();await A().set(['deck','cfg'],nc);await A().set(['deck','cards'],rows);await A().set(['deck','npcs'],npcs.length?npcs:null);open()};
-  $('#creset',md).onclick=async()=>{A().closeModal();await A().set(['deck','cards'],null);await A().set(['deck','cfg'],null);open()}}
+   const npcs=$('#cnp',md).value.split(',').map(x=>x.trim()).filter(Boolean);A().closeModal();await A().setMany([[['deck','cfg'],nc],[['deck','cards'],rows],[['deck','npcs'],npcs.length?npcs:null]]);back(ph)};
+  $('#creset',md).onclick=async()=>{if(!confirm('카드 · 설정을 기본값으로 되돌릴까?'))return;A().closeModal();await A().setMany([[['deck','cards'],null],[['deck','cfg'],null]]);back(ph)};
+  const x=md.querySelector('[data-x]');if(x&&ph)x.onclick=()=>back(true)}
  /* GM 화면: 좌석이 pub 에 적어 둔 사용 선언을 받아 적는다 */
  let busy=false;
- async function absorb(){if(!gm()||busy)return;const pub=A().ST.state.pub||{};const todo=Object.keys(pub).filter(id=>pub[id]&&pub[id].deck&&pub[id].deck.card);if(!todo.length)return;busy=true;
-  try{for(const id of todo){const req=pub[id].deck;await A().set(['pub',id,'deck'],null);const cd=cards().find(x=>x.id===req.card);if(cd&&left(cd))await applyUse(id,cd)}}finally{busy=false}
+ async function absorb(){if(!gm()||busy)return;const pub=A().ST.state.pub||{};const todo=[];
+  for(const id of Object.keys(pub)){const p=pub[id]||{};if(p.deck&&p.deck.card)todo.push({id,path:['pub',id,'deck'],req:p.deck});for(const [rid,q] of Object.entries(p.deckq||{}))if(q&&q.card)todo.push({id,path:['pub',id,'deckq',rid],req:q})}
+  if(!todo.length)return;busy=true;todo.sort((a,b)=>(a.req.at||0)-(b.req.at||0));
+  try{for(const x of todo){if(!await A().set(x.path,null))continue;const cd=cards().find(c=>c.id===x.req.card);if(cd&&left(cd))await applyUse(x.id,cd);else A().sysLog(`${(((A().ST.state.roster||{}).trainers||{})[x.id]||{}).name||x.id} 사용 선언 무시 — 카드가 없거나 다 썼다`,'battle')}}finally{busy=false}
   if(document.querySelector('.dkgrid'))reopen()}
- return {open,absorb};
+ /* ---------- 휴대폰 「덱」 앱 (2026-10-21 망령: 덱은 휴대폰 안으로) ----------
+   휴대폰 주인(tid)의 은열쇠 · 광기 · 손패(카드) · 마음 칸 + 「파티」 탭(모두의 광기 · 은열쇠 한눈에).
+   좌석의 사용 선언은 pub/<tid>/deckq/<요청 id> 에 줄을 세운다 — 예전 한 칸(pub/<tid>/deck)은 연달아 쓰면 앞 선언이 덮였다. GM 화면이 순서대로 받아 적는다 (absorb).
+   쓰기는 바뀐 칸만 (deck/pcs/<tid>/mad 처럼). */
+ const PV={tab:'me'};
+ function pending(id){const p=((A().ST.state.pub||{})[id])||{};const q=Object.values(p.deckq||{}).filter(x=>x&&x.card);if(p.deck&&p.deck.card)q.push(p.deck);return q}
+ const pips=(n,mx,cls,th)=>`<div class="${cls}">${Array.from({length:mx},(_,i)=>`<i class="${i<n?'on':''} ${th&&th.some(x=>x.t===i+1)?'th':''}"></i>`).join('')}</div>`;
+ const pm=(act,id,extra)=>gm()?`<span class="pdpm"><button class="btn xs ghost" data-pd="${act}" data-id="${esc(id)}" data-d="-1" ${extra||''}>−</button><button class="btn xs ghost" data-pd="${act}" data-id="${esc(id)}" data-d="1" ${extra||''}>＋</button></span>`:'';
+ function phone(t,canWrite){const c=cfg();const party=c.scope==='party';
+  const head=`<div class="ph-head deck"><button class="ph-back" data-ph="home">‹</button><div><b>덱</b><small>${esc(t?t.name:'')} · 은열쇠 ${party?'파티 공용':'개인'}</small></div>${gm()?'<button class="btn xs" data-pd="cfg" title="카드 · 은열쇠 · 광기 단계 · NPC">설정</button><button class="btn xs ghost" data-pd="reset" title="카드 사용 횟수를 모두 되돌린다">새 부</button>':''}</div>`;
+  if(!t||t.npc)return head+`<div class="ph-empty">덱은 PC 전용이다${gm()?'<br><span class="small">홈에서 「누구의 휴대폰」을 PC 로 바꿔 줘</span>':''}</div>`;
+  const tabs=`<div class="ph-dtabs">${[['me','내 덱'],['party','파티']].map(([k,n])=>`<button class="${PV.tab===k?'on':''}" data-pd="tab" data-v="${k}">${n}</button>`).join('')}</div>`;
+  if(PV.tab==='party')return head+tabs+partyView(c);
+  const id=t.id,p=pcOf(id),k=keysOf(id),hit=c.thresholds.filter(x=>p.mad>=x.t),cur=hit[hit.length-1],nx=c.thresholds.find(x=>x.t>p.mad);
+  const pend=pending(id);const npcs=npcList();const mine=canWrite;
+  return head+tabs+`<div class="ph-dk">
+   <div class="pdstat">
+    <div class="pdr"><span class="pdl">🔑 은열쇠${party?'<small>파티</small>':''}</span>${pips(k,c.keyMax,'keys')}<b>${k}/${c.keyMax}</b>${pm('keys',party?'party':id)}</div>
+    <div class="pdr"><span class="pdl">🌀 광기</span>${pips(p.mad,c.madMax,'mad',c.thresholds)}<b>${p.mad}/${c.madMax}</b>${pm('mad',id)}</div>
+    ${cur?`<div class="pdth on"><b>광기 ${cur.t}</b> ${esc(cur.x)}</div>`:''}${nx?`<div class="pdth"><span class="dim">다음 ${nx.t}</span> ${esc(nx.x)}</div>`:''}
+   </div>
+   <div class="ph-sec">손패 <small>이번 부 · 쓰면 ${k>0?'은열쇠 −1':'<b class="red">은열쇠가 없어 광기 +1</b>'}</small></div>
+   <div class="pdcards">${cards().map(cd=>{const n=left(cd),q=cd.q||1,w=pend.filter(x=>x.card===cd.id).length;
+    return `<div class="pdc ${esc(cd.kind)} ${n?'':'out'}"><div class="pdch"><b>${esc(cd.name)}</b>${cd.tag?`<span class="tag">${esc(cd.tag)}</span>`:''}<span class="sp"></span><span class="pdq" title="이번 부 남은 장수">${Array.from({length:q},(_,i)=>`<i class="${i<n?'on':''}"></i>`).join('')}<em>${n}/${q}</em></span></div>
+     <div class="pdce">${esc(cd.eff)}</div>
+     <div class="pdcf">${w?`<small class="pdw">⏳ GM 반영 대기 ${w}</small>`:''}<span class="sp"></span>${gm()?`<button class="btn xs ghost" data-pd="cq" data-c="${esc(cd.id)}" data-d="-1" title="남은 장수 −1">−</button><button class="btn xs ghost" data-pd="cq" data-c="${esc(cd.id)}" data-d="1" title="남은 장수 +1">＋</button>`:''}${mine?`<button class="btn xs ${n?'pri':'ghost'}" data-pd="use" data-c="${esc(cd.id)}" ${n?'':'disabled'}>${n?'사용':'다 씀'}</button>`:''}</div></div>`}).join('')}</div>
+   <div class="ph-sec">마음 칸 <small>${esc(t.name)} ↔ NPC</small></div>
+   <div class="pdhearts">${npcs.length?npcs.map(nm=>{const v=+(p.hearts||{})[nm]||0;return `<div class="pdh"><div class="pdhn"><b>${esc(nm)}</b><small>${esc(HEART_X[v]||'아직 없음')}</small></div><div class="hearts">${[1,2,3].map(i=>`<i class="${i<=v?'on':''}">${['①','②','③'][i-1]}</i>`).join('')}</div>${pm('heart',id,`data-n="${esc(nm)}"`)}</div>`}).join(''):'<div class="ph-empty small">관계도에 NPC 를 넣거나 덱 설정에서 적으면 여기 나온다</div>'}</div>
+  </div>`}
+ function partyView(c){const ST=A().ST;const T=(ST.state.roster||{}).trainers||{};const ids=pcIds();const party=c.scope==='party';
+  return `<div class="ph-dk">${party?`<div class="pdstat"><div class="pdr"><span class="pdl">🔑 파티 은열쇠</span>${pips(partyKeys(),c.keyMax,'keys')}<b>${partyKeys()}/${c.keyMax}</b>${pm('keys','party')}</div></div>`:''}
+   <div class="ph-sec">카드 <small>파티 공용 · 이번 부 남은 장수</small></div>
+   <div class="pdmini">${cards().map(cd=>`<span class="pdmc ${esc(cd.kind)} ${left(cd)?'':'out'}" title="${esc(cd.eff)}">${esc(cd.name)} <b>${left(cd)}/${cd.q||1}</b></span>`).join('')}</div>
+   <div class="ph-sec">PC</div>
+   <div class="ph-list">${ids.map(id=>{const t=T[id];const p=pcOf(id);const hit=c.thresholds.filter(x=>p.mad>=x.t);const cur=hit[hit.length-1];const w=pending(id).length;
+    return `<div class="ph-item pdpc ${id===ST.seat?'me':''}">${av(t.name,t.image)}<div class="ph-it"><b>${esc(t.name)}${id===ST.seat?' <span class="tag me">ME</span>':''}${w?` <small class="pdw">⏳${w}</small>`:''}</b>
+     ${party?'':`<div class="pdr sm"><span class="pdl">🔑</span>${pips(p.keys,c.keyMax,'keys')}<b>${p.keys}</b></div>`}
+     <div class="pdr sm"><span class="pdl">🌀</span>${pips(p.mad,c.madMax,'mad',c.thresholds)}<b>${p.mad}</b></div>${cur?`<small class="pdth on">광기 ${cur.t} · ${esc(cur.x)}</small>`:''}</div></div>`}).join('')||'<div class="ph-empty">아직 PC 가 없다</div>'}</div></div>`}
+ function av(name,img){const u=A().portraitOf?A().portraitOf(name,img):(img||'');return `<i class="ph-av" style="${u?`background-image:url('${cssu(u)}')`:''}"></i>`}
+ function bindPhone(md,redraw,t){const c=cfg();const T=(A().ST.state.roster||{}).trainers||{};const nm=id=>(T[id]||{}).name||id;
+  md.querySelectorAll('[data-pd]').forEach(b=>b.onclick=async e=>{e.stopPropagation();const a=b.dataset.pd,id=b.dataset.id,d=+b.dataset.d;
+   if(a==='tab'){PV.tab=b.dataset.v;return redraw()}
+   if(a==='cfg')return openCfg(true);
+   if(a==='reset'){if(!confirm('새 부: 카드 사용 횟수를 모두 되돌릴까? (은열쇠 · 광기 · 마음 칸은 그대로)'))return;if(await A().set(['deck','uses'],null))A().sysLog('덱: 새 부 — 카드 리셋');return redraw()}
+   if(a==='keys'){if(id==='party')await A().set(['deck','party','keys'],clamp(partyKeys()+d,c.keyMax));else await A().set(['deck','pcs',id,'keys'],clamp(pcOf(id).keys+d,c.keyMax));return redraw()}
+   if(a==='mad'){const v=clamp(pcOf(id).mad+d,c.madMax);if(await A().set(['deck','pcs',id,'mad'],v)&&d>0){const th=c.thresholds.find(x=>x.t===v);if(th)A().sysLog(`${nm(id)} 광기 ${v} — ${th.x}`)}return redraw()}
+   if(a==='heart'){const n=b.dataset.n;const v=clamp((+(pcOf(id).hearts||{})[n]||0)+d,3);if(await A().set(['deck','pcs',id,'hearts',n],v)&&d>0)A().sysLog(`${nm(id)} ↔ ${n} 마음 칸 ${HEART_X[v]||''}`);return redraw()}
+   if(a==='cq'){const cd=cards().find(x=>x.id===b.dataset.c);if(!cd)return;const u=(D().uses||{})[cd.id]||0;await A().set(['deck','uses',cd.id],clamp(u-d,cd.q||1));return redraw()}
+   if(a==='use'){const tid=t&&t.id;const cd=cards().find(x=>x.id===b.dataset.c);if(!tid||!cd||!left(cd))return;
+    const k=keysOf(tid);const msg=k>0?`은열쇠 −1 (남은 ${k-1})`:'은열쇠가 없어 광기 +1';
+    if(!confirm(`『${cd.name}』을 쓸까?\n${msg}`))return;
+    if(gm()){await applyUse(tid,cd);return redraw()}
+    const rid='q'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
+    if(await A().set(['pub',tid,'deckq',rid],{card:cd.id,at:Date.now()})){A().sysLog(`${nm(tid)} 『${cd.name}』 사용 선언 — ${msg}`,'dice');A().toast('GM 화면에서 반영된다')}return redraw()}})}
+ return {open,absorb,phone,bindPhone};
 })();

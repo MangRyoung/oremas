@@ -110,7 +110,7 @@ const isMobile=()=>window.matchMedia('(max-width:760px)').matches;
 function mobMode(m){MOB.mode=m;document.body.classList.toggle('m-chat',m==='chat');document.querySelectorAll('#mbar [data-m]').forEach(b=>b.classList.toggle('on',b.dataset.m===m));if(m==='chat'){MOB.unread=0;mobBadge();const l=$('#log');if(l)l.scrollTop=l.scrollHeight}}
 function mobBadge(){const e=$('#mUnread');if(!e)return;e.textContent=MOB.unread>99?'99+':MOB.unread;e.style.display=MOB.unread?'':'none'}
 function mobNote(r){if(!isMobile()||MOB.mode==='chat')return;const d=(r&&r.data)||{};if(r.kind==='chat'&&(d.sms||(!d.t&&!d.img)))return;if(isMineLog(r))return;MOB.unread++;mobBadge()}
-function openMobMenu(){const items=[['skillBtn','스킬 체크'],['dexBtn','도감'],['deckBtn','덱'],['dbBtn','DB'],['rmBtn','레디메이드'],['copyLink','플레이어 링크'],['copyGm','GM 링크'],['seatBtn','자리'],['roomSet','⚙ 설정'],['saveLog','로그 저장'],['presence','내 이름']].filter(([id])=>$('#'+id));
+function openMobMenu(){const items=[['skillBtn','스킬 체크'],['dexBtn','도감'],['dbBtn','DB'],['rmBtn','레디메이드'],['copyLink','플레이어 링크'],['copyGm','GM 링크'],['seatBtn','자리'],['roomSet','⚙ 설정'],['saveLog','로그 저장'],['presence','내 이름']].filter(([id])=>$('#'+id));
  const m=openModal(`<div class="mhead"><h2>메뉴</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="mmenu">${items.map(([id,l])=>`<button class="btn" data-mm="${id}">${esc(l)}</button>`).join('')}</div><div class="small dim" style="margin-top:10px">접속 중: ${esc(($('#presence')||{}).textContent||'')}</div>`);
  m.querySelectorAll('[data-mm]').forEach(b=>b.onclick=()=>{closeModal();const t=$('#'+b.dataset.mm);if(t)t.click()})}
 function bindMobile(){const bar=$('#mbar');if(!bar)return;bar.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;if(k==='menu')return openMobMenu();if(k==='phone'){if(window.OM_PHONE_UI)window.OM_PHONE_UI.open('home');return}mobMode(k)});mobMode(MOB.mode)}
@@ -122,7 +122,7 @@ function renderRoom(){
    ${ST.role==='gm'?'<span class="badge gm">GM</span>':ST.role==='seat'?`<span class="badge seat">${esc(ST.name)}</span>`:'<span class="badge">관전</span>'}
    <span class="tabs" id="sceneTabs"></span>
    <span class="sp"></span><span id="typingTop" class="typingtop"></span><span id="presence" class="presence" title="지금 접속 중인 사람 · 누르면 내 이름"></span><span id="conn" class="small muted">○ 연결 중</span>
-   ${ST.role?`<button class="btn sm ${window.OM_SKILL_UI&&window.OM_SKILL_UI.pending()?'pri':''}" id="skillBtn">스킬 체크${window.OM_SKILL_UI&&window.OM_SKILL_UI.pending()?' !':''}</button>${ST.role==='seat'?'<button class="btn sm" id="dexBtn" title="포켓몬 도감 · 해석 관리">도감</button>':''}<button class="btn sm" id="deckBtn">덱</button>`:''}<button class="btn sm" id="dbBtn">DB</button><button class="btn sm" id="rmBtn" title="레디메이드 (자동화 효과 사전)">레디메이드</button><button class="btn sm" id="copyLink">플레이어 링크</button>
+   ${ST.role?`<button class="btn sm ${window.OM_SKILL_UI&&window.OM_SKILL_UI.pending()?'pri':''}" id="skillBtn">스킬 체크${window.OM_SKILL_UI&&window.OM_SKILL_UI.pending()?' !':''}</button>${ST.role==='seat'?'<button class="btn sm" id="dexBtn" title="포켓몬 도감 · 해석 관리">도감</button>':''}`:''}<button class="btn sm" id="dbBtn">DB</button><button class="btn sm" id="rmBtn" title="레디메이드 (자동화 효과 사전)">레디메이드</button><button class="btn sm" id="copyLink">플레이어 링크</button>
    ${ST.role==='gm'?'<button class="btn sm" id="copyGm">GM 링크</button><button class="btn sm" id="roomSet">⚙ 설정</button>':'<button class="btn sm" id="seatBtn">자리</button><button class="btn sm ghost" id="roomSet" title="내 설정 — 소리·알림·글자·이미지·단축키">⚙ 설정</button>'}
   </div>
   <div class="body"><div class="scene" id="scene"></div><div class="resizer" id="resizer" title="끌어서 채팅 창 너비 조절"></div>
@@ -290,7 +290,8 @@ function renderScene(){reconcileNodes();
  else if(VIEW==='report')window.OM_REPORT_UI.render(el);
  else window.OM_RP_UI.render(el);
  if(window.OM_RP_UI)window.OM_RP_UI.onState();
- if(window.OM_DECK_UI&&ST.role==='gm')window.OM_DECK_UI.absorb()}
+ if(window.OM_DECK_UI&&ST.role==='gm')window.OM_DECK_UI.absorb();
+ if(window.OM_PHONE_UI&&window.OM_PHONE_UI.refresh)window.OM_PHONE_UI.refresh()}
 
 /* ---------- 배틀 씬 → battle_ui.js ---------- */
 function B(){return ST.state.battle||{}}

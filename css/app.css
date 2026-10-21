@@ -1576,3 +1576,49 @@ label.tgc:has(input:focus-visible){outline:2px solid var(--yel)}
 .qe:hover,.dxed:hover{outline-color:var(--line2,#555);background:rgba(255,255,255,.04)}
 span.qe{display:inline-block;min-width:1.5em}
 .mved th{width:70px}.mved select{min-width:84px}.mvbase{gap:6px;flex-wrap:wrap}.mvbase label{display:flex;flex-direction:column;align-items:center;gap:2px}.mvbase input{width:62px}
+/* 10-21 망령: 휴대폰 「덱」 앱 */
+.ph-head.deck{background:#2a1846}
+.ph-dtabs{display:flex;gap:0;border-bottom:1px solid var(--line2);background:#101114}
+.ph-dtabs button{flex:1;background:none;border:0;border-bottom:3px solid transparent;color:var(--mute);padding:8px 0;font-family:var(--lab);font-size:14px;cursor:pointer}
+.ph-dtabs button.on{color:#fff;border-bottom-color:#9b6bff}
+.ph-dk{display:flex;flex-direction:column;gap:2px;padding-bottom:12px}
+.ph-sec small{color:var(--mute);letter-spacing:0;font-family:var(--font)}
+.ph-sec small b.red{color:var(--red2);font-weight:600}
+.pdstat{margin:10px 10px 2px;background:#141518;border:1px solid var(--line2);padding:8px 10px;display:flex;flex-direction:column;gap:6px}
+.pdr{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pdr .pdl{min-width:74px;flex:none;color:var(--fg2);font-size:13px;white-space:nowrap}
+.pdr .pdl small{margin-left:4px;color:var(--mute);font-size:10px}
+.pdr>b{font-family:var(--mono);font-size:12px;color:#fff;min-width:30px}
+.pdr .keys,.pdr .mad{display:flex;flex-wrap:wrap;gap:0}
+.pdr.sm .pdl{width:22px}.pdr.sm i{width:10px;height:10px}
+.pdpm{display:flex;gap:2px;margin-left:auto}
+.pdpm .btn{padding:0 8px;min-width:0;width:auto}
+.pdth{font-size:12px;color:var(--fg2);padding-left:2px}
+.pdth.on{color:var(--red2)}
+.pdth.on b{margin-right:4px}
+.pdcards{display:flex;flex-direction:column;gap:6px;padding:0 10px}
+.pdc{background:#15161a;border:1px solid var(--line2);border-left:4px solid var(--line2);padding:8px 10px}
+.pdc.battle{border-left-color:var(--red)}.pdc.skill{border-left-color:var(--blue)}.pdc.rest{border-left-color:var(--ok)}
+.pdc.out{opacity:.5}
+.pdch{display:flex;align-items:center;gap:6px}
+.pdch b{font-family:var(--lab);font-size:15px;color:#fff}
+.pdch .tag{font-size:10px}
+.pdq{display:flex;align-items:center;gap:2px}
+.pdq i{width:9px;height:13px;border:1px solid var(--line2);background:#2a2b31;border-radius:2px}
+.pdq i.on{background:#cfd6e0}
+.pdq em{font-style:normal;font-family:var(--mono);font-size:11px;color:var(--fg2);margin-left:3px}
+.pdce{font-size:12px;color:var(--fg2);margin:4px 0;line-height:1.45}
+.pdcf{display:flex;align-items:center;gap:4px}
+.pdcf .btn{padding:1px 10px;min-width:0;width:auto}
+.pdw{color:var(--yel2);font-size:11px}
+.pdhearts{display:flex;flex-direction:column;gap:4px;padding:0 10px}
+.pdh{display:flex;align-items:center;gap:8px;background:#141518;border:1px solid var(--line2);padding:6px 10px}
+.pdhn{flex:1;min-width:0}
+.pdhn b{display:block;font-size:13px;color:#fff}
+.pdhn small{display:block;font-size:11px;color:var(--mute)}
+.pdh .hearts i{font-size:15px}
+.pdmini{display:flex;flex-wrap:wrap;gap:4px;padding:0 10px}
+.pdmc{font-size:11px;background:#15161a;border:1px solid var(--line2);border-left:3px solid var(--line2);padding:2px 6px;color:var(--fg2)}
+.pdmc.battle{border-left-color:var(--red)}.pdmc.skill{border-left-color:var(--blue)}.pdmc.rest{border-left-color:var(--ok)}
+.pdmc.out{opacity:.45}.pdmc b{color:#fff;font-family:var(--mono);margin-left:2px}
+.ph-item.pdpc{cursor:default}.ph-item.pdpc.me{border-color:#9b6bff}
