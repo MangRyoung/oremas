@@ -209,12 +209,13 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
     if(SPK.key===key)SPK.key='gm';A().toast(`${name} 를 지웠다`);return re()}
    if(k==='fmove'){const key=b.dataset.k;C.order=C.order.filter(x=>x!==key);for(const f of Object.values(C.folders))f.keys=(f.keys||[]).filter(x=>x!==key);if(b.value&&C.folders[b.value])C.folders[b.value].keys.push(key);else C.order.push(key);await saveSpk(C);return re()}};
    if(b.tagName==='SELECT')b.onchange=h;else b.onclick=h})}
- function openGmImg(){const ST=A().ST;const cur=gmImg();
+ function openGmImg(){const cur=gmImg();
   const md=A().openModal(`<div class="mhead"><h2>GM 그림</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small muted">화자 칸의 GM 칩과 GM 이 쓴 로그 줄의 아바타로 쓴다.</p>
-   <div class="row" style="gap:12px;align-items:center"><i class="gmimgpv" style="${cur?`background-image:url('${cssu(cur)}')`:''}"></i><div style="flex:1;display:flex;flex-direction:column;gap:6px"><input type="text" id="gi_url" value="${esc(cur)}" placeholder="그림 주소 https://…"><div class="row"><label class="btn sm">파일 올리기<input type="file" accept="image/*" id="gi_file" hidden></label>${cur?'<button class="btn sm ghost danger" id="gi_del">지우기</button>':''}<span class="sp"></span><button class="btn sm pri" id="gi_ok">저장</button></div></div></div>`);
+   <div class="row" style="gap:14px;align-items:stretch;flex-wrap:nowrap"><i class="gmimgpv" style="${cur?`background-image:url('${cssu(cur)}')`:''}"></i><div style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:0">${dzHtml('gi_dz')}
+    <input type="text" id="gi_url" value="${esc(cur)}" placeholder="또는 그림 주소 https://…"><div class="row">${cur?'<button class="btn sm ghost danger" id="gi_del">지우기</button>':''}<span class="sp"></span><button class="btn sm pri" id="gi_ok">저장</button></div></div></div>`);
   const pv=u=>{const i=$('.gmimgpv',md);if(i)i.style.backgroundImage=u?`url('${cssu(u)}')`:''};$('#gi_url',md).oninput=e=>pv(e.target.value.trim());
-  $('#gi_file',md).onchange=async e=>{const f=e.target.files[0];if(!f)return;if(f.size>5*1024*1024)return A().toast('5MB 이하만');A().toast('올리는 중…');try{const u=await DBS().uploadImage(`rooms/${ST.room}/gm_${Date.now().toString(36)}`,f);$('#gi_url',md).value=u;pv(u);A().toast('올렸다 — 저장을 눌러 줘')}catch(err){A().toast(err.message)}};
   const save=async u=>{A().closeModal();if(await A().set(['rp','gmImg'],u||null)){A().toast(u?'GM 그림을 바꿨다':'GM 그림을 지웠다');A().renderScene()}};
+  bindDz(md,'#gi_dz',async fs=>{const u=await upImg(fs[0],'gm');$('#gi_url',md).value=u;pv(u);await save(u)});
   $('#gi_ok',md).onclick=()=>save($('#gi_url',md).value.trim());const d=$('#gi_del',md);if(d)d.onclick=()=>save('')}
  function speakerChar(){const ST=A().ST;const k=SPK.key;if(ST.role!=='gm'){if(k&&k.startsWith('pm:'))return charOf(k);return charOf(ST.seat)}if(!k||k==='gm')return null;return charOf(k)}
  /* @등록명 → 그 표정으로 바꾼다 (뒤에 대사가 있으면 바꾸고 바로 말한다) */
@@ -249,31 +250,48 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  function addNpcQuick(){const ST=A().ST;
   const md=A().openModal(`<div class="mhead"><h2>인물 추가</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    <div class="row" style="margin-bottom:6px"><b style="width:80px">이름</b><input type="text" id="na_n" style="flex:1" placeholder="예: 유현"></div>
-   <div class="row" style="margin-bottom:6px"><b style="width:80px">초상</b><input type="text" id="na_i" style="flex:1" placeholder="그림 주소 (채팅 아바타·지도 칩)"><label class="btn sm">파일<input type="file" accept="image/*" id="na_if" hidden></label></div>
-   <div class="row" style="margin-bottom:6px"><b style="width:80px">스탠딩</b><input type="text" id="na_s" style="flex:1" placeholder="전신 그림 주소 (비우면 초상으로 선다)"><label class="btn sm">파일<input type="file" accept="image/*" id="na_sf" hidden></label></div>
+   <div class="row" style="margin-bottom:6px"><b style="width:80px">초상</b><input type="text" id="na_i" style="flex:1" placeholder="그림 주소 (채팅 아바타·지도 칩)"><div class="updz mini" id="na_idz"><b>끌어 놓기</b><span>클릭 · Ctrl+V</span><input type="file" accept="image/*" hidden></div></div>
+   <div class="row" style="margin-bottom:6px"><b style="width:80px">스탠딩</b><input type="text" id="na_s" style="flex:1" placeholder="전신 그림 주소 (비우면 초상으로 선다)"><div class="updz mini" id="na_sdz"><b>끌어 놓기</b><span>클릭 · Ctrl+V</span><input type="file" accept="image/*" hidden></div></div>
    <div class="small dim">관계도 탭에 NPC 로 들어가고, 여기 화자 줄에 바로 뜬다. 표정을 더 넣으려면 「✎ 표정」.</div>
    <div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn pri" id="na_ok">추가</button></div>`);
-  const up=async(fi,ti,tag)=>{const f=fi.files[0];if(!f)return;A().toast('올리는 중…');try{$(ti,md).value=await DBS().uploadImage(`rooms/${ST.room}/${tag}_${Date.now().toString(36)}`,f);A().toast('올렸다')}catch(e){A().toast(e.message)}};
-  $('#na_if',md).onchange=()=>up($('#na_if',md),'#na_i','npc');$('#na_sf',md).onchange=()=>up($('#na_sf',md),'#na_s','st_npc');
+  bindDz(md,'#na_idz',async fs=>{$('#na_i',md).value=await upImg(fs[0],'npc');A().toast('올렸다')});bindDz(md,'#na_sdz',async fs=>{$('#na_s',md).value=await upImg(fs[0],'st_npc');A().toast('올렸다')});
   $('#na_ok',md).onclick=async()=>{const n=$('#na_n',md).value.trim();if(!n)return A().toast('이름이 필요해');const nodes=(ST.state.graph||{}).nodes||{};if(Object.values(nodes).some(x=>x.name===n))return A().toast('같은 이름의 인물이 이미 있다');
    const id='n'+Date.now().toString(36);const i=Object.keys(nodes).length;const st=$('#na_s',md).value.trim();
    await A().set(['graph','nodes',id],{id,name:n,kind:'npc',img:$('#na_i',md).value.trim(),x:120+(i%6)*140,y:120+Math.floor(i/6)*140,stands:st?[{label:'기본',src:st,point:0}]:[],standActive:0});
    SPK.key='npc:'+n;A().closeModal();A().renderScene();A().toast(`${n} 추가 — 관계도에도 들어갔다`)}}
  /* ----- 빠른 배경 / BGM 고르기 (무대 위 버튼) ----- */
  const QB={g:''};
- function quickBg(){const r=R();const groups=bgGroups();if(!QB.g||!groups.find(x=>x.n===QB.g))QB.g=groups[0]?groups[0].n:'';const g=groups.find(x=>x.n===QB.g)||{i:[]};const cur=(r.bg||{}).src;
-  const md=A().openModal(`<div class="mhead"><h2>배경</h2><span class="sp"></span><button class="btn sm ghost" data-q="bgx">배경 없음</button><button class="btn sm ghost" data-q="mgr">관리</button><button class="btn ghost" data-x>닫기</button></div>
-   ${(r.recentBg||[]).length?`<div class="bgchips" style="margin-bottom:8px">${r.recentBg.map(k=>{const b=bgOf(k);return b?`<div class="bgchip ${cur===b.src?'cur':''}" data-q="bg" data-k="${esc(k)}"><i style="background-image:url('${cssu(b.src)}')"></i>${esc(b.l)}</div>`:''}).join('')}</div>`:''}
-   <div class="gtabs">${groups.map(x=>`<button class="gt ${x.n===QB.g?'on':''}" data-q="g" data-g="${esc(x.n)}">${esc(x.n)}<em>${x.i.filter(i=>i.src).length}</em></button>`).join('')}</div>
-   <div class="bggrid" style="max-height:56vh">${g.i.map(it=>it.src?`<div class="bgt ${cur===it.src?'cur':''}" data-q="bg" data-k="${esc(it.k)}"><img src="${esc(it.src)}" loading="lazy" alt=""><span>${esc(it.l)}</span></div>`:'').join('')}</div>
-   <div class="row" style="margin-top:8px"><input type="text" id="qbgu" placeholder="또는 그림 주소 https://…" style="flex:1"><input type="text" id="qbgn" placeholder="장소 이름" style="width:140px"><button class="btn sm" data-q="url">적용</button></div>`);
-  md.classList.add('wide');
+ function quickBg(){const r=R();const groups=bgGroups();const ST=A().ST;
+  const recent=(r.recentBg||[]).map(bgOf).filter(x=>x&&x.src);const RC='★최근';
+  if(!QB.g||(QB.g===RC&&!recent.length)||(QB.g!==RC&&!groups.find(x=>x.n===QB.g)))QB.g=recent.length?RC:(groups[0]?groups[0].n:'');
+  const cur=r.bg||null;
+  const nav=[...(recent.length?[{n:RC,c:recent.length,l:'최근'}]:[]),...groups.map(x=>({n:x.n,c:x.i.filter(i=>i.src).length,l:x.n}))];
+  const md=A().openModal(`<div class="mhead"><h2>배경</h2><span class="sp"></span><button class="btn sm ghost" data-q="mgr">목록 관리</button><button class="btn ghost" data-x>닫기</button></div>
+   <div class="qbtop"><div class="qbcur" style="${cur&&cur.src?`background-image:url('${cssu(cur.src)}')`:''}"><span>${cur&&cur.src?`<small>지금</small><b>${esc(cur.name||'이름 없는 배경')}</b>`:'<small>지금</small><b>배경 없음</b>'}</span></div>
+    <div class="qbtopr"><input type="search" id="qbq" placeholder="배경 이름으로 찾기 (모든 그룹)" value="${esc(QB.q||'')}"><button class="btn sm ghost" data-q="bgx" ${cur?'':'disabled'}>배경 없애기</button></div></div>
+   <div class="qbcols"><nav class="qbnav">${nav.map(x=>`<button class="qbn ${x.n===QB.g&&!QB.q?'on':''}" data-q="g" data-g="${esc(x.n)}"><span>${esc(x.l)}</span><em>${x.c}</em></button>`).join('')}</nav>
+    <div class="qbgrid" id="qbgrid"></div></div>
+   <div class="qbadd"><div class="updz sm" id="qb_dz"><b>새 그림 끌어 놓기</b><span>클릭 · Ctrl+V</span><input type="file" accept="image/*" hidden></div>
+    <div class="qbaddr"><div class="row"><input type="text" id="qbgu" placeholder="또는 그림 주소 https://…" style="flex:1"><input type="text" id="qbgn" placeholder="장소 이름" style="width:130px"><button class="btn sm pri" data-q="url">적용</button></div>
+    ${ST.role==='gm'&&QB.g!==RC&&groups.find(x=>x.n===QB.g)?`<label class="small dim"><input type="checkbox" id="qbsave" ${QB.save?'checked':''}> 「${esc(QB.g)}」 그룹에도 넣어 두기</label>`:''}</div></div>`);
+  md.classList.add('wide','qbmodal');
+  const items=()=>{const q=(QB.q||'').trim().toLowerCase();if(q){const out=[];for(const g of groups)for(const it of g.i)if(it.src&&(it.l||'').toLowerCase().includes(q))out.push(Object.assign({g:g.n},it));return out}
+   if(QB.g===RC)return recent;const g=groups.find(x=>x.n===QB.g);return g?g.i.filter(i=>i.src):[]};
+  const draw=()=>{const xs=items();const q=(QB.q||'').trim();$('#qbgrid',md).innerHTML=xs.map(it=>{const on=cur&&cur.src===it.src;return `<button class="qbt ${on?'on':''}" data-k="${esc(it.k)}" title="${esc(it.l)}"><img src="${esc(it.src)}" loading="lazy" alt=""><span class="qbl">${esc(it.l)}${q&&it.g?`<small>${esc(it.g)}</small>`:''}</span>${on?'<em>사용 중</em>':''}</button>`}).join('')||`<div class="empty small">${q?'찾는 배경이 없다':'이 그룹에 그림이 없다 — 「목록 관리」에서 넣어 줘'}</div>`;
+   $('#qbgrid',md).querySelectorAll('.qbt').forEach(b=>b.onclick=()=>useBg(b.dataset.k))};
+  const useBg=async k=>{const it=bgOf(k);if(!it)return;A().closeModal();await A().set(['rp','bg'],{src:it.src,name:it.l,at:Date.now()});await A().set(['rp','recentBg'],[k,...(r.recentBg||[]).filter(x=>x!==k)].slice(0,12))};
+  const useUrl=async(u,name)=>{if(!u)return;const sv=$('#qbsave',md);let key='';
+   if(sv&&sv.checked){const gs=JSON.parse(JSON.stringify(groups));const g=gs.find(x=>x.n===QB.g);if(g){const l=name||'새 배경';key=(g.n+'_'+l+'_'+Date.now().toString(36)).replace(/\s+/g,'_');g.i.push({k:key,l,src:u});await A().set(['rp','bgList'],gs)}}
+   A().closeModal();await A().set(['rp','bg'],{src:u,name,at:Date.now()});if(key)await A().set(['rp','recentBg'],[key,...(r.recentBg||[])].slice(0,12))};
+  draw();
+  const qi=$('#qbq',md);qi.oninput=()=>{QB.q=qi.value;md.querySelectorAll('.qbn').forEach(b=>b.classList.toggle('on',!QB.q.trim()&&b.dataset.g===QB.g));draw()};
+  const sv=$('#qbsave',md);if(sv)sv.onchange=()=>{QB.save=sv.checked};
+  bindDz(md,'#qb_dz',async fs=>{const f=fs[0];const u=await upImg(f,'bg');const nm=$('#qbgn',md).value.trim()||stLabel(f.name&&f.name!=='image.png'?f.name:'');return useUrl(u,nm==='기본'?'':nm)});
   md.querySelectorAll('[data-q]').forEach(b=>b.onclick=async()=>{const k=b.dataset.q;
-   if(k==='g'){QB.g=b.dataset.g;return quickBg()}
-   if(k==='bg'){const it=bgOf(b.dataset.k);if(!it)return;A().closeModal();await A().set(['rp','bg'],{src:it.src,name:it.l,at:Date.now()});await A().set(['rp','recentBg'],[b.dataset.k,...(r.recentBg||[]).filter(x=>x!==b.dataset.k)].slice(0,8));return}
+   if(k==='g'){QB.g=b.dataset.g;QB.q='';return quickBg()}
    if(k==='bgx'){A().closeModal();return A().set(['rp','bg'],null)}
    if(k==='mgr')return openBgMgr();
-   if(k==='url'){const u=$('#qbgu',md).value.trim();if(!u)return;A().closeModal();return A().set(['rp','bg'],{src:u,name:$('#qbgn',md).value.trim(),at:Date.now()})}})}
+   if(k==='url')return useUrl($('#qbgu',md).value.trim(),$('#qbgn',md).value.trim())})}
  function quickBgm(){const md=A().openModal(`<div class="mhead"><h2>BGM</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div id="bgmpanel">${bgmPanelHtml()}</div>`);md.classList.add('wide');const re=()=>{const el=$('#bgmpanel');if(!el)return;el.innerHTML=bgmPanelHtml();bindBgmPanel(md,re)};bindBgmPanel(md,re)}
  /* ----- 대화 기록 ----- */
  let logOoc=false;
@@ -397,7 +415,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
     ${(r.recentBg||[]).length?`<div class="sec">최근</div><div class="bgchips">${r.recentBg.map(k=>{const b=bgOf(k);return b?`<div class="bgchip ${cur===b.src?'cur':''}" data-gc="bg" data-k="${esc(k)}"><i style="background-image:url('${cssu(b.src)}')"></i>${esc(b.l)}</div>`:''}).join('')}</div>`:''}
     <div class="sec">그룹</div><div class="tabs2 wrap">${groups.map(x=>`<button class="tab2 ${x.n===g.n?'on':''}" data-gc="bgg" data-g="${esc(x.n)}">${esc(x.n)} <small>${x.i.filter(i=>i.src).length}</small></button>`).join('')}</div>
     <div class="bggrid">${g.i.map(it=>it.src?`<div class="bgt ${cur===it.src?'cur':''}" data-gc="bg" data-k="${esc(it.k)}"><img src="${esc(it.src)}" loading="lazy" alt=""><span>${esc(it.l)}</span></div>`:'').join('')}</div>
-    <div class="sec">직접 넣기</div><div class="row"><input type="text" id="gbg" placeholder="그림 주소 https://…" style="flex:1"><input type="text" id="gbgn" placeholder="장소 이름" style="width:160px"><label class="btn sm">파일<input type="file" accept="image/*" id="gbgf" hidden></label><button class="btn sm" data-gc="bgurl">적용</button></div>`}
+    <div class="sec">직접 넣기</div><div class="row"><input type="text" id="gbg" placeholder="그림 주소 https://…" style="flex:1"><input type="text" id="gbgn" placeholder="장소 이름" style="width:160px"><div class="updz mini" id="gbgdz"><b>끌어 놓기</b><span>클릭 · Ctrl+V</span><input type="file" accept="image/*" hidden></div><button class="btn sm" data-gc="bgurl">적용</button></div>`}
   else if(GC.tab==='bgm'){body=bgmPanelHtml()}
   else if(GC.tab==='notice'){const ns=notices();
    body=`<div class="row" style="margin-bottom:8px"><span class="small">멘트 바꿔 보내기</span><input type="text" id="gsub" placeholder="비우면 공지에 저장된 멘트" style="flex:1"></div>
@@ -423,7 +441,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
      <label>경고 제목 <input type="text" id="gci_wt" value="${esc(CI.warnTitle||'')}" placeholder="강적 출현" style="width:120px"></label><button class="btn sm" data-gc="cisave">저장</button></div>
     <div class="row" style="margin-top:6px;gap:6px"><button class="btn sm" data-gc="cutvs">VS 컷인 지금</button><button class="btn sm" data-gc="cutwarn">경고 연출 지금</button><button class="btn sm" data-gc="cuttest">컷인 시험</button></div>
     <div class="sec">효과음 <span class="note">누르면 모두에게 한 번 · 배틀의 명중/급소/빗나감/빈사/주사위/공개는 자동</span></div>${Object.keys(SG).sort().map(g=>`<div class="small dim" style="margin:6px 0 2px">${esc(g)}</div><div class="row" style="flex-wrap:wrap;gap:4px">${Object.keys(SG[g]).map(n=>`<button class="chip" data-gc="se" data-n="${esc(n)}">${esc(n)}</button>`).join('')}</div>`).join('')}<div class="row" style="margin-top:6px"><input type="text" id="gseu" placeholder="효과음 직링크 (mp3/wav)" style="flex:1"><button class="btn sm" data-gc="seurl">울리기</button></div>
-    <div class="sec">중앙 이미지</div><div class="row"><input type="text" id="gci" placeholder="그림 주소" style="flex:1"><label class="btn sm">파일<input type="file" accept="image/*" id="gcif" hidden></label><button class="btn sm" data-gc="center">띄우기</button><button class="btn sm ghost" data-gc="centerx">내리기</button></div>
+    <div class="sec">중앙 이미지</div><div class="row"><input type="text" id="gci" placeholder="그림 주소" style="flex:1"><div class="updz mini" id="gcidz"><b>끌어 놓기</b><span>클릭 · Ctrl+V</span><input type="file" accept="image/*" hidden></div><button class="btn sm" data-gc="center">띄우기</button><button class="btn sm ghost" data-gc="centerx">내리기</button></div>
     <div class="sec">채팅 명령</div><table class="t small"><tr><td><code>/as 이름 말</code></td><td>그 인물로 말하기 (관계도의 NPC 면 스탠딩·아바타가 따라온다)</td></tr><tr><td><code>/s 라벨</code></td><td>내 표정(스탠딩) 바꾸기</td></tr><tr><td><code>/img 주소</code></td><td>채팅에 그림</td></tr><tr><td><code>/r 1d100</code></td><td>주사위</td></tr><tr><td><code>/w 이름 말</code></td><td>귓속말 (GM 은 GM)</td></tr><tr><td><code>/clear</code></td><td>무대의 스탠딩 모두 내리기 (GM)</td></tr></table>
     <div class="sec">귓속말</div><div class="row"><select id="gwto">${Object.entries(ST.state.seats||{}).map(([k,v])=>`<option value="${esc(k)}">${esc((((ST.state.roster||{}).trainers||{})[k]||{}).name||k)} (${esc(v.name)})</option>`).join('')}</select><input type="text" id="gwt" placeholder="메시지" style="flex:1"><button class="btn sm" data-gc="whisper">보내기</button></div>`}
   const md=A().openModal(`<div class="mhead"><h2>GM 콘솔</h2><span class="tabs2" style="margin:0 0 0 14px;flex:0 1 560px">${TABS.map(([k,n])=>`<button class="tab2 ${GC.tab===k?'on':''}" data-gc="tab" data-t="${k}">${n}</button>`).join('')}</span><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="gcbody">${body}</div>`);
@@ -463,8 +481,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(b.type==='checkbox')b.onchange=h;else b.onclick=h});
   const vr=$('#gvol',md);if(vr)vr.oninput=()=>{vol=+vr.value;try{localStorage.setItem('om_vol',vol)}catch(e){}if(audio)audio.volume=vol};
   if(GC.tab==='bgm')bindBgmPanel(md,re);
-  const up=async(inp,target)=>{const f=inp.files[0];if(!f)return;A().toast('올리는 중…');try{const url=await DBS().uploadImage(`rooms/${ST.room}/rp_${Date.now().toString(36)}`,f);$(target,md).value=url;A().toast('올렸다 — 적용/띄우기를 눌러')}catch(e){A().toast(e.message)}};
-  const f1=$('#gbgf',md);if(f1)f1.onchange=()=>up(f1,'#gbg');const f2=$('#gcif',md);if(f2)f2.onchange=()=>up(f2,'#gci')}
+  if($('#gbgdz',md))bindDz(md,'#gbgdz',async fs=>{$('#gbg',md).value=await upImg(fs[0],'rp');A().toast('올렸다 — 적용을 눌러')});if($('#gcidz',md))bindDz(md,'#gcidz',async fs=>{$('#gci',md).value=await upImg(fs[0],'rp');A().toast('올렸다 — 띄우기를 눌러')})}
  /* ----- 배경 관리 (맵툴 배경 관리 창): 그룹·그림 추가/이름/삭제/순서, 방 상태 rp.bgList 에 통째로 저장 ----- */
  const BGM_UI={g:0};
  function openBgMgr(){const groups=JSON.parse(JSON.stringify(bgGroups()));const ST=A().ST;if(BGM_UI.g>=groups.length)BGM_UI.g=0;const g=groups[BGM_UI.g];
@@ -472,7 +489,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    <div class="mmcols"><div><div class="sec">그룹 <span class="sp"></span><button class="btn xs" data-bm="gadd">+ 그룹</button></div>
     <div class="mmlist">${groups.map((x,i)=>`<div class="mml ${i===BGM_UI.g?'on':''}" style="cursor:pointer" data-bm="gsel" data-i="${i}"><span class="nm"><b>${esc(x.n)}</b> <small class="dim">${x.i.length}장</small></span><button class="btn xs ghost" data-bm="gren" data-i="${i}">이름</button><button class="btn xs ghost" data-bm="gup" data-i="${i}">↑</button><button class="btn xs ghost" data-bm="gdn" data-i="${i}">↓</button><button class="btn xs ghost danger" data-bm="gdel" data-i="${i}">×</button></div>`).join('')||'<div class="empty small">그룹이 없다</div>'}</div></div>
    <div>${g?`<div class="sec">「${esc(g.n)}」의 그림</div><div class="mmlist">${g.i.map((it,i)=>`<div class="mml"><i class="bgth" style="${it.src?`background-image:url('${cssu(it.src)}')`:''}"></i><span class="nm"><b>${esc(it.l)}</b><br><small class="dim">${esc(it.src||'(없음)')}</small></span><button class="btn xs ghost" data-bm="iedit" data-i="${i}">수정</button><button class="btn xs ghost" data-bm="iup" data-i="${i}">↑</button><button class="btn xs ghost" data-bm="idn" data-i="${i}">↓</button><button class="btn xs ghost danger" data-bm="idel" data-i="${i}">×</button></div>`).join('')||'<div class="empty small">그림이 없다</div>'}</div>
-    <div class="sec">그림 추가</div><div class="row"><input type="text" id="bm_l" placeholder="이름" style="width:120px"><input type="text" id="bm_u" placeholder="그림 주소 https://…" style="flex:1"><label class="btn sm">파일<input type="file" accept="image/*" id="bm_f" hidden></label><button class="btn sm pri" data-bm="iadd">추가</button></div><div class="small dim">파일을 올리면 Supabase 저장소에 들어가고 주소가 채워진다.</div>`:''}</div></div>`);
+    <div class="sec">그림 추가</div><div class="row"><input type="text" id="bm_l" placeholder="이름" style="width:120px"><input type="text" id="bm_u" placeholder="그림 주소 https://…" style="flex:1"><button class="btn sm pri" data-bm="iadd">추가</button></div><div class="updz" id="bm_dz" style="margin-top:8px"><b>그림 여러 장을 끌어 놓기</b><span>클릭해서 고르기 · Ctrl+V · 파일 이름이 배경 이름이 된다</span><input type="file" accept="image/*" multiple hidden></div>`:''}</div></div>`);
   md.classList.add('wide');
   const save=async(gs)=>{await A().set(['rp','bgList'],gs);openBgMgr()};
   md.querySelectorAll('[data-bm]').forEach(b=>b.onclick=async e=>{if(b.dataset.bm!=='gsel')e.stopPropagation();const k=b.dataset.bm;const i=+b.dataset.i;
@@ -488,7 +505,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(k==='idel'){g.i.splice(i,1);return save(groups)}
    if(k==='iup'&&i>0){[g.i[i-1],g.i[i]]=[g.i[i],g.i[i-1]];return save(groups)}
    if(k==='idn'&&i<g.i.length-1){[g.i[i+1],g.i[i]]=[g.i[i],g.i[i+1]];return save(groups)}});
-  const f=$('#bm_f',md);if(f)f.onchange=async()=>{const file=f.files[0];if(!file)return;A().toast('올리는 중…');try{$('#bm_u',md).value=await DBS().uploadImage(`rooms/${ST.room}/bg_${Date.now().toString(36)}`,file);if(!$('#bm_l',md).value)$('#bm_l',md).value=file.name.replace(/\.[^.]+$/,'');A().toast('올렸다 — 추가를 눌러')}catch(e){A().toast(e.message)}}}
+  if(g)bindDz(md,'#bm_dz',async fs=>{let n=0;for(const f of fs){const u=await upImg(f,'bg');const l=(f.name&&f.name!=='image.png')?stLabel(f.name):'새 배경 '+(g.i.length+1);g.i.push({k:(g.n+'_'+l+'_'+Date.now().toString(36)).replace(/\s+/g,'_'),l,src:u});n++}A().toast(`배경 ${n}장 추가`);await save(groups)},true)}
  /* ----- BGM 패널 (맵툴 Lib:bgm 정리판과 같은 꼴): 홈 = 띠(장면/배틀/분위기)별 그룹 타일 → 그룹 = 곡 줄 · 검색 · ▶ 미리듣기 · 모두에게 재생 · ⟳ 다른 곡 ----- */
  const BG={g:'',q:''};
  const gshort=g=>String(g).replace(/^[0-9.]+\s*/,'');
@@ -541,6 +558,17 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   const walk=async e=>{if(e.isFile){const f=await new Promise((r,j)=>e.file(r,j));if(isImg(f))out.push(f)}else if(e.isDirectory){const rd=e.createReader();for(;;){const xs=await new Promise((r,j)=>rd.readEntries(r,j));if(!xs.length)break;for(const x of xs)await walk(x)}}};
   for(const e of ents)await walk(e);return out}
  if(!window.__omDropGuard){window.__omDropGuard=1;const g=e=>{if(e.dataTransfer&&[...e.dataTransfer.types].includes('Files'))e.preventDefault()};addEventListener('dragover',g);addEventListener('drop',g)}
+ /* 그림 올리기 칸 (스탠딩 창과 같은 방식): 끌어 놓기 · 클릭해서 고르기 · Ctrl+V. 한 창에 여러 칸이면 마지막으로 마우스를 올린 칸이 붙여넣기를 받는다 */
+ const upImg=(f,tag)=>DBS().uploadImage(`rooms/${A().ST.room}/${tag||'img'}_${Date.now().toString(36)}${Math.random().toString(36).slice(2,5)}`,f);
+ function bindDz(md,sel,onFiles,multi){const z=typeof sel==='string'?$(sel,md):sel;if(!z)return;const fi=z.querySelector('input[type=file]');const hasF=e=>e.dataTransfer&&[...e.dataTransfer.types].includes('Files');
+  const run=async fs=>{fs=(fs||[]).filter(isImg);if(!fs.length)return A().toast('그림 파일이 없다');if(z.classList.contains('busy'))return;z.classList.add('busy');const t=z.querySelector('b'),t0=t?t.textContent:'';if(t)t.textContent='올리는 중…';
+   try{await onFiles(multi?fs:[fs[0]])}catch(e){A().toast('올리지 못했다: '+e.message)}finally{if(z.isConnected){z.classList.remove('busy');if(t)t.textContent=t0}}};
+  if(fi){z.onclick=e=>{if(e.target!==fi)fi.click()};fi.onchange=()=>{const fs=[...fi.files];fi.value='';run(fs)}}
+  let d=0;z.addEventListener('dragenter',e=>{if(!hasF(e))return;e.preventDefault();d++;z.classList.add('over')});z.addEventListener('dragover',e=>{if(hasF(e)){e.preventDefault();e.dataTransfer.dropEffect='copy'}});
+  z.addEventListener('dragleave',()=>{if(--d<=0){d=0;z.classList.remove('over')}});z.addEventListener('drop',async e=>{e.preventDefault();e.stopPropagation();d=0;z.classList.remove('over');run(await dropImgs(e.dataTransfer))});
+  z.addEventListener('mouseenter',()=>{md._dzAct=z});z._run=run;
+  if(!md._dzPaste){md._dzPaste=1;const onPaste=e=>{if(!md.isConnected)return document.removeEventListener('paste',onPaste);const fs=[...((e.clipboardData||{}).files||[])].filter(isImg);if(!fs.length)return;const tz=md._dzAct&&md._dzAct.isConnected?md._dzAct:md.querySelector('.updz');if(!tz||!tz._run)return;e.preventDefault();tz._run(fs)};document.addEventListener('paste',onPaste)}}
+ const dzHtml=(id,label,sub)=>`<div class="updz" id="${id}"><b>${label||'그림을 끌어 놓기'}</b><span>${sub||'클릭해서 고르기 · Ctrl+V 붙여넣기'}</span><input type="file" accept="image/*" hidden></div>`;
  function openStands(key){const c=charOf(key);if(!c)return A().toast('그 인물이 없다');const ST=A().ST;const canEdit=gm()||(c.kind==='pc'&&c.id===ST.seat)||(c.kind==='pm'&&c.tid===ST.seat);
   const KINDS=[['','모양 자동'],['stand','스탠딩'],['portrait','초상']];const kindSel=(attr,v)=>`<select ${attr}>${KINDS.map(([k,n])=>`<option value="${k}" ${(v||'')===k?'selected':''}>${n}</option>`).join('')}</select>`;
   const cur=c.stands.map(s=>Object.assign({},s));let act=Math.max(0,Math.min(c.active||0,cur.length-1));
