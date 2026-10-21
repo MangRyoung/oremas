@@ -2544,3 +2544,12 @@ span.iedit{display:inline-block;min-width:3em}
 .typingslot .dots i{display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--yel2);margin-right:2px;animation:blink 1.2s infinite}.typingslot .dots i:nth-child(2){animation-delay:.2s}.typingslot .dots i:nth-child(3){animation-delay:.4s}
 .rpbtns .typingslot{position:absolute;right:calc(100% + 10px);top:50%;transform:translateY(-50%);max-width:36vw}
 @media (max-width:760px){.rpbtns .typingslot{right:auto;left:auto;top:calc(100% + 6px);transform:none}}
+
+/* ---------- 턴 마무리 확인 칸 (10-23) — 주인 화면에만 자기 포텐셜, 모두 「다음」을 누르면 넘어간다 ---------- */
+.endq{background:#140a0c;border:1px solid var(--red);padding:8px 10px;margin-bottom:8px;display:flex;flex-direction:column;gap:6px}
+.endq .ohead{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.endq .olab{font-family:var(--lab);color:#fff;background:var(--red);padding:1px 10px;transform:skew(var(--skew))}
+.eqrow{border:1px solid var(--line2);background:#0c0c0e;padding:6px 8px;display:flex;flex-direction:column;gap:4px}
+.eqrow.mine{border-color:var(--yel2)}.eqrow.done{opacity:.6}
+.eqh{display:flex;align-items:center;gap:8px}
+.endq .firerow{cursor:default;flex-wrap:wrap}

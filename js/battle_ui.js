@@ -81,7 +81,7 @@ window.OM_BATTLE_UI=(()=>{
     <button class="btn sm ghost" data-act="resetcmd">지시 초기화</button>${c.gm?'<button class="btn sm" data-act="result" title="HP·빈사·상태 이상·포텐셜 횟수·쓴 소지품을 시트에 돌려준다">결과 정리</button>':''}<button class="btn sm ghost danger" data-act="clear">배틀 비우기</button>${c.gm?`<button class="btn sm gmh ${c.fair?'pri':'ghost'}" data-act="gmhands" title="켜면 GM 도 플레이어처럼 — 플레이어가 올린 트레이너의 지시·준비·HP·상태는 그 플레이어만. GM 이 불러온 파티·NPC 는 GM 이 그대로 지시하고 진행한다 (방 설정 「GM 불간섭」과 같음)">${c.fair?'PL 권한 중 ↩ GM':'PL 권한으로'}</button>`:''}
     ${Object.entries(c.ST.state.pub||{}).filter(([k,v])=>v&&v.time).map(([k,v])=>`<span class="chip" style="border-color:var(--yel)">타임 요청: ${esc((b.trainers[k]||{}).name||k)} → ${esc(monName(b,v.time.mid))} <button class="btn xs pri" data-act="timeok" data-seat="${k}">허가</button></span>`).join('')}</div>`:''}
   </div>
-  ${revealStrip(c,ready)}
+  ${revealStrip(c,ready)}${endPanel(c)}
   <div class="stadium">
    ${benchRow(c,'left',ready)}
    <div class="fieldcol ${f.stage&&f.stage.name?'staged':''} ${fieldBg(f).cls}" style="${fieldBg(f).st}">${areaGrid(c)}${window.OM_STAGE_UI?window.OM_STAGE_UI.chip(c,f):''}${fieldStrip(c,f)}</div>
@@ -478,6 +478,7 @@ window.OM_BATTLE_UI=(()=>{
    case 'reveal':return reveal();
    case 'order':return computeOrder();
    case 'progress':return progressTurn();
+   case 'edone':case 'efire':case 'eskip':return endAct(d.act,d);
    case 'turnstart':{await A().set(['ready'],{});await A().set(['battle','cmds'],{});await A().set(['battle','phase'],1);A().sysLog('턴 개시 — 각자 지시를 공개하세요 (에리어마다 「공개」)','battle');return}
    case 'revealmon':return revealOne(d.tid,d.mid);
    case 'fire':return openFire(d.tid);
@@ -610,7 +611,7 @@ window.OM_BATTLE_UI=(()=>{
  async function selfCharge(){const c=ctx();const b=c.b;const tid=c.seat;const t=(b.trainers||{})[tid];if(c.role!=='seat'||!t)return;const key=turnKey(b);if(t.pcTurn===key||BUSY.pc===key)return;BUSY.pc=key;
   const cm=await myCmd(c,tid,true);const t0=snap((ctx().b.trainers||{})[tid]||t),t2=snap(t0);if(t2.pcTurn===key)return;if(cm)chargeOne(t2,cm,ctx().b);t2.pcTurn=key;await A().setDiff(['battle','trainers',tid],t0,t2,1)}
  /* 상태가 바뀔 때마다 (app.js onState): 턴 개시면 내 선입력 차감, 공개 요청이 오면 내 남은 지시를 연다, 진행자는 자동으로 넘긴다 */
- async function watch(){const c=ctx();const b=c.b;if((+b.phase||0)>=2)return autoRevealTurn();if((+b.phase||0)!==1)return;
+ async function watch(){const c=ctx();const b=c.b;if(b.endq&&b.endq.step)endAdvance();if((+b.phase||0)>=2)return autoRevealTurn();if((+b.phase||0)!==1)return;
   if(c.role==='seat'&&c.seat&&(b.trainers||{})[c.seat]){await selfCharge();await publishOk();
    const key=turnKey(b);if(String(b.revealReq||'')===key&&!BUSY.rv){const mine=Object.values(b.mons||{}).filter(m=>m.tid===c.seat&&m.entry&&m.hp.cur>0&&!revealed(b,c.seat,m.id)&&!SENT[key+':'+m.id]);
     if(mine.length){BUSY.rv=1;try{for(const m of mine){if(revealed(ctx().b,c.seat,m.id))continue;SENT[key+':'+m.id]=1;await revealOne(c.seat,m.id,true)}}finally{BUSY.rv=0}}}}
@@ -757,28 +758,42 @@ window.OM_BATTLE_UI=(()=>{
 
  /* ----- 턴 종료 ----- */
  /* 턴 마무리: 「턴 가장 마지막」 → (턴 종료 처리) → 「턴 종료 이후」. 그 타이밍이 적힌 포텐셜(필드의 포켓몬 · 그 트레이너 고유)이 있으면 단계마다 발동을 묻고, 없으면 그냥 넘어간다 */
- const END_T={last:/가장\s*마지막/,end:/턴\s*종료\s*(시|때|시점|에)|턴\s*종료\s*마다/,after:/턴\s*종료\s*(이후|후|뒤)/};
+ /* 「턴 종료 시까지」「가장 마지막까지」는 해제 타이밍이라 발동 후보가 아니다 */
+ const END_T={last:/가장\s*마지막(?!\s*까지)/,end:/턴\s*종료\s*(시|때|시점|에)(?!\s*까지)|턴\s*종료\s*마다/,after:/턴\s*종료\s*(이후|후|뒤)(?!\s*까지)/};
  function endCands(b,step){const out=[];const ok=t=>{t=String(t||'');if(step==='end'&&END_T.after.test(t)&&!END_T.end.test(t.replace(END_T.after,'')))return false;return END_T[step].test(t)};
   for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0)continue;for(const p of potSrc(m))if(ok(p.eff))out.push({m,kind:'pot',name:p.name,eff:p.eff,tag:isExcl(m,p)?'전용':'포텐셜'})}
   const seen=new Set();for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0||seen.has(m.tid))continue;seen.add(m.tid);const t=(b.trainers||{})[m.tid];for(const x of uniqList(t))if(ok(x.p.eff))out.push({m,kind:'uq',name:x.p.name,eff:x.p.eff,tag:'고유',t})}
   return out}
- async function endFlow(){const c=ctx();if(!c.mgr)return;
-  const STEP={last:'턴 가장 마지막',end:'턴 종료',after:'턴 종료 이후'};
-  const ask=(step,btnLabel)=>new Promise(res=>{const L=endCands(ctx().b,step);if(!L.length)return res(true);
-   const md=A().openModal(`<div class="mhead"><h2>${STEP[step]}</h2><span class="sp"></span></div><div class="small dim" style="margin-bottom:8px">이 타이밍이 적힌 포텐셜이다. 쓸 것만 「발동」 — 안 쓰면 그냥 넘어간다.</div>
-    <div class="firelist">${L.map((x,i)=>`<div class="firerow"><b class="fnm"><span class="tag ${x.kind==='uq'?'uqt':'ext'}">${x.tag}</span> 『${esc(x.name)}』</b><span class="small dim">${esc(x.kind==='uq'?x.t.name:x.m.name)} (${String(x.m.entry).toUpperCase()})</span><span class="sp"></span><button class="btn sm pri" data-ef="${i}">발동</button><div class="small" style="flex-basis:100%;white-space:pre-wrap;color:var(--fg2)">${esc(String(x.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,300))}</div></div>`).join('')}</div>
-    <div class="row" style="margin-top:10px;justify-content:flex-end"><button class="btn" data-ec>그만두기</button><button class="btn pri" data-en>${btnLabel} ▶</button></div>`);
-   md.querySelectorAll('[data-ef]').forEach(bt=>bt.onclick=async()=>{const x=L[+bt.dataset.ef];bt.disabled=true;bt.textContent='발동함';
-    if(x.kind==='uq'){A().sysLog(`【고유】 ${x.t.name} 『${x.name}』 (${STEP[step]})`,'battle',{mid:x.m.id,img:x.t.image||'',eff:String(x.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,400)});return}
-    const a=FX()&&FX().autoOf(x.m,'pot',x.name);if(a&&a.ops&&a.ops.length&&!a.manual){A().closeModal();await fireAuto(x.m.id,'pot',x.name);return res(null)}
-    A().sysLog(`【${x.tag}】 ${x.m.name} 『${x.name}』 (${STEP[step]})`,'battle',{mid:x.m.id,img:x.m.image||'',eff:String(x.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,400)})});
-   md.querySelector('[data-en]').onclick=()=>{A().closeModal();res(true)};md.querySelector('[data-ec]').onclick=()=>{A().closeModal();res(false)}});
-  /* 자동화 발동(창이 닫힘) 뒤에는 같은 단계를 다시 물어 남은 것을 고르게 한다 */
-  const stepLoop=async(step,lab)=>{for(;;){const r=await ask(step,lab);if(r===null)continue;return r}};
-  if(!await stepLoop('last','턴 종료로'))return;
-  if(!await stepLoop('end','턴 종료 처리'))return;
-  await turnEnd();
-  await stepLoop('after','다음 턴 지시 준비로')}
+ /* 턴 마무리 (10-23): 단계마다 그 타이밍 포텐셜을 가진 트레이너의 주인 화면에만 묻는다 (플레이어 몫은 그 플레이어, NPC·GM 몫은 GM).
+    각자 쓸 것을 「발동」하고 「다음 ▶」(턴 종료 단계는 「턴 종료 처리 ▶」)를 누르면, 모두 눌렀을 때 진행하는 화면이 다음 단계로 넘긴다.
+    상태: battle.endq = {key, step:'last'|'end'|'after', need:[tid]} · 끝냄 표시 = battle.cmds[tid].ed = key+':'+step (좌석도 쓸 수 있는 자리) */
+ const END_STEP={last:'턴 가장 마지막',end:'턴 종료',after:'턴 종료 이후'};
+ const endMine=(c,tid)=>c.role==='seat'?tid===c.seat:(c.gm&&!seatOwned(c,tid));
+ const endDone=(b,tid)=>{const q=b.endq||{};return ((b.cmds||{})[tid]||{}).ed===q.key+':'+q.step};
+ const EFIRED={};
+ async function endFlow(){const c=ctx();if(!c.mgr)return;const q=c.b.endq;if(q&&q.step){A().toast(`${END_STEP[q.step]} 확인 중 — 아래 칸에서 각자 「다음」`);return}
+  await A().set(['battle','host'],c.gm?'gm':c.seat);await endStep('last')}
+ async function endStep(step){for(;;){const b=ctx().b;const L=endCands(b,step);const need=[...new Set(L.map(x=>x.m.tid))];
+   if(need.length){const key=String(Date.now());await A().set(['battle','endq'],{key,step,need});A().sysLog(`【${END_STEP[step]}】 포텐셜 확인 — ${need.map(t=>(b.trainers[t]||{}).name||'?').join(' · ')} (각자 쓸 것을 고르고 「다음」)`,'battle');return}
+   if(step==='last'){step='end';continue}
+   if(step==='end'){await turnEnd();step='after';continue}
+   await A().set(['battle','endq'],null);return}}
+ /* 진행하는 화면: 모두 「다음」을 눌렀으면 다음 단계로 */
+ async function endAdvance(force){const c=ctx();const b=c.b;const q=b.endq;if(!q||!q.step||!c.mgr)return;const me=c.gm?'gm':c.seat;if((b.host||'gm')!==me)return;
+  if(!force&&!(q.need||[]).every(t=>endDone(b,t)))return;if(BUSY.end===q.key)return;BUSY.end=q.key;
+  try{await A().set(['battle','endq'],null);if(q.step==='last')await endStep('end');else if(q.step==='end'){await turnEnd();await endStep('after')}}finally{BUSY.end=''}}
+ function endPanel(c){const b=c.b;const q=b.endq;if(!q||!q.step)return '';const L=endCands(b,q.step);const btn=q.step==='end'?'턴 종료 처리':q.step==='last'?'턴 종료로':'다음 턴으로';
+  const rows=(q.need||[]).map(tid=>{const t=(b.trainers||{})[tid]||{};const mine=endMine(c,tid);const dn=endDone(b,tid);const my=mine?L.filter(x=>x.m.tid===tid):[];
+   return `<div class="eqrow ${dn?'done':''} ${mine?'mine':''}"><div class="eqh"><b>${esc(t.name||'?')}</b>${dn?'<span class="tag ok">✓ 끝냄</span>':mine?'':'<span class="small dim">고르는 중…</span>'}<span class="sp"></span>${mine&&!dn?`<button class="btn sm pri" data-act="edone" data-tid="${tid}">${btn} ▶</button>`:''}</div>
+    ${my.map(x=>{const i=L.indexOf(x);const fk=q.key+':'+q.step+':'+x.m.id+':'+x.name;return `<div class="firerow"><b class="fnm"><span class="tag ${x.kind==='uq'?'uqt':'ext'}">${x.tag}</span> 『${esc(x.name)}』</b><span class="small dim">${esc(x.kind==='uq'?x.t.name:x.m.name)} (${String(x.m.entry).toUpperCase()})</span><span class="sp"></span>${dn?'':`<button class="btn xs ${EFIRED[fk]?'ghost':'pri'}" data-act="efire" data-i="${i}" ${EFIRED[fk]?'disabled':''}>${EFIRED[fk]?'발동함':'발동'}</button>`}<div class="small" style="flex-basis:100%;white-space:pre-wrap;color:var(--fg2)">${esc(String(x.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,300))}</div></div>`}).join('')}</div>`}).join('');
+  return `<div class="endq"><div class="ohead"><span class="olab">${END_STEP[q.step]}</span><span class="small dim">이 타이밍이 적힌 포텐셜 — 주인만 본다. 쓸 것만 「발동」, 다 골랐으면 「${btn}」. 모두 누르면 넘어간다</span><span class="sp"></span>${c.mgr?'<button class="btn xs ghost" data-act="eskip" title="안 누른 사람을 기다리지 않고 넘긴다">기다리지 않고 넘기기</button>':''}</div>${rows}</div>`}
+ async function endAct(act,d){const c=ctx();const b=c.b;const q=b.endq;if(!q||!q.step)return;
+  if(act==='eskip'){if(!c.mgr)return;if(!confirm('아직 안 누른 사람을 기다리지 않고 넘길까?'))return;return endAdvance(true)}
+  if(act==='edone'){const tid=d.tid;if(!endMine(c,tid))return;const ed=q.key+':'+q.step;if((b.cmds||{})[tid])await A().set(['battle','cmds',tid,'ed'],ed);else await A().set(['battle','cmds',tid],{ed});A().sysLog(`${(b.trainers[tid]||{}).name} — ${END_STEP[q.step]} 끝냄`,'battle');return endAdvance()}
+  if(act==='efire'){const L=endCands(b,q.step);const x=L[+d.i];if(!x||!endMine(c,x.m.tid))return;const fk=q.key+':'+q.step+':'+x.m.id+':'+x.name;if(EFIRED[fk])return;EFIRED[fk]=1;
+   if(x.kind==='uq'){A().sysLog(`【고유】 ${x.t.name} 『${x.name}』 (${END_STEP[q.step]})`,'battle',{mid:x.m.id,img:x.t.image||'',eff:String(x.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,400)});return A().renderScene()}
+   const a=FX()&&FX().autoOf(x.m,'pot',x.name);if(a&&a.ops&&a.ops.length&&!a.manual){await fireAuto(x.m.id,'pot',x.name);return A().renderScene()}
+   A().sysLog(`【${x.tag}】 ${x.m.name} 『${x.name}』 (${END_STEP[q.step]})`,'battle',{mid:x.m.id,img:x.m.image||'',eff:String(x.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,400)});return A().renderScene()}}
  /* 예고 공격(미래예지 계열, 맵툴 future_fire): 건 포켓몬의 그때 공격/특공 실수치(랭크 무시)로 계산. 명중 확정 · 급소 없음 · 벽 보정 · 상성 · 타입 일치. 소지품·특성 보정은 손으로 */
  function futureFire(b,m){const r=m.futRsv;delete m.futRsv;if(!r)return [];if(!m.entry||m.hp.cur<=0)return [`「${r.by}」의 『${r.mv}』 — ${m.name}이(가) 쓰러져 있어 불발`];
   const f=fieldOf(b);const objs=(f.objects||{})[m.side]||{};const cat=r.akey==='attack'?'physical':'special';const ws=(+((DB().const||{}).campaign||{}).type_battle_regulation||0)?0.667:0.5;
