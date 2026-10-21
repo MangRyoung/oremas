@@ -102,7 +102,7 @@ window.OM_RP_UI=(()=>{
    if(narr){if(bub.c)skin={v:'c',src:bub.c}}
    else{const sk=speakerKey(lastChat);const sl=sk?SLOTS.find(x=>slots[x]===sk):'';const want=sl==='right'?'r':'l';const alt=want==='l'?'r':'l';
     /* 10-21 망령: 가운데(·무대 밖) 화자는 「꼬리 가운데」 그림이 있으면 그걸로 */
-    if(sl!=='left'&&sl!=='right')skin={v:'m',src:bub.m||'img/bubble/mid.svg'};   /* 10-23: 꼬리 가운데 그림을 안 올렸으면 오레마스 기본 그림 */else if(bub[want])skin={v:want,src:bub[want]};else if(bub[alt])skin={v:want,src:bub[alt],flip:1};else skin={v:'c',src:bub.c};
+    if(sl!=='left'&&sl!=='right')skin={v:'m',src:bub.m||new URL('img/bubble/mid.svg',location.href).href};   /* 절대 주소로 — CSS 변수 안의 상대 주소는 css/ 기준으로 풀려 버린다 */   /* 10-23: 꼬리 가운데 그림을 안 올렸으면 오레마스 기본 그림 */else if(bub[want])skin={v:want,src:bub[want]};else if(bub[alt])skin={v:want,src:bub[alt],flip:1};else skin={v:'c',src:bub.c};
     if(skin.v!=='c'&&skin.v!=='m'&&sl!=='left'&&sl!=='right')skin.mid=1}}
   const dlg=$('#dlg',el);if(dlgHtml){if(dlg.dataset.k!==dlgHtml){dlg.innerHTML=dlgHtml;dlg.dataset.k=dlgHtml;dlg.classList.remove('pop');void dlg.offsetWidth;dlg.classList.add('pop')}dlg.style.display=''}else{dlg.style.display='none';dlg.dataset.k=''}
   dlg.classList.toggle('skin',!!skin);for(const v of ['c','l','r','m'])dlg.classList.toggle('s'+v,!!skin&&skin.v===v);dlg.classList.toggle('flip',!!(skin&&skin.flip));dlg.classList.toggle('mid',!!(skin&&skin.mid));dlg.style.setProperty('--bub',skin?`url('${cssu(skin.src)}')`:'');bubStyle(dlg,bub.st);
