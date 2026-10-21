@@ -228,7 +228,7 @@ window.OM_GUIDE_UI=(()=>{
   const q=G.q.trim().toLowerCase();const hit=i=>!q||IDX[i].includes(q);const done=c2=>c2.pages.every((_,i)=>G.seen[c2.id+'.'+i]);
   const no=i=>String(i+1).padStart(2,'0');const gd=guide();const tag=pg.tag||c.tag;
   const nav=PARTS.map(([pk,pn,pe])=>{const list=CH.map((x,i)=>[x,i]).filter(([x,i])=>x.part===pk&&hit(i));if(!list.length)return '';
-   return `<div class="gd-part"><b>PART ${pk}</b> ${esc(pn)}<small>${pe}</small></div>`+list.map(([x,i])=>`<button type="button" class="gd-ch ${i===G.c?'on':''} ${done(x)?'done':''}" data-ch="${i}"><em>${no(i)}</em><span><b>${esc(x.t)}</b><small>${esc(x.en)}</small></span>${x.tag?`<i class="gd-tag">${x.tag}</i>`:''}${done(x)?'<u>✓</u>':''}</button>`).join('')}).join('')||'<div class="small dim" style="padding:10px">찾는 장이 없다</div>';
+   return `<div class="gd-part"><b>PART ${pk}</b> ${esc(pn)}<small>${pe}</small></div>`+list.map(([x,i])=>`<button type="button" class="gd-ch ${i===G.c?'on':''} ${done(x)?'done':''}" data-ch="${i}"><em>${no(i)}</em><span><b>${esc(x.t)}</b><small>${esc(x.en)}</small></span>${x.tag?`<i class="gd-tag">${x.tag}</i>`:''}${done(x)?'<u title="이 장을 끝까지 읽음 (이 브라우저에만 기억)">✓</u>':''}</button>`).join('')}).join('')||'<div class="small dim" style="padding:10px">찾는 장이 없다</div>';
   const gi=PAGES.findIndex(x=>x.ci===G.c&&x.pi===G.p);
   el.innerHTML=`<div class="gd">
    <aside class="gd-nav"><div class="gd-logo"><small>ORE-MAS</small><b>TUTORIAL</b></div>

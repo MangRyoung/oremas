@@ -2420,3 +2420,29 @@ span.iedit{display:inline-block;min-width:3em}
  .gd-keys{display:none}.gd-nav{position:static;max-height:none}.gd-say{margin:10px 0 0;max-width:none}.gd-bub{flex:1}}
 .gd-b.tall{align-items:flex-start}.gd-b.tall span{padding-top:5px}
 .gd-bub em{font-style:normal;color:var(--red)}
+
+/* ---------- 그림 말풍선 (rp.bubble, 10-23) — 900×400 가로 말풍선 기준 글자 칸 ---------- */
+.dlg.skin{left:auto;right:auto;bottom:3%;width:min(62%,860px);aspect-ratio:9/4;isolation:isolate}
+.dlg.skin::before{content:'';position:absolute;inset:0;background:var(--bub) center/100% 100% no-repeat;z-index:-1}
+.dlg.skin.flip::before{transform:scaleX(-1)}
+.dlg.skin.sc{left:calc(50% - min(31%,430px))}
+.dlg.skin.sl{left:22%}
+.dlg.skin.sr{right:22%}
+.dlg.skin .dtext{position:absolute;background:none;clip-path:none;border:0;min-height:0;max-height:none;padding:0;overflow-y:auto;scrollbar-width:none;font-size:calc(var(--dlgfs,22px) * .9);line-height:1.45;transform:rotate(-2.5deg);text-shadow:0 1px 2px #000}
+.dlg.skin .dtext::-webkit-scrollbar{display:none}
+.dlg.skin .dname{position:absolute;top:auto;margin:0;transform:rotate(-4deg);z-index:1}
+.dlg.skin.sc .dtext{left:13%;right:18%;top:27%;bottom:25%}
+.dlg.skin.sc .dname{left:7%;bottom:83%}
+.dlg.skin.sl .dtext{left:30%;right:15%;top:32%;bottom:30%}
+.dlg.skin.sl .dname{left:27%;bottom:76%}
+.dlg.skin.sr .dtext{left:14%;right:30%;top:32%;bottom:30%}
+.dlg.skin.sr .dname{left:10%;bottom:76%}
+.bubslots{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:8px 0 6px}
+.bubslot{display:flex;flex-direction:column;gap:4px;align-items:stretch}
+.bubslot .updz{min-height:70px}
+.bubslot small{color:var(--mute);font-size:11px;text-align:center}
+.bubpv{aspect-ratio:9/4;background:#333 center/contain no-repeat;border:1px solid var(--line2)}
+@media (max-width:760px){.dlg.skin,.dlg.skin.sc,.dlg.skin.sl,.dlg.skin.sr{left:2%;right:auto;width:96%}.dlg.skin .dtext{font-size:14px}.bubslots{grid-template-columns:1fr}}
+.gd-list{overflow-x:hidden;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--red) transparent;padding-right:6px}
+.gd-list::-webkit-scrollbar{width:4px;height:0}.gd-list::-webkit-scrollbar-thumb{background:var(--red)}.gd-list::-webkit-scrollbar-track{background:transparent}
+.gd-ch.on{margin-right:6px}
