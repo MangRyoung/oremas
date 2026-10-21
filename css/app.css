@@ -2571,3 +2571,8 @@ span.iedit{display:inline-block;min-width:3em}
 .hitb .hitp{border-color:#7a2a30;background:#1d1113}.hitb .hitp b{color:#ff8a8a;font-size:22px}
 .hitbar{position:relative;height:8px;margin-top:8px}.hitbar em{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(45deg,#ff5a5a,#ff5a5a 4px,#7a1f25 4px,#7a1f25 8px);opacity:.85}
 @media(max-width:560px){.hitb{grid-template-columns:1fr 1fr}.hitb .hitp{grid-column:1/-1}}
+/* 꼬리 가운데 말풍선 (10-21): 가운데 화자 */
+.dlg.skin.sm{left:calc(50% - min(26%,370px))}
+.dlg.skin.sm .dtext{left:14%;right:14%;top:24%;bottom:30%;transform:rotate(-2deg)}
+.dlg.skin.sm .dname{left:9%;bottom:78%;transform:rotate(-3deg)}
+@media (max-width:760px){.dlg.skin.sm{left:2%;width:96%}}
