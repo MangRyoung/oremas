@@ -1891,3 +1891,27 @@ span.qe{display:inline-block;min-width:1.5em}
 .madj>label.chg>span:first-child{color:var(--yel2);font-weight:700}
 .madj textarea{width:100%;box-sizing:border-box}
 .madj .seg span{cursor:pointer}
+/* 10-21 망령: 종족치 · 특성 · 소지품 카드 */
+.stb-h{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px}
+.stb-h b{font-family:var(--mono);color:#fff;font-size:13px}
+.stb{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin-top:6px}
+.stc2{background:#18191d;border:1px solid var(--line2);border-top:3px solid var(--rc);padding:7px 9px 8px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.stc2h{display:flex;align-items:baseline;justify-content:space-between;gap:4px}
+.stc2h small{font-size:11px;color:var(--fg2)}
+.stc2h b{font-family:var(--head);font-size:22px;line-height:1;color:var(--rc)}
+.stc2b{height:6px;background:#0d0e10;border-radius:3px;overflow:hidden}
+.stc2b i{display:block;height:100%;background:var(--rc);border-radius:3px}
+.stc2n{display:flex;align-items:baseline;justify-content:space-between;gap:4px}
+.stc2n span{font-family:var(--mono);font-size:16px;color:#fff;font-weight:700}
+.stc2n em{font-style:normal;font-size:10.5px;color:var(--mute);white-space:nowrap}
+.kig{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.kic{background:#18191d;border:1px solid var(--line2);border-left:4px solid #5fd38d;padding:9px 12px 10px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.kic.item{border-left-color:#ffb340}
+.kih{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.kit{flex:none;font-size:11px;font-weight:700;color:#111;background:#5fd38d;padding:2px 7px}
+.kic.item .kit{background:#ffb340}
+.kin{font-family:var(--lab);font-size:16px;color:#fff}
+.kie{font-size:13.5px;line-height:1.6;color:#e4e3de}
+.kif{display:flex;justify-content:flex-end}
+@media (max-width:760px){.stb{grid-template-columns:repeat(3,minmax(0,1fr))}.kig{grid-template-columns:1fr}}
+.kie .dbl{font-size:13.5px;line-height:1.6;color:#e4e3de}
