@@ -2291,3 +2291,29 @@ span.iedit{display:inline-block;min-width:3em}
 .sgb:hover{border-color:var(--fg2)}.sgb.del:hover{background:var(--red);color:#fff;border-color:var(--red)}
 .sgt.hid{opacity:.45}.sgt.hid .sgn{text-decoration:line-through}
 @media (max-width:760px){.sgboard{grid-template-columns:1fr;max-height:none}.sgtool input[type=search]{width:100%}}
+/* ===== 휴대폰 손질 (10-23) ===== */
+.phone-dev{position:relative}
+.ph-x{margin-left:6px;background:transparent;border:1px solid #444;color:#bbb;border-radius:50%;width:20px;height:20px;font-size:10px;line-height:1;cursor:pointer;padding:0;display:grid;place-items:center}.ph-x:hover{color:#fff;border-color:#999}
+@media (max-width:760px){.ph-close{display:none!important}.ph-x{width:28px;height:28px;font-size:13px}}
+/* 휴대폰 안 아래 시트 */
+.ph-sheetwrap{position:absolute;inset:0;z-index:20;display:flex;flex-direction:column;justify-content:flex-end}
+.ph-sheetwrap[hidden]{display:none}
+.ph-sheetbg{position:absolute;inset:0;background:rgba(0,0,0,.55)}
+.ph-sheet{position:relative;max-height:86%;display:flex;flex-direction:column;background:#15161b;border-top:3px solid var(--yel2);border-radius:16px 16px 0 0;transform:translateY(100%);transition:transform .2s ease-out}
+.ph-sheet.in{transform:none}
+.ph-sheeth{display:flex;align-items:center;gap:8px;padding:12px 14px 8px}.ph-sheeth b{font-size:15px}
+.ph-shx{background:transparent;border:0;color:#bbb;font-size:16px;cursor:pointer}
+.ph-sheetb{overflow:auto;padding:0 14px 14px}.ph-sheetb .fr{display:flex;align-items:center;gap:8px;margin-bottom:8px;flex-wrap:wrap}.ph-sheetb .ph-list{padding:0}
+/* 홈: 최근 문자 */
+.ph-recent{display:flex;flex-direction:column;gap:6px;margin:0 6px 14px}
+.ph-rc{display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:12px;cursor:pointer;backdrop-filter:blur(4px)}
+.ph-rc:hover{border-color:var(--yel2)}.ph-rc .ph-av{width:32px;height:32px}
+.ph-when{margin-left:auto;color:var(--mute);font-size:10px;flex:none;align-self:flex-start}
+/* 문자 방 */
+.ph-msg.cont{margin-top:-4px}.ph-msg.cont>.ph-av{visibility:hidden}
+.ph-bub.pic{padding:3px;background:#000}.ph-pic img{display:block;max-width:210px;max-height:240px;border-radius:2px}
+.ph-msg.me .ph-bub.pic{background:#000}
+.ph-mb>.ph-bub+.ph-bub{margin-top:3px}
+.ph-clip{cursor:pointer;font-size:18px;padding:0 4px;opacity:.8}.ph-clip:hover{opacity:1}
+.ph-sms.over{outline:2px dashed var(--yel2);outline-offset:-6px}
+.ph-cq{padding:8px 10px 0}.ph-cq input{width:100%;background:#000;border:1px solid var(--line2);color:var(--fg);padding:7px 10px;border-radius:999px}
