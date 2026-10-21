@@ -927,9 +927,10 @@ window.OM_BATTLE_UI=(()=>{
   const st={};for(const k of SHEET_ABN)if((m.states||{})[k])st[k]=m.states[k];if(dead)st.Dead=1;
   return {hp,dead,st,uses:Object.assign({},m.potUses||{}),item:m.item||'',itemEff:m.itemEff||'',used:!m.item&&m.itemUsed?m.itemUsed.name:''}}
  function openResult(){const c=ctx();if(!c.gm)return;const b=c.b;const R=(A().ST.state.roster||{}).mons||{};const stKo=k=>(((DB().states||{}).st||{})[k]||{}).ko||k;
-  const mons=Object.values(b.mons||{}).filter(m=>R[m.id]).sort((x,y)=>String(x.tid).localeCompare(String(y.tid))||(x.slot||0)-(y.slot||0));
+  const RID=m=>m.rid||m.id;   /* 빌려 쓴 파티(다른 좌석이 불러옴)는 배틀 id 가 다르다 — 시트 id 는 rid */
+  const mons=Object.values(b.mons||{}).filter(m=>R[RID(m)]).sort((x,y)=>String(x.tid).localeCompare(String(y.tid))||(x.slot||0)-(y.slot||0));
   if(!mons.length)return A().toast('시트(로스터)에서 불러온 포켓몬이 없다');
-  const rows=mons.map(m=>{const rm=R[m.id];const r=resultOf(m,rm);const t=b.trainers[m.tid]||{};const hp0=rm.sheetHp==null?rm.hp.max:rm.sheetHp;
+  const rows=mons.map(m=>{const rm=R[RID(m)];const r=resultOf(m,rm);const t=b.trainers[m.tid]||{};const hp0=rm.sheetHp==null?rm.hp.max:rm.sheetHp;
    const usesTxt=Object.entries(r.uses).map(([k,v])=>`${k} 남은 ${v}`).join(' · ');
    return {m,r,html:`<tr><td><label class="row" style="gap:6px;flex-wrap:nowrap"><input type="checkbox" data-rs="${m.id}" checked><div class="ti sm" style="${m.image?`background-image:url('${cssu((m.form0||{}).image||m.image)}')`:''}"></div><div><b>${esc((m.form0||{}).name||m.name)}</b><div class="small dim">${esc(t.name||'')}</div></div></label></td>
     <td class="nw mono">${hp0} → <b style="color:${r.dead?'var(--red)':r.hp<hp0?'var(--yel2)':'var(--ok)'}">${r.hp}</b><span class="dim">/${rm.hp.max}</span></td>
@@ -942,7 +943,7 @@ window.OM_BATTLE_UI=(()=>{
    <table class="t"><tr><th>포켓몬</th><th>HP</th><th>상태</th><th>포텐셜 횟수</th><th>소지품</th></tr>${rows.map(x=>x.html).join('')}</table>
    <div class="row" style="margin-top:10px"><label class="small"><input type="checkbox" id="rsclear"> 반영한 뒤 배틀 비우기</label><span class="sp"></span><button class="btn" data-x>취소</button><button class="btn pri" id="rsgo">시트에 반영</button></div>`);
   $('#rsgo',md).onclick=async()=>{const on=k=>!!(md.querySelector(`[data-rk="${k}"]`)||{}).checked;const ops=[];const L=[];
-   for(const {m,r} of rows){if(!(md.querySelector(`[data-rs="${m.id}"]`)||{}).checked)continue;const P=['roster','mons',m.id];const bits=[];
+   for(const {m,r} of rows){if(!(md.querySelector(`[data-rs="${m.id}"]`)||{}).checked)continue;const P=['roster','mons',RID(m)];const bits=[];
     if(on('hp')){ops.push([[...P,'sheetHp'],r.hp]);bits.push('HP '+r.hp)}
     if(on('st')){ops.push([[...P,'sheetStates'],Object.keys(r.st).length?r.st:null]);const s2=Object.keys(r.st).map(k=>k==='Dead'?'빈사':stKo(k));if(s2.length)bits.push(s2.join('·'))}
     if(on('uses')){ops.push([[...P,'potUses'],Object.keys(r.uses).length?r.uses:null])}
