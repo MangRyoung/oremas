@@ -2563,3 +2563,11 @@ span.iedit{display:inline-block;min-width:3em}
 /* 지시 현황: 칸 고정 (10-21) */
 .bc{min-height:44px}.bc.empty{opacity:.45}.bc.empty .bop{background:#222328}
 .bca{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 피해 입음 창 (10-21) */
+.hith{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}.hitw{color:var(--mute);font-size:12.5px}.hitm{font-weight:800;font-size:16px;color:#fff}
+.hitc{font-size:11.5px;padding:1px 7px;border:1px solid var(--line2);background:#16171b;border-radius:3px}.hitc.up{color:#ff9b6b;border-color:#7a3a22}.hitc.dn{color:#8fb7ff;border-color:#2c4677}.hitc.cr{color:#fff;background:#a8323a;border-color:#a8323a}
+.hitb{display:grid;grid-template-columns:1fr 1fr 1.3fr;gap:6px;margin-top:8px}.hitb>div{background:#121317;border:1px solid var(--line);padding:6px 8px;display:flex;flex-direction:column;min-width:0}
+.hitb small{font-size:10.5px;color:var(--mute);letter-spacing:.04em}.hitb b{font-size:18px;font-family:var(--mono);color:#fff;line-height:1.2}.hitb i{font-style:normal;font-size:11px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hitb .hitp{border-color:#7a2a30;background:#1d1113}.hitb .hitp b{color:#ff8a8a;font-size:22px}
+.hitbar{position:relative;height:8px;margin-top:8px}.hitbar em{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(45deg,#ff5a5a,#ff5a5a 4px,#7a1f25 4px,#7a1f25 8px);opacity:.85}
+@media(max-width:560px){.hitb{grid-template-columns:1fr 1fr}.hitb .hitp{grid-column:1/-1}}

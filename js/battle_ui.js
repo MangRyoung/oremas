@@ -924,14 +924,15 @@ window.OM_BATTLE_UI=(()=>{
    <div class="hphead"><div class="ti" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div><div style="flex:1"><div class="hpbar ${pct<=25?'low':pct<=50?'mid':''}"><i style="width:${pct}%"></i></div><div class="row small"><span>「HP」 <b>${m.hp.cur}</b> / ${m.hp.max} (${pct}%)</span>${m.hp.latest!=null&&m.hp.latest!==m.hp.cur?`<span class="dim">직전 ${m.hp.latest}</span>`:''}<span class="sp"></span><button class="btn xs ghost" data-hp="undo" ${m.hp.latest==null?'disabled':''}>되돌리기</button><button class="btn xs ghost" data-hp="one">HP 1</button><button class="btn xs ghost danger" data-hp="faint">빈사</button></div></div></div>
    <div class="tabs"><button class="tb ${tab==='dmg'?'on':''}" data-hpt="dmg">피해</button><button class="tb ${tab==='heal'?'on':''}" data-hpt="heal">회복</button></div>
    ${tab==='dmg'?`
-   ${lh?`<div class="card hit"><div class="sec">기술 피해 <span class="note">받은 피해 판정 — 완화 배율을 넣고 적용</span></div>
-     <div class="kv"><span>공격한 포켓몬</span><b>${esc(lh.from)}</b><span>기술</span><b>${esc(lh.move)} ${esc(lh.moveType)} <span style="color:var(--yel2)">×${lh.eff}</span>${lh.crit?' <span style="color:var(--red)">급소</span>':''}${lh.hits>1?' · '+lh.hits+'회':''}</b><span>기본 대미지</span><b style="font-size:15px;color:#ff9b9b">${lh.total} <span class="dim small">(${lh.min}~${lh.max})</span></b><span>위력 완화</span><b>${lh.guard&&lh.guard!==1?'×'+lh.guard:'없음'}${lh.guardNote?` <span class="small dim">${esc(lh.guardNote)}</span>`:''} <span class="note">자동 반영</span></b></div>
+   ${lh?`<div class="card hit"><div class="hith"><span class="hitw">${esc(lh.from)}</span><span class="hitm">「${esc(lh.move)}」</span>${lh.moveType?`<span class="small dim">${esc(lh.moveType)}</span>`:''}<span class="sp"></span><span class="hitc ${+lh.eff>1?'up':+lh.eff<1?'dn':''}">상성 ×${lh.eff}</span>${lh.crit?'<span class="hitc cr">급소</span>':''}${lh.hits>1?`<span class="hitc">${lh.hits}번 맞음</span>`:''}</div>
+     <div class="hitb"><div><small>기본 대미지</small><b>${lh.total}</b><i>${lh.min}~${lh.max}</i></div><div><small>위력 완화</small><b>${lh.guard&&lh.guard!==1?'×'+lh.guard:'—'}</b><i>${lh.guardNote?esc(lh.guardNote):'자동 반영'}</i></div><div class="hitp"><small>받을 피해</small><b id="h_prevd">—</b><i id="h_preva"></i></div></div>
+     <div class="hpbar hitbar"><i id="h_bar_after" style="width:${pct}%"></i><em id="h_bar_cut"></em></div>
      <div class="hgrid"><label>대미지 보정 <input type="number" step="0.01" class="n" id="h_mod" value="1" title="방호·완화·역할 보정 등 배율"></label>
       <label>최종 상성 <select id="h_eff">${EFFS.map(v=>`<option value="${v}" ${v===+lh.eff?'selected':''}>×${v}</option>`).join('')}</select></label>
       <label><input type="checkbox" id="h_berry"> 반감열매</label><label><input type="checkbox" id="h_endure" ${lh.endure?'checked':''}> 버티기 (HP 1 남김)</label>
       <label>고정 대미지 <input type="text" class="n" id="h_forced" placeholder="-1 = 계산값" value="-1" title="숫자 또는 분수(1/8)를 넣으면 그 값으로"></label>
       ${fl?`<label class="small" style="color:var(--yel)">레이드 배리어 하한 ${fl}</label>`:''}</div>
-     <div class="row" style="margin-top:8px"><span class="small dim">예상: <b id="h_prev"></b></span><span class="sp"></span><button class="btn pri" data-hp="apply">피해 적용</button><button class="btn ghost xs" data-hp="discard" title="이 판정을 지운다 (피해 없음)">판정 버리기</button></div></div>`
+     <div class="row" style="margin-top:8px"><span class="small dim" id="h_prev"></span><span class="sp"></span><button class="btn pri" data-hp="apply">피해 적용</button><button class="btn ghost xs" data-hp="discard" title="이 판정을 지운다 (피해 없음)">판정 버리기</button></div></div>`
    :'<div class="small dim" style="margin:6px 0">받은 피해 판정이 없다 — 고정·비율 피해로 처리한다.</div>'}
    <div class="card"><div class="sec">비율 · 고정 피해 <span class="note">최대 「HP」 기준</span></div><div class="qs">${FRACS.map(([l,n])=>`<button class="btn sm" data-hp="frac" data-v="${l}">${l} <small>−${Math.max(1,Math.floor(m.hp.max/n))}</small></button>`).join('')}</div>
     <div class="row" style="margin-top:6px"><input type="text" class="n" id="h_cv" placeholder="숫자 또는 분수 (예: 30, 1/8)" style="width:170px"><button class="btn sm" data-hp="custom">피해</button></div></div>
@@ -948,16 +949,19 @@ window.OM_BATTLE_UI=(()=>{
   const calc=()=>{if(!lh)return null;const g=id=>$('#'+id,md);const forced=g('h_forced').value.trim();
    if(forced!==''&&forced!=='-1'){const v=parseAmt(forced,m.hp.max);return {final:Math.min(v,m.hp.cur),after:Math.max(0,m.hp.cur-v)}}
    const r=B().hpDamage(m,lh.total,+g('h_eff').value,{stab:false,guard:lh.guard||1,manual:+g('h_mod').value||1,berryHalf:g('h_berry').checked,endure:g('h_endure').checked,hpFloor:fl});return r};
-  const prev=()=>{const r=calc();const el=$('#h_prev',md);if(el&&r)el.textContent=`−${r.final} → HP ${r.after}/${m.hp.max}${r.after<=0?' 빈사':''}`};prev();
+  const prev=()=>{const r=calc();if(!r)return;const P=v=>v>0?Math.max(1,Math.round(v/m.hp.max*100)):0;const d=$('#h_prevd',md),a=$('#h_preva',md),bA=$('#h_bar_after',md),bC=$('#h_bar_cut',md);
+   if(d)d.textContent='−'+r.final;if(a)a.textContent=`HP ${m.hp.cur} → ${r.after}/${m.hp.max} (${P(r.after)}%)${r.after<=0?' · 빈사':''}`;
+   if(bA)bA.style.width=P(r.after)+'%';if(bC){bC.style.left=P(r.after)+'%';bC.style.width=Math.max(0,pct-P(r.after))+'%'}};prev();
   md.querySelectorAll('#h_mod,#h_eff,#h_berry,#h_endure,#h_forced').forEach(el=>{el.addEventListener('input',prev);el.addEventListener('change',prev)});
   const apply=async(delta,why,opt)=>{opt=opt||{};const m0=snap(ctx().b.mons[mid]),x=snap(m0);x.hp.latest=x.hp.cur;
    if(delta<0){let v=-delta;if(opt.floor&&x.hp.cur-v<opt.floor)v=Math.max(0,x.hp.cur-opt.floor);x.hp.cur=Math.max(0,x.hp.cur-v);x.hpOdd=!x.hpOdd;delta=-v}else{const h=Math.min(delta,x.hp.max-x.hp.cur);x.hp.cur+=h;delta=h}
-   if(opt.clearHit)delete x.lastHit;let line=`${x.name} ${why} ${delta>0?'+':''}${delta} → HP ${x.hp.cur}/${x.hp.max}`;
-   if(x.hp.cur<=0){x.entry='';line+=' · 빈사!';line+=`\n${x.name}은(는) 쓰러졌다!`}
+   if(opt.clearHit)delete x.lastHit;const pc=v=>v>0?Math.max(1,Math.round(v/x.hp.max*100)):0;
+   let line=`【${delta>0?'회복':delta<0?'피해':'HP'}】 ${x.name} ${delta>0?'+':delta<0?'−':''}${Math.abs(delta)}  ·  HP ${x.hp.latest} → ${x.hp.cur}/${x.hp.max} (${pc(x.hp.cur)}%)\n${why}`;
+   if(x.hp.cur<=0){x.entry='';line+=`\n${x.name}은(는) 쓰러졌다!`}
    if(x.raid&&x.raid.segments>0&&opt.floor&&x.hp.cur<=opt.floor&&delta<0){x.raid.broken=(x.raid.broken||0)+1;x.raid.phase=(x.raid.phase||1)+1;line+=`\n${x.name} 배리어 파괴! → 페이즈 ${x.raid.phase}`}
-   A().closeModal();if(await saveMon(m0,mid,x))A().sysLog(line,'battle')};
+   A().closeModal();if(await saveMon(m0,mid,x))A().sysLog(line,'battle',{mid,img:x.image||''})};
   md.querySelectorAll('[data-hp]').forEach(bt=>bt.onclick=async()=>{const k=bt.dataset.hp;const v=bt.dataset.v;const g=id=>$('#'+id,md);
-   if(k==='apply'){const r=calc();if(!r)return;const mods=[];if(+g('h_mod').value!==1)mods.push('보정 ×'+g('h_mod').value);if(g('h_berry').checked)mods.push('반감열매');if(g('h_endure').checked)mods.push('버티기');const berryUse=g('h_berry').checked&&/열매/.test(IT(m));const ret=await apply(-r.final,`「${lh.move}」(${lh.from}) 피해${lh.crit?' 급소':''} ×${g('h_eff').value}${mods.length?' · '+mods.join(' · '):''}`,{clearHit:true,floor:fl});if(berryUse)await itemConsume(mid);return ret}
+   if(k==='apply'){const r=calc();if(!r)return;const mods=[];if(+g('h_mod').value!==1)mods.push('보정 ×'+g('h_mod').value);if(g('h_berry').checked)mods.push('반감열매');if(g('h_endure').checked)mods.push('버티기');const berryUse=g('h_berry').checked&&/열매/.test(IT(m));const ret=await apply(-r.final,`${lh.from}의 「${lh.move}」 · 상성 ×${g('h_eff').value}${lh.crit?' · 급소':''}${lh.hits>1?' · '+lh.hits+'번 맞음':''}${mods.length?' · '+mods.join(' · '):''}`,{clearHit:true,floor:fl});if(berryUse)await itemConsume(mid);return ret}
    if(k==='discard'){A().closeModal();await A().set(['battle','mons',mid,'lastHit'],null);return A().sysLog(`${m.name} 받은 피해 판정을 버렸다`,'battle')}
    if(k==='frac')return apply(-parseAmt(v,m.hp.max),`비율 피해 ${v}`,{floor:fl});
    if(k==='custom'){const a=parseAmt(g('h_cv').value,m.hp.max);if(!a)return A().toast('숫자나 분수를 넣어 줘');return apply(-a,`고정 피해 ${g('h_cv').value}`,{floor:fl})}
