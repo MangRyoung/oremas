@@ -759,6 +759,8 @@ window.OM_BATTLE_UI=(()=>{
   const eff=r.typeEn?B().effectiveness([r.typeEn],m,{atkTypes:r.atkTypes||[]}):{value:1,stab:false};const hd=B().hpDamage(m,amt,eff.value,{stab:eff.stab});
   m.hp.cur=Math.max(0,m.hp.cur-hd.final);const out=[`◆ 예고 공격 발동 — 「${r.by}」의 『${r.mv}』가 ${m.name}을(를) 덮쳤다! ${hd.final} 대미지 (기본 ${Math.floor(base*0.85)}~${Math.floor(base)}${eff.value!==1?' · 상성 ×'+eff.value:''}${eff.stab?' · 타입 일치':''}${wall<1?' · 벽 보정':''}) → HP ${m.hp.cur}/${m.hp.max}`];
   if(m.hp.cur<=0){m.entry='';out.push(`${m.name}은(는) 쓰러졌다!`)}return out}
+ /* 기술을 내보낼 때 줄어드는 상태: DB 의 prog:'move' + 얼음(설명이 「3번째로 기술을 내보낼 때 해제」라 턴이 아니라 기술 횟수로 센다) */
+ const movesDown=(k,d)=>(d&&d.prog==='move')||k==='Freeze';
  async function turnEnd(){const c=ctx();if(!c.mgr)return;const b0=snap(c.b),b=snap(b0);const f=fieldOf(b);const db=(DB().states||{}).st||{};const lines=[];const futs=[];
   if(F()){const slots={};for(const s of SIDES){const e=entered(b,s);for(const a in e)slots[s+'_'+a]=e[a]}
    const r1=F().turnEndStates(b.mons,slots);lines.push(...r1.lines);const r2=F().turnEndField(b.mons,f);lines.push(...r2.lines);
@@ -766,7 +768,7 @@ window.OM_BATTLE_UI=(()=>{
   else for(const mid in b.mons){const m=b.mons[mid];if(!m.entry||m.hp.cur<=0)continue;
    for(const t of B().turnEnd(m)){if(!t.delta)continue;m.hp.cur=Math.max(0,Math.min(m.hp.max,m.hp.cur+t.delta));lines.push(`${m.name} ${db[t.state]?db[t.state].ko:t.state} ${t.delta>0?'+':''}${t.delta} → ${m.hp.cur}`);if(m.hp.cur<=0){lines.push(`${m.name} 빈사!`);m.entry=''}}}
   for(const mid in b.mons){const m=b.mons[mid];if(!m.entry||m.hp.cur<=0)continue;
-   const st=m.states||{};for(const k in st){const v=+st[k];const def=db[k]||{};if(def.prog==='turn'&&v>0&&v<1000){st[k]=v-1;if(st[k]<=0){delete st[k];if(m.futRsv&&m.futRsv.st===k)futs.push(m);else lines.push(`${m.name} ${def.ko||k} 해제`)}}}
+   const st=m.states||{};for(const k in st){const v=+st[k];const def=db[k]||{};if(def.prog==='turn'&&!movesDown(k,def)&&v>0&&v<1000){st[k]=v-1;if(st[k]<=0){delete st[k];if(m.futRsv&&m.futRsv.st===k)futs.push(m);else lines.push(`${m.name} ${def.ko||k} 해제`)}}}
    /* 임시 랭크 해제 */
    if(m.tempRank){for(const k in m.tempRank){{const lim=k==='critical'?4:6;m.rank[k]=Math.max(-lim,Math.min(lim,(+m.rank[k]||0)-(+m.tempRank[k]||0)))}}delete m.tempRank;lines.push(`${m.name} 임시 랭크 해제`)}
    if(m.tempMod){for(const k in m.tempMod){m.mod[k]=Math.round(((+m.mod[k]||1)/(+m.tempMod[k]||1))*1000)/1000;if(m.mod[k]===1)delete m.mod[k]}delete m.tempMod}
@@ -1252,6 +1254,9 @@ ${L.join('\n')}${once.length?'\n'+once.map(x=>'· '+x.line).join('\n'):''}`,'bat
   $('#aapply',md).onclick=async()=>{if(!RESULT)return;const nb0=snap(),nb=snap(nb0);const lines=[];
    if(RESULT.check){/* 창을 연 때의 공격자 사본(am)으로 덮지 않는다 (점검 3-6): 상태 변화와 자작 대미지만 지금 모습에 옮긴다 */const am=RESULT.check;const x=nb.mons[mid];if(!x)return;const self=Math.max(0,(+atk.hp.cur||0)-(+am.hp.cur||0));x.states=am.states;if(self){x.hp.latest=x.hp.cur;x.hp.cur=Math.max(0,x.hp.cur-self)}if(x.hp.cur<=0)x.entry='';A().closeModal();if(await saveBattle(nb0,nb)){A().sysLog(`${atk.name}의 ${RESULT.mv.name}…\n${RESULT.lines.join('\n')}`,'battle')}return}
    if(RESULT.checkOnly){const am=RESULT.checkOnly;nb.mons[mid].states=am.states;if(RESULT.lines.length)lines.push(...RESULT.lines)}
+   /* 「기술을 내보낼 때마다」 줄어드는 상태 (prog:'move' — 도발·앙코르·사슬묶기·침묵·소란피기·난동부리기 … + 얼음). 잠듦·혼란·얼음은 행동 판정을 돌렸으면 거기서 이미 줄었다 */
+   {const a=nb.mons[mid];const sdb=(DB().states||{}).st||{};const st=(a&&a.states)||{};for(const k of Object.keys(st)){const d=sdb[k]||{};const v=+st[k];if(!movesDown(k,d)||!(v>0&&v<1000))continue;if(RESULT.checkOnly&&(k==='Sleep'||k==='Confusion'||k==='Freeze'))continue;
+    if(v<=1){delete st[k];lines.push(`${a.name} 「${d.ko||k}」 해제`)}else{st[k]=v-1;lines.push(`${a.name} 「${d.ko||k}」 남은 ${v-1}`)}}}
    /* 맵툴처럼 공격 쪽은 판정만 한다. 피해는 받는 쪽이 「HP」 창에서 완화 배율을 넣고 적용한다 (lastHit 에 기록) */
    let dealtAny=false;
    for(const r of RESULT.targets){const def=nb.mons[r.def.id];if(!def)continue;const hitTxt=r.acc.sure?'필중':r.acc.hit?`명중(${r.acc.roll}/${r.acc.target})`:`빗나감(${r.acc.roll}/${r.acc.target})`;

@@ -30,7 +30,8 @@ const FX=()=>window.OM_FX;
   roll('Flinch',pct('flinch',1),'은(는) 풀이 죽어 움직일 수 없다...','');
   if(!failed&&st.Sleep){const d=d10000();const lim=Math.round(pct('sleep',1)*10000);const left=(+st.Sleep||1)-1;if(d<=lim&&(+st.Sleep||1)>0){failed=1;lines.push(`${m.name}은(는) 쿨쿨 잠자고 있다... (남은 ${left}턴)`);if(left<=0){clearState(m,'Sleep');lines.push(`${m.name}은(는) 눈을 떴다!`)}else m.states.Sleep=left}}
   roll('Paralysis',pct('paralysis',1/8),'은(는) 몸이 저려서 움직일 수 없다...','은(는) 몸이 저려도 지시를 따른다!');
-  if(!failed&&st.Freeze){const d=d10000();const lim=Math.round(pct('freeze',3/4)*10000);if(d<=lim){failed=1;lines.push(`${m.name}은(는) 얼어붙어 움직일 수 없다... (판정 ${10000-d})`)}else{clearState(m,'Freeze');lines.push(`${m.name}은(는) 얼음을 깨부수고 나왔다! (판정 ${10000-d})`)}}
+  /* 얼음: 기술을 내보내려 할 때마다 1 줄고(3번째에 풀림), 그 전엔 3/4 로 못 움직인다 */
+  if(!failed&&st.Freeze){const d=d10000();const lim=Math.round(pct('freeze',3/4)*10000);const left=(+st.Freeze||1)-1;if(left<=0){clearState(m,'Freeze');lines.push(`${m.name}은(는) 얼음이 녹았다!`)}else if(d<=lim){failed=1;m.states.Freeze=left;lines.push(`${m.name}은(는) 얼어붙어 움직일 수 없다... (남은 ${left} · 판정 ${10000-d})`)}else{clearState(m,'Freeze');lines.push(`${m.name}은(는) 얼음을 깨부수고 나왔다! (판정 ${10000-d})`)}}
   roll('Attract',pct('attract',1/2),'은(는) 이상형에게 홀딱 반해있다...','은(는) 정신을 차리고 지시를 따른다!');
   if(!failed&&st.Confusion){const d=d10000();const lim=Math.round(pct('confusion',1/3)*10000);const left=(+st.Confusion||1)-1;if(left<=0){clearState(m,'Confusion');lines.push(`${m.name}의 혼란이 풀렸다!`)}else{m.states.Confusion=left;if(d<=lim){failed=2;lines.push(`${m.name}은(는) 영문도 모르고 스스로를 공격했다...! (판정 ${d})`)}else lines.push(`${m.name}은(는) 혼란스러워 하면서도 지시를 따른다! (판정 ${d})`)}}
   return {ok:failed===0,selfHit:failed===2,lines}}
