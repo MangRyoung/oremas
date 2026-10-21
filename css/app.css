@@ -1854,11 +1854,11 @@ span.qe{display:inline-block;min-width:1.5em}
 .potc.ph{opacity:.45}
 .potc.ex{background:linear-gradient(90deg,rgba(255,216,74,.08),transparent 60%),#18191d}
 .poth{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.potk{display:inline-flex;align-items:stretch;flex:none;font-size:11px;line-height:1;border:1px solid var(--ph,#3fc7c0)}
-.potk em{font-style:normal;font-family:var(--mono);background:var(--ph,#3fc7c0);color:#111;padding:3px 5px;font-weight:700}
-.potk span{color:var(--ph,#3fc7c0);padding:3px 6px;font-weight:600}
-.potn{font-family:var(--lab);font-size:16px;color:#fff;letter-spacing:.01em}
-.potn small{font-size:11px;color:var(--mute)}
+.potc .potk{display:inline-flex;align-items:stretch;flex:none;font-size:11px;line-height:1;border:1px solid var(--ph,#3fc7c0)}
+.potc .potk em{font-style:normal;font-family:var(--mono);background:var(--ph,#3fc7c0);color:#111;padding:3px 5px;font-weight:700}
+.potc .potk span{color:var(--ph,#3fc7c0);padding:3px 6px;font-weight:600}
+.potc .potn{font-family:var(--lab);font-size:16px;color:#fff;letter-spacing:.01em}
+.potc .potn small{font-size:11px;color:var(--mute)}
 .pota .btn{margin:0}
 .pote{margin-top:6px;font-size:14px;line-height:1.65;color:#e4e3de;word-break:keep-all;white-space:pre-wrap}
 .pote .ptqt{color:#ffd56b;font-weight:600}
@@ -1867,7 +1867,7 @@ span.qe{display:inline-block;min-width:1.5em}
 .pote .pkl+.pkl{margin-top:3px}
 .pote .pkl i{font-style:normal;flex:none;color:var(--ph,#3fc7c0);font-weight:700;min-width:1.1em}
 /* 10-21 망령: 기술 카드 (읽기 쉽게) */
-.mvg{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:8px}
+.smvg{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:8px}
 .mvc{background:#18191d;border:1px solid var(--line2);border-left:5px solid var(--tc,#666);padding:8px 12px 10px;display:flex;flex-direction:column;gap:6px}
 .mvh{display:flex;align-items:center;gap:8px}
 .mvh .type{flex:none}
