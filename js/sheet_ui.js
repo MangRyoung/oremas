@@ -108,13 +108,13 @@ window.OM_SHEET_UI=(()=>{
  /* 노란 초상 카드 아래: 한눈 정보 · 스탠딩 (망령 10-21 — 빈칸이 휑하다) */
  function ppMore(c,t,m,E){const ed=canEdit(c,t.id);const st=m.stands||[];const act=+m.standActive||0;const tot=(m.base||[]).reduce((a,v)=>a+(+v||0),0);const iv=(m.iv||[]).length?S().ivSum(m.iv):null;
   const egg=(m.egg||[]).filter(x=>x&&x!=='-');const fact=(k,v)=>`<div><small>${k}</small><b>${v}</b></div>`;
-  return `<div class="ppfacts">${fact('Lv',m.lv)}${fact('성별',esc(m.gender||'-'))}${fact('테라',esc(m.tera||'-'))}${fact('종족치 합',tot)}${iv!=null?fact('개체값 합',iv):''}${egg.length?fact('알그룹',esc(egg.join('·'))):''}${m.partner?fact('파트너','★'):''}${(m.fields||[]).length?fact('필드',(m.fields||[]).length):''}${(m.forms||[]).length?fact('폼',(m.forms||[]).length):''}</div>
+  return `<div class="ppfacts">${fact('Lv',m.lv)}${fact('성별',esc(m.gender||'-'))}${fact('테라',esc(m.tera||'-'))}${fact('종족치 합',tot)}${iv!=null?fact('개체값 합',iv):''}${egg.length?fact('알그룹',esc(egg.join('·'))):''}${(m.fields||[]).length?fact('필드',(m.fields||[]).length):''}${(m.forms||[]).length?fact('폼',(m.forms||[]).length):''}</div>
    <div class="ppst"><div class="pph">스탠딩<span class="sp"></span>${ed?`<button class="btn xs" data-act="mstands" data-mid="${m.id}">표정·스탠딩 편집</button>`:''}</div>
     ${st.length?`<div class="ppstg">${st.map((x,i)=>`<div class="ppsti ${i===act?'on':''}" title="${esc(x.label||'기본')}"><i style="${x.src?`background-image:url('${cssu(x.src)}')`:''}"></i><span>${esc(x.label||'기본')}</span></div>`).join('')}</div>`:'<div class="small" style="color:#333">아직 없다 — 무대에는 위 그림으로 선다</div>'}</div>
    ${ed&&!E?`<label class="btn xs" style="margin-top:6px;align-self:flex-start">그림 바꾸기<input type="file" accept="image/*" data-up="mon" data-id="${m.id}" hidden style="display:none"></label>`:''}`}
  function pokeTab(c,t,mons,E){
   const m=mons.find(x=>x.id===UI.mid);
-  const strip=`<div class="pstrip">${mons.map(x=>`<div class="pcard ${x.id===UI.mid?'on':''}" data-pick="${x.id}"><div class="ppic" style="${x.image?`background-image:url('${cssu(x.image)}')`:''}"></div><div class="pn">${esc(x.name)}</div><div class="pl">Lv.${x.lv} ${x.partner?'<span class="tag">파트너</span>':''}</div></div>`).join('')}
+  const strip=`<div class="pstrip">${mons.map(x=>`<div class="pcard ${x.id===UI.mid?'on':''}${x.partner?' partner':''}" data-pick="${x.id}">${x.partner?'<span class="ppstar sm" title="파트너">★</span>':''}<div class="ppic" style="${x.image?`background-image:url('${cssu(x.image)}')`:''}"></div><div class="pn">${esc(x.name)}</div><div class="pl">Lv.${x.lv}</div></div>`).join('')}
    ${E?`<button class="btn sm ghost" data-act="addmon">+ 포켓몬</button>`:''}</div>`;
   if(!m)return strip+'<div class="empty">포켓몬이 없다.</div>';
   const eff=TYPES18.map(ty=>({ty,v:S().effect(ty,m.teraActive&&m.teraEn!=='-'?[m.teraEn]:m.types)}));
@@ -122,7 +122,7 @@ window.OM_SHEET_UI=(()=>{
   const sheetHp=m.sheetHp==null?m.hp.max:Math.min(m.sheetHp,m.hp.max);
   const traitNames=Object.keys(DB().traits||{}),itemNames=Object.keys(DB().items||{}),moveNames=Object.keys(DB().moves||{});
   return strip+`<div class="pview">
-   <div class="pportrait"><div class="ppbig" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}">${m.image?'':'<span>그림 없음</span>'}</div><div class="ppname">${esc(m.role||'')}${m.pride?' · 프라이드 '+esc(m.pride):''}</div>${ppMore(c,t,m,E)}
+   <div class="pportrait${m.partner?' partner':''}">${m.partner?'<span class="ppstar" title="파트너">★</span>':''}<div class="ppbig" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}">${m.image?'':'<span>그림 없음</span>'}</div><div class="ppname">${esc(m.role||'')}${m.pride?' · 프라이드 '+esc(m.pride):''}</div>${ppMore(c,t,m,E)}
     ${E?`<input type="text" data-me="image" value="${esc(m.image&&!m.image.startsWith('data:')?m.image:'')}" placeholder="그림 주소 https://… (비우면 그대로)" style="width:100%;margin-top:6px"><label class="btn xs" style="margin-top:6px">파일 올리기<input type="file" accept="image/*" data-up="mon" data-id="${m.id}" hidden></label>`:''}</div>
    <div class="pinfo">
     <div class="plv">Lv <b>${m.lv}</b> <span class="dim small">기본 ${S().baseLevel((t.ranks||{})['육성'])} ${m.dist?(m.dist>0?'+':'')+m.dist:''}</span></div>

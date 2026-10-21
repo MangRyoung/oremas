@@ -80,7 +80,7 @@ window.OM_BATTLE_UI=(()=>{
   ${revealStrip(c,ready)}
   <div class="stadium">
    ${benchRow(c,'left',ready)}
-   <div class="fieldcol ${f.stage&&f.stage.name?'staged':''}"${window.OM_STAGE_UI?window.OM_STAGE_UI.bgStyle(f):''}>${areaGrid(c)}${window.OM_STAGE_UI?window.OM_STAGE_UI.chip(c,f):''}${fieldStrip(c,f)}</div>
+   <div class="fieldcol ${f.stage&&f.stage.name?'staged':''} ${fieldBg(f).cls}" style="${fieldBg(f).st}">${areaGrid(c)}${window.OM_STAGE_UI?window.OM_STAGE_UI.chip(c,f):''}${fieldStrip(c,f)}</div>
    ${benchRow(c,'right',ready)}
   </div>
   ${orderBox(c)}
@@ -178,6 +178,14 @@ window.OM_BATTLE_UI=(()=>{
   const ph1=window.matchMedia&&matchMedia('(max-width:760px)').matches;UIC.bside=UIC.bside||{};const open=!ph1||UIC.bside[side];
   const sum=ids.map(tid=>`${esc(trs[tid].name)} ${(b.cmds||{})[tid]?'공개됨':ready[tid]?'READY':'입력 중'}`).join(' · ');
   return `<details class="bside" data-bside="${side}" ${open?'open':''}><summary class="bsh"><span>지시 현황</span><small class="bsum">${sum}</small><span class="sp"></span><b>TURN ${+b.turn||0}</b></summary>${blocks}</details>`}
+ /* 10-21 망령: 날씨 · 필드 · 룸 · 《필드》 그림을 배틀맵 뒤에 반투명하게 깐다 (맵툴 Lib:field 0.75 · Lib:field_object 0.5 처럼) */
+ const fbgUrl=k=>{if(!k)return '';let u=`img/fieldbg/${k}.webp`;try{u=new URL(u,location.href).href}catch(e){}return `url('${cssu(u)}')`};
+ function fieldBg(f){f=f||{};const w=(f.weather||{}).type,t=(f.terrain||{}).type;const cls=[],st=[];
+  const ss=window.OM_STAGE_UI?window.OM_STAGE_UI.bgStyle(f):'';const m=ss.match(/style="([^"]*)"/);if(m)st.push(m[1]);
+  const low=[...ROOMS.filter(r=>(f.rooms||{})[r]>0),...ETC.filter(r=>(f.etc||{})[r]>0),t].filter(Boolean).map(k=>fbgUrl(T_IMG[k])).filter(Boolean);
+  if(w&&W_IMG[w]){cls.push('fbw','w-'+W_IMG[w]);st.push(`--fbw:${fbgUrl(W_IMG[w])}`)}
+  if(low.length){cls.push('fbt');st.push(`--fbt:${low.join(',')}`)}
+  if(cls.length)cls.push('fxbg');return {cls:cls.join(' '),st:st.join(';')}}
  function fieldStrip(c,f){const w=f.weather.type,t=f.terrain.type;
   const ic=(name,label,cnt,kind)=>{const im=fimg(name);return `<div class="fic ${kind}" title="${esc(label)}">${im?`<img src="${esc(im)}" alt="">`:'<span class="fnoimg"></span>'}<span><small>${({w:'날씨',t:'필드',r:'룸',e:'필드의 상태'})[kind]||''}</small><b>${esc(label)}</b>${cnt?`<em>${cnt>=1000?'∞':cnt+'T'}</em>`:''}</span></div>`};
   const mid=[w?ic(W_IMG[w],w,f.weather.count,'w'):'',t?ic(T_IMG[t],t,f.terrain.count,'t'):'',...ROOMS.filter(r=>(f.rooms||{})[r]>0).map(r=>ic(T_IMG[r],r,f.rooms[r],'r')),...ETC.filter(r=>(f.etc||{})[r]>0).map(r=>ic(T_IMG[r],r,f.etc[r],'e'))].filter(Boolean).join('');

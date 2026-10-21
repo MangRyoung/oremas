@@ -1829,3 +1829,22 @@ span.qe{display:inline-block;min-width:1.5em}
 .dmres textarea{flex-basis:100%;width:100%;box-sizing:border-box;font-size:12px}
 .dmmodal textarea[readonly]{opacity:.85}
 @media (max-width:760px){.dmgrid{grid-template-columns:1fr}.dmform{position:static}.dmform .stform{grid-template-columns:1fr}}
+/* 10-21 망령: 날씨 · 필드 · 룸 그림이 배틀맵 뒤에 반투명하게 (맵툴처럼) */
+.fieldcol.fxbg .fgrid{position:relative;isolation:isolate}
+.fieldcol.fbt .fgrid::before,.fieldcol.fbw .fgrid::after{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;background-position:center;background-size:cover;background-repeat:no-repeat}
+.fieldcol.fbt .fgrid::before{background-image:var(--fbt);opacity:.55}
+.fieldcol.fbw .fgrid::after{background-image:var(--fbw);opacity:.7}
+.fieldcol.fbw.fbt .fgrid::after{opacity:.6;-webkit-mask-image:linear-gradient(#000 45%,transparent 92%);mask-image:linear-gradient(#000 45%,transparent 92%)}
+.fieldcol.staged.fbw .fgrid::after,.fieldcol.staged.fbt .fgrid::before{opacity:.4}
+.fieldcol.fxbg .fgrid .area{background:rgba(0,0,0,.38)}
+.fieldcol.fxbg .fgrid .area.empty{background:rgba(0,0,0,.18)}
+.fieldcol.fxbg .fgrid .ahead{box-shadow:0 2px 6px rgba(0,0,0,.5)}
+/* 10-21 망령: 파트너 카드는 오른쪽 위 별표 + 다른 카드 색 */
+.pportrait,.pcard{position:relative}
+.pportrait.partner{background:linear-gradient(150deg,#ffd6e8 0%,#f3b8ff 55%,#b9c8ff 100%);border-color:#2a1236}
+.pportrait.partner .ppbig{border-color:#2a1236}
+.pportrait.partner .ppfacts>div{border-left-color:#c03bd6}
+.pportrait.partner .ppst{background:rgba(255,255,255,.28);border-color:#2a1236}
+.pcard.partner{background:linear-gradient(150deg,#ffe3ef,#e7d0ff)}
+.ppstar{position:absolute;top:-12px;right:-12px;z-index:3;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:26px;line-height:1;color:#ffd84a;background:#2a1236;border:2px solid #ffd84a;border-radius:50%;text-shadow:0 0 6px rgba(255,216,74,.8);box-shadow:0 2px 6px rgba(0,0,0,.5);pointer-events:auto;cursor:default}
+.ppstar.sm{top:-9px;right:-9px;width:24px;height:24px;font-size:15px;border-width:1.5px}
