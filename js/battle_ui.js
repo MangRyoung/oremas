@@ -78,7 +78,7 @@ window.OM_BATTLE_UI=(()=>{
   <div class="bstat ${BFOLD.open?'':'fold'}">
    <div class="turn ${c.mgr?'clickable':''}" ${c.mgr?'data-act="turnset" title="눌러서 턴 번호 조정"':''}><span class="tlab">TURN</span><span class="tnum">${b.turn||0}</span></div>
    <span class="phnow">${esc((phases.find(([p])=>p===(+b.phase||0))||[,''])[1])}${(+b.phase||0)===1&&b.tstep?(+b.tstep===1?' · 교대':' · 포텐셜 발동'):''}</span><button class="btn sm ghost bfold" data-bfold title="조작판 펼치기 · 접기">${BFOLD.open?'접기 ▴':'펼치기 ▾'}</button>
-   <div class="phases">${phases.map(([p,n])=>`<button class="ph ${(+b.phase||0)===p?'on':''}" data-phase="${p}" ${c.mgr?'':'disabled'}>${n}</button>`).join('')}</div>
+   <div class="phases">${phases.map(([p,n])=>`<button class="ph ${(+b.phase||0)===p?'on':''}" data-phase="${p}" ${c.mgr?'':'disabled'}>${n}</button>`).join('')}</div>${(c.mgr||c.seat)?'<button class="btn sm autock" data-act="autock" title="내 트레이너 · 필드 위 내 포켓몬에서 자동으로 처리되는 것 (포텐셜 · 특성 · 소지품 · 기술 · 지령)">⚙ 자동화 확인</button>':''}
    <span class="sp"></span><span id="typingBat" class="typingslot">${window.OM_RP_UI&&window.OM_RP_UI.typingHtml?window.OM_RP_UI.typingHtml():''}</span><span class="sp"></span>${window.OM_RP_UI&&window.OM_RP_UI.bgmWidgetHtml?window.OM_RP_UI.bgmWidgetHtml():''}
    ${c.mgr?`<div class="gmrow"><label title="${b.started?'시합 중에는 바꿀 수 없다 — 「배틀 비우기」 뒤에':'싱글 1 · 더블 2 · 트리플 3 에리어'}">에리어 <select data-act="mode" ${b.started?'disabled':''}>${[[1,'싱글'],[2,'더블'],[3,'트리플']].map(([n,l])=>`<option value="${n}" ${mode(b)===n?'selected':''}>${l}</option>`).join('')}</select>${b.started?' 🔒':''}</label>
     ${!b.started?`<button class="btn sm pri" data-act="start" title="연출(VS/경고)과 함께 시합을 시작한다. 동시 내밀기가 켜져 있으면 예약한 포켓몬이 한꺼번에 나온다">시합 개시</button>`:''}
@@ -485,6 +485,7 @@ window.OM_BATTLE_UI=(()=>{
    case 'result':return openResult();
    case 'hp':return openHp(d.mid);
    case 'pots':return openPots(d.mid);
+   case 'autock':return openAutoCheck(d.tid);
    case 'fxoff':{const m=b.mons[d.mid];if(!m||!canEdit(c,m))return;const nm=d.nm||'';const all=FX().chips(m).filter(ch=>ch.name===nm);const compound=nm&&all.length>1;
     if(!confirm(compound?`「${nm}」 의 효과 ${all.length}개를 모두 해제할까?\n${all.map(x=>'· '+x.t).join('\n')}`:`「${nm}」 효과를 해제할까?`))return;
     const m0=snap(b.mons[d.mid]);const x=snap(m0);if(compound)FX().removeByName(x,nm);else FX().remove(x,d.fx);await saveMon(m0,d.mid,x);return A().sysLog(`${m.name} 「${nm}」 해제${compound?' ('+all.length+'개)':''}`,'battle')}
@@ -928,6 +929,32 @@ window.OM_BATTLE_UI=(()=>{
 
  /* ---------- 랭크·상태 편집 ---------- */
  /* ---------- 포텐셜 목록 창: 출력(채팅에 알림) · 발동(자동화) · 횟수 · 효과 해제 ---------- */
+ /* ---------- ⚙ 자동화 확인 (10-24 망령: 처음 하는 사람이 자동화 도우미를 어려워한다)
+    내 트레이너(GM 은 고른 트레이너)와 지금 필드 위의 그 포켓몬에서, 구문이 있어 자동으로 처리되는 것을 한눈에: 언제 · 무엇을 · 어떻게 (자동 / 발동 버튼 / 공격·HP 창) ----- */
+ const AK={tid:''};
+ function autoRows(m,t){const out=[],man=[];const tm=a=>FX()?FX().timing(a.text||''):{};
+  const how=(a,kind)=>{const T=tm(a);if(kind==='지령 · 명령')return ['지시에서 고르면 걸린다','press'];if(T.entry)return ['등장하면 자동','auto'];if(T.passive)return ['늘 켜짐','auto'];if(/【턴 종료】/.test(a.text||''))return ['턴 종료 때 · 「발동」','press'];if(T.pre)return ['선행 · 「발동」','press'];return ['「발동」 버튼','press']};
+  const add=(kind,name,a,eff)=>{if(a&&a.ops&&a.ops.length&&!a.manual){const [w,c]=how(a,kind);out.push({kind,name,when:w+(tm(a).uses?` (${tm(a).uses}회)`:''),cls:c,what:FX().describe(a.ops)})}else man.push({kind,name,eff})};
+  if(m){for(const p of potSrc(m))add(p.unique?'고유':isExcl(m,p)?'전용':'포텐셜',p.name,FX()&&FX().autoOf(m,'pot',p.name),p.eff);
+   if(m.ability)add('특성',m.ability,FX()&&FX().autoOf(m,'trait',m.ability),m.abilityEff);
+   if(m.item&&m.item!=='-'){const I=window.OM_ITEMS,IR=window.OM_ITEMRULE;const r=I&&I.of(m);const passive=r&&IR&&IR.has(r);if(passive)out.push({kind:'소지품',name:m.item,when:'공격 · HP 창 · 턴 종료에서 자동',cls:'auto',what:IR.toText(r).split('\n').filter(x=>x!=='소모품'&&!/^전용 /.test(x)).join(' · ')+(r.once?' (한 번 쓰면 없어짐)':'')});
+    const a=FX()&&FX().autoOf(m,'item',m.item);if(a&&a.ops&&a.ops.length&&!a.manual){if(!passive)add('소지품',m.item,a)}else if(!passive)man.push({kind:'소지품',name:m.item,eff:m.itemEff})}
+   for(const mv of m.moves||[]){if(!mv||!mv.name)continue;const a=moveAuto(mv);if(a&&MA().auto(a))out.push({kind:'기술',name:mv.name,when:'공격 창 「적용」 때 자동',cls:'auto',what:MA().describe(a)+(a.notes&&a.notes.length?' · 손으로: '+a.notes.join(' · '):'')});else if(a&&a.notes&&a.notes.length)man.push({kind:'기술',name:mv.name,eff:a.notes.join(' · ')})}}
+  else if(t){for(const u of (t.unique||[]).filter(u=>u&&u.name))add('고유',u.name,FX()&&FX().autoOf({tid:t.id},'pot',u.name),u.eff);
+   if(OO())for(const n of [...OO().orderNames(t),...OO().commandNames(t)].filter(Boolean)){const a=FX()&&FX().rm(n);if(a&&a.ops&&a.ops.length&&!a.manual)add('지령 · 명령',n,a)}}
+  return {out,man}}
+ function openAutoCheck(tid){const c=ctx(),b=c.b;const trs=Object.values(b.trainers||{}).filter(t=>c.mgr||t.id===c.seat);if(!trs.length)return A().toast('배틀에 올린 내 트레이너가 없다');
+  if(tid)AK.tid=tid;if(!trs.some(t=>t.id===AK.tid))AK.tid=trs[0].id;const t=b.trainers[AK.tid];
+  const mons=Object.values(b.mons||{}).filter(m=>m.tid===t.id&&m.entry&&m.hp&&m.hp.cur>0);
+  const block=(title,img,{out,man})=>`<div class="akblk"><div class="akh">${img?`<img src="${esc(img)}" alt="">`:''}<b>${esc(title)}</b><span class="dim small">자동 ${out.length}${man.length?' · 손으로 '+man.length:''}</span></div>
+   ${out.length?`<div class="akl">${out.map(x=>`<div class="akr ${x.cls}"><span class="akk">${esc(x.kind)}</span><b>${esc(x.name)}</b><span class="akw">${esc(x.when)}</span><div class="akd">${esc(x.what)}</div></div>`).join('')}</div>`:'<div class="dim small">자동으로 처리되는 것이 없다</div>'}
+   ${man.length?`<details class="akman"><summary class="small">자동화 안 됨 — 손으로 (📢 발동 · HP · 상태 창) ${man.length}</summary>${man.map(x=>`<div class="small"><span class="akk">${esc(x.kind)}</span>${esc(x.name)}${x.eff?` <span class="dim">— ${esc(String(x.eff).replace(/<br\s*\/?>/g,' ').slice(0,90))}</span>`:''}</div>`).join('')}</details>`:''}</div>`;
+  const md=A().openModal(`<div class="mhead"><h2>⚙ 자동화 확인</h2><span class="sp"></span>${trs.length>1?`<select id="akt">${trs.map(x=>`<option value="${esc(x.id)}" ${x.id===t.id?'selected':''}>${esc(x.name||x.id)}</option>`).join('')}</select>`:''}<button class="btn ghost" data-x>닫기</button></div>
+   <div class="mbody akbody"><p class="small dim" style="margin:0 0 8px">구문이 있어 오레마스가 알아서 처리하는 것들. <b class="akauto">자동</b> 은 건드리지 않아도 되고, <b class="akbtn">「발동」</b> 은 포텐셜 칸의 발동 버튼을 누르면 효과가 걸린다. 자동화가 없는 것은 「📢 발동」으로 로그에 띄우고 HP · 상태 창에서 손으로.</p>
+   ${block(`트레이너 ${t.name||t.id}`,t.image||'',autoRows(null,t))}
+   ${mons.length?mons.map(m=>block(`${m.name}${m.entry?' · '+m.entry:''}`,m.image||'',autoRows(m,t))).join(''):'<div class="dim small" style="margin-top:8px">필드에 나와 있는 포켓몬이 없다 — 내보내면 여기 나온다</div>'}</div>`,{wide:true});
+  const sel=md&&md.querySelector('#akt');if(sel)sel.onchange=()=>{A().closeModal();openAutoCheck(sel.value)};
+  if(md)md.querySelectorAll('[data-x]').forEach(x=>x.onclick=()=>A().closeModal())}
  function openPots(mid){const c=ctx();const b=c.b;const m=b.mons[mid];if(!m)return;const full=canEdit(c,m);const u=m.potUses||{};const L=potList(m);
   const rows=[...(m.pots||[]).filter(p=>p&&p.name&&!p.ph).map(p=>['pot',p.name,p.kind||'',p.eff||'']),...(m.excl?[['pot',m.excl.name,'전용',m.excl.eff||'']]:[]),...(m.exclX||[]).map(p=>['pot',p.name,'전용',p.eff||'']),...(m.ability?[['trait',m.ability,'특성',m.abilityEff||'']]:[]),...(m.item?[['item',m.item,'소지품',m.itemEff||'']]:[])];
   const chips=FX()?FX().chips(m):[];const SH=window.OM_SHEET_UI||{};const pf=SH.potFmt||(t=>esc(t));const pk=SH.potKind||(k=>({no:'',lab:k}));const HUE=SH.POT_HUE||{};

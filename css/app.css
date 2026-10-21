@@ -2710,3 +2710,18 @@ span.iedit{display:inline-block;min-width:3em}
  .rpbtns .btn{padding:3px 7px;font-size:12px;line-height:1.25;min-height:0}
  .rpbtns .rpspkbtn{position:absolute;left:0;top:calc(var(--tagh,34px) - 8px + 6px);margin:0}
 }
+
+/* 10-24 망령: ⚙ 자동화 확인 */
+.bstat .autock{margin-left:8px;flex:none}
+.akbody{display:flex;flex-direction:column;gap:12px}
+.akblk{border:1px solid var(--line2);padding:8px 10px;background:rgba(255,255,255,.02)}
+.akh{display:flex;align-items:center;gap:8px;margin-bottom:6px}.akh img{width:32px;height:32px;object-fit:cover;border:1px solid var(--line2)}.akh b{font-size:15px}
+.akl{display:flex;flex-direction:column;gap:4px}
+.akr{display:grid;grid-template-columns:auto auto 1fr;gap:2px 8px;align-items:baseline;padding:5px 8px;border-left:3px solid var(--line2);background:rgba(255,255,255,.03)}
+.akr.auto{border-left-color:#3fbf7f}.akr.press{border-left-color:var(--yel,#f0c84a)}
+.akr .akw{justify-self:end;font-size:12px;color:var(--mute,#9a9a94)}.akr.auto .akw{color:#7fe0a5}.akr.press .akw{color:var(--yel,#f0c84a)}
+.akr .akd{grid-column:1/-1;font-size:12.5px;color:#cfcfcf;white-space:pre-line}
+.akk{display:inline-block;font-size:11px;padding:0 6px;margin-right:4px;border:1px solid var(--line2);color:var(--mute,#9a9a94)}
+.akauto{color:#7fe0a5}.akbtn{color:var(--yel,#f0c84a)}
+.akman{margin-top:6px}.akman>div{padding:2px 0 2px 8px}
+@media (max-width:760px){.akr{grid-template-columns:auto 1fr}.akr .akw{grid-column:1/-1;justify-self:start}}
