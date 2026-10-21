@@ -132,7 +132,7 @@ window.OM_RP_UI=(()=>{
  const TYPING={last:0,who:{},t:null};
  /* 입력 중: 내 것은 바로 화면에(브로드캐스트는 나한테 안 돌아오니까), 남에게는 2.5초에 한 번 보낸다 */
  /* ooc: 잡담 탭에서 치는 중 — 위쪽 표시에만 나오고 무대에는 안 나온다 */
- function typingPing(ooc){ooc=ooc===true;const now=Date.now();const c=ooc?null:speakerChar();const who=c?c.name:(A().ST.role==='gm'?'GM':A().ST.name);const me=A().ST.role==='gm'?'gm':A().ST.seat;if(!me)return;TYPING.who[me+'|'+who+(ooc?'|o':'')]={who,at:now,me:true,from:me,ooc};drawTyping();clearTimeout(TYPING.t);TYPING.t=setTimeout(drawTyping,4200);if(now-TYPING.last<2500)return;TYPING.last=now;DBS().broadcast({t:'typing',who,from:me,at:now,ooc})}
+ function typingPing(ooc){ooc=ooc===true;const now=Date.now();const c=ooc?null:speakerChar();const who=c&&c.kind!=='gm'?c.name:(A().ST.role==='gm'?'GM'+(A().ST.gmNick?' · '+A().ST.gmNick:''):A().ST.name);const me=A().ST.role==='gm'?'gm':A().ST.seat;if(!me)return;TYPING.who[me+'|'+who+(ooc?'|o':'')]={who,at:now,me:true,from:me,ooc};drawTyping();clearTimeout(TYPING.t);TYPING.t=setTimeout(drawTyping,4200);if(now-TYPING.last<2500)return;TYPING.last=now;DBS().broadcast({t:'typing',who,from:me,at:now,ooc})}
  function typingStop(){const me=A().ST.role==='gm'?'gm':A().ST.seat;for(const k in TYPING.who)if(TYPING.who[k].me)delete TYPING.who[k];TYPING.last=0;drawTyping()}
  /* 남의 입력 중: 같은 사람이 창 두 개나 다른 인물로 치면 따로 보인다 (from|who 로 키) */
  function onTyping(p){if(!p||!p.from)return;const me=A().ST.role==='gm'?'gm':A().ST.seat;const key=p.from+'|'+(p.who||'')+(p.ooc?'|o':'');if(p.from===me&&TYPING.who[key]&&TYPING.who[key].me)return;TYPING.who[key]={who:p.who,at:Date.now(),from:p.from,ooc:!!p.ooc};drawTyping();clearTimeout(TYPING.t);TYPING.t=setTimeout(drawTyping,4200)}
@@ -248,7 +248,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  async function sendLine(){const ST=A().ST;const inp=$('#rpline');if(!inp)return;let t=inp.value.trim();if(!t)return;inp.value='';SPK.draft='';SPK.focus=true;typingStop();
   try{if(t.startsWith('/')){const ci=$('#chatIn');if(ci){ci.value=t;$('#chatSend').click()}return}
    let m;if((m=t.match(/^@(\S+)\s*([\s\S]*)$/))){const ok=await setStandByLabel(speakerChar(),m[1]);if(!ok)return;t=m[2].trim();if(!t){A().toast(`표정: ${m[1]}`);return}}
-   if(ST.role==='gm'){if(SPK.key==='gm')await DBS().addLog(ST.room,ST.secret,'chat',ST.name,{t,nf:1});else{const c=charOf(SPK.key);const name=c?c.name:SPK.key.replace(/^(npc|as|pm):/,'');await DBS().addLog(ST.room,ST.secret,'chat',name,{t,as:name,k:SPK.key,nf:1})}}
+   if(ST.role==='gm'){if(SPK.key==='gm')await DBS().addLog(ST.room,ST.secret,'chat',ST.name,Object.assign({t,nf:1},ST.gmNick?{gmn:ST.gmNick}:{}));else{const c=charOf(SPK.key);const name=c?c.name:SPK.key.replace(/^(npc|as|pm):/,'');await DBS().addLog(ST.room,ST.secret,'chat',name,{t,as:name,k:SPK.key,nf:1})}}
    else if(SPK.key&&SPK.key.startsWith('pm:')){const c=charOf(SPK.key);await DBS().addLog(ST.room,ST.secret,'chat',c?c.name:ST.name,{t,as:c?c.name:'',k:SPK.key,nf:1})}
    else{const c=charOf(ST.seat);const nm=c?c.name:ST.name;await DBS().addLog(ST.room,ST.secret,'chat',nm,c?{t,as:nm,k:ST.seat,nf:1}:{t,nf:1})}}catch(e)   /* 좌석이 자기 캐릭터로 말하면 캐릭터 이름으로 남긴다 (플레이어 닉 X) */{A().toast('보내지 못했다: '+e.message)}}
  function act(k){

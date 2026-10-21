@@ -26,13 +26,15 @@ async function route(){
  const p=params();
  if(ST.unsub){ST.unsub();ST.unsub=null}clearInterval(ST.wtimer);
  if(!p.r){renderLobby();return}
- await openRoom(p.r,p.gm||'')}
+ await openRoom(p.r,p.pl?'':(p.gm||''))}
 
 /* ---------- 로비 ---------- */
 function renderLobby(){
  const app=$('#app');const mine=LS.get('om_rooms',[]);
  app.innerHTML=`<div class="lobby">
   <div class="brand">오레마스 <small>망켓몬 배틀 · 세션 툴</small></div>
+  <div class="card lbnick"><h2>내 닉네임</h2><div class="row"><input type="text" id="lbNick" value="${esc(LS.get('om_nick',''))}" placeholder="접속자 칸 · 입력 중 표시에 보일 이름" style="flex:1"><button class="btn" id="lbNickOk">저장</button></div>
+   <p class="small muted">GM 으로 들어가면 「GM · 닉」, PL 로 들어가면 이 닉으로 자리에 앉는다. GM 링크를 가진 사람이 여럿이면 다 같이 GM 으로 들어와도 된다 — 닉으로 구분된다.</p></div>
   ${recent(mine)}
   <div class="card"><h2>방 만들기 (GM)</h2>
    <div class="row"><input type="text" id="newName" placeholder="방 이름 (예: 무진)" style="flex:1"><button class="btn pri" id="mk">만들기</button></div>
@@ -41,6 +43,7 @@ function renderLobby(){
    <div class="row"><input type="text" id="joinId" placeholder="방 링크 또는 방 id" style="flex:1"><button class="btn" id="join">입장</button></div></div>
   ${mine.length?'':'<p class="hint">들어간 방은 이 기기에 기억해 두고 맨 위에 「최근 방」으로 보여 준다.</p>'}
  </div>`;
+ {const ni=$('#lbNick'),save=()=>{LS.set('om_nick',ni.value.trim());toast(ni.value.trim()?`닉네임: ${ni.value.trim()}`:'닉네임을 비웠다')};$('#lbNickOk').onclick=save;ni.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)save()}}
  app.querySelectorAll('[data-rmdel]').forEach(b=>b.onclick=e=>{e.preventDefault();const id=b.dataset.rmdel;if(!confirm('이 기기의 최근 방 목록에서 뺄까? (방은 그대로 있다)'))return;LS.set('om_rooms',LS.get('om_rooms',[]).filter(r=>r.id!==id));renderLobby()});
  $('#mk').onclick=async()=>{const name=$('#newName').value.trim()||'새 방';const sec=rnd(24);
   try{const id=await DBS().createRoom(name,sec);remember(id,name,sec);location.hash='r='+id+'&gm='+sec}catch(e){toast('방을 만들지 못했다: '+e.message)}};
@@ -48,7 +51,7 @@ function renderLobby(){
 function remember(id,name,gm){const L=LS.get('om_rooms',[]).filter(r=>r.id!==id);L.unshift({id,name,gm:gm||(LS.get('om_rooms',[]).find(r=>r.id===id)||{}).gm||'',at:Date.now()});LS.set('om_rooms',L.slice(0,20))}
 /* 로비 맨 위: 최근 들어간 방 (이 기기에만 기억) */
 function ago(t){if(!t)return '';const m=Math.floor((Date.now()-t)/60000);if(m<1)return '방금';if(m<60)return m+'분 전';const h=Math.floor(m/60);if(h<24)return h+'시간 전';const d=Math.floor(h/24);return d<7?d+'일 전':new Date(t).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'})}
-function recent(mine){if(!mine.length)return '';return `<div class="card"><h2>최근 방</h2><ul class="rooms">${mine.map(r=>`<li><b>${esc(r.name||r.id)}</b>${r.at?`<span class="when">${esc(ago(r.at))}</span>`:''}<span class="sp"></span>${r.gm?'<span class="badge gm">GM</span>':''}<a class="btn sm ${r===mine[0]?'pri':''}" href="${esc(r.gm?gmLink(r.id,r.gm):roomLink(r.id))}">들어가기</a><button class="rmdel" type="button" data-rmdel="${esc(r.id)}" title="목록에서 빼기" aria-label="목록에서 빼기">✕</button></li>`).join('')}</ul></div>`}
+function recent(mine){if(!mine.length)return '';return `<div class="card"><h2>최근 방</h2><ul class="rooms">${mine.map(r=>`<li><b>${esc(r.name||r.id)}</b>${r.at?`<span class="when">${esc(ago(r.at))}</span>`:''}<span class="sp"></span>${r.gm?`<a class="btn sm ${r===mine[0]?'pri':''}" href="${esc(gmLink(r.id,r.gm))}" title="GM 권한으로 들어간다">GM 으로</a><a class="btn sm ghost" href="${esc(roomLink(r.id)+'&pl=1')}" title="GM 링크가 있어도 플레이어로 — 자리에 앉아 PL 닉으로 논다">PL 로</a>`:`<a class="btn sm ${r===mine[0]?'pri':''}" href="${esc(roomLink(r.id))}">들어가기</a>`}<button class="rmdel" type="button" data-rmdel="${esc(r.id)}" title="목록에서 빼기" aria-label="목록에서 빼기">✕</button></li>`).join('')}</ul></div>`}
 
 /* ---------- 방 ---------- */
 async function openRoom(id,gm){
@@ -57,9 +60,9 @@ async function openRoom(id,gm){
  if(!row){app.innerHTML='<div class="lobby">그런 방이 없다. <a href="#">로비로</a></div>';return}
  ST.room=id;ST.roomRow=row;ST._sub=false;if(window.OM_BATTLE_UI)window.OM_BATTLE_UI.resetLocal();ST.role=null;ST.secret='';ST.seat='';ST.name='';
  const seatInfo=LS.get('om_seat_'+id,null);
- if(gm){const w=await DBS().whoami(id,gm);if(w==='gm'){ST.role='gm';ST.secret=gm;ST.name='GM';remember(id,row.name,gm)}else toast('GM 비밀값이 맞지 않는다')}
+ if(gm){const w=await DBS().whoami(id,gm);if(w==='gm'){ST.role='gm';ST.secret=gm;ST.name='GM';ST.gmNick=LS.get('om_gmnick_'+id,'')||LS.get('om_nick','')||'';remember(id,row.name,gm)}else toast('GM 비밀값이 맞지 않는다')}
  if(!ST.role&&seatInfo&&seatInfo.secret){const w=await DBS().whoami(id,seatInfo.secret);if(w&&w!=='gm'){ST.role='seat';ST.secret=seatInfo.secret;ST.seat=w;ST.name=seatInfo.name||w}}
- if(!ST.role){remember(id,row.name,'');ST.name=LS.get('om_name_'+id,'')||''}
+ if(!ST.role){remember(id,row.name,'');ST.name=LS.get('om_name_'+id,'')||LS.get('om_nick','')||''}
  const st=await DBS().getState(id);ST.state=(st&&st.data)||{};ST.v=(st&&st.v)||0;
  /* GM 이 방을 열면 좌석이 쓸 상자(roster · pub · graph · skill · dex)를 먼저 만들어 둔다 — 서버의 jsonb_set 은 부모가 없으면 조용히 실패하니까 */
  if(ST.role==='gm'){const need={roster:{trainers:{},mons:{}},pub:{},ready:{},graph:{nodes:{},edges:{}},skill:{},dex:{},rp:{},battle:{}};for(const k in need){if(typeof ST.state[k]!=='object'||ST.state[k]===null){try{const v=await DBS().setState(id,ST.secret,[k],need[k]);ST.state[k]=need[k];ST.v=Math.max(ST.v,v||0)}catch(e){}}else if(k==='roster'){for(const kk of ['trainers','mons'])if(typeof ST.state.roster[kk]!=='object'||ST.state.roster[kk]===null){try{const v=await DBS().setState(id,ST.secret,['roster',kk],{});ST.state.roster[kk]={};ST.v=Math.max(ST.v,v||0)}catch(e){}}}}}
@@ -123,7 +126,7 @@ function renderRoom(){
    <span class="tabs" id="sceneTabs"></span>
    <span class="sp"></span><span id="typingTop" class="typingtop"></span><span id="presence" class="presence" title="지금 접속 중인 사람 · 누르면 내 이름"></span><span id="conn" class="small muted">○ 연결 중</span>
    ${ST.role?`<button class="btn sm ${window.OM_SKILL_UI&&window.OM_SKILL_UI.pending()?'pri':''}" id="skillBtn">스킬 체크${window.OM_SKILL_UI&&window.OM_SKILL_UI.pending()?' !':''}</button>${ST.role==='seat'?'<button class="btn sm" id="dexBtn" title="포켓몬 도감 · 해석 관리">도감</button>':''}`:''}<button class="btn sm" id="dbBtn">DB</button><button class="btn sm" id="rmBtn" title="레디메이드 (자동화 효과 사전)">레디메이드</button><button class="btn sm" id="copyLink">플레이어 링크</button>
-   ${ST.role==='gm'?'<button class="btn sm" id="copyGm">GM 링크</button><button class="btn sm" id="roomSet">⚙ 설정</button>':'<button class="btn sm" id="seatBtn">자리</button><button class="btn sm ghost" id="roomSet" title="내 설정 — 소리·알림·글자·이미지·단축키">⚙ 설정</button>'}
+   ${ST.role==='gm'?`<a class="btn sm ghost" href="${esc(roomLink(ST.room)+'&pl=1')}" title="이 방에 플레이어로 다시 들어간다 (자리·PL 닉)">PL 로</a>`:((LS.get('om_rooms',[]).find(x=>x.id===ST.room)||{}).gm?`<a class="btn sm ghost" href="${esc(gmLink(ST.room,(LS.get('om_rooms',[]).find(x=>x.id===ST.room)||{}).gm))}" title="이 기기에 GM 링크가 있다 — GM 으로 다시 들어간다">GM 으로</a>`:'')}${ST.role==='gm'?'<button class="btn sm" id="copyGm">GM 링크</button><button class="btn sm" id="roomSet">⚙ 설정</button>':'<button class="btn sm" id="seatBtn">자리</button><button class="btn sm ghost" id="roomSet" title="내 설정 — 소리·알림·글자·이미지·단축키">⚙ 설정</button>'}
   </div>
   <div class="body"><div class="scene" id="scene"></div><div class="resizer" id="resizer" title="끌어서 채팅 창 너비 조절"></div>
    <div class="side" id="side"><div class="phone"><div class="pbar"><span>●●●</span><span class="ptime" id="pclock"></span></div><div class="ptitle"><span class="plogs">${ST.role==='gm'?'<button class="btn xs ghost plog" id="clearLog" title="로그 비우기">🧹 비우기</button>':''}<button class="btn xs ghost plog" id="saveLog" title="채팅 로그를 파일로 저장">💾 로그</button></span>${esc(r.name||r.id)}<small>${ST.role==='gm'?'GM':ST.role==='seat'?esc(ST.name):'관전'} · 오레마스</small></div><div class="ctabs" id="ctabs"><button type="button" data-ch="s">세션</button><button type="button" data-ch="o">잡담<i class="cdot"></i></button></div><div class="log" id="log"></div>
@@ -132,7 +135,7 @@ function renderRoom(){
   <div class="mbar" id="mbar"><button data-m="scene" class="on"><i>🎭</i><span>무대</span></button><button data-m="chat"><i>💬</i><span>채팅</span><em id="mUnread" class="mbadge" style="display:none"></em></button><button data-m="phone"><i>📱</i><span>휴대폰</span></button><button data-m="top" title="맨 위로"><i>▲</i><span>맨 위</span></button><button data-m="menu"><i>☰</i><span>메뉴</span></button></div></div>`;
  $('#copyLink').onclick=()=>copy(roomLink(ST.room),'플레이어 링크를 복사했다');
  bindMobile();
- const sl=$('#saveLog');if(sl)sl.onclick=openSaveLog;const cl=$('#clearLog');if(cl)cl.onclick=openClearLog;const pr=$('#presence');if(pr)pr.onclick=()=>{if(ST.role==='gm')return;openNick()};
+ const sl=$('#saveLog');if(sl)sl.onclick=openSaveLog;const cl=$('#clearLog');if(cl)cl.onclick=openClearLog;const pr=$('#presence');if(pr)pr.onclick=()=>{openNick()};
  const sk=$('#skillBtn');if(sk)sk.onclick=()=>window.OM_SKILL_UI.open();const dxb=$('#dexBtn');if(dxb)dxb.onclick=()=>window.OM_DEX_UI.openMgr(ST.seat);
  const dk=$('#deckBtn');if(dk)dk.onclick=()=>window.OM_DECK_UI.open();
  $('#dbBtn').onclick=()=>window.OM_DB_UI.open({kind:'trait'});if($('#rmBtn'))$('#rmBtn').onclick=()=>window.OM_FX_UI.openRm('');
@@ -197,7 +200,7 @@ function battleCard(d){const t=String(d.t||'');const m=t.match(/^【([^】]+)】
  return `<div class="bcard" style="--tc:${col}"><div class="bch">${d.img?`<span class="bcav" style="background-image:url('${cssu(d.img)}')"></span>`:''}<span class="bctag">${esc(tag)}</span><b>${esc(title)}</b>${d.mid?`<span class="sp"></span><button class="btn xs ghost bcfx" data-lmid="${esc(d.mid)}" title="이 포켓몬의 포텐셜 창 — 발동 중인 효과를 ✕ 로 해제">효과</button>`:''}</div>${d.eff?`<div class="bceff">${esc(d.eff)}</div>`:''}${lines?`<div class="bcb">${lines}</div>`:''}</div>`}
 
 /* 대사 화자 이름: as 가 있으면 그것, 좌석의 세션 대사(예전 줄)는 그 좌석 캐릭터 이름, 잡담·그 밖은 남긴 이름 그대로 */
-function chatName(r){const d=r.data||{};if(d.as)return d.as;if(r.kind==='chat'&&!isOoc(r)&&!d.sms&&d.from&&d.from!=='gm'){const t=((ST.state.roster||{}).trainers||{})[d.from];if(t&&t.name)return t.name}return r.who||''}
+function chatName(r){const d=r.data||{};if(d.as)return d.as;if(d.gmn&&d.from==='gm')return 'GM · '+d.gmn;if(r.kind==='chat'&&!isOoc(r)&&!d.sms&&d.from&&d.from!=='gm'){const t=((ST.state.roster||{}).trainers||{})[d.from];if(t&&t.name)return t.name}return r.who||''}
 /* ---------- 대사 / 지문 판정 ----------
    새 규칙(nf:1 이 붙은 줄): 그냥 치면 지문, "…" “…” 「…」 『…』 로 감싸면 대사. *…* 도 여전히 지문.
    옛 줄(nf 없음): 예전처럼 *…* 만 지문, 나머지는 대사 (따옴표가 없으면 무대에서 붙여 준다) */
@@ -230,7 +233,7 @@ async function sendChat(){
   else if(/^\/clear$/.test(t)){if(ST.role!=='gm')return toast('/clear 는 GM 만');await DBS().addLog(ST.room,ST.secret,'chat',ST.name,{t:'',clear:1})}
   else if(t.startsWith('/'))return toast('모르는 명령이야: /r /w /as /s /img /clear');
   else if(ST.role==='gm'&&CHAN.cur!=='o'&&ST.chatAs&&ST.chatAs!=='gm'){const R=window.OM_RP_UI;const c=R&&R.charOf?R.charOf(ST.chatAs):null;const nm=c?c.name:ST.chatAs.replace(/^(npc|as|pm):/,'');await DBS().addLog(ST.room,ST.secret,'chat',nm,Object.assign({t,as:nm,k:ST.chatAs},nf))}   /* GM 이 고른 인물로 */
-  else{const tr=CHAN.cur!=='o'&&ST.role==='seat'?((ST.state.roster||{}).trainers||{})[ST.seat]:null;const nm=tr&&tr.name?tr.name:ST.name;await DBS().addLog(ST.room,ST.secret,'chat',nm,Object.assign({t},ch,nf,tr&&tr.name?{as:nm,k:ST.seat}:{}))}   /* 세션 탭: 좌석은 캐릭터 이름으로 · 잡담 탭은 플레이어 닉 */
+  else{const tr=CHAN.cur!=='o'&&ST.role==='seat'?((ST.state.roster||{}).trainers||{})[ST.seat]:null;const nm=tr&&tr.name?tr.name:ST.name;await DBS().addLog(ST.room,ST.secret,'chat',nm,Object.assign({t},ch,nf,tr&&tr.name?{as:nm,k:ST.seat}:{},ST.role==='gm'&&ST.gmNick?{gmn:ST.gmNick}:{}))}   /* 세션 탭: 좌석은 캐릭터 이름으로 · 잡담 탭은 플레이어 닉 */
  }catch(e){toast('보내지 못했다: '+e.message)}}
 function resolveSeat(n){if(n==='GM'||n==='gm')return 'gm';const seats=ST.state.seats||{};for(const k in seats)if(seats[k]&&(seats[k].name===n||k===n))return k;const trs=(ST.state.battle||{}).trainers||{};for(const k in trs)if(trs[k].name===n)return k;return null}
 function roll(expr){const m=String(expr).replace(/\s/g,'').match(/^(\d*)d(\d+)([+-]\d+)?$/i);if(!m)return null;const n=Math.min(+m[1]||1,100),f=+m[2],mod=+(m[3]||0);if(f<1)return null;const rs=[];for(let i=0;i<n;i++)rs.push(1+Math.floor(Math.random()*f));const total=rs.reduce((a,b)=>a+b,0)+mod;return {total,text:'['+rs.join(',')+']'+(mod?(mod>0?'+':'')+mod:'')}}
@@ -244,7 +247,7 @@ function renderLog(scroll){
   if(k==='chat'&&d.sms)return '';
   if(k==='chat'&&!d.t&&!d.img)return '';
   if(k==='battle'){const card=battleCard(d);if(card)return `<div class="msg battle card">${card}<span class="time">${t}</span></div>`}
-  const mine=(ST.role==='gm'&&d.from==='gm'&&!d.as)||(ST.role==='seat'&&d.from===ST.seat&&(!d.as||d.k===ST.seat));
+  const mine=(ST.role==='gm'&&d.from==='gm'&&!d.as&&(!d.gmn||d.gmn===ST.gmNick))||(ST.role==='seat'&&d.from===ST.seat&&(!d.as||d.k===ST.seat));
   const who=k==='whisper'?`${esc(r.who)} → ${esc(d.toName||d.to)}`:esc(chatName(r));
   const av=avatarOf(r);
   const lf=k==='chat'&&!isOoc(r)?lineFmt(d):{narr:false,text:String(d.t||'')};
@@ -259,12 +262,12 @@ let VIEW='';let lastScene='';
 const VIEWS=[['rp','RP'],['battle','배틀'],['sheet','시트'],['graph','관계도'],['calendar','캘린더'],['report','제보'],['guide','튜토리얼']];
 /* ---------- 접속 중인 사람 (브로드캐스트 인사: 25초마다 · 새로 온 사람에게 답인사) ---------- */
 const PRES={who:{},t:null,last:0};
-function myId(){return ST.role==='gm'?'gm':ST.role==='seat'?('s:'+ST.seat):('v:'+(ST.vid||(ST.vid=Math.random().toString(36).slice(2,8))))}
-function sayHello(force){const now=Date.now();if(!force&&now-PRES.last<20000)return;PRES.last=now;try{DBS().broadcast({t:'hello',id:myId(),name:ST.role==='gm'?'GM':(ST.name||'관전'),role:ST.role||'view',seat:ST.seat||'',at:now})}catch(e){}}
+function myId(){return ST.role==='gm'?('gm:'+(ST.vid||(ST.vid=Math.random().toString(36).slice(2,8)))):ST.role==='seat'?('s:'+ST.seat):('v:'+(ST.vid||(ST.vid=Math.random().toString(36).slice(2,8))))}
+function sayHello(force){const now=Date.now();if(!force&&now-PRES.last<20000)return;PRES.last=now;try{DBS().broadcast({t:'hello',id:myId(),name:ST.role==='gm'?(ST.gmNick||''):(ST.name||'관전'),role:ST.role||'view',seat:ST.seat||'',at:now})}catch(e){}}
 function onHello(p){if(!p||!p.id||p.id===myId())return;const isNew=!PRES.who[p.id];PRES.who[String(p.id).slice(0,40)]={name:String(p.name||'').slice(0,40),role:['gm','seat','view'].includes(p.role)?p.role:'view',seat:String(p.seat||'').slice(0,40),at:Date.now()};drawPresence();if(isNew)setTimeout(()=>sayHello(true),300+Math.random()*700)}
-function drawPresence(){const el=$('#presence');if(!el)return;const now=Date.now();const list=[{id:myId(),name:ST.role==='gm'?'GM':(ST.name||'관전'),role:ST.role||'view',seat:ST.seat||'',me:true},...Object.entries(PRES.who).filter(([k,v])=>now-v.at<70000).map(([k,v])=>Object.assign({id:k},v))];
- const trs=(ST.state.roster||{}).trainers||{};const nm=x=>x.role==='gm'?'GM':x.role==='seat'?`${esc(x.name)}${trs[x.seat]?' <small>'+esc(trs[x.seat].name)+'</small>':''}`:esc(x.name||'관전');
- el.innerHTML=`<span class="pcount" title="${esc(list.map(x=>x.name).join(', '))}">● ${list.length}</span>${list.map(x=>`<span class="pwho ${x.role} ${x.me?'me':''}">${nm(x)}</span>`).join('')}`}
+function drawPresence(){const el=$('#presence');if(!el)return;const now=Date.now();const list=[{id:myId(),name:ST.role==='gm'?(ST.gmNick||''):(ST.name||'관전'),role:ST.role||'view',seat:ST.seat||'',me:true},...Object.entries(PRES.who).filter(([k,v])=>now-v.at<70000).map(([k,v])=>Object.assign({id:k},v))];
+ const trs=(ST.state.roster||{}).trainers||{};const nm=x=>x.role==='gm'?`GM${x.name?' <small>'+esc(x.name)+'</small>':''}`:x.role==='seat'?`${esc(x.name)}${trs[x.seat]?' <small>'+esc(trs[x.seat].name)+'</small>':''}`:esc(x.name||'관전');
+ el.innerHTML=`<span class="pcount" title="${esc(list.map(x=>x.role==='gm'?'GM'+(x.name?' '+x.name:''):x.name).join(', '))}">● ${list.length}</span>${list.map(x=>`<span class="pwho ${x.role} ${x.me?'me':''}">${nm(x)}</span>`).join('')}`}
 function startPresence(){sayHello(true);clearInterval(PRES.t);PRES.t=setInterval(()=>{sayHello(false);drawPresence()},25000)}
 /* GM 이 보고 있으면 로스터 트레이너마다 관계도 노드가 있게 맞춘다 (좌석이 제 파티를 가져왔을 때 — 좌석은 graph 를 못 쓰니까) */
 /* 트레이너마다 한 번만 (graph.auto[tid]) — GM 이 지운 노드는 다시 만들지 않는다 */
@@ -310,7 +313,7 @@ async function openLoadParty(side){
  const r=roster();const ids=Object.keys(r.trainers).sort((a,b)=>(r.trainers[a].ord||0)-(r.trainers[b].ord||0));
  const inB=B().trainers||{};
  const m=openModal(`<div class="mhead"><h2>${side==='left'?'좌측':'우측'} 진영에 파티 불러오기</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-  ${ids.length?`<ul class="pick">${ids.map(id=>{const t=r.trainers[id];const n=(t.pids||[]).length;return `<li><b>${esc(t.name)}</b><span class="small muted">${esc(['육성','지시','통솔','능력'].map(k=>k+' '+((t.ranks||{})[k]||'-')).join(' · '))} · ${n}체</span><span class="sp"></span>${inB[id]||Object.values(inB).some(x=>x&&x.srcTid===id)?'<span class="tag">배틀에 있음</span>':''}${(ST.role!=='gm'&&id!==ST.seat)||(ST.role==='gm'&&(ST.state.rp||{}).gmHands===false&&(ST.state.seats||{})[id])?'<span class="tag" title="불러온 사람이 지시한다 (내 몫으로 올림)">빌려 쓰기</span>':''}<button class="btn sm pri" data-pick="${id}">불러오기</button></li>`}).join('')}</ul>`:'<div class="empty">로스터가 비어 있다.</div>'}
+  ${ids.length?`<ul class="pick">${ids.map(id=>{const t=r.trainers[id];const n=(t.pids||[]).length;return `<li><b>${esc(t.name)}</b><span class="small muted">${esc(['육성','지시','통솔','능력'].map(k=>k+' '+((t.ranks||{})[k]||'-')).join(' · '))} · ${n}체</span><span class="sp"></span>${inB[id]||Object.values(inB).some(x=>x&&x.srcTid===id)?'<span class="tag">배틀에 있음</span>':''}${(ST.role!=='gm'&&id!==ST.seat)?'<span class="tag" title="불러온 사람이 지시한다 (내 몫으로 올림)">빌려 쓰기</span>':''}<button class="btn sm pri" data-pick="${id}">불러오기</button></li>`}).join('')}</ul>`:'<div class="empty">로스터가 비어 있다.</div>'}
   <div class="row" style="margin-top:10px"><span class="small muted">트레이너는 「시트」 탭에서 제작기에서 가져오거나 새로 만든다.</span><span class="sp"></span><button class="btn sm" id="goSheet">시트 탭으로</button></div>`);
  $('#goSheet',m).onclick=()=>{closeModal();VIEW='sheet';renderScene()};
  m.querySelectorAll('[data-pick]').forEach(btn=>btn.onclick=async()=>{closeModal();await loadFromRoster(btn.dataset.pick,side)})}
@@ -323,8 +326,8 @@ async function loadFromRoster(tid,side){
  const borrowAs=nid=>{trainer.srcTid=tid;trainer.id=nid;const map={};for(const mon of mons){mon.rid=mon.id;mon.id=nid+'~'+mon.id;mon.tid=nid;map[mon.rid]=mon.id}trainer.pids=(trainer.pids||[]).map(id=>map[id]||id)};
  if(ST.role!=='gm'&&tid!==ST.seat){const mine=(B().trainers||{})[ST.seat];
   if(mine&&!confirm(`내 자리로 「${mine.name}」가 이미 배틀에 있다. 「${t.name}」 파티로 바꿀까?`))return;borrowAs(ST.seat)}
- /* PL 권한(GM 불간섭) 중인 GM 이 플레이어 자리의 파티를 불러오면 GM 몫(gb_좌석)으로 — 그 플레이어 것으로 남으면 GM 이 지시를 못 한다 */
- else if(ST.role==='gm'&&(ST.state.rp||{}).gmHands===false&&(ST.state.seats||{})[tid])borrowAs('gb_'+tid);
+ /* 불러온 사람 = 지시하는 사람 (by). GM 이 불러온 파티는 PL 권한(GM 불간섭) 중에도 GM 이 지시·진행한다 */
+ trainer.by=ST.role==='gm'?'gm':ST.seat;
  const b0=JSON.parse(JSON.stringify(B())),nb=JSON.parse(JSON.stringify(b0));nb.sides=nb.sides||{left:{trainers:[]},right:{trainers:[]}};nb.sides.left=nb.sides.left||{trainers:[]};nb.sides.right=nb.sides.right||{trainers:[]};
  nb.trainers=nb.trainers||{};nb.mons=nb.mons||{};nb.turn=nb.turn||0;nb.phase=nb.phase||0;nb.mode=nb.mode||2;nb.field=nb.field||{};nb.cmds=nb.cmds||{};nb.order=nb.order||[];
  for(const s of ['left','right'])nb.sides[s].trainers=nb.sides[s].trainers.filter(x=>x!==trainer.id);
@@ -463,8 +466,8 @@ function monChange(mid,kind){const m=(B().mons||{})[mid];if(!m)return;const D=wi
 
 /* ---------- 좌석 ---------- */
 /* 관전자도 이름을 정해 접속자 칸에 보이게 */
-function openNick(){const m=openModal(`<div class="mhead"><h2>내 이름</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small muted">접속자 칸과 입력 중 표시에 이 이름이 보인다. 자리에 앉으면 그 자리 이름을 따른다.</p><div class="row"><input type="text" id="nickIn" value="${esc(ST.name||'')}" placeholder="닉네임" style="flex:1"><button class="btn pri" id="nickOk">저장</button></div>${ST.role?'':'<div class="row" style="margin-top:8px"><button class="btn sm" id="nickSeat">자리에 앉기</button></div>'}`);
- const ok=async()=>{const n=$('#nickIn',m).value.trim();if(!n)return toast('이름을 적어 줘');ST.name=n;LS.set('om_name_'+ST.room,n);if(ST.role==='seat'){const info=LS.get('om_seat_'+ST.room,null);if(info){info.name=n;LS.set('om_seat_'+ST.room,info);try{await DBS().claimSeat(ST.room,ST.seat,ST.secret,n)}catch(e){}}}closeModal();sayHello(true);drawPresence();renderRoom();toast(`이제 「${n}」로 보인다`)};
+function openNick(){const isG=ST.role==='gm';const m=openModal(`<div class="mhead"><h2>${isG?'GM 닉네임':'내 이름'}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small muted">${isG?'GM 이 여럿일 때 접속자 칸 · 입력 중 표시 · 채팅에 「GM · 닉」으로 보인다.':'접속자 칸과 입력 중 표시에 이 이름이 보인다. 자리에 앉으면 그 자리 이름을 따른다.'}</p><div class="row"><input type="text" id="nickIn" value="${esc(isG?(ST.gmNick||''):(ST.name||''))}" placeholder="닉네임" style="flex:1"><button class="btn pri" id="nickOk">저장</button></div>${ST.role?'':'<div class="row" style="margin-top:8px"><button class="btn sm" id="nickSeat">자리에 앉기</button></div>'}`);
+ const ok=async()=>{const n=$('#nickIn',m).value.trim();if(isG){ST.gmNick=n;LS.set('om_gmnick_'+ST.room,n);closeModal();sayHello(true);drawPresence();return toast(n?`이제 「GM · ${n}」로 보인다`:'GM 닉을 비웠다')}if(!n)return toast('이름을 적어 줘');ST.name=n;LS.set('om_name_'+ST.room,n);if(ST.role==='seat'){const info=LS.get('om_seat_'+ST.room,null);if(info){info.name=n;LS.set('om_seat_'+ST.room,info);try{await DBS().claimSeat(ST.room,ST.seat,ST.secret,n)}catch(e){}}}closeModal();sayHello(true);drawPresence();renderRoom();toast(`이제 「${n}」로 보인다`)};
  $('#nickOk',m).onclick=ok;$('#nickIn',m).onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)ok()};const ns=$('#nickSeat',m);if(ns)ns.onclick=()=>{closeModal();openSeatPicker()}}
 /* 로그 저장: 방의 전체 로그를 HTML(아바타 · 그림 · 배틀 카드 · 날짜 구분) 또는 TXT 로. 설정은 om_logsave 에 기억 */
 async function fetchAllLog(){const out=[];let after=0;for(let i=0;i<200;i++){const rows=await DBS().getLog(ST.room,after,1000);if(!rows||!rows.length)break;out.push(...rows);after=rows[rows.length-1].id;if(rows.length<1000)break}return out}
@@ -554,9 +557,10 @@ function openRoomSettings(tab){
  const sw=(id,on,label,sub)=>`<label class="pf-sw"><input type="checkbox" id="${id}" ${on?'checked':''}><i></i><span><b>${label}</b>${sub?`<small>${sub}</small>`:''}</span></label>`;
  const room=isGm?`<div class="pf">
   ${card('🏠','방',`<div class="pf-sel"><span class="pf-lb">방 이름</span><input type="text" id="rn" value="${esc(r.name)}"><button class="btn xs pri" id="rnSave">저장</button></div><div class="pf-note">방 id <span class="mono">${esc(r.id)}</span></div>`)}
-  ${card('⚔','배틀',`${sw('plBattle',rp.plBattle!==false,'플레이어도 배틀 진행','파티 불러오기 · 시합 개시 · 턴 진행 · 필드 (모의전용). 엿보기 · 강제 · 모두 공개는 GM 만')}
-   ${sw('seatOwn',rp.seatOwn===true,'플레이어는 자기 것만','자기 트레이너·포켓몬·지시·스킬 칸만. 턴·필드·남의 HP 는 GM 만 (켜면 위 칸은 꺼진 것과 같다)')}
-   ${sw('gmHands',rp.gmHands===false,'GM 불간섭','플레이어의 지시·준비·HP·랭크·상태 창은 주인만 (자동 처리는 그대로)')}`)}
+  ${(()=>{const own=rp.seatOwn===true,run=!own&&rp.plBattle!==false;return card('⚔','배틀',`<div class="pf-note" style="margin:0 0 6px">플레이어가 배틀에서 어디까지 누를 수 있나 — 위 두 칸은 둘 중 하나만 켠다 (둘 다 끄면 배틀 올리기·진행은 GM 만, 플레이어는 자기 지시만 입력)</div>
+   ${sw('plBattle',run,'① 플레이어도 배틀 진행 (모의전)','플레이어도 파티 불러오기 · 시합 개시 · 턴 진행 · 필드를 누른다. GM 없이 플레이어끼리 붙을 때. 엿보기 · 강제 · 모두 공개는 GM 만')}
+   ${sw('seatOwn',own,'② 플레이어는 자기 것만 (세션)','플레이어는 자기 트레이너를 배틀에 올리고 자기 포켓몬 · 지시 · 스킬만 만진다. 턴 진행 · 필드 · 남의 HP 는 GM 이')}
+   ${sw('gmHands',rp.gmHands===false,'GM 불간섭 (GM 도 플레이어처럼)','플레이어가 배틀에 올린 트레이너의 지시 · 준비 · HP · 랭크 · 상태는 그 플레이어만. GM 이 직접 불러온 파티와 NPC 는 GM 이 그대로 지시하고 턴도 진행한다 (자동 처리는 그대로)')}`)})()}
   ${card('🎲','확률 표식',`<div class="pf-pct">${PCT_LABELS.map(l=>{const base=pctBase(l);const cur=(rp.pct||{})[l];return `<label><span>${l}</span><input type="number" min="0" max="100" step="1" data-pct="${l}" value="${cur!=null&&cur!==''?esc(String(cur)):''}" placeholder="${base}"><em>%</em></label>`}).join('')}</div>
    <div class="row" style="margin-top:8px"><button class="btn xs pri" id="pctSave">저장</button><button class="btn xs ghost" id="pctReset">기본값으로</button></div><div class="pf-note">효과 글의 「드물게·저확률·중확률·고확률」 판정 %. 비운 칸은 흐린 기본값. 이 방에만.</div>`)}
   ${card('🪑','자리',`<div class="row"><button class="btn sm" id="seatMgr">자리 관리</button></div>`)}</div>`:'';
@@ -567,8 +571,11 @@ function openRoomSettings(tab){
  m.querySelectorAll('[data-stab]').forEach(b=>b.onclick=()=>{SET_TAB=b.dataset.stab;openRoomSettings()});
  const s2=$('#seatMgr2',m);if(s2)s2.onclick=()=>{closeModal();openSeatPicker()};
  if(SET_TAB==='me'||!isGm){const host=$('#setBody',m);if(window.OM_PREFS)window.OM_PREFS.bind(host);return}
- const pb=$('#plBattle',m);if(pb)pb.onchange=async()=>{await set(['rp','plBattle'],pb.checked);toast(pb.checked?'플레이어도 배틀을 진행할 수 있다':'배틀 진행은 GM 만')};
- const so=$('#seatOwn',m);if(so)so.onchange=async()=>{await set(['rp','seatOwn'],so.checked);sysLog(so.checked?'방 설정: 플레이어는 자기 것만 바꿀 수 있다':'방 설정: 「자기 것만」을 껐다');toast(so.checked?'플레이어는 자기 것만':'「자기 것만」 끔')};
+ const pb=$('#plBattle',m),so=$('#seatOwn',m);
+ /* ①·② 는 둘 중 하나만 — 하나가 켜져 있으면 다른 칸은 막아 둔다 */
+ const lockPair=()=>{if(!pb||!so)return;pb.disabled=so.checked;so.disabled=pb.checked;for(const x of [pb,so]){const l=x.closest('.pf-sw');if(l){l.classList.toggle('off',x.disabled);l.title=x.disabled?'다른 쪽을 끄면 고를 수 있다':''}}};lockPair();
+ if(pb)pb.onchange=async()=>{lockPair();await set(['rp','plBattle'],pb.checked);if(pb.checked&&rp.seatOwn)await set(['rp','seatOwn'],false);sysLog(pb.checked?'방 설정: 플레이어도 배틀을 진행한다 (모의전)':'방 설정: 배틀 진행은 GM 만');toast(pb.checked?'플레이어도 배틀 진행':'배틀 진행은 GM 만')};
+ if(so)so.onchange=async()=>{lockPair();await set(['rp','seatOwn'],so.checked);if(so.checked)await set(['rp','plBattle'],false);sysLog(so.checked?'방 설정: 플레이어는 자기 것만 (턴 진행·필드는 GM)':'방 설정: 「자기 것만」을 껐다');toast(so.checked?'플레이어는 자기 것만':'「자기 것만」 끔')};
  const ps=$('#pctSave',m);if(ps)ps.onclick=async()=>{const o={};let bad='';m.querySelectorAll('[data-pct]').forEach(x=>{const v=x.value.trim();if(v==='')return;const n=+v;if(!isFinite(n)||n<0||n>100){bad=x.dataset.pct;return}o[x.dataset.pct]=Math.round(n)});if(bad)return toast(`「${bad}」 은 0~100 사이 숫자로 적어 줘`);
   const has=Object.keys(o).length;if(!await set(['rp','pct'],has?o:null))return;sysLog('방 설정: 확률 — '+PCT_LABELS.map(l=>`${l} ${o[l]!=null?o[l]:pctBase(l)}%`).join(' · '));toast('확률을 저장했다')};
  const pr=$('#pctReset',m);if(pr)pr.onclick=async()=>{if(!await set(['rp','pct'],null))return;m.querySelectorAll('[data-pct]').forEach(x=>x.value='');sysLog('방 설정: 확률을 기본값으로 — '+PCT_LABELS.map(l=>`${l} ${pctBase(l)}%`).join(' · '));toast('기본값으로 돌렸다')};

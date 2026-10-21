@@ -2537,3 +2537,4 @@ span.iedit{display:inline-block;min-width:3em}
 .top{position:relative}
 .typingtop,.top .typingtop{position:absolute;left:50%;top:calc(100% + 6px);transform:translateX(-50%);z-index:60;margin:0;pointer-events:none;max-width:80vw;overflow:hidden;text-overflow:ellipsis;box-shadow:0 2px 8px rgba(0,0,0,.5);background:rgba(0,0,0,.82)}
 @media (max-width:760px){.typingtop,.top .typingtop{flex-basis:auto;font-size:11px;padding:1px 8px}}
+.pf-sw.off{opacity:.38;cursor:not-allowed}
