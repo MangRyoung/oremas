@@ -2430,7 +2430,7 @@ span.iedit{display:inline-block;min-width:3em}
 .dlg.skin.sl{left:21%}
 .dlg.skin.sr{right:21%}
 .dlg.skin.sl.mid{left:47%}
-.dlg.skin .dtext{position:absolute;display:grid;align-content:safe center;background:none;clip-path:none;border:0;min-height:0;max-height:none;padding:0;overflow-y:auto;scrollbar-width:none;font-family:var(--bubfont,var(--font));font-weight:var(--bubwt,700);font-size:calc(var(--dlgfs,22px) * .98 * var(--bubfs,1));translate:0 var(--buby,0%);line-height:1.34;letter-spacing:-.01em;color:#fff;word-break:keep-all;text-shadow:none}
+.dlg.skin .dtext{position:absolute;display:grid;align-content:safe center;background:none;clip-path:none;border:0;min-height:0;max-height:none;padding:0;overflow-y:auto;scrollbar-width:none;font-family:var(--bubfont,var(--font));font-weight:var(--bubwt,700);font-size:calc(var(--dlgfs,22px) * .98 * var(--bubfs,1) * var(--bubpc,.88));translate:0 var(--buby,0%);line-height:1.34;letter-spacing:-.01em;color:#fff;word-break:keep-all;text-shadow:none}
 .dlg.skin .dtext.narr{font-style:normal;font-weight:500;color:#e8e8e8}
 .dlg.skin .dtext::-webkit-scrollbar{display:none}
 .dlg.skin .dname{position:absolute;top:auto;margin:0;z-index:1}
@@ -2653,6 +2653,14 @@ span.iedit{display:inline-block;min-width:3em}
 .updz.mini.gbdz::before{content:'';position:absolute;inset:6%;background:var(--defbub) center/contain no-repeat;opacity:.38;z-index:-1}
 .updz.mini.gbdz.fx::before{transform:scaleX(-1)}
 @media (max-width:760px){.dlg.skin.sc.nl,.dlg.skin.sc.nr{left:2%}}
+/* 10-23 망령: PC 무대도 폰과 같은 비율(5:2)과 글자 칸을 쓴다 — 같은 설정이면 폰은 딱 맞고 PC 는 커 보이던 것. 상자 폭 · 글자는 rp_ui.js BUB_PC 로 조금 줄인다 */
+.dlg.skin,.dlg.skin.sc,.dlg.skin.sl,.dlg.skin.sr,.dlg.skin.sm{aspect-ratio:5/2}
+.dlg.skin.sc .dtext{left:14%;right:13%;top:21%;bottom:19%}
+.dlg.skin.sm .dtext{left:13%;right:12%;top:19%;bottom:27%}
+.dlg.skin.sl .dtext{left:31%;right:12%;top:25%;bottom:27%}
+.dlg.skin.sr .dtext{left:12%;right:31%;top:25%;bottom:27%}
+.dlg.skin.sm .dname,.dlg.skin.sc .dname{bottom:79%}
+.dlg.skin.sl .dname,.dlg.skin.sr .dname{bottom:73%}
 /* 10-23 망령: 폰 무대 — 대사창은 조금 낮고 넓게, 글자는 화면 폭에 맞춰 크게, 이름표는 작게 */
 @media (max-width:760px){
  .dlg.skin,.dlg.skin.sc,.dlg.skin.sl,.dlg.skin.sr,.dlg.skin.sl.mid,.dlg.skin.sm,.dlg.skin.sc.nl,.dlg.skin.sc.nr{left:1.5%;right:auto;width:97%;aspect-ratio:5/2}
@@ -2670,13 +2678,16 @@ span.iedit{display:inline-block;min-width:3em}
 .dlg:not(.skin):has(.dtext.narr){bottom:calc(4% + var(--dlgny,0) * 1%);translate:calc(var(--dlgnx,0) * 1.064%) 0}
 .dlg.skin.sr{right:auto;left:calc(79% - var(--bubw,min(52%,740px)))}
 .dlg.skin:not(.sc){bottom:calc(9% + var(--dlgdy,0) * 1%);margin-left:calc(var(--dlgdx,0) * 1%)}
+/* 10-23 망령: 왼쪽 · 오른쪽 화자 말풍선은 따로 (lx/ly · rx/ry) */
+.dlg.skin.sl{bottom:calc(9% + var(--dlgly,0) * 1%);margin-left:calc(var(--dlglx,0) * 1%)}
+.dlg.skin.sr{bottom:calc(9% + var(--dlgry,0) * 1%);margin-left:calc(var(--dlgrx,0) * 1%)}
 .dlg.skin.sc{bottom:calc(1% + var(--dlgny,0) * 1%);margin-left:calc(var(--dlgnx,0) * 1%)}
 /* 10-23 망령: 폰에서는 위치 조정을 쓰지 않고 대사창 · 지문 상자 모두 무대 맨 아래 */
 @media (max-width:760px){.dlg.skin:not(.sc),.dlg.skin.sc,.dlg:not(.skin),.dlg:not(.skin):has(.dtext.narr){margin-left:0;translate:none;bottom:.5%}}
 .gbpos{margin-top:10px}
 .gbph{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
 .gbpst{position:relative;aspect-ratio:16/10;max-width:640px;background:#222 center/cover no-repeat;border:2px solid var(--line2);overflow:hidden;touch-action:none}
-.gbpbox{container-type:inline-size;position:absolute;aspect-ratio:9/4;background:center/100% 100% no-repeat;cursor:grab;user-select:none;display:flex;align-items:center;justify-content:center;touch-action:none}
+.gbpbox{container-type:inline-size;position:absolute;aspect-ratio:5/2;background:center/100% 100% no-repeat;cursor:grab;user-select:none;display:flex;align-items:center;justify-content:center;touch-action:none}
 .gbpbox.drag{cursor:grabbing;outline:2px dashed var(--yel2);outline-offset:2px}
 .gbpbox .gbpn{position:absolute;left:8%;top:6%;background:#000;color:#fff;border:2px solid #fff;font:700 11px var(--lab);padding:0 8px}
 /* 10-23 망령: 예시 글자도 글꼴 · 글자 크기 · 굵기를 따른다 (상자 폭 기준) */
@@ -2685,7 +2696,10 @@ span.iedit{display:inline-block;min-width:3em}
 @media (max-width:760px){.dlg.skin.sr{left:1.5%}}
 .gbpsel{display:inline-flex;gap:4px}
 .gbpst .gbpbox{opacity:.35;pointer-events:none;z-index:1}
-.gbpst.seld #gbp_d,.gbpst.seln #gbp_n{opacity:1;pointer-events:auto;z-index:2}
+.gbpst[data-sel=d] #gbp_d,.gbpst[data-sel=l] #gbp_l,.gbpst[data-sel=r] #gbp_r,.gbpst[data-sel=n] #gbp_n{opacity:1;pointer-events:auto;z-index:2}
+.gbpbox .gbpbg{position:absolute;inset:0;background:center/100% 100% no-repeat;pointer-events:none}
+.gbpbox .gbpn,.gbpbox .gbpt{position:relative;z-index:1}.gbpbox .gbpn{position:absolute}
+.gbpbox.l .gbpt{padding:0 8% 0 30%}.gbpbox.r .gbpt{padding:0 30% 0 8%;transform:rotate(2deg)}.gbpbox.l .gbpn{left:27%}
 .top .tolobby{flex:none;padding-left:8px;padding-right:10px}
 
 /* 10-23 망령: 폰 무대 우상단 버튼 — 장소 이름과 같은 줄에서 시작, 간격 좁게 · 오른쪽 정렬, 「화자」는 이름 칸 바로 아래 왼쪽 */

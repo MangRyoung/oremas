@@ -129,7 +129,14 @@ window.OM_RP_UI=(()=>{
   bindMap(el);tickBanner();syncBgm();scheduleExpire();drawTyping()}
  /* 스탠딩 DOM 을 키로 맞춘다: 새로 선 것만 등장 애니메이션, 자리 바뀜·표정 바뀜은 제자리에서 */
  /* 스탠딩 크기 (인물마다 standScale %, 10-23 망령) — 발밑 기준으로 키우고 줄인다 */
- function standTf(img,flip,scale){const k=scale&&+scale!==100?+scale/100:1;img.style.transformOrigin='50% 100%';img.style.transform=(flip?'scaleX(-1) ':'')+(k!==1?`scale(${k})`:'')}
+ function standTf(img,flip,scale){const k=scale&&+scale!==100?+scale/100:1;img.dataset.k=k;img.dataset.fl=flip?1:0;img.style.transformOrigin='50% 100%';standPut(img,k);
+  if(!img.complete)img.addEventListener('load',()=>standFit(img),{once:true});requestAnimationFrame(()=>standFit(img))}
+ function standPut(img,k){img.style.transform=(img.dataset.fl==='1'?'scaleX(-1) ':'')+(k!==1?`scale(${k})`:'')}
+ /* 10-23 망령: 키운 스탠딩(인물 크기 × 내 설정 스탠딩 크기)이 무대 위로 넘치면 넘치지 않을 만큼만 키운다 (발밑 기준이라 머리가 잘리던 것) */
+ function standFit(img){const ch=img.closest('.stand');if(!ch||!img.isConnected||!img.offsetHeight||ch.classList.contains('portrait'))return;
+  const k=+img.dataset.k||1,g=parseFloat(getComputedStyle(img).scale)||1,room=img.getBoundingClientRect().bottom-ch.getBoundingClientRect().top;
+  const kk=Math.min(k,room/(img.offsetHeight*g));standPut(img,Math.abs(kk-1)<.005?1:kk)}
+ addEventListener('resize',()=>{clearTimeout(standFit.t);standFit.t=setTimeout(()=>document.querySelectorAll('#stands .stand img').forEach(standFit),120)});
  function syncStands(box,slots,manual){const want={};for(const s of SLOTS){const c=charOf(slots[s]);const src=standSrc(c);if(c&&src)want[s]={key:c.key,src,name:c.name,point:standPoint(c),kind:standKind(c),scale:+c.scale||0,flip:!!(manual[s]||{}).flip,on:STAGE.active===c.key||!STAGE.active}}
   [...box.children].forEach(ch=>{const s=ch.dataset.slot;if(!want[s]||want[s].key!==ch.dataset.key){ch.classList.add('out');setTimeout(()=>ch.remove(),350)}});
   for(const s of SLOTS){const w=want[s];if(!w)continue;let ch=[...box.children].find(x=>x.dataset.slot===s&&x.dataset.key===w.key&&!x.classList.contains('out'));
@@ -530,10 +537,11 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
      <label>상자 크기 <input type="range" id="gbw" min="30" max="85" step="1" value="${st.w}"><b id="gbw_v">${st.w}%</b></label>
      <label>굵기 <select id="gbb">${[['','굵게 (기본)'],['400','보통'],['500','중간'],['900','아주 굵게']].map(([v,l])=>`<option value="${v}" ${String(st.wt||'')===v?'selected':''}>${l}</option>`).join('')}</select></label>
      <button class="btn xs ghost" data-gc="bubst0">원래대로</button><button class="btn xs ghost" data-gc="bubstcp" title="지금 무대 설정 값을 글자로 복사 (반디에게 보내면 코드 기본값으로 넣는다)">값 복사</button></div>
-     ${(()=>{/* 10-23 망령: 예시 무대에서 대사창 · 지문 상자를 끌어서 옮긴다 (st.dx/dy · nx/ny = 무대 폭·높이의 %) */const bgs=(r.bg||{}).src;const w=+st.w||52;const u=k=>new URL('img/bubble/'+k+'.svg?v=3',location.href).href;
-      const box=(id,lab,txt,src,x,y,b0)=>`<div class="gbpbox" id="${id}" style="width:${w}%;left:calc(${50-w/2}% + ${x||0}%);bottom:calc(${b0}% + ${y||0}%);background-image:url('${cssu(src)}')"><span class="gbpn">${lab}</span><span class="gbpt">${txt}</span></div>`;
-      return `<div class="gbpos"><div class="gbph"><b>대사창 · 지문 상자 위치</b><span class="small dim">예시 상자를 끌어서 옮기면 무대에 바로 보이고, 손을 떼면 저장 · 대사창은 가운데 화자 기준 (좌우 화자도 같은 만큼 움직인다)</span><span class="sp"></span><span class="gbpsel"><button class="btn xs pri" data-gbp="d">대사창 옮기기</button><button class="btn xs ghost" data-gbp="n">지문 상자 옮기기</button></span><button class="btn xs ghost" id="gbp0">위치만 원래대로</button></div>
-       <div class="gbpst seld" id="gbpst" style=""${bgs?`background-image:url('${cssu(bgs)}')`:''}">${box('gbp_d','대사','"이 상자를 끌어서 옮긴다"',(bb.on&&bb.m)||u('mid'),st.dx,st.dy,9)}${box('gbp_n','지문','이건 지문 상자',(bb.on&&bb.c)||u('plain'),st.nx,st.ny,1)}</div></div>`})()}<div class="small dim">글꼴 · 글자 크기 · 굵기는 기본 띠와 그림 말풍선 모두에, 상자 크기는 그림 말풍선에, 대사창 · 지문 상자 높이는 둘 다에 (무대 높이의 %, + 는 위로). 움직이면 무대에 바로 미리 보이고 손을 떼면 모두에게 저장된다.</div>`})()}`}
+     ${(()=>{/* 10-23 망령: 예시 무대에서 가운데 · 왼쪽 · 오른쪽 대사창과 지문 상자를 끌어서 옮긴다 (st.dx/dy · lx/ly · rx/ry · nx/ny = 무대 폭·높이의 %) */const bgs=(r.bg||{}).src;const w=(+st.w||52)*BUB_PC;const u=k=>new URL('img/bubble/'+k+'.svg?v=3',location.href).href;
+      const box=g=>{const x=st[g.kx]||0,y=st[g.ky]||0;return `<div class="gbpbox ${g.k}" id="gbp_${g.k}" style="width:${w}%;left:calc(${g.base(w)}% + ${x}%);bottom:calc(${g.b0}% + ${y}%)"><i class="gbpbg" style="background-image:url('${cssu(g.src)}')${g.flip?';transform:scaleX(-1)':''}"></i><span class="gbpn">${g.lab}</span><span class="gbpt">${g.txt}</span></div>`};
+      const G=GBP.map(g=>Object.assign({},g,{src:g.k==='d'?((bb.on&&bb.m)||u('mid')):g.k==='l'?((bb.on&&bb.l)||u('left')):g.k==='r'?((bb.on&&bb.r)||u('left')):((bb.on&&bb.c)||u('plain')),flip:g.k==='r'&&!(bb.on&&bb.r)}));
+      return `<div class="gbpos"><div class="gbph"><b>대사창 · 지문 상자 위치</b><span class="small dim">고를 상자를 누르고 예시 상자를 끌어서 옮기면 무대에 바로 보이고, 손을 떼면 저장</span><span class="sp"></span><span class="gbpsel">${GBP.map((g,n)=>`<button class="btn xs ${n?'ghost':'pri'}" data-gbp="${g.k}">${g.btn}</button>`).join('')}</span><button class="btn xs ghost" id="gbp0">위치만 원래대로</button></div>
+       <div class="gbpst" data-sel="d" id="gbpst" style="${bgs?`background-image:url('${cssu(bgs)}')`:''}">${G.map(box).join('')}</div></div>`})()}<div class="small dim">글꼴 · 글자 크기 · 굵기는 기본 띠와 그림 말풍선 모두에, 상자 크기는 그림 말풍선에, 대사창 · 지문 상자 높이는 둘 다에 (무대 높이의 %, + 는 위로). 움직이면 무대에 바로 미리 보이고 손을 떼면 모두에게 저장된다.</div>`})()}`}
   else if(GC.tab==='etc'){const CI=R().cutin||{};const sel=(id,cur,opts)=>`<select id="${id}" data-ci>${opts.map(([v,l])=>`<option value="${v}" ${String(cur)===v?'selected':''}>${l}</option>`).join('')}</select>`;
    body=`${sec('컷인 · 연출','고치면 바로 저장')}<div class="gcform">
      <label><span>시합 개시</span>${sel('gci_start',CI.start||'vs',[['vs','일반 (VS 컷인)'],['warn','경고 (위험 등장)'],['off','끄기']])}</label>
@@ -594,29 +602,34 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(k==='whisper'){const to=$('#gwto',md).value,t=$('#gwt',md).value.trim();if(!to||!t)return;await DBS().addLog(ST.room,ST.secret,'whisper',ST.name,{t,to,toName:(((ST.state.roster||{}).trainers||{})[to]||{}).name||to});$('#gwt',md).value='';A().toast('보냈다');return}};
    if(b.type==='checkbox')b.onchange=h;else b.onclick=h});
   if(GC.tab==='bgm')bindBgmPanel(md,re);
-  if($('#gbf',md)){const st0=stOf((R().bubble||{}).st);const POS={dx:+st0.dx||0,dy:+st0.dy||0,nx:+st0.nx||0,ny:+st0.ny||0};const dif=(k,v)=>v===BUB_DEF[k]?null:v;/* 기본값(BUB_DEF)과 다른 것만 저장 */
-   const rd=()=>({font:dif('font',$('#gbf',md).value),fs:dif('fs',+$('#gbs',md).value),w:dif('w',+$('#gbw',md).value),dx:dif('dx',POS.dx),dy:dif('dy',POS.dy),nx:dif('nx',POS.nx),ny:dif('ny',POS.ny),wt:dif('wt',$('#gbb',md).value)});
+  if($('#gbf',md)){const st0=stOf((R().bubble||{}).st);const POS={};for(const k of BUB_POS)POS[k]=+st0[k]||0;const dif=(k,v)=>v===BUB_DEF[k]?null:v;/* 기본값(BUB_DEF)과 다른 것만 저장 */
+   const rd=()=>({font:dif('font',$('#gbf',md).value),fs:dif('fs',+$('#gbs',md).value),w:dif('w',+$('#gbw',md).value),...Object.fromEntries(BUB_POS.map(k=>[k,dif(k,POS[k])])),wt:dif('wt',$('#gbb',md).value)});
    const live=()=>{const v=stOf(rd());$('#gbs_v',md).textContent=v.fs+'%';$('#gbw_v',md).textContent=v.w+'%';const d=document.getElementById('dlg');if(d)bubStyle(d,v);const p=$('#gbpst',md);if(p)bubStyle(p,v)};
    const save=async()=>{live();const v=rd();for(const k in v)if(v[k]==null)delete v[k];await A().set(['rp','bubble','st'],Object.keys(v).length?v:null)};
    ['#gbs','#gbw'].forEach(q=>{const e=$(q,md);e.oninput=live;e.onchange=save});
    /* 예시 무대 끌기 */
-   const pst=$('#gbpst',md);const drag=(id,kx,ky,b0)=>{const el=$(id,md);if(!el)return;el.onpointerdown=e=>{e.preventDefault();el.setPointerCapture(e.pointerId);const R=pst.getBoundingClientRect();const sx=e.clientX,sy=e.clientY,x0=POS[kx]||0,y0=POS[ky]||0;el.classList.add('drag');
-     const clamp=(v,a,b)=>Math.max(a,Math.min(b,Math.round(v*2)/2));const w=+$('#gbw',md).value||52;
-     el.onpointermove=ev=>{POS[kx]=clamp(x0+(ev.clientX-sx)/R.width*100,-(50-w/2)-2,50-w/2+2);POS[ky]=clamp(y0-(ev.clientY-sy)/R.height*100,-b0-6,80);el.style.left=`calc(${50-w/2}% + ${POS[kx]}%)`;el.style.bottom=`calc(${b0}% + ${POS[ky]}%)`;live()};
+   const pst=$('#gbpst',md);const drag=g=>{const el=$('#gbp_'+g.k,md);const kx=g.kx,ky=g.ky,b0=g.b0;if(!el)return;el.onpointerdown=e=>{e.preventDefault();el.setPointerCapture(e.pointerId);const R=pst.getBoundingClientRect();const sx=e.clientX,sy=e.clientY,x0=POS[kx]||0,y0=POS[ky]||0;el.classList.add('drag');
+     const clamp=(v,a,b)=>Math.max(a,Math.min(b,Math.round(v*2)/2));const w=(+$('#gbw',md).value||52)*BUB_PC;
+     const bx=g.base(w);el.onpointermove=ev=>{POS[kx]=clamp(x0+(ev.clientX-sx)/R.width*100,-bx-2,100-w-bx+2);POS[ky]=clamp(y0-(ev.clientY-sy)/R.height*100,-b0-6,80);el.style.left=`calc(${bx}% + ${POS[kx]}%)`;el.style.bottom=`calc(${b0}% + ${POS[ky]}%)`;live()};
      el.onpointerup=el.onpointercancel=()=>{el.onpointermove=null;el.onpointerup=null;el.classList.remove('drag');save()}}};
-   drag('#gbp_d','dx','dy',9);drag('#gbp_n','nx','ny',1);
-   md.querySelectorAll('[data-gbp]').forEach(b=>b.onclick=()=>{const k=b.dataset.gbp;pst.classList.toggle('seld',k==='d');pst.classList.toggle('seln',k==='n');md.querySelectorAll('[data-gbp]').forEach(x=>{x.classList.toggle('pri',x===b);x.classList.toggle('ghost',x!==b)})});
-   $('#gbp0',md).onclick=()=>{for(const k of ['dx','dy','nx','ny'])POS[k]=BUB_DEF[k];save().then(re)};
-   $('#gbw',md).addEventListener('input',()=>{const w=+$('#gbw',md).value||52;[['#gbp_d','dx'],['#gbp_n','nx']].forEach(([id,k])=>{const el=$(id,md);if(el){el.style.width=w+'%';el.style.left=`calc(${50-w/2}% + ${POS[k]||0}%)`}})});['#gbf','#gbb'].forEach(q=>$(q,md).onchange=save);live()}
+   GBP.forEach(drag);
+   md.querySelectorAll('[data-gbp]').forEach(b=>b.onclick=()=>{const k=b.dataset.gbp;pst.dataset.sel=k;md.querySelectorAll('[data-gbp]').forEach(x=>{x.classList.toggle('pri',x===b);x.classList.toggle('ghost',x!==b)})});
+   $('#gbp0',md).onclick=()=>{for(const k of BUB_POS)POS[k]=BUB_DEF[k];save().then(re)};
+   $('#gbw',md).addEventListener('input',()=>{const w=(+$('#gbw',md).value||52)*BUB_PC;GBP.forEach(g=>{const el=$('#gbp_'+g.k,md);if(el){el.style.width=w+'%';el.style.left=`calc(${g.base(w)}% + ${POS[g.kx]||0}%)`}})});['#gbf','#gbb'].forEach(q=>$(q,md).onchange=save);live()}
   for(const k of ['c','l','m','r'])if($('#bub_'+k,md))bindDz(md,'#bub_'+k,async fs=>{const u=await upImg(fs[0],'bub_'+k);await A().set(['rp','bubble',k],u);if(!(R().bubble||{}).on)await A().set(['rp','bubble','on'],true);re()});
   if($('#gcidz',md))bindDz(md,'#gcidz',async fs=>{const u=await upImg(fs[0],'rp');await A().set(['rp','center'],{src:u,at:Date.now()});re()})}
  /* 대사 상자 글꼴 · 글자 크기 · 상자 크기 · 굵기 · 대사창/지문 상자 높이 (rp.bubble.st, GM 콘솔 무대 탭, 10-21 · 10-23 망령: 글자 위치 대신 상자 위치) */
  const BUB_FONTS=[['','기본 (화면 글꼴)'],['bhs','Black Han Sans'],['dohyeon','Do Hyeon'],['jua','주아'],['gugi','구기'],['plex','IBM Plex Sans KR'],['noto','Noto Sans KR'],['nanum','나눔고딕'],['gothica1','Gothic A1'],['gowun','고운돋움'],['pretendard','Pretendard'],['myeongjo','나눔명조']];
  /* 무대 기본값 — 방에 저장된 st 는 이것과 다른 값만 담는다 (10-23 망령: 그랜드 오더 방 설정을 기본값으로) */
- const BUB_DEF={font:'',fs:100,w:52,wt:'',dx:0,dy:0,nx:0,ny:0};
+ /* PC 보정 (10-23 망령: 같은 설정이면 폰은 딱 맞고 PC 는 조금 크다) — PC 무대에서 상자 폭 · 글자에 곱한다. 글자 쪽은 css 의 --bubpc */
+ const BUB_PC=.88;
+ const BUB_DEF={font:'nanum',fs:105,w:47,wt:'500',dx:0,dy:0,lx:0,ly:0,rx:0,ry:0,nx:0,ny:0};
+ const BUB_POS=['dx','dy','lx','ly','rx','ry','nx','ny'];
+ /* 예시 무대의 상자들: 무대(PC)의 기본 자리와 같게 — 가운데 50-w/2 · 왼쪽 21% · 오른쪽 79%-w · 바닥 9%(지문 1%) */
+ const GBP=[{k:'d',btn:'가운데 대사',lab:'가운데',txt:'"가운데 화자 대사"',kx:'dx',ky:'dy',b0:9,base:w=>50-w/2},{k:'l',btn:'왼쪽 대사',lab:'왼쪽',txt:'"왼쪽 화자 대사"',kx:'lx',ky:'ly',b0:9,base:()=>21},{k:'r',btn:'오른쪽 대사',lab:'오른쪽',txt:'"오른쪽 화자 대사"',kx:'rx',ky:'ry',b0:9,base:w=>79-w},{k:'n',btn:'지문',lab:'지문',txt:'이건 지문 상자',kx:'nx',ky:'ny',b0:1,base:w=>50-w/2}];
  function stOf(st){const o=Object.assign({},BUB_DEF);if(st)for(const k in BUB_DEF)if(st[k]!=null)o[k]=st[k];return o}
  function bubStyle(el,st){st=st||{};const S=(k,v)=>{if(v===''||v==null)el.style.removeProperty(k);else el.style.setProperty(k,v)};
-  S('--bubfont',st.font&&A().fontCss?A().fontCss(st.font):'');S('--bubfs',st.fs&&+st.fs!==100?String(st.fs/100):'');S('--bubw',st.w?st.w+'%':'');S('--bubwt',st.wt||'');for(const k of ['dx','dy','nx','ny'])S('--dlg'+k,st[k]?String(+st[k]):'')}
+  S('--bubfont',st.font&&A().fontCss?A().fontCss(st.font):'');S('--bubfs',st.fs&&+st.fs!==100?String(st.fs/100):'');S('--bubw',st.w?(st.w*BUB_PC)+'%':'');S('--bubwt',st.wt||'');for(const k of BUB_POS)S('--dlg'+k,st[k]?String(+st[k]):'')}
  /* ----- BGM 패널 (맵툴 Lib:bgm 정리판과 같은 꼴): 홈 = 띠(장면/배틀/분위기)별 그룹 타일 → 그룹 = 곡 줄 · 검색 · ▶ 미리듣기 · 모두에게 재생 · ⟳ 다른 곡 ----- */
  const BG={g:'',q:''};
  const gshort=g=>String(g).replace(/^[0-9.]+\s*/,'');
