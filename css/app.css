@@ -1882,3 +1882,12 @@ span.qe{display:inline-block;min-width:1.5em}
 .mve{font-size:13.5px;line-height:1.6;color:#e4e3de;word-break:keep-all;white-space:pre-wrap}
 .mve .ptqt{color:#ffd56b;font-weight:600}.mve .ptbk{color:#7cc8ff;font-weight:700}
 .mve .pkl{display:flex;gap:6px;white-space:normal}.mve .pkl i{font-style:normal;flex:none;color:var(--tc);font-weight:700}
+/* 10-21 망령: 기술 칸 바로 고치기 · 기술 조정 창 */
+.mvc .mvt{display:flex;align-items:center;gap:4px;border-top:1px dashed #33353c;padding-top:6px;margin-top:2px}
+.mvc .mvadj{flex:none;font-size:10px;font-weight:700;color:#111;background:var(--yel2);padding:1px 6px}
+.madj{display:flex;flex-direction:column;gap:8px}
+.madj>label{display:grid;grid-template-columns:110px 1fr;align-items:center;gap:10px;font-size:13px;color:var(--fg2)}
+.madj>label>span:first-child small{display:block;font-size:10px;color:var(--mute)}
+.madj>label.chg>span:first-child{color:var(--yel2);font-weight:700}
+.madj textarea{width:100%;box-sizing:border-box}
+.madj .seg span{cursor:pointer}
