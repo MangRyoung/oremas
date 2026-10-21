@@ -80,7 +80,10 @@ window.OM_RP_UI=(()=>{
   const cutId=+((A().ST.state.rp||{}).logClearAt)||0;const lastChat=[...(A().ST.log||[])].reverse().find(x=>x.id>cutId&&x.kind==='chat'&&x.data&&x.data.t&&!x.data.sms&&!x.data.bat&&x.data.ch!=='ooc');
   const LF=window.OM_LINE||(d=>({narr:false,text:String(d.t||''),q:true}));
   const line=(name,d)=>{const f=LF(d);return `<div class="dname"><span>${esc(name)}</span></div><div class="dtext ${f.narr?'narr':''}">${f.narr?esc(f.text):(f.q?esc(f.text.trim()):'"'+esc(f.text)+'"')}</div>`};
-  const showDlg=cap.text||(lastChat&&Date.now()-(Date.parse(lastChat.at)||0)<STAND_TTL*2);
+  /* 10-23 망령: 무대를 비웠거나(clear 줄) 말한 인물이 무대에서 사라졌으면 대사 상자도 내린다 (지문은 그대로) */
+  const clearAfter=!!lastChat&&(A().ST.log||[]).some(x=>x.id>lastChat.id&&x.kind==='chat'&&x.data&&x.data.clear);
+  const lk=lastChat?speakerKey(lastChat):'';const gone=!!lk&&!LF(lastChat.data||{}).narr&&!Object.values(slots).includes(lk)&&!Object.values(STAGE.slots).includes(lk);
+  const showDlg=cap.text||(lastChat&&!clearAfter&&!gone&&Date.now()-(Date.parse(lastChat.at)||0)<STAND_TTL*2);
   const dlgHtml=cap.text?line(cap.name||'',{t:cap.text}):(showDlg?line(lastChat.data.as||(charOf(speakerKey(lastChat))||{}).name||lastChat.who,lastChat.data):'');
   const ST=A().ST;const speakers=gm()?allSpeakers():(ST.seat?[{key:'me',name:(charOf(ST.seat)||{}).name||ST.name},...Object.values((ST.state.roster||{}).mons||{}).filter(m=>m.tid===ST.seat).map(m=>({key:'pm:'+m.id,name:m.name+' (포켓몬)'}))]:[]);
   if(gm()&&!SPK.key)SPK.key='gm';if(!gm()&&(!SPK.key||SPK.key==='gm'))SPK.key='me';
@@ -99,7 +102,7 @@ window.OM_RP_UI=(()=>{
    if(narr){if(bub.c)skin={v:'c',src:bub.c}}
    else{const sk=speakerKey(lastChat);const sl=sk?SLOTS.find(x=>slots[x]===sk):'';const want=sl==='right'?'r':'l';const alt=want==='l'?'r':'l';
     /* 10-21 망령: 가운데(·무대 밖) 화자는 「꼬리 가운데」 그림이 있으면 그걸로 */
-    if(sl!=='left'&&sl!=='right'&&bub.m)skin={v:'m',src:bub.m};else if(bub[want])skin={v:want,src:bub[want]};else if(bub[alt])skin={v:want,src:bub[alt],flip:1};else skin={v:'c',src:bub.c};
+    if(sl!=='left'&&sl!=='right')skin={v:'m',src:bub.m||'img/bubble/mid.svg'};   /* 10-23: 꼬리 가운데 그림을 안 올렸으면 오레마스 기본 그림 */else if(bub[want])skin={v:want,src:bub[want]};else if(bub[alt])skin={v:want,src:bub[alt],flip:1};else skin={v:'c',src:bub.c};
     if(skin.v!=='c'&&skin.v!=='m'&&sl!=='left'&&sl!=='right')skin.mid=1}}
   const dlg=$('#dlg',el);if(dlgHtml){if(dlg.dataset.k!==dlgHtml){dlg.innerHTML=dlgHtml;dlg.dataset.k=dlgHtml;dlg.classList.remove('pop');void dlg.offsetWidth;dlg.classList.add('pop')}dlg.style.display=''}else{dlg.style.display='none';dlg.dataset.k=''}
   dlg.classList.toggle('skin',!!skin);for(const v of ['c','l','r','m'])dlg.classList.toggle('s'+v,!!skin&&skin.v===v);dlg.classList.toggle('flip',!!(skin&&skin.flip));dlg.classList.toggle('mid',!!(skin&&skin.mid));dlg.style.setProperty('--bub',skin?`url('${cssu(skin.src)}')`:'');bubStyle(dlg,bub.st);

@@ -2573,8 +2573,10 @@ span.iedit{display:inline-block;min-width:3em}
 @media(max-width:560px){.hitb{grid-template-columns:1fr 1fr}.hitb .hitp{grid-column:1/-1}}
 /* 꼬리 가운데 말풍선 (10-21): 가운데 화자 */
 .dlg.skin.sm{left:calc(50% - var(--bubw,min(52%,740px)) / 2)}
-.dlg.skin.sm .dtext{left:14%;right:14%;top:24%;bottom:30%;transform:rotate(-2deg)}
-.dlg.skin.sm .dname{left:9%;bottom:78%;transform:rotate(-3deg)}
+.dlg.skin.sm .dtext{left:13%;right:13%;top:22%;bottom:30%;transform:rotate(-2.4deg)}
+.dlg.skin.sm .dname{left:7%;bottom:76%;transform:rotate(-3deg)}
+/* 10-23 망령: 대사 상자는 조금 위로, 나레이션(꼬리 없는 그림)은 조금 아래로 */
+.dlg.skin:not(.sc){bottom:9%}.dlg.skin.sc{bottom:1%}
 @media (max-width:760px){.dlg.skin.sm{left:2%;width:96%}}
 /* 기술 카드 접촉 배지 (분류 배지 오른쪽, 10-21) */
 .mvct{flex:none;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #e8b04a;color:#e8b04a;margin-left:4px}
