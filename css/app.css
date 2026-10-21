@@ -1999,3 +1999,10 @@ span.iedit{display:inline-block;min-width:3em}
 .potsum .psp{flex:none;line-height:1}.potsum .psp .pips{font-size:10px}
 .potsum .psf{flex:none;background:var(--red);color:#fff;font-weight:700;font-size:11px;padding:1px 5px;border-radius:2px;white-space:nowrap}
 .potsum{flex-wrap:wrap;row-gap:3px;padding:5px 6px;position:relative}.potsum::after{content:"";position:absolute;right:4px;top:50%;width:5px;height:5px;border-right:1.5px solid #999;border-top:1.5px solid #999;transform:translateY(-50%) rotate(45deg)}
+/* 상세 창: 비례 회복 · 기술 / 포텐셜 카드 */
+.hpq .qs.qh .btn{background:#10301d;color:#9ff0bd;border-color:#2fa35c}
+.hpq .qs.qh{margin-left:4px}
+.dxmvg{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));margin-bottom:4px}
+.dxpots.dxpc{grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:8px}
+.dxpc .potc .anb{margin-left:0}
+@media (max-width:760px){.dxmvg,.dxpots.dxpc{grid-template-columns:1fr}}
