@@ -524,20 +524,57 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  async function fireNotice(n,sub){const ment=sub||n.ment||'';await A().set(['rp','banner'],{title:n.title||n.name,text:ment,color:n.color||'#d9243f',at:Date.now()});await A().sysLog(`[${n.title||n.name}]${ment?' '+ment.replace(/\n/g,' '):''}`);if(n.bgm==='stop')await A().set(['rp','bgm'],null)}
 
  /* ----- 스탠딩(표정) 편집: 트레이너는 로스터에, NPC 는 관계도 노드에 ----- */
+ const ST_IMG=/\.(png|jpe?g|webp|gif|avif|bmp)$/i, isImg=f=>f&&(/^image\//.test(f.type||'')||ST_IMG.test(f.name||''));
+ const stLabel=n=>String(n||'').split(/[\\/]/).pop().replace(/\.[^.]+$/,'').trim()||'기본';
+ /* 끌어 놓은 파일·폴더 → 그림 파일 목록 (폴더는 안까지 다 훑는다). items 는 drop 순간에만 읽을 수 있어서 await 전에 entry 로 바꿔 둔다 */
+ async function dropImgs(dt){const ents=[...(dt.items||[])].map(it=>it.kind==='file'&&it.webkitGetAsEntry&&it.webkitGetAsEntry()).filter(Boolean);const plain=[...(dt.files||[])];
+  if(!ents.length)return plain.filter(isImg);const out=[];
+  const walk=async e=>{if(e.isFile){const f=await new Promise((r,j)=>e.file(r,j));if(isImg(f))out.push(f)}else if(e.isDirectory){const rd=e.createReader();for(;;){const xs=await new Promise((r,j)=>rd.readEntries(r,j));if(!xs.length)break;for(const x of xs)await walk(x)}}};
+  for(const e of ents)await walk(e);return out}
+ if(!window.__omDropGuard){window.__omDropGuard=1;const g=e=>{if(e.dataTransfer&&[...e.dataTransfer.types].includes('Files'))e.preventDefault()};addEventListener('dragover',g);addEventListener('drop',g)}
  function openStands(key){const c=charOf(key);if(!c)return A().toast('그 인물이 없다');const ST=A().ST;const canEdit=gm()||(c.kind==='pc'&&c.id===ST.seat)||(c.kind==='pm'&&c.tid===ST.seat);
-  const KINDS=[['','모양: 자동 (그림 비율)'],['stand','스탠딩 (틀 없이 전신)'],['portrait','초상 (네모 틀)']];const kindSel=(id,v,dis)=>`<select ${id} ${dis?'disabled':''} style="font-size:12px;max-width:100%">${KINDS.map(([k,n])=>`<option value="${k}" ${(v||'')===k?'selected':''}>${n}</option>`).join('')}</select>`;
-  const md=A().openModal(`<div class="mhead"><h2>${esc(c.name)} — 표정·스탠딩</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-   <div class="small dim" style="margin-bottom:8px">채팅할 때 「사용 중」인 스탠딩이 무대에 선다. 없으면 초상(시트 그림)을 쓴다. 보정 = 위로 올릴 px (음수면 내림). 모양: 「스탠딩」은 틀 없이 전신으로, 「초상」은 네모 틀 안에 선다 (「자동」은 그림 비율로 정한다). 채팅에서 <code>/s 라벨</code> 로도 바꿀 수 있다.</div>
-   <div class="stgrid">${c.stands.map((s,i)=>`<div class="stcard ${i===c.active?'on':''}"><div class="sth" style="${s.src?`background-image:url('${cssu(s.src)}')`:''}"></div><b>${esc(s.label||'기본')}</b>${i===c.active?'<span class="tag me">사용 중</span>':''}<div>${kindSel(`data-stk="${i}"`,s.kind,!canEdit)}</div><div class="row">${canEdit?`<button class="btn xs" data-st="use" data-i="${i}">사용</button><button class="btn xs ghost" data-st="edit" data-i="${i}">수정</button><button class="btn xs ghost danger" data-st="del" data-i="${i}">×</button>`:''}</div></div>`).join('')||'<div class="empty small">아직 스탠딩이 없다 — 시트 그림(초상)을 쓴다</div>'}</div>
-   ${canEdit?`<div class="sec">추가</div><div class="row"><input type="text" id="st_l" placeholder="라벨 (기본·웃음·놀람…)" style="width:140px"><input type="text" id="st_u" placeholder="그림 주소 (투명 PNG 전신 권장)" style="flex:1"><label class="btn sm">파일<input type="file" accept="image/*" id="st_f" hidden></label><input type="number" class="n" id="st_p" value="0" title="보정 px">${kindSel('id="st_k"','',false)}<button class="btn sm pri" data-st="add">추가</button></div>`:''}`);
-  const save=async(stands,active)=>{if(c.kind==='pc'){await A().set(['roster','trainers',c.id,'stands'],stands);if(active!=null)await A().set(['roster','trainers',c.id,'standActive'],active)}else if(c.kind==='pm'){await A().set(['roster','mons',c.id,'stands'],stands);if(active!=null)await A().set(['roster','mons',c.id,'standActive'],active)}else{if(!c.id)return A().toast('관계도에 없는 인물이다 — 관계도에 먼저 넣어 줘');await A().set(['graph','nodes',c.id,'stands'],stands);if(active!=null)await A().set(['graph','nodes',c.id,'standActive'],active)}A().closeModal();openStands(key)};
-  md.querySelectorAll('[data-st]').forEach(b=>b.onclick=async()=>{const k=b.dataset.st;const i=+b.dataset.i;const st=c.stands.slice();
-   if(k==='use')return save(st,i);
-   if(k==='del'){st.splice(i,1);return save(st,Math.max(0,Math.min(c.active,st.length-1)))}
-   if(k==='edit'){const s=st[i];const l=prompt('라벨',s.label||'');if(l==null)return;const u=prompt('그림 주소',s.src||'');if(u==null)return;const p=prompt('보정 px',s.point||0);st[i]=Object.assign({},s,{label:l,src:u,point:+p||0});return save(st,null)}
-   if(k==='add'){const u=$('#st_u',md).value.trim();if(!u)return A().toast('그림 주소가 필요해');const kd=$('#st_k',md).value;st.push(Object.assign({label:$('#st_l',md).value.trim()||'기본',src:u,point:+$('#st_p',md).value||0},kd?{kind:kd}:{}));return save(st,st.length-1)}});
-  md.querySelectorAll('[data-stk]').forEach(sel=>sel.onchange=()=>{if(!canEdit)return;const i=+sel.dataset.stk;const st=c.stands.slice();const s=Object.assign({},st[i]);if(sel.value)s.kind=sel.value;else delete s.kind;st[i]=s;save(st,null)});
-  const f=$('#st_f',md);if(f)f.onchange=async()=>{const file=f.files[0];if(!file)return;A().toast('올리는 중…');try{$('#st_u',md).value=await DBS().uploadImage(`rooms/${ST.room}/st_${c.kind}_${(c.id||c.name)}_${Date.now().toString(36)}`,file);A().toast('올렸다 — 추가를 눌러')}catch(e){A().toast(e.message)}}}
+  const KINDS=[['','모양 자동'],['stand','스탠딩'],['portrait','초상']];const kindSel=(attr,v)=>`<select ${attr}>${KINDS.map(([k,n])=>`<option value="${k}" ${(v||'')===k?'selected':''}>${n}</option>`).join('')}</select>`;
+  const cur=c.stands.map(s=>Object.assign({},s));let act=Math.max(0,Math.min(c.active||0,cur.length-1));
+  const card=(s,i)=>`<div class="stxc ${i===act?'on':''}">
+    <div class="stxp" ${canEdit?`data-st="use" data-i="${i}" title="눌러서 이 표정으로"`:''}>${s.src?`<img src="${esc(s.src)}" alt="" loading="lazy">`:'<span class="small dim">그림 없음</span>'}${i===act?'<span class="stxon">사용 중</span>':''}${s.kind?`<span class="stxk">${s.kind==='stand'?'스탠딩':'초상'}</span>`:''}</div>
+    ${canEdit?`<div class="stxf"><input type="text" class="stxl" data-sl="${i}" value="${esc(s.label||'')}" placeholder="라벨"><input type="number" class="n stxn" data-sp="${i}" value="${+s.point||0}" title="보정 — 위로 올릴 px (음수면 내림)"></div>
+    <div class="stxf">${kindSel(`data-stk="${i}"`,s.kind)}<label class="btn xs ghost" title="그림만 바꾸기">교체<input type="file" accept="image/*" data-srep="${i}" hidden></label><button class="btn xs ghost danger" data-st="del" data-i="${i}" title="지우기">×</button></div>`
+    :`<div class="stxf"><b class="stxb">${esc(s.label||'기본')}</b></div>`}</div>`;
+  const md=A().openModal(`<div class="mhead"><h2>${esc(c.name)} — 표정·스탠딩</h2><span class="sp"></span><span class="tag">${cur.length}장</span><button class="btn ghost" data-x>닫기</button></div>
+   ${canEdit?`<div class="stdz" id="st_dz"><div class="stdzt"><b>그림을 여기로 끌어 놓기</b><span class="small dim">여러 장·폴더째로 된다 · 파일 이름이 라벨 · 같은 라벨은 그림만 바뀐다 · Ctrl+V 로 붙여넣기도</span></div>
+    <div class="row stdzb"><label class="btn sm pri">파일 고르기<input type="file" accept="image/*" multiple id="st_f" hidden></label><label class="btn sm">폴더 올리기<input type="file" webkitdirectory directory multiple id="st_d" hidden></label><span class="sp"></span>${kindSel('id="st_k" title="새로 올리는 그림의 모양"','')}</div>
+    <div class="stprog" id="st_pg" hidden><i></i><span></span></div></div>`:''}
+   <div class="stxg">${cur.map(card).join('')||'<div class="empty small">아직 스탠딩이 없다 — 시트 그림(초상)을 쓴다</div>'}</div>
+   ${canEdit?`<details class="stmore"><summary>그림 주소로 추가</summary><div class="row"><input type="text" id="st_l" placeholder="라벨" style="width:120px"><input type="text" id="st_u" placeholder="그림 주소 (투명 PNG 전신 권장)" style="flex:1"><button class="btn sm" data-st="add">추가</button></div></details>`:''}
+   <details class="stmore"><summary>도움말</summary><div class="small dim">채팅할 때 「사용 중」인 스탠딩이 무대에 선다. 없으면 초상(시트 그림)을 쓴다. 그림을 누르면 그 표정으로 바뀌고, 채팅에서 <code>/s 라벨</code> 로도 바꿀 수 있다. 숫자 칸은 보정 — 위로 올릴 px (음수면 내림). 모양: 「스탠딩」은 틀 없이 전신으로, 「초상」은 네모 틀 안에 선다 (「자동」은 그림 비율로 정한다).</div></details>`);
+  md.classList.add('stmodal2');
+  const path=c.kind==='pc'?['roster','trainers',c.id]:c.kind==='pm'?['roster','mons',c.id]:['graph','nodes',c.id];
+  const okPath=()=>{if(c.kind!=='pc'&&c.kind!=='pm'&&!c.id){A().toast('관계도에 없는 인물이다 — 관계도에 먼저 넣어 줘');return false}return true};
+  const save=async re=>{if(!okPath())return;act=Math.max(0,Math.min(act,cur.length-1));await A().set([...path,'stands'],cur.slice());await A().set([...path,'standActive'],act);if(re){A().closeModal();openStands(key)}};
+  const upOne=f=>DBS().uploadImage(`rooms/${ST.room}/st_${c.kind}_${(c.id||c.name)}_${Date.now().toString(36)}${Math.random().toString(36).slice(2,6)}`,f);
+  let busy=false;
+  const addFiles=async files=>{if(!canEdit||busy)return;files=files.filter(isImg).sort((a,b)=>(a.webkitRelativePath||a.name).localeCompare(b.webkitRelativePath||b.name,'ko',{numeric:true}));if(!files.length)return A().toast('그림 파일이 없다');if(!okPath())return;
+   busy=true;const pg=$('#st_pg',md),bar=pg.querySelector('i'),txt=pg.querySelector('span');pg.hidden=false;const kd=$('#st_k',md).value;const urls=new Array(files.length);let done=0,fail=0,nx=0;
+   const tick=()=>{bar.style.width=(done/files.length*100)+'%';txt.textContent=`올리는 중 ${done}/${files.length}${fail?` · 실패 ${fail}`:''}`};tick();
+   const worker=async()=>{while(nx<files.length){const k=nx++;try{urls[k]=await upOne(files[k])}catch(e){fail++;A().toast(e.message)}done++;tick()}};
+   await Promise.all([worker(),worker(),worker()]);let add=0,rep=0;
+   files.forEach((f,k)=>{const url=urls[k];if(!url)return;const label=stLabel(f.name);const j=cur.findIndex(s=>(s.label||'')===label);if(j>=0){cur[j]=Object.assign({},cur[j],{src:url});rep++}else{cur.push(Object.assign({label,src:url,point:0},kd?{kind:kd}:{}));add++}});
+   busy=false;if(!add&&!rep){pg.hidden=true;return}await save(true);A().toast(`스탠딩 ${add}장 추가${rep?` · ${rep}장 교체`:''}${fail?` · ${fail}장 실패`:''}`)};
+  if(canEdit){const dz=$('#st_dz',md);let depth=0;
+   md.addEventListener('dragenter',e=>{if(![...e.dataTransfer.types].includes('Files'))return;e.preventDefault();depth++;dz.classList.add('over')});
+   md.addEventListener('dragover',e=>{if([...e.dataTransfer.types].includes('Files')){e.preventDefault();e.dataTransfer.dropEffect='copy'}});
+   md.addEventListener('dragleave',()=>{if(--depth<=0){depth=0;dz.classList.remove('over')}});
+   md.addEventListener('drop',async e=>{e.preventDefault();depth=0;dz.classList.remove('over');addFiles(await dropImgs(e.dataTransfer))});
+   $('#st_f',md).onchange=e=>addFiles([...e.target.files]);$('#st_d',md).onchange=e=>addFiles([...e.target.files]);
+   const onPaste=e=>{if(!md.isConnected)return document.removeEventListener('paste',onPaste);const fs=[...((e.clipboardData||{}).files||[])].filter(isImg);if(!fs.length)return;e.preventDefault();addFiles(fs.map((f,k)=>new File([f],(f.name&&f.name!=='image.png'?f.name:`붙여넣기${cur.length+k+1}.png`),{type:f.type})))};document.addEventListener('paste',onPaste);
+   md.querySelectorAll('[data-sl]').forEach(inp=>inp.onchange=()=>{const i=+inp.dataset.sl;cur[i]=Object.assign({},cur[i],{label:inp.value.trim()||'기본'});save(false)});
+   md.querySelectorAll('[data-sp]').forEach(inp=>inp.onchange=()=>{const i=+inp.dataset.sp;cur[i]=Object.assign({},cur[i],{point:+inp.value||0});save(false)});
+   md.querySelectorAll('[data-stk]').forEach(sel=>sel.onchange=()=>{const i=+sel.dataset.stk;const s=Object.assign({},cur[i]);if(sel.value)s.kind=sel.value;else delete s.kind;cur[i]=s;save(true)});
+   md.querySelectorAll('[data-srep]').forEach(fi=>fi.onchange=async()=>{const i=+fi.dataset.srep,f=fi.files[0];if(!f)return;A().toast('올리는 중…');try{const url=await upOne(f);cur[i]=Object.assign({},cur[i],{src:url});await save(true)}catch(e){A().toast(e.message)}});
+   md.querySelectorAll('[data-st]').forEach(b=>b.onclick=async()=>{const k=b.dataset.st;const i=+b.dataset.i;
+    if(k==='use'){act=i;return save(true)}
+    if(k==='del'){if(!confirm(`「${cur[i].label||'기본'}」 스탠딩을 지울까?`))return;cur.splice(i,1);if(act>i||act>=cur.length)act=Math.max(0,act-1);return save(true)}
+    if(k==='add'){const u=$('#st_u',md).value.trim();if(!u)return A().toast('그림 주소가 필요해');const kd=$('#st_k',md).value;cur.push(Object.assign({label:$('#st_l',md).value.trim()||stLabel(u.split('?')[0])||'기본',src:u,point:0},kd?{kind:kd}:{}));act=cur.length-1;return save(true)}})}}
  function openMyStand(){const ST=A().ST;if(gm()){const chars=[...Object.values((ST.state.roster||{}).trainers||{}).map(t=>({key:t.id,name:t.name})),...Object.values((ST.state.graph||{}).nodes||{}).map(n=>({key:'npc:'+n.name,name:n.name+' (NPC)'}))];
    const md=A().openModal(`<div class="mhead"><h2>표정·스탠딩</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="row"><select id="gsc2" style="flex:1">${chars.map(c=>`<option value="${esc(c.key)}">${esc(c.name)}</option>`).join('')}</select><button class="btn sm pri" id="gsc2ok">열기</button></div>`);$('#gsc2ok',md).onclick=()=>openStands($('#gsc2',md).value);return}
   if(!ST.seat)return A().toast('자리에 앉아야 한다');openStands(ST.seat)}

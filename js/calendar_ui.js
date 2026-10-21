@@ -33,23 +33,36 @@ window.OM_CAL_UI=(()=>{
   el.querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>ctl(b.dataset.c));
   const ws=$('#cwsel',el);if(ws)ws.onchange=()=>A().set(['calendar','weather'],ws.value);
   const ps=$('#cpsel',el);if(ps)ps.onchange=async()=>{await A().set(['calendar','phase'],ps.value);if(ps.value)A().sysLog(`시간대: ${ps.value}`)};
-  el.querySelectorAll('.cev,.cupi').forEach(x=>x.onclick=e=>{e.stopPropagation();openEvent(x.dataset.d,x.dataset.e)});
-  if(gm())el.querySelectorAll('.ccell').forEach(x=>x.ondblclick=()=>openEvent(x.dataset.d,null))}
+  el.querySelectorAll('.cev,.cupi').forEach(x=>x.onclick=e=>{e.stopPropagation();openDay(x.dataset.d,x.dataset.e)});
+  el.querySelectorAll('.ccell').forEach(x=>{if(gm()||x.querySelector('.cev'))x.classList.add('cclk');x.onclick=()=>openDay(x.dataset.d,null)})}
  async function ctl(k){const c=C();const [vy,vm]=view.split('-').map(Number);
   if(k==='prev'){const d=new Date(vy,vm-2,1);view=ymd(d).slice(0,7)}if(k==='next'){const d=new Date(vy,vm,1);view=ymd(d).slice(0,7)}if(k==='now'){view=(c.today||ymd(new Date())).slice(0,7)}
   if(k==='day+'||k==='day-'){const d=parse(c.today)||new Date();d.setDate(d.getDate()+(k==='day+'?1:-1));await A().set(['calendar','today'],ymd(d));A().sysLog(`날짜: ${ymd(d)} (${WD[d.getDay()]})`);view=ymd(d).slice(0,7)}
-  if(k==='add')return openEvent(c.today||ymd(new Date()),null);
+  if(k==='add')return openDay(c.today||ymd(new Date()),null);
   A().renderScene()}
- function openEvent(date,id){const c=C();const list=(c.events||{})[date]||[];const e=id?list.find(x=>x.id===id):null;const E=gm();
-  if(!E&&!e)return;
-  const md=A().openModal(`<div class="mhead"><h2>${e?'일정':'일정 추가'}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-   ${E?`<div class="row"><label>날짜 <input type="text" id="ed" value="${esc(date)}" placeholder="YYYY-MM-DD"></label><label>종류 <select id="ek">${Object.entries(KINDS).map(([k,[n]])=>`<option value="${k}" ${(e?e.k:'session')===k?'selected':''}>${n}</option>`).join('')}</select></label></div>
-    <div class="row" style="margin-top:6px"><input type="text" id="et" value="${esc(e?e.t:'')}" placeholder="제목" style="flex:1"></div><div style="margin-top:6px"><textarea id="en" rows="4" style="width:100%" placeholder="메모">${esc(e?e.note||'':'')}</textarea></div>
-    <div class="row" style="margin-top:10px">${e?`<button class="btn sm ghost danger" id="edel">삭제</button>`:''}<span class="sp"></span><button class="btn pri" id="eok">저장</button></div>`
-   :`<div><span class="tag">${(KINDS[e.k]||KINDS.memo)[0]}</span> <b>${esc(e.t)}</b> <span class="dim small">${esc(date)}</span></div><div class="pre small" style="margin-top:8px">${esc(e.note||'')}</div>`}`);
+ /* 날짜 창: 그 날의 일정 목록 + (GM) 바로 쓰고 고치는 칸. id 를 주면 그 일정을 고치는 상태로 연다 */
+ function openDay(date,id){const c=C();const E=gm();const d=parse(date);if(!d)return;const todayS=c.today||ymd(new Date());
+  const list=(c.events||{})[date]||[];let e=id?list.find(x=>x.id===id)||null:null;if(!E&&!list.length&&!id)return;
+  const kc=k=>(KINDS[k]||KINDS.memo);const dw=d.getDay();
+  const item=x=>`<div class="cdi ${e&&e.id===x.id?'on':''}" data-de="${x.id}" style="--kc:${kc(x.k)[1]}"><div class="cdit"><span class="cdk">${kc(x.k)[0]}</span><b>${esc(x.t)}</b>${E?'<span class="cdie">고치기</span>':''}</div>${x.note?`<div class="cdin">${esc(x.note)}</div>`:''}</div>`;
+  const k0=e?e.k:'session';
+  const md=A().openModal(`<div class="mhead cdh"><div class="cdd ${dw===0?'sun':dw===6?'sat':''}"><b>${pad(d.getMonth()+1)}/${pad(d.getDate())}</b><span>${WD[dw]}</span></div><div class="cdy"><span class="small dim">${d.getFullYear()}</span>${date===todayS?'<span class="tt">TODAY</span>':''}</div><span class="sp"></span><button class="btn xs" data-dn="-1" title="전날">‹</button><button class="btn xs" data-dn="1" title="다음날">›</button><button class="btn ghost" data-x>닫기</button></div>
+   <div class="cdl">${list.map(item).join('')||'<div class="empty small">이 날 일정이 없어</div>'}</div>
+   ${E?`<div class="cdf"><div class="cdfh"><b>${e?'일정 고치기':'새 일정'}</b>${e?'<button class="btn xs ghost" id="enew">+ 새로 쓰기</button>':''}</div>
+    <div class="cdks">${Object.entries(KINDS).map(([k,[n,col]])=>`<button class="cdkb ${k0===k?'on':''}" data-ek="${k}" style="--kc:${col}">${n}</button>`).join('')}</div>
+    <input type="text" id="et" value="${esc(e?e.t:'')}" placeholder="제목 (Enter 로 저장)" class="cdti">
+    <textarea id="en" rows="3" placeholder="메모">${esc(e?e.note||'':'')}</textarea>
+    <div class="row cdfb">${e?`<label class="small dim">날짜 옮기기 <input type="date" id="ed" value="${esc(date)}"></label><button class="btn sm ghost danger" id="edel">삭제</button>`:''}<span class="sp"></span>${date!==todayS?'<button class="btn sm ghost" id="etoday">이 날을 오늘로</button>':''}<button class="btn pri" id="eok">${e?'저장':'추가'}</button></div></div>`:''}`);
+  md.querySelectorAll('[data-dn]').forEach(b=>b.onclick=()=>{const n=new Date(d);n.setDate(n.getDate()+ +b.dataset.dn);const ns=ymd(n);if(!E&&!((C().events||{})[ns]||[]).length){A().closeModal();return A().toast(`${ns.slice(5).replace('-','/')} 일정 없음`)}openDay(ns)});
+  md.querySelectorAll('[data-de]').forEach(x=>x.onclick=()=>{if(E)openDay(date,x.dataset.de)});
   if(!E)return;
-  $('#eok',md).onclick=async()=>{const nd=$('#ed',md).value.trim();if(!parse(nd))return A().toast('날짜는 YYYY-MM-DD');const ne={id:e?e.id:'ev'+rnd(6),t:$('#et',md).value.trim()||'(제목 없음)',k:$('#ek',md).value,note:$('#en',md).value};
-   const evs=JSON.parse(JSON.stringify(c.events||{}));if(e){evs[date]=(evs[date]||[]).filter(x=>x.id!==e.id);if(!evs[date].length)delete evs[date]}(evs[nd]=evs[nd]||[]).push(ne);A().closeModal();await A().set(['calendar','events'],evs)};
-  const del=$('#edel',md);if(del)del.onclick=async()=>{const evs=JSON.parse(JSON.stringify(c.events||{}));evs[date]=(evs[date]||[]).filter(x=>x.id!==e.id);if(!evs[date].length)delete evs[date];A().closeModal();await A().set(['calendar','events'],evs)}}
+  let k=k0;md.querySelectorAll('[data-ek]').forEach(b=>b.onclick=()=>{k=b.dataset.ek;md.querySelectorAll('[data-ek]').forEach(y=>y.classList.toggle('on',y===b))});
+  const nb=$('#enew',md);if(nb)nb.onclick=()=>openDay(date);
+  const save=async()=>{const nd=e?$('#ed',md).value.trim():date;if(!parse(nd))return A().toast('날짜를 골라 줘');const ne={id:e?e.id:'ev'+rnd(6),t:$('#et',md).value.trim()||'(제목 없음)',k,note:$('#en',md).value};
+   const evs=JSON.parse(JSON.stringify(C().events||{}));if(e){evs[date]=(evs[date]||[]).filter(x=>x.id!==e.id);if(!evs[date].length)delete evs[date]}(evs[nd]=evs[nd]||[]).push(ne);A().closeModal();await A().set(['calendar','events'],evs)};
+  $('#eok',md).onclick=save;$('#et',md).onkeydown=ev=>{if(ev.key==='Enter'&&!ev.isComposing){ev.preventDefault();save()}};
+  const del=$('#edel',md);if(del)del.onclick=async()=>{if(!confirm(`「${e.t}」 일정을 지울까?`))return;const evs=JSON.parse(JSON.stringify(C().events||{}));evs[date]=(evs[date]||[]).filter(x=>x.id!==e.id);if(!evs[date].length)delete evs[date];A().closeModal();await A().set(['calendar','events'],evs)};
+  const tb=$('#etoday',md);if(tb)tb.onclick=async()=>{await A().set(['calendar','today'],date);A().sysLog(`날짜: ${date} (${WD[dw]})`);view=date.slice(0,7);A().closeModal();A().renderScene()};
+  if(!e)setTimeout(()=>{const t=$('#et',md);if(t)t.focus()},30)}
  return {render};
 })();
