@@ -2446,3 +2446,4 @@ span.iedit{display:inline-block;min-width:3em}
 .gd-list{overflow-x:hidden;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--red) transparent;padding-right:6px}
 .gd-list::-webkit-scrollbar{width:4px;height:0}.gd-list::-webkit-scrollbar-thumb{background:var(--red)}.gd-list::-webkit-scrollbar-track{background:transparent}
 .gd-ch.on{margin-right:6px}
+.dlg.skin.sr .dtext{transform:rotate(2.5deg)}.dlg.skin.sr .dname{transform:rotate(2deg)}

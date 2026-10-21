@@ -2,6 +2,7 @@
    state.rp = {
      bg:{src,name,at}                                 배경 (data/bg.js 목록 또는 주소·올린 파일)
      caption:{name,text,at,fixed}                     GM 고정 자막 (없으면 채팅이 자막)
+     bubble:{on,c,l,r}                                그림 말풍선 (꼬리 없음 · 왼쪽 · 오른쪽 그림 주소 — GM 이 방 저장소에 올린다)
      banner:{title,text,color,at}                     공지 배너
      bgm:{src,title,at}                               BGM (data/bgm.js 목록 또는 주소)
      center:{src,at}                                  중앙 이미지
@@ -91,7 +92,11 @@ window.OM_RP_UI=(()=>{
   $('#centerimg',el).innerHTML=r.center&&r.center.src?`<div class="centerimg"><img src="${esc(r.center.src)}" alt="">${gm()?'<button class="btn xs" data-rp="centerx">닫기</button>':''}</div>`:'';
   $('#rpbtns',el).innerHTML=`<button class="btn sm rpspkbtn" data-rp="spkpop" title="화자 · 인물 · 표정">🎭 화자</button>${gm()?`<button class="btn sm" data-rp="qbg" title="배경 바꾸기">🖼 배경</button><button class="btn sm" data-rp="qbgm" title="BGM 바꾸기">♪ BGM</button>`:''}<button class="btn sm" data-rp="log" title="대화 기록">📜 기록</button><button class="btn sm ${mapOpen?'pri':''}" data-rp="map">${mapOpen?'지도 닫기':'지도'}</button><button class="btn sm" data-rp="deck">덱</button><button class="btn sm" data-rp="phone" title="휴대폰 — 연락처 · 협력자 · 캘린더">📱 휴대폰</button><button class="btn sm ghost" data-rp="stand">표정</button>${r.bgm&&r.bgm.src?(unlocked?`<button class="btn sm ghost" data-rp="${gm()?'bgmstop':'mute'}" title="${esc(r.bgm.title||'')}${gm()?' — 누르면 모두에게 정지':' — 누르면 내 소리만 끄기'}">♪ ${esc(r.bgm.title||'BGM')} ■</button>`:`<button class="btn sm ghost" data-rp="sound" title="${esc(r.bgm.title||'')}">소리 켜기</button>`):''}${gm()?`<button class="btn sm pri" data-rp="gm">GM 콘솔</button>`:''}`;
   $('#mapov',el).innerHTML=mapOpen?mapOverlay():'';
+  /* 그림 말풍선 (rp.bubble): 말하는 사람의 무대 자리로 꼬리 방향을 고른다 — 왼쪽 자리 → 꼬리 왼쪽 그림을 그 오른편에, 오른쪽 → 반대, 그 밖(가운데 · 나레이션 · 고정 자막) → 꼬리 없음 */
+  const bub=r.bubble||{};let skin=null;if(bub.on&&(bub.c||bub.l||bub.r)){const sk=cap.text||!lastChat?'':speakerKey(lastChat);const sl=sk?SLOTS.find(x=>slots[x]===sk):'';const want=sl==='left'?'l':sl==='right'?'r':'c';
+   const alt={l:'r',r:'l'}[want];if(bub[want])skin={v:want,src:bub[want]};else if(alt&&bub[alt])skin={v:want,src:bub[alt],flip:1};else if(bub.c)skin={v:'c',src:bub.c};else{const k=bub.l?'l':'r';skin={v:k,src:bub[k]}}}
   const dlg=$('#dlg',el);if(dlgHtml){if(dlg.dataset.k!==dlgHtml){dlg.innerHTML=dlgHtml;dlg.dataset.k=dlgHtml;dlg.classList.remove('pop');void dlg.offsetWidth;dlg.classList.add('pop')}dlg.style.display=''}else{dlg.style.display='none';dlg.dataset.k=''}
+  dlg.classList.toggle('skin',!!skin);for(const v of ['c','l','r'])dlg.classList.toggle('s'+v,!!skin&&skin.v===v);dlg.classList.toggle('flip',!!(skin&&skin.flip));dlg.style.setProperty('--bub',skin?`url('${cssu(skin.src)}')`:'');
   syncStands($('#stands',el),slots,manual);
   /* 무대 아래: 칸마다 바뀐 것만 다시 그린다 — 대사 입력칸은 그대로 두어야 치는 중에 끊기지 않는다 (한글 조합·포커스 유지) */
   const barH=`${gm()?spkBarHtml(speakers):(speakers.length>1?`<div class="spkbar">${speakers.map(x=>{const c=x.key==='me'?charOf(ST.seat):charOf(x.key);const av=c?(standSrc(c)||c.img):'';return spkChip(x.key,x.name,av,SPK.key===x.key||(!SPK.key&&x.key==='me'))}).join('')}<button class="spk add" data-rp="spkedit" title="고른 인물의 표정·스탠딩"><i>✎</i><span>표정</span></button></div>`:'')}`;
@@ -481,7 +486,12 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    body=`<div class="sec">자리 고정 <span class="note">비우면 말하는 사람이 자동으로 선다</span></div>${SLOTS.map(s=>`<div class="row" style="margin-bottom:4px"><b style="width:60px">${{left:'왼쪽',center:'가운데',right:'오른쪽'}[s]}</b><select data-slot="${s}" style="flex:1"><option value="">(자동)</option>${chars.map(c=>`<option value="${esc(c.key)}" ${(manual[s]||{}).key===c.key?'selected':''}>${esc(c.name)}</option>`).join('')}</select><label class="small"><input type="checkbox" data-flip="${s}" ${(manual[s]||{}).flip?'checked':''}> 반전</label></div>`).join('')}
     <div class="row"><button class="btn sm" data-gc="stageok">자리 적용</button><button class="btn sm ghost" data-gc="stageclear">무대 비우기</button></div>
     <div class="sec">스탠딩 관리</div><div class="row"><select id="gsc" style="flex:1">${chars.map(c=>`<option value="${esc(c.key)}">${esc(c.name)}</option>`).join('')}</select><button class="btn sm" data-gc="stands">표정·스탠딩 편집</button></div>
-    <div class="sec">자막</div><div class="row"><input type="text" id="gcn" value="${esc((r.caption||{}).name||'')}" placeholder="이름" style="width:120px"><input type="text" id="gct" value="${esc((r.caption||{}).fixed?(r.caption.text||''):'')}" placeholder="고정 자막 (비우면 채팅이 자막)" style="flex:1"><button class="btn sm" data-gc="cap">고정</button><button class="btn sm ghost" data-gc="capx">풀기</button></div>`}
+    <div class="sec">자막</div><div class="row"><input type="text" id="gcn" value="${esc((r.caption||{}).name||'')}" placeholder="이름" style="width:120px"><input type="text" id="gct" value="${esc((r.caption||{}).fixed?(r.caption.text||''):'')}" placeholder="고정 자막 (비우면 채팅이 자막)" style="flex:1"><button class="btn sm" data-gc="cap">고정</button><button class="btn sm ghost" data-gc="capx">풀기</button></div>
+    ${(()=>{const bb=r.bubble||{};const slot=(k,l)=>`<div class="bubslot">${bb[k]?`<div class="bubpv" style="background-image:url('${cssu(bb[k])}')"></div><button class="btn xs ghost danger" data-gc="bubx" data-v="${k}">지우기</button>`:dzHtml('bub_'+k,'그림 올리기','끌어 놓기 · 클릭 · Ctrl+V')}<small>${l}</small></div>`;
+     return `<div class="sec">대사 상자 모양 <span class="note">그림 말풍선은 말하는 사람 자리에 따라 꼬리 방향을 고른다</span></div>
+     <div class="row"><label class="small"><input type="radio" name="bubm" data-gc="bubon" value="" ${bb.on?'':'checked'}> 기본 (검은 띠)</label><label class="small"><input type="radio" name="bubm" data-gc="bubon" value="1" ${bb.on?'checked':''}> 그림 말풍선</label></div>
+     <div class="bubslots">${slot('c','꼬리 없음 (가운데 · 나레이션)')}${slot('l','꼬리 왼쪽 (왼쪽 화자)')}${slot('r','꼬리 오른쪽 (오른쪽 화자)')}</div>
+     <div class="small dim">900×400 가로 말풍선 기준으로 글자 칸을 맞췄다 (움직이는 APNG 그대로). 꼬리 한쪽만 올리면 반대쪽은 뒤집어 쓴다. 그림은 이 방 저장소에만 올라간다.</div>`})()}`}
   else{const SG=seList();const CI=(R().cutin)||{};body=`<div class="sec">컷인 · 연출 <span class="note">맵툴 배틀 연출 설정</span></div>
     <div class="row" style="flex-wrap:wrap;gap:8px"><label>시합 개시 <select id="gci_start"><option value="vs" ${(CI.start||'vs')==='vs'?'selected':''}>일반 (VS 컷인)</option><option value="warn" ${CI.start==='warn'?'selected':''}>경고 (위험 등장)</option><option value="off" ${CI.start==='off'?'selected':''}>끄기</option></select></label>
      <label>컷인 전체 <select id="gci_on"><option value="1" ${String(CI.on)!=='0'?'selected':''}>켜기</option><option value="0" ${String(CI.on)==='0'?'selected':''}>끄기</option></select></label>
@@ -520,6 +530,8 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(k==='stands'){return openStands($('#gsc',md).value)}
    if(k==='cap'){await A().set(['rp','caption'],{name:$('#gcn',md).value.trim(),text:$('#gct',md).value.trim(),at:Date.now(),fixed:true});return re()}
    if(k==='capx'){await A().set(['rp','caption'],null);return re()}
+   if(k==='bubon'){await A().set(['rp','bubble','on'],b.value?true:null);return re()}
+   if(k==='bubx'){await A().set(['rp','bubble',b.dataset.v],null);return re()}
    if(k==='center'){const u=$('#gci',md).value.trim();if(!u)return;await A().set(['rp','center'],{src:u,at:Date.now()});return re()}
    if(k==='se'){unlocked=true;return playSe(b.dataset.n)}
    if(k==='cisave'){const ci=Object.assign({},R().cutin||{},{start:$('#gci_start',md).value,on:$('#gci_on',md).value,ord:$('#gci_ord',md).value,pot:$('#gci_pot',md).value,sc:+$('#gci_sc',md).value||70,pos:$('#gci_pos',md).value,warnTitle:$('#gci_wt',md).value.trim()});await A().set(['rp','cutin'],ci);return A().toast('연출 설정을 저장했다')}
@@ -531,6 +543,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(b.type==='checkbox')b.onchange=h;else b.onclick=h});
   const vr=$('#gvol',md);if(vr)vr.oninput=()=>{vol=+vr.value;try{localStorage.setItem('om_vol',vol)}catch(e){}if(audio)audio.volume=vol};
   if(GC.tab==='bgm')bindBgmPanel(md,re);
+  for(const k of ['c','l','r'])if($('#bub_'+k,md))bindDz(md,'#bub_'+k,async fs=>{const u=await upImg(fs[0],'bub_'+k);await A().set(['rp','bubble',k],u);if(!(R().bubble||{}).on)await A().set(['rp','bubble','on'],true);re()});
   if($('#gbgdz',md))bindDz(md,'#gbgdz',async fs=>{$('#gbg',md).value=await upImg(fs[0],'rp');A().toast('올렸다 — 적용을 눌러')});if($('#gcidz',md))bindDz(md,'#gcidz',async fs=>{$('#gci',md).value=await upImg(fs[0],'rp');A().toast('올렸다 — 띄우기를 눌러')})}
  /* ----- BGM 패널 (맵툴 Lib:bgm 정리판과 같은 꼴): 홈 = 띠(장면/배틀/분위기)별 그룹 타일 → 그룹 = 곡 줄 · 검색 · ▶ 미리듣기 · 모두에게 재생 · ⟳ 다른 곡 ----- */
  const BG={g:'',q:''};
