@@ -2646,3 +2646,5 @@ span.iedit{display:inline-block;min-width:3em}
 .admt th{text-align:left;font-weight:400;color:var(--mute);font-size:12px;border-bottom:1px solid var(--line2);padding:3px 6px}
 .admt td{padding:5px 6px;border-bottom:1px dashed var(--line)}
 .admt select{background:var(--panel);border:1px solid var(--line2);padding:3px 6px}
+.fbulk{flex-wrap:wrap;gap:6px;margin:0 0 8px;padding:6px 8px;background:var(--bg2);border:1px dashed var(--line2)}
+.pick .fsel{width:18px;height:18px;flex:none;accent-color:var(--red);cursor:pointer}
