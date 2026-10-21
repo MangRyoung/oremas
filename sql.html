@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>오레마스 SQL</title>
+<meta name="robots" content="noindex">
+<style>
+:root{--bg:#121316;--panel:#1c1d22;--line:#3a3c44;--fg:#e9e8e3;--mute:#9a9a94;--red:#d9243f;--yel:#f0c84a}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 system-ui,'Noto Sans KR',sans-serif}
+main{max-width:720px;margin:0 auto;padding:20px 16px 60px}
+h1{font-size:24px;margin:0 0 4px}
+p{margin:6px 0}
+.mute{color:var(--mute);font-size:13px}
+.card{background:var(--panel);border:1px solid var(--line);padding:14px;margin-top:16px}
+.card h2{font-size:17px;margin:0 0 6px}
+ol{padding-left:20px;margin:8px 0}
+ol li{margin:4px 0}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+button,a.btn{appearance:none;border:2px solid #fff;background:#000;color:#fff;font:inherit;font-weight:700;padding:10px 16px;cursor:pointer;text-decoration:none;display:inline-block}
+button.pri{background:var(--red);border-color:var(--red)}
+button:disabled{opacity:.5}
+.ok{color:var(--yel);font-weight:700}
+textarea{width:100%;height:160px;background:#000;color:#cfcfcf;border:1px solid var(--line);font:12px/1.4 ui-monospace,monospace;padding:8px}
+</style>
+</head>
+<body>
+<main>
+<h1>오레마스 SQL</h1>
+<p class="mute">Supabase 에 서버 기능을 올릴 때 쓰는 페이지. 폰에서도 된다.</p>
+<div id="list"></div>
+<div class="card"><h2>순서</h2>
+<ol>
+<li>아래 SQL 칸의 「복사」를 누른다.</li>
+<li>「Supabase SQL Editor 열기」를 눌러 로그인한다 (새 쿼리 창이 열린다).</li>
+<li>빈 칸에 붙여 넣고 <b>Run</b> 을 누른다. 「Success. No rows returned」가 나오면 끝.</li>
+<li>오레마스로 돌아가 <b>제일 먼저 가입</b>한다 — 처음 가입한 계정이 관리자다.</li>
+</ol>
+<p class="mute">「destructive operation」 경고가 뜨면 그대로 실행해도 된다 (예전 함수를 새 것으로 바꾸는 것뿐, 방 · 로그 데이터는 안 지운다). 두 번 실행해도 괜찮다.</p>
+</div>
+</main>
+<script>
+"use strict";
+const FILES=[{f:'supabase/patch_2026-10-23_계정.sql',t:'계정 로그인 (2026-10-23)',d:'아이디 · 비밀번호 로그인, 로그인 유지, 관리자 계정 관리, 계정 전용 방.'}];
+const EDITOR='https://supabase.com/dashboard/project/jsnvqcvwspxzfnhdethl/sql/new';
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const list=document.getElementById('list');
+FILES.forEach((x,i)=>{const c=document.createElement('div');c.className='card';
+ c.innerHTML=`<h2>${esc(x.t)}</h2><p class="mute">${esc(x.d)}</p><div class="btns"><button class="pri" data-copy disabled>불러오는 중…</button><a class="btn" href="${EDITOR}" target="_blank" rel="noopener">Supabase SQL Editor 열기</a></div><p data-msg class="mute"></p><textarea readonly spellcheck="false"></textarea>`;
+ list.appendChild(c);const ta=c.querySelector('textarea'),bt=c.querySelector('[data-copy]'),msg=c.querySelector('[data-msg]');
+ fetch(x.f+'?t='+Date.now()).then(r=>{if(!r.ok)throw new Error(r.status);return r.text()}).then(s=>{ta.value=s;bt.disabled=false;bt.textContent='복사';msg.textContent=s.split('\n').length+'줄'})
+  .catch(e=>{bt.textContent='못 불러왔다';msg.textContent='파일을 읽지 못했다: '+e.message});
+ bt.onclick=async()=>{let ok=false;try{await navigator.clipboard.writeText(ta.value);ok=true}catch(e){}
+  if(!ok){ta.focus();ta.select();ta.setSelectionRange(0,ta.value.length);try{ok=document.execCommand('copy')}catch(e){}}
+  msg.innerHTML=ok?'<span class="ok">복사했다 — SQL Editor 에 붙여 넣고 Run</span>':'자동 복사가 막혔다. 아래 칸을 길게 눌러 「전체 선택」 → 복사';}});
+</script>
+</body>
+</html>
