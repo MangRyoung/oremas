@@ -15,6 +15,7 @@ let titleT=null;function flashTitle(msg){if(!document.hidden)return;const base=d
 function notifyLog(r){if(!r||r.kind!=='chat'||!r.data||r.data.sms||!(r.data.t))return;if(isMineLog(r))return;if(r.at&&Date.now()-new Date(r.at).getTime()>15000)return;if(!alarm().chat)return;try{if(window.OM_PREFS)window.OM_PREFS.notify('chat');else if(window.OM_RP_UI)window.OM_RP_UI.playSe('Ping',true)}catch(e){}flashTitle('새 메시지')}   /* 부드러운 알림음 · 화면을 보고 있으면 울리지 않는다 (내 설정) */
 let toastT=null;function toast(m){if(window.OM_REPORT_UI)window.OM_REPORT_UI.note('toast',m);const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2400)}
 function fmtTime(s){const d=new Date(s);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
+function contactOf(mv){const c=mv&&mv.contact;if(c==='O'||c==='X')return c;const d=((window.OM_DB||{}).moves||{})[mv&&mv.name];return d&&d.contact||'-'}
 function typeChip(en){const c=S().typeColor(en);return `<span class="type" style="background:${c.bg};color:${c.fg}">${esc(S().typeKo(en))}</span>`}
 
 /* ---------- 라우팅 ---------- */
@@ -376,7 +377,7 @@ function openMon(mid){
  const full=ST.role==='gm'||ST.seat===m.tid;
  /* 내 것이 아니면 상세 창 대신 도감 — 해석한 만큼만 보인다 (같은 편은 도감 규칙대로 전부) */
  if(!full&&window.OM_DEX_UI)return window.OM_DEX_UI.open(mid,ST.seat||'_view');
- const K=S().STATS_KO;const pct=Math.round(m.hp.cur/m.hp.max*100);
+ const K=S().STATS_KO;const pct=(m.hp.cur>0?Math.max(1,Math.round(m.hp.cur/m.hp.max*100)):0);
  const stat6=`<div class="dxst wide">${m.ranks.map((r,i)=>`<div><small>${K[i]}</small><b>${esc(r)}</b>${full?`<em title="종족치 · 실수치">${m.base[i]} · ${m.stats[i]}</em>`:''}</div>`).join('')}</div>`;
  const an=(kind,name)=>(full&&name&&name!=='-')?` <button class="btn xs ghost anb" data-an="${esc(kind)}" data-ann="${esc(name)}" title="로그에 출력">📢 출력</button>`:'';
  const hpRow=full?`<div class="hpq"><span class="k">HP 조작</span><input type="text" id="hpd" placeholder="숫자 · 1/8" title="숫자 또는 분수(최대 HP 기준)"><button class="btn sm hpdmg" id="hpDmg">대미지</button><button class="btn sm hpheal" id="hpHeal">회복</button><button class="btn sm ghost hpheal2" id="hpFull">전부 회복</button>${(()=>{const l=m.hp.latest;const ok=l!=null&&+l!==+m.hp.cur;return `<button class="btn sm ghost hpundo" id="hpUndo" ${ok?'':'disabled'} title="${ok?`가장 최근의 피해·회복을 취소 — HP ${m.hp.cur} → ${l} (한 번 더 누르면 다시 적용)`:'되돌릴 피해·회복이 없다'}">↶ 되돌리기${ok?` <small>${+l>+m.hp.cur?'+':'−'}${Math.abs(l-m.hp.cur)}</small>`:''}</button>`})()}
@@ -386,7 +387,8 @@ function openMon(mid){
  const SH=window.OM_SHEET_UI||{};const pf=SH.potFmt||(t=>esc(t||''));const pk=SH.potKind||(k=>({no:'',lab:k||''}));const HUE=SH.POT_HUE||{};
  const potCard=(p,kind)=>{const k=pk(kind||p.kind);const hue=kind==='전용'?'#ffd84a':(HUE[k.lab]||'#3fc7c0');return `<div class="potc${p.ph?' ph':''}${kind==='전용'?' ex':''}" style="--ph:${hue}"><div class="poth"><span class="potk">${k.no?`<em>${esc(k.no)}</em>`:''}${k.lab?`<span>${esc(k.lab)}</span>`:''}</span><b class="potn">${esc(p.name)}${p.ph?' <small>(미정)</small>':''}</b><span class="sp"></span>${p.ph?'':an('pot',p.name)}</div>${p.ph?'':`<div class="pote">${pf(String(p.eff||'').replace(/<br\s*\/?>/gi,'\n'))}</div>`}</div>`};
  const tcol=en=>{try{return S().typeColor(en).bg}catch(e){return '#666'}};
- const mvCard=mv=>{const pr=+mv.prio||0;return `<div class="mvc" style="--tc:${tcol(mv.typeEn)}"><div class="mvh">${typeChip(mv.typeEn)}<b class="mvn">${esc(mv.name)}</b>${mv.half?'<span class="small muted">½</span>':''}${mv.missing?'<span class="small" style="color:var(--red)">DB 없음</span>':''}${mv.adj?'<span class="mvadj" title="이 포켓몬만 조정한 기술">조정됨</span>':''}<span class="sp"></span><span class="mvcat c-${({물리:'p',특수:'s',변화:'x'})[mv.cat]||'x'}">${esc(mv.cat||'-')}</span></div><div class="mvs"><span><small>위력</small><b>${mv.pow||'-'}</b></span><span><small>명중</small><b>${mv.acc||'필중'}</b></span><span><small>범위</small><b>${esc(mv.range||'-')}</b></span><span class="${pr?'hot':''}"><small>우선</small><b>${pr>0?'+'+pr:pr}</b></span></div>${mv.eff?`<div class="mve">${pf(mv.eff)}</div>`:''}</div>`};
+ const ctSpan=mv=>{const c=contactOf(mv);return c==='O'||c==='X'?`<span class="${c==='O'?'ct':''}"><small>접촉</small><b>${c==='O'?'O':'X'}</b></span>`:''};
+ const mvCard=mv=>{const pr=+mv.prio||0;return `<div class="mvc" style="--tc:${tcol(mv.typeEn)}"><div class="mvh">${typeChip(mv.typeEn)}<b class="mvn">${esc(mv.name)}</b>${mv.half?'<span class="small muted">½</span>':''}${mv.missing?'<span class="small" style="color:var(--red)">DB 없음</span>':''}${mv.adj?'<span class="mvadj" title="이 포켓몬만 조정한 기술">조정됨</span>':''}<span class="sp"></span><span class="mvcat c-${({물리:'p',특수:'s',변화:'x'})[mv.cat]||'x'}">${esc(mv.cat||'-')}</span></div><div class="mvs"><span><small>위력</small><b>${mv.pow||'-'}</b></span><span><small>명중</small><b>${mv.acc||'필중'}</b></span><span><small>범위</small><b>${esc(mv.range||'-')}</b></span><span class="${pr?'hot':''}"><small>우선</small><b>${pr>0?'+'+pr:pr}</b></span>${ctSpan(mv)}</div>${mv.eff?`<div class="mve">${pf(mv.eff)}</div>`:''}</div>`};
  const pots=(m.pots||[]).filter(p=>p&&p.name);const uniq=(tr.unique||[]).filter(u=>u&&u.name);
  const md=openModal(`<div class="mhead"><h2>${esc(m.name)} <span class="small muted">상세</span></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
   <div class="dxhead"><div class="dxpic" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div>
@@ -593,6 +595,6 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
 /* 이름으로 기본 초상 찾기: 그림이 따로 없으면 같은 이름의 로스터 트레이너 → 포켓몬 → 관계도 노드의 그림을 쓴다 */
 function portraitOf(name,img){if(img)return img;if(!name)return '';const ro=ST.state.roster||{};const t=Object.values(ro.trainers||{}).find(x=>x.name===name);if(t&&t.image)return t.image;const m=Object.values(ro.mons||{}).find(x=>x.name===name&&x.image);if(m)return m.image;const n=Object.values((ST.state.graph||{}).nodes||{}).find(x=>x.name===name&&x.img);return n?n.img:''}
-window.OM_APP={UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,openMon,openLoadParty,loadFromRoster,loadMaker,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,get view(){return VIEW},set view(v){VIEW=v}};
+window.OM_APP={contactOf,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,openMon,openLoadParty,loadFromRoster,loadMaker,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,get view(){return VIEW},set view(v){VIEW=v}};
 route();
 })();
