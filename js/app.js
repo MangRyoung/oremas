@@ -218,7 +218,7 @@ const isMobile=()=>window.matchMedia('(max-width:760px)').matches;
 function mobMode(m){const sc=$('#scene');if(MOB.mode==='scene'&&m!=='scene'&&sc)MOB.sTop=sc.scrollTop;if(m==='chat'&&MOB.mode!=='chat')MOB.prev=MOB.mode;const back=m==='scene'&&MOB.mode!=='scene';MOB.mode=m;if(back&&sc)requestAnimationFrame(()=>{sc.scrollTop=MOB.sTop});document.body.classList.toggle('m-chat',m==='chat');document.querySelectorAll('#mbar [data-m]').forEach(b=>b.classList.toggle('on',b.dataset.m===m));if(m==='chat'){MOB.unread=0;mobBadge();const l=$('#log');if(l)l.scrollTop=l.scrollHeight}}
 function mobBadge(){const e=$('#mUnread');if(!e)return;e.textContent=MOB.unread>99?'99+':MOB.unread;e.style.display=MOB.unread?'':'none'}
 function mobNote(r){if(!isMobile()||MOB.mode==='chat')return;const d=(r&&r.data)||{};if(r.kind==='chat'&&(d.sms||(!d.t&&!d.img)))return;if(isMineLog(r))return;MOB.unread++;mobBadge()}
-function openMobMenu(){const items=[['skillBtn','스킬 체크'],['dexBtn','도감'],['dbBtn','DB'],['rmBtn','레디메이드'],['copyLink','플레이어 링크'],['copyGm','GM 링크'],['seatBtn','자리'],['roomSet','⚙ 설정'],['saveLog','로그 저장'],['presence','내 이름']].filter(([id])=>$('#'+id));
+function openMobMenu(){const items=[['skillBtn','스킬 체크'],['dexBtn','도감'],['dbBtn','DB'],['rmBtn','레디메이드'],['copyLink','플레이어 링크'],['copyGm','GM 링크'],['seatBtn','자리'],['roomSet','⚙ 설정'],['saveLog','로그 저장'],['presence','내 이름'],['toLobby','← 로비로']].filter(([id])=>$('#'+id));
  const m=openModal(`<div class="mhead"><h2>메뉴</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="mmenu">${items.map(([id,l])=>`<button class="btn" data-mm="${id}">${esc(l)}</button>`).join('')}</div><div class="small dim" style="margin-top:10px">접속 중: ${esc(($('#presence')||{}).textContent||'')}</div>`);
  m.querySelectorAll('[data-mm]').forEach(b=>b.onclick=()=>{closeModal();const t=$('#'+b.dataset.mm);if(t)t.click()})}
 function bindMobile(){const bar=$('#mbar');if(!bar)return;bar.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;if(k==='menu')return openMobMenu();if(k==='phone'){if(window.OM_PHONE_UI)window.OM_PHONE_UI.open('home');return}if(k==='top'){const el=MOB.mode==='chat'?$('#log'):$('#scene');if(el)el.scrollTo({top:0,behavior:'smooth'});return}if(k==='chat'&&MOB.mode==='chat')return mobMode(MOB.prev||'scene');mobMode(k)});mobMode(MOB.mode)}
@@ -226,7 +226,7 @@ function renderRoom(){
  const app=$('#app');const r=ST.roomRow;
  app.innerHTML=`<div class="room">
   <div class="top">
-   <a href="#" class="muted small" title="로비">오레마스</a><span class="name">${esc(r.name||r.id)}</span>
+   <a href="${ACCT.tok()?'#':'#lobby'}" class="btn sm ghost tolobby" id="toLobby" title="로비로 — 내 방 목록">← 로비</a><span class="name">${esc(r.name||r.id)}</span>
    ${ST.role==='gm'?'<span class="badge gm">GM</span>':ST.role==='seat'?`<span class="badge seat">${esc(ST.name)}</span>`:'<span class="badge">관전</span>'}
    <span class="tabs" id="sceneTabs"></span>
    <span class="sp"></span><span id="typingTop" class="typingtop"></span><span id="presence" class="presence" title="지금 접속 중인 사람 · 누르면 내 이름"></span><span id="conn" class="small muted">○ 연결 중</span>

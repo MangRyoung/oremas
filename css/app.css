@@ -2684,3 +2684,4 @@ span.iedit{display:inline-block;min-width:3em}
 .gbpsel{display:inline-flex;gap:4px}
 .gbpst .gbpbox{opacity:.35;pointer-events:none;z-index:1}
 .gbpst.seld #gbp_d,.gbpst.seln #gbp_n{opacity:1;pointer-events:auto;z-index:2}
+.top .tolobby{flex:none;padding-left:8px;padding-right:10px}
