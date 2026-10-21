@@ -54,6 +54,8 @@ window.OM_BATTLE_UI=(()=>{
  function entered(b,side){const out={};for(const a of AREAS.slice(0,mode(b))){const m=Object.values(b.mons||{}).find(x=>x.side===side&&x.entry===a&&x.hp.cur>0);out[a]=m||null}return out}
  function allEntered(b){const out=[];for(const s of SIDES){const e=entered(b,s);for(const a in e)if(e[a])out.push({slot:slotOf(s,a),side:s,area:a,mon:e[a]})}return out}
  /* 내 지시 칸 · 내 포켓몬 편집은 GM 과 그 자리의 주인만 — 모의전 권한(mgr)과는 별개 */
+ /* 파티 불러오기: 진행하는 사람(mgr) + 「자기 것만」 방의 플레이어(자기 자리로) */
+ function canLoad(c){return c.mgr||(c.role==='seat'&&!!c.seat&&c.strict)}
  function myTrainers(c){const trs=c.b.trainers||{};if(c.gm)return Object.keys(trs).filter(t=>!(c.fair&&seatOwned(c,t)));return c.seat&&trs[c.seat]?[c.seat]:[]}
  function canEdit(c,mon){if(mon&&mon.tid===c.seat&&c.role==='seat')return true;return c.gm&&!(c.fair&&mon&&seatOwned(c,mon.tid))}
  function skPend(c,tid){try{const K=c.ST.state.skill||{};const O=K.offer;if(!O)return false;const R=(K.res||{})[tid];return !(R&&R.offerId===O.id)}catch(e){return false}}
@@ -163,11 +165,11 @@ window.OM_BATTLE_UI=(()=>{
     <div class="bench">${mons.map(m=>benchCard(c,m)).join('')||'<div class="dim small">포켓몬 없음</div>'}</div></div>`}).join('');
   /* 10-21 망령: 폰에서 벤치 머리를 누르면 접는다 (접으면 트레이너별 남은 포켓몬 수만) */
   const bfs=ids.map(tid=>{const ms=Object.values(b.mons||{}).filter(m=>m.tid===tid);return `${esc((trs[tid]||{}).name||'?')} ${ms.filter(m=>m.hp.cur>0).length}/${ms.length}`}).join(' · ');
-  return `<div class="bcol ${side} ${(UIC.bfold||{})[side]?'fold':''}"><div class="shead" data-bfold="${side}"><i class="bfc" aria-hidden="true"></i><span class="sname">${SIDE_KO[side]} 벤치</span>${bfs?`<small class="bfs">${bfs}</small>`:''}${b.simul?(()=>{const P=pendCount(b,side);return `<span class="chip simpc ${P.need>0&&P.n>=P.need?'on':''}" title="동시 내밀기 예약">예약 ${P.n}/${P.need}</span>`})():''}<span class="sp"></span>${c.mgr?`<button class="btn xs" data-act="load" data-side="${side}">+ 파티</button>`:''}</div>${side==='left'?(()=>{
+  return `<div class="bcol ${side} ${(UIC.bfold||{})[side]?'fold':''}"><div class="shead" data-bfold="${side}"><i class="bfc" aria-hidden="true"></i><span class="sname">${SIDE_KO[side]} 벤치</span>${bfs?`<small class="bfs">${bfs}</small>`:''}${b.simul?(()=>{const P=pendCount(b,side);return `<span class="chip simpc ${P.need>0&&P.n>=P.need?'on':''}" title="동시 내밀기 예약">예약 ${P.n}/${P.need}</span>`})():''}<span class="sp"></span>${canLoad(c)?`<button class="btn xs" data-act="load" data-side="${side}" title="${c.mgr?'이 진영에 파티를 불러온다':'내 자리로 파티를 불러온다 (불러온 사람이 지시)'}">+ 파티</button>`:''}</div>${side==='left'?(()=>{
     /* 10-21 망령: 좌측 벤치 아래 줄 — 왼쪽 필드 전개, 오른쪽(+ 파티 밑) 동시 내밀기 · 내밀기 실행 */
     const fe=window.OM_STAGE_UI&&(c.mgr||(c.seat&&(b.trainers||{})[c.seat]))?`<button class="btn xs" data-act="stagemgr" title="${c.mgr?'트레이너 · 포켓몬이 각자 가진':'내 트레이너 · 포켓몬의'} 필드 · 스타디움 · 이계를 펼친다">필드 전개</button>`:'';
-    const sm=c.mgr?`<label class="btn xs ${b.simul?'pri':'ghost'} simtg" title="켜면 「등장」 대신 「내밀기 예약」을 하고, 「시합 개시」·「내밀기 실행」 때 양쪽이 동시에 나온다"><input type="checkbox" data-act="simul" ${b.simul?'checked':''}> 동시 내밀기</label>`:'';
-    return fe||sm?`<div class="shead2">${fe}<span class="sp"></span>${sm}</div>`:''})():''}${items||'<div class="aempty small">트레이너 없음'+(c.mgr?' — 「+ 파티」':'')+'</div>'}${sidePanel(c,side,ready)}</div>`}
+    const sm=c.mgr?`<label class="btn xs ${b.simul?'pri':'ghost'} simtg" title="켜면 「등장」 대신 「내밀기 예약」을 하고, 「시합 개시」·「내밀기 실행」 때 양쪽이 동시에 나온다"><input type="checkbox" data-act="simul" ${b.simul?'checked':''}> 동시 내밀기</label>`:`<span class="chip ${b.simul?'on':''}" title="${b.simul?'켜짐 — 「등장」 대신 「내밀기 예약」, 시합 개시 때 양쪽이 동시에 나온다':'꺼짐 — 바로 「등장」'} (켜고 끄는 건 진행하는 사람)">동시 내밀기 ${b.simul?'켬':'끔'}</span>`;
+    return fe||sm?`<div class="shead2">${fe}<span class="sp"></span>${sm}</div>`:''})():''}${items||'<div class="aempty small">트레이너 없음'+(canLoad(c)?` — <button class="btn xs pri" data-act="load" data-side="${side}">+ 파티 불러오기</button>`:' — 진행하는 사람이 파티를 불러온다')+'</div>'}${sidePanel(c,side,ready)}</div>`}
  /* 벤치 아래 빈 곳: 그 진영이 입력해 둔 지시 현황. 내 트레이너(GM 은 볼 수 있는 것 전부)는 편집 중인 지시를, 남의 것은 공개된 만큼만 */
  function sidePanel(c,side,ready){const b=c.b;const trs=b.trainers||{};const ids=(((b.sides||{})[side]||{}).trainers||[]).filter(t=>trs[t]);if(!ids.length)return '';
   const mine=myTrainers(c);const ph=+b.phase||0;
@@ -213,7 +215,7 @@ window.OM_BATTLE_UI=(()=>{
      <div class="tr">${['육성','지시','통솔','능력'].map(k=>`${k} <b>${esc(t.ranks[k]||'-')}</b>`).join(' · ')} · ${o?`<span class="who">${esc(o.name)}</span>`:'<span class="dim">빈 자리</span>'}</div></div>
      ${c.mgr?`<button class="btn xs ghost" data-act="orders" data-tid="${tid}" title="포텐셜 설정 · 지령·명령 · 고유·전용 횟수">설정</button><button class="btn xs ghost danger" data-act="unload" data-tid="${tid}">빼기</button>`:''}</div>
     <div class="bench">${mons.map(m=>benchCard(c,m)).join('')||'<div class="dim small">포켓몬 없음</div>'}</div>`}).join('');
-  return `<div class="sideBox ${side}"><div class="shead"><span class="sname">${SIDE_KO[side]}</span><span class="sp"></span>${c.mgr?`<button class="btn xs" data-act="load" data-side="${side}">+ 파티</button>`:''}</div>
+  return `<div class="sideBox ${side}"><div class="shead"><span class="sname">${SIDE_KO[side]}</span><span class="sp"></span>${canLoad(c)?`<button class="btn xs" data-act="load" data-side="${side}">+ 파티</button>`:''}</div>
    <div class="areas">${areas}</div>${bench||'<div class="aempty">트레이너 없음</div>'}</div>`}
 
  /* HP 막대: 지난번 값에서 새 값으로 줄어들고(늘고), 빨간 잔상이 뒤따라온다 */
@@ -229,7 +231,7 @@ window.OM_BATTLE_UI=(()=>{
  function stateChips(m){const st=m.states||{};const db=(DB().states||{}).st||{};return Object.keys(st).filter(k=>st[k]).map(k=>{const im=simg(k);return `<span class="stc ${db[k]&&db[k].abn?'abn':''}" title="${esc((db[k]&&db[k].desc||[]).join(' '))}">${im?`<img src="${esc(im)}" alt="">`:''}${esc(db[k]?db[k].ko:k)}${+st[k]>1&&+st[k]<1000?' '+st[k]:''}</span>`}).join('')}
  function bigCard(c,m,slot){const full=canEdit(c,m);const cmd=cmdOf(c.b,m);
   return `<div class="mon big ${m.hp.cur<=0?'fainted':''}" data-mon="${m.id}"><div class="pic" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div>
-   <div class="minfo"><div class="nm">${esc(m.name)}<span class="lv">Lv.${m.lv}</span>${((!full&&c.seat)||c.gm)?`<button class="btn xs ghost dexb" data-act="dex" data-mid="${m.id}" title="도감 정보 · 해석">도감</button>`:''}${full&&mode(c.b)>=2&&m.hp.cur>0?`<button class="btn xs ghost dexb" data-act="areaswap" data-mid="${m.id}" title="같은 편 다른 에리어와 자리 바꾸기 (사이드체인지 등)">⇄ 에리어</button>`:''}${(!full&&c.seat&&(c.b.trainers[c.seat]||{}).side!==m.side&&(+c.b.phase||0)===0)||c.gm&&!full?`<button class="btn xs ghost dexb" data-act="time" data-mid="${m.id}" title="「타임」 — 상대 지시의 꼴 엿보기">타임</button>`:''}</div><div class="ty">${m.types.filter(t=>t!=='-').map(typeChip).join('')}${m.teraActive?`<span class="rk up">테라 ${esc(m.tera)}</span>`:''}</div>
+   <div class="minfo"><div class="nm">${esc(m.name)}<span class="lv">Lv.${m.lv}</span>${((!full&&c.seat)||c.gm)?`<button class="btn xs ghost dexb" data-act="dex" data-mid="${m.id}" title="도감 정보 · 해석">도감</button>`:''}${full&&mode(c.b)>=2&&m.hp.cur>0?`<button class="btn xs ghost dexb" data-act="areaswap" data-mid="${m.id}" title="같은 편 다른 에리어와 자리 바꾸기 (사이드체인지 등)">⇄ 에리어</button>`:''}${(!full&&c.seat&&(c.b.trainers[c.seat]||{}).side!==m.side&&(+c.b.phase||0)===0)||c.gm&&!full?`<button class="btn xs ghost dexb" data-act="time" data-mid="${m.id}" title="「타임」 — 상대 지시의 꼴 엿보기">타임</button>`:''}</div><div class="ty">${tyHtml(c,m)}${m.teraActive?`<span class="rk up">테라 ${esc(m.tera)}</span>`:''}</div>
    ${hpBar(m,full)}<div class="rks">${rankChips(m)}${stateChips(m)}${flagChips(m)}${FX()?FX().chips(m).map(ch=>`<span class="rk fxc ${full?'rm':''}" title="${esc(ch.title)}${full?' — 눌러서 해제':''}" ${full?`data-act="fxoff" data-mid="${m.id}" data-fx="${esc(ch.id)}" data-nm="${esc(ch.name)}"`:''}>${esc(ch.t)}${full?' ✕':''}</span>`).join(''):''}</div>
    ${cmd?`<div class="cmdcard">${cmd}</div>`:(((+c.b.phase||0)>=1&&full&&m.hp.cur>0)?`<div class="revealrow"><button class="btn sm pri" data-act="revealmon" data-tid="${m.tid}" data-mid="${m.id}">지시 공개 (에리어 ${String(m.entry).toUpperCase()})</button></div>`:'')}
    ${potLine(c,m)}
@@ -240,7 +242,7 @@ window.OM_BATTLE_UI=(()=>{
  function benchCard(c,m){const full=canEdit(c,m);const out=!!m.entry;const sec=secret(c,m);
   if(sec)return `<div class="mon small secret"><div class="btop"><div class="pic"></div><div class="nm">비공개</div></div><div class="hpbar"><i style="width:100%"></i></div><div class="hpnum">?</div></div>`;
   return `<div class="mon small ${m.hp.cur<=0?'fainted':''} ${out?'onfield':''}" data-mon="${m.id}">
-   <div class="btop"><div class="pic" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div><div class="nm" title="${esc(m.name)} · ${esc(m.types.filter(t=>t!=='-').map(t=>S().typeKo(t)).join('/'))}">${esc(m.name)}${out?` <span class="tag">${m.entry.toUpperCase()}</span>`:''}</div></div><div class="ty">${m.types.filter(t=>t!=='-').map(typeChip).join('')}</div>${hpBar(m,full)}
+   <div class="btop"><div class="pic" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div><div class="nm" title="${esc(m.name)}${dexSees(c,m,'type')?' · '+esc(m.types.filter(t=>t!=='-').map(t=>S().typeKo(t)).join('/')):''}">${esc(m.name)}${out?` <span class="tag">${m.entry.toUpperCase()}</span>`:''}</div></div><div class="ty">${tyHtml(c,m)}</div>${hpBar(m,full)}
    ${!out&&full&&m.hp.cur>0?(c.b.simul?`<button class="btn xs ${m.pend?'pri':''}" data-act="pend" data-mid="${m.id}">${m.pend?'예약 '+String(m.pend).toUpperCase()+' ✓':'내밀기 예약'}</button>`:`<button class="btn xs" data-act="enter" data-mid="${m.id}">등장</button>`):''}</div>`}
 
  /* 【N/시】 포텐셜 횟수. potUses[name] = 남은 횟수 */
@@ -261,7 +263,10 @@ window.OM_BATTLE_UI=(()=>{
  function uniqList(t){return ((t&&t.unique)||[]).filter(u=>u&&u.name).map(u=>{const mm=String(u.eff||'').match(/【(\d+)\/시】/);const max=mm?+mm[1]:null;const left=max==null?null:(((t.uUses||{})[u.name]==null)?max:+(t.uUses||{})[u.name]);return {p:u,kind:'고유',max,left}})}
  function potList(m){const out=[];const src=potSrc(m);
   for(const p of src){const mm=String(p.eff||'').match(/【(\d+)\/시】/);if(mm)out.push({name:p.name,max:+mm[1]})}return out}
- function potLine(c,m){const full=canEdit(c,m);const L=potList(m).filter(p=>full||!isExcl(m,p));   /* 전용 포텐셜은 주인(과 GM)만 본다 */const u=m.potUses||{};const Lnames=new Set(L.map(p=>p.name));
+ /* 해석: 상대 포켓몬의 타입은 「타입」 해석(또는 전체)부터, 포텐셜 칸은 전체 해석부터 보인다 (도감 scope 기준 — GM · 주인 · 같은 편은 늘 보인다) */
+ function dexSees(c,m,part){if(c.gm||canEdit(c,m))return true;const D=window.OM_DEX_UI;if(!D||!D.scope)return true;const sc=D.scope(m.id,c.seat||'');return sc==='all'||(part!=='all'&&Array.isArray(sc)&&sc.includes(part))}
+ function tyHtml(c,m){return dexSees(c,m,'type')?m.types.filter(t=>t!=='-').map(typeChip).join(''):'<span class="tyq" title="타입 미해석 — 도감으로 해석하면 보인다">타입 ?</span>'}
+ function potLine(c,m){const full=canEdit(c,m);if(!full&&!dexSees(c,m,'all'))return '';const L=potList(m).filter(p=>full||!isExcl(m,p));   /* 전용 포텐셜은 주인(과 GM)만 본다 */const u=m.potUses||{};const Lnames=new Set(L.map(p=>p.name));
   /* 횟수 없는 자동화(포텐셜·특성·소지품) 도 「발동」 버튼으로 */
   const extra=[];if(FX()&&full){const src=potSrc(m).filter(p=>!Lnames.has(p.name));
    for(const p of src){const a=FX().autoOf(m,'pot',p.name);if(a&&a.ops&&a.ops.length&&!a.manual)extra.push(['pot',p.name])}
@@ -303,7 +308,7 @@ window.OM_BATTLE_UI=(()=>{
  const UIC={tab:{},fold:{}};  /* tid → 선택된 mid */
  function moveCard(mv,i,on,extra){const col=S().typeColor(mv.typeEn);return `<div class="mv ${on?'on':''}" style="background:${col.bg};color:${col.fg}" ${extra||''}><div class="mn">${esc(mv.name)} <i class="mvdb" data-mvdb="${esc(mv.name)}" title="기술 DB">?</i></div><div class="mm">${esc(mv.cat)} · 위력 ${mv.pow||'-'} · 명중 ${mv.acc||'필중'}${mv.prio?' · 우선 '+mv.prio:''}</div><div class="mr">${esc(mv.range)}</div></div>`}
  function tile(m,side,area,on,cls,extra){if(!m)return `<div class="ttile none ${cls||''}"><span class="tn"><small>${SIDE_KO[side]} ${area.toUpperCase()} 빈 자리</small></span></div>`;const pct=Math.max(0,Math.min(100,Math.round(m.hp.cur/m.hp.max*100)));
-  return `<div class="ttile ${cls||''} ${on?'on':''}" ${extra||''}><div class="ti" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div><div class="tn"><b>${esc(m.name)}</b><small>${SIDE_KO[side]} ${area.toUpperCase()} · ${m.types.filter(t=>t!=='-').map(typeChip).join('')}</small><div class="hpb ${pct<=25?'low':pct<=50?'mid':''}"><i style="width:${pct}%"></i></div></div><span class="tk">${on?'✓':''}</span></div>`}
+  return `<div class="ttile ${cls||''} ${on?'on':''}" ${extra||''}><div class="ti" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div><div class="tn"><b>${esc(m.name)}</b><small>${SIDE_KO[side]} ${area.toUpperCase()} · ${tyHtml(ctx(),m)}</small><div class="hpb ${pct<=25?'low':pct<=50?'mid':''}"><i style="width:${pct}%"></i></div></div><span class="tk">${on?'✓':''}</span></div>`}
  /* 대상판: 열 = 좌측/우측, 행 = 에리어 (무대와 같은 배치). 아군 열은 초록, 상대 열은 빨강 */
  function board(b,mySide,isOn,attr,allowSelf){const ent={left:entered(b,'left'),right:entered(b,'right')};const cls=s=>s===mySide?'al':'en';
   const head=SIDES.map(s=>`<div class="bl ${cls(s)}">${SIDE_KO[s]}${s===mySide?' (아군)':' (상대)'}</div>`).join('');
