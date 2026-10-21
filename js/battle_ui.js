@@ -1032,7 +1032,7 @@ window.OM_BATTLE_UI=(()=>{
    A().closeModal();if(await saveMon(m,mid,nm)){const ch=[];for(const k in STAT_KO){const a=+m.rank[k]||0,b2=+rank[k]||0;if(a!==b2)ch.push(`${STAT_KO[k]} ${a}→${b2>0?'+':''}${b2}`)}
     const sa=Object.keys(m.states||{}).filter(k=>m.states[k]),sb=Object.keys(nm.states);const on=sb.filter(k=>!sa.includes(k)).map(k=>(sdb.st[k]||{}).ko||k),off=sa.filter(k=>!sb.includes(k)).map(k=>(sdb.st[k]||{}).ko||k);
     if(on.length)ch.push('+'+on.join(','));if(off.length)ch.push('−'+off.join(','));if(nm.hp.cur!==m.hp.cur)ch.push(`HP ${m.hp.cur}→${nm.hp.cur}`);if((nm.item||'')!==(m.item||''))ch.push(`소지품 ${nm.item||'없음'}`);
-    if(ch.length)A().sysLog(`${m.name}: ${ch.join(' · ')}`,'battle')}}}
+    const dsc=sb.filter(k=>!sa.includes(k)).map(k=>{const ds=stDesc(k);return ds.length?`「${stName(k)}」 ${ds.join(' ')}`:''}).filter(Boolean);if(ch.length)A().sysLog(`${m.name}: ${ch.join(' · ')}${dsc.length?'\n'+dsc.join('\n'):''}`,'battle',{mid,img:m.image||''})}}}
 
  /* ---------- 필드 (GM) ---------- */
  function openField(){const c=ctx();if(!c.mgr)return;const f=fieldOf(c.b);
@@ -1306,6 +1306,49 @@ ${L.join('\n')}${once.length?'\n'+once.map(x=>'· '+x.line).join('\n'):''}`,'bat
    case 'bField':if(mgrOnly())openField();return true;
    case 'bTurnEnd':if(mgrOnly()&&confirm('턴 마무리(턴 가장 마지막 → 턴 종료 → 턴 종료 이후)로 갈까?'))endFlow();return true}
   return false}
+ /* ----- 상세 창의 랭크·배율·상태 (10-21 망령): 항목별 칸을 눌러 바로 조절하고, 상태는 붙이고 뗀다. 바뀐 것은 채팅 로그에 (상태는 설명까지) ----- */
+ const NOW_K=['attack','defense','specialattack','specialdefense','speed','accuracy','evasion','critical'];const NOW_MODS=[0.5,0.67,0.75,1,1.33,1.5,2];
+ const fmtR=v=>(v>0?'+':'')+v;const LOGQ={};
+ /* 랭크·배율은 여러 번 누르니 잠깐 모았다가 한 줄로 (바꾸기 전 값을 처음 한 번만 잡아 둔다) */
+ function nowQueue(m){const q=LOGQ[m.id]||(LOGQ[m.id]={r0:Object.assign({},m.rank||{}),m0:Object.assign({},m.mod||{})});clearTimeout(q.t);q.t=setTimeout(()=>nowFlush(m.id),1500)}
+ function nowFlush(mid){const q=LOGQ[mid];if(!q)return;clearTimeout(q.t);delete LOGQ[mid];const m=(ctx().b.mons||{})[mid];if(!m)return;const ch=[];
+  for(const k of NOW_K){const a=+q.r0[k]||0,b2=+(m.rank||{})[k]||0;if(a!==b2)ch.push(`${STAT_KO[k]} 랭크 ${fmtR(a)} → ${fmtR(b2)}`);const x=+q.m0[k]||1,y=+(m.mod||{})[k]||1;if(x!==y)ch.push(`${STAT_KO[k]} 배율 ×${x} → ×${y}`)}
+  if(ch.length)A().sysLog(`【랭크·배율】 ${m.name}\n${ch.join('\n')}`,'battle',{mid,img:m.image||''})}
+ const stDesc=k=>((((DB().states||{}).st||{})[k])||{}).desc||[];const stName=k=>((((DB().states||{}).st||{})[k])||{}).ko||k;
+ function nowEditHtml(m,full,o){o=o||{};const r=m.rank||{},md=m.mod||{};const sdb=(DB().states||{}).st||{};const st=m.states||{};
+  const cell=k=>{const v=+r[k]||0,x=+md[k]||1;return `<button type="button" class="dxrk ${v>0?'up':v<0?'dn':''} ${x>1?'mup':x<1?'mdn':''} ${o.sel===k?'sel':''}" ${full?`data-nrk="${k}"`:'disabled'}><small>${STAT_KO[k]}${k==='critical'?' (C)':''}</small><b>${fmtR(v)}</b><em>×${x}</em></button>`};
+  const chips=Object.keys(st).filter(k=>st[k]).map(k=>{const d=sdb[k]||{ko:k};const im=simg(k);return `<span class="dxs1 ${d.abn?'abn':''}" title="${esc((d.desc||[]).join(' '))}">${im?`<img src="${esc(im)}" alt="">`:''}<b>${esc(d.ko||k)}</b>${+st[k]>1&&+st[k]<1000?`<i>${st[k]}턴</i>`:''}${full?`<button type="button" class="dxsx" data-nsoff="${esc(k)}" title="「${esc(d.ko||k)}」 풀기">✕</button>`:''}</span>`}).join('');
+  const fx=flagChips(m)+(FX()?FX().chips(m).map(ch=>`<span class="rk fxc" title="${esc(ch.title)}">${esc(ch.t)}</span>`).join(''):'');
+  const bar=()=>{const k=o.sel;const v=+r[k]||0,x=+md[k]||1;const lim=k==='critical'?4:6;
+   return `<div class="dxrkb"><b class="dxrkt">${STAT_KO[k]}</b><span class="dxrkr"><button type="button" class="btn sm" data-nrd="-1" ${v<=-lim?'disabled':''}>−1</button><b class="mono">${fmtR(v)}</b><button type="button" class="btn sm" data-nrd="1" ${v>=lim?'disabled':''}>+1</button></span>
+    <span class="dxrkm"><span class="small dim">배율</span>${NOW_MODS.map(z=>`<button type="button" class="btn xs ${z===x?'pri':'ghost'}" data-nmod="${z}">×${z}</button>`).join('')}<input type="number" step="0.01" min="0.01" class="n xs" data-nmodi value="${x}" title="배율 직접 입력"></span>
+    <label class="small dxrkp"><input type="checkbox" data-ntemp ${o.temp?'checked':''}> 랭크를 턴 종료 때 되돌리기</label></div>`};
+  const pick=()=>{const q=(o.q||'').toLowerCase();const groups=((DB().states||{}).groups||[]).map(g=>({l:g.l,s:g.s.filter(k=>!st[k]&&sdb[k]&&(!q||(sdb[k].ko+' '+k+' '+(sdb[k].desc||[]).join(' ')).toLowerCase().includes(q)))})).filter(g=>g.s.length);
+   return `<div class="dxspk"><input type="text" data-nsq value="${esc(o.q||'')}" placeholder="상태 검색 (이름·설명)"><div class="dxspg">${groups.map(g=>`<div class="dxspgl">${esc(g.l)}</div><div class="dxsps">${g.s.map(k=>{const d=sdb[k];const im=simg(k);return `<button type="button" class="dxsp1 ${d.abn?'abn':''}" data-nsadd1="${esc(k)}" title="${esc((d.desc||[]).join(' '))}">${im?`<img src="${esc(im)}" alt="">`:''}${esc(d.ko)}</button>`}).join('')}</div>`).join('')||'<span class="small dim">맞는 상태가 없다</span>'}</div></div>`};
+  return `<div class="dxnow"><div class="k dxk">랭크 · 배율${full?'<span class="small dim">칸을 눌러 조절</span><span class="sp"></span><button type="button" class="btn xs ghost" data-nrk0 title="랭크·배율을 전부 원래대로">초기화</button>':''}</div><div class="dxrkg">${NOW_K.map(cell).join('')}</div>${full&&o.sel?bar():''}</div>
+   <div class="dxnow"><div class="k dxk">상태${full?`<span class="sp"></span><button type="button" class="btn xs ${o.pk?'pri':''}" data-nsadd>${o.pk?'닫기':'+ 상태'}</button>`:''}</div><div class="dxstl">${chips||'<span class="small dim">없음</span>'}</div>${full&&o.pk?pick():''}</div>
+   ${fx?`<div class="dxnow"><div class="k">효과</div><div class="rks">${fx}</div></div>`:''}`}
+ function bindNowEdit(box,mid){if(!box)return;const o={sel:'',temp:false,pk:false,q:''};const mon=()=>(ctx().b.mons||{})[mid];
+  const P=k=>['battle','mons',mid,k];
+  const redraw=(focusQ)=>{const m=mon();if(!m)return;box.innerHTML=nowEditHtml(m,true,o);bind();if(focusQ){const q=box.querySelector('[data-nsq]');if(q){q.focus();q.setSelectionRange(q.value.length,q.value.length)}}};
+  const setMod=async z=>{z=Math.round(+z*1000)/1000;if(!(z>0))return;const m=mon(),k=o.sel;const x0=+(m.mod||{})[k]||1;if(z===x0)return;nowQueue(m);const nm=Object.assign({},m.mod||{});if(z===1)delete nm[k];else nm[k]=z;await A().set(P('mod'),nm);
+   /* 손으로 바꾼 배율은 출처 기록에서 떼어 낸다 (나중에 효과 ✕ 로 역으로 나뉘지 않게) */
+   const F=m.fx;if(F&&F.mults&&F.mults.some(e=>e.stats&&e.stats[k]!=null)){const nf=JSON.parse(JSON.stringify(F));nf.mults=nf.mults.map(e=>{const s=Object.assign({},e.stats);delete s[k];return Object.assign({},e,{stats:s})}).filter(e=>Object.keys(e.stats).length);await A().set(P('fx'),nf)}redraw()};
+  const bind=()=>{
+   box.querySelectorAll('[data-nrk]').forEach(b=>b.onclick=()=>{o.sel=o.sel===b.dataset.nrk?'':b.dataset.nrk;redraw()});
+   box.querySelectorAll('[data-nrd]').forEach(b=>b.onclick=async()=>{const m=mon(),k=o.sel;const lim=k==='critical'?4:6;const v0=+(m.rank||{})[k]||0;const v=Math.max(-lim,Math.min(lim,v0+(+b.dataset.nrd)));if(v===v0)return;nowQueue(m);
+    await A().set(P('rank'),Object.assign({},m.rank||{},{[k]:v}));if(o.temp){const tr=Object.assign({},m.tempRank||{});tr[k]=(+tr[k]||0)+(v-v0);if(!tr[k])delete tr[k];await A().set(P('tempRank'),tr)}redraw()});
+   box.querySelectorAll('[data-nmod]').forEach(b=>b.onclick=()=>setMod(b.dataset.nmod));
+   const mi=box.querySelector('[data-nmodi]');if(mi)mi.onchange=()=>setMod(mi.value);
+   const tp=box.querySelector('[data-ntemp]');if(tp)tp.onchange=()=>{o.temp=tp.checked};
+   const r0=box.querySelector('[data-nrk0]');if(r0)r0.onclick=async()=>{const m=mon();const any=NOW_K.some(k=>+(m.rank||{})[k]||(+(m.mod||{})[k]||1)!==1);if(!any)return A().toast('바꿀 랭크·배율이 없다');if(!confirm(`${m.name}의 랭크·배율을 전부 원래대로 돌릴까?`))return;nowQueue(m);
+    await A().set(P('rank'),{});await A().set(P('mod'),{});if(m.tempRank)await A().set(P('tempRank'),null);if(m.tempMod)await A().set(P('tempMod'),null);if(m.fx&&m.fx.mults&&m.fx.mults.length){const nf=JSON.parse(JSON.stringify(m.fx));nf.mults=[];await A().set(P('fx'),nf)}nowFlush(mid);redraw()};
+   box.querySelectorAll('[data-nsoff]').forEach(b=>b.onclick=async()=>{const m=mon(),k=b.dataset.nsoff;const ns=Object.assign({},m.states||{});delete ns[k];await A().set(P('states'),ns);A().sysLog(`【상태】 ${m.name}의 「${stName(k)}」이(가) 풀렸다`,'battle',{mid,img:m.image||''});redraw()});
+   const ad=box.querySelector('[data-nsadd]');if(ad)ad.onclick=()=>{o.pk=!o.pk;o.q='';redraw(o.pk)};
+   const q=box.querySelector('[data-nsq]');if(q)q.oninput=()=>{o.q=q.value;redraw(true)};
+   box.querySelectorAll('[data-nsadd1]').forEach(b=>b.onclick=async()=>{const m=mon(),k=b.dataset.nsadd1;const d=((DB().states||{}).st||{})[k]||{};const c=d.min&&d.min<1000?d.min:(d.min||1000);const ns=Object.assign({},m.states||{},{[k]:c});await A().set(P('states'),ns);
+    const ds=stDesc(k);A().sysLog(`【상태】 ${m.name} 「${stName(k)}」${c<1000?` (${c}턴)`:''}${ds.length?'\n'+ds.join('\n'):''}`,'battle',{mid,img:m.image||''});o.pk=false;o.q='';redraw()})};
+  bind()}
  function nowParts(m){return {rank:rankChips(m),state:stateChips(m),fx:flagChips(m)+(FX()?FX().chips(m).map(ch=>`<span class="rk fxc" title="${esc(ch.title)}">${esc(ch.t)}</span>`).join(''):'')}}
- return {render,nowParts,watch,ctx,entered,allEntered,fieldOf,futureFire,trapWarn,resetLocal:()=>{CMD={}},startCut:(m)=>battleStartCut(ctx().b,m),openHp,action,hotkey};
+ return {render,nowParts,nowEditHtml,bindNowEdit,watch,ctx,entered,allEntered,fieldOf,futureFire,trapWarn,resetLocal:()=>{CMD={}},startCut:(m)=>battleStartCut(ctx().b,m),openHp,action,hotkey};
 })();

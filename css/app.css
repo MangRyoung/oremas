@@ -2054,3 +2054,63 @@ span.iedit{display:inline-block;min-width:3em}
 .cdf textarea{width:100%}
 .cdfb{gap:8px;flex-wrap:wrap;align-items:center}.cdfb input[type=date]{color-scheme:dark}
 .btn>[hidden],.btn>input[type=file]{display:none!important}
+/* 고유 포텐셜 — 제작기에서 꾸민 색 · 아이콘 · 부제 */
+.potc.tuqx{background:linear-gradient(135deg,color-mix(in srgb,var(--ph) 18%,#16171b) 0%,#16171b 70%)}
+.tuqi{flex:none;width:30px;height:30px;display:grid;place-items:center;font-size:18px;border-radius:50%;border:2px solid var(--ph);background:color-mix(in srgb,var(--ph) 22%,#111)}
+.tuqs{display:block;font-size:11.5px;font-weight:400;font-style:italic;color:var(--fg2);margin-top:1px}
+/* 상세 창 랭크·배율·상태 — 항목별 칸 · 바로 조절 */
+.dxk{display:flex;align-items:center;gap:6px}.dxk .small{font-family:var(--body,inherit);letter-spacing:0;text-transform:none}
+.dxrkg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.dxrk{background:#101114;border:1px solid var(--line);border-radius:6px;padding:4px 2px 3px;display:flex;flex-direction:column;align-items:center;gap:0;cursor:pointer;color:var(--fg);min-width:0}
+.dxrk small{font-size:10.5px;color:var(--mute);white-space:nowrap}
+.dxrk b{font-family:var(--mono);font-size:16px;line-height:1.2;color:var(--fg2)}
+.dxrk em{font-style:normal;font-family:var(--mono);font-size:10.5px;color:var(--mute)}
+.dxrk.up b{color:#ff7a7a}.dxrk.dn b{color:#6fb6ff}.dxrk.mup em{color:#ffb35c;font-weight:700}.dxrk.mdn em{color:#7fd0ff;font-weight:700}
+.dxrk:hover:not(:disabled){border-color:var(--line2)}.dxrk.sel{border-color:var(--yel2);box-shadow:0 0 0 1px var(--yel2) inset}.dxrk:disabled{cursor:default}
+.dxrkb{margin-top:6px;background:#15161a;border:1px solid var(--yel2);border-radius:8px;padding:7px 8px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 10px}
+.dxrkt{font-size:13px}.dxrkr{display:flex;align-items:center;gap:6px}.dxrkr b{font-size:18px;min-width:28px;text-align:center}
+.dxrkm{display:flex;flex-wrap:wrap;align-items:center;gap:3px}.dxrkm .n{width:58px}
+.dxrkp{flex-basis:100%}
+.dxstl{display:flex;flex-wrap:wrap;gap:4px}
+.dxs1{display:inline-flex;align-items:center;gap:4px;background:#101114;border:1px solid var(--line2);border-radius:5px;padding:2px 4px 2px 6px;font-size:12.5px}
+.dxs1.abn{border-color:#a8323a;background:#2a1215}.dxs1 img{width:18px;height:18px;object-fit:contain}.dxs1 i{font-style:normal;font-size:11px;color:var(--mute)}
+.dxsx{background:none;border:0;color:var(--mute);cursor:pointer;padding:0 2px;font-size:12px}.dxsx:hover{color:#fff}
+.dxspk{margin-top:6px;background:#15161a;border:1px solid var(--line2);border-radius:8px;padding:7px}
+.dxspk input{width:100%}.dxspg{max-height:220px;overflow:auto;margin-top:6px}
+.dxspgl{font-size:11px;color:var(--mute);margin:6px 0 3px}.dxsps{display:flex;flex-wrap:wrap;gap:3px}
+.dxsp1{display:inline-flex;align-items:center;gap:3px;background:#101114;border:1px solid var(--line);border-radius:5px;padding:2px 7px;font-size:12px;color:var(--fg);cursor:pointer}
+.dxsp1:hover{border-color:var(--yel2)}.dxsp1.abn{border-color:#6b2a30}.dxsp1 img{width:16px;height:16px;object-fit:contain}
+@media (max-width:760px){.dxrkg{grid-template-columns:repeat(4,minmax(0,1fr))}}
+/* 캐릭터 시트 머리 — 소지 포켓몬 6체 + 배틀 배치 */
+.hero>.hmain{flex:0 1 auto}
+.hparty{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px}
+.hpmons{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.hpm{position:relative;width:62px;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:0;padding:0;cursor:pointer;color:#000}
+.hpm.empty{cursor:default}
+.hpmi{width:56px;height:56px;background:#000 center/cover no-repeat;border:3px solid #000;display:grid;place-items:center;color:#fff;font-family:var(--head);font-size:18px;box-shadow:3px 3px 0 #fff;transition:transform .12s}
+.hpm.empty .hpmi{background:rgba(0,0,0,.12);border-style:dashed;box-shadow:none}
+.hpm:not(.empty):hover .hpmi{transform:translateY(-2px)}
+.hpm.on .hpmi{border-color:var(--red);box-shadow:3px 3px 0 var(--red)}
+.hpm.partner .hpmi{border-color:#000;outline:2px solid #fff;outline-offset:-5px}
+.hpms{position:absolute;top:-6px;right:0;background:#000;color:var(--yel2);font-size:11px;line-height:1;padding:2px 3px}
+.hpmn{font-size:10.5px;font-weight:700;max-width:62px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hpbtn{display:flex;align-items:center;gap:5px;flex-wrap:wrap;justify-content:center}
+.hpbl{background:#000;color:var(--yel2);font-family:var(--lab);font-size:11.5px;padding:2px 8px}
+@media (max-width:760px){.hparty{flex:1 1 100%;order:3}.hpm{width:48px}.hpmi{width:44px;height:44px;font-size:15px}.hpmn{max-width:48px;font-size:10px}.hpmons{gap:4px}}
+@media (max-width:760px){.hero>.hmain{flex:1 1 100%}}
+/* 10-21 망령: 모바일 배틀 카드 — 타입부터 아래 줄은 그림 밑까지 꽉 채우고, 「⋯」는 공격·HP 옆 한 줄로 */
+@media (max-width:760px){
+ .mon.big{grid-template-columns:44px minmax(0,1fr);align-items:start}
+ .mon.big .pic{grid-row:1;grid-column:1}
+ .mon.big .minfo{display:contents}
+ .mon.big .minfo>.nm{grid-column:2;grid-row:1;align-self:center}
+ .mon.big .minfo>:not(.nm){grid-column:1/-1;min-width:0}
+ .mon.big .mbtns{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media (min-width:761px){.hero .tiles{max-width:236px}.hpmons{flex-wrap:nowrap}.hpm{width:56px}.hpmi{width:50px;height:50px}.hpmn{max-width:56px}}
+/* DB 상태 변화 수정 창 */
+.stedg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px 12px;margin-bottom:8px}
+.stedg>label{display:flex;flex-direction:column;align-items:stretch;gap:3px}.stedg>label>b{font-size:12px;color:var(--fg2)}
+.stedg>label.seck{flex-direction:row;align-items:center;gap:6px}
+.stedg>label.sefull{grid-column:1/-1}.stedg textarea{width:100%}
+@media (max-width:760px){.stedg{grid-template-columns:1fr}}

@@ -24,7 +24,7 @@ window.OM_DB_UI=(()=>{
   if(kind==='pot'){return ((d.maker||{}).pots||[]).map((p,i)=>({name:p[1],group:p[0],summary:String(p[2]||'').replace(/\n/g,' '),tags:[String(p[0]||'').replace(/^[\d.]+\s*/,'')].concat(tagsOf(p[2])).concat(p.src==='maker'?['제작기']:[]),search:p[0]+' '+p[1]+' '+(p[2]||'')+' '+(p[3]||''),
     html:`<div class="row small" style="margin-bottom:6px"><span class="chip">${esc(p[0])}</span>${p.src?`<span class="chip" style="border-color:var(--yel2)">${esc(p.src==='maker'?'제작기에서':'방에서 고침')}</span>`:''}</div><div class="dbsec">효과</div><div class="dbbody">${pretty(p[2])}</div>${p[3]?`<div class="dbsec">비고</div><div class="dbbody small">${pretty(p[3],{dot:false})}</div>`:''}`}))}
   if(kind==='state'){const st=(d.states||{}).st||{};const groups=(d.states||{}).groups||[];const gOf={};groups.forEach(g=>g.s.forEach(k=>gOf[k]=g.l));const im0=(d.img||{}).state||{};const im={};for(const k in st){const v=(st[k]||{}).img||im0[k];if(v)im[k]=/^(https?:|data:image\/)/.test(v)?v:'img/state/'+v}
-   return Object.entries(st).map(([k,v])=>({name:v.ko||k,key:k,summary:(v.desc||[]).join(' '),tags:[...new Set([gOf[k]||'기타'].concat(v.abn?['상태 이상']:[],v.neg?['불리']:[]))],search:k+' '+(v.ko||'')+' '+(v.desc||[]).join(' '),img:im[k]?'img/state/'+im[k]:'',
+   return Object.entries(st).map(([k,v])=>({name:v.ko||k,key:k,summary:(v.desc||[]).join(' '),tags:[...new Set([gOf[k]||'기타'].concat(v.abn?['상태 이상']:[],v.neg?['불리']:[]))],search:k+' '+(v.ko||'')+' '+(v.desc||[]).join(' '),img:im[k]||'',
     html:`<div class="row" style="gap:8px;align-items:center;margin-bottom:8px">${im[k]?`<img src="${esc(im[k])}" style="width:40px;height:40px;object-fit:contain">`:''}<span class="chip">${esc(gOf[k]||'기타')}</span>${v.prog==='turn'?'<span class="chip">턴 감소</span>':''}${v.max&&v.max<1000?`<span class="chip">${v.min===v.max?v.max+'턴':v.min+'~'+v.max+'턴'}</span>`:''}<span class="small dim">${esc(k)}</span></div><div class="dbsec">설명</div><div class="dbbody">${pretty((v.desc||[]).join('\n'),{dot:false})}</div>${v.memo?`<div class="dbsec">메모</div><div class="dbbody small">${esc(v.memo)}</div>`:''}`}))}
   return []}
  const CACHE={};function all(kind){if(!CACHE[kind])CACHE[kind]=rows(kind).sort((a,b)=>a.name.localeCompare(b.name,'ko'));return CACHE[kind]}
@@ -54,9 +54,14 @@ window.OM_DB_UI=(()=>{
   drawDetail()}
  function drawDetail(){const md=$('.modal');if(!md)return;const r=all(UI.kind).find(x=>x.name===UI.sel);const el=$('#dbdetail',md);
   if(!r){el.innerHTML='<div class="empty">왼쪽에서 고르면 여기 자세히 나온다</div>';return}
-  const isGm=A().ST.role==='gm';const ov=((A().ST.state.dbx||{})[UI.kind]||{})[r.name];
-  el.innerHTML=`<div class="dbcard"><div class="dbth">${r.img?`<img src="${esc(r.img)}">`:''}${r.type?A().typeChip(r.type):''}<b>${esc(r.name)}</b><span class="sp"></span>${r.tags.map(t=>`<span class="dbtag">${esc(t)}</span>`).join('')}</div><div class="dbtb">${r.html}${UI.kind==='move'?mvAuto(r.name):''}</div><div class="dbfoot">${isGm&&UI.kind!=='state'?`<button class="btn sm ghost" id="dbedit">수정</button><button class="btn sm ghost" id="dbdup">사본</button>${ov?'<button class="btn sm ghost" id="dbrevert">기본으로</button>':''}<button class="btn sm ghost danger" id="dbdel">삭제</button>`:''}<span class="sp"></span>${UI.pick?`<button class="btn pri" id="dbpick">이 걸로</button>`:''}</div></div>`;
+  const isGm=A().ST.role==='gm';const ov=UI.kind==='state'?((A().ST.state.dbx||{}).st||{})[r.key]:((A().ST.state.dbx||{})[UI.kind]||{})[r.name];
+  el.innerHTML=`<div class="dbcard"><div class="dbth">${r.img?`<img src="${esc(r.img)}">`:''}${r.type?A().typeChip(r.type):''}<b>${esc(r.name)}</b><span class="sp"></span>${r.tags.map(t=>`<span class="dbtag">${esc(t)}</span>`).join('')}</div><div class="dbtb">${r.html}${UI.kind==='move'?mvAuto(r.name):''}</div><div class="dbfoot">${isGm?`<button class="btn sm ghost" id="dbedit">수정</button><button class="btn sm ghost" id="dbdup">사본</button>${ov?'<button class="btn sm ghost" id="dbrevert">기본으로</button>':''}<button class="btn sm ghost danger" id="dbdel">삭제</button>`:''}<span class="sp"></span>${UI.pick?`<button class="btn pri" id="dbpick">이 걸로</button>`:''}</div></div>`;
   const p=$('#dbpick',md);if(p)p.onclick=choose;
+  if(UI.kind==='state'){/* 10-21 망령: 상태 변화도 방마다 고치기 · 사본 · 삭제 (dbx.st[키]) — 캠페인마다 다른 세팅 */
+   const e=$('#dbedit',md);if(e)e.onclick=()=>openStEdit(r.key,false);const du=$('#dbdup',md);if(du)du.onclick=()=>openStEdit(r.key,true);
+   const rv=$('#dbrevert',md);if(rv)rv.onclick=async()=>{await A().set(['dbx','st',r.key],null);await A().set(['dbx','at'],Date.now());refresh()};
+   const dl=$('#dbdel',md);if(dl)dl.onclick=async()=>{if(!confirm(`상태 「${r.name}」을 이 방의 DB 에서 지울까? (기본 DB 는 그대로, 「기본으로」로 되돌릴 수 있다)`))return;await A().set(['dbx','st',r.key],{del:1,src:'room'});await A().set(['dbx','at'],Date.now());UI.sel='';refresh()};
+   const p2=$('#dbpick',md);if(p2)p2.onclick=choose;return}
   const e=$('#dbedit',md);if(e)e.onclick=()=>openEdit(UI.kind,r.name,false);const du=$('#dbdup',md);if(du)du.onclick=()=>openEdit(UI.kind,r.name,true);
   const rv=$('#dbrevert',md);if(rv)rv.onclick=async()=>{await A().set(['dbx',UI.kind,r.name],null);await A().set(['dbx','at'],Date.now());refresh()};
   const dl=$('#dbdel',md);if(dl)dl.onclick=async()=>{if(!confirm(`「${r.name}」을 이 방의 DB 에서 지울까? (기본 DB 는 그대로, 「기본으로」로 되돌릴 수 있다)`))return;await A().set(['dbx',UI.kind,r.name],{del:1});await A().set(['dbx','at'],Date.now());UI.sel='';refresh()}}
@@ -78,6 +83,28 @@ window.OM_DB_UI=(()=>{
   $('#ed_ok',md).onclick=async()=>{const n=$('#ed_name',md).value.trim();if(!n)return A().toast('이름이 필요해');const rec={};fs.forEach(([k,l,t])=>{const v=md.querySelector(`[data-ed="${k}"]`).value;rec[k]=t==='num'?(v===''?'':+v):v});
    if(kind==='move'){rec.name=n;rec.typeEn=window.OM_STATS.typeEn(rec.type);rec.cat=rec.cat||'변화';rec.range=rec.range||'1체';rec.contact=rec.contact||'X';rec.tags=String(rec.tag||'').split(/\s+/).filter(Boolean)}
    rec.src='room';A().closeModal();await A().set(['dbx',kind,n],rec);await A().set(['dbx','at'],Date.now());UI.sel=n;if(document.querySelector('.dbmodal'))refresh();else open({kind,sel:n})}}
+ /* 상태 변화 수정: 키(영문)는 그대로, 이름·그룹·턴·설명·그림을 방 DB(dbx.st)에 */
+ function openStEdit(key,dup){const sd=DB().states||{st:{},groups:[]};const cur=Object.assign({},(sd.st||{})[key]||{});const gOf=((sd.groups||[]).find(g=>g.s.includes(key))||{}).l||'(숨김)';
+  const nk=dup?(key+'_'+Date.now().toString(36).slice(-4)):key;const groups=[...new Set([...(sd.groups||[]).map(g=>g.l),gOf,'(숨김)'])];
+  const md=A().openModal(`<div class="mhead"><h2>${dup?'사본 만들기':'수정'} — 상태 변화</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+   <div class="stedg">
+    <label><b>이름</b><input type="text" id="se_ko" value="${esc((cur.ko||key)+(dup?' (사본)':''))}"></label>
+    <label><b>키</b><input type="text" id="se_key" value="${esc(nk)}" ${dup?'':'readonly'} title="자동화 구문·배틀이 쓰는 영문 키"></label>
+    <label><b>그룹</b><input type="text" id="se_grp" list="se_gl" value="${esc(gOf)}"><datalist id="se_gl">${groups.map(g=>`<option value="${esc(g)}">`).join('')}</datalist></label>
+    <label><b>진행</b><select id="se_prog">${[['turn','턴 감소'],['move','기술 사용 시 감소'],['','유지']].map(([v,n])=>`<option value="${v}" ${(cur.prog||'')===v?'selected':''}>${n}</option>`).join('')}</select></label>
+    <label><b>최소 턴</b><input type="number" id="se_min" value="${cur.min??1}" title="1000 = 계속"></label>
+    <label><b>최대 턴</b><input type="number" id="se_max" value="${cur.max??1}" title="1000 = 계속"></label>
+    <label class="seck"><input type="checkbox" id="se_abn" ${cur.abn?'checked':''}> 상태 이상</label><label class="seck"><input type="checkbox" id="se_neg" ${cur.neg?'checked':''}> 불리 (해제 대상)</label>
+    <label class="sefull"><b>그림 주소</b><span class="row" style="gap:6px;flex:1"><input type="text" id="se_img" value="${esc(cur.img||'')}" placeholder="https://… 또는 img/state 파일 이름" style="flex:1"><img id="se_imgv" alt="" style="width:28px;height:28px;object-fit:contain"></span></label>
+    <label class="sefull"><b>설명</b><textarea id="se_desc" rows="5" placeholder="한 줄에 하나씩">${esc((cur.desc||[]).join('\n'))}</textarea></label>
+    <label class="sefull"><b>메모</b><input type="text" id="se_memo" value="${esc(cur.memo||'')}"></label>
+   </div>
+   <div class="small dim">저장하면 이 방의 모두에게 바로 반영된다 (기본 DB 파일은 그대로 · 「기본으로」로 되돌릴 수 있다).</div>
+   <div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn pri" id="se_ok">저장</button></div>`);
+  const iv=()=>{const v=$('#se_img',md).value.trim();const im=$('#se_imgv',md);im.src=!v?'':/^(https?:|data:image\/)/.test(v)?v:'img/state/'+v;im.style.visibility=v?'visible':'hidden'};$('#se_img',md).oninput=iv;iv();
+  $('#se_ok',md).onclick=async()=>{const k=$('#se_key',md).value.trim().replace(/[^\w가-힣-]/g,'');const ko=$('#se_ko',md).value.trim();if(!k||!ko)return A().toast('이름과 키가 필요해');if(dup&&(sd.st||{})[k])return A().toast('이미 있는 키다');
+   const e={ko,min:+$('#se_min',md).value||1,max:+$('#se_max',md).value||1,roll:cur.roll||'',prog:$('#se_prog',md).value,abn:$('#se_abn',md).checked?1:0,neg:$('#se_neg',md).checked?1:0,bat:cur.bat||0,desc:$('#se_desc',md).value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean),memo:$('#se_memo',md).value,img:$('#se_img',md).value.trim()};
+   A().closeModal();await A().set(['dbx','st',k],{group:$('#se_grp',md).value.trim()||'기타',e,src:'room'});await A().set(['dbx','at'],Date.now());UI.sel=ko;if(document.querySelector('.dbmodal'))refresh();else open({kind:'state',sel:ko})}}
  let BASE=null,appliedAt=null;
  function applyOverride(dbx){const d=DB();if(!BASE)BASE={traits:Object.assign({},d.traits),items:Object.assign({},d.items),moves:Object.assign({},d.moves),pots:((d.maker||{}).pots||[]).slice(),states:d.states?JSON.parse(JSON.stringify(d.states)):null};
   const at=(dbx||{}).at||0;if(at===appliedAt&&appliedAt!==null)return;appliedAt=at;dbx=dbx||{};
