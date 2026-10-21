@@ -101,13 +101,14 @@ window.OM_RP_UI=(()=>{
   const bub=r.bubble||{};let skin=null;if(bub.on&&dlgHtml){const narr=!!cap.text||!lastChat||LF(lastChat.data||{}).narr;
    /* 10-23 망령: 칸을 비우면 오레마스 기본 그림(img/bubble/*.svg — 직접 그린 것). 절대 주소로 — CSS 변수 안의 상대 주소는 css/ 기준으로 풀려 버린다 */
    const DEF=k=>new URL('img/bubble/'+({c:'plain',l:'left',m:'mid'})[k]+'.svg',location.href).href;
-   if(narr)skin={v:'c',src:bub.c||DEF('c')}
+   if(narr){skin={v:'c',src:bub.c||DEF('c')};   /* 10-23 망령: 인물이 친 지문은 그 인물이 선 쪽으로 조금 붙는다 */
+    const sk=!cap.text&&lastChat?speakerKey(lastChat):'';const sl=sk?SLOTS.find(x=>slots[x]===sk):'';if(sl==='left'||sl==='right')skin.side=sl[0]}
    else{const sk=speakerKey(lastChat);const sl=sk?SLOTS.find(x=>slots[x]===sk):'';const want=sl==='right'?'r':'l';const alt=want==='l'?'r':'l';
     /* 10-21 망령: 가운데(·무대 밖) 화자는 「꼬리 가운데」 그림이 있으면 그걸로 */
     if(sl!=='left'&&sl!=='right')skin={v:'m',src:bub.m||DEF('m')};else if(bub[want])skin={v:want,src:bub[want]};else if(bub[alt])skin={v:want,src:bub[alt],flip:1};else skin={v:want,src:DEF('l'),flip:want==='r'?1:0};
     if(skin.v!=='c'&&skin.v!=='m'&&sl!=='left'&&sl!=='right')skin.mid=1}}
   const dlg=$('#dlg',el);if(dlgHtml){if(dlg.dataset.k!==dlgHtml){dlg.innerHTML=dlgHtml;dlg.dataset.k=dlgHtml;dlg.classList.remove('pop');void dlg.offsetWidth;dlg.classList.add('pop')}dlg.style.display=''}else{dlg.style.display='none';dlg.dataset.k=''}
-  dlg.classList.toggle('skin',!!skin);for(const v of ['c','l','r','m'])dlg.classList.toggle('s'+v,!!skin&&skin.v===v);dlg.classList.toggle('flip',!!(skin&&skin.flip));dlg.classList.toggle('mid',!!(skin&&skin.mid));dlg.style.setProperty('--bub',skin?`url('${cssu(skin.src)}')`:'');bubStyle(dlg,bub.st);
+  dlg.classList.toggle('skin',!!skin);for(const v of ['c','l','r','m'])dlg.classList.toggle('s'+v,!!skin&&skin.v===v);dlg.classList.toggle('flip',!!(skin&&skin.flip));dlg.classList.toggle('mid',!!(skin&&skin.mid));dlg.classList.toggle('nl',!!(skin&&skin.side==='l'));dlg.classList.toggle('nr',!!(skin&&skin.side==='r'));dlg.style.setProperty('--bub',skin?`url('${cssu(skin.src)}')`:'');bubStyle(dlg,bub.st);
   syncStands($('#stands',el),slots,manual);
   /* 무대 아래: 칸마다 바뀐 것만 다시 그린다 — 대사 입력칸은 그대로 두어야 치는 중에 끊기지 않는다 (한글 조합·포커스 유지) */
   const barH=`${gm()?spkBarHtml(speakers):(speakers.length>1?`<div class="spkbar">${speakers.map(x=>{const c=x.key==='me'?charOf(ST.seat):charOf(x.key);const av=c?(standSrc(c)||c.img):'';return spkChip(x.key,x.name,av,SPK.key===x.key||(!SPK.key&&x.key==='me'))}).join('')}<button class="spk add" data-rp="spkedit" title="고른 인물의 표정·스탠딩"><i>✎</i><span>표정</span></button></div>`:'')}`;
