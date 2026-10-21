@@ -378,12 +378,12 @@ function openMon(mid){
  const pots=(m.pots||[]).filter(p=>p&&p.name);const uniq=(tr.unique||[]).filter(u=>u&&u.name);
  const md=openModal(`<div class="mhead"><h2>${esc(m.name)} <span class="small muted">상세</span></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
   <div class="dxhead"><div class="dxpic" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div>
-   <div class="dxinfo"><div class="dxname">${esc(m.name)}<span class="lv">Lv.${m.lv}</span><span class="small muted">${esc(tr.name)}</span><span class="row" style="gap:4px;display:inline-flex">${m.types.filter(t=>t!=='-').map(typeChip).join('')}</span>${m.tera&&m.tera!=='-'?`<span class="badge">테라 ${esc(m.tera)}</span>`:''}${m.role?`<span class="badge">${esc(m.role)}</span>`:''}${m.pride?`<span class="badge">프라이드 ${esc(m.pride)}</span>`:''}</div>
+   <div class="dxinfo"><div class="dxname">${esc(m.name)}<span class="lv">Lv.${m.lv}</span><span class="small muted">${esc(tr.name)}</span><span class="row ${full?'dxed':''}" ${full?'data-ed="types" title="눌러서 타입 바꾸기"':''} style="gap:4px;display:inline-flex">${m.types.filter(t=>t!=='-').map(typeChip).join('')}</span>${full?`<button class="btn xs ghost" data-ed="types" title="타입 · 종족치 · 특성 · 소지품 바꾸기">✎ 변경</button>`:''}${m.tera&&m.tera!=='-'?`<span class="badge">테라 ${esc(m.tera)}</span>`:''}${m.role?`<span class="badge">${esc(m.role)}</span>`:''}${m.pride?`<span class="badge">프라이드 ${esc(m.pride)}</span>`:''}</div>
     <div class="dxhp"><div class="hpbar ${pct<=25?'low':pct<=50?'mid':''}"><i style="width:${pct}%"></i></div><span class="mono">${full?m.hp.cur+' / '+m.hp.max:pct+'%'}</span></div>
-    <div class="dxrow"><span class="k">특성</span><span><b>${esc(m.ability||'-')}</b>${an('trait',m.ability)}<div class="dbmini">${effHtml('trait',m.ability,m.abilityEff)}</div></span></div>
-    <div class="dxrow"><span class="k">소지품</span><span><b>${esc(m.item||'-')}</b>${an('item',m.item)}<div class="dbmini">${effHtml('item',m.item,m.itemEff)}</div></span></div>
+    <div class="dxrow"><span class="k">특성</span><span><b class="${full?'dxed':''}" ${full?'data-ed="ability" title="눌러서 특성 바꾸기"':''}>${esc(m.ability||'-')}</b>${m.abilityOrig!=null?`<span class="small dim"> (원래 ${esc(m.abilityOrig||'없음')})</span>`:''}${an('trait',m.ability)}<div class="dbmini">${effHtml('trait',m.ability,m.abilityEff)}</div></span></div>
+    <div class="dxrow"><span class="k">소지품</span><span><b class="${full?'dxed':''}" ${full?'data-ed="item" title="눌러서 소지품 바꾸기"':''}>${esc(m.item||'-')}</b>${an('item',m.item)}<div class="dbmini">${effHtml('item',m.item,m.itemEff)}</div></span></div>
    </div><div class="dxside dxaffs"><div class="k">상성</div>${affHtml(m)}</div></div>
-  <div class="dxlow"><div class="dxabil"><div class="k">능력</div>${stat6}</div><div class="dxnowc">${(()=>{const U=window.OM_BATTLE_UI;if(!U||!U.nowParts||!m.entry)return '<div class="k">랭크 · 상태</div><div class="small dim">필드에 나와 있지 않다</div>';const P=U.nowParts(m);const row=(k,h)=>`<div class="dxnow"><div class="k">${k}</div><div class="rks">${h||'<span class="small dim">없음</span>'}</div></div>`;return row('랭크 · 배율',P.rank)+row('상태',P.state)+row('효과',P.fx)})()}</div></div>
+  <div class="dxlow"><div class="dxabil ${full?'dxed':''}" ${full?'data-ed="base" title="눌러서 종족치 바꾸기"':''}><div class="k">능력</div>${stat6}</div><div class="dxnowc">${(()=>{const U=window.OM_BATTLE_UI;if(!U||!U.nowParts||!m.entry)return '<div class="k">랭크 · 상태</div><div class="small dim">필드에 나와 있지 않다</div>';const P=U.nowParts(m);const row=(k,h)=>`<div class="dxnow"><div class="k">${k}</div><div class="rks">${h||'<span class="small dim">없음</span>'}</div></div>`;return row('랭크 · 배율',P.rank)+row('상태',P.state)+row('효과',P.fx)})()}</div></div>
   ${hpRow}
   <div class="sec">기술 <span class="note">${m.moves.length}개</span></div>
   <table class="t dxmv"><tr><th>이름</th><th>타입</th><th>분류</th><th>위력</th><th>명중</th><th>범위</th><th>우선</th><th>효과</th></tr>
@@ -392,12 +392,46 @@ function openMon(mid){
   <div class="sec">전용 포텐셜 <span class="note">${esc(m.name)}</span></div>${m.excl||(m.exclX||[]).length?`<div class="dxpots">${[...(m.excl?[m.excl]:[]),...(m.exclX||[])].map(p=>potCard(p,'전용')).join('')}</div>`:'<div class="small dim" style="padding:4px 2px">전용 포텐셜이 없다</div>'}
   ${full&&m.memo?`<div class="sec">메모</div><div class="pre small muted">${esc(m.memo)}</div>`:''}`);
  md.classList.add('wide');
+ md.querySelectorAll('[data-ed]').forEach(el=>el.onclick=e=>{e.stopPropagation();openMonEdit(mid,el.dataset.ed)});
  if(ST.role==='gm'||full){const amt=v=>{v=String(v||'').trim();const f=v.match(/^(\d+)\s*\/\s*(\d+)$/);if(f)return Math.max(1,Math.floor(m.hp.max*+f[1]/+f[2]));return Math.max(0,Math.floor(+v||0))};
   const ap=async(cur,msg)=>{cur=Math.max(0,Math.min(m.hp.max,cur));closeModal();const nh=Object.assign({},m.hp,{cur,latest:m.hp.cur});if(await set(['battle','mons',mid,'hp'],nh))sysLog(`${m.name} ${msg} → HP ${cur}/${m.hp.max}${cur<=0?' · 빈사!':''}`,'battle')};
   $('#hpDmg',md).onclick=()=>{const v=$('#hpd',md).value;const d=amt(v);if(d)ap(m.hp.cur-d,`에게 ${d} 대미지${/\//.test(v)?' ('+v.trim()+')':''}`)};$('#hpHeal',md).onclick=()=>{const v=$('#hpd',md).value;const d=amt(v);if(d)ap(m.hp.cur+d,`${d} 회복${/\//.test(v)?' ('+v.trim()+')':''}`)};$('#hpFull',md).onclick=()=>ap(m.hp.max,'전부 회복');
   md.querySelectorAll('[data-an]').forEach(bt=>bt.onclick=()=>{if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.action){window.OM_BATTLE_UI.action({act:'announce',mid,kind:bt.dataset.an,pot:bt.dataset.ann});bt.textContent='📢 출력됨';bt.disabled=true}});
   md.querySelectorAll('[data-hpf]').forEach(bt=>bt.onclick=()=>{const f=bt.dataset.hpf;ap(m.hp.cur-amt(f),`비례 대미지 ${f} (−${amt(f)})`)});
   const hw=$('#hpWin',md);if(hw)hw.onclick=()=>{closeModal();if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.openHp)window.OM_BATTLE_UI.openHp(mid)}}}
+
+/* 배틀 중 포켓몬 바꾸기: 타입 · 종족치 · 특성 · 소지품. 타입·특성은 효과(fx)의 「변경」과 같은 꼴(typesOrig · abilityOrig)로 남겨 효과 칸에서 원래대로 돌릴 수 있다 */
+function openMonEdit(mid,focus){
+ const m=(B().mons||{})[mid];if(!m)return;const D=window.OM_DB||{};const kor=((D.types||{}).kor||[]).filter(x=>x!=='-');const K=S().STATS_KO;
+ const ko=t=>t&&t!=='-'?S().typeKo(t):'-';const tk=[0,1,2].map(i=>ko(m.types[i]));
+ const sel=i=>`<select data-et="${i}">${['-',...kor].map(x=>`<option ${tk[i]===x?'selected':''}>${x}</option>`).join('')}</select>`;
+ const md=openModal(`<div class="mhead"><h2>${esc(m.name)} <span class="small muted">바꾸기</span></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+  <div class="small dim" style="margin-bottom:8px">지금 배틀의 이 포켓몬만 바뀐다 (시트는 그대로). 타입·특성은 효과 칸에 「변경」으로 남아 원래대로 돌릴 수 있다.</div>
+  <table class="t mved">
+   <tr><th>타입</th><td><div class="row">${sel(0)}${sel(1)}${sel(2)}${m.typesOrig?`<span class="small dim">원래 ${m.typesOrig.filter(t=>t!=='-').map(ko).join('/')}</span><button class="btn xs ghost" data-er="types">원래대로</button>`:''}</div></td></tr>
+   <tr><th>종족치</th><td><div class="row mvbase">${m.base.map((v,i)=>`<label class="small">${K[i]}<input type="number" class="n" data-eb="${i}" value="${v}"></label>`).join('')}</div></td></tr>
+   <tr><th>특성</th><td><div class="row"><input type="text" id="edAb" list="edAbL" value="${esc(m.ability||'')}" style="flex:1"><button class="btn sm" data-edb="trait">DB</button>${m.abilityOrig!=null?`<span class="small dim">원래 ${esc(m.abilityOrig||'없음')}</span><button class="btn xs ghost" data-er="ability">원래대로</button>`:''}</div><datalist id="edAbL">${Object.keys(D.traits||{}).map(n=>`<option value="${esc(n)}">`).join('')}</datalist></td></tr>
+   <tr><th>소지품</th><td><div class="row"><input type="text" id="edIt" list="edItL" value="${esc(m.item||'')}" style="flex:1"><button class="btn sm" data-edb="item">DB</button><button class="btn xs ghost" id="edItClr">비우기</button></div><datalist id="edItL">${Object.keys(D.items||{}).map(n=>`<option value="${esc(n)}">`).join('')}</datalist></td></tr>
+  </table>
+  <div class="row" style="margin-top:12px"><span class="sp"></span><button class="btn pri" id="edOk">적용</button></div>`);
+ const ab=$('#edAb',md),it=$('#edIt',md);
+ md.querySelectorAll('[data-edb]').forEach(bt=>bt.onclick=()=>{const k=bt.dataset.edb;const cur={types:[0,1,2].map(i=>$(`[data-et="${i}"]`,md).value),base:[...md.querySelectorAll('[data-eb]')].map(x=>x.value),ab:ab.value,it:it.value};
+  /* DB 창이 이 창을 덮으니, 고른 뒤 적던 값 그대로 다시 연다 */
+  window.OM_DB_UI.open({kind:k,sel:k==='trait'?ab.value:it.value,pick:n=>{openMonEdit(mid);const m2=$('.modal');[0,1,2].forEach(i=>$(`[data-et="${i}"]`,m2).value=cur.types[i]);m2.querySelectorAll('[data-eb]').forEach((x,i)=>x.value=cur.base[i]);$('#edAb',m2).value=k==='trait'?n:cur.ab;$('#edIt',m2).value=k==='item'?n:cur.it}})});
+ $('#edItClr',md).onclick=()=>{it.value='';it.focus()};
+ const save=async(fn)=>{const m0=JSON.parse(JSON.stringify(B().mons[mid])),x=JSON.parse(JSON.stringify(m0));const L=fn(x);if(!L.length){closeModal();return openMon(mid)}
+  if(await setDiff(['battle','mons',mid],m0,x)){sysLog(`${m0.name} ${L.join(' · ')}`,'battle');toast('바꿨다')}closeModal();openMon(mid)};
+ md.querySelectorAll('[data-er]').forEach(bt=>bt.onclick=()=>save(x=>{if(bt.dataset.er==='types'&&x.typesOrig){x.types=x.typesOrig;x.typesKo=x.types.map(ko);delete x.typesOrig;delete x.typesBy;return ['타입 원래대로']}
+  if(bt.dataset.er==='ability'&&x.abilityOrig!=null){if(window.OM_FX&&x.ability)window.OM_FX.removeByName(x,x.ability);x.ability=x.abilityOrig;const a=((D.traits||{})[x.ability])||{};x.abilityEff=String(a.multi||a.single||'').replace(/<br\s*\/?>/gi,'\n');delete x.abilityOrig;delete x.abilityBy;return [`특성 원래대로 「${x.ability||'없음'}」`]}return []}));
+ $('#edOk',md).onclick=()=>save(x=>{const L=[];
+  const nt=[0,1,2].map(i=>{const v=$(`[data-et="${i}"]`,md).value;return v==='-'?'-':S().typeEn(v)});
+  if(nt.join()!==x.types.slice(0,3).concat(['-','-','-']).slice(0,3).join()){if(!x.typesOrig){x.typesOrig=x.types.slice();x.typesBy='직접 변경'}x.types=nt;x.typesKo=nt.map(ko);if(x.typesOrig.join()===nt.join()){delete x.typesOrig;delete x.typesBy}L.push('타입 → '+(nt.filter(t=>t!=='-').map(ko).join('/')||'없음'))}
+  const nb=[...md.querySelectorAll('[data-eb]')].map(e=>Math.max(1,+e.value||0));
+  if(nb.join()!==x.base.join()){const full=x.hp.cur>=x.hp.max,oldMax=x.hp.max;x.base=nb;x.ranks=nb.map(S().gradeOf);x.stats=S().statsOf(nb,x.iv,x.ev,x.lv);x.hp.max=x.stats[0];x.hp.cur=x.hp.cur<=0?0:full?x.hp.max:Math.max(1,Math.min(x.hp.max,x.hp.cur+x.hp.max-oldMax));L.push('종족치 → '+nb.join('/'))}
+  const na=ab.value.trim();if(na!==(x.ability||'')){const FX=window.OM_FX;if(FX&&x.ability)FX.removeByName(x,x.ability);if(x.abilityOrig==null){x.abilityOrig=x.ability||'';x.abilityBy='직접 변경'}x.ability=na;const a=((D.traits||{})[na])||{};x.abilityEff=String(a.multi||a.single||'').replace(/<br\s*\/?>/gi,'\n');if(x.abilityOrig===na){delete x.abilityOrig;delete x.abilityBy}L.push(`특성 → 「${na||'없음'}」`)}
+  const ni=it.value.trim();if(ni!==(x.item||'')){const FX=window.OM_FX;if(FX&&x.item)FX.removeByName(x,x.item);x.item=ni;x.itemEff=String((((D.items||{})[ni])||{}).eff||'');L.push(ni?`소지품 → 「${ni}」`:'소지품 비움')}
+  return L});
+ const f={types:'[data-et="0"]',base:'[data-eb="0"]',ability:'#edAb',item:'#edIt'}[focus];const fe=f&&$(f,md);if(fe){fe.focus();if(fe.select)fe.select()}}
 
 /* ---------- 좌석 ---------- */
 /* 관전자도 이름을 정해 접속자 칸에 보이게 */
