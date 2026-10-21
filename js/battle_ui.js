@@ -66,7 +66,7 @@ window.OM_BATTLE_UI=(()=>{
  /* ---------- 렌더 ---------- */
  function render(el){
   const c=ctx();const b=c.b;const f=fieldOf(b);const ready=c.ST.state.ready||{};
-  const phases=[[0,'지시 준비'],[1,'턴 개시·공개'],[2,'행동 순서'],[3,'행동 처리'],[5,'턴 종료']];
+  const phases=[[0,'지시 준비'],[1,'턴 개시'],[2,'행동 순서'],[3,'행동 처리'],[5,'턴 종료']];
   const chips=[f.weather.type?`날씨 ${f.weather.type}${f.weather.count?' '+f.weather.count+'T':''}`:'',f.terrain.type?`${f.terrain.type}${f.terrain.count?' '+f.terrain.count+'T':''}`:'',...ROOMS.filter(r=>(f.rooms||{})[r]>0).map(r=>`${r} ${f.rooms[r]}T`),...ETC.filter(r=>(f.etc||{})[r]>0).map(r=>`${r} ${f.etc[r]}T`)].filter(Boolean);
   const mySide=c.mgr?'left':((b.trainers||{})[c.seat]||{}).side||'left';const top=mySide==='left'?'right':'left';
   el.innerHTML=`
@@ -148,8 +148,8 @@ window.OM_BATTLE_UI=(()=>{
  function pendStatus(b){const L=pendCount(b,'left'),R=pendCount(b,'right');const done=L.need>0&&R.need>0&&L.n>=L.need&&R.n>=R.need;return `<span class="chip ${done?'on':''}" title="동시 내밀기 예약">예약 좌 ${L.n}/${L.need} · 우 ${R.n}/${R.need}${done?' — 완료!':''}</span>`}
  function revealStrip(c,ready){const b=c.b;const ph=+b.phase||0;if(ph<1)return '';const mine=myTrainers(c);
   const rows=Object.keys(b.trainers||{}).map(tid=>{const t=b.trainers[tid];const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid&&m.entry&&m.hp.cur>0).sort((x,y)=>x.entry.localeCompare(y.entry));if(!mons.length)return '';const my=mine.includes(tid);
-   return `<span class="rs ${my?'my':''}"><b>${esc(t.name)}</b>${mons.map(m=>revealed(b,tid,m.id)?`<i class="ok" title="${esc(m.name)}">${String(m.entry).toUpperCase()} ✓</i>`:my&&ph===1?`<button class="btn xs pri" data-act="revealmon" data-tid="${tid}" data-mid="${m.id}" title="${esc(m.name)} 의 지시를 공개">${String(m.entry).toUpperCase()} 공개</button>`:`<i title="${esc(m.name)}">${String(m.entry).toUpperCase()}</i>`).join('')}${my?`<button class="btn xs" data-act="fire" data-tid="${tid}" title="선행 입력한 지령·명령 · 고유·전용 포텐셜을 발동">포텐셜 발동</button>`:''}</span>`}).join('');
-  return `<div class="revealstat"><span class="olab">지시 공개</span>${rows}<span class="sp"></span><span class="small dim">${ph===1?'에리어마다 하나씩 연다 · 다 열리면 행동 순서로':'지령·명령·고유·전용은 「포텐셜 발동」에서 그때그때'}</span></div>`}
+   return `<span class="rs ${my?'my':''}"><b>${esc(t.name)}</b>${mons.map(m=>revealed(b,tid,m.id)?`<i class="ok" title="${esc(m.name)}">${String(m.entry).toUpperCase()} ✓</i>`:my&&ph>=2&&turnReached(b,m)?`<button class="btn xs pri" data-act="revealmon" data-tid="${tid}" data-mid="${m.id}" title="${esc(m.name)} 의 지시를 공개">${String(m.entry).toUpperCase()} 공개</button>`:`<i title="${esc(m.name)}">${String(m.entry).toUpperCase()}</i>`).join('')}${my?`<button class="btn xs" data-act="fire" data-tid="${tid}" title="선행 입력한 지령·명령 · 고유·전용 포텐셜을 발동">포텐셜 발동</button>`:''}</span>`}).join('');
+  return `<div class="revealstat"><span class="olab">지시 공개</span>${rows}<span class="sp"></span><span class="small dim">${ph===1?'턴 개시 — 지령 · 턴 개시 포텐셜은 「포텐셜 발동」. 지시(기술·교대)는 행동 순서가 오면 그 포켓몬부터 공개된다':'지시는 자기 차례에 공개 · 지령·명령·고유·전용은 「포텐셜 발동」에서 그때그때'}</span></div>`}
  /* 좌측 A | 우측 A / 좌측 B | 우측 B … 열 = 진영, 행 = 에리어 */
  function areaGrid(c){const b=c.b;const ent={left:entered(b,'left'),right:entered(b,'right')};const ids={left:((b.sides||{}).left||{}).trainers||[],right:((b.sides||{}).right||{}).trainers||[]};
   const cell=(side,a)=>{const m=ent[side][a];const slot=slotOf(side,a);return `<div class="area ${side} ${m?'':'empty'}" data-slot="${slot}"><div class="alab ${side}">${SIDE_KO[side]} ${a.toUpperCase()}</div>${m?bigCard(c,m,slot):`<div class="aempty">빈 자리${c.mgr||ids[side].includes(c.seat)?'<br><span class="small">벤치에서 「등장」</span>':''}</div>`}</div>`};
@@ -233,7 +233,7 @@ window.OM_BATTLE_UI=(()=>{
   return `<div class="mon big ${m.hp.cur<=0?'fainted':''}" data-mon="${m.id}"><div class="pic" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div>
    <div class="minfo"><div class="nm">${esc(m.name)}<span class="lv">Lv.${m.lv}</span>${((!full&&c.seat)||c.gm)?`<button class="btn xs ghost dexb" data-act="dex" data-mid="${m.id}" title="도감 정보 · 해석">도감</button>`:''}${full&&mode(c.b)>=2&&m.hp.cur>0?`<button class="btn xs ghost dexb" data-act="areaswap" data-mid="${m.id}" title="같은 편 다른 에리어와 자리 바꾸기 (사이드체인지 등)">⇄ 에리어</button>`:''}${(!full&&c.seat&&(c.b.trainers[c.seat]||{}).side!==m.side&&(+c.b.phase||0)===0)||c.gm&&!full?`<button class="btn xs ghost dexb" data-act="time" data-mid="${m.id}" title="「타임」 — 상대 지시의 꼴 엿보기">타임</button>`:''}</div><div class="ty">${tyHtml(c,m)}${m.teraActive?`<span class="rk up">테라 ${esc(m.tera)}</span>`:''}</div>
    ${hpBar(m,full)}<div class="rks">${rankChips(m)}${stateChips(m)}${flagChips(m)}${FX()?FX().chips(m).map(ch=>`<span class="rk fxc ${full?'rm':''}" title="${esc(ch.title)}${full?' — 눌러서 해제':''}" ${full?`data-act="fxoff" data-mid="${m.id}" data-fx="${esc(ch.id)}" data-nm="${esc(ch.name)}"`:''}>${esc(ch.t)}${full?' ✕':''}</span>`).join(''):''}</div>
-   ${cmd?`<div class="cmdcard">${cmd}</div>`:(((+c.b.phase||0)>=1&&full&&m.hp.cur>0)?`<div class="revealrow"><button class="btn sm pri" data-act="revealmon" data-tid="${m.tid}" data-mid="${m.id}">지시 공개 (에리어 ${String(m.entry).toUpperCase()})</button></div>`:'')}
+   ${cmd?`<div class="cmdcard">${cmd}</div>`:(((+c.b.phase||0)>=2&&full&&m.hp.cur>0&&turnReached(c.b,m))?`<div class="revealrow"><button class="btn sm pri" data-act="revealmon" data-tid="${m.tid}" data-mid="${m.id}">지시 공개 (에리어 ${String(m.entry).toUpperCase()})</button></div>`:'')}
    ${potLine(c,m)}
    ${m.lastHit&&full?`<div class="incoming"><b>피해 판정 받음</b> ${esc(m.lastHit.from)}의 「${esc(m.lastHit.move)}」 ${m.lastHit.total}×${m.lastHit.eff}${m.lastHit.crit?' 급소':''} ≈ ${m.lastHit.expect} <button class="btn xs pri" data-act="hp" data-mid="${m.id}">피해 적용</button></div>`:''}
    <div class="mbtns">${full?`<button class="btn xs" data-act="attack" data-mid="${m.id}">공격</button><button class="btn xs ${m.lastHit?'pri':''}" data-act="hp" data-mid="${m.id}">HP</button><button class="btn xs mmore" type="button" data-mmore aria-label="버튼 더 보기" aria-expanded="false">⋯</button><button class="btn xs mx" data-act="pots" data-mid="${m.id}" title="포텐셜 목록 · 출력 · 발동 · 해제">포텐셜</button><button class="btn xs mx" data-act="edit" data-mid="${m.id}">랭크·상태</button>${(formsOf(m).length||m.form0)?`<button class="btn xs mx ${m.form0?'pri':''}" data-act="form" data-mid="${m.id}" title="폼체인지 · 메가진화 · 원래대로">${m.form0?'✦ '+esc(((m.forms||[])[m.formIdx]||{}).kind||'폼'):'✦ 폼'}</button>`:''}<span class="exg"><button class="btn xs ghost mx exit1" data-act="exit" data-mid="${m.id}" title="바로 퇴장 (랭크·배율·효과 정리)">퇴장</button><button class="btn xs ghost mx exdn" data-act="exitx" data-mid="${m.id}" title="퇴장(특수) — 배턴터치 퇴장 · 강제 교대">(특수)</button></span>`:''}</div></div></div>`}
@@ -299,7 +299,7 @@ window.OM_BATTLE_UI=(()=>{
  function orderBox(c){const b=c.b;if(!b.order||!b.order.length)return '';const cur=+b.orderIdx||0;
   const cap=o=>{if(!o.started)return '「교대 등장」';if(o.change)return '「통상 교대」';if(o.order!==20)return '「'+esc(orderValueName(o.order))+'」';return '「우선도 : '+(o.prio>0?'+':'')+o.prio+'」'};
   return `<div class="orderbox"><div class="ohead"><span class="olab">행동 순서</span><span class="small dim">${(b.orderNotes||[]).length?esc((b.orderNotes||[]).join(' · ')):'스피드 순 · 초상을 누르면 그 차례로'}</span><span class="sp"></span>${c.mgr?`<button class="btn xs ghost" data-act="oprev">◀</button><span class="small">${Math.min(cur+1,b.order.length)} / ${b.order.length}</span><button class="btn xs pri" data-act="onext">다음 행동 ▶</button>`:''}</div>
-   <div class="ostrip">${b.order.map((o,i)=>{const m=(b.mons||{})[o.mid]||{};const dead=m.hp&&m.hp.cur<=0;return `<div class="ocard ${o.side} ${i===cur?'now':i<cur?'done':''} ${dead?'dead':''}" data-act="ojump" data-i="${i}" title="${esc(o.name)} · 스피드 ${Math.round(o.speed)} · d${o.dice}"><span class="onum">${i+1}</span><div class="opt" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div><b class="onm">${esc(o.name)}</b><span class="ocap">${cap(o)}</span>${o.move?`<span class="omv">${o.moveType?typeChip(o.moveType):''}${esc(o.move)}</span>`:''}<span class="osp">S ${Math.round(Math.abs(o.speed))} · d${o.dice}</span></div>`}).join('')}</div></div>`}
+   <div class="ostrip">${b.order.map((o,i)=>{const m=(b.mons||{})[o.mid]||{};const dead=m.hp&&m.hp.cur<=0;return `<div class="ocard ${o.side} ${i===cur?'now':i<cur?'done':''} ${dead?'dead':''}" data-act="ojump" data-i="${i}" title="${esc(o.name)} · 스피드 ${Math.round(o.speed)} · d${o.dice}"><span class="onum">${i+1}</span><div class="opt" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div><b class="onm">${esc(o.name)}</b><span class="ocap">${cap(o)}</span>${(()=>{const px=(((b.cmds||{})[m.tid]||{}).mons||{})[o.mid];if(px){if(px.move==='switch')return '<span class="omv">교대</span>';const mv=(px.move!==''&&px.move!=null)?(m.moves||[])[+px.move]:null;return mv?`<span class="omv">${typeChip(mv.typeEn)}${esc(mv.name)}</span>`:'<span class="omv dim">행동 없음</span>'}if(o.pursuitHit&&o.move)return `<span class="omv">${esc(o.move)}</span>`;return `<span class="omv dim" title="차례가 오면 공개">${i<=cur?'공개 대기':'?'}</span>`})()}<span class="osp">S ${Math.round(Math.abs(o.speed))} · d${o.dice}</span></div>`}).join('')}</div></div>`}
  function orderValueName(v){return ({40:'가장 먼저',30:'상대보다 먼저',20:'일반',10:'상대보다 나중에',0:'가장 나중에'})[v]||('순서 '+v)}
 
  /* ---------- 지시 입력 패널 ---------- */
@@ -389,17 +389,34 @@ window.OM_BATTLE_UI=(()=>{
   if(p===0){await A().set(['battle','cmds'],{});await A().set(['ready'],{});await A().set(['battle','order'],[]);await A().set(['battle','phase'],0);A().sysLog('페이즈: 지시 준비 — 지시를 입력하고 「준비 완료」','battle');return}
   if(p===1){const tids=Object.keys(b.trainers||{});const ready=c.ST.state.ready||{};const seats=c.ST.state.seats||{};const notReady=tids.filter(t=>seats[t]&&!ready[t]);if(notReady.length&&!confirm(`아직 준비 완료가 아닌 트레이너: ${notReady.map(t=>b.trainers[t].name).join(', ')}\n그래도 턴을 개시할까?`))return;
    if(!b.started){await startBattle();if(!ctx().b.started)return;await new Promise(r=>setTimeout(r,2600))}
-   await A().set(['ready'],{});await A().set(['battle','cmds'],{});await A().set(['battle','host'],c.gm?'gm':c.seat);await A().set(['battle','phase'],1);await preCharge();cutPhase('턴 개시',`TURN ${(+b.turn||0)+1} · 지시 공개`);A().sysLog('턴 개시 — 위의 「지시 공개」에서 에리어마다 연다','battle');return}
-  if(p===2){const left=unrevealed(b);if(left.length){
-    /* GM(보통): 비밀 지시를 읽어 한꺼번에 연다 */
-    if(c.gm&&!c.fair){if(!confirm(`아직 안 연 지시가 있다: ${left.join(', ')}\n한꺼번에 열고 행동 순서로 갈까?`))return;await reveal();return computeOrder()}
-    /* 모의전 진행자 · GM 불간섭: 남의 비밀 지시는 못 읽으니 각자의 화면에 「공개 요청」을 보낸다. GM 은 NPC 것만 연다 */
-    if(c.gm)await reveal(true);const left2=unrevealed(ctx().b);if(!left2.length)return computeOrder();
-    if(String(ctx().b.revealReq||'')===turnKey(b)){if(!confirm(`아직 안 연 지시: ${left2.join(', ')}\n(그 플레이어가 접속해 있지 않을 수 있다)\n그대로 행동 순서를 계산할까?`))return;return computeOrder()}
-    await A().set(['battle','host'],c.gm?'gm':c.seat);await A().set(['battle','revealReq'],turnKey(b));A().sysLog(`지시 공개 요청 — 각자의 화면이 남은 지시를 연다 (${left2.join(', ')}). 모두 열리면 행동 순서로 넘어간다`,'battle');watch();return}
-   return computeOrder()}
+   await A().set(['ready'],{});await A().set(['battle','cmds'],{});await A().set(['battle','host'],c.gm?'gm':c.seat);await A().set(['battle','phase'],1);
+   /* 맵툴 set_turn_start: 턴을 연 순간 필드에 있던 포켓몬은 started (이 턴 도중에 들어온 포켓몬만 「교대 등장」) */
+   for(const m of Object.values(ctx().b.mons||{}))if(m.entry&&!m.started)await A().set(['battle','mons',m.id,'started'],true);
+   await preCharge();cutPhase('턴 개시',`TURN ${(+b.turn||0)+1}`);A().sysLog(`턴 개시 — TURN ${(+b.turn||0)+1}\n지령 · 턴 개시 포텐셜은 「포텐셜 발동」 · 지시는 행동 순서가 오면 차례대로 공개`,'battle');return}
+  if(p===2)return computeOrder();
   if(p===3){await A().set(['battle','orderIdx'],0);await A().set(['battle','phase'],3);cutPhase('행동 처리','순서대로 공격');A().sysLog('행동 처리 — 순서대로 「공격」, 끝나면 「다음 행동 ▶」','battle');return}
   if(p===5)return endFlow()}
+ /* 행동 순서에서 이 포켓몬 차례가 왔나 (지금 · 지난 차례) */
+ function turnReached(b,m){const ord=b.order||[];const i=ord.findIndex(o=>o.mid===m.id);return i>=0&&i<=(+b.orderIdx||0)}
+ /* 순서 열쇠: 행동 순서 계산에 드는 것만 (교대 여부 · 우선도/순서 바꾸기 · 기술 우선도 · 따라가때리기). 기술 이름·대상은 차례가 올 때 공개 */
+ function okeyOf(m,x){x=x||{};const pm={},om={};for(const k in (x.prio||{}))if(x.prio[k]!=='')pm[k]=+x.prio[k];for(const k in (x.ochg||{}))if(x.ochg[k]!=='')om[k]=+x.ochg[k];
+  const mv=(x.move!==''&&x.move!=='switch'&&x.move!=null)?(m.moves||[])[+x.move]:null;
+  const o={sw:x.move==='switch'?1:0,pm,om,pr:mv?(FX()?FX().prioOf(m,mv):(+mv.prio||0)):0,mv:mv?1:0};
+  if(mv&&(isPursuit(mv,m)||x.pur)){o.pn=mv.name;o.tg=x.targets||[];o.psrc=isPursuit(mv,m)?((m.flags||{}).pursuit?(m.flags.pursuitBy||''):''):(x.pur||'')}
+  const pimm=x.pimm||((m.flags||{}).pursuitImmune?(m.flags.pursuitImmuneBy||'추격 무시'):'');if(pimm)o.pimm=pimm;return o}
+ /* 좌석: 턴 개시 때 내 순서 열쇠를 cmds[내 자리].ok 에 올린다 (진행하는 사람이 남의 비밀 지시를 못 읽어도 순서를 계산하게) */
+ async function publishOk(){const c=ctx();const b=c.b;const tid=c.seat;if(c.role!=='seat'||!tid||!(b.trainers||{})[tid])return;const key=turnKey(b);const cur=((b.cmds||{})[tid]||{}).ok;if((cur&&cur.key===key)||BUSY.ok===key)return;BUSY.ok=key;
+  const cm=await myCmd(c,tid,true);const ok={key,m:{}};for(const mm of Object.values(b.mons||{}).filter(x=>x.tid===tid&&x.entry&&x.hp.cur>0))ok.m[mm.id]=okeyOf(mm,((cm||{}).mons||{})[mm.id]);
+  if((ctx().b.cmds||{})[tid])await A().set(['battle','cmds',tid,'ok'],ok);else await A().set(['battle','cmds',tid],{ok})}
+ /* 차례가 온 포켓몬의 지시를 연다: 주인 화면이, GM 몫(NPC · GM 이 불러온 파티)은 GM 화면이. 보통 모드의 GM 은 플레이어가 안 열면 잠시 뒤 대신 연다 */
+ const RVT={};
+ async function autoRevealTurn(){const c=ctx();const b=c.b;if((+b.phase||0)<2)return;const o=(b.order||[])[+b.orderIdx||0];if(!o)return;const m=(b.mons||{})[o.mid];if(!m||!m.entry||m.hp.cur<=0||revealed(b,m.tid,m.id))return;
+  const key=turnKey(b)+':'+m.id;if(SENT['rv:'+key]||BUSY.rv)return;
+  const run=async()=>{const b2=ctx().b;const o2=(b2.order||[])[+b2.orderIdx||0];if(!o2||o2.mid!==m.id||revealed(b2,m.tid,m.id)||SENT['rv:'+key])return;SENT['rv:'+key]=1;BUSY.rv=1;try{await revealOne(m.tid,m.id,true)}finally{BUSY.rv=0}};
+  if(c.role==='seat'&&m.tid===c.seat)return run();
+  if(!c.gm||(b.host||'gm')!=='gm')return;if(c.fair&&seatOwned(c,m.tid))return;
+  if(!seatOwned(c,m.tid))return run();
+  if(!RVT[key])RVT[key]=setTimeout(run,2500)}
  function unrevealed(b){const out=[];for(const tid in b.trainers||{}){const t=b.trainers[tid];const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid&&m.entry&&m.hp.cur>0);for(const m of mons)if(!revealed(b,tid,m.id))out.push(`${t.name} ${String(m.entry).toUpperCase()}`)}return out}
  async function progressTurn(){const c=ctx();if(!c.mgr)return;const p=+c.b.phase||0;const next={0:1,1:2,2:3,3:5,5:0}[p];if(next==null)return;return setPhase(next)}
  async function action(d,val){
@@ -592,8 +609,8 @@ window.OM_BATTLE_UI=(()=>{
  async function selfCharge(){const c=ctx();const b=c.b;const tid=c.seat;const t=(b.trainers||{})[tid];if(c.role!=='seat'||!t)return;const key=turnKey(b);if(t.pcTurn===key||BUSY.pc===key)return;BUSY.pc=key;
   const cm=await myCmd(c,tid,true);const t0=snap((ctx().b.trainers||{})[tid]||t),t2=snap(t0);if(t2.pcTurn===key)return;if(cm)chargeOne(t2,cm,ctx().b);t2.pcTurn=key;await A().setDiff(['battle','trainers',tid],t0,t2,1)}
  /* 상태가 바뀔 때마다 (app.js onState): 턴 개시면 내 선입력 차감, 공개 요청이 오면 내 남은 지시를 연다, 진행자는 자동으로 넘긴다 */
- async function watch(){const c=ctx();const b=c.b;if((+b.phase||0)!==1)return;
-  if(c.role==='seat'&&c.seat&&(b.trainers||{})[c.seat]){await selfCharge();
+ async function watch(){const c=ctx();const b=c.b;if((+b.phase||0)>=2)return autoRevealTurn();if((+b.phase||0)!==1)return;
+  if(c.role==='seat'&&c.seat&&(b.trainers||{})[c.seat]){await selfCharge();await publishOk();
    const key=turnKey(b);if(String(b.revealReq||'')===key&&!BUSY.rv){const mine=Object.values(b.mons||{}).filter(m=>m.tid===c.seat&&m.entry&&m.hp.cur>0&&!revealed(b,c.seat,m.id)&&!SENT[key+':'+m.id]);
     if(mine.length){BUSY.rv=1;try{for(const m of mine){if(revealed(ctx().b,c.seat,m.id))continue;SENT[key+':'+m.id]=1;await revealOne(c.seat,m.id,true)}}finally{BUSY.rv=0}}}}
   autoAdvance()}
@@ -672,7 +689,7 @@ window.OM_BATTLE_UI=(()=>{
   if(c.gm&&c.fair&&seatOwned(c,tid))return A().toast('GM 불간섭 설정 — 플레이어의 지시는 그 플레이어가 연다');
   const cm=await myCmd(c,tid,quiet);if(!cm)return;
   const m=b.mons[part];if(!m)return;if(revealed(b,tid,part))return;const x=pubMon((cm.mons||{})[part]);
-  await A().set(['battle','cmds',tid,'mons',part],x);if(cm.detail&&!((b.cmds||{})[tid]||{}).detail)await A().set(['battle','cmds',tid,'detail'],cm.detail);A().sysLog('【공개】 '+revealCardText(b,t,m,x),'battle')}
+  {const cur=(ctx().b.cmds||{})[tid];if(!cur)await A().set(['battle','cmds',tid],{mons:{[part]:x}});else if(!cur.mons)await A().set(['battle','cmds',tid,'mons'],{[part]:x});else await A().set(['battle','cmds',tid,'mons',part],x)}if(cm.detail&&!((b.cmds||{})[tid]||{}).detail)await A().set(['battle','cmds',tid,'detail'],cm.detail);A().sysLog('【공개】 '+revealCardText(b,t,m,x),'battle')}
  async function reveal(npcOnly){const c=ctx();if(!c.gm)return;const b=c.b;npcOnly=npcOnly||c.fair;
   let rows;try{rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd')}catch(e){return A().toast('지시를 읽지 못했다: '+e.message)}
   const cmds={};(rows||[]).forEach(r=>{if((b.trainers||{})[r.id]&&!(npcOnly&&seatOwned(c,r.id)))cmds[r.id]=r.data});
@@ -714,14 +731,16 @@ window.OM_BATTLE_UI=(()=>{
  async function computeOrder(){const c=ctx();if(!c.mgr)return;const b=c.b;const f=fieldOf(b);const iceUsed=[];
   let SEC={};try{const rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd');for(const r of rows||[]){const d=r.data||{};for(const mid in (d.mons||{}))SEC[mid]=d.mons[mid]}}catch(e){}   /* 선행 입력에 묻은 추격·추격 무시 (GM 만 읽힌다) */
   const slots=allEntered(b);if(!slots.length)return A().toast('등장한 포켓몬이 없다');
-  const entries=slots.map(s=>{const cm=((b.cmds||{})[s.mon.tid]||{}).mons||{};const x=cm[s.mon.id]||{};
-   const prioMap={},orderMap={};for(const k in (x.prio||{}))if(x.prio[k]!=='')prioMap[k]=+x.prio[k];for(const k in (x.ochg||{}))if(x.ochg[k]!=='')orderMap[k]=+x.ochg[k];
-   let prioMod=0;if(x.move!==''&&x.move!=='switch'&&x.move!=null){const mv=(s.mon.moves||[])[+x.move];if(mv)prioMod+=FX()?FX().prioOf(s.mon,mv):(+mv.prio||0);if(mv&&s.mon.prioDown){prioMod-=1;iceUsed.push(s.mon)}}
+  /* 순서 열쇠: 읽을 수 있는 비밀 지시(GM 은 전부) → 좌석이 올린 열쇠(cmds[tid].ok) → 이미 공개된 지시 */
+  const tk=turnKey(b);const keyOf=m=>{if(SEC[m.id])return okeyOf(m,SEC[m.id]);const ok=((b.cmds||{})[m.tid]||{}).ok;if(ok&&ok.key===tk&&ok.m&&ok.m[m.id])return ok.m[m.id];const px=(((b.cmds||{})[m.tid]||{}).mons||{})[m.id];return px?okeyOf(m,px):null};
+  const KEYS={},miss=[];for(const s of slots){const k=keyOf(s.mon);if(!k)miss.push(`${(b.trainers[s.mon.tid]||{}).name||'?'} · ${s.mon.name}`);KEYS[s.mon.id]=k||{sw:0,pm:{},om:{},pr:0,mv:0}}
+  if(miss.length&&!confirm(`아직 순서 정보가 없는 포켓몬: ${miss.join(', ')}\n(지시를 저장하지 않았거나 그 플레이어가 접속해 있지 않다)\n행동 없음으로 보고 순서를 계산할까?`))return;
+  const entries=slots.map(s=>{const K=KEYS[s.mon.id];let prioMod=+K.pr||0;if(K.mv&&s.mon.prioDown){prioMod-=1;iceUsed.push(s.mon)}
    const objs=(f.objects||{})[s.side]||{};
-   return {slot:s.slot,mon:s.mon,cmd:{change:x.move==='switch',priorityMap:prioMap,orderMap},prioMod,started:!!s.mon.started,scarf:IT(s.mon)==='구애스카프',tailwind:(objs['순풍']||0)>0,swamp:(objs['습원']||0)>0}});
+   return {slot:s.slot,mon:s.mon,cmd:{change:!!K.sw,priorityMap:K.pm||{},orderMap:K.om||{}},prioMod,started:!!s.mon.started,scarf:IT(s.mon)==='구애스카프',tailwind:(objs['순풍']||0)>0,swamp:(objs['습원']||0)>0}});
   const rows=B().turnOrder(entries,{trick:((f.rooms||{})['트릭룸']||0)>0});
-  const order=rows.map(r=>{const x=(((b.cmds||{})[r.mon.tid]||{}).mons||{})[r.mon.id]||{};const mv=(x.move!==''&&x.move!=='switch'&&x.move!=null)?(r.mon.moves||[])[+x.move]:null;
-   return {slot:r.slot,mid:r.mon.id,name:r.mon.name,side:r.mon.side,change:r.change,started:r.started,order:r.order,prio:r.prio,speed:r.speed,dice:r.dice,move:mv?mv.name:(x.move==='switch'?'교대':''),moveType:mv?mv.typeEn:'',targets:x.targets||[],pursuit:isPursuit(mv,r.mon)||!!(mv&&(SEC[r.mon.id]||{}).pur),pursuitSrc:mv&&!isPursuit(mv,r.mon)?((SEC[r.mon.id]||{}).pur||''):((r.mon.flags||{}).pursuit?(r.mon.flags.pursuitBy||''):''),pimm:(SEC[r.mon.id]||{}).pimm||((r.mon.flags||{}).pursuitImmune?(r.mon.flags.pursuitImmuneBy||'추격 무시'):'')}});
+  const order=rows.map(r=>{const K=KEYS[r.mon.id]||{};
+   return {slot:r.slot,mid:r.mon.id,name:r.mon.name,side:r.mon.side,change:r.change,started:r.started,order:r.order,prio:r.prio,speed:r.speed,dice:r.dice,move:K.pn||'',targets:K.tg||[],pursuit:!!K.pn,pursuitSrc:K.psrc||'',pimm:K.pimm||''}});
   /* 추격: 교대하는 대상을 노리면 교대보다 먼저 때린다 */
   const notes=[];if(((f.rooms||{})['트릭룸']||0)>0)notes.push('「트릭룸」이 시공간을 뒤틀었다! (스피드 역순)');
   for(const m of iceUsed)notes.push(`${m.name} 「아이스번」 — 이번 기술 우선도 −1`);
@@ -730,7 +749,7 @@ window.OM_BATTLE_UI=(()=>{
    if(v.pimm){notes.push(`${v.name}의 『${v.pimm}』 — ${o.name}의 따라가때리기를 무시했다!`);A().sysLog(`【따라가때리기】 ${v.name} 『${v.pimm}』\n${o.name}의 따라가때리기를 무시했다! (교대는 그대로)`,'battle',{mid:v.mid,img:(b.mons[v.mid]||{}).image||''});continue}
    const i=order.indexOf(o),j=order.indexOf(v);
    if(i>j){order.splice(i,1);order.splice(j,0,o)}o.pursuitHit=v.mid;notes.push(`${o.name}의 「${o.move}」 — 교대하려는 ${v.name}을(를) 먼저 때린다!`);purs.push([o,v]);break}
-  for(const o of order){if(!o.pursuitHit){delete o.pursuitSrc;o.pursuit=false}delete o.pimm}   /* 걸리지 않은 선행 추격·추격 무시는 공개 순서표에 남기지 않는다 */
+  for(const o of order){if(!o.pursuitHit){delete o.pursuitSrc;o.pursuit=false;o.move='';o.targets=[]}delete o.pimm}   /* 기술 이름·대상은 차례가 와서 공개될 때까지 순서표에 남기지 않는다 (걸린 따라가때리기만 예외) */   /* 걸리지 않은 선행 추격·추격 무시는 공개 순서표에 남기지 않는다 */
   for(const m of iceUsed)await A().set(['battle','mons',m.id,'prioDown'],null);
   await A().set(['battle','order'],order);await A().set(['battle','orderIdx'],0);await A().set(['battle','orderNotes'],notes);await A().set(['battle','phase'],2);
   cutPhase('행동 순서','');for(const [o,v] of purs){const pm=b.mons[o.mid]||{};A().sysLog(`【따라가때리기】 ${o.name} 『${o.move}』 발동!${o.pursuitSrc?'\n선행 『'+o.pursuitSrc+'』에 묻어 있던 추격':''}\n교대하려는 ${v.name}을(를) 교대 전에 먼저 때린다${pursuitX2(((b.mons[o.mid]||{}).moves||[]).find(q=>q.name===o.move))?' → 위력 2배':''}`,'battle',{mid:o.mid,img:pm.image||''});setTimeout(()=>cutFire('m:'+o.mid,pm.image,`${o.name}의 따라가때리기!`,`『${o.move}』 → ${v.name}`,pm.side==='left'?'#1f6fd1':'#e3101f'),1600)}A().sysLog('행동 순서\n'+order.map((o,i)=>`${i+1}. ${o.name} (${o.change?'교대 · ':''}${o.order!==20?'순서 '+o.order+' · ':''}${o.prio?'우선 '+o.prio+' · ':''}스피드 ${Math.round(o.speed)} · d${o.dice})`).join('\n'),'battle')}
