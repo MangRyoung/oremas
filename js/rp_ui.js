@@ -102,7 +102,7 @@ window.OM_RP_UI=(()=>{
     if(sl!=='left'&&sl!=='right'&&bub.m)skin={v:'m',src:bub.m};else if(bub[want])skin={v:want,src:bub[want]};else if(bub[alt])skin={v:want,src:bub[alt],flip:1};else skin={v:'c',src:bub.c};
     if(skin.v!=='c'&&skin.v!=='m'&&sl!=='left'&&sl!=='right')skin.mid=1}}
   const dlg=$('#dlg',el);if(dlgHtml){if(dlg.dataset.k!==dlgHtml){dlg.innerHTML=dlgHtml;dlg.dataset.k=dlgHtml;dlg.classList.remove('pop');void dlg.offsetWidth;dlg.classList.add('pop')}dlg.style.display=''}else{dlg.style.display='none';dlg.dataset.k=''}
-  dlg.classList.toggle('skin',!!skin);for(const v of ['c','l','r','m'])dlg.classList.toggle('s'+v,!!skin&&skin.v===v);dlg.classList.toggle('flip',!!(skin&&skin.flip));dlg.classList.toggle('mid',!!(skin&&skin.mid));dlg.style.setProperty('--bub',skin?`url('${cssu(skin.src)}')`:'');
+  dlg.classList.toggle('skin',!!skin);for(const v of ['c','l','r','m'])dlg.classList.toggle('s'+v,!!skin&&skin.v===v);dlg.classList.toggle('flip',!!(skin&&skin.flip));dlg.classList.toggle('mid',!!(skin&&skin.mid));dlg.style.setProperty('--bub',skin?`url('${cssu(skin.src)}')`:'');bubStyle(dlg,bub.st);
   syncStands($('#stands',el),slots,manual);
   /* 무대 아래: 칸마다 바뀐 것만 다시 그린다 — 대사 입력칸은 그대로 두어야 치는 중에 끊기지 않는다 (한글 조합·포커스 유지) */
   const barH=`${gm()?spkBarHtml(speakers):(speakers.length>1?`<div class="spkbar">${speakers.map(x=>{const c=x.key==='me'?charOf(ST.seat):charOf(x.key);const av=c?(standSrc(c)||c.img):'';return spkChip(x.key,x.name,av,SPK.key===x.key||(!SPK.key&&x.key==='me'))}).join('')}<button class="spk add" data-rp="spkedit" title="고른 인물의 표정·스탠딩"><i>✎</i><span>표정</span></button></div>`:'')}`;
@@ -516,7 +516,13 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
     <div class="row" style="margin-top:8px"><button class="btn sm ghost" data-gc="stageclear" title="자리 고정을 풀고 서 있는 스탠딩도 내린다">무대 비우기</button><span class="sp"></span><select id="gsc">${chars.map(c=>`<option value="${esc(c.key)}">${esc(c.name)}</option>`).join('')}</select><button class="btn sm" data-gc="stands">표정·스탠딩 편집</button></div>
     ${sec('고정 자막',(r.caption||{}).fixed?'<b style="color:var(--ok)">고정 중</b>':'비우면 채팅이 그대로 자막')}<div class="row"><input type="text" id="gcn" value="${esc((r.caption||{}).name||'')}" placeholder="이름" style="width:130px"><input type="text" id="gct" value="${esc((r.caption||{}).fixed?(r.caption.text||''):'')}" placeholder="무대에 계속 띄워 둘 대사" style="flex:1"><button class="btn sm" data-gc="cap">고정</button>${(r.caption||{}).fixed?'<button class="btn sm ghost" data-gc="capx">풀기</button>':''}</div>
     ${sec('대사 상자 모양','그림 말풍선은 대사에만 — 꼬리는 말하는 사람 자리 쪽, 지문은 꼬리 없는 나레이션')}<div class="row gbm"><button class="btn sm ${bb.on?'ghost':'pri'}" data-gc="bubon" data-v="">기본 (검은 띠)</button><button class="btn sm ${bb.on?'pri':'ghost'}" data-gc="bubon" data-v="1">그림 말풍선</button></div>
-    <div class="gbslots">${bslot('c','꼬리 없음 · 지문·자막')}${bslot('l','꼬리 왼쪽 · 왼쪽 화자')}${bslot('m','꼬리 가운데 · 가운데 화자')}${bslot('r','꼬리 오른쪽 · 오른쪽 화자')}</div><div class="small dim">900×400 가로 말풍선 기준 (움직이는 APNG 그대로). 한쪽 꼬리만 있으면 반대쪽은 뒤집어 쓴다. 꼬리 가운데가 없으면 가운데 화자는 꼬리 왼쪽 그림을 가운데 오른편에. 그림은 이 방 저장소에만.</div>`}
+    <div class="gbslots">${bslot('c','꼬리 없음 · 지문·자막')}${bslot('l','꼬리 왼쪽 · 왼쪽 화자')}${bslot('m','꼬리 가운데 · 가운데 화자')}${bslot('r','꼬리 오른쪽 · 오른쪽 화자')}</div><div class="small dim">900×400 가로 말풍선 기준 (움직이는 APNG 그대로). 한쪽 꼬리만 있으면 반대쪽은 뒤집어 쓴다. 꼬리 가운데가 없으면 가운데 화자는 꼬리 왼쪽 그림을 가운데 오른편에. 그림은 이 방 저장소에만.</div>
+    ${(()=>{const st=bb.st||{};return `<div class="gbst"><label>글꼴 <select id="gbf">${BUB_FONTS.map(([v,l])=>`<option value="${v}" ${(st.font||'')===v?'selected':''}>${esc(l)}</option>`).join('')}</select></label>
+     <label>글자 크기 <input type="range" id="gbs" min="60" max="170" step="5" value="${st.fs||100}"><b id="gbs_v">${st.fs||100}%</b></label>
+     <label>상자 크기 <input type="range" id="gbw" min="30" max="85" step="1" value="${st.w||52}"><b id="gbw_v">${st.w||52}%</b></label>
+     <label>글자 위치 <input type="range" id="gby" min="-12" max="12" step="1" value="${st.y||0}"><b id="gby_v">${st.y>0?'+':''}${st.y||0}</b></label>
+     <label>굵기 <select id="gbb">${[['','굵게 (기본)'],['400','보통'],['500','중간'],['900','아주 굵게']].map(([v,l])=>`<option value="${v}" ${String(st.wt||'')===v?'selected':''}>${l}</option>`).join('')}</select></label>
+     <button class="btn xs ghost" data-gc="bubst0">원래대로</button></div><div class="small dim">글꼴 · 글자 크기 · 굵기는 기본 띠와 그림 말풍선 모두에, 상자 크기 · 글자 위치는 그림 말풍선에. 움직이면 무대에 바로 미리 보이고 손을 떼면 모두에게 저장된다.</div>`})()}`}
   else if(GC.tab==='etc'){const CI=R().cutin||{};const sel=(id,cur,opts)=>`<select id="${id}" data-ci>${opts.map(([v,l])=>`<option value="${v}" ${String(cur)===v?'selected':''}>${l}</option>`).join('')}</select>`;
    body=`${sec('컷인 · 연출','고치면 바로 저장')}<div class="gcform">
      <label><span>시합 개시</span>${sel('gci_start',CI.start||'vs',[['vs','일반 (VS 컷인)'],['warn','경고 (위험 등장)'],['off','끄기']])}</label>
@@ -566,6 +572,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(k==='capx'){await A().set(['rp','caption'],null);return re()}
    if(k==='bubon'){await A().set(['rp','bubble','on'],b.dataset.v?true:null);return re()}
    if(k==='bubx'){await A().set(['rp','bubble',b.dataset.v],null);return re()}
+   if(k==='bubst0'){await A().set(['rp','bubble','st'],null);return re()}
    if(k==='center'){const u=$('#gci',md).value.trim();if(!u)return;await A().set(['rp','center'],{src:u,at:Date.now()});return re()}
    if(k==='centerx'){await A().set(['rp','center'],null);return re()}
    if(k==='se'){unlocked=true;return playSe(b.dataset.n)}
@@ -575,8 +582,16 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(k==='whisper'){const to=$('#gwto',md).value,t=$('#gwt',md).value.trim();if(!to||!t)return;await DBS().addLog(ST.room,ST.secret,'whisper',ST.name,{t,to,toName:(((ST.state.roster||{}).trainers||{})[to]||{}).name||to});$('#gwt',md).value='';A().toast('보냈다');return}};
    if(b.type==='checkbox')b.onchange=h;else b.onclick=h});
   if(GC.tab==='bgm')bindBgmPanel(md,re);
+  if($('#gbf',md)){const rd=()=>({font:$('#gbf',md).value||null,fs:+$('#gbs',md).value===100?null:+$('#gbs',md).value,w:+$('#gbw',md).value===52?null:+$('#gbw',md).value,y:+$('#gby',md).value||null,wt:$('#gbb',md).value||null});
+   const live=()=>{const v=rd();$('#gbs_v',md).textContent=(v.fs||100)+'%';$('#gbw_v',md).textContent=(v.w||52)+'%';$('#gby_v',md).textContent=(v.y>0?'+':'')+(v.y||0);const d=document.getElementById('dlg');if(d)bubStyle(d,v)};
+   const save=async()=>{live();const v=rd();for(const k in v)if(v[k]==null)delete v[k];await A().set(['rp','bubble','st'],Object.keys(v).length?v:null)};
+   ['#gbs','#gbw','#gby'].forEach(q=>{const e=$(q,md);e.oninput=live;e.onchange=save});['#gbf','#gbb'].forEach(q=>$(q,md).onchange=save)}
   for(const k of ['c','l','m','r'])if($('#bub_'+k,md))bindDz(md,'#bub_'+k,async fs=>{const u=await upImg(fs[0],'bub_'+k);await A().set(['rp','bubble',k],u);if(!(R().bubble||{}).on)await A().set(['rp','bubble','on'],true);re()});
   if($('#gcidz',md))bindDz(md,'#gcidz',async fs=>{const u=await upImg(fs[0],'rp');await A().set(['rp','center'],{src:u,at:Date.now()});re()})}
+ /* 대사 상자 글꼴 · 글자 크기 · 상자 크기 · 굵기 · 글자 위치 (rp.bubble.st, GM 콘솔 무대 탭, 10-21 망령) */
+ const BUB_FONTS=[['','기본 (화면 글꼴)'],['bhs','Black Han Sans'],['dohyeon','Do Hyeon'],['jua','주아'],['gugi','구기'],['plex','IBM Plex Sans KR'],['noto','Noto Sans KR'],['nanum','나눔고딕'],['gothica1','Gothic A1'],['gowun','고운돋움'],['pretendard','Pretendard'],['myeongjo','나눔명조']];
+ function bubStyle(el,st){st=st||{};const S=(k,v)=>{if(v===''||v==null)el.style.removeProperty(k);else el.style.setProperty(k,v)};
+  S('--bubfont',st.font&&A().fontCss?A().fontCss(st.font):'');S('--bubfs',st.fs&&+st.fs!==100?String(st.fs/100):'');S('--bubw',st.w?st.w+'%':'');S('--bubwt',st.wt||'');S('--buby',st.y?st.y+'%':'')}
  /* ----- BGM 패널 (맵툴 Lib:bgm 정리판과 같은 꼴): 홈 = 띠(장면/배틀/분위기)별 그룹 타일 → 그룹 = 곡 줄 · 검색 · ▶ 미리듣기 · 모두에게 재생 · ⟳ 다른 곡 ----- */
  const BG={g:'',q:''};
  const gshort=g=>String(g).replace(/^[0-9.]+\s*/,'');

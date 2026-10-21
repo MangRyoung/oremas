@@ -2422,14 +2422,14 @@ span.iedit{display:inline-block;min-width:3em}
 .gd-bub em{font-style:normal;color:var(--red)}
 
 /* ---------- 그림 말풍선 (rp.bubble, 10-23) — 900×400 가로 말풍선 기준 글자 칸 ---------- */
-.dlg.skin{left:auto;right:auto;bottom:4%;width:min(52%,740px);aspect-ratio:9/4;isolation:isolate}
+.dlg.skin{left:auto;right:auto;bottom:4%;width:var(--bubw,min(52%,740px));max-width:96%;aspect-ratio:9/4;isolation:isolate}
 .dlg.skin::before{content:'';position:absolute;inset:0;background:var(--bub) center/100% 100% no-repeat;z-index:-1}
 .dlg.skin.flip::before{transform:scaleX(-1)}
-.dlg.skin.sc{left:calc(50% - min(26%,370px))}
+.dlg.skin.sc{left:calc(50% - var(--bubw,min(52%,740px)) / 2)}
 .dlg.skin.sl{left:21%}
 .dlg.skin.sr{right:21%}
 .dlg.skin.sl.mid{left:47%}
-.dlg.skin .dtext{position:absolute;display:grid;align-content:safe center;background:none;clip-path:none;border:0;min-height:0;max-height:none;padding:0;overflow-y:auto;scrollbar-width:none;font-family:var(--font);font-weight:700;font-size:calc(var(--dlgfs,22px) * .98);line-height:1.34;letter-spacing:-.01em;color:#fff;word-break:keep-all;text-shadow:none}
+.dlg.skin .dtext{position:absolute;display:grid;align-content:safe center;background:none;clip-path:none;border:0;min-height:0;max-height:none;padding:0;overflow-y:auto;scrollbar-width:none;font-family:var(--bubfont,var(--font));font-weight:var(--bubwt,700);font-size:calc(var(--dlgfs,22px) * .98 * var(--bubfs,1));translate:0 var(--buby,0%);line-height:1.34;letter-spacing:-.01em;color:#fff;word-break:keep-all;text-shadow:none}
 .dlg.skin .dtext.narr{font-style:normal;font-weight:500;color:#e8e8e8}
 .dlg.skin .dtext::-webkit-scrollbar{display:none}
 .dlg.skin .dname{position:absolute;top:auto;margin:0;z-index:1}
@@ -2572,10 +2572,32 @@ span.iedit{display:inline-block;min-width:3em}
 .hitbar{position:relative;height:8px;margin-top:8px}.hitbar em{position:absolute;top:0;bottom:0;background:repeating-linear-gradient(45deg,#ff5a5a,#ff5a5a 4px,#7a1f25 4px,#7a1f25 8px);opacity:.85}
 @media(max-width:560px){.hitb{grid-template-columns:1fr 1fr}.hitb .hitp{grid-column:1/-1}}
 /* 꼬리 가운데 말풍선 (10-21): 가운데 화자 */
-.dlg.skin.sm{left:calc(50% - min(26%,370px))}
+.dlg.skin.sm{left:calc(50% - var(--bubw,min(52%,740px)) / 2)}
 .dlg.skin.sm .dtext{left:14%;right:14%;top:24%;bottom:30%;transform:rotate(-2deg)}
 .dlg.skin.sm .dname{left:9%;bottom:78%;transform:rotate(-3deg)}
 @media (max-width:760px){.dlg.skin.sm{left:2%;width:96%}}
 /* 기술 카드 접촉 배지 (분류 배지 오른쪽, 10-21) */
 .mvct{flex:none;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #e8b04a;color:#e8b04a;margin-left:4px}
 .mvct.no{border-color:#555;color:#8a8a8a;font-weight:500}
+/* HP 변화 카드 (10-21) */
+.bcard.hpc{padding:7px 10px 8px}
+.hpcr{display:flex;gap:10px;align-items:center}
+.hpcav{width:44px;height:44px;flex:none;background:#0d0e11 center/cover no-repeat;border:1px solid #2a2b31}
+.hpcm{flex:1;min-width:0}
+.hpct{display:flex;align-items:baseline;gap:8px}.hpct b{color:#fff;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hpcn{margin-left:auto;font-family:var(--mono);font-weight:800;font-size:22px;line-height:1;color:var(--tc)}
+.hpcbar{position:relative;height:9px;background:#2a2b31;border:1px solid #000;margin:5px 0 3px;overflow:hidden}
+.hpcbar i{position:absolute;left:0;top:0;bottom:0;background:var(--ok)}.hpcbar.mid i{background:var(--yel)}.hpcbar.low i{background:var(--red)}
+.hpcbar em{position:absolute;top:0;bottom:0}
+.hpcbar em.cut{background:repeating-linear-gradient(45deg,#ff5a5a,#ff5a5a 3px,#6d1a20 3px,#6d1a20 6px)}
+.hpcbar em.gain{background:#7fe0a3;opacity:.85}
+.hpcs{display:flex;justify-content:space-between;font-size:11.5px;color:#b9bac0;font-family:var(--mono)}.hpcs b{color:#fff}.hpcp{color:var(--tc)}
+.hpcw{font-size:11.5px;color:#9a9ba2;margin-top:3px}.hpcw.x{color:#d9c27a}
+.hpcf{margin-top:6px;padding:4px 8px;background:#2a0f12;border-left:3px solid #ff4a4a;color:#ff8a8a;font-weight:800;font-size:13px;letter-spacing:.02em}
+.bcb .bsec{font-size:11px;color:var(--tc);font-weight:700;letter-spacing:.04em;margin-top:4px}.bcb .bsec:first-child{margin-top:0}
+
+/* 대사 상자 글꼴 · 크기 (rp.bubble.st, 10-21) — 기본 띠에도 */
+.dlg:not(.skin) .dtext{font-family:var(--bubfont,inherit);font-size:calc(var(--dlgfs,22px) * var(--bubfs,1))}
+.dlg:not(.skin) .dtext:not(.narr){font-weight:var(--bubwt,inherit)}
+.gbst{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;margin:10px 0 4px;font-size:12.5px}
+.gbst label{display:flex;align-items:center;gap:6px}.gbst input[type=range]{width:120px}.gbst b{font-family:var(--mono);min-width:38px;color:#fff}
