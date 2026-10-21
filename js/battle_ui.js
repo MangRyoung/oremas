@@ -659,9 +659,7 @@ window.OM_BATTLE_UI=(()=>{
    <div class="small dim" style="margin-top:8px">선행 발동 : 지시 입력에서 선행 입력한 것을 그 순간 발동 (턴 개시 때 횟수를 깎았다) · 임의 발동 : 남은 횟수 1을 써서 지금 발동 · 강제 : GM 이 횟수와 상관없이</div>`);
   md.querySelectorAll('[data-ftab]').forEach(el=>el.onclick=()=>{UIC.fire[tid]=el.dataset.ftab;A().closeModal();openFire(tid)});
   /* 선행 입력 읽기 (주인·GM 만 읽을 수 있다) */
-  myCmd(c,tid,true).then(cm=>{const pre=$('#firepre',md);if(!pre)return;let x=cm&&cm.mons&&cm.mons[m.id]||{};const parts=[];
-   /* 교대로 나간 포켓몬의 선행 입력은 그 자리에 들어온 포켓몬이 이어받는다 (지시를 넣은 포켓몬이 필드에 없을 때) */
-   if(!(x.order||x.command||(x.pots||[]).length)&&cm&&cm.mons){for(const id in cm.mons){const y=cm.mons[id]||{};const o=b.mons[id];if(o&&o.tid===tid&&!(o.entry&&o.hp.cur>0)&&(y.order||y.command)){x=Object.assign({},y,{pots:[]});parts.push(`<span class="dim">(교대로 나간 ${esc(o.name)}의 선행)</span>`);break}}}
+  myCmd(c,tid,true).then(cm=>{const pre=$('#firepre',md);if(!pre)return;const x=cm&&cm.mons&&cm.mons[m.id]||{};const parts=[];   /* 교대로 나간 포켓몬의 선행 입력은 함께 사라진다 (들어온 포켓몬이 이어받지 않는다) */
    for(const kind of ['order','command']){const k=x[kind];if(!k)continue;const nm=kind==='order'?OO().orderName(t,k):OO().commandName(t,k);parts.push(`${kind==='order'?'지령':'명령'} 『${esc(nm)}』${fired[kind]===k?' (발동함)':''}`);
     const bt=md.querySelector(`[data-fire="pre"][data-kind="${kind}"][data-k="${k}"]`);if(bt&&ph>=1&&fired[kind]!==k)bt.hidden=false;const row=md.querySelector(`.firerow[data-kind="${kind}"][data-fk="${k}"]`);if(row)row.classList.add('pre')}
    const fp=fired.pot||{};for(const [sk,list] of [['uq',(cm&&cm.upots)||[]],['ex',x.pots||[]]])for(const n of list){const key=(sk==='uq'?'u:':'e:')+n;const bt=md.querySelector(`[data-sfire="pre"][data-sk="${sk}"][data-sn="${CSS.escape(n)}"]`);if(!bt)continue;parts.push(`${sk==='uq'?'고유':'전용'} 『${esc(n)}』${fp[key]?' (발동함)':''}`);if(ph>=1&&!fp[key])bt.hidden=false;const r=bt.closest('.firerow');if(r)r.classList.add('pre')}
