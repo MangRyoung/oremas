@@ -108,7 +108,7 @@ window.OM_RP_UI=(()=>{
     if(sl!=='left'&&sl!=='right')skin={v:'m',src:bub.m||DEF('m')};else if(bub[want])skin={v:want,src:bub[want]};else if(bub[alt])skin={v:want,src:bub[alt],flip:1};else skin={v:want,src:DEF('l'),flip:want==='r'?1:0};
     if(skin.v!=='c'&&skin.v!=='m'&&sl!=='left'&&sl!=='right')skin.mid=1}}
   const dlg=$('#dlg',el);if(dlgHtml){if(dlg.dataset.k!==dlgHtml){dlg.innerHTML=dlgHtml;dlg.dataset.k=dlgHtml;dlg.classList.remove('pop');void dlg.offsetWidth;dlg.classList.add('pop')}dlg.style.display=''}else{dlg.style.display='none';dlg.dataset.k=''}
-  dlg.classList.toggle('skin',!!skin);for(const v of ['c','l','r','m'])dlg.classList.toggle('s'+v,!!skin&&skin.v===v);dlg.classList.toggle('flip',!!(skin&&skin.flip));dlg.classList.toggle('mid',!!(skin&&skin.mid));dlg.classList.toggle('nl',!!(skin&&skin.side==='l'));dlg.classList.toggle('nr',!!(skin&&skin.side==='r'));dlg.style.setProperty('--bub',skin?`url('${cssu(skin.src)}')`:'');bubStyle(dlg,bub.st);
+  dlg.classList.toggle('skin',!!skin);for(const v of ['c','l','r','m'])dlg.classList.toggle('s'+v,!!skin&&skin.v===v);dlg.classList.toggle('flip',!!(skin&&skin.flip));dlg.classList.toggle('mid',!!(skin&&skin.mid));dlg.classList.toggle('nl',!!(skin&&skin.side==='l'));dlg.classList.toggle('nr',!!(skin&&skin.side==='r'));dlg.style.setProperty('--bub',skin?`url('${cssu(skin.src)}')`:'');bubStyle(dlg,stOf(bub.st));
   syncStands($('#stands',el),slots,manual);
   /* 무대 아래: 칸마다 바뀐 것만 다시 그린다 — 대사 입력칸은 그대로 두어야 치는 중에 끊기지 않는다 (한글 조합·포커스 유지) */
   const barH=`${gm()?spkBarHtml(speakers):(speakers.length>1?`<div class="spkbar">${speakers.map(x=>{const c=x.key==='me'?charOf(ST.seat):charOf(x.key);const av=c?(standSrc(c)||c.img):'';return spkChip(x.key,x.name,av,SPK.key===x.key||(!SPK.key&&x.key==='me'))}).join('')}<button class="spk add" data-rp="spkedit" title="고른 인물의 표정·스탠딩"><i>✎</i><span>표정</span></button></div>`:'')}`;
@@ -525,12 +525,12 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
     ${sec('고정 자막',(r.caption||{}).fixed?'<b style="color:var(--ok)">고정 중</b>':'비우면 채팅이 그대로 자막')}<div class="row"><input type="text" id="gcn" value="${esc((r.caption||{}).name||'')}" placeholder="이름" style="width:130px"><input type="text" id="gct" value="${esc((r.caption||{}).fixed?(r.caption.text||''):'')}" placeholder="무대에 계속 띄워 둘 대사" style="flex:1"><button class="btn sm" data-gc="cap">고정</button>${(r.caption||{}).fixed?'<button class="btn sm ghost" data-gc="capx">풀기</button>':''}</div>
     ${sec('대사 상자 모양','그림 말풍선은 대사에만 — 꼬리는 말하는 사람 자리 쪽, 지문은 꼬리 없는 나레이션')}<div class="row gbm"><button class="btn sm ${bb.on?'ghost':'pri'}" data-gc="bubon" data-v="">기본 (검은 띠)</button><button class="btn sm ${bb.on?'pri':'ghost'}" data-gc="bubon" data-v="1">그림 말풍선</button></div>
     <div class="gbslots">${bslot('c','꼬리 없음 · 지문·자막')}${bslot('l','꼬리 왼쪽 · 왼쪽 화자')}${bslot('m','꼬리 가운데 · 가운데 화자')}${bslot('r','꼬리 오른쪽 · 오른쪽 화자')}</div><div class="small dim">900×400 가로 말풍선 기준 (움직이는 APNG 그대로). 한쪽 꼬리만 있으면 반대쪽은 뒤집어 쓴다. 비운 칸은 오레마스 기본 그림(검은 상자 · 흰 테두리)을 쓴다. 그림은 이 방 저장소에만.</div>
-    ${(()=>{const st=bb.st||{};return `<div class="gbst"><label>글꼴 <select id="gbf">${BUB_FONTS.map(([v,l])=>`<option value="${v}" ${(st.font||'')===v?'selected':''}>${esc(l)}</option>`).join('')}</select></label>
-     <label>글자 크기 <input type="range" id="gbs" min="60" max="170" step="5" value="${st.fs||100}"><b id="gbs_v">${st.fs||100}%</b></label>
-     <label>상자 크기 <input type="range" id="gbw" min="30" max="85" step="1" value="${st.w||52}"><b id="gbw_v">${st.w||52}%</b></label>
+    ${(()=>{const st=stOf(bb.st);return `<div class="gbst"><label>글꼴 <select id="gbf">${BUB_FONTS.map(([v,l])=>`<option value="${v}" ${(st.font||'')===v?'selected':''}>${esc(l)}</option>`).join('')}</select></label>
+     <label>글자 크기 <input type="range" id="gbs" min="60" max="170" step="5" value="${st.fs}"><b id="gbs_v">${st.fs}%</b></label>
+     <label>상자 크기 <input type="range" id="gbw" min="30" max="85" step="1" value="${st.w}"><b id="gbw_v">${st.w}%</b></label>
      <label>굵기 <select id="gbb">${[['','굵게 (기본)'],['400','보통'],['500','중간'],['900','아주 굵게']].map(([v,l])=>`<option value="${v}" ${String(st.wt||'')===v?'selected':''}>${l}</option>`).join('')}</select></label>
-     <button class="btn xs ghost" data-gc="bubst0">원래대로</button></div>
-     ${(()=>{/* 10-23 망령: 예시 무대에서 대사창 · 지문 상자를 끌어서 옮긴다 (st.dx/dy · nx/ny = 무대 폭·높이의 %) */const bgs=(r.bg||{}).src;const w=st.w||52;const u=k=>new URL('img/bubble/'+k+'.svg?v=3',location.href).href;
+     <button class="btn xs ghost" data-gc="bubst0">원래대로</button><button class="btn xs ghost" data-gc="bubstcp" title="지금 무대 설정 값을 글자로 복사 (반디에게 보내면 코드 기본값으로 넣는다)">값 복사</button></div>
+     ${(()=>{/* 10-23 망령: 예시 무대에서 대사창 · 지문 상자를 끌어서 옮긴다 (st.dx/dy · nx/ny = 무대 폭·높이의 %) */const bgs=(r.bg||{}).src;const w=+st.w||52;const u=k=>new URL('img/bubble/'+k+'.svg?v=3',location.href).href;
       const box=(id,lab,txt,src,x,y,b0)=>`<div class="gbpbox" id="${id}" style="width:${w}%;left:calc(${50-w/2}% + ${x||0}%);bottom:calc(${b0}% + ${y||0}%);background-image:url('${cssu(src)}')"><span class="gbpn">${lab}</span><span class="gbpt">${txt}</span></div>`;
       return `<div class="gbpos"><div class="gbph"><b>대사창 · 지문 상자 위치</b><span class="small dim">예시 상자를 끌어서 옮기면 무대에 바로 보이고, 손을 떼면 저장 · 대사창은 가운데 화자 기준 (좌우 화자도 같은 만큼 움직인다)</span><span class="sp"></span><span class="gbpsel"><button class="btn xs pri" data-gbp="d">대사창 옮기기</button><button class="btn xs ghost" data-gbp="n">지문 상자 옮기기</button></span><button class="btn xs ghost" id="gbp0">위치만 원래대로</button></div>
        <div class="gbpst seld" id="gbpst" style=""${bgs?`background-image:url('${cssu(bgs)}')`:''}">${box('gbp_d','대사','"이 상자를 끌어서 옮긴다"',(bb.on&&bb.m)||u('mid'),st.dx,st.dy,9)}${box('gbp_n','지문','이건 지문 상자',(bb.on&&bb.c)||u('plain'),st.nx,st.ny,1)}</div></div>`})()}<div class="small dim">글꼴 · 글자 크기 · 굵기는 기본 띠와 그림 말풍선 모두에, 상자 크기는 그림 말풍선에, 대사창 · 지문 상자 높이는 둘 다에 (무대 높이의 %, + 는 위로). 움직이면 무대에 바로 미리 보이고 손을 떼면 모두에게 저장된다.</div>`})()}`}
@@ -584,6 +584,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(k==='bubon'){await A().set(['rp','bubble','on'],b.dataset.v?true:null);return re()}
    if(k==='bubx'){await A().set(['rp','bubble',b.dataset.v],null);return re()}
    if(k==='bubst0'){await A().set(['rp','bubble','st'],null);return re()}
+   if(k==='bubstcp'){const t='무대설정 '+JSON.stringify(stOf((R().bubble||{}).st));let ok=false;try{await navigator.clipboard.writeText(t);ok=true}catch(e){}if(ok)A().toast('복사했다 — 반디에게 붙여 넣어 줘');else prompt('이 글을 길게 눌러 복사',t);return}
    if(k==='center'){const u=$('#gci',md).value.trim();if(!u)return;await A().set(['rp','center'],{src:u,at:Date.now()});return re()}
    if(k==='centerx'){await A().set(['rp','center'],null);return re()}
    if(k==='se'){unlocked=true;return playSe(b.dataset.n)}
@@ -593,8 +594,9 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(k==='whisper'){const to=$('#gwto',md).value,t=$('#gwt',md).value.trim();if(!to||!t)return;await DBS().addLog(ST.room,ST.secret,'whisper',ST.name,{t,to,toName:(((ST.state.roster||{}).trainers||{})[to]||{}).name||to});$('#gwt',md).value='';A().toast('보냈다');return}};
    if(b.type==='checkbox')b.onchange=h;else b.onclick=h});
   if(GC.tab==='bgm')bindBgmPanel(md,re);
-  if($('#gbf',md)){const st0=(R().bubble||{}).st||{};const POS={dx:+st0.dx||0,dy:+st0.dy||0,nx:+st0.nx||0,ny:+st0.ny||0};const rd=()=>({font:$('#gbf',md).value||null,fs:+$('#gbs',md).value===100?null:+$('#gbs',md).value,w:+$('#gbw',md).value===52?null:+$('#gbw',md).value,dx:POS.dx||null,dy:POS.dy||null,nx:POS.nx||null,ny:POS.ny||null,wt:$('#gbb',md).value||null});
-   const live=()=>{const v=rd();$('#gbs_v',md).textContent=(v.fs||100)+'%';$('#gbw_v',md).textContent=(v.w||52)+'%';const d=document.getElementById('dlg');if(d)bubStyle(d,v);const p=$('#gbpst',md);if(p)bubStyle(p,v)};
+  if($('#gbf',md)){const st0=stOf((R().bubble||{}).st);const POS={dx:+st0.dx||0,dy:+st0.dy||0,nx:+st0.nx||0,ny:+st0.ny||0};const dif=(k,v)=>v===BUB_DEF[k]?null:v;/* 기본값(BUB_DEF)과 다른 것만 저장 */
+   const rd=()=>({font:dif('font',$('#gbf',md).value),fs:dif('fs',+$('#gbs',md).value),w:dif('w',+$('#gbw',md).value),dx:dif('dx',POS.dx),dy:dif('dy',POS.dy),nx:dif('nx',POS.nx),ny:dif('ny',POS.ny),wt:dif('wt',$('#gbb',md).value)});
+   const live=()=>{const v=stOf(rd());$('#gbs_v',md).textContent=v.fs+'%';$('#gbw_v',md).textContent=v.w+'%';const d=document.getElementById('dlg');if(d)bubStyle(d,v);const p=$('#gbpst',md);if(p)bubStyle(p,v)};
    const save=async()=>{live();const v=rd();for(const k in v)if(v[k]==null)delete v[k];await A().set(['rp','bubble','st'],Object.keys(v).length?v:null)};
    ['#gbs','#gbw'].forEach(q=>{const e=$(q,md);e.oninput=live;e.onchange=save});
    /* 예시 무대 끌기 */
@@ -604,12 +606,15 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
      el.onpointerup=el.onpointercancel=()=>{el.onpointermove=null;el.onpointerup=null;el.classList.remove('drag');save()}}};
    drag('#gbp_d','dx','dy',9);drag('#gbp_n','nx','ny',1);
    md.querySelectorAll('[data-gbp]').forEach(b=>b.onclick=()=>{const k=b.dataset.gbp;pst.classList.toggle('seld',k==='d');pst.classList.toggle('seln',k==='n');md.querySelectorAll('[data-gbp]').forEach(x=>{x.classList.toggle('pri',x===b);x.classList.toggle('ghost',x!==b)})});
-   $('#gbp0',md).onclick=()=>{POS.dx=POS.dy=POS.nx=POS.ny=0;save().then(re)};
+   $('#gbp0',md).onclick=()=>{for(const k of ['dx','dy','nx','ny'])POS[k]=BUB_DEF[k];save().then(re)};
    $('#gbw',md).addEventListener('input',()=>{const w=+$('#gbw',md).value||52;[['#gbp_d','dx'],['#gbp_n','nx']].forEach(([id,k])=>{const el=$(id,md);if(el){el.style.width=w+'%';el.style.left=`calc(${50-w/2}% + ${POS[k]||0}%)`}})});['#gbf','#gbb'].forEach(q=>$(q,md).onchange=save);live()}
   for(const k of ['c','l','m','r'])if($('#bub_'+k,md))bindDz(md,'#bub_'+k,async fs=>{const u=await upImg(fs[0],'bub_'+k);await A().set(['rp','bubble',k],u);if(!(R().bubble||{}).on)await A().set(['rp','bubble','on'],true);re()});
   if($('#gcidz',md))bindDz(md,'#gcidz',async fs=>{const u=await upImg(fs[0],'rp');await A().set(['rp','center'],{src:u,at:Date.now()});re()})}
  /* 대사 상자 글꼴 · 글자 크기 · 상자 크기 · 굵기 · 대사창/지문 상자 높이 (rp.bubble.st, GM 콘솔 무대 탭, 10-21 · 10-23 망령: 글자 위치 대신 상자 위치) */
  const BUB_FONTS=[['','기본 (화면 글꼴)'],['bhs','Black Han Sans'],['dohyeon','Do Hyeon'],['jua','주아'],['gugi','구기'],['plex','IBM Plex Sans KR'],['noto','Noto Sans KR'],['nanum','나눔고딕'],['gothica1','Gothic A1'],['gowun','고운돋움'],['pretendard','Pretendard'],['myeongjo','나눔명조']];
+ /* 무대 기본값 — 방에 저장된 st 는 이것과 다른 값만 담는다 (10-23 망령: 그랜드 오더 방 설정을 기본값으로) */
+ const BUB_DEF={font:'',fs:100,w:52,wt:'',dx:0,dy:0,nx:0,ny:0};
+ function stOf(st){const o=Object.assign({},BUB_DEF);if(st)for(const k in BUB_DEF)if(st[k]!=null)o[k]=st[k];return o}
  function bubStyle(el,st){st=st||{};const S=(k,v)=>{if(v===''||v==null)el.style.removeProperty(k);else el.style.setProperty(k,v)};
   S('--bubfont',st.font&&A().fontCss?A().fontCss(st.font):'');S('--bubfs',st.fs&&+st.fs!==100?String(st.fs/100):'');S('--bubw',st.w?st.w+'%':'');S('--bubwt',st.wt||'');for(const k of ['dx','dy','nx','ny'])S('--dlg'+k,st[k]?String(+st[k]):'')}
  /* ----- BGM 패널 (맵툴 Lib:bgm 정리판과 같은 꼴): 홈 = 띠(장면/배틀/분위기)별 그룹 타일 → 그룹 = 곡 줄 · 검색 · ▶ 미리듣기 · 모두에게 재생 · ⟳ 다른 곡 ----- */
