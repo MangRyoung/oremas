@@ -410,7 +410,7 @@ window.OM_BATTLE_UI=(()=>{
   const pimm=x.pimm||((m.flags||{}).pursuitImmune?(m.flags.pursuitImmuneBy||'추격 무시'):'');if(pimm)o.pimm=pimm;return o}
  /* 좌석: 턴 개시 때 내 순서 열쇠를 cmds[내 자리].ok 에 올린다 (진행하는 사람이 남의 비밀 지시를 못 읽어도 순서를 계산하게) */
  async function publishOk(){const c=ctx();const b=c.b;const tid=c.seat;if(c.role!=='seat'||!tid||!(b.trainers||{})[tid])return;const key=turnKey(b);const cur=((b.cmds||{})[tid]||{}).ok;if((cur&&cur.key===key)||BUSY.ok===key)return;BUSY.ok=key;
-  const cm=await myCmd(c,tid,true);const ok={key,m:{}};for(const mm of Object.values(b.mons||{}).filter(x=>x.tid===tid&&x.entry&&x.hp.cur>0)){const xx=((cm||{}).mons||{})[mm.id]||{};ok.m[mm.id]=okeyOf(mm,xx);if(xx.order||xx.command||(xx.pots||[]).length)ok.pre=1}if(((cm||{}).upots||[]).length)ok.pre=1;
+  const cm=await myCmd(c,tid,true);const ok={key,m:{}};for(const mm of Object.values(b.mons||{}).filter(x=>x.tid===tid&&x.entry&&x.hp.cur>0)){const xx=((cm||{}).mons||{})[mm.id]||{};ok.m[mm.id]=okeyOf(mm,xx);if(xx.order||xx.command||(xx.pots||[]).length)ok.m[mm.id].pi=1}if(((cm||{}).upots||[]).length)ok.pre=1;
   if((ctx().b.cmds||{})[tid])await A().set(['battle','cmds',tid,'ok'],ok);else await A().set(['battle','cmds',tid],{ok})}
  /* 차례가 온 포켓몬의 지시를 연다: 주인 화면이, GM 몫(NPC · GM 이 불러온 파티)은 GM 화면이. 보통 모드의 GM 은 플레이어가 안 열면 잠시 뒤 대신 연다 */
  const RVT={};
@@ -427,7 +427,7 @@ window.OM_BATTLE_UI=(()=>{
  async function turnInfo(c,b){let rows=[];try{rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd')||[]}catch(e){}
   const SEC={},PRE={};const live=mid=>{const mm=(b.mons||{})[mid];return mm&&mm.entry&&mm.hp.cur>0};
   for(const r of rows){const d=r.data||{};if(!(b.trainers||{})[r.id])continue;if((d.upots||[]).length)PRE[r.id]=1;for(const mid in (d.mons||{})){const x=d.mons[mid]||{};SEC[mid]=x;if(live(mid)&&(x.order||x.command||(x.pots||[]).length))PRE[r.id]=1}}
-  const tk=turnKey(b);for(const tid in b.trainers||{}){const ok=((b.cmds||{})[tid]||{}).ok;if(ok&&ok.key===tk&&ok.pre)PRE[tid]=1}
+  const tk=turnKey(b);for(const tid in b.trainers||{}){const ok=((b.cmds||{})[tid]||{}).ok;if(!ok||ok.key!==tk)continue;if(ok.pre)PRE[tid]=1;for(const mid in (ok.m||{}))if(ok.m[mid].pi&&live(mid))PRE[tid]=1}   /* 교대로 나간 포켓몬의 선행은 세지 않는다 */
   const keyOf=m=>{if(SEC[m.id])return okeyOf(m,SEC[m.id]);const ok=((b.cmds||{})[m.tid]||{}).ok;if(ok&&ok.key===tk&&ok.m&&ok.m[m.id])return ok.m[m.id];const px=(((b.cmds||{})[m.tid]||{}).mons||{})[m.id];return px?okeyOf(m,px):null};
   return {SEC,PRE,keyOf}}
  async function stepTurn(){const c=ctx();if(!c.mgr)return;const b=c.b;if((+b.phase||0)!==1)return;const st=+b.tstep||0;const I=await turnInfo(c,b);const slots=allEntered(b);const TN=tid=>((b.trainers||{})[tid]||{}).name||'?';
