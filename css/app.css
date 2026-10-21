@@ -1848,3 +1848,21 @@ span.qe{display:inline-block;min-width:1.5em}
 .pcard.partner{background:linear-gradient(150deg,#ffe3ef,#e7d0ff)}
 .ppstar{position:absolute;top:-12px;right:-12px;z-index:3;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:26px;line-height:1;color:#ffd84a;background:#2a1236;border:2px solid #ffd84a;border-radius:50%;text-shadow:0 0 6px rgba(255,216,74,.8);box-shadow:0 2px 6px rgba(0,0,0,.5);pointer-events:auto;cursor:default}
 .ppstar.sm{top:-9px;right:-9px;width:24px;height:24px;font-size:15px;border-width:1.5px}
+/* 10-21 망령: 포텐셜 카드 (읽기 쉽게) */
+.potl{display:flex;flex-direction:column;gap:8px}
+.potc{background:#18191d;border:1px solid var(--line2);border-left:4px solid var(--ph,#3fc7c0);padding:9px 12px 10px}
+.potc.ph{opacity:.45}
+.potc.ex{background:linear-gradient(90deg,rgba(255,216,74,.08),transparent 60%),#18191d}
+.poth{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.potk{display:inline-flex;align-items:stretch;flex:none;font-size:11px;line-height:1;border:1px solid var(--ph,#3fc7c0)}
+.potk em{font-style:normal;font-family:var(--mono);background:var(--ph,#3fc7c0);color:#111;padding:3px 5px;font-weight:700}
+.potk span{color:var(--ph,#3fc7c0);padding:3px 6px;font-weight:600}
+.potn{font-family:var(--lab);font-size:16px;color:#fff;letter-spacing:.01em}
+.potn small{font-size:11px;color:var(--mute)}
+.pota .btn{margin:0}
+.pote{margin-top:6px;font-size:14px;line-height:1.65;color:#e4e3de;word-break:keep-all;white-space:pre-wrap}
+.pote .ptqt{color:#ffd56b;font-weight:600}
+.pote .ptbk{color:#7cc8ff;font-weight:700}
+.pote .pkl{display:flex;gap:6px;white-space:normal}
+.pote .pkl+.pkl{margin-top:3px}
+.pote .pkl i{font-style:normal;flex:none;color:var(--ph,#3fc7c0);font-weight:700;min-width:1.1em}
