@@ -106,11 +106,22 @@ window.OM_DB_UI=(()=>{
    const e={ko,min:+$('#se_min',md).value||1,max:+$('#se_max',md).value||1,roll:cur.roll||'',prog:$('#se_prog',md).value,abn:$('#se_abn',md).checked?1:0,neg:$('#se_neg',md).checked?1:0,bat:cur.bat||0,desc:$('#se_desc',md).value.split(/\r?\n/).map(x=>x.trim()).filter(Boolean),memo:$('#se_memo',md).value,img:$('#se_img',md).value.trim()};
    A().closeModal();await A().set(['dbx','st',k],{group:$('#se_grp',md).value.trim()||'기타',e,src:'room'});await A().set(['dbx','at'],Date.now());UI.sel=ko;if(document.querySelector('.dbmodal'))refresh();else open({kind:'state',sel:ko})}}
  let BASE=null,appliedAt=null;
+ /* 10-21 망령: 제작기 DB 에 새로 넣은 특성·포텐셜(dbedit)은 「제작기 새로고침」 전이라도 시트를 가져올 때 읽어 둔다 (이 화면에만 · 방에서 고친 것이 이긴다) */
+ let MKX=null,mkxP=null;
+ function ensureMaker(){if(MKX)return Promise.resolve(MKX);if(mkxP)return mkxP;mkxP=(async()=>{const x={trait:{},pot:{}};try{const rows=await window.OM_STORE.makerDocs('dbedit');
+   for(const r of rows||[]){const d=r.data||{};const row=d.row||[];if(!d.key||d.deleted)continue;if(d.kind==='abil')x.trait[d.key]={multi:String(row[2]||''),single:String(row[2]||''),cost:row[0]||''};else if(d.kind==='pots')x.pot[d.key]={group:row[0]||'',eff:row[2]||'',note:row[3]||''}}}catch(e){console.warn('제작기 DB 를 읽지 못했다',e)}
+   MKX=x;appliedAt=null;applyOverride(A().ST.state.dbx);return MKX})();return mkxP}
+ /* 비어 있는 특성·포텐셜 효과 글을 DB 로 채운다 (예전에 빈 채로 가져온 시트도) */
+ function fillEff(m){if(!m)return false;const d=DB();let ch=false;const pr=n=>((d.maker||{}).pots||[]).find(r=>r[1]===n);
+  if(m.ability&&!m.abilityEff){const v=(d.traits||{})[m.ability];if(v&&(v.multi||v.single)){m.abilityEff=String(v.multi||v.single).replace(/<br\s*\/?>/gi,'\n');ch=true}}
+  for(const p of m.pots||[]){if(p.eff)continue;const r=pr(p.name)||pr('『'+p.name+'』');if(r&&r[2]){p.eff=String(r[2]).replace(/<br\s*\/?>/gi,'\n');if(!p.kind)p.kind=r[0]||'';ch=true}}
+  return ch}
  function applyOverride(dbx){const d=DB();if(!BASE)BASE={traits:Object.assign({},d.traits),items:Object.assign({},d.items),moves:Object.assign({},d.moves),pots:((d.maker||{}).pots||[]).slice(),states:d.states?JSON.parse(JSON.stringify(d.states)):null};
   const at=(dbx||{}).at||0;if(at===appliedAt&&appliedAt!==null)return;appliedAt=at;dbx=dbx||{};
   const merge=(base,ov)=>{const out=Object.assign({},base);for(const k in ov||{}){if(ov[k]&&ov[k].del)delete out[k];else out[k]=Object.assign({},base[k]||{},ov[k])}return out};
-  d.traits=merge(BASE.traits,dbx.trait);d.items=merge(BASE.items,dbx.item);d.moves=merge(BASE.moves,dbx.move);
-  const pots=BASE.pots.filter(p=>!((dbx.pot||{})[p[1]]));for(const n in dbx.pot||{}){const o=dbx.pot[n];if(o.del)continue;const row=[o.group||'99. 기타',n,o.eff||'',o.note||''];row.src=o.src;const i=BASE.pots.findIndex(p=>p[1]===n);if(i>=0)pots.splice(Math.min(i,pots.length),0,row);else pots.push(row)}
+  d.traits=merge(MKX?merge(BASE.traits,MKX.trait):BASE.traits,dbx.trait);d.items=merge(BASE.items,dbx.item);d.moves=merge(BASE.moves,dbx.move);
+  const POV=Object.assign({},MKX?MKX.pot:{},dbx.pot||{});
+  const pots=BASE.pots.filter(p=>!(POV[p[1]]));for(const n in POV){const o=POV[n];if(o.del)continue;const row=[o.group||'99. 기타',n,o.eff||'',o.note||''];row.src=o.src;const i=BASE.pots.findIndex(p=>p[1]===n);if(i>=0)pots.splice(Math.min(i,pots.length),0,row);else pots.push(row)}
   if(d.maker)d.maker.pots=pots;
   /* 상태 변화: 제작기 상태 변화 DB 에서 고친 상태(dbx.st[키] = {e, group} | {del}). 같은 그룹이면 자리를 지킨다 */
   if(BASE.states){const S0=BASE.states,so=dbx.st||{};const st=Object.assign({},S0.st);const groups=(S0.groups||[]).map(g=>({l:g.l,s:g.s.slice()}));let hidden=(S0.hidden||[]).slice();
@@ -130,5 +141,5 @@ window.OM_DB_UI=(()=>{
   dbx.at=Date.now();await A().set(['dbx'],dbx);A().toast(`제작기에서 ${n}개 가져왔다 (특성·포텐셜)${ns?` · 상태 변화 ${ns}개`:''}`);refresh()}
  /* 시트·배틀에서 쓰는 한 줄 요약 (특성/소지품 이름 → 효과 문구 HTML) */
  function effectHtml(kind,name){const d=DB();if(kind==='trait'){const v=(d.traits||{})[name];return v?pretty(v.multi||v.single):''}if(kind==='item'){const v=(d.items||{})[name];return v?pretty(v.eff):''}return ''}
- return {open,pretty,effectHtml,applyOverride,syncMaker};
+ return {open,pretty,effectHtml,applyOverride,syncMaker,ensureMaker,fillEff};
 })();

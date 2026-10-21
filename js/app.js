@@ -328,6 +328,8 @@ async function openLoadParty(side){
 async function loadFromRoster(tid,side){
  const r=roster();const t=r.trainers[tid];if(!t)return toast('로스터에 없는 트레이너다');
  const trainer=JSON.parse(JSON.stringify(t));const mons=(t.pids||[]).map(id=>r.mons[id]).filter(Boolean).map(x=>JSON.parse(JSON.stringify(x)));
+ /* 비어 있는 특성·포텐셜 효과 글 채우기 (제작기 DB 에 새로 넣은 것) */
+ {const DU=window.OM_DB_UI;if(DU&&DU.fillEff&&mons.some(m=>(m.ability&&!m.abilityEff)||(m.pots||[]).some(p=>!p.eff))){if(DU.ensureMaker)await DU.ensureMaker();for(const m of mons)DU.fillEff(m)}}
  if(!mons.length&&!confirm('이 트레이너는 포켓몬이 없다. 그래도 불러올까?'))return;
  /* 지시 권한 = 배틀에 불러온 사람 (망령 2026-10-22: 덱 빌려 쓰기). 좌석이 남의 파티를 불러오면 내 자리 id 로 올린다 —
     트레이너 id = 내 좌석, 포켓몬 id = 좌석~원래id (rid 에 시트 id). 서버 권한·비밀 지시가 좌석 id 기준이라 그대로 맞는다. 결과 정리는 rid 로 시트에 돌려준다 */

@@ -37,9 +37,11 @@ window.OM_IMPORT=(()=>{
   const stats=S().statsOf(base,iv,ev,L);
   const tko=[d.t1,d.t2,d.t3].map(x=>x&&x!=='-'?x:'-');
   const pots=[];
+  /* 효과 글: 시트에 직접 적은 글 → 제작기가 시트에 남긴 사본(effTxt, 제작기 DB·새로 만든 항목 포함) → 오레마스 DB (10-21 망령: DB 에 없어도 시트에 있으면 가져온다) */
+  const ET=d.effTxt||{};
   (d.pots||[]).forEach((n,i)=>{if(!n||n==='-')return;const row=((DB().maker||{}).pots||[]).find(r=>r[1]===n);
-   pots.push({slot:i,name:String(n).replace(/『|』/g,''),kind:(d.potKind||[])[i]||(row?row[0]:''),eff:brN((d.potEff||[])[i]||(row?row[2]:'')),ph:isPh(n)})});
-  const abil=(DB().traits||{})[d.ability]||{};
+   pots.push({slot:i,name:String(n).replace(/『|』/g,''),kind:(d.potKind||[])[i]||(ET.kinds||[])[i]||(row?row[0]:''),eff:brN((d.potEff||[])[i]||(ET.pots||[])[i]||(row?row[2]:'')),ph:isPh(n)})});
+  const abil0=(DB().traits||{})[d.ability]||{};const abil=ET.ab?{multi:ET.ab}:abil0;
   const item=(DB().items||{})[d.item]||{};
   return {id:doc.id||d.id,tid:tr?tr.id:(doc.data&&doc.data.tid)||'',name:d.name||'',gender:d.gender||'-',lv:L,dist:nz(d.dist),
    typesKo:tko,types:tko.map(S().typeEn),tera:d.tera&&d.tera!=='-'?d.tera:'-',teraEn:d.tera&&d.tera!=='-'?S().typeEn(d.tera):'-',

@@ -376,7 +376,7 @@ window.OM_SHEET_UI=(()=>{
   const up=async(obj,path)=>{if(!obj.image||!obj.image.startsWith('data:'))return;try{obj.image=await DBS().uploadImage(path,obj.image)}catch(e){console.warn('이미지 올리기 실패',e);obj.image=obj.image.length<150000?obj.image:'';A().toast('그림을 올리지 못했다 (Storage 설정을 확인): '+e.message)}};
   jobs.push(up(trainer,`rooms/${room}/t_${trainer.id}`));for(const m of mons)jobs.push(up(m,`rooms/${room}/m_${m.id}`));await Promise.all(jobs)}
  /* asId: 좌석이 제 자리로 가져올 때 — 트레이너 id 를 좌석 id 로 바꾸고 제작기 id 는 mkId 에 둔다 (새로고침용). GM 이 같은 제작기 트레이너를 또 가져오면 그 자리를 다시 쓴다 */
- async function importTrainer(tdoc,pokeDocs,keep,asId){const c=ctx();const {trainer,mons}=I().party(tdoc,pokeDocs);
+ async function importTrainer(tdoc,pokeDocs,keep,asId){if(window.OM_DB_UI&&window.OM_DB_UI.ensureMaker)await window.OM_DB_UI.ensureMaker();const c=ctx();const {trainer,mons}=I().party(tdoc,pokeDocs);
   if(!asId){const dup=Object.values(c.r.trainers||{}).find(x=>x.mkId===tdoc.id&&x.id!==tdoc.id);if(dup)asId=dup.id}
   if(asId){trainer.mkId=tdoc.id;trainer.id=asId;for(const m of mons)m.tid=asId}
   const r0=JSON.parse(JSON.stringify(c.r));r0.trainers=r0.trainers||{};r0.mons=r0.mons||{};await hostImages(c.ST.room,trainer,mons);const r=JSON.parse(JSON.stringify(r0));const old=r.trainers[trainer.id];
