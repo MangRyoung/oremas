@@ -1915,3 +1915,47 @@ span.qe{display:inline-block;min-width:1.5em}
 .kif{display:flex;justify-content:flex-end}
 @media (max-width:760px){.stb{grid-template-columns:repeat(3,minmax(0,1fr))}.kig{grid-template-columns:1fr}}
 .kie .dbl{font-size:13.5px;line-height:1.6;color:#e4e3de}
+/* potential delete */
+.potc .potx{padding:0 7px;margin-left:2px;line-height:1.4}
+/* 한눈 정보 칸 바로 고치기 */
+.ppfacts>.qfc{cursor:pointer;transition:background .12s,transform .12s}
+.ppfacts>.qfc:hover{background:#1d1d22;transform:translateY(-1px)}
+.ppfacts>.qfc small{display:flex;align-items:center;gap:3px}
+.ppfacts>.qfc small i{font-style:normal;margin-left:auto;opacity:0;color:var(--yel2);font-size:10px;transition:opacity .12s}
+.ppfacts>.qfc:hover small i{opacity:1}
+.pfe>label.chg{background:rgba(255,216,74,.07);box-shadow:inset 3px 0 0 var(--yel2);padding:4px 6px;margin:-4px -6px}
+.pfe .pfelv{font-family:var(--lab);font-size:20px;color:#fff}
+.pfe .pfesub{margin:-4px 0 0 120px}
+.pfeg{display:flex;flex-wrap:wrap;gap:4px}
+.pfeg .btn{position:relative}
+.pfeg .btn.on{background:var(--yel2);color:#1a1400;border-color:var(--yel2)}
+.pfeg .btn i{font-style:normal;font-size:9px;margin-left:3px;font-weight:700}
+.pfeg .btn i:empty{display:none}
+@media (max-width:560px){.pfe .pfesub{margin-left:0}}
+/* 캐릭터 탭: 자질 카드 · 고유 포텐셜 · 메모 · 그 자리에서 고치기 */
+.tqg{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:8px}
+.tqc{background:#141518;border:1px solid var(--line);border-left:4px solid var(--rc);padding:8px 10px 10px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.tqh{display:flex;align-items:center;gap:8px}
+.tqh>span:first-child{font-family:var(--lab);font-size:14px;color:#fff}
+.tqh small{font-size:11px;color:var(--mute)}
+.tqr{font-family:var(--lab);font-size:20px;line-height:1;min-width:40px;text-align:center;padding:4px 8px;background:var(--rc);color:#111;clip-path:var(--slant)}
+.tqr.on{cursor:pointer;transition:filter .12s,transform .12s}
+.tqr.on:hover{filter:brightness(1.15);transform:translateY(-1px)}
+.tqd{font-size:13px;color:var(--fg2);line-height:1.5}
+.tmemo{background:#141518;border:1px solid var(--line);padding:10px 12px;font-size:13px;line-height:1.6;min-height:120px}
+.iedit{cursor:text;border-radius:3px;outline:1px dashed transparent;outline-offset:3px;transition:outline-color .12s,background .12s;min-height:1.4em;white-space:pre-wrap}
+.iedit:hover{outline-color:var(--line2,#555);background:rgba(255,255,255,.04)}
+span.iedit{display:inline-block;min-width:3em}
+.iedit.ieon{outline:none;background:none;cursor:auto}
+.iedit .iein{width:100%;box-sizing:border-box;font:inherit;color:var(--fg);background:#0b0b0d;border:1px solid var(--yel2);padding:5px 7px;resize:vertical}
+.iedit .iehint{font-size:10px;color:var(--mute);margin-top:3px;font-family:var(--body,inherit)}
+.potn .iedit .iehint{display:none}
+.potc.tuqc .potn{flex:1;min-width:0}
+.rkp{display:grid;grid-template-columns:repeat(auto-fill,minmax(64px,1fr));gap:6px}
+.rkp button{font-family:var(--lab);font-size:17px;padding:8px 4px;background:#141518;color:#fff;border:1px solid var(--line);border-bottom:3px solid var(--rc);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
+.rkp button small{font-size:10px;color:var(--mute);font-family:inherit}
+.rkp button:hover{background:#1d1d22}
+.rkp button.on{background:var(--rc);color:#111}
+.rkp button.on small{color:#222}
+.tqh>span:first-child{white-space:nowrap}.tqh small{line-height:1.25}
+.potc.tuqc .potn .iedit{display:block}

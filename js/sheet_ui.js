@@ -55,6 +55,11 @@ window.OM_SHEET_UI=(()=>{
    const put=fn=>{const src=ctx().r.mons[m.id]||m;const nm=JSON.parse(JSON.stringify(src));fn(nm);return putMon(m.id,src,nm).then(()=>A().renderScene())};
    if(q.dataset.qpk==='types')window.OM_PICK.types(m.types,{title:m.name+' — 타입 변경',note:'시트의 타입을 바꾼다 (다음에 배틀로 보낼 때부터).'},nt=>put(nm=>{nm.types=nt;nm.typesKo=nt.map(x=>x==='-'?'-':S().typeKo(x))}));
    else window.OM_PICK.base(m.base,{title:m.name+' — 종족치 변경',lv:m.lv,iv:m.iv,ev:m.ev},nb=>put(nm=>{nm.base=nb;recalc(nm,t)}))});
+  /* 10-21 망령: 캐릭터 탭 — 그 자리에서 고치기 (Enter 저장 · 여러 줄은 Ctrl+Enter · Esc 취소 · 칸 밖을 누르면 저장) */
+  el.querySelectorAll('[data-ie]').forEach(q=>q.onclick=e=>{if(e.target.closest('button,a,input,textarea,select'))return;e.stopPropagation();openIe(q)});
+  if(UI.ief){const q=el.querySelector(`[data-ie="${UI.ief}"]`);UI.ief='';if(q)openIe(q)}
+  el.querySelectorAll('[data-trk]').forEach(q=>q.onclick=e=>{e.stopPropagation();rankPick(q.dataset.trk)});
+  el.querySelectorAll('[data-qf]').forEach(q=>q.onclick=e=>{e.stopPropagation();if(UI.mid)factEdit(UI.mid,q.dataset.qf)});
   el.querySelectorAll('[data-qitem0]').forEach(q=>q.onclick=async e=>{e.stopPropagation();const m=c.r.mons[UI.mid];if(!m||!t||!canEdit(c,t.id)||!confirm(`「${m.item}」을(를) 뗄까?`))return;const nm=JSON.parse(JSON.stringify(m));applyMon(nm,'item','',t);await putMon(m.id,m,nm);A().renderScene()});
   /* 10-21 망령: 기술 칸 바로 고치기 — 추가 · 바꾸기 · 기술 조정 · 순서 · 빼기 */
   el.querySelectorAll('[data-qmv]').forEach(q=>q.onclick=e=>{e.stopPropagation();const m=c.r.mons[UI.mid];if(!m||!t||!canEdit(c,t.id))return;const i=+q.dataset.i,k=q.dataset.qmv;
@@ -95,7 +100,7 @@ window.OM_SHEET_UI=(()=>{
   return `<div class="hero">
     <div class="hpic" style="${t.image?`background-image:url('${cssu(t.image)}')`:''}">${t.image?'':'<span>사진</span>'}</div>
     <div class="hmain"><div class="hname">${E?`<input type="text" data-te="name" value="${esc(t.name)}">`:qe('te:name',esc(t.name))}</div>
-     <div class="hbadges">${['육성','지시','통솔','능력'].map(k=>E?`<label class="hb">${k} <select data-te="rank_${k}">${['',...RANKS,'B-','A-','AA-'].map(r=>`<option value="${r}" ${(t.ranks||{})[k]===r?'selected':''}>${r||'-'}</option>`).join('')}</select></label>`:qe('te:rank_'+k,`<span class="hb">${k} <b>${esc((t.ranks||{})[k]||'-')}</b></span>`)).join('')}${t.solo?'<span class="hb">1인 기준</span>':''}</div>
+     <div class="hbadges">${['육성','지시','통솔','능력'].map(k=>E?`<label class="hb">${k} <select data-te="rank_${k}">${['',...RK_LIST,...(RK_LIST.includes((t.ranks||{})[k]||'')?[]:[(t.ranks||{})[k]])].map(r=>`<option value="${r}" ${(t.ranks||{})[k]===r?'selected':''}>${r||'-'}</option>`).join('')}</select></label>`:qe('te:rank_'+k,`<span class="hb">${k} <b>${esc((t.ranks||{})[k]||'-')}</b></span>`)).join('')}${t.solo?'<span class="hb">1인 기준</span>':''}</div>
      ${E?`<div class="row small" style="margin-top:6px"><label>사진 주소 <input type="text" data-te="image" value="${esc(t.image&&!t.image.startsWith('data:')?t.image:'')}" placeholder="https://… (비우면 그대로)" style="width:320px"></label><label class="btn xs">파일 올리기<input type="file" accept="image/*" data-up="tr" data-id="${t.id}" hidden></label></div>`:''}</div>
     <div class="tiles">${tiles.map(([k,v])=>`<div class="tile"><b>${esc(String(v))}</b><span>${k}</span></div>`).join('')}</div>
    </div>
@@ -109,15 +114,27 @@ window.OM_SHEET_UI=(()=>{
    ${st.length?`<div class="stgrid">${st.map((s,i)=>`<div class="stcard ${i===act?'on':''}"><div class="sth" style="${s.src?`background-image:url('${cssu(s.src)}')`:''}"></div><b>${esc(s.label||'기본')}</b>${i===act?' <span class="tag me">기본</span>':''}</div>`).join('')}</div>`:`<div class="small dim">아직 없다 — 초상(위 그림)으로 선다</div>`}</div>`;
   const fieldSec=window.OM_STAGE_UI?window.OM_STAGE_UI.sheetSec(t.fields,canEdit(c,t.id),'tr:'+t.id):'';
   return standSec+fieldSec+`<div class="spanel two">
-   <div><div class="sh">자질</div><table class="t">${['육성','지시','통솔','능력'].map(k=>`<tr><th style="width:60px">${k} ${esc((t.ranks||{})[k]||'-')}</th><td>${E?`<input type="text" data-te="detail_${k}" value="${esc(d[k]||'')}" style="width:100%">`:qe('te:detail_'+k,esc(d[k]||''))}</td></tr>`).join('')}</table>
-    <div class="sh" style="margin-top:12px">고유 포텐셜</div>${(t.unique||[]).length?`<table class="t">${t.unique.map((u,i)=>`<tr><th style="width:140px;white-space:normal">${E?`<input type="text" data-te="uniq_name_${i}" value="${esc(u.name)}" style="width:100%">`:qe(`te:uniq_name_${i}`,esc(u.name))}${u.name?uniqAutoBtn(u,i):''}</th><td class="pre small">${E?`<textarea data-te="uniq_eff_${i}" rows="3" style="width:100%">${esc(u.eff)}</textarea>`:qe(`te:uniq_eff_${i}`,esc(u.eff),1)}</td></tr>`).join('')}</table>`:'<div class="dim small">없음</div>'}${E?`<button class="btn xs" data-act="adduniq">+ 고유</button>`:''}</div>
-   <div><div class="sh">메모</div>${E?`<textarea data-te="memo" rows="12" style="width:100%">${esc(t.memo||'')}</textarea>`:qe('te:memo',`<div class="pre small">${esc(t.memo||'')||'<span class="dim">없음</span>'}</div>`,1)}</div>
+   ${E?`<div><div class="sh">자질</div><table class="t">${['육성','지시','통솔','능력'].map(k=>`<tr><th style="width:60px">${k} ${esc((t.ranks||{})[k]||'-')}</th><td>${E?`<input type="text" data-te="detail_${k}" value="${esc(d[k]||'')}" style="width:100%">`:qe('te:detail_'+k,esc(d[k]||''))}</td></tr>`).join('')}</table>
+    <div class="sh" style="margin-top:12px">고유 포텐셜</div>${(t.unique||[]).length?`<table class="t">${t.unique.map((u,i)=>`<tr><th style="width:140px;white-space:normal">${E?`<input type="text" data-te="uniq_name_${i}" value="${esc(u.name)}" style="width:100%">`:qe(`te:uniq_name_${i}`,esc(u.name))}${u.name?uniqAutoBtn(u,i):''}${E?`<button class="btn xs ghost danger" data-act="deluniq" data-i="${i}" style="margin-top:4px">× 지우기</button>`:''}</th><td class="pre small">${E?`<textarea data-te="uniq_eff_${i}" rows="3" style="width:100%">${esc(u.eff)}</textarea>`:qe(`te:uniq_eff_${i}`,esc(u.eff),1)}</td></tr>`).join('')}</table>`:'<div class="dim small">없음</div>'}${E?`<button class="btn xs" data-act="adduniq">+ 고유</button>`:''}</div>
+   <div><div class="sh">메모</div>${E?`<textarea data-te="memo" rows="12" style="width:100%">${esc(t.memo||'')}</textarea>`:qe('te:memo',`<div class="pre small">${esc(t.memo||'')||'<span class="dim">없음</span>'}</div>`,1)}</div>`:charView(t,d)}
   </div>`}
+ /* 10-21 망령: 캐릭터 탭 보기 — 자질 카드 (랭크 누르면 고르기 · 설명 누르면 그 자리에서 고치기) · 고유 포텐셜 카드 · 메모 */
+ const RK_LIST=['E','D','C','C+','B-','B','B+','A-','A','A+','AA-','AA','AA+','AAA','S'];
+ function charView(t,d){const U=t.unique||[];const rc=r=>RK_COL[String(r||'-')[0]]||'#555';
+  const ie=(k,h,ph,ml)=>QE?`<div class="iedit" data-ie="${k}"${ml?' data-ml':''} title="눌러서 고치기">${h||`<span class="dim">${ph}</span>`}</div>`:`<div>${h||'<span class="dim">—</span>'}</div>`;
+  const uc=(u,i)=>`<div class="potc tuqc" style="--ph:#b07cff"><div class="poth"><span class="potk"><span>고유</span></span><b class="potn">${QE?`<span class="iedit" data-ie="te:uniq_name_${i}" title="눌러서 이름 고치기">${esc(u.name)||'<span class="dim">이름</span>'}</span>`:esc(u.name)}</b>${u.name?uniqAutoBtn(u,i).replace('<div class="small" style="margin-top:2px">','<div class="pota">'):''}${QE?`<button class="btn xs ghost danger potx" data-act="deluniq" data-i="${i}" title="지우기">×</button>`:''}</div><div class="pote">${ie(`te:uniq_eff_${i}`,potFmt(u.eff),'눌러서 효과 쓰기',1)}</div></div>`;
+  return `<div><div class="sh">자질</div>
+    <div class="tqg">${['육성','지시','통솔','능력'].map(k=>{const r=(t.ranks||{})[k]||'-';return `<div class="tqc" style="--rc:${rc(r)}"><div class="tqh"><span>${k}</span>${k==='육성'?`<small>기본 Lv ${S().baseLevel(r)}<br>알까기 ${S().hatchCount(t)}회</small>`:''}<span class="sp"></span><b class="tqr${QE?' on':''}" ${QE?`data-trk="${k}" title="눌러서 랭크 바꾸기"`:''}>${esc(r)}</b></div><div class="tqd">${ie('te:detail_'+k,esc(d[k]||''),'눌러서 설명 쓰기')}</div></div>`}).join('')}</div>
+    <div class="sh" style="margin-top:14px">고유 포텐셜 ${U.length}${QE?'<span class="sp"></span><button class="btn xs" data-act="adduniq">＋ 고유 포텐셜</button>':''}</div>
+    ${U.length?`<div class="potl">${U.map(uc).join('')}</div>`:'<div class="dim small">없음</div>'}</div>
+   <div><div class="sh">메모</div><div class="tmemo pre">${ie('te:memo',esc(t.memo||''),'눌러서 메모 쓰기',1)}</div></div>`}
 
  /* 노란 초상 카드 아래: 한눈 정보 · 스탠딩 (망령 10-21 — 빈칸이 휑하다) */
  function ppMore(c,t,m,E){const ed=canEdit(c,t.id);const st=m.stands||[];const act=+m.standActive||0;const tot=(m.base||[]).reduce((a,v)=>a+(+v||0),0);const iv=(m.iv||[]).length?S().ivSum(m.iv):null;
-  const egg=(m.egg||[]).filter(x=>x&&x!=='-');const fact=(k,v)=>`<div><small>${k}</small><b>${v}</b></div>`;
-  return `<div class="ppfacts">${fact('Lv',m.lv)}${fact('성별',esc(m.gender||'-'))}${fact('테라',esc(m.tera||'-'))}${fact('종족치 합',tot)}${iv!=null?fact('개체값 합',iv):''}${egg.length?fact('알그룹',esc(egg.join('/'))):''}${(m.fields||[]).length?fact('필드',(m.fields||[]).length):''}${(m.forms||[]).length?fact('폼',(m.forms||[]).length):''}</div>
+  const egg=(m.egg||[]).filter(x=>x&&x!=='-');const QF=ed&&!E;
+  /* 10-21 망령: 칸을 누르면 바로 고치기 — Lv · 성별 · 테라 · 알그룹은 한눈 정보 창, 종족치는 종족치 창, 개체값은 알까기 */
+  const fact=(k,v,q)=>QF&&q?`<div class="qfc" ${q} title="눌러서 고치기"><small>${k}<i>✎</i></small><b>${v}</b></div>`:`<div><small>${k}</small><b>${v}</b></div>`;
+  return `<div class="ppfacts">${fact('Lv',m.lv,'data-qf="lv"')}${fact('성별',esc(m.gender||'-'),'data-qf="gender"')}${fact('테라',esc(m.tera||'-'),'data-qf="tera"')}${fact('종족치 합',tot,'data-qpk="base"')}${iv!=null||QF?fact('개체값 합',iv??'-',`data-act="hatch" data-mid="${m.id}"`):''}${egg.length||QF?fact('알그룹',esc(egg.join('/')||'-'),'data-qf="egg"'):''}${(m.fields||[]).length?fact('필드',(m.fields||[]).length):''}${(m.forms||[]).length?fact('폼',(m.forms||[]).length):''}</div>
    <div class="ppst"><div class="pph">스탠딩<span class="sp"></span>${ed?`<button class="btn xs" data-act="mstands" data-mid="${m.id}">표정·스탠딩 편집</button>`:''}</div>
     ${st.length?`<div class="ppstg">${st.map((x,i)=>`<div class="ppsti ${i===act?'on':''}" title="${esc(x.label||'기본')}"><i style="${x.src?`background-image:url('${cssu(x.src)}')`:''}"></i><span>${esc(x.label||'기본')}</span></div>`).join('')}</div>`:'<div class="small" style="color:#333">아직 없다 — 무대에는 위 그림으로 선다</div>'}</div>
    ${ed&&!E?`<label class="btn xs" style="margin-top:6px;align-self:flex-start">그림 바꾸기<input type="file" accept="image/*" data-up="mon" data-id="${m.id}" hidden style="display:none"></label>`:''}`}
@@ -152,8 +169,8 @@ window.OM_SHEET_UI=(()=>{
     ${E?`<div class="row small" style="margin-bottom:6px">${m.moves.map((mv,i)=>`<span class="tg">${esc(mv.name)} <button class="btn xs ghost danger" data-act="delmove" data-i="${i}">×</button></span>`).join('')}<input type="text" id="addmove" list="movelist" placeholder="기술 이름 입력 후 Enter" style="width:220px"><button class="btn sm" id="addmovedb">DB</button><datalist id="movelist">${moveNames.map(n=>`<option value="${esc(n)}">`).join('')}</datalist></div>`:''}
     <div class="smvg">
     ${m.moves.map((mv,mi)=>{const pr=+mv.prio||0;return `<div class="mvc" style="--tc:${typeCol(mv.typeEn)}"><div class="mvh">${typeChip(mv.typeEn)}<b class="lnk mvn" data-mvdb="${esc(mv.name)}" title="DB 에서 보기">${esc(mv.name)}</b>${mv.missing?'<span class="small" style="color:var(--red)">DB 없음</span>':''}${mv.adj?'<span class="mvadj" title="이 포켓몬만 조정한 기술">조정됨</span>':''}<span class="sp"></span><span class="mvcat c-${({물리:'p',특수:'s',변화:'x'})[mv.cat]||'x'}">${esc(mv.cat||'-')}</span></div><div class="mvs"><span><small>위력</small><b>${mv.pow||'-'}</b></span><span><small>명중</small><b>${mv.acc||'필중'}</b></span><span><small>범위</small><b>${esc(mv.range||'-')}</b></span><span class="${pr?'hot':''}"><small>우선</small><b>${pr>0?'+'+pr:pr}</b></span></div>${mv.eff?`<div class="mve">${potFmt(mv.eff)}</div>`:''}${QE?`<div class="mvt"><button class="btn xs" data-qmv="adj" data-i="${mi}" title="타입 · 위력 · 명중 · 효과를 이 포켓몬만 바꾼다">기술 조정</button><button class="btn xs ghost" data-qmv="swap" data-i="${mi}" title="DB 에서 다른 기술로 바꾸기">바꾸기</button><span class="sp"></span><button class="btn xs ghost" data-qmv="up" data-i="${mi}" ${mi?'':'disabled'}>↑</button><button class="btn xs ghost" data-qmv="dn" data-i="${mi}" ${mi<m.moves.length-1?'':'disabled'}>↓</button><button class="btn xs ghost danger" data-qmv="del" data-i="${mi}">빼기</button></div>`:''}</div>`}).join('')}</div></div>
-   <div class="spanel two"><div><div class="sh">포텐셜 ${m.pots.filter(p=>!p.ph).length}</div>${E?`<table class="t">${m.pots.map((p,i)=>`<tr${p.ph?' style="opacity:.45"':''}><th style="width:140px;white-space:normal"><input type="text" data-me="pot_name_${i}" value="${esc(p.name)}" style="width:100%">${p.ph?' <span class="small">(미정)</span>':''}<div class="small dim">${esc(p.kind)}</div>${p.name&&!p.ph?autoBtn(m,'pot',p.name,E):''}</th><td class="pre small"><textarea data-me="pot_eff_${i}" rows="2" style="width:100%">${esc(p.eff)}</textarea></td></tr>`).join('')}</table><button class="btn xs" data-act="addpot">+ 포텐셜</button>`:`<div class="potl">${m.pots.map((p,i)=>potCard(m,p.name,p.kind,p.eff,{ph:p.ph,kn:`me:pot_name_${i}`,ke:`me:pot_eff_${i}`})).join('')}</div>`}</div>
-    <div><div class="sh">전용 포텐셜</div>${E?`<table class="t"><tr><th style="width:140px;white-space:normal"><input type="text" data-me="excl_name" value="${esc(m.excl?m.excl.name:'')}" style="width:100%">${m.excl&&m.excl.name?autoBtn(m,'pot',m.excl.name,E):''}</th><td class="pre small"><textarea data-me="excl_eff" rows="3" style="width:100%">${esc(m.excl?m.excl.eff:'')}</textarea></td></tr>${(m.exclX||[]).map(x=>`<tr><th>${esc(x.name)}${autoBtn(m,'pot',x.name,E)}</th><td class="pre small">${esc(x.eff)}</td></tr>`).join('')}</table>`:m.excl&&(m.excl.name||m.excl.eff)||(m.exclX||[]).length?`<div class="potl">${m.excl&&(m.excl.name||m.excl.eff)?potCard(m,m.excl.name,'전용',m.excl.eff,{ex:1,kn:'me:excl_name',ke:'me:excl_eff'}):''}${(m.exclX||[]).map(x=>potCard(m,x.name,'전용',x.eff,{ex:1})).join('')}</div>`:'<div class="dim small">없음</div>'}
+   <div class="spanel two"><div><div class="sh">포텐셜 ${m.pots.filter(p=>!p.ph).length}${QE?'<span class="sp"></span><button class="btn xs" data-act="addpot">＋ 포텐셜</button>':''}</div>${E?`<table class="t">${m.pots.map((p,i)=>`<tr${p.ph?' style="opacity:.45"':''}><th style="width:140px;white-space:normal"><input type="text" data-me="pot_name_${i}" value="${esc(p.name)}" style="width:100%">${p.ph?' <span class="small">(미정)</span>':''}<div class="small dim">${esc(p.kind)}</div>${p.name&&!p.ph?autoBtn(m,'pot',p.name,E):''}<button class="btn xs ghost danger" data-act="delpot" data-i="${i}" title="이 포텐셜 지우기" style="margin-top:4px">× 지우기</button></th><td class="pre small"><textarea data-me="pot_eff_${i}" rows="2" style="width:100%">${esc(p.eff)}</textarea></td></tr>`).join('')}</table><button class="btn xs" data-act="addpot">+ 포텐셜</button>`:`<div class="potl">${m.pots.map((p,i)=>potCard(m,p.name,p.kind,p.eff,{ph:p.ph,kn:`me:pot_name_${i}`,ke:`me:pot_eff_${i}`,del:`data-act="delpot" data-i="${i}"`})).join('')}</div>`}</div>
+    <div><div class="sh">전용 포텐셜${QE?'<span class="sp"></span><button class="btn xs" data-act="addexcl">＋ 전용 포텐셜</button>':''}</div>${E?`<table class="t">${exclList(m).map((x,j)=>`<tr><th style="width:140px;white-space:normal"><input type="text" data-me="${j?'exclx_name_'+(j-1):'excl_name'}" value="${esc(x.name)}" style="width:100%" placeholder="이름">${x.name?autoBtn(m,'pot',x.name,E):''}<button class="btn xs ghost danger" data-act="delexcl" data-i="${j}" style="margin-top:4px">× 지우기</button></th><td class="pre small"><textarea data-me="${j?'exclx_eff_'+(j-1):'excl_eff'}" rows="3" style="width:100%" placeholder="효과">${esc(x.eff)}</textarea></td></tr>`).join('')}</table><button class="btn xs" data-act="addexcl">+ 전용 포텐셜</button>`:m.excl&&(m.excl.name||m.excl.eff)||(m.exclX||[]).length?`<div class="potl">${m.excl&&(m.excl.name||m.excl.eff)?potCard(m,m.excl.name,'전용',m.excl.eff,{ex:1,kn:'me:excl_name',ke:'me:excl_eff',del:'data-act="delexcl" data-i="0"'}):''}${(m.exclX||[]).map((x,j)=>potCard(m,x.name,'전용',x.eff,{ex:1,kn:`me:exclx_name_${j}`,ke:`me:exclx_eff_${j}`,del:`data-act="delexcl" data-i="${j+1}"`})).join('')}</div>`:'<div class="dim small">없음</div>'}
      <div class="sh" style="margin-top:12px">메모</div>${E?`<textarea data-me="memo" rows="6" style="width:100%">${esc(m.memo||'')}</textarea>`:qe('me:memo',`<div class="pre small">${esc(m.memo||'')||'<span class="dim">없음</span>'}</div>`,1)}
      ${E?`<div class="row" style="margin-top:8px"><button class="btn xs ghost danger" data-act="delmon" data-mid="${m.id}">이 포켓몬 삭제</button></div>`:''}</div></div>
    ${window.OM_STAGE_UI?window.OM_STAGE_UI.sheetSec(m.fields,canEdit(c,t.id),'mon:'+m.id):''}${window.OM_PICK?window.OM_PICK.formsSec(m,canEdit(c,t.id)):''}`}
@@ -176,7 +193,7 @@ window.OM_SHEET_UI=(()=>{
   const lines=h.split('\n').map(x=>x.trim()).filter(Boolean);if(lines.length<2&&!/^[①-⑳]/.test(lines[0]||''))return h;
   return lines.map(l=>{const m=l.match(/^([①-⑳]|\d+[.)])\s*(.*)$/);return m?`<div class="pkl"><i>${m[1]}</i><span>${m[2]}</span></div>`:`<div class="pkl"><span>${l}</span></div>`}).join('')}
  function potCard(m,name,kind,eff,o){o=o||{};const k=potKind(kind);const hue=POT_HUE[k.lab]||'#3fc7c0';
-  return `<div class="potc${o.ph?' ph':''}${o.ex?' ex':''}" style="--ph:${hue}"><div class="poth"><span class="potk">${k.no?`<em>${esc(k.no)}</em>`:''}${k.lab?`<span>${esc(k.lab)}</span>`:''}</span><b class="potn">${o.kn?qe(o.kn,esc(name)):esc(name)}${o.ph?' <small>(미정)</small>':''}</b><span class="sp"></span>${name&&!o.ph?autoBtn(m,'pot',name,false).replace('<div class="small" style="margin-top:2px">','<div class="pota">'):''}</div>${o.ph?'':`<div class="pote">${o.ke?qe(o.ke,potFmt(eff),1):potFmt(eff)}</div>`}</div>`}
+  return `<div class="potc${o.ph?' ph':''}${o.ex?' ex':''}" style="--ph:${hue}"><div class="poth"><span class="potk">${k.no?`<em>${esc(k.no)}</em>`:''}${k.lab?`<span>${esc(k.lab)}</span>`:''}</span><b class="potn">${o.kn?qe(o.kn,esc(name)):esc(name)}${o.ph?' <small>(미정)</small>':''}</b><span class="sp"></span>${name&&!o.ph?autoBtn(m,'pot',name,false).replace('<div class="small" style="margin-top:2px">','<div class="pota">'):''}${QE&&o.del?`<button class="btn xs ghost danger potx" ${o.del} title="지우기">×</button>`:''}</div>${o.ph?'':`<div class="pote">${o.ke?qe(o.ke,potFmt(eff),1):potFmt(eff)}</div>`}</div>`}
  /* 기술 조정 창: 이 포켓몬의 기술 하나만 타입 · 분류 · 위력 · 명중 · 범위 · 우선 · 효과를 바꾼다 (DB 는 그대로) */
  function moveAdj(m,i,st,done){const mv=st||JSON.parse(JSON.stringify(m.moves[i]));const db=I().move(mv.name,!!mv.half);const diff=k=>String(mv[k]??'')!==String(db[k]??'');
   const row=(lab,k,inp)=>`<label class="${diff(k)?'chg':''}"><span>${lab}${diff(k)?` <small>DB: ${esc(k==='typeEn'?S().typeKo(db[k]):db[k]===0&&k==='acc'?'필중':db[k]??'-')}</small>`:''}</span>${inp}</label>`;
@@ -197,6 +214,55 @@ window.OM_SHEET_UI=(()=>{
   md.querySelector('#ma_tyb').onclick=()=>{rd();window.OM_PICK.types([mv.typeEn],{title:mv.name+' — 기술 타입',max:1,orig:[db.typeEn],note:'이 포켓몬의 이 기술만 바뀐다.'},nt=>{const ty=(nt||[])[0];if(ty){mv.typeEn=ty;mv.type=S().typeKo(ty)}moveAdj(m,i,mv,done)})};
   md.querySelector('#ma_db').onclick=()=>{if(!confirm('DB 값으로 되돌릴까?'))return;A().closeModal();done(db)};
   md.querySelector('#ma_ok').onclick=()=>{rd();const keys=['typeEn','cat','pow','acc','range','prio','eff'];mv.adj=keys.some(k=>String(mv[k]??'')!==String(db[k]??''))?1:0;if(!mv.adj)delete mv.adj;A().closeModal();done(mv)}}
+ function openIe(q){if(q.classList.contains('ieon'))return;const [,k]=q.dataset.ie.split(':');const c=ctx();const t0=c.r.trainers[UI.tid];if(!t0||!canEdit(c,t0.id))return;
+  const get=t=>k==='memo'?t.memo||'':k.startsWith('detail_')?((t.detail||{})[k.slice(7)]||''):k.startsWith('uniq_')?(((t.unique||[])[+k.split('_')[2]]||{})[k.split('_')[1]]||''):'';
+  const cur=get(t0);const ml=q.hasAttribute('data-ml');const inp=document.createElement(ml?'textarea':'input');if(!ml)inp.type='text';inp.value=cur;inp.className='iein';if(ml)inp.rows=Math.min(16,Math.max(3,cur.split('\n').length+1));
+  q.classList.add('ieon');q.innerHTML='';q.appendChild(inp);
+  const hint=document.createElement('div');hint.className='iehint';hint.textContent=ml?'Ctrl+Enter 저장 · Esc 취소 · 밖을 누르면 저장':'Enter 저장 · Esc 취소';q.appendChild(hint);
+  inp.focus();if(!ml)inp.select();else inp.setSelectionRange(cur.length,cur.length);
+  let done=false;const fin=async save=>{if(done)return;done=true;const v=inp.value;inp.onblur=null;if(document.activeElement===inp)inp.blur();
+   if(save&&v!==cur){const src=ctx().r.trainers[UI.tid];if(src){const nt=JSON.parse(JSON.stringify(src));applyTr(nt,k,v);await putTr(src.id,src,nt)}}A().renderScene()};
+  inp.onkeydown=ev=>{if(ev.isComposing)return;if(ev.key==='Escape'){ev.preventDefault();fin(false)}else if(ev.key==='Enter'&&(!ml||ev.ctrlKey||ev.metaKey)){ev.preventDefault();fin(true)}};
+  inp.onblur=()=>fin(true);inp.onclick=ev=>ev.stopPropagation()}
+ function rankPick(k){const c=ctx();const t=c.r.trainers[UI.tid];if(!t||!canEdit(c,t.id))return;const cur=(t.ranks||{})[k]||'';const L=RK_LIST.includes(cur)||!cur?RK_LIST:[...RK_LIST,cur];
+  const md=A().openModal(`<div class="mhead"><h2>${esc(t.name)} — ${k} 랭크</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+   ${k==='육성'?'<div class="small dim" style="margin-bottom:8px">육성은 기본 레벨과 알까기 횟수를 정한다.</div>':k==='지시'?'<div class="small dim" style="margin-bottom:8px">지시를 바꾸면 지령 · 명령 계열도 다시 맞춘다.</div>':''}
+   <div class="rkp">${['',...L].map(r=>`<button type="button" class="${r===cur?'on':''}" data-r="${r}" style="--rc:${RK_COL[(r||'-')[0]]||'#555'}">${r||'없음'}${k==='육성'&&r?`<small>Lv ${S().baseLevel(r)}</small>`:''}</button>`).join('')}</div>`);
+  md.classList.add('pkmodal');md.querySelector('[data-x]').onclick=()=>A().closeModal();
+  md.querySelectorAll('[data-r]').forEach(b=>b.onclick=async()=>{const src=ctx().r.trainers[UI.tid];const nt=JSON.parse(JSON.stringify(src));applyTr(nt,'rank_'+k,b.dataset.r);A().closeModal();await putTr(src.id,src,nt);A().renderScene()})}
+ /* 10-21 망령: 한눈 정보 창 — 레벨 보정 · 성별 · 테라 · 알그룹 (성장 탭까지 안 가고) */
+ function factEdit(mid,focus,keep){const c=ctx();const m0=c.r.mons[mid];if(!m0)return;const t=c.r.trainers[m0.tid]||c.r.trainers[UI.tid];if(!t||!canEdit(c,t.id))return;
+  const st=keep||{dist:+m0.dist||0,gender:m0.gender||'-',teraEn:m0.teraEn&&m0.teraEn!=='-'?m0.teraEn:'-',egg:(m0.egg||[]).filter(x=>x&&x!=='-').slice(0,2)};
+  const EGGS=String((((DB().const||{}).lists||{}).list_group_egg)||'').split(',').map(x=>x.trim()).filter(x=>x&&x!=='-');
+  const base=S().baseLevel((t.ranks||{})['육성']);const lim=(t.base||{})['분배레벨'];
+  const others=Object.values(c.r.mons).filter(x=>x.tid===t.id&&x.id!==mid).reduce((a,x)=>a+(+x.dist||0),0);
+  const tchip=en=>en&&en!=='-'?typeChip(en):'<span class="small dim">없음</span>';
+  const md=A().openModal(`<div class="mhead"><h2>${esc(m0.name)} — 한눈 정보</h2><span class="small dim">레벨 보정 · 성별 · 테라 · 알그룹</span><span class="sp"></span><button class="btn ghost" id="pf_x">닫기</button></div>
+   <div class="madj pfe">
+    <label data-pf="lv"><span>레벨 <small>기본 ${base} · 육성 ${esc((t.ranks||{})['육성']||'-')}</small></span><span class="row" style="gap:4px;flex-wrap:wrap"><b class="pfelv" id="pf_lv"></b><span class="sp"></span><button class="btn xs ghost" data-d="-5">−5</button><button class="btn xs ghost" data-d="-1">−1</button><input type="number" class="n xs" id="pf_dist" value="${st.dist}" title="보정 (분배레벨)"><button class="btn xs ghost" data-d="1">＋1</button><button class="btn xs ghost" data-d="5">＋5</button></span></label>
+    <div class="small dim pfesub" id="pf_sum"></div>
+    <label data-pf="gender"><span>성별</span><span class="seg" id="pf_g">${['♂','♀','-'].map(x=>`<span data-v="${x}" class="${st.gender===x?'on':''}">${x==='-'?'없음':x}</span>`).join('')}</span></label>
+    <label data-pf="tera"><span>테라 타입</span><span class="row" style="gap:6px"><span id="pf_tc"></span><button class="btn xs" id="pf_tb">테라 변경</button><button class="btn xs ghost" id="pf_t0">없음</button></span></label>
+    <label data-pf="egg"><span>알그룹 <small>최대 2개 · 누른 순서</small></span><span class="pfeg">${EGGS.map(x=>`<button type="button" class="btn xs ghost" data-eg="${esc(x)}">${esc(x)}<i></i></button>`).join('')}</span></label>
+   </div>
+   <div class="row" style="margin-top:10px"><button class="btn sm ghost" id="pf_base">종족치 변경</button><button class="btn sm ghost" id="pf_hatch">🥚 알까기</button><span class="sp"></span><button class="btn pri" id="pf_ok">저장</button></div>`);
+  md.classList.add('pkmodal');const g=id=>md.querySelector('#'+id);
+  const draw=()=>{st.dist=Math.round(+g('pf_dist').value||0);g('pf_lv').textContent='Lv '+(base+st.dist);
+   g('pf_sum').innerHTML=`분배레벨 합 <b>${others+st.dist}</b> / ${esc(String(lim??'-'))}${lim!=null&&lim!==''&&others+st.dist>+lim?' <span style="color:var(--red)">· 넘었다</span>':''}`;
+   md.querySelectorAll('[data-eg]').forEach(b=>{const i=st.egg.indexOf(b.dataset.eg);b.classList.toggle('on',i>=0);b.querySelector('i').textContent=i>=0?String(i+1):''});
+   g('pf_tc').innerHTML=tchip(st.teraEn)};
+  md.querySelectorAll('[data-d]').forEach(b=>b.onclick=e=>{e.preventDefault();g('pf_dist').value=(+g('pf_dist').value||0)+(+b.dataset.d);draw()});
+  g('pf_dist').oninput=draw;
+  md.querySelectorAll('#pf_g [data-v]').forEach(b=>b.onclick=e=>{e.preventDefault();st.gender=b.dataset.v;md.querySelectorAll('#pf_g [data-v]').forEach(x=>x.classList.toggle('on',x===b))});
+  md.querySelectorAll('[data-eg]').forEach(b=>b.onclick=e=>{e.preventDefault();const x=b.dataset.eg;const i=st.egg.indexOf(x);if(i>=0)st.egg.splice(i,1);else{if(st.egg.length>=2)st.egg.shift();st.egg.push(x)}draw()});
+  const save=async()=>{draw();const src=ctx().r.mons[mid]||m0;const nm=JSON.parse(JSON.stringify(src));nm.dist=st.dist;nm.gender=st.gender;nm.teraEn=st.teraEn;nm.tera=st.teraEn==='-'?'-':S().typeKo(st.teraEn);nm.egg=[...st.egg,'-','-'].slice(0,2);recalc(nm,t);await putMon(mid,src,nm);A().renderScene()};
+  g('pf_t0').onclick=e=>{e.preventDefault();st.teraEn='-';draw()};
+  g('pf_tb').onclick=e=>{e.preventDefault();draw();window.OM_PICK.types(st.teraEn==='-'?[]:[st.teraEn],{title:m0.name+' — 테라 타입',max:1,note:'테라스탈 했을 때의 타입.'},nt=>{st.teraEn=(nt||[])[0]||'-';factEdit(mid,'tera',st)})};
+  g('pf_x').onclick=()=>A().closeModal();
+  g('pf_base').onclick=async()=>{await save();A().closeModal();const m=ctx().r.mons[mid];window.OM_PICK.base(m.base,{title:m.name+' — 종족치 변경',lv:m.lv,iv:m.iv,ev:m.ev},async nb=>{const src=ctx().r.mons[mid];const nm=JSON.parse(JSON.stringify(src));nm.base=nb;recalc(nm,t);await putMon(mid,src,nm);A().renderScene()})};
+  g('pf_hatch').onclick=async()=>{await save();A().closeModal();openHatch(mid)};
+  g('pf_ok').onclick=async()=>{await save();A().closeModal()};
+  draw();if(focus){const r=md.querySelector(`[data-pf="${focus}"]`);if(r)r.classList.add('chg')}}
  /* 10-21 망령: 종족치 · 특성 · 소지품 (보기) — 랭크 색 · 막대 · 카드 */
  const RK_COL={S:'#ff5c8a',A:'#ffb340',B:'#5fd38d',C:'#4aa3ff',D:'#9a9aa6',E:'#7a7a84',F:'#6b6b74'};
  function statBlock(m,QE){const tot=m.base.reduce((a,b)=>a+(+b||0),0);
@@ -205,6 +271,8 @@ window.OM_SHEET_UI=(()=>{
     return `<div class="stc2" style="--rc:${col}"><div class="stc2h"><small>${STATS_KO[i]}</small><b>${esc(r||'-')}</b></div><div class="stc2b"><i style="width:${pct}%"></i></div><div class="stc2n"><span>${m.base[i]}</span><em>실수치 ${v}</em></div></div>`}).join('')}</div>`}
  function kiCards(m,QE){const card=(lab,kind,name,effH,btns)=>`<div class="kic ${kind}"><div class="kih"><span class="kit">${lab}</span>${QE?`<b class="kin qe" data-qdb="${kind==='trait'?'trait':'item'}" title="눌러서 DB 에서 골라 바꾸기">${esc(name||'없음')}</b>`:`<b class="kin">${esc(name||'없음')}</b>`}<span class="sp"></span>${QE?btns:''}</div>${name?`<div class="kie dbmini">${effH}</div>`:''}${name?`<div class="kif">${autoBtn(m,kind,name,false).replace('<div class="small" style="margin-top:2px">','<div>')}</div>`:''}</div>`;
   return `<div class="kig">${card('특성','trait',m.ability,window.OM_DB_UI.effectHtml('trait',m.ability)||`<span class="small dim">${esc(m.abilityEff||'')}</span>`,'<button class="btn xs" data-qdb="trait">특성 변경</button>')}${card('소지품','item',m.item,window.OM_DB_UI.effectHtml('item',m.item)||`<span class="small dim">${esc(m.itemEff||'')}</span>`,`<button class="btn xs" data-qdb="item">${m.item?'바꾸기':'착용'}</button>${m.item?'<button class="btn xs ghost" data-qitem0>떼기</button>':''}`)}</div>`}
+ /* 전용 포텐셜 목록: excl(첫째) + exclX(나머지) — 편집 모드는 빈 칸이라도 하나 보여 준다 */
+ function exclList(m){const L=[];if(m.excl)L.push({name:m.excl.name||'',eff:m.excl.eff||''});for(const x of (m.exclX||[]))if(x)L.push({name:x.name||'',eff:x.eff||''});return L}
  /* 자동화 구문 버튼: 레디메이드 자동 / 이 포켓몬의 구문 / 없음 */
  function uniqAutoBtn(u,i){const K=window.OM_FX;if(!K)return '';const has=u.auto&&u.auto.ops&&u.auto.ops.length;const base=K.rm(u.name);const rmHas=base&&base.ops&&base.ops.length&&!base.manual;
   return `<div class="small" style="margin-top:2px"><button class="btn xs ${has?'pri':rmHas?'':'ghost'}" data-uauto="${i}" title="${esc(has?K.unparse(u.auto.ops).join(' / '):rmHas?'레디메이드 자동: '+K.unparse(base.ops).join(' / '):'자동화 없음 — 구문을 써 넣을 수 있다')}">${has?'구문 ✓':rmHas?'자동':'구문'}</button></div>`}
@@ -221,11 +289,11 @@ window.OM_SHEET_UI=(()=>{
     ${E?`<ol class="porder">${mons.map((m,i)=>`<li>${esc(m.name)} <button class="btn xs ghost" data-act="mvup" data-i="${i}">↑</button><button class="btn xs ghost" data-act="mvdn" data-i="${i}">↓</button> <label class="small"><input type="checkbox" data-me-partner="${m.id}" ${m.partner?'checked':''}> 파트너</label></li>`).join('')}</ol>`:`<ol class="porder">${mons.map(m=>`<li>${esc(m.name)}${m.partner?' <span class="tag">파트너</span>':''}</li>`).join('')}</ol>`}</div></div>`}
 
  /* ---------- 편집 바인딩 (변경 즉시 저장) ---------- */
- let saveT=null;const pending={tr:null,mon:null,tr0:null,mon0:null,g0:null};
+ let saveT=null;const pending={tr:null,mon:null,tr0:null,mon0:null,g0:null};let flushRef=null;
  function bindEdits(el,c){
   const t=c.r.trainers[UI.tid];if(!t||!UI.edit||!canEdit(c,t.id))return;
   const m=c.r.mons[UI.mid];
-  const queue=()=>{clearTimeout(saveT);saveT=setTimeout(flush,500)};
+  const queue=()=>{clearTimeout(saveT);saveT=setTimeout(flush,500)};flushRef=flush;
   el.querySelectorAll('[data-te]').forEach(inp=>inp.addEventListener('input',()=>{if(!pending.tr){pending.tr0=JSON.parse(JSON.stringify(t));pending.tr=JSON.parse(JSON.stringify(t))}const nt=pending.tr;applyTr(nt,inp.dataset.te,inp.value);queue()}));
   const op=el.querySelector('#opanel');if(op)window.OM_ORDERS.bind(op,()=>pending.tr||c.r.trainers[UI.tid],async nt=>{const src=pending.tr0||c.r.trainers[UI.tid];pending.tr=null;pending.tr0=null;await putTr(nt.id,src,nt);A().renderScene()});
   if(m){el.querySelectorAll('[data-me]').forEach(inp=>inp.addEventListener('input',()=>{if(!pending.mon){pending.mon0=JSON.parse(JSON.stringify(m));pending.mon=JSON.parse(JSON.stringify(m))}const nm=pending.mon;applyMon(nm,inp.dataset.me,inp.value,t);queue()}));
@@ -251,11 +319,12 @@ window.OM_SHEET_UI=(()=>{
   else if(k==='item'){m.item=v;const it=(DB().items||{})[v]||{};m.itemEff=String(it.eff||'')}
   else if(k.startsWith('base_')){m.base[+k.slice(5)]=+v||0;recalc(m,t)}
   else if(k.startsWith('pot_')){const [,f,i]=k.split('_');m.pots[+i]=m.pots[+i]||{name:'',kind:'',eff:''};m.pots[+i][f]=v;if(f==='name')m.pots[+i].ph=false}
+  else if(k.startsWith('exclx_')){const [,f,i]=k.split('_');m.exclX=m.exclX||[];m.exclX[+i]=m.exclX[+i]||{name:'',eff:''};m.exclX[+i][f]=v}
   else if(k==='excl_name'){m.excl=m.excl||{name:'',eff:''};m.excl.name=v}else if(k==='excl_eff'){m.excl=m.excl||{name:'',eff:''};m.excl.eff=v}}
  function recalc(m,t){m.lv=S().levelOf(t,m);m.stats=S().statsOf(m.base,m.iv,m.ev,m.lv);m.ranks=m.base.map(S().gradeOf);const oldMax=m.hp.max;m.hp.max=m.stats[0];if(m.sheetHp==null||m.sheetHp>=oldMax)m.sheetHp=m.hp.max;m.hp.cur=Math.min(m.hp.cur,m.hp.max)}
 
  /* ---------- 동작 ---------- */
- async function action(d){const c=ctx();const t=c.r.trainers[UI.tid];
+ async function action(d){if((pending.tr||pending.mon||pending.g)&&flushRef){clearTimeout(saveT);await flushRef()}const c=ctx();const t=c.r.trainers[UI.tid];
   switch(d.act){
    case 'import':return openImport();
    case 'newtr':{const id='t'+rnd(7);const nt={id,name:'새 트레이너',image:'',ranks:{육성:'C',지시:'C',통솔:'C',능력:'C'},base:{},detail:{},unique:[],pids:[],solo:false,ord:Object.keys(c.r.trainers).length,src:'new'};await A().set(['roster','trainers',id],nt);UI.tid=id;UI.edit=true;A().renderScene();return}
@@ -272,8 +341,12 @@ window.OM_SHEET_UI=(()=>{
    case 'addmon':{if(!t||!canEdit(c,t.id))return;const id='m'+rnd(7);const nm=I().pokemon({id,data:{data:{id,name:'새 포켓몬',t1:'노말',base:['50','50','50','50','50','50'],moves:[]}}},t);nm.src='new';await A().set(['roster','mons',id],nm);await A().set(['roster','trainers',t.id,'pids'],[...(t.pids||[]),id]);UI.mid=id;A().renderScene();return}
    case 'delmon':{const m=c.r.mons[d.mid];if(!m||!confirm(`${m.name} 을 지울까?`))return;await A().set(['roster','trainers',t.id,'pids'],(t.pids||[]).filter(x=>x!==d.mid));await A().set(['roster','mons',d.mid],null);UI.mid='';A().renderScene();return}
    case 'delmove':{const m=c.r.mons[UI.mid];const nm=JSON.parse(JSON.stringify(m));nm.moves.splice(+d.i,1);if(!nm.moves.length)nm.moves=[I().move('발버둥',false)];await putMon(UI.mid,m,nm);return}
-   case 'addpot':{const m=c.r.mons[UI.mid];const nm=JSON.parse(JSON.stringify(m));nm.pots.push({name:'',kind:'',eff:''});await putMon(UI.mid,m,nm);return}
-   case 'adduniq':{const nt=JSON.parse(JSON.stringify(t));nt.unique=nt.unique||[];nt.unique.push({name:'',eff:''});await putTr(t.id,t,nt);return}
+   case 'addpot':{const m=c.r.mons[UI.mid];if(!m||!canEdit(c,m.tid))return;const nm=JSON.parse(JSON.stringify(m));nm.pots.push({name:'',kind:'',eff:''});await putMon(UI.mid,m,nm);if(!UI.edit)UI.quick=true;UI.edit=true;UI.qf='me:pot_name_'+(nm.pots.length-1);A().renderScene();return}
+   case 'delpot':{const m=c.r.mons[UI.mid];if(!m||!canEdit(c,m.tid))return;const p=m.pots[+d.i];if(!p)return;if((p.name||p.eff)&&!confirm(`포텐셜 「${p.name||'(이름 없음)'}」을(를) 지울까?`))return;const nm=JSON.parse(JSON.stringify(m));nm.pots.splice(+d.i,1);if(p.name&&nm.auto)delete nm.auto[String(p.name).replace(/『|』/g,'')];await putMon(UI.mid,m,nm);return}
+   case 'addexcl':{const m=c.r.mons[UI.mid];if(!m||!canEdit(c,m.tid))return;const nm=JSON.parse(JSON.stringify(m));let qf='me:excl_name';if(!nm.excl||!(nm.excl.name||nm.excl.eff))nm.excl={name:'',eff:''};else{nm.exclX=nm.exclX||[];nm.exclX.push({name:'',eff:''});qf='me:exclx_name_'+(nm.exclX.length-1)}await putMon(UI.mid,m,nm);if(!UI.edit)UI.quick=true;UI.edit=true;UI.qf=qf;A().renderScene();return}
+   case 'delexcl':{const m=c.r.mons[UI.mid];if(!m||!canEdit(c,m.tid))return;const L=exclList(m);const x=L[+d.i];if(!x)return;if((x.name||x.eff)&&!confirm(`전용 포텐셜 「${x.name||'(이름 없음)'}」을(를) 지울까?`))return;const nm=JSON.parse(JSON.stringify(m));L.splice(+d.i,1);nm.excl=L[0]?Object.assign({},L[0]):null;nm.exclX=L.slice(1).map(y=>Object.assign({},y));if(x.name&&nm.auto)delete nm.auto[String(x.name).replace(/『|』/g,'')];await putMon(UI.mid,m,nm);return}
+   case 'adduniq':{if(!canEdit(c,t.id))return;const nt=JSON.parse(JSON.stringify(t));nt.unique=nt.unique||[];nt.unique.push({name:'',eff:''});if(!UI.edit)UI.ief='te:uniq_name_'+(nt.unique.length-1);await putTr(t.id,t,nt);A().renderScene();return}
+   case 'deluniq':{if(!canEdit(c,t.id))return;const u=(t.unique||[])[+d.i];if(!u)return;if((u.name||u.eff)&&!confirm(`고유 포텐셜 「${u.name||'(이름 없음)'}」을(를) 지울까?`))return;const nt=JSON.parse(JSON.stringify(t));nt.unique.splice(+d.i,1);await putTr(t.id,t,nt);A().renderScene();return}
    case 'mvup':case 'mvdn':{const p=[...(t.pids||[])];const i=+d.i,j=d.act==='mvup'?i-1:i+1;if(j<0||j>=p.length)return;[p[i],p[j]]=[p[j],p[i]];await A().set(['roster','trainers',t.id,'pids'],p);return}
    case 'tobattle':return A().loadFromRoster(d.tid,d.side)}}
 
