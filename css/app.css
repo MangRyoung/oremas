@@ -880,7 +880,7 @@ body.resizing{user-select:none;cursor:col-resize}
 .bgmw .bt{font-family:var(--lab);font-size:12px;color:#ddd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
 .bgmw input[type=range]{width:80px;margin:0}
 .firerow{cursor:pointer}.firerow:hover{border-color:var(--yel2)}.firerow.dis{opacity:.45;cursor:not-allowed}.firerow b{min-width:110px;display:inline-block}
-.mon.big .nm{display:flex;align-items:center;gap:6px;overflow:visible;text-overflow:clip}.mon.big .nm>span.lv{flex:none}.mon.big .nm .dexb{font-size:11px;padding:0 7px;opacity:.8;flex:none}.mon.big .nm .dexb:first-of-type{margin-left:auto}
+.mon.big .nm{display:flex;align-items:center;gap:6px;overflow:visible;text-overflow:clip}.mon.big .nm>span.lv{flex:none}.mon.big .nm .dexb{font-size:11px;padding:0 7px;opacity:.8;flex:none}.mon.big .nm .nmt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.mon.big .nm .nmb{margin-left:auto;display:flex;gap:6px;flex:none}.mon.big .nm .nmb:empty{display:none}
 
 /* ---------- 도감 보기 ---------- */
 .dxhead{display:flex;gap:14px;align-items:flex-start;background:#111216;border:1px solid var(--line2);padding:10px}
@@ -1130,7 +1130,7 @@ label.ph-item input[type=checkbox]{width:16px;height:16px;flex:none}
  .ttabs .btn,.tabs2 .btn{white-space:nowrap}
 }
 @media (max-width:760px){
- .fstrip{grid-template-columns:1fr;gap:6px;padding:6px 8px}.fmid{text-align:center}.fobjs.rgt{justify-content:flex-start}
+ .fstrip{grid-template-columns:1fr;gap:6px;padding:6px 8px}.fmid{text-align:center}.fobjs.rgt{justify-content:flex-end}
  .fieldcol,.bwrap,.scene>*{max-width:100%;min-width:0}
  .scene{overflow-x:hidden}
  .area .alab{font-size:11px}
@@ -1151,7 +1151,7 @@ label.ph-item input[type=checkbox]{width:16px;height:16px;flex:none}
  .mon.big{display:grid;grid-template-columns:44px 1fr;gap:4px 6px;padding:5px}
  .mon.big .pic{width:44px;height:44px;grid-row:1/3}
  .mon.big .minfo{min-width:0}
- .mon.big .nm{font-size:13px;flex-wrap:wrap;gap:3px}.mon.big .nm .lv{font-size:11px}.mon.big .nm .dexb{padding:0 5px;font-size:10px}
+ .mon.big .nm{font-size:13px;flex-wrap:wrap;gap:3px}.mon.big .nm .nmt{flex:0 1 auto}.mon.big .nm .nmb{flex:1 1 100%;justify-content:flex-end;gap:3px}.mon.big .nm .lv{font-size:11px}.mon.big .nm .dexb{padding:0 5px;font-size:10px}
  .mon.big .ty .type{font-size:10px;padding:0 5px}
  .hpbar{height:6px;margin:3px 0 1px}.hpnum{font-size:11px}
  .mon.big .rks{gap:2px}.mon.big .rk{font-size:10px;padding:0 4px}
