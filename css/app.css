@@ -2576,3 +2576,6 @@ span.iedit{display:inline-block;min-width:3em}
 .dlg.skin.sm .dtext{left:14%;right:14%;top:24%;bottom:30%;transform:rotate(-2deg)}
 .dlg.skin.sm .dname{left:9%;bottom:78%;transform:rotate(-3deg)}
 @media (max-width:760px){.dlg.skin.sm{left:2%;width:96%}}
+/* 기술 카드 접촉 배지 (분류 배지 오른쪽, 10-21) */
+.mvct{flex:none;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;border:1px solid #e8b04a;color:#e8b04a;margin-left:4px}
+.mvct.no{border-color:#555;color:#8a8a8a;font-weight:500}
