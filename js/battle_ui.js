@@ -9,6 +9,7 @@
 window.OM_BATTLE_UI=(()=>{
  /* 모바일(760px 이하) 배틀 상단 조작판: 기본은 접어서 TURN · 지금 단계 · 「턴 진행」만 보이고, 「펼치기」로 전부 연다 (css .bstat.fold). 펼친 상태는 브라우저마다 기억 */
  const BFOLD={open:(()=>{try{return localStorage.getItem('om_bfold')==='1'}catch(e){return false}})()};
+ const OI=()=>window.OM_ITEMS;   /* 소지품 자동화 (js/engine/items.js) */
  const A=()=>window.OM_APP, S=()=>window.OM_STATS, B=()=>window.OM_BATTLE, DB=()=>window.OM_DB||{}, DBS=()=>window.OM_STORE;
  const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
  const $=(s,r)=>(r||document).querySelector(s);
@@ -44,8 +45,12 @@ window.OM_BATTLE_UI=(()=>{
  /* 바뀐 칸만 쓴다 (점검 2-4) — 배틀을 통째로 쓰면 그 사이 남이 바꾼 칸(다른 포켓몬의 피해, 지시 공개 …)이 지워진다.
     nb0 = 사본을 뜰 때의 배틀, nb = 고친 사본 (f 를 주면 필드도 그걸로). 포켓몬은 칸(hp · states …) 하나 단위로, 턴·페이즈는 맨 끝에 쓴다 */
  const snap=x=>JSON.parse(JSON.stringify(x===undefined?ctx().b:x));
- function saveBattle(nb0,nb,f){if(f!==undefined)nb.field=f;const ops=A().diffOps(['battle'],nb0,nb,3);const last=p=>(p[1]==='turn'||p[1]==='phase')?1:0;ops.sort((x,y)=>last(x[0])-last(y[0]));return A().setMany(ops)}
- function saveMon(m0,mid,nm){return A().setDiff(['battle','mons',mid],m0,nm,1)}
+ function saveBattle(nb0,nb,f){if(f!==undefined)nb.field=f;const ops=A().diffOps(['battle'],nb0,nb,3);const last=p=>(p[1]==='turn'||p[1]==='phase')?1:0;ops.sort((x,y)=>last(x[0])-last(y[0]));return A().setMany(ops).then(r=>{if(r&&ops.length)itemKick();return r})}
+ function saveMon(m0,mid,nm){return A().setDiff(['battle','mons',mid],m0,nm,1).then(r=>{if(r)itemKick();return r})}
+ /* 소지품 저장 뒤 점검 (2026-10-23): 내가 저장한 뒤에만, 내가 고칠 수 있는 포켓몬의 HP 열매 · 치유 열매 · 시드 · 룸서비스 · 하양허브 … 를 터트린다 */
+ let ITK=0;function itemKick(){clearTimeout(ITK);ITK=setTimeout(itemSweep,150)}
+ async function itemSweep(){if(!OI())return;const c=ctx();if(!c||!c.b||!c.b.mons)return;const b0=snap(c.b),b=snap(b0);const f=fieldOf(b);let out=[];try{out=OI().sweep(b,f,m=>canEdit(c,m))}catch(e){console.warn(e);return}if(!out.length)return;
+  if(!await saveBattle(b0,b,f))return;for(const x of out){const m=b.mons[x.mid]||{};A().sysLog(`【소지품】 ${m.name} 『${x.name}』\n${x.lines.join('\n')}`,'battle',{mid:x.mid,img:m.image||'',eff:String(x.eff||'').slice(0,300)})}}
  /* 플레이어 몫인 트레이너 = 플레이어가 배틀에 올린 것 (trainers[tid].by = 좌석 id). GM 이 불러온 파티(by:'gm')는 PL 권한 중에도 GM 이 그대로 지시·진행한다.
     by 가 없는 예전 배틀은 예전처럼 「주인이 앉아 있는 자리」로 본다 (gmTake 도 GM 몫) */
  function seatOwned(c,tid){if(!tid)return false;const t=((c.b||{}).trainers||{})[tid]||{};if(t.by)return t.by!=='gm';return !!((c.ST.state.seats||{})[tid])&&!t.gmTake}
@@ -107,7 +112,7 @@ window.OM_BATTLE_UI=(()=>{
 
  /* 턴 개시 뒤 맨 위: 지시 공개 UI (맵툴 open_command). 자기 것(GM 은 모두)은 버튼, 남의 것은 현황. 지령·명령은 공개하지 않고 「4식 6령」 창에서 발동한다 */
  /* 급소 소지품: 초점렌즈·예리한손톱 C+1, 럭키펀치(럭키) C+2, 받는 쪽 방검조끼 C-2 — 맵툴처럼 자동 */
- function itemCrit(atk,def){let v=0;const ai=IT(atk),di=IT(def);if(ai==='초점렌즈'||ai==='예리한손톱')v+=1;if(ai==='럭키펀치'&&/럭키/.test(atk.species||atk.name||''))v+=2;if(di==='방검조끼')v-=2;return v}
+ function itemCrit(atk,def){if(OI())return OI().crit(atk,def);let v=0;const ai=IT(atk),di=IT(def);if(ai==='초점렌즈'||ai==='예리한손톱')v+=1;if(ai==='럭키펀치'&&/럭키/.test(atk.species||atk.name||''))v+=2;if(di==='방검조끼')v-=2;return v}
  /* 기술 부가효과 굴림: 효과 글의 「N할 …」마다 1d10 ≤ N 이면 발동. 10할은 굴리지 않고 확정. 하늘의은총 ×2, 받는 쪽 은밀망토면 없음. 적용은 손으로 */
  function secRolls(atk,def,mv){const t=String(mv.eff||'');const out=[];const re=/(\d+)할\s*(?:의\s*확률로\s*|로\s*)?([^.。\n]*)/g;let m;
   while((m=re.exec(t))){let n=+m[1];const what=m[2].trim()||'추가 효과';if(atk.ability==='하늘의은총')n=Math.min(10,n*2);
@@ -947,7 +952,7 @@ window.OM_BATTLE_UI=(()=>{
  const FRACS=[['1/16',16],['1/8',8],['1/6',6],['1/4',4],['1/3',3],['1/2',2],['2/3',1.5]];
  function parseAmt(v,base){v=String(v||'').trim();if(!v)return 0;const m=v.match(/^(\d+)\s*\/\s*(\d+)$/);if(m)return Math.max(1,Math.floor(base*+m[1]/+m[2]));const n=+v;return isNaN(n)?0:Math.max(0,Math.floor(n))}
  function openHp(mid,tab){const c=ctx();const b=c.b;const m=b.mons[mid];if(!m||!canEdit(c,m))return;tab=tab||(m.lastHit?'dmg':'dmg');const lh=m.lastHit;const pct=(m.hp.cur>0?Math.max(1,Math.round(m.hp.cur/m.hp.max*100)):0);
-  const EFFS=[0,0.25,0.5,1,2,4];const fl=raidFloor(m);
+  const EFFS=[0,0.25,0.5,1,2,4];const fl=raidFloor(m);const berryN=lh&&OI()?OI().resist(m,lh):'';const sashX=lh&&OI()?OI().sash(m):null;
   const md=A().openModal(`<div class="mhead"><h2>「HP」 · ${esc(m.name)}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    <div class="hphead"><div class="ti" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div><div style="flex:1"><div class="hpbar ${pct<=25?'low':pct<=50?'mid':''}"><i style="width:${pct}%"></i></div><div class="row small"><span>「HP」 <b>${m.hp.cur}</b> / ${m.hp.max} (${pct}%)</span>${m.hp.latest!=null&&m.hp.latest!==m.hp.cur?`<span class="dim">직전 ${m.hp.latest}</span>`:''}<span class="sp"></span><button class="btn xs ghost" data-hp="undo" ${m.hp.latest==null?'disabled':''}>되돌리기</button><button class="btn xs ghost" data-hp="one">HP 1</button><button class="btn xs ghost danger" data-hp="faint">빈사</button></div></div></div>
    <div class="tabs"><button class="tb ${tab==='dmg'?'on':''}" data-hpt="dmg">피해</button><button class="tb ${tab==='heal'?'on':''}" data-hpt="heal">회복</button></div>
@@ -957,7 +962,7 @@ window.OM_BATTLE_UI=(()=>{
      <div class="hpbar hitbar"><i id="h_bar_after" style="width:${pct}%"></i><em id="h_bar_cut"></em></div>
      <div class="hgrid"><label>대미지 보정 <input type="number" step="0.01" class="n" id="h_mod" value="1" title="방호·완화·역할 보정 등 배율"></label>
       <label>최종 상성 <select id="h_eff">${EFFS.map(v=>`<option value="${v}" ${v===+lh.eff?'selected':''}>×${v}</option>`).join('')}</select></label>
-      <label><input type="checkbox" id="h_berry"> 반감열매</label><label><input type="checkbox" id="h_endure" ${lh.endure?'checked':''}> 버티기 (HP 1 남김)</label>
+      <label><input type="checkbox" id="h_berry" ${berryN?'checked':''}> 반감열매${berryN?` <b style="color:var(--yel2)">「${esc(berryN)}」</b>`:''}</label><label><input type="checkbox" id="h_endure" ${lh.endure||(sashX&&sashX.sure)?'checked':''}> 버티기 (HP 1 남김)${sashX&&sashX.sure?` <b style="color:var(--yel2)">「${esc(sashX.name)}」</b>`:''}</label>${sashX&&sashX.pct?`<label class="small" style="color:var(--yel2)">「${esc(sashX.name)}」 쓰러질 피해면 ${sashX.pct}% 로 버틴다 (적용 때 굴림)</label>`:''}
       <label>고정 대미지 <input type="text" class="n" id="h_forced" placeholder="-1 = 계산값" value="-1" title="숫자 또는 분수(1/8)를 넣으면 그 값으로"></label>
       ${fl?`<label class="small" style="color:var(--yel)">레이드 배리어 하한 ${fl}</label>`:''}</div>
      <div class="row" style="margin-top:8px"><span class="small dim" id="h_prev"></span><span class="sp"></span><button class="btn pri" data-hp="apply">피해 적용</button><button class="btn ghost xs" data-hp="discard" title="이 판정을 지운다 (피해 없음)">판정 버리기</button></div></div>`
@@ -989,7 +994,11 @@ window.OM_BATTLE_UI=(()=>{
    if(x.raid&&x.raid.segments>0&&opt.floor&&x.hp.cur<=opt.floor&&delta<0){x.raid.broken=(x.raid.broken||0)+1;x.raid.phase=(x.raid.phase||1)+1;line+=`\n${x.name} 배리어 파괴! → 페이즈 ${x.raid.phase}`}
    A().closeModal();if(await saveMon(m0,mid,x))A().sysLog(line,'battle',{mid,img:x.image||'',hp:{name:x.name,prev:x.hp.latest,cur:x.hp.cur,max:x.hp.max,why,faint:x.hp.cur<=0}})};
   md.querySelectorAll('[data-hp]').forEach(bt=>bt.onclick=async()=>{const k=bt.dataset.hp;const v=bt.dataset.v;const g=id=>$('#'+id,md);
-   if(k==='apply'){const r=calc();if(!r)return;const mods=[];if(+g('h_mod').value!==1)mods.push('보정 ×'+g('h_mod').value);if(g('h_berry').checked)mods.push('반감열매');if(g('h_endure').checked)mods.push('버티기');const berryUse=g('h_berry').checked&&/열매/.test(IT(m));const ret=await apply(-r.final,`${lh.from}의 「${lh.move}」 · 상성 ×${g('h_eff').value}${lh.crit?' · 급소':''}${lh.hits>1?' · '+lh.hits+'번 맞음':''}${mods.length?' · '+mods.join(' · '):''}`,{clearHit:true,floor:fl});if(berryUse)await itemConsume(mid);return ret}
+   if(k==='apply'){let r=calc();if(!r)return;const mods=[];if(+g('h_mod').value!==1)mods.push('보정 ×'+g('h_mod').value);if(g('h_berry').checked)mods.push(berryN?'「'+berryN+'」 반감':'반감열매');if(g('h_endure').checked)mods.push(sashX&&sashX.sure?'「'+sashX.name+'」로 버팀':'버티기');
+    /* 기합의머리띠: 쓰러질 피해면 굴린다 */
+    if(sashX&&sashX.pct&&!g('h_endure').checked&&r.after<=0&&m.hp.cur>1){const roll=1+Math.floor(Math.random()*100);if(roll<=sashX.pct){r={final:m.hp.cur-1,after:1};mods.push(`「${sashX.name}」로 버팀 (${roll}/${sashX.pct})`)}else mods.push(`「${sashX.name}」 실패 (${roll}/${sashX.pct})`)}
+    const berryUse=g('h_berry').checked&&/열매/.test(IT(m));const sashUse=g('h_endure').checked&&sashX&&sashX.sure&&sashX.once&&r.after<=1&&m.hp.cur>1;const ret=await apply(-r.final,`${lh.from}의 「${lh.move}」 · 상성 ×${g('h_eff').value}${lh.crit?' · 급소':''}${lh.hits>1?' · '+lh.hits+'번 맞음':''}${mods.length?' · '+mods.join(' · '):''}`,{clearHit:true,floor:fl});if(berryUse||sashUse)await itemConsume(mid);
+    if(OI()&&r.final>0)await itemHitReact(mid,lh,r.final);return ret}
    if(k==='discard'){A().closeModal();await A().set(['battle','mons',mid,'lastHit'],null);return A().sysLog(`${m.name} 받은 피해 판정을 버렸다`,'battle')}
    if(k==='frac')return apply(-parseAmt(v,m.hp.max),`비율 피해 ${v}`,{floor:fl});
    if(k==='custom'){const a=parseAmt(g('h_cv').value,m.hp.max);if(!a)return A().toast('숫자나 분수를 넣어 줘');return apply(-a,`고정 피해 ${g('h_cv').value}`,{floor:fl})}
@@ -1023,6 +1032,10 @@ window.OM_BATTLE_UI=(()=>{
   L.push(f?`${fromName} → 「${m.name}」 ${f.kind||'폼체인지'}! (${tk(m.types)} · 특성 ${m.ability||'-'}${m.hp.max!==oldMax?' · 최대 HP '+oldMax+'→'+m.hp.max:''})${potLine?'\n포텐셜 '+potLine:''}`:`${fromName} → 원래 모습 「${m.name}」으로 돌아왔다${potLine?'\n'+potLine:''}`);
   return L}
  /* ---------- 소지품 소모 (맵툴 item_consume): 칸에서 빼고 itemUsed 에 남긴다. 결과 정리 때 시트에서도 뺀다 ---------- */
+ /* 맞은 뒤 소지품 반응 (약점보험 · 울퉁불퉁멧 · 옐로우카드 · 풍선 · 구근 …): 받는 쪽 화면에서, 공격한 쪽도 함께 고친다 */
+ async function itemHitReact(mid,lh,dealt){const b0=snap(),b=snap(b0);const m=b.mons[mid];if(!m)return;let L=[];try{L=OI().onHit(b,m,lh,dealt)}catch(e){console.warn(e);return}if(!L.length)return;
+  for(const id in b.mons){const x=b.mons[id];if(x.entry&&x.hp.cur<=0)x.entry=''}
+  if(await saveBattle(b0,b))A().sysLog(`【소지품】 ${m.name} 『${(b0.mons[mid]||{}).item||''}』\n${L.join('\n')}`,'battle',{mid,img:m.image||'',eff:String(((DB().items||{})[String((b0.mons[mid]||{}).item||'').replace(/『|』/g,'').trim()]||{}).eff||'').slice(0,300)})}
  async function itemConsume(mid,undo){const m0=snap(ctx().b.mons[mid]);if(!m0)return;const x=snap(m0);
   if(undo){const u=x.itemUsed;if(!u||x.item)return;x.item=u.name;x.itemEff=u.eff||'';delete x.itemUsed;await saveMon(m0,mid,x);return A().sysLog(`${x.name} 「${u.name}」 소모 되돌림`,'battle')}
   if(!x.item)return;const name=x.item;x.itemUsed={name,eff:x.itemEff||'',turn:+ctx().b.turn||0};if(FX())FX().removeByName(x,name);x.item='';x.itemEff='';
@@ -1239,6 +1252,8 @@ window.OM_BATTLE_UI=(()=>{
   const syncMove=()=>{const mv=(atk.moves||[])[+mvSel.value]||{};$('#apow',md).value=mv.pow||0;{const h=$('#amhint',md),mn=+mv.min||1,mx=+mv.max||1;if(h)h.textContent=mx<=1?'':mn===mx?`${mx}회 연속기 — 매 회 명중 판정`:`${mn}~${mx}회 연속기 — 첫 명중 뒤 확정`}{const oe=(b.order||[]).find(o=>o.mid===mid&&o.pursuitHit);const pv=oe&&b.mons[oe.pursuitHit];if(oe&&pv&&pv.entry&&String(mv.name)===String(oe.move)){const x2=pursuitX2(mv);if(x2)$('#apow',md).value=(+mv.pow||0)*2;setTimeout(()=>{const e2=$('#amef',md);if(e2)e2.textContent='【따라가때리기 — 교대하려는 '+pv.name+'에게 먼저'+(x2?' · 위력 2배':'')+'】 '+e2.textContent},0)}}{const a=moveAuto(mv);$('#acritforce',md).checked=!!(a&&a.critSure)}{const st=atk.states||{};$('#acharge',md).checked=mv.cat!=='변화'&&Object.keys(CHARGE_ST).some(k=>st[k]&&tyOf(mv)===CHARGE_ST[k])}$('#amef',md).textContent=(SPMAP[String(mv.name||'').trim()]?'【변칙 위력 — 대상마다 자동 계산】 ':'')+String(mv.eff||'').replace(/<br\s*\/?>/gi,'\n');{const col=S().typeColor(tyOf(mv));$('#amhd',md).innerHTML=`<span class="amty" style="background:${col.bg};color:${col.fg}">${esc(S().typeKo(tyOf(mv))||mv.type||'')}</span><b>${esc(mv.name||'')}</b><span class="dim">${esc(mv.cat||'')} · 위력 ${mv.pow||'-'} · 명중 ${mv.acc||'필중'}${mv.prio?' · 우선 '+mv.prio:''} · ${esc(mv.range||'')}${mv.tag&&mv.tag!=='-'?' · '+esc(mv.tag):''}</span>`}const T0=tyOf(mv);const wm=WEATHER_MUL[f.weather.type]||{};$('#aweather',md).value=wm[T0]!=null?wm[T0]:1;
    /* 필드 강화는 땅 위의 공격자만 (미스트필드의 드래곤 반감은 대상마다 따로) */
    let fm=1;const ft=f.terrain.type;if(grd(atk)){if(ft==='그래스필드'&&T0==='Grass')fm=1.3;if(ft==='일렉트릭필드'&&T0==='Electric')fm=1.3;if(ft==='사이코필드'&&T0==='Psychic')fm=1.3}$('#afield',md).value=fm;
+   /* 소지품 위력 (검은띠 · 쥬얼 · 구애머리띠 …): 기술을 고를 때 「아이템 1」 칸에 넣는다 */
+   {const tys=RM('블랙룸')&&mv.cat!=='변화'?['Ghost']:String(mv.type||'').split(/[()/,]/).map(t=>t.trim()).filter(Boolean).map(S().typeEn);const im=OI()?OI().atkMul(atk,{types:tys,cat:mv.cat,single:String(mv.range||'')==='1체'}):null;$('#aitem1',md).value=im?im.v:1;md.dataset.jewel=im&&im.jewel?'1':'';if(im)setTimeout(()=>{const e2=$('#amef',md);if(e2)e2.textContent='【소지품 '+im.txt+'】 '+e2.textContent},0)}
    {const rn=[...(RM('블랙룸')&&mv.cat!=='변화'?['블랙룸: 고스트 기술로']:[]),...(RM('원더룸')?['원더룸: 방어↔특방']:[]),...(RM('매직룸')?['매직룸: 소지품 무효']:[]),...(ft&&['그래스필드','일렉트릭필드','사이코필드'].includes(ft)&&!grd(atk)?['떠 있어 '+ft+' 강화 없음']:[])];if(rn.length)setTimeout(()=>{const e2=$('#amef',md);if(e2)e2.textContent='【'+rn.join(' · ')+'】 '+e2.textContent},0)}
    const dflt=defaultTargets(b,mid,String(mvSel.value));if(x.move==null||x.move===''||+x.move!==+mvSel.value){md.querySelectorAll('[data-t]').forEach(cb=>cb.checked=dflt.includes(cb.dataset.t))}syncBoard()};
   mvSel.onchange=syncMove;
@@ -1255,8 +1270,8 @@ window.OM_BATTLE_UI=(()=>{
    const tg=[...md.querySelectorAll('[data-t]:checked')].map(cb=>cb.dataset.t);const out=[];
    try{const moveTypes=RM('블랙룸')?['Ghost']:String(mv.type||'').split(/[()/,]/).map(t=>t.trim()).filter(Boolean).map(S().typeEn);const atkTypes=atk.teraActive&&atk.teraEn!=='-'?[...atk.types,atk.teraEn]:atk.types;
     for(const slot of tg){const [side,area]=slot.split('_');const def=entered(b,side)[area];if(!def)continue;
-     const eff=B().effectiveness(moveTypes,def,{multiMode:+g('amulti').value,atkTypes,force:g('aforce').value===''?null:+g('aforce').value,floating:(def.states||{}).MagnetRise||(def.states||{}).Telekinesis||(FX()&&FX().floating(def))});
-     let mods={boost:1,guard:1};try{if(FX())mods=FX().attackMods(atk,def,Object.assign(moveQuery(atk,def,mv,moveTypes,eff.value,tg.length<2),{stab:!!eff.stab}))}catch(e){}
+     const eff=B().effectiveness(moveTypes,def,{multiMode:+g('amulti').value,atkTypes,force:g('aforce').value===''?null:+g('aforce').value,floating:(def.states||{}).MagnetRise||(def.states||{}).Telekinesis||(FX()&&FX().floating(def))||IT(def)==='풍선'});
+     let mods={boost:1,guard:1};try{if(FX())mods=FX().attackMods(atk,def,Object.assign(moveQuery(atk,def,mv,moveTypes,eff.value,tg.length<2),{stab:!!eff.stab}))}catch(e){}{const ig=OI()&&OI().defGuard(def,mv.cat);if(ig)mods=Object.assign({},mods,{guard:(mods.guard||1)*ig.v})}
      const objs=(fieldOf(b).objects||{})[side]||{};const wall={};for(const k in WALLS)if(objs[k]>0)wall[WALLS[k]]=1;
      const d=B().damage(atk,def,Object.assign({},mv,{pow:+g('apow').value}),{hits:[1],free1:n('afree1')*(mods.boost||1),free2:n('afree2'),item1:n('aitem1'),item2:n('aitem2'),trait:n('atrait'),weather:n('aweather'),fieldMul:n('afield'),wonder:RM('원더룸'),helping:g('ahelp').checked,charge:g('acharge').checked,lifeOrb:g('alife').checked,multiTarget:tg.length>1,wall,wallSize:mode(b)>=2?2:1,atkStat:g('aatk').value||undefined,defStat:g('adef').value||undefined,ignoreAtk:+g('aigatk').value,ignoreDef:+g('aigdef').value,scarf:IT(atk)==='구애스카프'});
      const o={stab:eff.stab,adaptability:g('aadapt').checked,expertBelt:g('abelt').checked,guard:(mods.guard||1)*((def.flags||{}).endure?0.5:1)};
@@ -1286,10 +1301,12 @@ window.OM_BATTLE_UI=(()=>{
     const autoMiss=(phys&&DF.dodgePhys)||(spec&&DF.dodgeSpec)||AF.acc0;
     /* 사이코필드: 땅 위의 포켓몬은 상대의 선공 기술(우선도 +1 이상)을 받지 않는다 */
     const psyBlock=f.terrain.type==='사이코필드'&&def.side!==atk.side&&grd(def)&&(FX()?FX().prioOf(atk,mv):(+mv.prio||0))>0;
-    const accRoll=()=>psyBlock?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:'사이코필드 — 땅 위라 선공 기술 무효'}:autoMiss?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:'지령으로 회피/명중 0'}:B().accuracy(atk,def,{acc:mv.acc},{accMult:n('aacc'),sureHit:sure,starry:f.weather.type==='별하늘',fog:f.weather.type==='짙은안개',fogImmune:moveTypes.some(t=>t==='Poison'||t==='Fairy'),gravity:(f.etc||{})['중력']>0,wideLens:IT(atk)==='광각렌즈'});const acc=accRoll();
+    const itImm=OI()&&mv.cat!=='변화'?OI().immune(def,moveTypes):'';
+    const accRoll=()=>itImm?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:`${def.name}의 「${itImm}」 — 효과가 없다`}:psyBlock?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:'사이코필드 — 땅 위라 선공 기술 무효'}:autoMiss?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:'지령으로 회피/명중 0'}:B().accuracy(atk,def,{acc:mv.acc},{accMult:n('aacc'),sureHit:sure,starry:f.weather.type==='별하늘',fog:f.weather.type==='짙은안개',fogImmune:moveTypes.some(t=>t==='Poison'||t==='Fairy'),gravity:(f.etc||{})['중력']>0,wideLens:IT(atk)==='광각렌즈'});const acc=accRoll();
     /* 효과 엔진: 상성을 먼저 보고 강화·완화·급소 조건을 맞춘다 */
-    const effPre=mv.cat==='변화'?null:B().effectiveness(moveTypes,def,{multiMode:+g('amulti').value,atkTypes,force:g('aforce').value===''?null:+g('aforce').value,floating:(def.states||{}).MagnetRise||(def.states||{}).Telekinesis||(FX()&&FX().floating(def))});
+    const effPre=mv.cat==='변화'?null:B().effectiveness(moveTypes,def,{multiMode:+g('amulti').value,atkTypes,force:g('aforce').value===''?null:+g('aforce').value,floating:(def.states||{}).MagnetRise||(def.states||{}).Telekinesis||(FX()&&FX().floating(def))||IT(def)==='풍선'});
     const mods=FX()?FX().attackMods(atk,def,Object.assign(moveQuery(atk,def,mv,moveTypes,effPre?effPre.value:1,!multiTarget),{stab:!!(effPre&&effPre.stab)})):{boost:1,guard:1,cg:0,cr:0,cx:'',names:[]};
+    {const ig=OI()&&OI().defGuard(def,mv.cat);if(ig){mods.guard=(mods.guard||1)*ig.v;mods.names=(mods.names||[]).concat([{key:'_i',who:def.id,txt:ig.txt}])}}
     const iu=(atk.fx||{}).ignoreUp,iuD=(def.fx||{}).ignoreUp;let igDef=+g('aigdef').value,igAtk=+g('aigatk').value;if(iu&&iu.dir==='atk'&&igDef===-1&&(iu.scope==='def'||iu.scope==='both'||iu.scope==='eva'))igDef=0;if(iuD&&iuD.dir==='recv'&&igAtk===-1&&(iuD.scope==='atk'||iuD.scope==='both'))igAtk=0;
     /* 연속기 (맵툴 attack_target): 2~5회처럼 횟수가 범위면 첫 명중 뒤로는 확정, 2회·3회처럼 고정이면 매 회 명중 판정 (스킬링크면 첫 명중 뒤 확정) · 빗나가면 거기서 멈춘다 */
     let hits=[];if(acc.hit){const sl=ck('askill');const mx=+mv.max||1,mn=+mv.min||1;const cnt=n('ahits')||B().multiHits(mv,{skillLink:sl});const fixedN=mx>1&&mn===mx&&!sl&&!acc.sure;const stage=B().critStage(atk,def,{input:n('acrit'),order:n('acritord')+(mods.cr||0)-(mods.cg||0)+itemCrit(atk,def)});
@@ -1302,7 +1319,7 @@ window.OM_BATTLE_UI=(()=>{
     const wt=f.weather.type;const defMul=(['눈','싸라기눈','극한'].includes(wt)&&dTy.includes('Ice')&&dS==='defense')?1.5:(wt==='모래바람'&&dTy.includes('Rock')&&dS==='specialdefense')?1.5:1;
     if(defMul!==1&&mods.names)mods.names.push({key:'_w',who:def.id,txt:`${def.name} 「${wt}」 ${dS==='defense'?'방어':'특방'} ×1.5`});if(fieldT!==n('afield')&&mods.names)mods.names.push({key:'_t',who:def.id,txt:`${def.name} 「미스트필드」 드래곤 ×0.5`});
     const dmg=mv.cat==='변화'||!powT||(spw&&spw.fixed)||(MAU&&MAU.delay)?null:B().damage(atk,def,Object.assign({},mv,{pow:powT}),{hits:hits.map(h=>h.v),free1:n('afree1')*(mods.boost||1),free2:n('afree2'),item1:n('aitem1'),item2:n('aitem2'),trait:n('atrait'),weather:n('aweather'),fieldMul:fieldT,defMul,wonder:RM('원더룸'),helping:ck('ahelp'),charge:ck('acharge'),lifeOrb:ck('alife'),multiTarget,wall,wallSize:mode(b)>=2?2:1,atkStat:g('aatk').value||undefined,defStat:g('adef').value||undefined,ignoreAtk:igAtk,ignoreDef:igDef,watersport:(f.etc||{})['물놀이']>0,mudsport:(f.etc||{})['흙놀이']>0,scarf:IT(atk)==='구애스카프',choiceDef:false,tailwindDef:((f.objects||{})[side]||{})['순풍']>0,swampDef:((f.objects||{})[side]||{})['습원']>0});
-    const eff=dmg?B().effectiveness(moveTypes,def,{multiMode:+g('amulti').value,atkTypes,force:g('aforce').value===''?null:+g('aforce').value,floating:(def.states||{}).MagnetRise||(def.states||{}).Telekinesis||(FX()&&FX().floating(def))}):null;
+    const eff=dmg?B().effectiveness(moveTypes,def,{multiMode:+g('amulti').value,atkTypes,force:g('aforce').value===''?null:+g('aforce').value,floating:(def.states||{}).MagnetRise||(def.states||{}).Telekinesis||(FX()&&FX().floating(def))||IT(def)==='풍선'}):null;
     const stab=eff?eff.stab:false;
     const guard0=(DF.endure?0.5:1)*(mods.guard||1);const endure0=!!DF.endure&&!AF.noEndure;
     const hp=dmg?B().hpDamage(def,dmg.total,eff.value,{stab,adaptability:ck('aadapt'),expertBelt:ck('abelt'),guard:guard0,endure:endure0,hpFloor:raidFloor(def)}):null;
@@ -1324,7 +1341,7 @@ ${L.join('\n')}${once.length?'\n'+once.map(x=>'· '+x.line).join('\n'):''}`,'bat
     <td>${r.hits.map(h=>h.v===2?`<b style="color:var(--red)">급소</b>`:'-').join('<br>')}<div class="small dim">${r.hits.map(h=>h.cr.roll+'/'+h.cr.chance).join('<br>')}</div></td>
     <td>${r.dmg?`<b class="mono">${r.dmg.total}</b> <span class="small dim">(${r.dmg.min}~${r.dmg.max}${r.hits.length>1?' · '+r.hits.length+'회':''})</span>`:'-'}</td>
     <td>${r.eff?`<b>×${r.eff.value}</b> <span class="small dim">${esc(S().typeKo(r.eff.type))}${r.stab?' · 자속':''}</span>`:'-'}</td>
-    <td>${r.dmg?`<label class="small">버텨라/방호 <input type="number" step="0.01" class="n xs" data-guard="${i}" value="${r.guard}"></label> <label class="small">수동 <input type="number" step="0.01" class="n xs" data-manual="${i}" value="1"></label> <label class="small"><input type="checkbox" data-berry="${i}"> 반감열매</label> <label class="small"><input type="checkbox" data-endure="${i}" ${r.endure?'checked':''}> 버티기</label>${raidFloor(r.def)?`<div class="small" style="color:var(--yel)">레이드 배리어 하한 ${raidFloor(r.def)}</div>`:''}`:''}</td>
+    <td>${r.dmg?`<label class="small">버텨라/방호 <input type="number" step="0.01" class="n xs" data-guard="${i}" value="${r.guard}"></label> <label class="small">수동 <input type="number" step="0.01" class="n xs" data-manual="${i}" value="1"></label> <label class="small"><input type="checkbox" data-berry="${i}" ${OI()&&OI().resist(r.def,{mt:moveTypes,cat:mv.cat,eff:r.eff.value,multi:multiTarget})?'checked':''}> 반감열매</label> <label class="small"><input type="checkbox" data-endure="${i}" ${r.endure?'checked':''}> 버티기</label>${raidFloor(r.def)?`<div class="small" style="color:var(--yel)">레이드 배리어 하한 ${raidFloor(r.def)}</div>`:''}`:''}</td>
     <td><b class="mono" id="fin_${i}">${r.hp&&r.acc.hit?r.hp.final:0}</b><div class="small dim" id="aft_${i}">→ ${r.hp&&r.acc.hit?r.hp.after:r.def.hp.cur}</div></td></tr>`).join('')}</table>
     <div class="small dim" style="margin-top:4px">${esc(mv.name)} · L${atk.lv} 위력 ${g('apow').value} · ${res[0]&&res[0].dmg?`공격 ${Math.round(res[0].dmg.hits[0]?res[0].dmg.hits[0].A:0)} / 방어 ${Math.round(res[0].dmg.hits[0]?res[0].dmg.hits[0].D:0)} · M ${res[0].dmg.M} · 벽 ${res[0].dmg.wall}`:''}</div>`;
    const recompute=()=>{res.forEach((r,i)=>{if(!r.dmg)return;const gd=md.querySelector(`[data-guard="${i}"]`),mn=md.querySelector(`[data-manual="${i}"]`),br=md.querySelector(`[data-berry="${i}"]`),en=md.querySelector(`[data-endure="${i}"]`);
@@ -1347,7 +1364,7 @@ ${L.join('\n')}${once.length?'\n'+once.map(x=>'· '+x.line).join('\n'):''}`,'bat
     if(!r.dmg){lines.push(`→ ${def.name}: ${hitTxt} (변화기)`);continue}
     const crit=r.hits.some(h=>h.v===2);dealtAny=true;
     const am=atkMul(r,md);
-    def.lastHit={from:atk.name,fromId:atk.id,move:RESULT.mv.name,moveType:RESULT.mv.type||'',eff:r.eff.value,effType:r.eff.type||'',total:Math.floor(r.dmg.total*am),min:Math.floor(r.dmg.min*am),max:Math.floor(r.dmg.max*am),hits:r.hits.length,crit,guard:r.guard,guardNote:(r.mods&&r.mods.names.filter(x=>x.who===def.id).map(x=>x.txt).join(' · '))||'',endure:r.endure,expect:r.hp?r.hp.final:0,at:Date.now(),turn:+nb.turn||0};
+    def.lastHit={from:atk.name,fromId:atk.id,move:RESULT.mv.name,moveType:RESULT.mv.type||'',eff:r.eff.value,effType:r.eff.type||'',total:Math.floor(r.dmg.total*am),min:Math.floor(r.dmg.min*am),max:Math.floor(r.dmg.max*am),hits:r.hits.length,crit,guard:r.guard,guardNote:(r.mods&&r.mods.names.filter(x=>x.who===def.id).map(x=>x.txt).join(' · '))||'',endure:r.endure,expect:r.hp?r.hp.final:0,at:Date.now(),turn:+nb.turn||0,mt:RESULT.moveTypes||[],cat:RESULT.mv.cat||'',ct:!!(A().contactOf&&A().contactOf(RESULT.mv)==='O'),multi:RESULT.targets.length>1};
     if(FX()&&r.mods)FX().consume(nb,r.mods.names);
     lines.push(`→ ${def.name}: ${hitTxt} ${crit?'급소! ':''}${r.acc.multi?r.hits.length+'번 맞았다! ':''}대미지 ${def.lastHit.total} ×${r.eff.value}${r.guard&&r.guard!==1?' 완화 ×'+r.guard:''} ≈ ${r.hp?r.hp.final:0} — 받는 쪽이 「HP」에서 적용`)}
    if($('#alife',md).checked&&dealtAny){const a=nb.mons[mid];const rec=Math.max(1,Math.floor(a.hp.max/10));a.hp.latest=a.hp.cur;a.hp.cur=Math.max(0,a.hp.cur-rec);lines.push(`${atk.name} 생명의구슬 반동 −${rec} → ${a.hp.cur}`);if(a.hp.cur<=0){a.entry='';lines.push(`${a.name}은(는) 쓰러졌다!`)}}
@@ -1361,6 +1378,8 @@ ${L.join('\n')}${once.length?'\n'+once.map(x=>'· '+x.line).join('\n'):''}`,'bat
     if(AU.drain&&ckx('drain')&&dealt>0&&a.hp.cur>0){if((a.states||{}).HealBlock)lines.push(`${a.name} 「회복봉인」이라 드레인 없음`);else{const [p,q]=AU.drain.split('/').map(Number);let v=Math.max(1,Math.floor(dealt*p/q));if(IT(a)==='큰뿌리')v=Math.floor(v*1.3);const h=Math.min(v,a.hp.max-a.hp.cur);a.hp.latest=a.hp.cur;a.hp.cur+=h;lines.push(`${a.name} 드레인 +${h} (예상 대미지 ${dealt}의 ${AU.drain}) → ${a.hp.cur}`)}}
     if(AU.selfFaint&&ckx('faint')&&a.hp.cur>0){a.hp.latest=a.hp.cur;a.hp.cur=0;lines.push(`${a.name} 「${RESULT.mv.name}」 사용 후 빈사`)}
     for(const id in nb.mons){const x=nb.mons[id];if(x.entry&&x.hp.cur<=0){x.entry='';lines.push(`${x.name}은(는) 쓰러졌다!`)}}}
+   if(OI()){const a=nb.mons[mid];const tags=String(RESULT.mv.tag||'').split(/[,/·\s]+/).filter(Boolean);const dealt=RESULT.targets.filter(r=>r.acc.hit&&r.dmg).map(r=>r.def.id);
+    try{lines.push(...OI().afterAttack(nb,a,{jewel:md.dataset.jewel==='1'&&+$('#aitem1',md).value>1,dealt,missAll:RESULT.targets.length>0&&!RESULT.targets.some(r=>r.acc.hit),tags}))}catch(e){console.warn(e)}}
    nb.mons[mid].lastDealt={total:RESULT.targets.filter(r=>r.acc.hit&&r.dmg).reduce((a,r)=>a+(r.hp?r.hp.final:0),0),targets:RESULT.targets.filter(r=>r.acc.hit&&r.dmg).map(r=>r.def.name).join(', '),at:Date.now()};
    const AU2=RESULT.auto;const xck=t=>{if(!AU2)return false;const ex=[...(AU2.recoil?['recoil']:[]),...(AU2.drain?['drain']:[]),...(AU2.selfFaint?['faint']:[]),...(AU2.forceSwitch?['fsw']:[]),...(AU2.selfSwitch?['ssw']:[])];const el=md.querySelector(`[data-agx="${ex.indexOf(t)}"]`);return !!(el&&el.checked)};
    const doF=AU2&&AU2.forceSwitch&&xck('fsw'),doS=AU2&&AU2.selfSwitch&&xck('ssw');

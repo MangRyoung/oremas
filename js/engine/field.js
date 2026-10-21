@@ -54,6 +54,8 @@ const FX=()=>window.OM_FX;
    if(st.SyrupBomb){m.syrupN=(+m.syrupN||0)+1;rankDown(m,'speed',-1);lines.push(`${m.name} 「물엿범벅」 스피드 −1 (${m.syrupN}/3)`);if(m.syrupN>=3){clearState(m,'SyrupBomb');m.syrupN=0}}
    if(st.DeathCount){const c=+st.DeathCount||0;if(c<=1){lines.push(`${m.name} 「죽음의카운트」 0 · 「빈사」`);m.hp.cur=0;dead.push(m.id)}else lines.push(`${m.name} 「죽음의카운트」 ${c-1}`)}
    for(const [k,to,kn,tn] of [['Yawn','Sleep','하품','잠듦'],['Hibernation','Freeze','동면','얼음']]){if(!st[k])continue;const c=+st[k]||0;if(c>1)continue;const tb=tblock(m,to);if(tb)lines.push(`${m.name} 「${kn}」 땅 위라서 「${tb}」가 「${tn}」을(를) 막았다`);else if(isAbn(m))lines.push(`${m.name} 「${kn}」 이미 상태 이상이라 「${tn}」 상태가 되지 않음`);else{setState(m,to);lines.push(`${m.name} 「${kn}」 → 「${tn}」`)}}
+   /* 소지품 (먹다남은음식 · 검은진흙 · 불꽃구슬 · 맹독구슬 · 끈적끈적바늘) — js/engine/items.js */
+   if(m.hp.cur>0&&window.OM_ITEMS)window.OM_ITEMS.turnEnd(m,lines,{heal,dmg});
    if(m.hp.cur<=0&&!dead.includes(m.id)){dead.push(m.id);lines.push(`${m.name}은(는) 쓰러졌다!`)}}
   return {lines,dead}}
 
