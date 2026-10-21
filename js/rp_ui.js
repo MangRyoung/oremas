@@ -594,7 +594,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(b.type==='checkbox')b.onchange=h;else b.onclick=h});
   if(GC.tab==='bgm')bindBgmPanel(md,re);
   if($('#gbf',md)){const st0=(R().bubble||{}).st||{};const POS={dx:+st0.dx||0,dy:+st0.dy||0,nx:+st0.nx||0,ny:+st0.ny||0};const rd=()=>({font:$('#gbf',md).value||null,fs:+$('#gbs',md).value===100?null:+$('#gbs',md).value,w:+$('#gbw',md).value===52?null:+$('#gbw',md).value,dx:POS.dx||null,dy:POS.dy||null,nx:POS.nx||null,ny:POS.ny||null,wt:$('#gbb',md).value||null});
-   const live=()=>{const v=rd();$('#gbs_v',md).textContent=(v.fs||100)+'%';$('#gbw_v',md).textContent=(v.w||52)+'%';const d=document.getElementById('dlg');if(d)bubStyle(d,v)};
+   const live=()=>{const v=rd();$('#gbs_v',md).textContent=(v.fs||100)+'%';$('#gbw_v',md).textContent=(v.w||52)+'%';const d=document.getElementById('dlg');if(d)bubStyle(d,v);const p=$('#gbpst',md);if(p)bubStyle(p,v)};
    const save=async()=>{live();const v=rd();for(const k in v)if(v[k]==null)delete v[k];await A().set(['rp','bubble','st'],Object.keys(v).length?v:null)};
    ['#gbs','#gbw'].forEach(q=>{const e=$(q,md);e.oninput=live;e.onchange=save});
    /* 예시 무대 끌기 */
@@ -605,7 +605,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    drag('#gbp_d','dx','dy',9);drag('#gbp_n','nx','ny',1);
    md.querySelectorAll('[data-gbp]').forEach(b=>b.onclick=()=>{const k=b.dataset.gbp;pst.classList.toggle('seld',k==='d');pst.classList.toggle('seln',k==='n');md.querySelectorAll('[data-gbp]').forEach(x=>{x.classList.toggle('pri',x===b);x.classList.toggle('ghost',x!==b)})});
    $('#gbp0',md).onclick=()=>{POS.dx=POS.dy=POS.nx=POS.ny=0;save().then(re)};
-   $('#gbw',md).addEventListener('input',()=>{const w=+$('#gbw',md).value||52;[['#gbp_d','dx'],['#gbp_n','nx']].forEach(([id,k])=>{const el=$(id,md);if(el){el.style.width=w+'%';el.style.left=`calc(${50-w/2}% + ${POS[k]||0}%)`}})});['#gbf','#gbb'].forEach(q=>$(q,md).onchange=save)}
+   $('#gbw',md).addEventListener('input',()=>{const w=+$('#gbw',md).value||52;[['#gbp_d','dx'],['#gbp_n','nx']].forEach(([id,k])=>{const el=$(id,md);if(el){el.style.width=w+'%';el.style.left=`calc(${50-w/2}% + ${POS[k]||0}%)`}})});['#gbf','#gbb'].forEach(q=>$(q,md).onchange=save);live()}
   for(const k of ['c','l','m','r'])if($('#bub_'+k,md))bindDz(md,'#bub_'+k,async fs=>{const u=await upImg(fs[0],'bub_'+k);await A().set(['rp','bubble',k],u);if(!(R().bubble||{}).on)await A().set(['rp','bubble','on'],true);re()});
   if($('#gcidz',md))bindDz(md,'#gcidz',async fs=>{const u=await upImg(fs[0],'rp');await A().set(['rp','center'],{src:u,at:Date.now()});re()})}
  /* 대사 상자 글꼴 · 글자 크기 · 상자 크기 · 굵기 · 대사창/지문 상자 높이 (rp.bubble.st, GM 콘솔 무대 탭, 10-21 · 10-23 망령: 글자 위치 대신 상자 위치) */

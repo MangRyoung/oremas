@@ -2675,10 +2675,11 @@ span.iedit{display:inline-block;min-width:3em}
 .gbpos{margin-top:10px}
 .gbph{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
 .gbpst{position:relative;aspect-ratio:16/10;max-width:640px;background:#222 center/cover no-repeat;border:2px solid var(--line2);overflow:hidden;touch-action:none}
-.gbpbox{position:absolute;aspect-ratio:9/4;background:center/100% 100% no-repeat;cursor:grab;user-select:none;display:flex;align-items:center;justify-content:center;touch-action:none}
+.gbpbox{container-type:inline-size;position:absolute;aspect-ratio:9/4;background:center/100% 100% no-repeat;cursor:grab;user-select:none;display:flex;align-items:center;justify-content:center;touch-action:none}
 .gbpbox.drag{cursor:grabbing;outline:2px dashed var(--yel2);outline-offset:2px}
 .gbpbox .gbpn{position:absolute;left:8%;top:6%;background:#000;color:#fff;border:2px solid #fff;font:700 11px var(--lab);padding:0 8px}
-.gbpbox .gbpt{color:#fff;font-weight:700;font-size:12px;padding:0 16%;text-align:center;transform:rotate(-2.5deg)}
+/* 10-23 망령: 예시 글자도 글꼴 · 글자 크기 · 굵기를 따른다 (상자 폭 기준) */
+.gbpbox .gbpt{color:#fff;font-family:var(--bubfont,inherit);font-weight:var(--bubwt,700);font-size:calc(4.4cqw * var(--bubfs,1));line-height:1.3;word-break:keep-all;padding:0 16%;text-align:center;transform:rotate(-2.5deg)}
 .stscale{gap:8px;align-items:center;margin:0 0 8px}
 @media (max-width:760px){.dlg.skin.sr{left:1.5%}}
 .gbpsel{display:inline-flex;gap:4px}
