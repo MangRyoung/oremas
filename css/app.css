@@ -2173,3 +2173,53 @@ span.iedit{display:inline-block;min-width:3em}
  .qbadd{flex-direction:column}.updz.sm{width:auto}
  .qbaddr .row{flex-wrap:wrap}
 }
+/* ===== 진화 연출 (메가진화 · 폼체인지 · 폼 복귀) ===== */
+.evo .ev-dim{background:radial-gradient(ellipse at center,rgba(10,6,30,.82),rgba(0,0,0,.94));opacity:0;animation:evDim 5s forwards}
+.ev-form .ev-dim{animation-duration:3.4s;background:rgba(0,0,0,.6)}
+@keyframes evDim{0%{opacity:0}8%{opacity:1}90%{opacity:1}100%{opacity:0}}
+.evo .ev-mon{position:absolute;left:50%;top:46%;width:340px;height:340px;margin:-170px 0 0 -170px}
+.evo .ev-mon>*{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.evo .ev-ball{border-radius:50%;inset:70px;width:auto;height:auto;background:linear-gradient(#e33 0,#e33 46%,#222 46%,#222 54%,#fff 54%);border:8px solid #222}
+.evo .ev-flash{background:#fff;opacity:0}
+.evo .ev-txt{position:absolute;left:0;right:0;bottom:34px;text-align:center;color:#fff;opacity:0;text-shadow:0 3px 0 #000,0 0 18px rgba(0,0,0,.8)}
+.evo .ev-t1{font-size:22px;font-weight:700;letter-spacing:.04em}
+.evo .ev-t2{font-size:64px;font-weight:900;letter-spacing:.06em;line-height:1.05;font-style:italic}
+.evo .ev-t3{font-size:24px;font-weight:700;color:#ffe680}
+/* 메가진화 */
+.ev-mega .ev-a{animation:evSil .5s .5s both,evBlinkA 1.45s 1s both}
+.ev-mega .ev-b{opacity:0;filter:brightness(0) invert(1) drop-shadow(0 0 22px #fff);animation:evBlinkB 1.45s 1s both,evReveal .8s 2.45s both}
+@keyframes evSil{from{filter:none}to{filter:brightness(0) invert(1) drop-shadow(0 0 22px #fff)}}
+@keyframes evBlinkA{0%,14%{opacity:1}15%,28%{opacity:0}29%,40%{opacity:1}41%,50%{opacity:0}51%,58%{opacity:1}59%,65%{opacity:0}66%,71%{opacity:1}72%,76%{opacity:0}77%,80%{opacity:1}81%,84%{opacity:0}85%,87%{opacity:1}88%,100%{opacity:0}}
+@keyframes evBlinkB{0%,14%{opacity:0}15%,28%{opacity:1}29%,40%{opacity:0}41%,50%{opacity:1}51%,58%{opacity:0}59%,65%{opacity:1}66%,71%{opacity:0}72%,76%{opacity:1}77%,80%{opacity:0}81%,84%{opacity:1}85%,87%{opacity:0}88%,100%{opacity:1}}
+@keyframes evReveal{0%{filter:brightness(0) invert(1) drop-shadow(0 0 22px #fff);transform:scale(1.12)}100%{filter:drop-shadow(0 0 16px rgba(255,255,255,.55)) drop-shadow(0 0 40px rgba(180,120,255,.6));transform:scale(1)}}
+.ev-mega .ev-orb{position:absolute;left:50%;top:46%;width:300px;height:300px;margin:-150px 0 0 -150px;border-radius:50%;background:radial-gradient(circle,#fff 0,#fff6c8 18%,rgba(255,170,220,.85) 38%,rgba(120,140,255,.55) 60%,transparent 72%);filter:blur(2px);opacity:0;animation:evOrb 2.2s .25s both}
+.ev-mega .ev-orb i{position:absolute;inset:-30px;border-radius:50%;border:4px solid transparent;border-top-color:#ffd84a;border-bottom-color:#7ad7ff;animation:evSpin 1s linear infinite}
+.ev-mega .ev-orb i:nth-child(2){inset:-60px;border-top-color:#ff6fb1;border-bottom-color:#9dff7a;animation-duration:1.4s;animation-direction:reverse}
+.ev-mega .ev-orb i:nth-child(3){inset:-95px;border-width:2px;border-top-color:#fff;border-bottom-color:#c38bff;animation-duration:.8s}
+@keyframes evOrb{0%{opacity:0;transform:scale(.1)}20%{opacity:1;transform:scale(1)}80%{opacity:1;transform:scale(1.25)}100%{opacity:0;transform:scale(2.4)}}
+@keyframes evSpin{to{transform:rotate(360deg)}}
+.ev-mega .ev-rays{position:absolute;left:50%;top:46%;width:1400px;height:1400px;margin:-700px 0 0 -700px;border-radius:50%;background:repeating-conic-gradient(from 0deg,rgba(255,255,255,.22) 0 4deg,transparent 4deg 14deg);-webkit-mask:radial-gradient(circle,#000 0,#000 25%,transparent 60%);mask:radial-gradient(circle,#000 0,#000 25%,transparent 60%);opacity:0;animation:evRays 4.6s .3s both}
+@keyframes evRays{0%{opacity:0;transform:rotate(0)}15%{opacity:.6}50%{opacity:.35}55%{opacity:1}90%{opacity:.6}100%{opacity:0;transform:rotate(80deg)}}
+.ev-mega .ev-flash{animation:evFlash .55s 2.4s both}
+@keyframes evFlash{0%{opacity:0}25%{opacity:1}100%{opacity:0}}
+.ev-mega .ev-ring{position:absolute;left:50%;top:46%;width:200px;height:200px;margin:-100px 0 0 -100px;border-radius:50%;background:conic-gradient(#ff4d6a,#ffd84a,#6bff8f,#4ad2ff,#9b6bff,#ff4d6a);-webkit-mask:radial-gradient(circle,transparent 62%,#000 64%,#000 70%,transparent 72%);mask:radial-gradient(circle,transparent 62%,#000 64%,#000 70%,transparent 72%);opacity:0;animation:evRing 1.2s 2.5s ease-out both}
+.ev-mega .ev-ring.r2{animation-delay:2.75s}
+@keyframes evRing{0%{opacity:0;transform:scale(.6)}2%{opacity:1;transform:scale(.6)}100%{opacity:0;transform:scale(5)}}
+.ev-mega .ev-txt{animation:evTxt 2.2s 2.85s both}
+@keyframes evTxt{0%{opacity:0;transform:translateY(24px) scale(.9)}15%{opacity:1;transform:none}85%{opacity:1}100%{opacity:0}}
+.ev-mega .ev-t2{background:linear-gradient(90deg,#ff6fb1,#ffd84a,#7ad7ff,#c38bff);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 3px 0 #000) drop-shadow(0 0 12px rgba(0,0,0,.7))}
+/* 폼체인지 · 복귀 */
+.ev-form .ev-band{position:absolute;left:-10%;right:-10%;top:50%;height:calc(300px * var(--s));margin-top:calc(-170px * var(--s));transform:skewY(-5deg);background:linear-gradient(90deg,transparent,var(--ec) 18%,var(--ec) 82%,transparent);box-shadow:0 -5px 0 rgba(255,255,255,.9),0 5px 0 rgba(255,255,255,.9);opacity:0;animation:evBand 3.4s both}
+@keyframes evBand{0%{opacity:0;transform:skewY(-5deg) scaleY(0)}9%{opacity:.92;transform:skewY(-5deg) scaleY(1)}88%{opacity:.92;transform:skewY(-5deg) scaleY(1)}100%{opacity:0;transform:skewY(-5deg) scaleY(0)}}
+.ev-form .ev-mon{top:44%}
+.ev-form .ev-a{animation:evSil .3s .3s both,evFlipOut .3s .9s ease-in both}
+.ev-form .ev-b{transform:scaleX(0);filter:brightness(0) invert(1) drop-shadow(0 0 22px #fff);animation:evFlipIn .3s 1.2s ease-out both,evReveal2 .5s 1.55s both}
+@keyframes evFlipOut{to{transform:scaleX(0)}}
+@keyframes evFlipIn{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes evReveal2{from{filter:brightness(0) invert(1) drop-shadow(0 0 22px #fff)}to{filter:drop-shadow(0 0 14px rgba(255,255,255,.5))}}
+.ev-form .ev-spark{position:absolute;left:50%;top:44%;width:420px;height:420px;margin:-210px 0 0 -210px;border-radius:50%;background:radial-gradient(circle,#fff 0,rgba(255,255,255,.8) 20%,transparent 60%);opacity:0;animation:evSpark .6s 1.4s both}
+@keyframes evSpark{0%{opacity:0;transform:scale(.2)}30%{opacity:1}100%{opacity:0;transform:scale(1.6)}}
+.ev-form .ev-flash{animation:evFlash .35s 1.45s both}
+.ev-form .ev-flash{background:rgba(255,255,255,.7)}
+.ev-form .ev-txt{bottom:60px;animation:evTxt 1.7s 1.6s both}
+.ev-form .ev-t2{font-size:52px}

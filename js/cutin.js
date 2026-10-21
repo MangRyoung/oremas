@@ -3,6 +3,7 @@
    · vs(L,R)     : 시합 개시 VS 컷인
    · raid(opt)   : 경고(위험 등장) 연출
    · phase(text) : 페이즈 띠 (지시 준비 / 턴 개시 / 행동 순서 / 행동 처리 / 턴 종료)
+   · evo(D)      : 메가진화 · 폼체인지 · 폼 복귀 연출 ({kind:'mega'|'form'|'back', from:{name,img}, to:{name,img}, color})
    보내는 쪽은 바로 그리고 broadcast 로 같은 방의 모두에게 보낸다 (저장하지 않는다). */
 "use strict";
 window.OM_CUTIN=(()=>{
@@ -60,6 +61,22 @@ window.OM_CUTIN=(()=>{
  function phaseLocal(text,sub){const r=root('phov');r.className='phov';r.innerHTML=`<div class="phin"><div class="pht">${esc(text)}</div>${sub?`<div class="phs">${esc(sub)}</div>`:''}</div>`;setTimeout(()=>r.classList.add('out'),1800);setTimeout(()=>r.remove(),2300)}
  function phase(text,sub){phaseLocal(text,sub);DBS().broadcast({t:'cutin',k:'phase',text,sub})}
 
- function onEvent(p){if(!p||p.t!=='cutin')return;if(p.k==='fire'){se(p.se||'cut');if(p.c)showFire(p.c);else if(p.list)fireLocal(p.list)}else if(p.k==='vs'){se('cut');vsLocal(p)}else if(p.k==='raid'){se('cut');raidLocal(p.D)}else if(p.k==='phase')phaseLocal(p.text,p.sub)}
- return {preview,fire,vs,raid,phase,onEvent,fireLocal,vsLocal,raidLocal};
+ /* ----- 진화 연출: 메가진화(빛 고치 → 실루엣 깜빡임 → 번쩍 → 새 모습 + 무지개 고리) · 폼체인지(띠 위에서 실루엣이 돌며 바뀜) · 폼 복귀 ----- */
+ function evoLocal(D){D=D||{};if(String(cfg().on)==='0')return;const r=root('cut');r.className='cutov evo '+(D.kind==='mega'?'ev-mega':'ev-form');fit(r);
+  const im=(x,c)=>x&&x.img?`<img class="${c}" src="${esc(x.img)}" alt="">`:`<i class="${c} ev-ball"></i>`;const fr=D.from||{},to=D.to||{};const col=D.color||'#e3101f';
+  const title=D.kind==='mega'?'메가진화':D.kind==='back'?'원래 모습으로':(D.label||'폼체인지');
+  if(D.kind==='mega'){r.innerHTML=`<div class="full ev-dim"></div><div class="stage">
+    <div class="ev-rays"></div><div class="ev-orb"><i></i><i></i><i></i></div>
+    <div class="ev-mon">${im(fr,'ev-a')}${im(to,'ev-b')}</div>
+    <div class="ev-ring"></div><div class="ev-ring r2"></div>
+    <div class="ev-txt"><div class="ev-t1">${esc(fr.name||'')}의</div><div class="ev-t2">${esc(title)}!</div><div class="ev-t3">「${esc(to.name||'')}」</div></div></div><div class="full ev-flash"></div>`;
+   setTimeout(()=>r.remove(),5200)}
+  else{r.style.setProperty('--ec',col);r.innerHTML=`<div class="full ev-dim"></div><div class="ev-band"></div><div class="stage">
+    <div class="ev-mon">${im(fr,'ev-a')}${im(to,'ev-b')}</div><div class="ev-spark"></div>
+    <div class="ev-txt"><div class="ev-t2">${esc(title)}</div><div class="ev-t3">${esc(fr.name||'')} → 「${esc(to.name||'')}」</div></div></div><div class="full ev-flash"></div>`;
+   setTimeout(()=>r.remove(),3400)}}
+ function evo(D){evoLocal(D);se('cut');DBS().broadcast({t:'cutin',k:'evo',D})}
+
+ function onEvent(p){if(!p||p.t!=='cutin')return;if(p.k==='fire'){se(p.se||'cut');if(p.c)showFire(p.c);else if(p.list)fireLocal(p.list)}else if(p.k==='vs'){se('cut');vsLocal(p)}else if(p.k==='raid'){se('cut');raidLocal(p.D)}else if(p.k==='phase')phaseLocal(p.text,p.sub);else if(p.k==='evo'){se('cut');evoLocal(p.D)}}
+ return {preview,fire,vs,raid,phase,evo,evoLocal,onEvent,fireLocal,vsLocal,raidLocal};
 })();

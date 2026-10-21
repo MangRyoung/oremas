@@ -994,7 +994,9 @@ window.OM_BATTLE_UI=(()=>{
    if(f&&f.kind==='메가진화'&&usedMega&&!confirm('이 트레이너는 이번 배틀에서 이미 메가진화를 썼다. 그래도 할까?'))return;
    A().closeModal();const nb0=snap(),nb=snap(nb0);const x=nb.mons[mid];if(!x)return;x.forms=JSON.parse(JSON.stringify(forms));const L=formSet(x,k);if(f&&f.kind==='메가진화')x.megaUsed=true;
    if(!await saveBattle(nb0,nb))return;A().sysLog(`【${f?f.kind||'폼체인지':'폼 복귀'}】 ${L.join('\n')}`,'battle',{mid,img:x.image||''});
-   if(f)cutFire('m:'+mid,x.image,`${m.name}의 ${f.kind||'폼체인지'}!`,`→ 「${x.name}」`,x.side==='left'?'#1f6fd1':'#e3101f');
+   {const col=x.side==='left'?'#1f6fd1':'#e3101f';const kd=!f?'back':f.kind==='메가진화'?'mega':'form';
+    if(CUT()&&CUT().evo){try{CUT().evo({kind:kd,label:f?f.kind||'폼체인지':'',from:{name:m.name,img:m.image||''},to:{name:x.name,img:x.image||''},color:col})}catch(e){}}
+    else if(f)cutFire('m:'+mid,x.image,`${m.name}의 ${f.kind||'폼체인지'}!`,`→ 「${x.name}」`,col)}
    /* 새 특성의 등장·상시 구문은 바로 */
    const ab=ctx().b.mons[mid];if(f&&ab&&ab.ability&&ab.ability!==o.ability&&FX()){const a=FX().autoOf(ab,'trait',ab.ability);if(a&&a.ops&&a.ops.length&&!a.manual){const tm=FX().timing(a.text||'');if(tm.entry||tm.passive)await fireAuto(mid,'trait',ab.ability,{quiet:true,noRoll:!!tm.passive})}}
    {const cm=ctx().b.mons[mid];if(cm&&FX())for(const n of (cm.formNewPots||[])){const a=FX().autoOf(cm,'pot',n);if(!a||!a.ops||!a.ops.length||a.manual)continue;const tm=FX().timing(a.text||'');if(tm.entry||tm.passive)await fireAuto(mid,'pot',n,{quiet:true,noRoll:!!tm.passive})}}})}
