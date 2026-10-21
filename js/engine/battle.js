@@ -40,9 +40,8 @@ window.OM_BATTLE=(()=>{
    if(has(mon,'Paralysis'))spd*=(+C().campaign.value_paralysis||0.5);
    if(field.trick)spd*=-1;
    return {slot,mon,started:e.started?1:0,change:(e.cmd&&e.cmd.change)?1:0,order,prio,speed:spd,dice:d(opts,10000)}});
-  /* 맵툴 json.sort "d" = 내림차순. started 는 0 이 먼저 와야 하므로 뒤집어 저장 */
-  rows.forEach(r=>r._st=r.started?0:1);
-  rows.sort((a,b)=>(b._st-a._st)||(b.change-a.change)||(b.order-a.order)||(b.prio-a.prio)||(b.speed-a.speed)||(b.dice-a.dice));
+  /* 맵툴 json.sort "d" = 내림차순: started 1(턴 개시 때 필드에 있던 포켓몬)이 먼저, 턴 도중 등장(0, 「교대 등장」)은 뒤 */
+  rows.sort((a,b)=>(b.started-a.started)||(b.change-a.change)||(b.order-a.order)||(b.prio-a.prio)||(b.speed-a.speed)||(b.dice-a.dice));
   return rows}
 
  /* ----- 명중 (calculate_attack → attack_target_once) ----- */
