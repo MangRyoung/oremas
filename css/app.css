@@ -2729,3 +2729,8 @@ span.iedit{display:inline-block;min-width:3em}
 /* 10-24 망령: 무대 우상단 탭 접기 — ›/☰ 버튼, 접으면 화자 · 소리 · GM 콘솔(과 열린 지도 닫기)만 남는다 */
 .rpbtns.fold .rpt{display:none}
 .rpbtns .rpfoldb{padding-left:8px;padding-right:8px;min-width:0}
+
+/* 10-24 망령: 로비 내 방 이름 바꾸기 · 지우기 */
+.rooms li .rmb{padding:3px 8px;min-width:0}
+.rooms li .rmb+.rmb{margin-left:-6px}
+@media (max-width:760px){.rooms li{gap:6px}.rooms li b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}

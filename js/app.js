@@ -75,7 +75,7 @@ async function renderHome(){
   <div class="brand">오레마스 <small>망켓몬 배틀 · 세션 툴</small></div>
   <div class="card acct"><div class="row"><b class="anm">${esc(me.name)}</b><span class="mono small muted">@${esc(me.uid)}</span>${me.admin?'<span class="badge gm">관리자</span>':''}<span class="sp"></span>${me.admin?'<button class="btn sm pri" id="hmAdmin">계정 관리</button>':''}<button class="btn sm" id="hmMe">내 계정</button><button class="btn sm ghost" id="hmOut">로그아웃</button></div>
    <p class="small muted">${ACCT.kept()?'이 기기에서 로그인 유지 중 (30일 동안 안 들어오면 끝난다)':'창을 닫으면 로그아웃된다'}</p></div>
-  <div class="card"><h2>내 방</h2>${rooms.length?`<ul class="rooms">${rooms.map(r=>`<li><b>${esc(r.name||r.id)}</b><span class="badge ${r.role==='gm'?'gm':'seat'}">${r.role==='gm'?'GM':'PL'}</span>${r.role==='pl'&&!r.seat?'<span class="small muted">자리 아직</span>':''}<span class="sp"></span><a class="btn sm pri" href="#r=${esc(r.id)}">들어가기</a></li>`).join('')}</ul>`:'<div class="empty">아직 권한이 있는 방이 없다. 방 링크로 들어가 자리에 앉거나, 관리자에게 방 권한을 받으면 여기 생긴다.</div>'}</div>
+  <div class="card"><h2>내 방</h2>${rooms.length?`<ul class="rooms">${rooms.map(r=>`<li><b>${esc(r.name||r.id)}</b><span class="badge ${r.role==='gm'?'gm':'seat'}">${r.role==='gm'?'GM':'PL'}</span>${r.role==='pl'&&!r.seat?'<span class="small muted">자리 아직</span>':''}<span class="sp"></span>${r.role==='gm'?`<button class="btn sm ghost rmb" data-rmren="${esc(r.id)}" title="방 이름 바꾸기">✎</button><button class="btn sm ghost rmb" data-rmkill="${esc(r.id)}" title="방 지우기">🗑</button>`:''}<a class="btn sm pri" href="#r=${esc(r.id)}">들어가기</a></li>`).join('')}</ul>`:'<div class="empty">아직 권한이 있는 방이 없다. 방 링크로 들어가 자리에 앉거나, 관리자에게 방 권한을 받으면 여기 생긴다.</div>'}</div>
   <div class="card"><h2>방 만들기 (GM)</h2>
    <div class="row"><input type="text" id="newName" placeholder="방 이름 (예: 무진)" style="flex:1"><button class="btn pri" id="mk">만들기</button></div>
    <p class="small muted">만든 계정이 그 방의 GM 이 된다. 플레이어에게는 방 링크만 주면 된다 — 들어와서 로그인하고 자리에 앉는다.</p></div>
@@ -86,6 +86,14 @@ async function renderHome(){
  $('#hmOut').onclick=async e=>{e.preventDefault();if(!confirm('이 기기에서 로그아웃할까?'))return;try{await DBS().acct.logout(a.token)}catch(x){}ACCT.set(null);route()};
  $('#hmMe').onclick=()=>openMe(me);const ad=$('#hmAdmin');if(ad)ad.onclick=()=>openAdmin();
  app.querySelectorAll('[data-rmdel]').forEach(b=>b.onclick=e=>{e.preventDefault();const id=b.dataset.rmdel;if(!confirm('이 기기의 최근 방 목록에서 뺄까? (방은 그대로 있다)'))return;LS.set('om_rooms',LS.get('om_rooms',[]).filter(r=>r.id!==id));renderHome()});
+ /* 10-24 망령: 내 방 이름 바꾸기 · 지우기 (GM 인 방만) — 이름은 om_room_update, 지우기는 om_room_del */
+ const rmOf=id=>rooms.find(r=>r.id===id)||{};
+ app.querySelectorAll('[data-rmren]').forEach(b=>b.onclick=async()=>{const r=rmOf(b.dataset.rmren);const n=prompt('새 방 이름',r.name||'');if(n==null)return;const nm=n.trim();if(!nm)return toast('이름을 적어 줘');if(nm===r.name)return;
+  try{await DBS().roomUpdate(r.id,'u:'+a.token,nm,null);toast('방 이름을 바꿨다');renderHome()}catch(e){toast('이름을 못 바꿨다: '+acctErr(e))}});
+ app.querySelectorAll('[data-rmkill]').forEach(b=>b.onclick=async()=>{const r=rmOf(b.dataset.rmkill);const nm=r.name||r.id;
+  const typed=prompt(`「${nm}」 방을 지운다. 대화 기록 · 배틀 · 시트 · 좌석이 모두 사라지고 되돌릴 수 없다.\n지우려면 방 이름을 그대로 적어 줘.`,'');if(typed==null)return;if(typed.trim()!==nm)return toast('방 이름이 달라서 안 지웠다');
+  try{await DBS().roomDel(r.id,'u:'+a.token);LS.set('om_rooms',LS.get('om_rooms',[]).filter(x=>x.id!==r.id));toast(`「${nm}」 방을 지웠다`);renderHome()}
+  catch(e){const raw=String((e&&e.message)||e||'');toast(/om_room_del|PGRST202|Could not find the function|schema cache/i.test(raw)?'서버에 방 지우기 함수가 아직 없다 — supabase/patch_2026-10-24_방삭제.sql 을 SQL Editor 에서 실행해 줘':'못 지웠다: '+acctErr(e))}});
  $('#mk').onclick=async()=>{const name=$('#newName').value.trim()||'새 방';try{const id=await DBS().acct.roomNew(a.token,name);location.hash='r='+id}catch(e){toast('방을 만들지 못했다: '+acctErr(e))}};
  $('#join').onclick=()=>{const v=$('#joinId').value.trim();const m=v.match(/#?r=([a-z0-9]+)(?:&gm=([a-z0-9]+))?/)||[null,v];if(!m[1])return toast('방 id 를 넣어 줘');location.hash='r='+m[1]+(m[2]?'&gm='+m[2]:'')}}
 function openMe(me){
