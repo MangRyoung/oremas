@@ -224,7 +224,7 @@ window.OM_PHONE_UI=(()=>{
  /* ----- 묶기 ----- */
  function bind(md){const t=owner();
   md.querySelectorAll('[data-ph]').forEach(b=>b.onclick=async(e)=>{if(e&&e.stopPropagation)e.stopPropagation();const k=b.dataset.ph;if(!k)return;
-   if(['home','contacts','conf','cal','sms','notes','callog'].includes(k)){PH.screen=k;return re()}
+   if(['home','contacts','conf','cal','sms','notes','callog','set'].includes(k)){PH.screen=k;return re()}
    if(k==='caldel2'){const pd=phoneData(PH.tid);const log=Object.assign({},pd.log||{});log[b.dataset.d]=(log[b.dataset.d]||[]).filter((x,i)=>i!==+b.dataset.i);if(!log[b.dataset.d].length)delete log[b.dataset.d];await savePhone(PH.tid,{log});return re()}
    if(k==='noteadd'){PH.note='';PH.screen='note1';return re()}
    if(k==='note1'){PH.note=b.dataset.id;PH.screen='note1';return re()}
