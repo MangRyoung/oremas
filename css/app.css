@@ -2249,3 +2249,45 @@ span.iedit{display:inline-block;min-width:3em}
 .qbx i{font-style:normal;width:24px;height:24px;display:grid;place-items:center;background:rgba(0,0,0,.75);color:#fff;border:1px solid rgba(255,255,255,.35);border-radius:4px;font-size:12px;cursor:pointer}
 .qbx i:hover{background:var(--yel2);color:#000}.qbx i[data-e=del]:hover{background:var(--red);color:#fff}
 @media (hover:none){.qbx{opacity:1}}
+/* 지도 관리 · 장소/루트: 미니 지도 */
+.mmcols.mmloc{grid-template-columns:minmax(0,1.45fr) minmax(0,1fr)}
+.mmtools{display:flex;gap:6px;align-items:center;margin-bottom:6px;flex-wrap:wrap}
+.mmmap{position:relative;width:100%;background:#0e0e10 center/100% 100% no-repeat;border:1px solid var(--line2);border-radius:6px;overflow:hidden;user-select:none;touch-action:none}
+.mmmap.m-add{cursor:crosshair}.mmmap.m-add:hover{outline:2px dashed var(--yel2);outline-offset:-2px}
+.mmmap .routes{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.mmp{position:absolute;transform:translate(-50%,-50%);display:flex;align-items:center;gap:4px;cursor:pointer;z-index:2}
+.m-sel .mmp{cursor:grab}.mmp.drag{cursor:grabbing;z-index:5}
+.mmp b{width:24px;height:24px;border-radius:50%;background:var(--red);color:#fff;border:2px solid #fff;display:grid;place-items:center;font-size:11px;box-shadow:0 2px 6px rgba(0,0,0,.6);flex:none}
+.mmp span{position:absolute;left:28px;white-space:nowrap;font-size:11px;font-weight:700;color:#fff;background:rgba(0,0,0,.72);padding:1px 6px;border-radius:3px;pointer-events:none}
+.mmp em{position:absolute;top:-16px;left:50%;transform:translateX(-50%);font-style:normal;font-size:9px;font-weight:800;background:var(--yel2);color:#000;padding:0 4px;border-radius:3px}
+.mmp.hid b{background:#555;opacity:.75}.mmp.hid span{opacity:.6}
+.mmp.hl b{box-shadow:0 0 0 3px var(--yel2),0 2px 6px rgba(0,0,0,.6)}
+.m-route .mmp b{cursor:copy}.mmp.inseq b{background:var(--yel2);color:#000}
+.mmlocs{max-height:40vh;overflow:auto}
+.mmlocs .mml{gap:6px}.mmlocs .mml.hl{outline:2px solid var(--yel2);outline-offset:-2px}
+.mmname{flex:1;min-width:0;background:transparent!important;border:1px solid transparent!important;padding:3px 6px!important;font-weight:700}
+.mmname:hover{border-color:var(--line2)!important}.mmname:focus{background:#000!important;border-color:var(--yel2)!important}
+@media (max-width:760px){.mmcols.mmloc{grid-template-columns:1fr}}
+/* 화자 정리 창: 폴더 카드 보드 */
+.sgmodal{width:min(1180px,96vw)!important;max-width:none}
+.sgtool{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.sgtool input[type=search]{background:#000;border:1px solid var(--line2);color:var(--fg);padding:6px 10px;width:220px}
+.sgboard{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px;max-height:64vh;overflow:auto;align-items:start;padding:2px}
+.sgc{background:var(--panel);border:1px solid var(--line);border-radius:8px;display:flex;flex-direction:column;min-width:0;transition:border-color .12s,background .12s}
+.sgc.over{border-color:var(--yel2);background:#1d1b10}
+.sgh{display:flex;align-items:center;gap:6px;padding:7px 8px;border-bottom:1px solid var(--line);position:relative}
+.sgh b{font-size:13px}.sgh small{color:var(--mute);font-size:11px}.sgi{flex:none}
+.sgname{flex:1;min-width:0;background:transparent!important;border:1px solid transparent!important;padding:2px 6px!important;font-weight:800;font-size:13px}
+.sgname:hover{border-color:var(--line2)!important}.sgname:focus{background:#000!important;border-color:var(--yel2)!important}
+.sgmv{display:none;position:absolute;inset:0;align-items:center;justify-content:center;background:rgba(240,200,74,.92);color:#000;font-weight:800;font-size:12px;border-radius:8px 8px 0 0}
+.sgboard.moving .sgc{cursor:pointer}.sgboard.moving .sgc:hover{border-color:var(--yel2)}.sgboard.moving .sgc:hover .sgmv{display:flex}
+.sgl{display:flex;flex-direction:column;gap:3px;padding:6px;min-height:40px}
+.sge{font-size:11px;color:var(--mute);text-align:center;padding:8px 4px}
+.sgt{display:flex;align-items:center;gap:7px;padding:4px 6px;border-radius:6px;background:var(--bg2);border:1px solid transparent;cursor:grab;min-width:0}
+.sgt:hover{border-color:var(--line2)}.sgt.sel{border-color:var(--yel2);background:#2a2610}.sgt.dragging{opacity:.4}
+.sgt i{width:30px;height:30px;border-radius:50%;flex:none;background:#333 center top/cover no-repeat;display:grid;place-items:center;font-style:normal;font-size:12px;font-weight:800;color:#ddd}
+.sgn{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px;font-weight:600}
+.sgt small{font-size:10px;color:var(--mute);flex:none}
+.sgb{flex:none;width:24px;height:24px;border:1px solid var(--line);background:transparent;border-radius:4px;cursor:pointer;font-size:12px;color:var(--fg2);display:grid;place-items:center;padding:0}
+.sgb:hover{border-color:var(--fg2)}.sgb.del:hover{background:var(--red);color:#fff;border-color:var(--red)}
+.sgt.hid{opacity:.45}.sgt.hid .sgn{text-decoration:line-through}
+@media (max-width:760px){.sgboard{grid-template-columns:1fr;max-height:none}.sgtool input[type=search]{width:100%}}

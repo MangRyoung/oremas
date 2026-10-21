@@ -184,31 +184,45 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
      await saveSpk(C);return}
     if(z.dataset.fold&&dragFold&&z.dataset.fold!==dragFold){const a='f:'+dragFold,b='f:'+z.dataset.fold;C.order=C.order.filter(x=>x!==a);if(!C.order.includes(b))C.order.push(b);C.order.splice(C.order.indexOf(b),0,a);await saveSpk(C);return}
     if(z.classList.contains('spkbar')){if(dragKey){removeEverywhere(dragKey);if(zoneF&&C.folders[zoneF])C.folders[zoneF].keys.push(dragKey);else C.order.push(dragKey)}else{const fi='f:'+dragFold;C.order=C.order.filter(x=>x!==fi);C.order.push(fi)}await saveSpk(C)}}})}
- /* 화자 정리 창 */
+ /* 화자 정리 창: 폴더마다 카드 하나 — 칩을 끌어 다른 카드에 놓거나, 칩을 누른 뒤 옮길 카드를 누른다. 폴더 이름은 그 자리에서 고친다 */
+ const SM={q:'',pm:true,sel:'',top:0};
  function openSpkMgr(){const C=spkConf();const sp=allSpeakers().filter(x=>x.key!=='gm');const fOf=k=>Object.keys(C.folders).find(id=>(C.folders[id].keys||[]).includes(k))||'';
+  const byKey={};sp.forEach(x=>byKey[x.key]=x);if(SM.sel&&!byKey[SM.sel])SM.sel='';
+  const KIND={pc:'PC',pm:'포켓몬',npc:'인물'};
+  const tile=x=>{const c=charOf(x.key);const av=c?(standSrc(c)||c.img):'';const h=!!C.hidden[x.key];
+   return `<div class="sgt ${h?'hid':''} ${SM.sel===x.key?'sel':''}" draggable="true" data-key="${esc(x.key)}" data-kind="${esc(x.kind||'')}" data-q="${esc((x.name||'').toLowerCase())}" title="${esc(x.name)}"><i style="${av?`background-image:url('${cssu(av)}')`:''}">${av?'':esc([...(x.name||'?')][0]||'?')}</i><span class="sgn">${esc(x.name.replace(/ \(PC\)$/,''))}</span><small>${KIND[x.kind]||''}</small><button class="sgb" data-eye="${esc(x.key)}" title="${h?'숨김 — 눌러서 화자 칸에 보이기':'화자 칸에 보임 — 눌러서 숨기기'}">${h?'🙈':'👁'}</button>${x.kind==='npc'?`<button class="sgb del" data-ndel="${esc(x.key)}" title="이 인물을 없앤다 — 관계도에서도 빠진다">×</button>`:''}</div>`};
+  const fids=[...C.order.filter(o=>o.startsWith('f:')).map(o=>o.slice(2)).filter(id=>C.folders[id]),...Object.keys(C.folders).filter(id=>!C.order.includes('f:'+id))];
+  const outside=sp.filter(x=>!fOf(x.key));
+  const card=(id,title,list)=>`<div class="sgc" data-drop="${id}"><div class="sgh">${id?`<span class="sgi">📁</span><input type="text" class="sgname" data-fren="${id}" value="${esc(title)}" title="고치면 바로 저장"><small>${list.length}</small><button class="btn xs ghost danger" data-fdel="${id}" title="폴더만 없애고 안의 칩은 바깥으로">풀기</button>`:`<span class="sgi">◇</span><b>${title}</b><small>${list.length}</small>`}<span class="sgmv">여기로 옮기기</span></div><div class="sgl">${list.map(tile).join('')||'<div class="sge">비어 있다 — 칩을 끌어 놓아 줘</div>'}</div></div>`;
   const md=A().openModal(`<div class="mhead"><h2>화자 정리</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-   <div class="small dim" style="margin-bottom:8px">무대 아래 칩을 끌어서 순서를 바꾸고, 폴더 칩이나 「＋📁」에 놓으면 폴더에 들어간다. 여기서는 숨기기와 폴더 이름을 다룬다. 「＋ 인물」로 넣은 인물은 「지우기」로 없앤다(관계도에서도 빠진다) — PC·포켓몬은 캐릭터 시트에서 지운다.</div>
-   <div class="sec">폴더 <span class="note">${Object.keys(C.folders).length}</span><span class="sp"></span><button class="btn xs" data-sm="fadd">＋ 폴더</button><button class="btn xs ghost" data-sm="fauto" title="아직 폴더에 없는 트레이너·포켓몬을 트레이너 이름 폴더로 묶는다 (손으로 넣은 건 그대로)">트레이너별로 묶기</button></div>
-   ${Object.entries(C.folders).map(([id,f])=>`<div class="mml"><span class="nm">📁 <b>${esc(f.name)}</b> <small class="dim">${(f.keys||[]).length}명</small></span><button class="btn xs ghost" data-sm="fren" data-id="${id}">이름</button><button class="btn xs ghost danger" data-sm="fdel" data-id="${id}" title="폴더만 없애고 안의 인물은 밖으로">폴더 풀기</button></div>`).join('')||'<div class="empty small">폴더가 없다</div>'}
-   <div class="sec" style="margin-top:10px">인물 · 포켓몬 <span class="note">${sp.length}</span><span class="sp"></span><label class="small"><input type="checkbox" id="smq_pm" checked> 포켓몬 보이기</label></div>
-   <div class="mmlist" style="max-height:44vh;overflow:auto">${sp.map(x=>{const c=charOf(x.key);const av=c?(standSrc(c)||c.img):'';const f=fOf(x.key);return `<div class="mml ${C.hidden[x.key]?'hid':''}" data-smk="${esc(x.kind||'')}"><i class="tpic sm" style="${av?`background-image:url('${cssu(av)}')`:''}"></i><span class="nm">${esc(x.name)}${f?` <small class="dim">📁 ${esc(C.folders[f].name)}</small>`:''}</span><select data-sm="fmove" data-k="${esc(x.key)}"><option value="">(바깥)</option>${Object.entries(C.folders).map(([id,ff])=>`<option value="${id}" ${f===id?'selected':''}>${esc(ff.name)}</option>`).join('')}</select><button class="btn xs ${C.hidden[x.key]?'pri':'ghost'}" data-sm="hide" data-k="${esc(x.key)}">${C.hidden[x.key]?'보이기':'숨기기'}</button>${x.kind==='npc'?`<button class="btn xs ghost danger" data-sm="ndel" data-k="${esc(x.key)}" title="이 인물을 없앤다 — 관계도에서도 빠진다">지우기</button>`:`<span class="btn xs ghost" style="visibility:hidden" aria-hidden="true">지우기</span>`}</div>`}).join('')}</div>`);
-  md.classList.add('wide');const re=()=>{A().closeModal();openSpkMgr()};
-  const pmck=$('#smq_pm',md);pmck.onchange=()=>md.querySelectorAll('[data-smk="pm"]').forEach(r=>r.style.display=pmck.checked?'':'none');
-  md.querySelectorAll('[data-sm]').forEach(b=>{const h=async()=>{const k=b.dataset.sm;const C=spkConf();
+   <div class="sgtool"><input type="search" id="sg_q" placeholder="이름으로 찾기" value="${esc(SM.q)}"><label class="small"><input type="checkbox" id="sg_pm" ${SM.pm?'checked':''}> 포켓몬 보이기</label><span class="sp"></span><button class="btn sm" data-smk="fadd">＋ 폴더</button><button class="btn sm ghost" data-smk="fauto" title="아직 폴더에 없는 트레이너·포켓몬을 트레이너 이름 폴더로 묶는다 (손으로 넣은 건 그대로)">트레이너별로 묶기</button></div>
+   <div class="small dim" style="margin:4px 0 8px">칩을 끌어 다른 칸에 놓거나, 칩을 누르고 옮길 칸을 누른다. 👁 은 화자 칸에 보이기/숨기기. 「＋ 인물」로 넣은 인물만 × 로 지운다 — PC·포켓몬은 캐릭터 시트에서.</div>
+   <div class="sgboard ${SM.sel?'moving':''}" id="sg_b">${card('','바깥 (폴더 없음)',outside)}${fids.map(id=>card(id,C.folders[id].name,(C.folders[id].keys||[]).map(k=>byKey[k]).filter(Boolean))).join('')}</div>`);
+  md.classList.add('wide','sgmodal');const bd=$('#sg_b',md);bd.scrollTop=SM.top||0;
+  const re=()=>{SM.top=bd.scrollTop;A().closeModal();openSpkMgr()};
+  const filt=()=>{const q=SM.q.trim().toLowerCase();md.querySelectorAll('.sgt').forEach(t=>{t.style.display=(!SM.pm&&t.dataset.kind==='pm')||(q&&!t.dataset.q.includes(q))?'none':''})};filt();
+  const qi=$('#sg_q',md);qi.oninput=()=>{SM.q=qi.value;filt()};$('#sg_pm',md).onchange=e=>{SM.pm=e.target.checked;filt()};
+  const move=async(key,fid)=>{const C=spkConf();if((fOf(key)||'')===(fid||''))return;C.order=C.order.filter(x=>x!==key);for(const f of Object.values(C.folders))f.keys=(f.keys||[]).filter(x=>x!==key);if(fid&&C.folders[fid])C.folders[fid].keys.push(key);else C.order.push(key);await saveSpk(C)};
+  md.querySelectorAll('.sgt').forEach(t=>{t.addEventListener('dragstart',e=>{e.dataTransfer.setData('text/om-spk',t.dataset.key);e.dataTransfer.effectAllowed='move';t.classList.add('dragging')});t.addEventListener('dragend',()=>t.classList.remove('dragging'));
+   t.onclick=e=>{if(e.target.closest('button'))return;e.stopPropagation();SM.sel=SM.sel===t.dataset.key?'':t.dataset.key;md.querySelectorAll('.sgt').forEach(x=>x.classList.toggle('sel',x.dataset.key===SM.sel));bd.classList.toggle('moving',!!SM.sel)}});
+  md.querySelectorAll('.sgc').forEach(cd=>{let d=0;const isSpk=e=>[...e.dataTransfer.types].includes('text/om-spk');
+   cd.addEventListener('dragenter',e=>{if(!isSpk(e))return;e.preventDefault();d++;cd.classList.add('over')});cd.addEventListener('dragover',e=>{if(isSpk(e)){e.preventDefault();e.dataTransfer.dropEffect='move'}});
+   cd.addEventListener('dragleave',()=>{if(--d<=0){d=0;cd.classList.remove('over')}});
+   cd.addEventListener('drop',async e=>{if(!isSpk(e))return;e.preventDefault();d=0;cd.classList.remove('over');await move(e.dataTransfer.getData('text/om-spk'),cd.dataset.drop);re()});
+   cd.onclick=async e=>{if(!SM.sel||e.target.closest('.sgt,button,input'))return;const k=SM.sel;SM.sel='';await move(k,cd.dataset.drop);re()}});
+  md.querySelectorAll('[data-eye]').forEach(b=>b.onclick=async e=>{e.stopPropagation();const C=spkConf();const key=b.dataset.eye;if(C.hidden[key])delete C.hidden[key];else C.hidden[key]=1;await saveSpk(C);re()});
+  md.querySelectorAll('[data-fren]').forEach(inp=>{inp.onchange=async()=>{const C=spkConf();const f=C.folders[inp.dataset.fren];if(!f||!inp.value.trim())return;f.name=inp.value.trim();await saveSpk(C)};inp.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)inp.blur()}});
+  md.querySelectorAll('[data-fdel]').forEach(b=>b.onclick=async e=>{e.stopPropagation();const C=spkConf();const id=b.dataset.fdel;const f=C.folders[id];if(!f||!confirm(`「${f.name}」 폴더를 풀까? (안의 칩은 바깥으로)`))return;C.order=C.order.filter(x=>x!=='f:'+id);C.order.push(...(f.keys||[]));delete C.folders[id];if(SPK.folder===id)SPK.folder='';await saveSpk(C);re()});
+  md.querySelectorAll('[data-ndel]').forEach(b=>b.onclick=async e=>{e.stopPropagation();const key=b.dataset.ndel;const name=key.slice(4);const g=A().ST.state.graph||{};const ids=Object.keys(g.nodes||{}).filter(id=>(g.nodes[id]||{}).name===name&&g.nodes[id].kind!=='org');if(!ids.length)return A().toast('지울 인물을 찾지 못했다');
+   const lines=Object.entries(g.edges||{}).filter(([,ed])=>ids.includes(ed.a)||ids.includes(ed.b));
+   if(!confirm(`「${name}」 인물을 지울까?${ids.length>1?` (같은 이름 ${ids.length}명 모두)`:''}\n관계도에서도 빠지고${lines.length?` 이어진 선 ${lines.length}개도 지워진다`:''}. 되돌릴 수 없다.`))return;
+   for(const [eid] of lines)await A().set(['graph','edges',eid],null);
+   for(const id of ids)await A().set(['graph','nodes',id],null);
+   const C=spkConf();C.order=C.order.filter(x=>x!==key);for(const f of Object.values(C.folders))f.keys=(f.keys||[]).filter(x=>x!==key);delete C.hidden[key];await saveSpk(C);
+   if(SPK.key===key)SPK.key='gm';A().toast(`${name} 를 지웠다`);re()});
+  md.querySelectorAll('[data-smk]').forEach(b=>b.onclick=async()=>{const k=b.dataset.smk;const C=spkConf();
    if(k==='fauto'){const n=await autoFolderAll();A().toast(n?`${n}개를 트레이너 폴더로 묶었다`:'묶을 칩이 없다');return re()}
-   if(k==='fadd'){const name=prompt('폴더 이름','새 폴더');if(name==null)return;const id='f'+Date.now().toString(36);C.folders[id]={name:name.trim()||'폴더',keys:[]};C.order.push('f:'+id);await saveSpk(C);return re()}
-   if(k==='fren'){const f=C.folders[b.dataset.id];const name=prompt('폴더 이름',f.name);if(name==null||!name.trim())return;f.name=name.trim();await saveSpk(C);return re()}
-   if(k==='fdel'){const f=C.folders[b.dataset.id];if(!confirm(`「${f.name}」 폴더를 풀까? (안의 인물은 바깥으로)`))return;C.order=C.order.filter(x=>x!=='f:'+b.dataset.id);C.order.push(...(f.keys||[]));delete C.folders[b.dataset.id];if(SPK.folder===b.dataset.id)SPK.folder='';await saveSpk(C);return re()}
-   if(k==='hide'){const key=b.dataset.k;if(C.hidden[key])delete C.hidden[key];else C.hidden[key]=1;await saveSpk(C);return re()}
-   if(k==='ndel'){const key=b.dataset.k;const name=key.slice(4);const g=A().ST.state.graph||{};const ids=Object.keys(g.nodes||{}).filter(id=>(g.nodes[id]||{}).name===name&&g.nodes[id].kind!=='org');if(!ids.length)return A().toast('지울 인물을 찾지 못했다');
-    const lines=Object.entries(g.edges||{}).filter(([,e])=>ids.includes(e.a)||ids.includes(e.b));
-    if(!confirm(`「${name}」 인물을 지울까?${ids.length>1?` (같은 이름 ${ids.length}명 모두)`:''}\n관계도에서도 빠지고${lines.length?` 이어진 선 ${lines.length}개도 지워진다`:''}. 되돌릴 수 없다.`))return;
-    for(const [eid] of lines)await A().set(['graph','edges',eid],null);
-    for(const id of ids)await A().set(['graph','nodes',id],null);
-    C.order=C.order.filter(x=>x!==key);for(const f of Object.values(C.folders))f.keys=(f.keys||[]).filter(x=>x!==key);delete C.hidden[key];await saveSpk(C);
-    if(SPK.key===key)SPK.key='gm';A().toast(`${name} 를 지웠다`);return re()}
-   if(k==='fmove'){const key=b.dataset.k;C.order=C.order.filter(x=>x!==key);for(const f of Object.values(C.folders))f.keys=(f.keys||[]).filter(x=>x!==key);if(b.value&&C.folders[b.value])C.folders[b.value].keys.push(key);else C.order.push(key);await saveSpk(C);return re()}};
-   if(b.tagName==='SELECT')b.onchange=h;else b.onclick=h})}
+   if(k==='fadd'){const name=prompt('폴더 이름','새 폴더');if(name==null)return;const id='f'+Date.now().toString(36);C.folders[id]={name:name.trim()||'폴더',keys:[]};C.order.push('f:'+id);await saveSpk(C);return re()}})}
  function openGmImg(){const cur=gmImg();
   const md=A().openModal(`<div class="mhead"><h2>GM 그림</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small muted">화자 칸의 GM 칩과 GM 이 쓴 로그 줄의 아바타로 쓴다.</p>
    <div class="row" style="gap:14px;align-items:stretch;flex-wrap:nowrap"><i class="gmimgpv" style="${cur?`background-image:url('${cssu(cur)}')`:''}"></i><div style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:0">${dzHtml('gi_dz')}
@@ -351,19 +365,25 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   $('#lfocus',md).onclick=async()=>{A().closeModal();await A().set(['rp','caption'],{name:'장소',text:l.name,at:Date.now(),fixed:false})};
   $('#lmgr',md).onclick=()=>openMapMgr('loc')}
  /* 지도 관리 창 (맵툴 Lib:map 의 두 탭) */
- const MM={tab:'loc',seq:[],col:'red',rname:'',pin:false};
+ const MM={tab:'loc',seq:[],col:'red',rname:'',pin:false,mode:'sel',hl:0};
  function openMapMgr(tab){if(tab)MM.tab=tab;const M=mapS();const ST=A().ST;const locName=n=>(M.locs.find(x=>x.n===n)||{}).name||'';
-  const locTab=`<div class="mmcols"><div><div class="sec">장소 공개 / 가리기 <span class="sp"></span><button class="btn xs ${M.ann?'pri':'ghost'}" data-mm="ann">채팅 알림 ${M.ann?'켬':'끔'}</button></div>
-    <div class="row small" style="margin-bottom:6px"><button class="btn xs" data-mm="all" data-v="0">모두 공개</button><button class="btn xs" data-mm="all" data-v="1">모두 가리기</button><span class="dim">가린 장소는 지도에서 「?」로 덮인다</span></div>
-    <div class="mmlist">${M.locs.map(l=>{const h=M.vis[l.n]==1;return `<div class="mml ${h?'hid':''}"><span class="no">${l.n}</span><span class="nm">${esc(l.name)}${M.party.n===l.n?' <span class="tag me">파티</span>':''}</span><span class="chip ${h?'':'on'}">${h?'가림':'공개'}</span><button class="btn xs ${h?'pri':''}" data-mm="t" data-n="${l.n}">${h?'공개':'가리기'}</button><button class="btn xs ghost" data-mm="ren" data-n="${l.n}">이름</button><button class="btn xs ghost danger" data-mm="del" data-n="${l.n}">×</button></div>`}).join('')}</div>
-    <div class="row" style="margin-top:8px"><input type="text" id="mm_new" placeholder="새 장소 이름" style="flex:1"><input type="number" class="n" id="mm_x" placeholder="x" value="900"><input type="number" class="n" id="mm_y" placeholder="y" value="650"><button class="btn sm" data-mm="add">추가</button></div><div class="small dim">좌표는 지도 그림 기준 (0~${MAP_IMG.w}, 0~${MAP_IMG.h})</div></div>
-   <div><div class="sec">루트 그리기</div><div class="small dim">지나갈 순서대로 번호를 누른다 (예: 5 → 7 → 8)</div>
-    <div class="picks">${M.locs.map(l=>`<button class="pk" data-mm="seq" data-n="${l.n}" title="${esc(l.name)}">${l.n}</button>`).join('')}</div>
-    <div class="seq">${MM.seq.length?MM.seq.map((n,i)=>`${i?' → ':''}<b>${n}</b> ${esc(locName(n))}`).join(''):'<span class="dim small">아직 고른 장소가 없다</span>'}</div>
-    <div class="row"><button class="btn xs ghost" data-mm="undo">하나 빼기</button><button class="btn xs ghost" data-mm="clr">비우기</button><span class="sp"></span>${Object.entries(RCOL).map(([k,c])=>`<span class="sw ${MM.col===k?'on':''}" data-mm="col" data-c="${k}" style="background:${c}"></span>`).join('')}</div>
+  /* 장소 · 루트: 왼쪽 미니 지도에서 바로 — 「선택」은 핀을 끌어 옮기고 누르면 목록에서 찾아 준다, 「＋ 장소 찍기」는 누른 자리에 새 장소, 「루트 그리기」는 핀을 차례로 누른다 */
+  const W0=(M.img||{}).w||1000,H0=(M.img||{}).h||700;const pc=(x,y)=>`left:${x/W0*100}%;top:${y/H0*100}%`;
+  const seqPath=MM.seq.map(n=>M.locs.find(x=>x.n===n)).filter(Boolean);
+  const mini=M.img?`<div class="mmtools"><button class="btn xs ${MM.mode==='sel'?'pri':'ghost'}" data-mm="mode" data-v="sel">✥ 선택 · 옮기기</button><button class="btn xs ${MM.mode==='add'?'pri':'ghost'}" data-mm="mode" data-v="add">＋ 장소 찍기</button><button class="btn xs ${MM.mode==='route'?'pri':'ghost'}" data-mm="mode" data-v="route">〰 루트 그리기</button>${MM.mode==='add'?`<input type="text" id="mm_new" placeholder="새 장소 이름 (비우면 「장소 N」)" style="flex:1;min-width:120px">`:''}</div>
+    <div class="mmmap m-${MM.mode}" id="mm_map" style="aspect-ratio:${W0}/${H0};background-image:url('${cssu(M.img.src)}')">
+     <svg class="routes" viewBox="0 0 ${W0} ${H0}" preserveAspectRatio="none">${M.routes.map(rt=>{const pts=rt.seq.map(n=>M.locs.find(x=>x.n===n)).filter(Boolean);if(pts.length<2)return '';return `<path d="${pts.map((p,i)=>(i?'L':'M')+p.x+' '+p.y).join(' ')}" stroke="${RCOL[rt.color]||'#d63f4f'}" stroke-width="${W0/180}" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="${rt.vis?.85:.3}"/>`}).join('')}${seqPath.length>1?`<path d="${seqPath.map((p,i)=>(i?'L':'M')+p.x+' '+p.y).join(' ')}" stroke="${RCOL[MM.col]||'#d63f4f'}" stroke-width="${W0/150}" stroke-dasharray="${W0/60} ${W0/90}" fill="none" stroke-linecap="round"/>`:''}</svg>
+     ${M.locs.map(l=>{const h=M.vis[l.n]==1;const si=MM.seq.indexOf(l.n);return `<div class="mmp ${h?'hid':''} ${MM.hl===l.n?'hl':''} ${si>=0?'inseq':''}" data-pin="${l.n}" style="${pc(l.x,l.y)}" title="${esc(l.name)}${h?' (가림)':''}"><b>${l.n}</b><span>${esc(l.name)}</span>${M.party.n===l.n?'<em>PC</em>':''}</div>`}).join('')}
+    </div><div class="small dim" style="margin-top:4px">${MM.mode==='add'?'지도를 누르면 그 자리에 장소가 생긴다 (이름은 위 칸, 여러 번 연달아 찍을 수 있다)':MM.mode==='route'?'지나갈 순서대로 핀을 누른다 → 오른쪽에서 이름·색을 고르고 「루트 그리기」':'핀을 끌면 자리가 옮겨지고, 누르면 오른쪽 목록에서 그 장소를 찾아 준다. 흐린 핀은 가린 장소'}</div>`
+   :`<div class="mapprev big"><span class="dim">지도 그림이 없다 — 「지도 그림」 탭에서 먼저 올려 줘</span></div>`;
+  const locTab=`<div class="mmcols mmloc"><div>${mini}</div>
+   <div><div class="sec">장소 <span class="note">${M.locs.filter(l=>M.vis[l.n]!=1).length}/${M.locs.length} 공개</span><span class="sp"></span><button class="btn xs" data-mm="all" data-v="0">모두 공개</button><button class="btn xs ghost" data-mm="all" data-v="1">모두 가리기</button><button class="btn xs ${M.ann?'pri':'ghost'}" data-mm="ann" title="공개·가림·루트를 채팅에 알린다">알림 ${M.ann?'켬':'끔'}</button></div>
+    <div class="mmlist mmlocs">${M.locs.map(l=>{const h=M.vis[l.n]==1;return `<div class="mml ${h?'hid':''} ${MM.hl===l.n?'hl':''}" data-row="${l.n}"><span class="no">${l.n}</span><input type="text" class="mmname" data-mmren="${l.n}" value="${esc(l.name)}" title="고치면 바로 저장">${M.party.n===l.n?'<span class="tag me">파티</span>':''}<button class="btn xs ${h?'pri':'ghost'}" data-mm="t" data-n="${l.n}" title="${h?'지금 가림 — 눌러서 공개':'지금 공개 — 눌러서 가리기'}">${h?'🙈 가림':'👁 공개'}</button><button class="btn xs ghost danger" data-mm="del" data-n="${l.n}">×</button></div>`}).join('')||'<div class="empty small">장소가 없다 — 왼쪽에서 「＋ 장소 찍기」</div>'}</div>
+    <div class="sec" style="margin-top:12px">루트 <span class="sp"></span>${M.routes.length?'<button class="btn xs ghost danger" data-mm="wipe">모두 지우기</button>':''}</div>
+    <div class="seq">${MM.seq.length?MM.seq.map((n,i)=>`${i?' → ':''}<b>${n}</b> ${esc(locName(n))}`).join(''):`<span class="dim small">${MM.mode==='route'?'지도에서 핀을 차례로 눌러 줘':'「〰 루트 그리기」를 켜고 핀을 차례로 누른다'}</span>`}</div>
+    <div class="row"><button class="btn xs ghost" data-mm="undo" ${MM.seq.length?'':'disabled'}>하나 빼기</button><button class="btn xs ghost" data-mm="clr" ${MM.seq.length?'':'disabled'}>비우기</button><span class="sp"></span>${Object.entries(RCOL).map(([k,c])=>`<span class="sw ${MM.col===k?'on':''}" data-mm="col" data-c="${k}" style="background:${c}"></span>`).join('')}</div>
     <div class="row"><input type="text" id="mm_rname" placeholder="루트 이름 (비우면 번호 순서)" value="${esc(MM.rname)}" style="flex:1"><button class="btn sm pri" data-mm="draw" ${MM.seq.length<2?'disabled':''}>루트 그리기</button></div>
-    <div class="sec" style="margin-top:10px">그려진 루트 <span class="sp"></span>${M.routes.length?'<button class="btn xs ghost danger" data-mm="wipe">모두 지우기</button>':''}</div>
-    ${M.routes.length?M.routes.map((r,i)=>`<div class="mml ${r.vis?'':'hid'}"><i class="sw" style="background:${RCOL[r.color]||'#888'}"></i><span class="nm">${esc(r.name||'')}<small class="dim"> ${r.seq.map(n=>n+'.'+locName(n)).join(' → ')}</small></span><button class="btn xs" data-mm="rvis" data-i="${i}">${r.vis?'숨기기':'보이기'}</button><button class="btn xs ghost danger" data-mm="rdel" data-i="${i}">×</button></div>`).join(''):'<div class="empty small">그려진 루트가 없다</div>'}</div></div>`;
+    ${M.routes.map((r,i)=>`<div class="mml ${r.vis?'':'hid'}"><i class="sw" style="background:${RCOL[r.color]||'#888'}"></i><span class="nm">${esc(r.name||'')}<small class="dim"> ${r.seq.map(n=>n+'.'+locName(n)).join(' → ')}</small></span><button class="btn xs ghost" data-mm="rvis" data-i="${i}">${r.vis?'숨기기':'보이기'}</button><button class="btn xs ghost danger" data-mm="rdel" data-i="${i}">×</button></div>`).join('')}</div></div>`;
   const pics=[...Object.values((ST.state.graph||{}).nodes||{}).map(n=>({name:n.name,img:A().portraitOf(n.name,n.img)})),...Object.values((ST.state.roster||{}).trainers||{}).map(t=>({name:t.name,img:t.image||''})),...Object.values((ST.state.roster||{}).mons||{}).map(m=>({name:m.name,img:m.image||''}))].filter((p,i,a)=>a.findIndex(q=>q.name===p.name)===i);
   const pcTab=`<div class="mmcols"><div><div class="sec">파티 현재 위치</div>
     <div class="partycard"><div class="ppin static"><span>PC</span></div><div style="flex:1"><small class="dim">지금 있는 곳</small><br><b>${M.party.n?M.party.n+'. '+esc(locName(M.party.n)):'—'}</b> ${M.party.vis?'<span class="chip on">플레이어에게 보임</span>':'<span class="chip">핀 숨김 (GM만)</span>'}</div><button class="btn sm ${M.party.vis?'':'pri'}" data-mm="pvis">${M.party.vis?'핀 숨기기':'핀 보이기'}</button></div>
@@ -389,8 +409,23 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   const applyImg=async src=>{A().toast('그림 크기를 재는 중…');const im=new Image();im.onload=async()=>{const nw=im.naturalWidth||1000,nh=im.naturalHeight||700;const ow=(M.img||{}).w,oh=(M.img||{}).h;let locs=M.locs;if(ow&&oh&&(ow!==nw||oh!==nh))locs=locs.map(l=>Object.assign({},l,{x:Math.round(l.x/ow*nw),y:Math.round(l.y/oh*nh)}));await saveMap({img:{src,w:nw,h:nh},preset:'',locs});const H=[...(M.img&&M.img.src&&M.img.src!==src?[M.img]:[]),...((R().mapHist)||[])].filter((h,i,arr)=>h&&h.src&&h.src!==src&&arr.findIndex(x=>x.src===h.src)===i).slice(0,8);await A().set(['rp','mapHist'],H);A().toast('지도를 바꿨다');openMapMgr('img')};im.onerror=()=>A().toast('그림을 불러오지 못했다');im.src=src};
   if($('#mm_dz',md))bindDz(md,'#mm_dz',async fs=>{await applyImg(await upImg(fs[0],'map'))});
   md.classList.add('wide');
+  const re=()=>openMapMgr();
+  if(MM.tab==='loc'){const mp=$('#mm_map',md);
+   md.querySelectorAll('[data-mmren]').forEach(inp=>inp.onchange=async()=>{const n=+inp.dataset.mmren;const v=inp.value.trim();if(!v)return;const M2=mapS();await saveMap({locs:M2.locs.map(x=>x.n===n?Object.assign({},x,{name:v}):x)})});
+   const hl=n=>{MM.hl=n;md.querySelectorAll('[data-row]').forEach(r=>r.classList.toggle('hl',+r.dataset.row===n));md.querySelectorAll('[data-pin]').forEach(p=>p.classList.toggle('hl',+p.dataset.pin===n));const r=md.querySelector(`[data-row="${n}"]`);if(r)r.scrollIntoView({block:'nearest'})};
+   md.querySelectorAll('[data-row]').forEach(r=>r.onclick=e=>{if(e.target.closest('button,input'))return;hl(+r.dataset.row)});
+   if(mp){const at=e=>{const rc=mp.getBoundingClientRect();return {x:Math.round(Math.max(0,Math.min(1,(e.clientX-rc.left)/rc.width))*W0),y:Math.round(Math.max(0,Math.min(1,(e.clientY-rc.top)/rc.height))*H0)}};
+    mp.addEventListener('click',async e=>{if(MM.mode!=='add'||e.target.closest('[data-pin]'))return;const p=at(e);const M2=mapS();const n=Math.max(0,...M2.locs.map(x=>x.n))+1;const ni=$('#mm_new',md);const name=(ni&&ni.value.trim())||'장소 '+n;
+     await saveMap({locs:[...M2.locs,{n,name,x:p.x,y:p.y}]});MM.hl=n;A().toast(`${n}. ${name} 추가`);re()});
+    mp.querySelectorAll('[data-pin]').forEach(pin=>{const n=+pin.dataset.pin;
+     pin.addEventListener('pointerdown',e=>{if(MM.mode==='route'){e.preventDefault();if(MM.seq[MM.seq.length-1]!==n)MM.seq.push(n);const rn=$('#mm_rname',md);if(rn)MM.rname=rn.value;return re()}
+      if(MM.mode!=='sel')return;e.preventDefault();pin.setPointerCapture(e.pointerId);const sx=e.clientX,sy=e.clientY;let moved=false;
+      const mv=ev=>{if(!moved&&Math.hypot(ev.clientX-sx,ev.clientY-sy)<4)return;moved=true;const p=at(ev);pin.style.left=p.x/W0*100+'%';pin.style.top=p.y/H0*100+'%';pin.classList.add('drag')};
+      const up=async ev=>{pin.removeEventListener('pointermove',mv);pin.removeEventListener('pointerup',up);pin.classList.remove('drag');if(!moved)return hl(n);const p=at(ev);const M2=mapS();await saveMap({locs:M2.locs.map(x=>x.n===n?Object.assign({},x,{x:p.x,y:p.y}):x)});re()};
+      pin.addEventListener('pointermove',mv);pin.addEventListener('pointerup',up)})})}}
   md.querySelectorAll('[data-mm]').forEach(b=>{const h=async()=>{const k=b.dataset.mm;const re=()=>openMapMgr();
    if(k==='tab'){MM.tab=b.dataset.t;return re()}
+   if(k==='mode'){MM.mode=b.dataset.v;const rn=$('#mm_rname',md);if(rn)MM.rname=rn.value;return re()}
    if(k==='url'){const u=$('#mm_url',md).value.trim();if(!u)return;return applyImg(u)}
    if(k==='hist'){const h=hist[+b.dataset.i];if(h)return applyImg(h.src);return}
    if(k==='mujin'){if(!confirm('무진 기본 지도를 쓸까? (핀이 없으면 기본 장소 목록이 들어간다)'))return;await saveMap({img:null,preset:'mujin',locs:M.locs.length&&!isMujin?M.locs:[]});return re()}
