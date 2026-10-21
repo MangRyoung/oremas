@@ -256,7 +256,7 @@ function renderLog(scroll){
 /* ---------- 씬 ---------- */
 function scene(){return ST.state.scene||'rp'}
 let VIEW='';let lastScene='';
-const VIEWS=[['rp','RP'],['battle','배틀'],['sheet','시트'],['graph','관계도'],['calendar','캘린더'],['report','제보']];
+const VIEWS=[['rp','RP'],['battle','배틀'],['sheet','시트'],['graph','관계도'],['calendar','캘린더'],['report','제보'],['guide','튜토리얼']];
 /* ---------- 접속 중인 사람 (브로드캐스트 인사: 25초마다 · 새로 온 사람에게 답인사) ---------- */
 const PRES={who:{},t:null,last:0};
 function myId(){return ST.role==='gm'?'gm':ST.role==='seat'?('s:'+ST.seat):('v:'+(ST.vid||(ST.vid=Math.random().toString(36).slice(2,8))))}
@@ -282,12 +282,13 @@ function renderScene(){reconcileNodes();
   tabs.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>{VIEW=b.dataset.s;renderScene()});
   const sb=$('#stageBtn');if(sb)sb.onclick=()=>{if(VIEW==='rp'||VIEW==='battle')set(['scene'],VIEW);else toast('무대는 RP 나 배틀만 될 수 있어')}}
  const el=$('#scene');if(!el)return;
- if(VIEW!=='report')ST.lastView=VIEW;
+ if(VIEW!=='report'&&VIEW!=='guide')ST.lastView=VIEW;
  if(VIEW==='battle')renderBattle(el);
  else if(VIEW==='sheet')window.OM_SHEET_UI.render(el);
  else if(VIEW==='graph')window.OM_GRAPH_UI.render(el);
  else if(VIEW==='calendar')window.OM_CAL_UI.render(el);
  else if(VIEW==='report')window.OM_REPORT_UI.render(el);
+ else if(VIEW==='guide'){if(window.OM_GUIDE_UI)window.OM_GUIDE_UI.render(el)}
  else window.OM_RP_UI.render(el);
  if(window.OM_RP_UI)window.OM_RP_UI.onState();
  if(window.OM_DECK_UI){if(ST.role==='gm')window.OM_DECK_UI.absorb();else if(window.OM_DECK_UI.onAck)window.OM_DECK_UI.onAck()}
