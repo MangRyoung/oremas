@@ -2671,7 +2671,8 @@ span.iedit{display:inline-block;min-width:3em}
 .dlg.skin.sr{right:auto;left:calc(79% - var(--bubw,min(52%,740px)))}
 .dlg.skin:not(.sc){bottom:calc(9% + var(--dlgdy,0) * 1%);margin-left:calc(var(--dlgdx,0) * 1%)}
 .dlg.skin.sc{bottom:calc(1% + var(--dlgny,0) * 1%);margin-left:calc(var(--dlgnx,0) * 1%)}
-@media (max-width:760px){.dlg.skin:not(.sc),.dlg.skin.sc,.dlg:not(.skin){margin-left:0;translate:none}}
+/* 10-23 망령: 폰에서는 위치 조정을 쓰지 않고 대사창 · 지문 상자 모두 무대 맨 아래 */
+@media (max-width:760px){.dlg.skin:not(.sc),.dlg.skin.sc,.dlg:not(.skin),.dlg:not(.skin):has(.dtext.narr){margin-left:0;translate:none;bottom:.5%}}
 .gbpos{margin-top:10px}
 .gbph{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:6px}
 .gbpst{position:relative;aspect-ratio:16/10;max-width:640px;background:#222 center/cover no-repeat;border:2px solid var(--line2);overflow:hidden;touch-action:none}
