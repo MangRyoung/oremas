@@ -194,7 +194,7 @@ window.OM_BATTLE_UI=(()=>{
   const sum=ids.map(tid=>`${esc(trs[tid].name)} ${(b.cmds||{})[tid]?'공개됨':ready[tid]?'READY':'입력 중'}`).join(' · ');
   return `<details class="bside" data-bside="${side}" ${open?'open':''}><summary class="bsh"><span>지시 현황</span><small class="bsum">${sum}</small><span class="sp"></span><b>TURN ${+b.turn||0}</b></summary>${blocks}</details>`}
  /* 10-21 망령: 날씨 · 필드 · 룸 · 《필드》 그림을 배틀맵 뒤에 반투명하게 깐다 (맵툴 Lib:field 0.75 · Lib:field_object 0.5 처럼) */
- const fbgUrl=k=>{if(!k)return '';let u=`img/fieldbg/${k}.webp`;try{u=new URL(u,location.href).href}catch(e){}return `url('${cssu(u)}')`};
+ const fbgUrl=k=>{if(!k)return '';let u=`img/fieldbg/${k}.webp?v=2`;try{u=new URL(u,location.href).href}catch(e){}return `url('${cssu(u)}')`};
  function fieldBg(f){f=f||{};const w=(f.weather||{}).type,t=(f.terrain||{}).type;const cls=[],st=[];
   const ss=window.OM_STAGE_UI?window.OM_STAGE_UI.bgStyle(f):'';const m=ss.match(/style="([^"]*)"/);if(m)st.push(m[1]);
   const low=[...ROOMS.filter(r=>(f.rooms||{})[r]>0),...ETC.filter(r=>(f.etc||{})[r]>0),t].filter(Boolean).map(k=>fbgUrl(T_IMG[k])).filter(Boolean);
