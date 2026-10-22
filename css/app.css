@@ -3046,3 +3046,34 @@ span.cdfw{display:inline-flex;align-items:center;justify-content:center;cursor:d
  .ccell .tt{display:none}
  .cn{gap:3px}
 }
+/* 10-24 망령: 휴대폰 기본 검은 띠 — PC 글자 크기(22px)가 그대로 와서 긴 대사가 잘리던 것. 휴대폰 크기로 두고 높이를 px 로 막아, 넘치면 fitDlg 가 --fit 으로 줄인다 */
+@media (max-width:760px){.dlg:not(.skin) .dtext{font-size:calc(clamp(15px,4.4vw,18px) * var(--bubfs,1) * var(--fit,1));line-height:1.45;max-height:136px}}
+/* 10-24 망령: 관계도 「내 인연」 보드 — 가운데 나, 노란 고리 내 포켓몬, 바깥 랭크 고리 + 옆 10칸 눈금 목록 */
+.gmode{display:inline-flex;margin-right:6px}
+.gme{max-width:160px}
+.gmine{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:10px;height:calc(100vh - 150px);min-height:420px}
+.gmine>.empty{grid-column:1/-1;align-self:center;text-align:center}
+.gmsvgw{background:#0d0d0d radial-gradient(circle at 50% 50%,#1d1012 0,#0d0d0d 60%);border:2px solid #fff;overflow:hidden;min-height:0}
+.gmsvg{display:block;width:100%;height:100%}
+.gmo:hover>circle:first-child,.gme0:hover>circle:first-child{fill:#ffd23f}
+.gmside{display:flex;flex-direction:column;min-height:0;background:#111;border:2px solid #fff}
+.gmsh{display:flex;align-items:baseline;gap:8px;padding:8px 10px;border-bottom:2px solid var(--red)}.gmsh b{font-family:var(--head);font-size:18px}
+.gmlist{flex:1;overflow-y:auto;padding:4px 0}
+.gml{display:grid;grid-template-columns:36px minmax(0,1fr) auto;grid-template-rows:auto auto;column-gap:8px;align-items:center;width:100%;padding:6px 10px;background:none;border:0;border-bottom:1px solid #222;color:#fff;text-align:left;cursor:pointer;font:inherit}
+.gml:hover{background:#1c1c1c}
+.gmlp{grid-row:1/3;width:36px;height:36px;border-radius:50%;overflow:hidden;background:#222;border:2px solid #fff;display:grid;place-items:center;font-size:14px}.gml.shock .gmlp{border-color:var(--red)}
+.gmlp img{width:100%;height:100%;object-fit:cover}
+.gmln{display:flex;gap:6px;align-items:baseline;min-width:0}.gmln b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.gmln small{color:#999;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gmlk{font-family:var(--lab);font-size:13px;color:#ffd23f}.gml.shock .gmlk{color:#ff8a8a}
+.gmlr{grid-column:2/4;display:grid;grid-template-columns:repeat(10,1fr);gap:2px;margin-top:3px}
+.gmlr i{height:7px;background:#2a2a2a;transform:skewX(-12deg)}.gmlr i.on{background:#ffd23f}.gml.shock .gmlr i.on{background:var(--red)}
+.gmleg{padding:6px 10px;border-top:1px solid #222}
+@media (max-width:760px){
+ .gtop{flex-wrap:wrap}.gmhint{flex-basis:100%}
+ .gmine{display:flex;flex-direction:column;height:auto;min-height:0}
+ .gmsvgw{aspect-ratio:1/1;width:100%}
+ .gmlist{overflow:visible}
+ .gmlb,.gmmn,.gmrl{display:none}
+}
+.gmrk{display:none}
+@media (max-width:760px){.gmrk{display:inline}}

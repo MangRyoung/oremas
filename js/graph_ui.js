@@ -15,6 +15,7 @@ window.OM_GRAPH_UI=(()=>{
  let pendingEl=null;
  function render(el){
   if(drag||pan){pendingEl=el;return}
+  if(MODE.v==='mine')return renderMine(el);
   const g=G();const nodes=g.nodes||{},edges=g.edges||{};
   const nodeSvg=Object.values(nodes).map(n=>{const r=n.kind==='pc'?30:n.kind==='org'?26:22;const nimg=A().portraitOf(n.name,n.img);
    return `<g class="gn ${n.kind||'npc'}" data-n="${n.id}" transform="translate(${n.x||0},${n.y||0})" style="cursor:${gm()?'grab':'pointer'}">
@@ -24,13 +25,14 @@ window.OM_GRAPH_UI=(()=>{
   const edgeSvg=Object.values(edges).map(e=>{const a=nodes[e.a],b=nodes[e.b];if(!a||!b)return '';const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;const w=1+Math.min(5,+e.rank||0);
    return `<g class="ge" data-e="${e.id}"><line pointer-events="none" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${e.shock?'var(--red)':'#fff'}" stroke-width="${w}" ${e.shock?'stroke-dasharray="8 5"':''} opacity=".85"/>
     <g class="gel" transform="translate(${mx},${my})" style="cursor:pointer"><rect x="-16" y="-9" width="32" height="18" fill="${e.shock?'var(--red)':'#fff'}" transform="skewX(-10)"/><text y="4" text-anchor="middle" font-size="11" font-family="var(--lab)" fill="${e.shock?'#fff':'#000'}">${e.shock?'⚡':''}R${+e.rank||0}</text>${e.label?`<text y="22" text-anchor="middle" font-size="10" fill="#ccc">${esc(e.label)}</text>`:''}</g></g>`}).join('');
-  el.innerHTML=`<div class="gtop"><button class="btn xs" data-z="in">＋</button><button class="btn xs" data-z="out">－</button><button class="btn xs ghost" data-z="fit">맞추기</button>
+  el.innerHTML=`<div class="gtop">${modeBar()}<button class="btn xs" data-z="in">＋</button><button class="btn xs" data-z="out">－</button><button class="btn xs ghost" data-z="fit">맞추기</button>
     <span class="small dim">끌어서 이동 · 휠로 확대 · 노드를 누르면 자세히${gm()?' · GM: 노드를 끌어서 배치':''}</span><span class="sp"></span>
     ${gm()?`<button class="btn sm" data-g="addn">+ 노드</button><button class="btn sm" data-g="adde">+ 선</button>`:''}</div>
    <div class="gwrap"><svg id="gsvg" width="100%" height="100%"><defs><pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.2" fill="#2a2a2a"/></pattern></defs>
     <rect width="100%" height="100%" fill="url(#dots)"/><g id="gview" transform="translate(${V.x},${V.y}) scale(${V.k})">${edgeSvg}${nodeSvg}</g></svg>
     <div class="glegend"><b>관계도</b><div class="small">빨간 테두리 = PC, 흰 테두리 = NPC, 마름모 = 조직. 선 굵기와 R 숫자가 관계 랭크, 빨간 점선과 ⚡가 쇼크.</div></div></div>`;
   const svg=$('#gsvg',el);
+  bindMode(el);
   el.querySelectorAll('[data-z]').forEach(b=>b.onclick=()=>{if(b.dataset.z==='in')V.k=Math.min(3,V.k*1.2);if(b.dataset.z==='out')V.k=Math.max(.3,V.k/1.2);if(b.dataset.z==='fit')fit(svg);render(el)});
   el.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>b.dataset.g==='addn'?editNode(null):editEdge(null));
   svg.addEventListener('wheel',e=>{e.preventDefault();const f=e.deltaY<0?1.1:1/1.1;const r=svg.getBoundingClientRect();const px=e.clientX-r.left,py=e.clientY-r.top;V.x=px-(px-V.x)*f;V.y=py-(py-V.y)*f;V.k*=f;$('#gview',el).setAttribute('transform',`translate(${V.x},${V.y}) scale(${V.k})`)},{passive:false});
@@ -47,6 +49,47 @@ window.OM_GRAPH_UI=(()=>{
     if(d.moved){const n=G().nodes[d.id];if(n){const nn=Object.assign({},n,{x:d.x,y:d.y});await A().set(['graph','nodes',d.id],nn)}}else if(e.type==='pointerup')openNode(d.id)}
    pan=null;if(pendingEl){const p=pendingEl;pendingEl=null;render(p)}};
   svg.addEventListener('pointerup',end);svg.addEventListener('pointercancel',end)}
+ /* ---------- 「내 인연」 보드 (10-24 벨벳 참고) ----------
+    나를 가운데 두고, 안쪽 고리에 내 포켓몬, 바깥에 랭크 1~10 고리. 랭크가 높을수록 가운데에 가깝다.
+    플레이어는 자기 트레이너, GM 은 PC 노드를 골라 본다. 보기 방식은 이 브라우저에서만 기억 */
+ const MODE={v:(()=>{try{return localStorage.getItem('om_gmode')==='mine'?'mine':'all'}catch(e){return 'all'}})(),me:''};
+ function modeBar(){return `<span class="gmode"><button class="btn xs ${MODE.v==='all'?'pri':'ghost'}" data-gm="all">전체 관계도</button><button class="btn xs ${MODE.v==='mine'?'pri':'ghost'}" data-gm="mine">내 인연</button></span>`}
+ function bindMode(el){el.querySelectorAll('[data-gm]').forEach(b=>b.onclick=()=>{MODE.v=b.dataset.gm;try{localStorage.setItem('om_gmode',MODE.v)}catch(e){}render(el)})}
+ const TRS=()=>((A().ST.state.roster||{}).trainers)||{};
+ function myNode(){const ns=Object.values(G().nodes||{});
+  if(gm()){const pcs=ns.filter(n=>n.kind==='pc');if(MODE.me&&G().nodes[MODE.me])return G().nodes[MODE.me];return pcs[0]||null}
+  const t=TRS()[A().ST.seat];if(!t)return null;return ns.find(n=>n.kind==='pc'&&n.name===t.name)||ns.find(n=>n.name===t.name)||null}
+ const RR=rk=>150+(10-Math.max(0,Math.min(10,rk)))*20;   /* 랭크 10 → 150, 랭크 0 → 350 */
+ function renderMine(el){const g=G();const nodes=g.nodes||{};const me=myNode();
+  const pcs=Object.values(nodes).filter(n=>n.kind==='pc');
+  const pick=gm()&&pcs.length?`<select id="gme" class="gme">${pcs.map(n=>`<option value="${n.id}" ${me&&me.id===n.id?'selected':''}>${esc(n.name)}</option>`).join('')}</select>`:'';
+  const top=`<div class="gtop">${modeBar()}${pick}<span class="small dim gmhint">가운데가 나 · 가까울수록 랭크가 높다 · 누르면 자세히</span></div>`;
+  if(!me){el.innerHTML=top+`<div class="gmine"><div class="empty">${gm()?'관계도에 PC 노드가 아직 없다':'관계도에 내 트레이너 노드가 아직 없다<br><span class="small dim">GM 이 접속해 있으면 저절로 생긴다</span>'}</div></div>`;bindMode(el);return}
+  const tr=Object.values(TRS()).find(t=>t.name===me.name);
+  const mons=tr?Object.values((A().ST.state.roster||{}).mons||{}).filter(m=>m.tid===tr.id):[];
+  const links=Object.values(g.edges||{}).filter(e=>e.a===me.id||e.b===me.id).map(e=>({e,o:nodes[e.a===me.id?e.b:e.a]})).filter(x=>x.o).sort((x,y)=>(+y.e.rank||0)-(+x.e.rank||0)||String(x.o.name).localeCompare(String(y.o.name),'ko'));
+  const por=n=>A().portraitOf(n.name,n.img||n.image);
+  const disc=(id,r,img,name,ring)=>`<circle r="${r+3}" fill="${ring}"/><circle r="${r}" fill="#222"/>${img?`<clipPath id="mc_${id}"><circle r="${r-1}"/></clipPath><image href="${esc(img)}" x="${-r}" y="${-r}" width="${r*2}" height="${r*2}" clip-path="url(#mc_${id})" preserveAspectRatio="xMidYMid slice"/>`:`<text y="${Math.round(r/3)}" text-anchor="middle" font-size="${Math.round(r*.8)}" fill="#fff" font-family="var(--lab)">${esc((name||'?').slice(0,2))}</text>`}`;
+  const rings=[...Array(10)].map((_,i)=>{const rk=i+1,r=RR(rk),mk=rk===1||rk===5||rk===10;return `<circle r="${r}" fill="none" stroke="${mk?'#3a3a3a':'#242424'}" stroke-width="${mk?1.6:1}"/>${mk?`<text class="gmrl" x="${Math.round(r*.7071)+4}" y="${-Math.round(r*.7071)-4}" font-size="16" fill="#666" font-family="var(--lab)">R${rk}</text>`:''}`}).join('');
+  const n0=links.length;const pos=links.map((x,i)=>{const a=-Math.PI/2+(n0?i*2*Math.PI/n0:0)+(n0%2?0:Math.PI/n0/2);const r=RR(+x.e.rank||0);return {x:Math.round(Math.cos(a)*r),y:Math.round(Math.sin(a)*r)}});
+  const lines=links.map((x,i)=>{const p=pos[i],e=x.e,w=1+Math.min(5,(+e.rank||0)/2);return `<line x1="0" y1="0" x2="${p.x}" y2="${p.y}" stroke="${e.shock?'var(--red)':'#fff'}" stroke-width="${w}" ${e.shock?'stroke-dasharray="10 7"':''} opacity="${e.shock?.95:.55}"/>`}).join('');
+  const others=links.map((x,i)=>{const p=pos[i],e=x.e,o=x.o;return `<g class="gmo" data-o="${o.id}" data-e="${e.id}" transform="translate(${p.x},${p.y})" style="cursor:pointer">${disc('o'+o.id,32,por(o),o.name,e.shock?'var(--red)':o.kind==='pc'?'var(--red)':'#fff')}
+    ${e.shock?`<g transform="translate(25,-25)"><circle r="13" fill="var(--red)" stroke="#fff" stroke-width="2"/><text y="5" text-anchor="middle" font-size="14">⚡</text></g>`:''}
+    <g class="gmlb" transform="translate(0,52)"><rect x="-70" y="-14" width="140" height="27" fill="#000" stroke="${e.shock?'var(--red)':'#fff'}" stroke-width="2" transform="skewX(-8)"/><text y="6" text-anchor="middle" font-size="17" fill="#fff" font-family="var(--lab)">${esc(o.name||'')} <tspan fill="${e.shock?'#ff8a8a':'#ffd23f'}">R${+e.rank||0}</tspan></text></g><text class="gmrk" y="64" text-anchor="middle" font-size="28" fill="${e.shock?'#ff8a8a':'#ffd23f'}" font-family="var(--lab)">${e.shock?'⚡':''}R${+e.rank||0}</text></g>`}).join('');
+  const mm=mons.length;const st=2*Math.PI/Math.max(1,mm);
+  /* 내 포켓몬은 인연 선과 바로 아래(내 이름표 자리)를 피해서 돈다: 72 갈래 중 가장 멀리 떨어지는 각도 */
+  const avoid=[...pos.map(p=>Math.atan2(p.y,p.x)),Math.PI/2,Math.PI/2-.45,Math.PI/2+.45];const gap=(x,y)=>{const d=Math.abs(((x-y)%(2*Math.PI)+3*Math.PI)%(2*Math.PI)-Math.PI);return d};
+  let rot=0,best=-1;for(let k=0;k<72;k++){const r0=k*2*Math.PI/72;let m=9;for(let i=0;i<mm;i++)for(const v of avoid)m=Math.min(m,gap(-Math.PI/2+i*st+r0,v));if(m>best+1e-6){best=m;rot=r0}}
+  const monSvg=mons.map((m,i)=>{const a=-Math.PI/2+i*st+rot;const r=114;const x=Math.round(Math.cos(a)*r),y=Math.round(Math.sin(a)*r);return `<g class="gmm" transform="translate(${x},${y})">${disc('m'+m.id,20,por(m),m.name,'#ffd23f')}<text class="gmmn" y="38" text-anchor="middle" font-size="14" fill="#ffd23f" font-family="var(--lab)">${esc(m.name||'')}</text></g>`}).join('');
+  const center=`<g class="gme0" data-o="${me.id}" style="cursor:pointer">${disc('me',50,por(me),me.name,'var(--red)')}<g transform="translate(0,62)"><rect x="-58" y="-15" width="116" height="28" fill="var(--red)" stroke="#fff" stroke-width="2" transform="skewX(-8)"/><text y="6" text-anchor="middle" font-size="16" fill="#fff" font-family="var(--lab)">${esc(me.name||'')}</text></g></g>`;
+  const L=RR(0)+72;
+  const list=links.length?links.map(({e,o})=>{const rk=+e.rank||0;return `<button type="button" class="gml ${e.shock?'shock':''}" data-o="${o.id}" data-e="${e.id}"><span class="gmlp">${por(o)?`<img src="${esc(por(o))}" alt="">`:esc((o.name||'?').slice(0,1))}</span><span class="gmln"><b>${esc(o.name||'')}</b>${e.label?`<small>${esc(e.label)}</small>`:''}</span><span class="gmlk">${e.shock?'⚡':''}R${rk}</span><span class="gmlr">${[...Array(10)].map((_,i)=>`<i class="${i<rk?'on':''}"></i>`).join('')}</span></button>`}).join(''):`<div class="empty small">아직 이어진 인연이 없다${gm()?'<br>전체 관계도에서 「+ 선」으로 잇는다':''}</div>`;
+  el.innerHTML=top+`<div class="gmine"><div class="gmsvgw"><svg class="gmsvg" viewBox="${-L} ${-L} ${L*2} ${L*2}" preserveAspectRatio="xMidYMid meet">${rings}<circle r="114" fill="none" stroke="#ffd23f" stroke-width="1.2" stroke-dasharray="3 6" opacity=".5"/>${lines}${monSvg}${others}${center}</svg></div>
+   <div class="gmside"><div class="gmsh"><b>인연</b><span class="small dim">${links.length}명 · 포켓몬 ${mons.length}</span></div><div class="gmlist">${list}</div><div class="small dim gmleg">노란 고리 = 내 포켓몬 · 빨간 점선과 ⚡ = 쇼크 · 칸 수 = 랭크 (0~10)</div></div></div>`;
+  bindMode(el);
+  const sel=$('#gme',el);if(sel)sel.onchange=()=>{MODE.me=sel.value;render(el)};
+  const open=(oid,eid)=>{if(gm()&&eid)return editEdge(eid);openNode(oid)};
+  el.querySelectorAll('.gmo,.gml,.gme0').forEach(x=>x.onclick=()=>open(x.dataset.o,x.dataset.e))}
  function fit(svg){const ns=Object.values(G().nodes||{});if(!ns.length){V.x=V.y=0;V.k=1;return}const xs=ns.map(n=>n.x),ys=ns.map(n=>n.y);const minx=Math.min(...xs)-80,maxx=Math.max(...xs)+80,miny=Math.min(...ys)-80,maxy=Math.max(...ys)+80;const r=svg.getBoundingClientRect();V.k=Math.min(3,Math.max(.3,Math.min(r.width/(maxx-minx),r.height/(maxy-miny))));V.x=(r.width-(maxx+minx)*V.k)/2;V.y=(r.height-(maxy+miny)*V.k)/2}
 
  function openNode(id){const n=G().nodes[id];if(!n)return;if(gm())return editNode(id);

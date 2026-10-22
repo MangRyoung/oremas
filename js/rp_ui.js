@@ -101,7 +101,7 @@ window.OM_RP_UI=(()=>{
  /* 말풍선 칸에 대사가 넘치면(긴 대사·띄어쓰기 없는 긴 말) 글자를 조금씩 줄여 칸 안에 다 들어가게 — 최소 50%.
     타자 중엔 남은 글자가 자리만 차지하고 있어서(.tw-off) 처음 그릴 때 한 번 맞추면 끝까지 그대로다 */
  function fitDlg(dlg){const t=dlg.querySelector('.dtext');if(!t||dlg.style.display==='none')return;const sig=dlg.dataset.k+'|'+dlg.className.replace(/\b(pop|twing|dqable)\b/g,'')+'|'+dlg.clientWidth+'x'+dlg.clientHeight;if(dlg._fit===sig)return;dlg._fit=sig;
-  t.style.removeProperty('--fit');if(!dlg.classList.contains('skin'))return;let f=1;
+  t.style.removeProperty('--fit');let f=1;   /* 10-24 망령: 기본 검은 띠도 (휴대폰에서 높이가 막혀 있어) 넘치면 줄인다 */
   while(f>.5&&(t.scrollHeight>t.clientHeight+1||t.scrollWidth>t.clientWidth+1)){f=Math.round((f-.05)*100)/100;t.style.setProperty('--fit',f)}}
  addEventListener('resize',()=>{const d=document.getElementById('dlg');if(d&&d.isConnected)fitDlg(d)});
  function dqSkip(dlg){if(DQ.phase==='typing'){const on=dlg.querySelector('.tw-on'),off=dlg.querySelector('.tw-off');if(on&&off){on.textContent+=off.textContent;off.textContent=''}clearTimeout(DQ.t);dlg.classList.remove('twing');DQ.phase='hold';DQ.t=setTimeout(dqNext,Math.min(twCfg().hold,900))}else if(DQ.phase==='hold')dqNext()}
