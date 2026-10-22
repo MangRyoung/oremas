@@ -98,6 +98,12 @@ window.OM_RP_UI=(()=>{
   const step=()=>{if(!off.isConnected)return;const rest=off.textContent;if(!rest){DQ.phase='hold';dlg.classList.remove('twing');DQ.t=setTimeout(dqNext,hold);return}
    const ch=Array.from(rest)[0];on.textContent+=ch;off.textContent=rest.slice(ch.length);DQ.t=setTimeout(step,/[.!?…。,，、~]/.test(ch)?ms*4:ms)};
   dlg.classList.add('twing');step()}
+ /* 말풍선 칸에 대사가 넘치면(긴 대사·띄어쓰기 없는 긴 말) 글자를 조금씩 줄여 칸 안에 다 들어가게 — 최소 50%.
+    타자 중엔 남은 글자가 자리만 차지하고 있어서(.tw-off) 처음 그릴 때 한 번 맞추면 끝까지 그대로다 */
+ function fitDlg(dlg){const t=dlg.querySelector('.dtext');if(!t||dlg.style.display==='none')return;const sig=dlg.dataset.k+'|'+dlg.className.replace(/\b(pop|twing|dqable)\b/g,'')+'|'+dlg.clientWidth+'x'+dlg.clientHeight;if(dlg._fit===sig)return;dlg._fit=sig;
+  t.style.removeProperty('--fit');if(!dlg.classList.contains('skin'))return;let f=1;
+  while(f>.5&&(t.scrollHeight>t.clientHeight+1||t.scrollWidth>t.clientWidth+1)){f=Math.round((f-.05)*100)/100;t.style.setProperty('--fit',f)}}
+ addEventListener('resize',()=>{const d=document.getElementById('dlg');if(d&&d.isConnected)fitDlg(d)});
  function dqSkip(dlg){if(DQ.phase==='typing'){const on=dlg.querySelector('.tw-on'),off=dlg.querySelector('.tw-off');if(on&&off){on.textContent+=off.textContent;off.textContent=''}clearTimeout(DQ.t);dlg.classList.remove('twing');DQ.phase='hold';DQ.t=setTimeout(dqNext,Math.min(twCfg().hold,900))}else if(DQ.phase==='hold')dqNext()}
 
  /* ----- 무대 ----- */
@@ -112,19 +118,21 @@ window.OM_RP_UI=(()=>{
   const clearAfter=!!lastChat&&(A().ST.log||[]).some(x=>x.id>lastChat.id&&x.kind==='chat'&&x.data&&x.data.clear);
   const lk=lastChat?speakerKey(lastChat):'';const gone=!qRow&&!!lk&&!LF(lastChat.data||{}).narr&&!Object.values(slots).includes(lk)&&!Object.values(STAGE.slots).includes(lk);
   const showDlg=cap.text||(lastChat&&!clearAfter&&!gone&&(DQ.phase!=='done'||Date.now()-(Date.parse(lastChat.at)||0)<STAND_TTL*2));
-  const dlgHtml=cap.text?line(cap.name||'',{t:cap.text}):(showDlg?line(lastChat.data.as||(charOf(speakerKey(lastChat))||{}).name||lastChat.who,lastChat.data,anim):'');
-  const dlgKey=cap.text?'cap|'+dlgHtml:(showDlg?'r'+lastChat.id+'|'+dlgHtml.replace(/<span class="tw-(on|off)">/g,''):'');
+  const dnm=showDlg&&!cap.text?(lastChat.data.as||(charOf(speakerKey(lastChat))||{}).name||lastChat.who):'';
+  const dlgHtml=cap.text?line(cap.name||'',{t:cap.text}):(showDlg?line(dnm,lastChat.data,anim):'');
+  /* 열쇠는 타자 span 을 뺀 모양으로 — 타자가 끝나 평문으로 바뀔 때 상자를 다시 그려 「한 번 더 튀는」 일이 없게 */
+  const dlgKey=cap.text?'cap|'+dlgHtml:(showDlg?'r'+lastChat.id+'|'+line(dnm,lastChat.data,false):'');
   const ST=A().ST;const speakers=gm()?allSpeakers():(ST.seat?[{key:'me',name:(charOf(ST.seat)||{}).name||ST.name},...Object.values((ST.state.roster||{}).mons||{}).filter(m=>m.tid===ST.seat).map(m=>({key:'pm:'+m.id,name:m.name+' (포켓몬)'}))]:[]);
   if(gm()&&!SPK.key)SPK.key='gm';if(!gm()&&(!SPK.key||SPK.key==='gm'))SPK.key='me';
   /* 뼈대는 한 번만 — 스탠딩이 매번 다시 그려져 애니메이션이 되풀이되지 않게 */
   let stage=$('#rpstage',el);
-  if(!stage){el.innerHTML=`<div class="rpwrap"><div class="rpstage" id="rpstage"><div class="stands" id="stands"></div><div class="dlg" id="dlg"></div><div class="typing" id="typing"></div><div id="bgname"></div><div id="centerimg"></div><div class="rpbtns" id="rpbtns"></div><div id="mapov"></div></div><div id="rpunder"></div></div>`;stage=$('#rpstage',el)}
+  if(!stage){el.innerHTML=`<div class="rpwrap"><div class="rpstage" id="rpstage"><div class="stands" id="stands"></div><div class="dlg" id="dlg"></div><div class="typing" id="typing"></div><div id="bgname"></div><div id="centerimg"></div><div class="rpbtns" id="rpbtns"></div><div id="mapov"></div><div id="voteov"></div></div><div id="rpunder"></div></div>`;stage=$('#rpstage',el)}
   stage.style.backgroundImage=bg.src?`url('${cssu(bg.src)}')`:'';
   const cal=ST.state.calendar||{};const dt=cal.today?(()=>{const d=new Date(cal.today+'T00:00:00');return {md:cal.today.slice(5).replace('-','/'),wd:['일','월','화','수','목','금','토'][d.getDay()]}})():null;
   $('#bgname',el).innerHTML=`<div class="stagetags">${dt?`<div class="daytag" ${gm()?'data-rp="phase" title="눌러서 시간대 바꾸기"':''}><b>${esc(dt.md)}</b><i>${dt.wd}</i>${cal.weather?`<em>${esc(cal.weather)}</em>`:''}${cal.phase?`<span class="phase ${({아침:'morning',저녁:'evening',밤:'night',심야:'night'})[cal.phase]||''}">${esc(cal.phase)}</span>`:''}</div>`:''}${bg.name?`<div class="bgname">${esc(bg.name)}</div>`:''}</div>`;
   $('#centerimg',el).innerHTML=r.center&&r.center.src?`<div class="centerimg"><img src="${esc(r.center.src)}" alt="">${gm()?'<button class="btn xs" data-rp="centerx">닫기</button>':''}</div>`:'';
-  $('#rpbtns',el).classList.toggle('fold',rpFold);$('#rpbtns',el).innerHTML=`<span id="typingRp" class="typingslot ${TYPING_HTML?'on':''}">${TYPING_HTML}</span><button class="btn sm rpspkbtn" data-rp="spkpop" title="화자 · 인물 · 표정">🎭 화자</button><button class="btn sm rpfoldb" data-rp="fold" title="${rpFold?'탭 펼치기 (배경 · BGM · 기록 · 지도 …)':'탭 접기'}">${rpFold?'☰':'›'}</button>${gm()?`<button class="btn sm rpt" data-rp="qbg" title="배경 바꾸기">🖼 배경</button><button class="btn sm rpt" data-rp="qbgm" title="BGM 바꾸기">♪ BGM</button>`:''}<button class="btn sm rpt" data-rp="log" title="대화 기록">📜 기록</button><button class="btn sm ${mapOpen?'pri':'rpt'}" data-rp="map">${mapOpen?'지도 닫기':'지도'}</button><button class="btn sm rpt" data-rp="deck">덱</button><button class="btn sm rpt" data-rp="phone" title="휴대폰 — 연락처 · 협력자 · 캘린더">📱 휴대폰</button><button class="btn sm ghost rpt" data-rp="stand">표정</button>${r.bgm&&r.bgm.src?(unlocked?`<button class="btn sm ghost" data-rp="${gm()?'bgmstop':'mute'}" title="${esc(r.bgm.title||'')}${gm()?' — 누르면 모두에게 정지':' — 누르면 내 소리만 끄기'}">♪ ${esc(r.bgm.title||'BGM')} ■</button>`:`<button class="btn sm ghost" data-rp="sound" title="${esc(r.bgm.title||'')}">소리 켜기</button>`):''}${gm()?`<button class="btn sm pri" data-rp="gm">GM 콘솔</button>`:''}`;
-  $('#mapov',el).innerHTML=mapOpen?mapOverlay():'';
+  $('#rpbtns',el).classList.toggle('fold',rpFold);$('#rpbtns',el).innerHTML=`<span id="typingRp" class="typingslot ${TYPING_HTML?'on':''}">${TYPING_HTML}</span><button class="btn sm rpspkbtn" data-rp="spkpop" title="화자 · 인물 · 표정">🎭 화자</button><button class="btn sm rpfoldb" data-rp="fold" title="${rpFold?'탭 펼치기 (배경 · BGM · 기록 · 지도 …)':'탭 접기'}">${rpFold?'☰':'›'}</button>${gm()?`<button class="btn sm rpt" data-rp="qbg" title="배경 바꾸기">🖼 배경</button><button class="btn sm rpt" data-rp="qbgm" title="BGM 바꾸기">♪ BGM</button><button class="btn sm rpt" data-rp="vote" title="투표 열기 — 파티 분기 · 작전 고르기">🗳 투표</button>`:''}<button class="btn sm rpt" data-rp="log" title="대화 기록">📜 기록</button><button class="btn sm ${mapOpen?'pri':'rpt'}" data-rp="map">${mapOpen?'지도 닫기':'지도'}</button><button class="btn sm rpt" data-rp="deck">덱</button><button class="btn sm rpt" data-rp="phone" title="휴대폰 — 연락처 · 협력자 · 캘린더">📱 휴대폰</button><button class="btn sm ghost rpt" data-rp="stand">표정</button>${r.bgm&&r.bgm.src?(unlocked?`<button class="btn sm ghost" data-rp="${gm()?'bgmstop':'mute'}" title="${esc(r.bgm.title||'')}${gm()?' — 누르면 모두에게 정지':' — 누르면 내 소리만 끄기'}">♪ ${esc(r.bgm.title||'BGM')} ■</button>`:`<button class="btn sm ghost" data-rp="sound" title="${esc(r.bgm.title||'')}">소리 켜기</button>`):''}${gm()?`<button class="btn sm pri" data-rp="gm">GM 콘솔</button>`:''}`;
+  $('#mapov',el).innerHTML=mapOpen?mapOverlay():'';drawVote(el);
   /* 그림 말풍선 (rp.bubble) — 대사 전용: 말하는 사람이 왼쪽 자리면 꼬리 왼쪽 그림을 그 오른편에, 오른쪽이면 반대, 가운데·무대 밖이면 꼬리 왼쪽 그림을 화면 가운데 오른편에(mid).
      지문(비문)·고정 자막은 꼬리 없는 그림 — 그게 없으면 기본 검은 띠 */
   const bub=r.bubble||{};let skin=null;if(bub.on&&dlgHtml){const narr=!!cap.text||!lastChat||LF(lastChat.data||{}).narr;
@@ -139,7 +147,7 @@ window.OM_RP_UI=(()=>{
   const dlg=$('#dlg',el);if(dlgHtml){if(dlg.dataset.k!==dlgKey){dlg.innerHTML=dlgHtml;dlg.dataset.k=dlgKey;dlg.classList.remove('pop');void dlg.offsetWidth;dlg.classList.add('pop');if(anim&&!cap.text)dqType(dlg)}dlg.style.display=''}else{dlg.style.display='none';dlg.dataset.k=''}
   {let mo=dlg.querySelector('.dq-more');const n=cap.text?0:DQ.q.length;if(n){if(!mo){mo=document.createElement('i');mo.className='dq-more';dlg.appendChild(mo)}mo.textContent=`+${n}줄`}else if(mo)mo.remove()}
   dlg.onclick=()=>{if(!cap.text)dqSkip(dlg)};dlg.classList.toggle('dqable',!cap.text&&DQ.phase!=='done');
-  dlg.classList.toggle('skin',!!skin);for(const v of ['c','l','r','m'])dlg.classList.toggle('s'+v,!!skin&&skin.v===v);dlg.classList.toggle('flip',!!(skin&&skin.flip));dlg.classList.toggle('mid',!!(skin&&skin.mid));dlg.classList.toggle('nl',!!(skin&&skin.side==='l'));dlg.classList.toggle('nr',!!(skin&&skin.side==='r'));dlg.style.setProperty('--bub',skin?`url('${cssu(skin.src)}')`:'');bubStyle(dlg,stOf(bub.st));
+  dlg.classList.toggle('skin',!!skin);for(const v of ['c','l','r','m'])dlg.classList.toggle('s'+v,!!skin&&skin.v===v);dlg.classList.toggle('flip',!!(skin&&skin.flip));dlg.classList.toggle('mid',!!(skin&&skin.mid));dlg.classList.toggle('nl',!!(skin&&skin.side==='l'));dlg.classList.toggle('nr',!!(skin&&skin.side==='r'));dlg.style.setProperty('--bub',skin?`url('${cssu(skin.src)}')`:'');bubStyle(dlg,stOf(bub.st));fitDlg(dlg);
   syncStands($('#stands',el),slots,manual);
   /* 무대 아래: 칸마다 바뀐 것만 다시 그린다 — 대사 입력칸은 그대로 두어야 치는 중에 끊기지 않는다 (한글 조합·포커스 유지) */
   const barH=`${gm()?spkBarHtml(speakers):(speakers.length>1?`<div class="spkbar">${speakers.map(x=>{const c=x.key==='me'?charOf(ST.seat):charOf(x.key);const av=c?(standSrc(c)||c.img):'';return spkChip(x.key,x.name,av,SPK.key===x.key||(!SPK.key&&x.key==='me'))}).join('')}<button class="spk add" data-rp="spkedit" title="고른 인물의 표정·스탠딩"><i>✎</i><span>표정</span></button></div>`:'')}`;
@@ -341,7 +349,8 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   if(k==='spkedit'){const key=SPK.key;if(key==='gm'&&gm())return openStands('gm');if(!key||key==='gm'||key==='me')return A().toast('먼저 인물을 골라 줘');return openStands(key)}
   if(k==='spkmgr')return openSpkMgr();
   if(k==='qbgm')return quickBgm();
-  if(k==='log')return openLog()}
+  if(k==='log')return openLog();
+  if(k==='vote')return openVote()}
  /* 인물 빠른 추가: 관계도에 NPC 노드로 들어간다 (이름 · 초상 · 스탠딩) */
  function addNpcQuick(){const ST=A().ST;
   const md=A().openModal(`<div class="mhead"><h2>인물 추가</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
@@ -823,7 +832,54 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   if(!unlocked)return;
   if(src!==lastBgm||force){if(audio)audio.pause();audio=new Audio(src);audio.loop=true;audio.volume=vol;audio.play().catch(()=>{});lastBgm=src}}
  function onChat(row){if(row&&row.id)DQ.arr[row.id]=Date.now();if(row.kind==='chat'&&row.data&&row.data.bat){autoSe(Object.assign({},row,{kind:row.data.bat}));return}if(row.kind==='chat'&&row.data&&row.data.sms){if(window.OM_PHONE_UI)window.OM_PHONE_UI.onSms(row);return}autoSe(row);feedLog([row]);if(row.kind==='chat'&&row.data){const nm=row.data.as||row.who;for(const k in TYPING.who)if(TYPING.who[k].from===row.data.from&&(!nm||TYPING.who[k].who===nm))delete TYPING.who[k];}if(A().view==='rp'&&row.kind==='chat'&&row.data&&row.data.ch!=='ooc'&&(row.data.t||row.data.clear))A().renderScene()}
- function onState(){tickBanner();syncBgm();syncSe()}
+ function onState(){tickBanner();syncBgm();syncSe();voteNotice()}
+ /* ----- GM 투표 (10-23 벨벳 참고) -----
+    rp.vote = {id,q,opts:[{id,t}],anon,blind,open,at,res?:{n:{opt:표},win:[opt],total}}
+    표는 각 좌석이 자기 칸 pub/<좌석>/vote = {id,opt,at} 에 넣는다 (좌석이 쓸 수 있는 곳). 같은 단추를 다시 누르면 취소, 다른 단추면 바꾸기.
+    GM 이 마감하면 그때 표를 세어 rp.vote.res 에 박고 로그에 결과 한 줄. 「닫기」로 무대에서 내린다. 접기·펴기는 내 화면에서만 */
+ const VOTE={fold:false,seen:''};
+ function voteSeats(){const ST=A().ST;return Object.keys(ST.state.seats||{})}
+ function seatName(id){const ST=A().ST;const t=((ST.state.roster||{}).trainers||{})[id]||(((ST.state.battle||{}).trainers||{})[id]);return (t&&t.name)||((ST.state.seats||{})[id]||{}).name||id}
+ function tally(v){const pub=A().ST.state.pub||{};const n={},who={};for(const o of v.opts)n[o.id]=0,who[o.id]=[];let total=0;
+  for(const sid in pub){const pv=(pub[sid]||{}).vote;if(!pv||pv.id!==v.id||!(pv.opt in n))continue;n[pv.opt]++;who[pv.opt].push(sid);total++}return {n,who,total}}
+ function drawVote(el){const box=$('#voteov',el);if(!box)return;const v=R().vote;if(!v||!v.id){box.innerHTML='';box._h='';return}
+  const ST=A().ST;const g=gm();const t=v.open?tally(v):Object.assign({who:{}},v.res||{n:{},total:0});if(!v.open){const live=tally(v);t.who=live.who}
+  const mine=ST.role==='seat'?(((ST.state.pub||{})[ST.seat]||{}).vote||{}):{};const myOpt=mine.id===v.id?mine.opt:'';
+  const hide=v.open&&v.blind&&!g;const max=Math.max(1,...Object.values(t.n||{}));const seats=voteSeats();const win=v.res?v.res.win||[]:[];
+  const opt=o=>{const c=(t.n||{})[o.id]||0;const pct=hide?0:Math.round(c/Math.max(1,v.open?Math.max(t.total,1):Math.max(t.total,1))*100);const ws=(t.who||{})[o.id]||[];
+   return `<button class="vo ${myOpt===o.id?'mine':''} ${win.includes(o.id)?'win':''}" data-vote="${esc(o.id)}" ${v.open&&ST.role==='seat'?'':'disabled'}><span class="vbar" style="width:${pct}%"></span><span class="vt">${win.includes(o.id)?'👑 ':''}${esc(o.t)}</span>${!v.anon&&!hide&&ws.length?`<span class="vwho">${ws.map(s=>`<i title="${esc(seatName(s))}">${esc(seatName(s).slice(0,2))}</i>`).join('')}</span>`:''}<b class="vc">${hide?'?':c}</b></button>`};
+  const status=v.open?`${t.total}/${seats.length||'?'}명 투표${v.blind?' · 결과는 마감 뒤':''}${v.anon?' · 익명':''}`:`마감 · ${t.total}표`;
+  const h=`<div class="vote ${VOTE.fold?'fold':''} ${v.open?'':'done'}"><div class="vhead" data-vf="1"><b>🗳 ${v.open?'투표':'투표 결과'}</b><span class="vq">${esc(v.q)}</span><span class="vfold">${VOTE.fold?'▾':'▴'}</span></div>
+   ${VOTE.fold?'':`<div class="vopts">${v.opts.map(opt).join('')}</div><div class="vfoot"><span>${status}</span>${ST.role==='seat'&&v.open?`<small>${myOpt?'다시 누르면 취소 · 다른 걸 누르면 바꾸기':'골라 줘'}</small>`:''}${!ST.role||(!g&&ST.role!=='seat')?'<small>자리에 앉으면 투표할 수 있다</small>':''}<span class="sp"></span>${g?(v.open?`<button class="btn xs pri" data-vact="close">마감</button><button class="btn xs ghost" data-vact="cancel">취소</button>`:`<button class="btn xs" data-vact="again">다시 열기</button><button class="btn xs ghost" data-vact="dismiss">닫기</button>`):''}</div>`}</div>`;
+  if(box._h!==h){box.innerHTML=h;box._h=h}
+  box.querySelectorAll('[data-vf]').forEach(b=>b.onclick=()=>{VOTE.fold=!VOTE.fold;box._h='';drawVote(el)});
+  box.querySelectorAll('[data-vote]').forEach(b=>b.onclick=async()=>{const o=b.dataset.vote;const cur=(((A().ST.state.pub||{})[A().ST.seat]||{}).vote)||{};const same=cur.id===v.id&&cur.opt===o;
+   if(await A().set(['pub',A().ST.seat,'vote'],same?null:{id:v.id,opt:o,at:Date.now()}))A().toast(same?'표를 거뒀다':'투표했다: '+(v.opts.find(x=>x.id===o)||{}).t)});
+  box.querySelectorAll('[data-vact]').forEach(b=>b.onclick=()=>voteAct(b.dataset.vact))}
+ async function voteAct(k){const v=R().vote;if(!v)return;
+  if(k==='close'){const t=tally(v);const top=Math.max(0,...Object.values(t.n));const win=top>0?v.opts.filter(o=>t.n[o.id]===top).map(o=>o.id):[];
+   await A().set(['rp','vote'],Object.assign({},v,{open:false,res:{n:t.n,win,total:t.total},end:Date.now()}));
+   const line=v.opts.map(o=>`${o.t} ${t.n[o.id]}`).join(' · ');A().sysLog(`🗳 투표 결과 「${v.q}」 — ${line}${win.length?` → ${win.map(id=>(v.opts.find(o=>o.id===id)||{}).t).join(', ')}${win.length>1?' (동점)':''}`:' (표 없음)'}`);return}
+  if(k==='cancel'){if(!confirm('이 투표를 취소할까? 결과를 남기지 않고 내린다.'))return;await A().set(['rp','vote'],null);A().sysLog(`🗳 투표 취소 「${v.q}」`);return}
+  if(k==='again'){await A().set(['rp','vote'],Object.assign({},v,{id:Date.now().toString(36),open:true,res:null,at:Date.now()}));A().sysLog(`🗳 다시 투표 「${v.q}」`);return}
+  if(k==='dismiss')return A().set(['rp','vote'],null)}
+ /* 새 투표가 열리면 한 번 알림 (내가 연 건 빼고) */
+ function voteNotice(){const v=R().vote;const id=v&&v.open?v.id:'';if(id&&id!==VOTE.seen){const first=VOTE.seen==='';VOTE.seen=id;VOTE.fold=false;if(!first&&!gm()){A().toast('🗳 GM 이 투표를 열었다 — RP 무대에서 골라 줘');try{if(window.OM_PREFS)window.OM_PREFS.notify('vote')}catch(e){}}}else if(!id&&VOTE.seen)VOTE.seen=v?VOTE.seen:'-'}
+ function openVote(){const v=R().vote;if(v&&v.open){VOTE.fold=false;A().renderScene();return A().toast('이미 투표 중 — 무대의 투표 칸에서 마감하거나 취소해 줘')}
+  const md=A().openModal(`<div class="mhead"><h2>🗳 투표 열기</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+   <div class="row" style="margin-bottom:8px"><b style="width:64px">질문</b><input type="text" id="vo_q" style="flex:1" placeholder="예: 어느 길로 갈까?" maxlength="80"></div>
+   <div class="vo-ed" id="vo_opts"></div><button class="btn xs ghost" id="vo_add" style="margin:4px 0 10px">+ 보기 더하기</button>
+   <label class="small" style="display:flex;gap:6px;align-items:center;margin-bottom:4px"><input type="checkbox" id="vo_anon"> 익명 — 누가 뭘 골랐는지 안 보인다 (수만 보인다)</label>
+   <label class="small" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="vo_blind"> 결과는 마감 뒤에 — 그 전엔 플레이어에게 수가 「?」로 보인다</label>
+   <div class="small dim" style="margin-top:8px">자리에 앉은 플레이어가 무대 위 투표 칸에서 고른다. 마감하면 결과가 로그에 한 줄 남는다.</div>
+   <div class="row" style="margin-top:12px"><span class="sp"></span><button class="btn pri" id="vo_ok">투표 열기</button></div>`);
+  const opts=['',''];const draw=()=>{$('#vo_opts',md).innerHTML=opts.map((o,i)=>`<div class="row" style="margin-bottom:4px"><b style="width:64px" class="small">보기 ${i+1}</b><input type="text" data-oi="${i}" value="${esc(o)}" style="flex:1" maxlength="40" placeholder="${['예: 숲길','예: 해안길','예: 그냥 여기 남는다'][i]||''}">${opts.length>2?`<button class="btn xs ghost" data-od="${i}" title="빼기">✕</button>`:''}</div>`).join('');
+   md.querySelectorAll('[data-oi]').forEach(x=>x.oninput=()=>{opts[+x.dataset.oi]=x.value});md.querySelectorAll('[data-od]').forEach(x=>x.onclick=()=>{opts.splice(+x.dataset.od,1);draw()})};draw();
+  $('#vo_add',md).onclick=()=>{if(opts.length>=6)return A().toast('보기는 6개까지');opts.push('');draw();const l=md.querySelector(`[data-oi="${opts.length-1}"]`);if(l)l.focus()};
+  $('#vo_ok',md).onclick=async()=>{const q=$('#vo_q',md).value.trim();const os=opts.map(x=>x.trim()).filter(Boolean);if(!q)return A().toast('질문을 적어 줘');if(os.length<2)return A().toast('보기가 둘은 있어야 해');
+   const vote={id:Date.now().toString(36),q,opts:os.map((t,i)=>({id:'o'+i,t})),anon:$('#vo_anon',md).checked?1:0,blind:$('#vo_blind',md).checked?1:0,open:true,at:Date.now()};
+   if(await A().set(['rp','vote'],vote)){A().closeModal();VOTE.fold=false;A().sysLog(`🗳 투표 「${q}」 — ${os.join(' / ')}`);A().renderScene()}};
+  setTimeout(()=>{const q=$('#vo_q',md);if(q)q.focus()},30)}
  /* 배틀 상단용 작은 BGM 위젯: 지금 곡 · 내 음량 · (GM) 다른 곡/BGM 창 · (플레이어) 소리 켜기 */
  function bgmWidgetHtml(){const now=R().bgm||{};const G=bgmGroups();return `<div class="bgmw"><span class="eq ${now.src?'':'off'} ${gm()?'lk':''}" ${gm()?'data-bw="open"':''}>♪</span><span class="bt ${gm()?'lk':''}" ${gm()?'data-bw="open"':''} title="${esc(now.title?(now.group?gshort(now.group)+' - ':'')+now.title:'재생 중인 곡 없음')}${gm()?' — 누르면 BGM 고르기':''}">${esc(now.title||'BGM 없음')}</span><input type="range" min="0" max="1" step="0.05" value="${vol}" data-bw="vol" title="내 음량">${!unlocked&&now.src?'<button class="btn xs pri" data-bw="sound" title="브라우저가 소리를 막아서 한 번 눌러야 들린다">소리 켜기</button>':''}${gm()?`${now.group&&G[now.group]?`<button class="btn xs ghost" data-bw="rand" title="같은 그룹에서 다른 곡">⟳</button>`:''}${now.src?'<button class="btn xs ghost" data-bw="stop" title="모두에게 정지">■</button>':''}<button class="btn xs" data-bw="open" title="BGM 고르기 (모두에게)">BGM</button>`:''}</div>`}
  function bindBgmWidget(root){root.querySelectorAll('[data-bw]').forEach(el=>{const k=el.dataset.bw;

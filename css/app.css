@@ -2912,7 +2912,7 @@ span.iedit{display:inline-block;min-width:3em}
 
 /* ---------- 대사 큐 + 타자기 · 입력줄 표정/대사·지문 (10-23 벨벳 참고) ---------- */
 .dtext .tw-off{visibility:hidden}
-.dlg.twing .tw-on::after{content:'';display:inline-block;width:.5em;height:1em;margin-left:1px;vertical-align:-.12em;background:currentColor;opacity:.75;animation:twblink .7s steps(1) infinite}
+.dlg.twing .tw-on::after{content:'';display:inline-block;width:.5em;height:1em;margin-left:1px;margin-right:calc(-.5em - 1px);vertical-align:-.12em;background:currentColor;opacity:.75;animation:twblink .7s steps(1) infinite}
 @keyframes twblink{50%{opacity:0}}
 .dlg.dqable{cursor:pointer}
 .dq-more{position:absolute;right:10px;top:6px;z-index:2;font-style:normal;font-size:12px;font-weight:700;letter-spacing:.02em;color:#000;background:#fff;padding:1px 8px;border-radius:999px;box-shadow:0 1px 0 rgba(0,0,0,.4);pointer-events:none;animation:dqbob 1.2s ease-in-out infinite}
@@ -2923,5 +2923,47 @@ span.iedit{display:inline-block;min-width:3em}
 .rpmode{padding:0 12px!important;font-size:13px!important;white-space:nowrap;min-width:74px}
 .rpmode.m-say{background:#2e86de;border-color:#2e86de;color:#fff}
 .rpmode.m-narr{background:#3a3f4b;border-color:#8a90a0;color:#e8e8e8;font-style:italic}
-@media (max-width:760px){.rpexpbox select{width:auto;flex:1 1 40%}.rpmode{min-width:0}}
+@media (max-width:760px){.rpexpbox select{width:auto;flex:1 1 40%}.rpmode{min-width:0;padding:0 10px!important}.rpinput input{flex:1 1 120px;min-width:0}.rpinput #rpsend{padding:0 14px}}
 .pf-twwrap.off{opacity:.4;pointer-events:none}
+/* ---------- GM 투표 (무대 위 카드, 10-24 벨벳 참고) ---------- */
+#voteov{position:absolute;left:50%;top:56px;transform:translateX(-50%);z-index:5;width:min(440px,calc(100% - 24px));pointer-events:none}
+#voteov:empty{display:none}
+.vote{pointer-events:auto;background:rgba(14,15,19,.93);border:2px solid #fff;box-shadow:4px 4px 0 var(--red),0 6px 18px rgba(0,0,0,.5);padding:8px 10px;color:#f2f2f2;transform:skewX(-2deg);animation:votein .25s ease-out}
+.vote>*{transform:skewX(2deg)}
+@keyframes votein{from{opacity:0;transform:skewX(-2deg) translateY(-8px)}}
+.vote.done{border-color:#ffd54a;box-shadow:4px 4px 0 #b8860b,0 6px 18px rgba(0,0,0,.5)}
+.vhead{display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;min-height:24px}
+.vhead b{font-size:13px;color:#fff;background:var(--red);padding:1px 8px;white-space:nowrap}
+.vote.done .vhead b{background:#b8860b}
+.vhead .vq{flex:1;min-width:0;font-weight:700;font-size:15px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.vote:not(.fold) .vhead .vq{white-space:normal;word-break:keep-all;overflow-wrap:anywhere}
+.vhead .vfold{opacity:.7;font-size:12px}
+.vopts{display:flex;flex-direction:column;gap:5px;margin-top:8px}
+.vo{position:relative;display:flex;align-items:center;gap:8px;width:100%;min-height:36px;padding:6px 10px;background:#23252c;border:1px solid #4a4e5a;color:#eee;text-align:left;font:inherit;font-size:14px;cursor:pointer;overflow:hidden}
+.vo:disabled{cursor:default;opacity:1}
+.vo:not(:disabled):hover{border-color:#fff}
+.vo .vbar{position:absolute;left:0;top:0;bottom:0;background:rgba(230,0,18,.32);transition:width .35s ease;pointer-events:none}
+.vo>*:not(.vbar){position:relative}
+.vo .vt{flex:1;min-width:0;word-break:keep-all;overflow-wrap:anywhere}
+.vo .vc{min-width:22px;text-align:right;font-size:15px}
+.vo .vwho{display:flex;gap:2px;flex-wrap:wrap;justify-content:flex-end;max-width:45%}
+.vo .vwho i{font-style:normal;font-size:11px;line-height:18px;padding:0 5px;background:#fff;color:#111;border-radius:9px}
+.vo.mine{border-color:#fff;background:#3a1d22;box-shadow:inset 3px 0 0 var(--red)}
+.vo.mine .vt::after{content:' ✔';color:#ff6b78}
+.vo.win{border-color:#ffd54a;background:#3a3216}
+.vo.win .vbar{background:rgba(255,213,74,.3)}
+.vfoot{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:7px;font-size:12px;color:#c9c9d1}
+.vfoot small{opacity:.8}
+.vfoot .sp{flex:1}
+@media (max-width:760px){
+ #voteov{left:8px;right:8px;top:100px;width:auto;transform:none}
+ .vote{transform:none;padding:7px 8px;box-shadow:3px 3px 0 var(--red),0 4px 12px rgba(0,0,0,.5)}
+ .vote>*{transform:none}
+ .vote:not(.fold){max-height:calc(100% - 100px);overflow:auto}
+ .vo{min-height:40px;font-size:14px}
+ .vfoot .btn{min-height:32px}
+}
+/* 말풍선 넘침 — 띄어쓰기 없는 긴 말도 칸 안에서 줄을 바꾸고, 그래도 넘치면 rp_ui 의 fitDlg 가 --fit 으로 글자를 줄인다 */
+.dlg.skin .dtext{overflow-wrap:anywhere;font-size:calc(var(--dlgfs,22px) * .98 * var(--bubfs,1) * var(--bubpc,.88) * var(--fit,1))}
+.dlg:not(.skin) .dtext{overflow-wrap:anywhere}
+@media (max-width:760px){.dlg.skin .dtext{font-size:calc(clamp(16px,4.7vw,21px) * var(--bubfs,1) * var(--fit,1))}}
