@@ -31,7 +31,9 @@ window.OM_IMPORT=(()=>{
  function pokemon(doc,tr,iv){
   const d=(doc.data&&doc.data.data)||doc.data||doc;
   const L=S().levelOf(tr,d);
-  const base=Array.from({length:6},(_,i)=>nz((d.base||[])[i]));
+  /* 10-22 망령: 제작기가 특성 · 포텐셜의 「종족치 N랭크 상승」을 반영해 둔 값(baseUp)이 있으면 그걸로 실수치를 낸다 (원래 값은 base0) */
+  const base0=Array.from({length:6},(_,i)=>nz((d.base||[])[i]));const BU=d.baseUp&&Array.isArray(d.baseUp.base)&&d.baseUp.base.length===6?d.baseUp:null;
+  const base=BU?BU.base.map((v,i)=>v===''||v==null?base0[i]:nz(v)):base0;
   const ev=[0,0,0,0,0,0];  /* 개체값·노력치는 쓰지 않는다 */
   iv=[0,0,0,0,0,0];
   const stats=S().statsOf(base,iv,ev,L);
@@ -46,7 +48,7 @@ window.OM_IMPORT=(()=>{
   return {id:doc.id||d.id,tid:tr?tr.id:(doc.data&&doc.data.tid)||'',name:d.name||'',gender:d.gender||'-',lv:L,dist:nz(d.dist),
    typesKo:tko,types:tko.map(S().typeEn),tera:d.tera&&d.tera!=='-'?d.tera:'-',teraEn:d.tera&&d.tera!=='-'?S().typeEn(d.tera):'-',
    ability:d.ability||'',abilityEff:brN(abil.multi||abil.single||''),item:d.item||'',itemEff:brN(item.eff||''),
-   base,ranks:base.map(S().gradeOf),iv,ev,stats,hp:{max:stats[0],cur:stats[0]},
+   base,ranks:base.map(S().gradeOf),iv,ev,stats,...(BU?{base0,baseUp:(BU.up||[]).map(u=>({i:+u.i,from:+u.from,to:+u.to,by:(u.by||[]).slice(0,4)}))}:{}),hp:{max:stats[0],cur:stats[0]},
    moves:(()=>{const mv=(d.moves||[]).filter(m=>m&&m.name).map(m=>move(m.name,m.half));return mv.length?mv:[move('발버둥',false)]})(),
    pots,excl:d.excl&&d.excl.name&&d.excl.name!=='전용 포텐셜'?{name:d.excl.name,eff:brN(d.excl.eff||'')}:null,
    exclX:(d.exclX||[]).filter(x=>x&&x.name).map(x=>({name:x.name,eff:brN(x.eff||'')})),

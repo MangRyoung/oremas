@@ -10,6 +10,8 @@ window.OM_FIELD=(()=>{
  const ko=k=>{const st=(DB().states||{}).st||{};return (st[k]&&st[k].ko)||k};
  const typesOf=m=>(m.teraActive&&m.teraEn&&m.teraEn!=='-')?[m.teraEn]:(m.types||[]).filter(t=>t&&t!=='-');
  const frac=(m,n,d)=>Math.max(1,Math.floor(m.hp.max*n/d));
+ /* 10-22 망령: 시트에 적어 둔 상태 변화 사양 (『수선녀의 요술』 「아쿠아링」 1/8 → 1/6 등) — OM_FX.stMod. sf(m,'AquaRing',1,8) = [양, 표시] */
+ const sf=(m,en,n,d)=>{const o=FX()&&FX().stMod?FX().stMod(m,en):null;if(o&&o.d>0)return [frac(m,o.n,o.d),`${o.n}/${o.d} 『${o.name}』`];return [frac(m,n,d),`${n}/${d}`]};
  const dmg=(m,v,lines,why)=>{v=+v;if(!isFinite(v))return 0;if(noind(m,'')){lines.push(`${m.name} ${why} — 비례 대미지를 받지 않는다`);return 0}const floor=noind(m,'noko')?1:0;const d=Math.max(0,Math.min(m.hp.cur-floor,v));if(d<=0){if(floor)lines.push(`${m.name} ${why} — 비례 대미지로는 빈사가 되지 않는다`);return 0}m.hp.cur-=d;lines.push(`${m.name} ${why} −${d} (HP ${m.hp.cur}/${m.hp.max})`);return d};
  const heal=(m,v,lines,why)=>{if(has(m,'HealBlock')){lines.push(`${m.name} ${why} — 「회복봉인」이라 회복하지 못함`);return 0}const h=Math.min(v,m.hp.max-m.hp.cur);if(h<=0){lines.push(`${m.name} ${why} — HP 가득이라 회복 없음`);return 0}m.hp.cur+=h;lines.push(`${m.name} ${why} +${h} (HP ${m.hp.cur}/${m.hp.max})`);return h};
 const FX=()=>window.OM_FX;
@@ -42,12 +44,12 @@ const FX=()=>window.OM_FX;
  function turnEndStates(mons,slots){const lines=[];const dead=[];
   for(const id in mons){const m=mons[id];if(!m.entry||m.hp.cur<=0||has(m,'Dead'))continue;const st=m.states||{};const sleeping=has(m,'Sleep')||has(m,'Comatose');
    /* 희망사항: 건 턴은 표시만, 다음 턴 종료에 1/2 */
-   if(st.Wish){if(!m.wishWait){m.wishWait=1;lines.push(`${m.name} 「희망사항」 다음 턴 종료 시 1/2 회복`)}else{m.wishWait=0;heal(m,frac(m,1,2),lines,'「희망사항」');clearState(m,'Wish')}}
-   if(st.AquaRing)heal(m,frac(m,1,8),lines,'「아쿠아링」');if(st.Ingrain)heal(m,frac(m,1,16),lines,'「뿌리박기」');if(st.Chant)heal(m,frac(m,1,16),lines,'「환희의노래」');
-   if(st.LeechSeed){const from=m.seedFrom||((m.side==='left'?'right':'left')+'_'+m.entry);const to=slots[from];if(!to||to.hp.cur<=0)lines.push(`${m.name} 「씨뿌리기」 씨를 뿌린 ${String(from).split('_')[1].toUpperCase()} 에리어에 포켓몬이 없어 회복 없음`);else{const v=frac(m,1,8);const d=dmg(m,v,lines,'「씨뿌리기」 드레인');if(d>0)heal(to,d,lines,`「씨뿌리기」(${m.name})`)}}
+   if(st.Wish){const [wv,wt]=sf(m,'Wish',1,2);if(!m.wishWait){m.wishWait=1;lines.push(`${m.name} 「희망사항」 다음 턴 종료 시 ${wt} 회복`)}else{m.wishWait=0;heal(m,wv,lines,`「희망사항」 ${wt}`);clearState(m,'Wish')}}
+   for(const [k,n,d,ko] of [['AquaRing',1,8,'아쿠아링'],['Ingrain',1,16,'뿌리박기'],['Chant',1,16,'환희의노래']])if(st[k]){const [v,tx]=sf(m,k,n,d);heal(m,v,lines,`「${ko}」 ${tx}`)}
+   if(st.LeechSeed){const from=m.seedFrom||((m.side==='left'?'right':'left')+'_'+m.entry);const to=slots[from];if(!to||to.hp.cur<=0)lines.push(`${m.name} 「씨뿌리기」 씨를 뿌린 ${String(from).split('_')[1].toUpperCase()} 에리어에 포켓몬이 없어 회복 없음`);else{const [v,tx]=sf(m,'LeechSeed',1,8);const d=dmg(m,v,lines,`「씨뿌리기」 드레인 ${tx}`);if(d>0)heal(to,d,lines,`「씨뿌리기」(${m.name})`)}}
    if(st.Toxic){m.toxicN=Math.min(15,(+m.toxicN||0)+1);dmg(m,frac(m,m.toxicN,16),lines,`「맹독」 ${m.toxicN}/16`)}else m.toxicN=0;
-   if(st.Poison)dmg(m,frac(m,1,8),lines,'「독」 1/8');if(st.Burn)dmg(m,frac(m,1,16),lines,'「화상」 1/16');
-   if(st.Nightmare&&sleeping)dmg(m,frac(m,1,4),lines,'「악몽」 1/4');if(st.Curse)dmg(m,frac(m,1,4),lines,'「저주」 1/4');if(st.Bind)dmg(m,frac(m,1,8),lines,'「바인드」 1/8');
+   if(st.Poison){const [v,tx]=sf(m,'Poison',1,8);dmg(m,v,lines,`「독」 ${tx}`)}if(st.Burn){const [v,tx]=sf(m,'Burn',1,16);dmg(m,v,lines,`「화상」 ${tx}`)}
+   if(st.Nightmare&&sleeping){const [v,tx]=sf(m,'Nightmare',1,4);dmg(m,v,lines,`「악몽」 ${tx}`)}if(st.Curse){const [v,tx]=sf(m,'Curse',1,4);dmg(m,v,lines,`「저주」 ${tx}`)}if(st.Bind){const [v,tx]=sf(m,'Bind',1,8);dmg(m,v,lines,`「바인드」 ${tx}`)}
    if(st.SaltCure){const ty=typesOf(m);const sw=ty.includes('Steel')||ty.includes('Water');dmg(m,sw?frac(m,1,6):frac(m,1,8),lines,`「소금절이」 ${sw?'1/6':'1/8'}`)}
    if(st.ThunderCage){const mul=B().effectiveness(['Electric'],m,{}).value;if(mul>0)dmg(m,Math.max(1,Math.floor(m.hp.max/8*mul)),lines,`「썬더프리즌」 전기 1/8 ×${mul}`);else lines.push(`${m.name} 「썬더프리즌」 전기 타입 효과가 없음`)}
    if(st.OctoLock){rankDown(m,'defense',-1);rankDown(m,'specialdefense',-1);lines.push(`${m.name} 「문어굳히기」 방어·특방 −1`)}
