@@ -71,18 +71,33 @@ async function renderHome(){
  if(!me){ACCT.set(null);return renderLogin('로그인이 끝났다 (30일 동안 안 들어왔거나 비밀번호가 바뀌었다) — 다시 로그인해 줘')}
  ACCT.set(Object.assign(a,{uid:me.uid,name:me.name,admin:!!me.admin}),ACCT.kept());
  const rooms=me.rooms||[],mine=LS.get('om_rooms',[]).filter(r=>!rooms.some(x=>x.id===r.id));
- app.innerHTML=`<div class="lobby">
-  <div class="brand">오레마스 <small>망켓몬 배틀 · 세션 툴</small></div>
-  <div class="card acct"><div class="row"><b class="anm">${esc(me.name)}</b><span class="mono small muted">@${esc(me.uid)}</span>${me.admin?'<span class="badge gm">관리자</span>':''}<span class="sp"></span>${me.admin?'<button class="btn sm pri" id="hmAdmin">계정 관리</button>':''}<button class="btn sm" id="hmMe">내 계정</button><button class="btn sm ghost" id="hmOut">로그아웃</button></div>
-   <p class="small muted">${ACCT.kept()?'이 기기에서 로그인 유지 중 (30일 동안 안 들어오면 끝난다)':'창을 닫으면 로그아웃된다'}</p></div>
-  <div class="card"><h2>내 방</h2>${rooms.length?`<ul class="rooms">${rooms.map(r=>`<li><b>${esc(r.name||r.id)}</b><span class="badge ${r.role==='gm'?'gm':'seat'}">${r.role==='gm'?'GM':'PL'}</span>${r.role==='pl'&&!r.seat?'<span class="small muted">자리 아직</span>':''}<span class="sp"></span>${r.role==='gm'?`<button class="btn sm ghost rmb" data-rmren="${esc(r.id)}" title="방 이름 바꾸기">✎</button><button class="btn sm ghost rmb" data-rmkill="${esc(r.id)}" title="방 지우기">🗑</button>`:''}<a class="btn sm pri" href="#r=${esc(r.id)}">들어가기</a></li>`).join('')}</ul>`:'<div class="empty">아직 권한이 있는 방이 없다. 방 링크로 들어가 자리에 앉거나, 관리자에게 방 권한을 받으면 여기 생긴다.</div>'}</div>
-  <div class="card"><h2>방 만들기 (GM)</h2>
-   <div class="row"><input type="text" id="newName" placeholder="방 이름 (예: 무진)" style="flex:1"><button class="btn pri" id="mk">만들기</button></div>
-   <p class="small muted">만든 계정이 그 방의 GM 이 된다. 플레이어에게는 방 링크만 주면 된다 — 들어와서 로그인하고 자리에 앉는다.</p></div>
-  <div class="card"><h2>방 들어가기</h2>
-   <div class="row"><input type="text" id="joinId" placeholder="방 링크 또는 방 id" style="flex:1"><button class="btn" id="join">입장</button></div></div>
-  ${mine.length?recent(mine).replace('<h2>최근 방</h2>','<h2>이 기기의 최근 방 <small class="muted">(예전 링크)</small></h2>'):''}
+ /* 10-22 망령: 로비 개편 — 위 막대(계정 · 관리자 패널) · 왼쪽 「내 방」 카드(그 방 배경 · 첫 화면 · 마지막 변경) · 오른쪽 만들기 · 들어가기 · 이 기기의 최근 방 */
+ const peek={};try{(await DBS().roomsPeek(rooms.map(r=>r.id))).forEach(x=>peek[x.room]=x)}catch(e){}
+ const upd=r=>String((peek[r.id]||{}).updated_at||'');const sorted=rooms.slice().sort((a,b)=>upd(b).localeCompare(upd(a)));
+ const tile=r=>{const pk=peek[r.id]||{};const bg=(pk.bg&&pk.bg.src)||'';const gm=r.role==='gm';const when=pk.updated_at?ago(new Date(pk.updated_at).getTime()):'';
+  return `<div class="rmt ${gm?'gm':'pl'}" data-go="${esc(r.id)}" data-q="${esc(String(r.name||r.id).toLowerCase())}" tabindex="0" role="link" aria-label="${esc((r.name||r.id)+' 들어가기')}"><div class="rmt-bg" style="${bg?`background-image:url('${cssu(bg)}')`:''}"></div><div class="rmt-in">
+   <div class="rmt-top"><span class="badge ${gm?'gm':'seat'}">${gm?'GM':'PL'}</span>${gm?'':`<span class="rmt-seat">${r.seat?'자리 있음':'자리 아직'}</span>`}<span class="sp"></span>${gm?`<button type="button" class="rmb" data-rmren="${esc(r.id)}" title="방 이름 바꾸기" aria-label="방 이름 바꾸기">✎</button><button type="button" class="rmb" data-rmkill="${esc(r.id)}" title="방 지우기" aria-label="방 지우기">🗑</button>`:''}</div>
+   <div class="rmt-nm">${esc(r.name||r.id)}</div>
+   <div class="rmt-meta">${pk.scene==='battle'?'⚔ 배틀':'🎬 RP'}${pk.bg&&pk.bg.name?' · '+esc(pk.bg.name):''}${when?' · '+esc(when):''}</div><span class="rmt-go">들어가기 ▶</span></div></div>`};
+ app.innerHTML=`<div class="lobby lb2">
+  <header class="lbtop"><div class="brand">오레마스 <small>망켓몬 배틀 · 세션 툴</small></div><span class="sp"></span>
+   <div class="lbme"><span class="lbav">${esc([...(me.name||me.uid||'?')][0]||'?')}</span><div class="lbmei"><b>${esc(me.name)}</b><small><span class="mono">@${esc(me.uid)}</span>${me.admin?' · <span class="lbadm">관리자</span>':''}</small></div></div>
+   <div class="lbacts">${me.admin?'<button class="btn sm pri" id="hmAdmin" title="계정 · 권한 · 방 · 방 기본값">⚙ 관리자 패널</button>':''}<button class="btn sm" id="hmMe">내 계정</button><button class="btn sm ghost" id="hmOut">로그아웃</button></div></header>
+  <div class="lbgrid">
+   <section class="lbmain"><div class="lbh"><h2>내 방 <small>${rooms.length}</small></h2><span class="sp"></span>${rooms.length>4?'<input type="search" id="rmQ" placeholder="방 찾기" autocomplete="off">':''}</div>
+    ${rooms.length?`<div class="rmgrid">${sorted.map(tile).join('')}</div>`:'<div class="empty lbempty">아직 권한이 있는 방이 없다. 오른쪽에서 방을 만들거나, 방 링크로 들어가 자리에 앉으면 여기 생긴다.</div>'}</section>
+   <aside class="lbside">
+    <div class="card"><h2>방 만들기</h2>
+     <div class="row"><input type="text" id="newName" placeholder="방 이름 (예: 무진)" style="flex:1;min-width:0"><button class="btn pri" id="mk">만들기</button></div>
+     <p class="small muted">만든 계정이 그 방의 GM 이 된다. 플레이어에게는 방 링크만 주면 된다.${me.admin?' 관리자 패널의 「방 기본값」이 처음부터 들어간다.':''}</p></div>
+    <div class="card"><h2>방 들어가기</h2>
+     <div class="row"><input type="text" id="joinId" placeholder="방 링크 또는 방 id" style="flex:1;min-width:0"><button class="btn" id="join">입장</button></div></div>
+    ${mine.length?recent(mine).replace('<h2>최근 방</h2>','<h2>이 기기의 최근 방 <small class="muted">(예전 링크)</small></h2>'):''}
+    <p class="small muted lbkeep">${ACCT.kept()?'이 기기에서 로그인 유지 중 (30일 동안 안 들어오면 끝난다)':'창을 닫으면 로그아웃된다'}</p>
+   </aside></div>
  </div>`;
+ app.querySelectorAll('.rmt[data-go]').forEach(el=>{const go=()=>{location.hash='r='+el.dataset.go};el.onclick=e=>{if(e.target.closest('button,a'))return;go()};el.onkeydown=e=>{if((e.key==='Enter'||e.key===' ')&&e.target===el){e.preventDefault();go()}}});
+ {const q=$('#rmQ');if(q)q.oninput=()=>{const v=q.value.trim().toLowerCase();app.querySelectorAll('.rmt[data-go]').forEach(el=>el.classList.toggle('hidden',!!v&&!el.dataset.q.includes(v)))}}
  $('#hmOut').onclick=async e=>{e.preventDefault();if(!confirm('이 기기에서 로그아웃할까?'))return;try{await DBS().acct.logout(a.token)}catch(x){}ACCT.set(null);route()};
  $('#hmMe').onclick=()=>openMe(me);const ad=$('#hmAdmin');if(ad)ad.onclick=()=>openAdmin();
  app.querySelectorAll('[data-rmdel]').forEach(b=>b.onclick=e=>{e.preventDefault();const id=b.dataset.rmdel;if(!confirm('이 기기의 최근 방 목록에서 뺄까? (방은 그대로 있다)'))return;LS.set('om_rooms',LS.get('om_rooms',[]).filter(r=>r.id!==id));renderHome()});
@@ -106,23 +121,99 @@ function openMe(me){
  $('#meNameOk',m).onclick=async()=>{const n=$('#meName',m).value.trim();if(!n)return toast('이름을 적어 줘');try{await DBS().acct.meUpdate(a.token,n,null,null);closeModal();toast('이름을 바꿨다');renderHome()}catch(e){toast(acctErr(e))}};
  $('#mePwOk',m).onclick=async()=>{const o=$('#meOld',m).value,n=$('#meNew',m).value;if(n!==$('#meNew2',m).value)return toast('새 비밀번호 확인이 다르다');if(n.length<4)return toast('비밀번호는 4자 이상');try{await DBS().acct.meUpdate(a.token,null,o,n);closeModal();toast('비밀번호를 바꿨다')}catch(e){toast(acctErr(e))}}}
 /* 관리자: 계정 목록 · 방마다 GM/PL 권한 · 관리자 · 비밀번호 초기화 · 지우기 · 방의 「계정 전용」 */
-let ADM={sel:'',tab:'users'};
-async function openAdmin(){
+let ADM={sel:'',tab:'users',def:null,defErr:'',defFrom:'',defAt:0};
+/* 10-22 망령: 관리자 패널 「방 기본값」 — 새로 만드는 방에 들어갈 입장 · 배틀 권한 · 첫 화면 · 확률 · 배경 · BGM · 공지 프리셋 · 같이 들어갈 계정.
+   서버 om_config 'room_defaults' (supabase/patch_2026-10-22_방기본값.sql) 에 두고, 방이 만들어질 때 서버가 덧붙인다. 「기존 방에 적용」은 여기서 방마다 쓴다 */
+const DEF_NEED='서버에 방 기본값 함수가 아직 없다 — supabase/patch_2026-10-22_방기본값.sql 을 SQL Editor 에서 실행해 줘';
+const defNorm=d=>{d=d&&typeof d==='object'?JSON.parse(JSON.stringify(d)):{};d.settings=d.settings||{};d.state=d.state||{};d.state.rp=d.state.rp||{};d.members=Array.isArray(d.members)?d.members:[];return d};
+const defMissing=e=>/om_config|PGRST202|Could not find the function|schema cache|does not exist/i.test(String((e&&e.message)||e||''));
+function bgOptions(cur){const G=(window.OM_DB||{}).bg||[];return `<option value="">없음 (검은 무대)</option>${G.map(g=>`<optgroup label="${esc(g.n)}">${(g.i||[]).filter(x=>x.src).map(x=>`<option value="${esc(x.src)}" data-l="${esc(x.l)}" ${cur===x.src?'selected':''}>${esc(x.l)}</option>`).join('')}</optgroup>`).join('')}`}
+function bgmOptions(cur){const M=(window.OM_DB||{}).bgm||{};const base=M.base||'';return `<option value="">없음</option>${Object.entries(M.groups||{}).map(([g,songs])=>`<optgroup label="${esc(g)}">${Object.entries(songs).map(([s,p])=>`<option value="${esc(base+p)}" data-g="${esc(g)}" data-s="${esc(s)}" ${cur===base+p?'selected':''}>${esc(s)}</option>`).join('')}</optgroup>`).join('')}`}
+function defsHtml(users,rooms,me){
+ if(ADM.defErr)return `<div class="adm"><div class="empty">${esc(ADM.defErr)}</div></div>`;
+ const d=ADM.def;const rp=d.state.rp;const bat=rp.seatOwn===true?'own':rp.plBattle===false?'gm':'mock';
+ const card=(ic,ttl,body,sub)=>`<section class="pf-card"><header><i>${ic}</i><b>${ttl}</b>${sub?`<small>${sub}</small>`:''}</header>${body}</section>`;
+ const sw=(id,on,label,sub)=>`<label class="pf-sw"><input type="checkbox" id="${id}" ${on?'checked':''}><i></i><span><b>${label}</b>${sub?`<small>${sub}</small>`:''}</span></label>`;
+ const rad=(v,label,sub)=>`<label class="pf-sw dfr"><input type="radio" name="dfBat" value="${v}" ${bat===v?'checked':''}><i></i><span><b>${label}</b><small>${sub}</small></span></label>`;
+ const mem=uid=>(d.members.find(x=>x.uid===uid)||{}).role||'';
+ const others=users.filter(u=>u.uid!==me&&!u.admin);
+ return `<div class="dfwrap"><div class="pf-note" style="margin:0 0 10px">여기서 정한 값이 <b>새로 만드는 방</b>에 처음부터 들어간다. 방을 만든 뒤에는 그 방 「설정 → 방 설정」에서 따로 바꿀 수 있다.${ADM.defAt?` · 마지막 저장 ${esc(ago(ADM.defAt))}`:''}</div>
+  <div class="pf">
+  ${card('🔐','입장',sw('dfAcct',!!d.settings.accountOnly,'계정 전용 방','로그인한 계정만 들어오고, PL 권한을 준 계정만 자리에 앉는다'))}
+  ${card('⚔','배틀 권한',`${rad('mock','① 플레이어도 배틀 진행 (모의전)','플레이어도 파티 불러오기 · 시합 개시 · 턴 진행')}${rad('own','② 플레이어는 자기 것만 (세션)','자기 트레이너 · 지시 · 스킬만. 턴 진행 · 필드는 GM')}${rad('gm','배틀 진행은 GM 만','플레이어는 자기 지시만 입력')}
+   ${sw('dfHands',rp.gmHands===false,'GM 불간섭','플레이어가 올린 트레이너의 지시 · HP · 상태는 그 플레이어만')}`)}
+  ${card('🎬','처음 화면 · 무대',`<div class="pf-sel"><span class="pf-lb">첫 화면</span><select id="dfScene"><option value="rp" ${d.state.scene!=='battle'?'selected':''}>RP 무대</option><option value="battle" ${d.state.scene==='battle'?'selected':''}>배틀</option></select><span></span></div>
+   <div class="pf-sel"><span class="pf-lb">배경</span><select id="dfBg">${bgOptions((rp.bg||{}).src||'')}</select><span></span></div>
+   <div class="dfbgp" style="${(rp.bg||{}).src?`background-image:url('${cssu(rp.bg.src)}')`:''}">${(rp.bg||{}).src?'':'<span>배경 없음</span>'}</div>
+   <div class="pf-sel"><span class="pf-lb">BGM</span><select id="dfBgm">${bgmOptions((rp.bgm||{}).src||'')}</select><span></span></div><div class="pf-note">BGM 은 방에 들어온 사람이 화면을 한 번 누르면 흐른다</div>`)}
+  ${card('🎲','확률 표식',`<div class="pf-pct">${PCT_LABELS.map(l=>{const cur=(rp.pct||{})[l];return `<label><span>${l}</span><input type="number" min="0" max="100" step="1" data-dfpct="${l}" value="${cur!=null&&cur!==''?esc(String(cur)):''}" placeholder="${pctBase(l)}"><em>%</em></label>`}).join('')}</div><div class="pf-note">비운 칸은 흐린 기본값</div>`)}
+  ${card('📢','공지 프리셋 · 배경 목록',`<div class="pf-note" style="margin:0 0 6px">잘 짜 둔 방에서 공지 프리셋(씬 오픈 · 씬 전환 …)과 GM 이 넣은 배경 목록을 가져와 새 방에 그대로 넣는다</div>
+   <div class="row"><select id="dfFrom" style="flex:1;min-width:0">${rooms.map(r=>`<option value="${esc(r.id)}">${esc(r.name||r.id)}</option>`).join('')}</select><button class="btn sm" id="dfPull" ${rooms.length?'':'disabled'}>이 방에서 가져오기</button></div>
+   <div class="dfhave small">${rp.notices?`<span class="badge">공지 ${rp.notices.length}개</span>`:'<span class="dim">공지: 기본 8개</span>'} ${rp.bgList?`<span class="badge">배경 목록 ${(rp.bgList||[]).reduce((a,g)=>a+((g.i||[]).length),0)}장</span>`:'<span class="dim">배경 목록: 기본</span>'}${rp.notices||rp.bgList?` <button class="btn xs ghost" id="dfPullX">비우기</button>`:''}${ADM.defFrom?` <span class="dim">· 「${esc(ADM.defFrom)}」에서</span>`:''}</div>`)}
+  ${card('👥','같이 들어갈 계정',others.length?`<div class="pf-note" style="margin:0 0 6px">계정으로 방을 만들면 이 계정들이 처음부터 그 방의 GM · PL 이 된다 (만든 사람은 언제나 GM)</div><table class="admt"><tbody>${others.map(u=>`<tr><td><b>${esc(u.name)}</b> <span class="mono small muted">@${esc(u.uid)}</span></td><td style="width:110px"><select data-dfm="${esc(u.uid)}"><option value="">없음</option><option value="gm" ${mem(u.uid)==='gm'?'selected':''}>GM</option><option value="pl" ${mem(u.uid)==='pl'?'selected':''}>PL</option></select></td></tr>`).join('')}</tbody></table>`:'<div class="small dim">관리자 말고는 아직 계정이 없다</div>')}
+  </div>
+  <div class="row dfbar"><button class="btn ghost danger sm" id="dfClear">기본값 지우기</button><span class="sp"></span><button class="btn" id="dfApply" ${rooms.length?'':'disabled'}>기존 방에도 적용…</button><button class="btn pri" id="dfSave">저장</button></div></div>`}
+function readDefs(m){const d=ADM.def;const rp=d.state.rp;const q=s=>$(s,m);
+ d.settings.accountOnly=q('#dfAcct').checked;if(!d.settings.accountOnly)delete d.settings.accountOnly;
+ const bat=(m.querySelector('[name="dfBat"]:checked')||{}).value||'mock';
+ if(bat==='own'){rp.seatOwn=true;rp.plBattle=false}else if(bat==='gm'){delete rp.seatOwn;rp.plBattle=false}else{delete rp.seatOwn;delete rp.plBattle}
+ if(q('#dfHands').checked)rp.gmHands=false;else delete rp.gmHands;
+ if(q('#dfScene').value==='battle')d.state.scene='battle';else delete d.state.scene;
+ const bs=q('#dfBg');if(bs.value){const o=bs.selectedOptions[0];rp.bg={src:bs.value,name:o.dataset.l||o.textContent,at:0}}else delete rp.bg;
+ const ms=q('#dfBgm');if(ms.value){const o=ms.selectedOptions[0];rp.bgm={src:ms.value,title:o.dataset.s||o.textContent,group:o.dataset.g||'',at:0}}else delete rp.bgm;
+ const pct={};let bad='';m.querySelectorAll('[data-dfpct]').forEach(x=>{const v=x.value.trim();if(v==='')return;const n=+v;if(!isFinite(n)||n<0||n>100){bad=x.dataset.dfpct;return}pct[x.dataset.dfpct]=Math.round(n)});
+ if(Object.keys(pct).length)rp.pct=pct;else delete rp.pct;
+ d.members=[...m.querySelectorAll('[data-dfm]')].filter(s=>s.value).map(s=>({uid:s.dataset.dfm,role:s.value}));
+ if(!Object.keys(d.settings).length)delete d.settings;if(!Object.keys(rp).length)delete d.state.rp;if(!Object.keys(d.state).length)delete d.state;if(!d.members.length)delete d.members;
+ const out=JSON.parse(JSON.stringify(d));ADM.def=defNorm(d);return {out,bad}}
+function bindDefs(m,t,users,rooms){if(ADM.defErr)return;
+ const keep=()=>{readDefs(m)};
+ m.querySelectorAll('.dfwrap input,.dfwrap select').forEach(x=>{if(x.id!=='dfFrom')x.addEventListener('change',keep)});
+ const bs=$('#dfBg',m);if(bs)bs.addEventListener('change',()=>{const p=$('.dfbgp',m);p.style.backgroundImage=bs.value?`url('${cssu(bs.value)}')`:'';p.innerHTML=bs.value?'':'<span>배경 없음</span>'});
+ const pull=$('#dfPull',m);if(pull)pull.onclick=async()=>{const id=$('#dfFrom',m).value;const r=rooms.find(x=>x.id===id)||{};try{const s=await DBS().getState(id);const rp=((s&&s.data)||{}).rp||{};readDefs(m);const D=ADM.def.state.rp;let n=0;
+  if(Array.isArray(rp.notices)&&rp.notices.length){D.notices=rp.notices;n++}else delete D.notices;if(Array.isArray(rp.bgList)&&rp.bgList.length){D.bgList=rp.bgList;n++}else delete D.bgList;
+  ADM.defFrom=r.name||id;toast(n?`「${r.name||id}」의 공지 · 배경 목록을 가져왔다 — 「저장」을 눌러야 남는다`:`「${r.name||id}」에는 따로 짠 공지 · 배경 목록이 없다 (기본값을 쓴다)`);openAdmin(true)}catch(e){toast('방을 읽지 못했다: '+e.message)}};
+ const px=$('#dfPullX',m);if(px)px.onclick=()=>{readDefs(m);delete ADM.def.state.rp.notices;delete ADM.def.state.rp.bgList;ADM.defFrom='';openAdmin(true)};
+ $('#dfSave',m).onclick=async()=>{const {out,bad}=readDefs(m);if(bad)return toast(`「${bad}」 은 0~100 사이 숫자로 적어 줘`);
+  try{await DBS().acct.configSet(t,'room_defaults',Object.keys(out).length?out:null);ADM.defAt=Date.now();toast('방 기본값을 저장했다 — 이제 새로 만드는 방에 들어간다')}catch(e){toast(defMissing(e)?DEF_NEED:acctErr(e))}};
+ $('#dfClear',m).onclick=async()=>{if(!confirm('방 기본값을 모두 지울까? 새 방은 처음 상태(아무 설정 없음)로 만들어진다. 이미 만든 방은 그대로.'))return;
+  try{await DBS().acct.configSet(t,'room_defaults',null);ADM.def=defNorm(null);ADM.defFrom='';ADM.defAt=Date.now();toast('방 기본값을 지웠다');openAdmin(true)}catch(e){toast(defMissing(e)?DEF_NEED:acctErr(e))}};
+ $('#dfApply',m).onclick=()=>{const {out,bad}=readDefs(m);if(bad)return toast(`「${bad}」 은 0~100 사이 숫자로 적어 줘`);openDefApply(out,t,users,rooms)}}
+/* 기존 방에 적용: 고른 방마다 입장 설정 · rp 칸 · 같이 들어갈 계정(그 방 권한이 아직 없는 계정만). 첫 화면은 지금 보고 있는 화면이라 건드리지 않는다 */
+function openDefApply(d,t,users,rooms){const rp=(d.state||{}).rp||{};const keys=Object.keys(rp);const mem=d.members||[];
+ const what=[d.settings&&d.settings.accountOnly!=null?'입장(계정 전용)':'',keys.length?'방 설정 '+keys.length+'칸':'',mem.length?'계정 '+mem.length+'명':''].filter(Boolean);
+ if(!what.length)return toast('적용할 기본값이 없다');
+ const m=openModal(`<div class="mhead"><h2>기존 방에 적용</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+  <div class="pf-note" style="margin:0 0 8px">${esc(what.join(' · '))} 을(를) 고른 방에 덮어쓴다. 첫 화면은 바꾸지 않는다. 계정은 그 방 권한이 아직 없을 때만 넣는다.</div>
+  <div class="row" style="margin-bottom:6px"><button class="btn xs ghost" id="daAll">모두</button><button class="btn xs ghost" id="daNone">없음</button></div>
+  <ul class="daL">${rooms.map(r=>`<li><label class="lgkeep"><input type="checkbox" data-da="${esc(r.id)}"> <b>${esc(r.name||r.id)}</b> <span class="mono small muted">${esc(r.id)}</span></label></li>`).join('')}</ul>
+  <div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn pri" id="daGo">적용</button></div>`);
+ m.classList.add('setmodal');
+ $('#daAll',m).onclick=()=>m.querySelectorAll('[data-da]').forEach(c=>c.checked=true);$('#daNone',m).onclick=()=>m.querySelectorAll('[data-da]').forEach(c=>c.checked=false);
+ $('#daGo',m).onclick=async()=>{const ids=[...m.querySelectorAll('[data-da]:checked')].map(c=>c.dataset.da);if(!ids.length)return toast('방을 골라 줘');const bt=$('#daGo',m);bt.disabled=true;let ok=0,bad='';
+  for(const id of ids){bt.textContent=`적용 중… ${ok}/${ids.length}`;try{const sec='u:'+t;
+    if(d.settings&&Object.keys(d.settings).length){const row=await DBS().getRoom(id);await DBS().roomUpdate(id,sec,null,Object.assign({},(row&&row.settings)||{},d.settings))}
+    for(const k of keys)await DBS().setState(id,sec,['rp',k],(k==='bg'||k==='bgm')?Object.assign({},rp[k],{at:Date.now()}):rp[k]);
+    for(const x of mem){const u=users.find(y=>y.uid===x.uid);if(u&&!(u.rooms||[]).some(r=>r.room===id))await DBS().acct.adminMember(t,x.uid,id,x.role,null)}
+    ok++}catch(e){bad=e.message}}
+  closeModal();toast(`${ok}개 방에 적용했다${bad?' · 실패: '+bad:''}`);openAdmin()}}
+async function openAdmin(keepDraft){
  const t=ACCT.tok();let d;try{d=await DBS().acct.adminList(t)}catch(e){return toast(acctErr(e))}
+ if(ADM.tab==='defs'&&(!keepDraft||!ADM.def)){ADM.defErr='';ADM.defFrom='';try{ADM.def=defNorm(await DBS().acct.configGet(t,'room_defaults'))}catch(e){ADM.def=defNorm(null);ADM.defErr=defMissing(e)?DEF_NEED:acctErr(e)}}
  const users=d.users||[],rooms=d.rooms||[],me=(ACCT.get()||{}).uid;if(!users.some(u=>u.uid===ADM.sel))ADM.sel=(users[0]||{}).uid||'';
  const u=users.find(x=>x.uid===ADM.sel);const roleOf=rid=>((u&&u.rooms)||[]).find(x=>x.room===rid)||null;
  const when=s=>s?ago(new Date(s).getTime()):'—';
- const m=openModal(`<div class="mhead"><h2>계정 관리</h2><span class="small muted">${users.length}명 · 방 ${rooms.length}개</span><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-  <div class="pf-tabs"><button data-atab="users" class="${ADM.tab==='users'?'on':''}"><span>계정 · 권한</span></button><button data-atab="rooms" class="${ADM.tab==='rooms'?'on':''}"><span>방</span></button></div>
+ const m=openModal(`<div class="mhead"><h2>관리자 패널</h2><span class="small muted">${users.length}명 · 방 ${rooms.length}개</span><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+  <div class="pf-tabs"><button data-atab="users" class="${ADM.tab==='users'?'on':''}"><span>계정 · 권한</span></button><button data-atab="rooms" class="${ADM.tab==='rooms'?'on':''}"><span>방</span></button><button data-atab="defs" class="${ADM.tab==='defs'?'on':''}"><span>방 기본값</span></button></div>
   ${ADM.tab==='users'?`<div class="adm"><ul class="admu">${users.map(x=>`<li data-u="${esc(x.uid)}" class="${x.uid===ADM.sel?'on':''}"><b>${esc(x.name)}</b><span class="mono small muted">@${esc(x.uid)}</span>${x.admin?'<span class="badge gm">관리자</span>':''}<span class="sp"></span><span class="admr">${(x.rooms||[]).map(r=>`<span class="badge ${r.role==='gm'?'gm':'seat'}">${esc(r.name||r.room)} ${r.role==='gm'?'GM':'PL'}</span>`).join('')}</span><span class="when">${esc(when(x.last_at))}</span></li>`).join('')}</ul>
    ${u?`<div class="adme"><div class="row"><b>${esc(u.name)}</b><span class="mono small muted">@${esc(u.uid)} · 가입 ${esc(when(u.created_at))}</span><span class="sp"></span>
      <label class="lgkeep"><input type="checkbox" id="admAdm" ${u.admin?'checked':''} ${u.uid===me?'disabled title="자기 관리자 권한은 뺄 수 없다"':''}> 관리자</label></div>
     <table class="admt"><thead><tr><th>방</th><th>권한</th><th>자리</th></tr></thead><tbody>${rooms.map(r=>{const x=roleOf(r.id);return `<tr><td>${esc(r.name||r.id)}${r.accountOnly?' <span class="badge">계정 전용</span>':''}</td><td><select data-arole="${esc(r.id)}"><option value="">없음${u.admin?' (관리자라 GM)':''}</option><option value="gm" ${x&&x.role==='gm'?'selected':''}>GM</option><option value="pl" ${x&&x.role==='pl'?'selected':''}>PL</option></select></td><td class="small muted">${x&&x.role==='pl'?(x.seat?esc(x.seat):'아직'):''}</td></tr>`}).join('')||'<tr><td colspan="3" class="muted">방이 없다</td></tr>'}</tbody></table>
     <div class="pf-note">PL 권한만 주면 그 사람이 방에 들어와 자리를 고른다. 자리를 옮기게 하려면 방의 「자리 관리」에서 비운다.</div>
     <div class="row" style="margin-top:10px"><button class="btn sm" id="admPw">비밀번호 초기화</button>${u.uid===me?'':'<button class="btn sm ghost danger" id="admDel">계정 지우기</button>'}</div></div>`:'<div class="empty">아직 계정이 없다</div>'}</div>`
-  :`<div class="adm"><table class="admt"><thead><tr><th>방</th><th>계정 전용</th><th></th></tr></thead><tbody>${rooms.map(r=>`<tr><td><b>${esc(r.name||r.id)}</b> <span class="mono small muted">${esc(r.id)}</span></td><td><label class="lgkeep"><input type="checkbox" data-aonly="${esc(r.id)}" ${r.accountOnly?'checked':''}> 로그인해야 들어간다</label></td><td><a class="btn xs" href="#r=${esc(r.id)}">들어가기</a></td></tr>`).join('')}</tbody></table>
+  :ADM.tab==='defs'?defsHtml(users,rooms,me):`<div class="adm"><table class="admt"><thead><tr><th>방</th><th>계정 전용</th><th></th></tr></thead><tbody>${rooms.map(r=>`<tr><td><b>${esc(r.name||r.id)}</b> <span class="mono small muted">${esc(r.id)}</span></td><td><label class="lgkeep"><input type="checkbox" data-aonly="${esc(r.id)}" ${r.accountOnly?'checked':''}> 로그인해야 들어간다</label></td><td><a class="btn xs" href="#r=${esc(r.id)}">들어가기</a></td></tr>`).join('')}</tbody></table>
    <div class="pf-note">「계정 전용」을 켜면 로그인해야 들어오고, 「계정 · 권한」에서 PL 을 준 계정만 자리에 앉는다. 예전 방 링크 · GM 링크 · 이 기기에 기억된 자리로는 권한이 안 생긴다 (관리자는 언제나 GM). 끈 방은 로그인한 누구나 앉을 수 있다.</div></div>`}`);
- m.classList.add('setmodal');
+ m.classList.add('setmodal');if(ADM.tab==='defs'){m.classList.add('dfmodal');bindDefs(m,t,users,rooms)}
  m.querySelectorAll('[data-atab]').forEach(b=>b.onclick=()=>{ADM.tab=b.dataset.atab;openAdmin()});
  m.querySelectorAll('[data-u]').forEach(li=>li.onclick=()=>{ADM.sel=li.dataset.u;openAdmin()});
  const run=async(f,ok)=>{try{await f();if(ok)toast(ok)}catch(e){toast(acctErr(e))}openAdmin()};
