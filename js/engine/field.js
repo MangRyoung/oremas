@@ -13,7 +13,7 @@ window.OM_FIELD=(()=>{
  /* 10-22 망령: 시트에 적어 둔 상태 변화 사양 (『수선녀의 요술』 「아쿠아링」 1/8 → 1/6 등) — OM_FX.stMod. sf(m,'AquaRing',1,8) = [양, 표시] */
  const sf=(m,en,n,d)=>{const o=FX()&&FX().stMod?FX().stMod(m,en):null;if(o&&o.d>0)return [frac(m,o.n,o.d),`${o.n}/${o.d} 『${o.name}』`];return [frac(m,n,d),`${n}/${d}`]};
  const dmg=(m,v,lines,why)=>{v=+v;if(!isFinite(v))return 0;if(noind(m,'')){lines.push(`${m.name} ${why} — 비례 대미지를 받지 않는다`);return 0}const floor=noind(m,'noko')?1:0;const d=Math.max(0,Math.min(m.hp.cur-floor,v));if(d<=0){if(floor)lines.push(`${m.name} ${why} — 비례 대미지로는 빈사가 되지 않는다`);return 0}m.hp.cur-=d;lines.push(`${m.name} ${why} −${d} (HP ${m.hp.cur}/${m.hp.max})`);return d};
- const heal=(m,v,lines,why)=>{if(has(m,'HealBlock')){lines.push(`${m.name} ${why} — 「회복봉인」이라 회복하지 못함`);return 0}const h=Math.min(v,m.hp.max-m.hp.cur);if(h<=0){lines.push(`${m.name} ${why} — HP 가득이라 회복 없음`);return 0}m.hp.cur+=h;lines.push(`${m.name} ${why} +${h} (HP ${m.hp.cur}/${m.hp.max})`);return h};
+ const heal=(m,v,lines,why)=>{if(has(m,'HealBlock')){lines.push(`${m.name} ${why} — 「회복봉인」이라 회복하지 못함`);return 0}const h=Math.min(v,m.hp.max-m.hp.cur);if(h<=0)return 0;m.hp.cur+=h;lines.push(`${m.name} ${why} +${h} (HP ${m.hp.cur}/${m.hp.max})`);return h};
 const FX=()=>window.OM_FX;
  const ABN=['Poison','Toxic','Burn','Paralysis','Freeze','Sleep','Comatose'];
  const isAbn=m=>ABN.some(k=>has(m,k));

@@ -419,7 +419,7 @@ window.OM_BATTLE_UI=(()=>{
    await A().set(['ready'],{});await A().set(['battle','cmds'],{});await A().set(['battle','host'],c.gm?'gm':c.seat);if(b.tstep)await A().set(['battle','tstep'],null);if(b.swPur)await A().set(['battle','swPur'],null);await A().set(['battle','phase'],1);
    /* 맵툴 set_turn_start: 턴을 연 순간 필드에 있던 포켓몬은 started (이 턴 도중에 들어온 포켓몬만 「교대 등장」) */
    for(const m of Object.values(ctx().b.mons||{}))if(m.entry&&!m.started)await A().set(['battle','mons',m.id,'started'],true);
-   await preCharge();const TN=+ctx().b.turn||1;cutPhase('턴 개시',`TURN ${TN}`);A().sysLog(`턴 개시 — TURN ${TN}\n「턴 진행 ▶」: 교대 알림 → 『지령』 & 『포텐셜』 발동 → 행동 순서 · 지시는 행동 순서가 오면 차례대로 공개`,'battle');try{await autoTurnStart()}catch(e){console.warn('턴 개시 자동',e)}return}
+   await preCharge();const TN=+ctx().b.turn||1;cutPhase('턴 개시',`TURN ${TN}`);A().sysLog(`턴 개시 — TURN ${TN}${TN<=1?'\n「턴 진행 ▶」: 교대 알림 → 『지령』 & 『포텐셜』 발동 → 행동 순서 · 지시는 행동 순서가 오면 차례대로 공개':''}`,'battle');try{await autoTurnStart()}catch(e){console.warn('턴 개시 자동',e)}return}
   if(p===2)return computeOrder();
   if(p===3){await A().set(['battle','orderIdx'],0);await A().set(['battle','phase'],3);cutPhase('행동 처리','순서대로 공격');A().sysLog('행동 처리 — 순서대로 「공격」, 끝나면 「다음 행동 ▶」','battle');return}
   if(p===5)return endFlow()}
@@ -632,7 +632,7 @@ window.OM_BATTLE_UI=(()=>{
 
  /* ----- 지시 저장 · 준비 · 공개 ----- */
  /* 저장한 지시엔 턴 번호를 붙인다 (10-24 망령): 지난 턴 지시(선행 포텐셜 · 지령)를 다음 턴에 또 읽어 「선행」이 풀리지 않던 것 */
- function cleanCmd(cur){const out={mons:{},detail:cur.detail||'',upots:cur.upots||[],turn:+ctx().b.turn||0};for(const k in cur.mons){const x=cur.mons[k];out.mons[k]={move:x.move,switch:x.switch,targets:x.targets||[],prio:x.prio||{},ochg:x.ochg||{},order:x.order||'',command:x.command||'',pots:x.pots||[],pman:x.pman?1:0,pur:x.pur||'',pimm:x.pimm||''}}return out}
+ function cleanCmd(cur){const out={mons:{},detail:cur.detail||'',upots:cur.upots||[],turn:+ctx().b.turn||1};   /* 시합 개시 전(턴 0)에 넣은 지시는 TURN 1 것 */for(const k in cur.mons){const x=cur.mons[k];out.mons[k]={move:x.move,switch:x.switch,targets:x.targets||[],prio:x.prio||{},ochg:x.ochg||{},order:x.order||'',command:x.command||'',pots:x.pots||[],pman:x.pman?1:0,pur:x.pur||'',pimm:x.pimm||''}}return out}
  /* 공개용: 선행 입력(지령·명령)은 뺀다 — 발동할 때 드러난다 */
  function pubMon(x){x=x||{};return {move:x.move,switch:x.switch,targets:x.targets||[],prio:x.prio||{},ochg:x.ochg||{}}}
  async function saveCmd(tid,quiet){const c=ctx();const cur=CMD[tid];if(!cur)return;{const t=(c.b.trainers||{})[tid]||{};for(const mid in cur.mons){const m=c.b.mons[mid];if(!m)continue;const pp=prePursuit(t,m,cur.mons[mid],cur.upots);cur.mons[mid].pur=pp.pur;cur.mons[mid].pimm=pp.pimm}}
@@ -733,7 +733,7 @@ window.OM_BATTLE_UI=(()=>{
   A().sysLog(`【${kind==='order'?'지령':'명령'}】 ${t.name}의 지시! 『${name}』 → ${m.name} (에리어 ${String(m.entry).toUpperCase()}) 【${Math.max(0,+t.orderCount[ck]||0)}/시】${tag}${fx.length?'\n'+fx.join('\n'):''}`,'battle',{mid:m.id,img:trainerImg(t),eff:String(oeff).replace(/<br\s*\/?>/g,'\n').slice(0,400)})}
  /* 맵툴 open_command 처럼 에리어(포켓몬) 하나씩 공개한다. 좌석은 자기 것만, GM 은 아무 것이나 */
  function revealed(b,tid,part){const cm=((b.cmds||{})[tid]||{});return part==='orders'?!!cm.revealedOrders:!!((cm.mons||{})[part])}
- const cmdFresh=(r,b)=>{const d=r&&r.data;return !!d&&(d.turn==null||+d.turn===(+(b||ctx().b).turn||0))};
+ const cmdFresh=(r,b)=>{const d=r&&r.data;return !!d&&(d.turn==null||(+d.turn||1)===(+(b||ctx().b).turn||1))};
  async function myCmd(c,tid,quiet){let rows;try{rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd')}catch(e){if(!quiet)A().toast('지시를 읽지 못했다: '+e.message);return null}const r=(rows||[]).filter(x=>cmdFresh(x,c.b)).find(x=>x.id===tid);if(!r){if(!quiet)A().toast('저장된 지시가 없다 — 먼저 「저장」');return null}return r.data}
  function revealCardText(b,t,m,x){if(x.move==='switch')return `${t.name} · ${m.name} (${slotName(b,m.side+'_'+m.entry).replace(/<[^>]+>/g,'')}): 「교대」 → ${monName(b,x.switch)}`;
   if(x.move===''||x.move==null)return `${t.name} · ${m.name}: (행동 없음)`;const mv=MVS(m)[+x.move]||{};
@@ -817,7 +817,7 @@ window.OM_BATTLE_UI=(()=>{
   for(const o of order){if(!o.pursuitHit){delete o.pursuitSrc;o.pursuit=false;o.move='';o.targets=[]}delete o.pimm}   /* 기술 이름·대상은 차례가 와서 공개될 때까지 순서표에 남기지 않는다 (걸린 따라가때리기만 예외) */   /* 걸리지 않은 선행 추격·추격 무시는 공개 순서표에 남기지 않는다 */
   for(const m of iceUsed)await A().set(['battle','mons',m.id,'prioDown'],null);
   await A().set(['battle','order'],order);await A().set(['battle','orderIdx'],0);await A().set(['battle','orderNotes'],notes);await A().set(['battle','phase'],2);if(b.tstep)await A().set(['battle','tstep'],null);if(b.swPur)await A().set(['battle','swPur'],null);
-  cutPhase('행동 순서','');for(const [o,v] of purs){const pm=b.mons[o.mid]||{};A().sysLog(`【따라가때리기】 ${o.name} 『${o.move}』 발동!${o.pursuitSrc?'\n선행 『'+o.pursuitSrc+'』에 묻어 있던 추격':''}\n교대하려는 ${v.name}을(를) 교대 전에 먼저 때린다${pursuitX2(((b.mons[o.mid]||{}).moves||[]).find(q=>q.name===o.move))?' → 위력 2배':''}`,'battle',{mid:o.mid,img:pm.image||''});setTimeout(()=>cutFire('m:'+o.mid,pm.image,`${o.name}의 따라가때리기!`,`『${o.move}』 → ${v.name}`,pm.side==='left'?'#1f6fd1':'#e3101f'),1600)}A().sysLog('행동 순서\n'+order.map((o,i)=>`${i+1}. ${o.name} (${o.change?'교대 · ':''}${o.order!==20?'순서 '+o.order+' · ':''}${o.prio?'우선 '+o.prio+' · ':''}스피드 ${Math.round(o.speed)} · d${o.dice})`).join('\n'),'battle',{ord:order.map(o=>({n:o.name,img:(b.mons[o.mid]||{}).image||'',side:o.side,s:Math.round(o.speed),cap:!o.started?'교대 등장':o.change?'통상 교대':o.order!==20?orderValueName(o.order):'우선도 '+(o.prio>0?'+':'')+o.prio+(o.pursuitHit?' · 따라가때리기':'')}))})}
+  cutPhase('행동 순서','');for(const [o,v] of purs){const pm=b.mons[o.mid]||{};A().sysLog(`【따라가때리기】 ${o.name} 『${o.move}』 발동!${o.pursuitSrc?'\n선행 『'+o.pursuitSrc+'』에 묻어 있던 추격':''}\n교대하려는 ${v.name}을(를) 교대 전에 먼저 때린다${pursuitX2(((b.mons[o.mid]||{}).moves||[]).find(q=>q.name===o.move))?' → 위력 2배':''}`,'battle',{mid:o.mid,img:pm.image||''});setTimeout(()=>cutFire('m:'+o.mid,pm.image,`${o.name}의 따라가때리기!`,`『${o.move}』 → ${v.name}`,pm.side==='left'?'#1f6fd1':'#e3101f'),1600)}A().sysLog('행동 순서\n'+order.map((o,i)=>`${i+1}. ${o.name} (${o.change?'교대 · ':''}${o.order!==20?'순서 '+o.order+' · ':''}${o.prio?'우선 '+o.prio+' · ':''}스피드 ${Math.round(o.speed)}${order.some(q=>q!==o&&Math.round(q.speed)===Math.round(o.speed)&&(+q.prio||0)===(+o.prio||0)&&q.order===o.order)?' · 동속 주사위 '+o.dice:''})`).join('\n'),'battle',{ord:order.map(o=>({n:o.name,img:(b.mons[o.mid]||{}).image||'',side:o.side,s:Math.round(o.speed),cap:!o.started?'교대 등장':o.change?'통상 교대':o.order!==20?orderValueName(o.order):'우선도 '+(o.prio>0?'+':'')+o.prio+(o.pursuitHit?' · 따라가때리기':'')}))})}
 
  /* ----- 턴 종료 ----- */
  /* 턴 마무리: 「턴 가장 마지막」 → (턴 종료 처리) → 「턴 종료 이후」. 그 타이밍이 적힌 포텐셜(필드의 포켓몬 · 그 트레이너 고유)이 있으면 단계마다 발동을 묻고, 없으면 그냥 넘어간다 */
@@ -1053,10 +1053,10 @@ window.OM_BATTLE_UI=(()=>{
   const apply=async(delta,why,opt)=>{opt=opt||{};const m0=snap(ctx().b.mons[mid]),x=snap(m0);x.hp.latest=x.hp.cur;
    if(delta<0){let v=-delta;if(opt.floor&&x.hp.cur-v<opt.floor)v=Math.max(0,x.hp.cur-opt.floor);x.hp.cur=Math.max(0,x.hp.cur-v);x.hpOdd=!x.hpOdd;delta=-v;if(v>0)x.lastTaken={v,why:String(why||'').split('\n')[0].slice(0,120),turn:+ctx().b.turn||0}}else{const h=Math.min(delta,x.hp.max-x.hp.cur);x.hp.cur+=h;delta=h}
    if(opt.clearHit)delete x.lastHit;const pc=v=>v>0?Math.max(1,Math.round(v/x.hp.max*100)):0;
-   let line=`【${delta>0?'회복':delta<0?'피해':'HP'}】 ${x.name} ${delta>0?'+':delta<0?'−':''}${Math.abs(delta)}  ·  HP ${x.hp.latest} → ${x.hp.cur}/${x.hp.max} (${pc(x.hp.cur)}%)\n${why}`;
+   let line=delta?`【${delta>0?'회복':'피해'}】 ${x.name} ${delta>0?'+':'−'}${Math.abs(delta)}  ·  HP ${x.hp.latest} → ${x.hp.cur}/${x.hp.max} (${pc(x.hp.cur)}%)\n${why}`:`【무효】 ${x.name} 대미지 없음  ·  HP ${x.hp.cur}/${x.hp.max}\n${why}`;
    if(x.hp.cur<=0){x.entry='';line+=`\n${x.name}은(는) 쓰러졌다!`}
    if(x.raid&&x.raid.segments>0&&opt.floor&&x.hp.cur<=opt.floor&&delta<0){x.raid.broken=(x.raid.broken||0)+1;x.raid.phase=(x.raid.phase||1)+1;line+=`\n${x.name} 배리어 파괴! → 페이즈 ${x.raid.phase}`}
-   A().closeModal();if(await saveMon(m0,mid,x))A().sysLog(line,'battle',{mid,img:x.image||'',hp:{name:x.name,prev:x.hp.latest,cur:x.hp.cur,max:x.hp.max,why,faint:x.hp.cur<=0}})};
+   A().closeModal();if(await saveMon(m0,mid,x))A().sysLog(line,'battle',Object.assign({mid,img:x.image||''},delta?{hp:{name:x.name,prev:x.hp.latest,cur:x.hp.cur,max:x.hp.max,why,faint:x.hp.cur<=0}}:{}))};
   md.querySelectorAll('[data-hp]').forEach(bt=>bt.onclick=async()=>{const k=bt.dataset.hp;const v=bt.dataset.v;const g=id=>$('#'+id,md);
    if(k==='apply'){let r=calc();if(!r)return;const mods=[];if(+g('h_mod').value!==1)mods.push('보정 ×'+g('h_mod').value);if(g('h_berry').checked)mods.push(berryN?'「'+berryN+'」 반감':'반감열매');if(g('h_endure').checked)mods.push(sashX&&sashX.sure?'「'+sashX.name+'」로 버팀':'버티기');
     /* 기합의머리띠: 쓰러질 피해면 굴린다 */
@@ -1416,8 +1416,8 @@ window.OM_BATTLE_UI=(()=>{
    RESULT={mv,targets:res,moveTypes,auto:MAU,once,checkOnly:CK?CK.checkOnly:null,lines:CK?CK.lines:[]};
    { /* 굴린 시점에 로그로 (자속·보정 같은 공격 쪽 내부 정보는 빼고) */
     const L=res.map(r=>{const hit=r.acc.sure?'필중':r.acc.hit?`명중 ${r.acc.roll}/${r.acc.target}`:`빗나감 ${r.acc.roll}/${r.acc.target}`;if(!r.acc.hit)return `→ ${r.def.name}: ${hit}`;
-     const cr=r.hits.length?r.hits.map(h=>h.v===2?`급소!(${h.cr.roll}/${h.cr.chance})`:`${h.cr.roll}/${h.cr.chance}`).join(' · '):'';
-     const am=atkMul(r);const mu=r.acc.multi;const mh=mu?` · ${mu.kind==='fixed'?mu.cnt+'회 연속기':'연속기 '+mu.cnt+'회'}${mu.sl?'「스킬링크」':''}${mu.more.length?' (이후 명중 '+mu.more.map(a=>a.hit?a.roll+'/'+a.target:'빗나감 '+a.roll+'/'+a.target).join(' · ')+')':''} → ${r.hits.length}번 맞았다!`:'';return `→ ${r.def.name}: ${hit}${mh}${cr?' · 급소 '+cr:''}${r.dmg?` · 대미지 ${Math.floor(r.dmg.total*am)}${r.hits.length>1?' ('+r.hits.length+'회)':''} · 상성 ×${r.eff.value}`:' (변화기)'}${(r.sec||[]).map(x=>'\n   '+x.line).join('')}`});
+     /* 10-24 망령: 급소는 터진 타만 (변화기 · 급소 아님은 굴림 숫자를 적지 않는다) */const cr=r.dmg?r.hits.map((h,k)=>h.v===2?`급소!(${r.hits.length>1?(k+1)+'타 ':''}${h.cr.roll}/${h.cr.chance})`:'').filter(Boolean).join(' · '):'';
+     const am=atkMul(r);const mu=r.acc.multi;const mh=mu?` · ${mu.kind==='fixed'?mu.cnt+'회 연속기':'연속기 '+mu.cnt+'회'}${mu.sl?'「스킬링크」':''}${mu.more.length?' (이후 명중 '+mu.more.map(a=>a.hit?a.roll+'/'+a.target:'빗나감 '+a.roll+'/'+a.target).join(' · ')+')':''} → ${r.hits.length}번 맞았다!`:'';return `→ ${r.def.name}: ${hit}${mh}${cr?' · '+cr:''}${r.dmg?` · 대미지 ${Math.floor(r.dmg.total*am)}${r.hits.length>1?' ('+r.hits.length+'회)':''} · 상성 ×${r.eff.value}`:' (변화기)'}${(r.sec||[]).map(x=>'\n   '+x.line).join('')}`});
     const PO=(b.order||[]).find(o=>o.mid===mid&&o.pursuitHit&&String(o.move)===String(mv.name));const PV=PO&&b.mons[PO.pursuitHit];if(PV&&res.some(r=>r.def.id===PV.id))cutFire('m:'+atk.id,atk.image,`${atk.name}의 따라가때리기!`,`『${mv.name}』 → ${PV.name}`,atk.side==='left'?'#1f6fd1':'#e3101f');
     A().sysLog(`【공격】 ${atk.name} 『${mv.name}』${PV&&res.some(r=>r.def.id===PV.id)?(pursuitX2(mv)?' · 따라가때리기 ×2':' · 따라가때리기'):''} ${esc(mv.type||'')} ${mv.cat||''}${+g('apow').value?' 위력 '+g('apow').value:''}
 ${L.join('\n')}${once.length?'\n'+once.map(x=>'· '+x.line).join('\n'):''}`,'battle',{mid:atk.id,img:atk.image||''})}
@@ -1454,7 +1454,7 @@ ${L.join('\n')}${once.length?'\n'+once.map(x=>'· '+x.line).join('\n'):''}`,'bat
     const am=atkMul(r,md);
     def.lastHit={from:atk.name,fromId:atk.id,move:RESULT.mv.name,moveType:RESULT.mv.type||'',eff:r.eff.value,effType:r.eff.type||'',total:Math.floor(r.dmg.total*am),min:Math.floor(r.dmg.min*am),max:Math.floor(r.dmg.max*am),hits:r.hits.length,crit,...(r.dmgAlt?{alt:{total:Math.floor(r.dmgAlt.total*am),min:Math.floor(r.dmgAlt.min*am),max:Math.floor(r.dmgAlt.max*am),crit:!crit}}:{}),guard:r.guard,guardNote:(r.mods&&r.mods.names.filter(x=>x.who===def.id).map(x=>x.txt).join(' · '))||'',endure:r.endure,expect:r.hp?r.hp.final:0,at:Date.now(),turn:+nb.turn||0,mt:RESULT.moveTypes||[],cat:RESULT.mv.cat||'',ct:!!(A().contactOf&&A().contactOf(RESULT.mv)==='O'),multi:RESULT.targets.length>1};
     if(FX()&&r.mods)FX().consume(nb,r.mods.names);
-    lines.push(`→ ${def.name}: ${hitTxt} ${crit?'급소! ':''}${r.acc.multi?r.hits.length+'번 맞았다! ':''}대미지 ${def.lastHit.total} ×${r.eff.value}${r.guard&&r.guard!==1?' 완화 ×'+r.guard:''} ≈ ${r.hp?r.hp.final:0} — 받는 쪽이 「HP」에서 적용`)}
+    lines.push(`→ ${def.name}: ${hitTxt} ${crit?'급소! ':''}${r.acc.multi?r.hits.length+'번 맞았다! ':''}대미지 ${def.lastHit.total} ×${r.eff.value}${r.guard&&r.guard!==1?' 완화 ×'+r.guard:''} ≈ ${r.hp?(r.hp.raw>r.hp.final&&r.hp.final>=def.hp.cur?`${r.hp.raw} (남은 HP ${def.hp.cur}뿐)`:r.hp.final):0} — 받는 쪽이 「HP」에서 적용`)}
    if($('#alife',md).checked&&dealtAny){const a=nb.mons[mid];const rec=Math.max(1,Math.floor(a.hp.max/10));a.hp.latest=a.hp.cur;a.hp.cur=Math.max(0,a.hp.cur-rec);lines.push(`${atk.name} 생명의구슬 반동 −${rec} → ${a.hp.cur}`);if(a.hp.cur<=0){a.entry='';lines.push(`${a.name}은(는) 쓰러졌다!`)}}
    if(RESULT.auto&&FX()){const AU=RESULT.auto,a=nb.mons[mid];const ck2=k=>{const el=md.querySelector(`[data-ag="${k}"]`);return !!(el&&el.checked)};const ckx=t=>{const ex=[...(AU.recoil?['recoil']:[]),...(AU.drain?['drain']:[]),...(AU.selfFaint?['faint']:[]),...(AU.forceSwitch?['fsw']:[]),...(AU.selfSwitch?['ssw']:[])];const el=md.querySelector(`[data-agx="${ex.indexOf(t)}"]`);return !!(el&&el.checked)};
     const runOps=async(ops,def)=>{const map=def?tgtFor(atk,def):(o=>o);const cx=Object.assign({},uiCtx(nb,a,RESULT.mv.name),def?{pick:list=>list.find(x=>x.id===def.id)||null}:{});const r=await FX().run(ops.map(map),cx);lines.push(...r.lines)};

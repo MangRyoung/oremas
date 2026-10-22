@@ -2897,3 +2897,15 @@ span.iedit{display:inline-block;min-width:3em}
 .rvtg{display:flex;gap:4px;flex-wrap:wrap}.rvt{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,.06);border-radius:999px;padding:2px 8px 2px 2px}.rvt span{display:flex;flex-direction:column;line-height:1.1}.rvt b{font-size:12px}.rvt small{font-size:10px;color:#a9a9b3}.rvt.foe .rvav{border-color:#e3101f}.rvt.ally .rvav{border-color:#1f6fd1}
 .atav{width:22px;height:22px;flex:none;border-radius:50%;background:#2a2a30 center/cover no-repeat;border:1px solid var(--tc)}.atnote{font-size:10.5px;color:#a9a9b3;margin-left:4px}
 .hitc[hidden]{display:none}.hcrit{color:var(--yel2,#ffd84a)}
+/* 10-24 망령: 휴대폰 시트 머리 — 사진 옆에 이름 · 랭크, 수치 칸은 3열로 꽉 채워 왼쪽 빈자리 없이 */
+@media (max-width:760px){
+ .hero{gap:10px 12px;align-items:flex-start}
+ .hero>.hpic{width:76px;height:76px}
+ .hero>.hmain{flex:1 1 200px}
+ .hero .hname{font-size:24px;line-height:1.1}
+ .hero>.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;width:100%;flex:1 1 100%;justify-content:stretch;max-width:none}
+ .hero .tile{min-width:0;padding:6px 4px;box-shadow:2px 2px 0 #fff}
+ .hero .tile b{font-size:20px}
+ .hero>.hparty{align-items:center;width:100%}
+ .hero .hpmn{white-space:normal;text-overflow:clip;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;word-break:keep-all;overflow-wrap:anywhere;line-height:1.15;text-align:center}
+}
