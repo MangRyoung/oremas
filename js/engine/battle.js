@@ -17,7 +17,7 @@ window.OM_BATTLE=(()=>{
   let r=+((mon.rank||{})[stat]||0),m=+((mon.mod||{})[stat]||1);
   if(opt.rank!=null)r=+opt.rank;if(opt.mod!=null)m=+opt.mod;
   const ig=opt.ignore==null?-1:+opt.ignore;
-  if(r>0&&(ig===0||ig===2))r=0;if(r<0&&(ig===1||ig===4))r=0;
+  if(r>0&&(ig===0||ig===2||ig===6))r=0;if(r<0&&(ig===1||ig===4||ig===6))r=0;   /* 6 = 랭크 변화 모두 (천진 · 성스러운칼) */
   if(m>1&&(ig===0||ig===3))m=1;if(m<1&&(ig===1||ig===5))m=1;
   const rv=(stat==='accuracy'||stat==='evasion')?S().accMult(r):S().rankMult(r);
   return {value:base*rv*m,rank:r,rankMult:rv,mod:m}}

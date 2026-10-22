@@ -2,6 +2,18 @@
    state.roster = { trainers:{tid:{…}}, mons:{mid:{…}} }  — 제작기에서 가져온 뒤 여기서 레벨·개체값·노력치·소지품·기술·특성을 다듬고, 배틀은 여기서 불러온다.
    편집 권한: GM, 또는 그 트레이너 자리에 앉은 플레이어. */
 "use strict";
+window.OM_PNGFIX=(()=>{
+/* html2canvas 1.4 는 color(srgb …) · oklch 같은 새 색 함수를 못 읽는다 (color-mix 의 계산 값이 그 꼴) → 복제본의 계산된 색을 rgba 로 바꿔 넣는다 (::before · ::after 는 규칙으로) */
+const PNG_PROPS=['color','background-color','background-image','border-top-color','border-right-color','border-bottom-color','border-left-color','outline-color','text-decoration-color','box-shadow','text-shadow','fill','stroke'];
+const PNG_BAD=/color\(|oklch\(|oklab\(|\blab\(|\blch\(/;
+function pngRgb(v){v=String(v).replace(/color\(srgb\s+([\d.e-]+)\s+([\d.e-]+)\s+([\d.e-]+)(?:\s*\/\s*([\d.e-]+%?))?\)/g,(_,r,g,b,a)=>`rgba(${Math.round(r*255)},${Math.round(g*255)},${Math.round(b*255)},${a==null?1:/%$/.test(a)?parseFloat(a)/100:+a})`);
+ if(PNG_BAD.test(v)){let cx=null;try{cx=document.createElement('canvas').getContext('2d')}catch(e){}v=v.replace(/(color|oklch|oklab|lab|lch)\([^()]*\)/g,m=>{if(!cx)return 'rgba(0,0,0,0)';cx.fillStyle='rgba(0,0,0,0)';cx.fillStyle=m;const f=String(cx.fillStyle);return /^(#|rgb)/.test(f)?f:'rgba(0,0,0,0)'})}return v}
+function pngFix(cdoc,root){const W=cdoc.defaultView;if(!W)return;const css=[];let n=0;const els=[root,...root.querySelectorAll('*')];
+ for(const el of els){const cs=W.getComputedStyle(el);for(const p of PNG_PROPS){const v=cs.getPropertyValue(p);if(v&&PNG_BAD.test(v))el.style.setProperty(p,pngRgb(v),'important')}
+  for(const ps of ['::before','::after']){const c2=W.getComputedStyle(el,ps);if(!c2||c2.content==='none'||c2.content==='normal')continue;const fx=[];for(const p of PNG_PROPS){const v=c2.getPropertyValue(p);if(v&&PNG_BAD.test(v))fx.push(`${p}:${pngRgb(v)} !important`)}
+   if(fx.length){const k='pngfx'+(n++);el.classList.add(k);css.push(`.${k}${ps}{${fx.join(';')}}`)}}}
+ if(css.length){const s=cdoc.createElement('style');s.textContent=css.join('\n');cdoc.head.appendChild(s)}}
+return pngFix})();
 window.OM_SHEET_UI=(()=>{
  const A=()=>window.OM_APP, S=()=>window.OM_STATS, I=()=>window.OM_IMPORT, DB=()=>window.OM_DB||{}, DBS=()=>window.OM_STORE;
  const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -23,6 +35,23 @@ window.OM_SHEET_UI=(()=>{
  function canSee(c,tid){if(c.gm)return true;if(!c.seat)return false;if(tid===c.seat)return true;const ph=id=>((((c.ST.state.pub||{})[id]||{}).phone)||{});const my=String(ph(c.seat).room||'').trim();if(!my)return false;const o=ph(tid);return String(o.room||'').trim()===my&&o.share!==false}
  const typeChip=en=>A().typeChip(en);
 
+ /* ---------- 시트 폴더 (10-24 망령): 트레이너 탭이 많아지면 폴더로 묶는다. GM 이 정한 sfold → 없으면 제작기에서 가져올 때의 폴더 이름(folderName) ---------- */
+ const foldOf=t=>String(t&&t.sfold!=null?t.sfold:((t&&t.folderName)||'')).trim();
+ const FK=()=>'om_sfold_'+((ctx().ST||{}).room||'');
+ function curFold(){if(UI.fold==null){try{UI.fold=localStorage.getItem(FK())||'*'}catch(e){UI.fold='*'}}return UI.fold}
+ function setFold(v){UI.fold=v;try{localStorage.setItem(FK(),v)}catch(e){}}
+ function openFolders(){const c=ctx();if(!c.gm)return;const trs=c.r.trainers||{};const ids=Object.keys(trs).sort((a,b)=>foldOf(trs[a]).localeCompare(foldOf(trs[b]))||(trs[a].ord||0)-(trs[b].ord||0));
+  const fl=[...new Set(ids.map(id=>foldOf(trs[id])).concat(ids.map(id=>String(trs[id].folderName||'').trim())))].filter(Boolean).sort();
+  const md=A().openModal(`<div class="mhead"><h2>시트 폴더 정리</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+   <p class="small dim" style="margin:0 0 8px">폴더 이름을 적으면 탭 위 폴더 줄에 묶인다. 새 이름을 적으면 새 폴더 · 비우면 미분류. 탭을 폴더 칩으로 끌어다 놓아도 옮겨진다. 처음 값은 제작기 폴더 이름이다.</p>
+   <div class="row" style="gap:6px;margin-bottom:8px"><input type="text" id="sfAll" list="sfL" placeholder="고른 트레이너를 한 번에 이 폴더로" style="flex:1"><button class="btn sm" id="sfAllGo">고른 것에 적용</button></div>
+   <datalist id="sfL">${fl.map(f=>`<option value="${esc(f)}">`).join('')}</datalist>
+   <ul class="pick sfl">${ids.map(id=>`<li><label class="row" style="gap:6px;flex:1;min-width:0"><input type="checkbox" data-sfc="${id}"><b style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(trs[id].name||'(이름 없음)')}</b></label>${trs[id].folderName?`<span class="small dim" title="제작기 폴더">제작기: ${esc(trs[id].folderName)}</span>`:''}<input type="text" data-sf="${id}" list="sfL" value="${esc(foldOf(trs[id]))}" placeholder="미분류" style="width:180px"></li>`).join('')}</ul>
+   <div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn" data-x>취소</button><button class="btn pri" id="sfSave">저장</button></div>`);
+  md.querySelector('#sfAllGo').onclick=()=>{const v=md.querySelector('#sfAll').value;md.querySelectorAll('[data-sfc]:checked').forEach(cb=>{md.querySelector(`[data-sf="${cb.dataset.sfc}"]`).value=v})};
+  md.querySelector('#sfSave').onclick=async()=>{const ops=[];md.querySelectorAll('[data-sf]').forEach(inp=>{const id=inp.dataset.sf,v=inp.value.trim();if(v!==foldOf(trs[id]))ops.push([['roster','trainers',id,'sfold'],v])});
+   if(ops.length)await A().setMany(ops);A().closeModal();A().toast(ops.length?`폴더 ${ops.length}곳을 바꿨다`:'바뀐 것이 없다');A().renderScene()}}
+
  /* ---------- 렌더 ---------- */
  function render(el){
   /* 글을 치는 중이면 다시 그리지 않는다 — 남의 변경이 올 때마다 입력칸이 새로 생겨 포커스·조합 중 한글이 날아갔다 (점검 3-8). 칸을 벗어나면 그때 다시 그린다 */
@@ -31,14 +60,26 @@ window.OM_SHEET_UI=(()=>{
    if(!ae._omb){ae._omb=1;ae.addEventListener('blur',()=>setTimeout(()=>A().renderScene(),0),{once:true})}
    return}
   const c=ctx();const trs=c.r.trainers||{};const ids=Object.keys(trs).filter(id=>canSee(c,id)).sort((a,b)=>(trs[a].ord||0)-(trs[b].ord||0)||trs[a].name.localeCompare(trs[b].name));
-  if(!ids.includes(UI.tid))UI.tid=ids.includes(c.seat)?c.seat:(ids[0]||'');
+  const folds=[...new Set(ids.map(id=>foldOf(trs[id])))].filter(Boolean).sort((a,b)=>a.localeCompare(b));const nUn=ids.filter(id=>!foldOf(trs[id])).length;
+  let F=folds.length?curFold():'*';if(F!=='*'&&(F===''?!nUn:!folds.includes(F)))F='*';
+  const fo=id=>{const f=foldOf(trs[id]);return f?folds.indexOf(f):folds.length};
+  const shown=F==='*'?ids.slice().sort((a,b)=>fo(a)-fo(b)):ids.filter(id=>foldOf(trs[id])===F);
+  if(!ids.includes(UI.tid)||(shown.length&&!shown.includes(UI.tid)))UI.tid=shown.includes(c.seat)?c.seat:(shown[0]||ids[0]||'');
   const t=trs[UI.tid];
+  const fchip=(v,lab,n)=>`<button type="button" class="tfold ${F===v?'on':''}" data-tfold="${esc(v)}">${v==='*'||v===''?'':'<i class="fic" aria-hidden="true"></i>'}${esc(lab)} <span class="n">${n}</span></button>`;
+  let lastF=null;
   el.innerHTML=`<div class="sheet">
-   <div class="ttabs">${ids.map(id=>`<button class="ttab ${id===UI.tid?'on':''}" data-tid="${id}">${esc(trs[id].name)}${id===c.seat?' <span class="tag me">ME</span>':''}</button>`).join('')}
-    <span class="sp"></span>${c.gm?`<button class="btn sm" data-act="import">제작기에서 가져오기</button><button class="btn sm ghost" data-act="newtr">+ 새 트레이너</button>`:(c.seat?`<button class="btn sm ${trs[c.seat]?'ghost':'pri'}" data-act="import" title="제작기에 있는 내 트레이너를 내 자리로 가져온다">${trs[c.seat]?'내 파티 다시 불러오기':'내 파티 불러오기'}</button>`:'')}</div>
+   ${folds.length?`<div class="tfolds">${fchip('*','전체',ids.length)}${folds.map(f=>fchip(f,f,ids.filter(id=>foldOf(trs[id])===f).length)).join('')}${nUn?fchip('','미분류',nUn):''}</div>`:''}
+   <div class="ttabs">${shown.map(id=>{const f=foldOf(trs[id]);const sep=F==='*'&&folds.length&&f!==lastF?`<span class="tfsep">${esc(f||'미분류')}</span>`:'';lastF=f;return sep+`<button class="ttab ${id===UI.tid?'on':''}" data-tid="${id}" ${c.gm?'draggable="true"':''}>${esc(trs[id].name)}${id===c.seat?' <span class="tag me">ME</span>':''}</button>`}).join('')}
+    <span class="sp"></span>${c.gm?`<button class="btn sm" data-act="import">제작기에서 가져오기</button><button class="btn sm ghost" data-act="newtr">+ 새 트레이너</button><button class="btn sm ghost" data-act="sfolders" title="트레이너 탭을 폴더로 묶는다">폴더 정리</button>`:(c.seat?`<button class="btn sm ${trs[c.seat]?'ghost':'pri'}" data-act="import" title="제작기에 있는 내 트레이너를 내 자리로 가져온다">${trs[c.seat]?'내 파티 다시 불러오기':'내 파티 불러오기'}</button>`:'')}</div>
    ${t?trainerView(c,t):'<div class="empty">아직 트레이너가 없다.'+(c.gm?' 「제작기에서 가져오기」로 시작한다.':(c.seat?' 「내 파티 불러오기」로 제작기의 트레이너를 가져온다. 남의 시트는 휴대폰 연락처에서 같은 방 코드로 들어와야 보인다.':' 자리에 앉은 뒤 「내 파티 불러오기」.'))+'</div>'}
   </div>`;
   el.querySelectorAll('.ttab').forEach(b=>b.onclick=()=>{UI.tid=b.dataset.tid;UI.mid='';A().renderScene()});
+  el.querySelectorAll('.tile.sock').forEach(b=>b.onclick=()=>A().toast(String(b.title||'').replace(/\n/g,' · ')));
+  el.querySelectorAll('[data-tfold]').forEach(b=>{b.onclick=()=>{setFold(b.dataset.tfold);UI.mid='';A().renderScene()};
+   if(!c.gm||b.dataset.tfold==='*')return;b.ondragover=e=>{if([...e.dataTransfer.types].includes('text/om-tid')){e.preventDefault();b.classList.add('drop')}};b.ondragleave=()=>b.classList.remove('drop');
+   b.ondrop=async e=>{e.preventDefault();b.classList.remove('drop');const id=e.dataTransfer.getData('text/om-tid');if(!id||!trs[id])return;await A().set(['roster','trainers',id,'sfold'],b.dataset.tfold);A().toast(`${trs[id].name} → ${b.dataset.tfold||'미분류'}`);A().renderScene()}});
+  if(c.gm)el.querySelectorAll('.ttab[draggable]').forEach(b=>b.ondragstart=e=>{e.dataTransfer.setData('text/om-tid',b.dataset.tid);e.dataTransfer.effectAllowed='move'});
   el.querySelectorAll('[data-act]').forEach(b=>{if(b.tagName==='SELECT'||b.tagName==='INPUT')return;b.onclick=e=>{e.stopPropagation();action(b.dataset)}});
   el.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{UI.mid=b.dataset.pick;A().renderScene()});
   el.querySelectorAll('[data-hmon]').forEach(b=>b.onclick=()=>{UI.mid=b.dataset.hmon;UI.tab='poke';A().renderScene()});
@@ -50,7 +91,7 @@ window.OM_SHEET_UI=(()=>{
   el.querySelectorAll('[data-qe]').forEach(q=>q.onclick=e=>{e.stopPropagation();UI.edit=true;UI.quick=true;UI.qf=q.dataset.qe;A().renderScene()});
   const t=c.r.trainers[UI.tid];
   el.querySelectorAll('[data-qdb]').forEach(q=>q.onclick=e=>{e.stopPropagation();const m=c.r.mons[UI.mid];if(!m||!t)return;const k=q.dataset.qdb==='trait'?'ability':'item';
-   window.OM_DB_UI.open({kind:q.dataset.qdb,sel:m[k]||'',pick:async name=>{const src=c.r.mons[m.id]||m;const nm=JSON.parse(JSON.stringify(src));applyMon(nm,k,name,t);await putMon(m.id,src,nm);A().renderScene()}})});
+   window.OM_DB_UI.open({kind:q.dataset.qdb,sel:m[k]||'',pick:async name=>{const src=c.r.mons[m.id]||m;const was=src.item||'';const nm=JSON.parse(JSON.stringify(src));applyMon(nm,k,name,t);if(await putMon(m.id,src,nm)&&k==='item'&&A().selfLog&&was!==name)A().selfLog(`${m.name} 소지품 → 「${name}」 (시트)`);A().renderScene()}})});
   /* 타입 · 종족치 전용 창 (OM_PICK), 소지품 떼기, 필드 · 폼 칸 */
   el.querySelectorAll('[data-qpk]').forEach(q=>q.onclick=e=>{e.stopPropagation();const m=c.r.mons[UI.mid];if(!m||!t||!canEdit(c,t.id)||!window.OM_PICK)return;
    const put=fn=>{const src=ctx().r.mons[m.id]||m;const nm=JSON.parse(JSON.stringify(src));fn(nm);return putMon(m.id,src,nm).then(()=>A().renderScene())};
@@ -61,7 +102,7 @@ window.OM_SHEET_UI=(()=>{
   if(UI.ief){const q=el.querySelector(`[data-ie="${UI.ief}"]`);UI.ief='';if(q)openIe(q)}
   el.querySelectorAll('[data-trk]').forEach(q=>q.onclick=e=>{e.stopPropagation();rankPick(q.dataset.trk)});
   el.querySelectorAll('[data-qf]').forEach(q=>q.onclick=e=>{e.stopPropagation();if(UI.mid)factEdit(UI.mid,q.dataset.qf)});
-  el.querySelectorAll('[data-qitem0]').forEach(q=>q.onclick=async e=>{e.stopPropagation();const m=c.r.mons[UI.mid];if(!m||!t||!canEdit(c,t.id)||!confirm(`「${m.item}」을(를) 뗄까?`))return;const nm=JSON.parse(JSON.stringify(m));applyMon(nm,'item','',t);await putMon(m.id,m,nm);A().renderScene()});
+  el.querySelectorAll('[data-qitem0]').forEach(q=>q.onclick=async e=>{e.stopPropagation();const m=c.r.mons[UI.mid];if(!m||!t||!canEdit(c,t.id)||!confirm(`「${m.item}」을(를) 뗄까?`))return;const nm=JSON.parse(JSON.stringify(m));applyMon(nm,'item','',t);const was=m.item;if(await putMon(m.id,m,nm)&&A().selfLog)A().selfLog(`${m.name} 소지품 「${was}」 뗌 (시트)`);A().renderScene()});
   /* 10-21 망령: 기술 칸 바로 고치기 — 추가 · 바꾸기 · 기술 조정 · 순서 · 빼기 */
   el.querySelectorAll('[data-qmv]').forEach(q=>q.onclick=e=>{e.stopPropagation();const m=c.r.mons[UI.mid];if(!m||!t||!canEdit(c,t.id))return;const i=+q.dataset.i,k=q.dataset.qmv;
    const put=fn=>{const src=ctx().r.mons[m.id]||m;const nm=JSON.parse(JSON.stringify(src));if(fn(nm)===false)return;if(!nm.moves.length)nm.moves=[I().move('발버둥',false)];return putMon(m.id,src,nm).then(()=>A().renderScene())};
@@ -93,11 +134,19 @@ window.OM_SHEET_UI=(()=>{
     const btr=((A().ST.state.battle||{}).trainers||{})[UI.tid];if(btr){await A().set(['battle','trainers',UI.tid,'unique'],nt.unique)}A().toast(auto?'구문을 저장했다':'구문을 지웠다');A().renderScene()}})});
  }
 
+ /* PT 소지품 소켓 (10-24 망령): 소지품 DB 의 소켓(오리지널 소지품은 시트에 적은 소켓) 합 / 「지시」 랭크 상한 (룰북: D 7 · C 9 · B 10 · A 11 · AA 12, 1인 기준 2.5 ~ 4.5) */
+ const SOCK_CAP={D:7,C:9,B:10,A:11,AA:12},SOCK_CAP1={D:2.5,C:3,B:3.5,A:4,AA:4.5};
+ function itemSock(t,mons){const D=DB().items||{};let used=0;const L=[];
+  for(const m of mons){const n=String(m.item||'').replace(/『|』/g,'').trim();if(!n)continue;const it=D[n];const own=!it&&m.itemOwn&&m.itemOwn.name===n?m.itemOwn:null;const v=parseFloat(it?it.sock:own?own.sock:'');const ok=isFinite(v);if(ok)used+=v;L.push(`${m.name}: ${n} ${ok?v:'?'}`)}
+  used=Math.round(used*10)/10;const rk=String((t.ranks||{})['지시']||'').replace(/[+-]+$/,'');const ov=(t.base||{})['소지품 소켓'];
+  const cap=ov!=null&&ov!==''&&isFinite(+ov)?+ov:(t.solo?SOCK_CAP1:SOCK_CAP)[rk]??null;
+  return {used,cap,over:cap!=null&&used>cap,tip:`소지품 소켓 ${used}${cap!=null?' / '+cap+` (지시 ${rk||'-'}${t.solo?' · 1인 기준':''})`:' (지시 랭크로 상한을 못 정함)'}\n`+(L.join('\n')||'지닌 소지품 없음')}}
  function trainerView(c,t){
   const mons=(t.pids||[]).map(id=>c.r.mons[id]).filter(Boolean);const ed=canEdit(c,t.id);const E=UI.edit&&ed;QE=ed&&!UI.edit;
   if(!mons.find(m=>m.id===UI.mid))UI.mid=mons[0]?mons[0].id:'';
   const base=t.base||{};
-  const tiles=[['포켓몬',mons.length],['메인',base['메인']??'-'],['통솔점',base['통솔점']??'-'],['분배레벨',base['분배레벨']??'-'],['할인점',base['「기술 할인점」']??'-'],['1/시',base['【1/시】']??'-']];
+  const SK=itemSock(t,mons);
+  const tiles=[['포켓몬',mons.length],['메인',base['메인']??'-'],['통솔점',base['통솔점']??'-'],['분배레벨',base['분배레벨']??'-'],['할인점',base['「기술 할인점」']??'-'],['1/시',base['【1/시】']??'-'],['소지품 소켓',SK.cap!=null?`${SK.used}/${SK.cap}`:String(SK.used),SK]];
   return `<div class="hero">
     <div class="hpic" style="${t.image?`background-image:url('${cssu(t.image)}')`:''}">${t.image?'':'<span>사진</span>'}</div>
     <div class="hmain"><div class="hname">${E?`<input type="text" data-te="name" value="${esc(t.name)}">`:qe('te:name',esc(t.name))}</div>
@@ -107,7 +156,7 @@ window.OM_SHEET_UI=(()=>{
      const slots=[...mons.slice(0,6),...Array(Math.max(0,6-mons.length)).fill(null)];
      return `<div class="hparty"><div class="hpmons">${slots.map(m=>m?`<button type="button" class="hpm${m.partner?' partner':''}${m.id===UI.mid&&UI.tab==='poke'?' on':''}" data-hmon="${m.id}" title="${esc(m.name)}${m.partner?' (파트너)':''}"><span class="hpmi" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}">${m.image?'':esc([...(m.name||'?')][0]||'?')}</span>${m.partner?'<span class="hpms">★</span>':''}<span class="hpmn">${esc(m.name)}</span></button>`:'<span class="hpm empty"><span class="hpmi"></span></span>').join('')}</div>
       ${can?`<div class="hpbtn"><span class="hpbl">${inB?'배틀 중 · 다시 보내기':'배틀 배치'}</span><button type="button" class="btn sm" data-act="tobattle" data-tid="${t.id}" data-side="left">◀ 좌측</button><button type="button" class="btn sm" data-act="tobattle" data-tid="${t.id}" data-side="right">우측 ▶</button></div>`:''}</div>`})()}
-    <div class="tiles">${tiles.map(([k,v])=>`<div class="tile"><b>${esc(String(v))}</b><span>${k}</span></div>`).join('')}</div>
+    <div class="tiles">${tiles.map(([k,v,sk])=>sk?`<div class="tile sock${sk.over?' over':''}" title="${esc(sk.tip)}"><b>${esc(String(v))}</b><span>${k}</span></div>`:`<div class="tile"><b>${esc(String(v))}</b><span>${k}</span></div>`).join('')}</div>
    </div>
    <div class="stabs"><button class="stab ${UI.tab==='char'?'on':''}" data-stab="char">캐릭터</button><button class="stab ${UI.tab==='poke'?'on':''}" data-stab="poke">포켓몬</button><button class="stab ${UI.tab==='grow'?'on':''}" data-stab="grow">성장</button><button class="stab ${UI.tab==='battle'?'on':''}" data-stab="battle">전투</button>
     <span class="sp"></span>${ed?`<button class="btn sm ${UI.edit?'pri':''}" data-act="toggleedit">${UI.edit?'편집 끝':'✎ 편집'}</button>`:''}${(c.gm||t.id===c.seat)?`<button class="btn sm ghost" data-act="refresh" data-tid="${t.id}" title="제작기 시트에서 다시 읽어 온다 (개체값·소지품·HP는 유지)">제작기 동기화</button><button class="btn sm ghost danger" data-act="deltr" data-tid="${t.id}">삭제</button>`:''}</div>
@@ -303,7 +352,7 @@ window.OM_SHEET_UI=(()=>{
   el.querySelectorAll('[data-te]').forEach(inp=>inp.addEventListener('input',()=>{if(!pending.tr){pending.tr0=JSON.parse(JSON.stringify(t));pending.tr=JSON.parse(JSON.stringify(t))}const nt=pending.tr;applyTr(nt,inp.dataset.te,inp.value);queue()}));
   const op=el.querySelector('#opanel');if(op)window.OM_ORDERS.bind(op,()=>pending.tr||c.r.trainers[UI.tid],async nt=>{const src=pending.tr0||c.r.trainers[UI.tid];pending.tr=null;pending.tr0=null;await putTr(nt.id,src,nt);A().renderScene()});
   if(m){el.querySelectorAll('[data-me]').forEach(inp=>inp.addEventListener('input',()=>{if(!pending.mon){pending.mon0=JSON.parse(JSON.stringify(m));pending.mon=JSON.parse(JSON.stringify(m))}const nm=pending.mon;applyMon(nm,inp.dataset.me,inp.value,t);queue()}));
-   el.querySelectorAll('[data-db]').forEach(bt=>bt.onclick=()=>{const k=bt.dataset.meTarget;const inp=el.querySelector(`[data-me="${k}"]`);window.OM_DB_UI.open({kind:bt.dataset.db,sel:inp.value,q:'',pick:async name=>{const src=c.r.mons[m.id]||m;const nm=JSON.parse(JSON.stringify(src));applyMon(nm,k,name,t);await putMon(m.id,src,nm);A().renderScene()}})});
+   el.querySelectorAll('[data-db]').forEach(bt=>bt.onclick=()=>{const k=bt.dataset.meTarget;const inp=el.querySelector(`[data-me="${k}"]`);window.OM_DB_UI.open({kind:bt.dataset.db,sel:inp.value,q:'',pick:async name=>{const src=c.r.mons[m.id]||m;const was=src.item||'';const nm=JSON.parse(JSON.stringify(src));applyMon(nm,k,name,t);if(await putMon(m.id,src,nm)&&k==='item'&&A().selfLog&&was!==name)A().selfLog(`${m.name} 소지품 → 「${name}」 (시트)`);A().renderScene()}})});
    el.querySelectorAll('[data-me-partner]').forEach(cb=>cb.addEventListener('change',async()=>{const mid=cb.dataset.mePartner;await A().set(['roster','mons',mid,'partner'],cb.checked)}));
    const addMove=async n=>{if(!n)return;if(!(DB().moves||{})[n]&&!confirm(`「${n}」은 기술 DB에 없다. 그래도 넣을까?`))return;const src=c.r.mons[UI.mid];const nm=JSON.parse(JSON.stringify(src));nm.moves=nm.moves.filter(x=>x.name!=='발버둥'||nm.moves.length>1);nm.moves.push(I().move(n,false));await putMon(UI.mid,src,nm)};
    const am=$('#addmove',el);if(am)am.addEventListener('keydown',async e=>{if(e.key!=='Enter'||e.isComposing)return;e.preventDefault();addMove(am.value.trim())});
@@ -333,6 +382,7 @@ window.OM_SHEET_UI=(()=>{
  async function action(d){if((pending.tr||pending.mon||pending.g)&&flushRef){clearTimeout(saveT);await flushRef()}const c=ctx();const t=c.r.trainers[UI.tid];
   switch(d.act){
    case 'import':return openImport();
+   case 'sfolders':return openFolders();
    case 'newtr':{const id='t'+rnd(7);const nt={id,name:'새 트레이너',image:'',ranks:{육성:'C',지시:'C',통솔:'C',능력:'C'},base:{},detail:{},unique:[],pids:[],solo:false,ord:Object.keys(c.r.trainers).length,src:'new'};await A().set(['roster','trainers',id],nt);UI.tid=id;UI.edit=true;A().renderScene();return}
    case 'toggleedit':UI.edit=!UI.edit;UI.quick=false;A().renderScene();return;
    case 'hatch':return openHatch(d.mid);
@@ -381,7 +431,9 @@ window.OM_SHEET_UI=(()=>{
   if(!asId){const dup=Object.values(c.r.trainers||{}).find(x=>x.mkId===tdoc.id&&x.id!==tdoc.id);if(dup)asId=dup.id}
   if(asId){trainer.mkId=tdoc.id;trainer.id=asId;for(const m of mons)m.tid=asId}
   const r0=JSON.parse(JSON.stringify(c.r));r0.trainers=r0.trainers||{};r0.mons=r0.mons||{};await hostImages(c.ST.room,trainer,mons);const r=JSON.parse(JSON.stringify(r0));const old=r.trainers[trainer.id];
-  trainer.ord=old?old.ord:Object.keys(r.trainers).length;trainer.src='maker';if(old){for(const k of ['orderStyle','commandStyle','orderCount','orderBase','orderPreset','orderType'])if(old[k]!=null)trainer[k]=old[k];trainer.memo=old.memo;const rs=window.OM_ORDERS.resync(trainer);if(rs)Object.assign(trainer,rs)}
+  trainer.ord=old?old.ord:Object.keys(r.trainers).length;trainer.src='maker';if(old&&old.sfold!=null)trainer.sfold=old.sfold;
+  try{const mk=await A().loadMaker();const f=(mk.folders||[]).find(f=>f.id===trainer.folder);trainer.folderName=f?String((f.data||{}).name||''):''}catch(e){}
+if(old){for(const k of ['orderStyle','commandStyle','orderCount','orderBase','orderPreset','orderType'])if(old[k]!=null)trainer[k]=old[k];trainer.memo=old.memo;const rs=window.OM_ORDERS.resync(trainer);if(rs)Object.assign(trainer,rs)}
   if(!trainer.orderCount)Object.assign(trainer,window.OM_ORDERS.auto(trainer,'assoc',1));if(old){if(old.image&&!trainer.image)trainer.image=old.image;if(!(trainer.stands||[]).length&&(old.stands||[]).length){trainer.stands=old.stands;trainer.standActive=old.standActive}else{for(const s of trainer.stands||[]){const o=(old.stands||[]).find(x=>x.src===s.src);if(!s.kind&&o&&o.kind)s.kind=o.kind}}if(!(trainer.fields||[]).length&&(old.fields||[]).length)trainer.fields=old.fields}
   for(const id of ((old&&old.pids)||[]))if(!trainer.pids.includes(id))delete r.mons[id];
   for(const m of mons){const om=r.mons[m.id];m.src='maker';if(om&&keep){m.iv=om.iv;m.item=om.item||m.item;m.itemEff=om.itemEff||m.itemEff;m.sheetHp=om.sheetHp;if(om.sheetStates)m.sheetStates=om.sheetStates;if(om.potUses)m.potUses=om.potUses;m.dist=om.dist;m.ev=om.ev;if(om.image&&!m.image)m.image=om.image;if(!(m.stands||[]).length&&(om.stands||[]).length){m.stands=om.stands;m.standActive=om.standActive||0}if(!(m.fields||[]).length&&(om.fields||[]).length)m.fields=om.fields;if(!(m.forms||[]).length&&(om.forms||[]).length)m.forms=om.formsrecalc(m,trainer)}r.mons[m.id]=m}
@@ -435,9 +487,12 @@ window.OM_SHEET_UI=(()=>{
   const c1=(()=>{try{return S().typeColor(tys[0]||'Normal').bg}catch(e){return '#e4002b'}})(),c2=(()=>{try{return S().typeColor(tys[1]||tys[0]||'Normal').bg}catch(e){return '#e4002b'}})();
   const sub=[m.role,m.pride?'프라이드 '+m.pride:''].filter(Boolean).join(' · ');
   const egg=(m.egg||[]).filter(x=>x&&x!=='-');
+  /* 폼체인지 · 메가진화 (10-24 망령): 시트(로스터) 폼 목록을 먼저. 배틀에서 폼을 바꾼 채 열면 지금 모습이라고 적고 원래 모습을 같이 보인다 */
+  const rm=(((A().ST.state||{}).roster||{}).mons||{})[m.rid||m.id];const FL=((rm&&rm.forms)||m.forms||[]).filter(f=>f&&f.name);const o0=m.form0||null;
+  const formsH=FL.length||o0?`<div class="opc-h">폼체인지 · 메가진화 <span class="dim small">${FL.length}</span></div>${o0?`<div class="opc-f on"><span class="opc-pk">원래 모습</span><b>${esc(o0.name||'')}</b><div class="opc-fs mono">${(o0.base||[]).map((v,i)=>STATS_KO[i]+' '+v).join(' · ')}</div></div>`:''}${FL.map((f,k)=>{const ty=(f.types||[]).filter(t=>t&&t!=='-');const cur=o0&&(m.formIdx===k||m.name===f.name);return `<div class="opc-f${cur?' cur':''}"><span class="opc-pk">${esc(f.kind||'폼체인지')}${cur?' · 지금':''}</span><b>${esc(f.name)}</b>${ty.map(typeChip).join('')}${f.ability?` <span class="opc-v">특성 ${esc(f.ability)}</span>`:''}<div class="opc-fs mono">${(f.base||[]).map((v,i)=>STATS_KO[i]+' '+v).join(' · ')}</div>${f.cond?`<div class="opc-e">${esc(f.cond)}</div>`:''}</div>`}).join('')}`:'';
   return `<div class="opc" style="--c1:${c1};--c2:${c2}"><div class="opc-l">
   <div class="opc-hd"><div class="opc-img" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}">${m.image?'':'<span>그림 없음</span>'}</div>
-   <div class="opc-ttl"><div class="opc-nm">${m.partner?'<span class="opc-star" title="파트너">★</span>':''}<b>${esc(m.name)}</b>${m.gender&&m.gender!=='-'?`<span class="opc-gd">${esc(m.gender)}</span>`:''}<span class="opc-lv">Lv.${esc(m.lv)}</span></div>
+   <div class="opc-ttl"><div class="opc-nm">${m.partner?'<span class="opc-star" title="파트너">★</span>':''}<b>${esc(m.name)}</b>${m.gender&&m.gender!=='-'?`<span class="opc-gd">${esc(m.gender)}</span>`:''}<span class="opc-lv">Lv.${esc(m.lv)}</span>${o0?`<span class="opc-fnow" title="배틀에서 폼을 바꾼 상태 — 능력치는 지금 모습">폼체인지 중 · 원래 ${esc(o0.name||'')}</span>`:''}</div>
     ${sub||trName?`<div class="opc-sub">${esc(sub)}${trName?`${sub?' · ':''}<span class="dim">${esc(trName)}</span>`:''}</div>`:''}
     <div class="opc-tags">${(m.types||[]).filter(x=>x&&x!=='-').map(typeChip).join('')}${m.tera&&m.tera!=='-'?`<span class="opc-k">테라</span>${typeChip(m.teraEn&&m.teraEn!=='-'?m.teraEn:S().typeEn(m.tera))}`:''}${egg.length?`<span class="opc-k">알그룹</span><span class="opc-v">${esc(egg.join(' · '))}</span>`:''}</div>
    </div></div>
@@ -446,12 +501,12 @@ window.OM_SHEET_UI=(()=>{
   <div class="opc-st">${STATS_KO.map((k,i)=>{const v=+(m.base||[])[i]||0,g=(m.ranks||[])[i]||'';const col=GCOL[String(g).replace(/[+-]+$/,'')]||'#888';return `<div class="opc-sr"><span class="opc-sl">${k}</span><span class="opc-bar"><i style="width:${Math.min(100,v/180*100)}%;background:${col}"></i></span><b class="opc-g" style="background:${col}">${esc(g)}</b><span class="mono opc-sv">${v}</span><span class="mono dim opc-sa">${esc((m.stats||[])[i]??'')}</span></div>`}).join('')}<div class="opc-tot small dim">종족치 합 <b class="mono">${tot}</b> · 오른쪽은 실수치</div></div>
    <div class="opc-ty"><div class="opc-h">받는 상성${m.teraActive?' <span class="dim small">(테라스탈)</span>':''}</div>${grp.length?grp.map(g=>`<div class="opc-tg ${g.c}"><i>${g.l}</i><div>${g.list.map(typeChip).join('')}</div></div>`).join(''):'<div class="small dim">약점·내성 없음</div>'}</div></div>
   <div class="opc-flow"><div class="opc-mvc">${(m.moves||[]).length?`<div class="opc-h">기술 <span class="dim small">${m.moves.length}</span></div>${m.moves.map(mv=>{const pr=+mv.prio||0;return `<div class="opc-m" style="--tc:${typeCol(mv.typeEn)}"><div class="opc-mh">${typeChip(mv.typeEn)}<b>${esc(mv.name)}</b><span class="sp"></span><span class="mvcat c-${({물리:'p',특수:'s',변화:'x'})[mv.cat]||'x'}">${esc(mv.cat||'-')}</span></div><div class="opc-mm">위력 <b>${esc(mv.pow||'-')}</b> · 명중 <b>${esc(mv.acc||'필중')}</b> · ${esc(mv.range||'-')}${pr?` · 우선 <b>${pr>0?'+'+pr:pr}</b>`:''}</div>${mv.eff?`<div class="opc-e">${potFmt(mv.eff)}</div>`:''}</div>`}).join('')}`:''}
-  </div><div class="opc-ptc">${XL.length?`<div class="opc-h">전용 포텐셜</div>${XL.map(x=>`<div class="opc-x"><b>『${esc(x.name)}』</b>${x.eff?`<div class="opc-e">${potFmt(String(x.eff).replace(/<br\s*\/?>/gi,'\n'))}</div>`:''}</div>`).join('')}`:''}
+  </div><div class="opc-ptc">${formsH}${XL.length?`<div class="opc-h">전용 포텐셜</div>${XL.map(x=>`<div class="opc-x"><b>『${esc(x.name)}』</b>${x.eff?`<div class="opc-e">${potFmt(String(x.eff).replace(/<br\s*\/?>/gi,'\n'))}</div>`:''}</div>`).join('')}`:''}
   ${pots.length?`<div class="opc-h">포텐셜 <span class="dim small">${pots.length}</span></div><div class="opc-ptg">${pots.map(p=>{const k=potKind(p.kind);return `<div class="opc-p" style="--ph:${POT_HUE[k.lab]||'#3fc7c0'}"><span class="opc-pk">${esc(k.lab||'')}</span><b>『${esc(p.name)}』</b>${p.eff?`<div class="opc-e">${potFmt(String(p.eff).replace(/<br\s*\/?>/gi,'\n'))}</div>`:''}</div>`}).join('')}</div>`:''}
   ${m.memo?`<div class="opc-h">메모</div><div class="opc-e opc-memo">${esc(m.memo)}</div>`:''}</div></div></div>`}
  function openCard(m,trName){if(!m)return;const md=A().openModal(`<div class="mhead"><h2>한 장 요약</h2><span class="sp"></span><button class="btn sm" data-opng title="이 요약을 그림 파일로 저장">PNG 저장</button><button class="btn ghost" data-x>닫기</button></div><div class="opc-wrap">${cardHTML(m,trName)}</div>`);
   md.classList.add('wide','opcbox');
   $('[data-opng]',md).onclick=async()=>{const el=$('.opc',md);try{if(!window.html2canvas)await new Promise((ok,no)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';sc.onload=ok;sc.onerror=()=>no(new Error('html2canvas 를 불러오지 못했다'));document.head.appendChild(sc)});
-   const cv=await window.html2canvas(el,{backgroundColor:'#141414',scale:2,useCORS:true});const a=document.createElement('a');a.download=(m.name||'포켓몬')+'.png';a.href=cv.toDataURL('image/png');a.click()}catch(err){A().toast('PNG 로 저장하지 못했다 ('+err.message+')')}}}
+   const cv=await window.html2canvas(el,{backgroundColor:'#141414',scale:2,useCORS:true,onclone:(cd,ce)=>{try{window.OM_PNGFIX&&window.OM_PNGFIX(cd,ce)}catch(e){}}});const a=document.createElement('a');a.download=(m.name||'포켓몬')+'.png';a.href=cv.toDataURL('image/png');a.click()}catch(err){A().toast('PNG 로 저장하지 못했다 ('+err.message+')')}}}
  return {render,UI,importTrainer,potFmt,potKind,POT_HUE,openCard,cardHTML};
 })();

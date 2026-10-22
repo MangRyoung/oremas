@@ -20,7 +20,15 @@ window.OM_ITEMS=(()=>{
  function rule(name){name=nm(name);if(!name)return null;const it=(DB().items||{})[name]||{};const e=String(it.eff||'').replace(/<br\s*\/?>/g,' ');const ck=name+'\u0001'+(it.auto||'')+'\u0001'+e;
   if(CACHE[name]&&CACHE[name].ck===ck)return CACHE[name].r;const IR=window.OM_ITEMRULE;const r=Object.assign(IR?IR.ruleOf(name,it):{},{name,eff:e});r.once=!!r.once;CACHE[name]={ck,r};return r}
  /* 그 포켓몬이 지금 쓰는 소지품 규칙 (전용 소지품은 종족이 맞을 때만) */
- function of(m){const n=itemOf(m);if(!n)return null;const r=rule(n);if(!r)return null;if(r.only&&!r.only.some(o=>String(m.species||'').includes(o)||String(m.name||'').includes(o)||String(m.form||'').includes(o)))return null;return r}
+ /* 제작기 「상세 조정」의 소지품 구문: 그 포켓몬이 그 소지품을 들고 있을 때만 DB 구문 대신 쓴다 */
+ const TCACHE={};
+ function tuned(n,dsl,own){const ck=n+'\u0001'+dsl+'\u0001'+(own?own.eff:'');if(TCACHE[ck])return TCACHE[ck];const it=(DB().items||{})[n]||own||{};const e=String(it.eff||'').replace(/<br\s*\/?>/g,' ');const IR=window.OM_ITEMRULE;const r=Object.assign(IR?IR.ruleOf(n,{eff:e,auto:dsl}):{},{name:n,eff:e,tuned:1});r.once=!!r.once;return TCACHE[ck]=r}
+ /* 오리지널 소지품 (제작기 시트에만 적은 것, DB 에 없음): 시트의 구문 → 없으면 지금 들고 있는 소지품 글(itemEff)을 읽는다. 트릭 등으로 옮겨 가도 글은 따라간다 */
+ const OCACHE={};
+ function ownOf(m,n){if((DB().items||{})[n])return null;const o=m.itemOwn&&nm(m.itemOwn.name)===n?m.itemOwn:null;const eff=String((o&&o.eff)||m.itemEff||'').replace(/<br\s*\/?>/g,' ');const auto=o?String(o.auto||''):'';if(!eff&&!auto)return null;
+  const cons=o?!!o.cons:/소모|사라진다|사라짐/.test(eff);return {eff,auto,cons,sock:'-'}}
+ function ownRule(n,o){const ck=n+'\u0001'+o.auto+'\u0001'+o.eff+'\u0001'+o.cons;if(OCACHE[ck])return OCACHE[ck];const IR=window.OM_ITEMRULE;const it={eff:(o.cons&&!/소모품/.test(o.eff)?'소모품/':'')+o.eff,auto:o.auto};const r=Object.assign(IR?IR.ruleOf(n,it):{},{name:n,eff:o.eff,own:1});r.once=!!(r.once||o.cons);return OCACHE[ck]=r}
+ function of(m){const n=itemOf(m);if(!n)return null;const tu=m.itemTune;const own=ownOf(m,n);const r=tu&&tu.dsl&&nm(tu.item)===n?tuned(n,tu.dsl,own):own?ownRule(n,own):rule(n);if(!r)return null;if(r.only&&!r.only.some(o=>String(m.species||'').includes(o)||String(m.name||'').includes(o)||String(m.form||'').includes(o)))return null;return r}
 
  /* ----- 공용 손질 ----- */
  function use(m,lines,b){const name=nm(m.item);if(!name)return;m.itemUsed={name,eff:m.itemEff||'',turn:+((b||{}).turn)||0};try{if(FX())FX().removeByName(m,name)}catch(e){}m.item='';m.itemEff='';lines.push(`「${name}」 — 다 써서 없어졌다`)}

@@ -476,10 +476,18 @@ async function sendChat(){
 function resolveSeat(n){if(n==='GM'||n==='gm')return 'gm';const seats=ST.state.seats||{};for(const k in seats)if(seats[k]&&(seats[k].name===n||k===n))return k;const trs=(ST.state.battle||{}).trainers||{};for(const k in trs)if(trs[k].name===n)return k;return null}
 function roll(expr){const m=String(expr).replace(/\s/g,'').match(/^(\d*)d(\d+)([+-]\d+)?$/i);if(!m)return null;const n=Math.min(+m[1]||1,100),f=+m[2],mod=+(m[3]||0);if(f<1)return null;const rs=[];for(let i=0;i<n;i++)rs.push(1+Math.floor(Math.random()*f));const total=rs.reduce((a,b)=>a+b,0)+mod;return {total,text:'['+rs.join(',')+']'+(mod?(mod>0?'+':'')+mod:'')}}
 function avatarOf(r){const d=r.data||{};if(d.k&&window.OM_RP_UI&&window.OM_RP_UI.imgOfKey){const u=window.OM_RP_UI.imgOfKey(d.k);if(u)return u}if(d.as){const tr=Object.values((ST.state.roster||{}).trainers||{}).find(x=>x.name===d.as);if(tr&&tr.image)return tr.image;const n=Object.values((ST.state.graph||{}).nodes||{}).find(x=>x.name===d.as);return n&&n.img||''}const from=d.from;if(from==='gm')return (ST.state.rp||{}).gmImg||'';const b=ST.state.battle||{};const ro=ST.state.roster||{trainers:{}};const t=(b.trainers||{})[from]||(ro.trainers||{})[from];if(t&&t.image)return t.image;return ''}
+/* 나만 보는 로그 (10-24 망령): 시트 · 상세 창에서 소지품을 착용 · 교체 · 뗀 줄은 서버에 남기지 않고 이 브라우저에만 (방마다 50줄까지 기억) */
+const SELFK=()=>'om_selflog_'+(ST.room||'');let SELFLOG=null;
+function selfRows(){if(SELFLOG&&SELFLOG.room===ST.room)return SELFLOG.rows;let rows=[];try{rows=JSON.parse(localStorage.getItem(SELFK())||'[]')||[]}catch(e){}SELFLOG={room:ST.room,rows};return rows}
+function selfLog(t){const rows=selfRows();rows.push({id:(ST.lastLogId||0)+0.5,kind:'self',at:new Date().toISOString(),data:{t:String(t)}});while(rows.length>50)rows.shift();try{localStorage.setItem(SELFK(),JSON.stringify(rows))}catch(e){}renderLog(true)}
+/* 소지품 줄만 나만 보는 로그로, 나머지는 모두에게 */
+function splitLog(name,L,kind){const it=L.filter(x=>/^소지품/.test(x)),rest=L.filter(x=>!/^소지품/.test(x));if(rest.length)sysLog(`${name} ${rest.join(' · ')}`,kind||'battle');if(it.length)selfLog(`${name} ${it.join(' · ')}`)}
 function renderLog(scroll){
  const el=$('#log');if(!el)return;
  const cut=+((ST.state.rp||{}).logClearAt)||0;
- el.innerHTML=ST.log.filter(r=>r.id>cut&&(CHAN.cur==='o'?isOoc(r):!isOoc(r))).map(r=>{const d=r.data||{};const k=(r.kind==='chat'&&d.bat)?d.bat:r.kind;const t=fmtTime(r.at);
+ const SR=CHAN.cur==='o'?[]:selfRows().filter(r=>r.id>cut);
+ el.innerHTML=(SR.length?ST.log.concat(SR).sort((a,b)=>a.id-b.id):ST.log).filter(r=>r.kind==='self'||(r.id>cut&&(CHAN.cur==='o'?isOoc(r):!isOoc(r)))).map(r=>{const d=r.data||{};const k=(r.kind==='chat'&&d.bat)?d.bat:r.kind;const t=fmtTime(r.at);
+  if(k==='self')return `<div class="msg sys self"><div class="bub">${esc(d.t)} <span class="selftag">나만 보임</span></div></div>`;
   if(k==='sys')return `<div class="msg sys"><div class="bub">${esc(d.t)}</div></div>`;
   if(k==='chat'&&d.clear)return `<div class="msg sys"><div class="bub">무대를 비웠다</div></div>`;
   if(k==='chat'&&d.sms)return '';
@@ -676,7 +684,7 @@ function openMonEdit(mid,focus){
   window.OM_DB_UI.open({kind:k,sel:k==='trait'?ab.value:it.value,pick:n=>{openMonEdit(mid);const m2=$('.modal');[0,1,2].forEach(i=>$(`[data-et="${i}"]`,m2).value=cur.types[i]);m2.querySelectorAll('[data-eb]').forEach((x,i)=>x.value=cur.base[i]);$('#edAb',m2).value=k==='trait'?n:cur.ab;$('#edIt',m2).value=k==='item'?n:cur.it}})});
  $('#edItClr',md).onclick=()=>{it.value='';it.focus()};
  const save=async(fn)=>{const m0=JSON.parse(JSON.stringify(B().mons[mid])),x=JSON.parse(JSON.stringify(m0));const L=fn(x);if(!L.length){closeModal();return openMon(mid)}
-  if(await setDiff(['battle','mons',mid],m0,x)){sysLog(`${m0.name} ${L.join(' · ')}`,'battle');toast('바꿨다')}closeModal();openMon(mid)};
+  if(await setDiff(['battle','mons',mid],m0,x)){splitLog(m0.name,L,'battle');toast('바꿨다')}closeModal();openMon(mid)};
  md.querySelectorAll('[data-er]').forEach(bt=>bt.onclick=()=>save(x=>{if(bt.dataset.er==='types'&&x.typesOrig){x.types=x.typesOrig;x.typesKo=x.types.map(ko);delete x.typesOrig;delete x.typesBy;return ['타입 원래대로']}
   if(bt.dataset.er==='ability'&&x.abilityOrig!=null){if(window.OM_FX&&x.ability)window.OM_FX.removeByName(x,x.ability);x.ability=x.abilityOrig;const a=((D.traits||{})[x.ability])||{};x.abilityEff=String(a.multi||a.single||'').replace(/<br\s*\/?>/gi,'\n');delete x.abilityOrig;delete x.abilityBy;return [`특성 원래대로 「${x.ability||'없음'}」`]}return []}));
  $('#edOk',md).onclick=()=>save(x=>{const L=[];
@@ -692,7 +700,7 @@ function openMonEdit(mid,focus){
 /* 배틀 상세의 바꾸기 (망령 10-21): 타입 = 18 타입 단추 창 · 종족치 = 랭크 ▲▼ 창 · 특성 · 소지품 = DB 창. 지금 배틀의 이 포켓몬만 (시트는 그대로).
    타입 · 특성은 효과(fx)의 「변경」과 같은 꼴(typesOrig · abilityOrig)로 남겨 원래대로 돌릴 수 있다 */
 function monChange(mid,kind){const m=(B().mons||{})[mid];if(!m)return;const D=window.OM_DB||{};const P=window.OM_PICK;const ko=t=>t&&t!=='-'?S().typeKo(t):'-';
- const save=async fn=>{const m0=JSON.parse(JSON.stringify(B().mons[mid])),x=JSON.parse(JSON.stringify(m0));const L=fn(x);if(L.length&&await setDiff(['battle','mons',mid],m0,x)){sysLog(`${m0.name} ${L.join(' · ')}`,'battle');toast('바꿨다')}openMon(mid)};
+ const save=async fn=>{const m0=JSON.parse(JSON.stringify(B().mons[mid])),x=JSON.parse(JSON.stringify(m0));const L=fn(x);if(L.length&&await setDiff(['battle','mons',mid],m0,x)){splitLog(m0.name,L,'battle');toast('바꿨다')}openMon(mid)};
  const setTypes=(x,nt)=>{if(!x.typesOrig){x.typesOrig=x.types.slice();x.typesBy='직접 변경'}x.types=nt;x.typesKo=nt.map(ko);if(x.typesOrig.join()===nt.join()){delete x.typesOrig;delete x.typesBy}return '타입 → '+(nt.filter(t=>t!=='-').map(ko).join('/')||'없음')};
  const setAb=(x,na)=>{const FX=window.OM_FX;if(FX&&x.ability)FX.removeByName(x,x.ability);if(x.abilityOrig==null){x.abilityOrig=x.ability||'';x.abilityBy='직접 변경'}x.ability=na;const a=((D.traits||{})[na])||{};x.abilityEff=String(a.multi||a.single||'').replace(/<br\s*\/?>/gi,'\n');if(x.abilityOrig===na){delete x.abilityOrig;delete x.abilityBy}return `특성 → 「${na||'없음'}」`};
  const setIt=(x,ni)=>{const FX=window.OM_FX;if(FX&&x.item)FX.removeByName(x,x.item);x.item=ni;x.itemEff=String((((D.items||{})[ni])||{}).eff||'');return ni?`소지품 → 「${ni}」`:'소지품 뗌'};
@@ -847,6 +855,6 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
 /* 이름으로 기본 초상 찾기: 그림이 따로 없으면 같은 이름의 로스터 트레이너 → 포켓몬 → 관계도 노드의 그림을 쓴다 */
 function portraitOf(name,img){if(img)return img;if(!name)return '';const ro=ST.state.roster||{};const t=Object.values(ro.trainers||{}).find(x=>x.name===name);if(t&&t.image)return t.image;const m=Object.values(ro.mons||{}).find(x=>x.name===name&&x.image);if(m)return m.image;const n=Object.values((ST.state.graph||{}).nodes||{}).find(x=>x.name===name&&x.img);return n?n.img:''}
-window.OM_APP={contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,openMon,openLoadParty,loadFromRoster,loadMaker,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,get view(){return VIEW},set view(v){VIEW=v}};
+window.OM_APP={selfLog,splitLog,contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,openMon,openLoadParty,loadFromRoster,loadMaker,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,get view(){return VIEW},set view(v){VIEW=v}};
 route();
 })();
