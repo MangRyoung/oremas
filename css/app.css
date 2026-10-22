@@ -2736,7 +2736,7 @@ span.iedit{display:inline-block;min-width:3em}
 @media (max-width:760px){.rooms li{gap:6px}.rooms li b{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}
 /* 한 장 요약 (10-22 망령): 왼쪽 기둥(그림 · 특성 · 소지품 · 능력치 · 상성) + 오른쪽은 기술 · 전용 · 포텐셜 · 메모를 여러 단으로 흘려 한 화면에 */
 .plv .plcard{margin-left:10px;vertical-align:middle}
-.modal.opcbox{width:min(1560px,98vw);max-height:calc(100vh - 20px);padding:12px 14px}
+.modal.opcbox{width:min(1560px,100%);max-height:calc(100vh - 20px);padding:12px 14px}
 .opc-wrap{padding:0}
 .opc{position:relative;display:grid;grid-template-columns:300px minmax(0,1fr);gap:10px;padding:10px;background:#141414;border:2px solid #fff;overflow:hidden}
 .opc::before{content:"";position:absolute;left:0;top:0;bottom:0;width:330px;background:linear-gradient(170deg,color-mix(in srgb,var(--c1) 40%,transparent),color-mix(in srgb,var(--c2) 18%,transparent) 40%,transparent 70%);pointer-events:none}
@@ -2774,9 +2774,11 @@ span.iedit{display:inline-block;min-width:3em}
 .opc-tg.x4>i{background:#ff2d55;color:#fff}.opc-tg.x2>i{background:#ff8a3c}.opc-tg.h>i{background:#4aa3ff}.opc-tg.q>i{background:#2f6fd0;color:#fff}.opc-tg.z>i{background:#555;color:#fff}
 .opc-tg>div{display:flex;gap:3px;flex-wrap:wrap}
 .opc-h{font-family:var(--head);font-weight:400;font-size:15px;color:#fff;border-bottom:2px solid var(--red);padding-bottom:1px;margin:0 0 5px;break-after:avoid}
-.opc-flow{columns:280px;column-gap:8px;column-fill:balance;min-width:0}
-.opc-flow>*{break-inside:avoid;margin-bottom:6px}
-.opc-flow>.opc-h:not(:first-child){margin-top:8px}
+.opc-flow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:10px;align-items:start;min-width:0}
+.opc-mvc,.opc-ptc{display:flex;flex-direction:column;gap:6px;min-width:0}
+.opc-mvc>.opc-h,.opc-ptc>.opc-h{margin:0}
+.opc-ptc>.opc-h:not(:first-child){margin-top:4px}
+.opc-ptg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;align-items:start}
 .opc-m{background:#18191d;border:1px solid var(--line2);border-left:5px solid var(--tc,#666);padding:5px 9px}
 .opc-mh{display:flex;align-items:center;gap:6px}.opc-mh b{font-size:13.5px}
 .opc-mm{font-size:11px;color:var(--mute);margin-top:1px}.opc-mm b{color:var(--fg)}
@@ -2785,11 +2787,12 @@ span.iedit{display:inline-block;min-width:3em}
 .opc-p{background:#18191d;border:1px solid var(--line2);border-left:4px solid var(--ph,#3fc7c0);padding:5px 9px}
 .opc-p>b{font-size:13px}
 .opc-pk{font-family:var(--lab);font-size:10.5px;color:#000;background:var(--ph,#3fc7c0);padding:0 5px;margin-right:5px}
-@media (max-width:900px){.opc{grid-template-columns:minmax(0,1fr)}.opc::before{width:auto;bottom:auto;height:170px}.opc-flow{columns:240px}}
+@media (max-width:1250px){.opc-flow{grid-template-columns:minmax(0,1fr)}.opc-mvc{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.opc-mvc>.opc-h{grid-column:1/-1}}
+@media (max-width:900px){.opc{grid-template-columns:minmax(0,1fr)}.opc::before{width:auto;bottom:auto;height:170px}}
 @media (max-width:700px){
  .modal.opcbox{width:100%;max-width:100%;max-height:100dvh;padding:12px 12px 70px}
  .opc{padding:8px}
  .opc::after{width:110px;height:44px;right:-30px}
- .opc-flow{columns:auto 1}
+ .opc-mvc,.opc-ptg{grid-template-columns:minmax(0,1fr)}
  .plv .plcard{margin-left:6px}
 }
