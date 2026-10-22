@@ -157,7 +157,7 @@ window.OM_SHEET_UI=(()=>{
    <div class="pportrait${m.partner?' partner':''}">${m.partner?'<span class="ppstar" title="파트너">★</span>':''}<div class="ppbig" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}">${m.image?'':'<span>그림 없음</span>'}</div><div class="ppname">${esc(m.role||'')}${m.pride?' · 프라이드 '+esc(m.pride):''}</div>${ppMore(c,t,m,E)}
     ${E?`<input type="text" data-me="image" value="${esc(m.image&&!m.image.startsWith('data:')?m.image:'')}" placeholder="그림 주소 https://… (비우면 그대로)" style="width:100%;margin-top:6px"><label class="btn xs" style="margin-top:6px">파일 올리기<input type="file" accept="image/*" data-up="mon" data-id="${m.id}" hidden></label>`:''}</div>
    <div class="pinfo">
-    <div class="plv">Lv <b>${m.lv}</b> <span class="dim small">기본 ${S().baseLevel((t.ranks||{})['육성'])} ${m.dist?(m.dist>0?'+':'')+m.dist:''}</span></div>
+    <div class="plv">Lv <b>${m.lv}</b> <span class="dim small">기본 ${S().baseLevel((t.ranks||{})['육성'])} ${m.dist?(m.dist>0?'+':'')+m.dist:''}</span><button class="btn xs plcard" data-act="pcard" data-mid="${m.id}" title="이 포켓몬을 한 장으로 요약해서 본다 · PNG 저장">한 장 요약</button></div>
     <div class="pbig">${E?`<input type="text" data-me="name" value="${esc(m.name)}">`:qe('me:name',esc(m.name))}</div>
     <div class="row small" style="margin:4px 0">${E?['t1','t2','t3'].map((k,i)=>`<select data-me="${k}">${['-',...((DB().types||{}).kor||[]).filter(x=>x!=='-')].map(x=>`<option value="${x}" ${m.typesKo[i]===x?'selected':''}>${x}</option>`).join('')}</select>`).join(''):QE?`<span class="qe" data-qpk="types" title="눌러서 타입 바꾸기">${m.types.filter(x=>x!=='-').map(typeChip).join('')}</span><button class="btn xs ghost" data-qpk="types">타입 변경</button>`:m.types.filter(x=>x!=='-').map(typeChip).join('')}
      <span class="dim">테라스탈</span> ${E?`<select data-me="tera">${['-',...((DB().types||{}).kor||[]).filter(x=>x!=='-')].map(x=>`<option value="${x}" ${m.tera===x?'selected':''}>${x}</option>`).join('')}</select>`:qe('me:tera',esc(m.tera))}
@@ -338,6 +338,7 @@ window.OM_SHEET_UI=(()=>{
    case 'hatch':return openHatch(d.mid);
    case 'stands':return window.OM_RP_UI.openStands(t.id);
    case 'mstands':return window.OM_RP_UI.openStands('pm:'+d.mid);
+   case 'pcard':return openCard(c.r.mons[d.mid],t&&t.name);
    case 'refresh':return refreshFromMaker(d.tid);
    case 'deltr':if(!c.gm&&t.id!==c.seat)return A().toast('내 시트만 지울 수 있다');if(!confirm(`${t.name} 와 파티를 로스터에서 지울까?`))return;
     /* GM 도 좌석처럼 하나씩 지운다 — 로스터를 통째로 쓰면 그 사이 남이 고친 시트가 지워진다 (점검 2-4) */
@@ -422,5 +423,35 @@ window.OM_SHEET_UI=(()=>{
    const note=[used.extra?`추가 ${used.extra}회`:'',used.one?`개별 다시 굴림 ${used.one}회`:'',used.all?`전부 다시 굴림 ${used.all}회`:'',edited.has(chosen)?'고른 후보는 손으로 고침':used.edit?`다른 후보 ${used.edit}개 손으로 고침`:''].filter(Boolean).join(' · ');
    if(await putMon(mid,m,nm))A().sysLog(`${m.name} 알까기 → ${nm.iv.join('/')} (합 ${S().ivSum(nm.iv)})${note?' · '+note:''}`)}}
 
- return {render,UI,importTrainer,potFmt,potKind,POT_HUE};
+ /* ---------- 한 장 요약 (망령 10-22): 포켓몬 하나를 한 장으로 — 그림 · 타입 · 특성 · 소지품 · 능력치 막대 · 받는 상성 · 기술 · 전용 · 포텐셜 · 메모. PNG 로 저장 ---------- */
+ const GCOL={E:'#7a7a7a',D:'#4a90d9',C:'#3fb56b',B:'#e6b422',A:'#ff8a3c',AA:'#ff4f7b',AAA:'#a970ff',S:'#e4002b'};
+ function cardHTML(m,trName){const tys=(m.teraActive&&m.teraEn&&m.teraEn!=='-'?[m.teraEn]:m.types||[]).filter(x=>x&&x!=='-');
+  const D=DB();const ab=(D.traits||{})[m.ability]||{};const abE=String(ab.multi||ab.single||m.abilityEff||'').replace(/<br\s*\/?>/gi,'\n');
+  const itE=m.item?String((((D.items||{})[m.item])||{}).eff||m.itemEff||''):'';
+  const tot=(m.base||[]).reduce((a,v)=>a+(+v||0),0);
+  const mul={};for(const ty of TYPES18)mul[ty]=S().effect(ty,tys);
+  const grp=[[4,'×4','x4'],[2,'×2','x2'],[0.5,'×½','h'],[0.25,'×¼','q'],[0,'×0','z']].map(([v,l,c])=>({l,c,list:TYPES18.filter(a=>v===4?mul[a]>=4:v===2?mul[a]===2:v===0.5?mul[a]===0.5:v===0.25?mul[a]>0&&mul[a]<=0.25:mul[a]===0)})).filter(g=>g.list.length);
+  const pots=(m.pots||[]).filter(p=>p&&p.name&&!p.ph);const XL=exclList(m).filter(x=>x.name);
+  const c1=(()=>{try{return S().typeColor(tys[0]||'Normal').bg}catch(e){return '#e4002b'}})(),c2=(()=>{try{return S().typeColor(tys[1]||tys[0]||'Normal').bg}catch(e){return '#e4002b'}})();
+  const sub=[m.role,m.pride?'프라이드 '+m.pride:''].filter(Boolean).join(' · ');
+  const egg=(m.egg||[]).filter(x=>x&&x!=='-');
+  return `<div class="opc" style="--c1:${c1};--c2:${c2}"><div class="opc-l">
+  <div class="opc-hd"><div class="opc-img" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}">${m.image?'':'<span>그림 없음</span>'}</div>
+   <div class="opc-ttl"><div class="opc-nm">${m.partner?'<span class="opc-star" title="파트너">★</span>':''}<b>${esc(m.name)}</b>${m.gender&&m.gender!=='-'?`<span class="opc-gd">${esc(m.gender)}</span>`:''}<span class="opc-lv">Lv.${esc(m.lv)}</span></div>
+    ${sub||trName?`<div class="opc-sub">${esc(sub)}${trName?`${sub?' · ':''}<span class="dim">${esc(trName)}</span>`:''}</div>`:''}
+    <div class="opc-tags">${(m.types||[]).filter(x=>x&&x!=='-').map(typeChip).join('')}${m.tera&&m.tera!=='-'?`<span class="opc-k">테라</span>${typeChip(m.teraEn&&m.teraEn!=='-'?m.teraEn:S().typeEn(m.tera))}`:''}${egg.length?`<span class="opc-k">알그룹</span><span class="opc-v">${esc(egg.join(' · '))}</span>`:''}</div>
+   </div></div>
+  <div class="opc-ab"><span class="opc-k">특성</span><b>${esc(m.ability||'-')}</b>${abE?`<div class="opc-e">${potFmt(abE)}</div>`:''}</div>
+  ${m.item?`<div class="opc-ab"><span class="opc-k">소지품</span><b>${esc(m.item)}</b>${itE?`<div class="opc-e">${potFmt(itE)}</div>`:''}</div>`:''}
+  <div class="opc-st">${STATS_KO.map((k,i)=>{const v=+(m.base||[])[i]||0,g=(m.ranks||[])[i]||'';const col=GCOL[String(g).replace(/[+-]+$/,'')]||'#888';return `<div class="opc-sr"><span class="opc-sl">${k}</span><span class="opc-bar"><i style="width:${Math.min(100,v/180*100)}%;background:${col}"></i></span><b class="opc-g" style="background:${col}">${esc(g)}</b><span class="mono opc-sv">${v}</span><span class="mono dim opc-sa">${esc((m.stats||[])[i]??'')}</span></div>`}).join('')}<div class="opc-tot small dim">종족치 합 <b class="mono">${tot}</b> · 오른쪽은 실수치</div></div>
+   <div class="opc-ty"><div class="opc-h">받는 상성${m.teraActive?' <span class="dim small">(테라스탈)</span>':''}</div>${grp.length?grp.map(g=>`<div class="opc-tg ${g.c}"><i>${g.l}</i><div>${g.list.map(typeChip).join('')}</div></div>`).join(''):'<div class="small dim">약점·내성 없음</div>'}</div></div>
+  <div class="opc-flow">${(m.moves||[]).length?`<div class="opc-h">기술 <span class="dim small">${m.moves.length}</span></div>${m.moves.map(mv=>{const pr=+mv.prio||0;return `<div class="opc-m" style="--tc:${typeCol(mv.typeEn)}"><div class="opc-mh">${typeChip(mv.typeEn)}<b>${esc(mv.name)}</b><span class="sp"></span><span class="mvcat c-${({물리:'p',특수:'s',변화:'x'})[mv.cat]||'x'}">${esc(mv.cat||'-')}</span></div><div class="opc-mm">위력 <b>${esc(mv.pow||'-')}</b> · 명중 <b>${esc(mv.acc||'필중')}</b> · ${esc(mv.range||'-')}${pr?` · 우선 <b>${pr>0?'+'+pr:pr}</b>`:''}</div>${mv.eff?`<div class="opc-e">${potFmt(mv.eff)}</div>`:''}</div>`}).join('')}`:''}
+  ${XL.length?`<div class="opc-h">전용 포텐셜</div>${XL.map(x=>`<div class="opc-x"><b>『${esc(x.name)}』</b>${x.eff?`<div class="opc-e">${potFmt(String(x.eff).replace(/<br\s*\/?>/gi,'\n'))}</div>`:''}</div>`).join('')}`:''}
+  ${pots.length?`<div class="opc-h">포텐셜 <span class="dim small">${pots.length}</span></div>${pots.map(p=>{const k=potKind(p.kind);return `<div class="opc-p" style="--ph:${POT_HUE[k.lab]||'#3fc7c0'}"><span class="opc-pk">${esc(k.lab||'')}</span><b>『${esc(p.name)}』</b>${p.eff?`<div class="opc-e">${potFmt(String(p.eff).replace(/<br\s*\/?>/gi,'\n'))}</div>`:''}</div>`}).join('')}`:''}
+  ${m.memo?`<div class="opc-h">메모</div><div class="opc-e opc-memo">${esc(m.memo)}</div>`:''}</div></div>`}
+ function openCard(m,trName){if(!m)return;const md=A().openModal(`<div class="mhead"><h2>한 장 요약</h2><span class="sp"></span><button class="btn sm" data-opng title="이 요약을 그림 파일로 저장">PNG 저장</button><button class="btn ghost" data-x>닫기</button></div><div class="opc-wrap">${cardHTML(m,trName)}</div>`);
+  md.classList.add('wide','opcbox');
+  $('[data-opng]',md).onclick=async()=>{const el=$('.opc',md);try{if(!window.html2canvas)await new Promise((ok,no)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';sc.onload=ok;sc.onerror=()=>no(new Error('html2canvas 를 불러오지 못했다'));document.head.appendChild(sc)});
+   const cv=await window.html2canvas(el,{backgroundColor:'#141414',scale:2,useCORS:true});const a=document.createElement('a');a.download=(m.name||'포켓몬')+'.png';a.href=cv.toDataURL('image/png');a.click()}catch(err){A().toast('PNG 로 저장하지 못했다 ('+err.message+')')}}}
+ return {render,UI,importTrainer,potFmt,potKind,POT_HUE,openCard,cardHTML};
 })();
