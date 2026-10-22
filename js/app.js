@@ -335,13 +335,13 @@ function renderRoom(){
    ${ST.role==='gm'?`<a class="btn sm ghost" id="asPlBtn" href="${esc(roomLink(ST.room)+'&pl=1')}" title="이 방에 플레이어로 다시 들어간다 (자리·PL 닉)">PL 로</a>`:(()=>{const sg=(LS.get('om_rooms',[]).find(x=>x.id===ST.room)||{}).gm;return ST.canGm?`<a class="btn sm pri" id="asGmBtn" href="${esc(roomLink(ST.room))}" title="내 계정은 이 방의 GM 이다 — GM 으로 다시 들어간다">GM 으로</a>`:sg?`<a class="btn sm pri" id="asGmBtn" href="${esc(gmLink(ST.room,sg))}" title="이 기기에 GM 링크가 있다 — GM 으로 다시 들어간다">GM 으로</a>`:''})()}${ST.role==='gm'?(String(ST.secret).startsWith('u:')?'':'<button class="btn sm" id="copyGm">GM 링크</button>')+'<button class="btn sm" id="roomSet">⚙ 설정</button>':'<button class="btn sm" id="seatBtn">자리</button><button class="btn sm ghost" id="roomSet" title="내 설정 — 소리·알림·글자·이미지·단축키">⚙ 설정</button>'}
   </div>
   <div class="body"><div class="scene" id="scene"></div><div class="resizer" id="resizer" title="끌어서 채팅 창 너비 조절"></div>
-   <div class="side" id="side"><div class="phone"><div class="pbar"><span>●●●</span><span class="ptime" id="pclock"></span></div><div class="ptitle"><span class="plogs">${ST.role==='gm'?'<button class="btn xs ghost plog" id="clearLog" title="로그 비우기">🧹 비우기</button>':''}<button class="btn xs ghost plog" id="saveLog" title="채팅 로그를 파일로 저장">💾 로그</button><button class="btn xs ghost plog" id="chatPrefs" title="채팅 설정 — 글자 크기 · 내 글자색 · 닉네임 색">⚙ 채팅 설정</button></span>${esc(r.name||r.id)}<small>${ST.role==='gm'?'GM':ST.role==='seat'?esc(ST.name):'관전'} · 오레마스</small></div><div class="ctabs" id="ctabs"><button type="button" data-ch="s">세션</button><button type="button" data-ch="o">잡담<i class="cdot"></i></button></div><div class="log" id="log"></div>
+   <div class="side" id="side"><div class="phone"><div class="pbar"><span>●●●</span><span class="ptime" id="pclock"></span></div><div class="ptitle"><span class="plogs">${ST.role==='gm'?'<button class="btn xs ghost plog" id="clearLog" title="로그 비우기">🧹 비우기</button>':''}<button class="btn xs ghost plog ${LOGPIN?'on':''}" id="pinLog" title="채팅 고정 — 켜 두면 새 글이 올라와도 맨 아래로 내려가지 않는다 (지난 글 읽을 때)">📌 고정</button><button class="btn xs ghost plog" id="saveLog" title="채팅 로그를 파일로 저장">💾 로그</button><button class="btn xs ghost plog" id="chatPrefs" title="채팅 설정 — 글자 크기 · 내 글자색 · 닉네임 색">⚙ 채팅 설정</button></span>${esc(r.name||r.id)}<small>${ST.role==='gm'?'GM':ST.role==='seat'?esc(ST.name):'관전'} · 오레마스</small></div><div class="ctabs" id="ctabs"><button type="button" data-ch="s">세션</button><button type="button" data-ch="o">잡담<i class="cdot"></i></button></div><div class="log" id="log"></div>
     <div class="inbox">${ST.role==='gm'?'<select id="chatAs" title="누구로 말할지 (세션 탭) — 배틀 화면에서도 인물로 말할 수 있다"><option value="gm">GM</option></select>':''}<input type="text" id="chatIn" placeholder="${ST.role?'메시지 · /r 1d100 · /w 이름 메시지':'자리에 앉으면 말할 수 있다'}" ${ST.role?'':'disabled'}><button class="btn" id="chatSend" ${ST.role?'':'disabled'}>➤</button></div></div></div>
   </div>
   <div class="mbar" id="mbar"><button data-m="scene" class="on"><i>🎭</i><span>무대</span></button><button data-m="chat"><i>💬</i><span>채팅</span><em id="mUnread" class="mbadge" style="display:none"></em></button><button data-m="phone"><i>📱</i><span>휴대폰</span></button><button data-m="top" title="맨 위로"><i>▲</i><span>맨 위</span></button><button data-m="menu"><i>☰</i><span>메뉴</span></button></div></div>`;
  $('#copyLink').onclick=()=>copy(roomLink(ST.room),'플레이어 링크를 복사했다');
  bindMobile();
- const sl=$('#saveLog');if(sl)sl.onclick=openSaveLog;const cpf=$('#chatPrefs');if(cpf)cpf.onclick=openChatPrefs;const cl=$('#clearLog');if(cl)cl.onclick=openClearLog;const pr=$('#presence');if(pr)pr.onclick=()=>{openNick()};
+ const pn=$('#pinLog');if(pn)pn.onclick=()=>{LOGPIN=!LOGPIN;try{localStorage.setItem('om_logpin',LOGPIN?'1':'0')}catch(e){}pn.classList.toggle('on',LOGPIN);pn.classList.remove('new');if(!LOGPIN){const lg=$('#log');if(lg)lg.scrollTop=lg.scrollHeight}toast(LOGPIN?'채팅 고정 — 새 글이 와도 그 자리에 머문다':'고정 풀림 — 새 글을 따라 내려간다')};const sl=$('#saveLog');if(sl)sl.onclick=openSaveLog;const cpf=$('#chatPrefs');if(cpf)cpf.onclick=openChatPrefs;const cl=$('#clearLog');if(cl)cl.onclick=openClearLog;const pr=$('#presence');if(pr)pr.onclick=()=>{openNick()};
  const sk=$('#skillBtn');if(sk)sk.onclick=()=>window.OM_SKILL_UI.open();const dxb=$('#dexBtn');if(dxb)dxb.onclick=()=>window.OM_DEX_UI.openMgr(ST.seat);
  const dk=$('#deckBtn');if(dk)dk.onclick=()=>window.OM_DECK_UI.open();
  $('#dbBtn').onclick=()=>window.OM_DB_UI.open({kind:'trait'});if($('#rmBtn'))$('#rmBtn').onclick=()=>window.OM_FX_UI.openRm('');
@@ -357,7 +357,7 @@ function renderRoom(){
   document.addEventListener('pointermove',mv);document.addEventListener('pointerup',up)};
  renderScene();
  /* 방에 막 들어왔을 때: 세션 탭 · 로그 맨 아래 (그림이 늦게 불려 와 길어져도 따라 내려간다) */
- if(ST._toBottom){ST._toBottom=false;renderLog(true);const lg=$('#log');if(lg)[150,600,1500,3000].forEach(t=>setTimeout(()=>{if(lg.isConnected)lg.scrollTop=lg.scrollHeight},t))}else renderLog(false)}
+ if(ST._toBottom){ST._toBottom=false;renderLog(true);const lg=$('#log');if(lg&&!LOGPIN)[150,600,1500,3000].forEach(t=>setTimeout(()=>{if(lg.isConnected)lg.scrollTop=lg.scrollHeight},t))}else renderLog(false)}
 function copy(t,msg){navigator.clipboard.writeText(t).then(()=>toast(msg),()=>prompt('복사해서 쓰기',t))}
 
 /* ---------- 상태 쓰기 ---------- */
@@ -392,8 +392,13 @@ const TAGCOL={'고유':'#7b4fd6','전용':'#1f6fd1','포텐셜':'#7b4fd6','특�
 function atkLines(body){const out=[];for(const raw of body.split('\n')){if(!raw.trim())continue;
   if(/^\s{2,}/.test(raw)){const t=raw.trim();out.push(`<div class="atsub ${/발동!|확정/.test(t)?'ok':/불발|받지 않음/.test(t)?'no':''}">${esc(t)}</div>`);continue}
   const m=raw.match(/^→\s*([^:]+):\s*(.*)$/);if(!m){out.push(`<div class="bl">${esc(raw)}</div>`);continue}
-  const parts=m[2].split(' · ');const chips=[];let dmg='';
+  const tm=Object.values((ST.state.battle||{}).mons||{}).find(q=>q.name===m[1].trim());let rest=m[2];let note='';
+  rest=rest.replace(/\s*—\s*받는 쪽이 「HP」에서 적용\s*$/,()=>{note='<span class="atnote">HP 창에서 적용</span>';return ''});
+  const parts=[];for(let p of rest.split(' · ')){p=p.trim();let x;while((x=p.match(/^(필중|급소!|\d+번 맞았다!)\s+(.+)$/))){parts.push(x[1]==='급소!'?'급소 급소!':x[1]);p=x[2]}if(p)parts.push(p)}
+  const chips=[];let dmg='';
   for(const p of parts){let x;
+   if((x=p.match(/^대미지\s+(\d+)\s*×([\d.]+)(?:\s*완화\s*×([\d.]+))?\s*≈\s*(\d+)/))){const v=+x[2];chips.push(`<span class="atc ${v>1?'sup':v===0?'imm':v<1?'weak':''}">상성 ×${x[2]}</span>`);if(x[3])chips.push(`<span class="atc">완화 ×${x[3]}</span>`);dmg=`<span class="atdmg">${x[4]}<small>기본 ${x[1]}</small></span>`;continue}
+   if(/^\d+번 맞았다!$/.test(p)){chips.push(`<span class="atc">${esc(p.replace('!',''))}</span>`);continue}
    if((x=p.match(/^명중\s+(\d+)\/(\d+)/)))chips.push(`<span class="atc hit">명중 <small>${x[1]}/${x[2]}</small></span>`);
    else if((x=p.match(/^빗나감\s+(\d+)\/(\d+)/)))chips.push(`<span class="atc miss">빗나감 <small>${x[1]}/${x[2]}</small></span>`);
    else if(p==='필중')chips.push(`<span class="atc hit">필중</span>`);
@@ -401,7 +406,7 @@ function atkLines(body){const out=[];for(const raw of body.split('\n')){if(!raw.
    else if((x=p.match(/^대미지\s+(\d+)(.*)$/)))dmg=`<span class="atdmg">${x[1]}<small>${esc(x[2].trim())}</small></span>`;
    else if((x=p.match(/^상성\s+×([\d.]+)/))){const v=+x[1];chips.push(`<span class="atc ${v>1?'sup':v===0?'imm':v<1?'weak':''}">상성 ×${x[1]}</span>`)}
    else chips.push(`<span class="atc">${esc(p)}</span>`)}
-  out.push(`<div class="atrow"><b class="attg">${esc(m[1].trim())}</b><span class="atchips">${chips.join('')}</span>${dmg}</div>`)}
+  out.push(`<div class="atrow">${tm&&tm.image?`<span class="atav" style="background-image:url('${cssu(tm.image)}')"></span>`:''}<b class="attg">${esc(m[1].trim())}</b><span class="atchips">${chips.join('')}${note}</span>${dmg}</div>`)}
  return out.join('')}
 /* 10-21 망령: HP 가 바뀐 줄 (data.hp = {prev,cur,max,d,why,faint}) — 큰 숫자 · 깎인 만큼 빗금 친 HP 바 */
 function hpCard(d){const h=d.hp;const P=v=>v>0?Math.max(1,Math.round(v/h.max*100)):0;const a=P(h.prev),b=P(h.cur);const dmg=h.cur<h.prev;const col=dmg?'#d23a3a':'#2f9a5b';const lo=Math.min(a,b),hi=Math.max(a,b);const cls=b<=25?'low':b<=50?'mid':'';
@@ -415,9 +420,17 @@ function sysCard(d){const t=String(d.t||'');if(!t)return '';
  const mt=t.match(/^▶\s*(.+?)의 행동\s*$/);if(mt)return `<div class="systurn">▶ <b>${esc(mt[1])}</b>의 차례</div>`;
  if(!/\n/.test(t))return `<div class="syspill">${esc(t)}</div>`;
  const L=t.split('\n');return `<div class="bcard"><div class="bch"><b>${esc(L[0])}</b></div><div class="bcb">${L.slice(1).filter(Boolean).map(l=>`<div class="bl">${esc(l)}</div>`).join('')}</div></div>`}
-function battleCard(d){if(d.hp&&d.hp.max)return hpCard(d);const t=String(d.t||'');const m=t.match(/^【([^】]+)】\s*([^\n]*)\n?([\s\S]*)$/);if(!m)return '';const tag=m[1],title=m[2],body=m[3].trim();const col=TAGCOL[tag]||(/^턴 \d+ 종료$/.test(tag)?'#3b6fb0':'#555');
- const lines=tag==='공격'?atkLines(body):body.split('\n').filter(Boolean).map(l=>/^▸ /.test(l)?`<div class="bsec">${esc(l.slice(2))}</div>`:`<div class="bl ${/실패|차단|없|않/.test(l)?'neg':/\+\d|회복|성공|→/.test(l)?'pos':''}">${esc(l)}</div>`).join('');
- return `<div class="bcard" style="--tc:${col}"><div class="bch">${d.img?`<span class="bcav" style="background-image:url('${cssu(d.img)}')"></span>`:''}<span class="bctag">${esc(tag)}</span><b>${esc(title)}</b>${d.mid?`<span class="sp"></span><button class="btn xs ghost bcfx" data-lmid="${esc(d.mid)}" title="이 포켓몬의 포텐셜 창 — 발동 중인 효과를 ✕ 로 해제">효과</button>`:''}</div>${d.eff?`<div class="bceff">${esc(d.eff)}</div>`:''}${lines?`<div class="bcb">${lines}</div>`:''}</div>`}
+/* 10-24 망령: 【공개】 · 【모두 공개】 — 쓰는 포켓몬 그림 · 기술 · 대상 그림 칩 */
+function rvCard(d,tag){const av=(img,cls)=>`<span class="rvav ${cls||''}" style="${img?`background-image:url('${cssu(img)}')`:''}"></span>`;const SK={left:'좌측',right:'우측'};
+ const row=r=>{const who=`<div class="rvw">${av(r.img)}<div class="rvwn"><b>${esc(r.name)}</b><small>${esc(r.tr)}${r.area?` · ${SK[r.side]||''} ${esc(r.area)}`:''}</small></div></div>`;
+  if(r.none)return `<div class="rvr">${who}<span class="rvnone">행동 없음</span></div>`;
+  if(r.sw)return `<div class="rvr">${who}<span class="rvar">⇄ 교대</span><div class="rvtg">${`<span class="rvt">${av(r.sw.img,'s')}<b>${esc(r.sw.name)}</b></span>`}</div></div>`;
+  const mv=r.mv||{};const meta=[mv.cat,mv.pow&&mv.pow!=='-'?'위력 '+mv.pow:'',mv.acc&&mv.acc!=='-'?'명중 '+mv.acc:'',mv.prio?'우선도 '+(mv.prio>0?'+':'')+mv.prio:''].filter(Boolean).join(' · ');
+  return `<div class="rvr">${who}<div class="rvm">${mv.type?typeChip(mv.type):''}<b>「${esc(mv.name)}」</b>${meta?`<small>${esc(meta)}</small>`:''}</div>${(r.tg||[]).length?`<span class="rvar">→</span><div class="rvtg">${r.tg.map(x=>`<span class="rvt ${x.side===r.side?'ally':'foe'}">${av(x.img,'s')}<span><b>${esc(x.name||'빈 자리')}</b><small>${SK[x.side]||''} ${esc(x.area)}</small></span></span>`).join('')}</div>`:''}</div>`};
+ return `<div class="bcard rvc" style="--tc:${TAGCOL[tag]||'#d6a23b'}"><div class="bch"><span class="bctag">${esc(tag)}</span></div><div class="bcb">${d.rv.map(row).join('')}</div></div>`}
+function battleCard(d){if(d.hp&&d.hp.max)return hpCard(d);if(Array.isArray(d.rv)&&d.rv.length){const tg=(String(d.t||'').match(/^【([^】]+)】/)||[])[1]||'공개';return rvCard(d,tg)}const t=String(d.t||'');const m=t.match(/^【([^】]+)】\s*([^\n]*)\n?([\s\S]*)$/);if(!m)return '';const tag=m[1],title=m[2],body=m[3].trim();const col=TAGCOL[tag]||(/^턴 \d+ 종료$/.test(tag)?'#3b6fb0':'#555');
+ const lines=(tag==='공격'||/^→\s*[^:\n]+:/m.test(body))?atkLines(body):body.split('\n').filter(Boolean).map(l=>/^▸ /.test(l)?`<div class="bsec">${esc(l.slice(2))}</div>`:`<div class="bl ${/실패|차단|없|않/.test(l)?'neg':/\+\d|회복|성공|→/.test(l)?'pos':''}">${esc(l)}</div>`).join('');
+ return `<div class="bcard" style="--tc:${col}"><div class="bch">${d.img?`<span class="bcav" style="background-image:url('${cssu(d.img)}')"></span>`:''}<span class="bctag">${esc(tag)}</span><b>${esc(title)}</b>${d.mid?`<span class="sp"></span><button class="btn xs ghost bcfx" data-lmid="${esc(d.mid)}" data-lnm="${esc([...String(title).matchAll(/『([^』]+)』|「([^」]+)」/g)].map(x=>x[1]||x[2]).join('|'))}" title="이 포켓몬의 포텐셜 창 — 발동 중인 효과를 ✕ 로 해제">효과</button>`:''}</div>${d.eff?`<div class="bceff">${esc(d.eff)}</div>`:''}${lines?`<div class="bcb">${lines}</div>`:''}</div>`}
 
 /* 대사 화자 이름: as 가 있으면 그것, 좌석의 세션 대사(예전 줄)는 그 좌석 캐릭터 이름, 잡담·그 밖은 남긴 이름 그대로 */
 function chatName(r){const d=r.data||{};if(d.as)return d.as;if(d.gmn&&d.from==='gm')return 'GM · '+d.gmn;if(r.kind==='chat'&&!isOoc(r)&&!d.sms&&d.from&&d.from!=='gm'){const t=((ST.state.roster||{}).trainers||{})[d.from];if(t&&t.name)return t.name}return r.who||''}
@@ -482,8 +495,10 @@ function selfRows(){if(SELFLOG&&SELFLOG.room===ST.room)return SELFLOG.rows;let r
 function selfLog(t){const rows=selfRows();rows.push({id:(ST.lastLogId||0)+0.5,kind:'self',at:new Date().toISOString(),data:{t:String(t)}});while(rows.length>50)rows.shift();try{localStorage.setItem(SELFK(),JSON.stringify(rows))}catch(e){}renderLog(true)}
 /* 소지품 줄만 나만 보는 로그로, 나머지는 모두에게 */
 function splitLog(name,L,kind){const it=L.filter(x=>/^소지품/.test(x)),rest=L.filter(x=>!/^소지품/.test(x));if(rest.length)sysLog(`${name} ${rest.join(' · ')}`,kind||'battle');if(it.length)selfLog(`${name} ${it.join(' · ')}`)}
+/* 채팅 고정 (10-24 망령): 켜 두면 새 글이 와도 스크롤을 그대로 둔다 — 고정 단추에 새 글 표시만 */
+var LOGPIN=(()=>{try{return localStorage.getItem('om_logpin')==='1'}catch(e){return false}})();
 function renderLog(scroll){
- const el=$('#log');if(!el)return;
+ const el=$('#log');if(!el)return;const top0=el.scrollTop,h0=el.scrollHeight;
  const cut=+((ST.state.rp||{}).logClearAt)||0;
  const SR=CHAN.cur==='o'?[]:selfRows().filter(r=>r.id>cut);
  el.innerHTML=(SR.length?ST.log.concat(SR).sort((a,b)=>a.id-b.id):ST.log).filter(r=>r.kind==='self'||(r.id>cut&&(CHAN.cur==='o'?isOoc(r):!isOoc(r)))).map(r=>{const d=r.data||{};const k=(r.kind==='chat'&&d.bat)?d.bat:r.kind;const t=fmtTime(r.at);
@@ -499,9 +514,9 @@ function renderLog(scroll){
   const lf=k==='chat'&&!isOoc(r)?lineFmt(d):{narr:false,text:String(d.t||'')};
   const sa=styAttr(d);
   return `<div class="msg ${k} ${mine?'me':''} ${lf.narr?'narr':''}"><div class="av" style="${av?`background-image:url('${cssu(av)}')`:''}"></div><div class="bub" style="${sa.bub}"><span class="who" style="${sa.who}">${who}</span>${d.img?`<a href="${esc(d.img)}" target="_blank" rel="noopener"><img class="cimg" src="${esc(d.img)}" alt=""></a>`:''}${esc(lf.text)}</div><span class="time">${t}</span></div>`}).join('');
- el.querySelectorAll('[data-lmid]').forEach(bt=>bt.onclick=()=>{if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.action)window.OM_BATTLE_UI.action({act:'pots',mid:bt.dataset.lmid})});
+ el.querySelectorAll('[data-lmid]').forEach(bt=>bt.onclick=()=>{if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.action)window.OM_BATTLE_UI.action({act:'pots',mid:bt.dataset.lmid,only:String(bt.dataset.lnm||'').split('|').filter(Boolean)})});
  if(!el.innerHTML&&CHAN.cur==='o')el.innerHTML='<div class="msg sys"><div class="bub">잡담 창 — 여기서 한 말은 세션 로그·무대에 나오지 않는다</div></div>';chanDots();
- if(scroll!==false)el.scrollTop=el.scrollHeight}
+ if(LOGPIN){el.scrollTop=top0;if(el.scrollHeight>h0+2){const pn=$('#pinLog');if(pn)pn.classList.add('new')}}else if(scroll!==false)el.scrollTop=el.scrollHeight}
 
 /* ---------- 씬 ---------- */
 function scene(){return ST.state.scene||'rp'}
@@ -553,8 +568,9 @@ async function unloadTrainer(tid){const b=B();if(!confirm('이 트레이너와 �
 
 /* ---------- 파티 불러오기: 로스터(시트) → 배틀 ---------- */
 let MK=null;
-async function loadMaker(force){if(MK&&!force)return MK;toast('제작기 시트를 읽는 중…');const [trs,pks,fos]=await Promise.all([DBS().makerDocs('trainers'),DBS().makerDocs('pokemon'),DBS().makerDocs('folders')]);
- MK={trainers:trs,pokemon:pks,folders:fos};return MK}
+/* 제작기 문서는 30초만 담아 둔다 — 제작기에서 폼 · 소지품을 고친 뒤 다시 불러와도 예전 것을 쓰지 않게 (10-24 망령) */
+async function loadMaker(force){if(MK&&!force&&Date.now()-(MK.at||0)<30000)return MK;toast('제작기 시트를 읽는 중…');const [trs,pks,fos]=await Promise.all([DBS().makerDocs('trainers'),DBS().makerDocs('pokemon'),DBS().makerDocs('folders')]);
+ MK={trainers:trs,pokemon:pks,folders:fos,at:Date.now()};return MK}
 function roster(){return ST.state.roster||{trainers:{},mons:{}}}
 async function openLoadParty(side){
  const r=roster();const ids=Object.keys(r.trainers).sort((a,b)=>(r.trainers[a].ord||0)-(r.trainers[b].ord||0));
@@ -641,7 +657,7 @@ function openMon(mid){
    <div class="dxinfo"><div class="dxname">${esc(m.name)}<span class="lv">Lv.${m.lv}</span><span class="small muted">${esc(tr.name)}</span><span class="row ${full?'dxed':''}" ${full?'data-ed="types" title="눌러서 타입 바꾸기"':''} style="gap:4px;display:inline-flex">${m.types.filter(t=>t!=='-').map(typeChip).join('')}</span>${full?`<button class="btn xs ghost" data-ed="types" title="18 타입 단추로 타입 바꾸기">타입 변경</button>${m.typesOrig?'<button class="btn xs ghost" data-ed="types0" title="원래 타입으로">원래대로</button>':''}`:''}${m.tera&&m.tera!=='-'?`<span class="badge">테라 ${esc(m.tera)}</span>`:''}${m.role?`<span class="badge">${esc(m.role)}</span>`:''}${m.pride?`<span class="badge">프라이드 ${esc(m.pride)}</span>`:''}</div>
     <div class="dxhp"><div class="hpbar ${pct<=25?'low':pct<=50?'mid':''}"><i style="width:${pct}%"></i></div><span class="mono">${full?m.hp.cur+' / '+m.hp.max:pct+'%'}</span></div>
     <div class="dxrow"><span class="k">특성</span><span><b class="${full?'dxed':''}" ${full?'data-ed="ability" title="눌러서 특성 바꾸기"':''}>${esc(m.ability||'-')}</b>${m.abilityOrig!=null?`<span class="small dim"> (원래 ${esc(m.abilityOrig||'없음')})</span>`:''}${full?`<button class="btn xs ghost" data-ed="ability" title="특성 DB 에서 골라 바꾸기">특성 변경</button>${m.abilityOrig!=null?'<button class="btn xs ghost" data-ed="ability0">원래대로</button>':''}`:''}${an('trait',m.ability)}<div class="dbmini">${effHtml('trait',m.ability,m.abilityEff)}</div></span></div>
-    <div class="dxrow"><span class="k">소지품</span><span><b class="${full?'dxed':''}" ${full?'data-ed="item" title="눌러서 소지품 바꾸기"':''}>${esc(m.item||'-')}</b>${full?`<button class="btn xs ghost" data-ed="item" title="소지품 DB 에서 골라 지니게 하기">착용</button>${m.item?'<button class="btn xs ghost" data-ed="item0" title="소지품 떼기">떼기</button>':''}`:''}${an('item',m.item)}<div class="dbmini">${effHtml('item',m.item,m.itemEff)}</div></span></div>
+    <div class="dxrow"><span class="k">소지품</span><span><b class="${full?'dxed':''}" ${full?'data-ed="item" title="눌러서 소지품 바꾸기"':''}>${esc(m.item||'-')}</b>${full?`<button class="btn xs ghost" data-ed="item" title="소지품 DB 에서 골라 지니게 하기">착용</button>${m.item?'<button class="btn xs ghost" data-ed="item0" title="소지품 떼기">떼기</button>':''}`:''}${an('item',m.item)}<div class="dbmini">${effHtml('item',m.item,m.itemEff)}</div></span></div>${(m.items2||[]).filter(x=>x&&x.item).map((x,k)=>`<div class="dxrow"><span class="k">소지품 ${k+2}</span><span><b>${esc(x.item)}</b>${an('item',x.item)}<div class="dbmini">${effHtml('item',x.item,x.itemEff)}</div></span></div>`).join('')}
    </div><div class="dxside dxaffs"><div class="k">상성</div>${affHtml(m)}</div></div>
   <div class="dxlow"><div class="dxabil ${full?'dxed':''}" ${full?'data-ed="base" title="눌러서 종족치 바꾸기"':''}><div class="k">능력${full?' <button class="btn xs ghost" data-ed="base" title="랭크 한 단계씩 ▲▼ 또는 수치 입력">종족치 변경</button>':''}</div>${stat6}</div><div class="dxnowc">${(()=>{const U=window.OM_BATTLE_UI;if(U&&U.nowEditHtml)return U.nowEditHtml(m,full);if(!U||!U.nowParts||!m.entry)return '<div class="k">랭크 · 상태</div><div class="small dim">필드에 나와 있지 않다</div>';const P=U.nowParts(m);const row=(k,h)=>`<div class="dxnow"><div class="k">${k}</div><div class="rks">${h||'<span class="small dim">없음</span>'}</div></div>`;return row('랭크 · 배율',P.rank)+row('상태',P.state)+row('효과',P.fx)})()}</div></div>
   ${hpRow}
@@ -686,13 +702,13 @@ function openMonEdit(mid,focus){
  const save=async(fn)=>{const m0=JSON.parse(JSON.stringify(B().mons[mid])),x=JSON.parse(JSON.stringify(m0));const L=fn(x);if(!L.length){closeModal();return openMon(mid)}
   if(await setDiff(['battle','mons',mid],m0,x)){splitLog(m0.name,L,'battle');toast('바꿨다')}closeModal();openMon(mid)};
  md.querySelectorAll('[data-er]').forEach(bt=>bt.onclick=()=>save(x=>{if(bt.dataset.er==='types'&&x.typesOrig){x.types=x.typesOrig;x.typesKo=x.types.map(ko);delete x.typesOrig;delete x.typesBy;return ['타입 원래대로']}
-  if(bt.dataset.er==='ability'&&x.abilityOrig!=null){if(window.OM_FX&&x.ability)window.OM_FX.removeByName(x,x.ability);x.ability=x.abilityOrig;const a=((D.traits||{})[x.ability])||{};x.abilityEff=String(a.multi||a.single||'').replace(/<br\s*\/?>/gi,'\n');delete x.abilityOrig;delete x.abilityBy;return [`특성 원래대로 「${x.ability||'없음'}」`]}return []}));
+  if(bt.dataset.er==='ability'&&x.abilityOrig!=null){if(window.OM_FX&&x.ability)window.OM_FX.removeByName(x,x.ability);x.ability=x.abilityOrig;const a=((D.traits||{})[x.ability])||{};x.abilityEff=x.abilityEffOrig!=null?x.abilityEffOrig:String(a.multi||a.single||'').replace(/<br\s*\/?>/gi,'\n');delete x.abilityOrig;delete x.abilityEffOrig;delete x.abilityBy;return [`특성 원래대로 「${x.ability||'없음'}」`]}return []}));
  $('#edOk',md).onclick=()=>save(x=>{const L=[];
   const nt=[0,1,2].map(i=>{const v=$(`[data-et="${i}"]`,md).value;return v==='-'?'-':S().typeEn(v)});
   if(nt.join()!==x.types.slice(0,3).concat(['-','-','-']).slice(0,3).join()){if(!x.typesOrig){x.typesOrig=x.types.slice();x.typesBy='직접 변경'}x.types=nt;x.typesKo=nt.map(ko);if(x.typesOrig.join()===nt.join()){delete x.typesOrig;delete x.typesBy}L.push('타입 → '+(nt.filter(t=>t!=='-').map(ko).join('/')||'없음'))}
   const nb=[...md.querySelectorAll('[data-eb]')].map(e=>Math.max(1,+e.value||0));
   if(nb.join()!==x.base.join()){const full=x.hp.cur>=x.hp.max,oldMax=x.hp.max;x.base=nb;x.ranks=nb.map(S().gradeOf);x.stats=S().statsOf(nb,x.iv,x.ev,x.lv);x.hp.max=x.stats[0];x.hp.cur=x.hp.cur<=0?0:full?x.hp.max:Math.max(1,Math.min(x.hp.max,x.hp.cur+x.hp.max-oldMax));L.push('종족치 → '+nb.join('/'))}
-  const na=ab.value.trim();if(na!==(x.ability||'')){const FX=window.OM_FX;if(FX&&x.ability)FX.removeByName(x,x.ability);if(x.abilityOrig==null){x.abilityOrig=x.ability||'';x.abilityBy='직접 변경'}x.ability=na;const a=((D.traits||{})[na])||{};x.abilityEff=String(a.multi||a.single||'').replace(/<br\s*\/?>/gi,'\n');if(x.abilityOrig===na){delete x.abilityOrig;delete x.abilityBy}L.push(`특성 → 「${na||'없음'}」`)}
+  const na=ab.value.trim();if(na!==(x.ability||'')){const FX=window.OM_FX;if(FX&&x.ability)FX.removeByName(x,x.ability);if(x.abilityOrig==null){x.abilityOrig=x.ability||'';x.abilityEffOrig=x.abilityEff||'';x.abilityBy='직접 변경'}x.ability=na;const a=((D.traits||{})[na])||{};x.abilityEff=String(a.multi||a.single||'').replace(/<br\s*\/?>/gi,'\n');if(x.abilityOrig===na){if(x.abilityEffOrig!=null)x.abilityEff=x.abilityEffOrig;delete x.abilityOrig;delete x.abilityEffOrig;delete x.abilityBy}L.push(`특성 → 「${na||'없음'}」`)}
   const ni=it.value.trim();if(ni!==(x.item||'')){const FX=window.OM_FX;if(FX&&x.item)FX.removeByName(x,x.item);x.item=ni;x.itemEff=String((((D.items||{})[ni])||{}).eff||'');L.push(ni?`소지품 → 「${ni}」`:'소지품 비움')}
   return L});
  const f={types:'[data-et="0"]',base:'[data-eb="0"]',ability:'#edAb',item:'#edIt'}[focus];const fe=f&&$(f,md);if(fe){fe.focus();if(fe.select)fe.select()}}
@@ -702,7 +718,7 @@ function openMonEdit(mid,focus){
 function monChange(mid,kind){const m=(B().mons||{})[mid];if(!m)return;const D=window.OM_DB||{};const P=window.OM_PICK;const ko=t=>t&&t!=='-'?S().typeKo(t):'-';
  const save=async fn=>{const m0=JSON.parse(JSON.stringify(B().mons[mid])),x=JSON.parse(JSON.stringify(m0));const L=fn(x);if(L.length&&await setDiff(['battle','mons',mid],m0,x)){splitLog(m0.name,L,'battle');toast('바꿨다')}openMon(mid)};
  const setTypes=(x,nt)=>{if(!x.typesOrig){x.typesOrig=x.types.slice();x.typesBy='직접 변경'}x.types=nt;x.typesKo=nt.map(ko);if(x.typesOrig.join()===nt.join()){delete x.typesOrig;delete x.typesBy}return '타입 → '+(nt.filter(t=>t!=='-').map(ko).join('/')||'없음')};
- const setAb=(x,na)=>{const FX=window.OM_FX;if(FX&&x.ability)FX.removeByName(x,x.ability);if(x.abilityOrig==null){x.abilityOrig=x.ability||'';x.abilityBy='직접 변경'}x.ability=na;const a=((D.traits||{})[na])||{};x.abilityEff=String(a.multi||a.single||'').replace(/<br\s*\/?>/gi,'\n');if(x.abilityOrig===na){delete x.abilityOrig;delete x.abilityBy}return `특성 → 「${na||'없음'}」`};
+ const setAb=(x,na)=>{const FX=window.OM_FX;if(FX&&x.ability)FX.removeByName(x,x.ability);if(x.abilityOrig==null){x.abilityOrig=x.ability||'';x.abilityEffOrig=x.abilityEff||'';x.abilityBy='직접 변경'}x.ability=na;const a=((D.traits||{})[na])||{};x.abilityEff=String(a.multi||a.single||'').replace(/<br\s*\/?>/gi,'\n');if(x.abilityOrig===na){if(x.abilityEffOrig!=null)x.abilityEff=x.abilityEffOrig;delete x.abilityOrig;delete x.abilityEffOrig;delete x.abilityBy}return `특성 → 「${na||'없음'}」`};
  const setIt=(x,ni)=>{const FX=window.OM_FX;if(FX&&x.item)FX.removeByName(x,x.item);x.item=ni;x.itemEff=String((((D.items||{})[ni])||{}).eff||'');return ni?`소지품 → 「${ni}」`:'소지품 뗌'};
  if(!P)return openMonEdit(mid,kind);
  switch(kind){

@@ -75,7 +75,7 @@ window.OM_ITEMS=(()=>{
    if(h.back){if(atk&&atk.hp.cur>0)hurt(atk,frac(atk.hp.max,h.back),L,`「${r.name}」 ${h.back}`)}
    if(h.yellow&&atk&&atk.hp.cur>0){const ks=['attack','defense','specialattack','specialdefense','speed'];let best=ks[0],bv=-1;for(const k of ks){const v=B()&&B().statValue?B().statValue(atk,k).value:0;if(v>bv){bv=v;best=k}}rank(atk,{[best]:-h.yellow},L)}
    if(h.setType&&atk&&atk.hp.cur>0){atk.typesOrig=atk.typesOrig||(atk.types||[]).slice();atk.typesBy=r.name;atk.types=[h.setType];L.push(`${atk.name} 타입 → ${S()&&S().typeKo?S().typeKo(h.setType):h.setType}`)}
-   if(h.setTrait&&atk&&atk.hp.cur>0){if(atk.abilityOrig==null)atk.abilityOrig=atk.ability||'';atk.abilityBy=r.name;atk.ability=h.setTrait;L.push(`${atk.name} 특성 → 「${h.setTrait}」`)}
+   if(h.setTrait&&atk&&atk.hp.cur>0){if(FX()&&FX().setAb)FX().setAb(atk,h.setTrait,r.name);else{if(atk.abilityOrig==null)atk.abilityOrig=atk.ability||'';atk.abilityBy=r.name;atk.ability=h.setTrait}L.push(`${atk.name} 특성 → 「${h.setTrait}」`)}
    if(h.move){if(atk&&atk.hp.cur>0&&!nm(atk.item)){atk.item=def.item;atk.itemEff=def.itemEff||'';def.item='';def.itemEff='';L.push(`「${r.name}」이(가) ${atk.name}에게 옮겨붙었다`);gone=true}continue}
    if(h.note)L.push(`${def.name} — ${h.note}`);
    if(r.once){use(def,L,b);gone=true}}

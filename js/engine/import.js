@@ -49,9 +49,9 @@ window.OM_IMPORT=(()=>{
   const item=item0||(own?{eff:own.eff||ET.it||''}:ET.it?{eff:ET.it}:{});
   return {id:doc.id||d.id,tid:tr?tr.id:(doc.data&&doc.data.tid)||'',name:d.name||'',gender:d.gender||'-',lv:L,dist:nz(d.dist),
    typesKo:tko,types:tko.map(S().typeEn),tera:d.tera&&d.tera!=='-'?d.tera:'-',teraEn:d.tera&&d.tera!=='-'?S().typeEn(d.tera):'-',
-   ability:d.ability||'',abilityEff:brN(abil.multi||abil.single||''),item:d.item||'',itemEff:brN(item.eff||''),
+   ability:d.ability||'',abilityEff:brN(abil.multi||abil.single||''),item:d.item||'',itemEff:brN(item.eff||''),items2:itemsX(d,ET),
    base,ranks:base.map(S().gradeOf),iv,ev,stats,...(BU?{base0,baseUp:(BU.up||[]).map(u=>({i:+u.i,from:+u.from,to:+u.to,by:(u.by||[]).slice(0,4)}))}:{}),hp:{max:stats[0],cur:stats[0]},
-   moves:(()=>{const mv=(d.moves||[]).filter(m=>m&&m.name).map(m=>move(m.name,m.half));return mv.length?mv:[move('발버둥',false)]})(),
+   moves:(()=>{const mv=(d.moves||[]).filter(m=>m&&m.name).map(m=>{const o=move(m.name,m.half);if(m.hide)o.hide=true;return o});   /* hide: 한 장 요약 · 도감에 안 보이는 기술 (10-22) */return mv.length?mv:[move('발버둥',false)]})(),
    pots,excl:d.excl&&d.excl.name&&d.excl.name!=='전용 포텐셜'?{name:d.excl.name,eff:brN(d.excl.eff||'')}:null,
    exclX:(d.exclX||[]).filter(x=>x&&x.name).map(x=>({name:x.name,eff:brN(x.eff||'')})),
    role:roleOf(d),pride:d.pride||'',egg:[d.egg1||'-',d.egg2||'-'],partner:!!d.partner,image:d.image||'',stands:standsOf(d.stands),standActive:+d.standActive||0,memo:d.memo||'',
@@ -63,6 +63,9 @@ window.OM_IMPORT=(()=>{
    ...(()=>{const tu=d.tune||{};const dsl=String(tu.item||'').trim();return dsl?{itemTune:{item:String(tu.itemName||d.item||''),dsl}}:{}})(),
    fields:fieldsOf(d.fields),rank:{attack:0,defense:0,specialattack:0,specialdefense:0,speed:0,accuracy:0,evasion:0,critical:0},states:{},forms:formsOf(d,base,L)}}
 
+ /* 소지품 2 · 3번 칸 (제작기 items2, 10-24 망령): DB → 오리지널(itemOwn) → 시트 사본(effTxt.its2) 순으로 글을 찾는다 */
+ function itemsX(d,ET){return (Array.isArray(d.items2)?d.items2:[]).slice(0,2).map((x,k)=>{const n=String((x&&x.item)||'');if(!n)return {item:'',itemEff:''};const r=(DB().items||{})[n];const own=x.itemOwn&&x.itemOwn.name===n?x.itemOwn:null;const et=((ET.its2||[])[k])||{};const eff=brN(r?r.eff||'':own?own.eff||'':et.it||'');
+  return Object.assign({item:n,itemEff:eff},!r&&(own||et.it)?{itemOwn:{name:n,eff,auto:String(own?own.auto||'':et.itAuto||''),cons:!!(own?own.cons:et.itCons),sock:own?String(own.sock||''):''}}:{})})}
  /* 폼체인지·메가진화 (제작기 시트 forms): 비운 칸은 원래 값 */
  function formsOf(d,base0,L){const out=(d.forms||[]).filter(f=>f&&(f.name||f.ability||(f.base||[]).some(v=>v!=='')||(f.pots||[]).some(x=>x&&x.name))).map(f=>{
    const base=Array.from({length:6},(_,i)=>{const v=(f.base||[])[i];return v===''||v==null?base0[i]:nz(v)});

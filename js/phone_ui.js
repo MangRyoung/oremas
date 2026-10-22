@@ -161,7 +161,7 @@ window.OM_PHONE_UI=(()=>{
  /* ----- 연락처: 파티원은 로스터(시트 → 제작기에서 가져오기)에서 저절로 · 그 밖의 사람은 「＋ 추가」로 관계도 노드를 내 연락처에 넣는다 ----- */
  /* 방 코드: pub[tid].phone.room — 같은 코드를 넣은 사람끼리 파티원으로 보인다 (코드가 비어 있으면 코드 없는 사람들끼리). share=false 면 남의 목록에 안 뜬다. GM 은 코드별로 전부 본다 */
  const roomOf2=tid=>String((phoneData(tid).room||'')).trim();
- const shared=tid=>phoneData(tid).share!==false;
+ const shared=tid=>phoneData(tid).share!==false&&!(trs()[tid]||{}).priv;   /* 10-22 망령: 시트를 비공개로 두면 남의 연락처에도 안 뜬다 */
  function contacts(t){const T=trs();const seats=A().ST.state.seats||{};const pd=phoneData(PH.tid);const g=G();const ids=(pd.contacts||[]).filter(id=>g.nodes[id]);const my=roomOf2(PH.tid);
   const item=x=>{const o=seats[x.id];const n=Object.values(mons()).filter(m=>m.tid===x.id).length;const rc=roomOf2(x.id);const meItem=x.id===PH.tid;return `<div class="ph-item" data-ph="${meItem?'sheet':'dm'}" data-tid="${x.id}" data-cid="${x.id}">${av(x.name,x.image)}<div class="ph-it"><b>${esc(x.name)}${meItem?' <span class="ph-tag">나</span>':''}${x.kind==='npc'?' <span class="ph-tag">NPC</span>':''}</b><small>${o?'🟢 '+esc(o.name):'빈 자리'} · 포켓몬 ${n}${gm()&&rc?' · 방 '+esc(rc):''}${!shared(x.id)?' · 비공개':''}</small></div><button class="btn xs ghost" data-ph="sheet" data-tid="${x.id}" title="시트 보기">시트</button>${meItem?'':'<span class="ph-arrow" title="문자">💬</span>'}</div>`};
   /* 코드가 있을 때만 같은 코드끼리. 코드가 없으면 나 혼자 */

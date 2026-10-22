@@ -17,11 +17,12 @@ window.OM_DEX_UI=(()=>{
  const monOf=mid=>((A().ST.state.battle||{}).mons||{})[mid]||((A().ST.state.roster||{}).mons||{})[mid];
  const trOf=tid=>((A().ST.state.battle||{}).trainers||{})[tid]||((A().ST.state.roster||{}).trainers||{})[tid]||{};
  /* 보는 사람 기준 공개 범위: 'all' | ['move','type'] | [] */
- function scope(mid,viewer){const m=monOf(mid);if(!m)return [];if(gm()||m.tid===viewer)return 'all';const mt=trOf(viewer);if(mt.side&&m.side&&mt.side===m.side)return 'all';const d=dx(viewer);if(d.list.includes(mid))return 'all';return d.part[mid]||[]}
+ function scope(mid,viewer,asPl){const m=monOf(mid);if(!m)return [];if((gm()&&!asPl)||m.tid===viewer)return 'all';const mt=trOf(viewer);if(mt.side&&m.side&&mt.side===m.side)return 'all';const d=dx(viewer);if(d.list.includes(mid))return 'all';return d.part[mid]||[]}
  /* 노이즈: 같은 글에 늘 같은 자리 (이름을 씨앗으로) */
  function noise(text,key){let seed=7;for(const ch of String(key))seed=(seed*31+ch.charCodeAt(0))%2147483647;const rnd=()=>{seed=(seed*48271)%2147483647;return seed/2147483647};const NZ=['■','■','▓','▒','█'];return String(text).split('').map(ch=>/\s/.test(ch)?ch:(rnd()<.35?NZ[Math.floor(rnd()*NZ.length)]:ch)).join('')}
- function open(mid,viewer){viewer=viewer||me();const m=monOf(mid);if(!m)return;const sc=scope(mid,viewer);const full=sc==='all';const has=p=>full||sc.includes(p);const nz=!full&&false||(m.dexFw===4&&!(gm()||m.tid===viewer));const N=s=>nz?noise(s,m.name):s;
-  const vt=trOf(viewer);const d=dx(viewer);const left=Math.max(0,maxOf(vt)-d.used);const isEnemy=!gm()&&m.tid!==viewer&&(!vt.side||!m.side||vt.side!==m.side);
+ /* asPl: PL 권한(공평 모드)의 GM 이 자기 트레이너(viewer) 눈으로 본다 — GM 이라고 다 보이지 않는다 */
+ function open(mid,viewer,asPl){viewer=viewer||me();const m=monOf(mid);if(!m)return;const G=gm()&&!asPl;const sc=scope(mid,viewer,asPl);const full=sc==='all';const has=p=>full||sc.includes(p);const nz=!full&&false||(m.dexFw===4&&!(G||m.tid===viewer));const N=s=>nz?noise(s,m.name):s;
+  const vt=trOf(viewer);const d=dx(viewer);const left=Math.max(0,maxOf(vt)-d.used);const isEnemy=!G&&m.tid!==viewer&&(!vt.side||!m.side||vt.side!==m.side);
   const PH='<div class="dexph">■■■ 미해석 ■■■</div>';const PHs='<span class="dexph sm">■■■</span>';
   const typeRow=()=>has('type')?`<span class="row" style="gap:4px;display:inline-flex">${(m.types||[]).filter(t=>t&&t!=='-').map(t=>A().typeChip(t)).join('')}${m.teraActive?`<span class="rk up">테라 ${esc(m.tera)}</span>`:''}</span>`:PHs;
   const weaks=()=>{if(!has('type'))return PH;const rows=TYPES.map(t=>{const e=B().effectiveness([t],m,{});return [t,e&&typeof e==='object'?+e.value:+e]}).filter(x=>x[1]!==1);
@@ -29,9 +30,10 @@ window.OM_DEX_UI=(()=>{
    return `<div class="dxweak">${G||'<span class="dim small">약점·내성 없음</span>'}</div>`};
   const KO=['HP','공격','방어','특공','특방','스피드'];
   const stats=()=>full?`<div class="dxst">${(m.ranks||[]).map((r,i)=>`<div><small>${KO[i]}</small><b>${esc(N(r))}</b></div>`).join('')}</div>`:PH;
-  const moves=()=>has('move')?`<table class="t small dxmv"><tr><th>기술</th><th>타입</th><th>분류</th><th>위력</th><th>명중</th><th>효과</th></tr>${(m.moves||[]).map(mv=>`<tr><td class="nw"><b>${esc(N(mv.name))}</b></td><td class="nw">${mv.typeEn?A().typeChip(mv.typeEn):esc(mv.type||'')}</td><td class="nw">${esc(mv.cat||'')}</td><td class="mono">${esc(mv.pow||'-')}</td><td class="mono">${esc(mv.acc||'-')}</td><td class="small eff">${esc(N(mv.eff||''))}</td></tr>`).join('')}</table>`:PH;
-  const trait=()=>has('trait')?`<b>${esc(N(m.ability||'-'))}</b> <span class="small dim">${esc(N(m.abilityEff||''))}</span>`:PHs;
-  const own=gm()||m.tid===viewer;   /* 전용 포텐셜은 주인과 GM 만 — 해석해도 안 보인다 */
+  const moves=()=>has('move')?`<table class="t small dxmv"><tr><th>기술</th><th>타입</th><th>분류</th><th>위력</th><th>명중</th><th>효과</th></tr>${(m.moves||[]).filter(mv=>!mv.hide||G||m.tid===viewer).map(mv=>`<tr><td class="nw"><b>${esc(N(mv.name))}</b>${mv.hide?' <span class="small dim" title="한 장 요약 · 남의 도감에 안 나온다">숨김</span>':''}</td><td class="nw">${mv.typeEn?A().typeChip(mv.typeEn):esc(mv.type||'')}</td><td class="nw">${esc(mv.cat||'')}</td><td class="mono">${esc(mv.pow||'-')}</td><td class="mono">${esc(mv.acc||'-')}</td><td class="small eff">${esc(N(mv.eff||''))}</td></tr>`).join('')}</table>`:PH;
+  const abE=(()=>{const a=m.abilityOrig!=null?(DB().traits||{})[m.ability]:null;return a?String(a.multi||a.single||'').replace(/<br\s*\/?>/gi,'\n'):(m.abilityEff||'')})();   /* 바뀐 특성은 DB 글 (예전에 바뀐 채 글이 남은 배틀도) */
+  const trait=()=>has('trait')?`<b>${esc(N(m.ability||'-'))}</b> <span class="small dim">${esc(N(abE))}</span>`:PHs;
+  const own=G||m.tid===viewer;   /* 전용 포텐셜은 주인과 GM 만 — 해석해도 안 보인다 */
   const pots=()=>{if(!full)return PH;const L=[...(m.pots||[]).filter(p=>p&&p.name&&!p.ph),...(own&&m.excl?[Object.assign({kind:'전용'},m.excl)]:[]),...(own?(m.exclX||[]):[]).map(x=>Object.assign({kind:'전용'},x))];
    return `<div class="dxpots">${L.map(p=>`<div class="dxp"><div class="pn"><b>${esc(N(p.name))}</b>${p.kind?`<small>${esc(p.kind)}</small>`:''}</div><div class="pe">${esc(N(p.eff||''))}</div></div>`).join('')||'<div class="dim small">없음</div>'}</div>`};
   const shown=!!(m.seen||m.entry);const nameOk=full||sc.length||shown;
@@ -41,7 +43,7 @@ window.OM_DEX_UI=(()=>{
      <div class="dxrow"><span class="k">특성</span><span>${trait()}</span></div>${full?`<div class="dxrow"><span class="k">소지품</span><span>${esc(m.item||'-')}${m.itemEff?` <span class="small dim">${esc(m.itemEff)}</span>`:''}</span></div>`:''}
      ${full?`<div class="dxrow"><span class="k">종족치</span>${stats()}</div>`:`<div class="dxrow"><span class="k">종족치</span>${PHs}</div>`}
      </div><div class="dxside"><div class="k">상성</div>${weaks()}</div></div>
-   <div class="sec">기술 <span class="note">${has('move')?(m.moves||[]).length+'개':''}</span></div>${moves()}
+   <div class="sec">기술 <span class="note">${has('move')?(m.moves||[]).filter(mv=>!mv.hide||G||m.tid===viewer).length+'개':''}</span></div>${moves()}
    <div class="sec">포텐셜</div>${pots()}
    ${isEnemy&&!full?`<div class="card hit"><div class="sec">해석 <span class="note">『포켓몬 도감』 남은 ${left}/${maxOf(vt)} (지시 ${esc((vt.ranks||{})['지시']||'-')})</span></div>
     <div class="row" style="flex-wrap:wrap;gap:8px"><span class="small">부분만:</span>${PARTS.map(([k,n])=>`<label class="small"><input type="checkbox" data-part="${k}"> ${n}</label>`).join('')}<span class="small dim">(아무것도 안 고르면 전체)</span><span class="sp"></span><button class="btn pri" data-dex="run" ${left>0?'':'disabled'}>『포켓몬 도감』 해석</button><button class="btn" data-dex="fx" title="포텐셜·효과로 하는 해석 — 횟수 없이, 차단을 돌파한다 (정직하게)">데이터 해석 (효과)</button></div></div>`:''}
