@@ -13,7 +13,7 @@ window.OM_PREFS=(()=>{
   ['bCmd','지시 입력으로','c','b'],['bReady','준비 완료 · 취소','y','b'],['bFire','포텐셜 발동','q','b'],['bReveal','모두 공개 (GM)','o','b'],['bField','필드','f','b'],['bTurnEnd','턴 종료 처리','e','b'],
   ['mRoll','공격 창 굴리기','r','m'],['mApply','공격·상태 창 적용','Enter','m']];
  const KGRP=[['','일반'],['b','배틀','배틀 화면에서 · 「지금 차례」= 행동 순서의 지금 칸'],['m','배틀 창','공격·상태 창이 열려 있을 때']];
- const DEF={keysOn:1,bgmMute:0,seMute:0,alertVol:0.35,alertSound:'soft',quiet:1,stand:100,cutin:100,keys:Object.fromEntries(ACTS.map(a=>[a[0],a[2]]))};
+ const DEF={keysOn:1,bgmMute:0,seMute:0,alertVol:0.35,alertSound:'soft',quiet:1,stand:100,cutin:100,tw:1,twSpeed:3,twHold:1.5,twFast:1,keys:Object.fromEntries(ACTS.map(a=>[a[0],a[2]]))};
  let P=load();
  function load(){let o={};try{o=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(e){}const p=Object.assign({},DEF,o);p.keys=Object.assign({},DEF.keys,o.keys||{});return p}
  function save(){try{localStorage.setItem(KEY,JSON.stringify(P))}catch(e){}apply()}
@@ -63,8 +63,9 @@ window.OM_PREFS=(()=>{
  /* ----- 판 ----- */
  const sw=(id,on,label,sub)=>`<label class="pf-sw"><input type="checkbox" data-pf="${id}" ${on?'checked':''}><i></i><span><b>${label}</b>${sub?`<small>${sub}</small>`:''}</span></label>`;
  const sl=(id,label,min,max,step,val,unit,extra)=>`<div class="pf-sl"><span class="pf-lb">${label}</span><input type="range" data-pf="${id}" min="${min}" max="${max}" step="${step}" value="${val}"><b class="pf-v" data-pfv="${id}">${fmt(val,unit)}</b>${extra||''}</div>`;
- const fmt=(v,u)=>u==='%1'?Math.round(v*100)+'%':u==='%'?Math.round(v)+'%':u==='px'?Math.round(v)+'px':String(v);
- const UNIT={bgm:'%1',se:'%1',alertVol:'%1',scale:'%',chat:'px',dlg:'px',av:'px',stand:'%',cutin:'%'};
+ const TWSP=['아주 느리게','느리게','보통','빠르게','아주 빠르게'];
+ const fmt=(v,u)=>u==='sp'?TWSP[Math.max(0,Math.min(4,v-1))]:u==='s'?(+v).toFixed(1)+'초':u==='%1'?Math.round(v*100)+'%':u==='%'?Math.round(v)+'%':u==='px'?Math.round(v)+'px':String(v);
+ const UNIT={twSpeed:'sp',twHold:'s',bgm:'%1',se:'%1',alertVol:'%1',scale:'%',chat:'px',dlg:'px',av:'px',stand:'%',cutin:'%'};
  function html(opt){opt=opt||{};const ui=(A()&&A().UI)||{};const al=(A()&&A().alarm)?A().alarm():{chat:1,sms:1,typing:1};const F=(A()&&A().UI_FONTS)||[],H=(A()&&A().UI_HEADS)||[];
   const vb=lsNum('om_vol',0.5),vs=lsNum('om_vol_se',0.7);
   return `<div class="pf ${opt.compact?'cmp':''}">
@@ -84,6 +85,11 @@ window.OM_PREFS=(()=>{
    ${sl('dlg','대사 글씨',16,34,1,ui.dlg||22,'px')}
    <div class="pf-sel"><span class="pf-lb">본문 폰트</span><select data-pf="font">${F.map(([k,n])=>`<option value="${k}" ${ui.font===k?'selected':''}>${esc(n)}</option>`).join('')}</select></div>
    <div class="pf-sel"><span class="pf-lb">제목 폰트</span><select data-pf="head">${H.map(([k,n])=>`<option value="${k}" ${ui.head===k?'selected':''}>${esc(n)}</option>`).join('')}</select></div></section>
+  <section class="pf-card"><header><i>💬</i><b>대사 연출</b><small>무대 대사 상자</small></header>
+   ${sw('tw',P.tw,'한 글자씩 찍기 (타자기)','여러 줄이 한꺼번에 와도 한 줄씩 차례로 · 대사 상자를 누르면 넘긴다')}
+   <div class="pf-twwrap ${P.tw?'':'off'}">${sl('twSpeed','글자 속도',1,5,1,P.twSpeed,'sp')}
+   ${sl('twHold','머무는 시간',0.5,4,0.5,P.twHold,'s')}
+   ${sw('twFast',P.twFast,'줄이 쌓이면 빨리 넘기기','3줄 이상 밀리면 빠르게 · 8줄 넘게 밀리면 마지막 3줄만')}</div></section>
   <section class="pf-card"><header><i>▣</i><b>이미지</b></header>
    ${sl('av','채팅 초상',24,72,2,ui.av||40,'px')}
    ${sl('stand','무대 스탠딩',50,150,5,P.stand,'%')}
@@ -98,10 +104,10 @@ window.OM_PREFS=(()=>{
   const app=A();const UI=app&&app.UI;
   const setUi=(k,v)=>{if(!UI)return;UI[k]=v;try{localStorage.setItem('om_ui',JSON.stringify(UI))}catch(e){}if(app.applyUi)app.applyUi()};
   root.querySelectorAll('input[type=range][data-pf]').forEach(el=>el.oninput=()=>{const k=el.dataset.pf,v=+el.value;const o=root.querySelector(`[data-pfv="${k}"]`);if(o)o.textContent=fmt(v,UNIT[k]);
-   if(k==='bgm'){if(RP())RP().setVolume('bgm',v)}else if(k==='se'){if(RP())RP().setVolume('se',v)}else if(k==='alertVol'){P.alertVol=v;save()}else if(k==='stand'||k==='cutin'){P[k]=v;save()}else setUi(k,v)});
+   if(k==='bgm'){if(RP())RP().setVolume('bgm',v)}else if(k==='se'){if(RP())RP().setVolume('se',v)}else if(k==='alertVol'){P.alertVol=v;save()}else if(k==='stand'||k==='cutin'||k==='twSpeed'||k==='twHold'){P[k]=v;save()}else setUi(k,v)});
   root.querySelectorAll('input[type=range][data-pf="alertVol"]').forEach(el=>el.onchange=()=>alert('test',true));
   root.querySelectorAll('select[data-pf]').forEach(el=>el.onchange=()=>setUi(el.dataset.pf,el.value));
-  root.querySelectorAll('input[type=checkbox][data-pf]').forEach(el=>el.onchange=()=>{const k=el.dataset.pf;if(k==='quiet'){P.quiet=el.checked?1:0;save();return}if(k==='keysOn'){P.keysOn=el.checked?1:0;save();return R()}if(k.startsWith('al_')&&app&&app.setAlarm)app.setAlarm(k.slice(3),el.checked)});
+  root.querySelectorAll('input[type=checkbox][data-pf]').forEach(el=>el.onchange=()=>{const k=el.dataset.pf;if(k==='quiet'){P.quiet=el.checked?1:0;save();return}if(k==='keysOn'){P.keysOn=el.checked?1:0;save();return R()}if(k==='tw'||k==='twFast'){P[k]=el.checked?1:0;save();return R()}if(k.startsWith('al_')&&app&&app.setAlarm)app.setAlarm(k.slice(3),el.checked)});
   root.querySelectorAll('[data-pfs]').forEach(el=>el.onclick=()=>{P.alertSound=el.dataset.pfs;save();alert('test',true);R()});
   root.querySelectorAll('[data-pfb]').forEach(el=>el.onclick=()=>{const k=el.dataset.pfb;
    if(k==='bgmMute'){setBgmMute(!P.bgmMute);return R()}if(k==='seMute'){setSeMute(!P.seMute);return R()}if(k==='alertTest')return alert('test',true);

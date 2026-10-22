@@ -72,20 +72,48 @@ window.OM_RP_UI=(()=>{
  function expire(now){now=now||Date.now();for(const s of SLOTS){const k=STAGE.slots[s];if(k&&now-(STAGE.last[k]||0)>STAND_TTL){STAGE.slots[s]=null;if(STAGE.active===k)STAGE.active=null}}}
  let expT=null;
  function scheduleExpire(){clearTimeout(expT);const keys=Object.values(STAGE.slots).filter(Boolean);if(!keys.length)return;const next=Math.min(...keys.map(k=>(STAGE.last[k]||0)+STAND_TTL))-Date.now();expT=setTimeout(()=>{if(A().view==='rp')A().renderScene()},Math.max(200,next+50))}
+ /* ----- 대사 큐 + 타자기 (10-23 벨벳 참고) -----
+    빠르게 여러 줄이 올라와도 무대 대사 상자는 한 줄씩: 한 글자씩 찍고 → 잠깐 머물렀다 → 다음 줄. 들어올 때 이미 있던 줄은 연출 없이 마지막 줄만.
+    줄이 쌓이면 빨리 넘기고(3줄 이상), 아주 많이 쌓이면(8줄 이상) 마지막 3줄만 남긴다. 대사 상자를 누르면 다 찍기 → 한 번 더 누르면 다음 줄.
+    설정은 「내 설정 › 대사 연출」(om_prefs tw · twSpeed · twHold · twFast) — 이 브라우저에서만 */
+ const DQ={init:false,seen:0,q:[],cur:null,phase:'done',t:null,cut:0,arr:{}};
+ const TW_MS=[70,50,35,22,12];
+ function twCfg(){const p=(window.OM_PREFS&&window.OM_PREFS.get())||{};return {on:p.tw==null?1:+p.tw,ms:TW_MS[Math.max(0,Math.min(4,(+p.twSpeed||3)-1))],hold:(p.twHold==null?1.5:+p.twHold)*1000,fast:p.twFast==null?1:+p.twFast}}
+ const dqOk=(x,cut)=>x.id>cut&&x.kind==='chat'&&x.data&&x.data.t&&!x.data.sms&&!x.data.bat&&x.data.ch!=='ooc';
+ /* 새 줄을 큐에 넣는다. 처음(방에 들어올 때)과 1분 넘게 지난 줄은 연출 없이 지나간다 */
+ function dqFeed(rows,cut){if(DQ.cut!==cut){DQ.cut=cut;DQ.q=DQ.q.filter(x=>x.id>cut);if(DQ.cur&&DQ.cur.id<=cut){DQ.cur=null;DQ.phase='done'}}
+  const fresh=rows.filter(x=>x.id>DQ.seen);if(!fresh.length)return;DQ.seen=Math.max(DQ.seen,...fresh.map(x=>x.id));
+  const cand=fresh.filter(x=>dqOk(x,cut));if(!DQ.init){DQ.init=true;return}
+  /* 방금 실시간으로 온 줄만 찍는다: 받은 시각(onChat)이 8초 안 · 받은 시각이 없으면 줄 시각이 20초 안. 다른 화면에 있다 돌아오면 밀린 줄은 연출 없이 */
+  const now=Date.now(),live=r=>{const a=DQ.arr[r.id];return a?now-a<8000:Math.abs(now-(Date.parse(r.at)||now))<20000};
+  const c=twCfg();for(const r of cand){if(!c.on||!live(r)){DQ.q=[];clearTimeout(DQ.t);DQ.cur=r;DQ.phase='done';continue}DQ.q.push(r)}
+  if(DQ.q.length>=8){DQ.q=DQ.q.slice(-3)}
+  if(DQ.q.length&&DQ.phase==='done'){DQ.cur=DQ.q.shift();DQ.phase='typing'}}
+ /* 지금 무대에 올릴 줄: 큐가 돌고 있으면 그 줄, 아니면 null (예전처럼 마지막 줄) */
+ function dqRow(){return DQ.cur&&DQ.phase!=='done'?DQ.cur:null}
+ function dqNext(){clearTimeout(DQ.t);if(DQ.q.length){DQ.cur=DQ.q.shift();DQ.phase='typing'}else DQ.phase='done';if(A().view==='rp')A().renderScene()}
+ /* 대사 상자의 글자를 찍는다. 아직 안 찍은 글자는 투명하게 자리를 잡아 두어서 상자 크기가 흔들리지 않는다 */
+ function dqType(dlg){const on=dlg.querySelector('.tw-on'),off=dlg.querySelector('.tw-off');if(!on||!off)return;clearTimeout(DQ.t);
+  const c=twCfg();const busy=c.fast&&DQ.q.length>=3;const ms=busy?Math.max(6,c.ms/2.5):c.ms;const hold=busy?Math.min(c.hold,600):c.hold;
+  const step=()=>{if(!off.isConnected)return;const rest=off.textContent;if(!rest){DQ.phase='hold';dlg.classList.remove('twing');DQ.t=setTimeout(dqNext,hold);return}
+   const ch=Array.from(rest)[0];on.textContent+=ch;off.textContent=rest.slice(ch.length);DQ.t=setTimeout(step,/[.!?…。,，、~]/.test(ch)?ms*4:ms)};
+  dlg.classList.add('twing');step()}
+ function dqSkip(dlg){if(DQ.phase==='typing'){const on=dlg.querySelector('.tw-on'),off=dlg.querySelector('.tw-off');if(on&&off){on.textContent+=off.textContent;off.textContent=''}clearTimeout(DQ.t);dlg.classList.remove('twing');DQ.phase='hold';DQ.t=setTimeout(dqNext,Math.min(twCfg().hold,900))}else if(DQ.phase==='hold')dqNext()}
 
  /* ----- 무대 ----- */
  function render(el){
   feedLog(A().ST.log||[]);expire();
   const r=R();const bg=r.bg||{};const cap=r.caption||{};const manual=r.stage||{};
   const slots={};for(const s of SLOTS){const m=manual[s];slots[s]=m&&m.key?m.key:STAGE.slots[s]}
-  const cutId=+((A().ST.state.rp||{}).logClearAt)||0;const lastChat=[...(A().ST.log||[])].reverse().find(x=>x.id>cutId&&x.kind==='chat'&&x.data&&x.data.t&&!x.data.sms&&!x.data.bat&&x.data.ch!=='ooc');
+  const cutId=+((A().ST.state.rp||{}).logClearAt)||0;dqFeed(A().ST.log||[],cutId);const qRow=dqRow();const lastChat=qRow||[...(A().ST.log||[])].reverse().find(x=>dqOk(x,cutId));const anim=!!qRow&&DQ.phase==='typing';
   const LF=window.OM_LINE||(d=>({narr:false,text:String(d.t||''),q:true}));
-  const line=(name,d)=>{const f=LF(d);return `<div class="dname"><span>${esc(name)}</span></div><div class="dtext ${f.narr?'narr':''}">${f.narr?esc(f.text):(f.q?esc(f.text.trim()):'"'+esc(f.text)+'"')}</div>`};
+  const line=(name,d,tw)=>{const f=LF(d);const tx=f.narr?esc(f.text):(f.q?esc(f.text.trim()):'"'+esc(f.text)+'"');return `<div class="dname"><span>${esc(name)}</span></div><div class="dtext ${f.narr?'narr':''}">${tw?`<span class="tw-on"></span><span class="tw-off">${tx}</span>`:tx}</div>`};
   /* 10-23 망령: 무대를 비웠거나(clear 줄) 말한 인물이 무대에서 사라졌으면 대사 상자도 내린다 (지문은 그대로) */
   const clearAfter=!!lastChat&&(A().ST.log||[]).some(x=>x.id>lastChat.id&&x.kind==='chat'&&x.data&&x.data.clear);
-  const lk=lastChat?speakerKey(lastChat):'';const gone=!!lk&&!LF(lastChat.data||{}).narr&&!Object.values(slots).includes(lk)&&!Object.values(STAGE.slots).includes(lk);
-  const showDlg=cap.text||(lastChat&&!clearAfter&&!gone&&Date.now()-(Date.parse(lastChat.at)||0)<STAND_TTL*2);
-  const dlgHtml=cap.text?line(cap.name||'',{t:cap.text}):(showDlg?line(lastChat.data.as||(charOf(speakerKey(lastChat))||{}).name||lastChat.who,lastChat.data):'');
+  const lk=lastChat?speakerKey(lastChat):'';const gone=!qRow&&!!lk&&!LF(lastChat.data||{}).narr&&!Object.values(slots).includes(lk)&&!Object.values(STAGE.slots).includes(lk);
+  const showDlg=cap.text||(lastChat&&!clearAfter&&!gone&&(DQ.phase!=='done'||Date.now()-(Date.parse(lastChat.at)||0)<STAND_TTL*2));
+  const dlgHtml=cap.text?line(cap.name||'',{t:cap.text}):(showDlg?line(lastChat.data.as||(charOf(speakerKey(lastChat))||{}).name||lastChat.who,lastChat.data,anim):'');
+  const dlgKey=cap.text?'cap|'+dlgHtml:(showDlg?'r'+lastChat.id+'|'+dlgHtml.replace(/<span class="tw-(on|off)">/g,''):'');
   const ST=A().ST;const speakers=gm()?allSpeakers():(ST.seat?[{key:'me',name:(charOf(ST.seat)||{}).name||ST.name},...Object.values((ST.state.roster||{}).mons||{}).filter(m=>m.tid===ST.seat).map(m=>({key:'pm:'+m.id,name:m.name+' (포켓몬)'}))]:[]);
   if(gm()&&!SPK.key)SPK.key='gm';if(!gm()&&(!SPK.key||SPK.key==='gm'))SPK.key='me';
   /* 뼈대는 한 번만 — 스탠딩이 매번 다시 그려져 애니메이션이 되풀이되지 않게 */
@@ -108,12 +136,15 @@ window.OM_RP_UI=(()=>{
     /* 10-21 망령: 가운데(·무대 밖) 화자는 「꼬리 가운데」 그림이 있으면 그걸로 */
     if(sl!=='left'&&sl!=='right')skin={v:'m',src:bub.m||DEF('m')};else if(bub[want])skin={v:want,src:bub[want]};else if(bub[alt])skin={v:want,src:bub[alt],flip:1};else skin={v:want,src:DEF('l'),flip:want==='r'?1:0};
     if(skin.v!=='c'&&skin.v!=='m'&&sl!=='left'&&sl!=='right')skin.mid=1}}
-  const dlg=$('#dlg',el);if(dlgHtml){if(dlg.dataset.k!==dlgHtml){dlg.innerHTML=dlgHtml;dlg.dataset.k=dlgHtml;dlg.classList.remove('pop');void dlg.offsetWidth;dlg.classList.add('pop')}dlg.style.display=''}else{dlg.style.display='none';dlg.dataset.k=''}
+  const dlg=$('#dlg',el);if(dlgHtml){if(dlg.dataset.k!==dlgKey){dlg.innerHTML=dlgHtml;dlg.dataset.k=dlgKey;dlg.classList.remove('pop');void dlg.offsetWidth;dlg.classList.add('pop');if(anim&&!cap.text)dqType(dlg)}dlg.style.display=''}else{dlg.style.display='none';dlg.dataset.k=''}
+  {let mo=dlg.querySelector('.dq-more');const n=cap.text?0:DQ.q.length;if(n){if(!mo){mo=document.createElement('i');mo.className='dq-more';dlg.appendChild(mo)}mo.textContent=`+${n}줄`}else if(mo)mo.remove()}
+  dlg.onclick=()=>{if(!cap.text)dqSkip(dlg)};dlg.classList.toggle('dqable',!cap.text&&DQ.phase!=='done');
   dlg.classList.toggle('skin',!!skin);for(const v of ['c','l','r','m'])dlg.classList.toggle('s'+v,!!skin&&skin.v===v);dlg.classList.toggle('flip',!!(skin&&skin.flip));dlg.classList.toggle('mid',!!(skin&&skin.mid));dlg.classList.toggle('nl',!!(skin&&skin.side==='l'));dlg.classList.toggle('nr',!!(skin&&skin.side==='r'));dlg.style.setProperty('--bub',skin?`url('${cssu(skin.src)}')`:'');bubStyle(dlg,stOf(bub.st));
   syncStands($('#stands',el),slots,manual);
   /* 무대 아래: 칸마다 바뀐 것만 다시 그린다 — 대사 입력칸은 그대로 두어야 치는 중에 끊기지 않는다 (한글 조합·포커스 유지) */
   const barH=`${gm()?spkBarHtml(speakers):(speakers.length>1?`<div class="spkbar">${speakers.map(x=>{const c=x.key==='me'?charOf(ST.seat):charOf(x.key);const av=c?(standSrc(c)||c.img):'';return spkChip(x.key,x.name,av,SPK.key===x.key||(!SPK.key&&x.key==='me'))}).join('')}<button class="spk add" data-rp="spkedit" title="고른 인물의 표정·스탠딩"><i>✎</i><span>표정</span></button></div>`:'')}`;
-  const inH=speakers.length?`<div class="rpinput"><select id="rpspk">${speakers.map(x=>`<option value="${esc(x.key)}">${esc(x.name)}</option>`).join('')}</select><input type="text" id="rpline" placeholder="그냥 치면 지문 · &quot;대사&quot; 는 따옴표로 · @표정 &quot;대사&quot;" autocomplete="off"><button class="btn pri" id="rpsend">보내기</button></div><div class="small dim rphint">${gm()?'그냥 치면 지문, "…" 「…」 로 감싸면 대사 · 고른 인물로 말하면 그 인물의 스탠딩이 선다 · 「@웃음 "대사"」처럼 @등록명으로 표정을 바꾸며 말한다':'그냥 치면 지문, "…" 「…」 로 감싸면 대사 · 스탠딩 그림이 아직 없으면 시트 그림(초상)으로 선다 — 「표정」에서 전신 그림을 넣고, 「@웃음 "대사"」로 표정을 바꾸며 말한다'}</div>`:'<div class="small dim rphint">자리에 앉으면 여기서 대사를 칠 수 있다</div>';
+  const MD=MODES[SPK.mode]||MODES.auto;
+  const inH=speakers.length?`<div class="rpinput"><select id="rpspk">${speakers.map(x=>`<option value="${esc(x.key)}">${esc(x.name)}</option>`).join('')}</select><span id="rpexpbox" class="rpexpbox"></span><button type="button" class="btn rpmode m-${SPK.mode}" id="rpmode" title="${esc(MD.tip)} — 누르면 자동 → 대사 → 지문">${MD.lb}</button><input type="text" id="rpline" placeholder="${esc(MD.ph)}" autocomplete="off"><button class="btn pri" id="rpsend">보내기</button></div><div class="small dim rphint">${gm()?'그냥 치면 지문, "…" 「…」 로 감싸면 대사 · 고른 인물로 말하면 그 인물의 스탠딩이 선다 · 「@웃음 "대사"」처럼 @등록명으로 표정을 바꾸며 말한다':'그냥 치면 지문, "…" 「…」 로 감싸면 대사 · 스탠딩 그림이 아직 없으면 시트 그림(초상)으로 선다 — 「표정」에서 전신 그림을 넣고, 「@웃음 "대사"」로 표정을 바꾸며 말한다'}</div>`:'<div class="small dim rphint">자리에 앉으면 여기서 대사를 칠 수 있다</div>';
   const under=$('#rpunder',el);if(!$('#rpu_in',under)){under.innerHTML='<div id="rpu_bar"></div><div class="rpfabbg" id="rpu_fabbg"></div><div id="rpu_in"></div><div id="rpu_me"></div>';bindSpkPop(under)}
   const setH=(id,h)=>{const bx=$('#'+id,under);if(bx._h===h)return false;bx.innerHTML=h;bx._h=h;return true};
   const hadFocus=!!(document.activeElement&&document.activeElement.id==='rpline');setH('rpu_bar',barH);const inNew=setH('rpu_in',inH);if(inNew&&hadFocus)SPK.focus=true;setH('rpu_me',meBarHtml());
@@ -122,8 +153,10 @@ window.OM_RP_UI=(()=>{
   const bindRp=root=>root.querySelectorAll('[data-rp]').forEach(b=>b.onclick=e=>{if(b.dataset.rp==='spkpop'){e.stopPropagation();$('#rpunder',el).classList.toggle('spkpop');return}if(b.dataset.rp==='mon'){const ST=A().ST;const bm=((ST.state.battle||{}).mons||{})[b.dataset.mid];if(bm)return A().openMon(b.dataset.mid);const m=((ST.state.roster||{}).mons||{})[b.dataset.mid];if(m&&window.OM_SHEET_UI){window.OM_SHEET_UI.UI.tid=m.tid;window.OM_SHEET_UI.UI.mid=m.id;window.OM_SHEET_UI.UI.tab='poke';A().view='sheet';A().renderScene()}return}act(b.dataset.rp)});bindRp(el);
   const refreshMeBar=()=>{const old=el.querySelector('.mebar');if(!old)return;const tmp=document.createElement('div');tmp.innerHTML=meBarHtml();const nw=tmp.firstElementChild;if(nw){old.replaceWith(nw);bindRp(nw)}};
   const spk=$('#rpspk',el);if(spk)spk.onchange=()=>{SPK.key=spk.value;el.querySelectorAll('.spk[data-spk]').forEach(b=>b.classList.toggle('on',b.dataset.spk===SPK.key))};
-  el.querySelectorAll('.spk[data-spk]').forEach(b=>b.onclick=()=>{SPK.key=b.dataset.spk;if(spk)spk.value=SPK.key;el.querySelectorAll('.spk[data-spk]').forEach(x=>x.classList.toggle('on',x===b));refreshMeBar();const inp=$('#rpline',el);if(inp)inp.focus()});
-  if(spk){const o=spk.onchange;spk.onchange=()=>{o&&o();refreshMeBar()}}
+  el.querySelectorAll('.spk[data-spk]').forEach(b=>b.onclick=()=>{SPK.key=b.dataset.spk;if(spk)spk.value=SPK.key;el.querySelectorAll('.spk[data-spk]').forEach(x=>x.classList.toggle('on',x===b));refreshMeBar();refreshExp(el);const inp=$('#rpline',el);if(inp)inp.focus()});
+  if(spk){const o=spk.onchange;spk.onchange=()=>{o&&o();refreshMeBar();refreshExp(el)}}
+  {const mb=$('#rpmode',el);if(mb)mb.onclick=()=>{const ks=Object.keys(MODES);SPK.mode=ks[(ks.indexOf(SPK.mode)+1)%ks.length];try{localStorage.setItem('om_rpmode',SPK.mode)}catch(e){}SPK.focus=true;A().renderScene();A().toast(MODES[SPK.mode].tip)}}
+  refreshExp(el);
   el.querySelectorAll('.spk[data-fold]').forEach(b=>b.onclick=()=>{SPK.folder=SPK.folder===b.dataset.fold?'':b.dataset.fold;A().renderScene()});const fc=el.querySelector('[data-fclose]');if(fc)fc.onclick=()=>{SPK.folder='';A().renderScene()};
   bindSpkDrag(el);
   const inp=$('#rpline',el);if(inp&&inNew){inp.value=SPK.draft||'';inp.oninput=()=>{SPK.draft=inp.value;typingPing()};inp.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)sendLine()};$('#rpsend',el).onclick=sendLine}if(inp&&SPK.focus){inp.focus();SPK.focus=false}
@@ -138,7 +171,8 @@ window.OM_RP_UI=(()=>{
   const k=+img.dataset.k||1,g=parseFloat(getComputedStyle(img).scale)||1,room=img.getBoundingClientRect().bottom-ch.getBoundingClientRect().top;
   const kk=Math.min(k,room/(img.offsetHeight*g));standPut(img,Math.abs(kk-1)<.005?1:kk)}
  addEventListener('resize',()=>{clearTimeout(standFit.t);standFit.t=setTimeout(()=>document.querySelectorAll('#stands .stand img').forEach(standFit),120)});
- function syncStands(box,slots,manual){const want={};for(const s of SLOTS){const c=charOf(slots[s]);const src=standSrc(c);if(c&&src)want[s]={key:c.key,src,name:c.name,point:standPoint(c),kind:standKind(c),scale:+c.scale||0,flip:!!(manual[s]||{}).flip,on:STAGE.active===c.key||!STAGE.active}}
+ function syncStands(box,slots,manual){const want={};const pr=dqRow(),pk=pr?speakerKey(pr):'',psx=pr&&pr.data?pr.data.sx:null;
+  for(const s of SLOTS){let c=charOf(slots[s]);if(c&&psx!=null&&c.key===pk&&(c.stands||[])[psx])c=Object.assign({},c,{active:psx});   /* 큐에서 찍는 줄은 보낼 때의 표정으로 */const src=standSrc(c);if(c&&src)want[s]={key:c.key,src,name:c.name,point:standPoint(c),kind:standKind(c),scale:+c.scale||0,flip:!!(manual[s]||{}).flip,on:((dqRow()?speakerKey(dqRow()):'')||STAGE.active)===c.key||!STAGE.active}}
   [...box.children].forEach(ch=>{const s=ch.dataset.slot;if(!want[s]||want[s].key!==ch.dataset.key){ch.classList.add('out');setTimeout(()=>ch.remove(),350)}});
   for(const s of SLOTS){const w=want[s];if(!w)continue;let ch=[...box.children].find(x=>x.dataset.slot===s&&x.dataset.key===w.key&&!x.classList.contains('out'));
    if(!ch){ch=document.createElement('div');ch.dataset.slot=s;ch.dataset.key=w.key;ch.className=`stand ${s} in`;ch.innerHTML=`<img alt=""><div class="stname"></div>`;box.appendChild(ch)}
@@ -161,7 +195,17 @@ window.OM_RP_UI=(()=>{
   const slots=['typingBat','typingRp'].map(id=>document.getElementById(id)).filter(Boolean);
   for(const el of slots){el.innerHTML=TYPING_HTML;el.classList.toggle('on',!!names.length)}
   const top=document.getElementById('typingTop');if(top){const use=!slots.length;top.innerHTML=use?TYPING_HTML:'';top.style.display=use&&names.length?'inline-block':'none'}}
- const SPK={key:'',draft:'',focus:false,folder:''};
+ const SPK={key:'',draft:'',focus:false,folder:'',mode:(()=>{try{const v=localStorage.getItem('om_rpmode');return ['auto','say','narr'].includes(v)?v:'auto'}catch(e){return 'auto'}})()};
+ /* 입력줄 「자동 / 대사 / 지문」 (10-23 벨벳 참고): 따옴표 규칙을 몰라도 고른 대로 나간다 — 이 브라우저에서만 기억 */
+ const MODES={auto:{lb:'자동',tip:'자동: 그냥 치면 지문, "…" 「…」 로 감싸면 대사',ph:'그냥 치면 지문 · "대사" 는 따옴표로 · @표정 "대사"'},
+  say:{lb:'💬 대사',tip:'대사: 따옴표 없이 쳐도 대사로 나간다',ph:'대사로 보낸다 — 따옴표 없이 그냥 쳐도 돼'},
+  narr:{lb:'✎ 지문',tip:'지문: 따옴표가 있어도 지문(행동·묘사)으로 나간다',ph:'지문으로 보낸다 — 행동 · 표정 · 상황 묘사'}};
+ const QUOTED=/^["“「『].*["”」』]$/s;
+ function modeText(t){if(SPK.mode==='say'&&!QUOTED.test(t)&&!/^\*.+\*$/s.test(t))return '"'+t+'"';if(SPK.mode==='narr'&&QUOTED.test(t))return '*'+t+'*';return t}
+ /* 표정 고르기: 지금 화자의 표정(스탠딩)이 둘 이상이면 입력줄 옆에 뜬다. 고르면 「@표정」 과 같이 무대 그림이 바로 바뀐다 */
+ function refreshExp(el){const box=$('#rpexpbox',el);if(!box)return;const c=speakerChar()||(gm()&&SPK.key==='gm'?charOf('gm'):null);const st=c?(c.stands||[]):[];
+  const h=st.length>=2?`<select id="rpexp" title="${esc(c.name)} 표정 — 고르면 무대 그림이 바로 바뀐다">${st.map((x,i)=>`<option value="${i}" ${i===(+c.active||0)?'selected':''}>${esc(x.label||('표정 '+(i+1)))}</option>`).join('')}</select>`:'';
+  if(box._h!==h){box.innerHTML=h;box._h=h}box.classList.toggle('on',!!h);const se=$('#rpexp',box);if(se)se.onchange=async()=>{const i=+se.value;if(await setStandIdx(c,i))A().toast(`표정: ${st[i].label||'표정 '+(i+1)}`);const inp=$('#rpline');if(inp)inp.focus()}}
  /* ----- 화자 목록: 토큰이 있는 모든 개체 (GM · NPC(관계도) · PC(로스터) · 포켓몬(로스터)). 정리는 rp.spk = {order:[키|'f:폴더id'], folders:{id:{name,keys:[]}}, hidden:{키:1}} ----- */
  function allSpeakers(){const ST=A().ST;const out=[{key:'gm',name:'GM (나레이션)'}];
   const trNames=new Set(Object.values((ST.state.roster||{}).trainers||{}).map(t=>t.name));
@@ -267,14 +311,17 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   $('#gi_ok',md).onclick=()=>save($('#gi_url',md).value.trim());const d=$('#gi_del',md);if(d)d.onclick=()=>save('')}
  function speakerChar(){const ST=A().ST;const k=SPK.key;if(ST.role!=='gm'){if(k&&k.startsWith('pm:'))return charOf(k);return charOf(ST.seat)}if(!k)return null;return charOf(k)}
  /* @등록명 → 그 표정으로 바꾼다 (뒤에 대사가 있으면 바꾸고 바로 말한다) */
- async function setStandByLabel(c,label){if(!c)return false;const i=(c.stands||[]).findIndex(s=>(s.label||'')===label);if(i<0){A().toast(`「${label}」 표정이 없다${c.stands.length?': '+c.stands.map(s=>s.label).join(', '):' — 「표정」에서 먼저 넣어 줘'}`);return false}
+ async function setStandByLabel(c,label){if(!c)return false;const i=(c.stands||[]).findIndex(s=>(s.label||'')===label);if(i<0){A().toast(`「${label}」 표정이 없다${c.stands.length?': '+c.stands.map(s=>s.label).join(', '):' — 「표정」에서 먼저 넣어 줘'}`);return false}return setStandIdx(c,i)}
+ async function setStandIdx(c,i){if(!c)return false;
   if(c.kind==='gm')await A().set(['rp','gmSt','standActive'],i);else if(c.kind==='pc')await A().set(['roster','trainers',c.id,'standActive'],i);else if(c.kind==='pm')await A().set(['roster','mons',c.id,'standActive'],i);else{if(!c.id)return false;await A().set(['graph','nodes',c.id,'standActive'],i)}return true}
  async function sendLine(){const ST=A().ST;const inp=$('#rpline');if(!inp)return;let t=inp.value.trim();if(!t)return;inp.value='';SPK.draft='';SPK.focus=true;typingStop();
   try{if(t.startsWith('/')){const ci=$('#chatIn');if(ci){ci.value=t;$('#chatSend').click()}return}
    let m;if((m=t.match(/^@(\S+)\s*([\s\S]*)$/))){const ok=await setStandByLabel(speakerChar(),m[1]);if(!ok)return;t=m[2].trim();if(!t){A().toast(`표정: ${m[1]}`);return}}
-   if(ST.role==='gm'){if(SPK.key==='gm')await DBS().addLog(ST.room,ST.secret,'chat',ST.name,Object.assign({t,nf:1},ST.gmNick?{gmn:ST.gmNick}:{}));else{const c=charOf(SPK.key);const name=c?c.name:SPK.key.replace(/^(npc|as|pm):/,'');await DBS().addLog(ST.room,ST.secret,'chat',name,{t,as:name,k:SPK.key,nf:1})}}
-   else if(SPK.key&&SPK.key.startsWith('pm:')){const c=charOf(SPK.key);await DBS().addLog(ST.room,ST.secret,'chat',c?c.name:ST.name,{t,as:c?c.name:'',k:SPK.key,nf:1})}
-   else{const c=charOf(ST.seat);const nm=c?c.name:ST.name;await DBS().addLog(ST.room,ST.secret,'chat',nm,c?{t,as:nm,k:ST.seat,nf:1}:{t,nf:1})}}catch(e)   /* 좌석이 자기 캐릭터로 말하면 캐릭터 이름으로 남긴다 (플레이어 닉 X) */{A().toast('보내지 못했다: '+e.message)}}
+   t=modeText(t);
+   const sxc=speakerChar()||(ST.role==='gm'&&SPK.key==='gm'?charOf('gm'):null);const SX=sxc&&(sxc.stands||[]).length>=2?{sx:+sxc.active||0}:{};
+   if(ST.role==='gm'){if(SPK.key==='gm')await DBS().addLog(ST.room,ST.secret,'chat',ST.name,Object.assign({t,nf:1},ST.gmNick?{gmn:ST.gmNick}:{},SX));else{const c=charOf(SPK.key);const name=c?c.name:SPK.key.replace(/^(npc|as|pm):/,'');await DBS().addLog(ST.room,ST.secret,'chat',name,Object.assign({t,as:name,k:SPK.key,nf:1},SX))}}
+   else if(SPK.key&&SPK.key.startsWith('pm:')){const c=charOf(SPK.key);await DBS().addLog(ST.room,ST.secret,'chat',c?c.name:ST.name,Object.assign({t,as:c?c.name:'',k:SPK.key,nf:1},SX))}
+   else{const c=charOf(ST.seat);const nm=c?c.name:ST.name;await DBS().addLog(ST.room,ST.secret,'chat',nm,Object.assign(c?{t,as:nm,k:ST.seat,nf:1}:{t,nf:1},SX))}}catch(e)   /* 좌석이 자기 캐릭터로 말하면 캐릭터 이름으로 남긴다 (플레이어 닉 X) */{A().toast('보내지 못했다: '+e.message)}}
  function act(k){
   if(k==='fold'){rpFold=!rpFold;try{localStorage.setItem('om_rpfold',rpFold?'1':'')}catch(e){}return A().renderScene()}
   if(k==='map'){mapOpen=!mapOpen;return A().renderScene()}
@@ -775,7 +822,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   if(!src){if(audio){audio.pause();audio=null}lastBgm='';return}
   if(!unlocked)return;
   if(src!==lastBgm||force){if(audio)audio.pause();audio=new Audio(src);audio.loop=true;audio.volume=vol;audio.play().catch(()=>{});lastBgm=src}}
- function onChat(row){if(row.kind==='chat'&&row.data&&row.data.bat){autoSe(Object.assign({},row,{kind:row.data.bat}));return}if(row.kind==='chat'&&row.data&&row.data.sms){if(window.OM_PHONE_UI)window.OM_PHONE_UI.onSms(row);return}autoSe(row);feedLog([row]);if(row.kind==='chat'&&row.data){const nm=row.data.as||row.who;for(const k in TYPING.who)if(TYPING.who[k].from===row.data.from&&(!nm||TYPING.who[k].who===nm))delete TYPING.who[k];}if(A().view==='rp'&&row.kind==='chat'&&row.data&&row.data.ch!=='ooc'&&(row.data.t||row.data.clear))A().renderScene()}
+ function onChat(row){if(row&&row.id)DQ.arr[row.id]=Date.now();if(row.kind==='chat'&&row.data&&row.data.bat){autoSe(Object.assign({},row,{kind:row.data.bat}));return}if(row.kind==='chat'&&row.data&&row.data.sms){if(window.OM_PHONE_UI)window.OM_PHONE_UI.onSms(row);return}autoSe(row);feedLog([row]);if(row.kind==='chat'&&row.data){const nm=row.data.as||row.who;for(const k in TYPING.who)if(TYPING.who[k].from===row.data.from&&(!nm||TYPING.who[k].who===nm))delete TYPING.who[k];}if(A().view==='rp'&&row.kind==='chat'&&row.data&&row.data.ch!=='ooc'&&(row.data.t||row.data.clear))A().renderScene()}
  function onState(){tickBanner();syncBgm();syncSe()}
  /* 배틀 상단용 작은 BGM 위젯: 지금 곡 · 내 음량 · (GM) 다른 곡/BGM 창 · (플레이어) 소리 켜기 */
  function bgmWidgetHtml(){const now=R().bgm||{};const G=bgmGroups();return `<div class="bgmw"><span class="eq ${now.src?'':'off'} ${gm()?'lk':''}" ${gm()?'data-bw="open"':''}>♪</span><span class="bt ${gm()?'lk':''}" ${gm()?'data-bw="open"':''} title="${esc(now.title?(now.group?gshort(now.group)+' - ':'')+now.title:'재생 중인 곡 없음')}${gm()?' — 누르면 BGM 고르기':''}">${esc(now.title||'BGM 없음')}</span><input type="range" min="0" max="1" step="0.05" value="${vol}" data-bw="vol" title="내 음량">${!unlocked&&now.src?'<button class="btn xs pri" data-bw="sound" title="브라우저가 소리를 막아서 한 번 눌러야 들린다">소리 켜기</button>':''}${gm()?`${now.group&&G[now.group]?`<button class="btn xs ghost" data-bw="rand" title="같은 그룹에서 다른 곡">⟳</button>`:''}${now.src?'<button class="btn xs ghost" data-bw="stop" title="모두에게 정지">■</button>':''}<button class="btn xs" data-bw="open" title="BGM 고르기 (모두에게)">BGM</button>`:''}</div>`}

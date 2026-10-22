@@ -2909,3 +2909,19 @@ span.iedit{display:inline-block;min-width:3em}
  .hero>.hparty{align-items:center;width:100%}
  .hero .hpmn{white-space:normal;text-overflow:clip;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;word-break:keep-all;overflow-wrap:anywhere;line-height:1.15;text-align:center}
 }
+
+/* ---------- 대사 큐 + 타자기 · 입력줄 표정/대사·지문 (10-23 벨벳 참고) ---------- */
+.dtext .tw-off{visibility:hidden}
+.dlg.twing .tw-on::after{content:'';display:inline-block;width:.5em;height:1em;margin-left:1px;vertical-align:-.12em;background:currentColor;opacity:.75;animation:twblink .7s steps(1) infinite}
+@keyframes twblink{50%{opacity:0}}
+.dlg.dqable{cursor:pointer}
+.dq-more{position:absolute;right:10px;top:6px;z-index:2;font-style:normal;font-size:12px;font-weight:700;letter-spacing:.02em;color:#000;background:#fff;padding:1px 8px;border-radius:999px;box-shadow:0 1px 0 rgba(0,0,0,.4);pointer-events:none;animation:dqbob 1.2s ease-in-out infinite}
+.dlg.skin .dq-more{right:12%;top:auto;bottom:14%}
+@keyframes dqbob{50%{transform:translateY(-2px)}}
+.rpexpbox{display:none}.rpexpbox.on{display:flex}
+.rpexpbox select{width:118px;font-size:14px;padding:6px 8px}
+.rpmode{padding:0 12px!important;font-size:13px!important;white-space:nowrap;min-width:74px}
+.rpmode.m-say{background:#2e86de;border-color:#2e86de;color:#fff}
+.rpmode.m-narr{background:#3a3f4b;border-color:#8a90a0;color:#e8e8e8;font-style:italic}
+@media (max-width:760px){.rpexpbox select{width:auto;flex:1 1 40%}.rpmode{min-width:0}}
+.pf-twwrap.off{opacity:.4;pointer-events:none}
