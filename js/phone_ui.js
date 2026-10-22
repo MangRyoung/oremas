@@ -47,16 +47,16 @@ window.OM_PHONE_UI=(()=>{
  /* 뒤로 가기: 메모를 고치던 중이면 저장부터 */
  async function backTo(s,md){md=md||$('.modal.phone-modal');if(PH.screen==='note1'&&md&&canWrite()&&noteDirty(md))await saveNote(md,true);PH.screen=s;re()}
  function draw(md){md=md||$('.modal');const el=$('#phScreen',md);if(!el)return;const t=owner();
-  el.innerHTML=PH.screen==='contacts'?contacts(t):PH.screen==='conf'?confidants(t):PH.screen==='cal'?calendar(t):PH.screen==='sms'?smsRooms(t):PH.screen==='smsroom'?smsRoom(t):PH.screen==='notes'?notes(t):PH.screen==='note1'?noteEdit(t):PH.screen==='callog'?calLog(t):PH.screen==='set'?settings():PH.screen==='deck'&&window.OM_DECK_UI?window.OM_DECK_UI.phone(t,canWrite()):home(t);
-  bind(md);if(PH.screen==='deck'&&window.OM_DECK_UI)window.OM_DECK_UI.bindPhone(md,re,t);if(PH.screen==='set'){const r=$('#phPrefs',md);if(r&&window.OM_PREFS)window.OM_PREFS.bind(r)}if(PH.screen==='smsroom'){const lg=$('.ph-sms',md);if(lg){lg.scrollTop=lg.scrollHeight;lg.querySelectorAll('img').forEach(im=>im.addEventListener('load',()=>{lg.scrollTop=lg.scrollHeight},{once:true}))}markSeen(PH.room)}}
+  el.innerHTML=PH.screen==='contacts'?contacts(t):PH.screen==='conf'?confidants(t):PH.screen==='cal'?calendar(t):PH.screen==='sms'?smsRooms(t):PH.screen==='smsroom'?smsRoom(t):PH.screen==='notes'?notes(t):PH.screen==='sns'?sns(t):PH.screen==='note1'?noteEdit(t):PH.screen==='callog'?calLog(t):PH.screen==='set'?settings():PH.screen==='deck'&&window.OM_DECK_UI?window.OM_DECK_UI.phone(t,canWrite()):home(t);
+  bind(md);if(PH.screen==='deck'&&window.OM_DECK_UI)window.OM_DECK_UI.bindPhone(md,re,t);if(PH.screen==='set'){const r=$('#phPrefs',md);if(r&&window.OM_PREFS)window.OM_PREFS.bind(r)}if(PH.screen==='sns')snsSeen();if(PH.screen==='smsroom'){const lg=$('.ph-sms',md);if(lg){lg.scrollTop=lg.scrollHeight;lg.querySelectorAll('img').forEach(im=>im.addEventListener('load',()=>{lg.scrollTop=lg.scrollHeight},{once:true}))}markSeen(PH.room)}}
  const re=()=>draw();
  const hmOf=at=>{const d=new Date(at);if(isNaN(d))return '';const n=new Date();return d.toDateString()===n.toDateString()?`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`:`${d.getMonth()+1}/${d.getDate()}`};
  /* ----- 설정: 내 환경 설정 (OM_PREFS 판을 휴대폰 크기로) ----- */
  function settings(){return `<div class="ph-head set"><button class="ph-back" data-ph="home">‹</button><div><b>설정</b><small>이 기기에서만 · 나만 적용</small></div></div><div class="ph-setwrap"><div id="phPrefs" class="pf-host cmp">${window.OM_PREFS?window.OM_PREFS.html({compact:true}):'<div class="dim">설정을 불러오지 못했다</div>'}</div></div>`}
  /* ----- 홈 ----- */
- function home(t){const T=trs();const un=unreadAll();const apps=[['contacts','📞','연락처',1],['sms','💬','문자',1,un],['conf','🤝','협력자',1],['cal','📅','캘린더',1],['notes','📝','메모장',1],['deck','🃏','덱',!!window.OM_DECK_UI],['set','⚙️','설정',1]];
+ function home(t){const T=trs();const un=unreadAll();const apps=[['contacts','📞','연락처',1],['sms','💬','문자',1,un],['conf','🤝','협력자',1],['cal','📅','캘린더',1],['notes','📝','메모장',1],['sns','📸','SNS',1,snsUnread()],['deck','🃏','덱',!!window.OM_DECK_UI],['set','⚙️','설정',1]];
   return `<div class="ph-wall"><div class="ph-clock"><b>${esc(dateKo(today()))}</b><small>${esc(cal().phase||'')}${cal().weather?' '+esc(cal().weather):''}</small></div>
-   ${gm()?`<div class="ph-owner"><span class="small dim">누구의 휴대폰</span><select id="phOwner">${Object.values(T).map(x=>`<option value="${x.id}" ${x.id===PH.tid?'selected':''}>${esc(x.name)}</option>`).join('')}${Object.values(G().nodes||{}).filter(n=>n.kind!=='org'&&!Object.values(T).some(x=>x.name===n.name)).map(n=>`<option value="n:${esc(n.id)}" ${'n:'+n.id===PH.tid?'selected':''}>${esc(n.name)} (관계도)</option>`).join('')}</select></div>`:''}
+   ${gm()?`<div class="ph-owner"><span class="small dim">누구의 휴대폰</span><select id="phOwner">${Object.values(T).map(x=>`<option value="${x.id}" ${x.id===PH.tid?'selected':''}>${esc(x.name)}</option>`).join('')}${Object.values(G().nodes||{}).filter(n=>!Object.values(T).some(x=>x.name===n.name)).map(n=>`<option value="n:${esc(n.id)}" ${'n:'+n.id===PH.tid?'selected':''}>${esc(n.name)} (관계도)</option>`).join('')}</select></div>`:''}
    ${(()=>{const rs=rooms().map(r=>({r,L:smsLogs(r.id)})).filter(x=>x.L.length).sort((a,b)=>b.L[b.L.length-1].id-a.L[a.L.length-1].id).slice(0,2);if(!rs.length)return '';
     return `<div class="ph-recent">${rs.map(({r,L})=>{const l=L[L.length-1];const u=unread(r.id);return `<div class="ph-rc" data-ph="smsopen" data-room="${esc(r.id)}">${roomIcon(r)}<div class="ph-it"><b>${esc(r.name)}${u?` <em class="ph-badge inline">${u}</em>`:''}</b><small>${esc((l.data.as||l.who)+': '+(l.data.t?String(l.data.t).slice(0,34):l.data.img?'[사진]':''))}</small></div></div>`}).join('')}</div>`})()}
    <div class="ph-apps">${apps.map(([k,ic,n,on,bd])=>`<button class="ph-app ${on?'':'off'}" data-ph="${on?k:''}" ${on?'':'title="아직 준비 중"'}><i>${ic}${bd?`<em class="ph-badge">${bd}</em>`:''}</i><span>${n}</span></button>`).join('')}</div></div>`}
@@ -76,7 +76,7 @@ window.OM_PHONE_UI=(()=>{
  const dmMembers=id=>id.startsWith('dm:')?id.slice(3).split('|'):null;
  function openedRooms(){try{return JSON.parse(localStorage.getItem(OPEN_KEY)||'[]')}catch(e){return []}}
  function rememberOpen(id){const o=openedRooms();if(!o.includes(id)){o.push(id);try{localStorage.setItem(OPEN_KEY,JSON.stringify(o.slice(-50)))}catch(e){}}}
- function allSmsRows(){return (A().ST.log||[]).filter(r=>r.kind==='chat'&&r.data&&r.data.sms)}
+ function allSmsRows(){return (A().ST.log||[]).filter(r=>r.kind==='chat'&&r.data&&r.data.sms&&r.data.sms!=='sns')}   /* SNS 줄은 문자 방이 아니다 */
  function rooms(){const me=myCid();const out=new Map();const put=r=>{if(r&&r.id&&!out.has(r.id))out.set(r.id,r)};
   /* 자리도 파티도 없으면(관전 · 아직 파티 안 불러온 자리) 방이 하나도 없다 */
   const t=owner();if(!gm()&&(!A().ST.role||!t))return [];
@@ -113,6 +113,44 @@ window.OM_PHONE_UI=(()=>{
   return `<div class="ph-head green"><button class="ph-back" data-ph="sms">‹</button><div><b>${esc(r.name)}</b><small>${esc(memLine)} · ${L.length}개</small></div></div>
    <div class="ph-sms">${rows||'<div class="ph-empty">첫 메시지를 보내 봐</div>'}</div>
    ${A().ST.role?`<div class="ph-smsin"><i class="ph-av sm" title="${esc(S.name)}" style="${S.img?`background-image:url('${cssu(S.img)}')`:''}"></i><label class="ph-clip" title="그림 보내기 (끌어 놓기 · Ctrl+V 도 된다)">📎<input type="file" accept="image/*" id="smsFile" hidden></label><input type="text" id="smsIn" placeholder="${esc(S.name)} 으로 보내기 · @이름" value="${esc(PH.draft[r.id]||'')}"><button class="btn pri sm" data-ph="smssend">➤</button></div>`:''}`}
+ /* ----- SNS (10-24 벨벳 NyangStar 참고): 방 모두가 보는 타임라인. 로그 kind chat + data.sms='sns' — 문자처럼 채팅 · 무대 · 세션 로그에서 빠진다.
+    글 {t,img?} · 댓글 {re:글 id} · 좋아요 {like:글 id} (같은 사람이 다시 누르면 취소) · 지우기 {del:글 id, 쓴 사람 · GM}.
+    올리는 이름은 휴대폰 주인 — GM 은 홈에서 「누구의 휴대폰」으로 NPC · 조직(체육관 · 로켓단 계정)을 골라 올린다 ----- */
+ const SNS_SEEN='om_sns_seen';
+ const isSns=d=>!!d&&d.sms==='sns';
+ function snsRows(){return (A().ST.log||[]).filter(r=>r.kind==='chat'&&isSns(r.data))}
+ function snsModel(){const posts=new Map(),dels=new Set(),likes={},cms={};
+  for(const r of snsRows()){const d=r.data;if(d.del){dels.add(+d.del);continue}
+   if(d.like){const L=likes[d.like]||(likes[d.like]=new Map());const c=d.cid||r.who;L.has(c)?L.delete(c):L.set(c,d.as||r.who);continue}
+   if(d.re){(cms[d.re]||(cms[d.re]=[])).push(r);continue}if(d.t||d.img)posts.set(r.id,r)}
+  return [...posts.values()].filter(r=>!dels.has(r.id)).reverse().map(r=>({r,likes:likes[r.id]||new Map(),cms:(cms[r.id]||[]).filter(c=>!dels.has(c.id))}))}
+ function snsLast(){try{return +localStorage.getItem(SNS_SEEN)||0}catch(e){return 0}}
+ function snsUnread(){const s=snsLast();const me=myCid();return snsRows().filter(r=>r.id>s&&!r.data.like&&!r.data.del&&!r.data.re&&(r.data.t||r.data.img)&&r.data.cid!==me).length}
+ function snsSeen(){const L=snsRows();if(L.length)try{localStorage.setItem(SNS_SEEN,String(L[L.length-1].id))}catch(e){}}
+ function snsHandle(cid){if(!cid)return '';if(cid==='gm')return 'GM';if(cid.startsWith('n:')){const n=(G().nodes||{})[cid.slice(2)];return n?(KINDN[n.kind]||'NPC'):''}return '트레이너'}
+ const snsFmt=t=>esc(t).replace(/(^|\s)#([^\s#@]+)/g,'$1<span class="sn-tag">#$2</span>').replace(/@([^\s@]+)/g,'<span class="ph-at">@$1</span>');
+ const snsAgo=at=>{const d=new Date(at);if(isNaN(d))return '';const s=(Date.now()-d)/1000;return s<60?'방금':s<3600?Math.floor(s/60)+'분 전':s<86400?Math.floor(s/3600)+'시간 전':`${d.getMonth()+1}/${d.getDate()}`};
+ function snsCan(){return !!A().ST.role&&(gm()||!!owner())}
+ function sns(t){const S=spk();const M=snsModel();const me=myCid();
+  const avs=(cid,cls)=>{const u=cidImg(cid);return `<i class="ph-av ${cls||'sm'}" style="${u?`background-image:url('${cssu(u)}')`:''}"></i>`};
+  const compose=snsCan()?`<div class="sn-new">${avs(S.cid)}<div class="sn-nb"><textarea id="snIn" rows="2" placeholder="${esc(S.name)} 으로 올리기 · #태그 · @이름">${esc(PH.snDraft||'')}</textarea>
+    <div class="sn-nr">${PH.snImg?`<span class="sn-att"><img src="${esc(PH.snImg)}" alt=""><button type="button" data-ph="snimgx" title="그림 빼기">✕</button></span>`:''}<label class="ph-clip" title="그림 붙이기 (붙여넣기도 된다)">📷<input type="file" accept="image/*" id="snFile" hidden></label><span class="sp"></span><button class="btn xs pri" data-ph="snpost">올리기</button></div></div></div>`
+   :`<div class="ph-empty sm">${!A().ST.role?'자리에 앉으면 글을 올릴 수 있다':'시트 탭에서 「내 파티 불러오기」를 하면 글을 올릴 수 있다'}</div>`;
+  const cards=M.map(({r,likes,cms})=>{const d=r.data;const liked=likes.has(me);const open=PH.snOpen===r.id;const shown=open?cms:cms.slice(-2);
+   const lk=[...likes.values()];
+   return `<article class="sn-card" data-sn="${r.id}"><div class="sn-h">${avs(d.cid)}<div class="sn-who"><b>${esc(d.as||r.who)}</b><small>${esc(snsHandle(d.cid))} · ${esc(snsAgo(r.at))}</small></div><span class="sp"></span>${gm()||d.cid===me?`<button type="button" class="sn-x" data-ph="sndel" data-id="${r.id}" title="지우기">✕</button>`:''}</div>
+    ${d.img?`<a class="sn-pic" href="${esc(d.img)}" target="_blank" rel="noopener"><img src="${esc(d.img)}" alt="" loading="lazy"></a>`:''}${d.t?`<div class="sn-t">${snsFmt(d.t)}</div>`:''}
+    <div class="sn-act"><button type="button" class="sn-b sn-like ${liked?'on':''}" data-ph="snlike" data-id="${r.id}" ${snsCan()?'':'disabled'}>${liked?'♥':'♡'}<span>${likes.size||''}</span></button><button type="button" class="sn-b" data-ph="sncm" data-id="${r.id}">💬<span>${cms.length||''}</span></button>${lk.length?`<small class="sn-lw">${esc(lk.slice(0,2).join(', '))}${lk.length>2?` 외 ${lk.length-2}명`:''} 님이 좋아한다</small>`:''}</div>
+    ${cms.length>shown.length?`<button type="button" class="sn-more" data-ph="sncm" data-id="${r.id}">댓글 ${cms.length}개 모두 보기</button>`:''}
+    ${shown.length?`<div class="sn-cms">${shown.map(c=>`<div class="sn-c"><b>${esc(c.data.as||c.who)}</b> ${snsFmt(c.data.t||'')}${gm()||c.data.cid===me?`<button type="button" class="sn-cx" data-ph="sndel" data-id="${c.id}" title="지우기">✕</button>`:''}</div>`).join('')}</div>`:''}
+    ${open&&snsCan()?`<div class="sn-cin">${avs(S.cid,'xs')}<input type="text" id="snCm" placeholder="${esc(S.name)} 으로 댓글" autocomplete="off"><button type="button" class="btn xs" data-ph="sncmsend" data-id="${r.id}">게시</button></div>`:''}</article>`}).join('');
+  return `<div class="ph-head pink"><button class="ph-back" data-ph="home">‹</button><div><b>SNS</b><small>모두가 보는 타임라인 · 글 ${M.length}개</small></div></div>
+   <div class="sn-feed">${compose}${cards||'<div class="ph-empty">아직 올라온 글이 없다</div>'}</div>`}
+ async function snsAdd(data){const S=spk();const ST=A().ST;await window.OM_STORE.addLog(ST.room,ST.secret,'chat',S.name||ST.name||'',Object.assign({t:'',sms:'sns',as:S.name,k:S.key,cid:S.cid},data))}
+ async function snsPost(md){const inp=$('#snIn',md);const t=(inp?inp.value:'').trim();const img=PH.snImg||'';if(!t&&!img)return A().toast('쓸 말이나 그림을 넣어 줘');
+  try{await snsAdd(Object.assign({t},img?{img}:{}));PH.snDraft='';PH.snImg='';PH.snOpen=0;re()}catch(e){A().toast('올리지 못했다: '+e.message)}}
+ async function snsImg(f){if(!f||!/^image\//.test(f.type||''))return;if(f.size>5*1024*1024)return A().toast('5MB 이하만');const ST=A().ST;A().toast('그림을 올리는 중…');
+  try{PH.snImg=await window.OM_STORE.uploadImage(`rooms/${ST.room}/sns_${Date.now().toString(36)}`,f);re()}catch(e){A().toast('그림을 올리지 못했다: '+e.message)}}
  async function smsSend(md){const inp=$('#smsIn',md);if(!inp)return;const t=inp.value.trim();if(!t)return;inp.value='';const S=spk();const ST=A().ST;
   delete PH.draft[PH.room];
   try{await window.OM_STORE.addLog(ST.room,ST.secret,'chat',S.name||ST.name||'',{t,sms:PH.room,as:S.name,k:S.key,cid:S.cid})}catch(e){A().toast('보내지 못했다: '+e.message)}}
@@ -120,7 +158,9 @@ window.OM_PHONE_UI=(()=>{
  async function smsImg(f){if(!f||!/^image\//.test(f.type||''))return;if(f.size>5*1024*1024)return A().toast('5MB 이하만');const S=spk();const ST=A().ST;A().toast('그림을 보내는 중…');
   try{const url=await window.OM_STORE.uploadImage(`rooms/${ST.room}/sms_${Date.now().toString(36)}`,f);await window.OM_STORE.addLog(ST.room,ST.secret,'chat',S.name||ST.name||'',{t:'',img:url,sms:PH.room,as:S.name,k:S.key,cid:S.cid})}catch(e){A().toast('보내지 못했다: '+e.message)}}
  /* 새 문자가 오면 (내 방이고 내 것이 아니면) 알림을 띄우고, 열려 있으면 다시 그린다 */
- function onSms(row){const d=row.data||{};const md=$('.modal.phone-modal');const openHere=md&&PH.screen==='smsroom'&&PH.room===d.sms;
+ function onSms(row){const d=row.data||{};const md=$('.modal.phone-modal');
+  if(isSns(d)){if(md&&(PH.screen==='sns'||PH.screen==='home')){const a=document.activeElement;if(!(a&&md.contains(a)&&a.matches('input,textarea'))||PH.screen==='home')draw(md)}A().renderScene();return}
+ const openHere=md&&PH.screen==='smsroom'&&PH.room===d.sms;
   if(openHere){draw(md);return}
   const isMine=A().isMineLog?A().isMineLog(row):d.cid===myCid();const room=roomOf(d.sms);const al=A().alarm?A().alarm().sms:1;
   if(!isMine&&room&&al&&!d.room&&(d.t||d.img)){popSms(row,room);try{if(window.OM_PREFS)window.OM_PREFS.alert('sms');else if(window.OM_RP_UI)window.OM_RP_UI.playSe('Ping',true)}catch(e){}}
@@ -248,7 +288,13 @@ window.OM_PHONE_UI=(()=>{
  /* ----- 묶기 ----- */
  function bind(md){const t=owner();
   md.querySelectorAll('[data-ph]').forEach(b=>b.onclick=async(e)=>{if(e&&e.stopPropagation)e.stopPropagation();const k=b.dataset.ph;if(!k)return;
-   if(['home','contacts','conf','cal','sms','notes','callog','set','deck'].includes(k))return backTo(k,md);
+   if(['home','contacts','conf','cal','sms','notes','callog','set','deck','sns'].includes(k))return backTo(k,md);
+   if(k==='snpost')return snsPost(md);
+   if(k==='snimgx'){PH.snImg='';return re()}
+   if(k==='snlike'){if(!snsCan())return;try{await snsAdd({like:+b.dataset.id})}catch(er){A().toast('누르지 못했다: '+er.message)}return re()}
+   if(k==='sncm'){const id=+b.dataset.id;PH.snOpen=PH.snOpen===id&&!b.classList.contains('sn-more')?0:id;re();const ci=$('#snCm',md);if(ci)ci.focus();return}
+   if(k==='sncmsend'){const ci=$('#snCm',md);const v=ci?ci.value.trim():'';if(!v)return;try{await snsAdd({t:v,re:+b.dataset.id})}catch(er){return A().toast('보내지 못했다: '+er.message)}return re()}
+   if(k==='sndel'){if(!confirm('이 글을 지울까? (로그에는 지운 표시가 남는다)'))return;try{await snsAdd({del:+b.dataset.id})}catch(er){A().toast('지우지 못했다: '+er.message)}return re()}
    if(k==='caldel2'){const pd=phoneData(PH.tid);const log=Object.assign({},pd.log||{});log[b.dataset.d]=(log[b.dataset.d]||[]).filter((x,i)=>i!==+b.dataset.i);if(!log[b.dataset.d].length)delete log[b.dataset.d];await savePhone(PH.tid,{log});return re()}
    if(k==='noteadd'){PH.note='';PH.screen='note1';return re()}
    if(k==='note1'){PH.note=b.dataset.id;PH.screen='note1';return re()}
@@ -276,12 +322,15 @@ window.OM_PHONE_UI=(()=>{
    if(k==='caldel'){const tid=PH.tid;const pd=phoneData(tid);const day=today();const log=Object.assign({},pd.log||{});log[day]=(log[day]||[]).filter((x,i)=>i!==+b.dataset.i);await savePhone(tid,{log});return re()}
    if(k==='memosave'){await savePhone(PH.tid,{memo:$('#cs_memo',md).value});return A().toast('저장했다')}
    if(k==='rest'){const K=window.OM_SKILL_UI;if(!K)return;const kd=b.dataset.k;const nm=RESTS.find(x=>x[0]===kd);if(!confirm(`「${nm[1]} (${nm[2]})」 회복을 할까? — ${t?t.name:''} 와 소지 포켓몬`))return;A().closeModal();await K.applyRest(kd,[PH.tid],{by:(t?t.name:'')+' · 휴대폰'});return open('cal')}});
-  const own=$('#phOwner',md);if(own)own.onchange=()=>{PH.tid=own.value;re()};
+  const own=$('#phOwner',md);if(own)own.onchange=()=>{PH.tid=own.value;re();const st=md.querySelector('.ph-status span');if(st){const o=owner();st.textContent=o?o.name:'—'}};
   const sh=$('#ph_share',md);if(sh)sh.onchange=async()=>{await savePhone(PH.tid,{share:sh.checked});A().toast(sh.checked?'방에 공유한다':'비공개로 바꿨다')};
   const rin=$('#ph_room',md);if(rin)rin.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing){const b=md.querySelector('[data-ph=roomgo]');if(b)b.click()}};
   const si=$('#smsIn',md);if(si){si.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)smsSend(md)};si.oninput=()=>{PH.draft[PH.room]=si.value};
    si.onpaste=e=>{const f=[...((e.clipboardData||{}).files||[])].find(x=>/^image\//.test(x.type));if(f){e.preventDefault();smsImg(f)}};
    if(!(window.matchMedia&&matchMedia('(hover:none)').matches))si.focus()}
+  const sn=$('#snIn',md);if(sn){sn.oninput=()=>{PH.snDraft=sn.value};sn.onpaste=e=>{const f=[...((e.clipboardData||{}).files||[])].find(x=>/^image\//.test(x.type));if(f){e.preventDefault();snsImg(f)}};sn.onkeydown=e=>{if(e.key==='Enter'&&(e.ctrlKey||e.metaKey)){e.preventDefault();snsPost(md)}}}
+  const snf=$('#snFile',md);if(snf)snf.onchange=()=>{const f=snf.files[0];snf.value='';snsImg(f)};
+  const scm=$('#snCm',md);if(scm)scm.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing){const bb=md.querySelector('[data-ph=sncmsend]');if(bb)bb.click()}};
   const sf=$('#smsFile',md);if(sf)sf.onchange=()=>{const f=sf.files[0];sf.value='';smsImg(f)};
   const lg=$('.ph-sms',md);if(lg&&A().ST.role){lg.ondragover=e=>{if([...e.dataTransfer.types].includes('Files')){e.preventDefault();lg.classList.add('over')}};lg.ondragleave=()=>lg.classList.remove('over');lg.ondrop=e=>{e.preventDefault();lg.classList.remove('over');const f=[...(e.dataTransfer.files||[])].find(x=>/^image\//.test(x.type));if(f)smsImg(f)}}
   const mm=$('#cs_memo',md);if(mm&&canWrite())mm.onblur=async()=>{if(mm.value!==(phoneData(PH.tid).memo||''))await savePhone(PH.tid,{memo:mm.value})};

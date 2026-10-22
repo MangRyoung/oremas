@@ -3077,3 +3077,34 @@ span.cdfw{display:inline-flex;align-items:center;justify-content:center;cursor:d
 }
 .gmrk{display:none}
 @media (max-width:760px){.gmrk{display:inline}}
+/* 10-24 망령: 휴대폰 SNS 타임라인 — 글 카드 · 그림 · ♥ · 댓글 */
+.ph-head.pink{background:#6a1544}
+.sn-feed{display:flex;flex-direction:column;gap:10px;padding:10px;background:#0b0c10}
+.sn-new{display:flex;gap:8px;align-items:flex-start;background:#15161c;border:2px solid #2a2b31;padding:8px}
+.sn-nb{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.sn-nb textarea{width:100%;resize:vertical;min-height:52px;background:#0b0c10;color:#fff;border:1px solid #33343c;padding:6px 8px;font:inherit}
+.sn-nr{display:flex;align-items:center;gap:6px}
+.sn-att{position:relative;display:inline-block}.sn-att img{height:44px;width:44px;object-fit:cover;border:2px solid #fff;display:block}
+.sn-att button{position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;border:0;background:var(--red);color:#fff;font-size:10px;line-height:18px;padding:0;cursor:pointer}
+.sn-card{background:#15161c;border:2px solid #2a2b31;border-left:4px solid #d63a7a}
+.sn-h{display:flex;align-items:center;gap:8px;padding:8px 10px}
+.sn-who{display:flex;flex-direction:column;min-width:0}.sn-who b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.sn-who small{color:var(--mute);font-size:11px}
+.sn-x,.sn-cx{background:none;border:0;color:#777;cursor:pointer;font-size:12px;padding:2px 4px}.sn-x:hover,.sn-cx:hover{color:var(--red)}
+.sn-pic{display:block;background:#000}.sn-pic img{display:block;width:100%;max-height:320px;object-fit:cover}
+.sn-t{padding:8px 12px 4px;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.5}
+.sn-tag{color:#ff7fb0;white-space:nowrap}
+.sn-act{display:flex;align-items:center;gap:4px;padding:4px 8px 6px;flex-wrap:wrap}
+.sn-b{display:inline-flex;align-items:center;gap:4px;background:none;border:0;color:#ddd;font:inherit;font-size:16px;cursor:pointer;padding:4px 6px}.sn-b span{font-size:12px}
+.sn-b:disabled{opacity:.5;cursor:default}
+.sn-like.on{color:#ff4d8d}
+.sn-lw{color:var(--mute);font-size:11px;flex-basis:100%;padding:0 6px}
+.sn-more{background:none;border:0;color:var(--mute);font-size:12px;padding:0 12px 4px;cursor:pointer;text-align:left}
+.sn-cms{padding:0 12px 8px;display:flex;flex-direction:column;gap:3px}
+.sn-c{font-size:12.5px;line-height:1.45;overflow-wrap:anywhere}.sn-c b{margin-right:4px}
+.sn-cin{display:flex;align-items:center;gap:6px;padding:6px 10px 10px;border-top:1px solid #23242a}
+.sn-cin input{flex:1;min-width:0;background:#0b0c10;color:#fff;border:1px solid #33343c;padding:5px 8px;font:inherit}
+.ph-av.xs{width:24px;height:24px}
+/* 10-24 망령: 로그 저장 범위 — 날짜 칸 두 개와 빠른 단추, 아래에 몇 줄인지 */
+.lgr{display:inline-flex;align-items:center;gap:6px}.lgr input[type=date]{min-width:0;color-scheme:dark}.lgq{display:inline-flex;gap:4px;flex-wrap:wrap}
+.lgcnt{margin:6px 0 0;color:var(--yel,#f5d000)}
+@media (max-width:760px){.lgrange>select{flex:1 1 100%}.lgr{flex:1 1 100%}.lgr input[type=date]{flex:1}}
