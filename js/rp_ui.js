@@ -129,10 +129,10 @@ window.OM_RP_UI=(()=>{
   if(!stage){el.innerHTML=`<div class="rpwrap"><div class="rpstage" id="rpstage"><div class="stands" id="stands"></div><div class="dlg" id="dlg"></div><div class="typing" id="typing"></div><div id="bgname"></div><div id="centerimg"></div><div class="rpbtns" id="rpbtns"></div><div id="mapov"></div><div id="voteov"></div></div><div id="rpunder"></div></div>`;stage=$('#rpstage',el)}
   stage.style.backgroundImage=bg.src?`url('${cssu(bg.src)}')`:'';
   const cal=ST.state.calendar||{};const dt=cal.today?(()=>{const d=new Date(cal.today+'T00:00:00');return {md:cal.today.slice(5).replace('-','/'),wd:['일','월','화','수','목','금','토'][d.getDay()]}})():null;
-  $('#bgname',el).innerHTML=`<div class="stagetags">${dt?`<div class="daytag" ${gm()?'data-rp="phase" title="눌러서 시간대 바꾸기"':''}><b>${esc(dt.md)}</b><i>${dt.wd}</i>${cal.weather?`<em>${esc(cal.weather)}</em>`:''}${cal.phase?`<span class="phase ${({아침:'morning',저녁:'evening',밤:'night',심야:'night'})[cal.phase]||''}">${esc(cal.phase)}</span>`:''}</div>`:''}${bg.name?`<div class="bgname">${esc(bg.name)}</div>`:''}</div>`;
+  $('#bgname',el).innerHTML=`<div class="stagetags">${dt?`<div class="daytag" ${gm()?'data-rp="phase" title="눌러서 시간대 바꾸기"':''}><b>${esc(dt.md)}</b><i>${dt.wd}</i>${cal.weather?`<em>${esc(cal.weather)}</em>`:''}${cal.phase?`<span class="phase ${({아침:'morning',저녁:'evening',밤:'night',심야:'night'})[cal.phase]||''}">${esc(cal.phase)}</span>`:''}</div>`:''}${bg.name?`<div class="bgname">${esc(bg.name)}</div>`:''}${(()=>{const CU=window.OM_CAL_UI;const nx=CU&&CU.next&&cal.today?CU.next(cal,14):null;return nx?`<div class="ddaytag ${nx.n===0?'on':''}" data-rp="calview" title="${esc(nx.date)} ${esc(nx.t)} — 눌러서 캘린더">${CU.ddL(nx.n)}<span>${esc(nx.t)}</span></div>`:''})()}</div>`;
   $('#centerimg',el).innerHTML=r.center&&r.center.src?`<div class="centerimg"><img src="${esc(r.center.src)}" alt="">${gm()?'<button class="btn xs" data-rp="centerx">닫기</button>':''}</div>`:'';
   $('#rpbtns',el).classList.toggle('fold',rpFold);$('#rpbtns',el).innerHTML=`<span id="typingRp" class="typingslot ${TYPING_HTML?'on':''}">${TYPING_HTML}</span><button class="btn sm rpspkbtn" data-rp="spkpop" title="화자 · 인물 · 표정">🎭 화자</button><button class="btn sm rpfoldb" data-rp="fold" title="${rpFold?'탭 펼치기 (배경 · BGM · 기록 · 지도 …)':'탭 접기'}">${rpFold?'☰':'›'}</button>${gm()?`<button class="btn sm rpt" data-rp="qbg" title="배경 바꾸기">🖼 배경</button><button class="btn sm rpt" data-rp="qbgm" title="BGM 바꾸기">♪ BGM</button><button class="btn sm rpt" data-rp="vote" title="투표 열기 — 파티 분기 · 작전 고르기">🗳 투표</button>`:''}<button class="btn sm rpt" data-rp="log" title="대화 기록">📜 기록</button><button class="btn sm ${mapOpen?'pri':'rpt'}" data-rp="map">${mapOpen?'지도 닫기':'지도'}</button><button class="btn sm rpt" data-rp="deck">덱</button><button class="btn sm rpt" data-rp="phone" title="휴대폰 — 연락처 · 협력자 · 캘린더">📱 휴대폰</button><button class="btn sm ghost rpt" data-rp="stand">표정</button>${r.bgm&&r.bgm.src?(unlocked?`<button class="btn sm ghost" data-rp="${gm()?'bgmstop':'mute'}" title="${esc(r.bgm.title||'')}${gm()?' — 누르면 모두에게 정지':' — 누르면 내 소리만 끄기'}">♪ ${esc(r.bgm.title||'BGM')} ■</button>`:`<button class="btn sm ghost" data-rp="sound" title="${esc(r.bgm.title||'')}">소리 켜기</button>`):''}${gm()?`<button class="btn sm pri" data-rp="gm">GM 콘솔</button>`:''}`;
-  $('#mapov',el).innerHTML=mapOpen?mapOverlay():'';drawVote(el);
+  $('#mapov',el).innerHTML=mapOpen?mapOverlay():'';drawVote(el);oocTick();
   /* 그림 말풍선 (rp.bubble) — 대사 전용: 말하는 사람이 왼쪽 자리면 꼬리 왼쪽 그림을 그 오른편에, 오른쪽이면 반대, 가운데·무대 밖이면 꼬리 왼쪽 그림을 화면 가운데 오른편에(mid).
      지문(비문)·고정 자막은 꼬리 없는 그림 — 그게 없으면 기본 검은 띠 */
   const bub=r.bubble||{};let skin=null;if(bub.on&&dlgHtml){const narr=!!cap.text||!lastChat||LF(lastChat.data||{}).narr;
@@ -344,6 +344,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   if(k==='centerx')return A().set(['rp','center'],null);
   if(k==='stand')return openMyStand();
   if(k==='qbg'){QB.con=false;return quickBg()}
+  if(k==='calview'){A().view='calendar';return A().renderScene()}
   if(k==='phase'){const PH=['아침','점심','오후','저녁','밤','심야'];const cur=(A().ST.state.calendar||{}).phase||'';const n=PH[(PH.indexOf(cur)+1)%PH.length];return A().set(['calendar','phase'],n).then(()=>A().sysLog(`시간대: ${n}`))}
   if(k==='npcadd')return addNpcQuick();
   if(k==='spkedit'){const key=SPK.key;if(key==='gm'&&gm())return openStands('gm');if(!key||key==='gm'||key==='me')return A().toast('먼저 인물을 골라 줘');return openStands(key)}
@@ -831,7 +832,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   if(!src){if(audio){audio.pause();audio=null}lastBgm='';return}
   if(!unlocked)return;
   if(src!==lastBgm||force){if(audio)audio.pause();audio=new Audio(src);audio.loop=true;audio.volume=vol;audio.play().catch(()=>{});lastBgm=src}}
- function onChat(row){if(row&&row.id)DQ.arr[row.id]=Date.now();if(row.kind==='chat'&&row.data&&row.data.bat){autoSe(Object.assign({},row,{kind:row.data.bat}));return}if(row.kind==='chat'&&row.data&&row.data.sms){if(window.OM_PHONE_UI)window.OM_PHONE_UI.onSms(row);return}autoSe(row);feedLog([row]);if(row.kind==='chat'&&row.data){const nm=row.data.as||row.who;for(const k in TYPING.who)if(TYPING.who[k].from===row.data.from&&(!nm||TYPING.who[k].who===nm))delete TYPING.who[k];}if(A().view==='rp'&&row.kind==='chat'&&row.data&&row.data.ch!=='ooc'&&(row.data.t||row.data.clear))A().renderScene()}
+ function onChat(row){if(row&&row.id)DQ.arr[row.id]=Date.now();if(row.kind==='chat'&&row.data&&row.data.bat){autoSe(Object.assign({},row,{kind:row.data.bat}));return}if(row.kind==='chat'&&row.data&&row.data.sms){if(window.OM_PHONE_UI)window.OM_PHONE_UI.onSms(row);return}autoSe(row);feedLog([row]);if(row.kind==='chat'&&row.data){const nm=row.data.as||row.who;for(const k in TYPING.who)if(TYPING.who[k].from===row.data.from&&(!nm||TYPING.who[k].who===nm))delete TYPING.who[k];}if(A().view==='rp'&&row.kind==='chat'&&row.data&&row.data.ch!=='ooc'&&(row.data.t||row.data.clear))A().renderScene();oocTick()}
  function onState(){tickBanner();syncBgm();syncSe();voteNotice()}
  /* ----- GM 투표 (10-23 벨벳 참고) -----
     rp.vote = {id,q,opts:[{id,t}],anon,blind,open,at,res?:{n:{opt:표},win:[opt],total}}
@@ -896,5 +897,36 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    <div class="mebtns"><button class="btn sm ${pend?'pri':''}" data-rp="roll" title="스킬 체크 창">🎲 굴림${pend?' !':''}</button><button class="btn sm" data-rp="phone" title="휴대폰">📱 폰</button><button class="btn sm ghost" data-rp="talk" title="${t?t.name+' (으)로 말하기 — 무대에 선다':'대사 입력'}">💬 대화</button></div>
    <div class="memons">${mons.map(m=>{const b=bm[m.id];const hp=b?b.hp:m.hp;const pct=Math.max(0,Math.min(100,(hp.cur>0?Math.max(1,Math.round(hp.cur/hp.max*100)):0)));const tired=t&&K&&(K.tsk(t.id).tired||[]).includes(m.id);return `<div class="memon ${hp.cur<=0?'ko':''} ${tired?'tired':''}" data-rp="mon" data-mid="${m.id}" title="${esc(m.name)} HP ${hp.cur}/${hp.max}${b&&b.entry?' · 무대 '+String(b.entry).toUpperCase():''}${tired?' · 지침':''}"><i style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></i><div class="mhp ${pct<=25?'low':pct<=50?'mid':''}"><b style="width:${pct}%"></b></div><small>${esc(m.name)}</small></div>`}).join('')}</div>
    ${lastDice?`<div class="melast" title="${esc(lastDice.data.t||'')}">🎲 ${esc((lastDice.who||'')+' · '+String(lastDice.data.t||'').split('\n').slice(-2).join(' · '))}</div>`:''}</div>`}
+ /* ----- 잡담 서랍 (10-24 벨벳 참고) -----
+    휴대폰처럼 옆 채팅창이 안 보이는 화면에서, 무대 오른쪽 끝 「잡담」 세로 탭을 누르면 잡담만 담긴 서랍이 미끄러져 나온다.
+    채팅 탭으로 넘어가지 않고 무대를 보면서 「밥 먹고 옴」을 주고받는 용도. 보내기는 채팅창의 잡담 탭 보내기를 그대로 빌려 쓴다
+    (/r 주사위 · 채팅 꾸미기 · GM 닉 같은 규칙이 한곳에만 있게). 옆 채팅창이 보이는 PC 화면에선 탭을 숨긴다 */
+ const OOC={open:false,seen:-1,room:'',key:''};
+ function oocRows(){const ST=A().ST;const cut=+((ST.state.rp||{}).logClearAt)||0;return (ST.log||[]).filter(r=>r.id>cut&&r.data&&r.data.ch==='ooc'&&(r.kind==='chat'||r.kind==='dice'))}
+ function sideShown(){const s=document.getElementById('side');return !!(s&&s.offsetWidth>0&&getComputedStyle(s).display!=='none')}
+ function oocEl(){let d=document.getElementById('oocdr');if(d)return d;d=document.createElement('div');d.id='oocdr';d.className='oocdr';d.setAttribute('aria-hidden','true');
+  d.innerHTML=`<div class="oochd"><b>💬 잡담</b><small>세션 로그 · 무대에 안 남는 이야기</small><span class="sp"></span><button class="btn xs ghost" data-oc="x" title="닫기">✕</button></div><div class="ooclog" id="ooclog"></div><div class="oocin"><input type="text" id="oocIn" autocomplete="off" placeholder="잡담 · /r 1d100"><button class="btn pri" id="oocSend">보내기</button></div>`;
+  document.body.appendChild(d);d.querySelector('[data-oc="x"]').onclick=()=>oocOpen(false);$('#oocSend',d).onclick=oocSend;
+  $('#oocIn',d).onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();oocSend()}else if(e.key==='Escape')oocOpen(false)};return d}
+ function oocOpen(on){OOC.open=!!on;const d=oocEl();d.classList.toggle('on',OOC.open);d.setAttribute('aria-hidden',OOC.open?'false':'true');OOC.key='';oocTick();if(OOC.open){const i=$('#oocIn',d);if(i&&A().ST.role&&!matchMedia('(hover:none)').matches)i.focus({preventScroll:true})}}
+ function oocSend(){const d=oocEl();const inp=$('#oocIn',d);const t=inp.value.trim();if(!t)return;const ci=$('#chatIn'),tabs=$('#ctabs'),send=$('#chatSend');
+  if(!ci||!tabs||!send||!A().ST.role)return A().toast('자리에 앉아야 말할 수 있다');
+  const prev=((tabs.querySelector('[data-ch].on')||{}).dataset||{}).ch||'s';const keep=ci.value;const to=tabs.querySelector('[data-ch="o"]');if(!to)return;
+  /* sendChat 은 첫 await 전에 채널을 읽어 두므로, 잡담 탭으로 잠깐 돌려 보내고 바로 원래 탭으로 */
+  to.click();ci.value=t;send.click();ci.value=keep;if(prev!=='o'){const b=tabs.querySelector(`[data-ch="${prev}"]`);if(b)b.click()}inp.value='';inp.focus()}
+ function oocTick(){const ST=A().ST;if(OOC.room!==ST.room){OOC.room=ST.room;const r=oocRows();OOC.seen=r.length?r[r.length-1].id:0;OOC.key=''}
+  const stage=document.getElementById('rpstage');const show=!!(ST.room&&stage&&stage.isConnected&&A().view==='rp'&&!sideShown());
+  let tab=document.getElementById('ooctab');if(show&&!tab){tab=document.createElement('button');tab.id='ooctab';tab.className='ooctab';tab.title='잡담 서랍';tab.onclick=()=>oocOpen(!OOC.open)}
+  if(show&&tab.parentNode!==stage)stage.appendChild(tab);if(!show){if(tab)tab.remove();if(OOC.open){OOC.open=false;const d=document.getElementById('oocdr');if(d)d.classList.remove('on')}return}
+  const rows=oocRows();const last=rows.length?rows[rows.length-1].id:0;if(OOC.open)OOC.seen=Math.max(OOC.seen,last);
+  const unread=rows.filter(r=>r.id>OOC.seen&&!A().isMineLog(r)).length;const th=`<span>잡담</span>${unread?`<em>${unread>9?'9+':unread}</em>`:''}`;if(tab._h!==th){tab.innerHTML=th;tab._h=th}tab.classList.toggle('on',OOC.open);tab.classList.toggle('new',!!unread);
+  if(!OOC.open)return;const d=oocEl();const box=$('#ooclog',d);const key=ST.room+'|'+last+'|'+rows.length;if(OOC.key===key)return;OOC.key=key;
+  const near=box.scrollHeight-box.scrollTop-box.clientHeight<60;
+  box.innerHTML=rows.length?rows.slice(-60).map(r=>{const dd=r.data||{};const mine=A().isMineLog(r);const nm=dd.gmn||r.who||'';const tm=(()=>{const x=new Date(r.at);return isNaN(x)?'':String(x.getHours()).padStart(2,'0')+':'+String(x.getMinutes()).padStart(2,'0')})();
+   const body=r.kind==='dice'?`🎲 ${esc(dd.t||'')}`:(dd.img?`<img src="${esc(dd.img)}" alt="" loading="lazy">`:esc(dd.t||''));
+   return `<div class="oor ${mine?'me':''} ${r.kind==='dice'?'dice':''}"><div class="oorm"><b>${esc(nm)}</b><time>${tm}</time></div><div class="oorb">${body}</div></div>`}).join(''):'<div class="oornone">아직 잡담이 없어. 여기서 한 말은 세션 로그 · 무대에 나오지 않아.</div>';
+  if(near||box._first!==ST.room){box.scrollTop=box.scrollHeight;box._first=ST.room}
+  const inp=$('#oocIn',d);if(inp){inp.disabled=!ST.role;inp.placeholder=ST.role?'잡담 · /r 1d100':'자리에 앉으면 말할 수 있다'}}
+ addEventListener('resize',()=>{try{oocTick()}catch(e){}});
  return {typingHtml,autoFolder,bgmMuted,seUrlOf:seUrl,render,allSpeakers,onChat,feedLog,onState,onTyping,typingPing,typingStop,drawTyping,mapData:mapS,openConsole,openStands,setMyStand,charOf,playSe,setVolume,bgmWidgetHtml,bindBgmWidget,imgOfKey:k=>{if(k==='gm')return gmImg();const c=charOf(k);return c?(c.img||standSrc(c)):''},curSpeaker:()=>{const ST=A().ST;const c=speakerChar();if(c)return {key:c.key,name:c.name,img:c.img||standSrc(c)};return gm()?{key:'gm',name:'GM',img:gmImg()}:{key:'me',name:ST.name||'',img:''}}};
 })();
