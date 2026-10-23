@@ -3253,3 +3253,21 @@ body.m-chat .mecard{display:none}
 .whorow.gm .whorole{border-color:var(--red);color:#fff}.whome{margin-left:auto;font-size:11px;color:var(--yel2,var(--yel))}
 .top .presence{cursor:pointer}
 @media (min-width:1500px){.top{flex-wrap:nowrap}.top .tabs{flex-shrink:0}.top .presence{flex:0 1 240px}}
+/* 10-23 망령: 모바일 채팅창 위쪽 간소화 — 휴대폰 상단 줄 · 방 이름은 숨기고(위 띠에 이미 있다), 세션/잡담 탭과 버튼을 한 줄에 */
+@media (max-width:760px){
+ :root .side .phone{display:grid!important;grid-template-columns:minmax(0,1fr) auto;grid-template-rows:auto minmax(0,1fr) auto;min-height:0}
+ :root .side .phone>*{grid-column:1/-1}
+ :root .side .phone .pbar{display:none!important}
+ :root .side .phone .ptitle{grid-row:1;grid-column:2;font-size:0!important;padding:0 4px 0 6px!important;clip-path:none!important;border-bottom:3px solid #000;display:flex;align-items:center;min-height:0}
+ :root .side .phone .ptitle small{display:none!important}
+ :root .side .phone .ptitle .plogs{position:static!important;margin:0!important;flex-wrap:nowrap;gap:3px}
+ :root .side .phone .ptitle .plog{font-size:15px!important;line-height:1;padding:5px 7px!important;min-width:32px}
+ :root .side .phone .ptitle .plog .plt{display:none}
+ :root .side .phone .ptitle .plog.on.new::after{content:'•';color:#e3101f;margin-left:1px}
+ :root .side .phone .ctabs{grid-row:1;grid-column:1}
+ :root .side .phone .ctabs button{padding:7px 0!important}
+ :root .side .phone .log{grid-row:2;min-height:0}
+ :root .side .phone .inbox{grid-row:3}
+}
+/* 10-23 망령: 방 복제 창 */
+.rcopt{display:grid;gap:6px;margin-top:10px}.rcopt label{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}

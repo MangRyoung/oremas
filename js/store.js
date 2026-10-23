@@ -21,7 +21,7 @@ window.OM_STORE=(()=>{
  async function whoami(room,secret){return rpc('om_whoami',{p_room:room,p_secret:secret||''})}
  /* 계정 (2026-10-23): 아이디 · 비밀번호 로그인 → 로그인 표(token). 방에서는 비밀값 자리에 'u:'+token 을 쓴다 (supabase/patch_2026-10-23_계정.sql) */
  const acct={signup:(id,pw,name)=>rpc('om_signup',{p_id:id,p_pw:pw,p_name:name||''}),login:(id,pw,dev)=>rpc('om_login',{p_id:id,p_pw:pw,p_device:dev||''}),logout:t=>rpc('om_logout',{p_token:t}),
-  me:t=>rpc('om_me',{p_token:t}),meUpdate:(t,name,oldPw,newPw)=>rpc('om_me_update',{p_token:t,p_name:name??null,p_old:oldPw??null,p_new:newPw??null}),roomNew:(t,name)=>rpc('om_room_new',{p_token:t,p_name:name}),join:(t,room)=>rpc('om_room_join',{p_token:t,p_room:room}),
+  me:t=>rpc('om_me',{p_token:t}),meUpdate:(t,name,oldPw,newPw)=>rpc('om_me_update',{p_token:t,p_name:name??null,p_old:oldPw??null,p_new:newPw??null}),roomNew:(t,name)=>rpc('om_room_new',{p_token:t,p_name:name}),roomCopy:(t,room,name,opts)=>rpc('om_room_copy',{p_token:t,p_room:room,p_name:name,p_opts:opts||{}}),join:(t,room)=>rpc('om_room_join',{p_token:t,p_room:room}),
   adminList:t=>rpc('om_admin_list',{p_token:t}),adminMember:(t,uid,room,role,seat)=>rpc('om_admin_member',{p_token:t,p_uid:uid,p_room:room,p_role:role??null,p_seat:seat??null}),
   adminUser:(t,uid,o)=>rpc('om_admin_user',{p_token:t,p_uid:uid,p_admin:o.admin??null,p_pw:o.pw??null,p_delete:!!o.del}),
   /* 10-22: 관리자 설정 (방 기본값 등) — supabase/patch_2026-10-22_방기본값.sql */

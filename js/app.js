@@ -76,7 +76,7 @@ async function renderHome(){
  const upd=r=>String((peek[r.id]||{}).updated_at||'');const sorted=rooms.slice().sort((a,b)=>upd(b).localeCompare(upd(a)));
  const tile=r=>{const pk=peek[r.id]||{};const bg=(pk.bg&&pk.bg.src)||'';const gm=r.role==='gm';const when=pk.updated_at?ago(new Date(pk.updated_at).getTime()):'';
   return `<div class="rmt ${gm?'gm':'pl'}" data-go="${esc(r.id)}" data-q="${esc(String(r.name||r.id).toLowerCase())}" tabindex="0" role="link" aria-label="${esc((r.name||r.id)+' 들어가기')}"><div class="rmt-bg" style="${bg?`background-image:url('${cssu(bg)}')`:''}"></div><div class="rmt-in">
-   <div class="rmt-top"><span class="badge ${gm?'gm':'seat'}">${gm?'GM':'PL'}</span>${gm?'':`<span class="rmt-seat">${r.seat?'자리 있음':'자리 아직'}</span>`}<span class="sp"></span>${gm?`<button type="button" class="rmb" data-rmren="${esc(r.id)}" title="방 이름 바꾸기" aria-label="방 이름 바꾸기">✎</button><button type="button" class="rmb" data-rmkill="${esc(r.id)}" title="방 지우기" aria-label="방 지우기">🗑</button>`:''}</div>
+   <div class="rmt-top"><span class="badge ${gm?'gm':'seat'}">${gm?'GM':'PL'}</span>${gm?'':`<span class="rmt-seat">${r.seat?'자리 있음':'자리 아직'}</span>`}<span class="sp"></span>${gm?`<button type="button" class="rmb" data-rmren="${esc(r.id)}" title="방 이름 바꾸기" aria-label="방 이름 바꾸기">✎</button><button type="button" class="rmb" data-rmkill="${esc(r.id)}" title="방 지우기" aria-label="방 지우기">🗑</button>`:''}${me.admin?`<button type="button" class="rmb" data-rmcopy="${esc(r.id)}" title="방 복제 — 설정 · 무대 · 시트 · 권한을 그대로 새 방으로" aria-label="방 복제">⧉</button>`:''}</div>
    <div class="rmt-nm">${esc(r.name||r.id)}</div>
    <div class="rmt-meta">${pk.scene==='battle'?'⚔ 배틀':'🎬 RP'}${pk.bg&&pk.bg.name?' · '+esc(pk.bg.name):''}${when?' · '+esc(when):''}</div><span class="rmt-go">들어가기 ▶</span></div></div>`};
  app.innerHTML=`<div class="lobby lb2">
@@ -87,9 +87,9 @@ async function renderHome(){
    <section class="lbmain"><div class="lbh"><h2>내 방 <small>${rooms.length}</small></h2><span class="sp"></span>${rooms.length>4?'<input type="search" id="rmQ" placeholder="방 찾기" autocomplete="off">':''}</div>
     ${rooms.length?`<div class="rmgrid">${sorted.map(tile).join('')}</div>`:'<div class="empty lbempty">아직 권한이 있는 방이 없다. 오른쪽에서 방을 만들거나, 방 링크로 들어가 자리에 앉으면 여기 생긴다.</div>'}</section>
    <aside class="lbside">
-    <div class="card"><h2>방 만들기</h2>
+    ${me.admin?`<div class="card"><h2>방 만들기</h2>
      <div class="row"><input type="text" id="newName" placeholder="방 이름 (예: 무진)" style="flex:1;min-width:0"><button class="btn pri" id="mk">만들기</button></div>
-     <p class="small muted">만든 계정이 그 방의 GM 이 된다. 플레이어에게는 방 링크만 주면 된다.${me.admin?' 관리자 패널의 「방 기본값」이 처음부터 들어간다.':''}</p></div>
+     <p class="small muted">만든 계정이 그 방의 GM 이 된다. 플레이어에게는 방 링크만 주면 된다. 관리자 패널의 「방 기본값」이 처음부터 들어간다. 내 방 카드의 ⧉ 로 방을 통째로 복제할 수도 있다.</p></div>`:'<div class="card"><h2>방 만들기</h2><p class="small muted">방은 관리자 계정만 만들 수 있다. 관리자에게 방 링크를 받거나 GM · PL 권한을 달라고 해 줘.</p></div>'}
     <div class="card"><h2>방 들어가기</h2>
      <div class="row"><input type="text" id="joinId" placeholder="방 링크 또는 방 id" style="flex:1;min-width:0"><button class="btn" id="join">입장</button></div></div>
     ${mine.length?recent(mine).replace('<h2>최근 방</h2>','<h2>이 기기의 최근 방 <small class="muted">(예전 링크)</small></h2>'):''}
@@ -103,14 +103,30 @@ async function renderHome(){
  app.querySelectorAll('[data-rmdel]').forEach(b=>b.onclick=e=>{e.preventDefault();const id=b.dataset.rmdel;if(!confirm('이 기기의 최근 방 목록에서 뺄까? (방은 그대로 있다)'))return;LS.set('om_rooms',LS.get('om_rooms',[]).filter(r=>r.id!==id));renderHome()});
  /* 10-24 망령: 내 방 이름 바꾸기 · 지우기 (GM 인 방만) — 이름은 om_room_update, 지우기는 om_room_del */
  const rmOf=id=>rooms.find(r=>r.id===id)||{};
+ app.querySelectorAll('[data-rmcopy]').forEach(b=>b.onclick=()=>openRoomCopy(rmOf(b.dataset.rmcopy),a));
  app.querySelectorAll('[data-rmren]').forEach(b=>b.onclick=async()=>{const r=rmOf(b.dataset.rmren);const n=prompt('새 방 이름',r.name||'');if(n==null)return;const nm=n.trim();if(!nm)return toast('이름을 적어 줘');if(nm===r.name)return;
   try{await DBS().roomUpdate(r.id,'u:'+a.token,nm,null);toast('방 이름을 바꿨다');renderHome()}catch(e){toast('이름을 못 바꿨다: '+acctErr(e))}});
  app.querySelectorAll('[data-rmkill]').forEach(b=>b.onclick=async()=>{const r=rmOf(b.dataset.rmkill);const nm=r.name||r.id;
   const typed=prompt(`「${nm}」 방을 지운다. 대화 기록 · 배틀 · 시트 · 좌석이 모두 사라지고 되돌릴 수 없다.\n지우려면 방 이름을 그대로 적어 줘.`,'');if(typed==null)return;if(typed.trim()!==nm)return toast('방 이름이 달라서 안 지웠다');
   try{await DBS().roomDel(r.id,'u:'+a.token);LS.set('om_rooms',LS.get('om_rooms',[]).filter(x=>x.id!==r.id));toast(`「${nm}」 방을 지웠다`);renderHome()}
   catch(e){const raw=String((e&&e.message)||e||'');toast(/om_room_del|PGRST202|Could not find the function|schema cache/i.test(raw)?'서버에 방 지우기 함수가 아직 없다 — supabase/patch_2026-10-24_방삭제.sql 을 SQL Editor 에서 실행해 줘':'못 지웠다: '+acctErr(e))}});
- $('#mk').onclick=async()=>{const name=$('#newName').value.trim()||'새 방';try{const id=await DBS().acct.roomNew(a.token,name);location.hash='r='+id}catch(e){toast('방을 만들지 못했다: '+acctErr(e))}};
+ {const mk=$('#mk');if(mk)mk.onclick=async()=>{const name=$('#newName').value.trim()||'새 방';try{const id=await DBS().acct.roomNew(a.token,name);location.hash='r='+id}catch(e){toast('방을 만들지 못했다: '+acctErr(e))}}};
  $('#join').onclick=()=>{const v=$('#joinId').value.trim();const m=v.match(/#?r=([a-z0-9]+)(?:&gm=([a-z0-9]+))?/)||[null,v];if(!m[1])return toast('방 id 를 넣어 줘');location.hash='r='+m[1]+(m[2]?'&gm='+m[2]:'')}}
+/* 10-23 망령: 방 복제 (관리자) — 설정 · 상태(무대 · 시트 · 로스터)는 늘 복사, 채팅 로그는 복사하지 않는다 */
+function openRoomCopy(r,a){if(!r||!r.id)return;
+ const m=openModal(`<div class="mhead"><h2>방 복제</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+  <p class="small muted">「${esc(r.name||r.id)}」의 방 설정 · RP 무대 · 시트 · 로스터를 그대로 새 방으로 옮긴다. 채팅 로그는 옮기지 않는다. 원래 방은 그대로 남는다.</p>
+  <label class="lgf"><span>새 방 이름</span><input type="text" id="rcName" value="${esc((r.name||r.id)+' (복제)')}"></label>
+  <div class="rcopt">
+   <label><input type="checkbox" id="rcMem" checked> 멤버(GM · PL 권한)도 같이</label>
+   <label><input type="checkbox" id="rcSeat" checked> PL 자리(좌석)도 그대로</label>
+   <label><input type="checkbox" id="rcBat" checked> 진행 중인 배틀은 비우기</label>
+   <label><input type="checkbox" id="rcSec" checked> GM 메모도 같이</label></div>
+  <div class="row" style="justify-content:flex-end;margin-top:10px"><button class="btn pri" id="rcGo">복제해서 들어가기</button></div>`);
+ $('#rcGo',m).onclick=async()=>{const bt=$('#rcGo',m);bt.disabled=true;
+  const o={members:$('#rcMem',m).checked,seats:$('#rcSeat',m).checked,battle:$('#rcBat',m).checked,secret:$('#rcSec',m).checked};
+  try{const id=await DBS().acct.roomCopy(a.token,r.id,$('#rcName',m).value.trim(),o);closeModal();toast('방을 복제했다');location.hash='r='+id}
+  catch(e){bt.disabled=false;const raw=String((e&&e.message)||e||'');toast(/om_room_copy|PGRST202|Could not find the function|schema cache/i.test(raw)?'서버에 방 복제 함수가 아직 없다 — supabase/patch_2026-10-25_방복제.sql 을 SQL Editor 에서 실행해 줘':'복제하지 못했다: '+acctErr(e))}}}
 function openMe(me){
  const a=ACCT.get();
  const m=openModal(`<div class="mhead"><h2>내 계정</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
@@ -231,9 +247,7 @@ function renderLobby(){
   <div class="card lbnick"><h2>내 닉네임</h2><div class="row"><input type="text" id="lbNick" value="${esc(LS.get('om_nick',''))}" placeholder="접속자 칸 · 입력 중 표시에 보일 이름" style="flex:1"><button class="btn" id="lbNickOk">저장</button></div>
    <p class="small muted">GM 으로 들어가면 「GM · 닉」, PL 로 들어가면 이 닉으로 자리에 앉는다. GM 링크를 가진 사람이 여럿이면 다 같이 GM 으로 들어와도 된다 — 닉으로 구분된다.</p></div>
   ${recent(mine)}
-  <div class="card"><h2>방 만들기 (GM)</h2>
-   <div class="row"><input type="text" id="newName" placeholder="방 이름 (예: 무진)" style="flex:1"><button class="btn pri" id="mk">만들기</button></div>
-   <p class="small muted">방을 만들면 플레이어용 링크와 GM용 링크가 나온다. GM 링크는 아무에게도 주지 말 것.</p></div>
+  <div class="card"><h2>방 만들기</h2><p class="small muted">방은 관리자 계정만 만들 수 있다. <a href="#">계정으로 로그인</a>해서 로비에서 만든다.</p></div>
   <div class="card"><h2>방 들어가기</h2>
    <div class="row"><input type="text" id="joinId" placeholder="방 링크 또는 방 id" style="flex:1"><button class="btn" id="join">입장</button></div></div>
   ${mine.length?'':'<p class="hint">들어간 방은 이 기기에 기억해 두고 맨 위에 「최근 방」으로 보여 준다.</p>'}
@@ -241,8 +255,8 @@ function renderLobby(){
  </div>`;
  {const ni=$('#lbNick'),save=()=>{LS.set('om_nick',ni.value.trim());toast(ni.value.trim()?`닉네임: ${ni.value.trim()}`:'닉네임을 비웠다')};$('#lbNickOk').onclick=save;ni.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)save()}}
  app.querySelectorAll('[data-rmdel]').forEach(b=>b.onclick=e=>{e.preventDefault();const id=b.dataset.rmdel;if(!confirm('이 기기의 최근 방 목록에서 뺄까? (방은 그대로 있다)'))return;LS.set('om_rooms',LS.get('om_rooms',[]).filter(r=>r.id!==id));renderLobby()});
- $('#mk').onclick=async()=>{const name=$('#newName').value.trim()||'새 방';const sec=rnd(24);
-  try{const id=await DBS().createRoom(name,sec);remember(id,name,sec);location.hash='r='+id+'&gm='+sec}catch(e){toast('방을 만들지 못했다: '+e.message)}};
+ {const mk=$('#mk');if(mk)mk.onclick=async()=>{const name=$('#newName').value.trim()||'새 방';const sec=rnd(24);
+  try{const id=await DBS().createRoom(name,sec);remember(id,name,sec);location.hash='r='+id+'&gm='+sec}catch(e){toast('방을 만들지 못했다: '+e.message)}}};
  $('#join').onclick=()=>{const v=$('#joinId').value.trim();const m=v.match(/#?r=([a-z0-9]+)(?:&gm=([a-z0-9]+))?/)||[null,v];if(!m[1])return toast('방 id 를 넣어 줘');location.hash='r='+m[1]+(m[2]?'&gm='+m[2]:'')}}
 function remember(id,name,gm){const L=LS.get('om_rooms',[]).filter(r=>r.id!==id);L.unshift({id,name,gm:gm||(LS.get('om_rooms',[]).find(r=>r.id===id)||{}).gm||'',at:Date.now()});LS.set('om_rooms',L.slice(0,20))}
 /* 로비 맨 위: 최근 들어간 방 (이 기기에만 기억) */
@@ -370,7 +384,7 @@ function renderRoom(){
    ${ST.role==='gm'?`<a class="btn sm ghost" id="asPlBtn" href="${esc(roomLink(ST.room)+'&pl=1')}" title="이 방에 플레이어로 다시 들어간다 (자리·PL 닉)">PL 로</a>`:(()=>{const sg=(LS.get('om_rooms',[]).find(x=>x.id===ST.room)||{}).gm;return ST.canGm?`<a class="btn sm pri" id="asGmBtn" href="${esc(roomLink(ST.room))}" title="내 계정은 이 방의 GM 이다 — GM 으로 다시 들어간다">GM 으로</a>`:sg?`<a class="btn sm pri" id="asGmBtn" href="${esc(gmLink(ST.room,sg))}" title="이 기기에 GM 링크가 있다 — GM 으로 다시 들어간다">GM 으로</a>`:''})()}${ST.role==='gm'?(String(ST.secret).startsWith('u:')?'':'<button class="btn sm" id="copyGm">GM 링크</button>')+'<button class="btn sm" id="roomSet">⚙ 설정</button>':'<button class="btn sm" id="seatBtn">자리</button><button class="btn sm ghost" id="roomSet" title="내 설정 — 소리·알림·글자·이미지·단축키">⚙ 설정</button>'}
   </div>
   <div class="body"><div class="scene" id="scene"></div><div class="resizer" id="resizer" title="끌어서 채팅 창 너비 조절"></div>
-   <div class="side" id="side"><div class="phone"><div class="pbar"><span>●●●</span><span class="ptime" id="pclock"></span></div><div class="ptitle"><span class="plogs">${ST.role==='gm'?'<button class="btn xs ghost plog" id="clearLog" title="로그 비우기">🧹 비우기</button>':''}<button class="btn xs ghost plog ${LOGPIN?'on':''}" id="pinLog" title="채팅 고정 — 켜 두면 새 글이 올라와도 맨 아래로 내려가지 않는다 (지난 글 읽을 때)">📌 고정</button><button class="btn xs ghost plog" id="saveLog" title="채팅 로그를 파일로 저장">💾 로그</button><button class="btn xs ghost plog" id="chatPrefs" title="채팅 설정 — 글자 크기 · 내 글자색 · 닉네임 색">⚙ 채팅 설정</button></span>${esc(r.name||r.id)}<small>${ST.role==='gm'?'GM':ST.role==='seat'?esc(ST.name):'관전'} · 오레마스</small></div><div class="ctabs" id="ctabs"><button type="button" data-ch="s">세션</button><button type="button" data-ch="o">잡담<i class="cdot"></i></button></div><div class="log" id="log"></div>
+   <div class="side" id="side"><div class="phone"><div class="pbar"><span>●●●</span><span class="ptime" id="pclock"></span></div><div class="ptitle"><span class="plogs">${ST.role==='gm'?'<button class="btn xs ghost plog" id="clearLog" title="로그 비우기">🧹<span class="plt"> 비우기</span></button>':''}<button class="btn xs ghost plog ${LOGPIN?'on':''}" id="pinLog" title="채팅 고정 — 켜 두면 새 글이 올라와도 맨 아래로 내려가지 않는다 (지난 글 읽을 때)">📌<span class="plt"> 고정</span></button><button class="btn xs ghost plog" id="saveLog" title="채팅 로그를 파일로 저장">💾<span class="plt"> 로그</span></button><button class="btn xs ghost plog" id="chatPrefs" title="채팅 설정 — 글자 크기 · 내 글자색 · 닉네임 색">⚙<span class="plt"> 채팅 설정</span></button></span>${esc(r.name||r.id)}<small>${ST.role==='gm'?'GM':ST.role==='seat'?esc(ST.name):'관전'} · 오레마스</small></div><div class="ctabs" id="ctabs"><button type="button" data-ch="s">세션</button><button type="button" data-ch="o">잡담<i class="cdot"></i></button></div><div class="log" id="log"></div>
     <div class="inbox">${ST.role==='gm'?'<select id="chatAs" title="누구로 말할지 (세션 탭) — 배틀 화면에서도 인물로 말할 수 있다"><option value="gm">GM</option></select>':''}<input type="text" id="chatIn" placeholder="${ST.role?'메시지 · /r 1d100 · /w 이름 메시지':'자리에 앉으면 말할 수 있다'}" ${ST.role?'':'disabled'}><button class="btn" id="chatSend" ${ST.role?'':'disabled'}>➤</button></div></div></div>
   </div>
   <div class="mbar" id="mbar"><button data-m="scene" class="on"><i>🎭</i><span>무대</span></button><button data-m="chat"><i>💬</i><span>채팅</span><em id="mUnread" class="mbadge" style="display:none"></em></button><button data-m="phone"><i>📱</i><span>휴대폰</span></button><button data-m="top" title="맨 위로"><i>▲</i><span>맨 위</span></button><button data-m="menu"><i>☰</i><span>메뉴</span></button></div></div>`;

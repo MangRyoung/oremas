@@ -29,7 +29,7 @@ window.OM_IMPORT=(()=>{
   return {name,type:m.type,typeEn:m.typeEn||S().typeEn(m.type),cat:m.cat,pow:nz(m.pow),acc:nz(m.acc),range:m.range,contact:m.contact,prio:nz(m.prio),
    tag:m.tag,eff:brN(m.eff),atk:m.atk,def:m.def,note:m.note,min:nz(m.min)||1,max:nz(m.max)||1,sock:m.sock||'',tags:m.tags||[],half:!!half}}
 
- /* 제작기 포켓몬 문서 → 배틀 포켓몬. iv 를 주지 않으면 0 (알까기는 파티 등록 때) */
+ /* 제작기 포켓몬 문서 → 배틀 포켓몬. 개체값은 제작기 시트의 알까기 값(ivs), 없으면 0 (10-23 망령) */
  function pokemon(doc,tr,iv){
   const d=(doc.data&&doc.data.data)||doc.data||doc;
   const L=S().levelOf(tr,d);
@@ -37,7 +37,8 @@ window.OM_IMPORT=(()=>{
   const base0=Array.from({length:6},(_,i)=>nz((d.base||[])[i]));const BU=d.baseUp&&Array.isArray(d.baseUp.base)&&d.baseUp.base.length===6?d.baseUp:null;
   const base=BU?BU.base.map((v,i)=>v===''||v==null?base0[i]:nz(v)):base0;
   const ev=[0,0,0,0,0,0];  /* 개체값·노력치는 쓰지 않는다 */
-  iv=[0,0,0,0,0,0];
+  const mkIv=Array.isArray(d.ivs)&&d.ivs.length===6?d.ivs.map(v=>Math.max(0,Math.min(31,Math.round(+v)||0))):null;
+  iv=mkIv||[0,0,0,0,0,0];
   const stats=S().statsOf(base,iv,ev,L);
   const tko=[d.t1,d.t2,d.t3].map(x=>x&&x!=='-'?x:'-');
   const pots=[];
@@ -52,7 +53,7 @@ window.OM_IMPORT=(()=>{
   return {id:doc.id||d.id,tid:tr?tr.id:(doc.data&&doc.data.tid)||'',name:d.name||'',gender:d.gender||'-',lv:L,dist:nz(d.dist),
    typesKo:tko,types:tko.map(S().typeEn),tera:d.tera&&d.tera!=='-'?d.tera:'-',teraEn:d.tera&&d.tera!=='-'?S().typeEn(d.tera):'-',
    ability:d.ability||'',abilityEff:brN(abil.multi||abil.single||''),item:d.item||'',itemEff:brN(item.eff||''),items2:itemsX(d,ET),
-   base,ranks:base.map(S().gradeOf),iv,ev,stats,...(BU?{base0,baseUp:(BU.up||[]).map(u=>({i:+u.i,from:+u.from,to:+u.to,by:(u.by||[]).slice(0,4)}))}:{}),hp:{max:stats[0],cur:stats[0]},
+   base,ranks:base.map(S().gradeOf),iv,ev,stats,...(mkIv?{mkIvSig:mkIv.join('/')}:{}),...(BU?{base0,baseUp:(BU.up||[]).map(u=>({i:+u.i,from:+u.from,to:+u.to,by:(u.by||[]).slice(0,4)}))}:{}),hp:{max:stats[0],cur:stats[0]},
    moves:(()=>{const mv=(d.moves||[]).filter(m=>m&&m.name).map(m=>{const o=move(m.name,m.half);if(m.hide)o.hide=true;return o});   /* hide: 한 장 요약 · 도감에 안 보이는 기술 (10-22) */return mv.length?mv:[move('발버둥',false)]})(),
    pots,excl:d.excl&&d.excl.name&&d.excl.name!=='전용 포텐셜'?{name:d.excl.name,eff:brN(d.excl.eff||'')}:null,
    exclX:(d.exclX||[]).filter(x=>x&&x.name).map(x=>({name:x.name,eff:brN(x.eff||'')})),
