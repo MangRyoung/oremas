@@ -18,30 +18,46 @@ window.OM_CUTIN=(()=>{
   const pts=top.concat(bot).map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');return `<svg viewBox="0 0 1000 100" preserveAspectRatio="none"><polygon points="${pts}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" vector-effect="non-scaling-stroke"/></svg>`}
  function zig(){let p='',x=0,up=true;while(x<=1000){p+=x+','+(up?20:80)+' ';x+=45;up=!up}return `<svg viewBox="0 0 1000 100" preserveAspectRatio="none"><polyline points="${p}" fill="none" stroke="#111" stroke-width="22" vector-effect="non-scaling-stroke"/><polyline points="${p}" fill="none" stroke="#ffe14a" stroke-width="14" vector-effect="non-scaling-stroke"/><polyline points="${p}" fill="none" stroke="#fff" stroke-width="4" vector-effect="non-scaling-stroke"/></svg>`}
 
- /* ----- 발동 컷인 (P5 꼴) ----- */
+ /* ----- 발동 컷인 (10-23 망령 새 디자인): 보는 사람의 화면 테마(P5 · P3 · P4)를 따른다. 둘이면 양쪽 끝에서 날아와 가운데서 쾅 → VS.
+    c = {src 그림, tag 위 작은 글, ment 큰 글(『이름』), line 컷인 대사, color, gh 띠 뒤 글자} ----- */
+ const letters=s=>[...String(s)].map((ch,i)=>`<i style="--i:${i}">${ch===' '?'&nbsp;':esc(ch)}</i>`).join('');
+ function vt(){try{const v=document.documentElement.getAttribute('data-vt')||(window.OM_VT&&window.OM_VT.get());return v==='p3'?'3':v==='p5'?'5':'4'}catch(e){return '4'}}
+ /* 글자가 띠 칸 밖으로 삐져나가지 않게: 가로는 그림 옆 ~ 화면 끝, 세로는 띠 높이 안으로 줄인다 */
+ function fitTxt(r){r.querySelectorAll('.c2-side').forEach(sd=>{const t=sd.querySelector('.c2-txt'),po=sd.querySelector('.c2-por');if(!t)return;t.style.removeProperty('--k');
+  const k=parseFloat(getComputedStyle(sd).getPropertyValue('--k'))||1;const nar=r.classList.contains('c2-nar');const aw=nar||!po?innerWidth*.88:innerWidth-po.offsetWidth-14*innerWidth/100;const ah=sd.offsetHeight*.8;
+  const f=Math.min(1,aw/Math.max(1,t.offsetWidth),ah/Math.max(1,t.offsetHeight));if(f<1)t.style.setProperty('--k',k*f)})}
  function fireLocal(list){const C=cfg();if(String(C.on)==='0')return;list=(list||[]).slice(0,2);if(!list.length)return;const dual=list.length>1;
-  let K=parseFloat(C.sc);if(!(K>0))K=70;K=Math.max(40,Math.min(120,K))/100;
-  /* 세로로 긴 폰 화면: 크기가 vh 기준이라 너무 커진다 → 화면 비율만큼 줄인다 */
-  {const ar=innerWidth/Math.max(1,innerHeight);if(ar<1.2)K*=Math.max(.45,Math.min(1,ar*1.1))}
+  let K=parseFloat(C.sc);if(!(K>0))K=70;K=Math.max(40,Math.min(120,K))/70;   /* 방 설정 「컷인 크기」 70 이 기본 크기 */
   {const pc=window.OM_PREFS?+window.OM_PREFS.get().cutin:100;if(pc>0)K*=pc/100}   /* 내 설정 「컷인」 크기 */
   const POS=C.pos||'mid',DIM=String(C.dim)==='0'?0:1,DUR=parseFloat(C.dur);const END=DUR>0?DUR:(dual?3.6:3.1);
-  const r=root('p5');r.className='p5';r.style.setProperty('--end',END+'s');
-  let h=DIM?'<div class="p-dim"></div>':'';h+='<div class="p-shake">';
-  list.forEach((c,i)=>{const left=!dual||i===0;const rh=(dual?26:30)*K;const ctr=dual?(i===0?50-20*Math.max(K,.75):50+20*Math.max(K,.75)):(POS==='top'?28:POS==='bot'?72:50);const cw=(dual?30:38)*K;
-   const big=String(c.ment||c.name||'');let fs=dual?10:11.5;if(big.length>8)fs=fs*8/big.length;if(fs<5)fs=5;fs*=K;
-   h+=`<div class="p-row" style="--rh:${rh}vh;--ry:${ctr-rh/2}vh;--rot:${dual?-5:-7}deg;--org:${left?'0%':'100%'};--d0:${i*.45}s;${c.color?`--pc:${esc(c.color)}`:''}">
-    <div class="p-red">${jag(c.color||'#e3101f','#fff',3,10)}</div><div class="p-blk">${jag('#111','#fff',5,22)}</div>
-    <div class="p-card ${left?'':'rv'}" style="--cw:${cw}vh;${left?'left':'right'}:22vw;--cx:${left?-60:60}vw"><div class="bk"></div><div class="fr"><div class="ib">${c.src?`<img src="${esc(c.src)}" alt="">`:''}</div><div class="sl"></div></div></div>
-    <div class="p-txt" style="${left?'left':'right'}:calc(22vw + ${cw*1.05}vh + ${7*K}vw);text-align:${left?'left':'right'};--tx:${left?50:-50}vw;--ts:${(dual?3:3.8)*K}vh;--fs:${fs}vh">${c.tag?`<div class="p-tag">${esc(c.tag)}</div>`:''}<div class="p-big"><span class="b2">${esc(big)}</span><span class="b3">${esc(big)}</span><span class="b1">${esc(big)}</span><span class="b0">${esc(big)}</span></div></div></div>`});
-  if(dual)h+=`<div class="p-zig" style="height:${12*K}vh;margin-top:${-6*K}vh">${zig()}</div><div class="p-vs" style="font-size:${9*K}vh">VS</div>`;
-  h+='</div><div class="p-flash"></div>';r.innerHTML=h;
+  const nar=innerWidth/Math.max(1,innerHeight)<1;const u=Math.min(innerHeight/100,innerWidth/100*1.5);
+  const r=root('cut2');r.className=`c2 c2${vt()}${dual?' c2-vs':''}${nar?' c2-nar':''}`;r.style.cssText=`--u:${u}px;--end:${END}s`;if(dual)r.style.setProperty('--k',.74*K);else r.style.setProperty('--k',K);
+  let h=`<div class="c2-dim" ${DIM?'':'style="display:none"'}></div><div class="c2-shake">`;
+  list.forEach((c,i)=>{const L=!dual||i===0;const nm=String(c.ment||c.name||'');let fs=dual?10:12.5;if(nm.length>7)fs=fs*7/nm.length;
+   const y=dual?'':`--y:${POS==='top'?30:POS==='bot'?70:50}vh;`;const gh=c.gh||(/지시|지령/.test(String(c.tag||''))?'ORDER':'POTENTIAL');const pic=!!c.src;
+   h+=`<div class="c2-side ${L?'c2-L':'c2-R'}" style="${y}--pc:${esc(c.color||'#e3101f')};--rot:${dual?-9:-7}deg;--org:${L?'0%':'100%'};--d0:0s;--fs:calc(var(--u)*${fs});--px:${L?-60:60}vw;--tx:${L?40:-40}vw">
+    <div class="c2-band"><div class="c2-w"></div><div class="c2-c"></div><div class="c2-k"></div><div class="c2-g">${gh} ${gh} ${gh}</div></div>
+    ${pic?`<div class="c2-por" style="${L?'left:7vw':'right:7vw'}"><div class="c2-sh"></div><div class="c2-fr"></div><div class="c2-im" style="background-image:url('${esc(c.src)}')"></div></div>`:''}
+    <div class="c2-txt" style="${nar||!pic?(L?'left:6vw':'right:6vw;text-align:right'):(L?'left:calc(7vw + var(--u)*42*var(--k))':'right:calc(7vw + var(--u)*42*var(--k));text-align:right')}">${c.tag?`<span class="c2-tag">${esc(c.tag)}</span>`:''}<span class="c2-name">${letters(nm)}</span>${c.line?`<span class="c2-line">「${esc(String(c.line).replace(/^「|」$/g,''))}」</span>`:''}</div></div>`});
+  if(dual){let sp='';for(let a=0;a<360;a+=30)sp+=`<i style="--a:${a+8}deg"></i>`;
+   h+=`<div class="c2-crack"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><polyline points="0,62 22,55 30,58 41,50 47,53 53,46 60,49 70,42 79,45 100,36" fill="none" stroke="#fff" vector-effect="non-scaling-stroke" style="stroke-width:6px"/></svg></div><div class="c2-ring"></div><div class="c2-spark">${sp}</div><div class="c2-vsw"><div class="c2-burst"></div><b>VS</b></div>`}
+  h+='</div><div class="c2-flash"></div>';r.innerHTML=h;fitTxt(r);[120,400].forEach(ms=>setTimeout(()=>{if(r.parentNode)fitTxt(r)},ms));   /* 글꼴이 늦게 오면 한 번 더 잰다 */
+  if(dual)setTimeout(()=>synth('hit'),600);else setTimeout(()=>synth('slam'),260);
   setTimeout(()=>{if(r.parentNode)r.remove()},(END+.45)*1000)}
+ /* 효과음 덧대기 (10-23 망령): 파일 없이 브라우저에서 바로 만든다 — VS 충돌 순간 「쾅」 · 혼자일 때 글자 박히는 「탁」. 효과음 끄기 · 음량 설정을 따른다 */
+ let AC=null;
+ function synth(kind){try{if(window.OM_PREFS&&window.OM_PREFS.get().seMute)return;let v=0.7;try{v=+(localStorage.getItem('om_vol_se')??0.7)}catch(e){}if(!(v>0))return;
+  AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();const t=AC.currentTime,g=AC.createGain();g.connect(AC.destination);
+  const big=kind==='hit';g.gain.setValueAtTime(v*(big?.9:.45),t);g.gain.exponentialRampToValueAtTime(.001,t+(big?.6:.18));
+  const o=AC.createOscillator();o.type='sine';o.frequency.setValueAtTime(big?140:220,t);o.frequency.exponentialRampToValueAtTime(big?38:90,t+(big?.45:.15));o.connect(g);o.start(t);o.stop(t+(big?.6:.2));
+  const n=AC.createBufferSource(),len=Math.floor(AC.sampleRate*(big?.35:.08)),buf=AC.createBuffer(1,len,AC.sampleRate),d=buf.getChannelData(0);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,big?2.2:3);
+  const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=big?2400:3600;const ng=AC.createGain();ng.gain.value=v*(big?.8:.35);n.buffer=buf;n.connect(f);f.connect(ng);ng.connect(AC.destination);n.start(t)}catch(e){}}
  /* 양측이 2.5초 안에 잇달아 발동하면 둘을 한 화면(VS 꼴)에 — 맵툴 cutin_last. 보낸 쪽·받는 쪽 모두 같은 규칙으로 합친다 */
  let lastFire=null;
  function showFire(c){const now=Date.now();let list=[c];
   if(lastFire&&now-lastFire.t<2500&&lastFire.c.tok!==c.tok){list=[lastFire.c,c];lastFire=null}else lastFire={t:now,c};
   fireLocal(list)}
- function preview(){fireLocal([{tok:'pv',src:'',tag:'미리 보기',ment:'『컷인 크기』',color:'#e4002b'}])}
+ function preview(){fireLocal([{tok:'pv',src:'',tag:'미리 보기',ment:'『컷인 크기』',line:'이 크기로 나온다',color:'#e4002b'}])}
  function fire(c){c=c||{};se(c.se||'cut');showFire(c);DBS().broadcast({t:'cutin',k:'fire',c,se:c.se||'cut'})}
 
  /* ----- VS 시합 개시 / 경고 ----- */

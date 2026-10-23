@@ -58,7 +58,7 @@ window.OM_BATTLE=(()=>{
   return {sure:false,hit:roll<=target,target,roll,acc,eva}}
 
  /* ----- 급소 (get_target_critical 계열) ----- stage = C랭크+버프+입력+지시보정+아이템+기합 - 방호 */
- const CRIT={0:[625,1250,2500,5000,10000],2:[625,1250,2500,3333,5000],1:[625,1250,5000,10000,10000]};
+ const CRIT={0:[625,1250,2500,5000,10000],2:[625,1250,2500,3333,5000],1:[625,1250,5000,10000,10000],3:[417,1250,5000,10000,10000]};   /* 0 기본 · 2 5세대(1/16→1/8→1/4→1/3→1/2) · 1 6세대(1/16→1/8→1/2→1) · 3 7세대 이후(1/24→1/8→1/2→1) */
  function critical(stage,o){
   o=o||{};const tbl=CRIT[o.type||0]||CRIT[0];
   const s=Math.max(0,Math.min(tbl.length-1,floor(stage)));

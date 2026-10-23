@@ -34,6 +34,7 @@ window.OM_RP_UI=(()=>{
  const STAGE={slots:{left:null,center:null,right:null},last:{},active:null,seen:0};
  function R(){return A().ST.state.rp||{}}
  function gm(){return A().ST.role==='gm'}
+ function bgmOk(){if(gm())return true;const ST=A().ST;const rp=ST.state.rp||{};return ST.role==='seat'&&rp.plBattle!==false&&rp.seatOwn!==true}
  /* GM(나레이션) 칩 · 로그 아바타 그림: rp.gmImg */
  const gmImg=()=>((A().ST.state.rp||{}).gmImg)||'';
  /* 지도 그림: 방에서 올린 그림(rp.map.img) → 「무진」 기본(preset 'mujin') → 없음. 예전 방(그림 설정 없이 지도를 쓰던 방)은 그대로 무진 기본을 쓴다 */
@@ -165,7 +166,7 @@ window.OM_RP_UI=(()=>{
   if(spk){const o=spk.onchange;spk.onchange=()=>{o&&o();refreshMeBar();refreshExp(el)}}
   {const mb=$('#rpmode',el);if(mb)mb.onclick=()=>{const ks=Object.keys(MODES);SPK.mode=ks[(ks.indexOf(SPK.mode)+1)%ks.length];try{localStorage.setItem('om_rpmode',SPK.mode)}catch(e){}SPK.focus=true;A().renderScene();A().toast(MODES[SPK.mode].tip)}}
   refreshExp(el);
-  el.querySelectorAll('.spk[data-fold]').forEach(b=>b.onclick=()=>{SPK.folder=SPK.folder===b.dataset.fold?'':b.dataset.fold;A().renderScene()});const fc=el.querySelector('[data-fclose]');if(fc)fc.onclick=()=>{SPK.folder='';A().renderScene()};
+  el.querySelectorAll('.spk[data-fold]').forEach(b=>b.onclick=()=>{const id=b.dataset.fold,i=SPK.fo.indexOf(id);if(i>=0)SPK.fo.splice(i,1);else{SPK.fo.push(id);if(SPK.fo.length>3)SPK.fo.shift()}A().renderScene()});el.querySelectorAll('[data-fclose]').forEach(fc=>fc.onclick=()=>{SPK.fo=SPK.fo.filter(x=>x!==fc.dataset.fclose);A().renderScene()});
   bindSpkDrag(el);
   const inp=$('#rpline',el);if(inp&&inNew){inp.value=SPK.draft||'';inp.oninput=()=>{SPK.draft=inp.value;typingPing()};inp.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)sendLine()};$('#rpsend',el).onclick=sendLine}if(inp&&SPK.focus){inp.focus();SPK.focus=false}
   bindMap(el);tickBanner();syncBgm();scheduleExpire();drawTyping()}
@@ -203,7 +204,7 @@ window.OM_RP_UI=(()=>{
   const slots=['typingBat','typingRp'].map(id=>document.getElementById(id)).filter(Boolean);
   for(const el of slots){el.innerHTML=TYPING_HTML;el.classList.toggle('on',!!names.length)}
   const top=document.getElementById('typingTop');if(top){const use=!slots.length;top.innerHTML=use?TYPING_HTML:'';top.style.display=use&&names.length?'inline-block':'none'}}
- const SPK={key:'',draft:'',focus:false,folder:'',mode:(()=>{try{const v=localStorage.getItem('om_rpmode');return ['auto','say','narr'].includes(v)?v:'auto'}catch(e){return 'auto'}})()};
+ const SPK={key:'',draft:'',focus:false,fo:[],mode:(()=>{try{const v=localStorage.getItem('om_rpmode');return ['auto','say','narr'].includes(v)?v:'auto'}catch(e){return 'auto'}})()};
  /* 입력줄 「자동 / 대사 / 지문」 (10-23 벨벳 참고): 따옴표 규칙을 몰라도 고른 대로 나간다 — 이 브라우저에서만 기억 */
  const MODES={auto:{lb:'자동',tip:'자동: 그냥 치면 지문, "…" 「…」 로 감싸면 대사',ph:'그냥 치면 지문 · "대사" 는 따옴표로 · @표정 "대사"'},
   say:{lb:'💬 대사',tip:'대사: 따옴표 없이 쳐도 대사로 나간다',ph:'대사로 보낸다 — 따옴표 없이 그냥 쳐도 돼'},
@@ -246,12 +247,12 @@ function bindSpkPop(under){const MQ=matchMedia('(max-width:760px)');const close=
 function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}" data-spk="${esc(key)}" title="${esc(name)}" draggable="${extra&&extra.drag?'true':'false'}"><i style="${av?`background-image:url('${cssu(av)}')`:''}">${av?'':(key==='gm'?'GM':esc(name.slice(0,2)))}</i><span>${esc(name.replace(/ \((PC|NPC|포켓몬)\)$/,'').replace(/ · .*$/,''))}</span></button>`}
  function spkBarHtml(speakers){const C=spkConf();const byKey={};speakers.forEach(x=>byKey[x.key]=x);const inFolder=new Set();for(const f of Object.values(C.folders))for(const k of f.keys||[])inFolder.add(k);
   const chipOf=k=>{const x=byKey[k];if(!x)return '';const c=k==='gm'?null:charOf(k);const av=k==='gm'?gmImg():c?(standSrc(c)||c.img):'';return spkChip(k,x.name,av,SPK.key===k,{drag:k!=='gm'})};
-  const fchip=(id,f)=>`<button class="spk folder ${SPK.folder===id?'on':''}" data-fold="${esc(id)}" title="${esc(f.name)} — ${(f.keys||[]).length}명 · 눌러서 열기 · 칩을 끌어다 놓으면 넣는다" draggable="true"><i>📁</i><span>${esc(f.name)} <small>${(f.keys||[]).filter(k=>byKey[k]).length}</small></span></button>`;
+  const fchip=(id,f)=>`<button class="spk folder ${SPK.fo.includes(id)?'on':''}" data-fold="${esc(id)}" title="${esc(f.name)} — ${(f.keys||[]).length}명 · 눌러서 열기 · 칩을 끌어다 놓으면 넣는다" draggable="true"><i>📁</i><span>${esc(f.name)} <small>${(f.keys||[]).filter(k=>byKey[k]).length}</small></span></button>`;
   const seen=new Set(['gm']);let top='';
   for(const it of C.order){if(it.startsWith('f:')){const id=it.slice(2);if(C.folders[id]){top+=fchip(id,C.folders[id]);seen.add(it)}continue}if(byKey[it]&&!inFolder.has(it)&&!C.hidden[it]){top+=chipOf(it);seen.add(it)}}
   for(const id in C.folders)if(!seen.has('f:'+id))top+=fchip(id,C.folders[id]);
   for(const x of speakers)if(!seen.has(x.key)&&!inFolder.has(x.key)&&!C.hidden[x.key])top+=chipOf(x.key);
-  let sub='';if(SPK.folder&&C.folders[SPK.folder]){const f=C.folders[SPK.folder];sub=`<div class="spkbar sub" data-fzone="${esc(SPK.folder)}"><span class="fname">📁 ${esc(f.name)}</span>${(f.keys||[]).filter(k=>byKey[k]&&!C.hidden[k]).map(chipOf).join('')||'<span class="dim small">비어 있다 — 위 칩을 끌어다 놓아</span>'}<span class="sp"></span><span class="spkdrop" data-fout title="여기에 끌어다 놓으면 폴더에서 뺀다">⤴ 밖으로</span><button class="btn xs ghost" data-fclose>닫기</button></div>`}
+  SPK.fo=SPK.fo.filter(id=>C.folders[id]);let sub='';for(const fid of SPK.fo){const f=C.folders[fid];sub+=`<div class="spkbar sub" data-fzone="${esc(fid)}"><span class="fname">📁 ${esc(f.name)}</span>${(f.keys||[]).filter(k=>byKey[k]&&!C.hidden[k]).map(chipOf).join('')||'<span class="dim small">비어 있다 — 위 칩을 끌어다 놓아</span>'}<span class="sp"></span><span class="spkdrop" data-fout title="여기에 끌어다 놓으면 폴더에서 뺀다">⤴ 밖으로</span><button class="btn xs ghost" data-fclose="${esc(fid)}">닫기</button></div>`}
   return `<div class="spkbar top" data-fzone="">${chipOf('gm')}<button class="spk add" data-rp="npcadd" title="인물 추가 (관계도에 NPC 로 들어간다)"><i>＋</i><span>인물</span></button><button class="spk add" data-rp="spkedit" title="고른 인물의 표정·스탠딩"><i>✎</i><span>표정</span></button><button class="spk add" data-rp="spkmgr" title="화자 정리: 숨기기 · 폴더 이름 · 순서"><i>☰</i><span>정리</span></button><span class="spkdrop" data-fnew title="칩을 여기 끌어다 놓으면 새 폴더가 생긴다">＋📁</span>${top}</div>${sub}`}
  /* 끌어서 순서 바꾸기 · 폴더에 넣기 (GM) */
  function bindSpkDrag(el){if(!gm())return;let dragKey='',dragFold='';
@@ -298,7 +299,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    cd.onclick=async e=>{if(!SM.sel||e.target.closest('.sgt,button,input'))return;const k=SM.sel;SM.sel='';await move(k,cd.dataset.drop);re()}});
   md.querySelectorAll('[data-eye]').forEach(b=>b.onclick=async e=>{e.stopPropagation();const C=spkConf();const key=b.dataset.eye;if(C.hidden[key])delete C.hidden[key];else C.hidden[key]=1;await saveSpk(C);re()});
   md.querySelectorAll('[data-fren]').forEach(inp=>{inp.onchange=async()=>{const C=spkConf();const f=C.folders[inp.dataset.fren];if(!f||!inp.value.trim())return;f.name=inp.value.trim();await saveSpk(C)};inp.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)inp.blur()}});
-  md.querySelectorAll('[data-fdel]').forEach(b=>b.onclick=async e=>{e.stopPropagation();const C=spkConf();const id=b.dataset.fdel;const f=C.folders[id];if(!f||!confirm(`「${f.name}」 폴더를 풀까? (안의 칩은 바깥으로)`))return;C.order=C.order.filter(x=>x!=='f:'+id);C.order.push(...(f.keys||[]));delete C.folders[id];if(SPK.folder===id)SPK.folder='';await saveSpk(C);re()});
+  md.querySelectorAll('[data-fdel]').forEach(b=>b.onclick=async e=>{e.stopPropagation();const C=spkConf();const id=b.dataset.fdel;const f=C.folders[id];if(!f||!confirm(`「${f.name}」 폴더를 풀까? (안의 칩은 바깥으로)`))return;C.order=C.order.filter(x=>x!=='f:'+id);C.order.push(...(f.keys||[]));delete C.folders[id];SPK.fo=SPK.fo.filter(x=>x!==id);await saveSpk(C);re()});
   md.querySelectorAll('[data-ndel]').forEach(b=>b.onclick=async e=>{e.stopPropagation();const key=b.dataset.ndel;const name=key.slice(4);const g=A().ST.state.graph||{};const ids=Object.keys(g.nodes||{}).filter(id=>(g.nodes[id]||{}).name===name&&g.nodes[id].kind!=='org');if(!ids.length)return A().toast('지울 인물을 찾지 못했다');
    const lines=Object.entries(g.edges||{}).filter(([,ed])=>ids.includes(ed.a)||ids.includes(ed.b));
    if(!confirm(`「${name}」 인물을 지울까?${ids.length>1?` (같은 이름 ${ids.length}명 모두)`:''}\n관계도에서도 빠지고${lines.length?` 이어진 선 ${lines.length}개도 지워진다`:''}. 되돌릴 수 없다.`))return;
@@ -705,6 +706,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   else{const g=BG.g;const S=Object.keys(G[g]||{}).sort();const m=bgmMeta(g);
    head=`<div class="sec gh"><a class="back" data-bq="home">◂ 그룹 목록</a><div style="flex:1;min-width:0"><b>${esc(gshort(g))} <span class="small dim">${S.length}곡</span></b><div class="small dim">${esc(m.d||'')}</div></div><button class="btn sm pri" data-bq="rand" data-g="${esc(g)}">▶ 랜덤 재생</button><button class="btn sm" data-bq="sadd" data-g="${esc(g)}">＋ 곡 추가</button></div><div class="row" style="margin-bottom:6px"><input type="text" id="bgq" placeholder="이 그룹에서 곡 검색" value="${esc(BG.q)}" style="flex:1"></div>`;
    const rows=S.filter(sn=>!q||sn.toLowerCase().includes(q)).map(sn=>row(g,sn,false)).join('');list=`<div class="songlist" style="max-height:56vh">${rows||'<div class="empty small">'+(S.length?'찾는 곡이 없다':'이 그룹엔 아직 곡이 없다')+'</div>'}</div>`}
+  if(!gm())return `<div class="bgmro">${bar+head+list}</div><div class="small dim" style="margin-top:6px">방 설정 「플레이어도 배틀 진행」이라 플레이어도 BGM 을 고를 수 있다 (모두에게). 목록 고치기는 GM 만.</div>`;
   return bar+head+list+`<div class="small dim" style="margin-top:6px">플레이어 화면에서는 「소리 켜기」를 한 번 눌러야 들린다. 음량은 각자. 기본 목록은 파일에 있고 여기서 더하거나 지운 것만 방에 저장된다.</div>`}
  function bindBgmPanel(md,re){const G=bgmGroups();
   const vr=$('#gvol',md);if(vr)vr.oninput=()=>{vol=+vr.value;try{localStorage.setItem('om_vol',vol)}catch(e){}if(audio)audio.volume=vol;if(PV.audio)PV.audio.volume=vol};
@@ -882,7 +884,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(await A().set(['rp','vote'],vote)){A().closeModal();VOTE.fold=false;A().sysLog(`🗳 투표 「${q}」 — ${os.join(' / ')}`);A().renderScene()}};
   setTimeout(()=>{const q=$('#vo_q',md);if(q)q.focus()},30)}
  /* 배틀 상단용 작은 BGM 위젯: 지금 곡 · 내 음량 · (GM) 다른 곡/BGM 창 · (플레이어) 소리 켜기 */
- function bgmWidgetHtml(){const now=R().bgm||{};const G=bgmGroups();return `<div class="bgmw"><span class="eq ${now.src?'':'off'} ${gm()?'lk':''}" ${gm()?'data-bw="open"':''}>♪</span><span class="bt ${gm()?'lk':''}" ${gm()?'data-bw="open"':''} title="${esc(now.title?(now.group?gshort(now.group)+' - ':'')+now.title:'재생 중인 곡 없음')}${gm()?' — 누르면 BGM 고르기':''}">${esc(now.title||'BGM 없음')}</span><input type="range" min="0" max="1" step="0.05" value="${vol}" data-bw="vol" title="내 음량">${!unlocked&&now.src?'<button class="btn xs pri" data-bw="sound" title="브라우저가 소리를 막아서 한 번 눌러야 들린다">소리 켜기</button>':''}${gm()?`${now.group&&G[now.group]?`<button class="btn xs ghost" data-bw="rand" title="같은 그룹에서 다른 곡">⟳</button>`:''}${now.src?'<button class="btn xs ghost" data-bw="stop" title="모두에게 정지">■</button>':''}<button class="btn xs" data-bw="open" title="BGM 고르기 (모두에게)">BGM</button>`:''}</div>`}
+ function bgmWidgetHtml(){const now=R().bgm||{};const G=bgmGroups();const ok=bgmOk();return `<div class="bgmw"><span class="eq ${now.src?'':'off'} ${ok?'lk':''}" ${ok?'data-bw="open"':''}>♪</span><span class="bt ${ok?'lk':''}" ${ok?'data-bw="open"':''} title="${esc(now.title?(now.group?gshort(now.group)+' - ':'')+now.title:'재생 중인 곡 없음')}${ok?' — 누르면 BGM 고르기':''}">${esc(now.title||'BGM 없음')}</span><input type="range" min="0" max="1" step="0.05" value="${vol}" data-bw="vol" title="내 음량">${!unlocked&&now.src?'<button class="btn xs pri" data-bw="sound" title="브라우저가 소리를 막아서 한 번 눌러야 들린다">소리 켜기</button>':''}${ok?`${now.group&&G[now.group]?`<button class="btn xs ghost" data-bw="rand" title="같은 그룹에서 다른 곡">⟳</button>`:''}${now.src?'<button class="btn xs ghost" data-bw="stop" title="모두에게 정지">■</button>':''}<button class="btn xs" data-bw="open" title="BGM 고르기 (모두에게)">BGM</button>`:''}</div>`}
  function bindBgmWidget(root){root.querySelectorAll('[data-bw]').forEach(el=>{const k=el.dataset.bw;
   if(k==='vol'){el.oninput=()=>setVolume('bgm',+el.value);return}
   el.onclick=async()=>{if(k==='sound'){userMuted=false;unlocked=true;syncBgm(true);return A().renderScene()}if(k==='open')return quickBgm();

@@ -3271,3 +3271,133 @@ body.m-chat .mecard{display:none}
 }
 /* 10-23 망령: 방 복제 창 */
 .rcopt{display:grid;gap:6px;margin-top:10px}.rcopt label{display:flex;align-items:center;gap:8px;font-size:14px;cursor:pointer}
+/* 10-23 망령: 벤치 밑 줄 — 함께 지시 · 필드 전개 (한 줄, 좁으면 글자가 줄어든다) */
+.bcol .tfoot{display:flex;flex-wrap:nowrap;align-items:center;gap:4px;margin:5px 0 2px;min-width:0}
+.bcol .tfoot>.btn{white-space:nowrap;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+/* 10-23 망령: 행동 순서 번호가 위로 살짝 잘리던 것 */
+.ostrip{padding-top:12px;padding-left:8px}
+/* 10-23 망령: P4 폰 머리 버튼 글씨 — 머리 글자색(#111)이 버튼 안 글씨까지 덮던 것 */
+html[data-vt] .phone .ptitle .btn *{color:inherit!important}
+/* 10-23 망령: 아래 띠 — 굴림 · 폰 · 대화를 이름(GM) 바로 옆으로, 입력칸 밑 설명 줄은 뺀다 (입력칸 안내 글로 충분) */
+.mebar .mebtns{order:2;margin-left:0}.mebar .memons{order:3}.mebar .melast{order:4}
+.rpinput+.rphint{display:none}
+@media (max-width:760px){.mebar .memons{order:5}.mebar .melast{order:6}}
+/* ===== 2026-10-23 공격 창 아래 잘림 ===== */
+.modal .afoot{bottom:-16px}
+@media (max-width:760px){.modal .afoot{bottom:-70px}}
+/* ===== 2026-10-23 4식 6령 불가 ===== */
+.noordr{gap:6px;margin:4px 0 2px;align-items:center}.noordr input{margin:0}
+.noordw{color:var(--yel2,var(--yel));padding:6px 10px 0}
+/* ===== 2026-10-23 BGM 위젯 · 위 띠 ===== */
+.bgmw{max-width:420px;min-width:0;flex-wrap:nowrap}
+.bgmw>.btn{flex:0 0 auto;white-space:nowrap;writing-mode:horizontal-tb}
+.bgmw .bt{flex:1 1 auto;min-width:24px}
+.bgmw input[type=range]{flex:0 1 80px;min-width:44px}
+.bgmw .eq{flex:none}
+.bgmro [data-bq=gadd],.bgmro [data-bq=sadd],.bgmro [data-bq=undel],.bgmro [data-bq=gdel],.bgmro [data-bq=gren],.bgmro [data-bq=sdel],.bgmro [data-bq=sedit]{display:none!important}
+@media (min-width:1500px){.top{flex-wrap:wrap}}
+/* ===== 2026-10-23 알까기 버튼 (포켓몬 탭) ===== */
+.ppfacts .qhb{display:inline-block;margin-left:6px;font-style:normal;font-size:11px;font-family:var(--font);font-weight:700;padding:1px 6px;background:var(--yel2,var(--yel));color:#000;vertical-align:2px}
+/* 10-23 망령: 발동 컷인 새 디자인 (테마 따라 P5 · P3 · P4 · 둘이면 VS 로 부딪힘 · 컷인 대사) — js/cutin.js fireLocal */
+.c2{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:9000;--pc:#e3101f;--k:1;animation:c2Out .35s ease-in var(--end,3.2s) forwards}
+@keyframes c2Out{to{opacity:0}}
+.c2 .c2-dim{position:absolute;inset:0;animation:c2fIn .15s both}
+.c2 .c2-flash{position:absolute;inset:0;background:#fff;opacity:0;animation:c2fFlash .4s .28s}
+.c2 .c2-shake{position:absolute;inset:0;animation:c2shake .34s .3s}
+.c2 .c2-side{position:absolute;left:0;right:0;top:var(--y);height:calc(calc(var(--u)*34)*var(--k));margin-top:calc(calc(var(--u)*-17)*var(--k));transform:rotate(var(--rot));transform-origin:50% 50%}
+.c2 .c2-band{position:absolute;left:-12vw;width:124vw;top:0;height:100%;transform-origin:var(--org) 50%;animation:c2band .3s cubic-bezier(.2,.9,.25,1) var(--d0) both}
+.c2 .c2-por{position:absolute;top:50%;--py:-50%;height:calc(calc(var(--u)*64)*var(--k));width:calc(calc(var(--u)*38)*var(--k));transform:translateY(var(--py));animation:c2por .5s cubic-bezier(.2,1.25,.3,1) calc(var(--d0) + .08s) both}
+.c2 .c2-por .c2-im{position:absolute;inset:0;background-size:cover;background-position:50% 18%}
+.c2 .c2-txt{position:absolute;top:50%;transform:translateY(-50%);white-space:nowrap;animation:c2txt .4s cubic-bezier(.2,1.2,.3,1) calc(var(--d0) + .2s) both}
+.c2 .c2-name{display:block;line-height:1.02}
+.c2 .c2-name i{display:inline-block;font-style:normal;animation:c2slam .32s cubic-bezier(.2,1.4,.4,1) both;animation-delay:calc(var(--d0) + .26s + var(--i) * .035s)}
+.c2 .c2-line{display:inline-block;margin-top:calc(var(--u)*1.2);animation:c2txt .4s cubic-bezier(.2,1.2,.3,1) calc(var(--d0) + .55s) both}
+
+@keyframes c2fIn{from{opacity:0}}
+@keyframes c2fFlash{0%{opacity:.85}100%{opacity:0}}
+@keyframes c2band{from{transform:scaleX(0)}}
+@keyframes c2por{from{transform:translate(var(--px),var(--py)) skewX(-10deg);opacity:0}}
+@keyframes c2txt{from{transform:translate(var(--tx),-50%);opacity:0}}
+@keyframes c2slam{from{transform:scale(2.6) rotate(-8deg);opacity:0}60%{opacity:1}}
+@keyframes c2shake{0%,100%{transform:none}20%{transform:translate(calc(var(--u)*-1.2),calc(var(--u)*.8))}45%{transform:translate(calc(var(--u)*1),calc(var(--u)*-.9))}70%{transform:translate(calc(var(--u)*-.6),calc(var(--u)*-.5))}}
+@keyframes c2speed{to{background-position:-400px 0}}
+@keyframes c2ghost{from{transform:translateX(0)}to{transform:translateX(-30vw)}}
+
+/* ===== P5 ===== */
+.c2.c25 .c2-dim{background:radial-gradient(ellipse at 35% 50%,rgba(227,16,31,.28),rgba(5,3,6,.78) 70%),#0000}
+.c2.c25 .c2-dim:after{content:"";position:absolute;inset:0;background:radial-gradient(circle,rgba(255,255,255,.07) 1.2px,transparent 1.6px) 0 0/11px 11px}
+.c2.c25 .c2-band .c2-w{position:absolute;inset:calc(var(--u)*-1.4) 0;background:#fff;clip-path:polygon(0 10%,100% 0,100% 90%,0 100%)}
+.c2.c25 .c2-band .c2-c{position:absolute;inset:0;background:var(--pc);clip-path:polygon(0 10%,100% 0,100% 90%,0 100%)}
+.c2.c25 .c2-band .c2-c:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(100deg,transparent 0 46px,rgba(0,0,0,.16) 46px 52px);animation:c2speed .6s linear infinite}
+.c2.c25 .c2-band .c2-k{position:absolute;left:0;right:0;top:24%;height:52%;background:#0c0c0e;clip-path:polygon(0 12%,100% 0,100% 88%,0 100%)}
+.c2.c25 .c2-band .c2-g{position:absolute;left:0;top:24%;height:52%;display:flex;align-items:center;font:calc(calc(var(--u)*15)*var(--k))/1 'Black Han Sans';color:transparent;-webkit-text-stroke:2px rgba(255,255,255,.13);letter-spacing:calc(var(--u)*1);white-space:nowrap;animation:c2ghost 3.5s linear both}
+.c2.c25 .c2-por{filter:drop-shadow(calc(var(--u)*1.4) calc(var(--u)*1.4) 0 #0c0c0e)}
+.c2.c25 .c2-por .c2-fr{position:absolute;inset:0;background:#fff;clip-path:polygon(20% 0,100% 0,80% 100%,0 100%)}
+.c2.c25 .c2-por .c2-sh{position:absolute;inset:0;background:var(--pc);clip-path:polygon(20% 0,100% 0,80% 100%,0 100%);transform:translate(calc(var(--u)*-1.6),calc(var(--u)*1.2))}
+.c2.c25 .c2-por .c2-im{inset:calc(var(--u)*1);clip-path:polygon(20% 0,100% 0,80% 100%,0 100%)}
+.c2.c25 .c2-tag{display:inline-block;padding:calc(var(--u)*.6) calc(var(--u)*2.2) calc(var(--u)*.6) calc(var(--u)*1.6);background:#0c0c0e;color:#fff;font:calc(calc(var(--u)*3.4)*var(--k))/1.1 'Black Han Sans';transform:skewX(-14deg);border-left:calc(var(--u)*1.2) solid var(--pc);box-shadow:calc(var(--u)*.6) calc(var(--u)*.6) 0 #fff}
+.c2.c25 .c2-name{font:calc(var(--fs)*var(--k))/1.02 'Black Han Sans';color:#fff;-webkit-text-stroke:calc(var(--u)*1.3) #0c0c0e;paint-order:stroke fill;text-shadow:calc(var(--u)*1) calc(var(--u)*1) 0 var(--pc),calc(var(--u)*1.8) calc(var(--u)*1.8) 0 #0c0c0e;transform:skewX(-8deg);margin-top:calc(var(--u)*.8)}
+.c2.c25 .c2-line{padding:calc(var(--u)*.9) calc(var(--u)*2.4);background:#fff;color:#0c0c0e;font:calc(calc(var(--u)*3.6)*var(--k))/1.15 'Black Han Sans';transform:skewX(-14deg) rotate(-2deg);box-shadow:calc(var(--u)*.7) calc(var(--u)*.7) 0 var(--pc),calc(var(--u)*1.2) calc(var(--u)*1.2) 0 #0c0c0e}
+
+/* ===== P3 ===== */
+.c2.c23 .c2-dim{background:linear-gradient(180deg,rgba(4,14,40,.55),rgba(2,8,26,.85))}
+.c2.c23 .c2-band .c2-c{position:absolute;inset:0;background:linear-gradient(90deg,rgba(18,58,140,.0),rgba(18,58,140,.88) 12%,rgba(10,36,96,.92) 70%,rgba(18,58,140,0));border-top:2px solid rgba(110,200,255,.85);border-bottom:2px solid rgba(110,200,255,.85);backdrop-filter:blur(6px)}
+.c2.c23 .c2-band .c2-c:before{content:"";position:absolute;top:0;bottom:0;width:30vw;background:linear-gradient(90deg,transparent,rgba(180,236,255,.35),transparent);animation:c2sweep 1.4s .3s ease-in-out both}
+.c2.c23 .c2-band .c2-c:after{content:"";position:absolute;left:0;right:0;top:12%;height:1px;background:rgba(110,200,255,.5);box-shadow:0 calc(calc(var(--u)*26)*var(--k)) 0 rgba(110,200,255,.5)}
+@keyframes c2sweep{from{left:-30vw}to{left:110vw}}
+.c2.c23 .c2-band .c2-g{position:absolute;right:6vw;top:50%;transform:translateY(-50%);font:700 calc(calc(var(--u)*12)*var(--k))/1 'Rajdhani';color:rgba(160,220,255,.12);letter-spacing:calc(var(--u)*2);white-space:nowrap}
+.c2.c23 .c2-por{border-radius:calc(var(--u)*2);overflow:hidden;box-shadow:0 0 0 2px rgba(150,220,255,.9),0 0 calc(var(--u)*4) rgba(79,195,255,.55);background:#0a2050}
+.c2.c23 .c2-por .c2-im{inset:0}
+.c2.c23 .c2-por:after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,transparent 60%,rgba(6,20,60,.75))}
+.c2.c23 .c2-tag{display:inline-block;font:700 calc(calc(var(--u)*3.2)*var(--k))/1 'Rajdhani','IBM Plex Sans KR',sans-serif;color:#9fe0ff;letter-spacing:calc(var(--u)*.5);padding-bottom:calc(var(--u)*.8);border-bottom:2px solid #4fc3ff}
+.c2.c23 .c2-name{font:calc(var(--fs)*.92*var(--k))/1.05 'Black Han Sans';color:#fff;letter-spacing:calc(var(--u)*.3);text-shadow:0 0 calc(var(--u)*2) rgba(79,195,255,.9),0 0 calc(var(--u)*.4) #bdf0ff;margin-top:calc(var(--u)*1.2)}
+.c2.c23 .c2-line{font:calc(calc(var(--u)*3.4)*var(--k))/1.2 'Do Hyeon';color:#d8f3ff;padding:calc(var(--u)*.6) calc(var(--u)*2);border-left:3px solid #4fc3ff;background:linear-gradient(90deg,rgba(79,195,255,.22),transparent)}
+
+/* ===== P4 ===== */
+.c2.c24 .c2-dim{background:rgba(10,10,10,.62)}
+.c2.c24 .c2-dim:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.05) 0 2px,transparent 2px 4px)}
+.c2.c24 .c2-band .c2-c{position:absolute;inset:0;background:#ffe100;border-top:calc(var(--u)*1.2) solid #111;border-bottom:calc(var(--u)*1.2) solid #111}
+.c2.c24 .c2-band .c2-c:before{content:"";position:absolute;left:0;right:0;top:0;height:calc(var(--u)*2.2);background:repeating-linear-gradient(-45deg,#111 0 calc(var(--u)*1.4),#ffe100 calc(var(--u)*1.4) calc(var(--u)*2.8))}
+.c2.c24 .c2-band .c2-c:after{content:"";position:absolute;left:0;right:0;bottom:0;height:calc(var(--u)*2.2);background:repeating-linear-gradient(-45deg,#111 0 calc(var(--u)*1.4),#ffe100 calc(var(--u)*1.4) calc(var(--u)*2.8))}
+.c2.c24 .c2-band .c2-g{position:absolute;left:0;top:50%;transform:translateY(-50%);font:calc(calc(var(--u)*14)*var(--k))/1 'Do Hyeon';color:rgba(0,0,0,.08);white-space:nowrap;animation:c2ghost 3.5s linear both}
+.c2.c24 .c2-por{border:calc(var(--u)*1.2) solid #111;border-radius:calc(var(--u)*3);overflow:hidden;background:#222;box-shadow:calc(var(--u)*1.2) calc(var(--u)*1.2) 0 rgba(0,0,0,.55)}
+.c2.c24 .c2-por .c2-im{inset:0}
+.c2.c24 .c2-por:after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(0,0,0,.14) 0 2px,transparent 2px 5px)}
+.c2.c24 .c2-tag{display:inline-block;padding:calc(var(--u)*.7) calc(var(--u)*2.2);background:#111;color:#ffe100;font:calc(calc(var(--u)*3.4)*var(--k))/1.1 'Do Hyeon';border-radius:calc(var(--u)*3)}
+.c2.c24 .c2-name{font:calc(var(--fs)*var(--k))/1.05 'Do Hyeon';color:#111;-webkit-text-stroke:calc(var(--u)*1) #fff;paint-order:stroke fill;text-shadow:calc(var(--u)*.9) calc(var(--u)*.9) 0 rgba(0,0,0,.35);margin-top:calc(var(--u)*.6)}
+.c2.c24 .c2-line{padding:calc(var(--u)*.8) calc(var(--u)*2.4);background:#fff;color:#111;font:calc(calc(var(--u)*3.6)*var(--k))/1.15 'Do Hyeon';border:calc(var(--u)*.5) solid #111;border-radius:calc(var(--u)*2.4) calc(var(--u)*2.4) calc(var(--u)*2.4) calc(var(--u)*.4)}
+
+/* ===== 둘이 부딪힘 (VS) ===== */
+.c2.c2-vs{--k:.74}.c2-vs .c2-side.c2-L{--y:27vh!important}.c2-vs .c2-side.c2-R{--y:73vh!important}.c2-vs .c2-vsw b{font-size:calc(var(--u)*12)}.c2-vs .c2-vsw .c2-burst{width:calc(var(--u)*26);height:calc(var(--u)*26);margin:calc(var(--u)*-13) 0 0 calc(var(--u)*-13)}.c2-vs .c2-flash{opacity:0}@keyframes c2fFlashV{0%{opacity:.55}100%{opacity:0}}
+.c2-vs .c2-crack{position:absolute;inset:0;opacity:0;animation:c2fIn .1s .62s both}
+.c2-vs .c2-crack svg{position:absolute;inset:0;width:100%;height:100%}
+.c2-vs .c2-ring{position:absolute;left:50%;top:50%;width:calc(var(--u)*10);height:calc(var(--u)*10);margin:calc(var(--u)*-5) 0 0 calc(var(--u)*-5);border-radius:50%;border:calc(var(--u)*1.4) solid #fff;opacity:0;animation:c2ring .55s .6s ease-out both}
+@keyframes c2ring{0%{transform:scale(.2);opacity:1}100%{transform:scale(9);opacity:0}}
+.c2-vs .c2-spark{position:absolute;left:50%;top:50%;width:0;height:0;animation:c2fIn .05s .6s both}
+.c2-vs .c2-spark i{position:absolute;left:0;top:calc(var(--u)*-.4);height:calc(var(--u)*.8);width:calc(var(--u)*22);background:linear-gradient(90deg,#fff,rgba(255,255,255,0));transform-origin:0 50%;transform:rotate(var(--a)) translateX(calc(var(--u)*4)) scaleX(0);animation:c2spark .45s .6s ease-out both}
+@keyframes c2spark{0%{transform:rotate(var(--a)) translateX(calc(var(--u)*2)) scaleX(.2);opacity:1}100%{transform:rotate(var(--a)) translateX(calc(var(--u)*26)) scaleX(1);opacity:0}}
+.c2-vs .c2-vsw{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) rotate(-10deg);animation:c2vsIn .4s .62s cubic-bezier(.2,1.5,.35,1) both}
+@keyframes c2vsIn{from{transform:translate(-50%,-50%) rotate(-10deg) scale(4);opacity:0}}
+.c2-vs .c2-vsw .c2-burst{position:absolute;left:50%;top:50%;width:calc(var(--u)*34);height:calc(var(--u)*34);margin:calc(var(--u)*-17) 0 0 calc(var(--u)*-17);clip-path:polygon(50% 0,58% 32%,88% 12%,68% 42%,100% 50%,68% 58%,88% 88%,58% 68%,50% 100%,42% 68%,12% 88%,32% 58%,0 50%,32% 42%,12% 12%,42% 32%);animation:c2spin 3s linear infinite}
+@keyframes c2spin{to{transform:rotate(360deg)}}
+.c2-vs .c2-vsw b{position:relative;display:block;font:italic calc(calc(var(--u)*15)*var(--k))/1 'Black Han Sans';letter-spacing:calc(var(--u)*-.5)}
+.c2.c25.c2-vs .c2-vsw .c2-burst{background:#ffe14a;box-shadow:none;filter:drop-shadow(0 0 0 #111)}
+.c2.c25.c2-vs .c2-vsw b{color:#fff;-webkit-text-stroke:calc(var(--u)*1.4) #0c0c0e;paint-order:stroke fill;text-shadow:calc(var(--u)*1.2) calc(var(--u)*1.2) 0 #e3101f}
+.c2.c23.c2-vs .c2-vsw .c2-burst{background:radial-gradient(circle,rgba(160,230,255,.9),rgba(79,195,255,0) 65%);clip-path:none;border-radius:50%}
+.c2.c23.c2-vs .c2-vsw b{font-family:'Rajdhani';font-weight:700;font-style:normal;color:#fff;text-shadow:0 0 calc(var(--u)*3) #4fc3ff,0 0 calc(var(--u)*1) #fff;letter-spacing:calc(var(--u)*1)}
+.c2.c24.c2-vs .c2-vsw .c2-burst{background:#111}
+.c2.c24.c2-vs .c2-vsw b{font-family:'Do Hyeon';font-style:normal;color:#ffe100;-webkit-text-stroke:calc(var(--u)*1) #111;paint-order:stroke fill}
+/* 부딪히기: 양쪽 띠가 반대편에서 날아와 가운데에서 멈칫 */
+.c2-vs .c2-side.c2-L .c2-band{animation:c2bandL .55s cubic-bezier(.3,1.3,.4,1) both}
+.c2-vs .c2-side.c2-R .c2-band{animation:c2bandR .55s cubic-bezier(.3,1.3,.4,1) both}
+@keyframes c2bandL{0%{transform:translateX(-110vw)}82%{transform:translateX(2vw)}100%{transform:none}}
+@keyframes c2bandR{0%{transform:translateX(110vw)}82%{transform:translateX(-2vw)}100%{transform:none}}
+.c2-vs .c2-shake{animation:c2shake .4s .6s}
+.c2-vs .c2-flash{animation:c2fFlashV .35s .6s}
+
+/* 세로로 긴 화면(휴대폰): 그림은 띠 위(오른쪽 편은 띠 아래)로 비키고, 글자는 띠를 가로로 다 쓴다 */
+.c2.c2-nar .c2-por{--py:0;top:auto;bottom:80%;height:calc(var(--u)*44*var(--k));width:calc(var(--u)*30*var(--k))}
+.c2.c2-nar .c2-side.c2-R .c2-por{top:80%;bottom:auto}
+.c2.c2-nar.c2-vs .c2-side.c2-L{--y:30vh!important}.c2.c2-nar.c2-vs .c2-side.c2-R{--y:70vh!important}
+.c2 .c2-line{margin-top:calc(var(--u)*.6)}
+.c2 .c2-por .c2-im.none{background:linear-gradient(160deg,var(--pc),#111)}

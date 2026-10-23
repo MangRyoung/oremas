@@ -17,10 +17,10 @@ window.OM_IMPORT=(()=>{
   const d=(doc.data&&doc.data.data)||doc.data||doc;
   return {id:doc.id||d.id,name:d.name||'트레이너',kind:d.kind==='npc'?'npc':'pc',image:d.image||'',stands:standsOf(d.stands),standActive:+d.standActive||0,
    ranks:Object.assign({육성:'',지시:'',통솔:'',능력:''},d.ranks||{}),base:d.base||{},detail:d.detail||{},
-   unique:(d.unique||[]).filter(u=>u&&u.name).map(u=>{const o={name:u.name,eff:brN(u.eff||'')};for(const k of ['color','icon','sub'])if(u[k])o[k]=String(u[k]).slice(0,40);const dsl=String(u.auto||'').trim();if(dsl){const r=window.OM_FX?window.OM_FX.parse(dsl):{ops:[]};o.auto={dsl,ops:r.ops}}return o}),
+   unique:(d.unique||[]).filter(u=>u&&u.name).map(u=>{const o={name:u.name,eff:brN(u.eff||'')};for(const k of ['color','icon','sub'])if(u[k])o[k]=String(u[k]).slice(0,40);if(u.line)o.line=String(u.line).slice(0,80);const dsl=String(u.auto||'').trim();if(dsl){const r=window.OM_FX?window.OM_FX.parse(dsl):{ops:[]};o.auto={dsl,ops:r.ops}}return o}),
    pids:d.pids||[],solo:!!d.solo,folder:d.folder||'',fields:fieldsOf(d.fields),
    /* 10-23 망령: 제작기 시트의 지시 체계 {preset:assoc|ten|wild|jam|manual, tc, base} */
-   mkOrders:d.orders&&d.orders.preset?{preset:String(d.orders.preset),tc:+d.orders.tc||0,base:d.orders.base==null?1:Math.max(0,+d.orders.base||0)}:null}}
+   mkOrders:d.orders&&d.orders.preset?Object.assign({preset:String(d.orders.preset),tc:+d.orders.tc||0,base:d.orders.base==null?1:Math.max(0,+d.orders.base||0)},(()=>{const ty={};const src=d.orders.type||{};for(const k in src)if(/^[oc]_[a-z]+$/.test(k)&&isFinite(+src[k]))ty[k]=Math.max(0,Math.min(8,Math.round(+src[k])));return Object.keys(ty).length?{type:ty}:{}})()):null}}
 
  /* 기술 이름 → 배틀용 기술 (기술 DB 복사) */
  function move(name,half){
@@ -58,6 +58,7 @@ window.OM_IMPORT=(()=>{
    pots,excl:d.excl&&d.excl.name&&d.excl.name!=='전용 포텐셜'?{name:d.excl.name,eff:brN(d.excl.eff||'')}:null,
    exclX:(d.exclX||[]).filter(x=>x&&x.name).map(x=>({name:x.name,eff:brN(x.eff||'')})),
    role:roleOf(d),pride:d.pride||'',egg:[d.egg1||'-',d.egg2||'-'],partner:!!d.partner,image:d.image||'',stands:standsOf(d.stands),standActive:+d.standActive||0,memo:d.memo||'',
+   cutLine:(()=>{const out={};const src=d.cutLine||{};for(const k in src){const v=String(src[k]||'').trim();if(v)out[String(k).replace(/『|』/g,'').trim()]=v.slice(0,80)}return out})(),
    auto:(()=>{const out={};const src=d.auto||{};for(const k in src){const dsl=String(src[k]||'').trim();if(!dsl)continue;const r=window.OM_FX?window.OM_FX.parse(dsl):{ops:[]};out[String(k).replace(/『|』/g,'')]={dsl,ops:r.ops}}
     /* 제작기 「상세 조정」 탭: 상태 변화 사양 → 「상태수정」 줄 (OM_FX.stMod 가 읽는다) */
     const tst=((d.tune||{}).st||[]).filter(x=>x&&x.st&&/^\d+\/\d+$/.test(String(x.v||'').replace(/\s+/g,''))).map(x=>`상태수정 ${x.st} ${String(x.v).replace(/\s+/g,'')}`).join('\n');

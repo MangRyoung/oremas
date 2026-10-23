@@ -17,7 +17,7 @@ window.OM_MECARD=(()=>{
   const dots=mons.slice(0,6).map(m=>{const x=hpOf(m);return `<b class="${x.h.cur<=0?'ko':x.pct<=25?'low':x.pct<=50?'mid':''}"></b>`}).join('');
   e.classList.toggle('open',open);
   e.innerHTML=open?`<div class="mcbox"><div class="mch">${av(t.image,'mcav',[...(t.name||'?')][0])}<div class="mcn"><b>${esc(t.name)}</b><small>${st}${k.tired&&k.tired.length?' · 지침 '+k.tired.length:''}</small></div><button type="button" class="mcx" data-mc="fold" title="접기">▾</button></div>
-    <div class="mcrk">${['육성','지시','통솔','능력'].map(r=>`<span>${r} <b>${esc((t.ranks||{})[r]||'-')}</b></span>`).join('')}</div>
+    <div class="mcrk">${['지시','육성','통솔','능력'].map(r=>`<span>${r} <b>${esc((t.ranks||{})[r]||'-')}</b></span>`).join('')}</div>
     <div class="mcmons">${mons.map(m=>{const x=hpOf(m);return `<button type="button" class="mcm ${x.h.cur<=0?'ko':''}" data-mc="mon" data-mid="${esc(m.id)}" title="${esc(m.name)} — 눌러서 한 장 요약">${av(m.image,'mcmi',[...(m.name||'?')][0])}<span class="mcmn"><b>${esc(m.name)}${m.partner?' ★':''}</b><small>Lv.${esc(m.lv??'-')}${x.inB?' · 배틀':''}</small></span><span class="mchp"><i class="${x.pct<=25?'low':x.pct<=50?'mid':''}" style="width:${x.pct}%"></i></span><small class="mchpn">${x.h.cur}/${x.h.max}</small></button>`}).join('')||'<div class="small dim">소지 포켓몬이 없다</div>'}</div>
     <div class="mcbtn"><button type="button" class="btn xs" data-mc="sheet">📄 시트</button><button type="button" class="btn xs" data-mc="roll">🎲 굴림</button><button type="button" class="btn xs" data-mc="phone">📱 폰</button></div></div>`
    :`<button type="button" class="mcpill" data-mc="open" title="내 트레이너 펼치기">${av(t.image,'mcav',[...(t.name||'?')][0])}<span class="mcpn">${esc(t.name)}</span><span class="mcdots">${dots}</span></button>`;
