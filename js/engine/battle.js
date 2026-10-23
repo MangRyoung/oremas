@@ -85,7 +85,7 @@ window.OM_BATTLE=(()=>{
   let wall=1;const ws=o.wallSize>=2?0.667:0.5;const w=o.wall||{};
   if((cat==='physical'&&(w.reflector||w.icewall))||(cat==='special'&&w.lightscreen)||w.aurora)wall=ws;
   const critMul=(o.critGen===2?2:1.5)*(o.critDamage===1?1.5:o.critDamage===2?2:1);
-  const critValue=o.critDamage===3?2.5:critMul;
+  const critValue=num(o.critMul,0)>0?+o.critMul:(o.critDamage===3?2.5:critMul);   /* critMul: 포켓몬마다 급소 배율 (제작기 상세 조정) */
   /* 급소 때 1 미만 보정을 1 로 되돌리는 역수 (input_damage_mod_reverse) */
   let rev=1;if(free1>0&&free1<1)rev/=free1;if(free2>0&&free2<1)rev/=free2;if(trait>0&&trait<1)rev/=trait;
   const hits=o.hits&&o.hits.length?o.hits:[1];

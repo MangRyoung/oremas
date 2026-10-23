@@ -3189,3 +3189,7 @@ body.m-chat .mecard{display:none}
 .bcol .shead2{flex-wrap:nowrap;min-height:22px}
 .bcol .shead2 .simtg{padding:1px 6px;letter-spacing:0;gap:3px;font-size:11.5px;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .bcol .shead2 .simtg input{width:12px;height:12px;flex:none}
+/* 10-23 망령: 발동 확률 창 */
+.pcask{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-top:10px}
+.pcask label{display:inline-flex;align-items:center;gap:4px}
+.pcask input{width:72px}

@@ -61,6 +61,7 @@ window.OM_IMPORT=(()=>{
     if(tst){const r=window.OM_FX?window.OM_FX.parse(tst):{ops:[]};out['상세 조정']={dsl:tst,ops:r.ops}}return out})(),
    ...(!item0&&d.item&&(own||ET.it)?{itemOwn:{name:String(d.item),eff:brN(item.eff||''),auto:String(own?own.auto||'':ET.itAuto||''),cons:!!(own?own.cons:ET.itCons)}}:{}),
    ...(()=>{const tu=d.tune||{};const dsl=String(tu.item||'').trim();return dsl?{itemTune:{item:String(tu.itemName||d.item||''),dsl}}:{}})(),
+   ...(()=>{const c=(d.tune||{}).crit;if(!c||typeof c!=='object')return {};const r={};if(c.tbl!=null&&c.tbl!=='')r.tbl=+c.tbl;if(+c.add)r.add=+c.add;if(+c.guard)r.guard=+c.guard;if(+c.dmg)r.dmg=+c.dmg;if(c.sure)r.sure=1;if(c.never)r.never=1;return Object.keys(r).length?{critRule:r}:{}})(),   /* 제작기 상세 조정 「급소 규칙」 (10-23 망령) */
    fields:fieldsOf(d.fields),rank:{attack:0,defense:0,specialattack:0,specialdefense:0,speed:0,accuracy:0,evasion:0,critical:0},states:{},forms:formsOf(d,base,L)}}
 
  /* 소지품 2 · 3번 칸 (제작기 items2, 10-24 망령): DB → 오리지널(itemOwn) → 시트 사본(effTxt.its2) 순으로 글을 찾는다 */
