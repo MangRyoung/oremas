@@ -815,9 +815,12 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  const seOff=()=>!!(window.OM_PREFS&&window.OM_PREFS.get().seMute);
  /* 10-24 망령: 같은 소리는 한 번 받아 둔 걸 다시 쓴다 (매번 새로 받느라 컷인보다 늦게 울리던 것). 배틀 기본 효과음은 첫 클릭 뒤 미리 받아 둔다 */
  const SEC=new Map();
- function seAudio(u){try{let b=SEC.get(u);if(!b){b=new Audio(u);b.preload='auto';SEC.set(u,b)}const a=(b.paused||b.ended)?b:b.cloneNode();a.currentTime=0;a.volume=volSe;a.play().catch(()=>{})}catch(e){}}
- document.addEventListener('pointerdown',()=>setTimeout(()=>{try{const g=seList()['00. 기본 (배틀)']||{};for(const n of ['Blow','Draw','Ping','Ping2','cut','cut_critical','dice','evasion','Dead','raid_warning']){const u=g[n];if(u&&!SEC.has(u)){const b=new Audio(u);b.preload='auto';SEC.set(u,b)}}}catch(e){}},1500),{once:true});
- function playSe(name,localOnly){if(seOff()&&localOnly!=='force')return;const u=/^https?:/.test(name)?name:seUrl(name);if(!u)return;if(!gm())localOnly=true;/* 좌석은 rp 를 못 쓰니 내 쪽에서만 울린다 */if(localOnly){seAudio(u);return}A().set(['rp','se'],{name,src:u,at:Date.now()})}
+ /* 효과음별 손질: vol 크기 배수 · end 초에서 끊기(fade 초 동안 줄이며) */
+ const SE_TUNE={ball_open:{vol:.65,end:.85,fade:.18}};
+ function seAudio(u,tn){try{let b=SEC.get(u);if(!b){b=new Audio(u);b.preload='auto';SEC.set(u,b)}const a=(b.paused||b.ended)?b:b.cloneNode();a.currentTime=0;const v0=Math.min(1,volSe*((tn&&tn.vol)||1));a.volume=v0;a.play().catch(()=>{});
+  if(tn&&tn.end){const fd=tn.fade||.15,st=Date.now();clearInterval(a._tn);a._tn=setInterval(()=>{const t=(Date.now()-st)/1000;if(t>=tn.end){clearInterval(a._tn);a.pause();a.volume=v0;return}if(t>tn.end-fd)a.volume=Math.max(0,v0*(tn.end-t)/fd)},30)}}catch(e){}}
+ document.addEventListener('pointerdown',()=>setTimeout(()=>{try{const g=seList()['00. 기본 (배틀)']||{};for(const n of ['Blow','Draw','Ping','Ping2','cut','cut_critical','dice','evasion','Dead','raid_warning','ball_open']){const u=g[n];if(u&&!SEC.has(u)){const b=new Audio(u);b.preload='auto';SEC.set(u,b)}}}catch(e){}},1500),{once:true});
+ function playSe(name,localOnly){if(seOff()&&localOnly!=='force')return;const u=/^https?:/.test(name)?name:seUrl(name);if(!u)return;if(!gm())localOnly=true;/* 좌석은 rp 를 못 쓰니 내 쪽에서만 울린다 */if(localOnly){seAudio(u,SE_TUNE[name]);return}A().set(['rp','se'],{name,src:u,at:Date.now()})}
  /* 로그를 보고 자동 효과음: 주사위 → dice, 지시 공개 → Draw, 턴 개시 → Ping2, 공격 명중 → Blow, 급소 → cut_critical, 빗나감 → evasion, 빈사 → Dead */
  let seenLog=new Set(),lastBall=0;
  function autoSe(row){if(!row||!row.id||seenLog.has(row.id))return;seenLog.add(row.id);if(seenLog.size>500)seenLog=new Set([...seenLog].slice(-200));if(row.at&&Date.now()-new Date(row.at).getTime()>15000)return;if(!unlocked)return;
@@ -825,10 +828,10 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   /* 10-24 망령: 파일 없이 브라우저에서 만드는 소리 — 등장(볼 열림) · 랭크 상승/하강 · 회복 · 양측 지시 준비 완료 */
   if(!n&&row.kind==='battle'){const sy=k=>{try{if(window.OM_CUTIN&&window.OM_CUTIN.synth)window.OM_CUTIN.synth(k)}catch(e){}};const h=(row.data||{}).hp;
    if(/^【준비 완료】/.test(t))return sy('ready');
-   if(/ 등장 \((좌측|우측) /.test(t)){const now=Date.now();if(now-lastBall>90){lastBall=now;sy('ball')}else setTimeout(()=>sy('ball'),140);return}
+   if(/ 등장 \((좌측|우측) /.test(t)){const now=Date.now();const ball=()=>{if(seUrl('ball_open'))playSe('ball_open',true);else sy('ball')};if(now-lastBall>90){lastBall=now;ball()}else setTimeout(ball,140);return}
    if(h&&+h.cur>+h.prev&&+h.prev>0)return sy('heal');
    if(h&&+h.cur<+h.prev||/^【피해】/.test(t)){const em=t.match(/상성 ×([\d.]+)/),e=em?+em[1]:1;sy(e>1?'dmg_big':e<1?'dmg_weak':'dmg');if(/빈사!|쓰러졌다!/.test(t))setTimeout(()=>playSe('Dead',true),650);return}
-   let d=0;t.replace(/배율 ×([\d.]+) → ×([\d.]+)/g,(_,x,y)=>{d+=Math.sign((+y)-(+x))});if(/^【랭크·배율】/.test(t))t.replace(/랭크 ([+-]?\d+) → ([+-]?\d+)/g,(_,x,y)=>{d+=(+y)-(+x)});else if(!d){const mm=t.match(/(?:공격|방어|특공|특방|스피드|명중|회피)\s*(?:랭크\s*)?([+-])\d/);if(mm)d=mm[1]==='+'?1:-1}
+   let d=0;t.replace(/배율 ×([\d.]+) → ×([\d.]+)/g,(_,x,y)=>{d+=Math.sign((+y)-(+x))});if(/^【랭크·배율】/.test(t))t.replace(/랭크 ([+-]?\d+) → ([+-]?\d+)/g,(_,x,y)=>{d+=(+y)-(+x)});else if(!d){const mm=t.match(/(?:공격|방어|특공|특방|스피드|명중|회피)\s*(?:랭크\s*)?([+-])\d/);if(mm)d=mm[1]==='+'?1:-1;else{const mx=t.match(/(?:공격|방어|특공|특방|스피드|명중|회피) ×([\d.]+)/);if(mx&&+mx[1]!==1)d=+mx[1]>1?1:-1}}
    if(d)return sy(d>0?'up':'down')}
   const dead=/빈사!|쓰러졌다!/.test(t);if(!n&&!dead)return;if(n)playSe(n,true);if(dead)setTimeout(()=>playSe('Dead',true),n?700:0)}
  function syncSe(){const se=R().se;if(!se||!se.at||se.at===lastSe)return;lastSe=se.at;if(Date.now()-se.at>8000)return;if(seOff())return;if(!unlocked&&!gm())return;seAudio(se.src)}
