@@ -3563,3 +3563,7 @@ html[data-vt] .phone .ptitle .btn *{color:inherit!important}
 .r3.v33 .r3-tape{background:repeating-linear-gradient(-45deg,#ff3355 0 calc(var(--u)*3),#1a0010 calc(var(--u)*3) calc(var(--u)*6))}
 .r3.v33 .r3-tape span{color:#ff8899;font-family:Rajdhani,'Black Han Sans',sans-serif;font-weight:700}
 .r3.v34 .r3-ttl .n{background:#ffe100;color:#111}
+
+/* 10-24 망령: 연속기 급소 칸 — 한 타에 한 줄 */
+.crkc .crk1{white-space:nowrap;line-height:1.5}.crkc .crk1+.crk1{margin-top:2px}.crkc .crk{display:inline-flex;align-items:center;gap:3px;white-space:nowrap}.crkc .crk input{margin:0}
+@media (max-width:699px){.crkc .crk1 .mono{display:block;padding-left:20px;margin-top:-2px}}

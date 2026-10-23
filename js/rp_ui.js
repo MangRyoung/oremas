@@ -828,7 +828,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(/ 등장 \((좌측|우측) /.test(t)){const now=Date.now();if(now-lastBall>90){lastBall=now;sy('ball')}else setTimeout(()=>sy('ball'),140);return}
    if(h&&+h.cur>+h.prev&&+h.prev>0)return sy('heal');
    if(h&&+h.cur<+h.prev||/^【피해】/.test(t)){const em=t.match(/상성 ×([\d.]+)/),e=em?+em[1]:1;sy(e>1?'dmg_big':e<1?'dmg_weak':'dmg');if(/빈사!|쓰러졌다!/.test(t))setTimeout(()=>playSe('Dead',true),650);return}
-   let d=0;if(/^【랭크·배율】/.test(t))t.replace(/랭크 ([+-]?\d+) → ([+-]?\d+)/g,(_,x,y)=>{d+=(+y)-(+x)});else{const mm=t.match(/(?:공격|방어|특공|특방|스피드|명중|회피)\s*(?:랭크\s*)?([+-])\d/);if(mm)d=mm[1]==='+'?1:-1}
+   let d=0;t.replace(/배율 ×([\d.]+) → ×([\d.]+)/g,(_,x,y)=>{d+=Math.sign((+y)-(+x))});if(/^【랭크·배율】/.test(t))t.replace(/랭크 ([+-]?\d+) → ([+-]?\d+)/g,(_,x,y)=>{d+=(+y)-(+x)});else if(!d){const mm=t.match(/(?:공격|방어|특공|특방|스피드|명중|회피)\s*(?:랭크\s*)?([+-])\d/);if(mm)d=mm[1]==='+'?1:-1}
    if(d)return sy(d>0?'up':'down')}
   const dead=/빈사!|쓰러졌다!/.test(t);if(!n&&!dead)return;if(n)playSe(n,true);if(dead)setTimeout(()=>playSe('Dead',true),n?700:0)}
  function syncSe(){const se=R().se;if(!se||!se.at||se.at===lastSe)return;lastSe=se.at;if(Date.now()-se.at>8000)return;if(seOff())return;if(!unlocked&&!gm())return;seAudio(se.src)}

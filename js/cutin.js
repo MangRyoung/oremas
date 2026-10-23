@@ -63,8 +63,10 @@ window.OM_CUTIN=(()=>{
   if(kind==='hit'){   /* VS 충돌 */
    tone(140,'sine',0,.6,.9,38);noise('lowpass',2400,0,.35,.75);tone(1100,'triangle',.01,.55,.05);return}
   if(kind==='ball'){   /* 몬스터볼 열림: 딸깍 → 퐁 → 반짝 */
-   noise('highpass',2600,0,.03,.35);tone(320,'sine',.05,.12,.42,980);noise('bandpass',1800,.05,.14,.14,5200,1);
-   [1568,2093,2637].forEach((f,i)=>tone(f,'sine',.13+i*.045,.3,.09));return}
+   noise('highpass',3200,0,.022,.42);tone(1900,'square',0,.018,.04);noise('highpass',2600,.03,.018,.25);
+   tone(560,'triangle',.05,.3,.16,2500);tone(574,'triangle',.05,.3,.14,2560);tone(280,'sine',.05,.2,.18,1150);
+   noise('bandpass',1800,.06,.32,.17,8200,1.1);
+   [2637,3136,2349,3520,2794,3951].forEach((f,i)=>tone(f,'sine',.17+i*.042,.28-i*.015,.055-i*.004));return}
   if(kind==='ready'){tone(988,'triangle',0,.22,.2);tone(1319,'triangle',.11,.38,.18);return}   /* 양측 준비 완료: 가벼운 「띵동」 */
   if(kind==='up'){[523,659,784,1047].forEach((f,i)=>tone(f,'triangle',i*.06,.2,.23));tone(2093,'sine',.24,.3,.05);return}   /* 랭크 상승 */
   if(kind==='down'){[784,622,494].forEach((f,i)=>tone(f,'triangle',i*.08,.24,.23,f*.94));return}   /* 랭크 하강 */
