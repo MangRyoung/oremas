@@ -58,7 +58,7 @@ window.OM_STORE=(()=>{
  let CH=null;
  function subscribe(room,{onState,onPatch,onLog,onStatus,onEvent}){
   const ch=sb().channel('om:'+room)
-   .on('postgres_changes',{event:'*',schema:'public',table:'om_state',filter:'room=eq.'+room},p=>{if(onState&&p.new)onState(p.new.data,p.new.v)})   /* 패치 전 서버(상태 전체) */
+   /* 10-23 이그레스: om_state 는 실시간 목록에서 빠졌다 — 없는 표를 구독하면 채널 전체(채팅 포함)가 실패하므로 구독하지 않는다. 상태는 아래 'st' 신호로 */
    .on('broadcast',{event:'st'},p=>{if(onPatch&&p.payload)onPatch(p.payload)})   /* 10-23 이그레스: 바뀐 칸만 (supabase/patch_2026-10-23_이그레스.sql) */
    .on('postgres_changes',{event:'INSERT',schema:'public',table:'om_log',filter:'room=eq.'+room},p=>{if(onLog&&p.new)onLog(p.new)})
    .on('broadcast',{event:'ev'},p=>{if(onEvent&&p.payload)onEvent(p.payload)})
