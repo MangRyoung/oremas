@@ -71,7 +71,8 @@ window.OM_STORE=(()=>{
  async function makerDocs(kind){
   const out=[];let from=0;const PAGE=1000;
   for(;;){const r=await sb().from(cfg().makerTable||'docs').select('id,data').eq('kind',kind).order('id').range(from,from+PAGE-1);
-   if(r.error)throw err(r.error);const rows=r.data||[];out.push(...rows);if(rows.length<PAGE)break;from+=PAGE}
+   /* 10-23 망령: 서버가 한 번에 주는 줄 수(max rows)가 PAGE 보다 적으면 거기서 끊겨 뒤쪽 문서(포켓몬)가 빠졌다 — 빈 쪽이 올 때까지 받은 만큼씩 넘긴다 */
+   if(r.error)throw err(r.error);const rows=r.data||[];out.push(...rows);if(!rows.length)break;from+=rows.length}
   return out}
 
 

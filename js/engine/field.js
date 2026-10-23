@@ -23,7 +23,7 @@ const FX=()=>window.OM_FX;
  const grounded=m=>!(typesOf(m).includes('Flying')||/풍선/.test(itemOf(m))||has(m,'MagnetRise')||has(m,'Telekinesis')||has(m,'Fly')||/부유/.test(m.ability||'')||(FX()&&FX().floating(m)));
  const noind=(m,k)=>!!(FX()&&FX().noind(m,k));
  const rankDown=(m,k,n)=>{m.rank=m.rank||{};m.rank[k]=Math.max(-6,Math.min(6,(+m.rank[k]||0)+n))};
- const setState=(m,k,count)=>{m.states=m.states||{};if(m.states[k])return false;const st=((DB().states||{}).st||{})[k]||{};m.states[k]=count!=null?count:(st.min<1000?st.min:1000);return true};
+ const setState=(m,k,count)=>{m.states=m.states||{};if(m.states[k])return false;const st=((DB().states||{}).st||{})[k]||{};{const d=st;m.states[k]=count!=null?count:(d.min>=1000||!d.min?1000:(+d.max>+d.min&&+d.max<1000?+d.min+Math.floor(Math.random()*(+d.max-+d.min+1)):+d.min))}return true};
  const clearState=(m,k)=>{if(m.states)delete m.states[k]};
 
  /* ----- 행동 판정 (check_attack): 풀죽음 → 잠듦 → 마비 → 얼음 → 헤롱헤롱 → 혼란. 돌려줌 {ok, selfHit, lines} ----- */

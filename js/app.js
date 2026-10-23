@@ -427,7 +427,7 @@ function josa(s){return String(s==null?'':s).replace(/([가-힣0-9])([」』]?)(
   const w=j==='(으)로'?(jong&&!rieul?'으로':'로'):JOSA[j][jong?0:1];return c+q+w})}
 async function sysLog(t,kind,extra){t=josa(t);const k=kind||'sys';const data=Object.assign({t},extra||{});try{await DBS().addLog(ST.room,ST.secret,k,ST.name,data)}catch(e){if(ST.role==='seat'&&k!=='chat'){try{await DBS().addLog(ST.room,ST.secret,'chat',ST.name,Object.assign({},data,{bat:k}));return}catch(e2){}}console.warn('로그를 남기지 못했다',e);toast('로그를 남기지 못했다: '+e.message)}}
 /* 배틀 로그 카드: 「【포텐셜】 이름 『효과』」 꼴의 글은 머리띠 + 본문 카드로 */
-const TAGCOL={'고유':'#7b4fd6','전용':'#1f6fd1','포텐셜':'#7b4fd6','특성':'#2f8f5b','소지품':'#c7651a','지령':'#1f6fd1','명령':'#e3101f','공개':'#d6a23b','스킬 체크':'#2b8fa8','모두 공개':'#d6a23b','공격':'#c8362b','전달':'#8a4b2a','효과':'#555','따라가때리기':'#b3261e','피해':'#d23a3a','회복':'#2f9a5b','HP':'#777','무효':'#777','교대 알림':'#d6a23b','『지령』 & 『포텐셜』 발동':'#7b4fd6'};
+const TAGCOL={'고유':'#7b4fd6','전용':'#1f6fd1','포텐셜':'#7b4fd6','특성':'#2f8f5b','소지품':'#c7651a','지령':'#e3101f','명령':'#1f6fd1','공개':'#d6a23b','스킬 체크':'#2b8fa8','모두 공개':'#d6a23b','공격':'#c8362b','전달':'#8a4b2a','효과':'#555','따라가때리기':'#b3261e','피해':'#d23a3a','회복':'#2f9a5b','HP':'#777','무효':'#777','교대 알림':'#d6a23b','『지령』 & 『포텐셜』 발동':'#7b4fd6','함께 지시하기':'#d6a23b'};
 /* 【공격】 카드 본문: 「→ 대상: 명중 34/80 · 급소 3/24 · 대미지 120 · 상성 ×2」 줄을 대상마다 배지로, 들여쓴 줄(판정·부가효과)은 아래 작은 글씨로 */
 function atkLines(body){const out=[];for(const raw of body.split('\n')){if(!raw.trim())continue;
   if(/^\s{2,}/.test(raw)){const t=raw.trim();out.push(`<div class="atsub ${/발동!|확정/.test(t)?'ok':/불발|받지 않음/.test(t)?'no':''}">${esc(t)}</div>`);continue}
@@ -625,12 +625,57 @@ async function openLoadParty(side){
   <div class="row" style="margin-top:10px"><span class="small muted">트레이너는 「시트」 탭에서 제작기에서 가져오거나 새로 만든다.</span><span class="sp"></span><button class="btn sm" id="goSheet">시트 탭으로</button></div>`);
  $('#goSheet',m).onclick=()=>{closeModal();VIEW='sheet';renderScene()};
  m.querySelectorAll('[data-pick]').forEach(btn=>btn.onclick=async()=>{closeModal();await loadFromRoster(btn.dataset.pick,side)})}
+/* 배틀에 올릴 포켓몬 초기화: 시트의 남은 HP·상태 이상·빈사(결과 정리로 돌려받은 것)로 시작 */
+function prepMon(mon,side,i){mon.side=side;mon.slot=i;mon.entry='';mon.started=false;mon.rank={attack:0,defense:0,specialattack:0,specialdefense:0,speed:0,accuracy:0,evasion:0,critical:0};mon.mod={};mon.states=Object.assign({},mon.sheetStates||{});mon.teraActive=false;delete mon.itemUsed;delete mon.form0;delete mon.formIdx;
+ mon.hp={max:mon.stats[0],cur:mon.states.Dead?0:mon.sheetHp==null?mon.stats[0]:Math.min(mon.sheetHp,mon.stats[0])}}
+/* ---------- 함께 지시하기 · 합치기 (10-23 망령): 같은 진영에 트레이너가 있으면 「+ 파티」로 부른 파티를 그 트레이너에 합친다.
+   포켓몬 목록 · 고유 · 전용(포켓몬에 붙어 옴) · 4식 6령이 한 트레이너로 모이고 지시 창 하나를 같이 쓴다. 손님 좌석은 시트의 co(함께 지시)에 적는다 ---------- */
+function mergeHosts(side,tid){const b=B();const own=h=>ST.role==='gm'||h.id===ST.seat||((((roster().trainers||{})[h.id]||{}).co)||[]).includes(ST.seat);
+ return ((((b.sides||{})[side]||{}).trainers)||[]).map(id=>(b.trainers||{})[id]).filter(h=>h&&h.id!==tid&&h.srcTid!==tid&&!(h.mates||[]).some(x=>x.id===tid)&&own(h))}
+function askMerge(hosts,g,mons,side){return new Promise(res=>{const OD=window.OM_ORDERS;const gT=Object.assign({},g);if(!gT.orderCount||!Object.keys(gT.orderCount).length)Object.assign(gT,OD.auto(gT,gT.orderPreset||'assoc',gT.orderBase||1));
+ const sep=ST.role==='gm'||g.id===ST.seat?'따로 세우기 — 같은 진영에 트레이너 둘':'내 자리 파티를 이 파티로 바꾸기';
+ const m=openModal(`<div class="mhead"><h2>${side==='left'?'좌측':'우측'}에 이미 트레이너가 있다</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+  <div class="mgopt"><label><input type="radio" name="mgm" value="merge" checked> <b>함께 지시하기</b> — ${hosts.length>1?`<select id="mgHost">${hosts.map(h=>`<option value="${esc(h.id)}">${esc(h.name)}</option>`).join('')}</select>`:`<b>${esc(hosts[0].name)}</b>`} 와(과) 「${esc(g.name)}」 를 한 트레이너로 합친다</label>
+   <label><input type="radio" name="mgm" value="sep"> ${sep}</label></div>
+  <div id="mgBody"><div class="sec">4식 · 6령</div><div class="mgord"><label><input type="radio" name="mgo" value="host" checked> <span id="mgHn"></span> 것으로 통일</label><label><input type="radio" name="mgo" value="guest"> ${esc(g.name)} 것으로 통일</label><label><input type="radio" name="mgo" value="both"> 모두 합치기 <small class="dim">같은 이름은 횟수를 더한다</small></label></div>
+   <div class="sec">합친 결과 미리 보기</div><div class="mgprev" id="mgPrev"></div></div>
+  <div class="row" style="margin-top:12px"><span class="sp"></span><button class="btn" data-x>취소</button><button class="btn pri" id="mgGo">불러오기</button></div>`);
+ const hostOf=()=>{const s=m.querySelector('#mgHost');return s?hosts.find(h=>h.id===s.value):hosts[0]};
+ const draw=()=>{const merge=m.querySelector('[name=mgm]:checked').value==='merge';m.querySelector('#mgBody').style.display=merge?'':'none';if(!merge)return;const h=hostOf();const mode=m.querySelector('[name=mgo]:checked').value;
+  m.querySelector('#mgHn').textContent=h.name0||h.name;const r=Object.assign({},h,OD.merge(h,gT,mode));const hm=Object.values(B().mons||{}).filter(x=>x.tid===h.id).sort((x,y)=>(x.slot||0)-(y.slot||0));
+  const U=[...(h.unique||[]),...(g.unique||[])].filter(u=>u&&u.name);
+  m.querySelector('#mgPrev').innerHTML=`<div class="mghead"><b>${esc([h.name0||h.name,...(h.mates||[]).map(x=>x.name),g.name].join(' & '))}</b><span class="small dim">포켓몬 ${hm.length} + ${mons.length} = ${hm.length+mons.length}체 · 고유 ${U.length}개</span></div>
+   <div class="mgmons">${[...hm,...mons].map(x=>`<span class="mgm ${hm.includes(x)?'':'g'}" title="${esc(hm.includes(x)?(h.name0||h.name):g.name)}">${esc(x.name)}</span>`).join('')}</div>
+   ${U.length?`<div class="mgmons">${U.map(u=>`<span class="mgm u">고유 · ${esc(u.name)}</span>`).join('')}</div>`:''}${OD.chips(r)}`};
+ m.querySelectorAll('input[type=radio],select').forEach(x=>x.onchange=draw);draw();
+ m.querySelector('#mgGo').onclick=()=>{const merge=m.querySelector('[name=mgm]:checked').value==='merge';const v=merge?{mode:'merge',host:hostOf().id,ord:m.querySelector('[name=mgo]:checked').value,gT}:{mode:'sep'};closeModal();res(v)};
+ m.querySelectorAll('[data-x]').forEach(x=>x.addEventListener('click',()=>res(null)))})}
+async function mergeInto(hostId,g,mons,ord,gT){const b0=JSON.parse(JSON.stringify(B())),nb=JSON.parse(JSON.stringify(b0));const H=nb.trainers[hostId];if(!H)return toast('합칠 트레이너가 배틀에 없다');
+ nb.mons=nb.mons||{};nb.sides=nb.sides||{left:{trainers:[]},right:{trainers:[]}};
+ if(nb.trainers[g.id]&&g.id!==hostId){for(const s of ['left','right'])if(nb.sides[s])nb.sides[s].trainers=(nb.sides[s].trainers||[]).filter(x=>x!==g.id);delete nb.trainers[g.id];for(const k in nb.mons)if(nb.mons[k].tid===g.id)delete nb.mons[k]}
+ for(const mon of mons)delete nb.mons[mon.id];
+ const base=Object.values(nb.mons).filter(x=>x.tid===hostId).length;
+ mons.forEach((mon,i)=>{prepMon(mon,H.side,base+i);mon.otid=g.id;mon.oname=g.name;mon.tid=hostId;nb.mons[mon.id]=mon});
+ H.pids=(H.pids||[]).concat(mons.map(x=>x.id));
+ const seats=ST.state.seats||{};const gSeat=seats[g.id]?g.id:'';
+ H.mates=(H.mates||[]).concat([{id:g.id,name:g.name,image:g.image||'',seat:gSeat}]);H.name0=H.name0||H.name;H.name=[H.name0,...H.mates.map(x=>x.name)].join(' & ');
+ const have=new Set((H.unique||[]).map(u=>u&&u.name));H.unique=(H.unique||[]).concat((g.unique||[]).filter(u=>u&&u.name).map(u=>{const o=JSON.parse(JSON.stringify(u));if(have.has(o.name))o.name=o.name+' ('+g.name+')';o.from=g.name;return o}));
+ if(g.uUses)H.uUses=Object.assign({},g.uUses,H.uUses||{});
+ Object.assign(H,window.OM_ORDERS.merge(H,gT||g,ord));
+ let ops=diffOps(['battle'],b0,nb,3);const rk={trainers:0,sides:1,mons:2};if(ST.role!=='gm')ops=ops.filter(o=>o[0][1] in rk);ops.sort((x,y)=>(rk[x[0][1]]??3)-(rk[y[0][1]]??3));
+ if(!await setMany(ops))return;
+ const rt=(roster().trainers||{})[hostId];let coNote='';
+ if(gSeat&&rt&&(ST.role==='gm'||hostId===ST.seat)){const co=Array.isArray(rt.co)?rt.co.slice():[];if(!co.includes(gSeat)){co.push(gSeat);if(await set(['roster','trainers',hostId,'co'],co))coNote=` · ${(seats[gSeat]||{}).name||gSeat} 도 지시 창을 함께 쓴다`}}
+ else if(gSeat&&!rt)coNote=' · (시트에 없는 트레이너라 손님 좌석 권한은 GM 이 「함께 지시」로 준다)';
+ const OL={host:(H.name0||'')+' 것으로 통일',guest:g.name+' 것으로 통일',both:'모두 합침'};
+ toast(`${H.name} — ${mons.length}체 합류`);sysLog(`【함께 지시하기】 ${H.name} (${H.side==='left'?'좌측':'우측'}) — ${g.name} 의 파티 ${mons.length}체 합류 · 4식 6령: ${OL[ord]||ord}${coNote}`,'battle');VIEW='battle';renderScene()}
 async function loadFromRoster(tid,side){
  const r=roster();const t=r.trainers[tid];if(!t)return toast('로스터에 없는 트레이너다');
  const trainer=JSON.parse(JSON.stringify(t));const mons=(t.pids||[]).map(id=>r.mons[id]).filter(Boolean).map(x=>JSON.parse(JSON.stringify(x)));
  /* 비어 있는 특성·포텐셜 효과 글 채우기 (제작기 DB 에 새로 넣은 것) */
  {const DU=window.OM_DB_UI;if(DU&&DU.fillEff&&mons.some(m=>(m.ability&&!m.abilityEff)||(m.pots||[]).some(p=>!p.eff))){if(DU.ensureMaker)await DU.ensureMaker();for(const m of mons)DU.fillEff(m)}}
  if(!mons.length&&!confirm('이 트레이너는 포켓몬이 없다. 그래도 불러올까?'))return;
+ {const hs=mergeHosts(side,tid);if(hs.length){const pk=await askMerge(hs,trainer,mons,side);if(!pk)return;if(pk.mode==='merge')return mergeInto(pk.host,trainer,mons,pk.ord,pk.gT)}}   /* 10-23 망령: 함께 지시하기 */
  /* 지시 권한 = 배틀에 불러온 사람 (망령 2026-10-22: 덱 빌려 쓰기). 좌석이 남의 파티를 불러오면 내 자리 id 로 올린다 —
     트레이너 id = 내 좌석, 포켓몬 id = 좌석~원래id (rid 에 시트 id). 서버 권한·비밀 지시가 좌석 id 기준이라 그대로 맞는다. 결과 정리는 rid 로 시트에 돌려준다 */
  const borrowAs=nid=>{trainer.srcTid=tid;trainer.id=nid;const map={};for(const mon of mons){mon.rid=mon.id;mon.id=nid+'~'+mon.id;mon.tid=nid;map[mon.rid]=mon.id}trainer.pids=(trainer.pids||[]).map(id=>map[id]||id)};
@@ -643,8 +688,7 @@ async function loadFromRoster(tid,side){
  for(const s of ['left','right'])nb.sides[s].trainers=nb.sides[s].trainers.filter(x=>x!==trainer.id);
  nb.sides[side].trainers.push(trainer.id);trainer.side=side;nb.trainers[trainer.id]=trainer;
  for(const k in nb.mons)if(nb.mons[k].tid===trainer.id)delete nb.mons[k];
- mons.forEach((mon,i)=>{mon.side=side;mon.slot=i;mon.entry='';mon.started=false;mon.rank={attack:0,defense:0,specialattack:0,specialdefense:0,speed:0,accuracy:0,evasion:0,critical:0};mon.mod={};mon.states=Object.assign({},mon.sheetStates||{});mon.teraActive=false;delete mon.itemUsed;delete mon.form0;delete mon.formIdx;
-  mon.hp={max:mon.stats[0],cur:mon.states.Dead?0:mon.sheetHp==null?mon.stats[0]:Math.min(mon.sheetHp,mon.stats[0])};nb.mons[mon.id]=mon});   /* 시트의 남은 HP·상태 이상·빈사(결과 정리로 돌려받은 것)로 시작 */
+ mons.forEach((mon,i)=>{prepMon(mon,side,i);nb.mons[mon.id]=mon});
  /* 바뀐 칸만 쓴다 (점검 3-18) — 트레이너 → 진영 → 포켓몬 순. 좌석은 자기 트레이너·포켓몬·진영 칸만 (턴·필드 같은 기본값은 GM 만) */
  const rk={trainers:0,sides:1,mons:2};let ops=diffOps(['battle'],b0,nb,3);if(ST.role!=='gm')ops=ops.filter(o=>o[0][1] in rk);
  ops.sort((x,y)=>(rk[x[0][1]]??3)-(rk[y[0][1]]??3));const ok=await setMany(ops);

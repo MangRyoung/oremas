@@ -57,7 +57,7 @@ window.OM_STAGE_UI=(()=>{
   const x=$('#stx',md);if(x)x.onclick=async()=>{if(!confirm(`《${keyOf(s)}》을(를) 걷을까?`))return;A().closeModal();await reset()}}
 
  /* ----- 필드 전개 (맵툴 dialog_field_field) — 주인별로 묶어서 ----- */
- function open(){const s=stage();const cur=s?keyOf(s):'';const all=owners();const L=all.filter(mine);
+ function open(side){if(typeof side!=='string')side='';const re=()=>open(side);const s=stage();const cur=s?keyOf(s):'';const all=owners();const bt=(ST().state.battle||{}).trainers||{};const L=all.filter(mine).filter(o=>!side||((bt[o.tid]||{}).side===side));
   const card=(o,f,k)=>{const key=o.kind+':'+o.id+':'+k;const u=bgSrc(f.img);const on=!!s&&s.src===key;const col=tcol(f.color);const can=o.kind==='t'||o.on||gm();
    return `<div class="sfc ${on?'on':''}"><div class="stpic" ${u?`style="background-image:url('${cssu(u)}')"`:''}>${u?'':`<span class="bad">${f.img?'「'+esc(f.img)+'」<br>':''}그림 없음</span>`}</div>
     <div class="stbody"><div class="sthead"><b>${esc(f.name)}</b><span class="stgb ${KIND_CLS[kindOf(f)]}">${KINDS[kindOf(f)]}</span>${f.color?`<span class="type" style="background:${esc(col.bg)};color:${esc(col.fg)}">${esc(tko(f.color))}</span>`:''}</div>
@@ -72,9 +72,9 @@ window.OM_STAGE_UI=(()=>{
   md.classList.add('stmodal');
   const ownerOf=k=>all.find(o=>o.kind+':'+o.id===k);
   md.querySelectorAll('[data-sg]').forEach(b=>b.onclick=async()=>{const v=($(`[data-sgc="${CSS.escape(b.dataset.sg)}"]`,md)||{}).value||'';A().closeModal();await deploy(b.dataset.sg,+v>0?+v:0)});
-  md.querySelectorAll('[data-se]').forEach(b=>b.onclick=()=>{const e=find(b.dataset.se);if(e)editIn(e.o,e.k,open)});
-  md.querySelectorAll('[data-sa]').forEach(b=>b.onclick=()=>{const o=ownerOf(b.dataset.sa);if(o)editIn(o,null,open)});
-  md.querySelectorAll('[data-sd]').forEach(b=>b.onclick=async()=>{const e=find(b.dataset.sd);if(!e||!confirm(`「${e.name}」을(를) ${e.o.name}의 필드에서 지울까?`))return;const list=e.o.fields.slice();list.splice(e.k,1);if(await A().set(e.o.path,list))A().toast('지웠다');open()});
+  md.querySelectorAll('[data-se]').forEach(b=>b.onclick=()=>{const e=find(b.dataset.se);if(e)editIn(e.o,e.k,re)});
+  md.querySelectorAll('[data-sa]').forEach(b=>b.onclick=()=>{const o=ownerOf(b.dataset.sa);if(o)editIn(o,null,re)});
+  md.querySelectorAll('[data-sd]').forEach(b=>b.onclick=async()=>{const e=find(b.dataset.sd);if(!e||!confirm(`「${e.name}」을(를) ${e.o.name}의 필드에서 지울까?`))return;const list=e.o.fields.slice();list.splice(e.k,1);if(await A().set(e.o.path,list))A().toast('지웠다');re()});
   md.querySelectorAll('[data-sgoff]').forEach(b=>b.onclick=async()=>{A().closeModal();await reset()});
   const rs=$('#strs',md);if(rs)rs.onclick=async()=>{if(!confirm(`《${cur}》을(를) 걷을까?`))return;A().closeModal();await reset()}}
  /* 주인의 목록 하나를 고쳐 쓴다 (path = 로스터 칸, 없으면 배틀 사본) */

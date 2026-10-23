@@ -18,7 +18,9 @@ window.OM_IMPORT=(()=>{
   return {id:doc.id||d.id,name:d.name||'트레이너',kind:d.kind==='npc'?'npc':'pc',image:d.image||'',stands:standsOf(d.stands),standActive:+d.standActive||0,
    ranks:Object.assign({육성:'',지시:'',통솔:'',능력:''},d.ranks||{}),base:d.base||{},detail:d.detail||{},
    unique:(d.unique||[]).filter(u=>u&&u.name).map(u=>{const o={name:u.name,eff:brN(u.eff||'')};for(const k of ['color','icon','sub'])if(u[k])o[k]=String(u[k]).slice(0,40);const dsl=String(u.auto||'').trim();if(dsl){const r=window.OM_FX?window.OM_FX.parse(dsl):{ops:[]};o.auto={dsl,ops:r.ops}}return o}),
-   pids:d.pids||[],solo:!!d.solo,folder:d.folder||'',fields:fieldsOf(d.fields)}}
+   pids:d.pids||[],solo:!!d.solo,folder:d.folder||'',fields:fieldsOf(d.fields),
+   /* 10-23 망령: 제작기 시트의 지시 체계 {preset:assoc|ten|wild|jam|manual, tc, base} */
+   mkOrders:d.orders&&d.orders.preset?{preset:String(d.orders.preset),tc:+d.orders.tc||0,base:d.orders.base==null?1:Math.max(0,+d.orders.base||0)}:null}}
 
  /* 기술 이름 → 배틀용 기술 (기술 DB 복사) */
  function move(name,half){
@@ -86,6 +88,8 @@ window.OM_IMPORT=(()=>{
  function party(trDoc,pokeDocs){
   const tr=trainer(trDoc);
   const byId=new Map(pokeDocs.map(x=>[x.id,x]));
+  /* 10-23 망령: pids 에 빠진 포켓몬도 그 트레이너 것(tid)이면 뒤에 붙인다 */
+  for(const x of pokeDocs)if(x&&x.data&&x.data.tid===tr.id&&!tr.pids.includes(x.id))tr.pids.push(x.id);
   const mons=tr.pids.map(id=>byId.get(id)).filter(Boolean).map(x=>pokemon(x,tr));
   return {trainer:tr,mons}}
 

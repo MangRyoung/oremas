@@ -77,7 +77,7 @@ window.OM_SKILL_UI=(()=>{
   const needMon=!!(sub.dmg||sub.st||Object.values(sub.rk).some(v=>+v));
   if(needMon){const mid=await pickMon(tid,`패널티 — ${why}`,'패널티를 받을 포켓몬 1체를 고른다');if(mid){await putMon(mid,x=>{const nm=x.name;
     if(sub.dmg){const loss=frac(x.hp.max,sub.dmg);x.hp.cur=Math.max(0,x.hp.cur-loss);L.push(`${nm} HP −${loss}`)}
-    if(sub.st){x.states=x.states||{};const sd=sdb()[sub.st]||{};x.states[sub.st]=+sub.cnt>0?+sub.cnt:(sd.min<1000?sd.min:1000);L.push(`${nm} 「${stKo(sub.st)}」`)}
+    if(sub.st){x.states=x.states||{};const sd=sdb()[sub.st]||{};{const d=sd;x.states[sub.st]=+sub.cnt>0?+sub.cnt:(d.min>=1000||!d.min?1000:(+d.max>+d.min&&+d.max<1000?+d.min+Math.floor(Math.random()*(+d.max-+d.min+1)):+d.min))}L.push(`${nm} 「${stKo(sub.st)}」`)}
     const rk=Object.entries(sub.rk).filter(([k,v])=>+v);if(rk.length){x.rank=x.rank||{};for(const [k,v] of rk){x.rank[k]=Math.max(-6,Math.min(6,(+x.rank[k]||0)+ +v))}L.push(`${nm} `+rk.map(([k,v])=>(RK.find(r=>r[0]===k)||[k,k])[1]+(v>0?'+':'')+v).join(' '))}})}}
   const bt=((A().ST.state.battle||{}).trainers||{})[tid];
   if(+sub.oo>0||+sub.oc>0){if(bt){const nt=JSON.parse(JSON.stringify(bt));nt.orderCount=nt.orderCount||{};const cut=(pre,n)=>{let left=n;for(const k of Object.keys(nt.orderCount).filter(k=>k.startsWith(pre)).sort()){while(left>0&&(+nt.orderCount[k]||0)>0){nt.orderCount[k]--;left--}}return n-left};const a=cut('order_',+sub.oo||0),b=cut('command_',+sub.oc||0);await A().setDiff(['battle','trainers',tid],bt,nt,2);if(a)L.push(`4식 −${a}`);if(b)L.push(`6령 −${b}`)}else L.push(`4식/6령 차감은 배틀에 트레이너가 없어 손으로 (${sub.oo||0}/${sub.oc||0})`)}

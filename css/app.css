@@ -3232,3 +3232,16 @@ body.m-chat .mecard{display:none}
  .phone-modal .ph-home{position:relative;min-height:50px;align-items:center;padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px))}
  .phone-modal .ph-close{display:inline-flex!important;align-items:center;position:fixed;top:auto;right:10px;bottom:calc(9px + env(safe-area-inset-bottom,0px));z-index:6;margin:0;padding:5px 16px;font-size:13px;min-height:32px}
 }
+/* 10-23 망령: 함께 지시하기 · 합치기 */
+.mgopt{display:grid;gap:6px;margin-bottom:10px}.mgopt label,.mgord label{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.mgopt select{max-width:220px}
+.mgord{display:grid;gap:4px;margin:4px 0 8px}
+.mgprev{border:2px solid var(--line);background:#141518;padding:10px;display:grid;gap:6px}
+.mghead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.mghead b{font-family:var(--lab);color:#fff;font-size:15px}
+.mgmons,.mgl{display:flex;flex-wrap:wrap;gap:4px}
+.mgm{padding:2px 8px;border:1px solid var(--line);font-size:12px;background:#1d1f24}.mgm.g{border-color:#d6a23b;color:#ffd98a}.mgm.u{border-color:#7b4fd6;color:#cdb6ff}
+.mgrow{display:flex;align-items:center;gap:6px;margin-top:4px}.mgrow .gk{font-family:var(--lab);font-size:10px;letter-spacing:.15em;background:var(--blue);color:#fff;padding:0 6px}.mgrow .gk.c{background:var(--red)}
+.mgc{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border:1px solid var(--line);font-size:12px;background:#1d1f24}.mgc b{color:#ffd98a;font-variant-numeric:tabular-nums}
+.mgc.co{border-color:#d6a23b}.mgc.z{opacity:.4}
+.oown{display:inline-block;font-style:normal;font-size:10px;padding:0 5px;margin:1px 0;background:#d6a23b;color:#1a1306;border-radius:2px}
+.firerow .oown{margin-left:6px}
