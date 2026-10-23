@@ -12,6 +12,7 @@ window.OM_CUTIN=(()=>{
  const cfg=()=>Object.assign({sc:70,pos:'mid',dim:1,dur:0,on:1},(((A()&&A().ST.state||{}).rp||{}).cutin)||{});
  let unlocked=false;document.addEventListener('pointerdown',()=>{unlocked=true},{once:true});
  function se(name){try{if(window.OM_RP_UI)window.OM_RP_UI.playSe(name,true)}catch(e){}}
+ function sfx(name){try{const U=window.OM_RP_UI;if(!U||!U.seUrlOf(name))return false;U.playSe(name,true);return true}catch(e){return false}}
  function root(id){let r=document.getElementById(id);if(r)r.remove();r=document.createElement('div');r.id=id;document.body.appendChild(r);return r}
  const rnd=(a,b)=>a+Math.random()*(b-a);
  function jag(fill,stroke,sw,amp){const top=[],bot=[];let x=0;while(x<1000){top.push([x,rnd(0,amp)]);x+=rnd(14,40)}top.push([1000,rnd(0,amp)]);x=1000;while(x>0){bot.push([x,100-rnd(0,amp)]);x-=rnd(14,40)}bot.push([0,100-rnd(0,amp)]);
@@ -87,10 +88,10 @@ window.OM_CUTIN=(()=>{
     <div class="r3-ttl"><div class="a">${esc(D.label||'RAID BATTLE')}</div><div class="b">${esc(title)}</div>${D.n?`<div class="n">${esc(D.n)}</div>`:''}${D.ph>0?`<div class="c">PHASE ${esc(D.ph)}</div>`:''}</div>
     ${nohp?'':`<div class="r3-hp"><i></i>${marks}</div>`}</div><div class="r3-flash"></div>`;
   if(!nohp){let p=parseFloat(D.hp);if(!(p>=0))p=100;setTimeout(()=>{const f=r.querySelector('.r3-hp i');if(f)f.style.width=Math.min(p,100)+'%'},2500)}
-  synth('siren');setTimeout(()=>synth('hit'),1700);setTimeout(()=>{if(r.parentNode)r.remove()},5400)}
+  if(!sfx('raid_warning'))synth('siren');setTimeout(()=>{if(r.parentNode)r.remove()},5400)}   /* 맵툴에서 쓰던 경고음. 목록에 없으면 브라우저 사이렌 */
  function fit(r){const f=()=>{const s=Math.min(window.innerWidth/960,window.innerHeight/540)*.94;r.style.setProperty('--s',s>0?s:1)};f();[30,80,160,320].forEach(ms=>setTimeout(f,ms))}
- function vs(L,R){vsLocal({L,R});se('cut');DBS().broadcast({t:'cutin',k:'vs',L,R})}
- function raid(D){raidLocal(D);se('cut');DBS().broadcast({t:'cutin',k:'raid',D})}
+ function vs(L,R){vsLocal({L,R});DBS().broadcast({t:'cutin',k:'vs',L,R})}
+ function raid(D){raidLocal(D);DBS().broadcast({t:'cutin',k:'raid',D})}
 
  /* ----- 페이즈 띠 (turn_overlay): 화면 위 가운데에 잠깐 ----- */
  function phaseLocal(text,sub){const r=root('phov');r.className='phov';r.innerHTML=`<div class="phin"><div class="pht">${esc(text)}</div>${sub?`<div class="phs">${esc(sub)}</div>`:''}</div>`;setTimeout(()=>r.classList.add('out'),1800);setTimeout(()=>r.remove(),2300)}
@@ -112,6 +113,6 @@ window.OM_CUTIN=(()=>{
    setTimeout(()=>r.remove(),3400)}}
  function evo(D){evoLocal(D);se('cut');DBS().broadcast({t:'cutin',k:'evo',D})}
 
- function onEvent(p){if(!p||p.t!=='cutin')return;if(p.k==='fire'){se(p.se||'cut');if(p.c)showFire(p.c);else if(p.list)fireLocal(p.list)}else if(p.k==='vs'){se('cut');vsLocal(p)}else if(p.k==='raid'){se('cut');raidLocal(p.D)}else if(p.k==='phase')phaseLocal(p.text,p.sub);else if(p.k==='evo'){se('cut');evoLocal(p.D)}}
+ function onEvent(p){if(!p||p.t!=='cutin')return;if(p.k==='fire'){se(p.se||'cut');if(p.c)showFire(p.c);else if(p.list)fireLocal(p.list)}else if(p.k==='vs'){vsLocal(p)}else if(p.k==='raid'){raidLocal(p.D)}else if(p.k==='phase')phaseLocal(p.text,p.sub);else if(p.k==='evo'){se('cut');evoLocal(p.D)}}
  return {preview,fire,vs,raid,phase,evo,evoLocal,onEvent,fireLocal,vsLocal,raidLocal};
 })();
