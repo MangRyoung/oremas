@@ -590,13 +590,15 @@ function renderScene(){reconcileNodes();
  const el=$('#scene');if(!el)return;
  if(VIEW!=='report'&&VIEW!=='guide')ST.lastView=VIEW;
  try{if(window.OM_MECARD)window.OM_MECARD.draw(VIEW)}catch(e){}   /* 내 트레이너 미니 카드 (10-24) — 탭 그리기가 실패해도 숨김/보임은 먼저 맞춘다 */
- if(VIEW==='battle')renderBattle(el);
+ /* 10-24 망령: 탭 그리기가 실패하면 탭만 바뀌고 화면은 그대로 남았다 (휴대폰 시트) — 실패를 화면에 보이고 나머지는 계속 돈다 */
+ try{if(VIEW==='battle')renderBattle(el);
  else if(VIEW==='sheet')window.OM_SHEET_UI.render(el);
  else if(VIEW==='graph')window.OM_GRAPH_UI.render(el);
  else if(VIEW==='calendar')window.OM_CAL_UI.render(el);
  else if(VIEW==='report')window.OM_REPORT_UI.render(el);
  else if(VIEW==='guide'){if(window.OM_GUIDE_UI)window.OM_GUIDE_UI.render(el)}
- else window.OM_RP_UI.render(el);
+ else window.OM_RP_UI.render(el)}
+ catch(err){console.error(err);const n=(VIEWS.find(x=>x[0]===VIEW)||[0,VIEW])[1];el.innerHTML=`<div class="empty vfail"><b>「${esc(n)}」 화면을 그리지 못했다.</b><div class="small dim" style="margin:6px 0 10px;word-break:break-all">${esc(err&&err.message||err)}</div><button class="btn sm" id="vfailRe">다시 그리기</button> <button class="btn sm ghost" id="vfailRp">RP 로</button><div class="small dim" style="margin-top:8px">이 글을 캡처해서 보내 주면 고칠 수 있다.</div></div>`;const r1=$('#vfailRe');if(r1)r1.onclick=()=>renderScene();const r2=$('#vfailRp');if(r2)r2.onclick=()=>{VIEW='rp';renderScene()}}
  if(window.OM_RP_UI)window.OM_RP_UI.onState();
  if(window.OM_DECK_UI){if(ST.role==='gm')window.OM_DECK_UI.absorb();else if(window.OM_DECK_UI.onAck)window.OM_DECK_UI.onAck()}
  if(window.OM_PHONE_UI&&window.OM_PHONE_UI.refresh)window.OM_PHONE_UI.refresh();

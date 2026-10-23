@@ -3193,3 +3193,42 @@ body.m-chat .mecard{display:none}
 .pcask{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;margin-top:10px}
 .pcask label{display:inline-flex;align-items:center;gap:4px}
 .pcask input{width:72px}
+/* 포켓몬 시트 이름 줄: 이름 · 타입 · Lv 한 줄 (2026-10-24) */
+.pbrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pbrow .pbn{min-width:0}
+.pbty{display:inline-flex;gap:4px;align-items:center;font-size:13px;line-height:1;text-shadow:none}
+.pblv{font-family:var(--head);font-size:15px;line-height:1;color:#fff;background:#000;border:2px solid #fff;padding:3px 8px;text-shadow:none}
+/* 휴대폰 위 띠: 방 이름 · 접속자를 한 줄에 — 접속자가 많아도 줄을 새로 만들지 않고 잘라서 무대·대사창을 첫 화면에 남긴다 (2026-10-24) */
+@media (max-width:760px){
+ .top{flex-wrap:wrap}
+ .top .name{flex:0 1 auto;min-width:0}
+ .top .badge{flex:none}
+ .top .presence{flex:1 1 0;min-width:0;max-width:none;margin-left:auto;justify-content:flex-start;flex-wrap:nowrap;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,#000 85%,transparent);mask-image:linear-gradient(90deg,#000 85%,transparent)}
+ .top .presence .pcount{flex:none;display:inline-flex;flex-direction:row;align-items:center;gap:3px;white-space:nowrap}
+ .top .presence .pwho{flex:none}
+ /* 무대는 화면에 남은 높이만큼만 — 아래 화자 고르기 · 입력줄이 끌어내리지 않아도 보이게 */
+ .rpstage{min-height:max(260px,min(58vh,calc(100dvh - 300px)));max-height:max(260px,min(66vh,calc(100dvh - 300px)))}
+}
+/* 위 띠 접속자: 사람이 많아도 뒤 메뉴를 밀지 않게 — 폭을 묶고 넘치는 이름은 흐리게 잘라 낸다 (2026-10-24) */
+@media (min-width:761px){
+ .top .presence{flex:0 1 auto;min-width:0;max-width:min(24vw,320px);flex-wrap:nowrap;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)}
+ .top .presence .pcount,.top .presence .pwho{flex:none}
+ .top .tabs,.top .btn,.top #conn,.top .name,.top .badge{flex-shrink:0}
+}
+/* PC 배틀 포텐셜 · 지령 · 명령 칸: Do Hyeon 이 작은 글자에서 빽빽해서 본문 글꼴 굵게로 (휴대폰은 그대로) (2026-10-24) */
+@media (min-width:761px){
+ .cfold>summary{font-family:var(--font);font-weight:700;letter-spacing:0;font-size:13px}
+ .oc b{font-family:var(--font);font-weight:700;letter-spacing:0;font-size:12.5px}
+ .oc small{letter-spacing:0}
+}
+/* RP 아래 띠 정리: 내 캐릭터 · 소지 포켓몬은 왼쪽, 굴림 · 폰 · 대화는 오른쪽 끝에 모은다 (2026-10-24) */
+.mebar .meid{order:1}.mebar .memons{order:2;flex:0 1 auto;min-width:0}.mebar .melast{order:3;min-width:0}.mebar .mebtns{order:4;margin-left:auto;flex:none}
+.mebar .meid>div{display:flex;flex-direction:column;justify-content:center;gap:1px}
+.mebar .memons:empty{display:none}
+@media (max-width:760px){.mebar .memons{order:5;flex-basis:100%}.mebar .melast{order:6;flex-basis:100%}}
+/* 휴대폰(폰 화면) 닫기: 위 오른쪽 ✕ 대신 아래 홈 막대 줄 오른쪽 「닫기」 — 엄지가 닿는 곳 (2026-10-24) */
+@media (max-width:760px){
+ .phone-modal .ph-x{display:none}
+ .phone-modal .ph-home{position:relative;min-height:50px;align-items:center;padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px))}
+ .phone-modal .ph-close{display:inline-flex!important;align-items:center;position:fixed;top:auto;right:10px;bottom:calc(9px + env(safe-area-inset-bottom,0px));z-index:6;margin:0;padding:5px 16px;font-size:13px;min-height:32px}
+}
