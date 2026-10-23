@@ -48,6 +48,7 @@ window.OM_CUTIN=(()=>{
  let AC=null;
  function synth(kind){try{if(window.OM_PREFS&&window.OM_PREFS.get().seMute)return;let v=0.7;try{v=+(localStorage.getItem('om_vol_se')??0.7)}catch(e){}if(!(v>0))return;
   AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();const t=AC.currentTime,g=AC.createGain();g.connect(AC.destination);
+  if(kind==='siren'){g.gain.setValueAtTime(0,t);const os=AC.createOscillator();os.type='square';for(let k=0;k<6;k++){os.frequency.setValueAtTime(k%2?620:880,t+k*.26);g.gain.setValueAtTime(v*.09,t+k*.26);g.gain.setValueAtTime(v*.02,t+k*.26+.22)}g.gain.setValueAtTime(0,t+1.56);os.connect(g);os.start(t);os.stop(t+1.6);return}
   const big=kind==='hit';g.gain.setValueAtTime(v*(big?.9:.45),t);g.gain.exponentialRampToValueAtTime(.001,t+(big?.6:.18));
   const o=AC.createOscillator();o.type='sine';o.frequency.setValueAtTime(big?140:220,t);o.frequency.exponentialRampToValueAtTime(big?38:90,t+(big?.45:.15));o.connect(g);o.start(t);o.stop(t+(big?.6:.2));
   const n=AC.createBufferSource(),len=Math.floor(AC.sampleRate*(big?.35:.08)),buf=AC.createBuffer(1,len,AC.sampleRate),d=buf.getChannelData(0);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,big?2.2:3);
@@ -63,12 +64,30 @@ window.OM_CUTIN=(()=>{
  /* ----- VS 시합 개시 / 경고 ----- */
  function side(cls,S){S=S||{};const mons=(S.mons||[]).slice(0,6);const balls=(S.balls||[]).slice(0,6).map((b,i)=>{const m=mons[i];return `<i class="ball ${b?'':'dead'}" style="animation-delay:${(1.55+i*.1)}s">${m&&m.img?`<img src="${esc(m.img)}" alt="" title="${esc(m.name||'')}">`:''}</i>`}).join('');
   return `<div class="vs-side ${cls}"><div class="por">${S.img?`<img src="${esc(S.img)}" alt="">`:''}</div><div class="txt"><div class="vs-nm">${esc(S.p?'《'+S.p+'》':(S.t||''))}</div><div class="vs-tn">${esc(S.sub||'')}</div><div class="vs-balls">${balls}</div></div></div>`}
- function vsLocal(D){const r=root('cut');r.className='cutov';fit(r);r.innerHTML=`<div class="full vs-blink"></div><div class="full vs-dim"></div><div class="vs-band"></div><div class="full vs-flash"></div><div class="stage">${side('vs-L',D.L)}${side('vs-R',D.R)}<div class="vs-word">VS</div></div>`;setTimeout(()=>r.remove(),4300)}
- function raidLocal(D){const r=root('cut');r.className='cutov';fit(r);const one=D.tape?String(D.tape):'⚠ WARNING ⚠ 레이드 보스 출현';let msg='';for(let i=0;i<8;i++)msg+=one+' ';
-  const x=parseInt(D.x,10);let marks='';if(x>1&&x<=20)for(let k=1;k<x;k++)marks+=`<b style="left:${k*100/x}%"></b>`;
-  r.innerHTML=`<div class="full rd-dark"></div><div class="full rd-red"></div><div class="rd-tape t"><div>${esc(msg)}</div></div><div class="rd-tape b"><div>${esc(msg)}</div></div><div class="stage"><div class="full rd-shake"><div class="rd-boss">${D.img?`<img src="${esc(D.img)}" alt="">`:''}</div><div class="rd-ttl"><div class="a">${esc(D.label||'RAID BATTLE')}</div><div class="b">${esc((D.title?String(D.title):'레이드 배틀 : '+(D.x||'?'))+(D.n?' — '+D.n:''))}</div>${D.ph>0?`<div class="c">페이즈 ${esc(D.ph)}</div>`:''}</div>${String(D.nohp)==='1'?'':`<div class="rd-hp"><i></i>${marks}</div>`}</div></div>`;
-  if(String(D.nohp)!=='1'){let p=parseFloat(D.hp);if(!(p>=0))p=100;setTimeout(()=>{const f=r.querySelector('.rd-hp i');if(f)f.style.width=Math.min(p,100)+'%'},2400)}
-  setTimeout(()=>r.remove(),5000)}
+ /* 10-24 망령 새 디자인: 양쪽 판이 대각선으로 날아와 가운데서 부딪히고 VS 가 박힌다 (테마 P5 · P3 · P4, 휴대폰 세로는 위아래로) */
+ const vU=()=>Math.min(innerHeight/100,innerWidth/100*1.5),vNar=()=>innerWidth/Math.max(1,innerHeight)<1;
+ function vsPane(S,L){S=S||{};const mons=S.mons||[],bl=S.balls||[];
+  const balls=Array.from({length:6},(_,i)=>{if(bl[i]==null)return '<i class="v3-ball none"></i>';const m=mons[i]||{};return `<i class="v3-ball${bl[i]?'':' dead'}" style="--bi:${i}" title="${esc(m.name||'')}">${m.img?`<img src="${esc(m.img)}" alt="">`:''}</i>`}).join('');
+  const rk=String(S.sub||'').split('·').map(x=>x.trim()).filter(Boolean).map(x=>{const k=x.split(' ')[0],v=x.slice(k.length).trim();return `<span><small>${esc(k)}</small><b>${esc(v||'-')}</b></span>`}).join('');
+  return `<div class="v3-pane ${L?'v3-L':'v3-R'}"><div class="v3-bg"></div><div class="v3-lines"></div><div class="v3-por${S.img?'':' none'}"${S.img?` style="background-image:url('${cssu(S.img)}')"`:''}></div>
+   <div class="v3-plate"><div class="v3-side">${L?'PLAYER':'RIVAL'}</div><div class="v3-nm">${esc(S.p?'《'+S.p+'》':(S.t||'???'))}</div>${rk?`<div class="v3-rk">${rk}</div>`:''}<div class="v3-balls">${balls}</div></div></div>`}
+ function vsLocal(D){D=D||{};const r=root('cut');const nar=vNar();const sa=nar?90-Math.atan(.10*innerHeight/innerWidth)*180/Math.PI:Math.atan(.14*innerWidth/innerHeight)*180/Math.PI;r.className=`v3 v3${vt()}${nar?' v3-nar':''}`;r.style.cssText=`--u:${vU()}px;--sa:${sa.toFixed(2)}deg`;
+  let sp='';for(let a=0;a<360;a+=30)sp+=`<i style="--a:${a+12}deg"></i>`;
+  r.innerHTML=`<div class="v3-dim"></div><div class="v3-shake">${vsPane(D.L,1)}${vsPane(D.R,0)}<div class="v3-seam"></div><div class="v3-ring"></div><div class="v3-spark">${sp}</div><div class="v3-vs"><b>V</b><b>S</b></div></div><div class="v3-top"><span>BATTLE START</span></div><div class="v3-flash"></div>`;
+  setTimeout(()=>synth('hit'),560);setTimeout(()=>{if(r.parentNode)r.remove()},4500)}
+ /* 경고: 붉은 경보 + 기울어진 경고 테이프 + 글리치 WARNING → 실루엣이 드러나는 강적 · 레이드 HP 칸 */
+ function raidLocal(D){D=D||{};const r=root('cut');r.className=`r3 v3${vt()}${vNar()?' v3-nar':''}`;r.style.cssText=`--u:${vU()}px`;
+  const one=D.tape?String(D.tape):'⚠ WARNING ⚠ 레이드 보스 출현';let msg='';for(let i=0;i<8;i++)msg+=`<span>${esc(one)}</span>`;
+  const x=parseInt(D.x,10);let marks='';if(x>1&&x<=20)for(let k=1;k<x;k++)marks+=`<b style="left:${k*100/x}%"></b>`;const nohp=String(D.nohp)==='1';
+  const title=D.title?String(D.title):'레이드 배틀 : '+(D.x||'?');
+  r.innerHTML=`<div class="r3-dark"></div><div class="r3-vig"></div><div class="r3-scan"></div>
+   <div class="r3-tape t"><div>${msg}${msg}</div></div><div class="r3-tape b"><div>${msg}${msg}</div></div>
+   <div class="r3-warn"><b data-t="WARNING">WARNING</b></div>
+   <div class="r3-shake"><div class="r3-boss"><div class="r3-glow"></div><div class="r3-im${D.img?'':' none'}"${D.img?` style="background-image:url('${cssu(D.img)}')"`:''}></div><div class="r3-fr"></div></div>
+    <div class="r3-ttl"><div class="a">${esc(D.label||'RAID BATTLE')}</div><div class="b">${esc(title)}</div>${D.n?`<div class="n">${esc(D.n)}</div>`:''}${D.ph>0?`<div class="c">PHASE ${esc(D.ph)}</div>`:''}</div>
+    ${nohp?'':`<div class="r3-hp"><i></i>${marks}</div>`}</div><div class="r3-flash"></div>`;
+  if(!nohp){let p=parseFloat(D.hp);if(!(p>=0))p=100;setTimeout(()=>{const f=r.querySelector('.r3-hp i');if(f)f.style.width=Math.min(p,100)+'%'},2500)}
+  synth('siren');setTimeout(()=>synth('hit'),1700);setTimeout(()=>{if(r.parentNode)r.remove()},5400)}
  function fit(r){const f=()=>{const s=Math.min(window.innerWidth/960,window.innerHeight/540)*.94;r.style.setProperty('--s',s>0?s:1)};f();[30,80,160,320].forEach(ms=>setTimeout(f,ms))}
  function vs(L,R){vsLocal({L,R});se('cut');DBS().broadcast({t:'cutin',k:'vs',L,R})}
  function raid(D){raidLocal(D);se('cut');DBS().broadcast({t:'cutin',k:'raid',D})}
