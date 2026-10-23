@@ -816,9 +816,9 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  /* 10-24 망령: 같은 소리는 한 번 받아 둔 걸 다시 쓴다 (매번 새로 받느라 컷인보다 늦게 울리던 것). 배틀 기본 효과음은 첫 클릭 뒤 미리 받아 둔다 */
  const SEC=new Map();
  /* 효과음별 손질: vol 크기 배수 · end 초에서 끊기(fade 초 동안 줄이며) */
- const SE_TUNE={ball_open:{vol:.65,end:.85,fade:.18}};
+ const SE_TUNE={ball_open:{vol:.65,end:1.3,fade:.6}};
  function seAudio(u,tn){try{let b=SEC.get(u);if(!b){b=new Audio(u);b.preload='auto';SEC.set(u,b)}const a=(b.paused||b.ended)?b:b.cloneNode();a.currentTime=0;const v0=Math.min(1,volSe*((tn&&tn.vol)||1));a.volume=v0;a.play().catch(()=>{});
-  if(tn&&tn.end){const fd=tn.fade||.15,st=Date.now();clearInterval(a._tn);a._tn=setInterval(()=>{const t=(Date.now()-st)/1000;if(t>=tn.end){clearInterval(a._tn);a.pause();a.volume=v0;return}if(t>tn.end-fd)a.volume=Math.max(0,v0*(tn.end-t)/fd)},30)}}catch(e){}}
+  if(tn&&tn.end){const fd=tn.fade||.15,st=Date.now();clearInterval(a._tn);a._tn=setInterval(()=>{const t=(Date.now()-st)/1000;if(t>=tn.end){clearInterval(a._tn);a.pause();a.volume=v0;return}if(t>tn.end-fd){const q=Math.max(0,(tn.end-t)/fd);a.volume=v0*q*q}},25)}}catch(e){}}
  document.addEventListener('pointerdown',()=>setTimeout(()=>{try{const g=seList()['00. 기본 (배틀)']||{};for(const n of ['Blow','Draw','Ping','Ping2','cut','cut_critical','dice','evasion','Dead','raid_warning','ball_open']){const u=g[n];if(u&&!SEC.has(u)){const b=new Audio(u);b.preload='auto';SEC.set(u,b)}}}catch(e){}},1500),{once:true});
  function playSe(name,localOnly){if(seOff()&&localOnly!=='force')return;const u=/^https?:/.test(name)?name:seUrl(name);if(!u)return;if(!gm())localOnly=true;/* 좌석은 rp 를 못 쓰니 내 쪽에서만 울린다 */if(localOnly){seAudio(u,SE_TUNE[name]);return}A().set(['rp','se'],{name,src:u,at:Date.now()})}
  /* 로그를 보고 자동 효과음: 주사위 → dice, 지시 공개 → Draw, 턴 개시 → Ping2, 공격 명중 → Blow, 급소 → cut_critical, 빗나감 → evasion, 빈사 → Dead */
