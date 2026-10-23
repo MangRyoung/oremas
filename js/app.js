@@ -635,6 +635,10 @@ let MK=null;
 /* 제작기 문서는 30초만 담아 둔다 — 제작기에서 폼 · 소지품을 고친 뒤 다시 불러와도 예전 것을 쓰지 않게 (10-24 망령) */
 async function loadMaker(force){if(MK&&!force&&Date.now()-(MK.at||0)<600000)return MK;toast('제작기 시트를 읽는 중…');const [trs,pks,fos]=await Promise.all([DBS().makerDocs('trainers'),DBS().makerDocs('pokemon'),DBS().makerDocs('folders')]);
  MK={trainers:trs,pokemon:pks,folders:fos,at:Date.now()};return MK}
+/* 10-23 망령 (이그레스): 트레이너 하나만 새로 읽어 MK 에 끼운다 — 가져오기 · 제작기에서 갱신. 함수가 없거나 실패하면 전체를 다시 읽는다 */
+async function loadMakerParty(tid){if(!tid||!DBS().makerParty)return loadMaker(true);let r;try{r=await DBS().makerParty(tid)}catch(e){console.warn('makerParty',e);return loadMaker(true)}
+ if(!r.trainer)return MK||{trainers:[],pokemon:[],folders:[]};const base=MK||{trainers:[],pokemon:[],folders:[],at:0};const ids=new Set(r.pokemon.map(x=>x.id));
+ const out={trainers:[...base.trainers.filter(x=>x.id!==r.trainer.id),r.trainer],pokemon:[...base.pokemon.filter(x=>!ids.has(x.id)),...r.pokemon],folders:base.folders,at:base.at};if(MK)MK=out;return out}
 function roster(){return ST.state.roster||{trainers:{},mons:{}}}
 async function openLoadParty(side){
  const r=roster();const ids=Object.keys(r.trainers).sort((a,b)=>(r.trainers[a].ord||0)-(r.trainers[b].ord||0));
@@ -1001,6 +1005,6 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
 /* 이름으로 기본 초상 찾기: 그림이 따로 없으면 같은 이름의 로스터 트레이너 → 포켓몬 → 관계도 노드의 그림을 쓴다 */
 function portraitOf(name,img){if(img)return img;if(!name)return '';const ro=ST.state.roster||{};const t=Object.values(ro.trainers||{}).find(x=>x.name===name);if(t&&t.image)return t.image;const m=Object.values(ro.mons||{}).find(x=>x.name===name&&x.image);if(m)return m.image;const n=Object.values((ST.state.graph||{}).nodes||{}).find(x=>x.name===name&&x.img);return n?n.img:''}
-window.OM_APP={selfLog,splitLog,contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,openMon,openLoadParty,loadFromRoster,loadMaker,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,online:s=>!!s&&Object.values(PRES.who).some(v=>v.role==='seat'&&v.seat===s&&Date.now()-v.at<70000),get view(){return VIEW},set view(v){VIEW=v}};
+window.OM_APP={selfLog,splitLog,contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,openMon,openLoadParty,loadFromRoster,loadMaker,loadMakerParty,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,online:s=>!!s&&Object.values(PRES.who).some(v=>v.role==='seat'&&v.seat===s&&Date.now()-v.at<70000),get view(){return VIEW},set view(v){VIEW=v}};
 route();
 })();
