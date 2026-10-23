@@ -166,6 +166,13 @@ end $$;
 --   rp.gmHands = false : 「GM 도 남의 지시·준비를 못 건드림」 — GM 은 좌석 주인의 비밀 지시를 쓰지 못하고,
 --                        공개된 지시(battle/cmds/<좌석>) · 준비(ready/<좌석>) · 공개 칸(pub/<좌석>)은 비우기만 할 수 있다.
 -- 바뀌는 값을 경로 단위로 비교해서 허락되지 않은 곳이 하나라도 바뀌면 false.
+-- 2026-10-25 함께 지시하기: x 트레이너를 w 좌석이 다룰 수 있나 — 제 자리이거나, 그 트레이너 시트(roster.trainers.x.co)에 w 가 적혀 있으면.
+-- co 는 시트 주인(과 GM)만 쓸 수 있는 칸이라, 남의 트레이너에 저를 끼워 넣을 수 없다.
+create or replace function public.om_own(d jsonb, w text, x text)
+returns boolean language sql immutable as $$
+  select x is not null and w is not null and (x = w or coalesce(jsonb_typeof(d #> array['roster','trainers',x,'co']) = 'array' and (d #> array['roster','trainers',x,'co']) ? w, false))
+$$;
+
 create or replace function public.om_chk(p_mode text, w text, p_path text[], o jsonb, n jsonb, d jsonb, seats text[])
 returns boolean language plpgsql stable as $$
 declare len int := coalesce(array_length(p_path,1),0); k text; owner text; recurse boolean := false;
@@ -182,7 +189,7 @@ begin
     -- 좌석: 자기 것만
     if len = 0 then recurse := true;
     elsif p_path[1] in ('seats','pub','dex','ready') then
-      if len = 1 then recurse := true; else return p_path[2] = w; end if;
+      if len = 1 then recurse := true; elsif p_path[1] in ('pub','ready') then return public.om_own(d, w, p_path[2]); else return p_path[2] = w; end if;   -- 준비 · 공개 칸은 함께 지시하는 좌석도
     elsif p_path[1] = 'roster' then
       if len = 1 or (len = 2 and p_path[2] in ('trainers','mons')) then recurse := true;
       elsif p_path[2] = 'trainers' then return p_path[3] = w;
@@ -200,7 +207,7 @@ begin
       else return false; end if;
     elsif p_path[1] = 'battle' then
       if len = 1 or (len = 2 and p_path[2] in ('trainers','cmds','mons','sides')) then recurse := true;
-      elsif p_path[2] in ('trainers','cmds') then return p_path[3] = w;
+      elsif p_path[2] in ('trainers','cmds') then return public.om_own(d, w, p_path[3]);
       elsif p_path[2] = 'sides' then
         -- 진영 목록: 나를 넣거나 빼는 것만
         if len = 3 or (len = 4 and p_path[4] = 'trainers') then
@@ -214,11 +221,11 @@ begin
       elsif p_path[2] = 'mons' then
         if len = 3 then
           owner := coalesce(o->>'tid', n->>'tid');
-          if owner = w and (n is null or jsonb_typeof(n) = 'null' or n->>'tid' = w) then return true; end if;
+          if public.om_own(d, w, owner) and (n is null or jsonb_typeof(n) = 'null' or n->>'tid' = owner) then return true; end if;
           if jsonb_typeof(o) = 'object' and jsonb_typeof(n) = 'object' then recurse := true; else return false; end if;
         else
           owner := d #>> array['battle','mons',p_path[3],'tid'];
-          if owner = w then return true; end if;
+          if public.om_own(d, w, owner) then return true; end if;
           return p_path[4] in ('lastHit','pend','fx');   -- 남의 포켓몬: 공격 판정 넘기기 · 맞을 때 소모되는 효과만
         end if;
       else return false; end if;
@@ -258,7 +265,7 @@ begin
   if w <> 'gm' then
     if p_path is null or array_length(p_path,1) < 1 then raise exception '좌석은 전체를 바꿀 수 없습니다'; end if;
     if array_length(p_path,1) < 2 and p_path[1] not in ('battle','ready') then raise exception '좌석은 전체를 바꿀 수 없습니다'; end if;
-    if ((p_path[1] = 'seats' and p_path[2] = w) or (p_path[1] = 'ready') or (p_path[1] = 'pub' and p_path[2] = w)   -- ready: 지시 완료 표시 (턴이 넘어갈 때 비운다)
+    if ((p_path[1] = 'seats' and p_path[2] = w) or (p_path[1] = 'ready') or (p_path[1] = 'pub' and public.om_own(cur, w, p_path[2]))   -- ready: 지시 완료 표시 (턴이 넘어갈 때 비운다)
             or (p_path[1] = 'battle')   -- 배틀 전체: 포켓몬 HP·랭크·상태, 필드, 지시 공개, 턴·페이즈, 파티 불러오기 … 플레이어끼리 모의전을 할 수 있게 (신뢰 기반, 맵툴과 같음)
             or (p_path[1] = 'roster' and p_path[2] = 'trainers' and p_path[3] = w)   -- 내 시트
             or (p_path[1] = 'skill' and p_path[2] in ('trainers','res','hist'))        -- 스킬 체크 자원·결과 (지침·돌봄·커버는 남의 칸도 건드린다 · 신뢰 기반)
@@ -309,7 +316,7 @@ declare w text;
 begin
   w := om_who(p_room, p_secret);
   if w is null then raise exception '권한이 없습니다'; end if;
-  if w <> 'gm' and not (p_kind = 'cmd' and p_id = w) then raise exception '이 좌석이 쓸 수 없는 곳입니다'; end if;
+  if w <> 'gm' and not (p_kind = 'cmd' and public.om_own((select s.data from om_state s where s.room = p_room), w, p_id)) then raise exception '이 좌석이 쓸 수 없는 곳입니다'; end if;   -- 함께 지시하는 트레이너의 지시도
   if w = 'gm' and p_kind = 'cmd'
      and (select s.data #>> '{rp,gmHands}' from om_state s where s.room = p_room) = 'false'
      and exists (select 1 from om_auth a where a.room = p_room and a.role = 'seat' and a.seat = p_id) then
@@ -327,7 +334,8 @@ begin
   w := om_who(p_room, p_secret);
   if w is null then return; end if;
   if w = 'gm' then return query select * from om_secret s where s.room = p_room and s.kind = p_kind order by s.id;
-  else return query select * from om_secret s where s.room = p_room and s.kind = p_kind and s.id = w; end if;
+  else return query select * from om_secret s where s.room = p_room and s.kind = p_kind
+         and (s.id = w or (p_kind in ('cmd','peek') and public.om_own((select st.data from om_state st where st.room = p_room), w, s.id))) order by s.id; end if;
 end $$;
 
 -- 방 설정·이름 바꾸기 (GM)
@@ -381,3 +389,73 @@ create policy "oremas img read"   on storage.objects for select to anon, authent
 create policy "oremas img insert" on storage.objects for insert to anon, authenticated with check (bucket_id = 'oremas');
 create policy "oremas img update" on storage.objects for update to anon, authenticated using (bucket_id = 'oremas') with check (bucket_id = 'oremas');
 -- (2026-10-20) 그림 지우기 정책은 두지 않는다 — 두 앱 모두 그림을 지우지 않고, 링크만 아는 사람이 남의 그림을 지우지 못하게. 위의 drop 이 예전 정책을 없앤다.
+
+
+-- ---------- 이그레스 줄이기 (2026-10-23) ----------
+-- supabase/patch_2026-10-23_이그레스.sql 과 같은 내용. 방 상태는 바뀐 칸만 실시간으로 보낸다 (위에서 om_state 를 실시간 목록에 넣었다가 여기서 뺀다).
+do $$ begin
+  if to_regprocedure('realtime.send(jsonb,text,text,boolean)') is null then
+    raise exception 'realtime.send 함수가 없다 — Supabase 대시보드에서 Realtime 이 켜져 있는지 확인하고 다시 실행해 줘';
+  end if;
+end $$;
+
+-- 옛 값 a 와 새 값 b 에서 바뀐 곳을 모두 덮는 가장 깊은 경로. 바뀐 게 없으면 null, 맨 위에서 여러 칸이 바뀌었으면 빈 배열.
+-- 객체만 따라 내려간다 (배열은 통째로 하나의 칸으로 본다).
+create or replace function public.om_jdiff_path(a jsonb, b jsonb)
+returns text[] language plpgsql immutable as $$
+declare path text[] := '{}'; k text; hit text; n int;
+begin
+  if a is not distinct from b then return null; end if;
+  loop
+    if a is null or b is null or jsonb_typeof(a) <> 'object' or jsonb_typeof(b) <> 'object' then return path; end if;
+    n := 0; hit := null;
+    for k in select jsonb_object_keys(a) union select jsonb_object_keys(b) loop
+      if (a -> k) is distinct from (b -> k) then n := n + 1; hit := k; exit when n > 1; end if;
+    end loop;
+    if n = 0 then return path; end if;
+    if n > 1 then return path; end if;
+    path := path || hit; a := a -> hit; b := b -> hit;
+  end loop;
+end $$;
+
+create or replace function public.om_state_notify()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare p text[]; val jsonb; msg jsonb;
+begin
+  p := public.om_jdiff_path(old.data, new.data);
+  if p is null then
+    msg := jsonb_build_object('v', new.v, 'same', true);                    -- 버전만 올랐다
+  elsif coalesce(array_length(p, 1), 0) = 0 then
+    msg := jsonb_build_object('v', new.v, 'full', true);                    -- 여러 칸이 한꺼번에: 전체를 다시 읽게
+  else
+    val := new.data #> p;
+    if val is not null and octet_length(val::text) > 100000 then
+      msg := jsonb_build_object('v', new.v, 'full', true);                  -- 너무 크면 신호 대신 다시 읽게
+    else
+      msg := jsonb_build_object('v', new.v, 'path', to_jsonb(p), 'value', val);   -- value 가 null 이면 그 칸을 지운다
+    end if;
+  end if;
+  begin
+    perform realtime.send(msg, 'st', 'om:' || new.room, false);
+  exception when others then
+    raise warning 'om_state_notify: %', sqlerrm;   -- 신호를 못 보내도 저장은 막지 않는다 (화면이 30초마다 버전을 확인한다)
+  end;
+  return null;
+end $$;
+
+drop trigger if exists om_state_notify on public.om_state;
+create trigger om_state_notify after update on public.om_state
+  for each row when (old.v is distinct from new.v or old.data is distinct from new.data)
+  execute function public.om_state_notify();
+
+do $$ begin
+  if exists (select 1 from pg_publication_tables where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = 'om_state') then
+    alter publication supabase_realtime drop table public.om_state;
+  end if;
+end $$;
+alter table public.om_state replica identity default;
+
+-- 되돌리기 (예전 방식으로):
+--   drop trigger if exists om_state_notify on public.om_state;
+--   alter table public.om_state replica identity full;
+--   alter publication supabase_realtime add table public.om_state;

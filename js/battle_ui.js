@@ -61,8 +61,16 @@ window.OM_BATTLE_UI=(()=>{
  /* 내 지시 칸 · 내 포켓몬 편집은 GM 과 그 자리의 주인만 — 모의전 권한(mgr)과는 별개 */
  /* 파티 불러오기: 진행하는 사람(mgr) + 「자기 것만」 방의 플레이어(자기 자리로) */
  function canLoad(c){return c.mgr||(c.role==='seat'&&!!c.seat&&c.strict)}
- function myTrainers(c){const trs=c.b.trainers||{};if(c.gm)return Object.keys(trs).filter(t=>!(c.fair&&seatOwned(c,t)));return c.seat&&trs[c.seat]?[c.seat]:[]}
- function canEdit(c,mon){if(mon&&mon.tid===c.seat&&c.role==='seat')return true;return c.gm&&!(c.fair&&mon&&seatOwned(c,mon.tid))}
+ /* 함께 지시하기 (10-25 망령): 트레이너 시트(roster.trainers.<id>.co)에 적힌 좌석은 그 트레이너를 제 것처럼 다룬다 — 지시 창 · 준비 · 공개 · 포켓몬 조작.
+    co 는 시트 주인과 GM 만 쓸 수 있는 칸이고, 서버(om_own)가 같은 칸을 보고 숨긴 지시 읽기 · 저장을 허락한다 */
+ function coOf(c,tid){const t=(((c.ST.state.roster||{}).trainers)||{})[tid];return t&&Array.isArray(t.co)?t.co.filter(s=>s&&s!==tid):[]}
+ function ownT(c,tid){return c.role==='seat'&&!!c.seat&&!!tid&&(tid===c.seat||coOf(c,tid).includes(c.seat))}
+ /* 차례 자동 처리(선입력 차감 · 준비 꼴 · 공개)를 누가 맡나: 주인 화면, 주인이 없으면 함께 지시하는 좌석 중 접속한 첫 자리 — 같은 일을 두 화면이 하지 않게 */
+ const coHtml=(c,tid)=>{const L=coOf(c,tid);if(!L.length)return '';const S=c.ST.state.seats||{};return ` <span class="cow" title="이 트레이너를 함께 지시하는 플레이어">👥 ${esc(L.map(s=>(S[s]||{}).name||s).join(' · '))}</span>`};
+ const coBtn=(c,tid)=>(c.gm||c.seat===tid)&&(((c.ST.state.roster||{}).trainers||{})[tid])?`<button class="btn xs ghost" data-act="co" data-tid="${tid}" title="여러 플레이어가 이 트레이너의 지시 창 · 조작권을 함께 쓴다">함께 지시</button>`:'';
+ function lead(c,tid){if(!ownT(c,tid))return false;if(tid===c.seat)return true;if(!((c.ST.state.seats||{})[tid])||A().online(tid))return false;return coOf(c,tid).filter(s=>s===c.seat||A().online(s)).sort()[0]===c.seat}
+ function myTrainers(c){const trs=c.b.trainers||{};if(c.gm)return Object.keys(trs).filter(t=>!(c.fair&&seatOwned(c,t)));return Object.keys(trs).filter(t=>ownT(c,t)).sort((x,y)=>(y===c.seat)-(x===c.seat))}
+ function canEdit(c,mon){if(mon&&ownT(c,mon.tid))return true;return c.gm&&!(c.fair&&mon&&seatOwned(c,mon.tid))}
  function skPend(c,tid){try{const K=c.ST.state.skill||{};const O=K.offer;if(!O)return false;const R=(K.res||{})[tid];return !(R&&R.offerId===O.id)}catch(e){return false}}
  function fieldOf(b){return Object.assign({weather:{type:'',count:0},terrain:{type:'',count:0},rooms:{},etc:{},objects:{left:{},right:{}}},b.field||{})}
  function typeChip(en){return A().typeChip(en)}
@@ -73,7 +81,7 @@ window.OM_BATTLE_UI=(()=>{
   const c=ctx();const b=c.b;const f=fieldOf(b);const ready=c.ST.state.ready||{};
   const phases=[[0,'지시 준비'],[1,'턴 개시'],[2,'행동 순서'],[3,'행동 처리'],[5,'턴 종료']];
   const chips=[f.weather.type?`날씨 ${f.weather.type}${f.weather.count?' '+f.weather.count+'T':''}`:'',f.terrain.type?`${f.terrain.type}${f.terrain.count?' '+f.terrain.count+'T':''}`:'',...ROOMS.filter(r=>(f.rooms||{})[r]>0).map(r=>`${r} ${f.rooms[r]}T`),...ETC.filter(r=>(f.etc||{})[r]>0).map(r=>`${r} ${f.etc[r]}T`)].filter(Boolean);
-  const mySide=c.mgr?'left':((b.trainers||{})[c.seat]||{}).side||'left';const top=mySide==='left'?'right':'left';
+  const mySide=c.mgr?'left':((b.trainers||{})[myTrainers(c)[0]]||{}).side||'left';const top=mySide==='left'?'right':'left';
   el.innerHTML=`
   <div class="bstat ${BFOLD.open?'':'fold'}">
    <div class="turn ${c.mgr?'clickable':''}" ${c.mgr?'data-act="turnset" title="눌러서 턴 번호 조정"':''}><span class="tlab">TURN</span><span class="tnum">${b.turn||0}</span></div>
@@ -171,13 +179,13 @@ window.OM_BATTLE_UI=(()=>{
    return `<div class="area ${m?'':'empty'}" data-slot="${slot}"><div class="alab">${a.toUpperCase()}</div>${m?bigCard(c,m,slot):`<div class="aempty">빈 자리${c.mgr||ids.includes(c.seat)?'<br><span class="small">벤치에서 「등장」</span>':''}</div>`}</div>`}).join('')}</div>`}
  function benchRow(c,side,ready){const b=c.b;const ids=((b.sides||{})[side]||{}).trainers||[];const trs=b.trainers||{};const seats=c.ST.state.seats||{};
   const items=ids.map(tid=>{const t=trs[tid]||{name:'?',ranks:{}};const o=seats[tid];const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid).sort((x,y)=>(x.slot||0)-(y.slot||0));const cmdDone=!!(b.cmds||{})[tid];const rd=!!ready[tid];
-   return `<div class="tblock"><div class="trainer"><div class="tpic" style="${t.image?`background-image:url('${cssu(t.image)}')`:''}"></div><div class="tinfo"><div class="tn">${esc(t.name)}${tid===c.seat?' <span class="tag me">ME</span>':''}${rd?' <span class="tag ok">READY</span>':cmdDone?' <span class="tag">공개됨</span>':''}</div>
-     <div class="rk4">${['육성','지시','통솔','능력'].map(k=>`<span><small>${k}</small><b>${esc(t.ranks[k]||'-')}</b></span>`).join('')}</div>${o?`<div class="tr"><span class="who">${esc(o.name)}</span></div>`:''}</div>
-     </div>${(()=>{const U=uniqList(t);const own=c.gm||tid===c.seat;return U.length?`<div class="tuq">${U.map(x=>`<span class="pot sp uq" title="${esc(String(x.p.eff||'').replace(/<br\s*\/?>/g,' ').slice(0,300))}"><em>고유</em>${esc(x.p.name)}${x.max!=null?' '+pips(x.left,x.max):''}${own?(x.left!==null&&x.left<=0?'<small class="dim">다 씀</small>':`<button class="btn xs pri" data-act="ufire" data-tid="${tid}" data-pot="${esc(x.p.name)}" title="고유 포텐셜 발동 — 대상 포켓몬을 고른다">발동</button>`):''}</span>`).join('')}</div>`:''})()}<div class="tbtns">${((c.gm||tid===c.seat)&&mons.some(m=>m.entry))?`<button class="btn xs" data-act="fire" data-tid="${tid}" title="지령·명령 · 고유·전용 포텐셜 발동 창">포텐셜 발동</button>`:''}${(c.gm||tid===c.seat)?`<button class="btn xs ghost" data-act="dexmgr" data-tid="${tid}" title="도감 · 데이터 해석">해석</button><button class="btn xs ghost ${myosuGlow(c,tid)?'pri':''}" data-act="skillp" data-tid="${tid}" title="「타임」 — 상대가 준비를 마치면 지시의 꼴(교대/기술)을 엿본다">묘수</button>`:''}${(c.gm||tid===c.seat)?`<button class="btn xs ghost" data-act="orders" data-tid="${tid}" title="지령·명령 · 고유·전용 포텐셜 횟수 설정 · 빼기">설정</button>`:''}</div>
+   return `<div class="tblock"><div class="trainer"><div class="tpic" style="${t.image?`background-image:url('${cssu(t.image)}')`:''}"></div><div class="tinfo"><div class="tn">${esc(t.name)}${tid===c.seat?' <span class="tag me">ME</span>':ownT(c,tid)?' <span class="tag me co" title="함께 지시하는 트레이너">함께</span>':''}${rd?' <span class="tag ok">READY</span>':cmdDone?' <span class="tag">공개됨</span>':''}</div>
+     <div class="rk4">${['육성','지시','통솔','능력'].map(k=>`<span><small>${k}</small><b>${esc(t.ranks[k]||'-')}</b></span>`).join('')}</div>${o||coOf(c,tid).length?`<div class="tr">${o?`<span class="who">${esc(o.name)}</span>`:''}${coHtml(c,tid)}</div>`:''}</div>
+     </div>${(()=>{const U=uniqList(t);const own=c.gm||tid===c.seat;return U.length?`<div class="tuq">${U.map(x=>`<span class="pot sp uq" title="${esc(String(x.p.eff||'').replace(/<br\s*\/?>/g,' ').slice(0,300))}"><em>고유</em>${esc(x.p.name)}${x.max!=null?' '+pips(x.left,x.max):''}${own?(x.left!==null&&x.left<=0?'<small class="dim">다 씀</small>':`<button class="btn xs pri" data-act="ufire" data-tid="${tid}" data-pot="${esc(x.p.name)}" title="고유 포텐셜 발동 — 대상 포켓몬을 고른다">발동</button>`):''}</span>`).join('')}</div>`:''})()}<div class="tbtns">${((c.gm||ownT(c,tid))&&mons.some(m=>m.entry))?`<button class="btn xs" data-act="fire" data-tid="${tid}" title="지령·명령 · 고유·전용 포텐셜 발동 창">포텐셜 발동</button>`:''}${(c.gm||ownT(c,tid))?`<button class="btn xs ghost" data-act="dexmgr" data-tid="${tid}" title="도감 · 데이터 해석">해석</button><button class="btn xs ghost ${myosuGlow(c,tid)?'pri':''}" data-act="skillp" data-tid="${tid}" title="「타임」 — 상대가 준비를 마치면 지시의 꼴(교대/기술)을 엿본다">묘수</button>`:''}${(c.gm||ownT(c,tid))?`<button class="btn xs ghost" data-act="orders" data-tid="${tid}" title="지령·명령 · 고유·전용 포텐셜 횟수 설정 · 빼기">설정</button>`:''}${coBtn(c,tid)}</div>
     <div class="bench">${mons.map(m=>benchCard(c,m)).join('')||'<div class="dim small">포켓몬 없음</div>'}</div></div>`}).join('');
   /* 10-21 망령: 폰에서 벤치 머리를 누르면 접는다 (접으면 트레이너별 남은 포켓몬 수만) */
   /* 10-22 망령: 동시 내밀기 켜기는 벤치 머리(「+ 파티」 옆)로. 내 트레이너만, 여럿이면 이름을 붙인다 */
-  const simIds=ids.filter(tid=>trs[tid]&&(c.gm||tid===c.seat));
+  const simIds=ids.filter(tid=>trs[tid]&&(c.gm||ownT(c,tid)));
   const simTg=simIds.map(tid=>`<label class="btn xs ${simOn(b,tid)?'pri':'ghost'} simtg" title="켜면 ${esc(trs[tid].name||'')}은(는) 「등장」 대신 「내밀기 예약」 — 「시합 개시」·「내밀기 실행」 때 예약한 포켓몬이 양쪽 동시에 나온다. 내 것만 바뀐다"><input type="checkbox" data-act="simul" data-tid="${tid}" ${simOn(b,tid)?'checked':''}> 동시 내밀기${simIds.length>1?' · '+esc(String(trs[tid].name||'').slice(0,6)):''}</label>`).join('');
   const bfs=ids.map(tid=>{const ms=Object.values(b.mons||{}).filter(m=>m.tid===tid);return `${esc((trs[tid]||{}).name||'?')} ${ms.filter(m=>m.hp.cur>0).length}/${ms.length}`}).join(' · ');
   return `<div class="bcol ${side} ${(UIC.bfold||{})[side]?'fold':''}"><div class="shead" data-bfold="${side}"><i class="bfc" aria-hidden="true"></i><span class="sname">${SIDE_KO[side]} 벤치</span>${bfs?`<small class="bfs">${bfs}</small>`:''}${simSide(b,side)?(()=>{const P=pendCount(b,side);return `<span class="chip simpc ${P.need>0&&P.n>=P.need?'on':''}" title="동시 내밀기 예약">예약 ${P.n}/${P.need}</span>`})():''}<span class="sp"></span>${simTg}${canLoad(c)?`<button class="btn xs" data-act="load" data-side="${side}" title="${c.mgr?'이 진영에 파티를 불러온다':'내 자리로 파티를 불러온다 (불러온 사람이 지시)'}">+ 파티</button>`:''}</div>${side==='left'?(()=>{
@@ -229,8 +237,8 @@ window.OM_BATTLE_UI=(()=>{
    return `<div class="area ${m?'':'empty'}" data-slot="${slot}"><div class="alab">${a.toUpperCase()}</div>${m?bigCard(c,m,slot):`<div class="aempty">빈 자리${c.mgr||ids.includes(c.seat)?'<br><span class="small">벤치에서 「등장」</span>':''}</div>`}</div>`}).join('');
   const bench=ids.map(tid=>{const t=trs[tid]||{name:'?',ranks:{}};const o=seats[tid];const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid).sort((x,y)=>(x.slot||0)-(y.slot||0));
    const cmdDone=!!(b.cmds||{})[tid];const rd=!!ready[tid];
-   return `<div class="trainer"><div class="tpic" style="${t.image?`background-image:url('${cssu(t.image)}')`:''}"></div><div class="tinfo"><div class="tn">${esc(t.name)}${tid===c.seat?' <span class="tag me">ME</span>':''}${rd?' <span class="tag ok">READY</span>':cmdDone?' <span class="tag">공개됨</span>':''}</div>
-     <div class="tr">${['육성','지시','통솔','능력'].map(k=>`${k} <b>${esc(t.ranks[k]||'-')}</b>`).join(' · ')} · ${o?`<span class="who">${esc(o.name)}</span>`:'<span class="dim">빈 자리</span>'}</div></div>
+   return `<div class="trainer"><div class="tpic" style="${t.image?`background-image:url('${cssu(t.image)}')`:''}"></div><div class="tinfo"><div class="tn">${esc(t.name)}${tid===c.seat?' <span class="tag me">ME</span>':ownT(c,tid)?' <span class="tag me co" title="함께 지시하는 트레이너">함께</span>':''}${rd?' <span class="tag ok">READY</span>':cmdDone?' <span class="tag">공개됨</span>':''}</div>
+     <div class="tr">${['육성','지시','통솔','능력'].map(k=>`${k} <b>${esc(t.ranks[k]||'-')}</b>`).join(' · ')} · ${o?`<span class="who">${esc(o.name)}</span>`:'<span class="dim">빈 자리</span>'}${coHtml(c,tid)}</div></div>
      ${c.mgr?`<button class="btn xs ghost" data-act="orders" data-tid="${tid}" title="포텐셜 설정 · 지령·명령 · 고유·전용 횟수">설정</button><button class="btn xs ghost danger" data-act="unload" data-tid="${tid}">빼기</button>`:''}</div>
     <div class="bench">${mons.map(m=>benchCard(c,m)).join('')||'<div class="dim small">포켓몬 없음</div>'}</div>`}).join('');
   return `<div class="sideBox ${side}"><div class="shead"><span class="sname">${SIDE_KO[side]}</span><span class="sp"></span>${canLoad(c)?`<button class="btn xs" data-act="load" data-side="${side}">+ 파티</button>`:''}</div>
@@ -256,7 +264,7 @@ window.OM_BATTLE_UI=(()=>{
    ${m.lastHit&&full?`<div class="incoming"><b>피해 판정 받음</b> ${esc(m.lastHit.from)}의 「${esc(m.lastHit.move)}」 ${m.lastHit.total}×${m.lastHit.eff}${m.lastHit.crit?' 급소':''} ≈ ${m.lastHit.expect} <button class="btn xs pri" data-act="hp" data-mid="${m.id}">피해 적용</button></div>`:''}
    <div class="mbtns">${full?`<button class="btn xs" data-act="attack" data-mid="${m.id}">공격</button><button class="btn xs ${m.lastHit?'pri':''}" data-act="hp" data-mid="${m.id}">HP</button><button class="btn xs mmore" type="button" data-mmore aria-label="버튼 더 보기" aria-expanded="false">⋯</button><button class="btn xs mx" data-act="pots" data-mid="${m.id}" title="포텐셜 목록 · 출력 · 발동 · 해제">포텐셜</button><button class="btn xs mx" data-act="edit" data-mid="${m.id}">랭크·상태</button>${(formsOf(m).length||m.form0)?`<button class="btn xs mx ${m.form0?'pri':''}" data-act="form" data-mid="${m.id}" title="폼체인지 · 메가진화 · 원래대로">${m.form0?'✦ '+esc(((m.forms||[])[m.formIdx]||{}).kind||'폼'):'✦ 폼'}</button>`:''}<span class="exg"><button class="btn xs ghost mx exit1" data-act="exit" data-mid="${m.id}" title="바로 퇴장 (랭크·배율·효과 정리)">퇴장</button><button class="btn xs ghost mx exdn" data-act="exitx" data-mid="${m.id}" title="퇴장(특수) — 배턴터치 퇴장 · 강제 교대">(특수)</button></span>`:''}</div></div></div>`}
  /* 비공개: 아직 한 번도 나오지 않은 상대 포켓몬은 이름·그림·타입을 숨긴다 (맵툴 「비공개」 토큰) */
- function secret(c,m){if((c.gm&&!c.fair)||!m)return false;if(m.seen||m.entry)return false;if(c.gm){if(canEdit(c,m))return false;const v=gmEyes(c,m);const t=(c.b.trainers||{})[v];return !t||t.side!==m.side}const my=(c.b.trainers||{})[c.seat];return !my||my.side!==m.side}
+ function secret(c,m){if((c.gm&&!c.fair)||!m)return false;if(m.seen||m.entry)return false;if(c.gm){if(canEdit(c,m))return false;const v=gmEyes(c,m);const t=(c.b.trainers||{})[v];return !t||t.side!==m.side}const my=(c.b.trainers||{})[myTrainers(c)[0]];return !my||my.side!==m.side}
  function benchCard(c,m){const full=canEdit(c,m);const out=!!m.entry;const sec=secret(c,m);
   if(sec)return `<div class="mon small secret"><div class="btop"><div class="pic"></div><div class="nm">비공개</div></div><div class="hpbar"><i style="width:100%"></i></div><div class="hpnum">?</div></div>`;
   return `<div class="mon small ${m.hp.cur<=0?'fainted':''} ${out?'onfield':''}" data-mon="${m.id}">
@@ -351,7 +359,7 @@ window.OM_BATTLE_UI=(()=>{
   const b=c.b;const tids=myTrainers(c);if(!tids.length)return '';
   const phase=+b.phase||0;
   const blocks=tids.map(tid=>{const t=(b.trainers||{})[tid]||{};const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid&&m.entry&&m.hp.cur>0).sort((x,y)=>x.entry.localeCompare(y.entry));if(!mons.length)return '';
-   const cur=cmdNow(tid,b)||(CMD[tid]={mons:{},detail:'',upots:[],turn:+b.turn||0});cur.upots=cur.upots||[];const UL=uniqList(t);const tmOpen=!!ready[tid]&&timeOf(t,+b.turn||0).sw>=1&&phase===0;const locked=!!ready[tid]&&!tmOpen;
+   if(!cmdNow(tid,b)&&coOf(c,tid).length)coPull(tid);const cur=cmdNow(tid,b)||(CMD[tid]={mons:{},detail:'',upots:[],turn:+b.turn||0,fresh:1});cur.upots=cur.upots||[];const UL=uniqList(t);const tmOpen=!!ready[tid]&&timeOf(t,+b.turn||0).sw>=1&&phase===0;const locked=!!ready[tid]&&!tmOpen;
    if(!mons.find(m=>m.id===UIC.tab[tid]))UIC.tab[tid]=mons[0].id;const m=mons.find(x=>x.id===UIC.tab[tid]);
    mons.forEach(mm=>{cur.mons[mm.id]=cur.mons[mm.id]||{move:'',switch:'',targets:[],prio:{},ochg:{},order:'',command:'',pots:[]};cur.mons[mm.id].pots=cur.mons[mm.id].pots||[]});
    const x=cur.mons[m.id];const bench=Object.values(b.mons||{}).filter(mm=>mm.tid===tid&&!mm.entry&&mm.hp.cur>0);
@@ -432,7 +440,7 @@ window.OM_BATTLE_UI=(()=>{
   if(mv&&(isPursuit(mv,m)||x.pur)){o.pn=mv.name;o.tg=x.targets||[];o.psrc=isPursuit(mv,m)?((m.flags||{}).pursuit?(m.flags.pursuitBy||''):''):(x.pur||'')}
   const pimm=x.pimm||((m.flags||{}).pursuitImmune?(m.flags.pursuitImmuneBy||'추격 무시'):'');if(pimm)o.pimm=pimm;return o}
  /* 좌석: 턴 개시 때 내 순서 열쇠를 cmds[내 자리].ok 에 올린다 (진행하는 사람이 남의 비밀 지시를 못 읽어도 순서를 계산하게) */
- async function publishOk(){const c=ctx();const b=c.b;const tid=c.seat;if(c.role!=='seat'||!tid||!(b.trainers||{})[tid])return;const key=turnKey(b);const cur=((b.cmds||{})[tid]||{}).ok;if((cur&&cur.key===key)||BUSY.ok===key)return;BUSY.ok=key;
+ async function publishOk(tid0){const c=ctx();const b=c.b;const tid=tid0||c.seat;if(c.role!=='seat'||!tid||!(b.trainers||{})[tid])return;const key=turnKey(b);const cur=((b.cmds||{})[tid]||{}).ok;if((cur&&cur.key===key)||BUSY.ok===key)return;BUSY.ok=key;
   const cm=await myCmd(c,tid,true);const ok={key,m:{}};for(const mm of Object.values(b.mons||{}).filter(x=>x.tid===tid&&x.entry&&x.hp.cur>0)){const xx=((cm||{}).mons||{})[mm.id]||{};ok.m[mm.id]=okeyOf(mm,xx);if(preCounts(t,xx))ok.m[mm.id].pi=1}if(((cm||{}).upots||[]).length)ok.pre=1;
   if((ctx().b.cmds||{})[tid])await A().set(['battle','cmds',tid,'ok'],ok);else await A().set(['battle','cmds',tid],{ok})}
  /* 차례가 온 포켓몬의 지시를 연다: 주인 화면이, GM 몫(NPC · GM 이 불러온 파티)은 GM 화면이. 보통 모드의 GM 은 플레이어가 안 열면 잠시 뒤 대신 연다 */
@@ -440,7 +448,7 @@ window.OM_BATTLE_UI=(()=>{
  async function autoRevealTurn(){const c=ctx();const b=c.b;if((+b.phase||0)<2)return;const o=(b.order||[])[+b.orderIdx||0];if(!o)return;const m=(b.mons||{})[o.mid];if(!m||!m.entry||m.hp.cur<=0||revealed(b,m.tid,m.id))return;
   const key=turnKey(b)+':'+m.id;if(SENT['rv:'+key]||BUSY.rv)return;
   const run=async()=>{const b2=ctx().b;const o2=(b2.order||[])[+b2.orderIdx||0];if(!o2||o2.mid!==m.id||revealed(b2,m.tid,m.id)||SENT['rv:'+key])return;SENT['rv:'+key]=1;BUSY.rv=1;try{await revealOne(m.tid,m.id,true)}finally{BUSY.rv=0}};
-  if(c.role==='seat'&&m.tid===c.seat)return run();
+  if(c.role==='seat'&&lead(c,m.tid))return run();
   if(!c.gm||(b.host||'gm')!=='gm')return;if(c.fair&&seatOwned(c,m.tid))return;
   if(!seatOwned(c,m.tid))return run();
   if(!RVT[key])RVT[key]=setTimeout(run,2500)}
@@ -485,12 +493,13 @@ window.OM_BATTLE_UI=(()=>{
    case 'stage':return window.OM_STAGE_UI&&window.OM_STAGE_UI.info();
    case 'stagemgr':return window.OM_STAGE_UI&&window.OM_STAGE_UI.open();
    case 'orders':return openOrders(d.tid);
-   case 'dexmgr':{if(!(c.gm||d.tid===c.seat))return;return window.OM_DEX_UI&&window.OM_DEX_UI.openMgr(d.tid)}
-   case 'skillp':{if(!(c.mgr||d.tid===c.seat))return;return openMyosu(d.tid)}
-   case 'skillck':{if(!(c.mgr||d.tid===c.seat))return;return window.OM_SKILL_UI&&window.OM_SKILL_UI.openPlayer(d.tid)}
+   case 'co':return openCo(d.tid);
+   case 'dexmgr':{if(!(c.gm||ownT(c,d.tid)))return;return window.OM_DEX_UI&&window.OM_DEX_UI.openMgr(d.tid)}
+   case 'skillp':{if(!(c.mgr||ownT(c,d.tid)))return;return openMyosu(d.tid)}
+   case 'skillck':{if(!(c.mgr||ownT(c,d.tid)))return;return window.OM_SKILL_UI&&window.OM_SKILL_UI.openPlayer(d.tid)}
    case 'enter':return enterMon(d.mid);
    case 'pend':return pendMon(d.mid);
-   case 'simul':{const tid=d.tid;if(!tid||!(c.gm||tid===c.seat)||!(c.b.trainers||{})[tid])return;return A().set(['battle','trainers',tid,'simul'],!!val)}
+   case 'simul':{const tid=d.tid;if(!tid||!(c.gm||ownT(c,tid))||!(c.b.trainers||{})[tid])return;return A().set(['battle','trainers',tid,'simul'],!!val)}
    case 'start':return startBattle();
    case 'pendgo':return applyPending();
    case 'exit':return exitMon(d.mid,{noAsk:true});
@@ -640,15 +649,35 @@ window.OM_BATTLE_UI=(()=>{
  /* 공개용: 선행 입력(지령·명령)은 뺀다 — 발동할 때 드러난다 */
  function pubMon(x){x=x||{};return {move:x.move,switch:x.switch,targets:x.targets||[],prio:x.prio||{},ochg:x.ochg||{}}}
  async function saveCmd(tid,quiet){const c=ctx();const cur=CMD[tid];if(!cur)return;{const t=(c.b.trainers||{})[tid]||{};for(const mid in cur.mons){const m=c.b.mons[mid];if(!m)continue;const pp=prePursuit(t,m,cur.mons[mid],cur.upots);cur.mons[mid].pur=pp.pur;cur.mons[mid].pimm=pp.pimm}}
-  try{await DBS().secretPut(c.ST.room,c.ST.secret,'cmd',tid,cleanCmd(cur));if(!quiet)A().toast('지시를 저장했다 (공개 전까지 GM만 본다)');if((c.ST.state.ready||{})[tid])await putShape(tid);return true}catch(e){A().toast('저장 실패: '+e.message);return false}}
+  try{await DBS().secretPut(c.ST.room,c.ST.secret,'cmd',tid,cleanCmd(cur));if(coOf(c,tid).length&&!(c.gm&&c.fair))try{await A().set(['pub',tid,'csav'],{at:Date.now(),by:c.gm?'gm':c.seat,name:c.gm?'GM':(c.ST.name||c.seat)})}catch(e){}   /* 함께 지시하는 화면들이 이걸 보고 불러온다 */if(!quiet)A().toast('지시를 저장했다 (공개 전까지 GM만 본다)');if((c.ST.state.ready||{})[tid])await putShape(tid);return true}catch(e){A().toast('저장 실패: '+e.message);return false}}
  /* 지시의 「꼴」만 공개 칸에 둔다 — 「타임」이 보는 건 교대인지 기술인지뿐 (맵툴 active_command_expert 와 같다) */
  async function putShape(tid,clear){const c=ctx();const b=c.b;const cur=CMD[tid];const mons={};if(!clear&&cur){for(const mid in cur.mons){const m=b.mons[mid];if(!m||!m.entry)continue;const x=cur.mons[mid];mons[mid]=x.move==='switch'?'switch':(x.move===''||x.move==null)?'none':'move'}}
   try{await A().set(['pub',tid,'shape'],clear?null:{turn:+b.turn||0,mons})}catch(e){}}
  async function loadCmd(tid){const c=ctx();try{const rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd');const r=(rows||[]).find(x=>x.id===tid);if(!r)return A().toast('저장된 지시가 없다');CMD[tid]=Object.assign({mons:{},detail:''},JSON.parse(JSON.stringify(r.data)),{turn:+c.b.turn||0});delete CMD[tid].order;delete CMD[tid].command;if(!cmdFresh(r)){CMD[tid].upots=[];for(const k in CMD[tid].mons||{}){const x=CMD[tid].mons[k];x.pots=[];x.order='';x.command=''}}A().renderScene();A().toast('불러왔다')}catch(e){A().toast(e.message)}}
+ /* 함께 지시하기: 저장된 지시를 지시 창으로 — 처음 열 때(아직 손대지 않았으면), 그리고 같이 보는 사람이 저장했을 때 */
+ const PULL={};
+ async function coPull(tid,who){const c=ctx();const key=turnKey(c.b)+':'+tid;if(!who&&PULL[key])return;PULL[key]=1;let rows;try{rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd')}catch(e){return}
+  const r=(rows||[]).filter(x=>cmdFresh(x,ctx().b)).find(x=>x.id===tid);if(!r||!r.data)return;const now=cmdNow(tid,ctx().b);if(!who&&now&&!now.fresh)return;
+  CMD[tid]=Object.assign({mons:{},detail:'',upots:[]},JSON.parse(JSON.stringify(r.data)),{turn:+ctx().b.turn||0});A().renderScene();
+  if(who)A().toast(`${who} 님이 「${((ctx().b.trainers||{})[tid]||{}).name||tid}」 지시를 저장했다 — 지시 창에 불러왔다`)}
+ const CSEEN={};
+ function coWatch(){const c=ctx();if(!c.gm&&c.role!=='seat')return;const me=c.gm?'gm':c.seat;for(const tid of myTrainers(c)){if(!coOf(c,tid).length)continue;const s=((c.ST.state.pub||{})[tid]||{}).csav;
+  if(CSEEN[tid]==null){CSEEN[tid]=(s&&+s.at)||0;continue}if(s&&s.at>CSEEN[tid]){CSEEN[tid]=s.at;if(s.by!==me)coPull(tid,String(s.name||s.by||'').slice(0,30)||'함께 지시하는 사람')}}}
+ /* 함께 지시할 좌석 고르기 — 트레이너 주인과 GM 만. 트레이너 시트에 적는다 */
+ function openCo(tid){const c=ctx();if(!c.gm&&tid!==c.seat)return;const R=((c.ST.state.roster||{}).trainers||{})[tid];if(!R)return A().toast('시트에 있는 트레이너만 함께 지시할 수 있다');
+  const seats=Object.entries(c.ST.state.seats||{}).filter(([k])=>k!==tid);const on=new Set(coOf(c,tid));
+  const md=A().openModal(`<div class="mhead"><h2>함께 지시하기 — ${esc(R.name||tid)}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+   <div class="small dim" style="margin-bottom:10px">고른 플레이어는 이 트레이너의 지시 창을 같이 보고 고치고, 준비 완료 · 지시 공개 · 포켓몬 조작(HP · 공격 · 교대 …)도 함께 한다. 누가 저장하면 같이 보는 화면에 바로 불러온다.</div>
+   <div class="cosel">${seats.length?seats.map(([k,v])=>{const tn=(((c.ST.state.roster||{}).trainers||{})[k]||{}).name;return `<label class="coseat"><input type="checkbox" value="${esc(k)}" ${on.has(k)?'checked':''}><b>${esc((v&&v.name)||k)}</b>${tn?`<small>${esc(tn)}</small>`:''}</label>`}).join(''):'<div class="dim">자리에 앉은 다른 플레이어가 없다</div>'}</div>
+   <div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn pri" data-cosave>저장</button></div>`);
+  md.querySelector('[data-cosave]').onclick=async()=>{const pick=[...md.querySelectorAll('.cosel input:checked')].map(i=>i.value);const before=coOf(ctx(),tid);
+   const r=await A().set(['roster','trainers',tid,'co'],pick.length?pick:null);if(r===false)return;A().closeModal();
+   const nm=s=>(((ctx().ST.state.seats||{})[s]||{}).name||s);const add=pick.filter(s=>!before.includes(s)),del=before.filter(s=>!pick.includes(s));
+   if(add.length||del.length)A().sysLog(`함께 지시하기 — ${R.name||tid}: ${[add.length?add.map(nm).join(' · ')+' 합류':'',del.length?del.map(nm).join(' · ')+' 빠짐':''].filter(Boolean).join(' / ')}`,'battle')}}
  async function toggleReady(tid){const c=ctx();const rd=!!(c.ST.state.ready||{})[tid];
   if(!rd){const ok=await saveCmd(tid,true);if(!ok)return}
   if(rd&&!c.mgr&&(+c.b.phase||0)>=1)return A().toast('턴이 시작돼서 준비를 풀 수 없다');
-  const path=c.mgr?['ready',tid]:['ready',c.seat];
+  const path=c.mgr||ownT(c,tid)?['ready',tid]:['ready',c.seat];
   await putShape(tid,rd);
   await A().set(path,rd?null:true);A().sysLog(`${((c.b.trainers||{})[tid]||{}).name||tid} ${rd?'준비 해제':'준비 완료'}`,'battle')}
  /* 턴 개시: 선행 입력한 지령·명령의 횟수를 미리 깎는다 (맵툴 set_turn_start). 주인의 호령(tc 7)은 능력·회복이 횟수를 같이 쓴다 */
@@ -657,23 +686,23 @@ window.OM_BATTLE_UI=(()=>{
    if(x.order){const k='order_'+x.order;t.orderCount[k]=Math.max(0,(+t.orderCount[k]||0)-1)}
    if(x.command){if(tc===7){t.orderCount.command_attack=Math.max(0,(+t.orderCount.command_attack||0)-1);t.orderCount.command_defense=Math.max(0,(+t.orderCount.command_defense||0)-1)}else{const k='command_'+x.command;t.orderCount[k]=Math.max(0,(+t.orderCount[k]||0)-1)}}}}
  async function preCharge(){const c=ctx();const b=c.b;const key=turnKey(b);
-  if(!c.gm)return selfCharge();
+  if(!c.gm){for(const t of myTrainers(c).filter(t=>lead(c,t)))await selfCharge(t);return}
   let rows;try{rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd')}catch(e){return}
   const trs0=snap(ctx().b.trainers||{}),trs=snap(trs0);let any=false;
   for(const r of rows||[]){const t=trs[r.id];if(!t||!r.data||!cmdFresh(r,b)||t.pcTurn===key)continue;if(c.fair&&seatOwned(c,r.id))continue;chargeOne(t,r.data,b);t.pcTurn=key;any=true}
   if(any)await A().setDiff(['battle','trainers'],trs0,trs,2)}
  /* 좌석: 내 지시의 선입력분은 내 화면이 깎는다 (모의전 · GM 불간섭 · GM 이 없을 때) */
  const BUSY={},SENT={};
- async function selfCharge(){const c=ctx();const b=c.b;const tid=c.seat;const t=(b.trainers||{})[tid];if(c.role!=='seat'||!t)return;const key=turnKey(b);if(t.pcTurn===key||BUSY.pc===key)return;BUSY.pc=key;
+ async function selfCharge(tid0){const c=ctx();const b=c.b;const tid=tid0||c.seat;const t=(b.trainers||{})[tid];if(c.role!=='seat'||!t)return;const key=turnKey(b);if(t.pcTurn===key||BUSY.pc===key)return;BUSY.pc=key;
   const cm=await myCmd(c,tid,true);const t0=snap((ctx().b.trainers||{})[tid]||t),t2=snap(t0);if(t2.pcTurn===key)return;if(cm)chargeOne(t2,cm,ctx().b);t2.pcTurn=key;await A().setDiff(['battle','trainers',tid],t0,t2,1)}
  /* 상태가 바뀔 때마다 (app.js onState): 턴 개시면 내 선입력 차감, 공개 요청이 오면 내 남은 지시를 연다, 진행자는 자동으로 넘긴다 */
- async function watch(){const c=ctx();const b=c.b;if(b.endq&&b.endq.step)endAdvance();if((+b.phase||0)>=2)return autoRevealTurn();if((+b.phase||0)!==1)return;
-  if(c.role==='seat'&&c.seat&&(b.trainers||{})[c.seat]){await selfCharge();await publishOk();
-   const key=turnKey(b);if(String(b.revealReq||'')===key&&!BUSY.rv){const mine=Object.values(b.mons||{}).filter(m=>m.tid===c.seat&&m.entry&&m.hp.cur>0&&!revealed(b,c.seat,m.id)&&!SENT[key+':'+m.id]);
-    if(mine.length){BUSY.rv=1;try{for(const m of mine){if(revealed(ctx().b,c.seat,m.id))continue;SENT[key+':'+m.id]=1;await revealOne(c.seat,m.id,true)}}finally{BUSY.rv=0}}}}
+ async function watch(){const c=ctx();const b=c.b;try{coWatch()}catch(e){}if(b.endq&&b.endq.step)endAdvance();if((+b.phase||0)>=2)return autoRevealTurn();if((+b.phase||0)!==1)return;
+  if(c.role==='seat')for(const tid of myTrainers(c).filter(t=>lead(c,t))){await selfCharge(tid);await publishOk(tid);   /* 함께 지시하는 트레이너도 (주인이 없을 때) */
+   const key=turnKey(b);if(String(b.revealReq||'')===key&&!BUSY.rv){const left=Object.values(b.mons||{}).filter(m=>m.tid===tid&&m.entry&&m.hp.cur>0&&!revealed(b,tid,m.id)&&!SENT[key+':'+m.id]);
+    if(left.length){BUSY.rv=1;try{for(const m of left){if(revealed(ctx().b,tid,m.id))continue;SENT[key+':'+m.id]=1;await revealOne(tid,m.id,true)}}finally{BUSY.rv=0}}}}
   autoAdvance()}
  /* ----- 4식 6령 발동 창 (맵툴 order_mgr / order_run): 선행 발동 · 임의 발동 · 강제 ----- */
- function openFire(tid){const c=ctx();const b=c.b;const t=(b.trainers||{})[tid];if(!t)return;if(!c.gm&&c.seat!==tid)return;
+ function openFire(tid){const c=ctx();const b=c.b;const t=(b.trainers||{})[tid];if(!t)return;if(!c.gm&&!ownT(c,tid))return;
   const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid&&m.entry&&m.hp.cur>0).sort((x,y)=>x.entry.localeCompare(y.entry));if(!mons.length)return A().toast('필드에 포켓몬이 없다');
   UIC.fire=UIC.fire||{};if(!mons.find(m=>m.id===UIC.fire[tid]))UIC.fire[tid]=mons[0].id;const m=mons.find(x=>x.id===UIC.fire[tid]);
   const cnt=t.orderCount||{};const fired=(((b.cmds||{})[tid]||{}).fired||{})[m.id]||{};const ph=+b.phase||0;
@@ -698,7 +727,7 @@ window.OM_BATTLE_UI=(()=>{
   md.querySelectorAll('[data-fire]').forEach(bt=>bt.onclick=()=>fireOrder(tid,m.id,bt.dataset.kind,bt.dataset.k,bt.dataset.fire));
   md.querySelectorAll('[data-sfire]').forEach(bt=>bt.onclick=()=>fireSpecial(tid,m.id,bt.dataset.sk,bt.dataset.sn,bt.dataset.sfire))}
  /* 트레이너 칸의 고유 「발동」: 대상(필드의 내 포켓몬 · 없으면 대상 없이) · 선행/임의/강제 를 고른다 */
- async function openUfire(tid,name){const c=ctx();const b=c.b;const t=(b.trainers||{})[tid];if(!t)return;if(!c.gm&&c.seat!==tid)return;const x=uniqList(t).find(q=>q.p.name===name);if(!x)return;
+ async function openUfire(tid,name){const c=ctx();const b=c.b;const t=(b.trainers||{})[tid];if(!t)return;if(!c.gm&&!ownT(c,tid))return;const x=uniqList(t).find(q=>q.p.name===name);if(!x)return;
   const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid&&m.entry&&m.hp.cur>0).sort((p,q)=>p.entry.localeCompare(q.entry));const ph=+b.phase||0;
   const md=A().openModal(`<div class="mhead"><h2><span class="tag uqt">고유</span> 『${esc(name)}』</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    <div class="small" style="margin-bottom:8px;white-space:pre-wrap">${esc(String(x.p.eff||'').replace(/<br\s*\/?>/g,'\n'))}</div>
@@ -710,7 +739,7 @@ window.OM_BATTLE_UI=(()=>{
   md.querySelectorAll('[data-uf]').forEach(bt=>bt.onclick=()=>fireSpecial(tid,tgt,'uq',name,bt.dataset.uf));
   try{const rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd');const r=(rows||[]).filter(q=>cmdFresh(q)).find(q=>q.id===tid);const cm=r&&(r.data||r.v||r.value||r);const up=(cm&&cm.upots)||[];const el=$('#upre',md);if(el)el.textContent=up.includes(name)?'이번 턴에 선행 입력했다':'선행 입력 안 함';if(up.includes(name)&&ph>=1){const p=md.querySelector('[data-uf=pre]');if(p)p.hidden=false}}catch(e){const el=$('#upre',md);if(el)el.textContent=''}}
  /* 고유(트레이너) · 전용 포텐셜 발동: 선행(지시에서 선행 입력한 것) · 임의 · 강제(GM). 횟수는 발동할 때 1 깎는다(강제 제외). 자동화가 있으면 대상 포켓몬에 걸고, 없으면 효과를 로그 카드로 */
- async function fireSpecial(tid,mid,sk,name,how){const c=ctx();const b=c.b;const t=(b.trainers||{})[tid];const m=(b.mons||{})[mid]||null;if(!t||(!m&&sk!=='uq'))return;if(!c.gm&&c.seat!==tid)return;if(how==='force'&&!c.gm)return;
+ async function fireSpecial(tid,mid,sk,name,how){const c=ctx();const b=c.b;const t=(b.trainers||{})[tid];const m=(b.mons||{})[mid]||null;if(!t||(!m&&sk!=='uq'))return;if(!c.gm&&!ownT(c,tid))return;if(how==='force'&&!c.gm)return;
   const x=sk==='uq'?uniqList(t).find(q=>q.p.name===name):specialPots(m).find(q=>q.p.name===name);if(!x)return;
   if(how!=='force'&&x.left!==null&&x.left<=0)return A().toast('남은 횟수가 없다');
   A().closeModal();const tag=how==='pre'?'【선행】':how==='free'?'【임의】':'【강제】';const LB=sk==='uq'?'고유':'전용';
@@ -753,7 +782,7 @@ window.OM_BATTLE_UI=(()=>{
  /* 같은 포켓몬 공개가 여러 길(자동 공개 · 내 차례 공개 · 버튼)로 겹쳐 들어오면 로그가 두 번 찍혔다 (10-24 망령) — 진행 중이면 무시하고, 기다린 뒤 다시 확인 */
  const RVING=new Set();
  async function revealOne(tid,part,quiet){const rk=tid+':'+part+':'+(+ctx().b.turn||0);if(RVING.has(rk))return;RVING.add(rk);try{return await revealOne0(tid,part,quiet)}finally{setTimeout(()=>RVING.delete(rk),1500)}}
- async function revealOne0(tid,part,quiet){const c=ctx();const b=c.b;const t=(b.trainers||{})[tid];if(!t)return;if(!c.gm&&c.seat!==tid)return A().toast('내 지시만 공개할 수 있다');
+ async function revealOne0(tid,part,quiet){const c=ctx();const b=c.b;const t=(b.trainers||{})[tid];if(!t)return;if(!c.gm&&!ownT(c,tid))return A().toast('내 지시만 공개할 수 있다');
   if(c.gm&&c.fair&&seatOwned(c,tid))return A().toast('GM 불간섭 설정 — 플레이어의 지시는 그 플레이어가 연다');
   const cm=await myCmd(c,tid,quiet);if(!cm)return;
   const m=b.mons[part];if(!m)return;if(revealed(b,tid,part)||revealed(ctx().b,tid,part))return;const x=pubMon((cm.mons||{})[part]);
@@ -835,7 +864,7 @@ window.OM_BATTLE_UI=(()=>{
     각자 쓸 것을 「발동」하고 「다음 ▶」(턴 종료 단계는 「턴 종료 처리 ▶」)를 누르면, 모두 눌렀을 때 진행하는 화면이 다음 단계로 넘긴다.
     상태: battle.endq = {key, step:'last'|'end'|'after', need:[tid]} · 끝냄 표시 = battle.cmds[tid].ed = key+':'+step (좌석도 쓸 수 있는 자리) */
  const END_STEP={last:'턴 가장 마지막',end:'턴 종료',after:'턴 종료 이후'};
- const endMine=(c,tid)=>c.role==='seat'?tid===c.seat:(c.gm&&!seatOwned(c,tid));
+ const endMine=(c,tid)=>c.role==='seat'?ownT(c,tid):(c.gm&&!seatOwned(c,tid));
  const endDone=(b,tid)=>{const q=b.endq||{};return ((b.cmds||{})[tid]||{}).ed===q.key+':'+q.step};
  const EFIRED={};
  async function endFlow(){const c=ctx();if(!c.mgr)return;const q=c.b.endq;if(q&&q.step){const wait=(q.need||[]).filter(t=>!endDone(c.b,t)&&endCands(c.b,q.step).some(x=>x.m.tid===t)).map(t=>(c.b.trainers[t]||{}).name||'?');
@@ -912,7 +941,7 @@ window.OM_BATTLE_UI=(()=>{
  function timeBlocked(c,tid){const b=c.b;const turn=+b.turn||0;const my=timeOf(b.trainers[tid],turn);if(my.sw===2)return true;return my.sw>=1&&enemyTids(c,tid).some(e=>timeOf(b.trainers[e],turn).sw>=1)}
  function myosuGlow(c,tid){const b=c.b;if((+b.phase||0)!==0)return false;const t=b.trainers[tid];if(!t)return false;const my=timeOf(t,+b.turn||0);if(timeBlocked(c,tid))return false;if(my.sw===0&&my.used>=timeLimit(c,tid))return false;const rd=c.ST.state.ready||{};return enemyTids(c,tid).some(e=>rd[e])}
  const SHAPE_KO={switch:'교대하려고 한다…',move:'기술을 내보내려고 한다…',none:'움직일 기색이 없다…'};
- function openMyosu(tid,pick){const c=ctx();const b=c.b;const t=(b.trainers||{})[tid];if(!t)return;if(!(c.mgr||tid===c.seat))return;
+ function openMyosu(tid,pick){const c=ctx();const b=c.b;const t=(b.trainers||{})[tid];if(!t)return;if(!(c.mgr||ownT(c,tid)))return;
   const turn=+b.turn||0;const phase=+b.phase||0;const my=timeOf(t,turn);const lim=timeLimit(c,tid);const rd=c.ST.state.ready||{};const blocked=timeBlocked(c,tid);
   const enemies=Object.values(b.mons||{}).filter(m=>m.entry&&m.hp.cur>0&&m.side!==t.side).sort((x,y)=>String(x.entry).localeCompare(String(y.entry)));
   const left=Math.max(0,lim-my.used);
@@ -1191,7 +1220,9 @@ window.OM_BATTLE_UI=(()=>{
   md.querySelectorAll('[data-st],[data-stc]').forEach(cb=>cb.addEventListener('input',updOn));updOn();
   const stq=$('#stq',md);if(stq){stq.oninput=()=>{const q=stq.value.trim().toLowerCase();md.querySelectorAll('.stt').forEach(l=>{l.style.display=!q||l.dataset.stq.includes(q)||l.classList.contains('on')?'':'none'});md.querySelectorAll('[data-stg]').forEach(g=>{g.style.display=[...g.querySelectorAll('.stt')].some(l=>l.style.display!=='none')?'':'none'})};setTimeout(()=>stq.focus(),50)}
   $('#eitemdb',md).onclick=()=>{window.OM_DB_UI.open({kind:'item',sel:$('#eitem',md).value,pick:async name=>{const it=(DB().items||{})[name]||{};await A().set(['battle','mons',mid,'item'],name);await A().set(['battle','mons',mid,'itemEff'],String(it.eff||''));openEdit(mid)}})};
-  $('#esave',md).onclick=async()=>{const nm=JSON.parse(JSON.stringify(m));nm.hp.cur=Math.max(0,Math.min(m.hp.max,+$('#ehp',md).value||0));nm.rank=rank;nm.teraActive=$('#etera',md).checked;nm.item=$('#eitem',md).value.trim();
+  /* 10-23 망령: 저장 중에 화면이 m(살아 있는 상태 객체)을 새 값으로 먼저 바꿔 놓아서(낙관적 반영) 「바뀐 것」 로그가 비던 것 — 누를 때의 사본과 비교한다 */
+  const snapM=()=>JSON.parse(JSON.stringify((ctx().b.mons||{})[mid]||m));
+  $('#esave',md).onclick=async()=>{const m=snapM();const nm=JSON.parse(JSON.stringify(m));nm.hp.cur=Math.max(0,Math.min(m.hp.max,+$('#ehp',md).value||0));nm.rank=rank;nm.teraActive=$('#etera',md).checked;nm.item=$('#eitem',md).value.trim();
    nm.mod={};md.querySelectorAll('[data-mod]').forEach(i=>{if(i.value!==''&&+i.value!==1)nm.mod[i.dataset.mod]=+i.value});
    /* 손으로 바꾼 배율은 출처 기록에서 떼어 낸다 (나중에 ✕ 로 역으로 나뉘지 않게) */
    if(nm.fx&&nm.fx.mults){nm.fx.mults=nm.fx.mults.map(e=>{const st={};for(const k in e.stats)if((+nm.mod[k]||1)===(+(m.mod||{})[k]||1))st[k]=e.stats[k];return Object.assign({},e,{stats:st})}).filter(e=>Object.keys(e.stats).length)}

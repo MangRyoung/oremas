@@ -83,7 +83,8 @@ window.OM_SHEET_UI=(()=>{
   if(c.gm)el.querySelectorAll('.ttab[draggable]').forEach(b=>b.ondragstart=e=>{e.dataTransfer.setData('text/om-tid',b.dataset.tid);e.dataTransfer.effectAllowed='move'});
   el.querySelectorAll('[data-act]').forEach(b=>{if(b.tagName==='SELECT'||b.tagName==='INPUT')return;b.onclick=e=>{e.stopPropagation();action(b.dataset)}});
   el.querySelectorAll('[data-pick]').forEach(b=>b.onclick=()=>{UI.mid=b.dataset.pick;A().renderScene()});
-  el.querySelectorAll('[data-hmon]').forEach(b=>b.onclick=()=>{UI.mid=b.dataset.hmon;UI.tab='poke';A().renderScene()});
+  el.querySelectorAll('[data-hmon]').forEach(b=>b.onclick=()=>{const id=b.dataset.hmon;UI.mid=id;UI.tab='poke';A().renderScene();   /* 10-25 망령: 휴대폰에선 파티 그림을 누르면 한 장 요약도 바로 */
+   if(window.matchMedia&&matchMedia('(max-width:760px)').matches){const m=((A().ST.state.roster||{}).mons||{})[id];if(m)openCard(m,(trs[m.tid]||{}).name)}});
   el.querySelectorAll('[data-stab]').forEach(b=>b.onclick=()=>{UI.tab=b.dataset.stab;A().renderScene()});
   el.querySelectorAll('[data-up]').forEach(inp=>inp.onchange=async()=>{const f=inp.files[0];if(!f)return;if(f.size>5*1024*1024)return A().toast('5MB 이하만');A().toast('그림을 올리는 중…');
    try{const url=await DBS().uploadImage(`rooms/${c.ST.room}/${inp.dataset.up==='tr'?'t_':'m_'}${inp.dataset.id}`,f);await A().set(['roster',inp.dataset.up==='tr'?'trainers':'mons',inp.dataset.id,'image'],url);A().toast('올렸다')}catch(e){A().toast('올리지 못했다: '+e.message)}});

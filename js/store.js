@@ -32,6 +32,8 @@ window.OM_STORE=(()=>{
 
  /* ----- 상태 ----- */
  async function getState(room){const r=await sb().from('om_state').select('data,v').eq('room',room).maybeSingle();if(r.error)throw err(r.error);return r.data}
+ /* 10-23 이그레스: 버전만 (가볍게 확인하고, 앞서 있을 때만 전체를 읽는다) */
+ async function getStateV(room){const r=await sb().from('om_state').select('v').eq('room',room).maybeSingle();if(r.error)throw err(r.error);return r.data}
  /* 10-22 로비 방 카드: 방마다 배경 · 첫 화면 · 마지막 변경만 (상태 전체는 무겁다) */
  async function roomsPeek(ids){if(!ids.length)return [];const r=await sb().from('om_state').select('room,updated_at,bg:data->rp->bg,scene:data->scene').in('room',ids);if(r.error)throw err(r.error);return r.data||[]}
  async function setState(room,secret,path,value){return rpc('om_set_state',{p_room:room,p_secret:secret,p_path:path||null,p_value:value===undefined?null:value})}
@@ -54,9 +56,10 @@ window.OM_STORE=(()=>{
 
  /* ----- 실시간 ----- */
  let CH=null;
- function subscribe(room,{onState,onLog,onStatus,onEvent}){
+ function subscribe(room,{onState,onPatch,onLog,onStatus,onEvent}){
   const ch=sb().channel('om:'+room)
-   .on('postgres_changes',{event:'*',schema:'public',table:'om_state',filter:'room=eq.'+room},p=>{if(onState&&p.new)onState(p.new.data,p.new.v)})
+   .on('postgres_changes',{event:'*',schema:'public',table:'om_state',filter:'room=eq.'+room},p=>{if(onState&&p.new)onState(p.new.data,p.new.v)})   /* 패치 전 서버(상태 전체) */
+   .on('broadcast',{event:'st'},p=>{if(onPatch&&p.payload)onPatch(p.payload)})   /* 10-23 이그레스: 바뀐 칸만 (supabase/patch_2026-10-23_이그레스.sql) */
    .on('postgres_changes',{event:'INSERT',schema:'public',table:'om_log',filter:'room=eq.'+room},p=>{if(onLog&&p.new)onLog(p.new)})
    .on('broadcast',{event:'ev'},p=>{if(onEvent&&p.payload)onEvent(p.payload)})
    .subscribe(st=>{if(onStatus)onStatus(st)});
@@ -77,10 +80,11 @@ window.OM_STORE=(()=>{
   let blob=src;
   if(typeof src==='string'){const r=await fetch(src);blob=await r.blob()}
   const ext=(blob.type||'').includes('png')?'png':(blob.type||'').includes('webp')?'webp':(blob.type||'').includes('gif')?'gif':'jpg';
-  const full=path+'.'+ext;
-  const r=await sb().storage.from('oremas').upload(full,blob,{upsert:true,contentType:blob.type||'image/jpeg',cacheControl:'3600'});
+  /* 10-23 이그레스: 올릴 때마다 새 이름 → 브라우저가 1년 동안 다시 받지 않아도 된다 */
+  const full=path+'_'+Date.now().toString(36)+'.'+ext;
+  const r=await sb().storage.from('oremas').upload(full,blob,{upsert:true,contentType:blob.type||'image/jpeg',cacheControl:'31536000'});
   if(r.error){const m=String(r.error.message||r.error);if(/bucket not found|NoSuchBucket/i.test(m))throw new Error('그림 저장소(버킷 oremas)가 아직 없다 — Supabase SQL Editor 에서 supabase/schema.sql 을 다시 실행해 줘');throw err(r.error)}
-  return sb().storage.from('oremas').getPublicUrl(full).data.publicUrl+'?v='+Date.now().toString(36)}
+  return sb().storage.from('oremas').getPublicUrl(full).data.publicUrl}
 
- return {roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs};
+ return {getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs};
 })();

@@ -267,13 +267,13 @@ async function openRoom(id,gm,asPl){
  if(!ST.role&&!tok&&!gm){const only=!!((row.settings||{}).accountOnly);let guest=false;try{guest=!!sessionStorage.getItem('om_guest_'+id)}catch(e){}
   if(only||!guest){renderLogin(only?`「${row.name||id}」 은 계정 전용 방이다 — 로그인해야 들어갈 수 있다`:`「${row.name||id}」 에 들어가려면 로그인`,{room:id,noGuest:only});return}}
  if(!ST.role){remember(id,row.name,'');ST.name=LS.get('om_name_'+id,'')||(tok&&!asPl&&(ACCT.get()||{}).name)||LS.get('om_nick','')||''}
- const st=await DBS().getState(id);ST.state=(st&&st.data)||{};ST.v=(st&&st.v)||0;
+ const st=await DBS().getState(id);ST.state=(st&&st.data)||{};ST.v=(st&&st.v)||0;PATCH.pend.clear();
  /* GM 이 방을 열면 좌석이 쓸 상자(roster · pub · graph · skill · dex)를 먼저 만들어 둔다 — 서버의 jsonb_set 은 부모가 없으면 조용히 실패하니까 */
  if(ST.role==='gm'){const need={roster:{trainers:{},mons:{}},pub:{},ready:{},graph:{nodes:{},edges:{}},skill:{},dex:{},rp:{},battle:{}};for(const k in need){if(typeof ST.state[k]!=='object'||ST.state[k]===null){try{const v=await DBS().setState(id,ST.secret,[k],need[k]);ST.state[k]=need[k];ST.v=Math.max(ST.v,v||0)}catch(e){}}else if(k==='roster'){for(const kk of ['trainers','mons'])if(typeof ST.state.roster[kk]!=='object'||ST.state.roster[kk]===null){try{const v=await DBS().setState(id,ST.secret,['roster',kk],{});ST.state.roster[kk]={};ST.v=Math.max(ST.v,v||0)}catch(e){}}}}}
  ST.log=await DBS().getLogTail(id,200);ST.lastLogId=ST.log.length?ST.log[ST.log.length-1].id:0;
  CHAN.cur='s';ST._toBottom=true;renderRoom();
- ST.unsub=DBS().subscribe(id,{onEvent:p=>{if(p&&p.t==='hello')onHello(p);if(window.OM_RP_UI&&p&&p.t==='typing')window.OM_RP_UI.onTyping(p);if(window.OM_CUTIN&&p&&p.t==='cutin')window.OM_CUTIN.onEvent(p)},onState:(d,v)=>{if(v>=ST.v){ST.state=d;ST.v=v;renderScene();if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.watch)window.OM_BATTLE_UI.watch().catch(e=>console.warn(e))}},onLog:r=>{if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;renderLog(true);notifyLog(r);mobNote(r);if(window.OM_RP_UI)window.OM_RP_UI.onChat(r)}},
-  onStatus:s=>{const el=$('#conn');if(el){el.textContent=s==='SUBSCRIBED'?'● 실시간':'○ '+s;el.style.color=s==='SUBSCRIBED'?'var(--acc2)':'var(--mute)'}if(s==='SUBSCRIBED'){startPresence();if(ST._sub)resync('재연결');ST._sub=true}}});
+ ST.unsub=DBS().subscribe(id,{onPatch,onEvent:p=>{if(p&&p.t==='hello')onHello(p);if(window.OM_RP_UI&&p&&p.t==='typing')window.OM_RP_UI.onTyping(p);if(window.OM_CUTIN&&p&&p.t==='cutin')window.OM_CUTIN.onEvent(p)},onState:(d,v)=>{if(v>=ST.v){ST.state=d;ST.v=v;renderScene();if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.watch)window.OM_BATTLE_UI.watch().catch(e=>console.warn(e))}},onLog:r=>{if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;renderLog(true);notifyLog(r);mobNote(r);if(window.OM_RP_UI)window.OM_RP_UI.onChat(r)}},
+  onStatus:s=>{const el=$('#conn');if(el){el.textContent=s==='SUBSCRIBED'?'● 실시간':'○ '+s;el.style.color=s==='SUBSCRIBED'?'var(--acc2)':'var(--mute)'}if(s==='SUBSCRIBED'){startPresence();if(ST._sub)resync('재연결');else checkState('구독');ST._sub=true}}});
  if(ST.role){pollWhispers();ST.wtimer=setInterval(pollWhispers,4000)}
  if(!ST.role)openSeatPicker()}
 
@@ -288,13 +288,40 @@ function resync(why){if(!ST.room)return Promise.resolve();if(RESYNC)return RESYN
   if(got){renderLog(true);
    /* 놓친 줄은 무대 기록에만 넣고, 무대 자막·효과음은 마지막 한 줄만 (한꺼번에 울리지 않게) */
    const R=window.OM_RP_UI;if(R){if(got>1&&R.feedLog)R.feedLog(fresh.slice(0,-1));R.onChat(fresh[got-1])}}
-  const st=await DBS().getState(room);if(ST.room!==room)return;
-  const newer=!!(st&&(st.v||0)>ST.v);if(newer){ST.state=st.data||{};ST.v=st.v;renderScene();if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.watch)window.OM_BATTLE_UI.watch().catch(e=>console.warn(e))}
+  const newer=await checkState(why);if(ST.room!==room)return;   /* 10-23 이그레스: 버전만 확인하고, 앞서 있을 때만 전체를 읽는다 */
   if(ST.role)pollWhispers();
   if(got||newer)console.info('[오레마스] 다시 맞춤',why,got+'줄')}
  catch(e){console.warn('[오레마스] 다시 맞추기 실패',e)}finally{RESYNC=null}})();return RESYNC}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&ST.room)resync('다시 보임')});
 window.addEventListener('online',()=>{if(ST.room)resync('온라인')});
+
+/* 10-23 이그레스: 방 상태는 바뀐 칸만 받는다 — supabase/patch_2026-10-23_이그레스.sql 의 'st' 신호 {v, path, value} (value 가 null 이면 그 칸을 지운다).
+   버전 순서대로 고치고, 빈 버전이 1.5초 넘게 안 채워지거나 「전체」 신호가 오면 그때만 상태 전체를 다시 읽는다.
+   패치 전 서버에서는 신호 없이 예전처럼 onState 로 상태 전체가 온다. 내가 쓴 것도 신호로 돌아와야 버전이 오른다 (화면은 setRaw 가 먼저 고친다) */
+const PATCH={pend:new Map(),t:null,last:0,pull:null};
+/* 경로를 따라 사본을 떠서 고친다 — 남이 들고 있는 옛 상태 조각은 그대로 (예전처럼 신호마다 새 상태) */
+function putPath(o,path,value){const root=Object.assign({},o||{});let x=root;
+ for(let i=0;i<path.length-1;i++){const c=x[path[i]];const n=c&&typeof c==='object'&&!Array.isArray(c)?Object.assign({},c):{};x[path[i]]=n;x=n}
+ const k=path[path.length-1];if(value===null||value===undefined)delete x[k];else x[k]=value;return root}
+function stateChanged(){renderScene();if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.watch)window.OM_BATTLE_UI.watch().catch(e=>console.warn(e))}
+function onPatch(p){if(!p||!ST.room)return;const v=+p.v||0;PATCH.last=Date.now();if(!(v>ST.v))return;
+ if(p.full||(!p.same&&!(Array.isArray(p.path)&&p.path.length))){pullState('전체 신호');return}
+ PATCH.pend.set(v,p);if(drainPatch())stateChanged()}
+function drainPatch(){let n=0;
+ while(PATCH.pend.has(ST.v+1)){const p=PATCH.pend.get(ST.v+1);PATCH.pend.delete(ST.v+1);if(!p.same){ST.state=putPath(ST.state,p.path.map(String),p.value);n++}ST.v++}
+ for(const k of [...PATCH.pend.keys()])if(k<=ST.v)PATCH.pend.delete(k);
+ clearTimeout(PATCH.t);if(PATCH.pend.size)PATCH.t=setTimeout(()=>{if(PATCH.pend.size)pullState('빈 버전')},1500);
+ return n}
+function pullState(why){if(PATCH.pull)return PATCH.pull;const room=ST.room;if(!room)return Promise.resolve(false);
+ PATCH.pull=(async()=>{try{const st=await DBS().getState(room);if(ST.room!==room||!st)return false;
+   if((st.v||0)<=ST.v){if(drainPatch())stateChanged();return false}
+   ST.state=st.data||{};ST.v=st.v||0;drainPatch();stateChanged();console.info('[오레마스] 상태 다시 읽음',why);return true}
+  catch(e){console.warn('[오레마스] 상태 다시 읽기 실패',e);return false}finally{PATCH.pull=null}})();return PATCH.pull}
+/* 버전만 가볍게 확인하고, 서버가 앞서 있으면 그때 전체를 읽는다 */
+async function checkState(why){const room=ST.room;if(!room)return false;
+ try{const r=await DBS().getStateV(room);if(ST.room!==room||!r)return false;return (r.v||0)>ST.v?await pullState(why):false}catch(e){console.warn('[오레마스] 버전 확인 실패',e);return false}}
+/* 신호를 놓쳤을 때의 안전망: 25초 넘게 신호가 없으면 30초마다 버전만 확인 */
+setInterval(()=>{if(ST.room&&document.visibilityState==='visible'&&Date.now()-PATCH.last>25000)checkState('점검')},30000);
 
 async function pollWhispers(){try{const ws=await DBS().whispers(ST.room,ST.secret,ST.lastWhisper);if(!ws||!ws.length)return;ws.forEach(w=>{ST.lastWhisper=Math.max(ST.lastWhisper,w.id);if(!ST.log.find(x=>x.id===w.id))ST.log.push(w)});ST.log.sort((a,b)=>a.id-b.id);renderLog(true)}catch(e){}}
 
@@ -316,9 +343,17 @@ applyUi();
 /* ---------- 모바일 (폭 760px 이하): 무대/채팅을 아래 바로 오가고, 위쪽 버튼들은 ☰ 메뉴에 모은다 ---------- */
 const MOB={mode:'scene',unread:0,prev:'scene',sTop:0};
 const isMobile=()=>window.matchMedia('(max-width:760px)').matches;
-function mobMode(m){const sc=$('#scene');if(MOB.mode==='scene'&&m!=='scene'&&sc)MOB.sTop=sc.scrollTop;if(m==='chat'&&MOB.mode!=='chat')MOB.prev=MOB.mode;const back=m==='scene'&&MOB.mode!=='scene';MOB.mode=m;if(back&&sc)requestAnimationFrame(()=>{sc.scrollTop=MOB.sTop});document.body.classList.toggle('m-chat',m==='chat');document.querySelectorAll('#mbar [data-m]').forEach(b=>b.classList.toggle('on',b.dataset.m===m));if(m==='chat'){MOB.unread=0;mobBadge();const l=$('#log');if(l)l.scrollTop=l.scrollHeight}}
+function mobMode(m){const sc=$('#scene');if(MOB.mode==='scene'&&m!=='scene'&&sc)MOB.sTop=sc.scrollTop;if(m==='chat'&&MOB.mode!=='chat')MOB.prev=MOB.mode;const back=m==='scene'&&MOB.mode!=='scene';MOB.mode=m;if(back&&sc)requestAnimationFrame(()=>{sc.scrollTop=MOB.sTop});document.body.classList.toggle('m-chat',m==='chat');if(m==='chat'&&BCH.open)bchOpen(false);document.querySelectorAll('#mbar [data-m]').forEach(b=>b.classList.toggle('on',b.dataset.m===m));if(m==='chat'){MOB.unread=0;mobBadge();const l=$('#log');if(l)l.scrollTop=l.scrollHeight}}
 function mobBadge(){const e=$('#mUnread');if(!e)return;e.textContent=MOB.unread>99?'99+':MOB.unread;e.style.display=MOB.unread?'':'none'}
-function mobNote(r){if(!isMobile()||MOB.mode==='chat')return;const d=(r&&r.data)||{};if(r.kind==='chat'&&(d.sms||(!d.t&&!d.img)))return;if(isMineLog(r))return;MOB.unread++;mobBadge()}
+function mobNote(r){if(!isMobile()||MOB.mode==='chat'||BCH.open)return;const d=(r&&r.data)||{};if(r.kind==='chat'&&(d.sms||(!d.t&&!d.img)))return;if(isMineLog(r))return;MOB.unread++;mobBadge();bchTick()}
+/* 10-25 망령: 휴대폰 배틀 화면 「채팅」 세로 탭 — RP 잡담 서랍처럼, 채팅 탭으로 넘어가지 않고 배틀을 보면서 옆 채팅창 전체(탭 · 입력 그대로)를 오른쪽 서랍으로 연다. 안 읽은 수는 아래 바 채팅 배지와 같이 센다 */
+const BCH={open:false};
+function bchOpen(on){BCH.open=!!on;document.body.classList.toggle('bchat',BCH.open);if(BCH.open){MOB.unread=0;mobBadge();const l=$('#log');if(l)requestAnimationFrame(()=>{l.scrollTop=l.scrollHeight})}bchTick()}
+function bchTick(){const show=!!(ST.room&&isMobile()&&VIEW==='battle'&&MOB.mode!=='chat');let t=$('#bchtab');
+ if(!show){if(t)t.remove();if(BCH.open){BCH.open=false;document.body.classList.remove('bchat')}return}
+ if(!t){t=document.createElement('button');t.id='bchtab';t.className='ooctab bchtab';t.title='채팅 서랍';t.onclick=()=>bchOpen(!BCH.open);document.body.appendChild(t)}
+ const n=MOB.unread;const h=`<span>${BCH.open?'닫기':'채팅'}</span>${!BCH.open&&n?`<em>${n>9?'9+':n}</em>`:''}`;if(t._h!==h){t.innerHTML=h;t._h=h}t.classList.toggle('on',BCH.open);t.classList.toggle('new',!BCH.open&&!!n)}
+addEventListener('resize',()=>{try{bchTick()}catch(e){}});addEventListener('keydown',e=>{if(e.key==='Escape'&&BCH.open)bchOpen(false)});
 function openMobMenu(){const items=[['skillBtn','스킬 체크'],['dexBtn','도감'],['dbBtn','DB'],['rmBtn','레디메이드'],['copyLink','플레이어 링크'],['copyGm','GM 링크'],['seatBtn','자리'],['roomSet','⚙ 설정'],['saveLog','로그 저장'],['presence','내 이름'],['asPlBtn','PL 로 보기'],['asGmBtn','GM 으로 돌아가기'],['toLobby','← 로비로']].filter(([id])=>$('#'+id));
  const m=openModal(`<div class="mhead"><h2>메뉴</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="mmenu">${items.map(([id,l])=>`<button class="btn" data-mm="${id}">${esc(l)}</button>`).join('')}</div><div class="small dim" style="margin-top:10px">접속 중: ${esc(($('#presence')||{}).textContent||'')}</div>`);
  m.querySelectorAll('[data-mm]').forEach(b=>b.onclick=()=>{closeModal();const t=$('#'+b.dataset.mm);if(t)t.click()})}
@@ -370,7 +405,8 @@ async function setRaw(path,value){
   /* 낙관적 반영: 실시간이 오기 전에 화면부터 */
   if(path&&path.length){let o=ST.state;for(let i=0;i<path.length-1;i++){if(typeof o[path[i]]!=='object'||o[path[i]]==null)o[path[i]]={};o=o[path[i]]}
    if(value===null||value===undefined)delete o[path[path.length-1]];else o[path[path.length-1]]=value}else ST.state=value||{};
-  ST.v=Math.max(ST.v,v||0)}
+  /* 10-23 이그레스: 버전은 여기서 올리지 않는다 — 그 사이 남이 쓴 칸의 신호를 버리지 않게. 내 쓰기도 'st' 신호(또는 패치 전 서버의 onState)로 돌아와 버전이 오른다 */
+  return v}
 async function set(path,value){try{await setRaw(path,value);renderScene();return true}catch(e){toast('저장 실패: '+e.message);return false}}
 /* 바뀐 칸만 쓴다 (점검 2-4 · 3-18) — 읽어서 고친 사본을 통째로 쓰면, 그 사이 남이 바꾼 칸이 지워진다.
    before = 사본을 뜰 때의 모습, after = 고친 사본. depth 단계까지 내려가 바뀐 칸만 쓰고, 그 아래(배열 포함)는 통째로 */
@@ -564,7 +600,8 @@ function renderScene(){reconcileNodes();
  if(window.OM_RP_UI)window.OM_RP_UI.onState();
  if(window.OM_DECK_UI){if(ST.role==='gm')window.OM_DECK_UI.absorb();else if(window.OM_DECK_UI.onAck)window.OM_DECK_UI.onAck()}
  if(window.OM_PHONE_UI&&window.OM_PHONE_UI.refresh)window.OM_PHONE_UI.refresh();
- if(window.OM_STAGE_UI)window.OM_STAGE_UI.onState()}
+ if(window.OM_STAGE_UI)window.OM_STAGE_UI.onState();
+ try{bchTick()}catch(e){}}
 
 /* ---------- 배틀 씬 → battle_ui.js ---------- */
 function B(){return ST.state.battle||{}}
@@ -575,7 +612,7 @@ async function unloadTrainer(tid){const b=B();if(!confirm('이 트레이너와 �
 /* ---------- 파티 불러오기: 로스터(시트) → 배틀 ---------- */
 let MK=null;
 /* 제작기 문서는 30초만 담아 둔다 — 제작기에서 폼 · 소지품을 고친 뒤 다시 불러와도 예전 것을 쓰지 않게 (10-24 망령) */
-async function loadMaker(force){if(MK&&!force&&Date.now()-(MK.at||0)<30000)return MK;toast('제작기 시트를 읽는 중…');const [trs,pks,fos]=await Promise.all([DBS().makerDocs('trainers'),DBS().makerDocs('pokemon'),DBS().makerDocs('folders')]);
+async function loadMaker(force){if(MK&&!force&&Date.now()-(MK.at||0)<600000)return MK;toast('제작기 시트를 읽는 중…');const [trs,pks,fos]=await Promise.all([DBS().makerDocs('trainers'),DBS().makerDocs('pokemon'),DBS().makerDocs('folders')]);
  MK={trainers:trs,pokemon:pks,folders:fos,at:Date.now()};return MK}
 function roster(){return ST.state.roster||{trainers:{},mons:{}}}
 async function openLoadParty(side){
@@ -899,6 +936,6 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
 /* 이름으로 기본 초상 찾기: 그림이 따로 없으면 같은 이름의 로스터 트레이너 → 포켓몬 → 관계도 노드의 그림을 쓴다 */
 function portraitOf(name,img){if(img)return img;if(!name)return '';const ro=ST.state.roster||{};const t=Object.values(ro.trainers||{}).find(x=>x.name===name);if(t&&t.image)return t.image;const m=Object.values(ro.mons||{}).find(x=>x.name===name&&x.image);if(m)return m.image;const n=Object.values((ST.state.graph||{}).nodes||{}).find(x=>x.name===name&&x.img);return n?n.img:''}
-window.OM_APP={selfLog,splitLog,contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,openMon,openLoadParty,loadFromRoster,loadMaker,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,get view(){return VIEW},set view(v){VIEW=v}};
+window.OM_APP={selfLog,splitLog,contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,openMon,openLoadParty,loadFromRoster,loadMaker,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,online:s=>!!s&&Object.values(PRES.who).some(v=>v.role==='seat'&&v.seat===s&&Date.now()-v.at<70000),get view(){return VIEW},set view(v){VIEW=v}};
 route();
 })();

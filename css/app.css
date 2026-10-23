@@ -3156,3 +3156,32 @@ body.m-chat .mecard{display:none}
 .tour-ask b{font-family:var(--head);font-size:18px}.tour-ask span{font-size:13px;color:#ccc}
 @media (max-width:760px){.tour-ask{right:16px;left:16px;width:auto;bottom:calc(72px + env(safe-area-inset-bottom,0px))}.tour-bub p{font-size:15px}}
 @media (prefers-reduced-motion:reduce){.tour-hole{transition:none}}
+/* 10-25 망령: 휴대폰 시트 머리 2 — 파티 그림을 위에 크게(누르면 한 장 요약), 수치 칸은 그 아래 한 줄로 작게, 배틀 배치 단추는 맨 아래 */
+@media (max-width:760px){
+ .hero>.hparty{display:contents}
+ .hero .hpmons{order:3;flex:1 1 100%;display:grid;grid-auto-flow:row;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:none;gap:10px 8px;justify-items:center;margin-top:2px}
+ .hero .hpm{width:100%;max-width:118px}
+ .hero .hpmi{width:100%;height:auto;aspect-ratio:1;font-size:26px}
+ .hero .hpmn{max-width:100%;font-size:12px}
+ .hero>.tiles{order:4;grid-template-columns:repeat(auto-fit,minmax(52px,1fr));gap:4px}
+ .hero .tile{padding:4px 2px;box-shadow:1.5px 1.5px 0 #fff;border-width:1.5px}
+ .hero .tile b{font-size:16px}
+ .hero .tile span{font-size:9px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+ .hero .hpbtn{order:5;flex:1 1 100%;margin:0 auto}
+}
+/* 10-25 망령: 휴대폰 배틀 「채팅」 탭 + 서랍 — 옆 채팅창(.side)을 배틀 위에 오른쪽 서랍으로 띄운다. 탭 모양은 RP 잡담 탭을 그대로 빌리고, 열리면 서랍 왼쪽 끝에 붙어 「닫기」가 된다 */
+.bchtab{display:none}
+@media (max-width:760px){
+ .bchtab{display:flex;position:fixed;top:50%;z-index:41;transition:right .22s ease-out}
+ body.bchat .bchtab{right:min(90vw,400px)}
+ body.bchat .tour-ask{display:none}   /* 처음 둘러보기 쪽지가 서랍 입력칸을 가리지 않게 */
+ body.bchat .side{display:flex;position:fixed;right:0;top:auto;bottom:calc(58px + env(safe-area-inset-bottom));z-index:41;width:min(90vw,400px);height:min(68dvh,560px);flex:none;padding:6px 6px 0;background:#000;border:0;box-shadow:-4px 4px 0 var(--red),0 8px 30px rgba(0,0,0,.6)}
+}
+/* 10-25 망령: 함께 지시하기 — 좌석 고르기 창 · 트레이너 줄 표시 */
+.cosel{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.coseat{display:flex;align-items:center;gap:8px;padding:9px 10px;border:2px solid var(--line2);background:var(--bg2);cursor:pointer}
+.coseat:has(input:checked){border-color:var(--yel2);background:rgba(240,200,74,.08)}
+.coseat input{width:18px;height:18px;margin:0;accent-color:var(--red)}
+.coseat b{font-weight:700}.coseat small{color:var(--mute);margin-left:auto;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tag.co{background:var(--yel2);border-color:var(--yel2);color:#000}
+.cow{color:var(--yel2);font-size:11px;margin-left:4px;white-space:nowrap}
