@@ -43,24 +43,43 @@ window.OM_CUTIN=(()=>{
   if(dual){let sp='';for(let a=0;a<360;a+=30)sp+=`<i style="--a:${a+8}deg"></i>`;
    h+=`<div class="c2-crack"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><polyline points="0,62 22,55 30,58 41,50 47,53 53,46 60,49 70,42 79,45 100,36" fill="none" stroke="#fff" vector-effect="non-scaling-stroke" style="stroke-width:6px"/></svg></div><div class="c2-ring"></div><div class="c2-spark">${sp}</div><div class="c2-vsw"><div class="c2-burst"></div><b>VS</b></div>`}
   h+='</div><div class="c2-flash"></div>';r.innerHTML=h;fitTxt(r);[120,400].forEach(ms=>setTimeout(()=>{if(r.parentNode)fitTxt(r)},ms));   /* 글꼴이 늦게 오면 한 번 더 잰다 */
-  if(dual)setTimeout(()=>synth('hit'),600);else setTimeout(()=>synth('slam'),260);
+  if(!list.some(c=>c.se&&c.se!=='cut')){if(dual)setTimeout(()=>synth('hit'),600);else setTimeout(()=>synth('slam'),70)}   /* 따로 고른 효과음이 있으면 그것만 */
   setTimeout(()=>{if(r.parentNode)r.remove()},(END+.45)*1000)}
  /* 효과음 덧대기 (10-23 망령): 파일 없이 브라우저에서 바로 만든다 — VS 충돌 순간 「쾅」 · 혼자일 때 글자 박히는 「탁」. 효과음 끄기 · 음량 설정을 따른다 */
- let AC=null;
+ let AC=null,MX=null;
  function synth(kind){try{if(window.OM_PREFS&&window.OM_PREFS.get().seMute)return;let v=0.7;try{v=+(localStorage.getItem('om_vol_se')??0.7)}catch(e){}if(!(v>0))return;
-  AC=AC||new (window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();const t=AC.currentTime,g=AC.createGain();g.connect(AC.destination);
-  if(kind==='siren'){g.gain.setValueAtTime(0,t);const os=AC.createOscillator();os.type='square';for(let k=0;k<6;k++){os.frequency.setValueAtTime(k%2?620:880,t+k*.26);g.gain.setValueAtTime(v*.09,t+k*.26);g.gain.setValueAtTime(v*.02,t+k*.26+.22)}g.gain.setValueAtTime(0,t+1.56);os.connect(g);os.start(t);os.stop(t+1.6);return}
-  const big=kind==='hit';g.gain.setValueAtTime(v*(big?.9:.45),t);g.gain.exponentialRampToValueAtTime(.001,t+(big?.6:.18));
-  const o=AC.createOscillator();o.type='sine';o.frequency.setValueAtTime(big?140:220,t);o.frequency.exponentialRampToValueAtTime(big?38:90,t+(big?.45:.15));o.connect(g);o.start(t);o.stop(t+(big?.6:.2));
-  const n=AC.createBufferSource(),len=Math.floor(AC.sampleRate*(big?.35:.08)),buf=AC.createBuffer(1,len,AC.sampleRate),d=buf.getChannelData(0);for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,big?2.2:3);
-  const f=AC.createBiquadFilter();f.type='lowpass';f.frequency.value=big?2400:3600;const ng=AC.createGain();ng.gain.value=v*(big?.8:.35);n.buffer=buf;n.connect(f);f.connect(ng);ng.connect(AC.destination);n.start(t)}catch(e){}}
+  if(!AC){AC=new (window.AudioContext||window.webkitAudioContext)();MX=AC.createDynamicsCompressor();MX.threshold.value=-14;MX.knee.value=8;MX.ratio.value=4;MX.attack.value=.003;MX.release.value=.18;MX.connect(AC.destination)}
+  if(AC.state==='suspended')AC.resume();const t=AC.currentTime+.01;
+  /* 음 하나: 파형 · 시작 · 길이 · 크기 · (끝 높이) — 짧게 올라갔다 부드럽게 줄어든다 */
+  const tone=(f,ty,st,du,gn,f2)=>{const o=AC.createOscillator(),g=AC.createGain();o.type=ty;o.frequency.setValueAtTime(f,t+st);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+st+du*.8);
+   g.gain.setValueAtTime(0,t+st);g.gain.linearRampToValueAtTime(v*gn,t+st+Math.min(.012,du/4));g.gain.exponentialRampToValueAtTime(.0005,t+st+du);o.connect(g);g.connect(MX);o.start(t+st);o.stop(t+st+du+.02)};
+  /* 잡음: 필터 종류 · 높이(끝 높이) · 시작 · 길이 · 크기 */
+  const noise=(ft,f,st,du,gn,f2,q)=>{const len=Math.floor(AC.sampleRate*du),buf=AC.createBuffer(1,len,AC.sampleRate),d=buf.getChannelData(0);for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
+   const n=AC.createBufferSource(),fl=AC.createBiquadFilter(),g=AC.createGain();n.buffer=buf;fl.type=ft;fl.Q.value=q||.8;fl.frequency.setValueAtTime(f,t+st);if(f2)fl.frequency.exponentialRampToValueAtTime(f2,t+st+du);
+   g.gain.setValueAtTime(0,t+st);g.gain.linearRampToValueAtTime(v*gn,t+st+du*(f2?.6:.04));g.gain.exponentialRampToValueAtTime(.0005,t+st+du);n.connect(fl);fl.connect(g);g.connect(MX);n.start(t+st);n.stop(t+st+du)};
+  if(kind==='siren'){for(let k=0;k<6;k++)tone(k%2?620:880,'square',k*.26,.24,.07);return}
+  if(kind==='slam'){   /* 발동 컷인: 띠가 쓸고 지나가는 「쉭」 → 글자 박히는 「쾅」 + 쨍 */
+   noise('bandpass',500,0,.2,.32,4200,1.2);tone(170,'sine',.19,.38,.85,46);noise('lowpass',3200,.19,.13,.42);tone(1320,'triangle',.2,.5,.07);tone(1980,'triangle',.2,.4,.045);return}
+  if(kind==='hit'){   /* VS 충돌 */
+   tone(140,'sine',0,.6,.9,38);noise('lowpass',2400,0,.35,.75);tone(1100,'triangle',.01,.55,.05);return}
+  if(kind==='ball'){   /* 몬스터볼 열림: 딸깍 → 퐁 → 반짝 */
+   noise('highpass',2600,0,.03,.35);tone(320,'sine',.05,.12,.42,980);noise('bandpass',1800,.05,.14,.14,5200,1);
+   [1568,2093,2637].forEach((f,i)=>tone(f,'sine',.13+i*.045,.3,.09));return}
+  if(kind==='ready'){tone(988,'triangle',0,.22,.2);tone(1319,'triangle',.11,.38,.18);return}   /* 양측 준비 완료: 가벼운 「띵동」 */
+  if(kind==='up'){[523,659,784,1047].forEach((f,i)=>tone(f,'triangle',i*.06,.2,.23));tone(2093,'sine',.24,.3,.05);return}   /* 랭크 상승 */
+  if(kind==='down'){[784,622,494].forEach((f,i)=>tone(f,'triangle',i*.08,.24,.23,f*.94));return}   /* 랭크 하강 */
+  if(kind==='dmg'){noise('lowpass',1900,0,.13,.5);tone(125,'sine',0,.2,.6,58);return}   /* 피해 (보통 · 상태 이상 · 반동 등) */
+  if(kind==='dmg_big'){noise('bandpass',1100,0,.2,.6,280,1);tone(160,'sine',0,.32,.75,42);tone(95,'square',.0,.18,.12,40);noise('lowpass',2600,.075,.14,.5);tone(140,'sine',.075,.26,.6,45);return}   /* 효과가 굉장했다 (상성 ×2 이상): 두 번 「콰직」 */
+  if(kind==='dmg_weak'){noise('lowpass',650,0,.1,.38);tone(92,'sine',0,.14,.38,62);return}   /* 효과가 별로 (상성 ×1 미만): 둔한 「툭」 */
+  if(kind==='heal'){[1047,1319,1568,2093].forEach((f,i)=>tone(f,'sine',i*.07,.6,.08));noise('bandpass',6000,0,.5,.05,9000,2);return}   /* 회복 */
+ }catch(e){}}
  /* 양측이 2.5초 안에 잇달아 발동하면 둘을 한 화면(VS 꼴)에 — 맵툴 cutin_last. 보낸 쪽·받는 쪽 모두 같은 규칙으로 합친다 */
  let lastFire=null;
  function showFire(c){const now=Date.now();let list=[c];
   if(lastFire&&now-lastFire.t<2500&&lastFire.c.tok!==c.tok){list=[lastFire.c,c];lastFire=null}else lastFire={t:now,c};
   fireLocal(list)}
  function preview(){fireLocal([{tok:'pv',src:'',tag:'미리 보기',ment:'『컷인 크기』',line:'이 크기로 나온다',color:'#e4002b'}])}
- function fire(c){c=c||{};se(c.se||'cut');showFire(c);DBS().broadcast({t:'cutin',k:'fire',c,se:c.se||'cut'})}
+ function fire(c){c=c||{};const S=c.se&&c.se!=='cut'?c.se:'';if(S)se(S);showFire(c);DBS().broadcast({t:'cutin',k:'fire',c,se:S})}   /* 옛 「cut」 은 급소 소리로만 쓴다 */
 
  /* ----- VS 시합 개시 / 경고 ----- */
  function side(cls,S){S=S||{};const mons=(S.mons||[]).slice(0,6);const balls=(S.balls||[]).slice(0,6).map((b,i)=>{const m=mons[i];return `<i class="ball ${b?'':'dead'}" style="animation-delay:${(1.55+i*.1)}s">${m&&m.img?`<img src="${esc(m.img)}" alt="" title="${esc(m.name||'')}">`:''}</i>`}).join('');
@@ -113,6 +132,6 @@ window.OM_CUTIN=(()=>{
    setTimeout(()=>r.remove(),3400)}}
  function evo(D){evoLocal(D);se('cut');DBS().broadcast({t:'cutin',k:'evo',D})}
 
- function onEvent(p){if(!p||p.t!=='cutin')return;if(p.k==='fire'){se(p.se||'cut');if(p.c)showFire(p.c);else if(p.list)fireLocal(p.list)}else if(p.k==='vs'){vsLocal(p)}else if(p.k==='raid'){raidLocal(p.D)}else if(p.k==='phase')phaseLocal(p.text,p.sub);else if(p.k==='evo'){se('cut');evoLocal(p.D)}}
- return {preview,fire,vs,raid,phase,evo,evoLocal,onEvent,fireLocal,vsLocal,raidLocal};
+ function onEvent(p){if(!p||p.t!=='cutin')return;if(p.k==='fire'){if(p.se&&p.se!=='cut')se(p.se);if(p.c)showFire(p.c);else if(p.list)fireLocal(p.list)}else if(p.k==='vs'){vsLocal(p)}else if(p.k==='raid'){raidLocal(p.D)}else if(p.k==='phase')phaseLocal(p.text,p.sub);else if(p.k==='evo'){se('cut');evoLocal(p.D)}}
+ return {synth,preview,fire,vs,raid,phase,evo,evoLocal,onEvent,fireLocal,vsLocal,raidLocal};
 })();

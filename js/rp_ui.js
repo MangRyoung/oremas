@@ -819,9 +819,17 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  document.addEventListener('pointerdown',()=>setTimeout(()=>{try{const g=seList()['00. 기본 (배틀)']||{};for(const n of ['Blow','Draw','Ping','Ping2','cut','cut_critical','dice','evasion','Dead','raid_warning']){const u=g[n];if(u&&!SEC.has(u)){const b=new Audio(u);b.preload='auto';SEC.set(u,b)}}}catch(e){}},1500),{once:true});
  function playSe(name,localOnly){if(seOff()&&localOnly!=='force')return;const u=/^https?:/.test(name)?name:seUrl(name);if(!u)return;if(!gm())localOnly=true;/* 좌석은 rp 를 못 쓰니 내 쪽에서만 울린다 */if(localOnly){seAudio(u);return}A().set(['rp','se'],{name,src:u,at:Date.now()})}
  /* 로그를 보고 자동 효과음: 주사위 → dice, 지시 공개 → Draw, 턴 개시 → Ping2, 공격 명중 → Blow, 급소 → cut_critical, 빗나감 → evasion, 빈사 → Dead */
- let seenLog=new Set();
+ let seenLog=new Set(),lastBall=0;
  function autoSe(row){if(!row||!row.id||seenLog.has(row.id))return;seenLog.add(row.id);if(seenLog.size>500)seenLog=new Set([...seenLog].slice(-200));if(row.at&&Date.now()-new Date(row.at).getTime()>15000)return;if(!unlocked)return;
   const t=String((row.data||{}).t||'');let n='';if(row.kind==='dice')n='dice';else if(row.kind==='battle'){if(/^【공개】/.test(t))n='Draw';else if(/^턴 개시/.test(t))n='Ping2';else if(/급소!/.test(t))n='cut_critical';else if(/명중\(|필중/.test(t))n='Blow';else if(/빗나감/.test(t))n='evasion';else if(/풀이 죽어|잠자고|저려서|얼어붙어|홀딱 반해|스스로를 공격/.test(t))n='Ping'}
+  /* 10-24 망령: 파일 없이 브라우저에서 만드는 소리 — 등장(볼 열림) · 랭크 상승/하강 · 회복 · 양측 지시 준비 완료 */
+  if(!n&&row.kind==='battle'){const sy=k=>{try{if(window.OM_CUTIN&&window.OM_CUTIN.synth)window.OM_CUTIN.synth(k)}catch(e){}};const h=(row.data||{}).hp;
+   if(/^【준비 완료】/.test(t))return sy('ready');
+   if(/ 등장 \((좌측|우측) /.test(t)){const now=Date.now();if(now-lastBall>90){lastBall=now;sy('ball')}else setTimeout(()=>sy('ball'),140);return}
+   if(h&&+h.cur>+h.prev&&+h.prev>0)return sy('heal');
+   if(h&&+h.cur<+h.prev||/^【피해】/.test(t)){const em=t.match(/상성 ×([\d.]+)/),e=em?+em[1]:1;sy(e>1?'dmg_big':e<1?'dmg_weak':'dmg');if(/빈사!|쓰러졌다!/.test(t))setTimeout(()=>playSe('Dead',true),650);return}
+   let d=0;if(/^【랭크·배율】/.test(t))t.replace(/랭크 ([+-]?\d+) → ([+-]?\d+)/g,(_,x,y)=>{d+=(+y)-(+x)});else{const mm=t.match(/(?:공격|방어|특공|특방|스피드|명중|회피)\s*(?:랭크\s*)?([+-])\d/);if(mm)d=mm[1]==='+'?1:-1}
+   if(d)return sy(d>0?'up':'down')}
   const dead=/빈사!|쓰러졌다!/.test(t);if(!n&&!dead)return;if(n)playSe(n,true);if(dead)setTimeout(()=>playSe('Dead',true),n?700:0)}
  function syncSe(){const se=R().se;if(!se||!se.at||se.at===lastSe)return;lastSe=se.at;if(Date.now()-se.at>8000)return;if(seOff())return;if(!unlocked&&!gm())return;seAudio(se.src)}
  function setVolume(kind,v){if(kind==='se'){volSe=v;try{localStorage.setItem('om_vol_se',v)}catch(e){}}else{vol=v;try{localStorage.setItem('om_vol',v)}catch(e){}if(audio)audio.volume=v;if(PV.audio)PV.audio.volume=v}}

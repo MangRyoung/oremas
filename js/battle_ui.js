@@ -716,7 +716,10 @@ window.OM_BATTLE_UI=(()=>{
   if(rd&&!c.mgr&&(+c.b.phase||0)>=1)return A().toast('턴이 시작돼서 준비를 풀 수 없다');
   const path=c.mgr||ownT(c,tid)?['ready',tid]:['ready',c.seat];
   await putShape(tid,rd);
-  await A().set(path,rd?null:true);A().sysLog(`${((c.b.trainers||{})[tid]||{}).name||tid} ${rd?'준비 해제':'준비 완료'}`,'battle')}
+  await A().set(path,rd?null:true);A().sysLog(`${((c.b.trainers||{})[tid]||{}).name||tid} ${rd?'준비 해제':'준비 완료'}`,'battle');
+  /* 10-24 망령: 자리에 앉은 트레이너가 모두 준비를 마치면 한 줄 알림 (마지막으로 누른 사람이 쓴다) */
+  if(!rd){const R=Object.assign({},c.ST.state.ready||{});R[path[1]]=true;const seats=c.ST.state.seats||{};const T=Object.keys(c.b.trainers||{}).filter(t=>seats[t]);
+   if(T.length>=2&&T.every(t=>R[t]))A().sysLog(`【준비 완료】 양측 모두 지시 준비를 마쳤다${c.mgr?'':' — GM 의 「턴 개시」를 기다린다'}`,'battle')}}
  /* 턴 개시: 선행 입력한 지령·명령의 횟수를 미리 깎는다 (맵툴 set_turn_start). 주인의 호령(tc 7)은 능력·회복이 횟수를 같이 쓴다 */
  function chargeOne(t,data,b){t.orderCount=t.orderCount||{};const tc=OO().styles(t).tc;
   for(const mid in (data.mons||{})){const m=b.mons[mid];if(!m||!m.entry||m.hp.cur<=0)continue;const x=data.mons[mid];
