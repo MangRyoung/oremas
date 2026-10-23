@@ -816,7 +816,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  /* 10-24 망령: 같은 소리는 한 번 받아 둔 걸 다시 쓴다 (매번 새로 받느라 컷인보다 늦게 울리던 것). 배틀 기본 효과음은 첫 클릭 뒤 미리 받아 둔다 */
  const SEC=new Map();
  /* 효과음별 손질: vol 크기 배수 · end 초에서 끊기(fade 초 동안 줄이며) */
- const SE_TUNE={ball_open:{vol:.65,end:1.3,fade:.6}};
+ const SE_TUNE={ball_open:{vol:.65,end:1.9,fade:1}};
  function seAudio(u,tn){try{let b=SEC.get(u);if(!b){b=new Audio(u);b.preload='auto';SEC.set(u,b)}const a=(b.paused||b.ended)?b:b.cloneNode();a.currentTime=0;const v0=Math.min(1,volSe*((tn&&tn.vol)||1));a.volume=v0;a.play().catch(()=>{});
   if(tn&&tn.end){const fd=tn.fade||.15,st=Date.now();clearInterval(a._tn);a._tn=setInterval(()=>{const t=(Date.now()-st)/1000;if(t>=tn.end){clearInterval(a._tn);a.pause();a.volume=v0;return}if(t>tn.end-fd){const q=Math.max(0,(tn.end-t)/fd);a.volume=v0*q*q}},25)}}catch(e){}}
  document.addEventListener('pointerdown',()=>setTimeout(()=>{try{const g=seList()['00. 기본 (배틀)']||{};for(const n of ['Blow','Draw','Ping','Ping2','cut','cut_critical','dice','evasion','Dead','raid_warning','ball_open']){const u=g[n];if(u&&!SEC.has(u)){const b=new Audio(u);b.preload='auto';SEC.set(u,b)}}}catch(e){}},1500),{once:true});

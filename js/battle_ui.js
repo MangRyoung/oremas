@@ -612,7 +612,7 @@ window.OM_BATTLE_UI=(()=>{
  const mentKey=n=>String(n||'').replace(/『|』|\s/g,'');
  async function entryLines(mid){const b=ctx().b;const m=b.mons[mid];const L=[];if(!m)return L;const t=(b.trainers||{})[m.tid];const MT=DB().ment||{};
   const la=leadAcc(m);
-  if(la!==1){L.push(`「통솔」에 의해 「명중」이 강화(${la}배)되었다!`)}
+  /* 10-24 망령: 「통솔」 명중 강화 문구는 로그에 쓰지 않는다 (공격 창 명중 배율 칸에 자동) */
   const tm=(MT.trait||{})[mentKey(m.ability)];if(m.ability&&tm)L.push(mentText(tm,m.name,m.ability));
   for(const it of [m.item,...(m.items2||[]).map(x=>x&&x.item)]){const x=it&&(MT.item||{})[mentKey(it)];if(x)L.push(mentText(x,m.name,it))}
   return L}
