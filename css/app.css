@@ -3401,3 +3401,24 @@ html[data-vt] .phone .ptitle .btn *{color:inherit!important}
 .c2.c2-nar.c2-vs .c2-side.c2-L{--y:30vh!important}.c2.c2-nar.c2-vs .c2-side.c2-R{--y:70vh!important}
 .c2 .c2-line{margin-top:calc(var(--u)*.6)}
 .c2 .c2-por .c2-im.none{background:linear-gradient(160deg,var(--pc),#111)}
+/* 10-24 공격 창 보정 칸 (넓은 화면): 이름 · 자동 지시가 줄바꿈되지 않게 한 줄로, 급소 지시 칸은 두 칸 너비 */
+@media (min-width:700px){
+.agrp .agrid>label:not(.tgc){display:flex;align-items:center;gap:6px;white-space:nowrap;min-width:0}
+.agrp .agrid>label:not(.tgc)>select{flex:1 1 auto;min-width:0;width:auto}
+.agrp .agrid>label:not(.tgc)>input.n{flex:0 1 72px;min-width:44px}
+.agrp .agrid .aordh{flex:none;white-space:nowrap}
+.agrp .agrid>label:has(#acritord){grid-column:span 2}
+}
+.agrp .agrid>label:not(.tgc){white-space:nowrap}
+/* 10-24 공격 창 급소 칸 (넓은 화면): 윗줄 급소 + · 급소 지시 추가 · 급소 확정 / 아랫줄 급소 표 · 급소 대미지 */
+@media (min-width:700px){
+.agrp[data-ag0="crit"] .agrid{display:flex;flex-wrap:wrap;align-items:center;gap:6px 18px}
+.agrp[data-ag0="crit"] .agrid>label{grid-column:auto!important}
+.agrp[data-ag0="crit"] .agrid>label:has(#acrit){order:1}
+.agrp[data-ag0="crit"] .agrid>label:has(#acritord){order:2}
+.agrp[data-ag0="crit"] .agrid>label.tgc{order:3;min-width:110px}
+.agrp[data-ag0="crit"] .agrid::after{content:'';order:4;flex-basis:100%;height:0}
+.agrp[data-ag0="crit"] .agrid>label:has(#acrittype){order:5}
+.agrp[data-ag0="crit"] .agrid>label:has(#acritmul){order:6}
+.agrp[data-ag0="crit"] .agrid>label>select{flex:none;width:auto}
+}
