@@ -3135,3 +3135,24 @@ body.m-chat .mecard{display:none}
  .mecard.open{right:8px}.mecard.open .mcbox{width:auto}
  .mcpill{padding:3px 10px 3px 3px}.mcav{width:26px;height:26px}
 }
+
+/* ---------- 시트 되돌리기 ↶↷ · 수정 기록 (10-24) ---------- */
+.shist{display:inline-flex;gap:2px;flex:none}.shist .btn{min-width:34px;padding-inline:8px}.shist [data-shu],.shist [data-shr]{font-size:18px;line-height:1;font-weight:700}.shist .btn:disabled{opacity:.35;cursor:default}
+.shlist{display:flex;flex-direction:column;gap:8px;max-height:62vh;overflow:auto;margin-top:6px}
+.shrow{background:#111;border:1px solid var(--line2);border-left:4px solid var(--red);padding:8px 10px}
+.shrh{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}.shrh b{font-size:15px}.shme{font-size:11px;background:var(--red);color:#fff;padding:0 6px;transform:skewX(-10deg)}
+.shch{display:flex;flex-direction:column;gap:2px;margin:6px 0;font-size:13px;color:#ccc;overflow-wrap:anywhere}.shch i{font-style:normal;color:#ffd23f;margin-right:4px}.shch em{font-style:normal;color:#fff;font-weight:700}
+.shbt{display:flex;gap:6px;flex-wrap:wrap}
+@media (max-width:760px){.shist .shlb{display:none}.shbt .btn{flex:1}.stabs .shist{position:sticky;right:0;z-index:2;background:#0d0d10;padding-left:6px;box-shadow:-10px 0 10px #0d0d10}}
+
+/* ---------- 처음 둘러보기 · 화면에서 찾기 (10-24) ---------- */
+.tour{position:fixed;inset:0;z-index:9000}
+.tour-hole{position:fixed;border:3px solid var(--red);box-shadow:0 0 0 9999px rgba(0,0,0,.72),0 0 18px rgba(230,0,18,.6);pointer-events:none;transition:left .2s,top .2s,width .2s,height .2s}
+.tour-bub{position:fixed;background:#0d0d10;color:#fff;border:2px solid #fff;box-shadow:6px 6px 0 var(--red);padding:12px 14px 10px}
+.tour-h small{display:block;color:#ffd23f;font-size:11px;letter-spacing:.04em}.tour-h b{font-family:var(--head);font-size:20px;line-height:1.2}
+.tour-bub p{margin:6px 0 10px;font-size:14px;line-height:1.55;color:#ddd;overflow-wrap:anywhere}
+.tour-f{display:flex;gap:6px;align-items:center}
+.tour-ask{position:fixed;right:16px;bottom:16px;z-index:8000;width:min(320px,calc(100vw - 32px));background:#0d0d10;color:#fff;border:2px solid #fff;border-left:6px solid var(--red);box-shadow:6px 6px 0 #000;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.tour-ask b{font-family:var(--head);font-size:18px}.tour-ask span{font-size:13px;color:#ccc}
+@media (max-width:760px){.tour-ask{right:16px;left:16px;width:auto;bottom:calc(72px + env(safe-area-inset-bottom,0px))}.tour-bub p{font-size:15px}}
+@media (prefers-reduced-motion:reduce){.tour-hole{transition:none}}

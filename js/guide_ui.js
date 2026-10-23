@@ -241,7 +241,7 @@ window.OM_GUIDE_UI=(()=>{
     <div class="gd-body"><div class="gd-h"><span>${esc(pg.h)}</span>${tag?`<i class="gd-tag">${tag}</i>`:''}</div>
      <p class="gd-lead">${fmt(pg.lead)}</p>
      <div class="gd-grid">${shot(pg)}<ol class="gd-items">${(pg.items||[]).map(([t,d],i)=>`<li data-it="${i+1}"><i>${i+1}</i><div><b>${esc(t)}</b><span>${fmt(d)}</span></div></li>`).join('')}</ol></div></div>
-    <div class="gd-foot">${(pg.go||c.go)?`<button class="btn sm ghost" data-g="go">이 화면 열기 →</button>`:''}<span class="sp"></span><span class="small dim">${gi+1} / ${PAGES.length}</span><button class="btn" data-g="prev" ${gi<=0?'disabled':''}>◀ 이전</button><button class="btn pri" data-g="next" ${gi>=PAGES.length-1?'disabled':''}>다음 ▶</button></div></div>
+    <div class="gd-foot">${(pg.go||c.go)?`<button class="btn sm ghost" data-g="go">이 화면 열기 →</button>`:''}${window.OM_TOUR&&window.OM_TOUR.has(c.id)?`<button class="btn sm" data-g="find" title="이 장에 나오는 실제 단추를 차례로 짚는다">🔍 화면에서 찾기</button>`:''}<span class="sp"></span><span class="small dim">${gi+1} / ${PAGES.length}</span><button class="btn" data-g="prev" ${gi<=0?'disabled':''}>◀ 이전</button><button class="btn pri" data-g="next" ${gi>=PAGES.length-1?'disabled':''}>다음 ▶</button></div></div>
     ${pg.say?`<div class="gd-say ${gd.img?'img':''}">${gd.img?`<div class="gd-who" style="background-image:url('${esc(gd.img)}')"></div>`:''}<div class="gd-bub"><b>${esc(gd.name)}</b>${gm()?'<button class="gd-ed" data-g="who" title="안내역 이름 · 그림 (방 전체)">✎</button>':''}<p>${fmt(pg.say)}</p></div></div>`:''}
     <div class="gd-keys"><span><kbd>↑</kbd><kbd>↓</kbd> 장</span><span><kbd>←</kbd><kbd>→</kbd> 쪽</span></div></section></div>`;
   bind(el)}
@@ -260,6 +260,7 @@ window.OM_GUIDE_UI=(()=>{
   $('.gd-grid',root).onmouseleave=()=>flash('');
   root.querySelectorAll('[data-g]').forEach(b=>b.onclick=async()=>{const k=b.dataset.g;
    if(k==='prev')return step(-1);if(k==='next')return step(1);
+   if(k==='find'){if(window.OM_TOUR)window.OM_TOUR.find(CH[G.c].id);return}   /* 10-24 벨벳: 도식 대신 진짜 화면에서 */
    if(k==='go'){const c=CH[G.c];const v=c.pages[G.p].go||c.go;if(v==='phone'){if(window.OM_PHONE_UI)window.OM_PHONE_UI.open('home');return}A().view=v;A().renderScene();return}
    if(k==='who'){const g=guide();const md=A().openModal(`<div class="mhead"><h2>안내역</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
      <div class="small dim" style="margin-bottom:8px">튜토리얼 말풍선의 이름과 그림 — 방의 모두에게 같게 보인다.</div>
