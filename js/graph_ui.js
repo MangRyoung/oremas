@@ -83,13 +83,15 @@ window.OM_GRAPH_UI=(()=>{
   const monSvg=mons.map((m,i)=>{const a=-Math.PI/2+i*st+rot;const r=114;const x=Math.round(Math.cos(a)*r),y=Math.round(Math.sin(a)*r);return `<g class="gmm" transform="translate(${x},${y})">${disc('m'+m.id,20,por(m),m.name,'#ffd23f')}<text class="gmmn" y="38" text-anchor="middle" font-size="14" fill="#ffd23f" font-family="var(--lab)">${esc(m.name||'')}</text></g>`}).join('');
   const center=`<g class="gme0" data-o="${me.id}" style="cursor:pointer">${disc('me',50,por(me),me.name,'var(--red)')}<g transform="translate(0,62)"><rect x="-58" y="-15" width="116" height="28" fill="var(--red)" stroke="#fff" stroke-width="2" transform="skewX(-8)"/><text y="6" text-anchor="middle" font-size="16" fill="#fff" font-family="var(--lab)">${esc(me.name||'')}</text></g></g>`;
   const L=RR(0)+72;
-  const list=links.length?links.map(({e,o})=>{const rk=+e.rank||0;return `<button type="button" class="gml ${e.shock?'shock':''}" data-o="${o.id}" data-e="${e.id}"><span class="gmlp">${por(o)?`<img src="${esc(por(o))}" alt="">`:esc((o.name||'?').slice(0,1))}</span><span class="gmln"><b>${esc(o.name||'')}</b>${e.label?`<small>${esc(e.label)}</small>`:''}</span><span class="gmlk">${e.shock?'⚡':''}R${rk}</span><span class="gmlr">${[...Array(10)].map((_,i)=>`<i class="${i<rk?'on':''}"></i>`).join('')}</span></button>`}).join(''):`<div class="empty small">아직 이어진 인연이 없다${gm()?'<br>전체 관계도에서 「+ 선」으로 잇는다':''}</div>`;
+  const list=links.length?links.map(({e,o})=>{const rk=+e.rank||0;return `<button type="button" class="gml ${e.shock?'shock':''}" data-o="${o.id}" data-e="${e.id}"><span class="gmlp">${por(o)?`<img src="${esc(por(o))}" alt="">`:esc((o.name||'?').slice(0,1))}</span><span class="gmln"><b>${esc(o.name||'')}</b>${e.label?`<small>${esc(e.label)}</small>`:''}</span><span class="gmlk">${e.shock?'⚡':''}R${rk}</span><span class="gmlr">${[...Array(10)].map((_,i)=>`<i class="${i<rk?'on':''}"></i>`).join('')}</span></button>`}).join(''):`<div class="empty small">아직 이어진 인연이 없다${gm()?`<br><button class="btn sm pri" data-gadd style="margin-top:8px">+ 인연 잇기</button>`:''}</div>`;
   el.innerHTML=top+`<div class="gmine"><div class="gmsvgw"><svg class="gmsvg" viewBox="${-L} ${-L} ${L*2} ${L*2}" preserveAspectRatio="xMidYMid meet">${rings}<circle r="114" fill="none" stroke="#ffd23f" stroke-width="1.2" stroke-dasharray="3 6" opacity=".5"/>${lines}${monSvg}${others}${center}</svg></div>
-   <div class="gmside"><div class="gmsh"><b>인연</b><span class="small dim">${links.length}명 · 포켓몬 ${mons.length}</span></div><div class="gmlist">${list}</div><div class="small dim gmleg">노란 고리 = 내 포켓몬 · 빨간 점선과 ⚡ = 쇼크 · 칸 수 = 랭크 (0~10)</div></div></div>`;
+   <div class="gmside"><div class="gmsh"><b>인연</b><span class="small dim">${links.length}명 · 포켓몬 ${mons.length}</span>${gm()?'<span class="sp"></span><button class="btn xs" data-gadd title="가운데 사람과 다른 노드를 선으로 잇는다">+ 선</button>':''}</div><div class="gmlist">${list}</div><div class="small dim gmleg">노란 고리 = 내 포켓몬 · 빨간 점선과 ⚡ = 쇼크 · 칸 수 = 랭크 (0~10)</div></div></div>`;
   bindMode(el);
   const sel=$('#gme',el);if(sel)sel.onchange=()=>{MODE.me=sel.value;render(el)};
   const open=(oid,eid)=>{if(gm()&&eid)return editEdge(eid);openNode(oid)};
-  el.querySelectorAll('.gmo,.gml,.gme0').forEach(x=>x.onclick=()=>open(x.dataset.o,x.dataset.e))}
+  el.querySelectorAll('.gmo,.gml,.gme0').forEach(x=>x.onclick=()=>open(x.dataset.o,x.dataset.e));
+  /* 10-22 망령: 「내 인연」에서도 바로 선을 잇는다 — 한쪽은 가운데 사람, 다른 쪽은 아직 안 이어진 노드부터 */
+  el.querySelectorAll('[data-gadd]').forEach(x=>x.onclick=()=>editEdge(null,{a:me.id,skip:links.map(l=>l.o.id)}))}
  function fit(svg){const ns=Object.values(G().nodes||{});if(!ns.length){V.x=V.y=0;V.k=1;return}const xs=ns.map(n=>n.x),ys=ns.map(n=>n.y);const minx=Math.min(...xs)-80,maxx=Math.max(...xs)+80,miny=Math.min(...ys)-80,maxy=Math.max(...ys)+80;const r=svg.getBoundingClientRect();V.k=Math.min(3,Math.max(.3,Math.min(r.width/(maxx-minx),r.height/(maxy-miny))));V.x=(r.width-(maxx+minx)*V.k)/2;V.y=(r.height-(maxy+miny)*V.k)/2}
 
  function openNode(id){const n=G().nodes[id];if(!n)return;if(gm())return editNode(id);
@@ -110,7 +112,9 @@ window.OM_GRAPH_UI=(()=>{
    for(const [k,x] of Object.entries(G().edges||{}))if(x.a===id||x.b===id)await A().set(['graph','edges',k],null);
    const tr=Object.values(((A().ST.state.roster||{}).trainers)||{}).find(t=>t.name===n.name);if(tr)await A().set(['graph','auto',tr.id],-1);
    await A().set(['graph','nodes',id],null);A().toast(`${n.name} 를 지웠다`)}}
- function editEdge(id){const g=G();const ns=Object.values(g.nodes||{});if(ns.length<2)return A().toast('노드가 둘 이상 있어야 한다');const e=id?g.edges[id]:{id:'e'+rnd(6),a:ns[0].id,b:ns[1].id,rank:1,label:'',shock:false};
+ function editEdge(id,pre){const g=G();const ns=Object.values(g.nodes||{});if(ns.length<2)return A().toast('노드가 둘 이상 있어야 한다');pre=pre||{};
+  const pa=pre.a&&g.nodes[pre.a]?pre.a:ns[0].id;const pb=(ns.find(n=>n.id!==pa&&!(pre.skip||[]).includes(n.id))||ns.find(n=>n.id!==pa)).id;
+  const e=id?g.edges[id]:{id:'e'+rnd(6),a:pa,b:pb,rank:1,label:'',shock:false};
   const sel=(idv,cur)=>`<select id="${idv}">${ns.map(n=>`<option value="${n.id}" ${n.id===cur?'selected':''}>${esc(n.name)}</option>`).join('')}</select>`;
   const md=A().openModal(`<div class="mhead"><h2>${id?'선 수정':'선 추가'}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    <div class="row">${sel('ea',e.a)} ↔ ${sel('eb',e.b)}</div>

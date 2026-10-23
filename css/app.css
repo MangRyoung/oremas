@@ -3108,3 +3108,30 @@ span.cdfw{display:inline-flex;align-items:center;justify-content:center;cursor:d
 .lgr{display:inline-flex;align-items:center;gap:6px}.lgr input[type=date]{min-width:0;color-scheme:dark}.lgq{display:inline-flex;gap:4px;flex-wrap:wrap}
 .lgcnt{margin:6px 0 0;color:var(--yel,#f5d000)}
 @media (max-width:760px){.lgrange>select{flex:1 1 100%}.lgr{flex:1 1 100%}.lgr input[type=date]{flex:1}}
+/* 10-24 망령: 내 트레이너 미니 카드 — RP · 시트 밖의 탭에서 왼쪽 아래. 접으면 알약(얼굴 · 이름 · HP 점), 펼치면 랭크 · 포켓몬 HP · 단추 */
+.mecard{position:fixed;left:14px;bottom:14px;z-index:40;font-size:13px}
+.mecard[hidden]{display:none}
+body.m-chat .mecard{display:none}
+.mcpill{display:flex;align-items:center;gap:8px;background:#000;color:#fff;border:2px solid #fff;box-shadow:3px 3px 0 var(--red);padding:4px 12px 4px 4px;cursor:pointer;font:inherit;transform:skewX(-6deg)}
+.mcpill>*{transform:skewX(6deg)}
+.mcav{width:30px;height:30px;border-radius:50%;background:#2a2b31 center/cover no-repeat;border:2px solid var(--red);display:grid;place-items:center;font-style:normal;font-size:13px;flex:none}
+.mcpn{font-weight:700;max-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mcdots{display:flex;gap:3px}.mcdots b{width:7px;height:7px;border-radius:50%;background:#3fcf6b}.mcdots b.mid{background:#f5d000}.mcdots b.low{background:#ff7a2f}.mcdots b.ko{background:#555}
+.mcbox{width:280px;background:#0f1014;border:2px solid #fff;box-shadow:4px 4px 0 var(--red);color:#fff}
+.mch{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:2px solid var(--red)}.mch .mcav{width:40px;height:40px}
+.mcn{display:flex;flex-direction:column;min-width:0;flex:1}.mcn b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.mcn small{color:var(--mute)}.mcn .bad{color:#ff6b6b}
+.mcx{background:none;border:1px solid #444;color:#fff;width:26px;height:26px;cursor:pointer}
+.mcrk{display:flex;gap:4px;padding:6px 10px;flex-wrap:wrap}.mcrk span{background:#1c1d22;padding:1px 7px;font-size:11px;transform:skewX(-8deg)}.mcrk b{color:var(--yel,#f5d000)}
+.mcmons{display:flex;flex-direction:column;gap:2px;padding:2px 6px 6px;max-height:46vh;overflow:auto}
+.mcm{display:grid;grid-template-columns:28px minmax(0,1fr) 62px;grid-template-rows:auto auto;column-gap:6px;align-items:center;background:none;border:0;border-bottom:1px solid #1f2026;color:#fff;font:inherit;text-align:left;padding:4px;cursor:pointer}
+.mcm:hover{background:#1a1b20}.mcm.ko{opacity:.55}
+.mcmi{grid-row:1/3;width:28px;height:28px;border-radius:50%;background:#2a2b31 center/cover no-repeat;display:grid;place-items:center;font-style:normal;font-size:12px}
+.mcmn{display:flex;align-items:baseline;gap:6px;min-width:0}.mcmn b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:12.5px}.mcmn small{color:var(--mute);font-size:10.5px;white-space:nowrap}
+.mchp{grid-column:2/3;height:6px;background:#2a2b31;display:block}.mchp i{display:block;height:100%;background:#3fcf6b}.mchp i.mid{background:#f5d000}.mchp i.low{background:#ff7a2f}
+.mchpn{grid-column:3;grid-row:1/3;text-align:right;font-family:var(--lab);font-size:11px;color:#ccc}
+.mcbtn{display:flex;gap:4px;padding:6px 10px 10px}.mcbtn .btn{flex:1}
+@media (max-width:760px){
+ .mecard{left:8px;bottom:calc(64px + env(safe-area-inset-bottom,0px))}
+ .mecard.open{right:8px}.mecard.open .mcbox{width:auto}
+ .mcpill{padding:3px 10px 3px 3px}.mcav{width:26px;height:26px}
+}

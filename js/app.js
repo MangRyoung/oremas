@@ -553,6 +553,7 @@ function renderScene(){reconcileNodes();
   const sb=$('#stageBtn');if(sb)sb.onclick=()=>{if(VIEW==='rp'||VIEW==='battle')set(['scene'],VIEW);else toast('무대는 RP 나 배틀만 될 수 있어')}}
  const el=$('#scene');if(!el)return;
  if(VIEW!=='report'&&VIEW!=='guide')ST.lastView=VIEW;
+ try{if(window.OM_MECARD)window.OM_MECARD.draw(VIEW)}catch(e){}   /* 내 트레이너 미니 카드 (10-24) — 탭 그리기가 실패해도 숨김/보임은 먼저 맞춘다 */
  if(VIEW==='battle')renderBattle(el);
  else if(VIEW==='sheet')window.OM_SHEET_UI.render(el);
  else if(VIEW==='graph')window.OM_GRAPH_UI.render(el);

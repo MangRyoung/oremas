@@ -599,6 +599,10 @@ window.OM_BATTLE_UI=(()=>{
   if(m.form0&&((m.forms||[])[m.formIdx]||{}).revert)L.push(...formSet(m,-1));
   delete m.flags;delete m.prioDown;delete m.fxDone;delete m.futRsv;if(m.tera!=null)m.teraActive=false;m.entry='';
   if(gone.length)L.push(`${m.name} 상태 해제: ${gone.join('·')}`);return L}
+ /* 10-22 망령: 나가는 포켓몬이 다른 포켓몬에게 걸어 둔 포텐셜·특성 효과(옵저버 같은 아군 배율)도 같이 꺼진다. 기술로 건 효과는 남긴다 */
+ function auraOff(nb,m){const L=[],ids=[];if(!FX())return {L,ids};const mv=new Set((m.moves||[]).map(x=>x&&String(x.name||'').replace(/『|』/g,'').trim()).filter(Boolean));const tail=' ← '+m.name;
+  for(const x of Object.values(nb.mons||{})){if(!x||x.id===m.id)continue;const off=FX().chips(x).filter(c=>/^(mods|noind|prio|immune|nodrop|mults):/.test(c.id)&&c.id.endsWith(tail)&&!mv.has(String(c.name||'').replace(/『|』/g,'').trim()));
+   if(!off.length)continue;for(const c of off)FX().remove(x,c.id);ids.push(x.id);L.push(`${x.name} 「${[...new Set(off.map(c=>c.name))].join('」「')}」 해제 (${m.name} 퇴장)`)}return {L,ids}}
  function applyBatton(nb,m){const t=nb.trainers[m.tid];const bt=t&&t.batton;if(!bt)return [];delete t.batton;m.rank=Object.assign({},bt.rank||{});m.states=Object.assign({},m.states||{},bt.states||{});if(bt.critBuff)m.critBuff=bt.critBuff;
   const st=(DB().states||{}).st||{};const rk=Object.entries(m.rank).filter(([k,v])=>+v).map(([k,v])=>(FX()?FX().STAT_KO[k]:k)+(v>0?'+':'')+v);const ss=Object.keys(bt.states||{}).map(k=>(st[k]||{}).ko||k);
   return [`${m.name} 「배턴터치」 받음 (${bt.from||''}) ${[...rk,...ss].join(' · ')||'없음'}`]}
@@ -610,7 +614,7 @@ window.OM_BATTLE_UI=(()=>{
     <label class="firerow ${bench.length?'':'dis'}" data-ex="forced"><b>강제 교대</b><span class="small dim">${bench.length?'배턴터치 없이 나가고 벤치에서 무작위 한 마리가 같은 자리로':'벤치에 교대할 포켓몬이 없다'}</span></label></div>`);
    md.querySelectorAll('[data-ex]').forEach(el=>el.onclick=()=>{const k=el.dataset.ex;if(k==='forced'&&!bench.length)return;if(k==='batton'&&!ps)return;A().closeModal();if(k==='forced')return forcedSwitch(mid);exitMon(mid,{batton:k==='batton',noAsk:true})});return}
   let batton=!!opt.batton;if(!batton&&!opt.forced&&passable(m)&&!opt.noAsk)batton=confirm(`${m.name} 퇴장 — 「배턴터치」인가? (랭크·넘길 수 있는 상태를 다음 포켓몬에게)\n취소 = 그냥 퇴장`);
-  const nb0=snap(c.b),nb=snap(nb0);const L=outReset(nb,nb.mons[mid],{batton});await saveMon(nb0.mons[mid],mid,nb.mons[mid]);if(batton)await A().set(['battle','trainers',m.tid,'batton'],nb.trainers[m.tid].batton);
+  const nb0=snap(c.b),nb=snap(nb0);const L=outReset(nb,nb.mons[mid],{batton});const AU=auraOff(nb,nb.mons[mid]);L.push(...AU.L);await saveMon(nb0.mons[mid],mid,nb.mons[mid]);for(const id of AU.ids)await saveMon(nb0.mons[id],id,nb.mons[id]);if(batton)await A().set(['battle','trainers',m.tid,'batton'],nb.trainers[m.tid].batton);
   A().sysLog(`${m.name} ${opt.forced?'강제 퇴장':'퇴장'}${L.length?'\n'+L.join('\n'):''}`,'battle')}
  /* 강제 교대 (맵툴 change_forced): 배턴터치 없이 나가고, 벤치에서 아무 포켓몬이나 같은 에리어로 */
  async function forcedSwitch(mid,opt){opt=opt||{};const c=ctx();const b=c.b;const m=b.mons[mid];if(!m||!(canEdit(c,m)||(opt.sys&&c.mgr))||!m.entry)return false;
