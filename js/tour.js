@@ -12,7 +12,7 @@ window.OM_TOUR=(()=>{
  const TAB=k=>`#sceneTabs button[data-s="${k}"]`;const MENU='#mbar [data-m="menu"]';   /* 휴대폰에선 상단 단추가 ☰ 메뉴 안에 있다 — 메뉴 단추를 짚는다 */
  const BASE=[
   {s:'#sceneTabs',t:'장면 탭',d:'RP · 배틀 · 시트 · 관계도 · 캘린더 · 제보 · 튜토리얼. GM 이 무대(RP · 배틀)를 바꾸면 모두 그쪽으로 따라가고, 나머지 탭은 각자 본다.'},
-  {s:'#presence',t:'접속 중',d:'지금 들어와 있는 사람. 내 이름을 누르면 닉네임을 바꾼다.'},
+  {s:'#presence',t:'접속 중',d:'지금 들어와 있는 사람. 누르면 전체 목록 창이 열리고, 거기서 내 이름도 바꾼다.'},
   {s:'#seatBtn',t:'자리',d:'내 트레이너 자리에 앉는다. 앉으면 내 시트와 포켓몬을 고칠 수 있다.',only:'view',ms:MENU},
   {v:'rp',m:'scene',s:'.rpinput',t:'입력줄',d:'화자를 고르고 대사나 지문을 친다. 표정 · 자동/대사/지문 단추도 여기.'},
   {v:'rp',s:'[data-rp="phone"],#mbar [data-m="phone"]',t:'휴대폰',d:'게임 안 휴대폰. 문자 · 연락처 · SNS · 캘린더.'},

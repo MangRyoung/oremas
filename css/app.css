@@ -3211,9 +3211,9 @@ body.m-chat .mecard{display:none}
 }
 /* 위 띠 접속자: 사람이 많아도 뒤 메뉴를 밀지 않게 — 폭을 묶고 넘치는 이름은 흐리게 잘라 낸다 (2026-10-24) */
 @media (min-width:761px){
- .top .presence{flex:0 1 auto;min-width:0;max-width:min(24vw,320px);flex-wrap:nowrap;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)}
+ .top .presence{flex:0 1 auto;min-width:46px;max-width:min(16vw,240px);flex-wrap:nowrap;overflow:hidden;-webkit-mask-image:linear-gradient(90deg,#000 88%,transparent);mask-image:linear-gradient(90deg,#000 88%,transparent)}
  .top .presence .pcount,.top .presence .pwho{flex:none}
- .top .tabs,.top .btn,.top #conn,.top .name,.top .badge{flex-shrink:0}
+ .top .tabs,.top .btn,.top #conn,.top .name,.top .badge,.top .vtsw{flex-shrink:0}
 }
 /* PC 배틀 포텐셜 · 지령 · 명령 칸: Do Hyeon 이 작은 글자에서 빽빽해서 본문 글꼴 굵게로 (휴대폰은 그대로) (2026-10-24) */
 @media (min-width:761px){
@@ -3245,3 +3245,11 @@ body.m-chat .mecard{display:none}
 .mgc.co{border-color:#d6a23b}.mgc.z{opacity:.4}
 .oown{display:inline-block;font-style:normal;font-size:10px;padding:0 5px;margin:1px 0;background:#d6a23b;color:#1a1306;border-radius:2px}
 .firerow .oown{margin-left:6px}
+/* 접속자 전체 목록 창 · 넓은 PC 에선 위 띠를 한 줄로 (테마 단추가 아래 줄로 밀리지 않게 — 넘치면 접속자 칸이 먼저 줄어든다) (2026-10-24) */
+.wholist{display:flex;flex-direction:column;gap:4px;max-height:60vh;overflow:auto;margin-top:6px}
+.whorow{display:flex;align-items:center;gap:8px;padding:6px 10px;background:#141518;border:1px solid var(--line);border-left:3px solid var(--line2)}
+.whorow.gm{border-left-color:var(--red)}.whorow.seat{border-left-color:var(--ok,#3fbf7f)}.whorow.me{background:#1d1e24}
+.whorow b{font-weight:700}.whorole{flex:none;font-size:11px;font-weight:700;padding:1px 7px;background:#000;border:1px solid var(--line2);color:#ddd}
+.whorow.gm .whorole{border-color:var(--red);color:#fff}.whome{margin-left:auto;font-size:11px;color:var(--yel2,var(--yel))}
+.top .presence{cursor:pointer}
+@media (min-width:1500px){.top{flex-wrap:nowrap}.top .tabs{flex-shrink:0}.top .presence{flex:0 1 240px}}
