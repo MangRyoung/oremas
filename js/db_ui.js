@@ -38,7 +38,7 @@ window.OM_DB_UI=(()=>{
   $('#dbkinds',md).innerHTML=KINDS.map(([k,n])=>`<button class="tab2 ${UI.kind===k?'on':''}" data-kind="${k}">${n} <small>${all(k).length}</small></button>`).join('');
   $('#dbkinds',md).querySelectorAll('[data-kind]').forEach(b=>b.onclick=()=>{UI.kind=b.dataset.kind;UI.tag='';UI.sel='';UI.lim=200;render()});
   $('#dbtitle',md).textContent=(UI.pick?'고르기 — ':'')+KINDS.find(x=>x[0]===UI.kind)[1];
-  const tb=$('#dbtools',md);if(tb){tb.innerHTML=A().ST.role==='gm'?`${UI.kind!=='state'?'<button class="btn sm" id="dbnew">+ 새로</button>':''}<button class="btn sm ghost" id="dbsync" title="제작기(dbedit)의 특성·포텐셜·상태 변화 변경을 이 방 DB 에 가져온다">제작기 새로고침</button>`:'';const nw=$('#dbnew',md);if(nw)nw.onclick=()=>openEdit(UI.kind,'',true);const sy=$('#dbsync',md);if(sy)sy.onclick=syncMaker}
+  const tb=$('#dbtools',md);if(tb){tb.innerHTML=A().ST.role==='gm'?`${UI.kind!=='state'?'<button class="btn sm" id="dbnew">+ 새로</button>':''}<button class="btn sm ghost" id="dbsync" title="제작기 DB 수정은 GM 화면이 2분마다 · 창으로 돌아올 때 자동으로 가져온다. 이 단추는 전부 다시 읽기">제작기 다시 읽기</button>`:'';const nw=$('#dbnew',md);if(nw)nw.onclick=()=>openEdit(UI.kind,'',true);const sy=$('#dbsync',md);if(sy)sy.onclick=syncMaker}
   const cnt={};all(UI.kind).forEach(r=>r.tags.forEach(t=>{const b=t.replace(/\s*\(.*\)$/,'');cnt[b]=(cnt[b]||0)+1}));
   const top=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]).slice(0,14);
   $('#dbtags',md).innerHTML=top.map(t=>`<button class="chip ${UI.tag===t?'on':''}" data-tag="${esc(t)}">${esc(t)} <small>${cnt[t]}</small></button>`).join('');
@@ -132,17 +132,39 @@ window.OM_DB_UI=(()=>{
    d.states=Object.assign({},S0,{groups:groups.filter(g=>g.s.length),hidden,st})}
   for(const k in CACHE)CACHE[k]=null}
  /* 제작기의 dbedit (특성 abil · 포텐셜 pots) 를 이 방 DB 에 가져온다 */
- async function syncMaker(){A().toast('제작기에서 읽는 중…');let rows;try{rows=await window.OM_STORE.makerDocs('dbedit')}catch(e){return A().toast('읽지 못했다: '+e.message)}
-  const dbx=JSON.parse(JSON.stringify(A().ST.state.dbx||{}));dbx.trait=dbx.trait||{};dbx.item=dbx.item||{};dbx.pot=dbx.pot||{};dbx.st=dbx.st||{};let n=0,ns=0;
-  for(const k in dbx.st)if(dbx.st[k]&&dbx.st[k].src==='maker')delete dbx.st[k];/* 제작기 것은 매번 새로 받는다 (원래대로 되돌린 상태도 따라가게) */
-  const num=v=>{const x=+v;return v===''||v==null||isNaN(x)?0:x};
+ /* 제작기의 dbedit (특성 abil · 포텐셜 pots · 소지품 items · 상태 st · 레디메이드 rm) 를 이 방 DB(dbx)에 섞는다. 돌려줌: 바뀐 개수 {n,ns,nr}
+    full: 전부 읽은 것 (제작기 상태 변화는 새로 받는다) · 아니면 바뀐 문서만 (10-24 자동 반영). 방에서 직접 고친 것(src 'room')은 건드리지 않는다 */
+ function mergeMaker(dbx,rows,full){dbx.trait=dbx.trait||{};dbx.item=dbx.item||{};dbx.pot=dbx.pot||{};dbx.st=dbx.st||{};dbx.rm=dbx.rm||{};let n=0,ns=0,nr=0;
+  if(full)for(const k in dbx.st)if(dbx.st[k]&&dbx.st[k].src==='maker')delete dbx.st[k];/* 제작기 것은 매번 새로 받는다 (원래대로 되돌린 상태도 따라가게) */
+  const num=v=>{const x=+v;return v===''||v==null||isNaN(x)?0:x};const FX=window.OM_FX;const RB=(window.OM_DB||{}).readymade||{};
   for(const r of rows||[]){const d=r.data||{};const row=d.row||[];if(!d.key)continue;
-   if(d.kind==='abil'){const cur=(dbx.trait[d.key]||{});if(cur.src==='room')continue;const eff=String(row[2]||'');const base=BASE&&BASE.traits[d.key];if(base&&base.multi===eff&&!cur.src)continue;dbx.trait[d.key]={multi:eff,single:(base&&base.single)||eff,cost:row[0]||'',src:'maker'};n++}
+   if(d.kind==='abil'){const cur=(dbx.trait[d.key]||{});if(cur.src==='room')continue;if(d.deleted){if(cur.src==='maker'){delete dbx.trait[d.key];n++}continue}const eff=String(row[2]||'');const base=BASE&&BASE.traits[d.key];if(base&&base.multi===eff){if(cur.src==='maker'){delete dbx.trait[d.key];n++}continue}dbx.trait[d.key]={multi:eff,single:(base&&base.single)||eff,cost:row[0]||'',src:'maker'};n++}
    else if(d.kind==='st'){if((dbx.st[d.key]||{}).src==='room')continue;if(d.deleted){dbx.st[d.key]={del:1,src:'maker'};ns++;continue}const r=row;dbx.st[d.key]={group:String(r[2]||''),e:{ko:r[1]||d.key,min:num(r[3]),max:num(r[4]),roll:r[5]||'',prog:r[6]||'turn',abn:r[7]==='O'?1:0,neg:r[8]==='O'?1:0,bat:r[9]==='O'?1:0,desc:String(r[10]||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean),memo:r[11]||'',img:r[12]||((BASE&&BASE.states&&BASE.states.st[d.key])||((DB().states||{}).st||{})[d.key]||{}).img||''},src:'maker'};ns++}
-   else if(d.kind==='items'){const cur=(dbx.item[d.key]||{});if(cur.src==='room')continue;const it=mkItem(row);const base=BASE&&BASE.items[d.key];if(base&&base.eff===it.eff&&String(base.auto||'')===it.auto&&!cur.src)continue;dbx.item[d.key]=Object.assign(it,{src:'maker'});n++}
-   else if(d.kind==='pots'){const cur=(dbx.pot[d.key]||{});if(cur.src==='room')continue;const base=BASE&&BASE.pots.find(p=>p[1]===d.key);if(base&&base[2]===row[2]&&!cur.src)continue;dbx.pot[d.key]={group:row[0]||'',eff:row[2]||'',note:row[3]||'',src:'maker'};n++}}
-  dbx.at=Date.now();await A().set(['dbx'],dbx);A().toast(`제작기에서 ${n}개 가져왔다 (특성·포텐셜)${ns?` · 상태 변화 ${ns}개`:''}`);refresh()}
+   else if(d.kind==='items'){const cur=(dbx.item[d.key]||{});if(cur.src==='room')continue;if(d.deleted){if(cur.src==='maker'){delete dbx.item[d.key];n++}continue}const it=mkItem(row);const base=BASE&&BASE.items[d.key];if(base&&base.eff===it.eff&&String(base.auto||'')===it.auto){if(cur.src==='maker'){delete dbx.item[d.key];n++}continue}dbx.item[d.key]=Object.assign(it,{src:'maker'});n++}
+   else if(d.kind==='pots'){const cur=(dbx.pot[d.key]||{});if(cur.src==='room')continue;if(d.deleted){if(cur.src==='maker'){delete dbx.pot[d.key];n++}continue}const base=BASE&&BASE.pots.find(p=>p[1]===d.key);if(base&&base[2]===row[2]){if(cur.src==='maker'){delete dbx.pot[d.key];n++}continue}dbx.pot[d.key]={group:row[0]||'',eff:row[2]||'',note:row[3]||'',src:'maker'};n++}
+   else if(d.kind==='rm'&&FX){const cur=dbx.rm[d.key]||{};if(cur.src==='room')continue;
+    if(d.deleted){if(RB[d.key]&&!cur.deleted){dbx.rm[d.key]={deleted:1,src:'maker'};nr++}continue}
+    const text=String(row[1]||''),dsl=String(row[2]||''),manual=row[3]==='O';const pc=String(row[4]==null?'':row[4]).trim();const b=RB[d.key];
+    if(b&&b.text===text&&FX.unparse(b.ops||[]).join('\n')===dsl&&!!b.manual===manual&&String(b.p==null?'':b.p)===pc){if(cur.src==='maker'){delete dbx.rm[d.key];nr++}continue}
+    const v={text,ops:FX.parse(dsl).ops,src:'maker'};if(manual)v.manual=1;if(pc!==''&&+pc>0)v.p=Math.min(100,+pc);if(JSON.stringify(Object.assign({},cur,{src:''}))===JSON.stringify(Object.assign({},v,{src:''})))continue;dbx.rm[d.key]=v;nr++}}
+  return {n,ns,nr}}
+ const maxAt=rows=>(rows||[]).reduce((m,r)=>r.updated_at&&r.updated_at>m?r.updated_at:m,'');
+ /* 「제작기 새로고침」 단추: 전부 읽는다 */
+ async function syncMaker(){A().toast('제작기에서 읽는 중…');let rows;try{rows=window.OM_STORE.makerDocsSince?await window.OM_STORE.makerDocsSince('dbedit',null):await window.OM_STORE.makerDocs('dbedit')}catch(e){return A().toast('읽지 못했다: '+e.message)}
+  const dbx=JSON.parse(JSON.stringify(A().ST.state.dbx||{}));const c=mergeMaker(dbx,rows,true);const at=maxAt(rows);if(at)dbx.mkSeen=at;
+  dbx.at=Date.now();await A().set(['dbx'],dbx);MKX=null;mkxP=null;A().toast(`제작기에서 ${c.n}개 가져왔다 (특성·포텐셜·소지품)${c.ns?` · 상태 변화 ${c.ns}개`:''}${c.nr?` · 레디메이드 ${c.nr}개`:''}`);if(document.querySelector('.dbmodal'))refresh()}
+ /* 10-24 망령: 제작기 DB 자동 반영 — GM 화면이 2분마다(그리고 창으로 돌아올 때) 지난번 뒤에 바뀐 제작기 DB 문서만 읽어 방 DB 에 섞는다.
+    바뀐 게 없으면 빈 응답 하나라 사용량은 거의 없다. 처음 한 번(mkSeen 없음)은 전부 읽는다 */
+ let AUTO=false,PULL=false,LASTP=0;
+ async function pullMaker(){if(PULL||A().ST.role!=='gm'||!A().ST.room||!window.OM_STORE||!window.OM_STORE.makerDocsSince)return;if(document.visibilityState==='hidden')return;if(Date.now()-LASTP<20000)return;PULL=true;LASTP=Date.now();
+  try{const d0=A().ST.state.dbx||{};const since=d0.mkSeen||null;const rows=await window.OM_STORE.makerDocsSince('dbedit',since);if(!rows.length)return;
+   const dbx=JSON.parse(JSON.stringify(A().ST.state.dbx||{}));const c=mergeMaker(dbx,rows,!since);const at=maxAt(rows);if(at)dbx.mkSeen=at;
+   if(!c.n&&!c.ns&&!c.nr&&since){await A().set(['dbx','mkSeen'],dbx.mkSeen);return}
+   dbx.at=Date.now();await A().set(['dbx'],dbx);MKX=null;mkxP=null;
+   const tot=c.n+c.ns+c.nr;if(tot&&since)A().toast(`제작기 DB 변경 ${tot}개를 반영했다`);if(document.querySelector('.dbmodal'))refresh()}
+  catch(e){console.warn('제작기 DB 자동 반영',e)}finally{PULL=false}}
+ function startAuto(){if(AUTO)return;AUTO=true;setTimeout(pullMaker,5000);setInterval(pullMaker,120000);addEventListener('focus',()=>setTimeout(pullMaker,300));document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(pullMaker,300)})}
  /* 시트·배틀에서 쓰는 한 줄 요약 (특성/소지품 이름 → 효과 문구 HTML) */
  function effectHtml(kind,name){const d=DB();if(kind==='trait'){const v=(d.traits||{})[name];return v?pretty(v.multi||v.single):''}if(kind==='item'){const v=(d.items||{})[name];return v?pretty(v.eff):''}return ''}
- return {open,pretty,effectHtml,applyOverride,syncMaker,ensureMaker,fillEff};
+ return {open,pretty,effectHtml,applyOverride,syncMaker,pullMaker,startAuto,ensureMaker,fillEff};
 })();

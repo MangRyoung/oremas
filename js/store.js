@@ -74,6 +74,11 @@ window.OM_STORE=(()=>{
    /* 10-23 망령: 서버가 한 번에 주는 줄 수(max rows)가 PAGE 보다 적으면 거기서 끊겨 뒤쪽 문서(포켓몬)가 빠졌다 — 빈 쪽이 올 때까지 받은 만큼씩 넘긴다 */
    if(r.error)throw err(r.error);const rows=r.data||[];out.push(...rows);if(!rows.length)break;from+=rows.length}
   return out}
+ /* 10-24 망령: since 이후에 바뀐 문서만 (updated_at). 바뀐 게 없으면 빈 줄 하나 — 제작기 DB 자동 반영이 쓴다 */
+ async function makerDocsSince(kind,since){const out=[];let from=0;
+  for(;;){let q=sb().from(cfg().makerTable||'docs').select('id,data,updated_at').eq('kind',kind);if(since)q=q.gt('updated_at',since);const r=await q.order('updated_at').range(from,from+999);
+   if(r.error)throw err(r.error);const rows=r.data||[];out.push(...rows);if(!rows.length)break;from+=rows.length}
+  return out}
  /* 트레이너 하나와 그 포켓몬만 (pids + data.tid) — 고를 때 전체를 다시 받지 않게 (10-23 이그레스) */
  async function makerParty(tid){const T=cfg().makerTable||'docs';const t=await sb().from(T).select('id,data').eq('kind','trainers').eq('id',tid);if(t.error)throw err(t.error);const tr=(t.data||[])[0];if(!tr)return {trainer:null,pokemon:[]};
   const d=(tr.data&&tr.data.data)||tr.data||{};const pids=(Array.isArray(d.pids)?d.pids:[]).filter(x=>typeof x==='string'&&x);
@@ -92,5 +97,5 @@ window.OM_STORE=(()=>{
   if(r.error){const m=String(r.error.message||r.error);if(/bucket not found|NoSuchBucket/i.test(m))throw new Error('그림 저장소(버킷 oremas)가 아직 없다 — Supabase SQL Editor 에서 supabase/schema.sql 을 다시 실행해 줘');throw err(r.error)}
   return sb().storage.from('oremas').getPublicUrl(full).data.publicUrl}
 
- return {getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerParty};
+ return {getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty};
 })();
