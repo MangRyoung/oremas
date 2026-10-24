@@ -4,5 +4,5 @@ window.OM_CONFIG={
   supabaseUrl:"https://jsnvqcvwspxzfnhdethl.supabase.co",
   supabaseKey:"sb_publishable_HDcgWnb1QS1P6GOiBPqdAA_yBJNhU7R",
   makerTable:"docs",   /* 제작기 시트 테이블 (읽기만) */
-  organizerUrl:"https://mangryoung.github.io/maptool-log/"   /* 맵툴 로그 정리기 — 「💾 로그 → 정리기에서 열기」 */
+  organizerUrl:"https://mangryoung.github.io/mangketmon-maker/?tab=log"   /* 제작기 「로그 정리기」 탭 — 「💾 로그 → 제작기 정리기로」 (10-25: 따로 있던 maptool-log 대신) */
 };
