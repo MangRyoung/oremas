@@ -436,11 +436,25 @@ window.OM_SHEET_UI=(()=>{
   const me=await makerMe();const fpriv=new Map(mk.folders.map(f=>[f.id,f.data||{}]));const see=o=>!o||!o.priv||!!(me&&o.owner===me);
   const all=mk.trainers.map(t=>({id:t.id,d:(t.data&&t.data.data)||{},ord:(t.data||{}).ord||0}));const list=all.filter(t=>see(t.d)&&see(fpriv.get(t.d.folder)));const nHid=all.length-list.length;const isPriv=t=>!!(t.d.priv||(fpriv.get(t.d.folder)||{}).priv);
   list.sort((a,b)=>(fold.get(a.d.folder)||'').localeCompare(fold.get(b.d.folder)||'')||a.ord-b.ord);
-  const md=A().openModal(`<div class="mhead"><h2>제작기에서 가져오기</h2><span class="sp"></span><button class="btn sm ghost" id="mkRefresh">새로 읽기</button><button class="btn ghost" data-x>닫기</button></div>
+  /* 10-24 망령: 제작기 폴더(하위 폴더 포함) 단위로 접고 펼친다 · 트레이너 그림을 같이 보여 준다. 접힘 상태는 이 브라우저에 기억 */
+  const FK='om_mkimp_fold';let fst={};try{fst=JSON.parse(localStorage.getItem(FK)||'{}')||{}}catch(e){}
+  const fdat=new Map(mk.folders.map(f=>[f.id,f.data||{}]));const par=id=>{const p=(fdat.get(id)||{}).parent;return p&&fdat.has(p)&&p!==id?p:''};
+  const kids=new Map();for(const f of mk.folders){if(!see(f.data))continue;let p=par(f.id),g=0;for(let q=p;q&&g<30;q=par(q),g++)if(q===f.id){p='';break}if(!kids.has(p))kids.set(p,[]);kids.get(p).push(f.id)}
+  for(const a of kids.values())a.sort((x,y)=>((fdat.get(x)||{}).ord||0)-((fdat.get(y)||{}).ord||0)||(fold.get(x)||'').localeCompare(fold.get(y)||''));
+  const byF=new Map();for(const t of list){const f=fdat.has(t.d.folder)?t.d.folder:'';if(!byF.has(f))byF.set(f,[]);byF.get(f).push(t)}
+  const cnt=id=>(byF.get(id)||[]).length+(kids.get(id)||[]).reduce((n,k)=>n+cnt(k),0);
+  const rowH=t=>{const img=t.d.image||'';return `<li data-id="${t.id}" data-q="${esc(t.d.name||'')}">${img?`<img class="mkimg" src="${esc(img)}" alt="" loading="lazy">`:`<span class="mkimg none">${esc((t.d.name||'?').slice(0,1))}</span>`}${isPriv(t)?'<span title="제작기 비공개 — 가져오면 웹툴에서도 비공개">🔒</span>':''}<b>${esc(t.d.name||'(이름 없음)')}</b><span class="small dim">${esc(['지시','육성','통솔','능력'].map(k=>k+' '+((t.d.ranks||{})[k]||'-')).join(' · '))} · ${(t.d.pids||[]).length}체</span><span class="sp"></span>${c.r.trainers[t.id]?'<span class="tag">있음</span>':''}<button class="btn sm pri" data-pick="${t.id}">가져오기</button></li>`};
+  const grp=(id,depth)=>{if(!cnt(id))return '';const fp=(fdat.get(id)||{}).priv;return `<details class="mkfold" data-f="${esc(id)}" ${fst[id]?'':'open'}><summary>📁 ${esc(fold.get(id)||id)}${fp?' 🔒':''} <span class="small dim">${cnt(id)}명</span></summary><div class="mkfin">${(kids.get(id)||[]).map(k=>grp(k,depth+1)).join('')}<ul class="pick">${(byF.get(id)||[]).map(rowH).join('')}</ul></div></details>`};
+  const body=(kids.get('')||[]).map(k=>grp(k,0)).join('')+((byF.get('')||[]).length?`<details class="mkfold" data-f="" ${fst['']?'':'open'}><summary>📂 폴더 없음 <span class="small dim">${byF.get('').length}명</span></summary><div class="mkfin"><ul class="pick">${byF.get('').map(rowH).join('')}</ul></div></details>`:'');
+  const md=A().openModal(`<div class="mhead"><h2>제작기에서 가져오기</h2><span class="sp"></span><button class="btn sm ghost" id="mkFoldAll" title="폴더 전부 접기/펴기">접기/펴기</button><button class="btn sm ghost" id="mkRefresh">새로 읽기</button><button class="btn ghost" data-x>닫기</button></div>
    <input type="text" id="tq" placeholder="트레이너 이름으로 찾기" style="width:100%;margin-bottom:8px">${nHid?`<div class="small dim" style="margin:-2px 0 8px">🔒 비공개 시트 ${nHid}개는 안 보인다 — 만든 사람이 이 브라우저 제작기 「서명」에 같은 비밀구를 적어야 보이고 가져올 수 있다</div>`:''}
-   <ul class="pick" id="tl">${list.map(t=>`<li data-id="${t.id}"><span class="small dim" style="min-width:90px">${esc(fold.get(t.d.folder)||'-')}</span>${isPriv(t)?'<span title="제작기 비공개 — 가져오면 웹툴에서도 비공개">🔒</span>':''}<b>${esc(t.d.name||'(이름 없음)')}</b><span class="small dim">${esc(['지시','육성','통솔','능력'].map(k=>k+' '+((t.d.ranks||{})[k]||'-')).join(' · '))} · ${(t.d.pids||[]).length}체</span><span class="sp"></span>${c.r.trainers[t.id]?'<span class="tag">있음</span>':''}<button class="btn sm pri" data-pick="${t.id}">가져오기</button></li>`).join('')}</ul>`);
+   <div id="tl" class="mkimp">${body||'<div class="small dim">가져올 트레이너가 없다</div>'}</div>`);
+  const saveF=()=>{try{localStorage.setItem(FK,JSON.stringify(fst))}catch(e){}};
+  md.querySelectorAll('details.mkfold').forEach(d=>d.addEventListener('toggle',()=>{if($('#tq',md).value.trim())return;const f=d.dataset.f;if(d.open)delete fst[f];else fst[f]=1;saveF()}));
+  $('#mkFoldAll',md).onclick=()=>{const ds=[...md.querySelectorAll('details.mkfold')];const anyOpen=ds.some(d=>d.open);ds.forEach(d=>d.open=!anyOpen)};
   $('#mkRefresh',md).onclick=async()=>{await A().loadMaker(true);A().closeModal();openImport()};
-  $('#tq',md).oninput=e=>{const q=e.target.value.trim();md.querySelectorAll('#tl li').forEach(li=>li.style.display=!q||li.textContent.includes(q)?'':'none')};
+  $('#tq',md).oninput=e=>{const q=e.target.value.trim().toLowerCase();md.querySelectorAll('#tl li').forEach(li=>li.style.display=!q||li.textContent.toLowerCase().includes(q)?'':'none');
+   [...md.querySelectorAll('details.mkfold')].reverse().forEach(d=>{const any=[...d.querySelectorAll('li')].some(li=>li.style.display!=='none');d.style.display=any?'':'none';if(q)d.open=true;else d.open=!fst[d.dataset.f]})};
   md.querySelectorAll('[data-pick]').forEach(bt=>bt.onclick=async()=>{try{mk=await (A().loadMakerParty?A().loadMakerParty(bt.dataset.pick):A().loadMaker(true))}catch(e){}/* 10-23 망령: 가져올 땐 그 트레이너 · 포켓몬만 새로 읽는다 (방금 고친 포켓몬이 빠지지 않게, 이그레스는 아끼게) */const tdoc=mk.trainers.find(t=>t.id===bt.dataset.pick);if(!tdoc)return A().toast('제작기에서 이 트레이너를 찾지 못했다');const asId=c.gm?'':c.seat;if(!c.gm&&c.r.trainers[c.seat]&&!confirm(`내 자리의 「${c.r.trainers[c.seat].name}」를 「${(tdoc.data&&tdoc.data.data||{}).name||''}」로 바꿀까? (HP·랭크·메모는 새로 시작)`))return;await importTrainer(tdoc,mk.pokemon,false,asId);A().closeModal();UI.tid=asId||tdoc.id;UI.tab='poke';A().renderScene()})}
  /* base64 그림은 저장소에 올리고 주소로 바꾼다 (방 상태를 가볍게) */
  async function hostImages(room,trainer,mons){const jobs=[];
@@ -544,5 +558,17 @@ if(old){for(const k of ['orderStyle','commandStyle','orderCount','orderBase','or
   md.classList.add('wide','opcbox');
   $('[data-opng]',md).onclick=async()=>{const el=$('.opc',md);try{if(!window.html2canvas)await new Promise((ok,no)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';sc.onload=ok;sc.onerror=()=>no(new Error('html2canvas 를 불러오지 못했다'));document.head.appendChild(sc)});
    const cv=await window.html2canvas(el,{backgroundColor:'#141414',scale:2,useCORS:true,onclone:(cd,ce)=>{try{window.OM_PNGFIX&&window.OM_PNGFIX(cd,ce)}catch(e){}}});const a=document.createElement('a');a.download=(m.name||'포켓몬')+'.png';a.href=cv.toDataURL('image/png');a.click()}catch(err){A().toast('PNG 로 저장하지 못했다 ('+err.message+')')}}}
- return {render,UI,importTrainer,potFmt,potKind,POT_HUE,openCard,cardHTML};
+ /* 10-24 망령: 제작기에서 스탠딩을 나중에 넣은 시트 — 방의 시트에 스탠딩이 비어 있으면 제작기에서 스탠딩 · 그림을 채운다 (비어 있는 칸만, 방에서 고친 건 그대로).
+    GM 화면에서 방에 들어올 때 한 번 (트레이너마다 제작기 문서 하나씩만 읽는다) */
+ let FILLED=false;
+ async function fillStands(){if(FILLED||A().ST.role!=='gm'||!A().loadMakerParty)return;FILLED=true;const R=A().ST.state.roster||{};const T=R.trainers||{},M=R.mons||{};const I=window.OM_IMPORT;let n=0;
+  const sOf=d=>(Array.isArray(d&&d.stands)?d.stands:[]).filter(x=>x&&x.src).map(x=>Object.assign({label:x.label||'기본',src:x.src,point:+x.point||0},x.kind==='stand'||x.kind==='portrait'?{kind:x.kind}:{}));
+  for(const t of Object.values(T)){const ms=Object.values(M).filter(m=>m.tid===t.id);if(!(t.mkId||ms.some(m=>m.src==='maker')))continue;
+   if((t.stands||[]).length&&ms.every(m=>(m.stands||[]).length))continue;
+   let mk;try{mk=await A().loadMakerParty(t.mkId||t.id)}catch(e){continue}if(!mk)continue;
+   const td=(mk.trainers||[]).find(x=>x.id===(t.mkId||t.id));
+   if(td&&!(t.stands||[]).length){const d=(td.data&&td.data.data)||td.data||{};const st=sOf(d);if(st.length){await A().set(['roster','trainers',t.id,'stands'],st);await A().set(['roster','trainers',t.id,'standActive'],+d.standActive||0);n++}}
+   for(const m of ms){if((m.stands||[]).length)continue;const pd=(mk.pokemon||[]).find(x=>x.id===(m.rid||m.id));if(!pd)continue;const d=(pd.data&&pd.data.data)||pd.data||{};const st=sOf(d);if(st.length){await A().set(['roster','mons',m.id,'stands'],st);await A().set(['roster','mons',m.id,'standActive'],+d.standActive||0);n++}}}
+  if(n)A().toast(`제작기에서 스탠딩 ${n}개를 채웠다`)}
+ return {render,UI,importTrainer,potFmt,potKind,POT_HUE,openCard,cardHTML,fillStands,openImport};
 })();

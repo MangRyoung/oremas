@@ -3652,3 +3652,33 @@ button.tag.solo:hover{border-color:var(--yel2)}
 /* 튜토리얼 안내역 반디: 표정 그림(정사각) */
 .gd-say.bandi .gd-who{width:120px;height:120px;border-radius:14px;background:#111 center/cover no-repeat;border:2px solid #fff;margin-right:-12px;filter:none;box-shadow:4px 4px 0 var(--red);flex:none}
 @media (max-width:760px){.gd-say.bandi .gd-who{width:84px;height:84px}}
+/* 화자 칸: 연 폴더는 같은 줄 안에서 칸을 나눠 펼친다 */
+.spkbar.sub.inl{display:inline-flex;flex:none;margin:0;padding:2px 4px 2px 2px;border:1px solid var(--yel2);border-left-width:3px;border-radius:8px;gap:4px;overflow:visible;align-items:stretch;background:rgba(240,200,74,.06)}
+.spkbar.sub.inl .spkdrop{align-self:center;padding:4px 6px}.spkbar.sub.inl .spke{align-self:center;padding:0 6px;white-space:nowrap}
+#rpunder.spkpop #rpu_bar .spkbar.sub.inl{flex-wrap:wrap}
+/* RP 무대 위 BGM 위젯 */
+.rpbtns .rpbgmw{display:inline-flex;pointer-events:auto}.rpbtns .rpbgmw .bgmw{margin:0;max-width:340px;background:rgba(14,14,16,.88)}
+@media (max-width:760px){.rpbtns .rpbgmw .bgmw{max-width:none}.rpbtns .rpbgmw .bgmw input[type=range]{width:60px}}
+/* 10-24 제작기에서 가져오기: 폴더 묶음 · 트레이너 그림 */
+.mkimp details.mkfold{border:1px solid var(--line,#3334);border-radius:8px;margin:0 0 6px;padding:2px 6px}
+.mkimp details.mkfold>summary{cursor:pointer;padding:5px 2px;font-weight:600;list-style:revert}
+.mkimp .mkfin{padding-left:8px}
+.mkimp .mkfin>details.mkfold{margin-top:4px}
+.mkimp ul.pick{margin:2px 0 4px}
+.mkimp .mkimg{width:38px;height:38px;border-radius:8px;object-fit:cover;object-position:top;flex:none;background:var(--bg2,#0002)}
+.mkimp .mkimg.none{display:inline-flex;align-items:center;justify-content:center;font-weight:700;opacity:.6}
+/* 10-24 인물 관리: 폴더별 접기 */
+.ppgrid .ppgrp{grid-column:1/-1;display:flex;flex-direction:column;gap:6px}
+.ppgrid .ppgh{all:unset;cursor:pointer;font-weight:600;font-size:13px;padding:4px 6px;border-radius:6px;border-bottom:1px solid var(--line,#3334)}
+.ppgrid .ppgh:hover{background:var(--bg2,#0001)}
+.ppgrid .ppgh small{opacity:.6;font-weight:400;margin-left:4px}
+.ppgrid .ppgh .ppar{display:inline-block;transition:transform .15s}
+.ppgrid .ppgrp.shut .ppar{transform:rotate(-90deg)}
+.ppgrid .ppgc{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+@media (max-width:760px){.ppgrid .ppgc{grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}}
+.ppgrid .ppgrp.shut .ppgc{display:none}
+.calrpd{display:inline-flex;align-items:center;gap:4px;margin-left:8px;cursor:pointer;white-space:nowrap}
+#atype{max-width:110px}label.chgd select{outline:2px solid var(--yel2)}
+/* 10-24 제보: 긴 글이 작아지면 테두리 · 그림자가 글자보다 굵어 겹쳐 보였다 — 글자 크기에 맞춰 줄인다 */
+.c2.c25 .c2-name{-webkit-text-stroke:min(calc(var(--u)*1.3),calc(var(--fs)*var(--k)*.11));text-shadow:min(calc(var(--u)*1),calc(var(--fs)*var(--k)*.08)) min(calc(var(--u)*1),calc(var(--fs)*var(--k)*.08)) 0 var(--pc),min(calc(var(--u)*1.8),calc(var(--fs)*var(--k)*.14)) min(calc(var(--u)*1.8),calc(var(--fs)*var(--k)*.14)) 0 #0c0c0e}
+.c2.c24 .c2-name{-webkit-text-stroke:min(calc(var(--u)*1),calc(var(--fs)*var(--k)*.09))}
