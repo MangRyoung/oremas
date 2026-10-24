@@ -410,6 +410,8 @@ window.OM_SHEET_UI=(()=>{
    case 'deltr':if(!c.gm&&t.id!==c.seat)return A().toast('내 시트만 지울 수 있다');if(!confirm(`${t.name} 와 파티를 로스터에서 지울까?`))return;
     /* GM 도 좌석처럼 하나씩 지운다 — 로스터를 통째로 쓰면 그 사이 남이 고친 시트가 지워진다 (점검 2-4) */
     {for(const id of (t.pids||[]))if(c.r.mons[id])await A().set(['roster','mons',id],null);await A().set(['roster','trainers',t.id],null)}
+    if(!c.gm)try{await A().set(['pub',t.id,'gone'],Date.now())}catch(e){}   /* GM 화면이 보고 관계도 노드 · 화자 폴더를 지운다 */
+    if(c.gm&&A().cleanupTrainer){const n=await A().cleanupTrainer(t.id);if(n)A().toast(`${t.name} — 관계도 노드 · 화자 폴더도 같이 지웠다`)}   /* 10-24 망령: 따라 생긴 관계도 노드 · 화자 폴더도 (좌석이 지우면 GM 화면이 대신) */
     UI.tid='';A().renderScene();return
    case 'pheal':{const m=c.r.mons[UI.mid];if(!m||!canEdit(c,m.tid))return;const nm=JSON.parse(JSON.stringify(m));nm.sheetHp=nm.hp.max;delete nm.sheetStates;delete nm.potUses;await putMon(UI.mid,m,nm);A().toast(`${m.name} 회복 — HP 가득 · 상태 풀림 · 포텐셜 횟수 채움`);return}
    case 'addmon':{if(!t||!canEdit(c,t.id))return;const id='m'+rnd(7);const nm=I().pokemon({id,data:{data:{id,name:'새 포켓몬',t1:'노말',base:['50','50','50','50','50','50'],moves:[]}}},t);nm.src='new';await A().set(['roster','mons',id],nm);await A().set(['roster','trainers',t.id,'pids'],[...(t.pids||[]),id]);UI.mid=id;A().renderScene();return}

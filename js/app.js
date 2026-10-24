@@ -593,7 +593,17 @@ function drawPresence(){const el=$('#presence');if(!el)return;const list=presLis
 function startPresence(){sayHello(true);clearInterval(PRES.t);PRES.t=setInterval(()=>{sayHello(false);drawPresence()},25000)}
 /* GM 이 보고 있으면 로스터 트레이너마다 관계도 노드가 있게 맞춘다 (좌석이 제 파티를 가져왔을 때 — 좌석은 graph 를 못 쓰니까) */
 /* 트레이너마다 한 번만 (graph.auto[tid]) — GM 이 지운 노드는 다시 만들지 않는다 */
-let reconT=null;function reconcileNodes(){if(ST.role!=='gm')return;clearTimeout(reconT);reconT=setTimeout(async()=>{const trs=(ST.state.roster||{}).trainers||{};const g=ST.state.graph;if(!g)return;const nodes=g.nodes||{};const auto=g.auto||{};const have=new Set(Object.values(nodes).map(n=>n.name));let i=Object.keys(nodes).length;
+/* 10-24 망령: 시트(로스터 트레이너)가 지워지면 따라 생긴 것도 지운다 — 관계도 자동 노드(t_<id> · graph.auto[id]=1)와 그 선, 화자 칸의 트레이너 폴더(폴더 tid).
+   폴더 안에 손으로 넣은 다른 칩은 폴더 밖으로 꺼낸다. 좌석이 제 시트를 지우면 GM 화면이 알아채고 대신 지운다 (좌석은 관계도 · 화자 칸을 못 쓰니까) */
+async function cleanupTrainer(tid){if(ST.role!=='gm'||!tid)return 0;let n=0;const g=ST.state.graph||{};const nodes=g.nodes||{};const nid='t_'+tid;
+ if(nodes[nid]){for(const [eid,e] of Object.entries(g.edges||{}))if(e&&(e.a===nid||e.b===nid))await set(['graph','edges',eid],null);await set(['graph','nodes',nid],null);n++}
+ if((g.auto||{})[tid]!=null)await set(['graph','auto',tid],null);
+ const sp=(ST.state.rp||{}).spk;if(sp&&sp.folders){const C={order:Array.isArray(sp.order)?sp.order.slice():[],folders:Object.assign({},sp.folders),hidden:Object.assign({},sp.hidden||{})};const live=new Set([...Object.values((ST.state.roster||{}).trainers||{}).map(t=>'as:'+t.name),...Object.keys((ST.state.roster||{}).mons||{}).map(id=>'pm:'+id)]);let ch=false;
+  for(const [fid,f] of Object.entries(C.folders)){if(!f||f.tid!==tid)continue;const keep=(f.keys||[]).filter(k=>!/^(as|pm):/.test(k)||live.has(k));C.order=C.order.filter(x=>x!=='f:'+fid);C.order.push(...keep.filter(k=>!C.order.includes(k)));delete C.folders[fid];ch=true;n++}
+  if(ch){C.order=C.order.filter(k=>!/^(as|pm):/.test(k)||live.has(k));for(const k of Object.keys(C.hidden))if(/^(as|pm):/.test(k)&&!live.has(k))delete C.hidden[k];await set(['rp','spk'],C)}}
+ return n}
+let reconT=null;function reconcileNodes(){if(ST.role!=='gm')return;clearTimeout(reconT);reconT=setTimeout(async()=>{const trs=(ST.state.roster||{}).trainers||{};const g=ST.state.graph;if(!g)return;const nodes=g.nodes||{};const auto=g.auto||{};
+ {const pub=ST.state.pub||{};const gone=new Set([...Object.keys(pub).filter(id=>pub[id]&&pub[id].gone&&!trs[id]),...Object.values(((ST.state.rp||{}).spk||{}).folders||{}).map(f=>f&&f.tid).filter(id=>id&&!trs[id])]);for(const id of gone){await cleanupTrainer(id);if((pub[id]||{}).gone)await set(['pub',id,'gone'],null)}}   /* 지워진 시트의 노드 · 폴더 — 좌석이 지운 표시(pub.<id>.gone) 또는 주인 잃은 트레이너 폴더. 예전부터 남겨 둔 관계도 노드는 건드리지 않는다 */const have=new Set(Object.values(nodes).map(n=>n.name));let i=Object.keys(nodes).length;
  for(const t of Object.values(trs)){if(!t||!t.name||auto[t.id])continue;if(!have.has(t.name)){have.add(t.name);const id='t_'+t.id;await set(['graph','nodes',id],{id,name:t.name,kind:t.kind==='npc'?'npc':'pc',img:'',note:'',x:120+(i%6)*140,y:120+Math.floor(i/6)*140,stands:[],standActive:0});i++}
   if(!g.auto)await set(['graph','auto'],{});await set(['graph','auto',t.id],1)}},800)}
 function renderScene(){reconcileNodes();
@@ -720,18 +730,21 @@ async function loadFromRoster(tid,side){
  if(ok){toast(`${trainer.name} 파티 ${mons.length}체를 불러왔다`);sysLog(`${trainer.name} (${side==='left'?'좌측':'우측'}${trainer.solo?' · 개인전':''}) 파티 등록 · ${mons.length}체`,'battle');VIEW='battle';renderScene()}}
 
 /* ---------- 알까기 (개체값) ---------- */
+/* 10-24 망령: 배틀에서 굴린 후보도 시트 포켓몬(roster, 빌려 쓰기면 rid)의 ivRolls 에 남긴다 — 시트 알까기 · 제작기와 같은 칸 */
+const ivRm=mon=>((ST.state.roster||{}).mons||{})[mon.rid||mon.id]||null;
+function ivKeep(mon,rolls){const rm=ivRm(mon);if(!rm)return;const R=rm.ivRolls||{};set(['roster','mons',rm.id,'ivRolls'],{rolls:rolls.map(r=>r.slice()),x:+R.x||0,r:(+R.r||0)+(R.rolls?rolls.length:0)})}
 function openHatch(tid){
  const b=B();const tr=(b.trainers||{})[tid];const list=Object.values(b.mons||{}).filter(m=>m.tid===tid).sort((a,b)=>a.slot-b.slot);
  if(!list.length)return toast('포켓몬이 없다');
  const count=S().hatchCount(tr);
  const m=openModal(`<div class="mhead"><h2>알까기 — ${esc(tr.name)}</h2><span class="small muted">육성 ${esc(tr.ranks.육성||'-')} → ${count}회 굴림. 포켓몬마다 하나를 고른다 (맵툴 reroll_iv 와 같음)</span><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-  ${list.map(mon=>{const cur=mon.iv&&S().ivSum(mon.iv)?mon.iv:null;const sv=((mon.ivRolls||{}).rolls||[]).filter(r=>Array.isArray(r)&&r.length===6);const rolls=sv.length?sv.map(r=>r.slice()):cur?[]:S().hatch(count);mon._rolls=rolls;   /* 10-24 망령: 시트에 남은 후보(ivRolls)가 있으면 그대로, 이미 깐 포켓몬은 새로 굴리지 않는다 — 「🎲 재굴림」을 눌러야 새 후보 */
+  ${list.map(mon=>{const cur=mon.iv&&S().ivSum(mon.iv)?mon.iv:null;const rm=ivRm(mon);const sv=(((rm||mon).ivRolls||{}).rolls||[]).filter(r=>Array.isArray(r)&&r.length===6);const rolls=sv.length?sv.map(r=>r.slice()):cur?[]:S().hatch(count);mon._rolls=rolls;if(!sv.length&&rolls.length)ivKeep(mon,rolls);   /* 처음 굴린 후보도 시트에 남긴다 */   /* 10-24 망령: 시트에 남은 후보(ivRolls)가 있으면 그대로, 이미 깐 포켓몬은 새로 굴리지 않는다 — 「🎲 재굴림」을 눌러야 새 후보 */
    return `<div class="card" data-mid="${mon.id}"><div class="row"><b>${esc(mon.name)}</b><span class="small muted">지금: ${cur?cur.join('/')+' (합 '+S().ivSum(cur)+')':'없음 (전부 0)'}</span><span class="sp"></span><button class="btn sm ${cur?'pri':''}" data-re="${mon.id}">${cur?'🎲 재굴림':'다시 굴림'}</button></div>
     <div class="ivs" style="margin-top:6px">${rolls.length?rolls.map((r,i)=>`<button class="btn" data-iv="${i}">${r.join('/')} <span class="muted">합 ${S().ivSum(r)}</span></button>`).join(''):'<span class="small muted">남아 있는 후보가 없어 지금 값을 그대로 둔다 — 새로 깔려면 「🎲 재굴림」</span>'}</div></div>`}).join('')}
   <div class="row" style="margin-top:12px"><span class="sp"></span><button class="btn pri" id="ivApply">고른 것 적용</button></div>`);
  const chosen={};
  m.querySelectorAll('.card').forEach(c=>{c.querySelectorAll('[data-iv]').forEach(bt=>bt.onclick=()=>{c.querySelectorAll('[data-iv]').forEach(x=>x.classList.remove('on'));bt.classList.add('on');chosen[c.dataset.mid]=+bt.dataset.iv});
-  $('[data-re]',c).onclick=()=>{const mon=list.find(x=>x.id===c.dataset.mid);mon._rolls=S().hatch(count);delete chosen[mon.id];const box=$('.ivs',c);box.innerHTML=mon._rolls.map((r,i)=>`<button class="btn" data-iv="${i}">${r.join('/')} <span class="muted">합 ${S().ivSum(r)}</span></button>`).join('');box.querySelectorAll('[data-iv]').forEach(bt=>bt.onclick=()=>{box.querySelectorAll('[data-iv]').forEach(x=>x.classList.remove('on'));bt.classList.add('on');chosen[mon.id]=+bt.dataset.iv})}});
+  $('[data-re]',c).onclick=()=>{const mon=list.find(x=>x.id===c.dataset.mid);mon._rolls=S().hatch(count);ivKeep(mon,mon._rolls);delete chosen[mon.id];const box=$('.ivs',c);box.innerHTML=mon._rolls.map((r,i)=>`<button class="btn" data-iv="${i}">${r.join('/')} <span class="muted">합 ${S().ivSum(r)}</span></button>`).join('');box.querySelectorAll('[data-iv]').forEach(bt=>bt.onclick=()=>{box.querySelectorAll('[data-iv]').forEach(x=>x.classList.remove('on'));bt.classList.add('on');chosen[mon.id]=+bt.dataset.iv})}});
  $('#ivApply',m).onclick=async()=>{const b0=JSON.parse(JSON.stringify(B())),nb=JSON.parse(JSON.stringify(b0));let n=0;
   for(const mon of list){if(chosen[mon.id]==null)continue;const iv=mon._rolls[chosen[mon.id]];const t=nb.mons[mon.id];const full=t.hp.cur>=t.hp.max;t.iv=iv;t.stats=S().statsOf(t.base,iv,t.ev,t.lv);const oldMax=t.hp.max;t.hp.max=t.stats[0];t.hp.cur=full?t.hp.max:Math.max(1,Math.min(t.hp.max,t.hp.cur+t.hp.max-oldMax));n++}
   closeModal();if(n&&await setDiff(['battle','mons'],b0.mons,nb.mons,2))toast(n+'체의 개체값을 적용했다')}}
@@ -1007,6 +1020,6 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
 /* 이름으로 기본 초상 찾기: 그림이 따로 없으면 같은 이름의 로스터 트레이너 → 포켓몬 → 관계도 노드의 그림을 쓴다 */
 function portraitOf(name,img){if(img)return img;if(!name)return '';const ro=ST.state.roster||{};const t=Object.values(ro.trainers||{}).find(x=>x.name===name);if(t&&t.image)return t.image;const m=Object.values(ro.mons||{}).find(x=>x.name===name&&x.image);if(m)return m.image;const n=Object.values((ST.state.graph||{}).nodes||{}).find(x=>x.name===name&&x.img);return n?n.img:''}
-window.OM_APP={selfLog,splitLog,contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,openMon,openLoadParty,loadFromRoster,loadMaker,loadMakerParty,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,online:s=>!!s&&Object.values(PRES.who).some(v=>v.role==='seat'&&v.seat===s&&Date.now()-v.at<70000),get view(){return VIEW},set view(v){VIEW=v}};
+window.OM_APP={selfLog,splitLog,contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,cleanupTrainer,openMon,openLoadParty,loadFromRoster,loadMaker,loadMakerParty,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,online:s=>!!s&&Object.values(PRES.who).some(v=>v.role==='seat'&&v.seat===s&&Date.now()-v.at<70000),get view(){return VIEW},set view(v){VIEW=v}};
 route();
 })();
