@@ -129,6 +129,8 @@ window.OM_RP_UI=(()=>{
   let stage=$('#rpstage',el);
   if(!stage){el.innerHTML=`<div class="rpwrap"><div class="rpstage" id="rpstage"><div class="stands" id="stands"></div><div class="dlg" id="dlg"></div><div class="typing" id="typing"></div><div id="bgname"></div><div id="centerimg"></div><div class="rpbtns" id="rpbtns"></div><div id="mapov"></div><div id="voteov"></div></div><div id="rpunder"></div></div>`;stage=$('#rpstage',el)}
   stage.style.backgroundImage=bg.src?`url('${cssu(bg.src)}')`:'';
+  /* 10-24 망령: VELVET 테마(P3·P4·P5)의 .rpstage{background:…!important} 가 위 그림을 덮어 배경이 안 보였다 — 변수 + hasbg 로 테마보다 앞에 깐다 (css/vtheme.css 끝) */
+  if(bg.src){let au=bg.src;try{au=new URL(bg.src,location.href).href}catch(e){}stage.style.setProperty('--stbg',`url('${cssu(au)}')`)}   /* 변수 속 상대 주소는 css/ 기준으로 풀리니 절대 주소로 */else stage.style.removeProperty('--stbg');stage.classList.toggle('hasbg',!!bg.src);
   const cal=ST.state.calendar||{};const dt=cal.today?(()=>{const d=new Date(cal.today+'T00:00:00');return {md:cal.today.slice(5).replace('-','/'),wd:['일','월','화','수','목','금','토'][d.getDay()]}})():null;
   $('#bgname',el).innerHTML=`<div class="stagetags">${dt?`<div class="daytag" ${gm()?'data-rp="phase" title="눌러서 시간대 바꾸기"':''}><b>${esc(dt.md)}</b><i>${dt.wd}</i>${cal.weather?`<em>${esc(cal.weather)}</em>`:''}${cal.phase?`<span class="phase ${({아침:'morning',저녁:'evening',밤:'night',심야:'night'})[cal.phase]||''}">${esc(cal.phase)}</span>`:''}</div>`:''}${bg.name?`<div class="bgname">${esc(bg.name)}</div>`:''}${(()=>{const CU=window.OM_CAL_UI;const nx=CU&&CU.next&&cal.today?CU.next(cal,14):null;return nx?`<div class="ddaytag ${nx.n===0?'on':''}" data-rp="calview" title="${esc(nx.date)} ${esc(nx.t)} — 눌러서 캘린더">${CU.ddL(nx.n)}<span>${esc(nx.t)}</span></div>`:''})()}</div>`;
   $('#centerimg',el).innerHTML=r.center&&r.center.src?`<div class="centerimg"><img src="${esc(r.center.src)}" alt="">${gm()?'<button class="btn xs" data-rp="centerx">닫기</button>':''}</div>`:'';
@@ -253,7 +255,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   for(const id in C.folders)if(!seen.has('f:'+id))top+=fchip(id,C.folders[id]);
   for(const x of speakers)if(!seen.has(x.key)&&!inFolder.has(x.key)&&!C.hidden[x.key])top+=chipOf(x.key);
   SPK.fo=SPK.fo.filter(id=>C.folders[id]);let sub='';for(const fid of SPK.fo){const f=C.folders[fid];sub+=`<div class="spkbar sub" data-fzone="${esc(fid)}"><span class="fname">📁 ${esc(f.name)}</span>${(f.keys||[]).filter(k=>byKey[k]&&!C.hidden[k]).map(chipOf).join('')||'<span class="dim small">비어 있다 — 위 칩을 끌어다 놓아</span>'}<span class="sp"></span><span class="spkdrop" data-fout title="여기에 끌어다 놓으면 폴더에서 뺀다">⤴ 밖으로</span><button class="btn xs ghost" data-fclose="${esc(fid)}">닫기</button></div>`}
-  return `<div class="spkbar top" data-fzone="">${chipOf('gm')}<button class="spk add" data-rp="npcadd" title="인물 추가 (관계도에 NPC 로 들어간다)"><i>＋</i><span>인물</span></button><button class="spk add" data-rp="spkedit" title="고른 인물의 표정·스탠딩"><i>✎</i><span>표정</span></button><button class="spk add" data-rp="spkmgr" title="화자 정리: 숨기기 · 폴더 이름 · 순서"><i>☰</i><span>정리</span></button><span class="spkdrop" data-fnew title="칩을 여기 끌어다 놓으면 새 폴더가 생긴다">＋📁</span>${top}</div>${sub}`}
+  return `<div class="spkbar top" data-fzone="">${chipOf('gm')}<button class="spk add" data-rp="npcadd" title="새 인물 추가 (관계도에 NPC 로 들어간다)"><i>＋</i><span>인물</span></button><button class="spk add" data-rp="people" title="인물 관리 — 모든 인물 · PC · 포켓몬을 한눈에 보고 이름 · 초상 · 스탠딩 · 메모 · 폴더를 고친다"><i>👥</i><span>관리</span></button><button class="spk add" data-rp="spkedit" title="고른 인물의 표정·스탠딩"><i>✎</i><span>표정</span></button><button class="spk add" data-rp="spkmgr" title="화자 정리: 숨기기 · 폴더 이름 · 순서"><i>☰</i><span>정리</span></button><span class="spkdrop" data-fnew title="칩을 여기 끌어다 놓으면 새 폴더가 생긴다">＋📁</span>${top}</div>${sub}`}
  /* 끌어서 순서 바꾸기 · 폴더에 넣기 (GM) */
  function bindSpkDrag(el){if(!gm())return;let dragKey='',dragFold='';
   el.querySelectorAll('.spk[draggable="true"]').forEach(ch=>{ch.ondragstart=e=>{dragKey=ch.dataset.spk||'';dragFold=ch.dataset.fold||'';e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain',dragKey||('f:'+dragFold))}catch(x){}ch.classList.add('dragging')};ch.ondragend=()=>ch.classList.remove('dragging')});
@@ -347,14 +349,103 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   if(k==='qbg'){QB.con=false;return quickBg()}
   if(k==='calview'){A().view='calendar';return A().renderScene()}
   if(k==='phase'){const PH=['아침','점심','오후','저녁','밤','심야'];const cur=(A().ST.state.calendar||{}).phase||'';const n=PH[(PH.indexOf(cur)+1)%PH.length];return A().set(['calendar','phase'],n).then(()=>A().sysLog(`시간대: ${n}`))}
-  if(k==='npcadd')return addNpcQuick();
+  if(k==='npcadd')return openPeople('new');
+  if(k==='people')return openPeople();
   if(k==='spkedit'){const key=SPK.key;if(key==='gm'&&gm())return openStands('gm');if(!key||key==='gm'||key==='me')return A().toast('먼저 인물을 골라 줘');return openStands(key)}
   if(k==='spkmgr')return openSpkMgr();
   if(k==='qbgm')return quickBgm();
   if(k==='log')return openLog();
   if(k==='vote')return openVote()}
- /* 인물 빠른 추가: 관계도에 NPC 노드로 들어간다 (이름 · 초상 · 스탠딩) */
- function addNpcQuick(){const ST=A().ST;
+ /* ----- 10-24 망령: 인물 관리 창 — 화자로 쓰는 모든 개체(인물 · PC · 포켓몬)를 카드로 한눈에 보고, 오른쪽에서 고친다 -----
+    인물(NPC)은 관계도 노드(graph.nodes)에 산다: 이름 · 초상(img) · 스탠딩(stands) · 메모(note). 화자 칸의 폴더 · 숨김은 rp.spk.
+    PC · 포켓몬은 시트가 원본이라 이름은 여기서 안 바꾸고, 표정 · 폴더 · 숨김 · 말하기만 */
+ const PP={q:'',f:'all',sel:'',top:0,more:false,draft:null};
+ const PPK={npc:'인물',pc:'PC',pm:'포켓몬'};
+ function ppList(){const C=spkConf();const fOf=k=>Object.keys(C.folders).find(id=>(C.folders[id].keys||[]).includes(k))||'';const g=(A().ST.state.graph||{}).nodes||{};
+  return allSpeakers().filter(x=>x.key!=='gm').map(x=>{const c=charOf(x.key)||{};const node=x.kind==='npc'?Object.values(g).find(n=>n.name===c.name):null;const fid=fOf(x.key);
+   return {key:x.key,kind:x.kind,name:c.name||x.name,sub:x.kind==='pm'?String(x.name).replace(/^.*? · /,''):'',c,node,fid,fname:fid?(C.folders[fid]||{}).name:'',hid:!!C.hidden[x.key]}})}
+ async function ppMoveFolder(key,fid){const C=spkConf();C.order=C.order.filter(x=>x!==key);for(const f of Object.values(C.folders))f.keys=(f.keys||[]).filter(x=>x!==key);if(fid&&C.folders[fid])C.folders[fid].keys.push(key);else C.order.push(key);await saveSpk(C)}
+ async function ppNewFolder(){const name=prompt('새 폴더 이름','새 폴더');if(name==null||!name.trim())return '';const C=spkConf();const id='f'+Date.now().toString(36);C.folders[id]={name:name.trim(),keys:[]};C.order.push('f:'+id);await saveSpk(C);return id}
+ function ppFolderSel(id,cur){const C=spkConf();return `<select id="${id}"><option value="">폴더 없음</option>${Object.entries(C.folders).map(([k,f])=>`<option value="${esc(k)}" ${k===cur?'selected':''}>📁 ${esc(f.name)}</option>`).join('')}<option value="__new">＋ 새 폴더…</option></select>`}
+ const ppThumb=(src,cls,txt)=>`<i class="${cls||'ppth'}${src?'':' noimg'}" style="${src?`background-image:url('${cssu(src)}')`:''}">${src?'':esc([...(txt||'')].slice(0,2).join(''))}</i>`;
+ function openPeople(sel){if(!gm())return A().toast('인물 관리는 GM 만');if(sel!==undefined)PP.sel=sel;
+  const L=ppList();const q=PP.q.trim().toLowerCase();const cnt={all:L.length,npc:0,pc:0,pm:0,hid:0};L.forEach(x=>{cnt[x.kind]=(cnt[x.kind]||0)+1;if(x.hid)cnt.hid++});
+  const vis=L.filter(x=>(PP.f==='all'?true:PP.f==='hid'?x.hid:x.kind===PP.f)&&(!q||x.name.toLowerCase().includes(q)||x.sub.toLowerCase().includes(q)||(x.fname||'').toLowerCase().includes(q)));
+  if(PP.sel&&PP.sel!=='new'&&!L.some(x=>x.key===PP.sel))PP.sel='';
+  const card=x=>{const av=x.c.img||'';const st=(x.c.stands||[]).length;return `<div role="button" tabindex="0" class="ppc ${PP.sel===x.key?'on':''} ${x.hid?'hid':''}" data-pp="${esc(x.key)}">${ppThumb(standSrc(x.c)||av,'ppst',x.name)}${ppThumb(av,'ppth',x.name)}<span class="ppn"><b>${esc(x.name)}</b><small><em class="ppk k-${x.kind}">${PPK[x.kind]||''}</em>${[x.sub?esc(x.sub):'',x.fname?'📁 '+esc(x.fname):'',st?`표정 ${st}`:''].filter(Boolean).join(' · ')}</small></span>${x.hid?'<span class="pphid" title="화자 칸에서 숨김">🙈</span>':''}</div>`};
+  const chip=(k,n)=>`<button type="button" class="chip ${PP.f===k?'on':''}" data-ppf="${k}">${n} <small>${cnt[k]||0}</small></button>`;
+  const md=A().openModal(`<div class="mhead"><h2>인물 관리</h2><span class="small dim pphint" style="margin-left:8px">관계도 NPC · PC · 포켓몬 — 화자로 쓰는 모두</span><span class="sp"></span><button class="btn sm pri" data-ppa="new">＋ 새 인물</button><button class="btn sm ghost" data-ppa="spkmgr" title="폴더 · 순서 · 숨김을 칸별로 정리">폴더 정리</button><button class="btn ghost" data-x>닫기</button></div>
+   <div class="pptool"><input type="search" id="pp_q" placeholder="이름 · 트레이너 · 폴더로 찾기" value="${esc(PP.q)}"><span class="chips">${chip('all','전체')}${chip('npc','인물')}${chip('pc','PC')}${chip('pm','포켓몬')}${cnt.hid?chip('hid','숨김'):''}</span></div>
+   <div class="ppwrap"><div class="ppgrid" id="pp_g">${vis.map(card).join('')||`<div class="empty small">${L.length?'찾는 인물이 없다':'아직 인물이 없다 — 「＋ 새 인물」'}</div>`}</div><div class="ppdet" id="pp_d">${ppDetail(L)}</div></div>`);
+  md.classList.add('wide','ppmodal');const g=$('#pp_g',md);g.scrollTop=PP.top||0;
+  const re=s=>{PP.top=g.scrollTop;openPeople(s)};
+  const qi=$('#pp_q',md);qi.oninput=()=>{PP.q=qi.value;const qq=qi.value.trim().toLowerCase();md.querySelectorAll('.ppc').forEach(b=>{const x=L.find(y=>y.key===b.dataset.pp);b.style.display=!qq||(x&&(x.name.toLowerCase().includes(qq)||x.sub.toLowerCase().includes(qq)||(x.fname||'').toLowerCase().includes(qq)))?'':'none'})};
+  md.querySelectorAll('[data-ppf]').forEach(b=>b.onclick=()=>{PP.f=b.dataset.ppf;re()});
+  md.querySelectorAll('[data-pp]').forEach(b=>b.onclick=()=>re(b.dataset.pp));
+  md.querySelectorAll('[data-ppa]').forEach(b=>b.onclick=()=>{if(b.dataset.ppa==='new'){PP.draft=null;return re('new')}if(b.dataset.ppa==='spkmgr'){A().closeModal();return openSpkMgr()}});
+  ppBind(md,L,re)}
+ function ppDetail(L){
+  if(PP.sel==='new'){const D=PP.draft=PP.draft||{name:'',img:'',stands:[],fid:'',note:''};
+   return `<div class="ppdh"><b>새 인물</b><span class="small dim">관계도에 NPC 로 들어가고 화자 칸에 바로 뜬다</span></div>
+    <div class="ppform"><label class="ppf"><span>이름</span><input type="text" id="pn_name" value="${esc(D.name)}" placeholder="예) 유현" autocomplete="off"></label>
+     <div class="ppimgs"><div class="ppimg"><span class="pplab">초상 <small>채팅 아바타 · 지도 칩</small></span><div class="pppv por" id="pn_pv">${D.img?`<img src="${esc(D.img)}" alt="">`:'<span>없음</span>'}</div>${dzHtml('pn_idz','초상 끌어 놓기','클릭 · Ctrl+V')}<input type="text" id="pn_img" value="${esc(D.img)}" placeholder="또는 그림 주소"></div>
+      <div class="ppimg"><span class="pplab">스탠딩 <small>여러 장 · 파일 이름이 표정 이름</small></span><div class="ppstrip" id="pn_st">${D.stands.map((s,i)=>`<span class="ppsti">${ppThumb(s.src,'ppsth')}<small>${esc(s.label)}</small><u data-pnx="${i}" title="빼기">×</u></span>`).join('')||'<span class="small dim">없으면 초상으로 선다</span>'}</div><div class="updz" id="pn_sdz"><b>스탠딩 끌어 놓기</b><span>여러 장 · 폴더째 · 클릭 · Ctrl+V</span><input type="file" accept="image/*" multiple hidden></div></div></div>
+     <label class="ppf"><span>폴더</span>${ppFolderSel('pn_f',D.fid)}</label>
+     <label class="ppf ppt"><span>메모</span><textarea id="pn_note" rows="3" placeholder="관계도 노드 메모 (모두가 본다)">${esc(D.note)}</textarea></label>
+     <div class="row" style="margin-top:6px"><label class="small"><input type="checkbox" id="pn_more" ${PP.more?'checked':''}> 추가하고 바로 다음 인물</label><span class="sp"></span><button class="btn" data-ppd="cancel">취소</button><button class="btn pri" data-ppd="add">추가</button></div></div>`}
+  const x=L.find(y=>y.key===PP.sel);
+  if(!x)return `<div class="ppempty"><b>왼쪽에서 인물을 고른다</b><span class="small dim">카드를 누르면 여기서 이름 · 초상 · 스탠딩 · 메모 · 폴더를 고친다.<br>새 인물은 위 「＋ 새 인물」.</span></div>`;
+  const c=x.c;const st=c.stands||[];const npc=x.kind==='npc';const node=x.node||{};
+  const strip=`<div class="ppstrip big">${st.map((s,i)=>`<div role="button" tabindex="0" class="ppsti ${i===(+c.active||0)?'on':''}" data-pps="${i}" title="눌러서 이 표정으로">${ppThumb(s.src,'ppsth')}<small>${esc(s.label||'표정 '+(i+1))}</small></div>`).join('')||'<span class="small dim">스탠딩이 없다 — 초상으로 선다</span>'}</div>`;
+  return `<div class="ppdh">${ppThumb(standSrc(c)||c.img,'ppbig',x.name)}<div><b>${esc(x.name)}</b><span class="small dim"><em class="ppk k-${x.kind}">${PPK[x.kind]}</em>${x.sub?esc(x.sub)+' · ':''}${st.length?'표정 '+st.length+'장':'스탠딩 없음'}</span></div></div>
+   <div class="ppform">${npc?`<label class="ppf"><span>이름</span><input type="text" id="pe_name" value="${esc(x.name)}" autocomplete="off"></label>
+    <div class="ppimgs one"><div class="ppimg"><span class="pplab">초상</span><div class="row" style="gap:10px;align-items:stretch;flex-wrap:nowrap"><div class="pppv por" id="pe_pv">${c.img?`<img src="${esc(node.img||c.img)}" alt="">`:'<span>없음</span>'}</div><div style="flex:1;display:flex;flex-direction:column;gap:6px;min-width:0">${dzHtml('pe_idz','초상 바꾸기','끌어 놓기 · 클릭 · Ctrl+V')}<input type="text" id="pe_img" value="${esc(node.img||'')}" placeholder="그림 주소 (비우면 같은 이름 초상)"></div></div></div></div>`
+    :`<div class="small dim" style="margin-bottom:6px">${x.kind==='pc'?'PC':'포켓몬'}의 이름 · 그림은 캐릭터 시트에서 고친다.</div>`}
+    <div class="ppf ppt"><span>스탠딩</span><div style="flex:1;min-width:0">${strip}<div class="row" style="margin-top:6px;gap:6px"><button class="btn sm" data-ppd="stands">✎ 표정 · 스탠딩 편집</button>${npc?'<div class="updz mini" id="pe_sdz"><b>스탠딩 더하기</b><span>끌어 놓기 · 여러 장</span><input type="file" accept="image/*" multiple hidden></div>':''}</div></div></div>
+    <label class="ppf"><span>폴더</span>${ppFolderSel('pe_f',x.fid)}</label>
+    <label class="ppf"><span>화자 칸</span><span class="row" style="gap:8px"><label class="small"><input type="checkbox" id="pe_vis" ${x.hid?'':'checked'}> 화자 줄에 보이기</label></span></label>
+    ${npc?`<label class="ppf ppt"><span>메모</span><textarea id="pe_note" rows="4" placeholder="관계도 노드 메모 (모두가 본다)">${esc(node.note||'')}</textarea></label>`:''}
+    <div class="row ppact"><button class="btn sm" data-ppd="talk" title="화자로 고르고 창을 닫는다">💬 이 인물로 말하기</button>${npc?'<button class="btn sm ghost" data-ppd="graph" title="관계도 탭으로">관계도</button><button class="btn sm ghost danger" data-ppd="del">삭제</button>':''}<span class="sp"></span>${npc?'<button class="btn pri" data-ppd="save">저장</button>':''}</div></div>`}
+ function ppBind(md,L,re){const D=PP.draft;const x=L.find(y=>y.key===PP.sel);const ST=A().ST;
+  const fsel=async s=>{if(!s||s.value!=='__new')return;const id=await ppNewFolder();if(D&&PP.sel==='new'){D.fid=id;grabNew()}re()};
+  const grabNew=()=>{if(!D)return;const v=id=>{const e=$('#'+id,md);return e?e.value:''};D.name=v('pn_name').trim();D.img=v('pn_img').trim();D.note=v('pn_note');const f=v('pn_f');if(f!=='__new')D.fid=f;const m=$('#pn_more',md);if(m)PP.more=m.checked};
+  if(PP.sel==='new'){
+   const pv=()=>{const p=$('#pn_pv',md);if(p)p.innerHTML=D.img?`<img src="${esc(D.img)}" alt="">`:'<span>없음</span>'};
+   $('#pn_img',md).oninput=e=>{D.img=e.target.value.trim();pv()};
+   bindDz(md,'#pn_idz',async fs=>{D.img=await upImg(fs[0],'npc');$('#pn_img',md).value=D.img;pv();A().toast('초상을 올렸다')});
+   bindDz(md,'#pn_sdz',async fs=>{grabNew();for(const f of fs){const u=await upImg(f,'st_npc');D.stands.push({label:stLabel(f.name&&f.name!=='image.png'?f.name:'표정'+(D.stands.length+1)),src:u,point:0})}re('new')},true);
+   md.querySelectorAll('[data-pnx]').forEach(u=>u.onclick=()=>{grabNew();D.stands.splice(+u.dataset.pnx,1);re('new')});
+   const fs=$('#pn_f',md);fs.onchange=()=>{grabNew();fsel(fs)};
+   const nm=$('#pn_name',md);setTimeout(()=>nm.focus(),30);nm.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();md.querySelector('[data-ppd="add"]').click()}}}
+  else if(x&&x.kind==='npc'){const pv=u=>{const p=$('#pe_pv',md);if(p)p.innerHTML=u?`<img src="${esc(u)}" alt="">`:'<span>없음</span>'};$('#pe_img',md).oninput=e=>pv(e.target.value.trim());
+   bindDz(md,'#pe_idz',async fs=>{const u=await upImg(fs[0],'npc');$('#pe_img',md).value=u;pv(u);if(x.node)await A().set(['graph','nodes',x.node.id,'img'],u);A().toast('초상을 바꿨다')});
+   bindDz(md,'#pe_sdz',async fs=>{if(!x.node)return;const cur=(x.node.stands||[]).slice();let add=0;for(const f of fs){const u=await upImg(f,'st_npc');const label=stLabel(f.name&&f.name!=='image.png'?f.name:'표정'+(cur.length+1));const j=cur.findIndex(s=>(s.label||'')===label);if(j>=0)cur[j]=Object.assign({},cur[j],{src:u});else{cur.push({label,src:u,point:0});add++}}await A().set(['graph','nodes',x.node.id,'stands'],cur);A().toast(`스탠딩 ${fs.length}장을 넣었다`);re()},true)}
+  if(x){const fs=$('#pe_f',md);if(fs)fs.onchange=async()=>{if(fs.value==='__new'){const id=await ppNewFolder();if(id)await ppMoveFolder(x.key,id);return re()}await ppMoveFolder(x.key,fs.value);A().toast(fs.value?'폴더로 옮겼다':'폴더에서 뺐다');re()};
+   const vs=$('#pe_vis',md);if(vs)vs.onchange=async()=>{const C=spkConf();if(vs.checked)delete C.hidden[x.key];else C.hidden[x.key]=1;await saveSpk(C);re()};
+   md.querySelectorAll('[data-pps]').forEach(b=>b.onclick=async()=>{if(await setStandIdx(x.c,+b.dataset.pps))re()})}
+  md.querySelectorAll('[data-ppd]').forEach(b=>b.onclick=async()=>{const k=b.dataset.ppd;
+   if(k==='cancel'){PP.draft=null;return re('')}
+   if(k==='add'){grabNew();const n=D.name;if(!n)return A().toast('이름이 필요해');const nodes=(ST.state.graph||{}).nodes||{};if(Object.values(nodes).some(y=>y.name===n)||Object.values((ST.state.roster||{}).trainers||{}).some(t=>t.name===n))return A().toast('같은 이름이 이미 있다');
+    const id='n'+Date.now().toString(36);const i=Object.keys(nodes).length;
+    await A().set(['graph','nodes',id],{id,name:n,kind:'npc',img:D.img,note:D.note||'',x:120+(i%6)*140,y:120+Math.floor(i/6)*140,stands:D.stands.slice(),standActive:0});
+    if(D.fid)await ppMoveFolder('npc:'+n,D.fid);SPK.key='npc:'+n;A().toast(`${n} 추가 — 관계도에도 들어갔다`);
+    if(PP.more){PP.draft={name:'',img:'',stands:[],fid:D.fid,note:''};return re('new')}PP.draft=null;return re('npc:'+n)}
+   if(!x)return;
+   if(k==='stands'){A().closeModal();return openStands(x.key)}
+   if(k==='talk'){SPK.key=x.key;A().closeModal();A().renderScene();const l=document.getElementById('rpline');if(l)l.focus();return}
+   if(k==='graph'){A().closeModal();A().view='graph';return A().renderScene()}
+   if(k==='del'){const g=ST.state.graph||{};const ids=Object.keys(g.nodes||{}).filter(id=>(g.nodes[id]||{}).name===x.name&&g.nodes[id].kind!=='org');const lines=Object.entries(g.edges||{}).filter(([,ed])=>ids.includes(ed.a)||ids.includes(ed.b));
+    if(!confirm(`「${x.name}」 인물을 지울까?\n관계도에서도 빠지고${lines.length?` 이어진 선 ${lines.length}개도 지워진다`:''}. 되돌릴 수 없다.`))return;
+    for(const [eid] of lines)await A().set(['graph','edges',eid],null);for(const id of ids)await A().set(['graph','nodes',id],null);
+    const C=spkConf();C.order=C.order.filter(y=>y!==x.key);for(const f of Object.values(C.folders))f.keys=(f.keys||[]).filter(y=>y!==x.key);delete C.hidden[x.key];await saveSpk(C);if(SPK.key===x.key)SPK.key='gm';A().toast(`${x.name} 를 지웠다`);return re('')}
+   if(k==='save'){if(!x.node)return A().toast('관계도 노드를 찾지 못했다');const n=$('#pe_name',md).value.trim();if(!n)return A().toast('이름이 필요해');
+    if(n!==x.name&&(Object.values((ST.state.graph||{}).nodes||{}).some(y=>y.name===n)||Object.values((ST.state.roster||{}).trainers||{}).some(t=>t.name===n)))return A().toast('같은 이름이 이미 있다');
+    const nn=Object.assign({},x.node,{name:n,img:$('#pe_img',md).value.trim(),note:$('#pe_note',md).value});await A().set(['graph','nodes',x.node.id],nn);
+    if(n!==x.name){const ok='npc:'+x.name,nk='npc:'+n;const C=spkConf();C.order=C.order.map(y=>y===ok?nk:y);for(const f of Object.values(C.folders))f.keys=(f.keys||[]).map(y=>y===ok?nk:y);if(C.hidden[ok]){delete C.hidden[ok];C.hidden[nk]=1}await saveSpk(C);if(SPK.key===ok)SPK.key=nk;PP.sel=nk}
+    A().toast('저장했다');return re()}})}
+ /* (예전) 인물 빠른 추가 — 이제 「인물 관리」의 새 인물 칸을 쓴다 */
+ function addNpcQuick(){return openPeople('new')}
+ function addNpcQuickOld(){const ST=A().ST;
   const md=A().openModal(`<div class="mhead"><h2>인물 추가</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    <div class="row" style="margin-bottom:6px"><b style="width:80px">이름</b><input type="text" id="na_n" style="flex:1" placeholder="예: 유현"></div>
    <div class="row" style="margin-bottom:6px"><b style="width:80px">초상</b><input type="text" id="na_i" style="flex:1" placeholder="그림 주소 (채팅 아바타·지도 칩)"><div class="updz mini" id="na_idz"><b>끌어 놓기</b><span>클릭 · Ctrl+V</span><input type="file" accept="image/*" hidden></div></div>
@@ -945,5 +1036,5 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   if(near||box._first!==ST.room){box.scrollTop=box.scrollHeight;box._first=ST.room}
   const inp=$('#oocIn',d);if(inp){inp.disabled=!ST.role;inp.placeholder=ST.role?'잡담 · /r 1d100':'자리에 앉으면 말할 수 있다'}}
  addEventListener('resize',()=>{try{oocTick()}catch(e){}});
- return {typingHtml,autoFolder,bgmMuted,seUrlOf:seUrl,render,allSpeakers,onChat,feedLog,onState,onTyping,typingPing,typingStop,drawTyping,mapData:mapS,openConsole,openStands,setMyStand,charOf,playSe,setVolume,bgmWidgetHtml,bindBgmWidget,imgOfKey:k=>{if(k==='gm')return gmImg();const c=charOf(k);return c?(c.img||standSrc(c)):''},curSpeaker:()=>{const ST=A().ST;const c=speakerChar();if(c)return {key:c.key,name:c.name,img:c.img||standSrc(c)};return gm()?{key:'gm',name:'GM',img:gmImg()}:{key:'me',name:ST.name||'',img:''}}};
+ return {typingHtml,autoFolder,bgmMuted,seUrlOf:seUrl,render,allSpeakers,onChat,feedLog,onState,onTyping,typingPing,typingStop,drawTyping,mapData:mapS,openConsole,openStands,openPeople,setMyStand,charOf,playSe,setVolume,bgmWidgetHtml,bindBgmWidget,imgOfKey:k=>{if(k==='gm')return gmImg();const c=charOf(k);return c?(c.img||standSrc(c)):''},curSpeaker:()=>{const ST=A().ST;const c=speakerChar();if(c)return {key:c.key,name:c.name,img:c.img||standSrc(c)};return gm()?{key:'gm',name:'GM',img:gmImg()}:{key:'me',name:ST.name||'',img:''}}};
 })();

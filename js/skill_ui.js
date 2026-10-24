@@ -32,6 +32,23 @@ window.OM_SKILL_UI=(()=>{
   {name:'위기 돌파 (능력 9 · 이능 · 반동)',o:{label:'위기 돌파 — 이능',stat:'능력',mode:'inou',target:9,pen:{fail:{dmg:'1/4',memo:'반동으로 휘말린다'},cost:{dmg:'1/8'}}}},
   {name:'대항 — 숙련 트레이너 (지시)',o:{label:'상대 트레이너와 수 싸움',stat:'지시',mode:'skill',target:7,npc:3}},
   {name:'잠입 (지시 9 · 불리 · 실패 시 경계)',o:{label:'들키지 않고 잠입',stat:'지시',mode:'skill',target:9,step:-1,pen:{fail:{memo:'경계 강화 — 다음 배틀 상대 「경계」 상태'},cost:{memo:'흔적을 남김'}}}}];
+ /* 10-24 망령: 패널티 예시 (자주 쓰는 묶음). 「저장」으로 내 것을 더하고, 「예시 관리」에서 한 번에 보고 고친다 */
+ const PEN_EX=[
+  {name:'반동 — 대미지 1/4',p:{dmg:'1/4',memo:'반동으로 휘말린다'}},
+  {name:'가벼운 반동 — 대미지 1/8',p:{dmg:'1/8'}},
+  {name:'큰 부상 — 대미지 1/2',p:{dmg:'1/2',memo:'크게 다쳤다'}},
+  {name:'독에 노출',p:{st:'Poison',memo:'독 안개를 들이마셨다'}},
+  {name:'화상',p:{st:'Burn'}},
+  {name:'혼란',p:{st:'Confusion',cnt:3,memo:'정신이 아득해진다'}},
+  {name:'잠듦 (지쳐 쓰러짐)',p:{st:'Sleep'}},
+  {name:'기세가 꺾임 — 공격 · 특공 −1',p:{rk:{attack:-1,specialattack:-1}}},
+  {name:'발이 묶임 — 스피드 −1',p:{rk:{speed:-1}}},
+  {name:'지시 혼선 — 4식 1개 차감',p:{oo:1}},
+  {name:'지쳐 버림 — 6령 1개 차감',p:{oc:1}},
+  {name:'고유 포텐셜 1회 소모',p:{pot:{who:'tr',name:'',n:1}}},
+  {name:'경계 강화 (서술)',p:{memo:'경계 강화 — 다음 배틀 상대 「경계」 상태'}},
+  {name:'흔적을 남김 (서술)',p:{memo:'흔적을 남겼다 — 추적당할 수 있다'}},
+  {name:'시간 지체 (서술)',p:{memo:'시간이 지체된다 — 다음 장면이 한 시간대 늦어진다'}}];
  const d=n=>1+Math.floor(Math.random()*n);
  const st=()=>A().ST.state.skill||{};
  const cfg=()=>Object.assign({},CFG0,st().cfg||{});
@@ -119,18 +136,26 @@ window.OM_SKILL_UI=(()=>{
  function offerSummary(O){return `${esc(O.stat)}${O.mode==='inou'?' · 이능':O.mode==='any'?' · 방식 자유':''} · 목표 ${O.target}${O.npc?' (대항 '+esc(O.npc)+')':''}${O.step?' · 단계 '+(O.step>0?'유리':'불리'):''}${O.twice?' · 두 번 굴려 '+(O.twice>0?'높은':'낮은')+' 값':''}${O.pm?' · '+(O.pm>0?'능숙함':'서투름'):''}`}
  function penLine(P){if(!P||!(penHas(P.fail)||penHas(P.cost)))return '';return `<div class="skpenline">${penHas(P.fail)?`<span><i class="penf">실패</i> ${esc(penTxt(P.fail))}</span>`:''}${penHas(P.cost)?`<span><i class="penc">대가</i> ${esc(penTxt(P.cost))}</span>`:''}</div>`}
  const DMGS=['','1/8','1/4','1/3','1/2'];
- function penBox(P){return `<div class="skpen"><div class="fr"><span class="lbl">패널티</span><div class="pensum">${penHas(P.fail)?`<div><i class="penf">실패 · 대실패</i> ${esc(penTxt(P.fail))}</div>`:''}${penHas(P.cost)?`<div><i class="penc">대가를 치르고 성공</i> ${esc(penTxt(P.cost))}</div>`:''}${!penHas(P.fail)&&!penHas(P.cost)?'<span class="dim small">없음</span>':''}</div><button class="btn xs" data-sk="penopen">${F.penOpen?'접기':'패널티 설정 ▸'}</button>${penHas(P.fail)||penHas(P.cost)?'<button class="btn xs ghost" data-sk="penclr">비우기</button>':''}</div>
-  ${F.penOpen?`<div class="skpencols">${[['fail','실패 · 대실패','penf'],['cost','대가를 치르고 성공','penc']].map(([t,title,cl])=>{const X=penNorm(P[t]);return `<div class="skpencol ${cl}"><div class="sec">${title}</div>
-   <div class="fr"><span class="lbl">대미지</span>${seg('pen_'+t+'_dmg',[['','없음'],['1/8','1/8'],['1/4','1/4'],['1/3','1/3'],['1/2','1/2']],DMGS.includes(X.dmg)?X.dmg:'x')}<input type="text" class="n xs" data-pen="${t}.dmg" value="${DMGS.includes(X.dmg)?'':esc(X.dmg)}" placeholder="직접"></div>
+ /* 패널티 한 칸 (실패 · 대가 · 예시 편집 창이 같이 쓴다). t = 칸 이름, X = 패널티 */
+ function penFields(t,X){return `   <div class="fr"><span class="lbl">대미지</span>${seg('pen_'+t+'_dmg',[['','없음'],['1/8','1/8'],['1/4','1/4'],['1/3','1/3'],['1/2','1/2']],DMGS.includes(X.dmg)?X.dmg:'x')}<input type="text" class="n xs" data-pen="${t}.dmg" value="${DMGS.includes(X.dmg)?'':esc(X.dmg)}" placeholder="직접"></div>
    <div class="fr"><span class="lbl">상태</span><select data-pen="${t}.st"><option value="">없음</option>${stList().map(([k,ko,abn])=>`<option value="${k}" ${X.st===k?'selected':''}>${esc(ko)}${abn?' (이상)':''}</option>`).join('')}</select><span class="small dim">턴</span><input type="number" class="n xs" data-pen="${t}.cnt" value="${esc(X.cnt)}" placeholder="기본"></div>
    <div class="fr" style="align-items:flex-start"><span class="lbl">랭크</span><div class="prk">${RK.map(([k,n])=>{const v=+X.rk[k]||0;return `<div class="prki ${v>0?'up':v<0?'dn':''}"><small>${n}</small><span data-rk="${t}.${k}.-1">−</span><b>${v>0?'+':''}${v}</b><span data-rk="${t}.${k}.1">＋</span></div>`}).join('')}</div></div>
    <div class="fr"><span class="lbl">4식 6령</span><span class="small dim">4식</span><input type="number" class="n xs" data-pen="${t}.oo" value="${+X.oo||0}"><span class="small dim">6령</span><input type="number" class="n xs" data-pen="${t}.oc" value="${+X.oc||0}"><span class="small dim">개 차감 (배틀의 트레이너)</span></div>
    <div class="fr"><span class="lbl">포텐셜</span>${seg('pen_'+t+'_who',[['tr','고유'],['pk','전용']],X.pot.who||'tr')}<input type="text" class="n" data-pen="${t}.pot.name" value="${esc(X.pot.name||'')}" placeholder="이름 (비우면 아무거나)" style="width:150px"><input type="number" class="n xs" data-pen="${t}.pot.n" value="${+X.pot.n||0}"><span class="small dim">회 차감</span></div>
-   <div class="fr"><span class="lbl">메모</span><input type="text" data-pen="${t}.memo" value="${esc(X.memo)}" placeholder="GM 이 손으로 할 것 · 서술" style="flex:1"></div></div>`}).join('')}</div>
+   <div class="fr"><span class="lbl">메모</span><input type="text" data-pen="${t}.memo" value="${esc(X.memo)}" placeholder="GM 이 손으로 할 것 · 서술" style="flex:1"></div>`}
+ /* 패널티 칸 머리의 예시 고르기 (기본 예시 중 숨긴 것은 빼고, 내 것 먼저) */
+ const exHide=k=>(((st().exHide)||{})[k])||[];
+ function penExSel(t){const mine=st().penPresets||[];const hid=exHide('pen');return `<select data-penex="${t}" title="패널티 예시 불러오기 (이 칸에)"><option value="">예시…</option>${mine.length?`<optgroup label="내가 저장한 것">${mine.map(p=>`<option value="my:${esc(p.id)}">${esc(p.name)}</option>`).join('')}</optgroup>`:''}<optgroup label="기본">${PEN_EX.map((e,i)=>hid.includes(e.name)?'':`<option value="ex:${i}">${esc(e.name)}</option>`).join('')}</optgroup></select>`}
+ function penExGet(v){if(!v)return null;if(v.startsWith('ex:'))return (PEN_EX[+v.slice(3)]||{}).p||null;const p=(st().penPresets||[]).find(p=>p.id===v.slice(3));return p?p.p:null}
+ /* 패널티 칸 읽기 (data-pen="t.…") */
+ function grabPen(md,t,X0){const X=penNorm(X0);const q=k=>md.querySelector(`[data-pen="${t}.${k}"]`);if(!q('dmg'))return X;const dv=segVal(md,'pen_'+t+'_dmg');const di=q('dmg').value.trim();X.dmg=di||(dv==='x'?X.dmg:dv);X.st=q('st').value;X.cnt=q('cnt').value;X.oo=+q('oo').value||0;X.oc=+q('oc').value||0;X.pot.who=segVal(md,'pen_'+t+'_who')||'tr';X.pot.name=q('pot.name').value.trim();X.pot.n=+q('pot.n').value||0;X.memo=q('memo').value.trim();return X}
+ function penBox(P){return `<div class="skpen"><div class="fr"><span class="lbl">패널티</span><div class="pensum">${penHas(P.fail)?`<div><i class="penf">실패 · 대실패</i> ${esc(penTxt(P.fail))}</div>`:''}${penHas(P.cost)?`<div><i class="penc">대가를 치르고 성공</i> ${esc(penTxt(P.cost))}</div>`:''}${!penHas(P.fail)&&!penHas(P.cost)?'<span class="dim small">없음</span>':''}</div><button class="btn xs" data-sk="penopen">${F.penOpen?'접기':'패널티 설정 ▸'}</button><button class="btn xs ghost" data-sk="exmgr" data-t="pen" title="패널티 예시를 한 번에 보고 관리">패널티 예시</button>${penHas(P.fail)||penHas(P.cost)?'<button class="btn xs ghost" data-sk="penclr">비우기</button>':''}</div>
+  ${F.penOpen?`<div class="skpencols">${[['fail','실패 · 대실패','penf'],['cost','대가를 치르고 성공','penc']].map(([t,title,cl])=>{const X=penNorm(P[t]);return `<div class="skpencol ${cl}"><div class="sec">${title}<span class="sp"></span>${penExSel(t)}<button class="btn xs ghost" data-sk="pensave" data-t="${t}" title="이 칸을 패널티 예시로 저장">저장</button></div>
+${penFields(t,X)}</div>`}).join('')}</div>
    <label class="small tg" style="margin-top:6px;display:block"><input type="checkbox" id="pen_auto" ${cfg().penAuto?'checked':''}> 결과가 나오면 자동으로 건다 (끄면 GM 이 현황에서 손으로)</label>`:''}</div>`}
  function grabOffer(md){F.label=$('#so_label',md).value.trim();F.stat=segVal(md,'stat')||'지시';F.mode=segVal(md,'mode')||'skill';F.target=+$('#so_target',md).value||7;F.npc=+segVal(md,'npc')||0;F.step=+segVal(md,'step')||0;F.twice=+segVal(md,'twice')||0;F.pm=+segVal(md,'pm')||0;
   F.ids=[...md.querySelectorAll('[data-so-id]:checked')].map(i=>i.dataset.soId);
-  if(F.penOpen){for(const t of ['fail','cost']){const X=penNorm(F.pen[t]);const dv=segVal(md,'pen_'+t+'_dmg');const di=md.querySelector(`[data-pen="${t}.dmg"]`).value.trim();X.dmg=di||(dv==='x'?X.dmg:dv);X.st=md.querySelector(`[data-pen="${t}.st"]`).value;X.cnt=md.querySelector(`[data-pen="${t}.cnt"]`).value;X.oo=+md.querySelector(`[data-pen="${t}.oo"]`).value||0;X.oc=+md.querySelector(`[data-pen="${t}.oc"]`).value||0;X.pot.who=segVal(md,'pen_'+t+'_who')||'tr';X.pot.name=md.querySelector(`[data-pen="${t}.pot.name"]`).value.trim();X.pot.n=+md.querySelector(`[data-pen="${t}.pot.n"]`).value||0;X.memo=md.querySelector(`[data-pen="${t}.memo"]`).value.trim();F.pen[t]=X}}}
+  if(F.penOpen){for(const t of ['fail','cost'])F.pen[t]=grabPen(md,t,F.pen[t])}}
  function loadPreset(o){Object.assign(F,{label:o.label||'',stat:o.stat||'지시',mode:o.mode||'skill',target:+o.target||7,npc:+o.npc||0,step:+o.step||0,twice:+o.twice||0,pm:+o.pm||0,pen:{fail:penNorm((o.pen||{}).fail),cost:penNorm((o.pen||{}).cost)}});F.penOpen=penHas(F.pen.fail)||penHas(F.pen.cost)}
 
  /* ----- GM 창 ----- */
@@ -138,7 +163,7 @@ window.OM_SKILL_UI=(()=>{
   const ids=F.ids||Object.keys(T);
   const offerTab=`${O?`<div class="skcard hit"><div class="sec">지금 제시된 체크 <span class="note">${esc(O.label||'')}</span><span class="sp"></span><button class="btn xs ghost" data-sk="close">마감 (제시 거두기)</button></div><div class="small">${offerSummary(O)}</div>${penLine(O.pen)}
      <div class="sklist" style="margin-top:6px">${(O.ids||[]).map(id=>{const r=R[id];const t=T[id]||{};const done=r&&r.offerId===O.id;return `<div class="skrow"><b>${esc(t.name)}</b>${done?`<span class="skres" style="background:${COL[r.ri]}">${RES[r.ri]}</span><span class="small dim">${esc(r.text.split('\n').slice(1,-1).join(' / '))}</span>${r.cover?`<span class="tag">커버 ${esc(T[r.cover.by]&&T[r.cover.by].name)}</span>`:''}${r.penDone?'<span class="tag">패널티 적용됨</span>':''}`:'<span class="small dim">아직 안 굴림</span>'}<span class="sp"></span>${done&&O.pen&&!r.penDone&&((r.ri<=1&&penHas(O.pen.fail))||(r.ri===2&&penHas(O.pen.cost)))?`<button class="btn xs" data-sk="penapply" data-tid="${id}">패널티 걸기</button>`:''}<button class="btn xs ghost" data-sk="rollfor" data-tid="${id}">대신 굴리기</button></div>`}).join('')}</div></div>`:''}
-    <div class="skcard"><div class="sec">새 체크 제시 <span class="sp"></span><select id="so_ex" title="예시·저장한 제시 불러오기"><option value="">예시 불러오기…</option>${EX.map((e,i)=>`<option value="ex:${i}">${esc(e.name)}</option>`).join('')}${presets.length?`<optgroup label="내가 저장한 것">${presets.map(p=>`<option value="my:${p.id}">${esc(p.name)}</option>`).join('')}</optgroup>`:''}</select><button class="btn xs ghost" data-sk="exsave" title="지금 폼을 예시로 저장">저장</button>${presets.length?'<button class="btn xs ghost" data-sk="exdel" title="저장한 예시 지우기">지우기</button>':''}</div>
+    <div class="skcard"><div class="sec">새 체크 제시 <span class="sp"></span><select id="so_ex" title="예시·저장한 제시 불러오기"><option value="">예시 불러오기…</option>${presets.length?`<optgroup label="내가 저장한 것">${presets.map(p=>`<option value="my:${p.id}">${esc(p.name)}</option>`).join('')}</optgroup>`:''}<optgroup label="기본">${EX.map((e,i)=>exHide('check').includes(e.name)?'':`<option value="ex:${i}">${esc(e.name)}</option>`).join('')}</optgroup></select><button class="btn xs ghost" data-sk="exsave" title="지금 폼을 예시로 저장">저장</button><button class="btn xs" data-sk="exmgr" data-t="check" title="체크 · 패널티 예시를 한 번에 보고 이름 · 순서 · 삭제 · 덮어쓰기">예시 관리</button></div>
      <div class="fr"><span class="lbl">상황</span><input type="text" id="so_label" placeholder="예) 겁먹은 야생 무리를 진정시킨다" value="${esc(F.label)}" style="flex:1"></div>
      <div class="fr"><span class="lbl">자질</span>${seg('stat',SK.map(s=>[s,s]),F.stat)}${seg('mode',[['skill','기교 / 일반'],['inou','이능 (A 이상)'],['any','트레이너가 고름']],F.mode)}</div>
      <div class="fr"><span class="lbl">난이도</span><span class="chips">${DIFF.map(([v,n])=>`<span class="chip ${!F.npc&&F.target===v?'on':''}" data-diff="${v}">${n} ${v}</span>`).join('')}</span><input type="number" class="n xs" id="so_target" value="${F.target}"></div>
@@ -186,6 +211,7 @@ window.OM_SKILL_UI=(()=>{
    md.querySelectorAll('[data-so-id]').forEach(cb=>cb.onchange=()=>cb.closest('.chip').classList.toggle('on',cb.checked));
    md.querySelectorAll('[data-rk]').forEach(b=>b.onclick=()=>{grabOffer(md);const [t,k,dv]=b.dataset.rk.split('.');const X=penNorm(F.pen[t]);X.rk[k]=Math.max(-6,Math.min(6,(+X.rk[k]||0)+ +dv));F.pen[t]=X;re('offer')});
    const ex=$('#so_ex',md);if(ex)ex.onchange=()=>{const v=ex.value;if(!v)return;grabOffer(md);if(v.startsWith('ex:'))loadPreset(EX[+v.slice(3)].o);else{const p=presets.find(p=>p.id===v.slice(3));if(p)loadPreset(p.o)}re('offer')};
+   md.querySelectorAll('[data-penex]').forEach(sl=>sl.onchange=()=>{const p=penExGet(sl.value);if(!p)return;grabOffer(md);F.pen[sl.dataset.penex]=penNorm(JSON.parse(JSON.stringify(p)));F.penOpen=true;re('offer')});
    const pa=$('#pen_auto',md);if(pa)pa.onchange=async()=>{await A().set(['skill','cfg'],Object.assign({},st().cfg||{},{penAuto:pa.checked?1:0}))}}
   function grabRest(){const kind=F.restKind||'long';const R=restCfg(kind);md.querySelectorAll('[data-rest]').forEach(cb=>R[cb.dataset.rest]=cb.checked?1:0);
    for(const k of ['hp','revive_hp']){if(!md.querySelector(`[data-seg="rest_${k}"]`))continue;const v=segVal(md,'rest_'+k);const inp=md.querySelector(`[data-restv="${k}"]`);R[k]=(inp&&inp.value.trim())||(v==='x'?R[k]:v)}
@@ -196,6 +222,8 @@ window.OM_SKILL_UI=(()=>{
   md.querySelectorAll('[data-sk]').forEach(el=>{el.onclick=async()=>{const k=el.dataset.sk;
    if(k==='penopen'){grabOffer(md);F.penOpen=!F.penOpen;return re('offer')}
    if(k==='penclr'){F.pen={fail:PEN0(),cost:PEN0()};return re('offer')}
+   if(k==='exmgr'){grabOffer(md);return openExMgr(el.dataset.t||'check')}
+   if(k==='pensave'){grabOffer(md);const t=el.dataset.t;const X=penNorm(F.pen[t]);if(!penHas(X))return A().toast('이 칸이 비어 있다');const name=prompt('패널티 예시 이름',penTxt(X).slice(0,40));if(name==null||!name.trim())return;const list=(st().penPresets||[]).slice();list.push({id:'q'+Date.now().toString(36),name:name.trim(),p:X});await A().set(['skill','penPresets'],list);A().toast('패널티 예시로 저장했다');return re('offer')}
    if(k==='exsave'){grabOffer(md);const name=prompt('예시 이름',F.label||'새 예시');if(name==null||!name.trim())return;const list=(st().presets||[]).slice();list.push({id:'p'+Date.now().toString(36),name:name.trim(),o:{label:F.label,stat:F.stat,mode:F.mode,target:F.target,npc:F.npc,step:F.step,twice:F.twice,pm:F.pm,pen:{fail:F.pen.fail,cost:F.pen.cost}}});await A().set(['skill','presets'],list);A().toast('저장했다');return re('offer')}
    if(k==='exdel'){const list=st().presets||[];if(!list.length)return;const name=prompt('지울 예시 번호\n'+list.map((p,i)=>(i+1)+'. '+p.name).join('\n'));const i=+name-1;if(!(i>=0&&i<list.length))return;await A().set(['skill','presets'],list.filter((p,j)=>j!==i));return re('offer')}
    if(k==='offer'){grabOffer(md);const ids=F.ids;if(!ids.length)return A().toast('대상을 골라 줘');const npc=NPC.find(x=>x[0]===F.npc);
@@ -213,6 +241,51 @@ window.OM_SKILL_UI=(()=>{
    if(k==='restgo'){const R=grabRest();const kind=F.restKind||'long';const kn=KINDS.find(x=>x[0]===kind)[1];if(!confirm(`「${kn}」 을 선언할까? (로스터 트레이너 전원 · 지금 설정도 저장)`))return;await A().set(['skill','rest',kind],R);A().closeModal();await applyRest(kind,null,{});return}
    if(k==='cfgsave'){const g=id=>$('#'+id,md);const n=Object.assign({},st().cfg||{},{s1:+g('sc_s1').value||0,s2:+g('sc_s2').value||0,both1:g('sc_both1').checked?1:0,hp1:g('sc_hp1').value.trim(),hp2:g('sc_hp2').value.trim(),noinou2:g('sc_noinou2').checked?1:0,nocover2:g('sc_nocover2').checked?1:0,inou:+g('sc_inou').value||2,aa:+g('sc_aa').value||9,myosuA:+g('sc_myosuA').value||1,myosuAA:+g('sc_myosuAA').value||2,penAuto:g('sc_penAuto').checked?1:0});A().closeModal();await A().set(['skill','cfg'],n);return A().toast('저장했다')}}});
   md.addEventListener('segchange',async e=>{const sg=e.target.closest('[data-seg]');if(!sg)return;const n=sg.dataset.seg;if(n.startsWith('inj_'))await setT(n.slice(4),{inj:+e.detail||0})})}
+
+ /* ----- 10-24 망령: 예시 관리 창 — 체크 제시 예시 · 패널티 예시를 한 번에 보고 고친다 -----
+    내 것(skill.presets · skill.penPresets): 불러오기 · 덮어쓰기/편집 · 이름 · 순서 · 삭제. 기본 예시: 불러오기 · 내 것으로 복사 · 숨기기(skill.exHide).
+    내보내기/가져오기(JSON)로 다른 방에 옮긴다 */
+ function exSum(o){o=o||{};const n=NPC.find(x=>x[0]===+o.npc);return offerSummary(Object.assign({stat:'지시',target:7},o,{npc:n&&n[2]?n[1]:''}))}
+ function openExMgr(tab){tab=tab==='pen'?'pen':'check';const K=st();const isP=tab==='pen';const mine=(isP?K.penPresets:K.presets)||[];const base=isP?PEN_EX:EX;const hid=exHide(tab);const key=isP?'penPresets':'presets';
+  const sum=x=>isP?`<span class="exs">${esc(penTxt(x.p))||'<span class="dim">비어 있음</span>'}</span>`:`<span class="exs">${exSum(x.o)}${x.o&&x.o.label?' · 「'+esc(x.o.label)+'」':''}</span>${penLine((x.o||{}).pen)}`;
+  const load=(src,i)=>isP?`<button class="btn xs" data-em="lf" data-src="${src}" data-i="${i}" title="실패 · 대실패 칸에 넣는다">→ 실패</button><button class="btn xs" data-em="lc" data-src="${src}" data-i="${i}" title="대가를 치르고 성공 칸에 넣는다">→ 대가</button>`:`<button class="btn xs pri" data-em="load" data-src="${src}" data-i="${i}">불러오기</button>`;
+  const rowM=(x,i)=>`<div class="exrow"><div class="exn"><b>${esc(x.name)}</b>${sum(x)}</div><span class="exb">${load('m',i)}${isP?`<button class="btn xs ghost" data-em="edit" data-i="${i}">편집</button>`:`<button class="btn xs ghost" data-em="over" data-i="${i}" title="스킬 체크 창에 지금 적혀 있는 폼으로 바꾼다">덮어쓰기</button>`}<button class="btn xs ghost" data-em="ren" data-i="${i}">이름</button><button class="btn xs ghost" data-em="up" data-i="${i}" ${i?'':'disabled'} title="위로">▲</button><button class="btn xs ghost" data-em="dn" data-i="${i}" ${i<mine.length-1?'':'disabled'} title="아래로">▼</button><button class="btn xs ghost danger" data-em="del" data-i="${i}">삭제</button></span></div>`;
+  const rowB=(x,i)=>{const h=hid.includes(x.name);return `<div class="exrow ${h?'off':''}"><div class="exn"><b>${esc(x.name)}</b>${h?' <span class="tag">숨김</span>':''}${sum(isP?x:{o:x.o})}</div><span class="exb">${h?'':load('b',i)}<button class="btn xs ghost" data-em="copy" data-i="${i}" title="내 예시로 복사해서 고친다">복사</button><button class="btn xs ghost" data-em="hide" data-i="${i}">${h?'보이기':'숨기기'}</button></span></div>`};
+  const md=A().openModal(`<div class="mhead"><h2>예시 관리 <span class="small dim">스킬 체크</span></h2><span class="tabs2" style="margin-left:14px;flex:0 1 300px">${[['check','체크 제시 예시'],['pen','패널티 예시']].map(([k,n])=>`<button class="tab2 ${tab===k?'on':''}" data-emt="${k}">${n}</button>`).join('')}</span><span class="sp"></span><button class="btn ghost" data-em="back">← 스킬 체크</button></div>
+   <div class="skwrap exmgr"><div class="skcard"><div class="sec">내가 저장한 것 <span class="note">${mine.length}</span><span class="sp"></span>${isP?'<button class="btn xs pri" data-em="new">＋ 새 패널티 예시</button>':'<button class="btn xs pri" data-em="newf" title="스킬 체크 창에 적혀 있는 폼을 새 예시로">＋ 지금 폼을 새 예시로</button>'}<button class="btn xs ghost" data-em="exp" title="내 예시를 JSON 파일로 내려받는다">내보내기</button><button class="btn xs ghost" data-em="imp" title="JSON 파일에서 예시를 더한다">가져오기</button></div>
+    <div class="exlist">${mine.map(rowM).join('')||`<div class="empty small">아직 없다 — ${isP?'「＋ 새 패널티 예시」나 스킬 체크 창 패널티 칸의 「저장」':'스킬 체크 창의 「저장」이나 위 「＋ 지금 폼을 새 예시로」'}로 더한다</div>`}</div></div>
+    <div class="skcard"><div class="sec">기본 예시 <span class="note">${base.length} · 숨긴 것은 고르기 목록에 안 나온다</span></div><div class="exlist">${base.map(rowB).join('')}</div></div>
+    <input type="file" id="em_file" accept="application/json,.json" hidden></div>`);
+  md.classList.add('wide');const re=()=>openExMgr(tab);const save=async L=>{await A().set(['skill',key],L);re()};const back=()=>openGm('offer');
+  md.querySelectorAll('[data-emt]').forEach(b=>b.onclick=()=>openExMgr(b.dataset.emt));
+  const fi=$('#em_file',md);fi.onchange=async()=>{const f=fi.files[0];if(!f)return;try{const j=JSON.parse(await f.text());const arr=Array.isArray(j)?j:(j[key]||[]);const ok=arr.filter(x=>x&&x.name&&(isP?x.p:x.o)).map(x=>({id:(isP?'q':'p')+Date.now().toString(36)+Math.random().toString(36).slice(2,5),name:String(x.name).slice(0,80),[isP?'p':'o']:isP?penNorm(x.p):x.o}));if(!ok.length)return A().toast('가져올 예시가 없다');await save([...(st()[key]||[]),...ok]);A().toast(`${ok.length}개를 더했다`)}catch(e){A().toast('읽지 못했다: '+e.message)}};
+  md.querySelectorAll('[data-em]').forEach(b=>b.onclick=async()=>{const k=b.dataset.em;const i=+b.dataset.i;const L=(st()[key]||[]).slice();const src=b.dataset.src==='b'?base:L;
+   if(k==='back')return back();
+   if(k==='load'){loadPreset(src[i].o);return back()}
+   if(k==='lf'||k==='lc'){F.pen[k==='lf'?'fail':'cost']=penNorm(JSON.parse(JSON.stringify(src[i].p)));F.penOpen=true;return back()}
+   if(k==='newf'){const name=prompt('예시 이름',F.label||'새 예시');if(name==null||!name.trim())return;L.push({id:'p'+Date.now().toString(36),name:name.trim(),o:{label:F.label,stat:F.stat,mode:F.mode,target:F.target,npc:F.npc,step:F.step,twice:F.twice,pm:F.pm,pen:{fail:F.pen.fail,cost:F.pen.cost}}});return save(L)}
+   if(k==='over'){if(!confirm(`「${L[i].name}」 를 스킬 체크 창의 지금 폼으로 바꿀까?\n${F.label||'(상황 없음)'} · ${F.stat} · 목표 ${F.target}`))return;L[i]=Object.assign({},L[i],{o:{label:F.label,stat:F.stat,mode:F.mode,target:F.target,npc:F.npc,step:F.step,twice:F.twice,pm:F.pm,pen:{fail:F.pen.fail,cost:F.pen.cost}}});return save(L)}
+   if(k==='ren'){const n=prompt('새 이름',L[i].name);if(n==null||!n.trim())return;L[i]=Object.assign({},L[i],{name:n.trim()});return save(L)}
+   if(k==='up'||k==='dn'){const j=k==='up'?i-1:i+1;if(j<0||j>=L.length)return;[L[i],L[j]]=[L[j],L[i]];return save(L)}
+   if(k==='del'){if(!confirm(`「${L[i].name}」 를 지울까?`))return;L.splice(i,1);return save(L)}
+   if(k==='copy'){const x=JSON.parse(JSON.stringify(base[i]));L.push({id:(isP?'q':'p')+Date.now().toString(36),name:x.name+' (내 것)',[isP?'p':'o']:isP?penNorm(x.p):x.o});await A().set(['skill',key],L);if(isP)return openPenEd(L.length-1);return re()}
+   if(k==='hide'){const H=Object.assign({check:[],pen:[]},st().exHide||{});const nm=base[i].name;H[tab]=H[tab].includes(nm)?H[tab].filter(x=>x!==nm):[...H[tab],nm];await A().set(['skill','exHide'],H);return re()}
+   if(k==='edit')return openPenEd(i);
+   if(k==='new')return openPenEd(-1);
+   if(k==='exp'){const blob=new Blob([JSON.stringify({[key]:L},null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=(isP?'패널티_예시':'체크_예시')+'.json';document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500);return}
+   if(k==='imp')return fi.click()})}
+ /* 패널티 예시 편집 (i = 내 예시 번호, -1 = 새로) */
+ function openPenEd(i,X,name){const L=st().penPresets||[];const cur=i>=0?L[i]:null;X=penNorm(X||(cur&&cur.p));name=name!=null?name:(cur?cur.name:'');
+  const md=A().openModal(`<div class="mhead"><h2>${cur?'패널티 예시 편집':'새 패널티 예시'}</h2><span class="sp"></span><button class="btn ghost" data-pe="back">← 예시 관리</button></div>
+   <div class="skwrap"><div class="skcard"><div class="fr"><span class="lbl">이름</span><input type="text" id="pe_name" value="${esc(name)}" placeholder="예) 반동 — 대미지 1/4" style="flex:1"></div>
+    <div class="skpencol pene">${penFields('ed',X)}</div>
+    <div class="fr"><span class="lbl">미리 보기</span><span class="small" id="pe_sum">${esc(penTxt(X))||'<span class="dim">비어 있음</span>'}</span></div>
+    <div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn" data-pe="back">취소</button><button class="btn pri" data-pe="save">저장</button></div></div></div>`);
+  bindSeg(md);const grab=()=>grabPen(md,'ed',X);
+  md.querySelectorAll('[data-rk]').forEach(b=>b.onclick=()=>{const Y=grab();const [,k,dv]=b.dataset.rk.split('.');Y.rk[k]=Math.max(-6,Math.min(6,(+Y.rk[k]||0)+ +dv));openPenEd(i,Y,$('#pe_name',md).value)});
+  md.addEventListener('input',()=>{const s=$('#pe_sum',md);if(s)s.textContent=penTxt(grab())||'비어 있음'});md.addEventListener('segchange',()=>{const s=$('#pe_sum',md);if(s)s.textContent=penTxt(grab())||'비어 있음'});
+  md.querySelectorAll('[data-pe]').forEach(b=>b.onclick=async()=>{if(b.dataset.pe==='back')return openExMgr('pen');const Y=grab();if(!penHas(Y))return A().toast('패널티가 비어 있다');const nm=$('#pe_name',md).value.trim()||penTxt(Y).slice(0,40);const L2=(st().penPresets||[]).slice();
+   if(i>=0&&L2[i])L2[i]=Object.assign({},L2[i],{name:nm,p:Y});else L2.push({id:'q'+Date.now().toString(36),name:nm,p:Y});await A().set(['skill','penPresets'],L2);A().toast('저장했다');openExMgr('pen')})}
 
  /* ----- 플레이어 창 ----- */
  function openPlayer(tid){const T=trs();const t=T[tid];if(!t)return;const K=st();const O=K.offer;const k=tsk(tid);const C=cfg();const R=(K.res||{})[tid];const mine=R&&O&&R.offerId===O.id?R:null;

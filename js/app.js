@@ -656,7 +656,7 @@ function prepMon(mon,side,i){mon.side=side;mon.slot=i;mon.entry='';mon.started=f
 function mergeHosts(side,tid){const b=B();const own=h=>ST.role==='gm'||h.id===ST.seat||((((roster().trainers||{})[h.id]||{}).co)||[]).includes(ST.seat);
  return ((((b.sides||{})[side]||{}).trainers)||[]).map(id=>(b.trainers||{})[id]).filter(h=>h&&h.id!==tid&&h.srcTid!==tid&&!(h.mates||[]).some(x=>x.id===tid)&&own(h))}
 function askMerge(hosts,g,mons,side){return new Promise(res=>{const OD=window.OM_ORDERS;const gT=Object.assign({},g);if(!gT.orderCount||!Object.keys(gT.orderCount).length)Object.assign(gT,OD.auto(gT,gT.orderPreset||'assoc',gT.orderBase||1));
- const sep=ST.role==='gm'||g.id===ST.seat?'따로 세우기 — 같은 진영에 트레이너 둘':'내 자리 파티를 이 파티로 바꾸기';
+ const sep=ST.role==='gm'||g.id===ST.seat?'<b>따로 세우기 (개인전)</b> — 같은 진영에 서지만 지시 · 벤치 · 도감 정보를 나누지 않고 서로 적으로 싸운다':'내 자리 파티를 이 파티로 바꾸기';
  const m=openModal(`<div class="mhead"><h2>${side==='left'?'좌측':'우측'}에 이미 트레이너가 있다</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
   <div class="mgopt"><label><input type="radio" name="mgm" value="merge" checked> <b>함께 지시하기</b> — ${hosts.length>1?`<select id="mgHost">${hosts.map(h=>`<option value="${esc(h.id)}">${esc(h.name)}</option>`).join('')}</select>`:`<b>${esc(hosts[0].name)}</b>`} 와(과) 「${esc(g.name)}」 를 한 트레이너로 합친다</label>
    <label><input type="radio" name="mgm" value="sep"> ${sep}</label></div>
@@ -709,13 +709,15 @@ async function loadFromRoster(tid,side){
  const b0=JSON.parse(JSON.stringify(B())),nb=JSON.parse(JSON.stringify(b0));nb.sides=nb.sides||{left:{trainers:[]},right:{trainers:[]}};nb.sides.left=nb.sides.left||{trainers:[]};nb.sides.right=nb.sides.right||{trainers:[]};
  nb.trainers=nb.trainers||{};nb.mons=nb.mons||{};nb.turn=nb.turn||0;nb.phase=nb.phase||0;nb.mode=nb.mode||2;nb.field=nb.field||{};nb.cmds=nb.cmds||{};nb.order=nb.order||[];
  for(const s of ['left','right'])nb.sides[s].trainers=nb.sides[s].trainers.filter(x=>x!==trainer.id);
+ /* 10-24 망령: 함께 지시하기로 합치지 않고 같은 진영에 따로 세우면 개인전 — 정보를 나누지 않고 서로 적 (벤치의 「⚔ 개인전」을 눌러 같은 팀으로) */
+ if(nb.sides[side].trainers.some(x=>x!==trainer.id))trainer.solo=true;else delete trainer.solo;
  nb.sides[side].trainers.push(trainer.id);trainer.side=side;nb.trainers[trainer.id]=trainer;
  for(const k in nb.mons)if(nb.mons[k].tid===trainer.id)delete nb.mons[k];
  mons.forEach((mon,i)=>{prepMon(mon,side,i);nb.mons[mon.id]=mon});
  /* 바뀐 칸만 쓴다 (점검 3-18) — 트레이너 → 진영 → 포켓몬 순. 좌석은 자기 트레이너·포켓몬·진영 칸만 (턴·필드 같은 기본값은 GM 만) */
  const rk={trainers:0,sides:1,mons:2};let ops=diffOps(['battle'],b0,nb,3);if(ST.role!=='gm')ops=ops.filter(o=>o[0][1] in rk);
  ops.sort((x,y)=>(rk[x[0][1]]??3)-(rk[y[0][1]]??3));const ok=await setMany(ops);
- if(ok){toast(`${trainer.name} 파티 ${mons.length}체를 불러왔다`);sysLog(`${trainer.name} (${side==='left'?'좌측':'우측'}) 파티 등록 · ${mons.length}체`,'battle');VIEW='battle';renderScene()}}
+ if(ok){toast(`${trainer.name} 파티 ${mons.length}체를 불러왔다`);sysLog(`${trainer.name} (${side==='left'?'좌측':'우측'}${trainer.solo?' · 개인전':''}) 파티 등록 · ${mons.length}체`,'battle');VIEW='battle';renderScene()}}
 
 /* ---------- 알까기 (개체값) ---------- */
 function openHatch(tid){
@@ -723,9 +725,9 @@ function openHatch(tid){
  if(!list.length)return toast('포켓몬이 없다');
  const count=S().hatchCount(tr);
  const m=openModal(`<div class="mhead"><h2>알까기 — ${esc(tr.name)}</h2><span class="small muted">육성 ${esc(tr.ranks.육성||'-')} → ${count}회 굴림. 포켓몬마다 하나를 고른다 (맵툴 reroll_iv 와 같음)</span><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-  ${list.map(mon=>{const rolls=S().hatch(count);mon._rolls=rolls;const cur=mon.iv&&S().ivSum(mon.iv)?mon.iv:null;
-   return `<div class="card" data-mid="${mon.id}"><div class="row"><b>${esc(mon.name)}</b><span class="small muted">지금: ${cur?cur.join('/')+' (합 '+S().ivSum(cur)+')':'없음 (전부 0)'}</span><span class="sp"></span><button class="btn sm" data-re="${mon.id}">다시 굴림</button></div>
-    <div class="ivs" style="margin-top:6px">${rolls.map((r,i)=>`<button class="btn" data-iv="${i}">${r.join('/')} <span class="muted">합 ${S().ivSum(r)}</span></button>`).join('')}</div></div>`}).join('')}
+  ${list.map(mon=>{const cur=mon.iv&&S().ivSum(mon.iv)?mon.iv:null;const rolls=cur?[]:S().hatch(count);mon._rolls=rolls;   /* 10-24 망령: 이미 깐 포켓몬은 굴리지 않는다 — 「🎲 재굴림」을 눌러야 후보가 나온다 */
+   return `<div class="card" data-mid="${mon.id}"><div class="row"><b>${esc(mon.name)}</b><span class="small muted">지금: ${cur?cur.join('/')+' (합 '+S().ivSum(cur)+')':'없음 (전부 0)'}</span><span class="sp"></span><button class="btn sm ${cur?'pri':''}" data-re="${mon.id}">${cur?'🎲 재굴림':'다시 굴림'}</button></div>
+    <div class="ivs" style="margin-top:6px">${rolls.length?rolls.map((r,i)=>`<button class="btn" data-iv="${i}">${r.join('/')} <span class="muted">합 ${S().ivSum(r)}</span></button>`).join(''):'<span class="small muted">이미 깐 값이 있어 그대로 둔다 — 새로 깔려면 「🎲 재굴림」</span>'}</div></div>`}).join('')}
   <div class="row" style="margin-top:12px"><span class="sp"></span><button class="btn pri" id="ivApply">고른 것 적용</button></div>`);
  const chosen={};
  m.querySelectorAll('.card').forEach(c=>{c.querySelectorAll('[data-iv]').forEach(bt=>bt.onclick=()=>{c.querySelectorAll('[data-iv]').forEach(x=>x.classList.remove('on'));bt.classList.add('on');chosen[c.dataset.mid]=+bt.dataset.iv});

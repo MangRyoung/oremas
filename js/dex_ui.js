@@ -17,12 +17,12 @@ window.OM_DEX_UI=(()=>{
  const monOf=mid=>((A().ST.state.battle||{}).mons||{})[mid]||((A().ST.state.roster||{}).mons||{})[mid];
  const trOf=tid=>((A().ST.state.battle||{}).trainers||{})[tid]||((A().ST.state.roster||{}).trainers||{})[tid]||{};
  /* 보는 사람 기준 공개 범위: 'all' | ['move','type'] | [] */
- function scope(mid,viewer,asPl){const m=monOf(mid);if(!m)return [];if((gm()&&!asPl)||m.tid===viewer)return 'all';const mt=trOf(viewer);if(mt.side&&m.side&&mt.side===m.side)return 'all';const d=dx(viewer);if(d.list.includes(mid))return 'all';return d.part[mid]||[]}
+ function scope(mid,viewer,asPl){const m=monOf(mid);if(!m)return [];if((gm()&&!asPl)||m.tid===viewer)return 'all';const mt=trOf(viewer);if(mt.side&&m.side&&mt.side===m.side&&window.OM_TEAM&&window.OM_TEAM(A().ST.state.battle,viewer)===window.OM_TEAM(A().ST.state.battle,m))return 'all';   /* 같은 편(개인전이면 저 혼자)만 다 보인다 */const d=dx(viewer);if(d.list.includes(mid))return 'all';return d.part[mid]||[]}
  /* 노이즈: 같은 글에 늘 같은 자리 (이름을 씨앗으로) */
  function noise(text,key){let seed=7;for(const ch of String(key))seed=(seed*31+ch.charCodeAt(0))%2147483647;const rnd=()=>{seed=(seed*48271)%2147483647;return seed/2147483647};const NZ=['■','■','▓','▒','█'];return String(text).split('').map(ch=>/\s/.test(ch)?ch:(rnd()<.35?NZ[Math.floor(rnd()*NZ.length)]:ch)).join('')}
  /* asPl: PL 권한(공평 모드)의 GM 이 자기 트레이너(viewer) 눈으로 본다 — GM 이라고 다 보이지 않는다 */
  function open(mid,viewer,asPl){viewer=viewer||me();const m=monOf(mid);if(!m)return;const G=gm()&&!asPl;const sc=scope(mid,viewer,asPl);const full=sc==='all';const has=p=>full||sc.includes(p);const nz=!full&&false||(m.dexFw===4&&!(G||m.tid===viewer));const N=s=>nz?noise(s,m.name):s;
-  const vt=trOf(viewer);const d=dx(viewer);const left=Math.max(0,maxOf(vt)-d.used);const isEnemy=!G&&m.tid!==viewer&&(!vt.side||!m.side||vt.side!==m.side);
+  const vt=trOf(viewer);const d=dx(viewer);const left=Math.max(0,maxOf(vt)-d.used);const isEnemy=!G&&m.tid!==viewer&&(!vt.side||!m.side||vt.side!==m.side||(window.OM_TEAM&&window.OM_TEAM(A().ST.state.battle,viewer)!==window.OM_TEAM(A().ST.state.battle,m)));
   const PH='<div class="dexph">■■■ 미해석 ■■■</div>';const PHs='<span class="dexph sm">■■■</span>';
   const typeRow=()=>has('type')?`<span class="row" style="gap:4px;display:inline-flex">${(m.types||[]).filter(t=>t&&t!=='-').map(t=>A().typeChip(t)).join('')}${m.teraActive?`<span class="rk up">테라 ${esc(m.tera)}</span>`:''}</span>`:PHs;
   const weaks=()=>{if(!has('type'))return PH;const rows=TYPES.map(t=>{const e=B().effectiveness([t],m,{});return [t,e&&typeof e==='object'?+e.value:+e]}).filter(x=>x[1]!==1);
@@ -69,7 +69,7 @@ window.OM_DEX_UI=(()=>{
   try{if(window.OM_RP_UI)window.OM_RP_UI.playSe(isOpen?'Ping':'evasion',true)}catch(e){}
   if(isOpen)setTimeout(()=>open(mid,viewer),200)}
  /* 해석 관리 (내 도감) */
- function openMgr(viewer){viewer=viewer||me();if(gm()&&!viewer)return A().toast('GM 은 포켓몬 카드의 「도감」에서 본다');const vt=trOf(viewer);const d=dx(viewer);const b=A().ST.state.battle||{};const enemies=Object.values(b.mons||{}).filter(m=>m.tid!==viewer&&m.side&&m.side!==(vt.side||'')&&(m.seen||m.entry));
+ function openMgr(viewer){viewer=viewer||me();if(gm()&&!viewer)return A().toast('GM 은 포켓몬 카드의 「도감」에서 본다');const vt=trOf(viewer);const d=dx(viewer);const b=A().ST.state.battle||{};const enemies=Object.values(b.mons||{}).filter(m=>m.tid!==viewer&&m.side&&(m.side!==(vt.side||'')||(window.OM_TEAM&&window.OM_TEAM(b,viewer)!==window.OM_TEAM(b,m)))&&(m.seen||m.entry));
   const md=A().openModal(`<div class="mhead"><h2>해석 관리 · ${esc(vt.name||'')}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    <div class="row small"><span>『포켓몬 도감』 남은 <b>${Math.max(0,maxOf(vt)-d.used)}</b>/${maxOf(vt)} (지시 ${esc((vt.ranks||{})['지시']||'-')})</span>${gm()?`<span class="sp"></span><button class="btn xs" data-dm="minus">−1</button><button class="btn xs" data-dm="plus">+1</button>`:''}</div>
    <div class="sec">해석 이력 <span class="note">${d.list.length}마리 · 누르면 도감</span></div><div class="row" style="flex-wrap:wrap;gap:4px">${d.list.map(mid=>`<button class="btn xs" data-dm="open" data-mid="${mid}">${esc((monOf(mid)||{}).name||mid)}</button>`).join('')}${Object.keys(d.part).map(mid=>`<button class="btn xs ghost" data-dm="open" data-mid="${mid}">${esc((monOf(mid)||{}).name||'???')} (부분)</button>`).join('')}${!d.list.length&&!Object.keys(d.part).length?'<span class="dim small">아직 없다</span>':''}</div>

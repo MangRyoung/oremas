@@ -33,7 +33,7 @@ window.OM_PHONE_UI=(()=>{
  function nodeOfTrainer(t){if(!t)return null;const ns=Object.values(G().nodes||{});return ns.find(n=>n.kind==='pc'&&n.name===t.name)||ns.find(n=>n.name===t.name)||null}
 
  function open(screen){if(screen)PH.screen=screen;const t=owner();
-  const md=A().openModal(`<div class="phone-shell"><div class="phone-dev"><div class="ph-status"><span>${esc(t?t.name:'—')}</span><span class="sp"></span><span>${esc(today().slice(5).replace('-','/'))}</span><span class="ph-bat">▮▮▮</span><button class="ph-x" data-x title="닫기 (Esc 는 한 칸 뒤로)">✕</button></div><div class="ph-screen" id="phScreen"></div><div class="ph-sheetwrap" id="phSheet" hidden></div><div class="ph-home"><button class="ph-hb" data-ph="home" title="홈"></button></div></div><button class="btn ghost ph-close" data-x>닫기</button></div>`);
+  const md=A().openModal(`<div class="phone-shell"><div class="phone-dev"><div class="ph-status"><span>${esc(t?t.name:'—')}</span><span class="sp"></span><span>${esc(today().slice(5).replace('-','/'))}</span><span class="ph-bat">▮▮▮</span><button class="ph-x" data-x title="닫기 (Esc 는 한 칸 뒤로)">✕</button></div><div class="ph-screen" id="phScreen"></div><div class="ph-sheetwrap" id="phSheet" hidden></div><div class="ph-home"><button class="btn ghost ph-close" data-x>닫기</button><button class="ph-hb" data-ph="home" title="홈"></button></div></div></div>`);   /* 10-24 망령: 닫기는 폰 화면 안 아래 가운데(홈 막대 위) — PC · 모바일 같은 자리 */
   md.classList.add('phone-modal');draw(md);
   if(!window.__omPhEsc){window.__omPhEsc=1;document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;const pm=$('.modal.phone-modal');if(!pm)return;
    if(closeSheet()){e.stopImmediatePropagation();e.preventDefault();return}

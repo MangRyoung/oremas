@@ -475,16 +475,19 @@ if(old){for(const k of ['orderStyle','commandStyle','orderCount','orderBase','or
 
  /* 알까기 — 후보마다 능력치 이름과 값, 0–1 / 30–31 표시, 개별 다시 굴림 · 개별 수정(✎) · 추가 굴림. 전부 다시 굴림과 합 130 넘는 후보 다시 굴림은 한 번 더 묻는다 */
  function openHatch(mid){const c=ctx();const m=c.r.mons[mid];const t=c.r.trainers[m.tid]||c.r.trainers[UI.tid];if(!m||!canEdit(c,t.id))return;
-  if((m.iv||[]).some(v=>+v>0)){const lg=m.ivLog;const when=lg&&lg.at?new Date(lg.at):null;if(!confirm(`${m.name} 은(는) 이미 알을 깠다 — 지금 개체값 ${m.iv.join('/')} (합 ${S().ivSum(m.iv)})${when?`\n${when.getMonth()+1}/${when.getDate()} 에 ${lg.by?lg.by+' 이(가) ':''}깠다`:''}${m.src==='maker'&&m.mkIvSig?'\n제작기 시트에서 깐 값이다':''}\n\n정말 다시 깔까? (적용을 누르기 전까지는 그대로)`))return}const count=S().hatchCount(t);let rolls=S().hatch(count);let chosen=-1,editing=-1;const used={extra:0,one:0,all:0,edit:0};const edited=new Set();const BIG=130;
+  /* 10-24 망령: 이미 깐 값이 있으면 열기만 하고 굴리지 않는다 — 창 안의 「🎲 재굴림」을 눌러야 후보가 나온다 */
+  const had=(m.iv||[]).some(v=>+v>0);const lg=m.ivLog;const when=lg&&lg.at?new Date(lg.at):null;
+  const count=S().hatchCount(t);let rolls=had?[]:S().hatch(count);let chosen=-1,editing=-1;const used={extra:0,one:0,all:0,edit:0};const edited=new Set();const BIG=130;
   const cell=v=>`<b class="${v<=1?'lo':v>=30?'hi':''}">${v}</b>`;
   const ivTable=iv=>`<div class="ivt">${STATS_KO.map(k=>`<span>${k}</span>`).join('')}${iv.map(cell).join('')}</div>`;
   const ivEdit=(iv,i)=>`<div class="ivt ed">${STATS_KO.map(k=>`<span>${k}</span>`).join('')}${iv.map((v,k)=>`<input type="number" min="0" max="31" value="${v}" data-ivi="${i}" data-ivk="${k}">`).join('')}</div>`;
   const md=A().openModal(`<div class="mhead"><h2>알까기 — ${esc(m.name)}</h2><span class="small dim" id="ivcnt"></span><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    <div class="ivnow"><span class="small dim">지금</span>${(m.iv||[]).length?ivTable(m.iv)+`<span class="small">합 <b>${S().ivSum(m.iv)}</b></span>`:'<span class="small dim">없음</span>'}</div>
    <div class="small dim" style="margin:6px 0">제작기 시트에서도 깔 수 있다 (시트에서 바꾸면 다시 불러올 때 그 값이 들어온다) · 하나를 눌러 고른다 · <b class="ivlg lo">0–1</b> 낮음 · <b class="ivlg hi">30–31</b> 높음 · 🎲 = 그 후보만 다시 굴림 · ✎ = 값 고치기 (0–31) · <b class="ivlg big">★ 합 ${BIG} 초과</b> = 다시 굴리기 전에 한 번 더 묻는다</div>
+   ${had?`<div class="ivhad" id="ivhad"><div><b>이미 알을 깠다</b><div class="small dim">${when?`${when.getMonth()+1}/${when.getDate()} 에 ${lg.by?esc(lg.by)+' 이(가) ':''}깠다 · `:''}${m.src==='maker'&&m.mkIvSig?'제작기 시트에서 깐 값 · ':''}그대로 두려면 닫으면 된다. 새로 깔려면 「🎲 재굴림」 — 적용을 누르기 전까지 지금 값은 그대로</div></div><button class="btn pri" id="ivroll">🎲 재굴림 (${count}회)</button></div>`:''}
    <div class="ivgrid" id="ivbox"></div>
-   <div class="row" style="margin-top:12px"><button class="btn ghost" id="ivre">전부 다시 굴림</button><button class="btn ghost" id="ivadd">+ 추가 굴림</button><span class="sp"></span><button class="btn pri" id="ivok">적용</button></div>`);
-  const draw=()=>{$('#ivcnt',md).textContent=`육성 ${(t.ranks||{})['육성']||'-'} → ${count}회${used.extra?' + 추가 '+used.extra+'회':''}`;
+   <div class="row" id="ivbtns" style="margin-top:12px"><button class="btn ghost" id="ivre">전부 다시 굴림</button><button class="btn ghost" id="ivadd">+ 추가 굴림</button><span class="sp"></span><button class="btn pri" id="ivok">적용</button></div>`);
+  const draw=()=>{const empty=!rolls.length;$('#ivbtns',md).style.display=empty?'none':'';const hb=$('#ivhad',md);if(hb)hb.style.display=empty?'':'none';$('#ivcnt',md).textContent=`육성 ${(t.ranks||{})['육성']||'-'} → ${count}회${used.extra?' + 추가 '+used.extra+'회':''}`;
    $('#ivbox',md).innerHTML=rolls.map((r,i)=>{const sum=S().ivSum(r);return `<div class="ivc ${chosen===i?'on':''} ${sum>BIG?'big':''}" data-iv="${i}"><div class="ivh"><span class="dim">#${i+1}</span><span class="sp"></span>${edited.has(i)?'<span class="ivmod">수정됨</span>':''}<span class="ivsum ${sum>BIG?'big':''}">${sum>BIG?'★ ':''}합 ${sum}</span><button class="btn xs ghost" data-ivr="${i}" title="이 후보만 다시 굴림">🎲</button><button class="btn xs ghost ${editing===i?'on':''}" data-ive="${i}" title="${editing===i?'고치기 끝':'이 후보 값 고치기'}">${editing===i?'✓':'✎'}</button></div>${editing===i?ivEdit(r,i):ivTable(r)}</div>`}).join('');
    md.querySelectorAll('[data-iv]').forEach(b=>b.onclick=()=>{chosen=+b.dataset.iv;draw()});
    md.querySelectorAll('[data-ivr]').forEach(b=>b.onclick=e=>{e.stopPropagation();const i=+b.dataset.ivr;const sum=S().ivSum(rolls[i]);
@@ -495,6 +498,7 @@ if(old){for(const k of ['orderStyle','commandStyle','orderCount','orderBase','or
     f.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();f.onchange()}}})};draw();
   $('#ivre',md).onclick=()=>{const big=rolls.filter(r=>S().ivSum(r)>BIG).length;
    if(!confirm(`후보 ${rolls.length}개가 전부 새로 바뀐다.${big?`\n합 ${BIG} 넘는 후보 ${big}개도 같이 사라진다.`:''}\n정말 다시 굴릴까?`))return;rolls=S().hatch(count+used.extra);used.all++;chosen=-1;editing=-1;edited.clear();draw()};
+  {const rb=$('#ivroll',md);if(rb)rb.onclick=()=>{rolls=S().hatch(count);used.all++;chosen=-1;editing=-1;edited.clear();draw()}}
   $('#ivadd',md).onclick=()=>{rolls.push(S().rollIv());used.extra++;draw();const g=$('#ivbox',md);g.lastElementChild&&g.lastElementChild.scrollIntoView({block:'nearest'})};
   $('#ivok',md).onclick=async()=>{if(chosen<0)return A().toast('하나 골라 줘');const nm=JSON.parse(JSON.stringify(m));nm.iv=rolls[chosen];nm.ivLog={at:Date.now(),n:count,x:used.extra,r:used.one+used.all,by:A().ST.role==='gm'?'GM':(A().ST.name||'')};recalc(nm,t);A().closeModal();
    const note=[used.extra?`추가 ${used.extra}회`:'',used.one?`개별 다시 굴림 ${used.one}회`:'',used.all?`전부 다시 굴림 ${used.all}회`:'',edited.has(chosen)?'고른 후보는 손으로 고침':used.edit?`다른 후보 ${used.edit}개 손으로 고침`:''].filter(Boolean).join(' · ');

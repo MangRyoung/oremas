@@ -3575,3 +3575,60 @@ html[data-vt] .phone .ptitle .btn *{color:inherit!important}
 .hero>.hpic{width:116px;height:116px}@media (max-width:760px){.hero>.hpic{width:92px;height:92px}}
 /* 칸이 좁은 PC(옆 메뉴가 열려 있을 때 등)에서 파티 그림 · 배틀 배치가 겹치던 것: 배틀 배치를 그림 아래로 내린다 */
 @media (min-width:761px){.hero{container-type:inline-size}.hero>.hmain{flex:0 0 auto}}@container (max-width:1180px){.hero .hparty{flex-wrap:wrap;row-gap:10px}.hero .hpbtn{width:210px}}
+
+/* ===== 10-24 망령 추가분 ===== */
+/* 개인전 표시 · 켜고 끄기 */
+button.tag.solo{cursor:pointer;color:var(--fg2);font:inherit;font-size:11px;font-family:var(--lab)}
+.tag.solo.on{background:#7a1020;border-color:var(--red2);color:#fff}
+button.tag.solo:hover{border-color:var(--yel2)}
+/* 휴대폰 닫기: 폰 화면 안 아래 가운데, 홈 막대 바로 위 (PC · 모바일 같은 자리) */
+.phone-dev .ph-home{flex-direction:column;align-items:center;gap:8px;padding-top:10px}
+.phone-modal .phone-dev .ph-home .ph-close,.phone-dev .ph-home .ph-close{display:inline-flex!important;align-items:center;justify-content:center;position:static!important;top:auto!important;right:auto!important;bottom:auto!important;margin:0;padding:6px 30px;min-height:34px;font-size:14px}
+/* 인물 관리 창 */
+.modal.ppmodal{width:min(1180px,100%)}
+.pptool{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:2px 0 10px}.pptool input[type=search]{flex:1 1 220px;min-width:0}
+.pptool .chips{display:inline-flex;gap:4px;flex-wrap:wrap}.pptool .chip{cursor:pointer;padding:2px 10px}.pptool .chip small{color:var(--mute);margin-left:2px}.pptool .chip.on{background:var(--yel2);color:#000;border-color:var(--yel2)}.pptool .chip.on small{color:#000}
+.ppwrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,420px);gap:12px;min-height:56vh}
+.ppgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;align-content:start;max-height:66vh;overflow:auto;padding:2px}
+.ppc{position:relative;display:flex;flex-direction:column;align-items:stretch;gap:0;padding:0;border:1px solid var(--line2);border-radius:10px;background:var(--bg2);color:var(--fg);cursor:pointer;overflow:hidden;text-align:left;font:inherit;transition:border-color .12s,transform .12s}
+.ppc:hover{border-color:var(--fg2);transform:translateY(-1px)}.ppc.on{border-color:var(--yel2);box-shadow:0 0 0 2px var(--yel2) inset}.ppc.hid{opacity:.55}
+.ppc .ppst{display:block;height:120px;background:#0b0c0f center bottom/contain no-repeat;border-bottom:1px solid var(--line)}
+.ppc .ppth{position:absolute;top:84px;left:8px;width:40px;height:40px;border-radius:50%;border:2px solid var(--panel);background:#222 center/cover no-repeat}
+.ppc .ppn{display:flex;flex-direction:column;gap:2px;padding:8px 8px 8px 54px;min-height:46px;min-width:0}.ppc .ppn b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ppc .ppn small{font-size:11px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ppk{font-style:normal;font-size:10px;padding:0 5px;border-radius:3px;margin-right:4px;background:#333;color:#fff}.ppk.k-npc{background:#2b6b4a}.ppk.k-pc{background:var(--red)}.ppk.k-pm{background:#8a6a12}
+.pphid{position:absolute;top:6px;right:6px;font-size:13px}
+.ppdet{background:#111216;border:1px solid var(--line2);border-radius:10px;padding:12px;max-height:66vh;overflow:auto}
+.ppempty{height:100%;min-height:240px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center}
+.ppdh{display:flex;gap:10px;align-items:center;margin-bottom:10px}.ppdh>div{display:flex;flex-direction:column;gap:3px;min-width:0}.ppdh b{font-size:17px}
+.ppbig{width:64px;height:64px;border-radius:12px;background:#0b0c0f center/contain no-repeat;border:1px solid var(--line2);flex:none}
+.ppform{display:flex;flex-direction:column;gap:8px}
+.ppf{display:flex;gap:10px;align-items:center}.ppf.ppt{align-items:flex-start}.ppf>span:first-child{width:56px;flex:none;font-size:12px;color:var(--fg2)}.ppf input[type=text],.ppf select,.ppf textarea{flex:1;min-width:0}
+.ppimgs{display:grid;grid-template-columns:1fr 1fr;gap:10px}.ppimgs.one{grid-template-columns:1fr}
+.ppimg{display:flex;flex-direction:column;gap:6px;min-width:0}.pplab{font-size:12px;color:var(--fg2)}.pplab small{color:var(--mute);margin-left:4px}
+.pppv{height:110px;border:1px solid var(--line);border-radius:8px;background:#0b0c0f;display:flex;align-items:center;justify-content:center;overflow:hidden}.pppv img{max-width:100%;max-height:100%;object-fit:contain}.pppv span{font-size:12px;color:var(--mute)}
+.pppv.por{width:110px;flex:none}.ppimgs:not(.one) .pppv.por{width:100%}
+.ppstrip{display:flex;gap:6px;flex-wrap:wrap;min-height:30px;align-items:flex-start}
+.ppsti{position:relative;display:flex;flex-direction:column;align-items:center;gap:2px;width:64px;padding:3px;border:1px solid var(--line);border-radius:6px;background:var(--bg2);color:var(--fg);font:inherit;cursor:pointer}
+.ppsti.on{border-color:var(--yel2)}.ppsti small{font-size:10px;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ppsth{display:block;width:56px;height:64px;background:#0b0c0f center bottom/contain no-repeat;border-radius:4px}
+.ppsti u{position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--red);color:#fff;text-decoration:none;font-size:12px;line-height:18px;text-align:center;cursor:pointer}
+.ppstrip.big .ppsti{width:76px}.ppstrip.big .ppsth{width:68px;height:84px}
+.ppact{margin-top:8px;gap:6px;border-top:1px solid var(--line);padding-top:10px}
+@media (max-width:760px){.ppwrap{grid-template-columns:1fr}.ppgrid{max-height:40vh;grid-template-columns:repeat(auto-fill,minmax(120px,1fr))}.ppc .ppst{height:90px}.ppc .ppth{top:56px}.ppdet{max-height:none}.ppimgs{grid-template-columns:1fr}}
+/* 스킬 체크 예시 관리 */
+.exmgr .exlist{display:flex;flex-direction:column;gap:4px;margin-top:6px}
+.exrow{display:flex;gap:10px;align-items:center;padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg2)}.exrow.off{opacity:.5}
+.exn{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.exn b{font-size:13px}.exs{font-size:11px;color:var(--mute)}
+.exb{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end;flex:none}
+.skpencol .sec select{max-width:170px;font-size:12px}
+.skpencol.pene{border:1px solid var(--line);border-radius:8px;padding:8px;margin:8px 0}
+@media (max-width:760px){.exrow{flex-direction:column;align-items:stretch}.exb{justify-content:flex-start}}
+/* 알까기: 이미 깐 값이 있을 때 */
+.ivhad{display:flex;gap:12px;align-items:center;justify-content:space-between;border:1px solid var(--yel2);background:#15140e;border-radius:8px;padding:10px 12px;margin:8px 0}
+.ivhad>div{display:flex;flex-direction:column;gap:3px}
+.ppc i.noimg,.ppbig.noimg{display:flex;align-items:center;justify-content:center;font-style:normal;font-family:var(--lab);color:var(--mute)}
+.ppc .ppst.noimg{font-size:34px;color:#3a3d45}.ppc .ppth.noimg{font-size:12px}.ppbig.noimg{font-size:20px}
+.gtop .btn{white-space:nowrap;flex:none}.gtop>.small.dim{flex:1 1 140px;min-width:0}
+.ppmodal .mhead h2{white-space:nowrap}
+@media (max-width:760px){.ppmodal .pphint{display:none}.ppmodal .mhead{flex-wrap:wrap;gap:6px}}
+.ppc>*{flex:none}.ppgrid{grid-auto-rows:max-content}

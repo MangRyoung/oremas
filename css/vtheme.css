@@ -194,3 +194,9 @@ html[data-vt="p4"] .sheet .hero .hsk,html[data-vt="p4"] .sheet .hero .hsk *,html
 
 /* 10-24 망령: P4 소지품 소켓 막대 — 노란 배경과 겹치지 않게 주황으로 채운다 */
 html[data-vt="p4"] .hsock .hsbar{background:#3a3a3a}html[data-vt="p4"] .hsock .hsbar i{background:#ff9a00}html[data-vt="p4"] .hsock.over .hsbar i{background:#ff5a6a}
+
+/* 10-24 망령: RP 무대 배경 그림 — 위 테마의 .rpstage{background:…!important} 가 무대에 고른 배경을 덮어 안 보였다. 배경이 있으면 그림이 먼저 */
+html[data-vt] .rpstage.hasbg{background-color:#000!important;background-image:var(--stbg)!important;background-size:cover!important;background-position:center!important;background-repeat:no-repeat!important}
+html[data-vt="p5"] .rpstage.hasbg{background-image:linear-gradient(#fff,#fff),linear-gradient(#fff,#fff),linear-gradient(#fff,#fff),linear-gradient(#fff,#fff),linear-gradient(#fff,#fff),linear-gradient(#fff,#fff),linear-gradient(#fff,#fff),linear-gradient(#fff,#fff),var(--stbg)!important;
+ background-size:22px 2px,2px 22px,22px 2px,2px 22px,22px 2px,2px 22px,22px 2px,2px 22px,cover!important;
+ background-position:8px 8px,8px 8px,calc(100% - 8px) 8px,calc(100% - 8px) 8px,8px calc(100% - 8px),8px calc(100% - 8px),calc(100% - 8px) calc(100% - 8px),calc(100% - 8px) calc(100% - 8px),center!important}

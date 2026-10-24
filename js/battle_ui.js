@@ -6,6 +6,9 @@
               cmds:{tid:{mons:{mid:{…}}, order, command, detail}}  (공개된 지시), order:[{slot,mid,name}] }
    ready = {tid:true}   비밀 지시 = om_secret(kind 'cmd', id = tid) */
 "use strict";
+/* 10-24 망령: 개인전 — 트레이너에 solo 가 켜져 있으면 같은 진영에 서 있어도 그 트레이너 혼자 한 편이다 (정보 비공유 · 서로 적).
+   팀 = solo 면 'solo:<트레이너 id>', 아니면 진영(left/right). x = 트레이너 id 문자열 · 포켓몬(tid) · 트레이너 객체(id) */
+window.OM_TEAM=function(b,x){b=b||{};const trs=b.trainers||{};let tid,side;if(typeof x==='string'){tid=x;side=(trs[x]||{}).side}else if(x){tid=x.tid!=null?x.tid:x.id;side=x.side}else return '';const t=trs[tid];if(t&&t.solo)return 'solo:'+tid;return side||(t&&t.side)||''};
 window.OM_BATTLE_UI=(()=>{
  /* 모바일(760px 이하) 배틀 상단 조작판: 기본은 접어서 TURN · 지금 단계 · 「턴 진행」만 보이고, 「펼치기」로 전부 연다 (css .bstat.fold). 펼친 상태는 브라우저마다 기억 */
  const BFOLD={open:(()=>{try{return localStorage.getItem('om_bfold')==='1'}catch(e){return false}})()};
@@ -27,6 +30,7 @@ window.OM_BATTLE_UI=(()=>{
  const objCat=name=>OBJ_CAT.find(c=>c[4].includes(name))||OBJ_CAT[4];
  const WALLS={리플렉터:'reflector',빛의장막:'lightscreen',얼음의장벽:'icewall',오로라베일:'aurora'};
  const slotOf=(side,area)=>side+'_'+area;
+ const TM=(x,b)=>window.OM_TEAM(b||ctx().b,x);const sameT=(x,y,b)=>{const p=TM(x,b);return !!p&&p===TM(y,b)};   /* 같은 편인가 (개인전 반영) */
  const lists=()=>((DB().const||{}).lists||{});
  const csv=s=>String(s||'').split(',').map(x=>x.trim()).filter(Boolean);
  const IMG=()=>((DB().img)||{state:{},field:{}});
@@ -144,7 +148,7 @@ window.OM_BATTLE_UI=(()=>{
   const pick=g.oneOf?g.oneOf[Math.floor(Math.random()*g.oneOf.length)]:null;const pk=pick?' → '+FX().unparse(pick).join(' ').replace(/^상태 /,'').replace(/ target.*$/,''):'';
   if(n>=10)return {g,ok:true,ops:pick||g.ops,line:`${what}${pk}${g.sec?' — 확정':''}`};
   const r=1+Math.floor(Math.random()*10);const ok=r<=n;return {g,ok,ops:pick||g.ops,line:`${what} — 굴림 ${r}/${n} ${ok?'발동!'+pk:'불발'}`}}
- const tgtFor=(atk,def)=>op=>op.tgt!=='target'?op:Object.assign({},op,{tgt:def.id===atk.id?'self':def.side!==atk.side?'enemy1':'ally1'});
+ const tgtFor=(atk,def)=>op=>op.tgt!=='target'?op:Object.assign({},op,{tgt:def.id===atk.id?'self':!sameT(def,atk)?'enemy1':'ally1'});
  /* 변칙 위력 기술 (맵툴 get_special_move_power 를 옮김): 이름 → (def)=>{pow, note, fixed} */
  const SPMAP={헤비봄버:'heavy',머슬봄버:'heavy',때려부수기:'heavy',메테오퍼니셔:'heavy',아쿠아스탬프:'heavy',록스탬프:'heavy',히트스탬프:'heavy',질주:'ball',마하비행:'ball',앞지르기:'ball',일렉트릭볼:'ball',드래곤에너지:'spout',해수스파우팅:'spout',분화:'spout',기사회생:'flail',바둥바둥:'flail',플레임블래스트:'flail',스완송:'flail',하드프레스:'press',묵사발:'crush',쥐어짜기:'crush',안다리걸기:'grass',풀묶기:'grass',자이로볼:'gyro',매그니튜드:'mag',엘렉키슬롯:'mag',프레젠트:'present',사이코웨이브:'psywave'};
  function specialPowFor(name,atk){const k=SPMAP[String(name||'').trim()];if(!k)return null;
@@ -185,7 +189,7 @@ window.OM_BATTLE_UI=(()=>{
  function benchRow(c,side,ready){const b=c.b;const ids=((b.sides||{})[side]||{}).trainers||[];const trs=b.trainers||{};const seats=c.ST.state.seats||{};
   const feB=window.OM_STAGE_UI&&(c.mgr?ids.length:ids.some(t=>ownT(c,t)))?`<button class="btn xs" data-act="stagemgr" data-side="${side}" title="${c.mgr?'트레이너 · 포켓몬이 각자 가진':'내 트레이너 · 포켓몬의'} 필드 · 스타디움 · 이계를 펼친다">필드 전개</button>`:'';
   const items=ids.map((tid,ti)=>{const t=trs[tid]||{name:'?',ranks:{}};const o=seats[tid];const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid).sort((x,y)=>(x.slot||0)-(y.slot||0));const cmdDone=!!(b.cmds||{})[tid];const rd=!!ready[tid];
-   return `<div class="tblock"><div class="trainer"><div class="tpic" style="${t.image?`background-image:url('${cssu(t.image)}')`:''}"></div><div class="tinfo"><div class="tn">${esc(t.name)}${tid===c.seat?' <span class="tag me">ME</span>':ownT(c,tid)?' <span class="tag me co" title="함께 지시하는 트레이너">함께</span>':''}${rd?' <span class="tag ok">READY</span>':cmdDone?' <span class="tag">공개됨</span>':''}</div>
+   return `<div class="tblock"><div class="trainer"><div class="tpic" style="${t.image?`background-image:url('${cssu(t.image)}')`:''}"></div><div class="tinfo"><div class="tn">${esc(t.name)}${tid===c.seat?' <span class="tag me">ME</span>':ownT(c,tid)?' <span class="tag me co" title="함께 지시하는 트레이너">함께</span>':''}${rd?' <span class="tag ok">READY</span>':cmdDone?' <span class="tag">공개됨</span>':''}${soloTag(c,tid,ids)}</div>
      <div class="rk4">${['지시','육성','통솔','능력'].map(k=>`<span><small>${k}</small><b>${esc(t.ranks[k]||'-')}</b></span>`).join('')}</div>${o||coOf(c,tid).length?`<div class="tr">${o?`<span class="who">${esc(o.name)}</span>`:''}${coHtml(c,tid)}</div>`:''}</div>
      </div>${(()=>{const U=uniqList(t);const own=c.gm||tid===c.seat;return U.length?`<div class="tuq">${U.map(x=>`<span class="pot sp uq" title="${esc(String(x.p.eff||'').replace(/<br\s*\/?>/g,' ').slice(0,300))}"><em>고유</em>${esc(x.p.name)}${x.max!=null?' '+pips(x.left,x.max):''}${own?(x.left!==null&&x.left<=0?'<small class="dim">다 씀</small>':`<button class="btn xs pri" data-act="ufire" data-tid="${tid}" data-pot="${esc(x.p.name)}" title="고유 포텐셜 발동 — 대상 포켓몬을 고른다">발동</button>`):''}</span>`).join('')}</div>`:''})()}<div class="tbtns">${((c.gm||ownT(c,tid))&&mons.some(m=>m.entry))?`<button class="btn xs" data-act="fire" data-tid="${tid}" title="지령·명령 · 고유·전용 포텐셜 발동 창">포텐셜 발동</button>`:''}${(c.gm||ownT(c,tid))?`<button class="btn xs ghost" data-act="dexmgr" data-tid="${tid}" title="도감 · 데이터 해석">해석</button><button class="btn xs ghost ${myosuGlow(c,tid)?'pri':''}" data-act="skillp" data-tid="${tid}" title="「타임」 — 상대가 준비를 마치면 지시의 꼴(교대/기술)을 엿본다">묘수</button>`:''}${(c.gm||ownT(c,tid))?`<button class="btn xs ghost" data-act="orders" data-tid="${tid}" title="지령·명령 · 고유·전용 포텐셜 횟수 설정 · 빼기">설정</button>`:''}</div>
     <div class="bench">${mons.map(m=>benchCard(c,m)).join('')||'<div class="dim small">포켓몬 없음</div>'}</div></div>`}).join('');
@@ -264,14 +268,14 @@ window.OM_BATTLE_UI=(()=>{
  function stateChips(m){const st=m.states||{};const db=(DB().states||{}).st||{};return Object.keys(st).filter(k=>st[k]).map(k=>{const im=simg(k);return `<span class="stc ${db[k]&&db[k].abn?'abn':''}" title="${esc((db[k]&&db[k].desc||[]).join(' '))}">${im?`<img src="${esc(im)}" alt="">`:''}${esc(db[k]?db[k].ko:k)}${+st[k]>1&&+st[k]<1000?' '+st[k]:''}</span>`}).join('')}
  function bigCard(c,m,slot){const full=canEdit(c,m);const cmd=cmdOf(c.b,m);
   return `<div class="mon big ${m.hp.cur<=0?'fainted':''}" data-mon="${m.id}"><div class="pic" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div>
-   <div class="minfo"><div class="nm"><span class="nmt">${esc(m.name)}</span><span class="lv">Lv.${m.lv}</span><span class="nmb">${((!full&&c.seat)||c.gm)?`<button class="btn xs ghost dexb" data-act="dex" data-mid="${m.id}" title="도감 정보 · 해석">도감</button>`:''}${full&&mode(c.b)>=2&&m.hp.cur>0?`<button class="btn xs ghost dexb" data-act="areaswap" data-mid="${m.id}" title="같은 편 다른 에리어와 자리 바꾸기 (사이드체인지 등)">⇄ 에리어</button>`:''}${(!full&&c.seat&&(c.b.trainers[c.seat]||{}).side!==m.side&&(+c.b.phase||0)===0)||c.gm&&!full?`<button class="btn xs ghost dexb" data-act="time" data-mid="${m.id}" title="「타임」 — 상대 지시의 꼴 엿보기">타임</button>`:''}</span></div><div class="ty">${tyHtml(c,m)}${m.teraActive?`<span class="rk up">테라 ${esc(m.tera)}</span>`:''}</div>
+   <div class="minfo"><div class="nm"><span class="nmt">${esc(m.name)}</span><span class="lv">Lv.${m.lv}</span><span class="nmb">${((!full&&c.seat)||c.gm)?`<button class="btn xs ghost dexb" data-act="dex" data-mid="${m.id}" title="도감 정보 · 해석">도감</button>`:''}${full&&mode(c.b)>=2&&m.hp.cur>0?`<button class="btn xs ghost dexb" data-act="areaswap" data-mid="${m.id}" title="같은 편 다른 에리어와 자리 바꾸기 (사이드체인지 등)">⇄ 에리어</button>`:''}${(!full&&c.seat&&!sameT(c.seat,m,c.b)&&(+c.b.phase||0)===0)||c.gm&&!full?`<button class="btn xs ghost dexb" data-act="time" data-mid="${m.id}" title="「타임」 — 상대 지시의 꼴 엿보기">타임</button>`:''}</span></div><div class="ty">${tyHtml(c,m)}${m.teraActive?`<span class="rk up">테라 ${esc(m.tera)}</span>`:''}</div>
    ${hpBar(m,full)}<div class="rks">${rankChips(m)}${stateChips(m)}${flagChips(m)}${FX()?FX().chips(m).map(ch=>`<span class="rk fxc ${full?'rm':''}" title="${esc(ch.title)}${full?' — 눌러서 해제':''}" ${full?`data-act="fxoff" data-mid="${m.id}" data-fx="${esc(ch.id)}" data-nm="${esc(ch.name)}"`:''}>${esc(ch.t)}${full?' ✕':''}</span>`).join(''):''}</div>
    ${cmd?`<div class="cmdcard">${cmd}</div>`:(((+c.b.phase||0)>=2&&full&&m.hp.cur>0&&turnReached(c.b,m))?`<div class="revealrow"><button class="btn sm pri" data-act="revealmon" data-tid="${m.tid}" data-mid="${m.id}">지시 공개 (에리어 ${String(m.entry).toUpperCase()})</button></div>`:'')}
    ${potLine(c,m)}
    ${m.lastHit&&full?`<div class="incoming"><b>피해 판정 받음</b> ${esc(m.lastHit.from)}의 「${esc(m.lastHit.move)}」 ${m.lastHit.total}×${m.lastHit.eff}${m.lastHit.crit?' 급소':''} ≈ ${m.lastHit.expect} <button class="btn xs pri" data-act="hp" data-mid="${m.id}">피해 적용</button></div>`:''}
    <div class="mbtns">${full?`<button class="btn xs" data-act="attack" data-mid="${m.id}">공격</button><button class="btn xs ${m.lastHit?'pri':''}" data-act="hp" data-mid="${m.id}">HP</button><button class="btn xs mmore" type="button" data-mmore aria-label="버튼 더 보기" aria-expanded="false">⋯</button><button class="btn xs mx" data-act="pots" data-mid="${m.id}" title="포텐셜 목록 · 출력 · 발동 · 해제">포텐셜</button><button class="btn xs mx" data-act="edit" data-mid="${m.id}">랭크·상태</button>${(formsOf(m).length||m.form0)?`<button class="btn xs mx ${m.form0?'pri':''}" data-act="form" data-mid="${m.id}" title="폼체인지 · 메가진화 · 원래대로">${m.form0?'✦ '+esc(((m.forms||[])[m.formIdx]||{}).kind||'폼'):'✦ 폼'}</button>`:''}<span class="exg"><button class="btn xs ghost mx exit1" data-act="exit" data-mid="${m.id}" title="바로 퇴장 (랭크·배율·효과 정리)">퇴장</button><button class="btn xs ghost mx exdn" data-act="exitx" data-mid="${m.id}" title="퇴장(특수) — 배턴터치 퇴장 · 강제 교대">(특수)</button></span>`:''}</div></div></div>`}
  /* 비공개: 아직 한 번도 나오지 않은 상대 포켓몬은 이름·그림·타입을 숨긴다 (맵툴 「비공개」 토큰) */
- function secret(c,m){if((c.gm&&!c.fair)||!m)return false;if(m.seen||m.entry)return false;if(c.gm){if(canEdit(c,m))return false;const v=gmEyes(c,m);const t=(c.b.trainers||{})[v];return !t||t.side!==m.side}const my=(c.b.trainers||{})[myTrainers(c)[0]];return !my||my.side!==m.side}
+ function secret(c,m){if((c.gm&&!c.fair)||!m)return false;if(m.seen||m.entry)return false;if(c.gm){if(canEdit(c,m))return false;const v=gmEyes(c,m);const t=(c.b.trainers||{})[v];return !t||!sameT(v,m,c.b)}const mt=myTrainers(c)[0];const my=(c.b.trainers||{})[mt];return !my||!sameT(mt,m,c.b)}
  function benchCard(c,m){const full=canEdit(c,m);const out=!!m.entry;const sec=secret(c,m);
   if(sec)return `<div class="mon small secret"><div class="btop"><div class="pic"></div><div class="nm">비공개</div></div><div class="hpbar"><i style="width:100%"></i></div><div class="hpnum">?</div></div>`;
   return `<div class="mon small ${m.hp.cur<=0?'fainted':''} ${out?'onfield':''}" data-mon="${m.id}">
@@ -304,7 +308,7 @@ window.OM_BATTLE_UI=(()=>{
  /* 해석: 상대 포켓몬의 타입은 「타입」 해석(또는 전체)부터, 포텐셜 칸은 전체 해석부터 보인다 (도감 scope 기준 — GM · 주인 · 같은 편은 늘 보인다) */
  /* PL 권한(공평 모드) 중의 GM 은 플레이어 몫 포켓몬을 자기 트레이너 눈으로 본다 — 같은 편이거나, 자기 트레이너의 도감으로 해석한 만큼만 */
  function plView(c){return c.gm&&c.fair}
- function gmEyes(c,m){const trs=c.b.trainers||{};const mine=myTrainers(c).filter(t=>trs[t]);const al=mine.find(t=>trs[t].side&&trs[t].side===m.side);return al||mine.find(t=>trs[t].side!==m.side)||mine[0]||''}
+ function gmEyes(c,m){const trs=c.b.trainers||{};const mine=myTrainers(c).filter(t=>trs[t]);const al=mine.find(t=>trs[t].side&&sameT(t,m,c.b));return al||mine.find(t=>!sameT(t,m,c.b))||mine[0]||''}
  function dexSees(c,m,part){if((c.gm&&!c.fair)||canEdit(c,m))return true;const D=window.OM_DEX_UI;if(!D||!D.scope)return !c.gm;const sc=c.gm?(()=>{const v=gmEyes(c,m);return v?D.scope(m.id,v,true):[]})():D.scope(m.id,c.seat||'');return sc==='all'||(part!=='all'&&Array.isArray(sc)&&sc.includes(part))}
  function tyHtml(c,m){return dexSees(c,m,'type')?m.types.filter(t=>t!=='-').map(typeChip).join(''):'<span class="tyq" title="타입 미해석 — 도감으로 해석하면 보인다">타입 ?</span>'}
  function potLine(c,m){const full=canEdit(c,m);if(!full&&!dexSees(c,m,'all'))return '';const L=potList(m).filter(p=>full||!isExcl(m,p));   /* 전용 포텐셜은 주인(과 GM)만 본다 */const u=m.potUses||{};const Lnames=new Set(L.map(p=>p.name));
@@ -353,9 +357,11 @@ window.OM_BATTLE_UI=(()=>{
  function tile(m,side,area,on,cls,extra){if(!m)return `<div class="ttile none ${cls||''}"><span class="tn"><small>${SIDE_KO[side]} ${area.toUpperCase()} 빈 자리</small></span></div>`;const pct=Math.max(0,Math.min(100,(m.hp.cur>0?Math.max(1,Math.round(m.hp.cur/m.hp.max*100)):0)));
   return `<div class="ttile ${cls||''} ${on?'on':''}" ${extra||''}><div class="ti" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div><div class="tn"><b>${esc(m.name)}</b><small>${SIDE_KO[side]} ${area.toUpperCase()} · ${tyHtml(ctx(),m)}</small><div class="hpb ${pct<=25?'low':pct<=50?'mid':''}"><i style="width:${pct}%"></i></div></div><span class="tk">${on?'✓':''}</span></div>`}
  /* 대상판: 열 = 좌측/우측, 행 = 에리어 (무대와 같은 배치). 아군 열은 초록, 상대 열은 빨강 */
- function board(b,mySide,isOn,attr,allowSelf){const ent={left:entered(b,'left'),right:entered(b,'right')};const cls=s=>s===mySide?'al':'en';
-  const head=SIDES.map(s=>`<div class="bl ${cls(s)}">${SIDE_KO[s]}${s===mySide?' (아군)':' (상대)'}</div>`).join('');
-  const rows=AREAS.slice(0,mode(b)).map(a=>SIDES.map(s=>{const m=ent[s][a];const slot=slotOf(s,a);return tile(m,s,a,m&&isOn(slot,m),cls(s),m?attr(slot,m):'')}).join('')).join('');
+ function board(b,mySide,isOn,attr,allowSelf,me){const ent={left:entered(b,'left'),right:entered(b,'right')};const cls=s=>s===mySide?'al':'en';
+  /* 개인전: 같은 진영이라도 다른 편이면 빨강 (me = 지시하는/공격하는 포켓몬) */
+  const tc=(m,s)=>m&&me?(sameT(m,me,b)?'al':'en'):cls(s);const mixed=!!me&&((((b.sides||{})[mySide]||{}).trainers)||[]).some(t=>((b.trainers||{})[t]||{}).solo);
+  const head=SIDES.map(s=>`<div class="bl ${cls(s)}">${SIDE_KO[s]}${s===mySide?(mixed?' (내 쪽 · 개인전)':' (아군)'):' (상대)'}</div>`).join('');
+  const rows=AREAS.slice(0,mode(b)).map(a=>SIDES.map(s=>{const m=ent[s][a];const slot=slotOf(s,a);return tile(m,s,a,m&&isOn(slot,m),tc(m,s),m?attr(slot,m):'')}).join('')).join('');
   return `<div class="board grid">${head}${rows}</div>`}
  /* 선행 입력에 묻은 추격(맵툴 command_pursuit): 선행 입력한 포텐셜·지령·명령·고유의 자동화에 「추격」이 있거나 글에 따라가때리기 부여가 적혀 있으면.
     「추격 무시」면 pimm (이번 턴 교대해도 상대의 추격을 받지 않는다). 손으로 켠 추격(pman)도 함께. 공개되지 않고 행동 순서 때 드러난다 */
@@ -386,7 +392,7 @@ window.OM_BATTLE_UI=(()=>{
      <div class="sec">행동 <span class="seg"><span class="${!isSwitch?'on':''}" data-seg="move">기술</span><span class="${isSwitch?'on':''}" data-seg="switch">교대</span></span><span class="note">에리어 ${m.entry.toUpperCase()}</span></div>
      ${isSwitch?(()=>{const tw=trapWarn(m);return tw?`<div class="small" style="margin:4px 0;color:${tw.free?'var(--ok)':'var(--yel2)'}">${tw.free?`교대 제한(${esc(tw.hit.join('·'))})이 걸려 있지만 ${esc(tw.free)}로 교대할 수 있다`:`⚠ ${esc(tw.hit.join('·'))} 때문에 교대할 수 없다${tw.pot?` — 「${esc(tw.pot)}」를 쓰면 교대할 수 있다`:''}`}</div>`:''})():''}${isSwitch?`<div class="pg">${bench.length?bench.map(bm=>`<div class="pc ${x.switch===bm.id?'on':''}" data-sw="${bm.id}"><div class="pic" style="${bm.image?`background-image:url('${cssu(bm.image)}')`:''}"></div><div><b>${esc(bm.name)}</b><div class="small dim">${bm.hp.cur}/${bm.hp.max}</div></div></div>`).join(''):'<div class="dim small">교대할 포켓몬이 없다</div>'}</div>`
      :`${(m.states||{}).Oblivion?'<div class="small" style="color:var(--yel2);margin:2px 0 4px">「망각」 상태 — 「발버둥」만 내보낼 수 있다</div>':''}<div class="mvg">${MVS(m).map((mv,i)=>moveCard(mv,i,String(x.move)===String(i),`data-mv="${i}"`)).join('')}</div>${mvSel?`<div class="mef">${esc(mvSel.eff||'')}${mvSel.tag&&mvSel.tag!=='-'?` <span class="dim">[${esc(mvSel.tag)}]</span>`:''}</div>`:''}
-      ${mvSel?`<div class="sec">대상 <span class="note">범위 ${esc(mvSel.range)} — 누르면 바꿀 수 있다</span></div>${(m.states||{}).Thrash?`<div class="small" style="color:var(--yel2);margin:2px 0 4px">「난동부리기」 — ${x.tman?'손으로 고른 대상으로 때린다':'공격할 때 적진에서 랜덤으로 고른다 · 대상을 누르면 손으로 정한다'}</div>`:''}${board(b,m.side,(slot)=>x.targets.includes(slot),(slot)=>`data-tgt="${slot}"`)}`:''}${(()=>{const pp=prePursuit(t,m,x,cur.upots);const auto=isPursuit(mvSel,m);return `<div class="row small purrow" style="margin-top:6px;gap:8px;flex-wrap:wrap"><span class="oc ${x.pman||auto?'mine':''}" data-pman title="노린 대상이 교대하면 교대 전에 먼저 때린다 (맵툴 「추격」 칸)"><b>추격</b><small>${auto?'기술에 있음':x.pman?'켬':'끔'}</small></span>${pp.pur&&pp.pur!=='손으로 선행'?`<span class="tag" style="color:var(--yel2)">선행 『${esc(pp.pur)}』에 추격이 묻어 있다</span>`:''}${pp.pimm?`<span class="tag" style="color:var(--ok)">선행 『${esc(pp.pimm)}』 — 상대 추격 무시</span>`:''}<span class="dim">공개되지 않고, 걸리면 행동 순서 때 드러난다</span></div>`})()}`}
+      ${mvSel?`<div class="sec">대상 <span class="note">범위 ${esc(mvSel.range)} — 누르면 바꿀 수 있다</span></div>${(m.states||{}).Thrash?`<div class="small" style="color:var(--yel2);margin:2px 0 4px">「난동부리기」 — ${x.tman?'손으로 고른 대상으로 때린다':'공격할 때 적진에서 랜덤으로 고른다 · 대상을 누르면 손으로 정한다'}</div>`:''}${board(b,m.side,(slot)=>x.targets.includes(slot),(slot)=>`data-tgt="${slot}"`,false,m)}`:''}${(()=>{const pp=prePursuit(t,m,x,cur.upots);const auto=isPursuit(mvSel,m);return `<div class="row small purrow" style="margin-top:6px;gap:8px;flex-wrap:wrap"><span class="oc ${x.pman||auto?'mine':''}" data-pman title="노린 대상이 교대하면 교대 전에 먼저 때린다 (맵툴 「추격」 칸)"><b>추격</b><small>${auto?'기술에 있음':x.pman?'켬':'끔'}</small></span>${pp.pur&&pp.pur!=='손으로 선행'?`<span class="tag" style="color:var(--yel2)">선행 『${esc(pp.pur)}』에 추격이 묻어 있다</span>`:''}${pp.pimm?`<span class="tag" style="color:var(--ok)">선행 『${esc(pp.pimm)}』 — 상대 추격 무시</span>`:''}<span class="dim">공개되지 않고, 걸리면 행동 순서 때 드러난다</span></div>`})()}`}
      <details class="cfold" data-fold="${tid}:sp" ${UIC.fold[tid+':sp']?'open':''}><summary>전용 포텐셜 <span class="tag ext">${esc(m.name)}</span><span class="fsum">${fsum(x.pots.filter(n=>specialPots(m).some(s=>s.p.name===n)))}</span></summary><div class="note small">선행 입력 — 턴 중 「포텐셜 발동」에서 「선행 발동」</div><div class="pool">${potDecl(c,m,x,'sp')}</div></details>
      <details class="cfold" data-fold="${tid}:ord" ${UIC.fold[tid+':ord']?'open':''}><summary>명령 <small class="dim">4식</small><span class="fsum">${fsum(x.order?[OO().orderName(t,x.order)]:[])}</span></summary>${noOrdWhy(m)?`<div class="small noordw">⚠ 4식 6령 불가 — ${esc(noOrdWhy(m))}</div>`:''}<div class="note small">에리어 ${m.entry.toUpperCase()} ${esc(m.name)} 에 선행 입력 — 턴 중 「포텐셜 발동」에서 발동</div><div class="pool">${OKEYS.map((k,i)=>oNames[i]?`<div class="oc ${x.order===k?'mine':''} ${(cnt['order_'+k]??0)<=0?'dis':''}" data-ord="${k}"><b>${esc(oNames[i])}</b>${OO().ownerOf(t,k)?`<i class="oown">${esc(OO().ownerOf(t,k))}</i>`:''}<small>남은 ${cnt['order_'+k]??0}</small></div>`:'').join('')||'<span class="dim small">쓸 수 있는 명령이 없다</span>'}</div></details>
      <details class="cfold" data-fold="${tid}:cmd" ${UIC.fold[tid+':cmd']?'open':''}><summary>지령 <small class="dim">6령</small><span class="fsum">${fsum(x.command?[OO().commandName(t,x.command)]:[])}</span></summary>${noOrdWhy(m)?`<div class="small noordw">⚠ 4식 6령 불가 — ${esc(noOrdWhy(m))}</div>`:''}<div class="pool">${CKEYS.map((k,i)=>cNames[i]?`<div class="oc ${x.command===k?'mine':''} ${(cnt['command_'+k]??0)<=0?'dis':''}" data-cmd="${k}"><b>${esc(cNames[i])}</b>${OO().ownerOf(t,k)?`<i class="oown">${esc(OO().ownerOf(t,k))}</i>`:''}<small>남은 ${cnt['command_'+k]??0}</small></div>`:'').join('')||'<span class="dim small">쓸 수 있는 지령이 없다</span>'}</div></details>
@@ -423,8 +429,8 @@ window.OM_BATTLE_UI=(()=>{
    blk.querySelectorAll('[data-f]').forEach(el=>{const h=()=>{const f=el.dataset.f;const xm=cur.mons[el.dataset.mid]||x;if(f==='prio')xm.prio[el.dataset.slot]=el.value;if(f==='ochg')xm.ochg[el.dataset.slot]=el.value;if(f==='detail')cur.detail=el.value};el.addEventListener('input',h);el.addEventListener('change',h)})})}
  function defaultTargets(b,mid,moveIdx){const m=b.mons[mid];if(!m||moveIdx===''||moveIdx==='switch')return [];const mv=MVS(m)[+moveIdx];if(!mv)return [];
   const slots=allEntered(b);const my=slots.find(s=>s.mon.id===mid);const r=String(mv.range||'');
-  const enemies=slots.filter(s=>s.side!==m.side),allies=slots.filter(s=>s.side===m.side&&s.mon.id!==mid);
-  if(r==='자신')return my?[my.slot]:[];if(r==='상대 전체'||r==='적진')return enemies.map(s=>s.slot);if(r==='아군 전체'||r==='자진')return slots.filter(s=>s.side===m.side).map(s=>s.slot);
+  const enemies=slots.filter(s=>!sameT(s.mon,m,b)),allies=slots.filter(s=>sameT(s.mon,m,b)&&s.mon.id!==mid);
+  if(r==='자신')return my?[my.slot]:[];if(r==='상대 전체'||r==='적진')return enemies.map(s=>s.slot);if(r==='아군 전체'||r==='자진')return slots.filter(s=>sameT(s.mon,m,b)).map(s=>s.slot);
   if(r==='자신 이외')return slots.filter(s=>s.mon.id!==mid).map(s=>s.slot);if(r==='전체'||r==='필드 전체')return slots.map(s=>s.slot);
   if(r==='아군')return allies.map(s=>s.slot).slice(0,1);
   if(r==='상대 2체')return enemies.map(s=>s.slot).slice(0,2);
@@ -515,6 +521,7 @@ window.OM_BATTLE_UI=(()=>{
    case 'stagemgr':return window.OM_STAGE_UI&&window.OM_STAGE_UI.open(d.side||'');
    case 'orders':return openOrders(d.tid);
    case 'co':return openCo(d.tid);
+   case 'solo':return toggleSolo(d.tid);
    case 'dexmgr':{if(!(c.gm||ownT(c,d.tid)))return;return window.OM_DEX_UI&&window.OM_DEX_UI.openMgr(d.tid)}
    case 'skillp':{if(!(c.mgr||ownT(c,d.tid)))return;return openMyosu(d.tid)}
    case 'skillck':{if(!(c.mgr||ownT(c,d.tid)))return;return window.OM_SKILL_UI&&window.OM_SKILL_UI.openPlayer(d.tid)}
@@ -701,6 +708,11 @@ window.OM_BATTLE_UI=(()=>{
  const CSEEN={};
  function coWatch(){const c=ctx();if(!c.gm&&c.role!=='seat')return;const me=c.gm?'gm':c.seat;for(const tid of myTrainers(c)){if(!coOf(c,tid).length)continue;const s=((c.ST.state.pub||{})[tid]||{}).csav;
   if(CSEEN[tid]==null){CSEEN[tid]=(s&&+s.at)||0;continue}if(s&&s.at>CSEEN[tid]){CSEEN[tid]=s.at;if(s.by!==me)coPull(tid,String(s.name||s.by||'').slice(0,30)||'함께 지시하는 사람')}}}
+ /* 10-24 망령: 개인전 켜기 · 끄기 — GM 과 그 트레이너 주인. 같은 진영에 둘 이상 있을 때만 의미가 있다 */
+ function soloTag(c,tid,ids){const t=(c.b.trainers||{})[tid]||{};const can=(c.gm||ownT(c,tid))&&(ids||[]).length>1&&(t.solo||(ids||[]).indexOf(tid)>0);   /* 진영 맨 앞 트레이너는 기준이라 버튼 없음 (뒤에 선 트레이너를 개인전으로) */if(!t.solo&&!can)return '';
+  return can?` <button class="tag solo ${t.solo?'on':''}" data-act="solo" data-tid="${tid}" title="${t.solo?'개인전 — 같은 진영의 다른 트레이너와 정보를 나누지 않고 서로 적으로 싸운다. 누르면 같은 팀으로':'같은 팀 — 누르면 개인전(정보 비공유 · 서로 적)으로'}">${t.solo?'⚔ 개인전':'같은 팀'}</button>`:' <span class="tag solo on" title="개인전 — 같은 진영이어도 한 편이 아니다">⚔ 개인전</span>'}
+ async function toggleSolo(tid){const c=ctx();const t=(c.b.trainers||{})[tid];if(!t||!(c.gm||ownT(c,tid)))return;const on=!t.solo;
+  if(await A().set(['battle','trainers',tid,'solo'],on?true:null))A().sysLog(`${t.name} — ${on?'개인전 (같은 진영과도 정보를 나누지 않고 서로 적)':'같은 팀으로 (진영과 정보 공유)'}`,'battle')}
  /* 함께 지시할 좌석 고르기 — 트레이너 주인과 GM 만. 트레이너 시트에 적는다 */
  function openCo(tid){const c=ctx();if(!c.gm&&tid!==c.seat)return;const R=((c.ST.state.roster||{}).trainers||{})[tid];if(!R)return A().toast('시트에 있는 트레이너만 함께 지시할 수 있다');
   const seats=Object.entries(c.ST.state.seats||{}).filter(([k])=>k!==tid);const on=new Set(coOf(c,tid));
@@ -845,7 +857,7 @@ window.OM_BATTLE_UI=(()=>{
  /* 지령·명령 효과 (Lib:readymade 의 지령 레디메이드와 같은 내용). 랭크는 임시(턴 종료 해제). 플래그는 flags 에 두고 공격 창이 읽는다 */
  const STATWORD={공격:'attack',방어:'defense',특공:'specialattack',특방:'specialdefense',민첩:'speed',저격:'accuracy',회피:'evasion',스피드:'speed',명중:'accuracy'};
  function tempRank(m,k,d){m.rank=m.rank||{};m.tempRank=m.tempRank||{};const lim=k==='critical'?4:6;const b0=+m.rank[k]||0;const a=Math.max(-lim,Math.min(lim,b0+d));m.rank[k]=a;m.tempRank[k]=(+m.tempRank[k]||0)+(a-b0)}   /* 한계(±6)에 막힌 만큼은 기록하지 않는다 — 턴 종료 해제 때 랭크가 깎이지 않게 */
- function applyOrder(mons,f,t,name,targetId){const out=[];const tgt=mons[targetId];const allies=Object.values(mons).filter(m=>m.side===t.side&&m.entry&&m.hp.cur>0);const enemies=Object.values(mons).filter(m=>m.side!==t.side&&m.entry&&m.hp.cur>0);
+ function applyOrder(mons,f,t,name,targetId){const out=[];const tgt=mons[targetId];const allies=Object.values(mons).filter(m=>sameT(m,t)&&m.entry&&m.hp.cur>0);const enemies=Object.values(mons).filter(m=>!sameT(m,t)&&m.entry&&m.hp.cur>0);
   const n=String(name||'');let m;
   if((m=n.match(/^(숙달|전개|방해)?(공격|방어|특공|특방|민첩|회복|저격|회피)지령$/))){const pre=m[1]||'',st=m[2];
    if(st==='회복'){if(pre==='방해'){for(const e of enemies){e.states=e.states||{};if(!e.states.HealBlock)e.states.HealBlock=1}out.push(`상대 전체 「회복봉인」 (턴 종료까지)${enemies.length?'':' — 대상 없음'}`);return out}if(tgt){const v=Math.max(1,Math.floor(tgt.hp.max/4));tgt.hp.cur=Math.min(tgt.hp.max,tgt.hp.cur+v);out.push(`${tgt.name} HP +${v}`)}return out}
@@ -979,14 +991,14 @@ window.OM_BATTLE_UI=(()=>{
  /* ---------- 묘수 = 「타임」 (맵툴 command_expert): 지시 준비 페이즈에, 상대 트레이너가 준비를 마치면 상대 포켓몬 하나의 지시 꼴(교대/기술)을 본다.
      횟수는 배틀마다 지시 랭크로(A 1회 · AA 이상 2회) + 포켓몬의 timeAlly/timeEnemy 보정. 한 턴에 한 대상만(다시 보기는 자유). 양쪽이 같은 턴에 쓰면 둘 다 그 턴은 더 못 쓴다. 쓰고 나면 READY 여도 지시를 고칠 수 있다 ---------- */
  function timeOf(t,turn){const x=(t&&t.time)||{};const same=(+x.turn||0)===turn;return {used:+x.used||0,forced:+x.forced||0,sw:same?(+x.sw||0):0,target:same?(x.target||''):''}}
- function timeLimit(c,tid){const b=c.b;const t=(b.trainers||{})[tid];if(!t)return 0;let mod=0;for(const m of Object.values(b.mons||{})){if(!m.entry)continue;if(m.side===t.side)mod+=+(m.timeAlly||0);else mod+=+(m.timeEnemy||0)}return Math.max(0,timeCount(t)+mod)}
- function enemyTids(c,tid){const b=c.b;const t=(b.trainers||{})[tid]||{};return Object.keys(b.trainers||{}).filter(k=>(b.trainers[k]||{}).side&&b.trainers[k].side!==t.side)}
+ function timeLimit(c,tid){const b=c.b;const t=(b.trainers||{})[tid];if(!t)return 0;let mod=0;for(const m of Object.values(b.mons||{})){if(!m.entry)continue;if(sameT(m,tid,b))mod+=+(m.timeAlly||0);else mod+=+(m.timeEnemy||0)}return Math.max(0,timeCount(t)+mod)}
+ function enemyTids(c,tid){const b=c.b;const t=(b.trainers||{})[tid]||{};return Object.keys(b.trainers||{}).filter(k=>k!==tid&&(b.trainers[k]||{}).side&&!sameT(k,tid,b))}
  function timeBlocked(c,tid){const b=c.b;const turn=+b.turn||0;const my=timeOf(b.trainers[tid],turn);if(my.sw===2)return true;return my.sw>=1&&enemyTids(c,tid).some(e=>timeOf(b.trainers[e],turn).sw>=1)}
  function myosuGlow(c,tid){const b=c.b;if((+b.phase||0)!==0)return false;const t=b.trainers[tid];if(!t)return false;const my=timeOf(t,+b.turn||0);if(timeBlocked(c,tid))return false;if(my.sw===0&&my.used>=timeLimit(c,tid))return false;const rd=c.ST.state.ready||{};return enemyTids(c,tid).some(e=>rd[e])}
  const SHAPE_KO={switch:'교대하려고 한다…',move:'기술을 내보내려고 한다…',none:'움직일 기색이 없다…'};
  function openMyosu(tid,pick){const c=ctx();const b=c.b;const t=(b.trainers||{})[tid];if(!t)return;if(!(c.mgr||ownT(c,tid)))return;
   const turn=+b.turn||0;const phase=+b.phase||0;const my=timeOf(t,turn);const lim=timeLimit(c,tid);const rd=c.ST.state.ready||{};const blocked=timeBlocked(c,tid);
-  const enemies=Object.values(b.mons||{}).filter(m=>m.entry&&m.hp.cur>0&&m.side!==t.side).sort((x,y)=>String(x.entry).localeCompare(String(y.entry)));
+  const enemies=Object.values(b.mons||{}).filter(m=>m.entry&&m.hp.cur>0&&!sameT(m,tid,b)).sort((x,y)=>String(x.entry).localeCompare(String(y.entry)));
   const left=Math.max(0,lim-my.used);
   const why=m=>{if(phase!==0)return '지시 준비 페이즈에만';if(blocked)return '이번 턴은 더 못 쓴다';if(!rd[m.tid])return '상대가 아직 준비 전';if(my.sw===1&&my.target&&my.target!==m.id)return '이번 턴은 「'+(monName(b,my.target)||'?')+'」만';if(my.sw===0&&my.used>=lim)return lim?'횟수를 다 썼다':'지시 '+(t.ranks['지시']||'-')+' 는 「타임」 0회';return ''};
   const md=A().openModal(`<div class="mhead"><h2>묘수 · 「타임」 <span class="small dim">${esc(t.name)}</span></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
@@ -1375,7 +1387,7 @@ window.OM_BATTLE_UI=(()=>{
  /* 10-24 망령: 지시 급소 보정 (고정식, 오레마스 룰) — 상대 · 야생과 상관없이 공격 쪽 트레이너 「지시」 랭크값 − 3 (A +1 · AA +2 · AAA +3 · S +4). 야생 포켓몬(트레이너 없음)은 0.
     랭크값 E0 · D1 · C2 · B3 · A4 · AA5 · AAA6 · S7, 필드 위 포켓몬의 orderAlly/orderEnemy 를 더한다 (get_status_trainer) */
  function orderCrit(atk,def){const b=ctx().b;const T=b.trainers||{};const ta=T[atk.tid];if(!ta||!def)return {v:0};
-  const lv=t=>{let v=S().RANKS.indexOf(S().strip((t.ranks||{})['지시']));if(v<0)v=0;for(const m of Object.values(b.mons||{}))if(m.entry)v+=+(m.side===t.side?m.orderAlly:m.orderEnemy)||0;return Math.min(7,Math.max(0,v))};
+  const lv=t=>{let v=S().RANKS.indexOf(S().strip((t.ranks||{})['지시']));if(v<0)v=0;for(const m of Object.values(b.mons||{}))if(m.entry)v+=+(sameT(m,t,b)?m.orderAlly:m.orderEnemy)||0;return Math.min(7,Math.max(0,v))};
   const rk=t=>S().strip((t.ranks||{})['지시'])||'-';
   const v=Math.max(0,lv(ta)-3);return {v,txt:`${ta.name} 「지시」 ${rk(ta)} — 급소 +${v}`}}
  function crAdj(atk,def){return (+CRR(atk).add||0)-(+CRR(def).guard||0)}
@@ -1423,18 +1435,18 @@ window.OM_BATTLE_UI=(()=>{
   const x=(((b.cmds||{})[atk.tid]||{}).mons||{})[mid]||{};const slots=allEntered(b);
   const defMoveIdx=x.move!==''&&x.move!=='switch'&&x.move!=null?+x.move:((atk.states||{}).Oblivion?MVS(atk).findIndex(q=>q.name==='발버둥'):0);
   let T0=(x.targets||[]).filter(s=>slots.some(z=>z.slot===s));let lostNote='';{const lost=(x.targets||[]).filter(s=>!slots.some(z=>z.slot===s));const mv0=MVS(atk)[defMoveIdx];
-   if(lost.length&&!T0.length){const foes=slots.filter(z=>z.side!==atk.side);const nm=lost.map(s=>{const [sd,ar]=s.split('_');const q=Object.values(b.mons||{}).find(o=>o.side===sd&&o.entry===ar);return q?q.name:s.replace('_',' ').toUpperCase()}).join(', ');
+   if(lost.length&&!T0.length){const foes=slots.filter(z=>!sameT(z.mon,atk,b));const nm=lost.map(s=>{const [sd,ar]=s.split('_');const q=Object.values(b.mons||{}).find(o=>o.side===sd&&o.entry===ar);return q?q.name:s.replace('_',' ').toUpperCase()}).join(', ');
     if(mv0&&mv0.cat!=='변화'&&foes.length===1){T0=[foes[0].slot];lostNote=`<div class="small" style="color:var(--yel2);margin:2px 0 4px">지시한 대상(${esc(nm)})이 쓰러져 있어 남은 상대 ${esc(foes[0].mon.name)}(으)로 바꿨다</div>`}
     else lostNote=`<div class="small" style="color:var(--yel2);margin:2px 0 4px">지시한 대상(${esc(nm)})이 쓰러져 있다 — 다른 대상을 골라 줘</div>`}}
   /* 10-23 망령: 「난동부리기」 — 대상은 적진에서 랜덤 (지시에서 손으로 고른 대상이 있으면 그대로). 같은 턴에 창을 다시 열어도 같은 대상 */
-  let thrNote='';if((atk.states||{}).Thrash&&!x.tman){const mv0=MVS(atk)[defMoveIdx];const foes=slots.filter(z=>z.side!==atk.side);const multi=/전체|적진|자진|자신/.test(String((mv0||{}).range||''));
+  let thrNote='';if((atk.states||{}).Thrash&&!x.tman){const mv0=MVS(atk)[defMoveIdx];const foes=slots.filter(z=>!sameT(z.mon,atk,b));const multi=/전체|적진|자진|자신/.test(String((mv0||{}).range||''));
    if(mv0&&mv0.cat!=='변화'&&!multi&&foes.length){const tk=mid+':'+(+b.turn||0);let pick=foes.find(z=>z.slot===THR_PICK[tk]);if(!pick){pick=foes[Math.floor(Math.random()*foes.length)];THR_PICK[tk]=pick.slot}T0=[pick.slot];lostNote='';
     thrNote=`<div class="small" style="color:var(--yel2);margin:2px 0 4px">「난동부리기」 — 적진에서 랜덤으로 ${esc(pick.mon.name)}(을)를 골랐다 · 눌러서 바꿀 수 있다</div>`}}
   const md=A().openModal(`<div class="mhead"><h2>공격 — ${esc(atk.name)}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    <select id="amove" hidden>${MVS(atk).map((mv,i)=>`<option value="${i}" ${i===defMoveIdx?'selected':''}>${esc(mv.name)}</option>`).join('')}</select>
    <div class="sec">기술</div><div class="mvg" id="amvg">${MVS(atk).map((mv,i)=>moveCard(mv,i,i===defMoveIdx,`data-amv="${i}"`)).join('')}</div>
    <div class="amefw"><div class="amhd" id="amhd"></div><div class="mef amef" id="amef"></div></div><div class="row small" style="margin-top:6px"><label>위력 <input type="number" class="n" id="apow"></label><label title="트레이너 「통솔」 A 이상이면 기본값에 명중 보정이 들어 있다">명중 배율 <input type="number" step="0.01" class="n" id="aacc" value="${leadAcc(atk)}">${leadAcc(atk)!==1?` <span class="small dim">통솔 ×${leadAcc(atk)}</span>`:''}</label><label class="tgc asurel" title="이 공격은 명중 판정 없이 맞는다 (필중화 · 록온 · 마음의눈 등)"><input type="checkbox" id="asure"> 필중화</label></div>
-   <div class="sec">대상 <span class="note">누르면 고르고 푼다</span></div>${lostNote}${thrNote}<div id="aboard">${board(b,atk.side,(slot)=>T0.includes(slot),(slot)=>`data-at="${slot}"`)}</div>
+   <div class="sec">대상 <span class="note">누르면 고르고 푼다</span></div>${lostNote}${thrNote}<div id="aboard">${board(b,atk.side,(slot)=>T0.includes(slot),(slot)=>`data-at="${slot}"`,false,atk)}</div>
    <div id="aprev" class="aprev"></div>
    <div hidden>${slots.map(s=>`<input type="checkbox" data-t="${s.slot}" ${T0.includes(s.slot)?'checked':''}>`).join('')}</div>
    <div class="sec">보정 <span class="note">바꾼 것만 위에 모인다 · ✕ 로 되돌림</span></div><div class="achg" id="achg"></div>
@@ -1497,7 +1509,7 @@ window.OM_BATTLE_UI=(()=>{
     const sure=ck('asure')||AF.surehit||(phys&&AF.hitPhys)||(spec&&AF.hitSpec)||!!(FX()&&FX().nextOf&&FX().nextOf(atk).some(e=>e.sure));const IG=FX()?iuIgnore(atk,def):{};
     const autoMiss=(phys&&DF.dodgePhys)||(spec&&DF.dodgeSpec)||AF.acc0;
     /* 사이코필드: 땅 위의 포켓몬은 상대의 선공 기술(우선도 +1 이상)을 받지 않는다 */
-    const psyBlock=f.terrain.type==='사이코필드'&&def.side!==atk.side&&grd(def)&&(FX()?FX().prioOf(atk,mv):(+mv.prio||0))>0;
+    const psyBlock=f.terrain.type==='사이코필드'&&!sameT(def,atk)&&grd(def)&&(FX()?FX().prioOf(atk,mv):(+mv.prio||0))>0;
     const itImm=OI()&&mv.cat!=='변화'?OI().immune(def,moveTypes):'';
     const accRoll=()=>itImm?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:`${def.name}의 「${itImm}」 — 효과가 없다`}:psyBlock?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:'사이코필드 — 땅 위라 선공 기술 무효'}:autoMiss?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:'지령으로 회피/명중 0'}:B().accuracy(atk,def,{acc:mv.acc},{accMult:n('aacc'),sureHit:sure,starry:f.weather.type==='별하늘',fog:f.weather.type==='짙은안개',fogImmune:moveTypes.some(t=>t==='Poison'||t==='Fairy'),gravity:(f.etc||{})['중력']>0,wideLens:IT(atk)==='광각렌즈',ignoreAcc:IG.acc,ignoreEva:IG.eva});const acc=accRoll();
     /* 효과 엔진: 상성을 먼저 보고 강화·완화·급소 조건을 맞춘다 */
@@ -1643,7 +1655,7 @@ ${L.join('\n')}${once.length?'\n'+once.map(x=>'· '+x.line).join('\n'):''}`,'bat
   for(const k of NOW_K){const a=+q.r0[k]||0,b2=+(m.rank||{})[k]||0;if(a!==b2)ch.push(`${STAT_KO[k]} 랭크 ${fmtR(a)} → ${fmtR(b2)}`);const x=+q.m0[k]||1,y=+(m.mod||{})[k]||1;if(x!==y)ch.push(`${STAT_KO[k]} 배율 ×${x} → ×${y}`)}
   if(ch.length)A().sysLog(`【랭크·배율】 ${m.name}\n${ch.join('\n')}`,'battle',{mid,img:m.image||''})}
  /* 손으로 붙인 「씨뿌리기」: 지금 행동 중인 상대 포켓몬의 에리어를 씨 뿌린 곳으로 (없으면 정면) */
- function seedSrc(b,m){const o=(b.order||[])[+b.orderIdx||0];const a=o&&(b.mons||{})[o.mid];return a&&a.side!==m.side&&a.entry&&(+b.phase||0)>=2?a.side+'_'+a.entry:null}
+ function seedSrc(b,m){const o=(b.order||[])[+b.orderIdx||0];const a=o&&(b.mons||{})[o.mid];return a&&!sameT(a,m,b)&&a.entry&&(+b.phase||0)>=2?a.side+'_'+a.entry:null}
  const stDesc=k=>((((DB().states||{}).st||{})[k])||{}).desc||[];const stName=k=>((((DB().states||{}).st||{})[k])||{}).ko||k;
  function nowEditHtml(m,full,o){o=o||{};const r=m.rank||{},md=m.mod||{};const sdb=(DB().states||{}).st||{};const st=m.states||{};
   const cell=k=>{const v=+r[k]||0,x=+md[k]||1;return `<button type="button" class="dxrk ${v>0?'up':v<0?'dn':''} ${x>1?'mup':x<1?'mdn':''} ${o.sel===k?'sel':''}" ${full?`data-nrk="${k}"`:'disabled'}><small>${STAT_KO[k]}${k==='critical'?' (C)':''}</small><b>${fmtR(v)}</b><em>×${x}</em></button>`};

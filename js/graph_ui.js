@@ -27,14 +27,14 @@ window.OM_GRAPH_UI=(()=>{
     <g class="gel" transform="translate(${mx},${my})" style="cursor:pointer"><rect x="-16" y="-9" width="32" height="18" fill="${e.shock?'var(--red)':'#fff'}" transform="skewX(-10)"/><text y="4" text-anchor="middle" font-size="11" font-family="var(--lab)" fill="${e.shock?'#fff':'#000'}">${e.shock?'⚡':''}R${+e.rank||0}</text>${e.label?`<text y="22" text-anchor="middle" font-size="10" fill="#ccc">${esc(e.label)}</text>`:''}</g></g>`}).join('');
   el.innerHTML=`<div class="gtop">${modeBar()}<button class="btn xs" data-z="in">＋</button><button class="btn xs" data-z="out">－</button><button class="btn xs ghost" data-z="fit">맞추기</button>
     <span class="small dim">끌어서 이동 · 휠로 확대 · 노드를 누르면 자세히${gm()?' · GM: 노드를 끌어서 배치':''}</span><span class="sp"></span>
-    ${gm()?`<button class="btn sm" data-g="addn">+ 노드</button><button class="btn sm" data-g="adde">+ 선</button>`:''}</div>
+    ${gm()?`${UNDO?'<button class="btn sm ghost" data-g="undo" title="자동 정리 전 배치로 되돌린다">↶ 되돌리기</button>':''}<button class="btn sm" data-g="auto" title="선으로 이어진 사람끼리 가깝게, 랭크가 높을수록 더 가깝게, PC 는 가운데로 — 겹치지 않게 다시 놓는다">✦ 자동 정리</button><button class="btn sm" data-g="addn">+ 노드</button><button class="btn sm" data-g="adde">+ 선</button>`:''}</div>
    <div class="gwrap"><svg id="gsvg" width="100%" height="100%"><defs><pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.2" fill="#2a2a2a"/></pattern></defs>
     <rect width="100%" height="100%" fill="url(#dots)"/><g id="gview" transform="translate(${V.x},${V.y}) scale(${V.k})">${edgeSvg}${nodeSvg}</g></svg>
     <div class="glegend"><b>관계도</b><div class="small">빨간 테두리 = PC, 흰 테두리 = NPC, 마름모 = 조직. 선 굵기와 R 숫자가 관계 랭크, 빨간 점선과 ⚡가 쇼크.</div></div></div>`;
   const svg=$('#gsvg',el);
   bindMode(el);
   el.querySelectorAll('[data-z]').forEach(b=>b.onclick=()=>{if(b.dataset.z==='in')V.k=Math.min(3,V.k*1.2);if(b.dataset.z==='out')V.k=Math.max(.3,V.k/1.2);if(b.dataset.z==='fit')fit(svg);render(el)});
-  el.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>b.dataset.g==='addn'?editNode(null):editEdge(null));
+  el.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{const k=b.dataset.g;if(k==='auto')return autoLayout(el,svg);if(k==='undo')return undoLayout(el,svg);return k==='addn'?editNode(null):editEdge(null)});
   svg.addEventListener('wheel',e=>{e.preventDefault();const f=e.deltaY<0?1.1:1/1.1;const r=svg.getBoundingClientRect();const px=e.clientX-r.left,py=e.clientY-r.top;V.x=px-(px-V.x)*f;V.y=py-(py-V.y)*f;V.k*=f;$('#gview',el).setAttribute('transform',`translate(${V.x},${V.y}) scale(${V.k})`)},{passive:false});
   svg.addEventListener('pointerdown',e=>{if(e.button!==0)return;const gn=e.target.closest('.gn');const gl=e.target.closest('.gel');
    if(gn){const id=gn.dataset.n;const n=G().nodes[id];if(!n)return;if(gm()){drag={id,sx:e.clientX,sy:e.clientY,ox:+n.x||0,oy:+n.y||0,x:+n.x||0,y:+n.y||0,moved:false,g:gn,edges:[...el.querySelectorAll('.ge')].map(ge=>({ge,ed:G().edges[ge.dataset.e]})).filter(o=>o.ed&&(o.ed.a===id||o.ed.b===id))};gn.parentNode.appendChild(gn);gn.classList.add('dragging');svg.setPointerCapture(e.pointerId)}else openNode(id);return}
@@ -92,6 +92,40 @@ window.OM_GRAPH_UI=(()=>{
   el.querySelectorAll('.gmo,.gml,.gme0').forEach(x=>x.onclick=()=>open(x.dataset.o,x.dataset.e));
   /* 10-22 망령: 「내 인연」에서도 바로 선을 잇는다 — 한쪽은 가운데 사람, 다른 쪽은 아직 안 이어진 노드부터 */
   el.querySelectorAll('[data-gadd]').forEach(x=>x.onclick=()=>editEdge(null,{a:me.id,skip:links.map(l=>l.o.id)}))}
+ /* ---------- 10-24 망령: 자동 정리 ----------
+    힘 배치(Fruchterman–Reingold): 모든 노드는 서로 밀고, 선으로 이어진 노드는 당긴다(랭크가 높을수록 더 세게 · 짧게).
+    PC 는 가운데로 조금 더 당기고, 다 돌면 이름표가 겹치지 않게 벌린다. 정리 전 자리는 「↶ 되돌리기」로 한 번 돌릴 수 있다 */
+ let UNDO=null;
+ function layout(nodes,edges){const ids=Object.keys(nodes);const N=ids.length;if(!N)return {};
+  const E=Object.values(edges||{}).filter(e=>nodes[e.a]&&nodes[e.b]&&e.a!==e.b);
+  const deg={};for(const e of E){deg[e.a]=(deg[e.a]||0)+1;deg[e.b]=(deg[e.b]||0)+1}
+  /* 처음 자리: 이어진 순서(너비 우선)로 고리에 — 교차가 덜 생긴다. PC 는 안쪽 고리 */
+  const adj={};for(const e of E){(adj[e.a]=adj[e.a]||[]).push(e.b);(adj[e.b]=adj[e.b]||[]).push(e.a)}
+  const seen=new Set(),ord=[];const start=ids.slice().sort((x,y)=>((nodes[y].kind==='pc')-(nodes[x].kind==='pc'))||((deg[y]||0)-(deg[x]||0)));
+  for(const s of start){if(seen.has(s))continue;const q=[s];seen.add(s);while(q.length){const v=q.shift();ord.push(v);for(const w of (adj[v]||[]).slice().sort((x,y)=>(deg[y]||0)-(deg[x]||0)))if(!seen.has(w)){seen.add(w);q.push(w)}}}
+  const pcs=ord.filter(id=>nodes[id].kind==='pc'),rest=ord.filter(id=>nodes[id].kind!=='pc');
+  const P={};const K=170;
+  pcs.forEach((id,i)=>{const a=-Math.PI/2+i*2*Math.PI/Math.max(1,pcs.length);const r=pcs.length>1?Math.max(90,pcs.length*40):0;P[id]={x:Math.cos(a)*r,y:Math.sin(a)*r}});
+  const R2=Math.max(260,rest.length*28);rest.forEach((id,i)=>{const a=-Math.PI/2+(i+.5)*2*Math.PI/Math.max(1,rest.length);P[id]={x:Math.cos(a)*R2,y:Math.sin(a)*R2}});
+  let T=K*1.5;const IT=500;
+  for(let it=0;it<IT;it++){const D={};for(const id of ids)D[id]={x:0,y:0};
+   for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){const a=P[ids[i]],b=P[ids[j]];let dx=a.x-b.x,dy=a.y-b.y;let d=Math.hypot(dx,dy);if(d<0.01){dx=(i-j)*.1+.05;dy=.07;d=.1}
+    if(d>K*3)continue;const f=K*K/d*(d<150?2:1)*(1-d/(K*3));D[ids[i]].x+=dx/d*f;D[ids[i]].y+=dy/d*f;D[ids[j]].x-=dx/d*f;D[ids[j]].y-=dy/d*f}
+   for(const e of E){const a=P[e.a],b=P[e.b];const dx=a.x-b.x,dy=a.y-b.y;const d=Math.max(.01,Math.hypot(dx,dy));const w=.6+Math.min(10,Math.max(0,+e.rank||0))/8;const L=K*(1.15-Math.min(10,+e.rank||0)/25);
+    const f=(d*d/L)*w;D[e.a].x-=dx/d*f;D[e.a].y-=dy/d*f;D[e.b].x+=dx/d*f;D[e.b].y+=dy/d*f}
+   for(const id of ids){const p=P[id];const g=(nodes[id].kind==='pc'?.08:.04)*(deg[id]?1:1.6);D[id].x-=p.x*g;D[id].y-=p.y*g}
+   for(const id of ids){const d=D[id];const l=Math.max(.01,Math.hypot(d.x,d.y));const m=Math.min(l,T);P[id].x+=d.x/l*m;P[id].y+=d.y/l*m}
+   T=Math.max(1,T*0.985)}
+  /* 이름표(폭 120) 겹침 풀기 */
+  for(let pass=0;pass<80;pass++){let moved=false;for(let i=0;i<N;i++)for(let j=i+1;j<N;j++){const a=P[ids[i]],b=P[ids[j]];const dx=b.x-a.x,dy=b.y-a.y;const ox=140-Math.abs(dx),oy=96-Math.abs(dy);if(ox>0&&oy>0){moved=true;if(ox/140<oy/96){const s=(dx>=0?1:-1)*ox/2;a.x-=s;b.x+=s}else{const s=(dy>=0?1:-1)*oy/2;a.y-=s;b.y+=s}}}if(!moved)break}
+  const out={};for(const id of ids)out[id]={x:Math.round(P[id].x),y:Math.round(P[id].y)};return out}
+ async function applyPos(pos){const g=G();const ops=[];for(const id in pos){const n=(g.nodes||{})[id];if(!n)continue;if(+n.x===pos[id].x&&+n.y===pos[id].y)continue;ops.push([['graph','nodes',id],Object.assign({},n,{x:pos[id].x,y:pos[id].y})])}
+  if(!ops.length)return true;return A().setMany(ops)}
+ async function autoLayout(el,svg){if(!gm())return;const g=G();const nodes=g.nodes||{};const n=Object.keys(nodes).length;if(n<2)return A().toast('노드가 둘 이상 있어야 정리할 수 있다');
+  const before={};for(const id in nodes)before[id]={x:+nodes[id].x||0,y:+nodes[id].y||0};
+  const pos=layout(nodes,g.edges);A().toast('관계도를 정리하는 중…');
+  if(await applyPos(pos)===false)return;UNDO=before;V.k=1;const s=$('#gsvg',el)||svg;render(el);const s2=$('#gsvg',el);if(s2){fit(s2);render(el)}A().toast(`노드 ${n}개를 다시 놓았다 — 마음에 안 들면 「↶ 되돌리기」`)}
+ async function undoLayout(el){if(!gm()||!UNDO)return;const u=UNDO;UNDO=null;if(await applyPos(u)===false){UNDO=u;return}render(el);const s2=$('#gsvg',el);if(s2){fit(s2);render(el)}A().toast('정리 전 배치로 되돌렸다')}
  function fit(svg){const ns=Object.values(G().nodes||{});if(!ns.length){V.x=V.y=0;V.k=1;return}const xs=ns.map(n=>n.x),ys=ns.map(n=>n.y);const minx=Math.min(...xs)-80,maxx=Math.max(...xs)+80,miny=Math.min(...ys)-80,maxy=Math.max(...ys)+80;const r=svg.getBoundingClientRect();V.k=Math.min(3,Math.max(.3,Math.min(r.width/(maxx-minx),r.height/(maxy-miny))));V.x=(r.width-(maxx+minx)*V.k)/2;V.y=(r.height-(maxy+miny)*V.k)/2}
 
  function openNode(id){const n=G().nodes[id];if(!n)return;if(gm())return editNode(id);
