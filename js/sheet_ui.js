@@ -565,6 +565,8 @@ if(old){for(const k of ['orderStyle','commandStyle','orderCount','orderBase','or
   const sOf=d=>(Array.isArray(d&&d.stands)?d.stands:[]).filter(x=>x&&x.src).map(x=>Object.assign({label:x.label||'기본',src:x.src,point:+x.point||0},x.kind==='stand'||x.kind==='portrait'?{kind:x.kind}:{}));
   for(const t of Object.values(T)){const ms=Object.values(M).filter(m=>m.tid===t.id);if(!(t.mkId||ms.some(m=>m.src==='maker')))continue;
    if((t.stands||[]).length&&ms.every(m=>(m.stands||[]).length))continue;
+   /* 10-24 망령(이그레스): 스탠딩이 없는 포켓몬은 흔하니 매번 읽지 않는다 — 트레이너마다 이 브라우저에서 하루 한 번만 제작기를 본다 */
+   const ck='om_fs:'+(A().ST.room||'')+':'+t.id;let last=0;try{last=+localStorage.getItem(ck)||0}catch(e){}if(Date.now()-last<86400000)continue;try{localStorage.setItem(ck,String(Date.now()))}catch(e){}
    let mk;try{mk=await A().loadMakerParty(t.mkId||t.id)}catch(e){continue}if(!mk)continue;
    const td=(mk.trainers||[]).find(x=>x.id===(t.mkId||t.id));
    if(td&&!(t.stands||[]).length){const d=(td.data&&td.data.data)||td.data||{};const st=sOf(d);if(st.length){await A().set(['roster','trainers',t.id,'stands'],st);await A().set(['roster','trainers',t.id,'standActive'],+d.standActive||0);n++}}
