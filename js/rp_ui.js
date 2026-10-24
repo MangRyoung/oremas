@@ -157,17 +157,16 @@ window.OM_RP_UI=(()=>{
   /* 무대 아래: 칸마다 바뀐 것만 다시 그린다 — 대사 입력칸은 그대로 두어야 치는 중에 끊기지 않는다 (한글 조합·포커스 유지) */
   const barH=`${gm()?spkBarHtml(speakers):(speakers.length>1?`<div class="spkbar">${speakers.map(x=>{const c=x.key==='me'?charOf(ST.seat):charOf(x.key);const av=c?(standSrc(c)||c.img):'';return spkChip(x.key,x.name,av,SPK.key===x.key||(!SPK.key&&x.key==='me'))}).join('')}<button class="spk add" data-rp="spkedit" title="고른 인물의 표정·스탠딩"><i>✎</i><span>표정</span></button></div>`:'')}`;
   const MD=MODES[SPK.mode]||MODES.auto;
-  const inH=speakers.length?`<div class="rpinput"><select id="rpspk">${speakers.map(x=>`<option value="${esc(x.key)}">${esc(x.name)}</option>`).join('')}</select><span id="rpexpbox" class="rpexpbox"></span><button type="button" class="btn rpmode m-${SPK.mode}" id="rpmode" title="${esc(MD.tip)} — 누르면 자동 → 대사 → 지문">${MD.lb}</button><input type="text" id="rpline" placeholder="${esc(MD.ph)}" autocomplete="off"><button class="btn pri" id="rpsend">보내기</button></div><div class="small dim rphint">${gm()?'그냥 치면 지문, "…" 「…」 로 감싸면 대사 · 고른 인물로 말하면 그 인물의 스탠딩이 선다 · 「@웃음 "대사"」처럼 @등록명으로 표정을 바꾸며 말한다':'그냥 치면 지문, "…" 「…」 로 감싸면 대사 · 스탠딩 그림이 아직 없으면 시트 그림(초상)으로 선다 — 「표정」에서 전신 그림을 넣고, 「@웃음 "대사"」로 표정을 바꾸며 말한다'}</div>`:'<div class="small dim rphint">자리에 앉으면 여기서 대사를 칠 수 있다</div>';
+  const inH=speakers.length?`<div class="rpinput"><button type="button" class="spkpbtn" id="rpspk" title="누구로 말할지 — 눌러서 고르기 (찾기 · 배틀 중 · 최근 · 폴더)"></button><span id="rpexpbox" class="rpexpbox"></span><button type="button" class="btn rpmode m-${SPK.mode}" id="rpmode" title="${esc(MD.tip)} — 누르면 자동 → 대사 → 지문">${MD.lb}</button><input type="text" id="rpline" placeholder="${esc(MD.ph)}" autocomplete="off"><button class="btn pri" id="rpsend">보내기</button></div><div class="small dim rphint">${gm()?'그냥 치면 지문, "…" 「…」 로 감싸면 대사 · 고른 인물로 말하면 그 인물의 스탠딩이 선다 · 「@웃음 "대사"」처럼 @등록명으로 표정을 바꾸며 말한다':'그냥 치면 지문, "…" 「…」 로 감싸면 대사 · 스탠딩 그림이 아직 없으면 시트 그림(초상)으로 선다 — 「표정」에서 전신 그림을 넣고, 「@웃음 "대사"」로 표정을 바꾸며 말한다'}</div>`:'<div class="small dim rphint">자리에 앉으면 여기서 대사를 칠 수 있다</div>';
   const under=$('#rpunder',el);if(!$('#rpu_in',under)){under.innerHTML='<div id="rpu_bar"></div><div class="rpfabbg" id="rpu_fabbg"></div><div id="rpu_in"></div><div id="rpu_me"></div>';bindSpkPop(under)}
   const setH=(id,h)=>{const bx=$('#'+id,under);if(bx._h===h)return false;bx.innerHTML=h;bx._h=h;return true};
   const hadFocus=!!(document.activeElement&&document.activeElement.id==='rpline');setH('rpu_bar',barH);const inNew=setH('rpu_in',inH);if(inNew&&hadFocus)SPK.focus=true;setH('rpu_me',meBarHtml());
   {const sb=$('.rpspkbtn',el);if(sb)sb.style.display=$('#rpu_bar',under).innerHTML.trim()?'':'none'}
-  {const s=$('#rpspk',el);if(s&&SPK.key&&[...s.options].some(o=>o.value===SPK.key)&&s.value!==SPK.key)s.value=SPK.key}
+  {const s=$('#rpspk',el);if(s)spkBtnFill(s,curSpk(speakers))}
   const bindRp=root=>root.querySelectorAll('[data-rp]').forEach(b=>b.onclick=e=>{if(b.dataset.rp==='spkpop'){e.stopPropagation();$('#rpunder',el).classList.toggle('spkpop');return}if(b.dataset.rp==='mon'){const ST=A().ST;const bm=((ST.state.battle||{}).mons||{})[b.dataset.mid];if(bm)return A().openMon(b.dataset.mid);const m=((ST.state.roster||{}).mons||{})[b.dataset.mid];if(m&&window.OM_SHEET_UI){window.OM_SHEET_UI.UI.tid=m.tid;window.OM_SHEET_UI.UI.mid=m.id;window.OM_SHEET_UI.UI.tab='poke';A().view='sheet';A().renderScene()}return}act(b.dataset.rp)});bindRp(el);
   const refreshMeBar=()=>{const old=el.querySelector('.mebar');if(!old)return;const tmp=document.createElement('div');tmp.innerHTML=meBarHtml();const nw=tmp.firstElementChild;if(nw){old.replaceWith(nw);bindRp(nw)}};
-  const spk=$('#rpspk',el);if(spk)spk.onchange=()=>{SPK.key=spk.value;el.querySelectorAll('.spk[data-spk]').forEach(b=>b.classList.toggle('on',b.dataset.spk===SPK.key))};
-  el.querySelectorAll('.spk[data-spk]').forEach(b=>b.onclick=()=>{SPK.key=b.dataset.spk;if(spk)spk.value=SPK.key;el.querySelectorAll('.spk[data-spk]').forEach(x=>x.classList.toggle('on',x===b));refreshMeBar();refreshExp(el);const inp=$('#rpline',el);if(inp)inp.focus()});
-  if(spk){const o=spk.onchange;spk.onchange=()=>{o&&o();refreshMeBar();refreshExp(el)}}
+  const spk=$('#rpspk',el);if(spk)spk.onclick=()=>openSpkPick(spk,{cur:curSpk(speakers),onPick:k=>{SPK.key=k;pushRecent(k);spkBtnFill(spk,k);el.querySelectorAll('.spk[data-spk]').forEach(b=>b.classList.toggle('on',b.dataset.spk===SPK.key));refreshMeBar();refreshExp(el);const inp=$('#rpline',el);if(inp)inp.focus()}});
+  el.querySelectorAll('.spk[data-spk]').forEach(b=>b.onclick=()=>{SPK.key=b.dataset.spk;pushRecent(SPK.key);if(spk)spkBtnFill(spk,SPK.key);el.querySelectorAll('.spk[data-spk]').forEach(x=>x.classList.toggle('on',x===b));refreshMeBar();refreshExp(el);const inp=$('#rpline',el);if(inp)inp.focus()});
   {const mb=$('#rpmode',el);if(mb)mb.onclick=()=>{const ks=Object.keys(MODES);SPK.mode=ks[(ks.indexOf(SPK.mode)+1)%ks.length];try{localStorage.setItem('om_rpmode',SPK.mode)}catch(e){}SPK.focus=true;A().renderScene();A().toast(MODES[SPK.mode].tip)}}
   refreshExp(el);
   el.querySelectorAll('.spk[data-fold]').forEach(b=>b.onclick=()=>{const id=b.dataset.fold,i=SPK.fo.indexOf(id);if(i>=0)SPK.fo.splice(i,1);else{SPK.fo.push(id);if(SPK.fo.length>3)SPK.fo.shift()}A().renderScene()});el.querySelectorAll('[data-fclose]').forEach(fc=>fc.onclick=()=>{SPK.fo=SPK.fo.filter(x=>x!==fc.dataset.fclose);A().renderScene()});
@@ -365,7 +364,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  /* ----- 10-24 망령: 인물 관리 창 — 화자로 쓰는 모든 개체(인물 · PC · 포켓몬)를 카드로 한눈에 보고, 오른쪽에서 고친다 -----
     인물(NPC)은 관계도 노드(graph.nodes)에 산다: 이름 · 초상(img) · 스탠딩(stands) · 메모(note). 화자 칸의 폴더 · 숨김은 rp.spk.
     PC · 포켓몬은 시트가 원본이라 이름은 여기서 안 바꾸고, 표정 · 폴더 · 숨김 · 말하기만 */
- const PP={q:'',f:'all',sel:'',top:0,more:false,draft:null};
+ const PP={q:'',f:'all',sel:'',top:0,more:false,draft:null,multi:new Set()};
  /* 10-24 망령: 폴더별로 접고 편다 — 접힌 폴더는 이 브라우저에 기억 */
  let PPC={};try{PPC=JSON.parse(localStorage.getItem('om_pp_fold')||'{}')||{}}catch(e){}
  const ppSaveC=()=>{try{localStorage.setItem('om_pp_fold',JSON.stringify(PPC))}catch(e){}};
@@ -377,25 +376,56 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  async function ppNewFolder(){const name=prompt('새 폴더 이름','새 폴더');if(name==null||!name.trim())return '';const C=spkConf();const id='f'+Date.now().toString(36);C.folders[id]={name:name.trim(),keys:[]};C.order.push('f:'+id);await saveSpk(C);return id}
  function ppFolderSel(id,cur){const C=spkConf();return `<select id="${id}"><option value="">폴더 없음</option>${Object.entries(C.folders).map(([k,f])=>`<option value="${esc(k)}" ${k===cur?'selected':''}>📁 ${esc(f.name)}</option>`).join('')}<option value="__new">＋ 새 폴더…</option></select>`}
  const ppThumb=(src,cls,txt)=>`<i class="${cls||'ppth'}${src?'':' noimg'}" style="${src?`background-image:url('${cssu(src)}')`:''}">${src?'':esc([...(txt||'')].slice(0,2).join(''))}</i>`;
- function ppGroups(vis,card){if(!vis.length)return '';const C=spkConf();const ids=[];for(const k of C.order||[])if(String(k).startsWith('f:')&&C.folders[k.slice(2)])ids.push(k.slice(2));for(const id of Object.keys(C.folders))if(!ids.includes(id))ids.push(id);ids.push('');
-  const q=PP.q.trim();return ids.map(id=>{const xs=vis.filter(x=>(x.fid||'')===id);if(!xs.length)return '';const shut=!q&&PPC[id];return `<div class="ppgrp${shut?' shut':''}" data-ppg="${esc(id)}"><button type="button" class="ppgh" data-ppgh><span class="ppar">▾</span> ${id?'📁 '+esc((C.folders[id]||{}).name||''):'📂 폴더 없음'} <small>${xs.length}</small></button><div class="ppgc">${xs.map(card).join('')}</div></div>`}).join('')}
+ /* 10-25 망령: 폴더 머리에 ✎ 이름 · 🗑 지우기, 머리를 끌어 순서 바꾸기. 빈 폴더 · 「폴더 없음」도 끌어 놓을 자리로 보인다 */
+ function ppGroups(vis,card,showEmpty){const C=spkConf();const ids=[];for(const k of C.order||[])if(String(k).startsWith('f:')&&C.folders[k.slice(2)])ids.push(k.slice(2));for(const id of Object.keys(C.folders))if(!ids.includes(id))ids.push(id);ids.push('');
+  if(!vis.length&&!showEmpty)return '';const q=PP.q.trim();
+  return ids.map(id=>{const xs=vis.filter(x=>(x.fid||'')===id);if(!xs.length&&!(showEmpty&&(id||ids.length>1)))return '';const shut=!q&&PPC[id]&&xs.length;const nm=id?(C.folders[id]||{}).name||'':'';
+   return `<div class="ppgrp${shut?' shut':''}${xs.length?'':' empty'}" data-ppg="${esc(id)}"><div class="ppghr"${id?` draggable="true" data-ppfd="${esc(id)}" title="끌어서 폴더 순서 바꾸기"`:''}><button type="button" class="ppgh" data-ppgh><span class="ppar">▾</span> ${id?'📁 <span class="ppfn">'+esc(nm)+'</span>':'📂 폴더 없음'} <small>${xs.length}</small></button>${id?`<span class="ppgact"><button type="button" data-ppren="${esc(id)}" title="폴더 이름 바꾸기">✎</button><button type="button" data-ppfdel="${esc(id)}" title="폴더 지우기 (안의 인물은 「폴더 없음」으로)">🗑</button></span>`:''}</div><div class="ppgc">${xs.map(card).join('')||'<div class="ppdrop">여기로 카드를 끌어 놓는다</div>'}</div></div>`}).join('')}
+ async function ppMoveMany(keys,fid){const C=spkConf();for(const key of keys){C.order=C.order.filter(x=>x!==key);for(const f of Object.values(C.folders))f.keys=(f.keys||[]).filter(x=>x!==key);if(fid&&C.folders[fid])C.folders[fid].keys.push(key);else C.order.push(key)}await saveSpk(C)}
  function openPeople(sel){if(!gm())return A().toast('인물 관리는 GM 만');if(sel!==undefined)PP.sel=sel;
   const L=ppList();const q=PP.q.trim().toLowerCase();const cnt={all:L.length,npc:0,pc:0,pm:0,hid:0};L.forEach(x=>{cnt[x.kind]=(cnt[x.kind]||0)+1;if(x.hid)cnt.hid++});
   const vis=L.filter(x=>(PP.f==='all'?true:PP.f==='hid'?x.hid:x.kind===PP.f)&&(!q||x.name.toLowerCase().includes(q)||x.sub.toLowerCase().includes(q)||(x.fname||'').toLowerCase().includes(q)));
   if(PP.sel&&PP.sel!=='new'&&!L.some(x=>x.key===PP.sel))PP.sel='';
-  const card=x=>{const av=x.c.img||'';const st=(x.c.stands||[]).length;return `<div role="button" tabindex="0" class="ppc ${PP.sel===x.key?'on':''} ${x.hid?'hid':''}" data-pp="${esc(x.key)}">${ppThumb(standSrc(x.c)||av,'ppst',x.name)}${ppThumb(av,'ppth',x.name)}<span class="ppn"><b>${esc(x.name)}</b><small><em class="ppk k-${x.kind}">${PPK[x.kind]||''}</em>${[x.sub?esc(x.sub):'',x.fname?'📁 '+esc(x.fname):'',st?`표정 ${st}`:''].filter(Boolean).join(' · ')}</small></span>${x.hid?'<span class="pphid" title="화자 칸에서 숨김">🙈</span>':''}</div>`};
+  const card=x=>{const av=x.c.img||'';const st=(x.c.stands||[]).length;return `<div role="button" tabindex="0" draggable="true" class="ppc ${PP.sel===x.key?'on':''} ${x.hid?'hid':''} ${PP.multi.has(x.key)?'pick':''}" data-pp="${esc(x.key)}">${ppThumb(standSrc(x.c)||av,'ppst',x.name)}${ppThumb(av,'ppth',x.name)}<span class="ppn"><b>${esc(x.name)}</b><small><em class="ppk k-${x.kind}">${PPK[x.kind]||''}</em>${[x.sub?esc(x.sub):'',x.fname?'📁 '+esc(x.fname):'',st?`표정 ${st}`:''].filter(Boolean).join(' · ')}</small></span>${x.hid?'<span class="pphid" title="화자 칸에서 숨김">🙈</span>':''}</div>`};
   const chip=(k,n)=>`<button type="button" class="chip ${PP.f===k?'on':''}" data-ppf="${k}">${n} <small>${cnt[k]||0}</small></button>`;
-  const md=A().openModal(`<div class="mhead"><h2>인물 관리</h2><span class="small dim pphint" style="margin-left:8px">관계도 NPC · PC · 포켓몬 — 화자로 쓰는 모두</span><span class="sp"></span><button class="btn sm pri" data-ppa="new">＋ 새 인물</button><button class="btn sm ghost" data-ppa="spkmgr" title="폴더 · 순서 · 숨김을 칸별로 정리">폴더 정리</button><button class="btn ghost" data-x>닫기</button></div>
+  const md=A().openModal(`<div class="mhead"><h2>인물 관리</h2><span class="small dim pphint" style="margin-left:8px">관계도 NPC · PC · 포켓몬 — 화자로 쓰는 모두</span><span class="sp"></span><button class="btn sm pri" data-ppa="new">＋ 새 인물</button><button class="btn sm ghost" data-ppa="fadd" title="새 폴더 — 카드를 끌어 넣는다">＋ 폴더</button><button class="btn sm ghost" data-ppa="spkmgr" title="화자 줄의 칩 순서 · 숨김을 칸별로 정리">화자 줄 정리</button><button class="btn ghost" data-x>닫기</button></div>
    <div class="pptool"><input type="search" id="pp_q" placeholder="이름 · 트레이너 · 폴더로 찾기" value="${esc(PP.q)}"><span class="chips">${chip('all','전체')}${chip('npc','인물')}${chip('pc','PC')}${chip('pm','포켓몬')}${cnt.hid?chip('hid','숨김'):''}</span></div>
-   <div class="ppwrap"><div class="ppgrid" id="pp_g">${ppGroups(vis,card)||`<div class="empty small">${L.length?'찾는 인물이 없다':'아직 인물이 없다 — 「＋ 새 인물」'}</div>`}</div><div class="ppdet" id="pp_d">${ppDetail(L)}</div></div>`);
+   <div class="pphelp small dim">카드를 끌어 폴더에 놓으면 옮겨진다 · Ctrl(⌘)·Shift+클릭으로 여러 장을 골라 한꺼번에 · 폴더 머리를 끌면 순서가 바뀐다</div>
+   <div class="ppwrap"><div class="ppgrid" id="pp_g">${ppGroups(vis,card,!q&&PP.f==='all')||`<div class="empty small">${L.length?'찾는 인물이 없다':'아직 인물이 없다 — 「＋ 새 인물」'}</div>`}</div><div class="ppdet" id="pp_d">${ppDetail(L)}</div></div>`);
   md.classList.add('wide','ppmodal');const g=$('#pp_g',md);g.scrollTop=PP.top||0;
   const re=s=>{PP.top=g.scrollTop;openPeople(s)};
   const qi=$('#pp_q',md);qi.oninput=()=>{PP.q=qi.value;const qq=qi.value.trim().toLowerCase();md.querySelectorAll('.ppc').forEach(b=>{const x=L.find(y=>y.key===b.dataset.pp);b.style.display=!qq||(x&&(x.name.toLowerCase().includes(qq)||x.sub.toLowerCase().includes(qq)||(x.fname||'').toLowerCase().includes(qq)))?'':'none'});md.querySelectorAll('.ppgrp').forEach(gp=>{const any=[...gp.querySelectorAll('.ppc')].some(b=>b.style.display!=='none');gp.style.display=any?'':'none';gp.classList.toggle('shut',!qq&&!!PPC[gp.dataset.ppg])})};
   md.querySelectorAll('[data-ppgh]').forEach(b=>b.onclick=()=>{const gp=b.closest('.ppgrp');const f=gp.dataset.ppg;if(PPC[f])delete PPC[f];else PPC[f]=1;ppSaveC();gp.classList.toggle('shut',!!PPC[f])});
   md.querySelectorAll('[data-ppf]').forEach(b=>b.onclick=()=>{PP.f=b.dataset.ppf;re()});
-  md.querySelectorAll('[data-pp]').forEach(b=>b.onclick=()=>re(b.dataset.pp));
-  md.querySelectorAll('[data-ppa]').forEach(b=>b.onclick=()=>{if(b.dataset.ppa==='new'){PP.draft=null;return re('new')}if(b.dataset.ppa==='spkmgr'){A().closeModal();return openSpkMgr()}});
+  md.querySelectorAll('[data-pp]').forEach(b=>b.onclick=e=>{const k=b.dataset.pp;if(e.ctrlKey||e.metaKey||e.shiftKey){if(PP.multi.has(k))PP.multi.delete(k);else PP.multi.add(k);b.classList.toggle('pick',PP.multi.has(k));ppMultiBar(md);return}PP.multi.clear();re(k)});
+  ppDnD(md,re);ppMultiBar(md);
+  md.querySelectorAll('[data-ppa]').forEach(b=>b.onclick=async()=>{if(b.dataset.ppa==='new'){PP.draft=null;return re('new')}if(b.dataset.ppa==='fadd'){const id=await ppNewFolder();if(id){delete PPC[id];if(PP.multi.size){await ppMoveMany([...PP.multi],id);PP.multi.clear()}}return re()}if(b.dataset.ppa==='spkmgr'){A().closeModal();return openSpkMgr()}});
   ppBind(md,L,re)}
+ /* 여러 장 골랐을 때 아래 띠 — 폴더로 옮기기 · 고르기 풀기 */
+ function ppMultiBar(md){let bar=$('.ppmulti',md);const n=PP.multi.size;if(!n){if(bar)bar.remove();return}
+  if(!bar){bar=document.createElement('div');bar.className='ppmulti';$('.ppwrap',md).before(bar)}
+  bar.innerHTML=`<b>${n}장 고름</b><span class="small dim">폴더에 끌어 놓거나 고른다</span>${ppFolderSel('pp_mf','').replace('<option value="">폴더 없음</option>','<option value="" disabled selected>폴더로 옮기기…</option><option value="__none">폴더 없음</option>')}<span class="sp"></span><button class="btn xs ghost" data-ppmx>고르기 풀기</button>`;
+  $('[data-ppmx]',bar).onclick=()=>{PP.multi.clear();md.querySelectorAll('.ppc.pick').forEach(c=>c.classList.remove('pick'));ppMultiBar(md)};
+  const sel=$('#pp_mf',bar);sel.onchange=async()=>{let fid=sel.value;if(fid==='__new'){fid=await ppNewFolder();if(!fid)return}const keys=[...PP.multi];PP.multi.clear();await ppMoveMany(keys,fid==='__none'?'':fid);A().toast(`${keys.length}장을 옮겼다`);const g=$('#pp_g',md);PP.top=g?g.scrollTop:0;openPeople()}}
+ /* 끌어 놓기: 카드 → 폴더(빈 폴더 · 폴더 없음 포함), 폴더 머리 → 다른 폴더 머리(순서) · 머리 ✎ 이름 · 🗑 지우기 */
+ function ppDnD(md,re){let drag=null;
+  md.querySelectorAll('.ppc[data-pp]').forEach(c=>{c.addEventListener('dragstart',e=>{const k=c.dataset.pp;const keys=PP.multi.has(k)?[...PP.multi]:[k];drag={t:'card',keys};e.dataTransfer.setData('text/om-pp',k);e.dataTransfer.effectAllowed='move';c.classList.add('dragging');md.classList.add('ppdragging');if(keys.length>1){const g=document.createElement('div');g.className='ppghost';g.textContent=keys.length+'장';document.body.appendChild(g);e.dataTransfer.setDragImage(g,20,20);setTimeout(()=>g.remove(),0)}});
+   c.addEventListener('dragend',()=>{c.classList.remove('dragging');md.classList.remove('ppdragging');md.querySelectorAll('.ppgrp.over').forEach(x=>x.classList.remove('over'));drag=null})});
+  md.querySelectorAll('[data-ppfd]').forEach(h=>{h.addEventListener('dragstart',e=>{if(e.target.closest('input'))return e.preventDefault();drag={t:'folder',id:h.dataset.ppfd};e.dataTransfer.setData('text/om-ppf',h.dataset.ppfd);e.dataTransfer.effectAllowed='move';md.classList.add('ppdragging')});h.addEventListener('dragend',()=>{md.classList.remove('ppdragging');md.querySelectorAll('.ppgrp.over,.ppgrp.before').forEach(x=>x.classList.remove('over','before'));drag=null})});
+  md.querySelectorAll('.ppgrp').forEach(gp=>{let d=0;const ok=()=>drag&&(drag.t==='card'||(drag.t==='folder'&&gp.dataset.ppg&&gp.dataset.ppg!==drag.id));
+   gp.addEventListener('dragenter',e=>{if(!ok())return;e.preventDefault();d++;gp.classList.add(drag.t==='card'?'over':'before')});
+   gp.addEventListener('dragover',e=>{if(ok()){e.preventDefault();e.dataTransfer.dropEffect='move'}});
+   gp.addEventListener('dragleave',()=>{if(--d<=0){d=0;gp.classList.remove('over','before')}});
+   gp.addEventListener('drop',async e=>{if(!ok())return;e.preventDefault();d=0;gp.classList.remove('over','before');const fid=gp.dataset.ppg||'';const dr=drag;drag=null;
+    if(dr.t==='card'){const keys=dr.keys.filter(k=>{const it=md.querySelector(`.ppc[data-pp="${CSS.escape(k)}"]`);return !it||it.closest('.ppgrp')!==gp});if(!keys.length)return;PP.multi.clear();await ppMoveMany(keys,fid);if(fid)delete PPC[fid];A().toast(keys.length>1?`${keys.length}장을 옮겼다`:fid?'폴더로 옮겼다':'폴더에서 뺐다');return re()}
+    if(dr.t==='folder'){const C=spkConf();const a='f:'+dr.id,b='f:'+fid;C.order=C.order.filter(x=>x!==a);const i=C.order.indexOf(b);C.order.splice(i<0?C.order.length:i,0,a);await saveSpk(C);return re()}})});
+  md.querySelectorAll('[data-ppren]').forEach(b=>b.onclick=e=>{e.stopPropagation();const id=b.dataset.ppren;const C=spkConf();const f=C.folders[id];if(!f)return;const sp=b.closest('.ppghr').querySelector('.ppfn');if(!sp)return;
+   const inp=document.createElement('input');inp.type='text';inp.value=f.name;inp.className='ppfin';sp.replaceWith(inp);inp.focus();inp.select();inp.onclick=ev=>ev.stopPropagation();let done=false;
+   const fin=async save=>{if(done)return;done=true;const v=inp.value.trim();if(save&&v&&v!==f.name){const C2=spkConf();if(C2.folders[id]){C2.folders[id].name=v;await saveSpk(C2)}}re()};
+   inp.onkeydown=ev=>{if(ev.key==='Enter'&&!ev.isComposing){ev.preventDefault();fin(true)}if(ev.key==='Escape'){ev.preventDefault();ev.stopPropagation();fin(false)}};inp.onblur=()=>fin(true)});
+  md.querySelectorAll('[data-ppfdel]').forEach(b=>b.onclick=async e=>{e.stopPropagation();const id=b.dataset.ppfdel;const C=spkConf();const f=C.folders[id];if(!f)return;const n=(f.keys||[]).length;
+   if(!confirm(`「${f.name}」 폴더를 지울까?${n?`\n안의 ${n}명은 「폴더 없음」으로 나온다 (인물은 지워지지 않는다).`:''}`))return;
+   C.order=C.order.filter(x=>x!=='f:'+id);C.order.push(...(f.keys||[]));delete C.folders[id];if(typeof SPK!=='undefined'&&SPK.fo)SPK.fo=SPK.fo.filter(x=>x!==id);await saveSpk(C);A().toast('폴더를 지웠다');re()})}
  function ppDetail(L){
   if(PP.sel==='new'){const D=PP.draft=PP.draft||{name:'',img:'',stands:[],fid:'',note:''};
    return `<div class="ppdh"><b>새 인물</b><span class="small dim">관계도에 NPC 로 들어가고 화자 칸에 바로 뜬다</span></div>
@@ -952,7 +982,79 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   if(!src){if(audio){audio.pause();audio=null}lastBgm='';return}
   if(!unlocked)return;
   if(src!==lastBgm||force){if(audio)audio.pause();audio=new Audio(src);audio.loop=true;audio.volume=vol;audio.play().catch(()=>{});lastBgm=src}}
- function onChat(row){if(row&&row.id)DQ.arr[row.id]=Date.now();if(row.kind==='chat'&&row.data&&row.data.bat){autoSe(Object.assign({},row,{kind:row.data.bat}));return}if(row.kind==='chat'&&row.data&&row.data.sms){if(window.OM_PHONE_UI)window.OM_PHONE_UI.onSms(row);return}autoSe(row);feedLog([row]);if(row.kind==='chat'&&row.data){const nm=row.data.as||row.who;for(const k in TYPING.who)if(TYPING.who[k].from===row.data.from&&(!nm||TYPING.who[k].who===nm))delete TYPING.who[k];}if(A().view==='rp'&&row.kind==='chat'&&row.data&&row.data.ch!=='ooc'&&(row.data.t||row.data.clear))A().renderScene();oocTick()}
+ /* ----- 10-25 망령: 화자 고르기 창 — RP 입력줄 · 채팅 입력칸 공용. 긴 select 목록 대신 찾기 · 배틀 중 · 최근 · 폴더별 묶음을 그림과 함께 -----
+    고른 화자는 이 브라우저의 최근 목록(om_spk_recent, 8명)에 남는다. 폴더 접힘은 om_spkp_fold */
+ const SPKR_LS='om_spk_recent';
+ const recentSpk=()=>{try{const v=JSON.parse(localStorage.getItem(SPKR_LS)||'[]');return Array.isArray(v)?v:[]}catch(e){return []}};
+ function pushRecent(k){if(!k||k==='gm'||k==='me')return;try{const L=recentSpk().filter(x=>x!==k);L.unshift(k);localStorage.setItem(SPKR_LS,JSON.stringify(L.slice(0,8)))}catch(e){}}
+ let SPKF={};try{SPKF=JSON.parse(localStorage.getItem('om_spkp_fold')||'{}')||{}}catch(e){}
+ function curSpk(speakers){const k=SPK.key;if(k&&(!speakers||speakers.some(x=>x.key===k)))return k;return gm()?'gm':'me'}
+ function spkInfo(key){const ST=A().ST;
+  if(key==='gm'){const g=charOf('gm');return {key,name:'GM',sub:'나레이션',av:gmImg()||standSrc(g),kind:'gm'}}
+  if(key==='me'){const c=charOf(ST.seat);return {key,name:c?c.name:(ST.name||'나'),sub:'내 트레이너',av:c?(c.img||standSrc(c)):'',kind:'pc'}}
+  const c=charOf(key);if(!c)return {key,name:key.replace(/^(npc|as|pm):/,''),sub:'',av:'',kind:''};
+  let sub=c.kind==='pm'?'포켓몬':c.kind==='pc'?'PC':'인물';if(c.kind==='pm'){const t=((ST.state.roster||{}).trainers||{})[c.tid];if(t)sub='포켓몬 · '+t.name}
+  return {key,name:c.name,sub,av:c.img||standSrc(c),kind:c.kind}}
+ const spkAv=(i,cls)=>`<i class="${cls||'spkp-av'}${i.av?'':' noimg'}" style="${i.av?`background-image:url('${cssu(i.av)}')`:''}">${i.av?'':esc(i.key==='gm'?'GM':[...(i.name||'')].slice(0,2).join(''))}</i>`;
+ function spkBtnFill(btn,key){const i=spkInfo(key);const h=`${spkAv(i,'spkp-av sm')}<span class="spkpbn">${esc(i.name)}</span><span class="spkpcar">▾</span>`;if(btn._h!==h){btn.innerHTML=h;btn._h=h}btn.dataset.k=key}
+ /* 배틀 중인 트레이너 · 포켓몬 (필드에 나온 포켓몬 먼저) — 화자 키로 */
+ function battleSpkKeys(have){const b=A().ST.state.battle||{};const out=[];const field=new Set();
+  for(const side of ['left','right'])for(const tid of (((b.sides||{})[side]||{}).trainers||[])){const t=(b.trainers||{})[tid];if(!t)continue;
+   const tk=have.has('as:'+t.name)?'as:'+t.name:have.has('npc:'+t.name)?'npc:'+t.name:'';if(tk)out.push(tk);
+   const ms=Object.values(b.mons||{}).filter(m=>m.tid===tid).sort((x,y)=>(y.entry&&y.hp&&y.hp.cur>0?1:0)-(x.entry&&x.hp&&x.hp.cur>0?1:0));
+   for(const m of ms){const k='pm:'+(m.rid||m.id);if(!have.has(k))continue;out.push(k);if(m.entry&&m.hp&&m.hp.cur>0)field.add(k)}}
+  return {keys:[...new Set(out)],field}}
+ function pickSections(){const ST=A().ST;
+  if(!gm()){const keys=['me',...Object.values((ST.state.roster||{}).mons||{}).filter(m=>m.tid===ST.seat).map(m=>'pm:'+m.id)];const bs=battleSpkKeys(new Set(keys));return {secs:[{id:'mine',name:'내 캐릭터',keys}],field:bs.field}}
+  const all=allSpeakers();const have=new Set(all.map(x=>x.key));const C=spkConf();const secs=[{id:'gm',name:'',keys:['gm']}];
+  const bs=battleSpkKeys(have);if(bs.keys.length)secs.push({id:'bat',name:'⚔ 배틀 중',keys:bs.keys});
+  const rc=recentSpk().filter(k=>have.has(k));if(rc.length)secs.push({id:'rec',name:'🕘 최근',keys:rc});
+  const inF=new Set();const fids=[];for(const k of C.order||[])if(String(k).startsWith('f:')&&C.folders[k.slice(2)])fids.push(k.slice(2));for(const id of Object.keys(C.folders))if(!fids.includes(id))fids.push(id);
+  for(const id of fids){const f=C.folders[id];const keys=(f.keys||[]).filter(k=>have.has(k)&&!C.hidden[k]);keys.forEach(k=>inF.add(k));if(keys.length)secs.push({id:'f:'+id,name:'📁 '+f.name,keys,fold:true})}
+  const loose=all.map(x=>x.key).filter(k=>k!=='gm'&&!inF.has(k)&&!C.hidden[k]);if(loose.length)secs.push({id:'loose',name:fids.length?'📂 폴더 밖':'인물',keys:loose,fold:true});
+  return {secs,field:bs.field}}
+ function closeSpkPick(){const p=document.querySelector('.spkp');if(p){p.remove();document.removeEventListener('pointerdown',spkPickOut,true)}}
+ function spkPickOut(e){const p=document.querySelector('.spkp');if(!p)return;if(p.contains(e.target)||(p._anchor&&p._anchor.contains(e.target)))return;closeSpkPick()}
+ function openSpkPick(anchor,opt){if(document.querySelector('.spkp')&&document.querySelector('.spkp')._anchor===anchor)return closeSpkPick();closeSpkPick();
+  const {secs,field}=pickSections();const cur=opt.cur;const many=secs.reduce((n,s)=>n+s.keys.length,0)>8;
+  const it=k=>{const i=spkInfo(k);return `<button type="button" class="spkp-it ${k===cur?'on':''}" data-k="${esc(k)}" data-q="${esc((i.name+' '+i.sub).toLowerCase())}">${spkAv(i)}<span class="spkp-tx"><b>${esc(i.name)}</b><small>${esc(i.sub)}${field.has(k)?' <em class="spkp-fd">필드</em>':''}</small></span></button>`};
+  const pop=document.createElement('div');pop.className='spkp';pop._anchor=anchor;
+  pop.innerHTML=`${many?'<div class="spkp-h"><input type="search" class="spkp-q" placeholder="이름 · 트레이너로 찾기" autocomplete="off"></div>':''}<div class="spkp-b">${secs.map(s=>`<div class="spkp-sec ${s.fold&&SPKF[s.id]?'shut':''}" data-s="${esc(s.id)}">${s.name?`<button type="button" class="spkp-sh" ${s.fold?'data-fold':''}>${s.fold?'<span class="spkp-ar">▾</span> ':''}${esc(s.name)} <small>${s.keys.length}</small></button>`:''}<div class="spkp-g">${s.keys.map(it).join('')}</div></div>`).join('')}</div>`;
+  document.body.appendChild(pop);
+  const place=()=>{const r=anchor.getBoundingClientRect();const W=Math.min(380,innerWidth-16);pop.style.width=W+'px';const below=innerHeight-r.bottom-10,above=r.top-10;const up=below<320&&above>below;const mh=Math.max(180,Math.min(520,(up?above:below)));pop.style.maxHeight=mh+'px';pop.style.left=Math.max(8,Math.min(innerWidth-W-8,r.left))+'px';if(up){pop.style.top='';pop.style.bottom=(innerHeight-r.top+6)+'px'}else{pop.style.bottom='';pop.style.top=(r.bottom+6)+'px'}};place();
+  const pick=k=>{closeSpkPick();opt.onPick&&opt.onPick(k)};
+  pop.querySelectorAll('.spkp-it').forEach(b=>b.onclick=()=>pick(b.dataset.k));
+  pop.querySelectorAll('[data-fold]').forEach(b=>b.onclick=()=>{const sec=b.closest('.spkp-sec');const id=sec.dataset.s;if(SPKF[id])delete SPKF[id];else SPKF[id]=1;try{localStorage.setItem('om_spkp_fold',JSON.stringify(SPKF))}catch(e){}sec.classList.toggle('shut',!!SPKF[id])});
+  const q=pop.querySelector('.spkp-q');
+  const filt=()=>{const v=(q?q.value:'').trim().toLowerCase();pop.classList.toggle('qing',!!v);pop.querySelectorAll('.spkp-sec').forEach(sec=>{let any=0;sec.querySelectorAll('.spkp-it').forEach(b=>{const ok=!v||b.dataset.q.includes(v);b.style.display=ok?'':'none';if(ok)any++});sec.style.display=any?'':'none'})};
+  if(q){q.oninput=filt;if(matchMedia('(pointer:fine)').matches)setTimeout(()=>q.focus(),20)}   /* 휴대폰은 자판이 올라와 창을 가리니 바로 포커스하지 않는다 */
+  pop.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closeSpkPick();anchor.focus()}if(e.key==='Enter'&&e.target===q&&!e.isComposing){e.preventDefault();const f=[...pop.querySelectorAll('.spkp-it')].find(b=>b.style.display!=='none'&&b.offsetParent);if(f)pick(f.dataset.k)}});
+  {const on=pop.querySelector('.spkp-it.on');if(on&&!on.closest('.shut'))on.scrollIntoView({block:'nearest'})}
+  setTimeout(()=>document.addEventListener('pointerdown',spkPickOut,true),0)}
+ /* ----- 10-25 망령: 배틀 화면에서 채팅(세션)을 치면, 말한 사람 진영 쪽에 스탠딩 + 말풍선이 잠깐 뜬다 -----
+    진영: 포켓몬은 배틀 칸의 side, 트레이너 · 인물은 배틀 트레이너 이름으로 찾는다. 배틀에 없는 사람 · GM 나레이션은 가운데 위. 화면에만 그리는 연출이라 저장하지 않는다 */
+ const BSAY={el:null,t:{}};
+ function bsayKey(row){const d=row.data||{};const ST=A().ST;if(d.k)return d.k==='me'?(d.from||ST.seat||''):d.k;
+  if(d.as){const t=Object.values((ST.state.roster||{}).trainers||{}).find(x=>x.name===d.as);return t?t.id:'npc:'+d.as}
+  if(d.from==='gm')return 'gm';return d.from||''}
+ function bsaySide(key,name){const b=A().ST.state.battle||{};const T=b.trainers||{};
+  if(key&&key.startsWith('pm:')){const rid=key.slice(3);const m=Object.values(b.mons||{}).find(x=>(x.rid||x.id)===rid);if(m)return m.side||(T[m.tid]||{}).side||'center'}
+  const t=Object.values(T).find(x=>(x.srcTid||x.id)===key||x.name===name);if(t&&t.side)return t.side;
+  if(key&&key.startsWith('pm:'))return 'center';return 'center'}
+ function bsayPlace(){const L=BSAY.el;if(!L)return;const f=document.querySelector('#scene .stadium');if(!f||A().view!=='battle'){L.style.display='none';return}const r=f.getBoundingClientRect();L.style.display='';Object.assign(L.style,{left:r.left+'px',top:r.top+'px',width:r.width+'px',height:Math.min(r.height,innerHeight-r.top)+'px'})}
+ function battleSay(row){try{if(A().view!=='battle'||!row||row.kind!=='chat')return;const d=row.data||{};if(!d.t||d.ch==='ooc'||d.sms||d.bat||d.clear)return;
+  const key=bsayKey(row);const c=key&&key!=='gm'?charOf(key):null;const name=c?c.name:(d.as||(d.from==='gm'?(d.gmn||'GM'):row.who||''));
+  const narr=window.OM_LINE?!!window.OM_LINE(d).narr:false;const side=key==='gm'||!key?'center':bsaySide(key,name);
+  const img=key==='gm'?standSrc(charOf('gm')):c?(standSrc(c)||c.img):'';
+  if(!BSAY.el){BSAY.el=document.createElement('div');BSAY.el.className='bsayL';document.body.appendChild(BSAY.el);addEventListener('resize',bsayPlace);document.addEventListener('scroll',()=>{if(BSAY.el&&BSAY.el.childElementCount)bsayPlace()},true)}
+  bsayPlace();const L=BSAY.el;const old=L.querySelector(`.bsay.${side}`);if(old)old.remove();clearTimeout(BSAY.t[side]);
+  const txt=String(d.t);const body=esc(txt.replace(/^["“「『](.*)["”」』]$/s,'$1')).replace(/\*(.+?)\*/g,'<i>$1</i>').replace(/\n/g,'<br>');
+  const el=document.createElement('div');el.className=`bsay ${side}${narr?' narr':''}${img&&side!=='center'?' hasimg':''}`;
+  el.innerHTML=`${img&&side!=='center'?`<i class="bsay-st" style="background-image:url('${cssu(img)}')"></i>`:''}<div class="bsay-bub"><b>${esc(name)}</b><p>${body}</p></div>`;
+  el.onclick=()=>{el.classList.add('out');setTimeout(()=>el.remove(),250)};L.appendChild(el);
+  const ms=Math.min(14000,4200+txt.length*90);BSAY.t[side]=setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),300)},ms)}catch(e){console.warn('battleSay',e)}}
+ function bsayClear(){if(BSAY.el&&A().view!=='battle')BSAY.el.innerHTML=''}
+ function onChat(row){if(row&&row.id)DQ.arr[row.id]=Date.now();if(row.kind==='chat'&&row.data&&row.data.bat){autoSe(Object.assign({},row,{kind:row.data.bat}));return}if(row.kind==='chat'&&row.data&&row.data.sms){if(window.OM_PHONE_UI)window.OM_PHONE_UI.onSms(row);return}autoSe(row);feedLog([row]);battleSay(row);if(row.kind==='chat'&&row.data){const nm=row.data.as||row.who;for(const k in TYPING.who)if(TYPING.who[k].from===row.data.from&&(!nm||TYPING.who[k].who===nm))delete TYPING.who[k];}if(A().view==='rp'&&row.kind==='chat'&&row.data&&row.data.ch!=='ooc'&&(row.data.t||row.data.clear))A().renderScene();oocTick()}
  function onState(){tickBanner();syncBgm();syncSe();voteNotice()}
  /* ----- GM 투표 (10-23 벨벳 참고) -----
     rp.vote = {id,q,opts:[{id,t}],anon,blind,open,at,res?:{n:{opt:표},win:[opt],total}}
@@ -1054,5 +1156,5 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   if(near||box._first!==ST.room){box.scrollTop=box.scrollHeight;box._first=ST.room}
   const inp=$('#oocIn',d);if(inp){inp.disabled=!ST.role;inp.placeholder=ST.role?'잡담 · /r 1d100':'자리에 앉으면 말할 수 있다'}}
  addEventListener('resize',()=>{try{oocTick()}catch(e){}});
- return {typingHtml,autoFolder,bgmMuted,seUrlOf:seUrl,render,allSpeakers,onChat,feedLog,onState,onTyping,typingPing,typingStop,drawTyping,mapData:mapS,openConsole,openStands,openPeople,setMyStand,charOf,playSe,setVolume,bgmWidgetHtml,bindBgmWidget,imgOfKey:k=>{if(k==='gm')return gmImg();const c=charOf(k);return c?(c.img||standSrc(c)):''},curSpeaker:()=>{const ST=A().ST;const c=speakerChar();if(c)return {key:c.key,name:c.name,img:c.img||standSrc(c)};return gm()?{key:'gm',name:'GM',img:gmImg()}:{key:'me',name:ST.name||'',img:''}}};
+ return {openSpkPick,spkBtnFill,spkInfo,pushRecent,curSpk,battleSay,bsayPlace,bsayClear,typingHtml,autoFolder,bgmMuted,seUrlOf:seUrl,render,allSpeakers,onChat,feedLog,onState,onTyping,typingPing,typingStop,drawTyping,mapData:mapS,openConsole,openStands,openPeople,setMyStand,charOf,playSe,setVolume,bgmWidgetHtml,bindBgmWidget,imgOfKey:k=>{if(k==='gm')return gmImg();const c=charOf(k);return c?(c.img||standSrc(c)):''},curSpeaker:()=>{const ST=A().ST;const c=speakerChar();if(c)return {key:c.key,name:c.name,img:c.img||standSrc(c)};return gm()?{key:'gm',name:'GM',img:gmImg()}:{key:'me',name:ST.name||'',img:''}}};
 })();

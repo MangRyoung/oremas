@@ -385,7 +385,7 @@ function renderRoom(){
   </div>
   <div class="body"><div class="scene" id="scene"></div><div class="resizer" id="resizer" title="끌어서 채팅 창 너비 조절"></div>
    <div class="side" id="side"><div class="phone"><div class="pbar"><span>●●●</span><span class="ptime" id="pclock"></span></div><div class="ptitle"><span class="plogs">${ST.role==='gm'?'<button class="btn xs ghost plog" id="clearLog" title="로그 비우기">🧹<span class="plt"> 비우기</span></button>':''}<button class="btn xs ghost plog ${LOGPIN?'on':''}" id="pinLog" title="채팅 고정 — 켜 두면 새 글이 올라와도 맨 아래로 내려가지 않는다 (지난 글 읽을 때)">📌<span class="plt"> 고정</span></button><button class="btn xs ghost plog" id="saveLog" title="채팅 로그를 파일로 저장">💾<span class="plt"> 로그</span></button><button class="btn xs ghost plog" id="chatPrefs" title="채팅 설정 — 글자 크기 · 내 글자색 · 닉네임 색">⚙<span class="plt"> 채팅 설정</span></button></span>${esc(r.name||r.id)}<small>${ST.role==='gm'?'GM':ST.role==='seat'?esc(ST.name):'관전'} · 오레마스</small></div><div class="ctabs" id="ctabs"><button type="button" data-ch="s">세션</button><button type="button" data-ch="o">잡담<i class="cdot"></i></button></div><div class="log" id="log"></div>
-    <div class="inbox">${ST.role==='gm'?'<select id="chatAs" title="누구로 말할지 (세션 탭) — 배틀 화면에서도 인물로 말할 수 있다"><option value="gm">GM</option></select>':''}<input type="text" id="chatIn" placeholder="${ST.role?'메시지 · /r 1d100 · /w 이름 메시지':'자리에 앉으면 말할 수 있다'}" ${ST.role?'':'disabled'}><button class="btn" id="chatSend" ${ST.role?'':'disabled'}>➤</button></div></div></div>
+    <div class="inbox">${ST.role?'<button type="button" class="spkpbtn" id="chatAs" title="누구로 말할지 (세션 탭) — 배틀 화면에서 말하면 그 사람 진영 쪽에 말풍선이 뜬다"></button>':''}<input type="text" id="chatIn" placeholder="${ST.role?'메시지 · /r 1d100 · /w 이름 메시지':'자리에 앉으면 말할 수 있다'}" ${ST.role?'':'disabled'}><button class="btn" id="chatSend" ${ST.role?'':'disabled'}>➤</button></div></div></div>
   </div>
   <div class="mbar" id="mbar"><button data-m="scene" class="on"><i>🎭</i><span>무대</span></button><button data-m="chat"><i>💬</i><span>채팅</span><em id="mUnread" class="mbadge" style="display:none"></em></button><button data-m="phone"><i>📱</i><span>휴대폰</span></button><button data-m="top" title="맨 위로"><i>▲</i><span>맨 위</span></button><button data-m="menu"><i>☰</i><span>메뉴</span></button></div></div>`;
  $('#copyLink').onclick=()=>copy(roomLink(ST.room),'플레이어 링크를 복사했다');
@@ -505,10 +505,12 @@ function chanDots(){const tb=$('#ctabs');if(!tb)return;const last={s:0,o:0};for(
  if(CHAN.room!==ST.room){CHAN.room=ST.room;CHAN.seen={s:last.s,o:last.o}}   /* 방에 들어올 때까지의 줄은 읽은 것으로 */
  CHAN.seen[CHAN.cur]=Math.max(CHAN.seen[CHAN.cur],last[CHAN.cur]);tb.querySelectorAll('[data-ch]').forEach(b=>b.classList.toggle('new',b.dataset.ch!==CHAN.cur&&last[b.dataset.ch]>CHAN.seen[b.dataset.ch]))}
 /* GM 채팅 화자: RP 무대의 화자 목록(GM · NPC · PC · 포켓몬)을 그대로 쓴다. 열 때마다 목록을 새로 채운다 */
-function bindChatAs(){const s=$('#chatAs');if(!s)return;
- const fill=()=>{const R=window.OM_RP_UI;const list=R&&R.allSpeakers?R.allSpeakers():[{key:'gm',name:'GM'}];const cur=ST.chatAs||'gm';
-  s.innerHTML=list.map(x=>`<option value="${esc(x.key)}">${esc(x.key==='gm'?'GM':x.name)}</option>`).join('');s.value=list.some(x=>x.key===cur)?cur:'gm';ST.chatAs=s.value};
- fill();s.addEventListener('pointerdown',fill);s.addEventListener('focus',fill);s.onchange=()=>{ST.chatAs=s.value;const i=$('#chatIn');if(i)i.focus()}}
+function bindChatAs(){const s=$('#chatAs');if(!s)return;const R=()=>window.OM_RP_UI;
+ /* 10-25 망령: select 대신 화자 고르기 창 (RP 입력줄과 같은 창). 좌석은 내 트레이너 · 내 포켓몬 */
+ const okKey=k=>{if(!k)return false;if(ST.role==='gm')return k==='gm'||!!(R()&&R().charOf&&R().charOf(k));if(k==='me')return true;if(k.startsWith('pm:')){const m=((ST.state.roster||{}).mons||{})[k.slice(3)];return !!(m&&m.tid===ST.seat)}return false};
+ const def=ST.role==='gm'?'gm':'me';if(!okKey(ST.chatAs))ST.chatAs=def;
+ const fill=()=>{if(!okKey(ST.chatAs))ST.chatAs=def;if(R()&&R().spkBtnFill)R().spkBtnFill(s,ST.chatAs)};fill();s._fill=fill;
+ s.onclick=()=>{if(!R()||!R().openSpkPick)return;R().openSpkPick(s,{cur:ST.chatAs||def,onPick:k=>{ST.chatAs=k;if(R().pushRecent)R().pushRecent(k);fill();const i=$('#chatIn');if(i)i.focus()}})}}
 /* ---------- 채팅 설정 (10-21 망령): 글자 크기 · 프로필 크기는 내 화면만, 내 글자색 · 닉네임 색 · 말풍선 색은 보내는 줄에 실려 모두에게 ---------- */
 const HEX=v=>/^#[0-9a-f]{6}$/i.test(String(v||''))?String(v):'';
 function chatSty(){try{const o=JSON.parse(localStorage.getItem('om_chatsty')||'{}');const x={};for(const k of ['tc','nc','bc'])if(HEX(o[k]))x[k]=o[k];return x}catch(e){return {}}}
@@ -539,6 +541,7 @@ async function sendChat(){
   else if(/^\/clear$/.test(t)){if(ST.role!=='gm')return toast('/clear 는 GM 만');await DBS().addLog(ST.room,ST.secret,'chat',ST.name,{t:'',clear:1})}
   else if(t.startsWith('/'))return toast('모르는 명령이야: /r /w /as /s /img /clear');
   else if(ST.role==='gm'&&CHAN.cur!=='o'&&ST.chatAs&&ST.chatAs!=='gm'){const R=window.OM_RP_UI;const c=R&&R.charOf?R.charOf(ST.chatAs):null;const nm=c?c.name:ST.chatAs.replace(/^(npc|as|pm):/,'');await DBS().addLog(ST.room,ST.secret,'chat',nm,Object.assign({t,as:nm,k:ST.chatAs},nf))}   /* GM 이 고른 인물로 */
+  else if(ST.role==='seat'&&CHAN.cur!=='o'&&ST.chatAs&&ST.chatAs.startsWith('pm:')&&(((ST.state.roster||{}).mons||{})[ST.chatAs.slice(3)]||{}).tid===ST.seat){const m=ST.state.roster.mons[ST.chatAs.slice(3)];await DBS().addLog(ST.room,ST.secret,'chat',m.name,Object.assign({t,as:m.name,k:ST.chatAs},ch,nf))}   /* 10-25: 좌석이 내 포켓몬으로 */
   else{const tr=CHAN.cur!=='o'&&ST.role==='seat'?((ST.state.roster||{}).trainers||{})[ST.seat]:null;const nm=tr&&tr.name?tr.name:ST.name;await DBS().addLog(ST.room,ST.secret,'chat',nm,Object.assign({t},ch,nf,tr&&tr.name?{as:nm,k:ST.seat}:{},ST.role==='gm'&&ST.gmNick?{gmn:ST.gmNick}:{}))}   /* 세션 탭: 좌석은 캐릭터 이름으로 · 잡담 탭은 플레이어 닉 */
  }catch(e){toast('보내지 못했다: '+e.message)}}
 function resolveSeat(n){if(n==='GM'||n==='gm')return 'gm';const seats=ST.state.seats||{};for(const k in seats)if(seats[k]&&(seats[k].name===n||k===n))return k;const trs=(ST.state.battle||{}).trainers||{};for(const k in trs)if(trs[k].name===n)return k;return null}
@@ -622,6 +625,7 @@ function renderScene(){reconcileNodes();
   tabs.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>{VIEW=b.dataset.s;renderScene()});
   const sb=$('#stageBtn');if(sb)sb.onclick=()=>{if(VIEW==='rp'||VIEW==='battle')set(['scene'],VIEW);else toast('무대는 RP 나 배틀만 될 수 있어')}}
  const el=$('#scene');if(!el)return;
+ document.body.classList.toggle('v-guide',VIEW==='guide');   /* 10-25: 튜토리얼 탭이면 오른쪽에 감우 (guide_ui.js) */
  if(VIEW!=='report'&&VIEW!=='guide')ST.lastView=VIEW;
  try{if(window.OM_MECARD)window.OM_MECARD.draw(VIEW)}catch(e){}   /* 내 트레이너 미니 카드 (10-24) — 탭 그리기가 실패해도 숨김/보임은 먼저 맞춘다 */
  /* 10-24 망령: 탭 그리기가 실패하면 탭만 바뀌고 화면은 그대로 남았다 (휴대폰 시트) — 실패를 화면에 보이고 나머지는 계속 돈다 */
@@ -637,7 +641,8 @@ function renderScene(){reconcileNodes();
  if(window.OM_DECK_UI){if(ST.role==='gm')window.OM_DECK_UI.absorb();else if(window.OM_DECK_UI.onAck)window.OM_DECK_UI.onAck()}
  if(window.OM_PHONE_UI&&window.OM_PHONE_UI.refresh)window.OM_PHONE_UI.refresh();
  if(window.OM_STAGE_UI)window.OM_STAGE_UI.onState();
- try{bchTick()}catch(e){}}
+ try{bchTick()}catch(e){}
+ try{const R=window.OM_RP_UI;if(R&&R.bsayClear){R.bsayClear();R.bsayPlace()}const ca=$('#chatAs');if(ca&&ca._fill)ca._fill()}catch(e){}}
 
 /* ---------- 배틀 씬 → battle_ui.js ---------- */
 function B(){return ST.state.battle||{}}
