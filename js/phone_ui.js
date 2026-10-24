@@ -119,13 +119,18 @@ window.OM_PHONE_UI=(()=>{
  const SNS_SEEN='om_sns_seen';
  const isSns=d=>!!d&&d.sms==='sns';
  function snsRows(){return (A().ST.log||[]).filter(r=>r.kind==='chat'&&isSns(r.data))}
+ /* 10-24 망령: 친구 공개 — 글에 fo:1 이 붙으면 쓴 계정의 친구 목록(pub.<계정>.phone.snsFriends)에 든 사람과 쓴 사람, GM 만 본다 (뒷계 · 비밀글).
+    화면에서 가리는 방식이라 로그 자체는 방 안에 남는다 */
+ const snsFriends=cid=>((phoneData(cid)||{}).snsFriends)||[];
+ function snsVisible(d){if(!d||!d.fo)return true;if(gm())return true;const me=myCid();return d.cid===me||snsFriends(d.cid).includes(me)}
+ function snsAccounts(){const out=Object.values(trs()).map(t=>({cid:t.id,name:t.name,kind:'트레이너'}));const tn=new Set(out.map(x=>x.name));for(const n of Object.values(G().nodes||{}))if(!tn.has(n.name))out.push({cid:'n:'+n.id,name:n.name,kind:KINDN[n.kind]||'NPC'});return out}
  function snsModel(){const posts=new Map(),dels=new Set(),likes={},cms={};
   for(const r of snsRows()){const d=r.data;if(d.del){dels.add(+d.del);continue}
    if(d.like){const L=likes[d.like]||(likes[d.like]=new Map());const c=d.cid||r.who;L.has(c)?L.delete(c):L.set(c,d.as||r.who);continue}
    if(d.re){(cms[d.re]||(cms[d.re]=[])).push(r);continue}if(d.t||d.img)posts.set(r.id,r)}
-  return [...posts.values()].filter(r=>!dels.has(r.id)).reverse().map(r=>({r,likes:likes[r.id]||new Map(),cms:(cms[r.id]||[]).filter(c=>!dels.has(c.id))}))}
+  return [...posts.values()].filter(r=>!dels.has(r.id)&&snsVisible(r.data)).reverse().map(r=>({r,likes:likes[r.id]||new Map(),cms:(cms[r.id]||[]).filter(c=>!dels.has(c.id))}))}
  function snsLast(){try{return +localStorage.getItem(SNS_SEEN)||0}catch(e){return 0}}
- function snsUnread(){const s=snsLast();const me=myCid();return snsRows().filter(r=>r.id>s&&!r.data.like&&!r.data.del&&!r.data.re&&(r.data.t||r.data.img)&&r.data.cid!==me).length}
+ function snsUnread(){const s=snsLast();const me=myCid();return snsRows().filter(r=>r.id>s&&!r.data.like&&!r.data.del&&!r.data.re&&(r.data.t||r.data.img)&&r.data.cid!==me&&snsVisible(r.data)).length}
  function snsSeen(){const L=snsRows();if(L.length)try{localStorage.setItem(SNS_SEEN,String(L[L.length-1].id))}catch(e){}}
  function snsHandle(cid){if(!cid)return '';if(cid==='gm')return 'GM';if(cid.startsWith('n:')){const n=(G().nodes||{})[cid.slice(2)];return n?(KINDN[n.kind]||'NPC'):''}return '트레이너'}
  const snsFmt=t=>esc(t).replace(/(^|\s)#([^\s#@]+)/g,'$1<span class="sn-tag">#$2</span>').replace(/@([^\s@]+)/g,'<span class="ph-at">@$1</span>');
@@ -134,21 +139,21 @@ window.OM_PHONE_UI=(()=>{
  function sns(t){const S=spk();const M=snsModel();const me=myCid();
   const avs=(cid,cls)=>{const u=cidImg(cid);return `<i class="ph-av ${cls||'sm'}" style="${u?`background-image:url('${cssu(u)}')`:''}"></i>`};
   const compose=snsCan()?`<div class="sn-new">${avs(S.cid)}<div class="sn-nb"><textarea id="snIn" rows="2" placeholder="${esc(S.name)} 으로 올리기 · #태그 · @이름">${esc(PH.snDraft||'')}</textarea>
-    <div class="sn-nr">${PH.snImg?`<span class="sn-att"><img src="${esc(PH.snImg)}" alt=""><button type="button" data-ph="snimgx" title="그림 빼기">✕</button></span>`:''}<label class="ph-clip" title="그림 붙이기 (붙여넣기도 된다)">📷<input type="file" accept="image/*" id="snFile" hidden></label><span class="sp"></span><button class="btn xs pri" data-ph="snpost">올리기</button></div></div></div>`
+    <div class="sn-nr">${PH.snImg?`<span class="sn-att"><img src="${esc(PH.snImg)}" alt=""><button type="button" data-ph="snimgx" title="그림 빼기">✕</button></span>`:''}<label class="ph-clip" title="그림 붙이기 (붙여넣기도 된다)">📷<input type="file" accept="image/*" id="snFile" hidden></label><button type="button" class="sn-vis ${PH.snFo?'on':''}" data-ph="snvis" title="${PH.snFo?'친구만 본다 — 누르면 전체 공개':'모두가 본다 — 누르면 친구만'}">${PH.snFo?'🔒 친구만':'🌐 전체'}</button><span class="sp"></span><button class="btn xs pri" data-ph="snpost">올리기</button></div></div></div>`
    :`<div class="ph-empty sm">${!A().ST.role?'자리에 앉으면 글을 올릴 수 있다':'시트 탭에서 「내 파티 불러오기」를 하면 글을 올릴 수 있다'}</div>`;
   const cards=M.map(({r,likes,cms})=>{const d=r.data;const liked=likes.has(me);const open=PH.snOpen===r.id;const shown=open?cms:cms.slice(-2);
    const lk=[...likes.values()];
-   return `<article class="sn-card" data-sn="${r.id}"><div class="sn-h">${avs(d.cid)}<div class="sn-who"><b>${esc(d.as||r.who)}</b><small>${esc(snsHandle(d.cid))} · ${esc(snsAgo(r.at))}</small></div><span class="sp"></span>${gm()||d.cid===me?`<button type="button" class="sn-x" data-ph="sndel" data-id="${r.id}" title="지우기">✕</button>`:''}</div>
+   return `<article class="sn-card" data-sn="${r.id}"><div class="sn-h">${avs(d.cid)}<div class="sn-who"><b>${esc(d.as||r.who)}</b><small>${esc(snsHandle(d.cid))} · ${esc(snsAgo(r.at))}${d.fo?' · <span class="sn-fo" title="친구만 보는 글">🔒 친구만</span>':''}</small></div><span class="sp"></span>${gm()||d.cid===me?`<button type="button" class="sn-x" data-ph="sndel" data-id="${r.id}" title="지우기">✕</button>`:''}</div>
     ${d.img?`<a class="sn-pic" href="${esc(d.img)}" target="_blank" rel="noopener"><img src="${esc(d.img)}" alt="" loading="lazy"></a>`:''}${d.t?`<div class="sn-t">${snsFmt(d.t)}</div>`:''}
     <div class="sn-act"><button type="button" class="sn-b sn-like ${liked?'on':''}" data-ph="snlike" data-id="${r.id}" ${snsCan()?'':'disabled'}>${liked?'♥':'♡'}<span>${likes.size||''}</span></button><button type="button" class="sn-b" data-ph="sncm" data-id="${r.id}">💬<span>${cms.length||''}</span></button>${lk.length?`<small class="sn-lw">${esc(lk.slice(0,2).join(', '))}${lk.length>2?` 외 ${lk.length-2}명`:''} 님이 좋아한다</small>`:''}</div>
     ${cms.length>shown.length?`<button type="button" class="sn-more" data-ph="sncm" data-id="${r.id}">댓글 ${cms.length}개 모두 보기</button>`:''}
     ${shown.length?`<div class="sn-cms">${shown.map(c=>`<div class="sn-c"><b>${esc(c.data.as||c.who)}</b> ${snsFmt(c.data.t||'')}${gm()||c.data.cid===me?`<button type="button" class="sn-cx" data-ph="sndel" data-id="${c.id}" title="지우기">✕</button>`:''}</div>`).join('')}</div>`:''}
     ${open&&snsCan()?`<div class="sn-cin">${avs(S.cid,'xs')}<input type="text" id="snCm" placeholder="${esc(S.name)} 으로 댓글" autocomplete="off"><button type="button" class="btn xs" data-ph="sncmsend" data-id="${r.id}">게시</button></div>`:''}</article>`}).join('');
-  return `<div class="ph-head pink"><button class="ph-back" data-ph="home">‹</button><div><b>SNS</b><small>모두가 보는 타임라인 · 글 ${M.length}개</small></div></div>
+  return `<div class="ph-head pink"><button class="ph-back" data-ph="home">‹</button><div><b>SNS</b><small>${esc(S.name)} · 글 ${M.length}개</small></div>${snsCan()?`<span class="sp"></span><button type="button" class="sn-frb" data-ph="snfr" title="「🔒 친구만」 글을 볼 수 있는 사람">👥 친구 ${snsFriends(S.cid).length}</button>`:''}</div>
    <div class="sn-feed">${compose}${cards||'<div class="ph-empty">아직 올라온 글이 없다</div>'}</div>`}
  async function snsAdd(data){const S=spk();const ST=A().ST;await window.OM_STORE.addLog(ST.room,ST.secret,'chat',S.name||ST.name||'',Object.assign({t:'',sms:'sns',as:S.name,k:S.key,cid:S.cid},data))}
  async function snsPost(md){const inp=$('#snIn',md);const t=(inp?inp.value:'').trim();const img=PH.snImg||'';if(!t&&!img)return A().toast('쓸 말이나 그림을 넣어 줘');
-  try{await snsAdd(Object.assign({t},img?{img}:{}));PH.snDraft='';PH.snImg='';PH.snOpen=0;re()}catch(e){A().toast('올리지 못했다: '+e.message)}}
+  try{await snsAdd(Object.assign({t},img?{img}:{},PH.snFo?{fo:1}:{}));PH.snDraft='';PH.snImg='';PH.snOpen=0;re()}catch(e){A().toast('올리지 못했다: '+e.message)}}
  async function snsImg(f){if(!f||!/^image\//.test(f.type||''))return;if(f.size>5*1024*1024)return A().toast('5MB 이하만');const ST=A().ST;A().toast('그림을 올리는 중…');
   try{PH.snImg=await window.OM_STORE.uploadImage(`rooms/${ST.room}/sns_${Date.now().toString(36)}`,f);re()}catch(e){A().toast('그림을 올리지 못했다: '+e.message)}}
  async function smsSend(md){const inp=$('#smsIn',md);if(!inp)return;const t=inp.value.trim();if(!t)return;inp.value='';const S=spk();const ST=A().ST;
@@ -291,6 +296,11 @@ window.OM_PHONE_UI=(()=>{
    if(['home','contacts','conf','cal','sms','notes','callog','set','deck','sns'].includes(k))return backTo(k,md);
    if(k==='snpost')return snsPost(md);
    if(k==='snimgx'){PH.snImg='';return re()}
+   if(k==='snvis'){const ta=$('#snIn',md);if(ta)PH.snDraft=ta.value;PH.snFo=!PH.snFo;return re()}
+   if(k==='snfr'){const me=myCid();const cur=new Set(snsFriends(me));const L=snsAccounts().filter(x=>x.cid!==me);
+    const sh=sheet('친구 — 「🔒 친구만」 글을 보는 사람',`<div class="small dim" style="margin-bottom:8px">${esc(cidName(me))} 계정이 「🔒 친구만」 으로 올린 글은 여기서 고른 사람과 GM 만 본다.</div><input type="search" class="sn-frq" placeholder="이름으로 찾기"><div class="sn-frl">${L.map(x=>`<label class="sn-fri" data-q="${esc(String(x.name).toLowerCase())}"><input type="checkbox" value="${esc(x.cid)}" ${cur.has(x.cid)?'checked':''}>${av(x.name,x.cid.startsWith('n:')?(G().nodes[x.cid.slice(2)]||{}).img:(trs()[x.cid]||{}).image,'xs')}<b>${esc(x.name)}</b><small>${esc(x.kind)}</small></label>`).join('')||'<div class="ph-empty sm">고를 사람이 없다</div>'}</div><div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn sm pri" data-frsave>저장</button></div>`);
+    const q=sh.querySelector('.sn-frq');q.oninput=()=>{const v=q.value.trim().toLowerCase();sh.querySelectorAll('.sn-fri').forEach(l=>l.style.display=!v||l.dataset.q.includes(v)?'':'none')};
+    sh.querySelector('[data-frsave]').onclick=async()=>{const pick=[...sh.querySelectorAll('.sn-fri input:checked')].map(i=>i.value);await savePhone(me,{snsFriends:pick});closeSheet();A().toast(`친구 ${pick.length}명`);re()};return}
    if(k==='snlike'){if(!snsCan())return;try{await snsAdd({like:+b.dataset.id})}catch(er){A().toast('누르지 못했다: '+er.message)}return re()}
    if(k==='sncm'){const id=+b.dataset.id;PH.snOpen=PH.snOpen===id&&!b.classList.contains('sn-more')?0:id;re();const ci=$('#snCm',md);if(ci)ci.focus();return}
    if(k==='sncmsend'){const ci=$('#snCm',md);const v=ci?ci.value.trim():'';if(!v)return;try{await snsAdd({t:v,re:+b.dataset.id})}catch(er){return A().toast('보내지 못했다: '+er.message)}return re()}

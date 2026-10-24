@@ -53,7 +53,7 @@ window.OM_IMPORT=(()=>{
   return {id:doc.id||d.id,tid:tr?tr.id:(doc.data&&doc.data.tid)||'',name:d.name||'',gender:d.gender||'-',lv:L,dist:nz(d.dist),
    typesKo:tko,types:tko.map(S().typeEn),tera:d.tera&&d.tera!=='-'?d.tera:'-',teraEn:d.tera&&d.tera!=='-'?S().typeEn(d.tera):'-',
    ability:d.ability||'',abilityEff:brN(abil.multi||abil.single||''),item:d.item||'',itemEff:brN(item.eff||''),items2:itemsX(d,ET),
-   base,ranks:base.map(S().gradeOf),iv,ev,stats,...(mkIv?{mkIvSig:mkIv.join('/')}:{}),...(BU?{base0,baseUp:(BU.up||[]).map(u=>({i:+u.i,from:+u.from,to:+u.to,by:(u.by||[]).slice(0,4)}))}:{}),hp:{max:stats[0],cur:stats[0]},
+   base,ranks:base.map(S().gradeOf),iv,ev,stats,...(mkIv?{mkIvSig:mkIv.join('/')}:{}),...(d.ivRolls&&Array.isArray(d.ivRolls.rolls)&&d.ivRolls.rolls.length?{ivRolls:{rolls:d.ivRolls.rolls.filter(r=>Array.isArray(r)&&r.length===6).map(r=>r.map(v=>Math.max(0,Math.min(31,Math.round(+v)||0)))),x:+d.ivRolls.x||0,r:+d.ivRolls.r||0}}:{}),   /* 10-24: 제작기에서 굴려 둔 알까기 후보 */...(BU?{base0,baseUp:(BU.up||[]).map(u=>({i:+u.i,from:+u.from,to:+u.to,by:(u.by||[]).slice(0,4)}))}:{}),hp:{max:stats[0],cur:stats[0]},
    moves:(()=>{const mv=(d.moves||[]).filter(m=>m&&m.name).map(m=>{const o=move(m.name,m.half);if(m.hide)o.hide=true;return o});   /* hide: 한 장 요약 · 도감에 안 보이는 기술 (10-22) */return mv.length?mv:[move('발버둥',false)]})(),
    pots,excl:d.excl&&d.excl.name&&d.excl.name!=='전용 포텐셜'?{name:d.excl.name,eff:brN(d.excl.eff||'')}:null,
    exclX:(d.exclX||[]).filter(x=>x&&x.name).map(x=>({name:x.name,eff:brN(x.eff||'')})),

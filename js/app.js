@@ -725,9 +725,9 @@ function openHatch(tid){
  if(!list.length)return toast('포켓몬이 없다');
  const count=S().hatchCount(tr);
  const m=openModal(`<div class="mhead"><h2>알까기 — ${esc(tr.name)}</h2><span class="small muted">육성 ${esc(tr.ranks.육성||'-')} → ${count}회 굴림. 포켓몬마다 하나를 고른다 (맵툴 reroll_iv 와 같음)</span><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-  ${list.map(mon=>{const cur=mon.iv&&S().ivSum(mon.iv)?mon.iv:null;const rolls=cur?[]:S().hatch(count);mon._rolls=rolls;   /* 10-24 망령: 이미 깐 포켓몬은 굴리지 않는다 — 「🎲 재굴림」을 눌러야 후보가 나온다 */
+  ${list.map(mon=>{const cur=mon.iv&&S().ivSum(mon.iv)?mon.iv:null;const sv=((mon.ivRolls||{}).rolls||[]).filter(r=>Array.isArray(r)&&r.length===6);const rolls=sv.length?sv.map(r=>r.slice()):cur?[]:S().hatch(count);mon._rolls=rolls;   /* 10-24 망령: 시트에 남은 후보(ivRolls)가 있으면 그대로, 이미 깐 포켓몬은 새로 굴리지 않는다 — 「🎲 재굴림」을 눌러야 새 후보 */
    return `<div class="card" data-mid="${mon.id}"><div class="row"><b>${esc(mon.name)}</b><span class="small muted">지금: ${cur?cur.join('/')+' (합 '+S().ivSum(cur)+')':'없음 (전부 0)'}</span><span class="sp"></span><button class="btn sm ${cur?'pri':''}" data-re="${mon.id}">${cur?'🎲 재굴림':'다시 굴림'}</button></div>
-    <div class="ivs" style="margin-top:6px">${rolls.length?rolls.map((r,i)=>`<button class="btn" data-iv="${i}">${r.join('/')} <span class="muted">합 ${S().ivSum(r)}</span></button>`).join(''):'<span class="small muted">이미 깐 값이 있어 그대로 둔다 — 새로 깔려면 「🎲 재굴림」</span>'}</div></div>`}).join('')}
+    <div class="ivs" style="margin-top:6px">${rolls.length?rolls.map((r,i)=>`<button class="btn" data-iv="${i}">${r.join('/')} <span class="muted">합 ${S().ivSum(r)}</span></button>`).join(''):'<span class="small muted">남아 있는 후보가 없어 지금 값을 그대로 둔다 — 새로 깔려면 「🎲 재굴림」</span>'}</div></div>`}).join('')}
   <div class="row" style="margin-top:12px"><span class="sp"></span><button class="btn pri" id="ivApply">고른 것 적용</button></div>`);
  const chosen={};
  m.querySelectorAll('.card').forEach(c=>{c.querySelectorAll('[data-iv]').forEach(bt=>bt.onclick=()=>{c.querySelectorAll('[data-iv]').forEach(x=>x.classList.remove('on'));bt.classList.add('on');chosen[c.dataset.mid]=+bt.dataset.iv});
