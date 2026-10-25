@@ -3828,3 +3828,28 @@ button.tag.solo:hover{border-color:var(--yel2)}
 .bsm.narr .bsm-bub p{font-style:italic;font-weight:500}
 @media (max-width:760px){.bspk-opt label{display:none}}
 .bsm.top .bsm-bub{flex:1}
+/* 10-25 휴대폰 배틀 화자 줄: 옆으로 넘치면 볼 수 없었다 — 줄바꿈해서 다 보이게 */
+.bspk{min-width:0;max-width:100%}
+@media (max-width:760px){
+ .bspk-row{flex-wrap:wrap;overflow:visible;gap:4px}
+ .bspk-sep{writing-mode:horizontal-tb;flex-basis:100%;border-left:0;border-top:1px solid var(--line2);margin:2px 0 0;padding:4px 2px 0}
+ .bspk-row .spk{min-width:0;width:calc((100% - 16px) / 5);padding:4px 2px}
+ .bspk-row .spk span{max-width:100%;font-size:11px}
+ .bspk-row .spk i{width:34px;height:34px}
+ .bspk-h{gap:6px}
+}
+/* 10-25 휴대폰 RP: 입력칸 아래 폴더 칩 줄 */
+#rpu_fold{display:none}
+@media (max-width:760px){
+ #rpu_fold{display:block;margin:6px 0 2px}
+ #rpu_fold:empty{display:none}
+ .spkfold-row,.spkfold-mem{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding:2px 2px 4px}
+ .spkfold-row::-webkit-scrollbar,.spkfold-mem::-webkit-scrollbar{display:none}
+ .spkfold-row .spk.fr{flex-direction:row;min-width:0;padding:5px 10px 5px 6px;gap:6px;border-radius:999px}
+ .spkfold-row .spk.fr i{width:24px;height:24px;font-size:13px}
+ .spkfold-row .spk.fr span{max-width:120px}
+ .spkfold-mem{border-left:3px solid var(--yel2,#ffd12e);padding-left:6px;margin-top:2px}
+ .spkfold-mem .spk{min-width:58px;padding:3px 4px}.spkfold-mem .spk i{width:36px;height:36px}.spkfold-mem .spk span{font-size:11px}
+}
+/* 10-25 망령: 접속자 칸이 줄바꿈 계산에 제 폭(최대 240px)을 다 써서 테마 단추가 다음 줄로 밀렸다 — 남는 폭만 쓰게 (줄은 안 늘린다) */
+@media (min-width:761px){.top>.presence{flex:1 1 0;min-width:46px;max-width:min(16vw,240px)}}

@@ -201,3 +201,12 @@ html[data-vt="p5"] .rpstage.hasbg{background-image:linear-gradient(#fff,#fff),li
  background-size:22px 2px,2px 22px,22px 2px,2px 22px,22px 2px,2px 22px,22px 2px,2px 22px,cover!important;
  background-position:8px 8px,8px 8px,calc(100% - 8px) 8px,calc(100% - 8px) 8px,8px calc(100% - 8px),8px calc(100% - 8px),calc(100% - 8px) calc(100% - 8px),calc(100% - 8px) calc(100% - 8px),center!important}
 html[data-vt="p4"] .mebar .btn.pri{background:#111!important;color:#ffe100!important;box-shadow:3px 3px 0 var(--red,#e4002b)!important}
+/* 10-25 위 띠의 테마 단추: 하나로 줄이고 누르면 아래로 펼친다 */
+.vtsw.compact{position:relative;border:0}
+.vtsw.compact .vtcur{display:inline-flex;align-items:center;gap:3px;border:1px solid rgba(255,255,255,.25)}
+html[data-vt="p4"] .vtsw.compact .vtcur{border-color:#111;color:#111}
+.vtsw.compact .vtcur i{font-style:normal;font-size:9px;opacity:.7}
+.vtsw.compact .vtmenu{display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:60;flex-direction:column;background:#111;border:1px solid rgba(255,255,255,.3);box-shadow:3px 3px 0 #000;min-width:56px}
+.vtsw.compact.open .vtmenu{display:flex}
+html[data-vt] .top .vtsw.compact .vtmenu button,.vtsw.compact .vtmenu button{color:#fff!important;text-align:left;padding:8px 12px}
+.vtsw.compact .vtmenu button:hover{background:rgba(255,255,255,.12)}
