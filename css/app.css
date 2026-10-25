@@ -3810,3 +3810,21 @@ button.tag.solo:hover{border-color:var(--yel2)}
 .bspk-row .spk .bspk-x{position:absolute;top:1px;left:3px;text-decoration:none;font-size:12px;line-height:1;color:var(--mute);padding:2px 4px;border-radius:4px;opacity:0;transition:opacity .12s}
 .bspk-row .spk:hover .bspk-x{opacity:1}.bspk-row .spk .bspk-x:hover{color:#fff;background:var(--red)}
 @media (hover:none){.bspk-row .spk .bspk-x{opacity:.8}}
+/* 10-25 휴대폰 배틀 말풍선: 위에서부터 쌓는 작은 줄 (얼굴 + 대사) · 나레이션은 맨 위 · 스탠딩 크기 조절은 숨김 */
+.bsm-stack{position:absolute;left:6px;right:6px;top:6px;display:flex;flex-direction:column;gap:6px;pointer-events:none}
+.bsm{display:flex;align-items:flex-start;gap:6px;max-width:92%;pointer-events:auto;cursor:pointer;animation:bsayIn .22s ease-out}
+.bsm.right{align-self:flex-end;flex-direction:row-reverse}
+.bsm.center{align-self:center}
+.bsm.top{align-self:stretch;max-width:none}
+.bsm.out{opacity:0;transition:opacity .25s}
+.bsm-av{flex:none;width:46px;height:46px;border-radius:50%;background:#222 center top/cover no-repeat;border:2px solid #fff;box-shadow:2px 2px 0 var(--red);display:grid;place-items:center;font-style:normal;font-size:11px;color:#fff}
+.bsm.right .bsm-av{box-shadow:-2px 2px 0 var(--blue,#4aa3ff)}
+.bsm-bub{min-width:0;background:#fff;color:#000;padding:6px 12px 8px;border-radius:4px 12px 12px 12px;box-shadow:3px 3px 0 var(--red)}
+.bsm.right .bsm-bub{border-radius:12px 4px 12px 12px;box-shadow:-3px 3px 0 var(--blue,#4aa3ff)}
+.bsm.top .bsm-bub{border-radius:8px;background:#111;color:#fff;border:1px solid var(--yel,#ffd12e);box-shadow:3px 3px 0 #000;text-align:center}
+.bsm-bub b{display:block;font-size:11px;color:var(--red)}
+.bsm.top .bsm-bub b{color:var(--yel,#ffd12e)}
+.bsm-bub p{margin:0;font-size:14px;line-height:1.5;font-weight:600;word-break:keep-all;overflow-wrap:anywhere}
+.bsm.narr .bsm-bub p{font-style:italic;font-weight:500}
+@media (max-width:760px){.bspk-opt label{display:none}}
+.bsm.top .bsm-bub{flex:1}

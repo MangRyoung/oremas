@@ -1069,13 +1069,23 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   if(key&&key.startsWith('pm:')){const rid=key.slice(3);const m=Object.values(b.mons||{}).find(x=>(x.rid||x.id)===rid);if(m)return m.side||(T[m.tid]||{}).side||'center'}
   const t=Object.values(T).find(x=>(x.srcTid||x.id)===key||x.name===name);if(t&&t.side)return t.side;
   if(key&&key.startsWith('pm:'))return 'center';return 'center'}
- function bsayPlace(){const L=BSAY.el;if(!L)return;const f=document.querySelector('#scene .stadium');if(!f||A().view!=='battle'){L.style.display='none';return}const r=f.getBoundingClientRect();const mb=document.getElementById('mbar');const mbH=mb&&getComputedStyle(mb).display!=='none'?mb.getBoundingClientRect().height:0;const top=Math.max(r.top,0),bot=Math.min(r.bottom,innerHeight-mbH);L.style.display=bot-top>80?'':'none';Object.assign(L.style,{left:r.left+'px',top:top+'px',width:r.width+'px',height:Math.max(0,bot-top)+'px'})}
+ function bsayPlace(){const L=BSAY.el;if(!L)return;const f=matchMedia('(max-width:760px)').matches?document.getElementById('scene'):document.querySelector('#scene .stadium');if(!f||A().view!=='battle'){L.style.display='none';return}const r=f.getBoundingClientRect();const mb=document.getElementById('mbar');const mbH=mb&&getComputedStyle(mb).display!=='none'?mb.getBoundingClientRect().height:0;const top=Math.max(r.top,0),bot=Math.min(r.bottom,innerHeight-mbH);L.style.display=bot-top>80?'':'none';Object.assign(L.style,{left:r.left+'px',top:top+'px',width:r.width+'px',height:Math.max(0,bot-top)+'px'})}
  function battleSay(row,force){try{if(A().view!=='battle'||!row||row.kind!=='chat')return;if(!BSP.on&&!force)return;const d=row.data||{};if(!d.t||d.ch==='ooc'||d.sms||d.bat||d.clear)return;
   const key=bsayKey(row);const c=key&&key!=='gm'?charOf(key):null;const name=c?c.name:(d.as||(d.from==='gm'?(d.gmn||'GM'):row.who||''));
   const narr=window.OM_LINE?!!window.OM_LINE(d).narr:false;const side=key==='gm'||!key?'center':bsaySide(key,name);
   const img=key==='gm'?standSrc(charOf('gm')):c?(standSrc(c)||c.img):'';
   if(!BSAY.el){BSAY.el=document.createElement('div');BSAY.el.className='bsayL';document.body.appendChild(BSAY.el);addEventListener('resize',bsayPlace);document.addEventListener('scroll',()=>{if(BSAY.el&&BSAY.el.childElementCount)bsayPlace()},true)}
-  BSAY.el.style.setProperty('--bs',BSP.sc/100);bsayPlace();const L=BSAY.el;const old=L.querySelector(`.bsay.${side}`);if(old)old.remove();clearTimeout(BSAY.t[side]);
+  const txt0=String(d.t);
+  /* 10-25 망령: 휴대폰은 화면이 좁아 큰 스탠딩이 겹친다 — 위에서부터 한 줄씩 쌓는 작은 말풍선(얼굴 + 대사), 최대 3개. 나레이션은 늘 맨 위 */
+  if(BSAY.mob=matchMedia('(max-width:760px)').matches){bsayPlace();const L=BSAY.el;let st=L.querySelector('.bsm-stack');if(!st){L.innerHTML='';st=document.createElement('div');st.className='bsm-stack';L.appendChild(st)}
+   const av=key==='gm'?(gmImg()||img):c?(c.img||standSrc(c)):'';const top=side==='center'&&(narr||key==='gm'||!key);
+   const it=document.createElement('div');it.className=`bsm ${side}${narr?' narr':''}${top?' top':''}`;
+   it.innerHTML=`${top?'':`<i class="bsm-av${av?'':' noimg'}" style="${av?`background-image:url('${cssu(av)}')`:''}">${av?'':esc([...name].slice(0,2).join(''))}</i>`}<div class="bsm-bub"><b>${esc(name)}</b><p>${esc(txt0).replace(/\*(.+?)\*/g,'<i>$1</i>').replace(/\n/g,'<br>')}</p></div>`;
+   const kill=()=>{it.classList.add('out');setTimeout(()=>it.remove(),260)};it.onclick=kill;
+   if(top){const firstNon=[...st.children].find(x=>!x.classList.contains('top'));st.insertBefore(it,firstNon||null)}else st.appendChild(it);
+   while(st.children.length>3){const old=[...st.children].find(x=>!x.classList.contains('top'))||st.firstElementChild;old.remove()}
+   setTimeout(kill,Math.min(12000,4000+txt0.length*80));return}
+  BSAY.el.style.setProperty('--bs',BSP.sc/100);bsayPlace();const L=BSAY.el;{const st=L.querySelector('.bsm-stack');if(st)st.remove()}const old=L.querySelector(`.bsay.${side}`);if(old)old.remove();clearTimeout(BSAY.t[side]);
   const txt=String(d.t);const body=esc(txt).replace(/\*(.+?)\*/g,'<i>$1</i>').replace(/\n/g,'<br>');
   const showImg=!!img&&!(key==='gm'&&narr);const el=document.createElement('div');el.className=`bsay ${side}${narr?' narr':''}${showImg?' hasimg':''}`;
   el.innerHTML=`${showImg?`<i class="bsay-st" style="background-image:url('${cssu(img)}')"></i>`:''}<div class="bsay-bub"><b>${esc(name)}</b><p>${body}</p></div>`;
