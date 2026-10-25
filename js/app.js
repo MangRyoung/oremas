@@ -425,7 +425,7 @@ function renderRoom(){
   document.addEventListener('pointermove',mv);document.addEventListener('pointerup',up)};
  renderScene();
  /* 방에 막 들어왔을 때: 세션 탭 · 로그 맨 아래 (그림이 늦게 불려 와 길어져도 따라 내려간다) */
- if(ST._toBottom){ST._toBottom=false;renderLog(true);const lg=$('#log');if(lg&&!LOGPIN)[150,600,1500,3000].forEach(t=>setTimeout(()=>{if(lg.isConnected)lg.scrollTop=lg.scrollHeight},t))}else renderLog(false)}
+ if(ST._toBottom){ST._toBottom=false;renderLog('force');const lg=$('#log');if(lg&&!LOGPIN)[150,600,1500,3000].forEach(t=>setTimeout(()=>{if(lg.isConnected)lg.scrollTop=lg.scrollHeight},t))}else renderLog(false)}
 function copy(t,msg){navigator.clipboard.writeText(t).then(()=>toast(msg),()=>prompt('복사해서 쓰기',t))}
 
 /* ---------- 상태 쓰기 ---------- */
@@ -519,7 +519,7 @@ window.OM_LINE=lineFmt;
 const CHAN={cur:(()=>{try{return localStorage.getItem('om_chan')==='o'?'o':'s'}catch(e){return 's'}})(),seen:{s:0,o:0}};
 const isOoc=r=>!!(r&&r.data&&r.data.ch==='ooc');
 function setChan(ch,quiet){CHAN.cur=ch==='o'?'o':'s';try{localStorage.setItem('om_chan',CHAN.cur)}catch(e){}const tb=$('#ctabs');if(tb)tb.querySelectorAll('[data-ch]').forEach(b=>b.classList.toggle('on',b.dataset.ch===CHAN.cur));
- const inp=$('#chatIn');if(inp&&ST.role)inp.placeholder=CHAN.cur==='o'?'잡담 · 세션 로그에 남지 않는다':'메시지 · /r 1d100 · /w 이름 메시지';const side=$('#side');if(side)side.classList.toggle('ooc',CHAN.cur==='o');if(!quiet)renderLog(true)}
+ const inp=$('#chatIn');if(inp&&ST.role)inp.placeholder=CHAN.cur==='o'?'잡담 · 세션 로그에 남지 않는다':'메시지 · /r 1d100 · /w 이름 메시지';const side=$('#side');if(side)side.classList.toggle('ooc',CHAN.cur==='o');if(!quiet){LOGNEW=false;renderLog('force')}}   /* 탭을 바꾸면 다른 글이니 맨 아래부터 */
 function chanDots(){const tb=$('#ctabs');if(!tb)return;const last={s:0,o:0};for(const r of ST.log){if(r.kind!=='chat'&&r.kind!=='dice')continue;if(r.data&&(r.data.sms||r.data.bat))continue;const c=isOoc(r)?'o':'s';last[c]=Math.max(last[c],r.id)}
  if(CHAN.room!==ST.room){CHAN.room=ST.room;CHAN.seen={s:last.s,o:last.o}}   /* 방에 들어올 때까지의 줄은 읽은 것으로 */
  CHAN.seen[CHAN.cur]=Math.max(CHAN.seen[CHAN.cur],last[CHAN.cur]);tb.querySelectorAll('[data-ch]').forEach(b=>b.classList.toggle('new',b.dataset.ch!==CHAN.cur&&last[b.dataset.ch]>CHAN.seen[b.dataset.ch]))}
@@ -549,7 +549,7 @@ function openChatPrefs(){const y=chatSty();const md=openModal(`<div class="mhead
  g('cp_reset').onclick=()=>{for(const k of ['tc','nc','bc'])g('cp_'+k+'_on').checked=false;g('cp_fs').value=UI_DEF.chat;g('cp_av').value=UI_DEF.av;pv()};
  g('cp_ok').onclick=()=>{try{localStorage.setItem('om_chatsty',JSON.stringify(rd()));localStorage.setItem('om_ui',JSON.stringify(UI))}catch(e){}closeModal();toast('채팅 설정을 저장했다');renderLog&&renderLog()}}
 async function sendChat(){
- const inp=$('#chatIn');const t=inp.value.trim();if(!t)return;const SY=chatSty();const ch=Object.assign(CHAN.cur==='o'?{ch:'ooc'}:{},Object.keys(SY).length?{sty:SY}:{});const nf=CHAN.cur==='o'?{}:{nf:1};inp.value='';if(window.OM_RP_UI&&window.OM_RP_UI.typingStop)window.OM_RP_UI.typingStop();
+ const inp=$('#chatIn');const t=inp.value.trim();if(!t)return;LOGMINE=Date.now();const SY=chatSty();const ch=Object.assign(CHAN.cur==='o'?{ch:'ooc'}:{},Object.keys(SY).length?{sty:SY}:{});const nf=CHAN.cur==='o'?{}:{nf:1};inp.value='';if(window.OM_RP_UI&&window.OM_RP_UI.typingStop)window.OM_RP_UI.typingStop();
  try{
   let m;
   if((m=t.match(/^\/r(?:oll)?\s+(.+)$/i))){const r=roll(m[1]);if(!r)return toast('주사위 식을 모르겠다 (예: 1d100, 2d6+3)');await DBS().addLog(ST.room,ST.secret,'dice',ST.name,Object.assign({t:`${m[1]} → ${r.text} = ${r.total}`,total:r.total},ch))}
@@ -573,9 +573,12 @@ function selfLog(t){const rows=selfRows();rows.push({id:(ST.lastLogId||0)+0.5,ki
 /* 소지품 줄만 나만 보는 로그로, 나머지는 모두에게 */
 function splitLog(name,L,kind){const it=L.filter(x=>/^소지품/.test(x)),rest=L.filter(x=>!/^소지품/.test(x));if(rest.length)sysLog(`${name} ${rest.join(' · ')}`,kind||'battle');if(it.length)selfLog(`${name} ${it.join(' · ')}`)}
 /* 채팅 고정 (10-24 망령): 켜 두면 새 글이 와도 스크롤을 그대로 둔다 — 고정 단추에 새 글 표시만 */
+/* 10-25 망령: 채팅창은 처음 들어올 때만 맨 아래로. 그 뒤로는 끌어내리지 않는다 — 맨 아래를 보고 있을 때만 새 글을 따라가고, 위를 읽는 중이면 「↓ 새 글」만 띄운다. 내가 보낸 글은 따라간다 */
+var LOGNEW=false,LOGMINE=0;
 var LOGPIN=(()=>{try{return localStorage.getItem('om_logpin')==='1'}catch(e){return false}})();
 function renderLog(scroll){
- const el=$('#log');if(!el)return;const top0=el.scrollTop,h0=el.scrollHeight;
+ const el=$('#log');if(!el)return;const top0=el.scrollTop,h0=el.scrollHeight;const near=h0-top0-el.clientHeight<48;
+ if(!el._nb){el._nb=1;el.addEventListener('scroll',()=>{if(LOGNEW&&el.scrollHeight-el.scrollTop-el.clientHeight<48){LOGNEW=false;const b=el.querySelector('.lognew');if(b)b.remove()}},{passive:true});el.addEventListener('click',e=>{if(e.target.closest('.lognew')){LOGNEW=false;e.target.closest('.lognew').remove();el.scrollTop=el.scrollHeight}})}
  const cut=+((ST.state.rp||{}).logClearAt)||0;
  const SR=CHAN.cur==='o'?[]:selfRows().filter(r=>r.id>cut);
  el.innerHTML=(SR.length?ST.log.concat(SR).sort((a,b)=>a.id-b.id):ST.log).filter(r=>r.kind==='self'||(r.id>cut&&(CHAN.cur==='o'?isOoc(r):!isOoc(r)))).map(r=>{const d=r.data||{};const k=(r.kind==='chat'&&d.bat)?d.bat:r.kind;const t=fmtTime(r.at);
@@ -593,7 +596,8 @@ function renderLog(scroll){
   return `<div class="msg ${k} ${mine?'me':''} ${lf.narr?'narr':''}"><div class="av" style="${av?`background-image:url('${cssu(av)}')`:''}"></div><div class="bub" style="${sa.bub}"><span class="who" style="${sa.who}">${who}</span>${d.img?`<a href="${esc(d.img)}" target="_blank" rel="noopener"><img class="cimg" src="${esc(d.img)}" alt=""></a>`:''}${esc(lf.text)}</div><span class="time">${t}</span></div>`}).join('');
  el.querySelectorAll('[data-lmid]').forEach(bt=>bt.onclick=()=>{if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.action)window.OM_BATTLE_UI.action({act:'pots',mid:bt.dataset.lmid,only:String(bt.dataset.lnm||'').split('|').filter(Boolean)})});
  if(!el.innerHTML&&CHAN.cur==='o')el.innerHTML='<div class="msg sys"><div class="bub">잡담 창 — 여기서 한 말은 세션 로그·무대에 나오지 않는다</div></div>';chanDots();
- if(LOGPIN){el.scrollTop=top0;if(el.scrollHeight>h0+2){const pn=$('#pinLog');if(pn)pn.classList.add('new')}}else if(scroll!==false)el.scrollTop=el.scrollHeight}
+ const follow=scroll==='force'||(!LOGPIN&&scroll!==false&&(near||Date.now()-LOGMINE<5000));
+ if(follow){LOGNEW=false;el.scrollTop=el.scrollHeight}else{el.scrollTop=top0;if(el.scrollHeight>h0+2&&scroll!==false){if(LOGPIN){const pn=$('#pinLog');if(pn)pn.classList.add('new')}else LOGNEW=true}if(LOGNEW&&!LOGPIN)el.insertAdjacentHTML('beforeend','<button type="button" class="lognew">↓ 새 글</button>')}}
 
 /* ---------- 씬 ---------- */
 function scene(){return ST.state.scene||'rp'}
