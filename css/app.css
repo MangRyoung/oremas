@@ -3853,3 +3853,4 @@ button.tag.solo:hover{border-color:var(--yel2)}
 }
 /* 10-25 망령: 접속자 칸이 줄바꿈 계산에 제 폭(최대 240px)을 다 써서 테마 단추가 다음 줄로 밀렸다 — 남는 폭만 쓰게 (줄은 안 늘린다) */
 @media (min-width:761px){.top>.presence{flex:1 1 0;min-width:46px;max-width:min(16vw,240px)}}
+.tbtns-own{margin:4px 0 2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}

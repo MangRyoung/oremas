@@ -57,7 +57,7 @@ window.OM_STAGE_UI=(()=>{
   const x=$('#stx',md);if(x)x.onclick=async()=>{if(!confirm(`《${keyOf(s)}》을(를) 걷을까?`))return;A().closeModal();await reset()}}
 
  /* ----- 필드 전개 (맵툴 dialog_field_field) — 주인별로 묶어서 ----- */
- function open(side){if(typeof side!=='string')side='';const re=()=>open(side);const s=stage();const cur=s?keyOf(s):'';const all=owners();const bt=(ST().state.battle||{}).trainers||{};const L=all.filter(mine).filter(o=>!side||((bt[o.tid]||{}).side===side));
+ function open(side,tid){if(typeof side!=='string')side='';if(typeof tid!=='string')tid='';const re=()=>open(side,tid);const s=stage();const cur=s?keyOf(s):'';const all=owners();const bt=(ST().state.battle||{}).trainers||{};const L=all.filter(mine).filter(o=>!side||((bt[o.tid]||{}).side===side)).filter(o=>!tid||o.tid===tid);   /* 10-25: 트레이너 칸의 「필드 전개」는 그 트레이너 것만 */
   const card=(o,f,k)=>{const key=o.kind+':'+o.id+':'+k;const u=bgSrc(f.img);const on=!!s&&s.src===key;const col=tcol(f.color);const can=o.kind==='t'||o.on||gm();
    return `<div class="sfc ${on?'on':''}"><div class="stpic" ${u?`style="background-image:url('${cssu(u)}')"`:''}>${u?'':`<span class="bad">${f.img?'「'+esc(f.img)+'」<br>':''}그림 없음</span>`}</div>
     <div class="stbody"><div class="sthead"><b>${esc(f.name)}</b><span class="stgb ${KIND_CLS[kindOf(f)]}">${KINDS[kindOf(f)]}</span>${f.color?`<span class="type" style="background:${esc(col.bg)};color:${esc(col.fg)}">${esc(tko(f.color))}</span>`:''}</div>
