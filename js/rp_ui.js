@@ -1044,7 +1044,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  /* 📌 고정: GM 이 배틀 화자 줄에 늘 둘 화자 (방에 저장 rp.bspkPin) — 아직 한 번도 안 정했으면 숨기지 않은 인물(NPC) 전부 */
  function bspkPins(){const v=R().bspkPin;if(Array.isArray(v))return v.slice();const C=spkConf();return allSpeakers().filter(x=>x.kind==='npc'&&!C.hidden[x.key]).map(x=>x.key)}
  async function bspkPinSave(L){await A().set(['rp','bspkPin'],[...new Set(L)])}
- function bsayToggleHtml(){return `<button type="button" class="btn sm ${BSP.on?'pri':'ghost'} bsaytog" data-bspk="on" title="배틀 말풍선(대사창) 켜기 · 끄기 — 이 브라우저에서만">💬 대사창 ${BSP.on?'ON':'OFF'}</button>`}
+ function bsayToggleHtml(){return `<button type="button" class="btn sm ${BSP.on?'pri':'ghost'} bsaytog" data-bspk="on" title="배틀 말풍선(대사창) 켜기 · 끄기 — 이 브라우저에서만">💬<span class="lbl"> 대사창</span> ${BSP.on?'ON':'OFF'}</button>`}
  function bspkHtml(){const ST=A().ST;const all=allSpeakers();const have=new Set(all.map(x=>x.key));const C=spkConf();
   const bs=battleSpkKeys(have);const pins=bspkPins().filter(k=>have.has(k));const cur=ST.chatAs||'gm';
   const chip=(k,pin)=>{const i=spkInfo(k);return `<button type="button" class="spk ${k===cur?'on':''}${pin?' pin':''}" data-bspk-k="${esc(k)}" title="${esc(i.name)}${i.sub?' — '+esc(i.sub):''}${pin?' · × 로 이 줄에서 빼기':''}">${pin?`<u class="bspk-x" data-bspk-x="${esc(k)}" title="이 줄에서 빼기">×</u>`:''}<i style="${i.av?`background-image:url('${cssu(i.av)}')`:''}">${i.av?'':esc(k==='gm'?'GM':[...i.name].slice(0,2).join(''))}</i><span>${esc(k==='gm'?'GM (나레이션)':i.name)}</span>${bs.field.has(k)?'<em class="bspk-fd">필드</em>':''}</button>`};
@@ -1097,13 +1097,13 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    const vimg=key==='gm'?standSrc(charOf('gm')):c?(standSrc(c)||c.img):'';const vs=side==='right'?'right':'left';
    const vn=document.createElement('div');vn.className=`bsvn ${vs}${vimg?' hasimg':''}${narr?' narr':''}`;vn._o={side,narr,top:false,av,name,body:bodyH,end:Date.now()+ms};
    vn.innerHTML=`<div class="bsvn-band"></div>${vimg?`<i class="bsvn-st" style="background-image:url('${cssu(vimg)}')"></i>`:''}<div class="bsvn-bub"><b>${esc(name)}</b><p>${bodyH}</p></div>`;
-   vn.onclick=()=>{vn.classList.add('out');setTimeout(()=>vn.remove(),260)};L.appendChild(vn);
+   vn.querySelector('.bsvn-bub').onclick=()=>{vn.classList.add('out');setTimeout(()=>vn.remove(),260)};L.appendChild(vn);
    BSAY.t.vn=setTimeout(()=>{vn.classList.add('out');setTimeout(()=>vn.remove(),300)},ms);return}
   BSAY.el.style.setProperty('--bs',BSP.sc/100);bsayPlace();const L=BSAY.el;{const st=L.querySelector('.bsm-stack');if(st)st.remove()}const old=L.querySelector(`.bsay.${side}`);if(old)old.remove();clearTimeout(BSAY.t[side]);
   const txt=String(d.t);const body=esc(txt).replace(/\*(.+?)\*/g,'<i>$1</i>').replace(/\n/g,'<br>');
   const showImg=!!img&&!(key==='gm'&&narr);const el=document.createElement('div');el.className=`bsay ${side}${narr?' narr':''}${showImg?' hasimg':''}`;
   el.innerHTML=`${showImg?`<i class="bsay-st" style="background-image:url('${cssu(img)}')"></i>`:''}<div class="bsay-bub"><b>${esc(name)}</b><p>${body}</p></div>`;
-  el.onclick=()=>{el.classList.add('out');setTimeout(()=>el.remove(),250)};L.appendChild(el);
+  el.querySelector('.bsay-bub').onclick=()=>{el.classList.add('out');setTimeout(()=>el.remove(),250)};L.appendChild(el);
   const ms=Math.min(14000,4200+txt.length*90);BSAY.t[side]=setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),300)},ms)}catch(e){console.warn('battleSay',e)}}
  function bsayClear(){if(BSAY.el&&A().view!=='battle')BSAY.el.innerHTML=''}
  function onChat(row){if(row&&row.id)DQ.arr[row.id]=Date.now();if(row.kind==='chat'&&row.data&&row.data.bat){autoSe(Object.assign({},row,{kind:row.data.bat}));return}if(row.kind==='chat'&&row.data&&row.data.sms){if(window.OM_PHONE_UI)window.OM_PHONE_UI.onSms(row);return}autoSe(row);feedLog([row]);battleSay(row);if(row.kind==='chat'&&row.data){const nm=row.data.as||row.who;for(const k in TYPING.who)if(TYPING.who[k].from===row.data.from&&(!nm||TYPING.who[k].who===nm))delete TYPING.who[k];}if(A().view==='rp'&&row.kind==='chat'&&row.data&&row.data.ch!=='ooc'&&(row.data.t||row.data.clear))A().renderScene();oocTick()}

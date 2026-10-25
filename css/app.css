@@ -1292,7 +1292,7 @@ label.ph-item input[type=checkbox]{width:16px;height:16px;flex:none}
  .bstat.fold{gap:8px}
  .bstat.fold .phnow{display:inline;font-family:var(--lab);font-size:14px;color:#fff}
  .bstat.fold .phases,.bstat.fold .bgmw,.bstat.fold>.sp{display:none}
- .bstat.fold .gmrow>*:not([data-act=progress]):not([data-act=start]):not([data-act=pendgo]):not(.chip){display:none}
+ .bstat.fold .gmrow>*:not([data-act=progress]):not([data-act=start]):not([data-act=pendgo]):not(.chip):not(.bsaytog):not(.gmh){display:none}
  .bstat.fold .gmrow{width:100%;display:flex;gap:6px;flex-wrap:wrap}
 }
 /* 시트 표 모바일: 넓은 칸(기술 효과 · 개체값 · 실수치)은 아랫줄(.mobx)로 내려 전체 폭으로 보인다 */
@@ -3878,3 +3878,15 @@ button.tag.solo:hover{border-color:var(--yel2)}
 .bsvn-bub b{display:inline-block;background:#000;color:#fff;font-size:12px;padding:1px 10px;margin:-20px 0 4px -6px}
 .bsvn-bub p{margin:0;font-size:15px;line-height:1.55;font-weight:700;word-break:keep-all;overflow-wrap:anywhere}
 .bsvn.narr .bsvn-bub p{font-style:italic;font-weight:500}
+/* 10-25 배틀 조작판을 접어도(휴대폰) 대사창 · PL 권한 단추는 턴 진행 옆에 — 줄을 넘기지 않게 짧은 글씨로 */
+.gmrow .sh{display:none}
+@media (max-width:760px){
+ .bstat.fold .gmrow{flex-wrap:nowrap}
+ .bstat.fold .gmrow>*{flex-shrink:0}
+ .bstat.fold .gmrow .lbl{display:none}
+ .bstat.fold .gmrow .sh{display:inline}
+ .bstat.fold .gmrow>.bsaytog,.bstat.fold .gmrow>.gmh{display:inline-flex;padding-left:8px;padding-right:8px}
+}
+/* 10-25 말풍선이 떠 있어도 화면을 밀어 내릴 수 있게 — 그림 · 빈 곳은 손가락을 통과시키고, 말풍선만 눌러서 닫는다 */
+.bsvn,.bsay{pointer-events:none}
+.bsvn-bub,.bsay-bub{pointer-events:auto;cursor:pointer}
