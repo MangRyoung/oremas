@@ -711,7 +711,19 @@ async function mergeInto(hostId,g,mons,ord,gT){const b0=JSON.parse(JSON.stringif
  if(gSeat&&rt&&(ST.role==='gm'||hostId===ST.seat)){const co=Array.isArray(rt.co)?rt.co.slice():[];if(!co.includes(gSeat)){co.push(gSeat);if(await set(['roster','trainers',hostId,'co'],co))coNote=` · ${(seats[gSeat]||{}).name||gSeat} 도 지시 창을 함께 쓴다`}}
  else if(gSeat&&!rt)coNote=' · (시트에 없는 트레이너라 손님 좌석 권한은 GM 이 「함께 지시」로 준다)';
  const OL={host:(H.name0||'')+' 것으로 통일',guest:g.name+' 것으로 통일',both:'모두 합침'};
+ mergePor(hostId,[H.image0||H.image||'',...H.mates.map(x=>x.image||'')]);   /* 10-25 망령: 초상도 합친다 (뒤에서 · 실패하면 그대로) */
  toast(`${H.name} — ${mons.length}체 합류`);sysLog(`【함께 지시하기】 ${H.name} (${H.side==='left'?'좌측':'우측'}) — ${g.name} 의 파티 ${mons.length}체 합류 · 4식 6령: ${OL[ord]||ord}${coNote}`,'battle');VIEW='battle';renderScene()}
+/* 10-25 망령: 함께 지시하기 — 정사각 초상 여럿을 비스듬히 잘라 한 장으로. 원래 그림은 image0 에 남긴다 */
+async function mergePor(hostId,urls){try{urls=urls.filter(Boolean);if(urls.length<2)return;
+ const load=u=>new Promise(res=>{const im=new Image();im.crossOrigin='anonymous';im.onload=()=>res(im);im.onerror=()=>res(null);im.src=u});
+ const ims=(await Promise.all(urls.map(load))).filter(Boolean);if(ims.length<2)return;
+ const S=512,n=ims.length,cv=document.createElement('canvas');cv.width=cv.height=S;const x=cv.getContext('2d');x.fillStyle='#111';x.fillRect(0,0,S,S);const sk=S*.16;
+ ims.forEach((im,i)=>{const x0=S*i/n,x1=S*(i+1)/n;x.save();x.beginPath();x.moveTo(i?x0+sk/2:0,0);x.lineTo(i<n-1?x1+sk/2:S,0);x.lineTo(i<n-1?x1-sk/2:S,S);x.lineTo(i?x0-sk/2:0,S);x.closePath();x.clip();
+  const w=S/n+sk,cx=(x0+x1)/2,sc=Math.max(w/im.width,S/im.height),dw=im.width*sc,dh=im.height*sc;x.drawImage(im,cx-dw/2,0,dw,dh);x.restore()});
+ x.strokeStyle='#fff';x.lineWidth=6;for(let i=1;i<n;i++){const xx=S*i/n;x.beginPath();x.moveTo(xx+sk/2,0);x.lineTo(xx-sk/2,S);x.stroke()}
+ const blob=await new Promise(r=>cv.toBlob(r,'image/webp',.9));if(!blob)return;
+ const u=await DBS().uploadImage(`rooms/${ST.room}/merge_${hostId}_${Date.now().toString(36)}`,blob);if(!u)return;
+ const H=(B().trainers||{})[hostId];if(!H)return;if(!H.image0)await set(['battle','trainers',hostId,'image0'],H.image||'');await set(['battle','trainers',hostId,'image'],u)}catch(e){console.warn('mergePor',e)}}
 async function loadFromRoster(tid,side){
  const r=roster();const t=r.trainers[tid];if(!t)return toast('로스터에 없는 트레이너다');
  const trainer=JSON.parse(JSON.stringify(t));const mons=(t.pids||[]).map(id=>r.mons[id]).filter(Boolean).map(x=>JSON.parse(JSON.stringify(x)));
@@ -773,7 +785,7 @@ function affHtml(m){const TYPES=['Normal','Fire','Water','Electric','Grass','Ice
  return `<div class="aff"><div class="afcol wk"><div class="afh">약점</div>${W||'<div class="afnone">없음</div>'}</div><div class="afcol rs"><div class="afh">내성 · 무효</div>${R||'<div class="afnone">없음</div>'}</div></div>`}
 function openMon(mid){
  const b=B();const m=(b.mons||{})[mid];if(!m)return;const tr=(b.trainers||{})[m.tid]||{name:''};
- const full=ST.role==='gm'||ST.seat===m.tid;
+ const full=ST.role==='gm'||ST.seat===m.tid||!!(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.canEditMon&&window.OM_BATTLE_UI.canEditMon(mid));   /* 10-25: 함께 지시(co · 합치기) 중이면 같이 쓰는 포켓몬도 상세 창 */
  /* 내 것이 아니면 상세 창 대신 도감 — 해석한 만큼만 보인다 (같은 편은 도감 규칙대로 전부) */
  if(!full&&window.OM_DEX_UI)return window.OM_DEX_UI.open(mid,ST.seat||'_view');
  const K=S().STATS_KO;const pct=(m.hp.cur>0?Math.max(1,Math.round(m.hp.cur/m.hp.max*100)):0);

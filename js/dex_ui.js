@@ -17,7 +17,16 @@ window.OM_DEX_UI=(()=>{
  const monOf=mid=>((A().ST.state.battle||{}).mons||{})[mid]||((A().ST.state.roster||{}).mons||{})[mid];
  const trOf=tid=>((A().ST.state.battle||{}).trainers||{})[tid]||((A().ST.state.roster||{}).trainers||{})[tid]||{};
  /* 보는 사람 기준 공개 범위: 'all' | ['move','type'] | [] */
- function scope(mid,viewer,asPl){const m=monOf(mid);if(!m)return [];if((gm()&&!asPl)||m.tid===viewer)return 'all';const mt=trOf(viewer);if(mt.side&&m.side&&mt.side===m.side&&window.OM_TEAM&&window.OM_TEAM(A().ST.state.battle,viewer)===window.OM_TEAM(A().ST.state.battle,m))return 'all';   /* 같은 편(개인전이면 저 혼자)만 다 보인다 */const d=dx(viewer);if(d.list.includes(mid))return 'all';return d.part[mid]||[]}
+ /* 10-25 망령: 함께 지시 · 함께 지시하기(합치기) 중이면 같이 쓰는 사람끼리 트레이너 · 도감을 나눈다
+    team(viewer) = 이 좌석이 다루는 트레이너들 (자기 · co 로 받은 · 합쳐진 호스트), seats(viewer) = 도감을 함께 보는 좌석들 */
+ function team(viewer){const out=new Set([viewer]);const b=A().ST.state.battle||{},R=(A().ST.state.roster||{}).trainers||{};
+  for(const [id,t] of Object.entries(b.trainers||{}))if(t&&(t.mates||[]).some(x=>x&&(x.seat===viewer||x.id===viewer)))out.add(id);
+  for(const [id,t] of Object.entries(R))if(t&&Array.isArray(t.co)&&t.co.includes(viewer))out.add(id);return out}
+ function seats(viewer){const out=new Set(team(viewer));const b=A().ST.state.battle||{},R=(A().ST.state.roster||{}).trainers||{};
+  for(const id of [...out]){const t=(b.trainers||{})[id];for(const x of ((t&&t.mates)||[]))if(x&&x.seat)out.add(x.seat);const r=R[id];for(const s of ((r&&r.co)||[]))out.add(s)}return out}
+ function scope(mid,viewer,asPl){const m=monOf(mid);if(!m)return [];if((gm()&&!asPl)||m.tid===viewer)return 'all';const T=team(viewer);if(T.has(m.tid)||(m.otid&&T.has(m.otid)))return 'all';
+  for(const id of T){const mt=trOf(id);if(mt.side&&m.side&&mt.side===m.side&&window.OM_TEAM&&window.OM_TEAM(A().ST.state.battle,id)===window.OM_TEAM(A().ST.state.battle,m))return 'all'}   /* 같은 편(개인전이면 저 혼자)만 다 보인다 */
+  const part=new Set();for(const sv of seats(viewer)){const d=dx(sv);if(d.list.includes(mid))return 'all';for(const p of (d.part[mid]||[]))part.add(p)}return [...part]}
  /* 노이즈: 같은 글에 늘 같은 자리 (이름을 씨앗으로) */
  function noise(text,key){let seed=7;for(const ch of String(key))seed=(seed*31+ch.charCodeAt(0))%2147483647;const rnd=()=>{seed=(seed*48271)%2147483647;return seed/2147483647};const NZ=['■','■','▓','▒','█'];return String(text).split('').map(ch=>/\s/.test(ch)?ch:(rnd()<.35?NZ[Math.floor(rnd()*NZ.length)]:ch)).join('')}
  /* asPl: PL 권한(공평 모드)의 GM 이 자기 트레이너(viewer) 눈으로 본다 — GM 이라고 다 보이지 않는다 */

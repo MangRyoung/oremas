@@ -3919,3 +3919,9 @@ button.tag.solo:hover{border-color:var(--yel2)}
 @media (max-width:760px){.spimg{width:64px;height:86px}.spform .ppf{flex-wrap:wrap}.spform .ppf>span:first-child{width:100%}}
 @media (max-width:760px){.spmodal .mhead h2{white-space:nowrap}.spmodal .mhead>.small{display:none}}
 .spau{font-size:11px;font-weight:700;color:#3ddc84;border:1px solid #3ddc84;border-radius:4px;padding:0 6px}
+/* 10-25 망령: 배틀에 없는 화자(진영 없음)는 가운데 아래에 발을 딛고 선다 — 위에 붕 뜨지 않게. 그림 없는 나레이션만 위 */
+.bsay.center.hasimg{top:auto;bottom:10px;left:50%;transform:translateX(-50%);align-items:flex-end;max-width:min(70%,620px)}
+.bsay.center.hasimg .bsay-st{height:calc(clamp(190px,32vh,380px) * var(--bs,1));width:calc(clamp(130px,15vw,240px) * var(--bs,1));background-position:center bottom;margin-right:-18px}
+.bsay.center.hasimg .bsay-bub{margin:0 0 18px;box-shadow:5px 5px 0 #888}
+@keyframes bsayInCB{from{opacity:0;transform:translate(-50%,16px)}to{opacity:1;transform:translateX(-50%)}}
+.bsay.center.hasimg{animation:bsayInCB .28s cubic-bezier(.2,.9,.3,1.2)}

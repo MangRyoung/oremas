@@ -83,7 +83,7 @@ window.OM_BATTLE=(()=>{
   const burn=(cat==='physical'&&has(atk,'Burn')&&!(has(atk,'Guts')||o.burnGuts))?0.5:1;
   const M=burn*(o.multiTarget?0.75:1)*weather*num(o.fieldMul,1);
   let wall=1;const ws=o.wallSize>=2?0.667:0.5;const w=o.wall||{};
-  if((cat==='physical'&&(w.reflector||w.icewall))||(cat==='special'&&w.lightscreen)||w.aurora)wall=ws;
+  if((cat==='physical'&&w.reflector)||(cat==='special'&&w.lightscreen)||w.aurora||w.icewall)wall=ws;   /* 10-25 망령: 얼음의장벽은 「기술로 받을 대미지」 — 물리 · 특수 둘 다 */
   const critMul=(o.critGen===2?2:1.5)*(o.critDamage===1?1.5:o.critDamage===2?2:1);
   const critValue=num(o.critMul,0)>0?+o.critMul:(o.critDamage===3?2.5:critMul);   /* critMul: 포켓몬마다 급소 배율 (제작기 상세 조정) */
   /* 급소 때 1 미만 보정을 1 로 되돌리는 역수 (input_damage_mod_reverse) */
