@@ -303,11 +303,16 @@ window.OM_GUIDE_UI=(()=>{
   if(!box)return [n,x,y];return box[2]<=30?[n,Math.min(98,box[0]+box[2]-1.5),Math.max(4,box[1]+1)]:[n,x,Math.min(96,box[1]+box[3]+2.5)]};   /* 넓은 띠는 같은 x 로 바로 아래 */
  function shot(p){return `<div class="gd-shot"><div class="gd-frame">${(p.s||[]).map(([x,y,w,h,l,cls])=>`<div class="gd-b ${esc(cls||'')}${h>=25?' tall':''}" style="left:${x}%;top:${y}%;width:${w}%;height:${h}%"><span>${esc(l||'').replace(/\n/g,'<br>')}</span></div>`).join('')}
    ${(p.p||[]).map(pinAt(p.s||[])).map(([n,x,y])=>`<i class="gd-pin" data-pin="${n}" style="left:${x}%;top:${y}%">${n}</i>`).join('')}</div><span class="gd-scr">SCREEN</span></div>`}
- function render(el){clampPos();const c=CH[G.c],pg=c.pages[G.p];G.seen[c.id+'.'+G.p]=1;keep();
+/* 10-26 망령 제보: 찾기 칸에 한글이 잘 안 쳐짐 — 글자마다 튜토리얼 전체를 다시 그려 입력칸이 새로 바뀌면서 한글 조합이 끊겼다. 이제 목록만 바꾼다 */
+ function navHtml(){const q=G.q.trim().toLowerCase();const hit=i=>!q||IDX[i].includes(q);const done=c2=>c2.pages.every((_,i)=>G.seen[c2.id+'.'+i]);const no=i=>String(i+1).padStart(2,'0');
+  return PARTS.map(([pk,pn,pe])=>{const list=CH.map((x,i)=>[x,i]).filter(([x,i])=>x.part===pk&&hit(i));if(!list.length)return '';
+   return `<div class="gd-part"><b>PART ${pk}</b> ${esc(pn)}<small>${pe}</small></div>`+list.map(([x,i])=>`<button type="button" class="gd-ch ${i===G.c?'on':''} ${done(x)?'done':''}" data-ch="${i}"><em>${no(i)}</em><span><b>${esc(x.t)}</b><small>${esc(x.en)}</small></span>${x.tag?`<i class="gd-tag">${x.tag}</i>`:''}${done(x)?'<u title="이 장을 끝까지 읽음 (이 브라우저에만 기억)">✓</u>':''}</button>`).join('')}).join('')||'<div class="small dim" style="padding:10px">찾는 장이 없다</div>';}
+ function render(el,soft){   /* soft: 방 상태가 바뀌어 다시 그릴 때 — 찾기 칸에 입력 중이면 건드리지 않는다 */
+  if(soft){const ae=document.activeElement;if(ae&&ae.id==='gd_q'&&el.contains(ae))return}
+  clampPos();const c=CH[G.c],pg=c.pages[G.p];G.seen[c.id+'.'+G.p]=1;keep();
   const q=G.q.trim().toLowerCase();const hit=i=>!q||IDX[i].includes(q);const done=c2=>c2.pages.every((_,i)=>G.seen[c2.id+'.'+i]);
   const no=i=>String(i+1).padStart(2,'0');const gd=guide();const tag=pg.tag||c.tag;
-  const nav=PARTS.map(([pk,pn,pe])=>{const list=CH.map((x,i)=>[x,i]).filter(([x,i])=>x.part===pk&&hit(i));if(!list.length)return '';
-   return `<div class="gd-part"><b>PART ${pk}</b> ${esc(pn)}<small>${pe}</small></div>`+list.map(([x,i])=>`<button type="button" class="gd-ch ${i===G.c?'on':''} ${done(x)?'done':''}" data-ch="${i}"><em>${no(i)}</em><span><b>${esc(x.t)}</b><small>${esc(x.en)}</small></span>${x.tag?`<i class="gd-tag">${x.tag}</i>`:''}${done(x)?'<u title="이 장을 끝까지 읽음 (이 브라우저에만 기억)">✓</u>':''}</button>`).join('')}).join('')||'<div class="small dim" style="padding:10px">찾는 장이 없다</div>';
+  const nav=navHtml();
   const gi=PAGES.findIndex(x=>x.ci===G.c&&x.pi===G.p);
   el.innerHTML=`<div class="gd">
    <aside class="gd-nav"><div class="gd-logo"><small>ORE-MAS</small><b>TUTORIAL</b></div>
@@ -342,8 +347,8 @@ window.OM_GUIDE_UI=(()=>{
   root.querySelectorAll('[data-ch]').forEach(b=>b.onclick=()=>goTo(+b.dataset.ch,0));
   $('#gd_sel',root).onchange=e=>goTo(+e.target.value,0);
   root.querySelectorAll('[data-pg]').forEach(b=>b.onclick=()=>goTo(G.c,+b.dataset.pg));
-  const qi=$('#gd_q',root);qi.oninput=()=>{G.q=qi.value;const pos=qi.selectionStart;render(el);const n=$('#gd_q',el);n.focus();try{n.setSelectionRange(pos,pos)}catch(e){}};
-  qi.onkeydown=e=>{if(e.key==='Enter'){const q=G.q.trim().toLowerCase();const i=IDX.findIndex(t=>t.includes(q));if(q&&i>=0){G.q='';goTo(i,0)}}};
+  const qi=$('#gd_q',root);const lst=$('.gd-list',root);const navUp=()=>{lst.innerHTML=navHtml();lst.querySelectorAll('[data-ch]').forEach(b=>b.onclick=()=>goTo(+b.dataset.ch,0))};qi.oninput=()=>{G.q=qi.value;navUp()};
+  qi.onkeydown=e=>{if(e.isComposing||e.keyCode===229)return;if(e.key==='Enter'){const q=G.q.trim().toLowerCase();const i=IDX.findIndex(t=>t.includes(q));if(q&&i>=0){G.q='';goTo(i,0)}}};
   /* 번호를 누르면 도식의 같은 번호가 깜빡 */
   const flash=n=>{root.querySelectorAll('.gd-pin,.gd-items li').forEach(x=>x.classList.toggle('hl',x.dataset.pin===n||x.dataset.it===n))};
   root.querySelectorAll('.gd-items li').forEach(li=>{li.onmouseenter=()=>flash(li.dataset.it);li.onclick=()=>flash(li.dataset.it)});
@@ -367,5 +372,5 @@ window.OM_GUIDE_UI=(()=>{
   const k=e.key;let done=true;if(k==='ArrowRight')step(1);else if(k==='ArrowLeft')step(-1);else if(k==='ArrowDown'){if(G.c<CH.length-1)goTo(G.c+1,0)}else if(k==='ArrowUp'){if(G.c>0)goTo(G.c-1,0)}else done=false;
   if(done){e.preventDefault();e.stopPropagation()}},true);
 
- return {render,chapters:CH}
+ return {render:(el,soft)=>render(el,soft!==false),open:el=>render(el),chapters:CH}
 })();
