@@ -48,7 +48,7 @@ window.OM_CUTIN=(()=>{
  /* 효과음 덧대기 (10-23 망령): 파일 없이 브라우저에서 바로 만든다 — VS 충돌 순간 「쾅」 · 혼자일 때 글자 박히는 「탁」. 효과음 끄기 · 음량 설정을 따른다 */
  let AC=null,MX=null;
  function synth(kind){try{if(window.OM_PREFS&&window.OM_PREFS.get().seMute)return;let v=0.7;try{v=+(localStorage.getItem('om_vol_se')??0.7)}catch(e){}if(!(v>0))return;
-  if(!AC){AC=new (window.AudioContext||window.webkitAudioContext)();MX=AC.createDynamicsCompressor();MX.threshold.value=-14;MX.knee.value=8;MX.ratio.value=4;MX.attack.value=.003;MX.release.value=.18;MX.connect(AC.destination)}
+  if(!AC){AC=new (window.AudioContext||window.webkitAudioContext)();MX=AC.createDynamicsCompressor();MX.threshold.value=-14;MX.knee.value=8;MX.ratio.value=4;MX.attack.value=.003;MX.release.value=.18;const OUT=AC.createGain();OUT.gain.value=1.7;MX.connect(OUT);OUT.connect(AC.destination)}   /* 10-25: 압축 뒤 한 번 더 키운다 (맥아리 없다는 말) */
   if(AC.state==='suspended')AC.resume();const t=AC.currentTime+.01;
   /* 음 하나: 파형 · 시작 · 길이 · 크기 · (끝 높이) — 짧게 올라갔다 부드럽게 줄어든다 */
   const tone=(f,ty,st,du,gn,f2)=>{const o=AC.createOscillator(),g=AC.createGain();o.type=ty;o.frequency.setValueAtTime(f,t+st);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+st+du*.8);
@@ -59,9 +59,10 @@ window.OM_CUTIN=(()=>{
    g.gain.setValueAtTime(0,t+st);g.gain.linearRampToValueAtTime(v*gn,t+st+du*(f2?.6:.04));g.gain.exponentialRampToValueAtTime(.0005,t+st+du);n.connect(fl);fl.connect(g);g.connect(MX);n.start(t+st);n.stop(t+st+du)};
   if(kind==='siren'){for(let k=0;k<6;k++)tone(k%2?620:880,'square',k*.26,.24,.07);return}
   if(kind==='slam'){   /* 발동 컷인: 띠가 쓸고 지나가는 「쉭」 → 글자 박히는 「쾅」 + 쨍 */
-   noise('bandpass',500,0,.2,.32,4200,1.2);tone(170,'sine',.19,.38,.85,46);noise('lowpass',3200,.19,.13,.42);tone(1320,'triangle',.2,.5,.07);tone(1980,'triangle',.2,.4,.045);return}
+   /* 10-25 망령: 맥아리 없다 — 쓸고 가는 소리를 키우고, 박히는 순간에 깊은 저음 「둥」 + 짧은 딱 소리 + 묵직한 중음을 겹친다. 높은 쨍은 줄였다 */
+   noise('bandpass',420,0,.22,.5,5200,1.1);tone(110,'sine',.2,.75,1.0,32);tone(58,'sine',.2,.9,.8,30);noise('highpass',2500,.195,.035,.7);noise('lowpass',1400,.2,.32,.75,180);tone(240,'square',.2,.16,.16,90);tone(880,'triangle',.21,.3,.05);return}
   if(kind==='hit'){   /* VS 충돌 */
-   tone(140,'sine',0,.6,.9,38);noise('lowpass',2400,0,.35,.75);tone(1100,'triangle',.01,.55,.05);return}
+   tone(140,'sine',0,.7,1.0,34);tone(62,'sine',0,1.0,.85,28);noise('highpass',2600,0,.04,.7);noise('lowpass',1800,0,.45,.9,160);tone(260,'square',0,.18,.18,80);tone(1100,'triangle',.01,.45,.04);return}
   if(kind==='ball'){   /* 몬스터볼 열림: 딸깍 → 퐁 → 반짝 */
    noise('highpass',3200,0,.022,.42);tone(1900,'square',0,.018,.04);noise('highpass',2600,.03,.018,.25);
    tone(560,'triangle',.05,.3,.16,2500);tone(574,'triangle',.05,.3,.14,2560);tone(280,'sine',.05,.2,.18,1150);
