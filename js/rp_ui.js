@@ -1031,6 +1031,30 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   pop.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closeSpkPick();anchor.focus()}if(e.key==='Enter'&&e.target===q&&!e.isComposing){e.preventDefault();const f=[...pop.querySelectorAll('.spkp-it')].find(b=>b.style.display!=='none'&&b.offsetParent);if(f)pick(f.dataset.k)}});
   {const on=pop.querySelector('.spkp-it.on');if(on&&!on.closest('.shut'))on.scrollIntoView({block:'nearest'})}
   setTimeout(()=>document.addEventListener('pointerdown',spkPickOut,true),0)}
+ /* ----- 10-25 망령: 배틀 화자 줄 (GM) — 「시합 개시 · 턴 진행」 줄 아래. GM · 배틀 중 트레이너/포켓몬(필드 먼저) · 인물(NPC)로 채팅 화자를 바꾼다.
+    접기 · 대사창(배틀 말풍선) 켜기/끄기 · 스탠딩 크기는 이 브라우저에만 (om_bspk_open · om_bsay_on · om_bsay_scale) */
+ const LSg=(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:v}catch(e){return d}};const LSs=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+ const BSP={open:LSg('om_bspk_open','1')!=='0',on:LSg('om_bsay_on','1')!=='0',sc:Math.max(60,Math.min(200,+LSg('om_bsay_scale','100')||100))};
+ function bsayToggleHtml(){return `<button type="button" class="btn sm ${BSP.on?'pri':'ghost'} bsaytog" data-bspk="on" title="배틀 말풍선(대사창) 켜기 · 끄기 — 이 브라우저에서만">💬 대사창 ${BSP.on?'ON':'OFF'}</button>`}
+ function bspkHtml(){const ST=A().ST;const all=allSpeakers();const have=new Set(all.map(x=>x.key));const C=spkConf();
+  const bs=battleSpkKeys(have);const npcs=all.filter(x=>x.kind==='npc'&&!C.hidden[x.key]).map(x=>x.key);const cur=ST.chatAs||'gm';
+  const chip=k=>{const i=spkInfo(k);return `<button type="button" class="spk ${k===cur?'on':''}" data-bspk-k="${esc(k)}" title="${esc(i.name)}${i.sub?' — '+esc(i.sub):''}"><i style="${i.av?`background-image:url('${cssu(i.av)}')`:''}">${i.av?'':esc(k==='gm'?'GM':[...i.name].slice(0,2).join(''))}</i><span>${esc(k==='gm'?'GM (나레이션)':i.name)}</span>${bs.field.has(k)?'<em class="bspk-fd">필드</em>':''}</button>`};
+  const sep=t=>`<span class="bspk-sep">${t}</span>`;
+  return `<div class="bspk ${BSP.open?'':'shut'}"><div class="bspk-h"><button type="button" class="btn sm ghost" data-bspk="fold" title="화자 줄 접기 · 펴기">🎭 화자 ${BSP.open?'▴':'▾'}</button>${BSP.open?`<span class="bspk-opt"><label title="배틀 말풍선의 스탠딩 크기 — 이 브라우저에만">스탠딩 크기 <input type="range" min="60" max="200" step="10" value="${BSP.sc}" data-bspk="sc"><b data-bspk-v>${BSP.sc}%</b></label><button type="button" class="btn xs ghost" data-bspk="test" title="지금 화자로 말풍선 미리보기 (나만 보인다)">미리보기</button></span>`:`<span class="small dim bspk-now">지금 화자: <b>${esc(spkInfo(cur).name)}</b></span>`}</div>
+   ${BSP.open?`<div class="spkbar bspk-row">${chip('gm')}${bs.keys.length?sep('⚔ 배틀')+bs.keys.map(chip).join(''):''}${npcs.length?sep('인물')+npcs.map(chip).join(''):''}<button type="button" class="spk add" data-bspk="more" title="모든 화자에서 찾기"><i>⋯</i><span>더 찾기</span></button></div>`:''}</div>`}
+ function bspkSet(k,el){const ST=A().ST;ST.chatAs=k;pushRecent(k);const ca=document.getElementById('chatAs');if(ca&&ca._fill)ca._fill();
+  if(el)el.querySelectorAll('[data-bspk-k]').forEach(b=>b.classList.toggle('on',b.dataset.bspkK===k));
+  if(matchMedia('(max-width:760px)').matches){if(A().bchOpen)A().bchOpen(true)}const ci=document.getElementById('chatIn');if(ci)setTimeout(()=>ci.focus({preventScroll:true}),60)}
+ function bspkBind(el){const box=el.querySelector('.bspk');
+  el.querySelectorAll('[data-bspk="on"]').forEach(b=>b.onclick=()=>{BSP.on=!BSP.on;LSs('om_bsay_on',BSP.on?'1':'0');if(!BSP.on&&BSAY.el)BSAY.el.innerHTML='';A().toast(BSP.on?'배틀 말풍선을 켰다':'배틀 말풍선을 껐다 (이 브라우저)');A().renderScene()});
+  if(!box)return;
+  box.querySelectorAll('[data-bspk-k]').forEach(b=>b.onclick=()=>bspkSet(b.dataset.bspkK,box));
+  box.querySelectorAll('[data-bspk]').forEach(b=>{const k=b.dataset.bspk;
+   if(k==='fold')b.onclick=()=>{BSP.open=!BSP.open;LSs('om_bspk_open',BSP.open?'1':'0');A().renderScene()};
+   if(k==='more')b.onclick=()=>openSpkPick(b,{cur:A().ST.chatAs||'gm',onPick:x=>{bspkSet(x,box);A().renderScene()}});
+   if(k==='sc')b.oninput=()=>{BSP.sc=+b.value;LSs('om_bsay_scale',String(BSP.sc));const v=box.querySelector('[data-bspk-v]');if(v)v.textContent=BSP.sc+'%';if(BSAY.el)BSAY.el.style.setProperty('--bs',BSP.sc/100)};
+   if(k==='test')b.onclick=()=>{const ST=A().ST;let key=ST.chatAs||'gm';if(key==='gm'){const bk=battleSpkKeys(new Set(allSpeakers().map(x=>x.key))).keys;key=bk[0]||'gm'}
+    const c=key!=='gm'?charOf(key):null;battleSay({id:0,kind:'chat',who:c?c.name:'GM',data:Object.assign({t:'"스탠딩 크기 미리보기예요. 슬라이더로 맞춰 보세요."'},key==='gm'?{from:'gm'}:{k:key,as:c?c.name:''})},true)}})}
  /* ----- 10-25 망령: 배틀 화면에서 채팅(세션)을 치면, 말한 사람 진영 쪽에 스탠딩 + 말풍선이 잠깐 뜬다 -----
     진영: 포켓몬은 배틀 칸의 side, 트레이너 · 인물은 배틀 트레이너 이름으로 찾는다. 배틀에 없는 사람 · GM 나레이션은 가운데 위. 화면에만 그리는 연출이라 저장하지 않는다 */
  const BSAY={el:null,t:{}};
@@ -1041,16 +1065,16 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   if(key&&key.startsWith('pm:')){const rid=key.slice(3);const m=Object.values(b.mons||{}).find(x=>(x.rid||x.id)===rid);if(m)return m.side||(T[m.tid]||{}).side||'center'}
   const t=Object.values(T).find(x=>(x.srcTid||x.id)===key||x.name===name);if(t&&t.side)return t.side;
   if(key&&key.startsWith('pm:'))return 'center';return 'center'}
- function bsayPlace(){const L=BSAY.el;if(!L)return;const f=document.querySelector('#scene .stadium');if(!f||A().view!=='battle'){L.style.display='none';return}const r=f.getBoundingClientRect();L.style.display='';Object.assign(L.style,{left:r.left+'px',top:r.top+'px',width:r.width+'px',height:Math.min(r.height,innerHeight-r.top)+'px'})}
- function battleSay(row){try{if(A().view!=='battle'||!row||row.kind!=='chat')return;const d=row.data||{};if(!d.t||d.ch==='ooc'||d.sms||d.bat||d.clear)return;
+ function bsayPlace(){const L=BSAY.el;if(!L)return;const f=document.querySelector('#scene .stadium');if(!f||A().view!=='battle'){L.style.display='none';return}const r=f.getBoundingClientRect();const mb=document.getElementById('mbar');const mbH=mb&&getComputedStyle(mb).display!=='none'?mb.getBoundingClientRect().height:0;const top=Math.max(r.top,0),bot=Math.min(r.bottom,innerHeight-mbH);L.style.display=bot-top>80?'':'none';Object.assign(L.style,{left:r.left+'px',top:top+'px',width:r.width+'px',height:Math.max(0,bot-top)+'px'})}
+ function battleSay(row,force){try{if(A().view!=='battle'||!row||row.kind!=='chat')return;if(!BSP.on&&!force)return;const d=row.data||{};if(!d.t||d.ch==='ooc'||d.sms||d.bat||d.clear)return;
   const key=bsayKey(row);const c=key&&key!=='gm'?charOf(key):null;const name=c?c.name:(d.as||(d.from==='gm'?(d.gmn||'GM'):row.who||''));
   const narr=window.OM_LINE?!!window.OM_LINE(d).narr:false;const side=key==='gm'||!key?'center':bsaySide(key,name);
   const img=key==='gm'?standSrc(charOf('gm')):c?(standSrc(c)||c.img):'';
   if(!BSAY.el){BSAY.el=document.createElement('div');BSAY.el.className='bsayL';document.body.appendChild(BSAY.el);addEventListener('resize',bsayPlace);document.addEventListener('scroll',()=>{if(BSAY.el&&BSAY.el.childElementCount)bsayPlace()},true)}
-  bsayPlace();const L=BSAY.el;const old=L.querySelector(`.bsay.${side}`);if(old)old.remove();clearTimeout(BSAY.t[side]);
-  const txt=String(d.t);const body=esc(txt.replace(/^["“「『](.*)["”」』]$/s,'$1')).replace(/\*(.+?)\*/g,'<i>$1</i>').replace(/\n/g,'<br>');
-  const el=document.createElement('div');el.className=`bsay ${side}${narr?' narr':''}${img&&side!=='center'?' hasimg':''}`;
-  el.innerHTML=`${img&&side!=='center'?`<i class="bsay-st" style="background-image:url('${cssu(img)}')"></i>`:''}<div class="bsay-bub"><b>${esc(name)}</b><p>${body}</p></div>`;
+  BSAY.el.style.setProperty('--bs',BSP.sc/100);bsayPlace();const L=BSAY.el;const old=L.querySelector(`.bsay.${side}`);if(old)old.remove();clearTimeout(BSAY.t[side]);
+  const txt=String(d.t);const body=esc(txt).replace(/\*(.+?)\*/g,'<i>$1</i>').replace(/\n/g,'<br>');
+  const showImg=!!img&&!(key==='gm'&&narr);const el=document.createElement('div');el.className=`bsay ${side}${narr?' narr':''}${showImg?' hasimg':''}`;
+  el.innerHTML=`${showImg?`<i class="bsay-st" style="background-image:url('${cssu(img)}')"></i>`:''}<div class="bsay-bub"><b>${esc(name)}</b><p>${body}</p></div>`;
   el.onclick=()=>{el.classList.add('out');setTimeout(()=>el.remove(),250)};L.appendChild(el);
   const ms=Math.min(14000,4200+txt.length*90);BSAY.t[side]=setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),300)},ms)}catch(e){console.warn('battleSay',e)}}
  function bsayClear(){if(BSAY.el&&A().view!=='battle')BSAY.el.innerHTML=''}
@@ -1156,5 +1180,5 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   if(near||box._first!==ST.room){box.scrollTop=box.scrollHeight;box._first=ST.room}
   const inp=$('#oocIn',d);if(inp){inp.disabled=!ST.role;inp.placeholder=ST.role?'잡담 · /r 1d100':'자리에 앉으면 말할 수 있다'}}
  addEventListener('resize',()=>{try{oocTick()}catch(e){}});
- return {openSpkPick,spkBtnFill,spkInfo,pushRecent,curSpk,battleSay,bsayPlace,bsayClear,typingHtml,autoFolder,bgmMuted,seUrlOf:seUrl,render,allSpeakers,onChat,feedLog,onState,onTyping,typingPing,typingStop,drawTyping,mapData:mapS,openConsole,openStands,openPeople,setMyStand,charOf,playSe,setVolume,bgmWidgetHtml,bindBgmWidget,imgOfKey:k=>{if(k==='gm')return gmImg();const c=charOf(k);return c?(c.img||standSrc(c)):''},curSpeaker:()=>{const ST=A().ST;const c=speakerChar();if(c)return {key:c.key,name:c.name,img:c.img||standSrc(c)};return gm()?{key:'gm',name:'GM',img:gmImg()}:{key:'me',name:ST.name||'',img:''}}};
+ return {bspkHtml,bspkBind,bsayToggleHtml,openSpkPick,spkBtnFill,spkInfo,pushRecent,curSpk,battleSay,bsayPlace,bsayClear,typingHtml,autoFolder,bgmMuted,seUrlOf:seUrl,render,allSpeakers,onChat,feedLog,onState,onTyping,typingPing,typingStop,drawTyping,mapData:mapS,openConsole,openStands,openPeople,setMyStand,charOf,playSe,setVolume,bgmWidgetHtml,bindBgmWidget,imgOfKey:k=>{if(k==='gm')return gmImg();const c=charOf(k);return c?(c.img||standSrc(c)):''},curSpeaker:()=>{const ST=A().ST;const c=speakerChar();if(c)return {key:c.key,name:c.name,img:c.img||standSrc(c)};return gm()?{key:'gm',name:'GM',img:gmImg()}:{key:'me',name:ST.name||'',img:''}}};
 })();

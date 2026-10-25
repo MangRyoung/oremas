@@ -3694,7 +3694,6 @@ button.tag.solo:hover{border-color:var(--yel2)}
  body.v-guide:not(.gd-chat) .side>.phone{display:none}
  /* 감우가 오른쪽에 서 있을 땐 대사를 카드 아래 오른쪽 빈칸에 크게 — 꼬리는 감우 쪽으로 (위 띠는 숨김) */
  body.v-guide:not(.gd-chat) .gd-main .gd-say{display:none}
- body.v-guide:not(.gd-chat) .gd-line{display:flex;justify-content:flex-end;margin:22px 26px 0 0}
  .gd-line .gd-bub{max-width:640px;min-width:300px;padding:16px 26px 18px;box-shadow:6px 6px 0 var(--red)}
  .gd-line .gd-bub b{font-size:15px;padding:2px 14px}
  .gd-line .gd-bub p{font-size:19px;line-height:1.7;font-weight:600}
@@ -3704,8 +3703,11 @@ button.tag.solo:hover{border-color:var(--yel2)}
  .gds-top{display:flex;align-items:center;gap:8px;padding:8px 10px;border-bottom:2px solid var(--red)}
  .gds-top small{font:11px var(--mono);letter-spacing:.2em;color:var(--red2)}
  .gds-top b{font-size:16px}
- .gd-stage .gd-bub{display:none}
- .gds-fig{flex:1;min-height:200px;margin:10px -10px 0;background:transparent center bottom/contain no-repeat;filter:drop-shadow(6px 4px 0 var(--red)) drop-shadow(0 0 1px rgba(0,0,0,.6))}
+ /* 10-25 망령: 대사는 감우 그림 바로 아래 (스크롤 없이 보이게) — 그림은 남는 높이만큼만 */
+ .gd-stage .gd-bub{order:3;flex:none;margin:-34px 14px 16px 12px;min-width:0;padding:12px 18px 14px;position:relative;z-index:2;box-shadow:6px 6px 0 var(--red)}
+ .gd-stage .gd-bub b{font-size:14px;padding:2px 12px}
+ .gd-stage .gd-bub p{font-size:15.5px;line-height:1.7;font-weight:600}
+ .gds-fig{flex:1;min-height:160px;margin:12px 0 0;width:100%;max-width:330px;align-self:center;background:transparent center bottom/contain no-repeat;filter:drop-shadow(6px 4px 0 var(--red)) drop-shadow(0 0 1px rgba(0,0,0,.6))}
  .gds-fig.none{display:none}
 }
 @media (max-width:760px){.gd-say.bandi .gd-who{width:84px;height:92px}.gd-say.bandi .gd-bub{margin:10px 6px 10px 0}.gd-say.bandi .gd-bub p{font-size:13.5px}}
@@ -3757,12 +3759,12 @@ button.tag.solo:hover{border-color:var(--yel2)}
 .spkp-sec[data-s="gm"] .spkp-g{grid-template-columns:1fr}
 /* 10-25 배틀 화면 말풍선: 말한 사람 진영 쪽 (fieldcol 위에 겹친 고정 층) */
 .bsayL{position:fixed;z-index:45;pointer-events:none;overflow:hidden}
-.bsay{position:absolute;bottom:10px;display:flex;align-items:flex-end;max-width:min(49%,520px);pointer-events:auto;cursor:pointer;animation:bsayIn .28s cubic-bezier(.2,.9,.3,1.2)}
+.bsay{position:absolute;bottom:10px;display:flex;align-items:flex-end;max-width:min(56%,640px);pointer-events:auto;cursor:pointer;animation:bsayIn .28s cubic-bezier(.2,.9,.3,1.2)}
 .bsay.left{left:6px}
 .bsay.right{right:6px;flex-direction:row-reverse}
 .bsay.center{left:50%;top:10px;bottom:auto;transform:translateX(-50%);max-width:min(80%,640px);animation:bsayInC .25s ease-out}
 .bsay.out{opacity:0;transition:opacity .3s}
-.bsay-st{flex:none;width:clamp(100px,13vw,180px);height:clamp(140px,24vh,260px);background:center bottom/contain no-repeat;filter:drop-shadow(4px 3px 0 var(--red)) drop-shadow(0 0 1px rgba(0,0,0,.7));font-style:normal}
+.bsay-st{flex:none;width:calc(clamp(130px,15vw,240px) * var(--bs,1));height:calc(clamp(190px,32vh,380px) * var(--bs,1));max-height:calc(100% - 8px);background:center bottom/contain no-repeat;filter:drop-shadow(4px 3px 0 var(--red)) drop-shadow(0 0 1px rgba(0,0,0,.7));font-style:normal}
 .bsay.left .bsay-st{margin-right:-18px}.bsay.right .bsay-st{margin-left:-18px;transform:scaleX(-1)}
 .bsay-bub{position:relative;flex:0 1 auto;min-width:0;background:#fff;color:#000;padding:10px 16px 12px;margin-bottom:18px;transform:skew(var(--skew,-6deg));box-shadow:5px 5px 0 var(--red);min-width:140px}
 .bsay.right .bsay-bub{box-shadow:-5px 5px 0 var(--blue,#4aa3ff)}
@@ -3773,4 +3775,35 @@ button.tag.solo:hover{border-color:var(--yel2)}
 .bsay.center .bsay-bub{margin:0;box-shadow:5px 5px 0 #000}
 @keyframes bsayIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 @keyframes bsayInC{from{opacity:0;transform:translate(-50%,-10px)}to{opacity:1;transform:translateX(-50%)}}
-@media (max-width:760px){.bsay{max-width:88%}.bsay-st{width:90px;height:130px}.bsay-bub p{font-size:13.5px}}
+@media (max-width:760px){.bsay{max-width:92%}.bsay-st{width:calc(110px * var(--bs,1));height:calc(170px * var(--bs,1))}.bsay.center.hasimg .bsay-st{width:calc(90px * var(--bs,1));height:calc(140px * var(--bs,1))}.bsay-bub p{font-size:13.5px}}
+
+/* 10-25 배틀 화자 줄 (GM) — 시합 개시 · 턴 진행 줄 아래 */
+.bspk{margin-top:8px;padding-top:6px;border-top:1px dashed var(--line2)}
+.bspk-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.bspk-opt{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--fg2)}
+.bspk-opt label{display:flex;align-items:center;gap:6px}
+.bspk-opt input[type=range]{width:120px}
+.bspk-opt b{min-width:38px;color:#fff}
+.bspk-now b{color:#fff}
+.bspk-row{margin-top:6px;align-items:stretch}
+.bspk-row .spk{position:relative}
+.bspk-sep{flex:none;align-self:center;writing-mode:vertical-rl;font-size:11px;color:var(--yel2,#ffd12e);padding:4px 2px;border-left:1px solid var(--line2);margin-left:2px}
+.bspk-fd{position:absolute;top:2px;right:2px;font-style:normal;font-size:9px;background:var(--red);color:#fff;border-radius:3px;padding:0 3px}
+.bsaytog{white-space:nowrap}
+@media (max-width:760px){.bspk-opt input[type=range]{width:90px}.bspk-row .spk{min-width:56px}.bspk-row .spk i{width:38px;height:38px}}
+.bsay.center.hasimg{top:6px;align-items:flex-start;max-width:min(70%,620px)}
+.bsay.center.hasimg .bsay-st{height:calc(clamp(150px,24vh,280px) * var(--bs,1));width:calc(clamp(110px,11vw,180px) * var(--bs,1));margin-right:-14px;background-position:center top}
+.bsay.center.hasimg .bsay-bub{margin:26px 0 0;box-shadow:5px 5px 0 var(--red)}
+/* 휴대폰: 좌우 말풍선이 겹치지 않게 — 왼쪽 진영은 아래, 오른쪽 진영은 위, 배틀 밖 화자는 가운데 */
+@media (max-width:760px){
+ .bsay.right{bottom:auto;top:8px;align-items:flex-start}
+ .bsay.right .bsay-bub{margin:26px 0 0}
+ .bsay.center,.bsay.center.hasimg{top:36%}
+}
+/* 10-25 망령: 투박한 기본 스크롤바(흰 바탕 · 회색 막대 · 위아래 화살표)를 웹툴 전체에서 얇고 어둡게 — 따로 정한 곳(.gd-list · 숨긴 곳)은 그대로 */
+*{scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.22) transparent}
+*::-webkit-scrollbar{width:6px;height:6px}
+*::-webkit-scrollbar-track,*::-webkit-scrollbar-corner{background:transparent}
+*::-webkit-scrollbar-thumb{background:rgba(255,255,255,.22);border-radius:6px}
+*::-webkit-scrollbar-thumb:hover{background:var(--red)}
+*::-webkit-scrollbar-button{display:none;width:0;height:0}
