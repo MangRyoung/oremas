@@ -1084,13 +1084,21 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   const txt0=String(d.t);
   /* 10-25 망령: 휴대폰은 화면이 좁아 큰 스탠딩이 겹친다 — 위에서부터 한 줄씩 쌓는 작은 말풍선(얼굴 + 대사), 최대 3개. 나레이션은 늘 맨 위 */
   if(BSAY.mob=matchMedia('(max-width:760px)').matches){bsayPlace();const L=BSAY.el;let st=L.querySelector('.bsm-stack');if(!st){L.innerHTML='';st=document.createElement('div');st.className='bsm-stack';L.appendChild(st)}
+   /* 10-25 망령 A안: 휴대폰은 스탠딩을 하나만 — 가장 최근에 말한 사람이 아래에 크게 서고(오른쪽 진영이면 오른쪽) 큰 대사창. 바로 전 대사는 위에 얼굴 칩(최대 2), 나레이션은 늘 맨 위 */
    const av=key==='gm'?(gmImg()||img):c?(c.img||standSrc(c)):'';const top=side==='center'&&(narr||key==='gm'||!key);
-   const it=document.createElement('div');it.className=`bsm ${side}${narr?' narr':''}${top?' top':''}`;
-   it.innerHTML=`${top?'':`<i class="bsm-av${av?'':' noimg'}" style="${av?`background-image:url('${cssu(av)}')`:''}">${av?'':esc([...name].slice(0,2).join(''))}</i>`}<div class="bsm-bub"><b>${esc(name)}</b><p>${esc(txt0).replace(/\*(.+?)\*/g,'<i>$1</i>').replace(/\n/g,'<br>')}</p></div>`;
-   const kill=()=>{it.classList.add('out');setTimeout(()=>it.remove(),260)};it.onclick=kill;
-   if(top){const firstNon=[...st.children].find(x=>!x.classList.contains('top'));st.insertBefore(it,firstNon||null)}else st.appendChild(it);
-   while(st.children.length>3){const old=[...st.children].find(x=>!x.classList.contains('top'))||st.firstElementChild;old.remove()}
-   setTimeout(kill,Math.min(12000,4000+txt0.length*80));return}
+   const bodyH=esc(txt0).replace(/\*(.+?)\*/g,'<i>$1</i>').replace(/\n/g,'<br>');
+   const chipOf=(o)=>{const it=document.createElement('div');it.className=`bsm ${o.side}${o.narr?' narr':''}${o.top?' top':''}`;
+    it.innerHTML=`${o.top?'':`<i class="bsm-av${o.av?'':' noimg'}" style="${o.av?`background-image:url('${cssu(o.av)}')`:''}">${o.av?'':esc([...o.name].slice(0,2).join(''))}</i>`}<div class="bsm-bub"><b>${esc(o.name)}</b><p>${o.body}</p></div>`;
+    const kill=()=>{it.classList.add('out');setTimeout(()=>it.remove(),260)};it.onclick=kill;setTimeout(kill,o.ms);return it};
+   const trim=()=>{let n=[...st.children].filter(x=>!x.classList.contains('top'));while(n.length>2){n[0].remove();n=n.slice(1)}};
+   const ms=Math.min(12000,4000+txt0.length*80);
+   if(top){const it=chipOf({side,narr,top:true,av:'',name,body:bodyH,ms});const firstNon=[...st.children].find(x=>!x.classList.contains('top'));st.insertBefore(it,firstNon||null);return}
+   const old=L.querySelector('.bsvn');if(old){const o=old._o;old.remove();clearTimeout(BSAY.t.vn);if(o){st.appendChild(chipOf(Object.assign({},o,{ms:Math.max(2500,o.end-Date.now())})));trim()}}
+   const vimg=key==='gm'?standSrc(charOf('gm')):c?(standSrc(c)||c.img):'';const vs=side==='right'?'right':'left';
+   const vn=document.createElement('div');vn.className=`bsvn ${vs}${vimg?' hasimg':''}${narr?' narr':''}`;vn._o={side,narr,top:false,av,name,body:bodyH,end:Date.now()+ms};
+   vn.innerHTML=`<div class="bsvn-band"></div>${vimg?`<i class="bsvn-st" style="background-image:url('${cssu(vimg)}')"></i>`:''}<div class="bsvn-bub"><b>${esc(name)}</b><p>${bodyH}</p></div>`;
+   vn.onclick=()=>{vn.classList.add('out');setTimeout(()=>vn.remove(),260)};L.appendChild(vn);
+   BSAY.t.vn=setTimeout(()=>{vn.classList.add('out');setTimeout(()=>vn.remove(),300)},ms);return}
   BSAY.el.style.setProperty('--bs',BSP.sc/100);bsayPlace();const L=BSAY.el;{const st=L.querySelector('.bsm-stack');if(st)st.remove()}const old=L.querySelector(`.bsay.${side}`);if(old)old.remove();clearTimeout(BSAY.t[side]);
   const txt=String(d.t);const body=esc(txt).replace(/\*(.+?)\*/g,'<i>$1</i>').replace(/\n/g,'<br>');
   const showImg=!!img&&!(key==='gm'&&narr);const el=document.createElement('div');el.className=`bsay ${side}${narr?' narr':''}${showImg?' hasimg':''}`;

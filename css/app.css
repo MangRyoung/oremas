@@ -3863,3 +3863,18 @@ button.tag.solo:hover{border-color:var(--yel2)}
 .bcol .shead{gap:4px}
 .bcol .shead .sname{min-width:68px}
 .bcol .shead .btn{padding:3px 6px;font-size:11px}
+/* 10-25 휴대폰 배틀 A안: 최근 화자 한 명만 크게 (아래) + 큰 대사창 */
+.bsvn{position:absolute;left:0;right:0;bottom:0;height:min(78%,480px);pointer-events:auto;cursor:pointer;animation:bsayIn .25s ease-out}
+.bsvn.out{opacity:0;transition:opacity .28s}
+.bsvn-band{position:absolute;left:0;right:0;bottom:0;height:46%;background:linear-gradient(transparent,rgba(0,0,0,.82) 40%);pointer-events:none}
+.bsvn-st{position:absolute;bottom:0;width:64%;height:100%;background:center bottom/contain no-repeat;font-style:normal;filter:drop-shadow(4px 3px 0 var(--red)) drop-shadow(0 0 1px rgba(0,0,0,.7))}
+.bsvn.left .bsvn-st{left:-12px}
+.bsvn.right .bsvn-st{right:-12px;transform:scaleX(-1);filter:drop-shadow(-4px 3px 0 var(--blue,#4aa3ff)) drop-shadow(0 0 1px rgba(0,0,0,.7))}
+.bsvn-bub{position:absolute;bottom:16px;background:#fff;color:#000;padding:10px 14px 12px;transform:skew(var(--skew,-6deg));box-shadow:5px 5px 0 var(--red)}
+.bsvn.left .bsvn-bub{left:38%;right:8px}
+.bsvn.right .bsvn-bub{right:38%;left:8px;box-shadow:-5px 5px 0 var(--blue,#4aa3ff)}
+.bsvn:not(.hasimg) .bsvn-bub{left:8px;right:8px}
+.bsvn-bub>*{transform:skew(calc(var(--skew,-6deg) * -1))}
+.bsvn-bub b{display:inline-block;background:#000;color:#fff;font-size:12px;padding:1px 10px;margin:-20px 0 4px -6px}
+.bsvn-bub p{margin:0;font-size:15px;line-height:1.55;font-weight:700;word-break:keep-all;overflow-wrap:anywhere}
+.bsvn.narr .bsvn-bub p{font-style:italic;font-weight:500}
