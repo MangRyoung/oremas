@@ -308,6 +308,18 @@ function resync(why){if(!ST.room)return Promise.resolve();if(RESYNC)return RESYN
  catch(e){console.warn('[오레마스] 다시 맞추기 실패',e)}finally{RESYNC=null}})();return RESYNC}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&ST.room)resync('다시 보임')});
 window.addEventListener('online',()=>{if(ST.room)resync('온라인')});
+/* 10-25 망령: 모바일이 옛 index.html 을 붙들고 있으면(깃허브 페이지 캐시 10분 · 탭 복원) 새 버전을 못 받는다 — 올라온 index 의 ?v= 가 지금 읽은 것과 다르면 알린다.
+   cache:'reload' 로 받아 두니 띠를 눌러 새로고침하면 바로 새 index 를 읽는다 */
+const VER_HAVE=()=>[...document.scripts,...document.querySelectorAll('link[rel=stylesheet]')].map(s=>s.src||s.href||'').filter(u=>/[?&]v=\d+/.test(u)).map(u=>u.replace(/^.*\/(?=[^/]+\?)/,'').replace(/\?.*?v=(\d+).*$/,'@$1'));
+let verT=0,verShown=false;
+async function verCheck(force){if(verShown||(!force&&Date.now()-verT<60000))return;verT=Date.now();
+ try{const r=await fetch('index.html',{cache:'reload'});if(!r.ok)return;const t=await r.text();const have=new Set(VER_HAVE());if(!have.size)return;
+  const want=[...t.matchAll(/(?:src|href)="([^"]+\?v=\d+)"/g)].map(m=>m[1].replace(/^.*\/(?=[^/]+\?)/,'').replace(/\?.*?v=(\d+).*$/,'@$1'));
+  if(want.some(w=>!have.has(w)))verBar()}catch(e){}}
+function verBar(){if(verShown)return;verShown=true;const d=document.createElement('button');d.id='verbar';d.type='button';d.textContent='새 버전이 올라왔어요 · 눌러서 새로고침';d.onclick=()=>location.reload();document.body.appendChild(d)}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')verCheck()});
+window.addEventListener('pageshow',e=>{if(e.persisted)verCheck(1)});
+setInterval(()=>{if(document.visibilityState==='visible')verCheck()},300000);setTimeout(()=>verCheck(1),8000);
 
 /* 10-23 이그레스: 방 상태는 바뀐 칸만 받는다 — supabase/patch_2026-10-23_이그레스.sql 의 'st' 신호 {v, path, value} (value 가 null 이면 그 칸을 지운다).
    버전 순서대로 고치고, 빈 버전이 1.5초 넘게 안 채워지거나 「전체」 신호가 오면 그때만 상태 전체를 다시 읽는다.
