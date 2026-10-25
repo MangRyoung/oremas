@@ -286,8 +286,9 @@ async function openRoom(id,gm,asPl){
  if(ST.role==='gm'){const need={roster:{trainers:{},mons:{}},pub:{},ready:{},graph:{nodes:{},edges:{}},skill:{},dex:{},rp:{},battle:{}};for(const k in need){if(typeof ST.state[k]!=='object'||ST.state[k]===null){try{const v=await DBS().setState(id,ST.secret,[k],need[k]);ST.state[k]=need[k];ST.v=Math.max(ST.v,v||0)}catch(e){}}else if(k==='roster'){for(const kk of ['trainers','mons'])if(typeof ST.state.roster[kk]!=='object'||ST.state.roster[kk]===null){try{const v=await DBS().setState(id,ST.secret,['roster',kk],{});ST.state.roster[kk]={};ST.v=Math.max(ST.v,v||0)}catch(e){}}}}}
  ST.log=await DBS().getLogTail(id,200);ST.lastLogId=ST.log.length?ST.log[ST.log.length-1].id:0;
  CHAN.cur='s';ST._toBottom=true;renderRoom();
- ST.unsub=DBS().subscribe(id,{onPatch,onEvent:p=>{if(p&&p.t==='hello')onHello(p);if(window.OM_RP_UI&&p&&p.t==='typing')window.OM_RP_UI.onTyping(p);if(window.OM_CUTIN&&p&&p.t==='cutin')window.OM_CUTIN.onEvent(p)},onState:(d,v)=>{if(v>=ST.v){ST.state=d;ST.v=v;renderScene();if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.watch)window.OM_BATTLE_UI.watch().catch(e=>console.warn(e))}},onLog:r=>{if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;renderLog(true);notifyLog(r);mobNote(r);if(window.OM_RP_UI)window.OM_RP_UI.onChat(r)}},
-  onStatus:s=>{const el=$('#conn');if(el){el.textContent=s==='SUBSCRIBED'?'● 실시간':'○ '+s;el.style.color=s==='SUBSCRIBED'?'var(--acc2)':'var(--mute)'}if(s==='SUBSCRIBED'){startPresence();if(ST._sub)resync('재연결');else checkState('구독');ST._sub=true}}});
+ ST.subH={onPatch,onEvent:p=>{PATCH.last=Date.now();if(p&&p.t==='hello')onHello(p);if(window.OM_RP_UI&&p&&p.t==='typing')window.OM_RP_UI.onTyping(p);if(window.OM_CUTIN&&p&&p.t==='cutin')window.OM_CUTIN.onEvent(p)},onState:(d,v)=>{if(v>=ST.v){ST.state=d;ST.v=v;renderScene();if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.watch)window.OM_BATTLE_UI.watch().catch(e=>console.warn(e))}},onLog:r=>{PATCH.last=Date.now();if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;renderLog(true);notifyLog(r);mobNote(r);if(window.OM_RP_UI)window.OM_RP_UI.onChat(r)}},
+  onStatus:s=>{const el=$('#conn');if(el){el.textContent=s==='SUBSCRIBED'?'● 실시간':'○ '+s;el.style.color=s==='SUBSCRIBED'?'var(--acc2)':'var(--mute)'}RT.st=s;RT.at=Date.now();if(s==='SUBSCRIBED'){startPresence();if(ST._sub)resync('재연결');else checkState('구독');ST._sub=true}}};
+ ST.unsub=DBS().subscribe(id,ST.subH);
  if(ST.role){pollWhispers();ST.wtimer=setInterval(pollWhispers,4000)}
  if(!ST.role)openSeatPicker()}
 
@@ -306,7 +307,13 @@ function resync(why){if(!ST.room)return Promise.resolve();if(RESYNC)return RESYN
   if(ST.role)pollWhispers();
   if(got||newer)console.info('[오레마스] 다시 맞춤',why,got+'줄')}
  catch(e){console.warn('[오레마스] 다시 맞추기 실패',e)}finally{RESYNC=null}})();return RESYNC}
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&ST.room)resync('다시 보임')});
+/* 10-25 망령 제보: 모바일에서 배틀 · 채팅이 안 올라옴 — 폰이 화면을 끄거나 다른 앱에 갔다 오면 실시간 소켓이 열린 척 죽어 있을 수 있다.
+   ① 20초 넘게 가려졌다 돌아오면 소켓을 새로 붙이고 ② 실시간이 끊긴 채(구독 아님)면 10초 뒤 다시 붙이고 ③ 신호가 25초 없으면 로그 · 상태를 함께 다시 읽는다 */
+const RT={st:'',at:0,hid:0};
+let RJ=null;function rtRejoin(why){if(!ST.room||!ST.subH||RJ)return;const room=ST.room;   /* 소켓을 먼저 끊어야 죽은 소켓에서 떠나기 응답을 기다리지 않는다 */
+ RJ=(async()=>{try{if(DBS().rtReset)DBS().rtReset();const u=ST.unsub;ST.unsub=null;if(u)await Promise.race([u(),new Promise(r=>setTimeout(r,3000))]);if(ST.room!==room)return;ST.unsub=DBS().subscribe(room,ST.subH);console.info('[오레마스] 실시간 다시 붙임',why)}catch(e){console.warn('[오레마스] 실시간 다시 붙이기 실패',e)}finally{RJ=null}})()}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){RT.hid=Date.now();return}if(!ST.room)return;const away=RT.hid?Date.now()-RT.hid:0;RT.hid=0;if(away>20000||RT.st!=='SUBSCRIBED')rtRejoin('다시 보임');resync('다시 보임')});
+setInterval(()=>{if(!ST.room||document.visibilityState!=='visible')return;if(RT.st&&RT.st!=='SUBSCRIBED'&&Date.now()-RT.at>10000){RT.at=Date.now();rtRejoin(RT.st)}},5000);
 window.addEventListener('online',()=>{if(ST.room)resync('온라인')});
 /* 10-25 망령: 모바일이 옛 index.html 을 붙들고 있으면(깃허브 페이지 캐시 10분 · 탭 복원) 새 버전을 못 받는다 — 올라온 index 의 ?v= 가 지금 읽은 것과 다르면 알린다.
    cache:'reload' 로 받아 두니 띠를 눌러 새로고침하면 바로 새 index 를 읽는다 */
@@ -347,7 +354,7 @@ function pullState(why){if(PATCH.pull)return PATCH.pull;const room=ST.room;if(!r
 async function checkState(why){const room=ST.room;if(!room)return false;
  try{const r=await DBS().getStateV(room);if(ST.room!==room||!r)return false;return (r.v||0)>ST.v?await pullState(why):false}catch(e){console.warn('[오레마스] 버전 확인 실패',e);return false}}
 /* 신호를 놓쳤을 때의 안전망: 25초 넘게 신호가 없으면 30초마다 버전만 확인 */
-setInterval(()=>{if(ST.room&&document.visibilityState==='visible'&&Date.now()-PATCH.last>25000)checkState('점검')},30000);
+setInterval(()=>{if(ST.room&&document.visibilityState==='visible'&&Date.now()-PATCH.last>25000)resync('점검')},30000);   /* 10-25: 상태만이 아니라 놓친 로그(채팅)도 */
 
 async function pollWhispers(){try{const ws=await DBS().whispers(ST.room,ST.secret,ST.lastWhisper);if(!ws||!ws.length)return;ws.forEach(w=>{ST.lastWhisper=Math.max(ST.lastWhisper,w.id);if(!ST.log.find(x=>x.id===w.id))ST.log.push(w)});ST.log.sort((a,b)=>a.id-b.id);renderLog(true)}catch(e){}}
 

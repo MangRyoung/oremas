@@ -951,7 +951,7 @@ window.OM_BATTLE_UI=(()=>{
  const EFIRED={};
  async function endFlow(){const c=ctx();if(!c.mgr)return;const q=c.b.endq;if(q&&q.step){const wait=(q.need||[]).filter(t=>!endDone(c.b,t)&&endCands(c.b,q.step).some(x=>x.m.tid===t)).map(t=>(c.b.trainers[t]||{}).name||'?');
    if(confirm(`${END_STEP[q.step]} 확인 중이다${wait.length?' (기다리는 중: '+wait.join(' · ')+')':''}.\n기다리지 않고 바로 넘길까?`))return endAdvance(true);return}
-  await A().set(['battle','host'],c.gm?'gm':c.seat);await endStep('last')}
+  await A().set(['battle','host'],c.gm?'gm':c.seat);raidExtra(c.b);await endStep('last')}
  async function endStep(step){for(;;){const b=ctx().b;const L=endCands(b,step);const need=[...new Set(L.map(x=>x.m.tid))];
    if(need.length){const key=String(Date.now());await A().set(['battle','endq'],{key,step,need});A().sysLog(`【${END_STEP[step]}】 포텐셜 확인 — ${need.map(t=>(b.trainers[t]||{}).name||'?').join(' · ')} (각자 쓸 것을 고르고 「다음」)`,'battle');return}
    if(step==='last'){step='end';continue}
@@ -1002,6 +1002,7 @@ window.OM_BATTLE_UI=(()=>{
    m.started=false}
   for(const m of futs)lines.push(...futureFire(b,m));
   if(FX())lines.push(...FX().turnEnd(b));
+  const raidL=[];for(const mid in b.mons){const m=b.mons[mid];const R=m.raid;if(!R||!(+R.segments>0))continue;if(m.hp.cur>0&&(R.brk||R.cond==='every'))raidL.push(...raidPhase(b,m,'턴 종료 이후'));delete R.brk}
   for(const mid in b.mons){delete b.mons[mid].flags}
   const dec=(o,k)=>{if(o[k]>0&&o[k]<1000){o[k]--;if(o[k]<=0){delete o[k];return true}}return false};
   if(f.weather.type&&f.weather.count>0){f.weather.count--;if(f.weather.count<=0){fieldL.push(`날씨 「${f.weather.type}」 끝`);f.weather={type:'',count:0}}}
@@ -1012,7 +1013,7 @@ window.OM_BATTLE_UI=(()=>{
   b.field=f;b.cmds={};b.order=[];b.phase=0;b.turn=(+b.turn||0)+1;CMD={};
   await saveBattle(b0,b);await A().set(['ready'],{});
   cutPhase('턴 종료',`다음 턴 ${b.turn} · 지시 준비`);const sec=(h,L)=>L.length?[`▸ ${h}`,...L.map(x=>'  '+String(x).replace(/\n/g,'\n  '))]:[];const relL=Object.keys(rel).map(n=>`${n} — ${rel[n].join(' · ')}`);
-  const body=[...sec('포켓몬',lines),...sec('풀린 것',relL),...sec('필드',fieldL)];
+  const body=[...sec('포켓몬',lines),...sec('풀린 것',relL),...sec('필드',fieldL),...sec('레이드',raidL)];
   A().sysLog(`【턴 ${b.turn-1} 종료】${body.length?'\n'+body.join('\n'):'\n  처리할 것 없음'}\n— 턴 ${b.turn} 지시 준비`,'battle')}
 
  /* ---------- 묘수 = 「타임」 (맵툴 command_expert): 지시 준비 페이즈에, 상대 트레이너가 준비를 마치면 상대 포켓몬 하나의 지시 꼴(교대/기술)을 본다.
@@ -1170,7 +1171,7 @@ window.OM_BATTLE_UI=(()=>{
    if(opt.clearHit)delete x.lastHit;const pc=v=>v>0?Math.max(1,Math.round(v/x.hp.max*100)):0;
    let line=delta?`【${delta>0?'회복':'피해'}】 ${x.name} ${delta>0?'+':'−'}${Math.abs(delta)}  ·  HP ${x.hp.latest} → ${x.hp.cur}/${x.hp.max} (${pc(x.hp.cur)}%)\n${why}`:`【무효】 ${x.name} 대미지 없음  ·  HP ${x.hp.cur}/${x.hp.max}\n${why}`;
    if(x.hp.cur<=0){x.entry='';line+=`\n${x.name}은(는) 쓰러졌다!`}
-   if(x.raid&&x.raid.segments>0&&opt.floor&&x.hp.cur<=opt.floor&&delta<0){x.raid.broken=(x.raid.broken||0)+1;x.raid.phase=(x.raid.phase||1)+1;line+=`\n${x.name} 배리어 파괴! → 페이즈 ${x.raid.phase}`}
+   if(x.raid&&x.raid.segments>0&&opt.floor&&x.hp.cur<=opt.floor&&delta<0&&x.hp.cur>0){x.raid.broken=(x.raid.broken||0)+1;x.raid.brk=1;line+=`\n◆ ${x.name}의 배리어(${opt.floor})가 깨졌다! — 턴 종료 이후 「트리거 : 페이즈 체인지」`}   /* 10-25 망령: 맵툴처럼 페이즈 체인지는 깨진 턴이 끝난 뒤 */
    A().closeModal();if(await saveMon(m0,mid,x)){A().sysLog(line,'battle',Object.assign({mid,img:x.image||''},delta?{hp:{name:x.name,prev:x.hp.latest,cur:x.hp.cur,max:x.hp.max,why,faint:x.hp.cur<=0}}:{}));if(x.hp.cur<=0&&m0.hp.cur>0)await faintOff(mid)}};
   md.querySelectorAll('[data-hp]').forEach(bt=>bt.onclick=async()=>{const k=bt.dataset.hp;const v=bt.dataset.v;const g=id=>$('#'+id,md);
    if(k==='apply'){let r=calc();if(!r)return;const mods=[];if(+g('h_mod').value!==1)mods.push('보정 ×'+g('h_mod').value);if(g('h_berry').checked)mods.push(berryN?'「'+berryN+'」 반감':'반감열매');let saved=false;if(g('h_endure').checked){const ec=g('h_endure');ec.checked=false;const r0=calc();ec.checked=true;saved=!!(r0&&r0.after<=0&&r.after>0);if(saved)mods.push(sashX&&sashX.sure?'「'+sashX.name+'」로 버팀':'버티기')}   /* 10-23 망령 제보: 쓰러질 피해가 아니면 「버팀」을 적지 않는다 */
@@ -1285,10 +1286,11 @@ window.OM_BATTLE_UI=(()=>{
      <input type="number" step="0.01" class="n" data-mod="${k}" value="${(m.mod||{})[k]!=null&&(m.mod||{})[k]!==1?(m.mod||{})[k]:''}" placeholder="×1" title="배율(mod)"></div>`).join('')}</div>
    <div class="row small" style="margin:6px 0"><label><input type="checkbox" id="etemp"> 이번 변경을 임시 랭크로 (턴 종료 때 해제)</label><button class="btn xs ghost" id="erk0">랭크 전부 0</button></div>
    <div class="row" style="margin:8px 0"><b>소지품</b> <input type="text" id="eitem" list="itemlist" value="${esc(m.item||'')}" style="flex:1"><button class="btn sm" id="eitemdb" type="button">DB</button><datalist id="itemlist">${items.map(i=>`<option value="${esc(i)}">`).join('')}</datalist>
-    ${c.mgr?`<b>레이드</b> <input type="number" class="n" id="eraid" value="${(m.raid&&m.raid.segments)||''}" placeholder="구간 X" title="최대 HP 를 X 등분한 자리마다 배리어"><span class="small dim">${m.raid&&m.raid.segments?`페이즈 ${m.raid.phase||1} · 깨짐 ${m.raid.broken||0}`:''}</span>`:''}</div>
+    ${c.mgr?`<b>레이드</b> <input type="number" class="n" id="eraid" value="${(m.raid&&m.raid.segments)||''}" placeholder="구간 X" title="최대 HP 를 X 등분한 자리마다 배리어"><span class="small dim">${m.raid&&m.raid.segments?`페이즈 ${m.raid.phase||1} · 깨짐 ${m.raid.broken||0}${raidFloor(m)?' · 다음 배리어 '+raidFloor(m):''}${m.raid.brk?' · 이번 턴 깨짐':''}`:''}</span>${m.raid&&m.raid.segments?'<button class="btn xs ghost" type="button" id="eraidpc" title="「트리거 : 페이즈 체인지」를 지금 발동 (자신의 부정적인 상태 · 적진 능력치 상승 초기화)">페이즈 체인지</button>':''}`:''}</div>
    <div class="sec" style="margin-top:10px">걸린 상태</div><div class="ston" id="ston"></div><div class="row" style="margin-top:8px"><b>눌러서 걸기</b><input type="text" id="stq" placeholder="상태 검색 (이름·설명)" style="flex:1"></div>
    <div class="stgroups" id="stgroups">${(sdb.groups||[]).map(g=>`<div class="stg" data-stg><div class="stgl">${esc(g.l)}</div>${g.s.map(k=>{const d=sdb.st[k]||{ko:k};const v=(m.states||{})[k];const im=simg(k);return `<label class="stt ${v?'on':''} ${d.abn?'abn':''}" data-stq="${esc((d.ko+' '+k+' '+(d.desc||[]).join(' ')).toLowerCase())}" title="${esc((d.desc||[]).join(' '))}"><input type="checkbox" data-st="${k}" ${v?'checked':''}>${im?`<img src="${esc(im)}" alt="">`:`<span class="sti0">${esc(String(d.ko||k).slice(0,1))}</span>`}<span class="stn">${esc(d.ko)}</span>${d.prog==='turn'||d.prog==='move'?`<input type="number" class="n xs" data-stc="${k}" value="${v&&v<1000?v:(d.min<1000?d.min:'')}" placeholder="T">`:''}</label>`}).join('')}</div>`).join('')}</div>
    <div class="row afoot"><span class="sp"></span><button class="btn pri" id="esave">적용</button></div>`);
+  {const pc=$('#eraidpc',md);if(pc)pc.onclick=async()=>{A().closeModal();await raidPhaseNow(mid,'수동 발동')}}
   const rank=Object.assign({},m.rank);const delta={};
   md.querySelectorAll('[data-rk]').forEach(bt=>bt.onclick=()=>{const k=bt.dataset.rk;const lim=k==='critical'?4:6;const p0=+rank[k]||0;rank[k]=Math.max(-lim,Math.min(lim,p0+(+bt.dataset.d)));delta[k]=(delta[k]||0)+(rank[k]-p0);$('#rk_'+k,md).textContent=(rank[k]>0?'+':'')+rank[k]});
   $('#erk0',md).onclick=()=>{for(const k in STAT_KO){rank[k]=0;$('#rk_'+k,md).textContent='0'}};
@@ -1308,7 +1310,7 @@ window.OM_BATTLE_UI=(()=>{
    nm.mod={};md.querySelectorAll('[data-mod]').forEach(i=>{if(i.value!==''&&+i.value!==1)nm.mod[i.dataset.mod]=+i.value});
    /* 손으로 바꾼 배율은 출처 기록에서 떼어 낸다 (나중에 ✕ 로 역으로 나뉘지 않게) */
    if(nm.fx&&nm.fx.mults){nm.fx.mults=nm.fx.mults.map(e=>{const st={};for(const k in e.stats)if((+nm.mod[k]||1)===(+(m.mod||{})[k]||1))st[k]=e.stats[k];return Object.assign({},e,{stats:st})}).filter(e=>Object.keys(e.stats).length)}
-   const er=$('#eraid',md);if(er){const X=+er.value||0;if(!X)delete nm.raid;else if(!nm.raid||nm.raid.segments!==X)nm.raid={segments:X,broken:0,phase:1}}
+   const er=$('#eraid',md);if(er){const X=+er.value||0;if(!X)delete nm.raid;else if(!nm.raid||nm.raid.segments!==X)nm.raid=Object.assign({cure:1,cstat:1,rup:1,rmod:0,cond:'cap'},nm.raid||{},{segments:X,broken:0,phase:1,brk:0})}
    if($('#etemp',md).checked){nm.tempRank=nm.tempRank||{};for(const k in delta)nm.tempRank[k]=(+nm.tempRank[k]||0)+delta[k]}
    nm.states={};md.querySelectorAll('[data-st]').forEach(cb=>{if(!cb.checked)return;const k=cb.dataset.st;const ci=md.querySelector(`[data-stc="${k}"]`);const d=sdb.st[k]||{};nm.states[k]=ci&&ci.value!==''?+ci.value:(+(m.states||{})[k]||(d.min>=1000||!d.min?1000:(+d.max>+d.min&&+d.max<1000?+d.min+Math.floor(Math.random()*(+d.max-+d.min+1)):+d.min)))});if(nm.states.LeechSeed&&!(m.states||{}).LeechSeed){const sf=seedSrc(b,m);if(sf)nm.seedFrom=sf;else delete nm.seedFrom}
    if(nm.hp.cur<=0)nm.entry='';
@@ -1412,8 +1414,9 @@ window.OM_BATTLE_UI=(()=>{
   if(tm.percent&&!opt.noRoll&&!pExp){const rr=roll(FX().percentOf(tm.percent));if(!rr.ok){A().sysLog(`【${KN}】 ${m.name} 『${name}』\n${tm.percent} 판정 실패 (${rr.r}/${rr.p})${rr.adj} — 발동하지 않았다`,'battle',{mid:m.id,img:m.image||''});return false}L.push(`${tm.percent} 판정 성공 (${rr.r}/${rr.p})${rr.adj}`)}
   /* 「필드 위에 있는 한」 · 「필드에 있는 동안」: 이 효과가 바꾼 것은 쓴 포켓몬이 필드를 떠나면 되돌린다 */const hold=FX().release&&/필드\s*(?:위)?에\s*있는\s*(?:한|동안)|나와\s*있는\s*(?:한|동안)/.test(etx)?{hold:1}:{};
   const r=await FX().run(auto.ops,Object.assign(uiCtx(nb,m,name,opt.area),opt.noRoll?{noRoll:1}:{},adj,hold));L.push(...r.lines);if(hold.hold&&(m.holds||[]).length)L.push('(필드를 떠나면 풀린다)');
+  const raidNew=await raidFix(m,m0,name,L);if(raidNew===null)return false;
   const f=fieldOf(nb);for(const id in nb.mons){const x=nb.mons[id];if(x.entry&&x.hp.cur<=0){x.entry='';L.push(`${x.name}은(는) 쓰러졌다!`)}}
-  if(!await saveBattle(nb0,nb,f))return false;
+  if(!await saveBattle(nb0,nb,f))return false;if(raidNew)raidCut(m);
   if(kind==='item'&&oneShot(m0)&&!opt.quiet&&confirm(`「${name}」을(를) 다 썼나? (소지품 칸에서 뺀다)`))setTimeout(()=>itemConsume(mid),50);
   A().sysLog(opt.head?`${opt.head}${L.length?'\n'+L.join('\n'):''}`:`【${({pot:'포텐셜',trait:'특성',item:'소지품',order:'지령'})[kind]||'효과'}】 ${m.name} 『${name}』${L.length?'\n'+L.join('\n'):''}`,'battle',{mid:m.id,img:opt.img!=null?opt.img:(m.image||''),eff:String(opt.eff||auto.text||(kind==='trait'?m.abilityEff:kind==='item'?m.itemEff:((potSrc(m).find(p=>p&&p.name===name)||{}).eff))||'').replace(/<br\s*\/?>/g,'\n').slice(0,300)});return true}
  function slotEff(m,kind,name){const n=String(name||'').replace(/『|』/g,'');if(kind==='trait')return m.abilityEff||(FX()&&FX().effOf?FX().effOf('trait',n):'');if(kind==='item'){const x=n===m.item?m:(m.items2||[]).find(q=>q&&q.item===n);return (x&&x.itemEff)||''}return ((potSrc(m).find(p=>p&&p.name===n)||{}).eff)||''}
@@ -1476,6 +1479,34 @@ window.OM_BATTLE_UI=(()=>{
   const boss=Object.values(b.mons||{}).find(m=>m.raid&&+m.raid.segments>0);
   if(mode==='warn'||boss){const AM=Object.values(b.mons||{});const bm=boss||AM.find(m=>m.side==='right'&&m.entry)||AM.find(m=>m.side==='right')||AM[0]||(force?{name:'???',image:'',hp:{cur:1,max:1}}:null);if(bm){CUT().raid({img:bm.image,n:bm.name,title:cfg.warnTitle||(boss?'레이드 배틀 : '+boss.raid.segments:'강적 출현'),tape:cfg.warnTape||('⚠ WARNING ⚠ '+(cfg.warnTitle||(boss?'레이드 보스 출현':'강적 출현'))),nohp:cfg.warnHp?0:1,x:boss?boss.raid.segments:0,hp:(bm.hp.cur>0?Math.max(1,Math.round(bm.hp.cur/bm.hp.max*100)):0),ph:boss?boss.raid.phase||1:0,label:boss?'RAID BATTLE':'BATTLE'});return}}
   let L=sideData('left'),R=sideData('right');if(force&&!(L&&R)){const ex=(t,n)=>({img:'',t,sub:'',balls:Array(n).fill(1),mons:[]});L=L||ex('좌측 트레이너',6);R=R||ex('우측 트레이너',6);A().toast('배틀에 양쪽 파티가 없어서 예시로 띄웠다')}if(L&&R)CUT().vs(L,R)}/* 효과음은 로그를 보고 rp_ui 가 울린다 (모두 같은 로그를 받으니 좌석도 들린다) */
+ /* ---------- 레이드 배틀 (맵툴 raid_set · raid_turnend · raid_phase · raid_cure · raid_reset_one) ----------
+    배리어: 최대 HP × k/X 자리마다. 닿으면 깨지고(그 아래로는 그 피해에서 안 깎임) 회복해도 되살아나지 않는다.
+    깨진 턴(또는 cond:every 면 매 턴)이 끝난 뒤 「트리거 : 페이즈 체인지」: ② 자신의 부정적인 상태(cstat: 능력치 하락도) 초기화 ③ 적진 전체 능력치 상승(rmod: 배율 강화도) 초기화 */
+ async function raidFix(m,m0,name,L){if(!m.raid)return 0;const R=m.raid;const was=!!(m0&&m0.raid&&+m0.raid.segments>0);
+  if(!(+R.segments>0)){let X=+((String(name||'').match(/(\d+)/)||[])[1])||0;   /* X 가 비어 있으면 포텐셜 이름 속 숫자 (레이드 배틀 : 4 → 4) */
+   if(!X){const v=prompt('「레이드 배틀 : X」의 X를 정해 줘.\n최대 HP 의 1/X 마다 배리어가 생긴다.','3');if(v===null)return null;X=+v||3}R.segments=X}
+  R.segments=Math.max(1,Math.floor(+R.segments));for(const [k,v] of [['cure',1],['cstat',1],['rup',1],['rmod',0]])if(R[k]==null||R[k]==='')R[k]=v;R.cond=R.cond||'cap';R.name=R.name||String(name||'');
+  if(!was){R.broken=0;R.phase=+R.phase||1;delete R.brk}
+  const X=R.segments,cap=Math.max(1,Math.floor(m.hp.max/X));
+  const txt=`「레이드 배틀 : ${X}」 — 「HP : 1/${X}」(${cap})마다 배리어. 배리어 아래로 내려가는 피해는 받지 않고, 배리어는 닿으면 깨지며 회복해도 되살아나지 않는다. ${R.cond==='every'?'매 턴':'배리어가 깨진 턴'} 종료 이후 「트리거 : 페이즈 체인지」${+R.cure?`\n· 자신의 모든 부정적인 상태${+R.cstat?'(능력치 하락 포함)':''} 초기화`:''}${+R.rup?`\n· 적진 전체의 모든 능력치 상승${+R.rmod?'·강화':''} 초기화`:''}`;
+  const i=L.findIndex(x=>/레이드 배틀 설정/.test(x));if(i>=0)L[i]=txt;else L.push(txt);return was?0:1}
+ function raidCut(m){try{const cfg=((A().ST.state.rp||{}).cutin)||{};if(cfg.start==='off'||!CUT()||!CUT().raid)return;const R=m.raid||{};CUT().raid({img:m.image,n:m.name,title:'레이드 배틀 : '+R.segments,tape:'⚠ WARNING ⚠ 레이드 보스 출현',nohp:cfg.warnHp?0:1,x:R.segments,hp:m.hp.cur>0?Math.max(1,Math.round(m.hp.cur/m.hp.max*100)):0,ph:R.phase||1,label:'RAID BATTLE'})}catch(e){}}
+ function modDrop(m,k){if(m.mod)delete m.mod[k];if(m.fx&&m.fx.mults)m.fx.mults=m.fx.mults.map(e=>{const st=Object.assign({},e.stats);delete st[k];return Object.assign({},e,{stats:st})}).filter(e=>Object.keys(e.stats).length)}
+ function raidPhase(b,m,why){const R=m.raid;R.phase=(+R.phase||1)+1;const out=[`「트리거 : 페이즈 체인지」 ${m.name} · 페이즈 ${R.phase}${why?' ('+why+')':''}`];const RK=Object.assign({},STAT_KO,{critical:'급소'});const on=(k,d)=>R[k]==null||R[k]===''?d:+R[k];
+  if(on('cure',1)){const NEG=(FX()&&FX().NEG)||[];const sdb=(DB().states||{}).st||{};const st=m.states||{};const c=[];for(const k of Object.keys(st))if(st[k]&&NEG.includes(k)){delete st[k];c.push(`「${(sdb[k]||{}).ko||k}」`)}
+   if(m.seedFrom&&!st.LeechSeed)delete m.seedFrom;const d=[];
+   if(on('cstat',1)){m.rank=m.rank||{};for(const k in m.rank)if(+m.rank[k]<0){d.push(`${RK[k]||k} ${m.rank[k]}→0`);m.rank[k]=0}for(const k in (m.mod||{}))if(+m.mod[k]<1){d.push(`${RK[k]||k} ×${m.mod[k]}→×1`);modDrop(m,k)}}
+   out.push(c.length||d.length?`② 자신의 부정적인 상태를 초기화했다! ${c.join('')}${d.length?' / '+d.join(' '):''}`:'② 자신에게 초기화할 부정적인 상태가 없다.')}
+  if(on('rup',1)){const e=[];for(const id in b.mons){const x=b.mons[id];if(x===m||!x.entry||x.hp.cur<=0||sameT(x,m,b))continue;const d=[];x.rank=x.rank||{};
+    for(const k in x.rank)if(+x.rank[k]>0){d.push(`${RK[k]||k} +${x.rank[k]}→0`);x.rank[k]=0}if(x.tempRank)for(const k in x.tempRank)if(+x.tempRank[k]>0)delete x.tempRank[k];
+    if(on('rmod',0))for(const k in (x.mod||{}))if(+x.mod[k]>1){d.push(`${RK[k]||k} ×${x.mod[k]}→×1`);modDrop(x,k);if(x.tempMod)delete x.tempMod[k]}
+    if(d.length)e.push(`「${x.name}」 ${d.join(' ')}`)}
+   out.push(e.length?`③ 적진 전체의 능력치 상승을 초기화했다!\n   ${e.join('\n   ')}`:'③ 적진에 초기화할 능력치 상승이 없다.')}
+  return out}
+ /* 수동 페이즈 체인지 (버프 관리 raid_pc) */
+ async function raidPhaseNow(mid,why){const c=ctx();if(!c.mgr)return;const b0=snap(c.b),b=snap(b0);const m=b.mons[mid];if(!m||!m.raid)return;const L=raidPhase(b,m,why||'수동 발동');delete m.raid.brk;if(await saveBattle(b0,b))A().sysLog(`【레이드】 ${L.join('\n')}`,'battle',{mid,img:m.image||''})}
+ /* 「레이드 배틀 : 4」 ②: 「3」 배수 턴의 가장 마지막에 추가 행동 (【사전】 공개) — 맵툴처럼 손으로 하되 알려 준다 */
+ function raidExtra(b){const t=+b.turn||0;if(!t||t%3)return;for(const id in b.mons){const m=b.mons[id];if(!m.raid||!(+m.raid.segments>0)||!m.entry||m.hp.cur<=0)continue;const p=potSrc(m).find(p=>p&&/레이드 배틀/.test(p.name||'')&&/추가 행동/.test(p.eff||''));if(p)A().sysLog(`【레이드】 ${m.name} — 「3」의 배수 턴(턴 ${t})의 가장 마지막: 추가 행동을 얻는다 (【사전】에 공개)`,'battle',{mid:m.id,img:m.image||''})}}
  function raidFloor(m){if(!m||!m.raid||!(+m.raid.segments>0))return 0;const X=+m.raid.segments,br=+m.raid.broken||0;let fl=0;for(let k=X-1-br;k>=1;k--){const v=Math.floor(m.hp.max*k/X);if(v<m.hp.cur){fl=v;break}}return fl}
  /* ---------- 공격 ---------- */
  function openAttack(mid){const c=ctx();const b=c.b;const atk=b.mons[mid];if(!atk||!canEdit(c,atk))return;const f=fieldOf(b);

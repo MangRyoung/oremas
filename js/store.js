@@ -62,8 +62,10 @@ window.OM_STORE=(()=>{
    .on('broadcast',{event:'st'},p=>{if(onPatch&&p.payload)onPatch(p.payload)})   /* 10-23 이그레스: 바뀐 칸만 (supabase/patch_2026-10-23_이그레스.sql) */
    .on('postgres_changes',{event:'INSERT',schema:'public',table:'om_log',filter:'room=eq.'+room},p=>{if(onLog&&p.new)onLog(p.new)})
    .on('broadcast',{event:'ev'},p=>{if(onEvent&&p.payload)onEvent(p.payload)})
-   .subscribe(st=>{if(onStatus)onStatus(st)});
-  CH=ch;return ()=>{try{sb().removeChannel(ch)}catch(e){}if(CH===ch)CH=null}}
+   .subscribe(st=>{if(CH===ch&&onStatus)onStatus(st)});   /* 10-25: 바꿔 붙인 뒤 옛 채널의 CLOSED 는 무시 */
+  CH=ch;return ()=>{if(CH===ch)CH=null;try{return Promise.resolve(sb().removeChannel(ch)).catch(()=>{})}catch(e){return Promise.resolve()}}}
+ /* 10-25 망령: 폰이 잠들었다 깨면 소켓이 열린 척 죽어 있을 수 있다 — 소켓을 끊고 다시 붙인다 (채널 subscribe 가 다시 연결한다) */
+ function rtReset(){try{const rt=sb().realtime;if(rt&&rt.disconnect)rt.disconnect()}catch(e){}}
  /* 저장하지 않는 신호 (입력 중 표시 등): 같은 방의 모두에게 바로 */
  function broadcast(payload){if(!CH)return;try{CH.send({type:'broadcast',event:'ev',payload})}catch(e){}}
 
@@ -97,5 +99,5 @@ window.OM_STORE=(()=>{
   if(r.error){const m=String(r.error.message||r.error);if(/bucket not found|NoSuchBucket/i.test(m))throw new Error('그림 저장소(버킷 oremas)가 아직 없다 — Supabase SQL Editor 에서 supabase/schema.sql 을 다시 실행해 줘');throw err(r.error)}
   return sb().storage.from('oremas').getPublicUrl(full).data.publicUrl}
 
- return {getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty};
+ return {rtReset,getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty};
 })();
