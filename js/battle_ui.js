@@ -195,7 +195,8 @@ window.OM_BATTLE_UI=(()=>{
   const perT=tid=>{if(!multi)return '';const t=trs[tid];if(!t)return '';const own=c.gm||ownT(c,tid);
    const fe=window.OM_STAGE_UI&&(c.mgr||ownT(c,tid))?`<button class="btn xs" data-act="stagemgr" data-side="${side}" data-tid="${tid}" title="${esc(t.name||'')}의 트레이너 · 포켓몬이 가진 필드 · 스타디움 · 이계를 펼친다">필드 전개</button>`:'';
    const sm=own?`<label class="btn xs ${simOn(b,tid)?'pri':'ghost'} simtg" title="켜면 ${esc(t.name||'')}은(는) 「등장」 대신 「내밀기 예약」 — 「시합 개시」·「내밀기 실행」 때 예약한 포켓몬이 양쪽 동시에 나온다"><input type="checkbox" data-act="simul" data-tid="${tid}" ${simOn(b,tid)?'checked':''}> 동시 내밀기</label>`:'';
-   return fe||sm?`<div class="tbtns tbtns-own">${fe}<span class="sp"></span>${sm}</div>`:''};
+   const spb=window.OM_SP_UI&&window.OM_SP_UI.canOpen('',tid)?`<button class="btn xs spbtn" data-act="spmgr" data-side="${side}" data-tid="${tid}" title="SP (서포터) — 밖에서 돕는 조력자의 한 수">SP</button>`:'';
+   return fe||sm||spb?`<div class="tbtns tbtns-own">${fe}${spb}<span class="sp"></span>${sm}</div>`:''};
   const items=ids.map((tid,ti)=>{const t=trs[tid]||{name:'?',ranks:{}};const o=seats[tid];const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid).sort((x,y)=>(x.slot||0)-(y.slot||0));const cmdDone=!!(b.cmds||{})[tid];const rd=!!ready[tid];
    return `<div class="tblock"><div class="trainer"><div class="tpic" style="${t.image?`background-image:url('${cssu(t.image)}')`:''}"></div><div class="tinfo"><div class="tn">${esc(t.name)}${tid===c.seat?' <span class="tag me">ME</span>':ownT(c,tid)?' <span class="tag me co" title="함께 지시하는 트레이너">함께</span>':''}${rd?' <span class="tag ok">READY</span>':cmdDone?' <span class="tag">공개됨</span>':''}${soloTag(c,tid,ids)}</div>
      <div class="rk4">${['지시','육성','통솔','능력'].map(k=>`<span><small>${k}</small><b>${esc(t.ranks[k]||'-')}</b></span>`).join('')}</div>${o||coOf(c,tid).length?`<div class="tr">${o?`<span class="who">${esc(o.name)}</span>`:''}${coHtml(c,tid)}</div>`:''}</div>
@@ -212,7 +213,8 @@ window.OM_BATTLE_UI=(()=>{
     const cos='';   /* 함께 지시는 머리 줄 「+ 파티」 왼쪽으로 옮겼다 (10-25) */   /* 10-24 망령: 함께 지시 · 필드 전개도 이 줄 왼쪽으로 (벤치 맨 아래에 있으면 밀려 안 보였다) */
     const sm=simTg;   /* 10-25 망령: 동시 내밀기는 제목줄 대신 이 줄 오른쪽(+ 파티 밑 빈 곳) — 제목줄에 두면 「+ 파티」가 밀려 칸이 하나 더 생겼다 */
     if(multi)return '';   /* 여럿이면 각 트레이너 칸에 (perT) */
-    return sm||fe||cos?`<div class="shead2">${cos}${fe}<span class="sp"></span>${sm}</div>`:''})()}${items||'<div class="aempty small">트레이너 없음'+(canLoad(c)?` — <button class="btn xs pri" data-act="load" data-side="${side}">+ 파티 불러오기</button>`:' — 진행하는 사람이 파티를 불러온다')+'</div>'}${sidePanel(c,side,ready)}</div>`}
+    const spb=window.OM_SP_UI&&window.OM_SP_UI.canOpen(side,'')?`<button class="btn xs spbtn" data-act="spmgr" data-side="${side}" title="SP (서포터) — 밖에서 돕는 조력자의 한 수">SP</button>`:'';   /* 10-25 망령: SP(서포터) — 필드 전개 옆 */
+    return sm||fe||cos||spb?`<div class="shead2">${cos}${fe}${spb}<span class="sp"></span>${sm}</div>`:''})()}${items||'<div class="aempty small">트레이너 없음'+(canLoad(c)?` — <button class="btn xs pri" data-act="load" data-side="${side}">+ 파티 불러오기</button>`:' — 진행하는 사람이 파티를 불러온다')+'</div>'}${sidePanel(c,side,ready)}</div>`}
  /* 벤치 아래 빈 곳: 그 진영이 입력해 둔 지시 현황. 내 트레이너(GM 은 볼 수 있는 것 전부)는 편집 중인 지시를, 남의 것은 공개된 만큼만 */
  function sidePanel(c,side,ready){const b=c.b;const trs=b.trainers||{};const ids=(((b.sides||{})[side]||{}).trainers||[]).filter(t=>trs[t]);if(!ids.length)return '';
   const mine=myTrainers(c);const ph=+b.phase||0;
@@ -529,6 +531,7 @@ window.OM_BATTLE_UI=(()=>{
    case 'areaswap':return areaSwap(d.mid);
    case 'field':return openField();
    case 'stage':return window.OM_STAGE_UI&&window.OM_STAGE_UI.info();
+   case 'spmgr':return window.OM_SP_UI&&window.OM_SP_UI.open(d.side||'',d.tid||'');
    case 'stagemgr':return window.OM_STAGE_UI&&window.OM_STAGE_UI.open(d.side||'',d.tid||'');
    case 'orders':return openOrders(d.tid);
    case 'co':return openCo(d.tid);
@@ -1386,7 +1389,7 @@ window.OM_BATTLE_UI=(()=>{
   choose:(labels,multi)=>new Promise(res=>{const md=A().openModal(`<div class="mhead"><h2>${esc(name)} — 발동할 효과</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="firelist">${labels.map((l,i)=>`<label class="firerow"><input type="${multi?'checkbox':'radio'}" name="ch" value="${i}" ${i===0?'checked':''}> <span>${esc(l)}</span></label>`).join('')}</div><div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn pri" id="chok">발동</button></div>`);
    $('#chok',md).onclick=()=>{const v=[...md.querySelectorAll('[name=ch]:checked')].map(i=>+i.value);A().closeModal();res(v)};md.querySelector('[data-x]').addEventListener('click',()=>res([]))})}}
  /* 효과 하나를 돌려서 배틀에 적용한다. kind: pot|trait|item|order. 돌려줌: 적용했으면 true */
- async function fireAuto(mid,kind,name,opt){opt=opt||{};const c=ctx();const b0=c.b;const m0=b0.mons[mid];if(!m0)return false;const auto=FX().autoOf(m0,kind,name);
+ async function fireAuto(mid,kind,name,opt){opt=opt||{};const c=ctx();const b0=c.b;const m0=b0.mons[mid];if(!m0)return false;const auto=opt.auto||FX().autoOf(m0,kind,name);   /* opt.auto: SP(서포터) 처럼 포켓몬 밖에 적힌 구문 */
   if(!auto||!auto.ops||!auto.ops.length||auto.manual){if(!opt.quiet)A().toast(auto&&auto.manual?`「${name}」은(는) 자동화가 없어 손으로 처리한다`:`「${name}」 자동화 없음`);return false}
   /* 확률 (10-24 망령): 레디메이드 특성은 글(text)이 비어 있어 확률을 못 읽었다 — 그 칸의 효과 글까지 본다. 「N할로」 · 「N% 확률」 은 여기서 굴리고, 줄마다 고르는 효과(①②)는 고른 줄에서 굴린다 */
   const etx=auto.text||slotEff(m0,kind,name);const tm=FX().timing(etx);const nb0=snap(b0),nb=snap(nb0);const m=nb.mons[mid];const L=[];
@@ -1738,5 +1741,5 @@ ${L.join('\n')}${once.length?'\n'+once.map(x=>'· '+x.line).join('\n'):''}`,'bat
     const ds=stDesc(k);A().sysLog(`【상태】 ${m.name} 「${stName(k)}」${c<1000?` (${c}턴)`:''}${ds.length?'\n'+ds.join('\n'):''}`,'battle',{mid,img:m.image||''});o.pk=false;o.q='';o.n='';redraw()});
   bind()}
  function nowParts(m){return {rank:rankChips(m),state:stateChips(m),fx:flagChips(m)+(FX()?FX().chips(m).map(ch=>`<span class="rk fxc" title="${esc(ch.title)}">${esc(ch.t)}</span>`).join(''):'')}}
- return {render,nowParts,nowEditHtml,bindNowEdit,watch,ctx,entered,allEntered,fieldOf,futureFire,trapWarn,resetLocal:()=>{CMD={}},startCut:(m)=>battleStartCut(ctx().b,m),openHp,action,hotkey};
+ return {fireAuto,render,nowParts,nowEditHtml,bindNowEdit,watch,ctx,entered,allEntered,fieldOf,futureFire,trapWarn,resetLocal:()=>{CMD={}},startCut:(m)=>battleStartCut(ctx().b,m),openHp,action,hotkey};
 })();
