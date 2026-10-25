@@ -3854,3 +3854,12 @@ button.tag.solo:hover{border-color:var(--yel2)}
 /* 10-25 망령: 접속자 칸이 줄바꿈 계산에 제 폭(최대 240px)을 다 써서 테마 단추가 다음 줄로 밀렸다 — 남는 폭만 쓰게 (줄은 안 늘린다) */
 @media (min-width:761px){.top>.presence{flex:1 1 0;min-width:46px;max-width:min(16vw,240px)}}
 .tbtns-own{margin:4px 0 2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+/* 10-25 벤치 머리: 「👥 함께」 · 「+ 파티」가 한 줄에 — 좁으면 벤치 이름만 줄인다. 트레이너 칸의 필드 전개 · 동시 내밀기도 한 줄 */
+.bcol .shead{flex-wrap:nowrap;min-width:0}
+.bcol .shead .sname{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:0 1 auto}
+.bcol .shead .btn{flex:none;white-space:nowrap}
+.tbtns-own{flex-wrap:nowrap}
+.tbtns-own .btn{padding-left:7px;padding-right:7px;white-space:nowrap}
+.bcol .shead{gap:4px}
+.bcol .shead .sname{min-width:68px}
+.bcol .shead .btn{padding:3px 6px;font-size:11px}
