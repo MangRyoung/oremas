@@ -4470,8 +4470,9 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .dgme-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .dgme-set{display:inline-flex;gap:4px;align-items:center;margin-left:auto}
 .dgme-set input{width:76px}
-.dgme-rk{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:6px}
+.dgme-rk{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:6px}
 .dgme-rk span{display:flex;align-items:center;gap:4px;padding:3px 6px;border:1px solid var(--line2,#333);border-radius:6px}
-.dgme-rk span b{flex:1;font-size:12px}
+.dgme-rk span b{flex:1;font-size:12px;white-space:nowrap}
+.dgme-sec>.btn{align-self:flex-start}
 .dgme-rk span em{font-style:normal;font-family:var(--mono,monospace);min-width:22px;text-align:center}
 .dgme-rk span.up em{color:var(--ok,#3ee0a1)}.dgme-rk span.dn em{color:var(--red,#ff4a5a)}
