@@ -4272,3 +4272,11 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .dg-ed-row label{min-width:0}
 .dgcl-card img{flex:0 1 auto;min-height:60px;max-height:none;height:auto}
 .dgcl-card p,.dgcl-h{flex:none}
+/* RP 단서 카드 (10-26) — 던전 단서와 같은 카드 */
+.rpstage .rpclue{position:absolute;inset:0;z-index:9;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.45);pointer-events:auto}
+.rpstage .rpclue.mini{inset:auto;left:50%;top:10px;translate:-50% 0;padding:0;background:none}
+.rpclue-pill{font:700 13px/1 inherit;padding:8px 14px;background:#0d0f16;color:var(--yel2,#f0c84a);border:2px solid var(--yel2,#f0c84a);box-shadow:3px 3px 0 #000;cursor:pointer;transform:skewX(-6deg)}
+.rpclue .dgcl-card{--dg-acc:var(--yel2,#f0c84a)}
+.gcclue{display:flex;flex-direction:column;gap:6px}
+.gccl-lib{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.gccl-it{display:inline-flex;align-items:center;gap:2px}
