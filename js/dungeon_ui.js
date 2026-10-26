@@ -64,7 +64,7 @@ window.OM_DG_UI=(()=>{
   return ids.map(tid=>{const t=tr[tid],pids=(t.pids||[]).filter(id=>ms[id]),w=walkOf(tid),me=canWalk(tid);
    const balls=pids.map(id=>{const h=monHp(ms[id]);return `<i class="${h.dead?'ko':h.c<h.mx?'hurt':''}${w.includes(id)?' w':''}" title="${H(ms[id].name)} ${h.c}/${h.mx}"></i>`}).join('');
    const chips=w.map(id=>{const m=ms[id],h=monHp(m),p=h.c/h.mx,st=Object.keys(m.sheetStates||{}).filter(k=>k!=='Dead'&&m.sheetStates[k]);
-    return `<div class="dgpt-mon${h.dead?' ko':''}"><span class="dgpt-img" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></span><span class="dgpt-mi"><b>${H(m.name)}</b><span class="dgpt-hp ${p<=.25?'low':p<=.5?'mid':''}"><i style="width:${Math.round(p*100)}%"></i></span><small>${h.dead?'빈사':h.c+'/'+h.mx}${st.length?' · '+H(st.map(stKo).join(' ')):''}</small></span></div>`}).join('');
+    const rkt=rkTxt(m);return `<div class="dgpt-mon${h.dead?' ko':''}" data-pm="${H(id)}" title="눌러서 HP · 상태 · 랭크 고치기"><span class="dgpt-img" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></span><span class="dgpt-mi"><b>${H(m.name)}</b><span class="dgpt-hp ${p<=.25?'low':p<=.5?'mid':''}"><i style="width:${Math.round(p*100)}%"></i></span><small>${h.dead?'빈사':h.c+'/'+h.mx}${st.length?' · '+H(st.map(stKo).join(' ')):''}${rkt?' · '+H(rkt):''}</small></span></div>`}).join('');
    const add=me&&w.length<n?`<button type="button" class="dgpt-add" data-walk="${H(tid)}">＋ 동행</button>`:'';
    return `<div class="dgpt-row${me?' mine':''}" ${me?`data-walk="${H(tid)}" title="눌러서 동행 포켓몬 고르기 (최대 ${n}체)"`:''}><div class="dgpt-h"><b>${H(t.name||'')}</b>${cardChip(tid,me)}<span class="dgpt-balls">${balls}</span></div>${ordHTML(tid)}${chips||add?`<div class="dgpt-walk">${chips}${add}</div>`:''}</div>`}).join('')}
  /* 10-26 망령: 던전에서도 손패 카드 · 4식 6령 남은 횟수.
@@ -73,7 +73,9 @@ window.OM_DG_UI=(()=>{
  function ordHTML(tid){const OD=window.OM_ORDERS;if(!OD)return '';const t=ordSrc(tid);const cnt=t.orderCount||{};
   const one=kind=>{let ks=[];try{ks=(kind==='order'?OD.orderKeys:OD.commandKeys)(t)}catch(e){}return ks.map(k=>{const nm=kind==='order'?OD.orderName(t,k):OD.commandName(t,k);if(!nm)return '';const v=+cnt[(kind==='order'?'order_':'command_')+k]||0;return `<span class="${v?'':'z'}" title="${H(nm)} 남은 ${v}">${H((OD.KO||{})[String(k).split('@')[0]]||String(nm).slice(0,3))}${String(k).includes('@')?'<sup>+</sup>':''}<b>${v}</b></span>`}).join('')};
   const o=one('order'),c=one('command');if(!o&&!c)return '';
-  return `<div class="dgpt-ord">${o?`<i>4식</i>${o}`:''}${c?`<i class="c">6령</i>${c}`:''}</div>`}
+  /* 10-26 망령: 칸마다 늘어놓으니 PT 칸이 요약 노릇을 못 했다 — 남은 합계만 한 줄, 자세한 건 마우스를 올리면 */
+  const sum=h=>{const v=[...h.matchAll(/title="([^"]*) 남은 (\d+)"/g)];return {n:v.reduce((a,x)=>a+ +x[2],0),k:v.length,t:v.map(x=>x[1]+' '+x[2]).join(' · ')}};const so=sum(o),sc=sum(c);
+  return `<div class="dgpt-ord sum" title="${H((so.k?'4식: '+so.t:'')+(so.k&&sc.k?'\n':'')+(sc.k?'6령: '+sc.t:''))}">${so.k?`<i>4식</i><b>${so.n}</b>`:''}${sc.k?`<i class="c">6령</i><b>${sc.n}</b>`:''}</div>`}
  function cardChip(tid,me){const D=window.OM_DECK_UI;if(!D||!D.handCount)return '';const n=D.handCount(tid);
   return me?`<button type="button" class="dgpt-card-b${n?'':' empty'}" data-dgcard="${H(tid)}" title="손패에서 카드를 쓴다 (던전 · 배틀 밖)">🃏<b>${n}</b></button>`:(n?`<span class="dgpt-card-b ro" title="손패 ${n}장">🃏<b>${n}</b></span>`:'')}
  /* 카드 쓰기: 구문이 있는 카드는 동행 포켓몬 중 하나를 기준으로 (배틀 밖이라 구문은 효과 글로만 남는다) */
@@ -198,7 +200,7 @@ window.OM_DG_UI=(()=>{
   const rs=R(d);if(!rs[d.at]){const s=d.st&&rs[d.st]?d.st:Object.keys(rs)[0];d.at=s||''}
   stage.classList.add('dgmode');
   let bg=stage.querySelector(':scope>.dgrp-bg');if(!bg){bg=document.createElement('div');bg.className='dgrp dgrp-bg';bg.innerHTML='<div class="dg-planes"></div>';stage.prepend(bg);RPH.frame=''}
-  const hudClick=e=>{const cb=e.target.closest('[data-dgcard]');if(cb){e.stopPropagation();return useCard(cb.dataset.dgcard)}const w=e.target.closest('[data-walk]');if(w){e.stopPropagation();return walkPick(w.dataset.walk)}const b=e.target.closest('[data-rpdg]');if(!b)return;e.stopPropagation();
+  const hudClick=e=>{const cb=e.target.closest('[data-dgcard]');if(cb){e.stopPropagation();return useCard(cb.dataset.dgcard)}const pm=e.target.closest('[data-pm]');if(pm){e.stopPropagation();return monEdit(pm.dataset.pm)}const w=e.target.closest('[data-walk]');if(w){e.stopPropagation();return walkPick(w.dataset.walk)}const b=e.target.closest('[data-rpdg]');if(!b)return;e.stopPropagation();
     if(b.dataset.rpdg==='pt'){const mn=!ptMin();try{localStorage.setItem('om_dg_pt',mn?'min':'open')}catch(err){}const pw=stage.querySelector('.dgrp-ptw');if(pw)pw._h='';rpSync(stage);return}
     if(b.dataset.rpdg==='enc'){const dd=cur();if(dd)startEnc(dd)}
     if(b.dataset.rpdg==='clue'){const dd=cur();if(!dd)return;const rr=R(dd)[dd.at];if(rr&&rr.cs){DG.clueLocal=dd.at;DG.clueHide=0;RPH.clueSig='';rpSync(stage)}else if(gm())showClue(dd,dd.at)}
@@ -271,7 +273,7 @@ window.OM_DG_UI=(()=>{
 
  /* ---------- 클릭 (탭 화면) ---------- */
  function startOptions(d){const rs=R(d),o=[];if(d.st&&rs[d.st])o.push([d.st,'입구에서 시작']);Object.entries(rs).forEach(([id,r])=>{if(r.t==='safe'&&r.s&&id!==d.st)o.push([id,'세이프룸 · '+(r.n||'')])});if(d.at&&rs[d.at]&&!o.some(x=>x[0]===d.at))o.push([d.at,'지난 위치에서 이어서']);if(!o.length){const f=Object.keys(rs)[0];if(f)o.push([f,'첫 방에서 시작'])}return o}
- function bindRoot(el){if(el._dgBound)return;el._dgBound=1;el.addEventListener('click',e=>{const cb=e.target.closest('[data-dgcard]');if(cb&&el.contains(cb)){e.stopPropagation();return useCard(cb.dataset.dgcard)}const w=e.target.closest('[data-walk]');if(w&&el.contains(w)&&w.closest('#dgRoot')){return walkPick(w.dataset.walk)}const b=e.target.closest('[data-a]');if(!b||!el.contains(b)||!b.closest('#dgRoot,.dg-idle'))return;act(b.dataset.a,b)})}
+ function bindRoot(el){if(el._dgBound)return;el._dgBound=1;el.addEventListener('click',e=>{const cb=e.target.closest('[data-dgcard]');if(cb&&el.contains(cb)){e.stopPropagation();return useCard(cb.dataset.dgcard)}const pm=e.target.closest('[data-pm]');if(pm&&el.contains(pm)&&pm.closest('#dgRoot')){e.stopPropagation();return monEdit(pm.dataset.pm)}const w=e.target.closest('[data-walk]');if(w&&el.contains(w)&&w.closest('#dgRoot')){return walkPick(w.dataset.walk)}const b=e.target.closest('[data-a]');if(!b||!el.contains(b)||!b.closest('#dgRoot,.dg-idle'))return;act(b.dataset.a,b)})}
  async function act(k,b){const d=cur();const v=b.dataset.v;
   if(k==='pick'){DG.sel=v;return A().renderScene()}
   if(k==='torp'){try{A().goView('rp')}catch(e){}return}
@@ -375,6 +377,36 @@ window.OM_DG_UI=(()=>{
   if(k==='img'){const f=b.files&&b.files[0];if(!f)return;A().toast('올리는 중…');try{const u=await DBS().uploadImage(`rooms/${ST().room}/dg_${d.id}_${id}_${Date.now().toString(36)}`,await shrinkImg(f,1920,1080));if(u&&await upd({[P0(d.id)+'r/'+id+'/b']:u}))A().toast('방 배경을 바꿨다');edDraw()}catch(e){A().toast('그림을 올리지 못했다: '+e.message)}}}
 
  /* ---------- 동행 포켓몬 고르기 (본인 · GM) ---------- */
+
+ /* ---------- 탐사 중 포켓몬 손보기 (10-26 망령): PT 칸의 동행 포켓몬을 누르면 HP ± · 상태 이상 · 랭크 · 회복 — 시트(로스터) 값을 바로 고친다.
+    랭크는 다음 배틀에 들고 들어가고(「결과 정리」 때 0), HP · 상태는 sheetHp · sheetStates (배틀 결과 정리와 같은 자리) ---------- */
+ const ME_RK=[['attack','공격'],['defense','방어'],['specialattack','특공'],['specialdefense','특방'],['speed','스피드'],['accuracy','명중'],['evasion','회피']];
+ const ME_ST=[['Poison','독'],['Toxic','맹독'],['Burn','화상'],['Paralysis','마비'],['Freeze','얼음'],['Sleep','잠듦'],['Confusion','혼란']];
+ const ME_MAJOR=['Poison','Toxic','Burn','Paralysis','Freeze','Sleep'];
+ function rkTxt(m){const rk=(m&&m.rank)||{};return ME_RK.filter(([k])=>+rk[k]).map(([k,n])=>n+(+rk[k]>0?'+':'')+(+rk[k])).join(' ')}
+ function stCount(k){const d=((((window.OM_DB||{}).states||{}).st||{})[k])||{};return d.min>=1000||!d.min?1000:(+d.max>+d.min&&+d.max<1000?+d.min+Math.floor(Math.random()*(+d.max-+d.min+1)):+d.min)}
+ function monEdit(mid){const m0=(RO().mons||{})[mid];if(!m0||!(gm()||canWalk(m0.tid)))return;const t=(RO().trainers||{})[m0.tid]||{};
+  const md=A().openModal('<div id="dgMe"></div>');const P=k=>['roster','mons',mid,k];
+  const draw=()=>{const m=(RO().mons||{})[mid];if(!m)return;const h=monHp(m),p=h.c/h.mx,ss=m.sheetStates||{},rk=m.rank||{};
+   md.querySelector('#dgMe').innerHTML=`<div class="mhead"><h2>${H(m.name)} <small class="dim">${H(t.name||'')} · 탐사 중</small></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+   <div class="dgme"><div class="dgme-top"><span class="dgpt-img" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></span><div class="dgme-hp"><b class="mono">${h.dead?'빈사':'HP '+h.c+' / '+h.mx}</b><span class="dgpt-hp ${p<=.25?'low':p<=.5?'mid':''}"><i style="width:${Math.round(p*100)}%"></i></span></div></div>
+   <div class="dgme-sec"><small>HP <span class="dim">(최대 HP 기준)</span></small><div class="dgme-row">${[['-1/2','−1/2'],['-1/4','−1/4'],['-1/8','−1/8'],['+1/8','+1/8'],['+1/4','+1/4'],['+1/2','+1/2']].map(([v,l])=>`<button class="btn sm ${v[0]==='-'?'':'ok'}" data-me-hp="${v}">${l}</button>`).join('')}<span class="dgme-set"><input type="number" id="dgMeHp" value="${h.c}" min="0" max="${h.mx}"><button class="btn sm" data-me-hp="set">로 정하기</button></span></div></div>
+   <div class="dgme-sec"><small>상태 이상 <span class="dim">(누르면 걸고 · 다시 누르면 푼다)</span></small><div class="dgme-row">${ME_ST.map(([k,n])=>`<button class="btn sm ${ss[k]?'pri':''}" data-me-st="${k}">${n}</button>`).join('')}</div></div>
+   <div class="dgme-sec"><small>랭크 <span class="dim">(다음 배틀로 들고 간다)</span></small><div class="dgme-rk">${ME_RK.map(([k,n])=>{const v=+rk[k]||0;return `<span class="${v>0?'up':v<0?'dn':''}"><b>${n}</b><button class="btn xs" data-me-rk="${k}" data-d="-1">−</button><em>${v>0?'+':''}${v}</em><button class="btn xs" data-me-rk="${k}" data-d="1">＋</button></span>`}).join('')}</div><button class="btn xs ghost" data-me-rk="reset">랭크 모두 0</button></div>
+   <div class="dgme-sec"><small>회복</small><div class="dgme-row"><button class="btn sm pri" data-me-heal="full">전부 회복 · HP 가득 · 상태 풀림 · 랭크 0</button>${h.dead?'<button class="btn sm" data-me-heal="revive">빈사에서 일으키기 (HP 1/4)</button>':''}</div></div></div>`};
+  const log=line=>A().sysLog(`【탐사】 ${(RO().mons[mid]||{}).name||''} — ${line}`,'battle',{mid,img:(RO().mons[mid]||{}).image||''});
+  const setHp=async(v,why)=>{const m=RO().mons[mid];const h=monHp(m);v=clamp(Math.round(v),0,h.mx);const ss=Object.assign({},m.sheetStates||{});if(v<=0)ss.Dead=1;else delete ss.Dead;
+   await A().set(P('sheetHp'),v);await A().set(P('sheetStates'),Object.keys(ss).length?ss:null);log(`HP ${h.dead?0:h.c} → ${v}/${h.mx}${why?' · '+why:''}${v<=0?' · 빈사':''}`)};
+  draw();
+  md.addEventListener('click',async e=>{const b=e.target.closest('[data-me-hp],[data-me-st],[data-me-rk],[data-me-heal]');if(!b)return;const m=RO().mons[mid];if(!m)return;const h=monHp(m);
+   if(b.dataset.meHp){const v=b.dataset.meHp;if(v==='set')await setHp(+(md.querySelector('#dgMeHp')||{}).value||0,'직접');else{const [n,dd]=v.slice(1).split('/').map(Number);const amt=Math.max(1,Math.floor(h.mx*n/dd));await setHp((h.dead?0:h.c)+(v[0]==='-'?-amt:amt),v)}}
+   else if(b.dataset.meSt){const k=b.dataset.meSt;const ss=Object.assign({},m.sheetStates||{});let line;if(ss[k]){delete ss[k];line=`「${stKo(k)}」 풀림`}else{if(ME_MAJOR.includes(k))ME_MAJOR.forEach(x=>delete ss[x]);ss[k]=stCount(k);line=`「${stKo(k)}」`}await A().set(P('sheetStates'),Object.keys(ss).length?ss:null);log(line)}
+   else if(b.dataset.meRk){const rk=Object.assign({attack:0,defense:0,specialattack:0,specialdefense:0,speed:0,accuracy:0,evasion:0,critical:0},m.rank||{});
+    if(b.dataset.meRk==='reset'){for(const k in rk)rk[k]=0;await A().set(P('rank'),rk);log('랭크 모두 0')}
+    else{const k=b.dataset.meRk,dd=+b.dataset.d;rk[k]=clamp((+rk[k]||0)+dd,-6,6);await A().set(P('rank'),rk);log(`${(ME_RK.find(x=>x[0]===k)||[k,k])[1]} ${dd>0?'+1':'−1'} (지금 ${rk[k]>0?'+':''}${rk[k]})`)}}
+   else if(b.dataset.meHeal==='full'){await A().set(P('sheetHp'),h.mx);await A().set(P('sheetStates'),null);await A().set(P('rank'),{attack:0,defense:0,specialattack:0,specialdefense:0,speed:0,accuracy:0,evasion:0,critical:0});log(`전부 회복 — HP ${h.mx}/${h.mx} · 상태 풀림 · 랭크 0`)}
+   else if(b.dataset.meHeal==='revive')await setHp(Math.max(1,Math.floor(h.mx/4)),'빈사에서 일으킴');
+   draw()})}
  function walkPick(tid){const d=cur();const t=(RO().trainers||{})[tid];if(!t||!canWalk(tid))return;const ms=RO().mons||{},n=WN(d);let sel=walkOf(tid);
   const pids=(t.pids||[]).filter(id=>ms[id]);
   const m=A().openModal(`<div class="mhead"><h2>${H(t.name||'')} — 동행 포켓몬</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small dim" style="margin:0 0 8px">탐색하며 데리고 다닐 포켓몬 <b>최대 ${n}체</b>. 야생 조우 때 이 순서대로 먼저 나간다.</p><ul class="pick dgwk" id="dgWk"></ul><div class="row" style="margin-top:10px"><button class="btn ghost" id="dgWkClr">모두 빼기</button><span class="sp"></span><button class="btn pri" id="dgWkOk">정하기</button></div>`);

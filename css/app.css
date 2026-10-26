@@ -4455,3 +4455,23 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .bsay.left .bsay-st,.bsay.right .bsay-st{background-position:right bottom}
 /* 10-26 망령: 던전 대사 말풍선은 조금 낮게 — 왼쪽 위 HUD(기척 · 체크) 높이를 비켜 말하는 사람 바로 위에 둘 수 있게 */
 .rpstage.dgmode .dlg.skin.sm{bottom:2%;margin-left:0}
+/* 10-26 망령: 탐사 중 포켓몬 손보기 창 (던전 PT 칸의 동행 포켓몬을 누르면) · PT 의 4식/6령은 합계 한 줄 */
+.dgpt-mon[data-pm]{cursor:pointer}
+.dgpt-mon[data-pm]:hover{outline:1px solid var(--yel2,#f0c84a);outline-offset:1px}
+.dgpt-ord.sum{display:flex;gap:6px;align-items:center;flex-wrap:nowrap;cursor:help}
+.dgpt-ord.sum b{font-family:var(--mono,monospace);font-size:12px;margin-right:4px}
+.dgme{display:flex;flex-direction:column;gap:12px;min-width:min(440px,86vw)}
+.dgme-top{display:flex;gap:12px;align-items:center}
+.dgme-top .dgpt-img{width:56px;height:56px;flex:none}
+.dgme-hp{flex:1;display:flex;flex-direction:column;gap:6px;min-width:0}
+.dgme-hp .dgpt-hp{height:8px}
+.dgme-sec{display:flex;flex-direction:column;gap:6px}
+.dgme-sec>small{font-size:12px;opacity:.85}
+.dgme-row{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.dgme-set{display:inline-flex;gap:4px;align-items:center;margin-left:auto}
+.dgme-set input{width:76px}
+.dgme-rk{display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:6px}
+.dgme-rk span{display:flex;align-items:center;gap:4px;padding:3px 6px;border:1px solid var(--line2,#333);border-radius:6px}
+.dgme-rk span b{flex:1;font-size:12px}
+.dgme-rk span em{font-style:normal;font-family:var(--mono,monospace);min-width:22px;text-align:center}
+.dgme-rk span.up em{color:var(--ok,#3ee0a1)}.dgme-rk span.dn em{color:var(--red,#ff4a5a)}
