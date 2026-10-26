@@ -299,7 +299,7 @@ ${penFields(t,X)}</div>`}).join('')}</div>
 
  /* ----- 플레이어 창 ----- */
  function openPlayer(tid){const T=trs();const t=T[tid];if(!t)return;const K=st();const O=K.offer;const k=tsk(tid);const C=cfg();const R=(K.res||{})[tid];const mine=R&&O&&R.offerId===O.id?R:null;
-  const can=S().strip(rankOf(t,'능력'));const aLv=LAD[can]||0;const inouLeft=Math.max(0,C.inou-(+k.inou||0));const myMons=Object.values(mons()).filter(m=>m.hp&&alive(m));
+  const can=S().strip(rankOf(t,'능력'));const aLv=LAD[can]||0;const inouLeft=Math.max(0,C.inou-(+k.inou||0));/* 10-26 던전 시험: 방의 모든 포켓몬(야생 무리 · 상대 트레이너까지)이 다 떠서 고르기 어려웠다 — 내 포켓몬 먼저, 그다음 같은 체크를 받은 동료의 포켓몬만 */const mates=new Set([tid,...((O&&O.ids)||[])]);const myMons=Object.values(mons()).filter(m=>m.hp&&alive(m)&&mates.has(m.tid)).sort((x,y)=>(x.tid===tid?0:1)-(y.tid===tid?0:1));
   const stat=O?O.stat:'지시';const mode=O?O.mode:'any';const D=O?dieOf(t,stat,{inj:+k.inj||0,step:O.step||0}):null;
   const md=A().openModal(`<div class="mhead"><h2>스킬 체크 <span class="small dim">${esc(t.name)}</span></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="skwrap">
    <div class="skme"><div class="skranks">${SK.map(s=>`<span><small>${s}</small><b>${esc(rankOf(t,s)||'-')}</b><em>d${SIDES[Math.min(4,lv(rankOf(t,s)))]}</em></span>`).join('')}</div>
