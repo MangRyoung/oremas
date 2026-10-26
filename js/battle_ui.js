@@ -1442,7 +1442,8 @@ window.OM_BATTLE_UI=(()=>{
   if(tm.percent&&!opt.noRoll&&!pExp){const rr=roll(FX().percentOf(tm.percent));if(!rr.ok){A().sysLog(`【${KN}】 ${m.name} 『${name}』\n${tm.percent} 판정 실패 (${rr.r}/${rr.p})${rr.adj} — 발동하지 않았다`,'battle',{mid:m.id,img:m.image||''});return false}L.push(`${tm.percent} 판정 성공 (${rr.r}/${rr.p})${rr.adj}`)}
   /* 「필드 위에 있는 한」 · 「필드에 있는 동안」: 이 효과가 바꾼 것은 쓴 포켓몬이 필드를 떠나면 되돌린다 */const hold=FX().release&&/필드\s*(?:위)?에\s*있는\s*(?:한|동안)|나와\s*있는\s*(?:한|동안)/.test(etx)?{hold:1}:{};
   /* 10-26 망령: 트레이너 고유는 고른 포켓몬이 곧 대상 — 구문의 「아군 1체」는 「고른 포켓몬」으로 (예전엔 고른 포켓몬을 뺀 다른 아군에게 걸렸다) */
-  const ops=opt.uq?JSON.parse(JSON.stringify(auto.ops).replace(/"tgt":"ally1"/g,'"tgt":"self"')):auto.ops;
+  /* 10-26 덱 시험: 카드의 「아군 1체」가 기준 포켓몬(자기 편 첫 포켓몬)을 빼고 물었다 — 트레이너가 쓰는 카드는 기준 포켓몬도 고를 수 있게 (ally1s) */
+  const ops=opt.uq?JSON.parse(JSON.stringify(auto.ops).replace(/"tgt":"ally1"/g,'"tgt":"self"')):auto.src==='card'?JSON.parse(JSON.stringify(auto.ops).replace(/"tgt":"ally1"/g,'"tgt":"ally1s"')):auto.ops;
   const r=await FX().run(ops,Object.assign(uiCtx(nb,m,name,opt.area),opt.noRoll?{noRoll:1}:{},adj,hold));L.push(...r.lines);if(hold.hold&&(m.holds||[]).length)L.push('(필드를 떠나면 풀린다)');
   const raidNew=await raidFix(m,m0,name,L);if(raidNew===null)return false;
   const f=fieldOf(nb);for(const id in nb.mons){const x=nb.mons[id];if(x.entry&&x.hp.cur<=0){x.entry='';L.push(`${x.name}은(는) 쓰러졌다!`)}}
