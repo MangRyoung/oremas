@@ -286,7 +286,7 @@ async function openRoom(id,gm,asPl){
  if(ST.role==='gm'){const need={roster:{trainers:{},mons:{}},pub:{},ready:{},graph:{nodes:{},edges:{}},skill:{},dex:{},rp:{},battle:{}};for(const k in need){if(typeof ST.state[k]!=='object'||ST.state[k]===null){try{const v=await DBS().setState(id,ST.secret,[k],need[k]);ST.state[k]=need[k];ST.v=Math.max(ST.v,v||0)}catch(e){}}else if(k==='roster'){for(const kk of ['trainers','mons'])if(typeof ST.state.roster[kk]!=='object'||ST.state.roster[kk]===null){try{const v=await DBS().setState(id,ST.secret,['roster',kk],{});ST.state.roster[kk]={};ST.v=Math.max(ST.v,v||0)}catch(e){}}}}}
  ST.log=await DBS().getLogTail(id,200);ST.lastLogId=ST.log.length?ST.log[ST.log.length-1].id:0;
  CHAN.cur='s';ST._toBottom=true;renderRoom();
- ST.subH={onPatch,onEvent:p=>{PATCH.last=Date.now();if(p&&p.t==='hello')onHello(p);if(window.OM_RP_UI&&p&&p.t==='typing')window.OM_RP_UI.onTyping(p);if(window.OM_CUTIN&&p&&p.t==='cutin')window.OM_CUTIN.onEvent(p)},onState:(d,v)=>{if(v>=ST.v){ST.state=d;ST.v=v;renderScene();if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.watch)window.OM_BATTLE_UI.watch().catch(e=>console.warn(e))}},onLog:r=>{PATCH.last=Date.now();if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;renderLog(true);notifyLog(r);mobNote(r);if(window.OM_RP_UI)window.OM_RP_UI.onChat(r)}},
+ ST.subH={onPatch,onEvent:p=>{PATCH.last=Date.now();if(p&&p.t==='hello')onHello(p);if(window.OM_RP_UI&&p&&p.t==='typing')window.OM_RP_UI.onTyping(p);if(window.OM_CUTIN&&p&&p.t==='cutin')window.OM_CUTIN.onEvent(p);if(window.OM_EMO&&p&&p.t==='emo'&&VIEW==='rp')window.OM_EMO.onEvent(p)},onState:(d,v)=>{if(v>=ST.v){ST.state=d;ST.v=v;renderScene();if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.watch)window.OM_BATTLE_UI.watch().catch(e=>console.warn(e))}},onLog:r=>{PATCH.last=Date.now();if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;renderLog(true);notifyLog(r);mobNote(r);if(window.OM_RP_UI)window.OM_RP_UI.onChat(r)}},
   onStatus:s=>{const el=$('#conn');if(el){el.textContent=s==='SUBSCRIBED'?'● 실시간':'○ '+s;el.style.color=s==='SUBSCRIBED'?'var(--acc2)':'var(--mute)'}RT.st=s;RT.at=Date.now();if(s==='SUBSCRIBED'){startPresence();if(ST._sub)resync('재연결');else checkState('구독');ST._sub=true}}};
  ST.unsub=DBS().subscribe(id,ST.subH);
  if(ST.role){pollWhispers();ST.wtimer=setInterval(pollWhispers,4000)}
@@ -602,7 +602,7 @@ function renderLog(scroll){
 /* ---------- 씬 ---------- */
 function scene(){return ST.state.scene||'rp'}
 let VIEW='';let lastScene='';
-const VIEWS=[['rp','RP'],['battle','배틀'],['sheet','시트'],['graph','관계도'],['calendar','캘린더'],['report','제보'],['guide','튜토리얼']];
+const VIEWS=[['rp','RP'],['battle','배틀'],['dungeon','던전'],['sheet','시트'],['graph','관계도'],['calendar','캘린더'],['report','제보'],['guide','튜토리얼']];
 /* ---------- 접속 중인 사람 (브로드캐스트 인사: 25초마다 · 새로 온 사람에게 답인사) ---------- */
 const PRES={who:{},t:null,last:0};
 function myId(){return ST.role==='gm'?('gm:'+(ST.vid||(ST.vid=Math.random().toString(36).slice(2,8)))):ST.role==='seat'?('s:'+ST.seat):('v:'+(ST.vid||(ST.vid=Math.random().toString(36).slice(2,8))))}
@@ -644,7 +644,8 @@ function renderScene(){reconcileNodes();
  /* GM 이 무대(RP/배틀)를 바꾸면 모두 그쪽으로 따라간다. 그 밖의 탭(시트·관계도·캘린더·제보)은 각자 본다 */
  if(scene()!==lastScene){lastScene=scene();VIEW=scene()}
  if(!VIEW)VIEW=scene();
- const tabs=$('#sceneTabs');if(tabs){tabs.innerHTML=VIEWS.map(([k,n])=>`<button data-s="${k}" class="${VIEW===k?'on':''} ${scene()===k?'stage':''}" title="${scene()===k?'지금 무대':''}">${n}</button>`).join('')+(ST.role==='gm'?`<button class="btn xs ghost" id="stageBtn" title="모두를 이 탭으로 부른다">무대로</button>`:'');
+ const tabs=$('#sceneTabs');if(tabs){const DGU=window.OM_DG_UI,dgOn=!!(DGU&&DGU.on());   /* 10-26 던전 탭 (dungeon_ui.js): GM 에게는 늘, 플레이어에게는 던전에 들어가 있을 때만 */
+  tabs.innerHTML=VIEWS.filter(([k])=>k!=='dungeon'||(DGU&&(ST.role==='gm'||dgOn))).map(([k,n])=>`<button data-s="${k}" class="${VIEW===k?'on':''} ${scene()===k||(k==='dungeon'&&dgOn)?'stage':''} ${k==='dungeon'&&dgOn&&VIEW!=='dungeon'?'dgnew':''}" title="${scene()===k?'지금 무대':k==='dungeon'&&dgOn?'던전 탐색 중':''}">${n}</button>`).join('')+(ST.role==='gm'?`<button class="btn xs ghost" id="stageBtn" title="모두를 이 탭으로 부른다">무대로</button>`:'');
   tabs.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>{VIEW=b.dataset.s;renderScene()});
   const sb=$('#stageBtn');if(sb)sb.onclick=()=>{if(VIEW==='rp'||VIEW==='battle')set(['scene'],VIEW);else toast('무대는 RP 나 배틀만 될 수 있어')}}
  const el=$('#scene');if(!el)return;
@@ -656,11 +657,13 @@ function renderScene(){reconcileNodes();
  else if(VIEW==='sheet')window.OM_SHEET_UI.render(el);
  else if(VIEW==='graph')window.OM_GRAPH_UI.render(el);
  else if(VIEW==='calendar')window.OM_CAL_UI.render(el);
+ else if(VIEW==='dungeon'){if(window.OM_DG_UI)window.OM_DG_UI.render(el)}
  else if(VIEW==='report')window.OM_REPORT_UI.render(el);
  else if(VIEW==='guide'){if(window.OM_GUIDE_UI)window.OM_GUIDE_UI.render(el)}
  else window.OM_RP_UI.render(el)}
  catch(err){console.error(err);const n=(VIEWS.find(x=>x[0]===VIEW)||[0,VIEW])[1];el.innerHTML=`<div class="empty vfail"><b>「${esc(n)}」 화면을 그리지 못했다.</b><div class="small dim" style="margin:6px 0 10px;word-break:break-all">${esc(err&&err.message||err)}</div><button class="btn sm" id="vfailRe">다시 그리기</button> <button class="btn sm ghost" id="vfailRp">RP 로</button><div class="small dim" style="margin-top:8px">이 글을 캡처해서 보내 주면 고칠 수 있다.</div></div>`;const r1=$('#vfailRe');if(r1)r1.onclick=()=>renderScene();const r2=$('#vfailRp');if(r2)r2.onclick=()=>{VIEW='rp';renderScene()}}
  if(window.OM_RP_UI)window.OM_RP_UI.onState();
+ try{if(window.OM_DG_UI)window.OM_DG_UI.onState()}catch(e){console.warn('dungeon',e)}
  if(window.OM_DECK_UI){if(ST.role==='gm')window.OM_DECK_UI.absorb();else if(window.OM_DECK_UI.onAck)window.OM_DECK_UI.onAck()}
  if(window.OM_PHONE_UI&&window.OM_PHONE_UI.refresh)window.OM_PHONE_UI.refresh();
  if(window.OM_STAGE_UI)window.OM_STAGE_UI.onState();
@@ -1065,6 +1068,6 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
 /* 이름으로 기본 초상 찾기: 그림이 따로 없으면 같은 이름의 로스터 트레이너 → 포켓몬 → 관계도 노드의 그림을 쓴다 */
 function portraitOf(name,img){if(img)return img;if(!name)return '';const ro=ST.state.roster||{};const t=Object.values(ro.trainers||{}).find(x=>x.name===name);if(t&&t.image)return t.image;const m=Object.values(ro.mons||{}).find(x=>x.name===name&&x.image);if(m)return m.image;const n=Object.values((ST.state.graph||{}).nodes||{}).find(x=>x.name===name&&x.img);return n?n.img:''}
-window.OM_APP={bchOpen,selfLog,splitLog,contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,cleanupTrainer,openMon,openLoadParty,loadFromRoster,loadMaker,loadMakerParty,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,online:s=>!!s&&Object.values(PRES.who).some(v=>v.role==='seat'&&v.seat===s&&Date.now()-v.at<70000),get view(){return VIEW},set view(v){VIEW=v}};
+window.OM_APP={bchOpen,selfLog,splitLog,contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,cleanupTrainer,openMon,openLoadParty,loadFromRoster,loadMaker,loadMakerParty,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,online:s=>!!s&&Object.values(PRES.who).some(v=>v.role==='seat'&&v.seat===s&&Date.now()-v.at<70000),get view(){return VIEW},goView:v=>{VIEW=v||scene();renderScene()},set view(v){VIEW=v}};
 route();
 })();
