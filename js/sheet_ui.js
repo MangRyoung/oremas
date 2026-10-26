@@ -181,7 +181,7 @@ window.OM_SHEET_UI=(()=>{
   return standSec+fieldSec+`<div class="spanel two">
    ${E?`<div><div class="sh">자질</div><table class="t">${['지시','육성','통솔','능력'].map(k=>`<tr><th style="width:60px">${k} ${esc((t.ranks||{})[k]||'-')}</th><td>${E?`<input type="text" data-te="detail_${k}" value="${esc(d[k]||'')}" style="width:100%">`:qe('te:detail_'+k,esc(d[k]||''))}</td></tr>`).join('')}</table>
     <div class="sh" style="margin-top:12px">고유 포텐셜</div>${(t.unique||[]).length?`<table class="t">${t.unique.map((u,i)=>`<tr><th style="width:140px;white-space:normal">${E?`<input type="text" data-te="uniq_name_${i}" value="${esc(u.name)}" style="width:100%">`:qe(`te:uniq_name_${i}`,esc(u.name))}${u.name?uniqAutoBtn(u,i):''}${E?`<button class="btn xs ghost danger" data-act="deluniq" data-i="${i}" style="margin-top:4px">× 지우기</button>`:''}</th><td class="pre small">${E?`<textarea data-te="uniq_eff_${i}" rows="3" style="width:100%">${esc(u.eff)}</textarea>`:qe(`te:uniq_eff_${i}`,esc(u.eff),1)}</td></tr>`).join('')}</table>`:'<div class="dim small">없음</div>'}${E?`<button class="btn xs" data-act="adduniq">+ 고유</button>`:''}</div>
-   <div><div class="sh">메모</div>${E?`<textarea data-te="memo" rows="12" style="width:100%">${esc(t.memo||'')}</textarea>`:qe('te:memo',`<div class="pre small">${esc(t.memo||'')||'<span class="dim">없음</span>'}</div>`,1)}</div>`:charView(t,d)}
+   ${bioSec(t)}`:charView(t,d)}
   </div>`}
  /* 10-21 망령: 캐릭터 탭 보기 — 자질 카드 (랭크 누르면 고르기 · 설명 누르면 그 자리에서 고치기) · 고유 포텐셜 카드 · 메모 */
  const RK_LIST=['E','D','C','C+','B-','B','B+','A-','A','A+','AA-','AA','AA+','AAA','S'];
@@ -193,7 +193,11 @@ window.OM_SHEET_UI=(()=>{
     <div class="tqg">${['지시','육성','통솔','능력'].map(k=>{const r=(t.ranks||{})[k]||'-';return `<div class="tqc" style="--rc:${rc(r)}"><div class="tqh"><span>${k}</span>${k==='육성'?`<small>기본 Lv ${S().baseLevel(r)}<br>알까기 ${S().hatchCount(t)}회</small>`:''}<span class="sp"></span><b class="tqr${QE?' on':''}" ${QE?`data-trk="${k}" title="눌러서 랭크 바꾸기"`:''}>${esc(r)}</b></div><div class="tqd">${ie('te:detail_'+k,esc(d[k]||''),'눌러서 설명 쓰기')}</div></div>`}).join('')}</div>
     <div class="sh" style="margin-top:14px">고유 포텐셜 ${U.length}${QE?'<span class="sp"></span><button class="btn xs" data-act="adduniq">＋ 고유 포텐셜</button>':''}</div>
     ${U.length?`<div class="potl">${U.map(uc).join('')}</div>`:'<div class="dim small">없음</div>'}</div>
-   <div><div class="sh">메모</div><div class="tmemo pre">${ie('te:memo',esc(t.memo||''),'눌러서 메모 쓰기',1)}</div></div>`}
+   ${bioSec(t)}`}
+ /* 10-26 망령: 메모 칸 → 제작기 프로필 「상세」(백스토리 · 성격 · 말투 · 선호하는 전법 …) 보기. 고치는 곳은 제작기, 「제작기 동기화」로 따라온다. 예전에 여기 적은 메모는 맨 아래에 그대로 */
+ function bioSec(t){const B=(Array.isArray(t.bio)?t.bio:[]).filter(x=>x&&String(x.v||'').trim());const memo=String(t.memo||'').trim();
+  const sec=(k,v)=>`<div class="tbio"><div class="tbk">${esc(k)}</div><div class="tbv pre small">${esc(v)}</div></div>`;
+  return `<div><div class="sh">상세 <span class="note">제작기 프로필 「상세」에서 적는다</span></div>${B.length||memo?`<div class="tmemo tbios">${B.map(x=>sec(x.k,x.v)).join('')}${memo?sec('메모',memo):''}</div>`:'<div class="dim small">아직 없다 — 제작기 트레이너 프로필 오른쪽 위 「상세」에서 쓰고 「제작기 동기화」</div>'}</div>`}
 
  /* 노란 초상 카드 아래: 한눈 정보 · 스탠딩 (망령 10-21 — 빈칸이 휑하다) */
  function ppMore(c,t,m,E){const ed=canEdit(c,t.id);const st=m.stands||[];const act=+m.standActive||0;const tot=(m.base||[]).reduce((a,v)=>a+(+v||0),0);const iv=(m.iv||[]).length?S().ivSum(m.iv):null;

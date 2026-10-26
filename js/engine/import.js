@@ -19,6 +19,8 @@ window.OM_IMPORT=(()=>{
    ranks:Object.assign({육성:'',지시:'',통솔:'',능력:''},d.ranks||{}),base:d.base||{},detail:d.detail||{},
    unique:(d.unique||[]).filter(u=>u&&u.name).map(u=>{const o={name:u.name,eff:brN(u.eff||'')};for(const k of ['color','icon','sub'])if(u[k])o[k]=String(u[k]).slice(0,40);if(u.line)o.line=String(u.line).slice(0,80);const dsl=String(u.auto||'').trim();if(dsl){const r=window.OM_FX?window.OM_FX.parse(dsl):{ops:[]};o.auto={dsl,ops:r.ops}}return o}),
    pids:d.pids||[],solo:!!d.solo,folder:d.folder||'',fields:fieldsOf(d.fields),
+   /* 10-26 망령: 제작기 프로필 「상세」 — 백스토리 · 성격 · 말투 · 선호하는 전법 … [{k,v}] */
+   bio:(Array.isArray(d.bio)?d.bio:[]).filter(x=>x&&String(x.v||'').trim()).map(x=>({k:String(x.k||'메모').slice(0,40),v:String(x.v||'').slice(0,8000)})),
    /* 10-25 망령: SP · 서포터 — 제작기 「포인트」 칸 아래에서 적는다. 자동화 구문은 고유 포텐셜과 같은 꼴로 */
    sps:(Array.isArray(d.sps)?d.sps:[]).filter(x=>x&&x.name).map(x=>{const o={name:String(x.name),prob:x.prob===''||x.prob==null?100:Math.max(0,Math.min(100,Math.round(+x.prob)||0)),theme:String(x.theme||''),eff:brN(x.eff||''),img:String(x.img||''),line:String(x.line||''),color:String(x.color||'')};const dsl=String(x.auto||'').trim();if(dsl){const r=window.OM_FX?window.OM_FX.parse(dsl):{ops:[]};o.auto={dsl,ops:r.ops}}return o}),
    /* 10-23 망령: 제작기 시트의 지시 체계 {preset:assoc|ten|wild|jam|manual, tc, base} */

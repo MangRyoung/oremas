@@ -4518,3 +4518,8 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .spkctx button:hover{background:rgba(255,255,255,.08)}
 .spkctx button.danger{color:#ff6b6b}.spkctx button.danger:hover{background:rgba(255,80,80,.15)}
 .spkctx small{font-size:11px;color:var(--mute,#888);padding:4px 10px}
+/* 10-26 망령: 캐릭터 탭 「상세」 (제작기 프로필 상세 — 백스토리 · 성격 · 말투 · 선호하는 전법) */
+.tbios{display:flex;flex-direction:column;gap:12px}
+.tbio .tbk{font-family:var(--lab);font-size:13px;color:var(--y,#f5d000);margin-bottom:3px;letter-spacing:.02em}
+.tbio .tbv{color:#e8e8e8;line-height:1.65}
+.tbio+.tbio{border-top:1px dashed var(--line);padding-top:10px}
