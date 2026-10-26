@@ -13,9 +13,31 @@ window.OM_GRAPH_UI=(()=>{
  function gm(){return A().ST.role==='gm'}
 
  let pendingEl=null;
+ /* 10-26 망령: 「보드」 = 코르크보드 관계도 (칼데아 「마슈의 인물 관계도」 → js/board.js, 세션 노트와 같은 파일). 「선도」 = 예전 SVG */
+ const BW=2200,BH=1400;let BOARD=null;const bview=()=>{try{return localStorage.getItem('om_gboard')||'board'}catch(e){return 'board'}};
+ function renderBoard(el){const g=G();const nodes=Object.values(g.nodes||{}),edges=Object.values(g.edges||{});const G_=gm();
+  el.innerHTML=`<div class="gtop">${modeBar()}<span class="gmode"><button class="btn xs pri" data-bv="board">보드</button><button class="btn xs ghost" data-bv="svg">선도</button></span><span class="small dim">끌어서 옮기기 · 카드를 누르면 수사 파일${G_?' · 빈 곳 두 번 누르면 새 노드 · 실을 누르면 고치기':''}</span><span class="sp"></span>
+    ${G_?`<button class="btn sm ghost" data-g="notes" title="세션 노트의 인물 · 조직 · 관계를 이 방 관계도로">📓 세션 노트에서</button><button class="btn sm" data-g="adde">+ 선</button>`:''}</div><div class="cb" id="omBoard"></div>`;
+  bindMode(el);el.querySelectorAll('[data-bv]').forEach(b=>b.onclick=()=>{try{localStorage.setItem('om_gboard',b.dataset.bv)}catch(e){}render(el)});
+  el.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{const k=b.dataset.g;if(k==='notes')return window.OM_NOTES&&OM_NOTES.importGraph();if(k==='adde')return editEdge(null)});
+  const groups={pc:{name:'PC',color:'#d22a2a'},npc:{name:'NPC',color:'#2f6fd0'},org:{name:'조직',color:'#e3b51e'}};
+  const xs=nodes.map(n=>+n.x||0),ys=nodes.map(n=>+n.y||0);const cx=xs.length?(Math.min(...xs)+Math.max(...xs))/2:0,cy=ys.length?(Math.min(...ys)+Math.max(...ys))/2:0;
+  const toB=n=>({x:BW/2+((+n.x||0)-cx),y:BH/2+((+n.y||0)-cy)});const fromB=(x,y)=>({x:Math.round(x-BW/2+cx),y:Math.round(y-BH/2+cy)});
+  const nb=nodes.map(n=>Object.assign({id:n.id,name:n.name||'?',role:(n.kind==='pc'?'PC':n.kind==='org'?'조직':'NPC'),img:A().portraitOf(n.name,n.img)||'',group:n.kind||'npc'},toB(n)));
+  const eb=edges.filter(e=>g.nodes[e.a]&&g.nodes[e.b]).map(e=>({id:e.id,a:e.a,b:e.b,kind:e.shock?'doubt':((+e.rank||0)>=1?'tie':'secret'),label:`${e.label||''}${(+e.rank||0)?' R'+(+e.rank):''}${e.shock?' ⚡':''}`.trim()}));
+  if(BOARD)BOARD.destroy();
+  BOARD=NT_BOARD.mount($('#omBoard',el),{nodes:nb,edges:eb,groups,W:BW,H:BH,key:'om-board-'+A().ST.room,canEdit:G_,
+   onMove:async(id,x,y)=>{const n=G().nodes[id];if(!n)return;const p=fromB(x,y);await A().set(['graph','nodes',id],Object.assign({},n,{x:p.x,y:p.y}))},
+   onLink:(a,b)=>editEdge(null,{a,b}),onEdge:id=>gm()?editEdge(id):openEdge(id),onNew:(x,y)=>{const p=fromB(x,y);editNode(null,p)},
+   onEmpty:()=>`<p class="empty">보드에서 인물 한 명을 골라 주세요.<br>이어진 실을 정리해 드릴게요.</p>`,
+   dossier:(id,ctx)=>{const n=G().nodes[id]||{};let h=`<h2>${esc(n.name||'?')}</h2><p class="rl">${esc(KIND[n.kind]||'')}</p>`;if(n.note)h+=`<h3>메모</h3><p>${esc(n.note)}</p>`;
+    if(ctx.edges.length)h+=`<h3>이어진 실</h3><ul class="rels">${ctx.edges.map(ed=>{const o=ed.a===id?ed.b:ed.a;const col=ed.kind==='tie'?'var(--cb-red)':ed.kind==='doubt'?'var(--cb-gold)':'var(--cb-noir)';return `<li><i class="${ed.kind}" style="border-color:${col}"></i><button type="button" data-go="${esc(o)}">${esc((ctx.byId[o]||{}).name||'?')}</button><span>${esc(ed.label||'')}</span>${G_?` <button type="button" class="cb-mini" data-ge="${esc(ed.id)}">✎</button>`:''}</li>`}).join('')}</ul>`;
+    h+=`<div class="acts">${G_?`<button type="button" data-gn="edit" data-id="${esc(id)}">✎ 노드 고치기</button>`:''}${n.kind!=='org'?`<button type="button" data-gn="mine" data-id="${esc(id)}">「내 인연」 보기</button>`:''}</div>`;return h}});
+  el.addEventListener('click',e=>{const ge=e.target.closest('[data-ge]');if(ge)return editEdge(ge.dataset.ge);const b=e.target.closest('[data-gn]');if(!b)return;if(b.dataset.gn==='edit')return editNode(b.dataset.id);if(b.dataset.gn==='mine'){MODE.v='mine';MODE.me=b.dataset.id;try{localStorage.setItem('om_gmode','mine')}catch(x){}render(el)}})}
  function render(el){
   if(drag||pan){pendingEl=el;return}
   if(MODE.v==='mine')return renderMine(el);
+  if(bview()==='board'&&window.NT_BOARD)return renderBoard(el);
   const g=G();const nodes=g.nodes||{},edges=g.edges||{};
   const nodeSvg=Object.values(nodes).map(n=>{const r=n.kind==='pc'?30:n.kind==='org'?26:22;const nimg=A().portraitOf(n.name,n.img);
    return `<g class="gn ${n.kind||'npc'}" data-n="${n.id}" transform="translate(${n.x||0},${n.y||0})" style="cursor:${gm()?'grab':'pointer'}">
@@ -25,14 +47,14 @@ window.OM_GRAPH_UI=(()=>{
   const edgeSvg=Object.values(edges).map(e=>{const a=nodes[e.a],b=nodes[e.b];if(!a||!b)return '';const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;const w=1+Math.min(5,+e.rank||0);
    return `<g class="ge" data-e="${e.id}"><line pointer-events="none" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${e.shock?'var(--red)':'#fff'}" stroke-width="${w}" ${e.shock?'stroke-dasharray="8 5"':''} opacity=".85"/>
     <g class="gel" transform="translate(${mx},${my})" style="cursor:pointer"><rect x="-16" y="-9" width="32" height="18" fill="${e.shock?'var(--red)':'#fff'}" transform="skewX(-10)"/><text y="4" text-anchor="middle" font-size="11" font-family="var(--lab)" fill="${e.shock?'#fff':'#000'}">${e.shock?'⚡':''}R${+e.rank||0}</text>${e.label?`<text y="22" text-anchor="middle" font-size="10" fill="#ccc">${esc(e.label)}</text>`:''}</g></g>`}).join('');
-  el.innerHTML=`<div class="gtop">${modeBar()}<button class="btn xs" data-z="in">＋</button><button class="btn xs" data-z="out">－</button><button class="btn xs ghost" data-z="fit">맞추기</button>
+  el.innerHTML=`<div class="gtop">${modeBar()}<span class="gmode"><button class="btn xs ghost" data-bv="board">보드</button><button class="btn xs pri" data-bv="svg">선도</button></span><button class="btn xs" data-z="in">＋</button><button class="btn xs" data-z="out">－</button><button class="btn xs ghost" data-z="fit">맞추기</button>
     <span class="small dim">끌어서 이동 · 휠로 확대 · 노드를 누르면 자세히${gm()?' · GM: 노드를 끌어서 배치':''}</span><span class="sp"></span>
     ${gm()?`${UNDO?'<button class="btn sm ghost" data-g="undo" title="자동 정리 전 배치로 되돌린다">↶ 되돌리기</button>':''}<button class="btn sm" data-g="auto" title="선으로 이어진 사람끼리 가깝게, 랭크가 높을수록 더 가깝게, PC 는 가운데로 — 겹치지 않게 다시 놓는다">✦ 자동 정리</button><button class="btn sm" data-g="addn">+ 노드</button><button class="btn sm ghost" data-g="notes" title="세션 노트의 인물 · 조직 · 관계를 이 방 관계도로">📓 세션 노트에서</button><button class="btn sm" data-g="adde">+ 선</button>`:''}</div>
    <div class="gwrap"><svg id="gsvg" width="100%" height="100%"><defs><pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.2" fill="#2a2a2a"/></pattern></defs>
     <rect width="100%" height="100%" fill="url(#dots)"/><g id="gview" transform="translate(${V.x},${V.y}) scale(${V.k})">${edgeSvg}${nodeSvg}</g></svg>
     <div class="glegend"><b>관계도</b><div class="small">빨간 테두리 = PC, 흰 테두리 = NPC, 마름모 = 조직. 선 굵기와 R 숫자가 관계 랭크, 빨간 점선과 ⚡가 쇼크.</div></div></div>`;
   const svg=$('#gsvg',el);
-  bindMode(el);
+  bindMode(el);el.querySelectorAll('[data-bv]').forEach(b=>b.onclick=()=>{try{localStorage.setItem('om_gboard',b.dataset.bv)}catch(e){}render(el)});
   el.querySelectorAll('[data-z]').forEach(b=>b.onclick=()=>{if(b.dataset.z==='in')V.k=Math.min(3,V.k*1.2);if(b.dataset.z==='out')V.k=Math.max(.3,V.k/1.2);if(b.dataset.z==='fit')fit(svg);render(el)});
   el.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{const k=b.dataset.g;if(k==='auto')return autoLayout(el,svg);if(k==='notes')return window.OM_NOTES&&OM_NOTES.importGraph();if(k==='undo')return undoLayout(el,svg);return k==='addn'?editNode(null):editEdge(null)});
   svg.addEventListener('wheel',e=>{e.preventDefault();const f=e.deltaY<0?1.1:1/1.1;const r=svg.getBoundingClientRect();const px=e.clientX-r.left,py=e.clientY-r.top;V.x=px-(px-V.x)*f;V.y=py-(py-V.y)*f;V.k*=f;$('#gview',el).setAttribute('transform',`translate(${V.x},${V.y}) scale(${V.k})`)},{passive:false});
@@ -134,7 +156,7 @@ window.OM_GRAPH_UI=(()=>{
    <div class="row" style="align-items:flex-start">${A().portraitOf(n.name,n.img)?`<img src="${esc(A().portraitOf(n.name,n.img))}" style="width:96px;height:96px;object-fit:cover;border:2px solid #fff">`:''}<div class="pre small" style="flex:1">${esc(n.note||'')||'<span class="dim">메모 없음</span>'}</div></div>
    <div class="sh" style="margin-top:10px">관계</div><ul class="small">${links||'<li class="dim">없음</li>'}</ul>`)}
  function openEdge(eid){const g=G();const e=(g.edges||{})[eid];if(!e)return;const a=g.nodes[e.a]||{},b=g.nodes[e.b]||{};A().toast(`${a.name||'?'} ↔ ${b.name||'?'} · R${+e.rank||0}${e.label?' · '+e.label:''}${e.shock?' · ⚡ 쇼크'+(e.shockNote?' ('+e.shockNote+')':''):''}`)}
- function editNode(id){const g=G();const n=id?g.nodes[id]:{id:'n'+rnd(6),name:'',kind:'npc',x:Math.round((200-V.x)/V.k),y:Math.round((200-V.y)/V.k),img:'',note:''};
+ function editNode(id,at){const g=G();const n=id?g.nodes[id]:{id:'n'+rnd(6),name:'',kind:'npc',x:at?at.x:Math.round((200-V.x)/V.k),y:at?at.y:Math.round((200-V.y)/V.k),img:'',note:''};
   const md=A().openModal(`<div class="mhead"><h2>${id?'노드 수정':'노드 추가'}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    <div class="row"><label>이름 <input type="text" id="nn" value="${esc(n.name)}"></label><label>종류 <select id="nk">${Object.entries(KIND).map(([k,v])=>`<option value="${k}" ${n.kind===k?'selected':''}>${v}</option>`).join('')}</select></label></div>
    <div class="row" style="margin-top:6px"><label style="flex:1">그림 주소 <input type="text" id="ni" value="${esc(n.img||'')}" style="flex:1" placeholder="비우면 같은 이름의 트레이너·포켓몬 초상을 쓴다"></label></div>
