@@ -72,11 +72,12 @@ window.OM_EMO=(()=>{
    (P[k]||(()=>{}))()}catch(e){}}
 
  /* ----- 연출: 대상 = 무대의 그 인물 스탠딩. 없으면 대사 상자 이름표 위에 아이콘만 ----- */
- const REDUCE=()=>{try{return matchMedia('(prefers-reduced-motion:reduce)').matches}catch(e){return false}};
+ /* 10-26 망령 「감정 애니메이션이 아무것도 안 뜬다」: 윈도 「애니메이션 효과」를 끄면 브라우저가 prefers-reduced-motion 을 켜는데,
+    그때 움직임을 건너뛰고 아이콘 애니메이션을 0.01초로 줄여 아이콘이 곧바로 투명해졌다 → 감정 연출은 일부러 보내는 신호라 그 설정과 상관없이 보여 준다 */
  function standOf(key){if(!key)return null;return [...document.querySelectorAll('#stands .stand')].find(x=>x.dataset.key===key&&!x.classList.contains('out'))||null}
  function play(target,k,opt){const e=E[k];if(!e||!target)return false;opt=opt||{};
   const isStand=target.classList.contains('stand');
-  if(isStand&&!REDUCE()&&e.mo){target.classList.remove('emo-mo');target.removeAttribute('data-emo');void target.offsetWidth;target.dataset.emo=e.mo;target.classList.add('emo-mo');clearTimeout(target._emoT);target._emoT=setTimeout(()=>{target.classList.remove('emo-mo');target.removeAttribute('data-emo')},2200)}
+  if(isStand&&e.mo){target.classList.remove('emo-mo','in');target.removeAttribute('data-emo');void target.offsetWidth;target.dataset.emo=e.mo;target.classList.add('emo-mo');clearTimeout(target._emoT);target._emoT=setTimeout(()=>{target.classList.remove('emo-mo');target.removeAttribute('data-emo')},2200)}
   target.querySelectorAll(':scope>.emo-bub').forEach(x=>x.remove());
   if(e.ic){const b=document.createElement('div');b.className='emo-bub emo-'+e.ic;b.innerHTML=svg(e.ic);
    if(isStand){const img=target.querySelector('img');const tr=target.getBoundingClientRect(),ir=img?img.getBoundingClientRect():tr;const sg=(target.closest('#rpstage')||document.body).getBoundingClientRect();

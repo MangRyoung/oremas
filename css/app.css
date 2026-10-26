@@ -4005,7 +4005,7 @@ button.tag.solo:hover{border-color:var(--yel2)}
 @keyframes emoTw{50%{transform:scale(.4)}}
 @keyframes emoGloom{0%{opacity:0;transform:translateY(-8px)}30%{opacity:1;transform:none}}
 @keyframes emoRays{0%{opacity:0;transform:scale(.6);transform-origin:32px 32px}100%{opacity:1;transform:scale(1)}}
-@media (prefers-reduced-motion:reduce){.stand.emo-mo{animation:none!important}.emo-bub,.emo-bub *{animation-duration:.01s!important}}
+/* 10-26: 움직임 줄이기 설정(윈도 애니메이션 효과 끔)이어도 감정 연출은 보인다 — 예전 규칙이 아이콘을 곧바로 투명하게 만들었다 */
 /* 😮 버튼 · 고르기 창 */
 .rpinput .rpemo{flex:none;min-width:40px;padding:0 8px!important;font-size:18px;line-height:1}
 .rpinput .rpemo.on{outline:2px solid var(--yel2,#ffd23f);outline-offset:-2px}
