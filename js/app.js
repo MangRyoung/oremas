@@ -268,6 +268,7 @@ async function openRoom(id,gm,asPl){
  const app=$('#app');app.innerHTML='<div class="lobby muted">방에 들어가는 중…</div>';
  let row;try{row=await DBS().getRoom(id)}catch(e){app.innerHTML=`<div class="lobby">방을 읽지 못했다: ${esc(e.message)}<br><a href="#">로비로</a></div>`;return}
  if(!row){app.innerHTML='<div class="lobby">그런 방이 없다. <a href="#">로비로</a></div>';return}
+ if(ST.room!==id)ST.chatAs='';   /* 10-26: 다른 방의 화자(pm:…)가 따라오지 않게 */
  ST.room=id;ST.roomRow=row;ST._sub=false;ST.canGm=false;ST.asPlGm=null;if(window.OM_BATTLE_UI)window.OM_BATTLE_UI.resetLocal();ST.role=null;ST.secret='';ST.seat='';ST.name='';
  const seatInfo=LS.get('om_seat_'+id,null);const tok=ACCT.tok();
  /* 계정으로: 방 권한(GM · PL 자리)을 서버가 정한다. 「PL 로」(asPl) 는 예전 방식으로 */
@@ -574,7 +575,7 @@ async function sendChat(){
  }catch(e){toast('보내지 못했다: '+e.message)}}
 function resolveSeat(n){if(n==='GM'||n==='gm')return 'gm';const seats=ST.state.seats||{};for(const k in seats)if(seats[k]&&(seats[k].name===n||k===n))return k;const trs=(ST.state.battle||{}).trainers||{};for(const k in trs)if(trs[k].name===n)return k;return null}
 function roll(expr){const m=String(expr).replace(/\s/g,'').match(/^(\d*)d(\d+)([+-]\d+)?$/i);if(!m)return null;const n=Math.min(+m[1]||1,100),f=+m[2],mod=+(m[3]||0);if(f<1)return null;const rs=[];for(let i=0;i<n;i++)rs.push(1+Math.floor(Math.random()*f));const total=rs.reduce((a,b)=>a+b,0)+mod;return {total,text:'['+rs.join(',')+']'+(mod?(mod>0?'+':'')+mod:'')}}
-function avatarOf(r){const d=r.data||{};if(d.k&&window.OM_RP_UI&&window.OM_RP_UI.imgOfKey){const u=window.OM_RP_UI.imgOfKey(d.k);if(u)return u}if(d.as){const tr=Object.values((ST.state.roster||{}).trainers||{}).find(x=>x.name===d.as);if(tr&&tr.image)return tr.image;const n=Object.values((ST.state.graph||{}).nodes||{}).find(x=>x.name===d.as);return n&&n.img||''}const from=d.from;if(from==='gm')return (ST.state.rp||{}).gmImg||'';const b=ST.state.battle||{};const ro=ST.state.roster||{trainers:{}};const t=(b.trainers||{})[from]||(ro.trainers||{})[from];if(t&&t.image)return t.image;return ''}
+function avatarOf(r){const d=r.data||{};if(d.k&&window.OM_RP_UI&&window.OM_RP_UI.imgOfKey){const u=window.OM_RP_UI.imgOfKey(d.k);if(u)return u}if(d.as){const tr=Object.values((ST.state.roster||{}).trainers||{}).find(x=>x.name===d.as);if(tr&&tr.image)return tr.image;const n=Object.values((ST.state.graph||{}).nodes||{}).find(x=>x.name===d.as);return n&&n.img||''}const from=d.from;if(from==='gm'){const U=window.OM_RP_UI;if(U&&U.gmKeyOf&&U.imgOfKey){const k=U.gmKeyOf(d.gmn);if(k!=='gm')return U.imgOfKey(k)}return (ST.state.rp||{}).gmImg||''}const b=ST.state.battle||{};const ro=ST.state.roster||{trainers:{}};const t=(b.trainers||{})[from]||(ro.trainers||{})[from];if(t&&t.image)return t.image;return ''}
 /* 나만 보는 로그 (10-24 망령): 시트 · 상세 창에서 소지품을 착용 · 교체 · 뗀 줄은 서버에 남기지 않고 이 브라우저에만 (방마다 50줄까지 기억) */
 const SELFK=()=>'om_selflog_'+(ST.room||'');let SELFLOG=null;
 function selfRows(){if(SELFLOG&&SELFLOG.room===ST.room)return SELFLOG.rows;let rows=[];try{rows=JSON.parse(localStorage.getItem(SELFK())||'[]')||[]}catch(e){}SELFLOG={room:ST.room,rows};return rows}

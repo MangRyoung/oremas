@@ -37,6 +37,13 @@ window.OM_RP_UI=(()=>{
  function bgmOk(){if(gm())return true;const ST=A().ST;const rp=ST.state.rp||{};return ST.role==='seat'&&rp.plBattle!==false&&rp.seatOwn!==true}
  /* GM(나레이션) 칩 · 로그 아바타 그림: rp.gmImg */
  const gmImg=()=>((A().ST.state.rp||{}).gmImg)||'';
+ /* 10-26 망령: GM 닉네임마다 따로 쓰는 프로필 rp.gmProf[닉] = {img,stands,standActive,standScale}. 키 'gm' = 공용(rp.gmImg · rp.gmSt), 'gm@닉' = 그 닉 전용. 전용이 없는 닉은 공용을 쓴다 */
+ const gmProfs=()=>((A().ST.state.rp||{}).gmProf)||{};
+ const isGmK=k=>k==='gm'||(typeof k==='string'&&k.startsWith('gm@'));
+ const gmKeyOf=n=>n&&gmProfs()[n]?'gm@'+n:'gm';
+ const myGmKey=()=>gm()?gmKeyOf(A().ST.gmNick):'gm';
+ const gmPath=k=>k&&k.startsWith('gm@')?['rp','gmProf',k.slice(3)]:['rp','gmSt'];
+ const myGmImg=()=>{const c=charOf(myGmKey());return c&&c.img||''};
  /* 지도 그림: 방에서 올린 그림(rp.map.img) → 「무진」 기본(preset 'mujin') → 없음. 예전 방(그림 설정 없이 지도를 쓰던 방)은 그대로 무진 기본을 쓴다 */
  function mapImg(){const m=R().map||{};if(m.img&&m.img.src)return m.img;if(m.preset==='mujin')return MAP_IMG;if(m.preset==='none')return null;const legacy=!!(m.vis||m.party||m.routes||m.npcs||(m.locs&&m.locs.length));return legacy?MAP_IMG:null}
  function mapIsMujin(){const m=R().map||{};return !(m.img&&m.img.src)&&m.preset!=='none'&&mapImg()===MAP_IMG}
@@ -54,6 +61,7 @@ window.OM_RP_UI=(()=>{
  /* ----- 화자(스탠딩) ----- */
  function charOf(key){const ST=A().ST;if(!key)return null;
   if(key==='gm'){const g=R().gmSt||{};return {key,name:'GM',img:gmImg(),stands:g.stands||[],active:g.standActive||0,scale:g.standScale||0,kind:'gm',id:'gm'}}
+  if(key.startsWith('gm@')){const n=key.slice(3);const g=gmProfs()[n];if(!g)return charOf('gm');return {key,name:'GM · '+n,img:g.img||'',stands:g.stands||[],active:g.standActive||0,scale:g.standScale||0,kind:'gm',id:key,nick:n}}
   if(key.startsWith('pm:')){const mid=key.slice(3);const m=((ST.state.roster||{}).mons||{})[mid];if(!m)return null;return {key,name:m.name,img:m.image||'',stands:m.stands||[],active:m.standActive||0,scale:m.standScale||0,kind:'pm',id:mid,tid:m.tid}}
   if(key.startsWith('as:')){const t=Object.values((ST.state.roster||{}).trainers||{}).find(x=>x.name===key.slice(3));return t?charOf(t.id):null}
   if(key.startsWith('npc:')){const name=key.slice(4);const n=Object.values((ST.state.graph||{}).nodes||{}).find(x=>x.name===name);return n?{key,name:n.name,img:A().portraitOf(n.name,n.img),stands:n.stands||[],active:n.standActive||0,scale:n.standScale||0,kind:'npc',id:n.id}:{key,name,img:A().portraitOf(name,''),stands:[],active:0,kind:'npc',id:''}}
@@ -62,12 +70,12 @@ window.OM_RP_UI=(()=>{
  function standKind(c){if(!c)return '';const st=(c.stands||[])[c.active]||(c.stands||[])[0];return st&&st.kind?st.kind:''}
  function standPoint(c){const s=(c.stands||[])[c.active]||(c.stands||[])[0];return s&&+s.point||0}
  function speakerKey(row){const d=row.data||{};if(d.k&&d.k!=='me'){const c=charOf(d.k);if(c&&c.key)return c.key}   /* 10-25 망령: 고른 화자 키(d.k)가 먼저 — 포켓몬 · 별명으로 말하면 이름으로 찾다가 관계도 인물로 잘못 잡아 초상이 섰다 */
-  if(d.as){const t=Object.values((A().ST.state.roster||{}).trainers||{}).find(x=>x.name===d.as);return t?t.id:'npc:'+d.as}if(d.from&&d.from!=='gm')return d.from;if(d.from==='gm'&&((R().gmSt||{}).stands||[]).length)return 'gm';return ''}
+  if(d.as){const t=Object.values((A().ST.state.roster||{}).trainers||{}).find(x=>x.name===d.as);return t?t.id:'npc:'+d.as}if(d.from&&d.from!=='gm')return d.from;if(d.from==='gm'){const gk=gmKeyOf(d.gmn);return ((charOf(gk)||{}).stands||[]).length?gk:''}return ''}
  /* 화자 자리: 첫 화자는 가운데, 다음 화자는 왼쪽·오른쪽을 채운다. 마지막 대사 뒤 STAND_TTL 이 지나면 사라진다 (로그 시각 기준이라 모두 같은 결과) */
  const STAND_TTL=40000;let EXP_T=0;
  function feedLog(rows){for(const r of rows){if(r.id<=STAGE.seen)continue;STAGE.seen=r.id;if(r.kind!=='chat')continue;const d=r.data||{};if(d.sms||d.bat||d.ch==='ooc')continue;const at=Date.parse(r.at)||Date.now();
    if(d.clear){STAGE.slots={left:null,center:null,right:null};STAGE.active=null;continue}
-   const k=speakerKey(r);if(!k||!d.t)continue;if(k==='gm'&&window.OM_LINE&&window.OM_LINE(d).narr)continue;expire(at);STAGE.last[k]=at;STAGE.active=k;
+   const k=speakerKey(r);if(!k||!d.t)continue;if(isGmK(k)&&window.OM_LINE&&window.OM_LINE(d).narr)continue;expire(at);STAGE.last[k]=at;STAGE.active=k;
    if(Object.values(STAGE.slots).includes(k))continue;
    const free=['center','left','right'].find(s=>!STAGE.slots[s]);if(free){STAGE.slots[free]=k;continue}
    const oldest=SLOTS.slice().sort((a,b)=>(STAGE.last[STAGE.slots[a]]||0)-(STAGE.last[STAGE.slots[b]]||0))[0];STAGE.slots[oldest]=k}}
@@ -119,7 +127,7 @@ window.OM_RP_UI=(()=>{
   const cutId=+((A().ST.state.rp||{}).logClearAt)||0;dqFeed(A().ST.log||[],cutId);const qRow=dqRow();const lastChat=qRow||[...(A().ST.log||[])].reverse().find(x=>dqOk(x,cutId));const anim=!!qRow&&DQ.phase==='typing';
   const LF=window.OM_LINE||(d=>({narr:false,text:String(d.t||''),q:true}));
   /* 10-26 망령: 세 자리를 모두 고정해 두면 자리에 없는 사람이 말해도 스탠딩이 안 섰다 — 그 사람이 말하는 동안만 가운데에 잠깐 끼어든다 */
-  {const sk0=lastChat&&!LF(lastChat.data||{}).narr?speakerKey(lastChat):'';if(sk0&&sk0!=='gm'&&!SLOTS.some(x=>slots[x]===sk0)&&SLOTS.every(x=>manual[x]&&manual[x].key))slots.center=sk0}
+  {const sk0=lastChat&&!LF(lastChat.data||{}).narr?speakerKey(lastChat):'';if(sk0&&!isGmK(sk0)&&!SLOTS.some(x=>slots[x]===sk0)&&SLOTS.every(x=>manual[x]&&manual[x].key))slots.center=sk0}
   const line=(name,d,tw)=>{const f=LF(d);const tx=f.narr?esc(f.text):(f.q?esc(f.text.trim()):'"'+esc(f.text)+'"');return `<div class="dname"><span>${esc(name)}</span></div><div class="dtext ${f.narr?'narr':''}">${tw?`<span class="tw-on"></span><span class="tw-off">${tx}</span>`:tx}</div>`};
   /* 10-23 망령: 무대를 비웠거나(clear 줄) 말한 인물이 무대에서 사라졌으면 대사 상자도 내린다 (지문은 그대로) */
   const clearAfter=!!lastChat&&(A().ST.log||[]).some(x=>x.id>lastChat.id&&x.kind==='chat'&&x.data&&x.data.clear);
@@ -225,7 +233,7 @@ window.OM_RP_UI=(()=>{
  const QUOTED=/^["“「『].*["”」』]$/s;
  function modeText(t){if(SPK.mode==='say'&&!QUOTED.test(t)&&!/^\*.+\*$/s.test(t))return '"'+t+'"';if(SPK.mode==='narr'&&QUOTED.test(t))return '*'+t+'*';return t}
  /* 표정 고르기: 지금 화자의 표정(스탠딩)이 둘 이상이면 입력줄 옆에 뜬다. 고르면 「@표정」 과 같이 무대 그림이 바로 바뀐다 */
- function refreshExp(el){const box=$('#rpexpbox',el);if(!box)return;const c=speakerChar()||(gm()&&SPK.key==='gm'?charOf('gm'):null);const st=c?(c.stands||[]):[];
+ function refreshExp(el){const box=$('#rpexpbox',el);if(!box)return;const c=speakerChar();const st=c?(c.stands||[]):[];
   const h=st.length>=2?`<select id="rpexp" title="${esc(c.name)} 표정 — 고르면 무대 그림이 바로 바뀐다">${st.map((x,i)=>`<option value="${i}" ${i===(+c.active||0)?'selected':''}>${esc(x.label||('표정 '+(i+1)))}</option>`).join('')}</select>`:'';
   if(box._h!==h){box.innerHTML=h;box._h=h}box.classList.toggle('on',!!h);const se=$('#rpexp',box);if(se)se.onchange=async()=>{const i=+se.value;if(await setStandIdx(c,i))A().toast(`표정: ${st[i].label||'표정 '+(i+1)}`);const inp=$('#rpline');if(inp)inp.focus()}}
  /* ----- 화자 목록: 토큰이 있는 모든 개체 (GM · NPC(관계도) · PC(로스터) · 포켓몬(로스터)). 정리는 rp.spk = {order:[키|'f:폴더id'], folders:{id:{name,keys:[]}}, hidden:{키:1}} ----- */
@@ -265,7 +273,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   const mem=open.map(id=>(C.folders[id].keys||[]).filter(k=>byKey[k]&&!C.hidden[k]).map(k=>{const c=charOf(k);const av=c?(standSrc(c)||c.img):'';return spkChip(k,byKey[k].name,av,SPK.key===k)}).join('')).join('');
   return `<div class="spkfold-row">${ids.map(fc).join('')}</div>${mem?`<div class="spkfold-mem">${mem}</div>`:''}`}
  function spkBarHtml(speakers){const C=spkConf();const byKey={};speakers.forEach(x=>byKey[x.key]=x);const inFolder=new Set();for(const f of Object.values(C.folders))for(const k of f.keys||[])inFolder.add(k);
-  const chipOf=k=>{const x=byKey[k];if(!x)return '';const c=k==='gm'?null:charOf(k);const av=k==='gm'?gmImg():c?(standSrc(c)||c.img):'';return spkChip(k,x.name,av,SPK.key===k,{drag:k!=='gm'})};
+  const chipOf=k=>{const x=byKey[k];if(!x)return '';const c=k==='gm'?null:charOf(k);const av=k==='gm'?myGmImg():c?(standSrc(c)||c.img):'';return spkChip(k,x.name,av,SPK.key===k,{drag:k!=='gm'})};
   const fchip=(id,f)=>`<button class="spk folder ${SPK.fo.includes(id)?'on':''}" data-fold="${esc(id)}" title="${esc(f.name)} — ${(f.keys||[]).length}명 · 눌러서 열기 · 칩을 끌어다 놓으면 넣는다" draggable="true"><i>📁</i><span>${esc(f.name)} <small>${(f.keys||[]).filter(k=>byKey[k]).length}</small></span></button>`;
   const seen=new Set(['gm']);let top='';
   /* 10-24 망령: 연 폴더는 아래 새 줄이 아니라 같은 줄에서 칸을 나눠 펼친다 (폴더 칩 + 안의 칩 + ⤴) */
@@ -333,21 +341,21 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   md.querySelectorAll('[data-smk]').forEach(b=>b.onclick=async()=>{const k=b.dataset.smk;const C=spkConf();
    if(k==='fauto'){const n=await autoFolderAll();A().toast(n?`${n}개를 트레이너 폴더로 묶었다`:'묶을 칩이 없다');return re()}
    if(k==='fadd'){const name=prompt('폴더 이름','새 폴더');if(name==null)return;const id='f'+Date.now().toString(36);C.folders[id]={name:name.trim()||'폴더',keys:[]};C.order.push('f:'+id);await saveSpk(C);return re()}})}
- function openGmImg(){const cur=gmImg();
-  const md=A().openModal(`<div class="mhead"><h2>GM 그림</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small muted">화자 칸의 GM 칩과 GM 이 쓴 로그 줄의 아바타로 쓴다.</p>
+ function openGmImg(key){key=isGmK(key)?key:myGmKey();const gc=charOf(key)||{};const cur=gc.img||'';const ipath=key==='gm'?['rp','gmImg']:[...gmPath(key),'img'];
+  const md=A().openModal(`<div class="mhead"><h2>${esc(gc.name||'GM')} 그림</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small muted">화자 칸의 GM 칩과 GM 이 쓴 로그 줄의 아바타로 쓴다.</p>
    <div class="row" style="gap:14px;align-items:stretch;flex-wrap:nowrap"><i class="gmimgpv" style="${cur?`background-image:url('${cssu(cur)}')`:''}"></i><div style="flex:1;display:flex;flex-direction:column;gap:8px;min-width:0">${dzHtml('gi_dz')}
     <input type="text" id="gi_url" value="${esc(cur)}" placeholder="또는 그림 주소 https://…"><div class="row">${cur?'<button class="btn sm ghost danger" id="gi_del">지우기</button>':''}<span class="sp"></span><button class="btn sm pri" id="gi_ok">저장</button></div></div></div>`);
   const pv=u=>{const i=$('.gmimgpv',md);if(i)i.style.backgroundImage=u?`url('${cssu(u)}')`:''};$('#gi_url',md).oninput=e=>pv(e.target.value.trim());
-  const save=async u=>{A().closeModal();if(await A().set(['rp','gmImg'],u||null)){A().toast(u?'GM 그림을 바꿨다':'GM 그림을 지웠다');A().renderScene()}};
+  const save=async u=>{A().closeModal();if(await A().set(ipath,u||null)){A().toast(u?'GM 그림을 바꿨다':'GM 그림을 지웠다');A().renderScene()}};
   bindDz(md,'#gi_dz',async fs=>{const u=await upImg(fs[0],'gm');$('#gi_url',md).value=u;pv(u);await save(u)});
   $('#gi_ok',md).onclick=()=>save($('#gi_url',md).value.trim());const d=$('#gi_del',md);if(d)d.onclick=()=>save('')}
- function speakerChar(){const ST=A().ST;const k=SPK.key;if(ST.role!=='gm'){if(k&&k.startsWith('pm:'))return charOf(k);return charOf(ST.seat)}if(!k)return null;return charOf(k)}
+ function speakerChar(){const ST=A().ST;const k=SPK.key;if(ST.role!=='gm'){if(k&&k.startsWith('pm:'))return charOf(k);return charOf(ST.seat)}if(!k)return null;return charOf(k==='gm'?myGmKey():k)}
  /* @등록명 → 그 표정으로 바꾼다 (뒤에 대사가 있으면 바꾸고 바로 말한다) */
  async function setStandByLabel(c,label){if(!c)return false;const i=(c.stands||[]).findIndex(s=>(s.label||'')===label);if(i<0){A().toast(`「${label}」 표정이 없다${c.stands.length?': '+c.stands.map(s=>s.label).join(', '):' — 「표정」에서 먼저 넣어 줘'}`);return false}return setStandIdx(c,i)}
  async function setStandIdx(c,i){if(!c)return false;
-  if(c.kind==='gm')await A().set(['rp','gmSt','standActive'],i);else if(c.kind==='pc')await A().set(['roster','trainers',c.id,'standActive'],i);else if(c.kind==='pm')await A().set(['roster','mons',c.id,'standActive'],i);else{if(!c.id)return false;await A().set(['graph','nodes',c.id,'standActive'],i)}return true}
+  if(c.kind==='gm')await A().set([...gmPath(c.id),'standActive'],i);else if(c.kind==='pc')await A().set(['roster','trainers',c.id,'standActive'],i);else if(c.kind==='pm')await A().set(['roster','mons',c.id,'standActive'],i);else{if(!c.id)return false;await A().set(['graph','nodes',c.id,'standActive'],i)}return true}
  /* 감정 연출: 대사 없이 지금 바로 (모두에게 신호 · 내 화면은 바로) */
- function emoKeyNow(){const c=speakerChar()||(gm()&&SPK.key==='gm'?charOf('gm'):null);return c&&c.key?c.key:''}
+ function emoKeyNow(){const c=speakerChar();return c&&c.key?c.key:''}
  function emoNow(k){const key=emoKeyNow();if(!window.OM_EMO||!k)return;window.OM_EMO.playKey(key,k,{enter:true});try{DBS().broadcast({t:'emo',key,em:k,at:Date.now()})}catch(e){}}   /* 무대에 없으면 올리고 나서 연출 (10-26 망령) */
  /* 무대에 올라온 줄에 감정(data.em)이 있으면 한 번만 — 방금 받은 줄만 (방에 들어올 때 지난 줄은 안 움직인다) */
  const EMO_SEEN=new Set();
@@ -359,7 +367,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    let m;if((m=t.match(/^@(\S+)\s*([\s\S]*)$/))){const ok=await setStandByLabel(speakerChar(),m[1]);if(!ok)return;if(EMO)EM=EMO.fromLabel(m[1]);t=m[2].trim();if(!t&&!(EMO&&EMO.parse(t).em)){A().toast(`표정: ${m[1]}`);if(EM)setTimeout(()=>emoNow(EM),120);return}}
    if(EMO){const pe=EMO.parse(t);if(pe.em){EM=pe.em;t=pe.text}const pd=EMO.takePending();if(!EM&&pd)EM=pd;if(!t){if(EM)emoNow(EM);return}}
    t=modeText(t);
-   const sxc=speakerChar()||(ST.role==='gm'&&SPK.key==='gm'?charOf('gm'):null);const SX=sxc&&(sxc.stands||[]).length>=2?{sx:+sxc.active||0}:{};if(EM)SX.em=EM;
+   const sxc=speakerChar();const SX=sxc&&(sxc.stands||[]).length>=2?{sx:+sxc.active||0}:{};if(EM)SX.em=EM;
    if(ST.role==='gm'){if(SPK.key==='gm')await DBS().addLog(ST.room,ST.secret,'chat',ST.name,Object.assign({t,nf:1},ST.gmNick?{gmn:ST.gmNick}:{},SX));else{const c=charOf(SPK.key);const name=c?c.name:SPK.key.replace(/^(npc|as|pm):/,'');await DBS().addLog(ST.room,ST.secret,'chat',name,Object.assign({t,as:name,k:SPK.key,nf:1},SX))}}
    else if(SPK.key&&SPK.key.startsWith('pm:')){const c=charOf(SPK.key);await DBS().addLog(ST.room,ST.secret,'chat',c?c.name:ST.name,Object.assign({t,as:c?c.name:'',k:SPK.key,nf:1},SX))}
    else{const c=charOf(ST.seat);const nm=c?c.name:ST.name;await DBS().addLog(ST.room,ST.secret,'chat',nm,Object.assign(c?{t,as:nm,k:ST.seat,nf:1}:{t,nf:1},SX))}}catch(e)   /* 좌석이 자기 캐릭터로 말하면 캐릭터 이름으로 남긴다 (플레이어 닉 X) */{A().toast('보내지 못했다: '+e.message)}}
@@ -381,7 +389,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   if(k==='phase'){const PH=['아침','점심','오후','저녁','밤','심야'];const cur=(A().ST.state.calendar||{}).phase||'';const n=PH[(PH.indexOf(cur)+1)%PH.length];return A().set(['calendar','phase'],n).then(()=>A().sysLog(`시간대: ${n}`))}
   if(k==='npcadd')return openPeople('new');
   if(k==='people')return openPeople();
-  if(k==='spkedit'){const key=SPK.key;if(key==='gm'&&gm())return openStands('gm');if(!key||key==='gm'||key==='me')return A().toast('먼저 인물을 골라 줘');return openStands(key)}
+  if(k==='spkedit'){const key=SPK.key;if(key==='gm'&&gm())return openStands(myGmKey());if(!key||key==='gm'||key==='me')return A().toast('먼저 인물을 골라 줘');return openStands(key)}
   if(k==='spkmgr')return openSpkMgr();
   if(k==='notice')return openConsole('notice');
   if(k==='clues'){openConsole('etc');setTimeout(()=>{const g=document.querySelector('.gcclue');if(g)g.scrollIntoView({block:'start'})},60);return}
@@ -766,7 +774,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
     <div>${sec('파티')}<div class="row"><button class="btn sm ${M.party.vis?'':'pri'}" data-gc="pvis">${M.party.vis?'👁 핀 보임':'🙈 핀 숨김'}</button><label class="small"><input type="checkbox" data-gc="reveal" ${M.reveal?'checked':''}> 가린 곳으로 가면 함께 공개</label></div>
      ${sec('장소',`${M.locs.filter(l=>M.vis[l.n]!=1).length}/${M.locs.length} 공개`)}<div class="gmlocs">${M.locs.map(l=>{const h=M.vis[l.n]==1;return `<div class="gml ${h?'hid':''} ${M.party.n===l.n?'pc':''}"><span class="no">${l.n}</span><span class="nm">${esc(l.name)}</span>${M.party.n===l.n?'<span class="tag me">파티</span>':`<button class="btn xs ghost" data-gc="pgo" data-n="${l.n}">이동</button>`}<button class="btn xs ${h?'pri':'ghost'}" data-gc="lvis" data-n="${l.n}">${h?'🙈':'👁'}</button></div>`}).join('')||'<div class="small dim">장소가 없다</div>'}</div>
      <div class="row" style="margin-top:10px"><button class="btn sm" data-gc="mapmgr" data-t="loc">지도 관리 (장소 · 루트 · 인물)</button><button class="btn sm ghost" data-gc="mapopen">${mapOpen?'무대 지도 닫기':'무대에 지도 열기'}</button></div></div></div>`}
-  else if(GC.tab==='stage'){const manual=r.stage||{};const chars=[{key:'gm',name:'GM'},...Object.values((ST.state.roster||{}).trainers||{}).map(t=>({key:t.id,name:t.name})),...Object.values((ST.state.graph||{}).nodes||{}).filter(n=>n.kind!=='org').map(n=>({key:'npc:'+n.name,name:n.name+' (NPC)'}))];
+  else if(GC.tab==='stage'){const manual=r.stage||{};const chars=[{key:'gm',name:'GM'},...Object.keys(gmProfs()).filter(n=>gmProfs()[n]).map(n=>({key:'gm@'+n,name:'GM · '+n})),...Object.values((ST.state.roster||{}).trainers||{}).map(t=>({key:t.id,name:t.name})),...Object.values((ST.state.graph||{}).nodes||{}).filter(n=>n.kind!=='org').map(n=>({key:'npc:'+n.name,name:n.name+' (NPC)'}))];
    const slotCard=s=>{const m=manual[s]||{};const c=m.key?charOf(m.key):null;const src=c?standSrc(c):'';return `<div class="gss ${m.key?'set':''}"><div class="gssp ${m.flip?'flip':''}" style="${src?`background-image:url('${cssu(src)}')`:''}">${src?'':`<span>${m.key?'그림 없음':'자동'}</span>`}</div><b>${{left:'왼쪽',center:'가운데',right:'오른쪽'}[s]}</b><select data-slot="${s}"><option value="">(자동 — 말하는 사람)</option>${chars.map(x=>`<option value="${esc(x.key)}" ${m.key===x.key?'selected':''}>${esc(x.name)}</option>`).join('')}</select><label class="small"><input type="checkbox" data-flip="${s}" ${m.flip?'checked':''} ${m.key?'':'disabled'}> 좌우 반전</label></div>`};
    const bb=r.bubble||{};const bslot=(k,l)=>`<div class="gbs">${bb[k]?`<div class="gbpv" style="background-image:url('${cssu(bb[k])}')"><u data-gc="bubx" data-v="${k}" title="지우기">×</u></div>`:`<div class="updz mini gbdz ${k==='r'?'fx':''}" id="bub_${k}" style="--defbub:url('${new URL('img/bubble/'+({c:'plain',l:'left',m:'mid',r:'left'})[k]+'.svg?v=3',location.href).href}')"><b>＋ 올리기</b><span>비우면 기본 그림</span><input type="file" accept="image/*" hidden></div>`}<small>${l}</small></div>`;
    body=`${sec('자리 고정','고르면 바로 무대에 반영 · 비우면 말하는 사람이 자동으로 선다')}<div class="gslots">${SLOTS.map(slotCard).join('')}</div>
@@ -980,6 +988,9 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   z.addEventListener('mouseenter',()=>{md._dzAct=z});z._run=run;
   if(!md._dzPaste){md._dzPaste=1;const onPaste=e=>{if(!md.isConnected)return document.removeEventListener('paste',onPaste);const fs=[...((e.clipboardData||{}).files||[])].filter(isImg);if(!fs.length)return;const tz=md._dzAct&&md._dzAct.isConnected?md._dzAct:md.querySelector('.updz');if(!tz||!tz._run)return;e.preventDefault();tz._run(fs)};document.addEventListener('paste',onPaste)}}
  const dzHtml=(id,label,sub)=>`<div class="updz" id="${id}"><b>${label||'그림을 끌어 놓기'}</b><span>${sub||'클릭해서 고르기 · Ctrl+V 붙여넣기'}</span><input type="file" accept="image/*" hidden></div>`;
+ /* GM 닉 전용 프로필 줄 — 닉이 있을 때만. 공용을 보는 중이면 「전용 만들기」, 전용을 보는 중이면 「공용 편집 · 공용으로 돌아가기」 */
+ function gmProfRow(c){const n=A().ST.gmNick;if(!n)return '<div class="small dim" style="margin:-4px 0 8px">닉네임(이름 칸)을 정하면 그 닉 전용 GM 프로필을 따로 만들 수 있다.</div>';const own=c.id==='gm@'+n;const has=!!gmProfs()[n];
+  return `<div class="row small" style="margin:-4px 0 8px;gap:6px;align-items:center"><span class="tag">${own?`「${esc(n)}」 전용`:'공용 GM'}</span><span class="dim">${own?'이 닉으로 쓴 줄만 이 그림 · 스탠딩을 쓴다':has?`「${esc(n)}」 전용 프로필이 따로 있다`:'닉이 다른 GM 끼리 같은 프로필을 쓰는 중'}</span><span class="sp"></span>${own?'<button class="btn xs ghost" data-gmprof="shared">공용 편집</button><button class="btn xs ghost danger" data-gmprof="drop">공용으로 돌아가기</button>':has?`<button class="btn xs ghost" data-gmpgo>「${esc(n)}」 전용 열기</button>`:`<button class="btn xs" data-gmprof="make">「${esc(n)}」 전용 프로필 만들기</button>`}</div>`}
  function openStands(key){const c=charOf(key);if(!c)return A().toast('그 인물이 없다');const ST=A().ST;const canEdit=gm()||(c.kind==='pc'&&c.id===ST.seat)||(c.kind==='pm'&&c.tid===ST.seat);
   const KINDS=[['','모양 자동'],['stand','스탠딩'],['portrait','초상']];const kindSel=(attr,v)=>`<select ${attr}>${KINDS.map(([k,n])=>`<option value="${k}" ${(v||'')===k?'selected':''}>${n}</option>`).join('')}</select>`;
   const cur=c.stands.map(s=>Object.assign({},s));let act=Math.max(0,Math.min(c.active||0,cur.length-1));
@@ -988,7 +999,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
     ${canEdit?`<div class="stxf"><input type="text" class="stxl" data-sl="${i}" value="${esc(s.label||'')}" placeholder="라벨"><input type="number" class="n stxn" data-sp="${i}" value="${+s.point||0}" title="보정 — 위로 올릴 px (음수면 내림)"></div>
     <div class="stxf">${kindSel(`data-stk="${i}"`,s.kind)}<label class="btn xs ghost" title="그림만 바꾸기">교체<input type="file" accept="image/*" data-srep="${i}" hidden></label><button class="btn xs ghost danger" data-st="del" data-i="${i}" title="지우기">×</button></div>`
     :`<div class="stxf"><b class="stxb">${esc(s.label||'기본')}</b></div>`}</div>`;
-  const md=A().openModal(`<div class="mhead"><h2>${esc(c.name)} — 표정·스탠딩</h2><span class="sp"></span><span class="tag">${cur.length}장</span><button class="btn ghost" data-x>닫기</button></div>${c.kind==='gm'?`<div class="row small dim" style="margin:-4px 0 8px">GM 도 스탠딩을 쓴다 — 「GM」으로 따옴표 대사("…")를 칠 때 무대에 서고, 따옴표 없는 지문은 그대로 나레이션.<span class="sp"></span><button class="btn xs ghost" data-gmimg>칩·로그 그림</button></div>`:''}
+  const md=A().openModal(`<div class="mhead"><h2>${esc(c.name)} — 표정·스탠딩</h2><span class="sp"></span><span class="tag">${cur.length}장</span><button class="btn ghost" data-x>닫기</button></div>${c.kind==='gm'?`<div class="row small dim" style="margin:-4px 0 8px">GM 도 스탠딩을 쓴다 — 「GM」으로 따옴표 대사("…")를 칠 때 무대에 서고, 따옴표 없는 지문은 그대로 나레이션.<span class="sp"></span><button class="btn xs ghost" data-gmimg>칩·로그 그림</button></div>${gm()?gmProfRow(c):''}`:''}
    ${canEdit?`<div class="stdz" id="st_dz"><div class="stdzt"><b>그림을 여기로 끌어 놓기</b><span class="small dim">여러 장·폴더째로 된다 · 파일 이름이 라벨 · 같은 라벨은 그림만 바뀐다 · Ctrl+V 로 붙여넣기도</span></div>
     <div class="row stdzb"><label class="btn sm pri">파일 고르기<input type="file" accept="image/*" multiple id="st_f" hidden></label><label class="btn sm">폴더 올리기<input type="file" webkitdirectory directory multiple id="st_d" hidden></label><span class="sp"></span>${kindSel('id="st_k" title="새로 올리는 그림의 모양"','')}</div>
     <div class="stprog" id="st_pg" hidden><i></i><span></span></div></div>`:''}
@@ -997,8 +1008,13 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    ${canEdit?`<details class="stmore"><summary>그림 주소로 추가</summary><div class="row"><input type="text" id="st_l" placeholder="라벨" style="width:120px"><input type="text" id="st_u" placeholder="그림 주소 (투명 PNG 전신 권장)" style="flex:1"><button class="btn sm" data-st="add">추가</button></div></details>`:''}
    <details class="stmore"><summary>도움말</summary><div class="small dim">채팅할 때 「사용 중」인 스탠딩이 무대에 선다. 없으면 초상(시트 그림)을 쓴다. 그림을 누르면 그 표정으로 바뀌고, 채팅에서 <code>/s 라벨</code> 로도 바꿀 수 있다. 숫자 칸은 보정 — 위로 올릴 px (음수면 내림). 모양: 「스탠딩」은 틀 없이 전신으로, 「초상」은 네모 틀 안에 선다 (「자동」은 그림 비율로 정한다).</div></details>`);
   md.classList.add('stmodal2');
-  {const gi=$('[data-gmimg]',md);if(gi)gi.onclick=()=>{A().closeModal();openGmImg()}}
-  const path=c.kind==='gm'?['rp','gmSt']:c.kind==='pc'?['roster','trainers',c.id]:c.kind==='pm'?['roster','mons',c.id]:['graph','nodes',c.id];
+  {const gi=$('[data-gmimg]',md);if(gi)gi.onclick=()=>{A().closeModal();openGmImg(c.id)}}
+  {const gp=$('[data-gmprof]',md);if(gp)gp.onclick=async()=>{const n=A().ST.gmNick;if(!n)return;const how=gp.dataset.gmprof;
+    if(how==='make'){const g=R().gmSt||{};if(!await A().set(['rp','gmProf',n],{img:gmImg()||null,stands:(g.stands||[]).map(x=>Object.assign({},x)),standActive:g.standActive||0,standScale:g.standScale||null}))return;A().toast(`「${n}」 전용 프로필을 만들었다 — 지금부터 고치는 건 이 닉에만`);A().closeModal();A().renderScene();openStands('gm@'+n)}
+    else if(how==='drop'){if(!await askOk(`「${n}」 전용 프로필을 지우고 공용 GM 프로필로 돌아갈까?\n전용으로 올린 그림 · 스탠딩은 사라진다.`,'돌아간다'))return;if(!await A().set(['rp','gmProf',n],null))return;A().toast('공용 GM 프로필로 돌아갔다');A().closeModal();A().renderScene();openStands('gm')}
+    else if(how==='shared'){A().closeModal();openStands('gm')}}}
+  {const go=$('[data-gmpgo]',md);if(go)go.onclick=()=>{A().closeModal();openStands('gm@'+A().ST.gmNick)}}
+  const path=c.kind==='gm'?gmPath(c.id):c.kind==='pc'?['roster','trainers',c.id]:c.kind==='pm'?['roster','mons',c.id]:['graph','nodes',c.id];
   const okPath=()=>{if(c.kind!=='pc'&&c.kind!=='pm'&&!c.id){A().toast('관계도에 없는 인물이다 — 관계도에 먼저 넣어 줘');return false}return true};
   const save=async re=>{if(!okPath())return;act=Math.max(0,Math.min(act,cur.length-1));await A().set([...path,'stands'],cur.slice());await A().set([...path,'standActive'],act);if(re){A().closeModal();openStands(key)}};
   const upOne=f=>DBS().uploadImage(`rooms/${ST.room}/st_${c.kind}_${(c.id||c.name)}_${Date.now().toString(36)}${Math.random().toString(36).slice(2,6)}`,f);
@@ -1028,7 +1044,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
     if(k==='use'){act=i;return save(true)}
     if(k==='del'){if(!confirm(`「${cur[i].label||'기본'}」 스탠딩을 지울까?`))return;cur.splice(i,1);if(act>i||act>=cur.length)act=Math.max(0,act-1);return save(true)}
     if(k==='add'){const u=$('#st_u',md).value.trim();if(!u)return A().toast('그림 주소가 필요해');const kd=$('#st_k',md).value;cur.push(Object.assign({label:$('#st_l',md).value.trim()||stLabel(u.split('?')[0])||'기본',src:u,point:0},kd?{kind:kd}:{}));act=cur.length-1;return save(true)}})}}
- function openMyStand(){const ST=A().ST;if(gm()){const chars=[{key:'gm',name:'GM'},...Object.values((ST.state.roster||{}).trainers||{}).map(t=>({key:t.id,name:t.name})),...Object.values((ST.state.graph||{}).nodes||{}).map(n=>({key:'npc:'+n.name,name:n.name+' (NPC)'}))];
+ function openMyStand(){const ST=A().ST;if(gm()){const chars=[{key:'gm',name:'GM'},...Object.keys(gmProfs()).filter(n=>gmProfs()[n]).map(n=>({key:'gm@'+n,name:'GM · '+n})),...Object.values((ST.state.roster||{}).trainers||{}).map(t=>({key:t.id,name:t.name})),...Object.values((ST.state.graph||{}).nodes||{}).map(n=>({key:'npc:'+n.name,name:n.name+' (NPC)'}))];
    const md=A().openModal(`<div class="mhead"><h2>표정·스탠딩</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="row"><select id="gsc2" style="flex:1">${chars.map(c=>`<option value="${esc(c.key)}">${esc(c.name)}</option>`).join('')}</select><button class="btn sm pri" id="gsc2ok">열기</button></div>`);$('#gsc2ok',md).onclick=()=>openStands($('#gsc2',md).value);return}
   if(!ST.seat)return A().toast('자리에 앉아야 한다');openStands(ST.seat)}
  /* 채팅 /s 라벨 */
@@ -1083,7 +1099,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  let SPKF={};try{SPKF=JSON.parse(localStorage.getItem('om_spkp_fold')||'{}')||{}}catch(e){}
  function curSpk(speakers){const k=SPK.key;if(k&&(!speakers||speakers.some(x=>x.key===k)))return k;return gm()?'gm':'me'}
  function spkInfo(key){const ST=A().ST;
-  if(key==='gm'){const g=charOf('gm');return {key,name:'GM',sub:'나레이션',av:gmImg()||standSrc(g),kind:'gm'}}
+  if(key==='gm'){const g=charOf(myGmKey());return {key,name:'GM',sub:A().ST.gmNick&&g.nick?A().ST.gmNick+' 전용 · 나레이션':'나레이션',av:g.img||standSrc(g),kind:'gm'}}
   if(key==='me'){const c=charOf(ST.seat);return {key,name:c?c.name:(ST.name||'나'),sub:'내 트레이너',av:c?(c.img||standSrc(c)):'',kind:'pc'}}
   const c=charOf(key);if(!c)return {key,name:key.replace(/^(npc|as|pm):/,''),sub:'',av:'',kind:''};
   let sub=c.kind==='pm'?'포켓몬':c.kind==='pc'?'PC':'인물';if(c.kind==='pm'){const t=((ST.state.roster||{}).trainers||{})[c.tid];if(t)sub='포켓몬 · '+t.name}
@@ -1159,22 +1175,22 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  const BSAY={el:null,t:{}};
  function bsayKey(row){const d=row.data||{};const ST=A().ST;if(d.k)return d.k==='me'?(d.from||ST.seat||''):d.k;
   if(d.as){const t=Object.values((ST.state.roster||{}).trainers||{}).find(x=>x.name===d.as);return t?t.id:'npc:'+d.as}
-  if(d.from==='gm')return 'gm';return d.from||''}
+  if(d.from==='gm')return gmKeyOf(d.gmn);return d.from||''}
  function bsaySide(key,name){const b=A().ST.state.battle||{};const T=b.trainers||{};
   if(key&&key.startsWith('pm:')){const rid=key.slice(3);const m=Object.values(b.mons||{}).find(x=>(x.rid||x.id)===rid);if(m)return m.side||(T[m.tid]||{}).side||'center'}
   const t=Object.values(T).find(x=>(x.srcTid||x.id)===key||x.name===name);if(t&&t.side)return t.side;
   if(key&&key.startsWith('pm:'))return 'center';return 'center'}
  function bsayPlace(){const L=BSAY.el;if(!L)return;const f=matchMedia('(max-width:760px)').matches?document.getElementById('scene'):document.querySelector('#scene .stadium');if(!f||A().view!=='battle'){L.style.display='none';return}const r=f.getBoundingClientRect();const mb=document.getElementById('mbar');const mbH=mb&&getComputedStyle(mb).display!=='none'?mb.getBoundingClientRect().height:0;const top=Math.max(r.top,0),bot=Math.min(r.bottom,innerHeight-mbH);L.style.display=bot-top>80?'':'none';Object.assign(L.style,{left:r.left+'px',top:top+'px',width:r.width+'px',height:Math.max(0,bot-top)+'px'})}
  function battleSay(row,force){try{if(A().view!=='battle'||!row||row.kind!=='chat')return;if(!BSP.on&&!force)return;const d=row.data||{};if(!d.t||d.ch==='ooc'||d.sms||d.bat||d.clear)return;
-  const key=bsayKey(row);const c=key&&key!=='gm'?charOf(key):null;const name=c?c.name:(d.as||(d.from==='gm'?(d.gmn||'GM'):row.who||''));
+  const key0=bsayKey(row);const gk=isGmK(key0);const gc=gk?charOf(key0):null;const key=gk?'gm':key0;const c=key&&key!=='gm'?charOf(key):null;const name=c?c.name:(d.as||(d.from==='gm'?(d.gmn||'GM'):row.who||''));
   const narr=window.OM_LINE?!!window.OM_LINE(d).narr:false;const side=key==='gm'||!key?'center':bsaySide(key,name);
-  const img=key==='gm'?standSrc(charOf('gm')):c?(standSrc(c)||c.img):'';
+  const img=key==='gm'?standSrc(gc):c?(standSrc(c)||c.img):'';
   if(!BSAY.el){BSAY.el=document.createElement('div');BSAY.el.className='bsayL';document.body.appendChild(BSAY.el);addEventListener('resize',bsayPlace);document.addEventListener('scroll',()=>{if(BSAY.el&&BSAY.el.childElementCount)bsayPlace()},true)}
   const txt0=String(d.t);
   /* 10-25 망령: 휴대폰은 화면이 좁아 큰 스탠딩이 겹친다 — 위에서부터 한 줄씩 쌓는 작은 말풍선(얼굴 + 대사), 최대 3개. 나레이션은 늘 맨 위 */
   if(BSAY.mob=matchMedia('(max-width:760px)').matches){bsayPlace();const L=BSAY.el;let st=L.querySelector('.bsm-stack');if(!st){L.innerHTML='';st=document.createElement('div');st.className='bsm-stack';L.appendChild(st)}
    /* 10-25 망령 A안: 휴대폰은 스탠딩을 하나만 — 가장 최근에 말한 사람이 아래에 크게 서고(오른쪽 진영이면 오른쪽) 큰 대사창. 바로 전 대사는 위에 얼굴 칩(최대 2), 나레이션은 늘 맨 위 */
-   const av=key==='gm'?(gmImg()||img):c?(c.img||standSrc(c)):'';const top=side==='center'&&(narr||key==='gm'||!key);
+   const av=key==='gm'?((gc&&gc.img)||img):c?(c.img||standSrc(c)):'';const top=side==='center'&&(narr||key==='gm'||!key);
    const bodyH=esc(txt0).replace(/\*(.+?)\*/g,'<i>$1</i>').replace(/\n/g,'<br>');
    const chipOf=(o)=>{const it=document.createElement('div');it.className=`bsm ${o.side}${o.narr?' narr':''}${o.top?' top':''}`;
     it.innerHTML=`${o.top?'':`<i class="bsm-av${o.av?'':' noimg'}" style="${o.av?`background-image:url('${cssu(o.av)}')`:''}">${o.av?'':esc([...o.name].slice(0,2).join(''))}</i>`}<div class="bsm-bub"><b>${esc(o.name)}</b><p>${o.body}</p></div>`;
@@ -1183,7 +1199,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    const ms=Math.min(12000,4000+txt0.length*80);
    if(top){const it=chipOf({side,narr,top:true,av:'',name,body:bodyH,ms});const firstNon=[...st.children].find(x=>!x.classList.contains('top'));st.insertBefore(it,firstNon||null);return}
    const old=L.querySelector('.bsvn');if(old){const o=old._o;old.remove();clearTimeout(BSAY.t.vn);if(o){st.appendChild(chipOf(Object.assign({},o,{ms:Math.max(2500,o.end-Date.now())})));trim()}}
-   const vimg=key==='gm'?standSrc(charOf('gm')):c?(standSrc(c)||c.img):'';const vs=side==='right'?'right':'left';
+   const vimg=key==='gm'?standSrc(gc):c?(standSrc(c)||c.img):'';const vs=side==='right'?'right':'left';
    const vn=document.createElement('div');vn.className=`bsvn ${vs}${vimg?' hasimg':''}${narr?' narr':''}`;vn._o={side,narr,top:false,av,name,body:bodyH,end:Date.now()+ms};
    vn.innerHTML=`<div class="bsvn-band"></div>${vimg?`<i class="bsvn-st" style="background-image:url('${cssu(vimg)}')"></i>`:''}<div class="bsvn-bub"><b>${esc(name)}</b><p>${bodyH}</p></div>`;
    vn.querySelector('.bsvn-bub').onclick=()=>{vn.classList.add('out');setTimeout(()=>vn.remove(),260)};L.appendChild(vn);
@@ -1299,5 +1315,5 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   if(near||box._first!==ST.room){box.scrollTop=box.scrollHeight;box._first=ST.room}
   const inp=$('#oocIn',d);if(inp){inp.disabled=!ST.role;inp.placeholder=ST.role?'잡담 · /r 1d100':'자리에 앉으면 말할 수 있다'}}
  addEventListener('resize',()=>{try{oocTick()}catch(e){}});
- return {stageEnter,bspkHtml,bspkBind,bsayToggleHtml,openSpkPick,spkBtnFill,spkInfo,pushRecent,curSpk,battleSay,bsayPlace,bsayClear,typingHtml,autoFolder,bgmMuted,seUrlOf:seUrl,render,allSpeakers,onChat,feedLog,onState,onTyping,typingPing,typingStop,drawTyping,mapData:mapS,openConsole,openStands,openPeople,setMyStand,charOf,playSe,setVolume,bgmWidgetHtml,bindBgmWidget,imgOfKey:k=>{if(k==='gm')return gmImg();const c=charOf(k);return c?(c.img||standSrc(c)):''},curSpeaker:()=>{const ST=A().ST;const c=speakerChar();if(c)return {key:c.key,name:c.name,img:c.img||standSrc(c)};return gm()?{key:'gm',name:'GM',img:gmImg()}:{key:'me',name:ST.name||'',img:''}}};
+ return {stageEnter,bspkHtml,bspkBind,bsayToggleHtml,openSpkPick,spkBtnFill,spkInfo,pushRecent,curSpk,battleSay,bsayPlace,bsayClear,typingHtml,autoFolder,bgmMuted,seUrlOf:seUrl,render,allSpeakers,onChat,feedLog,onState,onTyping,typingPing,typingStop,drawTyping,mapData:mapS,openConsole,openStands,openPeople,setMyStand,charOf,playSe,setVolume,bgmWidgetHtml,bindBgmWidget,gmKeyOf,imgOfKey:k=>{if(k==='gm')return gmImg();const c=charOf(k);return c?(c.img||standSrc(c)):''},curSpeaker:()=>{const ST=A().ST;const c=speakerChar();if(c)return {key:c.key,name:c.name,img:c.img||standSrc(c)};return gm()?{key:'gm',name:'GM',img:myGmImg()}:{key:'me',name:ST.name||'',img:''}}};
 })();
