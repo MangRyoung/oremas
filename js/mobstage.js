@@ -14,7 +14,9 @@
    if(w){if(st.style.getPropertyValue('--tagw')!==w)st.style.setProperty('--tagw',w)}else st.style.removeProperty('--tagw')}
   if(!MQ.matches){if(last){st.style.removeProperty('--sttop');last=''}return}
   /* 10-23 망령: 버튼 줄은 장소 이름과 같은 줄에서 시작 — 왼쪽 이름 칸 폭 · 높이를 --tagw/--tagh 로 넘겨 그만큼 비운다 */
-  const tg=st.querySelector('.stagetags');if(tg){const q=tg.getBoundingClientRect(),w=Math.round(q.right-r.left)+'px',h=Math.round(q.bottom-r.top)+'px';if(st.style.getPropertyValue('--tagw')!==w)st.style.setProperty('--tagw',w);if(st.style.getPropertyValue('--tagh')!==h)st.style.setProperty('--tagh',h)}
+  /* 10-26: 던전 중엔 장소 이름이 숨어 칸 크기가 0 — 그대로 재면 「화자」 버튼이 무대 위로 사라졌다 */
+  const tg=st.querySelector('.stagetags');const tq=tg&&tg.getBoundingClientRect();if(tg&&!(tq.width>0&&tq.height>0)){st.style.removeProperty('--tagw');st.style.removeProperty('--tagh')}
+  if(tg&&tq.width>0&&tq.height>0){const q=tq,w=Math.round(q.right-r.left)+'px',h=Math.round(q.bottom-r.top)+'px';if(st.style.getPropertyValue('--tagw')!==w)st.style.setProperty('--tagw',w);if(st.style.getPropertyValue('--tagh')!==h)st.style.setProperty('--tagh',h)}
   for(const el of st.querySelectorAll('#rpbtns,.rpbtns,.stagetags,.rpspkbtn')){const q=el.getBoundingClientRect();if(q.height>0&&q.bottom>r.top)b=Math.max(b,q.bottom-r.top)}
   const v=Math.round(b+6)+'px';if(v!==last||st.style.getPropertyValue('--sttop')!==v){st.style.setProperty('--sttop',v);last=v}}
  const kick=()=>{if(!raf)raf=requestAnimationFrame(fit)};

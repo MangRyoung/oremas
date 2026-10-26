@@ -4497,3 +4497,6 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 @media (min-width:761px){.rpbtns{left:calc(var(--tagw,140px) + 10px);flex-wrap:wrap;justify-content:flex-end;align-content:flex-start;row-gap:4px}.rpbtns>*{flex-shrink:0}.rpbtns .btn{white-space:nowrap}}
 /* 10-26: 버튼 줄이 두 줄이면 던전 지도 칸(오른쪽)이 그 아래에서 시작 */
 @media (min-width:761px){.rpstage .dgrp-dock{top:max(58px,calc(var(--btnb,0px) + 6px))}.rpstage .dgrp-dock.big{top:max(58px,calc(var(--btnb,0px) + 6px))}}
+/* 10-26 망령: 폰 던전 — 장소 이름 칸이 없으니 버튼 줄은 왼쪽부터, 「화자」는 줄 맨 앞에. 오른쪽 지도·PT 와 왼쪽 HUD 는 버튼 줄(--sttop) 아래까지만 */
+@media (max-width:760px){.rpstage.dgmode .rpbtns{padding-left:0}.rpstage.dgmode .rpbtns .rpspkbtn{position:static;order:-1;margin:0}
+ .rpstage .dgrp-dock{max-height:calc(100% - var(--dlgh,34%) - 14px - var(--sttop,60px))}.rpstage .dgrp-hud{max-height:calc(100% - var(--dlgh,34%) - 14px - var(--sttop,60px))}}
