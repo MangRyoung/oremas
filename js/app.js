@@ -706,7 +706,7 @@ async function openLoadParty(side){
  $('#goSheet',m).onclick=()=>{closeModal();VIEW='sheet';renderScene()};
  m.querySelectorAll('[data-pick]').forEach(btn=>btn.onclick=async()=>{closeModal();await loadFromRoster(btn.dataset.pick,side)})}
 /* 배틀에 올릴 포켓몬 초기화: 시트의 남은 HP·상태 이상·빈사(결과 정리로 돌려받은 것)로 시작 */
-function prepMon(mon,side,i){mon.side=side;mon.slot=i;mon.entry='';mon.started=false;mon.rank={attack:0,defense:0,specialattack:0,specialdefense:0,speed:0,accuracy:0,evasion:0,critical:0};mon.mod={};mon.states=Object.assign({},mon.sheetStates||{});mon.teraActive=false;delete mon.itemUsed;delete mon.form0;delete mon.formIdx;
+function prepMon(mon,side,i){mon.side=side;mon.slot=i;mon.entry='';mon.started=false;/* 10-26 던전 시험: 스킬 체크 패널티(「발이 묶임 — 스피드 −1」 등)가 시트 포켓몬의 랭크에 남는데 배틀을 차릴 때 0 으로 지워졌다 — 시트의 랭크를 들고 들어간다 (「결과 정리」가 시트 랭크를 다시 0 으로) */const rk0=mon.rank||{};mon.rank={attack:0,defense:0,specialattack:0,specialdefense:0,speed:0,accuracy:0,evasion:0,critical:0};for(const k in mon.rank)if(+rk0[k])mon.rank[k]=Math.max(-6,Math.min(6,+rk0[k]));mon.mod={};mon.states=Object.assign({},mon.sheetStates||{});mon.teraActive=false;delete mon.itemUsed;delete mon.form0;delete mon.formIdx;
  mon.hp={max:mon.stats[0],cur:mon.states.Dead?0:mon.sheetHp==null?mon.stats[0]:Math.min(mon.sheetHp,mon.stats[0])}}
 /* ---------- 함께 지시하기 · 합치기 (10-23 망령): 같은 진영에 트레이너가 있으면 「+ 파티」로 부른 파티를 그 트레이너에 합친다.
    포켓몬 목록 · 고유 · 전용(포켓몬에 붙어 옴) · 4식 6령이 한 트레이너로 모이고 지시 창 하나를 같이 쓴다. 손님 좌석은 시트의 co(함께 지시)에 적는다 ---------- */

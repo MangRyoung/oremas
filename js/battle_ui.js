@@ -1271,6 +1271,7 @@ window.OM_BATTLE_UI=(()=>{
   $('#rsgo',md).onclick=async()=>{const on=k=>!!(md.querySelector(`[data-rk="${k}"]`)||{}).checked;const ops=[];const L=[];
    for(const {m,r} of rows){if(!(md.querySelector(`[data-rs="${m.id}"]`)||{}).checked)continue;const P=['roster','mons',RID(m)];const bits=[];
     if(on('hp')){ops.push([[...P,'sheetHp'],r.hp]);bits.push('HP '+r.hp)}
+    {const rr=(R[RID(m)]||{}).rank||{};if(Object.values(rr).some(v=>+v)){ops.push([[...P,'rank'],{attack:0,defense:0,specialattack:0,specialdefense:0,speed:0,accuracy:0,evasion:0,critical:0}]);bits.push('배틀 전 랭크 정리')}}   /* 10-26: 스킬 체크 패널티로 시트에 남긴 랭크는 이 배틀에서 썼으니 비운다 */
     if(on('st')){ops.push([[...P,'sheetStates'],Object.keys(r.st).length?r.st:null]);const s2=Object.keys(r.st).map(k=>k==='Dead'?'빈사':stKo(k));if(s2.length)bits.push(s2.join('·'))}
     if(on('uses')){ops.push([[...P,'potUses'],Object.keys(r.uses).length?r.uses:null])}
     if(on('item')&&r.used&&!r.item){ops.push([[...P,'item'],'']);ops.push([[...P,'itemEff'],'']);bits.push(r.used+' 소모')}

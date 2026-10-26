@@ -151,7 +151,8 @@ window.OM_RP_UI=(()=>{
     const sk=!cap.text&&lastChat?speakerKey(lastChat):'';const sl=sk?SLOTS.find(x=>slots[x]===sk):'';if(sl==='left'||sl==='right')skin.side=sl[0]}
    else{const sk=speakerKey(lastChat);const sl=sk?SLOTS.find(x=>slots[x]===sk):'';const want=sl==='right'?'r':'l';const alt=want==='l'?'r':'l';
     /* 10-21 망령: 가운데(·무대 밖) 화자는 「꼬리 가운데」 그림이 있으면 그걸로 */
-    if(sl!=='left'&&sl!=='right')skin={v:'m',src:bub.m||DEF('m')};else if(bub[want])skin={v:want,src:bub[want]};else if(bub[alt])skin={v:want,src:bub[alt],flip:1};else skin={v:want,src:DEF('l'),flip:want==='r'?1:0};
+    /* 10-26 망령: 던전 탐사 중엔 HUD 때문에 좌우 대사칸이 좁아져 쓰기 어렵다 — 모두 가운데 대사칸 */const inDg=!!(window.OM_DG_UI&&window.OM_DG_UI.cur&&window.OM_DG_UI.cur());
+    if(inDg||(sl!=='left'&&sl!=='right'))skin={v:'m',src:bub.m||DEF('m')};else if(bub[want])skin={v:want,src:bub[want]};else if(bub[alt])skin={v:want,src:bub[alt],flip:1};else skin={v:want,src:DEF('l'),flip:want==='r'?1:0};
     if(skin.v!=='c'&&skin.v!=='m'&&sl!=='left'&&sl!=='right')skin.mid=1}}
   const dlg=$('#dlg',el);if(dlgHtml){if(dlg.dataset.k!==dlgKey){dlg.innerHTML=dlgHtml;dlg.dataset.k=dlgKey;dlg.classList.remove('pop');void dlg.offsetWidth;dlg.classList.add('pop');if(anim&&!cap.text)dqType(dlg)}dlg.style.display=''}else{dlg.style.display='none';dlg.dataset.k=''}
   {let mo=dlg.querySelector('.dq-more');const n=cap.text?0:DQ.q.length;if(n){if(!mo){mo=document.createElement('i');mo.className='dq-more';dlg.appendChild(mo)}mo.textContent=`+${n}줄`}else if(mo)mo.remove()}
