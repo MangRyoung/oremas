@@ -361,7 +361,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   if(k==='fold'){rpFold=!rpFold;try{localStorage.setItem('om_rpfold',rpFold?'1':'')}catch(e){}return A().renderScene()}
   if(k==='map'){mapOpen=!mapOpen;return A().renderScene()}
   if(k==='deck')return window.OM_DECK_UI.open();
-  if(k==='phone')return window.OM_PHONE_UI&&window.OM_PHONE_UI.open();
+  if(k==='phone'){const t=gm()?meTrainer():null;return window.OM_PHONE_UI&&window.OM_PHONE_UI.open(null,t?{tid:t.id}:null)}
   if(k==='roll')return window.OM_SKILL_UI&&window.OM_SKILL_UI.open();
   if(k==='talk'){const ST=A().ST;if(ST.role==='seat'){SPK.key='me'}else{const t=meTrainer();if(t)SPK.key='as:'+t.name}A().renderScene();const inp=$('#rpline');if(inp)inp.focus();return}
   if(k==='sound'){userMuted=false;unlocked=true;syncBgm(true);A().renderScene();return}
@@ -775,7 +775,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
     <div class="row" style="margin-top:8px"><span class="small dim">지금 띄우기</span><button class="btn sm" data-gc="cutvs">VS 컷인</button><button class="btn sm" data-gc="cutwarn">경고 연출</button><button class="btn sm ghost" data-gc="cuttest">컷인 시험</button></div>
     ${sec('중앙 그림','무대 한가운데 크게 — 증거 · 편지 · 장면 컷')}<div class="gcctr"><div class="gcpv" style="${r.center&&r.center.src?`background-image:url('${cssu(r.center.src)}')`:''}">${r.center&&r.center.src?'':'<span>없음</span>'}</div>
      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px"><div class="row"><input type="text" id="gci" placeholder="그림 주소 https://…" style="flex:1"><button class="btn sm" data-gc="center">띄우기</button>${r.center&&r.center.src?'<button class="btn sm ghost" data-gc="centerx">내리기</button>':''}</div><div class="updz mini" id="gcidz"><b>＋ 그림 올리기</b><span>끌어 놓기 · 클릭 · Ctrl+V — 올리면 바로 띄운다</span><input type="file" accept="image/*" hidden></div></div></div>
-    ${(()=>{const C=r.clue||null,L=Array.isArray(r.clueLib)?r.clueLib:[];return `${sec('단서 카드','그림 + 제목 + 설명을 모두의 무대에 카드로 — 던전 단서와 같은 모양 (10-26)')}<div class="gcclue"><div class="row"><input type="text" id="gclt" placeholder="제목 (예: 찢어진 작업 일지)" style="flex:1" value="${esc(GC.clT||'')}"></div><textarea id="gcld" rows="3" placeholder="설명 — 줄바꿈 그대로" style="width:100%">${esc(GC.clD||'')}</textarea><div class="row"><input type="text" id="gcli" placeholder="그림 주소 (비워도 된다)" style="flex:1" value="${esc(GC.clI||'')}"><div class="updz mini" id="gclz" style="flex:0 0 auto"><b>＋ 그림</b><input type="file" accept="image/*" hidden></div></div><div class="row"><button class="btn sm pri" data-gc="clue">🔍 띄우기</button><button class="btn sm" data-gc="cluesave">목록에 저장</button>${C?`<button class="btn sm ghost" data-gc="cluex">지금 단서 내리기</button><span class="small dim">띄운 것: ${esc(C.t||'단서')}</span>`:''}</div>${L.length?`<div class="gccl-lib">${L.map((c,i)=>`<span class="gccl-it"><button class="chip" data-gc="cluelib" data-i="${i}" title="눌러서 바로 띄우기">${c.img?'🖼 ':''}${esc(c.t||'단서')}</button><button class="btn xs ghost" data-gc="clueed" data-i="${i}" title="칸에 불러와 고치기">✎</button><button class="btn xs ghost danger" data-gc="cluedel" data-i="${i}" title="목록에서 지우기">×</button></span>`).join('')}</div>`:''}</div>`})()}`}
+    ${clueConsoleHtml(r)}`}
   else if(GC.tab==='se'){const SG=seList();
    body=`${sec('효과음','누르면 모두에게 한 번 · 배틀의 명중/급소/빗나감/빈사/주사위/공개는 자동')}<div class="row"><input type="search" id="gseq" placeholder="효과음 이름으로 찾기" value="${esc(GC.seQ)}" style="flex:1"></div>
     <div class="gsel">${Object.keys(SG).sort().map(g=>`<div class="gseg" data-seg><div class="small dim">${esc(g.replace(/^\d+\.\s*/,''))}</div><div class="gsec">${Object.keys(SG[g]).map(n=>`<button class="chip" data-gc="se" data-n="${esc(n)}" data-q="${esc(n.toLowerCase())}">${esc(n)}</button>`).join('')}</div></div>`).join('')}</div>
@@ -817,12 +817,17 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(k==='bubstcp'){const t='무대설정 '+JSON.stringify(stOf((R().bubble||{}).st));let ok=false;try{await navigator.clipboard.writeText(t);ok=true}catch(e){}if(ok)A().toast('복사했다 — 반디에게 붙여 넣어 줘');else prompt('이 글을 길게 눌러 복사',t);return}
    if(k==='center'){const u=$('#gci',md).value.trim();if(!u)return;await A().set(['rp','center'],{src:u,at:Date.now()});return re()}
    if(k==='centerx'){await A().set(['rp','center'],null);return re()}
-   if(k==='clue'||k==='cluesave'){const c={t:$('#gclt',md).value.trim().slice(0,60),d:$('#gcld',md).value.trim().slice(0,1200),img:$('#gcli',md).value.trim().slice(0,600)};GC.clT=c.t;GC.clD=c.d;GC.clI=c.img;if(!c.t&&!c.d&&!c.img)return A().toast('제목 · 설명 · 그림 중 하나는 있어야 한다');
-    if(k==='cluesave'){const L=(Array.isArray(R().clueLib)?R().clueLib:[]).slice();L.push(Object.assign({id:'c'+Date.now().toString(36)},c));await A().set(['rp','clueLib'],L.slice(-60));A().toast('단서 목록에 저장했다');return re()}
-    await showClueRp(c);return re()}
-   if(k==='cluelib'){const c=(R().clueLib||[])[+b.dataset.i];if(c)await showClueRp(c);return re()}
-   if(k==='clueed'){const c=(R().clueLib||[])[+b.dataset.i];if(c){GC.clT=c.t||'';GC.clD=c.d||'';GC.clI=c.img||''}return re()}
-   if(k==='cluedel'){const L=(R().clueLib||[]).filter((x,i)=>i!==+b.dataset.i);await A().set(['rp','clueLib'],L.length?L:null);return re()}
+   if(['clue','cluesave','clueupd'].includes(k)){const c={t:$('#gclt',md).value.trim().slice(0,60),d:$('#gcld',md).value.trim().slice(0,1200),img:$('#gcli',md).value.trim().slice(0,600),g:$('#gclg',md).value.trim().slice(0,30)};GC.clT=c.t;GC.clD=c.d;GC.clI=c.img;GC.clGr=c.g;if(!c.t&&!c.d&&!c.img)return A().toast('제목 · 설명 · 그림 중 하나는 있어야 한다');
+    const L=(Array.isArray(R().clueLib)?R().clueLib:[]).slice();
+    if(k==='cluesave'){const it=Object.assign({id:'c'+Date.now().toString(36)},c);L.unshift(it);await A().set(['rp','clueLib'],L.slice(0,120));GC.clEdit=it.id;A().toast('단서 목록에 저장했다');return re()}
+    if(k==='clueupd'){const j=L.findIndex(x=>x.id===GC.clEdit);if(j<0)return A().toast('고치던 단서가 목록에 없다');L[j]=Object.assign({},L[j],c);await A().set(['rp','clueLib'],L);A().toast('고친 내용을 저장했다');return re()}
+    await showClueRp(Object.assign({},c,GC.clEdit?{id:GC.clEdit}:{}));return re()}
+   if(k==='cluelib'){const c=(R().clueLib||[]).find(x=>x.id===b.dataset.id);if(c)await showClueRp(c);return re()}
+   if(k==='clueed'){const c=(R().clueLib||[]).find(x=>x.id===b.dataset.id);if(c){GC.clT=c.t||'';GC.clD=c.d||'';GC.clI=c.img||'';GC.clGr=c.g||'';GC.clEdit=c.id}re();setTimeout(()=>{const f=document.getElementById('gclt');if(f){f.scrollIntoView({block:'center'});f.focus()}},50);return}
+   if(k==='cluenew'){GC.clT='';GC.clD='';GC.clI='';GC.clEdit='';return re()}
+   if(k==='cluedel'){const c=(R().clueLib||[]).find(x=>x.id===b.dataset.id);if(!c||!confirm(`「${c.t||'단서'}」 를 목록에서 지울까?`))return;const L=(R().clueLib||[]).filter(x=>x.id!==c.id);if(GC.clEdit===c.id)GC.clEdit='';await A().set(['rp','clueLib'],L.length?L:null);return re()}
+   if(k==='cluegrp'){GC.clG=b.dataset.g||'';return re()}
+   if(k==='cluemv'){const L=(R().clueLib||[]).slice();const j=L.findIndex(x=>x.id===b.dataset.id),t=j+(+b.dataset.d);if(j<0||t<0||t>=L.length)return;[L[j],L[t]]=[L[t],L[j]];await A().set(['rp','clueLib'],L);return re()}
    if(k==='cluex'){await A().set(['rp','clue'],null);return re()}
    if(k==='se'){unlocked=true;return playSe(b.dataset.n)}
    if(k==='seurl'){const u=$('#gseu',md).value.trim();if(!u)return;unlocked=true;return playSe(u)}
@@ -847,9 +852,27 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    $('#gbw',md).addEventListener('input',()=>{const w=(+$('#gbw',md).value||52)*BUB_PC;GBP.forEach(g=>{const el=$('#gbp_'+g.k,md);if(el){el.style.width=w+'%';el.style.left=`calc(${g.base(w)}% + ${POS[g.kx]||0}%)`}})});['#gbf','#gbb'].forEach(q=>$(q,md).onchange=save);live()}
   for(const k of ['c','l','m','r'])if($('#bub_'+k,md))bindDz(md,'#bub_'+k,async fs=>{const u=await upImg(fs[0],'bub_'+k);await A().set(['rp','bubble',k],u);if(!(R().bubble||{}).on)await A().set(['rp','bubble','on'],true);re()});
   if($('#gcidz',md))bindDz(md,'#gcidz',async fs=>{const u=await upImg(fs[0],'rp');await A().set(['rp','center'],{src:u,at:Date.now()});re()});
-  if($('#gclz',md))bindDz(md,'#gclz',async fs=>{A().toast('올리는 중…');GC.clT=$('#gclt',md).value;GC.clD=$('#gcld',md).value;const u=await upImg(await shrinkPic(fs[0],1600,1600),'clue');GC.clI=u||'';re()})}
+  [['#gclt','clT'],['#gcld','clD'],['#gcli','clI'],['#gclg','clGr']].forEach(([id,k])=>{const x=$(id,md);if(x)x.addEventListener('input',()=>{GC[k]=x.value;if(k==='clI'){const p=md.querySelector('.gccl-pv');if(p){p.classList.toggle('none',!x.value.trim());p.style.backgroundImage=x.value.trim()?`url('${cssu(x.value.trim())}')`:'';p.textContent=x.value.trim()?'':'그림 없음'}}})});
+  {const q=$('#gclq',md);if(q){const f=()=>{GC.clQ=q.value;const w=q.value.trim().toLowerCase();md.querySelectorAll('.gccl-card').forEach(c=>c.hidden=!!w&&!c.dataset.q.includes(w))};q.oninput=f;f()}}
+  if($('#gclz',md))bindDz(md,'#gclz',async fs=>{A().toast('올리는 중…');GC.clT=$('#gclt',md).value;GC.clD=$('#gcld',md).value;const u=await upImg(await shrinkPic(fs[0],1600,1600),'clue');GC.clI=u||'';GC.clGr=$('#gclg',md).value;re()})}
+ /* 단서 카드 칸 (GM 콘솔 「연출」): 위 = 쓰기(새로 · 고치기), 아래 = 저장한 단서 카드 격자(그림 · 제목 · 묶음 · 설명, 찾기 · 묶음 거르기 · 순서) — 10-26 망령 「목록 좀 더 개선」 */
+ function clueConsoleHtml(r){const C=r.clue||null,L=Array.isArray(r.clueLib)?r.clueLib:[];const groups=[...new Set(L.map(c=>c.g).filter(Boolean))];if(GC.clG&&!groups.includes(GC.clG))GC.clG='';
+  const ed=GC.clEdit&&L.find(c=>c.id===GC.clEdit);if(GC.clEdit&&!ed)GC.clEdit='';
+  const sec2=(t,note)=>`<div class="gcsec"><h3>${t}</h3>${note?`<span class="note">${note}</span>`:''}</div>`;
+  const pv=GC.clI?`<div class="gccl-pv" style="background-image:url('${cssu(GC.clI)}')"></div>`:'<div class="gccl-pv none">그림 없음</div>';
+  const form=`<div class="gccl-form ${ed?'editing':''}">${ed?`<div class="gccl-edbar">✎ 「${esc(ed.t||'단서')}」 고치는 중 <span class="sp"></span><button class="btn xs ghost" data-gc="cluenew">새 단서 쓰기</button></div>`:''}
+   <div class="gccl-fgrid"><div class="gccl-fl"><input type="text" id="gclt" placeholder="제목 (예: 찢어진 작업 일지)" value="${esc(GC.clT||'')}"><textarea id="gcld" rows="4" placeholder="설명 — 줄바꿈 그대로">${esc(GC.clD||'')}</textarea><div class="row"><input type="text" id="gcli" placeholder="그림 주소 (비워도 된다)" style="flex:1" value="${esc(GC.clI||'')}"><input type="text" id="gclg" list="gclgl" placeholder="묶음 (예: 무진 3화)" style="width:9.5em" value="${esc(GC.clGr||GC.clG||'')}"><datalist id="gclgl">${groups.map(g=>`<option value="${esc(g)}">`).join('')}</datalist></div></div>
+    <div class="updz mini gccl-dz" id="gclz">${pv}<b>＋ 그림</b><span>끌어 놓기 · 클릭 · Ctrl+V</span><input type="file" accept="image/*" hidden></div></div>
+   <div class="row"><button class="btn sm pri" data-gc="clue">🔍 모두에게 띄우기</button>${ed?'<button class="btn sm" data-gc="clueupd">✓ 고친 것 저장</button><button class="btn sm ghost" data-gc="cluesave">새 항목으로 저장</button>':'<button class="btn sm" data-gc="cluesave">＋ 목록에 저장</button>'}${C?`<span class="sp"></span><span class="small dim">무대에: ${esc(C.t||'단서')}</span><button class="btn sm ghost" data-gc="cluex">내리기</button>`:''}</div></div>`;
+  const shown=L.filter(c=>!GC.clG||c.g===GC.clG);
+  const lib=L.length?`<div class="gccl-libh"><b>저장한 단서 <small>${L.length}</small></b>${L.length>4?`<input type="search" id="gclq" placeholder="찾기 — 제목 · 설명 · 묶음" value="${esc(GC.clQ||'')}">`:''}</div>${groups.length?`<div class="gccl-grps"><button class="chip ${!GC.clG?'on':''}" data-gc="cluegrp" data-g="">전체 ${L.length}</button>${groups.map(g=>`<button class="chip ${GC.clG===g?'on':''}" data-gc="cluegrp" data-g="${esc(g)}">${esc(g)} ${L.filter(c=>c.g===g).length}</button>`).join('')}</div>`:''}
+   <div class="gccl-grid">${shown.map(c=>{const live=C&&(C.id?C.id===c.id:(C.t===c.t&&C.img===c.img));const i=L.indexOf(c);return `<div class="gccl-card ${live?'live':''} ${GC.clEdit===c.id?'ed':''}" data-q="${esc(((c.t||'')+' '+(c.d||'')+' '+(c.g||'')).toLowerCase())}">
+    <button class="gccl-th" data-gc="cluelib" data-id="${esc(c.id)}" title="눌러서 모두에게 띄우기" style="${c.img?`background-image:url('${cssu(c.img)}')`:''}">${c.img?'':'<span>🔍</span>'}${live?'<i>무대에</i>':''}</button>
+    <div class="gccl-bd"><b title="${esc(c.t||'')}">${esc(c.t||'(제목 없음)')}</b>${c.g?`<em>${esc(c.g)}</em>`:''}<p>${esc(c.d||'')}</p></div>
+    <div class="gccl-ac"><button class="btn xs pri" data-gc="cluelib" data-id="${esc(c.id)}">띄우기</button><button class="btn xs" data-gc="clueed" data-id="${esc(c.id)}" title="위 칸에 불러와 고치기">고치기</button><span class="sp"></span><button class="btn xs ghost" data-gc="cluemv" data-id="${esc(c.id)}" data-d="-1" title="앞으로" ${i<=0?'disabled':''}>◀</button><button class="btn xs ghost" data-gc="cluemv" data-id="${esc(c.id)}" data-d="1" title="뒤로" ${i>=L.length-1?'disabled':''}>▶</button><button class="btn xs ghost danger" data-gc="cluedel" data-id="${esc(c.id)}" title="지우기">×</button></div></div>`}).join('')||'<div class="small dim">이 묶음에 단서가 없다</div>'}</div>`:'<div class="gccl-empty small dim">저장한 단서가 없다 — 위에 쓰고 「＋ 목록에 저장」을 누르면 여기에 카드로 모인다. 세션 전에 미리 만들어 두고 한 번에 띄우면 된다.</div>';
+  return `${sec2('단서 카드','그림 + 제목 + 설명을 모두의 무대에 카드로 — 던전 단서와 같은 모양')}<div class="gcclue">${form}${lib}</div>`}
  /* 10-26 망령 「던전 단서 출력 기능을 RP 쪽에도」: rp.clue = {t,d,img,at} — 모두의 무대에 카드. 플레이어는 ✕ 로 내 화면에서만 닫고 「🔍 단서」로 다시 연다. GM 의 「모두 닫기」는 모두에게서 내린다 */
- async function showClueRp(c){const v={t:c.t||'',d:c.d||'',img:c.img||'',at:Date.now()};if(await A().set(['rp','clue'],v)){CLUE.hide=0;A().sysLog(`🔍 단서 — ${v.t||'단서'}${v.d?'\n'+v.d:''}`);try{playSe('Draw',true)}catch(e){}}}
+ async function showClueRp(c){const v={t:c.t||'',d:c.d||'',img:c.img||'',at:Date.now()};if(c.id)v.id=c.id;if(await A().set(['rp','clue'],v)){CLUE.hide=0;A().sysLog(`🔍 단서 — ${v.t||'단서'}${v.d?'\n'+v.d:''}`);try{playSe('Draw',true)}catch(e){}}}
  const CLUE={hide:0,sig:''};
  function clueRp(stage){if(!stage)return;const c=R().clue;let box=stage.querySelector(':scope>.rpclue');
   if(!c||!(c.t||c.d||c.img)){if(box)box.remove();CLUE.sig='';return}

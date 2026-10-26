@@ -4197,7 +4197,7 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .rpstage .dgrp-enc b{color:#ff8a96;letter-spacing:.02em}
 .rpstage .dgrp-enc.hid{border-color:#7d8496;background:rgba(10,12,18,.86)}
 .rpstage .dgrp-enc small{color:#e9c9cd;font-size:11px}
-.rpstage .dgrp-enc button{font:700 12px/1 inherit;padding:5px 9px;background:#ff4d5e;color:#fff;border:0;cursor:pointer;box-shadow:2px 2px 0 #000}
+.rpstage .dgrp-enc button{font-weight:700;font-size:12px;line-height:1;padding:5px 9px;background:#ff4d5e;color:#fff;border:0;cursor:pointer;box-shadow:2px 2px 0 #000}
 .rpstage .dgrp-pt{pointer-events:auto;width:min(250px,100%);background:rgba(6,8,14,.84);border:1px solid rgba(255,255,255,.18);border-left:3px solid var(--dg-acc,#f0c84a);box-shadow:3px 3px 0 #000;color:#eef2fa}
 .rpstage .dgrp-pt .dgpt-tog{display:block;width:100%;text-align:left;font:700 11px/1 'Black Han Sans',sans-serif;letter-spacing:.14em;padding:5px 8px;background:transparent;border:0;color:var(--dg-acc,#f0c84a);cursor:pointer}
 .rpstage .dgrp-pt.min{width:auto}.rpstage .dgrp-pt.min .dgpt-body{display:none}
@@ -4218,7 +4218,7 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .dgpt-mi small{font-size:10px;opacity:.8}
 .dgpt-hp{display:block;height:5px;background:#2a2f3c;border-radius:3px;overflow:hidden;margin:2px 0 1px}
 .dgpt-hp i{display:block;height:100%;background:#3ee07a}.dgpt-hp.mid i{background:#ffc93a}.dgpt-hp.low i{background:#ff4d5e}
-.dgpt-add{align-self:flex-start;font:700 11px/1 inherit;padding:4px 8px;background:transparent;border:1px dashed rgba(255,255,255,.4);color:inherit;cursor:pointer}
+.dgpt-add{align-self:flex-start;font-weight:700;font-size:11px;line-height:1;padding:4px 8px;background:transparent;border:1px dashed rgba(255,255,255,.4);color:inherit;cursor:pointer}
 .dgpt-empty{font-size:11px;opacity:.75;padding:2px 0}
 .dgpt-card .dgpt-list{display:flex;flex-direction:column;gap:8px;margin:4px 0}
 .dgpt-card .dgpt-row{padding:6px 8px;border:1px solid var(--line);background:rgba(0,0,0,.18)}
@@ -4249,7 +4249,7 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .dg-ed label.dg-chk input{width:auto!important;flex:none;margin:0}
 /* 던전 방 이벤트 (10-26): 스킬 체크 · 단서 · 휴식처 */
 .rpstage .dgrp-ev{pointer-events:auto;display:flex;flex-wrap:wrap;gap:6px;max-width:100%}
-.rpstage .dgrp-ev button,.rpstage .dgrp-ev .dgev-t{font:700 12px/1 inherit;padding:6px 10px;background:rgba(6,8,14,.86);color:#eef2fa;border:1px solid rgba(255,255,255,.28);box-shadow:2px 2px 0 #000;cursor:pointer;transform:skewX(-6deg)}
+.rpstage .dgrp-ev button,.rpstage .dgrp-ev .dgev-t{font-weight:700;font-size:12px;line-height:1;padding:6px 10px;background:rgba(6,8,14,.86);color:#eef2fa;border:1px solid rgba(255,255,255,.28);box-shadow:2px 2px 0 #000;cursor:pointer;transform:skewX(-6deg)}
 .rpstage .dgrp-ev button.gmo{border-style:dashed;border-color:var(--dg-acc,#f0c84a);color:var(--dg-acc,#f0c84a)}
 .rpstage .dgrp-ev button:disabled{opacity:.5;cursor:default}
 .rpstage .dgrp-ev .dgev-t{cursor:default;color:#3ee0a1;border-color:#3ee0a1}
@@ -4260,7 +4260,7 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .dgcl-h small{display:block;font:700 10px/1 'Black Han Sans',sans-serif;letter-spacing:.16em;color:var(--dg-acc,#f0c84a);margin-bottom:3px}
 .dgcl-h b{font-size:17px}.dgcl-h>div,.dgcl-h small+b{display:block}
 .dgcl-h .sp{flex:1}
-.dgcl-h button{font:700 12px/1 inherit;padding:6px 9px;background:transparent;border:1px solid rgba(255,255,255,.3);color:inherit;cursor:pointer}
+.dgcl-h button{font-weight:700;font-size:12px;line-height:1;padding:6px 9px;background:transparent;border:1px solid rgba(255,255,255,.3);color:inherit;cursor:pointer}
 .dgcl-card img{display:block;width:100%;max-height:52vh;object-fit:contain;background:#05060a}
 .dgcl-card p{margin:0;padding:12px 14px 14px;font-size:14px;line-height:1.7;white-space:normal}
 .dg-ev-box{margin:6px 0;padding:7px 9px;border:1px solid var(--line);background:rgba(255,255,255,.03);display:flex;flex-direction:column;gap:3px}
@@ -4275,9 +4275,46 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 /* RP 단서 카드 (10-26) — 던전 단서와 같은 카드 */
 .rpstage .rpclue{position:absolute;inset:0;z-index:9;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.45);pointer-events:auto}
 .rpstage .rpclue.mini{inset:auto;left:50%;top:10px;translate:-50% 0;padding:0;background:none}
-.rpclue-pill{font:700 13px/1 inherit;padding:8px 14px;background:#0d0f16;color:var(--yel2,#f0c84a);border:2px solid var(--yel2,#f0c84a);box-shadow:3px 3px 0 #000;cursor:pointer;transform:skewX(-6deg)}
+.rpclue-pill{font-weight:700;font-size:13px;line-height:1;padding:8px 14px;background:#0d0f16;color:var(--yel2,#f0c84a);border:2px solid var(--yel2,#f0c84a);box-shadow:3px 3px 0 #000;cursor:pointer;transform:skewX(-6deg)}
 .rpclue .dgcl-card{--dg-acc:var(--yel2,#f0c84a)}
 .gcclue{display:flex;flex-direction:column;gap:6px}
 .gccl-lib{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
 .gccl-it{display:inline-flex;align-items:center;gap:2px}
 .rpstage .rpclue.mini{left:12px;top:64px;translate:none}
+/* 단서 카드 콘솔 2판 (10-26) */
+.gccl-form{display:flex;flex-direction:column;gap:8px;padding:10px;border:1px solid var(--line);background:rgba(255,255,255,.02)}
+.gccl-form.editing{border-color:var(--yel2,#f0c84a);background:rgba(240,200,74,.05)}
+.gccl-edbar{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--yel2,#f0c84a);font-weight:700}
+.gccl-fgrid{display:grid;grid-template-columns:minmax(0,1fr) 150px;gap:8px}
+.gccl-fl{display:flex;flex-direction:column;gap:6px;min-width:0}
+.gccl-fl textarea{width:100%;resize:vertical}
+.gccl-dz{display:flex!important;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px!important;text-align:center;min-height:0}
+.gccl-dz span{font-size:10px}
+.gccl-pv{width:100%;aspect-ratio:4/3;background:#07080c center/contain no-repeat;border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--mute,#888)}
+.gccl-libh{display:flex;align-items:center;gap:10px;margin-top:12px}
+.gccl-libh b small{color:var(--mute,#888);font-weight:400;margin-left:4px}
+.gccl-libh input{flex:1;min-width:0}
+.gccl-grps{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.gccl-grps .chip.on{background:var(--yel2,#f0c84a);color:#111;border-color:var(--yel2,#f0c84a)}
+.gccl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px;margin-top:8px}
+.gccl-card{display:flex;flex-direction:column;background:#111319;border:1px solid var(--line);min-width:0}
+.gccl-card.live{border:2px solid var(--yel2,#f0c84a)}
+.gccl-card.ed{outline:2px dashed var(--yel2,#f0c84a);outline-offset:2px}
+.gccl-th{position:relative;display:flex;align-items:center;justify-content:center;width:100%;aspect-ratio:4/3;border:0;padding:0;background:#07080c center/cover no-repeat;cursor:pointer;font-size:28px;color:#556}
+.gccl-th:hover{filter:brightness(1.15)}
+.gccl-th i{position:absolute;left:6px;top:6px;font-weight:700;font-size:10px;line-height:1;font-style:normal;background:var(--yel2,#f0c84a);color:#111;padding:3px 6px}
+.gccl-bd{padding:7px 8px 4px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.gccl-bd b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gccl-bd em{font-style:normal;font-size:10px;color:var(--yel2,#f0c84a)}
+.gccl-bd p{margin:0;font-size:11px;line-height:1.45;color:var(--fg2,#aaa);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.9em}
+.gccl-ac{display:flex;align-items:center;gap:3px;padding:4px 6px 7px}
+.gccl-ac .sp{flex:1}
+.gccl-empty{padding:12px;border:1px dashed var(--line);margin-top:10px}
+@media(max-width:640px){.gccl-fgrid{grid-template-columns:1fr}.gccl-dz{flex-direction:row!important}.gccl-pv{width:80px}.gccl-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.gccl-th i{font-weight:700;font-size:10px;line-height:1}
+.gccl-grid{grid-template-columns:repeat(auto-fill,minmax(200px,1fr))}
+.gccl-ac{flex-wrap:wrap}
+.gccl-ac .btn{white-space:nowrap;writing-mode:horizontal-tb}
+.gccl-ac .btn.xs{padding:4px 8px;font-size:11px}
+.gccl-ac .btn.ghost{padding:4px 6px;min-width:0}
