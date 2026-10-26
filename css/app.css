@@ -4337,3 +4337,11 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .v3 .v3-R .v3-brow{align-items:flex-end}
 .v3 .v3-brow .v3-balls{margin-top:0}
 .v3 .v3-multi .v3-ball{width:calc(var(--u)*4);height:calc(var(--u)*4)}
+
+/* 10-26 배틀 카드 */
+.trainer .tn .cardbtn{margin-left:6px;padding:1px 7px;font-size:11px;vertical-align:middle}
+.dc .dca{position:absolute;right:6px;bottom:6px;font-style:normal;font-size:12px;opacity:.8}
+.dc{position:relative}
+.dchand.bh{display:flex;flex-wrap:wrap;gap:8px}
+.dchand.bh .dc{cursor:pointer;width:150px}
+.dchand.bh .dc:hover{outline:2px solid var(--yel)}

@@ -133,7 +133,7 @@ window.OM_DECK_UI=(()=>{
    case 'logClear':if(!own)return E('GM(덱 주인)만 지울 수 있어.');dk.log=[];R.msg='기록을 지웠어.';return R;
    /* ---- 카드 편집 (덱 주인) ---- */
    case 'cardSave':{if(!own)return E('이 덱을 고칠 권한이 없어.');const c=p.card||{};const n=nameOk(c.n);if(!n)return E('카드 이름을 적어 줘.');
-    const v={n,t:String(c.t||'').slice(0,30),c:c.c==null?'':String(c.c).slice(0,8),x:String(c.x||'').slice(0,2000),img:String(c.img||'').slice(0,600),col:colKey(c.col),q:Math.max(0,Math.min(99,Math.floor(+c.q||0)))};
+    const v={n,t:String(c.t||'').slice(0,30),c:c.c==null?'':String(c.c).slice(0,8),x:String(c.x||'').slice(0,2000),img:String(c.img||'').slice(0,600),col:colKey(c.col),q:Math.max(0,Math.min(99,Math.floor(+c.q||0))),a:c.a&&c.a.dsl?{dsl:String(c.a.dsl).slice(0,1500),ops:Array.isArray(c.a.ops)?c.a.ops:[]}:null};if(!v.a)delete v.a;
     if(p.cid&&cards[p.cid]){const dv=v.q-(+cards[p.cid].q||0);cards[p.cid]=Object.assign({},cards[p.cid],v,{q:cards[p.cid].q});const fh=qtyAdj(dk,p.cid,dv);R.msg=`「${n}」 고쳤어.${fh?` (손패에서 ${fh}장 빠짐)`:''}`;R.cid=p.cid}
     else{const id='c'+(++db.seq);cards[id]=Object.assign({},v,{q:0});dk.order.push(id);qtyAdj(dk,id,v.q);R.cid=id;R.msg=`「${n}」 ${v.q}장을 덱에 넣고 섞었어.`}return R}
    case 'cardQty':{if(!own)return E('이 덱을 고칠 권한이 없어.');if(!cards[p.cid])return E('그 카드가 없어.');const fh=qtyAdj(dk,p.cid,+p.dv||0);R.msg=`「${cn(p.cid)}」 ${cards[p.cid].q}장${fh?` (손패에서 ${fh}장 빠짐)`:''}`;return R}
@@ -190,7 +190,7 @@ window.OM_DECK_UI=(()=>{
 
  /* ---------- 카드 그림 ---------- */
  function cardHtml(c,o){o=o||{};if(!c)return '';const col=colOf(c.col);const cost=c.c!==''&&c.c!=null;
-  return `<div class="dc ${o.sel?'sel':''} ${o.cls||''}" style="--dc:${col}" ${o.attr||''}>${o.badge?`<em class="dcb">${o.badge}</em>`:''}<div class="dch"><b>${esc(c.n)}</b>${cost?`<span class="dcc">${esc(c.c)}</span>`:''}</div>${c.img?`<div class="dci" style="background-image:url('${cssu(c.img)}')"></div>`:''}${c.t?`<div class="dct">${esc(c.t)}</div>`:''}<div class="dcx">${esc(c.x||'')}</div></div>`}
+  return `<div class="dc ${o.sel?'sel':''} ${o.cls||''}" style="--dc:${col}" ${o.attr||''}>${o.badge?`<em class="dcb">${o.badge}</em>`:''}<div class="dch"><b>${esc(c.n)}</b>${cost?`<span class="dcc">${esc(c.c)}</span>`:''}</div>${c.img?`<div class="dci" style="background-image:url('${cssu(c.img)}')"></div>`:''}${c.t?`<div class="dct">${esc(c.t)}</div>`:''}<div class="dcx">${esc(c.x||'')}</div>${c.a&&c.a.ops&&c.a.ops.length?'<em class="dca" title="자동화 구문이 있다">⚙</em>':''}</div>`}
  const backHtml=n=>`<div class="dc back"><span>🃏</span>${n!=null?`<em>${n}</em>`:''}</div>`;
 
  /* ---------- 휴대폰 「덱」 앱 ---------- */
@@ -302,6 +302,7 @@ window.OM_DECK_UI=(()=>{
       <label>비용<input type="text" id="mf_c" value="${esc(f.c??'')}" placeholder="숫자 · 비우면 없음"></label><label>장수<input type="number" class="n" id="mf_q" min="0" max="99" value="${+f.q||0}"></label>
       <label class="wide">색<span class="dmpal">${PAL.map(p=>`<button type="button" class="dmc ${f.col===p[0]?'on':''}" data-mgc="${p[0]}" style="background:${p[1]}" title="${p[2]}"></button>`).join('')}</span></label>
       <label class="wide">효과<textarea id="mf_x" rows="5" placeholder="카드 효과 · 여러 줄 가능">${esc(f.x)}</textarea></label>
+      <label class="wide">자동화 구문 <span class="note">배틀에서 「🃏 카드」로 쓰면 이 구문이 돈다 · 비우면 효과 글만 로그에 (SP · 포텐셜과 같은 구문)</span><textarea id="mf_a" rows="3" style="font-family:var(--mono);font-size:12.5px" placeholder="예) 회복 1/4 아군1체 · 랭크 공격+1 임시 자신 · 상태확률 마비 30% 상대1체">${esc(f.a&&f.a.dsl||'')}</textarea><div class="small" id="mf_ap" style="white-space:pre-wrap"></div><details class="spgen"><summary class="small">⚙ 생성기 — 골라서 구문 만들기</summary><div id="mf_ag"></div></details></label>
       <label class="wide">그림<span class="row" style="gap:6px"><input type="text" id="mf_i" value="${esc(f.img)}" placeholder="https://… (비워도 된다)" style="flex:1"><label class="btn sm ghost">올리기<input type="file" id="mf_f" accept="image/*" hidden style="display:none"></label></span></label></div>
      <div class="dmprev" id="mf_p">${cardHtml(f)}</div>
      <div class="row" style="margin-top:8px">${MG.edit&&dk.cards[MG.edit]?`<button class="btn sm ghost danger" data-mg="del">삭제</button><button class="btn sm ghost" data-mg="dup">복제</button><span class="sp"></span><button class="btn pri" data-mg="save">저장</button>`:'<span class="sp"></span><button class="btn pri" data-mg="save">덱에 추가</button>'}</div>
@@ -327,8 +328,9 @@ window.OM_DECK_UI=(()=>{
   const bg=md.parentElement;if(bg)bg.onclick=e=>{if(e.target===bg)back()};
   md.querySelectorAll('[data-mgt]').forEach(b=>b.onclick=()=>{MG.tab=b.dataset.mgt;MG.resDraft=null;MG.optDraft=null;re()});
   /* 카드 폼 */
-  const rd=()=>{const g=id=>($('#'+id,md)||{}).value;if(!$('#mf_n',md))return;MG.form=Object.assign(MG.form||{},{n:g('mf_n'),t:g('mf_t'),c:g('mf_c'),q:+g('mf_q')||0,x:g('mf_x'),img:g('mf_i')});const p=$('#mf_p',md);if(p)p.innerHTML=cardHtml(MG.form)};
-  ['mf_n','mf_t','mf_c','mf_q','mf_x','mf_i'].forEach(id=>{const el=$('#'+id,md);if(el)el.oninput=rd});
+  const rd=()=>{const g=id=>($('#'+id,md)||{}).value;if(!$('#mf_n',md))return;MG.form=Object.assign(MG.form||{},{n:g('mf_n'),t:g('mf_t'),c:g('mf_c'),q:+g('mf_q')||0,x:g('mf_x'),img:g('mf_i')});{const dsl=String(g('mf_a')||'').trim();const K=window.OM_FX;if(dsl){const r=K?K.parse(dsl):{ops:[],errs:[]};MG.form.a={dsl,ops:r.ops};const ap=$('#mf_ap',md);if(ap)ap.innerHTML=(r.ops.length?'미리보기: '+esc(K.unparse(r.ops).join(' / ')):'')+(r.errs&&r.errs.length?` <span style="color:var(--red)">모르는 줄: ${esc(r.errs.join(' / '))}</span>`:'')}else{MG.form.a=null;const ap=$('#mf_ap',md);if(ap)ap.innerHTML=''}}const p=$('#mf_p',md);if(p)p.innerHTML=cardHtml(MG.form)};
+  ['mf_n','mf_t','mf_c','mf_q','mf_x','mf_i','mf_a'].forEach(id=>{const el=$('#'+id,md);if(el)el.oninput=rd});
+  {const ta=$('#mf_a',md),gh=$('#mf_ag',md);if(ta&&gh&&window.OM_FX_UI&&window.OM_FX_UI.mountGen)window.OM_FX_UI.mountGen(gh,ta,{toast:t=>A().toast(t)});if(ta)rd()}
   md.querySelectorAll('[data-mgc]').forEach(b=>b.onclick=()=>{rd();MG.form.col=b.dataset.mgc;md.querySelectorAll('[data-mgc]').forEach(x=>x.classList.toggle('on',x===b));rd()});
   const ff=$('#mf_f',md);if(ff)ff.onchange=async()=>{const f=ff.files[0];if(!f)return;A().toast('올리는 중…');try{$('#mf_i',md).value=await window.OM_STORE.uploadImage(`rooms/${ST().room}/card_${Date.now().toString(36)}`,f);rd();A().toast('올렸다')}catch(e){A().toast(e.message)}};
   const bl=$('#mf_b',md);const parseBulk=s=>String(s||'').split('\n').map(l=>l.trim()).filter(Boolean).map(l=>{const a=(l.includes('\t')?l.split('\t'):l.split('|')).map(x=>x.trim());return {n:a[0],t:a[1]||'',c:a[2]||'',q:a[3]===''||a[3]==null?1:+a[3],x:(a[4]||'').replace(/\\n/g,'\n'),col:a[5]||''}}).filter(r=>r.n);
@@ -376,5 +378,24 @@ window.OM_DECK_UI=(()=>{
   return {n:g('n').trim(),s:+g('s')||0,m:+g('m')||0,o:g('o'),a:g('a').split('\n').map(l=>{const m=l.match(/^\s*(-?\d+)\s*[:：=]\s*(.+)$/);return m?{t:+m[1],x:m[2].trim()}:null}).filter(Boolean)}})}
  /* 예전 「덱」 버튼 · 단축키가 부르는 자리 */
  function open(){if(window.OM_PHONE_UI)return window.OM_PHONE_UI.open('deck')}
- return {open,absorb,phone,bindPhone,openMgr,exec,seedDb,onAck};
+ /* ---------- 배틀에서 카드 쓰기 (10-26 망령) ----------
+   트레이너 칸의 「🃏 카드 n」 → 그 트레이너(=덱 주인 holder) 손패 → 「사용」: 덱의 play(비용 · 버린 더미) + 카드에 자동화 구문이 있으면 SP 처럼 기준 포켓몬에서 돌린다.
+   쓸 수 있는 덱: 지금 보는 덱(PV.deck) → 기본 덱 → 그 손패가 있는 덱 순 */
+ function deckFor(H){const L=visDecks();const has=([,d])=>(d.hands[H]||[]).length;return L.find(x=>x[0]===PV.deck&&has(x))||L.find(x=>x[0]===(DB()||{}).cur&&has(x))||L.find(has)||null}
+ function handCount(tid){const x=deckFor(tid);return x?(x[1].hands[tid]||[]).length:0}
+ function battleHand(tid,o){o=o||{};const x=deckFor(tid);const BU=window.OM_BATTLE_UI;if(!x)return A().toast('손패가 없다 — 휴대폰 「덱」에서 먼저 뽑아 둬');const [did,dk]=x;const hand=dk.hands[tid]||[];
+  const md=A().openModal(`<div class="mhead"><h2>🃏 ${esc(hName(tid))}의 손패 <small class="dim">${esc(dk.name)} · ${hand.length}장</small></h2><span class="sp"></span><button class="btn sm ghost" data-bh="phone">덱 앱</button><button class="btn ghost" data-x>닫기</button></div>
+   ${dk.opt.cr?`<div class="small dim" style="margin-bottom:6px">비용 자원: ${esc(dk.opt.cr)} ${esc(String(((dk.rv[tid]||{})[dk.opt.cr])??''))}</div>`:''}
+   <div class="dchand bh">${hand.map((cid,i)=>cardHtml(dk.cards[cid],{attr:`data-bhi="${i}"`})).join('')||'<div class="dim">손패가 비었다</div>'}</div>
+   <div class="small dim" style="margin-top:8px">카드를 누르면 쓴다 — 비용을 내고 버린 더미로, ⚙ 카드는 구문이 돈다.</div>`,'wide');
+  md.addEventListener('click',async e=>{if(e.target.closest('[data-bh="phone"]')){A().closeModal();PV.deck=did;return open()}const c=e.target.closest('[data-bhi]');if(!c)return;const i=+c.dataset.bhi;const cid=hand[i];const card=dk.cards[cid];if(!card)return;
+   if(!confirm(`「${card.n}」을(를) 쓸까?`))return;
+   const hasA=!!(card.a&&card.a.ops&&card.a.ops.length);let anchor='';if(hasA&&o.pickAnchor){anchor=await o.pickAnchor(tid);if(anchor===null)return}
+   A().closeModal();PV.deck=did;const r=await run({op:'play',d:did,h:tid,sel:[i],ids:[cid],adj:0});if(r&&r.err)return A().toast(r.err);
+   const head=`【카드】 ${hName(tid)} 『${card.n}』${card.c!==''&&card.c!=null?' (비용 '+card.c+')':''}`;
+   if(window.OM_CUTIN)window.OM_CUTIN.fire({tok:'card:'+tid,src:card.img||'',tag:`${hName(tid)}의 카드!`,ment:`『${card.n}』`,color:colOf(card.col),line:card.t||'',gh:'CARD'});
+   if(hasA&&anchor&&BU&&BU.fireAuto){const okA=await BU.fireAuto(anchor,'pot',card.n,{auto:Object.assign({name:card.n,src:'card',text:card.x||''},card.a),quiet:true,noRoll:true,head,img:card.img||'',eff:card.x||''});if(okA!==false)return}
+   else if(hasA&&!anchor)A().toast('필드에 기준 포켓몬이 없어 구문은 건너뛰고 효과 글만 남긴다');
+   await A().sysLog(`${head}${card.x?'\n'+card.x:''}`,'battle')})}
+ return {open,absorb,phone,bindPhone,openMgr,exec,seedDb,onAck,handCount,battleHand};
 })();

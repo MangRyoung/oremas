@@ -82,4 +82,4 @@ window.OM_SP_UI=(()=>{
   else if(hasAuto(e)&&!anchor)A().toast('필드에 내 포켓몬이 없어 구문은 건너뛰고 효과 글만 남긴다');
   await A().sysLog(`${head}${body}`,'battle');return true}
 
- return {open,canOpen,owners,fire}})();
+ return {open,canOpen,owners,fire,pickAnchorFor:tid=>pickAnchor({tid})}})();
