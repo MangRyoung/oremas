@@ -35,6 +35,7 @@ GitHub Pages 정적 사이트 + Supabase(제작기와 같은 프로젝트). 설�
 ## 처음 설정 (한 번만)
 
 1. **Supabase SQL** — 대시보드 *SQL Editor* 에 `supabase/schema.sql` 전체를 붙여 넣고 Run. (제작기 `docs` 테이블은 건드리지 않는다.) schema.sql 이 바뀔 때마다 다시 Run 한다 (몇 번 돌려도 안전). 2026-10-20: `om_jset`(중간 키 자동 생성) 이 없으면 RP·지도·덱 저장이 조용히 사라진다.
+   - (2026-10-26) 그다음 `supabase/patch_2026-10-*.sql` 을 날짜 순서대로, **맨 마지막에 `patch_2026-10-26_상태나누기.sql`**. 앞의 것을 다시 돌렸으면 상태나누기도 다시 돌린다. 상태나누기 뒤에는 방에 있는 모두가 새로고침.
 2. **GitHub Pages** — 저장소 *Settings → Pages → Deploy from a branch → main / (root)*.
 3. 끝. `js/config.js` 는 제작기와 같은 프로젝트를 가리키고 있다.
 

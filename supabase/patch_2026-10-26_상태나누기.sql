@@ -11,6 +11,7 @@
 -- 옛 화면: 옛 om_set_state 는 「새로고침 해 달라」는 오류만 낸다 — 옛 화면이 배틀 · 포켓몬이 빠진 상태를 보고 덮어쓰지 못하게.
 --   ⇒ 이 SQL 을 돌린 뒤에는 방에 있는 모두가 새로고침(F5) 한 번.
 -- 여러 번 실행해도 된다. 데이터를 지우지 않는다 (옮기기만). 되돌리는 법은 맨 아래.
+-- ⚠ 이 파일을 돌린 뒤 schema.sql 이나 10-20 ~ 10-25 패치를 다시 돌리면 옛 함수 · 트리거가 돌아와 이 변경이 깨진다 — 그랬다면 이 파일을 곧바로 한 번 더 돌릴 것.
 
 -- ---------- 표 ----------
 create table if not exists public.om_part (
@@ -29,9 +30,11 @@ returns jsonb language sql stable security definer set search_path = public as $
   select case when s.data is null then null else
     s.data
     || coalesce((select jsonb_build_object('battle', p.data) from om_part p where p.room = p_room and p.k = 'battle'), '{}'::jsonb)
-    || coalesce((select jsonb_build_object('roster', coalesce(s.data->'roster', '{}'::jsonb)
-                   || jsonb_build_object('mons', coalesce(case when jsonb_typeof(s.data#>'{roster,mons}') = 'object' then s.data#>'{roster,mons}' end, '{}'::jsonb) || jsonb_object_agg(substr(p.k, 3), p.data)))
-                 from om_part p where p.room = p_room and p.k like 'm:%' having count(*) > 0), '{}'::jsonb)
+    || jsonb_build_object('roster', case when jsonb_typeof(s.data->'roster') = 'object' then s.data->'roster' else '{}'::jsonb end
+         || jsonb_build_object('mons', case
+              when jsonb_typeof(s.data#>'{roster,mons}') not in ('object','null') and not exists (select 1 from om_part p where p.room = p_room and p.k like 'm:%') then s.data#>'{roster,mons}'   -- 상자가 아닌 옛 값은 그대로
+              else coalesce(case when jsonb_typeof(s.data#>'{roster,mons}') = 'object' then s.data#>'{roster,mons}' end, '{}'::jsonb)
+                   || coalesce((select jsonb_object_agg(substr(p.k, 3), p.data) from om_part p where p.room = p_room and p.k like 'm:%'), '{}'::jsonb) end))
   end
   from om_state s where s.room = p_room
 $$;
@@ -49,19 +52,19 @@ returns void language plpgsql security definer set search_path = public as $$
 declare d jsonb;
 begin
   select data into d from om_state where room = p_room;
-  if d is null or (not (d ? 'battle') and (d #> '{roster,mons}') is null) then return; end if;
+  if d is null or (not (d ? 'battle') and jsonb_typeof(d #> '{roster,mons}') is distinct from 'object') then return; end if;
   select data into d from om_state where room = p_room for update;   -- 옮기는 동안 다른 쓰기는 기다린다
-  if not (d ? 'battle') and (d #> '{roster,mons}') is null then return; end if;
-  if jsonb_typeof(d->'battle') = 'object' then
+  if not (d ? 'battle') and jsonb_typeof(d #> '{roster,mons}') is distinct from 'object' then return; end if;
+  if d ? 'battle' then
     insert into om_part(room, k, data) values (p_room, 'battle', d->'battle') on conflict (room, k) do nothing;   -- 조각이 이미 있으면 조각이 맞다
   end if;
   if jsonb_typeof(d #> '{roster,mons}') = 'object' then
     insert into om_part(room, k, data)
-      select p_room, 'm:' || e.key, e.value from jsonb_each(d #> '{roster,mons}') e where jsonb_typeof(e.value) = 'object'
+      select p_room, 'm:' || e.key, e.value from jsonb_each(d #> '{roster,mons}') e where jsonb_typeof(e.value) <> 'null'
       on conflict (room, k) do nothing;
   end if;
   perform set_config('om.quiet', '1', true);
-  update om_state set data = (d - 'battle') #- '{roster,mons}' where room = p_room;
+  update om_state set data = case when jsonb_typeof(d #> '{roster,mons}') = 'object' then (d - 'battle') #- '{roster,mons}' else d - 'battle' end where room = p_room;
   perform set_config('om.quiet', '', true);
 end $$;
 
@@ -89,14 +92,16 @@ declare w text; nv bigint; rest jsonb; cur jsonb; seats text[]; oldv jsonb; newv
 begin
   w := om_who(p_room, p_secret);
   if w is null then raise exception '권한이 없습니다'; end if;
+  -- 방마다 한 줄씩 차례로 (예전처럼 한 줄을 고칠 때와 같은 순서 보장 · 잠금 순서: om_state → om_part)
+  perform 1 from om_state s where s.room = p_room for update;
   select s.data into rest from om_state s where s.room = p_room;
   if rest is null then raise exception '그런 방이 없습니다'; end if;
-  if rest ? 'battle' or (rest #> '{roster,mons}') is not null then   -- 아직 안 나뉜 방(새 방 · 복제한 방)이면 먼저 나눈다
+  if rest ? 'battle' or jsonb_typeof(rest #> '{roster,mons}') = 'object' then   -- 아직 안 나뉜 방(새 방 · 복제한 방)이면 먼저 나눈다
     perform public.om_split(p_room);
     select s.data into rest from om_state s where s.room = p_room;
   end if;
   newv := case when p_value is null or jsonb_typeof(p_value) = 'null' then null else p_value end;
-  box := plen = 0 or (p_path[1] = 'roster' and plen <= 2);   -- 상자째 (전체 · roster · roster.mons): 조각 여럿을 한꺼번에
+  box := plen = 0 or (p_path[1] = 'roster' and (plen = 1 or (plen = 2 and p_path[2] = 'mons')));   -- 상자째 (전체 · roster · roster.mons): 조각 여럿을 한꺼번에
   pk := case when box then null
              when p_path[1] = 'battle' then 'battle'
              when p_path[1] = 'roster' and p_path[2] = 'mons' then 'm:' || p_path[3] end;
@@ -142,12 +147,13 @@ begin
     -- 새 전체를 만들어 나머지 · 조각으로 다시 나눈다. 드문 쓰기라 모두에게 「다시 읽어」
     nfull := case when plen = 0 then coalesce(newv, '{}'::jsonb) when newv is null then cur #- p_path else public.om_jset(cur, p_path, newv) end;
     delete from om_part where room = p_room and (k like 'm:%' or (plen = 0 and k = 'battle'));
-    if plen = 0 and jsonb_typeof(nfull->'battle') = 'object' then insert into om_part(room, k, data) values (p_room, 'battle', nfull->'battle'); end if;
+    if plen = 0 and nfull ? 'battle' then insert into om_part(room, k, data) values (p_room, 'battle', nfull->'battle'); end if;
     if jsonb_typeof(nfull #> '{roster,mons}') = 'object' then
-      insert into om_part(room, k, data) select p_room, 'm:' || e.key, e.value from jsonb_each(nfull #> '{roster,mons}') e where jsonb_typeof(e.value) = 'object';
+      insert into om_part(room, k, data) select p_room, 'm:' || e.key, e.value from jsonb_each(nfull #> '{roster,mons}') e where jsonb_typeof(e.value) <> 'null';
     end if;
     perform set_config('om.quiet', '1', true);
-    update om_state set data = case when plen = 0 then (nfull - 'battle') #- '{roster,mons}' else (rest - 'roster') || case when jsonb_typeof(nfull->'roster') = 'object' then jsonb_build_object('roster', (nfull->'roster') - 'mons') else '{}'::jsonb end end,
+    update om_state set data = case when plen = 0 then (case when jsonb_typeof(nfull #> '{roster,mons}') = 'object' then (nfull - 'battle') #- '{roster,mons}' else nfull - 'battle' end)
+                                    else (rest - 'roster') || case when jsonb_typeof(nfull->'roster') = 'object' then jsonb_build_object('roster', case when jsonb_typeof(nfull #> '{roster,mons}') = 'object' then (nfull->'roster') - 'mons' else nfull->'roster' end) else '{}'::jsonb end end,
       v = v + 1, updated_at = now() where room = p_room returning v into nv;
     perform set_config('om.quiet', '', true);
     perform public.om_send(p_room, jsonb_build_object('v', nv, 'full', true));
@@ -158,10 +164,10 @@ begin
       if newv is null then delete from om_part where room = p_room and k = pk;
       else insert into om_part(room, k, data) values (p_room, pk, newv) on conflict (room, k) do update set data = excluded.data; end if;
     elsif newv is null then
-      update om_part set data = data #- sub where room = p_room and k = pk;
+      update om_part set data = data #- sub where room = p_room and k = pk and jsonb_typeof(data) in ('object','array');
     else
       insert into om_part(room, k, data) values (p_room, pk, public.om_jset('{}'::jsonb, sub, newv))
-        on conflict (room, k) do update set data = public.om_jset(om_part.data, sub, newv);
+        on conflict (room, k) do update set data = public.om_jset(case when jsonb_typeof(om_part.data) = 'object' then om_part.data else '{}'::jsonb end, sub, newv);   -- 상자가 아닌 값이면 예전 om_jset 처럼 상자로
     end if;
     perform set_config('om.quiet', '1', true);
     update om_state set v = v + 1, updated_at = now() where room = p_room returning v into nv;
@@ -292,4 +298,7 @@ end $$;
 -- ---------- 되돌리기 (필요할 때만, 아래 주석을 풀고 실행) ----------
 -- update om_state s set data = public.om_full(s.room);
 -- delete from om_part;
+-- drop function if exists public.om_put(text,text,text[],jsonb);  drop function if exists public.om_get_state(text);   -- 열려 있는 새 화면도 예전 방식으로 돌아간다
+-- drop trigger if exists om_state_notify on public.om_state;
+-- create trigger om_state_notify after update on public.om_state for each row when (old.v is distinct from new.v or old.data is distinct from new.data) execute function public.om_state_notify();
 -- 그다음 supabase/patch_2026-10-25_함께지시.sql 를 다시 실행하면 옛 om_set_state 가 돌아온다 (화면도 옛 버전으로)
