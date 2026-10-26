@@ -4245,3 +4245,5 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .rpstage .dgrp-pt .dgpt-add{align-self:center;flex:none}
 @media(max-width:760px){.rpstage .dgrp-hud{max-height:calc(100% - var(--dlgh,34%) - 14px)}}
 .dg-ret{left:50%;translate:-50% 0}
+.dg-ed label.dg-chk{display:flex!important;flex-direction:row!important;align-items:center;gap:6px;flex-wrap:wrap}
+.dg-ed label.dg-chk input{width:auto!important;flex:none;margin:0}
