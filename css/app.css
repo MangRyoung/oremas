@@ -4318,3 +4318,9 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .gccl-ac .btn{white-space:nowrap;writing-mode:horizontal-tb}
 .gccl-ac .btn.xs{padding:4px 8px;font-size:11px}
 .gccl-ac .btn.ghost{padding:4px 6px;min-width:0}
+.gccl-dz .gccl-pv{align-self:stretch;width:auto;flex:none}
+@media(max-width:640px){.gccl-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.gccl-dz .gccl-pv{align-self:center;width:80px}.gccl-ac .btn.xs{padding:4px 6px}}
+.gcclue .gccl-dz{display:grid!important;grid-template-rows:minmax(0,1fr) auto auto;justify-items:center;align-content:stretch;overflow:hidden;gap:4px;padding:6px!important}
+.gcclue .gccl-dz .gccl-pv{width:100%;height:100%;min-height:60px;aspect-ratio:auto;align-self:stretch}
+.gcclue .gccl-dz b{font-size:12px}.gcclue .gccl-dz span{font-size:10px;white-space:nowrap}
+@media(max-width:640px){.gcclue .gccl-dz{grid-template-rows:auto;grid-template-columns:80px auto;grid-auto-flow:column;align-items:center}.gcclue .gccl-dz .gccl-pv{width:80px;height:60px}.gcclue .gccl-dz span{display:none}}
