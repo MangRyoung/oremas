@@ -99,5 +99,8 @@ window.OM_STORE=(()=>{
   if(r.error){const m=String(r.error.message||r.error);if(/bucket not found|NoSuchBucket/i.test(m))throw new Error('그림 저장소(버킷 oremas)가 아직 없다 — Supabase SQL Editor 에서 supabase/schema.sql 을 다시 실행해 줘');throw err(r.error)}
   return sb().storage.from('oremas').getPublicUrl(full).data.publicUrl}
 
- return {rtReset,getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty};
+ /* 10-26 망령: 세션 노트(nt_*) 읽기 — 공개 문서는 표에서, GM 비밀구가 있으면 nt_all 로 전부 */
+ async function ntCamps(){const r=await sb().from('nt_camp').select('id,name,data,created_at').order('created_at');if(r.error)throw err(r.error);return r.data||[]}
+ async function ntDocs(camp,secret,kinds){if(secret){const rows=await rpc('nt_all',{p_camp:camp,p_secret:secret,p_since:null});return (rows||[]).filter(x=>!kinds||kinds.includes(x.kind))}let q=sb().from('nt_docs').select('kind,id,data,vis').eq('camp',camp);if(kinds)q=q.in('kind',kinds);const r=await q;if(r.error)throw err(r.error);return r.data||[]}
+ return {ntCamps,ntDocs,rtReset,getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty};
 })();
