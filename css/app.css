@@ -4150,6 +4150,8 @@ button.tag.solo:hover{border-color:var(--yel2)}
 .dg-rpcap span{font:700 9px/1 'Black Han Sans',sans-serif;letter-spacing:.25em;color:var(--dg-acc)}.dg-rpcap b{font:15px/1.2 'Black Han Sans',sans-serif}
 .dg-rpcap:empty{display:none}
 .dg-torp{position:absolute;right:8px;bottom:8px;z-index:2}
+/* 10-26 망령: 높이가 정해진 스크롤 칸 안에서 방 미리보기(aspect-ratio + overflow:hidden) 줄이 4px 로 눌려 아래 카드가 덮던 것 */
+.dg-sidewrap{grid-auto-rows:max-content}.dg-sidewrap>*{flex:none}
 .dg-sidewrap{max-height:max(380px,calc(100dvh - 200px))}
 @media(max-width:980px){.dg-bigmap{height:min(62vh,520px)}.dg-sidewrap{max-height:none}}
 /* RP 무대 위 */
