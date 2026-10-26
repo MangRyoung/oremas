@@ -812,7 +812,10 @@ window.OM_BATTLE_UI=(()=>{
  /* 10-26 망령: 【지연 (N턴)】 = 필드에 나온 턴을 1턴째로 셀 때 N번째 턴부터. 【지연 (N턴 동안)】 = 나온 턴부터 N턴 동안.
     턴이 바뀔 때마다(GM 창) 필드 포켓몬의 특성 · 소지품 · 포텐셜 글을 보고, 도달한 것은 알린다. 지연 표시가 ① 줄에 있고 구문이 있으면 N번째 턴에 자동 발동 */
  const DELAY_SEEN={};const DLY_RE=/【[^】]*지연\s*\((아군,\s*)?(\d+)\s*턴(\s*동안)?\)[^】]*】/;
- async function delayWatch(c,b){if(!c.mgr||!b||!b.started||!FX())return;const T=+b.turn||0;const key=String(b.started)+'|'+T;if(DELAY_SEEN[key])return;DELAY_SEEN[key]=1;
+ /* 10-27 망령: 자동 처리는 한 창만 — 「플레이어도 배틀 진행」이면 좌석도 진행 권한이라 창마다 따로 돌아 【지연】 이 두 번 찍혔다.
+    접속 중인 GM 창이 있으면 그중 하나(id 가 가장 작은 것), 없으면 진행 권한 좌석 중 하나만 */
+ function isLeader(c){if(!c||!c.mgr)return false;const P=(A().presList?A().presList():[]).filter(p=>p.role==='gm'||p.role==='seat');const gms=P.filter(p=>p.role==='gm');const pool=gms.length?gms:P;if(!pool.length)return true;const lead=pool.slice().sort((x,y)=>String(x.id)<String(y.id)?-1:String(x.id)>String(y.id)?1:0)[0];return !!lead.me}
+ async function delayWatch(c,b){if(!c.mgr||!b||!b.started||!FX())return;const T=+b.turn||0;const key=String(b.started)+'|'+T;if(DELAY_SEEN[key])return;if(!isLeader(c))return;if(+b.dlyT===T){DELAY_SEEN[key]=1;return}DELAY_SEEN[key]=1;await A().set(['battle','dlyT'],T);   /* dlyT: 이 턴의 지연 알림을 이미 했다 (새로고침 · 다른 창에서 또 하지 않게) */
   const notes=[];for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0||!(+m.inT))continue;const k=T-(+m.inT)+1;
    const src=[['trait',m.ability,m.abilityEff],['item',m.item,m.itemEff],...potSrc(m).map(p=>['pot',p.name,p.eff])].filter(x=>x[1]&&x[2]);
    for(const [kind,name,eff0] of src){const eff=String(eff0).replace(/<br\s*\/?>/g,'\n');const lines=eff.split(/(?=[②③④⑤])/);
@@ -1512,7 +1515,7 @@ window.OM_BATTLE_UI=(()=>{
  const FAINT_SEEN={};let faintBusy=false;
  async function faintWatch(){const c=ctx();const b=c.b;if(!c.mgr||!b.started||faintBusy)return;const bk=String(b.started)+':'+Object.keys(b.mons||{}).sort().join(',');
   if(!FAINT_SEEN[bk]){FAINT_SEEN[bk]=new Set(Object.values(b.mons||{}).filter(m=>m.hp.cur<=0).map(m=>m.id));return}
-  const seen=FAINT_SEEN[bk];/* 10-26 점검: 되살아난(HP>0) 포켓몬은 다시 빈사 감시 대상으로 */for(const m of Object.values(b.mons||{}))if(m.hp.cur>0&&seen.has(m.id))seen.delete(m.id);const neu=Object.values(b.mons||{}).filter(m=>m.hp.cur<=0&&!seen.has(m.id));if(!neu.length)return;neu.forEach(m=>seen.add(m.id));faintBusy=true;
+  const seen=FAINT_SEEN[bk];/* 10-26 점검: 되살아난(HP>0) 포켓몬은 다시 빈사 감시 대상으로 */for(const m of Object.values(b.mons||{}))if(m.hp.cur>0&&seen.has(m.id))seen.delete(m.id);const neu=Object.values(b.mons||{}).filter(m=>m.hp.cur<=0&&!seen.has(m.id));if(!neu.length)return;neu.forEach(m=>seen.add(m.id));if(!isLeader(c))return;   /* 10-27: 아군 빈사 자동 처리도 한 창만 */faintBusy=true;
   try{const RE=/아군이\s*「빈사」\s*상태가\s*되었을\s*때/;const notes=[];const doneT=new Set();
    for(const dm of neu){for(const x of Object.values(ctx().b.mons||{})){if(x.id===dm.id||!x.entry||x.hp.cur<=0||!sameT(x,dm,ctx().b))continue;
      await autoOnEntry(x.id,{passiveOnly:true});
