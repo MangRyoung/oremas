@@ -36,7 +36,7 @@ window.OM_BATTLE=(()=>{
     const oc=cmd.orderMap&&cmd.orderMap[slot];if(oc!=null&&oc!==''){const v=+oc;if(v>20)order=Math.max(order,v);else if(v<20&&order!==50)order=Math.min(order,v)}
     const pc=cmd.priorityMap&&cmd.priorityMap[slot];if(pc!=null&&pc!=='')prio+=+pc}
    prio+=+(e.prioMod||0);
-   let spd=statValue(mon,'speed',{mod:((mon.mod||{}).speed||1)*(e.scarf?1.5:1)*(e.tailwind?2:1)*(e.swamp?0.25:1)}).value;
+   let spd=statValue(mon,'speed',{mod:((mon.mod||{}).speed||1)*(e.scarf?1.5:1)*(e.tailwind?2:1)*(e.swamp?0.25:1)*(+e.spMul||1)}).value;   /* spMul: 날씨 · 필드 조건 스피드 특성 (10-26) */
    if(has(mon,'Paralysis'))spd*=(+C().campaign.value_paralysis||0.5);
    if(field.trick)spd*=-1;
    return {slot,mon,started:e.started?1:0,change:(e.cmd&&e.cmd.change)?1:0,order,prio,speed:spd,dice:d(opts,10000)}});
