@@ -71,11 +71,28 @@ window.OM_DG_UI=(()=>{
     횟수는 배틀에 올라가 있으면 배틀 쪽(쓴 만큼 줄어든 것), 아니면 시트 쪽. 0 인 칸은 흐리게. */
  function ordSrc(tid){const bt=((ST().state.battle||{}).trainers||{})[tid];return bt&&bt.orderCount?bt:(RO().trainers||{})[tid]||{}}
  function ordHTML(tid){const OD=window.OM_ORDERS;if(!OD)return '';const t=ordSrc(tid);const cnt=t.orderCount||{};
-  const one=kind=>{let ks=[];try{ks=(kind==='order'?OD.orderKeys:OD.commandKeys)(t)}catch(e){}return ks.map(k=>{const nm=kind==='order'?OD.orderName(t,k):OD.commandName(t,k);if(!nm)return '';const v=+cnt[(kind==='order'?'order_':'command_')+k]||0;return `<span class="${v?'':'z'}" title="${H(nm)} 남은 ${v}">${H((OD.KO||{})[String(k).split('@')[0]]||String(nm).slice(0,3))}${String(k).includes('@')?'<sup>+</sup>':''}<b>${v}</b></span>`}).join('')};
-  const o=one('order'),c=one('command');if(!o&&!c)return '';
-  /* 10-26 망령: 칸마다 늘어놓으니 PT 칸이 요약 노릇을 못 했다 — 남은 합계만 한 줄, 자세한 건 마우스를 올리면 */
-  const sum=h=>{const v=[...h.matchAll(/title="([^"]*) 남은 (\d+)"/g)];return {n:v.reduce((a,x)=>a+ +x[2],0),k:v.length,t:v.map(x=>x[1]+' '+x[2]).join(' · ')}};const so=sum(o),sc=sum(c);
-  return `<div class="dgpt-ord sum" title="${H((so.k?'4식: '+so.t:'')+(so.k&&sc.k?'\n':'')+(sc.k?'6령: '+sc.t:''))}">${so.k?`<i>4식</i><b>${so.n}</b>`:''}${sc.k?`<i class="c">6령</i><b>${sc.n}</b>`:''}</div>`}
+  /* 10-26 망령: 합계 한 줄 + 남은 목록은 작은 칩으로. 칩을 누르면 발동(−1) · 회복(+1) 창 */
+  const one=kind=>{let ks=[];try{ks=(kind==='order'?OD.orderKeys:OD.commandKeys)(t)}catch(e){}let n=0;const h=ks.map(k=>{const nm=kind==='order'?OD.orderName(t,k):OD.commandName(t,k);if(!nm)return '';const v=+cnt[(kind==='order'?'order_':'command_')+k]||0;n+=v;return `<span class="${v?'':'z'}" data-ord="${H(tid)}|${kind}|${H(k)}" title="${H(nm)} 남은 ${v} — 눌러서 발동 · 회복">${H((OD.KO||{})[String(k).split('@')[0]]||String(nm).slice(0,3))}${String(k).includes('@')?'<sup>+</sup>':''}<b>${v}</b></span>`}).join('');return {h,n}};
+  const o=one('order'),c=one('command');if(!o.h&&!c.h)return '';
+  return `<div class="dgpt-ord mini">${o.h?`<div><i>4식 <b>${o.n}</b></i>${o.h}</div>`:''}${c.h?`<div><i class="c">6령 <b>${c.n}</b></i>${c.h}</div>`:''}</div>`}
+ /* 4식 · 6령 칩을 누르면: 발동(−1, 효과는 손으로) · 회복(+1) · 이 칸 가득 · 전부 가득. 배틀에 올라가 있으면 배틀 쪽 횟수, 아니면 시트 쪽 */
+ function ordEdit(tid,kind,k){const OD=window.OM_ORDERS;if(!OD||!(gm()||canWalk(tid)))return;
+  const md=A().openModal('<div id="dgOe"></div>');
+  const src=()=>{const bt=((ST().state.battle||{}).trainers||{})[tid];return bt&&bt.orderCount?{t:bt,P:['battle','trainers',tid,'orderCount']}:{t:(RO().trainers||{})[tid]||{},P:['roster','trainers',tid,'orderCount']}};
+  const key=(kind==='order'?'order_':'command_')+k;
+  const maxOf=t=>{try{return +OD.fill(t,t.orderBase||1)[key]||0}catch(e){return 0}};
+  const draw=()=>{const {t}=src();const nm=kind==='order'?OD.orderName(t,k):OD.commandName(t,k);const v=+((t.orderCount||{})[key])||0,mx=maxOf(t);
+   md.querySelector('#dgOe').innerHTML=`<div class="mhead"><h2>${kind==='order'?'4식':'6령'} 『${H(nm||k)}』 <small class="dim">${H(t.name||'')}</small></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+   <div class="dgoe"><div class="dgoe-n"><b class="mono">${v}</b><span class="dim"> / ${mx||'?'} 남음</span></div>
+   <div class="dgme-row"><button class="btn pri" data-oe="use" ${v>0?'':'disabled'}>발동 (−1)</button><button class="btn ok" data-oe="add" ${mx&&v>=mx?'disabled':''}>회복 (+1)</button><button class="btn sm" data-oe="full" ${mx&&v>=mx?'disabled':''}>이 칸 가득</button><button class="btn sm ghost" data-oe="all">${kind==='order'?'4식':'6령'} 전부 가득</button></div>
+   <p class="small dim" style="margin:0">발동은 횟수만 줄이고 로그를 남긴다 — 효과는 손으로.</p></div>`};
+  draw();
+  md.addEventListener('click',async e=>{const b=e.target.closest('[data-oe]');if(!b||b.disabled)return;const {t,P}=src();const cnt=Object.assign({},t.orderCount||{});const nm=(kind==='order'?OD.orderName(t,k):OD.commandName(t,k))||k;const v=+cnt[key]||0,mx=maxOf(t);const lab=kind==='order'?'4식':'6령';let line='';
+   if(b.dataset.oe==='use'){cnt[key]=Math.max(0,v-1);line=`『${nm}』 발동 · 남은 ${cnt[key]}`}
+   else if(b.dataset.oe==='add'){cnt[key]=mx?Math.min(mx,v+1):v+1;line=`『${nm}』 회복 +1 · 남은 ${cnt[key]}`}
+   else if(b.dataset.oe==='full'){cnt[key]=mx||v;line=`『${nm}』 가득 · 남은 ${cnt[key]}`}
+   else if(b.dataset.oe==='all'){let f={};try{f=OD.fill(t,t.orderBase||1)}catch(err){}const pre=kind==='order'?'order_':'command_';for(const x in f)if(x.startsWith(pre))cnt[x]=f[x];line=`${lab} 전부 가득`}
+   await A().set(P,cnt);A().sysLog(`【${lab}】 ${t.name||''} ${line}${P[0]==='roster'?' (탐사 중)':''}`,'battle');draw()})}
  function cardChip(tid,me){const D=window.OM_DECK_UI;if(!D||!D.handCount)return '';const n=D.handCount(tid);
   return me?`<button type="button" class="dgpt-card-b${n?'':' empty'}" data-dgcard="${H(tid)}" title="손패에서 카드를 쓴다 (던전 · 배틀 밖)">🃏<b>${n}</b></button>`:(n?`<span class="dgpt-card-b ro" title="손패 ${n}장">🃏<b>${n}</b></span>`:'')}
  /* 카드 쓰기: 구문이 있는 카드는 동행 포켓몬 중 하나를 기준으로 (배틀 밖이라 구문은 효과 글로만 남는다) */
@@ -200,7 +217,7 @@ window.OM_DG_UI=(()=>{
   const rs=R(d);if(!rs[d.at]){const s=d.st&&rs[d.st]?d.st:Object.keys(rs)[0];d.at=s||''}
   stage.classList.add('dgmode');
   let bg=stage.querySelector(':scope>.dgrp-bg');if(!bg){bg=document.createElement('div');bg.className='dgrp dgrp-bg';bg.innerHTML='<div class="dg-planes"></div>';stage.prepend(bg);RPH.frame=''}
-  const hudClick=e=>{const cb=e.target.closest('[data-dgcard]');if(cb){e.stopPropagation();return useCard(cb.dataset.dgcard)}const pm=e.target.closest('[data-pm]');if(pm){e.stopPropagation();return monEdit(pm.dataset.pm)}const w=e.target.closest('[data-walk]');if(w){e.stopPropagation();return walkPick(w.dataset.walk)}const b=e.target.closest('[data-rpdg]');if(!b)return;e.stopPropagation();
+  const hudClick=e=>{const cb=e.target.closest('[data-dgcard]');if(cb){e.stopPropagation();return useCard(cb.dataset.dgcard)}const pm=e.target.closest('[data-pm]');if(pm){e.stopPropagation();return monEdit(pm.dataset.pm)}const od=e.target.closest('[data-ord]');if(od){e.stopPropagation();const [a1,a2,a3]=od.dataset.ord.split('|');return ordEdit(a1,a2,a3)}const w=e.target.closest('[data-walk]');if(w){e.stopPropagation();return walkPick(w.dataset.walk)}const b=e.target.closest('[data-rpdg]');if(!b)return;e.stopPropagation();
     if(b.dataset.rpdg==='pt'){const mn=!ptMin();try{localStorage.setItem('om_dg_pt',mn?'min':'open')}catch(err){}const pw=stage.querySelector('.dgrp-ptw');if(pw)pw._h='';rpSync(stage);return}
     if(b.dataset.rpdg==='enc'){const dd=cur();if(dd)startEnc(dd)}
     if(b.dataset.rpdg==='clue'){const dd=cur();if(!dd)return;const rr=R(dd)[dd.at];if(rr&&rr.cs){DG.clueLocal=dd.at;DG.clueHide=0;RPH.clueSig='';rpSync(stage)}else if(gm())showClue(dd,dd.at)}
@@ -273,7 +290,7 @@ window.OM_DG_UI=(()=>{
 
  /* ---------- 클릭 (탭 화면) ---------- */
  function startOptions(d){const rs=R(d),o=[];if(d.st&&rs[d.st])o.push([d.st,'입구에서 시작']);Object.entries(rs).forEach(([id,r])=>{if(r.t==='safe'&&r.s&&id!==d.st)o.push([id,'세이프룸 · '+(r.n||'')])});if(d.at&&rs[d.at]&&!o.some(x=>x[0]===d.at))o.push([d.at,'지난 위치에서 이어서']);if(!o.length){const f=Object.keys(rs)[0];if(f)o.push([f,'첫 방에서 시작'])}return o}
- function bindRoot(el){if(el._dgBound)return;el._dgBound=1;el.addEventListener('click',e=>{const cb=e.target.closest('[data-dgcard]');if(cb&&el.contains(cb)){e.stopPropagation();return useCard(cb.dataset.dgcard)}const pm=e.target.closest('[data-pm]');if(pm&&el.contains(pm)&&pm.closest('#dgRoot')){e.stopPropagation();return monEdit(pm.dataset.pm)}const w=e.target.closest('[data-walk]');if(w&&el.contains(w)&&w.closest('#dgRoot')){return walkPick(w.dataset.walk)}const b=e.target.closest('[data-a]');if(!b||!el.contains(b)||!b.closest('#dgRoot,.dg-idle'))return;act(b.dataset.a,b)})}
+ function bindRoot(el){if(el._dgBound)return;el._dgBound=1;el.addEventListener('click',e=>{const cb=e.target.closest('[data-dgcard]');if(cb&&el.contains(cb)){e.stopPropagation();return useCard(cb.dataset.dgcard)}const pm=e.target.closest('[data-pm]');if(pm&&el.contains(pm)&&pm.closest('#dgRoot')){e.stopPropagation();return monEdit(pm.dataset.pm)}const od=e.target.closest('[data-ord]');if(od&&el.contains(od)&&od.closest('#dgRoot')){e.stopPropagation();const [a1,a2,a3]=od.dataset.ord.split('|');return ordEdit(a1,a2,a3)}const w=e.target.closest('[data-walk]');if(w&&el.contains(w)&&w.closest('#dgRoot')){return walkPick(w.dataset.walk)}const b=e.target.closest('[data-a]');if(!b||!el.contains(b)||!b.closest('#dgRoot,.dg-idle'))return;act(b.dataset.a,b)})}
  async function act(k,b){const d=cur();const v=b.dataset.v;
   if(k==='pick'){DG.sel=v;return A().renderScene()}
   if(k==='torp'){try{A().goView('rp')}catch(e){}return}

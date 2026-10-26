@@ -4476,3 +4476,12 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .dgme-sec>.btn{align-self:flex-start}
 .dgme-rk span em{font-style:normal;font-family:var(--mono,monospace);min-width:22px;text-align:center}
 .dgme-rk span.up em{color:var(--ok,#3ee0a1)}.dgme-rk span.dn em{color:var(--red,#ff4a5a)}
+/* 10-26 망령: PT 의 4식/6령 — 합계 + 작은 칩 목록, 칩을 누르면 발동 · 회복 */
+.dgpt-ord.mini{display:flex;flex-direction:column;gap:2px;font-size:9px}
+.dgpt-ord.mini>div{display:flex;flex-wrap:wrap;gap:2px;align-items:center}
+.dgpt-ord.mini i{font-size:9px;padding:0 4px;margin-left:0}
+.dgpt-ord.mini i b{margin-left:2px;color:#fff}
+.dgpt-ord.mini span{padding:0 3px;font-size:9px;cursor:pointer}
+.dgpt-ord.mini span:hover{outline:1px solid var(--dg-acc,#f0c84a)}
+.dgoe{display:flex;flex-direction:column;gap:10px;min-width:min(380px,86vw)}
+.dgoe-n b{font-size:28px}
