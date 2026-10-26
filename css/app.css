@@ -4454,4 +4454,4 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 /* 10-26 망령: 배틀 대사(bsay) — 스탠딩 칸이 그림보다 넓으면(크기 150% 등) 그림이 칸 가운데에 떠서 말풍선과 사이가 벌어졌다 — 그림을 말풍선 쪽 끝에 붙인다 (오른쪽은 좌우 반전이라 같은 값) */
 .bsay.left .bsay-st,.bsay.right .bsay-st{background-position:right bottom}
 /* 10-26 망령: 던전 대사 말풍선은 조금 낮게 — 왼쪽 위 HUD(기척 · 체크) 높이를 비켜 말하는 사람 바로 위에 둘 수 있게 */
-.rpstage.dgmode .dlg.skin.sm{bottom:calc(2% + var(--dlgdy,0) * 1%)}
+.rpstage.dgmode .dlg.skin.sm{bottom:2%;margin-left:0}
