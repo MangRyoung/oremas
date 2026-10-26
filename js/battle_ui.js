@@ -220,7 +220,7 @@ window.OM_BATTLE_UI=(()=>{
     const cb=ids.length===1?cardBtn(c,ids[0]):'';return sm||cb?`<div class="shead2">${cb}<span class="sp"></span>${sm}</div>`:''})()}${items||'<div class="aempty small">트레이너 없음'+(canLoad(c)?` — <button class="btn xs pri" data-act="load" data-side="${side}">+ 파티 불러오기</button>`:' — 진행하는 사람이 파티를 불러온다')+'</div>'}${sidePanel(c,side,ready)}</div>`}
  /* 벤치 아래 빈 곳: 그 진영이 입력해 둔 지시 현황. 내 트레이너(GM 은 볼 수 있는 것 전부)는 편집 중인 지시를, 남의 것은 공개된 만큼만 */
  function cardBtn(c,tid){const D=window.OM_DECK_UI;if(!D||!D.handCount)return '';const own=c.gm||tid===c.seat||ownT(c,tid);if(!own)return '';const n=D.handCount(tid);const t=((c.b.trainers||{})[tid])||{};
-  return `<button class="btn cardbig ${n?'':'empty'}" data-act="cards" data-tid="${tid}" title="손패에서 카드를 쓴다 · 무덤(버린 카드)에서 되돌리기도 여기서"><i>🃏</i><span>카드</span><b>${n}</b></button>`}
+  return `<button class="btn xs ghost cardtg ${n?'':'empty'}" data-act="cards" data-tid="${tid}" title="손패에서 카드를 쓴다 · 무덤(버린 카드)에서 되돌리기도 여기서">🃏 카드 <b>${n}</b></button>`}
  function sidePanel(c,side,ready){const b=c.b;const trs=b.trainers||{};const ids=(((b.sides||{})[side]||{}).trainers||[]).filter(t=>trs[t]);if(!ids.length)return '';
   const mine=myTrainers(c);const ph=+b.phase||0;
   const blocks=ids.map(tid=>{const t=trs[tid];const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid&&m.entry&&m.hp.cur>0).sort((x,y)=>x.entry.localeCompare(y.entry));

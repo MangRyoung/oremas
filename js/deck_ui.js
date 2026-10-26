@@ -433,7 +433,7 @@ window.OM_DECK_UI=(()=>{
    const head=`【카드】 ${hName(tid)} 『${card.n}』${card.c!==''&&card.c!=null?' (비용 '+card.c+')':''}`;
    if(window.OM_CUTIN)window.OM_CUTIN.fire({tok:'card:'+tid,src:card.img||'',tag:`${hName(tid)}의 카드!`,ment:`『${card.n}』`,color:colOf(card.col),line:card.t||'',gh:'CARD'});
    if(hasA&&anchor&&BU&&BU.fireAuto){const okA=await BU.fireAuto(anchor,'pot',card.n,{auto:Object.assign({name:card.n,src:'card',text:card.x||''},card.a),quiet:true,noRoll:true,head,img:card.img||'',eff:card.x||''});if(okA!==false)return}
-   else if(hasA&&!anchor)A().toast('필드에 기준 포켓몬이 없어 구문은 건너뛰고 효과 글만 남긴다');
-   await A().sysLog(`${head}${card.x?'\n'+card.x:''}`,'battle')}}
+   else if(hasA&&!anchor)A().toast(o.where==='dungeon'?'배틀 밖이라 구문은 건너뛰고 효과 글만 남긴다 — HP 같은 건 시트에서 직접':'필드에 기준 포켓몬이 없어 구문은 건너뛰고 효과 글만 남긴다');
+   await A().sysLog(`${head}${card.x?'\n'+card.x:''}`,o.where==='dungeon'?'sys':'battle')}}
  return {open,absorb,phone,bindPhone,openMgr,exec,seedDb,onAck,handCount,battleHand,importMakerDecks};
 })();

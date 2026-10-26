@@ -66,7 +66,18 @@ window.OM_DG_UI=(()=>{
    const chips=w.map(id=>{const m=ms[id],h=monHp(m),p=h.c/h.mx,st=Object.keys(m.sheetStates||{}).filter(k=>k!=='Dead'&&m.sheetStates[k]);
     return `<div class="dgpt-mon${h.dead?' ko':''}"><span class="dgpt-img" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></span><span class="dgpt-mi"><b>${H(m.name)}</b><span class="dgpt-hp ${p<=.25?'low':p<=.5?'mid':''}"><i style="width:${Math.round(p*100)}%"></i></span><small>${h.dead?'빈사':h.c+'/'+h.mx}${st.length?' · '+H(st.map(stKo).join(' ')):''}</small></span></div>`}).join('');
    const add=me&&w.length<n?`<button type="button" class="dgpt-add" data-walk="${H(tid)}">＋ 동행</button>`:'';
-   return `<div class="dgpt-row${me?' mine':''}" ${me?`data-walk="${H(tid)}" title="눌러서 동행 포켓몬 고르기 (최대 ${n}체)"`:''}><div class="dgpt-h"><b>${H(t.name||'')}</b><span class="dgpt-balls">${balls}</span></div>${chips||add?`<div class="dgpt-walk">${chips}${add}</div>`:''}</div>`}).join('')}
+   return `<div class="dgpt-row${me?' mine':''}" ${me?`data-walk="${H(tid)}" title="눌러서 동행 포켓몬 고르기 (최대 ${n}체)"`:''}><div class="dgpt-h"><b>${H(t.name||'')}</b>${cardChip(tid,me)}<span class="dgpt-balls">${balls}</span></div>${ordHTML(tid)}${chips||add?`<div class="dgpt-walk">${chips}${add}</div>`:''}</div>`}).join('')}
+ /* 10-26 망령: 던전에서도 손패 카드 · 4식 6령 남은 횟수.
+    횟수는 배틀에 올라가 있으면 배틀 쪽(쓴 만큼 줄어든 것), 아니면 시트 쪽. 0 인 칸은 흐리게. */
+ function ordSrc(tid){const bt=((ST().state.battle||{}).trainers||{})[tid];return bt&&bt.orderCount?bt:(RO().trainers||{})[tid]||{}}
+ function ordHTML(tid){const OD=window.OM_ORDERS;if(!OD)return '';const t=ordSrc(tid);const cnt=t.orderCount||{};
+  const one=kind=>{let ks=[];try{ks=(kind==='order'?OD.orderKeys:OD.commandKeys)(t)}catch(e){}return ks.map(k=>{const nm=kind==='order'?OD.orderName(t,k):OD.commandName(t,k);if(!nm)return '';const v=+cnt[(kind==='order'?'order_':'command_')+k]||0;return `<span class="${v?'':'z'}" title="${H(nm)} 남은 ${v}">${H((OD.KO||{})[String(k).split('@')[0]]||String(nm).slice(0,3))}${String(k).includes('@')?'<sup>+</sup>':''}<b>${v}</b></span>`}).join('')};
+  const o=one('order'),c=one('command');if(!o&&!c)return '';
+  return `<div class="dgpt-ord">${o?`<i>4식</i>${o}`:''}${c?`<i class="c">6령</i>${c}`:''}</div>`}
+ function cardChip(tid,me){const D=window.OM_DECK_UI;if(!D||!D.handCount)return '';const n=D.handCount(tid);
+  return me?`<button type="button" class="dgpt-card-b${n?'':' empty'}" data-dgcard="${H(tid)}" title="손패에서 카드를 쓴다 (던전 · 배틀 밖)">🃏<b>${n}</b></button>`:(n?`<span class="dgpt-card-b ro" title="손패 ${n}장">🃏<b>${n}</b></span>`:'')}
+ /* 카드 쓰기: 구문이 있는 카드는 동행 포켓몬 중 하나를 기준으로 (배틀 밖이라 구문은 효과 글로만 남는다) */
+ function useCard(tid){const D=window.OM_DECK_UI;if(!D)return;D.battleHand(tid,{where:'dungeon'})}
  /* 방에 둔 야생: r.e = 시트 트레이너 id */
  const encOf=r=>{if(!r||!r.e)return null;const t=(RO().trainers||{})[r.e];if(!t)return {t:null,ms:[]};const ms=RO().mons||{};return {t,ms:(t.pids||[]).map(id=>ms[id]).filter(Boolean)}};
  const encLive=(r,isGm)=>!!(r&&r.e&&!r.c&&(isGm||(r.s&&!r.eh)));
@@ -186,7 +197,7 @@ window.OM_DG_UI=(()=>{
   stage.classList.add('dgmode');
   let bg=stage.querySelector(':scope>.dgrp-bg');if(!bg){bg=document.createElement('div');bg.className='dgrp dgrp-bg';bg.innerHTML='<div class="dg-planes"></div>';stage.prepend(bg);RPH.frame=''}
   let hud=stage.querySelector(':scope>.dgrp-hud');if(!hud){hud=document.createElement('div');hud.className='dgrp dgrp-hud';stage.append(hud);
-   hud.addEventListener('click',e=>{const w=e.target.closest('[data-walk]');if(w){e.stopPropagation();return walkPick(w.dataset.walk)}const b=e.target.closest('[data-rpdg]');if(!b)return;e.stopPropagation();
+   hud.addEventListener('click',e=>{const cb=e.target.closest('[data-dgcard]');if(cb){e.stopPropagation();return useCard(cb.dataset.dgcard)}const w=e.target.closest('[data-walk]');if(w){e.stopPropagation();return walkPick(w.dataset.walk)}const b=e.target.closest('[data-rpdg]');if(!b)return;e.stopPropagation();
     if(b.dataset.rpdg==='pt'){const mn=!ptMin();try{localStorage.setItem('om_dg_pt',mn?'min':'open')}catch(err){}hud._h='';rpSync(stage);return}
     if(b.dataset.rpdg==='enc'){const dd=cur();if(dd)startEnc(dd)}
     if(b.dataset.rpdg==='clue'){const dd=cur();if(!dd)return;const rr=R(dd)[dd.at];if(rr&&rr.cs){DG.clueLocal=dd.at;DG.clueHide=0;RPH.clueSig='';rpSync(stage)}else if(gm())showClue(dd,dd.at)}
@@ -257,7 +268,7 @@ window.OM_DG_UI=(()=>{
 
  /* ---------- 클릭 (탭 화면) ---------- */
  function startOptions(d){const rs=R(d),o=[];if(d.st&&rs[d.st])o.push([d.st,'입구에서 시작']);Object.entries(rs).forEach(([id,r])=>{if(r.t==='safe'&&r.s&&id!==d.st)o.push([id,'세이프룸 · '+(r.n||'')])});if(d.at&&rs[d.at]&&!o.some(x=>x[0]===d.at))o.push([d.at,'지난 위치에서 이어서']);if(!o.length){const f=Object.keys(rs)[0];if(f)o.push([f,'첫 방에서 시작'])}return o}
- function bindRoot(el){if(el._dgBound)return;el._dgBound=1;el.addEventListener('click',e=>{const w=e.target.closest('[data-walk]');if(w&&el.contains(w)&&w.closest('#dgRoot')){return walkPick(w.dataset.walk)}const b=e.target.closest('[data-a]');if(!b||!el.contains(b)||!b.closest('#dgRoot,.dg-idle'))return;act(b.dataset.a,b)})}
+ function bindRoot(el){if(el._dgBound)return;el._dgBound=1;el.addEventListener('click',e=>{const cb=e.target.closest('[data-dgcard]');if(cb&&el.contains(cb)){e.stopPropagation();return useCard(cb.dataset.dgcard)}const w=e.target.closest('[data-walk]');if(w&&el.contains(w)&&w.closest('#dgRoot')){return walkPick(w.dataset.walk)}const b=e.target.closest('[data-a]');if(!b||!el.contains(b)||!b.closest('#dgRoot,.dg-idle'))return;act(b.dataset.a,b)})}
  async function act(k,b){const d=cur();const v=b.dataset.v;
   if(k==='pick'){DG.sel=v;return A().renderScene()}
   if(k==='torp'){try{A().goView('rp')}catch(e){}return}
