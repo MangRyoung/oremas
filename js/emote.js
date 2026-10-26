@@ -82,8 +82,8 @@ window.OM_EMO=(()=>{
   if(e.ic){const b=document.createElement('div');b.className='emo-bub emo-'+e.ic;b.innerHTML=svg(e.ic);
    if(isStand){const img=target.querySelector('img');const tr=target.getBoundingClientRect(),ir=img?img.getBoundingClientRect():tr;const sg=(target.closest('#rpstage')||document.body).getBoundingClientRect();
     /* 머리 옆 (스탠딩 위쪽 1할 · 무대 가운데 쪽으로 비켜서). 무대 위로 넘치면 무대 안으로 내린다 */
-    const sz=Math.max(40,Math.min(88,ir.height*.12));const side=target.classList.contains('right')?-1:1;
-    let top=ir.top-tr.top+ir.height*.08;top=Math.max(top,sg.top-tr.top+sz/2+6);const cx=ir.left-tr.left+ir.width*(side>0?.78:.22);
+    const sz=Math.max(52,Math.min(120,ir.height*.16));   /* 10-26 망령: 조금 더 크게 · 살짝 아래로 */const side=target.classList.contains('right')?-1:1;
+    let top=ir.top-tr.top+ir.height*.13;top=Math.max(top,sg.top-tr.top+sz/2+6);const cx=ir.left-tr.left+ir.width*(side>0?.78:.22);
     {const rb=document.getElementById('rpbtns');if(rb){const r=rb.getBoundingClientRect(),bx=tr.left+cx;if(r.height&&bx+sz/2>r.left&&bx-sz/2<r.right)top=Math.max(top,r.bottom-tr.top+sz/2+4)}}   /* 위 버튼 줄에 가리지 않게 */
     b.style.top=top+'px';b.style.left=cx+'px';b.style.setProperty('--sz',sz+'px')}
    else{b.classList.add('emo-dlg')}
