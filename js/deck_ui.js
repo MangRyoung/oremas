@@ -429,10 +429,12 @@ window.OM_DECK_UI=(()=>{
   async function use(i){const cid=hand[i];const card=dk.cards[cid];if(!card)return;const hasA=!!(card.a&&card.a.ops&&card.a.ops.length);let anchor='';
    if(hasA&&o.pickAnchor){ov.style.visibility='hidden';anchor=await o.pickAnchor(tid);ov.style.visibility='';if(anchor===null)return}
    const big=ov.querySelector('.ho-big');if(big)big.classList.add('play');ov.classList.add('playing');await new Promise(r=>setTimeout(r,520));close();
-   PV.deck=did;const r=await run({op:'play',d:did,h:tid,sel:[i],ids:[cid],adj:0});if(r&&r.err)return A().toast(r.err);
-   const head=`【카드】 ${hName(tid)} 『${card.n}』${card.c!==''&&card.c!=null?' (비용 '+card.c+')':''}`;
+   PV.deck=did;const head=`【카드】 ${hName(tid)} 『${card.n}』${card.c!==''&&card.c!=null?' (비용 '+card.c+')':''}`;
+   /* 10-26 점검: 효과(구문)를 먼저 돌리고, 취소되면 카드도 비용도 그대로 둔다 (전엔 카드부터 소모돼 되돌릴 수 없었다) */
+   if(hasA&&anchor&&BU&&BU.fireAuto){const okA=await BU.fireAuto(anchor,'pot',card.n,{auto:Object.assign({name:card.n,src:'card',text:card.x||''},card.a),quiet:true,noRoll:true,head,img:card.img||'',eff:card.x||''});if(okA===false){A().toast('카드 사용을 취소했다 — 카드는 손패에 남는다');setTimeout(()=>battleHand(tid,o),200);return}
+    const r=await run({op:'play',d:did,h:tid,sel:[i],ids:[cid],adj:0});if(r&&r.err)return A().toast(r.err+' (효과는 이미 적용됐다)');if(window.OM_CUTIN)window.OM_CUTIN.fire({tok:'card:'+tid,src:card.img||'',tag:`${hName(tid)}의 카드!`,ment:`『${card.n}』`,color:colOf(card.col),line:card.t||'',gh:'CARD'});return}
+   const r=await run({op:'play',d:did,h:tid,sel:[i],ids:[cid],adj:0});if(r&&r.err)return A().toast(r.err);
    if(window.OM_CUTIN)window.OM_CUTIN.fire({tok:'card:'+tid,src:card.img||'',tag:`${hName(tid)}의 카드!`,ment:`『${card.n}』`,color:colOf(card.col),line:card.t||'',gh:'CARD'});
-   if(hasA&&anchor&&BU&&BU.fireAuto){const okA=await BU.fireAuto(anchor,'pot',card.n,{auto:Object.assign({name:card.n,src:'card',text:card.x||''},card.a),quiet:true,noRoll:true,head,img:card.img||'',eff:card.x||''});if(okA!==false)return}
    else if(hasA&&!anchor)A().toast(o.where==='dungeon'?'배틀 밖이라 구문은 건너뛰고 효과 글만 남긴다 — HP 같은 건 시트에서 직접':'필드에 기준 포켓몬이 없어 구문은 건너뛰고 효과 글만 남긴다');
    await A().sysLog(`${head}${card.x?'\n'+card.x:''}`,o.where==='dungeon'?'sys':'battle')}}
  return {open,absorb,phone,bindPhone,openMgr,exec,seedDb,onAck,handCount,battleHand,importMakerDecks};

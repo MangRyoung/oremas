@@ -69,7 +69,7 @@ window.OM_DG_UI=(()=>{
    return `<div class="dgpt-row${me?' mine':''}" ${me?`data-walk="${H(tid)}" title="눌러서 동행 포켓몬 고르기 (최대 ${n}체)"`:''}><div class="dgpt-h"><b>${H(t.name||'')}</b>${cardChip(tid,me)}<span class="dgpt-balls">${balls}</span></div>${ordHTML(tid)}${chips||add?`<div class="dgpt-walk">${chips}${add}</div>`:''}</div>`}).join('')}
  /* 10-26 망령: 던전에서도 손패 카드 · 4식 6령 남은 횟수.
     횟수는 배틀에 올라가 있으면 배틀 쪽(쓴 만큼 줄어든 것), 아니면 시트 쪽. 0 인 칸은 흐리게. */
- function ordSrc(tid){const bt=((ST().state.battle||{}).trainers||{})[tid];return bt&&bt.orderCount?bt:(RO().trainers||{})[tid]||{}}
+ function ordSrc(tid){const B=ST().state.battle||{};const bt=(B.trainers||{})[tid];return bt&&bt.orderCount&&B.started?bt:(RO().trainers||{})[tid]||{}}
  function ordHTML(tid){const OD=window.OM_ORDERS;if(!OD)return '';const t=ordSrc(tid);const cnt=t.orderCount||{};
   /* 10-26 망령: 합계 한 줄 + 남은 목록은 작은 칩으로. 칩을 누르면 발동(−1) · 회복(+1) 창 */
   const one=kind=>{let ks=[];try{ks=(kind==='order'?OD.orderKeys:OD.commandKeys)(t)}catch(e){}let n=0;const h=ks.map(k=>{const nm=kind==='order'?OD.orderName(t,k):OD.commandName(t,k);if(!nm)return '';const v=+cnt[(kind==='order'?'order_':'command_')+k]||0;n+=v;return `<span class="${v?'':'z'}" title="${H(nm)} 남은 ${v}">${H((OD.KO||{})[String(k).split('@')[0]]||String(nm).slice(0,3))}${String(k).includes('@')?'<sup>+</sup>':''}<b>${v}</b></span>`}).join('');return {h,n}};

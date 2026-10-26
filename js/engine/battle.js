@@ -93,12 +93,12 @@ window.OM_BATTLE=(()=>{
   for(const h of hits){
    const crit=h===2;
    const Pc=crit?P*rev:P;
-   const av=statValue(atk,atkStat,{ignore:crit&&(o.ignoreAtk===0||o.ignoreAtk===2||o.ignoreAtk===4)?-1:o.ignoreAtk,rank:crit&&+((atk.rank||{})[atkStat]||0)<0?0:undefined,mod:crit&&+((atk.mod||{})[atkStat]||1)<1?1:undefined});
+   const av=statValue(atk,atkStat,{ignore:crit&&(o.ignoreAtk===1||o.ignoreAtk===4||o.ignoreAtk===5)?-1:o.ignoreAtk,/* 10-26 점검: 급소는 공격 측 하락만 이미 지우므로 하락 코드만 버린다 (전엔 상승 코드를 버려 천진류가 급소에 무력했다) */rank:crit&&+((atk.rank||{})[atkStat]||0)<0?0:undefined,mod:crit&&+((atk.mod||{})[atkStat]||1)<1?1:undefined});
    let A=av.value*(o.scarf&&atkStat==='speed'?1.5:1);
    if(has(atk,'Paralysis')&&atkStat==='speed')A*=(+C().campaign.value_paralysis||0.5);
    /* 원더룸: 방어·특방 실수치만 맞바꾸고 랭크·배율은 원래 능력 것을 쓴다 */
    const wS=o.wonder&&(defStat==='defense'||defStat==='specialdefense')?(defStat==='defense'?'specialdefense':'defense'):defStat;
-   const dv=statValue(def,wS,{ignore:crit?0:o.ignoreDef,rank:+((def.rank||{})[defStat]||0),mod:((def.mod||{})[defStat]||1)*(o.choiceDef?1.5:1)*(o.tailwindDef&&defStat==='speed'?2:1)*(o.swampDef&&defStat==='speed'?0.25:1)});
+   const dv=statValue(def,wS,{ignore:crit?(o.ignoreDef==null||o.ignoreDef===-1?0:o.ignoreDef===3?0:o.ignoreDef===1?7:o.ignoreDef===4?6:o.ignoreDef===5?0:o.ignoreDef):o.ignoreDef,/* 급소: 방어 측 상승은 늘 무시 + 호출자가 준 무시를 합친다 */rank:+((def.rank||{})[defStat]||0),mod:((def.mod||{})[defStat]||1)*(o.choiceDef?1.5:1)*(o.tailwindDef&&defStat==='speed'?2:1)*(o.swampDef&&defStat==='speed'?0.25:1)});
    let D=dv.value*num(o.defMul,1);if(has(def,'Paralysis')&&defStat==='speed')D*=(+C().campaign.value_paralysis||0.5);
    const wallCur=crit?1:wall;
    const base=floor(floor(L*Pc*A/50)/D)*(M*wallCur)+2;

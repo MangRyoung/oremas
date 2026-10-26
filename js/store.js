@@ -90,9 +90,12 @@ window.OM_STORE=(()=>{
 
 
  /* ----- 이미지 올리기 (Storage 버킷 oremas). dataUrl(base64) 또는 Blob → 공개 주소 ----- */
+/* 10-26 용량 점검: 올리는 그림은 전부 webp 로 줄인다 (긴 변 2048 · 품질 .86 · 투명 배경 유지). gif · svg 는 그대로. 줄인 게 더 크면 원본 */
+async function shrinkUpload(blob,maxSide){try{if(!/^image\/(png|jpe?g|webp|bmp)$/i.test(blob.type||''))return blob;const bmp=await createImageBitmap(blob);const sc=Math.min(1,(maxSide||2048)/Math.max(bmp.width,bmp.height));if(sc>=1&&blob.type==='image/webp')return blob;const cv=document.createElement('canvas');cv.width=Math.max(1,Math.round(bmp.width*sc));cv.height=Math.max(1,Math.round(bmp.height*sc));cv.getContext('2d').drawImage(bmp,0,0,cv.width,cv.height);const out=await new Promise(r=>cv.toBlob(r,'image/webp',.86));return out&&out.size<blob.size?out:blob}catch(e){return blob}}
  async function uploadImage(path,src){
   let blob=src;
   if(typeof src==='string'){const r=await fetch(src);blob=await r.blob()}
+  blob=await shrinkUpload(blob,2048);   /* 10-26 용량 점검: 스탠딩 · 배경 PNG 원본(2~3MB)이 저장소의 8할이었다 */
   const ext=(blob.type||'').includes('png')?'png':(blob.type||'').includes('webp')?'webp':(blob.type||'').includes('gif')?'gif':'jpg';
   /* 10-23 이그레스: 올릴 때마다 새 이름 → 브라우저가 1년 동안 다시 받지 않아도 된다 */
   const full=path+'_'+Date.now().toString(36)+'.'+ext;
@@ -103,5 +106,5 @@ window.OM_STORE=(()=>{
  /* 10-26 망령: 세션 노트(nt_*) 읽기 — 공개 문서는 표에서, GM 비밀구가 있으면 nt_all 로 전부 */
  async function ntCamps(){const r=await sb().from('nt_camp').select('id,name,data,created_at').order('created_at');if(r.error)throw err(r.error);return r.data||[]}
  async function ntDocs(camp,secret,kinds){if(secret){const rows=await rpc('nt_all',{p_camp:camp,p_secret:secret,p_since:null});return (rows||[]).filter(x=>!kinds||kinds.includes(x.kind))}let q=sb().from('nt_docs').select('kind,id,data,vis').eq('camp',camp);if(kinds)q=q.in('kind',kinds);const r=await q;if(r.error)throw err(r.error);return r.data||[]}
- return {ntCamps,ntDocs,rtReset,getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty};
+ return {shrinkUpload,ntCamps,ntDocs,rtReset,getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty};
 })();
