@@ -644,8 +644,8 @@ function renderScene(){reconcileNodes();
  /* GM 이 무대(RP/배틀)를 바꾸면 모두 그쪽으로 따라간다. 그 밖의 탭(시트·관계도·캘린더·제보)은 각자 본다 */
  if(scene()!==lastScene){lastScene=scene();VIEW=scene()}
  if(!VIEW)VIEW=scene();
- const tabs=$('#sceneTabs');if(tabs){const DGU=window.OM_DG_UI,dgOn=!!(DGU&&DGU.on());   /* 10-26 던전 탭 (dungeon_ui.js): GM 에게는 늘, 플레이어에게는 던전에 들어가 있을 때만 */
-  tabs.innerHTML=VIEWS.filter(([k])=>k!=='dungeon'||(DGU&&(ST.role==='gm'||dgOn))).map(([k,n])=>`<button data-s="${k}" class="${VIEW===k?'on':''} ${scene()===k||(k==='dungeon'&&dgOn)?'stage':''} ${k==='dungeon'&&dgOn&&VIEW!=='dungeon'?'dgnew':''}" title="${scene()===k?'지금 무대':k==='dungeon'&&dgOn?'던전 탐색 중':''}">${n}</button>`).join('')+(ST.role==='gm'?`<button class="btn xs ghost" id="stageBtn" title="모두를 이 탭으로 부른다">무대로</button>`:'');
+ const tabs=$('#sceneTabs');if(tabs){const DGU=window.OM_DG_UI,dgOn=!!(DGU&&DGU.on());   /* 10-26 던전 탭 (dungeon_ui.js): GM 전용 — 플레이어는 RP 무대의 작은 지도(크게 펼치기)로 본다 */
+  tabs.innerHTML=VIEWS.filter(([k])=>k!=='dungeon'||(DGU&&ST.role==='gm')).map(([k,n])=>`<button data-s="${k}" class="${VIEW===k?'on':''} ${scene()===k||(k==='dungeon'&&dgOn)?'stage':''} ${k==='dungeon'&&dgOn&&VIEW!=='dungeon'?'dgnew':''}" title="${scene()===k?'지금 무대':k==='dungeon'&&dgOn?'던전 탐색 중':''}">${n}</button>`).join('')+(ST.role==='gm'?`<button class="btn xs ghost" id="stageBtn" title="모두를 이 탭으로 부른다">무대로</button>`:'');
   tabs.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>{VIEW=b.dataset.s;renderScene()});
   const sb=$('#stageBtn');if(sb)sb.onclick=()=>{if(VIEW==='rp'||VIEW==='battle')set(['scene'],VIEW);else toast('무대는 RP 나 배틀만 될 수 있어')}}
  const el=$('#scene');if(!el)return;

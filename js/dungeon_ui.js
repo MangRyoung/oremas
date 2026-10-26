@@ -85,18 +85,21 @@ window.OM_DG_UI=(()=>{
   const[x,y,w,h]=box,r=rng(seed),cl=[];for(let i=0;i<26;i++){const cr=w*(.08+r()*.14);cl.push(`<circle cx="${(x+r()*w).toFixed(0)}" cy="${(y+r()*h).toFixed(0)}" r="${cr.toFixed(0)}" fill="url(#dgCl)" opacity="${(.25+r()*.4).toFixed(2)}"/>`)}
   return`<defs><radialGradient id="dgHo"><stop offset="0" stop-color="#000"/><stop offset=".5" stop-color="#000"/><stop offset="1" stop-color="#fff"/></radialGradient><radialGradient id="dgCl"><stop offset="0" stop-color="#9aa8c8"/><stop offset="1" stop-color="#9aa8c8" stop-opacity="0"/></radialGradient><mask id="dgFm" maskUnits="userSpaceOnUse" x="${x-50}" y="${y-50}" width="${w+100}" height="${h+100}"><rect x="${x-50}" y="${y-50}" width="${w+100}" height="${h+100}" fill="#fff"/>${holes.map(([hx,hy,hr])=>`<circle cx="${hx.toFixed(0)}" cy="${hy.toFixed(0)}" r="${hr}" fill="url(#dgHo)"/>`).join('')}</mask></defs><g mask="url(#dgFm)" opacity="${isGm?.32:1}"><rect x="${x-50}" y="${y-50}" width="${w+100}" height="${h+100}" fill="#06080f" opacity=".9"/>${cl.join('')}</g>${asks.map(([ax,ay])=>`<text class="dg-ask" x="${ax.toFixed(0)}" y="${ay.toFixed(0)}">?</text>`).join('')}<g class="dg-labels">${lab}</g>`}
 
- /* ---------- 화면 ---------- */
- const mapMode=()=>{try{return localStorage.getItem('om_dg_map')||''}catch(e){return''}};
- function shell(){return`<div class="dg" id="dgRoot"><div class="dg-layout"><div class="dg-stage" id="dgStage"><div class="dg-planes"></div><div class="dg-hud" id="dgHud"></div>
-  <div class="dg-dock ${mapMode()}" id="dgDock"><div class="dg-dock-tools"><button type="button" data-a="mapMode" data-v="big" title="지도 크게 보기 / 원래대로">⤢</button><button type="button" data-a="mapMode" data-v="min" title="지도 접기 / 펴기">▾</button></div>
-  <div class="dg-map3d" id="dgMap"><div class="dg-tilt"><svg id="dgIso" preserveAspectRatio="xMidYMid meet"></svg><svg class="dg-fog" id="dgFog" preserveAspectRatio="xMidYMid meet"></svg></div><div class="dg-haze"></div><div class="dg-map-cap" id="dgCap"></div></div></div></div>
-  <div class="dg-sidewrap"><div class="dg-side" id="dgSide"></div><div class="dg-legend" id="dgLegend"></div></div></div></div>`}
+ /* ---------- 화면 ----------
+   10-26 망령: 던전 칸이 아래 여백만 남기고 미니맵이 배경을 가렸다 + 던전 안에서도 화자 바꾸기 · 스탠딩 대사가 돼야 한다
+   → 탐색 중에는 RP 무대가 곧 던전이다: 방 화면을 무대 배경으로 깔고(스탠딩 · 대사 · 입력은 RP 그대로), 왼쪽 위에 장소 · 경계도, 오른쪽에 작은 지도(접기 가능).
+   → 「던전」 탭은 큰 지도 + 방 미리보기 + GM 조작 칸 (지도가 화면 높이를 꽉 채운다). */
+ const mapMode=()=>{try{return localStorage.getItem('om_dg_rpmap')||''}catch(e){return''}};
+ const isNarrow=()=>{try{return matchMedia('(max-width:760px)').matches}catch(e){return false}};
+ function shell(){return`<div class="dg" id="dgRoot"><div class="dg-layout">
+  <div class="dg-main"><div class="dg-map3d dg-bigmap" id="dgMap"><div class="dg-tilt"><svg id="dgIso" preserveAspectRatio="xMidYMid meet"></svg><svg class="dg-fog" id="dgFog" preserveAspectRatio="xMidYMid meet"></svg></div><div class="dg-haze"></div><div class="dg-hud" id="dgHud"></div><div class="dg-map-cap" id="dgCap"></div></div><div class="dg-legend" id="dgLegend"></div></div>
+  <div class="dg-sidewrap"><div class="dg-roomprev" id="dgStage"><div class="dg-planes"></div><div class="dg-rpcap" id="dgRpCap"></div><button type="button" class="btn sm pri dg-torp" data-a="torp" title="방 화면을 배경으로 스탠딩 · 대사">🎭 RP 무대로</button></div><div class="dg-side" id="dgSide"></div></div></div></div>`}
  function frameHTML(d){const r=R(d)[d.at],t=ty(r&&r.t),src=r&&r.b?String(r.b):'';
   if(src)return[`img:${d.at}|${src}`,`<img src="${H(src)}" alt="${H((r&&r.n)||t.k)}" decoding="async">`];
   return[`fb:${d.at}|${r&&r.t}`,`<div class="dg-fb-room"><i class="dg-fb-ceil"></i><i class="dg-fb-wall l"></i><i class="dg-fb-wall r"></i><i class="dg-fb-back"></i><i class="dg-fb-floor"></i></div><b class="dg-fb-ic">${t.ic}</b><span class="dg-fb-en">${t.en}</span>`]}
  /* 던전이 꺼져 있을 때 (GM 만 보는 화면): 준비한 던전 목록 · 진입 · 관리 */
  function idleHTML(){const ds=Object.entries(all());
-  return `<div class="dg dg-idle"><div class="dg-idle-head"><div><small>DUNGEON</small><h2>던전</h2><p>방을 이어 붙인 지도 위를 일행이 한 칸씩 나아간다. 안개 속 방은 GM 이 공개하거나 일행이 들어가야 보인다. 진입하면 모두의 화면이 이 탭으로 넘어온다.</p></div><div class="dg-acts"><button class="btn sm pri" data-a="manage">🛠 던전 관리</button></div></div>
+  return `<div class="dg dg-idle"><div class="dg-idle-head"><div><small>DUNGEON</small><h2>던전</h2><p>방을 이어 붙인 지도 위를 일행이 한 칸씩 나아간다. 안개 속 방은 GM 이 공개하거나 일행이 들어가야 보인다. 진입하면 모두의 RP 무대가 던전 방 화면으로 바뀌고(스탠딩 · 대사는 그대로), 이 탭에서 큰 지도와 GM 조작을 한다. 지도 핀에 던전을 걸어 두면 핀에서 바로 진입할 수 있다.</p></div><div class="dg-acts"><button class="btn sm pri" data-a="manage">🛠 던전 관리</button></div></div>
    ${ds.length?`<div class="dg-idle-list">${ds.map(([id,d])=>{const o=startOptions(d);const n=Object.keys(R(d)).length;return `<div class="dg-card"><h4>${H(d.n||'이름 없는 던전')} <small>방 ${n}개</small></h4>${d.o?`<span class="dg-chip">주인 · ${H(d.o)}</span>`:''}${d.a?`<span class="dg-chip">${H(d.a)}</span>`:''}${d.d?`<span class="dg-chip on">기한 · ${H(d.d)}</span>`:''}${mapLoc(id)}<div class="dg-acts">${o.map(([r,l])=>`<button class="btn sm pri" data-a="enter" data-v="${H(id)}" data-s="${H(r)}">⚔ ${H(l)}</button>`).join('')||'<span class="small dim">방이 없다 — 던전 관리에서 만든다</span>'}</div></div>`}).join('')}</div>`:`<div class="dg-card"><p>아직 던전이 없다. <b>던전 관리</b>에서 새로 만들거나 <b>샘플 던전</b>으로 시작해 봐.</p></div>`}</div>`}
  function render(el){if(!el)return;
   const d=cur();
@@ -104,23 +107,49 @@ window.OM_DG_UI=(()=>{
   el._dgIdle=null;
   if(!$('#dgRoot',el)){el.innerHTML=shell();DG.frame='';DG.mapSig=''}
   bindRoot(el);paint(el,d)}
+ /* 방 화면 바꾸기 (던전 탭 미리보기 · RP 무대 배경 공용). hold = {frame:키} */
+ function paintFrame(planes,d,hold){const room=R(d)[d.at],t=ty(room&&room.t);const [key,inner]=room?frameHTML(d):['none','<div class="dg-empty"><strong>DUNGEON</strong><small>GM 이 던전 관리에서 방을 만들면 여기에 보인다.</small></div>'];
+  if(!planes||hold.frame===key)return;const old=planes.lastElementChild,next=document.createElement('div');next.className='dg-frame'+(key.startsWith('fb:')?' dg-fb':'');next.style.setProperty('--c',t.c);next.innerHTML=inner;
+  const anim=!!old&&!matchMedia('(prefers-reduced-motion:reduce)').matches;planes.replaceChildren();if(anim){old.className=old.className.replace(/\b(in|out)\b/g,'')+' out';planes.append(old);setTimeout(()=>old.remove(),620)}
+  if(anim)next.classList.add('in');planes.append(next);hold.frame=key}
+ function hudHTML(d,lockBig){const room=R(d)[d.at],t=ty(room&&room.t),al=clamp(+d.al||0,0,100),lv=lvOf(al);
+  return `${room?`<div class="dg-loc"><span>${H(t.en)}</span><b>${H(room.n||t.k)}</b></div><div class="dg-type" style="--c:${t.c}">${t.ic} ${H(t.k)} · ${H(d.n||'이름 없는 던전')}</div>`:''}<div class="dg-meter lv${lv}" style="--p:${al/100}"><small>SECURITY</small><b>${al}<em>%</em></b><i></i><span>${LV[lv][1]} · ${LV[lv][2]}</span></div>${lv===3&&lockBig?'<div class="dg-lock"><strong>LOCKDOWN</strong><span>강제 퇴출</span></div>':''}`}
+ function paintMap(root,d,isGm,hold,mini){const rs=R(d);const sig=JSON.stringify([d.id,isGm,d.at,DG.sel,rs,d.l,!!mini]);if(hold.mapSig===sig)return;hold.mapSig=sig;
+  const m=mapBuild(d,isGm),iso=root.querySelector('.dg-iso'),fog=root.querySelector('.dg-fog');if(iso&&fog){const w=m.box[2],tl=iso.parentElement;const k=mini?1.5:1;tl.style.setProperty('--nm',(Math.max(15,w*.026)*k).toFixed(0)+'px');tl.style.setProperty('--ic',(Math.max(24,w*.034)*k).toFixed(0)+'px');iso.setAttribute('viewBox',m.vb);fog.setAttribute('viewBox',m.vb);iso.innerHTML=m.svg;fog.innerHTML=fogBuild(m.box,m.holes,d.id,isGm,m.asks,m.lab)}
+  const seen=Object.values(rs).filter(r=>r.s).length;const cap=root.querySelector('.dg-map-cap');if(cap)setH(cap,`<b>MAP</b>${isGm?`방 ${Object.keys(rs).length}개 · 공개 ${seen}개`:`탐색한 방 ${seen}개`}`);return true}
  function paint(el,d){
   const isGm=gm(),rs=R(d);
   if(!rs[d.at]){const s=d.st&&rs[d.st]?d.st:Object.keys(rs)[0];d.at=s||''}
-  const room=rs[d.at],t=ty(room&&room.t),al=clamp(+d.al||0,0,100),lv=lvOf(al);
+  const al=clamp(+d.al||0,0,100),lv=lvOf(al);
   if(!DG.sel||!rs[DG.sel]||!isGm&&!rs[DG.sel].s&&DG.sel!==d.at)DG.sel=d.at;
-  const planes=$('#dgStage .dg-planes',el),[key,inner]=room?frameHTML(d):['none','<div class="dg-empty"><strong>DUNGEON</strong><small>GM 이 던전 관리에서 방을 만들면 여기에 보인다.</small></div>'];
-  if(planes&&DG.frame!==key){const old=planes.lastElementChild,next=document.createElement('div');next.className='dg-frame'+(key.startsWith('fb:')?' dg-fb':'');next.style.setProperty('--c',t.c);next.innerHTML=inner;
-   const anim=!!old&&!matchMedia('(prefers-reduced-motion:reduce)').matches;planes.replaceChildren();if(anim){old.className=old.className.replace(/\b(in|out)\b/g,'')+' out';planes.append(old);setTimeout(()=>old.remove(),620)}
-   if(anim)next.classList.add('in');planes.append(next);DG.frame=key}
-  setH($('#dgHud',el),`${room?`<div class="dg-loc"><span>${H(t.en)}</span><b>${H(room.n||t.k)}</b></div><div class="dg-type" style="--c:${t.c}">${t.ic} ${H(t.k)} · ${H(d.n||'이름 없는 던전')}</div>`:''}<div class="dg-meter lv${lv}" style="--p:${al/100}"><small>SECURITY</small><b>${al}<em>%</em></b><i></i><span>${LV[lv][1]} · ${LV[lv][2]}</span></div>${lv===3?'<div class="dg-lock"><strong>LOCKDOWN</strong><span>강제 퇴출</span></div>':''}`);
-  const sig=JSON.stringify([d.id,isGm,d.at,DG.sel,rs,d.l]);
-  if(DG.mapSig!==sig){DG.mapSig=sig;const m=mapBuild(d,isGm),iso=$('#dgIso',el),fog=$('#dgFog',el);if(iso&&fog){const w=m.box[2],tl=iso.parentElement;tl.style.setProperty('--nm',Math.max(15,w*.026).toFixed(0)+'px');tl.style.setProperty('--ic',Math.max(24,w*.034).toFixed(0)+'px');iso.setAttribute('viewBox',m.vb);fog.setAttribute('viewBox',m.vb);iso.innerHTML=m.svg;fog.innerHTML=fogBuild(m.box,m.holes,d.id,isGm,m.asks,m.lab)}
-   const seen=Object.values(rs).filter(r=>r.s).length;setH($('#dgCap',el),`<b>MAP</b>${isGm?`방 ${Object.keys(rs).length}개 · 공개 ${seen}개`:`탐색한 방 ${seen}개`}`);
-   const types=[...new Set(Object.entries(rs).filter(([id,r])=>isGm||r.s||id===d.at).map(([,r])=>r.t in TY?r.t:'room'))];
-   setH($('#dgLegend',el),types.map(k=>`<span style="--c:${TY[k].c}"><i>${TY[k].ic}</i> ${TY[k].k}</span>`).join('')+'<span>◆ 일행 위치</span>')}
+  paintFrame($('#dgStage .dg-planes',el),d,DG);
+  {const room=rs[d.at],t=ty(room&&room.t);setH($('#dgRpCap',el),room?`<span>${H(t.en)}</span><b>${H(room.n||t.k)}</b>`:'')}
+  setH($('#dgHud',el),hudHTML(d,true));
+  const mp=$('#dgMap',el);if(mp){$('#dgIso',el).classList.add('dg-iso');if(paintMap(mp,d,isGm,DG,false)){const types=[...new Set(Object.entries(rs).filter(([id,r])=>isGm||r.s||id===d.at).map(([,r])=>r.t in TY?r.t:'room'))];
+   setH($('#dgLegend',el),types.map(k=>`<span style="--c:${TY[k].c}"><i>${TY[k].ic}</i> ${TY[k].k}</span>`).join('')+'<span>◆ 일행 위치</span>')}}
   tiltBind(el);
   setH($('#dgSide',el),side(d,isGm,al,lv))}
+ /* ---------- RP 무대 위 던전 (rp_ui render 가 부른다) ---------- */
+ const RPH={frame:'',mapSig:''};
+ function rpSync(stage){if(!stage)return;const d=cur();
+  if(!d){if(stage.classList.contains('dgmode')){stage.classList.remove('dgmode');stage.querySelectorAll(':scope>.dgrp').forEach(x=>x.remove());RPH.frame='';RPH.mapSig=''}return}
+  const rs=R(d);if(!rs[d.at]){const s=d.st&&rs[d.st]?d.st:Object.keys(rs)[0];d.at=s||''}
+  stage.classList.add('dgmode');
+  let bg=stage.querySelector(':scope>.dgrp-bg');if(!bg){bg=document.createElement('div');bg.className='dgrp dgrp-bg';bg.innerHTML='<div class="dg-planes"></div>';stage.prepend(bg);RPH.frame=''}
+  let hud=stage.querySelector(':scope>.dgrp-hud');if(!hud){hud=document.createElement('div');hud.className='dgrp dgrp-hud';stage.append(hud)}
+  let dock=stage.querySelector(':scope>.dgrp-dock');
+  if(!dock){dock=document.createElement('div');const mm=mapMode()||(isNarrow()?'min':'');dock.className='dgrp dgrp-dock '+mm;
+   dock.innerHTML=`<div class="dg-dock-tools"><button type="button" data-rpdg="min" title="지도 접기 / 펴기">▾</button><button type="button" data-rpdg="big" title="지도 크게 / 작게">⤢</button>${gm()?'<button type="button" data-rpdg="tab" title="던전 탭 (GM 조작)">🛠</button>':''}</div><button type="button" class="dgrp-mapbtn" data-rpdg="min" title="지도 펴기">MAP</button><div class="dg-map3d dgrp-map"><div class="dg-tilt"><svg class="dg-iso" preserveAspectRatio="xMidYMid meet"></svg><svg class="dg-fog" preserveAspectRatio="xMidYMid meet"></svg></div><div class="dg-map-cap"></div></div>`;
+   stage.append(dock);RPH.mapSig='';
+   /* ▾ 접기 · ⤢ 무대 위에서 크게 (플레이어는 던전 탭이 없으니 여기서 본다) · 🛠 던전 탭 (GM) · 방을 누르면 그 방 정보 */
+   dock.addEventListener('click',e=>{const nd=e.target.closest('.dg-node');if(nd){e.stopPropagation();const dd=cur();const r=dd&&R(dd)[nd.dataset.v];if(r){const t=ty(r.t);A().toast(`${t.ic} ${r.n||t.k} · ${t.k}${nd.dataset.v===dd.at?' · ◆ 일행 위치':''} — ${t.r}`)}return}
+    const b=e.target.closest('[data-rpdg]');if(!b){if(!dock.classList.contains('big')&&e.target.closest('.dgrp-map')){dock.classList.add('big');RPH.mapSig=''}return}e.stopPropagation();const k=b.dataset.rpdg;
+    if(k==='min'){const m=dock.classList.contains('min')?'open':'min';dock.classList.toggle('min',m==='min');dock.classList.remove('big');try{localStorage.setItem('om_dg_rpmap',m)}catch(err){}if(m==='open'){RPH.mapSig='';rpSync(stage)}return}
+    if(k==='big'){dock.classList.toggle('big');RPH.mapSig='';return}
+    try{A().goView('dungeon')}catch(err){}})}
+  paintFrame(bg.querySelector('.dg-planes'),d,RPH);
+  setH(hud,hudHTML(d,false));
+  if(!dock.classList.contains('min'))paintMap(dock,d,gm(),RPH,true)}
  function side(d,isGm,al,lv){
   const rs=R(d),id=DG.sel,r=rs[id],t=ty(r&&r.t),here=id===d.at;
   const meta=`<div class="dg-card"><h4>${H(d.n||'이름 없는 던전')} <small>DUNGEON</small></h4>${d.o?`<span class="dg-chip">주인 · ${H(d.o)}</span>`:''}${d.a?`<span class="dg-chip">${H(d.a)}</span>`:''}${d.d?`<span class="dg-chip on">기한 · ${H(d.d)}</span>`:''}${mapLoc(d.id)}
@@ -141,7 +170,7 @@ window.OM_DG_UI=(()=>{
   {const sg=JSON.stringify(D0());if(DG.edOpen&&sg!==DG.edSig&&!DG.drag&&!typingInModal())edDraw();DG.edSig=sg}
   if(!p||p.room!==s.room)return;   /* 방에 막 들어온 첫 상태: 컷인 없음 */
   if(p.mode!==s.mode||p.did!==s.did){DG.sel='';
-   if(s.mode==='dungeon'){cut('INFILTRATION','던전 진입',d.n||'','');try{A().goView('dungeon')}catch(e){}}
+   if(s.mode==='dungeon'){cut('INFILTRATION','던전 진입',d.n||'','');try{A().goView('rp')}catch(e){}}   /* 탐색은 RP 무대에서 (방 화면이 배경) — 큰 지도는 던전 탭 */
    else{cut('ESCAPE','던전 귀환','무대로 돌아왔다','out');try{if(A().view==='dungeon'&&!gm())A().goView('')}catch(e){}}
    return}
   if(s.mode==='dungeon'){const a=lvOf(p.al),b=lvOf(s.al);if(b>a)cut('SECURITY',b===3?'강제 퇴출':'경계도 '+LV[b][1],`${s.al}% · ${LV[b][3]}`,b===3?'lock':'warn')}}
@@ -152,7 +181,7 @@ window.OM_DG_UI=(()=>{
  function bindRoot(el){if(el._dgBound)return;el._dgBound=1;el.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b||!el.contains(b)||!b.closest('#dgRoot,.dg-idle'))return;act(b.dataset.a,b)})}
  async function act(k,b){const d=cur();const v=b.dataset.v;
   if(k==='pick'){DG.sel=v;return A().renderScene()}
-  if(k==='mapMode'){const m=mapMode()===v?'':v;try{localStorage.setItem('om_dg_map',m)}catch(err){}const dock=$('#dgDock');if(dock)dock.className='dg-dock '+m;return}
+  if(k==='torp'){try{A().goView('rp')}catch(e){}return}
   if(!gm())return;
   if(k==='manage'){if(d)DG.ed=d.id;return openEd()}
   if(k==='enter'){const id=v,s=b.dataset.s,dd=all()[id];if(!dd||!R(dd)[s])return;const p=P0(id);if(await upd({field:{mode:'dungeon',did:id,t:Date.now()},[p+'at']:s,[p+'r/'+s+'/s']:1,[p+'al']:0})){notice(`⚔ 던전 진입 — ${dd.n||'던전'}`)}return}
@@ -210,6 +239,9 @@ window.OM_DG_UI=(()=>{
    if(g.rid){if(DG.edMode==='link')return edLink(g.rid);DG.edSel=DG.edSel===g.rid?'':g.rid;return edDraw()}
    if(DG.edMode==='move')return edAdd({x:g.x,y:g.y});DG.edFrom='';edDraw()});
   svg.addEventListener('pointercancel',()=>{DG.drag=null})}
+ /* 10-26 용량 점검: 방 배경은 원본(수 MB PNG)을 그대로 올리지 않고 1920×1080 안으로 줄여 webp 로 — 방에 들어올 때마다 모두가 받으니 Supabase 전송량(무료 월 5GB)을 아낀다 */
+ async function shrinkImg(f,W,Hh){try{if(!/^image\/(png|jpe?g|webp|bmp)$/i.test(f.type||''))return f;const bmp=await createImageBitmap(f);const sc=Math.min(1,W/bmp.width,Hh/bmp.height);const cv=document.createElement('canvas');cv.width=Math.max(1,Math.round(bmp.width*sc));cv.height=Math.max(1,Math.round(bmp.height*sc));cv.getContext('2d').drawImage(bmp,0,0,cv.width,cv.height);
+  const bl=await new Promise(r=>cv.toBlob(r,'image/webp',.85));return bl&&bl.size<f.size?bl:f}catch(e){return f}}
  async function edAct(k,b){const d=edD();
   if(k==='close'){A().closeModal();DG.edOpen=false;return A().renderScene()}
   if(k==='mode'){DG.edMode=b.dataset.v;DG.edFrom='';return edDraw()}
@@ -227,12 +259,12 @@ window.OM_DG_UI=(()=>{
   if(k==='start'){await upd({[P0(d.id)+'st']:id});return edDraw()}
   if(k==='seen'){await upd({[P0(d.id)+'r/'+id+'/s']:r.s?null:1});return edDraw()}
   if(k==='imgdel'){await upd({[P0(d.id)+'r/'+id+'/b']:null});return edDraw()}
-  if(k==='img'){const f=b.files&&b.files[0];if(!f)return;A().toast('올리는 중…');try{const u=await DBS().uploadImage(`rooms/${ST().room}/dg_${d.id}_${id}_${Date.now().toString(36)}`,f);if(u&&await upd({[P0(d.id)+'r/'+id+'/b']:u}))A().toast('방 배경을 바꿨다');edDraw()}catch(e){A().toast('그림을 올리지 못했다: '+e.message)}}}
+  if(k==='img'){const f=b.files&&b.files[0];if(!f)return;A().toast('올리는 중…');try{const u=await DBS().uploadImage(`rooms/${ST().room}/dg_${d.id}_${id}_${Date.now().toString(36)}`,await shrinkImg(f,1920,1080));if(u&&await upd({[P0(d.id)+'r/'+id+'/b']:u}))A().toast('방 배경을 바꿨다');edDraw()}catch(e){A().toast('그림을 올리지 못했다: '+e.message)}}}
 
  /* 지도 연계 (10-26 망령): 지도 장소에 던전을 걸어 두고 그 핀에서 바로 진입 — rp_ui 의 지도 메뉴가 부른다 */
  function list(){return Object.entries(all()).map(([id,d])=>({id,n:d.n||'이름 없는 던전',rooms:Object.keys(R(d)).length,opts:startOptions(d)}))}
  async function enter(id,s,from){const d=all()[id];if(!d||!gm())return false;const o=startOptions(d);s=s&&R(d)[s]?s:(o[0]||[])[0];if(!s)return A().toast('던전에 방이 없다 — 던전 관리에서 만든다'),false;
   const p=P0(id);if(await upd({field:{mode:'dungeon',did:id,t:Date.now()},[p+'at']:s,[p+'r/'+s+'/s']:1,[p+'al']:0})){notice(`⚔ 던전 진입 — ${d.n||'던전'}${from?' ('+from+')':''}`);return true}return false}
  function nameOf(id){const d=all()[id];return d?(d.n||'이름 없는 던전'):''}
- return {render,onState,on,cur,TY,LV,lvOf,list,enter,nameOf};
+ return {render,rpSync,onState,on,cur,TY,LV,lvOf,list,enter,nameOf};
 })();

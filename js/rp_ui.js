@@ -156,7 +156,7 @@ window.OM_RP_UI=(()=>{
   {let mo=dlg.querySelector('.dq-more');const n=cap.text?0:DQ.q.length;if(n){if(!mo){mo=document.createElement('i');mo.className='dq-more';dlg.appendChild(mo)}mo.textContent=`+${n}줄`}else if(mo)mo.remove()}
   dlg.onclick=()=>{if(!cap.text)dqSkip(dlg)};dlg.classList.toggle('dqable',!cap.text&&DQ.phase!=='done');
   dlg.classList.toggle('skin',!!skin);for(const v of ['c','l','r','m'])dlg.classList.toggle('s'+v,!!skin&&skin.v===v);dlg.classList.toggle('flip',!!(skin&&skin.flip));dlg.classList.toggle('mid',!!(skin&&skin.mid));dlg.classList.toggle('nl',!!(skin&&skin.side==='l'));dlg.classList.toggle('nr',!!(skin&&skin.side==='r'));dlg.style.setProperty('--bub',skin?`url('${cssu(skin.src)}')`:'');bubStyle(dlg,stOf(bub.st));fitDlg(dlg);
-  syncStands($('#stands',el),slots,manual);try{emoTick(qRow||lastChat)}catch(e){console.warn('emo',e)}
+  syncStands($('#stands',el),slots,manual);try{if(window.OM_DG_UI)window.OM_DG_UI.rpSync($('#rpstage',el))}catch(e){console.warn('dungeon',e)}try{emoTick(qRow||lastChat)}catch(e){console.warn('emo',e)}
   /* 무대 아래: 칸마다 바뀐 것만 다시 그린다 — 대사 입력칸은 그대로 두어야 치는 중에 끊기지 않는다 (한글 조합·포커스 유지) */
   const barH=`${gm()?spkBarHtml(speakers):(speakers.length>1?`<div class="spkbar">${speakers.map(x=>{const c=x.key==='me'?charOf(ST.seat):charOf(x.key);const av=c?(standSrc(c)||c.img):'';return spkChip(x.key,x.name,av,SPK.key===x.key||(!SPK.key&&x.key==='me'))}).join('')}<button class="spk add" data-rp="spkedit" title="고른 인물의 표정·스탠딩"><i>✎</i><span>표정</span></button></div>`:'')}`;
   const MD=MODES[SPK.mode]||MODES.auto;
@@ -592,7 +592,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   const toXY=e=>{const r=wrap.getBoundingClientRect();return {x:Math.round(Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*W),y:Math.round(Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))*H)}};
   el.querySelectorAll('[data-loc]').forEach(b=>{const n=+b.dataset.loc;
    if(!isGm){b.onclick=()=>{const l=mapS().locs.find(x=>x.n===n);if(!l)return;const DGU=window.OM_DG_UI;const dgn=l.dg&&DGU?DGU.nameOf(l.dg):'';
-     if(dgn&&DGU.on()&&(DGU.cur()||{}).id===l.dg)return A().goView('dungeon');   /* 탐색 중인 던전이면 그쪽으로 */
+     if(dgn&&DGU.on()&&(DGU.cur()||{}).id===l.dg){mapOpen=false;return A().renderScene()}   /* 탐색 중인 던전이면 지도를 닫고 무대(방 화면)로 */
      A().toast(dgn?`${l.n}. ${l.name} — 던전 「${dgn}」 · GM 이 진입하면 열린다`:`${l.n}. ${l.name}`)};return}
    /* GM: 누르면 메뉴, 끌면 이동 (맵툴 토큰 끌기) */
    let st=null,moved=false;b.onpointerdown=e=>{if(e.button!==0)return;st={x:e.clientX,y:e.clientY};moved=false;b.setPointerCapture(e.pointerId);e.preventDefault()};
