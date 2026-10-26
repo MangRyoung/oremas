@@ -4481,7 +4481,14 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .dgpt-ord.mini>div{display:flex;flex-wrap:wrap;gap:2px;align-items:center}
 .dgpt-ord.mini i{font-size:9px;padding:0 4px;margin-left:0}
 .dgpt-ord.mini i b{margin-left:2px;color:#fff}
-.dgpt-ord.mini span{padding:0 3px;font-size:9px;cursor:pointer}
-.dgpt-ord.mini span:hover{outline:1px solid var(--dg-acc,#f0c84a)}
+.dgpt-ord.mini{cursor:pointer;border-radius:3px}
+.dgpt-ord.mini:hover{outline:1px solid var(--dg-acc,#f0c84a);outline-offset:1px}
+.dgpt-ord.mini span{padding:0 3px;font-size:9px}
+
 .dgoe{display:flex;flex-direction:column;gap:10px;min-width:min(380px,86vw)}
 .dgoe-n b{font-size:28px}
+.dgoe-sec{display:flex;flex-direction:column;gap:4px}
+.dgoe-h{display:flex;gap:8px;align-items:center;border-bottom:1px solid var(--line2,#333);padding-bottom:4px}
+.dgoe-row{display:grid;grid-template-columns:1fr 64px auto auto;gap:6px;align-items:center;padding:2px 0}
+.dgoe-row.z .nm,.dgoe-row.z .mono{opacity:.45}
+.dgoe-row .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
