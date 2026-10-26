@@ -166,9 +166,10 @@ window.OM_PHONE_UI=(()=>{
  function onSms(row){const d=row.data||{};const md=$('.modal.phone-modal');
   if(isSns(d)){if(md&&(PH.screen==='sns'||PH.screen==='home')){const a=document.activeElement;if(!(a&&md.contains(a)&&a.matches('input,textarea'))||PH.screen==='home')draw(md)}A().renderScene();return}
  const openHere=md&&PH.screen==='smsroom'&&PH.room===d.sms;
-  if(openHere){draw(md);return}
+  if(openHere){draw(md);try{const mine=A().isMineLog?A().isMineLog(row):d.cid===myCid();if(!mine&&(d.t||d.img)&&(!A().alarm||A().alarm().sms)&&window.OM_PREFS)window.OM_PREFS.alert('smsin')}catch(e){}return}   /* 10-26: 그 방을 보고 있어도 짧게 */
   const isMine=A().isMineLog?A().isMineLog(row):d.cid===myCid();const room=roomOf(d.sms);const al=A().alarm?A().alarm().sms:1;
-  if(!isMine&&room&&al&&!d.room&&(d.t||d.img)){popSms(row,room);try{if(window.OM_PREFS)window.OM_PREFS.alert('sms');else if(window.OM_RP_UI)window.OM_RP_UI.playSe('Ping',true)}catch(e){}}
+  /* 10-26 망령 「문자 왔을 때 알림음」: 문자 전용 소리(띠링띠링 · 효과음 목록에 sms 가 있으면 그 파일). 단체방 첫 메시지(d.room)도 울린다 */
+  if(!isMine&&room&&al&&(d.t||d.img)){popSms(row,room);try{if(window.OM_PREFS)window.OM_PREFS.alert('sms');else if(window.OM_RP_UI)window.OM_RP_UI.playSe('Ping',true)}catch(e){}}
   if(md&&PH.screen==='sms')draw(md);A().renderScene()}
  /* 문자 알림: 왼쪽 아래에서 휴대폰이 올라오고 알림 카드가 뜬다. 여러 개면 위로 쌓이고(최대 3), 누르면 그 방이 열린다. 6초 뒤 내려간다 */
  const POP={list:[],t:null};

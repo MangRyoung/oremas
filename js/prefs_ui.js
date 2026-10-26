@@ -28,6 +28,9 @@ window.OM_PREFS=(()=>{
  const SOUNDS=[['soft','부드러운 종'],['drop','물방울'],['tick','톡'],['ping','예전 핑'],['off','소리 없음']];
  function alert(kind,force){const v=+P.alertVol;const s=P.alertSound;if(!force&&(s==='off'||!(v>0)))return;if(s==='ping'){try{const u=RP()&&RP().seUrlOf?RP().seUrlOf('Ping'):'';if(u){const a=new Audio(u);a.volume=Math.min(1,v);a.play().catch(()=>{})}}catch(e){}return}
   const c=ac();if(!c)return;const t=c.currentTime+0.01,G=Math.max(0.0002,v*0.22);
+  /* 10-26 문자 알림: 휴대폰 문자 소리처럼 높은 두 음을 두 번 (smsin = 보고 있는 방이면 한 번만). 효과음 목록에 sms 가 있으면 그 파일 */
+  if(kind==='sms'||kind==='smsin'){try{const u=RP()&&RP().seUrlOf?RP().seUrlOf('sms'):'';if(u){const a=new Audio(u);a.volume=Math.min(1,v*(kind==='smsin'?.6:1.2));a.play().catch(()=>{});return}}catch(e){}
+   const g=G*1.25;tone(c,1760,0,t,0.11,g,'sine');tone(c,2349.3,0,t+0.1,0.16,g*0.9,'sine');if(kind==='sms'){tone(c,1760,0,t+0.36,0.11,g,'sine');tone(c,2349.3,0,t+0.46,0.2,g*0.9,'sine')}return}
   if(s==='drop'){tone(c,1250,620,t,0.16,G,'sine');tone(c,1650,900,t+0.09,0.14,G*0.55,'sine')}
   else if(s==='tick'){tone(c,880,880,t,0.07,G*0.9,'triangle')}
   else{tone(c,1318.5,0,t,0.42,G,'sine');tone(c,987.8,0,t+0.13,0.55,G*0.8,'sine')}}   /* soft: E6 → B5 두 음 */
@@ -72,7 +75,7 @@ window.OM_PREFS=(()=>{
   <section class="pf-card"><header><i>♪</i><b>소리</b><small>이 기기에서만</small></header>
    ${sl('bgm','BGM',0,1,0.05,vb,'%1',`<button class="pf-mute ${P.bgmMute?'on':''}" data-pfb="bgmMute" title="BGM 정지 · 다시">${P.bgmMute?'정지됨':'정지'}</button>`)}
    ${sl('se','효과음',0,1,0.05,vs,'%1',`<button class="pf-mute ${P.seMute?'on':''}" data-pfb="seMute" title="효과음 끄기 · 켜기">${P.seMute?'꺼짐':'끄기'}</button>`)}
-   ${sl('alertVol','알림음',0,1,0.05,P.alertVol,'%1',`<button class="pf-mute" data-pfb="alertTest" title="들어 보기">▶</button>`)}
+   ${sl('alertVol','알림음',0,1,0.05,P.alertVol,'%1',`<button class="pf-mute" data-pfb="alertTest" title="들어 보기">▶</button><button class="pf-mute" data-pfb="smsTest" title="문자 알림음 들어 보기">💬</button>`)}
    <div class="pf-chips">${SOUNDS.map(([k,n])=>`<button class="pf-chip ${P.alertSound===k?'on':''}" data-pfs="${k}">${n}</button>`).join('')}</div></section>
   <section class="pf-card"><header><i>🔔</i><b>알림</b></header>
    ${sw('al_chat',al.chat,'채팅이 올라오면 소리')}
@@ -110,7 +113,7 @@ window.OM_PREFS=(()=>{
   root.querySelectorAll('input[type=checkbox][data-pf]').forEach(el=>el.onchange=()=>{const k=el.dataset.pf;if(k==='quiet'){P.quiet=el.checked?1:0;save();return}if(k==='keysOn'){P.keysOn=el.checked?1:0;save();return R()}if(k==='tw'||k==='twFast'){P[k]=el.checked?1:0;save();return R()}if(k.startsWith('al_')&&app&&app.setAlarm)app.setAlarm(k.slice(3),el.checked)});
   root.querySelectorAll('[data-pfs]').forEach(el=>el.onclick=()=>{P.alertSound=el.dataset.pfs;save();alert('test',true);R()});
   root.querySelectorAll('[data-pfb]').forEach(el=>el.onclick=()=>{const k=el.dataset.pfb;
-   if(k==='bgmMute'){setBgmMute(!P.bgmMute);return R()}if(k==='seMute'){setSeMute(!P.seMute);return R()}if(k==='alertTest')return alert('test',true);
+   if(k==='bgmMute'){setBgmMute(!P.bgmMute);return R()}if(k==='seMute'){setSeMute(!P.seMute);return R()}if(k==='alertTest')return alert('test',true);if(k==='smsTest')return alert('sms',true);
    if(k==='cutTest'){if(window.OM_CUTIN&&window.OM_CUTIN.preview)window.OM_CUTIN.preview();return}
    if(k==='keyreset'){if(!confirm('단축키를 모두 기본으로 돌릴까?'))return;P.keys=JSON.parse(JSON.stringify(DEF.keys));save();return R()}
    if(k==='reset'){if(!confirm('내 설정을 모두 기본으로 돌릴까?'))return;const keep=P.bgmMute;P=JSON.parse(JSON.stringify(DEF));save();if(keep&&RP()&&RP().bgmMuted)RP().bgmMuted(false);if(UI&&app.UI_DEF){Object.assign(UI,app.UI_DEF);setUi('scale',UI.scale)}if(RP()){RP().setVolume('bgm',0.5);RP().setVolume('se',0.7)}return R()}});
