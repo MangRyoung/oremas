@@ -4449,3 +4449,5 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
  .mebar .mecheck{flex:none;min-width:0}
  .mecheck .mcq b{max-width:170px}
  .mecheck .mcks{flex-wrap:nowrap}.mck{white-space:nowrap}}
+/* 10-26 망령: 화자 폴더를 여럿 펼치면 칩 줄이 네다섯 줄로 늘어 RP 무대가 손바닥만 해졌다 — 두 줄 높이까지만, 나머지는 안에서 스크롤 */
+#rpu_bar>.spkbar.top{max-height:clamp(92px,24vh,184px);overflow-y:auto;scrollbar-width:thin}
