@@ -4434,3 +4434,14 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .rpstage .dgrp-dock.min .dgrp-mapbtn{align-self:flex-end}
 .rpstage .dgrp-dock.big .dgrp-ptw{display:none}
 @media(max-width:760px){.rpstage .dgrp-dock{max-height:calc(100% - var(--dlgh,34%) - 16px)}}
+/* 10-26 망령: 던전 탐사 중엔 왼쪽 위 HUD(장소 · 경계도 · 기척 · 체크) 와 오른쪽 지도 · PT 에 좌우 스탠딩이 가려졌다 — 좌우 인물을 안쪽으로 */
+.rpstage.dgmode .stand.left{left:19%}
+.rpstage.dgmode .stand.right{right:19%}
+@media (max-width:760px){.rpstage.dgmode .stand.left{left:4%}.rpstage.dgmode .stand.right{right:4%}}
+/* 10-26 망령: 아래 내 정보 줄에 스킬 체크 카드가 붙으면 줄이 둘로 접혀 아래가 커졌다 — 넓은 화면에선 한 줄로, 남는 칸(마지막 굴림 · 포켓몬 아이콘)이 줄어든다 */
+@media (min-width:761px){.mebar{flex-wrap:nowrap}
+ .mebar .memons{flex:0 1 auto;min-width:0;overflow-x:auto;scrollbar-width:none}
+ .mebar .melast{flex:1 1 0;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
+ .mebar .mecheck{flex:0 1 auto;min-width:0}
+ .mecheck .mcq b{max-width:170px}
+ .mecheck .mcks{flex-wrap:nowrap}}
