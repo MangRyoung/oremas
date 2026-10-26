@@ -3807,7 +3807,7 @@ button.tag.solo:hover{border-color:var(--yel2)}
 *::-webkit-scrollbar-thumb{background:rgba(255,255,255,.22);border-radius:6px}
 *::-webkit-scrollbar-thumb:hover{background:var(--red)}
 *::-webkit-scrollbar-button{display:none;width:0;height:0}
-.bspk-row .spk .bspk-x{position:absolute;top:1px;left:3px;text-decoration:none;font-size:12px;line-height:1;color:var(--mute);padding:2px 4px;border-radius:4px;opacity:0;transition:opacity .12s}
+.bspk-row .spk .bspk-x{position:absolute;top:1px;left:3px;text-decoration:none;font-size:12px;line-height:1;color:var(--mute);padding:2px 4px;border-radius:4px;opacity:.55;transition:opacity .12s}
 .bspk-row .spk:hover .bspk-x{opacity:1}.bspk-row .spk .bspk-x:hover{color:#fff;background:var(--red)}
 @media (hover:none){.bspk-row .spk .bspk-x{opacity:.8}}
 /* 10-25 휴대폰 배틀 말풍선: 위에서부터 쌓는 작은 줄 (얼굴 + 대사) · 나레이션은 맨 위 · 스탠딩 크기 조절은 숨김 */
@@ -4511,3 +4511,10 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
  .rpstage .dgrp-dock.min{width:auto}
  .rpstage .dgrp-hud{left:8px;right:auto;top:auto;bottom:calc(var(--dlgh,34%) + 8px);max-width:54%}
 }
+/* 10-26 화자 칩 우클릭 메뉴 */
+.spkctx{position:fixed;z-index:9999;min-width:190px;background:var(--panel,#16181d);border:1px solid var(--line,#333);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.5);padding:6px;display:flex;flex-direction:column;gap:2px}
+.spkctx b{font-size:12px;color:var(--mute,#999);padding:4px 8px 6px}
+.spkctx button{all:unset;cursor:pointer;padding:7px 10px;border-radius:6px;font-size:13px;color:var(--ink,#eee)}
+.spkctx button:hover{background:rgba(255,255,255,.08)}
+.spkctx button.danger{color:#ff6b6b}.spkctx button.danger:hover{background:rgba(255,80,80,.15)}
+.spkctx small{font-size:11px;color:var(--mute,#888);padding:4px 10px}

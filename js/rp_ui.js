@@ -278,6 +278,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   return `<div class="spkbar top" data-fzone="">${chipOf('gm')}<button class="spk add" data-rp="people" title="인물 — 새 인물 추가 · 모든 인물 · PC · 포켓몬의 이름 · 초상 · 스탠딩 · 메모 · 폴더"><i>👥</i><span>인물</span></button><button class="spk add" data-rp="spkedit" title="고른 인물의 표정·스탠딩"><i>✎</i><span>표정</span></button><button class="spk add" data-rp="spkmgr" title="화자 정리: 숨기기 · 폴더 이름 · 순서"><i>☰</i><span>정리</span></button><span class="spkdrop" data-fnew title="칩을 여기 끌어다 놓으면 새 폴더가 생긴다">＋📁</span>${top}</div>${sub}`}
  /* 끌어서 순서 바꾸기 · 폴더에 넣기 (GM) */
  function bindSpkDrag(el){if(!gm())return;let dragKey='',dragFold='';
+  el.querySelectorAll('.spk[data-spk]').forEach(ch=>{const k=ch.dataset.spk;if(!k||k==='gm')return;ch.addEventListener('contextmenu',e=>spkMenu(e,k));let lt=0;ch.addEventListener('touchstart',e=>{const t=e.touches[0];lt=setTimeout(()=>spkMenu({preventDefault(){},stopPropagation(){},clientX:t.clientX,clientY:t.clientY},k),550)},{passive:true});ch.addEventListener('touchend',()=>clearTimeout(lt));ch.addEventListener('touchmove',()=>clearTimeout(lt))});
   el.querySelectorAll('.spk[draggable="true"]').forEach(ch=>{ch.ondragstart=e=>{dragKey=ch.dataset.spk||'';dragFold=ch.dataset.fold||'';e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain',dragKey||('f:'+dragFold))}catch(x){}ch.classList.add('dragging')};ch.ondragend=()=>ch.classList.remove('dragging')});
   const zones=el.querySelectorAll('.spk[data-spk],.spk[data-fold],[data-fnew],[data-fout],.spkbar');
   zones.forEach(z=>{z.ondragover=e=>{if(!dragKey&&!dragFold)return;e.preventDefault();z.classList.add('over')};z.ondragleave=()=>z.classList.remove('over');
@@ -452,6 +453,21 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   md.querySelectorAll('[data-ppfdel]').forEach(b=>b.onclick=async e=>{e.stopPropagation();const id=b.dataset.ppfdel;const C=spkConf();const f=C.folders[id];if(!f)return;const n=(f.keys||[]).length;
    if(!confirm(`「${f.name}」 폴더를 지울까?${n?`\n안의 ${n}명은 「폴더 없음」으로 나온다 (인물은 지워지지 않는다).`:''}`))return;
    C.order=C.order.filter(x=>x!=='f:'+id);C.order.push(...(f.keys||[]));delete C.folders[id];if(typeof SPK!=='undefined'&&SPK.fo)SPK.fo=SPK.fo.filter(x=>x!==id);await saveSpk(C);A().toast('폴더를 지웠다');re()})}
+ /* 10-26 망령: 인물 지우기 — 인물 관리 · 화자 칩 우클릭 둘 다에서. confirm() 이 막히는 창도 있어 askYes 로 묻는다 */
+ async function askOk(q,yes,no){const B=window.OM_BATTLE_UI;if(B&&B.askYes)return B.askYes(q,yes||'지운다',no||'그만');return confirm(q)}
+ async function ppDelNpc(key){const ST=A().ST;const name=String(key).replace(/^npc:/,'');const g=ST.state.graph||{};const ids=Object.keys(g.nodes||{}).filter(id=>(g.nodes[id]||{}).name===name&&g.nodes[id].kind!=='org');const lines=Object.entries(g.edges||{}).filter(([,ed])=>ids.includes(ed.a)||ids.includes(ed.b));
+  if(!(await askOk(`「${name}」 인물을 지울까?\n관계도에서도 빠지고${lines.length?` 이어진 선 ${lines.length}개도 지워진다`:''}. 되돌릴 수 없다.`)))return false;
+  for(const [eid] of lines)await A().set(['graph','edges',eid],null);for(const id of ids)await A().set(['graph','nodes',id],null);
+  const C=spkConf();C.order=C.order.filter(y=>y!==key);for(const f of Object.values(C.folders))f.keys=(f.keys||[]).filter(y=>y!==key);delete C.hidden[key];await saveSpk(C);if(SPK.key===key)SPK.key='gm';A().toast(`${name} 를 지웠다`);return true}
+ /* 화자 칩 우클릭(폰은 길게 누르기) 메뉴 — GM */
+ function spkMenu(e,key,extra){extra=extra||[];e.preventDefault();e.stopPropagation();document.querySelectorAll('.spkctx').forEach(m=>m.remove());const c=charOf(key);if(!c)return;const npc=key.startsWith('npc:');
+  const m=document.createElement('div');m.className='spkctx';m.innerHTML=`<b>${esc(c.name)}</b>${extra.map((x,i)=>`<button data-sx="${i}">${x.label}</button>`).join('')}<button data-sm="open">👥 인물 관리에서 열기</button><button data-sm="stand">✎ 표정 · 스탠딩</button><button data-sm="hide">🙈 화자 줄에서 숨기기</button>${npc?'<button data-sm="del" class="danger">🗑 인물 지우기</button>':'<small>PC · 포켓몬은 시트를 지우면 빠진다</small>'}`;
+  document.body.appendChild(m);const W=m.offsetWidth,H=m.offsetHeight;m.style.left=Math.max(4,Math.min(innerWidth-W-4,e.clientX))+'px';m.style.top=Math.max(4,Math.min(innerHeight-H-4,e.clientY))+'px';
+  const off=ev=>{if(!m.contains(ev.target)){m.remove();document.removeEventListener('pointerdown',off,true)}};setTimeout(()=>document.addEventListener('pointerdown',off,true),0);
+  m.onclick=async ev=>{const bx=ev.target.closest('[data-sx]');if(bx){m.remove();document.removeEventListener('pointerdown',off,true);return extra[+bx.dataset.sx].fn()}const b=ev.target.closest('[data-sm]');if(!b)return;m.remove();document.removeEventListener('pointerdown',off,true);const a=b.dataset.sm;
+   if(a==='open')return openPeople(key);if(a==='stand')return openStands(key);
+   if(a==='hide'){const C=spkConf();C.hidden[key]=1;await saveSpk(C);A().toast(`${c.name} — 화자 줄에서 숨겼다 (인물 관리 「숨김」에서 되돌린다)`);return}
+   if(a==='del')await ppDelNpc(key)}}
  function ppDetail(L){
   if(PP.sel==='new'){const D=PP.draft=PP.draft||{name:'',img:'',stands:[],fid:'',note:''};
    return `<div class="ppdh"><b>새 인물</b><span class="small dim">관계도에 NPC 로 들어가고 화자 칸에 바로 뜬다</span></div>
@@ -473,7 +489,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
     <label class="ppf"><span>폴더</span>${ppFolderSel('pe_f',x.fid)}</label>
     <label class="ppf"><span>화자 칸</span><span class="row" style="gap:8px"><label class="small"><input type="checkbox" id="pe_vis" ${x.hid?'':'checked'}> 화자 줄에 보이기</label></span></label>
     ${npc?`<label class="ppf ppt"><span>메모</span><textarea id="pe_note" rows="4" placeholder="관계도 노드 메모 (모두가 본다)">${esc(node.note||'')}</textarea></label>`:''}
-    <div class="row ppact"><button class="btn sm" data-ppd="talk" title="화자로 고르고 창을 닫는다">💬 이 인물로 말하기</button>${npc?'<button class="btn sm ghost" data-ppd="graph" title="관계도 탭으로">관계도</button><button class="btn sm ghost danger" data-ppd="del">삭제</button>':''}<span class="sp"></span>${npc?'<button class="btn pri" data-ppd="save">저장</button>':''}</div></div>`}
+    <div class="row ppact"><button class="btn sm" data-ppd="talk" title="화자로 고르고 창을 닫는다">💬 이 인물로 말하기</button>${npc?'<button class="btn sm ghost" data-ppd="graph" title="관계도 탭으로">관계도</button><button class="btn sm danger" data-ppd="del" title="관계도 노드와 이어진 선까지 지운다">🗑 인물 지우기</button>':`<button class="btn sm ghost" data-ppd="hide" title="PC · 포켓몬은 시트가 원본이라 지우지 않고 화자 줄에서만 뺀다">🙈 화자 줄에서 빼기</button>`}<span class="sp"></span>${npc?'<button class="btn pri" data-ppd="save">저장</button>':''}</div></div>`}
  function ppBind(md,L,re){const D=PP.draft;const x=L.find(y=>y.key===PP.sel);const ST=A().ST;
   const fsel=async s=>{if(!s||s.value!=='__new')return;const id=await ppNewFolder();if(D&&PP.sel==='new'){D.fid=id;grabNew()}re()};
   const grabNew=()=>{if(!D)return;const v=id=>{const e=$('#'+id,md);return e?e.value:''};D.name=v('pn_name').trim();D.img=v('pn_img').trim();D.note=v('pn_note');const f=v('pn_f');if(f!=='__new')D.fid=f;const m=$('#pn_more',md);if(m)PP.more=m.checked};
@@ -502,10 +518,8 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(k==='stands'){A().closeModal();return openStands(x.key)}
    if(k==='talk'){SPK.key=x.key;A().closeModal();A().renderScene();const l=document.getElementById('rpline');if(l)l.focus();return}
    if(k==='graph'){A().closeModal();A().view='graph';return A().renderScene()}
-   if(k==='del'){const g=ST.state.graph||{};const ids=Object.keys(g.nodes||{}).filter(id=>(g.nodes[id]||{}).name===x.name&&g.nodes[id].kind!=='org');const lines=Object.entries(g.edges||{}).filter(([,ed])=>ids.includes(ed.a)||ids.includes(ed.b));
-    if(!confirm(`「${x.name}」 인물을 지울까?\n관계도에서도 빠지고${lines.length?` 이어진 선 ${lines.length}개도 지워진다`:''}. 되돌릴 수 없다.`))return;
-    for(const [eid] of lines)await A().set(['graph','edges',eid],null);for(const id of ids)await A().set(['graph','nodes',id],null);
-    const C=spkConf();C.order=C.order.filter(y=>y!==x.key);for(const f of Object.values(C.folders))f.keys=(f.keys||[]).filter(y=>y!==x.key);delete C.hidden[x.key];await saveSpk(C);if(SPK.key===x.key)SPK.key='gm';A().toast(`${x.name} 를 지웠다`);return re('')}
+   if(k==='del'){if(await ppDelNpc(x.key))return re('');return}
+   if(k==='hide'){const C=spkConf();C.hidden[x.key]=1;await saveSpk(C);A().toast(`${x.name} — 화자 줄에서 뺐다 (「숨김」 칸에서 되돌린다)`);return re()}
    if(k==='save'){if(!x.node)return A().toast('관계도 노드를 찾지 못했다');const n=$('#pe_name',md).value.trim();if(!n)return A().toast('이름이 필요해');
     if(n!==x.name&&(Object.values((ST.state.graph||{}).nodes||{}).some(y=>y.name===n)||Object.values((ST.state.roster||{}).trainers||{}).some(t=>t.name===n)))return A().toast('같은 이름이 이미 있다');
     const nn=Object.assign({},x.node,{name:n,img:$('#pe_img',md).value.trim(),note:$('#pe_note',md).value});await A().set(['graph','nodes',x.node.id],nn);
@@ -1130,6 +1144,8 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  function bspkBind(el){const box=el.querySelector('.bspk');
   el.querySelectorAll('[data-bspk="on"]').forEach(b=>b.onclick=()=>{BSP.on=!BSP.on;LSs('om_bsay_on',BSP.on?'1':'0');if(!BSP.on&&BSAY.el)BSAY.el.innerHTML='';A().toast(BSP.on?'배틀 말풍선을 켰다':'배틀 말풍선을 껐다 (이 브라우저)');A().renderScene()});
   if(!box)return;
+  if(gm())box.querySelectorAll('[data-bspk-k]').forEach(b=>{const k=b.dataset.bspkK;if(!k||k==='gm')return;const pin=b.classList.contains('pin');const ex=pin?[{label:'📌 이 줄에서 빼기',fn:async()=>{await bspkPinSave(bspkPins().filter(x=>x!==k));A().toast('배틀 화자 줄에서 뺐다')}}]:[];
+   b.addEventListener('contextmenu',e=>spkMenu(e,k,ex));let lt=0;b.addEventListener('touchstart',e=>{const t=e.touches[0];lt=setTimeout(()=>spkMenu({preventDefault(){},stopPropagation(){},clientX:t.clientX,clientY:t.clientY},k,ex),550)},{passive:true});b.addEventListener('touchend',()=>clearTimeout(lt));b.addEventListener('touchmove',()=>clearTimeout(lt))});
   box.querySelectorAll('[data-bspk-k]').forEach(b=>b.onclick=async e=>{const x=e.target.closest('[data-bspk-x]');if(x){e.stopPropagation();const L=bspkPins().filter(k=>k!==x.dataset.bspkX);await bspkPinSave(L);return}bspkSet(b.dataset.bspkK,box)});
   box.querySelectorAll('[data-bspk]').forEach(b=>{const k=b.dataset.bspk;
    if(k==='fold')b.onclick=()=>{BSP.open=!BSP.open;LSs('om_bspk_open',BSP.open?'1':'0');A().renderScene()};
