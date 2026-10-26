@@ -383,19 +383,37 @@ window.OM_DECK_UI=(()=>{
    쓸 수 있는 덱: 지금 보는 덱(PV.deck) → 기본 덱 → 그 손패가 있는 덱 순 */
  function deckFor(H){const L=visDecks();const has=([,d])=>(d.hands[H]||[]).length;return L.find(x=>x[0]===PV.deck&&has(x))||L.find(x=>x[0]===(DB()||{}).cur&&has(x))||L.find(has)||null}
  function handCount(tid){const x=deckFor(tid);return x?(x[1].hands[tid]||[]).length:0}
- function battleHand(tid,o){o=o||{};const x=deckFor(tid);const BU=window.OM_BATTLE_UI;if(!x)return A().toast('손패가 없다 — 휴대폰 「덱」에서 먼저 뽑아 둬');const [did,dk]=x;const hand=dk.hands[tid]||[];
-  const md=A().openModal(`<div class="mhead"><h2>🃏 ${esc(hName(tid))}의 손패 <small class="dim">${esc(dk.name)} · ${hand.length}장</small></h2><span class="sp"></span><button class="btn sm ghost" data-bh="phone">덱 앱</button><button class="btn ghost" data-x>닫기</button></div>
-   ${dk.opt.cr?`<div class="small dim" style="margin-bottom:6px">비용 자원: ${esc(dk.opt.cr)} ${esc(String(((dk.rv[tid]||{})[dk.opt.cr])??''))}</div>`:''}
-   <div class="dchand bh">${hand.map((cid,i)=>cardHtml(dk.cards[cid],{attr:`data-bhi="${i}"`})).join('')||'<div class="dim">손패가 비었다</div>'}</div>
-   <div class="small dim" style="margin-top:8px">카드를 누르면 쓴다 — 비용을 내고 버린 더미로, ⚙ 카드는 구문이 돈다.</div>`,'wide');
-  md.addEventListener('click',async e=>{if(e.target.closest('[data-bh="phone"]')){A().closeModal();PV.deck=did;return open()}const c=e.target.closest('[data-bhi]');if(!c)return;const i=+c.dataset.bhi;const cid=hand[i];const card=dk.cards[cid];if(!card)return;
-   if(!confirm(`「${card.n}」을(를) 쓸까?`))return;
-   const hasA=!!(card.a&&card.a.ops&&card.a.ops.length);let anchor='';if(hasA&&o.pickAnchor){anchor=await o.pickAnchor(tid);if(anchor===null)return}
-   A().closeModal();PV.deck=did;const r=await run({op:'play',d:did,h:tid,sel:[i],ids:[cid],adj:0});if(r&&r.err)return A().toast(r.err);
+ /* 손패 화면: 어두운 무대 위 부채꼴 손패 → 카드를 고르면 가운데로 크게 떠오르고 「사용」 */
+ function bigCard(c){const col=colOf(c.col);const cost=c.c!==''&&c.c!=null;const auto=!!(c.a&&c.a.ops&&c.a.ops.length);
+  return `<div class="hc" style="--hc:${col}"><div class="hc-in"><div class="hc-top"><b class="hc-n">${esc(c.n)}</b>${cost?`<span class="hc-cost">${esc(c.c)}</span>`:''}</div>
+   <div class="hc-art" style="${c.img?`background-image:url('${cssu(c.img)}')`:''}">${c.img?'':`<span class="hc-mono">${esc([...(c.n||'?')][0])}</span>`}</div>
+   ${c.t?`<div class="hc-type"><span>${esc(c.t)}</span></div>`:''}<div class="hc-x">${esc(c.x||'')}</div>${auto?'<div class="hc-auto" title="자동화 구문이 돈다">⚙ AUTO</div>':''}</div></div>`}
+ function battleHand(tid,o){o=o||{};const x=deckFor(tid);const BU=window.OM_BATTLE_UI;if(!x)return A().toast('손패가 없다 — 휴대폰 「덱」에서 먼저 뽑아 둬');const [did,dk]=x;const hand=(dk.hands[tid]||[]).slice();
+  document.querySelectorAll('.hand-ov').forEach(e=>e.remove());
+  const ov=document.createElement('div');ov.className='hand-ov';const n=hand.length;const spread=Math.min(64,Math.max(28,520/Math.max(n,1)));const ang=Math.min(8,40/Math.max(n,1));
+  const res=dk.opt.cr?`<span class="ho-res">${esc(dk.opt.cr)} <b>${esc(String(((dk.rv[tid]||{})[dk.opt.cr])??0))}</b></span>`:'';
+  ov.innerHTML=`<div class="ho-bg"></div><div class="ho-head"><div><small>${esc(dk.name)}</small><h2>${esc(hName(tid))}의 손패</h2></div>${res}<span class="ho-cnt">${n}<small>장</small></span><span class="sp"></span><button class="ho-btn" data-ho="phone">덱 앱</button><button class="ho-btn" data-ho="x">✕</button></div>
+   <div class="ho-stage"><div class="ho-focus"></div></div>
+   <div class="ho-fan">${hand.map((cid,i)=>{const c=dk.cards[cid];if(!c)return '';const k=i-(n-1)/2;return `<div class="ho-slot" data-hi="${i}" style="--x:${k*spread}px;--r:${k*ang}deg;--y:${Math.abs(k)*Math.abs(k)*2.2}px;--d:${i*45}ms">${bigCard(c)}</div>`}).join('')||'<div class="ho-empty">손패가 비었다</div>'}</div>
+   <div class="ho-hint">카드를 골라 · 다시 누르거나 「사용」으로 쓴다 · Esc 닫기</div>`;
+  document.body.appendChild(ov);requestAnimationFrame(()=>ov.classList.add('on'));
+  let sel=-1;const focus=ov.querySelector('.ho-focus');
+  const close=()=>{ov.classList.remove('on');ov.classList.add('off');setTimeout(()=>ov.remove(),280);document.removeEventListener('keydown',kd)};
+  const kd=e=>{if(e.key==='Escape')close()};document.addEventListener('keydown',kd);
+  const pick=i=>{sel=i;ov.querySelectorAll('.ho-slot').forEach(s=>s.classList.toggle('sel',+s.dataset.hi===i));const c=dk.cards[hand[i]];
+   focus.innerHTML=c?`<div class="ho-big">${bigCard(c)}</div><div class="ho-acts"><button class="ho-use" data-ho="use">사용</button><button class="ho-btn" data-ho="cancel">취소</button></div>`:'';ov.classList.toggle('picked',!!c)};
+  ov.addEventListener('click',async e=>{const t=e.target;const h=t.closest('[data-ho]');const sl=t.closest('.ho-slot');
+   if(h){const k=h.dataset.ho;if(k==='x')return close();if(k==='phone'){close();PV.deck=did;return open()}if(k==='cancel'){sel=-1;focus.innerHTML='';ov.classList.remove('picked');ov.querySelectorAll('.ho-slot').forEach(s=>s.classList.remove('sel'));return}if(k==='use')return use(sel)}
+   if(sl){const i=+sl.dataset.hi;if(i===sel)return use(i);return pick(i)}
+   if(t.classList.contains('ho-bg')||t.classList.contains('ho-stage'))close()});
+  async function use(i){const cid=hand[i];const card=dk.cards[cid];if(!card)return;const hasA=!!(card.a&&card.a.ops&&card.a.ops.length);let anchor='';
+   if(hasA&&o.pickAnchor){ov.style.visibility='hidden';anchor=await o.pickAnchor(tid);ov.style.visibility='';if(anchor===null)return}
+   const big=ov.querySelector('.ho-big');if(big)big.classList.add('play');ov.classList.add('playing');await new Promise(r=>setTimeout(r,520));close();
+   PV.deck=did;const r=await run({op:'play',d:did,h:tid,sel:[i],ids:[cid],adj:0});if(r&&r.err)return A().toast(r.err);
    const head=`【카드】 ${hName(tid)} 『${card.n}』${card.c!==''&&card.c!=null?' (비용 '+card.c+')':''}`;
    if(window.OM_CUTIN)window.OM_CUTIN.fire({tok:'card:'+tid,src:card.img||'',tag:`${hName(tid)}의 카드!`,ment:`『${card.n}』`,color:colOf(card.col),line:card.t||'',gh:'CARD'});
    if(hasA&&anchor&&BU&&BU.fireAuto){const okA=await BU.fireAuto(anchor,'pot',card.n,{auto:Object.assign({name:card.n,src:'card',text:card.x||''},card.a),quiet:true,noRoll:true,head,img:card.img||'',eff:card.x||''});if(okA!==false)return}
    else if(hasA&&!anchor)A().toast('필드에 기준 포켓몬이 없어 구문은 건너뛰고 효과 글만 남긴다');
-   await A().sysLog(`${head}${card.x?'\n'+card.x:''}`,'battle')})}
+   await A().sysLog(`${head}${card.x?'\n'+card.x:''}`,'battle')}}
  return {open,absorb,phone,bindPhone,openMgr,exec,seedDb,onAck,handCount,battleHand};
 })();

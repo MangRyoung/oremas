@@ -4345,3 +4345,58 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .dchand.bh{display:flex;flex-wrap:wrap;gap:8px}
 .dchand.bh .dc{cursor:pointer;width:150px}
 .dchand.bh .dc:hover{outline:2px solid var(--yel)}
+
+/* ===== 배틀 손패 (10-26) ===== */
+.hand-ov{position:fixed;inset:0;z-index:400;display:flex;flex-direction:column;opacity:0;transition:opacity .25s;font-family:var(--font,inherit)}
+.hand-ov.on{opacity:1}.hand-ov.off{opacity:0}
+.ho-bg{position:absolute;inset:0;background:radial-gradient(120% 80% at 50% 110%,rgba(30,20,60,.92),rgba(5,5,10,.95) 60%);backdrop-filter:blur(3px)}
+.ho-bg::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(115deg,transparent 0 40px,rgba(255,255,255,.025) 40px 41px)}
+.ho-head{position:relative;display:flex;align-items:center;gap:14px;padding:18px max(20px,env(safe-area-inset-right)) 0 max(20px,env(safe-area-inset-left));color:#fff}
+.ho-head small{font-size:11px;letter-spacing:.2em;color:rgba(255,255,255,.55);text-transform:uppercase}
+.ho-head h2{margin:2px 0 0;font:400 30px/1.1 var(--head,'Black Han Sans',sans-serif);letter-spacing:.02em;text-shadow:3px 3px 0 #000}
+.ho-cnt{font:400 34px/1 var(--head,'Black Han Sans',sans-serif);color:var(--yel,#ffd12e);text-shadow:2px 2px 0 #000}.ho-cnt small{font-size:14px;margin-left:2px}
+.ho-res{font-size:13px;color:#ddd;border:1px solid rgba(255,255,255,.25);padding:4px 10px;border-radius:20px}.ho-res b{color:#fff}
+.ho-btn{background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.35);color:#fff;padding:7px 14px;font:600 13px/1 inherit;cursor:pointer;border-radius:4px}
+.ho-btn:hover{border-color:#fff}
+.ho-stage{position:relative;flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
+.ho-focus{display:flex;align-items:center;gap:26px}
+.ho-big .hc{width:min(300px,62vw);height:auto;aspect-ratio:5/7;animation:hobig .35s cubic-bezier(.2,1.4,.4,1)}
+.ho-big.play .hc{animation:hoplay .5s ease forwards}
+@keyframes hobig{from{transform:translateY(80px) scale(.6) rotate(-6deg);opacity:0}to{transform:none;opacity:1}}
+@keyframes hoplay{40%{transform:scale(1.12);filter:brightness(1.6) drop-shadow(0 0 30px var(--hc))}100%{transform:translateY(-120vh) scale(.8) rotate(8deg);opacity:0}}
+.ho-acts{display:flex;flex-direction:column;gap:10px}
+.ho-use{background:var(--yel,#ffd12e);color:#000;border:0;padding:14px 34px;font:400 26px/1 var(--head,'Black Han Sans',sans-serif);cursor:pointer;transform:skewX(-10deg);box-shadow:5px 5px 0 #000,0 0 30px rgba(255,209,46,.4);letter-spacing:.06em}
+.ho-use:hover{transform:skewX(-10deg) translateY(-2px);box-shadow:7px 7px 0 #000,0 0 40px rgba(255,209,46,.6)}
+.ho-fan{position:relative;height:260px;flex:none;display:flex;justify-content:center;pointer-events:none}
+.ho-slot{position:absolute;bottom:-40px;left:50%;width:150px;margin-left:-75px;transform-origin:50% 140%;transform:translateX(var(--x)) translateY(calc(var(--y) + 200px)) rotate(var(--r));transition:transform .28s cubic-bezier(.2,1,.3,1),filter .2s;pointer-events:auto;cursor:pointer}
+.hand-ov.on .ho-slot{transform:translateX(var(--x)) translateY(var(--y)) rotate(var(--r));transition-delay:var(--d)}
+.hand-ov.on .ho-slot:hover{transform:translateX(var(--x)) translateY(-46px) rotate(0) scale(1.12);z-index:5;transition-delay:0s}
+.hand-ov.on .ho-slot.sel{transform:translateX(var(--x)) translateY(-30px) rotate(0);z-index:4;filter:brightness(.55) grayscale(.4)}
+.hand-ov.playing .ho-fan{opacity:.3;transition:opacity .3s}
+.ho-slot .hc{width:150px;aspect-ratio:5/7}
+.ho-empty{color:#aaa;align-self:center}
+.ho-hint{position:relative;text-align:center;color:rgba(255,255,255,.5);font-size:12px;padding:6px 0 max(10px,env(safe-area-inset-bottom))}
+/* 카드 얼굴 */
+.hc{position:relative;border-radius:12px;padding:5px;background:linear-gradient(145deg,color-mix(in srgb,var(--hc) 85%,#fff),var(--hc) 40%,color-mix(in srgb,var(--hc) 60%,#000));box-shadow:0 10px 26px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.35);color:#1b1b1b;user-select:none}
+.hc::after{content:"";position:absolute;inset:0;border-radius:12px;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.35) 45%,transparent 60%);background-size:250% 100%;background-position:120% 0;transition:background-position .6s;pointer-events:none}
+.ho-slot:hover .hc::after,.ho-big .hc::after{background-position:-30% 0}
+.hc-in{height:100%;border-radius:8px;background:#f6f2e8;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.hc-top{display:flex;align-items:center;gap:6px;padding:7px 9px 5px;background:linear-gradient(#fff,#efe8d8);border-bottom:2px solid var(--hc)}
+.hc-n{flex:1;min-width:0;font:700 14px/1.15 var(--head,inherit);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ho-big .hc-n{font-size:22px}
+.hc-cost{flex:none;width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:700 14px/1 var(--mono,monospace);color:#fff;background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--hc) 50%,#fff),var(--hc) 60%,#000);box-shadow:0 2px 4px rgba(0,0,0,.4),inset 0 0 0 2px rgba(255,255,255,.6)}
+.ho-big .hc-cost{width:38px;height:38px;font-size:20px}
+.hc-art{flex:0 0 44%;background:linear-gradient(135deg,color-mix(in srgb,var(--hc) 30%,#222),#111) center/cover no-repeat;display:flex;align-items:center;justify-content:center;border-bottom:2px solid var(--hc)}
+.hc-mono{font:400 46px/1 var(--head,serif);color:rgba(255,255,255,.75);text-shadow:0 2px 10px rgba(0,0,0,.6)}
+.ho-big .hc-mono{font-size:90px}
+.hc-type{display:flex;justify-content:center;margin-top:-11px;position:relative;z-index:1}
+.hc-type span{background:var(--hc);color:#fff;font:700 10px/1 inherit;letter-spacing:.12em;padding:4px 12px;border-radius:2px;box-shadow:0 2px 4px rgba(0,0,0,.35);text-shadow:0 1px 1px rgba(0,0,0,.4)}
+.ho-big .hc-type span{font-size:13px;padding:5px 16px}
+.hc-x{flex:1;padding:7px 10px;font-size:11px;line-height:1.45;white-space:pre-wrap;overflow:hidden;color:#2a2620}
+.ho-big .hc-x{font-size:14px;padding:12px 16px;overflow:auto}
+.hc-auto{position:absolute;right:6px;bottom:6px;font:700 9px/1 var(--mono,monospace);letter-spacing:.1em;color:#fff;background:#111;padding:3px 6px;border-radius:3px;box-shadow:0 0 0 1px var(--hc)}
+.ho-big .hc-auto{font-size:11px;padding:4px 8px}
+@media(max-width:760px){.ho-head h2{font-size:22px}.ho-fan{height:200px}.ho-slot,.ho-slot .hc{width:110px}.ho-slot{margin-left:-55px}.ho-focus{flex-direction:column;gap:14px}.ho-acts{flex-direction:row}.ho-use{font-size:20px;padding:10px 26px}}
+.ho-head h2{white-space:nowrap}
+@media(min-width:1000px){.ho-slot,.ho-slot .hc{width:176px}.ho-slot{margin-left:-88px}.ho-fan{height:300px}}
+@media(max-width:760px){.ho-head{flex-wrap:wrap;gap:8px}.ho-head h2{font-size:20px}.ho-cnt{font-size:24px}}
