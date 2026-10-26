@@ -237,7 +237,9 @@ window.OM_DG_UI=(()=>{
     try{A().goView('dungeon')}catch(err){}})}
   paintFrame(bg.querySelector('.dg-planes'),d,RPH);
   setH(hud,rpHudHTML(d));
-  {let pw=dock.querySelector(':scope>.dgrp-ptw');if(!pw){pw=document.createElement('div');pw.className='dgrp-ptw';dock.append(pw);pw.addEventListener('click',hudClick)}setH(pw,rpPtHTML(d))}
+  /* 10-26 망령: 폰에선 PT 칸을 지도 밑이 아니라 무대 왼쪽 위로 (지도는 오른쪽 위, 위치 · 안정도 · 체크는 왼쪽 아래) */
+  {const host=isNarrow()?stage:dock;let pw=stage.querySelector('.dgrp-ptw');if(!pw){pw=document.createElement('div');pw.className='dgrp-ptw';pw.addEventListener('click',hudClick)}if(pw.parentNode!==host)host.append(pw);setH(pw,rpPtHTML(d))}
+  if(isNarrow()){let T=1e9,B=-1e9;for(const x of [hud,...hud.children]){if(!x.offsetHeight)continue;const q=x.getBoundingClientRect();T=Math.min(T,q.top);B=Math.max(B,q.bottom)}const v=B>T?Math.round(B-T)+'px':'0px';if(stage.style.getPropertyValue('--hudh')!==v)stage.style.setProperty('--hudh',v)}
   {const dl=stage.querySelector('#dlg');let h=18;if(dl&&dl.style.display!=='none'&&dl.offsetHeight){const sr=stage.getBoundingClientRect(),dr=dl.getBoundingClientRect();h=Math.max(18,Math.round(sr.bottom-dr.top))}stage.style.setProperty('--dlgh',h+'px')}
   if(!dock.classList.contains('min'))paintMap(dock,d,gm(),RPH,true);
   clueSync(stage,d)}

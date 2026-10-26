@@ -4500,3 +4500,14 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 /* 10-26 망령: 폰 던전 — 장소 이름 칸이 없으니 버튼 줄은 왼쪽부터, 「화자」는 줄 맨 앞에. 오른쪽 지도·PT 와 왼쪽 HUD 는 버튼 줄(--sttop) 아래까지만 */
 @media (max-width:760px){.rpstage.dgmode .rpbtns{padding-left:0}.rpstage.dgmode .rpbtns .rpspkbtn{position:static;order:-1;margin:0}
  .rpstage .dgrp-dock{max-height:calc(100% - var(--dlgh,34%) - 14px - var(--sttop,60px))}.rpstage .dgrp-hud{max-height:calc(100% - var(--dlgh,34%) - 14px - var(--sttop,60px))}}
+/* 10-26 망령: 폰 던전 배치 — PT 왼쪽 위 · 지도 오른쪽 위(버튼 줄 아래) · 위치/안정도/체크 왼쪽 아래(말풍선 위) */
+@media (max-width:760px){
+ .rpstage>.dgrp-ptw{position:absolute;left:8px;top:var(--sttop,60px);z-index:5;width:min(54%,230px);display:flex;flex-direction:column;min-height:0;max-height:calc(100% - var(--sttop,60px) - var(--dlgh,34%) - var(--hudh,110px) - 22px)}
+ .rpstage>.dgrp-ptw:empty{display:none}
+ .rpstage>.dgrp-ptw .dgrp-pt{width:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+ .rpstage>.dgrp-ptw .dgrp-pt .dgpt-body{flex:1;min-height:0;max-height:none;overflow:auto}
+ .rpstage>.dgrp-ptw .dgrp-pt.min{width:auto;align-self:flex-start}
+ .rpstage .dgrp-dock{top:var(--sttop,60px);bottom:auto;right:8px;width:min(42%,190px);max-height:calc(100% - var(--sttop,60px) - var(--dlgh,34%) - 14px)}
+ .rpstage .dgrp-dock.min{width:auto}
+ .rpstage .dgrp-hud{left:8px;right:auto;top:auto;bottom:calc(var(--dlgh,34%) + 8px);max-width:54%}
+}
