@@ -95,7 +95,7 @@ window.OM_EMO=(()=>{
   if(n>40)return cb(null);setTimeout(()=>whenReady(key,cb,n+1),80)}
  /* opt.enter: 무대에 없으면 올린다 (rp_ui stageEnter) · opt.standOnly: 스탠딩이 없으면 대사 상자로 대신하지 않는다 */
  function playKey(key,k,opt){opt=opt||{};if(!E[k])return false;
-  if(opt.enter&&key&&!standOf(key)){try{window.OM_RP_UI&&window.OM_RP_UI.stageEnter&&window.OM_RP_UI.stageEnter(key)}catch(e){}}
+  if(opt.enter&&key&&!standOf(key)){try{window.OM_RP_UI&&window.OM_RP_UI.stageEnter&&window.OM_RP_UI.stageEnter(key,{brief:opt.brief||4200})}catch(e){}}
   whenReady(key,st=>{if(st)return play(st,k,opt);const d=document.querySelector('#dlg .dname');if(d&&!opt.standOnly&&!opt.enter)return play(d,k,opt);if(!opt.silent)sound(k)});return true}
 
  /* ----- 😮 버튼 · 고르기 창 ----- */

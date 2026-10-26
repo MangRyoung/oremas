@@ -72,7 +72,8 @@ window.OM_RP_UI=(()=>{
    const free=['center','left','right'].find(s=>!STAGE.slots[s]);if(free){STAGE.slots[free]=k;continue}
    const oldest=SLOTS.slice().sort((a,b)=>(STAGE.last[STAGE.slots[a]]||0)-(STAGE.last[STAGE.slots[b]]||0))[0];STAGE.slots[oldest]=k}}
  /* 대사 없이 무대에 올린다 (감정 연출 「!한숨」 등) — 대사가 들어온 것처럼 빈 자리 · 가장 오래된 자리에 */
- function stageEnter(k){if(!k)return;const now=Date.now();expire(now);STAGE.last[k]=now;STAGE.active=k;if(!Object.values(STAGE.slots).includes(k)){const free=['center','left','right'].find(s=>!STAGE.slots[s]);if(free)STAGE.slots[free]=k;else{const oldest=SLOTS.slice().sort((a,b)=>(STAGE.last[STAGE.slots[a]]||0)-(STAGE.last[STAGE.slots[b]]||0))[0];STAGE.slots[oldest]=k}}if(A().view==='rp')A().renderScene()}
+ /* opt.brief(ms): 대사 없는 감정 연출 — 새로 올린 인물은 그만큼만 섰다가 내려간다 (10-26 망령: 애니메이션은 금방 끝나는데 스탠딩이 한참 남았다). 이미 서 있던 인물은 시간을 건드리지 않는다 */
+ function stageEnter(k,opt){if(!k)return;opt=opt||{};const now=Date.now();expire(now);const was=Object.values(STAGE.slots).includes(k);if(opt.brief){if(!was)STAGE.last[k]=now-STAND_TTL+opt.brief}else STAGE.last[k]=now;STAGE.active=k;if(!was){const free=['center','left','right'].find(s=>!STAGE.slots[s]);if(free)STAGE.slots[free]=k;else{const oldest=SLOTS.slice().sort((a,b)=>(STAGE.last[STAGE.slots[a]]||0)-(STAGE.last[STAGE.slots[b]]||0))[0];STAGE.slots[oldest]=k}}if(A().view==='rp')A().renderScene()}
  function expire(now){now=now||Date.now();for(const s of SLOTS){const k=STAGE.slots[s];if(k&&now-(STAGE.last[k]||0)>STAND_TTL){STAGE.slots[s]=null;if(STAGE.active===k)STAGE.active=null}}}
  let expT=null;
  function scheduleExpire(){clearTimeout(expT);const keys=Object.values(STAGE.slots).filter(Boolean);if(!keys.length)return;const next=Math.min(...keys.map(k=>(STAGE.last[k]||0)+STAND_TTL))-Date.now();expT=setTimeout(()=>{if(A().view==='rp')A().renderScene()},Math.max(200,next+50))}
