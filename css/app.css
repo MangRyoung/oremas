@@ -4451,3 +4451,5 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
  .mecheck .mcks{flex-wrap:nowrap}.mck{white-space:nowrap}}
 /* 10-26 망령: 화자 폴더를 여럿 펼치면 칩 줄이 네다섯 줄로 늘어 RP 무대가 손바닥만 해졌다 — 두 줄 높이까지만, 나머지는 안에서 스크롤 */
 #rpu_bar>.spkbar.top{max-height:clamp(92px,24vh,184px);overflow-y:auto;scrollbar-width:thin}
+/* 10-26 망령: 배틀 대사(bsay) — 스탠딩 칸이 그림보다 넓으면(크기 150% 등) 그림이 칸 가운데에 떠서 말풍선과 사이가 벌어졌다 — 그림을 말풍선 쪽 끝에 붙인다 (오른쪽은 좌우 반전이라 같은 값) */
+.bsay.left .bsay-st,.bsay.right .bsay-st{background-position:right bottom}
