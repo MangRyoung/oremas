@@ -46,7 +46,8 @@ window.OM_STORE=(()=>{
  async function getLogTail(room,limit){
   const r=await sb().from('om_log').select('*').eq('room',room).order('id',{ascending:false}).limit(limit||200);
   if(r.error)throw err(r.error);return (r.data||[]).reverse()}
- async function addLog(room,secret,kind,who,data){return rpc('om_log_add',{p_room:room,p_secret:secret,p_kind:kind,p_who:who,p_data:data||{}})}
+ async /* 10-26 덱 시험: 내가 쓴 로그가 실시간으로 되돌아오지 않아 화면에서 빠지는 일이 잦았다 — 쓰고 나면 2.5초 뒤 서버를 한 번 더 읽어 채운다 (app.logFill) */
+ function addLog(room,secret,kind,who,data){return rpc('om_log_add',{p_room:room,p_secret:secret,p_kind:kind,p_who:who,p_data:data||{}}).then(r=>{try{const A=window.OM_APP;if(A&&A.logFill)A.logFill()}catch(e){}return r})}
  async function logClear(room,secret,keepSms){return rpc('om_log_clear',{p_room:room,p_secret:secret,p_keep_sms:!!keepSms})}
  async function whispers(room,secret,after){return rpc('om_whispers',{p_room:room,p_secret:secret,p_after:after||0})}
 
