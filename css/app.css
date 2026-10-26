@@ -4439,7 +4439,7 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .rpstage.dgmode .stand.right{right:19%}
 @media (max-width:760px){.rpstage.dgmode .stand.left{left:4%}.rpstage.dgmode .stand.right{right:4%}}
 /* 10-26 망령: 아래 내 정보 줄에 스킬 체크 카드가 붙으면 줄이 둘로 접혀 아래가 커졌다 — 넓은 화면에선 한 줄로, 남는 칸(마지막 굴림 · 포켓몬 아이콘)이 줄어든다 */
-@media (min-width:1200px){.mebar{flex-wrap:nowrap}}
+#rpu_me{container-type:inline-size}@container (min-width:1080px){.mebar{flex-wrap:nowrap}}
 @media (min-width:761px){
  .mebar .meid{flex:none}.meid small{white-space:nowrap}
  /* 포켓몬 아이콘은 3개씩 2줄 (하나만 아래로 떨어지던 것) */
