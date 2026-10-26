@@ -31,12 +31,20 @@ window.OM_STORE=(()=>{
  async function roomDel(room,secret){return rpc('om_room_del',{p_room:room,p_secret:secret})}   /* 10-24: supabase/patch_2026-10-24_방삭제.sql */
 
  /* ----- 상태 ----- */
- async function getState(room){const r=await sb().from('om_state').select('data,v').eq('room',room).maybeSingle();if(r.error)throw err(r.error);return r.data}
+ /* 10-26 상태 나누기 (supabase/patch_2026-10-26_상태나누기.sql): 배틀 · 포켓몬은 따로 담겨 있어 om_get_state 로 합쳐 읽고, 쓰기는 om_put.
+    SQL 을 아직 안 돌린 DB 면 함수가 없다 — 그때는 예전 방식(om_state 표 · om_set_state)으로 */
+ let SPLIT=null;   /* null 모름 · true 새 방식 · false 옛 방식 */
+ const noFn=e=>{const m=String((e&&(e.message||e.details||e.code))||'');return /PGRST202|Could not find the function|function .* does not exist/i.test(m)||(e&&e.code==='PGRST202')};
+ async function getState(room){
+  if(SPLIT!==false){const r=await sb().rpc('om_get_state',{p_room:room});if(!r.error){SPLIT=true;return r.data&&r.data.data?r.data:null}if(!noFn(r.error))throw err(r.error);SPLIT=false}
+  const r=await sb().from('om_state').select('data,v').eq('room',room).maybeSingle();if(r.error)throw err(r.error);return r.data}
  /* 10-23 이그레스: 버전만 (가볍게 확인하고, 앞서 있을 때만 전체를 읽는다) */
  async function getStateV(room){const r=await sb().from('om_state').select('v').eq('room',room).maybeSingle();if(r.error)throw err(r.error);return r.data}
  /* 10-22 로비 방 카드: 방마다 배경 · 첫 화면 · 마지막 변경만 (상태 전체는 무겁다) */
  async function roomsPeek(ids){if(!ids.length)return [];const r=await sb().from('om_state').select('room,updated_at,bg:data->rp->bg,scene:data->scene').in('room',ids);if(r.error)throw err(r.error);return r.data||[]}
- async function setState(room,secret,path,value){return rpc('om_set_state',{p_room:room,p_secret:secret,p_path:path||null,p_value:value===undefined?null:value})}
+ async function setState(room,secret,path,value){const args={p_room:room,p_secret:secret,p_path:path||null,p_value:value===undefined?null:value};
+  if(SPLIT!==false){const r=await sb().rpc('om_put',args);if(!r.error){SPLIT=true;return r.data}if(!noFn(r.error))throw err(r.error);SPLIT=false}
+  return rpc('om_set_state',args)}
 
  /* ----- 로그 ----- */
  async function getLog(room,after,limit){
