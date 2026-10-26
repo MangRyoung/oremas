@@ -51,7 +51,7 @@ window.NT_BOARD=(()=>{
    dos.innerHTML=opt.dossier?opt.dossier(sel,{edges:D.edges.filter(e=>e.a===sel||e.b===sel),byId}):`<h2>${esc(n.name)}</h2>`;
    dos.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{const t=b.dataset.go;sel=null;select(t);scrollTo(t)})}
   function scrollTo(id){const p=pos[id];if(!p)return;vp.scrollTo({left:(p.x+20)*scale-vp.clientWidth/2,top:(p.y+20)*scale-vp.clientHeight/2,behavior:'smooth'})}
-  board.addEventListener('click',e=>{if(e.target===board||e.target===svg){if(linkFrom){linkFrom=null;el.querySelectorAll('.cb-card.from').forEach(c=>c.classList.remove('from'));return}select(null)}});
+  board.addEventListener('click',e=>{if(board.dataset.panned)return;if(e.target===board||e.target===svg){if(linkFrom){linkFrom=null;el.querySelectorAll('.cb-card.from').forEach(c=>c.classList.remove('from'));return}select(null)}});
   board.addEventListener('dblclick',e=>{if(!opt.canEdit||!opt.onNew)return;if(e.target!==board&&e.target!==svg)return;const r=board.getBoundingClientRect();opt.onNew((e.clientX-r.left)/scale,(e.clientY-r.top)/scale)});
   function drag(c,id){let sx,sy,ox,oy,moved=false,pid=null;
    c.addEventListener('pointerdown',e=>{if(e.button!==0)return;pid=e.pointerId;c.setPointerCapture(pid);sx=e.clientX;sy=e.clientY;ox=pos[id].x;oy=pos[id].y;moved=false});
@@ -61,15 +61,22 @@ window.NT_BOARD=(()=>{
     select(id)})}
   /* PL(편집 못 하는 쪽)은 자기 브라우저에 둔 자리로 */
   if(!opt.canEdit){try{const o=JSON.parse(localStorage.getItem(key+':pos')||'{}');for(const id in o)if(pos[id])pos[id]={x:o[id][0],y:o[id][1]}}catch(e){}}
-  function setScale(s){scale=Math.max(.15,Math.min(1.4,s));frame.style.transform=`scale(${scale})`;sizer.style.width=((W+40)*scale)+'px';sizer.style.height=((H+40)*scale)+'px'}
-  const fit=()=>setScale(Math.min(vp.clientWidth/(W+40),1));
+  function setScale(s,ax,ay){const old=scale;scale=Math.max(.15,Math.min(1.6,s));frame.style.transform=`scale(${scale})`;sizer.style.width=((W+40)*scale)+'px';sizer.style.height=((H+40)*scale)+'px';
+   if(ax!=null){const bx=(vp.scrollLeft+ax)/old,by=(vp.scrollTop+ay)/old;vp.scrollLeft=bx*scale-ax;vp.scrollTop=by*scale-ay}}
+  /* 맞춤: 판 전체가 한눈에 — 가로 · 세로 둘 다 들어가게, 보는 창 높이도 판에 맞춘다 (스크롤 막대 없이) */
+  const fit=()=>{const maxH=Math.max(320,innerHeight-(innerWidth<980?150:200));const sc=Math.min(vp.clientWidth/(W+40),maxH/(H+40),1);vp.style.height=Math.round((H+40)*sc)+'px';setScale(sc);vp.scrollLeft=0;vp.scrollTop=0};
+  /* 빈 곳을 끌면 판이 움직인다 · 휠 = 확대/축소 (마우스 자리 기준) */
+  {let pan=null;vp.addEventListener('pointerdown',e=>{if(e.button!==0||e.target.closest('.cb-card,.hit'))return;pan={x:e.clientX,y:e.clientY,l:vp.scrollLeft,t:vp.scrollTop,id:e.pointerId,m:false}});
+   vp.addEventListener('pointermove',e=>{if(!pan||pan.id!==e.pointerId)return;const dx=e.clientX-pan.x,dy=e.clientY-pan.y;if(!pan.m&&Math.hypot(dx,dy)<4)return;pan.m=true;vp.classList.add('panning');vp.scrollLeft=pan.l-dx;vp.scrollTop=pan.t-dy});
+   const end=()=>{if(pan&&pan.m){board.dataset.panned='1';setTimeout(()=>{delete board.dataset.panned},0)}pan=null;vp.classList.remove('panning')};vp.addEventListener('pointerup',end);vp.addEventListener('pointercancel',end);
+   vp.addEventListener('wheel',e=>{e.preventDefault();const r=vp.getBoundingClientRect();setScale(scale*(e.deltaY<0?1.12:1/1.12),e.clientX-r.left,e.clientY-r.top)},{passive:false})}
   el.querySelector('.cb-top').addEventListener('click',e=>{const b=e.target.closest('[data-cb]');if(!b)return;const k=b.dataset.cb;
-   if(k==='in')setScale(scale*1.2);else if(k==='out')setScale(scale/1.2);else if(k==='fit')fit();
+   if(k==='in')setScale(scale*1.2,vp.clientWidth/2,vp.clientHeight/2);else if(k==='out')setScale(scale/1.2,vp.clientWidth/2,vp.clientHeight/2);else if(k==='fit')fit();
    else if(k==='labels'){labels=!labels;board.classList.toggle('labels',labels);b.setAttribute('aria-pressed',labels);b.textContent=labels?'실 메모 숨기기':'실 메모 보기';saveUi()}
    else if(k==='new'&&opt.onNew){opt.onNew(vp.scrollLeft/scale+vp.clientWidth/scale/2,vp.scrollTop/scale+vp.clientHeight/scale/2)}
    else if(k==='link'){linkFrom=null;el.querySelectorAll('.cb-card.from').forEach(x=>x.classList.remove('from'));b.classList.toggle('on');board.classList.toggle('linkmode',b.classList.contains('on'));b.textContent=b.classList.contains('on')?'🧵 실 잇기 중 — 두 사람을 차례로':'🧵 실 잇기'}});
   layoutAll();applyHidden();fit();select(null);
-  const ro=window.ResizeObserver?new ResizeObserver(()=>{if(scale>vp.clientWidth/(W+40))fit()}):null;if(ro)ro.observe(vp);
+  let lastW=0;const ro=window.ResizeObserver?new ResizeObserver(()=>{if(Math.abs(vp.clientWidth-lastW)>8){lastW=vp.clientWidth;fit()}}):null;if(ro)ro.observe(vp);
   return {select:id=>{select(id,true);scrollTo(id)},relayout:layoutAll,destroy:()=>{if(ro)ro.disconnect()}}}
  return {mount};
 })();
