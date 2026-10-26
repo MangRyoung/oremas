@@ -201,11 +201,11 @@ window.OM_DECK_UI=(()=>{
  function curDeck(){const L=visDecks();if(!L.length)return null;let x=L.find(([id])=>id===PV.deck);if(!x)x=L.find(([id])=>id===(DB()||{}).cur)||L[0];PV.deck=x[0];try{localStorage.setItem('om_deck_cur',PV.deck)}catch(e){}return x}
  function holderOf(t){if(!t)return '';return t.npc?'npc:'+t.name:t.id}
  function phone(t,canWrite){onAck();
-  if(!DB())return `<div class="ph-head deck"><button class="ph-back" data-ph="home">‹</button><div><b>덱</b><small>카드 · 손패 · 자원</small></div></div><div class="ph-empty">아직 덱이 없다.${gm()?'<br><br><button class="btn sm pri" data-pd="seed">덱 만들기 (예전 은열쇠 · 광기 카드를 옮겨 온다)</button>':'<br>GM 이 덱을 만들면 여기 나온다.'}</div>`;
+  if(!DB())return `<div class="ph-head deck"><button class="ph-back" data-ph="home">‹</button><div><b>덱</b><small>카드 · 손패 · 자원</small></div></div><div class="ph-empty">아직 덱이 없다.${gm()?'<br><br><button class="btn sm pri" data-pd="mkdeck">📥 제작기 덱 가져오기</button><br><br><button class="btn sm" data-pd="seed">예시 덱 만들기 (은열쇠 · 광기)</button>':'<br>GM 이 덱을 만들면 여기 나온다.'}</div>`;
   const cd=curDeck();if(!cd)return `<div class="ph-head deck"><button class="ph-back" data-ph="home">‹</button><div><b>덱</b></div></div><div class="ph-empty">볼 수 있는 덱이 없다${me()&&!gm()?'<br><br><button class="btn sm" data-pd="newdeck">＋ 내 덱 만들기</button>':''}</div>`;
   const [did,dk]=cd;const H=holderOf(t);const own=isOwner(dk,me(),gm());const mine=canWrite&&(gm()||H===me());
   const L=visDecks();const pn=pendingN();
-  const head=`<div class="ph-head deck"><button class="ph-back" data-ph="home">‹</button><div><select class="pd-sel" data-pd="deck">${L.map(([id,d])=>`<option value="${id}" ${id===did?'selected':''}>${esc(d.name)}${(DB()||{}).cur===id?' · 기본':''}${d.own?' · '+esc(hName(d.own)):''}</option>`).join('')}</select><small>${esc(hName(H))}의 손패${pn?` · ⏳ ${pn}`:''}</small></div><button class="btn xs" data-pd="mgr" title="카드 추가 · 편집 · 설정 · 자원 · 덱 관리">${own?'관리':'카드 목록'}</button></div>`;
+  const head=`<div class="ph-head deck"><button class="ph-back" data-ph="home">‹</button><div><select class="pd-sel" data-pd="deck">${L.map(([id,d])=>`<option value="${id}" ${id===did?'selected':''}>${esc(d.name)}${(DB()||{}).cur===id?' · 기본':''}${d.own?' · '+esc(hName(d.own)):''}</option>`).join('')}</select><small>${esc(hName(H))}의 손패${pn?` · ⏳ ${pn}`:''}</small></div>${gm()?'<button class="btn xs ghost" data-pd="mkdeck" title="제작기 트레이너 시트의 덱을 이 방으로 (다시 누르면 카드 · 장수만 맞춘다)">📥 제작기</button>':''}<button class="btn xs" data-pd="mgr" title="카드 추가 · 편집 · 설정 · 자원 · 덱 관리">${own?'관리':'카드 목록'}</button></div>`;
   const counts=`<div class="pdz"><span title="남은 덱"><b>${dk.pile.length}</b>덱</span><span title="버린 카드"><b>${dk.disc.length}</b>버림</span><span title="제외"><b>${dk.out.length}</b>제외</span><span title="손패"><b>${(dk.hands[H]||[]).length}</b>손패${+dk.opt.hl?'/'+dk.opt.hl:''}</span></div>`;
   const tabs=`<div class="ph-dtabs">${[['hand','손패'],['zones','덱 · 버린 카드'],['log','기록']].map(([k,n])=>`<button class="${PV.tab===k?'on':''}" data-pd="tab" data-v="${k}">${n}</button>`).join('')}</div>`;
   const body=PV.tab==='zones'?zonesTab(did,dk,H,own,mine):PV.tab==='log'?logTab(dk,own):handTab(did,dk,H,own,mine);
@@ -250,6 +250,7 @@ window.OM_DECK_UI=(()=>{
   md.querySelectorAll('[data-pd]').forEach(b=>{const ev=b.tagName==='SELECT'?'onchange':'onclick';b[ev]=async e=>{e.stopPropagation();const a=b.dataset.pd;const did=cd&&cd[0],dk=cd&&cd[1];const hand=dk?(dk.hands[H]||[]):[];
    switch(a){
     case 'seed':{if(!gm())return;await A().set(['deck2'],seedDb());return redraw()}
+    case 'mkdeck':{await importMakerDecks();return redraw()}
     case 'newdeck':{const n=prompt('새 덱 이름','내 덱');if(n==null)return;await run({op:'deckNew',name:n});return redraw()}
     case 'deck':PV.deck=b.value;PV.sel=[];PV.zsel={};PV.peek=null;try{localStorage.setItem('om_deck_cur',PV.deck)}catch(x){}return redraw();
     case 'tab':PV.tab=b.dataset.v;PV.zsel={};return redraw();
@@ -383,16 +384,31 @@ window.OM_DECK_UI=(()=>{
    쓸 수 있는 덱: 지금 보는 덱(PV.deck) → 기본 덱 → 그 손패가 있는 덱 순 */
  function deckFor(H){const L=visDecks();const has=([,d])=>(d.hands[H]||[]).length;return L.find(x=>x[0]===PV.deck&&has(x))||L.find(x=>x[0]===(DB()||{}).cur&&has(x))||L.find(has)||L.find(([,d])=>(d.holders||[]).includes(H))||L.find(x=>x[0]===(DB()||{}).cur)||L[0]||null}
  function handCount(tid){const x=deckFor(tid);return x?(x[1].hands[tid]||[]).length:0}
+ /* 10-26 망령: 제작기 덱 → 이 방 덱. 트레이너 시트의 「덱 관리」(t.deck=[{n,q}] · deckName) + 카드 DB(dbedit kind cards: 덱·이름·종류·비용·효과·색·그림·기본 장수·비고·자동화 구문)
+    로스터(시트)의 트레이너마다 덱 'mk_<tid>' 를 새로 만든다(같은 덱이 있으면 카드 · 장수만 고치고 손패 · 자원은 둔다). GM 만 */
+ async function importMakerDecks(){if(!gm())return;const R=((ST().state.roster||{}).trainers)||{};let rows=[];try{rows=await window.OM_STORE.makerDocs('dbedit')}catch(e){return A().toast('제작기 카드 DB 를 못 읽었다: '+e.message)}
+  const byName={};for(const r of rows){const d=r.data||{};if(d.kind!=='cards'||d.deleted)continue;const row=d.row||[];if(row[1])byName[row[1]]=row}
+  let mk=null;const ts=Object.values(R).filter(t=>t&&Array.isArray(t.deck)&&t.deck.length);
+  if(!ts.length){try{mk=await A().loadMaker&&A().loadMaker(true)}catch(e){}}
+  const list=ts.length?ts:[];if(!list.length)return A().toast('덱을 가진 트레이너가 없다 — 제작기 트레이너 시트 「덱 관리」에 카드를 넣고, 이 방에 파티를 다시 불러와 줘');
+  let db=DB()?clone(DB()):seedDb();if(!DB()){db.decks={};db.cur=''}const K=window.OM_FX;let nd=0,nc=0,miss=[];
+  for(const t of list){const id='mk_'+t.id;const old=db.decks[id]?fixDeck(db.decks[id]):null;const dk=old||blank(t.deckName||((t.name||'트레이너')+'의 덱'));dk.name=t.deckName||dk.name;ensureHolder(dk,t.id);
+   const keep=new Set();for(const x of t.deck){const r=byName[x.n];if(!r){miss.push(x.n);continue}const cid='k'+[...x.n].reduce((h,c)=>((h*31+c.codePointAt(0))>>>0),7).toString(36);keep.add(cid);
+    const dsl=String(r[9]||'').trim();const v={n:x.n,t:String(r[2]||''),c:r[3]==null?'':String(r[3]),x:String(r[4]||''),col:colKey(r[5]),img:String(r[6]||''),q:Math.max(0,+x.q||+r[7]||1)};if(dsl){const p=K?K.parse(dsl):{ops:[]};v.a={dsl,ops:p.ops}}
+    const was=dk.cards[cid];const q0=was?(+was.q||0):0;dk.cards[cid]=Object.assign({},v,{q:q0});if(!dk.order.includes(cid))dk.order.push(cid);qtyAdj(dk,cid,v.q-q0);nc++}
+   for(const cid of dk.order.slice())if(!keep.has(cid)&&String(cid).startsWith('k')){qtyAdj(dk,cid,-(+dk.cards[cid].q||0));dk.order=dk.order.filter(x=>x!==cid);delete dk.cards[cid];for(const z of ['pile','disc','out'])dk[z]=dk[z].filter(x=>x!==cid)}
+   if(!old)dk.pile=shuffle(dk.pile);db.decks[id]=dk;if(!db.cur)db.cur=id;nd++}
+  await A().set(['deck2'],db);A().toast(`제작기 덱 ${nd}개 · 카드 ${nc}종을 가져왔다${miss.length?` · 카드 DB 에 없는 것: ${[...new Set(miss)].slice(0,4).join(', ')}`:''}`);redrawSoon()}
  /* 손패 화면: 어두운 무대 위 부채꼴 손패 → 카드를 고르면 가운데로 크게 떠오르고 「사용」 */
  function bigCard(c){const col=colOf(c.col);const cost=c.c!==''&&c.c!=null;const auto=!!(c.a&&c.a.ops&&c.a.ops.length);
   return `<div class="hc" style="--hc:${col}"><div class="hc-in"><div class="hc-top"><b class="hc-n">${esc(c.n)}</b>${cost?`<span class="hc-cost">${esc(c.c)}</span>`:''}</div>
    <div class="hc-art" style="${c.img?`background-image:url('${cssu(c.img)}')`:''}">${c.img?'':`<span class="hc-mono">${esc([...(c.n||'?')][0])}</span>`}</div>
    ${c.t?`<div class="hc-type"><span>${esc(c.t)}</span></div>`:''}<div class="hc-x">${esc(c.x||'')}</div>${auto?'<div class="hc-auto" title="자동화 구문이 돈다">⚙ AUTO</div>':''}</div></div>`}
- function battleHand(tid,o){o=o||{};const x=deckFor(tid);const BU=window.OM_BATTLE_UI;if(!x)return A().toast('덱이 없다 — 휴대폰 「덱」에서 먼저 덱을 만들어 둬');const [did,dk]=x;const hand=(dk.hands[tid]||[]).slice();
+ function battleHand(tid,o){o=o||{};const x=deckFor(tid);const BU=window.OM_BATTLE_UI;if(!x){if(gm()&&confirm('이 방에 덱이 없다. 제작기 트레이너 시트의 덱을 가져올까?'))return importMakerDecks().then(()=>{if(deckFor(tid))battleHand(tid,o)});return A().toast('덱이 없다 — GM 이 휴대폰 「덱」에서 덱을 만들거나 제작기 덱을 가져와야 한다')}const [did,dk]=x;const hand=(dk.hands[tid]||[]).slice();
   document.querySelectorAll('.hand-ov').forEach(e=>e.remove());
   const ov=document.createElement('div');ov.className='hand-ov';const n=hand.length;const spread=Math.min(64,Math.max(28,520/Math.max(n,1)));const ang=Math.min(8,40/Math.max(n,1));
   const res=dk.opt.cr?`<span class="ho-res">${esc(dk.opt.cr)} <b>${esc(String(((dk.rv[tid]||{})[dk.opt.cr])??0))}</b></span>`:'';
-  ov.innerHTML=`<div class="ho-bg"></div><div class="ho-head"><div><small>${esc(dk.name)}</small><h2>${esc(hName(tid))}의 손패</h2></div>${res}<span class="ho-cnt">${n}<small>장</small></span><span class="sp"></span><button class="ho-btn ho-grave" data-ho="grave" title="버린 카드(무덤) — 잘못 쓴 카드는 여기서 손패로 되돌린다">🪦 무덤 <b>${dk.disc.length}</b></button><button class="ho-btn" data-ho="phone">덱 앱</button><button class="ho-btn" data-ho="x">✕</button></div>
+  ov.innerHTML=`<div class="ho-bg"></div><div class="ho-head"><div><small>${esc(dk.name)}</small><h2>${esc(hName(tid))}의 손패</h2></div>${res}<span class="ho-cnt">${n}<small>장</small></span><span class="sp"></span><button class="ho-btn ho-grave" data-ho="grave" title="버린 카드(무덤) — 잘못 쓴 카드는 여기서 손패로 되돌린다">🪦 무덤 <b>${dk.disc.length}</b></button>${gm()?'<button class="ho-btn" data-ho="mk" title="제작기 트레이너 시트의 덱을 다시 맞춘다">📥 제작기</button>':''}<button class="ho-btn" data-ho="phone">덱 앱</button><button class="ho-btn" data-ho="x">✕</button></div>
    <div class="ho-stage"><div class="ho-focus"></div></div>
    <div class="ho-fan">${hand.map((cid,i)=>{const c=dk.cards[cid];if(!c)return '';const k=i-(n-1)/2;return `<div class="ho-slot" data-hi="${i}" style="--x:${k*spread}px;--r:${k*ang}deg;--y:${Math.abs(k)*Math.abs(k)*2.2}px;--d:${i*45}ms">${bigCard(c)}</div>`}).join('')||'<div class="ho-empty">손패가 비었다</div>'}</div>
    <div class="ho-gv"></div>
@@ -404,7 +420,7 @@ window.OM_DECK_UI=(()=>{
   const pick=i=>{sel=i;ov.querySelectorAll('.ho-slot').forEach(s=>s.classList.toggle('sel',+s.dataset.hi===i));const c=dk.cards[hand[i]];
    focus.innerHTML=c?`<div class="ho-big">${bigCard(c)}</div><div class="ho-acts"><button class="ho-use" data-ho="use">사용</button><button class="ho-btn ho-dis" data-ho="discard" title="효과 · 비용 없이 버린 카드로">🪦 무덤으로</button><button class="ho-btn" data-ho="cancel">취소</button></div>`:'';ov.classList.toggle('picked',!!c)};
   ov.addEventListener('click',async e=>{const t=e.target;const h=t.closest('[data-ho]');const sl=t.closest('.ho-slot');
-   if(h){const k=h.dataset.ho;if(k==='x')return close();if(k==='phone'){close();PV.deck=did;return open()}if(k==='cancel'){sel=-1;focus.innerHTML='';ov.classList.remove('picked');ov.querySelectorAll('.ho-slot').forEach(s=>s.classList.remove('sel'));return}if(k==='use')return use(sel);if(k==='discard')return discard(sel);if(k==='grave')return grave();if(k==='back'){ov.classList.remove('gview');return}
+   if(h){const k=h.dataset.ho;if(k==='x')return close();if(k==='phone'){close();PV.deck=did;return open()}if(k==='mk'){close();await importMakerDecks();setTimeout(()=>battleHand(tid,o),300);return}if(k==='cancel'){sel=-1;focus.innerHTML='';ov.classList.remove('picked');ov.querySelectorAll('.ho-slot').forEach(s=>s.classList.remove('sel'));return}if(k==='use')return use(sel);if(k==='discard')return discard(sel);if(k==='grave')return grave();if(k==='back'){ov.classList.remove('gview');return}
     if(k==='revive'){const cid=h.dataset.cid;close();PV.deck=did;const r=await run({op:'take',d:did,h:tid,from:'disc',ids:[cid]});if(r&&r.err)return A().toast(r.err);A().toast(`「${(dk.cards[cid]||{}).n||''}」 을(를) 손패로 되돌렸다`);setTimeout(()=>battleHand(tid,o),350);return}}
    if(sl){const i=+sl.dataset.hi;if(i===sel)return use(i);return pick(i)}
    if(t.classList.contains('ho-bg')||t.classList.contains('ho-stage'))close()});
@@ -419,5 +435,5 @@ window.OM_DECK_UI=(()=>{
    if(hasA&&anchor&&BU&&BU.fireAuto){const okA=await BU.fireAuto(anchor,'pot',card.n,{auto:Object.assign({name:card.n,src:'card',text:card.x||''},card.a),quiet:true,noRoll:true,head,img:card.img||'',eff:card.x||''});if(okA!==false)return}
    else if(hasA&&!anchor)A().toast('필드에 기준 포켓몬이 없어 구문은 건너뛰고 효과 글만 남긴다');
    await A().sysLog(`${head}${card.x?'\n'+card.x:''}`,'battle')}}
- return {open,absorb,phone,bindPhone,openMgr,exec,seedDb,onAck,handCount,battleHand};
+ return {open,absorb,phone,bindPhone,openMgr,exec,seedDb,onAck,handCount,battleHand,importMakerDecks};
 })();

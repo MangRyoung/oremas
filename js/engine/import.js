@@ -15,7 +15,7 @@ window.OM_IMPORT=(()=>{
  /* 제작기 트레이너 문서 → 배틀 트레이너 */
  function trainer(doc){
   const d=(doc.data&&doc.data.data)||doc.data||doc;
-  return {id:doc.id||d.id,name:d.name||'트레이너',kind:d.kind==='npc'?'npc':'pc',image:d.image||'',stands:standsOf(d.stands),standActive:+d.standActive||0,
+  return {deck:(Array.isArray(d.deck)?d.deck:[]).filter(x=>x&&x.n).map(x=>({n:String(x.n).slice(0,60),q:Math.max(0,Math.min(99,Math.floor(+x.q||1)))})),deckName:String(d.deckName||'').slice(0,40),id:doc.id||d.id,name:d.name||'트레이너',kind:d.kind==='npc'?'npc':'pc',image:d.image||'',stands:standsOf(d.stands),standActive:+d.standActive||0,
    ranks:Object.assign({육성:'',지시:'',통솔:'',능력:''},d.ranks||{}),base:d.base||{},detail:d.detail||{},
    unique:(d.unique||[]).filter(u=>u&&u.name).map(u=>{const o={name:u.name,eff:brN(u.eff||'')};for(const k of ['color','icon','sub'])if(u[k])o[k]=String(u[k]).slice(0,40);if(u.line)o.line=String(u.line).slice(0,80);const dsl=String(u.auto||'').trim();if(dsl){const r=window.OM_FX?window.OM_FX.parse(dsl):{ops:[]};o.auto={dsl,ops:r.ops}}return o}),
    pids:d.pids||[],solo:!!d.solo,folder:d.folder||'',fields:fieldsOf(d.fields),
