@@ -392,7 +392,8 @@ window.OM_DG_UI=(()=>{
  async function startEnc(d,rid0){if(!gm())return;const id=rid0||d.at,r=R(d)[id];const e=encOf(r);if(!e)return A().toast('이 방에는 야생 포켓몬을 두지 않았다 — 던전 관리에서 배치');if(!e.t)return A().toast('이 방의 야생 무리 트레이너가 시트에 없다');
   const L=party(d),walk={};L.forEach(t=>walk[t]=walkOf(t));
   await A().encounter({left:L,right:[r.e],walk,dg:{did:d.id,rid:id},title:`${d.n||'던전'} · ${r.n||ty(r.t).k}`})}
- function retSync(){let el=document.getElementById('dgRet');const b=ST().state.battle||{},d=cur();const want=gm()&&!!d&&ST().state.scene==='battle'&&!!b.dg&&b.dg.did===d.id;
+ document.addEventListener('click',e=>{if(e.target&&e.target.closest&&e.target.closest('button[data-s]'))setTimeout(()=>{try{retSync()}catch(_){}},60)});
+ function retSync(){let el=document.getElementById('dgRet');const b=ST().state.battle||{},d=cur();/* 10-26 망령: RP 화면에서도 떠 있어 아래 줄과 겹쳤다 — 배틀 탭을 보고 있을 때만 */const want=gm()&&!!d&&ST().state.scene==='battle'&&!!b.dg&&b.dg.did===d.id&&!!document.querySelector('button[data-s="battle"].on');
   if(!want){if(el)el.remove();return}
   if(!el){el=document.createElement('button');el.id='dgRet';el.type='button';el.className='dg-ret';el.textContent='⛩ 던전으로 돌아가기';el.title='배틀을 마치고 던전 방으로 (결과 정리 · 클리어 표시)';el.onclick=retOpen;document.body.append(el)}}
  function retOpen(){const d=cur(),b=ST().state.battle||{};if(!d||!b.dg)return;const rid0=b.dg.rid,r=R(d)[rid0]||{};const foes=Object.values(b.mons||{}).filter(m=>m.side==='right');const win=foes.length>0&&foes.every(m=>((m.hp||{}).cur||0)<=0);
