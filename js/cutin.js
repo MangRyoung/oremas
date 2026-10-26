@@ -47,7 +47,7 @@ window.OM_CUTIN=(()=>{
   setTimeout(()=>{if(r.parentNode)r.remove()},(END+.45)*1000)}
  /* 효과음 덧대기 (10-23 망령): 파일 없이 브라우저에서 바로 만든다 — VS 충돌 순간 「쾅」 · 혼자일 때 글자 박히는 「탁」. 효과음 끄기 · 음량 설정을 따른다 */
  let AC=null,MX=null;
- function synth(kind){try{if(window.OM_PREFS&&window.OM_PREFS.get().seMute)return;let v=0.7;try{v=+(localStorage.getItem('om_vol_se')??0.7)}catch(e){}if(!(v>0))return;
+ function synth(kind){try{if(window.OM_PREFS&&window.OM_PREFS.get().seMute)return;{const U=window.OM_RP_UI;if(U&&U.seUrlOf&&U.seUrlOf('syn_'+kind)){U.playSe('syn_'+kind,true);return}}   /* 10-26: 효과음 목록에 「syn_<종류>」 파일이 있으면 그걸 울린다 (블아 효과음 교체안) — 없으면 아래 합성음 */let v=0.7;try{v=+(localStorage.getItem('om_vol_se')??0.7)}catch(e){}if(!(v>0))return;
   if(!AC){AC=new (window.AudioContext||window.webkitAudioContext)();MX=AC.createDynamicsCompressor();MX.threshold.value=-14;MX.knee.value=8;MX.ratio.value=4;MX.attack.value=.003;MX.release.value=.18;const OUT=AC.createGain();OUT.gain.value=1.35;MX.connect(OUT);OUT.connect(AC.destination)}   /* 10-25: 압축 뒤 한 번 더 키운다 (맥아리 없다는 말) */
   if(AC.state==='suspended')AC.resume();const t=AC.currentTime+.01;
   /* 음 하나: 파형 · 시작 · 길이 · 크기 · (끝 높이) — 짧게 올라갔다 부드럽게 줄어든다 */
