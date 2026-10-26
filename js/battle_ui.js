@@ -314,11 +314,11 @@ window.OM_BATTLE_UI=(()=>{
  /* 10-23 망령: 4식 6령 불가 — 시트 체크(올드 타입은 기본), 「난동부리기」·반무적(공중·땅속·물속 …) 상태 */
  function noOrdWhy(m){if(!m)return '';const why=[];const old=(m.pots||[]).some(p=>p&&/분류/.test(p.kind||'')&&String(p.name||'').trim()==='올드 타입');if(m.noOrd!=null?m.noOrd:old)why.push(m.noOrd==null?'올드 타입':'시트 체크');
   const st=m.states||{};const db=(DB().states||{}).st||{};const semi=(((DB().states||{}).groups||[]).find(g=>g.l==='반무적')||{}).s||['VanishToDark','VanishToHole','Fly','VanishToWater','VanishToFire','VanishToMeteor','VanishToSun'];
-  for(const k of ['Thrash',...semi])if(st[k])why.push((db[k]||{}).ko||k);return why.join(' · ')}
+  for(const k of ['Thrash','Recharge',...semi])if(st[k])why.push((db[k]||{}).ko||k);return why.join(' · ')}
  const NOORD_W={},THR_PICK={};
  function potSrc(m){return [...(m.pots||[]).filter(p=>p&&!p.ph&&p.name),...(m.excl?[m.excl]:[]),...(m.exclX||[])]}
  /* 고유 포텐셜 = 트레이너 것. 횟수는 battle.trainers[tid].uUses */
- function uniqList(t){return ((t&&t.unique)||[]).filter(u=>u&&u.name).map(u=>{const mm=String(u.eff||'').match(/【(\d+)\/시】/);const max=mm?+mm[1]:null;const left=max==null?null:(((t.uUses||{})[u.name]==null)?max:+(t.uUses||{})[u.name]);return {p:u,kind:'고유',max,left}})}
+ function uniqList(t){return ((t&&t.unique)||[]).filter(u=>u&&u.name).map(u=>{const mm=String(u.eff||'').match(/【(\d+)\/시】/);const max=mm?+mm[1]:/【\s*소진\s*】/.test(String(u.eff||''))?1:null;const left=max==null?null:(((t.uUses||{})[u.name]==null)?max:+(t.uUses||{})[u.name]);return {p:u,kind:'고유',max,left}})}
  function potList(m){const out=[];const src=potSrc(m);
   for(const p of src){const mm=String(p.eff||'').match(/【(\d+)\/시】/);if(mm)out.push({name:p.name,max:+mm[1]})}return out}
  /* 해석: 상대 포켓몬의 타입은 「타입」 해석(또는 전체)부터, 포텐셜 칸은 전체 해석부터 보인다 (도감 scope 기준 — GM · 주인 · 같은 편은 늘 보인다) */
@@ -417,7 +417,7 @@ window.OM_BATTLE_UI=(()=>{
     <div class="pane ${locked?'ro':''}">
      <div class="sec">행동 <span class="seg"><span class="${!isSwitch?'on':''}" data-seg="move">기술</span><span class="${isSwitch?'on':''}" data-seg="switch">교대</span></span><span class="note">에리어 ${m.entry.toUpperCase()}</span></div>
      ${isSwitch?(()=>{const tw=trapWarn(m);return tw?`<div class="small" style="margin:4px 0;color:${tw.free?'var(--ok)':'var(--yel2)'}">${tw.free?`교대 제한(${esc(tw.hit.join('·'))})이 걸려 있지만 ${esc(tw.free)}로 교대할 수 있다`:`⚠ ${esc(tw.hit.join('·'))} 때문에 교대할 수 없다${tw.pot?` — 「${esc(tw.pot)}」를 쓰면 교대할 수 있다`:''}`}</div>`:''})():''}${isSwitch?`<div class="pg">${bench.length?bench.map(bm=>`<div class="pc ${x.switch===bm.id?'on':''}" data-sw="${bm.id}"><div class="pic" style="${bm.image?`background-image:url('${cssu(bm.image)}')`:''}"></div><div><b>${esc(bm.name)}</b><div class="small dim">${bm.hp.cur}/${bm.hp.max}</div></div></div>`).join(''):'<div class="dim small">교대할 포켓몬이 없다</div>'}</div>`
-     :`${(m.states||{}).Oblivion?'<div class="small" style="color:var(--yel2);margin:2px 0 4px">「망각」 상태 — 「발버둥」만 내보낼 수 있다</div>':''}<div class="mvg">${MVS(m).map((mv,i)=>moveCard(mv,i,String(x.move)===String(i),`data-mv="${i}"`)).join('')}</div>${mvSel?`<div class="mef">${esc(mvSel.eff||'')}${mvSel.tag&&mvSel.tag!=='-'?` <span class="dim">[${esc(mvSel.tag)}]</span>`:''}</div>`:''}
+     :`${(m.states||{}).Recharge?'<div class="small" style="color:var(--yel2);margin:2px 0 4px">「반동 : 행동불능」 — 이번 턴은 움직일 수 없다 (행동 없음 · 4식 6령도 받을 수 없다)</div>':''}${(m.states||{}).Oblivion?'<div class="small" style="color:var(--yel2);margin:2px 0 4px">「망각」 상태 — 「발버둥」만 내보낼 수 있다</div>':''}<div class="mvg">${MVS(m).map((mv,i)=>moveCard(mv,i,String(x.move)===String(i),`data-mv="${i}"`)).join('')}</div>${mvSel?`<div class="mef">${esc(mvSel.eff||'')}${mvSel.tag&&mvSel.tag!=='-'?` <span class="dim">[${esc(mvSel.tag)}]</span>`:''}</div>`:''}
       ${mvSel?`<div class="sec">대상 <span class="note">범위 ${esc(mvSel.range)} — 누르면 바꿀 수 있다</span></div>${(m.states||{}).Thrash?`<div class="small" style="color:var(--yel2);margin:2px 0 4px">「난동부리기」 — ${x.tman?'손으로 고른 대상으로 때린다':'공격할 때 적진에서 랜덤으로 고른다 · 대상을 누르면 손으로 정한다'}</div>`:''}${board(b,m.side,(slot)=>x.targets.includes(slot),(slot)=>`data-tgt="${slot}"`,false,m)}`:''}${(()=>{const pp=prePursuit(t,m,x,cur.upots);const auto=isPursuit(mvSel,m);return `<div class="row small purrow" style="margin-top:6px;gap:8px;flex-wrap:wrap"><span class="oc ${x.pman||auto?'mine':''}" data-pman title="노린 대상이 교대하면 교대 전에 먼저 때린다 (맵툴 「추격」 칸)"><b>추격</b><small>${auto?'기술에 있음':x.pman?'켬':'끔'}</small></span>${pp.pur&&pp.pur!=='손으로 선행'?`<span class="tag" style="color:var(--yel2)">선행 『${esc(pp.pur)}』에 추격이 묻어 있다</span>`:''}${pp.pimm?`<span class="tag" style="color:var(--ok)">선행 『${esc(pp.pimm)}』 — 상대 추격 무시</span>`:''}${(()=>{const ua=isUturn(mvSel,m);return `<span class="oc ${x.uman||ua?'mine':''}" data-uman title="공격이 명중하면 임의 교대한다 — 상대가 이 포켓몬을 「따라가때리기」로 노리면 빠지기 전에 맞는다"><b>유턴</b><small>${ua?'기술에 있음':x.uman?'켬':'끔'}</small></span>${pp.ut&&pp.ut!=='손으로 선행'?`<span class="tag" style="color:var(--yel2)">선행 『${esc(pp.ut)}』에 유턴이 묻어 있다</span>`:''}`})()}<span class="dim">공개되지 않고, 걸리면 행동 순서 때 드러난다</span></div>`})()}`}
      <details class="cfold" data-fold="${tid}:sp" ${UIC.fold[tid+':sp']?'open':''}><summary>전용 포텐셜 <span class="tag ext">${esc(m.name)}</span><span class="fsum">${fsum(x.pots.filter(n=>specialPots(m).some(s=>s.p.name===n)))}</span></summary><div class="note small">선행 입력 — 턴 중 「포텐셜 발동」에서 「선행 발동」</div><div class="pool">${potDecl(c,m,x,'sp')}</div></details>
      <details class="cfold" data-fold="${tid}:ord" ${UIC.fold[tid+':ord']?'open':''}><summary>명령 <small class="dim">4식</small><span class="fsum">${fsum(x.order?[OO().orderName(t,x.order)]:[])}</span></summary>${noOrdWhy(m)?`<div class="small noordw">⚠ 4식 6령 불가 — ${esc(noOrdWhy(m))}</div>`:''}<div class="note small">에리어 ${m.entry.toUpperCase()} ${esc(m.name)} 에 선행 입력 — 턴 중 「포텐셜 발동」에서 발동</div><div class="pool">${OKEYS.map((k,i)=>oNames[i]?`<div class="oc ${x.order===k?'mine':''} ${(cnt['order_'+k]??0)<=0?'dis':''}" data-ord="${k}"><b>${esc(oNames[i])}</b>${OO().ownerOf(t,k)?`<i class="oown">${esc(OO().ownerOf(t,k))}</i>`:''}<small>남은 ${cnt['order_'+k]??0}</small></div>`:'').join('')||'<span class="dim small">쓸 수 있는 명령이 없다</span>'}</div></details>
@@ -449,8 +449,9 @@ window.OM_BATTLE_UI=(()=>{
    blk.querySelectorAll('[data-pq]').forEach(el=>el.onclick=()=>{const n=+el.dataset.pq;x.prio=x.prio||{};x.prio[el.dataset.slot]=n?String(n):'';rerenderCmd()});
    blk.querySelectorAll('[data-pman]').forEach(el=>el.onclick=()=>{x.pman=x.pman?0:1;rerenderCmd()});blk.querySelectorAll('[data-uman]').forEach(el=>el.onclick=()=>{x.uman=x.uman?0:1;rerenderCmd()});
    const noOrdGate=()=>{const mm=c.b.mons[mid];const why=noOrdWhy(mm);const wk=mid+':'+(+c.b.turn||0);if(!why||NOORD_W[wk])return false;NOORD_W[wk]=1;A().toast(`⚠ ${mm.name} — 4식 6령을 받을 수 없다 (${why}). 그래도 넣으려면 한 번 더 누른다`);return true};
-   blk.querySelectorAll('[data-ord]').forEach(el=>el.onclick=()=>{if(el.classList.contains('dis'))return;if(x.order!==el.dataset.ord&&noOrdGate())return;x.order=x.order===el.dataset.ord?'':el.dataset.ord;rerenderCmd()});
-   blk.querySelectorAll('[data-cmd]').forEach(el=>el.onclick=()=>{if(el.classList.contains('dis'))return;if(x.command!==el.dataset.cmd&&noOrdGate())return;x.command=x.command===el.dataset.cmd?'':el.dataset.cmd;rerenderCmd()});
+   const oneOf=(k,nm)=>{const o=Object.entries(cur.mons).find(([id,v])=>id!==mid&&v&&v[k]&&(c.b.mons[id]||{}).entry);if(!o)return false;A().toast(`${nm}은 한 턴에 하나만 — ${(c.b.mons[o[0]]||{}).name||'다른 포켓몬'}에 넣은 것을 먼저 뺀다`);return true};   /* 10-26 망령: 4식 · 6령은 트레이너당 한 턴에 종류별 하나 */
+   blk.querySelectorAll('[data-ord]').forEach(el=>el.onclick=()=>{if(el.classList.contains('dis'))return;if(x.order!==el.dataset.ord&&oneOf('order','4식(명령)'))return;if(x.order!==el.dataset.ord&&noOrdGate())return;x.order=x.order===el.dataset.ord?'':el.dataset.ord;rerenderCmd()});
+   blk.querySelectorAll('[data-cmd]').forEach(el=>el.onclick=()=>{if(el.classList.contains('dis'))return;if(x.command!==el.dataset.cmd&&oneOf('command','6령(지령)'))return;if(x.command!==el.dataset.cmd&&noOrdGate())return;x.command=x.command===el.dataset.cmd?'':el.dataset.cmd;rerenderCmd()});
    blk.querySelectorAll('[data-pdecl]').forEach(el=>el.onclick=()=>{if(el.classList.contains('dis'))return;const n=el.dataset.pdecl;x.pots=x.pots||[];const i=x.pots.indexOf(n);if(i>=0)x.pots.splice(i,1);else x.pots.push(n);rerenderCmd()});
    blk.querySelectorAll('[data-f]').forEach(el=>{const h=()=>{const f=el.dataset.f;const xm=cur.mons[el.dataset.mid]||x;if(f==='prio')xm.prio[el.dataset.slot]=el.value;if(f==='ochg')xm.ochg[el.dataset.slot]=el.value;if(f==='detail')cur.detail=el.value};el.addEventListener('input',h);el.addEventListener('change',h)})})}
  const MULTI_RANGE=/전체|적진|자진|자신 이외|[2-9]체/;
@@ -499,7 +500,9 @@ window.OM_BATTLE_UI=(()=>{
   if(!seatOwned(c,m.tid))return run();
   if(!RVT[key])RVT[key]=setTimeout(run,2500)}
  function unrevealed(b){const out=[];for(const tid in b.trainers||{}){const t=b.trainers[tid];const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid&&m.entry&&m.hp.cur>0);for(const m of mons)if(!revealed(b,tid,m.id))out.push(`${t.name} ${String(m.entry).toUpperCase()}`)}return out}
- async function progressTurn(){const c=ctx();if(!c.mgr)return;const p=+c.b.phase||0;if(p===1)return stepTurn();const next={0:1,1:2,2:3,3:5,5:0}[p];if(next==null)return;return setPhase(next)}
+ async function progressTurn(){const c=ctx();if(!c.mgr)return;const p=+c.b.phase||0;
+  /* 10-26: 행동 처리 중에 「턴 진행」을 또 누르면 남은 행동이 통째로 건너뛰어졌다 — 물어본다 */
+  if(p===3){const O=c.b.order||[];const i0=+c.b.orderIdx||0;if(O.slice(i0).some(o=>{const m=(c.b.mons||{})[o.mid];return m&&m.entry&&m.hp.cur>0})&&!(await askYes('아직 행동하지 않은 포켓몬이 있다. 그래도 턴 종료로 넘어갈까?','넘어간다','돌아간다')))return}if(p===1)return stepTurn();const next={0:1,1:2,2:3,3:5,5:0}[p];if(next==null)return;return setPhase(next)}
  /* ----- 턴 개시 단계 (맵툴 set_turn_start → 1.5 set_turn_potential → 2): ① 교대가 있으면 교대 알림 · 교대 처리 → ② 선행 입력이 있으면 『지령』 & 『포텐셜』 발동 알림 → 행동 순서 (10-21 망령) ----- */
  /* 턴 개시 「『지령』 & 『포텐셜』 발동」 컷인에 세는 선행 (10-24 망령): 4식(버텨라! · 물러나! …)은 공격받을 때 쓰는 것이라 턴 개시에 뜨지 않는다 — 글에 「턴 개시」 가 있으면 센다 */
  /* 10-23 망령: 선행 포텐셜은 글에 「턴 개시」 가 있을 때만 · 지령(6령)은 늘 · 결계 · 법계(5계)는 늘 · 4식 등 다른 지시는 「턴 개시」 가 있을 때만 */
@@ -644,6 +647,8 @@ window.OM_BATTLE_UI=(()=>{
   if(F()){const nb0=snap(),nb=snap(nb0);const nm=nb.mons[mid];nm.entry=area;const f=fieldOf(nb);const oppSide=m.side==='left'?'right':'left';const opp=entered(nb,oppSide);
    const r=F().hazardsOnEntry(nm,f,opp);if(r.lines.length){if(nm.hp.cur<=0){nm.entry='';r.lines.push(`${nm.name}은(는) 쓰러졌다!`)}else if(r.forced){nm.entry='';r.lines.push(`${nm.name}은(는) 튕겨 나갔다 — 다른 포켓몬을 내보내야 한다`)}
     await saveBattle(nb0,nb,f);A().sysLog(`설치기 처리\n${r.lines.join('\n')}`,'battle')}}
+  /* 10-26 (서서 VS 마리 시험): 필드의 다른 포켓몬이 「있는 한」 걸어 둔 효과(재앙의그릇 · 승리의별 …)를 새로 들어온 포켓몬에게도 */
+  if(FX()&&FX().reAura&&ctx().b.started&&(ctx().b.mons[mid]||{}).entry){const nb0=snap(),nb=snap(nb0);const L=FX().reAura(nb,nb.mons[mid]);if(L.length&&await saveBattle(nb0,nb))A().sysLog(`【필드 효과】\n${L.join('\n')}`,'battle')}
   /* 10-26 망령: 시합 개시 전에 나온 포켓몬 · 동시 내밀기는 모두 나온 뒤에 등장 효과를 스피드 순으로 (위협이 아무도 못 맞히던 것) */
   if(FX()&&(ctx().b.mons[mid]||{}).entry&&!opt.noAuto&&ctx().b.started)await autoOnEntry(mid,{how:opt.how||(opt.forced?'강제 교대':occ&&occ.id!==mid?'통상 교대':(+b.phase||0)>=2?'통상 교대':'죽어내밀기')})}
  async function autoEntryAll(ids,hows){const b=ctx().b;const f=fieldOf(b);const sp=m=>{try{return B().statValue(m,'speed').value*spMulOf(m,f).v}catch(e){return +((m.stats||[])[5]||0)}};
@@ -852,6 +857,10 @@ window.OM_BATTLE_UI=(()=>{
   A().sysLog(`【${LB}】 ${who} 『${name}』${left}${tag}${tgt?'\n대상:'+tgt.replace(' →',''):''}`,'battle',{mid:m?m.id:'',img,eff:String(x.p.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,400)})}
  async function fireOrder(tid,mid,kind,key,how){const c=ctx();const b0=snap(c.b),b=snap(b0);const t=b.trainers[tid];const m=b.mons[mid];if(!t||!m)return;
   const name=kind==='order'?OO().orderName(t,key):OO().commandName(t,key);const ck=(kind==='order'?'order_':'command_')+key;t.orderCount=t.orderCount||{};
+  /* 10-26 망령 (서서 VS 마리 시험): 4식 · 6령은 한 턴에 종류별로 하나만 · 임의 발동은 원칙이 아니다 (선행 입력 → 선행 발동) */
+  {const KN=kind==='order'?'4식(명령)':'6령(지령)';const used=Object.entries((((b.cmds||{})[tid]||{}).fired)||{}).find(([id,x])=>x&&x[kind]&&!(id===mid&&x[kind]===key&&how==='pre'));
+   if(used&&how!=='force'){const um=b.mons[used[0]];return A().toast(`${KN}은 한 턴에 하나만 — 이번 턴에 이미 『${kind==='order'?OO().orderName(t,used[1][kind]):OO().commandName(t,used[1][kind])}』(${um?um.name:'?'})를 썼다`)}
+   if(how==='free'&&!(await askYes(`${KN}은 지시 단계에서 선행 입력한 것을 「선행 발동」으로 쓰는 게 원칙이다.\n【임의】가 붙는 조건(6령 ② 등)일 때만 임의 발동한다. 그래도 지금 임의 발동할까?`,'임의 발동','그만')))return}
   let tag='';
   if(how==='pre'){tag='【선행】'}
   else if(how==='free'){if((+t.orderCount[ck]||0)<=0)return A().toast('남은 횟수가 없어 임의 발동할 수 없다');t.orderCount[ck]=(+t.orderCount[ck]||0)-1;{const sk=kind==='command'?OO().shareKey(t,key):'';const o=sk?'command_'+sk:'';if(o)t.orderCount[o]=Math.max(0,(+t.orderCount[o]||0)-1)}tag='【임의】'}
@@ -871,7 +880,8 @@ window.OM_BATTLE_UI=(()=>{
  async function myCmd(c,tid,quiet){let rows;try{rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd')}catch(e){if(!quiet)A().toast('지시를 읽지 못했다: '+e.message);return null}const r=(rows||[]).filter(x=>cmdFresh(x,c.b)).find(x=>x.id===tid);if(!r){if(!quiet)A().toast('저장된 지시가 없다 — 먼저 「저장」');return null}return r.data}
  function revealCardText(b,t,m,x){if(x.move==='switch')return `${t.name} · ${m.name} (${slotName(b,m.side+'_'+m.entry).replace(/<[^>]+>/g,'')}): 「교대」 → ${monName(b,x.switch)}`;
   if(x.move===''||x.move==null)return `${t.name} · ${m.name}: (행동 없음)`;const mv=MVS(m)[+x.move]||{};
-  return `${t.name} · ${m.name} (${SIDE_KO[m.side]} ${String(m.entry).toUpperCase()}): 「${mv.name||'?'}」 ${mv.type||''}·${mv.cat||''} · 위력 ${mv.pow||'-'} · 명중 ${mv.acc||'-'}${mv.prio?' · 우선도 '+mv.prio:''}${x.targets&&x.targets.length?' → '+x.targets.map(sl=>slotName(b,sl).replace(/<[^>]+>/g,'')).join(', '):''}${mv.eff&&mv.eff!=='-'?'\n   '+mv.eff:''}`}
+  const thr=(m.states||{}).Thrash&&!x.tman&&mv.cat!=='변화'&&!/전체|적진|자진|자신/.test(String(mv.range||''));   /* 10-26: 난동부리기면 대상은 공격할 때 랜덤 */
+  return `${t.name} · ${m.name} (${SIDE_KO[m.side]} ${String(m.entry).toUpperCase()}): 「${mv.name||'?'}」 ${mv.type||''}·${mv.cat||''} · 위력 ${mv.pow||'-'} · 명중 ${mv.acc||'-'}${mv.prio?' · 우선도 '+mv.prio:''}${thr?' → 적진에서 랜덤 (「난동부리기」)':x.targets&&x.targets.length?' → '+x.targets.map(sl=>slotName(b,sl).replace(/<[^>]+>/g,'')).join(', '):''}${mv.eff&&mv.eff!=='-'?'\n   '+mv.eff:''}`}
  /* 공개 카드 그림용 (10-24 망령): 누가 · 무엇을 · 누구에게 — 로그가 그림 칩으로 그린다 */
  function revealData(b,t,m,x){const at=sl=>{const [s,a]=String(sl).split('_');const q=Object.values(b.mons||{}).find(q=>q.side===s&&q.entry===a&&q.hp&&q.hp.cur>0);return {slot:sl,side:s,area:String(a||'').toUpperCase(),name:q?q.name:'',img:q?q.image||'':'',mid:q?q.id:''}};
   const o={tr:t.name||'',mid:m.id,name:m.name,img:m.image||'',side:m.side,area:String(m.entry||'').toUpperCase()};
@@ -1014,7 +1024,8 @@ window.OM_BATTLE_UI=(()=>{
   else for(const mid in b.mons){const m=b.mons[mid];if(!m.entry||m.hp.cur<=0)continue;
    for(const t of B().turnEnd(m)){if(!t.delta)continue;m.hp.cur=Math.max(0,Math.min(m.hp.max,m.hp.cur+t.delta));lines.push(`${m.name} ${db[t.state]?db[t.state].ko:t.state} ${t.delta>0?'+':''}${t.delta} → ${m.hp.cur}`);if(m.hp.cur<=0){lines.push(`${m.name} 빈사!`);m.entry=''}}}
   for(const mid in b.mons){const m=b.mons[mid];if(!m.entry||m.hp.cur<=0)continue;
-   const st=m.states||{};for(const k in st){const v=+st[k];const def=db[k]||{};if((def.prog==='turn'||def.prog==='once')&&!movesDown(k,def)&&v>0&&v<1000){   /* 10-23 망령: 「다음 기술 한 번」 상태(악인 · 송전 · 자세잡기 …)도 행동 안 했으면 턴 종료에 준다 */st[k]=v-1;if(st[k]<=0){delete st[k];if(m.futRsv&&m.futRsv.st===k)futs.push(m);else relAdd(m,`「${def.ko||k}」`)}}}
+   const st=m.states||{};/* 10-26 망령: 「반동 : 행동불능」으로 쉬는 턴에도 「난동부리기」는 줄어든다 */if(+st.Recharge===1&&st.Thrash){const tv=+st.Thrash;if(tv<=1){delete st.Thrash;relAdd(m,'「난동부리기」')}else if(tv<1000)st.Thrash=tv-1}
+   for(const k in st){const v=+st[k];const def=db[k]||{};if((def.prog==='turn'||def.prog==='once')&&!movesDown(k,def)&&v>0&&v<1000){   /* 10-23 망령: 「다음 기술 한 번」 상태(악인 · 송전 · 자세잡기 …)도 행동 안 했으면 턴 종료에 준다 */st[k]=v-1;if(st[k]<=0){delete st[k];if(m.futRsv&&m.futRsv.st===k)futs.push(m);else relAdd(m,`「${def.ko||k}」`)}}}
    /* 임시 랭크 해제 */
    if(m.tempRank){for(const k in m.tempRank){{const lim=k==='critical'?4:6;m.rank[k]=Math.max(-lim,Math.min(lim,(+m.rank[k]||0)-(+m.tempRank[k]||0)))}}delete m.tempRank;relAdd(m,'임시 랭크')}
    if(m.tempMod){for(const k in m.tempMod){m.mod[k]=Math.round(((+m.mod[k]||1)/(+m.tempMod[k]||1))*1000)/1000;if(Math.abs(m.mod[k]-1)<0.002)delete m.mod[k]}delete m.tempMod}
@@ -1612,7 +1623,7 @@ window.OM_BATTLE_UI=(()=>{
  function foulAtk(atk,def,mv){if(!def||!FOUL_RE.test(String((mv||{}).eff||'')))return atk;const x=Object.assign({},atk);x.stats=(atk.stats||[]).slice();x.stats[1]=(def.stats||[])[1]||x.stats[1];x.rank=Object.assign({},atk.rank||{},{attack:+((def.rank||{}).attack||0)});x.mod=Object.assign({},atk.mod||{},{attack:+((def.mod||{}).attack||1)});return x}
  /* 이제 창이 알아서 하는 「손으로」 문장 (속임수 · 날씨 차지 생략 · 날씨 위력 반감 · 난동부리기) */
  const autoNote=t=>FOUL_RE.test(String(t))||/「날씨\s*:[^」]*」일 때 「차지」를 생략|「날씨\s*:[^」]*」일 때 위력을 반감|「기술 방어」\s*상태가 된다|^「난동부리기\s*\(혼란\)\s*:\s*\d+~\d+회」$/.test(String(t).trim());
- const protMove=mv=>/「기술 방어」\s*상태가 된다/.test(String((mv||{}).eff||''));
+ const protMove=mv=>/「(기술|공격) 방어」\s*상태가 된다/.test(String((mv||{}).eff||''));
  const protBypass=mv=>{const e=String((mv||{}).eff||'');if(!/「방어」(?:「[^」]*」)*\s*상태를\s*무시/.test(e))return '';return /무시\(해제\)|해제한다/.test(e)?'clear':'pass'};
  function openAttack(mid){const c=ctx();const b=c.b;const atk=b.mons[mid];if(!atk||!canEdit(c,atk))return;const f=fieldOf(b);
   const RM=k=>+((f.rooms||{})[k]||0)>0;/* 10-25 망령: 송전 · 침수 · 악인 상태면 다음 기술이 전기 · 물 · 악 타입 (여럿이면 맨 끝 것 — 손으로 바꿀 수 있다) */const TYS0=[['Electrify','Electric'],['Flooding','Water'],['Knave','Dark']].filter(([k])=>+((atk.states||{})[k]||0)>0);let ATY=TYS0.length?TYS0[TYS0.length-1][1]:'';const tyOf=mv=>ATY||(RM('블랙룸')&&mv.cat!=='변화'?'Ghost':((skinOf(atk,mv)||{}).ty||mv.typeEn));
@@ -1625,7 +1636,7 @@ window.OM_BATTLE_UI=(()=>{
   const defMoveIdx=x.move!==''&&x.move!=='switch'&&x.move!=null?+x.move:oeIdx>=0?oeIdx:((atk.states||{}).Oblivion?MVS(atk).findIndex(q=>q.name==='발버둥'):0);
   let T0=((x.targets&&x.targets.length)?x.targets:(OE&&OE.targets)||[]).filter(s=>slots.some(z=>z.slot===s));let lostNote='';{const lost=(x.targets||[]).filter(s=>!slots.some(z=>z.slot===s));const mv0=MVS(atk)[defMoveIdx];
    if(lost.length&&!T0.length){const foes=slots.filter(z=>!sameT(z.mon,atk,b));const nm=lost.map(s=>{const [sd,ar]=s.split('_');const q=Object.values(b.mons||{}).find(o=>o.side===sd&&o.entry===ar);return q?q.name:s.replace('_',' ').toUpperCase()}).join(', ');
-    if(mv0&&mv0.cat!=='변화'&&foes.length===1){T0=[foes[0].slot];lostNote=`<div class="small" style="color:var(--yel2);margin:2px 0 4px">지시한 대상(${esc(nm)})이 쓰러져 있어 남은 상대 ${esc(foes[0].mon.name)}(으)로 바꿨다</div>`}
+    if(mv0&&(mv0.cat!=='변화'||String(mv0.range||'')==='1체')&&foes.length===1){T0=[foes[0].slot];lostNote=`<div class="small" style="color:var(--yel2);margin:2px 0 4px">지시한 대상(${esc(nm)})이 쓰러져 있어 남은 상대 ${esc(foes[0].mon.name)}(으)로 바꿨다</div>`}
     else lostNote=`<div class="small" style="color:var(--yel2);margin:2px 0 4px">지시한 대상(${esc(nm)})이 쓰러져 있다 — 다른 대상을 골라 줘</div>`}}
   /* 10-23 망령: 「난동부리기」 — 대상은 적진에서 랜덤 (지시에서 손으로 고른 대상이 있으면 그대로). 같은 턴에 창을 다시 열어도 같은 대상 */
   let thrNote='';if((atk.states||{}).Thrash&&!x.tman){const mv0=MVS(atk)[defMoveIdx];const foes=slots.filter(z=>!sameT(z.mon,atk,b));const multi=/전체|적진|자진|자신/.test(String((mv0||{}).range||''));
@@ -1704,12 +1715,12 @@ window.OM_BATTLE_UI=(()=>{
    for(const slot of targets){const [side,area]=slot.split('_');const def=entered(b,side)[area];if(!def)continue;
     const AF=atk.flags||{},DF=def.flags||{};const phys=mv.cat==='물리',spec=mv.cat==='특수';
     const sure=ck('asure')||AF.surehit||(phys&&AF.hitPhys)||(spec&&AF.hitSpec)||!!(FX()&&FX().nextOf&&FX().nextOf(atk).some(e=>e.sure));const IG=FX()?iuIgnore(atk,def):{};
-    const autoMiss=(phys&&DF.dodgePhys)||(spec&&DF.dodgeSpec)||AF.acc0;
+    const sureMv=sure||!(+mv.acc);/* 10-26 망령 판정: 「필중기」는 『피해라!』『물러나!』로 피할 수 없다 */const autoMiss=((phys&&DF.dodgePhys)||(spec&&DF.dodgeSpec))&&!sureMv||AF.acc0;
     /* 사이코필드: 땅 위의 포켓몬은 상대의 선공 기술(우선도 +1 이상)을 받지 않는다 */
     const psyBlock=f.terrain.type==='사이코필드'&&!sameT(def,atk)&&grd(def)&&(FX()?FX().prioOf(atk,mv):(+mv.prio||0))>0;
     const itImm=OI()&&mv.cat!=='변화'?OI().immune(def,moveTypes):'';
     /* 와이드가드(「전체기 방어」): 그 진영이 받는 전체기(대상 2체 이상 · 범위가 전체인 기술)를 막는다 — 같은 편 전체기도 */const wideBlock=def!==atk&&+(((f.objects||{})[def.side]||{})['와이드가드']||0)>0&&(multiTarget||/전체|자신\s*이외/.test(String(mv.range||'')));
-    const protBlock=def!==atk&&!PBY&&(def.flags||{}).protect===(+b.turn||0)&&def.hp.cur>0;const accRoll=()=>protBlock?{prot:1,sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:`${def.name} 「기술 방어」 — 기술을 막았다`,prot:1}:wideBlock?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:`${SIDE_KO[def.side]} 「와이드가드」 — 전체기를 막았다`}:itImm?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:`${def.name}의 「${itImm}」 — 효과가 없다`}:psyBlock?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:'사이코필드 — 땅 위라 선공 기술 무효'}:autoMiss?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:'지령으로 회피/명중 0'}:B().accuracy(atk,def,{acc:mv.acc},{accMult:n('aacc'),sureHit:sure,starry:f.weather.type==='별하늘',fog:f.weather.type==='짙은안개',fogImmune:moveTypes.some(t=>t==='Poison'||t==='Fairy'),gravity:(f.etc||{})['중력']>0,wideLens:IT(atk)==='광각렌즈',ignoreAcc:IG.acc,ignoreEva:IG.eva});const acc=accRoll();
+    const protBlock=def!==atk&&!PBY&&(def.flags||{}).protect===(+b.turn||0)&&def.hp.cur>0;const accRoll=()=>protBlock?{prot:1,sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:`${def.name} 「기술 방어」 — 기술을 막았다`,prot:1}:wideBlock?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:`${SIDE_KO[def.side]} 「와이드가드」 — 전체기를 막았다`}:itImm?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:`${def.name}의 「${itImm}」 — 효과가 없다`}:psyBlock?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:'사이코필드 — 땅 위라 선공 기술 무효'}:autoMiss?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:'지령으로 회피/명중 0'}:B().accuracy(atk,def,{acc:mv.acc},{accMult:n('aacc'),sureHit:sure,starry:f.weather.type==='별하늘',fog:f.weather.type==='짙은안개',fogImmune:moveTypes.some(t=>t==='Poison'||t==='Fairy')||tysOf(atk).some(t=>t==='Poison'||t==='Fairy'),gravity:(f.etc||{})['중력']>0,wideLens:IT(atk)==='광각렌즈',ignoreAcc:IG.acc,ignoreEva:IG.eva});const acc=accRoll();
     /* 효과 엔진: 상성을 먼저 보고 강화·완화·급소 조건을 맞춘다 */
     const effPre=mv.cat==='변화'?null:B().effectiveness(moveTypes,def,{multiMode:+g('amulti').value,atkTypes,force:g('aforce').value===''?null:+g('aforce').value,floating:(def.states||{}).MagnetRise||(def.states||{}).Telekinesis||(FX()&&FX().floating(def))||IT(def)==='풍선'});
     const mods=FX()?FX().attackMods(atk,def,Object.assign(moveQuery(atk,def,mv,moveTypes,effPre?effPre.value:1,!multiTarget),{stab:!!(effPre&&effPre.stab)})):{boost:1,guard:1,cg:0,cr:0,cx:'',names:[]};
@@ -1813,6 +1824,10 @@ ${PR?`「기술 방어」 ${PR.ok?'성공':'실패'}${PR.k?` (연속 ${PR.k+1}�
      if(/서로의 필드의 상태를 뒤바꾼다/.test(e)){const L0=f2.objects.left||{},R0=f2.objects.right||{};f2.objects={left:R0,right:L0};lines.push(`좌측 ↔ 우측 설치물을 맞바꿨다 — 『${RESULT.mv.name}』`)}}}
    /* 10-26 망령: 「난동부리기 (혼란) : 2~3회」(역린 · 꽃잎댄스 …) — 처음 쓰면 남은 횟수만큼 「난동부리기」, 끝나면 혼란 */
    {const tm2=String(RESULT.mv.eff||'').match(/「난동부리기\s*\(혼란\)\s*:\s*(\d+)~(\d+)회」/);const a=nb.mons[mid];if(tm2&&a&&!RESULT.check){a.states=a.states||{};if(!a.states.Thrash&&!a.thrashOn){const n=+tm2[1]+Math.floor(Math.random()*(+tm2[2]-+tm2[1]+1));if(n>1){a.states.Thrash=n-1;a.thrashOn=1;lines.push(`${a.name} 「난동부리기」 — 앞으로 ${n-1}번 더 (끝나면 혼란)`)}}else if(!a.states.Thrash&&a.thrashOn){delete a.thrashOn;const cf=((DB().states||{}).st||{}).Confusion||{};const lo=+cf.min||1,hi=+cf.max||lo;a.states.Confusion=lo+Math.floor(Math.random()*(hi-lo+1));lines.push(`${a.name} 난동이 끝나 「혼란」 상태가 됐다`)}}}
+   /* 10-26 망령 (서서 VS 마리 시험): 「반동 : 행동불능」 기술이 맞으면 다음 턴 움직일 수 없다 · 『버서커』는 공격하면 2턴 「난동부리기」 */
+   {const a=nb.mons[mid];const e=String(RESULT.mv.eff||'');if(a&&!RESULT.check&&a.hp.cur>0){a.states=a.states||{};
+    if(/「반동\s*:\s*행동불능」/.test(e)&&RESULT.targets.some(r=>r.acc.hit)){a.states.Recharge=2;lines.push(`${a.name} 「반동 : 행동불능」 — 다음 턴 움직일 수 없다 (무시하는 효과가 있으면 상태에서 지운다)`)}
+    if(RESULT.mv.cat!=='변화'&&!(atk.states||{}).Thrash&&!a.states.Thrash&&potSrc(a).some(p=>String(p.name||'').trim()==='버서커')){a.states.Thrash=2;lines.push(`${a.name} 『버서커』 — 2턴 동안 「난동부리기」`)}}}
    /* 10-26 망령: 「다음 기술」 효과는 기술을 내보내면 (변화기 · 빗나감이어도) 다 쓴다 */
    if((RESULT.nextKeys||[]).length){const a=nb.mons[mid];const F=a.fx||{};const nk=RESULT.nextKeys;const had=(F.mods||[]).some(e=>e.next&&nk.includes(e.key));F.mods=(F.mods||[]).filter(e=>!(e.next&&nk.includes(e.key)));F.prio=(F.prio||[]).filter(e=>!(e.next&&nk.includes(e.key)));if(had)lines.push(`${a.name} 「다음 기술」 효과를 썼다`)}
    nb.mons[mid].lastDealt={total:RESULT.targets.filter(r=>r.acc.hit&&r.dmg).reduce((a,r)=>a+(r.hp?r.hp.final:0),0),targets:RESULT.targets.filter(r=>r.acc.hit&&r.dmg).map(r=>r.def.name).join(', '),at:Date.now()};
