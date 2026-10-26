@@ -13,6 +13,21 @@
 -- 여러 번 실행해도 된다. 데이터를 지우지 않는다 (옮기기만). 되돌리는 법은 맨 아래.
 -- ⚠ 이 파일을 돌린 뒤 schema.sql 이나 10-20 ~ 10-25 패치를 다시 돌리면 옛 함수 · 트리거가 돌아와 이 변경이 깨진다 — 그랬다면 이 파일을 곧바로 한 번 더 돌릴 것.
 
+-- ---------- 0. 백업 (처음 돌릴 때 한 번만 · 다시 돌려도 덮어쓰지 않는다) ----------
+-- om_bak_20261026     : 돌리기 직전의 방 상태 전부 (room · data · v · updated_at)
+-- om_bak_20261026_fn  : 돌리기 직전의 om_* 함수 정의 · om_state 트리거 정의
+-- 둘 다 RLS 를 켜고 정책을 두지 않아 화면(anon)에서는 못 읽는다. 대시보드 Table Editor 에서만 보인다. 다 괜찮으면 나중에 drop table 로 지워도 된다.
+create table if not exists public.om_bak_20261026 as
+  select room, data, v, updated_at, now() as backed_at from public.om_state;
+alter table public.om_bak_20261026 enable row level security;
+create table if not exists public.om_bak_20261026_fn as
+  select p.proname::text as name, pg_get_function_identity_arguments(p.oid) as args, pg_get_functiondef(p.oid) as def
+    from pg_proc p where p.pronamespace = 'public'::regnamespace and p.proname like 'om\_%' and p.prokind = 'f'
+  union all
+  select t.tgname::text, 'trigger', pg_get_triggerdef(t.oid) || ';' from pg_trigger t where t.tgrelid = 'public.om_state'::regclass and not t.tgisinternal;
+alter table public.om_bak_20261026_fn enable row level security;
+revoke all on public.om_bak_20261026, public.om_bak_20261026_fn from anon, authenticated;
+
 -- ---------- 표 ----------
 create table if not exists public.om_part (
   room text not null references public.om_rooms(id) on delete cascade,
@@ -295,7 +310,14 @@ end $$;
 -- 확인: 방마다 나머지 크기 · 조각 수
 -- select s.room, pg_column_size(s.data) as rest_bytes, (select count(*) from om_part p where p.room = s.room) as parts from om_state s order by 2 desc;
 
--- ---------- 되돌리기 (필요할 때만, 아래 주석을 풀고 실행) ----------
+-- ---------- 백업에서 통째로 되돌리기 (돌리기 직전 순간으로 — 그 뒤에 바뀐 것은 사라진다) ----------
+-- update om_state s set data = b.data, v = s.v + 1 from om_bak_20261026 b where b.room = s.room;
+-- delete from om_part;
+-- drop function if exists public.om_put(text,text,text[],jsonb);  drop function if exists public.om_get_state(text);
+-- drop trigger if exists om_state_notify on public.om_state;
+-- do $$ declare r record; begin for r in select def from om_bak_20261026_fn order by (args = 'trigger') loop execute r.def; end loop; end $$;   -- 옛 함수 · 트리거 정의를 그대로 다시 만든다
+
+-- ---------- 지금 상태를 살린 채 되돌리기 (필요할 때만, 아래 주석을 풀고 실행) ----------
 -- update om_state s set data = public.om_full(s.room);
 -- delete from om_part;
 -- drop function if exists public.om_put(text,text,text[],jsonb);  drop function if exists public.om_get_state(text);   -- 열려 있는 새 화면도 예전 방식으로 돌아간다
