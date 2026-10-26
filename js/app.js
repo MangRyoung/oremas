@@ -289,12 +289,16 @@ async function openRoom(id,gm,asPl){
  if(ST.role==='gm'){try{const a=JSON.parse(sessionStorage.getItem('om_aspl_'+id)||'null');if(a){ST.asPlGm={secret:ST.secret,gmNick:ST.gmNick};ST.role=a.seat?'seat':null;ST.seat=a.seat||'';ST.name=a.seat||'구경';ST.canGm=true}}catch(e){}}
  ST.asPlGm=ST.asPlGm&&ST.role!=='gm'?ST.asPlGm:null;
  CHAN.cur='s';ST._toBottom=true;renderRoom();
- ST.subH={onPatch,onEvent:p=>{PATCH.last=Date.now();if(p&&p.t==='hello')onHello(p);if(window.OM_RP_UI&&p&&p.t==='typing')window.OM_RP_UI.onTyping(p);if(window.OM_CUTIN&&p&&p.t==='cutin')window.OM_CUTIN.onEvent(p);if(window.OM_EMO&&p&&p.t==='emo'&&VIEW==='rp')window.OM_EMO.onEvent(p)},onState:(d,v)=>{if(v>=ST.v){ST.state=d;ST.v=v;renderScene();if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.watch)window.OM_BATTLE_UI.watch().catch(e=>console.warn(e))}},onLog:r=>{PATCH.last=Date.now();if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;renderLog(true);notifyLog(r);mobNote(r);if(window.OM_RP_UI)window.OM_RP_UI.onChat(r)}},
+ ST.subH={onPatch,onEvent:p=>{PATCH.last=Date.now();if(p&&p.t==='hello')onHello(p);if(window.OM_RP_UI&&p&&p.t==='typing')window.OM_RP_UI.onTyping(p);if(window.OM_CUTIN&&p&&p.t==='cutin')window.OM_CUTIN.onEvent(p);if(window.OM_EMO&&p&&p.t==='emo'&&VIEW==='rp')window.OM_EMO.onEvent(p)},onState:(d,v)=>{if(v>=ST.v){ST.state=d;ST.v=v;renderScene();if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.watch)window.OM_BATTLE_UI.watch().catch(e=>console.warn(e))}},onLog:r=>{PATCH.last=Date.now();logFill();if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;renderLog(true);notifyLog(r);mobNote(r);if(window.OM_RP_UI)window.OM_RP_UI.onChat(r)}else if(!ST.log.some(x=>x.id===r.id)){ST.log.push(r);ST.log.sort((x,y)=>x.id-y.id);renderLog(true)}},
   onStatus:s=>{const el=$('#conn');if(el){el.textContent=s==='SUBSCRIBED'?'● 실시간':'○ '+s;el.style.color=s==='SUBSCRIBED'?'var(--acc2)':'var(--mute)'}RT.st=s;RT.at=Date.now();if(s==='SUBSCRIBED'){startPresence();if(ST._sub)resync('재연결');else checkState('구독');ST._sub=true}}};
  ST.unsub=DBS().subscribe(id,ST.subH);
  if(ST.role){pollWhispers();ST.wtimer=setInterval(pollWhispers,4000)}
  if(!ST.role&&!ST.asPlGm)openSeatPicker()}
 
+/* 실시간 로그가 한꺼번에 몰리면(퇴장 · 등장 · 자동 효과가 동시에) 순서가 뒤바뀌거나 몇 줄이 아예 안 오는 일이 있었다 (10-26 FFA 시험: 4줄 누락) —
+ 늦게 온 줄은 제자리에 끼우고, 로그가 들어오면 2.5초 뒤 그 사이 서버 로그를 한 번 더 읽어 빠진 줄을 채운다 */
+const LOGFILL={t:null,base:null};
+function logFill(){if(!ST.room)return;if(LOGFILL.base==null)LOGFILL.base=ST.lastLogId;clearTimeout(LOGFILL.t);LOGFILL.t=setTimeout(async()=>{const room=ST.room,base=LOGFILL.base;LOGFILL.base=null;try{const rows=await DBS().getLog(room,base,200);if(ST.room!==room||!rows||!rows.length)return;const have=new Set(ST.log.map(x=>x.id));const add=rows.filter(r=>!have.has(r.id));if(!add.length)return;ST.log.push(...add);ST.log.sort((x,y)=>x.id-y.id);ST.lastLogId=Math.max(ST.lastLogId,...add.map(r=>r.id));renderLog(true)}catch(e){}},2500)}
 /* 실시간이 끊겼다 다시 붙거나(노트북 절전 · 폰 백그라운드) 창이 다시 보이면, 그사이 놓친 로그와 상태를 다시 읽는다 (점검 3-9) */
 let RESYNC=null;
 function resync(why){if(!ST.room)return Promise.resolve();if(RESYNC)return RESYNC;const room=ST.room;
