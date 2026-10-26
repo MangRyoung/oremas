@@ -89,7 +89,7 @@ window.OM_BATTLE_UI=(()=>{
  /* ---------- 렌더 ---------- */
  /* 상태 설명의 %campaign:키% (맵툴 룰 상수) 를 값으로 — DB 가 바뀔 때마다 한 번 */
  let DESC_FIX=null;function fixStDesc(){const st=(DB().states||{}).st;if(!st||DESC_FIX===st)return;DESC_FIX=st;const C=((DB().const||{}).campaign)||{};const rp=s=>String(s).replace(/%campaign:([^%]+)%/g,(a,k)=>C[k]!=null?String(C[k]):a);for(const k in st){const d=st[k];if(d&&Array.isArray(d.desc))d.desc=d.desc.map(rp)}}
- function render(el){fixStDesc();
+ function render(el){fixStDesc();setTimeout(()=>{try{dupWatch(ctx(),ctx().b)}catch(e){}},0);
   const c=ctx();const b=c.b;const f=fieldOf(b);const ready=c.ST.state.ready||{};
   const phases=[[0,'지시 준비'],[1,'턴 개시'],[2,'행동 순서'],[3,'행동 처리'],[5,'턴 종료']];
   const chips=[f.weather.type?`날씨 ${f.weather.type}${f.weather.count?' '+f.weather.count+'T':''}`:'',f.terrain.type?`${f.terrain.type}${f.terrain.count?' '+f.terrain.count+'T':''}`:'',...ROOMS.filter(r=>(f.rooms||{})[r]>0).map(r=>`${r} ${f.rooms[r]}T`),...ETC.filter(r=>(f.etc||{})[r]>0).map(r=>`${r} ${f.etc[r]}T`)].filter(Boolean);
@@ -800,7 +800,12 @@ window.OM_BATTLE_UI=(()=>{
  async function selfCharge(tid0){const c=ctx();const b=c.b;const tid=tid0||c.seat;const t=(b.trainers||{})[tid];if(c.role!=='seat'||!t)return;const key=turnKey(b);if(t.pcTurn===key||BUSY.pc===key)return;BUSY.pc=key;
   const cm=await myCmd(c,tid,true);const t0=snap((ctx().b.trainers||{})[tid]||t),t2=snap(t0);if(t2.pcTurn===key)return;if(cm)chargeOne(t2,cm,ctx().b);t2.pcTurn=key;await A().setDiff(['battle','trainers',tid],t0,t2,1)}
  /* 상태가 바뀔 때마다 (app.js onState): 턴 개시면 내 선입력 차감, 공개 요청이 오면 내 남은 지시를 연다, 진행자는 자동으로 넘긴다 */
- async function watch(){const c=ctx();const b=c.b;try{coWatch()}catch(e){}faintWatch().catch(e=>console.warn('faint',e));hpFormWatch().catch(e=>console.warn('hpform',e));answerAsks().catch(e=>console.warn('asks',e));if(b.endq&&b.endq.step)endAdvance();if((+b.phase||0)>=2)return autoRevealTurn();if((+b.phase||0)!==1)return;
+ /* 10-26 망령: 배틀 준비(시합 개시 전) 중에 한 파티에 같은 소지품이 겹치면 그 파티를 다루는 사람(GM · 그 좌석)에게만 한 번 알린다. 소지품을 또 바꿔 다르게 겹치면 다시 */
+ const DUP_SEEN={};
+ function dupWatch(c,b){if(!b||b.started||!A().dupItems)return;const T=b.trainers||{};
+  for(const [tid,t] of Object.entries(T)){if(!(c.gm||ownT(c,tid)))continue;const d=A().dupItems(Object.values(b.mons||{}).filter(m=>m.tid===tid));if(!d.length)continue;
+   const key=(A().ST.room||'')+'|'+tid+'|'+JSON.stringify(d);if(DUP_SEEN[key])continue;DUP_SEEN[key]=1;const tx=A().dupItemText(t.name||tid,d);A().selfLog(tx);A().toast(tx)}}
+ async function watch(){const c=ctx();const b=c.b;try{dupWatch(c,b)}catch(e){console.warn('dup',e)}try{coWatch()}catch(e){}faintWatch().catch(e=>console.warn('faint',e));hpFormWatch().catch(e=>console.warn('hpform',e));answerAsks().catch(e=>console.warn('asks',e));if(b.endq&&b.endq.step)endAdvance();if((+b.phase||0)>=2)return autoRevealTurn();if((+b.phase||0)!==1)return;
   if(c.role==='seat')for(const tid of myTrainers(c).filter(t=>lead(c,t))){await selfCharge(tid);await publishOk(tid);   /* 함께 지시하는 트레이너도 (주인이 없을 때) */
    const key=turnKey(b);if(String(b.revealReq||'')===key&&!BUSY.rv){const left=Object.values(b.mons||{}).filter(m=>m.tid===tid&&m.entry&&m.hp.cur>0&&!revealed(b,tid,m.id)&&!SENT[key+':'+m.id]);
     if(left.length){BUSY.rv=1;try{for(const m of left){if(revealed(ctx().b,tid,m.id))continue;SENT[key+':'+m.id]=1;await revealOne(tid,m.id,true)}}finally{BUSY.rv=0}}}}

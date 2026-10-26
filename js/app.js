@@ -580,6 +580,9 @@ function avatarOf(r){const d=r.data||{};if(d.k&&window.OM_RP_UI&&window.OM_RP_UI
 const SELFK=()=>'om_selflog_'+(ST.room||'');let SELFLOG=null;
 function selfRows(){if(SELFLOG&&SELFLOG.room===ST.room)return SELFLOG.rows;let rows=[];try{rows=JSON.parse(localStorage.getItem(SELFK())||'[]')||[]}catch(e){}SELFLOG={room:ST.room,rows};return rows}
 function selfLog(t){const rows=selfRows();rows.push({id:(ST.lastLogId||0)+0.5,kind:'self',at:new Date().toISOString(),data:{t:String(t)}});while(rows.length>50)rows.shift();try{localStorage.setItem(SELFK(),JSON.stringify(rows))}catch(e){}renderLog(true)}
+/* 10-26 망령: 같은 소지품은 한 파티에 하나만 — 겹치면 [[소지품, [포켓몬 이름…]]] */
+function dupItems(mons){const by={};for(const m of mons||[]){const it=String((m&&m.item)||'').trim();if(!it)continue;(by[it]=by[it]||[]).push(m.name||m.id)}return Object.entries(by).filter(([k,v])=>v.length>1)}
+function dupItemText(name,d){return `⚠ ${name} — 같은 소지품이 겹친다 (한 파티에 하나만): ${d.map(([it,ns])=>`「${it}」 ${ns.join(' · ')}`).join(' / ')}`}
 /* 소지품 줄만 나만 보는 로그로, 나머지는 모두에게 */
 function splitLog(name,L,kind){const it=L.filter(x=>/^소지품/.test(x)),rest=L.filter(x=>!/^소지품/.test(x));if(rest.length)sysLog(`${name} ${rest.join(' · ')}`,kind||'battle');if(it.length)selfLog(`${name} ${it.join(' · ')}`)}
 /* 채팅 고정 (10-24 망령): 켜 두면 새 글이 와도 스크롤을 그대로 둔다 — 고정 단추에 새 글 표시만 */
@@ -787,7 +790,7 @@ async function loadFromRoster(tid,side){
  /* 바뀐 칸만 쓴다 (점검 3-18) — 트레이너 → 진영 → 포켓몬 순. 좌석은 자기 트레이너·포켓몬·진영 칸만 (턴·필드 같은 기본값은 GM 만) */
  const rk={trainers:0,sides:1,mons:2};let ops=diffOps(['battle'],b0,nb,3);if(ST.role!=='gm')ops=ops.filter(o=>o[0][1] in rk);
  ops.sort((x,y)=>(rk[x[0][1]]??3)-(rk[y[0][1]]??3));const ok=await setMany(ops);
- if(ok){toast(`${trainer.name} 파티 ${mons.length}체를 불러왔다`);sysLog(`${trainer.name} (${side==='left'?'좌측':'우측'}${trainer.solo?' · 개인전':''}) 파티 등록 · ${mons.length}체`,'battle');VIEW='battle';renderScene()}}
+ if(ok){{const d=dupItems(mons);if(d.length&&B().started){   /* 시합 개시 전이면 배틀 화면의 준비 점검(dupWatch)이 한 번 알린다 */const tx=dupItemText(trainer.name,d);selfLog(tx);setTimeout(()=>toast(tx),400)}}toast(`${trainer.name} 파티 ${mons.length}체를 불러왔다`);sysLog(`${trainer.name} (${side==='left'?'좌측':'우측'}${trainer.solo?' · 개인전':''}) 파티 등록 · ${mons.length}체`,'battle');VIEW='battle';renderScene()}}
 
 /* ---------- 던전 조우 (10-26 망령: 「위치에 야생 포켓몬을 배치해서 곧바로 배틀 진입」) ----------
    일행 트레이너(좌)와 방에 둔 야생 무리(우, 시트의 GM 트레이너)로 배틀 칸을 새로 차린다. 같은 진영 일행은 한 팀(개인전 아님).
@@ -1108,6 +1111,6 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
 /* 이름으로 기본 초상 찾기: 그림이 따로 없으면 같은 이름의 로스터 트레이너 → 포켓몬 → 관계도 노드의 그림을 쓴다 */
 function portraitOf(name,img){if(img)return img;if(!name)return '';const ro=ST.state.roster||{};const t=Object.values(ro.trainers||{}).find(x=>x.name===name);if(t&&t.image)return t.image;const m=Object.values(ro.mons||{}).find(x=>x.name===name&&x.image);if(m)return m.image;const n=Object.values((ST.state.graph||{}).nodes||{}).find(x=>x.name===name&&x.img);return n?n.img:''}
-window.OM_APP={logFill,bchOpen,selfLog,splitLog,contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,cleanupTrainer,openMon,openLoadParty,loadFromRoster,encounter,loadMaker,loadMakerParty,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,online:s=>!!s&&Object.values(PRES.who).some(v=>v.role==='seat'&&v.seat===s&&Date.now()-v.at<70000),get view(){return VIEW},goView:v=>{VIEW=v||scene();renderScene()},set view(v){VIEW=v}};
+window.OM_APP={dupItems,dupItemText,logFill,bchOpen,selfLog,splitLog,contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,cleanupTrainer,openMon,openLoadParty,loadFromRoster,encounter,loadMaker,loadMakerParty,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,online:s=>!!s&&Object.values(PRES.who).some(v=>v.role==='seat'&&v.seat===s&&Date.now()-v.at<70000),get view(){return VIEW},goView:v=>{VIEW=v||scene();renderScene()},set view(v){VIEW=v}};
 route();
 })();
