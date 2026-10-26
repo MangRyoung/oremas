@@ -89,7 +89,7 @@ window.OM_BATTLE_UI=(()=>{
  /* ---------- 렌더 ---------- */
  /* 상태 설명의 %campaign:키% (맵툴 룰 상수) 를 값으로 — DB 가 바뀔 때마다 한 번 */
  let DESC_FIX=null;function fixStDesc(){const st=(DB().states||{}).st;if(!st||DESC_FIX===st)return;DESC_FIX=st;const C=((DB().const||{}).campaign)||{};const rp=s=>String(s).replace(/%campaign:([^%]+)%/g,(a,k)=>C[k]!=null?String(C[k]):a);for(const k in st){const d=st[k];if(d&&Array.isArray(d.desc))d.desc=d.desc.map(rp)}}
- function render(el){fixStDesc();setTimeout(()=>{try{dupWatch(ctx(),ctx().b)}catch(e){}},0);
+ function render(el){fixStDesc();setTimeout(()=>{try{dupWatch(ctx(),ctx().b)}catch(e){}delayWatch(ctx(),ctx().b).catch(()=>{})},0);
   const c=ctx();const b=c.b;const f=fieldOf(b);const ready=c.ST.state.ready||{};
   const phases=[[0,'지시 준비'],[1,'턴 개시'],[2,'행동 순서'],[3,'행동 처리'],[5,'턴 종료']];
   const chips=[f.weather.type?`날씨 ${f.weather.type}${f.weather.count?' '+f.weather.count+'T':''}`:'',f.terrain.type?`${f.terrain.type}${f.terrain.count?' '+f.terrain.count+'T':''}`:'',...ROOMS.filter(r=>(f.rooms||{})[r]>0).map(r=>`${r} ${f.rooms[r]}T`),...ETC.filter(r=>(f.etc||{})[r]>0).map(r=>`${r} ${f.etc[r]}T`)].filter(Boolean);
@@ -643,7 +643,7 @@ window.OM_BATTLE_UI=(()=>{
   const occ=ent[area];
   if(occ&&occ.id!==mid){await exitMon(occ.id,{forced:!!opt.forced,noAsk:!!opt.noAsk,sys:!!opt.sys})}
   const started=(+b.phase||0)===1&&!(b.order||[]).length&&!(occ&&occ.id!==mid&&(b.swOut||[]).includes(occ.id));   /* 10-23 망령: 턴 개시 뒤 · 순서 계산 전에 나온 포켓몬(죽어내밀기 · 동시 내밀기 · 윤회)은 그 턴 순서에 들어간다. 그 밖엔 */ /* 턴 도중(교대 · 빈사 교체)에 들어온 포켓몬은 「교대 등장」 — 그 턴엔 지시가 없다. 턴 개시 때 필드에 있던 포켓몬만 setPhase(1) 이 started 로 바꾼다 */
-  await A().set(['battle','mons',mid,'entry'],area);await A().set(['battle','mons',mid,'started'],started);if(!m.seen)await A().set(['battle','mons',mid,'seen'],true);if(m.pend)await A().set(['battle','mons',mid,'pend'],null);
+  await A().set(['battle','mons',mid,'entry'],area);await A().set(['battle','mons',mid,'inT'],Math.max(1,+b.turn||0));await A().set(['battle','mons',mid,'started'],started);   /* inT: 필드에 나온 턴 (【지연】 셈 — 나온 턴이 1턴째) */if(!m.seen)await A().set(['battle','mons',mid,'seen'],true);if(m.pend)await A().set(['battle','mons',mid,'pend'],null);
   const EL=await entryLines(mid);
   A().sysLog(`${m.name} 등장 (${SIDE_KO[m.side]} ${area.toUpperCase()})${occ&&occ.id!==mid?' ← '+occ.name:''}${EL.length?'\n'+EL.join('\n'):''}`,'battle');
   /* 배턴터치 받기 */
@@ -805,7 +805,21 @@ window.OM_BATTLE_UI=(()=>{
  function dupWatch(c,b){if(!b||b.started||!A().dupItems)return;const T=b.trainers||{};
   for(const [tid,t] of Object.entries(T)){if(!(c.gm||ownT(c,tid)))continue;const d=A().dupItems(Object.values(b.mons||{}).filter(m=>m.tid===tid));if(!d.length)continue;
    const key=(A().ST.room||'')+'|'+tid+'|'+JSON.stringify(d);if(DUP_SEEN[key])continue;DUP_SEEN[key]=1;const tx=A().dupItemText(t.name||tid,d);A().selfLog(tx);A().toast(tx)}}
- async function watch(){const c=ctx();const b=c.b;try{dupWatch(c,b)}catch(e){console.warn('dup',e)}try{coWatch()}catch(e){}faintWatch().catch(e=>console.warn('faint',e));hpFormWatch().catch(e=>console.warn('hpform',e));answerAsks().catch(e=>console.warn('asks',e));if(b.endq&&b.endq.step)endAdvance();if((+b.phase||0)>=2)return autoRevealTurn();if((+b.phase||0)!==1)return;
+ /* 10-26 망령: 【지연 (N턴)】 = 필드에 나온 턴을 1턴째로 셀 때 N번째 턴부터. 【지연 (N턴 동안)】 = 나온 턴부터 N턴 동안.
+    턴이 바뀔 때마다(GM 창) 필드 포켓몬의 특성 · 소지품 · 포텐셜 글을 보고, 도달한 것은 알린다. 지연 표시가 ① 줄에 있고 구문이 있으면 N번째 턴에 자동 발동 */
+ const DELAY_SEEN={};const DLY_RE=/【[^】]*지연\s*\((아군,\s*)?(\d+)\s*턴(\s*동안)?\)[^】]*】/;
+ async function delayWatch(c,b){if(!c.mgr||!b||!b.started||!FX())return;const T=+b.turn||0;const key=String(b.started)+'|'+T;if(DELAY_SEEN[key])return;DELAY_SEEN[key]=1;
+  const notes=[];for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0||!(+m.inT))continue;const k=T-(+m.inT)+1;
+   const src=[['trait',m.ability,m.abilityEff],['item',m.item,m.itemEff],...potSrc(m).map(p=>['pot',p.name,p.eff])].filter(x=>x[1]&&x[2]);
+   for(const [kind,name,eff0] of src){const eff=String(eff0).replace(/<br\s*\/?>/g,'\n');const lines=eff.split(/(?=[②③④⑤])/);
+    lines.forEach((ln,li)=>{const mm=ln.match(DLY_RE);if(!mm)return;const N=+mm[2],ally=!!mm[1],dur=!!mm[3];const tag=mm[0];const lab=`${m.name} 「${name}」 ${tag}`;
+     if(ally){if(k===N)notes.push(`${lab} — 나온 지 ${N}턴째 (아군 조건은 손으로 확인)`);return}
+     if(dur){if(k===1)notes.push(`${lab} — 이번 턴부터 ${N}턴 동안 (${T}~${T+N-1}턴)`);else if(k===N+1)notes.push(`${lab} — 끝났다 (손으로 건 효과가 있으면 지운다)`);return}
+     if(k!==N)return;const a=FX().autoOf(m,kind,name);
+     if(li===0&&a&&a.ops&&a.ops.length&&!a.manual){fireAuto(m.id,kind,name,{quiet:true,head:`【지연】 ${lab} — 나온 지 ${N}턴째, 발동`}).catch(e=>console.warn('delay',e))}
+     else notes.push(`${lab} — 나온 지 ${N}턴째, 이번 턴부터 (손으로)`)})}}
+  if(notes.length)A().sysLog(`【지연】 ${T}턴\n${notes.join('\n')}`,'battle')}
+ async function watch(){const c=ctx();const b=c.b;try{dupWatch(c,b)}catch(e){console.warn('dup',e)}delayWatch(c,b).catch(e=>console.warn('delay',e));try{coWatch()}catch(e){}faintWatch().catch(e=>console.warn('faint',e));hpFormWatch().catch(e=>console.warn('hpform',e));answerAsks().catch(e=>console.warn('asks',e));if(b.endq&&b.endq.step)endAdvance();if((+b.phase||0)>=2)return autoRevealTurn();if((+b.phase||0)!==1)return;
   if(c.role==='seat')for(const tid of myTrainers(c).filter(t=>lead(c,t))){await selfCharge(tid);await publishOk(tid);   /* 함께 지시하는 트레이너도 (주인이 없을 때) */
    const key=turnKey(b);if(String(b.revealReq||'')===key&&!BUSY.rv){const left=Object.values(b.mons||{}).filter(m=>m.tid===tid&&m.entry&&m.hp.cur>0&&!revealed(b,tid,m.id)&&!SENT[key+':'+m.id]);
     if(left.length){BUSY.rv=1;try{for(const m of left){if(revealed(ctx().b,tid,m.id))continue;SENT[key+':'+m.id]=1;await revealOne(tid,m.id,true)}}finally{BUSY.rv=0}}}}
