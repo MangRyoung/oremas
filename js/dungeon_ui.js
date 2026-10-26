@@ -70,6 +70,15 @@ window.OM_DG_UI=(()=>{
  /* 방에 둔 야생: r.e = 시트 트레이너 id */
  const encOf=r=>{if(!r||!r.e)return null;const t=(RO().trainers||{})[r.e];if(!t)return {t:null,ms:[]};const ms=RO().mons||{};return {t,ms:(t.pids||[]).map(id=>ms[id]).filter(Boolean)}};
  const encLive=(r,isGm)=>!!(r&&r.e&&!r.c&&(isGm||(r.s&&!r.eh)));
+ /* 10-26 망령 「야생이 아닐 땐 스킬 체크나 단서(그림 · 설명)를 넣고, 휴식처는 우리 휴식 룰과」:
+    r.sk = 스킬 체크(예시 모양 {label,stat,mode,target,npc,step,twice,pm,pen,name}) → OM_SKILL_UI.present(일행)
+    r.cl = 단서 {t 제목, d 설명, img 그림} · r.cs = 공개함 · dg.clue = {did,rid,at} 지금 모두에게 띄운 단서
+    세이프룸: r.rk = 휴식 단계(long · short · breath, 기본 short) · r.rmany = 여러 번 · r.ru = 이미 쉼 → OM_SKILL_UI.applyRest(단계, 일행) */
+ const SKU=()=>window.OM_SKILL_UI;
+ const RKO=[['long','긴 휴식','대대적'],['short','짧은 휴식','상담함'],['breath','숨돌리기','가벼움']];
+ const rkOf=r=>RKO.find(x=>x[0]===(r&&r.rk))||RKO[1];
+ const skSum=sk=>{try{return SKU()&&SKU().sumOf?SKU().sumOf(sk).replace(/<[^>]+>/g,''):(sk.stat+' · 목표 '+sk.target)}catch(e){return ''}};
+ const isSafe=r=>!!r&&r.t==='safe';
 
  /* ---------- 쓰기 (GM 만) — {'list/<id>/at': v} 꼴을 경로 배열로 바꿔 한꺼번에 ---------- */
  async function upd(o){if(!gm()){A().toast('던전은 GM 만 바꿀 수 있어');return false}
@@ -147,8 +156,13 @@ window.OM_DG_UI=(()=>{
  const ptMin=()=>{try{const v=localStorage.getItem('om_dg_pt');return v?v==='min':isNarrow()}catch(e){return false}};
  function rpHudHTML(d){const r=R(d)[d.at],isGm=gm();const e=encLive(r,isGm)?encOf(r):null;
   const enc=e?`<div class="dgrp-enc${r.eh?' hid':''}"><b>⚠ 야생 포켓몬의 기척</b>${isGm?`<small>${e.t?H(e.ms.map(m=>m.name).join(' · ')||e.t.name):'(시트에 없는 무리)'}${r.eh?' · 플레이어에게 숨김':''}</small><button type="button" data-rpdg="enc">⚔ 배틀</button>`:''}</div>`:'';
+  const ev=[];
+  if(r&&r.cl&&(r.cs||isGm))ev.push(`<button type="button" data-rpdg="clue" class="${r.cs?'':'gmo'}">🔍 ${r.cs?'단서 보기':'단서 공개'}${r.cl.t?' · '+H(r.cl.t):''}</button>`);
+  if(r&&r.sk&&isGm)ev.push(`<button type="button" data-rpdg="sk" class="gmo" title="${H(skSum(r.sk))}">🎲 체크 · ${H(r.sk.label||r.sk.name||r.sk.stat)}</button>`);
+  if(isSafe(r)){const k=rkOf(r);ev.push(isGm?`<button type="button" data-rpdg="rest" ${r.ru&&!r.rmany?'disabled':''}>☗ ${k[1]}${r.ru&&!r.rmany?' (쉼)':''}</button>`:`<span class="dgev-t">☗ 휴식처 · ${k[1]}${r.ru&&!r.rmany?' (이미 쉼)':''}</span>`)}
+  const evH=ev.length?`<div class="dgrp-ev">${ev.join('')}</div>`:'';
   const pt=ptHTML(d);const mn=ptMin();
-  return hudHTML(d,false)+enc+(pt?`<div class="dgrp-pt${mn?' min':''}"><button type="button" class="dgpt-tog" data-rpdg="pt">PT ${mn?'▸':'▾'}</button><div class="dgpt-body">${pt}</div></div>`:'')}
+  return hudHTML(d,false)+enc+evH+(pt?`<div class="dgrp-pt${mn?' min':''}"><button type="button" class="dgpt-tog" data-rpdg="pt">PT ${mn?'▸':'▾'}</button><div class="dgpt-body">${pt}</div></div>`:'')}
  function paintMap(root,d,isGm,hold,mini){const rs=R(d);const sig=JSON.stringify([d.id,isGm,d.at,DG.sel,rs,d.l,!!mini]);if(hold.mapSig===sig)return;hold.mapSig=sig;
   const m=mapBuild(d,isGm),iso=root.querySelector('.dg-iso'),fog=root.querySelector('.dg-fog');if(iso&&fog){const w=m.box[2],tl=iso.parentElement;const k=mini?1.5:1;tl.style.setProperty('--nm',(Math.max(15,w*.026)*k).toFixed(0)+'px');tl.style.setProperty('--ic',(Math.max(24,w*.034)*k).toFixed(0)+'px');iso.setAttribute('viewBox',m.vb);fog.setAttribute('viewBox',m.vb);iso.innerHTML=m.svg;fog.innerHTML=fogBuild(m.box,m.holes,d.id,isGm,m.asks,m.lab)}
   const seen=Object.values(rs).filter(r=>r.s).length;const cap=root.querySelector('.dg-map-cap');if(cap)setH(cap,`<b>MAP</b>${isGm?`방 ${Object.keys(rs).length}개 · 공개 ${seen}개`:`탐색한 방 ${seen}개`}`);return true}
@@ -174,7 +188,10 @@ window.OM_DG_UI=(()=>{
   let hud=stage.querySelector(':scope>.dgrp-hud');if(!hud){hud=document.createElement('div');hud.className='dgrp dgrp-hud';stage.append(hud);
    hud.addEventListener('click',e=>{const w=e.target.closest('[data-walk]');if(w){e.stopPropagation();return walkPick(w.dataset.walk)}const b=e.target.closest('[data-rpdg]');if(!b)return;e.stopPropagation();
     if(b.dataset.rpdg==='pt'){const mn=!ptMin();try{localStorage.setItem('om_dg_pt',mn?'min':'open')}catch(err){}hud._h='';rpSync(stage);return}
-    if(b.dataset.rpdg==='enc'){const dd=cur();if(dd)startEnc(dd)}})}
+    if(b.dataset.rpdg==='enc'){const dd=cur();if(dd)startEnc(dd)}
+    if(b.dataset.rpdg==='clue'){const dd=cur();if(!dd)return;const rr=R(dd)[dd.at];if(rr&&rr.cs){DG.clueLocal=dd.at;DG.clueHide=0;RPH.clueSig='';rpSync(stage)}else if(gm())showClue(dd,dd.at)}
+    if(b.dataset.rpdg==='sk'){const dd=cur();if(dd)skOffer(dd,dd.at)}
+    if(b.dataset.rpdg==='rest'){const dd=cur();if(dd)restHere(dd,dd.at)}})}
   let dock=stage.querySelector(':scope>.dgrp-dock');
   if(!dock){dock=document.createElement('div');const mm=mapMode()||(isNarrow()?'min':'');dock.className='dgrp dgrp-dock '+mm;
    dock.innerHTML=`<div class="dg-dock-tools"><button type="button" data-rpdg="min" title="지도 접기 / 펴기">▾</button><button type="button" data-rpdg="big" title="지도 크게 / 작게">⤢</button>${gm()?'<button type="button" data-rpdg="tab" title="던전 탭 (GM 조작)">🛠</button>':''}</div><button type="button" class="dgrp-mapbtn" data-rpdg="min" title="지도 펴기">MAP</button><div class="dg-map3d dgrp-map"><div class="dg-tilt"><svg class="dg-iso" preserveAspectRatio="xMidYMid meet"></svg><svg class="dg-fog" preserveAspectRatio="xMidYMid meet"></svg></div><div class="dg-map-cap"></div></div>`;
@@ -188,7 +205,25 @@ window.OM_DG_UI=(()=>{
   paintFrame(bg.querySelector('.dg-planes'),d,RPH);
   setH(hud,rpHudHTML(d));
   {const dl=stage.querySelector('#dlg');let h=18;if(dl&&dl.style.display!=='none'&&dl.offsetHeight){const sr=stage.getBoundingClientRect(),dr=dl.getBoundingClientRect();h=Math.max(18,Math.round(sr.bottom-dr.top))}stage.style.setProperty('--dlgh',h+'px')}
-  if(!dock.classList.contains('min'))paintMap(dock,d,gm(),RPH,true)}
+  if(!dock.classList.contains('min'))paintMap(dock,d,gm(),RPH,true);
+  clueSync(stage,d)}
+ /* 단서 카드: GM 이 공개하면 모두에게(dg.clue), 플레이어는 「단서 보기」로 다시 연다(내 화면만). GM 의 ✕ 는 모두의 화면에서 내린다 */
+ function clueSync(stage,d){const cf=D0().clue;let rid='',mine=false;
+  if(cf&&cf.did===d.id&&R(d)[cf.rid]&&R(d)[cf.rid].cl&&DG.clueHide!==cf.at)rid=cf.rid;
+  if(!rid&&DG.clueLocal&&R(d)[DG.clueLocal]&&R(d)[DG.clueLocal].cl){rid=DG.clueLocal;mine=true}
+  let box=stage.querySelector(':scope>.dgrp-clue');const r=rid?R(d)[rid]:null;const sig=r?JSON.stringify([rid,r.cl,mine]):'';
+  if(!r){if(box)box.remove();RPH.clueSig='';return}
+  if(box&&RPH.clueSig===sig)return;RPH.clueSig=sig;
+  if(!box){box=document.createElement('div');box.className='dgrp dgrp-clue';stage.append(box);box.addEventListener('click',e=>{const b=e.target.closest('[data-clx]');if(!b)return;e.stopPropagation();const dd=cur();const c=D0().clue;
+   if(b.dataset.clx==='all'&&gm()){upd({clue:null});DG.clueLocal='';return}
+   if(c&&DG.clueLocal!==c.rid)DG.clueHide=c.at;DG.clueLocal='';RPH.clueSig='';if(dd)clueSync(stage,dd)})}
+  const c=r.cl;box.innerHTML=`<div class="dgcl-card"><div class="dgcl-h"><small>CLUE · ${H(r.n||ty(r.t).k)}</small><b>🔍 ${H(c.t||'단서')}</b><span class="sp"></span>${gm()&&!mine?'<button type="button" data-clx="all" title="모두의 화면에서 내리기">모두 닫기</button>':''}<button type="button" data-clx="me" title="닫기">✕</button></div>${c.img?`<img src="${H(c.img)}" alt="${H(c.t||'단서')}">`:''}${c.d?`<p>${H(c.d).replace(/\n/g,'<br>')}</p>`:''}</div>`}
+ async function showClue(d,rid){const r=R(d)[rid];if(!r||!r.cl||!gm())return;const at=Date.now();if(await upd({clue:{did:d.id,rid,at},[P0(d.id)+'r/'+rid+'/cs']:1})){DG.clueHide=0;notice(`🔍 단서 — ${r.cl.t||'단서'}${r.cl.d?'\n'+r.cl.d:''}`);try{window.OM_RP_UI&&window.OM_RP_UI.playSe('Draw',true)}catch(e){}}}
+ async function skOffer(d,rid){const r=R(d)[rid];if(!r||!r.sk||!gm())return;const K=SKU();if(!K||!K.present)return A().toast('스킬 체크 기능을 불러오지 못했다');const L=party(d);if(await K.present(r.sk,L,`${d.n||'던전'} · ${r.n||ty(r.t).k}`))A().toast('스킬 체크를 제시했다 — 결과는 「스킬 체크」 창에서')}
+ async function restHere(d,rid){const r=R(d)[rid];if(!r||!gm())return;const K=SKU();if(!K||!K.applyRest)return A().toast('휴식 기능을 불러오지 못했다');if(r.ru&&!r.rmany)return A().toast('이 휴식처에서는 이미 쉬었다');
+  const k=rkOf(r),L=party(d);if(!L.length)return A().toast('쉴 일행이 없다');
+  const m=A().openModal(`<div class="mhead"><h2>☗ 휴식 — ${H(r.n||'세이프룸')}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small" style="margin:0 0 8px">일행 ${L.length}명(${H(L.map(t=>((RO().trainers||{})[t]||{}).name).join(', '))})이 쉰다. 단계마다 회복하는 것은 스킬 체크 창 「휴식」 탭의 설정을 따른다.</p><div class="row" style="gap:6px;flex-wrap:wrap">${RKO.map(x=>`<button class="btn ${x[0]===k[0]?'pri':''}" data-rk="${x[0]}">${x[1]} <small>(${x[2]})</small></button>`).join('')}</div>${r.rmany?'':'<p class="small dim" style="margin:8px 0 0">이 휴식처는 한 번만 쓸 수 있다.</p>'}`);
+  m.querySelectorAll('[data-rk]').forEach(b=>b.onclick=async()=>{A().closeModal();await K.applyRest(b.dataset.rk,L,{by:`${d.n||'던전'} · ${r.n||'세이프룸'}`});if(!r.rmany)await upd({[P0(d.id)+'r/'+rid+'/ru']:1})})}
  function side(d,isGm,al,lv){
   const rs=R(d),id=DG.sel,r=rs[id],t=ty(r&&r.t),here=id===d.at;
   const meta=`<div class="dg-card"><h4>${H(d.n||'이름 없는 던전')} <small>DUNGEON</small></h4>${d.o?`<span class="dg-chip">주인 · ${H(d.o)}</span>`:''}${d.a?`<span class="dg-chip">${H(d.a)}</span>`:''}${d.d?`<span class="dg-chip on">기한 · ${H(d.d)}</span>`:''}${mapLoc(d.id)}
@@ -197,7 +232,9 @@ window.OM_DG_UI=(()=>{
   const ptc=`<div class="dg-card dgpt-card"><h4>일행 <small>PARTY · 동행 ${WN(d)}체</small></h4><div class="dgpt-list">${ptHTML(d)||'<p class="small dim">일행이 없다</p>'}</div>${isGm?'<div class="dg-acts"><button class="btn sm" data-a="ptset">일행 편성</button></div>':''}<p class="dg-help">트레이너 줄을 누르면 동행 포켓몬을 고른다 (본인 · GM). HP · 상태는 시트 값.</p></div>`;
   const e=r&&isGm?encOf(r):null;
   const encH=e?`<div class="dg-enc-box"><b>☠ 야생 배치 · ${e.t?H(e.t.name):'(시트에 없는 무리)'}</b>${r.eh?' <span class="dg-chip">플레이어에게 숨김</span>':''}${r.c?' <span class="dg-chip">✓ 처리함</span>':''}<div class="dg-enc-ms">${e.ms.map(m=>`<span>${m.image?`<i style="background-image:url('${cssu(m.image)}')"></i>`:''}${H(m.name)}</span>`).join('')||'<span class="small dim">포켓몬이 없다 — 시트 탭에서 넣는다</span>'}</div></div>`:'';
-  const card=r?`<div class="dg-card" style="--c:${t.c}"><h4><span class="dg-ico">${t.ic}</span>${H(r.n||t.k)} <small>${t.en}</small></h4><span class="dg-chip on">${H(t.k)}</span>${here?'<span class="dg-chip on">◆ 일행 위치</span>':''}${r.c?'<span class="dg-chip">✓ 클리어</span>':''}${isGm&&!r.s&&!here?'<span class="dg-chip">안개 속 (플레이어에게 안 보임)</span>':''}<p>${t.r}</p>${isGm&&r.m?`<p class="dg-memo">GM 메모 · ${H(r.m)}</p>`:''}${encH}
+  const evB=r?[r.sk?`<div class="dg-ev-box"><b>🎲 스킬 체크 · ${H(r.sk.label||r.sk.name||'')}</b><small>${H(skSum(r.sk))}</small></div>`:'',r.cl&&(isGm||r.cs)?`<div class="dg-ev-box"><b>🔍 단서 · ${H(r.cl.t||'')}</b>${r.cs?' <span class="dg-chip">공개함</span>':''}${r.cl.img?`<img src="${H(r.cl.img)}" alt="">`:''}${r.cl.d?`<small>${H(r.cl.d)}</small>`:''}</div>`:'',isSafe(r)?`<div class="dg-ev-box"><b>☗ 휴식처 · ${rkOf(r)[1]}</b><small>${r.rmany?'여러 번 쉴 수 있다':r.ru?'이미 쉬었다':'한 번 쉴 수 있다'}</small></div>`:''].join(''):'';
+  const evA=r&&isGm&&here?[r.sk?'<button class="btn sm pri" data-a="ev" data-v="sk">🎲 스킬 체크 제시</button>':'',r.cl?`<button class="btn sm ${r.cs?'':'pri'}" data-a="ev" data-v="clue">🔍 단서 ${r.cs?'다시 띄우기':'공개'}</button>`:'',isSafe(r)?`<button class="btn sm pri" data-a="ev" data-v="rest" ${r.ru&&!r.rmany?'disabled':''}>☗ 휴식</button>${r.ru?'<button class="btn sm ghost" data-a="ev" data-v="restreset">휴식 다시 쓰게</button>':''}`:''].join(''):'';
+  const card=r?`<div class="dg-card" style="--c:${t.c}"><h4><span class="dg-ico">${t.ic}</span>${H(r.n||t.k)} <small>${t.en}</small></h4><span class="dg-chip on">${H(t.k)}</span>${here?'<span class="dg-chip on">◆ 일행 위치</span>':''}${r.c?'<span class="dg-chip">✓ 클리어</span>':''}${isGm&&!r.s&&!here?'<span class="dg-chip">안개 속 (플레이어에게 안 보임)</span>':''}<p>${t.r}</p>${isGm&&r.m?`<p class="dg-memo">GM 메모 · ${H(r.m)}</p>`:''}${encH}${evB}${evA?`<div class="dg-acts">${evA}</div>`:''}
    ${isGm?`<div class="dg-acts">${here?'':`<button class="btn sm pri" data-a="move" data-v="${H(id)}">▶ 일행 이동</button>`}<button class="btn sm" data-a="seen" data-v="${H(id)}">${r.s?'안개로 숨기기':'👁 공개'}</button><button class="btn sm" data-a="clear" data-v="${H(id)}">${r.c?'클리어 취소':'✓ 클리어'}</button>${here?'<button class="btn sm" data-a="nav">📡 주변 방 밝히기</button>':''}</div>
    ${here?`<div class="dg-acts">${e&&e.t?'<button class="btn sm pri" data-a="enc" data-v="wild">⚔ 야생 조우 — 배틀 시작</button>':''}<button class="btn sm ${e&&e.t?'':'pri'}" data-a="enc" data-v="battle">${e&&e.t?'배틀 무대로만':'⚔ 조우 — 배틀 무대로'}</button>${alOn(d)?'<button class="btn sm danger" data-a="enc" data-v="spot">⚠ 들켰다 (경계도 +10)</button>':''}</div>`:''}`:''}</div>`:'';
   const foot=isGm?`<div class="dg-acts"><button class="btn sm" data-a="exit">🏠 던전에서 나가기</button><button class="btn sm" data-a="manage">🛠 던전 관리</button></div><p class="dg-help">지도에서 방을 눌러 고르고 이동 · 공개 · 조우를 처리한다. 플레이어에게는 공개한 방과 지나온 방만 보인다.</p>`:'<p class="dg-help">지도에서 방을 누르면 정보를 볼 수 있다. 안개 너머는 아직 아무도 모른다.</p>';
@@ -237,6 +274,7 @@ window.OM_DG_UI=(()=>{
   if(k==='clear'){const r=R(d)[v];if(r)upd({[P0(d.id)+'r/'+v+'/c']:r.c?null:1});return}
   if(k==='nav'){const n=nbrs(d,d.at).filter(id=>!R(d)[id].s);if(!n.length)return A().toast('주변에 새로 밝힐 방이 없다');const o={};n.forEach(id=>o[P0(d.id)+'r/'+id+'/s']=1);if(await upd(o))notice(`[${d.n||'던전'}] 📡 주변 방 ${n.length}곳이 지도에 드러났다`);return}
   if(k==='al'){const delta=+v||0,why=b.dataset.w||'';const before=clamp(+d.al||0,0,100),after=clamp(before+delta,0,100);if(after===before)return;if(await upd({[P0(d.id)+'al']:after}))notice(`[${d.n||'던전'}] 경계도 ${after>before?'+':''}${after-before}${why?' ('+why+')':''} → ${after}%`);return}
+  if(k==='ev'){const id=DG.sel||d.at;if(v==='sk')return skOffer(d,id);if(v==='clue')return showClue(d,id);if(v==='rest')return restHere(d,id);if(v==='restreset')return upd({[P0(d.id)+'r/'+id+'/ru']:null});return}
   if(k==='enc'){const r=R(d)[d.at]||{},head=`[${d.n||'던전'} · ${r.n||ty(r.t).k}] `;
    if(v==='spot'){const after=clamp((+d.al||0)+10,0,100);if(await upd({[P0(d.id)+'al']:after}))notice(head+`⚠ 들켰다! 경계도 +10 → ${after}%`);return}
    if(v==='wild')return startEnc(d);
@@ -259,6 +297,10 @@ window.OM_DG_UI=(()=>{
   const sideHTML=r?`<div class="dg-ed-side"><b style="font-size:15px">${t.ic} 방 편집</b><label>이름<input data-dgr="n" value="${H(r.n||'')}"></label><label>종류<select data-dgr="t">${TORDER.map(k=>`<option value="${k}" ${k===(r.t in TY?r.t:'room')?'selected':''}>${TY[k].ic} ${TY[k].k}</option>`).join('')}</select></label><p class="dg-help" style="margin:0">${t.r}</p><label>GM 메모 (GM 화면에만)<textarea data-dgr="m" rows="3">${H(r.m||'')}</textarea></label>
    ${(()=>{const tr=RO().trainers||{},ms=RO().mons||{},pt=new Set(party(d));const ids=Object.keys(tr).filter(id=>!pt.has(id)||id===r.e).sort((a,b)=>(tr[a].ord||0)-(tr[b].ord||0));
     return `<label>야생 포켓몬 배치 <small class="dim">(시트의 GM 트레이너 = 야생 무리)</small><select data-dge="e"><option value="">— 없음 —</option>${ids.map(id=>{const t=tr[id],n=(t.pids||[]).filter(x=>ms[x]);return `<option value="${H(id)}" ${id===r.e?'selected':''}>${H(t.name||id)} · ${n.length}체${n.length?' ('+H(n.slice(0,3).map(x=>ms[x].name).join(', '))+(n.length>3?' …':'')+')':''}</option>`}).join('')}</select></label>${r.e?`<label class="dg-chk"><input type="checkbox" data-dge="eh" ${r.eh?'checked':''}> 플레이어 지도에 「!」 숨기기 (기습)</label>`:''}<p class="dg-help" style="margin:0">야생 무리는 <b>시트</b> 탭 「+ 새 트레이너」(이름 예: 야생 · 터빈실)에 포켓몬을 넣거나 제작기에서 가져와 만든다. 플레이 중 이 방에서 「⚔ 야생 조우」를 누르면 일행 VS 이 무리로 배틀이 차려진다.</p>`})()}
+   ${(()=>{const K=SKU();const L=K&&K.presetList?K.presetList():[];const sk=r.sk;
+    return `<div class="dg-ed-ev"><b>🎲 스킬 체크</b><select data-dgk="pick"><option value="">${sk?'— 다른 예시로 바꾸기 —':'— 없음 —'}</option>${L.map(p=>`<option value="${H(p.id)}">${H(p.name)}</option>`).join('')}<option value="new">+ 직접 만들기</option></select>${sk?`<div class="dg-ed-row"><label>내용<input data-dgk="label" value="${H(sk.label||'')}" placeholder="예: 잠긴 문을 연다"></label><label>능력<select data-dgk="stat">${['지시','육성','통솔','능력'].map(x=>`<option ${x===sk.stat?'selected':''}>${x}</option>`).join('')}</select></label><label>목표<input type="number" min="2" max="20" data-dgk="target" value="${+sk.target||7}"></label></div><p class="dg-help" style="margin:0">${H(skSum(sk))}${sk.pen?' · 패널티는 예시에 붙은 것':''} <button type="button" class="btn xs ghost" data-e="skdel">체크 빼기</button></p>`:'<p class="dg-help" style="margin:0">플레이 중 이 방에서 「🎲 스킬 체크 제시」를 누르면 일행에게 바로 제시된다. 예시는 스킬 체크 창에서 저장한 것까지 나온다.</p>'}</div>`})()}
+   <div class="dg-ed-ev"><b>🔍 단서</b><label>제목<input data-dgc="t" value="${H((r.cl||{}).t||'')}" placeholder="예: 찢어진 작업 일지"></label><label>설명<textarea data-dgc="d" rows="3" placeholder="공개하면 모두의 무대에 그림과 함께 뜬다">${H((r.cl||{}).d||'')}</textarea></label><label>그림 주소<input data-dgc="img" value="${H((r.cl||{}).img||'')}" placeholder="https://… (비워도 된다)"></label><div class="dg-acts"><label class="btn sm">단서 그림 올리기<input type="file" accept="image/*" data-e="climg" hidden></label>${r.cl?'<button class="btn sm ghost" data-e="cldel">단서 빼기</button>':''}</div></div>
+   ${r.t==='safe'?`<div class="dg-ed-ev"><b>☗ 휴식처</b><label>휴식 단계<select data-dgs="rk">${RKO.map(x=>`<option value="${x[0]}" ${x[0]===rkOf(r)[0]?'selected':''}>${x[1]} (${x[2]})</option>`).join('')}</select></label><label class="dg-chk"><input type="checkbox" data-dgs="rmany" ${r.rmany?'checked':''}> 여러 번 쉴 수 있다 (끄면 한 번만)</label><p class="dg-help" style="margin:0">단계마다 회복하는 것은 스킬 체크 창 「휴식」 탭 설정 그대로(HP · 부활 · 상태 · 지침 · 돌봄 · 이능 · 부상). 플레이 중 고를 때 다른 단계로 바꿀 수도 있다.</p></div>`:''}
    <label>배경 그림 주소<input data-dgr="b" value="${H(r.b||'')}" placeholder="https://… (비우면 종류에 맞는 입체 공간)"></label>
    <div class="dg-acts"><label class="btn sm">그림 올리기<input type="file" accept="image/*" data-e="img" hidden></label>${r.b?'<button class="btn sm" data-e="imgdel">배경 빼기</button>':''}<button class="btn sm" data-e="start" ${d.st===DG.edSel?'disabled':''}>시작 방으로</button><button class="btn sm" data-e="seen">${r.s?'안개로 숨기기':'미리 공개'}</button><button class="btn sm danger" data-e="rdel">방 삭제</button></div></div>`
    :`<div class="dg-ed-side"><b>사용법</b><p class="dg-help" style="margin:0">• <b>배치 · 이동</b>: 빈 곳을 누르면 방 추가(고른 방에 통로로 이어 붙는다), 방을 끌어 옮기기, 누르면 편집.<br>• <b>통로 연결</b>: 방 두 개를 차례로 누르면 통로가 생기고, 다시 누르면 끊긴다.<br>• START 표시가 있는 방이 입구.<br>• 흐린 방은 안개 속(플레이어에게 안 보임). 일행이 들어가면 저절로 공개된다.<br>• 플레이 화면에서는 이 배치가 입체 지도로 보인다.</p></div>`;
@@ -266,10 +308,15 @@ window.OM_DG_UI=(()=>{
  function openEd(){const m=A().openModal(`<div class="dg-ed" id="dgEd">${edHTML()}</div>`);if(m)m.classList.add('dg-ed-dialog');DG.edOpen=true;edBind()}
  function edDraw(){const box=$('#dgEd');if(!box){DG.edOpen=false;return}box.innerHTML=edHTML();edBind()}
  function edBind(){const box=$('#dgEd');if(!box)return;
-  box.querySelectorAll('[data-e]').forEach(b=>{if(b.type==='file'){b.onchange=()=>edAct('img',b);return}b.onclick=()=>edAct(b.dataset.e,b)});
+  box.querySelectorAll('[data-e]').forEach(b=>{if(b.type==='file'){b.onchange=()=>edAct(b.dataset.e,b);return}b.onclick=()=>edAct(b.dataset.e,b)});
   box.querySelectorAll('[data-dgsel]').forEach(s=>s.onchange=()=>{DG.ed=s.value;DG.edSel='';DG.edFrom='';edDraw()});
   box.querySelectorAll('[data-dgm]').forEach(i=>i.onchange=()=>{const d=edD();if(d)upd({[P0(d.id)+i.dataset.dgm]:i.value.trim().slice(0,60)||null})});
   box.querySelectorAll('[data-dgx]').forEach(i=>i.onchange=()=>{const d=edD();if(!d)return;const f=i.dataset.dgx;if(f==='wn')upd({[P0(d.id)+'wn']:+i.value===2?null:+i.value});if(f==='al')upd({[P0(d.id)+'noal']:i.checked?null:1})});
+  box.querySelectorAll('[data-dgk]').forEach(i=>i.onchange=async()=>{const d=edD();if(!d||!R(d)[DG.edSel])return;const p=P0(d.id)+'r/'+DG.edSel+'/sk';const f=i.dataset.dgk;
+   if(f==='pick'){if(!i.value)return;let o;if(i.value==='new')o={label:'',stat:'지시',mode:'skill',target:7};else{const P=(SKU()&&SKU().presetList?SKU().presetList():[]).find(x=>x.id===i.value);if(!P)return;o=Object.assign(JSON.parse(JSON.stringify(P.o||{})),{name:P.name})}await upd({[p]:o});return edDraw()}
+   const sk=Object.assign({},R(d)[DG.edSel].sk||{});if(f==='target')sk.target=Math.max(2,Math.min(20,+i.value||7));else sk[f]=i.value.trim().slice(0,60);await upd({[p]:sk});edDraw()});
+  box.querySelectorAll('[data-dgc]').forEach(i=>i.onchange=async()=>{const d=edD();if(!d||!R(d)[DG.edSel])return;const cl=Object.assign({},R(d)[DG.edSel].cl||{});const f=i.dataset.dgc;cl[f]=i.value.trim().slice(0,f==='d'?1200:f==='img'?600:60);Object.keys(cl).forEach(k=>{if(!cl[k])delete cl[k]});await upd({[P0(d.id)+'r/'+DG.edSel+'/cl']:Object.keys(cl).length?cl:null});edDraw()});
+  box.querySelectorAll('[data-dgs]').forEach(i=>i.onchange=async()=>{const d=edD();if(!d||!R(d)[DG.edSel])return;const f=i.dataset.dgs,p=P0(d.id)+'r/'+DG.edSel+'/';if(f==='rk')await upd({[p+'rk']:i.value==='short'?null:i.value});else await upd({[p+'rmany']:i.checked?1:null});edDraw()});
   box.querySelectorAll('[data-dge]').forEach(i=>i.onchange=async()=>{const d=edD();if(!d||!R(d)[DG.edSel])return;const f=i.dataset.dge,p=P0(d.id)+'r/'+DG.edSel+'/';if(f==='e'){const o={[p+'e']:i.value||null};if(!i.value)o[p+'eh']=null;await upd(o)}else await upd({[p+'eh']:i.checked?1:null});edDraw()});
   box.querySelectorAll('[data-dgr]').forEach(i=>i.onchange=()=>{const d=edD();if(d&&R(d)[DG.edSel]){const f=i.dataset.dgr;upd({[P0(d.id)+'r/'+DG.edSel+'/'+f]:i.value.trim().slice(0,f==='m'?400:f==='b'?600:40)||null})}});
   const svg=$('#dgEdSvg',box);if(svg)svgBind(svg);
@@ -308,6 +355,9 @@ window.OM_DG_UI=(()=>{
   if(k==='start'){await upd({[P0(d.id)+'st']:id});return edDraw()}
   if(k==='seen'){await upd({[P0(d.id)+'r/'+id+'/s']:r.s?null:1});return edDraw()}
   if(k==='imgdel'){await upd({[P0(d.id)+'r/'+id+'/b']:null});return edDraw()}
+  if(k==='skdel'){await upd({[P0(d.id)+'r/'+id+'/sk']:null});return edDraw()}
+  if(k==='cldel'){if(!confirm('이 방의 단서를 지울까?'))return;await upd({[P0(d.id)+'r/'+id+'/cl']:null,[P0(d.id)+'r/'+id+'/cs']:null});return edDraw()}
+  if(k==='climg'){const f=b.files&&b.files[0];if(!f)return;A().toast('올리는 중…');try{const u=await DBS().uploadImage(`rooms/${ST().room}/dgcl_${d.id}_${id}_${Date.now().toString(36)}`,await shrinkImg(f,1600,1600));if(u)await upd({[P0(d.id)+'r/'+id+'/cl/img']:u});edDraw()}catch(e){A().toast('그림을 올리지 못했다: '+e.message)}return}
   if(k==='img'){const f=b.files&&b.files[0];if(!f)return;A().toast('올리는 중…');try{const u=await DBS().uploadImage(`rooms/${ST().room}/dg_${d.id}_${id}_${Date.now().toString(36)}`,await shrinkImg(f,1920,1080));if(u&&await upd({[P0(d.id)+'r/'+id+'/b']:u}))A().toast('방 배경을 바꿨다');edDraw()}catch(e){A().toast('그림을 올리지 못했다: '+e.message)}}}
 
  /* ---------- 동행 포켓몬 고르기 (본인 · GM) ---------- */

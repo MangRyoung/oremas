@@ -4247,3 +4247,28 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .dg-ret{left:50%;translate:-50% 0}
 .dg-ed label.dg-chk{display:flex!important;flex-direction:row!important;align-items:center;gap:6px;flex-wrap:wrap}
 .dg-ed label.dg-chk input{width:auto!important;flex:none;margin:0}
+/* 던전 방 이벤트 (10-26): 스킬 체크 · 단서 · 휴식처 */
+.rpstage .dgrp-ev{pointer-events:auto;display:flex;flex-wrap:wrap;gap:6px;max-width:100%}
+.rpstage .dgrp-ev button,.rpstage .dgrp-ev .dgev-t{font:700 12px/1 inherit;padding:6px 10px;background:rgba(6,8,14,.86);color:#eef2fa;border:1px solid rgba(255,255,255,.28);box-shadow:2px 2px 0 #000;cursor:pointer;transform:skewX(-6deg)}
+.rpstage .dgrp-ev button.gmo{border-style:dashed;border-color:var(--dg-acc,#f0c84a);color:var(--dg-acc,#f0c84a)}
+.rpstage .dgrp-ev button:disabled{opacity:.5;cursor:default}
+.rpstage .dgrp-ev .dgev-t{cursor:default;color:#3ee0a1;border-color:#3ee0a1}
+.rpstage .dgrp-clue{position:absolute;inset:0;z-index:8;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(0,0,0,.45);pointer-events:auto}
+.dgcl-card{width:min(560px,100%);max-height:100%;overflow:auto;background:#0d0f16;border:2px solid var(--dg-acc,#f0c84a);box-shadow:6px 6px 0 #000;color:#eef2fa;display:flex;flex-direction:column;animation:dgClIn .35s cubic-bezier(.2,1.3,.4,1)}
+@keyframes dgClIn{from{opacity:0;translate:0 16px;scale:.96}}
+.dgcl-h{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.12)}
+.dgcl-h small{display:block;font:700 10px/1 'Black Han Sans',sans-serif;letter-spacing:.16em;color:var(--dg-acc,#f0c84a);margin-bottom:3px}
+.dgcl-h b{font-size:17px}.dgcl-h>div,.dgcl-h small+b{display:block}
+.dgcl-h .sp{flex:1}
+.dgcl-h button{font:700 12px/1 inherit;padding:6px 9px;background:transparent;border:1px solid rgba(255,255,255,.3);color:inherit;cursor:pointer}
+.dgcl-card img{display:block;width:100%;max-height:52vh;object-fit:contain;background:#05060a}
+.dgcl-card p{margin:0;padding:12px 14px 14px;font-size:14px;line-height:1.7;white-space:normal}
+.dg-ev-box{margin:6px 0;padding:7px 9px;border:1px solid var(--line);background:rgba(255,255,255,.03);display:flex;flex-direction:column;gap:3px}
+.dg-ev-box small{color:var(--fg2);font-size:12px;line-height:1.5}
+.dg-ev-box img{max-width:100%;max-height:140px;object-fit:contain;align-self:flex-start;border:1px solid var(--line)}
+.dg-ed-ev{display:flex;flex-direction:column;gap:6px;padding:8px 10px;border:1px solid var(--line);background:rgba(255,255,255,.025)}
+.dg-ed-ev>b{font-size:13px}
+.dg-ed-row{display:grid;grid-template-columns:1fr 84px 64px;gap:6px}
+.dg-ed-row label{min-width:0}
+.dgcl-card img{flex:0 1 auto;min-height:60px;max-height:none;height:auto}
+.dgcl-card p,.dgcl-h{flex:none}
