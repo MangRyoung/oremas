@@ -305,7 +305,12 @@ window.OM_BATTLE_UI=(()=>{
  function potDecl(c,m,x,grp){const u=m.potUses||{};const chips=potSrc(m).filter(p=>{const sp=isExcl(m,p);return grp==='sp'?sp:grp==='norm'?!sp:true}).map(p=>{const kind=isExcl(m,p)?'전용':'';const mxm=String(p.eff||'').match(/【(\d+)\/시】/);const pmax=p.max!=null?p.max:(mxm?+mxm[1]:null);const left=pmax!=null?(u[p.name]==null?pmax:+u[p.name]):null;p={...p,max:pmax};const on=(x.pots||[]).includes(p.name);return `<div class="oc ${on?'mine':''} ${left!==null&&left<=0?'dis':''}" data-pdecl="${esc(p.name)}" title="${esc(String(p.eff||'').replace(/<br\s*\/?>/g,' '))}"><b>${kind?'['+esc(kind)+'] ':''}${esc(p.name)}</b>${left!==null?`<small>${pips(left,p.max)}</small>`:'<small>횟수 없음</small>'}</div>`});return chips.join('')||`<span class="dim small">${grp==='sp'?'전용 포텐셜이 없다':'선행 입력할 포텐셜이 없다'}</span>`}
  /* 고유(트레이너) · 전용 포텐셜: 지시 선언 · 카드 · 4식 6령 창에서 따로 묶어 보인다 */
  const isExcl=(m,p)=>(m.excl&&m.excl.name===p.name)||(m.exclX||[]).some(q=>q.name===p.name);
- function specialPots(m){const u=m.potUses||{};return potSrc(m).filter(p=>isExcl(m,p)).map(p=>{const mm=String(p.eff||'').match(/【(\d+)\/시】/);const max=mm?+mm[1]:null;const left=max==null?null:(u[p.name]==null?max:+u[p.name]);const a=FX()&&FX().autoOf(m,'pot',p.name);return {p,kind:p.unique?'고유':'전용',max,left,auto:!!(a&&a.ops&&a.ops.length&&!a.manual)}})}
+ /* 10-26 망령: 사용 제한 — 【N/시】 = 시합 중 N번(uses), 【소진】 = 1턴에 1번, 【탈진】 = 연속된 턴에는 못 쓴다 (발동 후 다음 턴 끝까지). 턴 제한은 쓴 턴을 적어 둔다(turns) */
+ function limOf(p,uses,turns){const e=String(p.eff||'');const mm=e.match(/【(\d+)\/시】/);const mmax=mm?+mm[1]:null;const ml=mmax==null?null:(uses[p.name]==null?mmax:+uses[p.name]);
+  const per=/【\s*소진\s*】/.test(e)?'turn':/【\s*탈진\s*】/.test(e)?'tal':'';const T=+((ctx().b||{}).turn)||0;const ut=turns[p.name];
+  const tl=!per?null:(ut==null?1:per==='turn'?(+ut===T?0:1):(T-(+ut)<=1?0:1));
+  const max=mmax!=null?mmax:per?1:null;const left=ml==null&&tl==null?null:Math.min(ml==null?Infinity:ml,tl==null?Infinity:tl);return {max,left,mmax,per}}
+ function specialPots(m){const u=m.potUses||{};return potSrc(m).filter(p=>isExcl(m,p)).map(p=>{const L=limOf(p,u,m.potTurn||{});const max=L.max,left=L.left;const a=FX()&&FX().autoOf(m,'pot',p.name);return {p,kind:p.unique?'고유':'전용',max,left,mmax:L.mmax,per:L.per,auto:!!(a&&a.ops&&a.ops.length&&!a.manual)}})}
  function spBtn(m,s){const n=esc(s.p.name);if(s.left!==null&&s.left<=0)return '<span class="small dim">다 씀</span>';
   if(s.auto)return `<button class="btn xs pri" data-act="fireauto" data-mid="${m.id}" data-kind="pot" data-pot="${n}" title="자동화 효과를 건다${s.max!=null?' (횟수 1 사용)':''}">발동</button>`;
   if(s.max!=null)return `<button class="btn xs pri" data-act="usepot" data-mid="${m.id}" data-pot="${n}" title="횟수 1을 쓰고 로그에 출력">사용</button>`;
@@ -318,7 +323,7 @@ window.OM_BATTLE_UI=(()=>{
  const NOORD_W={},THR_PICK={};
  function potSrc(m){return [...(m.pots||[]).filter(p=>p&&!p.ph&&p.name),...(m.excl?[m.excl]:[]),...(m.exclX||[])]}
  /* 고유 포텐셜 = 트레이너 것. 횟수는 battle.trainers[tid].uUses */
- function uniqList(t){return ((t&&t.unique)||[]).filter(u=>u&&u.name).map(u=>{const mm=String(u.eff||'').match(/【(\d+)\/시】/);const max=mm?+mm[1]:/【\s*소진\s*】/.test(String(u.eff||''))?1:null;const left=max==null?null:(((t.uUses||{})[u.name]==null)?max:+(t.uUses||{})[u.name]);return {p:u,kind:'고유',max,left}})}
+ function uniqList(t){return ((t&&t.unique)||[]).filter(u=>u&&u.name).map(u=>{const L=limOf(u,t.uUses||{},t.uTurn||{});return {p:u,kind:'고유',max:L.max,left:L.left,mmax:L.mmax,per:L.per}})}
  function potList(m){const out=[];const src=potSrc(m);
   for(const p of src){const mm=String(p.eff||'').match(/【(\d+)\/시】/);if(mm)out.push({name:p.name,max:+mm[1]})}return out}
  /* 해석: 상대 포켓몬의 타입은 「타입」 해석(또는 전체)부터, 포텐셜 칸은 전체 해석부터 보인다 (도감 scope 기준 — GM · 주인 · 같은 편은 늘 보인다) */
@@ -847,7 +852,9 @@ window.OM_BATTLE_UI=(()=>{
   const x=sk==='uq'?uniqList(t).find(q=>q.p.name===name):specialPots(m).find(q=>q.p.name===name);if(!x)return;
   if(how!=='force'&&x.left!==null&&x.left<=0)return A().toast('남은 횟수가 없다');
   A().closeModal();const tag=how==='pre'?'【선행】':how==='free'?'【임의】':'【강제】';const LB=sk==='uq'?'고유':'전용';
-  if(how!=='force'&&x.max!=null){if(sk==='uq'){const uu=Object.assign({},t.uUses||{});uu[name]=Math.max(0,x.left-1);await A().set(['battle','trainers',tid,'uUses'],uu)}else{const uu=Object.assign({},m.potUses||{});uu[name]=Math.max(0,x.left-1);await A().set(['battle','mons',mid,'potUses'],uu)}}
+  if(how!=='force'&&x.max!=null){const T=+b.turn||0;
+   if(x.mmax!=null){const cur=sk==='uq'?(t.uUses||{}):(m.potUses||{});const had=cur[name]==null?x.mmax:+cur[name];const uu=Object.assign({},cur);uu[name]=Math.max(0,had-1);await A().set(sk==='uq'?['battle','trainers',tid,'uUses']:['battle','mons',mid,'potUses'],uu)}
+   if(x.per)await A().set(sk==='uq'?['battle','trainers',tid,'uTurn',name]:['battle','mons',mid,'potTurn',name],T)}   /* 【소진】 · 【탈진】: 쓴 턴을 적는다 */
   await A().set(['battle','cmds',tid,'fired',m?mid:'_t','pot',(sk==='uq'?'u:':'e:')+name],1);
   if(sk==='uq'){if(String(((A().ST.state.rp||{}).cutin||{}).ord)!=='0')cutFire('t:'+tid,trainerImg(t),`${t.name}의 고유!`,`『${name}』`,t.side==='left'?'#1f6fd1':'#e3101f')}else if(wantCut(m,name))cutFire('m:'+m.id,m.image,m.name,`『${name}』`,m.side==='left'?'#1f6fd1':'#e3101f');
   const left=x.max!=null?` 【${how==='force'?x.left:Math.max(0,x.left-1)}/${x.max}】`:'';
@@ -1394,7 +1401,7 @@ window.OM_BATTLE_UI=(()=>{
   $('#osave',md).onclick=async()=>{const n={};md.querySelectorAll('[data-ov]').forEach(i=>{if(+i.value>0)n[i.dataset.ov]=+i.value});A().closeModal();const nf=JSON.parse(JSON.stringify(f));nf.objects=nf.objects||{left:{},right:{}};nf.objects[side]=n;if(await A().setDiff(['battle','field','objects',side],(f.objects||{})[side]||{},n,1))A().sysLog(`${SIDE_KO[side]} 설치물: ${Object.entries(n).map(([k,v])=>k+(v>=1000?'':' '+v)).join(' · ')||'없음'}`,'battle')}}
  /* ---------- 포텐셜 설정 (지령·명령 + 고유·전용 포텐셜 남은 횟수) ---------- */
  function spCntHtml(tid){const b=ctx().b;const t=b.trainers[tid];const U=uniqList(t);const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid);
-  const cell=(x,attrs,sub)=>`<div class="oc2 ${x.max!=null&&x.left<=0?'zero':''}"><div class="nm">『${esc(x.p.name)}』<small>${esc(sub)}</small></div>${x.max!=null?`<span class="step"><button type="button" ${attrs} data-d="-1">−</button><b>${x.left}<small class="dim">/${x.max}</small></b><button type="button" ${attrs} data-d="1">+</button></span>`:'<span class="small dim">횟수 없음</span>'}</div>`;
+  const cell=(x,attrs,sub)=>`<div class="oc2 ${x.max!=null&&x.left<=0?'zero':''}"><div class="nm">『${esc(x.p.name)}』<small>${esc(sub)}</small></div>${x.max!=null?`<span class="step"><button type="button" ${attrs} data-d="-1">−</button><b>${x.left}<small class="dim">/${x.max}${x.per&&x.mmax==null?(x.per==='turn'?' · 이번 턴':' · 탈진'):''}</small></b><button type="button" ${attrs} data-d="1">+</button></span>`:'<span class="small dim">횟수 없음</span>'}</div>`;
   const E=mons.flatMap(m=>specialPots(m).filter(x=>!x.p.unique).map(x=>cell(x,`data-spc="ex" data-mid="${m.id}" data-pn="${esc(x.p.name)}"`,m.name)));
   return `<div class="ogrp"><div class="ogh"><span class="gk uq">UNIQUE</span><b>고유 포텐셜</b><span class="small dim">트레이너</span></div><div class="ogrid">${U.map(x=>cell(x,`data-spc="uq" data-pn="${esc(x.p.name)}"`,'고유')).join('')||'<div class="small dim">고유 포텐셜이 없다.</div>'}</div></div>
    <div class="ogrp"><div class="ogh"><span class="gk ex">EXCLUSIVE</span><b>전용 포텐셜</b><span class="small dim">포켓몬마다</span></div><div class="ogrid">${E.join('')||'<div class="small dim">전용 포텐셜이 없다.</div>'}</div></div>`}
@@ -1405,8 +1412,10 @@ window.OM_BATTLE_UI=(()=>{
   $('#ounload',md).onclick=()=>{A().closeModal();A().unloadTrainer(tid)};
   const rebind=()=>OO().bind($('#opanel',md),()=>ctx().b.trainers[tid],async nt=>{await A().setDiff(['battle','trainers',tid],ctx().b.trainers[tid],nt,1);$('#opanel',md).innerHTML=OO().panel(nt,true);rebind()});rebind();
   const spBind=()=>$('#spcnt',md).querySelectorAll('[data-spc]').forEach(bt=>bt.onclick=async()=>{const b=ctx().b;const d=+bt.dataset.d,n=bt.dataset.pn;
-   if(bt.dataset.spc==='uq'){const t2=b.trainers[tid];const x=uniqList(t2).find(q=>q.p.name===n);if(!x||x.max==null)return;const uu=Object.assign({},t2.uUses||{});uu[n]=Math.max(0,Math.min(x.max,x.left+d));await A().set(['battle','trainers',tid,'uUses'],uu)}
-   else{const m=b.mons[bt.dataset.mid];if(!m)return;const x=specialPots(m).find(q=>q.p.name===n);if(!x||x.max==null)return;const uu=Object.assign({},m.potUses||{});uu[n]=Math.max(0,Math.min(x.max,x.left+d));await A().set(['battle','mons',m.id,'potUses'],uu)}
+   const adj=async(x,uses,upath,tpath)=>{if(!x||x.max==null)return;if(x.mmax!=null){const had=uses[n]==null?x.mmax:+uses[n];const uu=Object.assign({},uses);uu[n]=Math.max(0,Math.min(x.mmax,had+d));await A().set(upath,uu)}
+     else if(x.per)await A().set([...tpath,n],d<0?(+b.turn||0):null)};   /* 턴 제한만 있으면: − 는 「이번 턴에 썼다」, ＋ 는 그 표시를 지운다 */
+   if(bt.dataset.spc==='uq'){const t2=b.trainers[tid];await adj(uniqList(t2).find(q=>q.p.name===n),t2.uUses||{},['battle','trainers',tid,'uUses'],['battle','trainers',tid,'uTurn'])}
+   else{const m=b.mons[bt.dataset.mid];if(!m)return;await adj(specialPots(m).find(q=>q.p.name===n),m.potUses||{},['battle','mons',m.id,'potUses'],['battle','mons',m.id,'potTurn'])}
    $('#spcnt',md).innerHTML=spCntHtml(tid);spBind()});spBind()}
  const F=()=>window.OM_FIELD;const CUT=()=>window.OM_CUTIN;const FX=()=>window.OM_FX;
  /* 매직룸 동안 소지품은 없는 셈 */
