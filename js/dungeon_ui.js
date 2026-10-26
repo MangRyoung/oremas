@@ -84,14 +84,14 @@ window.OM_DG_UI=(()=>{
   const rows=(t,kind)=>{let ks=[];try{ks=(kind==='order'?OD.orderKeys:OD.commandKeys)(t)}catch(e){}const F=full(t),cnt=t.orderCount||{};return ks.map(k=>{const nm=kind==='order'?OD.orderName(t,k):OD.commandName(t,k);if(!nm)return null;const key=(kind==='order'?'order_':'command_')+k;return {key,nm,v:+cnt[key]||0,mx:+F[key]||0}}).filter(Boolean)};
   const draw=()=>{const {t,P}=src();const sec=(kind,lab)=>{const L=rows(t,kind);if(!L.length)return '';const sv=L.reduce((a,x)=>a+x.v,0),sm=L.reduce((a,x)=>a+x.mx,0);
     return `<div class="dgoe-sec"><div class="dgoe-h"><b>${lab}</b><span class="mono">${sv} / ${sm}</span><span class="sp"></span><button class="btn xs ghost" data-oe="all" data-k="${kind}">${lab} 전부 가득</button></div>
-     ${L.map(x=>`<div class="dgoe-row ${x.v?'':'z'}"><span class="nm">『${H(x.nm)}』</span><span class="mono">${x.v}<small> / ${x.mx}</small></span><button class="btn xs pri" data-oe="use" data-key="${H(x.key)}" ${x.v>0?'':'disabled'}>발동 −1</button><button class="btn xs" data-oe="add" data-key="${H(x.key)}" ${x.mx&&x.v>=x.mx?'disabled':''}>회복 +1</button></div>`).join('')}</div>`};
+     ${L.map(x=>`<div class="dgoe-row ${x.v?'':'z'}"><span class="nm">『${H(x.nm)}』</span><span class="mono">${x.v}<small> / ${x.mx}</small></span><button class="btn xs pri" data-oe="use" data-key="${H(x.key)}" ${x.v>0?'':'disabled'}>발동 −1</button><button class="btn xs" data-oe="add" data-key="${H(x.key)}" ${x.v>=x.mx?'disabled':''}>회복 +1</button></div>`).join('')}</div>`};
    md.querySelector('#dgOe').innerHTML=`<div class="mhead"><h2>4식 · 6령 <small class="dim">${H(t.name||'')}${P[0]==='roster'?' · 탐사 중 (시트)':' · 배틀'}</small></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    <div class="dgoe">${sec('order','4식')}${sec('command','6령')}<p class="small dim" style="margin:0">발동은 횟수만 줄이고 로그를 남긴다 — 효과는 손으로.</p></div>`};
   draw();
   md.addEventListener('click',async e=>{if(e.target.closest('[data-x]'))return A().closeModal();const b=e.target.closest('[data-oe]');if(!b||b.disabled)return;const {t,P}=src();const cnt=Object.assign({},t.orderCount||{});const F=full(t);let line='',tag=b.dataset.k==='order'?'4식':'6령';
    if(b.dataset.oe==='all'){const pre=b.dataset.k==='order'?'order_':'command_';for(const x in F)if(x.startsWith(pre))cnt[x]=F[x];line='전부 가득'}
    else{const key=b.dataset.key,v=+cnt[key]||0,mx=+F[key]||0;const kind=key.startsWith('order_')?'order':'command',k=key.replace(/^(order|command)_/,'');const nm=(kind==='order'?OD.orderName(t,k):OD.commandName(t,k))||k;
-    if(b.dataset.oe==='use'){cnt[key]=Math.max(0,v-1);line=`『${nm}』 발동 · 남은 ${cnt[key]}`}else{cnt[key]=mx?Math.min(mx,v+1):v+1;line=`『${nm}』 회복 +1 · 남은 ${cnt[key]}`}
+    if(b.dataset.oe==='use'){cnt[key]=Math.max(0,v-1);line=`『${nm}』 발동 · 남은 ${cnt[key]}`}else{/* 최대치가 0 인 칸(아직 못 쓰는 명령)은 회복해도 0 */cnt[key]=Math.min(mx,v+1);line=`『${nm}』 회복 +1 · 남은 ${cnt[key]}`}
     tag=kind==='order'?'4식':'6령'}
    await A().set(P,cnt);A().sysLog(`【${tag}】 ${t.name||''} ${line}${P[0]==='roster'?' (탐사 중)':''}`,'battle');draw()})}
  function cardChip(tid,me){const D=window.OM_DECK_UI;if(!D||!D.handCount)return '';const n=D.handCount(tid);
