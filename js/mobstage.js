@@ -6,7 +6,11 @@
   const r=st.getBoundingClientRect();let b=0;
   /* 10-26 망령: 넓은 화면이라도 옆 패널 때문에 무대가 좁으면 버튼이 한 글자 폭으로 찌그러졌다 — 이름 칸 폭은 늘 넘겨 버튼 줄이 그 오른쪽에서 두 줄로 접히게 */
   /* 던전 중엔 장소 이름 칸이 숨고 왼쪽 HUD 가 그 자리 — 보이는 쪽 오른쪽 끝을 쓴다 */
-  if(!MQ.matches){let w='';for(const sel of ['.stagetags',':scope>.dgrp-hud']){const tg=st.querySelector(sel);if(!tg||!tg.offsetWidth)continue;const q=tg.getBoundingClientRect();if(q.width>0&&q.bottom>r.top){w=Math.round(q.right-r.left)+'px';break}}
+  if(!MQ.matches){let w='';{const tg=st.querySelector('.stagetags');const q=tg&&tg.offsetWidth?tg.getBoundingClientRect():null;if(q&&q.width>0)w=Math.round(q.right-r.left)+'px'}
+   /* HUD 는 자식이 칸 밖으로 넘치니 맨 윗줄(던전 이름) 자식들 오른쪽 끝을 쓴다 */
+   if(!w){const hd=st.querySelector(':scope>.dgrp-hud');if(hd){let R=0;for(const x of [hd,...hd.children]){if(!x.offsetWidth)continue;const q=x.getBoundingClientRect();if(q.top<r.top+64)R=Math.max(R,q.right)}if(R)w=Math.round(R-r.left)+'px'}}
+   /* 버튼 줄이 두 줄로 접히면 오른쪽 지도 칸이 그 밑에서 시작하게 --btnb */
+   {const bt=st.querySelector('#rpbtns');const q=bt&&bt.getBoundingClientRect();const v=q&&q.height?Math.round(q.bottom-r.top)+'px':'';if(v){if(st.style.getPropertyValue('--btnb')!==v)st.style.setProperty('--btnb',v)}else st.style.removeProperty('--btnb')}
    if(w){if(st.style.getPropertyValue('--tagw')!==w)st.style.setProperty('--tagw',w)}else st.style.removeProperty('--tagw')}
   if(!MQ.matches){if(last){st.style.removeProperty('--sttop');last=''}return}
   /* 10-23 망령: 버튼 줄은 장소 이름과 같은 줄에서 시작 — 왼쪽 이름 칸 폭 · 높이를 --tagw/--tagh 로 넘겨 그만큼 비운다 */

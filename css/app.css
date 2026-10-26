@@ -4495,3 +4495,5 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 
 /* 10-26 망령: 옆 패널을 연 넓은 화면 — 무대가 좁으면 버튼이 한 글자 폭으로 찌그러지던 것. 이름 칸 오른쪽에서 줄바꿈해 오른쪽 정렬 (폰 규칙은 아래 미디어 쿼리가 덮는다) */
 @media (min-width:761px){.rpbtns{left:calc(var(--tagw,140px) + 10px);flex-wrap:wrap;justify-content:flex-end;align-content:flex-start;row-gap:4px}.rpbtns>*{flex-shrink:0}.rpbtns .btn{white-space:nowrap}}
+/* 10-26: 버튼 줄이 두 줄이면 던전 지도 칸(오른쪽)이 그 아래에서 시작 */
+@media (min-width:761px){.rpstage .dgrp-dock{top:max(58px,calc(var(--btnb,0px) + 6px))}.rpstage .dgrp-dock.big{top:max(58px,calc(var(--btnb,0px) + 6px))}}
