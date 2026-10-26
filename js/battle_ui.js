@@ -1549,8 +1549,14 @@ window.OM_BATTLE_UI=(()=>{
  function cutPhase(text,sub){try{if(CUT())CUT().phase(text,sub)}catch(e){}}
  /* 시합 개시 연출 (맵툴 switch_cutscene): rp.cutin.start = vs | warn | off. 레이드 보스가 있으면 경고 */
  function battleStartCut(b,force){const cfg=((A().ST.state.rp||{}).cutin)||{};const mode=force||cfg.start||'vs';if(mode==='off'||!CUT())return;
-  const sideData=side=>{const ids=((b.sides||{})[side]||{}).trainers||[];const t=(b.trainers||{})[ids[0]];const mons=Object.values(b.mons||{}).filter(m=>ids.includes(m.tid)).sort((x,y)=>(x.slot||0)-(y.slot||0));
-   if(!t&&!mons.length)return null;return {img:t?trainerImg(t):(mons[0]||{}).image||'',t:t?t.name:'야생의 '+(mons[0]||{}).name,sub:t?['지시','육성','통솔','능력'].map(k=>k+' '+((t.ranks||{})[k]||'-')).join('·'):'',balls:mons.slice(0,6).map(m=>m.hp.cur>0?1:0),mons:mons.slice(0,6).map(m=>({img:(!c_gm_or_seen(m))?'':m.image,name:(!c_gm_or_seen(m))?'비공개':m.name}))}};
+  /* 10-26 망령: 한 진영에 트레이너가 여럿(따로 세우기 · 개인전)이거나 합친 파티가 6체를 넘으면 — 이름을 모두, 그림 둘, 볼은 트레이너(6체)마다 한 줄 */
+  const monsOf=ids=>Object.values(b.mons||{}).filter(m=>ids.includes(m.tid)).sort((x,y)=>(x.slot||0)-(y.slot||0));
+  const pack=ms=>({balls:ms.slice(0,6).map(m=>m.hp.cur>0?1:0),mons:ms.slice(0,6).map(m=>({img:(!c_gm_or_seen(m))?'':m.image,name:(!c_gm_or_seen(m))?'비공개':m.name}))});
+  const sideData=side=>{const ids=(((b.sides||{})[side]||{}).trainers||[]).filter(tid=>monsOf([tid]).length||(b.trainers||{})[tid]);const T=ids.map(tid=>(b.trainers||{})[tid]).filter(Boolean);const all=monsOf(ids);
+   if(!T.length&&!all.length)return null;const t=T[0];
+   if(T.length<=1&&all.length<=6)return Object.assign({img:t?trainerImg(t):(all[0]||{}).image||'',t:t?t.name:'야생의 '+(all[0]||{}).name,sub:t?['지시','육성','통솔','능력'].map(k=>k+' '+((t.ranks||{})[k]||'-')).join('·'):''},pack(all));
+   const parts=[];if(T.length>1){for(const x of T){const ms=monsOf([x.id||ids[T.indexOf(x)]]);parts.push(Object.assign({t:x.name},pack(ms)))}}else{for(let i=0;i<all.length;i+=6)parts.push(Object.assign({t:''},pack(all.slice(i,i+6))))}
+   const solo=T.some(x=>x.solo);return {img:t?trainerImg(t):'',img2:T[1]?trainerImg(T[1]):'',t:T.length>1?T.map(x=>x.name).join(solo?' · ':' & '):(t?t.name:''),sub:'',solo,parts,balls:parts[0].balls,mons:parts[0].mons}};
   function c_gm_or_seen(m){return !!(m.entry||m.seen)}   /* 지금 나와 있거나 한 번 나온 포켓몬만 그림·이름, 나머지는 볼 */
   const boss=Object.values(b.mons||{}).find(m=>m.raid&&+m.raid.segments>0);
   if(mode==='warn'||boss){const AM=Object.values(b.mons||{});const bm=boss||AM.find(m=>m.side==='right'&&m.entry)||AM.find(m=>m.side==='right')||AM[0]||(force?{name:'???',image:'',hp:{cur:1,max:1}}:null);if(bm){CUT().raid({img:bm.image,n:bm.name,title:cfg.warnTitle||(boss?'레이드 배틀 : '+boss.raid.segments:'강적 출현'),tape:cfg.warnTape||('⚠ WARNING ⚠ '+(cfg.warnTitle||(boss?'레이드 보스 출현':'강적 출현'))),nohp:cfg.warnHp?0:1,x:boss?boss.raid.segments:0,hp:(bm.hp.cur>0?Math.max(1,Math.round(bm.hp.cur/bm.hp.max*100)):0),ph:boss?boss.raid.phase||1:0,label:boss?'RAID BATTLE':'BATTLE'});return}}

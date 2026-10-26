@@ -92,8 +92,12 @@ window.OM_CUTIN=(()=>{
  function vsPane(S,L){S=S||{};const mons=S.mons||[],bl=S.balls||[];
   const balls=Array.from({length:6},(_,i)=>{if(bl[i]==null)return '<i class="v3-ball none"></i>';const m=mons[i]||{};return `<i class="v3-ball${bl[i]?'':' dead'}" style="--bi:${i}" title="${esc(m.name||'')}">${m.img?`<img src="${esc(m.img)}" alt="">`:''}</i>`}).join('');
   const rk=String(S.sub||'').split('·').map(x=>x.trim()).filter(Boolean).map(x=>{const k=x.split(' ')[0],v=x.slice(k.length).trim();return `<span><small>${esc(k)}</small><b>${esc(v||'-')}</b></span>`}).join('');
-  return `<div class="v3-pane ${L?'v3-L':'v3-R'}"><div class="v3-bg"></div><div class="v3-lines"></div><div class="v3-por${S.img?'':' none'}"${S.img?` style="background-image:url('${cssu(S.img)}')"`:''}></div>
-   <div class="v3-plate"><div class="v3-side">${L?'PLAYER':'RIVAL'}</div><div class="v3-nm">${esc(S.p?'《'+S.p+'》':(S.t||'???'))}</div>${rk?`<div class="v3-rk">${rk}</div>`:''}<div class="v3-balls">${balls}</div></div></div>`}
+  /* 10-26: 한 진영에 트레이너 여럿(개인전 · 따로 세우기) — 그림 둘, 볼은 트레이너마다 한 줄 */
+  const ballRow=P=>Array.from({length:6},(_,i)=>{const b0=(P.balls||[])[i];if(b0==null)return '<i class="v3-ball none"></i>';const m=(P.mons||[])[i]||{};return `<i class="v3-ball${b0?'':' dead'}" style="--bi:${i}" title="${esc(m.name||'')}">${m.img?`<img src="${esc(m.img)}" alt="">`:''}</i>`}).join('');
+  const multi=Array.isArray(S.parts)&&S.parts.length>1;
+  const rows=multi?S.parts.map(P=>`<div class="v3-brow">${P.t?`<small>${esc(P.t)}</small>`:''}<div class="v3-balls">${ballRow(P)}</div></div>`).join(''):`<div class="v3-balls">${balls}</div>`;
+  return `<div class="v3-pane ${L?'v3-L':'v3-R'}${multi?' v3-multi':''}"><div class="v3-bg"></div><div class="v3-lines"></div><div class="v3-por${S.img?'':' none'}"${S.img?` style="background-image:url('${cssu(S.img)}')"`:''}></div>${S.img2?`<div class="v3-por v3-por2" style="background-image:url('${cssu(S.img2)}')"></div>`:''}
+   <div class="v3-plate"><div class="v3-side">${S.solo?'FREE FOR ALL':L?'PLAYER':'RIVAL'}</div><div class="v3-nm">${esc(S.p?'《'+S.p+'》':(S.t||'???'))}</div>${rk?`<div class="v3-rk">${rk}</div>`:''}${rows}</div></div>`}
  function vsLocal(D){D=D||{};const r=root('cut');const nar=vNar();const sa=nar?90-Math.atan(.10*innerHeight/innerWidth)*180/Math.PI:Math.atan(.14*innerWidth/innerHeight)*180/Math.PI;r.className=`v3 v3${vt()}${nar?' v3-nar':''}`;r.style.cssText=`--u:${vU()}px;--sa:${sa.toFixed(2)}deg`;
   let sp='';for(let a=0;a<360;a+=30)sp+=`<i style="--a:${a+12}deg"></i>`;
   r.innerHTML=`<div class="v3-dim"></div><div class="v3-shake">${vsPane(D.L,1)}${vsPane(D.R,0)}<div class="v3-seam"></div><div class="v3-ring"></div><div class="v3-spark">${sp}</div><div class="v3-vs"><b>V</b><b>S</b></div></div><div class="v3-top"><span>BATTLE START</span></div><div class="v3-flash"></div>`;
