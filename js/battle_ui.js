@@ -706,7 +706,7 @@ window.OM_BATTLE_UI=(()=>{
     <div class="firelist"><label class="firerow ${ps?'':'dis'}" data-ex="batton"><b>배턴터치 퇴장</b><span class="small dim">${ps?'랭크와 넘길 수 있는 상태를 다음에 나오는 포켓몬에게':'넘길 랭크·상태가 없다'}</span></label>
     <label class="firerow ${bench.length?'':'dis'}" data-ex="forced"><b>강제 교대</b><span class="small dim">${bench.length?'배턴터치 없이 나가고 벤치에서 무작위 한 마리가 같은 자리로':'벤치에 교대할 포켓몬이 없다'}</span></label></div>`);
    md.querySelectorAll('[data-ex]').forEach(el=>el.onclick=()=>{const k=el.dataset.ex;if(k==='forced'&&!bench.length)return;if(k==='batton'&&!ps)return;A().closeModal();if(k==='forced')return forcedSwitch(mid);exitMon(mid,{batton:k==='batton',noAsk:true})});return}
-  let batton=!!opt.batton;if(!batton&&!opt.forced&&passable(m)&&!opt.noAsk)batton=await askYes(`${m.name} 퇴장 — 「배턴터치」인가? (랭크·넘길 수 있는 상태를 다음 포켓몬에게)\n취소 = 그냥 퇴장`);
+  let batton=!!opt.batton;/* 10-26 FFA 시험: 랭크가 바뀐 포켓몬은 그냥 교대해도 늘 「배턴터치인가?」를 물어, 서두르다 「예」를 누르면 위협 −2 가 다음 포켓몬에게 넘어갔다 — 「배턴터치」를 쓸 줄 아는 포켓몬만 묻는다 (그 밖은 「(특수)」의 배턴터치 퇴장) */const knowsBP=MVS(m).some(v=>/배턴터치/.test(String((v||{}).name||'')))||potSrc(m).some(p=>p&&/배턴터치/.test(String(p.eff||'')))||/배턴터치/.test(String(m.abilityEff||''));if(!batton&&!opt.forced&&knowsBP&&passable(m)&&!opt.noAsk)batton=await askYes(`${m.name} 퇴장 — 「배턴터치」인가? (랭크·넘길 수 있는 상태를 다음 포켓몬에게)\n취소 = 그냥 퇴장`);
   const nb0=snap(c.b),nb=snap(nb0);const L=outReset(nb,nb.mons[mid],{batton});const AU=auraOff(nb,nb.mons[mid]);L.push(...AU.L);if(!await A().setMany(A().diffOps(['battle'],nb0,nb,3)))return;itemKick();if(batton)await A().set(['battle','trainers',m.tid,'batton'],nb.trainers[m.tid].batton);
   A().sysLog(`${m.name} ${opt.forced?'강제 퇴장':'퇴장'}${L.length?'\n'+L.join('\n'):''}`,'battle')}
  /* 강제 교대 (맵툴 change_forced): 배턴터치 없이 나가고, 벤치에서 아무 포켓몬이나 같은 에리어로 */
