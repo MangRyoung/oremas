@@ -30,7 +30,8 @@ const FX=()=>window.OM_FX;
  function actionCheck(m){const lines=[];const st=m.states||{};let failed=0;
   const roll=(k,p,failMsg,okMsg,invert)=>{if(failed||!st[k])return;const d=d10000();const lim=Math.round(p*10000);const hit=d<=lim;if(hit){failed=k==='Confusion'?2:1;lines.push(`${m.name}${failMsg} (판정 ${invert?10000-d:d})`);if(k==='Flinch')clearState(m,'Flinch')}else lines.push(`${m.name}${okMsg} (판정 ${invert?10000-d:d})`)};
   roll('Flinch',pct('flinch',1),'은(는) 풀이 죽어 움직일 수 없다...','');
-  if(!failed&&st.Sleep){const d=d10000();const lim=Math.round(pct('sleep',1)*10000);const left=(+st.Sleep||1)-1;if(d<=lim&&(+st.Sleep||1)>0){failed=1;lines.push(`${m.name}은(는) 쿨쿨 잠자고 있다... (남은 ${left}턴)`);if(left<=0){clearState(m,'Sleep');lines.push(`${m.name}은(는) 눈을 떴다!`)}else m.states.Sleep=left}}
+  /* 10-26 망령: 깨어나는 턴엔 바로 행동한다 (전엔 그 턴도 실패로 끝났다) */
+  if(!failed&&st.Sleep){const d=d10000();const lim=Math.round(pct('sleep',1)*10000);const left=(+st.Sleep||1)-1;if(left<=0){clearState(m,'Sleep');lines.push(`${m.name}은(는) 눈을 떴다!`)}else if(d<=lim){failed=1;m.states.Sleep=left;lines.push(`${m.name}은(는) 쿨쿨 잠자고 있다... (남은 ${left}턴)`)}}
   roll('Paralysis',pct('paralysis',1/8),'은(는) 몸이 저려서 움직일 수 없다...','은(는) 몸이 저려도 지시를 따른다!');
   /* 얼음: 기술을 내보내려 할 때마다 1 줄고(3번째에 풀림), 그 전엔 3/4 로 못 움직인다 */
   if(!failed&&st.Freeze){const d=d10000();const lim=Math.round(pct('freeze',3/4)*10000);const left=(+st.Freeze||1)-1;if(left<=0){clearState(m,'Freeze');lines.push(`${m.name}은(는) 얼음이 녹았다!`)}else if(d<=lim){failed=1;m.states.Freeze=left;lines.push(`${m.name}은(는) 얼어붙어 움직일 수 없다... (남은 ${left} · 판정 ${10000-d})`)}else{clearState(m,'Freeze');lines.push(`${m.name}은(는) 얼음을 깨부수고 나왔다! (판정 ${10000-d})`)}}
