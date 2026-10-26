@@ -40,6 +40,7 @@ window.OM_DG_UI=(()=>{
  const rid=d=>{let k;do k=Math.random().toString(36).slice(2,7);while(R(d)[k]);return k};
  const shade=(hex,f)=>{const n=parseInt(String(hex).slice(1),16),m=x=>Math.round(f<0?x*(1+f):x+(255-x)*f);return`rgb(${m(n>>16)},${m(n>>8&255)},${m(n&255)})`};
  const rng=s=>{let h=2166136261;for(const ch of String(s))h=Math.imul(h^ch.charCodeAt(0),16777619);return()=>{h=Math.imul(h^h>>>15,2246822507);h=Math.imul(h^h>>>13,3266489909);return((h^=h>>>16)>>>0)/4294967296}};
+ const mapLoc=id=>{const L=((((ST().state.rp||{}).map)||{}).locs)||[];const l=L.find(x=>x&&x.dg===id);return l?`<span class="dg-chip" title="지도의 이 장소에서 진입한다">📍 지도 ${H(l.n)}. ${H(l.name||'')}</span>`:''};
  const setH=(el,h)=>{if(el&&el._h!==h){el.innerHTML=h;el._h=h}};
 
  /* ---------- 쓰기 (GM 만) — {'list/<id>/at': v} 꼴을 경로 배열로 바꿔 한꺼번에 ---------- */
@@ -96,7 +97,7 @@ window.OM_DG_UI=(()=>{
  /* 던전이 꺼져 있을 때 (GM 만 보는 화면): 준비한 던전 목록 · 진입 · 관리 */
  function idleHTML(){const ds=Object.entries(all());
   return `<div class="dg dg-idle"><div class="dg-idle-head"><div><small>DUNGEON</small><h2>던전</h2><p>방을 이어 붙인 지도 위를 일행이 한 칸씩 나아간다. 안개 속 방은 GM 이 공개하거나 일행이 들어가야 보인다. 진입하면 모두의 화면이 이 탭으로 넘어온다.</p></div><div class="dg-acts"><button class="btn sm pri" data-a="manage">🛠 던전 관리</button></div></div>
-   ${ds.length?`<div class="dg-idle-list">${ds.map(([id,d])=>{const o=startOptions(d);const n=Object.keys(R(d)).length;return `<div class="dg-card"><h4>${H(d.n||'이름 없는 던전')} <small>방 ${n}개</small></h4>${d.o?`<span class="dg-chip">주인 · ${H(d.o)}</span>`:''}${d.a?`<span class="dg-chip">${H(d.a)}</span>`:''}${d.d?`<span class="dg-chip on">기한 · ${H(d.d)}</span>`:''}<div class="dg-acts">${o.map(([r,l])=>`<button class="btn sm pri" data-a="enter" data-v="${H(id)}" data-s="${H(r)}">⚔ ${H(l)}</button>`).join('')||'<span class="small dim">방이 없다 — 던전 관리에서 만든다</span>'}</div></div>`}).join('')}</div>`:`<div class="dg-card"><p>아직 던전이 없다. <b>던전 관리</b>에서 새로 만들거나 <b>샘플 던전</b>으로 시작해 봐.</p></div>`}</div>`}
+   ${ds.length?`<div class="dg-idle-list">${ds.map(([id,d])=>{const o=startOptions(d);const n=Object.keys(R(d)).length;return `<div class="dg-card"><h4>${H(d.n||'이름 없는 던전')} <small>방 ${n}개</small></h4>${d.o?`<span class="dg-chip">주인 · ${H(d.o)}</span>`:''}${d.a?`<span class="dg-chip">${H(d.a)}</span>`:''}${d.d?`<span class="dg-chip on">기한 · ${H(d.d)}</span>`:''}${mapLoc(id)}<div class="dg-acts">${o.map(([r,l])=>`<button class="btn sm pri" data-a="enter" data-v="${H(id)}" data-s="${H(r)}">⚔ ${H(l)}</button>`).join('')||'<span class="small dim">방이 없다 — 던전 관리에서 만든다</span>'}</div></div>`}).join('')}</div>`:`<div class="dg-card"><p>아직 던전이 없다. <b>던전 관리</b>에서 새로 만들거나 <b>샘플 던전</b>으로 시작해 봐.</p></div>`}</div>`}
  function render(el){if(!el)return;
   const d=cur();
   if(!d){DG.frame='';DG.mapSig='';if(!gm()){el.innerHTML='<div class="empty">지금은 던전에 들어가 있지 않다.</div>';return}const h=idleHTML();if(el._dgIdle!==h||!$('.dg-idle',el)){el.innerHTML=h;el._dgIdle=h}el._dgRoot=null;bindRoot(el);return}
@@ -122,7 +123,7 @@ window.OM_DG_UI=(()=>{
   setH($('#dgSide',el),side(d,isGm,al,lv))}
  function side(d,isGm,al,lv){
   const rs=R(d),id=DG.sel,r=rs[id],t=ty(r&&r.t),here=id===d.at;
-  const meta=`<div class="dg-card"><h4>${H(d.n||'이름 없는 던전')} <small>DUNGEON</small></h4>${d.o?`<span class="dg-chip">주인 · ${H(d.o)}</span>`:''}${d.a?`<span class="dg-chip">${H(d.a)}</span>`:''}${d.d?`<span class="dg-chip on">기한 · ${H(d.d)}</span>`:''}
+  const meta=`<div class="dg-card"><h4>${H(d.n||'이름 없는 던전')} <small>DUNGEON</small></h4>${d.o?`<span class="dg-chip">주인 · ${H(d.o)}</span>`:''}${d.a?`<span class="dg-chip">${H(d.a)}</span>`:''}${d.d?`<span class="dg-chip on">기한 · ${H(d.d)}</span>`:''}${mapLoc(d.id)}
    <div class="dg-mini-meter" style="--p:${al/100};--lc:${LVC[lv]}"></div><p><b style="color:${LVC[lv]}">경계도 ${al}% · ${LV[lv][1]}</b> — ${LV[lv][3]}</p>
    ${isGm?`<div class="dg-acts"><button class="btn sm" data-a="al" data-v="20" data-w="발각">발각 +20</button><button class="btn sm" data-a="al" data-v="10" data-w="소란·도주">소란 +10</button><button class="btn sm" data-a="al" data-v="-10" data-w="몰래 통과">몰래 통과 −10</button><button class="btn sm ghost" data-a="al" data-v="5" data-w="">+5</button><button class="btn sm ghost" data-a="al" data-v="-5" data-w="">−5</button></div>${lv===3?'<div class="dg-acts"><button class="btn sm danger" data-a="kick">강제 퇴출 처리 (던전에서 나가기)</button></div>':''}`:''}</div>`;
   const card=r?`<div class="dg-card" style="--c:${t.c}"><h4><span class="dg-ico">${t.ic}</span>${H(r.n||t.k)} <small>${t.en}</small></h4><span class="dg-chip on">${H(t.k)}</span>${here?'<span class="dg-chip on">◆ 일행 위치</span>':''}${r.c?'<span class="dg-chip">✓ 클리어</span>':''}${isGm&&!r.s&&!here?'<span class="dg-chip">안개 속 (플레이어에게 안 보임)</span>':''}<p>${t.r}</p>${isGm&&r.m?`<p class="dg-memo">GM 메모 · ${H(r.m)}</p>`:''}
@@ -228,5 +229,10 @@ window.OM_DG_UI=(()=>{
   if(k==='imgdel'){await upd({[P0(d.id)+'r/'+id+'/b']:null});return edDraw()}
   if(k==='img'){const f=b.files&&b.files[0];if(!f)return;A().toast('올리는 중…');try{const u=await DBS().uploadImage(`rooms/${ST().room}/dg_${d.id}_${id}_${Date.now().toString(36)}`,f);if(u&&await upd({[P0(d.id)+'r/'+id+'/b']:u}))A().toast('방 배경을 바꿨다');edDraw()}catch(e){A().toast('그림을 올리지 못했다: '+e.message)}}}
 
- return {render,onState,on,cur,TY,LV,lvOf};
+ /* 지도 연계 (10-26 망령): 지도 장소에 던전을 걸어 두고 그 핀에서 바로 진입 — rp_ui 의 지도 메뉴가 부른다 */
+ function list(){return Object.entries(all()).map(([id,d])=>({id,n:d.n||'이름 없는 던전',rooms:Object.keys(R(d)).length,opts:startOptions(d)}))}
+ async function enter(id,s,from){const d=all()[id];if(!d||!gm())return false;const o=startOptions(d);s=s&&R(d)[s]?s:(o[0]||[])[0];if(!s)return A().toast('던전에 방이 없다 — 던전 관리에서 만든다'),false;
+  const p=P0(id);if(await upd({field:{mode:'dungeon',did:id,t:Date.now()},[p+'at']:s,[p+'r/'+s+'/s']:1,[p+'al']:0})){notice(`⚔ 던전 진입 — ${d.n||'던전'}${from?' ('+from+')':''}`);return true}return false}
+ function nameOf(id){const d=all()[id];return d?(d.n||'이름 없는 던전'):''}
+ return {render,onState,on,cur,TY,LV,lvOf,list,enter,nameOf};
 })();

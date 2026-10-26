@@ -88,7 +88,14 @@ window.OM_EMO=(()=>{
    else{b.classList.add('emo-dlg')}
    target.appendChild(b);setTimeout(()=>b.remove(),2300)}
   if(!opt.silent)sound(k);return true}
- function playKey(key,k,opt){const st=standOf(key);if(st)return play(st,k,opt);const d=document.querySelector('#dlg .dname');if(d&&(!opt||!opt.standOnly))return play(d,k,opt);return false}
+ /* 스탠딩이 다 뜬 뒤에 연출한다 — 막 등장한 스탠딩은 그림을 다 받고 등장 애니메이션(standin)이 끝날 때까지 기다린다 (위치를 그림 크기로 재니까) */
+ function whenReady(key,cb,n){n=n||0;const st=standOf(key),img=st&&st.querySelector('img');
+  if(st&&img&&img.complete&&img.naturalWidth){let an=[];try{an=st.getAnimations().filter(a=>/standin/.test(a.animationName||''))}catch(e){}if(an.length)return Promise.all(an.map(a=>a.finished.catch(()=>{}))).then(()=>cb(standOf(key)));return cb(st)}
+  if(n>40)return cb(null);setTimeout(()=>whenReady(key,cb,n+1),80)}
+ /* opt.enter: 무대에 없으면 올린다 (rp_ui stageEnter) · opt.standOnly: 스탠딩이 없으면 대사 상자로 대신하지 않는다 */
+ function playKey(key,k,opt){opt=opt||{};if(!E[k])return false;
+  if(opt.enter&&key&&!standOf(key)){try{window.OM_RP_UI&&window.OM_RP_UI.stageEnter&&window.OM_RP_UI.stageEnter(key)}catch(e){}}
+  whenReady(key,st=>{if(st)return play(st,k,opt);const d=document.querySelector('#dlg .dname');if(d&&!opt.standOnly&&!opt.enter)return play(d,k,opt);if(!opt.silent)sound(k)});return true}
 
  /* ----- 😮 버튼 · 고르기 창 ----- */
  let pending='';
@@ -108,6 +115,6 @@ window.OM_EMO=(()=>{
   setTimeout(()=>{const off=ev=>{if(!pop.isConnected)return document.removeEventListener('pointerdown',off,true);if(!pop.contains(ev.target)&&ev.target!==btn){pop.remove();document.removeEventListener('pointerdown',off,true)}};document.addEventListener('pointerdown',off,true)},0)}
 
  /* 남이 보낸 「감정만」 신호 */
- function onEvent(p){if(!p||p.t!=='emo'||!E[p.em])return;if(Date.now()-(+p.at||0)>8000)return;playKey(String(p.key||''),p.em)}
+ function onEvent(p){if(!p||p.t!=='emo'||!E[p.em])return;if(Date.now()-(+p.at||0)>8000)return;playKey(String(p.key||''),p.em,{enter:true})}
  return {E,LIST:L.map(x=>x[0]),find,fromLabel,parse,play,playKey,standOf,sound,svg,btnHtml,bind,paintBtn,takePending,get pending(){return pending},onEvent};
 })();

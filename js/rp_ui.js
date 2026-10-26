@@ -71,6 +71,8 @@ window.OM_RP_UI=(()=>{
    if(Object.values(STAGE.slots).includes(k))continue;
    const free=['center','left','right'].find(s=>!STAGE.slots[s]);if(free){STAGE.slots[free]=k;continue}
    const oldest=SLOTS.slice().sort((a,b)=>(STAGE.last[STAGE.slots[a]]||0)-(STAGE.last[STAGE.slots[b]]||0))[0];STAGE.slots[oldest]=k}}
+ /* 대사 없이 무대에 올린다 (감정 연출 「!한숨」 등) — 대사가 들어온 것처럼 빈 자리 · 가장 오래된 자리에 */
+ function stageEnter(k){if(!k)return;const now=Date.now();expire(now);STAGE.last[k]=now;STAGE.active=k;if(!Object.values(STAGE.slots).includes(k)){const free=['center','left','right'].find(s=>!STAGE.slots[s]);if(free)STAGE.slots[free]=k;else{const oldest=SLOTS.slice().sort((a,b)=>(STAGE.last[STAGE.slots[a]]||0)-(STAGE.last[STAGE.slots[b]]||0))[0];STAGE.slots[oldest]=k}}if(A().view==='rp')A().renderScene()}
  function expire(now){now=now||Date.now();for(const s of SLOTS){const k=STAGE.slots[s];if(k&&now-(STAGE.last[k]||0)>STAND_TTL){STAGE.slots[s]=null;if(STAGE.active===k)STAGE.active=null}}}
  let expT=null;
  function scheduleExpire(){clearTimeout(expT);const keys=Object.values(STAGE.slots).filter(Boolean);if(!keys.length)return;const next=Math.min(...keys.map(k=>(STAGE.last[k]||0)+STAND_TTL))-Date.now();expT=setTimeout(()=>{if(A().view==='rp')A().renderScene()},Math.max(200,next+50))}
@@ -339,11 +341,11 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   if(c.kind==='gm')await A().set(['rp','gmSt','standActive'],i);else if(c.kind==='pc')await A().set(['roster','trainers',c.id,'standActive'],i);else if(c.kind==='pm')await A().set(['roster','mons',c.id,'standActive'],i);else{if(!c.id)return false;await A().set(['graph','nodes',c.id,'standActive'],i)}return true}
  /* 감정 연출: 대사 없이 지금 바로 (모두에게 신호 · 내 화면은 바로) */
  function emoKeyNow(){const c=speakerChar()||(gm()&&SPK.key==='gm'?charOf('gm'):null);return c&&c.key?c.key:''}
- function emoNow(k){const key=emoKeyNow();if(!window.OM_EMO||!k)return;if(!window.OM_EMO.playKey(key,k,{standOnly:true}))A().toast(`감정 「${(window.OM_EMO.E[k]||{}).ko||k}」 — 무대에 이 인물의 스탠딩이 없어서 소리만`);try{DBS().broadcast({t:'emo',key,em:k,at:Date.now()})}catch(e){}if(!window.OM_EMO.standOf(key))window.OM_EMO.sound(k)}
+ function emoNow(k){const key=emoKeyNow();if(!window.OM_EMO||!k)return;window.OM_EMO.playKey(key,k,{enter:true});try{DBS().broadcast({t:'emo',key,em:k,at:Date.now()})}catch(e){}}   /* 무대에 없으면 올리고 나서 연출 (10-26 망령) */
  /* 무대에 올라온 줄에 감정(data.em)이 있으면 한 번만 — 방금 받은 줄만 (방에 들어올 때 지난 줄은 안 움직인다) */
  const EMO_SEEN=new Set();
  function emoTick(row){if(!row||!row.id||!row.data||!row.data.em||!window.OM_EMO||EMO_SEEN.has(row.id))return;EMO_SEEN.add(row.id);if(EMO_SEEN.size>300)[...EMO_SEEN].slice(0,150).forEach(x=>EMO_SEEN.delete(x));
-  const a=DQ.arr[row.id];if(!a||Date.now()-a>20000)return;const key=speakerKey(row);setTimeout(()=>window.OM_EMO.playKey(key,row.data.em),40)}
+  const a=DQ.arr[row.id];if(!a||Date.now()-a>20000)return;const key=speakerKey(row);window.OM_EMO.playKey(key,row.data.em)}
  async function sendLine(){const ST=A().ST;const inp=$('#rpline');if(!inp)return;let t=inp.value.trim();if(!t)return;inp.value='';SPK.draft='';SPK.focus=true;typingStop();
   try{if(t.startsWith('/')){const ci=$('#chatIn');if(ci){ci.value=t;$('#chatSend').click()}return}
    const EMO=window.OM_EMO;let EM='';   /* 감정 연출 (js/emote.js): !감정 · 😮 버튼으로 붙인 것 · 표정 이름이 감정 이름이면 저절로 */
@@ -578,7 +580,8 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  function mapOverlay(){const M=mapS();const isGm=gm();if(!M.img)return `<div class="mapov"><div class="mapempty"><b>지도가 없다</b><div class="small dim">${isGm?'「지도 관리」에서 그림을 올리고 핀을 꽂아 줘':'GM 이 아직 지도를 올리지 않았다'}</div>${isGm?'<button class="btn sm pri" data-mapmgr data-t="img">지도 관리</button>':''}</div></div>`;
   const W=M.img.w||1000,H=M.img.h||700;const px=(x,y)=>`left:${x/W*100}%;top:${y/H*100}%`;const hid=n=>M.vis[n]==1;
   const locHtml=M.locs.map(l=>{const h=hid(l.n);if(h&&!isGm)return `<div class="cover" style="${px(l.x,l.y)}" title="?"><span>?</span></div>`;
-   return `<div class="loc ${h?'hid':''} ${M.party.n===l.n&&(M.party.vis||isGm)?'party':''}" data-loc="${l.n}" style="${px(l.x,l.y)}" title="${esc(l.name)}"><span class="ln">${l.n}</span><span class="lt">${esc(l.name)}${h?' (가림)':''}</span></div>`}).join('');
+   const dgn=l.dg&&window.OM_DG_UI?window.OM_DG_UI.nameOf(l.dg):'';const dgNow=dgn&&window.OM_DG_UI.on()&&(window.OM_DG_UI.cur()||{}).id===l.dg;
+   return `<div class="loc ${h?'hid':''} ${M.party.n===l.n&&(M.party.vis||isGm)?'party':''} ${dgn?'dgl':''} ${dgNow?'dgon':''}" data-loc="${l.n}" style="${px(l.x,l.y)}" title="${esc(l.name)}${dgn?' — 던전: '+esc(dgn):''}"><span class="ln">${l.n}</span><span class="lt">${esc(l.name)}${h?' (가림)':''}</span>${dgn?`<span class="ldg" title="던전: ${esc(dgn)}">⚔</span>`:''}</div>`}).join('');
   const pin=(()=>{const l=M.locs.find(x=>x.n===M.party.n);if(!l||(!M.party.vis&&!isGm))return '';return `<div class="ppin ${M.party.vis?'':'hid'}" style="${px(l.x,l.y)}" title="파티"><span>PC</span></div>`})();
   const routes=`<svg class="routes" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${M.routes.filter(rt=>rt.vis||isGm).map(rt=>{const pts=rt.seq.map(n=>M.locs.find(x=>x.n===n)).filter(Boolean);if(pts.length<2)return '';const d=pts.map((p,i)=>(i?'L':'M')+p.x+' '+p.y).join(' ');const c=RCOL[rt.color]||rt.color||'#d63f4f';return `<path d="${d}" stroke="${c}" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="${rt.vis?.85:.35}" stroke-dasharray="${rt.vis?'':'18 14'}"/>${pts.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="11" fill="${c}" stroke="#fff" stroke-width="3"/>`).join('')}<text x="${(pts[0].x+pts[1].x)/2+14}" y="${(pts[0].y+pts[1].y)/2-10}" font-size="28" fill="${c}" stroke="#000" stroke-width="4" paint-order="stroke" font-weight="bold">${esc(rt.name||rt.seq.join('→'))}</text>`}).join('')}</svg>`;
   const npcs=M.npcs.filter(n=>n.vis||isGm).map(n=>{const l=M.locs.find(x=>x.n===n.n);if(!l)return '';const sz={s:34,m:48,l:64}[n.size||'s'];const idx=M.npcs.filter(x=>x.n===n.n).indexOf(n);return `<div class="mnpc ${n.vis?'':'hid'}" style="${px(l.x+30+idx*(sz*0.8),l.y-10)};width:${sz}px;height:${sz}px;${n.img?`background-image:url('${cssu(n.img)}')`:''}" title="${esc(n.name)}${n.vis?'':' (숨김)'}"><i>${esc(n.name)}</i></div>`}).join('');
@@ -588,7 +591,9 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  function bindMap(el){const isGm=gm();const wrap=el.querySelector('[data-mapw]');const M=mapS();const W=(M.img||{}).w||1000,H=(M.img||{}).h||700;
   const toXY=e=>{const r=wrap.getBoundingClientRect();return {x:Math.round(Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*W),y:Math.round(Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))*H)}};
   el.querySelectorAll('[data-loc]').forEach(b=>{const n=+b.dataset.loc;
-   if(!isGm){b.onclick=()=>{const l=mapS().locs.find(x=>x.n===n);if(l)A().toast(`${l.n}. ${l.name}`)};return}
+   if(!isGm){b.onclick=()=>{const l=mapS().locs.find(x=>x.n===n);if(!l)return;const DGU=window.OM_DG_UI;const dgn=l.dg&&DGU?DGU.nameOf(l.dg):'';
+     if(dgn&&DGU.on()&&(DGU.cur()||{}).id===l.dg)return A().goView('dungeon');   /* 탐색 중인 던전이면 그쪽으로 */
+     A().toast(dgn?`${l.n}. ${l.name} — 던전 「${dgn}」 · GM 이 진입하면 열린다`:`${l.n}. ${l.name}`)};return}
    /* GM: 누르면 메뉴, 끌면 이동 (맵툴 토큰 끌기) */
    let st=null,moved=false;b.onpointerdown=e=>{if(e.button!==0)return;st={x:e.clientX,y:e.clientY};moved=false;b.setPointerCapture(e.pointerId);e.preventDefault()};
    b.onpointermove=e=>{if(!st)return;if(!moved&&Math.hypot(e.clientX-st.x,e.clientY-st.y)<5)return;moved=true;const p=toXY(e);b.style.left=(p.x/W*100)+'%';b.style.top=(p.y/H*100)+'%';b.classList.add('drag')};
@@ -602,7 +607,12 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  async function partyMove(n){const M=mapS();const vis=Object.assign({},M.vis);let rev=false;if(M.reveal&&vis[n]==1){delete vis[n];rev=true}await saveMap({party:{n,vis:M.party.vis==null?1:M.party.vis},vis});const l=M.locs.find(x=>x.n===n);if(M.ann&&l)A().sysLog(`파티가 ${l.n}. ${l.name}(으)로 이동했습니다.${rev?' (장소 공개)':''}`)}
  function locMenu(n){const M=mapS();const l=M.locs.find(x=>x.n===n);if(!l)return;const h=M.vis[n]==1;
   const md=A().openModal(`<div class="mhead"><h2>${n}. ${esc(l.name)}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-   <div class="row"><button class="btn ${h?'pri':''}" id="lopen">${h?'공개하기':'가리기'}</button><button class="btn" id="lparty">파티를 여기로</button><button class="btn ghost" id="lfocus">자막으로 알리기</button><button class="btn ghost" id="lmgr">지도 관리</button></div>`);
+   <div class="row"><button class="btn ${h?'pri':''}" id="lopen">${h?'공개하기':'가리기'}</button><button class="btn" id="lparty">파티를 여기로</button><button class="btn ghost" id="lfocus">자막으로 알리기</button><button class="btn ghost" id="lmgr">지도 관리</button></div>
+   ${(()=>{const DGU=window.OM_DG_UI;if(!DGU)return '';const L=DGU.list();const dn=l.dg?DGU.nameOf(l.dg):'';const now=dn&&DGU.on()&&(DGU.cur()||{}).id===l.dg;
+    return `<div class="locdg"><span class="small"><b>⚔ 던전</b> 이 장소를 던전 입구로</span><select id="ldg"><option value="">연결 안 함</option>${L.map(d=>`<option value="${esc(d.id)}" ${l.dg===d.id?'selected':''}>${esc(d.n)} (방 ${d.rooms}개)</option>`).join('')}</select>${dn?(now?'<button class="btn pri" id="ldggo">던전 탭으로</button>':`<button class="btn pri" id="ldgin" title="파티를 여기로 옮기고 던전에 들어간다 — 모두의 화면이 던전 탭으로">⚔ 던전 진입</button>`):''}${L.length?'':'<span class="small dim">준비한 던전이 없다 — 위 탭 「던전」 → 던전 관리</span>'}</div>`})()}`);
+  {const sel=$('#ldg',md);if(sel)sel.onchange=async()=>{const v=sel.value;const cur=mapS();await saveMap({locs:cur.locs.map(x=>x.n===n?Object.assign({},x,{dg:v||undefined}):x)});A().closeModal();locMenu(n);A().toast(v?`${l.name} = 던전 「${window.OM_DG_UI.nameOf(v)}」`:'던전 연결을 풀었다')}}
+  {const bi=$('#ldgin',md);if(bi)bi.onclick=async()=>{A().closeModal();await partyMove(n);await window.OM_DG_UI.enter(l.dg,'',`지도 ${n}. ${l.name}`)}}
+  {const bg=$('#ldggo',md);if(bg)bg.onclick=()=>{A().closeModal();A().goView('dungeon')}}
   $('#lopen',md).onclick=async()=>{A().closeModal();await toggleLoc(n)};
   $('#lparty',md).onclick=async()=>{A().closeModal();await partyMove(n)};
   $('#lfocus',md).onclick=async()=>{A().closeModal();await A().set(['rp','caption'],{name:'장소',text:l.name,at:Date.now(),fixed:false})};
@@ -1221,5 +1231,5 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   if(near||box._first!==ST.room){box.scrollTop=box.scrollHeight;box._first=ST.room}
   const inp=$('#oocIn',d);if(inp){inp.disabled=!ST.role;inp.placeholder=ST.role?'잡담 · /r 1d100':'자리에 앉으면 말할 수 있다'}}
  addEventListener('resize',()=>{try{oocTick()}catch(e){}});
- return {bspkHtml,bspkBind,bsayToggleHtml,openSpkPick,spkBtnFill,spkInfo,pushRecent,curSpk,battleSay,bsayPlace,bsayClear,typingHtml,autoFolder,bgmMuted,seUrlOf:seUrl,render,allSpeakers,onChat,feedLog,onState,onTyping,typingPing,typingStop,drawTyping,mapData:mapS,openConsole,openStands,openPeople,setMyStand,charOf,playSe,setVolume,bgmWidgetHtml,bindBgmWidget,imgOfKey:k=>{if(k==='gm')return gmImg();const c=charOf(k);return c?(c.img||standSrc(c)):''},curSpeaker:()=>{const ST=A().ST;const c=speakerChar();if(c)return {key:c.key,name:c.name,img:c.img||standSrc(c)};return gm()?{key:'gm',name:'GM',img:gmImg()}:{key:'me',name:ST.name||'',img:''}}};
+ return {stageEnter,bspkHtml,bspkBind,bsayToggleHtml,openSpkPick,spkBtnFill,spkInfo,pushRecent,curSpk,battleSay,bsayPlace,bsayClear,typingHtml,autoFolder,bgmMuted,seUrlOf:seUrl,render,allSpeakers,onChat,feedLog,onState,onTyping,typingPing,typingStop,drawTyping,mapData:mapS,openConsole,openStands,openPeople,setMyStand,charOf,playSe,setVolume,bgmWidgetHtml,bindBgmWidget,imgOfKey:k=>{if(k==='gm')return gmImg();const c=charOf(k);return c?(c.img||standSrc(c)):''},curSpeaker:()=>{const ST=A().ST;const c=speakerChar();if(c)return {key:c.key,name:c.name,img:c.img||standSrc(c)};return gm()?{key:'gm',name:'GM',img:gmImg()}:{key:'me',name:ST.name||'',img:''}}};
 })();
