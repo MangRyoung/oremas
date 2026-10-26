@@ -87,7 +87,7 @@ window.OM_DG_UI=(()=>{
    <div class="dgme-row"><button class="btn pri" data-oe="use" ${v>0?'':'disabled'}>발동 (−1)</button><button class="btn ok" data-oe="add" ${mx&&v>=mx?'disabled':''}>회복 (+1)</button><button class="btn sm" data-oe="full" ${mx&&v>=mx?'disabled':''}>이 칸 가득</button><button class="btn sm ghost" data-oe="all">${kind==='order'?'4식':'6령'} 전부 가득</button></div>
    <p class="small dim" style="margin:0">발동은 횟수만 줄이고 로그를 남긴다 — 효과는 손으로.</p></div>`};
   draw();
-  md.addEventListener('click',async e=>{const b=e.target.closest('[data-oe]');if(!b||b.disabled)return;const {t,P}=src();const cnt=Object.assign({},t.orderCount||{});const nm=(kind==='order'?OD.orderName(t,k):OD.commandName(t,k))||k;const v=+cnt[key]||0,mx=maxOf(t);const lab=kind==='order'?'4식':'6령';let line='';
+  md.addEventListener('click',async e=>{if(e.target.closest('[data-x]'))return A().closeModal();const b=e.target.closest('[data-oe]');if(!b||b.disabled)return;const {t,P}=src();const cnt=Object.assign({},t.orderCount||{});const nm=(kind==='order'?OD.orderName(t,k):OD.commandName(t,k))||k;const v=+cnt[key]||0,mx=maxOf(t);const lab=kind==='order'?'4식':'6령';let line='';
    if(b.dataset.oe==='use'){cnt[key]=Math.max(0,v-1);line=`『${nm}』 발동 · 남은 ${cnt[key]}`}
    else if(b.dataset.oe==='add'){cnt[key]=mx?Math.min(mx,v+1):v+1;line=`『${nm}』 회복 +1 · 남은 ${cnt[key]}`}
    else if(b.dataset.oe==='full'){cnt[key]=mx||v;line=`『${nm}』 가득 · 남은 ${cnt[key]}`}
@@ -415,7 +415,7 @@ window.OM_DG_UI=(()=>{
   const setHp=async(v,why)=>{const m=RO().mons[mid];const h=monHp(m);v=clamp(Math.round(v),0,h.mx);const ss=Object.assign({},m.sheetStates||{});if(v<=0)ss.Dead=1;else delete ss.Dead;
    await A().set(P('sheetHp'),v);await A().set(P('sheetStates'),Object.keys(ss).length?ss:null);log(`HP ${h.dead?0:h.c} → ${v}/${h.mx}${why?' · '+why:''}${v<=0?' · 빈사':''}`)};
   draw();
-  md.addEventListener('click',async e=>{const b=e.target.closest('[data-me-hp],[data-me-st],[data-me-rk],[data-me-heal]');if(!b)return;const m=RO().mons[mid];if(!m)return;const h=monHp(m);
+  md.addEventListener('click',async e=>{if(e.target.closest('[data-x]'))return A().closeModal();const b=e.target.closest('[data-me-hp],[data-me-st],[data-me-rk],[data-me-heal]');if(!b)return;const m=RO().mons[mid];if(!m)return;const h=monHp(m);
    if(b.dataset.meHp){const v=b.dataset.meHp;if(v==='set')await setHp(+(md.querySelector('#dgMeHp')||{}).value||0,'직접');else{const [n,dd]=v.slice(1).split('/').map(Number);const amt=Math.max(1,Math.floor(h.mx*n/dd));await setHp((h.dead?0:h.c)+(v[0]==='-'?-amt:amt),v)}}
    else if(b.dataset.meSt){const k=b.dataset.meSt;const ss=Object.assign({},m.sheetStates||{});let line;if(ss[k]){delete ss[k];line=`「${stKo(k)}」 풀림`}else{if(ME_MAJOR.includes(k))ME_MAJOR.forEach(x=>delete ss[x]);ss[k]=stCount(k);line=`「${stKo(k)}」`}await A().set(P('sheetStates'),Object.keys(ss).length?ss:null);log(line)}
    else if(b.dataset.meRk){const rk=Object.assign({attack:0,defense:0,specialattack:0,specialdefense:0,speed:0,accuracy:0,evasion:0,critical:0},m.rank||{});
