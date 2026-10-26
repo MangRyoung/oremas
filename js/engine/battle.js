@@ -11,14 +11,14 @@ window.OM_BATTLE=(()=>{
  const d=(o,n)=>1+Math.floor(rng(o)()*n);           /* 1..n */
  const floor=Math.floor;
 
- /* 능력치 실수치 × 랭크 × mod (get_status_values). ignore: -1 없음 / 0 상승(강화) 무시 / 1 하락(저하) 무시 / 2 랭크 상승만 / 3 mod 상승만 / 4 랭크 하락만 / 5 mod 하락만 */
+ /* 능력치 실수치 × 랭크 × mod (get_status_values). ignore: -1 없음 / 0 상승(랭크+)·강화(배율) 무시 / 1 감소·저하 무시 / 2 랭크 상승만 / 3 배율 강화만 / 4 랭크 감소만 / 5 배율 저하만 / 6 랭크 변화 모두 / 7 랭크·배율 변화 모두 / 8 배율 변화 모두 */
  function statValue(mon,stat,opt){
   opt=opt||{};const base=stat==='accuracy'||stat==='evasion'?1:(mon.stats[STATS.indexOf(stat)]||0);
   let r=+((mon.rank||{})[stat]||0),m=+((mon.mod||{})[stat]||1);
   if(opt.rank!=null)r=+opt.rank;if(opt.mod!=null)m=+opt.mod;
   const ig=opt.ignore==null?-1:+opt.ignore;
-  if(r>0&&(ig===0||ig===2||ig===6))r=0;if(r<0&&(ig===1||ig===4||ig===6))r=0;   /* 6 = 랭크 변화 모두 (천진 · 성스러운칼) */
-  if(m>1&&(ig===0||ig===3))m=1;if(m<1&&(ig===1||ig===5))m=1;
+  if(r>0&&(ig===0||ig===2||ig===6||ig===7))r=0;if(r<0&&(ig===1||ig===4||ig===6||ig===7))r=0;   /* 6 = 랭크 변화 모두 (천진 · 성스러운칼) · 7 = 랭크+배율 모두 */
+  if(m>1&&(ig===0||ig===3||ig===7||ig===8))m=1;if(m<1&&(ig===1||ig===5||ig===7||ig===8))m=1;
   const rv=(stat==='accuracy'||stat==='evasion')?S().accMult(r):S().rankMult(r);
   return {value:base*rv*m,rank:r,rankMult:rv,mod:m}}
 
