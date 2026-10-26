@@ -381,31 +381,35 @@ window.OM_DECK_UI=(()=>{
  /* ---------- 배틀에서 카드 쓰기 (10-26 망령) ----------
    트레이너 칸의 「🃏 카드 n」 → 그 트레이너(=덱 주인 holder) 손패 → 「사용」: 덱의 play(비용 · 버린 더미) + 카드에 자동화 구문이 있으면 SP 처럼 기준 포켓몬에서 돌린다.
    쓸 수 있는 덱: 지금 보는 덱(PV.deck) → 기본 덱 → 그 손패가 있는 덱 순 */
- function deckFor(H){const L=visDecks();const has=([,d])=>(d.hands[H]||[]).length;return L.find(x=>x[0]===PV.deck&&has(x))||L.find(x=>x[0]===(DB()||{}).cur&&has(x))||L.find(has)||null}
+ function deckFor(H){const L=visDecks();const has=([,d])=>(d.hands[H]||[]).length;return L.find(x=>x[0]===PV.deck&&has(x))||L.find(x=>x[0]===(DB()||{}).cur&&has(x))||L.find(has)||L.find(([,d])=>(d.holders||[]).includes(H))||L.find(x=>x[0]===(DB()||{}).cur)||L[0]||null}
  function handCount(tid){const x=deckFor(tid);return x?(x[1].hands[tid]||[]).length:0}
  /* 손패 화면: 어두운 무대 위 부채꼴 손패 → 카드를 고르면 가운데로 크게 떠오르고 「사용」 */
  function bigCard(c){const col=colOf(c.col);const cost=c.c!==''&&c.c!=null;const auto=!!(c.a&&c.a.ops&&c.a.ops.length);
   return `<div class="hc" style="--hc:${col}"><div class="hc-in"><div class="hc-top"><b class="hc-n">${esc(c.n)}</b>${cost?`<span class="hc-cost">${esc(c.c)}</span>`:''}</div>
    <div class="hc-art" style="${c.img?`background-image:url('${cssu(c.img)}')`:''}">${c.img?'':`<span class="hc-mono">${esc([...(c.n||'?')][0])}</span>`}</div>
    ${c.t?`<div class="hc-type"><span>${esc(c.t)}</span></div>`:''}<div class="hc-x">${esc(c.x||'')}</div>${auto?'<div class="hc-auto" title="자동화 구문이 돈다">⚙ AUTO</div>':''}</div></div>`}
- function battleHand(tid,o){o=o||{};const x=deckFor(tid);const BU=window.OM_BATTLE_UI;if(!x)return A().toast('손패가 없다 — 휴대폰 「덱」에서 먼저 뽑아 둬');const [did,dk]=x;const hand=(dk.hands[tid]||[]).slice();
+ function battleHand(tid,o){o=o||{};const x=deckFor(tid);const BU=window.OM_BATTLE_UI;if(!x)return A().toast('덱이 없다 — 휴대폰 「덱」에서 먼저 덱을 만들어 둬');const [did,dk]=x;const hand=(dk.hands[tid]||[]).slice();
   document.querySelectorAll('.hand-ov').forEach(e=>e.remove());
   const ov=document.createElement('div');ov.className='hand-ov';const n=hand.length;const spread=Math.min(64,Math.max(28,520/Math.max(n,1)));const ang=Math.min(8,40/Math.max(n,1));
   const res=dk.opt.cr?`<span class="ho-res">${esc(dk.opt.cr)} <b>${esc(String(((dk.rv[tid]||{})[dk.opt.cr])??0))}</b></span>`:'';
-  ov.innerHTML=`<div class="ho-bg"></div><div class="ho-head"><div><small>${esc(dk.name)}</small><h2>${esc(hName(tid))}의 손패</h2></div>${res}<span class="ho-cnt">${n}<small>장</small></span><span class="sp"></span><button class="ho-btn" data-ho="phone">덱 앱</button><button class="ho-btn" data-ho="x">✕</button></div>
+  ov.innerHTML=`<div class="ho-bg"></div><div class="ho-head"><div><small>${esc(dk.name)}</small><h2>${esc(hName(tid))}의 손패</h2></div>${res}<span class="ho-cnt">${n}<small>장</small></span><span class="sp"></span><button class="ho-btn ho-grave" data-ho="grave" title="버린 카드(무덤) — 잘못 쓴 카드는 여기서 손패로 되돌린다">🪦 무덤 <b>${dk.disc.length}</b></button><button class="ho-btn" data-ho="phone">덱 앱</button><button class="ho-btn" data-ho="x">✕</button></div>
    <div class="ho-stage"><div class="ho-focus"></div></div>
    <div class="ho-fan">${hand.map((cid,i)=>{const c=dk.cards[cid];if(!c)return '';const k=i-(n-1)/2;return `<div class="ho-slot" data-hi="${i}" style="--x:${k*spread}px;--r:${k*ang}deg;--y:${Math.abs(k)*Math.abs(k)*2.2}px;--d:${i*45}ms">${bigCard(c)}</div>`}).join('')||'<div class="ho-empty">손패가 비었다</div>'}</div>
-   <div class="ho-hint">카드를 골라 · 다시 누르거나 「사용」으로 쓴다 · Esc 닫기</div>`;
+   <div class="ho-gv"></div>
+   <div class="ho-hint">카드를 골라 · 다시 누르거나 「사용」으로 쓴다 · 「무덤으로」는 효과 없이 버림 · Esc 닫기</div>`;
   document.body.appendChild(ov);requestAnimationFrame(()=>ov.classList.add('on'));
   let sel=-1;const focus=ov.querySelector('.ho-focus');
   const close=()=>{ov.classList.remove('on');ov.classList.add('off');setTimeout(()=>ov.remove(),280);document.removeEventListener('keydown',kd)};
   const kd=e=>{if(e.key==='Escape')close()};document.addEventListener('keydown',kd);
   const pick=i=>{sel=i;ov.querySelectorAll('.ho-slot').forEach(s=>s.classList.toggle('sel',+s.dataset.hi===i));const c=dk.cards[hand[i]];
-   focus.innerHTML=c?`<div class="ho-big">${bigCard(c)}</div><div class="ho-acts"><button class="ho-use" data-ho="use">사용</button><button class="ho-btn" data-ho="cancel">취소</button></div>`:'';ov.classList.toggle('picked',!!c)};
+   focus.innerHTML=c?`<div class="ho-big">${bigCard(c)}</div><div class="ho-acts"><button class="ho-use" data-ho="use">사용</button><button class="ho-btn ho-dis" data-ho="discard" title="효과 · 비용 없이 버린 카드로">🪦 무덤으로</button><button class="ho-btn" data-ho="cancel">취소</button></div>`:'';ov.classList.toggle('picked',!!c)};
   ov.addEventListener('click',async e=>{const t=e.target;const h=t.closest('[data-ho]');const sl=t.closest('.ho-slot');
-   if(h){const k=h.dataset.ho;if(k==='x')return close();if(k==='phone'){close();PV.deck=did;return open()}if(k==='cancel'){sel=-1;focus.innerHTML='';ov.classList.remove('picked');ov.querySelectorAll('.ho-slot').forEach(s=>s.classList.remove('sel'));return}if(k==='use')return use(sel)}
+   if(h){const k=h.dataset.ho;if(k==='x')return close();if(k==='phone'){close();PV.deck=did;return open()}if(k==='cancel'){sel=-1;focus.innerHTML='';ov.classList.remove('picked');ov.querySelectorAll('.ho-slot').forEach(s=>s.classList.remove('sel'));return}if(k==='use')return use(sel);if(k==='discard')return discard(sel);if(k==='grave')return grave();if(k==='back'){ov.classList.remove('gview');return}
+    if(k==='revive'){const cid=h.dataset.cid;close();PV.deck=did;const r=await run({op:'take',d:did,h:tid,from:'disc',ids:[cid]});if(r&&r.err)return A().toast(r.err);A().toast(`「${(dk.cards[cid]||{}).n||''}」 을(를) 손패로 되돌렸다`);setTimeout(()=>battleHand(tid,o),350);return}}
    if(sl){const i=+sl.dataset.hi;if(i===sel)return use(i);return pick(i)}
    if(t.classList.contains('ho-bg')||t.classList.contains('ho-stage'))close()});
+  async function discard(i){const cid=hand[i];const card=dk.cards[cid];if(!card)return;const big=ov.querySelector('.ho-big');if(big)big.classList.add('toss');await new Promise(r=>setTimeout(r,380));close();PV.deck=did;const r=await run({op:'discard',d:did,h:tid,sel:[i],ids:[cid]});if(r&&r.err)return A().toast(r.err);A().toast(`「${card.n}」 → 무덤 (효과 없음)`)}
+  function grave(){const g=ov.querySelector('.ho-gv');const L=dk.disc.slice().reverse();g.innerHTML=`<div class="ho-gh"><b>🪦 무덤</b><small>${L.length}장 · 최근 것이 왼쪽 · 누르면 손패로 되돌린다 (잘못 쓴 카드 되돌리기 — 구문으로 바뀐 HP · 랭크는 배틀 화면에서 직접 되돌려 줘)</small><span class="sp"></span><button class="ho-btn" data-ho="back">손패로 돌아가기</button></div><div class="ho-grow">${L.map(cid=>dk.cards[cid]?`<button class="ho-gc" data-ho="revive" data-cid="${esc(cid)}">${bigCard(dk.cards[cid])}<span>↩ 손패로</span></button>`:'').join('')||'<div class="ho-empty">무덤이 비었다</div>'}</div>`;ov.classList.add('gview')}
   async function use(i){const cid=hand[i];const card=dk.cards[cid];if(!card)return;const hasA=!!(card.a&&card.a.ops&&card.a.ops.length);let anchor='';
    if(hasA&&o.pickAnchor){ov.style.visibility='hidden';anchor=await o.pickAnchor(tid);ov.style.visibility='';if(anchor===null)return}
    const big=ov.querySelector('.ho-big');if(big)big.classList.add('play');ov.classList.add('playing');await new Promise(r=>setTimeout(r,520));close();

@@ -4400,3 +4400,26 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .ho-head h2{white-space:nowrap}
 @media(min-width:1000px){.ho-slot,.ho-slot .hc{width:176px}.ho-slot{margin-left:-88px}.ho-fan{height:300px}}
 @media(max-width:760px){.ho-head{flex-wrap:wrap;gap:8px}.ho-head h2{font-size:20px}.ho-cnt{font-size:24px}}
+
+/* 손패: 무덤 · 버리기 · 카드 버튼 (10-26) */
+.ho-grave b{color:var(--yel,#ffd12e);margin-left:2px}
+.ho-dis{border-color:rgba(255,120,120,.6)}
+.ho-big.toss .hc{animation:hotoss .38s ease forwards}
+@keyframes hotoss{to{transform:translateY(60vh) rotate(-24deg) scale(.6);opacity:0;filter:grayscale(1)}}
+.ho-gv{display:none}
+.hand-ov.gview .ho-stage,.hand-ov.gview .ho-fan{display:none}
+.hand-ov.gview .ho-gv{display:flex;flex-direction:column;flex:1;min-height:0;position:relative;padding:14px max(20px,env(safe-area-inset-left))}
+.ho-gh{display:flex;align-items:center;gap:10px;color:#fff;flex-wrap:wrap}.ho-gh b{font:400 22px/1 var(--head,sans-serif)}.ho-gh small{color:rgba(255,255,255,.6);font-size:12px;flex:1;min-width:200px}
+.ho-grow{display:flex;gap:14px;overflow-x:auto;padding:18px 4px;align-items:flex-start;flex:1}
+.ho-gc{all:unset;flex:none;width:160px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;filter:grayscale(.55) brightness(.85);transition:filter .2s,transform .2s}
+.ho-gc .hc{width:160px;aspect-ratio:5/7}
+.ho-gc>span{color:#fff;font-size:12px;opacity:0;transition:opacity .2s}
+.ho-gc:hover{filter:none;transform:translateY(-6px)}.ho-gc:hover>span{opacity:1}
+/* 배틀 카드 버튼 · 이름 줄 작은 버튼 */
+.trainer .tn .tnmore{display:inline-flex;gap:3px;margin-left:6px;vertical-align:middle}
+.trainer .tn .tnmini{padding:1px 6px;font-size:10px;min-height:0;line-height:1.4}
+.cardbig{display:inline-flex;align-items:center;gap:6px;padding:6px 14px 6px 10px;font-size:14px;font-weight:800;background:linear-gradient(135deg,#2a1f4a,#120d24);color:#fff;border:2px solid var(--yel,#ffd12e);box-shadow:3px 3px 0 #000,0 0 14px rgba(255,209,46,.25);cursor:pointer}
+.cardbig i{font-style:normal;font-size:18px}
+.cardbig b{font:400 18px/1 var(--head,sans-serif);color:var(--yel,#ffd12e);min-width:14px;text-align:center}
+.cardbig:hover{transform:translateY(-1px);box-shadow:4px 4px 0 #000,0 0 22px rgba(255,209,46,.45)}
+.cardbig.empty{border-color:rgba(255,255,255,.3);box-shadow:3px 3px 0 #000}.cardbig.empty b{color:#aaa}
