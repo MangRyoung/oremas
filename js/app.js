@@ -268,7 +268,7 @@ async function openRoom(id,gm,asPl){
  const app=$('#app');app.innerHTML='<div class="lobby muted">방에 들어가는 중…</div>';
  let row;try{row=await DBS().getRoom(id)}catch(e){app.innerHTML=`<div class="lobby">방을 읽지 못했다: ${esc(e.message)}<br><a href="#">로비로</a></div>`;return}
  if(!row){app.innerHTML='<div class="lobby">그런 방이 없다. <a href="#">로비로</a></div>';return}
- ST.room=id;ST.roomRow=row;ST._sub=false;ST.canGm=false;if(window.OM_BATTLE_UI)window.OM_BATTLE_UI.resetLocal();ST.role=null;ST.secret='';ST.seat='';ST.name='';
+ ST.room=id;ST.roomRow=row;ST._sub=false;ST.canGm=false;ST.asPlGm=null;if(window.OM_BATTLE_UI)window.OM_BATTLE_UI.resetLocal();ST.role=null;ST.secret='';ST.seat='';ST.name='';
  const seatInfo=LS.get('om_seat_'+id,null);const tok=ACCT.tok();
  /* 계정으로: 방 권한(GM · PL 자리)을 서버가 정한다. 「PL 로」(asPl) 는 예전 방식으로 */
  if(!gm&&tok&&!asPl){let w=null;try{await DBS().acct.join(tok,id)}catch(e){}/* 10-24 망령: 로그인해서 들어오면 기본 PL 권한 (patch_2026-10-24_PL기본.sql) */try{w=await DBS().whoami(id,'u:'+tok)}catch(e){}
@@ -285,12 +285,15 @@ async function openRoom(id,gm,asPl){
  /* GM 이 방을 열면 좌석이 쓸 상자(roster · pub · graph · skill · dex)를 먼저 만들어 둔다 — 서버의 jsonb_set 은 부모가 없으면 조용히 실패하니까 */
  if(ST.role==='gm'){const need={roster:{trainers:{},mons:{}},pub:{},ready:{},graph:{nodes:{},edges:{}},skill:{},dex:{},rp:{},battle:{}};for(const k in need){if(typeof ST.state[k]!=='object'||ST.state[k]===null){try{const v=await DBS().setState(id,ST.secret,[k],need[k]);ST.state[k]=need[k];ST.v=Math.max(ST.v,v||0)}catch(e){}}else if(k==='roster'){for(const kk of ['trainers','mons'])if(typeof ST.state.roster[kk]!=='object'||ST.state.roster[kk]===null){try{const v=await DBS().setState(id,ST.secret,['roster',kk],{});ST.state.roster[kk]={};ST.v=Math.max(ST.v,v||0)}catch(e){}}}}}
  ST.log=await DBS().getLogTail(id,200);ST.lastLogId=ST.log.length?ST.log[ST.log.length-1].id:0;
+ /* 새로고침해도 「PL 로 보기」 유지 (이 탭에서만) */
+ if(ST.role==='gm'){try{const a=JSON.parse(sessionStorage.getItem('om_aspl_'+id)||'null');if(a){ST.asPlGm={secret:ST.secret,gmNick:ST.gmNick};ST.role=a.seat?'seat':null;ST.seat=a.seat||'';ST.name=a.seat||'구경';ST.canGm=true}}catch(e){}}
+ ST.asPlGm=ST.asPlGm&&ST.role!=='gm'?ST.asPlGm:null;
  CHAN.cur='s';ST._toBottom=true;renderRoom();
  ST.subH={onPatch,onEvent:p=>{PATCH.last=Date.now();if(p&&p.t==='hello')onHello(p);if(window.OM_RP_UI&&p&&p.t==='typing')window.OM_RP_UI.onTyping(p);if(window.OM_CUTIN&&p&&p.t==='cutin')window.OM_CUTIN.onEvent(p);if(window.OM_EMO&&p&&p.t==='emo'&&VIEW==='rp')window.OM_EMO.onEvent(p)},onState:(d,v)=>{if(v>=ST.v){ST.state=d;ST.v=v;renderScene();if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.watch)window.OM_BATTLE_UI.watch().catch(e=>console.warn(e))}},onLog:r=>{PATCH.last=Date.now();if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;renderLog(true);notifyLog(r);mobNote(r);if(window.OM_RP_UI)window.OM_RP_UI.onChat(r)}},
   onStatus:s=>{const el=$('#conn');if(el){el.textContent=s==='SUBSCRIBED'?'● 실시간':'○ '+s;el.style.color=s==='SUBSCRIBED'?'var(--acc2)':'var(--mute)'}RT.st=s;RT.at=Date.now();if(s==='SUBSCRIBED'){startPresence();if(ST._sub)resync('재연결');else checkState('구독');ST._sub=true}}};
  ST.unsub=DBS().subscribe(id,ST.subH);
  if(ST.role){pollWhispers();ST.wtimer=setInterval(pollWhispers,4000)}
- if(!ST.role)openSeatPicker()}
+ if(!ST.role&&!ST.asPlGm)openSeatPicker()}
 
 /* 실시간이 끊겼다 다시 붙거나(노트북 절전 · 폰 백그라운드) 창이 다시 보이면, 그사이 놓친 로그와 상태를 다시 읽는다 (점검 3-9) */
 let RESYNC=null;
@@ -387,7 +390,7 @@ function bchTick(){const show=!!(ST.room&&isMobile()&&VIEW==='battle'&&MOB.mode!
  if(!t){t=document.createElement('button');t.id='bchtab';t.className='ooctab bchtab';t.title='채팅 서랍';t.onclick=()=>bchOpen(!BCH.open);document.body.appendChild(t)}
  const n=MOB.unread;const h=`<span>${BCH.open?'닫기':'채팅'}</span>${!BCH.open&&n?`<em>${n>9?'9+':n}</em>`:''}`;if(t._h!==h){t.innerHTML=h;t._h=h}t.classList.toggle('on',BCH.open);t.classList.toggle('new',!BCH.open&&!!n)}
 addEventListener('resize',()=>{try{bchTick()}catch(e){}});addEventListener('keydown',e=>{if(e.key==='Escape'&&BCH.open)bchOpen(false)});
-function openMobMenu(){const items=[['skillBtn','스킬 체크'],['dexBtn','도감'],['dbBtn','DB'],['rmBtn','레디메이드'],['copyLink','플레이어 링크'],['copyGm','GM 링크'],['seatBtn','자리'],['roomSet','⚙ 설정'],['saveLog','로그 저장'],['presence','내 이름'],['asPlBtn','PL 로 보기'],['asGmBtn','GM 으로 돌아가기'],['toLobby','← 로비로']].filter(([id])=>$('#'+id));
+function openMobMenu(){const items=[['skillBtn','스킬 체크'],['dexBtn','도감'],['dbBtn','DB'],['rmBtn','레디메이드'],['copyLink','플레이어 링크'],['copyGm','GM 링크'],['seatBtn','자리'],['roomSet','⚙ 설정'],['saveLog','로그 저장'],['presence','내 이름'],['asPlBtn','PL 로 보기 (권한만)'],['asGmBtn','GM 으로 돌아가기'],['toLobby','← 로비로']].filter(([id])=>$('#'+id));
  const m=openModal(`<div class="mhead"><h2>메뉴</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="mmenu">${items.map(([id,l])=>`<button class="btn" data-mm="${id}">${esc(l)}</button>`).join('')}</div><div class="small dim" style="margin-top:10px">접속 중: ${esc(($('#presence')||{}).textContent||'')}</div>`);
  m.querySelectorAll('[data-mm]').forEach(b=>b.onclick=()=>{closeModal();const t=$('#'+b.dataset.mm);if(t)t.click()})}
 function bindMobile(){const bar=$('#mbar');if(!bar)return;bar.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;if(k==='menu')return openMobMenu();if(k==='phone'){if(window.OM_PHONE_UI)window.OM_PHONE_UI.open('home');return}if(k==='top'){const el=MOB.mode==='chat'?$('#log'):$('#scene');if(el)el.scrollTo({top:0,behavior:'smooth'});return}if(k==='chat'&&MOB.mode==='chat')return mobMode(MOB.prev||'scene');mobMode(k)});mobMode(MOB.mode)}
@@ -400,7 +403,7 @@ function renderRoom(){
    <span class="tabs" id="sceneTabs"></span>
    <span class="sp"></span><span id="typingTop" class="typingtop"></span><span id="presence" class="presence" title="지금 접속 중인 사람 · 누르면 전체 목록 (내 이름 바꾸기도 여기서)"></span><span id="conn" class="small muted">○ 연결 중</span>
    ${ST.role?`<button class="btn sm ${window.OM_SKILL_UI&&window.OM_SKILL_UI.pending()?'pri':''}" id="skillBtn">스킬 체크${window.OM_SKILL_UI&&window.OM_SKILL_UI.pending()?' !':''}</button>${ST.role==='seat'?'<button class="btn sm" id="dexBtn" title="포켓몬 도감 · 해석 관리">도감</button>':''}`:''}<button class="btn sm" id="dbBtn">DB</button><button class="btn sm" id="rmBtn" title="레디메이드 (자동화 효과 사전)">레디메이드</button><button class="btn sm" id="copyLink">플레이어 링크</button>
-   ${ST.role==='gm'?`<a class="btn sm ghost" id="asPlBtn" href="${esc(roomLink(ST.room)+'&pl=1')}" title="이 방에 플레이어로 다시 들어간다 (자리·PL 닉)">PL 로</a>`:(()=>{const sg=(LS.get('om_rooms',[]).find(x=>x.id===ST.room)||{}).gm;return ST.canGm?`<a class="btn sm pri" id="asGmBtn" href="${esc(roomLink(ST.room))}" title="내 계정은 이 방의 GM 이다 — GM 으로 다시 들어간다">GM 으로</a>`:sg?`<a class="btn sm pri" id="asGmBtn" href="${esc(gmLink(ST.room,sg))}" title="이 기기에 GM 링크가 있다 — GM 으로 다시 들어간다">GM 으로</a>`:''})()}${ST.role==='gm'?(String(ST.secret).startsWith('u:')?'':'<button class="btn sm" id="copyGm">GM 링크</button>')+'<button class="btn sm" id="roomSet">⚙ 설정</button>':'<button class="btn sm" id="seatBtn">자리</button><button class="btn sm ghost" id="roomSet" title="내 설정 — 소리·알림·글자·이미지·단축키">⚙ 설정</button>'}
+   ${ST.role==='gm'?`<button class="btn sm ghost" id="asPlBtn" title="다시 들어가지 않고 권한만 PL 로 — 고른 트레이너 눈으로 본다 (GM 비밀값은 그대로)">PL 로</button>`:ST.asPlGm?`<button class="btn sm pri" id="asGmBtn" title="권한만 GM 으로 되돌린다">GM 으로</button>`:(()=>{const sg=(LS.get('om_rooms',[]).find(x=>x.id===ST.room)||{}).gm;return ST.canGm?`<a class="btn sm pri" id="asGmBtn" href="${esc(roomLink(ST.room))}" title="내 계정은 이 방의 GM 이다 — GM 으로 다시 들어간다">GM 으로</a>`:sg?`<a class="btn sm pri" id="asGmBtn" href="${esc(gmLink(ST.room,sg))}" title="이 기기에 GM 링크가 있다 — GM 으로 다시 들어간다">GM 으로</a>`:''})()}${ST.role==='gm'?(String(ST.secret).startsWith('u:')?'':'<button class="btn sm" id="copyGm">GM 링크</button>')+'<button class="btn sm" id="roomSet">⚙ 설정</button>':'<button class="btn sm" id="seatBtn">자리</button><button class="btn sm ghost" id="roomSet" title="내 설정 — 소리·알림·글자·이미지·단축키">⚙ 설정</button>'}
   </div>
   <div class="body"><div class="scene" id="scene"></div><div class="resizer" id="resizer" title="끌어서 채팅 창 너비 조절"></div>
    <div class="side" id="side"><div class="phone"><div class="pbar"><span>●●●</span><span class="ptime" id="pclock"></span></div><div class="ptitle"><span class="plogs">${ST.role==='gm'?'<button class="btn xs ghost plog" id="clearLog" title="로그 비우기">🧹<span class="plt"> 비우기</span></button>':''}<button class="btn xs ghost plog ${LOGPIN?'on':''}" id="pinLog" title="채팅 고정 — 켜 두면 새 글이 올라와도 맨 아래로 내려가지 않는다 (지난 글 읽을 때)">📌<span class="plt"> 고정</span></button><button class="btn xs ghost plog" id="saveLog" title="채팅 로그를 파일로 저장">💾<span class="plt"> 로그</span></button><button class="btn xs ghost plog" id="chatPrefs" title="채팅 설정 — 글자 크기 · 내 글자색 · 닉네임 색">⚙<span class="plt"> 채팅 설정</span></button></span><span class="pname">${esc(r.name||r.id)}<small>${ST.role==='gm'?'GM':ST.role==='seat'?esc(ST.name):'관전'} · 오레마스</small></span></div><div class="ctabs" id="ctabs"><button type="button" data-ch="s">세션</button><button type="button" data-ch="o">잡담<i class="cdot"></i></button></div><div class="log" id="log"></div>
@@ -415,7 +418,8 @@ function renderRoom(){
  $('#dbBtn').onclick=()=>window.OM_DB_UI.open({kind:'trait'});if($('#rmBtn'))$('#rmBtn').onclick=()=>window.OM_FX_UI.openRm('');
  const clock=()=>{const el=$('#pclock');if(el){const d=new Date();el.textContent=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}};clock();clearInterval(ST.clockT);ST.clockT=setInterval(clock,15000);
  if(ST.role==='gm'){if($('#copyGm'))$('#copyGm').onclick=()=>copy(gmLink(ST.room,ST.secret),'GM 링크를 복사했다 (아무에게도 주지 말 것)');$('#roomSet').onclick=()=>openRoomSettings()}
- else {$('#seatBtn').onclick=openSeatPicker;$('#roomSet').onclick=()=>openRoomSettings()}
+ else {$('#seatBtn').onclick=ST.asPlGm?asPlPick:openSeatPicker;$('#roomSet').onclick=()=>openRoomSettings()}
+ if($('#asPlBtn'))$('#asPlBtn').onclick=asPlPick;if(ST.asPlGm&&$('#asGmBtn'))$('#asGmBtn').onclick=asGmBack;
  $('#chatSend').onclick=sendChat;bindChatAs();$('#ctabs').querySelectorAll('[data-ch]').forEach(b=>b.onclick=()=>setChan(b.dataset.ch));setChan(CHAN.cur,true);$('#chatIn').onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)sendChat()};$('#chatIn').oninput=()=>{if(window.OM_RP_UI&&window.OM_RP_UI.typingPing)window.OM_RP_UI.typingPing(CHAN.cur==='o')};
  /* 채팅 창 너비: 끌어서 조절, 브라우저에 기억 */
  try{const w=+localStorage.getItem('om_sidew');if(w>=260)$('#side').style.width=w+'px'}catch(e){}
@@ -1023,6 +1027,14 @@ function openClearLog(){if(ST.role!=='gm')return;const cut=+((ST.state.rp||{}).l
  const un=$('#lc_undo',m);if(un)un.onclick=async()=>{await set(['rp','logClearAt'],0);closeModal();renderLog(true);toast('지난 로그를 다시 보인다')};
  $('#lc_save',m).onclick=()=>{closeModal();openSaveLog()};
  $('#lc_hard',m).onclick=async()=>{if(!confirm('서버에서 로그를 완전히 지울까? 되돌릴 수 없다.'))return;const before=ST.lastLogId||0;try{const keep=$('#lc_sms',m).checked;const n=await DBS().logClear(ST.room,ST.secret,keep);ST.log=ST.log.filter(r=>r.id>before||(keep&&r.kind==='chat'&&r.data&&r.data.sms));await set(['rp','logClearAt'],0);closeModal();renderLog(true);toast(`로그 ${n||0}줄을 지웠다`)}catch(e){toast('지우지 못했다: '+e.message+' — supabase/schema.sql 을 다시 실행했는지 확인')}}}
+/* 10-26 망령: GM ↔ PL 은 권한만 바꾼다 — 다시 들어가지 않고(로그인 · 자리 없음 문제 없이) GM 비밀값을 쥔 채 role 만 seat 로, 고른 트레이너 자리에서 본다 */
+function asPlPick(){const b=B();const ro=(ST.state.roster||{}).trainers||{};const trs=Object.assign({},ro,b.trainers||{});const seats=ST.state.seats||{};const ids=[...new Set(Object.keys(trs).concat(Object.keys(seats)))];
+ const m=openModal(`<div class="mhead"><h2>PL 로 보기 — 누구 자리?</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small muted">권한만 PL 로 바뀐다. 그 트레이너의 PL 이 보는 화면 그대로 보고, 그 자리로 말하고 지시할 수 있다. 「GM 으로」를 누르면 바로 돌아온다.</p>
+  <ul class="pick">${ids.map(id=>{const t=trs[id]||{};const o=seats[id];return `<li><b>${esc(t.name||(o&&o.name)||id)}</b>${t.side?`<span class="badge ${t.side}">${t.side==='left'?'좌측':'우측'}</span>`:''}<span class="small muted">${o?'PL: '+esc(o.name||''):'빈 자리'}</span><span class="sp"></span><button class="btn sm pri" data-asp="${esc(id)}">이 자리로</button></li>`}).join('')}<li><b>구경꾼</b><span class="small muted">자리 없이 보기만</span><span class="sp"></span><button class="btn sm" data-asp="">구경</button></li></ul>`);
+ m.querySelectorAll('[data-asp]').forEach(bt=>bt.onclick=()=>{closeModal();asPlSet(bt.dataset.asp)})}
+function asPlSet(seat){if(!ST.asPlGm)ST.asPlGm={secret:ST.secret,gmNick:ST.gmNick};ST.role=seat?'seat':null;ST.seat=seat||'';const t=seat?(((ST.state.roster||{}).trainers||{})[seat]||(B().trainers||{})[seat]||((ST.state.seats||{})[seat])||{}):{};ST.name=t.name||seat||'구경';ST.canGm=true;
+ try{sessionStorage.setItem('om_aspl_'+ST.room,JSON.stringify({seat}))}catch(e){}if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.resetLocal)window.OM_BATTLE_UI.resetLocal();renderRoom();toast(seat?`PL 권한 · ${ST.name} 자리로 본다`:'PL 권한 · 구경')}
+function asGmBack(){const g=ST.asPlGm;if(!g)return;ST.role='gm';ST.secret=g.secret;ST.gmNick=g.gmNick;ST.seat='';ST.name='GM';ST.asPlGm=null;try{sessionStorage.removeItem('om_aspl_'+ST.room)}catch(e){}if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.resetLocal)window.OM_BATTLE_UI.resetLocal();renderRoom();toast('GM 권한으로 돌아왔다')}
 function openSeatPicker(){
  const b=B();const ro=(ST.state.roster||{}).trainers||{};const trs=Object.assign({},ro,b.trainers||{});const seats=ST.state.seats||{};const ids=Object.keys(trs);const free=Object.keys(seats).filter(id=>!trs[id]);
  const m=openModal(`<div class="mhead"><h2>자리 고르기</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
