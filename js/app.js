@@ -799,7 +799,7 @@ async function encounter(o){if(ST.role!=='gm')return false;const r=roster();cons
  const seats=ST.state.seats||{};const all=[];
  const put=(tid,side)=>{const t=JSON.parse(JSON.stringify(r.trainers[tid]));const ms=(t.pids||[]).map(id=>r.mons[id]).filter(Boolean).map(x=>JSON.parse(JSON.stringify(x)));
   delete t.walk;delete t.solo;t.side=side;t.by=seats[tid]&&side==='left'?tid:'gm';nb.sides[side].trainers.push(tid);nb.trainers[tid]=t;ms.forEach((m,i)=>{prepMon(m,side,i);nb.mons[m.id]=m;all.push(m)});return ms};
- const lw=[];L.forEach(tid=>{const ms=put(tid,'left');const w=((o.walk||{})[tid]||[]);w.forEach(id=>{const m=ms.find(x=>x.id===id);if(m&&m.hp.cur>0)lw.push(m)})});
+ /* 10-26 던전 시험: 일행이 셋이고 에리어가 3칸인데 앞 사람의 동행 둘이 먼저 다 차지해 레온은 한 마리도 못 나갔다 — 트레이너마다 1번 동행부터 번갈아 (1번들 → 2번들 …) */const per=[];L.forEach(tid=>{const ms=put(tid,'left');const w=((o.walk||{})[tid]||[]);per.push(w.map(id=>ms.find(x=>x.id===id)).filter(m=>m&&m.hp.cur>0))});const lw=[];for(let i=0;per.some(x=>x[i]);i++)per.forEach(x=>{if(x[i])lw.push(x[i])});
  const rw=[];R.forEach(tid=>put(tid,'right').forEach(m=>{if(m.hp.cur>0)rw.push(m)}));
  {const DU=window.OM_DB_UI;if(DU&&DU.fillEff&&all.some(m=>(m.ability&&!m.abilityEff)||(m.pots||[]).some(p=>!p.eff))){try{if(DU.ensureMaker)await DU.ensureMaker();all.forEach(m=>DU.fillEff(m))}catch(e){}}}
  const AR=['a','b','c'];const n=Math.max(1,Math.min(3,lw.length||2));nb.mode=n;
