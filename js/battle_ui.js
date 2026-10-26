@@ -1471,7 +1471,12 @@ window.OM_BATTLE_UI=(()=>{
      const t=(ctx().b.trainers||{})[x.tid];if(t&&!doneT.has(t.id||x.tid)){doneT.add(t.id||x.tid);for(const u of uniqList(t)){if(RE.test(String(u.p.eff||''))&&(u.left===null||u.left>0))notes.push(`${t.name} 고유 『${u.p.name}』`)}}}}
    if(notes.length)A().sysLog(`【아군 빈사】 ${neu.map(m=>m.name).join(' · ')} — 발동 조건을 만족한 효과\n${[...new Set(notes)].join('\n')}\n(「발동」 버튼으로)`,'battle')}finally{faintBusy=false}}
  const EVENT_RE=/받았을 때|받을 때 \d할|맞았을 때|했을 때|내보낼 때|내보냈을 때|쓰러뜨렸을|빈사(?:가| 상태가)? 되었을|교대(?:했을|할) 때|등장했을 때|턴 개시|【(?:등장|턴 종료|선행|사전|퇴장|함성|보급|탈진|지연|자동)/;
- function passiveOps(ops,text){if(!ops||!ops.length)return false;if(EVENT_RE.test(String(text||''))||/\d할(?:로|의)|\d+%\s*(?:확률|로)/.test(String(text||'')))return false;return ops.every(o=>o&&PASSIVE_K.includes(o.k)&&!o.p&&!o.pl)}
+ function passiveOps(ops,text){if(!ops||!ops.length)return false;
+  /* 줄이 여럿(①②…)이면 첫 줄만 본다 — 구문은 대개 ① 몫이고, 뒤 줄의 계기(【등장 (죽어내밀기)】 · 【지연】 …)는 따로 (디스럽터 ① …) */
+  const t=String(text||'');const first=/[①②③④⑤]/.test(t)?(t.split(/[②③④⑤]/)[0]):t;
+  if(EVENT_RE.test(first)||/\d할(?:로|의)|\d+%\s*(?:확률|로)/.test(first))return false;
+  /* 고르는 대상(아군 1체 · 상대 1체 · 에리어)이 든 구문은 등장 때 묻게 되니 손으로 */
+  return ops.every(o=>o&&PASSIVE_K.includes(o.k)&&!o.p&&!o.pl&&!['ally1','enemy1','area'].includes(o.tgt))}
  /* 자기 등급 조건: 「공격 : B」 이하일 때 · 「방어 : C」 이하일 때 — 포켓몬 등급표(m.ranks: HP 공격 방어 특공 특방 스피드)를 본다 */
  const GR_IDX={HP:0,공격:1,방어:2,특공:3,특방:4,스피드:5};
  function gradeVal(g){g=String(g||'').trim();const base=S().strip?S().strip(g):g.replace(/[+-]$/,'');const i=(S().RANKS||['E','D','C','B','A','AA','AAA','S']).indexOf(base);if(i<0)return null;return i*3+(/\+$/.test(g)?1:/-$/.test(g)?-1:0)}
@@ -1501,7 +1506,7 @@ window.OM_BATTLE_UI=(()=>{
    if(!tm.entry&&a.ops.length===1&&a.ops[0].k==='choice'){const po=(a.ops[0].opts||[]).filter(o=>o&&o.label&&/^[\s-]*[①②③④⑤]/.test(o.label)&&!/조건|등장|턴 종료|함성|보급|선행|사전|교대|빈사|받았을|했을|\d할/.test(o.label)&&passiveOps(o.ops,''));
     if(po.length){const cur=ctx().b.mons[mid];if(cur&&(cur.fxDone||{})[name])continue;if(await fireAuto(mid,kind,name,{quiet:true,noRoll:true,auto:{ops:po.flatMap(o=>o.ops),text:a.text}})){const d=Object.assign({},(ctx().b.mons[mid]||{}).fxDone||{});d[name]=1;await A().set(['battle','mons',mid,'fxDone'],d)}}continue}
    /* 【등장 (통상 교대)】 · 【등장 (임의 교대)】 · 【등장 (죽어내밀기)】: 그렇게 나왔을 때만 (바운서 · 닌자 ②) */
-   {const hx=etx2.match(/【등장\s*\(([^)]+)\)】/);if(hx&&!tm.entry&&!(a.ops.length===1&&a.ops[0].k==='choice')){if(!o2.passiveOnly&&o2.how&&hx[1].replace(/\s/g,'').includes(String(o2.how).replace(/\s/g,'')))await fireAuto(mid,kind,name,{quiet:true});continue}}
+   {const hx=String(etx2).split(/[②③④⑤]/)[0].match(/【등장\s*\(([^)]+)\)】/);if(hx&&!tm.entry&&!(a.ops.length===1&&a.ops[0].k==='choice')){if(!o2.passiveOnly&&o2.how&&hx[1].replace(/\s/g,'').includes(String(o2.how).replace(/\s/g,'')))await fireAuto(mid,kind,name,{quiet:true});continue}}
    if(tm.entry){if(!o2.passiveOnly)await fireAuto(mid,kind,name,{quiet:true})}
    else if(tm.passive||(!tm.turnEnd&&passiveOps(a.ops,etx2))){if(!condNow(ctx().b,ctx().b.mons[mid],a.ops))continue;const cur=ctx().b.mons[mid];if(cur&&(cur.fxDone||{})[name])continue;if(await fireAuto(mid,kind,name,{quiet:true,noRoll:true})){const d=Object.assign({},(ctx().b.mons[mid]||{}).fxDone||{});d[name]=1;await A().set(['battle','mons',mid,'fxDone'],d)}}}}
  /* 포켓몬마다 급소 규칙 (10-23 망령 · 제작기 상세 조정): tbl 급소 표 · add 급소 랭크 + · guard 받을 때 방호 · dmg 급소 대미지 배율 · sure 언제나 급소 · never 급소에 맞지 않음 */
