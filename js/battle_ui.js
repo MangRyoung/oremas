@@ -294,7 +294,7 @@ window.OM_BATTLE_UI=(()=>{
   if(sec)return `<div class="mon small secret"><div class="btop"><div class="pic"></div><div class="nm">비공개</div></div><div class="hpbar"><i style="width:100%"></i></div><div class="hpnum">?</div></div>`;
   return `<div class="mon small ${m.hp.cur<=0?'fainted':''} ${out?'onfield':''}" data-mon="${m.id}">
    <div class="btop"><div class="pic" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div><div class="nm" title="${esc(m.name)}${dexSees(c,m,'type')?' · '+esc(m.types.filter(t=>t!=='-').map(t=>S().typeKo(t)).join('/')):''}">${esc(m.name)}${out?` <span class="tag">${m.entry.toUpperCase()}</span>`:''}</div></div><div class="ty">${tyHtml(c,m)}</div>${hpBar(m,full)}
-   ${!out&&full&&m.hp.cur>0?(simOn(c.b,m.tid)?`<button class="btn xs ${m.pend?'pri':''}" data-act="pend" data-mid="${m.id}">${m.pend?'예약 '+String(m.pend).toUpperCase()+' ✓':'내밀기 예약'}</button>`:`<button class="btn xs" data-act="enter" data-mid="${m.id}">등장</button>`):''}${!out&&full&&m.hp.cur<=0?`<button class="btn xs ghost" data-act="edit" data-mid="${m.id}" title="잘못 쓰러진 포켓몬의 HP 를 되돌린다 (랭크·상태 창의 HP 칸)">HP 되돌리기</button>`:''}</div>`}
+   ${!out&&full&&m.hp.cur>0?(simOn(c.b,m.tid)&&((+c.b.phase||0)<2||m.pend)?`<button class="btn xs ${m.pend?'pri':''}" data-act="pend" data-mid="${m.id}">${m.pend?'예약 '+String(m.pend).toUpperCase()+' ✓':'내밀기 예약'}</button>`:`<button class="btn xs" data-act="enter" data-mid="${m.id}">등장</button>`):''}${!out&&full&&m.hp.cur<=0?`<button class="btn xs ghost" data-act="edit" data-mid="${m.id}" title="잘못 쓰러진 포켓몬의 HP 를 되돌린다 (랭크·상태 창의 HP 칸)">HP 되돌리기</button>`:''}</div>`}
 
  /* 【N/시】 포텐셜 횟수. potUses[name] = 남은 횟수 */
  /* 포켓몬이 쓸 수 있는 포텐셜 전부: 20칸 + 전용 + 트레이너의 고유 */
