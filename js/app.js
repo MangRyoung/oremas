@@ -777,6 +777,26 @@ async function loadFromRoster(tid,side){
  ops.sort((x,y)=>(rk[x[0][1]]??3)-(rk[y[0][1]]??3));const ok=await setMany(ops);
  if(ok){toast(`${trainer.name} 파티 ${mons.length}체를 불러왔다`);sysLog(`${trainer.name} (${side==='left'?'좌측':'우측'}${trainer.solo?' · 개인전':''}) 파티 등록 · ${mons.length}체`,'battle');VIEW='battle';renderScene()}}
 
+/* ---------- 던전 조우 (10-26 망령: 「위치에 야생 포켓몬을 배치해서 곧바로 배틀 진입」) ----------
+   일행 트레이너(좌)와 방에 둔 야생 무리(우, 시트의 GM 트레이너)로 배틀 칸을 새로 차린다. 같은 진영 일행은 한 팀(개인전 아님).
+   동행 포켓몬(roster.trainers.<id>.walk)은 에리어 A·B·C 순으로 내밀기 예약 — 「시합 개시」를 누르면 바로 나온다. 야생도 같은 수만큼 예약.
+   o = {left:[트레이너 id], right:[트레이너 id], walk:{tid:[mid]}, dg:{did,rid}} */
+async function encounter(o){if(ST.role!=='gm')return false;const r=roster();const L=(o.left||[]).filter(id=>r.trainers[id]),R=(o.right||[]).filter(id=>r.trainers[id]&&!L.includes(id));
+ if(!R.length){toast('야생 무리 트레이너가 시트에 없다');return false}
+ const b0=B();if(Object.keys(b0.trainers||{}).length&&!confirm('지금 배틀 칸을 비우고 조우 배틀을 차릴까? (좌석은 남는다)'))return false;
+ const nb={turn:0,phase:0,mode:2,sides:{left:{trainers:[]},right:{trainers:[]}},trainers:{},mons:{},field:{},cmds:{},order:[],dg:o.dg||null};
+ const seats=ST.state.seats||{};const all=[];
+ const put=(tid,side)=>{const t=JSON.parse(JSON.stringify(r.trainers[tid]));const ms=(t.pids||[]).map(id=>r.mons[id]).filter(Boolean).map(x=>JSON.parse(JSON.stringify(x)));
+  delete t.walk;delete t.solo;t.side=side;t.by=seats[tid]&&side==='left'?tid:'gm';nb.sides[side].trainers.push(tid);nb.trainers[tid]=t;ms.forEach((m,i)=>{prepMon(m,side,i);nb.mons[m.id]=m;all.push(m)});return ms};
+ const lw=[];L.forEach(tid=>{const ms=put(tid,'left');const w=((o.walk||{})[tid]||[]);w.forEach(id=>{const m=ms.find(x=>x.id===id);if(m&&m.hp.cur>0)lw.push(m)})});
+ const rw=[];R.forEach(tid=>put(tid,'right').forEach(m=>{if(m.hp.cur>0)rw.push(m)}));
+ {const DU=window.OM_DB_UI;if(DU&&DU.fillEff&&all.some(m=>(m.ability&&!m.abilityEff)||(m.pots||[]).some(p=>!p.eff))){try{if(DU.ensureMaker)await DU.ensureMaker();all.forEach(m=>DU.fillEff(m))}catch(e){}}}
+ const AR=['a','b','c'];const n=Math.max(1,Math.min(3,lw.length||2));nb.mode=n;
+ lw.slice(0,n).forEach((m,i)=>m.pend=AR[i]);rw.slice(0,n).forEach((m,i)=>m.pend=AR[i]);
+ if(!await set(['battle'],nb))return false;await set(['scene'],'battle');
+ sysLog(`⚔ 야생 조우${o.title?' — '+o.title:''}\n${L.map(t=>r.trainers[t].name).join(' · ')||'일행'} VS ${rw.map(m=>'야생의 '+m.name).join(' · ')||R.map(t=>r.trainers[t].name).join(' · ')}${lw.length?`\n먼저 나갈 포켓몬(예약): ${lw.slice(0,n).map(m=>m.name).join(' · ')}`:''}${lw.length>n?` — 에리어가 ${n}칸이라 ${lw.slice(n).map(m=>m.name).join(' · ')} 은(는) 벤치에`:''}\n「시합 개시」를 누르면 시작`,'battle');
+ VIEW='battle';renderScene();return true}
+
 /* ---------- 알까기 (개체값) ---------- */
 /* 10-24 망령: 배틀에서 굴린 후보도 시트 포켓몬(roster, 빌려 쓰기면 rid)의 ivRolls 에 남긴다 — 시트 알까기 · 제작기와 같은 칸 */
 const ivRm=mon=>((ST.state.roster||{}).mons||{})[mon.rid||mon.id]||null;
@@ -1068,6 +1088,6 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
 /* 이름으로 기본 초상 찾기: 그림이 따로 없으면 같은 이름의 로스터 트레이너 → 포켓몬 → 관계도 노드의 그림을 쓴다 */
 function portraitOf(name,img){if(img)return img;if(!name)return '';const ro=ST.state.roster||{};const t=Object.values(ro.trainers||{}).find(x=>x.name===name);if(t&&t.image)return t.image;const m=Object.values(ro.mons||{}).find(x=>x.name===name&&x.image);if(m)return m.image;const n=Object.values((ST.state.graph||{}).nodes||{}).find(x=>x.name===name&&x.img);return n?n.img:''}
-window.OM_APP={bchOpen,selfLog,splitLog,contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,cleanupTrainer,openMon,openLoadParty,loadFromRoster,loadMaker,loadMakerParty,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,online:s=>!!s&&Object.values(PRES.who).some(v=>v.role==='seat'&&v.seat===s&&Date.now()-v.at<70000),get view(){return VIEW},goView:v=>{VIEW=v||scene();renderScene()},set view(v){VIEW=v}};
+window.OM_APP={bchOpen,selfLog,splitLog,contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,cleanupTrainer,openMon,openLoadParty,loadFromRoster,encounter,loadMaker,loadMakerParty,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,online:s=>!!s&&Object.values(PRES.who).some(v=>v.role==='seat'&&v.seat===s&&Date.now()-v.at<70000),get view(){return VIEW},goView:v=>{VIEW=v||scene();renderScene()},set view(v){VIEW=v}};
 route();
 })();

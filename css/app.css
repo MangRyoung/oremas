@@ -4187,3 +4187,61 @@ button.tag.solo:hover{border-color:var(--yel2)}
 .phone .ptitle{padding-top:4px!important;padding-bottom:5px!important}
 .phone .ptitle .pname small{display:inline!important;margin-left:6px;font-size:11px}
 html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
+
+/* ===== 던전 망켓몬식 (10-26 오후): 야생 기척 · PT 현황 · 동행 · 조우 후 복귀 ===== */
+.dg-enc{font:900 calc(var(--ic,24px)*1.15) 'Arial Black',sans-serif;fill:#ff4d5e;text-anchor:middle;dominant-baseline:central;paint-order:stroke;stroke:#06080f;stroke-width:5px;pointer-events:none;animation:dgEncB 1.2s ease-in-out infinite}
+.dg-enc.hid{fill:#9aa3b5;animation:none;opacity:.8}
+@keyframes dgEncB{50%{translate:0 -6px}}
+.rpstage .dgrp-enc{pointer-events:auto;display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;padding:5px 10px;background:rgba(20,4,8,.86);border:2px solid #ff4d5e;color:#ffd7dc;font-size:13px;transform:skewX(-6deg);box-shadow:3px 3px 0 #000;max-width:100%}
+.rpstage .dgrp-enc>*{transform:skewX(6deg)}
+.rpstage .dgrp-enc b{color:#ff8a96;letter-spacing:.02em}
+.rpstage .dgrp-enc.hid{border-color:#7d8496;background:rgba(10,12,18,.86)}
+.rpstage .dgrp-enc small{color:#e9c9cd;font-size:11px}
+.rpstage .dgrp-enc button{font:700 12px/1 inherit;padding:5px 9px;background:#ff4d5e;color:#fff;border:0;cursor:pointer;box-shadow:2px 2px 0 #000}
+.rpstage .dgrp-pt{pointer-events:auto;width:min(250px,100%);background:rgba(6,8,14,.84);border:1px solid rgba(255,255,255,.18);border-left:3px solid var(--dg-acc,#f0c84a);box-shadow:3px 3px 0 #000;color:#eef2fa}
+.rpstage .dgrp-pt .dgpt-tog{display:block;width:100%;text-align:left;font:700 11px/1 'Black Han Sans',sans-serif;letter-spacing:.14em;padding:5px 8px;background:transparent;border:0;color:var(--dg-acc,#f0c84a);cursor:pointer}
+.rpstage .dgrp-pt.min{width:auto}.rpstage .dgrp-pt.min .dgpt-body{display:none}
+.dgpt-body{padding:0 8px 7px;display:flex;flex-direction:column;gap:6px;max-height:38vh;overflow:auto}
+.dgpt-row{display:flex;flex-direction:column;gap:4px}.dgpt-row.mine{cursor:pointer}
+.dgpt-row.mine:hover .dgpt-h b{text-decoration:underline}
+.dgpt-h{display:flex;align-items:center;gap:6px;font-size:12px}.dgpt-h b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:60%}
+.dgpt-balls{display:flex;gap:2px;margin-left:auto}
+.dgpt-balls i{width:9px;height:9px;border-radius:50%;background:linear-gradient(#e3101f 0 45%,#111 45% 55%,#f2f2f2 55%);border:1px solid #000}
+.dgpt-balls i.hurt{background:linear-gradient(#ff9a2f 0 45%,#111 45% 55%,#f2f2f2 55%)}
+.dgpt-balls i.ko{background:#555;opacity:.6}
+.dgpt-balls i.w{outline:2px solid var(--dg-acc,#f0c84a);outline-offset:0}
+.dgpt-walk{display:flex;flex-direction:column;gap:3px}
+.dgpt-mon{display:flex;align-items:center;gap:6px}.dgpt-mon.ko{opacity:.5}
+.dgpt-img{width:32px;height:32px;flex:none;border-radius:6px;background:#1b1f2a center/cover no-repeat;border:1px solid rgba(255,255,255,.2)}
+.dgpt-mi{display:flex;flex-direction:column;min-width:0;flex:1;line-height:1.25}
+.dgpt-mi b{font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dgpt-mi small{font-size:10px;opacity:.8}
+.dgpt-hp{display:block;height:5px;background:#2a2f3c;border-radius:3px;overflow:hidden;margin:2px 0 1px}
+.dgpt-hp i{display:block;height:100%;background:#3ee07a}.dgpt-hp.mid i{background:#ffc93a}.dgpt-hp.low i{background:#ff4d5e}
+.dgpt-add{align-self:flex-start;font:700 11px/1 inherit;padding:4px 8px;background:transparent;border:1px dashed rgba(255,255,255,.4);color:inherit;cursor:pointer}
+.dgpt-empty{font-size:11px;opacity:.75;padding:2px 0}
+.dgpt-card .dgpt-list{display:flex;flex-direction:column;gap:8px;margin:4px 0}
+.dgpt-card .dgpt-row{padding:6px 8px;border:1px solid var(--line);background:rgba(0,0,0,.18)}
+.dg-enc-box{margin:6px 0;padding:7px 9px;border:1px solid #ff4d5e;background:rgba(255,77,94,.08)}
+.dg-enc-ms{display:flex;flex-wrap:wrap;gap:4px 10px;margin-top:4px;font-size:12px}
+.dg-enc-ms span{display:inline-flex;align-items:center;gap:4px}
+.dg-enc-ms i{width:22px;height:22px;border-radius:4px;background:#111 center/cover no-repeat}
+.dg-chk{flex-direction:row!important;align-items:center;gap:6px}
+.dg-chk small{opacity:.7}
+.dgwk li{cursor:pointer;gap:8px;align-items:center}.dgwk li.on{outline:2px solid var(--yel2,#f0c84a);outline-offset:-2px;background:rgba(240,200,74,.08)}.dgwk li.ko{opacity:.45;cursor:not-allowed}
+.dgwk .dgpt-img{width:40px;height:40px}.dgwk .dgpt-mi{max-width:60%}
+.dgwk-n{font:900 18px/1 'Black Han Sans',sans-serif;color:var(--yel2,#f0c84a);min-width:18px;text-align:center}
+.dg-ret{position:fixed;left:14px;bottom:calc(14px + env(safe-area-inset-bottom));z-index:60;font:700 14px/1 'Black Han Sans',sans-serif;letter-spacing:.04em;padding:11px 16px;background:#0b0d14;color:var(--yel2,#f0c84a);border:2px solid var(--yel2,#f0c84a);box-shadow:4px 4px 0 #000;cursor:pointer;transform:skewX(-6deg)}
+.dg-ret:hover{background:var(--yel2,#f0c84a);color:#000}
+@media(max-width:760px){.rpstage .dgrp-pt{width:min(210px,100%)}.dgpt-body{max-height:26vh}.dgpt-img{width:26px;height:26px}.rpstage .dgrp-enc{font-size:12px;padding:4px 8px}.dg-ret{bottom:calc(66px + env(safe-area-inset-bottom));font-size:12px;padding:9px 12px}}
+/* 왼쪽 위 칸이 대사 상자를 덮지 않게 (rpSync 가 --dlgh 를 잰다) · 동행 둘은 가로로 */
+.rpstage .dgrp-hud{max-height:calc(100% - var(--dlgh,30%) - 22px);min-height:0}
+.rpstage .dgrp-hud>*{flex:none}
+.rpstage .dgrp-hud>.dgrp-pt{flex:0 1 auto;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.rpstage .dgrp-pt .dgpt-body{flex:1;min-height:0;max-height:none}
+.rpstage .dgrp-pt .dgpt-walk{flex-direction:row;gap:6px}
+.rpstage .dgrp-pt .dgpt-mon{flex:1 1 0;min-width:0;gap:4px}
+.rpstage .dgrp-pt .dgpt-img{width:26px;height:26px}
+.rpstage .dgrp-pt .dgpt-add{align-self:center;flex:none}
+@media(max-width:760px){.rpstage .dgrp-hud{max-height:calc(100% - var(--dlgh,34%) - 14px)}}
+.dg-ret{left:50%;translate:-50% 0}

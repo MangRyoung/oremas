@@ -5,7 +5,13 @@
      state.dg.field = {mode:'dungeon'|'', did, t}          지금 들어가 있는 던전
      state.dg.list[did] = {n 이름, o 주인, a 테마, d 기한, al 경계도 0~100, at 일행 위치, st 시작 방,
                            r:{rid:{n 이름, t 종류, x, y, s 공개(1), c 클리어(1), b 배경 그림 주소, m GM 메모}}, l:{'a~b':1} 통로}
-   화면: 던전이 열리면 모두의 화면이 「던전」 탭으로 넘어가고(컷인), 닫히면 원래 무대로 돌아간다. GM 에게는 늘 탭이 보인다(관리). */
+   화면: 던전이 열리면 모두의 RP 무대가 방 화면이 된다(컷인). 「던전」 탭은 GM 전용(큰 지도 · 조작).
+   10-26 오후 망켓몬식 개수 (망령 「페르소나 룰이니 우리 쪽에 맞춰」):
+     · 일행 · 동행: 일행 = 좌석 트레이너(또는 GM 이 고른 d.pt). 트레이너마다 동행 포켓몬 wn(기본 2)체 — roster.trainers.<id>.walk (본인 · GM 이 고른다).
+       무대 왼쪽 위에 PT 현황(볼 · HP · 상태). 시트(로스터)의 HP 를 그대로 보여 준다.
+     · 야생 배치: 방 r.e = 야생 무리(시트에서 GM 이 만든 트레이너), r.eh = 플레이어에게 표시 안 함(기습).
+       「⚔ 야생 조우」 → OM_APP.encounter: 일행(좌) VS 야생(우)로 배틀 칸을 차리고 동행을 먼저 내밀기 예약. 끝나면 「⛩ 던전으로 돌아가기」(클리어 표시).
+     · 경계도는 던전마다 끌 수 있다 (d.noal). */
 "use strict";
 window.OM_DG_UI=(()=>{
  const A=()=>window.OM_APP, DBS=()=>window.OM_STORE;
@@ -42,6 +48,28 @@ window.OM_DG_UI=(()=>{
  const rng=s=>{let h=2166136261;for(const ch of String(s))h=Math.imul(h^ch.charCodeAt(0),16777619);return()=>{h=Math.imul(h^h>>>15,2246822507);h=Math.imul(h^h>>>13,3266489909);return((h^=h>>>16)>>>0)/4294967296}};
  const mapLoc=id=>{const L=((((ST().state.rp||{}).map)||{}).locs)||[];const l=L.find(x=>x&&x.dg===id);return l?`<span class="dg-chip" title="지도의 이 장소에서 진입한다">📍 지도 ${H(l.n)}. ${H(l.name||'')}</span>`:''};
  const setH=(el,h)=>{if(el&&el._h!==h){el.innerHTML=h;el._h=h}};
+ const cssu=s=>String(s??'').replace(/[\s"'()\\<>]/g,c=>'%'+c.charCodeAt(0).toString(16).padStart(2,'0').toUpperCase());
+ /* ---------- 일행 · 동행 포켓몬 · 야생 (10-26 오후) ---------- */
+ const RO=()=>ST().state.roster||{trainers:{},mons:{}};
+ const SEATS=()=>ST().state.seats||{};
+ const WN=d=>Math.max(1,Math.min(3,+((d||{}).wn)||2));
+ const alOn=d=>!(d&&d.noal);
+ const stKo=k=>((((window.OM_DB||{}).states||{}).st||{})[k]||{}).ko||k;
+ function party(d){const tr=RO().trainers||{};const ids=d&&d.pt?Object.keys(d.pt):Object.keys(SEATS()).filter(id=>tr[id]);return ids.filter(id=>tr[id]).sort((a,b)=>(tr[a].ord||0)-(tr[b].ord||0))}
+ function monHp(m){const mx=Math.max(1,(m.hp&&m.hp.max)||(m.stats||[])[0]||1);const dead=!!((m.sheetStates||{}).Dead);const c=dead?0:m.sheetHp==null?mx:Math.max(0,Math.min(mx,+m.sheetHp||0));return {c,mx,dead:dead||c<=0}}
+ const canWalk=tid=>gm()||(!!ST().seat&&ST().seat===tid);
+ function walkOf(tid){const t=(RO().trainers||{})[tid]||{},ms=RO().mons||{};return (Array.isArray(t.walk)?t.walk:[]).filter(id=>ms[id]&&(t.pids||[]).includes(id))}
+ function ptHTML(d){const ids=party(d),tr=RO().trainers||{},ms=RO().mons||{},n=WN(d);
+  if(!ids.length)return gm()?'<div class="dgpt-empty">일행이 없다 — 좌석에 트레이너가 앉거나 던전 탭 「일행 편성」</div>':'';
+  return ids.map(tid=>{const t=tr[tid],pids=(t.pids||[]).filter(id=>ms[id]),w=walkOf(tid),me=canWalk(tid);
+   const balls=pids.map(id=>{const h=monHp(ms[id]);return `<i class="${h.dead?'ko':h.c<h.mx?'hurt':''}${w.includes(id)?' w':''}" title="${H(ms[id].name)} ${h.c}/${h.mx}"></i>`}).join('');
+   const chips=w.map(id=>{const m=ms[id],h=monHp(m),p=h.c/h.mx,st=Object.keys(m.sheetStates||{}).filter(k=>k!=='Dead'&&m.sheetStates[k]);
+    return `<div class="dgpt-mon${h.dead?' ko':''}"><span class="dgpt-img" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></span><span class="dgpt-mi"><b>${H(m.name)}</b><span class="dgpt-hp ${p<=.25?'low':p<=.5?'mid':''}"><i style="width:${Math.round(p*100)}%"></i></span><small>${h.dead?'빈사':h.c+'/'+h.mx}${st.length?' · '+H(st.map(stKo).join(' ')):''}</small></span></div>`}).join('');
+   const add=me&&w.length<n?`<button type="button" class="dgpt-add" data-walk="${H(tid)}">＋ 동행</button>`:'';
+   return `<div class="dgpt-row${me?' mine':''}" ${me?`data-walk="${H(tid)}" title="눌러서 동행 포켓몬 고르기 (최대 ${n}체)"`:''}><div class="dgpt-h"><b>${H(t.name||'')}</b><span class="dgpt-balls">${balls}</span></div>${chips||add?`<div class="dgpt-walk">${chips}${add}</div>`:''}</div>`}).join('')}
+ /* 방에 둔 야생: r.e = 시트 트레이너 id */
+ const encOf=r=>{if(!r||!r.e)return null;const t=(RO().trainers||{})[r.e];if(!t)return {t:null,ms:[]};const ms=RO().mons||{};return {t,ms:(t.pids||[]).map(id=>ms[id]).filter(Boolean)}};
+ const encLive=(r,isGm)=>!!(r&&r.e&&!r.c&&(isGm||(r.s&&!r.eh)));
 
  /* ---------- 쓰기 (GM 만) — {'list/<id>/at': v} 꼴을 경로 배열로 바꿔 한꺼번에 ---------- */
  async function upd(o){if(!gm()){A().toast('던전은 GM 만 바꿀 수 있어');return false}
@@ -73,6 +101,7 @@ window.OM_DG_UI=(()=>{
    const sh=prism(u+10,v+8,0).base;
    lab+=`<text class="nm${fog?' fogged':''}" x="${pr.c[0].toFixed(1)}" y="${(pr.f0[1]+RW*.9).toFixed(1)}">${H(fog?'(안개) '+(r.n||t.k):r.n||t.k)}</text>`;
    body+=`${here?`<ellipse class="dg-pulse" cx="${pr.f0[0].toFixed(1)}" cy="${pr.f0[1].toFixed(1)}" rx="${RW*1.9}" ry="${RW*1.1}"/>`:''}<g class="dg-node${id===DG.sel?' sel':''}${fog?' fogged':''}" data-a="pick" data-v="${H(id)}"><polygon points="${pts(sh)}" fill="#000" opacity=".4"/><polygon points="${pts(pr.left)}" fill="${shade(t.c,-.48)}"/><polygon points="${pts(pr.right)}" fill="${shade(t.c,-.68)}"/><polygon class="tp" points="${pts(pr.top)}" fill="url(#dgT_${tk})"/><polygon points="${pts(pr.inset)}" fill="none" stroke="rgba(255,255,255,.38)" stroke-width="1.2"/>${r.c?`<polygon points="${pts(pr.top)}" fill="#000" opacity=".38"/>`:''}<text class="ic" x="${pr.c[0].toFixed(1)}" y="${pr.c[1].toFixed(1)}">${r.c?'✓':t.ic}</text></g>`;
+   if(encLive(r,isGm))body+=`<text class="dg-enc${r.eh?' hid':''}" x="${pr.c[0].toFixed(1)}" y="${(pr.c[1]-RW*.62).toFixed(1)}">!</text>`;
    if(here)party=`<g class="dg-party" transform="translate(${pr.c[0].toFixed(1)} ${(pr.c[1]-34).toFixed(1)})"><g class="bob"><ellipse cx="0" cy="30" rx="12" ry="5" fill="#000" opacity=".35"/><polygon points="0,-24 12,-2 0,20 -12,-2" fill="var(--dg-acc)" stroke="#fff" stroke-width="2"/><polygon points="0,-24 12,-2 0,0" fill="#fff" opacity=".45"/></g></g>`});
   used.forEach(k=>{const c=TY[k].c;defs+=`<linearGradient id="dgT_${k}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${shade(c,.35)}"/><stop offset="1" stop-color="${c}"/></linearGradient>`});
   if(!xs.length){xs.push(-300,300);ys.push(-150,250)}
@@ -113,7 +142,13 @@ window.OM_DG_UI=(()=>{
   const anim=!!old&&!matchMedia('(prefers-reduced-motion:reduce)').matches;planes.replaceChildren();if(anim){old.className=old.className.replace(/\b(in|out)\b/g,'')+' out';planes.append(old);setTimeout(()=>old.remove(),620)}
   if(anim)next.classList.add('in');planes.append(next);hold.frame=key}
  function hudHTML(d,lockBig){const room=R(d)[d.at],t=ty(room&&room.t),al=clamp(+d.al||0,0,100),lv=lvOf(al);
-  return `${room?`<div class="dg-loc"><span>${H(t.en)}</span><b>${H(room.n||t.k)}</b></div><div class="dg-type" style="--c:${t.c}">${t.ic} ${H(t.k)} · ${H(d.n||'이름 없는 던전')}</div>`:''}<div class="dg-meter lv${lv}" style="--p:${al/100}"><small>SECURITY</small><b>${al}<em>%</em></b><i></i><span>${LV[lv][1]} · ${LV[lv][2]}</span></div>${lv===3&&lockBig?'<div class="dg-lock"><strong>LOCKDOWN</strong><span>강제 퇴출</span></div>':''}`}
+  return `${room?`<div class="dg-loc"><span>${H(t.en)}</span><b>${H(room.n||t.k)}</b></div><div class="dg-type" style="--c:${t.c}">${t.ic} ${H(t.k)} · ${H(d.n||'이름 없는 던전')}</div>`:''}${alOn(d)?`<div class="dg-meter lv${lv}" style="--p:${al/100}"><small>SECURITY</small><b>${al}<em>%</em></b><i></i><span>${LV[lv][1]} · ${LV[lv][2]}</span></div>${lv===3&&lockBig?'<div class="dg-lock"><strong>LOCKDOWN</strong><span>강제 퇴출</span></div>':''}`:''}`}
+ /* RP 무대 왼쪽 위: 장소 · 경계도 + 야생 기척 + PT 현황 (접기) */
+ const ptMin=()=>{try{const v=localStorage.getItem('om_dg_pt');return v?v==='min':isNarrow()}catch(e){return false}};
+ function rpHudHTML(d){const r=R(d)[d.at],isGm=gm();const e=encLive(r,isGm)?encOf(r):null;
+  const enc=e?`<div class="dgrp-enc${r.eh?' hid':''}"><b>⚠ 야생 포켓몬의 기척</b>${isGm?`<small>${e.t?H(e.ms.map(m=>m.name).join(' · ')||e.t.name):'(시트에 없는 무리)'}${r.eh?' · 플레이어에게 숨김':''}</small><button type="button" data-rpdg="enc">⚔ 배틀</button>`:''}</div>`:'';
+  const pt=ptHTML(d);const mn=ptMin();
+  return hudHTML(d,false)+enc+(pt?`<div class="dgrp-pt${mn?' min':''}"><button type="button" class="dgpt-tog" data-rpdg="pt">PT ${mn?'▸':'▾'}</button><div class="dgpt-body">${pt}</div></div>`:'')}
  function paintMap(root,d,isGm,hold,mini){const rs=R(d);const sig=JSON.stringify([d.id,isGm,d.at,DG.sel,rs,d.l,!!mini]);if(hold.mapSig===sig)return;hold.mapSig=sig;
   const m=mapBuild(d,isGm),iso=root.querySelector('.dg-iso'),fog=root.querySelector('.dg-fog');if(iso&&fog){const w=m.box[2],tl=iso.parentElement;const k=mini?1.5:1;tl.style.setProperty('--nm',(Math.max(15,w*.026)*k).toFixed(0)+'px');tl.style.setProperty('--ic',(Math.max(24,w*.034)*k).toFixed(0)+'px');iso.setAttribute('viewBox',m.vb);fog.setAttribute('viewBox',m.vb);iso.innerHTML=m.svg;fog.innerHTML=fogBuild(m.box,m.holes,d.id,isGm,m.asks,m.lab)}
   const seen=Object.values(rs).filter(r=>r.s).length;const cap=root.querySelector('.dg-map-cap');if(cap)setH(cap,`<b>MAP</b>${isGm?`방 ${Object.keys(rs).length}개 · 공개 ${seen}개`:`탐색한 방 ${seen}개`}`);return true}
@@ -136,7 +171,10 @@ window.OM_DG_UI=(()=>{
   const rs=R(d);if(!rs[d.at]){const s=d.st&&rs[d.st]?d.st:Object.keys(rs)[0];d.at=s||''}
   stage.classList.add('dgmode');
   let bg=stage.querySelector(':scope>.dgrp-bg');if(!bg){bg=document.createElement('div');bg.className='dgrp dgrp-bg';bg.innerHTML='<div class="dg-planes"></div>';stage.prepend(bg);RPH.frame=''}
-  let hud=stage.querySelector(':scope>.dgrp-hud');if(!hud){hud=document.createElement('div');hud.className='dgrp dgrp-hud';stage.append(hud)}
+  let hud=stage.querySelector(':scope>.dgrp-hud');if(!hud){hud=document.createElement('div');hud.className='dgrp dgrp-hud';stage.append(hud);
+   hud.addEventListener('click',e=>{const w=e.target.closest('[data-walk]');if(w){e.stopPropagation();return walkPick(w.dataset.walk)}const b=e.target.closest('[data-rpdg]');if(!b)return;e.stopPropagation();
+    if(b.dataset.rpdg==='pt'){const mn=!ptMin();try{localStorage.setItem('om_dg_pt',mn?'min':'open')}catch(err){}hud._h='';rpSync(stage);return}
+    if(b.dataset.rpdg==='enc'){const dd=cur();if(dd)startEnc(dd)}})}
   let dock=stage.querySelector(':scope>.dgrp-dock');
   if(!dock){dock=document.createElement('div');const mm=mapMode()||(isNarrow()?'min':'');dock.className='dgrp dgrp-dock '+mm;
    dock.innerHTML=`<div class="dg-dock-tools"><button type="button" data-rpdg="min" title="지도 접기 / 펴기">▾</button><button type="button" data-rpdg="big" title="지도 크게 / 작게">⤢</button>${gm()?'<button type="button" data-rpdg="tab" title="던전 탭 (GM 조작)">🛠</button>':''}</div><button type="button" class="dgrp-mapbtn" data-rpdg="min" title="지도 펴기">MAP</button><div class="dg-map3d dgrp-map"><div class="dg-tilt"><svg class="dg-iso" preserveAspectRatio="xMidYMid meet"></svg><svg class="dg-fog" preserveAspectRatio="xMidYMid meet"></svg></div><div class="dg-map-cap"></div></div>`;
@@ -148,41 +186,47 @@ window.OM_DG_UI=(()=>{
     if(k==='big'){dock.classList.toggle('big');RPH.mapSig='';return}
     try{A().goView('dungeon')}catch(err){}})}
   paintFrame(bg.querySelector('.dg-planes'),d,RPH);
-  setH(hud,hudHTML(d,false));
+  setH(hud,rpHudHTML(d));
+  {const dl=stage.querySelector('#dlg');let h=18;if(dl&&dl.style.display!=='none'&&dl.offsetHeight){const sr=stage.getBoundingClientRect(),dr=dl.getBoundingClientRect();h=Math.max(18,Math.round(sr.bottom-dr.top))}stage.style.setProperty('--dlgh',h+'px')}
   if(!dock.classList.contains('min'))paintMap(dock,d,gm(),RPH,true)}
  function side(d,isGm,al,lv){
   const rs=R(d),id=DG.sel,r=rs[id],t=ty(r&&r.t),here=id===d.at;
   const meta=`<div class="dg-card"><h4>${H(d.n||'이름 없는 던전')} <small>DUNGEON</small></h4>${d.o?`<span class="dg-chip">주인 · ${H(d.o)}</span>`:''}${d.a?`<span class="dg-chip">${H(d.a)}</span>`:''}${d.d?`<span class="dg-chip on">기한 · ${H(d.d)}</span>`:''}${mapLoc(d.id)}
-   <div class="dg-mini-meter" style="--p:${al/100};--lc:${LVC[lv]}"></div><p><b style="color:${LVC[lv]}">경계도 ${al}% · ${LV[lv][1]}</b> — ${LV[lv][3]}</p>
-   ${isGm?`<div class="dg-acts"><button class="btn sm" data-a="al" data-v="20" data-w="발각">발각 +20</button><button class="btn sm" data-a="al" data-v="10" data-w="소란·도주">소란 +10</button><button class="btn sm" data-a="al" data-v="-10" data-w="몰래 통과">몰래 통과 −10</button><button class="btn sm ghost" data-a="al" data-v="5" data-w="">+5</button><button class="btn sm ghost" data-a="al" data-v="-5" data-w="">−5</button></div>${lv===3?'<div class="dg-acts"><button class="btn sm danger" data-a="kick">강제 퇴출 처리 (던전에서 나가기)</button></div>':''}`:''}</div>`;
-  const card=r?`<div class="dg-card" style="--c:${t.c}"><h4><span class="dg-ico">${t.ic}</span>${H(r.n||t.k)} <small>${t.en}</small></h4><span class="dg-chip on">${H(t.k)}</span>${here?'<span class="dg-chip on">◆ 일행 위치</span>':''}${r.c?'<span class="dg-chip">✓ 클리어</span>':''}${isGm&&!r.s&&!here?'<span class="dg-chip">안개 속 (플레이어에게 안 보임)</span>':''}<p>${t.r}</p>${isGm&&r.m?`<p class="dg-memo">GM 메모 · ${H(r.m)}</p>`:''}
+   ${alOn(d)?`<div class="dg-mini-meter" style="--p:${al/100};--lc:${LVC[lv]}"></div><p><b style="color:${LVC[lv]}">경계도 ${al}% · ${LV[lv][1]}</b> — ${LV[lv][3]}</p>
+   ${isGm?`<div class="dg-acts"><button class="btn sm" data-a="al" data-v="20" data-w="발각">발각 +20</button><button class="btn sm" data-a="al" data-v="10" data-w="소란·도주">소란 +10</button><button class="btn sm" data-a="al" data-v="-10" data-w="몰래 통과">몰래 통과 −10</button><button class="btn sm ghost" data-a="al" data-v="5" data-w="">+5</button><button class="btn sm ghost" data-a="al" data-v="-5" data-w="">−5</button></div>${lv===3?'<div class="dg-acts"><button class="btn sm danger" data-a="kick">강제 퇴출 처리 (던전에서 나가기)</button></div>':''}`:''}`:''}</div>`;
+  const ptc=`<div class="dg-card dgpt-card"><h4>일행 <small>PARTY · 동행 ${WN(d)}체</small></h4><div class="dgpt-list">${ptHTML(d)||'<p class="small dim">일행이 없다</p>'}</div>${isGm?'<div class="dg-acts"><button class="btn sm" data-a="ptset">일행 편성</button></div>':''}<p class="dg-help">트레이너 줄을 누르면 동행 포켓몬을 고른다 (본인 · GM). HP · 상태는 시트 값.</p></div>`;
+  const e=r&&isGm?encOf(r):null;
+  const encH=e?`<div class="dg-enc-box"><b>☠ 야생 배치 · ${e.t?H(e.t.name):'(시트에 없는 무리)'}</b>${r.eh?' <span class="dg-chip">플레이어에게 숨김</span>':''}${r.c?' <span class="dg-chip">✓ 처리함</span>':''}<div class="dg-enc-ms">${e.ms.map(m=>`<span>${m.image?`<i style="background-image:url('${cssu(m.image)}')"></i>`:''}${H(m.name)}</span>`).join('')||'<span class="small dim">포켓몬이 없다 — 시트 탭에서 넣는다</span>'}</div></div>`:'';
+  const card=r?`<div class="dg-card" style="--c:${t.c}"><h4><span class="dg-ico">${t.ic}</span>${H(r.n||t.k)} <small>${t.en}</small></h4><span class="dg-chip on">${H(t.k)}</span>${here?'<span class="dg-chip on">◆ 일행 위치</span>':''}${r.c?'<span class="dg-chip">✓ 클리어</span>':''}${isGm&&!r.s&&!here?'<span class="dg-chip">안개 속 (플레이어에게 안 보임)</span>':''}<p>${t.r}</p>${isGm&&r.m?`<p class="dg-memo">GM 메모 · ${H(r.m)}</p>`:''}${encH}
    ${isGm?`<div class="dg-acts">${here?'':`<button class="btn sm pri" data-a="move" data-v="${H(id)}">▶ 일행 이동</button>`}<button class="btn sm" data-a="seen" data-v="${H(id)}">${r.s?'안개로 숨기기':'👁 공개'}</button><button class="btn sm" data-a="clear" data-v="${H(id)}">${r.c?'클리어 취소':'✓ 클리어'}</button>${here?'<button class="btn sm" data-a="nav">📡 주변 방 밝히기</button>':''}</div>
-   ${here?`<div class="dg-acts"><button class="btn sm pri" data-a="enc" data-v="battle">⚔ 조우 — 배틀 무대로</button><button class="btn sm danger" data-a="enc" data-v="spot">⚠ 들켰다 (경계도 +10)</button></div>`:''}`:''}</div>`:'';
+   ${here?`<div class="dg-acts">${e&&e.t?'<button class="btn sm pri" data-a="enc" data-v="wild">⚔ 야생 조우 — 배틀 시작</button>':''}<button class="btn sm ${e&&e.t?'':'pri'}" data-a="enc" data-v="battle">${e&&e.t?'배틀 무대로만':'⚔ 조우 — 배틀 무대로'}</button>${alOn(d)?'<button class="btn sm danger" data-a="enc" data-v="spot">⚠ 들켰다 (경계도 +10)</button>':''}</div>`:''}`:''}</div>`:'';
   const foot=isGm?`<div class="dg-acts"><button class="btn sm" data-a="exit">🏠 던전에서 나가기</button><button class="btn sm" data-a="manage">🛠 던전 관리</button></div><p class="dg-help">지도에서 방을 눌러 고르고 이동 · 공개 · 조우를 처리한다. 플레이어에게는 공개한 방과 지나온 방만 보인다.</p>`:'<p class="dg-help">지도에서 방을 누르면 정보를 볼 수 있다. 안개 너머는 아직 아무도 모른다.</p>';
-  return meta+card+foot}
+  return meta+card+ptc+foot}
  function tiltBind(el){const m=$('#dgMap',el);if(!m||m._tilt)return;m._tilt=1;const tilt=m.querySelector('.dg-tilt');
   m.addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;const b=m.getBoundingClientRect(),dx=(e.clientX-b.left)/b.width-.5,dy=(e.clientY-b.top)/b.height-.5;cancelAnimationFrame(DG.tiltRaf);DG.tiltRaf=requestAnimationFrame(()=>{tilt.style.setProperty('--rx',(9-dy*8).toFixed(2)+'deg');tilt.style.setProperty('--ry',(dx*10).toFixed(2)+'deg')})});
   m.addEventListener('pointerleave',()=>{cancelAnimationFrame(DG.tiltRaf);tilt.style.removeProperty('--rx');tilt.style.removeProperty('--ry')})}
  function cut(en,ko,sub,cls){const el=document.createElement('div');el.className='dg-cut '+(cls||'');el.setAttribute('role','status');el.innerHTML=`<div class="dg-cut-band"><small>${H(en)}</small><strong>${H(ko)}</strong>${sub?`<span>${H(sub)}</span>`:''}</div>`;document.body.append(el);whoosh();setTimeout(()=>el.remove(),2400)}
 
  /* ---------- 상태가 바뀔 때 (모든 탭에서 불린다): 진입 · 귀환 · 경계 단계 컷인, 화면 넘기기 ---------- */
- function onState(){const d=cur(),s={room:ST().room,mode:d?'dungeon':'',did:d?d.id:'',al:d?clamp(+d.al||0,0,100):0},p=DG.prev;DG.prev=s;
+ function onState(){try{retSync()}catch(e){}const d=cur(),s={room:ST().room,mode:d?'dungeon':'',did:d?d.id:'',al:d?clamp(+d.al||0,0,100):0},p=DG.prev;DG.prev=s;
   {const sg=JSON.stringify(D0());if(DG.edOpen&&sg!==DG.edSig&&!DG.drag&&!typingInModal())edDraw();DG.edSig=sg}
   if(!p||p.room!==s.room)return;   /* 방에 막 들어온 첫 상태: 컷인 없음 */
   if(p.mode!==s.mode||p.did!==s.did){DG.sel='';
    if(s.mode==='dungeon'){cut('INFILTRATION','던전 진입',d.n||'','');try{A().goView('rp')}catch(e){}}   /* 탐색은 RP 무대에서 (방 화면이 배경) — 큰 지도는 던전 탭 */
    else{cut('ESCAPE','던전 귀환','무대로 돌아왔다','out');try{if(A().view==='dungeon'&&!gm())A().goView('')}catch(e){}}
    return}
-  if(s.mode==='dungeon'){const a=lvOf(p.al),b=lvOf(s.al);if(b>a)cut('SECURITY',b===3?'강제 퇴출':'경계도 '+LV[b][1],`${s.al}% · ${LV[b][3]}`,b===3?'lock':'warn')}}
+  if(s.mode==='dungeon'&&alOn(d)){const a=lvOf(p.al),b=lvOf(s.al);if(b>a)cut('SECURITY',b===3?'강제 퇴출':'경계도 '+LV[b][1],`${s.al}% · ${LV[b][3]}`,b===3?'lock':'warn')}}
  const typingInModal=()=>{const a=document.activeElement;return !!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&a.closest('.dg-ed'))};
 
  /* ---------- 클릭 (탭 화면) ---------- */
  function startOptions(d){const rs=R(d),o=[];if(d.st&&rs[d.st])o.push([d.st,'입구에서 시작']);Object.entries(rs).forEach(([id,r])=>{if(r.t==='safe'&&r.s&&id!==d.st)o.push([id,'세이프룸 · '+(r.n||'')])});if(d.at&&rs[d.at]&&!o.some(x=>x[0]===d.at))o.push([d.at,'지난 위치에서 이어서']);if(!o.length){const f=Object.keys(rs)[0];if(f)o.push([f,'첫 방에서 시작'])}return o}
- function bindRoot(el){if(el._dgBound)return;el._dgBound=1;el.addEventListener('click',e=>{const b=e.target.closest('[data-a]');if(!b||!el.contains(b)||!b.closest('#dgRoot,.dg-idle'))return;act(b.dataset.a,b)})}
+ function bindRoot(el){if(el._dgBound)return;el._dgBound=1;el.addEventListener('click',e=>{const w=e.target.closest('[data-walk]');if(w&&el.contains(w)&&w.closest('#dgRoot')){return walkPick(w.dataset.walk)}const b=e.target.closest('[data-a]');if(!b||!el.contains(b)||!b.closest('#dgRoot,.dg-idle'))return;act(b.dataset.a,b)})}
  async function act(k,b){const d=cur();const v=b.dataset.v;
   if(k==='pick'){DG.sel=v;return A().renderScene()}
   if(k==='torp'){try{A().goView('rp')}catch(e){}return}
+  if(k==='walk')return walkPick(v);
   if(!gm())return;
+  if(k==='ptset'&&d)return ptSet(d);
   if(k==='manage'){if(d)DG.ed=d.id;return openEd()}
   if(k==='enter'){const id=v,s=b.dataset.s,dd=all()[id];if(!dd||!R(dd)[s])return;const p=P0(id);if(await upd({field:{mode:'dungeon',did:id,t:Date.now()},[p+'at']:s,[p+'r/'+s+'/s']:1,[p+'al']:0})){notice(`⚔ 던전 진입 — ${dd.n||'던전'}`)}return}
   if(!d)return;
@@ -195,6 +239,7 @@ window.OM_DG_UI=(()=>{
   if(k==='al'){const delta=+v||0,why=b.dataset.w||'';const before=clamp(+d.al||0,0,100),after=clamp(before+delta,0,100);if(after===before)return;if(await upd({[P0(d.id)+'al']:after}))notice(`[${d.n||'던전'}] 경계도 ${after>before?'+':''}${after-before}${why?' ('+why+')':''} → ${after}%`);return}
   if(k==='enc'){const r=R(d)[d.at]||{},head=`[${d.n||'던전'} · ${r.n||ty(r.t).k}] `;
    if(v==='spot'){const after=clamp((+d.al||0)+10,0,100);if(await upd({[P0(d.id)+'al']:after}))notice(head+`⚠ 들켰다! 경계도 +10 → ${after}%`);return}
+   if(v==='wild')return startEnc(d);
    if(v==='battle'){notice(head+'⚔ 조우! 배틀을 시작한다.');await A().set(['scene'],'battle');try{A().goView('battle')}catch(e){}return}}}
 
  /* ---------- 편집기 (위에서 본 배치 · 플레이 화면에서는 입체로) ---------- */
@@ -209,9 +254,11 @@ window.OM_DG_UI=(()=>{
   const head=`<div class="mhead"><h2>던전 관리</h2><span class="sp"></span><button class="btn ghost" data-e="close">닫기</button></div>`;
   const top=`<div class="dg-ed-top"><select data-dgsel>${ids.map(id=>`<option value="${H(id)}" ${id===DG.ed?'selected':''}>${H(ds[id].n||'이름 없는 던전')}</option>`).join('')||'<option>던전 없음</option>'}</select><button class="btn sm pri" data-e="new">＋ 새 던전</button><button class="btn sm" data-e="sample">샘플 던전</button>${d?'<button class="btn sm danger" data-e="del">던전 삭제</button>':''}</div>`;
   if(!d)return head+top+'<p class="small dim">새 던전을 만들거나 샘플 던전으로 시작해 봐.</p>';
-  const meta=`<div class="dg-ed-meta"><label>이름<input data-dgm="n" value="${H(d.n||'')}"></label><label>주인 (던전을 만든 인물 · 보스)<input data-dgm="o" value="${H(d.o||'')}"></label><label>테마<input data-dgm="a" value="${H(d.a||'')}" placeholder="예: 안개 · 폐허"></label><label>기한<input data-dgm="d" value="${H(d.d||'')}" placeholder="예: 7세션까지"></label></div>`;
+  const meta=`<div class="dg-ed-meta"><label>이름<input data-dgm="n" value="${H(d.n||'')}"></label><label>주인 (던전을 만든 인물 · 보스)<input data-dgm="o" value="${H(d.o||'')}"></label><label>테마<input data-dgm="a" value="${H(d.a||'')}" placeholder="예: 안개 · 폐허"></label><label>기한<input data-dgm="d" value="${H(d.d||'')}" placeholder="예: 7세션까지"></label><label>동행 포켓몬 수 (트레이너마다)<select data-dgx="wn">${[1,2,3].map(n=>`<option value="${n}" ${WN(d)===n?'selected':''}>${n}체</option>`).join('')}</select></label><label class="dg-chk"><input type="checkbox" data-dgx="al" ${alOn(d)?'checked':''}> 경계도 쓰기 <small>(들키면 오르는 0~100 계기 · 끄면 숨김)</small></label></div>`;
   const tool=`<div class="dg-acts" style="margin:0 0 8px"><button class="btn sm ${DG.edMode==='move'?'pri':''}" data-e="mode" data-v="move">✥ 배치 · 이동</button><button class="btn sm ${DG.edMode==='link'?'pri':''}" data-e="mode" data-v="link">⟷ 통로 연결</button></div>`;
   const sideHTML=r?`<div class="dg-ed-side"><b style="font-size:15px">${t.ic} 방 편집</b><label>이름<input data-dgr="n" value="${H(r.n||'')}"></label><label>종류<select data-dgr="t">${TORDER.map(k=>`<option value="${k}" ${k===(r.t in TY?r.t:'room')?'selected':''}>${TY[k].ic} ${TY[k].k}</option>`).join('')}</select></label><p class="dg-help" style="margin:0">${t.r}</p><label>GM 메모 (GM 화면에만)<textarea data-dgr="m" rows="3">${H(r.m||'')}</textarea></label>
+   ${(()=>{const tr=RO().trainers||{},ms=RO().mons||{},pt=new Set(party(d));const ids=Object.keys(tr).filter(id=>!pt.has(id)||id===r.e).sort((a,b)=>(tr[a].ord||0)-(tr[b].ord||0));
+    return `<label>야생 포켓몬 배치 <small class="dim">(시트의 GM 트레이너 = 야생 무리)</small><select data-dge="e"><option value="">— 없음 —</option>${ids.map(id=>{const t=tr[id],n=(t.pids||[]).filter(x=>ms[x]);return `<option value="${H(id)}" ${id===r.e?'selected':''}>${H(t.name||id)} · ${n.length}체${n.length?' ('+H(n.slice(0,3).map(x=>ms[x].name).join(', '))+(n.length>3?' …':'')+')':''}</option>`}).join('')}</select></label>${r.e?`<label class="dg-chk"><input type="checkbox" data-dge="eh" ${r.eh?'checked':''}> 플레이어 지도에 「!」 숨기기 (기습)</label>`:''}<p class="dg-help" style="margin:0">야생 무리는 <b>시트</b> 탭 「+ 새 트레이너」(이름 예: 야생 · 터빈실)에 포켓몬을 넣거나 제작기에서 가져와 만든다. 플레이 중 이 방에서 「⚔ 야생 조우」를 누르면 일행 VS 이 무리로 배틀이 차려진다.</p>`})()}
    <label>배경 그림 주소<input data-dgr="b" value="${H(r.b||'')}" placeholder="https://… (비우면 종류에 맞는 입체 공간)"></label>
    <div class="dg-acts"><label class="btn sm">그림 올리기<input type="file" accept="image/*" data-e="img" hidden></label>${r.b?'<button class="btn sm" data-e="imgdel">배경 빼기</button>':''}<button class="btn sm" data-e="start" ${d.st===DG.edSel?'disabled':''}>시작 방으로</button><button class="btn sm" data-e="seen">${r.s?'안개로 숨기기':'미리 공개'}</button><button class="btn sm danger" data-e="rdel">방 삭제</button></div></div>`
    :`<div class="dg-ed-side"><b>사용법</b><p class="dg-help" style="margin:0">• <b>배치 · 이동</b>: 빈 곳을 누르면 방 추가(고른 방에 통로로 이어 붙는다), 방을 끌어 옮기기, 누르면 편집.<br>• <b>통로 연결</b>: 방 두 개를 차례로 누르면 통로가 생기고, 다시 누르면 끊긴다.<br>• START 표시가 있는 방이 입구.<br>• 흐린 방은 안개 속(플레이어에게 안 보임). 일행이 들어가면 저절로 공개된다.<br>• 플레이 화면에서는 이 배치가 입체 지도로 보인다.</p></div>`;
@@ -222,6 +269,8 @@ window.OM_DG_UI=(()=>{
   box.querySelectorAll('[data-e]').forEach(b=>{if(b.type==='file'){b.onchange=()=>edAct('img',b);return}b.onclick=()=>edAct(b.dataset.e,b)});
   box.querySelectorAll('[data-dgsel]').forEach(s=>s.onchange=()=>{DG.ed=s.value;DG.edSel='';DG.edFrom='';edDraw()});
   box.querySelectorAll('[data-dgm]').forEach(i=>i.onchange=()=>{const d=edD();if(d)upd({[P0(d.id)+i.dataset.dgm]:i.value.trim().slice(0,60)||null})});
+  box.querySelectorAll('[data-dgx]').forEach(i=>i.onchange=()=>{const d=edD();if(!d)return;const f=i.dataset.dgx;if(f==='wn')upd({[P0(d.id)+'wn']:+i.value===2?null:+i.value});if(f==='al')upd({[P0(d.id)+'noal']:i.checked?null:1})});
+  box.querySelectorAll('[data-dge]').forEach(i=>i.onchange=async()=>{const d=edD();if(!d||!R(d)[DG.edSel])return;const f=i.dataset.dge,p=P0(d.id)+'r/'+DG.edSel+'/';if(f==='e'){const o={[p+'e']:i.value||null};if(!i.value)o[p+'eh']=null;await upd(o)}else await upd({[p+'eh']:i.checked?1:null});edDraw()});
   box.querySelectorAll('[data-dgr]').forEach(i=>i.onchange=()=>{const d=edD();if(d&&R(d)[DG.edSel]){const f=i.dataset.dgr;upd({[P0(d.id)+'r/'+DG.edSel+'/'+f]:i.value.trim().slice(0,f==='m'?400:f==='b'?600:40)||null})}});
   const svg=$('#dgEdSvg',box);if(svg)svgBind(svg);
   const bg=box.closest('.modalbg');if(bg&&!bg._dg){bg._dg=1;new MutationObserver((ms,ob)=>{if(!bg.isConnected){DG.edOpen=false;ob.disconnect();A().renderScene()}}).observe(document.body,{childList:true})}}
@@ -261,10 +310,36 @@ window.OM_DG_UI=(()=>{
   if(k==='imgdel'){await upd({[P0(d.id)+'r/'+id+'/b']:null});return edDraw()}
   if(k==='img'){const f=b.files&&b.files[0];if(!f)return;A().toast('올리는 중…');try{const u=await DBS().uploadImage(`rooms/${ST().room}/dg_${d.id}_${id}_${Date.now().toString(36)}`,await shrinkImg(f,1920,1080));if(u&&await upd({[P0(d.id)+'r/'+id+'/b']:u}))A().toast('방 배경을 바꿨다');edDraw()}catch(e){A().toast('그림을 올리지 못했다: '+e.message)}}}
 
+ /* ---------- 동행 포켓몬 고르기 (본인 · GM) ---------- */
+ function walkPick(tid){const d=cur();const t=(RO().trainers||{})[tid];if(!t||!canWalk(tid))return;const ms=RO().mons||{},n=WN(d);let sel=walkOf(tid);
+  const pids=(t.pids||[]).filter(id=>ms[id]);
+  const m=A().openModal(`<div class="mhead"><h2>${H(t.name||'')} — 동행 포켓몬</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small dim" style="margin:0 0 8px">탐색하며 데리고 다닐 포켓몬 <b>최대 ${n}체</b>. 야생 조우 때 이 순서대로 먼저 나간다.</p><ul class="pick dgwk" id="dgWk"></ul><div class="row" style="margin-top:10px"><button class="btn ghost" id="dgWkClr">모두 빼기</button><span class="sp"></span><button class="btn pri" id="dgWkOk">정하기</button></div>`);
+  const draw=()=>{m.querySelector('#dgWk').innerHTML=pids.map(id=>{const x=ms[id],h=monHp(x),i=sel.indexOf(id),p=h.c/h.mx;return `<li class="${i>=0?'on':''}${h.dead?' ko':''}" data-id="${H(id)}"><span class="dgpt-img" style="${x.image?`background-image:url('${cssu(x.image)}')`:''}"></span><span class="dgpt-mi"><b>${H(x.name)}</b> <small class="dim">Lv.${H(x.lv||'?')}</small><span class="dgpt-hp ${p<=.25?'low':p<=.5?'mid':''}"><i style="width:${Math.round(p*100)}%"></i></span><small>${h.dead?'빈사 — 데려갈 수 없다':h.c+'/'+h.mx}</small></span><span class="sp"></span><b class="dgwk-n">${i>=0?i+1:''}</b></li>`}).join('')||'<li class="dim">포켓몬이 없다</li>'};
+  draw();
+  m.querySelector('#dgWk').onclick=e=>{const li=e.target.closest('li[data-id]');if(!li||li.classList.contains('ko'))return;const id=li.dataset.id;const i=sel.indexOf(id);if(i>=0)sel.splice(i,1);else{if(sel.length>=n)sel.shift();sel.push(id)}draw()};
+  m.querySelector('#dgWkClr').onclick=()=>{sel=[];draw()};
+  m.querySelector('#dgWkOk').onclick=async()=>{A().closeModal();if(await A().set(['roster','trainers',tid,'walk'],sel.length?sel:null))A().toast(sel.length?`동행: ${sel.map(id=>ms[id].name).join(' · ')}`:'동행 포켓몬을 모두 뺐다')}}
+ /* 일행 편성 (GM): 비우면 좌석 트레이너 전원 */
+ function ptSet(d){const tr=RO().trainers||{},seats=SEATS(),cur0=new Set(party(d));const ids=Object.keys(tr).sort((a,b)=>(tr[a].ord||0)-(tr[b].ord||0));
+  const m=A().openModal(`<div class="mhead"><h2>일행 편성</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small dim" style="margin:0 0 8px">야생 조우 때 좌측에 서는 트레이너. 동행 NPC 를 넣거나 빠진 플레이어를 뺄 때.</p><ul class="pick">${ids.map(id=>`<li><label class="row" style="gap:8px;flex:1"><input type="checkbox" value="${H(id)}" ${cur0.has(id)?'checked':''}><b>${H(tr[id].name||id)}</b>${seats[id]?'<span class="tag">좌석</span>':''}</label></li>`).join('')}</ul><div class="row" style="margin-top:10px"><button class="btn ghost" id="dgPtDef">좌석 트레이너로 되돌리기</button><span class="sp"></span><button class="btn pri" id="dgPtOk">정하기</button></div>`);
+  m.querySelector('#dgPtDef').onclick=async()=>{A().closeModal();await upd({[P0(d.id)+'pt']:null})};
+  m.querySelector('#dgPtOk').onclick=async()=>{const v=[...m.querySelectorAll('input[type=checkbox]:checked')].map(x=>x.value);A().closeModal();await upd({[P0(d.id)+'pt']:v.length?Object.fromEntries(v.map(x=>[x,1])):null})}}
+ /* ---------- 야생 조우 → 배틀 (app.js encounter) · 돌아오기 ---------- */
+ async function startEnc(d,rid0){if(!gm())return;const id=rid0||d.at,r=R(d)[id];const e=encOf(r);if(!e)return A().toast('이 방에는 야생 포켓몬을 두지 않았다 — 던전 관리에서 배치');if(!e.t)return A().toast('이 방의 야생 무리 트레이너가 시트에 없다');
+  const L=party(d),walk={};L.forEach(t=>walk[t]=walkOf(t));
+  await A().encounter({left:L,right:[r.e],walk,dg:{did:d.id,rid:id},title:`${d.n||'던전'} · ${r.n||ty(r.t).k}`})}
+ function retSync(){let el=document.getElementById('dgRet');const b=ST().state.battle||{},d=cur();const want=gm()&&!!d&&ST().state.scene==='battle'&&!!b.dg&&b.dg.did===d.id;
+  if(!want){if(el)el.remove();return}
+  if(!el){el=document.createElement('button');el.id='dgRet';el.type='button';el.className='dg-ret';el.textContent='⛩ 던전으로 돌아가기';el.title='배틀을 마치고 던전 방으로 (결과 정리 · 클리어 표시)';el.onclick=retOpen;document.body.append(el)}}
+ function retOpen(){const d=cur(),b=ST().state.battle||{};if(!d||!b.dg)return;const rid0=b.dg.rid,r=R(d)[rid0]||{};const foes=Object.values(b.mons||{}).filter(m=>m.side==='right');const win=foes.length>0&&foes.every(m=>((m.hp||{}).cur||0)<=0);
+  const m=A().openModal(`<div class="mhead"><h2>⛩ 던전으로 돌아가기</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small" style="margin:0 0 8px">${win?'야생 포켓몬을 모두 쓰러뜨렸다.':'아직 서 있는 야생 포켓몬이 있다 (도망 · 포획 · 중단).'} 일행의 HP · 상태를 시트에 남기려면 먼저 <b>결과 정리</b>를 한다.</p><label class="row" style="gap:6px"><input type="checkbox" id="dgRetClr" ${win?'checked':''}> 「${H(r.n||ty(r.t).k)}」 클리어 표시 (야생 기척 없애기)</label><div class="row" style="margin-top:12px"><button class="btn" id="dgRetRes">📋 결과 정리 먼저</button><span class="sp"></span><button class="btn pri" id="dgRetGo">⛩ 던전으로</button></div>`);
+  m.querySelector('#dgRetRes').onclick=()=>{A().closeModal();try{window.OM_BATTLE_UI.action({act:'result'})}catch(e){}};
+  m.querySelector('#dgRetGo').onclick=async()=>{const clr=m.querySelector('#dgRetClr').checked;A().closeModal();if(clr&&R(d)[rid0])await upd({[P0(d.id)+'r/'+rid0+'/c']:1});await A().set(['battle','dg'],null);await A().set(['scene'],'rp');notice(`⛩ ${d.n||'던전'}(으)로 돌아왔다${clr?` — 「${r.n||ty(r.t).k}」 클리어`:''}`);try{A().goView('rp')}catch(e){}}}
+
  /* 지도 연계 (10-26 망령): 지도 장소에 던전을 걸어 두고 그 핀에서 바로 진입 — rp_ui 의 지도 메뉴가 부른다 */
  function list(){return Object.entries(all()).map(([id,d])=>({id,n:d.n||'이름 없는 던전',rooms:Object.keys(R(d)).length,opts:startOptions(d)}))}
  async function enter(id,s,from){const d=all()[id];if(!d||!gm())return false;const o=startOptions(d);s=s&&R(d)[s]?s:(o[0]||[])[0];if(!s)return A().toast('던전에 방이 없다 — 던전 관리에서 만든다'),false;
   const p=P0(id);if(await upd({field:{mode:'dungeon',did:id,t:Date.now()},[p+'at']:s,[p+'r/'+s+'/s']:1,[p+'al']:0})){notice(`⚔ 던전 진입 — ${d.n||'던전'}${from?' ('+from+')':''}`);return true}return false}
  function nameOf(id){const d=all()[id];return d?(d.n||'이름 없는 던전'):''}
- return {render,rpSync,onState,on,cur,TY,LV,lvOf,list,enter,nameOf};
+ return {render,rpSync,onState,on,cur,TY,LV,lvOf,list,enter,nameOf,party,walkOf,startEnc};
 })();
