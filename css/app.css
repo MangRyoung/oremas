@@ -4174,3 +4174,16 @@ button.tag.solo:hover{border-color:var(--yel2)}
 .rpstage .dgrp-dock.big .dgrp-map{aspect-ratio:auto;height:100%;cursor:default}
 .rpstage .dgrp-dock .dg-node{cursor:pointer}
 @media(max-width:760px){.rpstage .dgrp-dock.big{left:6px;right:6px;top:84px;bottom:8px}}
+
+/* 10-26 망령: 채팅창 위 — 방 이름과 버튼(비우기 · 고정 · 로그 · 채팅 설정)을 한 줄에. 버튼은 아이콘만(이름은 마우스를 올리면) */
+.phone .ptitle{display:flex;align-items:center;gap:8px}
+.phone .ptitle .pname{flex:1;min-width:0;order:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.phone .ptitle .pname small{overflow:hidden;text-overflow:ellipsis}
+.phone .ptitle .plogs{order:1;flex:none;flex-wrap:nowrap;margin:0;gap:3px}
+.phone .ptitle .plog{font-size:14px;line-height:1;padding:5px 6px;min-width:30px}
+.phone .ptitle .plog .plt{display:none}
+.phone .ptitle .plog.on.new::after{content:'•';color:#e3101f;margin-left:1px}
+@media (max-width:760px){:root .side .phone .ptitle .pname{display:none}}
+.phone .ptitle{padding-top:4px!important;padding-bottom:5px!important}
+.phone .ptitle .pname small{display:inline!important;margin-left:6px;font-size:11px}
+html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
