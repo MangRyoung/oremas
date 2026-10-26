@@ -577,12 +577,14 @@ function splitLog(name,L,kind){const it=L.filter(x=>/^소지품/.test(x)),rest=L
 /* 10-25 망령: 채팅창은 처음 들어올 때만 맨 아래로. 그 뒤로는 끌어내리지 않는다 — 맨 아래를 보고 있을 때만 새 글을 따라가고, 위를 읽는 중이면 「↓ 새 글」만 띄운다. 내가 보낸 글은 따라간다 */
 var LOGNEW=false,LOGMINE=0;
 var LOGPIN=(()=>{try{return localStorage.getItem('om_logpin')==='1'}catch(e){return false}})();
+/* 같은 GM 이 두 창(또는 두 기기)에서 방을 열고 있으면 자동 공개 같은 배틀 로그가 거의 동시에 두 번 들어온다 (10-26 FFA 시험) — 같은 사람 · 같은 글 · 4초 안이면 한 번만 보인다 */
+function logDup(){const seen=[];return r=>{if(r.kind!=='battle'&&!(r.kind==='chat'&&(r.data||{}).bat))return true;const t=String((r.data||{}).t||'');if(!t)return true;const at=Date.parse(r.at)||0;const hit=seen.find(q=>q.t===t&&q.w===r.who&&Math.abs(at-q.at)<4000);seen.push({t,w:r.who,at});if(seen.length>6)seen.shift();return !hit}}
 function renderLog(scroll){
  const el=$('#log');if(!el)return;const top0=el.scrollTop,h0=el.scrollHeight;const near=h0-top0-el.clientHeight<48;
  if(!el._nb){el._nb=1;el.addEventListener('scroll',()=>{if(LOGNEW&&el.scrollHeight-el.scrollTop-el.clientHeight<48){LOGNEW=false;const b=el.querySelector('.lognew');if(b)b.remove()}},{passive:true});el.addEventListener('click',e=>{if(e.target.closest('.lognew')){LOGNEW=false;e.target.closest('.lognew').remove();el.scrollTop=el.scrollHeight}})}
  const cut=+((ST.state.rp||{}).logClearAt)||0;
  const SR=CHAN.cur==='o'?[]:selfRows().filter(r=>r.id>cut);
- el.innerHTML=(SR.length?ST.log.concat(SR).sort((a,b)=>a.id-b.id):ST.log).filter(r=>r.kind==='self'||(r.id>cut&&(CHAN.cur==='o'?isOoc(r):!isOoc(r)))).map(r=>{const d=r.data||{};const k=(r.kind==='chat'&&d.bat)?d.bat:r.kind;const t=fmtTime(r.at);
+ el.innerHTML=(SR.length?ST.log.concat(SR).sort((a,b)=>a.id-b.id):ST.log).filter(logDup()).filter(r=>r.kind==='self'||(r.id>cut&&(CHAN.cur==='o'?isOoc(r):!isOoc(r)))).map(r=>{const d=r.data||{};const k=(r.kind==='chat'&&d.bat)?d.bat:r.kind;const t=fmtTime(r.at);
   if(k==='self')return `<div class="msg sys self"><div class="bub">${esc(d.t)} <span class="selftag">나만 보임</span></div></div>`;
   if(k==='sys')return `<div class="msg sys"><div class="bub">${esc(d.t)}</div></div>`;
   if(k==='chat'&&d.clear)return `<div class="msg sys"><div class="bub">무대를 비웠다</div></div>`;
