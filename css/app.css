@@ -4423,3 +4423,14 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .trainer .tn .tnmore{display:inline-flex;gap:3px;margin-left:6px;vertical-align:middle}
 .trainer .tn .tnmini{padding:1px 6px;font-size:10px;min-height:0;line-height:1.4}
 .cardtg b{color:var(--yel,#ffd12e);margin-left:2px}.cardtg.empty b{color:#999}
+/* 10-26 망령: PT 칸을 오른쪽 지도 아래로 (왼쪽 스탠딩 · 대사창과 겹치던 것) — 지도 + PT 를 한 줄기로 쌓고, 대사창 위에서 멈춘다 */
+.rpstage .dgrp-dock{display:flex;flex-direction:column;gap:8px;max-height:calc(100% - 58px - var(--dlgh,30%) - 10px)}
+.rpstage .dgrp-dock>.dg-map3d{flex:none}
+.rpstage .dgrp-dock .dgrp-ptw{min-height:0;display:flex;flex-direction:column}
+.rpstage .dgrp-dock .dgrp-ptw:empty{display:none}
+.rpstage .dgrp-dock .dgrp-pt{width:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.rpstage .dgrp-dock .dgrp-pt .dgpt-body{flex:1;min-height:0;max-height:none;overflow:auto}
+.rpstage .dgrp-dock .dgrp-pt.min{width:auto;align-self:flex-end}
+.rpstage .dgrp-dock.min .dgrp-mapbtn{align-self:flex-end}
+.rpstage .dgrp-dock.big .dgrp-ptw{display:none}
+@media(max-width:760px){.rpstage .dgrp-dock{max-height:calc(100% - var(--dlgh,34%) - 16px)}}

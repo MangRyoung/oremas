@@ -173,7 +173,9 @@ window.OM_DG_UI=(()=>{
   if(isSafe(r)){const k=rkOf(r);ev.push(isGm?`<button type="button" data-rpdg="rest" ${r.ru&&!r.rmany?'disabled':''}>☗ ${k[1]}${r.ru&&!r.rmany?' (쉼)':''}</button>`:`<span class="dgev-t">☗ 휴식처 · ${k[1]}${r.ru&&!r.rmany?' (이미 쉼)':''}</span>`)}
   const evH=ev.length?`<div class="dgrp-ev">${ev.join('')}</div>`:'';
   const pt=ptHTML(d);const mn=ptMin();
-  return hudHTML(d,false)+enc+evH+(pt?`<div class="dgrp-pt${mn?' min':''}"><button type="button" class="dgpt-tog" data-rpdg="pt">PT ${mn?'▸':'▾'}</button><div class="dgpt-body">${pt}</div></div>`:'')}
+  return hudHTML(d,false)+enc+evH}
+ /* 10-26 망령: PT 칸이 왼쪽 위에서 왼쪽 스탠딩 · 대사창과 겹쳤다 — 오른쪽 지도 아래로 옮긴다 (지도를 접으면 위로 올라간다) */
+ function rpPtHTML(d){const pt=ptHTML(d);const mn=ptMin();return pt?`<div class="dgrp-pt${mn?' min':''}"><button type="button" class="dgpt-tog" data-rpdg="pt">PT ${mn?'▸':'▾'}</button><div class="dgpt-body">${pt}</div></div>`:''}
  function paintMap(root,d,isGm,hold,mini){const rs=R(d);const sig=JSON.stringify([d.id,isGm,d.at,DG.sel,rs,d.l,!!mini]);if(hold.mapSig===sig)return;hold.mapSig=sig;
   const m=mapBuild(d,isGm),iso=root.querySelector('.dg-iso'),fog=root.querySelector('.dg-fog');if(iso&&fog){const w=m.box[2],tl=iso.parentElement;const k=mini?1.5:1;tl.style.setProperty('--nm',(Math.max(15,w*.026)*k).toFixed(0)+'px');tl.style.setProperty('--ic',(Math.max(24,w*.034)*k).toFixed(0)+'px');iso.setAttribute('viewBox',m.vb);fog.setAttribute('viewBox',m.vb);iso.innerHTML=m.svg;fog.innerHTML=fogBuild(m.box,m.holes,d.id,isGm,m.asks,m.lab)}
   const seen=Object.values(rs).filter(r=>r.s).length;const cap=root.querySelector('.dg-map-cap');if(cap)setH(cap,`<b>MAP</b>${isGm?`방 ${Object.keys(rs).length}개 · 공개 ${seen}개`:`탐색한 방 ${seen}개`}`);return true}
@@ -196,13 +198,13 @@ window.OM_DG_UI=(()=>{
   const rs=R(d);if(!rs[d.at]){const s=d.st&&rs[d.st]?d.st:Object.keys(rs)[0];d.at=s||''}
   stage.classList.add('dgmode');
   let bg=stage.querySelector(':scope>.dgrp-bg');if(!bg){bg=document.createElement('div');bg.className='dgrp dgrp-bg';bg.innerHTML='<div class="dg-planes"></div>';stage.prepend(bg);RPH.frame=''}
-  let hud=stage.querySelector(':scope>.dgrp-hud');if(!hud){hud=document.createElement('div');hud.className='dgrp dgrp-hud';stage.append(hud);
-   hud.addEventListener('click',e=>{const cb=e.target.closest('[data-dgcard]');if(cb){e.stopPropagation();return useCard(cb.dataset.dgcard)}const w=e.target.closest('[data-walk]');if(w){e.stopPropagation();return walkPick(w.dataset.walk)}const b=e.target.closest('[data-rpdg]');if(!b)return;e.stopPropagation();
-    if(b.dataset.rpdg==='pt'){const mn=!ptMin();try{localStorage.setItem('om_dg_pt',mn?'min':'open')}catch(err){}hud._h='';rpSync(stage);return}
+  const hudClick=e=>{const cb=e.target.closest('[data-dgcard]');if(cb){e.stopPropagation();return useCard(cb.dataset.dgcard)}const w=e.target.closest('[data-walk]');if(w){e.stopPropagation();return walkPick(w.dataset.walk)}const b=e.target.closest('[data-rpdg]');if(!b)return;e.stopPropagation();
+    if(b.dataset.rpdg==='pt'){const mn=!ptMin();try{localStorage.setItem('om_dg_pt',mn?'min':'open')}catch(err){}const pw=stage.querySelector('.dgrp-ptw');if(pw)pw._h='';rpSync(stage);return}
     if(b.dataset.rpdg==='enc'){const dd=cur();if(dd)startEnc(dd)}
     if(b.dataset.rpdg==='clue'){const dd=cur();if(!dd)return;const rr=R(dd)[dd.at];if(rr&&rr.cs){DG.clueLocal=dd.at;DG.clueHide=0;RPH.clueSig='';rpSync(stage)}else if(gm())showClue(dd,dd.at)}
     if(b.dataset.rpdg==='sk'){const dd=cur();if(dd)skOffer(dd,dd.at)}
-    if(b.dataset.rpdg==='rest'){const dd=cur();if(dd)restHere(dd,dd.at)}})}
+    if(b.dataset.rpdg==='rest'){const dd=cur();if(dd)restHere(dd,dd.at)}};
+  let hud=stage.querySelector(':scope>.dgrp-hud');if(!hud){hud=document.createElement('div');hud.className='dgrp dgrp-hud';stage.append(hud);hud.addEventListener('click',hudClick)}
   let dock=stage.querySelector(':scope>.dgrp-dock');
   if(!dock){dock=document.createElement('div');const mm=mapMode()||(isNarrow()?'min':'');dock.className='dgrp dgrp-dock '+mm;
    dock.innerHTML=`<div class="dg-dock-tools"><button type="button" data-rpdg="min" title="지도 접기 / 펴기">▾</button><button type="button" data-rpdg="big" title="지도 크게 / 작게">⤢</button>${gm()?'<button type="button" data-rpdg="tab" title="던전 탭 (GM 조작)">🛠</button>':''}</div><button type="button" class="dgrp-mapbtn" data-rpdg="min" title="지도 펴기">MAP</button><div class="dg-map3d dgrp-map"><div class="dg-tilt"><svg class="dg-iso" preserveAspectRatio="xMidYMid meet"></svg><svg class="dg-fog" preserveAspectRatio="xMidYMid meet"></svg></div><div class="dg-map-cap"></div></div>`;
@@ -215,6 +217,7 @@ window.OM_DG_UI=(()=>{
     try{A().goView('dungeon')}catch(err){}})}
   paintFrame(bg.querySelector('.dg-planes'),d,RPH);
   setH(hud,rpHudHTML(d));
+  {let pw=dock.querySelector(':scope>.dgrp-ptw');if(!pw){pw=document.createElement('div');pw.className='dgrp-ptw';dock.append(pw);pw.addEventListener('click',hudClick)}setH(pw,rpPtHTML(d))}
   {const dl=stage.querySelector('#dlg');let h=18;if(dl&&dl.style.display!=='none'&&dl.offsetHeight){const sr=stage.getBoundingClientRect(),dr=dl.getBoundingClientRect();h=Math.max(18,Math.round(sr.bottom-dr.top))}stage.style.setProperty('--dlgh',h+'px')}
   if(!dock.classList.contains('min'))paintMap(dock,d,gm(),RPH,true);
   clueSync(stage,d)}
