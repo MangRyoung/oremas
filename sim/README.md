@@ -21,6 +21,8 @@ node bin/sim.js battle --party 카이 --wild factory_boss --n 200 --wn 2 [--log]
 node bin/sim.js run --scenario data/scenarios/base.json [--n 1000]
 node bin/sim.js run --dungeon factory --party 카이,미오,레온 --n 500 --adjust target=2,penScale=0.5 --policy cover=never
 node bin/sim.js combos --pool id:a,id:b,… --size 3 --dungeons x,y --n 100 --id 이름   후보 중 n명 조합 전부 × 던전들 (기록 탭에 표)
+node bin/sim.js gen --tier easy|normal|hard --seed 3 [--knobs battles=1,checks=4] [--save]   던전 하나 무작위 생성 (lib/gen.js)
+node bin/sim.js calib --tier easy,normal --base 'lv=-5,bossLv=-5' --grid 'battles=0,1,2;checks=3,4' --g 12 --t 20 --n 10   생성기 맞추기 → records/private/calib_*.json
 node bin/sim.js report                                   records/*.summary.json → report/index.html · report.md
 ```
 
@@ -41,6 +43,8 @@ node bin/sim.js report                                   records/*.summary.json 
 | `lib/wild.js` | 야생 무리 (`data/wild/species.json` 의 종 · `data/wild/*.json` 의 무리) → 『와일드』 ×1.25 · 『와일드 보스』 ×1.5 |
 | `lib/dungeon.js` | 던전 진행기 — 방 순서대로 체크 · 조우 · 휴식, 일행 상태(HP · 상태 · 지침 · 부상 · 이능 · 묘수 · 돌봄 · 4식6령 차감) 추적 |
 | `lib/report.js` | 기록 집계 → HTML · Markdown |
+| `lib/gen.js` | 던전 무작위 생성기 — 난이도(쉬움 · 보통 · 어려움) + 손잡이(사전 배틀 · 야생 수 · 레벨 · 휴식 · 체크 수 · 목표치 · 패널티 표 · 경계도). 가이드라인은 `records/feedback.md` 「던전 랜덤 생성 가이드라인」 |
+| `lib/calib.js` | 생성기 맞추기 — 손잡이 격자마다 던전 g개 × 3인 조합 t개 × n판 → 승률 · 경계도 단계별 승률 |
 | `lib/automove.js` | 기술이 빈 포켓몬에게 시험용 표준 기술 |
 | `lib/ko.js` | 기록 · 리포트의 한국어 이름표 (조정값 · 정책 · 던전 · 일행 → 읽는 말) |
 | `data/dungeons/*.json` | 던전 (방 · 체크 · 조우 · 휴식 · 경로) — **가이드라인에 맞춰 여기서 관리하고 웹툴로 옮긴다** |
@@ -69,6 +73,8 @@ node bin/sim.js report                                   records/*.summary.json 
 - `check`: `stat` 지시 · 육성 · 통솔 · 능력, `target` 5 · 7 · 9 · 11, `mode` `inou` 면 능력 A 이상은 이능으로, `step` ±1 단계 보정, `twice` 1 높은 값 · −1 낮은 값, `hint` 동료 조건(`type:물` · `any` · `none`), `pen.fail` · `pen.cost` 패널티(`dmg` 분수 · `st` 상태 · `rk` 랭크 · `oo` 4식 차감 · `oc` 6령 차감 · `memo`). 패널티 꼴은 웹툴 `skill_ui.js` 의 PEN_EX 와 같다.
 - `enc.pack` 은 `data/wild/` 의 무리 id. `boss:true` 면 보스 방으로 센다.
 - `enc.trainer` 는 제작기 스냅샷의 트레이너를 야생 무리로(`"id:xxxx"`). `pick:[순번…]` 으로 포켓몬을 고르고, `boss:true` 면 파트너(없으면 첫째)가 『와일드 보스』 ×1.5, 나머지 『와일드』 ×1.25.
+- `enc.mix` 는 여러 트레이너의 포켓몬을 섞은 야생 무리: `"mix":[{"trainer":"id:xxxx","pick":[0,1]},…]` 를 순서대로 이어 붙여 앞에서 `n` 체. `boss:true` 면 `bossAt` 번째(기본 0)가 『와일드 보스』 ×1.5, `raid: X` 면 그 보스가 「레이드 배틀 : X」. 보스 방은 조정값 `bossN`(적 수) · `raidX`(X, 0 = 없음) · `raidMode`(barrier · cap)가 파일 값보다 우선한다 — 무진 최종 보스 기본값 4체 · 레이드 2 / 6체 · 레이드 3 (10-27 망령).
+- 레이드 배틀: 기본은 웹툴 · 맵툴과 같은 **배리어식**(최대 HP × k/X 자리마다 배리어 — 닿으면 그 피해는 배리어에서 멈추고 깨짐, 같은 턴에 다음 공격은 그 아래로 들어감). `raidMode: cap` 은 포텐셜 글 그대로 **턴당 상한식**(한 턴에 HP 1/X 넘게 안 깎임). 깨진(상한에 닿은) 턴이 끝나면 「트리거 : 페이즈 체인지」 — 자신의 부정적인 상태 · 능력치 하락 초기화, 나와 있는 적 능력치 상승 초기화. 「레이드 배틀 : 4」 이상의 「3」 배수 턴 추가 행동은 아직 없다.
 - 비공개: 파일 이름을 `*.private.json` 으로(화면의 「비공개」 칸). 비공개 트레이너가 일행에 있거나 던전이 비공개면 기록은 `records/private/`, 리포트는 `report/private.html` — 전부 git 제외.
 - 기술이 빈 포켓몬은 `lib/automove.js` 가 시험용 표준 기술(자속 + 견제)을 채운다(제작기에 기술이 있으면 그쪽).
 - `rest`: breath(HP 1/4 · 지침 해제) · short(HP 1/2 · 상태 치유 · 부상 1단계 · 이능 · 돌봄 회복) · long(전부).
@@ -80,8 +86,9 @@ node bin/sim.js report                                   records/*.summary.json 
  "sweep":{"target":[-2,0,2]},"policy":{"cover":"fail"}}
 ```
 
-- `adjust`: `target` 목표치 가감 · `penScale` 패널티 대미지 배율 · `checkEvery` 2 면 체크를 하나 걸러 하나만 · `stepAll` 모든 체크 단계 보정 · `wildLv` 야생 레벨 가감 · `wildExtra` 야생 무리에 n 체 더.
+- `adjust`: `target` 목표치 가감 · `penScale` 패널티 대미지 배율 · `checkEvery` 2 면 체크를 하나 걸러 하나만 · `stepAll` 모든 체크 단계 보정 · `wildLv` 야생 레벨 가감 · `wildExtra` 야생 무리에 n 체 더 · `bossN` 보스방 적 수(mix) · `raidX` 레이드 X · `raidMode` barrier | cap.
 - `policy`: `who` best(그 자질 주사위가 가장 큰 사람) · round, `cover` never · fail(실패를 받침) · always(대가도 받침), `partner` match · any · none, `inou` yes · no.
+- `variants: [{id, name, adjust, policy}]` 를 주면 짝지은 변형만 돈다(예: 보스방 4체 · 레이드 2 / 6체 · 레이드 3). sweep 보다 우선.
 - `sweep` 에 적은 키는 값마다 변형을 만든다 (정책 키 cover · who · partner · inou 는 정책으로, 나머지는 조정으로).
 
 ## 약식이라 다루지 않는 것 (해석할 때 주의)
