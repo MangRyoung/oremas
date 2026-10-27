@@ -30,4 +30,10 @@ function wild(win,snap,sel,enc){enc=enc||{};const L=list(snap);const id=/^id:/.t
 function wildFrom(win,snap){const C={};return (sel,enc)=>{const k=sel+'|'+JSON.stringify(enc||{});if(!C[k])C[k]=wild(win,snap,sel,enc);return JSON.parse(JSON.stringify(C[k]))}}
 /* 일행 · 던전에 비공개가 섞였나 */
 function isPrivate(parties,dg){return !!((dg&&dg.private)||(parties||[]).some(p=>p.trainer&&p.trainer.priv))}
-module.exports={readSnap,list,pick,build,wild,wildFrom,isPrivate,SNAP};
+/* 지시 횟수: 기본은 협회식(assoc). 1인 기준(solo) 트레이너는 제작기 시트의 지시 체계 · 고른 ORDER · COMMAND(mkOrders.pick)를 웹툴(sheet_ui)과 같게 — 고르지 않은 항목은 0 회 */
+function orders(win,t){const OD=win.OM_ORDERS;const mo=t.solo&&t.mkOrders;if(!mo){Object.assign(t,OD.auto(t,'assoc',1));return t}
+ if(mo.preset==='manual'){Object.assign(t,OD.make(t,mo.tc,mo.base,{reset:true}));t.orderPreset=''}else Object.assign(t,OD.auto(Object.assign({},t,{orderPreset:mo.preset}),mo.preset,mo.base));
+ if(mo.type){let nt=t;for(const k in mo.type)nt=OD.setItemType(nt,k[0]==='o'?'order':'command',k.slice(2),mo.type[k]);Object.assign(t,{orderType:nt.orderType,orderCount:nt.orderCount})}
+ if(mo.pick){const oc=Object.assign({},t.orderCount||{});for(const k of Object.keys(oc)){const m=k.match(/^(order|command)_([a-z]+)$/);if(!m)continue;const L=m[1]==='order'?mo.pick.o:mo.pick.c;if(!L.includes(m[2]))oc[k]=0}t.orderCount=oc}
+ return t}
+module.exports={readSnap,list,pick,build,wild,wildFrom,isPrivate,orders,SNAP};
