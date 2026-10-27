@@ -164,7 +164,7 @@ async function runBattle(W,opt){
   turnsLog.push({turn,hp:hpMap()});
   if(!Object.values(C().mons).some(m=>m.side==='left'&&alive(m))||!Object.values(C().mons).some(m=>m.side==='right'&&alive(m)))break}
  const fb=C();const winner=!Object.values(fb.mons).some(m=>m.side==='right'&&alive(m))?'left':!Object.values(fb.mons).some(m=>m.side==='left'&&alive(m))?'right':'draw';
- const mo=m=>({id:m._oid||m.id,tid:m.tid,name:m.name,hp:Math.max(0,m.hp.cur),max:m.hp.max,states:Object.keys(m.states||{}).filter(k=>m.states[k]),dealt:0,taken:0});
+ const mo=m=>({id:m._oid||m.id,tid:m.tid,name:m.name,hp:Math.max(0,m.hp.cur),max:m.hp.max,states:Object.keys(m.states||{}).filter(k=>m.states[k]),item:m.item||'',dealt:0,taken:0});
  const to=sd=>Object.fromEntries(Object.values(fb.trainers).filter(t=>t.side===sd).map(t=>[t.id,{name:t.name,pol:POLS[t.id],used:used[t.id]||{order:0,command:0},oc:t.orderCount||{}}]));
  const raid=Object.values(fb.mons).filter(m=>m.raid&&+m.raid.phase>0).flatMap(m=>Array.from({length:+m.raid.phase},(_,i)=>({name:m.name,phase:i+1})));
  const orig=sd=>{const src=opt[sd];return (src.parties||[src]).flatMap(p=>p.mons||[])};
