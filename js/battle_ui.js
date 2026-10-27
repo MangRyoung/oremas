@@ -390,7 +390,7 @@ window.OM_BATTLE_UI=(()=>{
  /* 행동 순서 띠 (맵툴 print_turn_order 꼴: 초상 줄 + 「교대 등장」「통상 교대」「우선도」「순서값」 줄) + 지금 행동 중인 칸 */
  function orderBox(c){const b=c.b;if(!b.order||!b.order.length)return '';const cur=+b.orderIdx||0;
   const cap=o=>{if(!o.started)return '「교대 등장」';if(o.change)return '「통상 교대」';if(o.order!==20)return '「'+esc(orderValueName(o.order))+'」';return '「우선도 : '+(o.prio>0?'+':'')+o.prio+'」'};
-  return `<div class="orderbox"><div class="ohead"><span class="olab">행동 순서</span><span class="small dim">${(b.orderNotes||[]).length?esc((b.orderNotes||[]).join(' · ')):'스피드 순 · 초상을 누르면 그 차례로'}</span><span class="sp"></span>${c.mgr?`<button class="btn xs ghost" data-act="oprev">◀</button><span class="small">${Math.min(cur+1,b.order.length)} / ${b.order.length}</span><button class="btn xs pri" data-act="onext">다음 행동 ▶</button>`:''}</div>
+  return `<div class="orderbox"><div class="ohead"><span class="olab">행동 순서</span><span class="small dim">${(b.orderNotes||[]).length?esc((b.orderNotes||[]).join(' · ')):'스피드 순 · 초상을 누르면 그 차례로'}</span><span class="sp"></span>${c.mgr?`<button class="btn xs ghost" data-act="oprev">◀</button><span class="small">${Math.min(cur+1,b.order.length)} / ${b.order.length}</span><button class="btn xs pri" data-act="onext">다음 행동 ▶</button><button class="btn xs ghost" data-act="oresort" title="아직 행동하지 않은 포켓몬만 지금 스피드 · 랭크 · 마비 · 트릭룸 · 순풍 등으로 다시 줄 세운다 (이미 행동한 차례와 지금 차례는 그대로)">순서 다시 계산</button>`:''}</div>
    <div class="ostrip">${b.order.map((o,i)=>{const m=(b.mons||{})[o.mid]||{};const dead=m.hp&&m.hp.cur<=0;return `<div class="ocard ${o.side} ${i===cur?'now':i<cur?'done':''} ${dead?'dead':''}" data-act="ojump" data-i="${i}" title="${esc(o.name)} · 스피드 ${Math.round(o.speed)} · d${o.dice}"><span class="onum">${i+1}</span><div class="opt" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div><b class="onm">${esc(o.name)}</b><span class="ocap">${cap(o)}</span>${(()=>{const px=(((b.cmds||{})[m.tid]||{}).mons||{})[o.mid];if(px){if(px.move==='switch')return '<span class="omv">교대</span>';const mv=(px.move!==''&&px.move!=null)?MVS(m)[+px.move]:null;return mv?`<span class="omv">${typeChip(mv.typeEn)}${esc(mv.name)}</span>`:'<span class="omv dim">행동 없음</span>'}if(o.pursuitHit&&o.move)return `<span class="omv">${esc(o.move)}</span>`;return `<span class="omv dim" title="차례가 오면 공개">${i<=cur?'공개 대기':'?'}</span>`})()}<span class="osp">S ${Math.round(Math.abs(o.speed))} · d${o.dice}</span></div>`}).join('')}</div></div>`}
  function orderValueName(v){return ({40:'가장 먼저',30:'상대보다 먼저',20:'일반',10:'상대보다 나중에',0:'가장 나중에'})[v]||('순서 '+v)}
 
@@ -638,6 +638,7 @@ window.OM_BATTLE_UI=(()=>{
     if(skipped.length)A().sysLog(`${skipped.join(' · ')} — 쓰러져 있어 차례를 건너뛴다`,'battle');await A().set(['battle','orderIdx'],n);if((+c.b.phase||0)===2)await A().set(['battle','phase'],3);if(n<(c.b.order||[]).length)A().sysLog(`▶ ${c.b.order[n].name}의 행동`,'battle');else{if((+c.b.orderIdx||0)<n)A().sysLog('행동 순서 끝 — 턴 종료 처리','battle');if(c.b.endq&&c.b.endq.step)return endFlow();if(await askYes('행동이 모두 끝났다. 턴 마무리(턴 가장 마지막 → 턴 종료 → 턴 종료 이후)로 갈까?'))await endFlow()}return}
    case 'oprev':{await A().set(['battle','orderIdx'],Math.max(0,(+c.b.orderIdx||0)-1));return}
    case 'ojump':{if(!c.mgr)return;await A().set(['battle','orderIdx'],+d.i);return}
+   case 'oresort':return resortOrder();
    case 'turnend':return endFlow();
    case 'resetcmd':if(!confirm('공개된 지시와 준비 상태를 지울까?'))return;CMD={};await A().set(['battle','cmds'],{});await A().set(['ready'],{});return}}
 
@@ -1027,6 +1028,23 @@ window.OM_BATTLE_UI=(()=>{
   for(const m of iceUsed)await A().set(['battle','mons',m.id,'prioDown'],null);
   await A().set(['battle','order'],order);await A().set(['battle','orderIdx'],0);await A().set(['battle','orderNotes'],notes);await A().set(['battle','phase'],2);if(b.tstep)await A().set(['battle','tstep'],null);if(b.swPur)await A().set(['battle','swPur'],null);
   cutPhase('행동 순서','');for(const [o,v] of purs){const pm=b.mons[o.mid]||{};A().sysLog(`【따라가때리기】 ${o.name} 『${o.move}』 발동!${o.pursuitSrc?'\n선행 『'+o.pursuitSrc+'』에 묻어 있던 추격':''}\n${v.utHit?'「유턴」으로 빠지려는':'교대하려는'} ${v.name}을(를) 교대 전에 먼저 때린다${pursuitX2(((b.mons[o.mid]||{}).moves||[]).find(q=>q.name===o.move))?' → 위력 2배':''}`,'battle',{mid:o.mid,img:pm.image||''});setTimeout(()=>cutFire('m:'+o.mid,pm.image,`${o.name}의 따라가때리기!`,`『${o.move}』 → ${v.name}`,pm.side==='left'?'#1f6fd1':'#e3101f'),1600)}A().sysLog('행동 순서\n'+order.map((o,i)=>`${i+1}. ${o.name} (${o.change?'교대 · ':''}${o.order!==20?'순서 '+o.order+' · ':''}${o.prio?'우선 '+o.prio+' · ':''}스피드 ${Math.round(o.speed)}${order.some(q=>q!==o&&Math.round(q.speed)===Math.round(o.speed)&&(+q.prio||0)===(+o.prio||0)&&q.order===o.order)?' · 동속 주사위 '+o.dice:''})`).join('\n')+(spNotes.length?'\n'+spNotes.map(x=>'· '+x).join('\n'):''),'battle',{ord:order.map(o=>({n:o.name,img:(b.mons[o.mid]||{}).image||'',side:o.side,s:Math.round(o.speed),cap:!o.started?'교대 등장':o.change?'통상 교대':o.order!==20?orderValueName(o.order):'우선도 '+(o.prio>0?'+':'')+o.prio+(o.pursuitHit?' · 따라가때리기':'')}))})}
+
+ /* 10-27 망령: 행동 순서 다시 계산 — 턴 도중 바뀐 상황(스피드 랭크 · 마비 · 트릭룸 · 순풍 · 습원 · 스카프 · 날씨 특성)을 아직 행동하지 않은 차례에만 적용한다.
+    이미 행동한 차례(지금 칸 앞)와 지금 행동 중인 칸은 그대로 (행동 순서가 막 나온 2단계면 첫 칸부터). 순서값 · 우선도 · 교대 · 교대 등장은 처음 계산한 값 그대로, 같은 스피드는 처음 주사위 그대로 */
+ async function resortOrder(){const c=ctx();if(!c.mgr)return;const b=c.b;const O=(b.order||[]).map(o=>Object.assign({},o));if(!O.length)return;
+  const ph=+b.phase||0;const cur=+b.orderIdx||0;const st=ph===2?cur:cur+1;if(st>=O.length-1)return A().toast('다시 줄 세울 차례가 없다 (남은 차례가 하나 이하)');
+  const rest=O.slice(st);if(rest.some(o=>o.pursuitHit))return A().toast('따라가때리기가 걸린 차례가 남아 있어 다시 계산하지 않는다 — 초상을 눌러 손으로 옮긴다');
+  const f=fieldOf(b);const trick=((f.rooms||{})['트릭룸']||0)>0;
+  const ents=rest.map(o=>{const m=(b.mons||{})[o.mid];if(!m)return null;const objs=(f.objects||{})[m.side]||{};
+   return {slot:o.slot,mon:m,cmd:{change:!!o.change,priorityMap:{},orderMap:{[o.slot]:o.order}},prioMod:+o.prio||0,started:!!o.started,scarf:IT(m)==='구애스카프',tailwind:(objs['순풍']||0)>0,swamp:(objs['습원']||0)>0,spMul:spMulOf(m,f).v}}).filter(Boolean);
+  const rows=B().turnOrder(ents,{trick});const sp={};for(const r of rows)sp[r.mon.id]=r.speed;
+  const before=rest.map(o=>o.mid);
+  for(const o of rest)if(sp[o.mid]!=null)o.speed=sp[o.mid];
+  rest.sort((a,b2)=>((b2.started?1:0)-(a.started?1:0))||((b2.change?1:0)-(a.change?1:0))||(b2.order-a.order)||(b2.prio-a.prio)||(b2.speed-a.speed)||(b2.dice-a.dice));
+  const order=[...O.slice(0,st),...rest];const moved=rest.some((o,i)=>o.mid!==before[i]);
+  const notes=(b.orderNotes||[]).filter(x=>!/^「트릭룸」/.test(x));if(trick)notes.unshift('「트릭룸」이 시공간을 뒤틀었다! (스피드 역순)');
+  await A().set(['battle','order'],order);await A().set(['battle','orderNotes'],notes);
+  A().sysLog(`【행동 순서 다시 계산】 ${st+1}번째 차례부터${moved?'':' — 순서는 그대로'}\n`+rest.map((o,i)=>`${st+i+1}. ${o.name} (${o.change?'교대 · ':''}${o.order!==20?'순서 '+o.order+' · ':''}${o.prio?'우선 '+o.prio+' · ':''}스피드 ${Math.round(Math.abs(o.speed))}${trick?' · 트릭룸':''})`).join('\n'),'battle')}
 
  /* ----- 턴 종료 ----- */
  /* 턴 마무리: 「턴 가장 마지막」 → (턴 종료 처리) → 「턴 종료 이후」. 그 타이밍이 적힌 포텐셜(필드의 포켓몬 · 그 트레이너 고유)이 있으면 단계마다 발동을 묻고, 없으면 그냥 넘어간다 */

@@ -4574,3 +4574,6 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
  .stx-top{grid-template-columns:minmax(0,1fr)}
  .stx-grid{grid-template-columns:minmax(0,1fr)}
 }
+/* 10-27: 행동 순서 머리줄 — 좁은 화면에서 글자가 세로로 찢어지지 않게 (설명은 아래 줄로) */
+.orderbox .ohead .olab,.orderbox .ohead .btn,.orderbox .ohead>.small:not(.dim){white-space:nowrap;flex:none}
+@media (max-width:700px){.orderbox .ohead{flex-wrap:wrap;row-gap:6px}.orderbox .ohead>.small.dim{order:9;flex:1 1 100%}}
