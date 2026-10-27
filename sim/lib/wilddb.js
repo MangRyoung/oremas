@@ -57,6 +57,7 @@ function buildV2(o){o=o||{};const BT=require('./battle.js'),M=require('./mongen.
  const used=new Set(DX.list().map(d=>d.name));const orig=M.batch(rng,plan.orig,used,{W:o.W});const old=pickOld(rng,plan.old,new Set());
  const entries=orig.concat(old);entries.forEach((e,i)=>e.id='w'+String(i+1).padStart(3,'0'));
  let review=null;if(o.W){/* 실전 검토 · 개선 루프 (lib/review.js) */const RV=require('./review.js');review=RV.reviewAll(o.W,module.exports,M,entries,{n:o.reviewN||24,rounds:o.rounds==null?3:o.rounds,seed:(o.seed||27)+1});module.exports._cache=null}
+ if(o.W){/* 기술을 항목에 써 넣는다 (10-27 20시 망령 「기존 DB 는 기술을 안 넣어둔 거야?」) — 생성기가 고른 구성이 DB 의 실제 값이 되고, 화면에서 고칠 수 있다. movesAuto:true 로 출처 표시 */module.exports.clearCache();const AM=require('./automove.js');for(const e of entries){try{const r=buildEntry(o.W,Object.assign({},e,{moves:[]}),{});e.moves=(r.mon.moves||[]).map(m=>m.name);e.movesAuto=true;e.sock=AM.sockInfo(o.W,r.mon)}catch(x){}}module.exports.clearCache()}
  const n=entries.length;const cnt={};for(const e of entries)cnt[e.origin+' '+e.pride]=(cnt[e.origin+' '+e.pride]||0)+1;
  return {v:2,seed:o.seed||27,review,source:'오리지널 = lib/mongen.js(제작기 customCalc 검증) · 올드 = 제작기 도감(MKM_DB.old)',plan,count:cnt,habitats:HAB,coverage:M.coverage(entries),entries}}
 /* 화면 · 생성기용: v1(sp 만) · v2 모두 타입 · 종족치가 채워진 꼴로 */

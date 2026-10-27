@@ -6,7 +6,7 @@
 const fs=require('fs'),path=require('path');
 const DIR=path.resolve(__dirname,'..','data','wild');
 function readJson(f){return JSON.parse(fs.readFileSync(f,'utf8'))}
-function species(){const f=path.join(DIR,'species.json');return fs.existsSync(f)?readJson(f):{}}
+function species(){return {}}/* 10-27 20시: 시험용 가상 종은 뺐다(망령). 무리는 야생 DB(db.json) 항목만 */
 function packs(){const out={};for(const f of fs.readdirSync(DIR)){if(f==='species.json'||f==='db.json'||!f.endsWith('.json'))continue;const p=readJson(path.join(DIR,f));if(!Array.isArray(p.mons))continue;/* 야생 DB 등 무리가 아닌 파일 */out[p.id||f.replace(/\.json$/,'')]=p}return out}
 function build(W,pack,opts){opts=opts||{};const SP=species();const rank=(pack.lv&&pack.lv.육성)||opts.rank||'C';
  const tdoc={id:'wild_'+(pack.id||'x'),data:{name:pack.name||'야생',kind:'npc',ranks:{육성:rank,지시:'D',통솔:'D',능력:'D'},pids:[]}};
@@ -14,7 +14,7 @@ function build(W,pack,opts){opts=opts||{};const SP=species();const rank=(pack.lv
  let DBL=null;const dbEntry=id=>{if(!DBL){const WB=require('./wilddb.js');DBL=WB.fullV2()}return DBL.find(e=>e.id===id||e.name===id)};
  const mons=(pack.mons||[]).map((m,i)=>{
   if(m.db){/* 야생 DB(data/wild/db.json) 항목 — 『와일드』 ×1.25 · boss ×1.5 는 같다 */const e=dbEntry(m.db);if(!e)throw new Error('야생 DB 에 없음: '+m.db);const WB=require('./wilddb.js');const r=WB.buildEntry(W,Object.assign({},e,{name:m.name||e.name}),{lvAdd:+(m.dist||0)+(+pack.lvAdd||0),boss:!!m.boss});const x=r.mon;x.tid=tr.id;const k=m.boss?1.5:1.25;x.mod={attack:k,defense:k,specialattack:k,specialdefense:k,speed:k};x.boss=!!m.boss;x.role=m.boss?'와일드 보스':'와일드';return x}
-  const sp=SP[m.sp];if(!sp)throw new Error('야생 종 없음: '+m.sp);const base=sp.base.slice();if(m.boss)base[0]+=15;
+  throw new Error('무리 「'+pack.name+'」 에 야생 DB 가 아닌 항목이 있어요 (가상 종은 빠졌어요): '+JSON.stringify(m));const base=sp.base.slice();if(m.boss)base[0]+=15;
   const doc={id:`${tdoc.id}_${i}`,data:{name:m.name||sp.name,t1:sp.types[0]||'-',t2:sp.types[1]||'-',base,ability:sp.ability||'',item:'',moves:(m.moves||sp.moves||[]).map(n=>({name:n})),pride:m.boss?'B':(sp.pride||'C'),dist:+(m.dist||0)+(+pack.lvAdd||0),pots:[]}};
   const x=W.OM_IMPORT.pokemon(doc,tr);const k=m.boss?1.5:1.25;x.mod={attack:k,defense:k,specialattack:k,specialdefense:k,speed:k};x.boss=!!m.boss;x.role=m.boss?'와일드 보스':'와일드';return x});
  return {trainer:tr,mons}}
