@@ -91,9 +91,24 @@ tr.hl td{background:var(--accent-soft)!important}
 .tyd{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:4px 18px}.tyd .r{display:grid;grid-template-columns:52px minmax(0,1fr) 92px;gap:6px;align-items:center;font-size:12px}.tyd .bar2{height:12px;background:var(--sunk2);border-radius:4px;position:relative;overflow:visible}.tyd .bar2 i{position:absolute;top:0;bottom:0;left:0}.tyd .bar2 .ref{position:absolute;top:-3px;bottom:-3px;width:2px;background:var(--ink);opacity:.55}.tyd .v{font-family:var(--mono);color:var(--muted);white-space:nowrap}
 #repFrame{width:100%;height:70vh;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
 .rname{font-weight:700}.rid{font:11px var(--mono);color:var(--faint)}
+/* ===== 생성기 탭 (10-28 망령 「야생/스킬/특성/던전 생성 UI 개선 · 조건 설정 · 마음에 드는 건 DB 로」) ===== */
+.gsub{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}.gsub button{border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:6px 14px;border-radius:999px;cursor:pointer;font:600 13px var(--body)}.gsub button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.glay{display:grid;grid-template-columns:320px minmax(0,1fr);gap:12px;align-items:start}@media(max-width:900px){.glay{grid-template-columns:minmax(0,1fr)}}
+.gcond{position:sticky;top:8px}.gcond .card{margin:0}.gcond .gf{display:flex;flex-direction:column;gap:3px;margin-bottom:10px}.gcond .gf>b{font-size:12px;color:var(--muted);font-weight:700}
+.gchips.gpt{max-height:180px;overflow:auto;border:1px solid var(--line,#e3e6ec);border-radius:8px;padding:6px}.gchips{display:flex;flex-wrap:wrap;gap:4px}.gchips .chip{font-size:12px;padding:2px 9px}.gchips .tc{cursor:pointer;opacity:.38;transition:opacity .1s}.gchips .tc.on{opacity:1;outline:2px solid var(--ink);outline-offset:1px}
+.gres{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
+.gcard{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow);min-width:0;position:relative}.gcard.pick{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
+.gcard h4{margin:0;font:17px var(--display);display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding-right:28px}.gcard .gck{position:absolute;top:9px;right:10px;width:18px;height:18px;accent-color:var(--accent);cursor:pointer}
+.gdesc{white-space:pre-line;font-size:12.5px;background:var(--sunk);border-radius:7px;padding:6px 8px;line-height:1.55}
+.gbad{display:inline-block;font-size:11px;font-weight:700;padding:1px 7px;border-radius:5px;background:var(--sunk2);color:var(--muted)}.gbad.to{background:var(--blue-soft);color:var(--blue)}.gbad.e1{background:var(--ok-soft);color:var(--ok)}.gbad.e0{background:var(--warn-soft);color:var(--warn)}.gbad.e2{background:#f7ecd0;color:#8a6200}
+.gbar{display:grid;grid-template-columns:28px 1fr 30px;gap:2px 6px;align-items:center;font-size:11px}.gbar i{display:block;height:6px;border-radius:3px;background:var(--g-c)}.gbar span{color:var(--muted)}.gbar em{font-style:normal;font-family:var(--mono);text-align:right}
+.gbulk{position:sticky;bottom:8px;z-index:2;display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:var(--ink);color:var(--bg);padding:8px 12px;border-radius:10px;margin-top:10px;box-shadow:var(--shadow)}.gbulk[hidden]{display:none}.gbulk .b{border-color:transparent}
+.gdb{margin-top:14px}.gdb table td{white-space:normal}.gempty{padding:24px;text-align:center;color:var(--faint);border:1px dashed var(--line);border-radius:10px}
+.gpk{display:flex;flex-wrap:wrap;gap:8px}.gpk .gcard{flex:1 1 220px}.gwin{font:28px var(--display)}
+.gstep{display:inline-grid;grid-template-columns:auto 52px;gap:4px 8px;align-items:center;font-size:12.5px}
 </style></head><body>
 <header><h1>망켓몬 던전 · 스킬 체크 시뮬레이터<small>약식 · 가이드라인 자료 수집용</small></h1><span class="small" id="snapInfo">…</span><span class="sp"></span><button class="b sm" id="btnFetch" title="제작기 공유 DB 에서 트레이너 · 포켓몬을 받아 data/snapshot.json 으로">제작기에서 받기</button><button class="b sm" id="btnReload">새로고침</button></header>
-<nav id="nav"><button data-t="run" class="on">돌리기</button><button data-t="pt">일행</button><button data-t="dg">던전</button><button data-t="auto">자동 생성</button><button data-t="wild">야생</button><button data-t="rec">기록 · 리포트</button><button data-t="fb">피드백 · 인수인계</button><button data-t="tbl">체크 확률표</button></nav>
+<nav id="nav"><button data-t="run" class="on">돌리기</button><button data-t="pt">일행</button><button data-t="dg">던전</button><button data-t="gen">생성기</button><button data-t="auto">자동 생성</button><button data-t="wild">야생</button><button data-t="rec">기록 · 리포트</button><button data-t="fb">피드백 · 인수인계</button><button data-t="tbl">체크 확률표</button></nav>
 <main>
 <section id="t-run">
  <div class="grid">
@@ -110,6 +125,10 @@ tr.hl td{background:var(--accent-soft)!important}
  </div>
  <div class="card" id="runOut" hidden></div>
  <div class="card"><details><summary><b>배틀만 따로</b> <span class="small">일행 vs 야생 무리 N 판 · 첫 판 로그</span></summary><div class="row" style="margin-top:8px"><label class="f">야생 무리<select id="bPack"></select></label><label class="f">판 수<input type="number" id="bN" value="100"></label><button class="b" id="btnBattle">배틀 돌리기</button><span class="small" id="bMsg"></span></div><div class="log" id="bLog" hidden></div></details></div>
+</section>
+<section id="t-gen" hidden>
+ <div class="gsub" id="gSub"><button data-g="abil" class="on">✨ 특성</button><button data-g="mon">🐾 야생 포켓몬</button><button data-g="pack">🎲 즉석 무리</button><button data-g="chk">🎯 스킬 체크</button><button data-g="dg">🗺 던전</button></div>
+ <div class="glay"><aside class="gcond"><div class="card" id="gCond"></div></aside><div id="gOut"></div></div>
 </section>
 <section id="t-auto" hidden>
  <div class="card col"><h3>던전 자동 생성 <span class="small">10-27 가이드라인이 기본값 · 자세한 규칙은 docs/던전_자동생성.md</span></h3>
@@ -187,7 +206,7 @@ const ratioCol=r=>r>=.9?'var(--g-aa)':r>=.75?'var(--g-a)':r>=.6?'var(--g-b)':r>=
 const HUE=['#C8362B','#2B5FB4','#1E8A62','#B07A00','#7A4FB4','#C4651A','#2A8C9C'];const hcol=s=>{let h=0;for(const c of String(s))h=(h*31+c.charCodeAt(0))>>>0;return HUE[h%HUE.length]};
 try{const t=localStorage.getItem('sim_tab');if(t&&$('#t-'+t))showTab(t)}catch(e){}
 $('#nav').onclick=e=>{const b=e.target.closest('button');if(!b)return;showTab(b.dataset.t)};
-function showTab(t){$$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));$$('main>section').forEach(s=>s.hidden=s.id!=='t-'+t);try{localStorage.setItem('sim_tab',t)}catch(e){}}
+function showTab(t){if(t==='gen')setTimeout(()=>window.genInit&&genInit(),0);$$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));$$('main>section').forEach(s=>s.hidden=s.id!=='t-'+t);try{localStorage.setItem('sim_tab',t)}catch(e){}}
 async function loadState(){S=await api('state');$('#snapInfo').textContent=(S.snapshot.sample?'시험용 파티 (제작기 스냅샷 없음 — 「제작기에서 받기」)':'제작기 스냅샷 '+S.snapshot.file+' · '+String(S.snapshot.at||'').slice(0,16).replace('T',' '))+' · 트레이너 '+S.trainers.length;
  renderTrainers();renderPt();renderDgSel();renderPacks();renderWdb();renderRecords();renderCombos();renderJournal();$('#fbText').value=S.feedback;renderTable();
  $('#bPack').innerHTML=Object.values(S.wild.packs).map(p=>`<option value="${esc(p.id)}">${esc(p.name)} (${p.mons.length}체)</option>`).join('')}
@@ -465,4 +484,117 @@ function agRender(){const d=AG.dungeon,out=$('#agOut');out.hidden=false;const ke
  const doSave=async w=>{const dg=Object.assign({},AG.dungeon,{id:$('#agId').value.trim()});try{const r=await api('autoSave',{dungeon:dg,webtool:w,sim:!w});$('#agSaveMsg').textContent='저장: '+(r.sim||r.webtool);if(!w)await loadState()}catch(e){toast('오류: '+e.message)}};
  $('#agSave').onclick=()=>doSave(false);$('#agSaveW').onclick=()=>doSave(true);
  $('#agCopy').onclick=async()=>{try{await navigator.clipboard.writeText(JSON.stringify(AG.webtool,null,1));toast('복사했어요')}catch(e){toast('복사 실패 — 아래 미리 보기에서 직접 복사')}}}
+/* ===== 생성기 탭 (10-28) — 조건을 고르고 뽑아 보고, 마음에 드는 것만 시뮬 DB 로 ===== */
+const GN={tab:'abil',meta:null,res:{},pick:{},c:{abil:{types:[],kind:'',to:'',fams:[],engine:'any',n:8},mon:{steps:['C','C+','B'],hab:'',kind:'',types:[],orig:45,n:6,review:false},pack:{hab:'',steps:['C','C','B'],boss:true,lvAdd:0,n:3,tn:60},chk:{tier:'normal',theme:'',n:4,stats:[],hint:1,lo:'',hi:''},dg:{tier:'normal',theme:'',shape:'',battles:'',checks:'',side:'',verify:false,fit:false,seed:''}}};
+try{const o=JSON.parse(localStorage.getItem('sim_gen')||'null');if(o)for(const k in o)Object.assign(GN.c[k]||{},o[k])}catch(e){}
+const gSave=()=>{try{localStorage.setItem('sim_gen',JSON.stringify(GN.c))}catch(e){}};
+async function genInit(){if(!S){setTimeout(genInit,300);return}if(!GN.meta){try{GN.meta=await api('genMeta')}catch(e){$('#gOut').innerHTML=`<div class="gempty">생성기 정보를 못 읽었어요: ${esc(e.message)}</div>`;return}}gTab(GN.tab)}
+$('#gSub').onclick=e=>{const b=e.target.closest('[data-g]');if(b)gTab(b.dataset.g)};
+function gTab(t){GN.tab=t;$$('#gSub button').forEach(b=>b.classList.toggle('on',b.dataset.g===t));gCond();gOut()}
+const gTypeChips=(cur,max)=>`<div class="gchips" data-gtypes="${max}">${TYPES.map(k=>`<span class="tc ${cur.includes(k)?'on':''}" data-ty="${esc(k)}" style="background:${tcol(k).bg};color:${tcol(k).fg}">${esc(k)}</span>`).join('')}</div>`;
+const gChk=(name,list,cur)=>`<div class="gchips" data-gmulti="${name}">${list.map(([v,l])=>`<span class="chip ${cur.includes(v)?'on':''}" data-v="${esc(v)}">${esc(l)}</span>`).join('')}</div>`;
+const gSel=(id,list,cur)=>`<select id="${id}" class="inp">${list.map(([v,l])=>`<option value="${esc(v)}" ${String(cur)===String(v)?'selected':''}>${esc(l)}</option>`).join('')}</select>`;
+const gParty=()=>`<div class="gf"><b>일행 (목표치 · 시험에 써요) — ${sel.size}명</b><div class="gchips gpt">${S.trainers.slice().sort((a,b)=>(sel.has(b.id)?1:0)-(sel.has(a.id)?1:0)).map(t=>`<span class="chip ${sel.has(t.id)?'on':''}" data-gpt="${esc(t.id)}">${esc(t.name)}</span>`).join('')}</div></div>`;
+const TIERS=[['easy','쉬움'],['normal','보통'],['hard','어려움']];
+function gCond(){const M=GN.meta,t=GN.tab,c=GN.c[t];let h='';
+ if(t==='abil')h=`<h3 style="margin:0 0 10px">✨ 오리지널 특성</h3>
+  <div class="gf"><b>타입 (최대 2 · 비우면 무작위)</b>${gTypeChips(c.types,2)}</div>
+  <div class="gf"><b>역할형</b>${gSel('gKind',[['','무작위']].concat(M.kinds.map(k=>[k,k])),c.kind)}</div>
+  <div class="gf"><b>TO (특성 비용)</b>${gSel('gTo',[['','섞어서'],['0.5','0.5'],['1','1 — C~B+ 기준'],['1.5','1.5 — A 기준'],['2','2'],['2.5','2.5']],c.to)}</div>
+  <div class="gf"><b>효과 꼴 (비우면 전부)</b>${gChk('fams',Object.entries(M.fams),c.fams)}</div>
+  <div class="gf"><label class="chk"><input type="checkbox" id="gEng" ${c.engine==='read'?'checked':''}> 시뮬이 읽는 것만 (자동 · 피격 반응 · 시뮬 GM)</label></div>
+  <div class="row"><label class="f">개수<input type="number" id="gN" min="1" max="40" value="${c.n}"></label><span class="sp"></span><button class="b pri" id="gGo">뽑기</button></div>`;
+ if(t==='mon')h=`<h3 style="margin:0 0 10px">🐾 야생 포켓몬</h3>
+  <div class="gf"><b>등급 계단 (고른 것을 돌아가며)</b>${gChk('steps',M.steps.map(s=>[s,s]),c.steps)}</div>
+  <div class="gf"><b>서식지</b>${gSel('gHab',[['','아무 데나']].concat(M.habs.map(h=>[h,h+' — '+M.hab[h].join('·')])),c.hab)}</div>
+  <div class="gf"><b>타입 (최대 2 · 서식지보다 먼저)</b>${gTypeChips(c.types,2)}</div>
+  <div class="gf"><b>역할형</b>${gSel('gKind',[['','무작위']].concat(M.kinds.map(k=>[k,k])),c.kind)}</div>
+  <div class="gf"><b>오리지널 특성 비율 <span class="mono" id="gOrigV">${c.orig}%</span></b><input type="range" id="gOrig" min="0" max="100" step="5" value="${c.orig}"><span class="small">특성 DB 에 맞는 게 있으면 그걸 먼저 써요 (지금 ${M.abilDb.length}개)</span></div>
+  <div class="gf"><label class="chk"><input type="checkbox" id="gRev" ${c.review?'checked':''}> 실전 검토 (같은 등급과 1:1 · 조금 느려요)</label></div>
+  <div class="row"><label class="f">개수<input type="number" id="gN" min="1" max="30" value="${c.n}"></label><span class="sp"></span><button class="b pri" id="gGo">뽑기</button></div>`;
+ if(t==='pack')h=`<h3 style="margin:0 0 10px">🎲 즉석 무리 <span class="small">DB 와 따로 — 눌러 보고 버려도 돼요</span></h3>
+  <div class="gf"><b>서식지</b>${gSel('gHab',[['','아무 데나']].concat(M.habs.map(h=>[h,h])),c.hab)}</div>
+  <div class="gf"><b>마리별 계단 (순서대로)</b><div class="row">${[0,1,2,3,4,5].map(i=>`<select class="inp" data-gstep="${i}">${[['','—']].concat(M.steps.map(s=>[s,s])).map(([v,l])=>`<option value="${v}" ${(c.steps[i]||'')===v?'selected':''}>${l}</option>`).join('')}</select>`).join('')}</div><span class="small">— 는 그 마리 없음</span></div>
+  <div class="row"><label class="chk"><input type="checkbox" id="gBoss" ${c.boss?'checked':''}> 가장 센 한 마리를 보스로 (×1.5)</label><label class="f">야생 Lv<input type="number" id="gLv" step="5" value="${c.lvAdd}"></label></div>
+  ${gParty()}
+  <div class="row"><label class="f">시험 판 수<input type="number" id="gTn" min="10" max="500" step="10" value="${c.tn}"></label><span class="sp"></span><button class="b pri" id="gGo">뽑기</button></div>`;
+ if(t==='chk')h=`<h3 style="margin:0 0 10px">🎯 스킬 체크</h3>
+  <div class="gf"><b>난이도 띠 (대가 포함 성공률)</b>${gSel('gTier',TIERS.map(([v,l])=>[v,l+' '+Math.round(M.bands[v][0]*100)+'~'+Math.round(M.bands[v][1]*100)+'%']),c.tier)}<div class="row"><span class="small">직접:</span><input type="number" id="gLo" class="inp" placeholder="최소%" value="${c.lo}" style="width:76px"><input type="number" id="gHi" class="inp" placeholder="최대%" value="${c.hi}" style="width:76px"></div></div>
+  <div class="gf"><b>테마 (문구 · 타입 조건)</b>${gSel('gTheme',[['','무작위']].concat(M.themes.map(x=>[x,x])),c.theme)}</div>
+  <div class="gf"><b>자질 (비우면 넷 다)</b>${gChk('stats',STATS.map(s=>[s,s]),c.stats)}</div>
+  <div class="row"><label class="f">체크 수<input type="number" id="gN" min="1" max="8" value="${c.n}"></label><label class="f">타입 조건 수<input type="number" id="gHint" min="0" max="8" value="${c.hint}"></label></div>
+  ${gParty()}
+  <div class="row"><span class="sp"></span><button class="b pri" id="gGo">뽑기</button></div>`;
+ if(t==='dg')h=`<h3 style="margin:0 0 10px">🗺 던전</h3>
+  <div class="gf"><b>난이도</b>${gSel('gTier',[['easy','쉬움 — 승률 약 8할'],['normal','보통 — 약 6할'],['hard','어려움 — 약 3할']],c.tier)}</div>
+  <div class="gf"><b>테마</b>${gSel('gTheme',[['','무작위']].concat(M.themes.map(x=>[x,x])),c.theme)}</div>
+  <div class="gf"><b>지도 모양</b>${gSel('gShape',[['','무작위'],['곧은길','곧은길'],['꺾인길','꺾인길'],['구불길','구불길']],c.shape)}</div>
+  <div class="row"><label class="f">사전 배틀<input type="number" id="gBat" min="0" max="4" placeholder="기본" value="${c.battles}"></label><label class="f">체크 수<input type="number" id="gChecks" min="0" max="6" placeholder="3~5" value="${c.checks}"></label><label class="f">곁방<input type="number" id="gSide" min="0" max="3" placeholder="0~2" value="${c.side}"></label></div>
+  <div class="gf" style="margin-top:8px"><label class="chk"><input type="checkbox" id="gVer" ${c.verify?'checked':''}> 검증 루프 — 시험 일행으로 돌려 목표 승률 ±15% 에 드는 것만 (수십 초)</label><label class="chk"><input type="checkbox" id="gFit" ${c.fit?'checked':''}> 체크 목표를 아래 일행에 맞추기</label></div>
+  ${c.fit?gParty():''}
+  <div class="row"><label class="f">씨앗<input type="number" id="gSeed" placeholder="무작위" value="${c.seed}" style="width:110px"></label><span class="sp"></span><button class="b pri" id="gGo">뽑기</button></div>`;
+ const box=$('#gCond');box.innerHTML=h;
+ box.onclick=e=>{const ty=e.target.closest('[data-ty]');if(ty){const host=ty.parentElement,max=+host.dataset.gtypes,v=ty.dataset.ty;const L=c.types;const i=L.indexOf(v);if(i>=0)L.splice(i,1);else{L.push(v);while(L.length>max)L.shift()}gSave();return gCond()}
+  const mc=e.target.closest('[data-gmulti] [data-v]');if(mc){const k=mc.parentElement.dataset.gmulti,v=mc.dataset.v;const L=c[k];const i=L.indexOf(v);if(i>=0)L.splice(i,1);else L.push(v);gSave();return gCond()}
+  const pt=e.target.closest('[data-gpt]');if(pt){toggleSel(pt.dataset.gpt);return gCond()}
+  if(e.target.closest('#gGo'))return gGo()};
+ box.onchange=e=>{gRead();if(e.target.id==='gFit')gCond()};const o=$('#gOrig');if(o)o.oninput=()=>{$('#gOrigV').textContent=o.value+'%'}}
+function gRead(){const t=GN.tab,c=GN.c[t];const v=id=>{const e=$('#'+id);return e?e.value:undefined};const ck=id=>{const e=$('#'+id);return e?e.checked:false};
+ if(t==='abil'){c.kind=v('gKind');c.to=v('gTo');c.engine=ck('gEng')?'read':'any';c.n=+v('gN')||8}
+ if(t==='mon'){c.hab=v('gHab');c.kind=v('gKind');c.orig=+v('gOrig');c.review=ck('gRev');c.n=+v('gN')||6}
+ if(t==='pack'){c.hab=v('gHab');c.steps=$$('[data-gstep]').map(s=>s.value);c.boss=ck('gBoss');c.lvAdd=+v('gLv')||0;c.tn=+v('gTn')||60}
+ if(t==='chk'){c.tier=v('gTier');c.theme=v('gTheme');c.n=+v('gN')||4;c.hint=+v('gHint');c.lo=v('gLo');c.hi=v('gHi')}
+ if(t==='dg'){c.tier=v('gTier');c.theme=v('gTheme');c.shape=v('gShape');c.battles=v('gBat');c.checks=v('gChecks');c.side=v('gSide');c.verify=ck('gVer');c.fit=ck('gFit');c.seed=v('gSeed')}
+ gSave()}
+async function gGo(){gRead();const t=GN.tab,c=GN.c[t];const btn=$('#gGo');btn.disabled=true;const old=btn.textContent;btn.textContent='뽑는 중…';
+ try{let r;
+  if(t==='abil')r=await api('genAbil',{n:c.n,types:c.types,kind:c.kind,to:c.to,fams:c.fams,engine:c.engine});
+  if(t==='mon')r=await api('genMons',{n:c.n,steps:c.steps,hab:c.hab,kind:c.kind,types:c.types,origAbilRate:c.orig/100,review:c.review});
+  if(t==='pack'){const st=c.steps.filter(Boolean);if(!st.length)throw new Error('마리별 계단을 하나 이상 골라요');r=await api('genPack',{n:st.length,steps:st,hab:c.hab,boss:c.boss,lvAdd:c.lvAdd});r.test=null}
+  if(t==='chk'){const band=c.lo!==''&&c.hi!==''?[+c.lo,+c.hi]:undefined;r=await api('genChecks',{party:[...sel],tier:c.tier,theme:c.theme,n:c.n,hintTyped:c.hint,stats:c.stats,band})}
+  if(t==='dg'){const kn={};if(c.battles!=='')kn.battles=+c.battles;if(c.checks!=='')kn.checks=+c.checks;r=await api('genDungeon',{tier:c.tier,theme:c.theme,shape:c.shape,sideRooms:c.side,knobs:kn,verify:c.verify,fitParty:c.fit,party:[...sel],seed:c.seed})}
+  GN.res[t]=r;GN.pick[t]=new Set();gOut()}
+ catch(e){toast('오류: '+e.message)}finally{btn.disabled=false;btn.textContent=old}}
+const engCls=e=>/^자동|^피격|^시뮬/.test(e)?(/일부/.test(e)?'e2':'e1'):'e0';
+const gBase=b=>{const L=['HP','공','방','특공','특방','스'];return `<div class="gbar">${(b||[]).map((v,i)=>`<span>${L[i]}</span><i style="width:${Math.min(100,v/1.6)}%;background:${gradeCol(v)}"></i><em>${v}</em>`).join('')}</div>`};
+function gOut(){const t=GN.tab,r=GN.res[t],P=GN.pick[t]||(GN.pick[t]=new Set()),out=$('#gOut');let h='';
+ if(!r)h=`<div class="gempty">왼쪽에서 조건을 고르고 「뽑기」를 눌러요.${t==='chk'||t==='pack'?'<br>일행을 먼저 골라야 해요.':''}</div>`;
+ else if(t==='abil')h=`<div class="gres">${r.list.map((a,i)=>`<div class="gcard ${P.has(i)?'pick':''}"><input type="checkbox" class="gck" data-gp="${i}" ${P.has(i)?'checked':''}><h4>${esc(a.name)} <span class="gbad to">TO ${a.to}</span></h4>
+   <div class="row" style="gap:4px">${(a.types||[]).map(tchip).join('')}<span class="gbad ${engCls(a.engine)}">${esc(a.engine)}</span><span class="small">${esc(a.kind||'')}</span></div>
+   <div class="gdesc">${esc(a.desc)}</div><div class="small">기준 특성: ${esc(a.anchors.join(' · '))}${a.note?' — '+esc(a.note):''}</div></div>`).join('')||'<div class="gempty">이 조건에 맞는 틀이 없어요 — TO 나 꼴을 바꿔 봐요</div>'}</div>`;
+ else if(t==='mon')h=`<div class="gres">${r.list.map((m,i)=>`<div class="gcard ${P.has(i)?'pick':''}"><input type="checkbox" class="gck" data-gp="${i}" ${P.has(i)?'checked':''}><h4>${esc(m.name)} ${rk('',m.pride)}</h4>
+   <div class="row" style="gap:4px">${m.types.map(tchip).join('')}<span class="small">${esc(m.kind)} · 계산 ${m.ct} · ${esc((m.hab||[]).join('·'))}</span></div>${gBase(m.base)}
+   <div><b style="font-size:13px">${esc(m.ability)}</b> ${m.abilityOrig?'<span class="gbad e2">오리지널</span>':''} <span class="gbad to">TO ${esc(m.abilityTo)}</span>${m.abilityDesc?`<div class="gdesc" style="margin-top:4px">${esc(m.abilityDesc)}</div>`:''}</div>
+   <div class="small">기술: ${esc((m.moves||[]).join(' · '))}</div><div class="small" style="font-style:italic">${esc(m.concept)}</div>
+   ${m.review?`<div class="small">실전 검토: 같은 등급 상대 승률 <b class="${m.review.wr<0.25?'bad':m.review.wr>0.78?'bad':'ok'}">${pct(m.review.wr)}</b>${m.review.flags.length?' · '+esc(m.review.flags.join(' · ')):''}</div>`:''}</div>`).join('')}</div>`;
+ else if(t==='pack'){const pk=r.pack;const T=r.test;h=`<div class="card"><h3>${esc(pk.name)} <span class="small">${pk.mons.length}체${pk.lvAdd?' · Lv '+(pk.lvAdd>0?'+':'')+pk.lvAdd:''}</span><span class="sp"></span><button class="b" id="gReroll">🎲 다시</button><button class="b pri" id="gTest">⚔ 일행과 붙여 보기</button></h3>
+   <div class="gpk">${pk.mons.map(x=>{const m=x.entry;return `<div class="gcard"><h4>${x.boss?'♛ ':''}${esc(m.name)} ${rk('',m.pride)}</h4><div class="row" style="gap:4px">${m.types.map(tchip).join('')}<span class="small">${esc(m.kind)}</span></div>${gBase(m.base)}<div class="small"><b>${esc(m.ability)}</b> · ${esc((m.moves||[]).join(' · '))}</div></div>`}).join('')}</div>
+   ${T?`<div class="row" style="margin-top:10px;gap:16px"><span class="gwin ${T.win<0.5?'bad':'ok'}">${pct(T.win)}</span><span class="small">일행 승률 · ${T.n}판 · 평균 ${T.turns.toFixed(1)}턴 · 남은 HP ${pct(T.hp)}</span></div><details><summary class="small">첫 판 기록</summary><div class="small mono" style="white-space:pre-wrap;max-height:260px;overflow:auto">${esc((T.log||[]).join('\n'))}</div></details>`:''}
+   <div class="row" style="margin-top:10px"><label class="f">무리 id<input id="gPkId" class="inp" placeholder="예: forest_try1"></label><label class="f">이름<input id="gPkName" class="inp" value="${esc(pk.name)}"></label><button class="b" id="gPkSave" style="align-self:end">야생 DB + 무리로 저장</button></div><div class="small">저장하면 이 포켓몬들이 야생 DB 에 들어가고, 야생 탭 무리 목록에도 생겨요. 안 누르면 아무 데도 안 남아요.</div></div>`}
+ else if(t==='chk')h=`<div class="card wrap"><table><tr><th></th><th>자질</th><th class="n">목표</th><th>동료 조건</th><th>장면</th><th>누가 굴리나</th><th class="n">대가 포함</th><th class="n">깔끔</th><th>대가 · 실패</th></tr>${r.list.map((c,i)=>`<tr><td><input type="checkbox" class="gck" style="position:static" data-gp="${i}" ${P.has(i)?'checked':''}></td><td>${esc(c.stat)}${c.mode?' <span class="gbad">이능</span>':''}</td><td class="n"><b>${c.target}</b></td><td>${c.hint==='any'?'아무 포켓몬':tchip(c.hint.replace('type:',''))}</td><td style="white-space:normal">${esc(c.label)}</td><td>${esc(c.odds.who)} <span class="small">${c.odds.die} + ${c.odds.partner==='alone'?'혼자 d4':c.odds.partner==='bond'?'유대 d8':'동료 d6'}</span></td><td class="n ${c.odds.inBand?'ok':'bad'}">${pct(c.odds.okPlus)}</td><td class="n">${pct(c.odds.ok)}</td><td class="small" style="white-space:normal">${esc(c.pen.cost.memo)} / ${esc(c.pen.fail.memo)}</td></tr>`).join('')}</table></div>`;
+ else if(t==='dg'){const d=r.dungeon,v=d.gen.verify;h=`<div class="card"><h3>${esc(d.name)} <span class="small">${esc(d.note||'')}</span></h3>
+   ${v?`<div class="small" style="margin-bottom:6px">검증: ${v.tries}번째 씨앗 · 시험 승률 <b class="${v.ok?'ok':'bad'}">${pct(v.wr)}</b> (목표 ${pct(v.target)} ±${pct(v.band)})</div>`:''}
+   ${typeof dgStrip==='function'&&d.path?`<div class="dg-strip" style="margin-bottom:8px">${dgStrip(d)}</div>`:''}
+   <div class="wrap"><table><tr><th>방</th><th>종류</th><th>내용</th></tr>${(d.path||d.rooms.map(x=>x.id)).map(id=>d.rooms.find(x=>x.id===id)).filter(Boolean).concat(d.rooms.filter(x=>x.side)).map(x=>`<tr><td>${x.side?'↳ ':''}${esc(x.name)}</td><td>${ty(x.t).ic} ${esc(ty(x.t).k)}</td><td style="white-space:normal" class="small">${x.check?`🎲 ${esc(x.check.stat)} ${x.check.target}${x.check.hint&&x.check.hint!=='any'?' ('+esc(x.check.hint.replace('type:','타입 '))+')':''} · ${esc(x.check.label||'')}`:''}${x.enc?` ${x.enc.boss?'♛':'⚔'} ${x.enc.mix.length}체${x.enc.raid?' · 레이드 '+x.enc.raid:''}`:''}${x.rest?' · ☗ '+esc(x.rest):''}${x.memo?' '+esc(x.memo):''}</td></tr>`).join('')}</table></div>
+   ${r.fit&&r.fit.length?`<details open><summary class="small">일행에 맞춘 체크 목표</summary><div class="small">${r.fit.map(f=>`${esc(f.room)} — ${esc(f.stat)} ${f.from} → <b>${f.to}</b> (${esc(f.who)} · ${pct(f.okPlus)})`).join('<br>')}</div></details>`:''}
+   <div class="row" style="margin-top:10px"><label class="f">던전 id<input id="gDgId" class="inp" value="${esc(d.id)}"></label><button class="b" id="gDgSim" style="align-self:end">시뮬 던전으로 저장</button><button class="b" id="gDgWeb" style="align-self:end">웹툴 꼴 JSON 저장</button><button class="b" id="gDgDl" style="align-self:end">웹툴 JSON 받기</button></div><div class="small" id="gDgMsg"></div></div>`}
+ /* DB 보내기 띠 + 보관함 */
+ const canDb={abil:['특성 DB 로 보내기','abilAdd'],mon:['야생 DB 로 보내기','monsAdd'],chk:['체크 DB 로 보내기','checksAdd']}[t];
+ if(r&&canDb)h+=`<div class="gbulk" ${P.size?'':'hidden'}><b>${P.size}개 골랐어요</b><span class="sp"></span><button class="b sm" id="gAll">전부 고르기</button><button class="b sm" id="gNone">비우기</button><button class="b sm pri" id="gSend">${canDb[0]}</button></div>`;
+ if(t==='abil')h+=`<div class="card gdb"><h3>특성 DB <span class="small">${GN.meta.abilDb.length}개 · 야생 생성이 「오리지널 특성」 자리에 먼저 끌어 써요 · data/abil/db.json</span></h3>${GN.meta.abilDb.length?`<div class="wrap"><table><tr><th>이름</th><th>TO</th><th>타입</th><th>시뮬</th><th>효과</th><th></th></tr>${GN.meta.abilDb.map(a=>`<tr><td><b>${esc(a.name)}</b></td><td class="n">${a.to}</td><td>${(a.types||[]).map(tchip).join('')}</td><td><span class="gbad ${engCls(a.engine)}">${esc(a.engine)}</span></td><td class="small" style="white-space:pre-line">${esc(a.desc)}</td><td><button class="b xs" data-gdel="${esc(a.name)}">빼기</button></td></tr>`).join('')}</table></div>`:'<div class="small">아직 비었어요 — 위에서 골라 보내요</div>'}</div>`;
+ if(t==='chk')h+=`<div class="card gdb"><h3>체크 DB <span class="small">${GN.meta.checkDb.length}개 · data/checks/db.json</span></h3>${GN.meta.checkDb.length?`<div class="wrap"><table><tr><th>자질</th><th class="n">목표</th><th>조건</th><th>장면</th><th>테마 · 난이도</th><th></th></tr>${GN.meta.checkDb.map(c=>`<tr><td>${esc(c.stat)}</td><td class="n">${c.target}</td><td>${c.hint==='any'?'—':esc(c.hint.replace('type:',''))}</td><td style="white-space:normal">${esc(c.label)}</td><td class="small">${esc(c.theme||'')} ${esc(c.tier||'')}</td><td><button class="b xs" data-gcdel="${esc(c.id)}">빼기</button></td></tr>`).join('')}</table></div>`:'<div class="small">아직 비었어요</div>'}</div>`;
+ out.innerHTML=h;
+ out.onclick=async e=>{const cb=e.target.closest('[data-gp]');if(cb){const i=+cb.dataset.gp;if(P.has(i))P.delete(i);else P.add(i);return gOut()}
+  const card=e.target.closest('.gcard');if(card&&!e.target.closest('button,input,details')&&card.querySelector('[data-gp]')){const i=+card.querySelector('[data-gp]').dataset.gp;if(P.has(i))P.delete(i);else P.add(i);return gOut()}
+  if(e.target.closest('#gAll')){(r.list||[]).forEach((x,i)=>P.add(i));return gOut()}if(e.target.closest('#gNone')){P.clear();return gOut()}
+  if(e.target.closest('#gSend')){const L=[...P].sort((a,b)=>a-b).map(i=>r.list[i]);try{const x=await api(canDb[1],{list:L,theme:GN.c.chk.theme,tier:GN.c.chk.tier});toast(t==='mon'?`야생 DB 에 ${x.added.length}체 넣었어요 (${x.added.map(a=>a.id).join(', ')})`:t==='abil'?`특성 DB 에 ${x.added}개 (모두 ${x.total})`:`체크 DB 에 넣었어요 (모두 ${x.total})`);
+    r.list=r.list.filter((_,i)=>!P.has(i));P.clear();GN.meta=await api('genMeta');if(t==='mon')loadState();gOut()}catch(er){toast('오류: '+er.message)}return}
+  const dl=e.target.closest('[data-gdel]');if(dl){await api('abilDel',{names:[dl.dataset.gdel]});GN.meta=await api('genMeta');return gOut()}
+  const cdl=e.target.closest('[data-gcdel]');if(cdl){await api('checksDel',{ids:[cdl.dataset.gcdel]});GN.meta=await api('genMeta');return gOut()}
+  if(e.target.closest('#gReroll'))return gGo();
+  if(e.target.closest('#gTest')){if(!sel.size)return toast('왼쪽에서 일행을 골라요');const b=e.target.closest('#gTest');b.disabled=true;b.textContent='붙이는 중…';try{r.test=await api('packTest',{pack:r.pack,party:[...sel],n:GN.c.pack.tn});gOut()}catch(er){toast('오류: '+er.message);b.disabled=false}return}
+  if(e.target.closest('#gPkSave')){try{const x=await api('packSave',{pack:r.pack,id:$('#gPkId').value.trim(),name:$('#gPkName').value.trim(),hab:GN.c.pack.hab});toast(`저장했어요 — 무리 「${x.pack.name}」 · 야생 DB ${x.added.length}체`);loadState()}catch(er){toast('오류: '+er.message)}return}
+  const dgSave=async w=>{const d=Object.assign({},r.dungeon,{id:$('#gDgId').value.trim()});try{const x=await api('autoSave',{dungeon:d,webtool:w,sim:!w});$('#gDgMsg').textContent='저장: '+(x.sim||x.webtool);if(!w)loadState()}catch(er){toast('오류: '+er.message)}};
+  if(e.target.closest('#gDgSim'))return dgSave(false);if(e.target.closest('#gDgWeb'))return dgSave(true);
+  if(e.target.closest('#gDgDl')){const blob=new Blob([JSON.stringify(r.webtool,null,1)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=($('#gDgId').value.trim()||'dungeon')+'.json';a.click();return}}}
 </script></body></html>

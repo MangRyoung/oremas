@@ -85,7 +85,7 @@ function concept(rng,types,kind,hab,beast){const t=types[0];const h1=hab.filter(
 const habOf=types=>Object.keys(HAB).filter(h=>types.some(t=>HAB[h].includes(t)));
 /* ---------- 한 체 ---------- */
 function one(rng,o){o=o||{};const step=o.step||'C';const kind=o.kind||pick(rng,KIND_NAMES);const t1=o.types&&o.types.length?o.types[0]:pick(rng,TYPES);const types=(o.types&&o.types.length?o.types.slice(0,2):[t1].concat(rng()<0.45?[pick(rng,PAIR[t1]||TYPES)]:[])).filter((t,i,a)=>a.indexOf(t)===i);
- const base=makeBase(rng,step,kind);if(!base)return null;const to=P.STEPS[STEP_IDX[step]].to;const ab=(o.W&&rng()<(o.origAbilRate==null?0.45:o.origAbilRate))?origAbility(rng,o.W,types,kind,to):pickAbility(rng,types,to,kind);const hab=o.hab&&o.hab.length?o.hab:habOf(types);const used=o.used||new Set();
+ const base=makeBase(rng,step,kind);if(!base)return null;const to=P.STEPS[STEP_IDX[step]].to;let ab=null;if(o.W&&rng()<(o.origAbilRate==null?0.45:o.origAbilRate)){/* 10-28: 특성 DB(data/abil/db.json, 생성기 탭에서 고른 것)에 맞는 게 있으면 먼저 */if(o.abilDb!==false){const x=require('./abilgen.js').fromDb(rng,types,to);if(x)ab={name:x.name,desc:x.desc,to:String(x.to),orig:true}}if(!ab)ab=origAbility(rng,o.W,types,kind,to)}else ab=pickAbility(rng,types,to,kind);const hab=o.hab&&o.hab.length?o.hab:habOf(types);const used=o.used||new Set();
  const r=P.calc(base,KINDS[kind].dual);const nm=makeName(rng,types,used,kind);
  return {id:'',origin:'orig',name:nm.name,types,base,ability:ab?ab.name:'',abilityTo:to,abilityDesc:ab?ab.desc:'',abilityOrig:!!(ab&&ab.orig),folder:'',pride:step,grade:GRADE_OF[step],hab,role:GRADE_OF[step]==='C'?'일반':'보스',kind,dual:KINDS[kind].dual,moves:[],concept:concept(rng,types,kind,hab,nm.beast),ct:Math.round(r.ct)}}
 /* ---------- 묶음 — 계단별 수 · 서식지 고루 ---------- */

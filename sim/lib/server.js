@@ -6,6 +6,7 @@ const SIM=path.resolve(__dirname,'..');
 const MIME={'.html':'text/html; charset=utf-8','.js':'text/javascript; charset=utf-8','.css':'text/css; charset=utf-8','.json':'application/json; charset=utf-8','.md':'text/plain; charset=utf-8','.webp':'image/webp','.png':'image/png'};
 const safe=(base,p)=>{const f=path.resolve(base,'.'+path.posix.normalize('/'+p));if(!f.startsWith(base))throw new Error('경로 밖');return f};
 const readJ=f=>JSON.parse(fs.readFileSync(f,'utf8'));
+const readJ0=f=>fs.existsSync(f)?JSON.parse(fs.readFileSync(f,'utf8')):{v:1,entries:[]};
 function listDir(d,ext){if(!fs.existsSync(d))return [];return fs.readdirSync(d).filter(f=>f.endsWith(ext)).sort()}
 function start(opt){opt=opt||{};const port=+opt.port||8470;
  const {load}=require('./env.js');const W=load().win;const P=require('./party.js'),D=require('./dungeon.js'),WD=require('./wild.js'),BT=require('./battle.js'),R=require('./report.js'),SK=require('./skill.js'),KO=require('./ko.js'),J=require('./journal.js');
@@ -23,7 +24,7 @@ function start(opt){opt=opt||{};const port=+opt.port||8470;
   combos:[R.REC,R.PRIV].flatMap(d=>listDir(d,'.json').filter(f=>!f.endsWith('.summary.json')).map(f=>{try{const j=readJ(path.join(d,f));return j.rows&&j.pool&&j.size&&j.rows[0]&&j.rows[0].dungeons?Object.assign(j,{private:d===R.PRIV}):null   /* calib · autocheck 기록(rows 꼴이 다름)은 빼고 조합 훑기만 */}catch(e){return null}}).filter(Boolean)),
   feedback:fs.existsSync(path.join(SIM,'records','feedback.md'))?fs.readFileSync(path.join(SIM,'records','feedback.md'),'utf8'):'',
   checkTable:(()=>{const T=[5,7,9,11];const o={};for(const pt of ['alone','mon','bond','inou'])o[pt]=Object.fromEntries(['D','C','B','A','AA'].filter(r=>pt!=='inou'||SK.lv(r)>=3).map(r=>[r,T.map(t=>SK.summary({rank:r,target:t,partner:pt}))]));return o})()});
- const pickParties=sel=>sel.flatMap(s=>{const r=P.pick(W,snap(),s);if(!r.length)throw new Error('트레이너 못 찾음: '+s);return r});
+ const pickParties=sel=>sel.flatMap(s=>{let r=P.pick(W,snap(),s);if(!r.length&&!/^id:/.test(s))r=P.pick(W,snap(),'id:'+s);if(!r.length)throw new Error('트레이너 못 찾음: '+s);return r});
  const api={
   state:()=>state(),
   run:async b=>{const dg=D.dungeons()[b.dungeon];if(!dg)throw new Error('던전 없음');const parties=pickParties(b.party||[]);if(!parties.length)throw new Error('일행을 고르세요');const n=Math.max(1,Math.min(5000,+b.n||200));const rows=[];const t0=Date.now();
@@ -55,6 +56,47 @@ function start(opt){opt=opt||{};const port=+opt.port||8470;
   regenMon:b=>{const M=require('./mongen.js'),BT=require('./battle.js'),WB=require('./wilddb.js');const rng=BT.mkRng(+b.seed||Date.now()%1e6);const used=new Set(WB.fullV2().map(e=>e.name));const m=M.one(rng,{step:b.step||'C',kind:b.kind||undefined,types:b.types&&b.types.length?b.types:null,used,W});if(m){const r=WB.buildEntry(W,Object.assign({},m,{id:'tmp'+Date.now()}),{});m.moves=(r.mon.moves||[]).map(x=>x.name);m.movesAuto=true;m.sock=require('./automove.js').sockInfo(W,r.mon);m.autoMoves=(r.mon.moves||[]).map(x=>({n:x.name,t:x.type,cat:x.cat,pow:x.pow}))}if(!m)throw new Error('이 조건으로는 계단을 못 맞췄어요');m.id=b.id||'';return {mon:m}},
   genWildDb:b=>{const WB=require('./wilddb.js');const db=WB.buildV2({seed:+b.seed||27,n:+b.n||undefined,mix:b.mix==null?0.5:+b.mix,W,rounds:2,reviewN:16});db.at=new Date().toISOString();if(b.save){WB.write(db);WB.clearCache();WB.rebuildPacks(+b.seed||27)}return {count:db.count,coverage:db.coverage,n:db.entries.length,review:db.review&&{avgWr:db.review.avgWr,flagged:db.review.flagged,log:db.review.log}}},
   autoMoves:b=>{const WB=require('./wilddb.js'),AM=require('./automove.js');const r=WB.buildEntry(W,Object.assign({},b.entry,{id:'tmp'+Date.now(),moves:[]}),{});const r2=(b.entry.moves||[]).length?WB.buildEntry(W,Object.assign({},b.entry,{id:'tmp2'+Date.now()}),{}):r;return {moves:(r.mon.moves||[]).map(x=>({n:x.name,t:x.type,cat:x.cat,pow:x.pow,sock:+(((W.OM_DB.moves||{})[x.name]||{}).sock)||3})),sock:AM.sockInfo(W,r2.mon)}},
+  /* ===== 생성기 탭 (10-28 망령 「야생/스킬/특성/던전 생성은 UI 개선 · 조건 설정 · 마음에 드는 건 DB 로」) ===== */
+  genMeta:()=>{const M=require('./mongen.js'),AB=require('./abilgen.js'),AG=require('./autogen.js'),CG=require('./checkgen.js');return {types:TYPES,habs:Object.keys(M.HAB),hab:M.HAB,kinds:M.KIND_NAMES,steps:['C','C+','B','B+','A'],
+   fams:Object.fromEntries(Object.entries(AB.FAM).filter(([k,v])=>v.main).map(([k,v])=>[k,v.ko])),themes:Object.keys(AG.THEMES),bands:CG.BAND,abilDb:AB.read().entries,checkDb:readJ0(path.join(SIM,'data','checks','db.json')).entries}},
+  genAbil:b=>{const AB=require('./abilgen.js'),M=require('./mongen.js');const used=new Set(M.abil().map(a=>a.name).concat(AB.read().entries.map(e=>e.name)));
+   return {list:AB.gen({n:+b.n||8,types:b.types||[],kind:b.kind||'',to:b.to===''||b.to==null?null:+b.to,fams:b.fams||[],engine:b.engine||'any',seed:+b.seed||Date.now()%1e6,W,usedNames:used})}},
+  abilAdd:b=>require('./abilgen.js').add(b.list||[]),
+  abilDel:b=>require('./abilgen.js').remove(b.names||[]),
+  genMons:b=>{const M=require('./mongen.js'),BT=require('./battle.js'),WB=require('./wilddb.js'),AM=require('./automove.js');const rng=BT.mkRng(+b.seed||Date.now()%1e6);const used=new Set(WB.fullV2().map(e=>e.name));const n=Math.max(1,Math.min(30,+b.n||6));
+   const steps=b.steps&&b.steps.length?b.steps:['C','C+','B','B+','A'];const out=[];
+   for(let i=0,g=0;out.length<n&&g<n*6;g++,i++){const step=steps[i%steps.length];let types=b.types&&b.types.length?b.types.slice(0,2):null;
+    if(!types&&b.hab&&M.HAB[b.hab]){const t1=M.HAB[b.hab][Math.floor(rng()*M.HAB[b.hab].length)];types=[t1].concat(rng()<0.45?[(M.PAIR[t1]||TYPES)[Math.floor(rng()*(M.PAIR[t1]||TYPES).length)]]:[]).filter((t,j,a)=>a.indexOf(t)===j)}
+    const m=M.one(rng,{step,kind:b.kind||undefined,types,used,W,hab:b.hab?[b.hab]:null,origAbilRate:b.origAbilRate==null?0.45:+b.origAbilRate});if(!m)continue;
+    try{const r=WB.buildEntry(W,Object.assign({},m,{id:'gen'+Date.now()+i}),{});m.moves=(r.mon.moves||[]).map(x=>x.name);m.movesAuto=true;m.sock=AM.sockInfo(W,r.mon);m.autoMoves=(r.mon.moves||[]).map(x=>({n:x.name,t:x.type,cat:x.cat,pow:x.pow}))}catch(e){}
+    if(b.review){try{const RV=require('./review.js');const opp=WB.fullV2().filter(e=>e.grade===m.grade);const smp=[];for(let k=0;k<Math.min(8,opp.length);k++)smp.push(opp[Math.floor(rng()*opp.length)]);const d=RV.duel(W,WB,Object.assign({},m,{id:'rv'+Date.now()+i}),smp,16,7);m.review={wr:+d.wr.toFixed(2),flags:RV.staticFlags(m,M)}}catch(e){}}
+    m.id='';out.push(m)}
+   WB.clearCache();return {list:out}},
+  monsAdd:b=>{const WB=require('./wilddb.js');const d=WB.read();if((d.v||1)<2)throw new Error('야생 DB 가 v2 가 아니에요');const ids=new Set(d.entries.map(e=>e.id));let k=d.entries.length;const added=[];
+   for(const e0 of b.list||[]){const e=Object.assign({},e0);delete e.autoMoves;delete e.review;do e.id='w'+String(++k).padStart(3,'0');while(ids.has(e.id));ids.add(e.id);if(d.entries.some(x=>x.name===e.name))e.name=e.name+'2';d.entries.push(e);added.push({id:e.id,name:e.name})}
+   WB.write(d);WB.clearCache();return {added,total:d.entries.length}},
+  genPack:b=>{const out=api.genMons({n:Math.max(1,Math.min(6,+b.n||3)),steps:b.steps&&b.steps.length?b.steps:['C'],hab:b.hab||'',kind:b.kind||'',seed:b.seed,origAbilRate:b.origAbilRate});
+   const L=out.list;const bossAt=b.boss?L.reduce((bi,e,i)=>((e.ct||0)>(L[bi].ct||0)?i:bi),0):-1;
+   return {pack:{id:'tmp',name:`즉석 무리 · ${b.hab||'아무 데나'}`,lvAdd:+b.lvAdd||0,mons:L.map((e,i)=>({entry:e,boss:i===bossAt}))}}},
+  packTest:async b=>{const pk=b.pack;if(!pk||!pk.mons||!pk.mons.length)throw new Error('무리가 비었어요');const parties=pickParties(b.party||[]).map(p=>{P.orders(W,p.trainer,{mons:p.mons});return {trainer:p.trainer,mons:p.mons.slice(0,+b.wn||2)}});if(!parties.length)throw new Error('일행을 고르세요');
+   const n=Math.max(1,Math.min(500,+b.n||60));let w=0,T=0,hp=0,log=null;for(let i=0;i<n;i++){const r=await BT.runBattle(W,{left:{parties},right:WD.build(W,pk),seed:(+b.seed||1)+i,format:parties.reduce((a,p)=>a+p.mons.length,0)>=3?3:2,log:i===0});if(r.winner==='left')w++;T+=r.turns;hp+=r.left.reduce((a,m)=>a+m.hp/m.max,0)/r.left.length;if(i===0)log=r.log}
+   const WB=require('./wilddb.js');WB.clearCache();return {win:w/n,turns:T/n,hp:hp/n,n,log}},
+  packSave:b=>{const pk=b.pack;if(!pk||!pk.mons)throw new Error('무리가 비었어요');const id=String(b.id||'').trim();if(!/^[\w가-힣-]+$/.test(id))throw new Error('무리 id 는 영문 · 숫자 · 한글만');
+   const r=api.monsAdd({list:pk.mons.map(m=>m.entry)});const mons=pk.mons.map((m,i)=>Object.assign({db:r.added[i].id},m.boss?{boss:true}:{}));
+   const o={id,name:String(b.name||pk.name||id),lv:{육성:'C'},hab:b.hab||'',kind:'gen',mons};if(pk.lvAdd)o.lvAdd=pk.lvAdd;fs.writeFileSync(path.join(SIM,'data','wild',id+'.json'),JSON.stringify(o,null,1));return {pack:o,added:r.added}},
+  genChecks:b=>{const CG=require('./checkgen.js');const parties=pickParties(b.party||[]);if(!parties.length)throw new Error('일행을 고르세요 (목표치는 일행 주사위로 셈해요)');
+   const band=Array.isArray(b.band)&&b.band.length===2?[+b.band[0]/100,+b.band[1]/100]:undefined;
+   return {list:CG.make(parties,{tier:b.tier||'normal',theme:b.theme||undefined,n:+b.n||4,hintTyped:b.hintTyped==null?1:+b.hintTyped,stats:b.stats||[],band,seed:+b.seed||Date.now()%1e6,wn:+b.wn||2})}},
+  checksAdd:b=>{const f=path.join(SIM,'data','checks','db.json');const d=readJ0(f);const at=new Date().toISOString();for(const c of b.list||[])d.entries.push(Object.assign({id:'ck'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),at},c,{theme:b.theme||c.theme||'',tier:b.tier||c.tier||''}));fs.mkdirSync(path.dirname(f),{recursive:true});fs.writeFileSync(f,JSON.stringify(d,null,1));return {total:d.entries.length}},
+  checksDel:b=>{const f=path.join(SIM,'data','checks','db.json');const d=readJ0(f);const S=new Set(b.ids||[]);d.entries=d.entries.filter(e=>!S.has(e.id));fs.writeFileSync(f,JSON.stringify(d,null,1));return {total:d.entries.length}},
+  genDungeon:async b=>{const AG=require('./autogen.js'),C=require('./calib.js');const o={tier:b.tier||'normal',seed:+b.seed||Math.floor(Math.random()*1e6),theme:b.theme||undefined,knobs:Object.assign({},b.knobs||{}),shape:b.shape||undefined,sideRooms:b.sideRooms===''||b.sideRooms==null?undefined:+b.sideRooms};
+   let dg;if(b.verify){const pool=String(b.pool||'id:4jie5w05,id:5leooo2r,id:6kqpeluy,id:d7pqlnhq,id:em94ge3p,id:hmt1rchl,id:mrsr7bn7,id:uudsvc3l').split(',');const built={};for(const s of pool){const r=P.pick(W,snap(),s);if(r.length)built[s]=r[0]}const pl=Object.keys(built);if(pl.length<3)throw new Error('검증용 시험 일행이 스냅샷에 없어요');
+    const AGg=AG.generate;dg=await C.verified(W,built,P.wildFrom(W,snap()),o.tier,{seed:o.seed,theme:o.theme,knobs:o.knobs,trios:C.trios(pl,+b.vt||10,11),n:+b.vn||3,tries:+b.tries||6});
+    if(o.shape||o.sideRooms!=null){/* verified 는 shape · 곁방 손잡이를 모른다 → 같은 씨앗으로 다시 (지도만 달라지고 승률에 닿는 길은 같다) */const v=dg.gen.verify;dg=AG.generate(Object.assign({},o,{seed:dg.gen.seed}));dg.gen.verify=v}}
+   else dg=AG.generate(o);
+   let fit=null;if(b.fitParty&&b.party&&b.party.length){/* 체크 목표를 고른 일행에 맞춤 (lib/checkgen.js) */const CG=require('./checkgen.js');const parties=pickParties(b.party);const info=CG.partyInfo(parties,+b.wn||2);const BT=require('./battle.js');const rng=BT.mkRng(o.seed+5);const band=CG.BAND[o.tier];fit=[];
+    for(const r of dg.rooms)if(r.check&&!r.check.optional){const ro=CG.roller(info,r.check.stat,r.check.hint);const T=CG.pickTarget(rng,ro,band);fit.push({room:r.name,stat:r.check.stat,from:r.check.target,to:T.t,who:ro.P.name,okPlus:T.o.okPlus});r.check.target=T.t}}
+   return {dungeon:dg,webtool:AG.toWebtool(dg),fit}},
   prideCalc:b=>{const P2=require('./pride.js');const r=P2.calc(b.base||[],!!b.dual);return {ct:r.ct,step:r.step,real:r.real,legal:P2.legal(b.base||[])}},
   saveFeedback:b=>{fs.mkdirSync(path.join(SIM,'records'),{recursive:true});fs.writeFileSync(path.join(SIM,'records','feedback.md'),String(b.text||''));return {ok:1}},
   deleteRecord:b=>{const RD=R.findRec(String(b.id))||R.REC;for(const ext of ['.summary.json','.jsonl']){const f=safe(RD,String(b.id)+ext);if(fs.existsSync(f))fs.unlinkSync(f)}R.build();return {ok:1}},

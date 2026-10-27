@@ -36,7 +36,7 @@ function make(parties,o){o=o||{};const tier=o.tier||'normal',band=o.band||BAND[t
  const spot=Object.fromEntries(info.map(P=>[P.name,0])),usedStat={},usedLab=new Set();let last='';const out=[];
  for(let i=0;i<n;i++){
   /* 자질: 같은 자질 연달아 X → 그 자질의 굴릴 사람이 덜 나온 쪽 → 덜 쓴 자질 → 무작위 */
-  const cand=STATS.filter(s=>s!==last).map(s=>({s,r:roller(info,s,'any'),k:rng()})).sort((a,b)=>(spot[a.r.P.name]-spot[b.r.P.name])||((usedStat[a.s]||0)-(usedStat[b.s]||0))||(a.k-b.k));
+  const SL=o.stats&&o.stats.length?STATS.filter(s=>o.stats.includes(s)):STATS;const cand=(SL.length>1?SL.filter(s=>s!==last):SL).map(s=>({s,r:roller(info,s,'any'),k:rng()})).sort((a,b)=>(spot[a.r.P.name]-spot[b.r.P.name])||((usedStat[a.s]||0)-(usedStat[b.s]||0))||(a.k-b.k));
   const stat=cand[0].s;last=stat;usedStat[stat]=(usedStat[stat]||0)+1;
   /* 타입 조건: 일행에 있는 테마 타입 먼저 */
   let hint='any';if(typedAt.has(i)){const have=HT.filter(t=>info.some(P=>P.types.has(TYPE_KO[t])));hint='type:'+(have.length&&rng()<0.8?pick(have):pick(HT))}
@@ -65,4 +65,4 @@ function review(built,trios,o){o=o||{};const out={};
     allPass:+(L.map(set=>set.reduce((p,c)=>p*c.odds.okPlus,1)).reduce((a,b)=>a+b,0)/L.length).toFixed(2)}};
   out[tier]={band,new:sum(S.new),old:sum(S.old)}}
  return out}
-module.exports={BAND,partyInfo,roller,odds,make,makeOld,review};
+module.exports={BAND,partyInfo,roller,odds,pickTarget,make,makeOld,review,STATS};
