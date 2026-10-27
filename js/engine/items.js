@@ -63,16 +63,17 @@ window.OM_ITEMS=(()=>{
    else L.push(`${d.name} 「${r.name}」 풀죽음 실패 (${roll}/${r.flinch})`)}
   return L}
 
- /* ----- HP 창: 맞은 뒤 받는 쪽 반응. b 사본 · def(맞은 쪽) · lh(lastHit) · dealt(받은 피해) ----- */
- function onHit(b,def,lh,dealt){const L=[];const r=of(def);if(!r||!r.hit||!(dealt>0))return L;const atk=b.mons[lh.fromId];let gone=false;
+ /* ----- HP 창: 맞은 뒤 받는 쪽 반응. b 사본 · def(맞은 쪽) · lh(lastHit) · dealt(받은 피해) · n(맞은 타 수, 연속기) ----- */
+ function onHit(b,def,lh,dealt,n){const L=[];const r=of(def);if(!r||!r.hit||!(dealt>0))return L;const atk=b.mons[lh.fromId];let gone=false;
+  const times=r.once?1:Math.max(1,+n||1);   /* 10-27 망령: 한 번 쓰고 없어지지 않는 것(울퉁불퉁멧 등)은 맞은 타마다 */
   const fire=()=>{if(!L.length)L.push(`${def.name} 「${r.name}」 발동`)};
   for(const h of r.hit){if(gone)break;
    if(h.pop){fire();L.push(`${def.name}의 「${r.name}」이(가) 터졌다!`);use(def,L,b);gone=true;break}
    if(h.se&&!(+lh.eff>=2))continue;if(h.type&&!(lh.mt||[]).includes(h.type))continue;if(h.cat&&h.cat!==lh.cat)continue;if(h.contact&&!lh.ct)continue;
    if(def.hp.cur<=0&&!h.back&&!h.yellow&&!h.setType&&!h.setTrait)continue;   /* 쓰러졌으면 자기 강화는 없다 · 되갚는 것은 한다 */
    fire();
-   if(h.stats)rank(def,h.stats,L);
-   if(h.back){if(atk&&atk.hp.cur>0)hurt(atk,frac(atk.hp.max,h.back),L,`「${r.name}」 ${h.back}`)}
+   if(h.stats)for(let i=0;i<times;i++)rank(def,h.stats,L);
+   if(h.back)for(let i=0;i<times;i++){if(atk&&atk.hp.cur>0)hurt(atk,frac(atk.hp.max,h.back),L,`「${r.name}」 ${h.back}${times>1?` (${i+1}타)`:''}`)}
    if(h.yellow&&atk&&atk.hp.cur>0){const ks=['attack','defense','specialattack','specialdefense','speed'];let best=ks[0],bv=-1;for(const k of ks){const v=B()&&B().statValue?B().statValue(atk,k).value:0;if(v>bv){bv=v;best=k}}rank(atk,{[best]:-h.yellow},L)}
    if(h.setType&&atk&&atk.hp.cur>0){atk.typesOrig=atk.typesOrig||(atk.types||[]).slice();atk.typesBy=r.name;atk.types=[h.setType];L.push(`${atk.name} 타입 → ${S()&&S().typeKo?S().typeKo(h.setType):h.setType}`)}
    if(h.setTrait&&atk&&atk.hp.cur>0){if(FX()&&FX().setAb)FX().setAb(atk,h.setTrait,r.name);else{if(atk.abilityOrig==null)atk.abilityOrig=atk.ability||'';atk.abilityBy=r.name;atk.ability=h.setTrait}L.push(`${atk.name} 특성 → 「${h.setTrait}」`)}

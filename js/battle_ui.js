@@ -1216,7 +1216,7 @@ window.OM_BATTLE_UI=(()=>{
   return `<div class="hfx small" style="margin:6px 0;padding:6px 8px;border:1px dashed var(--line,#888);border-radius:8px"><div><b>기본 대미지에 이미 들어감</b> ${inB.length?inB.map(chip).join(' '):'<span class="dim">없음</span>'}${hidN?` <span class="dim">+ 공격 쪽 보정 ${hidN}개 (공격 쪽만 볼 수 있다)</span>`:''}${lh.crit?' '+chip('급소'):''}</div>
    <div style="margin-top:4px"><b>여기서 곱함</b> ${chip('상성 ×'+lh.eff)} ${lh.guard&&lh.guard!==1?chip('위력 완화 ×'+lh.guard+((F.grd||[]).length?' — '+F.grd.join(' · '):'')):''} <span class="dim">· 반감열매 · 대미지 보정 · 버티기는 아래 칸</span></div></div>`}
  function openHp(mid,tab){const c=ctx();const b=c.b;const m=b.mons[mid];if(!m||!canEdit(c,m))return;tab=tab||(m.lastHit?'dmg':'dmg');const lh=m.lastHit;const pct=(m.hp.cur>0?Math.max(1,Math.round(m.hp.cur/m.hp.max*100)):0);
-  const EFFS=[0,0.25,0.5,1,2,4];const fl=raidFloor(m);const berryN=lh&&OI()?OI().resist(m,lh):'';const sashX=lh&&OI()?OI().sash(m):null;
+  const EFFS=[0,0.25,0.5,1,2,4];const fl=raidFloor(m);const berryN=lh&&OI()?OI().resist(m,lh):'';const sashX=lh&&OI()?OI().sash(m):null;const SH=lh?hitShield(m,lh):{};const RX=lh&&lh.cat!=='변화'?hitRules(m):[];
   const md=A().openModal(`<div class="mhead"><h2>「HP」 · ${esc(m.name)}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    <div class="hphead"><div class="ti" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div><div style="flex:1"><div class="hpbar ${pct<=25?'low':pct<=50?'mid':''}"><i style="width:${pct}%"></i></div><div class="row small"><span>「HP」 <b>${m.hp.cur}</b> / ${m.hp.max} (${pct}%)</span>${m.hp.latest!=null&&m.hp.latest!==m.hp.cur?`<span class="dim">직전 ${m.hp.latest}</span>`:''}<span class="sp"></span><button class="btn xs ghost" data-hp="undo" ${m.hp.latest==null?'disabled':''}>되돌리기</button><button class="btn xs ghost" data-hp="one">HP 1</button><button class="btn xs ghost danger" data-hp="faint">빈사</button></div></div></div>
    <div class="tabs"><button class="tb ${tab==='dmg'?'on':''}" data-hpt="dmg">피해</button><button class="tb ${tab==='heal'?'on':''}" data-hpt="heal">회복</button></div>
@@ -1228,6 +1228,7 @@ window.OM_BATTLE_UI=(()=>{
      <div class="hgrid">${lh.alt?`<label class="hcrit" title="명중 판정에서 굴린 급소 여부를 여기서 바꾼다 — 대미지를 급소/급소 아님으로 다시 계산한 값으로"><input type="checkbox" id="h_crit" ${lh.crit?'checked':''}> 급소 <span class="small dim">(판정: ${lh.crit?'급소':'급소 아님'})</span></label>`:''}<label>대미지 보정 <input type="number" step="0.01" class="n" id="h_mod" value="1" title="방호·완화·역할 보정 등 배율"></label>
       <label>최종 상성 <select id="h_eff">${EFFS.map(v=>`<option value="${v}" ${v===+lh.eff?'selected':''}>×${v}</option>`).join('')}</select></label>
       <label><input type="checkbox" id="h_berry" ${berryN?'checked':''}> 반감열매${berryN?` <b style="color:var(--yel2)">「${esc(berryN)}」</b>`:''}</label><label><input type="checkbox" id="h_endure" ${lh.endure||(sashX&&sashX.sure)?'checked':''}> 버티기 (HP 1 남김)${sashX&&sashX.sure?` <b style="color:var(--yel2)">「${esc(sashX.name)}」</b>`:''}</label>${sashX&&sashX.pct?`<label class="small" style="color:var(--yel2)">「${esc(sashX.name)}」 쓰러질 피해면 ${sashX.pct}% 로 버틴다 (적용 때 굴림)</label>`:''}
+      ${SH.fullGuard?`<label title="그 타를 맞기 전에 HP 가 가득일 때만 — 연속기면 첫 타만"><input type="checkbox" id="h_fg" checked> 「${esc(SH.fullGuard.name)}」 HP 가득일 때 반감</label>`:''}${SH.disguise?`<label title="이번 시합 한 번 — 처음 맞은 타의 대미지를 0 으로, 대신 HP 를 쓴다"><input type="checkbox" id="h_dsg" checked> 「${esc(SH.disguise.name)}」 첫 타 0 · HP −${SH.disguise.cost}</label>`:''}${RX.length?`<label title="맞은 타마다 특성 글대로 굴리고 적용한다 (적용 뒤 로그)"><input type="checkbox" id="h_rx" checked> 맞을 때 「${esc(abNm(m))}」 자동${lh.hits>1?' (맞은 타마다)':''}</label>`:''}
       <label>고정 대미지 <input type="text" class="n" id="h_forced" placeholder="-1 = 계산값" value="-1" title="숫자 또는 분수(1/8)를 넣으면 그 값으로"></label>
       ${fl?`<label class="small" style="color:var(--yel)">레이드 배리어 하한 ${fl}</label>`:''}</div>
      <div class="row" style="margin-top:8px"><span class="small dim" id="h_prev"></span><span class="sp"></span><button class="btn pri" data-hp="apply">피해 적용</button><button class="btn ghost xs" data-hp="discard" title="이 판정을 지운다 (피해 없음)">판정 버리기</button></div></div>`
@@ -1252,15 +1253,17 @@ window.OM_BATTLE_UI=(()=>{
   const calc=(roll)=>{if(!lh)return null;const g=id=>$('#'+id,md);const forced=g('h_forced').value.trim();
    if(forced!==''&&forced!=='-1'){const v=parseAmt(forced,m.hp.max);return {final:Math.min(v,m.hp.cur),after:Math.max(0,m.hp.cur-v)}}
    const h=curHit();const per=h.per&&h.per.length>1?h.per:[h.total];const en=g('h_endure').checked,sashOnly=en&&!lh.endure&&!!(sashX&&sashX.sure);
-   const r=B().hpDamageHits(m,per,+g('h_eff').value,{stab:false,guard:lh.guard||1,manual:+g('h_mod').value||1,berryHalf:g('h_berry').checked,endure:en&&!sashOnly,endureFull:sashOnly,hpFloor:fl,band:roll&&sashX&&sashX.pct&&!en?{pct:sashX.pct,roll:()=>1+Math.floor(Math.random()*100)}:null});return r};
-  const perTxt=r=>{const n=(curHit().per||[]).length;if(!r||!r.per||n<2)return '';return r.per.map((x,k)=>`${k+1}타 −${x.final}${x.held==='band'?'(띠로 버팀)':x.held?'(버팀)':''}`).join(' · ')+(r.landed<n?` · ${r.landed}타째에 쓰러져 남은 ${n-r.landed}타는 맞지 않음`:'')};
+   const fgOn=!!(SH.fullGuard&&g('h_fg')&&g('h_fg').checked),dgOn=!!(SH.disguise&&g('h_dsg')&&g('h_dsg').checked);
+   /* 멀티스케일을 손으로 발동해 둔 경우 위력 완화에 이미 ×0.5 가 들어 있다 — 빼고 타마다 다시 건다 */const g0=(lh.guard||1)/(fgOn&&String(lh.guardNote||'').includes(SH.fullGuard.name)?SH.fullGuard.v:1);
+   const r=B().hpDamageHits(m,per,+g('h_eff').value,{fullGuard:fgOn?SH.fullGuard.v:0,disguise:dgOn?SH.disguise.cost:0,stab:false,guard:g0,manual:+g('h_mod').value||1,berryHalf:g('h_berry').checked,endure:en&&!sashOnly,endureFull:sashOnly,hpFloor:fl,band:roll&&sashX&&sashX.pct&&!en?{pct:sashX.pct,roll:()=>1+Math.floor(Math.random()*100)}:null});return r};
+  const perTxt=r=>{const n=(curHit().per||[]).length;if(!r||!r.per||(n<2&&!r.per.some(x=>x.held==='disguise'||x.fg)))return '';return r.per.map((x,k)=>`${k+1}타 −${x.final}${x.held==='band'?'(띠로 버팀)':x.held==='disguise'?'(탈)':x.held?'(버팀)':''}${x.fg?'(반감)':''}`).join(' · ')+(r.landed<n?` · ${r.landed}타째에 쓰러져 남은 ${n-r.landed}타는 맞지 않음`:'')};
   const prev=()=>{const r=calc();if(!r)return;{const h=curHit();const t=$('#h_tot',md),rg=$('#h_rng',md),cc=$('#h_critc',md);if(t)t.textContent=h.total;if(rg)rg.textContent=h.min+'~'+h.max;if(cc)cc.hidden=!h.crit}const P=v=>v>0?Math.max(1,Math.round(v/m.hp.max*100)):0;const d=$('#h_prevd',md),a=$('#h_preva',md),bA=$('#h_bar_after',md),bC=$('#h_bar_cut',md);
    if(d)d.textContent='−'+r.final;if(a)a.textContent=`HP ${m.hp.cur} → ${r.after}/${m.hp.max} (${P(r.after)}%)${r.after<=0?' · 빈사':''}`;{const ph=$('#h_perhit',md);if(ph){ph.textContent=perTxt(r);ph.hidden=!ph.textContent}}
    if(bA)bA.style.width=P(r.after)+'%';if(bC){bC.style.left=P(r.after)+'%';bC.style.width=Math.max(0,pct-P(r.after))+'%'}};prev();
-  md.querySelectorAll('#h_mod,#h_eff,#h_berry,#h_endure,#h_forced,#h_crit').forEach(el=>{el.addEventListener('input',prev);el.addEventListener('change',prev)});
+  md.querySelectorAll('#h_mod,#h_eff,#h_berry,#h_endure,#h_forced,#h_crit,#h_fg,#h_dsg').forEach(el=>{el.addEventListener('input',prev);el.addEventListener('change',prev)});
   const apply=async(delta,why,opt)=>{opt=opt||{};const m0=snap(ctx().b.mons[mid]),x=snap(m0);x.hp.latest=x.hp.cur;
    if(delta<0){let v=-delta;if(opt.floor&&x.hp.cur-v<opt.floor)v=Math.max(0,x.hp.cur-opt.floor);x.hp.cur=Math.max(0,x.hp.cur-v);x.hpOdd=!x.hpOdd;delta=-v;if(v>0)x.lastTaken={v,why:String(why||'').split('\n')[0].slice(0,120),turn:+ctx().b.turn||0}}else{const h=Math.min(delta,x.hp.max-x.hp.cur);x.hp.cur+=h;delta=h}
-   if(opt.clearHit)delete x.lastHit;const pc=v=>v>0?Math.max(1,Math.round(v/x.hp.max*100)):0;
+   if(opt.clearHit)delete x.lastHit;if(opt.dsg)x.dsgUsed=1;const pc=v=>v>0?Math.max(1,Math.round(v/x.hp.max*100)):0;
    let line=delta?`【${delta>0?'회복':'피해'}】 ${x.name} ${delta>0?'+':'−'}${Math.abs(delta)}  ·  HP ${x.hp.latest} → ${x.hp.cur}/${x.hp.max} (${pc(x.hp.cur)}%)\n${why}`:`【무효】 ${x.name} 대미지 없음  ·  HP ${x.hp.cur}/${x.hp.max}\n${why}`;
    if(x.hp.cur<=0){x.entry='';line+=`\n${x.name}은(는) 쓰러졌다!`}
    if(x.raid&&x.raid.segments>0&&opt.floor&&x.hp.cur<=opt.floor&&delta<0&&x.hp.cur>0){x.raid.broken=(x.raid.broken||0)+1;x.raid.brk=1;line+=`\n◆ ${x.name}의 배리어(${opt.floor})가 깨졌다! — 턴 종료 이후 「트리거 : 페이즈 체인지」`}   /* 10-25 망령: 맵툴처럼 페이즈 체인지는 깨진 턴이 끝난 뒤 */
@@ -1269,8 +1272,9 @@ window.OM_BATTLE_UI=(()=>{
    if(k==='apply'){let r=calc();if(!r)return;const mods=[];if(+g('h_mod').value!==1)mods.push('보정 ×'+g('h_mod').value);if(g('h_berry').checked)mods.push(berryN?'「'+berryN+'」 반감':'반감열매');let saved=false;if(g('h_endure').checked){const ec=g('h_endure');ec.checked=false;const r0=calc();ec.checked=true;saved=!!(r0&&r0.after<=0&&r.after>0);if(saved)mods.push(sashX&&sashX.sure?'「'+sashX.name+'」로 버팀':'버티기')}   /* 10-23 망령 제보: 쓰러질 피해가 아니면 「버팀」을 적지 않는다 */
     /* 기합의머리띠: 쓰러질 피해면 굴린다 */
     if(sashX&&sashX.pct&&!g('h_endure').checked&&r.after<=0&&m.hp.cur>1){r=calc(true);for(const x of (r.per||[]).filter(x=>x.band))mods.push(x.band.ok?`「${sashX.name}」로 버팀 (${x.band.roll}/${x.band.pct})`:`「${sashX.name}」 실패 (${x.band.roll}/${x.band.pct})`)}
-    const berryUse=g('h_berry').checked&&/열매/.test(IT(m));const sashUse=saved&&sashX&&sashX.sure&&sashX.once&&m.hp.cur>1;const hc=curHit();const ret=await apply(-r.final,`${lh.from}의 「${lh.move}」 · 상성 ×${g('h_eff').value}${hc.crit?' · 급소':''}${hc!==lh?(hc.crit?' (급소로 바꿈)':' (급소 아님으로 바꿈)'):''}${lh.hits>1?' · '+lh.hits+'번 맞음':''}${mods.length?' · '+mods.join(' · '):''}${perTxt(r)?'\n'+perTxt(r):''}`,{clearHit:true,floor:fl});if(berryUse||sashUse)await itemConsume(mid);
-    if(OI()&&r.final>0)await itemHitReact(mid,lh,r.final);return ret}
+    const berryUse=g('h_berry').checked&&/열매/.test(IT(m));const sashUse=saved&&sashX&&sashX.sure&&sashX.once&&m.hp.cur>1;const hc=curHit();const rxOn=!!(RX.length&&g('h_rx')&&g('h_rx').checked);   /* 창이 닫히기 전에 읽어 둔다 */const ret=await apply(-r.final,`${lh.from}의 「${lh.move}」 · 상성 ×${g('h_eff').value}${hc.crit?' · 급소':''}${hc!==lh?(hc.crit?' (급소로 바꿈)':' (급소 아님으로 바꿈)'):''}${lh.hits>1?' · '+lh.hits+'번 맞음':''}${mods.length?' · '+mods.join(' · '):''}${perTxt(r)?'\n'+perTxt(r):''}`,{clearHit:true,floor:fl,dsg:(r.per||[]).some(x=>x.held==='disguise')});if(berryUse||sashUse)await itemConsume(mid);
+    const nHit=r.per&&r.per.length?r.landed:1;if(OI()&&r.final>0)await itemHitReact(mid,lh,r.final,nHit);
+    if(rxOn&&r.final>0)await abilityHitReact(mid,Object.assign({},lh,hc===lh?{}:{perCrit:null,crit:hc.crit}),r);return ret}
    if(k==='again'||k==='againh'){const L=m.lastTaken;if(!L)return;const v=k==='againh'?Math.max(1,Math.floor(L.v/2)):L.v;return apply(-v,`최근 피해 다시${k==='againh'?' (½)':''} — ${L.why}`,{floor:fl})}
    if(k==='discard'){A().closeModal();await A().set(['battle','mons',mid,'lastHit'],null);return A().sysLog(`${m.name} 받은 피해 판정을 버렸다`,'battle')}
    if(k==='frac')return apply(-parseAmt(v,m.hp.max),`비율 피해 ${v}`,{floor:fl});
@@ -1307,8 +1311,43 @@ window.OM_BATTLE_UI=(()=>{
   L.push(f?`${fromName} → 「${m.name}」 ${f.kind||'폼체인지'}! (${tk(m.types)} · 특성 ${m.ability||'-'}${m.hp.max!==oldMax?' · 최대 HP '+oldMax+'→'+m.hp.max:''})${potLine?'\n포텐셜 '+potLine:''}`:`${fromName} → 원래 모습 「${m.name}」으로 돌아왔다${potLine?'\n'+potLine:''}`);
   return L}
  /* ---------- 소지품 소모 (맵툴 item_consume): 칸에서 빼고 itemUsed 에 남긴다. 결과 정리 때 시트에서도 뺀다 ---------- */
+ /* 10-27 망령: 받는 쪽 특성 — 첫 타 완화(멀티스케일 · 스펙터가드) · 탈 · 맞을 때마다 반응(정전기 · 까칠한피부 · 지구력 · 깨어진갑옷 …). 특성 글(abilityEff, 없으면 특성 DB)을 읽는다 */
+ function abNm(m){return String((m&&m.ability)||'').replace(/^특성\s*:\s*/,'').trim()}
+ function abTxt(m){return String((m&&m.abilityEff)||((DB().traits||{})[abNm(m)]||{}).multi||'').replace(/<br\s*\/?>/gi,'\n')}
+ function hitShield(m,lh){const t=abTxt(m);const o={};if(!t||!m||(lh&&lh.cat==='변화'))return o;
+  if(/「HP : 가득」일 때 기술(?:의|로 받을) 대미지를 반감/.test(t))o.fullGuard={v:0.5,name:abNm(m)};
+  const dz=t.match(/기술에 의한 대미지를 「0」으로 만들고 자신의 「HP」를 (\d+\/\d+)만큼 소비/);if(dz&&!m.dsgUsed)o.disguise={cost:parseAmt(dz[1],m.hp.max),name:abNm(m)};return o}
+ /* 공격 창 예상용: 받는 쪽 첫 타 완화 · 탈 (손으로 발동해 이미 완화에 든 것은 빼지 않고 그대로) */
+ function hsOpt(def,cat,mods){const sh=hitShield(def,{cat});const dup=sh.fullGuard&&((mods&&mods.names)||[]).some(x=>String(x.txt||'').includes(sh.fullGuard.name));return {fullGuard:sh.fullGuard&&!dup?sh.fullGuard.v:0,disguise:sh.disguise?sh.disguise.cost:0}}
+ const HIT_ST={공격:'attack',방어:'defense',특공:'specialattack',특방:'specialdefense',스피드:'speed',명중:'accuracy',회피:'evasion'};
+ function hitRules(m){const t=abTxt(m);if(!t)return [];const R=[];
+  for(const cl of t.split(/(?=[①②③④⑤])|\n/)){const c=cl.trim();if(!/받(았을 때|으면)|급소에 맞았을 때/.test(c))continue;if(/반감|무효|「0」|「빈사」 상태가 되지|교대|모든 포켓몬|아군|상대 전체|적진|상태일 때|하고 자신을|「[^」:]+ : \d+\/\d+」/.test(c))continue;   /* 조건 붙은 것 · 두 쪽에 다른 효과 · 타입 비례는 손으로 */
+   const r={};let x;if(/「접촉기」를 받/.test(c))r.contact=1;if((x=c.match(/「(물리기|특수기)」를 받/)))r.cat=x[1]==='물리기'?'물리':'특수';
+   if((x=c.match(/「([^」]+)」 기술을 받/)))r.types=x[1].split('/').map(s=>S().typeEn(s.trim())).filter(Boolean);if(/급소에 맞았을 때/.test(c))r.crit=1;
+   if(!r.contact&&!r.cat&&!r.types&&!r.crit&&!/공격을 받/.test(c))continue;
+   if((x=c.match(/(\d+)할로/)))r.chance=+x[1]*10;if((x=c.match(/(\d+)턴 동안/)))r.cnt=+x[1];r.to=/자신을 공격한 (?:포켓몬|상대)|대상을|대상에게|그 포켓몬|상대를|상대에게/.test(c)?'atk':'self';
+   if((x=c.match(/(\d+\/\d+)의 비례 대미지/)))r.back=x[1];
+   if((x=c.match(/「([^」:]+\/[^」:]+)」 중 무작위/)))r.rnd=x[1].split('/');else if((x=c.match(/「([^」:]+)」 상태/))&&FX()&&FX().stEn(x[1]))r.state=x[1];
+   if((x=c.match(/「특성 : ([^」]+)」로 만든다/)))r.setTrait=x[1];
+   const st={};for(const y of c.matchAll(/「(공격|방어|특공|특방|스피드|명중|회피) : ([+-]\d+)」/g))st[HIT_ST[y[1]]]=(st[HIT_ST[y[1]]]||0)+(+y[2]);if(Object.keys(st).length)r.stats=st;
+   if(r.back||r.rnd||r.state||r.setTrait||r.stats)R.push(r)}
+  return R}
+ /* 맞은 타마다 특성 반응을 돌린다. r = hpDamageHits 결과(per · landed) — 받는 쪽 화면에서, 공격한 쪽도 함께 고친다 */
+ async function abilityHitReact(mid,lh,r){if(!FX()||!lh||!r)return;const b0=snap(),b=snap(b0);const m=b.mons[mid];if(!m)return;const R=hitRules(m);if(!R.length)return;
+  const n=r.per&&r.per.length?r.landed:(r.final>0?1:0);if(!n)return;const per=r.per&&r.per.length?r.per:[{after:m.hp.cur}];const crits=lh.perCrit||[];const name='특성 : '+abNm(m);const L=[];
+  for(let k=0;k<n;k++){const pre=n>1?(k+1)+'타 · ':'';const atk=b.mons[lh.fromId];
+   for(const ru of R){if(ru.contact&&!lh.ct)continue;if(ru.cat&&ru.cat!==lh.cat)continue;if(ru.types&&!ru.types.some(t=>(lh.mt||[]).includes(t)))continue;if(ru.crit&&!(crits[k]||(!crits.length&&lh.crit&&k===0)))continue;
+    if(ru.to==='self'&&!((per[k]||{}).after>0))continue;const tg=ru.to==='atk'?atk:m;if(!tg||tg.hp.cur<=0)continue;
+    if(ru.setTrait&&abNm(tg)===ru.setTrait)continue;
+    let roll='';if(ru.chance){const rl=1+Math.floor(Math.random()*100);if(rl>ru.chance){L.push(`${pre}${tg.name} 「${name}」 실패 (${rl}/${ru.chance})`);continue}roll=` (${rl}/${ru.chance})`}
+    const tgt=tg.id===m.id?'self':tg.side===m.side?'ally1':'enemy1';const ops=[];
+    if(ru.back)ops.push({k:'dmg',tgt,value:ru.back,basis:'max'});const stn=ru.rnd?ru.rnd[Math.floor(Math.random()*ru.rnd.length)]:ru.state;if(stn)ops.push({k:'state',state:stn,tgt,count:ru.cnt||-1,forced:0});if(ru.stats)ops.push({k:'rank',tgt,stats:ru.stats});
+    if(ops.length){const res=await FX().run(ops,{b,self:m,name,pick:list=>list.find(x=>x.id===tg.id)||null,confirm:async()=>true,choose:async()=>[0]});L.push(...res.lines.map(x=>pre+String(x).replace(/(」(?: \d+턴)?) — .*$/,'$1')+roll))   /* 상태 설명 글은 줄인다 */}
+    if(ru.setTrait){if(FX().setAb)FX().setAb(tg,ru.setTrait,name);else{if(tg.abilityOrig==null)tg.abilityOrig=tg.ability||'';tg.abilityBy=name;tg.ability=ru.setTrait;tg.abilityEff=((DB().traits||{})[ru.setTrait]||{}).multi||''}L.push(`${pre}${tg.name} 특성 → 「${ru.setTrait}」${roll}`)}}}
+  if(!L.length)return;for(const id in b.mons){const x=b.mons[id];if(x.entry&&x.hp.cur<=0)x.entry=''}
+  if(await saveBattle(b0,b))A().sysLog(`【특성】 ${m.name} 「${abNm(m)}」${n>1?' · '+n+'번 맞음':''}\n${L.join('\n')}`,'battle',{mid,img:m.image||''})}
  /* 맞은 뒤 소지품 반응 (약점보험 · 울퉁불퉁멧 · 옐로우카드 · 풍선 · 구근 …): 받는 쪽 화면에서, 공격한 쪽도 함께 고친다 */
- async function itemHitReact(mid,lh,dealt){const b0=snap(),b=snap(b0);const m=b.mons[mid];if(!m)return;let L=[];try{L=OI().onHit(b,m,lh,dealt)}catch(e){console.warn(e);return}if(!L.length)return;
+ async function itemHitReact(mid,lh,dealt,n){const b0=snap(),b=snap(b0);const m=b.mons[mid];if(!m)return;let L=[];try{L=OI().onHit(b,m,lh,dealt,n)}catch(e){console.warn(e);return}if(!L.length)return;
   for(const id in b.mons){const x=b.mons[id];if(x.entry&&x.hp.cur<=0)x.entry=''}
   if(await saveBattle(b0,b))A().sysLog(`【소지품】 ${m.name} 『${(b0.mons[mid]||{}).item||''}』\n${L.join('\n')}`,'battle',{mid,img:m.image||'',eff:String(((DB().items||{})[String((b0.mons[mid]||{}).item||'').replace(/『|』/g,'').trim()]||{}).eff||'').slice(0,300)})}
  async function itemConsume(mid,undo){const m0=snap(ctx().b.mons[mid]);if(!m0)return;const x=snap(m0);
@@ -1829,7 +1868,7 @@ window.OM_BATTLE_UI=(()=>{
     const stab=eff?eff.stab:false;
     if(dmg&&dmg.wall<1){mods.names=mods.names||[];mods.names.push({key:'_wall',who:def.id,txt:`${def.name} 「${wallNames(objs,catEn(mv.cat),tyOf(mv)).join('·')||'벽'}」 피해 ×${dmg.wall}${mode(b)>=2?' (더블)':''} · 급소면 무시`})}
     const guard0=(DF.endure?0.5:1)*(mods.guard||1);const endure0=(!!DF.endure&&!DF.endureUsed||!!mods.endure)&&!AF.noEndure;
-    const hp=dmg?B().hpDamageHits(def,perOf(dmg),eff.value,{stab,adaptability:ck('aadapt'),expertBelt:ck('abelt'),guard:guard0,endure:endure0,hpFloor:raidFloor(def)}):null;
+    const hp=dmg?B().hpDamageHits(def,perOf(dmg),eff.value,{...hsOpt(def,mv.cat,mods),stab,adaptability:ck('aadapt'),expertBelt:ck('abelt'),guard:guard0,endure:endure0,hpFloor:raidFloor(def)}):null;
     /* 급소를 뒤집은 대미지 (10-24 망령): HP 창에서 피해 적용 전에 급소 여부를 바꿀 수 있게 — 맞은 타마다 전부 급소 / 전부 급소 아님 */
     const dmgAlt=dmg&&DOPT.hits.some(v=>v>0)?(()=>{const anyC=DOPT.hits.includes(2);try{return B().damage(foulAtk(atk,def,mv),def,MVP,Object.assign({},DOPT,{hits:DOPT.hits.map(v=>v===0?0:(anyC?1:2))}))}catch(e){return null}})():null;
     res.push({_mv:MVP,_opt:DOPT,slot,def,acc,hits,dmg,dmgAlt,eff,stab,hp,guard:guard0,endure:endure0,manual:1,mods,spw,sec:[...(spw&&acc.hit?[{ok:true,line:spw.note}]:[]),...(acc.hit?(MAU?MAU.groups.filter(g=>g.who==='target').map(g=>rollGroup(atk,def,g)):secRolls(atk,def,mv)):[])]})}
@@ -1860,7 +1899,7 @@ ${PR?`「기술 방어」 ${PR.ok?'성공':'실패'}${PR.k?` (연속 ${PR.k+1}�
     <td><b class="mono" id="fin_${i}">${r.hp&&r.acc.hit?r.hp.final:0}</b><div class="small dim" id="aft_${i}">→ ${r.hp&&r.acc.hit?r.hp.after:r.def.hp.cur}</div></td></tr>`).join('')}</table>
     <div class="small dim" style="margin-top:4px">${esc(mv.name)} · L${atk.lv} 위력 ${g('apow').value} · ${res[0]&&res[0].dmg?`공격 ${Math.round(res[0].dmg.hits[0]?res[0].dmg.hits[0].A:0)} / 방어 ${Math.round(res[0].dmg.hits[0]?res[0].dmg.hits[0].D:0)} · M ${res[0].dmg.M}${multiTarget?` (전체기 ×0.75 · 대상 ${res.length})`:''} · 벽 ${res[0].dmg.wall}`:''}</div>`;
    const recompute=()=>{res.forEach((r,i)=>{if(!r.dmg)return;const gd=md.querySelector(`[data-guard="${i}"]`),mn=md.querySelector(`[data-manual="${i}"]`),br=md.querySelector(`[data-berry="${i}"]`),en=md.querySelector(`[data-endure="${i}"]`);
-     r.hp=B().hpDamageHits(r.def,perOf(r.dmg),r.eff.value,{stab:r.stab,adaptability:ck('aadapt'),expertBelt:ck('abelt'),guard:+gd.value||1,manual:+mn.value||1,berryHalf:br.checked,endure:en.checked,hpFloor:raidFloor(r.def)});
+     r.hp=B().hpDamageHits(r.def,perOf(r.dmg),r.eff.value,{...hsOpt(r.def,mv.cat,r.mods),stab:r.stab,adaptability:ck('aadapt'),expertBelt:ck('abelt'),guard:+gd.value||1,manual:+mn.value||1,berryHalf:br.checked,endure:en.checked,hpFloor:raidFloor(r.def)});
      $('#fin_'+i,md).textContent=r.acc.hit?r.hp.final:0;$('#aft_'+i,md).textContent='→ '+(r.acc.hit?r.hp.after:r.def.hp.cur)})};
    md.querySelectorAll('[data-guard],[data-manual],[data-berry],[data-endure]').forEach(el=>el.addEventListener('input',recompute));
    md.querySelectorAll('[data-crk]').forEach(el=>el.addEventListener('change',()=>{const [i,k]=el.dataset.crk.split('.').map(Number);const r=res[i];if(!r||!r.dmg||!r._mv||!r.hits[k])return;r.hits[k].v=el.checked?2:1;r.hits[k].hand=1;const hv=r.hits.map(h=>h.v);
@@ -1894,7 +1933,7 @@ ${PR?`「기술 방어」 ${PR.ok?'성공':'실패'}${PR.k?` (연속 ${PR.k+1}�
      if(+O.item1&&+O.item1!==1)ak.push('아이템1 ×'+O.item1);if(+O.item2&&+O.item2!==1)ak.push('아이템2 ×'+O.item2);if(+O.trait&&+O.trait!==1)ak.push('특성 ×'+O.trait);if(+O.free2&&+O.free2!==1)ak.push('자유2 ×'+O.free2);
      {const f1=(+O.free1||1)/((r.mods&&r.mods.boost)||1);if(Math.abs(f1-1)>0.001)ak.push('자유1 ×'+Math.round(f1*1000)/1000)}if(O.charge)ak.push('충전 ×2');if(O.lifeOrb)ak.push('생명의구슬 ×1.3');if(r.stab)ak.push('자속 ×'+(($('#aadapt',md)||{}).checked?2:1.5));if((($('#abelt',md)||{}).checked)&&r.eff&&r.eff.value>1)ak.push('달인의띠 ×1.2');
      return {pub,atk:ak,grd:gd}})();
-    def.lastHit={hfx,from:atk.name,fromId:atk.id,move:RESULT.mv.name,moveType:RESULT.mv.type||'',eff:r.eff.value,effType:r.eff.type||'',total:Math.floor(r.dmg.total*am),min:Math.floor(r.dmg.min*am),max:Math.floor(r.dmg.max*am),hits:r.hits.length,crit,per:perOf(r.dmg,am),...(r.dmgAlt?{alt:{total:Math.floor(r.dmgAlt.total*am),min:Math.floor(r.dmgAlt.min*am),max:Math.floor(r.dmgAlt.max*am),crit:!crit,per:perOf(r.dmgAlt,am)}}:{}),guard:r.guard,guardNote:(r.mods&&r.mods.names.filter(x=>x.who===def.id).map(x=>x.txt).join(' · '))||'',endure:r.endure,expect:r.hp?r.hp.final:0,at:Date.now(),turn:+nb.turn||0,mt:RESULT.moveTypes||[],cat:RESULT.mv.cat||'',ct:!!(A().contactOf&&A().contactOf(RESULT.mv)==='O'),multi:RESULT.targets.length>1};
+    def.lastHit={hfx,from:atk.name,fromId:atk.id,move:RESULT.mv.name,moveType:RESULT.mv.type||'',eff:r.eff.value,effType:r.eff.type||'',total:Math.floor(r.dmg.total*am),min:Math.floor(r.dmg.min*am),max:Math.floor(r.dmg.max*am),hits:r.hits.length,crit,per:perOf(r.dmg,am),perCrit:r.hits.map(h=>h.v===2),...(r.dmgAlt?{alt:{total:Math.floor(r.dmgAlt.total*am),min:Math.floor(r.dmgAlt.min*am),max:Math.floor(r.dmgAlt.max*am),crit:!crit,per:perOf(r.dmgAlt,am)}}:{}),guard:r.guard,guardNote:(r.mods&&r.mods.names.filter(x=>x.who===def.id).map(x=>x.txt).join(' · '))||'',endure:r.endure,expect:r.hp?r.hp.final:0,at:Date.now(),turn:+nb.turn||0,mt:RESULT.moveTypes||[],cat:RESULT.mv.cat||'',ct:!!(A().contactOf&&A().contactOf(RESULT.mv)==='O'),multi:RESULT.targets.length>1};
     if(FX()&&r.mods)FX().consume(nb,r.mods.names);if(def.flags&&def.flags.endure)def.flags.endureUsed=1;
     lines.push(`→ ${def.name}: ${hitTxt} ${crit?'급소! ':''}${r.acc.multi?r.hits.length+'번 맞았다! ':''}대미지 ${def.lastHit.total} ×${r.eff.value}${r.guard&&r.guard!==1?' 완화 ×'+r.guard:''} ≈ ${r.hp?(r.hp.raw>r.hp.final&&r.hp.final>=def.hp.cur?`${r.hp.raw} (남은 HP ${def.hp.cur}뿐)`:r.hp.final):0} — 받는 쪽이 「HP」에서 적용`)}
    if($('#alife',md).checked&&dealtAny){const a=nb.mons[mid];const rec=Math.max(1,Math.floor(a.hp.max/10));a.hp.latest=a.hp.cur;a.hp.cur=Math.max(0,a.hp.cur-rec);lines.push(`${atk.name} 생명의구슬 반동 −${rec} → ${a.hp.cur}`);if(a.hp.cur<=0){a.entry='';lines.push(`${a.name}은(는) 쓰러졌다!`)}}
