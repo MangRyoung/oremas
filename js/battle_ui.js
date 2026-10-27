@@ -430,7 +430,7 @@ window.OM_BATTLE_UI=(()=>{
    if(!mons.find(m=>m.id===UIC.tab[tid]))UIC.tab[tid]=mons[0].id;const m=mons.find(x=>x.id===UIC.tab[tid]);
    mons.forEach(mm=>{cur.mons[mm.id]=cur.mons[mm.id]||{move:'',switch:'',targets:[],prio:{},ochg:{},order:'',command:'',pots:[]};cur.mons[mm.id].pots=cur.mons[mm.id].pots||[]});
    const x=cur.mons[m.id];const bench=Object.values(b.mons||{}).filter(mm=>mm.tid===tid&&!mm.entry&&mm.hp.cur>0);
-   const oNames=OO().orderNames(t);const cNames=OO().commandNames(t);const OKEYS=OO().orderKeys(t);const CKEYS=OO().commandKeys(t);const cnt=dgCnt(b,t.orderCount||{});
+   const oNames=OO().orderNames(t);const cNames=OO().commandNames(t);const OKEYS=OO().orderKeys(t);const CKEYS=OO().commandKeys(t);const cnt=ppCnt(tid,t.orderCount||{});
    const summ=mons.map(mm=>{const xx=cur.mons[mm.id];const pre=[xx.order?`『${esc(OO().orderName(t,xx.order))}』`:'',xx.command?`『${esc(OO().commandName(t,xx.command))}』`:''].filter(Boolean).join(' ');const pd=(xx.pots||[]).length?` <span class="dim">포텐셜 ${xx.pots.map(p=>'『'+esc(p)+'』').join('')}</span>`:'';const pp=prePursuit(t,mm,xx,cur.upots);const tail=(pre?` <span class="dim">선행 ${pre}</span>`:'')+pd+(pp.pur||(xx.move!=='switch'&&isPursuit(MVS(mm)[+xx.move],mm))?' <span style="color:var(--yel2)">· 추격</span>':'')+(pp.pimm?' <span style="color:var(--ok)">· 추격 무시</span>':'')+(xx.move!=='switch'&&(pp.ut||isUturn(MVS(mm)[+xx.move],mm))?' <span style="color:var(--yel2)">· 유턴</span>':'');if(xx.move==='switch')return `${mm.name}: 교대 → ${monName(b,xx.switch)||'?'}${tail}`;if(xx.move===''||xx.move==null)return `${mm.name}: <span class="warn">행동 없음</span>${tail}`;const mv=MVS(mm)[+xx.move];return `${mm.name}: <b>${mv?esc(mv.name):'?'}</b>${xx.targets.length?' → '+xx.targets.map(sl=>slotName(b,sl)).join(', '):' <span class="warn">대상 없음</span>'}${tail}`}).join(' · ');
    const isSwitch=x.move==='switch';const mvSel=!isSwitch&&x.move!==''?MVS(m)[+x.move]:null;
    return `<div class="cmdt ${locked?'locked':''}" data-tid="${tid}">
@@ -817,10 +817,12 @@ window.OM_BATTLE_UI=(()=>{
   if(!rd){const R=Object.assign({},c.ST.state.ready||{});R[path[1]]=true;const seats=c.ST.state.seats||{};const T=Object.keys(c.b.trainers||{}).filter(t=>seats[t]);
    if(T.length>=2&&T.every(t=>R[t]))A().sysLog(`【준비 완료】 양측 모두 지시 준비를 마쳤다${c.mgr?'':' — GM 의 「턴 개시」를 기다린다'}`,'battle')}}
  /* 턴 개시: 선행 입력한 지령·명령의 횟수를 미리 깎는다 (맵툴 set_turn_start). 주인의 호령(tc 7)은 능력·회복이 횟수를 같이 쓴다 */
- /* 10-28 망령: 던전 조우 배틀이면 4식 · 6령은 던전 공용 칸(battle.dgPool = {o,c,o0,c0}, dungeon_ui 가 넣는다)에서도 하나씩 준다. 칸이 0 이면 그 종류는 못 쓴다 */
- const dgLeft=(b,kind)=>{const p=b&&b.dgPool;if(!p)return Infinity;return Math.max(0,+(kind==='order'?p.o:p.c)||0)};
- const dgCnt=(b,c)=>{if(!b||!b.dgPool)return c;const o=Object.assign({},c);if(dgLeft(b,'order')<=0)for(const k in o)if(k.startsWith('order_'))o[k]=0;if(dgLeft(b,'command')<=0)for(const k in o)if(k.startsWith('command_'))o[k]=0;return o};
- async function dgUse(n){const b=ctx().b;const p=b&&b.dgPool;if(!p||!n||(!n.o&&!n.c))return;const np=Object.assign({},p,{o:Math.max(0,(+p.o||0)-(n.o||0)),c:Math.max(0,(+p.c||0)-(n.c||0))});await A().set(['battle','dgPool'],np);A().sysLog(`【던전 공용】 4식 남은 ${np.o}/${np.o0||'-'} · 6령 남은 ${np.c}/${np.c0||'-'}`,'battle')}
+ /* 10-28 망령: 파티 공용 4식 · 6령 (js/ppool.js — 휴대폰 방 코드가 같은 트레이너들). 방 설정에서 켜면 선행 · 임의 발동마다 그 파티 칸에서도 하나씩 준다. 칸이 0 이면 그 종류는 못 쓴다 */
+ const PP=()=>window.OM_PPOOL;
+ const ppId=tid=>{const t=(((ctx().b||{}).trainers)||{})[tid]||{};return t.srcTid||tid};   /* 빌려 쓴 트레이너는 원래 시트 주인의 파티 */
+ const ppLeft=(tid,kind)=>PP()?PP().left(ppId(tid),kind):Infinity;
+ const ppCnt=(tid,c)=>PP()?PP().cnt(ppId(tid),c):c;
+ async function ppUse(tid,n){if(PP())await PP().use(ppId(tid),n)}
  function chargeOne(t,data,b,used){t.orderCount=t.orderCount||{};const tc=OO().styles(t).tc;
   for(const mid in (data.mons||{})){const m=b.mons[mid];if(!m||!m.entry||m.hp.cur<=0)continue;const x=data.mons[mid];
    if(x.order){const k='order_'+x.order;t.orderCount[k]=Math.max(0,(+t.orderCount[k]||0)-1);if(used)used.o++}
@@ -829,12 +831,12 @@ window.OM_BATTLE_UI=(()=>{
   if(!c.gm){for(const t of myTrainers(c).filter(t=>lead(c,t)))await selfCharge(t);return}
   let rows;try{rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd')}catch(e){return}
   const trs0=snap(ctx().b.trainers||{}),trs=snap(trs0);let any=false;
-  const used={o:0,c:0};for(const r of rows||[]){const t=trs[r.id];if(!t||!r.data||!cmdFresh(r,b)||t.pcTurn===key)continue;if(c.fair&&seatOwned(c,r.id))continue;chargeOne(t,r.data,b,used);t.pcTurn=key;any=true}
-  if(any)await A().setDiff(['battle','trainers'],trs0,trs,2);if(any)await dgUse(used)}
+  const used={};for(const r of rows||[]){const t=trs[r.id];if(!t||!r.data||!cmdFresh(r,b)||t.pcTurn===key)continue;if(c.fair&&seatOwned(c,r.id))continue;used[r.id]={o:0,c:0};chargeOne(t,r.data,b,used[r.id]);t.pcTurn=key;any=true}
+  if(any)await A().setDiff(['battle','trainers'],trs0,trs,2);if(any)for(const id in used)await ppUse(id,used[id])}
  /* 좌석: 내 지시의 선입력분은 내 화면이 깎는다 (모의전 · GM 불간섭 · GM 이 없을 때) */
  const BUSY={},SENT={};
  async function selfCharge(tid0){const c=ctx();const b=c.b;const tid=tid0||c.seat;const t=(b.trainers||{})[tid];if(c.role!=='seat'||!t)return;const key=turnKey(b);if(t.pcTurn===key||BUSY.pc===key)return;BUSY.pc=key;
-  const cm=await myCmd(c,tid,true);const t0=snap((ctx().b.trainers||{})[tid]||t),t2=snap(t0);if(t2.pcTurn===key)return;const used={o:0,c:0};if(cm)chargeOne(t2,cm,ctx().b,used);t2.pcTurn=key;await A().setDiff(['battle','trainers',tid],t0,t2,1);await dgUse(used)}
+  const cm=await myCmd(c,tid,true);const t0=snap((ctx().b.trainers||{})[tid]||t),t2=snap(t0);if(t2.pcTurn===key)return;const used={o:0,c:0};if(cm)chargeOne(t2,cm,ctx().b,used);t2.pcTurn=key;await A().setDiff(['battle','trainers',tid],t0,t2,1);await ppUse(tid,used)}
  /* 상태가 바뀔 때마다 (app.js onState): 턴 개시면 내 선입력 차감, 공개 요청이 오면 내 남은 지시를 연다, 진행자는 자동으로 넘긴다 */
  /* 10-26 망령: 배틀 준비(시합 개시 전) 중에 한 파티에 같은 소지품이 겹치면 그 파티를 다루는 사람(GM · 그 좌석)에게만 한 번 알린다. 소지품을 또 바꿔 다르게 겹치면 다시 */
  const DUP_SEEN={};
@@ -868,7 +870,7 @@ window.OM_BATTLE_UI=(()=>{
  function openFire(tid){const c=ctx();const b=c.b;const t=(b.trainers||{})[tid];if(!t)return;if(!c.gm&&!ownT(c,tid))return;
   const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid&&m.entry&&m.hp.cur>0).sort((x,y)=>x.entry.localeCompare(y.entry));if(!mons.length)return A().toast('필드에 포켓몬이 없다');
   UIC.fire=UIC.fire||{};if(!mons.find(m=>m.id===UIC.fire[tid]))UIC.fire[tid]=mons[0].id;const m=mons.find(x=>x.id===UIC.fire[tid]);
-  const cnt=dgCnt(b,t.orderCount||{});const fired=(((b.cmds||{})[tid]||{}).fired||{})[m.id]||{};const ph=+b.phase||0;
+  const cnt=ppCnt(tid,t.orderCount||{});const fired=(((b.cmds||{})[tid]||{}).fired||{})[m.id]||{};const ph=+b.phase||0;
   const md=A().openModal(`<div class="mhead"><h2>포텐셜 발동 · ${esc(t.name)}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    <div class="tabs2">${mons.map(mm=>`<div class="tab2 ${mm.id===m.id?'on':''}" data-ftab="${mm.id}"><div class="pic" style="${mm.image?`background-image:url('${cssu(mm.image)}')`:''}"></div><div><b>${esc(mm.name)}</b><small>에리어 ${mm.entry.toUpperCase()}</small></div></div>`).join('')}</div>
    <div class="firepre small dim" id="firepre">선행 입력을 읽는 중…</div>
@@ -931,7 +933,7 @@ window.OM_BATTLE_UI=(()=>{
    if(how==='free'&&!(await askYes(mm?`『${name}』 ② — ${MT[mm[1]]}에 【임의】로 쓸 수 있다.\n지금이 그때면 발동한다.`:`${KN}은 지시 단계에서 선행 입력한 것을 「선행 발동」으로 쓰는 게 원칙이다.\n【임의】가 붙는 조건(6령 ② 등)일 때만 임의 발동한다. 그래도 지금 임의 발동할까?`,mm?'발동':'임의 발동','그만')))return}
   let tag='';
   if(how==='pre'){tag='【선행】'}
-  else if(how==='free'){if((+t.orderCount[ck]||0)<=0)return A().toast('남은 횟수가 없어 임의 발동할 수 없다');if(dgLeft(b,kind)<=0)return A().toast(`던전 공용 ${kind==='order'?'4식':'6령'}이 남지 않았다`);await dgUse(kind==='order'?{o:1}:{c:1});t.orderCount[ck]=(+t.orderCount[ck]||0)-1;{const sk=kind==='command'?OO().shareKey(t,key):'';const o=sk?'command_'+sk:'';if(o)t.orderCount[o]=Math.max(0,(+t.orderCount[o]||0)-1)}tag='【임의】'}
+  else if(how==='free'){if((+t.orderCount[ck]||0)<=0)return A().toast('남은 횟수가 없어 임의 발동할 수 없다');if(ppLeft(tid,kind)<=0)return A().toast(`파티 공용 ${kind==='order'?'4식':'6령'}이 남지 않았다`);await ppUse(tid,kind==='order'?{o:1}:{c:1});t.orderCount[ck]=(+t.orderCount[ck]||0)-1;{const sk=kind==='command'?OO().shareKey(t,key):'';const o=sk?'command_'+sk:'';if(o)t.orderCount[o]=Math.max(0,(+t.orderCount[o]||0)-1)}tag='【임의】'}
   else if(how==='force'){if(!c.gm)return;tag='【강제】'}
   const f=fieldOf(b);const fx=applyOrder(b.mons,f,t,name,mid);
   if(!fx.length&&FX()){const a=FX().rm(name)||FX().rm(String(name).replace(/\s*[:：]\s*/,' / '));if(a&&a.ops&&a.ops.length&&!a.manual){const r=await FX().run(a.ops,uiCtx(b,m,name,m.entry));fx.push(...r.lines)}}

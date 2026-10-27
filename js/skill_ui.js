@@ -143,8 +143,9 @@ window.OM_SKILL_UI=(()=>{
    const tl=[];if(+R.tired&&k.tired.length)tl.push('지침 해제');if(+R.care)tl.push('돌봄');if(+R.inou)tl.push('이능');if(+R.inj_n>0&&k.inj)tl.push(`${k.inj>=2?'중상':'부상'} → ${patch.inj>=2?'중상':patch.inj===1?'부상':'건강'}`);if(tl.length)lines.push(tl.join(' · '));
    L.push(`${t.name}: ${lines.join(' · ')||'변화 없음'}`)}
   /* 10-28: ord_po · ord_pc = 파티 전체에서 4식 · 6령을 n 개 회복 (배틀 중이면 배틀 쪽 횟수, 아니면 시트 쪽 — 던전 탭 ordSrc 와 같다). 제작한 값(가득)까지만 */
-  /* 10-28: 던전 세이프룸 휴식(opt.did)이면 4식 · 6령은 던전 공용 칸을 채운다 (dungeon_ui poolRest) */
-  if(opt.did&&window.OM_DG_UI&&window.OM_DG_UI.poolRest){const t=await window.OM_DG_UI.poolRest(opt.did,R);if(t)L.push(t)}
+  /* 10-28 망령: 파티 공용 4식 · 6령(js/ppool.js)이 켜져 있으면 쉰 사람들의 파티(휴대폰 방 코드) 칸을 채운다 — 긴 휴식(4식 6령 전부)은 가득, 그 밖에는 「파티 4식 · 6령 회복」 개수만큼 */
+  const PP=window.OM_PPOOL;const ppOn=!!(PP&&PP.on()&&PP.codesOf(ids).length);
+  if(ppOn){for(const code of PP.codesOf(ids)){const t=await PP.restore(code,R.ord_n==='all'?'full':{o:+R.ord_po||0,c:+R.ord_pc||0});if(t)L.push(t)}}
   else if(+R.ord_po>0||+R.ord_pc>0){const OO=window.OM_ORDERS;const B=A().ST.state.battle||{};const LP=[];
    for(const [pre,n0,lab] of [['order_',+R.ord_po||0,'4식'],['command_',+R.ord_pc||0,'6령']]){let n=n0;
     for(const tid of ids){if(n<=0)break;const bT=(B.trainers||{})[tid];const inB=!!(bT&&bT.orderCount&&B.started);const src=inB?bT:T[tid];if(!src)continue;let FL={};try{FL=OO.fill(src,src.orderBase||1)}catch(e){}const cnt=Object.assign({},src.orderCount||{});let ch=0;

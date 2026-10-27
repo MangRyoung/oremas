@@ -54,31 +54,23 @@ window.OM_DG_UI=(()=>{
  const SEATS=()=>ST().state.seats||{};
  const WN=d=>Math.max(1,Math.min(3,+((d||{}).wn)||2));
  const alOn=d=>!(d&&d.noal);
- /* 10-28 망령: 4식 · 6령은 던전 단위 공용 칸 — 탐사 중인 일행(PT) × (4식 1 · 6령 2). 던전마다 d.pool = {o, c, o0, c0}.
-    야생 조우 배틀로 넘어갈 때 battle.dgPool 로 옮겨 쓰고(battle_ui 가 선행 · 임의 발동마다 하나씩 줄인다), 「던전으로 돌아가기」 때 되돌린다.
-    세이프룸 휴식은 이 칸을 채운다(skill_ui 휴식 설정 「파티 4식 · 6령 회복」 · 긴 휴식은 가득). */
- const POOL_PER={o:1,c:2};
- function poolOf(d){const n=Math.max(1,party(d).length);const p=(d&&d.pool)||{};const o0=+p.o0||n*POOL_PER.o,c0=+p.c0||n*POOL_PER.c;return {o:p.o==null?o0:clamp(+p.o||0,0,99),c:p.c==null?c0:clamp(+p.c||0,0,99),o0,c0}}
- const inBattleOf=d=>{const b=ST().state.battle||{};return b.dg&&b.dg.did===(d&&d.id)&&b.dgPool?b:null};
- const poolNow=d=>{const b=inBattleOf(d);return b?Object.assign({},poolOf(d),b.dgPool):poolOf(d)};
- async function poolSet(d,np){const b=inBattleOf(d);if(b)return A().set(['battle','dgPool'],np);return upd({[P0(d.id)+'pool']:np})}
- function poolHTML(d){const p=poolNow(d);return `<div class="dgpt-ord mini" data-dgpool="1" title="던전 공용 4식 · 6령 — 탐사 중인 일행이 함께 쓴다 (1인 4식 1 · 6령 2)${gm()?' · 눌러서 고치기':''}"><div><i>공용 4식 <b>${p.o}</b></i><span class="${p.o?'':'z'}">/ ${p.o0}</span></div><div><i class="c">공용 6령 <b>${p.c}</b></i><span class="${p.c?'':'z'}">/ ${p.c0}</span></div></div>`}
- function poolMgr(){const d=cur();if(!d||!gm())return;const md=A().openModal('<div id="dgPl"></div>');
-  const draw=()=>{const d2=cur();if(!d2)return A().closeModal();const p=poolNow(d2);const row=(k,lab)=>`<div class="dgoe-row ${p[k]?'':'z'}"><span class="nm">공용 ${lab}</span><span class="mono">${p[k]}<small> / ${p[k+'0']}</small></span><button class="btn xs pri" data-pl="-" data-k="${k}" ${p[k]>0?'':'disabled'}>쓰기 −1</button><button class="btn xs" data-pl="+" data-k="${k}" ${p[k]>=p[k+'0']?'disabled':''}>회복 +1</button></div>`;
-   md.querySelector('#dgPl').innerHTML=`<div class="mhead"><h2>던전 공용 4식 · 6령 <small class="dim">${H(d2.n||'')}${inBattleOf(d2)?' · 배틀 중':''}</small></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-    <div class="dgoe">${row('o','4식')}${row('c','6령')}<p class="small dim" style="margin:0">탐사 중인 일행 ${party(d2).length}명 × (4식 1 · 6령 2). 배틀에서 선행 · 임의 발동할 때마다 저절로 하나씩 준다. 휴식(세이프룸)이 채운다.</p>
-    <div class="row" style="gap:6px"><button class="btn sm" data-pl="full">가득 (새 탐사)</button><button class="btn sm ghost" data-pl="recount">지금 인원으로 다시 세기</button></div></div>`};
+ /* 10-28 망령: 4식 · 6령은 파티 공용 — 휴대폰 방 코드가 같은 트레이너들이 함께 쓴다 (js/ppool.js, 방 설정에서 켠다).
+    PT 패널 맨 위에 탐사 일행의 파티 칸을 보이고, GM 이 누르면 손으로 고친다. 배틀은 battle_ui 가, 휴식은 skill_ui applyRest 가 바로 이 칸을 쓴다 */
+ const PP=()=>window.OM_PPOOL;
+ function poolHTML(d){if(!PP()||!PP().on())return '';const cs=PP().codesOf(party(d));
+  if(!cs.length)return `<div class="dgpt-ord mini" title="휴대폰 연락처에서 같은 방 코드를 넣은 파티원끼리 4식 · 6령을 함께 쓴다"><div><i>파티 공용 4식 · 6령</i><span class="z">방 코드 없음</span></div></div>`;
+  return cs.map(code=>{const p=PP().stat(code);return `<div class="dgpt-ord mini" data-dgpool="${H(code)}" title="파티 「${H(code)}」 공용 4식 · 6령 — 같은 방 코드 ${p.n}명이 함께 쓴다 (1인 4식 1 · 6령 2)${gm()?' · 눌러서 고치기':''}"><div><i>공용 4식 <b>${p.o}</b></i><span class="${p.o?'':'z'}">/ ${p.o0}</span></div><div><i class="c">공용 6령 <b>${p.c}</b></i><span class="${p.c?'':'z'}">/ ${p.c0}</span></div></div>`}).join('')}
+ function poolMgr(code){if(!gm()||!PP()||!code)return;const md=A().openModal('<div id="dgPl"></div>');
+  const draw=()=>{const p=PP().stat(code);if(!p.n)return A().closeModal();const row=(k,lab)=>`<div class="dgoe-row ${p[k]?'':'z'}"><span class="nm">공용 ${lab}</span><span class="mono">${p[k]}<small> / ${p[k+'0']}</small></span><button class="btn xs pri" data-pl="-" data-k="${k}" ${p[k]>0?'':'disabled'}>쓰기 −1</button><button class="btn xs" data-pl="+" data-k="${k}" ${p[k]>=p[k+'0']?'disabled':''}>회복 +1</button></div>`;
+   md.querySelector('#dgPl').innerHTML=`<div class="mhead"><h2>파티 공용 4식 · 6령 <small class="dim">${H(code)}</small></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+    <div class="dgoe">${row('o','4식')}${row('c','6령')}<p class="small dim" style="margin:0">방 코드 「${H(code)}」 파티원 ${p.n}명(${p.members.map(t=>H(((RO().trainers||{})[t]||{}).name||t)).join(' · ')}) × (4식 1 · 6령 2). 배틀에서 선행 · 임의 발동할 때마다 저절로 하나씩 준다. 휴식이 채운다.</p>
+    <div class="row" style="gap:6px"><button class="btn sm" data-pl="full">가득</button></div></div>`};
   draw();
-  md.addEventListener('click',async e=>{if(e.target.closest('[data-x]'))return A().closeModal();const b=e.target.closest('[data-pl]');if(!b||b.disabled)return;const d2=cur();if(!d2)return;const p=poolNow(d2);const np={o:p.o,c:p.c,o0:p.o0,c0:p.c0};const a=b.dataset.pl,k=b.dataset.k;let line='';
-   if(a==='-'){np[k]=Math.max(0,np[k]-1);line=`공용 ${k==='o'?'4식':'6령'} −1 (남은 ${np[k]})`}
-   else if(a==='+'){np[k]=Math.min(np[k+'0'],np[k]+1);line=`공용 ${k==='o'?'4식':'6령'} +1 (남은 ${np[k]})`}
-   else if(a==='full'){np.o=np.o0;np.c=np.c0;line='공용 4식 · 6령 가득'}
-   else if(a==='recount'){const n=Math.max(1,party(d2).length);np.o0=n*POOL_PER.o;np.c0=n*POOL_PER.c;np.o=Math.min(np.o,np.o0);np.c=Math.min(np.c,np.c0);line=`일행 ${n}명 기준으로 다시 셈 (4식 ${np.o0} · 6령 ${np.c0})`}
-   await poolSet(d2,np);notice(`【던전】 ${d2.n||''} ${line}`);draw()})}
- /* 휴식(skill_ui applyRest 가 부른다): 긴 휴식(ord_n all) = 가득, 그 밖에는 「파티 4식 · 6령 회복」 개수만큼 */
- async function poolRest(did,R){const d0=all()[did];if(!d0||!gm())return '';const d=Object.assign({},d0,{id:did});const p=poolNow(d);const np={o:p.o,c:p.c,o0:p.o0,c0:p.c0};
-  if(R.ord_n==='all'){np.o=np.o0;np.c=np.c0}else{np.o=Math.min(np.o0,np.o+(+R.ord_po||0));np.c=Math.min(np.c0,np.c+(+R.ord_pc||0))}
-  if(np.o===p.o&&np.c===p.c)return '';await poolSet(d,np);return `파티: 공용 4식 +${np.o-p.o} · 6령 +${np.c-p.c} (남은 ${np.o} · ${np.c})`}
+  md.addEventListener('click',async e=>{if(e.target.closest('[data-x]'))return A().closeModal();const b=e.target.closest('[data-pl]');if(!b||b.disabled)return;const a=b.dataset.pl,k=b.dataset.k,lab=k==='o'?'4식':'6령';let line='';
+   if(a==='-'){await PP().spend(code,k==='o'?'order':'command');line=`공용 ${lab} −1`}
+   else if(a==='+'){await PP().restore(code,{[k]:1});line=`공용 ${lab} +1`}
+   else if(a==='full'){await PP().restore(code,'full');line='공용 4식 · 6령 가득'}
+   const p=PP().stat(code);notice(`【파티 ${code}】 ${line} (남은 4식 ${p.o}/${p.o0} · 6령 ${p.c}/${p.c0})`);draw()})}
  const stKo=k=>((((window.OM_DB||{}).states||{}).st||{})[k]||{}).ko||k;
  function party(d){const tr=RO().trainers||{};const ids=d&&d.pt?Object.keys(d.pt):Object.keys(SEATS()).filter(id=>tr[id]);return ids.filter(id=>tr[id]).sort((a,b)=>(tr[a].ord||0)-(tr[b].ord||0))}
  function monHp(m){const mx=Math.max(1,(m.hp&&m.hp.max)||(m.stats||[])[0]||1);const dead=!!((m.sheetStates||{}).Dead);const c=dead?0:m.sheetHp==null?mx:Math.max(0,Math.min(mx,+m.sheetHp||0));return {c,mx,dead:dead||c<=0}}
@@ -243,7 +235,7 @@ window.OM_DG_UI=(()=>{
   const rs=R(d);if(!rs[d.at]){const s=d.st&&rs[d.st]?d.st:Object.keys(rs)[0];d.at=s||''}
   stage.classList.add('dgmode');
   let bg=stage.querySelector(':scope>.dgrp-bg');if(!bg){bg=document.createElement('div');bg.className='dgrp dgrp-bg';bg.innerHTML='<div class="dg-planes"></div>';stage.prepend(bg);RPH.frame=''}
-  const hudClick=e=>{const cb=e.target.closest('[data-dgcard]');if(cb){e.stopPropagation();return useCard(cb.dataset.dgcard)}const pm=e.target.closest('[data-pm]');if(pm){e.stopPropagation();return monEdit(pm.dataset.pm)}const pl=e.target.closest('[data-dgpool]');if(pl){e.stopPropagation();return poolMgr()}const od=e.target.closest('[data-ordm]');if(od){e.stopPropagation();return ordMgr(od.dataset.ordm)}const w=e.target.closest('[data-walk]');if(w){e.stopPropagation();return walkPick(w.dataset.walk)}const b=e.target.closest('[data-rpdg]');if(!b)return;e.stopPropagation();
+  const hudClick=e=>{const cb=e.target.closest('[data-dgcard]');if(cb){e.stopPropagation();return useCard(cb.dataset.dgcard)}const pm=e.target.closest('[data-pm]');if(pm){e.stopPropagation();return monEdit(pm.dataset.pm)}const pl=e.target.closest('[data-dgpool]');if(pl){e.stopPropagation();return poolMgr(pl.dataset.dgpool)}const od=e.target.closest('[data-ordm]');if(od){e.stopPropagation();return ordMgr(od.dataset.ordm)}const w=e.target.closest('[data-walk]');if(w){e.stopPropagation();return walkPick(w.dataset.walk)}const b=e.target.closest('[data-rpdg]');if(!b)return;e.stopPropagation();
     if(b.dataset.rpdg==='pt'){const mn=!ptMin();try{localStorage.setItem('om_dg_pt',mn?'min':'open')}catch(err){}const pw=stage.querySelector('.dgrp-ptw');if(pw)pw._h='';rpSync(stage);return}
     if(b.dataset.rpdg==='enc'){const dd=cur();if(dd)startEnc(dd)}
     if(b.dataset.rpdg==='clue'){const dd=cur();if(!dd)return;const rr=R(dd)[dd.at];if(rr&&rr.cs){DG.clueLocal=dd.at;DG.clueHide=0;RPH.clueSig='';rpSync(stage)}else if(gm())showClue(dd,dd.at)}
@@ -318,7 +310,7 @@ window.OM_DG_UI=(()=>{
 
  /* ---------- 클릭 (탭 화면) ---------- */
  function startOptions(d){const rs=R(d),o=[];if(d.st&&rs[d.st])o.push([d.st,'입구에서 시작']);Object.entries(rs).forEach(([id,r])=>{if(r.t==='safe'&&r.s&&id!==d.st)o.push([id,'세이프룸 · '+(r.n||'')])});if(d.at&&rs[d.at]&&!o.some(x=>x[0]===d.at))o.push([d.at,'지난 위치에서 이어서']);if(!o.length){const f=Object.keys(rs)[0];if(f)o.push([f,'첫 방에서 시작'])}return o}
- function bindRoot(el){if(el._dgBound)return;el._dgBound=1;el.addEventListener('click',e=>{const cb=e.target.closest('[data-dgcard]');if(cb&&el.contains(cb)){e.stopPropagation();return useCard(cb.dataset.dgcard)}const pm=e.target.closest('[data-pm]');if(pm&&el.contains(pm)&&pm.closest('#dgRoot')){e.stopPropagation();return monEdit(pm.dataset.pm)}const pl=e.target.closest('[data-dgpool]');if(pl&&el.contains(pl)&&pl.closest('#dgRoot')){e.stopPropagation();return poolMgr()}const od=e.target.closest('[data-ordm]');if(od&&el.contains(od)&&od.closest('#dgRoot')){e.stopPropagation();return ordMgr(od.dataset.ordm)}const w=e.target.closest('[data-walk]');if(w&&el.contains(w)&&w.closest('#dgRoot')){return walkPick(w.dataset.walk)}const b=e.target.closest('[data-a]');if(!b||!el.contains(b)||!b.closest('#dgRoot,.dg-idle'))return;act(b.dataset.a,b)})}
+ function bindRoot(el){if(el._dgBound)return;el._dgBound=1;el.addEventListener('click',e=>{const cb=e.target.closest('[data-dgcard]');if(cb&&el.contains(cb)){e.stopPropagation();return useCard(cb.dataset.dgcard)}const pm=e.target.closest('[data-pm]');if(pm&&el.contains(pm)&&pm.closest('#dgRoot')){e.stopPropagation();return monEdit(pm.dataset.pm)}const pl=e.target.closest('[data-dgpool]');if(pl&&el.contains(pl)&&pl.closest('#dgRoot')){e.stopPropagation();return poolMgr(pl.dataset.dgpool)}const od=e.target.closest('[data-ordm]');if(od&&el.contains(od)&&od.closest('#dgRoot')){e.stopPropagation();return ordMgr(od.dataset.ordm)}const w=e.target.closest('[data-walk]');if(w&&el.contains(w)&&w.closest('#dgRoot')){return walkPick(w.dataset.walk)}const b=e.target.closest('[data-a]');if(!b||!el.contains(b)||!b.closest('#dgRoot,.dg-idle'))return;act(b.dataset.a,b)})}
  async function act(k,b){const d=cur();const v=b.dataset.v;
   if(k==='pick'){DG.sel=v;return A().renderScene()}
   if(k==='torp'){try{A().goView('rp')}catch(e){}return}
@@ -515,8 +507,7 @@ window.OM_DG_UI=(()=>{
  /* ---------- 야생 조우 → 배틀 (app.js encounter) · 돌아오기 ---------- */
  async function startEnc(d,rid0){if(!gm())return;const id=rid0||d.at,r=R(d)[id];const e=encOf(r);if(!e)return A().toast('이 방에는 야생 포켓몬을 두지 않았다 — 던전 관리에서 배치');if(!e.t)return A().toast('이 방의 야생 무리 트레이너가 시트에 없다');
   const L=party(d),walk={};L.forEach(t=>walk[t]=walkOf(t));
-  const ok=await A().encounter({left:L,right:[r.e],walk,dg:{did:d.id,rid:id},title:`${d.n||'던전'} · ${r.n||ty(r.t).k}`});
-  if(ok!==false&&(ST().state.battle||{}).dg)await A().set(['battle','dgPool'],poolOf(d))}   /* 10-28: 던전 공용 4식 · 6령을 배틀로 */
+  const ok=await A().encounter({left:L,right:[r.e],walk,dg:{did:d.id,rid:id},title:`${d.n||'던전'} · ${r.n||ty(r.t).k}`});}
  document.addEventListener('click',e=>{if(e.target&&e.target.closest&&e.target.closest('button[data-s]'))setTimeout(()=>{try{retSync()}catch(_){}},60)});
  function retSync(){let el=document.getElementById('dgRet');const b=ST().state.battle||{},d=cur();/* 10-26 망령: RP 화면에서도 떠 있어 아래 줄과 겹쳤다 — 배틀 탭을 보고 있을 때만 */const want=gm()&&!!d&&ST().state.scene==='battle'&&!!b.dg&&b.dg.did===d.id&&!!document.querySelector('button[data-s="battle"].on');
   if(!want){if(el)el.remove();return}
@@ -524,12 +515,12 @@ window.OM_DG_UI=(()=>{
  function retOpen(){const d=cur(),b=ST().state.battle||{};if(!d||!b.dg)return;const rid0=b.dg.rid,r=R(d)[rid0]||{};const foes=Object.values(b.mons||{}).filter(m=>m.side==='right');const win=foes.length>0&&foes.every(m=>((m.hp||{}).cur||0)<=0);
   const m=A().openModal(`<div class="mhead"><h2>⛩ 던전으로 돌아가기</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small" style="margin:0 0 8px">${win?'야생 포켓몬을 모두 쓰러뜨렸다.':'아직 서 있는 야생 포켓몬이 있다 (도망 · 포획 · 중단).'} 일행의 HP · 상태를 시트에 남기려면 먼저 <b>결과 정리</b>를 한다.</p><label class="row" style="gap:6px"><input type="checkbox" id="dgRetClr" ${win?'checked':''}> 「${H(r.n||ty(r.t).k)}」 클리어 표시 (야생 기척 없애기)</label><div class="row" style="margin-top:12px"><button class="btn" id="dgRetRes">📋 결과 정리 먼저</button><span class="sp"></span><button class="btn pri" id="dgRetGo">⛩ 던전으로</button></div>`);
   m.querySelector('#dgRetRes').onclick=()=>{A().closeModal();try{window.OM_BATTLE_UI.action({act:'result'})}catch(e){}};
-  m.querySelector('#dgRetGo').onclick=async()=>{const clr=m.querySelector('#dgRetClr').checked;A().closeModal();if(clr&&R(d)[rid0])await upd({[P0(d.id)+'r/'+rid0+'/c']:1});{const bp=(ST().state.battle||{}).dgPool;if(bp){await upd({[P0(d.id)+'pool']:{o:+bp.o||0,c:+bp.c||0,o0:+bp.o0||0,c0:+bp.c0||0}});await A().set(['battle','dgPool'],null)}}   /* 10-28: 배틀에서 쓴 공용 4식 · 6령을 던전으로 */await A().set(['battle','dg'],null);await A().set(['scene'],'rp');notice(`⛩ ${d.n||'던전'}(으)로 돌아왔다${clr?` — 「${r.n||ty(r.t).k}」 클리어`:''}`);try{A().goView('rp')}catch(e){}}}
+  m.querySelector('#dgRetGo').onclick=async()=>{const clr=m.querySelector('#dgRetClr').checked;A().closeModal();if(clr&&R(d)[rid0])await upd({[P0(d.id)+'r/'+rid0+'/c']:1});await A().set(['battle','dg'],null);await A().set(['scene'],'rp');notice(`⛩ ${d.n||'던전'}(으)로 돌아왔다${clr?` — 「${r.n||ty(r.t).k}」 클리어`:''}`);try{A().goView('rp')}catch(e){}}}
 
  /* 지도 연계 (10-26 망령): 지도 장소에 던전을 걸어 두고 그 핀에서 바로 진입 — rp_ui 의 지도 메뉴가 부른다 */
  function list(){return Object.entries(all()).map(([id,d])=>({id,n:d.n||'이름 없는 던전',rooms:Object.keys(R(d)).length,opts:startOptions(d)}))}
  async function enter(id,s,from){const d=all()[id];if(!d||!gm())return false;const o=startOptions(d);s=s&&R(d)[s]?s:(o[0]||[])[0];if(!s)return A().toast('던전에 방이 없다 — 던전 관리에서 만든다'),false;
   const p=P0(id);if(await upd({field:{mode:'dungeon',did:id,t:Date.now()},[p+'at']:s,[p+'r/'+s+'/s']:1,[p+'al']:0})){notice(`⚔ 던전 진입 — ${d.n||'던전'}${from?' ('+from+')':''}`);return true}return false}
  function nameOf(id){const d=all()[id];return d?(d.n||'이름 없는 던전'):''}
- return {render,rpSync,onState,on,cur,TY,LV,lvOf,list,enter,nameOf,party,walkOf,startEnc,poolOf,poolRest};
+ return {render,rpSync,onState,on,cur,TY,LV,lvOf,list,enter,nameOf,party,walkOf,startEnc};
 })();

@@ -209,6 +209,8 @@ window.OM_PHONE_UI=(()=>{
  /* 방 코드: pub[tid].phone.room — 같은 코드를 넣은 사람끼리 파티원으로 보인다 (코드가 비어 있으면 코드 없는 사람들끼리). share=false 면 남의 목록에 안 뜬다. GM 은 코드별로 전부 본다 */
  const roomOf2=tid=>String((phoneData(tid).room||'')).trim();
  const shared=tid=>phoneData(tid).share!==false&&!(trs()[tid]||{}).priv;   /* 10-22 망령: 시트를 비공개로 두면 남의 연락처에도 안 뜬다 */
+ /* 10-28 망령: 파티 공용 4식 · 6령 (js/ppool.js) — 같은 방 코드 파티의 남은 수 */
+ const ppLine=code=>{const PP=window.OM_PPOOL;if(!PP||!PP.on()||!code)return '';const p=PP.stat(code);if(!p.n)return '';return `<div class="ph-pp" title="같은 방 코드 ${p.n}명이 함께 쓴다 (1인 4식 1 · 6령 2) — 배틀에서 쓰면 줄고 휴식이 채운다"><span>공용 4식 <b class="${p.o?'':'z'}">${p.o}</b>/${p.o0}</span><span>공용 6령 <b class="${p.c?'':'z'}">${p.c}</b>/${p.c0}</span></div>`};
  function contacts(t){const T=trs();const seats=A().ST.state.seats||{};const pd=phoneData(PH.tid);const g=G();const ids=(pd.contacts||[]).filter(id=>g.nodes[id]);const my=roomOf2(PH.tid);
   const item=x=>{const o=seats[x.id];const n=Object.values(mons()).filter(m=>m.tid===x.id).length;const rc=roomOf2(x.id);const meItem=x.id===PH.tid;return `<div class="ph-item" data-ph="${meItem?'sheet':'dm'}" data-tid="${x.id}" data-cid="${x.id}">${av(x.name,x.image)}<div class="ph-it"><b>${esc(x.name)}${meItem?' <span class="ph-tag">나</span>':''}${x.kind==='npc'?' <span class="ph-tag">NPC</span>':''}</b><small>${o?'🟢 '+esc(o.name):'빈 자리'} · 포켓몬 ${n}${gm()&&rc?' · 방 '+esc(rc):''}${!shared(x.id)?' · 비공개':''}</small></div><button class="btn xs ghost" data-ph="sheet" data-tid="${x.id}" title="시트 보기">시트</button>${meItem?'':'<span class="ph-arrow" title="문자">💬</span>'}</div>`};
   /* 코드가 있을 때만 같은 코드끼리. 코드가 없으면 나 혼자 */
@@ -220,7 +222,7 @@ window.OM_PHONE_UI=(()=>{
    <div class="ph-room"><div class="row"><input type="text" id="ph_room" value="${esc(my)}" placeholder="방 코드 (예: velvet-01)" ${canWrite()?'':'readonly'}>${canWrite()?'<button class="btn sm pri" data-ph="roomgo">입장</button>':''}${my&&canWrite()?'<button class="btn sm ghost" data-ph="roomout" title="코드를 비운다">나가기</button>':''}</div>
     ${canWrite()?`<label class="small"><input type="checkbox" id="ph_share" ${shared(PH.tid)?'checked':''}> 「${esc(meName)}」를 방에 공유 (끄면 남의 연락처에 안 뜬다)</label>`:''}
     <div class="small dim">같은 코드를 넣은 사람끼리만 파티원으로 보인다. 코드가 없으면 아무도 안 보인다.</div></div>
-   <div class="ph-sec">파티원 <span class="sp"></span><span class="small dim">${party.length}</span></div>
+   <div class="ph-sec">파티원 <span class="sp"></span><span class="small dim">${party.length}</span></div>${ppLine(my)}
    <div class="ph-list">${party.map(item).join('')||`<div class="ph-empty">${t?'':'아직 내 파티가 없다 — 시트 탭에서 「내 파티 불러오기」<br>'}${my?'이 코드로 들어온 사람이 아직 없다':'방 코드를 넣고 입장하면 같은 코드의 파티원이 보인다'}</div>`}</div>
    <div class="small dim" style="padding:0 12px 6px">누르면 그 사람에게 문자. 「시트」는 보기 전용(자기 시트만 고칠 수 있다).</div>
    ${others.length?`<div class="ph-sec">다른 방 · 비공개 <span class="small dim">(GM 만 본다)</span></div><div class="ph-list">${others.map(item).join('')}</div>`:''}
