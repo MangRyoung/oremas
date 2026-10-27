@@ -463,7 +463,7 @@ window.OM_BATTLE_UI=(()=>{
    blk.querySelectorAll('[data-ctab]').forEach(el=>el.onclick=()=>{UIC.tab[tid]=el.dataset.ctab;rerenderCmd()});
    blk.querySelectorAll('[data-upre]').forEach(el=>el.onclick=()=>{if(el.classList.contains('dis'))return;const n=el.dataset.upre;cur.upots=cur.upots||[];const i=cur.upots.indexOf(n);if(i>=0)cur.upots.splice(i,1);else cur.upots.push(n);rerenderCmd()});
    blk.querySelectorAll('[data-seg]').forEach(el=>el.onclick=()=>{if(el.dataset.seg==='switch'){x.move='switch';x.targets=[]}else{x.move='';x.targets=[]}rerenderCmd()});
-   blk.querySelectorAll('[data-mv]').forEach(el=>el.onclick=()=>{if(extGone(MVS(m)[+el.dataset.mv]))return A().toast('이 기능 확장은 이번 시합에서 다 썼다');x.move=el.dataset.mv;x.targets=defaultTargets(c.b,mid,el.dataset.mv);x.tman=0;rerenderCmd()});
+   blk.querySelectorAll('[data-mv]').forEach(el=>el.onclick=()=>{if(extGone(MVS((c.b.mons||{})[mid]||{})[+el.dataset.mv]))return A().toast('이 기능 확장은 이번 시합에서 다 썼다');x.move=el.dataset.mv;x.targets=defaultTargets(c.b,mid,el.dataset.mv);x.tman=0;rerenderCmd()});
    blk.querySelectorAll('[data-sw]').forEach(el=>el.onclick=()=>{x.switch=el.dataset.sw;rerenderCmd()});
    blk.querySelectorAll('[data-tgt]').forEach(el=>el.onclick=()=>{const s=el.dataset.tgt;x.tman=1;const i=x.targets.indexOf(s);if(i>=0)x.targets.splice(i,1);else{/* 단일 대상 기술은 새로 누른 대상으로 바꾼다 — 지난 턴 대상이 남아 둘을 노리던 일 (10-26 FFA 시험) */const mv=MVS((c.b.mons||{})[mid]||{})[+x.move]||{};if(!MULTI_RANGE.test(String(mv.range||'')))x.targets.length=0;x.targets.push(s)}rerenderCmd()});
    blk.querySelectorAll('[data-pq]').forEach(el=>el.onclick=()=>{const n=+el.dataset.pq;x.prio=x.prio||{};x.prio[el.dataset.slot]=n?String(n):'';rerenderCmd()});
