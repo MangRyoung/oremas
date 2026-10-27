@@ -15,7 +15,7 @@ function dummy(){const f=function(){};let P;const H={get:(t,k)=>{if(k===Symbol.t
 /* 웹툴 원문에 바꿔 끼울 것 — [찾을 글, 바꿀 글]. 못 찾으면 오류 */
 const PATCH=[
  /* 내부 함수 꺼내기 (IIFE 끝의 return 앞) */
- [" return {askYes,", " window.__BUI_GET=n=>{try{return eval(n)}catch(e){return undefined}};\n return {askYes,"],
+ [" return {askYes,", " window.__BUI_GET=n=>{try{return eval(n)}catch(e){return undefined}};\n return {askYes,"],   /* 10-28: 웹툴 main 에서 askYes 뒤가 canSeeStx 로 바뀌어 앞부분만 잡는다 */
  /* 확인 창: 시뮬이 답한다 (기본 = 예) */
  [" function askYes(q,yes,no){return new Promise(res=>{", " function askYes(q,yes,no){if(window.__SIM&&window.__SIM.ask)return Promise.resolve(window.__SIM.ask(q,yes,no));return new Promise(res=>{"],
  /* 효과 엔진 문맥: 대상 고르기 · 조건 확인 · 선택지 — 시뮬이 답한다 */

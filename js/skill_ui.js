@@ -6,7 +6,7 @@
    AA 특권: 세션 1회, 목표 9 이하 이능 판정을 굴리지 않고 성공(이능 1회 소모). 커버: 다른 트레이너가 결과를 한 칸 올리고 부상(중상은 불가). 프라이드 A 고집: 동료 주사위 1 → 대가.
    패널티(맵툴 skill_pen): 제시마다 「실패·대실패」「대가를 치르고 성공」 두 묶음 — 포켓몬 대미지·상태·랭크, 4식/6령 차감, 포텐셜 횟수 −n, 메모. 자동 적용이면 결과가 나오는 즉시 건다.
    휴식(맵툴 skill_rest): 긴 휴식(대대적) · 짧은 휴식(상담함) · 숨돌리기(가벼움) 세 단계. 각 단계의 내용은 「휴식」 탭에서 고친다. 휴대폰 캘린더의 「회복」도 이것을 부른다.
-   상태: state.skill = {cfg, rest:{long,short,breath}, presets:[], offer, trainers:{tid:{myosu,care,inou,aa,inj,tired:[mid]}}, res:{tid:{...}}, hist:[]} */
+   상태: state.skill = {cfg, rest:{long,mid,short,breath}, presets:[], offer, trainers:{tid:{myosu,care,inou,aa,inj,tired:[mid]}}, res:{tid:{...}}, hist:[]} */
 "use strict";
 window.OM_SKILL_UI=(()=>{
  const A=()=>window.OM_APP, S=()=>window.OM_STATS, DB=()=>window.OM_DB||{};
@@ -19,9 +19,13 @@ window.OM_SKILL_UI=(()=>{
  const RES=['대실패','실패','대가를 치르고 성공','성공','대성공'];const COL=['#7a1020','#8a1c2b','#8a6a12','#1f7a4a','#1a6ad8'];
  const RK=[['attack','공격'],['defense','방어'],['specialattack','특공'],['specialdefense','특방'],['speed','스피드'],['accuracy','명중'],['evasion','회피'],['critical','급소']];
  const CFG0={s1:1,s2:2,both1:1,noinou2:1,nocover2:1,hp1:'1/4',hp2:'1/4',rest:1,inou:2,aa:9,myosuA:1,myosuAA:2,penAuto:1};
- const KINDS=[['long','긴 휴식','대대적'],['short','짧은 휴식','상담함'],['breath','숨돌리기','가벼움']];
+ const KINDS=[['long','긴 휴식','대대적'],['mid','중간 휴식','반쯤'],['short','짧은 휴식','상담함'],['breath','숨돌리기','가벼움']];   /* 10-28 망령: 중간 휴식 추가 */
  const REST0={long:{hp:'full',revive:1,revive_hp:'full',cure_ab:1,cure_sp:1,pot_pk_n:'all',ord_n:'all',pot_tr_n:'all',tired:1,care:1,inou:1,inj_n:2},
-  short:{hp:'1/2',revive:0,revive_hp:'1',cure_ab:0,cure_sp:1,pot_pk_n:'0',ord_n:'0',pot_tr_n:'0',tired:1,care:1,inou:1,inj_n:1},
+  /* 10-28 망령 「짧은 휴식이 저 정도고 긴 휴식이 전부면 중간 휴식은 적절하게」 — 감우안: 전원 HP 1/2 · 빈사는 HP 1/4 · 상태 회복 ·
+     파티 4식 2 · 6령 3(3인 공용 4식 3 · 6령 6 의 절반) · 전용 · 고유 포텐셜 1씩 · 지침 · 돌봄 · 이능 · 부상 1단계 */
+  mid:{hp:'1/2',hp_one:0,revive:1,revive_hp:'1/4',cure_ab:1,cure_sp:1,pot_pk_n:'1',ord_n:'0',ord_po:2,ord_pc:3,pot_tr_n:'1',tired:1,care:1,inou:1,inj_n:1},
+  /* 10-28 망령(시뮬 맞춤): 짧은 휴식 = 일행에서 가장 다친 1체 HP 1/4 · 빈사는 HP 1 · 상태 회복 · 파티 전체 4식 1 · 6령 1 (옛 기본: 전원 HP 1/2 · 상태 변화만) */
+  short:{hp:'1/4',hp_one:1,revive:1,revive_hp:'1',cure_ab:1,cure_sp:1,pot_pk_n:'0',ord_n:'0',ord_po:1,ord_pc:1,pot_tr_n:'0',tired:1,care:1,inou:1,inj_n:1},
   breath:{hp:'1/4',revive:0,revive_hp:'1',cure_ab:0,cure_sp:0,pot_pk_n:'0',ord_n:'0',pot_tr_n:'0',tired:1,care:0,inou:0,inj_n:0}};
  /* 체크 제시 예시 (자주 쓰는 모양). 「저장」으로 내 것을 더할 수 있다 */
  const EX=[
@@ -116,11 +120,13 @@ window.OM_SKILL_UI=(()=>{
  /* ===== 휴식 ===== */
  async function applyRest(kind,tids,opt){opt=opt||{};const R=restCfg(kind);const T=trs();const ids=(tids&&tids.length?tids:Object.keys(T)).filter(id=>T[id]);const kn=(KINDS.find(k=>k[0]===kind)||[])[1]||kind;const L=[];
   const SD=sdb();const bt=(A().ST.state.battle||{}).trainers||{};
+  /* 10-28: hp_one = 「HP」 회복은 일행 전체에서 가장 다친 1체만 (빈사 · 만피는 빼고 HP 비율이 가장 낮은 포켓몬) */
+  let oneId='';if(+R.hp_one&&R.hp&&R.hp!=='0'){let best=2;for(const m0 of Object.values(mons()).filter(m=>ids.includes(m.tid))){const b0=bmons()[m0.id];const x0=b0||m0;const c0=HP(x0,!!b0);if(c0<=0||c0>=x0.hp.max)continue;const r0=c0/x0.hp.max;if(r0<best){best=r0;oneId=m0.id}}}
   for(const tid of ids){const t=T[tid];const k=tsk(tid);const lines=[];
    for(const m of Object.values(mons()).filter(m=>m.tid===tid)){let heal=0,rev=false,cured=[];
     await putMon(m.id,(x,b)=>{const was=HP(x,b);let cur=was;const XS=STS(x,b);
      if(cur<=0||XS.Dead){if(+R.revive){cur=Math.max(1,frac(x.hp.max,R.revive_hp||'1'));delete XS.Dead;if(!b)rev=true}}
-     else if(R.hp&&R.hp!=='0'){const h=frac(x.hp.max,R.hp);cur=Math.min(x.hp.max,cur+h);if(!b)heal=cur-was}
+     else if(R.hp&&R.hp!=='0'&&(!+R.hp_one||m.id===oneId)){const h=frac(x.hp.max,R.hp);cur=Math.min(x.hp.max,cur+h);if(!b)heal=cur-was}
      setHP(x,b,cur);
      for(const st0 in XS){if(!XS[st0]||st0==='Dead')continue;const abn=!!(SD[st0]||{}).abn;if((abn&&+R.cure_ab)||(!abn&&+R.cure_sp)){delete XS[st0];if(!b)cured.push(SD[st0]?SD[st0].ko:st0)}}
      tidyST(x,b);
@@ -135,6 +141,15 @@ window.OM_SKILL_UI=(()=>{
    if(Object.keys(patch).length)await setT(tid,patch);
    const tl=[];if(+R.tired&&k.tired.length)tl.push('지침 해제');if(+R.care)tl.push('돌봄');if(+R.inou)tl.push('이능');if(+R.inj_n>0&&k.inj)tl.push(`${k.inj>=2?'중상':'부상'} → ${patch.inj>=2?'중상':patch.inj===1?'부상':'건강'}`);if(tl.length)lines.push(tl.join(' · '));
    L.push(`${t.name}: ${lines.join(' · ')||'변화 없음'}`)}
+  /* 10-28: ord_po · ord_pc = 파티 전체에서 4식 · 6령을 n 개 회복 (배틀 중이면 배틀 쪽 횟수, 아니면 시트 쪽 — 던전 탭 ordSrc 와 같다). 제작한 값(가득)까지만 */
+  /* 10-28: 던전 세이프룸 휴식(opt.did)이면 4식 · 6령은 던전 공용 칸을 채운다 (dungeon_ui poolRest) */
+  if(opt.did&&window.OM_DG_UI&&window.OM_DG_UI.poolRest){const t=await window.OM_DG_UI.poolRest(opt.did,R);if(t)L.push(t)}
+  else if(+R.ord_po>0||+R.ord_pc>0){const OO=window.OM_ORDERS;const B=A().ST.state.battle||{};const LP=[];
+   for(const [pre,n0,lab] of [['order_',+R.ord_po||0,'4식'],['command_',+R.ord_pc||0,'6령']]){let n=n0;
+    for(const tid of ids){if(n<=0)break;const bT=(B.trainers||{})[tid];const inB=!!(bT&&bT.orderCount&&B.started);const src=inB?bT:T[tid];if(!src)continue;let FL={};try{FL=OO.fill(src,src.orderBase||1)}catch(e){}const cnt=Object.assign({},src.orderCount||{});let ch=0;
+     for(const kk of Object.keys(FL).filter(k=>k.startsWith(pre)).sort()){while(n>0&&(+cnt[kk]||0)<(+FL[kk]||0)){cnt[kk]=(+cnt[kk]||0)+1;n--;ch++}}
+     if(ch){await A().set(inB?['battle','trainers',tid,'orderCount']:['roster','trainers',tid,'orderCount'],cnt);LP.push(`${src.name||''} ${lab} +${ch}`)}}}
+   if(LP.length)L.push('파티: '+LP.join(' · '))}
   const txt=`【휴식】 ${kn}${opt.by?' · '+opt.by:''}\n${L.join('\n')}`;A().sysLog(txt,'battle',{});try{window.OM_RP_UI&&window.OM_RP_UI.playSe('Ping')}catch(e){}return txt}
 
  /* ===== 창 공통 ===== */
@@ -198,11 +213,11 @@ ${penFields(t,X)}</div>`}).join('')}</div>
    const nsel=(k,lab,sub)=>{const v=String(R[k]==null?'all':R[k]);const isN=v!=='all'&&v!=='0';return `<div class="skrow on"><div style="flex:1"><b>${lab}</b>${sub?`<small>${sub}</small>`:''}</div>${seg('rest_'+k,[['0','안 함'],['all','전부'],['n','개수']],isN?'n':v)}<input type="number" class="n xs" data-restn="${k}" value="${isN?esc(v):''}" placeholder="개" style="${isN?'':'visibility:hidden'}"></div>`};
    return `<div class="skcard"><div class="sec">휴식 단계 <span class="note">종류마다 따로 저장 · 선언하면 로스터 트레이너 전원과 소지 포켓몬에 적용 · 휴대폰 캘린더의 「회복」은 자기만</span></div>
     <div class="fr">${seg('restkind',KINDS.map(k=>[k[0],k[1]+' · '+k[2]]),kind)}<span class="sp"></span><button class="btn pri" data-sk="restgo">「${kn[1]}」 선언 (전원)</button></div>
-    <div class="skcols"><div><div class="sec">포켓몬</div>${amt('hp','「HP」 회복',[['0','회복 안 함'],['1/4','1/4'],['1/2','1/2'],['full','전부']])}
+    <div class="skcols"><div><div class="sec">포켓몬</div>${amt('hp','「HP」 회복',[['0','회복 안 함'],['1/4','1/4'],['1/2','1/2'],['full','전부']])}${tg('hp_one','1체만 회복','일행 전체에서 가장 다친 포켓몬 하나만 (짧은 휴식 기본)')}
       ${tg('revive','빈사 포켓몬 부활','「HP」 0 인 포켓몬을 일으킨다')}${+R.revive?amt('revive_hp','부활 시 「HP」',[['1','1'],['1/4','1/4'],['1/2','1/2'],['full','전부']]):''}
       ${tg('cure_ab','상태 이상 치유','독 · 화상 · 마비 · 잠듦 · 얼음 등')}${tg('cure_sp','상태 변화 치유','혼란 · 랭크 외 일시 효과 등')}
       ${nsel('pot_pk_n','전용 포텐셜 횟수 회복','배틀에 있는 소지 포켓몬 (개수면 트레이너당 합계)')}</div>
-     <div><div class="sec">트레이너</div>${nsel('ord_n','4식 6령 회복','전부 = 제작한 값으로')}${nsel('pot_tr_n','고유 포텐셜 횟수 회복','횟수 제한이 있는 고유 포텐셜')}
+     <div><div class="sec">트레이너</div>${nsel('ord_n','4식 6령 회복','전부 = 제작한 값으로 (트레이너마다)')}<div class="skrow on"><div style="flex:1"><b>파티 4식 · 6령 회복</b><small>일행 전체에서 합쳐 n 개 (짧은 휴식 기본 1 · 1)</small></div>4식 <input type="number" class="n xs" data-restp="ord_po" value="${+R.ord_po||0}" min="0" max="9"> 6령 <input type="number" class="n xs" data-restp="ord_pc" value="${+R.ord_pc||0}" min="0" max="9"></div>${nsel('pot_tr_n','고유 포텐셜 횟수 회복','횟수 제한이 있는 고유 포텐셜')}
       ${tg('tired','지친 포켓몬 회복','스킬 체크 동료 지침 해제')}${tg('care','돌봄 횟수 회복')}${tg('inou','이능 횟수 · 반동 회복')}
       <div class="skrow on"><div style="flex:1"><b>부상 회복</b><small>중상 → 부상 → 없음</small></div>${seg('rest_inj_n',[[0,'안 함'],[1,'1단계'],[2,'2단계']],+R.inj_n||0)}</div></div></div>
     <div class="row" style="margin-top:10px"><button class="btn ghost" data-sk="restdef">「${kn[1]}」 기본값</button><span class="sp"></span><button class="btn" data-sk="restsave">「${kn[1]}」 설정 저장</button></div></div>`})();
@@ -226,7 +241,7 @@ ${penFields(t,X)}</div>`}).join('')}</div>
   function grabRest(){const kind=F.restKind||'long';const R=restCfg(kind);md.querySelectorAll('[data-rest]').forEach(cb=>R[cb.dataset.rest]=cb.checked?1:0);
    for(const k of ['hp','revive_hp']){if(!md.querySelector(`[data-seg="rest_${k}"]`))continue;const v=segVal(md,'rest_'+k);const inp=md.querySelector(`[data-restv="${k}"]`);R[k]=(inp&&inp.value.trim())||(v==='x'?R[k]:v)}
    for(const k of ['pot_pk_n','ord_n','pot_tr_n']){const v=segVal(md,'rest_'+k);const inp=md.querySelector(`[data-restn="${k}"]`);R[k]=v==='n'?String(Math.max(1,+inp.value||1)):v}
-   R.inj_n=+segVal(md,'rest_inj_n')||0;return R}
+   R.inj_n=+segVal(md,'rest_inj_n')||0;md.querySelectorAll('[data-restp]').forEach(i=>R[i.dataset.restp]=Math.max(0,Math.min(9,+i.value||0)));return R}
   if(tab==='rest'){md.addEventListener('segchange',e=>{const sg=e.target.closest('[data-seg]');if(!sg)return;const n=sg.dataset.seg;if(n==='restkind'){F.restKind=e.detail;re('rest')}else if(/^rest_(pot_pk_n|ord_n|pot_tr_n)$/.test(n)){const inp=md.querySelector(`[data-restn="${n.slice(5)}"]`);inp.style.visibility=e.detail==='n'?'visible':'hidden';if(e.detail==='n'&&!inp.value)inp.value='1'}});
    md.querySelectorAll('[data-rest]').forEach(cb=>cb.onchange=async()=>{cb.closest('.skrow').classList.toggle('on',cb.checked);if(cb.dataset.rest==='revive'){const R=grabRest();await A().set(['skill','rest',F.restKind||'long'],R);re('rest')}})}
   md.querySelectorAll('[data-sk]').forEach(el=>{el.onclick=async()=>{const k=el.dataset.sk;

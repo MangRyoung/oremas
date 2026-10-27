@@ -11,7 +11,7 @@ window.OM_PHONE_UI=(()=>{
  const WD=['일','월','화','수','목','금','토'];
  const SLOTS=['아침','점심','오후','방과 후','저녁','밤','심야'];
  const KINDS=[['commu','의미 있는 시간 (관계)','관계'],['study','학업 · 수련','학업'],['free','개인 시간','개인'],['work','노가다 · 아르바이트','노가다'],['out','나가다 · 조사','조사'],['memo','메모','메모']];
- const RESTS=[['breath','가벼움','숨돌리기'],['short','상담함','짧은 휴식'],['long','대대적','긴 휴식']];
+ const RESTS=[['breath','가벼움','숨돌리기'],['short','상담함','짧은 휴식'],['mid','반쯤','중간 휴식'],['long','대대적','긴 휴식']];   /* 10-28 중간 휴식 */
  const gm=()=>A().ST.role==='gm';
  const trs=()=>(A().ST.state.roster||{}).trainers||{};
  const mons=()=>(A().ST.state.roster||{}).mons||{};

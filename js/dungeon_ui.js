@@ -54,6 +54,31 @@ window.OM_DG_UI=(()=>{
  const SEATS=()=>ST().state.seats||{};
  const WN=d=>Math.max(1,Math.min(3,+((d||{}).wn)||2));
  const alOn=d=>!(d&&d.noal);
+ /* 10-28 망령: 4식 · 6령은 던전 단위 공용 칸 — 탐사 중인 일행(PT) × (4식 1 · 6령 2). 던전마다 d.pool = {o, c, o0, c0}.
+    야생 조우 배틀로 넘어갈 때 battle.dgPool 로 옮겨 쓰고(battle_ui 가 선행 · 임의 발동마다 하나씩 줄인다), 「던전으로 돌아가기」 때 되돌린다.
+    세이프룸 휴식은 이 칸을 채운다(skill_ui 휴식 설정 「파티 4식 · 6령 회복」 · 긴 휴식은 가득). */
+ const POOL_PER={o:1,c:2};
+ function poolOf(d){const n=Math.max(1,party(d).length);const p=(d&&d.pool)||{};const o0=+p.o0||n*POOL_PER.o,c0=+p.c0||n*POOL_PER.c;return {o:p.o==null?o0:clamp(+p.o||0,0,99),c:p.c==null?c0:clamp(+p.c||0,0,99),o0,c0}}
+ const inBattleOf=d=>{const b=ST().state.battle||{};return b.dg&&b.dg.did===(d&&d.id)&&b.dgPool?b:null};
+ const poolNow=d=>{const b=inBattleOf(d);return b?Object.assign({},poolOf(d),b.dgPool):poolOf(d)};
+ async function poolSet(d,np){const b=inBattleOf(d);if(b)return A().set(['battle','dgPool'],np);return upd({[P0(d.id)+'pool']:np})}
+ function poolHTML(d){const p=poolNow(d);return `<div class="dgpt-ord mini" data-dgpool="1" title="던전 공용 4식 · 6령 — 탐사 중인 일행이 함께 쓴다 (1인 4식 1 · 6령 2)${gm()?' · 눌러서 고치기':''}"><div><i>공용 4식 <b>${p.o}</b></i><span class="${p.o?'':'z'}">/ ${p.o0}</span></div><div><i class="c">공용 6령 <b>${p.c}</b></i><span class="${p.c?'':'z'}">/ ${p.c0}</span></div></div>`}
+ function poolMgr(){const d=cur();if(!d||!gm())return;const md=A().openModal('<div id="dgPl"></div>');
+  const draw=()=>{const d2=cur();if(!d2)return A().closeModal();const p=poolNow(d2);const row=(k,lab)=>`<div class="dgoe-row ${p[k]?'':'z'}"><span class="nm">공용 ${lab}</span><span class="mono">${p[k]}<small> / ${p[k+'0']}</small></span><button class="btn xs pri" data-pl="-" data-k="${k}" ${p[k]>0?'':'disabled'}>쓰기 −1</button><button class="btn xs" data-pl="+" data-k="${k}" ${p[k]>=p[k+'0']?'disabled':''}>회복 +1</button></div>`;
+   md.querySelector('#dgPl').innerHTML=`<div class="mhead"><h2>던전 공용 4식 · 6령 <small class="dim">${H(d2.n||'')}${inBattleOf(d2)?' · 배틀 중':''}</small></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+    <div class="dgoe">${row('o','4식')}${row('c','6령')}<p class="small dim" style="margin:0">탐사 중인 일행 ${party(d2).length}명 × (4식 1 · 6령 2). 배틀에서 선행 · 임의 발동할 때마다 저절로 하나씩 준다. 휴식(세이프룸)이 채운다.</p>
+    <div class="row" style="gap:6px"><button class="btn sm" data-pl="full">가득 (새 탐사)</button><button class="btn sm ghost" data-pl="recount">지금 인원으로 다시 세기</button></div></div>`};
+  draw();
+  md.addEventListener('click',async e=>{if(e.target.closest('[data-x]'))return A().closeModal();const b=e.target.closest('[data-pl]');if(!b||b.disabled)return;const d2=cur();if(!d2)return;const p=poolNow(d2);const np={o:p.o,c:p.c,o0:p.o0,c0:p.c0};const a=b.dataset.pl,k=b.dataset.k;let line='';
+   if(a==='-'){np[k]=Math.max(0,np[k]-1);line=`공용 ${k==='o'?'4식':'6령'} −1 (남은 ${np[k]})`}
+   else if(a==='+'){np[k]=Math.min(np[k+'0'],np[k]+1);line=`공용 ${k==='o'?'4식':'6령'} +1 (남은 ${np[k]})`}
+   else if(a==='full'){np.o=np.o0;np.c=np.c0;line='공용 4식 · 6령 가득'}
+   else if(a==='recount'){const n=Math.max(1,party(d2).length);np.o0=n*POOL_PER.o;np.c0=n*POOL_PER.c;np.o=Math.min(np.o,np.o0);np.c=Math.min(np.c,np.c0);line=`일행 ${n}명 기준으로 다시 셈 (4식 ${np.o0} · 6령 ${np.c0})`}
+   await poolSet(d2,np);notice(`【던전】 ${d2.n||''} ${line}`);draw()})}
+ /* 휴식(skill_ui applyRest 가 부른다): 긴 휴식(ord_n all) = 가득, 그 밖에는 「파티 4식 · 6령 회복」 개수만큼 */
+ async function poolRest(did,R){const d0=all()[did];if(!d0||!gm())return '';const d=Object.assign({},d0,{id:did});const p=poolNow(d);const np={o:p.o,c:p.c,o0:p.o0,c0:p.c0};
+  if(R.ord_n==='all'){np.o=np.o0;np.c=np.c0}else{np.o=Math.min(np.o0,np.o+(+R.ord_po||0));np.c=Math.min(np.c0,np.c+(+R.ord_pc||0))}
+  if(np.o===p.o&&np.c===p.c)return '';await poolSet(d,np);return `파티: 공용 4식 +${np.o-p.o} · 6령 +${np.c-p.c} (남은 ${np.o} · ${np.c})`}
  const stKo=k=>((((window.OM_DB||{}).states||{}).st||{})[k]||{}).ko||k;
  function party(d){const tr=RO().trainers||{};const ids=d&&d.pt?Object.keys(d.pt):Object.keys(SEATS()).filter(id=>tr[id]);return ids.filter(id=>tr[id]).sort((a,b)=>(tr[a].ord||0)-(tr[b].ord||0))}
  function monHp(m){const mx=Math.max(1,(m.hp&&m.hp.max)||(m.stats||[])[0]||1);const dead=!!((m.sheetStates||{}).Dead);const c=dead?0:m.sheetHp==null?mx:Math.max(0,Math.min(mx,+m.sheetHp||0));return {c,mx,dead:dead||c<=0}}
@@ -61,7 +86,7 @@ window.OM_DG_UI=(()=>{
  function walkOf(tid){const t=(RO().trainers||{})[tid]||{},ms=RO().mons||{};return (Array.isArray(t.walk)?t.walk:[]).filter(id=>ms[id]&&(t.pids||[]).includes(id))}
  function ptHTML(d){const ids=party(d),tr=RO().trainers||{},ms=RO().mons||{},n=WN(d);
   if(!ids.length)return gm()?'<div class="dgpt-empty">일행이 없다 — 좌석에 트레이너가 앉거나 던전 탭 「일행 편성」</div>':'';
-  return ids.map(tid=>{const t=tr[tid],pids=(t.pids||[]).filter(id=>ms[id]),w=walkOf(tid),me=canWalk(tid);
+  return poolHTML(d)+ids.map(tid=>{const t=tr[tid],pids=(t.pids||[]).filter(id=>ms[id]),w=walkOf(tid),me=canWalk(tid);
    const balls=pids.map(id=>{const h=monHp(ms[id]);return `<i class="${h.dead?'ko':h.c<h.mx?'hurt':''}${w.includes(id)?' w':''}" title="${H(ms[id].name)} ${h.c}/${h.mx}"></i>`}).join('');
    const chips=w.map(id=>{const m=ms[id],h=monHp(m),p=h.c/h.mx,st=Object.keys(m.sheetStates||{}).filter(k=>k!=='Dead'&&m.sheetStates[k]);
     const rkt=rkTxt(m);return `<div class="dgpt-mon${h.dead?' ko':''}" data-pm="${H(id)}" title="눌러서 HP · 상태 · 랭크 고치기"><span class="dgpt-img" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></span><span class="dgpt-mi"><b>${H(m.name)}</b><span class="dgpt-hp ${p<=.25?'low':p<=.5?'mid':''}"><i style="width:${Math.round(p*100)}%"></i></span><small>${h.dead?'빈사':h.c+'/'+h.mx}${st.length?' · '+H(st.map(stKo).join(' ')):''}${rkt?' · '+H(rkt):''}</small></span></div>`}).join('');
@@ -104,9 +129,9 @@ window.OM_DG_UI=(()=>{
  /* 10-26 망령 「야생이 아닐 땐 스킬 체크나 단서(그림 · 설명)를 넣고, 휴식처는 우리 휴식 룰과」:
     r.sk = 스킬 체크(예시 모양 {label,stat,mode,target,npc,step,twice,pm,pen,name}) → OM_SKILL_UI.present(일행)
     r.cl = 단서 {t 제목, d 설명, img 그림} · r.cs = 공개함 · dg.clue = {did,rid,at} 지금 모두에게 띄운 단서
-    세이프룸: r.rk = 휴식 단계(long · short · breath, 기본 short) · r.rmany = 여러 번 · r.ru = 이미 쉼 → OM_SKILL_UI.applyRest(단계, 일행) */
+    세이프룸: r.rk = 휴식 단계(long · mid · short · breath, 기본 short) · r.rmany = 여러 번 · r.ru = 이미 쉼 → OM_SKILL_UI.applyRest(단계, 일행) */
  const SKU=()=>window.OM_SKILL_UI;
- const RKO=[['long','긴 휴식','대대적'],['short','짧은 휴식','상담함'],['breath','숨돌리기','가벼움']];
+ const RKO=[['long','긴 휴식','대대적'],['mid','중간 휴식','반쯤'],['short','짧은 휴식','상담함'],['breath','숨돌리기','가벼움']];   /* 10-28 중간 휴식 */
  const rkOf=r=>RKO.find(x=>x[0]===(r&&r.rk))||RKO[1];
  const skSum=sk=>{try{return SKU()&&SKU().sumOf?SKU().sumOf(sk).replace(/<[^>]+>/g,''):(sk.stat+' · 목표 '+sk.target)}catch(e){return ''}};
  const isSafe=r=>!!r&&r.t==='safe';
@@ -218,7 +243,7 @@ window.OM_DG_UI=(()=>{
   const rs=R(d);if(!rs[d.at]){const s=d.st&&rs[d.st]?d.st:Object.keys(rs)[0];d.at=s||''}
   stage.classList.add('dgmode');
   let bg=stage.querySelector(':scope>.dgrp-bg');if(!bg){bg=document.createElement('div');bg.className='dgrp dgrp-bg';bg.innerHTML='<div class="dg-planes"></div>';stage.prepend(bg);RPH.frame=''}
-  const hudClick=e=>{const cb=e.target.closest('[data-dgcard]');if(cb){e.stopPropagation();return useCard(cb.dataset.dgcard)}const pm=e.target.closest('[data-pm]');if(pm){e.stopPropagation();return monEdit(pm.dataset.pm)}const od=e.target.closest('[data-ordm]');if(od){e.stopPropagation();return ordMgr(od.dataset.ordm)}const w=e.target.closest('[data-walk]');if(w){e.stopPropagation();return walkPick(w.dataset.walk)}const b=e.target.closest('[data-rpdg]');if(!b)return;e.stopPropagation();
+  const hudClick=e=>{const cb=e.target.closest('[data-dgcard]');if(cb){e.stopPropagation();return useCard(cb.dataset.dgcard)}const pm=e.target.closest('[data-pm]');if(pm){e.stopPropagation();return monEdit(pm.dataset.pm)}const pl=e.target.closest('[data-dgpool]');if(pl){e.stopPropagation();return poolMgr()}const od=e.target.closest('[data-ordm]');if(od){e.stopPropagation();return ordMgr(od.dataset.ordm)}const w=e.target.closest('[data-walk]');if(w){e.stopPropagation();return walkPick(w.dataset.walk)}const b=e.target.closest('[data-rpdg]');if(!b)return;e.stopPropagation();
     if(b.dataset.rpdg==='pt'){const mn=!ptMin();try{localStorage.setItem('om_dg_pt',mn?'min':'open')}catch(err){}const pw=stage.querySelector('.dgrp-ptw');if(pw)pw._h='';rpSync(stage);return}
     if(b.dataset.rpdg==='enc'){const dd=cur();if(dd)startEnc(dd)}
     if(b.dataset.rpdg==='clue'){const dd=cur();if(!dd)return;const rr=R(dd)[dd.at];if(rr&&rr.cs){DG.clueLocal=dd.at;DG.clueHide=0;RPH.clueSig='';rpSync(stage)}else if(gm())showClue(dd,dd.at)}
@@ -259,7 +284,7 @@ window.OM_DG_UI=(()=>{
  async function restHere(d,rid){const r=R(d)[rid];if(!r||!gm())return;const K=SKU();if(!K||!K.applyRest)return A().toast('휴식 기능을 불러오지 못했다');if(r.ru&&!r.rmany)return A().toast('이 휴식처에서는 이미 쉬었다');
   const k=rkOf(r),L=party(d);if(!L.length)return A().toast('쉴 일행이 없다');
   const m=A().openModal(`<div class="mhead"><h2>☗ 휴식 — ${H(r.n||'세이프룸')}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small" style="margin:0 0 8px">일행 ${L.length}명(${H(L.map(t=>((RO().trainers||{})[t]||{}).name).join(', '))})이 쉰다. 단계마다 회복하는 것은 스킬 체크 창 「휴식」 탭의 설정을 따른다.</p><div class="row" style="gap:6px;flex-wrap:wrap">${RKO.map(x=>`<button class="btn ${x[0]===k[0]?'pri':''}" data-rk="${x[0]}">${x[1]} <small>(${x[2]})</small></button>`).join('')}</div>${r.rmany?'':'<p class="small dim" style="margin:8px 0 0">이 휴식처는 한 번만 쓸 수 있다.</p>'}`);
-  m.querySelectorAll('[data-rk]').forEach(b=>b.onclick=async()=>{A().closeModal();await K.applyRest(b.dataset.rk,L,{by:`${d.n||'던전'} · ${r.n||'세이프룸'}`});if(!r.rmany)await upd({[P0(d.id)+'r/'+rid+'/ru']:1})})}
+  m.querySelectorAll('[data-rk]').forEach(b=>b.onclick=async()=>{A().closeModal();await K.applyRest(b.dataset.rk,L,{by:`${d.n||'던전'} · ${r.n||'세이프룸'}`,did:d.id});if(!r.rmany)await upd({[P0(d.id)+'r/'+rid+'/ru']:1})})}
  function side(d,isGm,al,lv){
   const rs=R(d),id=DG.sel,r=rs[id],t=ty(r&&r.t),here=id===d.at;
   const meta=`<div class="dg-card"><h4>${H(d.n||'이름 없는 던전')} <small>DUNGEON</small></h4>${d.o?`<span class="dg-chip">주인 · ${H(d.o)}</span>`:''}${d.a?`<span class="dg-chip">${H(d.a)}</span>`:''}${d.d?`<span class="dg-chip on">기한 · ${H(d.d)}</span>`:''}${mapLoc(d.id)}
@@ -293,7 +318,7 @@ window.OM_DG_UI=(()=>{
 
  /* ---------- 클릭 (탭 화면) ---------- */
  function startOptions(d){const rs=R(d),o=[];if(d.st&&rs[d.st])o.push([d.st,'입구에서 시작']);Object.entries(rs).forEach(([id,r])=>{if(r.t==='safe'&&r.s&&id!==d.st)o.push([id,'세이프룸 · '+(r.n||'')])});if(d.at&&rs[d.at]&&!o.some(x=>x[0]===d.at))o.push([d.at,'지난 위치에서 이어서']);if(!o.length){const f=Object.keys(rs)[0];if(f)o.push([f,'첫 방에서 시작'])}return o}
- function bindRoot(el){if(el._dgBound)return;el._dgBound=1;el.addEventListener('click',e=>{const cb=e.target.closest('[data-dgcard]');if(cb&&el.contains(cb)){e.stopPropagation();return useCard(cb.dataset.dgcard)}const pm=e.target.closest('[data-pm]');if(pm&&el.contains(pm)&&pm.closest('#dgRoot')){e.stopPropagation();return monEdit(pm.dataset.pm)}const od=e.target.closest('[data-ordm]');if(od&&el.contains(od)&&od.closest('#dgRoot')){e.stopPropagation();return ordMgr(od.dataset.ordm)}const w=e.target.closest('[data-walk]');if(w&&el.contains(w)&&w.closest('#dgRoot')){return walkPick(w.dataset.walk)}const b=e.target.closest('[data-a]');if(!b||!el.contains(b)||!b.closest('#dgRoot,.dg-idle'))return;act(b.dataset.a,b)})}
+ function bindRoot(el){if(el._dgBound)return;el._dgBound=1;el.addEventListener('click',e=>{const cb=e.target.closest('[data-dgcard]');if(cb&&el.contains(cb)){e.stopPropagation();return useCard(cb.dataset.dgcard)}const pm=e.target.closest('[data-pm]');if(pm&&el.contains(pm)&&pm.closest('#dgRoot')){e.stopPropagation();return monEdit(pm.dataset.pm)}const pl=e.target.closest('[data-dgpool]');if(pl&&el.contains(pl)&&pl.closest('#dgRoot')){e.stopPropagation();return poolMgr()}const od=e.target.closest('[data-ordm]');if(od&&el.contains(od)&&od.closest('#dgRoot')){e.stopPropagation();return ordMgr(od.dataset.ordm)}const w=e.target.closest('[data-walk]');if(w&&el.contains(w)&&w.closest('#dgRoot')){return walkPick(w.dataset.walk)}const b=e.target.closest('[data-a]');if(!b||!el.contains(b)||!b.closest('#dgRoot,.dg-idle'))return;act(b.dataset.a,b)})}
  async function act(k,b){const d=cur();const v=b.dataset.v;
   if(k==='pick'){DG.sel=v;return A().renderScene()}
   if(k==='torp'){try{A().goView('rp')}catch(e){}return}
@@ -323,11 +348,51 @@ window.OM_DG_UI=(()=>{
   const nd=Object.entries(rs).map(([id,r])=>{const t=ty(r.t);return`<g class="dg-ed-node${id===DG.edSel?' on':''}${id===DG.edFrom?' lf':''}${r.s?'':' hid'}" data-r="${H(id)}" transform="translate(${+r.x||0} ${+r.y||0})"><circle r="28" fill="${t.c}"/><text>${t.ic}</text><text class="nm" y="46">${H(r.n||t.k)}</text>${id===d.st?'<text class="st" y="-40">START</text>':''}</g>`}).join('');
   let grid='';for(let x=50;x<1000;x+=50)grid+=`M${x} 0V640`;for(let y=50;y<640;y+=50)grid+=`M0 ${y}H1000`;
   return`<svg class="dg-ed-svg${DG.edMode==='link'?' link':''}" id="dgEdSvg" viewBox="0 0 1000 640"><path d="${grid}" stroke="rgba(120,150,220,.08)"/>${ln}${nd}</svg>`}
+ /* ---------- JSON 가져오기 · 내보내기 (10-28) ---------- */
+ const DG_ROOM_MAX=60,DG_LINK_MAX=240;
+ const sKey=k=>String(k==null?'':k).replace(/[^A-Za-z0-9_]/g,'').slice(0,12);
+ const sTxt=(v,n)=>v==null?'':String(v).slice(0,n);
+ function dgNorm(src,warn){if(!src||typeof src!=='object'||Array.isArray(src))throw new Error('던전 하나는 { } 객체여야 한다');
+  const r0=src.r&&typeof src.r==='object'?src.r:null;if(!r0||!Object.keys(r0).length)throw new Error('방(r)이 없다');
+  const ks=Object.keys(r0);if(ks.length>DG_ROOM_MAX)throw new Error(`방이 너무 많다 (${ks.length} > ${DG_ROOM_MAX})`);
+  const map={},used=new Set(),r={};const rk=new Set(RKO.map(x=>x[0]));const tr=RO().trainers||{};
+  ks.forEach((k,i)=>{let id=sKey(k);if(!id||used.has(id)){do id='r'+Math.random().toString(36).slice(2,6);while(used.has(id))}used.add(id);map[k]=id;
+   const x=r0[k]||{};const o={n:sTxt(x.n,40)||('방 '+(i+1)),t:TY[x.t]?x.t:'room'};if(!TY[x.t]&&x.t)warn.push(`「${o.n}」 종류 ${x.t} → 통로`);
+   const cx=+x.x,cy=+x.y;o.x=Number.isFinite(cx)?clamp(Math.round(cx),30,970):clamp(110+(i%6)*160,30,970);o.y=Number.isFinite(cy)?clamp(Math.round(cy),30,600):clamp(80+Math.floor(i/6)*170,30,600);
+   if(x.m)o.m=sTxt(x.m,1200);if(x.b&&/^https?:\/\//.test(String(x.b)))o.b=sTxt(x.b,600);if(+x.s)o.s=1;
+   if(x.sk&&typeof x.sk==='object'){const k2=x.sk;const sk={label:sTxt(k2.label||k2.name,60),stat:['지시','육성','통솔','능력'].includes(k2.stat)?k2.stat:'지시',mode:k2.mode==='inou'?'inou':'skill',target:clamp(Math.round(+k2.target||7),2,20)};
+    if(k2.name)sk.name=sTxt(k2.name,60);for(const f of ['step','twice','pm'])if(+k2[f])sk[f]=+k2[f];if(k2.npc)sk.npc=sTxt(k2.npc,40);if(k2.pen&&typeof k2.pen==='object')sk.pen=JSON.parse(JSON.stringify(k2.pen));o.sk=sk}
+   if(x.rk&&rk.has(x.rk))o.rk=x.rk;if(+x.rmany)o.rmany=1;
+   if(x.cl&&typeof x.cl==='object'){const c={t:sTxt(x.cl.t,60),d:sTxt(x.cl.d,1200)};if(x.cl.img&&/^https?:\/\//.test(String(x.cl.img)))c.img=sTxt(x.cl.img,600);if(c.t||c.d)o.cl=c}
+   if(x.e){if(tr[x.e]){o.e=String(x.e);if(+x.eh)o.eh=1}else warn.push(`「${o.n}」 야생 무리 ${x.e} 는 이 방 시트에 없어서 뺐다 (GM 메모를 보고 배치)`)}
+   r[id]=o});
+  const l={};let nl=0;for(const k of Object.keys(src.l||{})){const [a,b]=String(k).split('~');const A1=map[a],B1=map[b];if(!A1||!B1||A1===B1)continue;l[lk(A1,B1)]=1;if(++nl>DG_LINK_MAX)throw new Error('통로가 너무 많다')}
+  let st=map[src.st];if(!st){st=(Object.keys(r).find(id=>r[id].t==='entry'))||Object.keys(r)[0];if(src.st)warn.push('시작 방(st)이 없어서 '+r[st].n+' 으로')}
+  const d={n:sTxt(src.n,60)||'가져온 던전',al:0,st,r,l};if(src.o)d.o=sTxt(src.o,60);if(src.a)d.a=sTxt(src.a,60);if(src.d)d.d=sTxt(src.d,60);
+  const wn=Math.round(+src.wn);if(wn>=1&&wn<=3&&wn!==2)d.wn=wn;if(+src.noal)d.noal=1;
+  if(src.gen&&typeof src.gen==='object')d.src=JSON.parse(JSON.stringify({tier:src.gen.tier||'',seed:src.gen.seed||'',theme:src.gen.theme||''}));
+  /* 통로로 안 이어진 방 알림 */const seen=new Set([st]),q=[st];const adj={};Object.keys(l).forEach(k=>{const [a,b]=k.split('~');(adj[a]=adj[a]||[]).push(b);(adj[b]=adj[b]||[]).push(a)});while(q.length){const c=q.shift();for(const n of adj[c]||[])if(!seen.has(n)){seen.add(n);q.push(n)}}
+  const lone=Object.keys(r).filter(id=>!seen.has(id));if(lone.length)warn.push(`시작 방에서 못 가는 방 ${lone.length}개: ${lone.map(id=>r[id].n).join(', ')}`);
+  return d}
+ function dgOut(d){const r={};for(const [id,x] of Object.entries(R(d))){const o=Object.assign({},x);delete o.c;delete o.cs;delete o.ru;r[id]=o}const o={n:d.n||'',st:d.st,r,l:Object.assign({},d.l||{})};for(const f of ['o','a','d','wn','noal','src'])if(d[f]!=null&&d[f]!=='')o[f]=d[f];return o}
+ async function dgImport(txt){let j;try{j=JSON.parse(String(txt||'').trim())}catch(e){throw new Error('JSON 을 읽지 못했다 — '+e.message)}
+  const list=Array.isArray(j)?j:(j&&Array.isArray(j.dungeons)?j.dungeons:[j]);if(!list.length)throw new Error('비어 있다');if(list.length>20)throw new Error('한 번에 20개까지');
+  const warn=[],o={};let last='';list.forEach((x,i)=>{const w=[];const d=dgNorm(x,w);const id=Math.random().toString(36).slice(2,8);o['list/'+id]=d;last=id;w.forEach(t=>warn.push((list.length>1?`[${i+1}] `:'')+t))});
+  if(!await upd(o))return null;return {n:list.length,last,warn}}
+
  function edHTML(){const ds=all(),ids=Object.keys(ds);if(!ds[DG.ed])DG.ed=ids[0]||'';const d=edD();if(d&&!R(d)[DG.edSel])DG.edSel='';
   const r=d&&R(d)[DG.edSel],t=ty(r&&r.t);
   const head=`<div class="mhead"><h2>던전 관리</h2><span class="sp"></span><button class="btn ghost" data-e="close">닫기</button></div>`;
-  const top=`<div class="dg-ed-top"><select data-dgsel>${ids.map(id=>`<option value="${H(id)}" ${id===DG.ed?'selected':''}>${H(ds[id].n||'이름 없는 던전')}</option>`).join('')||'<option>던전 없음</option>'}</select><button class="btn sm pri" data-e="new">＋ 새 던전</button><button class="btn sm" data-e="sample">샘플 던전</button>${d?'<button class="btn sm danger" data-e="del">던전 삭제</button>':''}</div>`;
+  const top=`<div class="dg-ed-top"><select data-dgsel>${ids.map(id=>`<option value="${H(id)}" ${id===DG.ed?'selected':''}>${H(ds[id].n||'이름 없는 던전')}</option>`).join('')||'<option>던전 없음</option>'}</select><button class="btn sm pri" data-e="new">＋ 새 던전</button><button class="btn sm" data-e="sample">샘플 던전</button><button class="btn sm ${DG.imp?'pri':''}" data-e="imp">JSON 가져오기</button>${d?`<button class="btn sm ${DG.exp?'pri':''}" data-e="exp">JSON 내보내기</button><button class="btn sm danger" data-e="del">던전 삭제</button>`:''}</div>`;
+  /* 10-28 망령 「웹툴 던전탭에 JSON 가져오기」: 시뮬 자동 생성(toWebtool) · 다른 방에서 내보낸 던전을 붙여 넣거나 파일로 */
+  if(DG.imp)return head+top+`<div class="dg-ed-ev" style="margin-top:8px"><b>JSON 가져오기</b><p class="dg-help" style="margin:0">던전 시뮬 「자동 생성 → 웹툴로」 파일이나 「JSON 내보내기」로 받은 글을 붙여 넣는다. 여러 개면 배열 <code>[…]</code> 로. 새 던전으로 들어가고, 있던 던전은 그대로다.</p>
+   <textarea id="dgImpTxt" rows="12" spellcheck="false" placeholder='{"n":"던전 이름","st":"entry","r":{"entry":{"n":"입구","t":"entry","x":95,"y":595}, …},"l":{"entry~b1":1, …}}' style="width:100%;font-family:ui-monospace,monospace;font-size:12px"></textarea>
+   <div class="dg-acts"><label class="btn sm">파일 고르기 (.json)<input type="file" accept=".json,application/json,text/plain" data-e="impfile" hidden></label><span class="sp"></span><button class="btn sm ghost" data-e="impx">취소</button><button class="btn sm pri" data-e="impgo">가져오기</button></div>
+   <p class="dg-help" style="margin:0">받는 칸: 이름 n · 주인 o · 테마 a · 기한 d · 동행 수 wn · 경계도 끄기 noal · 시작 방 st · 방 r(이름 n · 종류 t · 좌표 x · y · GM 메모 m · 배경 b · 스킬 체크 sk · 휴식 rk · 단서 cl · 야생 e · 기습 eh · 공개 s) · 통로 l. 모르는 칸은 버리고, 좌표는 편집 판(1000×640) 안으로 맞춘다. 야생 무리(e)는 이 방 시트에 그 트레이너가 있을 때만 남긴다.</p></div>`;
   if(!d)return head+top+'<p class="small dim">새 던전을 만들거나 샘플 던전으로 시작해 봐.</p>';
+  if(DG.exp)return head+top+`<div class="dg-ed-ev" style="margin-top:8px"><b>JSON 내보내기 · ${H(d.n||'')}</b><p class="dg-help" style="margin:0">다른 방의 「JSON 가져오기」에 붙여 넣으면 같은 던전이 생긴다. 플레이 기록(일행 위치 · 클리어 · 공개 · 경계도)은 빼고 내보낸다.</p>
+   <textarea id="dgExpTxt" rows="12" readonly spellcheck="false" style="width:100%;font-family:ui-monospace,monospace;font-size:12px">${H(JSON.stringify(dgOut(d),null,1))}</textarea>
+   <div class="dg-acts"><span class="sp"></span><button class="btn sm ghost" data-e="exp">닫기</button><button class="btn sm pri" data-e="expcopy">복사</button></div></div>`;
   const meta=`<div class="dg-ed-meta"><label>이름<input data-dgm="n" value="${H(d.n||'')}"></label><label>주인 (던전을 만든 인물 · 보스)<input data-dgm="o" value="${H(d.o||'')}"></label><label>테마<input data-dgm="a" value="${H(d.a||'')}" placeholder="예: 안개 · 폐허"></label><label>기한<input data-dgm="d" value="${H(d.d||'')}" placeholder="예: 7세션까지"></label><label>동행 포켓몬 수 (트레이너마다)<select data-dgx="wn">${[1,2,3].map(n=>`<option value="${n}" ${WN(d)===n?'selected':''}>${n}체</option>`).join('')}</select></label><label class="dg-chk"><input type="checkbox" data-dgx="al" ${alOn(d)?'checked':''}> 경계도 쓰기 <small>(들키면 오르는 0~100 계기 · 끄면 숨김)</small></label></div>`;
   const tool=`<div class="dg-acts" style="margin:0 0 8px"><button class="btn sm ${DG.edMode==='move'?'pri':''}" data-e="mode" data-v="move">✥ 배치 · 이동</button><button class="btn sm ${DG.edMode==='link'?'pri':''}" data-e="mode" data-v="link">⟷ 통로 연결</button></div>`;
   const sideHTML=r?`<div class="dg-ed-side"><b style="font-size:15px">${t.ic} 방 편집</b><label>이름<input data-dgr="n" value="${H(r.n||'')}"></label><label>종류<select data-dgr="t">${TORDER.map(k=>`<option value="${k}" ${k===(r.t in TY?r.t:'room')?'selected':''}>${TY[k].ic} ${TY[k].k}</option>`).join('')}</select></label><p class="dg-help" style="margin:0">${t.r}</p><label>GM 메모 (GM 화면에만)<textarea data-dgr="m" rows="3">${H(r.m||'')}</textarea></label>
@@ -377,6 +442,13 @@ window.OM_DG_UI=(()=>{
  async function edAct(k,b){const d=edD();
   if(k==='close'){A().closeModal();DG.edOpen=false;return A().renderScene()}
   if(k==='mode'){DG.edMode=b.dataset.v;DG.edFrom='';return edDraw()}
+  if(k==='imp'){DG.imp=!DG.imp;DG.exp=false;return edDraw()}
+  if(k==='impx'){DG.imp=false;return edDraw()}
+  if(k==='impfile'){const f=b.files&&b.files[0];if(!f)return;if(f.size>2e6)return A().toast('파일이 너무 크다 (2MB 까지)');try{const t=await f.text();const ta=$('#dgImpTxt');if(ta)ta.value=t}catch(e){A().toast('파일을 읽지 못했다')}return}
+  if(k==='impgo'){const ta=$('#dgImpTxt');try{const res=await dgImport(ta?ta.value:'');if(!res)return;DG.imp=false;DG.ed=res.last;DG.edSel='';edDraw();
+    A().toast(`던전 ${res.n}개를 가져왔다${res.warn.length?' · 알림 '+res.warn.length+'개':''}`);if(res.warn.length)notice('[던전 가져오기] '+res.warn.join(' / '))}catch(e){A().toast('가져오기 실패: '+e.message)}return}
+  if(k==='exp'){DG.exp=!DG.exp;DG.imp=false;return edDraw()}
+  if(k==='expcopy'){const ta=$('#dgExpTxt');if(!ta)return;try{await navigator.clipboard.writeText(ta.value);A().toast('복사했다')}catch(e){ta.select();A().toast('글을 골라 두었다 — Ctrl+C')}return}
   if(k==='new'){const n=prompt('던전 이름','');if(n===null)return;const id=Math.random().toString(36).slice(2,8),e=Math.random().toString(36).slice(2,7);
    if(await upd({['list/'+id]:{n:n.trim()||'이름 없는 던전',al:0,st:e,r:{[e]:{n:'입구',t:'entry',x:120,y:320}}}})){DG.ed=id;DG.edSel=e;edDraw()}return}
   if(k==='sample'){const id=Math.random().toString(36).slice(2,8);
@@ -443,7 +515,8 @@ window.OM_DG_UI=(()=>{
  /* ---------- 야생 조우 → 배틀 (app.js encounter) · 돌아오기 ---------- */
  async function startEnc(d,rid0){if(!gm())return;const id=rid0||d.at,r=R(d)[id];const e=encOf(r);if(!e)return A().toast('이 방에는 야생 포켓몬을 두지 않았다 — 던전 관리에서 배치');if(!e.t)return A().toast('이 방의 야생 무리 트레이너가 시트에 없다');
   const L=party(d),walk={};L.forEach(t=>walk[t]=walkOf(t));
-  await A().encounter({left:L,right:[r.e],walk,dg:{did:d.id,rid:id},title:`${d.n||'던전'} · ${r.n||ty(r.t).k}`})}
+  const ok=await A().encounter({left:L,right:[r.e],walk,dg:{did:d.id,rid:id},title:`${d.n||'던전'} · ${r.n||ty(r.t).k}`});
+  if(ok!==false&&(ST().state.battle||{}).dg)await A().set(['battle','dgPool'],poolOf(d))}   /* 10-28: 던전 공용 4식 · 6령을 배틀로 */
  document.addEventListener('click',e=>{if(e.target&&e.target.closest&&e.target.closest('button[data-s]'))setTimeout(()=>{try{retSync()}catch(_){}},60)});
  function retSync(){let el=document.getElementById('dgRet');const b=ST().state.battle||{},d=cur();/* 10-26 망령: RP 화면에서도 떠 있어 아래 줄과 겹쳤다 — 배틀 탭을 보고 있을 때만 */const want=gm()&&!!d&&ST().state.scene==='battle'&&!!b.dg&&b.dg.did===d.id&&!!document.querySelector('button[data-s="battle"].on');
   if(!want){if(el)el.remove();return}
@@ -451,12 +524,12 @@ window.OM_DG_UI=(()=>{
  function retOpen(){const d=cur(),b=ST().state.battle||{};if(!d||!b.dg)return;const rid0=b.dg.rid,r=R(d)[rid0]||{};const foes=Object.values(b.mons||{}).filter(m=>m.side==='right');const win=foes.length>0&&foes.every(m=>((m.hp||{}).cur||0)<=0);
   const m=A().openModal(`<div class="mhead"><h2>⛩ 던전으로 돌아가기</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small" style="margin:0 0 8px">${win?'야생 포켓몬을 모두 쓰러뜨렸다.':'아직 서 있는 야생 포켓몬이 있다 (도망 · 포획 · 중단).'} 일행의 HP · 상태를 시트에 남기려면 먼저 <b>결과 정리</b>를 한다.</p><label class="row" style="gap:6px"><input type="checkbox" id="dgRetClr" ${win?'checked':''}> 「${H(r.n||ty(r.t).k)}」 클리어 표시 (야생 기척 없애기)</label><div class="row" style="margin-top:12px"><button class="btn" id="dgRetRes">📋 결과 정리 먼저</button><span class="sp"></span><button class="btn pri" id="dgRetGo">⛩ 던전으로</button></div>`);
   m.querySelector('#dgRetRes').onclick=()=>{A().closeModal();try{window.OM_BATTLE_UI.action({act:'result'})}catch(e){}};
-  m.querySelector('#dgRetGo').onclick=async()=>{const clr=m.querySelector('#dgRetClr').checked;A().closeModal();if(clr&&R(d)[rid0])await upd({[P0(d.id)+'r/'+rid0+'/c']:1});await A().set(['battle','dg'],null);await A().set(['scene'],'rp');notice(`⛩ ${d.n||'던전'}(으)로 돌아왔다${clr?` — 「${r.n||ty(r.t).k}」 클리어`:''}`);try{A().goView('rp')}catch(e){}}}
+  m.querySelector('#dgRetGo').onclick=async()=>{const clr=m.querySelector('#dgRetClr').checked;A().closeModal();if(clr&&R(d)[rid0])await upd({[P0(d.id)+'r/'+rid0+'/c']:1});{const bp=(ST().state.battle||{}).dgPool;if(bp){await upd({[P0(d.id)+'pool']:{o:+bp.o||0,c:+bp.c||0,o0:+bp.o0||0,c0:+bp.c0||0}});await A().set(['battle','dgPool'],null)}}   /* 10-28: 배틀에서 쓴 공용 4식 · 6령을 던전으로 */await A().set(['battle','dg'],null);await A().set(['scene'],'rp');notice(`⛩ ${d.n||'던전'}(으)로 돌아왔다${clr?` — 「${r.n||ty(r.t).k}」 클리어`:''}`);try{A().goView('rp')}catch(e){}}}
 
  /* 지도 연계 (10-26 망령): 지도 장소에 던전을 걸어 두고 그 핀에서 바로 진입 — rp_ui 의 지도 메뉴가 부른다 */
  function list(){return Object.entries(all()).map(([id,d])=>({id,n:d.n||'이름 없는 던전',rooms:Object.keys(R(d)).length,opts:startOptions(d)}))}
  async function enter(id,s,from){const d=all()[id];if(!d||!gm())return false;const o=startOptions(d);s=s&&R(d)[s]?s:(o[0]||[])[0];if(!s)return A().toast('던전에 방이 없다 — 던전 관리에서 만든다'),false;
   const p=P0(id);if(await upd({field:{mode:'dungeon',did:id,t:Date.now()},[p+'at']:s,[p+'r/'+s+'/s']:1,[p+'al']:0})){notice(`⚔ 던전 진입 — ${d.n||'던전'}${from?' ('+from+')':''}`);return true}return false}
  function nameOf(id){const d=all()[id];return d?(d.n||'이름 없는 던전'):''}
- return {render,rpSync,onState,on,cur,TY,LV,lvOf,list,enter,nameOf,party,walkOf,startEnc};
+ return {render,rpSync,onState,on,cur,TY,LV,lvOf,list,enter,nameOf,party,walkOf,startEnc,poolOf,poolRest};
 })();

@@ -3,7 +3,7 @@
      generate({tier, seed, theme, knobs, wild, boss, name})  → 시뮬 던전 JSON (dungeon.run 으로 그대로 돌린다. dg.rules = 던전 규칙값)
      toWebtool(dg, names)                                    → 웹툴 던전 탭 꼴 {n,o,a,al,st,wn,r:{rid:{n,t,x,y,sk,rk,m}},l}
    가이드라인(records/feedback.md 「10-27 저녁 개정」, docs/던전_자동생성.md):
-     공통  야생 · 보스 Lv +10(10-28 배틀 v3 기준, 옛 −5) · 체크 3~5 (목표 7 · 9 섞기 — 빡센 길이면 9 · 11, 타입 조건 1개, 자질 넷 고루) · 보스 앞 짧은 휴식 하나(휴식 2안)
+     공통  야생 · 보스 Lv +1(10-28 4식 · 6령 던전 단위 기준 · 그 전 +10 · 옛 −5) · 체크 3~5 (목표 7 · 9 섞기 — 빡센 길이면 9 · 11, 타입 조건 1개, 자질 넷 고루) · 보스 앞 짧은 휴식 하나(휴식 2안)
            경계도: 대가 +15 · 실패 +30 · 일반 조우 +10 · 30 → 야생 Lv +5 · 70 → +10 · 100 → 자동 실패
      쉬움  보스방 4체 · 레이드 2 · 사전 배틀 1   (승률 약 8할 — v3 검증 78%)
      보통  보스방 4체 · 레이드 3 · 사전 배틀 1~2 (약 6할)
@@ -11,18 +11,20 @@
 "use strict";
 const fs=require('fs');
 const G=require('./gen.js'),BT=require('./battle.js');
-const COMMON={lv:10,bossLv:10,   /* 10-28 배틀 v3 기준 다시 맞춤(망령 「처음부터 다시」): 야생 · 보스 공통 Lv +10 (옛 −5 는 약식 엔진 기준) — docs/던전_자동생성.md */
+const COMMON={lv:5,bossLv:5,   /* 10-28 03:50 망령 「+1 은 웃기다 · +5/+10 기준으로 다른 걸 조정」 → 공통 Lv +5 (배틀마다 채우던 때 +10, 약식 엔진 −5) — docs/던전_자동생성.md */
  checks:[3,4,5],   /* 10-28 01:48 망령: 체크 수 3~5 무작위(전 난이도) */
- tgt:'mix',pen:'alert',alCost:15,alFail:30,rest:'short',hintTyped:1,foes:2};
+ tgt:'mix',pen:'alert',alCost:10,alFail:20,   /* 10-28 03:23 망령: 경계도 완화(옛 15 · 30) */
+ rest:'short',hintTyped:1,foes:2};
 /* 「빡센 길」(10-28 01:48 망령 「수가 줄면 조금 더 어렵게나 빡세게」) — 03시 2단계로:
    사전 배틀이 그 난이도 최대보다 적으면 = 빡센 길: 체크 목표 9 · 11(어렵게) + 경계도 실패 +45 · 대가 +20(빡세게). 보통 사전 배틀 1 에서 67 → 61% (2 일 때 58%)
    체크만 3개면 = 어려운 길: 목표 9 · 11 만 (체크 수 3 · 4 · 5 는 승률 59 · 58 · 58% 로 거의 같다) */
 const TOUGH={tgt:'high',alFail:45,alCost:20};
 const DEX_BST={wild:[400,520],boss:[520,600]};   /* 도감 야생 종족치 범위 — 보스는 600족까지(전설 · 환상 680 이상은 안 나옴) */
-const RULES={restV:2,alBattle:10,al30:5,al70:10};
-const PRESET={easy:{battles:[1]},   /* 10-28 v3: 쉬움 사전 배틀 0 → 1 (0 이면 Lv +10 에서도 92%) */
- normal:{battles:[1,2]},   /* 10-28 01:38 망령: 보통 사전 배틀 2 → 1~2 */
- hard:{battles:[0,1]}};
+const RULES={restV:2,alBattle:5,al30:5,al70:10,   /* 10-28 03:23 망령: 조우 경계도 +10 → +5, 경계도 단계의 레벨 상승(+5 · +10)은 그대로 */
+ restShort:'one',restPO:1,restPC:1};   /* 10-28 03:25 망령: 짧은 휴식 = 파티 4식 · 6령 1개씩 + 가장 다친 1체 HP 1/4 + 빈사 HP 1 + 상태 회복 (lib/dungeon.js doRest) */
+const PRESET={easy:{battles:[0,1]},   /* 10-28 03:50 Lv +5 · 던전 단위 자원에서: 0 → 92% · 1 → 69% · 0~1 → 82% */
+ normal:{battles:[1]},   /* 10-28 01:38 망령: 2 → 1~2. 03:50 Lv +5 · 던전 단위 자원에서 1~2 → 51% · 1 → 58% 라 1 로 (망령 확인 대기) */
+ hard:{battles:[0,1]}};   /* 03:50: 일반 야생을 C 로만 — C·B 면 21% */
 const TIER_KO={easy:'쉬움',normal:'보통',hard:'어려움'};
 /* 테마: 방 이름 · 체크 문구 · 단서 · 보스 방 이름. 문구만 바뀌고 숫자는 같다 */
 const THEMES={
@@ -102,7 +104,7 @@ function generate(o){o=o||{};const tier=o.tier||'normal';if(!PRESET[tier])throw 
  /* 야생 풀을 바꿀 수 있다: o.wild = [[트레이너 id, 순번, 이름]…] · o.boss = 같은 꼴 */
  /* 야생 출처: 'dex'(기본, 제작기 도감 실제 포켓몬 — 테마 타입 · 종족치 범위) | 'npc'(무진 NPC 풀, 10-27 맞추기에 쓴 것) */
  /* 'db'(야생 DB 가 있으면 기본): 테마 = 서식지. 일반 야생 = C 묶음(일반), 보스 = B · A 묶음. o.grades = {wild:['C'], boss:['B','A']} 로 바꿀 수 있다(등급 구성 실험용) */
- const GT={easy:{wild:['C'],boss:['B','A']},normal:{wild:['C'],boss:['A']},hard:{wild:['C','B'],boss:['A']}};/* 10-27 20:30 야생 DB 300체 기준 맞춤(gradecal_db300): 쉬움 88 · 보통 63 · 어려움 37% */const gr=Object.assign({},GT[tier]||GT.normal,o.grades||{});
+ const GT={easy:{wild:['C'],boss:['B','A']},normal:{wild:['C'],boss:['A']},hard:{wild:['C'],boss:['A']}};/* 10-27 20:30 야생 DB 300체 기준 맞춤(gradecal_db300): 쉬움 88 · 보통 63 · 어려움 37% */const gr=Object.assign({},GT[tier]||GT.normal,o.grades||{});
  const WB=require('./wilddb.js');const hasDb=fs.existsSync(WB.FILE)&&(WB.read().v||1)>=2;const source=o.source||(hasDb?'db':'dex');let wild=o.wild,bossP=o.boss;
  if(source==='db'&&!wild){const all=WB.fullV2();const gr=Object.assign({},GT[tier]||GT.normal,o.grades||{});const inHab=e=>(e.hab||[]).includes(thName);
   const W0=all.filter(e=>inHab(e)&&gr.wild.includes(e.grade)),B0=all.filter(e=>inHab(e)&&gr.boss.includes(e.grade));
@@ -142,7 +144,7 @@ function toWebtool(dg,names){names=names||{};for(const [t,i,n] of G.POOL.concat(
   if(x.enc&&x.enc.mix){const mons=x.enc.mix.flatMap(m=>m.sp?[m.sp]:m.db?[nameOf('db',m.db)]:(m.pick||[]).map(i=>nameOf(m.trainer,i)));   /* 10-28: 야생 DB(m.db) 이름이 빠져 「야생 0체」로 나가던 것 고침 */const lv=+x.enc.lvAdd||0;
    memo.push(`${x.enc.boss?'♛ 보스방':'⚔ 야생'} ${mons.length}체 · Lv ${lv>=0?'+':''}${lv} (경계도 30↑ +${dg.rules&&dg.rules.al30||5} · 70↑ +${dg.rules&&dg.rules.al70||10})`);
    memo.push('  '+mons.map((n,j)=>x.enc.boss&&j===(+x.enc.bossAt||0)?`★${n}『와일드 보스』${x.enc.raid?' 「레이드 배틀 : '+x.enc.raid+'」':''}`:`${n}『와일드』`).join(' · '));if(!x.enc.boss&&dg.rules&&dg.rules.alBattle)memo.push(`  배틀이 끝나면 경계도 +${dg.rules.alBattle}`)}
-  if(x.rest)o.rk=x.rest==='mid'?'short':x.rest;
+  if(x.rest)o.rk=x.rest;   /* 10-28 웹툴에 중간 휴식(mid)이 생김 */
   if(x.clue)o.cl={t:x.clue.t,d:x.clue.d};
   if(memo.length)o.m=memo.join('\n').slice(0,400);r[id]=o;if(!M&&i)l[[rid(rs[i-1]),id].sort().join('~')]=1});
  if(M)for(const k of Object.keys(M.links)){const [a,b]=k.split('~').map(z=>rid(rs.find(x=>x.id===z)));l[[a,b].sort().join('~')]=1}
