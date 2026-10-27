@@ -71,7 +71,7 @@ window.OM_BATTLE=(()=>{
  /* ----- 대미지 (calculate_damage + damage_target) : 상성·자속은 제외 -----
     o: {atkStat,defStat (기본 move.cat), accMult, free1, free2, item1, item2, trait, weather, helping, charge, watersport, mudsport, powerBoost,
         multiTarget, wall:{reflector,lightscreen,icewall,aurora}, wallSize(1 싱글/2 더블+), ignoreAtk, ignoreDef, scarf, tailwindDef, swampDef, choiceDef,
-        critGen(1.5|2), critDamage(0 기본/1 ×1.5/2 ×2/3 고정 2.5), lifeOrb, burnGuts, hits:[1|2|0 ...] (hit_log) } */
+        critGen(1.5|2), critDamage(0 기본/1 ×1.5/2 ×2/3 고정 2.5), lifeOrb, burnGuts, hits:[1|2|0 ...] (hit_log), powStep(타마다 위력 증가) } */
  function damage(atk,def,move,o){
   o=o||{};
   const cat=move.cat==='특수'?'special':'physical';
@@ -79,7 +79,9 @@ window.OM_BATTLE=(()=>{
   const defStat=o.defStat||(cat==='special'?'specialdefense':'defense');
   const L=floor(atk.lv*2/5+2);
   const free1=num(o.free1,1),free2=num(o.free2,1),item1=num(o.item1,1),item2=num(o.item2,1),trait=num(o.trait,1),weather=num(o.weather,1);
-  let P=(+o.power||+move.pow||0)*(o.helping?1.5:1)*free1*free2*item1*item2*(o.charge?2:1)*trait*(o.watersport?0.5:1)*(o.mudsport?0.5:1)*num(o.powerBoost,1);
+  const P0=+o.power||+move.pow||0,PM=(o.helping?1.5:1)*free1*free2*item1*item2*(o.charge?2:1)*trait*(o.watersport?0.5:1)*(o.mudsport?0.5:1)*num(o.powerBoost,1);
+  /* 10-27 망령: 「명중할 때 마다 위력이 N 씩 증가」(트리플악셀 · 트리플킥) — powStep: k 번째로 맞은 타의 위력 = 위력 + N×k (빗나가면 멈추니 맞은 순서 = 타 순서) */
+  const step=num(o.powStep,0);let P=P0*PM;
   const burn=(cat==='physical'&&has(atk,'Burn')&&!(has(atk,'Guts')||o.burnGuts))?0.5:1;
   const M=burn*(o.multiTarget?0.75:1)*weather*num(o.fieldMul,1);
   let wall=1;const ws=o.wallSize>=2?0.667:0.5;const w=o.wall||{};
@@ -90,9 +92,10 @@ window.OM_BATTLE=(()=>{
   let rev=1;if(free1>0&&free1<1)rev/=free1;if(free2>0&&free2<1)rev/=free2;if(trait>0&&trait<1)rev/=trait;
   const hits=o.hits&&o.hits.length?o.hits:[1];
   const out=[];let total=0,minSum=0,maxSum=0;
-  for(const h of hits){
+  let k=0;for(const h of hits){
    const crit=h===2;
-   const Pc=crit?P*rev:P;
+   const Pk=step?(P0+step*k)*PM:P;k++;
+   const Pc=crit?Pk*rev:Pk;
    const av=statValue(atk,atkStat,{ignore:crit&&(o.ignoreAtk===1||o.ignoreAtk===4||o.ignoreAtk===5)?-1:o.ignoreAtk,/* 10-26 점검: 급소는 공격 측 하락만 이미 지우므로 하락 코드만 버린다 (전엔 상승 코드를 버려 천진류가 급소에 무력했다) */rank:crit&&+((atk.rank||{})[atkStat]||0)<0?0:undefined,mod:crit&&+((atk.mod||{})[atkStat]||1)<1?1:undefined});
    let A=av.value*(o.scarf&&atkStat==='speed'?1.5:1);
    if(has(atk,'Paralysis')&&atkStat==='speed')A*=(+C().campaign.value_paralysis||0.5);
