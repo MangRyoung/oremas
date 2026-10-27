@@ -86,12 +86,18 @@ async function runBattle(W,opt){
   const bad=fs.every(f=>threatVs(pol,f,m).v>=m.hp.cur*0.6);if(!bad)return null;return L[0].s>cur+0.5?L[0].x:null};
  /* 4식 · 6령 (지시 단계 선행): 웹툴 fireOrder — 받을 수 없는 포켓몬 · 한 턴 하나는 웹툴이 막는다 */
  const ordKeys=t=>Object.keys(t.orderCount||{}).filter(k=>/^order_/.test(k)&&+t.orderCount[k]>0).map(k=>k.slice(6));
- const cmdLeft=(t,k)=>+((t.orderCount||{})['command_'+k]||0)>0&&(!opt.pool||opt.pool.command>(opt.pool&&!opt.poolBoss&&opt.poolInit?Math.ceil(opt.poolInit.command/2):0));
+ const cmdLeft=(t,k)=>+((t.orderCount||{})['command_'+k]||0)>0&&(!opt.pool||opt.pool.command>0);
  const fired=tid=>(((C().cmds||{})[tid]||{}).fired)||{};
  const cmdUsed=tid=>Object.values(fired(tid)).some(x=>x&&x.command);
  /* 10-28 망령: 4식 · 6령은 던전 단위 공용 풀(opt.pool = {order, command}, 던전이 넘긴다). 보스방 아닌 배틀에서는 풀의 절반(올림)을 보스방 몫으로 남긴다 — 시뮬 판단(지침에 없음) */
  const POOL=opt.pool||null,P0=opt.poolInit||null;const keep=kind=>POOL&&!opt.poolBoss&&P0?Math.ceil(P0[kind]/2):0;
- const fire=async(tid,mid,kind,key)=>{const t=T(tid);const ck=(kind==='order'?'order_':'command_')+key;const before=+((t.orderCount||{})[ck]||0);if(before<=0)return false;if(POOL&&POOL[kind]<=keep(kind))return false;await FN.fireOrder(tid,mid,kind,key,'free');await flush(1);const after=+((T(tid).orderCount||{})[ck]||0);if(after<before&&POOL)POOL[kind]--;return after<before};
+ /* 10-28 망령: 「대체로 절반을 남기려 하되 위험해질 것 같으면 써」 — 위험하면 보스방 몫도 꺼낸다.
+    위험 = 우리 편 살아 있는 수가 처음의 절반 이하 · 남은 HP 합이 40% 이하 · 또는 지키는 지시(방어 · 회피 · 회복 · 4식)로 쓰러질 아이를 살리는데 우리 편 수가 상대보다 많지 않을 때 */
+ const N0={};const SAVE=new Set(['defense','specialdefense','evasion','heal','retreat','dodge','endure']);
+ const danger=(tid,mid,key)=>{const sd=(T(tid)||{}).side||'left';const all=Object.values(C().mons).filter(m=>m.side===sd);if(N0[sd]==null)N0[sd]=all.length;const al=all.filter(alive);
+  if(al.length*2<=N0[sd])return true;const mx=all.reduce((a,m)=>a+m.hp.max,0);if(mx&&al.reduce((a,m)=>a+m.hp.cur,0)<=mx*0.4)return true;
+  const m=C().mons[mid];if(m&&SAVE.has(key)&&alive(m)&&dangerOf(m)>=m.hp.cur){const fo=Object.values(C().mons).filter(x=>x.side!==sd&&alive(x)).length;if(al.length<=fo)return true}return false};
+ const fire=async(tid,mid,kind,key)=>{const t=T(tid);const ck=(kind==='order'?'order_':'command_')+key;const before=+((t.orderCount||{})[ck]||0);if(before<=0)return false;if(POOL&&POOL[kind]<=0)return false;if(POOL&&POOL[kind]<=keep(kind)&&!danger(tid,mid,key))return false;await FN.fireOrder(tid,mid,kind,key,'free');await flush(1);const after=+((T(tid).orderCount||{})[ck]||0);if(after<before&&POOL)POOL[kind]--;return after<before};
  /* ---- GM 손 처리 (웹툴에서 사람이 「발동」을 누르던 일 중 늘 하는 것) — 10-27 밤 ----
     G1 「HP : a/b 이하」일 때 상시 효과(맹화 꼴): 그 HP 가 되면 효과 엔진 구문을 한 번 건다(퇴장하면 웹툴이 fxDone 을 지워 다시 걸 수 있다)
     G2 「S」 상태일 때 턴 종료 시 「HP」를 a/b 회복(포이즌힐 꼴): 턴 종료 전에 그 상태면 회복
