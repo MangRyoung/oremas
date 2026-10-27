@@ -130,10 +130,14 @@ window.OM_BATTLE=(()=>{
   return {value,type:pick.type,stab:pick.stab,all:vals}}
 
  /* ----- 피격 (hp_damage) : amount(공격 측 합계) × 상성 × 자속 × 수동mod × 달인의띠 × 반감열매 × 버텨라 등 ----- */
+ /* 10-27 망령: 급소는 받는 쪽 완화·반감(위력 완화 ×1 미만 · 멀티스케일류 · defMod ×1 미만)을 무시한다. o.crit = true 또는 타별 배열.
+    o.guardCrit 를 주면 급소 타는 그 값을 쓴다 (「버텨라!」 처럼 급소로도 못 뚫는 몫만 남긴 값) */
+ function critGuard(o){return o.guardCrit!=null&&o.guardCrit!==''?num(o.guardCrit,1):Math.max(1,num(o.guard,1))}
  function hpDamage(def,amount,eff,o){
   o=o||{};
   const stabMul=o.stab?(o.adaptability?2:1.5):1;
-  let v=amount*eff*stabMul*num(o.manual,1)*(o.expertBelt&&eff>1?1.2:1)*(o.berryHalf?0.5:1)*num(o.guard,1)*num(o.defMod,1);
+  const gd=o.crit?critGuard(o):num(o.guard,1),dm=o.crit?Math.max(1,num(o.defMod,1)):num(o.defMod,1);
+  let v=amount*eff*stabMul*num(o.manual,1)*(o.expertBelt&&eff>1?1.2:1)*(o.berryHalf?0.5:1)*gd*dm;
   v=floor(v);
   if(o.applyOdd){v+=def.hpOdd?1:0}
   let final=v;
@@ -153,8 +157,9 @@ window.OM_BATTLE=(()=>{
   for(let k=0;k<per.length;k++){
    if(cur<=0)break;landed++;
    if(o.disguise&&k===0&&eff>0&&per[k]>0){const f=Math.min(Math.max(1,+o.disguise||1),cur);raw+=f;fin+=f;cur-=f;out.push({raw:f,final:f,after:cur,held:'disguise',band:null});continue}
-   const fg=o.fullGuard&&cur>=mx?num(o.fullGuard,1):1;
-   let v=floor(per[k]*eff*stabMul*num(o.manual,1)*(o.expertBelt&&eff>1?1.2:1)*(berry?0.5:1)*num(o.guard,1)*num(o.defMod,1)*fg);berry=false;
+   const ck=Array.isArray(o.crit)?!!o.crit[k]:!!o.crit;
+   const fg=o.fullGuard&&cur>=mx&&!ck?num(o.fullGuard,1):1;
+   let v=floor(per[k]*eff*stabMul*num(o.manual,1)*(o.expertBelt&&eff>1?1.2:1)*(berry?0.5:1)*(ck?critGuard(o):num(o.guard,1))*(ck?Math.max(1,num(o.defMod,1)):num(o.defMod,1))*fg);berry=false;
    let f=eff>0&&per[k]>0?Math.max(Math.min(v,cur),1):Math.min(v,cur);if(eff===0)f=0;
    if(floorHp>0&&cur-f<floorHp)f=Math.max(0,cur-floorHp);
    let held='',band=null;if(cur-f<1){if(o.endure){f=cur-1;held='endure'}else if(o.endureFull&&cur>=mx&&cur>1){f=cur-1;held='full'}
