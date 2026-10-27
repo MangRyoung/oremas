@@ -24,9 +24,10 @@ window.OM_SKILL_UI=(()=>{
   /* 10-28 망령 「짧은 휴식이 저 정도고 긴 휴식이 전부면 중간 휴식은 적절하게」 — 감우안: 전원 HP 1/2 · 빈사는 HP 1/4 · 상태 회복 ·
      파티 4식 2 · 6령 3(3인 공용 4식 3 · 6령 6 의 절반) · 전용 · 고유 포텐셜 1씩 · 지침 · 돌봄 · 이능 · 부상 1단계 */
   mid:{hp:'1/2',hp_one:0,revive:1,revive_hp:'1/4',cure_ab:1,cure_sp:1,pot_pk_n:'1',ord_n:'0',ord_po:2,ord_pc:3,pot_tr_n:'1',tired:1,care:1,inou:1,inj_n:1},
-  /* 10-28 망령(시뮬 맞춤): 짧은 휴식 = 일행에서 가장 다친 1체 HP 1/4 · 빈사는 HP 1 · 상태 회복 · 파티 전체 4식 1 · 6령 1 (옛 기본: 전원 HP 1/2 · 상태 변화만) */
-  short:{hp:'1/4',hp_one:1,revive:1,revive_hp:'1',cure_ab:1,cure_sp:1,pot_pk_n:'0',ord_n:'0',ord_po:1,ord_pc:1,pot_tr_n:'0',tired:1,care:1,inou:1,inj_n:1},
-  breath:{hp:'1/4',revive:0,revive_hp:'1',cure_ab:0,cure_sp:0,pot_pk_n:'0',ord_n:'0',pot_tr_n:'0',tired:1,care:0,inou:0,inj_n:0}};
+  /* 10-28 망령(시뮬 맞춤): 짧은 휴식 = (22시: 전원) HP 1/4 · 빈사는 HP 1 · 상태 회복 · 파티 전체 4식 1 · 6령 1 (옛 기본: 전원 HP 1/2 · 상태 변화만) */
+  short:{hp:'1/4',hp_one:0,revive:1,revive_hp:'1',cure_ab:1,cure_sp:1,pot_pk_n:'0',ord_n:'0',ord_po:1,ord_pc:1,pot_tr_n:'0',tired:1,care:1,inou:1,inj_n:1},
+  /* 10-28 22시 망령: 짧은 휴식은 전원 HP 1/4, 숨돌리기 = 가장 다친 1체 HP 1/4 + 파티 6령 1 */
+  breath:{hp:'1/4',hp_one:1,revive:0,revive_hp:'1',cure_ab:0,cure_sp:0,pot_pk_n:'0',ord_n:'0',ord_po:0,ord_pc:1,pot_tr_n:'0',tired:1,care:0,inou:0,inj_n:0}};
  /* 체크 제시 예시 (자주 쓰는 모양). 「저장」으로 내 것을 더할 수 있다 */
  const EX=[
   {name:'정보 수집 (지시 7)',o:{label:'정보 수집',stat:'지시',mode:'skill',target:7}},
@@ -213,11 +214,11 @@ ${penFields(t,X)}</div>`}).join('')}</div>
    const nsel=(k,lab,sub)=>{const v=String(R[k]==null?'all':R[k]);const isN=v!=='all'&&v!=='0';return `<div class="skrow on"><div style="flex:1"><b>${lab}</b>${sub?`<small>${sub}</small>`:''}</div>${seg('rest_'+k,[['0','안 함'],['all','전부'],['n','개수']],isN?'n':v)}<input type="number" class="n xs" data-restn="${k}" value="${isN?esc(v):''}" placeholder="개" style="${isN?'':'visibility:hidden'}"></div>`};
    return `<div class="skcard"><div class="sec">휴식 단계 <span class="note">종류마다 따로 저장 · 선언하면 로스터 트레이너 전원과 소지 포켓몬에 적용 · 휴대폰 캘린더의 「회복」은 자기만</span></div>
     <div class="fr">${seg('restkind',KINDS.map(k=>[k[0],k[1]+' · '+k[2]]),kind)}<span class="sp"></span><button class="btn pri" data-sk="restgo">「${kn[1]}」 선언 (전원)</button></div>
-    <div class="skcols"><div><div class="sec">포켓몬</div>${amt('hp','「HP」 회복',[['0','회복 안 함'],['1/4','1/4'],['1/2','1/2'],['full','전부']])}${tg('hp_one','1체만 회복','일행 전체에서 가장 다친 포켓몬 하나만 (짧은 휴식 기본)')}
+    <div class="skcols"><div><div class="sec">포켓몬</div>${amt('hp','「HP」 회복',[['0','회복 안 함'],['1/4','1/4'],['1/2','1/2'],['full','전부']])}${tg('hp_one','1체만 회복','일행 전체에서 가장 다친 포켓몬 하나만 (숨돌리기 기본)')}
       ${tg('revive','빈사 포켓몬 부활','「HP」 0 인 포켓몬을 일으킨다')}${+R.revive?amt('revive_hp','부활 시 「HP」',[['1','1'],['1/4','1/4'],['1/2','1/2'],['full','전부']]):''}
       ${tg('cure_ab','상태 이상 치유','독 · 화상 · 마비 · 잠듦 · 얼음 등')}${tg('cure_sp','상태 변화 치유','혼란 · 랭크 외 일시 효과 등')}
       ${nsel('pot_pk_n','전용 포텐셜 횟수 회복','배틀에 있는 소지 포켓몬 (개수면 트레이너당 합계)')}</div>
-     <div><div class="sec">트레이너</div>${nsel('ord_n','4식 6령 회복','전부 = 제작한 값으로 (트레이너마다)')}<div class="skrow on"><div style="flex:1"><b>파티 4식 · 6령 회복</b><small>일행 전체에서 합쳐 n 개 (짧은 휴식 기본 1 · 1)</small></div>4식 <input type="number" class="n xs" data-restp="ord_po" value="${+R.ord_po||0}" min="0" max="9"> 6령 <input type="number" class="n xs" data-restp="ord_pc" value="${+R.ord_pc||0}" min="0" max="9"></div>${nsel('pot_tr_n','고유 포텐셜 횟수 회복','횟수 제한이 있는 고유 포텐셜')}
+     <div><div class="sec">트레이너</div>${nsel('ord_n','4식 6령 회복','전부 = 제작한 값으로 (트레이너마다)')}<div class="skrow on"><div style="flex:1"><b>파티 4식 · 6령 회복</b><small>일행 전체에서 합쳐 n 개 (짧은 휴식 기본 1 · 1 · 숨돌리기 6령 1)</small></div>4식 <input type="number" class="n xs" data-restp="ord_po" value="${+R.ord_po||0}" min="0" max="9"> 6령 <input type="number" class="n xs" data-restp="ord_pc" value="${+R.ord_pc||0}" min="0" max="9"></div>${nsel('pot_tr_n','고유 포텐셜 횟수 회복','횟수 제한이 있는 고유 포텐셜')}
       ${tg('tired','지친 포켓몬 회복','스킬 체크 동료 지침 해제')}${tg('care','돌봄 횟수 회복')}${tg('inou','이능 횟수 · 반동 회복')}
       <div class="skrow on"><div style="flex:1"><b>부상 회복</b><small>중상 → 부상 → 없음</small></div>${seg('rest_inj_n',[[0,'안 함'],[1,'1단계'],[2,'2단계']],+R.inj_n||0)}</div></div></div>
     <div class="row" style="margin-top:10px"><button class="btn ghost" data-sk="restdef">「${kn[1]}」 기본값</button><span class="sp"></span><button class="btn" data-sk="restsave">「${kn[1]}」 설정 저장</button></div></div>`})();
