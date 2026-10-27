@@ -189,7 +189,7 @@ const $=(s,r)=>(r||document).querySelector(s),$$=(s,r)=>[...(r||document).queryS
 const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const pct=x=>Math.round((+x||0)*100)+'%';const f2=x=>(+x||0).toFixed(2);
 let S=null,sel=new Set();let toastT;const toast=m=>{const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2600)};
-async function api(name,body){const r=await fetch('/api/'+name,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});const j=await r.json();if(j&&j.error)throw new Error(j.error);return j}
+async function api(name,body){const r=await fetch('/api/'+name,body?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}:{});if(r.status===404)throw new Error('켜져 있는 시뮬 서버가 옛 판이에요 — 검은 실행 창을 모두 닫고 실행.bat 을 다시 눌러 주세요');const j=await r.json();if(j&&j.error)throw new Error(j.error);return j}
 const STATS=['지시','육성','통솔','능력'],STK=['지','육','통','능'],TYPES=['노말','불꽃','물','전기','풀','얼음','격투','독','땅','비행','에스퍼','벌레','바위','고스트','드래곤','악','강철','페어리'];
 /* 웹툴 dungeon_ui.js 의 TY 와 같은 종류 · 아이콘 · 색 */
 const TY={entry:{k:'입구',ic:'⛩',c:'#59b6ff',r:'던전으로 들어오고 나가는 곳.'},room:{k:'통로',ic:'◇',c:'#8fa3bf',r:'특별한 것은 보이지 않는다. 체크로 살피면 숨은 것을 찾을 수도.'},battle:{k:'조우 구역',ic:'☠',c:'#ff4d5e',r:'적이 배회한다. 몰래 지나가거나 맞서 싸운다.'},trap:{k:'함정·기믹',ic:'⚙',c:'#ffa53a',r:'장치가 길을 막는다. 체크나 기술로 돌파한다.'},puzzle:{k:'수수께끼',ic:'✦',c:'#c58bff',r:'머리를 쓰는 시험. 단서를 모아 풀어 낸다.'},treasure:{k:'보물',ic:'◆',c:'#ffd84a',r:'보물이나 단서가 있다.'},safe:{k:'세이프룸',ic:'☗',c:'#3ee0a1',r:'안전한 곳. 숨을 고를 수 있다.'},boss:{k:'심층부',ic:'♛',c:'#ff2a6d',r:'던전의 주인이 기다리는 곳. 결전.'}};

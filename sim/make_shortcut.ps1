@@ -15,7 +15,9 @@ foreach ($p in $places) {
     # 한글 이름으로 바로 저장하면 COM 이 실패하는 PC 가 있어서, 영문 임시 이름으로 저장한 뒤 이름만 바꾼다
     $tmp = Join-Path (Split-Path $p) ('sim_tmp_' + [guid]::NewGuid().ToString('N').Substring(0,8) + '.lnk')
     $s = $w.CreateShortcut($tmp)
-    $s.TargetPath = $target
+    # 10-28: bat 를 바로 가리키면 윈도우가 「작업 표시줄에 고정」을 막는다 → cmd.exe 로 감싸서 고정되게
+    $s.TargetPath = $env:ComSpec
+    $s.Arguments = '/c "' + $target + '"'
     $s.WorkingDirectory = $dir
     if (Test-Path -LiteralPath $icon) { $s.IconLocation = "$icon,0" }
     $s.Description = '망켓몬 던전 · 스킬 체크 시뮬레이터'
