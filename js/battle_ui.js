@@ -565,7 +565,7 @@ window.OM_BATTLE_UI=(()=>{
   switch(d.act){
    case 'load':return A().openLoadParty(d.side);
    case 'unload':return A().unloadTrainer(d.tid);
-   case 'clear':if(!confirm('배틀 상태를 전부 비울까? (좌석은 남는다)'))return;CMD={};for(const k in FAINT_SEEN)delete FAINT_SEEN[k];return A().set(['battle'],{turn:0,phase:0,mode:mode(b),sides:{left:{trainers:[]},right:{trainers:[]}},trainers:{},mons:{},field:{},cmds:{},order:[]});
+   case 'clear':{const HL=window.OM_HALL_UI;if(HL&&HL.worth(b)){const r=await HL.offer(b,{clear:true});if(r==='cancel')return}else if(!confirm('배틀 상태를 전부 비울까? (좌석은 남는다)'))return}   /* 10-27 망령: 시합이 있었으면 전당에 남길지 묻는 창이 비우기 확인을 겸한다 */CMD={};for(const k in FAINT_SEEN)delete FAINT_SEEN[k];return A().set(['battle'],{turn:0,phase:0,mode:mode(b),sides:{left:{trainers:[]},right:{trainers:[]}},trainers:{},mons:{},field:{},cmds:{},order:[]});
    case 'iv':return A().openHatch(d.tid);
    case 'mode':if(c.b.started){A().toast('시합 중에는 에리어를 바꿀 수 없다');return A().renderScene()}return A().set(['battle','mode'],+val);
    case 'gmtake':{if(!c.gm)return;const t=(c.b.trainers||{})[d.tid];if(!t)return;const on=!t.gmTake;await A().set(['battle','trainers',d.tid,'gmTake'],on?true:null);A().sysLog(`${t.name} — ${on?'GM 이 맡는다 (빌려쓰기)':'플레이어에게 돌려줌'}`,'battle');return}
@@ -719,7 +719,7 @@ window.OM_BATTLE_UI=(()=>{
  async function startBattle(){const c=ctx();if(!c.mgr)return;const b=c.b;if(b.started)return;for(const k in FAINT_SEEN)delete FAINT_SEEN[k];
   if(simAny(b)){const n=await applyPending();if(!n&&!Object.values(b.mons||{}).some(m=>m.entry)){if(!(await askYes('예약된 포켓몬이 없다. 그래도 시합을 개시할까?')))return}}
   for(const tid of Object.keys(b.trainers||{}))if((b.trainers[tid]||{}).time)await A().set(['battle','trainers',tid,'time'],null);
-  await A().set(['battle','started'],true);if(!(+b.turn||0))await A().set(['battle','turn'],1);
+  await A().set(['battle','started'],true);if(!(+b.turn||0))await A().set(['battle','turn'],1);await A().set(['battle','log0'],+A().ST.lastLogId||0);await A().set(['battle','at0'],Date.now());   /* log0 · at0: 전당의 간략 로그를 여기서부터 (hall_ui.js) */
   await autoEntryAll(Object.values(ctx().b.mons||{}).filter(m=>m.entry).map(m=>m.id));   /* 선발 전원이 나온 뒤 등장 효과 (스피드 순) */
   A().sysLog('시합 개시! — TURN 1','battle');battleStartCut(ctx().b)}
  /* 퇴장 정리 (맵툴 out_area): 랭크·배율·임시 효과·발동 중인 포텐셜 효과·타입/특성 변경·하늘 위·급소 방호 를 되돌리고, 상태 이상(abn) 과 원념·빈사 빼고는 상태도 푼다.
@@ -1422,6 +1422,7 @@ window.OM_BATTLE_UI=(()=>{
     L.push(`${(m.form0||{}).name||m.name}: ${bits.join(' · ')||'반영'}`)}
    if(!ops.length)return A().toast('반영할 것이 없다');A().closeModal();if(!await A().setMany(ops))return;
    A().sysLog(`【배틀 결과】 시트에 반영\n${L.join('\n')}`,'battle');A().toast('시트에 반영했다');
+   {const HL=window.OM_HALL_UI;const nb=ctx().b;if(HL&&HL.worth(nb))await HL.offer(nb,{})}   /* 10-27 망령: 결과 정리 때도 전당에 남길지 */
    if($('#rsclear',md).checked){CMD={};await A().set(['battle'],{turn:0,phase:0,mode:mode(b),sides:{left:{trainers:[]},right:{trainers:[]}},trainers:{},mons:{},field:{},cmds:{},order:[]})}}}
  /* 폼 목록은 시트(로스터) 쪽을 먼저 — 오레마스 시트에서 고친 폼이 바로 따라온다 (빌려 온 파티는 rid) */
  function formsOf(m){const rm=((A().ST.state.roster||{}).mons||{})[m.rid||m.id];return rm?(rm.forms||[]):(m.forms||[])}

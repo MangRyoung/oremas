@@ -290,7 +290,7 @@ async function openRoom(id,gm,asPl){
  if(ST.role==='gm'){try{const a=JSON.parse(sessionStorage.getItem('om_aspl_'+id)||'null');if(a){ST.asPlGm={secret:ST.secret,gmNick:ST.gmNick};ST.role=a.seat?'seat':null;ST.seat=a.seat||'';ST.name=a.seat||'구경';ST.canGm=true}}catch(e){}}
  ST.asPlGm=ST.asPlGm&&ST.role!=='gm'?ST.asPlGm:null;
  CHAN.cur='s';ST._toBottom=true;renderRoom();
- ST.subH={onPatch,onEvent:p=>{PATCH.last=Date.now();if(p&&p.t==='hello')onHello(p);if(window.OM_RP_UI&&p&&p.t==='typing')window.OM_RP_UI.onTyping(p);if(window.OM_CUTIN&&p&&p.t==='cutin')window.OM_CUTIN.onEvent(p);if(window.OM_EMO&&p&&p.t==='emo'&&VIEW==='rp')window.OM_EMO.onEvent(p)},onState:(d,v)=>{if(v>=ST.v){ST.state=d;ST.v=v;renderScene();if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.watch)window.OM_BATTLE_UI.watch().catch(e=>console.warn(e))}},onLog:r=>{PATCH.last=Date.now();logFill();if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;renderLog(true);notifyLog(r);mobNote(r);if(window.OM_RP_UI)window.OM_RP_UI.onChat(r)}else if(!ST.log.some(x=>x.id===r.id)){ST.log.push(r);ST.log.sort((x,y)=>x.id-y.id);renderLog(true)}},
+ ST.subH={onPatch,onEvent:p=>{PATCH.last=Date.now();if(p&&p.t==='hello')onHello(p);if(window.OM_RP_UI&&p&&p.t==='typing')window.OM_RP_UI.onTyping(p);if(window.OM_CUTIN&&p&&p.t==='cutin')window.OM_CUTIN.onEvent(p);if(window.OM_EMO&&p&&p.t==='emo'&&VIEW==='rp')window.OM_EMO.onEvent(p);if(window.OM_HALL_UI&&p&&p.t==='hall')window.OM_HALL_UI.onEvent(p)},onState:(d,v)=>{if(v>=ST.v){ST.state=d;ST.v=v;renderScene();if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.watch)window.OM_BATTLE_UI.watch().catch(e=>console.warn(e))}},onLog:r=>{PATCH.last=Date.now();logFill();if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;renderLog(true);notifyLog(r);mobNote(r);if(window.OM_RP_UI)window.OM_RP_UI.onChat(r)}else if(!ST.log.some(x=>x.id===r.id)){ST.log.push(r);ST.log.sort((x,y)=>x.id-y.id);renderLog(true)}},
   onStatus:s=>{const el=$('#conn');if(el){el.textContent=s==='SUBSCRIBED'?'● 실시간':'○ '+s;el.style.color=s==='SUBSCRIBED'?'var(--acc2)':'var(--mute)'}RT.st=s;RT.at=Date.now();if(s==='SUBSCRIBED'){startPresence();if(ST._sub)resync('재연결');else checkState('구독');ST._sub=true}}};
  ST.unsub=DBS().subscribe(id,ST.subH);
  if(ST.role){pollWhispers();ST.wtimer=setInterval(pollWhispers,4000)}
@@ -619,7 +619,7 @@ function renderLog(scroll){
 /* ---------- 씬 ---------- */
 function scene(){return ST.state.scene||'rp'}
 let VIEW='';let lastScene='';
-const VIEWS=[['rp','RP'],['battle','배틀'],['dungeon','던전'],['sheet','시트'],['graph','관계도'],['calendar','캘린더'],['report','제보'],['guide','튜토리얼']];
+const VIEWS=[['rp','RP'],['battle','배틀'],['dungeon','던전'],['sheet','시트'],['graph','관계도'],['calendar','캘린더'],['hall','전당'],['report','제보'],['guide','튜토리얼']];
 /* ---------- 접속 중인 사람 (브로드캐스트 인사: 25초마다 · 새로 온 사람에게 답인사) ---------- */
 const PRES={who:{},t:null,last:0};
 function myId(){return ST.role==='gm'?('gm:'+(ST.vid||(ST.vid=Math.random().toString(36).slice(2,8)))):ST.role==='seat'?('s:'+ST.seat):('v:'+(ST.vid||(ST.vid=Math.random().toString(36).slice(2,8))))}
@@ -675,6 +675,7 @@ function renderScene(){reconcileNodes();
  else if(VIEW==='graph')window.OM_GRAPH_UI.render(el);
  else if(VIEW==='calendar')window.OM_CAL_UI.render(el);
  else if(VIEW==='dungeon'){if(window.OM_DG_UI)window.OM_DG_UI.render(el)}
+ else if(VIEW==='hall'){if(window.OM_HALL_UI)window.OM_HALL_UI.render(el)}
  else if(VIEW==='report')window.OM_REPORT_UI.render(el);
  else if(VIEW==='guide'){if(window.OM_GUIDE_UI)window.OM_GUIDE_UI.render(el)}
  else window.OM_RP_UI.render(el)}
