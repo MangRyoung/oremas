@@ -10,6 +10,9 @@ window.OM_IMPORT=(()=>{
  /* 스탠딩 [{label,src,point,kind?}] — 트레이너·포켓몬 같은 모양 */
  /* 필드 전개 [{type,name,loc,img,eff,count,color}] — 트레이너·포켓몬 같은 모양 (stage_ui) */
  const fieldsOf=a=>(Array.isArray(a)?a:[]).filter(x=>x&&x.name).map(x=>({type:[0,1,2].includes(+x.type)?+x.type:0,name:String(x.name),loc:x.loc||'',img:x.img||'',eff:brN(x.eff||''),count:+x.count>0?+x.count:-1,color:x.color||''}));
+ /* 해석 차단 (oremas dex_ui 의 mon.dexFw): 0 없음 · 1 1회 · 2 완전 · 3 일부 · 4 노이즈. '' = 정하지 않음 */
+ const dexFwOf=v=>v===''||v==null||!isFinite(+v)?'':Math.max(0,Math.min(4,Math.round(+v)));
+ const dexPartsOf=o=>{const r={};if(o&&typeof o==='object')for(const k of ['move','type','trait'])if(o[k])r[k]=1;return r};
  const standsOf=a=>(Array.isArray(a)?a:[]).filter(x=>x&&x.src).map(x=>Object.assign({label:x.label||'기본',src:x.src,point:+x.point||0},x.kind==='stand'||x.kind==='portrait'?{kind:x.kind}:{}));
 
  /* 제작기 트레이너 문서 → 배틀 트레이너 */
@@ -19,6 +22,10 @@ window.OM_IMPORT=(()=>{
    ranks:Object.assign({육성:'',지시:'',통솔:'',능력:''},d.ranks||{}),base:d.base||{},detail:d.detail||{},
    unique:(d.unique||[]).filter(u=>u&&u.name).map(u=>{const o={name:u.name,eff:brN(u.eff||'')};for(const k of ['color','icon','sub'])if(u[k])o[k]=String(u[k]).slice(0,40);if(u.line)o.line=String(u.line).slice(0,80);const dsl=String(u.auto||'').trim();if(dsl){const r=window.OM_FX?window.OM_FX.parse(dsl):{ops:[]};o.auto={dsl,ops:r.ops}}return o}),
    pids:d.pids||[],solo:(d.solo==3||d.solo==='3')?3:!!d.solo,folder:d.folder||'',fields:fieldsOf(d.fields),
+   /* 10-27 망령: 트레이너가 주는 「기능 확장 : 기술」 [{mv, lim(【N/시】, 0 = 제한 없음), kind:'act'(행동 대신)|'extra'(추가 행동), who(포켓몬 id, 비면 PT 전원), src(출처 포텐셜)}] */
+   ext:(Array.isArray(d.ext)?d.ext:[]).filter(x=>x&&String(x.mv||'').trim()).slice(0,12).map(x=>({mv:String(x.mv).trim().slice(0,60),lim:Math.max(0,Math.min(9,Math.round(+x.lim)||0)),kind:x.kind==='extra'?'extra':'act',who:String(x.who||'').slice(0,40),src:String(x.src||'').slice(0,60)})),
+   /* 10-27 망령: 해석 차단 기본값 (포켓몬마다 따로 정하지 않았으면 이 값) */
+   dexFw:dexFwOf(d.dexFw),dexFwParts:dexPartsOf(d.dexFwParts),
    /* 10-26 망령: 제작기 프로필 「상세」 — 백스토리 · 성격 · 말투 · 선호하는 전법 … [{k,v}] */
    bio:(Array.isArray(d.bio)?d.bio:[]).filter(x=>x&&String(x.v||'').trim()).map(x=>({k:String(x.k||'메모').slice(0,40),v:String(x.v||'').slice(0,8000)})),
    /* 10-25 망령: SP · 서포터 — 제작기 「포인트」 칸 아래에서 적는다. 자동화 구문은 고유 포텐셜과 같은 꼴로 */
@@ -70,6 +77,7 @@ window.OM_IMPORT=(()=>{
    ...(!item0&&d.item&&(own||ET.it)?{itemOwn:{name:String(d.item),eff:brN(item.eff||''),auto:String(own?own.auto||'':ET.itAuto||''),cons:!!(own?own.cons:ET.itCons)}}:{}),
    ...(()=>{const tu=d.tune||{};const dsl=String(tu.item||'').trim();return dsl?{itemTune:{item:String(tu.itemName||d.item||''),dsl}}:{}})(),
    ...(()=>{const c=(d.tune||{}).crit;if(!c||typeof c!=='object')return {};const r={};if(c.tbl!=null&&c.tbl!=='')r.tbl=+c.tbl;if(+c.add)r.add=+c.add;if(+c.guard)r.guard=+c.guard;if(+c.dmg)r.dmg=+c.dmg;if(c.sure)r.sure=1;if(c.never)r.never=1;return Object.keys(r).length?{critRule:r}:{}})(),   /* 제작기 상세 조정 「급소 규칙」 (10-23 망령) */
+   ...(()=>{/* 10-27 망령: 제작기에서 정한 해석 차단 — 포켓몬 값, 없으면 트레이너 기본값 */const own=dexFwOf(d.dexFw);const fw=own!==''?own:(tr&&tr.dexFw!==''&&tr.dexFw!=null?+tr.dexFw:0);if(!fw)return {};const parts=own!==''?dexPartsOf(d.dexFwParts):Object.assign({},(tr&&tr.dexFwParts)||{});return {dexFw:fw,...(fw===3?{dexFwParts:parts}:{})}})(),
    fields:fieldsOf(d.fields),rank:{attack:0,defense:0,specialattack:0,specialdefense:0,speed:0,accuracy:0,evasion:0,critical:0},states:{},forms:formsOf(d,base,L)}}
 
  /* 소지품 2 · 3번 칸 (제작기 items2, 10-24 망령): DB → 오리지널(itemOwn) → 시트 사본(effTxt.its2) 순으로 글을 찾는다 */

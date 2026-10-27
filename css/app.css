@@ -348,6 +348,8 @@ html,body{font-size:15px;line-height:1.55}
 .mv .mn{font-family:var(--lab);font-size:16px}.mv .mm{font-size:11px;opacity:.9}.mv .mr{position:absolute;right:8px;top:6px;font-size:10.5px;background:rgba(0,0,0,.35);padding:0 6px;color:#fff}
 .mv.on{border-color:#fff;outline:2px solid var(--yel2)}
 .mv.virt{opacity:.6;filter:saturate(.4);border-style:dashed;border-color:rgba(255,255,255,.35)}.mv.virt.on,.mv.virt:hover{opacity:1;filter:none}
+/* 10-27 트레이너 「기능 확장」 기술 카드 */
+.mv.ext{border-style:dashed;border-color:rgba(255,255,255,.7);position:relative}.mv .mvx{font-size:10px;font-weight:700;letter-spacing:.02em;opacity:.95;margin-bottom:1px}.mv.ext.gone{opacity:.45;filter:grayscale(.6)}.mv.ext.gone .mvx::after{content:' · 다 씀'}
 .mv:hover{filter:brightness(1.12)}
 .mef{background:#141518;padding:6px 10px;margin-top:6px;color:var(--fg2);font-size:12.5px;line-height:1.5;white-space:pre-wrap}
 .board{display:flex;flex-direction:column;gap:6px;background:#141518;padding:8px}
@@ -4525,3 +4527,4 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .tbio .tbk{font-family:var(--lab);font-size:13px;color:var(--y,#f5d000);margin-bottom:3px;letter-spacing:.02em}
 .tbio .tbv{color:#e8e8e8;line-height:1.65}
 .tbio+.tbio{border-top:1px dashed var(--line);padding-top:10px}
+@media (max-width:760px){.mv .mvx{flex:0 0 100%;order:-1;font-size:10px}}
