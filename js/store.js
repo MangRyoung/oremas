@@ -40,6 +40,11 @@ window.OM_STORE=(()=>{
   const r=await sb().from('om_state').select('data,v').eq('room',room).maybeSingle();if(r.error)throw err(r.error);return r.data}
  /* 10-23 이그레스: 버전만 (가볍게 확인하고, 앞서 있을 때만 전체를 읽는다) */
  async function getStateV(room){const r=await sb().from('om_state').select('v').eq('room',room).maybeSingle();if(r.error)throw err(r.error);return r.data}
+ /* 10-28 이그레스 (supabase/patch_2026-10-28_이어받기.sql): after 다음 버전부터 놓친 신호들만. 이어 붙일 수 없으면 null — 그때는 전체를 읽는다.
+    함수가 없는 DB 면 한 번 알고 나서는 묻지 않는다 */
+ let PATCHES=null;
+ async function patchesSince(room,after){if(PATCHES===false)return null;const r=await sb().rpc('om_patches',{p_room:room,p_after:after||0});
+  if(r.error){if(noFn(r.error)){PATCHES=false;return null}throw err(r.error)}PATCHES=true;return Array.isArray(r.data)?r.data:null}
  /* 10-22 로비 방 카드: 방마다 배경 · 첫 화면 · 마지막 변경만 (상태 전체는 무겁다) */
  async function roomsPeek(ids){if(!ids.length)return [];const r=await sb().from('om_state').select('room,updated_at,bg:data->rp->bg,scene:data->scene').in('room',ids);if(r.error)throw err(r.error);return r.data||[]}
  async function setState(room,secret,path,value){const args={p_room:room,p_secret:secret,p_path:path||null,p_value:value===undefined?null:value};
@@ -119,5 +124,5 @@ async function shrinkUpload(blob,maxSide){try{if(!/^image\/(png|jpe?g|webp|bmp)$
   put:(room,secret,id,head,log)=>rpc('om_hall_put',{p_room:room,p_secret:secret,p_id:id,p_head:head,p_log:log??null}),
   del:(room,secret,id)=>rpc('om_hall_del',{p_room:room,p_secret:secret,p_id:id}),
   cm:(room,secret,id,by,t,del)=>rpc('om_hall_cm',{p_room:room,p_secret:secret,p_id:id,p_by:by||'',p_t:t??null,p_del:del??null}),noFn};
- return {hall,shrinkUpload,ntCamps,ntDocs,rtReset,getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty};
+ return {patchesSince,hall,shrinkUpload,ntCamps,ntDocs,rtReset,getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty};
 })();

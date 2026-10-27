@@ -282,7 +282,7 @@ async function openRoom(id,gm,asPl){
  if(!ST.role&&!tok&&!gm){const only=!!((row.settings||{}).accountOnly);let guest=false;try{guest=!!sessionStorage.getItem('om_guest_'+id)}catch(e){}
   if(only||!guest){renderLogin(only?`「${row.name||id}」 은 계정 전용 방이다 — 로그인해야 들어갈 수 있다`:`「${row.name||id}」 에 들어가려면 로그인`,{room:id,noGuest:only});return}}
  if(!ST.role){remember(id,row.name,'');ST.name=LS.get('om_name_'+id,'')||(tok&&!asPl&&(ACCT.get()||{}).name)||LS.get('om_nick','')||''}
- const st=await DBS().getState(id);ST.state=(st&&st.data)||{};ST.v=(st&&st.v)||0;PATCH.pend.clear();
+ const st=await loadState(id);ST.state=(st&&st.data)||{};ST.v=(st&&st.v)||0;PATCH.pend.clear();
  /* GM 이 방을 열면 좌석이 쓸 상자(roster · pub · graph · skill · dex)를 먼저 만들어 둔다 — 서버의 jsonb_set 은 부모가 없으면 조용히 실패하니까 */
  if(ST.role==='gm'){const need={roster:{trainers:{},mons:{}},pub:{},ready:{},graph:{nodes:{},edges:{}},skill:{},dex:{},rp:{},battle:{}};for(const k in need){if(typeof ST.state[k]!=='object'||ST.state[k]===null){try{const v=await DBS().setState(id,ST.secret,[k],need[k]);ST.state[k]=need[k];ST.v=Math.max(ST.v,v||0)}catch(e){}}else if(k==='roster'){for(const kk of ['trainers','mons'])if(typeof ST.state.roster[kk]!=='object'||ST.state.roster[kk]===null){try{const v=await DBS().setState(id,ST.secret,['roster',kk],{});ST.state.roster[kk]={};ST.v=Math.max(ST.v,v||0)}catch(e){}}}}}
  ST.log=await DBS().getLogTail(id,200);ST.lastLogId=ST.log.length?ST.log[ST.log.length-1].id:0;
@@ -293,7 +293,7 @@ async function openRoom(id,gm,asPl){
  ST.subH={onPatch,onEvent:p=>{PATCH.last=Date.now();if(p&&p.t==='hello')onHello(p);if(window.OM_RP_UI&&p&&p.t==='typing')window.OM_RP_UI.onTyping(p);if(window.OM_CUTIN&&p&&p.t==='cutin')window.OM_CUTIN.onEvent(p);if(window.OM_EMO&&p&&p.t==='emo'&&VIEW==='rp')window.OM_EMO.onEvent(p);if(window.OM_HALL_UI&&p&&p.t==='hall')window.OM_HALL_UI.onEvent(p)},onState:(d,v)=>{if(v>=ST.v){ST.state=d;ST.v=v;renderScene();if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.watch)window.OM_BATTLE_UI.watch().catch(e=>console.warn(e))}},onLog:r=>{PATCH.last=Date.now();logFill();if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;renderLog(true);notifyLog(r);mobNote(r);if(window.OM_RP_UI)window.OM_RP_UI.onChat(r)}else if(!ST.log.some(x=>x.id===r.id)){ST.log.push(r);ST.log.sort((x,y)=>x.id-y.id);renderLog(true)}},
   onStatus:s=>{const el=$('#conn');if(el){el.textContent=s==='SUBSCRIBED'?'● 실시간':'○ '+s;el.style.color=s==='SUBSCRIBED'?'var(--acc2)':'var(--mute)'}RT.st=s;RT.at=Date.now();if(s==='SUBSCRIBED'){startPresence();if(ST._sub)resync('재연결');else checkState('구독');ST._sub=true}}};
  ST.unsub=DBS().subscribe(id,ST.subH);
- if(ST.role){pollWhispers();ST.wtimer=setInterval(pollWhispers,4000)}
+ if(ST.role){pollWhispers();ST.wtimer=setInterval(()=>{if(document.visibilityState==='visible')pollWhispers()},4000)}   /* 10-28 이그레스: 숨겨진 창은 쉰다 (다시 보이면 resync 가 한 번 읽는다) */
  if(!ST.role&&!ST.asPlGm)openSeatPicker()}
 
 /* 실시간 로그가 한꺼번에 몰리면(퇴장 · 등장 · 자동 효과가 동시에) 순서가 뒤바뀌거나 몇 줄이 아예 안 오는 일이 있었다 (10-26 FFA 시험: 4줄 누락) —
@@ -346,15 +346,31 @@ function putPath(o,path,value){const root=Object.assign({},o||{});let x=root;
  const k=path[path.length-1];if(value===null||value===undefined)delete x[k];else x[k]=value;return root}
 function stateChanged(){renderScene();if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.watch)window.OM_BATTLE_UI.watch().catch(e=>console.warn(e))}
 function onPatch(p){if(!p||!ST.room)return;const v=+p.v||0;PATCH.last=Date.now();if(!(v>ST.v))return;
- if(p.full||(!p.same&&!(Array.isArray(p.path)&&p.path.length))){pullState('전체 신호');return}
+ if(p.full||(!p.same&&!(Array.isArray(p.path)&&p.path.length))){pullState('전체 신호',true);return}
  PATCH.pend.set(v,p);if(drainPatch())stateChanged()}
 function drainPatch(){let n=0;
  while(PATCH.pend.has(ST.v+1)){const p=PATCH.pend.get(ST.v+1);PATCH.pend.delete(ST.v+1);if(!p.same){ST.state=putPath(ST.state,p.path.map(String),p.value);n++}ST.v++}
  for(const k of [...PATCH.pend.keys()])if(k<=ST.v)PATCH.pend.delete(k);
  clearTimeout(PATCH.t);if(PATCH.pend.size)PATCH.t=setTimeout(()=>{if(PATCH.pend.size)pullState('빈 버전')},1500);
  return n}
-function pullState(why){if(PATCH.pull)return PATCH.pull;const room=ST.room;if(!room)return Promise.resolve(false);
- PATCH.pull=(async()=>{try{const st=await DBS().getState(room);if(ST.room!==room||!st)return false;
+/* 10-28 이그레스: 방에 들어올 때 — 이 브라우저에 저장해 둔 마지막 상태(방 하나만)가 있으면 그 뒤 신호만 받아 이어 붙인다. 못 하면 전체 */
+const STC={k:id=>'om_st_'+id,at:0,v:0};
+function stCacheGet(id){try{const x=JSON.parse(localStorage.getItem(STC.k(id))||'null');return x&&x.v>0&&x.data&&typeof x.data==='object'?x:null}catch(e){return null}}
+function stCacheSave(){if(!ST.room||!ST.v||ST.v===STC.v)return;try{for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k&&k.startsWith('om_st_')&&k!==STC.k(ST.room))localStorage.removeItem(k)}
+  localStorage.setItem(STC.k(ST.room),JSON.stringify({v:ST.v,data:ST.state}));STC.v=ST.v;STC.at=Date.now()}catch(e){try{localStorage.removeItem(STC.k(ST.room))}catch(e2){}}}
+async function loadState(id){const ca=stCacheGet(id);
+ if(ca&&DBS().patchesSince){try{const L=await DBS().patchesSince(id,ca.v);
+   if(L){let s=ca.data,v=ca.v,ok=true;for(const p of L.slice().sort((a,b)=>a.v-b.v)){if(+p.v!==v+1||p.full||(!p.same&&!(Array.isArray(p.path)&&p.path.length))){ok=false;break}if(!p.same)s=putPath(s,p.path.map(String),p.value);v++}
+    if(ok){console.info('[오레마스] 저장해 둔 상태에 이어받음',ca.v,'→',v);STC.v=0;return {data:s,v}}}}catch(e){console.warn('[오레마스] 이어받기 실패',e)}}
+ return DBS().getState(id)}
+setInterval(()=>{if(Date.now()-STC.at>60000)stCacheSave()},20000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')stCacheSave()});addEventListener('pagehide',stCacheSave);
+/* 10-28 이그레스: 전체(큰 방은 560KB)를 읽기 전에 놓친 신호만 이어받아 본다 — 휴대폰을 껐다 켤 때 · 빈 버전. 「전체」 신호일 때는 바로 전체 */
+async function catchUp(room){if(!DBS().patchesSince)return false;const v0=ST.v;let L;try{L=await DBS().patchesSince(room,v0)}catch(e){console.warn('[오레마스] 이어받기 실패',e);return false}
+ if(ST.room!==room||!L)return false;for(const p of L){const v=+p.v||0;if(v<=ST.v)continue;if(p.full||(!p.same&&!(Array.isArray(p.path)&&p.path.length)))return false;PATCH.pend.set(v,p)}
+ const n=drainPatch();if(n)stateChanged();if(PATCH.pend.size)return false;if(L.length)console.info('[오레마스] 놓친 신호 이어받음',ST.v-v0);return true}
+function pullState(why,full){if(PATCH.pull)return PATCH.pull;const room=ST.room;if(!room)return Promise.resolve(false);
+ PATCH.pull=(async()=>{try{if(!full&&ST.v&&await catchUp(room))return true;if(ST.room!==room)return false;const st=await DBS().getState(room);if(ST.room!==room||!st)return false;
    if((st.v||0)<=ST.v){if(drainPatch())stateChanged();return false}
    ST.state=st.data||{};ST.v=st.v||0;drainPatch();stateChanged();console.info('[오레마스] 상태 다시 읽음',why);return true}
   catch(e){console.warn('[오레마스] 상태 다시 읽기 실패',e);return false}finally{PATCH.pull=null}})();return PATCH.pull}
