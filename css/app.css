@@ -3881,8 +3881,10 @@ button.tag.solo:hover{border-color:var(--yel2)}
 /* 10-25 배틀 조작판을 접어도(휴대폰) 대사창 · PL 권한 단추는 턴 진행 옆에 — 줄을 넘기지 않게 짧은 글씨로 */
 .gmrow .sh{display:none}
 @media (max-width:760px){
- .bstat.fold .gmrow{flex-wrap:nowrap}
+ .bstat.fold .gmrow{flex-wrap:wrap}   /* 10-27 망령: 한 줄로 묶으면 PL 권한 단추가 화면 밖으로 잘렸다 — 넘치면 줄을 넘긴다 */
  .bstat.fold .gmrow>*{flex-shrink:0}
+ .bstat.fold .gmrow>[data-act=pendgo][disabled]{display:none}   /* 누를 수 없는 「동시 내밀기 실행」은 접힌 판에서 숨긴다 */
+ .gmrow .gmh{margin-left:0}   /* 오른쪽 끝으로 밀면 떠 있는 「채팅」 탭에 가려진다 */
  .bstat.fold .gmrow .lbl{display:none}
  .bstat.fold .gmrow .sh{display:inline}
  .bstat.fold .gmrow>.bsaytog,.bstat.fold .gmrow>.gmh{display:inline-flex;padding-left:8px;padding-right:8px}

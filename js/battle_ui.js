@@ -79,8 +79,11 @@ window.OM_BATTLE_UI=(()=>{
  const coHtml=(c,tid)=>{const L=coOf(c,tid);if(!L.length)return '';const S=c.ST.state.seats||{};return ` <span class="cow" title="이 트레이너를 함께 지시하는 플레이어">👥 ${esc(L.map(s=>(S[s]||{}).name||s).join(' · '))}</span>`};
  const coBtn=(c,tid)=>(c.gm||c.seat===tid)&&(((c.ST.state.roster||{}).trainers||{})[tid])?`<button class="btn xs ghost" data-act="co" data-tid="${tid}" title="여러 플레이어가 이 트레이너의 지시 창 · 조작권을 함께 쓴다">함께 지시</button>`:'';
  function lead(c,tid){if(!ownT(c,tid))return false;if(tid===c.seat)return true;if(!((c.ST.state.seats||{})[tid])||A().online(tid))return false;return coOf(c,tid).filter(s=>s===c.seat||A().online(s)).sort()[0]===c.seat}
- function myTrainers(c){const trs=c.b.trainers||{};if(c.gm)return Object.keys(trs).filter(t=>!(c.fair&&seatOwned(c,t)));return Object.keys(trs).filter(t=>ownT(c,t)).sort((x,y)=>(y===c.seat)-(x===c.seat))}
- function canEdit(c,mon){if(mon&&ownT(c,mon.tid))return true;return c.gm&&!(c.fair&&mon&&seatOwned(c,mon.tid))}
+ /* 10-27 망령: PL 권한(c.fair) 중의 GM 은 자기가 불러온 트레이너만 — byAcct 가 다른 GM 것이면 지시 · 편집 · 수동 공개를 가린다 (자동 진행은 그대로). byAcct 가 없는 예전 트레이너는 어느 GM 이든 */
+ function gmMine(c,tid){const t=((c.b||{}).trainers||{})[tid]||{};if(!t.byAcct)return true;const k=A().acctKey?A().acctKey():'';return !k||t.byAcct===k}
+ function fairOff(c,tid){return !!(c.gm&&c.fair&&(seatOwned(c,tid)||!gmMine(c,tid)))}
+ function myTrainers(c){const trs=c.b.trainers||{};if(c.gm)return Object.keys(trs).filter(t=>!fairOff(c,t));return Object.keys(trs).filter(t=>ownT(c,t)).sort((x,y)=>(y===c.seat)-(x===c.seat))}
+ function canEdit(c,mon){if(mon&&ownT(c,mon.tid))return true;return c.gm&&!(mon&&fairOff(c,mon.tid))}
  function skPend(c,tid){try{const K=c.ST.state.skill||{};const O=K.offer;if(!O)return false;const R=(K.res||{})[tid];return !(R&&R.offerId===O.id)}catch(e){return false}}
  function fieldOf(b){return Object.assign({weather:{type:'',count:0},terrain:{type:'',count:0},rooms:{},etc:{},objects:{left:{},right:{}}},b.field||{})}
  function typeChip(en){return A().typeChip(en)}
@@ -505,7 +508,7 @@ window.OM_BATTLE_UI=(()=>{
   const key=turnKey(b)+':'+m.id;if(SENT['rv:'+key]||BUSY.rv)return;
   const run=async()=>{const b2=ctx().b;const o2=(b2.order||[])[+b2.orderIdx||0];if(!o2||o2.mid!==m.id||revealed(b2,m.tid,m.id)||SENT['rv:'+key])return;SENT['rv:'+key]=1;BUSY.rv=1;try{await revealOne(m.tid,m.id,true)}finally{BUSY.rv=0}};
   if(c.role==='seat'&&lead(c,m.tid))return run();
-  if(!c.gm||(b.host||'gm')!=='gm')return;if(c.fair&&seatOwned(c,m.tid))return;
+  if(!c.gm||(b.host||'gm')!=='gm')return;if(!isLeader(c))return;if(c.fair&&seatOwned(c,m.tid))return;
   if(!seatOwned(c,m.tid))return run();
   if(!RVT[key])RVT[key]=setTimeout(run,2500)}
  function unrevealed(b){const out=[];for(const tid in b.trainers||{}){const t=b.trainers[tid];const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid&&m.entry&&m.hp.cur>0);for(const m of mons)if(!revealed(b,tid,m.id))out.push(`${t.name} ${String(m.entry).toUpperCase()}`)}return out}
@@ -814,6 +817,7 @@ window.OM_BATTLE_UI=(()=>{
  const DELAY_SEEN={};const DLY_RE=/【[^】]*지연\s*\((아군,\s*)?(\d+)\s*턴(\s*동안)?\)[^】]*】/;
  /* 10-27 망령: 자동 처리는 한 창만 — 「플레이어도 배틀 진행」이면 좌석도 진행 권한이라 창마다 따로 돌아 【지연】 이 두 번 찍혔다.
     접속 중인 GM 창이 있으면 그중 하나(id 가 가장 작은 것), 없으면 진행 권한 좌석 중 하나만 */
+ function myPid(){try{const P=A().presList?A().presList():[];const me=P.find(p=>p.me);return me?String(me.id):'?'}catch(e){return '?'}}
  function isLeader(c){if(!c||!c.mgr)return false;const P=(A().presList?A().presList():[]).filter(p=>p.role==='gm'||p.role==='seat');const gms=P.filter(p=>p.role==='gm');const pool=gms.length?gms:P;if(!pool.length)return true;const lead=pool.slice().sort((x,y)=>String(x.id)<String(y.id)?-1:String(x.id)>String(y.id)?1:0)[0];return !!lead.me}
  async function delayWatch(c,b){if(!c.mgr||!b||!b.started||!FX())return;const T=+b.turn||0;const key=String(b.started)+'|'+T;if(DELAY_SEEN[key])return;if(!isLeader(c))return;if(+b.dlyT===T){DELAY_SEEN[key]=1;return}DELAY_SEEN[key]=1;await A().set(['battle','dlyT'],T);   /* dlyT: 이 턴의 지연 알림을 이미 했다 (새로고침 · 다른 창에서 또 하지 않게) */
   const notes=[];for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0||!(+m.inT))continue;const k=T-(+m.inT)+1;
@@ -924,12 +928,12 @@ window.OM_BATTLE_UI=(()=>{
   if(x.move===''||x.move==null)return Object.assign(o,{none:1});const mv=MVS(m)[+x.move]||{};
   return Object.assign(o,{mv:{name:mv.name||'?',type:mv.typeEn||'',typeKo:mv.type||'',cat:mv.cat||'',pow:mv.pow||'-',acc:mv.acc||'-',prio:+mv.prio||0},tg:(x.targets||[]).map(at)})}
  let autoT=null;
- function autoAdvance(){const c=ctx();const b=c.b;if(!c.mgr)return;const me=c.gm?'gm':c.seat;if((b.host||'gm')!==me)return;if((+b.phase||0)!==1||b.tstep)return;if(unrevealed(b).length)return;clearTimeout(autoT);autoT=setTimeout(async()=>{const c2=ctx();if((+c2.b.phase||0)!==1||c2.b.tstep||unrevealed(c2.b).length)return;A().sysLog('지시가 모두 공개됐다','battle');await stepTurn()},800)}
+ function autoAdvance(){const c=ctx();const b=c.b;if(!c.mgr)return;const me=c.gm?'gm':c.seat;if((b.host||'gm')!==me)return;if(me==='gm'&&!isLeader(c))return;   /* 10-27: GM 창 여럿이면 리더 하나만 */if((+b.phase||0)!==1||b.tstep)return;if(unrevealed(b).length)return;clearTimeout(autoT);autoT=setTimeout(async()=>{const c2=ctx();if((+c2.b.phase||0)!==1||c2.b.tstep||unrevealed(c2.b).length)return;A().sysLog('지시가 모두 공개됐다','battle');await stepTurn()},800)}
  /* 같은 포켓몬 공개가 여러 길(자동 공개 · 내 차례 공개 · 버튼)로 겹쳐 들어오면 로그가 두 번 찍혔다 (10-24 망령) — 진행 중이면 무시하고, 기다린 뒤 다시 확인 */
  const RVING=new Set();
  async function revealOne(tid,part,quiet){const rk=tid+':'+part+':'+(+ctx().b.turn||0);if(RVING.has(rk))return;RVING.add(rk);try{return await revealOne0(tid,part,quiet)}finally{setTimeout(()=>RVING.delete(rk),1500)}}
  async function revealOne0(tid,part,quiet){const c=ctx();const b=c.b;const t=(b.trainers||{})[tid];if(!t)return;if(!c.gm&&!ownT(c,tid))return A().toast('내 지시만 공개할 수 있다');
-  if(c.gm&&c.fair&&seatOwned(c,tid))return A().toast('GM 불간섭 설정 — 플레이어의 지시는 그 플레이어가 연다');
+  if(fairOff(c,tid))return A().toast(seatOwned(c,tid)?'GM 불간섭 설정 — 플레이어의 지시는 그 플레이어가 연다':'PL 권한 중 — 다른 GM 이 불러온 트레이너의 지시는 그 GM 이 연다');
   const cm=await myCmd(c,tid,quiet);if(!cm)return;
   const m=b.mons[part];if(!m)return;if(revealed(b,tid,part)||revealed(ctx().b,tid,part))return;const x=pubMon((cm.mons||{})[part]);
   {const cur=(ctx().b.cmds||{})[tid];if(!cur)await A().set(['battle','cmds',tid],{mons:{[part]:x}});else if(!cur.mons)await A().set(['battle','cmds',tid,'mons'],{[part]:x});else await A().set(['battle','cmds',tid,'mons',part],x)}if(cm.detail&&!((b.cmds||{})[tid]||{}).detail)await A().set(['battle','cmds',tid,'detail'],cm.detail);A().sysLog('【공개】 '+revealCardText(b,t,m,x),'battle',{rv:[revealData(b,t,m,x)]})}
@@ -1012,7 +1016,7 @@ window.OM_BATTLE_UI=(()=>{
     각자 쓸 것을 「발동」하고 「다음 ▶」(턴 종료 단계는 「턴 종료 처리 ▶」)를 누르면, 모두 눌렀을 때 진행하는 화면이 다음 단계로 넘긴다.
     상태: battle.endq = {key, step:'last'|'end'|'after', need:[tid]} · 끝냄 표시 = battle.cmds[tid].ed = key+':'+step (좌석도 쓸 수 있는 자리) */
  const END_STEP={last:'턴 가장 마지막',end:'턴 종료',after:'턴 종료 이후'};
- const endMine=(c,tid)=>c.role==='seat'?ownT(c,tid):(c.gm&&!seatOwned(c,tid));
+ const endMine=(c,tid)=>c.role==='seat'?ownT(c,tid):(c.gm&&!seatOwned(c,tid)&&!fairOff(c,tid));
  const endDone=(b,tid)=>{const q=b.endq||{};return ((b.cmds||{})[tid]||{}).ed===q.key+':'+q.step};
  const EFIRED={};
  async function endFlow(){const c=ctx();if(!c.mgr)return;const q=c.b.endq;if(q&&q.step){const wait=(q.need||[]).filter(t=>!endDone(c.b,t)&&endCands(c.b,q.step).some(x=>x.m.tid===t)).map(t=>(c.b.trainers[t]||{}).name||'?');
@@ -1027,6 +1031,10 @@ window.OM_BATTLE_UI=(()=>{
  async function endAdvance(force){const c=ctx();const b=c.b;const q=b.endq;if(!q||!q.step||!c.mgr)return;const me=c.gm?'gm':c.seat;if(!force&&(b.host||'gm')!==me)return;   /* 넘기기(force)는 진행 화면이 아니어도 된다 — 진행하던 좌석이 나가도 막히지 않게 */
   /* 고를 것이 없어진 트레이너(그 포켓몬이 쓰러졌거나 물러남)는 끝낸 것으로 본다 */
   const L=endCands(b,q.step);if(!force&&!(q.need||[]).every(t=>endDone(b,t)||!L.some(x=>x.m.tid===t)))return;if(BUSY.end===q.key)return;BUSY.end=q.key;
+  /* 10-27 망령: GM 창이 여럿이면(같은 계정 두 창 · GM 둘) 모두 host 'gm' 이라 턴 종료를 같이 돌려 한 턴이 건너뛰어졌다 (6턴).
+     ① 접속 중 GM 창 중 리더 하나만 ② 그래도 겹칠 때를 위해 잠금을 쓰고 잠깐 뒤 내 것인지 다시 본다 */
+  if(me==='gm'&&!force&&!isLeader(c)){BUSY.end='';return}
+  const lk=q.key+'|'+myPid();await A().set(['battle','endLock'],lk);await new Promise(r=>setTimeout(r,450));if(String((ctx().b||{}).endLock||'')!==lk||!((ctx().b||{}).endq||{}).step){BUSY.end='';return}
   try{await A().set(['battle','endq'],null);if(q.step==='last')await endStep('end');else if(q.step==='end'){await turnEnd();await endStep('after')}}finally{BUSY.end=''}}
  function endPanel(c){const b=c.b;const q=b.endq;if(!q||!q.step)return '';const L=endCands(b,q.step);const btn=q.step==='end'?'턴 종료 처리':q.step==='last'?'턴 종료로':'다음 턴으로';
   const rows=(q.need||[]).map(tid=>{const t=(b.trainers||{})[tid]||{};const mine=endMine(c,tid);const dn=endDone(b,tid)||!L.some(x=>x.m.tid===tid);const my=mine?L.filter(x=>x.m.tid===tid):[];
@@ -1349,7 +1357,7 @@ window.OM_BATTLE_UI=(()=>{
    {const cm=ctx().b.mons[mid];if(cm&&FX())for(const n of (cm.formNewPots||[])){const a=FX().autoOf(cm,'pot',n);if(!a||!a.ops||!a.ops.length||a.manual)continue;const tm=FX().timing(a.text||'');if(tm.entry||tm.passive)await fireAuto(mid,'pot',n,{quiet:true,noRoll:!!tm.passive})}}return true}
  /* HP 조건 폼체인지 (10-26 망령): 폼 조건 글이 「HP : 1/2 이하」 꼴이면 HP 가 그만큼 내려갔을 때 자동으로 (한 배틀에 한 번) */
  let hpFormBusy=false;
- async function hpFormWatch(){const c=ctx();const b=c.b;if(!c.mgr||!b.started||hpFormBusy)return;hpFormBusy=true;try{for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0||m.hpFormDone||m.form0)continue;const fs=formsOf(m);
+ async function hpFormWatch(){const c=ctx();const b=c.b;if(!c.mgr||!b.started||hpFormBusy)return;if(!isLeader(c))return;hpFormBusy=true;try{for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0||m.hpFormDone||m.form0)continue;const fs=formsOf(m);
    for(let k=0;k<fs.length;k++){const f=fs[k];const r=String((f&&f.cond)||'').match(/「HP\s*:\s*(\d+)\s*\/\s*(\d+)\s*이하」/);if(!r||f.kind==='메가진화')continue;if(m.hp.cur<=Math.floor(m.hp.max*+r[1]/+r[2])){await doForm(m.id,k,`「HP : ${r[1]}/${r[2]} 이하」 — 자동`);break}}}}finally{hpFormBusy=false}}
  function openEdit(mid){const c=ctx();const b=c.b;const m=b.mons[mid];if(!m||!canEdit(c,m))return;
   const sdb=DB().states||{st:{},groups:[]};const items=Object.keys(DB().items||{});

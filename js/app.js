@@ -583,6 +583,8 @@ function selfLog(t){const rows=selfRows();rows.push({id:(ST.lastLogId||0)+0.5,ki
 /* 10-26 망령: 같은 소지품은 한 파티에 하나만 — 겹치면 [[소지품, [포켓몬 이름…]]] */
 function dupItems(mons){const by={};for(const m of mons||[]){const it=String((m&&m.item)||'').trim();if(!it)continue;(by[it]=by[it]||[]).push(m.name||m.id)}return Object.entries(by).filter(([k,v])=>v.length>1)}
 function dupItemText(name,d){return `⚠ ${name} — 같은 소지품이 겹친다 (한 파티에 하나만): ${d.map(([it,ns])=>`「${it}」 ${ns.join(' · ')}`).join(' / ')}`}
+/* 이 창의 GM 을 가리는 열쇠: 로그인 계정 id, 없으면 GM 닉네임 (둘 다 없으면 '' — 구분하지 않음) */
+function acctKey(){const a=ACCT.get();if(a&&a.uid)return 'u:'+a.uid;return ST.gmNick?'n:'+ST.gmNick:''}
 /* 소지품 줄만 나만 보는 로그로, 나머지는 모두에게 */
 function splitLog(name,L,kind){const it=L.filter(x=>/^소지품/.test(x)),rest=L.filter(x=>!/^소지품/.test(x));if(rest.length)sysLog(`${name} ${rest.join(' · ')}`,kind||'battle');if(it.length)selfLog(`${name} ${it.join(' · ')}`)}
 /* 채팅 고정 (10-24 망령): 켜 두면 새 글이 와도 스크롤을 그대로 둔다 — 고정 단추에 새 글 표시만 */
@@ -780,6 +782,8 @@ async function loadFromRoster(tid,side){
   if(mine&&!confirm(`내 자리로 「${mine.name}」가 이미 배틀에 있다. 「${t.name}」 파티로 바꿀까?`))return;borrowAs(ST.seat)}
  /* 불러온 사람 = 지시하는 사람 (by). GM 이 불러온 파티는 PL 권한(GM 불간섭) 중에도 GM 이 지시·진행한다 */
  trainer.by=ST.role==='gm'?'gm':ST.seat;
+ /* 10-27 망령: GM 이 여럿(다른 계정 · 다른 닉)이면 PL 권한 중엔 자기가 불러온 트레이너만 다룬다 — 불러온 GM 을 적어 둔다 */
+ if(ST.role==='gm'){const k=acctKey();if(k)trainer.byAcct=k;else delete trainer.byAcct}else delete trainer.byAcct;
  const b0=JSON.parse(JSON.stringify(B())),nb=JSON.parse(JSON.stringify(b0));nb.sides=nb.sides||{left:{trainers:[]},right:{trainers:[]}};nb.sides.left=nb.sides.left||{trainers:[]};nb.sides.right=nb.sides.right||{trainers:[]};
  nb.trainers=nb.trainers||{};nb.mons=nb.mons||{};nb.turn=nb.turn||0;nb.phase=nb.phase||0;nb.mode=nb.mode||2;nb.field=nb.field||{};nb.cmds=nb.cmds||{};nb.order=nb.order||[];
  for(const s of ['left','right'])nb.sides[s].trainers=nb.sides[s].trainers.filter(x=>x!==trainer.id);
@@ -1113,6 +1117,6 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
 /* 이름으로 기본 초상 찾기: 그림이 따로 없으면 같은 이름의 로스터 트레이너 → 포켓몬 → 관계도 노드의 그림을 쓴다 */
 function portraitOf(name,img){if(img)return img;if(!name)return '';const ro=ST.state.roster||{};const t=Object.values(ro.trainers||{}).find(x=>x.name===name);if(t&&t.image)return t.image;const m=Object.values(ro.mons||{}).find(x=>x.name===name&&x.image);if(m)return m.image;const n=Object.values((ST.state.graph||{}).nodes||{}).find(x=>x.name===name&&x.img);return n?n.img:''}
-window.OM_APP={presList,dupItems,dupItemText,logFill,bchOpen,selfLog,splitLog,contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,cleanupTrainer,openMon,openLoadParty,loadFromRoster,encounter,loadMaker,loadMakerParty,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,online:s=>!!s&&Object.values(PRES.who).some(v=>v.role==='seat'&&v.seat===s&&Date.now()-v.at<70000),get view(){return VIEW},goView:v=>{VIEW=v||scene();renderScene()},set view(v){VIEW=v}};
+window.OM_APP={acctKey,presList,dupItems,dupItemText,logFill,bchOpen,selfLog,splitLog,contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,cleanupTrainer,openMon,openLoadParty,loadFromRoster,encounter,loadMaker,loadMakerParty,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,online:s=>!!s&&Object.values(PRES.who).some(v=>v.role==='seat'&&v.seat===s&&Date.now()-v.at<70000),get view(){return VIEW},goView:v=>{VIEW=v||scene();renderScene()},set view(v){VIEW=v}};
 route();
 })();
