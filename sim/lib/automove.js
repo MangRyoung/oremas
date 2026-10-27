@@ -19,7 +19,8 @@ function fill(W,m){const real=(m.moves||[]).filter(x=>x&&x.name&&x.name!=='발�
  const MV=W.OM_DB.moves||{};const std=t=>{const L=(STD[t]||[[],[]])[cat==='물리'?0:1].concat((STD[t]||[[],[]])[cat==='물리'?1:0]);for(const n of L)if(MV[n])return {name:n,type:t};return P.find(x=>x.type===t&&x.cat===cat)||P.find(x=>x.type===t)};
  for(const t of own){const mv=std(t);if(mv&&!pick.some(p=>p.name===mv.name))pick.push(mv)}
  const cov=TYPES.filter(t=>!own.includes(t)).map(t=>{const en=S.typeEn(t);return [t,TYPES.filter(d=>S.effect(en,[S.typeEn(d)])>1).length]}).sort((a,b)=>b[1]-a[1]);
- let need=own.length>=2?1:2;/* 단일 타입은 견제 둘 */for(const [t] of cov){if(need<=0)break;const mv=std(t);if(mv&&!pick.some(p=>p.name===mv.name)){pick.push(mv);need--}}
+ let need=own.length>=2?1:2;/* 단일 타입은 견제 둘. 견제 타입은 「효과 굉장 칸이 많은 상위 5」 중 이름 해시로 고른다(같은 몬이면 늘 같고, 몬마다 다르게) */
+ let h=0;for(const ch of String(m.name||''))h=(h*31+ch.charCodeAt(0))>>>0;const top=cov.slice(0,5);for(let k=0;k<top.length&&need>0;k++){const [t]=top[(h+k*2)%top.length];const mv=std(t);if(mv&&!pick.some(p=>p.name===mv.name)&&!own.includes(t)){pick.push(mv);need--}}
  if(!pick.length)return false;
  const doc={id:'auto',data:{name:m.name,t1:own[0]||'-',t2:own[1]||'-',base:[1,1,1,1,1,1],moves:pick.map(x=>({name:x.name})),pots:[]}};
  try{const tr=W.OM_IMPORT.trainer({id:'auto_t',data:{name:'auto',ranks:{육성:'C'},pids:[]}});const x=W.OM_IMPORT.pokemon(doc,tr);if(x.moves&&x.moves.length){m.moves=x.moves;m.autoMoves=true;return true}}catch(e){}

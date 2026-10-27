@@ -54,7 +54,7 @@ function pickOld(rng,plan,used){used=used||new Set();const C=candidates();const 
  return out}
 /* 전체 생성: {seed, plan} → db v2 */
 function buildV2(o){o=o||{};const BT=require('./battle.js'),M=require('./mongen.js');const rng=BT.mkRng(o.seed||27);const plan=o.plan||PLAN_V2;
- const used=new Set(DX.list().map(d=>d.name));const orig=M.batch(rng,plan.orig,used);const old=pickOld(rng,plan.old,new Set());
+ const used=new Set(DX.list().map(d=>d.name));const orig=M.batch(rng,plan.orig,used,{W:o.W});const old=pickOld(rng,plan.old,new Set());
  const entries=orig.concat(old);entries.forEach((e,i)=>e.id='w'+String(i+1).padStart(3,'0'));
  let review=null;if(o.W){/* 실전 검토 · 개선 루프 (lib/review.js) */const RV=require('./review.js');review=RV.reviewAll(o.W,module.exports,M,entries,{n:o.reviewN||24,rounds:o.rounds==null?3:o.rounds,seed:(o.seed||27)+1});module.exports._cache=null}
  const n=entries.length;const cnt={};for(const e of entries)cnt[e.origin+' '+e.pride]=(cnt[e.origin+' '+e.pride]||0)+1;
@@ -68,4 +68,5 @@ function buildEntry(W,e,o){o=o||{};const key=e.id+'|'+(+o.lvAdd||0)+'|'+(o.boss?
   const doc={id:'wdb_'+e.id,data:{name:e.name||e.sp,t1:types[0]||'-',t2:types[1]||'-',base,ability:src.ability||e.ability||'',item:'',moves:(e.moves||[]).map(n=>typeof n==='string'?{name:n}:n),pride:e.pride||'C',dist:+o.lvAdd||0,pots:[]}};
   const x=W.OM_IMPORT.pokemon(doc,tr);require('./automove.js').fill(W,x);CB[key]={trainer:tr,mon:x}}
  return JSON.parse(JSON.stringify(CB[key]))}
-module.exports={FILE,STEPS,prideOf,GRADES,HAB,read,write,build,full,candidates,gradeOf,habOf,isNot,PLAN_V2,pickOld,buildV2,fullV2,buildEntry};
+function clearCache(){for(const k in CB)delete CB[k];module.exports._cache=null}
+module.exports={FILE,STEPS,prideOf,GRADES,HAB,read,write,build,full,candidates,gradeOf,habOf,isNot,PLAN_V2,pickOld,buildV2,fullV2,buildEntry,clearCache};

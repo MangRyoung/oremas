@@ -23,10 +23,10 @@ function reviewAll(W,WB,M,entries,o){o=o||{};const n=o.n||24,rounds=o.rounds==nu
  const used=new Set(entries.map(e=>e.name));
  for(let round=0;round<=rounds;round++){let redo=0;const samp={C:sample('C'),B:sample('B'),A:sample('A')};
   for(const e of entries){if(e.origin!=='orig')continue;if(round>0&&!e._redo)continue;
-   const d=duel(W,WB,e,samp[e.grade].filter(x=>x!==e),n,100+round);const F=staticFlags(e,M);if(d.noMoves||d.stab===false)F.push('자속 기술 없음');if(d.wr<LOW)F.push('약함');if(d.wr>HIGH)F.push('과강');
+   if(round>0&&WB.clearCache)WB.clearCache();const d=duel(W,WB,e,samp[e.grade].filter(x=>x!==e),n,100+round);const F=staticFlags(e,M);if(d.noMoves||d.stab===false)F.push('자속 기술 없음');if(d.wr<LOW)F.push('약함');if(d.wr>HIGH)F.push('과강');
    e.review={wr:+d.wr.toFixed(2),flags:F,round};const bad=F.some(f=>/약함|과강|자속|낮음|느림|물렁/.test(f));
    if(bad&&round<rounds){/* 같은 조건으로 다시 — 역할형은 유지, 약함이면 스위퍼 · 쌍두 쪽으로 한 번 더 기회 */const kind=F.includes('약함')&&rng()<0.5?(e.kind==='물리 탱커'?'물리 스위퍼':e.kind==='특수 벽'?'특수 스위퍼':e.kind):e.kind;
-    used.delete(e.name);const m=M.one(rng,{step:e.pride,kind,types:e.types,hab:e.hab,used});if(m){const keep={id:e.id};for(const k of Object.keys(e))if(k!=='id')delete e[k];Object.assign(e,m,keep);e._redo=true;redo++}else used.add(e.name)}
+    used.delete(e.name);const m=M.one(rng,{step:e.pride,kind,types:e.types,hab:e.hab,used,W});if(m){const keep={id:e.id};for(const k of Object.keys(e))if(k!=='id')delete e[k];Object.assign(e,m,keep);e._redo=true;redo++}else used.add(e.name)}
    else delete e._redo}
   log.push({round,redo});if(!redo)break}
  for(const e of entries)delete e._redo;

@@ -13,7 +13,7 @@ const HAB={폐가:['고스트','악','독','에스퍼','노말'],동굴:['바위
 /* 둘째 타입 짝 — 자연스러운 조합 위주 (첫 타입 → 후보). 없는 쌍은 안 나온다 */
 const PAIR={노말:['비행','페어리','격투','에스퍼','풀'],불꽃:['격투','비행','바위','땅','악','고스트'],물:['얼음','비행','땅','독','페어리','바위','악'],전기:['강철','비행','물','에스퍼','페어리'],풀:['독','벌레','페어리','땅','고스트','비행'],얼음:['물','비행','땅','고스트','강철'],격투:['바위','땅','강철','악','불꽃'],독:['벌레','풀','악','물','고스트','땅'],땅:['바위','강철','독','물','드래곤','불꽃'],비행:['노말','벌레','물','전기','드래곤'],에스퍼:['페어리','고스트','비행','물','노말'],벌레:['독','풀','비행','강철','바위'],바위:['땅','강철','물','불꽃','고스트'],고스트:['독','악','에스퍼','풀','얼음'],드래곤:['비행','땅','물','강철','불꽃'],악:['고스트','비행','독','격투','강철'],강철:['바위','땅','전기','격투','벌레'],페어리:['풀','물','에스퍼','비행','노말']};
 /* 생물 어근의 체형 — fast 날렵 · bulky 묵직 · spec 특수(마법 · 빛 · 소리) · 역할형에 맞는 어근을 고른다 */
-const BODY={두더지:'bulky',토끼:'fast',다람쥐:'fast',오소리:'bulky',족제비:'fast',염소:'bulky',들소:'bulky',너구리:'',여우:'fast spec',도마뱀:'fast',사자:'fast',멧돼지:'bulky',살라만더:'spec',불나방:'spec fast',수탉:'fast',수달:'fast',거북:'bulky',게:'bulky',소라:'bulky spec',해파리:'spec',문어:'spec',물범:'bulky',가오리:'spec fast',개구리:'',늑대:'fast',뱀장어:'spec',반딧불:'spec',양:'bulky spec',고양이:'fast spec',사슴:'fast',나무늘보:'bulky',달팽이:'bulky',사마귀:'fast',곰:'bulky',올빼미:'spec',나방:'spec',원숭이:'fast',캥거루:'fast',두루미:'fast spec',개:'fast',두꺼비:'bulky',전갈:'',지네:'fast',뱀:'fast spec',민달팽이:'bulky',코뿔소:'bulky',아르마딜로:'bulky',하마:'bulky',지렁이:'bulky',매:'fast',까마귀:'fast spec',박쥐:'fast spec',갈매기:'fast',제비:'fast',딱정벌레:'bulky',거미:'',벌:'fast',매미:'spec',잠자리:'fast',골렘:'bulky',등불:'spec',인형:'spec',가면:'spec',촛불:'spec',항아리:'bulky spec',거울:'spec',열쇠:'spec fast',악어:'bulky',하이에나:'fast',갑옷:'bulky',톱니:'bulky',개미:'',종:'bulky spec',나비:'spec fast'};
+const BODY={두더지:'bulky',토끼:'fast',다람쥐:'fast',오소리:'bulky',족제비:'fast',염소:'bulky',들소:'bulky',너구리:'',여우:'fast spec',도마뱀:'fast',사자:'fast',멧돼지:'bulky',살라만더:'spec',불나방:'spec fast',수탉:'fast',수달:'fast',거북:'bulky',게:'bulky',소라:'bulky spec',해파리:'spec',문어:'spec',물범:'bulky',가오리:'spec fast',개구리:'',늑대:'fast',뱀장어:'spec',반딧불:'spec',양:'bulky spec',고양이:'fast spec',사슴:'fast',나무늘보:'bulky',달팽이:'bulky',사마귀:'fast',곰:'bulky',올빼미:'spec',나방:'spec',원숭이:'fast',캥거루:'fast',두루미:'fast spec',개:'fast',두꺼비:'bulky',전갈:'',지네:'fast',뱀:'fast spec',민달팽이:'bulky',코뿔소:'bulky',아르마딜로:'bulky',하마:'bulky',지렁이:'bulky',매:'fast',까마귀:'fast spec',박쥐:'fast spec',갈매기:'fast',제비:'fast',딱정벌레:'bulky',거미:'',벌:'fast',매미:'spec',잠자리:'fast',골렘:'bulky',등불:'spec',인형:'spec',가면:'spec',촛불:'spec',항아리:'bulky spec',거울:'spec',열쇠:'spec fast',악어:'bulky',하이에나:'fast',갑옷:'bulky',톱니:'bulky',펠리컨:'bulky',콘도르:'bulky',개미:'',종:'bulky spec',나비:'spec fast'};
 const WANT={'물리 스위퍼':['fast'],'특수 스위퍼':['spec','fast'],'물리 탱커':['bulky'],'특수 벽':['bulky','spec'],'밸런스':[],'쌍두':['fast','spec']};
 const STEP_IDX={C:0,'C+':1,B:2,'B+':3,A:4};
 const GRADE_OF={C:'C','C+':'C',B:'B','B+':'B',A:'A'};
@@ -31,7 +31,7 @@ let ABIL=null;
 function abil(){if(ABIL)return ABIL;const f=path.join(makerRoot(),'data','db.js');const ctx={window:{}};ctx.window.window=ctx.window;vm.createContext(ctx);vm.runInContext(fs.readFileSync(f,'utf8'),ctx);
  const rows=((ctx.window.MKM_DB||{}).abil||[]);
  /* 뺀다: 선공(우선도) · 종족치를 바꾸는 것(계산 종족치가 틀어짐) · 나무열매 · 포텐셜 · 세트 의존 · 폼 체인지 */
- const BAD=/우선도|선공|종족치|나무열매|포텐셜|폼|메가|다이맥스|테라|Z기술|교체했을 때|파트너|아군이|이 포켓몬이 쓰러|기절했을 때/;
+ const BAD=/우선도|선공|종족치|나무열매|포텐셜|폼|메가|다이맥스|테라|Z기술|교체했을 때|파트너|아군|이 포켓몬이 쓰러|기절했을 때/;
  ABIL=rows.filter(r=>r[1]&&!BAD.test(String(r[2])+' '+String(r[1]))).map(r=>({to:String(r[0]),name:r[1],desc:String(r[2]||'')}));return ABIL}
 /* 특성 고르기 — 타입 · 역할형과 맞는 설명에 점수를 주고 상위에서 무작위 (10-27 밤 망령 「콘셉트나 실전성 로직」) */
 const KIND_RE={'물리 스위퍼':/공격|물리기|접촉기|스피드|급소/,'특수 스위퍼':/특공|특수기|스피드|급소/,'물리 탱커':/방어|HP|회복|반감|접촉기를 받|물리기를 받/,'특수 벽':/특방|HP|회복|반감|특수기를 받|상태가 되지 않/,'밸런스':/./,'쌍두':/공격|특공|기술의 대미지/};
@@ -42,6 +42,19 @@ function pickAbility(rng,types,toWant,kind){const L=abil().filter(a=>a.to===Stri
   if(/퇴장|교대|교체/.test(d))v-=3;/* 야생은 교체하지 않는다 */ if(/날씨|필드/.test(d)&&!types.some(t=>d.includes(t)))v-=1;/* 혼자선 못 깔 조건 */ if(/나무열매|도구|소지품/.test(d))v-=2;
   if(/상대 전체|정면/.test(d)&&/등장/.test(d))v+=1;return {a,v:v+rng()*0.9}}).sort((x,y)=>y.v-x.v);
  return (sc[Math.floor(rng()*Math.min(5,sc.length))]||{}).a}
+/* ---------- 오리지널 특성 (10-27 밤 망령 「특성은 오리지널을 만들어도 괜찮아. 로직이 있다면」) ----------
+   제작기 특성 DB 의 TO 눈금에 맞춘 틀만 쓴다 (같은 꼴의 기존 특성 TO 를 기준으로):
+     TO 1   : 「X 기술을 받으면 S +1」(악의마음 · 정의의마음) · 「HP 1/3 이하일 때 자기 타입 기술 1.5배」(맹화 · 급류) · 「상태 N 일 때 턴 종료 HP 1/8 회복」(포이즌힐)
+     TO 1.5 : 「접촉기를 받으면 S +1」(대격분) · 「등장 시 정면 명중/회피 -1」(재뒤집어쓰기) · 「X 기술을 받으면 S +1 + 상태 면역」(열교환)
+   X = 자기 타입에 효과가 굉장한 타입(약점을 맞으면 발끈하는 그림) · S = 역할형에 맞는 능력. 이름 = 타입 수식어 + 효과 꼬리말. */
+const AB_TAIL={react:['투지','반골','오기','심지'],pinch:['불씨','각오','막판','집념'],heal:['재생','회생','치유'],touch:['가시','반격','되갚기'],glare:['위압','서슬','기세'],immune:['단련','내성','굳은살']};
+const STATUS_KO={Poison:'독',Burn:'화상',Paralysis:'마비',Sleep:'잠듦',Freeze:'얼음'};
+function origAbility(rng,W,types,kind,toWant){const S=W&&W.OM_STATS;const t=types[0];const stat=/특수/.test(kind)?'특공':/탱커|벽/.test(kind)?(rng()<0.5?'방어':'특방'):/쌍두/.test(kind)?(rng()<0.5?'공격':'특공'):rng()<0.6?'공격':'스피드';
+ const weak=S?TYPES.filter(x=>S.effect(S.typeEn(x),types.map(y=>S.typeEn(y)))>1):[];const X=weak.length?pick(rng,weak):pick(rng,TYPES.filter(x=>!types.includes(x)));const st=pick(rng,Object.keys(STATUS_KO));
+ const T1=[{k:'react',d:`①「${X}」 기술을 받으면 「${stat} : +1」한다.`},{k:'pinch',d:`①「HP : 1/3 이하」일 때 자신의 「${t}」 기술의 대미지를 강화(1.5배)한다.`},{k:'heal',d:`①「${STATUS_KO[st]}」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.`}];
+ const T15=[{k:'touch',d:`①「접촉기」를 받으면 「${stat} : +1」한다.`},{k:'glare',d:`①【등장】/「정면」에게 「${rng()<0.5?'명중':'회피'} : -1」한다.`},{k:'immune',d:`①「${X}」 기술을 받으면 「${stat} : +1」한다.
+②「${STATUS_KO[st]}」 상태가 되지 않는다.`}];
+ const tpl=pick(rng,String(toWant)==='1.5'?T15:T1);const roots=MOD[t].filter(x=>x.length>=2);const name=pick(rng,roots.length?roots:MOD[t])+pick(rng,AB_TAIL[tpl.k]);return {name,desc:tpl.d,to:String(toWant),orig:true}}
 /* ---------- 종족치 만들기 ---------- */
 const sum=b=>b.reduce((a,c)=>a+c,0);
 const capOf=step=>P.STEPS[STEP_IDX[step]].v,floorOf=step=>STEP_IDX[step]>0?P.STEPS[STEP_IDX[step]-1].v:0;
@@ -59,7 +72,7 @@ function makeBase(rng,step,kind){const K=KINDS[kind];const seed=K.seed[step];let
  return best}
 /* ---------- 이름 · 콘셉트 ---------- */
 const MOD={노말:['들','얼룩','솜털','둥근','털복','점박이','회색'],불꽃:['잿','숯','화염','불','열사','용암','그을음'],물:['물','거품','소라','파도','이슬','소금','물보라'],전기:['번개','찌릿','전기','뇌','스파크','정전기','전류'],풀:['이끼','덩굴','꽃','새싹','풀잎','버섯','솔방울','가시풀'],얼음:['서리','얼음','눈','빙하','고드름','설','한파'],격투:['주먹','철권','투사','발차기','완력','근육'],독:['독','늪','진흙','가시독','독액','오염'],땅:['모래','흙','황토','진흙','점토','먼지'],비행:['바람','깃','구름','하늘','돌풍','회오리'],에스퍼:['꿈','달','별','거울','환','최면','수정'],벌레:['껍질','더듬이','실','꿀','갑각','유충'],바위:['돌','암','자갈','석','화석','광석'],고스트:['망령','유령','그림자','안개','등불','저주'],드래곤:['용','비늘','뿔','고룡','사룡'],악:['밤','검은','그늘','도둑','칠흑','어둠'],강철:['쇠','강철','톱니','무쇠','철갑','나사'],페어리:['요정','달콤','방울','리본','꽃가루','별빛']};
-const BEAST={노말:['두더지','토끼','다람쥐','오소리','족제비','염소','들소','너구리'],불꽃:['여우','도마뱀','사자','멧돼지','살라만더','불나방','수탉'],물:['수달','거북','게','소라','해파리','문어','물범','가오리','개구리'],전기:['늑대','다람쥐','가오리','뱀장어','반딧불','양','고양이'],풀:['두더지','사슴','나무늘보','달팽이','사마귀','거북','여우','개구리'],얼음:['늑대','물범','올빼미','곰','여우','염소','나방'],격투:['곰','원숭이','캥거루','멧돼지','두루미','사마귀','개'],독:['두꺼비','전갈','지네','뱀','해파리','나방','민달팽이'],땅:['두더지','코뿔소','아르마딜로','거북','전갈','하마','지렁이'],비행:['매','올빼미','까마귀','두루미','박쥐','갈매기','제비'],에스퍼:['올빼미','고양이','사슴','여우','해파리','나방','원숭이'],벌레:['딱정벌레','거미','사마귀','나방','벌','지네','매미','잠자리'],바위:['거북','도마뱀','게','아르마딜로','달팽이','곰','골렘'],고스트:['등불','인형','가면','촛불','항아리','거울','열쇠','까마귀'],드래곤:['도마뱀','뱀','거북','가오리','지네','악어'],악:['늑대','까마귀','고양이','족제비','하이에나','박쥐','여우'],강철:['갑옷','톱니','거북','딱정벌레','개미','코뿔소','종'],페어리:['토끼','양','나비','사슴','고양이','다람쥐','인형']};
+const BEAST={노말:['두더지','토끼','다람쥐','오소리','족제비','염소','들소','너구리'],불꽃:['여우','도마뱀','사자','멧돼지','살라만더','불나방','수탉'],물:['수달','거북','게','소라','해파리','문어','물범','가오리','개구리'],전기:['늑대','다람쥐','가오리','뱀장어','반딧불','양','고양이'],풀:['두더지','사슴','나무늘보','달팽이','사마귀','거북','여우','개구리'],얼음:['늑대','물범','올빼미','곰','여우','염소','나방'],격투:['곰','원숭이','캥거루','멧돼지','두루미','사마귀','개'],독:['두꺼비','전갈','지네','뱀','해파리','나방','민달팽이'],땅:['두더지','코뿔소','아르마딜로','거북','전갈','하마','지렁이'],비행:['매','올빼미','까마귀','두루미','박쥐','갈매기','제비','펠리컨','콘도르'],에스퍼:['올빼미','고양이','사슴','여우','해파리','나방','원숭이'],벌레:['딱정벌레','거미','사마귀','나방','벌','지네','매미','잠자리'],바위:['거북','도마뱀','게','아르마딜로','달팽이','곰','골렘'],고스트:['등불','인형','가면','촛불','항아리','거울','열쇠','까마귀'],드래곤:['도마뱀','뱀','거북','가오리','지네','악어'],악:['늑대','까마귀','고양이','족제비','하이에나','박쥐','여우'],강철:['갑옷','톱니','거북','딱정벌레','개미','코뿔소','종'],페어리:['토끼','양','나비','사슴','고양이','다람쥐','인형']};
 const VERB={노말:'들판을 어슬렁거리는',불꽃:'잿더미 속에서 몸을 데우는',물:'물가에 숨어 기다리는',전기:'털끝에 전기를 모으는',풀:'이끼와 덩굴을 몸에 키우는',얼음:'서리를 내뿜는',격투:'제 영역에 들어온 것과 맞붙는',독:'독을 흘리며 기어다니는',땅:'흙 속을 파고드는',비행:'바람을 타고 내려다보는',에스퍼:'눈빛으로 사람을 홀리는',벌레:'그늘에서 집을 짓는',바위:'바위인 척 가만히 있는',고스트:'밤에만 모습을 드러내는',드래곤:'오래 살아 비늘이 굳은',악:'어둠 속에서 뒤를 노리는',강철:'몸이 쇠처럼 굳은',페어리:'달콤한 향으로 꾀는'};
 function makeName(rng,types,used,kind){const t1=types[0],t2=types[1];const want=WANT[kind]||[];const fit=L=>{const F=L.filter(b=>want.every(w=>(BODY[b]||'').includes(w)));return F.length?F:L.filter(b=>want.some(w=>(BODY[b]||'').includes(w)))||L};const bs=t=>{const F=fit(BEAST[t]);return F.length?F:BEAST[t]};
  for(let i=0;i<200;i++){const r=rng();let n,beast;
@@ -72,18 +85,18 @@ function concept(rng,types,kind,hab,beast){const t=types[0];const h1=hab.filter(
 const habOf=types=>Object.keys(HAB).filter(h=>types.some(t=>HAB[h].includes(t)));
 /* ---------- 한 체 ---------- */
 function one(rng,o){o=o||{};const step=o.step||'C';const kind=o.kind||pick(rng,KIND_NAMES);const t1=o.types&&o.types.length?o.types[0]:pick(rng,TYPES);const types=(o.types&&o.types.length?o.types.slice(0,2):[t1].concat(rng()<0.45?[pick(rng,PAIR[t1]||TYPES)]:[])).filter((t,i,a)=>a.indexOf(t)===i);
- const base=makeBase(rng,step,kind);if(!base)return null;const to=P.STEPS[STEP_IDX[step]].to;const ab=pickAbility(rng,types,to,kind);const hab=o.hab&&o.hab.length?o.hab:habOf(types);const used=o.used||new Set();
+ const base=makeBase(rng,step,kind);if(!base)return null;const to=P.STEPS[STEP_IDX[step]].to;const ab=(o.W&&rng()<(o.origAbilRate==null?0.45:o.origAbilRate))?origAbility(rng,o.W,types,kind,to):pickAbility(rng,types,to,kind);const hab=o.hab&&o.hab.length?o.hab:habOf(types);const used=o.used||new Set();
  const r=P.calc(base,KINDS[kind].dual);const nm=makeName(rng,types,used,kind);
- return {id:'',origin:'orig',name:nm.name,types,base,ability:ab?ab.name:'',abilityTo:to,pride:step,grade:GRADE_OF[step],hab,role:GRADE_OF[step]==='C'?'일반':'보스',kind,dual:KINDS[kind].dual,moves:[],concept:concept(rng,types,kind,hab,nm.beast),ct:Math.round(r.ct)}}
+ return {id:'',origin:'orig',name:nm.name,types,base,ability:ab?ab.name:'',abilityTo:to,abilityDesc:ab?ab.desc:'',abilityOrig:!!(ab&&ab.orig),folder:'',pride:step,grade:GRADE_OF[step],hab,role:GRADE_OF[step]==='C'?'일반':'보스',kind,dual:KINDS[kind].dual,moves:[],concept:concept(rng,types,kind,hab,nm.beast),ct:Math.round(r.ct)}}
 /* ---------- 묶음 — 계단별 수 · 서식지 고루 ---------- */
 /* plan = {C:63,'C+':42,B:18,'B+':12,A:15}. 서식지(8곳)를 돌아가며, 그 서식지의 타입에서 첫 타입을 고른다 → 서식지마다 등급이 고루 걸린다. 18타입이 한 번씩은 첫 타입이 되게 앞부분은 타입 순서대로. */
-function batch(rng,plan,used){used=used||new Set();const out=[];const habs=Object.keys(HAB);let hi=0;const tcount=Object.fromEntries(TYPES.map(t=>[t,0]));
+function batch(rng,plan,used,opts){opts=opts||{};used=used||new Set();const out=[];const habs=Object.keys(HAB);let hi=0;const tcount=Object.fromEntries(TYPES.map(t=>[t,0]));
  for(const step of ['C','C+','B','B+','A'])for(let i=0;i<(plan[step]||0);i++){
   const h=habs[hi++%habs.length];const hl=HAB[h].slice().sort((a,b)=>tcount[a]-tcount[b]||rng()-0.5);const t1=hl[0];tcount[t1]++;
   const t2=rng()<0.45?pick(rng,PAIR[t1]||TYPES.filter(t=>t!==t1)):null;const types=t2?[t1,t2]:[t1];
   /* 역할형: 등급이 오를수록 스위퍼 · 쌍두 비중을 조금 올린다 */
   const kinds=step==='A'||step==='B+'?KIND_NAMES.concat(['물리 스위퍼','특수 스위퍼','쌍두']):KIND_NAMES.concat(['밸런스','물리 탱커']);
-  let m=null;for(let k=0;k<5&&!m;k++)m=one(rng,{step,kind:pick(rng,kinds),types,used});if(!m)continue;out.push(m)}
+  let m=null;for(let k=0;k<5&&!m;k++)m=one(rng,{step,kind:pick(rng,kinds),types,used,W:opts.W});if(!m)continue;out.push(m)}
  return out}
 function coverage(entries){const o={};for(const h of Object.keys(HAB)){o[h]={C:0,B:0,A:0};for(const e of entries)if((e.hab||[]).includes(h))o[h][e.grade]++}return o}
-module.exports={TYPES,HAB,KINDS,KIND_NAMES,PAIR,BODY,one,batch,makeBase,makeName,coverage,abil,habOf,pickAbility};
+module.exports={TYPES,HAB,KINDS,KIND_NAMES,PAIR,BODY,one,batch,makeBase,makeName,coverage,abil,habOf,pickAbility,origAbility};
