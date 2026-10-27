@@ -9,7 +9,8 @@
 ## 돌리는 법
 
 - 필요한 것: Node 18 이상. 제작기 폴더가 웹툴 폴더 옆에 있어야 한다 (`D:\TRPG\망각\oremas` 와 `D:\TRPG\망각\mangketmon-maker`). 다른 곳이면 `MK_ROOT` 환경 변수로 제작기 폴더를 준다.
-- 망령 PC: `sim\받기.bat` (제작기 → 스냅샷), `sim\돌리기.bat` (기본 시나리오 → 리포트). 끝나면 `sim\report\index.html` 을 연다.
+- **화면으로 쓰기 (권장)**: `sim\실행.bat` → 브라우저에 http://localhost:8470 이 열린다. 일행 · 던전 · 설정을 골라 돌리고, 던전 · 야생을 고쳐 저장하고(data/ 에 바로 씀), 기록 · 리포트 · 피드백(feedback.md)을 본다. 「제작기에서 받기」 단추가 `fetch` 와 같다.
+- 명령줄 없이: `sim\받기.bat` (제작기 → 스냅샷), `sim\돌리기.bat` (기본 시나리오 → 리포트).
 - 명령줄:
 
 ```
@@ -29,7 +30,8 @@ node bin/sim.js report                                   records/*.summary.json 
 
 | 경로 | 내용 |
 |---|---|
-| `bin/sim.js` | 명령줄 진입점 |
+| `bin/sim.js` | 명령줄 진입점 (`ui` 명령이 화면 서버) |
+| `lib/server.js` · `ui/index.html` | 화면 — 로컬 서버(/api) + 한 장짜리 페이지. 돌리기 · 던전 편집 · 야생 편집 · 기록 · 피드백 · 체크 확률표 |
 | `lib/env.js` | 웹툴 `data/*.js` · `js/engine/*.js` · 제작기 `js/fx/*.js` 를 브라우저 없이 읽는다 (index.html 과 같은 순서) |
 | `lib/fetch.js` | Supabase REST 로 제작기 문서를 받아 스냅샷으로 |
 | `lib/party.js` | 스냅샷 → 배틀용 파티 (웹툴 `import.js` 의 `party()` 그대로) |

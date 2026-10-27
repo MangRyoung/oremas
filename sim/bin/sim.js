@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 /* 망켓몬 던전 · 스킬 체크 시뮬레이터 — 명령줄
+   node bin/sim.js ui [--port 8470]              화면 (브라우저) — 일행 · 던전 · 설정 고르고 돌리기 · 던전 · 야생 편집 · 기록 · 피드백
    node bin/sim.js fetch                         제작기 공유 DB → data/snapshot.json (망령 PC 에서)
    node bin/sim.js list [--snap 파일]           스냅샷의 트레이너 목록
    node bin/sim.js check                         스킬 체크 성공률 표 (룰북 열지도와 같은 식)
@@ -19,6 +20,7 @@ const stamp=()=>new Date().toISOString().replace(/[-:T]/g,'').slice(0,12);
 (async()=>{
  if(cmd==='help'){console.log(fs.readFileSync(__filename,'utf8').split('*/')[0].replace(/^[^\n]*\n/,''));return}
  if(cmd==='fetch'){const F=require('../lib/fetch.js');const r=await F.fetchAll(path.join(SIM,'data','snapshot.json'));console.log(`받았다: 트레이너 ${r.trainers} · 포켓몬 ${r.pokemon} · 폴더 ${r.folders} → ${r.file}`);return}
+ if(cmd==='ui'){require('../lib/server.js').start({port:+opt.port||8470,open:!opt.noopen});return}
  if(cmd==='check'){const S=require('../lib/skill.js');const T=[5,7,9,11];
   for(const pt of ['alone','mon','inou']){console.log(`\n[동료: ${pt==='alone'?'혼자 d4':pt==='mon'?'포켓몬 d6':'이능(능력 A 이상)'}]  성공 / 대가 포함 (%)`);console.log('랭크\t'+T.map(t=>`목표 ${t}`).join('\t'));
    for(const r of ['D','C','B','A','AA']){if(pt==='inou'&&S.lv(r)<3)continue;console.log(r+'\t'+T.map(t=>{const s=S.summary({rank:r,target:t,partner:pt});return `${s.ok}/${s.okPlus}`}).join('\t'))}}
