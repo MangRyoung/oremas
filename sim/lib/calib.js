@@ -18,11 +18,20 @@ async function evalCfg(W,built,wf,tier,knobs,o){const g=o.g||8,n=o.n||10;const T
   byDebt,byAl,lockdown:lock/runs,alertAvg:alSum/runs,boss:{reach:bossReach/runs,win:bossWin/Math.max(1,bossReach),turns:bossTurns/Math.max(1,bossReach),phases:phases/Math.max(1,bossReach)},endHp:endHp/runs}}
 function grid(spec){/* "lv=-10,-5,0;battles=1,2" → [{lv:-10,battles:1},…] */const ks=[];for(const part of String(spec||'').split(';')){if(!part.trim())continue;const [k,v]=part.split('=');ks.push([k.trim(),v.split(',').map(x=>isNaN(+x)?x.trim():+x)])}
  let out=[{}];for(const [k,vs] of ks){const nx=[];for(const o of out)for(const v of vs)nx.push(Object.assign({},o,{[k]:v}));out=nx}return out}
+/* 10-28 망령 「시뮬 방식 점검 · 개선」: 만든 던전을 바로 몇십 판 돌려 보고, 목표 승률 ±band 밖이면 씨앗을 바꿔 다시 만든다 (검증 루프).
+   평균만 맞추던 때는 쉬움 던전 12개가 40~100% 로 갈렸다. o = {seed, knobs, theme, grades, trios(검증용 3인 조합), n(조합당 판), target, band, tries}
+   조합마다 승률 차이가 커서(6~100%) 검증도 조합을 넓게(20조합 × 3판) — 6조합 × 8판이면 어려움에서 10% 던전이 통과했다 */
+const TGT={easy:0.8,normal:0.6,hard:0.3};
+async function quickWin(W,built,wf,dg,trios,n,seed0){let w=0,k=0;for(const c of trios)for(let i=0;i<n;i++){const r=await D.run(W,dg,c.map(x=>built[x]),{seed:seed0+k+1,wildFrom:wf});k++;if(!r.wipe)w++}return k?w/k:0}
+async function verified(W,built,wf,tier,o){const AG=require('./autogen.js');const tg=o.target!=null?+o.target:TGT[tier];const band=o.band!=null?+o.band:0.15;let best=null;
+ for(let t=0;t<(o.tries||8);t++){const seed=(+o.seed||1)+t*7919;const dg=AG.generate({tier,seed,knobs:o.knobs,theme:o.theme,grades:o.grades});
+  const wr=await quickWin(W,built,wf,dg,o.trios,o.n||8,777000+t*1000);const d=Math.abs(wr-tg);if(!best||d<best.d)best={dg,wr,d,tries:t+1};if(d<=band)break}
+ best.dg.gen.verify={wr:+best.wr.toFixed(2),target:tg,band,tries:best.tries,ok:best.d<=band};return best.dg}
 /* 자동 생성 검증: generate() 로 뽑은 던전(규칙값 dg.rules 포함)을 그대로 돌린다 */
 async function evalAuto(W,built,wf,tier,o){const AG=require('./autogen.js');const g=o.g||12,n=o.n||10;let runs=0,wins=0,al30=0,al70=0,lock=0;const perT={},perD=[];
- for(let s=1;s<=g;s++){const dg=AG.generate({tier,seed:(o.seed0||900)+s,knobs:o.knobs,theme:o.theme,grades:o.grades});let dw=0,dn=0;
+ for(let s=1;s<=g;s++){const dg=o.verify?await verified(W,built,wf,tier,{seed:(o.seed0||900)+s,knobs:o.knobs,theme:o.theme,grades:o.grades,trios:o.vtrios||o.trios,n:o.vn||3,band:o.band,tries:o.tries}):AG.generate({tier,seed:(o.seed0||900)+s,knobs:o.knobs,theme:o.theme,grades:o.grades});let dw=0,dn=0;
   for(const c of o.trios){let tw=0;for(let i=0;i<n;i++){const r=await D.run(W,dg,c.map(x=>built[x]),{seed:s*1000+i+1,wildFrom:wf});runs++;dn++;if(!r.wipe){wins++;dw++;tw++}if(r.alert>=30)al30++;if(r.alert>=70)al70++;if(r.lockdown)lock++}perT[c.join(',')]=(perT[c.join(',')]||0)+tw}
-  perD.push({seed:dg.gen.seed,name:dg.name,battles:dg.gen.knobs.battles,boss:dg.gen.boss,win:dw/dn})}
+  perD.push({seed:dg.gen.seed,name:dg.name,battles:dg.gen.knobs.battles,boss:dg.gen.boss,win:dw/dn,verify:dg.gen.verify})}
  const tw=Object.values(perT).map(v=>v/(g*n)).sort((a,b)=>a-b);
  return {tier,runs,win:wins/runs,al30:al30/runs,al70:al70/runs,lockdown:lock/runs,trioWin:{min:tw[0],med:tw[Math.floor(tw.length/2)],max:tw[tw.length-1]},perD}}
-module.exports={evalCfg,evalAuto,grid,trios};
+module.exports={evalCfg,evalAuto,grid,trios,verified,quickWin,TGT};

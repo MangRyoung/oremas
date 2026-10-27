@@ -149,4 +149,4 @@ function toWebtool(dg,names){names=names||{};for(const [t,i,n] of G.POOL.concat(
   if(memo.length)o.m=memo.join('\n').slice(0,400);r[id]=o;if(!M&&i)l[[rid(rs[i-1]),id].sort().join('~')]=1});
  if(M)for(const k of Object.keys(M.links)){const [a,b]=k.split('~').map(z=>rid(rs.find(x=>x.id===z)));l[[a,b].sort().join('~')]=1}
  return {n:dg.name,o:dg.owner?`(자동 생성) ${dg.owner}`:'',a:THEMES[dg.theme]?THEMES[dg.theme].a:(dg.theme||''),al:0,st:rid(rs[0]),wn:dg.wn||2,r,l,gen:{tier:dg.gen.tier,seed:dg.gen.seed,theme:dg.theme,rules:dg.rules}}}
-module.exports={DEX_BST,generate,toWebtool,THEMES,PRESET,COMMON,RULES,TIER_KO};
+module.exports={DEX_BST,generate,toWebtool,THEMES,PRESET,COMMON,RULES,TIER_KO,HINT_T};
