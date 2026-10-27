@@ -15,9 +15,31 @@ const STD={노말:[['은혜갚기','배틀하우스','몸통박치기'],['하이
 let CACHE=null,SCACHE=null;
 /* 변화기 풀 (10-27 20시 망령 「변화기도 조금 다채롭게」): 기술 DB 의 변화기 전부를 효과로 분류 — pb 물리 강화 · sb 특수 강화 · bulk 내구/회복 · deb 상대 약화 · stat 상태 이상 · field 날씨/설치/벽. 소켓 1.5 이하 · 교체/아군/성별/자폭 의존은 뺀다 */
 const SCAT={pb:/「(공격|스피드) : \+/,sb:/「특공 : \+/,bulk:/「(방어|특방) : \+|회복/,deb:/(상대|정면|대상).{0,30}「[^」]+ : -/,stat:/「(독|맹독|마비|화상|잠듦|혼란|얼음)」 상태로/,field:/날씨|필드|설치|리플렉터|빛의장막/};
-const SBAD=/교체|교대|아군|성별|이성|자신.{0,10}(빈사|기절)|자폭|HP.{0,6}절반.{0,6}(소비|잃)|다음 턴|충전|조건부|포텐셜|레이드/;
-function statusPool(W){if(SCACHE)return SCACHE;const MV=W.OM_DB.moves||{};const L=[];for(const [k,m] of Object.entries(MV)){if(!m||m.cat!=='변화'||/\(/.test(k))continue;const sock=m.sock!==''&&!isNaN(+m.sock)?+m.sock:3;if(sock>1.5)continue;const d=String(m.eff||'');if(SBAD.test(d))continue;const cats=Object.keys(SCAT).filter(c=>SCAT[c].test(d));if(!cats.length)continue;L.push({name:m.name||k,type:m.type,cats,sock})}SCACHE=L;return L}
+const SBAD=/교체|교대|아군|성별|이성|자신.{0,16}(빈사|기절)|빈사.{0,10}(된다|상태가 되)|자폭|HP.{0,6}절반.{0,6}(소비|잃)|HP」를 1\/2만큼 소비|다음 턴|충전|조건부|포텐셜|레이드|아니라면 실패|아니면 실패/;const SBAD_NAME=/추억의선물|길동무|대폭발|멸망의노래|저주|아픔나누기|변신|흉내내기|스케치|앵콜|배북|톱기어/;
+function statusPool(W){if(SCACHE)return SCACHE;const MV=W.OM_DB.moves||{};const L=[];for(const [k,m] of Object.entries(MV)){if(!m||m.cat!=='변화'||/\(/.test(k))continue;const sock=m.sock!==''&&!isNaN(+m.sock)?+m.sock:3;if(sock>1.5)continue;const d=String(m.eff||'');if(SBAD.test(d)||SBAD_NAME.test(k))continue;const cats=Object.keys(SCAT).filter(c=>SCAT[c].test(d));if(!cats.length)continue;L.push({name:m.name||k,type:m.type,cats,sock,d})}SCACHE=L;return L}
 const SROLE={phys:['pb','stat','deb','field'],spec:['sb','stat','deb','field'],bulk:['bulk','stat','field','deb']};
+/* 상성 맥락 가중치 (10-27 20시 망령 「상성 맥락도 패치 — 다만 가중치로, 절대 규칙은 아니게」)
+   변화기 x 가 이 몬(ctx: own 타입 · cat 주력 범주 · role · spe 스피드 종족치 · atk/spa)에 얼마나 어울리는지 −3 ~ +2 를 돌려준다. 음수여도 후보에서 빠지지 않는다 — 점수가 낮아져 덜 뽑힐 뿐. */
+const WEATHER={'비':['물'],'맑음':['불꽃','풀'],'모래바람':['바위','땅','강철'],'눈':['얼음']};
+function ctxWeight(x,d,ctx){let v=0;const {own,cat,role,spe,atk,spa}=ctx;
+ /* 스피드 강화는 이미 빠르거나 중간 속도일 때. 느린 탱커(60 미만)엔 −2. 트릭룸은 반대 */
+ if(/「스피드 : \+/.test(d)){if(spe>=90)v+=1;else if(spe<60)v-=2;else v-=0.5}
+ if(/트릭룸/.test(d)){if(spe<=55)v+=1.5;else if(spe>=85)v-=2.5}
+ /* 공격 강화는 물리 주력, 특공 강화는 특수 주력에. 반대 범주면 −2.5(쌍두는 −1) */
+ if(/「공격 : \+/.test(d)&&!/「특공 : \+/.test(d)){v+=cat==='물리'?0.5:ctx.dual?-1:-2.5}
+ if(/「특공 : \+/.test(d)&&!/「공격 : \+/.test(d)){v+=cat==='특수'?0.5:ctx.dual?-1:-2.5}
+ /* 날씨 · 필드는 자기 타입에 맞을 때 +1.5, 남의 것이면 −2 */
+ const wm=d.match(/날씨 : (비|맑음|모래바람|눈)/);if(wm){v+=(WEATHER[wm[1]]||[]).some(t=>own.includes(t))?1.5:-2}
+ const fm=d.match(/필드 : (일렉트릭필드|미스트필드|그래스필드|사이코필드)/);if(fm){const need={일렉트릭필드:'전기',미스트필드:'페어리',그래스필드:'풀',사이코필드:'에스퍼'}[fm[1]];v+=own.includes(need)?1.5:-2}
+ /* 회복 · 내구 강화는 내구형에 +1, 유리 대포(방어 · 특방 둘 다 70 미만 · 스피드 100↑)엔 −1.5 */
+ if(/회복|「(방어|특방) : \+/.test(d)){v+=role==='bulk'?1:(ctx.glass?-1.5:0)}
+ /* 상태 이상 걸기 — 자기 타입이 그 상태에 면역인 타입이면 자연스럽다(+0.5). 화상은 물리 상대용이니 내구형에 +0.5 */
+ if(/「화상」 상태로/.test(d)&&role==='bulk')v+=0.5;if(/「(독|맹독)」 상태로/.test(d)&&(own.includes('독')||own.includes('강철')))v+=0.5;
+ /* 설치기 · 벽 · 순풍 같은 「판 깔기」는 서포터에 +1, 어태커엔 −0.5 */
+ if(/설치기|리플렉터|빛의장막|오로라베일/.test(d)){v+=role==='bulk'?1:-0.5}
+ /* 우선도 변화기(속이기 등)는 빠른 어태커에 +0.5 */
+ if(/「우선도」\+/.test(d)&&spe>=90&&role!=='bulk')v+=0.5;
+ return Math.max(-3,Math.min(2,v))}
 function pool(W){if(CACHE)return CACHE;const MV=W.OM_DB.moves||{};const L=[];
  for(const [k,m] of Object.entries(MV)){if(!m||!m.type||m.type==='-'||!/^(물리|특수)$/.test(m.cat))continue;const pow=+m.pow||0,acc=+m.acc||0;if(pow<60||pow>120||acc<85)continue;if(pow>=110&&acc<100)continue;/* 고위력은 필중급만 */if(String(m.range||'')!=='1체')continue;if(+m.prio)continue;if(BAD.test(String(m.eff||'')+String(m.tag||'')))continue;if(/\(/.test(k))continue;
   const tags=(m.tags||[]).join(' ');if(/다이맥스|전용|Z기술/.test(tags))continue;L.push({name:m.name||k,type:m.type,typeEn:m.typeEn,cat:m.cat,pow,orig:/#오리지널/.test(tags),sock:m.sock!==''&&!isNaN(+m.sock)?+m.sock:3,score:Math.min(pow,100)*acc/100+(String(m.eff||'').length<2?3:0)-(+(m.sock)>=2.5?10:0)})}
@@ -45,8 +67,9 @@ function fill(W,m){const real=(m.moves||[]).filter(x=>x&&x.name&&x.name!=='발�
  const cov=TYPES.filter(t=>!own.includes(t)).map(t=>{const en=S.typeEn(t);return [t,TYPES.filter(d=>S.effect(en,[S.typeEn(d)])>1).length]}).sort((a,b)=>b[1]-a[1]).slice(0,6);
  for(let k=0;k<cov.length&&pick.length<nAtk;k++){const [t]=cov[(H(20)+k*2)%cov.length];const mv=atkPick(t,own.length>=2?cat:cat2,30+k);if(mv)pick.push(mv)}
  /* 변화기 후보 · 선택 (서로 다른 분류를 우선) */
+ const B6=m.base||[];const spe=+B6[5]||+st[5]/2||0,atk=+B6[1]||0,spa=+B6[3]||0;const ctx={own,cat,role,spe,atk,spa,dual:!!(m.dualHint||/쌍두/.test(kind)),glass:Math.min(+B6[2]||99,+B6[4]||99)<70&&spe>=100};
  const SP=statusPool(W);const want=SROLE[role];const stdNames=new Set(ST_ROLE[role].concat(own.flatMap(t=>ST_TYPE[t]||[])));
- const scored=SP.map(x=>{let v=0;if(own.includes(x.type))v+=2;const ci=x.cats.findIndex(c=>want.includes(c));if(ci>=0)v+=2+(want.indexOf(x.cats[ci])===0?1.5:0);if(stdNames.has(x.name))v+=1.5;if(x.sock<=1)v+=0.5;if(x.type==='노말'&&!own.includes('노말'))v-=0.3;if(!own.includes(x.type)&&!['노말','에스퍼','격투','악'].includes(x.type))v-=1.5;/* 남의 속성 변화기(요정 키스 · 물놀이 …)는 뒤로 */return {x,v}}).filter(o=>o.v>=2).sort((a,b)=>b.v-a.v);
+ const scored=SP.map(x=>{let v=0;if(own.includes(x.type))v+=2;const ci=x.cats.findIndex(c=>want.includes(c));if(ci>=0)v+=2+(want.indexOf(x.cats[ci])===0?1.5:0);if(stdNames.has(x.name))v+=1.5;if(x.sock<=1)v+=0.5;if(x.type==='노말'&&!own.includes('노말'))v-=0.3;if(!own.includes(x.type)&&!['노말','에스퍼','격투','악'].includes(x.type))v-=1.5;/* 남의 속성 변화기(요정 키스 · 물놀이 …)는 뒤로 */v+=ctxWeight(x,x.d,ctx);return {x,v}}).filter(o=>o.v>=1.5).sort((a,b)=>b.v-a.v);
  const usedCat=new Set();for(let k=0;k<nSt;k++){const C=scored.filter(o=>!pick.some(p=>p.name===o.x.name)&&!o.x.cats.some(c=>usedCat.has(c))).slice(0,8);const C2=C.length?C:scored.filter(o=>!pick.some(p=>p.name===o.x.name)).slice(0,8);if(!C2.length)break;const o=C2[H(50+k)%C2.length];pick.push({name:o.x.name,type:o.x.type,status:true,sock:o.x.sock});o.x.cats.forEach(c=>usedCat.add(c))}
  /* 4개 보장 · 변화기 1개 보장 */
  if(!pick.some(p=>p.status)&&scored.length){const o=scored[H(60)%Math.min(8,scored.length)];pick.push({name:o.x.name,type:o.x.type,status:true,sock:o.x.sock})}
