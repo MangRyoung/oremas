@@ -542,14 +542,16 @@ window.OM_BATTLE_UI=(()=>{
   return {SEC,PRE,keyOf}}
  async function stepTurn(){const c=ctx();if(!c.mgr)return;const b=c.b;if((+b.phase||0)!==1)return;const st=+b.tstep||0;const I=await turnInfo(c,b);const slots=allEntered(b);const TN=tid=>((b.trainers||{})[tid]||{}).name||'?';
   if(st<1){const sw=slots.filter(s=>{const k=I.keyOf(s.mon);return k&&k.sw});
-   if(sw.length){const L=sw.map(s=>`${TN(s.mon.tid)} — ${String(s.mon.entry).toUpperCase()} ${s.mon.name} 교대`);
+   if(sw.length){const swTo=mo=>(b.mons||{})[((((b.cmds||{})[mo.tid]||{}).mons||{})[mo.id]||{}).switch]||null;   /* 10-27 망령: 교대 알림에 누구와 바꾸는지 · 그림 */
+    const L=sw.map(s=>{const w=swTo(s.mon);return `${TN(s.mon.tid)} — ${String(s.mon.entry).toUpperCase()} ${s.mon.name} ⇄ ${w?w.name:'?'}`});
+    const RV=sw.map(s=>{const w=swTo(s.mon);return {tr:TN(s.mon.tid),mid:s.mon.id,name:s.mon.name,img:s.mon.image||'',side:s.mon.side,area:String(s.mon.entry||'').toUpperCase(),sw:{name:w?w.name:'(교대 대상 미정)',img:w?w.image||'':''}}});
     /* 따라가때리기: 교대하려는 포켓몬을 노린 추격은 교대 전에 먼저 (맵툴 get_turn_pursuit) — 그 포켓몬은 이번 턴 행동을 쓴 것으로 본다 */
     const pl=[],pur=[];for(const s of slots){const k=I.keyOf(s.mon);if(!k||!k.pn)continue;for(const tg of (k.tg||[])){const v=sw.find(z=>z.slot===tg);if(!v)continue;const kv=I.keyOf(v.mon)||{};
       if(kv.pimm){pl.push(`${v.mon.name}의 『${kv.pimm}』 — ${s.mon.name}의 따라가때리기를 무시했다`);continue}
       pl.push(`${s.mon.name}의 「${k.pn}」 — 교대하려는 ${v.mon.name}을(를) 교대 전에 먼저 때린다! (공격 창에서 처리한 뒤 교대)`);pur.push({slot:s.slot,mid:s.mon.id,name:s.mon.name,side:s.mon.side,change:false,started:true,order:20,prio:0,speed:0,dice:0,move:k.pn,targets:[tg],pursuit:true,pursuitHit:v.mon.id,pursuitSrc:k.psrc||''});break}}
     await A().set(['battle','tstep'],1);await A().set(['battle','swPur'],pur.map(o=>o.mid));await A().set(['battle','swOut'],sw.map(s=>s.mon.id));if(pur.length){await A().set(['battle','order'],pur);await A().set(['battle','orderIdx'],0)}
     cutPhase('교대',sw.map(s=>s.mon.name).join(' · '));
-    A().sysLog(`【교대 알림】\n${L.join('\n')}${pl.length?'\n'+pl.join('\n'):''}\n교대를 마치면 「턴 진행 ▶」`,'battle');return}}
+    A().sysLog(`【교대 알림】\n${L.join('\n')}${pl.length?'\n'+pl.join('\n'):''}\n교대를 마치면 「턴 진행 ▶」`,'battle',{rv:RV,rvx:[...pl,'교대를 마치면 「턴 진행 ▶」']});return}}
   if(st<2){const tids=Object.keys(I.PRE).filter(t=>(b.trainers||{})[t]);
    if(tids.length){await A().set(['battle','tstep'],2);
     for(const tid of tids){const t=b.trainers[tid];cutFire('t:'+tid,trainerImg(t),'『지령』 & 『포텐셜』 발동',t.name,t.side==='left'?'#1f6fd1':'#e3101f','You used the Potential!')   /* 10-24 제보: 긴 영문이 큰 글자 칸에서 겹쳤다 — 이름은 크게, 영문은 대사 칸으로 */}
@@ -647,6 +649,8 @@ window.OM_BATTLE_UI=(()=>{
   A().sysLog(`${m.name} 에리어 교대 ${from.toUpperCase()} → ${to.toUpperCase()}${other?` · ${other.name} → ${from.toUpperCase()}`:''}`,'battle')}
  async function enterMon(mid,area,opt){opt=opt||{};const c=ctx();const b=c.b;const m=b.mons[mid];if(!m||!(canEdit(c,m)||(opt.sys&&c.mgr)))return;
   const ent=entered(b,m.side);const areas=AREAS.slice(0,mode(b));
+  if(!area&&(+b.tstep||0)>=1){/* 10-27 망령: 교대 단계면 이 포켓몬과 바꾸기로 한 (교대 지시) 포켓몬의 자리로 — 빈 자리가 있어도 그쪽으로 새지 않게 */const outs=(b.swOut||[]).map(id=>(b.mons||{})[id]).filter(o=>o&&o.tid===m.tid&&o.side===m.side&&o.entry&&o.id!==mid);
+   const want=outs.find(o=>((((b.cmds||{})[o.tid]||{}).mons||{})[o.id]||{}).switch===mid)||(outs.length===1?outs[0]:null);if(want)area=want.entry}
   if(!area){const tids=((b.sides||{})[m.side]||{}).trainers||[];const pref=areas[Math.min(tids.indexOf(m.tid),areas.length-1)]||areas[0];
    const free=areas.filter(a=>!ent[a]);
    if(areas.length===1)area=areas[0];
@@ -657,11 +661,18 @@ window.OM_BATTLE_UI=(()=>{
     md.querySelectorAll('[data-area]').forEach(bt=>bt.onclick=()=>{A().closeModal();enterMon(mid,bt.dataset.area,opt)});return}}
   if(!areas.includes(area))return A().toast('그런 에리어가 없다');
   const occ=ent[area];
-  if(occ&&occ.id!==mid){await exitMon(occ.id,{forced:!!opt.forced,noAsk:!!opt.noAsk,sys:!!opt.sys})}
-  const started=(+b.phase||0)===1&&!(b.order||[]).length&&!(occ&&occ.id!==mid&&(b.swOut||[]).includes(occ.id));   /* 10-23 망령: 턴 개시 뒤 · 순서 계산 전에 나온 포켓몬(죽어내밀기 · 동시 내밀기 · 윤회)은 그 턴 순서에 들어간다. 그 밖엔 */ /* 턴 도중(교대 · 빈사 교체)에 들어온 포켓몬은 「교대 등장」 — 그 턴엔 지시가 없다. 턴 개시 때 필드에 있던 포켓몬만 setPhase(1) 이 started 로 바꾼다 */
+  let XL=null;if(occ&&occ.id!==mid){XL=await exitMon(occ.id,{forced:!!opt.forced,noAsk:!!opt.noAsk,sys:!!opt.sys,quiet:true})}
+  const swIn=occ&&occ.id!==mid?(b.swOut||[]).includes(occ.id):(+b.tstep||0)>=1&&(b.swOut||[]).some(id=>{const o=(b.mons||{})[id];return o&&id!==mid&&o.tid===m.tid&&!o.entry});   /* 10-27 망령: 교대하는 포켓몬을 먼저 「퇴장」시키고 빈 자리로 「등장」하면 occ 가 없어 교대 등장으로 안 잡혀, 행동 순서에 들어가 행동했다 — 교대 단계(tstep 1)에 같은 트레이너의 교대 포켓몬이 빠져 있으면 교대 등장 */
+  const started=(+b.phase||0)===1&&!(b.order||[]).length&&!swIn;   /* 10-23 망령: 턴 개시 뒤 · 순서 계산 전에 나온 포켓몬(죽어내밀기 · 동시 내밀기 · 윤회)은 그 턴 순서에 들어간다. 그 밖엔 */ /* 턴 도중(교대 · 빈사 교체)에 들어온 포켓몬은 「교대 등장」 — 그 턴엔 지시가 없다. 턴 개시 때 필드에 있던 포켓몬만 setPhase(1) 이 started 로 바꾼다 */
   await A().set(['battle','mons',mid,'entry'],area);{const faintRep=opt.how==='죽어내밀기'||!occ||(occ.id!==mid&&occ.hp&&occ.hp.cur<=0);const T0=+b.turn||0;await A().set(['battle','mons',mid,'inT'],b.started&&faintRep&&(+b.phase||0)>=2?T0+1:Math.max(1,T0))}   /* 10-26 망령: 죽어내밀기는 다음 턴이 1턴째 — 턴 도중 · 턴 끝에 빈 자리(쓰러진 자리)로 나오면 다음 턴부터 센다 */await A().set(['battle','mons',mid,'started'],started);   /* inT: 필드에 나온 턴 (【지연】 셈 — 나온 턴이 1턴째) */if(!m.seen)await A().set(['battle','mons',mid,'seen'],true);if(m.pend)await A().set(['battle','mons',mid,'pend'],null);
   const EL=await entryLines(mid);
-  A().sysLog(`${m.name} 등장 (${SIDE_KO[m.side]} ${area.toUpperCase()})${occ&&occ.id!==mid?' ← '+occ.name:''}${EL.length?'\n'+EL.join('\n'):''}`,'battle');
+  {/* 10-27 망령: 교대면 나가는 포켓몬 ⇄ 들어오는 포켓몬을 그림과 함께 한 장으로 (먼저 「퇴장」하고 빈 자리로 나온 교대도) */
+   const outM=occ&&occ.id!==mid?occ:swIn?(b.swOut||[]).map(id=>(b.mons||{})[id]).find(o=>o&&o.tid===m.tid&&!o.entry&&o.id!==mid&&((((b.cmds||{})[o.tid]||{}).mons||{})[o.id]||{}).switch===mid)||(b.swOut||[]).map(id=>(b.mons||{})[id]).find(o=>o&&o.tid===m.tid&&!o.entry&&o.id!==mid):null;
+   const XLL=Array.isArray(XL)?XL:[];
+   if(outM){const tn=((b.trainers||{})[m.tid]||{}).name||'';const head=`【교대】 ${outM.name} ⇄ ${m.name} (${SIDE_KO[m.side]} ${area.toUpperCase()})`;
+    A().sysLog(`${head}${XLL.length||EL.length?'\n'+[...XLL,...EL].join('\n'):''}`,'battle',{mid,img:m.image||'',rv:[{tr:tn,mid:outM.id,name:outM.name,img:outM.image||'',side:m.side,area:area.toUpperCase(),sw:{name:m.name,img:m.image||'',done:1}}],rvx:[...XLL,...EL]})}
+   else{if(XLL.length)A().sysLog(`${occ.name} ${opt.forced?'강제 퇴장':'퇴장'}\n${XLL.join('\n')}`,'battle');
+    A().sysLog(`${m.name} 등장 (${SIDE_KO[m.side]} ${area.toUpperCase()})${EL.length?'\n'+EL.join('\n'):''}`,'battle')}}
   /* 배턴터치 받기 */
   {const nb0=snap(),nb=snap(nb0);const t=nb.trainers[m.tid];if(t&&t.batton&&t.batton.from!==m.name){const L=applyBatton(nb,nb.mons[mid]);await saveMon(nb0.mons[mid],mid,nb.mons[mid]);await A().set(['battle','trainers',m.tid,'batton'],null);if(L.length)A().sysLog(L.join('\n'),'battle')}}
   /* 설치기 (맵툴 hazard_eval): 등장한 쪽의 설치기를 평가한다 */
@@ -736,6 +747,7 @@ window.OM_BATTLE_UI=(()=>{
    md.querySelectorAll('[data-ex]').forEach(el=>el.onclick=()=>{const k=el.dataset.ex;if(k==='forced'&&!bench.length)return;if(k==='batton'&&!ps)return;A().closeModal();if(k==='forced')return forcedSwitch(mid);exitMon(mid,{batton:k==='batton',noAsk:true})});return}
   let batton=!!opt.batton;/* 10-26 FFA 시험: 랭크가 바뀐 포켓몬은 그냥 교대해도 늘 「배턴터치인가?」를 물어, 서두르다 「예」를 누르면 위협 −2 가 다음 포켓몬에게 넘어갔다 — 「배턴터치」를 쓸 줄 아는 포켓몬만 묻는다 (그 밖은 「(특수)」의 배턴터치 퇴장) */const knowsBP=MVS(m).some(v=>/배턴터치/.test(String((v||{}).name||'')))||potSrc(m).some(p=>p&&/배턴터치/.test(String(p.eff||'')))||/배턴터치/.test(String(m.abilityEff||''));if(!batton&&!opt.forced&&knowsBP&&passable(m)&&!opt.noAsk)batton=await askYes(`${m.name} 퇴장 — 「배턴터치」인가? (랭크·넘길 수 있는 상태를 다음 포켓몬에게)\n취소 = 그냥 퇴장`);
   const nb0=snap(c.b),nb=snap(nb0);const L=outReset(nb,nb.mons[mid],{batton});const AU=auraOff(nb,nb.mons[mid]);L.push(...AU.L);if(!await A().setMany(A().diffOps(['battle'],nb0,nb,3)))return;itemKick();if(batton)await A().set(['battle','trainers',m.tid,'batton'],nb.trainers[m.tid].batton);
+  if(opt.quiet)return L;   /* 10-27: 교대 등장이 한 장(【교대】)으로 같이 적는다 */
   A().sysLog(`${m.name} ${opt.forced?'강제 퇴장':'퇴장'}${L.length?'\n'+L.join('\n'):''}`,'battle')}
  /* 강제 교대 (맵툴 change_forced): 배턴터치 없이 나가고, 벤치에서 아무 포켓몬이나 같은 에리어로 */
  async function forcedSwitch(mid,opt){opt=opt||{};const c=ctx();const b=c.b;const m=b.mons[mid];if(!m||!(canEdit(c,m)||(opt.sys&&c.mgr))||!m.entry)return false;
