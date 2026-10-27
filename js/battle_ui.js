@@ -83,6 +83,8 @@ window.OM_BATTLE_UI=(()=>{
  function gmMine(c,tid){const t=((c.b||{}).trainers||{})[tid]||{};if(!t.byAcct)return true;const k=A().acctKey?A().acctKey():'';return !k||t.byAcct===k}
  function fairOff(c,tid){return !!(c.gm&&c.fair&&(seatOwned(c,tid)||!gmMine(c,tid)))}
  function myTrainers(c){const trs=c.b.trainers||{};if(c.gm)return Object.keys(trs).filter(t=>!fairOff(c,t));return Object.keys(trs).filter(t=>ownT(c,t)).sort((x,y)=>(y===c.seat)-(x===c.seat))}
+ /* 10-27 망령: 요약 창은 그 트레이너를 다루는 사람만 — 좌석 주인 · 함께 지시, GM 은 PL 권한 중이면 자기가 불러온 트레이너만 (관전 · 상대는 못 본다) */
+ function stxOk(c,tid){return !!tid&&!!((c.b.trainers||{})[tid])&&(ownT(c,tid)||(c.gm&&!fairOff(c,tid)))}
  function canEdit(c,mon){if(mon&&ownT(c,mon.tid))return true;return c.gm&&!(mon&&fairOff(c,mon.tid))}
  function skPend(c,tid){try{const K=c.ST.state.skill||{};const O=K.offer;if(!O)return false;const R=(K.res||{})[tid];return !(R&&R.offerId===O.id)}catch(e){return false}}
  function fieldOf(b){return Object.assign({weather:{type:'',count:0},terrain:{type:'',count:0},rooms:{},etc:{},objects:{left:{},right:{}}},b.field||{})}
@@ -214,7 +216,7 @@ window.OM_BATTLE_UI=(()=>{
    const fe=window.OM_STAGE_UI&&(c.mgr||ownT(c,tid))?`<button class="btn xs" data-act="stagemgr" data-side="${side}" data-tid="${tid}" title="${esc(t.name||'')}의 트레이너 · 포켓몬이 가진 필드 · 스타디움 · 이계를 펼친다">필드 전개</button>`:'';
    const sm=own?`<label class="btn xs ${simOn(b,tid)?'pri':'ghost'} simtg" title="켜면 ${esc(t.name||'')}은(는) 「등장」 대신 「내밀기 예약」 — 「시합 개시」·「내밀기 실행」 때 예약한 포켓몬이 양쪽 동시에 나온다"><input type="checkbox" data-act="simul" data-tid="${tid}" ${simOn(b,tid)?'checked':''}> 동시 내밀기</label>`:'';
    const spb=window.OM_SP_UI&&window.OM_SP_UI.canOpen('',tid)?`<button class="btn xs spbtn" data-act="spmgr" data-side="${side}" data-tid="${tid}" title="SP (서포터) — 밖에서 돕는 조력자의 한 수">SP</button>`:'';
-   const sb=(c.gm||ownT(c,tid))&&window.OM_STATUS_UI?`<button class="btn xs ghost" data-act="stx" data-tid="${tid}" title="PT 요약 — 포켓몬 · 소지품 착용 · 소지품 소켓">요약</button>`:'';   /* 10-27 망령: 「현황」 → 「요약」, 카드 옆으로 */
+   const sb=stxOk(c,tid)&&window.OM_STATUS_UI?`<button class="btn xs ghost" data-act="stx" data-tid="${tid}" title="PT 요약 — 포켓몬 · 소지품 착용 · 소지품 소켓">요약</button>`:'';   /* 10-27 망령: 「현황」 → 「요약」, 카드 옆으로 */
    const cb=cardBtn(c,tid);return cb||sm||sb?`<div class="tbtns tbtns-own">${cb}${sb}<span class="sp"></span>${sm}</div>`:''};
   const items=ids.map((tid,ti)=>{const t=trs[tid]||{name:'?',ranks:{}};const o=seats[tid];const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid).sort((x,y)=>(x.slot||0)-(y.slot||0));const cmdDone=!!(b.cmds||{})[tid];const rd=!!ready[tid];
    return `<div class="tblock"><div class="trainer"><div class="tpic" style="${t.image?`background-image:url('${cssu(t.image)}')`:''}"></div><div class="tinfo"><div class="tn">${esc(t.name)}${tid===c.seat?' <span class="tag me">ME</span>':ownT(c,tid)?' <span class="tag me co" title="함께 지시하는 트레이너">함께</span>':''}${rd?' <span class="tag ok">READY</span>':cmdDone?' <span class="tag">공개됨</span>':''}${soloTag(c,tid,ids)}${(()=>{/* 10-26 망령: 필드 전개 · SP 는 자주 안 쓰니 이름 줄 빈 곳으로 작게 올리고, 그 자리(아래 줄)엔 카드 */const own=c.gm||tid===c.seat||ownT(c,tid);if(!own)return '';const fe=window.OM_STAGE_UI&&(c.mgr||ownT(c,tid))?`<button class="btn xs ghost tnmini" data-act="stagemgr" data-side="${side}" data-tid="${tid}" title="필드 · 스타디움 · 이계를 펼친다">필드</button>`:'';const sp=window.OM_SP_UI&&window.OM_SP_UI.canOpen('',tid)?`<button class="btn xs ghost tnmini spbtn" data-act="spmgr" data-side="${side}" data-tid="${tid}" title="SP (서포터) — 밖에서 돕는 조력자의 한 수">SP</button>`:'';return fe||sp?`<span class="tnmore">${fe}${sp}</span>`:''})()}</div>
@@ -233,7 +235,7 @@ window.OM_BATTLE_UI=(()=>{
     const sm=simTg;   /* 10-25 망령: 동시 내밀기는 제목줄 대신 이 줄 오른쪽(+ 파티 밑 빈 곳) — 제목줄에 두면 「+ 파티」가 밀려 칸이 하나 더 생겼다 */
     if(multi)return '';   /* 여럿이면 각 트레이너 칸에 (perT) */
     const spb=window.OM_SP_UI&&window.OM_SP_UI.canOpen(side,'')?`<button class="btn xs spbtn" data-act="spmgr" data-side="${side}" title="SP (서포터) — 밖에서 돕는 조력자의 한 수">SP</button>`:'';   /* 10-25 망령: SP(서포터) — 필드 전개 옆 */
-    const cb=ids.length===1?cardBtn(c,ids[0]):'';const sb=ids.length===1&&(c.gm||ownT(c,ids[0]))&&window.OM_STATUS_UI?`<button class="btn xs ghost" data-act="stx" data-tid="${ids[0]}" title="PT 요약 — 포켓몬 · 소지품 착용 · 소지품 소켓">요약</button>`:'';return sm||cb||sb?`<div class="shead2">${cb}${sb}<span class="sp"></span>${sm}</div>`:''})()}${items||'<div class="aempty small">트레이너 없음'+(canLoad(c)?` — <button class="btn xs pri" data-act="load" data-side="${side}">+ 파티 불러오기</button>`:' — 진행하는 사람이 파티를 불러온다')+'</div>'}${sidePanel(c,side,ready)}</div>`}
+    const cb=ids.length===1?cardBtn(c,ids[0]):'';const sb=ids.length===1&&stxOk(c,ids[0])&&window.OM_STATUS_UI?`<button class="btn xs ghost" data-act="stx" data-tid="${ids[0]}" title="PT 요약 — 포켓몬 · 소지품 착용 · 소지품 소켓">요약</button>`:'';return sm||cb||sb?`<div class="shead2">${cb}${sb}<span class="sp"></span>${sm}</div>`:''})()}${items||'<div class="aempty small">트레이너 없음'+(canLoad(c)?` — <button class="btn xs pri" data-act="load" data-side="${side}">+ 파티 불러오기</button>`:' — 진행하는 사람이 파티를 불러온다')+'</div>'}${sidePanel(c,side,ready)}</div>`}
  /* 벤치 아래 빈 곳: 그 진영이 입력해 둔 지시 현황. 내 트레이너(GM 은 볼 수 있는 것 전부)는 편집 중인 지시를, 남의 것은 공개된 만큼만 */
  function cardBtn(c,tid){const D=window.OM_DECK_UI;if(!D||!D.handCount)return '';const own=c.gm||tid===c.seat||ownT(c,tid);if(!own)return '';const n=D.handCount(tid);const t=((c.b.trainers||{})[tid])||{};
   return `<button class="btn xs ghost cardtg ${n?'':'empty'}" data-act="cards" data-tid="${tid}" title="손패에서 카드를 쓴다 · 무덤(버린 카드)에서 되돌리기도 여기서">🃏 카드 <b>${n}</b></button>`}
@@ -617,7 +619,7 @@ window.OM_BATTLE_UI=(()=>{
    case 'fireauto':{const m=b.mons[d.mid];if(!m||!canEdit(c,m))return;if(d.kind==='pot'&&wantCut(m,d.pot))cutFire('m:'+m.id,m.image,m.name,`『${d.pot}』`,m.side==='left'?'#1f6fd1':'#e3101f');return fireAuto(d.mid,d.kind,d.pot)}
    case 'time':return c.mgr?requestTime(d.mid):openMyosu(c.seat,d.mid);
    case 'myosu':return openMyosu(d.tid);
-   case 'stx':{if(!(c.gm||ownT(c,d.tid)))return;return window.OM_STATUS_UI&&window.OM_STATUS_UI.open(d.tid)}   /* 10-27 망령: 현황 창 */
+   case 'stx':{if(!stxOk(c,d.tid))return;return window.OM_STATUS_UI&&window.OM_STATUS_UI.open(d.tid)}   /* 10-27 망령: 현황 창 */
    case 'timeok':return grantTime(d.seat);
    case 'cmdsave':return saveCmd(d.tid,false);
    case 'ufire':return openUfire(d.tid,d.pot);
@@ -2071,5 +2073,5 @@ ${PR?`「기술 방어」 ${PR.ok?'성공':'실패'}${PR.k?` (연속 ${PR.k+1}�
     const ds=stDesc(k);A().sysLog(`【상태】 ${m.name} 「${stName(k)}」${c<1000?` (${c}턴)`:''}${ds.length?'\n'+ds.join('\n'):''}`,'battle',{mid,img:m.image||''});o.pk=false;o.q='';o.n='';redraw()});
   bind()}
  function nowParts(m){return {rank:rankChips(m),state:stateChips(m),fx:flagChips(m)+(FX()?FX().chips(m).map(ch=>`<span class="rk fxc" title="${esc(ch.title)}">${esc(ch.t)}</span>`).join(''):'')}}
- return {askYes,canEditMon:mid=>{const c=ctx();const m=((c.b||{}).mons||{})[mid];return !!m&&canEdit(c,m)},fireAuto,render,nowParts,nowEditHtml,bindNowEdit,watch,ctx,entered,allEntered,fieldOf,futureFire,trapWarn,resetLocal:()=>{CMD={}},startCut:(m)=>battleStartCut(ctx().b,m),openHp,action,hotkey};
+ return {askYes,canSeeStx:tid=>stxOk(ctx(),tid),canEditMon:mid=>{const c=ctx();const m=((c.b||{}).mons||{})[mid];return !!m&&canEdit(c,m)},fireAuto,render,nowParts,nowEditHtml,bindNowEdit,watch,ctx,entered,allEntered,fieldOf,futureFire,trapWarn,resetLocal:()=>{CMD={}},startCut:(m)=>battleStartCut(ctx().b,m),openHp,action,hotkey};
 })();

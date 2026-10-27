@@ -71,6 +71,7 @@ window.OM_STATUS_UI=(()=>{
   x.items2=x.items2||[];const o=x.items2[k-1]||{};const was=nmI(o.item);if(FX&&was)FX.removeByName(x,was);x.items2[k-1]={item:n,itemEff:eff};return n?(was?`소지품 ${k+1} 「${was}」 → 「${n}」`:`소지품 ${k+1} 「${n}」 착용`):`소지품 ${k+1} 「${was}」 뗌`};
 
  function open(tid){
+  const U=window.OM_BATTLE_UI;if(!U||!U.canSeeStx||!U.canSeeStx(tid))return A().toast('이 트레이너의 요약은 볼 수 없다');   /* 10-27: 관전 · 상대 차단 */
   TID=tid;const ST=A().ST;const b=ST.state.battle||{};const t=(b.trainers||{})[tid];if(!t)return;
   const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid).sort((x,y)=>(x.slot||0)-(y.slot||0));
   const old=document.querySelector('.stxmodal');const sc=old?old.scrollTop:0;
