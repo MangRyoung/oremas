@@ -4627,3 +4627,21 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .hlrow{padding:2px 0;border-bottom:1px solid rgba(255,255,255,.05)}.hlrow b{font-weight:600}.hlrow span{display:block;color:var(--mute);white-space:pre-wrap;font-size:11.5px}
 .pngwrap{width:760px}.pngwrap .hcmdel{display:none}.hlogpngb{margin-top:10px;font-size:12px;columns:2;column-gap:16px}.hlogpngb .hlrow{break-inside:avoid}
 @media (max-width:600px){.hvs{grid-template-columns:1fr}.hvsx{justify-self:center;font-size:16px}.hall #hallQ{width:100%;max-width:none;order:9}.hms{grid-template-columns:repeat(auto-fill,minmax(90px,1fr))}.hallshot{padding:10px}}
+/* 전당 목록: 한 줄씩 촘촘하게 (10-27 망령 — 판이 많이 쌓인다) */
+.hrows{display:flex;flex-direction:column;border:1px solid var(--line2);background:var(--panel)}
+.hrow{display:grid;grid-template-columns:54px minmax(120px,1.1fr) minmax(0,2fr) auto;gap:10px;align-items:center;padding:7px 12px;border-bottom:1px solid var(--line);cursor:pointer;font-size:13px;border-left:3px solid transparent}
+.hrow:last-child{border-bottom:0}.hrow:hover{background:rgba(255,214,0,.06);border-left-color:var(--yel)}
+.hrd{color:var(--mute);font-size:12px;font-variant-numeric:tabular-nums}
+.hrt{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:14px}
+.hrvs{display:flex;align-items:center;gap:8px;min-width:0}
+.hrs{display:inline-flex;align-items:center;gap:5px;min-width:0;flex:1 1 0;padding:1px 6px;border-left:3px solid #1f6fd1}.hrs.right{border-left-color:#e3101f}
+.hrs b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:600}.hrs i{font-style:normal;color:var(--mute);font-size:12px;flex:none}
+.hrs em{font-style:normal;font-family:var(--head);font-size:10.5px;background:var(--yel);color:#000;padding:0 4px;flex:none}
+.hrs.win b{color:var(--yel)}.hrs.lose{opacity:.6}
+.hrx{color:var(--red);font-family:var(--head);font-size:12px;flex:none}
+.hrm{color:var(--mute);font-size:12px;white-space:nowrap;text-align:right}.hdraw{color:#ccc;margin-right:6px}
+.hedit{border:1px solid var(--yel);padding:8px 10px;margin-bottom:10px;background:rgba(255,214,0,.04)}
+.hall-fl.top{align-items:flex-start}.hall-fl.top>span{padding-top:6px}.hall-fl textarea,.hcmin textarea{flex:1;min-width:0;width:100%;resize:vertical;line-height:1.5;font:inherit;font-size:14px}
+.hcmin{display:flex;flex-direction:column;gap:6px;margin-top:10px}
+.hcm>div{line-height:1.55}
+@media (max-width:600px){.hrow{grid-template-columns:auto 1fr auto;grid-template-areas:"d t m" "v v v";row-gap:4px;padding:8px 10px}.hrd{grid-area:d}.hrt{grid-area:t}.hrm{grid-area:m}.hrvs{grid-area:v}}

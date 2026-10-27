@@ -115,7 +115,7 @@ async function shrinkUpload(blob,maxSide){try{if(!/^image\/(png|jpe?g|webp|bmp)$
  async function ntCamps(){const r=await sb().from('nt_camp').select('id,name,data,created_at').order('created_at');if(r.error)throw err(r.error);return r.data||[]}
  async function ntDocs(camp,secret,kinds){if(secret){const rows=await rpc('nt_all',{p_camp:camp,p_secret:secret,p_since:null});return (rows||[]).filter(x=>!kinds||kinds.includes(x.kind))}let q=sb().from('nt_docs').select('kind,id,data,vis').eq('camp',camp);if(kinds)q=q.in('kind',kinds);const r=await q;if(r.error)throw err(r.error);return r.data||[]}
  /* 10-27 망령: 전당 (supabase/patch_2026-10-27_전당.sql) — 방 상태 밖 om_hall 표. 목록은 요약만, 로그는 한 판을 열 때만 */
- const hall={list:room=>rpc('om_hall_list',{p_room:room}),get:(room,id)=>rpc('om_hall_get',{p_room:room,p_id:id}),
+ const hall={list:(room,before,limit)=>rpc('om_hall_list',{p_room:room,p_before:before||null,p_limit:limit||60}),get:(room,id)=>rpc('om_hall_get',{p_room:room,p_id:id}),
   put:(room,secret,id,head,log)=>rpc('om_hall_put',{p_room:room,p_secret:secret,p_id:id,p_head:head,p_log:log??null}),
   del:(room,secret,id)=>rpc('om_hall_del',{p_room:room,p_secret:secret,p_id:id}),
   cm:(room,secret,id,by,t,del)=>rpc('om_hall_cm',{p_room:room,p_secret:secret,p_id:id,p_by:by||'',p_t:t??null,p_del:del??null}),noFn};
