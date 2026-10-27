@@ -948,7 +948,7 @@
    ],
    "role": "일반",
    "kind": "물리 스위퍼",
-   "dual": false,
+   "dual": true,
    "moves": [
     "번개펀치",
     "원시의힘",
@@ -1085,7 +1085,7 @@
    ],
    "role": "일반",
    "kind": "밸런스",
-   "dual": false,
+   "dual": true,
    "moves": [
     "공중제비",
     "은빛바람",
@@ -1995,7 +1995,7 @@
    ],
    "role": "일반",
    "kind": "물리 탱커",
-   "dual": false,
+   "dual": true,
    "moves": [
     "씨폭탄",
     "원시의힘",
@@ -4015,7 +4015,7 @@
    ],
    "role": "일반",
    "kind": "쌍두",
-   "dual": true,
+   "dual": false,
    "moves": [
     "러스터캐논",
     "은빛바람",
@@ -5961,7 +5961,7 @@
    ],
    "role": "일반",
    "kind": "물리 스위퍼",
-   "dual": false,
+   "dual": true,
    "moves": [
     "독찌르기",
     "은빛바람",
@@ -6380,7 +6380,7 @@
    ],
    "role": "일반",
    "kind": "물리 스위퍼",
-   "dual": false,
+   "dual": true,
    "moves": [
     "원시의힘",
     "뼈다귀치기",
@@ -6447,7 +6447,7 @@
    ],
    "role": "일반",
    "kind": "밸런스",
-   "dual": false,
+   "dual": true,
    "moves": [
     "트로피컬킥",
     "원시의힘",
@@ -7001,7 +7001,7 @@
    ],
    "role": "일반",
    "kind": "밸런스",
-   "dual": false,
+   "dual": true,
    "moves": [
     "은빛바람",
     "씨폭탄",
@@ -7972,7 +7972,7 @@
    ],
    "role": "일반",
    "kind": "밸런스",
-   "dual": false,
+   "dual": true,
    "moves": [
     "깜짝베기",
     "원시의힘",
@@ -8875,7 +8875,7 @@
    ],
    "role": "일반",
    "kind": "밸런스",
-   "dual": false,
+   "dual": true,
    "moves": [
     "아쿠아브레이크",
     "원시의힘",
@@ -9296,7 +9296,7 @@
    ],
    "role": "일반",
    "kind": "물리 스위퍼",
-   "dual": false,
+   "dual": true,
    "moves": [
     "번개엄니",
     "요정의바람",
@@ -10332,7 +10332,7 @@
    ],
    "role": "일반",
    "kind": "물리 스위퍼",
-   "dual": false,
+   "dual": true,
    "moves": [
     "씨폭탄",
     "요정의바람",
@@ -15285,7 +15285,7 @@
    ],
    "role": "보스",
    "kind": "밸런스",
-   "dual": false,
+   "dual": true,
    "moves": [
     "리프블레이드",
     "은빛바람",
@@ -20107,4 +20107,4 @@
   }
  ],
  "at": "2026-10-27T11:16:46.168Z"
-}
+}
