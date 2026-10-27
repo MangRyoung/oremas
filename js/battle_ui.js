@@ -1223,7 +1223,7 @@ window.OM_BATTLE_UI=(()=>{
    ${tab==='dmg'?`
    ${lh?`<div class="card hit"><div class="hith"><span class="hitw">${esc(lh.from)}</span><span class="hitm">「${esc(lh.move)}」</span>${lh.moveType?`<span class="small dim">${esc(lh.moveType)}</span>`:''}<span class="sp"></span><span class="hitc ${+lh.eff>1?'up':+lh.eff<1?'dn':''}">상성 ×${lh.eff}</span><span class="hitc cr" id="h_critc" ${lh.crit?'':'hidden'}>급소</span>${lh.hits>1?`<span class="hitc">${lh.hits}번 맞음</span>`:''}</div>
      <div class="hitb"><div><small>기본 대미지</small><b id="h_tot">${lh.total}</b><i id="h_rng">${lh.min}~${lh.max}</i></div><div><small>위력 완화</small><b>${lh.guard&&lh.guard!==1?'×'+lh.guard:'—'}</b><i>${lh.guardNote?esc(lh.guardNote):'자동 반영'}</i></div><div class="hitp"><small>받을 피해</small><b id="h_prevd">—</b><i id="h_preva"></i></div></div>
-     <div class="hpbar hitbar"><i id="h_bar_after" style="width:${pct}%"></i><em id="h_bar_cut"></em></div>
+     <div class="hpbar hitbar"><i id="h_bar_after" style="width:${pct}%"></i><em id="h_bar_cut"></em></div><div class="small dim" id="h_perhit" style="margin:2px 0 4px;overflow-wrap:anywhere" hidden></div>
       ${hfxHtml(c,lh)}
      <div class="hgrid">${lh.alt?`<label class="hcrit" title="명중 판정에서 굴린 급소 여부를 여기서 바꾼다 — 대미지를 급소/급소 아님으로 다시 계산한 값으로"><input type="checkbox" id="h_crit" ${lh.crit?'checked':''}> 급소 <span class="small dim">(판정: ${lh.crit?'급소':'급소 아님'})</span></label>`:''}<label>대미지 보정 <input type="number" step="0.01" class="n" id="h_mod" value="1" title="방호·완화·역할 보정 등 배율"></label>
       <label>최종 상성 <select id="h_eff">${EFFS.map(v=>`<option value="${v}" ${v===+lh.eff?'selected':''}>×${v}</option>`).join('')}</select></label>
@@ -1248,11 +1248,14 @@ window.OM_BATTLE_UI=(()=>{
     <div class="spx"><b>★ 희망사항</b><span class="small dim">최대 「HP」 1/2</span><span class="qs"><button class="btn xs" data-hp="heal" data-v="1/2">회복</button></span></div></div>`}`);
   md.querySelectorAll('[data-hpt]').forEach(bt=>bt.onclick=()=>{A().closeModal();openHp(mid,bt.dataset.hpt)});
   const curHit=()=>{const ck=$('#h_crit',md);return ck&&lh.alt&&ck.checked!==!!lh.crit?lh.alt:lh};
-  const calc=()=>{if(!lh)return null;const g=id=>$('#'+id,md);const forced=g('h_forced').value.trim();
+  /* 10-27 망령: 연속기는 타마다 깎는다 (lastHit.per). 버티기 칸이 띠(HP 가득일 때만)로 켜진 거면 그 타를 맞기 전에 가득일 때만 · roll 을 주면 확률 띠를 쓰러지는 타마다 굴린다 */
+  const calc=(roll)=>{if(!lh)return null;const g=id=>$('#'+id,md);const forced=g('h_forced').value.trim();
    if(forced!==''&&forced!=='-1'){const v=parseAmt(forced,m.hp.max);return {final:Math.min(v,m.hp.cur),after:Math.max(0,m.hp.cur-v)}}
-   const r=B().hpDamage(m,curHit().total,+g('h_eff').value,{stab:false,guard:lh.guard||1,manual:+g('h_mod').value||1,berryHalf:g('h_berry').checked,endure:g('h_endure').checked,hpFloor:fl});return r};
+   const h=curHit();const per=h.per&&h.per.length>1?h.per:[h.total];const en=g('h_endure').checked,sashOnly=en&&!lh.endure&&!!(sashX&&sashX.sure);
+   const r=B().hpDamageHits(m,per,+g('h_eff').value,{stab:false,guard:lh.guard||1,manual:+g('h_mod').value||1,berryHalf:g('h_berry').checked,endure:en&&!sashOnly,endureFull:sashOnly,hpFloor:fl,band:roll&&sashX&&sashX.pct&&!en?{pct:sashX.pct,roll:()=>1+Math.floor(Math.random()*100)}:null});return r};
+  const perTxt=r=>{const n=(curHit().per||[]).length;if(!r||!r.per||n<2)return '';return r.per.map((x,k)=>`${k+1}타 −${x.final}${x.held==='band'?'(띠로 버팀)':x.held?'(버팀)':''}`).join(' · ')+(r.landed<n?` · ${r.landed}타째에 쓰러져 남은 ${n-r.landed}타는 맞지 않음`:'')};
   const prev=()=>{const r=calc();if(!r)return;{const h=curHit();const t=$('#h_tot',md),rg=$('#h_rng',md),cc=$('#h_critc',md);if(t)t.textContent=h.total;if(rg)rg.textContent=h.min+'~'+h.max;if(cc)cc.hidden=!h.crit}const P=v=>v>0?Math.max(1,Math.round(v/m.hp.max*100)):0;const d=$('#h_prevd',md),a=$('#h_preva',md),bA=$('#h_bar_after',md),bC=$('#h_bar_cut',md);
-   if(d)d.textContent='−'+r.final;if(a)a.textContent=`HP ${m.hp.cur} → ${r.after}/${m.hp.max} (${P(r.after)}%)${r.after<=0?' · 빈사':''}`;
+   if(d)d.textContent='−'+r.final;if(a)a.textContent=`HP ${m.hp.cur} → ${r.after}/${m.hp.max} (${P(r.after)}%)${r.after<=0?' · 빈사':''}`;{const ph=$('#h_perhit',md);if(ph){ph.textContent=perTxt(r);ph.hidden=!ph.textContent}}
    if(bA)bA.style.width=P(r.after)+'%';if(bC){bC.style.left=P(r.after)+'%';bC.style.width=Math.max(0,pct-P(r.after))+'%'}};prev();
   md.querySelectorAll('#h_mod,#h_eff,#h_berry,#h_endure,#h_forced,#h_crit').forEach(el=>{el.addEventListener('input',prev);el.addEventListener('change',prev)});
   const apply=async(delta,why,opt)=>{opt=opt||{};const m0=snap(ctx().b.mons[mid]),x=snap(m0);x.hp.latest=x.hp.cur;
@@ -1265,8 +1268,8 @@ window.OM_BATTLE_UI=(()=>{
   md.querySelectorAll('[data-hp]').forEach(bt=>bt.onclick=async()=>{const k=bt.dataset.hp;const v=bt.dataset.v;const g=id=>$('#'+id,md);
    if(k==='apply'){let r=calc();if(!r)return;const mods=[];if(+g('h_mod').value!==1)mods.push('보정 ×'+g('h_mod').value);if(g('h_berry').checked)mods.push(berryN?'「'+berryN+'」 반감':'반감열매');let saved=false;if(g('h_endure').checked){const ec=g('h_endure');ec.checked=false;const r0=calc();ec.checked=true;saved=!!(r0&&r0.after<=0&&r.after>0);if(saved)mods.push(sashX&&sashX.sure?'「'+sashX.name+'」로 버팀':'버티기')}   /* 10-23 망령 제보: 쓰러질 피해가 아니면 「버팀」을 적지 않는다 */
     /* 기합의머리띠: 쓰러질 피해면 굴린다 */
-    if(sashX&&sashX.pct&&!g('h_endure').checked&&r.after<=0&&m.hp.cur>1){const roll=1+Math.floor(Math.random()*100);if(roll<=sashX.pct){r={final:m.hp.cur-1,after:1};mods.push(`「${sashX.name}」로 버팀 (${roll}/${sashX.pct})`)}else mods.push(`「${sashX.name}」 실패 (${roll}/${sashX.pct})`)}
-    const berryUse=g('h_berry').checked&&/열매/.test(IT(m));const sashUse=saved&&sashX&&sashX.sure&&sashX.once&&m.hp.cur>1;const hc=curHit();const ret=await apply(-r.final,`${lh.from}의 「${lh.move}」 · 상성 ×${g('h_eff').value}${hc.crit?' · 급소':''}${hc!==lh?(hc.crit?' (급소로 바꿈)':' (급소 아님으로 바꿈)'):''}${lh.hits>1?' · '+lh.hits+'번 맞음':''}${mods.length?' · '+mods.join(' · '):''}`,{clearHit:true,floor:fl});if(berryUse||sashUse)await itemConsume(mid);
+    if(sashX&&sashX.pct&&!g('h_endure').checked&&r.after<=0&&m.hp.cur>1){r=calc(true);for(const x of (r.per||[]).filter(x=>x.band))mods.push(x.band.ok?`「${sashX.name}」로 버팀 (${x.band.roll}/${x.band.pct})`:`「${sashX.name}」 실패 (${x.band.roll}/${x.band.pct})`)}
+    const berryUse=g('h_berry').checked&&/열매/.test(IT(m));const sashUse=saved&&sashX&&sashX.sure&&sashX.once&&m.hp.cur>1;const hc=curHit();const ret=await apply(-r.final,`${lh.from}의 「${lh.move}」 · 상성 ×${g('h_eff').value}${hc.crit?' · 급소':''}${hc!==lh?(hc.crit?' (급소로 바꿈)':' (급소 아님으로 바꿈)'):''}${lh.hits>1?' · '+lh.hits+'번 맞음':''}${mods.length?' · '+mods.join(' · '):''}${perTxt(r)?'\n'+perTxt(r):''}`,{clearHit:true,floor:fl});if(berryUse||sashUse)await itemConsume(mid);
     if(OI()&&r.final>0)await itemHitReact(mid,lh,r.final);return ret}
    if(k==='again'||k==='againh'){const L=m.lastTaken;if(!L)return;const v=k==='againh'?Math.max(1,Math.floor(L.v/2)):L.v;return apply(-v,`최근 피해 다시${k==='againh'?' (½)':''} — ${L.why}`,{floor:fl})}
    if(k==='discard'){A().closeModal();await A().set(['battle','mons',mid,'lastHit'],null);return A().sysLog(`${m.name} 받은 피해 판정을 버렸다`,'battle')}
@@ -1609,6 +1612,8 @@ window.OM_BATTLE_UI=(()=>{
   md.querySelector('[data-x]').addEventListener('click',()=>{if(!done){done=true;res(null)}})})}
  /* 공격 창에서 쓸 조건 */
  /* 공격 쪽 배율(자속·적응력·달인의띠): 받는 쪽에는 숫자에 녹여서만 보낸다 */
+ /* 10-27 망령: 연속기 타별 대미지 (맞은 타만) — am 을 주면 공격 쪽 배율(자속 · 달인의띠)을 곱해 내림. HP 는 hpDamageHits 로 타마다 깎는다 */
+ function perOf(d,am){return d&&d.hits?d.hits.filter(h=>h.hit>0).map(h=>am?Math.floor(h.value*am):h.value):[]}
  function atkMul(r,md){const ck=id=>{const el=md?$('#'+id,md):document.getElementById(id);return !!(el&&el.checked)};return (r.stab?(ck('aadapt')?2:1.5):1)*(ck('abelt')&&r.eff&&r.eff.value>1?1.2:1)}
  /* 10-26 망령: 이번 턴 공격을 지시받았나 — 공개된 지시(cmds[tid].mons[mid])의 기술이 변화기가 아니면. 교대 · 지시 없음(행동불능 등) · 변화기는 「지시받지 않음」 → 【수세】 · 【공세】 판정에 쓴다 */
  function ordAtk(b,m){if(!b||!m)return false;const x=(((b.cmds||{})[m.tid]||{}).mons||{})[m.id];if(!x||x.move==null||x.move===''||x.move==='switch')return false;const mv=MVS(m)[+x.move];return !!mv&&mv.cat!=='변화'}
@@ -1824,7 +1829,7 @@ window.OM_BATTLE_UI=(()=>{
     const stab=eff?eff.stab:false;
     if(dmg&&dmg.wall<1){mods.names=mods.names||[];mods.names.push({key:'_wall',who:def.id,txt:`${def.name} 「${wallNames(objs,catEn(mv.cat),tyOf(mv)).join('·')||'벽'}」 피해 ×${dmg.wall}${mode(b)>=2?' (더블)':''} · 급소면 무시`})}
     const guard0=(DF.endure?0.5:1)*(mods.guard||1);const endure0=(!!DF.endure&&!DF.endureUsed||!!mods.endure)&&!AF.noEndure;
-    const hp=dmg?B().hpDamage(def,dmg.total,eff.value,{stab,adaptability:ck('aadapt'),expertBelt:ck('abelt'),guard:guard0,endure:endure0,hpFloor:raidFloor(def)}):null;
+    const hp=dmg?B().hpDamageHits(def,perOf(dmg),eff.value,{stab,adaptability:ck('aadapt'),expertBelt:ck('abelt'),guard:guard0,endure:endure0,hpFloor:raidFloor(def)}):null;
     /* 급소를 뒤집은 대미지 (10-24 망령): HP 창에서 피해 적용 전에 급소 여부를 바꿀 수 있게 — 맞은 타마다 전부 급소 / 전부 급소 아님 */
     const dmgAlt=dmg&&DOPT.hits.some(v=>v>0)?(()=>{const anyC=DOPT.hits.includes(2);try{return B().damage(foulAtk(atk,def,mv),def,MVP,Object.assign({},DOPT,{hits:DOPT.hits.map(v=>v===0?0:(anyC?1:2))}))}catch(e){return null}})():null;
     res.push({_mv:MVP,_opt:DOPT,slot,def,acc,hits,dmg,dmgAlt,eff,stab,hp,guard:guard0,endure:endure0,manual:1,mods,spw,sec:[...(spw&&acc.hit?[{ok:true,line:spw.note}]:[]),...(acc.hit?(MAU?MAU.groups.filter(g=>g.who==='target').map(g=>rollGroup(atk,def,g)):secRolls(atk,def,mv)):[])]})}
@@ -1855,7 +1860,7 @@ ${PR?`「기술 방어」 ${PR.ok?'성공':'실패'}${PR.k?` (연속 ${PR.k+1}�
     <td><b class="mono" id="fin_${i}">${r.hp&&r.acc.hit?r.hp.final:0}</b><div class="small dim" id="aft_${i}">→ ${r.hp&&r.acc.hit?r.hp.after:r.def.hp.cur}</div></td></tr>`).join('')}</table>
     <div class="small dim" style="margin-top:4px">${esc(mv.name)} · L${atk.lv} 위력 ${g('apow').value} · ${res[0]&&res[0].dmg?`공격 ${Math.round(res[0].dmg.hits[0]?res[0].dmg.hits[0].A:0)} / 방어 ${Math.round(res[0].dmg.hits[0]?res[0].dmg.hits[0].D:0)} · M ${res[0].dmg.M}${multiTarget?` (전체기 ×0.75 · 대상 ${res.length})`:''} · 벽 ${res[0].dmg.wall}`:''}</div>`;
    const recompute=()=>{res.forEach((r,i)=>{if(!r.dmg)return;const gd=md.querySelector(`[data-guard="${i}"]`),mn=md.querySelector(`[data-manual="${i}"]`),br=md.querySelector(`[data-berry="${i}"]`),en=md.querySelector(`[data-endure="${i}"]`);
-     r.hp=B().hpDamage(r.def,r.dmg.total,r.eff.value,{stab:r.stab,adaptability:ck('aadapt'),expertBelt:ck('abelt'),guard:+gd.value||1,manual:+mn.value||1,berryHalf:br.checked,endure:en.checked,hpFloor:raidFloor(r.def)});
+     r.hp=B().hpDamageHits(r.def,perOf(r.dmg),r.eff.value,{stab:r.stab,adaptability:ck('aadapt'),expertBelt:ck('abelt'),guard:+gd.value||1,manual:+mn.value||1,berryHalf:br.checked,endure:en.checked,hpFloor:raidFloor(r.def)});
      $('#fin_'+i,md).textContent=r.acc.hit?r.hp.final:0;$('#aft_'+i,md).textContent='→ '+(r.acc.hit?r.hp.after:r.def.hp.cur)})};
    md.querySelectorAll('[data-guard],[data-manual],[data-berry],[data-endure]').forEach(el=>el.addEventListener('input',recompute));
    md.querySelectorAll('[data-crk]').forEach(el=>el.addEventListener('change',()=>{const [i,k]=el.dataset.crk.split('.').map(Number);const r=res[i];if(!r||!r.dmg||!r._mv||!r.hits[k])return;r.hits[k].v=el.checked?2:1;r.hits[k].hand=1;const hv=r.hits.map(h=>h.v);
@@ -1889,7 +1894,7 @@ ${PR?`「기술 방어」 ${PR.ok?'성공':'실패'}${PR.k?` (연속 ${PR.k+1}�
      if(+O.item1&&+O.item1!==1)ak.push('아이템1 ×'+O.item1);if(+O.item2&&+O.item2!==1)ak.push('아이템2 ×'+O.item2);if(+O.trait&&+O.trait!==1)ak.push('특성 ×'+O.trait);if(+O.free2&&+O.free2!==1)ak.push('자유2 ×'+O.free2);
      {const f1=(+O.free1||1)/((r.mods&&r.mods.boost)||1);if(Math.abs(f1-1)>0.001)ak.push('자유1 ×'+Math.round(f1*1000)/1000)}if(O.charge)ak.push('충전 ×2');if(O.lifeOrb)ak.push('생명의구슬 ×1.3');if(r.stab)ak.push('자속 ×'+(($('#aadapt',md)||{}).checked?2:1.5));if((($('#abelt',md)||{}).checked)&&r.eff&&r.eff.value>1)ak.push('달인의띠 ×1.2');
      return {pub,atk:ak,grd:gd}})();
-    def.lastHit={hfx,from:atk.name,fromId:atk.id,move:RESULT.mv.name,moveType:RESULT.mv.type||'',eff:r.eff.value,effType:r.eff.type||'',total:Math.floor(r.dmg.total*am),min:Math.floor(r.dmg.min*am),max:Math.floor(r.dmg.max*am),hits:r.hits.length,crit,...(r.dmgAlt?{alt:{total:Math.floor(r.dmgAlt.total*am),min:Math.floor(r.dmgAlt.min*am),max:Math.floor(r.dmgAlt.max*am),crit:!crit}}:{}),guard:r.guard,guardNote:(r.mods&&r.mods.names.filter(x=>x.who===def.id).map(x=>x.txt).join(' · '))||'',endure:r.endure,expect:r.hp?r.hp.final:0,at:Date.now(),turn:+nb.turn||0,mt:RESULT.moveTypes||[],cat:RESULT.mv.cat||'',ct:!!(A().contactOf&&A().contactOf(RESULT.mv)==='O'),multi:RESULT.targets.length>1};
+    def.lastHit={hfx,from:atk.name,fromId:atk.id,move:RESULT.mv.name,moveType:RESULT.mv.type||'',eff:r.eff.value,effType:r.eff.type||'',total:Math.floor(r.dmg.total*am),min:Math.floor(r.dmg.min*am),max:Math.floor(r.dmg.max*am),hits:r.hits.length,crit,per:perOf(r.dmg,am),...(r.dmgAlt?{alt:{total:Math.floor(r.dmgAlt.total*am),min:Math.floor(r.dmgAlt.min*am),max:Math.floor(r.dmgAlt.max*am),crit:!crit,per:perOf(r.dmgAlt,am)}}:{}),guard:r.guard,guardNote:(r.mods&&r.mods.names.filter(x=>x.who===def.id).map(x=>x.txt).join(' · '))||'',endure:r.endure,expect:r.hp?r.hp.final:0,at:Date.now(),turn:+nb.turn||0,mt:RESULT.moveTypes||[],cat:RESULT.mv.cat||'',ct:!!(A().contactOf&&A().contactOf(RESULT.mv)==='O'),multi:RESULT.targets.length>1};
     if(FX()&&r.mods)FX().consume(nb,r.mods.names);if(def.flags&&def.flags.endure)def.flags.endureUsed=1;
     lines.push(`→ ${def.name}: ${hitTxt} ${crit?'급소! ':''}${r.acc.multi?r.hits.length+'번 맞았다! ':''}대미지 ${def.lastHit.total} ×${r.eff.value}${r.guard&&r.guard!==1?' 완화 ×'+r.guard:''} ≈ ${r.hp?(r.hp.raw>r.hp.final&&r.hp.final>=def.hp.cur?`${r.hp.raw} (남은 HP ${def.hp.cur}뿐)`:r.hp.final):0} — 받는 쪽이 「HP」에서 적용`)}
    if($('#alife',md).checked&&dealtAny){const a=nb.mons[mid];const rec=Math.max(1,Math.floor(a.hp.max/10));a.hp.latest=a.hp.cur;a.hp.cur=Math.max(0,a.hp.cur-rec);lines.push(`${atk.name} 생명의구슬 반동 −${rec} → ${a.hp.cur}`);if(a.hp.cur<=0){a.entry='';lines.push(`${a.name}은(는) 쓰러졌다!`)}}

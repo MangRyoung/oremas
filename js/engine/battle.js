@@ -142,6 +142,22 @@ window.OM_BATTLE=(()=>{
   const floorHp=+(o.hpFloor||0);if(floorHp>0&&def.hp.cur-final<floorHp)final=Math.max(0,def.hp.cur-floorHp);
   if(o.endure&&def.hp.cur-final<1)final=def.hp.cur-1;
   return {raw:v,final,after:def.hp.cur-final,eff,stabMul}}
+ /* 10-27 망령: 연속기는 타마다 따로 깎는다 — per = 타별 대미지(상성 전, 맞은 타만). 쓰러지면 남은 타는 멈춘다(landed).
+    반감열매는 첫 타에만 · 버티기는 매 타 · 띠(o.endureFull)는 그 타를 맞기 전 HP 가 가득일 때만 · 확률 띠(o.band {pct, roll})는 쓰러지는 타마다 굴림 · 레이드 하한은 매 타.
+    한 타짜리는 hpDamage 와 같은 값 */
+ function hpDamageHits(def,per,eff,o){
+  o=o||{};per=(per||[]).map(v=>+v||0);if(!per.length)per=[0];
+  const stabMul=o.stab?(o.adaptability?2:1.5):1;const floorHp=+(o.hpFloor||0);const mx=+def.hp.max||0;
+  let cur=+def.hp.cur||0,raw=0,fin=0,landed=0;const out=[];
+  for(let k=0;k<per.length;k++){
+   if(cur<=0)break;landed++;
+   let v=floor(per[k]*eff*stabMul*num(o.manual,1)*(o.expertBelt&&eff>1?1.2:1)*(o.berryHalf&&k===0?0.5:1)*num(o.guard,1)*num(o.defMod,1));
+   let f=eff>0&&per[k]>0?Math.max(Math.min(v,cur),1):Math.min(v,cur);if(eff===0)f=0;
+   if(floorHp>0&&cur-f<floorHp)f=Math.max(0,cur-floorHp);
+   let held='',band=null;if(cur-f<1){if(o.endure){f=cur-1;held='endure'}else if(o.endureFull&&cur>=mx&&cur>1){f=cur-1;held='full'}
+    else if(o.band&&+o.band.pct>0){const rl=+o.band.roll()||100;band={roll:rl,pct:+o.band.pct,ok:rl<=+o.band.pct};if(band.ok){f=cur-1;held='band'}}}
+   raw+=v;fin+=f;cur-=f;out.push({raw:v,final:f,after:cur,held,band})}
+  return {raw,final:fin,after:cur,eff,stabMul,per:out,landed}}
 
  /* ----- 비례 대미지·회복 (state_turnend) ----- */
  const FRAC={Poison:-1/8,Toxic:-1/8,Burn:-1/16,Nightmare:-1/4,Curse:-1/4,Bind:-1/8,AquaRing:1/8,Ingrain:1/16,GrassySong:1/16};
@@ -154,5 +170,5 @@ window.OM_BATTLE=(()=>{
  /* ----- 연속기 횟수 (attack_target_once) ----- */
  function multiHits(move,o){o=o||{};const mn=+move.min||1,mx=+move.max||1;if(mx<=1)return 1;if(o.skillLink)return mx;return mn+Math.floor(rng(o)()*(mx-mn+1))}
 
- return {STATS,RANKED,statValue,turnOrder,accuracy,critical,critStage,damage,effectiveness,hpDamage,turnEnd,multiHits,FRAC};
+ return {STATS,RANKED,statValue,turnOrder,accuracy,critical,critStage,damage,effectiveness,hpDamage,hpDamageHits,turnEnd,multiHits,FRAC};
 })();
