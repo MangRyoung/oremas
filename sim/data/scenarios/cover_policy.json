@@ -1,1 +1,20 @@
-{"id":"cover","dungeon":"factory","party":["카이","미오","레온"],"n":500,"seed":1,"sweep":{"cover":["never","fail","always"]},"adjust":{}}
+{
+ "id": "cover",
+ "name": "커버 정책",
+ "dungeon": "factory",
+ "party": [
+  "카이",
+  "미오",
+  "레온"
+ ],
+ "n": 500,
+ "seed": 1,
+ "sweep": {
+  "cover": [
+   "never",
+   "fail",
+   "always"
+  ]
+ },
+ "adjust": {}
+}

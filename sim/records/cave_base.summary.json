@@ -1,5 +1,6 @@
 {
  "id": "cave_base",
+ "name": "기본 · 검은모래 동굴",
  "dungeon": "cave",
  "party": [
   "카이",

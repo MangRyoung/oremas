@@ -12,6 +12,7 @@
 "use strict";
 const fs=require('fs'),path=require('path');
 const SIM=path.resolve(__dirname,'..');
+const KO=require('../lib/ko.js');
 const args=process.argv.slice(2);const cmd=args[0]||'help';
 const opt={};for(let i=1;i<args.length;i++){const a=args[i];if(a.startsWith('--')){const k=a.slice(2);const v=args[i+1]&&!args[i+1].startsWith('--')?args[++i]:'1';opt[k]=v}}
 const kv=s=>{const o={};for(const p of String(s||'').split(',')){if(!p)continue;const [k,v]=p.split('=');o[k.trim()]=isNaN(+v)?v:+v}return o};
@@ -38,13 +39,13 @@ const stamp=()=>new Date().toISOString().replace(/[-:T]/g,'').slice(0,12);
   if(opt.n)sc.n=+opt.n;const dgs=D.dungeons();const variants=[];
   const sweep=sc.sweep||{};const keys=Object.keys(sweep);
   if(!keys.length)variants.push({id:sc.id,adjust:sc.adjust||{},policy:sc.policy||{}});
-  else{const POLK=['cover','who','partner','inou'];const split=cur=>{const a={},p={};for(const k in cur)(POLK.includes(k)?p:a)[k]=cur[k];return {a,p}};const rec=(i,cur)=>{if(i===keys.length){const {a,p}=split(cur);variants.push({id:sc.id+'__'+keys.map(k=>k+'='+cur[k]).join('_'),adjust:Object.assign({},sc.adjust||{},a),policy:Object.assign({},sc.policy||{},p)});return}for(const v of sweep[keys[i]])rec(i+1,Object.assign({},cur,{[keys[i]]:v}))};rec(0,{})}
+  else{const POLK=['cover','who','partner','inou'];const split=cur=>{const a={},p={};for(const k in cur)(POLK.includes(k)?p:a)[k]=cur[k];return {a,p}};const rec=(i,cur)=>{if(i===keys.length){const {a,p}=split(cur);variants.push({id:sc.id+'__'+keys.map(k=>k+'='+cur[k]).join('_'),name:(sc.name||sc.id)+' · '+KO.describe(a,p,true),adjust:Object.assign({},sc.adjust||{},a),policy:Object.assign({},sc.policy||{},p)});return}for(const v of sweep[keys[i]])rec(i+1,Object.assign({},cur,{[keys[i]]:v}))};rec(0,{})}
   for(const dgId of [].concat(sc.dungeon)){const dg=dgs[dgId];if(!dg)throw new Error('던전 없음: '+dgId+' (data/dungeons/)');const parties=pickParties(sc.party.join(','));
    for(const v of variants){const id=([].concat(sc.dungeon).length>1?dgId+'_':'')+v.id;const rows=[];const t0=Date.now();
     for(let i=0;i<sc.n;i++)rows.push(D.run(W,dg,parties,{seed:(sc.seed||1)+i,adjust:v.adjust,policy:v.policy}));
     fs.mkdirSync(R.REC,{recursive:true});const base=path.join(R.REC,id.replace(/[^\w가-힣=._-]/g,'_'));
     fs.writeFileSync(base+'.jsonl',rows.map(r=>JSON.stringify(r)).join('\n')+'\n');
-    const agg=R.aggregate(rows);fs.writeFileSync(base+'.summary.json',JSON.stringify({id,dungeon:dgId,party:sc.party,n:sc.n,seed:sc.seed||1,adjust:v.adjust,policy:v.policy,at:new Date().toISOString(),snapshot:path.basename(snapFile()),agg},null,1));
+    const agg=R.aggregate(rows);fs.writeFileSync(base+'.summary.json',JSON.stringify({id,name:(v.name||sc.name||sc.id)+(([].concat(sc.dungeon).length>1)?' · '+KO.dungeonName(dgId):''),dungeon:dgId,party:sc.party,n:sc.n,seed:sc.seed||1,adjust:v.adjust,policy:v.policy,at:new Date().toISOString(),snapshot:path.basename(snapFile()),agg},null,1));
     console.log(`${id}: ${sc.n}판 ${((Date.now()-t0)/1000).toFixed(1)}초 — 전멸 ${(agg.wipe*100).toFixed(0)}% · 끝 HP ${(agg.endHp*100).toFixed(0)}% · 체크 성공 ${(agg.ok*100).toFixed(0)}% 대가 ${(agg.cost*100).toFixed(0)}% 실패 ${(agg.fail*100).toFixed(0)}% · 부상자 있는 판 ${(agg.injAny*100).toFixed(0)}% · 커버 ${agg.covers.toFixed(2)}/판`)}}
   const rep=R.build();console.log('리포트:',rep.html);return}
  if(cmd==='report'){const R=require('../lib/report.js');const rep=R.build();console.log(`시나리오 ${rep.n}개 → ${rep.html}`);return}

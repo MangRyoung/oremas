@@ -9,7 +9,7 @@
 ## 돌리는 법
 
 - 필요한 것: Node 18 이상. 제작기 폴더가 웹툴 폴더 옆에 있어야 한다 (`D:\TRPG\망각\oremas` 와 `D:\TRPG\망각\mangketmon-maker`). 다른 곳이면 `MK_ROOT` 환경 변수로 제작기 폴더를 준다.
-- **화면으로 쓰기 (권장)**: `sim\실행.bat` → 브라우저에 http://localhost:8470 이 열린다. 일행 · 던전 · 설정을 골라 돌리고, 던전 · 야생을 고쳐 저장하고(data/ 에 바로 씀), 기록 · 리포트 · 피드백(feedback.md)을 본다. 「제작기에서 받기」 단추가 `fetch` 와 같다.
+- **화면으로 쓰기 (권장)**: `sim\실행.bat` → 브라우저에 http://localhost:8470 이 열린다(Node 가 없으면 설치 페이지를 연다). 탭: 돌리기 · 일행(제작기식 트레이너 카드 · 포켓몬 시트) · 던전(웹툴 던전 탭식 지도 편집기) · 야생(무리 · 종 카드) · 기록 · 리포트 · 피드백(feedback.md) · 체크 확률표. 던전 · 야생을 고쳐 저장하면 data/ 에 바로 쓴다. 「제작기에서 받기」 단추가 `fetch` 와 같다. `바로가기_만들기.bat` 을 한 번 실행하면 이 폴더와 바탕화면에 주사위 아이콘 바로가기가 생긴다.
 - 명령줄 없이: `sim\받기.bat` (제작기 → 스냅샷), `sim\돌리기.bat` (기본 시나리오 → 리포트).
 - 명령줄:
 
@@ -40,11 +40,12 @@ node bin/sim.js report                                   records/*.summary.json 
 | `lib/wild.js` | 야생 무리 (`data/wild/species.json` 의 종 · `data/wild/*.json` 의 무리) → 『와일드』 ×1.25 · 『와일드 보스』 ×1.5 |
 | `lib/dungeon.js` | 던전 진행기 — 방 순서대로 체크 · 조우 · 휴식, 일행 상태(HP · 상태 · 지침 · 부상 · 이능 · 묘수 · 돌봄 · 4식6령 차감) 추적 |
 | `lib/report.js` | 기록 집계 → HTML · Markdown |
+| `lib/ko.js` | 기록 · 리포트의 한국어 이름표 (조정값 · 정책 · 던전 · 일행 → 읽는 말) |
 | `data/dungeons/*.json` | 던전 (방 · 체크 · 조우 · 휴식 · 경로) — **가이드라인에 맞춰 여기서 관리하고 웹툴로 옮긴다** |
 | `data/wild/*.json` | 야생 종 · 무리 |
 | `data/scenarios/*.json` | 실험 시나리오 (던전 · 일행 · 판 수 · 조정값 · 정책 · 스윕) |
 | `data/sample_snapshot.json` | 시험용 파티 4명 (제작기 문서 꼴) |
-| `records/*.jsonl` · `*.summary.json` | 판마다 한 줄 기록 · 시나리오 집계 |
+| `records/*.jsonl` · `*.summary.json` | 판마다 한 줄 기록 · 시나리오 집계 (`name` 이 한국어 이름, `id` 가 파일 이름) |
 | `records/feedback.md` | **인수인계 · 결정 · 발견 · 다음 할 일** |
 | `report/index.html` · `report.md` | 리포트 |
 

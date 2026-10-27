@@ -1,5 +1,6 @@
 {
  "id": "ruin_base",
+ "name": "기본 · 숲 속의 폐가",
  "dungeon": "ruin",
  "party": [
   "카이",

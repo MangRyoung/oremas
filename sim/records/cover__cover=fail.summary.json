@@ -1,5 +1,6 @@
 {
  "id": "cover__cover=fail",
+ "name": "커버 정책 · 실패 받침",
  "dungeon": "factory",
  "party": [
   "카이",

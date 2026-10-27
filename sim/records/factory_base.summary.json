@@ -1,5 +1,6 @@
 {
  "id": "factory_base",
+ "name": "기본 · 버려진 발전소",
  "dungeon": "factory",
  "party": [
   "카이",

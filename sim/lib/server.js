@@ -8,13 +8,17 @@ const safe=(base,p)=>{const f=path.resolve(base,'.'+path.posix.normalize('/'+p))
 const readJ=f=>JSON.parse(fs.readFileSync(f,'utf8'));
 function listDir(d,ext){if(!fs.existsSync(d))return [];return fs.readdirSync(d).filter(f=>f.endsWith(ext)).sort()}
 function start(opt){opt=opt||{};const port=+opt.port||8470;
- const {load}=require('./env.js');const W=load().win;const P=require('./party.js'),D=require('./dungeon.js'),WD=require('./wild.js'),BT=require('./battle.js'),R=require('./report.js'),SK=require('./skill.js');
+ const {load}=require('./env.js');const W=load().win;const P=require('./party.js'),D=require('./dungeon.js'),WD=require('./wild.js'),BT=require('./battle.js'),R=require('./report.js'),SK=require('./skill.js'),KO=require('./ko.js');
+ const TYPES=['노말','불꽃','물','전기','풀','얼음','격투','독','땅','비행','에스퍼','벌레','바위','고스트','드래곤','악','강철','페어리'];
+ const typeColors=()=>Object.fromEntries(TYPES.map(k=>[k,W.OM_STATS.typeColor(W.OM_STATS.typeEn(k))]));
+ /* 일행 탭 카드용 — 트레이너마다 포켓몬 요약 (웹툴 import.js 가 보는 모양 그대로 빌드해서 뽑는다) */
+ const trainerDetail=t=>{try{const r=P.build(W,snap(),t.id);return {ext:(r.trainer.ext||[]).length,mons:r.mons.map(m=>({name:m.name,lv:m.lv,types:(m.typesKo||[]).filter(x=>x&&x!=='-'),stats:m.stats,hp:(m.hp||{}).max,partner:!!m.partner,ability:m.ability||'',item:m.item||'',role:m.role||'',pride:m.pride||'',moves:(m.moves||[]).map(x=>({n:x.name,t:x.type,cat:x.cat,pow:x.pow}))}))}}catch(e){return {err:e.message,mons:[]}}};
  const snapFile=()=>fs.existsSync(path.join(SIM,'data','snapshot.json'))?path.join(SIM,'data','snapshot.json'):path.join(SIM,'data','sample_snapshot.json');
  let SNAP=null,SNAPF='';const snap=()=>{const f=snapFile();if(!SNAP||SNAPF!==f||(fs.statSync(f).mtimeMs!==SNAP._mt)){SNAP=P.readSnap(f);SNAP._mt=fs.statSync(f).mtimeMs;SNAPF=f}return SNAP};
- const state=()=>({snapshot:{file:path.basename(snapFile()),at:snap().at,sample:path.basename(snapFile())==='sample_snapshot.json'},trainers:P.list(snap()),
+ const state=()=>({snapshot:{file:path.basename(snapFile()),at:snap().at,sample:path.basename(snapFile())==='sample_snapshot.json'},trainers:P.list(snap()).map(t=>Object.assign(t,trainerDetail(t))),types:typeColors(),
   dungeons:Object.fromEntries(listDir(path.join(SIM,'data','dungeons'),'.json').map(f=>[f.replace(/\.json$/,''),readJ(path.join(SIM,'data','dungeons',f))])),
   wild:{species:WD.species(),packs:WD.packs()},scenarios:Object.fromEntries(listDir(path.join(SIM,'data','scenarios'),'.json').map(f=>[f.replace(/\.json$/,''),readJ(path.join(SIM,'data','scenarios',f))])),
-  records:R.summaries().map(s=>({id:s.id,file:s.file,dungeon:s.dungeon,party:s.party,n:s.n,adjust:s.adjust,policy:s.policy,at:s.at,agg:s.agg})),
+  records:(KO.reset(),R.summaries().map(s=>({id:s.id,name:s.name||s.id,dungeon:s.dungeon,dungeonName:KO.dungeonName(s.dungeon),party:s.party,partyKo:KO.partyKo(s.party,P.list(snap())),desc:KO.describe(s.adjust,s.policy),n:s.n,adjust:s.adjust,policy:s.policy,at:s.at,agg:s.agg}))),
   feedback:fs.existsSync(path.join(SIM,'records','feedback.md'))?fs.readFileSync(path.join(SIM,'records','feedback.md'),'utf8'):'',
   checkTable:(()=>{const T=[5,7,9,11];const o={};for(const pt of ['alone','mon','bond','inou'])o[pt]=Object.fromEntries(['D','C','B','A','AA'].filter(r=>pt!=='inou'||SK.lv(r)>=3).map(r=>[r,T.map(t=>SK.summary({rank:r,target:t,partner:pt}))]));return o})()});
  const pickParties=sel=>sel.flatMap(s=>{const r=P.pick(W,snap(),s);if(!r.length)throw new Error('트레이너 못 찾음: '+s);return r});
@@ -23,7 +27,7 @@ function start(opt){opt=opt||{};const port=+opt.port||8470;
   run:b=>{const dg=D.dungeons()[b.dungeon];if(!dg)throw new Error('던전 없음');const parties=pickParties(b.party||[]);if(!parties.length)throw new Error('일행을 고르세요');const n=Math.max(1,Math.min(5000,+b.n||200));const rows=[];const t0=Date.now();
    for(let i=0;i<n;i++)rows.push(D.run(W,dg,parties,{seed:(+b.seed||1)+i,adjust:b.adjust||{},policy:b.policy||{},wn:+b.wn||undefined}));
    const agg=R.aggregate(rows);const sample=D.run(W,dg,parties,{seed:+b.seed||1,adjust:b.adjust||{},policy:b.policy||{},wn:+b.wn||undefined,events:true});
-   let saved='';if(b.save){const id=String(b.id||`${b.dungeon}_${Date.now().toString(36)}`).replace(/[^\w가-힣=._-]/g,'_');fs.mkdirSync(R.REC,{recursive:true});const base=path.join(R.REC,id);fs.writeFileSync(base+'.jsonl',rows.map(r=>JSON.stringify(r)).join('\n')+'\n');fs.writeFileSync(base+'.summary.json',JSON.stringify({id,dungeon:b.dungeon,party:b.party,n,seed:+b.seed||1,adjust:b.adjust||{},policy:b.policy||{},at:new Date().toISOString(),snapshot:path.basename(snapFile()),agg},null,1));R.build();saved=id}
+   let saved='';if(b.save){const name=String(b.id||'').trim()||`${KO.dungeonName(b.dungeon)} · ${KO.describe(b.adjust,b.policy)}`;const id=String(b.id||`${KO.dungeonName(b.dungeon)}_${KO.stamp()}`).replace(/[^\w가-힣=._-]/g,'_');fs.mkdirSync(R.REC,{recursive:true});const base=path.join(R.REC,id);fs.writeFileSync(base+'.jsonl',rows.map(r=>JSON.stringify(r)).join('\n')+'\n');fs.writeFileSync(base+'.summary.json',JSON.stringify({id,name,dungeon:b.dungeon,party:b.party,n,seed:+b.seed||1,adjust:b.adjust||{},policy:b.policy||{},at:new Date().toISOString(),snapshot:path.basename(snapFile()),agg},null,1));R.build();saved=id}
    return {agg,ms:Date.now()-t0,sample:sample.events,saved}},
   battle:b=>{const parties=pickParties(b.party||[]).map(p=>{Object.assign(p.trainer,W.OM_ORDERS.auto(p.trainer,'assoc',1));return {trainer:p.trainer,mons:p.mons.slice(0,+b.wn||2)}});const pk=WD.packs()[b.pack];if(!pk)throw new Error('야생 무리 없음');const n=Math.max(1,Math.min(2000,+b.n||100));let w=0,T=0,hp=0,log=[];
    for(let i=0;i<n;i++){const r=BT.runBattle(W,{left:{parties},right:WD.build(W,pk),seed:(+b.seed||1)+i,format:parties.reduce((a,p)=>a+p.mons.length,0)>=3?3:2,log:i===0});if(r.winner==='left')w++;T+=r.turns;hp+=r.left.reduce((a,m)=>a+m.hp/m.max,0)/r.left.length;if(i===0)log=r.log}

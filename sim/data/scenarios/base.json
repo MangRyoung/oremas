@@ -1,1 +1,22 @@
-{"id":"base","dungeon":["factory","cave","ruin"],"party":["카이","미오","레온"],"n":500,"seed":1,"adjust":{},"policy":{"cover":"fail","who":"best","partner":"match"}}
+{
+ "id": "base",
+ "name": "기본",
+ "dungeon": [
+  "factory",
+  "cave",
+  "ruin"
+ ],
+ "party": [
+  "카이",
+  "미오",
+  "레온"
+ ],
+ "n": 500,
+ "seed": 1,
+ "adjust": {},
+ "policy": {
+  "cover": "fail",
+  "who": "best",
+  "partner": "match"
+ }
+}
