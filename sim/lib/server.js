@@ -8,7 +8,7 @@ const safe=(base,p)=>{const f=path.resolve(base,'.'+path.posix.normalize('/'+p))
 const readJ=f=>JSON.parse(fs.readFileSync(f,'utf8'));
 function listDir(d,ext){if(!fs.existsSync(d))return [];return fs.readdirSync(d).filter(f=>f.endsWith(ext)).sort()}
 function start(opt){opt=opt||{};const port=+opt.port||8470;
- const {load}=require('./env.js');const W=load().win;const P=require('./party.js'),D=require('./dungeon.js'),WD=require('./wild.js'),BT=require('./battle.js'),R=require('./report.js'),SK=require('./skill.js'),KO=require('./ko.js');
+ const {load}=require('./env.js');const W=load().win;const P=require('./party.js'),D=require('./dungeon.js'),WD=require('./wild.js'),BT=require('./battle.js'),R=require('./report.js'),SK=require('./skill.js'),KO=require('./ko.js'),J=require('./journal.js');
  const TYPES=['노말','불꽃','물','전기','풀','얼음','격투','독','땅','비행','에스퍼','벌레','바위','고스트','드래곤','악','강철','페어리'];
  const typeColors=()=>Object.fromEntries(TYPES.map(k=>[k,W.OM_STATS.typeColor(W.OM_STATS.typeEn(k))]));
  /* 일행 탭 카드용 — 트레이너마다 포켓몬 요약 (웹툴 import.js 가 보는 모양 그대로 빌드해서 뽑는다) */
@@ -18,7 +18,8 @@ function start(opt){opt=opt||{};const port=+opt.port||8470;
  const state=()=>({snapshot:{file:path.basename(snapFile()),at:snap().at,sample:path.basename(snapFile())==='sample_snapshot.json'},trainers:P.list(snap()).map(t=>Object.assign(t,trainerDetail(t))),types:typeColors(),
   dungeons:(()=>{const o=D.dungeons();for(const k in o){o[k].id=o[k].id||k;delete o[k]._file}return o})(),
   wild:{species:WD.species(),packs:WD.packs()},scenarios:Object.fromEntries(listDir(path.join(SIM,'data','scenarios'),'.json').map(f=>[f.replace(/(\.private)?\.json$/,''),readJ(path.join(SIM,'data','scenarios',f))])),
-  records:(KO.reset(),R.summaries().map(s=>({id:s.id,private:!!s.private,name:s.name||s.id,dungeon:s.dungeon,dungeonName:KO.dungeonName(s.dungeon),party:s.party,partyKo:KO.partyKo(s.party,P.list(snap())),desc:KO.describe(s.adjust,s.policy),n:s.n,adjust:s.adjust,policy:s.policy,at:s.at,agg:s.agg}))),
+  records:(KO.reset(),R.summaries().map(s=>({id:s.id,private:!!s.private,comment:s.comment||'',name:s.name||s.id,dungeon:s.dungeon,dungeonName:KO.dungeonName(s.dungeon),party:s.party,partyKo:KO.partyKo(s.party,P.list(snap())),desc:KO.describe(s.adjust,s.policy),n:s.n,adjust:s.adjust,policy:s.policy,at:s.at,agg:s.agg}))),
+  journal:J.all(),kinds:J.KINDS,
   combos:[R.REC,R.PRIV].flatMap(d=>listDir(d,'.json').filter(f=>!f.endsWith('.summary.json')).map(f=>{try{const j=readJ(path.join(d,f));return j.rows&&j.pool?Object.assign(j,{private:d===R.PRIV}):null}catch(e){return null}}).filter(Boolean)),
   feedback:fs.existsSync(path.join(SIM,'records','feedback.md'))?fs.readFileSync(path.join(SIM,'records','feedback.md'),'utf8'):'',
   checkTable:(()=>{const T=[5,7,9,11];const o={};for(const pt of ['alone','mon','bond','inou'])o[pt]=Object.fromEntries(['D','C','B','A','AA'].filter(r=>pt!=='inou'||SK.lv(r)>=3).map(r=>[r,T.map(t=>SK.summary({rank:r,target:t,partner:pt}))]));return o})()});
@@ -38,6 +39,9 @@ function start(opt){opt=opt||{};const port=+opt.port||8470;
   deleteDungeon:b=>{for(const ext of ['.json','.private.json']){const f=safe(path.join(SIM,'data','dungeons'),b.id+ext);if(fs.existsSync(f))fs.unlinkSync(f)}return {ok:1}},
   saveWild:b=>{if(b.species)fs.writeFileSync(path.join(SIM,'data','wild','species.json'),JSON.stringify(b.species,null,1));if(b.pack){if(!/^[\w가-힣-]+$/.test(b.pack.id))throw new Error('무리 id 는 영문 · 숫자 · 한글만');fs.writeFileSync(path.join(SIM,'data','wild',b.pack.id+'.json'),JSON.stringify(b.pack,null,1))}if(b.deletePack){const f=safe(path.join(SIM,'data','wild'),b.deletePack+'.json');if(fs.existsSync(f))fs.unlinkSync(f)}return {ok:1}},
   saveScenario:b=>{if(!/^[\w가-힣-]+$/.test(b.id))throw new Error('시나리오 id 는 영문 · 숫자 · 한글만');fs.writeFileSync(path.join(SIM,'data','scenarios',b.id+'.json'),JSON.stringify(Object.assign({},b.data,{id:b.id}),null,1));return {ok:1}},
+  saveJournal:b=>{const e=J.save(b.entry||{});R.build();return {ok:1,entry:e}},
+  deleteJournal:b=>{J.remove(String(b.id));R.build();return {ok:1}},
+  saveComment:b=>{if(!J.comment(String(b.id),b.text))throw new Error('기록 없음: '+b.id);R.build();return {ok:1}},
   saveFeedback:b=>{fs.mkdirSync(path.join(SIM,'records'),{recursive:true});fs.writeFileSync(path.join(SIM,'records','feedback.md'),String(b.text||''));return {ok:1}},
   deleteRecord:b=>{const RD=R.findRec(String(b.id))||R.REC;for(const ext of ['.summary.json','.jsonl']){const f=safe(RD,String(b.id)+ext);if(fs.existsSync(f))fs.unlinkSync(f)}R.build();return {ok:1}},
   fetch:async()=>{const F=require('./fetch.js');const r=await F.fetchAll(path.join(SIM,'data','snapshot.json'));SNAP=null;return r},

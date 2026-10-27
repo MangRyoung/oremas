@@ -49,6 +49,7 @@ node bin/sim.js report                                   records/*.summary.json 
 | `data/sample_snapshot.json` | 시험용 파티 4명 (제작기 문서 꼴) |
 | `records/*.jsonl` · `*.summary.json` | 판마다 한 줄 기록 · 시나리오 집계 (`name` 이 한국어 이름, `id` 가 파일 이름) |
 | `records/feedback.md` | **인수인계 · 결정 · 발견 · 다음 할 일** |
+| `records/journal.json` · `records/private/journal.json` | **실험 일지** — 화면 「기록 · 리포트」 맨 위. 항목 종류 실험 · 발견 · 개선안 · 결정 · 할 일, 관련 기록 연결, 비공개 분리. 기록마다 짧은 코멘트는 summary 의 `comment` 칸 |
 | `report/index.html` · `report.md` | 리포트 |
 
 ## 던전 파일 꼴
