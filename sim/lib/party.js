@@ -31,9 +31,17 @@ function wildFrom(win,snap){const C={};return (sel,enc)=>{const k=sel+'|'+JSON.s
 /* 일행 · 던전에 비공개가 섞였나 */
 function isPrivate(parties,dg){return !!((dg&&dg.private)||(parties||[]).some(p=>p.trainer&&p.trainer.priv))}
 /* 지시 횟수: 기본은 협회식(assoc). 1인 기준(solo) 트레이너는 제작기 시트의 지시 체계 · 고른 ORDER · COMMAND(mkOrders.pick)를 웹툴(sheet_ui)과 같게 — 고르지 않은 항목은 0 회 */
-function orders(win,t){const OD=win.OM_ORDERS;const mo=t.solo&&t.mkOrders;if(!mo){Object.assign(t,OD.auto(t,'assoc',1));return t}
+/* 10-28: 1인 기준인데 제작기에서 아직 안 고른 트레이너(무진 NPC 등)는 시뮬이 대신 고른다 — 1인 지령 규칙(2체 4식 1 · 6령 2, 3체 4식 2 · 6령 3, 지시 A 이상은 6령 3 · 회피/명중 1 필수)대로.
+   4식 = 버텨라(3체면 + 물러나), 6령 = 주력 공격(일행 기술이 물리가 많으면 공격 · 아니면 특공) · 회복 (+ 지시 A↑ 회피 · 3체 방어). 옛 방식(전부)은 opt.autoPick=false */
+function autoPick(t,mons){const s3=t.solo==3||t.solo==='3';const A=/^(AA|A|S)/.test(String((t.ranks||{})['지시']||''));
+ let ph=0,sp=0;for(const m of mons||[])for(const mv of m.moves||[]){if(mv.cat==='물리')ph++;else if(mv.cat==='특수')sp++}
+ const o=s3?['endure','retreat']:['endure'];const c=[ph>=sp?'attack':'specialattack','heal'];if(A)c.push('evasion');else if(s3)c.push('defense');if(A&&s3&&c.length<3)c.push('defense');
+ return {o,c}}
+function orders(win,t,opt){opt=opt||{};const OD=win.OM_ORDERS;let mo=t.solo&&t.mkOrders;
+ if(t.solo&&!(mo&&mo.pick)&&opt.autoPick!==false){mo=Object.assign({preset:'assoc',tc:0,base:1},mo||{},{pick:autoPick(t,opt.mons)});t.autoPick=mo.pick}
+ if(!mo){Object.assign(t,OD.auto(t,'assoc',1));return t}
  if(mo.preset==='manual'){Object.assign(t,OD.make(t,mo.tc,mo.base,{reset:true}));t.orderPreset=''}else Object.assign(t,OD.auto(Object.assign({},t,{orderPreset:mo.preset}),mo.preset,mo.base));
  if(mo.type){let nt=t;for(const k in mo.type)nt=OD.setItemType(nt,k[0]==='o'?'order':'command',k.slice(2),mo.type[k]);Object.assign(t,{orderType:nt.orderType,orderCount:nt.orderCount})}
  if(mo.pick){const oc=Object.assign({},t.orderCount||{});for(const k of Object.keys(oc)){const m=k.match(/^(order|command)_([a-z]+)$/);if(!m)continue;const L=m[1]==='order'?mo.pick.o:mo.pick.c;if(!L.includes(m[2]))oc[k]=0}t.orderCount=oc}
  return t}
-module.exports={readSnap,list,pick,build,wild,wildFrom,isPrivate,orders,SNAP};
+module.exports={readSnap,list,pick,build,wild,wildFrom,isPrivate,orders,autoPick,SNAP};
