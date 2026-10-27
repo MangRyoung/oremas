@@ -97,7 +97,7 @@ window.OM_HALL_UI=(()=>{
  const cnt=sd=>`${alive(sd||{})}/${((sd||{}).mons||[]).length}`;
  const resShort=h=>h.r==='left'||h.r==='right'?'승':h.r==='draw'?'무':'—';
  const dShort=t=>{if(!t)return '';const d=new Date(t);const p=n=>String(n).padStart(2,'0');const y=d.getFullYear()===new Date().getFullYear()?'':String(d.getFullYear()).slice(2)+'.';return `${y}${p(d.getMonth()+1)}.${p(d.getDate())}`};
- function rowHtml(x){const h=x.head||{};const S=h.sides||{};const side=s=>{const sd=S[s]||{};const w=h.r===s,l=h.r&&h.r!=='draw'&&h.r!==s;return `<span class="hrs ${s} ${w?'win':''} ${l?'lose':''}">${w?'<em>WIN</em>':''}<b>${esc(trNames(sd))}</b><i>${cnt(sd)}</i></span>`};
+ function rowHtml(x){const h=x.head||{};const S=h.sides||{};const side=s=>{const sd=S[s]||{};const w=h.r===s,l=h.r&&h.r!=='draw'&&h.r!==s;return `<span class="hrs ${s} ${w?'win':''} ${l?'lose':''}"><b>${esc(trNames(sd))}</b><i>${cnt(sd)}</i>${w?'<em>WIN</em>':'<em class="no"></em>'}</span>`};
   return `<div class="hrow ${h.r||'none'}" data-id="${esc(x.id)}" role="button" tabindex="0" title="${esc(fmtT(x.at))}${h.by?' · '+esc(h.by):''}"><span class="hrd">${dShort(x.at)}</span><b class="hrt">${esc(h.t||'(제목 없음)')}</b><span class="hrvs">${side('left')}<span class="hrx">vs</span>${side('right')}</span><span class="hrm">${h.r==='draw'?'<span class="hdraw">무승부</span>':''}${h.turn?'T'+h.turn:''}${x.ncm?` · 💬${x.ncm}`:''}</span></div>`}
  function render(el){if(LIST==null){el.innerHTML='<div class="hall"><div class="empty">전당을 불러오는 중…</div></div>';load();return}
   const ae=document.activeElement;if(ae&&ae.id==='hallQ'&&el.contains(ae)&&el.querySelector('.hall'))return;   /* 찾기 칸에 쓰는 중이면 다시 그리지 않는다 */
