@@ -90,13 +90,15 @@ function one(rng,o){o=o||{};const step=o.step||'C';const kind=o.kind||pick(rng,K
  return {id:'',origin:'orig',name:nm.name,types,base,ability:ab?ab.name:'',abilityTo:to,abilityDesc:ab?ab.desc:'',abilityOrig:!!(ab&&ab.orig),folder:'',pride:step,grade:GRADE_OF[step],hab,role:GRADE_OF[step]==='C'?'일반':'보스',kind,dual:KINDS[kind].dual,moves:[],concept:concept(rng,types,kind,hab,nm.beast),ct:Math.round(r.ct)}}
 /* ---------- 묶음 — 계단별 수 · 서식지 고루 ---------- */
 /* plan = {C:63,'C+':42,B:18,'B+':12,A:15}. 서식지(8곳)를 돌아가며, 그 서식지의 타입에서 첫 타입을 고른다 → 서식지마다 등급이 고루 걸린다. 18타입이 한 번씩은 첫 타입이 되게 앞부분은 타입 순서대로. */
-function batch(rng,plan,used,opts){opts=opts||{};used=used||new Set();const out=[];const habs=Object.keys(HAB);let hi=0;const tcount=Object.fromEntries(TYPES.map(t=>[t,0]));
+/* 첫 타입 뽑기 (10-27 20시 망령 「중간으로」): 목표 비율 = 균등(1/18) 과 제작기 도감 비율의 절반씩. 서식지를 돌아가며, 그 서식지 타입 중 「목표 × 지금까지 수 − 실제 수」(부족분)가 가장 큰 타입 */
+function typeTargets(opts){const dex=opts&&opts.dexTypes;const mix=opts&&opts.mix!=null?opts.mix:0.5;const out={};let tot=0;for(const t of TYPES){const d=dex&&dex.n?((dex.first||{})[t]||0)/dex.n:1/18;out[t]=(1-mix)*(1/18)+mix*d;tot+=out[t]}for(const t of TYPES)out[t]/=tot;return out}
+function batch(rng,plan,used,opts){opts=opts||{};used=used||new Set();const out=[];const habs=Object.keys(HAB);let hi=0;const tcount=Object.fromEntries(TYPES.map(t=>[t,0]));const TG=typeTargets(opts);const N=Object.values(plan).reduce((a,b)=>a+b,0);let done=0;
  for(const step of ['C','C+','B','B+','A'])for(let i=0;i<(plan[step]||0);i++){
-  const h=habs[hi++%habs.length];const hl=HAB[h].slice().sort((a,b)=>tcount[a]-tcount[b]||rng()-0.5);const t1=hl[0];tcount[t1]++;
+  const h=habs[hi++%habs.length];const deficit=t=>TG[t]*(done+1)-tcount[t];const hl=HAB[h].slice().sort((a,b)=>deficit(b)-deficit(a)||rng()-0.5);const t1=hl[0];tcount[t1]++;done++;
   const t2=rng()<0.45?pick(rng,PAIR[t1]||TYPES.filter(t=>t!==t1)):null;const types=t2?[t1,t2]:[t1];
   /* 역할형: 등급이 오를수록 스위퍼 · 쌍두 비중을 조금 올린다 */
   const kinds=step==='A'||step==='B+'?KIND_NAMES.concat(['물리 스위퍼','특수 스위퍼','쌍두']):KIND_NAMES.concat(['밸런스','물리 탱커']);
   let m=null;for(let k=0;k<5&&!m;k++)m=one(rng,{step,kind:pick(rng,kinds),types,used,W:opts.W});if(!m)continue;out.push(m)}
  return out}
 function coverage(entries){const o={};for(const h of Object.keys(HAB)){o[h]={C:0,B:0,A:0};for(const e of entries)if((e.hab||[]).includes(h))o[h][e.grade]++}return o}
-module.exports={TYPES,HAB,KINDS,KIND_NAMES,PAIR,BODY,one,batch,makeBase,makeName,coverage,abil,habOf,pickAbility,origAbility};
+module.exports={TYPES,HAB,KINDS,KIND_NAMES,PAIR,BODY,one,batch,makeBase,makeName,coverage,abil,habOf,pickAbility,origAbility,typeTargets};

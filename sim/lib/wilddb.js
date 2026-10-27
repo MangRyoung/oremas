@@ -44,6 +44,10 @@ function build(n,seed){n=n||200;const BT=require('./battle.js');const rng=BT.mkR
 function full(db){db=db||read();const L=DX.list();const by=new Map(L.map(d=>[d.name,d]));return db.entries.map(e=>{const d=by.get(e.sp);return Object.assign({},e,d?{types:d.types,base:d.base,bst:d.bst,ability:d.ability,gen:d.gen}:{missing:true})})}
 /* ---------- v2 (10-27 밤): 오리지널 150 + 올드 50 ---------- */
 const PLAN_V2={orig:{C:63,'C+':42,B:18,'B+':12,A:15},old:{C:21,'C+':14,B:6,'B+':4,A:5}};
+/* n 체 계획: 오리지널 3 : 올드 1, 묶음 7:2:1, 묶음 안 6:4 */
+function planFor(n){const o=Math.round(n*0.75),d=n-o;const sp=(m)=>{const C=Math.round(m*0.7),B=Math.round(m*0.2),A=m-C-B;return {C:Math.round(C*0.6),'C+':C-Math.round(C*0.6),B:Math.round(B*0.6),'B+':B-Math.round(B*0.6),A}};return {orig:sp(o),old:sp(d)}}
+/* 도감 타입 비율 (첫 타입) — 생성기 목표 비율용 */
+function dexTypes(){const L=DX.list().filter(d=>!/메가|거다이맥스|원시회귀/.test(d.name));const o={n:L.length,first:{}};for(const d of L)if(d.types[0])o.first[d.types[0]]=(o.first[d.types[0]]||0)+1;return o}
 /* 올드: 계단별로 n 체, 첫 타입을 돌아가며 (씨앗 고정). 진화 전 단계 이름이 겹치지 않게 첫 어절 기준 중복 제거 */
 function pickOld(rng,plan,used){used=used||new Set();const C=candidates();const out=[];
  for(const step of Object.keys(plan)){const pool=C.filter(d=>prideOf(d.bst)===step);const byT={};for(const d of pool)(byT[d.types[0]]=byT[d.types[0]]||[]).push(d);
@@ -53,13 +57,13 @@ function pickOld(rng,plan,used){used=used||new Set();const C=candidates();const 
    out.push({id:'',origin:'old',sp:d.name,name:d.name,types:d.types,base:d.base,ability:d.ability,pride:step,grade:step[0],hab:habOf(d.types),role:step[0]==='C'?'일반':'보스',moves:[]})}}
  return out}
 /* 전체 생성: {seed, plan} → db v2 */
-function buildV2(o){o=o||{};const BT=require('./battle.js'),M=require('./mongen.js');const rng=BT.mkRng(o.seed||27);const plan=o.plan||PLAN_V2;
- const used=new Set(DX.list().map(d=>d.name));const orig=M.batch(rng,plan.orig,used,{W:o.W});const old=pickOld(rng,plan.old,new Set());
+function buildV2(o){o=o||{};const BT=require('./battle.js'),M=require('./mongen.js');const rng=BT.mkRng(o.seed||27);const plan=o.plan||(o.n?planFor(o.n):PLAN_V2);
+ const used=new Set(DX.list().map(d=>d.name));const orig=M.batch(rng,plan.orig,used,{W:o.W,dexTypes:dexTypes(),mix:o.mix==null?0.5:o.mix});const old=pickOld(rng,plan.old,new Set());
  const entries=orig.concat(old);entries.forEach((e,i)=>e.id='w'+String(i+1).padStart(3,'0'));
  let review=null;if(o.W){/* 실전 검토 · 개선 루프 (lib/review.js) */const RV=require('./review.js');review=RV.reviewAll(o.W,module.exports,M,entries,{n:o.reviewN||24,rounds:o.rounds==null?3:o.rounds,seed:(o.seed||27)+1});module.exports._cache=null}
  if(o.W){/* 기술을 항목에 써 넣는다 (10-27 20시 망령 「기존 DB 는 기술을 안 넣어둔 거야?」) — 생성기가 고른 구성이 DB 의 실제 값이 되고, 화면에서 고칠 수 있다. movesAuto:true 로 출처 표시 */module.exports.clearCache();const AM=require('./automove.js');for(const e of entries){try{const r=buildEntry(o.W,Object.assign({},e,{moves:[]}),{});e.moves=(r.mon.moves||[]).map(m=>m.name);e.movesAuto=true;e.sock=AM.sockInfo(o.W,r.mon)}catch(x){}}module.exports.clearCache()}
  const n=entries.length;const cnt={};for(const e of entries)cnt[e.origin+' '+e.pride]=(cnt[e.origin+' '+e.pride]||0)+1;
- return {v:2,seed:o.seed||27,review,source:'오리지널 = lib/mongen.js(제작기 customCalc 검증) · 올드 = 제작기 도감(MKM_DB.old)',plan,count:cnt,habitats:HAB,coverage:M.coverage(entries),entries}}
+ return {v:2,seed:o.seed||27,mix:o.mix==null?0.5:o.mix,review,source:'오리지널 = lib/mongen.js(제작기 customCalc 검증) · 올드 = 제작기 도감(MKM_DB.old)',plan,count:cnt,habitats:HAB,coverage:M.coverage(entries),entries}}
 /* 화면 · 생성기용: v1(sp 만) · v2 모두 타입 · 종족치가 채워진 꼴로 */
 function fullV2(db){db=db||read();if(!db.entries)return [];if(db.v>=2)return db.entries.map(e=>e.origin==='old'&&!e.base?Object.assign({},e,(DX.list().find(d=>d.name===e.sp)||{missing:true})):e);return full(db)}
 /* 배틀용 한 체: entry(v2) → {trainer, mon} (dex.build 와 같은 꼴). 오리지널은 제작기 import 로 직접 만든다(명세 8-1) */
@@ -69,5 +73,11 @@ function buildEntry(W,e,o){o=o||{};const key=e.id+'|'+(+o.lvAdd||0)+'|'+(o.boss?
   const doc={id:'wdb_'+e.id,data:{name:e.name||e.sp,t1:types[0]||'-',t2:types[1]||'-',base,ability:src.ability||e.ability||'',item:'',moves:(e.moves||[]).map(n=>typeof n==='string'?{name:n}:n),pride:e.pride||'C',dist:+o.lvAdd||0,pots:[]}};
   const x=W.OM_IMPORT.pokemon(doc,tr);x.dualHint=!!e.dual;x.kindHint=e.kind||'';require('./automove.js').fill(W,x);CB[key]={trainer:tr,mon:x}}
  return JSON.parse(JSON.stringify(CB[key]))}
+/* 옛 무리 7개를 지금 DB 로 다시 짠다 (DB 를 통째로 다시 만들면 id 가 다른 몬을 가리키므로) */
+function rebuildPacks(seed){const BT=require('./battle.js');const rng=BT.mkRng(seed||5);const L=fullV2();const used=new Set();const dir=path.resolve(__dirname,'..','data','wild');
+ const pickN=(hab,grade,n)=>{const C=L.filter(e=>(e.hab||[]).includes(hab)&&e.grade===grade&&!used.has(e.id));const out=[];for(let i=0;i<n&&C.length;i++){const e=C.splice(Math.floor(rng()*C.length),1)[0];out.push(e);used.add(e.id)}return out};
+ const mk=(id,name,hab,spec)=>{const mons=[];for(const [g,n,boss] of spec)for(const e of pickN(hab,g,n))mons.push(Object.assign({db:e.id},boss?{boss:true}:{}));return {id,name,lv:{육성:'C'},hab,mons}};
+ const P=[mk('rat_pack','들쥐 무리','숲',[['C',3]]),mk('cave_pack','동굴 무리','동굴',[['C',3]]),mk('cave_boss','동굴의 주인','동굴',[['B',1,true],['C',2]]),mk('factory_pack','공장 무리','연구소',[['C',3]]),mk('factory_boss','발전소의 주인','연구소',[['A',1,true],['C',2]]),mk('swamp_pack','늪 무리','폐가',[['C',3]]),mk('ruin_boss','폐가의 주인','폐가',[['B',1,true],['C',2]])];
+ for(const p of P)fs.writeFileSync(path.join(dir,p.id+'.json'),JSON.stringify(p,null,1));return P.map(p=>p.id)}
 function clearCache(){for(const k in CB)delete CB[k];module.exports._cache=null}
-module.exports={FILE,STEPS,prideOf,GRADES,HAB,read,write,build,full,candidates,gradeOf,habOf,isNot,PLAN_V2,pickOld,buildV2,fullV2,buildEntry,clearCache};
+module.exports={FILE,STEPS,prideOf,GRADES,HAB,read,write,build,full,candidates,gradeOf,habOf,isNot,PLAN_V2,planFor,dexTypes,pickOld,buildV2,fullV2,buildEntry,clearCache,rebuildPacks};
