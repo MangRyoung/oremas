@@ -1084,6 +1084,9 @@ function openRoomSettings(tab){
    ${sw('plBattle',run,'① 플레이어도 배틀 진행 (모의전)','플레이어도 파티 불러오기 · 시합 개시 · 턴 진행 · 필드를 누른다. GM 없이 플레이어끼리 붙을 때. 엿보기 · 강제 · 모두 공개는 GM 만')}
    ${sw('seatOwn',own,'② 플레이어는 자기 것만 (세션)','플레이어는 자기 트레이너를 배틀에 올리고 자기 포켓몬 · 지시 · 스킬만 만진다. 턴 진행 · 필드 · 남의 HP 는 GM 이')}
    ${sw('gmHands',rp.gmHands===false,'GM 불간섭 (GM 도 플레이어처럼)','플레이어가 배틀에 올린 트레이너의 지시 · 준비 · HP · 랭크 · 상태는 그 플레이어만. GM 이 직접 불러온 파티와 NPC 는 GM 이 그대로 지시하고 턴도 진행한다 (자동 처리는 그대로)')}`)})()}
+  ${(()=>{const sc=rp.standCrop||{};const bust=sc.mode==='bust';return card('🧍','무대 스탠딩',`<div class="pf-sel"><span class="pf-lb">보이는 모양</span><select id="stCrop"><option value="">전신 (기본)</option><option value="bust" ${bust?'selected':''}>상반신 — 허리 위로 크게</option></select></div>
+   <div class="pf-sel"><span class="pf-lb">허리 높이</span><input type="number" class="n" id="stWaist" min="30" max="80" step="1" value="${+sc.waist||52}" style="width:70px"><em>%</em><button class="btn xs pri" id="stCropSave">저장</button></div>
+   <div class="pf-note">상반신이면 스탠딩 그림 맨 위에서 이 % 까지(허리)를 무대 높이에 맞춰 키우고, 그 아래는 무대 밑으로 잘린다. 그림마다 허리 자리가 다르면 「표정 · 스탠딩 편집」의 허리 % 칸에서 그 그림만 따로 맞춘다. 초상 그림은 그대로.</div>`)})()}
   ${card('🎲','확률 표식',`<div class="pf-pct">${PCT_LABELS.map(l=>{const base=pctBase(l);const cur=(rp.pct||{})[l];return `<label><span>${l}</span><input type="number" min="0" max="100" step="1" data-pct="${l}" value="${cur!=null&&cur!==''?esc(String(cur)):''}" placeholder="${base}"><em>%</em></label>`}).join('')}</div>
    <div class="row" style="margin-top:8px"><button class="btn xs pri" id="pctSave">저장</button><button class="btn xs ghost" id="pctReset">기본값으로</button></div><div class="pf-note">효과 글의 「드물게·저확률·중확률·고확률」 판정 %. 비운 칸은 흐린 기본값. 이 방에만.</div>`)}
   ${card('🪑','자리',`<div class="row"><button class="btn sm" id="seatMgr">자리 관리</button></div>`)}
@@ -1107,6 +1110,7 @@ function openRoomSettings(tab){
  const ao=$('#acctOnly',m);if(ao)ao.onchange=async()=>{if(ao.checked&&!String(ST.secret).startsWith('u:')&&!confirm('지금 GM 링크(예전 방식)로 들어와 있다. 켜면 이 링크로는 GM 이 안 된다 — 관리자 계정이나 이 방 GM 권한이 있는 계정으로 다시 들어와야 한다. 켤까?')){ao.checked=false;return}
   const s=Object.assign({},r.settings||{},{accountOnly:ao.checked});try{await DBS().roomUpdate(ST.room,ST.secret,null,s);r.settings=s;sysLog(ao.checked?'방 설정: 계정 전용 방 (로그인한 계정만)':'방 설정: 「계정 전용」을 껐다');toast(ao.checked?'계정 전용 방':'예전 링크도 다시 된다')}catch(e){ao.checked=!ao.checked;toast(e.message)}};
  const rs=$('#rnSave',m);if(rs)rs.onclick=async()=>{try{await DBS().roomUpdate(ST.room,ST.secret,$('#rn',m).value.trim(),null);ST.roomRow.name=$('#rn',m).value.trim();remember(ST.room,ST.roomRow.name,ST.secret);closeModal();renderRoom()}catch(e){toast(e.message)}};
+ {const cs=$('#stCropSave',m),cm=$('#stCrop',m);const save=async()=>{const mode=cm.value,w=Math.max(30,Math.min(80,Math.round(+$('#stWaist',m).value||52)));if(!await set(['rp','standCrop'],mode||w!==52?{mode,waist:w}:null))return;sysLog(`방 설정: 무대 스탠딩 — ${mode==='bust'?'상반신 (허리 '+w+'%)':'전신'}`);toast(mode==='bust'?'스탠딩을 상반신으로':'스탠딩을 전신으로')};if(cs)cs.onclick=save;if(cm)cm.onchange=save}
  $('#seatMgr',m).onclick=()=>{closeModal();openSeatPicker()}}
 
 /* ---------- 모달 ---------- */

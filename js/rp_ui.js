@@ -68,6 +68,8 @@ window.OM_RP_UI=(()=>{
   const t=((ST.state.roster||{}).trainers||{})[key];if(!t)return null;return {key,name:t.name,img:t.image,stands:t.stands||[],active:t.standActive||0,scale:t.standScale||0,kind:'pc',id:key}}
  function standSrc(c){if(!c)return '';const s=(c.stands||[])[c.active]||(c.stands||[])[0];return (s&&s.src)||c.img||''}
  function standKind(c){if(!c)return '';const st=(c.stands||[])[c.active]||(c.stands||[])[0];return st&&st.kind?st.kind:''}
+ /* 10-27 망령: 방 설정 「상반신」 — 허리 높이(그림 맨 위에서 %). 그림마다 waist 로 따로 */
+ function standWaist(c){const sc=R().standCrop||{};if(sc.mode!=='bust')return 0;const s=(c.stands||[])[c.active]||(c.stands||[])[0];return Math.max(30,Math.min(80,+(s&&s.waist)||+sc.waist||52))}
  function standPoint(c){const s=(c.stands||[])[c.active]||(c.stands||[])[0];return s&&+s.point||0}
  function speakerKey(row){const d=row.data||{};if(d.k&&d.k!=='me'){const c=charOf(d.k);if(c&&c.key)return c.key}   /* 10-25 망령: 고른 화자 키(d.k)가 먼저 — 포켓몬 · 별명으로 말하면 이름으로 찾다가 관계도 인물로 잘못 잡아 초상이 섰다 */
   if(d.as){const t=Object.values((A().ST.state.roster||{}).trainers||{}).find(x=>x.name===d.as);return t?t.id:'npc:'+d.as}if(d.from&&d.from!=='gm')return d.from;if(d.from==='gm'){const gk=gmKeyOf(d.gmn);return ((charOf(gk)||{}).stands||[]).length?gk:''}return ''}
@@ -193,21 +195,21 @@ window.OM_RP_UI=(()=>{
   bindMap(el);tickBanner();syncBgm();scheduleExpire();drawTyping()}
  /* 스탠딩 DOM 을 키로 맞춘다: 새로 선 것만 등장 애니메이션, 자리 바뀜·표정 바뀜은 제자리에서 */
  /* 스탠딩 크기 (인물마다 standScale %, 10-23 망령) — 발밑 기준으로 키우고 줄인다 */
- function standTf(img,flip,scale){const k=scale&&+scale!==100?+scale/100:1;img.dataset.k=k;img.dataset.fl=flip?1:0;img.style.transformOrigin='50% 100%';standPut(img,k);
+ function standTf(img,flip,scale){const k=scale&&+scale!==100?+scale/100:1;img.dataset.k=k;img.dataset.fl=flip?1:0;{const bu=img.closest('.stand.bust');img.style.transformOrigin=bu?`50% ${bu.style.getPropertyValue('--waist')||52}%`:'50% 100%'}standPut(img,k);
   if(!img.complete)img.addEventListener('load',()=>standFit(img),{once:true});requestAnimationFrame(()=>standFit(img))}
  function standPut(img,k){img.style.transform=(img.dataset.fl==='1'?'scaleX(-1) ':'')+(k!==1?`scale(${k})`:'')}
  /* 10-23 망령: 키운 스탠딩(인물 크기 × 내 설정 스탠딩 크기)이 무대 위로 넘치면 넘치지 않을 만큼만 키운다 (발밑 기준이라 머리가 잘리던 것) */
- function standFit(img){const ch=img.closest('.stand');if(!ch||!img.isConnected||!img.offsetHeight||ch.classList.contains('portrait'))return;
+ function standFit(img){const ch=img.closest('.stand');if(!ch||!img.isConnected||!img.offsetHeight||ch.classList.contains('portrait'))return;if(ch.classList.contains('bust')){img.style.transformOrigin=`50% ${ch.style.getPropertyValue('--waist')||52}%`;return}   /* 상반신: 허리를 축으로 키운다 (무대 밑은 잘림) */
   const k=+img.dataset.k||1,g=parseFloat(getComputedStyle(img).scale)||1,room=img.getBoundingClientRect().bottom-ch.getBoundingClientRect().top;
   const kk=Math.min(k,room/(img.offsetHeight*g));standPut(img,Math.abs(kk-1)<.005?1:kk)}
  addEventListener('resize',()=>{clearTimeout(standFit.t);standFit.t=setTimeout(()=>document.querySelectorAll('#stands .stand img').forEach(standFit),120)});
  function syncStands(box,slots,manual){const want={};const pr=dqRow(),pk=pr?speakerKey(pr):'',psx=pr&&pr.data?pr.data.sx:null;
-  for(const s of SLOTS){let c=charOf(slots[s]);if(c&&psx!=null&&c.key===pk&&(c.stands||[])[psx])c=Object.assign({},c,{active:psx});   /* 큐에서 찍는 줄은 보낼 때의 표정으로 */const src=standSrc(c);if(c&&src)want[s]={key:c.key,src,name:c.name,point:standPoint(c),kind:standKind(c),scale:+c.scale||0,flip:!!(manual[s]||{}).flip,on:((dqRow()?speakerKey(dqRow()):'')||STAGE.active)===c.key||!STAGE.active}}
+  for(const s of SLOTS){let c=charOf(slots[s]);if(c&&psx!=null&&c.key===pk&&(c.stands||[])[psx])c=Object.assign({},c,{active:psx});   /* 큐에서 찍는 줄은 보낼 때의 표정으로 */const src=standSrc(c);if(c&&src)want[s]={key:c.key,src,name:c.name,point:standPoint(c),waist:standWaist(c),kind:standKind(c),scale:+c.scale||0,flip:!!(manual[s]||{}).flip,on:((dqRow()?speakerKey(dqRow()):'')||STAGE.active)===c.key||!STAGE.active}}
   [...box.children].forEach(ch=>{const s=ch.dataset.slot;if(!want[s]||want[s].key!==ch.dataset.key){ch.classList.add('out');setTimeout(()=>ch.remove(),350)}});
   for(const s of SLOTS){const w=want[s];if(!w)continue;let ch=[...box.children].find(x=>x.dataset.slot===s&&x.dataset.key===w.key&&!x.classList.contains('out'));
    if(!ch){ch=document.createElement('div');ch.dataset.slot=s;ch.dataset.key=w.key;ch.className=`stand ${s} in`;ch.innerHTML=`<img alt=""><div class="stname"></div>`;box.appendChild(ch)}
    const img=ch.querySelector('img');if(img.getAttribute('src')!==w.src){img.src=w.src;ch.classList.remove('portrait');img.onload=()=>{const k=ch.dataset.kind||(img.naturalHeight/Math.max(1,img.naturalWidth)<1.45?'portrait':'stand');ch.classList.toggle('portrait',k==='portrait')}}
-   ch.dataset.kind=w.kind||'';if(w.kind)ch.classList.toggle('portrait',w.kind==='portrait');else if(img.complete&&img.naturalWidth)ch.classList.toggle('portrait',img.naturalHeight/img.naturalWidth<1.45);standTf(img,w.flip,w.scale);ch.style.marginBottom=ch.classList.contains('portrait')?'':(-w.point)+'px';ch.querySelector('.stname').textContent=w.name;
+   ch.dataset.kind=w.kind||'';if(w.kind)ch.classList.toggle('portrait',w.kind==='portrait');else if(img.complete&&img.naturalWidth)ch.classList.toggle('portrait',img.naturalHeight/img.naturalWidth<1.45);{const bu=!!w.waist&&!ch.classList.contains('portrait');ch.classList.toggle('bust',bu);ch.style.setProperty('--waist',bu?w.waist:'')}standTf(img,w.flip,w.scale);ch.style.marginBottom=ch.classList.contains('portrait')||ch.classList.contains('bust')?'':(-w.point)+'px';ch.querySelector('.stname').textContent=w.name;
    ch.classList.toggle('on',w.on);ch.classList.toggle('off',!w.on)}}
  /* ----- 입력 중 표시: 저장 없이 방송 ----- */
  const TYPING={last:0,who:{},t:null};
@@ -996,7 +998,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   const cur=c.stands.map(s=>Object.assign({},s));let act=Math.max(0,Math.min(c.active||0,cur.length-1));
   const card=(s,i)=>`<div class="stxc ${i===act?'on':''}">
     <div class="stxp" ${canEdit?`data-st="use" data-i="${i}" title="눌러서 이 표정으로"`:''}>${s.src?`<img src="${esc(s.src)}" alt="" loading="lazy">`:'<span class="small dim">그림 없음</span>'}${i===act?'<span class="stxon">사용 중</span>':''}${s.kind?`<span class="stxk">${s.kind==='stand'?'스탠딩':'초상'}</span>`:''}</div>
-    ${canEdit?`<div class="stxf"><input type="text" class="stxl" data-sl="${i}" value="${esc(s.label||'')}" placeholder="라벨"><input type="number" class="n stxn" data-sp="${i}" value="${+s.point||0}" title="보정 — 위로 올릴 px (음수면 내림)"></div>
+    ${canEdit?`<div class="stxf"><input type="text" class="stxl" data-sl="${i}" value="${esc(s.label||'')}" placeholder="라벨"><input type="number" class="n stxn" data-sp="${i}" value="${+s.point||0}" title="보정 — 위로 올릴 px (음수면 내림)"><input type="number" class="n stxn" data-swa="${i}" value="${+s.waist||''}" min="30" max="80" placeholder="허리%" title="상반신(방 설정)일 때 이 그림의 허리 높이 % — 그림 맨 위에서 허리까지. 비우면 방 설정 값"></div>
     <div class="stxf">${kindSel(`data-stk="${i}"`,s.kind)}<label class="btn xs ghost" title="그림만 바꾸기">교체<input type="file" accept="image/*" data-srep="${i}" hidden></label><button class="btn xs ghost danger" data-st="del" data-i="${i}" title="지우기">×</button></div>`
     :`<div class="stxf"><b class="stxb">${esc(s.label||'기본')}</b></div>`}</div>`;
   const md=A().openModal(`<div class="mhead"><h2>${esc(c.name)} — 표정·스탠딩</h2><span class="sp"></span><span class="tag">${cur.length}장</span><button class="btn ghost" data-x>닫기</button></div>${c.kind==='gm'?`<div class="row small dim" style="margin:-4px 0 8px">GM 도 스탠딩을 쓴다 — 「GM」으로 따옴표 대사("…")를 칠 때 무대에 서고, 따옴표 없는 지문은 그대로 나레이션.<span class="sp"></span><button class="btn xs ghost" data-gmimg>칩·로그 그림</button></div>${gm()?gmProfRow(c):''}`:''}
@@ -1038,6 +1040,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
     sc.oninput=()=>live(+sc.value);sc.onchange=()=>put(+sc.value);$('#st_sc0',md).onclick=()=>{sc.value=100;live(100);put(100)}}
    md.querySelectorAll('[data-sl]').forEach(inp=>inp.onchange=()=>{const i=+inp.dataset.sl;cur[i]=Object.assign({},cur[i],{label:inp.value.trim()||'기본'});save(false)});
    md.querySelectorAll('[data-sp]').forEach(inp=>inp.onchange=()=>{const i=+inp.dataset.sp;cur[i]=Object.assign({},cur[i],{point:+inp.value||0});save(false)});
+   md.querySelectorAll('[data-swa]').forEach(inp=>inp.onchange=()=>{const i=+inp.dataset.swa;const w=Math.round(+inp.value||0);const o=Object.assign({},cur[i]);if(w>=30&&w<=80)o.waist=w;else delete o.waist;cur[i]=o;save(false)});
    md.querySelectorAll('[data-stk]').forEach(sel=>sel.onchange=()=>{const i=+sel.dataset.stk;const s=Object.assign({},cur[i]);if(sel.value)s.kind=sel.value;else delete s.kind;cur[i]=s;save(true)});
    md.querySelectorAll('[data-srep]').forEach(fi=>fi.onchange=async()=>{const i=+fi.dataset.srep,f=fi.files[0];if(!f)return;A().toast('올리는 중…');try{const url=await upOne(f);cur[i]=Object.assign({},cur[i],{src:url});await save(true)}catch(e){A().toast(e.message)}});
    md.querySelectorAll('[data-st]').forEach(b=>b.onclick=async()=>{const k=b.dataset.st;const i=+b.dataset.i;

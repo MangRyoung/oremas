@@ -566,7 +566,7 @@ if(old){for(const k of ['orderStyle','commandStyle','orderCount','orderBase','or
     GM 화면에서 방에 들어올 때 한 번 (트레이너마다 제작기 문서 하나씩만 읽는다) */
  let FILLED=false;
  async function fillStands(){if(FILLED||A().ST.role!=='gm'||!A().loadMakerParty)return;FILLED=true;const R=A().ST.state.roster||{};const T=R.trainers||{},M=R.mons||{};const I=window.OM_IMPORT;let n=0;
-  const sOf=d=>(Array.isArray(d&&d.stands)?d.stands:[]).filter(x=>x&&x.src).map(x=>Object.assign({label:x.label||'기본',src:x.src,point:+x.point||0},x.kind==='stand'||x.kind==='portrait'?{kind:x.kind}:{}));
+  const sOf=d=>(Array.isArray(d&&d.stands)?d.stands:[]).filter(x=>x&&x.src).map(x=>Object.assign({label:x.label||'기본',src:x.src,point:+x.point||0},x.kind==='stand'||x.kind==='portrait'?{kind:x.kind}:{},+x.waist?{waist:+x.waist}:{}));
   for(const t of Object.values(T)){const ms=Object.values(M).filter(m=>m.tid===t.id);if(!(t.mkId||ms.some(m=>m.src==='maker')))continue;
    if((t.stands||[]).length&&ms.every(m=>(m.stands||[]).length))continue;
    /* 10-24 망령(이그레스): 스탠딩이 없는 포켓몬은 흔하니 매번 읽지 않는다 — 트레이너마다 이 브라우저에서 하루 한 번만 제작기를 본다 */
