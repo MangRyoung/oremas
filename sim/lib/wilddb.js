@@ -66,7 +66,7 @@ const CB={};
 function buildEntry(W,e,o){o=o||{};const key=e.id+'|'+(+o.lvAdd||0)+'|'+(o.boss?1:0);if(!CB[key]){const tr=W.OM_IMPORT.trainer({id:'wild_db',data:{name:'야생',kind:'npc',ranks:{육성:'C',지시:'D',통솔:'D',능력:'D'},pids:[]}});tr.wild=true;tr.orderCount={};
   const src=e.base?e:(DX.list().find(d=>d.name===e.sp)||{});const base=(src.base||[60,60,60,60,60,60]).slice();if(o.boss)base[0]+=15;const types=src.types||e.types||['노말'];
   const doc={id:'wdb_'+e.id,data:{name:e.name||e.sp,t1:types[0]||'-',t2:types[1]||'-',base,ability:src.ability||e.ability||'',item:'',moves:(e.moves||[]).map(n=>typeof n==='string'?{name:n}:n),pride:e.pride||'C',dist:+o.lvAdd||0,pots:[]}};
-  const x=W.OM_IMPORT.pokemon(doc,tr);require('./automove.js').fill(W,x);CB[key]={trainer:tr,mon:x}}
+  const x=W.OM_IMPORT.pokemon(doc,tr);x.dualHint=!!e.dual;x.kindHint=e.kind||'';require('./automove.js').fill(W,x);CB[key]={trainer:tr,mon:x}}
  return JSON.parse(JSON.stringify(CB[key]))}
 function clearCache(){for(const k in CB)delete CB[k];module.exports._cache=null}
 module.exports={FILE,STEPS,prideOf,GRADES,HAB,read,write,build,full,candidates,gradeOf,habOf,isNot,PLAN_V2,pickOld,buildV2,fullV2,buildEntry,clearCache};
