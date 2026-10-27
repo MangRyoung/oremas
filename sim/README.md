@@ -17,7 +17,9 @@
 node bin/sim.js fetch                                    제작기 공유 DB → data/snapshot.json  (Supabase 가 닿는 곳에서만 — 작업 컨테이너는 막혀 있다)
 node bin/sim.js list                                     스냅샷의 트레이너 (폴더/이름 · 랭크 · 포켓몬 수 · id)
 node bin/sim.js check                                    스킬 체크 성공률 표 (룰북 열지도와 같은 식)
-node bin/sim.js battle --party 카이 --wild factory_boss --n 200 --wn 2 [--log]
+node bin/sim.js battle --party 카이 --wild lab_bossA --n 200 --wn 2 [--log]
+node bin/sim.js gendb --n 300 --seed 31 --mix 0.5          야생 DB 생성(오리지널 3 : 올드 1 · 7:2:1 · 검토 루프) → data/wild/db.json + 무리 48 다시 짜기
+node bin/sim.js mon --step B --kind 쌍두 --types 물,독 --n 5   오리지널몬 한 줌 미리보기
 node bin/sim.js run --scenario data/scenarios/base.json [--n 1000]
 node bin/sim.js run --dungeon factory --party 카이,미오,레온 --n 500 --adjust target=2,penScale=0.5 --policy cover=never
 node bin/sim.js combos --pool id:a,id:b,… --size 3 --dungeons x,y --n 100 --id 이름   후보 중 n명 조합 전부 × 던전들 (기록 탭에 표)
@@ -42,7 +44,9 @@ node bin/sim.js report                                   records/*.summary.json 
 | `lib/party.js` | 스냅샷 → 배틀용 파티 (웹툴 `import.js` 의 `party()` 그대로) |
 | `lib/skill.js` | 스킬 체크 순수 함수 — 룰북 「스킬 체크」 장 · 웹툴 `skill_ui.js` 와 같은 규칙. `dist()` 로 정확한 확률 |
 | `lib/battle.js` | 약식 배틀 — 엔진 계산(순서 · 명중 · 급소 · 대미지 · 상성 · 비례 대미지 · 행동 판정 · 기술 효과 구문) + 지시 랭크별 자동 지시 |
-| `lib/wild.js` | 야생 무리 (`data/wild/species.json` 의 종 · `data/wild/*.json` 의 무리) → 『와일드』 ×1.25 · 『와일드 보스』 ×1.5 |
+| `lib/wild.js` | 야생 무리(`data/wild/<서식지>_<종류>.json`, 항목 = `{db:'w012'}`) → 『와일드』 ×1.25 · 『와일드 보스』 ×1.5 |
+| `lib/wilddb.js` · `lib/mongen.js` · `lib/review.js` · `lib/pride.js` | 야생 DB(생성 · 읽기 · 배틀용 빌드) · 오리지널몬 생성기 · 1:1 실전 검토 루프 · 제작기 프라이드 계산 — 규칙은 `docs/야생몬_제작_로직.md` |
+| `lib/automove.js` | 기술 자동 구성(4개 이상 · 변화기 1+ · 소켓 상한 · 역할별 · 상성 맥락 가중치) |
 | `lib/dungeon.js` | 던전 진행기 — 방 순서대로 체크 · 조우 · 휴식, 일행 상태(HP · 상태 · 지침 · 부상 · 이능 · 묘수 · 돌봄 · 4식6령 차감) 추적 |
 | `lib/report.js` | 기록 집계 → HTML · Markdown |
 | `lib/gen.js` | 던전 무작위 생성기 — 난이도(쉬움 · 보통 · 어려움) + 손잡이(사전 배틀 · 야생 수 · 레벨 · 휴식 · 체크 수 · 목표치 · 패널티 표 · 경계도). 가이드라인은 `records/feedback.md` 「던전 랜덤 생성 가이드라인」 |
@@ -51,7 +55,8 @@ node bin/sim.js report                                   records/*.summary.json 
 | `lib/automove.js` | 기술이 빈 포켓몬에게 시험용 표준 기술 |
 | `lib/ko.js` | 기록 · 리포트의 한국어 이름표 (조정값 · 정책 · 던전 · 일행 → 읽는 말) |
 | `data/dungeons/*.json` | 던전 (방 · 체크 · 조우 · 휴식 · 경로) — **가이드라인에 맞춰 여기서 관리하고 웹툴로 옮긴다** |
-| `data/wild/*.json` | 야생 종 · 무리 |
+| `data/wild/db.json` | **야생 DB** (지금 300체, 씨앗 31 · mix 0.5) — 항목마다 타입 · 종족치 · 특성 · 기술 · 서식지 · 폴더 · 검토 결과 |
+| `data/wild/<서식지>_<종류>.json` | 무리 48 (서식지 8 × c2 · c3 · cb · bossB · bossA · bossAB) |
 | `data/scenarios/*.json` | 실험 시나리오 (던전 · 일행 · 판 수 · 조정값 · 정책 · 스윕) |
 | `data/sample_snapshot.json` | 시험용 파티 4명 (제작기 문서 꼴) |
 | `records/*.jsonl` · `*.summary.json` | 판마다 한 줄 기록 · 시나리오 집계 (`name` 이 한국어 이름, `id` 가 파일 이름) |
@@ -98,4 +103,4 @@ node bin/sim.js report                                   records/*.summary.json 
 
 - 배틀: 특성 · 소지품 · 포텐셜 · 날씨 · 필드 · 설치기 · 기술 방어 · 연속 제한 · 선행/임의 발동은 없다. 4식은 물러나 · 피해라 · 버텨라만, 6령은 능력 +1 지령만, 둘 다 【1/시】 횟수 안에서 단순 규칙으로 쓴다. 지시 정책은 지침 2-11 을 단순화한 것이라 실제 사람보다 「덜 똑똑하고 덜 멍청」하다.
 - 스킬 체크: 대성공 이득 · 대가의 내용은 패널티 칸에 적은 것만 반영한다(시간 지체 같은 서술은 기록만). 재시도 · 대항 판정은 없다.
-- 야생 종은 시험용 가상 종이다(실제 포켓몬 아님). 무진 각성체 데이터는 제작기에서 받아 쓰면 된다 (`--party 무진 NPC/…`).
+- 야생은 생성기로 만든 야생 DB 다(오리지널 + 제작기 도감 올드 타입). 시뮬 배틀은 특성을 계산하지 않는다. 캠페인 NPC 는 제작기에서 받아 쓴다(`enc.trainer`).
