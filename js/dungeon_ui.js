@@ -54,23 +54,15 @@ window.OM_DG_UI=(()=>{
  const SEATS=()=>ST().state.seats||{};
  const WN=d=>Math.max(1,Math.min(3,+((d||{}).wn)||2));
  const alOn=d=>!(d&&d.noal);
- /* 10-28 망령: 4식 · 6령은 파티 공용 — 휴대폰 방 코드가 같은 트레이너들이 함께 쓴다 (js/ppool.js, 방 설정에서 켠다).
-    PT 패널 맨 위에 탐사 일행의 파티 칸을 보이고, GM 이 누르면 손으로 고친다. 배틀은 battle_ui 가, 휴식은 skill_ui applyRest 가 바로 이 칸을 쓴다 */
+ /* 10-28 망령: 파티 현황 (js/ppool.js) — 휴대폰 방 코드가 같은 파티원들의 4식 · 6령을 합친 목록 + 포켓몬 현황.
+    PT 패널 맨 위에 파티마다 요약 한 줄, 누르면 전체 목록 창. 횟수는 각 주인의 것 그대로 (배틀 · 휴식이 고친다) */
  const PP=()=>window.OM_PPOOL;
- function poolHTML(d){if(!PP()||!PP().on())return '';const cs=PP().codesOf(party(d));
-  if(!cs.length)return `<div class="dgpt-ord mini" title="휴대폰 연락처에서 같은 방 코드를 넣은 파티원끼리 4식 · 6령을 함께 쓴다"><div><i>파티 공용 4식 · 6령</i><span class="z">방 코드 없음</span></div></div>`;
-  return cs.map(code=>{const p=PP().stat(code);return `<div class="dgpt-ord mini" data-dgpool="${H(code)}" title="파티 「${H(code)}」 공용 4식 · 6령 — 같은 방 코드 ${p.n}명이 함께 쓴다 (1인 4식 1 · 6령 2)${gm()?' · 눌러서 고치기':''}"><div><i>공용 4식 <b>${p.o}</b></i><span class="${p.o?'':'z'}">/ ${p.o0}</span></div><div><i class="c">공용 6령 <b>${p.c}</b></i><span class="${p.c?'':'z'}">/ ${p.c0}</span></div></div>`}).join('')}
- function poolMgr(code){if(!gm()||!PP()||!code)return;const md=A().openModal('<div id="dgPl"></div>');
-  const draw=()=>{const p=PP().stat(code);if(!p.n)return A().closeModal();const row=(k,lab)=>`<div class="dgoe-row ${p[k]?'':'z'}"><span class="nm">공용 ${lab}</span><span class="mono">${p[k]}<small> / ${p[k+'0']}</small></span><button class="btn xs pri" data-pl="-" data-k="${k}" ${p[k]>0?'':'disabled'}>쓰기 −1</button><button class="btn xs" data-pl="+" data-k="${k}" ${p[k]>=p[k+'0']?'disabled':''}>회복 +1</button></div>`;
-   md.querySelector('#dgPl').innerHTML=`<div class="mhead"><h2>파티 공용 4식 · 6령 <small class="dim">${H(code)}</small></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-    <div class="dgoe">${row('o','4식')}${row('c','6령')}<p class="small dim" style="margin:0">방 코드 「${H(code)}」 파티원 ${p.n}명(${p.members.map(t=>H(((RO().trainers||{})[t]||{}).name||t)).join(' · ')}) × (4식 1 · 6령 2). 배틀에서 선행 · 임의 발동할 때마다 저절로 하나씩 준다. 휴식이 채운다.</p>
-    <div class="row" style="gap:6px"><button class="btn sm" data-pl="full">가득</button></div></div>`};
-  draw();
-  md.addEventListener('click',async e=>{if(e.target.closest('[data-x]'))return A().closeModal();const b=e.target.closest('[data-pl]');if(!b||b.disabled)return;const a=b.dataset.pl,k=b.dataset.k,lab=k==='o'?'4식':'6령';let line='';
-   if(a==='-'){await PP().spend(code,k==='o'?'order':'command');line=`공용 ${lab} −1`}
-   else if(a==='+'){await PP().restore(code,{[k]:1});line=`공용 ${lab} +1`}
-   else if(a==='full'){await PP().restore(code,'full');line='공용 4식 · 6령 가득'}
-   const p=PP().stat(code);notice(`【파티 ${code}】 ${line} (남은 4식 ${p.o}/${p.o0} · 6령 ${p.c}/${p.c0})`);draw()})}
+ function poolHTML(d){if(!PP())return '';const cs=PP().codesOf(party(d));
+  return cs.map(code=>`<button type="button" class="dgpt-pp" data-dgpool="${H(code)}" title="파티 「${H(code)}」 — 4식 · 6령 합친 목록과 포켓몬 현황 보기"><i>👥 ${H(code)}</i>${PP().chip(code)}<em>›</em></button>`).join('')}
+ function poolMgr(code){if(!PP()||!code)return;const md=A().openModal('<div id="dgPl"></div>');
+  const draw=()=>{const el=md.querySelector('#dgPl');if(!el)return;el.innerHTML=`<div class="mhead"><h2>파티 현황 <small class="dim">${H(code)}</small></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>${PP().html(code)}`};
+  DG.ppDraw=draw;draw();
+  md.addEventListener('click',e=>{if(e.target.closest('[data-x]'))A().closeModal()})}
  const stKo=k=>((((window.OM_DB||{}).states||{}).st||{})[k]||{}).ko||k;
  function party(d){const tr=RO().trainers||{};const ids=d&&d.pt?Object.keys(d.pt):Object.keys(SEATS()).filter(id=>tr[id]);return ids.filter(id=>tr[id]).sort((a,b)=>(tr[a].ord||0)-(tr[b].ord||0))}
  function monHp(m){const mx=Math.max(1,(m.hp&&m.hp.max)||(m.stats||[])[0]||1);const dead=!!((m.sheetStates||{}).Dead);const c=dead?0:m.sheetHp==null?mx:Math.max(0,Math.min(mx,+m.sheetHp||0));return {c,mx,dead:dead||c<=0}}
@@ -298,7 +290,7 @@ window.OM_DG_UI=(()=>{
  function cut(en,ko,sub,cls){const el=document.createElement('div');el.className='dg-cut '+(cls||'');el.setAttribute('role','status');el.innerHTML=`<div class="dg-cut-band"><small>${H(en)}</small><strong>${H(ko)}</strong>${sub?`<span>${H(sub)}</span>`:''}</div>`;document.body.append(el);whoosh();setTimeout(()=>el.remove(),2400)}
 
  /* ---------- 상태가 바뀔 때 (모든 탭에서 불린다): 진입 · 귀환 · 경계 단계 컷인, 화면 넘기기 ---------- */
- function onState(){try{retSync()}catch(e){}const d=cur(),s={room:ST().room,mode:d?'dungeon':'',did:d?d.id:'',al:d?clamp(+d.al||0,0,100):0},p=DG.prev;DG.prev=s;
+ function onState(){try{retSync()}catch(e){}try{if(DG.ppDraw&&document.querySelector('#dgPl'))DG.ppDraw();else DG.ppDraw=null}catch(e){}const d=cur(),s={room:ST().room,mode:d?'dungeon':'',did:d?d.id:'',al:d?clamp(+d.al||0,0,100):0},p=DG.prev;DG.prev=s;
   {const sg=JSON.stringify(D0());if(DG.edOpen&&sg!==DG.edSig&&!DG.drag&&!typingInModal())edDraw();DG.edSig=sg}
   if(!p||p.room!==s.room)return;   /* 방에 막 들어온 첫 상태: 컷인 없음 */
   if(p.mode!==s.mode||p.did!==s.did){DG.sel='';

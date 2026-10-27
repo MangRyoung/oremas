@@ -48,14 +48,14 @@ window.OM_PHONE_UI=(()=>{
  /* 뒤로 가기: 메모를 고치던 중이면 저장부터 */
  async function backTo(s,md){md=md||$('.modal.phone-modal');if(PH.screen==='note1'&&md&&canWrite()&&noteDirty(md))await saveNote(md,true);PH.screen=s;re()}
  function draw(md){md=md||$('.modal');const el=$('#phScreen',md);if(!el)return;const t=owner();
-  el.innerHTML=PH.screen==='contacts'?contacts(t):PH.screen==='conf'?confidants(t):PH.screen==='cal'?calendar(t):PH.screen==='sms'?smsRooms(t):PH.screen==='smsroom'?smsRoom(t):PH.screen==='notes'?notes(t):PH.screen==='sns'?sns(t):PH.screen==='note1'?noteEdit(t):PH.screen==='callog'?calLog(t):PH.screen==='set'?settings():PH.screen==='deck'&&window.OM_DECK_UI?window.OM_DECK_UI.phone(t,canWrite()):home(t);
+  el.innerHTML=PH.screen==='contacts'?contacts(t):PH.screen==='party'&&window.OM_PPOOL?partyScr(t):PH.screen==='conf'?confidants(t):PH.screen==='cal'?calendar(t):PH.screen==='sms'?smsRooms(t):PH.screen==='smsroom'?smsRoom(t):PH.screen==='notes'?notes(t):PH.screen==='sns'?sns(t):PH.screen==='note1'?noteEdit(t):PH.screen==='callog'?calLog(t):PH.screen==='set'?settings():PH.screen==='deck'&&window.OM_DECK_UI?window.OM_DECK_UI.phone(t,canWrite()):home(t);
   bind(md);if(PH.screen==='deck'&&window.OM_DECK_UI)window.OM_DECK_UI.bindPhone(md,re,t);if(PH.screen==='set'){const r=$('#phPrefs',md);if(r&&window.OM_PREFS)window.OM_PREFS.bind(r)}if(PH.screen==='sns')snsSeen();if(PH.screen==='smsroom'){const lg=$('.ph-sms',md);if(lg){lg.scrollTop=lg.scrollHeight;lg.querySelectorAll('img').forEach(im=>im.addEventListener('load',()=>{lg.scrollTop=lg.scrollHeight},{once:true}))}markSeen(PH.room)}}
  const re=()=>draw();
  const hmOf=at=>{const d=new Date(at);if(isNaN(d))return '';const n=new Date();return d.toDateString()===n.toDateString()?`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`:`${d.getMonth()+1}/${d.getDate()}`};
  /* ----- 설정: 내 환경 설정 (OM_PREFS 판을 휴대폰 크기로) ----- */
  function settings(){return `<div class="ph-head set"><button class="ph-back" data-ph="home">‹</button><div><b>설정</b><small>이 기기에서만 · 나만 적용</small></div></div><div class="ph-setwrap"><div id="phPrefs" class="pf-host cmp">${window.OM_PREFS?window.OM_PREFS.html({compact:true}):'<div class="dim">설정을 불러오지 못했다</div>'}</div></div>`}
  /* ----- 홈 ----- */
- function home(t){const T=trs();const un=unreadAll();const apps=[['contacts','📞','연락처',1],['sms','💬','문자',1,un],['conf','🤝','협력자',1],['cal','📅','캘린더',1],['notes','📝','메모장',1],['sns','📸','SNS',1,snsUnread()],['deck','🃏','덱',!!window.OM_DECK_UI],['set','⚙️','설정',1]];
+ function home(t){const T=trs();const un=unreadAll();const apps=[['contacts','📞','연락처',1],['party','👥','파티',!!window.OM_PPOOL],['sms','💬','문자',1,un],['conf','🤝','협력자',1],['cal','📅','캘린더',1],['notes','📝','메모장',1],['sns','📸','SNS',1,snsUnread()],['deck','🃏','덱',!!window.OM_DECK_UI],['set','⚙️','설정',1]];
   return `<div class="ph-wall"><div class="ph-clock"><b>${esc(dateKo(today()))}</b><small>${esc(cal().phase||'')}${cal().weather?' '+esc(cal().weather):''}</small></div>
    ${gm()?`<div class="ph-owner"><span class="small dim">누구의 휴대폰</span><select id="phOwner">${Object.values(T).map(x=>`<option value="${x.id}" ${x.id===PH.tid?'selected':''}>${esc(x.name)}</option>`).join('')}${Object.values(G().nodes||{}).filter(n=>!Object.values(T).some(x=>x.name===n.name)).map(n=>`<option value="n:${esc(n.id)}" ${'n:'+n.id===PH.tid?'selected':''}>${esc(n.name)} (관계도)</option>`).join('')}</select></div>`:''}
    ${(()=>{const rs=rooms().map(r=>({r,L:smsLogs(r.id)})).filter(x=>x.L.length).sort((a,b)=>b.L[b.L.length-1].id-a.L[a.L.length-1].id).slice(0,2);if(!rs.length)return '';
@@ -209,8 +209,12 @@ window.OM_PHONE_UI=(()=>{
  /* 방 코드: pub[tid].phone.room — 같은 코드를 넣은 사람끼리 파티원으로 보인다 (코드가 비어 있으면 코드 없는 사람들끼리). share=false 면 남의 목록에 안 뜬다. GM 은 코드별로 전부 본다 */
  const roomOf2=tid=>String((phoneData(tid).room||'')).trim();
  const shared=tid=>phoneData(tid).share!==false&&!(trs()[tid]||{}).priv;   /* 10-22 망령: 시트를 비공개로 두면 남의 연락처에도 안 뜬다 */
- /* 10-28 망령: 파티 공용 4식 · 6령 (js/ppool.js) — 같은 방 코드 파티의 남은 수 */
- const ppLine=code=>{const PP=window.OM_PPOOL;if(!PP||!PP.on()||!code)return '';const p=PP.stat(code);if(!p.n)return '';return `<div class="ph-pp" title="같은 방 코드 ${p.n}명이 함께 쓴다 (1인 4식 1 · 6령 2) — 배틀에서 쓰면 줄고 휴식이 채운다"><span>공용 4식 <b class="${p.o?'':'z'}">${p.o}</b>/${p.o0}</span><span>공용 6령 <b class="${p.c?'':'z'}">${p.c}</b>/${p.c0}</span></div>`};
+ /* 10-28 망령: 「파티」 앱 (js/ppool.js) — 같은 방 코드 파티원의 4식 · 6령을 합친 목록과 포켓몬 현황 */
+ function partyScr(t){const my=roomOf2(PH.tid);const PP=window.OM_PPOOL;const tab=PH.ptab||'all';
+  const head=`<div class="ph-head"><button class="ph-back" data-ph="home">‹</button><div><b>파티</b><small>${my?'방 '+esc(my):'방 코드 없음'}</small></div></div>`;
+  if(!my)return head+`<div class="ph-empty">방 코드가 없다<br><span class="small">연락처에서 같은 방 코드를 넣으면 파티원의 4식 · 6령과 포켓몬이 여기 모인다</span><br><button class="btn sm" data-ph="contacts" style="margin-top:8px">연락처로</button></div>`;
+  const tabs=[['all','전체'],['ord','4식 · 6령'],['mon','포켓몬']];
+  return head+`<div class="ph-pp">${PP.chip(my,PH.tid)}</div><div class="ph-ptab">${tabs.map(([k,n])=>`<button class="${tab===k?'on':''}" data-ph="ptab" data-v="${k}">${n}</button>`).join('')}</div><div class="ph-ppbody">${PP.html(my,{me:PH.tid,only:tab==='all'?'':tab})}</div>`}
  function contacts(t){const T=trs();const seats=A().ST.state.seats||{};const pd=phoneData(PH.tid);const g=G();const ids=(pd.contacts||[]).filter(id=>g.nodes[id]);const my=roomOf2(PH.tid);
   const item=x=>{const o=seats[x.id];const n=Object.values(mons()).filter(m=>m.tid===x.id).length;const rc=roomOf2(x.id);const meItem=x.id===PH.tid;return `<div class="ph-item" data-ph="${meItem?'sheet':'dm'}" data-tid="${x.id}" data-cid="${x.id}">${av(x.name,x.image)}<div class="ph-it"><b>${esc(x.name)}${meItem?' <span class="ph-tag">나</span>':''}${x.kind==='npc'?' <span class="ph-tag">NPC</span>':''}</b><small>${o?'🟢 '+esc(o.name):'빈 자리'} · 포켓몬 ${n}${gm()&&rc?' · 방 '+esc(rc):''}${!shared(x.id)?' · 비공개':''}</small></div><button class="btn xs ghost" data-ph="sheet" data-tid="${x.id}" title="시트 보기">시트</button>${meItem?'':'<span class="ph-arrow" title="문자">💬</span>'}</div>`};
   /* 코드가 있을 때만 같은 코드끼리. 코드가 없으면 나 혼자 */
@@ -222,7 +226,7 @@ window.OM_PHONE_UI=(()=>{
    <div class="ph-room"><div class="row"><input type="text" id="ph_room" value="${esc(my)}" placeholder="방 코드 (예: velvet-01)" ${canWrite()?'':'readonly'}>${canWrite()?'<button class="btn sm pri" data-ph="roomgo">입장</button>':''}${my&&canWrite()?'<button class="btn sm ghost" data-ph="roomout" title="코드를 비운다">나가기</button>':''}</div>
     ${canWrite()?`<label class="small"><input type="checkbox" id="ph_share" ${shared(PH.tid)?'checked':''}> 「${esc(meName)}」를 방에 공유 (끄면 남의 연락처에 안 뜬다)</label>`:''}
     <div class="small dim">같은 코드를 넣은 사람끼리만 파티원으로 보인다. 코드가 없으면 아무도 안 보인다.</div></div>
-   <div class="ph-sec">파티원 <span class="sp"></span><span class="small dim">${party.length}</span></div>${ppLine(my)}
+   <div class="ph-sec">파티원 <span class="sp"></span><span class="small dim">${party.length}</span>${my&&window.OM_PPOOL?'<button class="btn xs ghost" data-ph="party">👥 현황</button>':''}</div>
    <div class="ph-list">${party.map(item).join('')||`<div class="ph-empty">${t?'':'아직 내 파티가 없다 — 시트 탭에서 「내 파티 불러오기」<br>'}${my?'이 코드로 들어온 사람이 아직 없다':'방 코드를 넣고 입장하면 같은 코드의 파티원이 보인다'}</div>`}</div>
    <div class="small dim" style="padding:0 12px 6px">누르면 그 사람에게 문자. 「시트」는 보기 전용(자기 시트만 고칠 수 있다).</div>
    ${others.length?`<div class="ph-sec">다른 방 · 비공개 <span class="small dim">(GM 만 본다)</span></div><div class="ph-list">${others.map(item).join('')}</div>`:''}
@@ -297,7 +301,8 @@ window.OM_PHONE_UI=(()=>{
  /* ----- 묶기 ----- */
  function bind(md){const t=owner();
   md.querySelectorAll('[data-ph]').forEach(b=>b.onclick=async(e)=>{if(e&&e.stopPropagation)e.stopPropagation();const k=b.dataset.ph;if(!k)return;
-   if(['home','contacts','conf','cal','sms','notes','callog','set','deck','sns'].includes(k))return backTo(k,md);
+   if(['home','contacts','conf','cal','sms','notes','callog','set','deck','sns','party'].includes(k))return backTo(k,md);
+   if(k==='ptab'){PH.ptab=b.dataset.v||'all';return re()}
    if(k==='snpost')return snsPost(md);
    if(k==='snimgx'){PH.snImg='';return re()}
    if(k==='snvis'){const ta=$('#snIn',md);if(ta)PH.snDraft=ta.value;PH.snFo=!PH.snFo;return re()}
@@ -350,6 +355,6 @@ window.OM_PHONE_UI=(()=>{
   const mm=$('#cs_memo',md);if(mm&&canWrite())mm.onblur=async()=>{if(mm.value!==(phoneData(PH.tid).memo||''))await savePhone(PH.tid,{memo:mm.value})};
   const cq=$('#ph_cq',md);if(cq){const f=()=>{const q=cq.value.trim().toLowerCase();PH.cq=cq.value;md.querySelectorAll('#phScreen .ph-list .ph-item').forEach(it=>{it.style.display=!q||it.textContent.toLowerCase().includes(q)?'':'none'})};cq.oninput=f;if(cq.value)f()}}
  /* 상태가 바뀌면 열린 화면 중 남이 바꾸는 것(덱)만 다시 그린다 — 입력 중이면 건드리지 않는다 */
- let rfT=0;function refresh(){if(PH.screen!=='deck')return;clearTimeout(rfT);rfT=setTimeout(()=>{const md=$('.modal.phone-modal');if(!md)return;const a=document.activeElement;if(a&&md.contains(a)&&a.matches('input,textarea,select'))return;draw(md)},60)}
+ let rfT=0;function refresh(){if(PH.screen!=='deck'&&PH.screen!=='party')return;clearTimeout(rfT);rfT=setTimeout(()=>{const md=$('.modal.phone-modal');if(!md)return;const a=document.activeElement;if(a&&md.contains(a)&&a.matches('input,textarea,select'))return;draw(md)},60)}
  return {open,onSms,unreadAll,popSms,refresh};
 })();

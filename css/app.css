@@ -983,7 +983,6 @@ body.resizing{user-select:none;cursor:col-resize}
 .ph-note{color:#bbb!important;margin-top:3px;white-space:pre-wrap}
 .ph-empty{color:var(--mute);text-align:center;padding:30px 10px}.ph-foot{padding:6px 12px}
 .ph-sec{display:flex;align-items:center;gap:8px;padding:8px 12px 4px;font-family:var(--lab);font-size:11px;letter-spacing:.08em;color:var(--yel2)}
-.ph-pp{display:flex;gap:6px;padding:2px 12px 6px;font-size:12px}.ph-pp span{flex:1;padding:4px 8px;border:1px solid rgba(255,255,255,.18);border-radius:4px;background:rgba(255,255,255,.04)}.ph-pp b{font-family:var(--mono,monospace);font-size:14px;margin:0 2px;color:var(--yel2)}.ph-pp b.z{color:#ff6b6b}
 .ph-slot{display:flex;flex-wrap:wrap;gap:4px;padding:0 12px 8px}.ph-slot select,.ph-slot input{flex:1;min-width:100px}
 .ph-log{width:100%;display:flex;flex-direction:column;gap:4px;margin-top:4px}.ph-logrow{display:flex;align-items:center;gap:8px;background:#141518;border:1px solid var(--line);padding:4px 8px;flex-wrap:wrap}.ph-logrow b{font-family:var(--lab);color:var(--yel2);min-width:50px}.ph-logrow small{width:100%;color:var(--mute)}
 .ph-rest{display:flex;gap:6px;padding:4px 12px}.ph-rest .btn{flex:1}
@@ -4653,3 +4652,42 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .hrs em{text-align:center}.hrs em.no{background:none;padding:0}
 .hrx{text-align:center}
 @media (max-width:600px){.hrow{grid-template-columns:auto minmax(0,1fr) auto}}
+/* 10-28 망령: 파티 현황 (js/ppool.js) — 휴대폰 「파티」 앱 · 던전 PT 패널 창이 같이 쓴다. 4식 = 빨강, 6령 = 파랑 */
+.pp{display:flex;flex-direction:column;gap:10px;padding:2px 0 8px}
+.pp-sec{border:1px solid var(--line);border-left:3px solid var(--line2);border-radius:6px;background:rgba(255,255,255,.03);padding:8px 10px}
+.pp-sec.o{border-left-color:#e3101f}.pp-sec.c{border-left-color:#2f6fe0}.pp-sec.m{border-left-color:var(--yel2)}
+.pp-h{display:flex;align-items:baseline;gap:8px;margin-bottom:6px;font-size:13px}.pp-h b{letter-spacing:.02em}
+.pp-n{margin-left:auto;font-family:var(--mono,monospace);font-size:18px;font-weight:700;color:var(--fg)}.pp-n small{font-size:12px;color:var(--mute);font-weight:400}.pp-n.z{color:var(--red2)}
+.pp-tag{margin-left:auto;font-size:10px;padding:1px 6px;border-radius:9px;background:rgba(240,200,74,.15);color:var(--yel2)}
+.pp-list{display:flex;flex-direction:column;gap:3px}
+.pp-it{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:2px 8px;padding:5px 7px;border-radius:4px;background:rgba(255,255,255,.04);font-size:12.5px}
+.pp-it.z{opacity:.45}.pp-it.z .pp-nm{text-decoration:line-through}
+.pp-nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}
+.pp-cnt{font-family:var(--mono,monospace);font-weight:700;font-size:13px}.pp-cnt small{color:var(--mute);font-weight:400;font-size:11px}
+.pp-who{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:3px 10px;font-size:11px;color:var(--fg2)}.pp-who>span{display:inline-flex;align-items:center;gap:4px;white-space:nowrap}.pp-who>span.z{opacity:.5}
+.pp-pip{display:flex;gap:3px;align-items:center}.pp-pip i{width:9px;height:9px;border-radius:50%;border:1px solid var(--line2);background:transparent}
+.pp-sec.o .pp-pip i.on{background:#e3101f;border-color:#e3101f}.pp-sec.c .pp-pip i.on{background:#2f6fe0;border-color:#2f6fe0}
+.pp-pip em{font-style:normal;font-size:11px;font-family:var(--mono,monospace);color:var(--fg2)}
+.pp-empty{font-size:12px;color:var(--mute);padding:4px 2px}
+.pp-tr+.pp-tr{margin-top:8px;padding-top:8px;border-top:1px dashed var(--line)}
+.pp-trh{display:flex;align-items:baseline;gap:6px;font-size:12.5px;margin-bottom:4px}.pp-trh small{color:var(--mute);font-family:var(--mono,monospace)}
+.pp-mon{display:flex;gap:8px;align-items:center;padding:3px 0}
+.pp-mon img,.pp-av{width:34px;height:34px;flex:none;border-radius:50%;object-fit:cover;background:var(--panel2);border:1px solid var(--line)}
+.pp-mon.dead img,.pp-mon.dead .pp-av{filter:grayscale(1);opacity:.5}
+.pp-mi{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.pp-mt{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 6px;font-size:12.5px}.pp-mt small{color:var(--mute)}
+.pp-st{font-size:10px;padding:0 5px;border-radius:3px;background:rgba(160,90,255,.25);color:#d8c2ff}.pp-st.dead{background:rgba(255,77,106,.2);color:var(--red2)}
+.pp-hp{display:flex;align-items:center;gap:6px}.pp-hp .mono{font-size:11px;color:var(--fg2);white-space:nowrap;font-family:var(--mono,monospace)}
+.pp-bar{flex:1;height:6px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden}.pp-bar i{display:block;height:100%;background:#3ccf6e}
+.pp-bar.yel i{background:#f0c84a}.pp-bar.red i{background:var(--red2)}.pp-bar.dead i{background:transparent}
+.pp-item{font-size:10.5px;color:var(--mute)}.pp-item::before{content:'🎒 '}
+/* 휴대폰 「파티」 화면 */
+.ph-pp{display:flex;gap:6px;padding:6px 12px 4px;font-size:12px}.ph-pp span{flex:1;padding:4px 6px;border:1px solid rgba(255,255,255,.18);border-radius:4px;background:rgba(255,255,255,.04);text-align:center;white-space:nowrap}.ph-pp b{font-family:var(--mono,monospace);font-size:14px;margin:0 2px;color:var(--yel2)}.ph-pp b.z{color:#ff6b6b}
+.ph-ptab{display:flex;gap:4px;padding:4px 12px}.ph-ptab button{flex:1;font:inherit;font-size:12px;padding:5px 0;border-radius:14px;border:1px solid rgba(255,255,255,.18);background:transparent;color:inherit;cursor:pointer}.ph-ptab button.on{background:var(--yel2);color:#111;border-color:var(--yel2);font-weight:700}
+.ph-ppbody{padding:4px 12px 10px}
+/* 던전 PT 패널 맨 위 파티 요약 (누르면 파티 현황 창) */
+.dgpt-pp{display:flex;flex-wrap:wrap;align-items:center;gap:3px 6px;width:100%;padding:4px 6px;font:inherit;font-size:10.5px;line-height:1.2;text-align:left;color:inherit;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);border-radius:4px;cursor:pointer}
+.dgpt-pp:hover{border-color:var(--dg-acc,#f0c84a)}.dgpt-pp i{font-style:normal;font-weight:700;margin-right:2px}
+.dgpt-pp span{white-space:nowrap}.dgpt-pp b{font-family:var(--mono,monospace);font-size:12px;color:var(--dg-acc,#f0c84a)}.dgpt-pp b.z{color:#ff6b6b}.dgpt-pp em{margin-left:auto;font-style:normal;opacity:.7}
+#dgPl .pp{min-width:min(520px,82vw)}
+@media (min-width:700px){#dgPl .pp-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:4px}#dgPl .pp-sec.m{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:0 14px}#dgPl .pp-sec.m>.pp-h{grid-column:1/-1}#dgPl .pp-sec.m .pp-tr+.pp-tr{margin-top:0;padding-top:0;border-top:0}}
