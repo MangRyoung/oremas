@@ -94,7 +94,7 @@ tr.hl td{background:var(--accent-soft)!important}
 /* ===== 생성기 탭 (10-28 망령 「야생/스킬/특성/던전 생성 UI 개선 · 조건 설정 · 마음에 드는 건 DB 로」) ===== */
 .gsub{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}.gsub button{border:1px solid var(--line);background:var(--surface);color:var(--muted);padding:6px 14px;border-radius:999px;cursor:pointer;font:600 13px var(--body)}.gsub button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .glay{display:grid;grid-template-columns:320px minmax(0,1fr);gap:12px;align-items:start}@media(max-width:900px){.glay{grid-template-columns:minmax(0,1fr)}}
-.gcond{position:sticky;top:8px}.gcond .card{margin:0}.gcond .gf{display:flex;flex-direction:column;gap:3px;margin-bottom:10px}.gcond .gf>b{font-size:12px;color:var(--muted);font-weight:700}
+@media(min-width:901px){.gcond{position:sticky;top:8px}}.gcond .card{margin:0}.gcond .gf{display:flex;flex-direction:column;gap:3px;margin-bottom:10px}.gcond .gf>b{font-size:12px;color:var(--muted);font-weight:700}
 .gchips.gpt{max-height:180px;overflow:auto;border:1px solid var(--line,#e3e6ec);border-radius:8px;padding:6px}.gchips{display:flex;flex-wrap:wrap;gap:4px}.gchips .chip{font-size:12px;padding:2px 9px}.gchips .tc{cursor:pointer;opacity:.38;transition:opacity .1s}.gchips .tc.on{opacity:1;outline:2px solid var(--ink);outline-offset:1px}
 .gres{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px}
 .gcard{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;box-shadow:var(--shadow);min-width:0;position:relative}.gcard.pick{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft)}
