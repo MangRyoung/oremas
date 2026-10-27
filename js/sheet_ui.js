@@ -576,5 +576,5 @@ if(old){for(const k of ['orderStyle','commandStyle','orderCount','orderBase','or
    if(td&&!(t.stands||[]).length){const d=(td.data&&td.data.data)||td.data||{};const st=sOf(d);if(st.length){await A().set(['roster','trainers',t.id,'stands'],st);await A().set(['roster','trainers',t.id,'standActive'],+d.standActive||0);n++}}
    for(const m of ms){if((m.stands||[]).length)continue;const pd=(mk.pokemon||[]).find(x=>x.id===(m.rid||m.id));if(!pd)continue;const d=(pd.data&&pd.data.data)||pd.data||{};const st=sOf(d);if(st.length){await A().set(['roster','mons',m.id,'stands'],st);await A().set(['roster','mons',m.id,'standActive'],+d.standActive||0);n++}}}
   if(n)A().toast(`제작기에서 스탠딩 ${n}개를 채웠다`)}
- return {render,UI,importTrainer,potFmt,potKind,POT_HUE,openCard,cardHTML,fillStands,openImport};
+ return {render,UI,itemSock,importTrainer,potFmt,potKind,POT_HUE,openCard,cardHTML,fillStands,openImport};
 })();
