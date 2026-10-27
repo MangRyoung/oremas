@@ -18,7 +18,7 @@ window.OM_IMPORT=(()=>{
   return {deck:(Array.isArray(d.deck)?d.deck:[]).filter(x=>x&&x.n).map(x=>({n:String(x.n).slice(0,60),q:Math.max(0,Math.min(99,Math.floor(+x.q||1)))})),deckName:String(d.deckName||'').slice(0,40),id:doc.id||d.id,name:d.name||'트레이너',kind:d.kind==='npc'?'npc':'pc',image:d.image||'',stands:standsOf(d.stands),standActive:+d.standActive||0,
    ranks:Object.assign({육성:'',지시:'',통솔:'',능력:''},d.ranks||{}),base:d.base||{},detail:d.detail||{},
    unique:(d.unique||[]).filter(u=>u&&u.name).map(u=>{const o={name:u.name,eff:brN(u.eff||'')};for(const k of ['color','icon','sub'])if(u[k])o[k]=String(u[k]).slice(0,40);if(u.line)o.line=String(u.line).slice(0,80);const dsl=String(u.auto||'').trim();if(dsl){const r=window.OM_FX?window.OM_FX.parse(dsl):{ops:[]};o.auto={dsl,ops:r.ops}}return o}),
-   pids:d.pids||[],solo:!!d.solo,folder:d.folder||'',fields:fieldsOf(d.fields),
+   pids:d.pids||[],solo:(d.solo==3||d.solo==='3')?3:!!d.solo,folder:d.folder||'',fields:fieldsOf(d.fields),
    /* 10-26 망령: 제작기 프로필 「상세」 — 백스토리 · 성격 · 말투 · 선호하는 전법 … [{k,v}] */
    bio:(Array.isArray(d.bio)?d.bio:[]).filter(x=>x&&String(x.v||'').trim()).map(x=>({k:String(x.k||'메모').slice(0,40),v:String(x.v||'').slice(0,8000)})),
    /* 10-25 망령: SP · 서포터 — 제작기 「포인트」 칸 아래에서 적는다. 자동화 구문은 고유 포텐셜과 같은 꼴로 */
