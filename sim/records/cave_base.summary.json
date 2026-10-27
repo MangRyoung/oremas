@@ -1,0 +1,84 @@
+{
+ "id": "cave_base",
+ "dungeon": "cave",
+ "party": [
+  "카이",
+  "미오",
+  "레온"
+ ],
+ "n": 500,
+ "seed": 1,
+ "adjust": {},
+ "policy": {
+  "cover": "fail",
+  "who": "best",
+  "partner": "match"
+ },
+ "at": "2026-10-27T03:23:35.107Z",
+ "snapshot": "sample_snapshot.json",
+ "agg": {
+  "n": 500,
+  "wipe": 0,
+  "boss": 1,
+  "endHp": 0.8429960000000003,
+  "fainted": 0,
+  "monsTotal": 6,
+  "checks": 3,
+  "ok": 0.502,
+  "crit": 0.096,
+  "cost": 0.486,
+  "fail": 0.012,
+  "fumble": 0,
+  "alone": 0.6666666666666666,
+  "covers": 0.996,
+  "inou": 0,
+  "injuries": 0.996,
+  "injAny": 0.556,
+  "injSevere": 0.01,
+  "penDmg": 56.33,
+  "perCheck": {
+   "발자국을 읽어 안전한 길을 고른다 (7)": {
+    "n": 500,
+    "ok": 456,
+    "cost": 44,
+    "fail": 0,
+    "alone": 0,
+    "inou": 0,
+    "cover": 16,
+    "who": {
+     "카이": 500
+    }
+   },
+   "겁먹은 포켓몬을 달래 바위턱을 건넌다 (9)": {
+    "n": 500,
+    "ok": 170,
+    "cost": 312,
+    "fail": 18,
+    "alone": 500,
+    "inou": 0,
+    "cover": 206,
+    "who": {
+     "카이": 500
+    }
+   },
+   "무너진 갱도를 뚫는다 (11)": {
+    "n": 500,
+    "ok": 127,
+    "cost": 373,
+    "fail": 0,
+    "alone": 500,
+    "inou": 0,
+    "cover": 276,
+    "who": {
+     "미오": 493,
+     "카이": 7
+    }
+   }
+  },
+  "battles": 3,
+  "bturns": 1.3333333333333333,
+  "bkos": 0,
+  "orders": 0.004,
+  "commands": 6
+ }
+}

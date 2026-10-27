@@ -1,0 +1,109 @@
+{
+ "id": "wild__wildLv=5_wildExtra=1",
+ "dungeon": "factory",
+ "party": [
+  "카이",
+  "미오",
+  "레온"
+ ],
+ "n": 500,
+ "seed": 1,
+ "adjust": {
+  "wildLv": 5,
+  "wildExtra": 1
+ },
+ "policy": {
+  "cover": "fail"
+ },
+ "at": "2026-10-27T03:26:00.508Z",
+ "snapshot": "sample_snapshot.json",
+ "agg": {
+  "n": 500,
+  "wipe": 0.286,
+  "boss": 0.716,
+  "endHp": 0.19603199999999987,
+  "fainted": 3.83,
+  "monsTotal": 6,
+  "checks": 5,
+  "ok": 0.6128,
+  "crit": 0.0912,
+  "cost": 0.376,
+  "fail": 0.0112,
+  "fumble": 0,
+  "alone": 0.6408,
+  "covers": 1.058,
+  "inou": 0,
+  "injuries": 1.058,
+  "injAny": 0.67,
+  "injSevere": 0.286,
+  "penDmg": 26.148,
+  "perCheck": {
+   "정문 안내판을 해독한다 (7)": {
+    "n": 500,
+    "ok": 456,
+    "cost": 44,
+    "fail": 0,
+    "alone": 0,
+    "inou": 0,
+    "cover": 16,
+    "who": {
+     "카이": 500
+    }
+   },
+   "들키지 않고 잠입 (9)": {
+    "n": 500,
+    "ok": 217,
+    "cost": 283,
+    "fail": 0,
+    "alone": 500,
+    "inou": 0,
+    "cover": 175,
+    "who": {
+     "카이": 500
+    }
+   },
+   "겁먹은 야생 무리를 진정시킨다 (7)": {
+    "n": 500,
+    "ok": 289,
+    "cost": 191,
+    "fail": 20,
+    "alone": 500,
+    "inou": 0,
+    "cover": 94,
+    "who": {
+     "카이": 500
+    }
+   },
+   "감전 복도 돌파 (9)": {
+    "n": 500,
+    "ok": 196,
+    "cost": 296,
+    "fail": 8,
+    "alone": 500,
+    "inou": 0,
+    "cover": 178,
+    "who": {
+     "카이": 236,
+     "미오": 264
+    }
+   },
+   "배전반 퍼즐을 푼다 (9)": {
+    "n": 500,
+    "ok": 374,
+    "cost": 126,
+    "fail": 0,
+    "alone": 102,
+    "inou": 0,
+    "cover": 66,
+    "who": {
+     "카이": 500
+    }
+   }
+  },
+  "battles": 3,
+  "bturns": 3.5006666666666666,
+  "bkos": 3.83,
+  "orders": 6.658,
+  "commands": 9.778
+ }
+}

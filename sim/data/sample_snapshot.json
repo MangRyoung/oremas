@@ -1,0 +1,25 @@
+{"at":"sample","folders":[{"id":"f_sample","data":{"name":"시뮬 샘플"}}],
+"trainers":[
+ {"id":"t_kai","data":{"name":"카이","kind":"pc","folder":"f_sample","ranks":{"지시":"A","육성":"B","통솔":"B","능력":"D"},"pids":["p_k1","p_k2","p_k3","p_k4"]}},
+ {"id":"t_mio","data":{"name":"미오","kind":"pc","folder":"f_sample","ranks":{"지시":"C","육성":"A","통솔":"C","능력":"B"},"pids":["p_m1","p_m2","p_m3","p_m4"]}},
+ {"id":"t_leon","data":{"name":"레온","kind":"pc","folder":"f_sample","ranks":{"지시":"C","육성":"C","통솔":"C","능력":"AA"},"pids":["p_l1","p_l2","p_l3","p_l4"]}},
+ {"id":"t_dan","data":{"name":"단","kind":"pc","folder":"f_sample","ranks":{"지시":"D","육성":"C","통솔":"A","능력":"C"},"pids":["p_d1","p_d2","p_d3","p_d4"]}}
+],
+"pokemon":[
+ {"id":"p_k1","data":{"tid":"t_kai","name":"번개늑대","t1":"전기","t2":"-","base":[75,105,70,70,70,110],"ability":"","item":"","moves":[{"name":"와일드볼트"},{"name":"깨물어부수기"},{"name":"전광석화"},{"name":"번개"}],"pride":"B","dist":10,"pots":[],"partner":true}},
+ {"id":"p_k2","data":{"tid":"t_kai","name":"철갑거북","t1":"물","t2":"강철","base":[95,70,115,80,95,40],"ability":"","item":"","moves":[{"name":"하이드로펌프"},{"name":"러스터캐논"},{"name":"철벽"},{"name":"냉동빔"}],"pride":"C","dist":5,"pots":[]}},
+ {"id":"p_k3","data":{"tid":"t_kai","name":"불꽃여우","t1":"불꽃","t2":"에스퍼","base":[70,65,65,110,85,100],"ability":"","item":"","moves":[{"name":"화염방사"},{"name":"사이코키네시스"},{"name":"명상"},{"name":"섀도볼"}],"pride":"C","dist":0,"pots":[]}},
+ {"id":"p_k4","data":{"tid":"t_kai","name":"바위곰","t1":"바위","t2":"격투","base":[90,115,90,50,70,55],"ability":"","item":"","moves":[{"name":"스톤에지"},{"name":"인파이트"},{"name":"지진"},{"name":"벌크업"}],"pride":"C","dist":0,"pots":[]}},
+ {"id":"p_m1","data":{"tid":"t_mio","name":"약초사슴","t1":"풀","t2":"-","base":[90,60,80,100,95,70],"ability":"","item":"","moves":[{"name":"기가드레인"},{"name":"광합성"},{"name":"씨뿌리기"},{"name":"에너지볼"}],"pride":"B","dist":10,"pots":[],"partner":true}},
+ {"id":"p_m2","data":{"tid":"t_mio","name":"눈꽃족제비","t1":"얼음","t2":"-","base":[70,95,60,65,60,120],"ability":"","item":"","moves":[{"name":"고드름떨구기"},{"name":"아쿠아제트"},{"name":"칼춤"},{"name":"깜짝베기"}],"pride":"C","dist":5,"pots":[]}},
+ {"id":"p_m3","data":{"tid":"t_mio","name":"진흙멧돼지","t1":"땅","t2":"-","base":[100,100,80,50,60,50],"ability":"","item":"","moves":[{"name":"지진"},{"name":"돌떨구기"},{"name":"몸통박치기"},{"name":"하품"}],"pride":"C","dist":0,"pots":[]}},
+ {"id":"p_m4","data":{"tid":"t_mio","name":"바람제비","t1":"비행","t2":"노말","base":[65,85,60,50,60,125],"ability":"","item":"","moves":[{"name":"브레이브버드"},{"name":"유턴"},{"name":"전광석화"},{"name":"날개쉬기"}],"pride":"C","dist":0,"pots":[]}},
+ {"id":"p_l1","data":{"tid":"t_leon","name":"어둠표범","t1":"악","t2":"-","base":[70,110,60,70,60,115],"ability":"","item":"","moves":[{"name":"깨물어부수기"},{"name":"기습"},{"name":"사이코팽"},{"name":"놀래키기"}],"pride":"B","dist":10,"pots":[],"partner":true}},
+ {"id":"p_l2","data":{"tid":"t_leon","name":"수정나방","t1":"벌레","t2":"에스퍼","base":[75,55,70,105,85,90],"ability":"","item":"","moves":[{"name":"벌레의야단법석"},{"name":"사이코키네시스"},{"name":"나비춤"},{"name":"기합구슬"}],"pride":"C","dist":5,"pots":[]}},
+ {"id":"p_l3","data":{"tid":"t_leon","name":"물뱀","t1":"물","t2":"독","base":[80,70,70,95,90,75],"ability":"","item":"","moves":[{"name":"열탕"},{"name":"오물폭탄"},{"name":"냉동빔"},{"name":"맹독"}],"pride":"C","dist":0,"pots":[]}},
+ {"id":"p_l4","data":{"tid":"t_leon","name":"쇠망치","t1":"강철","t2":"땅","base":[85,120,110,45,60,45],"ability":"","item":"","moves":[{"name":"아이언헤드"},{"name":"지진"},{"name":"스톤에지"},{"name":"철벽"}],"pride":"C","dist":0,"pots":[]}},
+ {"id":"p_d1","data":{"tid":"t_dan","name":"햇살용","t1":"드래곤","t2":"불꽃","base":[90,110,80,95,80,95],"ability":"","item":"","moves":[{"name":"드래곤클로"},{"name":"화염방사"},{"name":"용의춤"},{"name":"지진"}],"pride":"A","dist":10,"pots":[],"partner":true}},
+ {"id":"p_d2","data":{"tid":"t_dan","name":"방패달팽이","t1":"벌레","t2":"강철","base":[90,55,125,50,100,25],"ability":"","item":"","moves":[{"name":"아이언헤드"},{"name":"자이로볼"},{"name":"철벽"},{"name":"독압정"}],"pride":"B","dist":5,"pots":[]}},
+ {"id":"p_d3","data":{"tid":"t_dan","name":"요정토끼","t1":"페어리","t2":"-","base":[80,60,70,100,100,80],"ability":"","item":"","moves":[{"name":"문포스"},{"name":"매지컬샤인"},{"name":"명상"},{"name":"전기자석파"}],"pride":"C","dist":0,"pots":[]}},
+ {"id":"p_d4","data":{"tid":"t_dan","name":"얼음부엉이","t1":"얼음","t2":"비행","base":[75,60,65,105,80,95],"ability":"","item":"","moves":[{"name":"냉동빔"},{"name":"에어슬래시"},{"name":"사이코키네시스"},{"name":"오로라베일"}],"pride":"C","dist":0,"pots":[]}}
+]}

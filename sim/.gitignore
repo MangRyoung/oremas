@@ -1,0 +1,3 @@
+records/*.jsonl
+data/snapshot.json
+node_modules/

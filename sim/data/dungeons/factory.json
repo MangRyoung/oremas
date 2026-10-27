@@ -1,0 +1,12 @@
+{"id":"factory","name":"버려진 발전소","wn":2,"note":"무진 한 세션 분량의 윗선 — 체크 5 · 배틀 3 · 숨돌리기 1. 10-26 감우봇 던전 시험(시험: 감우봇 발전소)의 방 구성을 따랐다.",
+ "rooms":[
+  {"id":"gate","t":"entry","name":"정문","check":{"label":"정문 안내판을 해독한다","stat":"지시","target":7,"hint":"any","pen":{"fail":{"memo":"길을 돌아간다 — 시간 지체"},"cost":{"memo":"흔적을 남김"}}}},
+  {"id":"hall","t":"trap","name":"녹슨 복도","check":{"label":"들키지 않고 잠입","stat":"지시","target":9,"step":-1,"hint":"type:악","pen":{"fail":{"memo":"경계 강화","oc":1},"cost":{"memo":"흔적을 남김"}}}},
+  {"id":"line","t":"battle","name":"조립 라인","enc":{"pack":"factory_pack"}},
+  {"id":"turbine","t":"puzzle","name":"터빈실","check":{"label":"겁먹은 야생 무리를 진정시킨다","stat":"통솔","target":7,"hint":"type:노말","pen":{"fail":{"dmg":"1/8","memo":"무리가 날뛴다"},"cost":{"memo":"시간이 걸림"}}}},
+  {"id":"safe","t":"safe","name":"휴게실","rest":"breath"},
+  {"id":"shock","t":"trap","name":"감전 복도","check":{"label":"감전 복도 돌파","stat":"육성","target":9,"hint":"type:땅","pen":{"fail":{"dmg":"1/4","st":"Paralysis","memo":"감전"},"cost":{"dmg":"1/8"}}}},
+  {"id":"store","t":"battle","name":"창고","enc":{"pack":"factory_pack"}},
+  {"id":"panel","t":"puzzle","name":"배전반","check":{"label":"배전반 퍼즐을 푼다","stat":"지시","target":9,"twice":1,"hint":"type:전기","pen":{"fail":{"memo":"비상 전원 가동 — 보스가 경계 상태","rk":{"speed":-1}},"cost":{"oo":1,"memo":"지시 혼선"}}}},
+  {"id":"core","t":"boss","name":"발전기 심부","enc":{"pack":"factory_boss","boss":true}}],
+ "path":["gate","hall","line","turbine","safe","shock","store","panel","core"]}

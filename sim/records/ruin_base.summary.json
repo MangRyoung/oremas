@@ -1,0 +1,71 @@
+{
+ "id": "ruin_base",
+ "dungeon": "ruin",
+ "party": [
+  "카이",
+  "미오",
+  "레온"
+ ],
+ "n": 500,
+ "seed": 1,
+ "adjust": {},
+ "policy": {
+  "cover": "fail",
+  "who": "best",
+  "partner": "match"
+ },
+ "at": "2026-10-27T03:23:42.711Z",
+ "snapshot": "sample_snapshot.json",
+ "agg": {
+  "n": 500,
+  "wipe": 0,
+  "boss": 1,
+  "endHp": 0.5498319999999993,
+  "fainted": 1.68,
+  "monsTotal": 6,
+  "checks": 2,
+  "ok": 0.832,
+  "crit": 0.081,
+  "cost": 0.168,
+  "fail": 0,
+  "fumble": 0,
+  "alone": 0.5,
+  "covers": 0.13,
+  "inou": 1,
+  "injuries": 0.13,
+  "injAny": 0.13,
+  "injSevere": 0,
+  "penDmg": 0,
+  "perCheck": {
+   "무너진 담 너머로 기척을 살핀다 (7)": {
+    "n": 500,
+    "ok": 332,
+    "cost": 168,
+    "fail": 0,
+    "alone": 500,
+    "inou": 0,
+    "cover": 65,
+    "who": {
+     "미오": 500
+    }
+   },
+   "무너지는 계단을 붙잡는다 (9)": {
+    "n": 500,
+    "ok": 500,
+    "cost": 0,
+    "fail": 0,
+    "alone": 0,
+    "inou": 500,
+    "cover": 0,
+    "who": {
+     "레온": 500
+    }
+   }
+  },
+  "battles": 2,
+  "bturns": 2.514,
+  "bkos": 1.68,
+  "orders": 3.04,
+  "commands": 4.672
+ }
+}

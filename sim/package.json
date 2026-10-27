@@ -1,0 +1,1 @@
+{"name":"mangketmon-sim","private":true,"version":"0.1.0","description":"망켓몬 던전 · 스킬 체크 시뮬레이터 (oremas/sim)","bin":{"sim":"bin/sim.js"},"scripts":{"fetch":"node bin/sim.js fetch","run":"node bin/sim.js run --scenario data/scenarios/base.json","report":"node bin/sim.js report"},"engines":{"node":">=18"}}

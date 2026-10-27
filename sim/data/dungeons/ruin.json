@@ -1,0 +1,7 @@
+{"id":"ruin","name":"숲 속의 폐가","wn":2,"note":"짧은 세션 — 체크 2 · 배틀 2 · 휴식 없음. 이능 체크 하나 포함.",
+ "rooms":[
+  {"id":"yard","t":"entry","name":"마당","check":{"label":"무너진 담 너머로 기척을 살핀다","stat":"육성","target":7,"hint":"type:비행","pen":{"fail":{"memo":"기습 — 첫 배틀에 늪 무리가 먼저 움직인다","rk":{"speed":-1}},"cost":{"memo":"시간이 걸림"}}}},
+  {"id":"marsh","t":"battle","name":"물에 잠긴 거실","enc":{"pack":"swamp_pack"}},
+  {"id":"attic","t":"puzzle","name":"다락","check":{"label":"무너지는 계단을 붙잡는다","stat":"능력","target":9,"mode":"inou","hint":"type:격투","pen":{"fail":{"dmg":"1/4","memo":"추락"},"cost":{"dmg":"1/8"}}}},
+  {"id":"nest","t":"boss","name":"둥지","enc":{"pack":"ruin_boss","boss":true}}],
+ "path":["yard","marsh","attic","nest"]}

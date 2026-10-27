@@ -1,0 +1,10 @@
+{"id":"cave","name":"검은모래 동굴","wn":2,"note":"중간 세션 — 체크 3(매우 어려움 1 포함) · 배틀 3 · 짧은 휴식 1.",
+ "rooms":[
+  {"id":"mouth","t":"entry","name":"동굴 입구","check":{"label":"발자국을 읽어 안전한 길을 고른다","stat":"지시","target":7,"hint":"any","pen":{"fail":{"memo":"길을 잃어 되돌아간다"},"cost":{"memo":"시간이 걸림"}}}},
+  {"id":"bats","t":"battle","name":"박쥐 굴","enc":{"pack":"cave_pack"}},
+  {"id":"ledge","t":"trap","name":"좁은 바위턱","check":{"label":"겁먹은 포켓몬을 달래 바위턱을 건넌다","stat":"통솔","target":9,"hint":"type:비행","pen":{"fail":{"dmg":"1/4","memo":"미끄러짐"},"cost":{"dmg":"1/8"}}}},
+  {"id":"pool","t":"safe","name":"지하 샘","rest":"short"},
+  {"id":"crack","t":"puzzle","name":"무너진 갱도","check":{"label":"무너진 갱도를 뚫는다","stat":"육성","target":11,"hint":"type:격투","pen":{"fail":{"dmg":"1/4","st":"Confusion","memo":"낙석"},"cost":{"dmg":"1/8"}}}},
+  {"id":"deep","t":"battle","name":"깊은 굴","enc":{"pack":"cave_pack"}},
+  {"id":"lord","t":"boss","name":"가장 깊은 곳","enc":{"pack":"cave_boss","boss":true}}],
+ "path":["mouth","bats","ledge","pool","crack","deep","lord"]}
