@@ -65,7 +65,7 @@ window.OM_BATTLE=(()=>{
   const p=tbl[s];const roll=o.forced?0:d(o,10000);
   return {stage:s,chance:p,roll,crit:!!o.forced||roll<=p}}
  function critStage(atk,def,o){
-  o=o||{};let s=+((atk.rank||{}).critical||0)+(+o.buff||0)+(+o.input||0)+(+o.order||0)+(o.scopeLens?1:0)+(has(atk,'FocusEnergy')?2:0);
+  o=o||{};let s=+((atk.rank||{}).critical||0)+(+o.buff||0)+(+o.input||0)+(+o.order||0)+(o.scopeLens?1:0)+Math.max(has(atk,'FocusEnergy')?2:0,has(atk,'DragonCheer')?((atk.types||[]).includes('Dragon')?2:1):0);   /* 10-27 망령: 드래곤옐 (기충전과 겹치면 큰 쪽) */
   s-= +((def.guard||{}).critical||0);s+=(+o.cond||0);return s}
 
  /* ----- 대미지 (calculate_damage + damage_target) : 상성·자속은 제외 -----
