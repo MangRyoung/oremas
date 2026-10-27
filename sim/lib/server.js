@@ -17,7 +17,7 @@ function start(opt){opt=opt||{};const port=+opt.port||8470;
  let SNAP=null,SNAPF='';const snap=()=>{const f=snapFile();if(!SNAP||SNAPF!==f||(fs.statSync(f).mtimeMs!==SNAP._mt)){SNAP=P.readSnap(f);SNAP._mt=fs.statSync(f).mtimeMs;SNAPF=f}return SNAP};
  const state=()=>({snapshot:{file:path.basename(snapFile()),at:snap().at,sample:path.basename(snapFile())==='sample_snapshot.json'},trainers:P.list(snap()).map(t=>Object.assign(t,trainerDetail(t))),types:typeColors(),
   dungeons:(()=>{const o=D.dungeons();for(const k in o){o[k].id=o[k].id||k;delete o[k]._file}return o})(),
-  wild:{species:WD.species(),packs:WD.packs()},scenarios:Object.fromEntries(listDir(path.join(SIM,'data','scenarios'),'.json').map(f=>[f.replace(/(\.private)?\.json$/,''),readJ(path.join(SIM,'data','scenarios',f))])),
+  wild:{species:WD.species(),packs:WD.packs(),db:(()=>{try{const WB=require('./wilddb.js');const d=WB.read();return {v:d.v||0,at:d.at,seed:d.seed,count:d.count,coverage:d.coverage,entries:WB.fullV2(d)}}catch(e){return {v:0,entries:[],error:e.message}}})(),kinds:require('./mongen.js').KIND_NAMES,habitats:require('./mongen.js').HAB},scenarios:Object.fromEntries(listDir(path.join(SIM,'data','scenarios'),'.json').map(f=>[f.replace(/(\.private)?\.json$/,''),readJ(path.join(SIM,'data','scenarios',f))])),
   records:(KO.reset(),R.summaries().map(s=>({id:s.id,private:!!s.private,comment:s.comment||'',name:s.name||s.id,dungeon:s.dungeon,dungeonName:KO.dungeonName(s.dungeon),party:s.party,partyKo:KO.partyKo(s.party,P.list(snap())),desc:KO.describe(s.adjust,s.policy),n:s.n,adjust:s.adjust,policy:s.policy,at:s.at,agg:s.agg}))),
   journal:J.all(),kinds:J.KINDS,
   combos:[R.REC,R.PRIV].flatMap(d=>listDir(d,'.json').filter(f=>!f.endsWith('.summary.json')).map(f=>{try{const j=readJ(path.join(d,f));return j.rows&&j.pool&&j.size&&j.rows[0]&&j.rows[0].dungeons?Object.assign(j,{private:d===R.PRIV}):null   /* calib · autocheck 기록(rows 꼴이 다름)은 빼고 조합 훑기만 */}catch(e){return null}}).filter(Boolean)),
@@ -50,6 +50,11 @@ function start(opt){opt=opt||{};const port=+opt.port||8470;
   saveJournal:b=>{const e=J.save(b.entry||{});R.build();return {ok:1,entry:e}},
   deleteJournal:b=>{J.remove(String(b.id));R.build();return {ok:1}},
   saveComment:b=>{if(!J.comment(String(b.id),b.text))throw new Error('기록 없음: '+b.id);R.build();return {ok:1}},
+  /* 야생 DB (10-27 밤): 전체 저장 · 한 체 다시 만들기 · 새로 생성 */
+  saveWildDb:b=>{const WB=require('./wilddb.js');const d=WB.read();d.entries=(b.entries||[]).map(e=>{const o=Object.assign({},e);delete o.missing;if(o.origin==='old'){return {id:o.id,origin:'old',sp:o.sp,name:o.name,types:o.types,base:o.base,ability:o.ability,pride:o.pride,grade:o.grade,hab:o.hab,role:o.role,moves:o.moves||[],note:o.note||''}}return o});d.v=2;WB.write(d);WB._cache=null;return {ok:1}},
+  regenMon:b=>{const M=require('./mongen.js'),BT=require('./battle.js'),WB=require('./wilddb.js');const rng=BT.mkRng(+b.seed||Date.now()%1e6);const used=new Set(WB.fullV2().map(e=>e.name));const m=M.one(rng,{step:b.step||'C',kind:b.kind||undefined,types:b.types&&b.types.length?b.types:null,used});if(!m)throw new Error('이 조건으로는 계단을 못 맞췄어요');m.id=b.id||'';return {mon:m}},
+  genWildDb:b=>{const WB=require('./wilddb.js');const db=WB.buildV2({seed:+b.seed||27,W,rounds:2,reviewN:16});db.at=new Date().toISOString();if(b.save){WB.write(db);WB._cache=null}return {count:db.count,coverage:db.coverage,n:db.entries.length,review:db.review&&{avgWr:db.review.avgWr,flagged:db.review.flagged,log:db.review.log}}},
+  prideCalc:b=>{const P2=require('./pride.js');const r=P2.calc(b.base||[],!!b.dual);return {ct:r.ct,step:r.step,real:r.real,legal:P2.legal(b.base||[])}},
   saveFeedback:b=>{fs.mkdirSync(path.join(SIM,'records'),{recursive:true});fs.writeFileSync(path.join(SIM,'records','feedback.md'),String(b.text||''));return {ok:1}},
   deleteRecord:b=>{const RD=R.findRec(String(b.id))||R.REC;for(const ext of ['.summary.json','.jsonl']){const f=safe(RD,String(b.id)+ext);if(fs.existsSync(f))fs.unlinkSync(f)}R.build();return {ok:1}},
   fetch:async()=>{const F=require('./fetch.js');const r=await F.fetchAll(path.join(SIM,'data','snapshot.json'));SNAP=null;return r},

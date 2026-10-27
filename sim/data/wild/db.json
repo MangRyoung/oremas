@@ -1,0 +1,7001 @@
+{
+ "v": 2,
+ "seed": 27,
+ "review": {
+  "log": [
+   {
+    "round": 0,
+    "redo": 27
+   },
+   {
+    "round": 1,
+    "redo": 7
+   },
+   {
+    "round": 2,
+    "redo": 3
+   },
+   {
+    "round": 3,
+    "redo": 0
+   }
+  ],
+  "n": 24,
+  "avgWr": 0.5,
+  "flagged": 3,
+  "flags": [
+   "얼음올빼미: 공격 둘 다 낮음",
+   "점박이토끼: 약함",
+   "발차기두루미: 과강"
+  ]
+ },
+ "source": "오리지널 = lib/mongen.js(제작기 customCalc 검증) · 올드 = 제작기 도감(MKM_DB.old)",
+ "plan": {
+  "orig": {
+   "C": 63,
+   "C+": 42,
+   "B": 18,
+   "B+": 12,
+   "A": 15
+  },
+  "old": {
+   "C": 21,
+   "C+": 14,
+   "B": 6,
+   "B+": 4,
+   "A": 5
+  }
+ },
+ "count": {
+  "orig C": 63,
+  "orig C+": 42,
+  "orig B": 18,
+  "orig B+": 12,
+  "orig A": 15,
+  "old C": 21,
+  "old C+": 14,
+  "old B": 6,
+  "old B+": 4,
+  "old A": 5
+ },
+ "habitats": {
+  "폐가": [
+   "고스트",
+   "악",
+   "독",
+   "에스퍼",
+   "노말"
+  ],
+  "동굴": [
+   "바위",
+   "땅",
+   "강철",
+   "고스트",
+   "격투"
+  ],
+  "숲": [
+   "풀",
+   "벌레",
+   "독",
+   "비행",
+   "노말",
+   "페어리"
+  ],
+  "연구소": [
+   "전기",
+   "강철",
+   "독",
+   "에스퍼",
+   "노말"
+  ],
+  "유적": [
+   "바위",
+   "고스트",
+   "에스퍼",
+   "땅",
+   "드래곤"
+  ],
+  "바다": [
+   "물",
+   "얼음",
+   "비행",
+   "전기"
+  ],
+  "화산": [
+   "불꽃",
+   "바위",
+   "땅",
+   "드래곤",
+   "격투"
+  ],
+  "설원": [
+   "얼음",
+   "강철",
+   "페어리",
+   "물"
+  ]
+ },
+ "coverage": {
+  "폐가": {
+   "C": 54,
+   "B": 19,
+   "A": 7
+  },
+  "동굴": {
+   "C": 59,
+   "B": 16,
+   "A": 9
+  },
+  "숲": {
+   "C": 55,
+   "B": 17,
+   "A": 5
+  },
+  "연구소": {
+   "C": 52,
+   "B": 17,
+   "A": 8
+  },
+  "유적": {
+   "C": 54,
+   "B": 17,
+   "A": 8
+  },
+  "바다": {
+   "C": 43,
+   "B": 12,
+   "A": 5
+  },
+  "화산": {
+   "C": 50,
+   "B": 14,
+   "A": 7
+  },
+  "설원": {
+   "C": 42,
+   "B": 12,
+   "A": 9
+  }
+ },
+ "entries": [
+  {
+   "id": "w001",
+   "origin": "orig",
+   "name": "둥근오소리",
+   "types": [
+    "노말"
+   ],
+   "base": [
+    86,
+    88,
+    78,
+    73,
+    74,
+    76
+   ],
+   "ability": "도플갱어",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소"
+   ],
+   "role": "일반",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "숲에서 들판을 어슬렁거리는 오소리. 어디 하나 모자람이 없다.",
+   "ct": 475,
+   "review": {
+    "wr": 0.29,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w002",
+   "origin": "orig",
+   "name": "고드름열쇠",
+   "types": [
+    "고스트",
+    "얼음"
+   ],
+   "base": [
+    64,
+    42,
+    78,
+    110,
+    70,
+    106
+   ],
+   "ability": "나이트위저드",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "동굴",
+    "유적",
+    "바다",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "특수 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "동굴에서 밤에만 모습을 드러내는 열쇠. 얼음 기운도 띤다. 거리를 두고 쏘아 댄다.",
+   "ct": 473,
+   "review": {
+    "wr": 0.67,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w003",
+   "origin": "orig",
+   "name": "가시독뱀",
+   "types": [
+    "독"
+   ],
+   "base": [
+    65,
+    48,
+    67,
+    110,
+    62,
+    115
+   ],
+   "ability": "살인바이러스",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소"
+   ],
+   "role": "일반",
+   "kind": "특수 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "숲에서 독을 흘리며 기어다니는 뱀. 거리를 두고 쏘아 댄다.",
+   "ct": 468,
+   "review": {
+    "wr": 0.58,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w004",
+   "origin": "orig",
+   "name": "최면제비",
+   "types": [
+    "에스퍼",
+    "비행"
+   ],
+   "base": [
+    85,
+    105,
+    78,
+    38,
+    61,
+    108
+   ],
+   "ability": "정의의마음",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소",
+    "유적",
+    "바다"
+   ],
+   "role": "일반",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "유적에서 눈빛으로 사람을 홀리는 제비. 비행 기운도 띤다. 빠르고 세게 들이받는다.",
+   "ct": 479,
+   "review": {
+    "wr": 0.75,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w005",
+   "origin": "orig",
+   "name": "황토하마",
+   "types": [
+    "땅"
+   ],
+   "base": [
+    103,
+    36,
+    84,
+    90,
+    106,
+    43
+   ],
+   "ability": "흙덩이",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "특수 벽",
+   "dual": false,
+   "moves": [],
+   "concept": "유적에서 흙 속을 파고드는 하마. 좀처럼 지치지 않는다.",
+   "ct": 470,
+   "review": {
+    "wr": 0.38,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w006",
+   "origin": "orig",
+   "name": "얼음올빼미",
+   "types": [
+    "얼음"
+   ],
+   "base": [
+    73,
+    82,
+    78,
+    68,
+    74,
+    85
+   ],
+   "ability": "동결",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "바다",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "바다에서 서리를 내뿜는 올빼미. 어디 하나 모자람이 없다.",
+   "ct": 460,
+   "review": {
+    "wr": 0.33,
+    "flags": [
+     "공격 둘 다 낮음"
+    ],
+    "round": 3
+   }
+  },
+  {
+   "id": "w007",
+   "origin": "orig",
+   "name": "화염두더지",
+   "types": [
+    "불꽃",
+    "땅"
+   ],
+   "base": [
+    67,
+    86,
+    69,
+    88,
+    72,
+    86
+   ],
+   "ability": "화정",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "쌍두",
+   "dual": true,
+   "moves": [],
+   "concept": "화산에서 잿더미 속에서 몸을 데우는 두더지. 땅 기운도 띤다. 힘과 기교를 다 쓴다.",
+   "ct": 468,
+   "review": {
+    "wr": 0.33,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w008",
+   "origin": "orig",
+   "name": "얼룩사슴",
+   "types": [
+    "페어리",
+    "노말"
+   ],
+   "base": [
+    84,
+    108,
+    66,
+    44,
+    70,
+    105
+   ],
+   "ability": "요정",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "설원에서 달콤한 향으로 꾀는 사슴. 노말 기운도 띤다. 빠르고 세게 들이받는다.",
+   "ct": 477,
+   "review": {
+    "wr": 0.67,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w009",
+   "origin": "orig",
+   "name": "오염족제비",
+   "types": [
+    "악",
+    "독"
+   ],
+   "base": [
+    80,
+    90,
+    70,
+    65,
+    73,
+    77
+   ],
+   "ability": "흑심",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소"
+   ],
+   "role": "일반",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "폐가에서 어둠 속에서 뒤를 노리는 족제비. 독 기운도 띤다. 어디 하나 모자람이 없다.",
+   "ct": 455,
+   "review": {
+    "wr": 0.63,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w010",
+   "origin": "orig",
+   "name": "석거북",
+   "types": [
+    "바위"
+   ],
+   "base": [
+    105,
+    97,
+    92,
+    35,
+    62,
+    58
+   ],
+   "ability": "포이즌힐",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "동굴에서 바위인 척 가만히 있는 거북. 맞아 가며 버틴다.",
+   "ct": 459,
+   "review": {
+    "wr": 0.5,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w011",
+   "origin": "orig",
+   "name": "실지네",
+   "types": [
+    "벌레"
+   ],
+   "base": [
+    75,
+    42,
+    72,
+    112,
+    66,
+    108
+   ],
+   "ability": "스타트러쉬",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "숲"
+   ],
+   "role": "일반",
+   "kind": "특수 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "숲에서 그늘에서 집을 짓는 지네. 거리를 두고 쏘아 댄다.",
+   "ct": 479,
+   "review": {
+    "wr": 0.29,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w012",
+   "origin": "orig",
+   "name": "쇠무쇠종",
+   "types": [
+    "강철"
+   ],
+   "base": [
+    85,
+    35,
+    63,
+    115,
+    63,
+    106
+   ],
+   "ability": "참철",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "연구소",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "특수 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "설원에서 몸이 쇠처럼 굳은 종. 거리를 두고 쏘아 댄다.",
+   "ct": 480,
+   "review": {
+    "wr": 0.38,
+    "flags": [],
+    "round": 1
+   }
+  },
+  {
+   "id": "w013",
+   "origin": "orig",
+   "name": "용거북",
+   "types": [
+    "드래곤"
+   ],
+   "base": [
+    95,
+    102,
+    103,
+    48,
+    66,
+    43
+   ],
+   "ability": "슬로우스타터",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "유적에서 오래 살아 비늘이 굳은 거북. 맞아 가며 버틴다.",
+   "ct": 457,
+   "review": {
+    "wr": 0.71,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w014",
+   "origin": "orig",
+   "name": "뇌갑옷",
+   "types": [
+    "전기",
+    "강철"
+   ],
+   "base": [
+    98,
+    95,
+    97,
+    44,
+    79,
+    65
+   ],
+   "ability": "하늘을달리는자",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "연구소",
+    "바다",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "연구소에서 털끝에 전기를 모으는 갑옷. 강철 기운도 띤다. 맞아 가며 버틴다.",
+   "ct": 480,
+   "review": {
+    "wr": 0.54,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w015",
+   "origin": "orig",
+   "name": "발차기곰",
+   "types": [
+    "격투"
+   ],
+   "base": [
+    104,
+    103,
+    94,
+    39,
+    62,
+    49
+   ],
+   "ability": "발끈",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "동굴에서 제 영역에 들어온 것과 맞붙는 곰. 맞아 가며 버틴다.",
+   "ct": 458,
+   "review": {
+    "wr": 0.5,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w016",
+   "origin": "orig",
+   "name": "이슬거북",
+   "types": [
+    "물"
+   ],
+   "base": [
+    95,
+    100,
+    94,
+    40,
+    67,
+    61
+   ],
+   "ability": "촉촉보이스",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "바다",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "설원에서 물가에 숨어 기다리는 거북. 맞아 가며 버틴다.",
+   "ct": 457,
+   "review": {
+    "wr": 0.63,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w017",
+   "origin": "orig",
+   "name": "하늘고양이",
+   "types": [
+    "에스퍼",
+    "비행"
+   ],
+   "base": [
+    99,
+    95,
+    100,
+    33,
+    79,
+    60
+   ],
+   "ability": "염동력",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소",
+    "유적",
+    "바다"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "유적에서 눈빛으로 사람을 홀리는 고양이. 비행 기운도 띤다. 맞아 가며 버틴다.",
+   "ct": 475,
+   "review": {
+    "wr": 0.63,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w018",
+   "origin": "orig",
+   "name": "근육두루미",
+   "types": [
+    "격투"
+   ],
+   "base": [
+    83,
+    86,
+    74,
+    81,
+    66,
+    90
+   ],
+   "ability": "애널라이즈",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "쌍두",
+   "dual": true,
+   "moves": [],
+   "concept": "화산에서 제 영역에 들어온 것과 맞붙는 두루미. 힘과 기교를 다 쓴다.",
+   "ct": 480,
+   "review": {
+    "wr": 0.46,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w019",
+   "origin": "orig",
+   "name": "오염나무늘보",
+   "types": [
+    "풀",
+    "독"
+   ],
+   "base": [
+    101,
+    96,
+    92,
+    34,
+    64,
+    60
+   ],
+   "ability": "부식",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "숲에서 이끼와 덩굴을 몸에 키우는 나무늘보. 독 기운도 띤다. 맞아 가며 버틴다.",
+   "ct": 456,
+   "review": {
+    "wr": 0.63,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w020",
+   "origin": "orig",
+   "name": "독오염두꺼비",
+   "types": [
+    "독"
+   ],
+   "base": [
+    102,
+    92,
+    100,
+    43,
+    79,
+    44
+   ],
+   "ability": "부식",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "숲에서 독을 흘리며 기어다니는 두꺼비. 맞아 가며 버틴다.",
+   "ct": 464,
+   "review": {
+    "wr": 0.58,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w021",
+   "origin": "orig",
+   "name": "뿔거북",
+   "types": [
+    "드래곤"
+   ],
+   "base": [
+    105,
+    46,
+    91,
+    81,
+    99,
+    46
+   ],
+   "ability": "마이페이스",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "특수 벽",
+   "dual": false,
+   "moves": [],
+   "concept": "화산에서 오래 살아 비늘이 굳은 거북. 좀처럼 지치지 않는다.",
+   "ct": 476,
+   "review": {
+    "wr": 0.54,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w022",
+   "origin": "orig",
+   "name": "구름두루미",
+   "types": [
+    "비행"
+   ],
+   "base": [
+    69,
+    90,
+    84,
+    54,
+    87,
+    74
+   ],
+   "ability": "비상",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "숲",
+    "바다"
+   ],
+   "role": "일반",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "바다에서 바람을 타고 내려다보는 두루미. 어디 하나 모자람이 없다.",
+   "ct": 458,
+   "review": {
+    "wr": 0.33,
+    "flags": [],
+    "round": 1
+   }
+  },
+  {
+   "id": "w023",
+   "origin": "orig",
+   "name": "그을음거북",
+   "types": [
+    "불꽃",
+    "땅"
+   ],
+   "base": [
+    87,
+    39,
+    64,
+    115,
+    59,
+    106
+   ],
+   "ability": "맹화",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "특수 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "화산에서 잿더미 속에서 몸을 데우는 거북. 땅 기운도 띤다. 거리를 두고 쏘아 댄다.",
+   "ct": 479,
+   "review": {
+    "wr": 0.46,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w024",
+   "origin": "orig",
+   "name": "파도물소라",
+   "types": [
+    "물"
+   ],
+   "base": [
+    105,
+    40,
+    92,
+    83,
+    98,
+    53
+   ],
+   "ability": "수생",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "바다",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "특수 벽",
+   "dual": false,
+   "moves": [],
+   "concept": "설원에서 물가에 숨어 기다리는 소라. 좀처럼 지치지 않는다.",
+   "ct": 480,
+   "review": {
+    "wr": 0.33,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w025",
+   "origin": "orig",
+   "name": "망령등불",
+   "types": [
+    "고스트"
+   ],
+   "base": [
+    70,
+    89,
+    72,
+    76,
+    81,
+    80
+   ],
+   "ability": "배짱",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "동굴",
+    "유적"
+   ],
+   "role": "일반",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "폐가에서 밤에만 모습을 드러내는 등불. 어디 하나 모자람이 없다.",
+   "ct": 468,
+   "review": {
+    "wr": 0.38,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w026",
+   "origin": "orig",
+   "name": "암코뿔소",
+   "types": [
+    "땅",
+    "바위"
+   ],
+   "base": [
+    74,
+    85,
+    82,
+    62,
+    73,
+    80
+   ],
+   "ability": "오기",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "화산에서 흙 속을 파고드는 코뿔소. 바위 기운도 띤다. 어디 하나 모자람이 없다.",
+   "ct": 456,
+   "review": {
+    "wr": 0.38,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w027",
+   "origin": "orig",
+   "name": "물보라매",
+   "types": [
+    "비행",
+    "물"
+   ],
+   "base": [
+    76,
+    91,
+    84,
+    55,
+    89,
+    85
+   ],
+   "ability": "수은",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "숲",
+    "바다",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "숲에서 바람을 타고 내려다보는 매. 물 기운도 띤다. 어디 하나 모자람이 없다.",
+   "ct": 480,
+   "review": {
+    "wr": 0.58,
+    "flags": [],
+    "round": 1
+   }
+  },
+  {
+   "id": "w028",
+   "origin": "orig",
+   "name": "둥근회색토끼",
+   "types": [
+    "노말"
+   ],
+   "base": [
+    78,
+    37,
+    62,
+    113,
+    64,
+    106
+   ],
+   "ability": "깨어진갑옷",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소"
+   ],
+   "role": "일반",
+   "kind": "특수 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "연구소에서 들판을 어슬렁거리는 토끼. 거리를 두고 쏘아 댄다.",
+   "ct": 469,
+   "review": {
+    "wr": 0.25,
+    "flags": [],
+    "round": 1
+   }
+  },
+  {
+   "id": "w029",
+   "origin": "orig",
+   "name": "광석곰",
+   "types": [
+    "바위"
+   ],
+   "base": [
+    105,
+    40,
+    76,
+    81,
+    111,
+    46
+   ],
+   "ability": "슬로우스타터",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "특수 벽",
+   "dual": false,
+   "moves": [],
+   "concept": "화산에서 바위인 척 가만히 있는 곰. 좀처럼 지치지 않는다.",
+   "ct": 464,
+   "review": {
+    "wr": 0.29,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w030",
+   "origin": "orig",
+   "name": "거품곰",
+   "types": [
+    "얼음",
+    "물"
+   ],
+   "base": [
+    101,
+    44,
+    80,
+    88,
+    99,
+    49
+   ],
+   "ability": "급류",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "바다",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "특수 벽",
+   "dual": false,
+   "moves": [],
+   "concept": "바다에서 서리를 내뿜는 곰. 물 기운도 띤다. 좀처럼 지치지 않는다.",
+   "ct": 464,
+   "review": {
+    "wr": 0.33,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w031",
+   "origin": "orig",
+   "name": "모래악어",
+   "types": [
+    "드래곤",
+    "땅"
+   ],
+   "base": [
+    101,
+    96,
+    97,
+    32,
+    62,
+    62
+   ],
+   "ability": "용린",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "유적에서 오래 살아 비늘이 굳은 악어. 땅 기운도 띤다. 맞아 가며 버틴다.",
+   "ct": 461,
+   "review": {
+    "wr": 0.75,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w032",
+   "origin": "orig",
+   "name": "요정토끼",
+   "types": [
+    "페어리"
+   ],
+   "base": [
+    72,
+    90,
+    77,
+    61,
+    80,
+    84
+   ],
+   "ability": "요정",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "숲",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "숲에서 달콤한 향으로 꾀는 토끼. 어디 하나 모자람이 없다.",
+   "ct": 464,
+   "review": {
+    "wr": 0.63,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w033",
+   "origin": "orig",
+   "name": "늪늑대",
+   "types": [
+    "악",
+    "독"
+   ],
+   "base": [
+    104,
+    100,
+    99,
+    32,
+    64,
+    44
+   ],
+   "ability": "살인바이러스",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "폐가에서 어둠 속에서 뒤를 노리는 늑대. 독 기운도 띤다. 맞아 가며 버틴다.",
+   "ct": 456,
+   "review": {
+    "wr": 0.63,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w034",
+   "origin": "orig",
+   "name": "갑각종",
+   "types": [
+    "강철",
+    "벌레"
+   ],
+   "base": [
+    85,
+    39,
+    66,
+    104,
+    74,
+    107
+   ],
+   "ability": "부식",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "숲",
+    "연구소",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "특수 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "설원에서 몸이 쇠처럼 굳은 종. 벌레 기운도 띤다. 거리를 두고 쏘아 댄다.",
+   "ct": 478,
+   "review": {
+    "wr": 0.42,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w035",
+   "origin": "orig",
+   "name": "덩굴딱정벌레",
+   "types": [
+    "벌레",
+    "풀"
+   ],
+   "base": [
+    100,
+    100,
+    99,
+    37,
+    68,
+    46
+   ],
+   "ability": "심록",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "숲"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "숲에서 그늘에서 집을 짓는 딱정벌레. 풀 기운도 띤다. 맞아 가며 버틴다.",
+   "ct": 456,
+   "review": {
+    "wr": 0.38,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w036",
+   "origin": "orig",
+   "name": "전기고양이",
+   "types": [
+    "전기"
+   ],
+   "base": [
+    92,
+    91,
+    74,
+    53,
+    71,
+    75
+   ],
+   "ability": "하늘을달리는자",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "연구소",
+    "바다"
+   ],
+   "role": "일반",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "바다에서 털끝에 전기를 모으는 고양이. 어디 하나 모자람이 없다.",
+   "ct": 456,
+   "review": {
+    "wr": 0.63,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w037",
+   "origin": "orig",
+   "name": "칠흑까마귀",
+   "types": [
+    "고스트",
+    "악"
+   ],
+   "base": [
+    85,
+    87,
+    81,
+    56,
+    79,
+    75
+   ],
+   "ability": "배짱",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "동굴",
+    "유적"
+   ],
+   "role": "일반",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "유적에서 밤에만 모습을 드러내는 까마귀. 악 기운도 띤다. 어디 하나 모자람이 없다.",
+   "ct": 463,
+   "review": {
+    "wr": 0.42,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w038",
+   "origin": "orig",
+   "name": "소라수달",
+   "types": [
+    "물"
+   ],
+   "base": [
+    73,
+    110,
+    59,
+    38,
+    66,
+    111
+   ],
+   "ability": "촉촉보이스",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "바다",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "바다에서 물가에 숨어 기다리는 수달. 빠르고 세게 들이받는다.",
+   "ct": 464,
+   "review": {
+    "wr": 0.46,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w039",
+   "origin": "orig",
+   "name": "숯멧돼지",
+   "types": [
+    "불꽃"
+   ],
+   "base": [
+    103,
+    92,
+    98,
+    37,
+    76,
+    53
+   ],
+   "ability": "맹화",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "화산에서 잿더미 속에서 몸을 데우는 멧돼지. 맞아 가며 버틴다.",
+   "ct": 466,
+   "review": {
+    "wr": 0.38,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w040",
+   "origin": "orig",
+   "name": "별빛소라",
+   "types": [
+    "페어리",
+    "물"
+   ],
+   "base": [
+    98,
+    97,
+    100,
+    46,
+    71,
+    44
+   ],
+   "ability": "꾸덕꾸덕굳기",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "숲",
+    "바다",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "설원에서 달콤한 향으로 꾀는 소라. 물 기운도 띤다. 맞아 가며 버틴다.",
+   "ct": 458,
+   "review": {
+    "wr": 0.5,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w041",
+   "origin": "orig",
+   "name": "독액진흙지네",
+   "types": [
+    "독"
+   ],
+   "base": [
+    71,
+    108,
+    72,
+    39,
+    72,
+    111
+   ],
+   "ability": "포이즌힐",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소"
+   ],
+   "role": "일반",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "연구소에서 독을 흘리며 기어다니는 지네. 빠르고 세게 들이받는다.",
+   "ct": 478,
+   "review": {
+    "wr": 0.75,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w042",
+   "origin": "orig",
+   "name": "점토두더지",
+   "types": [
+    "땅"
+   ],
+   "base": [
+    67,
+    105,
+    77,
+    48,
+    60,
+    113
+   ],
+   "ability": "헤롱헤롱멘탈",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "화산에서 흙 속을 파고드는 두더지. 빠르고 세게 들이받는다.",
+   "ct": 470,
+   "review": {
+    "wr": 0.38,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w043",
+   "origin": "orig",
+   "name": "새싹꽃여우",
+   "types": [
+    "풀"
+   ],
+   "base": [
+    107,
+    36,
+    84,
+    85,
+    105,
+    43
+   ],
+   "ability": "두꺼운지방",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "숲"
+   ],
+   "role": "일반",
+   "kind": "특수 벽",
+   "dual": false,
+   "moves": [],
+   "concept": "숲에서 이끼와 덩굴을 몸에 키우는 여우. 좀처럼 지치지 않는다.",
+   "ct": 470,
+   "review": {
+    "wr": 0.33,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w044",
+   "origin": "orig",
+   "name": "꿀갑옷",
+   "types": [
+    "강철",
+    "벌레"
+   ],
+   "base": [
+    84,
+    88,
+    69,
+    76,
+    79,
+    78
+   ],
+   "ability": "스틸스킨",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "숲",
+    "연구소",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "동굴에서 몸이 쇠처럼 굳은 갑옷. 벌레 기운도 띤다. 어디 하나 모자람이 없다.",
+   "ct": 474,
+   "review": {
+    "wr": 0.46,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w045",
+   "origin": "orig",
+   "name": "광석골렘",
+   "types": [
+    "바위"
+   ],
+   "base": [
+    103,
+    100,
+    98,
+    44,
+    74,
+    44
+   ],
+   "ability": "달마모드",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "유적에서 바위인 척 가만히 있는 골렘. 맞아 가며 버틴다.",
+   "ct": 467,
+   "review": {
+    "wr": 0.42,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w046",
+   "origin": "orig",
+   "name": "깃두루미",
+   "types": [
+    "비행"
+   ],
+   "base": [
+    72,
+    108,
+    61,
+    33,
+    65,
+    115
+   ],
+   "ability": "비상",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "숲",
+    "바다"
+   ],
+   "role": "일반",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "바다에서 바람을 타고 내려다보는 두루미. 빠르고 세게 들이받는다.",
+   "ct": 465,
+   "review": {
+    "wr": 0.75,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w047",
+   "origin": "orig",
+   "name": "투사멧돼지",
+   "types": [
+    "격투"
+   ],
+   "base": [
+    100,
+    95,
+    92,
+    40,
+    79,
+    67
+   ],
+   "ability": "미라잡기",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "화산에서 제 영역에 들어온 것과 맞붙는 멧돼지. 맞아 가며 버틴다.",
+   "ct": 476,
+   "review": {
+    "wr": 0.5,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w048",
+   "origin": "orig",
+   "name": "철갑여우",
+   "types": [
+    "얼음",
+    "강철"
+   ],
+   "base": [
+    76,
+    46,
+    78,
+    109,
+    61,
+    109
+   ],
+   "ability": "두꺼운모피",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "연구소",
+    "바다",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "특수 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "설원에서 서리를 내뿜는 여우. 강철 기운도 띤다. 거리를 두고 쏘아 댄다.",
+   "ct": 480,
+   "review": {
+    "wr": 0.46,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w049",
+   "origin": "orig",
+   "name": "칠흑검은여우",
+   "types": [
+    "악"
+   ],
+   "base": [
+    84,
+    86,
+    59,
+    86,
+    60,
+    89
+   ],
+   "ability": "저주받은바디",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가"
+   ],
+   "role": "일반",
+   "kind": "쌍두",
+   "dual": true,
+   "moves": [],
+   "concept": "폐가에서 어둠 속에서 뒤를 노리는 여우. 힘과 기교를 다 쓴다.",
+   "ct": 464,
+   "review": {
+    "wr": 0.38,
+    "flags": [],
+    "round": 1
+   }
+  },
+  {
+   "id": "w050",
+   "origin": "orig",
+   "name": "무쇠도마뱀",
+   "types": [
+    "바위",
+    "강철"
+   ],
+   "base": [
+    71,
+    42,
+    68,
+    104,
+    79,
+    109
+   ],
+   "ability": "부식",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "연구소",
+    "유적",
+    "화산",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "특수 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "화산에서 바위인 척 가만히 있는 도마뱀. 강철 기운도 띤다. 거리를 두고 쏘아 댄다.",
+   "ct": 473,
+   "review": {
+    "wr": 0.25,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w051",
+   "origin": "orig",
+   "name": "유령사슴",
+   "types": [
+    "풀",
+    "고스트"
+   ],
+   "base": [
+    67,
+    106,
+    75,
+    47,
+    64,
+    109
+   ],
+   "ability": "심록",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "동굴",
+    "숲",
+    "유적"
+   ],
+   "role": "일반",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "숲에서 이끼와 덩굴을 몸에 키우는 사슴. 고스트 기운도 띤다. 빠르고 세게 들이받는다.",
+   "ct": 468,
+   "review": {
+    "wr": 0.67,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w052",
+   "origin": "orig",
+   "name": "달원숭이",
+   "types": [
+    "에스퍼"
+   ],
+   "base": [
+    98,
+    94,
+    94,
+    41,
+    82,
+    60
+   ],
+   "ability": "사이코스킨",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "연구소",
+    "유적"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "폐가에서 눈빛으로 사람을 홀리는 원숭이. 맞아 가며 버틴다.",
+   "ct": 471,
+   "review": {
+    "wr": 0.38,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w053",
+   "origin": "orig",
+   "name": "물고양이",
+   "types": [
+    "에스퍼",
+    "물"
+   ],
+   "base": [
+    96,
+    94,
+    90,
+    32,
+    81,
+    54
+   ],
+   "ability": "사이코스킨",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "연구소",
+    "유적",
+    "바다",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "연구소에서 눈빛으로 사람을 홀리는 고양이. 물 기운도 띤다. 맞아 가며 버틴다.",
+   "ct": 456,
+   "review": {
+    "wr": 0.33,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w054",
+   "origin": "orig",
+   "name": "번개가오리",
+   "types": [
+    "전기"
+   ],
+   "base": [
+    63,
+    89,
+    79,
+    84,
+    79,
+    84
+   ],
+   "ability": "통전",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "연구소",
+    "바다"
+   ],
+   "role": "일반",
+   "kind": "쌍두",
+   "dual": true,
+   "moves": [],
+   "concept": "연구소에서 털끝에 전기를 모으는 가오리. 힘과 기교를 다 쓴다.",
+   "ct": 478,
+   "review": {
+    "wr": 0.58,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w055",
+   "origin": "orig",
+   "name": "흙거북",
+   "types": [
+    "땅"
+   ],
+   "base": [
+    78,
+    88,
+    77,
+    55,
+    72,
+    86
+   ],
+   "ability": "흙덩이",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "동굴에서 흙 속을 파고드는 거북. 어디 하나 모자람이 없다.",
+   "ct": 456,
+   "review": {
+    "wr": 0.46,
+    "flags": [],
+    "round": 1
+   }
+  },
+  {
+   "id": "w056",
+   "origin": "orig",
+   "name": "바람곰",
+   "types": [
+    "얼음",
+    "비행"
+   ],
+   "base": [
+    95,
+    99,
+    90,
+    44,
+    64,
+    64
+   ],
+   "ability": "냉기",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "숲",
+    "바다",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "설원에서 서리를 내뿜는 곰. 비행 기운도 띤다. 맞아 가며 버틴다.",
+   "ct": 456,
+   "review": {
+    "wr": 0.58,
+    "flags": [],
+    "round": 1
+   }
+  },
+  {
+   "id": "w057",
+   "origin": "orig",
+   "name": "들족제비",
+   "types": [
+    "노말"
+   ],
+   "base": [
+    73,
+    36,
+    78,
+    107,
+    69,
+    109
+   ],
+   "ability": "슬로우스타터",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소"
+   ],
+   "role": "일반",
+   "kind": "특수 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "연구소에서 들판을 어슬렁거리는 족제비. 거리를 두고 쏘아 댄다.",
+   "ct": 479,
+   "review": {
+    "wr": 0.25,
+    "flags": [],
+    "round": 1
+   }
+  },
+  {
+   "id": "w058",
+   "origin": "orig",
+   "name": "덩굴열쇠",
+   "types": [
+    "고스트",
+    "풀"
+   ],
+   "base": [
+    75,
+    107,
+    72,
+    47,
+    59,
+    108
+   ],
+   "ability": "나이트위저드",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "동굴",
+    "숲",
+    "유적"
+   ],
+   "role": "일반",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "폐가에서 밤에만 모습을 드러내는 열쇠. 풀 기운도 띤다. 빠르고 세게 들이받는다.",
+   "ct": 468,
+   "review": {
+    "wr": 0.67,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w059",
+   "origin": "orig",
+   "name": "풀잎잠자리",
+   "types": [
+    "벌레",
+    "풀"
+   ],
+   "base": [
+    80,
+    115,
+    56,
+    47,
+    71,
+    109
+   ],
+   "ability": "나쁜벌레",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "숲"
+   ],
+   "role": "일반",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "숲에서 그늘에서 집을 짓는 잠자리. 풀 기운도 띤다. 빠르고 세게 들이받는다.",
+   "ct": 480,
+   "review": {
+    "wr": 0.5,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w060",
+   "origin": "orig",
+   "name": "정전기반딧불",
+   "types": [
+    "전기"
+   ],
+   "base": [
+    79,
+    88,
+    88,
+    57,
+    89,
+    76
+   ],
+   "ability": "반도체",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "연구소",
+    "바다"
+   ],
+   "role": "일반",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "바다에서 털끝에 전기를 모으는 반딧불. 어디 하나 모자람이 없다.",
+   "ct": 479,
+   "review": {
+    "wr": 0.29,
+    "flags": [],
+    "round": 2
+   }
+  },
+  {
+   "id": "w061",
+   "origin": "orig",
+   "name": "뿔가오리",
+   "types": [
+    "드래곤"
+   ],
+   "base": [
+    76,
+    89,
+    82,
+    68,
+    86,
+    77
+   ],
+   "ability": "도플갱어",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "유적에서 오래 살아 비늘이 굳은 가오리. 어디 하나 모자람이 없다.",
+   "ct": 478,
+   "review": {
+    "wr": 0.54,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w062",
+   "origin": "orig",
+   "name": "깃까마귀",
+   "types": [
+    "비행"
+   ],
+   "base": [
+    83,
+    90,
+    89,
+    63,
+    71,
+    76
+   ],
+   "ability": "정찰비행",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "숲",
+    "바다"
+   ],
+   "role": "일반",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "숲에서 바람을 타고 내려다보는 까마귀. 어디 하나 모자람이 없다.",
+   "ct": 472,
+   "review": {
+    "wr": 0.38,
+    "flags": [],
+    "round": 1
+   }
+  },
+  {
+   "id": "w063",
+   "origin": "orig",
+   "name": "잿여우",
+   "types": [
+    "불꽃"
+   ],
+   "base": [
+    75,
+    85,
+    92,
+    68,
+    74,
+    84
+   ],
+   "ability": "단열",
+   "abilityTo": 1,
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "화산에서 잿더미 속에서 몸을 데우는 여우. 어디 하나 모자람이 없다.",
+   "ct": 478,
+   "review": {
+    "wr": 0.29,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w064",
+   "origin": "orig",
+   "name": "둥근양",
+   "types": [
+    "페어리",
+    "노말"
+   ],
+   "base": [
+    102,
+    51,
+    92,
+    87,
+    109,
+    55
+   ],
+   "ability": "마성의미모",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "특수 벽",
+   "dual": false,
+   "moves": [],
+   "concept": "숲에서 달콤한 향으로 꾀는 양. 노말 기운도 띤다. 좀처럼 지치지 않는다.",
+   "ct": 503,
+   "review": {
+    "wr": 0.63,
+    "flags": [],
+    "round": 1
+   }
+  },
+  {
+   "id": "w065",
+   "origin": "orig",
+   "name": "유충두꺼비",
+   "types": [
+    "독",
+    "벌레"
+   ],
+   "base": [
+    75,
+    98,
+    84,
+    59,
+    77,
+    88
+   ],
+   "ability": "나쁜벌레",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소"
+   ],
+   "role": "일반",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "숲에서 독을 흘리며 기어다니는 두꺼비. 벌레 기운도 띤다. 어디 하나 모자람이 없다.",
+   "ct": 481,
+   "review": {
+    "wr": 0.71,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w066",
+   "origin": "orig",
+   "name": "쇠찌릿종",
+   "types": [
+    "강철",
+    "전기"
+   ],
+   "base": [
+    106,
+    43,
+    92,
+    90,
+    106,
+    56
+   ],
+   "ability": "하늘을달리는자",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "연구소",
+    "바다",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "특수 벽",
+   "dual": false,
+   "moves": [],
+   "concept": "연구소에서 몸이 쇠처럼 굳은 종. 전기 기운도 띤다. 좀처럼 지치지 않는다.",
+   "ct": 502,
+   "review": {
+    "wr": 0.63,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w067",
+   "origin": "orig",
+   "name": "점박이족제비",
+   "types": [
+    "노말"
+   ],
+   "base": [
+    88,
+    97,
+    62,
+    95,
+    76,
+    79
+   ],
+   "ability": "늑대",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소"
+   ],
+   "role": "일반",
+   "kind": "쌍두",
+   "dual": true,
+   "moves": [],
+   "concept": "연구소에서 들판을 어슬렁거리는 족제비. 힘과 기교를 다 쓴다.",
+   "ct": 492,
+   "review": {
+    "wr": 0.33,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w068",
+   "origin": "orig",
+   "name": "그림자여우",
+   "types": [
+    "에스퍼",
+    "고스트"
+   ],
+   "base": [
+    88,
+    98,
+    73,
+    84,
+    70,
+    90
+   ],
+   "ability": "염동력",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "동굴",
+    "연구소",
+    "유적"
+   ],
+   "role": "일반",
+   "kind": "쌍두",
+   "dual": true,
+   "moves": [],
+   "concept": "폐가에서 눈빛으로 사람을 홀리는 여우. 고스트 기운도 띤다. 힘과 기교를 다 쓴다.",
+   "ct": 503,
+   "review": {
+    "wr": 0.67,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w069",
+   "origin": "orig",
+   "name": "유령박쥐",
+   "types": [
+    "고스트",
+    "악"
+   ],
+   "base": [
+    71,
+    121,
+    66,
+    48,
+    73,
+    115
+   ],
+   "ability": "나이트위저드",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "동굴",
+    "유적"
+   ],
+   "role": "일반",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "동굴에서 밤에만 모습을 드러내는 박쥐. 악 기운도 띤다. 빠르고 세게 들이받는다.",
+   "ct": 498,
+   "review": {
+    "wr": 0.63,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w070",
+   "origin": "orig",
+   "name": "거품가오리",
+   "types": [
+    "물"
+   ],
+   "base": [
+    85,
+    47,
+    71,
+    108,
+    80,
+    110
+   ],
+   "ability": "수은",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "바다",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "특수 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "설원에서 물가에 숨어 기다리는 가오리. 거리를 두고 쏘아 댄다.",
+   "ct": 502,
+   "review": {
+    "wr": 0.42,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w071",
+   "origin": "orig",
+   "name": "철권두루미",
+   "types": [
+    "격투"
+   ],
+   "base": [
+    80,
+    89,
+    87,
+    68,
+    94,
+    82
+   ],
+   "ability": "예지몽",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "화산에서 제 영역에 들어온 것과 맞붙는 두루미. 어디 하나 모자람이 없다.",
+   "ct": 501,
+   "review": {
+    "wr": 0.54,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w072",
+   "origin": "orig",
+   "name": "물보라거북",
+   "types": [
+    "물"
+   ],
+   "base": [
+    107,
+    106,
+    89,
+    53,
+    64,
+    60
+   ],
+   "ability": "수생",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "바다",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "바다에서 물가에 숨어 기다리는 거북. 맞아 가며 버틴다.",
+   "ct": 485,
+   "review": {
+    "wr": 0.63,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w073",
+   "origin": "orig",
+   "name": "어둠종",
+   "types": [
+    "악",
+    "강철"
+   ],
+   "base": [
+    77,
+    38,
+    65,
+    116,
+    72,
+    117
+   ],
+   "ability": "참철",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "동굴",
+    "연구소",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "특수 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "폐가에서 어둠 속에서 뒤를 노리는 종. 강철 기운도 띤다. 거리를 두고 쏘아 댄다.",
+   "ct": 496,
+   "review": {
+    "wr": 0.54,
+    "flags": [],
+    "round": 1
+   }
+  },
+  {
+   "id": "w074",
+   "origin": "orig",
+   "name": "흙두더지",
+   "types": [
+    "땅"
+   ],
+   "base": [
+    72,
+    114,
+    77,
+    52,
+    68,
+    117
+   ],
+   "ability": "냉기",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "화산에서 흙 속을 파고드는 두더지. 빠르고 세게 들이받는다.",
+   "ct": 502,
+   "review": {
+    "wr": 0.42,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w075",
+   "origin": "orig",
+   "name": "갑각달팽이",
+   "types": [
+    "풀",
+    "벌레"
+   ],
+   "base": [
+    107,
+    102,
+    101,
+    48,
+    65,
+    53
+   ],
+   "ability": "나쁜벌레",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "숲"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "숲에서 이끼와 덩굴을 몸에 키우는 달팽이. 벌레 기운도 띤다. 맞아 가며 버틴다.",
+   "ct": 482,
+   "review": {
+    "wr": 0.38,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w076",
+   "origin": "orig",
+   "name": "전류해파리",
+   "types": [
+    "전기",
+    "에스퍼"
+   ],
+   "base": [
+    112,
+    51,
+    75,
+    87,
+    106,
+    41
+   ],
+   "ability": "사이코스킨",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "연구소",
+    "유적",
+    "바다"
+   ],
+   "role": "일반",
+   "kind": "특수 벽",
+   "dual": false,
+   "moves": [],
+   "concept": "연구소에서 털끝에 전기를 모으는 해파리. 에스퍼 기운도 띤다. 좀처럼 지치지 않는다.",
+   "ct": 483,
+   "review": {
+    "wr": 0.67,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w077",
+   "origin": "orig",
+   "name": "용사룡거북",
+   "types": [
+    "드래곤"
+   ],
+   "base": [
+    89,
+    92,
+    78,
+    61,
+    82,
+    87
+   ],
+   "ability": "용린",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "화산에서 오래 살아 비늘이 굳은 거북. 어디 하나 모자람이 없다.",
+   "ct": 489,
+   "review": {
+    "wr": 0.71,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w078",
+   "origin": "orig",
+   "name": "점토여우",
+   "types": [
+    "얼음",
+    "땅"
+   ],
+   "base": [
+    81,
+    94,
+    69,
+    87,
+    79,
+    93
+   ],
+   "ability": "흙덩이",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "유적",
+    "바다",
+    "화산",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "쌍두",
+   "dual": true,
+   "moves": [],
+   "concept": "바다에서 서리를 내뿜는 여우. 땅 기운도 띤다. 힘과 기교를 다 쓴다.",
+   "ct": 503,
+   "review": {
+    "wr": 0.5,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w079",
+   "origin": "orig",
+   "name": "용암여우",
+   "types": [
+    "불꽃"
+   ],
+   "base": [
+    86,
+    92,
+    71,
+    95,
+    69,
+    92
+   ],
+   "ability": "레인코트",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "쌍두",
+   "dual": true,
+   "moves": [],
+   "concept": "화산에서 잿더미 속에서 몸을 데우는 여우. 힘과 기교를 다 쓴다.",
+   "ct": 503,
+   "review": {
+    "wr": 0.54,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w080",
+   "origin": "orig",
+   "name": "강철갑옷",
+   "types": [
+    "강철"
+   ],
+   "base": [
+    96,
+    86,
+    86,
+    63,
+    83,
+    88
+   ],
+   "ability": "도플갱어",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "연구소",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "동굴에서 몸이 쇠처럼 굳은 갑옷. 어디 하나 모자람이 없다.",
+   "ct": 503,
+   "review": {
+    "wr": 0.25,
+    "flags": [],
+    "round": 1
+   }
+  },
+  {
+   "id": "w081",
+   "origin": "orig",
+   "name": "들토끼",
+   "types": [
+    "노말"
+   ],
+   "base": [
+    77,
+    119,
+    60,
+    40,
+    65,
+    113
+   ],
+   "ability": "독수",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소"
+   ],
+   "role": "일반",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "폐가에서 들판을 어슬렁거리는 토끼. 빠르고 세게 들이받는다.",
+   "ct": 485,
+   "review": {
+    "wr": 0.25,
+    "flags": [],
+    "round": 1
+   }
+  },
+  {
+   "id": "w082",
+   "origin": "orig",
+   "name": "암거북",
+   "types": [
+    "바위"
+   ],
+   "base": [
+    111,
+    100,
+    99,
+    49,
+    77,
+    47
+   ],
+   "ability": "불굴의방패",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "유적에서 바위인 척 가만히 있는 거북. 맞아 가며 버틴다.",
+   "ct": 491,
+   "review": {
+    "wr": 0.42,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w083",
+   "origin": "orig",
+   "name": "깃지네",
+   "types": [
+    "벌레",
+    "비행"
+   ],
+   "base": [
+    69,
+    95,
+    78,
+    96,
+    72,
+    96
+   ],
+   "ability": "나쁜벌레",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "숲",
+    "바다"
+   ],
+   "role": "일반",
+   "kind": "쌍두",
+   "dual": true,
+   "moves": [],
+   "concept": "숲에서 그늘에서 집을 짓는 지네. 비행 기운도 띤다. 힘과 기교를 다 쓴다.",
+   "ct": 501,
+   "review": {
+    "wr": 0.58,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w084",
+   "origin": "orig",
+   "name": "가시독두꺼비",
+   "types": [
+    "독"
+   ],
+   "base": [
+    106,
+    96,
+    93,
+    39,
+    82,
+    62
+   ],
+   "ability": "살인바이러스",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "폐가에서 독을 흘리며 기어다니는 두꺼비. 맞아 가며 버틴다.",
+   "ct": 488,
+   "review": {
+    "wr": 0.67,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w085",
+   "origin": "orig",
+   "name": "안개여우",
+   "types": [
+    "고스트",
+    "얼음"
+   ],
+   "base": [
+    83,
+    92,
+    73,
+    96,
+    61,
+    98
+   ],
+   "ability": "배짱",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "동굴",
+    "유적",
+    "바다",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "쌍두",
+   "dual": true,
+   "moves": [],
+   "concept": "유적에서 밤에만 모습을 드러내는 여우. 얼음 기운도 띤다. 힘과 기교를 다 쓴다.",
+   "ct": 501,
+   "review": {
+    "wr": 0.75,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w086",
+   "origin": "orig",
+   "name": "돌풍오소리",
+   "types": [
+    "비행",
+    "노말"
+   ],
+   "base": [
+    110,
+    97,
+    98,
+    40,
+    82,
+    46
+   ],
+   "ability": "방탄",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소",
+    "바다"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "숲에서 바람을 타고 내려다보는 오소리. 노말 기운도 띤다. 맞아 가며 버틴다.",
+   "ct": 484,
+   "review": {
+    "wr": 0.63,
+    "flags": [],
+    "round": 1
+   }
+  },
+  {
+   "id": "w087",
+   "origin": "orig",
+   "name": "근육곰",
+   "types": [
+    "격투"
+   ],
+   "base": [
+    109,
+    104,
+    94,
+    48,
+    70,
+    50
+   ],
+   "ability": "달마모드",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "동굴에서 제 영역에 들어온 것과 맞붙는 곰. 맞아 가며 버틴다.",
+   "ct": 482,
+   "review": {
+    "wr": 0.5,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w088",
+   "origin": "orig",
+   "name": "달콤양",
+   "types": [
+    "페어리"
+   ],
+   "base": [
+    73,
+    95,
+    94,
+    60,
+    89,
+    87
+   ],
+   "ability": "요정",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "숲",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "설원에서 달콤한 향으로 꾀는 양. 어디 하나 모자람이 없다.",
+   "ct": 500,
+   "review": {
+    "wr": 0.75,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w089",
+   "origin": "orig",
+   "name": "어둠박쥐",
+   "types": [
+    "악"
+   ],
+   "base": [
+    88,
+    42,
+    67,
+    109,
+    80,
+    110
+   ],
+   "ability": "흑심",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "폐가"
+   ],
+   "role": "일반",
+   "kind": "특수 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "폐가에서 어둠 속에서 뒤를 노리는 박쥐. 거리를 두고 쏘아 댄다.",
+   "ct": 499,
+   "review": {
+    "wr": 0.25,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w090",
+   "origin": "orig",
+   "name": "흙지렁이",
+   "types": [
+    "땅"
+   ],
+   "base": [
+    94,
+    91,
+    74,
+    81,
+    83,
+    80
+   ],
+   "ability": "흙덩이",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "동굴에서 흙 속을 파고드는 지렁이. 어디 하나 모자람이 없다.",
+   "ct": 503,
+   "review": {
+    "wr": 0.33,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w091",
+   "origin": "orig",
+   "name": "새싹나무늘보",
+   "types": [
+    "풀"
+   ],
+   "base": [
+    109,
+    103,
+    94,
+    45,
+    74,
+    62
+   ],
+   "ability": "달마모드",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "숲"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "숲에서 이끼와 덩굴을 몸에 키우는 나무늘보. 맞아 가며 버틴다.",
+   "ct": 494,
+   "review": {
+    "wr": 0.38,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w092",
+   "origin": "orig",
+   "name": "나사종",
+   "types": [
+    "강철"
+   ],
+   "base": [
+    79,
+    51,
+    79,
+    109,
+    77,
+    106
+   ],
+   "ability": "스틸스킨",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "연구소",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "특수 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "연구소에서 몸이 쇠처럼 굳은 종. 거리를 두고 쏘아 댄다.",
+   "ct": 502,
+   "review": {
+    "wr": 0.25,
+    "flags": [],
+    "round": 1
+   }
+  },
+  {
+   "id": "w093",
+   "origin": "orig",
+   "name": "비늘거북",
+   "types": [
+    "드래곤"
+   ],
+   "base": [
+    88,
+    87,
+    85,
+    67,
+    87,
+    84
+   ],
+   "ability": "용린",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "유적에서 오래 살아 비늘이 굳은 거북. 어디 하나 모자람이 없다.",
+   "ct": 498,
+   "review": {
+    "wr": 0.54,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w094",
+   "origin": "orig",
+   "name": "소라가오리",
+   "types": [
+    "물"
+   ],
+   "base": [
+    73,
+    117,
+    78,
+    43,
+    64,
+    118
+   ],
+   "ability": "동결",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "바다",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "설원에서 물가에 숨어 기다리는 가오리. 빠르고 세게 들이받는다.",
+   "ct": 500,
+   "review": {
+    "wr": 0.58,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w095",
+   "origin": "orig",
+   "name": "광석가오리",
+   "types": [
+    "바위",
+    "물"
+   ],
+   "base": [
+    76,
+    98,
+    81,
+    95,
+    73,
+    85
+   ],
+   "ability": "동결",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "유적",
+    "바다",
+    "화산",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "쌍두",
+   "dual": true,
+   "moves": [],
+   "concept": "유적에서 바위인 척 가만히 있는 가오리. 물 기운도 띤다. 힘과 기교를 다 쓴다.",
+   "ct": 503,
+   "review": {
+    "wr": 0.5,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w096",
+   "origin": "orig",
+   "name": "서리여우",
+   "types": [
+    "얼음"
+   ],
+   "base": [
+    81,
+    113,
+    61,
+    50,
+    66,
+    117
+   ],
+   "ability": "두꺼운모피",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "바다",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "바다에서 서리를 내뿜는 여우. 빠르고 세게 들이받는다.",
+   "ct": 490,
+   "review": {
+    "wr": 0.5,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w097",
+   "origin": "orig",
+   "name": "독액두꺼비",
+   "types": [
+    "독"
+   ],
+   "base": [
+    99,
+    100,
+    94,
+    52,
+    87,
+    67
+   ],
+   "ability": "포이즌힐",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "폐가에서 독을 흘리며 기어다니는 두꺼비. 맞아 가며 버틴다.",
+   "ct": 502,
+   "review": {
+    "wr": 0.67,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w098",
+   "origin": "orig",
+   "name": "철권광석곰",
+   "types": [
+    "격투",
+    "바위"
+   ],
+   "base": [
+    110,
+    101,
+    96,
+    42,
+    78,
+    66
+   ],
+   "ability": "투기",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "화산에서 제 영역에 들어온 것과 맞붙는 곰. 바위 기운도 띤다. 맞아 가며 버틴다.",
+   "ct": 502,
+   "review": {
+    "wr": 0.5,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w099",
+   "origin": "orig",
+   "name": "실딱정벌레",
+   "types": [
+    "벌레"
+   ],
+   "base": [
+    109,
+    39,
+    90,
+    80,
+    107,
+    61
+   ],
+   "ability": "방탄",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "숲"
+   ],
+   "role": "일반",
+   "kind": "특수 벽",
+   "dual": false,
+   "moves": [],
+   "concept": "숲에서 그늘에서 집을 짓는 딱정벌레. 좀처럼 지치지 않는다.",
+   "ct": 500,
+   "review": {
+    "wr": 0.29,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w100",
+   "origin": "orig",
+   "name": "달가오리",
+   "types": [
+    "에스퍼",
+    "물"
+   ],
+   "base": [
+    84,
+    37,
+    55,
+    117,
+    76,
+    120
+   ],
+   "ability": "촉촉보이스",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "연구소",
+    "유적",
+    "바다",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "특수 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "유적에서 눈빛으로 사람을 홀리는 가오리. 물 기운도 띤다. 거리를 두고 쏘아 댄다.",
+   "ct": 503,
+   "review": {
+    "wr": 0.58,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w101",
+   "origin": "orig",
+   "name": "암항아리",
+   "types": [
+    "바위",
+    "고스트"
+   ],
+   "base": [
+    113,
+    51,
+    85,
+    85,
+    113,
+    45
+   ],
+   "ability": "마성의미모",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "동굴",
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "특수 벽",
+   "dual": false,
+   "moves": [],
+   "concept": "유적에서 바위인 척 가만히 있는 항아리. 고스트 기운도 띤다. 좀처럼 지치지 않는다.",
+   "ct": 501,
+   "review": {
+    "wr": 0.29,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w102",
+   "origin": "orig",
+   "name": "찌릿다람쥐",
+   "types": [
+    "전기",
+    "페어리"
+   ],
+   "base": [
+    81,
+    90,
+    77,
+    74,
+    80,
+    84
+   ],
+   "ability": "요정",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "숲",
+    "연구소",
+    "바다",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "연구소에서 털끝에 전기를 모으는 다람쥐. 페어리 기운도 띤다. 어디 하나 모자람이 없다.",
+   "ct": 486,
+   "review": {
+    "wr": 0.54,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w103",
+   "origin": "orig",
+   "name": "불멧돼지",
+   "types": [
+    "불꽃"
+   ],
+   "base": [
+    102,
+    101,
+    91,
+    39,
+    84,
+    60
+   ],
+   "ability": "맹화",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "화산"
+   ],
+   "role": "일반",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "화산에서 잿더미 속에서 몸을 데우는 멧돼지. 맞아 가며 버틴다.",
+   "ct": 485,
+   "review": {
+    "wr": 0.33,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w104",
+   "origin": "orig",
+   "name": "방울양",
+   "types": [
+    "페어리"
+   ],
+   "base": [
+    115,
+    44,
+    81,
+    89,
+    112,
+    43
+   ],
+   "ability": "방탄",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "숲",
+    "설원"
+   ],
+   "role": "일반",
+   "kind": "특수 벽",
+   "dual": false,
+   "moves": [],
+   "concept": "설원에서 달콤한 향으로 꾀는 양. 좀처럼 지치지 않는다.",
+   "ct": 494,
+   "review": {
+    "wr": 0.67,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w105",
+   "origin": "orig",
+   "name": "회색족제비",
+   "types": [
+    "노말"
+   ],
+   "base": [
+    89,
+    100,
+    62,
+    89,
+    58,
+    91
+   ],
+   "ability": "도굴",
+   "abilityTo": 1,
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소"
+   ],
+   "role": "일반",
+   "kind": "쌍두",
+   "dual": true,
+   "moves": [],
+   "concept": "숲에서 들판을 어슬렁거리는 족제비. 힘과 기교를 다 쓴다.",
+   "ct": 489,
+   "review": {
+    "wr": 0.25,
+    "flags": [],
+    "round": 1
+   }
+  },
+  {
+   "id": "w106",
+   "origin": "orig",
+   "name": "주먹곰",
+   "types": [
+    "격투"
+   ],
+   "base": [
+    112,
+    105,
+    96,
+    50,
+    79,
+    63
+   ],
+   "ability": "악의마음",
+   "abilityTo": 1,
+   "pride": "B",
+   "grade": "B",
+   "hab": [
+    "동굴",
+    "화산"
+   ],
+   "role": "보스",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "동굴에서 제 영역에 들어온 것과 맞붙는 곰. 맞아 가며 버틴다.",
+   "ct": 514,
+   "review": {
+    "wr": 0.42,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w107",
+   "origin": "orig",
+   "name": "갑각벌",
+   "types": [
+    "벌레"
+   ],
+   "base": [
+    71,
+    124,
+    83,
+    44,
+    73,
+    116
+   ],
+   "ability": "나쁜벌레",
+   "abilityTo": 1,
+   "pride": "B",
+   "grade": "B",
+   "hab": [
+    "숲"
+   ],
+   "role": "보스",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "숲에서 그늘에서 집을 짓는 벌. 빠르고 세게 들이받는다.",
+   "ct": 523,
+   "review": {
+    "wr": 0.67,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w108",
+   "origin": "orig",
+   "name": "전류별빛늑대",
+   "types": [
+    "전기",
+    "페어리"
+   ],
+   "base": [
+    94,
+    92,
+    91,
+    65,
+    96,
+    83
+   ],
+   "ability": "도플갱어",
+   "abilityTo": 1,
+   "pride": "B",
+   "grade": "B",
+   "hab": [
+    "숲",
+    "연구소",
+    "바다",
+    "설원"
+   ],
+   "role": "보스",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "바다에서 털끝에 전기를 모으는 늑대. 페어리 기운도 띤다. 어디 하나 모자람이 없다.",
+   "ct": 524,
+   "review": {
+    "wr": 0.46,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w109",
+   "origin": "orig",
+   "name": "고룡악어",
+   "types": [
+    "드래곤"
+   ],
+   "base": [
+    111,
+    105,
+    107,
+    43,
+    84,
+    47
+   ],
+   "ability": "용린",
+   "abilityTo": 1,
+   "pride": "B",
+   "grade": "B",
+   "hab": [
+    "유적",
+    "화산"
+   ],
+   "role": "보스",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "화산에서 오래 살아 비늘이 굳은 악어. 맞아 가며 버틴다.",
+   "ct": 507,
+   "review": {
+    "wr": 0.38,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w110",
+   "origin": "orig",
+   "name": "돌풍족제비",
+   "types": [
+    "비행",
+    "노말"
+   ],
+   "base": [
+    82,
+    98,
+    83,
+    77,
+    101,
+    84
+   ],
+   "ability": "비상",
+   "abilityTo": 1,
+   "pride": "B",
+   "grade": "B",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소",
+    "바다"
+   ],
+   "role": "보스",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "바다에서 바람을 타고 내려다보는 족제비. 노말 기운도 띤다. 어디 하나 모자람이 없다.",
+   "ct": 525,
+   "review": {
+    "wr": 0.5,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w111",
+   "origin": "orig",
+   "name": "열사살라만더",
+   "types": [
+    "불꽃"
+   ],
+   "base": [
+    100,
+    90,
+    95,
+    57,
+    93,
+    82
+   ],
+   "ability": "맹화",
+   "abilityTo": 1,
+   "pride": "B",
+   "grade": "B",
+   "hab": [
+    "화산"
+   ],
+   "role": "보스",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "화산에서 잿더미 속에서 몸을 데우는 살라만더. 어디 하나 모자람이 없다.",
+   "ct": 524,
+   "review": {
+    "wr": 0.33,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w112",
+   "origin": "orig",
+   "name": "얼음빙하늑대",
+   "types": [
+    "얼음"
+   ],
+   "base": [
+    69,
+    125,
+    67,
+    45,
+    84,
+    120
+   ],
+   "ability": "전격전",
+   "abilityTo": 1,
+   "pride": "B",
+   "grade": "B",
+   "hab": [
+    "바다",
+    "설원"
+   ],
+   "role": "보스",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "바다에서 서리를 내뿜는 늑대. 빠르고 세게 들이받는다.",
+   "ct": 523,
+   "review": {
+    "wr": 0.5,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w113",
+   "origin": "orig",
+   "name": "밤고양이",
+   "types": [
+    "악"
+   ],
+   "base": [
+    78,
+    99,
+    97,
+    81,
+    86,
+    83
+   ],
+   "ability": "정의의마음",
+   "abilityTo": 1,
+   "pride": "B",
+   "grade": "B",
+   "hab": [
+    "폐가"
+   ],
+   "role": "보스",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "폐가에서 어둠 속에서 뒤를 노리는 고양이. 어디 하나 모자람이 없다.",
+   "ct": 525,
+   "review": {
+    "wr": 0.33,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w114",
+   "origin": "orig",
+   "name": "밤항아리",
+   "types": [
+    "고스트",
+    "악"
+   ],
+   "base": [
+    117,
+    40,
+    81,
+    92,
+    115,
+    46
+   ],
+   "ability": "나이트위저드",
+   "abilityTo": 1,
+   "pride": "B",
+   "grade": "B",
+   "hab": [
+    "폐가",
+    "동굴",
+    "유적"
+   ],
+   "role": "보스",
+   "kind": "특수 벽",
+   "dual": false,
+   "moves": [],
+   "concept": "폐가에서 밤에만 모습을 드러내는 항아리. 악 기운도 띤다. 좀처럼 지치지 않는다.",
+   "ct": 507,
+   "review": {
+    "wr": 0.67,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w115",
+   "origin": "orig",
+   "name": "솔방울여우",
+   "types": [
+    "풀"
+   ],
+   "base": [
+    79,
+    90,
+    88,
+    79,
+    94,
+    79
+   ],
+   "ability": "위험예지",
+   "abilityTo": 1,
+   "pride": "B",
+   "grade": "B",
+   "hab": [
+    "숲"
+   ],
+   "role": "보스",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "숲에서 이끼와 덩굴을 몸에 키우는 여우. 어디 하나 모자람이 없다.",
+   "ct": 511,
+   "review": {
+    "wr": 0.63,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w116",
+   "origin": "orig",
+   "name": "오염지네",
+   "types": [
+    "독"
+   ],
+   "base": [
+    73,
+    120,
+    81,
+    51,
+    66,
+    122
+   ],
+   "ability": "살인바이러스",
+   "abilityTo": 1,
+   "pride": "B",
+   "grade": "B",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소"
+   ],
+   "role": "보스",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "연구소에서 독을 흘리며 기어다니는 지네. 빠르고 세게 들이받는다.",
+   "ct": 518,
+   "review": {
+    "wr": 0.54,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w117",
+   "origin": "orig",
+   "name": "물코뿔소",
+   "types": [
+    "땅",
+    "물"
+   ],
+   "base": [
+    83,
+    95,
+    83,
+    101,
+    66,
+    102
+   ],
+   "ability": "동결",
+   "abilityTo": 1,
+   "pride": "B",
+   "grade": "B",
+   "hab": [
+    "동굴",
+    "유적",
+    "바다",
+    "화산",
+    "설원"
+   ],
+   "role": "보스",
+   "kind": "쌍두",
+   "dual": true,
+   "moves": [],
+   "concept": "화산에서 흙 속을 파고드는 코뿔소. 물 기운도 띤다. 힘과 기교를 다 쓴다.",
+   "ct": 525,
+   "review": {
+    "wr": 0.71,
+    "flags": [],
+    "round": 2
+   }
+  },
+  {
+   "id": "w118",
+   "origin": "orig",
+   "name": "바람매",
+   "types": [
+    "비행"
+   ],
+   "base": [
+    95,
+    88,
+    92,
+    67,
+    94,
+    82
+   ],
+   "ability": "예지몽",
+   "abilityTo": 1,
+   "pride": "B",
+   "grade": "B",
+   "hab": [
+    "숲",
+    "바다"
+   ],
+   "role": "보스",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "바다에서 바람을 타고 내려다보는 매. 어디 하나 모자람이 없다.",
+   "ct": 522,
+   "review": {
+    "wr": 0.42,
+    "flags": [],
+    "round": 1
+   }
+  },
+  {
+   "id": "w119",
+   "origin": "orig",
+   "name": "발차기원숭이",
+   "types": [
+    "격투"
+   ],
+   "base": [
+    75,
+    114,
+    63,
+    42,
+    84,
+    123
+   ],
+   "ability": "악의마음",
+   "abilityTo": 1,
+   "pride": "B",
+   "grade": "B",
+   "hab": [
+    "동굴",
+    "화산"
+   ],
+   "role": "보스",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "화산에서 제 영역에 들어온 것과 맞붙는 원숭이. 빠르고 세게 들이받는다.",
+   "ct": 508,
+   "review": {
+    "wr": 0.54,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w120",
+   "origin": "orig",
+   "name": "소금소라수달",
+   "types": [
+    "물"
+   ],
+   "base": [
+    83,
+    122,
+    71,
+    48,
+    83,
+    112
+   ],
+   "ability": "동결",
+   "abilityTo": 1,
+   "pride": "B",
+   "grade": "B",
+   "hab": [
+    "바다",
+    "설원"
+   ],
+   "role": "보스",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "바다에서 물가에 숨어 기다리는 수달. 빠르고 세게 들이받는다.",
+   "ct": 524,
+   "review": {
+    "wr": 0.71,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w121",
+   "origin": "orig",
+   "name": "발차기여우",
+   "types": [
+    "악",
+    "격투"
+   ],
+   "base": [
+    71,
+    125,
+    71,
+    48,
+    79,
+    121
+   ],
+   "ability": "투기",
+   "abilityTo": 1,
+   "pride": "B",
+   "grade": "B",
+   "hab": [
+    "폐가",
+    "동굴",
+    "화산"
+   ],
+   "role": "보스",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "폐가에서 어둠 속에서 뒤를 노리는 여우. 격투 기운도 띤다. 빠르고 세게 들이받는다.",
+   "ct": 525,
+   "review": {
+    "wr": 0.54,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w122",
+   "origin": "orig",
+   "name": "강철종",
+   "types": [
+    "강철"
+   ],
+   "base": [
+    112,
+    41,
+    85,
+    95,
+    111,
+    62
+   ],
+   "ability": "금속질",
+   "abilityTo": 1,
+   "pride": "B",
+   "grade": "B",
+   "hab": [
+    "동굴",
+    "연구소",
+    "설원"
+   ],
+   "role": "보스",
+   "kind": "특수 벽",
+   "dual": false,
+   "moves": [],
+   "concept": "설원에서 몸이 쇠처럼 굳은 종. 좀처럼 지치지 않는다.",
+   "ct": 519,
+   "review": {
+    "wr": 0.29,
+    "flags": [],
+    "round": 1
+   }
+  },
+  {
+   "id": "w123",
+   "origin": "orig",
+   "name": "껍질사마귀",
+   "types": [
+    "벌레"
+   ],
+   "base": [
+    89,
+    99,
+    88,
+    67,
+    83,
+    81
+   ],
+   "ability": "위험예지",
+   "abilityTo": 1,
+   "pride": "B",
+   "grade": "B",
+   "hab": [
+    "숲"
+   ],
+   "role": "보스",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "숲에서 그늘에서 집을 짓는 사마귀. 어디 하나 모자람이 없다.",
+   "ct": 507,
+   "review": {
+    "wr": 0.42,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w124",
+   "origin": "orig",
+   "name": "점박이토끼",
+   "types": [
+    "노말"
+   ],
+   "base": [
+    84,
+    123,
+    76,
+    45,
+    83,
+    121
+   ],
+   "ability": "깨어진갑옷",
+   "abilityTo": 1,
+   "pride": "B+",
+   "grade": "B",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소"
+   ],
+   "role": "보스",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "숲에서 들판을 어슬렁거리는 토끼. 빠르고 세게 들이받는다.",
+   "ct": 543,
+   "review": {
+    "wr": 0,
+    "flags": [
+     "약함"
+    ],
+    "round": 3
+   }
+  },
+  {
+   "id": "w125",
+   "origin": "orig",
+   "name": "수정사슴",
+   "types": [
+    "에스퍼"
+   ],
+   "base": [
+    92,
+    94,
+    88,
+    66,
+    100,
+    91
+   ],
+   "ability": "예지몽",
+   "abilityTo": 1,
+   "pride": "B+",
+   "grade": "B",
+   "hab": [
+    "폐가",
+    "연구소",
+    "유적"
+   ],
+   "role": "보스",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "폐가에서 눈빛으로 사람을 홀리는 사슴. 어디 하나 모자람이 없다.",
+   "ct": 533,
+   "review": {
+    "wr": 0.67,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w126",
+   "origin": "orig",
+   "name": "스파크양",
+   "types": [
+    "전기"
+   ],
+   "base": [
+    114,
+    109,
+    106,
+    44,
+    85,
+    67
+   ],
+   "ability": "반도체",
+   "abilityTo": 1,
+   "pride": "B+",
+   "grade": "B",
+   "hab": [
+    "연구소",
+    "바다"
+   ],
+   "role": "보스",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "바다에서 털끝에 전기를 모으는 양. 맞아 가며 버틴다.",
+   "ct": 539,
+   "review": {
+    "wr": 0.75,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w127",
+   "origin": "orig",
+   "name": "뿔악어",
+   "types": [
+    "드래곤"
+   ],
+   "base": [
+    120,
+    100,
+    105,
+    46,
+    83,
+    61
+   ],
+   "ability": "슬로우스타터",
+   "abilityTo": 1,
+   "pride": "B+",
+   "grade": "B",
+   "hab": [
+    "유적",
+    "화산"
+   ],
+   "role": "보스",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "유적에서 오래 살아 비늘이 굳은 악어. 맞아 가며 버틴다.",
+   "ct": 530,
+   "review": {
+    "wr": 0.46,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w128",
+   "origin": "orig",
+   "name": "리본고양이",
+   "types": [
+    "페어리"
+   ],
+   "base": [
+    79,
+    108,
+    89,
+    107,
+    74,
+    104
+   ],
+   "ability": "냉기",
+   "abilityTo": 1,
+   "pride": "B+",
+   "grade": "B",
+   "hab": [
+    "숲",
+    "설원"
+   ],
+   "role": "보스",
+   "kind": "쌍두",
+   "dual": true,
+   "moves": [],
+   "concept": "숲에서 달콤한 향으로 꾀는 고양이. 힘과 기교를 다 쓴다.",
+   "ct": 544,
+   "review": {
+    "wr": 0.46,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w129",
+   "origin": "orig",
+   "name": "진흙수달",
+   "types": [
+    "독",
+    "물"
+   ],
+   "base": [
+    77,
+    123,
+    78,
+    50,
+    80,
+    130
+   ],
+   "ability": "꾸덕꾸덕굳기",
+   "abilityTo": 1,
+   "pride": "B+",
+   "grade": "B",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소",
+    "바다",
+    "설원"
+   ],
+   "role": "보스",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "연구소에서 독을 흘리며 기어다니는 수달. 물 기운도 띤다. 빠르고 세게 들이받는다.",
+   "ct": 546,
+   "review": {
+    "wr": 0.58,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w130",
+   "origin": "orig",
+   "name": "광석항아리",
+   "types": [
+    "바위",
+    "고스트"
+   ],
+   "base": [
+    116,
+    106,
+    102,
+    51,
+    86,
+    59
+   ],
+   "ability": "배짱",
+   "abilityTo": 1,
+   "pride": "B+",
+   "grade": "B",
+   "hab": [
+    "폐가",
+    "동굴",
+    "유적",
+    "화산"
+   ],
+   "role": "보스",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "유적에서 바위인 척 가만히 있는 항아리. 고스트 기운도 띤다. 맞아 가며 버틴다.",
+   "ct": 531,
+   "review": {
+    "wr": 0.46,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w131",
+   "origin": "orig",
+   "name": "유령여우",
+   "types": [
+    "풀",
+    "고스트"
+   ],
+   "base": [
+    75,
+    128,
+    85,
+    45,
+    84,
+    116
+   ],
+   "ability": "유령",
+   "abilityTo": 1,
+   "pride": "B+",
+   "grade": "B",
+   "hab": [
+    "폐가",
+    "동굴",
+    "숲",
+    "유적"
+   ],
+   "role": "보스",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "숲에서 이끼와 덩굴을 몸에 키우는 여우. 고스트 기운도 띤다. 빠르고 세게 들이받는다.",
+   "ct": 547,
+   "review": {
+    "wr": 0.71,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w132",
+   "origin": "orig",
+   "name": "수정여우",
+   "types": [
+    "에스퍼"
+   ],
+   "base": [
+    93,
+    98,
+    83,
+    103,
+    87,
+    91
+   ],
+   "ability": "사이코스킨",
+   "abilityTo": 1,
+   "pride": "B+",
+   "grade": "B",
+   "hab": [
+    "폐가",
+    "연구소",
+    "유적"
+   ],
+   "role": "보스",
+   "kind": "쌍두",
+   "dual": true,
+   "moves": [],
+   "concept": "폐가에서 눈빛으로 사람을 홀리는 여우. 힘과 기교를 다 쓴다.",
+   "ct": 547,
+   "review": {
+    "wr": 0.75,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w133",
+   "origin": "orig",
+   "name": "그림자까마귀",
+   "types": [
+    "고스트"
+   ],
+   "base": [
+    79,
+    102,
+    70,
+    104,
+    77,
+    106
+   ],
+   "ability": "유령",
+   "abilityTo": 1,
+   "pride": "B+",
+   "grade": "B",
+   "hab": [
+    "폐가",
+    "동굴",
+    "유적"
+   ],
+   "role": "보스",
+   "kind": "쌍두",
+   "dual": true,
+   "moves": [],
+   "concept": "유적에서 밤에만 모습을 드러내는 까마귀. 힘과 기교를 다 쓴다.",
+   "ct": 526,
+   "review": {
+    "wr": 0.5,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w134",
+   "origin": "orig",
+   "name": "깃족제비",
+   "types": [
+    "비행",
+    "노말"
+   ],
+   "base": [
+    76,
+    128,
+    86,
+    49,
+    75,
+    121
+   ],
+   "ability": "주눅",
+   "abilityTo": 1,
+   "pride": "B+",
+   "grade": "B",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소",
+    "바다"
+   ],
+   "role": "보스",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "바다에서 바람을 타고 내려다보는 족제비. 노말 기운도 띤다. 빠르고 세게 들이받는다.",
+   "ct": 547,
+   "review": {
+    "wr": 0.5,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w135",
+   "origin": "orig",
+   "name": "흙물코뿔소",
+   "types": [
+    "땅",
+    "물"
+   ],
+   "base": [
+    78,
+    123,
+    68,
+    53,
+    72,
+    129
+   ],
+   "ability": "꾸덕꾸덕굳기",
+   "abilityTo": 1,
+   "pride": "B+",
+   "grade": "B",
+   "hab": [
+    "동굴",
+    "유적",
+    "바다",
+    "화산",
+    "설원"
+   ],
+   "role": "보스",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "유적에서 흙 속을 파고드는 코뿔소. 물 기운도 띤다. 빠르고 세게 들이받는다.",
+   "ct": 531,
+   "review": {
+    "wr": 0.75,
+    "flags": [],
+    "round": 2
+   }
+  },
+  {
+   "id": "w136",
+   "origin": "orig",
+   "name": "무쇠종",
+   "types": [
+    "강철"
+   ],
+   "base": [
+    100,
+    48,
+    71,
+    123,
+    92,
+    124
+   ],
+   "ability": "연금",
+   "abilityTo": 1.5,
+   "pride": "A",
+   "grade": "A",
+   "hab": [
+    "동굴",
+    "연구소",
+    "설원"
+   ],
+   "role": "보스",
+   "kind": "특수 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "설원에서 몸이 쇠처럼 굳은 종. 거리를 두고 쏘아 댄다.",
+   "ct": 570,
+   "review": {
+    "wr": 0.46,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w137",
+   "origin": "orig",
+   "name": "털복족제비",
+   "types": [
+    "노말"
+   ],
+   "base": [
+    94,
+    99,
+    77,
+    102,
+    88,
+    107
+   ],
+   "ability": "순진",
+   "abilityTo": 1.5,
+   "pride": "A",
+   "grade": "A",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소"
+   ],
+   "role": "보스",
+   "kind": "쌍두",
+   "dual": true,
+   "moves": [],
+   "concept": "폐가에서 들판을 어슬렁거리는 족제비. 힘과 기교를 다 쓴다.",
+   "ct": 558,
+   "review": {
+    "wr": 0.29,
+    "flags": [],
+    "round": 1
+   }
+  },
+  {
+   "id": "w138",
+   "origin": "orig",
+   "name": "먼지코뿔소",
+   "types": [
+    "땅"
+   ],
+   "base": [
+    94,
+    111,
+    95,
+    110,
+    84,
+    95
+   ],
+   "ability": "통뼈",
+   "abilityTo": 1.5,
+   "pride": "A",
+   "grade": "A",
+   "hab": [
+    "동굴",
+    "유적",
+    "화산"
+   ],
+   "role": "보스",
+   "kind": "쌍두",
+   "dual": true,
+   "moves": [],
+   "concept": "화산에서 흙 속을 파고드는 코뿔소. 힘과 기교를 다 쓴다.",
+   "ct": 569,
+   "review": {
+    "wr": 0.54,
+    "flags": [],
+    "round": 2
+   }
+  },
+  {
+   "id": "w139",
+   "origin": "orig",
+   "name": "풀잎사슴",
+   "types": [
+    "풀"
+   ],
+   "base": [
+    81,
+    126,
+    91,
+    49,
+    81,
+    120
+   ],
+   "ability": "엽맥",
+   "abilityTo": 1.5,
+   "pride": "A",
+   "grade": "A",
+   "hab": [
+    "숲"
+   ],
+   "role": "보스",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "숲에서 이끼와 덩굴을 몸에 키우는 사슴. 빠르고 세게 들이받는다.",
+   "ct": 557,
+   "review": {
+    "wr": 0.29,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w140",
+   "origin": "orig",
+   "name": "쇠거북",
+   "types": [
+    "강철"
+   ],
+   "base": [
+    107,
+    97,
+    85,
+    70,
+    91,
+    93
+   ],
+   "ability": "철혈",
+   "abilityTo": 1.5,
+   "pride": "A",
+   "grade": "A",
+   "hab": [
+    "동굴",
+    "연구소",
+    "설원"
+   ],
+   "role": "보스",
+   "kind": "밸런스",
+   "dual": false,
+   "moves": [],
+   "concept": "동굴에서 몸이 쇠처럼 굳은 거북. 어디 하나 모자람이 없다.",
+   "ct": 549,
+   "review": {
+    "wr": 0.25,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w141",
+   "origin": "orig",
+   "name": "거울들소",
+   "types": [
+    "에스퍼",
+    "노말"
+   ],
+   "base": [
+    120,
+    113,
+    105,
+    51,
+    90,
+    55
+   ],
+   "ability": "정의의아군",
+   "abilityTo": 1.5,
+   "pride": "A",
+   "grade": "A",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소",
+    "유적"
+   ],
+   "role": "보스",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "유적에서 눈빛으로 사람을 홀리는 들소. 노말 기운도 띤다. 맞아 가며 버틴다.",
+   "ct": 549,
+   "review": {
+    "wr": 0.54,
+    "flags": [],
+    "round": 1
+   }
+  },
+  {
+   "id": "w142",
+   "origin": "orig",
+   "name": "물가오리",
+   "types": [
+    "물"
+   ],
+   "base": [
+    89,
+    48,
+    83,
+    128,
+    86,
+    121
+   ],
+   "ability": "수맥",
+   "abilityTo": 1.5,
+   "pride": "A",
+   "grade": "A",
+   "hab": [
+    "바다",
+    "설원"
+   ],
+   "role": "보스",
+   "kind": "특수 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "설원에서 물가에 숨어 기다리는 가오리. 거리를 두고 쏘아 댄다.",
+   "ct": 568,
+   "review": {
+    "wr": 0.71,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w143",
+   "origin": "orig",
+   "name": "잿불나방",
+   "types": [
+    "불꽃"
+   ],
+   "base": [
+    88,
+    126,
+    82,
+    44,
+    72,
+    124
+   ],
+   "ability": "타오르는세계",
+   "abilityTo": 1.5,
+   "pride": "A",
+   "grade": "A",
+   "hab": [
+    "화산"
+   ],
+   "role": "보스",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "화산에서 잿더미 속에서 몸을 데우는 불나방. 빠르고 세게 들이받는다.",
+   "ct": 551,
+   "review": {
+    "wr": 0.75,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w144",
+   "origin": "orig",
+   "name": "한파거북",
+   "types": [
+    "얼음",
+    "강철"
+   ],
+   "base": [
+    122,
+    107,
+    103,
+    50,
+    88,
+    70
+   ],
+   "ability": "얼어붙는세계",
+   "abilityTo": 1.5,
+   "pride": "A",
+   "grade": "A",
+   "hab": [
+    "동굴",
+    "연구소",
+    "바다",
+    "설원"
+   ],
+   "role": "보스",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "설원에서 서리를 내뿜는 거북. 강철 기운도 띤다. 맞아 가며 버틴다.",
+   "ct": 556,
+   "review": {
+    "wr": 0.38,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w145",
+   "origin": "orig",
+   "name": "도둑여우",
+   "types": [
+    "악"
+   ],
+   "base": [
+    123,
+    108,
+    103,
+    54,
+    93,
+    68
+   ],
+   "ability": "악의아군",
+   "abilityTo": 1.5,
+   "pride": "A",
+   "grade": "A",
+   "hab": [
+    "폐가"
+   ],
+   "role": "보스",
+   "kind": "물리 탱커",
+   "dual": false,
+   "moves": [],
+   "concept": "폐가에서 어둠 속에서 뒤를 노리는 여우. 맞아 가며 버틴다.",
+   "ct": 568,
+   "review": {
+    "wr": 0.38,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w146",
+   "origin": "orig",
+   "name": "발차기두루미",
+   "types": [
+    "격투"
+   ],
+   "base": [
+    78,
+    44,
+    69,
+    133,
+    85,
+    122
+   ],
+   "ability": "나르시스트",
+   "abilityTo": 1.5,
+   "pride": "A",
+   "grade": "A",
+   "hab": [
+    "동굴",
+    "화산"
+   ],
+   "role": "보스",
+   "kind": "특수 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "화산에서 제 영역에 들어온 것과 맞붙는 두루미. 거리를 두고 쏘아 댄다.",
+   "ct": 553,
+   "review": {
+    "wr": 1,
+    "flags": [
+     "과강"
+    ],
+    "round": 3
+   }
+  },
+  {
+   "id": "w147",
+   "origin": "orig",
+   "name": "가시풀나방",
+   "types": [
+    "벌레",
+    "풀"
+   ],
+   "base": [
+    124,
+    47,
+    94,
+    99,
+    120,
+    50
+   ],
+   "ability": "벚꽃폭풍",
+   "abilityTo": 1.5,
+   "pride": "A",
+   "grade": "A",
+   "hab": [
+    "숲"
+   ],
+   "role": "보스",
+   "kind": "특수 벽",
+   "dual": false,
+   "moves": [],
+   "concept": "숲에서 그늘에서 집을 짓는 나방. 풀 기운도 띤다. 좀처럼 지치지 않는다.",
+   "ct": 557,
+   "review": {
+    "wr": 0.42,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w148",
+   "origin": "orig",
+   "name": "번개양",
+   "types": [
+    "전기",
+    "페어리"
+   ],
+   "base": [
+    120,
+    54,
+    106,
+    90,
+    125,
+    48
+   ],
+   "ability": "전기엔진",
+   "abilityTo": 1.5,
+   "pride": "A",
+   "grade": "A",
+   "hab": [
+    "숲",
+    "연구소",
+    "바다",
+    "설원"
+   ],
+   "role": "보스",
+   "kind": "특수 벽",
+   "dual": false,
+   "moves": [],
+   "concept": "연구소에서 털끝에 전기를 모으는 양. 페어리 기운도 띤다. 좀처럼 지치지 않는다.",
+   "ct": 568,
+   "review": {
+    "wr": 0.42,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w149",
+   "origin": "orig",
+   "name": "등불열쇠",
+   "types": [
+    "고스트"
+   ],
+   "base": [
+    99,
+    93,
+    82,
+    109,
+    79,
+    108
+   ],
+   "ability": "소울이터",
+   "abilityTo": 1.5,
+   "pride": "A",
+   "grade": "A",
+   "hab": [
+    "폐가",
+    "동굴",
+    "유적"
+   ],
+   "role": "보스",
+   "kind": "쌍두",
+   "dual": true,
+   "moves": [],
+   "concept": "폐가에서 밤에만 모습을 드러내는 열쇠. 힘과 기교를 다 쓴다.",
+   "ct": 570,
+   "review": {
+    "wr": 0.58,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w150",
+   "origin": "orig",
+   "name": "얼음여우",
+   "types": [
+    "얼음"
+   ],
+   "base": [
+    93,
+    125,
+    78,
+    51,
+    78,
+    121
+   ],
+   "ability": "춥다추워",
+   "abilityTo": 1.5,
+   "pride": "A",
+   "grade": "A",
+   "hab": [
+    "바다",
+    "설원"
+   ],
+   "role": "보스",
+   "kind": "물리 스위퍼",
+   "dual": false,
+   "moves": [],
+   "concept": "바다에서 서리를 내뿜는 여우. 빠르고 세게 들이받는다.",
+   "ct": 554,
+   "review": {
+    "wr": 0.42,
+    "flags": [],
+    "round": 0
+   }
+  },
+  {
+   "id": "w151",
+   "origin": "old",
+   "sp": "동탁군",
+   "name": "동탁군",
+   "types": [
+    "강철",
+    "에스퍼"
+   ],
+   "base": [
+    67,
+    89,
+    116,
+    79,
+    116,
+    33
+   ],
+   "ability": "내열",
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "동굴",
+    "연구소",
+    "유적",
+    "설원"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w152",
+   "origin": "old",
+   "sp": "부란다",
+   "name": "부란다",
+   "types": [
+    "격투",
+    "악"
+   ],
+   "base": [
+    95,
+    124,
+    78,
+    69,
+    71,
+    58
+   ],
+   "ability": "철주먹",
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "동굴",
+    "화산"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w153",
+   "origin": "old",
+   "sp": "모래성이당",
+   "name": "모래성이당",
+   "types": [
+    "고스트",
+    "땅"
+   ],
+   "base": [
+    85,
+    75,
+    110,
+    100,
+    75,
+    35
+   ],
+   "ability": "꾸덕꾸덕굳기",
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "동굴",
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w154",
+   "origin": "old",
+   "sp": "찌르호크",
+   "name": "찌르호크",
+   "types": [
+    "노말",
+    "비행"
+   ],
+   "base": [
+    85,
+    120,
+    70,
+    50,
+    60,
+    100
+   ],
+   "ability": "위협",
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소",
+    "바다"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w155",
+   "origin": "old",
+   "sp": "가라르 야도란",
+   "name": "가라르 야도란",
+   "types": [
+    "독",
+    "에스퍼"
+   ],
+   "base": [
+    95,
+    100,
+    95,
+    100,
+    70,
+    30
+   ],
+   "ability": "퀵드로",
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소",
+    "유적"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w156",
+   "origin": "old",
+   "sp": "파비코리",
+   "name": "파비코리",
+   "types": [
+    "드래곤",
+    "비행"
+   ],
+   "base": [
+    75,
+    70,
+    90,
+    70,
+    105,
+    80
+   ],
+   "ability": "자연회복",
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "숲",
+    "유적",
+    "바다",
+    "화산"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w157",
+   "origin": "old",
+   "sp": "만마드",
+   "name": "만마드",
+   "types": [
+    "땅"
+   ],
+   "base": [
+    100,
+    125,
+    100,
+    55,
+    85,
+    35
+   ],
+   "ability": "마이페이스",
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w158",
+   "origin": "old",
+   "sp": "만타인",
+   "name": "만타인",
+   "types": [
+    "물",
+    "비행"
+   ],
+   "base": [
+    85,
+    40,
+    70,
+    80,
+    140,
+    70
+   ],
+   "ability": "저수",
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "숲",
+    "바다",
+    "설원"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w159",
+   "origin": "old",
+   "sp": "램펄드",
+   "name": "램펄드",
+   "types": [
+    "바위"
+   ],
+   "base": [
+    97,
+    165,
+    60,
+    65,
+    50,
+    58
+   ],
+   "ability": "틀깨기",
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w160",
+   "origin": "old",
+   "sp": "헤라크로스",
+   "name": "헤라크로스",
+   "types": [
+    "벌레",
+    "격투"
+   ],
+   "base": [
+    80,
+    125,
+    75,
+    40,
+    95,
+    85
+   ],
+   "ability": "벌레의알림",
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "숲",
+    "화산"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w161",
+   "origin": "old",
+   "sp": "앤티골",
+   "name": "앤티골",
+   "types": [
+    "불꽃"
+   ],
+   "base": [
+    85,
+    97,
+    66,
+    105,
+    66,
+    65
+   ],
+   "ability": "먹보",
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "화산"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w162",
+   "origin": "old",
+   "sp": "떨구새",
+   "name": "떨구새",
+   "types": [
+    "비행",
+    "악"
+   ],
+   "base": [
+    70,
+    103,
+    85,
+    60,
+    85,
+    82
+   ],
+   "ability": "부풀린가슴",
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "숲",
+    "바다"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w163",
+   "origin": "old",
+   "sp": "곤율거니",
+   "name": "곤율거니",
+   "types": [
+    "악",
+    "격투"
+   ],
+   "base": [
+    65,
+    90,
+    115,
+    45,
+    115,
+    58
+   ],
+   "ability": "탈피",
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "동굴",
+    "화산"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w164",
+   "origin": "old",
+   "sp": "눈여아",
+   "name": "눈여아",
+   "types": [
+    "얼음",
+    "고스트"
+   ],
+   "base": [
+    70,
+    80,
+    70,
+    80,
+    70,
+    110
+   ],
+   "ability": "눈숨기",
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "동굴",
+    "유적",
+    "바다",
+    "설원"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w165",
+   "origin": "old",
+   "sp": "클레스퍼트라",
+   "name": "클레스퍼트라",
+   "types": [
+    "에스퍼"
+   ],
+   "base": [
+    95,
+    60,
+    60,
+    101,
+    60,
+    105
+   ],
+   "ability": "편승",
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "연구소",
+    "유적"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w166",
+   "origin": "old",
+   "sp": "알로라 라이츄",
+   "name": "알로라 라이츄",
+   "types": [
+    "전기",
+    "에스퍼"
+   ],
+   "base": [
+    60,
+    85,
+    50,
+    95,
+    85,
+    110
+   ],
+   "ability": "서핑테일",
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "연구소",
+    "유적",
+    "바다"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w167",
+   "origin": "old",
+   "sp": "큐아링",
+   "name": "큐아링",
+   "types": [
+    "페어리"
+   ],
+   "base": [
+    51,
+    52,
+    90,
+    82,
+    110,
+    100
+   ],
+   "ability": "플라워베일",
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "숲",
+    "설원"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w168",
+   "origin": "old",
+   "sp": "스코빌런",
+   "name": "스코빌런",
+   "types": [
+    "풀",
+    "불꽃"
+   ],
+   "base": [
+    65,
+    108,
+    65,
+    108,
+    65,
+    75
+   ],
+   "ability": "엽록소",
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "숲",
+    "화산"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w169",
+   "origin": "old",
+   "sp": "꿈트렁",
+   "name": "꿈트렁",
+   "types": [
+    "강철"
+   ],
+   "base": [
+    70,
+    85,
+    145,
+    60,
+    55,
+    65
+   ],
+   "ability": "흙먹기",
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "연구소",
+    "설원"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w170",
+   "origin": "old",
+   "sp": "내던숭이",
+   "name": "내던숭이",
+   "types": [
+    "격투"
+   ],
+   "base": [
+    100,
+    120,
+    90,
+    40,
+    60,
+    80
+   ],
+   "ability": "리시버",
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "화산"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w171",
+   "origin": "old",
+   "sp": "묘두기",
+   "name": "묘두기",
+   "types": [
+    "고스트"
+   ],
+   "base": [
+    72,
+    101,
+    100,
+    50,
+    97,
+    68
+   ],
+   "ability": "모래헤치기",
+   "pride": "C",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "동굴",
+    "유적"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w172",
+   "origin": "old",
+   "sp": "기기기어르",
+   "name": "기기기어르",
+   "types": [
+    "강철"
+   ],
+   "base": [
+    60,
+    100,
+    115,
+    70,
+    85,
+    90
+   ],
+   "ability": "플러스",
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "연구소",
+    "설원"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w173",
+   "origin": "old",
+   "sp": "비조도",
+   "name": "비조도",
+   "types": [
+    "격투"
+   ],
+   "base": [
+    65,
+    125,
+    60,
+    95,
+    60,
+    105
+   ],
+   "ability": "정신력",
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "화산"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w174",
+   "origin": "old",
+   "sp": "포트데스",
+   "name": "포트데스",
+   "types": [
+    "고스트"
+   ],
+   "base": [
+    60,
+    65,
+    65,
+    134,
+    114,
+    70
+   ],
+   "ability": "깨어진갑옷",
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "동굴",
+    "유적"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w175",
+   "origin": "old",
+   "sp": "워글",
+   "name": "워글",
+   "types": [
+    "노말",
+    "비행"
+   ],
+   "base": [
+    100,
+    123,
+    75,
+    57,
+    75,
+    80
+   ],
+   "ability": "날카로운눈",
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소",
+    "바다"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w176",
+   "origin": "old",
+   "sp": "니드퀸",
+   "name": "니드퀸",
+   "types": [
+    "독",
+    "땅"
+   ],
+   "base": [
+    90,
+    92,
+    87,
+    75,
+    85,
+    76
+   ],
+   "ability": "독가시",
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "동굴",
+    "숲",
+    "연구소",
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w177",
+   "origin": "old",
+   "sp": "플라이곤",
+   "name": "플라이곤",
+   "types": [
+    "땅",
+    "드래곤"
+   ],
+   "base": [
+    80,
+    100,
+    80,
+    80,
+    80,
+    100
+   ],
+   "ability": "부유",
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w178",
+   "origin": "old",
+   "sp": "독파리",
+   "name": "독파리",
+   "types": [
+    "물",
+    "독"
+   ],
+   "base": [
+    80,
+    70,
+    65,
+    80,
+    120,
+    100
+   ],
+   "ability": "클리어바디",
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소",
+    "바다",
+    "설원"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w179",
+   "origin": "old",
+   "sp": "기가이어스",
+   "name": "기가이어스",
+   "types": [
+    "바위"
+   ],
+   "base": [
+    85,
+    135,
+    130,
+    60,
+    80,
+    25
+   ],
+   "ability": "옹골참",
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w180",
+   "origin": "old",
+   "sp": "단단지",
+   "name": "단단지",
+   "types": [
+    "벌레",
+    "바위"
+   ],
+   "base": [
+    20,
+    10,
+    230,
+    10,
+    230,
+    5
+   ],
+   "ability": "옹골참",
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "동굴",
+    "숲",
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w181",
+   "origin": "old",
+   "sp": "화염레오",
+   "name": "화염레오",
+   "types": [
+    "불꽃",
+    "노말"
+   ],
+   "base": [
+    86,
+    68,
+    72,
+    109,
+    66,
+    106
+   ],
+   "ability": "투쟁심",
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소",
+    "화산"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w182",
+   "origin": "old",
+   "sp": "조로아크",
+   "name": "조로아크",
+   "types": [
+    "악"
+   ],
+   "base": [
+    60,
+    105,
+    60,
+    120,
+    60,
+    105
+   ],
+   "ability": "일루젼",
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "폐가"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w183",
+   "origin": "old",
+   "sp": "크레베이스",
+   "name": "크레베이스",
+   "types": [
+    "얼음"
+   ],
+   "base": [
+    95,
+    117,
+    184,
+    44,
+    46,
+    28
+   ],
+   "ability": "마이페이스",
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "바다",
+    "설원"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w184",
+   "origin": "old",
+   "sp": "엘레이드",
+   "name": "엘레이드",
+   "types": [
+    "에스퍼",
+    "격투"
+   ],
+   "base": [
+    68,
+    125,
+    65,
+    65,
+    115,
+    80
+   ],
+   "ability": "불굴의마음",
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "폐가",
+    "동굴",
+    "연구소",
+    "유적",
+    "화산"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w185",
+   "origin": "old",
+   "sp": "파치래곤",
+   "name": "파치래곤",
+   "types": [
+    "전기",
+    "드래곤"
+   ],
+   "base": [
+    90,
+    100,
+    90,
+    80,
+    70,
+    75
+   ],
+   "ability": "축전",
+   "pride": "C+",
+   "grade": "C",
+   "hab": [
+    "연구소",
+    "유적",
+    "바다",
+    "화산"
+   ],
+   "role": "일반",
+   "moves": []
+  },
+  {
+   "id": "w186",
+   "origin": "old",
+   "sp": "보스로라",
+   "name": "보스로라",
+   "types": [
+    "강철",
+    "바위"
+   ],
+   "base": [
+    70,
+    110,
+    180,
+    60,
+    60,
+    50
+   ],
+   "ability": "옹골참",
+   "pride": "B",
+   "grade": "B",
+   "hab": [
+    "동굴",
+    "연구소",
+    "유적",
+    "화산",
+    "설원"
+   ],
+   "role": "보스",
+   "moves": []
+  },
+  {
+   "id": "w187",
+   "origin": "old",
+   "sp": "루카리오",
+   "name": "루카리오",
+   "types": [
+    "격투",
+    "강철"
+   ],
+   "base": [
+    70,
+    110,
+    70,
+    115,
+    70,
+    90
+   ],
+   "ability": "불굴의마음",
+   "pride": "B",
+   "grade": "B",
+   "hab": [
+    "동굴",
+    "연구소",
+    "화산",
+    "설원"
+   ],
+   "role": "보스",
+   "moves": []
+  },
+  {
+   "id": "w188",
+   "origin": "old",
+   "sp": "야느와르몽",
+   "name": "야느와르몽",
+   "types": [
+    "고스트"
+   ],
+   "base": [
+    45,
+    100,
+    135,
+    65,
+    135,
+    45
+   ],
+   "ability": "프레셔",
+   "pride": "B",
+   "grade": "B",
+   "hab": [
+    "폐가",
+    "동굴",
+    "유적"
+   ],
+   "role": "보스",
+   "moves": []
+  },
+  {
+   "id": "w189",
+   "origin": "old",
+   "sp": "신비록",
+   "name": "신비록",
+   "types": [
+    "노말",
+    "에스퍼"
+   ],
+   "base": [
+    103,
+    105,
+    72,
+    105,
+    75,
+    65
+   ],
+   "ability": "위협",
+   "pride": "B",
+   "grade": "B",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소",
+    "유적"
+   ],
+   "role": "보스",
+   "moves": []
+  },
+  {
+   "id": "w190",
+   "origin": "old",
+   "sp": "크로뱃",
+   "name": "크로뱃",
+   "types": [
+    "독",
+    "비행"
+   ],
+   "base": [
+    85,
+    90,
+    80,
+    70,
+    80,
+    130
+   ],
+   "ability": "정신력",
+   "pride": "B",
+   "grade": "B",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소",
+    "바다"
+   ],
+   "role": "보스",
+   "moves": []
+  },
+  {
+   "id": "w191",
+   "origin": "old",
+   "sp": "액스라이즈",
+   "name": "액스라이즈",
+   "types": [
+    "드래곤"
+   ],
+   "base": [
+    76,
+    147,
+    90,
+    60,
+    70,
+    97
+   ],
+   "ability": "투쟁심",
+   "pride": "B",
+   "grade": "B",
+   "hab": [
+    "유적",
+    "화산"
+   ],
+   "role": "보스",
+   "moves": []
+  },
+  {
+   "id": "w192",
+   "origin": "old",
+   "sp": "타부자고",
+   "name": "타부자고",
+   "types": [
+    "강철",
+    "고스트"
+   ],
+   "base": [
+    87,
+    60,
+    95,
+    133,
+    91,
+    84
+   ],
+   "ability": "황금몸",
+   "pride": "B+",
+   "grade": "B",
+   "hab": [
+    "폐가",
+    "동굴",
+    "연구소",
+    "유적",
+    "설원"
+   ],
+   "role": "보스",
+   "moves": []
+  },
+  {
+   "id": "w193",
+   "origin": "old",
+   "sp": "기로치",
+   "name": "기로치",
+   "types": [
+    "독",
+    "페어리"
+   ],
+   "base": [
+    88,
+    91,
+    82,
+    70,
+    125,
+    99
+   ],
+   "ability": "독사슬",
+   "pride": "B+",
+   "grade": "B",
+   "hab": [
+    "폐가",
+    "숲",
+    "연구소",
+    "설원"
+   ],
+   "role": "보스",
+   "moves": []
+  },
+  {
+   "id": "w194",
+   "origin": "old",
+   "sp": "붉은 달 다투곰",
+   "name": "붉은 달 다투곰",
+   "types": [
+    "땅",
+    "노말"
+   ],
+   "base": [
+    113,
+    70,
+    120,
+    135,
+    65,
+    52
+   ],
+   "ability": "심안",
+   "pride": "B+",
+   "grade": "B",
+   "hab": [
+    "폐가",
+    "동굴",
+    "숲",
+    "연구소",
+    "유적",
+    "화산"
+   ],
+   "role": "보스",
+   "moves": []
+  },
+  {
+   "id": "w195",
+   "origin": "old",
+   "sp": "아케오스",
+   "name": "아케오스",
+   "types": [
+    "바위",
+    "비행"
+   ],
+   "base": [
+    75,
+    140,
+    65,
+    112,
+    65,
+    110
+   ],
+   "ability": "무기력",
+   "pride": "B+",
+   "grade": "B",
+   "hab": [
+    "동굴",
+    "숲",
+    "유적",
+    "바다",
+    "화산"
+   ],
+   "role": "보스",
+   "moves": []
+  },
+  {
+   "id": "w196",
+   "origin": "old",
+   "sp": "브리두라스",
+   "name": "브리두라스",
+   "types": [
+    "강철",
+    "드래곤"
+   ],
+   "base": [
+    90,
+    105,
+    130,
+    125,
+    65,
+    85
+   ],
+   "ability": "지구력",
+   "pride": "A",
+   "grade": "A",
+   "hab": [
+    "동굴",
+    "연구소",
+    "유적",
+    "화산",
+    "설원"
+   ],
+   "role": "보스",
+   "moves": []
+  },
+  {
+   "id": "w197",
+   "origin": "old",
+   "sp": "드닐레이브",
+   "name": "드닐레이브",
+   "types": [
+    "드래곤",
+    "얼음"
+   ],
+   "base": [
+    115,
+    145,
+    92,
+    75,
+    86,
+    87
+   ],
+   "ability": "열교환",
+   "pride": "A",
+   "grade": "A",
+   "hab": [
+    "유적",
+    "바다",
+    "화산",
+    "설원"
+   ],
+   "role": "보스",
+   "moves": []
+  },
+  {
+   "id": "w198",
+   "origin": "old",
+   "sp": "마기라스",
+   "name": "마기라스",
+   "types": [
+    "바위",
+    "악"
+   ],
+   "base": [
+    100,
+    134,
+    110,
+    95,
+    100,
+    61
+   ],
+   "ability": "모래날림",
+   "pride": "A",
+   "grade": "A",
+   "hab": [
+    "폐가",
+    "동굴",
+    "유적",
+    "화산"
+   ],
+   "role": "보스",
+   "moves": []
+  },
+  {
+   "id": "w199",
+   "origin": "old",
+   "sp": "삼삼드래",
+   "name": "삼삼드래",
+   "types": [
+    "악",
+    "드래곤"
+   ],
+   "base": [
+    92,
+    105,
+    90,
+    125,
+    90,
+    98
+   ],
+   "ability": "부유",
+   "pride": "A",
+   "grade": "A",
+   "hab": [
+    "폐가",
+    "유적",
+    "화산"
+   ],
+   "role": "보스",
+   "moves": []
+  },
+  {
+   "id": "w200",
+   "origin": "old",
+   "sp": "메타그로스",
+   "name": "메타그로스",
+   "types": [
+    "강철",
+    "에스퍼"
+   ],
+   "base": [
+    80,
+    135,
+    130,
+    95,
+    90,
+    70
+   ],
+   "ability": "클리어바디",
+   "pride": "A",
+   "grade": "A",
+   "hab": [
+    "폐가",
+    "동굴",
+    "연구소",
+    "유적",
+    "설원"
+   ],
+   "role": "보스",
+   "moves": []
+  }
+ ],
+ "at": "2026-10-27T10:34:09.957Z"
+}

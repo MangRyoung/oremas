@@ -8,6 +8,8 @@
    node bin/sim.js run --scenario data/scenarios/base.json [--n 1000]      시나리오대로 던전을 N 판 돌려 records/ 에 기록
    node bin/sim.js run --dungeon factory --party 카이,미오,레온 [--n 500] [--seed 1] [--adjust target=2,penScale=0.5] [--policy cover=never]
    node bin/sim.js combos --pool 이름,이름,… --size 3 --dungeons a,b --n 100 [--id x --name 이름]   조합 훑기
+   node bin/sim.js gendb [--seed 27]                야생 DB 200체 (오리지널 150 생성 + 올드 50) → data/wild/db.json
+   node bin/sim.js mon --step B --kind 쌍두 --types 물,독 --n 5   오리지널몬 한 줌 만들어 보기
    node bin/sim.js report                        records/*.summary.json → report/index.html · report.md
    --snap 를 안 주면 data/snapshot.json, 없으면 data/sample_snapshot.json (시험용 4명) */
 "use strict";
@@ -84,5 +86,13 @@ const stamp=()=>new Date().toISOString().replace(/[-:T]/g,'').slice(0,12);
   for(const tier of String(opt.tier||'easy').split(','))for(const gk of C.grid(opt.grid)){const kn=Object.assign({},base,gk);const AD=['restV','al0','al30','al70','alBattle','alScale'];const ad={};for(const k of AD)if(kn[k]!=null){ad[k]=kn[k];delete kn[k]}opt.adjust=Object.entries(Object.assign(kv(opt.adjustBase),ad)).map(([k,v])=>k+'='+v).join(',');const r=C.evalCfg(W,built,wf,tier,kn,{g:+opt.g||8,n:+opt.n||10,trios:TR,seed0:+opt.seed0||100,adjust:kv(opt.adjust)});out.push(r);
    r.adjust=kv(opt.adjust);console.log(`${tier} ${JSON.stringify(kn)}${opt.adjust?' ['+opt.adjust+']':''} → 승률 ${(r.win*100).toFixed(0)}% (조합 ${(r.trioWin.min*100).toFixed(0)}~${(r.trioWin.max*100).toFixed(0)}, 중앙 ${(r.trioWin.med*100).toFixed(0)}) · 보스 도달 ${(r.boss.reach*100).toFixed(0)}% 보스전 승 ${(r.boss.win*100).toFixed(0)}% · 체크 ${r.checks.per.toFixed(1)}개 성공 ${(r.checks.ok*100).toFixed(0)} 대가 ${(r.checks.cost*100).toFixed(0)} 실패 ${(r.checks.fail*100).toFixed(0)} · 경계도 평균 ${r.alertAvg.toFixed(0)} 퇴출 ${(r.lockdown*100).toFixed(0)}% [${['0+','30+','70+','100'].map(k=>r.byAl[k]?k+':'+(r.byAl[k].w/r.byAl[k].n*100).toFixed(0)+'%('+(r.byAl[k].n/r.runs*100).toFixed(0)+')':'').filter(Boolean).join(' ')}] · 끝 HP ${(r.endHp*100).toFixed(0)}% · ${((Date.now()-t0)/1000).toFixed(0)}초`)}
   const R=require('../lib/report.js');const id=(opt.id||'calib_'+KO.stamp()).replace(/[^\w가-힣=._-]/g,'_');fs.mkdirSync(R.PRIV,{recursive:true});fs.writeFileSync(path.join(R.PRIV,id+'.json'),JSON.stringify({id,name:opt.name||id,at:new Date().toISOString(),pool,trios:TR,g:+opt.g||8,n:+opt.n||10,base,grid:opt.grid||'',rows:out},null,1));console.log('저장:',id);return}
+ if(cmd==='gendb'){/* 야생 DB 200체 생성: --seed 27 [--out data/wild/db.json] [--dry] [--rounds 3 --reviewn 24 | --noreview] */
+  const WB=require('../lib/wilddb.js');const db=WB.buildV2({seed:+opt.seed||27,W:opt.noreview?null:W,rounds:opt.rounds==null?3:+opt.rounds,reviewN:+opt.reviewn||24});const cov=db.coverage;if(db.review){console.log('검토:',JSON.stringify(db.review.log),'평균 승률',db.review.avgWr,'남은 표시',db.review.flagged);for(const f of db.review.flags.slice(0,30))console.log('  ·',f)}
+  console.log('만든 수:',JSON.stringify(db.count));console.log('서식지 덮기 (C/B/A):',Object.entries(cov).map(([h,c])=>`${h} ${c.C}/${c.B}/${c.A}`).join(' · '));
+  const P2=require('../lib/pride.js');let bad=0;for(const e of db.entries)if(e.origin==='orig'){const r=P2.calc(e.base,e.dual);if(r.step!==e.pride||!P2.legal(e.base))bad++}console.log('계단 불일치:',bad);
+  if(!opt.dry){const f=opt.out?path.resolve(opt.out):WB.FILE;fs.mkdirSync(path.dirname(f),{recursive:true});fs.writeFileSync(f,JSON.stringify(Object.assign(db,{at:new Date().toISOString()}),null,1));console.log('저장:',f)}return}
+ if(cmd==='mon'){/* 한 체 만들어 보기: --step B --kind 쌍두 --types 물,독 --n 5 --seed 1 */
+  const M=require('../lib/mongen.js'),BT=require('../lib/battle.js'),P2=require('../lib/pride.js');const rng=BT.mkRng(+opt.seed||Date.now()%100000);const used=new Set();
+  for(let i=0;i<(+opt.n||5);i++){const m=M.one(rng,{step:opt.step||'C',kind:opt.kind,types:opt.types?String(opt.types).split(','):null,used});if(!m){console.log('실패');continue}const r=P2.calc(m.base,m.dual);console.log(`${m.name}\t${m.types.join('/')}\t${m.base.join('/')}\t${m.kind}\t${m.pride}(계산 ${Math.round(r.ct)})\t${m.ability}\t${m.hab.join('·')}\n  ${m.concept}`)}return}
  if(cmd==='report'){const R=require('../lib/report.js');const rep=R.build();console.log(`시나리오 ${rep.n}개 → ${rep.html}`);return}
  console.log('모르는 명령:',cmd);})().catch(e=>{console.error('오류:',e.message);process.exit(1)});

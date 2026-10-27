@@ -13,7 +13,7 @@ const BOSS=[[H,0,'잭 오 랜턴'],[A,1,'알 아지프'],[R,0,'아틀락-나차'
 const TIER={easy:{bossN:4,raid:2,name:'쉬움'},normal:{bossN:4,raid:3,name:'보통'},hard:{bossN:6,raid:3,name:'어려움'}};
 const STATS=['지시','육성','통솔','능력'];
 const TYPES=['물','풀','불꽃','전기','에스퍼','고스트','땅','비행','악','페어리'];
-const SRC=([t,i])=>t==='dex'?{sp:i}:{trainer:t,pick:[i]};   /* 풀 항목 → mix 항목. ['dex', 이름, 이름] = 도감 야생 */
+const SRC=([t,i])=>t==='dex'?{sp:i}:t==='db'?{db:i}:{trainer:t,pick:[i]};   /* 풀 항목 → mix 항목. ['dex', 이름, 이름] = 도감 야생 · ['db', id, 이름] = 야생 DB(data/wild/db.json) */
 const TGT={low:[5,7],mid:[7,9],high:[9,11],mix:[7,9]};
 /* 패널티 표 (웹툴 PEN_EX 꼴). 세기별로 실패 · 대가 */
 const PEN={

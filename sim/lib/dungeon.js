@@ -73,8 +73,8 @@ function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt.seed|
  /* 조우 */
  const doBattle=(room,enc)=>{let wild;
   if(enc.mix){/* 여러 트레이너의 포켓몬을 섞은 야생 무리: mix:[{trainer,pick}], 순서대로 이어 붙여 앞에서 n 체(보스 방은 adjust.bossN 이 우선). bossAt 번째가 『와일드 보스』(×1.5), raid:X 면 「레이드 배틀 : X」 */
-   if(!opt.wildFrom&&enc.mix.some(m=>!m.sp))throw new Error('스냅샷 야생을 쓸 수 없음 (wildFrom 없음)');const lvAdd=(+enc.lvAdd||0)+(+adj.wildLv||0)+(enc._extra?0:pend.foeLv)+(enc.boss?pend.bossLv:0)+alLv();if(!enc._extra)pend.foeLv=0;let mons=[],tr=null;
-   for(const src of enc.mix){if(src.sp){/* 도감 야생 (lib/dex.js) */const r=require('./dex.js').build(W,src.sp,{lvAdd});tr=tr||r.trainer;mons.push(r.mon);continue}const w=opt.wildFrom(src.trainer,{pick:src.pick,take:src.take,lvAdd});tr=tr||w.trainer;mons=mons.concat(w.mons)}
+   if(!opt.wildFrom&&enc.mix.some(m=>!m.sp&&!m.db))throw new Error('스냅샷 야생을 쓸 수 없음 (wildFrom 없음)');const lvAdd=(+enc.lvAdd||0)+(+adj.wildLv||0)+(enc._extra?0:pend.foeLv)+(enc.boss?pend.bossLv:0)+alLv();if(!enc._extra)pend.foeLv=0;let mons=[],tr=null;
+   for(const src of enc.mix){if(src.db){/* 야생 DB (lib/wilddb.js v2) */const WB=require('./wilddb.js');const e=(WB._cache=WB._cache||WB.fullV2()).find(x=>x.id===src.db||x.name===src.db);if(!e)throw new Error('야생 DB 에 없음: '+src.db);const r=WB.buildEntry(W,e,{lvAdd});tr=tr||r.trainer;mons.push(r.mon);continue}if(src.sp){/* 도감 야생 (lib/dex.js) */const r=require('./dex.js').build(W,src.sp,{lvAdd});tr=tr||r.trainer;mons.push(r.mon);continue}const w=opt.wildFrom(src.trainer,{pick:src.pick,take:src.take,lvAdd});tr=tr||w.trainer;mons=mons.concat(w.mons)}
    const N=enc.boss&&+adj.bossN?+adj.bossN:(+enc.n||mons.length);while(mons.length<N)mons.push(clone(mons[mons.length%Math.max(1,enc.mix.length)]));mons=mons.slice(0,N);
    const seen={};mons.forEach((x,i)=>{seen[x.id]=(seen[x.id]||0)+1;if(seen[x.id]>1)x.id=x.id+'_d'+i});
    const bi=enc.boss?(+enc.bossAt||0):-1;const X=enc.boss?(adj.raidX!=null&&adj.raidX!==''?+adj.raidX:(+enc.raid||0)):0;
