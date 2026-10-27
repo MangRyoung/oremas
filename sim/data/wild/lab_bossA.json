@@ -1,20 +1,21 @@
 {
- "id": "factory_boss",
- "name": "발전소의 주인",
+ "id": "lab_bossA",
+ "name": "연구소 보스 A + C 2",
  "lv": {
   "육성": "C"
  },
  "hab": "연구소",
+ "kind": "bossA",
  "mons": [
   {
-   "db": "w212",
+   "db": "w220",
    "boss": true
   },
   {
    "db": "w255"
   },
   {
-   "db": "w261"
+   "db": "w240"
   }
  ]
 }

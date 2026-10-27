@@ -36,8 +36,9 @@ function generate(o){o=o||{};const tier=o.tier||'normal';if(!PRESET[tier])throw 
  /* 야생 풀을 바꿀 수 있다: o.wild = [[트레이너 id, 순번, 이름]…] · o.boss = 같은 꼴 */
  /* 야생 출처: 'dex'(기본, 제작기 도감 실제 포켓몬 — 테마 타입 · 종족치 범위) | 'npc'(무진 NPC 풀, 10-27 맞추기에 쓴 것) */
  /* 'db'(야생 DB 가 있으면 기본): 테마 = 서식지. 일반 야생 = C 묶음(일반), 보스 = B · A 묶음. o.grades = {wild:['C'], boss:['B','A']} 로 바꿀 수 있다(등급 구성 실험용) */
+ const GT={easy:{wild:['C'],boss:['B','A']},normal:{wild:['C'],boss:['A']},hard:{wild:['C','B'],boss:['A']}};/* 10-27 20:30 야생 DB 300체 기준 맞춤(gradecal_db300): 쉬움 88 · 보통 63 · 어려움 37% */const gr=Object.assign({},GT[tier]||GT.normal,o.grades||{});
  const WB=require('./wilddb.js');const hasDb=fs.existsSync(WB.FILE)&&(WB.read().v||1)>=2;const source=o.source||(hasDb?'db':'dex');let wild=o.wild,bossP=o.boss;
- if(source==='db'&&!wild){const all=WB.fullV2();const gr=Object.assign({wild:['C'],boss:['B','A']},o.grades||{});const inHab=e=>(e.hab||[]).includes(thName);
+ if(source==='db'&&!wild){const all=WB.fullV2();const gr=Object.assign({},GT[tier]||GT.normal,o.grades||{});const inHab=e=>(e.hab||[]).includes(thName);
   const W0=all.filter(e=>inHab(e)&&gr.wild.includes(e.grade)),B0=all.filter(e=>inHab(e)&&gr.boss.includes(e.grade));
   wild=(W0.length>=8?W0:all.filter(e=>gr.wild.includes(e.grade))).map(e=>['db',e.id,e.name]);bossP=(B0.length>=3?B0:all.filter(e=>gr.boss.includes(e.grade))).map(e=>['db',e.id,e.name])}
  if(source==='dex'&&!wild){const DX=require('./dex.js');const wb=o.wildBst||DEX_BST.wild,bb=o.bossBst||DEX_BST.boss;
@@ -54,7 +55,7 @@ function generate(o){o=o||{};const tier=o.tier||'normal';if(!PRESET[tier])throw 
  dg.id=o.id||`auto_${tier}_${seed}`;dg.name=o.name||`${pick(th.name)} (${TIER_KO[tier]})`;dg.theme=thName;dg.owner=bossName;
  dg.rules=Object.assign({},RULES,o.rules||{});dg.private=true;
  dg.note=`자동 생성 · ${TIER_KO[tier]} · 씨앗 ${seed} · 테마 ${thName}. 사전 배틀 ${knobs.battles} · 체크 ${knobs.checks} · 보스방 ${G.TIER[tier].bossN}체 · ${RAIDN[G.TIER[tier].raid]} · 야생 Lv ${knobs.lv>=0?'+':''}${knobs.lv}.`;
- dg.gen=Object.assign({},dg.gen,{v:1,auto:true,theme:thName,rules:dg.rules,source});
+ dg.gen=Object.assign({},dg.gen,{v:1,auto:true,theme:thName,rules:dg.rules,source,grades:source==='db'?gr:undefined});
  return dg}
 /* 웹툴 던전 탭 꼴로 — 지도 좌표(지그재그) · 통로 · 방마다 sk(스킬 체크) · rk(휴식 단계) · m(GM 메모: 조우 구성 · 경계도 패널티 · 단서) */
 const PEN_KO=p=>{if(!p)return '';const L=[];if(p.al)L.push('경계도 +'+p.al);if(p.dmg)L.push('HP −'+p.dmg);if(p.st)L.push('상태 '+({Paralysis:'마비',Poison:'독',Confusion:'혼란',Burn:'화상',Sleep:'잠듦'}[p.st]||p.st));if(p.oo)L.push('다음 배틀 4식 −'+p.oo);if(p.oc)L.push('다음 배틀 6령 −'+p.oc);if(p.rk)L.push('랭크 '+Object.entries(p.rk).map(([k,v])=>k+(v>0?'+':'')+v).join(' '));if(p.memo)L.push(p.memo);return L.join(' · ')};

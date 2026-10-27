@@ -1,0 +1,21 @@
+{
+ "id": "volcano_bossA",
+ "name": "화산 보스 A + C 2",
+ "lv": {
+  "육성": "C"
+ },
+ "hab": "화산",
+ "kind": "bossA",
+ "mons": [
+  {
+   "db": "w295",
+   "boss": true
+  },
+  {
+   "db": "w026"
+  },
+  {
+   "db": "w243"
+  }
+ ]
+}

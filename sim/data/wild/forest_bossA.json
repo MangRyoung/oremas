@@ -1,0 +1,21 @@
+{
+ "id": "forest_bossA",
+ "name": "숲 보스 A + C 2",
+ "lv": {
+  "육성": "C"
+ },
+ "hab": "숲",
+ "kind": "bossA",
+ "mons": [
+  {
+   "db": "w219",
+   "boss": true
+  },
+  {
+   "db": "w052"
+  },
+  {
+   "db": "w057"
+  }
+ ]
+}

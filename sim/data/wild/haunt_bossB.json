@@ -1,0 +1,21 @@
+{
+ "id": "haunt_bossB",
+ "name": "폐가 보스 B + C 2",
+ "lv": {
+  "육성": "C"
+ },
+ "hab": "폐가",
+ "kind": "bossB",
+ "mons": [
+  {
+   "db": "w201",
+   "boss": true
+  },
+  {
+   "db": "w057"
+  },
+  {
+   "db": "w153"
+  }
+ ]
+}

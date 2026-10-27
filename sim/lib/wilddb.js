@@ -73,11 +73,15 @@ function buildEntry(W,e,o){o=o||{};const key=e.id+'|'+(+o.lvAdd||0)+'|'+(o.boss?
   const doc={id:'wdb_'+e.id,data:{name:e.name||e.sp,t1:types[0]||'-',t2:types[1]||'-',base,ability:src.ability||e.ability||'',item:'',moves:(e.moves||[]).map(n=>typeof n==='string'?{name:n}:n),pride:e.pride||'C',dist:+o.lvAdd||0,pots:[]}};
   const x=W.OM_IMPORT.pokemon(doc,tr);x.dualHint=!!e.dual;x.kindHint=e.kind||'';require('./automove.js').fill(W,x);CB[key]={trainer:tr,mon:x}}
  return JSON.parse(JSON.stringify(CB[key]))}
-/* 옛 무리 7개를 지금 DB 로 다시 짠다 (DB 를 통째로 다시 만들면 id 가 다른 몬을 가리키므로) */
-function rebuildPacks(seed){const BT=require('./battle.js');const rng=BT.mkRng(seed||5);const L=fullV2();const used=new Set();const dir=path.resolve(__dirname,'..','data','wild');
- const pickN=(hab,grade,n)=>{const C=L.filter(e=>(e.hab||[]).includes(hab)&&e.grade===grade&&!used.has(e.id));const out=[];for(let i=0;i<n&&C.length;i++){const e=C.splice(Math.floor(rng()*C.length),1)[0];out.push(e);used.add(e.id)}return out};
- const mk=(id,name,hab,spec)=>{const mons=[];for(const [g,n,boss] of spec)for(const e of pickN(hab,g,n))mons.push(Object.assign({db:e.id},boss?{boss:true}:{}));return {id,name,lv:{육성:'C'},hab,mons}};
- const P=[mk('rat_pack','들쥐 무리','숲',[['C',3]]),mk('cave_pack','동굴 무리','동굴',[['C',3]]),mk('cave_boss','동굴의 주인','동굴',[['B',1,true],['C',2]]),mk('factory_pack','공장 무리','연구소',[['C',3]]),mk('factory_boss','발전소의 주인','연구소',[['A',1,true],['C',2]]),mk('swamp_pack','늪 무리','폐가',[['C',3]]),mk('ruin_boss','폐가의 주인','폐가',[['B',1,true],['C',2]])];
- for(const p of P)fs.writeFileSync(path.join(dir,p.id+'.json'),JSON.stringify(p,null,1));return P.map(p=>p.id)}
+/* 무리 세트 (10-27 20:20 망령 「무리도 좀 더 늘려도 돼. 결국 여러 개 만들어 봐야 테스트할 수 있으니」):
+   서식지 8 × 종류 6 = 48 무리. 종류: c2 일반 C 2체 · c3 일반 C 3체 · cb 일반 C 2 + B 1 · bossB 보스 B + C 2 · bossA 보스 A + C 2 · bossAB 보스 A + B 1 + C 2.
+   id = <서식지 영문>_<종류>, 같은 서식지 안에서는 겹치지 않게 뽑는다(씨앗 고정). DB 를 다시 만들면 전부 다시 짠다 */
+const HAB_EN={폐가:'haunt',동굴:'cave',숲:'forest',연구소:'lab',유적:'ruin',바다:'sea',화산:'volcano',설원:'snow'};
+const PACK_KINDS=[['c2','일반 · C 2체',[['C',2]]],['c3','일반 · C 3체',[['C',3]]],['cb','일반 · C 2 + B 1',[['C',2],['B',1]]],['bossB','보스 B + C 2',[['B',1,true],['C',2]]],['bossA','보스 A + C 2',[['A',1,true],['C',2]]],['bossAB','보스 A + B 1 + C 2',[['A',1,true],['B',1],['C',2]]]];
+function rebuildPacks(seed){const BT=require('./battle.js');const rng=BT.mkRng(seed||5);const L=fullV2();const dir=path.resolve(__dirname,'..','data','wild');
+ for(const f of fs.readdirSync(dir))if(f.endsWith('.json')&&f!=='db.json')fs.unlinkSync(path.join(dir,f));
+ const ids=[];for(const hab of Object.keys(HAB)){const used=new Set();const pickN=(grade,n)=>{let C=L.filter(e=>(e.hab||[]).includes(hab)&&e.grade===grade&&!used.has(e.id));if(C.length<n)C=L.filter(e=>(e.hab||[]).includes(hab)&&e.grade===grade);const out=[];for(let i=0;i<n&&C.length;i++){const e=C.splice(Math.floor(rng()*C.length),1)[0];out.push(e);used.add(e.id)}return out};
+  for(const [k,label,spec] of PACK_KINDS){const mons=[];for(const [g,n,boss] of spec)for(const e of pickN(g,n))mons.push(Object.assign({db:e.id},boss?{boss:true}:{}));const id=HAB_EN[hab]+'_'+k;fs.writeFileSync(path.join(dir,id+'.json'),JSON.stringify({id,name:`${hab} ${label}`,lv:{육성:'C'},hab,kind:k,mons},null,1));ids.push(id)}}
+ return ids}
 function clearCache(){for(const k in CB)delete CB[k];module.exports._cache=null}
 module.exports={FILE,STEPS,prideOf,GRADES,HAB,read,write,build,full,candidates,gradeOf,habOf,isNot,PLAN_V2,planFor,dexTypes,pickOld,buildV2,fullV2,buildEntry,clearCache,rebuildPacks};

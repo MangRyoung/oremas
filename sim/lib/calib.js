@@ -20,7 +20,7 @@ function grid(spec){/* "lv=-10,-5,0;battles=1,2" → [{lv:-10,battles:1},…] */
  let out=[{}];for(const [k,vs] of ks){const nx=[];for(const o of out)for(const v of vs)nx.push(Object.assign({},o,{[k]:v}));out=nx}return out}
 /* 자동 생성 검증: generate() 로 뽑은 던전(규칙값 dg.rules 포함)을 그대로 돌린다 */
 function evalAuto(W,built,wf,tier,o){const AG=require('./autogen.js');const g=o.g||12,n=o.n||10;let runs=0,wins=0,al30=0,al70=0,lock=0;const perT={},perD=[];
- for(let s=1;s<=g;s++){const dg=AG.generate({tier,seed:(o.seed0||900)+s,knobs:o.knobs,theme:o.theme});let dw=0,dn=0;
+ for(let s=1;s<=g;s++){const dg=AG.generate({tier,seed:(o.seed0||900)+s,knobs:o.knobs,theme:o.theme,grades:o.grades});let dw=0,dn=0;
   for(const c of o.trios){let tw=0;for(let i=0;i<n;i++){const r=D.run(W,dg,c.map(x=>built[x]),{seed:s*1000+i+1,wildFrom:wf});runs++;dn++;if(!r.wipe){wins++;dw++;tw++}if(r.alert>=30)al30++;if(r.alert>=70)al70++;if(r.lockdown)lock++}perT[c.join(',')]=(perT[c.join(',')]||0)+tw}
   perD.push({seed:dg.gen.seed,name:dg.name,battles:dg.gen.knobs.battles,boss:dg.gen.boss,win:dw/dn})}
  const tw=Object.values(perT).map(v=>v/(g*n)).sort((a,b)=>a-b);
