@@ -67,11 +67,19 @@ function buildV2(o){o=o||{};const BT=require('./battle.js'),M=require('./mongen.
 /* 화면 · 생성기용: v1(sp 만) · v2 모두 타입 · 종족치가 채워진 꼴로 */
 function fullV2(db){db=db||read();if(!db.entries)return [];if(db.v>=2)return db.entries.map(e=>e.origin==='old'&&!e.base?Object.assign({},e,(DX.list().find(d=>d.name===e.sp)||{missing:true})):e);return full(db)}
 /* 배틀용 한 체: entry(v2) → {trainer, mon} (dex.build 와 같은 꼴). 오리지널은 제작기 import 로 직접 만든다(명세 8-1) */
+/* 오리지널 특성(10-27 밤 생성기, 틀 = 기존 특성)의 자동 구문 — 웹툴 효과 엔진이 읽는 꼴(m.auto[이름]). 틀:
+   「HP : 1/3 이하」일 때 「T」 기술 1.5배(맹화 꼴) → cond hp_le + boost · 【등장】/「정면」에게 「S : -1」(재뒤집어쓰기 꼴) → rank front.
+   「T」 기술을 받으면 · 「접촉기」를 받으면(정의의마음 · 대격분 꼴)은 웹툴 피격 반응(hitRules)이 효과 글을 읽는다 · 「S」 상태일 때 턴 종료 회복(포이즌힐 꼴)은 시뮬 GM 처리(battle3.js) */
+const KO_ST={공격:'attack',방어:'defense',특공:'specialattack',특방:'specialdefense',스피드:'speed',명중:'accuracy',회피:'evasion'};
+function origAuto(W,e){const t=String(e.abilityDesc||'');let m;
+ if((m=t.match(/「HP\s*:\s*(\d+\/\d+)\s*이하」일 때 자신의 「([^」]+)」 기술의 대미지를 강화\(([\d.]+)배\)/)))return {text:t,ops:[{k:'cond',c:'hp_le',frac:m[1]},{k:'boost',tgt:'self',v:+m[3],types:[W.OM_STATS.typeEn(m[2])],cat:'all',eff:'all',rng:'all',uses:-1,turn:0,tl:0,ro:[],st:'',tg:[],sb:''}]};
+ if((m=t.match(/【등장】\/「정면」에게 「([^」:]+)\s*:\s*([+-]\d+)」/))&&KO_ST[m[1].trim()])return {text:t,ops:[{k:'rank',tgt:'front',stats:{[KO_ST[m[1].trim()]]:+m[2]}}]};
+ return null}
 const CB={};
 function buildEntry(W,e,o){o=o||{};const key=e.id+'|'+(+o.lvAdd||0)+'|'+(o.boss?1:0);if(!CB[key]){const tr=W.OM_IMPORT.trainer({id:'wild_db',data:{name:'야생',kind:'npc',ranks:{육성:'C',지시:'D',통솔:'D',능력:'D'},pids:[]}});tr.wild=true;tr.orderCount={};
   const src=e.base?e:(DX.list().find(d=>d.name===e.sp)||{});const base=(src.base||[60,60,60,60,60,60]).slice();if(o.boss)base[0]+=15;const types=src.types||e.types||['노말'];
   const doc={id:'wdb_'+e.id,data:{name:e.name||e.sp,t1:types[0]||'-',t2:types[1]||'-',base,ability:src.ability||e.ability||'',item:'',moves:(e.moves||[]).map(n=>typeof n==='string'?{name:n}:n),pride:e.pride||'C',dist:+o.lvAdd||0,pots:[]}};
-  const x=W.OM_IMPORT.pokemon(doc,tr);x.dualHint=!!e.dual;x.kindHint=e.kind||'';require('./automove.js').fill(W,x);CB[key]={trainer:tr,mon:x}}
+  const x=W.OM_IMPORT.pokemon(doc,tr);x.dualHint=!!e.dual;x.kindHint=e.kind||'';if(e.abilityOrig&&e.abilityDesc){x.abilityEff=e.abilityDesc;const au=origAuto(W,e);if(au){x.auto=Object.assign({},x.auto||{});x.auto[e.ability]=au}}require('./automove.js').fill(W,x);CB[key]={trainer:tr,mon:x}}
  return JSON.parse(JSON.stringify(CB[key]))}
 /* 무리 세트 (10-27 20:20 망령 「무리도 좀 더 늘려도 돼. 결국 여러 개 만들어 봐야 테스트할 수 있으니」):
    서식지 8 × 종류 6 = 48 무리. 종류: c2 일반 C 2체 · c3 일반 C 3체 · cb 일반 C 2 + B 1 · bossB 보스 B + C 2 · bossA 보스 A + C 2 · bossAB 보스 A + B 1 + C 2.

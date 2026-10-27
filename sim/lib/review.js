@@ -15,7 +15,7 @@ function staticFlags(e,M){const F=[];const b=e.base||[];const main=Math.max(b[1]
 function duel(W,WB,e,opp,n,seed){let w=0,t=0;const rng=BT.mkRng(seed||1);const A=WB.buildEntry(W,e,{});
  if(!A.mon.moves||!A.mon.moves.length||A.mon.moves.every(m=>m.name==='발버둥'))return {wr:0,noMoves:true};
  const SI=require('./automove.js').sockInfo(W,A.mon);
- for(let i=0;i<n;i++){const o=opp[i%opp.length];const B=WB.buildEntry(W,o,{});const r=BT.runBattle(W,{left:{parties:[{trainer:A.trainer,mons:[A.mon]}]},right:{trainer:B.trainer,mons:[B.mon]},seed:(seed||1)*131+i,format:1,maxTurns:20});if(r.winner==='left')w++;else if(r.winner!=='right')t++}
+ for(let i=0;i<n;i++){const o=opp[i%opp.length];const B=WB.buildEntry(W,o,{});const r=BT.runBattleSync(W,{left:{parties:[{trainer:A.trainer,mons:[A.mon]}]},right:{trainer:B.trainer,mons:[B.mon]},seed:(seed||1)*131+i,format:1,maxTurns:20});if(r.winner==='left')w++;else if(r.winner!=='right')t++}
  return {wr:w/n,draw:t/n,stab:A.mon.moves.some(m=>e.types.includes(m.type)),sock:SI}}
 /* 전체 검토 + 개선 루프. entries 를 제자리에서 고친다. 돌려주는 것: 요약 */
 function reviewAll(W,WB,M,entries,o){o=o||{};const n=o.n||24,rounds=o.rounds==null?3:o.rounds;const rng=BT.mkRng(o.seed||9);const log=[];

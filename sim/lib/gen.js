@@ -39,12 +39,12 @@ function make(tier,knobs,seed){const T=TIER[tier];if(!T)throw new Error('난이�
   const fx=o=>{o=JSON.parse(JSON.stringify(o));if(o.al==='F')o.al=k.alFail;if(o.al==='C')o.al=k.alCost;if(typeof o.fight==='string'){const n=+o.fight.slice(1);o.fight={mix:take(n).map(SRC),lvAdd:k.lv}}return o};
   const c={label:LABEL[st][ri(3)],stat:st,target,hint:typedAt.has(i)?'type:'+TYPES[ri(TYPES.length)]:'any',pen:{fail:fx(pe.fail[ri(pe.fail.length)]),cost:fx(pe.cost[ri(pe.cost.length)])}};if(st==='능력'&&ri(2))c.mode='inou';checks.push(c)}
  /* 방 배치: 입구(체크) → [배틀 · 체크 섞기] → (휴식 방 + 남은 체크) → 보스 */
- const rooms=[];let ci=0;const nextCheck=()=>ci<checks.length?checks[ci++]:null;
+ const rooms=[];let ci=0,rn=0;const nextCheck=()=>ci<checks.length?checks[ci++]:null;const cid=()=>'c'+(++rn);   /* 10-28: 방 id 가 겹치던 것 고침(전엔 'c'+ci 가 두 곳에서 같은 값 — 시뮬이 한 체크를 두 번 · 다른 하나는 건너뜀) */
  rooms.push({id:'entry',t:'entry',name:'입구',check:nextCheck()});
  for(let b=0;b<k.battles;b++){rooms.push({id:'b'+(b+1),t:'battle',name:'조우 '+(b+1),enc:{mix:take(k.foes).map(SRC),lvAdd:k.lv}});
-  const left=checks.length-ci,slots=k.battles-b;if(left>1&&(left>slots||ri(2))){const c=nextCheck();if(c)rooms.push({id:'c'+ci,t:['puzzle','trap','room'][ri(3)],name:'방 '+ci,check:c})}}
+  const left=checks.length-ci,slots=k.battles-b;if(left>1&&(left>slots||ri(2))){const c=nextCheck();if(c)rooms.push({id:cid(),t:['puzzle','trap','room'][ri(3)],name:'방 '+ci,check:c})}}
  /* 10-27 저녁: 남은 체크는 휴식 방 앞에 둔다(마지막 하나는 휴식 방 안). 전엔 휴식 뒤에 남아 HP 패널티가 그대로 보스로 갔다 */
- while(checks.length-ci>1)rooms.push({id:'c'+ci,t:['puzzle','trap','room'][ri(3)],name:'방 '+ci,check:nextCheck()});
+ while(checks.length-ci>1)rooms.push({id:cid(),t:['puzzle','trap','room'][ri(3)],name:'방 '+ci,check:nextCheck()});
  const restRoom={id:'safe',t:'safe',name:'쉼터'};if(k.rest&&k.rest!=='none')restRoom.rest=k.rest;const c2=nextCheck();if(c2)restRoom.check=c2;if(restRoom.rest||restRoom.check)rooms.push(restRoom);
  const esc=take(T.bossN-1);rooms.push({id:'boss',t:'boss',name:'보스 · '+boss[2],enc:{mix:[SRC(boss)].concat(esc.map(SRC)),boss:true,bossAt:0,raid:T.raid,n:T.bossN,lvAdd:k.bossLv}});
  return {id:`gen_${tier}_${seed}`,name:`생성 · ${T.name} #${seed}`,wn:2,private:true,gen:{tier,knobs:k,seed,boss:boss[2]},rooms}}

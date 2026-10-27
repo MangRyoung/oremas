@@ -21,8 +21,8 @@ function dungeons(){const out={};if(!fs.existsSync(DIR))return out;for(const f o
 function makeParty(parties,wn){return parties.map(p=>{const t=clone(p.trainer);const ms=p.mons.slice().sort((a,b)=>(b.partner?1:0)-(a.partner?1:0)).slice(0,wn).map(m=>{const x=clone(m);x.hp.cur=x.hp.max;x.states={};x.rank={};return x});
  return {trainer:t,mons:ms,inj:0,tired:new Set(),inou:0,myosu:0,care:0,aa:0,debt:{oo:0,oc:0,rk:{}},stats:{checks:0,ok:0,cost:0,fail:0,fumble:0,crit:0,covers:0,covered:0,inouUsed:0,penDmg:0}}})}
 
-function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt.seed||1);const pol=Object.assign({who:'best',cover:'fail',partner:'match',inou:'yes'},opt.policy||{});
- const adj=Object.assign({target:0,penScale:1,checkEvery:1,stepAll:0,wildLv:0,wildExtra:0,bossN:0,raidX:null,raidMode:'barrier',restV:1,al0:0,al30:5,al70:10,alBattle:0,alScale:1},dg.rules||{},opt.adjust||{});   /* dg.rules = 던전에 박힌 규칙값(자동 생성 던전). 조정값(opt.adjust)이 그 위에 */
+async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt.seed||1);const pol=Object.assign({who:'best',cover:'fail',partner:'match',inou:'yes'},opt.policy||{});
+ const adj=Object.assign({ordScope:'dungeon',ordPer:1,cmdPer:2,target:0,penScale:1,checkEvery:1,stepAll:0,wildLv:0,wildExtra:0,bossN:0,raidX:null,raidMode:'barrier',restV:1,al0:0,al30:5,al70:10,alBattle:0,alScale:1},dg.rules||{},opt.adjust||{});   /* dg.rules = 던전에 박힌 규칙값(자동 생성 던전). 조정값(opt.adjust)이 그 위에 */
  const party=makeParty(parties,dg.wn||opt.wn||2);const ev=[];const say=(e)=>ev.push(e);
  const aliveMons=P=>P.mons.filter(m=>m.hp.cur>0);const anyAlive=()=>party.some(P=>aliveMons(P).length);
  const rankOf=(P,st)=>((P.trainer.ranks||{})[st]||'C');
@@ -59,7 +59,8 @@ function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt.seed|
   if(sub.dmg&&m){let loss=frac(m.hp.max,sub.dmg);loss=Math.max(1,Math.floor(loss*adj.penScale));m.hp.cur=Math.max(0,m.hp.cur-loss);P.stats.penDmg+=loss;L.push(`${m.name} HP −${loss}`)}
   if(sub.st&&m&&m.hp.cur>0){m.states[sub.st]=sub.st==='Sleep'?2:sub.st==='Confusion'?3:1000;L.push(`${m.name} 「${sub.st}」`)}
   if(sub.rk){for(const k in sub.rk)P.debt.rk[k]=(P.debt.rk[k]||0)+(+sub.rk[k]||0);L.push('랭크 '+JSON.stringify(sub.rk))}
-  if(+sub.oo)P.debt.oo+=+sub.oo;if(+sub.oc)P.debt.oc+=+sub.oc;if(+sub.oo||+sub.oc)L.push(`4식 −${+sub.oo||0} · 6령 −${+sub.oc||0} (다음 배틀)`);
+  if(adj.ordScope==='dungeon'){/* 10-28: 던전 공용 풀에서 바로 뺀다 */if(+sub.oo)pool.order=Math.max(0,pool.order-(+sub.oo));if(+sub.oc)pool.command=Math.max(0,pool.command-(+sub.oc));if(+sub.oo||+sub.oc)L.push(`4식 −${+sub.oo||0} · 6령 −${+sub.oc||0} (던전 공용 남은 4식 ${pool.order} · 6령 ${pool.command})`)}
+  else{if(+sub.oo)P.debt.oo+=+sub.oo;if(+sub.oc)P.debt.oc+=+sub.oc;if(+sub.oo||+sub.oc)L.push(`4식 −${+sub.oo||0} · 6령 −${+sub.oc||0} (다음 배틀)`)}
   /* 배틀에 닿는 패널티: fight 추가 조우(이 방 바로 뒤) · restDown 다음 휴식 한 단계 깎임 · foeLv 다음 배틀 야생 레벨 + */
   if(sub.fight){pend.fights.push(sub.fight);L.push(`추가 조우 ${(sub.fight.mix||[]).length||sub.fight.n||1}체`)}
   if(+sub.restDown){pend.restDown+=+sub.restDown;L.push(`다음 휴식 −${+sub.restDown}단계`)}
@@ -67,11 +68,12 @@ function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt.seed|
   if(+sub.al){const b=pend.al;pend.al=Math.min(100,pend.al+(+sub.al)*(+adj.alScale||1));L.push(`경계도 +${pend.al-b} → ${pend.al}`);say({k:'alert',from:b,to:pend.al})}
   if(+sub.bossLv){pend.bossLv+=+sub.bossLv;L.push(`보스방 Lv ${+sub.bossLv>0?'+':''}${+sub.bossLv}`)}
   if(sub.memo)L.push(sub.memo);rec.pen.push(`[${why}] `+L.join(' · '))};
+ const pool0={order:party.length*(+adj.ordPer||0),command:party.length*(+adj.cmdPer||0)};const pool=Object.assign({},pool0);   /* 던전 공용 4식 · 6령 (10-28) */
  const pend={fights:[],restDown:0,foeLv:0,bossLv:0,al:+adj.al0||0};
  /* 경계도 (웹툴 던전 탭과 같은 단계): 30 이상 → 야생 Lv +al30, 70 이상 → +al70, 100 → 자동 실패 */
  const alLv=()=>pend.al>=70?(+adj.al70||0):pend.al>=30?(+adj.al30||0):0;
  /* 조우 */
- const doBattle=(room,enc)=>{let wild;
+ const doBattle=async(room,enc)=>{let wild;
   if(enc.mix){/* 여러 트레이너의 포켓몬을 섞은 야생 무리: mix:[{trainer,pick}], 순서대로 이어 붙여 앞에서 n 체(보스 방은 adjust.bossN 이 우선). bossAt 번째가 『와일드 보스』(×1.5), raid:X 면 「레이드 배틀 : X」 */
    if(!opt.wildFrom&&enc.mix.some(m=>!m.sp&&!m.db))throw new Error('스냅샷 야생을 쓸 수 없음 (wildFrom 없음)');const lvAdd=(+enc.lvAdd||0)+(+adj.wildLv||0)+(enc._extra?0:pend.foeLv)+(enc.boss?pend.bossLv:0)+alLv();if(!enc._extra)pend.foeLv=0;let mons=[],tr=null;
    for(const src of enc.mix){if(src.db){/* 야생 DB (lib/wilddb.js v2) */const WB=require('./wilddb.js');const e=(WB._cache=WB._cache||WB.fullV2()).find(x=>x.id===src.db||x.name===src.db);if(!e)throw new Error('야생 DB 에 없음: '+src.db);const r=WB.buildEntry(W,e,{lvAdd});tr=tr||r.trainer;mons.push(r.mon);continue}if(src.sp){/* 도감 야생 (lib/dex.js) */const r=require('./dex.js').build(W,src.sp,{lvAdd});tr=tr||r.trainer;mons.push(r.mon);continue}const w=opt.wildFrom(src.trainer,{pick:src.pick,take:src.take,lvAdd});tr=tr||w.trainer;mons=mons.concat(w.mons)}
@@ -82,10 +84,10 @@ function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt.seed|
    wild={trainer:tr,mons}}
   else if(enc.trainer){/* 제작기 스냅샷의 트레이너를 야생 무리로 (예: 무진 NPC/숲 속의 폐가) — opt.wildFrom 은 서버 · 명령줄이 넘긴다 */if(!opt.wildFrom)throw new Error('스냅샷 야생을 쓸 수 없음 (wildFrom 없음)');const fl=pend.foeLv+alLv();pend.foeLv=0;wild=opt.wildFrom(enc.trainer,{pick:enc.pick,take:enc.take,boss:enc.boss,lvAdd:(+enc.lvAdd||0)+(+adj.wildLv||0)+fl,extra:(+enc.extra||0)+(+adj.wildExtra||0)})}
   else{const packs=WD.packs();const pk=packs[enc.pack];if(!pk)throw new Error('야생 무리 없음: '+enc.pack);const pk2=Object.assign({},pk,{lvAdd:(+pk.lvAdd||0)+(+adj.wildLv||0),mons:pk.mons.concat(Array.from({length:+adj.wildExtra||0},(_,i)=>pk.mons[i%pk.mons.length]))});wild=WD.build(W,pk2)}
-  const parties=party.map(P=>{const t=clone(P.trainer);require('./party.js').orders(W,t);const oc=t.orderCount||{};/* 체크 패널티의 4식 · 6령 차감 */let oo=P.debt.oo,oc2=P.debt.oc;for(const k of Object.keys(oc).sort()){if(k.startsWith('order_')&&oo>0&&oc[k]>0){oc[k]--;oo--}if(k.startsWith('command_')&&oc2>0&&oc[k]>0){oc[k]--;oc2--}}P.debt.oo=0;P.debt.oc=0;
+  const parties=party.map(P=>{const t=clone(P.trainer);require('./party.js').orders(W,t);const oc=t.orderCount||{};if(adj.ordScope==='dungeon'){/* 10-28 망령: 4식 · 6령은 던전 단위 — 1인 4식 1 · 6령 2 를 셋이 합친 공용 풀(pool). 종류마다 칸은 넉넉히 두고 풀이 한도 */for(const k of Object.keys(oc))if(oc[k]>0)oc[k]=9}/* 체크 패널티의 4식 · 6령 차감 */let oo=P.debt.oo,oc2=P.debt.oc;for(const k of Object.keys(oc).sort()){if(k.startsWith('order_')&&oo>0&&oc[k]>0){oc[k]--;oo--}if(k.startsWith('command_')&&oc2>0&&oc[k]>0){oc[k]--;oc2--}}P.debt.oo=0;P.debt.oc=0;
    const mons=P.mons.filter(m=>m.hp.cur>0).map(m=>{const x=clone(m);x.rank=Object.assign({},P.debt.rk);return x});P.debt.rk={};return {trainer:t,mons}}).filter(p=>p.mons.length);
   if(!parties.length)return null;const fmt=Math.min(3,Math.max(1,parties.reduce((a,p)=>a+p.mons.length,0)>=3?3:2));
-  const r=BT.runBattle(W,{left:{parties},right:wild,rng,format:fmt,maxTurns:30});
+  const r=await BT.runBattle(W,{left:{parties},right:wild,rng,format:fmt,maxTurns:30,pool:adj.ordScope==='dungeon'?pool:null,poolBoss:!!enc.boss,poolInit:pool0});
   /* 결과를 시트로 */for(const P of party)for(const m of P.mons){const x=r.left.find(y=>y.id===m.id);if(x){m.hp.cur=x.hp;m.states={};for(const k of x.states)if(['Poison','Toxic','Burn','Paralysis','Freeze','Sleep'].includes(k))m.states[k]=1000}}
   const used={order:0,command:0};for(const t of Object.values(r.trainers.left)){used.order+=t.used.order;used.command+=t.used.command}
   if(+adj.alBattle&&!enc.boss)pend.al=Math.min(100,pend.al+(+adj.alBattle));
@@ -99,8 +101,8 @@ function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt.seed|
  for(const rid of dg.path||dg.rooms.map(r=>r.id)){const room=dg.rooms.find(r=>r.id===rid);if(!room)continue;endRoom=rid;say({k:'room',room:rid,t:room.t,name:room.name});
   if(room.check){ci++;/* checkEvery 2 = 체크를 하나 걸러 하나만 (제시 횟수를 줄이는 실험) */if(adj.checkEvery<=1||ci%adj.checkEvery===1){care();doCheck(room,room.check)}
    if(pend.al>=100){lockdown=true;wipe=true;break}
-   while(pend.fights.length){const f=Object.assign({},pend.fights.shift(),{_extra:1});const r=doBattle(room,f);if(!r||!r.win){wipe=true;break}}if(wipe)break}
-  if(room.enc){const r=doBattle(room,room.enc);if(!r||!r.win){wipe=true;break}if(room.enc.boss)boss=true}
+   while(pend.fights.length){const f=Object.assign({},pend.fights.shift(),{_extra:1});const r=await doBattle(room,f);if(!r||!r.win){wipe=true;break}}if(wipe)break}
+  if(room.enc){const r=await doBattle(room,room.enc);if(!r||!r.win){wipe=true;break}if(room.enc.boss)boss=true}
   if(pend.al>=100){lockdown=true;wipe=true;break}
   if(room.rest)doRest(room,room.rest);
   if(!anyAlive()){wipe=true;break}}
@@ -109,7 +111,7 @@ function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt.seed|
  return {dungeon:dg.id,wipe,lockdown,alert:pend.al,boss,endRoom,rooms:ev.filter(e=>e.k==='room').length,
   checks:{n:checks.length,ok:checks.filter(c=>c.ri>=3).length,crit:checks.filter(c=>c.ri===4).length,cost:checks.filter(c=>c.ri===2).length,fail:checks.filter(c=>c.ri<=1).length,fumble:checks.filter(c=>c.ri===0).length,covers:checks.filter(c=>c.cover).length,inou:checks.filter(c=>c.mode==='inou').length,alone:checks.filter(c=>c.partner==='혼자').length},
   extraFights:battles.filter(b=>b.extra).length,restDowns:ev.filter(e=>e.k==='restDown').length,
-  bossLvDebt:pend.bossLv,
+  bossLvDebt:pend.bossLv,poolLeft:Object.assign({},pool),
   bossBattle:(()=>{const b=battles.find(x=>x.boss);return b?{win:b.win,turns:b.turns,kos:b.kos,foes:b.foes,raidX:b.raidX,phases:b.phases,bossHp:b.bossHp,hpAfter:b.hpAfter}:null})(),
   battles:{n:battles.length,won:battles.filter(b=>b.win).length,turns:battles.reduce((a,b)=>a+b.turns,0),kos:battles.reduce((a,b)=>a+b.kos,0),orders:battles.reduce((a,b)=>a+b.used.order,0),commands:battles.reduce((a,b)=>a+b.used.command,0)},
   injuries:party.map(P=>P.inj),injuryEvents:ev.filter(e=>e.k==='injury').length,tiredLeft:party.map(P=>P.tired.size),penDmg:party.reduce((a,P)=>a+P.stats.penDmg,0),

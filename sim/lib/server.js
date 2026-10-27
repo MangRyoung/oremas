@@ -26,20 +26,20 @@ function start(opt){opt=opt||{};const port=+opt.port||8470;
  const pickParties=sel=>sel.flatMap(s=>{const r=P.pick(W,snap(),s);if(!r.length)throw new Error('트레이너 못 찾음: '+s);return r});
  const api={
   state:()=>state(),
-  run:b=>{const dg=D.dungeons()[b.dungeon];if(!dg)throw new Error('던전 없음');const parties=pickParties(b.party||[]);if(!parties.length)throw new Error('일행을 고르세요');const n=Math.max(1,Math.min(5000,+b.n||200));const rows=[];const t0=Date.now();
+  run:async b=>{const dg=D.dungeons()[b.dungeon];if(!dg)throw new Error('던전 없음');const parties=pickParties(b.party||[]);if(!parties.length)throw new Error('일행을 고르세요');const n=Math.max(1,Math.min(5000,+b.n||200));const rows=[];const t0=Date.now();
    const wf=P.wildFrom(W,snap());const priv=P.isPrivate(parties,dg);
-   for(let i=0;i<n;i++)rows.push(D.run(W,dg,parties,{seed:(+b.seed||1)+i,adjust:b.adjust||{},policy:b.policy||{},wn:+b.wn||undefined,wildFrom:wf}));
-   const agg=R.aggregate(rows);const sample=D.run(W,dg,parties,{seed:+b.seed||1,adjust:b.adjust||{},policy:b.policy||{},wn:+b.wn||undefined,events:true,wildFrom:wf});
+   for(let i=0;i<n;i++)rows.push(await D.run(W,dg,parties,{seed:(+b.seed||1)+i,adjust:b.adjust||{},policy:b.policy||{},wn:+b.wn||undefined,wildFrom:wf}));
+   const agg=R.aggregate(rows);const sample=await D.run(W,dg,parties,{seed:+b.seed||1,adjust:b.adjust||{},policy:b.policy||{},wn:+b.wn||undefined,events:true,wildFrom:wf});
    let saved='';if(b.save){const name=String(b.id||'').trim()||`${KO.dungeonName(b.dungeon)} · ${KO.describe(b.adjust,b.policy)}`;const id=String(b.id||`${KO.dungeonName(b.dungeon)}_${KO.stamp()}`).replace(/[^\w가-힣=._-]/g,'_');const RD=R.recDir(priv);fs.mkdirSync(RD,{recursive:true});const base=path.join(RD,id);fs.writeFileSync(base+'.jsonl',rows.map(r=>JSON.stringify(r)).join('\n')+'\n');fs.writeFileSync(base+'.summary.json',JSON.stringify({id,name,private:priv||undefined,dungeon:b.dungeon,party:b.party,n,seed:+b.seed||1,adjust:b.adjust||{},policy:b.policy||{},at:new Date().toISOString(),snapshot:path.basename(snapFile()),agg},null,1));R.build();saved=id}
    return {agg,ms:Date.now()-t0,sample:sample.events,saved}},
-  battle:b=>{const parties=pickParties(b.party||[]).map(p=>{P.orders(W,p.trainer);return {trainer:p.trainer,mons:p.mons.slice(0,+b.wn||2)}});const pk=WD.packs()[b.pack];if(!pk)throw new Error('야생 무리 없음');const n=Math.max(1,Math.min(2000,+b.n||100));let w=0,T=0,hp=0,log=[];
-   for(let i=0;i<n;i++){const r=BT.runBattle(W,{left:{parties},right:WD.build(W,pk),seed:(+b.seed||1)+i,format:parties.reduce((a,p)=>a+p.mons.length,0)>=3?3:2,log:i===0});if(r.winner==='left')w++;T+=r.turns;hp+=r.left.reduce((a,m)=>a+m.hp/m.max,0)/r.left.length;if(i===0)log=r.log}
+  battle:async b=>{const parties=pickParties(b.party||[]).map(p=>{P.orders(W,p.trainer);return {trainer:p.trainer,mons:p.mons.slice(0,+b.wn||2)}});const pk=WD.packs()[b.pack];if(!pk)throw new Error('야생 무리 없음');const n=Math.max(1,Math.min(2000,+b.n||100));let w=0,T=0,hp=0,log=[];
+   for(let i=0;i<n;i++){const r=await BT.runBattle(W,{left:{parties},right:WD.build(W,pk),seed:(+b.seed||1)+i,format:parties.reduce((a,p)=>a+p.mons.length,0)>=3?3:2,log:i===0});if(r.winner==='left')w++;T+=r.turns;hp+=r.left.reduce((a,m)=>a+m.hp/m.max,0)/r.left.length;if(i===0)log=r.log}
    return {win:w/n,turns:T/n,hp:hp/n,n,log}},
   /* 던전 자동 생성 (lib/autogen.js · docs/던전_자동생성.md) */
   autoGen:b=>{const AG=require('./autogen.js');const dg=AG.generate({tier:b.tier,seed:+b.seed||undefined,theme:b.theme||undefined,knobs:b.knobs||{}});return {dungeon:dg,webtool:AG.toWebtool(dg),themes:Object.keys(AG.THEMES)}},
-  autoTest:b=>{const dg=b.dungeon;if(!dg||!dg.rooms)throw new Error('던전 없음');const parties=pickParties(b.party||[]);if(!parties.length)throw new Error('일행을 고르세요');const n=Math.max(1,Math.min(2000,+b.n||200));const wf=P.wildFrom(W,snap());const rows=[];const t0=Date.now();
-   for(let i=0;i<n;i++)rows.push(D.run(W,dg,parties,{seed:(+b.seed||1)+i,wildFrom:wf,policy:b.policy||{}}));const al=rows.map(r=>r.alert||0);
-   return {agg:R.aggregate(rows),ms:Date.now()-t0,alert:{avg:al.reduce((a,b)=>a+b,0)/n,over30:al.filter(x=>x>=30).length/n,over70:al.filter(x=>x>=70).length/n,lock:rows.filter(r=>r.lockdown).length/n},sample:D.run(W,dg,parties,{seed:+b.seed||1,wildFrom:wf,events:true}).events}},
+  autoTest:async b=>{const dg=b.dungeon;if(!dg||!dg.rooms)throw new Error('던전 없음');const parties=pickParties(b.party||[]);if(!parties.length)throw new Error('일행을 고르세요');const n=Math.max(1,Math.min(2000,+b.n||200));const wf=P.wildFrom(W,snap());const rows=[];const t0=Date.now();
+   for(let i=0;i<n;i++)rows.push(await D.run(W,dg,parties,{seed:(+b.seed||1)+i,wildFrom:wf,policy:b.policy||{}}));const al=rows.map(r=>r.alert||0);
+   return {agg:R.aggregate(rows),ms:Date.now()-t0,alert:{avg:al.reduce((a,b)=>a+b,0)/n,over30:al.filter(x=>x>=30).length/n,over70:al.filter(x=>x>=70).length/n,lock:rows.filter(r=>r.lockdown).length/n},sample:(await D.run(W,dg,parties,{seed:+b.seed||1,wildFrom:wf,events:true})).events}},
   autoSave:b=>{const AG=require('./autogen.js');const dg=b.dungeon;if(!dg||!dg.id||!/^[\w가-힣-]+$/.test(dg.id))throw new Error('던전 id 는 영문 · 숫자 · 한글만');const out={};
    if(b.sim!==false){const f=path.join(SIM,'data','dungeons',dg.id+'.private.json');fs.writeFileSync(f,JSON.stringify(dg,null,1));out.sim=path.relative(SIM,f)}
    if(b.webtool){const d=path.join(SIM,'data','webtool');fs.mkdirSync(d,{recursive:true});const f=path.join(d,dg.id+'.json');fs.writeFileSync(f,JSON.stringify(AG.toWebtool(dg),null,1));out.webtool=path.relative(SIM,f)}return out},

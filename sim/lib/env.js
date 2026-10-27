@@ -5,6 +5,8 @@
 const fs=require('fs'),path=require('path'),vm=require('vm');
 const ROOT=path.resolve(__dirname,'..','..');            // oremas
 function makerRoot(){return process.env.MK_ROOT||path.resolve(ROOT,'..','mangketmon-maker')}
+/* 시뮬 속도용 바꿔 끼우기 (10-27 밤): 효과 엔진의 레디메이드 표를 부를 때마다 새로 합치던 것(rmAll)을 한 번만 — 시뮬엔 방 덮어쓰기(dbx.rm)가 없다 */
+const SRC_PATCH={'fx.js':[[/function rmAll\(\)\{/,'let __RMC=null;function rmAll(){if(__RMC)return __RMC;return (__RMC=rmAll0())}function rmAll0(){']]};
 function load(opts){opts=opts||{};
  const win={console,setTimeout,clearTimeout,Math,Date,JSON,Object,Array,String,Number,Boolean,RegExp,Map,Set,Promise,Error,parseInt,parseFloat,isFinite,isNaN,encodeURIComponent,decodeURIComponent,structuredClone,
   localStorage:{getItem(){return null},setItem(){},removeItem(){}},sessionStorage:{getItem(){return null},setItem(){},removeItem(){}},
@@ -21,7 +23,7 @@ function load(opts){opts=opts||{};
  const loaded=[],failed=[];
  for(const [f,abs] of files){const p=abs?f:path.join(ROOT,f);
   if(!fs.existsSync(p)){failed.push({f:p,err:'없음'});continue}
-  try{vm.runInContext(fs.readFileSync(p,'utf8'),ctx,{filename:p});loaded.push(p)}catch(e){failed.push({f:p,err:e.message});if(opts.strict)throw e}}
+  try{let src=fs.readFileSync(p,'utf8');for(const [re,to] of (SRC_PATCH[path.basename(p)]||[]))src=src.replace(re,to);vm.runInContext(src,ctx,{filename:p});loaded.push(p)}catch(e){failed.push({f:p,err:e.message});if(opts.strict)throw e}}
  if(!win.OM_BATTLE||!win.OM_STATS||!win.OM_IMPORT)throw new Error('엔진을 못 읽었다: '+JSON.stringify(failed));
  return {win,loaded,failed,ROOT,MK};}
 module.exports={load,ROOT,makerRoot};
