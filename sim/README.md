@@ -20,6 +20,7 @@ node bin/sim.js check                                    스킬 체크 성공률
 node bin/sim.js battle --party 카이 --wild factory_boss --n 200 --wn 2 [--log]
 node bin/sim.js run --scenario data/scenarios/base.json [--n 1000]
 node bin/sim.js run --dungeon factory --party 카이,미오,레온 --n 500 --adjust target=2,penScale=0.5 --policy cover=never
+node bin/sim.js combos --pool id:a,id:b,… --size 3 --dungeons x,y --n 100 --id 이름   후보 중 n명 조합 전부 × 던전들 (기록 탭에 표)
 node bin/sim.js report                                   records/*.summary.json → report/index.html · report.md
 ```
 
@@ -40,6 +41,7 @@ node bin/sim.js report                                   records/*.summary.json 
 | `lib/wild.js` | 야생 무리 (`data/wild/species.json` 의 종 · `data/wild/*.json` 의 무리) → 『와일드』 ×1.25 · 『와일드 보스』 ×1.5 |
 | `lib/dungeon.js` | 던전 진행기 — 방 순서대로 체크 · 조우 · 휴식, 일행 상태(HP · 상태 · 지침 · 부상 · 이능 · 묘수 · 돌봄 · 4식6령 차감) 추적 |
 | `lib/report.js` | 기록 집계 → HTML · Markdown |
+| `lib/automove.js` | 기술이 빈 포켓몬에게 시험용 표준 기술 |
 | `lib/ko.js` | 기록 · 리포트의 한국어 이름표 (조정값 · 정책 · 던전 · 일행 → 읽는 말) |
 | `data/dungeons/*.json` | 던전 (방 · 체크 · 조우 · 휴식 · 경로) — **가이드라인에 맞춰 여기서 관리하고 웹툴로 옮긴다** |
 | `data/wild/*.json` | 야생 종 · 무리 |
@@ -65,6 +67,9 @@ node bin/sim.js report                                   records/*.summary.json 
 - `t` 방 종류는 웹툴 던전 탭과 같다: entry · room · battle · trap · puzzle · treasure · safe · boss.
 - `check`: `stat` 지시 · 육성 · 통솔 · 능력, `target` 5 · 7 · 9 · 11, `mode` `inou` 면 능력 A 이상은 이능으로, `step` ±1 단계 보정, `twice` 1 높은 값 · −1 낮은 값, `hint` 동료 조건(`type:물` · `any` · `none`), `pen.fail` · `pen.cost` 패널티(`dmg` 분수 · `st` 상태 · `rk` 랭크 · `oo` 4식 차감 · `oc` 6령 차감 · `memo`). 패널티 꼴은 웹툴 `skill_ui.js` 의 PEN_EX 와 같다.
 - `enc.pack` 은 `data/wild/` 의 무리 id. `boss:true` 면 보스 방으로 센다.
+- `enc.trainer` 는 제작기 스냅샷의 트레이너를 야생 무리로(`"id:xxxx"`). `pick:[순번…]` 으로 포켓몬을 고르고, `boss:true` 면 파트너(없으면 첫째)가 『와일드 보스』 ×1.5, 나머지 『와일드』 ×1.25.
+- 비공개: 파일 이름을 `*.private.json` 으로(화면의 「비공개」 칸). 비공개 트레이너가 일행에 있거나 던전이 비공개면 기록은 `records/private/`, 리포트는 `report/private.html` — 전부 git 제외.
+- 기술이 빈 포켓몬은 `lib/automove.js` 가 시험용 표준 기술(자속 + 견제)을 채운다(제작기에 기술이 있으면 그쪽).
 - `rest`: breath(HP 1/4 · 지침 해제) · short(HP 1/2 · 상태 치유 · 부상 1단계 · 이능 · 돌봄 회복) · long(전부).
 
 ## 시나리오 파일 꼴

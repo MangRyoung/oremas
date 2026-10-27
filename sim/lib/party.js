@@ -14,7 +14,20 @@ function pick(win,snap,sel){const L=list(snap);let hits;
  else if(sel.includes('/')){const [fo,nm]=sel.split('/');hits=L.filter(x=>x.folder===fo&&(nm==='*'||x.name===nm))}
  else hits=L.filter(x=>x.name===sel);
  return hits.map(h=>build(win,snap,h.id))}
-function build(win,snap,tid){const tdoc=(snap.trainers||[]).find(t=>t.id===tid);if(!tdoc)throw new Error('트레이너 없음: '+tid);
- const pk=(snap.pokemon||[]).map(x=>Object.assign({},x,{data:Object.assign({},x.data,{tid:(x.data&&x.data.tid)||dOf(x).tid})}));
- const r=win.OM_IMPORT.party(tdoc,pk);r.trainer.folderName=folderName(snap,dOf(tdoc).folder);return r}
-module.exports={readSnap,list,pick,build,SNAP};
+/* opt.lvAdd: 포켓몬 문서의 dist(레벨 보정)에 더한다 — 야생으로 쓸 때 레벨 가감용 */
+function build(win,snap,tid,opt){opt=opt||{};const tdoc=(snap.trainers||[]).find(t=>t.id===tid);if(!tdoc)throw new Error('트레이너 없음: '+tid);
+ const pk=(snap.pokemon||[]).map(x=>{const d=Object.assign({},x.data,{tid:(x.data&&x.data.tid)||dOf(x).tid});if(+opt.lvAdd){if(d.data&&typeof d.data==='object')d.data=Object.assign({},d.data,{dist:(+d.data.dist||0)+(+opt.lvAdd)});else d.dist=(+d.dist||0)+(+opt.lvAdd)}return Object.assign({},x,{data:d})});
+ const r=win.OM_IMPORT.party(tdoc,pk);r.trainer.folderName=folderName(snap,dOf(tdoc).folder);r.trainer.priv=!!dOf(tdoc).priv;
+ /* 기술이 비어 있으면 시험용 표준 기술 (lib/automove.js) */const A=require('./automove.js');for(const m of r.mons)A.fill(win,m);return r}
+/* 스냅샷 트레이너를 야생 무리로: 『와일드』 ×1.25, enc.boss 면 파트너(★, 없으면 첫째)만 『와일드 보스』 ×1.5. pick:[순번…] 으로 고르거나 take 로 앞에서부터 n 체. */
+function wild(win,snap,sel,enc){enc=enc||{};const L=list(snap);const id=/^id:/.test(sel)?sel.slice(3):((L.find(x=>x.name===sel||(x.folder+'/'+x.name)===sel)||{}).id);if(!id)throw new Error('야생으로 쓸 트레이너 없음: '+sel);
+ const r=build(win,snap,id,{lvAdd:enc.lvAdd});const tr=r.trainer;tr.wild=true;tr.orderCount={};tr.ranks=Object.assign({},tr.ranks,{지시:'D',통솔:'D',능력:'D'});
+ let mons=Array.isArray(enc.pick)?enc.pick.map(i=>r.mons[i]).filter(Boolean):r.mons.slice();if(+enc.take)mons=mons.slice(0,+enc.take);const extra=+enc.extra||0;for(let i=0;i<extra;i++){const x=JSON.parse(JSON.stringify(mons[i%mons.length]));x.id=x.id+'_x'+i;mons.push(x)}
+ const bi=enc.boss?Math.max(0,mons.findIndex(m=>m.partner)):-1;
+ mons.forEach((x,i)=>{const k=i===bi?1.5:1.25;x.mod={attack:k,defense:k,specialattack:k,specialdefense:k,speed:k};x.boss=i===bi;x.role=i===bi?'와일드 보스':'와일드';x.hp.cur=x.hp.max});
+ return {trainer:tr,mons,name:dOf((snap.trainers||[]).find(t=>t.id===id)).name,priv:tr.priv}}
+/* 던전 진행기에 넘길 「스냅샷 야생」 만들기 함수 (같은 조건이면 한 번만 빌드하고 복사본을 준다) */
+function wildFrom(win,snap){const C={};return (sel,enc)=>{const k=sel+'|'+JSON.stringify(enc||{});if(!C[k])C[k]=wild(win,snap,sel,enc);return JSON.parse(JSON.stringify(C[k]))}}
+/* 일행 · 던전에 비공개가 섞였나 */
+function isPrivate(parties,dg){return !!((dg&&dg.private)||(parties||[]).some(p=>p.trainer&&p.trainer.priv))}
+module.exports={readSnap,list,pick,build,wild,wildFrom,isPrivate,SNAP};

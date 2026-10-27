@@ -9,7 +9,7 @@ const DEF={who:'best',cover:'fail',partner:'match',inou:'yes'};
 function adjustKo(a,all){a=a||{};return Object.entries(a).filter(([k,v])=>v!=null&&v!==''&&(all||!(k==='penScale'?+v===1:k==='checkEvery'?+v<=1:+v===0))).map(([k,v])=>ADJ[k]?ADJ[k](+v):k+' '+v)}
 function policyKo(p,all){p=p||{};return Object.entries(p).filter(([k,v])=>all||DEF[k]!==v).map(([k,v])=>(POL[k]||{})[v]||(POLK[k]||k)+' '+v)}
 function describe(a,p,all){const L=adjustKo(a,all).concat(policyKo(p,all));return L.length?L.join(' · '):'기본값'}
-let DGN=null;function dungeonName(id){if(!DGN){DGN={};const d=path.join(SIM,'data','dungeons');if(fs.existsSync(d))for(const f of fs.readdirSync(d))if(f.endsWith('.json')){try{const j=JSON.parse(fs.readFileSync(path.join(d,f),'utf8'));DGN[f.replace(/\.json$/,'')]=j.name||f}catch(e){}}}return DGN[id]||id}
+let DGN=null;function dungeonName(id){if(!DGN){DGN={};const d=path.join(SIM,'data','dungeons');if(fs.existsSync(d))for(const f of fs.readdirSync(d))if(f.endsWith('.json')){try{const j=JSON.parse(fs.readFileSync(path.join(d,f),'utf8'));DGN[j.id||f.replace(/(\.private)?\.json$/,'')]=j.name||f}catch(e){}}}return DGN[id]||id}
 function partyKo(party,trainers){const by={};for(const t of trainers||[])by[t.id]=t.name;return (party||[]).map(s=>{s=String(s);if(s.startsWith('id:'))return by[s.slice(3)]||s.slice(3).slice(0,6)+'…';return s.replace(/^.*\//,'')})}
 function stamp(d){d=d||new Date();const z=n=>String(n).padStart(2,'0');return `${z(d.getMonth()+1)}${z(d.getDate())}_${z(d.getHours())}${z(d.getMinutes())}`}
 module.exports={ADJ,POL,POLK,DEF,adjustKo,policyKo,describe,dungeonName,partyKo,stamp,reset:()=>{DGN=null}};

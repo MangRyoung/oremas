@@ -12,7 +12,7 @@ const REST={long:{hp:'full',revive:1,cure:1,tired:1,care:1,inou:1,inj:2},short:{
 const TYPE_KO={노말:'Normal',불꽃:'Fire',물:'Water',전기:'Electric',풀:'Grass',얼음:'Ice',격투:'Fighting',독:'Poison',땅:'Ground',비행:'Flying',에스퍼:'Psychic',벌레:'Bug',바위:'Rock',고스트:'Ghost',드래곤:'Dragon',악:'Dark',강철:'Steel',페어리:'Fairy'};
 const frac=(v,s)=>{s=String(s==null?'':s).trim();if(s==='full')return v;const m=s.match(/^(\d+)\s*\/\s*(\d+)$/);return m?Math.max(1,Math.floor(v*+m[1]/+m[2])):Math.max(0,Math.floor(+s||0))};
 const clone=o=>JSON.parse(JSON.stringify(o));
-function dungeons(){const out={};if(!fs.existsSync(DIR))return out;for(const f of fs.readdirSync(DIR)){if(!f.endsWith('.json'))continue;const d=JSON.parse(fs.readFileSync(path.join(DIR,f),'utf8'));out[d.id||f.replace(/\.json$/,'')]=d}return out}
+function dungeons(){const out={};if(!fs.existsSync(DIR))return out;for(const f of fs.readdirSync(DIR)){if(!f.endsWith('.json'))continue;const d=JSON.parse(fs.readFileSync(path.join(DIR,f),'utf8'));if(/\.private\.json$/.test(f))d.private=true;d._file=f;out[d.id||f.replace(/(\.private)?\.json$/,'')]=d}return out}
 
 /* 일행 상태 만들기: parties=[{trainer,mons}] (제작기 파티), wn 동행 수 → 동행 = 파트너 먼저, 그다음 순서대로 */
 function makeParty(parties,wn){return parties.map(p=>{const t=clone(p.trainer);const ms=p.mons.slice().sort((a,b)=>(b.partner?1:0)-(a.partner?1:0)).slice(0,wn).map(m=>{const x=clone(m);x.hp.cur=x.hp.max;x.states={};x.rank={};return x});
@@ -58,14 +58,16 @@ function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt.seed|
   if(+sub.oo)P.debt.oo+=+sub.oo;if(+sub.oc)P.debt.oc+=+sub.oc;if(+sub.oo||+sub.oc)L.push(`4식 −${+sub.oo||0} · 6령 −${+sub.oc||0} (다음 배틀)`);
   if(sub.memo)L.push(sub.memo);rec.pen.push(`[${why}] `+L.join(' · '))};
  /* 조우 */
- const doBattle=(room,enc)=>{const packs=WD.packs();const pk=packs[enc.pack];if(!pk)throw new Error('야생 무리 없음: '+enc.pack);const pk2=Object.assign({},pk,{lvAdd:(+pk.lvAdd||0)+(+adj.wildLv||0),mons:pk.mons.concat(Array.from({length:+adj.wildExtra||0},(_,i)=>pk.mons[i%pk.mons.length]))});const wild=WD.build(W,pk2);
+ const doBattle=(room,enc)=>{let wild;
+  if(enc.trainer){/* 제작기 스냅샷의 트레이너를 야생 무리로 (예: 무진 NPC/숲 속의 폐가) — opt.wildFrom 은 서버 · 명령줄이 넘긴다 */if(!opt.wildFrom)throw new Error('스냅샷 야생을 쓸 수 없음 (wildFrom 없음)');wild=opt.wildFrom(enc.trainer,{pick:enc.pick,take:enc.take,boss:enc.boss,lvAdd:(+enc.lvAdd||0)+(+adj.wildLv||0),extra:(+enc.extra||0)+(+adj.wildExtra||0)})}
+  else{const packs=WD.packs();const pk=packs[enc.pack];if(!pk)throw new Error('야생 무리 없음: '+enc.pack);const pk2=Object.assign({},pk,{lvAdd:(+pk.lvAdd||0)+(+adj.wildLv||0),mons:pk.mons.concat(Array.from({length:+adj.wildExtra||0},(_,i)=>pk.mons[i%pk.mons.length]))});wild=WD.build(W,pk2)}
   const parties=party.map(P=>{const t=clone(P.trainer);Object.assign(t,W.OM_ORDERS.auto(t,'assoc',1));const oc=t.orderCount||{};/* 체크 패널티의 4식 · 6령 차감 */let oo=P.debt.oo,oc2=P.debt.oc;for(const k of Object.keys(oc).sort()){if(k.startsWith('order_')&&oo>0&&oc[k]>0){oc[k]--;oo--}if(k.startsWith('command_')&&oc2>0&&oc[k]>0){oc[k]--;oc2--}}P.debt.oo=0;P.debt.oc=0;
    const mons=P.mons.filter(m=>m.hp.cur>0).map(m=>{const x=clone(m);x.rank=Object.assign({},P.debt.rk);return x});P.debt.rk={};return {trainer:t,mons}}).filter(p=>p.mons.length);
   if(!parties.length)return null;const fmt=Math.min(3,Math.max(1,parties.reduce((a,p)=>a+p.mons.length,0)>=3?3:2));
   const r=BT.runBattle(W,{left:{parties},right:wild,rng,format:fmt,maxTurns:30});
   /* 결과를 시트로 */for(const P of party)for(const m of P.mons){const x=r.left.find(y=>y.id===m.id);if(x){m.hp.cur=x.hp;m.states={};for(const k of x.states)if(['Poison','Toxic','Burn','Paralysis','Freeze','Sleep'].includes(k))m.states[k]=1000}}
   const used={order:0,command:0};for(const t of Object.values(r.trainers.left)){used.order+=t.used.order;used.command+=t.used.command}
-  const rec={k:'battle',room:room.id,pack:enc.pack,boss:!!enc.boss,win:r.winner==='left',turns:r.turns,kos:r.kos.filter(k=>k.side==='left').length,wildKos:r.kos.filter(k=>k.side==='right').length,used,hpAfter:party.map(P=>P.mons.map(m=>+(m.hp.cur/m.hp.max).toFixed(2)))};say(rec);return rec};
+  const rec={k:'battle',room:room.id,pack:enc.pack||enc.trainer,boss:!!enc.boss,win:r.winner==='left',turns:r.turns,kos:r.kos.filter(k=>k.side==='left').length,wildKos:r.kos.filter(k=>k.side==='right').length,used,hpAfter:party.map(P=>P.mons.map(m=>+(m.hp.cur/m.hp.max).toFixed(2)))};say(rec);return rec};
  const doRest=(room,kind)=>{const R=REST[kind]||REST.breath;for(const P of party){for(const m of P.mons){if(m.hp.cur<=0){if(R.revive){m.hp.cur=R.hp==='full'?m.hp.max:1}else continue}else m.hp.cur=R.hp==='full'?m.hp.max:Math.min(m.hp.max,m.hp.cur+frac(m.hp.max,R.hp));if(R.cure)m.states={}}
    if(R.tired)P.tired.clear();if(R.inou)P.inou=0;if(R.care)P.care=0;P.inj=Math.max(0,P.inj-R.inj)}say({k:'rest',room:room.id,kind})};
  /* 돌봄(육성 B 이상, 휴식 사이 1회): 지친 포켓몬이 있고 쓸 수 있으면 체크 앞에서 */

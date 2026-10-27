@@ -7,6 +7,7 @@
    node bin/sim.js battle --party 카이 --wild factory_boss [--n 200] [--log] [--snap 파일]
    node bin/sim.js run --scenario data/scenarios/base.json [--n 1000]      시나리오대로 던전을 N 판 돌려 records/ 에 기록
    node bin/sim.js run --dungeon factory --party 카이,미오,레온 [--n 500] [--seed 1] [--adjust target=2,penScale=0.5] [--policy cover=never]
+   node bin/sim.js combos --pool 이름,이름,… --size 3 --dungeons a,b --n 100 [--id x --name 이름]   조합 훑기
    node bin/sim.js report                        records/*.summary.json → report/index.html · report.md
    --snap 를 안 주면 data/snapshot.json, 없으면 data/sample_snapshot.json (시험용 4명) */
 "use strict";
@@ -42,11 +43,25 @@ const stamp=()=>new Date().toISOString().replace(/[-:T]/g,'').slice(0,12);
   else{const POLK=['cover','who','partner','inou'];const split=cur=>{const a={},p={};for(const k in cur)(POLK.includes(k)?p:a)[k]=cur[k];return {a,p}};const rec=(i,cur)=>{if(i===keys.length){const {a,p}=split(cur);variants.push({id:sc.id+'__'+keys.map(k=>k+'='+cur[k]).join('_'),name:(sc.name||sc.id)+' · '+KO.describe(a,p,true),adjust:Object.assign({},sc.adjust||{},a),policy:Object.assign({},sc.policy||{},p)});return}for(const v of sweep[keys[i]])rec(i+1,Object.assign({},cur,{[keys[i]]:v}))};rec(0,{})}
   for(const dgId of [].concat(sc.dungeon)){const dg=dgs[dgId];if(!dg)throw new Error('던전 없음: '+dgId+' (data/dungeons/)');const parties=pickParties(sc.party.join(','));
    for(const v of variants){const id=([].concat(sc.dungeon).length>1?dgId+'_':'')+v.id;const rows=[];const t0=Date.now();
-    for(let i=0;i<sc.n;i++)rows.push(D.run(W,dg,parties,{seed:(sc.seed||1)+i,adjust:v.adjust,policy:v.policy}));
-    fs.mkdirSync(R.REC,{recursive:true});const base=path.join(R.REC,id.replace(/[^\w가-힣=._-]/g,'_'));
+    const wf=P.wildFrom(W,snap);const priv=sc.private||P.isPrivate(parties,dg);
+    for(let i=0;i<sc.n;i++)rows.push(D.run(W,dg,parties,{seed:(sc.seed||1)+i,adjust:v.adjust,policy:v.policy,wildFrom:wf,wn:+sc.wn||undefined}));
+    const RD=R.recDir(priv);fs.mkdirSync(RD,{recursive:true});const base=path.join(RD,id.replace(/[^\w가-힣=._-]/g,'_'));
     fs.writeFileSync(base+'.jsonl',rows.map(r=>JSON.stringify(r)).join('\n')+'\n');
-    const agg=R.aggregate(rows);fs.writeFileSync(base+'.summary.json',JSON.stringify({id,name:(v.name||sc.name||sc.id)+(([].concat(sc.dungeon).length>1)?' · '+KO.dungeonName(dgId):''),dungeon:dgId,party:sc.party,n:sc.n,seed:sc.seed||1,adjust:v.adjust,policy:v.policy,at:new Date().toISOString(),snapshot:path.basename(snapFile()),agg},null,1));
-    console.log(`${id}: ${sc.n}판 ${((Date.now()-t0)/1000).toFixed(1)}초 — 전멸 ${(agg.wipe*100).toFixed(0)}% · 끝 HP ${(agg.endHp*100).toFixed(0)}% · 체크 성공 ${(agg.ok*100).toFixed(0)}% 대가 ${(agg.cost*100).toFixed(0)}% 실패 ${(agg.fail*100).toFixed(0)}% · 부상자 있는 판 ${(agg.injAny*100).toFixed(0)}% · 커버 ${agg.covers.toFixed(2)}/판`)}}
+    const agg=R.aggregate(rows);fs.writeFileSync(base+'.summary.json',JSON.stringify({id,private:priv||undefined,name:(v.name||sc.name||sc.id)+(([].concat(sc.dungeon).length>1)?' · '+KO.dungeonName(dgId):''),dungeon:dgId,party:sc.party,n:sc.n,seed:sc.seed||1,adjust:v.adjust,policy:v.policy,at:new Date().toISOString(),snapshot:path.basename(snapFile()),agg},null,1));
+    console.log(`${priv?'[비공개] ':''}${id}: ${sc.n}판 ${((Date.now()-t0)/1000).toFixed(1)}초 — 전멸 ${(agg.wipe*100).toFixed(0)}% · 끝 HP ${(agg.endHp*100).toFixed(0)}% · 체크 성공 ${(agg.ok*100).toFixed(0)}% 대가 ${(agg.cost*100).toFixed(0)}% 실패 ${(agg.fail*100).toFixed(0)}% · 부상자 있는 판 ${(agg.injAny*100).toFixed(0)}% · 커버 ${agg.covers.toFixed(2)}/판`)}}
   const rep=R.build();console.log('리포트:',rep.html);return}
+ if(cmd==='combos'){/* 조합 훑기: --pool 후보(쉼표) 중 --size 명씩 모든 조합 × --dungeons 를 --n 판씩. 결과 = records/(private/)combos_<id>.json · .md */
+  const D=require('../lib/dungeon.js'),R=require('../lib/report.js');const pool=String(opt.pool||'').split(',').map(x=>x.trim()).filter(Boolean);const size=+opt.size||3;const N=+opt.n||100;const dgs=D.dungeons();
+  const dlist=String(opt.dungeons||Object.keys(dgs).join(',')).split(',').map(x=>x.trim()).filter(Boolean);for(const d of dlist)if(!dgs[d])throw new Error('던전 없음: '+d);
+  const built={};for(const s of pool){const r=P.pick(W,snap,s);if(!r.length)throw new Error('트레이너 못 찾음: '+s);built[s]=r[0]}
+  const combos=[];const rec=(st,cur)=>{if(cur.length===size){combos.push(cur.slice());return}for(let i=st;i<pool.length;i++){cur.push(pool[i]);rec(i+1,cur);cur.pop()}};rec(0,[]);
+  const wf=P.wildFrom(W,snap);const out=[];const t0=Date.now();let priv=false;
+  for(const [ci,c] of combos.entries()){const parties=c.map(s=>built[s]);const row={party:c,names:parties.map(p=>p.trainer.name),dungeons:{}};
+   for(const d of dlist){if(P.isPrivate(parties,dgs[d]))priv=true;const rows=[];for(let i=0;i<N;i++)rows.push(D.run(W,dgs[d],parties,{seed:(+opt.seed||1)+i,wildFrom:wf,adjust:kv(opt.adjust),policy:kv(opt.policy)}));const a=R.aggregate(rows);
+    row.dungeons[d]={wipe:a.wipe,boss:a.boss,endHp:a.endHp,ok:a.ok,cost:a.cost,fail:a.fail,alone:a.alone,injAny:a.injAny,injSevere:a.injSevere,covers:a.covers,bkos:a.bkos,bturns:a.bturns}}
+   out.push(row);if(ci%5===4||ci===combos.length-1)console.log(`${ci+1}/${combos.length} · ${((Date.now()-t0)/1000).toFixed(0)}초`)}
+  const id=(opt.id||'combos_'+KO.stamp()).replace(/[^\w가-힣=._-]/g,'_');const RD=R.recDir(priv);fs.mkdirSync(RD,{recursive:true});
+  fs.writeFileSync(path.join(RD,id+'.json'),JSON.stringify({id,name:opt.name||id,at:new Date().toISOString(),n:N,size,pool,dungeons:dlist,dungeonNames:dlist.map(d=>KO.dungeonName(d)),adjust:kv(opt.adjust),policy:kv(opt.policy),rows:out},null,1));
+  console.log('저장:',path.join(RD,id+'.json'));return}
  if(cmd==='report'){const R=require('../lib/report.js');const rep=R.build();console.log(`시나리오 ${rep.n}개 → ${rep.html}`);return}
  console.log('모르는 명령:',cmd);})().catch(e=>{console.error('오류:',e.message);process.exit(1)});

@@ -1,3 +1,7 @@
 records/*.jsonl
 data/snapshot.json
 node_modules/
+# 비공개(무진 등) — 비공개 트레이너 · 캠페인 던전이 들어간 것은 올리지 않는다
+records/private/
+data/**/*.private.json
+report/private.*

@@ -1,10 +1,13 @@
 /* 기록(records/*.summary.json) → report/index.html + report/report.md. 시나리오(변형)마다 한 줄 요약 + 체크 결과 분포 */
 "use strict";
 const fs=require('fs'),path=require('path');
-const REC=path.resolve(__dirname,'..','records'),OUT=path.resolve(__dirname,'..','report');
+const REC=path.resolve(__dirname,'..','records'),PRIV=path.join(REC,'private'),OUT=path.resolve(__dirname,'..','report');
+/* 비공개 기록(무진처럼 비공개 트레이너 · 던전이 들어간 것)은 records/private/ 에 두고 git 에 올리지 않는다. 리포트도 index.html(공개분) · private.html(전부, git 제외) 둘로 */
+const recDir=priv=>priv?PRIV:REC;
+function findRec(id){for(const d of [REC,PRIV]){const f=path.join(d,id+'.summary.json');if(fs.existsSync(f))return d}return null}
 const pct=x=>(x*100).toFixed(0)+'%';const f2=x=>(+x).toFixed(2);const KO=require('./ko.js');
 const nameOf=s=>s.name||s.id;const lineOf=s=>`${KO.dungeonName(s.dungeon)} · ${KO.partyKo(s.party).join('·')} · ${KO.describe(s.adjust,s.policy)}`;
-function summaries(){if(!fs.existsSync(REC))return [];return fs.readdirSync(REC).filter(f=>f.endsWith('.summary.json')).sort().map(f=>Object.assign({file:f},JSON.parse(fs.readFileSync(path.join(REC,f),'utf8'))))}
+function summaries(){const out=[];for(const [d,priv] of [[REC,false],[PRIV,true]]){if(!fs.existsSync(d))continue;for(const f of fs.readdirSync(d).filter(f=>f.endsWith('.summary.json')).sort())out.push(Object.assign({file:f,private:priv},JSON.parse(fs.readFileSync(path.join(d,f),'utf8'))))}return out}
 function aggregate(rows){const n=rows.length;const S=(k,fn)=>rows.reduce((a,r)=>a+fn(r),0);const cn=S('c',r=>r.checks.n)||1;
  return {n,wipe:S('w',r=>r.wipe?1:0)/n,boss:S('b',r=>r.boss?1:0)/n,endHp:S('h',r=>r.endHpAvg)/n,fainted:S('f',r=>r.faintedEnd)/n,monsTotal:rows[0]?rows[0].monsTotal:0,
   checks:cn/n,ok:S('o',r=>r.checks.ok)/cn,crit:S('o',r=>r.checks.crit)/cn,cost:S('o',r=>r.checks.cost)/cn,fail:S('o',r=>r.checks.fail)/cn,fumble:S('o',r=>r.checks.fumble)/cn,alone:S('o',r=>r.checks.alone)/cn,covers:S('o',r=>r.checks.covers)/n,inou:S('o',r=>r.checks.inou)/n,
@@ -32,5 +35,7 @@ ${list.map(s=>`<details><summary><b>${esc(nameOf(s))}</b> <span class="small">${
 const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 const bar=x=>`<span class="bar"><i style="width:${Math.round(x*100)}%"></i></span>${pct(x)}`;
 const stack=a=>`<span class="st"><i class="o" style="width:${a.ok*100}%"></i><i class="c" style="width:${a.cost*100}%"></i><i class="f" style="width:${(a.fail)*100}%"></i></span> ${pct(a.ok)} · ${pct(a.cost)} · ${pct(a.fail)}`;
-function build(){KO.reset();const L=summaries();fs.mkdirSync(OUT,{recursive:true});const m=md(L);fs.writeFileSync(path.join(OUT,'report.md'),m);fs.writeFileSync(path.join(OUT,'index.html'),html(L,m));return {n:L.length,md:path.join(OUT,'report.md'),html:path.join(OUT,'index.html')}}
-module.exports={summaries,aggregate,build,REC,OUT};
+function build(){KO.reset();const A=summaries(),L=A.filter(s=>!s.private);fs.mkdirSync(OUT,{recursive:true});const m=md(L);fs.writeFileSync(path.join(OUT,'report.md'),m);fs.writeFileSync(path.join(OUT,'index.html'),html(L,m));
+ const priv=A.length>L.length;if(priv){const m2=md(A);fs.writeFileSync(path.join(OUT,'private.md'),m2);fs.writeFileSync(path.join(OUT,'private.html'),html(A,m2))}
+ return {n:L.length,nAll:A.length,md:path.join(OUT,'report.md'),html:priv?path.join(OUT,'private.html'):path.join(OUT,'index.html')}}
+module.exports={summaries,aggregate,build,REC,PRIV,OUT,recDir,findRec};
