@@ -11,9 +11,7 @@ if errorlevel 1 (
   pause
   exit /b
 )
-if not exist "%~dp0시뮬레이터.lnk" (
-  powershell -NoProfile -ExecutionPolicy Bypass -Command "$s=(New-Object -ComObject WScript.Shell).CreateShortcut(\"%~dp0시뮬레이터.lnk\");$s.TargetPath=\"%~dp0실행.bat\";$s.WorkingDirectory=\"%~dp0\";$s.IconLocation=\"%~dp0sim.ico,0\";$s.Description=\"망켓몬 던전 시뮬레이터\";$s.Save()" >nul 2>nul
-)
+if not exist "%~dp0시뮬레이터.lnk" powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0make_shortcut.ps1" -LocalOnly >nul 2>nul
 start "" /b cmd /c "timeout /t 2 >nul & start http://localhost:8470"
 node bin\sim.js ui --noopen
 echo.

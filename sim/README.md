@@ -21,6 +21,8 @@ node bin/sim.js battle --party 카이 --wild factory_boss --n 200 --wn 2 [--log]
 node bin/sim.js run --scenario data/scenarios/base.json [--n 1000]
 node bin/sim.js run --dungeon factory --party 카이,미오,레온 --n 500 --adjust target=2,penScale=0.5 --policy cover=never
 node bin/sim.js combos --pool id:a,id:b,… --size 3 --dungeons x,y --n 100 --id 이름   후보 중 n명 조합 전부 × 던전들 (기록 탭에 표)
+node bin/sim.js auto --tier normal [--theme 숲] [--seed 42] [--save] [--webtool 1] [--test 200 --party a,b,c]   던전 자동 생성 (가이드라인 기본값, docs/던전_자동생성.md)
+node bin/sim.js autocheck [--g 12 --t 20 --n 10]          자동 생성 검증 — 난이도별 승률
 node bin/sim.js gen --tier easy|normal|hard --seed 3 [--knobs battles=1,checks=4] [--save]   던전 하나 무작위 생성 (lib/gen.js)
 node bin/sim.js calib --tier easy,normal --base 'lv=-5,bossLv=-5' --grid 'battles=0,1,2;checks=3,4' --g 12 --t 20 --n 10   생성기 맞추기 → records/private/calib_*.json
 node bin/sim.js report                                   records/*.summary.json → report/index.html · report.md
@@ -44,6 +46,7 @@ node bin/sim.js report                                   records/*.summary.json 
 | `lib/dungeon.js` | 던전 진행기 — 방 순서대로 체크 · 조우 · 휴식, 일행 상태(HP · 상태 · 지침 · 부상 · 이능 · 묘수 · 돌봄 · 4식6령 차감) 추적 |
 | `lib/report.js` | 기록 집계 → HTML · Markdown |
 | `lib/gen.js` | 던전 무작위 생성기 — 난이도(쉬움 · 보통 · 어려움) + 손잡이(사전 배틀 · 야생 수 · 레벨 · 휴식 · 체크 수 · 목표치 · 패널티 표 · 경계도). 가이드라인은 `records/feedback.md` 「던전 랜덤 생성 가이드라인」 |
+| `lib/autogen.js` | **던전 자동 생성** — 난이도 하나로 가이드라인대로(generate) · 웹툴 던전 탭 꼴로(toWebtool). 화면 「자동 생성」 탭. 규칙 문서 `docs/던전_자동생성.md` |
 | `lib/calib.js` | 생성기 맞추기 — 손잡이 격자마다 던전 g개 × 3인 조합 t개 × n판 → 승률 · 경계도 단계별 승률 |
 | `lib/automove.js` | 기술이 빈 포켓몬에게 시험용 표준 기술 |
 | `lib/ko.js` | 기록 · 리포트의 한국어 이름표 (조정값 · 정책 · 던전 · 일행 → 읽는 말) |

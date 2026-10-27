@@ -72,7 +72,7 @@ tr.hl td{background:var(--accent-soft)!important}
 .rname{font-weight:700}.rid{font:11px var(--mono);color:var(--faint)}
 </style></head><body>
 <header><h1>망켓몬 던전 · 스킬 체크 시뮬레이터<small>약식 · 가이드라인 자료 수집용</small></h1><span class="small" id="snapInfo">…</span><span class="sp"></span><button class="b sm" id="btnFetch" title="제작기 공유 DB 에서 트레이너 · 포켓몬을 받아 data/snapshot.json 으로">제작기에서 받기</button><button class="b sm" id="btnReload">새로고침</button></header>
-<nav id="nav"><button data-t="run" class="on">돌리기</button><button data-t="pt">일행</button><button data-t="dg">던전</button><button data-t="wild">야생</button><button data-t="rec">기록 · 리포트</button><button data-t="fb">피드백 · 인수인계</button><button data-t="tbl">체크 확률표</button></nav>
+<nav id="nav"><button data-t="run" class="on">돌리기</button><button data-t="pt">일행</button><button data-t="dg">던전</button><button data-t="auto">자동 생성</button><button data-t="wild">야생</button><button data-t="rec">기록 · 리포트</button><button data-t="fb">피드백 · 인수인계</button><button data-t="tbl">체크 확률표</button></nav>
 <main>
 <section id="t-run">
  <div class="grid">
@@ -87,6 +87,22 @@ tr.hl td{background:var(--accent-soft)!important}
  </div>
  <div class="card" id="runOut" hidden></div>
  <div class="card"><details><summary><b>배틀만 따로</b> <span class="small">일행 vs 야생 무리 N 판 · 첫 판 로그</span></summary><div class="row" style="margin-top:8px"><label class="f">야생 무리<select id="bPack"></select></label><label class="f">판 수<input type="number" id="bN" value="100"></label><button class="b" id="btnBattle">배틀 돌리기</button><span class="small" id="bMsg"></span></div><div class="log" id="bLog" hidden></div></details></div>
+</section>
+<section id="t-auto" hidden>
+ <div class="card col"><h3>던전 자동 생성 <span class="small">10-27 가이드라인이 기본값 · 자세한 규칙은 docs/던전_자동생성.md</span></h3>
+  <div class="row"><label class="f">난이도<select id="agTier"><option value="easy">쉬움 — 보스방 4체 · 레이드 2 (약 8할)</option><option value="normal" selected>보통 — 4체 · 레이드 3 (약 6할)</option><option value="hard">어려움 — 6체 · 레이드 3 (약 3할)</option></select></label>
+   <label class="f">테마<select id="agTheme"><option value="">무작위</option><option>폐가</option><option>동굴</option><option>숲</option><option>연구소</option><option>유적</option></select></label>
+   <label class="f">씨앗<input type="number" id="agSeed" placeholder="비우면 무작위" style="width:120px"></label>
+   <button class="b pri" id="agGen">생성</button><button class="b" id="agAgain" title="같은 설정 · 새 씨앗">다시 뽑기</button><span class="small" id="agMsg"></span></div>
+  <details><summary class="small">손잡이 바꾸기 (비우면 가이드라인 값)</summary><div class="row" style="margin-top:6px">
+   <label class="f">사전 배틀<input type="number" id="agBattles" min="0" max="4" placeholder="난이도 값" style="width:90px"></label>
+   <label class="f">체크 수<input type="number" id="agChecks" min="0" max="6" placeholder="4" style="width:80px"></label>
+   <label class="f">야생 Lv<input type="number" id="agLv" step="5" placeholder="−5" style="width:80px"></label>
+   <label class="f">대가 경계도<input type="number" id="agAlC" step="5" placeholder="15" style="width:80px"></label>
+   <label class="f">실패 경계도<input type="number" id="agAlF" step="5" placeholder="30" style="width:80px"></label>
+   <label class="f">보스 앞 휴식<select id="agRest"><option value="">짧은 휴식</option><option value="breath">숨돌리기</option><option value="mid">중간 휴식</option><option value="none">없음</option></select></label></div></details>
+ </div>
+ <div class="card" id="agOut" hidden></div>
 </section>
 <section id="t-pt" hidden>
  <div class="row" style="margin-bottom:8px"><span class="small">제작기 스냅샷의 트레이너예요. 카드를 누르면 일행에 들어가고, 「시트」를 누르면 포켓몬이 펼쳐져요. 비공개 트레이너는 git 에 올라가지 않는 스냅샷에만 있어요.</span><span class="sp"></span><button class="b sm" id="ptAll">모두 펼치기</button><button class="b sm" id="ptNone">모두 접기</button></div>
@@ -296,4 +312,29 @@ function renderTable(){const T=[5,7,9,11];const names={alone:'혼자 (d4)',mon:'
 $('#btnReload').onclick=()=>loadState().then(()=>toast('새로고침'));
 $('#btnFetch').onclick=async()=>{if(!confirm('제작기 공유 DB 에서 트레이너 · 포켓몬 전부를 받아 data/snapshot.json 에 저장할까요? (읽기만 해요)'))return;$('#btnFetch').disabled=true;try{const r=await api('fetch',{});toast(`받았어요: 트레이너 ${r.trainers} · 포켓몬 ${r.pokemon}`);sel.clear();await loadState()}catch(e){toast('오류: '+e.message+' (이 컴퓨터에서 Supabase 에 닿아야 해요)')}$('#btnFetch').disabled=false};
 loadState().catch(e=>toast('불러오기 오류: '+e.message));
+
+/* ---- 던전 자동 생성 (10-27) ---- */
+let AG=null;
+function agKnobs(){const k={};const n=(id,key)=>{const v=$(id).value;if(v!=='')k[key]=+v};n('#agBattles','battles');n('#agChecks','checks');n('#agLv','lv');if($('#agLv').value!=='')k.bossLv=+$('#agLv').value;n('#agAlC','alCost');n('#agAlF','alFail');if($('#agRest').value)k.rest=$('#agRest').value;return k}
+async function agGen(newSeed){if(newSeed)$('#agSeed').value='';$('#agMsg').textContent='…';try{const r=await api('autoGen',{tier:$('#agTier').value,theme:$('#agTheme').value,seed:$('#agSeed').value===''?undefined:+$('#agSeed').value,knobs:agKnobs()});AG=r;$('#agSeed').value=r.dungeon.gen.seed;$('#agMsg').textContent='';agRender()}catch(e){$('#agMsg').textContent='';toast('오류: '+e.message)}}
+$('#agGen').onclick=()=>agGen(false);$('#agAgain').onclick=()=>agGen(true);
+const PENKO=p=>{if(!p)return '-';const L=[];if(p.al)L.push('경계도 +'+p.al);if(p.dmg)L.push('HP −'+p.dmg);if(p.st)L.push(({Paralysis:'마비',Poison:'독',Confusion:'혼란'})[p.st]||p.st);if(p.oo)L.push('4식 −'+p.oo);if(p.oc)L.push('6령 −'+p.oc);if(p.memo)L.push('「'+p.memo+'」');return L.join(' · ')||'-'};
+function agRender(){const d=AG.dungeon,out=$('#agOut');out.hidden=false;const keep=DG;DG=JSON.parse(JSON.stringify(d));const map=mapSVG();DG=keep;const g=d.gen,k=g.knobs,R=d.rules||{};
+ const rows=d.rooms.map(r=>{const t=ty(r.t);const ev=[];if(r.check){const c=r.check;ev.push(`🎲 <b>${esc(c.label)}</b> <span class="small">${c.stat} ${c.target}${c.mode==='inou'?' · 이능':''}${c.hint&&c.hint!=='any'?' · '+esc(c.hint.replace('type:','타입 ')):''}</span><div class="small">실패: ${esc(PENKO(c.pen&&c.pen.fail))}<br>대가: ${esc(PENKO(c.pen&&c.pen.cost))}</div>`)}
+  if(r.enc){const names=(AG.webtool.r[Object.keys(AG.webtool.r).find(id=>AG.webtool.r[id].n===r.name)]||{}).m||'';ev.push(`${r.enc.boss?'♛':'⚔'} <b>${r.enc.mix.length}체</b>${r.enc.raid?' · 「레이드 배틀 : '+r.enc.raid+'」':''} <div class="small" style="white-space:pre-wrap">${esc(names.split('\n').slice(1).join('\n'))}</div>`)}
+  if(r.rest)ev.push(`☗ ${({short:'짧은 휴식',breath:'숨돌리기',mid:'중간 휴식',long:'긴 휴식'})[r.rest]||r.rest}`);if(r.clue)ev.push('🔍 단서 자리');
+  return `<tr><td style="white-space:normal;word-break:keep-all"><span style="color:${t.c}">${t.ic}</span> ${esc(r.name)}<div class="small">${t.k}</div></td><td style="white-space:normal;word-break:keep-all;overflow-wrap:anywhere">${ev.join('<hr style="border:0;border-top:1px dashed var(--line);margin:4px 0">')||'<span class="small">-</span>'}</td></tr>`}).join('');
+ out.innerHTML=`<h3>${esc(d.name)} <span class="small">${esc(d.note)}</span></h3>
+  <div class="small" style="margin:-4px 0 8px">경계도: 대가 +${k.alCost} · 실패 +${k.alFail} · 일반 조우 +${R.alBattle} · 30 → Lv +${R.al30} · 70 → Lv +${R.al70} · 100 → 자동 실패 · 휴식 ${+R.restV===2?'2안 (짧은 휴식이 빈사를 HP 1/4 로)':'1안'}</div>
+  ${map}
+  <div class="wrap" style="margin-top:8px"><table style="table-layout:fixed;width:100%"><colgroup><col style="width:30%"><col></colgroup><thead><tr><th>방</th><th>내용</th></tr></thead><tbody>${rows}</tbody></table></div>
+  <div class="row" style="margin-top:10px"><label class="f">시험 판 수<input type="number" id="agN" value="200" style="width:90px"></label><button class="b" id="agTest" title="「돌리기」 탭에서 고른 일행으로">일행으로 시험</button><span class="small" id="agTestMsg">${sel.size?'일행: '+[...sel].map(id=>(trById(id)||{}).name).join('·'):'「돌리기」 탭에서 일행을 먼저 고르세요'}</span></div>
+  <div id="agTestOut"></div>
+  <div class="row" style="margin-top:10px"><label class="f">id<input id="agId" value="${esc(d.id)}" style="width:200px"></label><button class="b pri" id="agSave">시뮬 던전으로 저장</button><button class="b" id="agSaveW">웹툴용 JSON 저장</button><button class="b" id="agCopy">웹툴용 JSON 복사</button><span class="small" id="agSaveMsg"></span></div>
+  <details style="margin-top:8px"><summary class="small">웹툴 던전 탭 꼴 미리 보기 (state.dg.list[id])</summary><textarea rows="12" readonly>${esc(JSON.stringify(AG.webtool,null,1))}</textarea></details>`;
+ $('#agTest').onclick=async()=>{if(!sel.size)return toast('「돌리기」 탭에서 일행을 먼저 고르세요');$('#agTestMsg').textContent='돌리는 중…';try{const r=await api('autoTest',{dungeon:AG.dungeon,party:partySel(),n:+$('#agN').value});const a=r.agg;$('#agTestMsg').textContent=`${a.n}판 · ${(r.ms/1000).toFixed(1)}초`;
+   $('#agTestOut').innerHTML=`<div class="kpi">${[[pct(1-a.wipe),'승률',a.wipe>0.5],[pct(a.bossWin),'보스전 승'],[pct(a.endHp),'끝 HP'],[f2(r.alert.avg),'경계도 평균'],[pct(r.alert.over30),'경계도 30↑'],[pct(r.alert.over70),'경계도 70↑'],[pct(r.alert.lock),'퇴출 (100)']].map(([v,k,bad])=>`<div><b class="${bad?'bad':''}">${v}</b><span>${k}</span></div>`).join('')}</div><div style="margin:8px 0 4px"><b>체크 결과</b> ${stack(a)}</div><details><summary class="small">첫 판 상세</summary>${r.sample.map(evHtml).join('')}</details>`}catch(e){$('#agTestMsg').textContent='';toast('오류: '+e.message)}};
+ const doSave=async w=>{const dg=Object.assign({},AG.dungeon,{id:$('#agId').value.trim()});try{const r=await api('autoSave',{dungeon:dg,webtool:w,sim:!w});$('#agSaveMsg').textContent='저장: '+(r.sim||r.webtool);if(!w)await loadState()}catch(e){toast('오류: '+e.message)}};
+ $('#agSave').onclick=()=>doSave(false);$('#agSaveW').onclick=()=>doSave(true);
+ $('#agCopy').onclick=async()=>{try{await navigator.clipboard.writeText(JSON.stringify(AG.webtool,null,1));toast('복사했어요')}catch(e){toast('복사 실패 — 아래 미리 보기에서 직접 복사')}}}
 </script></body></html>

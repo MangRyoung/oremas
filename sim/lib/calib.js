@@ -18,4 +18,11 @@ function evalCfg(W,built,wf,tier,knobs,o){const g=o.g||8,n=o.n||10;const TR=o.tr
   byDebt,byAl,lockdown:lock/runs,alertAvg:alSum/runs,boss:{reach:bossReach/runs,win:bossWin/Math.max(1,bossReach),turns:bossTurns/Math.max(1,bossReach),phases:phases/Math.max(1,bossReach)},endHp:endHp/runs}}
 function grid(spec){/* "lv=-10,-5,0;battles=1,2" → [{lv:-10,battles:1},…] */const ks=[];for(const part of String(spec||'').split(';')){if(!part.trim())continue;const [k,v]=part.split('=');ks.push([k.trim(),v.split(',').map(x=>isNaN(+x)?x.trim():+x)])}
  let out=[{}];for(const [k,vs] of ks){const nx=[];for(const o of out)for(const v of vs)nx.push(Object.assign({},o,{[k]:v}));out=nx}return out}
-module.exports={evalCfg,grid,trios};
+/* 자동 생성 검증: generate() 로 뽑은 던전(규칙값 dg.rules 포함)을 그대로 돌린다 */
+function evalAuto(W,built,wf,tier,o){const AG=require('./autogen.js');const g=o.g||12,n=o.n||10;let runs=0,wins=0,al30=0,al70=0,lock=0;const perT={},perD=[];
+ for(let s=1;s<=g;s++){const dg=AG.generate({tier,seed:(o.seed0||900)+s,knobs:o.knobs,theme:o.theme});let dw=0,dn=0;
+  for(const c of o.trios){let tw=0;for(let i=0;i<n;i++){const r=D.run(W,dg,c.map(x=>built[x]),{seed:s*1000+i+1,wildFrom:wf});runs++;dn++;if(!r.wipe){wins++;dw++;tw++}if(r.alert>=30)al30++;if(r.alert>=70)al70++;if(r.lockdown)lock++}perT[c.join(',')]=(perT[c.join(',')]||0)+tw}
+  perD.push({seed:dg.gen.seed,name:dg.name,battles:dg.gen.knobs.battles,boss:dg.gen.boss,win:dw/dn})}
+ const tw=Object.values(perT).map(v=>v/(g*n)).sort((a,b)=>a-b);
+ return {tier,runs,win:wins/runs,al30:al30/runs,al70:al70/runs,lockdown:lock/runs,trioWin:{min:tw[0],med:tw[Math.floor(tw.length/2)],max:tw[tw.length-1]},perD}}
+module.exports={evalCfg,evalAuto,grid,trios};

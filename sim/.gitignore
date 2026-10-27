@@ -5,3 +5,7 @@ node_modules/
 records/private/
 data/**/*.private.json
 report/private.*
+# 바로가기 · 기록 (PC 마다 다름)
+*.lnk
+shortcut_log.txt
+data/webtool/

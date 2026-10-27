@@ -22,7 +22,7 @@ function makeParty(parties,wn){return parties.map(p=>{const t=clone(p.trainer);c
  return {trainer:t,mons:ms,inj:0,tired:new Set(),inou:0,myosu:0,care:0,aa:0,debt:{oo:0,oc:0,rk:{}},stats:{checks:0,ok:0,cost:0,fail:0,fumble:0,crit:0,covers:0,covered:0,inouUsed:0,penDmg:0}}})}
 
 function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt.seed||1);const pol=Object.assign({who:'best',cover:'fail',partner:'match',inou:'yes'},opt.policy||{});
- const adj=Object.assign({target:0,penScale:1,checkEvery:1,stepAll:0,wildLv:0,wildExtra:0,bossN:0,raidX:null,raidMode:'barrier',restV:1,al0:0,al30:5,al70:10,alBattle:0,alScale:1},opt.adjust||{});
+ const adj=Object.assign({target:0,penScale:1,checkEvery:1,stepAll:0,wildLv:0,wildExtra:0,bossN:0,raidX:null,raidMode:'barrier',restV:1,al0:0,al30:5,al70:10,alBattle:0,alScale:1},dg.rules||{},opt.adjust||{});   /* dg.rules = 던전에 박힌 규칙값(자동 생성 던전). 조정값(opt.adjust)이 그 위에 */
  const party=makeParty(parties,dg.wn||opt.wn||2);const ev=[];const say=(e)=>ev.push(e);
  const aliveMons=P=>P.mons.filter(m=>m.hp.cur>0);const anyAlive=()=>party.some(P=>aliveMons(P).length);
  const rankOf=(P,st)=>((P.trainer.ranks||{})[st]||'C');
@@ -73,8 +73,8 @@ function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt.seed|
  /* 조우 */
  const doBattle=(room,enc)=>{let wild;
   if(enc.mix){/* 여러 트레이너의 포켓몬을 섞은 야생 무리: mix:[{trainer,pick}], 순서대로 이어 붙여 앞에서 n 체(보스 방은 adjust.bossN 이 우선). bossAt 번째가 『와일드 보스』(×1.5), raid:X 면 「레이드 배틀 : X」 */
-   if(!opt.wildFrom)throw new Error('스냅샷 야생을 쓸 수 없음 (wildFrom 없음)');const lvAdd=(+enc.lvAdd||0)+(+adj.wildLv||0)+(enc._extra?0:pend.foeLv)+(enc.boss?pend.bossLv:0)+alLv();if(!enc._extra)pend.foeLv=0;let mons=[],tr=null;
-   for(const src of enc.mix){const w=opt.wildFrom(src.trainer,{pick:src.pick,take:src.take,lvAdd});tr=tr||w.trainer;mons=mons.concat(w.mons)}
+   if(!opt.wildFrom&&enc.mix.some(m=>!m.sp))throw new Error('스냅샷 야생을 쓸 수 없음 (wildFrom 없음)');const lvAdd=(+enc.lvAdd||0)+(+adj.wildLv||0)+(enc._extra?0:pend.foeLv)+(enc.boss?pend.bossLv:0)+alLv();if(!enc._extra)pend.foeLv=0;let mons=[],tr=null;
+   for(const src of enc.mix){if(src.sp){/* 도감 야생 (lib/dex.js) */const r=require('./dex.js').build(W,src.sp,{lvAdd});tr=tr||r.trainer;mons.push(r.mon);continue}const w=opt.wildFrom(src.trainer,{pick:src.pick,take:src.take,lvAdd});tr=tr||w.trainer;mons=mons.concat(w.mons)}
    const N=enc.boss&&+adj.bossN?+adj.bossN:(+enc.n||mons.length);while(mons.length<N)mons.push(clone(mons[mons.length%Math.max(1,enc.mix.length)]));mons=mons.slice(0,N);
    const seen={};mons.forEach((x,i)=>{seen[x.id]=(seen[x.id]||0)+1;if(seen[x.id]>1)x.id=x.id+'_d'+i});
    const bi=enc.boss?(+enc.bossAt||0):-1;const X=enc.boss?(adj.raidX!=null&&adj.raidX!==''?+adj.raidX:(+enc.raid||0)):0;
