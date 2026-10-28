@@ -9,3 +9,4 @@ report/private.*
 *.lnk
 shortcut_log.txt
 data/webtool/
+data/img_cache/
