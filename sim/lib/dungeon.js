@@ -21,6 +21,7 @@ function dungeons(){const out={};if(!fs.existsSync(DIR))return out;for(const f o
 function makeParty(parties,wn){return parties.map(p=>{const t=clone(p.trainer);const ms=p.mons.slice().sort((a,b)=>(b.partner?1:0)-(a.partner?1:0)).slice(0,wn).map(m=>{const x=clone(m);x.hp.cur=x.hp.max;x.states={};x.rank={};return x});
  return {trainer:t,mons:ms,inj:0,tired:new Set(),inou:0,myosu:0,care:0,aa:0,debt:{oo:0,oc:0,rk:{}},stats:{checks:0,ok:0,cost:0,fail:0,fumble:0,crit:0,covers:0,covered:0,inouUsed:0,penDmg:0}}})}
 
+function pathOf(dg,r){let P=(dg.path||dg.rooms.filter(x=>!x.alt).map(x=>x.id)).slice();for(const g of dg.branches||[]){if(r()<0.5){const i=P.indexOf(g.main[0]);if(i>=0)P.splice(i,g.main.length,...g.alt)}}return P}
 async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt.seed||1);const pol=Object.assign({who:'best',cover:'fail',partner:'match',inou:'yes'},opt.policy||{});
  const adj=Object.assign({ordScope:'dungeon',ordPer:1,cmdPer:2,target:0,penScale:1,checkEvery:1,stepAll:0,wildLv:0,wildExtra:0,bossN:0,raidX:null,raidMode:'barrier',restV:1,al0:0,al30:5,al70:10,alBattle:0,alScale:1},dg.rules||{},opt.adjust||{});   /* dg.rules = 던전에 박힌 규칙값(자동 생성 던전). 조정값(opt.adjust)이 그 위에 */
  const party=makeParty(parties,dg.wn||opt.wn||2);const ev=[];const say=(e)=>ev.push(e);
@@ -112,7 +113,9 @@ async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt
  const care=()=>{for(const P of party){if(P.care)continue;if(SK.lv(rankOf(P,'육성'))<2)continue;const Q=party.find(Q=>Q.tired.size);if(!Q)break;const id=[...Q.tired][0];Q.tired.delete(id);P.care=1;say({k:'care',who:P.trainer.name,for:Q.trainer.name})}};
 
  let ci=0,wipe=false,boss=false,endRoom='',lockdown=false;
- for(const rid of dg.path||dg.rooms.map(r=>r.id)){const room=dg.rooms.find(r=>r.id===rid);if(!room)continue;endRoom=rid;say({k:'room',room:rid,t:room.t,name:room.name});
+ /* 10-28 갈림길(dg.branches): 판마다 갈림길에서 반반으로 한쪽 길(본길 구간 / 다른 길)을 걷는다 — opt.route = 'main' | 'alt' 로 고정할 수 있다 */
+ const route=pathOf(dg,()=>opt.route==='main'?1:opt.route==='alt'?0:rng());if(dg.branches&&dg.branches.length)say({k:'route',path:route});
+ for(const rid of route){const room=dg.rooms.find(r=>r.id===rid);if(!room)continue;endRoom=rid;say({k:'room',room:rid,t:room.t,name:room.name});
   if(room.check){ci++;/* checkEvery 2 = 체크를 하나 걸러 하나만 (제시 횟수를 줄이는 실험) */if(adj.checkEvery<=1||ci%adj.checkEvery===1){care();doCheck(room,room.check)}
    if(pend.al>=100){lockdown=true;wipe=true;break}
    while(pend.fights.length){const f=Object.assign({},pend.fights.shift(),{_extra:1});const r=await doBattle(room,f);if(!r||!r.win){wipe=true;break}}if(wipe)break}
@@ -132,4 +135,4 @@ async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt
   endHp:endHp.map(x=>+x.toFixed(2)),endHpAvg:+(endHp.reduce((a,b)=>a+b,0)/endHp.length).toFixed(3),faintedEnd:party.reduce((a,P)=>a+P.mons.filter(m=>m.hp.cur<=0).length,0),monsTotal:party.reduce((a,P)=>a+P.mons.length,0),
   checkRows:checks.map(c=>({l:c.label,t:c.target,ri:c.ri,ri0:c.ri0,w:c.who,p:c.partner,m:c.mode,cv:c.cover?1:0})),
   party:party.map(P=>({name:P.trainer.name,ranks:P.trainer.ranks,stats:P.stats})),events:opt.events?ev:undefined}}
-module.exports={dungeons,run,makeParty,REST,REST2,DIR};
+module.exports={pathOf,dungeons,run,makeParty,REST,REST2,DIR};

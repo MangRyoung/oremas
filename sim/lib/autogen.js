@@ -85,10 +85,24 @@ function walkGrid(rng,n,turn){const C=GRID.cols,Rw=GRID.rows,key=(c,r)=>c+','+r,
    for(const {i} of ord){const nc=c+DIRS[i][0],nr=r+DIRS[i][1];if(!inb(nc,nr)||used.has(key(nc,nr)))continue;used.add(key(nc,nr));path.push([nc,nr]);if(go(i))return true;path.pop();used.delete(key(nc,nr))}return false};
   if(go(-1))return {path,used}}
  return null}
-function layout(rng,dg,o,nm,th){o=o||{};const pick=a=>a[Math.floor(rng()*a.length)];const main=dg.rooms.filter(r=>!r.side);const sides=dg.rooms.filter(r=>r.side);const key=(c,r)=>c+','+r;
+const isChk=r=>r&&['puzzle','trap','room'].includes(r.t)&&r.check;
+function addBranches(rng,dg,donor,n){const pick=a=>a[Math.floor(rng()*a.length)];const main=dg.rooms.filter(r=>!r.side&&!r.alt);dg.branches=[];if(!(n>0))return;
+ const spare={battle:donor.rooms.filter(r=>r.t==='battle'),check:donor.rooms.filter(isChk)};const taken=new Set();
+ for(let g=1;g<=n;g++){const C=[];for(let i=0;i<main.length;i++)for(const L of [1,2]){const j=i+L+1;if(j>=main.length)continue;const seg=main.slice(i+1,j);if(seg.some(r=>taken.has(r.id)||!(r.t==='battle'||isChk(r))))continue;if(taken.has(main[i].id)&&taken.has(main[j].id))continue;C.push([i,j,seg])}
+  if(!C.length)break;const [i,j,seg]=pick(C);const alt=[];
+  for(const r of seg){const want=r.t==='battle'?'check':'battle';const src=spare[want].shift();if(!src)break;const x=JSON.parse(JSON.stringify(src));x.id='g'+g+'a'+(alt.length+1);x.alt='g'+g;alt.push(x)}
+  if(alt.length!==seg.length)break;seg.forEach(r=>taken.add(r.id));dg.rooms.push(...alt);dg.branches.push({id:'g'+g,from:main[i].id,to:main[j].id,main:seg.map(r=>r.id),alt:alt.map(r=>r.id)})}}
+/* 격자에서 a → b 를 정확히 k 걸음으로 잇는 빈칸 길 (끝점 빼고 used 를 피한다) */
+function gridPath(rng,a,b,k,used){const key=(c,r)=>c+','+r;const P=[a];const seen=new Set([key(...a)]);
+ const go=()=>{const [c,r]=P[P.length-1];const left=k-(P.length-1);const d=Math.abs(c-b[0])+Math.abs(r-b[1]);if(d>left||(left-d)%2)return false;if(left===0)return c===b[0]&&r===b[1];
+  for(const i of [0,1,2,3].sort(()=>rng()-0.5)){const nc=c+DIRS[i][0],nr=r+DIRS[i][1];if(nc<0||nr<0||nc>=GRID.cols||nr>=GRID.rows)continue;const kk=key(nc,nr);const end=nc===b[0]&&nr===b[1];if(end?left!==1:(used.has(kk)||seen.has(kk)))continue;seen.add(kk);P.push([nc,nr]);if(go())return true;P.pop();seen.delete(kk)}return false};
+ return go()?P:null}
+function layout(rng,dg,o,nm,th){o=o||{};const pick=a=>a[Math.floor(rng()*a.length)];const main=dg.rooms.filter(r=>!r.side&&!r.alt);const sides=dg.rooms.filter(r=>r.side);const key=(c,r)=>c+','+r;
  const shapeName=o.shape&&SHAPES[o.shape]!=null?o.shape:pick(Object.keys(SHAPES));
  for(let t=0;t<50;t++){const w=walkGrid(rng,main.length,SHAPES[shapeName]);if(!w)continue;const cells={},links={};main.forEach((r,i)=>{cells[r.id]=w.path[i];if(i)links[[main[i-1].id,r.id].sort().join('~')]=1});
   let ok=true;const used=new Set(w.used);
+  for(const g of dg.branches||[]){const p=gridPath(rng,cells[g.from],cells[g.to],g.alt.length+1,used);if(!p){ok=false;break}let prev=g.from;g.alt.forEach((id,k)=>{cells[id]=p[k+1];used.add(p[k+1].join(','));links[[prev,id].sort().join('~')]=1;prev=id});links[[prev,g.to].sort().join('~')]=1}
+  if(!ok)continue;
   for(const s of sides){/* 붙일 본길 방: 입구 · 보스 빼고, 빈 이웃 칸이 있는 곳 */const cand=[];main.forEach((r,i)=>{if(r.t==='boss'||(r.t==='entry'&&main.length>3))return;const [c,rr]=cells[r.id];for(const [dx,dy] of DIRS){const nc=c+dx,nr=rr+dy;if(nc>=0&&nr>=0&&nc<GRID.cols&&nr<GRID.rows&&!used.has(key(nc,nr)))cand.push([r.id,[nc,nr]])}});
    if(!cand.length){ok=false;break}const [at,cell]=pick(cand);used.add(key(...cell));cells[s.id]=cell;s.from=at;links[[at,s.id].sort().join('~')]=1}
   if(!ok)continue;
@@ -112,7 +126,11 @@ function generate(o){o=o||{};const tier=o.tier||'normal';if(!PRESET[tier])throw 
  if(source==='dex'&&!wild){const DX=require('./dex.js');const wb=o.wildBst||DEX_BST.wild,bb=o.bossBst||DEX_BST.boss;
   const W0=DX.pick({types:th.types,bst:wb}),B0=DX.pick({types:th.types,bst:bb});wild=(W0.length>=8?W0:DX.pick({bst:wb})).map(d=>['dex',d.name,d.name]);bossP=(B0.length>=3?B0:DX.pick({bst:bb})).map(d=>['dex',d.name,d.name])}
  const keep={POOL:G.POOL.slice(),BOSS:G.BOSS.slice()};if(Array.isArray(wild)&&wild.length){G.POOL.length=0;G.POOL.push(...wild)}if(Array.isArray(bossP)&&bossP.length){G.BOSS.length=0;G.BOSS.push(...bossP)}
- let dg;try{dg=G.make(tier,knobs,seed)}finally{G.POOL.length=0;G.POOL.push(...keep.POOL);G.BOSS.length=0;G.BOSS.push(...keep.BOSS)}
+ let dg,donor;try{dg=G.make(tier,knobs,seed);donor=G.make(tier,Object.assign({},knobs,{battles:4,checks:5}),seed+977)}finally{G.POOL.length=0;G.POOL.push(...keep.POOL);G.BOSS.length=0;G.BOSS.push(...keep.BOSS)}
+ /* 갈림길 (10-28 망령 「1갈래 길 밖에 안 나오는데?」) — 본길 한 구간(방 1~2개) 옆에 나란한 다른 길을 내고 끝에서 다시 만난다.
+    다른 길은 본길 구간의 방을 뒤집어 채운다: 배틀 ↔ 체크 (싸우며 뚫는 길 / 머리 쓰는 길). 방 수가 같아 길이도 같다.
+    시뮬은 판마다 반반으로 한쪽을 걷는다(dungeon.pathOf) → 승률은 두 길의 평균. o.branches = 갈림길 수(기본 1, 0 이면 예전처럼 한 줄) */
+ addBranches(rng,dg,donor,o.branches!=null?+o.branches:1);
  /* 테마 문구 입히기 */
  const used=new Set(),usedLab=new Set();const nm=list=>{const L=list.filter(x=>!used.has(x));const v=L.length?pick(L):pick(list)+' '+(used.size+1);used.add(v);return v};
  for(const r of dg.rooms){if(r.t==='entry')r.name=nm(th.entry);else if(r.t==='battle')r.name=nm(th.battle);else if(r.t==='safe')r.name=nm(th.safe);else if(r.t==='boss')r.name=nm(th.boss);else r.name=nm(th.check);
@@ -127,10 +145,11 @@ function generate(o){o=o||{};const tier=o.tier||'normal';if(!PRESET[tier])throw 
   if(kind.k==='ambush'){r.ambush=1}
   dg.rooms.push(r)}
  layout(rng,dg,o,nm,th);
+ if(!dg.map&&dg.branches&&dg.branches.length){/* 격자에 갈림길이 안 들어가면 갈림길 없이 */const A=new Set(dg.branches.flatMap(g=>g.alt));dg.rooms=dg.rooms.filter(r=>!A.has(r.id));dg.branches=[];layout(rng,dg,o,nm,th)}
  const bossName=dg.gen.boss;
  dg.id=o.id||`auto_${tier}_${seed}`;dg.name=o.name||`${pick(th.name)} (${TIER_KO[tier]})`;dg.theme=thName;dg.owner=bossName;
  dg.rules=Object.assign({},RULES,o.rules||{});dg.private=true;
- dg.note=`자동 생성 · ${TIER_KO[tier]} · 씨앗 ${seed} · 테마 ${thName}. 사전 배틀 ${knobs.battles} · 체크 ${knobs.checks} · 보스방 ${G.TIER[tier].bossN}체 · ${RAIDN[G.TIER[tier].raid]} · 지도 ${dg.map?dg.map.shape+(dg.rooms.some(r=>r.side)?' + 곁방 '+dg.rooms.filter(r=>r.side).length:''):'일자'} · 야생 Lv ${knobs.lv>=0?'+':''}${knobs.lv}${tough==='full'?' · 빡센 길(체크 목표 9 · 11, 경계도 실패 +45 · 대가 +20)':tough==='hard'?' · 어려운 길(체크 목표 9 · 11)':''}.`;
+ dg.note=`자동 생성 · ${TIER_KO[tier]} · 씨앗 ${seed} · 테마 ${thName}. 사전 배틀 ${knobs.battles} · 체크 ${knobs.checks} · 보스방 ${G.TIER[tier].bossN}체 · ${RAIDN[G.TIER[tier].raid]} · 지도 ${dg.branches&&dg.branches.length?'갈림길 '+dg.branches.length+' · ':''}${dg.map?dg.map.shape+(dg.rooms.some(r=>r.side)?' + 곁방 '+dg.rooms.filter(r=>r.side).length:''):'일자'} · 야생 Lv ${knobs.lv>=0?'+':''}${knobs.lv}${tough==='full'?' · 빡센 길(체크 목표 9 · 11, 경계도 실패 +45 · 대가 +20)':tough==='hard'?' · 어려운 길(체크 목표 9 · 11)':''}.`;
  dg.gen=Object.assign({},dg.gen,{v:1,auto:true,tough,shape:dg.map&&dg.map.shape,theme:thName,rules:dg.rules,source,grades:source==='db'?gr:undefined});
  return dg}
 /* 웹툴 던전 탭 꼴로 — 지도 좌표(dg.map 격자, 없으면 옛 지그재그) · 통로 · 방마다 sk(스킬 체크) · rk(휴식 단계) · m(GM 메모: 조우 구성 · 경계도 패널티 · 단서) */

@@ -108,7 +108,7 @@ tr.hl td{background:var(--accent-soft)!important}
 .gstep{display:inline-grid;grid-template-columns:auto 52px;gap:4px 8px;align-items:center;font-size:12.5px}
 </style></head><body>
 <header><h1>망켓몬 던전 · 스킬 체크 시뮬레이터<small>약식 · 가이드라인 자료 수집용</small></h1><span class="small" id="snapInfo">…</span><span class="sp"></span><button class="b sm" id="btnFetch" title="제작기 공유 DB 에서 트레이너 · 포켓몬을 받아 data/snapshot.json 으로">제작기에서 받기</button><button class="b sm" id="btnReload">새로고침</button></header>
-<nav id="nav"><button data-t="run" class="on">돌리기</button><button data-t="pt">일행</button><button data-t="dg">던전</button><button data-t="gen">생성기</button><button data-t="auto">자동 생성</button><button data-t="wild">야생</button><button data-t="rec">기록 · 리포트</button><button data-t="fb">피드백 · 인수인계</button><button data-t="tbl">체크 확률표</button></nav>
+<nav id="nav"><button data-t="run" class="on">돌리기</button><button data-t="pt">일행</button><button data-t="dg">던전</button><button data-t="gen">생성기</button><button data-t="auto">던전 생성</button><button data-t="wild">야생</button><button data-t="rec">기록 · 리포트</button><button data-t="fb">피드백 · 인수인계</button><button data-t="tbl">체크 확률표</button></nav>
 <main>
 <section id="t-run">
  <div class="grid">
@@ -127,15 +127,20 @@ tr.hl td{background:var(--accent-soft)!important}
  <div class="card"><details><summary><b>배틀만 따로</b> <span class="small">일행 vs 야생 무리 N 판 · 첫 판 로그</span></summary><div class="row" style="margin-top:8px"><label class="f">야생 무리<select id="bPack"></select></label><label class="f">판 수<input type="number" id="bN" value="100"></label><button class="b" id="btnBattle">배틀 돌리기</button><span class="small" id="bMsg"></span></div><div class="log" id="bLog" hidden></div></details></div>
 </section>
 <section id="t-gen" hidden>
- <div class="gsub" id="gSub"><button data-g="abil" class="on">✨ 특성</button><button data-g="mon">🐾 야생 포켓몬</button><button data-g="pack">🎲 즉석 무리</button><button data-g="chk">🎯 스킬 체크</button><button data-g="dg">🗺 던전</button></div>
+ <div class="gsub" id="gSub"><button data-g="abil" class="on">✨ 특성</button><button data-g="mon">🐾 야생 포켓몬</button><button data-g="pack">🎲 즉석 무리</button><button data-g="chk">🎯 스킬 체크</button></div>
  <div class="glay"><aside class="gcond"><div class="card" id="gCond"></div></aside><div id="gOut"></div></div>
 </section>
 <section id="t-auto" hidden>
- <div class="card col"><h3>던전 자동 생성 <span class="small">10-27 가이드라인이 기본값 · 자세한 규칙은 docs/던전_자동생성.md</span></h3>
+ <div class="card col"><h3>던전 생성 <span class="small">가이드라인이 기본값 · 자세한 규칙은 docs/던전_자동생성.md</span></h3>
   <div class="row"><label class="f">난이도<select id="agTier"><option value="easy">쉬움 — 보스방 4체 · 레이드 2 (약 8할)</option><option value="normal" selected>보통 — 4체 · 레이드 3 (약 6할)</option><option value="hard">어려움 — 6체 · 레이드 3 (약 3할)</option></select></label>
    <label class="f">테마<select id="agTheme"><option value="">무작위</option><option>폐가</option><option>동굴</option><option>숲</option><option>연구소</option><option>유적</option><option>바다</option><option>화산</option><option>설원</option></select></label>
    <label class="f">씨앗<input type="number" id="agSeed" placeholder="비우면 무작위" style="width:120px"></label>
    <button class="b pri" id="agGen">생성</button><button class="b" id="agAgain" title="같은 설정 · 새 씨앗">다시 뽑기</button><span class="small" id="agMsg"></span></div>
+  <div class="row"><label class="f">지도 모양<select id="agShape"><option value="">무작위</option><option>곧은길</option><option>꺾인길</option><option>구불길</option></select></label>
+   <label class="f">갈림길<select id="agBranch"><option value="">1 (기본)</option><option value="0">없음 (한 줄)</option><option value="2">2</option></select></label>
+   <label class="f">곁방<input type="number" id="agSide" min="0" max="3" placeholder="0~2" style="width:80px"></label>
+   <label class="chk" title="시험 일행으로 돌려 목표 승률 ±15% 에 드는 씨앗만 (수십 초)"><input type="checkbox" id="agVer"> 검증 루프</label>
+   <label class="chk" title="「돌리기」 탭에서 고른 일행으로 체크 목표를 셈한다 (lib/checkgen.js)"><input type="checkbox" id="agFit"> 체크 목표를 일행에 맞추기</label></div>
   <details><summary class="small">손잡이 바꾸기 (비우면 가이드라인 값)</summary><div class="row" style="margin-top:6px">
    <label class="f">사전 배틀<input type="number" id="agBattles" min="0" max="4" placeholder="난이도 값" style="width:90px"></label>
    <label class="f">체크 수<input type="number" id="agChecks" min="0" max="6" placeholder="4" style="width:80px"></label>
@@ -289,6 +294,18 @@ function mapSVG(){const rs=DG.rooms;const narrow=innerWidth<700;const COLS=narro
   return `<g class="dg-node${r.id===DGSEL?' on':''}" data-r="${esc(r.id)}" transform="translate(${p.x} ${p.y})"><circle class="c" r="${R}" fill="${t.c}"/><text>${t.ic}</text><text class="nm" y="${R+18}">${esc(r.name||t.k)}</text>${i===0?`<text class="st" y="${-R-36}">START</text>`:''}${bd.map((b,j)=>`<g transform="translate(${(j-(bd.length-1)/2)*(narrow?30:22)} ${-R-8})"><circle r="${narrow?14:10}" fill="#05060a" stroke="${t.c}" stroke-width="1.5"/><text class="bd">${b}</text></g>`).join('')}</g>`}).join('');
  const dgc=rs.filter(r=>r.check).length,dgb=rs.filter(r=>r.enc).length,dgr=rs.filter(r=>r.rest).length;
  return `<svg class="dg-svg${narrow?' narrow':''}" viewBox="0 0 ${W} ${H}"><path d="${grid}" stroke="rgba(120,150,220,.08)" fill="none"/>${ln}${nd}<text class="dg-cap" x="12" y="${H-12}">${esc((DG.name||'').toUpperCase())}  ·  방 ${rs.length} · 체크 ${dgc} · 배틀 ${dgb} · 휴식 ${dgr}</text></svg>`}
+/* 10-28 망령 「구조를 봐야 하니까」: 자동 생성 던전의 실제 격자 지도(d.map — 웹툴 던전 탭과 같은 배치). 본길 실선 · 갈림길 다른 길 노란 점선 · 곁방 가는 점선.
+   좁은 화면은 격자를 눕혀(가로 4 · 세로 6) 글씨가 읽히게 */
+function gridSVG(d){const M=d.map;if(!M||!M.cells)return '';const narrow=innerWidth<700;const G=M.grid;const R=narrow?40:30;
+ const xy=id=>{const c=M.cells[id];if(!c)return null;const x=G.x0+c[0]*G.dx,y=G.y0+c[1]*G.dy;return narrow?{x:y,y:x}:{x,y}};
+ const W=narrow?G.y0*2+(G.rows-1)*G.dy:G.x0*2+(G.cols-1)*G.dx,H=(narrow?G.x0*2+(G.cols-1)*G.dx:G.y0*2+(G.rows-1)*G.dy)+30;
+ const byId=Object.fromEntries(d.rooms.map(r=>[r.id,r]));const kind=r=>r&&r.alt?'alt':r&&r.side?'side':'main';
+ const ln=Object.keys(M.links||{}).map(k=>{const [a,b]=k.split('~');const A=xy(a),B=xy(b);if(!A||!B)return '';const ka=kind(byId[a]),kb=kind(byId[b]);const c=ka==='alt'||kb==='alt'?'alt':ka==='side'||kb==='side'?'side':'main';
+  return `<line x1="${A.x}" y1="${A.y}" x2="${B.x}" y2="${B.y}" stroke="${c==='alt'?'#e8b84a':c==='side'?'#6b7d99':'#8fa3bf'}" stroke-width="${c==='side'?(narrow?5:3):(narrow?10:6)}" ${c!=='main'?`stroke-dasharray="${c==='alt'?(narrow?'18 10':'12 7'):(narrow?'6 8':'4 6')}"`:''} stroke-linecap="round"/>`}).join('');
+ const nd=d.rooms.map(r=>{const p=xy(r.id);if(!p)return '';const t=ty(r.t);const sm=r.side?0.72:1;const bd=[r.check?'🎲':'',r.enc?(r.enc.boss?'♛':'⚔'):'',r.rest?'☗':'',r.clue?'🔍':''].filter(Boolean);
+  return `<g class="dg-node" transform="translate(${p.x} ${p.y})"><circle class="c" r="${R*sm}" fill="${t.c}" ${r.alt?`stroke="#e8b84a" stroke-width="${narrow?6:4}" stroke-dasharray="${narrow?'10 6':'7 4'}"`:''}/><text>${t.ic}</text><text class="nm" y="${R*sm+(narrow?26:18)}">${esc(r.name||t.k)}</text>${r.id===(d.path||[])[0]?`<text class="st" y="${-R-(narrow?40:30)}">START</text>`:''}${bd.map((b,j)=>`<g transform="translate(${(j-(bd.length-1)/2)*(narrow?32:22)} ${-R*sm-8})"><circle r="${narrow?15:10}" fill="#05060a" stroke="${t.c}" stroke-width="1.5"/><text class="bd">${b}</text></g>`).join('')}</g>`}).join('');
+ const nb=(d.branches||[]).length,ns=d.rooms.filter(r=>r.side).length;
+ return `<svg class="dg-svg${narrow?' narrow':''}" viewBox="0 0 ${W} ${H}">${ln}${nd}<text class="dg-cap" x="12" y="${H-10}">━ 본길${nb?'  ┅ 갈림길 다른 길 '+nb:''}${ns?'  ┈ 곁방 '+ns:''}  ·  방 ${d.rooms.length}</text></svg>`}
 function arrow(a,b){const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1,ux=dx/L,uy=dy/L;const nr=innerWidth<700?50:34;const tx=b.x-ux*nr,ty_=b.y-uy*nr;const s=innerWidth<700?14:9;return `${tx},${ty_} ${tx-ux*s-uy*s*.7},${ty_-uy*s+ux*s*.7} ${tx-ux*s+uy*s*.7},${ty_-uy*s-ux*s*.7}`}
 function sideHTML(){const r=selRoom();if(!r)return '<div class="dg-ev"><b>사용법</b><p class="dg-help">지도에서 방을 누르면 여기서 고쳐요. 던전에 방이 없으면 아래에서 첫 방을 만들어요.</p><button class="b" data-act="add">＋ 첫 방</button></div>';const t=ty(r.t),i=DG.rooms.findIndex(x=>x.id===r.id);const c=r.check;
  return `<div class="dg-type" style="background:${t.c}"><span style="font-size:22px">${t.ic}</span><div>${t.k} <small>${t.r}</small></div></div>
@@ -463,15 +480,22 @@ loadState().catch(e=>toast('불러오기 오류: '+e.message));
 /* ---- 던전 자동 생성 (10-27) ---- */
 let AG=null;
 function agKnobs(){const k={};const n=(id,key)=>{const v=$(id).value;if(v!=='')k[key]=+v};n('#agBattles','battles');n('#agChecks','checks');n('#agLv','lv');if($('#agLv').value!=='')k.bossLv=+$('#agLv').value;n('#agAlC','alCost');n('#agAlF','alFail');if($('#agRest').value)k.rest=$('#agRest').value;return k}
-async function agGen(newSeed){if(newSeed)$('#agSeed').value='';$('#agMsg').textContent='…';try{const r=await api('autoGen',{tier:$('#agTier').value,theme:$('#agTheme').value,seed:$('#agSeed').value===''?undefined:+$('#agSeed').value,knobs:agKnobs()});AG=r;$('#agSeed').value=r.dungeon.gen.seed;$('#agMsg').textContent='';agRender()}catch(e){$('#agMsg').textContent='';toast('오류: '+e.message)}}
+/* 10-28 망령 「던전은 생성기가 아니라 자동 생성 쪽에」: 생성기 탭 던전의 손잡이(지도 모양 · 곁방 · 검증 루프 · 일행 맞춤)를 여기로 — 서버는 genDungeon */
+async function agGen(newSeed){if(newSeed)$('#agSeed').value='';if($('#agFit').checked&&!sel.size)return toast('체크 목표를 맞출 일행을 「돌리기」 탭에서 먼저 고르세요');$('#agMsg').textContent=$('#agVer').checked?'검증 루프 도는 중… (수십 초)':'…';
+ try{const r=await api('genDungeon',{tier:$('#agTier').value,theme:$('#agTheme').value,seed:$('#agSeed').value===''?undefined:+$('#agSeed').value,knobs:agKnobs(),shape:$('#agShape').value,branches:$('#agBranch').value,sideRooms:$('#agSide').value,verify:$('#agVer').checked,fitParty:$('#agFit').checked,party:[...sel]});AG=r;$('#agSeed').value=r.dungeon.gen.seed;$('#agMsg').textContent='';agRender()}catch(e){$('#agMsg').textContent='';toast('오류: '+e.message)}}
 $('#agGen').onclick=()=>agGen(false);$('#agAgain').onclick=()=>agGen(true);
 const PENKO=p=>{if(!p)return '-';const L=[];if(p.al)L.push('경계도 +'+p.al);if(p.dmg)L.push('HP −'+p.dmg);if(p.st)L.push(({Paralysis:'마비',Poison:'독',Confusion:'혼란'})[p.st]||p.st);if(p.oo)L.push('4식 −'+p.oo);if(p.oc)L.push('6령 −'+p.oc);if(p.memo)L.push('「'+p.memo+'」');return L.join(' · ')||'-'};
-function agRender(){const d=AG.dungeon,out=$('#agOut');out.hidden=false;const keep=DG;DG=JSON.parse(JSON.stringify(d));const map=mapSVG();DG=keep;const g=d.gen,k=g.knobs,R=d.rules||{};
- const rows=d.rooms.map(r=>{const t=ty(r.t);const ev=[];if(r.check){const c=r.check;ev.push(`🎲 <b>${esc(c.label)}</b> <span class="small">${c.stat} ${c.target}${c.mode==='inou'?' · 이능':''}${c.hint&&c.hint!=='any'?' · '+esc(c.hint.replace('type:','타입 ')):''}</span><div class="small">실패: ${esc(PENKO(c.pen&&c.pen.fail))}<br>대가: ${esc(PENKO(c.pen&&c.pen.cost))}</div>`)}
+function agRender(){const d=AG.dungeon,out=$('#agOut');out.hidden=false;let map=gridSVG(d);if(!map){const keep=DG;DG=JSON.parse(JSON.stringify(d));map=mapSVG();DG=keep}const g=d.gen,k=g.knobs,R=d.rules||{};const v=g.verify;
+ /* 표 순서: 본길 → 그 갈림길의 다른 길(갈라지는 구간 바로 뒤) → 곁방 */
+ const byId=Object.fromEntries(d.rooms.map(r=>[r.id,r]));const order=[];for(const id of d.path||[]){order.push(byId[id]);for(const b of d.branches||[])if(b.main[b.main.length-1]===id)order.push(...b.alt.map(a=>byId[a]))}for(const r of d.rooms)if(!order.includes(r))order.push(r);
+ const brOf=r=>(d.branches||[]).find(b=>b.alt.includes(r.id)||b.main.includes(r.id));
+ const rows=order.filter(Boolean).map(r=>{const br=brOf(r);const t=ty(r.t);const ev=[];if(r.check){const c=r.check;ev.push(`🎲 <b>${esc(c.label)}</b> <span class="small">${c.stat} ${c.target}${c.mode==='inou'?' · 이능':''}${c.hint&&c.hint!=='any'?' · '+esc(c.hint.replace('type:','타입 ')):''}</span><div class="small">실패: ${esc(PENKO(c.pen&&c.pen.fail))}<br>대가: ${esc(PENKO(c.pen&&c.pen.cost))}</div>`)}
   if(r.enc){const names=(AG.webtool.r[Object.keys(AG.webtool.r).find(id=>AG.webtool.r[id].n===r.name)]||{}).m||'';ev.push(`${r.enc.boss?'♛':'⚔'} <b>${r.enc.mix.length}체</b>${r.enc.raid?' · 「레이드 배틀 : '+r.enc.raid+'」':''} <div class="small" style="white-space:pre-wrap">${esc(names.split('\n').slice(1).join('\n'))}</div>`)}
   if(r.rest)ev.push(`☗ ${({short:'짧은 휴식',breath:'숨돌리기',mid:'중간 휴식',long:'긴 휴식'})[r.rest]||r.rest}`);if(r.clue)ev.push('🔍 단서 자리');
-  return `<tr><td style="white-space:normal;word-break:keep-all"><span style="color:${t.c}">${t.ic}</span> ${esc(r.name)}<div class="small">${t.k}</div></td><td style="white-space:normal;word-break:keep-all;overflow-wrap:anywhere">${ev.join('<hr style="border:0;border-top:1px dashed var(--line);margin:4px 0">')||'<span class="small">-</span>'}</td></tr>`}).join('');
+  return `<tr><td style="white-space:normal;word-break:keep-all${r.alt?';border-left:3px dashed #e8b84a':''}">${r.side?'↳ ':''}<span style="color:${t.c}">${t.ic}</span> ${esc(r.name)}<div class="small">${t.k}${br?(r.alt?' · 갈림길 다른 길':' · 갈림길 본길'):''}</div></td><td style="white-space:normal;word-break:keep-all;overflow-wrap:anywhere">${ev.join('<hr style="border:0;border-top:1px dashed var(--line);margin:4px 0">')||'<span class="small">-</span>'}</td></tr>`}).join('');
  out.innerHTML=`<h3>${esc(d.name)} <span class="small">${esc(d.note)}</span></h3>
+  ${v?`<div class="small" style="margin:-4px 0 6px">검증: ${v.tries}번째 씨앗 · 시험 승률 <b class="${v.ok?'ok':'bad'}">${pct(v.wr)}</b> (목표 ${pct(v.target)} ±${pct(v.band)})</div>`:''}
+  ${AG.fit&&AG.fit.length?`<details open style="margin:-2px 0 6px"><summary class="small">일행에 맞춘 체크 목표</summary><div class="small">${AG.fit.map(f=>`${esc(f.room)} — ${esc(f.stat)} ${f.from} → <b>${f.to}</b> (${esc(f.who)} · ${pct(f.okPlus)})`).join('<br>')}</div></details>`:''}
   <div class="small" style="margin:-4px 0 8px">경계도: 대가 +${k.alCost} · 실패 +${k.alFail} · 일반 조우 +${R.alBattle} · 30 → Lv +${R.al30} · 70 → Lv +${R.al70} · 100 → 자동 실패 · 휴식 ${+R.restV===2?'2안 (짧은 휴식이 빈사를 HP 1/4 로)':'1안'}</div>
   ${map}
   <div class="wrap" style="margin-top:8px"><table style="table-layout:fixed;width:100%"><colgroup><col style="width:30%"><col></colgroup><thead><tr><th>방</th><th>내용</th></tr></thead><tbody>${rows}</tbody></table></div>
