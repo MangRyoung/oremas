@@ -90,7 +90,9 @@ function addBranches(rng,dg,donor,n){const pick=a=>a[Math.floor(rng()*a.length)]
  const spare={battle:donor.rooms.filter(r=>r.t==='battle'),check:donor.rooms.filter(isChk)};const taken=new Set();
  for(let g=1;g<=n;g++){const C=[];for(let i=0;i<main.length;i++)for(const L of [1,2]){const j=i+L+1;if(j>=main.length)continue;const seg=main.slice(i+1,j);if(seg.some(r=>taken.has(r.id)||!(r.t==='battle'||isChk(r))))continue;if(taken.has(main[i].id)&&taken.has(main[j].id))continue;C.push([i,j,seg])}
   if(!C.length)break;const [i,j,seg]=pick(C);const alt=[];
-  for(const r of seg){const want=r.t==='battle'?'check':'battle';const src=spare[want].shift();if(!src)break;const x=JSON.parse(JSON.stringify(src));x.id='g'+g+'a'+(alt.length+1);x.alt='g'+g;alt.push(x)}
+  /* 10-28 테스트: 2방 구간을 통째로 뒤집으면 다른 길 배틀이 2개 늘어(#8 씨앗 908: 본길 1 · 다른 길 3) 난이도 표가 깨진다 → 두 길의 배틀 수 차이는 1까지. 넘으면 마지막 방은 본길과 같은 종류 */
+  const wants=seg.map(r=>r.t==='battle'?'check':'battle');const nb=a=>a.filter(x=>x==='battle').length;if(Math.abs(nb(wants)-seg.filter(r=>r.t==='battle').length)>1)wants[wants.length-1]=seg[seg.length-1].t==='battle'?'battle':'check';
+  for(const [wi,r] of seg.entries()){const want=wants[wi];const src=spare[want].shift();if(!src)break;const x=JSON.parse(JSON.stringify(src));x.id='g'+g+'a'+(alt.length+1);x.alt='g'+g;alt.push(x)}
   if(alt.length!==seg.length)break;seg.forEach(r=>taken.add(r.id));dg.rooms.push(...alt);dg.branches.push({id:'g'+g,from:main[i].id,to:main[j].id,main:seg.map(r=>r.id),alt:alt.map(r=>r.id)})}}
 /* 격자에서 a → b 를 정확히 k 걸음으로 잇는 빈칸 길 (끝점 빼고 used 를 피한다) */
 function gridPath(rng,a,b,k,used){const key=(c,r)=>c+','+r;const P=[a];const seen=new Set([key(...a)]);
