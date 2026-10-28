@@ -211,3 +211,95 @@ html[data-vt="p4"] .vtsw.compact .vtcur{border-color:#111;color:#111}
 .vtsw.compact.open .vtmenu{display:flex}
 html[data-vt] .top .vtsw.compact .vtmenu button,.vtsw.compact .vtmenu button{color:#fff!important;text-align:left;padding:8px 12px}
 .vtsw.compact .vtmenu button:hover{background:rgba(255,255,255,.12)}
+
+/* ===== 튜토리얼 탭 (guide_ui.js) — 10-28 망령: P3 · P4 에서도 그 테마 모양으로. P5 는 원래 모습 그대로 ===== */
+/* P3: 짙은 파랑 판 · 하늘색 빛 · 기울기 없음 */
+html[data-vt="p3"] .gd{--skew:0deg;--red2:#7fd6ff}
+html[data-vt="p3"] .gd-logo{background:linear-gradient(#0b2a63,#061a40);color:#b8ecff;border:1px solid rgba(110,190,255,.5);border-radius:6px;box-shadow:0 0 18px rgba(79,195,255,.35)}
+html[data-vt="p3"] .gd-logo b{font-family:Rajdhani,'Black Han Sans',sans-serif;font-weight:700;letter-spacing:.1em;text-shadow:0 0 12px rgba(120,210,255,.75)}
+html[data-vt="p3"] .gd-nav input{background:rgba(3,14,40,.65);border-color:rgba(110,190,255,.38);border-radius:6px}
+html[data-vt="p3"] .gd-part b{background:#4fc3ff;color:#03122e;border-radius:4px}
+html[data-vt="p3"] .gd-ch:hover{background:rgba(79,195,255,.1)}
+html[data-vt="p3"] .gd-ch.on{background:linear-gradient(90deg,rgba(79,195,255,.28),rgba(79,195,255,.05));color:#fff;box-shadow:inset 3px 0 0 #4fc3ff;border-radius:4px}
+html[data-vt="p3"] .gd-ch.on em,html[data-vt="p3"] .gd-ch.on small{color:#7fd6ff}
+html[data-vt="p3"] .gd-tag{background:#4fc3ff;color:#03122e}
+html[data-vt="p3"] .gd-panel{background:rgba(9,28,72,.82);border:1px solid rgba(110,190,255,.55);border-radius:8px;box-shadow:0 0 0 1px rgba(110,190,255,.2),0 0 28px rgba(79,195,255,.22)}
+html[data-vt="p3"] .gd-head{background:linear-gradient(#03102a,#061a40);border-bottom:1px solid rgba(110,190,255,.55);border-radius:8px 8px 0 0}
+html[data-vt="p3"] .gd-head em{font-family:Rajdhani,'Black Han Sans',sans-serif;font-weight:700;color:#e6f3ff;-webkit-text-stroke:0;text-shadow:0 0 14px rgba(120,210,255,.8)}
+html[data-vt="p3"] .gd-dots i{background:rgba(110,190,255,.25);border-radius:2px}
+html[data-vt="p3"] .gd-dots i.on{background:#4fc3ff;box-shadow:0 0 8px rgba(79,195,255,.8)}
+html[data-vt="p3"] .gd-h span{background:#4fc3ff;color:#03122e;border-radius:6px;box-shadow:0 0 14px rgba(79,195,255,.45)}
+html[data-vt="p3"] .gd-lead,html[data-vt="p3"] .gd-items li span{color:#c7dcf5}
+html[data-vt="p3"] .gd-lead b{color:#7fd6ff}
+html[data-vt="p3"] .gd-shot{background:rgba(110,190,255,.55);transform:none;box-shadow:0 0 18px rgba(79,195,255,.3);border-radius:6px}
+html[data-vt="p3"] .gd-frame{background:#061634;border-radius:4px}
+html[data-vt="p3"] .gd-scr{background:#4fc3ff;color:#03122e;border-radius:3px}
+html[data-vt="p3"] .gd-b{background:#0a1f4a;border-color:rgba(110,190,255,.25)}
+html[data-vt="p3"] .gd-b span{color:#9fbfe6}
+html[data-vt="p3"] .gd-b.bar{background:#03102a;border-bottom-color:#4fc3ff}
+html[data-vt="p3"] .gd-b.scene{background:radial-gradient(circle at 30% 20%,#0b2a63,#061634 60%)}
+html[data-vt="p3"] .gd-b.btnw{background:#4fc3ff;border-color:#4fc3ff;box-shadow:none}
+html[data-vt="p3"] .gd-b.btnw span{color:#03122e}
+html[data-vt="p3"] .gd-b.modal{background:#0a1d47;border:1px solid rgba(110,190,255,.6)}
+html[data-vt="p3"] .gd-b.head{background:#03102a;border-bottom-color:#4fc3ff}
+html[data-vt="p3"] .gd-pin{background:#4fc3ff;color:#03122e}
+html[data-vt="p3"] .gd-items li{background:rgba(3,14,40,.65);border:1px solid rgba(110,190,255,.25);border-left:3px solid #4fc3ff;border-radius:4px}
+html[data-vt="p3"] .gd-items li>i{background:#4fc3ff;color:#03122e}
+html[data-vt="p3"] .gd-items li.hl{background:rgba(79,195,255,.22);border-color:#4fc3ff;box-shadow:0 0 12px rgba(79,195,255,.35)}
+html[data-vt="p3"] .gd-items li.hl b,html[data-vt="p3"] .gd-items li.hl span,html[data-vt="p3"] .gd-items li.hl em{color:#fff}
+html[data-vt="p3"] .gd-foot{border-top-color:rgba(110,190,255,.2)}
+html[data-vt="p3"] .gd-keys kbd{background:rgba(79,195,255,.2);color:#e6f3ff}
+html[data-vt="p3"] .gd-bub{--skew:0deg;background:rgba(9,28,72,.94);color:#e6f3ff;border:1px solid rgba(110,190,255,.6);border-radius:8px;box-shadow:0 0 18px rgba(79,195,255,.35)!important}
+html[data-vt="p3"] .gd-bub b{background:#4fc3ff;color:#03122e;border-radius:3px}
+html[data-vt="p3"] .gd-bub em{color:#7fd6ff}
+html[data-vt="p3"] .gd-line .gd-bub::after{border-left-color:rgba(110,190,255,.6)}
+html[data-vt="p3"] .gd-who,html[data-vt="p3"] .gds-fig{filter:drop-shadow(0 0 10px rgba(79,195,255,.55))}
+html[data-vt="p3"] .gd-say.bandi{background:rgba(9,28,72,.9);border-bottom-color:#4fc3ff}
+html[data-vt="p3"] .gds-top{border-bottom:1px solid #4fc3ff}
+html[data-vt="p3"] .gds-top small{color:#7fd6ff}
+html[data-vt="p3"] .gd-list{scrollbar-color:#4fc3ff transparent}
+
+/* P4: 노란 판 · 검정 글씨 · 주황 그림자 · 둥근 모서리 */
+html[data-vt="p4"] .gd{--skew:0deg;--red:#ffe100;--red2:#ffe100}
+html[data-vt="p4"] .gd-logo{background:#ffe100;color:#111;border-radius:4px;box-shadow:5px 5px 0 #ff9a00}
+html[data-vt="p4"] .gd-logo b{font-family:'Do Hyeon',sans-serif}
+html[data-vt="p4"] .gd-nav input{background:#111;border-color:#55503a;border-radius:4px}
+html[data-vt="p4"] .gd-part b{background:#ffe100;color:#111;border-radius:3px}
+html[data-vt="p4"] .gd-ch:hover{background:#1d1d1d}
+html[data-vt="p4"] .gd-ch.on{background:#ffe100;color:#111;box-shadow:4px 4px 0 #ff9a00;border-radius:4px}
+html[data-vt="p4"] .gd-ch.on em,html[data-vt="p4"] .gd-ch.on small{color:#6b5a00}
+html[data-vt="p4"] .gd-tag{background:#111;color:#ffe100;border:1px solid #ffe100}
+html[data-vt="p4"] .gd-panel{background:#1d1d1d;border:2px solid #ffe100;border-radius:6px;box-shadow:6px 6px 0 #ff9a00}
+html[data-vt="p4"] .gd-head{background:#ffe100;color:#111;border-bottom:2px solid #111;border-radius:4px 4px 0 0}
+html[data-vt="p4"] .gd-head em{font-family:'Do Hyeon',sans-serif;color:#111;-webkit-text-stroke:0;text-shadow:3px 3px 0 #ff9a00}
+html[data-vt="p4"] .gd-head small{color:#5a4f12}
+html[data-vt="p4"] .gd-head h2{color:#111}
+html[data-vt="p4"] .gd-dots i{background:rgba(0,0,0,.25)}
+html[data-vt="p4"] .gd-dots i.on{background:#111}
+html[data-vt="p4"] .gd-h span{background:#ffe100;color:#111;border-radius:4px;box-shadow:4px 4px 0 #ff9a00}
+html[data-vt="p4"] .gd-lead,html[data-vt="p4"] .gd-items li span{color:#d8cf9a}
+html[data-vt="p4"] .gd-lead em,html[data-vt="p4"] .gd-items em,html[data-vt="p4"] .gd-lead b,html[data-vt="p4"] .gd-items b{color:#fffbe6}
+html[data-vt="p4"] .gd-lead b{color:#ffe100}
+html[data-vt="p4"] .gd-shot{background:#ffe100;transform:none;box-shadow:5px 5px 0 #ff9a00;border-radius:4px}
+html[data-vt="p4"] .gd-scr{background:#111;color:#ffe100;border-radius:3px}
+html[data-vt="p4"] .gd-b.bar,html[data-vt="p4"] .gd-b.head{border-bottom-color:#ffe100}
+html[data-vt="p4"] .gd-b.btnw{background:#ffe100;border-color:#111;box-shadow:2px 2px 0 #ff9a00}
+html[data-vt="p4"] .gd-b.modal{border-color:#ffe100}
+html[data-vt="p4"] .gd-b.card:not(.blue){border-left-color:#ffe100}
+html[data-vt="p4"] .gd-pin{background:#ffe100;color:#111}
+html[data-vt="p4"] .gd-items li{background:#111;border:1px solid #333;border-left:3px solid #ffe100;border-radius:4px}
+html[data-vt="p4"] .gd-items li>i{background:#ffe100;color:#111}
+html[data-vt="p4"] .gd-items li.hl{background:#ffe100;border-color:#ffe100}
+html[data-vt="p4"] .gd-items li.hl b,html[data-vt="p4"] .gd-items li.hl span,html[data-vt="p4"] .gd-items li.hl em{color:#111}
+html[data-vt="p4"] .gd-foot{border-top-color:#333}
+html[data-vt="p4"] .gd-keys kbd{background:#ffe100;color:#111}
+html[data-vt="p4"] .gd-bub{--skew:0deg;background:#ffe100;color:#111;border-radius:6px;box-shadow:5px 5px 0 #ff9a00!important}
+html[data-vt="p4"] .gd-bub b{background:#111;color:#ffe100;border-radius:3px}
+html[data-vt="p4"] .gd-bub em{color:#b33a00}
+html[data-vt="p4"] .gd-line .gd-bub::after{border-left-color:#ffe100}
+html[data-vt="p4"] .gd-who,html[data-vt="p4"] .gds-fig{filter:drop-shadow(5px 4px 0 #ff9a00)}
+html[data-vt="p4"] .gds-top{border-bottom:2px solid #ffe100}
+html[data-vt="p4"] .gds-top small{color:#ffe100}
+html[data-vt="p4"] .gd-list{scrollbar-color:#ffe100 transparent}
+html[data-vt="p3"] .gd-sel{background:rgba(3,14,40,.85);border-color:rgba(110,190,255,.38);border-radius:6px;color:#e6f3ff}
+html[data-vt="p4"] .gd-sel{background:#111;border-color:#ffe100;border-radius:4px;color:#fffbe6}
