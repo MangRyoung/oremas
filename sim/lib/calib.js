@@ -5,7 +5,7 @@ const D=require('./dungeon.js'),G=require('./gen.js'),BT=require('./battle.js');
 function trios(pool,k,seed){const all=[];const rec=(s,c)=>{if(c.length===3){all.push(c.slice());return}for(let i=s;i<pool.length;i++){c.push(pool[i]);rec(i+1,c);c.pop()}};rec(0,[]);
  if(!k||k>=all.length)return all;const rng=BT.mkRng(seed||7);for(let i=all.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[all[i],all[j]]=[all[j],all[i]]}return all.slice(0,k)}
 async function evalCfg(W,built,wf,tier,knobs,o){const g=o.g||8,n=o.n||10;const TR=o.trios;let runs=0,wins=0;const perD=[],perT={};const ck={n:0,ok:0,cost:0,fail:0,cover:0,inj:0,alone:0};const byDebt={},byAl={};let lock=0,alSum=0;let bossReach=0,bossWin=0,bossTurns=0,phases=0,endHp=0,preHp=0;
- for(let s=1;s<=g;s++){const dg=G.make(tier,knobs,(o.seed0||100)+s);let dw=0,dn=0;
+ for(let s=1;s<=g;s++){/* 10-28: 지금 던전 생성기(autogen — 공통 Lv +5 · 체크 3~5 · 야생 DB · 휴식 · 경계도 규칙)로 만든다. 옛 gen.js 그대로 재려면 --raw 1 */const dg=o.raw?G.make(tier,knobs,(o.seed0||100)+s):require('./autogen.js').generate({tier,seed:(o.seed0||100)+s,knobs});let dw=0,dn=0;
   for(const c of TR){const parties=c.map(x=>built[x]);let tw=0;
    for(let i=0;i<n;i++){const r=await D.run(W,dg,parties,{seed:s*1000+i+1,wildFrom:wf,adjust:o.adjust});runs++;dn++;if(!r.wipe){wins++;dw++;tw++}const ak=r.alert>=100?'100':r.alert>=70?'70+':r.alert>=30?'30+':'0+';const ba=byAl[ak]=byAl[ak]||{n:0,w:0};ba.n++;if(!r.wipe)ba.w++;if(r.lockdown)lock++;alSum+=r.alert||0;const dk=r.bossLvDebt||0;const bd=byDebt[dk]=byDebt[dk]||{n:0,w:0};bd.n++;if(!r.wipe)bd.w++;
     ck.n+=r.checks.n;ck.ok+=r.checks.ok;ck.cost+=r.checks.cost;ck.fail+=r.checks.fail;ck.cover+=r.checks.covers;ck.alone+=r.checks.alone;ck.inj+=r.injuryEvents;endHp+=r.endHpAvg;
