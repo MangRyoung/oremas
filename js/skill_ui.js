@@ -94,6 +94,22 @@ window.OM_SKILL_UI=(()=>{
  /* ===== 판정 계산 ===== */
  function dieOf(t,stat,o){const r=rankOf(t,stat);let idx=lv(r)+(o.step||0);const injStep=o.inj>=2?cfg().s2:o.inj>=1?cfg().s1:0;idx-=injStep;
   const autofail=idx<0;let plus=sign(r);if(idx>4){plus+=idx-4;idx=4}idx=Math.max(0,Math.min(4,idx));return {sides:SIDES[idx],plus,autofail,idx,injStep}}
+ /* 10-28 망령 「목표 자동」 (시뮬 lib/checkgen.js 와 같은 계산): 대상 가운데 그 자질을 가장 잘 굴리는 사람의 주사위로,
+    「대가를 치르고 성공」 이상이 나올 확률이 난이도 띠에 드는 목표 중 띠 가운데에 가장 가까운 값을 고른다.
+    동료 주사위 = 살아 있는 포켓몬이 있으면 d6(통솔 + 『유대』 d8), 없으면 혼자 d4 · 이능 판정은 능력 주사위. 두 번 굴리기 · 숙련 · 단계 · 부상도 넣는다 */
+ const BAND={easy:[0.85,0.95,'쉬움'],normal:[0.70,0.85,'보통'],hard:[0.50,0.70,'어려움']};
+ function okPlusOf(D,cs,o,target){const n=D.sides;const pa={};for(let r1=1;r1<=n;r1++){if(o.twice){for(let r2=1;r2<=n;r2++){const v=o.twice>0?Math.max(r1,r2):Math.min(r1,r2);pa[v]=(pa[v]||0)+1/(n*n)}}else pa[r1]=(pa[r1]||0)+1/n}
+  let p=0;for(const k in pa){let av=+k;if(o.pm>0&&av===1)av=2;else if(o.pm<0&&av===n)av=n-1;for(let c=1;c<=cs;c++){if(av===1&&c===1)continue;if(av+(D.plus||0)+c>=target-2)p+=pa[k]/cs}}return p}
+ function autoRoller(ids,o){const T=trs();let best=null;
+  for(const tid of ids||[]){const t=T[tid];if(!t)continue;const k=tsk(tid);const D=dieOf(t,o.stat,{inj:+k.inj||0,step:o.step||0});if(D.autofail)continue;let cs,how;
+   if(o.mode==='inou'){if((LAD[S().strip(rankOf(t,'능력'))]||0)<3||o.stat!=='능력')continue;const Dc=dieOf(t,'능력',{inj:cfg().both1?+k.inj||0:0,step:o.step||0});cs=Dc.sides;how='이능 d'+cs}
+   else{const ms=Object.values(mons()).filter(m=>m.tid===tid&&m.hp&&alive(m));if(ms.length){const bond=o.stat==='통솔'&&ms.some(hasBond);cs=bond?8:6;how=bond?'『유대』 d8':'포켓몬 d6'}else{cs=4;how='혼자 d4'}}
+   const sc=okPlusOf(D,cs,o,8);if(!best||sc>best.sc)best={tid,name:t.name,D,cs,how,sc}}
+  return best}
+ function autoTarget(ids,o,tier){const B=BAND[tier];if(!B)return null;const r=autoRoller(ids,o);if(!r)return null;const mid=(B[0]+B[1])/2;let pick=null;
+  for(let tg=2;tg<=20;tg++){const p=okPlusOf(r.D,r.cs,o,tg);const inb=p>=B[0]-1e-9&&p<=B[1]+1e-9;const d=Math.abs(p-mid);if(!pick||(inb&&!pick.inb)||(inb===pick.inb&&d<pick.d))pick={tg,p,inb,d}}
+  return {target:pick.tg,p:pick.p,inb:pick.inb,who:r.name,die:'d'+r.D.sides+(r.D.plus?(r.D.plus>0?'+':'')+r.D.plus:''),how:r.how,tier,band:B}}
+ const autoTxt=a=>a?`목표 ${a.target} — ${a.who} (${a.die} + ${a.how}) 기준 대가 포함 성공 ${Math.round(a.p*100)}%${a.inb?'':' (띠 밖: 이 일행엔 가장 가까운 값)'}`:'굴릴 수 있는 대상이 없다';
  function judge(total,target,fumble,aLv){const diff=total-target;let ri=1;if(diff>=-2)ri=2;if(diff>=0)ri=3;if(diff>=5)ri=4;if(fumble)ri=aLv>=3?1:0;return ri}
 
  /* ===== 패널티 ===== */
@@ -156,8 +172,8 @@ window.OM_SKILL_UI=(()=>{
  const seg=(name,opts,cur)=>`<span class="seg" data-seg="${name}">${opts.map(([v,n,t])=>`<span class="${String(cur)===String(v)?'on':''}" data-v="${esc(v)}" ${t?`title="${esc(t)}"`:''}>${n}</span>`).join('')}</span>`;
  const segVal=(md,name)=>{const on=md.querySelector(`[data-seg="${name}"] .on`);return on?on.dataset.v:''};
  function bindSeg(md){md.querySelectorAll('[data-seg]').forEach(sg=>sg.querySelectorAll('span[data-v]').forEach(sp=>sp.onclick=()=>{sg.querySelectorAll('span[data-v]').forEach(x=>x.classList.toggle('on',x===sp));sg.dispatchEvent(new CustomEvent('segchange',{bubbles:true,detail:sp.dataset.v}))}))}
- const F={label:'',stat:'지시',mode:'skill',target:7,npc:0,step:0,twice:0,pm:0,pen:{fail:PEN0(),cost:PEN0()},ids:null,penOpen:false,restKind:'long'};
- function offerSummary(O){return `${esc(O.stat)}${O.mode==='inou'?' · 이능':O.mode==='any'?' · 방식 자유':''} · 목표 ${O.target}${O.npc?' (대항 '+esc(O.npc)+')':''}${O.step?' · 단계 '+(O.step>0?'유리':'불리'):''}${O.twice?' · 두 번 굴려 '+(O.twice>0?'높은':'낮은')+' 값':''}${O.pm?' · '+(O.pm>0?'능숙함':'서투름'):''}`}
+ const F={label:'',stat:'지시',mode:'skill',target:7,npc:0,step:0,twice:0,pm:0,pen:{fail:PEN0(),cost:PEN0()},ids:null,penOpen:false,restKind:'long',auto:''};
+ function offerSummary(O){return `${esc(O.stat)}${O.mode==='inou'?' · 이능':O.mode==='any'?' · 방식 자유':''} · 목표 ${O.target}${O.auto&&BAND[O.auto]?' (자동 · '+BAND[O.auto][2]+')':''}${O.npc?' (대항 '+esc(O.npc)+')':''}${O.step?' · 단계 '+(O.step>0?'유리':'불리'):''}${O.twice?' · 두 번 굴려 '+(O.twice>0?'높은':'낮은')+' 값':''}${O.pm?' · '+(O.pm>0?'능숙함':'서투름'):''}`}
  function penLine(P){if(!P||!(penHas(P.fail)||penHas(P.cost)))return '';return `<div class="skpenline">${penHas(P.fail)?`<span><i class="penf">실패</i> ${esc(penTxt(P.fail))}</span>`:''}${penHas(P.cost)?`<span><i class="penc">대가</i> ${esc(penTxt(P.cost))}</span>`:''}</div>`}
  const DMGS=['','1/8','1/4','1/3','1/2'];
  /* 패널티 한 칸 (실패 · 대가 · 예시 편집 창이 같이 쓴다). t = 칸 이름, X = 패널티 */
@@ -177,10 +193,10 @@ window.OM_SKILL_UI=(()=>{
   ${F.penOpen?`<div class="skpencols">${[['fail','실패 · 대실패','penf'],['cost','대가를 치르고 성공','penc']].map(([t,title,cl])=>{const X=penNorm(P[t]);return `<div class="skpencol ${cl}"><div class="sec">${title}<span class="sp"></span>${penExSel(t)}<button class="btn xs ghost" data-sk="pensave" data-t="${t}" title="이 칸을 패널티 예시로 저장">저장</button></div>
 ${penFields(t,X)}</div>`}).join('')}</div>
    <label class="small tg" style="margin-top:6px;display:block"><input type="checkbox" id="pen_auto" ${cfg().penAuto?'checked':''}> 결과가 나오면 자동으로 건다 (끄면 GM 이 현황에서 손으로)</label>`:''}</div>`}
- function grabOffer(md){F.label=$('#so_label',md).value.trim();F.stat=segVal(md,'stat')||'지시';F.mode=segVal(md,'mode')||'skill';F.target=+$('#so_target',md).value||7;F.npc=+segVal(md,'npc')||0;F.step=+segVal(md,'step')||0;F.twice=+segVal(md,'twice')||0;F.pm=+segVal(md,'pm')||0;
+ function grabOffer(md){F.label=$('#so_label',md).value.trim();F.stat=segVal(md,'stat')||'지시';F.mode=segVal(md,'mode')||'skill';F.target=+$('#so_target',md).value||7;F.npc=+segVal(md,'npc')||0;F.step=+segVal(md,'step')||0;F.twice=+segVal(md,'twice')||0;F.pm=+segVal(md,'pm')||0;F.auto=segVal(md,'auto')||'';
   F.ids=[...md.querySelectorAll('[data-so-id]:checked')].map(i=>i.dataset.soId);
   if(F.penOpen){for(const t of ['fail','cost'])F.pen[t]=grabPen(md,t,F.pen[t])}}
- function loadPreset(o){Object.assign(F,{label:o.label||'',stat:o.stat||'지시',mode:o.mode||'skill',target:+o.target||7,npc:+o.npc||0,step:+o.step||0,twice:+o.twice||0,pm:+o.pm||0,pen:{fail:penNorm((o.pen||{}).fail),cost:penNorm((o.pen||{}).cost)}});F.penOpen=penHas(F.pen.fail)||penHas(F.pen.cost)}
+ function loadPreset(o){Object.assign(F,{label:o.label||'',stat:o.stat||'지시',mode:o.mode||'skill',target:+o.target||7,auto:BAND[o.auto]?o.auto:'',npc:+o.npc||0,step:+o.step||0,twice:+o.twice||0,pm:+o.pm||0,pen:{fail:penNorm((o.pen||{}).fail),cost:penNorm((o.pen||{}).cost)}});F.penOpen=penHas(F.pen.fail)||penHas(F.pen.cost)}
 
  /* ----- GM 창 ----- */
  function openGm(tab){tab=tab||'offer';const K=st();const T=Object.fromEntries(Object.entries(trs()).filter(([,t])=>t&&t.kind!=='npc'));const O=K.offer;const R=K.res||{};const C=cfg();const presets=K.presets||[];
@@ -191,6 +207,7 @@ ${penFields(t,X)}</div>`}).join('')}</div>
      <div class="fr"><span class="lbl">상황</span><input type="text" id="so_label" placeholder="예) 겁먹은 야생 무리를 진정시킨다" value="${esc(F.label)}" style="flex:1"></div>
      <div class="fr"><span class="lbl">자질</span>${seg('stat',SK.map(s=>[s,s]),F.stat)}${seg('mode',[['skill','기교 / 일반'],['inou','이능 (A 이상)'],['any','트레이너가 고름']],F.mode)}</div>
      <div class="fr"><span class="lbl">난이도</span><span class="chips">${DIFF.map(([v,n])=>`<span class="chip ${!F.npc&&F.target===v?'on':''}" data-diff="${v}">${n} ${v}</span>`).join('')}</span><input type="number" class="n xs" id="so_target" value="${F.target}"></div>
+     <div class="fr"><span class="lbl">목표 자동</span>${seg('auto',[['','끔'],['easy','쉬움 85~95%'],['normal','보통 70~85%'],['hard','어려움 50~70%']],F.auto)}<span class="small dim" id="so_autoinfo"></span></div>
      <div class="fr"><span class="lbl">대항 판정</span>${seg('npc',NPC.map(([v,n])=>[v,n]),F.npc)}</div>
      <div class="fr"><span class="lbl">주사위 단계</span>${seg('step',[[-1,'불리'],[0,'없음'],[1,'유리']],F.step)}<span class="small dim">도구 · 환경 · 힘 차이</span></div>
      <div class="fr"><span class="lbl">두 번 굴리기</span>${seg('twice',[[-1,'낮은 값'],[0,'없음'],[1,'높은 값']],F.twice)}<span class="small dim">시간 여유·정보 / 서두름·방해</span></div>
@@ -231,8 +248,15 @@ ${penFields(t,X)}</div>`}).join('')}</div>
   const re=t=>{A().closeModal();openGm(t||tab)};
   md.querySelectorAll('[data-skt]').forEach(b=>b.onclick=()=>{if(tab==='offer')grabOffer(md);re(b.dataset.skt)});
   if(tab==='offer'){
-   md.querySelectorAll('[data-diff]').forEach(c=>c.onclick=()=>{$('#so_target',md).value=c.dataset.diff;md.querySelectorAll('[data-diff]').forEach(x=>x.classList.toggle('on',x===c))});
-   md.querySelectorAll('[data-so-id]').forEach(cb=>cb.onchange=()=>cb.closest('.chip').classList.toggle('on',cb.checked));
+   /* 목표 자동: 자질 · 방식 · 단계 · 두 번 · 숙련 · 대상이 바뀔 때마다 다시 셈한다. 난이도 칩이나 목표 칸을 손으로 고치면 자동은 꺼진다 */
+   const autoOff=()=>{const sg=md.querySelector('[data-seg="auto"]');if(sg)sg.querySelectorAll('span[data-v]').forEach(x=>x.classList.toggle('on',x.dataset.v===''));const i=$('#so_autoinfo',md);if(i)i.textContent=''};
+   const autoRe=()=>{const tier=segVal(md,'auto');const i=$('#so_autoinfo',md);if(!tier){if(i)i.textContent='';return}const ids=[...md.querySelectorAll('[data-so-id]:checked')].map(x=>x.dataset.soId);if(+segVal(md,'npc')){if(i)i.textContent='대항 판정은 상대 주사위가 목표라 자동을 쓰지 않는다';return}
+    const a=autoTarget(ids,{stat:segVal(md,'stat')||'지시',mode:segVal(md,'mode')||'skill',step:+segVal(md,'step')||0,twice:+segVal(md,'twice')||0,pm:+segVal(md,'pm')||0},tier);if(a){$('#so_target',md).value=a.target;md.querySelectorAll('[data-diff]').forEach(x=>x.classList.toggle('on',+x.dataset.diff===a.target))}if(i)i.textContent=ids.length?autoTxt(a):'대상을 골라 줘'};
+   md.addEventListener('segchange',e=>{const sg=e.target.closest('[data-seg]');if(sg&&/^(auto|stat|mode|step|twice|pm|npc)$/.test(sg.dataset.seg))autoRe()});
+   md.querySelectorAll('[data-diff]').forEach(c=>c.onclick=()=>{$('#so_target',md).value=c.dataset.diff;md.querySelectorAll('[data-diff]').forEach(x=>x.classList.toggle('on',x===c));autoOff()});
+   {const ti=$('#so_target',md);if(ti)ti.addEventListener('input',autoOff)}
+   md.querySelectorAll('[data-so-id]').forEach(cb=>cb.onchange=()=>{cb.closest('.chip').classList.toggle('on',cb.checked);autoRe()});
+   autoRe();
    md.querySelectorAll('[data-rk]').forEach(b=>b.onclick=()=>{grabOffer(md);const [t,k,dv]=b.dataset.rk.split('.');const X=penNorm(F.pen[t]);X.rk[k]=Math.max(-6,Math.min(6,(+X.rk[k]||0)+ +dv));F.pen[t]=X;re('offer')});
    const ex=$('#so_ex',md);if(ex)ex.onchange=()=>{const v=ex.value;if(!v)return;grabOffer(md);if(v.startsWith('ex:'))loadPreset(EX[+v.slice(3)].o);else{const p=presets.find(p=>p.id===v.slice(3));if(p)loadPreset(p.o)}re('offer')};
    md.querySelectorAll('[data-penex]').forEach(sl=>sl.onchange=()=>{const p=penExGet(sl.value);if(!p)return;grabOffer(md);F.pen[sl.dataset.penex]=penNorm(JSON.parse(JSON.stringify(p)));F.penOpen=true;re('offer')});
@@ -248,12 +272,13 @@ ${penFields(t,X)}</div>`}).join('')}</div>
    if(k==='penclr'){F.pen={fail:PEN0(),cost:PEN0()};return re('offer')}
    if(k==='exmgr'){grabOffer(md);return openExMgr(el.dataset.t||'check')}
    if(k==='pensave'){grabOffer(md);const t=el.dataset.t;const X=penNorm(F.pen[t]);if(!penHas(X))return A().toast('이 칸이 비어 있다');const name=prompt('패널티 예시 이름',penTxt(X).slice(0,40));if(name==null||!name.trim())return;const list=(st().penPresets||[]).slice();list.push({id:'q'+Date.now().toString(36),name:name.trim(),p:X});await A().set(['skill','penPresets'],list);A().toast('패널티 예시로 저장했다');return re('offer')}
-   if(k==='exsave'){grabOffer(md);const name=prompt('예시 이름',F.label||'새 예시');if(name==null||!name.trim())return;const list=(st().presets||[]).slice();list.push({id:'p'+Date.now().toString(36),name:name.trim(),o:{label:F.label,stat:F.stat,mode:F.mode,target:F.target,npc:F.npc,step:F.step,twice:F.twice,pm:F.pm,pen:{fail:F.pen.fail,cost:F.pen.cost}}});await A().set(['skill','presets'],list);A().toast('저장했다');return re('offer')}
+   if(k==='exsave'){grabOffer(md);const name=prompt('예시 이름',F.label||'새 예시');if(name==null||!name.trim())return;const list=(st().presets||[]).slice();list.push({id:'p'+Date.now().toString(36),name:name.trim(),o:{label:F.label,stat:F.stat,mode:F.mode,target:F.target,auto:F.auto,npc:F.npc,step:F.step,twice:F.twice,pm:F.pm,pen:{fail:F.pen.fail,cost:F.pen.cost}}});await A().set(['skill','presets'],list);A().toast('저장했다');return re('offer')}
    if(k==='exdel'){const list=st().presets||[];if(!list.length)return;const name=prompt('지울 예시 번호\n'+list.map((p,i)=>(i+1)+'. '+p.name).join('\n'));const i=+name-1;if(!(i>=0&&i<list.length))return;await A().set(['skill','presets'],list.filter((p,j)=>j!==i));return re('offer')}
    if(k==='offer'){grabOffer(md);const ids=F.ids;if(!ids.length)return A().toast('대상을 골라 줘');const npc=NPC.find(x=>x[0]===F.npc);
-    const o={id:'o'+Date.now().toString(36),label:F.label,stat:F.stat,mode:F.mode,target:F.target,npc:npc&&npc[2]?npc[1]:'',npcDice:npc&&npc[2]?npc[2]:null,step:F.step,twice:F.twice,pm:F.pm,pen:{fail:penNorm(F.pen.fail),cost:penNorm(F.pen.cost),auto:cfg().penAuto?1:0},ids,at:Date.now()};
+    let auto='';if(F.auto&&!F.npc){const a=autoTarget(ids,F,F.auto);if(a){F.target=a.target;auto=F.auto}}
+    const o={id:'o'+Date.now().toString(36),label:F.label,stat:F.stat,mode:F.mode,target:F.target,auto,npc:npc&&npc[2]?npc[1]:'',npcDice:npc&&npc[2]?npc[2]:null,step:F.step,twice:F.twice,pm:F.pm,pen:{fail:penNorm(F.pen.fail),cost:penNorm(F.pen.cost),auto:cfg().penAuto?1:0},ids,at:Date.now()};
     A().closeModal();await A().set(['skill','offer'],o);await A().set(['skill','res'],{});
-    A().sysLog(`【스킬 체크】 ${o.label||'판정'}\n${o.stat}${o.mode==='inou'?' · 이능':''} · 목표 ${o.target}${o.npc?' (대항 '+o.npc+')':''}${o.step?' · 단계 '+(o.step>0?'유리':'불리'):''}${o.twice?' · 두 번 굴려 '+(o.twice>0?'높은':'낮은')+' 값':''}${o.pm?' · '+(o.pm>0?'능숙함':'서투름'):''}\n대상: ${ids.map(i=>(T[i]||{}).name).join(', ')}${penHas(o.pen.fail)?'\n실패: '+penTxt(o.pen.fail):''}${penHas(o.pen.cost)?'\n대가: '+penTxt(o.pen.cost):''}`,'battle',{});try{window.OM_RP_UI&&window.OM_RP_UI.playSe('Ping2')}catch(e){}return openGm('offer')}
+    A().sysLog(`【스킬 체크】 ${o.label||'판정'}\n${o.stat}${o.mode==='inou'?' · 이능':''} · 목표 ${o.target}${o.auto?' (자동 · '+BAND[o.auto][2]+')':''}${o.npc?' (대항 '+o.npc+')':''}${o.step?' · 단계 '+(o.step>0?'유리':'불리'):''}${o.twice?' · 두 번 굴려 '+(o.twice>0?'높은':'낮은')+' 값':''}${o.pm?' · '+(o.pm>0?'능숙함':'서투름'):''}\n대상: ${ids.map(i=>(T[i]||{}).name).join(', ')}${penHas(o.pen.fail)?'\n실패: '+penTxt(o.pen.fail):''}${penHas(o.pen.cost)?'\n대가: '+penTxt(o.pen.cost):''}`,'battle',{});try{window.OM_RP_UI&&window.OM_RP_UI.playSe('Ping2')}catch(e){}return openGm('offer')}
    if(k==='close'){A().closeModal();await A().set(['skill','offer'],null);return A().sysLog('스킬 체크 제시를 거뒀다','battle')}
    if(k==='rollfor'){A().closeModal();return openPlayer(el.dataset.tid)}
    if(k==='penapply'){const r=(st().res||{})[el.dataset.tid];if(!r||!O)return;A().closeModal();await applyPenalty(el.dataset.tid,r.ri<=1?O.pen.fail:O.pen.cost,(O.label||'스킬 체크')+' · '+RES[r.ri]);await A().set(['skill','res',el.dataset.tid,'penDone'],1);return openGm('offer')}
@@ -287,8 +312,8 @@ ${penFields(t,X)}</div>`}).join('')}</div>
    if(k==='back')return back();
    if(k==='load'){loadPreset(src[i].o);return back()}
    if(k==='lf'||k==='lc'){F.pen[k==='lf'?'fail':'cost']=penNorm(JSON.parse(JSON.stringify(src[i].p)));F.penOpen=true;return back()}
-   if(k==='newf'){const name=prompt('예시 이름',F.label||'새 예시');if(name==null||!name.trim())return;L.push({id:'p'+Date.now().toString(36),name:name.trim(),o:{label:F.label,stat:F.stat,mode:F.mode,target:F.target,npc:F.npc,step:F.step,twice:F.twice,pm:F.pm,pen:{fail:F.pen.fail,cost:F.pen.cost}}});return save(L)}
-   if(k==='over'){if(!confirm(`「${L[i].name}」 를 스킬 체크 창의 지금 폼으로 바꿀까?\n${F.label||'(상황 없음)'} · ${F.stat} · 목표 ${F.target}`))return;L[i]=Object.assign({},L[i],{o:{label:F.label,stat:F.stat,mode:F.mode,target:F.target,npc:F.npc,step:F.step,twice:F.twice,pm:F.pm,pen:{fail:F.pen.fail,cost:F.pen.cost}}});return save(L)}
+   if(k==='newf'){const name=prompt('예시 이름',F.label||'새 예시');if(name==null||!name.trim())return;L.push({id:'p'+Date.now().toString(36),name:name.trim(),o:{label:F.label,stat:F.stat,mode:F.mode,target:F.target,auto:F.auto,npc:F.npc,step:F.step,twice:F.twice,pm:F.pm,pen:{fail:F.pen.fail,cost:F.pen.cost}}});return save(L)}
+   if(k==='over'){if(!confirm(`「${L[i].name}」 를 스킬 체크 창의 지금 폼으로 바꿀까?\n${F.label||'(상황 없음)'} · ${F.stat} · 목표 ${F.target}`))return;L[i]=Object.assign({},L[i],{o:{label:F.label,stat:F.stat,mode:F.mode,target:F.target,auto:F.auto,npc:F.npc,step:F.step,twice:F.twice,pm:F.pm,pen:{fail:F.pen.fail,cost:F.pen.cost}}});return save(L)}
    if(k==='ren'){const n=prompt('새 이름',L[i].name);if(n==null||!n.trim())return;L[i]=Object.assign({},L[i],{name:n.trim()});return save(L)}
    if(k==='up'||k==='dn'){const j=k==='up'?i-1:i+1;if(j<0||j>=L.length)return;[L[i],L[j]]=[L[j],L[i]];return save(L)}
    if(k==='del'){if(!confirm(`「${L[i].name}」 를 지울까?`))return;L.splice(i,1);return save(L)}
@@ -391,9 +416,11 @@ ${penFields(t,X)}</div>`}).join('')}</div>
  /* 10-26 던전 연계: 방에 넣어 둔 체크를 그대로 제시 (dungeon_ui). o0 = 예시 모양 {label,stat,mode,target,npc,step,twice,pm,pen} */
  function presetList(){return [...EX.map((e,i)=>({id:'ex'+i,name:e.name,o:e.o})),...(st().presets||[]).map(p=>({id:p.id,name:p.name,o:p.o}))]}
  async function present(o0,ids,by){if(!gm())return false;const T=trs();ids=(ids||[]).filter(i=>T[i]);if(!ids.length){A().toast('체크를 받을 트레이너가 없다');return false}o0=o0||{};const npc=NPC.find(x=>x[0]===+o0.npc);
-  const o={id:'o'+Date.now().toString(36),label:o0.label||'',stat:o0.stat||'지시',mode:o0.mode||'skill',target:+o0.target||7,npc:npc&&npc[2]?npc[1]:'',npcDice:npc&&npc[2]?npc[2]:null,step:+o0.step||0,twice:+o0.twice||0,pm:+o0.pm||0,pen:{fail:penNorm((o0.pen||{}).fail),cost:penNorm((o0.pen||{}).cost),auto:cfg().penAuto?1:0},ids,at:Date.now()};
+  /* 10-28: 던전 체크에 auto(easy · normal · hard)가 있으면 지금 일행으로 목표를 셈한다 (시뮬 자동 생성 던전은 난이도 띠만 적어 보낸다) */
+  let target=+o0.target||7,auto='';if(BAND[o0.auto]&&!(npc&&npc[2])){const a=autoTarget(ids,{stat:o0.stat||'지시',mode:o0.mode||'skill',step:+o0.step||0,twice:+o0.twice||0,pm:+o0.pm||0},o0.auto);if(a){target=a.target;auto=o0.auto}}
+  const o={id:'o'+Date.now().toString(36),label:o0.label||'',stat:o0.stat||'지시',mode:o0.mode||'skill',target,auto,npc:npc&&npc[2]?npc[1]:'',npcDice:npc&&npc[2]?npc[2]:null,step:+o0.step||0,twice:+o0.twice||0,pm:+o0.pm||0,pen:{fail:penNorm((o0.pen||{}).fail),cost:penNorm((o0.pen||{}).cost),auto:cfg().penAuto?1:0},ids,at:Date.now()};
   await A().set(['skill','offer'],o);await A().set(['skill','res'],{});
-  A().sysLog(`【스킬 체크】 ${o.label||'판정'}${by?' · '+by:''}\n${o.stat}${o.mode==='inou'?' · 이능':''} · 목표 ${o.target}${o.npc?' (대항 '+o.npc+')':''}${o.step?' · 단계 '+(o.step>0?'유리':'불리'):''}${o.twice?' · 두 번 굴려 '+(o.twice>0?'높은':'낮은')+' 값':''}${o.pm?' · '+(o.pm>0?'능숙함':'서투름'):''}\n대상: ${ids.map(i=>(T[i]||{}).name).join(', ')}${penHas(o.pen.fail)?'\n실패: '+penTxt(o.pen.fail):''}${penHas(o.pen.cost)?'\n대가: '+penTxt(o.pen.cost):''}`,'battle',{});try{window.OM_RP_UI&&window.OM_RP_UI.playSe('Ping2')}catch(e){}return true}
+  A().sysLog(`【스킬 체크】 ${o.label||'판정'}${by?' · '+by:''}\n${o.stat}${o.mode==='inou'?' · 이능':''} · 목표 ${o.target}${o.auto?' (자동 · '+BAND[o.auto][2]+')':''}${o.npc?' (대항 '+o.npc+')':''}${o.step?' · 단계 '+(o.step>0?'유리':'불리'):''}${o.twice?' · 두 번 굴려 '+(o.twice>0?'높은':'낮은')+' 값':''}${o.pm?' · '+(o.pm>0?'능숙함':'서투름'):''}\n대상: ${ids.map(i=>(T[i]||{}).name).join(', ')}${penHas(o.pen.fail)?'\n실패: '+penTxt(o.pen.fail):''}${penHas(o.pen.cost)?'\n대가: '+penTxt(o.pen.cost):''}`,'battle',{});try{window.OM_RP_UI&&window.OM_RP_UI.playSe('Ping2')}catch(e){}return true}
  const sumOf=o=>offerSummary(Object.assign({stat:'지시',target:7},o||{},{npc:''}));
- return {open,openGm,openPlayer,pending,applyRest,restCfg,KINDS,tsk,cfg,presetList,present,sumOf};
+ return {open,openGm,openPlayer,pending,applyRest,restCfg,KINDS,tsk,cfg,presetList,present,sumOf,autoTarget,okPlusOf,BAND};
 })();
