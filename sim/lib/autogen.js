@@ -121,8 +121,9 @@ function generate(o){o=o||{};const tier=o.tier||'normal';if(!PRESET[tier])throw 
  const GT={easy:{wild:['C'],boss:['B','A']},normal:{wild:['C'],boss:['A']},hard:{wild:['C'],boss:['A']}};/* 10-27 20:30 야생 DB 300체 기준 맞춤(gradecal_db300): 쉬움 88 · 보통 63 · 어려움 37% */const gr=Object.assign({},GT[tier]||GT.normal,o.grades||{});
  const WB=require('./wilddb.js');const hasDb=fs.existsSync(WB.FILE)&&(WB.read().v||1)>=2;const source=o.source||(hasDb?'db':'dex');let wild=o.wild,bossP=o.boss;
  if(source==='db'&&!wild){const all=WB.fullV2();const gr=Object.assign({},GT[tier]||GT.normal,o.grades||{});const inHab=e=>(e.hab||[]).includes(thName);
-  const W0=all.filter(e=>inHab(e)&&gr.wild.includes(e.grade)),B0=all.filter(e=>inHab(e)&&gr.boss.includes(e.grade));
-  wild=(W0.length>=8?W0:all.filter(e=>gr.wild.includes(e.grade))).map(e=>['db',e.id,e.name]);bossP=(B0.length>=3?B0:all.filter(e=>gr.boss.includes(e.grade))).map(e=>['db',e.id,e.name])}
+  /* 10-28 실험: knobs.bossBan = '초인|수맥' — 그 특성 가진 몬은 보스 후보에서 뺀다(「자기 타입 2배」 보스가 너무 셈) */const ban=(o.knobs||{}).bossBan?new RegExp('^('+String((o.knobs||{}).bossBan)+')$'):null;const okB=e=>!ban||!ban.test(e.ability||'');
+  const W0=all.filter(e=>inHab(e)&&gr.wild.includes(e.grade)),B0=all.filter(e=>inHab(e)&&gr.boss.includes(e.grade)&&okB(e));
+  wild=(W0.length>=8?W0:all.filter(e=>gr.wild.includes(e.grade))).map(e=>['db',e.id,e.name]);bossP=(B0.length>=3?B0:all.filter(e=>gr.boss.includes(e.grade)&&okB(e))).map(e=>['db',e.id,e.name])}
  if(source==='dex'&&!wild){const DX=require('./dex.js');const wb=o.wildBst||DEX_BST.wild,bb=o.bossBst||DEX_BST.boss;
   const W0=DX.pick({types:th.types,bst:wb}),B0=DX.pick({types:th.types,bst:bb});wild=(W0.length>=8?W0:DX.pick({bst:wb})).map(d=>['dex',d.name,d.name]);bossP=(B0.length>=3?B0:DX.pick({bst:bb})).map(d=>['dex',d.name,d.name])}
  const keep={POOL:G.POOL.slice(),BOSS:G.BOSS.slice()};if(Array.isArray(wild)&&wild.length){G.POOL.length=0;G.POOL.push(...wild)}if(Array.isArray(bossP)&&bossP.length){G.BOSS.length=0;G.BOSS.push(...bossP)}
