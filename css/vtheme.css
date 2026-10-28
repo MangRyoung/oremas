@@ -1,5 +1,5 @@
-@import url('https://fonts.googleapis.com/css2?family=Anton&family=Black+Han+Sans&family=Do+Hyeon&family=Gothic+A1:wght@400;700;800&family=Noto+Sans+KR:wght@400;700;800&family=Rajdhani:wght@600;700&display=swap');
-/* ---------- VELVET 테마 (P5 기본 · P3 · P4) ----------
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Black+Han+Sans&family=Do+Hyeon&family=Gothic+A1:wght@400;700;800&family=Noto+Sans+KR:wght@400;700;800&family=Rajdhani:wght@600;700&family=Noto+Serif+KR:wght@500;700;900&family=Cinzel:wght@500;700;900&display=swap');
+/* ---------- VELVET 테마 (P5 기본 · P3 · P4) + 망각(mm) ----------
    VELVET 플레이툴 · 캐릭터시트에 실제로 쓰인 글꼴 · 색 · 단추 모양 값을 가져와 html[data-vt="p5|p3|p4"] 아래에서 덮는다.
    테마를 고르는 건 js/vtheme.js. 이 파일을 빼면 예전 모습으로 돌아간다. */
 /* 테마 고르기 단추 */
@@ -303,3 +303,205 @@ html[data-vt="p4"] .gds-top small{color:#ffe100}
 html[data-vt="p4"] .gd-list{scrollbar-color:#ffe100 transparent}
 html[data-vt="p3"] .gd-sel{background:rgba(3,14,40,.85);border-color:rgba(110,190,255,.38);border-radius:6px;color:#e6f3ff}
 html[data-vt="p4"] .gd-sel{background:#111;border-color:#ffe100;border-radius:4px;color:#fffbe6}
+
+/* ===== 망각 (mm) — 10-28 망령: 망각전야풍. 먹색 바탕 · 뼈빛 종이 판 · 검붉은 피 · 바랜 금 가는 테 · 명조 제목. P4 규칙을 같은 자리에 옮기고 아래에서 손으로 고친다 ===== */
+html[data-vt="mm"] .vtsw button.on{background:#14100c;color:#cfae6e}
+html[data-vt="mm"] .vtsw{border-color:#14100c}
+html[data-vt="mm"] .top .vtsw button:not(.on){color:#14100c!important}
+html[data-vt="mm"]{--bg:#14100c;--panel:#13110e;--line:#cfae6e;--red:#a3182a;--fg:#e8dfcb;--mute:#a89a7e}
+html[data-vt="mm"] body{background:#14100c repeating-linear-gradient(135deg,#151515 0 22px,#14100c 22px 44px)!important;color:#e8dfcb!important;font-family:'Noto Sans KR','Gothic A1',sans-serif!important}
+html[data-vt="mm"] .top{background:#e9e0cb!important;border-bottom:3px solid #14100c!important;color:#14100c!important}
+html[data-vt="mm"] .top .name{font-family:'Noto Serif KR',serif!important;font-weight:900!important;font-size:28px!important;color:#14100c!important;text-shadow:0 0 16px rgba(163,24,42,.6)!important}
+html[data-vt="mm"] .top .badge.gm{background:#14100c!important;color:#cfae6e!important;border:0!important;border-radius:0!important}
+html[data-vt="mm"] .top .small,html[data-vt="mm"] .top #conn,html[data-vt="mm"] .top .presence{color:#14100c!important}
+html[data-vt="mm"] #sceneTabs button{font-family:'Noto Serif KR',serif!important;font-weight:900!important;font-size:18px!important;background:transparent!important;color:#5a4a33!important;border:0!important;border-radius:0!important;box-shadow:none!important;transform:none!important}
+html[data-vt="mm"] #sceneTabs button.on{background:#14100c!important;color:#cfae6e!important}
+html[data-vt="mm"] .btn{font-family:'Noto Sans KR'!important;font-weight:800!important;background:#14100c!important;color:#cfae6e!important;border:2px solid #8f7b52!important;border-radius:0!important;box-shadow:none!important;transform:none!important}
+html[data-vt="mm"] .btn.ghost{background:#13110e!important;color:#e8dfcb!important;border-color:#555!important}
+html[data-vt="mm"] .btn.pri,html[data-vt="mm"] #rpsend{background:#e9e0cb!important;color:#14100c!important;border-color:#14100c!important;box-shadow:0 0 14px rgba(163,24,42,.45)!important}
+html[data-vt="mm"] .top .btn{background:#14100c!important;color:#cfae6e!important;border-color:#14100c!important}
+html[data-vt="mm"] .top a.btn.ghost{background:transparent!important;color:#14100c!important;border-color:#14100c!important}
+html[data-vt="mm"] .rpstage{border:2px solid #8f7b52!important;border-radius:0!important;outline:0!important;background:radial-gradient(at 50% 55%,#5a4a33 0,#140b09 60%,#0a0908 100%)!important;box-shadow:0 10px 24px rgba(0,0,0,.55)!important}
+html[data-vt="mm"] .daytag{background:#e9e0cb!important;border:0!important;border-radius:0!important;box-shadow:0 10px 24px rgba(0,0,0,.55)!important;padding:2px 12px!important;color:#14100c!important}
+html[data-vt="mm"] .daytag b{font-family:'Noto Serif KR',serif!important;font-weight:900!important;font-size:38px!important;color:#14100c!important;text-shadow:none!important}
+html[data-vt="mm"] .daytag *{color:#14100c!important}
+html[data-vt="mm"] .daytag .phase{background:#14100c!important;color:#cfae6e!important;border-radius:0!important;white-space:nowrap}
+html[data-vt="mm"] .bgname{background:#14100c!important;color:#cfae6e!important;border:2px solid #8f7b52!important;border-radius:0!important;font-family:'Noto Serif KR',serif!important;font-weight:900!important;font-size:18px!important;box-shadow:none!important}
+html[data-vt="mm"] .spkbar{background:#13110e!important;border-top:3px solid #8f7b52!important}
+html[data-vt="mm"] .spk{background:#14100c!important;border:2px solid #444!important;border-radius:0!important}
+html[data-vt="mm"] .spk.on{border-color:#8f7b52!important;box-shadow:0 0 0 2px #14100c,0 0 0 4px #8f7b52!important}
+html[data-vt="mm"] .rpinput select,html[data-vt="mm"] .rpinput input,html[data-vt="mm"] #rpline{background:#14100c!important;border:2px solid #555!important;border-radius:0!important;color:#e8dfcb!important}
+html[data-vt="mm"] .mebar{background:#e9e0cb!important;color:#14100c!important;border:0!important;border-radius:0!important;box-shadow:0 10px 24px rgba(0,0,0,.55)!important}
+html[data-vt="mm"] .mebar *{color:#14100c}
+html[data-vt="mm"] .mebar .meid b{font-family:'Noto Serif KR',serif!important;font-weight:900!important;font-size:22px!important;color:#14100c!important}
+html[data-vt="mm"] .mebar .btn{color:#cfae6e!important}
+html[data-vt="mm"] .phone{background:#13110e!important;border:3px solid #8f7b52!important;border-radius:0!important;box-shadow:0 10px 24px rgba(0,0,0,.55)!important}
+html[data-vt="mm"] .phone .pbar,html[data-vt="mm"] .phone .ptitle{background:#e9e0cb!important;color:#14100c!important}
+html[data-vt="mm"] .phone .ptitle{font-family:'Noto Serif KR',serif!important;font-weight:900!important;font-size:22px!important}
+html[data-vt="mm"] .phone .ptitle small,html[data-vt="mm"] .phone .ptitle *{color:#14100c!important}
+html[data-vt="mm"] .phone .ptitle .btn{color:#cfae6e!important}
+html[data-vt="mm"] .ctabs{background:#14100c!important}
+html[data-vt="mm"] .ctabs button{background:#14100c!important;color:#a89a7e!important;border:0!important;border-radius:0!important;font-family:'Noto Serif KR',serif!important;font-weight:900!important;font-size:16px!important}
+html[data-vt="mm"] .ctabs button.on{background:#e9e0cb!important;color:#14100c!important}
+html[data-vt="mm"] .phone .log{background:#13110e!important;background-image:none!important}
+html[data-vt="mm"] .inbox{background:#14100c!important;border-top:2px solid #8f7b52!important}
+html[data-vt="mm"] .inbox input,html[data-vt="mm"] .inbox select{background:#13110e!important;color:#e8dfcb!important;border:2px solid #555!important}
+html[data-vt="mm"] .ttab{background:#14100c!important;color:#cfae6e!important;border:2px solid #8f7b52!important;border-radius:0!important;font-family:'Noto Serif KR',serif!important;font-weight:900!important;font-size:17px!important}
+html[data-vt="mm"] .ttab.on{background:#e9e0cb!important;color:#14100c!important}
+html[data-vt="mm"] .sheet .hero{background:#e9e0cb!important;border:3px solid #14100c!important;border-radius:0!important;box-shadow:0 10px 24px rgba(0,0,0,.55);color:#14100c!important; background-image:linear-gradient(90deg,#7d1220 0 6px,transparent 6px)!important;padding-left:26px!important}
+html[data-vt="mm"] .sheet .hero *{color:#14100c}
+html[data-vt="mm"] .hpic{border:4px solid #14100c!important;border-radius:0!important;box-shadow:0 0 14px rgba(163,24,42,.45)!important}
+html[data-vt="mm"] .hname .qe,html[data-vt="mm"] .hname{font-family:'Noto Serif KR',serif!important;font-weight:900!important;font-size:40px!important;color:#14100c!important;text-shadow:0 0 16px rgba(163,24,42,.6)!important}
+html[data-vt="mm"] .hb{background:#14100c!important;color:#cfae6e!important;border:1px solid #14100c!important;border-radius:0!important}
+html[data-vt="mm"] .hb *{color:#cfae6e!important}
+html[data-vt="mm"] .tile{background:#14100c!important;border:2px solid #14100c!important;border-radius:0!important}
+html[data-vt="mm"] .tile b{font-family:'Noto Serif KR',serif!important;font-weight:900!important;font-size:28px!important;color:#e8dfcb!important}
+html[data-vt="mm"] .tile span{color:#a89a7e!important;font-weight:800}
+html[data-vt="mm"] .hero .btn{background:#14100c!important;color:#cfae6e!important;border-color:#14100c!important}
+html[data-vt="mm"] .hpbl{color:#14100c!important;font-family:'Noto Serif KR',serif!important;font-weight:900!important;font-size:18px!important;background:transparent!important}
+html[data-vt="mm"] .hpm .hpmi,html[data-vt="mm"] .hpmi{border-color:#14100c!important}
+html[data-vt="mm"] .stabs{border-bottom:3px solid #8f7b52!important;background:transparent!important}
+html[data-vt="mm"] .stab{font-family:'Noto Serif KR',serif!important;font-weight:900!important;font-size:17px!important;background:transparent!important;color:#a89a7e!important;border:0!important;border-radius:0!important}
+html[data-vt="mm"] .stab.on{background:#e9e0cb!important;color:#14100c!important}
+html[data-vt="mm"] .sheet h3,html[data-vt="mm"] .sheet h4{font-family:'Noto Serif KR',serif!important;font-weight:900!important;font-size:20px!important;color:#14100c!important;background:#e9e0cb!important;padding:6px 14px!important;margin:-1px -1px 10px!important}
+html[data-vt="mm"] input,html[data-vt="mm"] select,html[data-vt="mm"] textarea{border-radius:0!important}
+@media(max-width:760px){html[data-vt="mm"] .daytag b{font-size:30px!important}html[data-vt="mm"] .top .name{font-size:22px!important}}
+html[data-vt="mm"] .bstat .turn .tlab{color:#14100c!important}
+html[data-vt="mm"] .sheet .hero .hsk,html[data-vt="mm"] .sheet .hero .hsk *,html[data-vt="mm"] .sheet .hero .hsock b{color:#e8dfcb!important}
+html[data-vt="mm"] .hsock .hsbar{background:#3a3a3a}html[data-vt="mm"] .hsock .hsbar i{background:#a3182a}html[data-vt="mm"] .hsock.over .hsbar i{background:#ff5a6a}
+html[data-vt="mm"] .mebar .btn.pri{background:#14100c!important;color:#cfae6e!important;box-shadow:0 10px 24px rgba(0,0,0,.55)!important}
+html[data-vt="mm"] .vtsw.compact .vtcur{border-color:#14100c;color:#14100c}
+html[data-vt="mm"] .gd{--skew:0deg;--red:#cfae6e;--red2:#cfae6e}
+html[data-vt="mm"] .gd-logo{background:#e9e0cb;color:#14100c;border-radius:0;box-shadow:0 0 14px rgba(163,24,42,.45)}
+html[data-vt="mm"] .gd-logo b{font-family:'Noto Serif KR',serif;font-weight:900!important}
+html[data-vt="mm"] .gd-nav input{background:#14100c;border-color:#4b3f29;border-radius:0}
+html[data-vt="mm"] .gd-part b{background:#e9e0cb;color:#14100c;border-radius:0}
+html[data-vt="mm"] .gd-ch:hover{background:#13110e}
+html[data-vt="mm"] .gd-ch.on{background:#e9e0cb;color:#14100c;box-shadow:0 0 14px rgba(163,24,42,.45);border-radius:0}
+html[data-vt="mm"] .gd-ch.on em,html[data-vt="mm"] .gd-ch.on small{color:#5a4a33}
+html[data-vt="mm"] .gd-tag{background:#14100c;color:#cfae6e;border:1px solid #8f7b52}
+html[data-vt="mm"] .gd-panel{background:#13110e;border:2px solid #8f7b52;border-radius:0;box-shadow:0 0 14px rgba(163,24,42,.45)}
+html[data-vt="mm"] .gd-head{background:#e9e0cb;color:#14100c;border-bottom:2px solid #14100c;border-radius:0}
+html[data-vt="mm"] .gd-head em{font-family:'Noto Serif KR',serif;font-weight:900!important;color:#14100c;-webkit-text-stroke:0;text-shadow:0 0 14px rgba(163,24,42,.45)}
+html[data-vt="mm"] .gd-head small{color:#5a4a33}
+html[data-vt="mm"] .gd-head h2{color:#14100c}
+html[data-vt="mm"] .gd-dots i{background:rgba(0,0,0,.25)}
+html[data-vt="mm"] .gd-dots i.on{background:#14100c}
+html[data-vt="mm"] .gd-h span{background:#e9e0cb;color:#14100c;border-radius:0;box-shadow:0 0 14px rgba(163,24,42,.45)}
+html[data-vt="mm"] .gd-lead,html[data-vt="mm"] .gd-items li span{color:#a89a7e}
+html[data-vt="mm"] .gd-lead em,html[data-vt="mm"] .gd-items em,html[data-vt="mm"] .gd-lead b,html[data-vt="mm"] .gd-items b{color:#e8dfcb}
+html[data-vt="mm"] .gd-lead b{color:#cfae6e}
+html[data-vt="mm"] .gd-shot{background:#e9e0cb;transform:none;box-shadow:0 0 14px rgba(163,24,42,.45);border-radius:0}
+html[data-vt="mm"] .gd-scr{background:#14100c;color:#cfae6e;border-radius:0}
+html[data-vt="mm"] .gd-b.bar,html[data-vt="mm"] .gd-b.head{border-bottom-color:#8f7b52}
+html[data-vt="mm"] .gd-b.btnw{background:#e9e0cb;border-color:#14100c;box-shadow:0 0 14px rgba(163,24,42,.45)}
+html[data-vt="mm"] .gd-b.modal{border-color:#8f7b52}
+html[data-vt="mm"] .gd-b.card:not(.blue){border-left-color:#8f7b52}
+html[data-vt="mm"] .gd-pin{background:#e9e0cb;color:#14100c}
+html[data-vt="mm"] .gd-items li{background:#14100c;border:1px solid #333;border-left:3px solid #8f7b52;border-radius:0}
+html[data-vt="mm"] .gd-items li>i{background:#e9e0cb;color:#14100c}
+html[data-vt="mm"] .gd-items li.hl{background:#e9e0cb;border-color:#8f7b52}
+html[data-vt="mm"] .gd-items li.hl b,html[data-vt="mm"] .gd-items li.hl span,html[data-vt="mm"] .gd-items li.hl em{color:#14100c}
+html[data-vt="mm"] .gd-foot{border-top-color:#333}
+html[data-vt="mm"] .gd-keys kbd{background:#e9e0cb;color:#14100c}
+html[data-vt="mm"] .gd-bub{--skew:0deg;background:#e9e0cb;color:#14100c;border-radius:0;box-shadow:0 0 14px rgba(163,24,42,.45)!important}
+html[data-vt="mm"] .gd-bub b{background:#14100c;color:#cfae6e;border-radius:0}
+html[data-vt="mm"] .gd-bub em{color:#7d1220}
+html[data-vt="mm"] .gd-line .gd-bub::after{border-left-color:#8f7b52}
+html[data-vt="mm"] .gd-who,html[data-vt="mm"] .gds-fig{filter:drop-shadow(0 0 14px rgba(163,24,42,.45))}
+html[data-vt="mm"] .gds-top{border-bottom:2px solid #8f7b52}
+html[data-vt="mm"] .gds-top small{color:#cfae6e}
+html[data-vt="mm"] .gd-list{scrollbar-color:#cfae6e transparent}
+html[data-vt="mm"] .gd-sel{background:#14100c;border-color:#8f7b52;border-radius:0;color:#e8dfcb}
+/* 망각 · 손으로 고친 것: 위 띠는 어둡게, 판은 가는 금 테, 제목은 명조 */
+html[data-vt="mm"]{--bg:#0a0908;--line:#8f7b52}
+html[data-vt="mm"] body{background:#0a0908 radial-gradient(1200px 560px at 50% -12%,rgba(120,14,24,.38),transparent 70%) fixed!important;background-image:radial-gradient(1200px 560px at 50% -12%,rgba(120,14,24,.38),transparent 70%),url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .9 0 0 0 0 .85 0 0 0 0 .75 0 0 0 .07 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")!important}
+html[data-vt="mm"] .top{background:linear-gradient(#0d0b09,#0a0908)!important;border-bottom:1px solid #8f7b52!important;box-shadow:0 1px 0 #0a0908,0 2px 0 #4b3f29!important;color:#e8dfcb!important}
+html[data-vt="mm"] .top .name{color:#e8dfcb!important;letter-spacing:.06em;text-shadow:0 0 18px rgba(163,24,42,.75)!important}
+html[data-vt="mm"] .top .small,html[data-vt="mm"] .top #conn,html[data-vt="mm"] .top .presence{color:#9c8f76!important}
+html[data-vt="mm"] .top .badge.gm{background:#7d1220!important;color:#f3eadb!important}
+html[data-vt="mm"] .top .btn,html[data-vt="mm"] .top a.btn.ghost{background:#0f0d0b!important;color:#d9c9a3!important;border-color:#5e4f33!important}
+html[data-vt="mm"] .top .vtsw button:not(.on){color:#d9c9a3!important}
+html[data-vt="mm"] .vtsw{border-color:#5e4f33}
+html[data-vt="mm"] .vtsw button.on{background:#7d1220;color:#f3eadb}
+html[data-vt="mm"] .vtsw.compact .vtcur{border-color:#5e4f33;color:#d9c9a3}
+html[data-vt="mm"] #sceneTabs button{color:#9c8f76!important;letter-spacing:.04em;font-size:16px!important;border-bottom:1px solid transparent!important}
+html[data-vt="mm"] #sceneTabs button.on{background:linear-gradient(transparent 40%,rgba(163,24,42,.4))!important;color:#f3eadb!important;border-bottom:1px solid #cfae6e!important;text-shadow:0 0 10px rgba(163,24,42,.9)}
+html[data-vt="mm"] .btn{font-family:'Noto Serif KR',serif!important;font-weight:700!important;background:#0f0d0b!important;color:#d9c9a3!important;border:1px solid #5e4f33!important;box-shadow:inset 0 0 0 1px #0a0908!important}
+html[data-vt="mm"] .btn.ghost{background:#13110e!important;color:#e8dfcb!important;border-color:#3e3426!important}
+html[data-vt="mm"] .btn.pri,html[data-vt="mm"] #rpsend,html[data-vt="mm"] .mebar .btn.pri{background:linear-gradient(#7d1220,#4a0a12)!important;color:#f3eadb!important;border:1px solid #8f7b52!important;box-shadow:inset 0 0 0 1px #0a0908,0 0 12px rgba(163,24,42,.4)!important}
+html[data-vt="mm"] input,html[data-vt="mm"] select,html[data-vt="mm"] textarea{background:#0b0a08!important;color:#e8dfcb!important;border:1px solid #3e3426!important;border-bottom-color:#8f7b52!important;border-radius:0!important}
+html[data-vt="mm"] .rpstage,html[data-vt="mm"] .phone,html[data-vt="mm"] .sheet .hero,html[data-vt="mm"] .gd-panel{border-width:1px!important;outline:1px solid #8f7b52;outline-offset:-6px}
+html[data-vt="mm"] .phone{border:1px solid #8f7b52!important}
+html[data-vt="mm"] .sheet .hero{border:1px solid #8f7b52!important}
+html[data-vt="mm"] .spk{border:1px solid #3e3426!important}
+html[data-vt="mm"] .spk.on{box-shadow:0 0 0 1px #0a0908,0 0 0 2px #cfae6e,0 0 14px rgba(163,24,42,.5)!important}
+html[data-vt="mm"] .sheet h3,html[data-vt="mm"] .sheet h4{background:linear-gradient(90deg,rgba(163,24,42,.55),rgba(163,24,42,0) 70%)!important;color:#e8dfcb!important;border-bottom:1px solid #8f7b52;letter-spacing:.05em}
+html[data-vt="mm"] .stabs{border-bottom:1px solid #8f7b52!important}
+html[data-vt="mm"] .stab.on,html[data-vt="mm"] .ttab.on,html[data-vt="mm"] .ctabs button.on{background:linear-gradient(#7d1220,#4a0a12)!important;color:#f3eadb!important}
+html[data-vt="mm"] .ttab{border-width:1px!important}
+html[data-vt="mm"] .hpic{border:1px solid #8f7b52!important;outline:1px solid #14100c;outline-offset:3px}
+html[data-vt="mm"] .hname,html[data-vt="mm"] .hname .qe{text-shadow:none!important;letter-spacing:.03em}
+html[data-vt="mm"] .daytag b{color:#14100c!important;letter-spacing:.04em}
+html[data-vt="mm"] .daytag .phase{background:#7d1220!important;color:#f3eadb!important}
+html[data-vt="mm"] .gd-head em{color:#7d1220!important;text-shadow:none!important}
+html[data-vt="mm"] .gd-ch.on{background:linear-gradient(90deg,rgba(163,24,42,.4),transparent)!important;color:#e8dfcb!important;box-shadow:inset 2px 0 0 #a3182a!important}
+html[data-vt="mm"] .gd-ch.on em,html[data-vt="mm"] .gd-ch.on small{color:#cfae6e!important}
+html[data-vt="mm"] .gd-who,html[data-vt="mm"] .gds-fig{filter:sepia(.3) drop-shadow(0 0 12px rgba(163,24,42,.45))!important}
+html[data-vt="mm"] .hsock .hsbar{background:#2a241b}html[data-vt="mm"] .hsock .hsbar i{background:#a3182a}
+/* 망각 · 튜토리얼 탭: 흰 판 → 뼈빛 종이, 기울기 · 어긋난 그림자 → 가는 금 테 · 붉은 번짐 */
+html[data-vt="mm"] .gd{--skew:0deg;--red:#a3182a;--red2:#cfae6e}
+html[data-vt="mm"] .gd-logo{background:transparent;color:#e8dfcb;border:1px solid #8f7b52;outline:1px solid #8f7b52;outline-offset:3px;box-shadow:none;text-align:center}
+html[data-vt="mm"] .gd-logo b{font-family:'Cinzel',serif;font-weight:700;letter-spacing:.1em;text-shadow:0 0 16px rgba(163,24,42,.8)}
+html[data-vt="mm"] .gd-nav input{background:#0b0a08;border:1px solid #3e3426;border-bottom-color:#8f7b52;border-radius:0}
+html[data-vt="mm"] .gd-part b{background:transparent;color:#cfae6e;border:1px solid #8f7b52;border-radius:0;font-family:'Cinzel',serif}
+html[data-vt="mm"] .gd-ch:hover{background:rgba(163,24,42,.12)}
+html[data-vt="mm"] .gd-ch{font-family:'Noto Serif KR',serif}
+html[data-vt="mm"] .gd-tag{background:#7d1220;color:#f3eadb;border:0}
+html[data-vt="mm"] .gd-panel{background:rgba(15,13,11,.94);border:1px solid #8f7b52;outline:1px solid #2a2319;outline-offset:-6px;border-radius:0;box-shadow:0 20px 44px rgba(0,0,0,.6)}
+html[data-vt="mm"] .gd-head{background:radial-gradient(500px 120px at 0 0,rgba(163,24,42,.35),transparent 70%),#0d0b09;color:#e8dfcb;border-bottom:1px solid #8f7b52;border-radius:0}
+html[data-vt="mm"] .gd-head em{font-family:'Cinzel',serif;font-weight:900;color:#a3182a!important;-webkit-text-stroke:0;text-shadow:0 0 18px rgba(163,24,42,.5)!important}
+html[data-vt="mm"] .gd-head h2{font-family:'Noto Serif KR',serif;font-weight:900;color:#e8dfcb;letter-spacing:.04em}
+html[data-vt="mm"] .gd-head small{color:#cfae6e;font-family:'Cinzel',serif;letter-spacing:.3em}
+html[data-vt="mm"] .gd-dots i{background:#3e3426}html[data-vt="mm"] .gd-dots i.on{background:#a3182a}
+html[data-vt="mm"] .gd-h span{background:transparent;color:#e8dfcb;border-top:1px solid #8f7b52;border-bottom:1px solid #8f7b52;border-radius:0;box-shadow:none;font-family:'Noto Serif KR',serif;font-weight:900}
+html[data-vt="mm"] .gd-lead,html[data-vt="mm"] .gd-items li span{color:#b0a38a}
+html[data-vt="mm"] .gd-lead em,html[data-vt="mm"] .gd-items em,html[data-vt="mm"] .gd-lead b,html[data-vt="mm"] .gd-items b{color:#e8dfcb}
+html[data-vt="mm"] .gd-lead b{color:#d8705f}
+html[data-vt="mm"] .gd-shot{background:#e9e0cb;transform:none;box-shadow:0 0 0 1px #0a0908,0 0 0 2px #8f7b52,0 14px 30px rgba(0,0,0,.5);border-radius:0}
+html[data-vt="mm"] .gd-scr{background:#7d1220;color:#f3eadb;border-radius:0;font-family:'Cinzel',serif}
+html[data-vt="mm"] .gd-b.bar,html[data-vt="mm"] .gd-b.head{border-bottom-color:#8f7b52}
+html[data-vt="mm"] .gd-b.btnw{background:#e9e0cb;border-color:#14100c;box-shadow:none}
+html[data-vt="mm"] .gd-b.modal{border-color:#8f7b52}
+html[data-vt="mm"] .gd-b.card:not(.blue){border-left-color:#a3182a}
+html[data-vt="mm"] .gd-pin{background:#a3182a;color:#f3eadb}
+html[data-vt="mm"] .gd-items li{background:#0d0b09;border:1px solid #2e271d;border-left:2px solid #a3182a;border-radius:0}
+html[data-vt="mm"] .gd-items li>i{background:#a3182a;color:#f3eadb}
+html[data-vt="mm"] .gd-items li.hl{background:#e9e0cb;border-color:#8f7b52}
+html[data-vt="mm"] .gd-items li.hl b,html[data-vt="mm"] .gd-items li.hl span,html[data-vt="mm"] .gd-items li.hl em{color:#14100c}
+html[data-vt="mm"] .gd-foot{border-top-color:#2e271d}
+html[data-vt="mm"] .gd-keys kbd{background:#e9e0cb;color:#14100c}
+html[data-vt="mm"] .gd-bub{--skew:0deg;background:#efe6d2;color:#1a140d;border:1px solid #8f7b52;border-radius:0;box-shadow:0 0 0 3px #0a0908,0 0 0 4px #8f7b52!important;font-family:'Noto Serif KR',serif}
+html[data-vt="mm"] .gd-bub b{background:#1a140d;color:#efe6d2;border-radius:0}
+html[data-vt="mm"] .gd-bub em{color:#7d1220}
+html[data-vt="mm"] .gd-line .gd-bub::after{border-left-color:#8f7b52}
+html[data-vt="mm"] .gds-top{border-bottom:1px solid #8f7b52}
+html[data-vt="mm"] .gds-top small{color:#cfae6e;font-family:'Cinzel',serif}
+html[data-vt="mm"] .gd-list{scrollbar-color:#8f7b52 transparent}
+html[data-vt="mm"] .gd-sel{background:#0b0a08;border-color:#8f7b52;border-radius:0;color:#e8dfcb}
+html[data-vt="mm"] .gd-btn,html[data-vt="mm"] .gd-foot button{border-radius:0}
+html[data-vt="mm"] .gd-say.bandi{background:radial-gradient(400px 140px at 20% 50%,rgba(163,24,42,.32),transparent 70%),#0f0c0a;border-bottom:1px solid #8f7b52}
+html[data-vt="mm"] .gd-ch b{font-family:'Noto Serif KR',serif;font-weight:900}
+/* 망각 · 로그인 · 방 목록 */
+html[data-vt="mm"]{background:#0a0908!important}
+html[data-vt="mm"] body{min-height:100vh}
+html[data-vt="mm"] .lobby .brand,html[data-vt="mm"] .lobby .brand *{font-family:'Noto Serif KR',serif!important;font-weight:900!important;color:#e8dfcb!important;-webkit-text-stroke:0!important;letter-spacing:.06em;text-shadow:0 0 22px rgba(163,24,42,.75)!important}
+html[data-vt="mm"] .lobby .brand small,html[data-vt="mm"] .lobby .brand p{font-weight:500!important;color:#cfae6e!important;text-shadow:none!important;letter-spacing:.3em}
+html[data-vt="mm"] .lobby .card{background:rgba(15,13,11,.94)!important;border:1px solid #8f7b52!important;outline:1px solid #2a2319;outline-offset:-6px;border-radius:0!important;box-shadow:0 20px 44px rgba(0,0,0,.6)!important;clip-path:none!important;transform:none!important}
+html[data-vt="mm"] .lgtabs button{font-family:'Noto Serif KR',serif!important;font-weight:700!important;background:#0f0d0b!important;color:#9c8f76!important;border:1px solid #3e3426!important;border-radius:0!important;transform:none!important;clip-path:none!important}
+html[data-vt="mm"] .lgtabs button.on{background:linear-gradient(#7d1220,#4a0a12)!important;color:#f3eadb!important;border-color:#8f7b52!important}
+html[data-vt="mm"] .lobby .btn.pri,html[data-vt="mm"] .lgok{transform:none!important;clip-path:none!important}
+html[data-vt="mm"] .rmt{background:rgba(15,13,11,.94)!important;border:1px solid #4b3f29!important;border-radius:0!important;box-shadow:none!important;transform:none!important}
+html[data-vt="mm"] .rmt:hover{border-color:#cfae6e!important;box-shadow:0 0 14px rgba(163,24,42,.4)!important}
+html[data-vt="mm"] input[type=checkbox]{accent-color:#a3182a}
+html[data-vt="mm"] a{color:#cfae6e}
