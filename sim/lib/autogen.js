@@ -115,7 +115,7 @@ function generate(o){o=o||{};const tier=o.tier||'normal';if(!PRESET[tier])throw 
  const rng=BT.mkRng(seed*7+3);const ri=n=>Math.floor(rng()*n);const pick=a=>a[ri(a.length)];
  const thName=o.theme&&THEMES[o.theme]?o.theme:Object.keys(THEMES)[ri(Object.keys(THEMES).length)];const th=THEMES[thName];
  const pre=PRESET[tier];const knobs=Object.assign({},COMMON,{battles:pick(pre.battles)},o.knobs||{});if(Array.isArray(knobs.checks))knobs.checks=pick(knobs.checks);
- const fewB=knobs.battles<Math.max(...pre.battles),fewC=knobs.checks<4;const tough=o.tough!=null?(o.tough?'full':''):fewB?'full':fewC?'hard':'';   /* 10-28 03시: 2단계 — 사전 배틀이 모자라면 어렵게 + 빡세게, 체크만 3개면 어렵게만(체크 수는 승률을 거의 안 움직임) */
+ const fewB=knobs.battles<Math.max(...pre.battles),fewC=knobs.checks<4;const tough=o.tough!=null?(o.tough?'full':''):fewB?'full':fewC&&tier!=='easy'?'hard':'';   /* 10-28 테스트: 쉬움에서 「어려운 길」(목표 9 · 11 체크 3개)은 승률이 38~77% 로 흔들려 뺀다 */   /* 10-28 03시: 2단계 — 사전 배틀이 모자라면 어렵게 + 빡세게, 체크만 3개면 어렵게만(체크 수는 승률을 거의 안 움직임) */
  if(tough){for(const [k,v] of Object.entries(tough==='full'?TOUGH:{tgt:TOUGH.tgt}))if(!(o.knobs&&k in o.knobs))knobs[k]=v}
  /* 야생 풀을 바꿀 수 있다: o.wild = [[트레이너 id, 순번, 이름]…] · o.boss = 같은 꼴 */
  /* 야생 출처: 'dex'(기본, 제작기 도감 실제 포켓몬 — 테마 타입 · 종족치 범위) | 'npc'(무진 NPC 풀, 10-27 맞추기에 쓴 것) */
