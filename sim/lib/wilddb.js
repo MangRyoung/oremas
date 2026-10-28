@@ -59,7 +59,7 @@ function pickOld(rng,plan,used){used=used||new Set();const C=candidates();const 
 /* 전체 생성: {seed, plan} → db v2 */
 function buildV2(o){o=o||{};const BT=require('./battle.js'),M=require('./mongen.js');const rng=BT.mkRng(o.seed||27);const plan=o.plan||(o.n?planFor(o.n):PLAN_V2);
  const used=new Set(DX.list().map(d=>d.name));const orig=M.batch(rng,plan.orig,used,{W:o.W,dexTypes:dexTypes(),mix:o.mix==null?0.5:o.mix});const old=pickOld(rng,plan.old,new Set());
- const entries=orig.concat(old);entries.forEach((e,i)=>e.id='w'+String(i+1).padStart(3,'0'));
+ const entries=orig.concat(old);entries.forEach((e,i)=>e.id='w'+String(i+1).padStart(3,'0'));M.trimHab(entries,BT.mkRng((o.seed||27)+7));/* 10-28 서식지 1~2곳 */
  let review=null;if(o.W){/* 실전 검토 · 개선 루프 (lib/review.js) */const RV=require('./review.js');review=RV.reviewAll(o.W,module.exports,M,entries,{n:o.reviewN||24,rounds:o.rounds==null?3:o.rounds,seed:(o.seed||27)+1});module.exports._cache=null}
  if(o.W){/* 기술을 항목에 써 넣는다 (10-27 20시 망령 「기존 DB 는 기술을 안 넣어둔 거야?」) — 생성기가 고른 구성이 DB 의 실제 값이 되고, 화면에서 고칠 수 있다. movesAuto:true 로 출처 표시 */module.exports.clearCache();const AM=require('./automove.js');for(const e of entries){try{const r=buildEntry(o.W,Object.assign({},e,{moves:[]}),{});e.moves=(r.mon.moves||[]).map(m=>m.name);e.movesAuto=true;e.sock=AM.sockInfo(o.W,r.mon)}catch(x){}}module.exports.clearCache()}
  const n=entries.length;const cnt={};for(const e of entries)cnt[e.origin+' '+e.pride]=(cnt[e.origin+' '+e.pride]||0)+1;

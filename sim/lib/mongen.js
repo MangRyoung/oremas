@@ -35,12 +35,14 @@ function abil(){if(ABIL)return ABIL;const f=path.join(makerRoot(),'data','db.js'
  ABIL=rows.filter(r=>r[1]&&!BAD.test(String(r[2])+' '+String(r[1]))).map(r=>({to:String(r[0]),name:r[1],desc:String(r[2]||'')}));return ABIL}
 /* 특성 고르기 — 타입 · 역할형과 맞는 설명에 점수를 주고 상위에서 무작위 (10-27 밤 망령 「콘셉트나 실전성 로직」) */
 const KIND_RE={'물리 스위퍼':/공격|물리기|접촉기|스피드|급소/,'특수 스위퍼':/특공|특수기|스피드|급소/,'물리 탱커':/방어|HP|회복|반감|접촉기를 받|물리기를 받/,'특수 벽':/특방|HP|회복|반감|특수기를 받|상태가 되지 않/,'밸런스':/./,'쌍두':/공격|특공|기술의 대미지/};
-function pickAbility(rng,types,toWant,kind){const L=abil().filter(a=>a.to===String(toWant));const re=KIND_RE[kind]||/./;
+function pickAbility(rng,types,toWant,kind,W){const RD=W?require('./abilread.js'):null;const L=abil().filter(a=>a.to===String(toWant));const re=KIND_RE[kind]||/./;
  const sc=L.map(a=>{let v=1;const d=a.desc;if(types.some(t=>d.includes('「'+t+'」')||d.includes(t+' 기술')||d.includes('타입 : '+t)))v+=3;if(re.test(d))v+=2;
   if(TYPES.some(t=>!types.includes(t)&&(d.includes('「'+t+'」 기술')||d.includes(t+' 기술')||d.includes('자신의 「'+t+'」'))&&!/받으면|받았을 때|받을/.test(d)))v-=3;/* 남의 타입 기술을 강화하는 특성 */
   if(/탱커|벽/.test(kind)&&/「(방어|특방|HP) : -/.test(d))v-=3;if(/스위퍼|쌍두/.test(kind)&&/「(공격|특공|스피드) : -/.test(d))v-=3;
   if(/퇴장|교대|교체/.test(d))v-=3;/* 야생은 교체하지 않는다 */ if(/날씨|필드/.test(d)&&!types.some(t=>d.includes(t)))v-=1;/* 혼자선 못 깔 조건 */ if(/나무열매|도구|소지품/.test(d))v-=2;
-  if(/상대 전체|정면/.test(d)&&/등장/.test(d))v+=1;return {a,v:v+rng()*0.9}}).sort((x,y)=>y.v-x.v);
+  if(/상대 전체|정면/.test(d)&&/등장/.test(d))v+=1;
+  if(RD&&!RD.reads(W,a.name,d))v-=3;/* 10-28 망령: 시뮬(웹툴 배틀 코드)이 못 읽는 「글만」 특성은 덜 뽑는다 — lib/abilread.js */
+  return {a,v:v+rng()*0.9}}).sort((x,y)=>y.v-x.v);
  return (sc[Math.floor(rng()*Math.min(5,sc.length))]||{}).a}
 /* ---------- 오리지널 특성 (10-27 밤 망령 「특성은 오리지널을 만들어도 괜찮아. 로직이 있다면」) ----------
    제작기 특성 DB 의 TO 눈금에 맞춘 틀만 쓴다 (같은 꼴의 기존 특성 TO 를 기준으로):
@@ -85,7 +87,7 @@ function concept(rng,types,kind,hab,beast){const t=types[0];const h1=hab.filter(
 const habOf=types=>Object.keys(HAB).filter(h=>types.some(t=>HAB[h].includes(t)));
 /* ---------- 한 체 ---------- */
 function one(rng,o){o=o||{};const step=o.step||'C';const kind=o.kind||pick(rng,KIND_NAMES);const t1=o.types&&o.types.length?o.types[0]:pick(rng,TYPES);const types=(o.types&&o.types.length?o.types.slice(0,2):[t1].concat(rng()<0.45?[pick(rng,PAIR[t1]||TYPES)]:[])).filter((t,i,a)=>a.indexOf(t)===i);
- const base=makeBase(rng,step,kind);if(!base)return null;const to=P.STEPS[STEP_IDX[step]].to;let ab=null;if(o.W&&rng()<(o.origAbilRate==null?0.45:o.origAbilRate)){/* 10-28: 특성 DB(data/abil/db.json, 생성기 탭에서 고른 것)에 맞는 게 있으면 먼저 */if(o.abilDb!==false){const x=require('./abilgen.js').fromDb(rng,types,to);if(x)ab={name:x.name,desc:x.desc,to:String(x.to),orig:true}}if(!ab)ab=origAbility(rng,o.W,types,kind,to)}else ab=pickAbility(rng,types,to,kind);const hab=o.hab&&o.hab.length?o.hab:habOf(types);const used=o.used||new Set();
+ const base=makeBase(rng,step,kind);if(!base)return null;const to=P.STEPS[STEP_IDX[step]].to;let ab=null;if(o.W&&rng()<(o.origAbilRate==null?0.45:o.origAbilRate)){/* 10-28: 특성 DB(data/abil/db.json, 생성기 탭에서 고른 것)에 맞는 게 있으면 먼저 */if(o.abilDb!==false){const x=require('./abilgen.js').fromDb(rng,types,to);if(x)ab={name:x.name,desc:x.desc,to:String(x.to),orig:true}}if(!ab)ab=origAbility(rng,o.W,types,kind,to)}else ab=pickAbility(rng,types,to,kind,o.W);const hab=o.hab&&o.hab.length?o.hab:habPick(rng,types);const used=o.used||new Set();
  const r=P.calc(base,KINDS[kind].dual);const nm=makeName(rng,types,used,kind);
  return {id:'',origin:'orig',name:nm.name,types,base,ability:ab?ab.name:'',abilityTo:to,abilityDesc:ab?ab.desc:'',abilityOrig:!!(ab&&ab.orig),folder:'',pride:step,grade:GRADE_OF[step],hab,role:GRADE_OF[step]==='C'?'일반':'보스',kind,dual:KINDS[kind].dual,moves:[],concept:concept(rng,types,kind,hab,nm.beast),ct:Math.round(r.ct)}}
 /* ---------- 묶음 — 계단별 수 · 서식지 고루 ---------- */
@@ -100,5 +102,23 @@ function batch(rng,plan,used,opts){opts=opts||{};used=used||new Set();const out=
   const kinds=step==='A'||step==='B+'?KIND_NAMES.concat(['물리 스위퍼','특수 스위퍼','쌍두']):KIND_NAMES.concat(['밸런스','물리 탱커']);
   let m=null;for(let k=0;k<5&&!m;k++)m=one(rng,{step,kind:pick(rng,kinds),types,used,W:opts.W});if(!m)continue;out.push(m)}
  return out}
+/* ---------- 서식지 줄이기 (10-28 망령 「서식지 1~2곳으로」) ----------
+   예전엔 타입이 하나라도 맞는 서식지를 전부 붙여 평균 2.9곳 · 최대 6곳이었다 → 「어디에나 사는」 몬이 많아 서식지 색이 흐렸다.
+   한 체 = 본 서식지 1곳(+ 둘째 1곳). 본 서식지: 콘셉트 문장의 서식지(「숲에서 …」) → 첫 타입이 사는 곳 중 덜 붐비는 곳.
+   둘째 서식지: ① 서식지마다 C 15 · B 4 · A 2 를 못 채운 칸 먼저 ② 그다음 전체 평균이 1.5곳이 되도록, 둘째 타입이 사는 곳 · 덜 붐비는 곳 먼저. */
+const HAB_MIN={C:15,B:4,A:2};
+const habMain=(e,load)=>{const full=habOf(e.types||[]);if(!full.length)return [];const m=String(e.concept||'').match(/^(\S+?)에서 /);if(m&&full.includes(m[1]))return [m[1]];
+ const t1=full.filter(h=>HAB[h].includes((e.types||[])[0]));const L=(t1.length?t1:full).slice().sort((a,b)=>(load[a]||0)-(load[b]||0));return [L[0]]};
+function trimHab(entries,rng,o){o=o||{};const avg=o.avg||1.5;const load={};const full=new Map();
+ for(const e of entries){full.set(e,habOf(e.types||[]));e.hab=habMain(e,load);for(const h of e.hab)load[h]=(load[h]||0)+1}
+ const add=(e,h)=>{e.hab.push(h);load[h]=(load[h]||0)+1};
+ for(const h of Object.keys(HAB))for(const g of Object.keys(HAB_MIN)){let have=entries.filter(e=>e.grade===g&&e.hab.includes(h)).length;
+  const C=entries.filter(e=>e.grade===g&&e.hab.length<2&&!e.hab.includes(h)&&full.get(e).includes(h));while(have<HAB_MIN[g]&&C.length){add(C.splice(Math.floor(rng()*C.length),1)[0],h);have++}}
+ let extra=Math.round(entries.length*(avg-1))-entries.filter(e=>e.hab.length>1).length;
+ const C=entries.filter(e=>e.hab.length<2&&full.get(e).length>1).sort(()=>rng()-0.5);
+ for(const e of C){if(extra<=0)break;const t2=(e.types||[])[1];const L=full.get(e).filter(h=>!e.hab.includes(h)).sort((a,b)=>((t2&&HAB[b].includes(t2))?1:0)-((t2&&HAB[a].includes(t2))?1:0)||(load[a]||0)-(load[b]||0));if(L.length){add(e,L[0]);extra--}}
+ return entries}
+/* 한 체만 만들 때: 첫 타입이 사는 곳 중 하나 + 반쯤 둘째 (콘셉트 문장은 이 서식지로 쓴다) */
+function habPick(rng,types){const all=habOf(types);if(!all.length)return [];const t1=all.filter(h=>HAB[h].includes(types[0]));const L=[pick(rng,t1.length?t1:all)];const full=habOf(types).filter(h=>!L.includes(h));if(full.length&&rng()<0.5){const t2=types[1];const P=t2?full.filter(h=>HAB[h].includes(t2)):[];L.push(pick(rng,P.length?P:full))}return L}
 function coverage(entries){const o={};for(const h of Object.keys(HAB)){o[h]={C:0,B:0,A:0};for(const e of entries)if((e.hab||[]).includes(h))o[h][e.grade]++}return o}
-module.exports={TYPES,HAB,KINDS,KIND_NAMES,PAIR,BODY,one,batch,makeBase,makeName,coverage,abil,habOf,pickAbility,origAbility,typeTargets};
+module.exports={TYPES,HAB,KINDS,KIND_NAMES,PAIR,BODY,one,batch,makeBase,makeName,coverage,abil,habOf,trimHab,habPick,pickAbility,origAbility,typeTargets};
