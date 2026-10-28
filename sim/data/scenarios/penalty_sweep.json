@@ -1,7 +1,7 @@
 {
  "id": "pen",
  "name": "패널티 배율",
- "dungeon": "factory",
+ "dungeon": "auto_normal_2004",
  "party": [
   "카이",
   "미오",

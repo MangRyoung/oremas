@@ -21,7 +21,7 @@ node bin/sim.js battle --party 카이 --wild lab_bossA --n 200 --wn 2 [--log]
 node bin/sim.js gendb --n 300 --seed 31 --mix 0.5          야생 DB 생성(오리지널 3 : 올드 1 · 7:2:1 · 검토 루프) → data/wild/db.json + 무리 48 다시 짜기
 node bin/sim.js mon --step B --kind 쌍두 --types 물,독 --n 5   오리지널몬 한 줌 미리보기
 node bin/sim.js run --scenario data/scenarios/base.json [--n 1000]
-node bin/sim.js run --dungeon factory --party 카이,미오,레온 --n 500 --adjust target=2,penScale=0.5 --policy cover=never
+node bin/sim.js run --dungeon auto_normal_2004 --party 카이,미오,레온 --n 500 --adjust target=2,penScale=0.5 --policy cover=never
 node bin/sim.js combos --pool id:a,id:b,… --size 3 --dungeons x,y --n 100 --id 이름   후보 중 n명 조합 전부 × 던전들 (기록 탭에 표)
 node bin/sim.js auto --tier normal [--theme 숲] [--seed 42] [--save] [--webtool 1] [--test 200 --party a,b,c]   던전 자동 생성 (가이드라인 기본값, docs/던전_자동생성.md)
 node bin/sim.js autocheck [--g 12 --t 20 --n 10]          자동 생성 검증 — 난이도별 승률

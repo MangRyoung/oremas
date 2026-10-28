@@ -1,0 +1,369 @@
+{
+ "id": "auto_easy_2001",
+ "name": "속삭이는 숲 (쉬움)",
+ "wn": 2,
+ "private": true,
+ "gen": {
+  "tier": "easy",
+  "knobs": {
+   "battles": 1,
+   "foes": 2,
+   "lv": 5,
+   "bossLv": 5,
+   "rest": "short",
+   "checks": 5,
+   "tgt": "mix",
+   "pen": "alert",
+   "hintTyped": 1,
+   "alCost": 10,
+   "alFail": 20
+  },
+  "seed": 2001,
+  "boss": "덩굴달팽이",
+  "v": 1,
+  "auto": true,
+  "tough": "",
+  "shape": "곧은길",
+  "theme": "숲",
+  "rules": {
+   "restV": 2,
+   "alBattle": 5,
+   "al30": 5,
+   "al70": 10,
+   "restShort": "all",
+   "restPO": 1,
+   "restPC": 1,
+   "restBreath": "one",
+   "restBC": 1
+  },
+  "source": "db",
+  "grades": {
+   "wild": [
+    "C"
+   ],
+   "boss": [
+    "B",
+    "A"
+   ]
+  },
+  "verify": {
+   "wr": 0.67,
+   "target": 0.8,
+   "band": 0.15,
+   "tries": 1,
+   "ok": true
+  }
+ },
+ "rooms": [
+  {
+   "id": "entry",
+   "t": "entry",
+   "name": "숲 어귀",
+   "check": {
+    "label": "안개 속에서 대열을 지킨다",
+    "stat": "통솔",
+    "target": 7,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "st": "Confusion",
+      "cnt": 3,
+      "memo": "대열이 무너졌다"
+     },
+     "cost": {
+      "oc": 1,
+      "memo": "숨이 찼다"
+     }
+    }
+   }
+  },
+  {
+   "id": "b1",
+   "t": "battle",
+   "name": "버섯 군락",
+   "enc": {
+    "mix": [
+     {
+      "db": "w076"
+     },
+     {
+      "db": "w156"
+     }
+    ],
+    "lvAdd": 5
+   }
+  },
+  {
+   "id": "c1",
+   "t": "trap",
+   "name": "길 잃은 오솔길",
+   "check": {
+    "label": "독초와 약초를 가려낸다",
+    "stat": "육성",
+    "target": 9,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "st": "Poison",
+      "memo": "독이 있는 것에 닿았다"
+     },
+     "cost": {
+      "dmg": "1/8",
+      "memo": "긁혔다"
+     }
+    }
+   }
+  },
+  {
+   "id": "c2",
+   "t": "puzzle",
+   "name": "갈림길",
+   "check": {
+    "label": "안개 속 표식을 따라간다",
+    "stat": "지시",
+    "target": 7,
+    "hint": "type:풀",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "oc": 2,
+      "memo": "우왕좌왕했다"
+     },
+     "cost": {
+      "al": 10,
+      "memo": "시간을 끌었다"
+     }
+    }
+   }
+  },
+  {
+   "id": "c3",
+   "t": "trap",
+   "name": "독 늪",
+   "check": {
+    "label": "숲의 속삭임을 듣는다",
+    "stat": "능력",
+    "target": 9,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "dmg": "1/8",
+      "st": "Paralysis",
+      "memo": "반동에 몸이 굳었다"
+     },
+     "cost": {
+      "dmg": "1/8",
+      "memo": "무리했다"
+     }
+    },
+    "mode": "inou"
+   }
+  },
+  {
+   "id": "safe",
+   "t": "safe",
+   "name": "맑은 샘",
+   "rest": "short",
+   "check": {
+    "label": "늪을 함께 건넌다",
+    "stat": "통솔",
+    "target": 7,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "st": "Confusion",
+      "cnt": 3,
+      "memo": "대열이 무너졌다"
+     },
+     "cost": {
+      "st": "Confusion",
+      "cnt": 2,
+      "memo": "정신이 없다"
+     }
+    }
+   }
+  },
+  {
+   "id": "boss",
+   "t": "boss",
+   "name": "고목의 심장",
+   "enc": {
+    "mix": [
+     {
+      "db": "w203"
+     },
+     {
+      "db": "w083"
+     },
+     {
+      "db": "w003"
+     },
+     {
+      "db": "w147"
+     }
+    ],
+    "boss": true,
+    "bossAt": 0,
+    "raid": 2,
+    "n": 4,
+    "lvAdd": 5
+   }
+  },
+  {
+   "id": "g1a1",
+   "t": "battle",
+   "name": "개울가",
+   "enc": {
+    "mix": [
+     {
+      "db": "w147"
+     },
+     {
+      "db": "w086"
+     }
+    ],
+    "lvAdd": 5
+   },
+   "alt": "g1"
+  },
+  {
+   "id": "tr",
+   "t": "treasure",
+   "side": 1,
+   "name": "새 둥지",
+   "clue": {
+    "t": "주인의 흔적",
+    "d": "깊은 곳의 주인 — 「풀」 기운이 서려 있다.\n「불꽃」 · 「얼음」 · 「독」 쪽을 꺼리는 흔적이 남아 있다.\n「저리가루」의 자국이 벽에 새겨져 있다.",
+    "auto": 1
+   },
+   "from": "c1"
+  },
+  {
+   "id": "s1",
+   "t": "room",
+   "side": 1,
+   "name": "이끼 바위",
+   "memo": "곁방 · 숨은 물건 — 살피면 소지품 · 열매 하나(GM 이 정한다). 찾는 데 체크는 없다",
+   "from": "safe"
+  },
+  {
+   "id": "s2",
+   "t": "room",
+   "side": 1,
+   "name": "덤불 속 공터",
+   "memo": "곁방 · 흔적 — 보스나 다음 방에 대한 단서 하나(GM 이 채운다)",
+   "from": "b1"
+  }
+ ],
+ "branches": [
+  {
+   "id": "g1",
+   "from": "b1",
+   "to": "c2",
+   "main": [
+    "c1"
+   ],
+   "alt": [
+    "g1a1"
+   ]
+  }
+ ],
+ "map": {
+  "grid": {
+   "cols": 6,
+   "rows": 4,
+   "x0": 95,
+   "dx": 162,
+   "y0": 85,
+   "dy": 170
+  },
+  "shape": "곧은길",
+  "turns": 1,
+  "cells": {
+   "entry": [
+    1,
+    2
+   ],
+   "b1": [
+    1,
+    1
+   ],
+   "c1": [
+    1,
+    0
+   ],
+   "c2": [
+    2,
+    0
+   ],
+   "c3": [
+    3,
+    0
+   ],
+   "safe": [
+    4,
+    0
+   ],
+   "boss": [
+    5,
+    0
+   ],
+   "g1a1": [
+    2,
+    1
+   ],
+   "tr": [
+    0,
+    0
+   ],
+   "s1": [
+    4,
+    1
+   ],
+   "s2": [
+    0,
+    1
+   ]
+  },
+  "links": {
+   "b1~entry": 1,
+   "b1~c1": 1,
+   "c1~c2": 1,
+   "c2~c3": 1,
+   "c3~safe": 1,
+   "boss~safe": 1,
+   "b1~g1a1": 1,
+   "c2~g1a1": 1,
+   "c1~tr": 1,
+   "s1~safe": 1,
+   "b1~s2": 1
+  }
+ },
+ "path": [
+  "entry",
+  "b1",
+  "c1",
+  "c2",
+  "c3",
+  "safe",
+  "boss"
+ ],
+ "theme": "숲",
+ "owner": "덩굴달팽이",
+ "rules": {
+  "restV": 2,
+  "alBattle": 5,
+  "al30": 5,
+  "al70": 10,
+  "restShort": "all",
+  "restPO": 1,
+  "restPC": 1,
+  "restBreath": "one",
+  "restBC": 1
+ },
+ "note": "자동 생성 · 쉬움 · 씨앗 2001 · 테마 숲. 사전 배틀 1 · 체크 5 · 보스방 4체 · 레이드 배틀 : 2 · 지도 갈림길 1 · 곧은길 + 곁방 3 · 야생 Lv +5."
+}

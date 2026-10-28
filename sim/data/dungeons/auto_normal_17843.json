@@ -1,0 +1,340 @@
+{
+ "id": "auto_normal_17843",
+ "name": "흐느끼는 저택 (보통)",
+ "wn": 2,
+ "private": true,
+ "gen": {
+  "tier": "normal",
+  "knobs": {
+   "battles": 1,
+   "foes": 2,
+   "lv": 5,
+   "bossLv": 5,
+   "rest": "short",
+   "checks": 4,
+   "tgt": "mix",
+   "pen": "alert",
+   "hintTyped": 1,
+   "alCost": 10,
+   "alFail": 20
+  },
+  "seed": 17843,
+  "boss": "삼삼드래",
+  "v": 1,
+  "auto": true,
+  "tough": "",
+  "shape": "구불길",
+  "theme": "폐가",
+  "rules": {
+   "restV": 2,
+   "alBattle": 5,
+   "al30": 5,
+   "al70": 10,
+   "restShort": "all",
+   "restPO": 1,
+   "restPC": 1,
+   "restBreath": "one",
+   "restBC": 1
+  },
+  "source": "db",
+  "grades": {
+   "wild": [
+    "C"
+   ],
+   "boss": [
+    "A"
+   ]
+  },
+  "verify": {
+   "wr": 0.47,
+   "target": 0.6,
+   "band": 0.15,
+   "tries": 3,
+   "ok": true
+  }
+ },
+ "rooms": [
+  {
+   "id": "entry",
+   "t": "entry",
+   "name": "잡초 덮인 정원",
+   "check": {
+    "label": "흐느끼는 소리의 정체를 쫓는다",
+    "stat": "능력",
+    "target": 7,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "dmg": "1/4",
+      "st": "Paralysis",
+      "memo": "반동에 몸이 굳었다"
+     },
+     "cost": {
+      "dmg": "1/8",
+      "memo": "무리했다"
+     }
+    },
+    "mode": "inou"
+   }
+  },
+  {
+   "id": "b1",
+   "t": "battle",
+   "name": "지하 창고",
+   "enc": {
+    "mix": [
+     {
+      "db": "w050"
+     },
+     {
+      "db": "w073"
+     }
+    ],
+    "lvAdd": 5
+   }
+  },
+  {
+   "id": "c1",
+   "t": "trap",
+   "name": "거울의 방",
+   "check": {
+    "label": "겁먹은 야생 포켓몬을 달랜다",
+    "stat": "육성",
+    "target": 9,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "dmg": "1/4",
+      "memo": "야생에게 물렸다"
+     },
+     "cost": {
+      "dmg": "1/8",
+      "memo": "긁혔다"
+     }
+    }
+   }
+  },
+  {
+   "id": "c2",
+   "t": "trap",
+   "name": "잠긴 아이 방",
+   "check": {
+    "label": "거울 장치의 각도를 맞춘다",
+    "stat": "지시",
+    "target": 7,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "oo": 1,
+      "memo": "지시가 엇갈렸다"
+     },
+     "cost": {
+      "oc": 1,
+      "memo": "지시를 다시 내렸다"
+     }
+    }
+   }
+  },
+  {
+   "id": "safe",
+   "t": "safe",
+   "name": "다락 아래 골방",
+   "rest": "short",
+   "check": {
+    "label": "무너지는 계단을 함께 건넌다",
+    "stat": "통솔",
+    "target": 9,
+    "hint": "type:에스퍼",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "st": "Confusion",
+      "cnt": 3,
+      "memo": "대열이 무너졌다"
+     },
+     "cost": {
+      "st": "Confusion",
+      "cnt": 2,
+      "memo": "정신이 없다"
+     }
+    }
+   }
+  },
+  {
+   "id": "boss",
+   "t": "boss",
+   "name": "다락",
+   "enc": {
+    "mix": [
+     {
+      "db": "w297"
+     },
+     {
+      "db": "w153"
+     },
+     {
+      "db": "w017"
+     },
+     {
+      "db": "w137"
+     }
+    ],
+    "boss": true,
+    "bossAt": 0,
+    "raid": 3,
+    "n": 4,
+    "lvAdd": 5
+   }
+  },
+  {
+   "id": "g1a1",
+   "t": "battle",
+   "name": "삐걱이는 계단",
+   "enc": {
+    "mix": [
+     {
+      "db": "w278"
+     },
+     {
+      "db": "w229"
+     }
+    ],
+    "lvAdd": 5
+   },
+   "alt": "g1"
+  },
+  {
+   "id": "tr",
+   "t": "treasure",
+   "side": 1,
+   "name": "먼지 쌓인 금고",
+   "clue": {
+    "t": "주인의 흔적",
+    "d": "깊은 곳의 주인 — 「악 · 드래곤」 기운이 서려 있다.\n「페어리」 · 「얼음」 · 「격투」 쪽을 꺼리는 흔적이 남아 있다.\n「바크아웃」의 자국이 벽에 새겨져 있다.",
+    "auto": 1
+   },
+   "from": "c2"
+  },
+  {
+   "id": "s1",
+   "t": "battle",
+   "side": 1,
+   "name": "막힌 굴뚝",
+   "memo": "곁방 · 기습 — 들어오면 야생 1~2체가 덮친다(웹툴 「기습」 — 플레이어에게 안 보임). 이기면 숨은 물건 하나",
+   "ambush": 1,
+   "from": "b1"
+  },
+  {
+   "id": "s2",
+   "t": "room",
+   "side": 1,
+   "name": "깨진 온실",
+   "memo": "곁방 · 흔적 — 보스나 다음 방에 대한 단서 하나(GM 이 채운다)",
+   "from": "b1"
+  }
+ ],
+ "branches": [
+  {
+   "id": "g1",
+   "from": "c1",
+   "to": "safe",
+   "main": [
+    "c2"
+   ],
+   "alt": [
+    "g1a1"
+   ]
+  }
+ ],
+ "map": {
+  "grid": {
+   "cols": 6,
+   "rows": 4,
+   "x0": 95,
+   "dx": 162,
+   "y0": 85,
+   "dy": 170
+  },
+  "shape": "구불길",
+  "turns": 4,
+  "cells": {
+   "entry": [
+    2,
+    1
+   ],
+   "b1": [
+    3,
+    1
+   ],
+   "c1": [
+    3,
+    2
+   ],
+   "c2": [
+    2,
+    2
+   ],
+   "safe": [
+    2,
+    3
+   ],
+   "boss": [
+    1,
+    3
+   ],
+   "g1a1": [
+    3,
+    3
+   ],
+   "tr": [
+    1,
+    2
+   ],
+   "s1": [
+    3,
+    0
+   ],
+   "s2": [
+    4,
+    1
+   ]
+  },
+  "links": {
+   "b1~entry": 1,
+   "b1~c1": 1,
+   "c1~c2": 1,
+   "c2~safe": 1,
+   "boss~safe": 1,
+   "c1~g1a1": 1,
+   "g1a1~safe": 1,
+   "c2~tr": 1,
+   "b1~s1": 1,
+   "b1~s2": 1
+  }
+ },
+ "path": [
+  "entry",
+  "b1",
+  "c1",
+  "c2",
+  "safe",
+  "boss"
+ ],
+ "theme": "폐가",
+ "owner": "삼삼드래",
+ "rules": {
+  "restV": 2,
+  "alBattle": 5,
+  "al30": 5,
+  "al70": 10,
+  "restShort": "all",
+  "restPO": 1,
+  "restPC": 1,
+  "restBreath": "one",
+  "restBC": 1
+ },
+ "note": "자동 생성 · 보통 · 씨앗 17843 · 테마 폐가. 사전 배틀 1 · 체크 4 · 보스방 4체 · 레이드 배틀 : 3 · 지도 갈림길 1 · 구불길 + 곁방 3 · 야생 Lv +5."
+}

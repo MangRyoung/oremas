@@ -1,7 +1,7 @@
 {
  "id": "cover",
  "name": "커버 정책",
- "dungeon": "factory",
+ "dungeon": "auto_normal_2004",
  "party": [
   "카이",
   "미오",

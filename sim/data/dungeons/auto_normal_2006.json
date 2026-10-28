@@ -1,0 +1,288 @@
+{
+ "id": "auto_normal_2006",
+ "name": "잊힌 성채 (보통)",
+ "wn": 2,
+ "private": true,
+ "gen": {
+  "tier": "normal",
+  "knobs": {
+   "battles": 1,
+   "foes": 2,
+   "lv": 5,
+   "bossLv": 5,
+   "rest": "short",
+   "checks": 3,
+   "tgt": "high",
+   "pen": "alert",
+   "hintTyped": 1,
+   "alCost": 10,
+   "alFail": 20
+  },
+  "seed": 2006,
+  "boss": "메타그로스",
+  "v": 1,
+  "auto": true,
+  "tough": "hard",
+  "shape": "꺾인길",
+  "theme": "유적",
+  "rules": {
+   "restV": 2,
+   "alBattle": 5,
+   "al30": 5,
+   "al70": 10,
+   "restShort": "all",
+   "restPO": 1,
+   "restPC": 1,
+   "restBreath": "one",
+   "restBC": 1
+  },
+  "source": "db",
+  "grades": {
+   "wild": [
+    "C"
+   ],
+   "boss": [
+    "A"
+   ]
+  },
+  "verify": {
+   "wr": 0.72,
+   "target": 0.6,
+   "band": 0.15,
+   "tries": 1,
+   "ok": true
+  }
+ },
+ "rooms": [
+  {
+   "id": "entry",
+   "t": "entry",
+   "name": "모래 계단",
+   "check": {
+    "label": "봉인을 푼다",
+    "stat": "능력",
+    "target": 9,
+    "hint": "type:에스퍼",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "dmg": "1/3",
+      "memo": "크게 휘말렸다"
+     },
+     "cost": {
+      "al": 10,
+      "memo": "소리를 냈다"
+     }
+    }
+   }
+  },
+  {
+   "id": "b1",
+   "t": "battle",
+   "name": "무너진 서고",
+   "enc": {
+    "mix": [
+     {
+      "db": "w228"
+     },
+     {
+      "db": "w270"
+     }
+    ],
+    "lvAdd": 5
+   }
+  },
+  {
+   "id": "c1",
+   "t": "puzzle",
+   "name": "봉인의 문",
+   "check": {
+    "label": "유물의 진위를 가린다",
+    "stat": "육성",
+    "target": 11,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "dmg": "1/4",
+      "memo": "야생에게 물렸다"
+     },
+     "cost": {
+      "al": 10,
+      "memo": "흔적을 남겼다"
+     }
+    }
+   }
+  },
+  {
+   "id": "safe",
+   "t": "safe",
+   "name": "순례자의 방",
+   "rest": "short",
+   "check": {
+    "label": "움직이는 바닥을 함께 건넌다",
+    "stat": "통솔",
+    "target": 11,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "st": "Confusion",
+      "cnt": 3,
+      "memo": "대열이 무너졌다"
+     },
+     "cost": {
+      "oc": 1,
+      "memo": "숨이 찼다"
+     }
+    }
+   }
+  },
+  {
+   "id": "boss",
+   "t": "boss",
+   "name": "금서고",
+   "enc": {
+    "mix": [
+     {
+      "db": "w294"
+     },
+     {
+      "db": "w053"
+     },
+     {
+      "db": "w248"
+     },
+     {
+      "db": "w249"
+     }
+    ],
+    "boss": true,
+    "bossAt": 0,
+    "raid": 3,
+    "n": 4,
+    "lvAdd": 5
+   }
+  },
+  {
+   "id": "g1a1",
+   "t": "puzzle",
+   "name": "움직이는 바닥",
+   "check": {
+    "label": "바닥 장치의 순서를 읽는다",
+    "stat": "지시",
+    "target": 9,
+    "hint": "type:고스트",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "oo": 1,
+      "memo": "지시가 엇갈렸다"
+     },
+     "cost": {
+      "oc": 1,
+      "memo": "지시를 다시 내렸다"
+     }
+    }
+   },
+   "alt": "g1"
+  },
+  {
+   "id": "tr",
+   "t": "treasure",
+   "side": 1,
+   "name": "봉헌함",
+   "clue": {
+    "t": "주인의 흔적",
+    "d": "깊은 곳의 주인 — 「강철 · 에스퍼」 기운이 서려 있다.\n「불꽃」 · 「땅」 · 「고스트」 쪽을 꺼리는 흔적이 남아 있다.\n「요가포즈」의 자국이 벽에 새겨져 있다.",
+    "auto": 1
+   },
+   "from": "b1"
+  }
+ ],
+ "branches": [
+  {
+   "id": "g1",
+   "from": "entry",
+   "to": "c1",
+   "main": [
+    "b1"
+   ],
+   "alt": [
+    "g1a1"
+   ]
+  }
+ ],
+ "map": {
+  "grid": {
+   "cols": 6,
+   "rows": 4,
+   "x0": 95,
+   "dx": 162,
+   "y0": 85,
+   "dy": 170
+  },
+  "shape": "꺾인길",
+  "turns": 2,
+  "cells": {
+   "entry": [
+    0,
+    1
+   ],
+   "b1": [
+    1,
+    1
+   ],
+   "c1": [
+    1,
+    2
+   ],
+   "safe": [
+    1,
+    3
+   ],
+   "boss": [
+    2,
+    3
+   ],
+   "g1a1": [
+    0,
+    2
+   ],
+   "tr": [
+    1,
+    0
+   ]
+  },
+  "links": {
+   "b1~entry": 1,
+   "b1~c1": 1,
+   "c1~safe": 1,
+   "boss~safe": 1,
+   "entry~g1a1": 1,
+   "c1~g1a1": 1,
+   "b1~tr": 1
+  }
+ },
+ "path": [
+  "entry",
+  "b1",
+  "c1",
+  "safe",
+  "boss"
+ ],
+ "theme": "유적",
+ "owner": "메타그로스",
+ "rules": {
+  "restV": 2,
+  "alBattle": 5,
+  "al30": 5,
+  "al70": 10,
+  "restShort": "all",
+  "restPO": 1,
+  "restPC": 1,
+  "restBreath": "one",
+  "restBC": 1
+ },
+ "note": "자동 생성 · 보통 · 씨앗 2006 · 테마 유적. 사전 배틀 1 · 체크 3 · 보스방 4체 · 레이드 배틀 : 3 · 지도 갈림길 1 · 꺾인길 + 곁방 1 · 야생 Lv +5 · 어려운 길(체크 목표 9 · 11)."
+}

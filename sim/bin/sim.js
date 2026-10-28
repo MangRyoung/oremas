@@ -6,7 +6,7 @@
    node bin/sim.js check                         스킬 체크 성공률 표 (룰북 열지도와 같은 식)
    node bin/sim.js battle --party 카이 --wild factory_boss [--n 200] [--log] [--snap 파일]
    node bin/sim.js run --scenario data/scenarios/base.json [--n 1000]      시나리오대로 던전을 N 판 돌려 records/ 에 기록
-   node bin/sim.js run --dungeon factory --party 카이,미오,레온 [--n 500] [--seed 1] [--adjust target=2,penScale=0.5] [--policy cover=never]
+   node bin/sim.js run --dungeon auto_normal_2004 --party 카이,미오,레온 [--n 500] [--seed 1] [--adjust target=2,penScale=0.5] [--policy cover=never]
    node bin/sim.js combos --pool 이름,이름,… --size 3 --dungeons a,b --n 100 [--id x --name 이름]   조합 훑기
    node bin/sim.js gendb [--seed 27]                야생 DB 200체 (오리지널 150 생성 + 올드 50) → data/wild/db.json
    node bin/sim.js mon --step B --kind 쌍두 --types 물,독 --n 5   오리지널몬 한 줌 만들어 보기

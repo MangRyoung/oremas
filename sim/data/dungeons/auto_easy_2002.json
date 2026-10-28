@@ -1,0 +1,294 @@
+{
+ "id": "auto_easy_2002",
+ "name": "난파선 해안 (쉬움)",
+ "wn": 2,
+ "private": true,
+ "gen": {
+  "tier": "easy",
+  "knobs": {
+   "battles": 0,
+   "foes": 2,
+   "lv": 5,
+   "bossLv": 5,
+   "rest": "short",
+   "checks": 3,
+   "tgt": "high",
+   "pen": "alert",
+   "hintTyped": 1,
+   "alCost": 20,
+   "alFail": 45
+  },
+  "seed": 2002,
+  "boss": "둥근까마귀",
+  "v": 1,
+  "auto": true,
+  "tough": "full",
+  "shape": "꺾인길",
+  "theme": "바다",
+  "rules": {
+   "restV": 2,
+   "alBattle": 5,
+   "al30": 5,
+   "al70": 10,
+   "restShort": "all",
+   "restPO": 1,
+   "restPC": 1,
+   "restBreath": "one",
+   "restBC": 1
+  },
+  "source": "db",
+  "grades": {
+   "wild": [
+    "C"
+   ],
+   "boss": [
+    "B",
+    "A"
+   ]
+  },
+  "verify": {
+   "wr": 0.87,
+   "target": 0.8,
+   "band": 0.15,
+   "tries": 1,
+   "ok": true
+  }
+ },
+ "rooms": [
+  {
+   "id": "entry",
+   "t": "entry",
+   "name": "모래톱",
+   "check": {
+    "label": "소용돌이를 거슬러 헤엄친다",
+    "stat": "능력",
+    "target": 11,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 45,
+      "dmg": "1/8",
+      "st": "Paralysis",
+      "memo": "반동에 몸이 굳었다"
+     },
+     "cost": {
+      "dmg": "1/8",
+      "memo": "무리했다"
+     }
+    }
+   }
+  },
+  {
+   "id": "c1",
+   "t": "room",
+   "name": "녹슨 선실",
+   "check": {
+    "label": "표류물의 흐름을 읽는다",
+    "stat": "지시",
+    "target": 9,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 45,
+      "oo": 1,
+      "memo": "지시가 엇갈렸다"
+     },
+     "cost": {
+      "oc": 1,
+      "memo": "지시를 다시 내렸다"
+     }
+    }
+   }
+  },
+  {
+   "id": "safe",
+   "t": "safe",
+   "name": "마른 동굴",
+   "rest": "short",
+   "check": {
+    "label": "밀물 전에 함께 건넌다",
+    "stat": "통솔",
+    "target": 9,
+    "hint": "type:비행",
+    "pen": {
+     "fail": {
+      "al": 45,
+      "st": "Confusion",
+      "cnt": 3,
+      "memo": "대열이 무너졌다"
+     },
+     "cost": {
+      "st": "Confusion",
+      "cnt": 2,
+      "memo": "정신이 없다"
+     }
+    }
+   }
+  },
+  {
+   "id": "boss",
+   "t": "boss",
+   "name": "바다 동굴 끝",
+   "enc": {
+    "mix": [
+     {
+      "db": "w201"
+     },
+     {
+      "db": "w136"
+     },
+     {
+      "db": "w110"
+     },
+     {
+      "db": "w094"
+     }
+    ],
+    "boss": true,
+    "bossAt": 0,
+    "raid": 2,
+    "n": 4,
+    "lvAdd": 5
+   }
+  },
+  {
+   "id": "g1a1",
+   "t": "battle",
+   "name": "해초 숲",
+   "enc": {
+    "mix": [
+     {
+      "db": "w062"
+     },
+     {
+      "db": "w228"
+     }
+    ],
+    "lvAdd": 5
+   },
+   "alt": "g1"
+  },
+  {
+   "id": "tr",
+   "t": "treasure",
+   "side": 1,
+   "name": "떠밀려 온 상자",
+   "clue": {
+    "t": "주인의 흔적",
+    "d": "깊은 곳의 주인 — 「노말 · 비행」 기운이 서려 있다.\n「전기」 · 「얼음」 · 「바위」 쪽을 꺼리는 흔적이 남아 있다.\n「에어슬래시」의 자국이 벽에 새겨져 있다.",
+    "auto": 1
+   },
+   "from": "c1"
+  },
+  {
+   "id": "s1",
+   "t": "puzzle",
+   "side": 1,
+   "name": "갈매기 둥지",
+   "memo": "곁방 · 선택 체크 — 해도 되고 안 해도 되는 체크 — 성공하면 경계도 −10 또는 단서, 실패하면 경계도가 오른다",
+   "check": {
+    "label": "풍랑 속에서 대열을 지킨다",
+    "stat": "통솔",
+    "target": 9,
+    "hint": "any",
+    "optional": 1,
+    "pen": {
+     "fail": {
+      "al": 20,
+      "memo": "헛걸음 — 기척을 남겼다"
+     },
+     "cost": {
+      "dmg": "1/8",
+      "memo": "무리했다"
+     }
+    },
+    "reward": "성공하면 경계도 −10 또는 단서 하나"
+   },
+   "from": "safe"
+  }
+ ],
+ "branches": [
+  {
+   "id": "g1",
+   "from": "entry",
+   "to": "safe",
+   "main": [
+    "c1"
+   ],
+   "alt": [
+    "g1a1"
+   ]
+  }
+ ],
+ "map": {
+  "grid": {
+   "cols": 6,
+   "rows": 4,
+   "x0": 95,
+   "dx": 162,
+   "y0": 85,
+   "dy": 170
+  },
+  "shape": "꺾인길",
+  "turns": 1,
+  "cells": {
+   "entry": [
+    3,
+    3
+   ],
+   "c1": [
+    2,
+    3
+   ],
+   "safe": [
+    2,
+    2
+   ],
+   "boss": [
+    2,
+    1
+   ],
+   "g1a1": [
+    3,
+    2
+   ],
+   "tr": [
+    1,
+    3
+   ],
+   "s1": [
+    1,
+    2
+   ]
+  },
+  "links": {
+   "c1~entry": 1,
+   "c1~safe": 1,
+   "boss~safe": 1,
+   "entry~g1a1": 1,
+   "g1a1~safe": 1,
+   "c1~tr": 1,
+   "s1~safe": 1
+  }
+ },
+ "path": [
+  "entry",
+  "c1",
+  "safe",
+  "boss"
+ ],
+ "theme": "바다",
+ "owner": "둥근까마귀",
+ "rules": {
+  "restV": 2,
+  "alBattle": 5,
+  "al30": 5,
+  "al70": 10,
+  "restShort": "all",
+  "restPO": 1,
+  "restPC": 1,
+  "restBreath": "one",
+  "restBC": 1
+ },
+ "note": "자동 생성 · 쉬움 · 씨앗 2002 · 테마 바다. 사전 배틀 0 · 체크 3 · 보스방 4체 · 레이드 배틀 : 2 · 지도 갈림길 1 · 꺾인길 + 곁방 2 · 야생 Lv +5 · 빡센 길(체크 목표 9 · 11, 경계도 실패 +45 · 대가 +20)."
+}

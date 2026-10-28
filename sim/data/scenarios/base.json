@@ -2,9 +2,9 @@
  "id": "base",
  "name": "기본",
  "dungeon": [
-  "factory",
-  "cave",
-  "ruin"
+  "auto_easy_2001",
+  "auto_normal_2004",
+  "auto_hard_2009"
  ],
  "party": [
   "카이",

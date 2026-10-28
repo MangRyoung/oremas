@@ -1,7 +1,7 @@
 {
  "id": "wild",
  "name": "야생 세기",
- "dungeon": "factory",
+ "dungeon": "auto_normal_2004",
  "party": [
   "카이",
   "미오",

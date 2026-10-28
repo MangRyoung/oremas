@@ -1,0 +1,425 @@
+{
+ "id": "auto_hard_17846",
+ "name": "재의 고원 (어려움)",
+ "wn": 2,
+ "private": true,
+ "gen": {
+  "tier": "hard",
+  "knobs": {
+   "battles": 1,
+   "foes": 2,
+   "lv": 5,
+   "bossLv": 5,
+   "rest": "short",
+   "checks": 5,
+   "tgt": "mix",
+   "pen": "alert",
+   "hintTyped": 1,
+   "alCost": 10,
+   "alFail": 20
+  },
+  "seed": 17846,
+  "boss": "잿불나방",
+  "v": 1,
+  "auto": true,
+  "tough": "",
+  "shape": "곧은길",
+  "theme": "화산",
+  "rules": {
+   "restV": 2,
+   "alBattle": 5,
+   "al30": 5,
+   "al70": 10,
+   "restShort": "all",
+   "restPO": 1,
+   "restPC": 1,
+   "restBreath": "one",
+   "restBC": 1
+  },
+  "source": "db",
+  "grades": {
+   "wild": [
+    "C"
+   ],
+   "boss": [
+    "A"
+   ]
+  },
+  "verify": {
+   "wr": 0.23,
+   "target": 0.3,
+   "band": 0.15,
+   "tries": 3,
+   "ok": true
+  }
+ },
+ "rooms": [
+  {
+   "id": "entry",
+   "t": "entry",
+   "name": "갈라진 땅",
+   "check": {
+    "label": "징검다리를 함께 건넌다",
+    "stat": "통솔",
+    "target": 7,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "st": "Confusion",
+      "cnt": 3,
+      "memo": "대열이 무너졌다",
+      "oc": 1
+     },
+     "cost": {
+      "st": "Confusion",
+      "cnt": 2,
+      "memo": "정신이 없다"
+     }
+    }
+   }
+  },
+  {
+   "id": "b1",
+   "t": "battle",
+   "name": "유황 웅덩이",
+   "enc": {
+    "mix": [
+     {
+      "db": "w026"
+     },
+     {
+      "db": "w005"
+     }
+    ],
+    "lvAdd": 5
+   }
+  },
+  {
+   "id": "c1",
+   "t": "room",
+   "name": "유독 가스 지대",
+   "check": {
+    "label": "달아오른 바위를 밀어낸다",
+    "stat": "능력",
+    "target": 9,
+    "hint": "type:땅",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "dmg": "1/3",
+      "memo": "크게 휘말렸다",
+      "oc": 1
+     },
+     "cost": {
+      "dmg": "1/6",
+      "memo": "무리했다"
+     }
+    },
+    "mode": "inou"
+   }
+  },
+  {
+   "id": "c2",
+   "t": "puzzle",
+   "name": "용암 징검다리",
+   "check": {
+    "label": "가스가 덜한 길을 고른다",
+    "stat": "지시",
+    "target": 7,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "oc": 3,
+      "memo": "우왕좌왕했다"
+     },
+     "cost": {
+      "al": 10,
+      "memo": "시간을 끌었다"
+     }
+    }
+   }
+  },
+  {
+   "id": "c3",
+   "t": "trap",
+   "name": "갈라진 동굴",
+   "check": {
+    "label": "화상 입은 포켓몬을 돌본다",
+    "stat": "육성",
+    "target": 9,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "st": "Poison",
+      "memo": "독이 있는 것에 닿았다",
+      "oc": 1
+     },
+     "cost": {
+      "al": 10,
+      "memo": "흔적을 남겼다"
+     }
+    }
+   }
+  },
+  {
+   "id": "safe",
+   "t": "safe",
+   "name": "식은 용암 굴",
+   "rest": "short",
+   "check": {
+    "label": "열기 속에서 대열을 지킨다",
+    "stat": "통솔",
+    "target": 7,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "st": "Confusion",
+      "cnt": 3,
+      "memo": "대열이 무너졌다",
+      "oc": 1
+     },
+     "cost": {
+      "oc": 1,
+      "memo": "숨이 찼다"
+     }
+    }
+   }
+  },
+  {
+   "id": "boss",
+   "t": "boss",
+   "name": "용암 호수",
+   "enc": {
+    "mix": [
+     {
+      "db": "w223"
+     },
+     {
+      "db": "w007"
+     },
+     {
+      "db": "w079"
+     },
+     {
+      "db": "w136"
+     },
+     {
+      "db": "w002"
+     },
+     {
+      "db": "w031"
+     }
+    ],
+    "boss": true,
+    "bossAt": 0,
+    "raid": 3,
+    "n": 6,
+    "lvAdd": 5
+   }
+  },
+  {
+   "id": "g1a1",
+   "t": "trap",
+   "name": "무너지는 비탈",
+   "check": {
+    "label": "징검다리를 함께 건넌다",
+    "stat": "통솔",
+    "target": 9,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "oc": 3,
+      "memo": "모두 지쳤다"
+     },
+     "cost": {
+      "oc": 1,
+      "memo": "숨이 찼다"
+     }
+    }
+   },
+   "alt": "g1"
+  },
+  {
+   "id": "g1a2",
+   "t": "battle",
+   "name": "열기 굴",
+   "enc": {
+    "mix": [
+     {
+      "db": "w005"
+     },
+     {
+      "db": "w031"
+     }
+    ],
+    "lvAdd": 5
+   },
+   "alt": "g1"
+  },
+  {
+   "id": "tr",
+   "t": "treasure",
+   "side": 1,
+   "name": "굳은 화석층",
+   "clue": {
+    "t": "주인의 흔적",
+    "d": "깊은 곳의 주인 — 「불꽃」 기운이 서려 있다.\n「물」 · 「땅」 · 「바위」 쪽을 꺼리는 흔적이 남아 있다.\n「화염방사」의 자국이 벽에 새겨져 있다.",
+    "auto": 1
+   },
+   "from": "c3"
+  },
+  {
+   "id": "s1",
+   "t": "room",
+   "side": 1,
+   "name": "검은 모래톱",
+   "memo": "곁방 · 숨 고르기 — 한 번만 「숨돌리기」(가장 다친 1체 HP 1/4 · 6령 1). 경계도 30 이상이면 쉴 수 없다",
+   "from": "b1"
+  },
+  {
+   "id": "s2",
+   "t": "puzzle",
+   "side": 1,
+   "name": "유황 틈",
+   "memo": "곁방 · 선택 체크 — 해도 되고 안 해도 되는 체크 — 성공하면 경계도 −10 또는 단서, 실패하면 경계도가 오른다",
+   "check": {
+    "label": "먹을 수 있는 열매를 가려낸다",
+    "stat": "육성",
+    "target": 9,
+    "hint": "any",
+    "optional": 1,
+    "pen": {
+     "fail": {
+      "al": 10,
+      "memo": "헛걸음 — 기척을 남겼다"
+     },
+     "cost": {
+      "dmg": "1/8",
+      "memo": "무리했다"
+     }
+    },
+    "reward": "성공하면 경계도 −10 또는 단서 하나"
+   },
+   "from": "c1"
+  }
+ ],
+ "branches": [
+  {
+   "id": "g1",
+   "from": "entry",
+   "to": "c2",
+   "main": [
+    "b1",
+    "c1"
+   ],
+   "alt": [
+    "g1a1",
+    "g1a2"
+   ]
+  }
+ ],
+ "map": {
+  "grid": {
+   "cols": 6,
+   "rows": 4,
+   "x0": 95,
+   "dx": 162,
+   "y0": 85,
+   "dy": 170
+  },
+  "shape": "곧은길",
+  "turns": 2,
+  "cells": {
+   "entry": [
+    3,
+    2
+   ],
+   "b1": [
+    3,
+    1
+   ],
+   "c1": [
+    3,
+    0
+   ],
+   "c2": [
+    2,
+    0
+   ],
+   "c3": [
+    1,
+    0
+   ],
+   "safe": [
+    0,
+    0
+   ],
+   "boss": [
+    0,
+    1
+   ],
+   "g1a1": [
+    2,
+    2
+   ],
+   "g1a2": [
+    2,
+    1
+   ],
+   "tr": [
+    1,
+    1
+   ],
+   "s1": [
+    4,
+    1
+   ],
+   "s2": [
+    4,
+    0
+   ]
+  },
+  "links": {
+   "b1~entry": 1,
+   "b1~c1": 1,
+   "c1~c2": 1,
+   "c2~c3": 1,
+   "c3~safe": 1,
+   "boss~safe": 1,
+   "entry~g1a1": 1,
+   "g1a1~g1a2": 1,
+   "c2~g1a2": 1,
+   "c3~tr": 1,
+   "b1~s1": 1,
+   "c1~s2": 1
+  }
+ },
+ "path": [
+  "entry",
+  "b1",
+  "c1",
+  "c2",
+  "c3",
+  "safe",
+  "boss"
+ ],
+ "theme": "화산",
+ "owner": "잿불나방",
+ "rules": {
+  "restV": 2,
+  "alBattle": 5,
+  "al30": 5,
+  "al70": 10,
+  "restShort": "all",
+  "restPO": 1,
+  "restPC": 1,
+  "restBreath": "one",
+  "restBC": 1
+ },
+ "note": "자동 생성 · 어려움 · 씨앗 17846 · 테마 화산. 사전 배틀 1 · 체크 5 · 보스방 6체 · 레이드 배틀 : 3 · 지도 갈림길 1 · 곧은길 + 곁방 3 · 야생 Lv +5."
+}

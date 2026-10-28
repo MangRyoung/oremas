@@ -1,7 +1,7 @@
 {
  "id": "target",
  "name": "목표치",
- "dungeon": "factory",
+ "dungeon": "auto_normal_2004",
  "party": [
   "카이",
   "미오",

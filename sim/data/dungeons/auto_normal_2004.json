@@ -1,0 +1,395 @@
+{
+ "id": "auto_normal_2004",
+ "name": "메아리 굴 (보통)",
+ "wn": 2,
+ "private": true,
+ "gen": {
+  "tier": "normal",
+  "knobs": {
+   "battles": 1,
+   "foes": 2,
+   "lv": 5,
+   "bossLv": 5,
+   "rest": "short",
+   "checks": 5,
+   "tgt": "mix",
+   "pen": "alert",
+   "hintTyped": 1,
+   "alCost": 10,
+   "alFail": 20
+  },
+  "seed": 2004,
+  "boss": "한파까마귀",
+  "v": 1,
+  "auto": true,
+  "tough": "",
+  "shape": "구불길",
+  "theme": "동굴",
+  "rules": {
+   "restV": 2,
+   "alBattle": 5,
+   "al30": 5,
+   "al70": 10,
+   "restShort": "all",
+   "restPO": 1,
+   "restPC": 1,
+   "restBreath": "one",
+   "restBC": 1
+  },
+  "source": "db",
+  "grades": {
+   "wild": [
+    "C"
+   ],
+   "boss": [
+    "A"
+   ]
+  },
+  "verify": {
+   "wr": 0.68,
+   "target": 0.6,
+   "band": 0.15,
+   "tries": 1,
+   "ok": true
+  }
+ },
+ "rooms": [
+  {
+   "id": "entry",
+   "t": "entry",
+   "name": "바위틈",
+   "check": {
+    "label": "어둠 속 기척을 읽는다",
+    "stat": "능력",
+    "target": 7,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "dmg": "1/4",
+      "st": "Paralysis",
+      "memo": "반동에 몸이 굳었다"
+     },
+     "cost": {
+      "dmg": "1/8",
+      "memo": "무리했다"
+     }
+    }
+   }
+  },
+  {
+   "id": "b1",
+   "t": "battle",
+   "name": "박쥐 굴",
+   "enc": {
+    "mix": [
+     {
+      "db": "w154"
+     },
+     {
+      "db": "w097"
+     }
+    ],
+    "lvAdd": 5
+   }
+  },
+  {
+   "id": "c1",
+   "t": "puzzle",
+   "name": "낙석 구간",
+   "check": {
+    "label": "야생의 발자국을 쫓는다",
+    "stat": "육성",
+    "target": 9,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "st": "Poison",
+      "memo": "독이 있는 것에 닿았다"
+     },
+     "cost": {
+      "al": 10,
+      "memo": "흔적을 남겼다"
+     }
+    }
+   }
+  },
+  {
+   "id": "c2",
+   "t": "trap",
+   "name": "지하 물길",
+   "check": {
+    "label": "무너질 바위를 읽는다",
+    "stat": "지시",
+    "target": 7,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "oo": 1,
+      "memo": "지시가 엇갈렸다"
+     },
+     "cost": {
+      "oc": 1,
+      "memo": "지시를 다시 내렸다"
+     }
+    }
+   }
+  },
+  {
+   "id": "c3",
+   "t": "room",
+   "name": "좁은 틈",
+   "check": {
+    "label": "겁먹은 포켓몬을 진정시킨다",
+    "stat": "통솔",
+    "target": 9,
+    "hint": "type:바위",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "oc": 2,
+      "memo": "모두 지쳤다"
+     },
+     "cost": {
+      "oc": 1,
+      "memo": "숨이 찼다"
+     }
+    }
+   }
+  },
+  {
+   "id": "safe",
+   "t": "safe",
+   "name": "버려진 광부 쉼터",
+   "rest": "short",
+   "check": {
+    "label": "낙석을 막아 선다",
+    "stat": "능력",
+    "target": 7,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "dmg": "1/3",
+      "memo": "크게 휘말렸다"
+     },
+     "cost": {
+      "dmg": "1/8",
+      "memo": "무리했다"
+     }
+    },
+    "mode": "inou"
+   }
+  },
+  {
+   "id": "boss",
+   "t": "boss",
+   "name": "가장 깊은 굴",
+   "enc": {
+    "mix": [
+     {
+      "db": "w218"
+     },
+     {
+      "db": "w058"
+     },
+     {
+      "db": "w146"
+     },
+     {
+      "db": "w127"
+     }
+    ],
+    "boss": true,
+    "bossAt": 0,
+    "raid": 3,
+    "n": 4,
+    "lvAdd": 5
+   }
+  },
+  {
+   "id": "g1a1",
+   "t": "trap",
+   "name": "메아리 방",
+   "check": {
+    "label": "다친 포켓몬을 응급 처치한다",
+    "stat": "육성",
+    "target": 9,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "dmg": "1/4",
+      "memo": "야생에게 물렸다"
+     },
+     "cost": {
+      "dmg": "1/8",
+      "memo": "긁혔다"
+     }
+    }
+   },
+   "alt": "g1"
+  },
+  {
+   "id": "g1a2",
+   "t": "battle",
+   "name": "수정 회랑",
+   "enc": {
+    "mix": [
+     {
+      "db": "w141"
+     },
+     {
+      "db": "w058"
+     }
+    ],
+    "lvAdd": 5
+   },
+   "alt": "g1"
+  },
+  {
+   "id": "tr",
+   "t": "treasure",
+   "side": 1,
+   "name": "광석 더미",
+   "clue": {
+    "t": "주인의 흔적",
+    "d": "깊은 곳의 주인 — 「고스트 · 얼음」 기운이 서려 있다.\n「불꽃」 · 「바위」 · 「고스트」 쪽을 꺼리는 흔적이 남아 있다.\n「설경」의 자국이 벽에 새겨져 있다.",
+    "auto": 1
+   },
+   "from": "c3"
+  },
+  {
+   "id": "s1",
+   "t": "room",
+   "side": 1,
+   "name": "광부 창고",
+   "memo": "곁방 · 숨 고르기 — 한 번만 「숨돌리기」(가장 다친 1체 HP 1/4 · 6령 1). 경계도 30 이상이면 쉴 수 없다",
+   "from": "c1"
+  },
+  {
+   "id": "s2",
+   "t": "room",
+   "side": 1,
+   "name": "좁은 굴",
+   "memo": "곁방 · 숨 고르기 — 한 번만 「숨돌리기」(가장 다친 1체 HP 1/4 · 6령 1). 경계도 30 이상이면 쉴 수 없다",
+   "from": "b1"
+  }
+ ],
+ "branches": [
+  {
+   "id": "g1",
+   "from": "entry",
+   "to": "c2",
+   "main": [
+    "b1",
+    "c1"
+   ],
+   "alt": [
+    "g1a1",
+    "g1a2"
+   ]
+  }
+ ],
+ "map": {
+  "grid": {
+   "cols": 6,
+   "rows": 4,
+   "x0": 95,
+   "dx": 162,
+   "y0": 85,
+   "dy": 170
+  },
+  "shape": "구불길",
+  "turns": 5,
+  "cells": {
+   "entry": [
+    1,
+    1
+   ],
+   "b1": [
+    1,
+    2
+   ],
+   "c1": [
+    2,
+    2
+   ],
+   "c2": [
+    2,
+    1
+   ],
+   "c3": [
+    3,
+    1
+   ],
+   "safe": [
+    3,
+    2
+   ],
+   "boss": [
+    4,
+    2
+   ],
+   "g1a1": [
+    1,
+    0
+   ],
+   "g1a2": [
+    2,
+    0
+   ],
+   "tr": [
+    3,
+    0
+   ],
+   "s1": [
+    2,
+    3
+   ],
+   "s2": [
+    1,
+    3
+   ]
+  },
+  "links": {
+   "b1~entry": 1,
+   "b1~c1": 1,
+   "c1~c2": 1,
+   "c2~c3": 1,
+   "c3~safe": 1,
+   "boss~safe": 1,
+   "entry~g1a1": 1,
+   "g1a1~g1a2": 1,
+   "c2~g1a2": 1,
+   "c3~tr": 1,
+   "c1~s1": 1,
+   "b1~s2": 1
+  }
+ },
+ "path": [
+  "entry",
+  "b1",
+  "c1",
+  "c2",
+  "c3",
+  "safe",
+  "boss"
+ ],
+ "theme": "동굴",
+ "owner": "한파까마귀",
+ "rules": {
+  "restV": 2,
+  "alBattle": 5,
+  "al30": 5,
+  "al70": 10,
+  "restShort": "all",
+  "restPO": 1,
+  "restPC": 1,
+  "restBreath": "one",
+  "restBC": 1
+ },
+ "note": "자동 생성 · 보통 · 씨앗 2004 · 테마 동굴. 사전 배틀 1 · 체크 5 · 보스방 4체 · 레이드 배틀 : 3 · 지도 갈림길 1 · 구불길 + 곁방 3 · 야생 Lv +5."
+}
