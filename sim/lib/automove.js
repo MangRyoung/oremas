@@ -54,7 +54,7 @@ const TYPES=['노말','불꽃','물','전기','풀','얼음','격투','독','땅
 const PLAN={attacker:[[3,1],[3,1],[3,1],[3,1],[3,1],[3,1],[3,1],[2,2],[2,2],[2,2]],support:[[2,2],[2,2],[2,2],[2,2],[2,2],[2,2],[1,3],[1,3],[1,3],[1,3]],balance:[[2,2],[2,2],[2,2],[2,2],[2,2],[2,2],[3,1],[3,1],[3,1],[3,1]]};
 function fill(W,m){const real=(m.moves||[]).filter(x=>x&&x.name&&x.name!=='발버둥');if(real.length)return false;
  const S=W.OM_STATS,st=m.stats||[];const cat=(+st[1]||0)>=(+st[3]||0)?'물리':'특수';const own=(m.typesKo||[]).filter(t=>t&&t!=='-');const P=pool(W);const MV=W.OM_DB.moves||{};
- let h=0;for(const ch of String(m.name||''))h=(h*31+ch.charCodeAt(0))>>>0;const H=(k)=>((h>>>(k%24))^(h*(k+1)))>>>0;
+ let h=0;for(const ch of String(m.name||'')+(m.moveSalt?'#'+m.moveSalt:''))h=(h*31+ch.charCodeAt(0))>>>0;/* moveSalt: 같은 몬의 다른 기술 구성 (10-28 1:1 재검사에서 약함 · 과강 고치기) */const H=(k)=>((h>>>(k%24))^(h*(k+1)))>>>0;
  /* 역할 */const kind=m.kindHint||'';const bulky=Math.min(+st[2]||0,+st[4]||0)>=(+st[1]||0)*0.9&&Math.min(+st[2]||0,+st[4]||0)>=(+st[3]||0)*0.9;
  const group=/스위퍼|쌍두/.test(kind)?'attacker':/탱커|벽/.test(kind)?'support':kind==='밸런스'?'balance':bulky?'support':'attacker';const role=bulky&&group!=='attacker'?'bulk':cat==='물리'?'phys':'spec';
  const [nAtk,nSt]=PLAN[group][H(1)%10];const cat2=m.dualHint||/쌍두/.test(kind)?(cat==='물리'?'특수':'물리'):cat;
