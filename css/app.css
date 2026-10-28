@@ -4693,3 +4693,19 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .dgpt-pp span{white-space:nowrap}.dgpt-pp b{font-family:var(--mono,monospace);font-size:12px;color:var(--dg-acc,#f0c84a)}.dgpt-pp b.z{color:#ff6b6b}.dgpt-pp em{margin-left:auto;font-style:normal;opacity:.7}
 #dgPl .pp{min-width:min(520px,82vw)}
 @media (min-width:700px){#dgPl .pp-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:4px}#dgPl .pp-sec.m{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:0 14px}#dgPl .pp-sec.m>.pp-h{grid-column:1/-1}#dgPl .pp-sec.m .pp-tr+.pp-tr{margin-top:0;padding-top:0;border-top:0}}
+/* 10-28 망령: 배율 개편 — 곱해진 것 목록 · 임시(턴 종료까지) */
+.dxrk{position:relative}.dxrk .dxtmp{position:absolute;top:2px;right:3px;font-style:normal;font-size:9px;padding:0 4px;border-radius:6px;background:#2a6fb0;color:#fff;line-height:14px}
+.dxrkb{flex-direction:column;align-items:stretch}
+.dxrkh{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.dxrkh .dxrkt{margin-right:auto}
+.dxtg{display:inline-flex;align-items:center;gap:4px;font-size:12px;padding:3px 9px;border-radius:999px;border:1px solid var(--line,#555);cursor:pointer;user-select:none}
+.dxtg.on{background:#2a6fb0;border-color:#4fa3ff;color:#fff}
+.dxrkl{display:flex;flex-wrap:wrap;align-items:center;gap:5px 8px}.dxrkl>.small.dim:first-child{min-width:36px}
+.dxmt{font-size:17px}
+.dxmfs{display:flex;flex-wrap:wrap;gap:4px;flex:1;min-width:0}
+.dxmf{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:2px 4px 2px 8px;border-radius:7px;border:1px solid var(--line,#555);background:rgba(255,255,255,.04);max-width:100%}
+.dxmf b{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px}.dxmf i{font-style:normal;font-size:10px;color:#8fc7ff}
+.dxmf.tmp{border-color:#4fa3ff;background:rgba(79,163,255,.12)}.dxmf.hand b{color:var(--yel2,#e6c34a)}
+.dxmadd .n{width:72px}.dxmadd .n.dxmemo{width:110px}
+.btn.xs.tmp{border-color:#4fa3ff!important;color:#8fc7ff!important}
+.dxmset summary{cursor:pointer;padding:2px 0}.dxmset[open] .dxrkm{margin:4px 0}
+@media (max-width:520px){.dxmf b{max-width:110px}.dxmemo{width:90px}}

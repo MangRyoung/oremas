@@ -41,6 +41,10 @@ window.OM_ITEMRULE=(()=>{
    if((x=e.match(/「([^」]+)」 기술의 대미지를 강화\((\d+(?:\.\d+)?)배\)/)))r.atk={types:x[1].split('/').map(tEn),v:+x[2]};
    else if((x=e.match(/「단일기 : ([^」]+)」의 위력을 강화\((\d+(?:\.\d+)?)배\)/)))r.atk={types:[tEn(x[1])],v:+x[2],single:1};
    else if((x=e.match(/「(물리기|특수기)」의 대미지를 강화\((\d+(?:\.\d+)?)배\)/)))r.atk={cat:KO_CAT[x[1]],v:+x[2]};
+   else if((x=e.match(/「(공격|방어|특공|특방|스피드)\s*:\s*([A-Z]+)」\s*이하일 때 「([^」]+)」(?:을|를) 강화\((\d+(?:\.\d+)?)배\)/))){   /* 10-28 망령 (마제망토): 「특방 : B」 이하일 때 「특방」 강화 — 종족치 등급 조건 */
+    const ks=x[3].split('/').map(k=>KO_STAT[k.trim()]).filter(Boolean);const v=+x[4];r.gle={st:KO_STAT[x[1]],g:x[2]};
+    if(ks.includes('attack')&&ks.includes('specialattack'))r.atk={v};else if(ks.includes('attack'))r.atk={cat:'물리',v};else if(ks.includes('specialattack'))r.atk={cat:'특수',v};
+    if(ks.includes('defense')&&ks.includes('specialdefense'))r.guard={v:num(1/v)};else if(ks.includes('defense'))r.guard={cat:'물리',v:num(1/v)};else if(ks.includes('specialdefense'))r.guard={cat:'특수',v:num(1/v)}}
    else if(!/이하일 때|이상일 때/.test(e)&&((x=e.match(/「([^」]+)」(?:을|를) 강화\((\d+(?:\.\d+)?)배\)/))||(x=e.match(/「([^」]+)」(?:을|를) (\d+(?:\.\d+)?)배로 만든다/)))){
     const ks=x[1].split('/').map(k=>KO_STAT[k.trim()]).filter(Boolean);const v=+x[2];
     if(ks.includes('attack')&&ks.includes('specialattack'))r.atk={v};else if(ks.includes('attack'))r.atk={cat:'물리',v};else if(ks.includes('specialattack'))r.atk={cat:'특수',v};
@@ -94,6 +98,7 @@ window.OM_ITEMRULE=(()=>{
  function toText(r){if(!r)return '';const L=[];
   if(r.only&&r.only.length)L.push('전용 '+r.only.join('/'));if(r.once)L.push('소모품');
   if(r.atk){const a=r.atk;L.push('공격 강화 '+(a.single?'단일기 '+a.types.map(tKo).join('/')+' ':a.types?'타입 '+a.types.map(tKo).join('/')+' ':a.cat?CAT_KO[a.cat]+' ':'')+'×'+num(a.v))}
+  if(r.gle)L.push(`조건 ${STAT_KO[r.gle.st]||r.gle.st} ${r.gle.g} 이하`);
   if(r.guard)L.push('받는 대미지 '+(r.guard.cat?CAT_KO[r.guard.cat]+' ':'')+'×'+num(r.guard.v));
   if(r.crit)L.push('급소 +'+r.crit);if(r.critGuard)L.push('급소 방호 '+r.critGuard);
   if(r.immune)L.push('무효 타입 '+r.immune.map(tKo).join('/'));
@@ -122,6 +127,7 @@ window.OM_ITEMRULE=(()=>{
    const bad=()=>errs.push(line);
    if((m=line.match(/^전용\s+(.+)$/)))r.only=m[1].split('/').map(s=>s.trim()).filter(Boolean);
    else if(line==='소모품')r.once=1;
+   else if((m=line.match(/^조건\s+(공격|방어|특공|특방|스피드)\s+([A-Z]+)\s*이하$/)))r.gle={st:KO_STAT[m[1]],g:m[2]};   /* 종족치 등급이 그 이하일 때만 공격 강화 · 받는 대미지가 걸린다 */
    else if((m=line.match(/^공격 강화\s*(?:(단일기|타입)\s+(\S+)\s+|(물리기|특수기)\s+)?[×x*]\s*(\d+(?:\.\d+)?)$/))){const a={v:+m[4]};if(m[1]){a.types=typeList(m[2]);if(m[1]==='단일기')a.single=1}else if(m[3])a.cat=KO_CAT[m[3]];r.atk=a}
    else if((m=line.match(/^받는 대미지\s*(?:(물리기|특수기)\s+)?[×x*]\s*(\d+(?:\.\d+)?)$/))){r.guard={v:+m[2]};if(m[1])r.guard={cat:KO_CAT[m[1]],v:+m[2]}}
    else if((m=line.match(/^급소 방호\s*(\d)$/)))r.critGuard=+m[1];

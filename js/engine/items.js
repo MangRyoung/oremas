@@ -36,13 +36,16 @@ window.OM_ITEMS=(()=>{
  function heal(m,v,lines,why){if((m.states||{}).HealBlock){lines.push(`${m.name} 「회복봉인」이라 ${why} 회복 못 함`);return 0}const h=Math.min(v,m.hp.max-m.hp.cur);if(h<=0)return 0;m.hp.latest=m.hp.cur;m.hp.cur+=h;lines.push(`${m.name} ${why} +${h} (HP ${m.hp.cur}/${m.hp.max})`);return h}
  function hurt(m,v,lines,why){if(FX()&&FX().noind&&FX().noind(m,'')){lines.push(`${m.name} ${why} — 비례 대미지를 받지 않는다`);return 0}const d=Math.min(v,m.hp.cur);if(d<=0)return 0;m.hp.latest=m.hp.cur;m.hp.cur-=d;lines.push(`${m.name} ${why} −${d} (HP ${m.hp.cur}/${m.hp.max})`);if(m.hp.cur<=0){m.entry='';lines.push(`${m.name}은(는) 쓰러졌다!`)}return d}
 
+ /* 「조건 특방 B 이하」 (마제망토): 그 능력의 종족치 등급이 기준 이하일 때만 (등급을 모르면 건다) */
+ function gleOk(m,r){const c=r&&r.gle;if(!c)return true;const i={attack:1,defense:2,specialattack:3,specialdefense:4,speed:5}[c.st];const S=window.OM_STATS;const RK=(S&&S.RANKS)||['E','D','C','B','A','AA','AAA','S'];
+  let g=String(((m&&m.ranks)||[])[i]||'').replace(/[+-]+$/,'');if(RK.indexOf(g)<0&&S&&S.gradeOf&&m&&m.base)g=String(S.gradeOf(m.base[i])||'').replace(/[+-]+$/,'');const a=RK.indexOf(g),b=RK.indexOf(c.g);return a<0||b<0?true:a<=b}
  /* ----- 공격 창 ----- */
  /* 공격 쪽 위력 배율. q: {types:[en], cat:'물리'|'특수'|'변화', single} → {v, txt, jewel} | null */
- function atkMul(atk,q){const r=of(atk);if(!r||!r.atk||q.cat==='변화')return null;const a=r.atk;
+ function atkMul(atk,q){const r=of(atk);if(!r||!r.atk||q.cat==='변화'||!gleOk(atk,r))return null;const a=r.atk;
   if(a.types&&!a.types.some(t=>(q.types||[]).includes(t)))return null;if(a.cat&&a.cat!==q.cat)return null;if(a.single&&!q.single)return null;
   return {v:a.v,txt:`「${r.name}」 ×${a.v}`,jewel:!!a.single&&r.once,name:r.name}}
  /* 받는 쪽 완화 (돌격조끼 · 진화의휘석 …) → {v, txt} | null */
- function defGuard(def,cat){const r=of(def);if(!r||!r.guard)return null;if(r.guard.cat&&r.guard.cat!==cat)return null;const v=Math.round(r.guard.v*1000)/1000;return {v,txt:`${def.name} 「${r.name}」 ×${v}`}}
+ function defGuard(def,cat){const r=of(def);if(!r||!r.guard||!gleOk(def,r))return null;if(r.guard.cat&&r.guard.cat!==cat)return null;const v=Math.round(r.guard.v*1000)/1000;return {v,txt:`${def.name} 「${r.name}」 ×${v}`}}
  /* 받는 쪽 무효 (스펀지 · 횃불) → 소지품 이름 | '' */
  function immune(def,types){const r=of(def);return r&&r.immune&&r.immune.some(t=>(types||[]).includes(t))?r.name:''}
  function crit(atk,def){let v=0;const a=of(atk),d=of(def);if(a&&a.crit)v+=a.crit;if(d&&d.critGuard)v-=d.critGuard;return v}
