@@ -58,7 +58,7 @@ async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt
  const injure=(P,why,rec)=>{P.inj=Math.min(2,P.inj+1);const m=aliveMons(P).sort((a,b)=>b.hp.cur-a.hp.cur)[0];let line=`${P.trainer.name} ${P.inj>=2?'중상':'부상'} (${why})`;if(m){const loss=frac(m.hp.max,P.inj>=2?'1/2':'1/4');m.hp.cur=Math.max(0,m.hp.cur-loss);line+=` · ${m.name} HP −${loss}`}rec.pen.push(line);say({k:'injury',who:P.trainer.name,inj:P.inj,why})};
  const applyPen=(P,sub,rec,why)=>{sub=sub||{};const L=[];const ms=aliveMons(P);const m=ms.length?ms[Math.floor(rng()*ms.length)]:null;
   if(sub.dmg&&m){let loss=frac(m.hp.max,sub.dmg);loss=Math.max(1,Math.floor(loss*adj.penScale));m.hp.cur=Math.max(0,m.hp.cur-loss);P.stats.penDmg+=loss;L.push(`${m.name} HP −${loss}`)}
-  if(sub.st&&m&&m.hp.cur>0){m.states[sub.st]=sub.st==='Sleep'?2:sub.st==='Confusion'?3:1000;L.push(`${m.name} 「${sub.st}」`)}
+  if(sub.st&&m&&m.hp.cur>0){m.states[sub.st]=+sub.cnt>0?+sub.cnt:sub.st==='Sleep'?2:sub.st==='Confusion'?3:1000;L.push(`${m.name} 「${sub.st}」`)}
   if(sub.rk){for(const k in sub.rk)P.debt.rk[k]=(P.debt.rk[k]||0)+(+sub.rk[k]||0);L.push('랭크 '+JSON.stringify(sub.rk))}
   if(adj.ordScope==='dungeon'){/* 10-28: 던전 공용 풀에서 바로 뺀다 */if(+sub.oo)pool.order=Math.max(0,pool.order-(+sub.oo));if(+sub.oc)pool.command=Math.max(0,pool.command-(+sub.oc));if(+sub.oo||+sub.oc)L.push(`4식 −${+sub.oo||0} · 6령 −${+sub.oc||0} (던전 공용 남은 4식 ${pool.order} · 6령 ${pool.command})`)}
   else{if(+sub.oo)P.debt.oo+=+sub.oo;if(+sub.oc)P.debt.oc+=+sub.oc;if(+sub.oo||+sub.oc)L.push(`4식 −${+sub.oo||0} · 6령 −${+sub.oc||0} (다음 배틀)`)}

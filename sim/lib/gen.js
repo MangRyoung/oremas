@@ -28,6 +28,20 @@ const PEN={
  boss:{fail:[{bossLv:10,memo:'보스가 눈치챔 — 보스방 Lv +10'}],cost:[{bossLv:5,memo:'흔적을 남김 — 보스방 Lv +5'}]},
  boss_lite:{fail:[{bossLv:5,memo:'보스가 눈치챔 — 보스방 Lv +5'}],cost:[{bossLv:3,memo:'흔적을 남김 — 보스방 Lv +3'}]},
  heavy:{fail:[{dmg:'1/4',st:'Poison',memo:'독 함정'},{oo:1,oc:1,memo:'혼란 — 다음 배틀 4식 · 6령 −1'},{dmg:'1/4',st:'Paralysis',memo:'감전'}],cost:[{dmg:'1/8',memo:'무리함'},{oc:1,memo:'경계 — 다음 배틀 6령 −1'},{rk:{attack:-1,specialattack:-1},memo:'기세가 꺾임'}]}};
+/* 10-28 망령 「스킬체크는 대가 실패가 정말 허접하게 되있는데? 게임 수치적인걸 제시해야지」 — 자질마다 숫자로 된 패널티 (룰: HP · 상태 이상 · 경계도 · 4식 6령).
+   실패 = 경계도 +F 와 함께 하나 더(HP · 상태 · 4식 · 6령), 대가 = 숫자 하나. 메모는 장면 말 한 줄(숫자 뒤에 붙는다).
+   지시 = 지시가 엇갈림(4식 · 6령) · 육성 = 야생 · 환경에 다침(HP · 독) · 통솔 = 대열이 흔들림(혼란 · 6령) · 능력 = 몸으로 · 이능 반동(HP · 마비).
+   난이도: 쉬움은 HP 한 단계 가볍게(1/4 → 1/8) · 어려움은 한 단계 무겁게(1/4 → 1/3, 1/8 → 1/6)와 6령 +1. 상태의 cnt = 턴 수(혼란) */
+PEN.num={
+ 지시:{fail:[{al:'F',oo:1,memo:'지시가 엇갈렸다'},{al:'F',oc:2,memo:'우왕좌왕했다'}],cost:[{oc:1,memo:'지시를 다시 내렸다'},{al:'C',memo:'시간을 끌었다'}]},
+ 육성:{fail:[{al:'F',st:'Poison',memo:'독이 있는 것에 닿았다'},{al:'F',dmg:'1/4',memo:'야생에게 물렸다'}],cost:[{dmg:'1/8',memo:'긁혔다'},{al:'C',memo:'흔적을 남겼다'}]},
+ 통솔:{fail:[{al:'F',st:'Confusion',cnt:3,memo:'대열이 무너졌다'},{al:'F',oc:2,memo:'모두 지쳤다'}],cost:[{st:'Confusion',cnt:2,memo:'정신이 없다'},{oc:1,memo:'숨이 찼다'}]},
+ 능력:{fail:[{al:'F',dmg:'1/4',st:'Paralysis',memo:'반동에 몸이 굳었다'},{al:'F',dmg:'1/3',memo:'크게 휘말렸다'}],cost:[{dmg:'1/8',memo:'무리했다'},{al:'C',memo:'소리를 냈다'}]}};
+const DMG_UP={'1/8':'1/6','1/6':'1/4','1/4':'1/3'},DMG_DN={'1/2':'1/3','1/3':'1/4','1/4':'1/8','1/6':'1/8'};
+/* 한 체크의 패널티 {fail, cost} — k = {alFail, alCost} */
+function penFor(stat,tier,rng,k){const T=PEN.num[stat]||PEN.num.지시;const pick=a=>JSON.parse(JSON.stringify(a[Math.floor(rng()*a.length)]));k=k||{};
+ const fx=o=>{if(o.al==='F')o.al=k.alFail==null?20:k.alFail;if(o.al==='C')o.al=k.alCost==null?10:k.alCost;if(o.dmg&&tier==='easy')o.dmg=DMG_DN[o.dmg]||o.dmg;if(o.dmg&&tier==='hard')o.dmg=DMG_UP[o.dmg]||o.dmg;return o};
+ const fail=fx(pick(T.fail)),cost=fx(pick(T.cost));if(tier==='hard')fail.oc=(+fail.oc||0)+1;return {fail,cost}}
 const LABEL={지시:['옛 장치를 작동시킨다','함정의 순서를 읽는다','갈림길의 표식을 해독한다'],육성:['지친 포켓몬을 돌본다','야생의 흔적을 쫓는다','다친 야생 포켓몬을 달랜다'],통솔:['겁먹은 포켓몬을 진정시킨다','무너지는 다리를 함께 건넌다','대열을 지켜 안개를 지난다'],능력:['봉인된 문을 연다','속삭이는 목소리의 정체를 쫓는다','무너진 길을 몸으로 뚫는다']};
 const DEF={battles:2,foes:2,lv:0,bossLv:0,rest:'short',checks:3,tgt:'mix',pen:'alert',hintTyped:1,alCost:15,alFail:30};
 function make(tier,knobs,seed){const T=TIER[tier];if(!T)throw new Error('난이도: easy | normal | hard');const k=Object.assign({},DEF,knobs||{});const rng=BT.mkRng(seed||1);
@@ -37,7 +51,7 @@ function make(tier,knobs,seed){const T=TIER[tier];if(!T)throw new Error('난이�
  const sts=shuffle(STATS);const checks=[];const tg=TGT[k.tgt]||TGT.mix;const typedAt=new Set(shuffle([...Array(k.checks).keys()]).slice(0,k.hintTyped));
  for(let i=0;i<k.checks;i++){const st=sts[i%4];const target=k.tgt==='mix'?tg[i%2]:tg[ri(tg.length)];const pe=PEN[k.pen]||PEN.mid;
   const fx=o=>{o=JSON.parse(JSON.stringify(o));if(o.al==='F')o.al=k.alFail;if(o.al==='C')o.al=k.alCost;if(typeof o.fight==='string'){const n=+o.fight.slice(1);o.fight={mix:take(n).map(SRC),lvAdd:k.lv}}return o};
-  const c={label:LABEL[st][ri(3)],stat:st,target,hint:typedAt.has(i)?'type:'+TYPES[ri(TYPES.length)]:'any',pen:{fail:fx(pe.fail[ri(pe.fail.length)]),cost:fx(pe.cost[ri(pe.cost.length)])}};if(st==='능력'&&ri(2))c.mode='inou';checks.push(c)}
+  const c={label:LABEL[st][ri(3)],stat:st,target,hint:typedAt.has(i)?'type:'+TYPES[ri(TYPES.length)]:'any',pen:k.pen==='alert'||k.pen==='num'?penFor(st,tier,rng,k):{fail:fx(pe.fail[ri(pe.fail.length)]),cost:fx(pe.cost[ri(pe.cost.length)])}};if(st==='능력'&&ri(2))c.mode='inou';checks.push(c)}
  /* 방 배치: 입구(체크) → [배틀 · 체크 섞기] → (휴식 방 + 남은 체크) → 보스 */
  const rooms=[];let ci=0,rn=0;const nextCheck=()=>ci<checks.length?checks[ci++]:null;const cid=()=>'c'+(++rn);   /* 10-28: 방 id 가 겹치던 것 고침(전엔 'c'+ci 가 두 곳에서 같은 값 — 시뮬이 한 체크를 두 번 · 다른 하나는 건너뜀) */
  rooms.push({id:'entry',t:'entry',name:'입구',check:nextCheck()});
@@ -48,4 +62,4 @@ function make(tier,knobs,seed){const T=TIER[tier];if(!T)throw new Error('난이�
  const restRoom={id:'safe',t:'safe',name:'쉼터'};if(k.rest&&k.rest!=='none')restRoom.rest=k.rest;const c2=nextCheck();if(c2)restRoom.check=c2;if(restRoom.rest||restRoom.check)rooms.push(restRoom);
  const esc=take(T.bossN-1);rooms.push({id:'boss',t:'boss',name:'보스 · '+boss[2],enc:{mix:[SRC(boss)].concat(esc.map(SRC)),boss:true,bossAt:0,raid:T.raid,n:T.bossN,lvAdd:k.bossLv}});
  return {id:`gen_${tier}_${seed}`,name:`생성 · ${T.name} #${seed}`,wn:2,private:true,gen:{tier,knobs:k,seed,boss:boss[2]},rooms}}
-module.exports={make,TIER,POOL,BOSS,PEN,DEF};
+module.exports={make,TIER,POOL,BOSS,PEN,DEF,penFor};

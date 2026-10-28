@@ -113,10 +113,11 @@ window.OM_SKILL_UI=(()=>{
  function judge(total,target,fumble,aLv){const diff=total-target;let ri=1;if(diff>=-2)ri=2;if(diff>=0)ri=3;if(diff>=5)ri=4;if(fumble)ri=aLv>=3?1:0;return ri}
 
  /* ===== 패널티 ===== */
- const PEN0=()=>({dmg:'',st:'',cnt:'',rk:{},oo:0,oc:0,pot:{who:'tr',name:'',n:0},memo:''});
+ /* 10-28 망령 「대가 실패는 게임 수치로」: al = 경계도 +N (던전 탐색 중이면 그 던전 경계도를 올린다) */
+ const PEN0=()=>({al:0,dmg:'',st:'',cnt:'',rk:{},oo:0,oc:0,pot:{who:'tr',name:'',n:0},memo:''});
  function penNorm(x){const b=PEN0();x=x||{};for(const k in b)if(x[k]!=null&&x[k]!=='')b[k]=typeof b[k]==='object'?Object.assign({},b[k],x[k]):x[k];if(typeof b.rk!=='object')b.rk={};return b}
- function penHas(x){x=penNorm(x);return !!(x.dmg||x.st||x.memo||Object.values(x.rk).some(v=>+v)||+x.oo>0||+x.oc>0||+x.pot.n>0)}
- function penTxt(x){x=penNorm(x);const t=[];if(x.dmg)t.push('대미지 '+x.dmg);if(x.st)t.push('「'+stKo(x.st)+'」'+(x.cnt&&+x.cnt>0?' '+x.cnt+'턴':''));RK.forEach(([k,n])=>{const v=+x.rk[k]||0;if(v)t.push(n+' '+(v>0?'+':'')+v)});if(+x.oo>0)t.push('4식 '+x.oo+'개 차감');if(+x.oc>0)t.push('6령 '+x.oc+'개 차감');if(+x.pot.n>0)t.push((x.pot.who==='pk'?'전용':'고유')+' 포텐셜'+(x.pot.name?' 『'+x.pot.name+'』':'')+' −'+x.pot.n);if(x.memo)t.push(x.memo);return t.join(' · ')}
+ function penHas(x){x=penNorm(x);return !!(+x.al>0||x.dmg||x.st||x.memo||Object.values(x.rk).some(v=>+v)||+x.oo>0||+x.oc>0||+x.pot.n>0)}
+ function penTxt(x){x=penNorm(x);const t=[];if(+x.al>0)t.push('경계도 +'+x.al);if(x.dmg)t.push('대미지 '+x.dmg);if(x.st)t.push('「'+stKo(x.st)+'」'+(x.cnt&&+x.cnt>0?' '+x.cnt+'턴':''));RK.forEach(([k,n])=>{const v=+x.rk[k]||0;if(v)t.push(n+' '+(v>0?'+':'')+v)});if(+x.oo>0)t.push('4식 '+x.oo+'개 차감');if(+x.oc>0)t.push('6령 '+x.oc+'개 차감');if(+x.pot.n>0)t.push((x.pot.who==='pk'?'전용':'고유')+' 포텐셜'+(x.pot.name?' 『'+x.pot.name+'』':'')+' −'+x.pot.n);if(x.memo)t.push(x.memo);return t.join(' · ')}
  /* 결과가 나온 트레이너에게 패널티 묶음을 건다 (맵툴 pen_apply) */
  async function applyPenalty(tid,sub,why){sub=penNorm(sub);const t=trs()[tid];if(!t||!penHas(sub))return '';const L=[];
   const needMon=!!(sub.dmg||sub.st||Object.values(sub.rk).some(v=>+v));
@@ -131,6 +132,7 @@ window.OM_SKILL_UI=(()=>{
     for(const p of all){if(n<=0)break;if(sub.pot.name&&p.name!==sub.pot.name)continue;const max=+(String(p.eff||'').match(/【(\d+)\/시】/)||[0,0])[1];const cur=u[p.name]==null?max:+u[p.name];if(cur>0){u[p.name]=cur-1;n--;done++;ch=true}}
     if(ch)await A().set(['battle','mons',m.id,'potUses'],u)}
    L.push(done?`포텐셜 횟수 −${done}`:'포텐셜 횟수 차감할 것이 없다')}
+  if(+sub.al>0){const DG=window.OM_DG_UI;let r='';try{r=DG&&DG.alAdd?await DG.alAdd(+sub.al,(why||'').split(' · ')[0]):''}catch(e){}L.push(r||`경계도 +${+sub.al} (던전 밖 — 적용 안 함)`)}
   if(sub.memo)L.push(sub.memo);
   const txt=`【패널티】 ${t.name} 『${why}』\n${L.join('\n')||'(적용할 것 없음)'}`;A().sysLog(txt,'battle',{});return txt}
 
@@ -180,6 +182,7 @@ window.OM_SKILL_UI=(()=>{
  function penFields(t,X){return `   <div class="fr"><span class="lbl">대미지</span>${seg('pen_'+t+'_dmg',[['','없음'],['1/8','1/8'],['1/4','1/4'],['1/3','1/3'],['1/2','1/2']],DMGS.includes(X.dmg)?X.dmg:'x')}<input type="text" class="n xs" data-pen="${t}.dmg" value="${DMGS.includes(X.dmg)?'':esc(X.dmg)}" placeholder="직접"></div>
    <div class="fr"><span class="lbl">상태</span><select data-pen="${t}.st"><option value="">없음</option>${stList().map(([k,ko,abn])=>`<option value="${k}" ${X.st===k?'selected':''}>${esc(ko)}${abn?' (이상)':''}</option>`).join('')}</select><span class="small dim">턴</span><input type="number" class="n xs" data-pen="${t}.cnt" value="${esc(X.cnt)}" placeholder="기본"></div>
    <div class="fr" style="align-items:flex-start"><span class="lbl">랭크</span><div class="prk">${RK.map(([k,n])=>{const v=+X.rk[k]||0;return `<div class="prki ${v>0?'up':v<0?'dn':''}"><small>${n}</small><span data-rk="${t}.${k}.-1">−</span><b>${v>0?'+':''}${v}</b><span data-rk="${t}.${k}.1">＋</span></div>`}).join('')}</div></div>
+   <div class="fr"><span class="lbl">경계도</span><span class="small dim">+</span><input type="number" class="n xs" data-pen="${t}.al" value="${+X.al||0}" step="5"><span class="small dim">던전 탐색 중이면 그 던전 경계도에 더한다</span></div>
    <div class="fr"><span class="lbl">4식 6령</span><span class="small dim">4식</span><input type="number" class="n xs" data-pen="${t}.oo" value="${+X.oo||0}"><span class="small dim">6령</span><input type="number" class="n xs" data-pen="${t}.oc" value="${+X.oc||0}"><span class="small dim">개 차감 (배틀의 트레이너)</span></div>
    <div class="fr"><span class="lbl">포텐셜</span>${seg('pen_'+t+'_who',[['tr','고유'],['pk','전용']],X.pot.who||'tr')}<input type="text" class="n" data-pen="${t}.pot.name" value="${esc(X.pot.name||'')}" placeholder="이름 (비우면 아무거나)" style="width:150px"><input type="number" class="n xs" data-pen="${t}.pot.n" value="${+X.pot.n||0}"><span class="small dim">회 차감</span></div>
    <div class="fr"><span class="lbl">메모</span><input type="text" data-pen="${t}.memo" value="${esc(X.memo)}" placeholder="GM 이 손으로 할 것 · 서술" style="flex:1"></div>`}
@@ -188,7 +191,7 @@ window.OM_SKILL_UI=(()=>{
  function penExSel(t){const mine=st().penPresets||[];const hid=exHide('pen');return `<select data-penex="${t}" title="패널티 예시 불러오기 (이 칸에)"><option value="">예시…</option>${mine.length?`<optgroup label="내가 저장한 것">${mine.map(p=>`<option value="my:${esc(p.id)}">${esc(p.name)}</option>`).join('')}</optgroup>`:''}<optgroup label="기본">${PEN_EX.map((e,i)=>hid.includes(e.name)?'':`<option value="ex:${i}">${esc(e.name)}</option>`).join('')}</optgroup></select>`}
  function penExGet(v){if(!v)return null;if(v.startsWith('ex:'))return (PEN_EX[+v.slice(3)]||{}).p||null;const p=(st().penPresets||[]).find(p=>p.id===v.slice(3));return p?p.p:null}
  /* 패널티 칸 읽기 (data-pen="t.…") */
- function grabPen(md,t,X0){const X=penNorm(X0);const q=k=>md.querySelector(`[data-pen="${t}.${k}"]`);if(!q('dmg'))return X;const dv=segVal(md,'pen_'+t+'_dmg');const di=q('dmg').value.trim();X.dmg=di||(dv==='x'?X.dmg:dv);X.st=q('st').value;X.cnt=q('cnt').value;X.oo=+q('oo').value||0;X.oc=+q('oc').value||0;X.pot.who=segVal(md,'pen_'+t+'_who')||'tr';X.pot.name=q('pot.name').value.trim();X.pot.n=+q('pot.n').value||0;X.memo=q('memo').value.trim();return X}
+ function grabPen(md,t,X0){const X=penNorm(X0);const q=k=>md.querySelector(`[data-pen="${t}.${k}"]`);if(!q('dmg'))return X;const dv=segVal(md,'pen_'+t+'_dmg');const di=q('dmg').value.trim();X.dmg=di||(dv==='x'?X.dmg:dv);X.al=Math.max(0,+((q('al')||{}).value)||0);X.st=q('st').value;X.cnt=q('cnt').value;X.oo=+q('oo').value||0;X.oc=+q('oc').value||0;X.pot.who=segVal(md,'pen_'+t+'_who')||'tr';X.pot.name=q('pot.name').value.trim();X.pot.n=+q('pot.n').value||0;X.memo=q('memo').value.trim();return X}
  function penBox(P){return `<div class="skpen"><div class="fr"><span class="lbl">패널티</span><div class="pensum">${penHas(P.fail)?`<div><i class="penf">실패 · 대실패</i> ${esc(penTxt(P.fail))}</div>`:''}${penHas(P.cost)?`<div><i class="penc">대가를 치르고 성공</i> ${esc(penTxt(P.cost))}</div>`:''}${!penHas(P.fail)&&!penHas(P.cost)?'<span class="dim small">없음</span>':''}</div><button class="btn xs" data-sk="penopen">${F.penOpen?'접기':'패널티 설정 ▸'}</button><button class="btn xs ghost" data-sk="exmgr" data-t="pen" title="패널티 예시를 한 번에 보고 관리">패널티 예시</button>${penHas(P.fail)||penHas(P.cost)?'<button class="btn xs ghost" data-sk="penclr">비우기</button>':''}</div>
   ${F.penOpen?`<div class="skpencols">${[['fail','실패 · 대실패','penf'],['cost','대가를 치르고 성공','penc']].map(([t,title,cl])=>{const X=penNorm(P[t]);return `<div class="skpencol ${cl}"><div class="sec">${title}<span class="sp"></span>${penExSel(t)}<button class="btn xs ghost" data-sk="pensave" data-t="${t}" title="이 칸을 패널티 예시로 저장">저장</button></div>
 ${penFields(t,X)}</div>`}).join('')}</div>

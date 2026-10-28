@@ -6,7 +6,7 @@
      3) 타입 조건(체크 중 hintTyped 개): 테마에 어울리는 타입(autogen HINT_T) 중 일행에 있는 타입을 먼저 — 「그 타입을 데려왔으면 덕을 본다」. 없는 타입이면 혼자 d4 로 셈한다.
      4) 목표치: 굴릴 사람 · 동료 주사위로 정확한 확률(skill.js dist)을 계산해, 「대가 포함 성공」이 난이도 띠에 드는 값 중 하나(띠 가운데에 가까운 쪽을 더 자주).
           쉬움 85~95% · 보통 70~85% · 어려움 50~70%   (지금 7 · 9 고정이 시험 일행에서 대략 이 근처)
-     5) 대가 · 실패: gen.js PEN.alert 그대로(경계도 대가 · 실패 + HP · 상태 · 4식 6령). 문구는 테마(autogen THEMES[테마].chk).
+     5) 대가 · 실패: gen.js penFor — 자질마다 숫자로 된 패널티(10-28, 실패 = 경계도 + HP · 상태 · 4식 6령 하나, 대가 = 숫자 하나). 문구는 테마(autogen THEMES[테마].chk).
    한 체크: gen.js 와 같은 꼴 {label, stat, target, hint, pen, mode?} + odds {who, die, partner, okPlus, ok, fail} (검토용 — 웹툴로 보낼 땐 무시해도 된다).
    검토(review): 조합마다 체크 묶음을 만들어 띠 안 비율 · 주인공 고루 · 혼자 d4 체크 수를, 지금 방식(7 · 9 고정)과 나란히 센다. */
 "use strict";
@@ -41,9 +41,9 @@ function make(parties,o){o=o||{};const tier=o.tier||'normal',band=o.band||BAND[t
   /* 타입 조건: 일행에 있는 테마 타입 먼저 */
   let hint='any';if(typedAt.has(i)){const have=HT.filter(t=>info.some(P=>P.types.has(TYPE_KO[t])));hint='type:'+(have.length&&rng()<0.8?pick(have):pick(HT))}
   const r=roller(info,stat,hint);spot[r.P.name]++;const T=pickTarget(rng,r,band);
-  const pe=G.PEN.alert;const fx=x=>{x=JSON.parse(JSON.stringify(x));if(x.al==='F')x.al=o.alFail==null?20:o.alFail;if(x.al==='C')x.al=o.alCost==null?10:o.alCost;return x};
+  const PN=G.penFor(stat,tier,rng,{alFail:o.alFail,alCost:o.alCost});   /* 10-28: 자질마다 숫자로 된 패널티 (gen.js PEN.num) */
   let label='';if(TH&&TH.chk&&TH.chk[stat]){const L=TH.chk[stat].filter(x=>!usedLab.has(x));label=pick(L.length?L:TH.chk[stat]);usedLab.add(label)}else label=stat+' 체크';
-  const c={label,stat,target:T.t,hint,pen:{fail:fx(pick(pe.fail)),cost:fx(pick(pe.cost))},odds:{who:r.P.name,die:'d'+SK.dieOf(r.rank,{}).sides,partner:r.partner,okPlus:+T.o.okPlus.toFixed(2),ok:+T.o.ok.toFixed(2),fail:+T.o.fail.toFixed(2),inBand:T.inb}};
+  const c={label,stat,target:T.t,hint,pen:PN,odds:{who:r.P.name,die:'d'+SK.dieOf(r.rank,{}).sides,partner:r.partner,okPlus:+T.o.okPlus.toFixed(2),ok:+T.o.ok.toFixed(2),fail:+T.o.fail.toFixed(2),inBand:T.inb}};
   if(stat==='능력'&&rng()<0.5)c.mode='inou';out.push(c)}
  return out}
 /* 지금 방식(gen.js: 목표 7 · 9 번갈아, 자질 섞어 돌림, 타입 조건 무작위 10타입)을 같은 계산으로 — 비교용 */

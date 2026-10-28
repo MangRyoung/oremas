@@ -514,5 +514,7 @@ window.OM_DG_UI=(()=>{
  async function enter(id,s,from){const d=all()[id];if(!d||!gm())return false;const o=startOptions(d);s=s&&R(d)[s]?s:(o[0]||[])[0];if(!s)return A().toast('던전에 방이 없다 — 던전 관리에서 만든다'),false;
   const p=P0(id);if(await upd({field:{mode:'dungeon',did:id,t:Date.now()},[p+'at']:s,[p+'r/'+s+'/s']:1,[p+'al']:0})){notice(`⚔ 던전 진입 — ${d.n||'던전'}${from?' ('+from+')':''}`);return true}return false}
  function nameOf(id){const d=all()[id];return d?(d.n||'이름 없는 던전'):''}
- return {render,rpSync,onState,on,cur,TY,LV,lvOf,list,enter,nameOf,party,walkOf,startEnc};
+ /* 10-28: 스킬 체크 패널티의 경계도(skill_ui pen.al) — 탐색 중인 던전의 경계도를 올린다. 경계도를 끈 던전 · 던전 밖이면 아무 일도 안 한다 */
+ async function alAdd(delta,why){const d=cur();if(!d||!alOn(d)||!(+delta))return '';const before=clamp(+d.al||0,0,100),after=clamp(before+(+delta),0,100);if(after===before)return '';if(!await upd({[P0(d.id)+'al']:after}))return '';notice(`[${d.n||'던전'}] 경계도 ${after>before?'+':''}${after-before}${why?' ('+why+')':''} → ${after}%`);return `경계도 ${after>before?'+':''}${after-before} → ${after}%`}
+ return {render,rpSync,onState,on,cur,TY,LV,lvOf,list,enter,nameOf,party,walkOf,startEnc,alAdd};
 })();
