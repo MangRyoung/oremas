@@ -1,0 +1,357 @@
+<title>망켓몬 생성 설계도</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Black+Han+Sans&family=Gothic+A1:wght@400;600;800&family=JetBrains+Mono:wght@400;700&display=swap">
+<style>
+/* 배치: 왼쪽 목차(넓은 화면에서 고정) + 본문 한 단. 각 절 = 한 줄 요약 → 흐름도 → 숫자 → 감우 검토 */
+:root{
+ --bg:#f3f4f8; --paper:#ffffff; --ink:#191b26; --mute:#5d6275; --line:#d9dce6; --sunk:#eceef4;
+ --accent:#c8402c; --accent-soft:#f6e0db;
+ --g-d:#7d6bb3; --g-c:#2f6fb8; --g-b:#2f8a52; --g-a:#b88a10; --g-aa:#d0631d;
+ --ok:#2f8a52; --warn:#b67a00; --bad:#c0392b;
+ --f-disp:"Black Han Sans","Gothic A1",sans-serif; --f-body:"Gothic A1","Apple SD Gothic Neo","Malgun Gothic",sans-serif; --f-mono:"JetBrains Mono",ui-monospace,Consolas,monospace;
+ color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+ --bg:#12131a; --paper:#1b1d27; --ink:#e9ebf3; --mute:#9aa0b4; --line:#2e3242; --sunk:#232634;
+ --accent:#ff7a5c; --accent-soft:#3a2420;
+ --g-d:#9b8ad6; --g-c:#5b9be0; --g-b:#4fb878; --g-a:#e0b030; --g-aa:#f08a40;
+ --ok:#4fb878; --warn:#e0a830; --bad:#ff6b5b; color-scheme:dark}}
+:root[data-theme="dark"]{
+ --bg:#12131a; --paper:#1b1d27; --ink:#e9ebf3; --mute:#9aa0b4; --line:#2e3242; --sunk:#232634;
+ --accent:#ff7a5c; --accent-soft:#3a2420;
+ --g-d:#9b8ad6; --g-c:#5b9be0; --g-b:#4fb878; --g-a:#e0b030; --g-aa:#f08a40;
+ --ok:#4fb878; --warn:#e0a830; --bad:#ff6b5b; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.65 var(--f-body);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px}
+.wrap{max-width:1180px;margin:0 auto;display:grid;grid-template-columns:200px minmax(0,1fr);gap:36px}main{min-width:0}
+@media(max-width:900px){.wrap{grid-template-columns:minmax(0,1fr);gap:0}nav.toc{display:none}}
+nav.toc{position:sticky;top:env(safe-area-inset-top,0px);align-self:start;padding-top:40px;display:grid;gap:2px}
+nav.toc a{color:var(--mute);text-decoration:none;font-size:13.5px;padding:4px 10px;border-left:3px solid transparent}
+nav.toc a:hover,nav.toc a:focus-visible{color:var(--ink);border-left-color:var(--accent);outline:none}
+nav.toc b{font:13px var(--f-disp);letter-spacing:.06em;color:var(--accent);padding:0 10px 8px}
+header.hero{padding:40px 0 18px;border-bottom:2px solid var(--ink);margin-bottom:28px}
+header.hero .eyebrow{font:700 11.5px var(--f-mono);letter-spacing:.14em;color:var(--accent)}
+h1{font:clamp(34px,6vw,54px)/1.05 var(--f-disp);margin:6px 0 10px;text-wrap:balance}
+header.hero p{margin:0;color:var(--mute);max-width:62ch}
+section{padding:26px 0 30px;border-bottom:1px solid var(--line);min-width:0}
+h2{font:30px/1.1 var(--f-disp);margin:0 0 4px;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap;text-wrap:balance}
+h2 small{font:600 12px var(--f-mono);color:var(--mute);letter-spacing:.06em}
+h3{font:800 16px var(--f-body);margin:22px 0 8px}
+.lead{color:var(--mute);margin:0 0 16px;max-width:68ch}
+.mono{font-family:var(--f-mono)}
+.small{font-size:12.5px;color:var(--mute)}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:13.5px;font-variant-numeric:tabular-nums}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font:700 11.5px var(--f-mono);letter-spacing:.06em;color:var(--mute);background:var(--sunk)}
+td.n,th.n{text-align:right}
+.pill{display:inline-block;font:700 11px var(--f-mono);padding:1px 7px;border-radius:5px;color:#fff;white-space:nowrap}
+.g-d{background:var(--g-d)}.g-c{background:var(--g-c)}.g-b{background:var(--g-b)}.g-a{background:var(--g-a)}.g-aa{background:var(--g-aa)}
+.chip{display:inline-block;font-size:12px;padding:1px 8px;border-radius:999px;border:1px solid var(--line);background:var(--paper);white-space:nowrap}
+.chip.f{border-color:var(--bad);color:var(--bad)}.chip.c{border-color:var(--warn);color:var(--warn)}
+/* 흐름도 */
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0;counter-reset:st;margin:6px 0 4px}
+.flow .st{position:relative;padding:12px 16px 12px 14px;background:var(--paper);border:1px solid var(--line);margin:0 -1px -1px 0;min-width:0}
+.flow .st::before{counter-increment:st;content:counter(st);font:700 11px var(--f-mono);color:var(--accent);display:block;margin-bottom:2px}
+.flow .st b{display:block;font-size:14px}
+.flow .st span{font-size:12.5px;color:var(--mute);display:block}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}
+.box{background:var(--paper);border:1px solid var(--line);border-radius:10px;padding:14px 16px;min-width:0}
+.box h4{margin:0 0 6px;font-size:14px}
+/* 검토 */
+.rev{margin-top:18px;border:2px solid var(--ink);background:var(--paper);border-radius:4px;box-shadow:5px 5px 0 var(--accent)}
+.rev>div{padding:12px 16px;border-top:1px solid var(--line);display:grid;grid-template-columns:76px minmax(0,1fr);gap:10px}
+.rev>div:first-child{border-top:0}
+.rev .lv{font:700 11px var(--f-mono);padding:2px 0;text-align:center;border-radius:4px;height:fit-content}
+.lv.hi{background:var(--bad);color:#fff}.lv.mid{background:var(--warn);color:#fff}.lv.lo{background:var(--sunk);color:var(--mute)}.lv.good{background:var(--ok);color:#fff}
+.rev p{margin:0}.rev p+p{margin-top:4px}
+.rev .t{font-weight:800}
+.revh{font:13px var(--f-disp);letter-spacing:.06em;padding:8px 16px;background:var(--ink);color:var(--paper)}
+svg text{fill:var(--ink);font-family:var(--f-body)}
+svg .mute{fill:var(--mute)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;color:var(--mute);margin-top:4px}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:5px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:8px 0}
+.kpis div{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:10px 14px}
+.kpis b{font:28px/1 var(--f-disp);display:block}
+.kpis span{font-size:12px;color:var(--mute)}
+@media (prefers-reduced-motion:no-preference){.bar{transition:width .4s}}
+</style>
+
+<div class="wrap">
+<nav class="toc" aria-label="목차"><b>목차</b>
+ <a href="#overview">한눈에</a><a href="#check">스킬 체크</a><a href="#abil">특성</a><a href="#wild">야생 포켓몬</a><a href="#dungeon">던전</a><a href="#tests">테스트</a><a href="#review">감우 검토 · 제안</a>
+</nav>
+<main>
+<header class="hero">
+ <div class="eyebrow">망각 · 시뮬레이터 · 2026-10-28 기준</div>
+ <h1>망켓몬 생성 설계도</h1>
+ <p>시뮬레이터가 스킬 체크, 오리지널 특성, 야생 포켓몬, 던전을 어떤 순서와 숫자로 만드는지 한 장에 모았어요. 절마다 끝에 감우가 직접 검토한 결과를 붙였어요.</p>
+</header>
+
+<section id="overview">
+ <h2>한눈에 <small>4개 생성기 · 1개 검증</small></h2>
+ <p class="lead">특성은 야생 포켓몬에 들어가고, 야생 포켓몬은 무리가 되어 던전 방에 들어가요. 스킬 체크도 던전 방에 들어가요. 완성된 던전은 시험 일행으로 돌려 보고, 목표 승률에서 벗어나면 다시 만들어요.</p>
+ <div class="scroll"><svg id="ovSvg" viewBox="0 0 900 250" style="min-width:640px;width:100%;height:auto" role="img" aria-label="생성기 연결도"></svg></div>
+</section>
+
+<section id="check">
+ <h2>스킬 체크 <small>lib/checkgen.js · gen.js penFor</small></h2>
+ <p class="lead">일행을 먼저 읽고, 그 일행이 굴렸을 때 성공 확률이 난이도 띠 안에 들도록 목표치를 정해요. 대가와 실패는 게임 수치로만 나와요.</p>
+ <div class="flow">
+  <div class="st"><b>일행 읽기</b><span>트레이너마다 지시 · 육성 · 통솔 · 능력 주사위, 동행 2체 타입 · 유대</span></div>
+  <div class="st"><b>굴릴 사람</b><span>그 자질 주사위가 가장 큰 사람. 동료 d6 · 통솔+유대 d8 · 조건 안 맞으면 혼자 d4</span></div>
+  <div class="st"><b>자질 고르기</b><span>같은 자질 연속 금지, 덜 나온 사람이 주인공이 되게</span></div>
+  <div class="st"><b>타입 조건</b><span>테마 타입 중 일행에 있는 타입을 8할로</span></div>
+  <div class="st"><b>목표치</b><span>정확한 확률로 계산해 띠 안 값 중 가운데에 가까운 값</span></div>
+  <div class="st"><b>대가 · 실패</b><span>자질별 수치표에서 하나씩, 난이도로 무게 조절</span></div>
+ </div>
+ <h3>난이도 띠 (대가 포함 성공 확률)</h3>
+ <div class="scroll"><svg id="bandSvg" viewBox="0 0 760 150" style="min-width:520px;width:100%;height:auto" role="img" aria-label="난이도 띠"></svg></div>
+ <h3>대가 · 실패 수치표 <span class="small">실패에는 늘 경계도 +20이 붙고, 대가에는 하나만 붙어요</span></h3>
+ <div class="scroll"><table id="penTbl"></table></div>
+ <p class="small">쉬움은 HP 피해를 한 단계 가볍게(1/4 → 1/8), 어려움은 한 단계 무겁게(1/8 → 1/6, 1/4 → 1/3) 하고 실패의 4식 · 6령을 1씩 더 깎아요. 4식은 큰 페널티, 6령은 작은 페널티예요.</p>
+ <h3>검토 결과 (시험 일행 20조합 × 40체크)</h3>
+ <div class="scroll"><table>
+  <tr><th>난이도</th><th>방식</th><th class="n">띠 안</th><th class="n">성공 평균</th><th class="n">최저</th><th class="n">혼자 d4</th></tr>
+  <tr><td rowspan="2">쉬움</td><td>옛 방식 (7 · 9 고정)</td><td class="n">29%</td><td class="n">76%</td><td class="n">42%</td><td class="n">21%</td></tr>
+  <tr><td><b>생성기</b></td><td class="n"><b>100%</b></td><td class="n">91%</td><td class="n">85%</td><td class="n">16%</td></tr>
+  <tr><td rowspan="2">보통</td><td>옛 방식</td><td class="n">40%</td><td class="n">76%</td><td class="n">42%</td><td class="n">21%</td></tr>
+  <tr><td><b>생성기</b></td><td class="n"><b>100%</b></td><td class="n">78%</td><td class="n">71%</td><td class="n">16%</td></tr>
+  <tr><td rowspan="2">어려움</td><td>옛 방식</td><td class="n">31%</td><td class="n">76%</td><td class="n">42%</td><td class="n">21%</td></tr>
+  <tr><td><b>생성기</b></td><td class="n"><b>100%</b></td><td class="n">60%</td><td class="n">54%</td><td class="n">16%</td></tr>
+ </table></div>
+ <div class="rev" id="rev-check"></div>
+</section>
+
+<section id="abil">
+ <h2>오리지널 특성 <small>lib/abilgen.js · abilread.js</small></h2>
+ <p class="lead">제작기에 실제로 있는 특성 꼴을 틀로 삼아요. 틀마다 기준 특성의 TO를 출발점으로 두고, 세기 손잡이 하나마다 TO를 0.5씩 올리거나 내려요.</p>
+ <div class="flow">
+  <div class="st"><b>틀 고르기</b><span>제작기 특성에 있는 효과 꼴 10가지</span></div>
+  <div class="st"><b>기준 TO</b><span>그 꼴의 기존 특성 TO (예: 악의마음 1)</span></div>
+  <div class="st"><b>세기 손잡이</b><span>능력 칸 수 · 발동 조건 폭 · 비례 대미지마다 ±0.5</span></div>
+  <div class="st"><b>목표 TO 맞추기</b><span>모자라면 ②줄에 상태 면역(+0.5)</span></div>
+  <div class="st"><b>이름</b><span>타입 수식어 + 틀 꼬리말, 기존 이름과 안 겹치게</span></div>
+ </div>
+ <h3>틀 10가지</h3>
+ <div class="scroll"><table id="tplTbl"></table></div>
+ <h3>시뮬이 실제로 읽는 특성 (제작기 795개)</h3>
+ <div class="scroll"><svg id="readSvg" viewBox="0 0 760 70" style="min-width:520px;width:100%;height:auto" role="img" aria-label="시뮬이 읽는 특성 비율"></svg></div>
+ <p class="small">글만 있는 특성은 배틀 시뮬에 아무 효과가 없어요. 그래서 야생 생성은 이런 특성에 −3점을 줘서 덜 고르게 했어요(37체 교체).</p>
+ <div class="rev" id="rev-abil"></div>
+</section>
+
+<section id="wild">
+ <h2>야생 포켓몬 <small>lib/mongen.js · review.js · automove.js</small></h2>
+ <p class="lead">제작기 「커스텀 포켓몬 계산 종족치」를 그대로 따라요. 목표 계단의 안쪽 끝에 붙도록 종족치를 다듬고, 특성 · 기술 · 서식지를 붙인 뒤 같은 등급끼리 1:1로 붙여 봐요.</p>
+ <div class="flow">
+  <div class="st"><b>계획</b><span>300체 = 오리지널 3 : 올드 1, 등급 C 7 : B 2 : A 1</span></div>
+  <div class="st"><b>역할형 씨앗</b><span>물리 · 특수 스위퍼, 물리 탱커, 특수 벽, 밸런스, 쌍두</span></div>
+  <div class="st"><b>흔들기 · 다듬기</b><span>칸마다 ±6~12 흔들고, 계산 종족치가 계단 안쪽 끝에 올 때까지 1~3씩</span></div>
+  <div class="st"><b>콘셉트</b><span>타입 짝 표 · 체형에 맞는 이름 · 서식지 문장</span></div>
+  <div class="st"><b>특성</b><span>기준 TO 안 점수제, 45%는 오리지널</span></div>
+  <div class="st"><b>기술</b><span>4개 이상 · 변화기 1개 이상 · 소켓 상한 안</span></div>
+  <div class="st"><b>서식지</b><span>본 서식지 1 + 둘째 1 (평균 1.5곳)</span></div>
+  <div class="st"><b>1:1 검토</b><span>같은 묶음 8체와 24판. 25% 미만 · 78% 초과면 다시 (최대 3회)</span></div>
+ </div>
+ <h3>계단 사다리 (계산 종족치 상한)</h3>
+ <div class="scroll"><svg id="ladderSvg" viewBox="0 0 760 170" style="min-width:560px;width:100%;height:auto" role="img" aria-label="계단 사다리"></svg></div>
+ <div class="cols">
+  <div class="box"><h4>계산 종족치</h4><p class="small mono" style="margin:0">실제 합 + 하한분 + 내구 할증 + HP 할증 + 화력·스피드 할증 − 쌍두 할인 + 특성 TO 조정</p><p class="small">특성 TO가 기준보다 0.5 높으면 +45, 1보다 0.5 낮으면 −25.</p></div>
+  <div class="box"><h4>역할별 기술 구성</h4><p class="small" style="margin:0">어태커 공격 3 + 변화 1 (70%) · 서포터 공격 2 + 변화 2 (60%) · 밸런스 공격 2 + 변화 2 (60%). 첫 타입 자속은 반드시 넣어요. 선공기는 넣지 않아요.</p></div>
+  <div class="box"><h4>종족치 등급 색</h4><p class="small" style="margin:0 0 6px">카드와 표의 막대는 제작기 등급 색을 따라요.</p><div id="gradeRow" style="display:flex;gap:4px;flex-wrap:wrap"></div></div>
+ </div>
+ <div class="rev" id="rev-wild"></div>
+</section>
+
+<section id="dungeon">
+ <h2>던전 <small>lib/autogen.js · dungeon.js · calib.js</small></h2>
+ <p class="lead">난이도는 보스방 적 수, 레이드, 사전 배틀, 경계도로 가르고 레벨은 모든 던전에서 같아요(야생 · 보스 Lv +5). 4식 · 6령, 소지품, 포텐셜은 던전 내내 이어 써요.</p>
+ <div class="scroll"><table>
+  <tr><th>난이도</th><th>보스방</th><th>사전 배틀</th><th>체크</th><th>일반 / 보스 등급</th><th class="n">목표</th></tr>
+  <tr><td><b>쉬움</b></td><td>4체 · 레이드 2</td><td>0~1</td><td>3~5</td><td><span class="pill g-c">C</span> / <span class="pill g-b">B</span> · <span class="pill g-a">A</span></td><td class="n">80%</td></tr>
+  <tr><td><b>보통</b></td><td>4체 · 레이드 3</td><td>1</td><td>3~5</td><td><span class="pill g-c">C</span> / <span class="pill g-a">A</span></td><td class="n">60%</td></tr>
+  <tr><td><b>어려움</b></td><td>6체 · 레이드 3</td><td>0~1</td><td>3~5</td><td><span class="pill g-c">C</span> / <span class="pill g-a">A</span></td><td class="n">30%</td></tr>
+ </table></div>
+ <h3>방 순서와 갈림길</h3>
+ <div class="scroll"><svg id="roomSvg" viewBox="0 0 900 210" style="min-width:680px;width:100%;height:auto" role="img" aria-label="방 순서"></svg></div>
+ <p class="small">갈림길은 본길 1~2방 구간과 나란한 다른 길이에요. 다른 길은 배틀과 체크를 뒤집어 채워요(싸우며 뚫는 길과 머리 쓰는 길). 시뮬은 판마다 반반으로 한쪽을 골라요. 120개 중 105개 던전에 들어가요.</p>
+ <h3>경계도</h3>
+ <div class="scroll"><svg id="alSvg" viewBox="0 0 760 120" style="min-width:520px;width:100%;height:auto" role="img" aria-label="경계도 눈금"></svg></div>
+ <div class="cols">
+  <div class="box"><h4>휴식</h4><p class="small" style="margin:0"><b>짧은 휴식</b>(보스 앞): 전원 HP 1/4 · 빈사는 HP 1 · 상태 회복 · 파티 4식 1 · 6령 1.<br><b>숨돌리기</b>: 가장 다친 1체 HP 1/4 + 파티 6령 1.</p></div>
+  <div class="box"><h4>검증 루프</h4><p class="small" style="margin:0">만든 던전을 시험 일행 20조합 × 3판으로 돌려요. 목표 ±15% 밖이면 씨앗을 바꿔 다시 만들어요(최대 8번). 던전마다 튀는 폭이 쉬움 · 보통에서 절반쯤으로 줄었어요.</p></div>
+  <div class="box"><h4>체크 목표</h4><p class="small" style="margin:0">시뮬 던전은 목표 7 · 9(어려운 길은 9 · 11)로 고정돼 있어요. 웹툴로 보낼 때는 난이도 띠만 싣고, 웹툴이 그 일행으로 목표를 계산해요(목표 자동).</p></div>
+ </div>
+ <div class="rev" id="rev-dungeon"></div>
+</section>
+
+<section id="tests">
+ <h2>테스트 <small>autocheck · 던전 12 × 조합 20 × 3판</small></h2>
+ <p class="lead" id="testLead">던전 12개의 승률을, 갈림길 버그를 고치기 전(옅은 막대)과 고친 뒤(진한 막대)로 비교했어요. 점선이 목표예요. #8은 다른 길로 가면 사전 배틀이 3개가 되던 던전이에요.</p>
+ <div class="kpis" id="kpis"></div>
+ <div class="scroll"><svg id="perdSvg" viewBox="0 0 900 420" style="min-width:680px;width:100%;height:auto" role="img" aria-label="던전별 승률"></svg></div>
+ <div class="legend"><span><i style="background:var(--g-c);opacity:.45"></i>고치기 전</span><span><i style="background:var(--g-c)"></i>갈림길 고친 뒤</span><span><i style="background:var(--bad)"></i>목표에서 20%p 넘게 낮음</span></div>
+ <h3>조건을 바꿔 본 결과 <span class="small">조건마다 난이도별 720판 (던전 12 × 조합 20 × 3판)</span></h3>
+ <div class="scroll"><svg id="condSvg" viewBox="0 0 900 580" style="min-width:640px;width:100%;height:auto" role="img" aria-label="조건별 승률"></svg></div>
+ <div class="legend"><span><i style="background:var(--ink)"></i>목표</span><span><i style="background:var(--g-c)"></i>목표 ±5%p 안</span><span><i style="background:var(--warn)"></i>±5~10%p</span><span><i style="background:var(--bad)"></i>10%p 넘게 벗어남</span></div>
+ <div class="scroll" style="margin-top:12px"><table id="condTbl"></table></div>
+ <div id="condNote"></div>
+</section>
+
+<section id="review">
+ <h2>감우 검토 · 제안 <small>우선순위 순</small></h2>
+ <p class="lead">설계도를 만들며 코드와 테스트 기록을 다시 확인해서 찾은 점이에요. 숫자가 바뀌는 제안은 망령 님이 고르시면 바로 적용할게요.</p>
+ <div class="rev" id="rev-all"></div>
+</section>
+</main>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const NS='http://www.w3.org/2000/svg';
+function el(tag,attrs,txt){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(txt!=null)e.textContent=txt;return e}
+const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+/* 한눈에 */
+(function(){const s=$('#ovSvg');const N=[
+ {id:'abil',x:20,y:30,t:'특성 생성기',d:'틀 10 · TO 손잡이'},
+ {id:'mon',x:240,y:30,t:'야생 포켓몬',d:'계산 종족치 · 1:1 검토'},
+ {id:'pack',x:460,y:30,t:'야생 무리',d:'서식지 · 등급 구성'},
+ {id:'chk',x:240,y:150,t:'스킬 체크',d:'일행 → 목표치 · 수치 페널티'},
+ {id:'dg',x:680,y:90,t:'던전',d:'방 · 갈림길 · 경계도'},
+];const W=180,H=58;const byId=Object.fromEntries(N.map(n=>[n.id,n]));
+ const ln=(a,b,lab)=>{const A=byId[a],B=byId[b];const x1=A.x+W,y1=A.y+H/2,x2=B.x,y2=B.y+H/2;const mx=(x1+x2)/2;s.append(el('path',{d:`M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`,fill:'none',stroke:css('--mute'),'stroke-width':2,'marker-end':'url(#ah)'}));if(lab)s.append(el('text',{x:mx,y:(y1+y2)/2-6,'text-anchor':'middle','font-size':11,class:'mute'},lab))};
+ const defs=el('defs',{});const m=el('marker',{id:'ah',viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:7,markerHeight:7,orient:'auto'});m.append(el('path',{d:'M0,0L10,5L0,10z',fill:css('--mute')}));defs.append(m);s.append(defs);
+ ln('abil','mon','특성 DB');ln('mon','pack','야생 DB');ln('pack','dg','조우 방');ln('chk','dg','체크 방');
+ for(const n of N){const g=el('g',{});g.append(el('rect',{x:n.x,y:n.y,width:W,height:H,rx:8,fill:css('--paper'),stroke:n.id==='dg'?css('--accent'):css('--line'),'stroke-width':n.id==='dg'?2.5:1.5}));g.append(el('text',{x:n.x+12,y:n.y+24,'font-size':15,'font-weight':800},n.t));g.append(el('text',{x:n.x+12,y:n.y+44,'font-size':11.5,class:'mute'},n.d));s.append(g)}
+ // 검증 루프
+ const d=byId.dg;s.append(el('path',{d:`M${d.x+W/2},${d.y+H} q0,60 -60,60 h-40`,fill:'none',stroke:css('--accent'),'stroke-width':2,'stroke-dasharray':'5 4'}));
+ s.append(el('rect',{x:470,y:182,width:200,height:46,rx:8,fill:css('--accent-soft'),stroke:css('--accent')}));
+ s.append(el('text',{x:482,y:202,'font-size':13,'font-weight':800},'검증 루프'));s.append(el('text',{x:482,y:220,'font-size':11.5,class:'mute'},'시험 일행 60판 · 벗어나면 다시'));
+ s.append(el('path',{d:`M670,205 h40 q60,0 60,-55`,fill:'none',stroke:css('--accent'),'stroke-width':2,'marker-end':'url(#ah)'}));
+})();
+
+/* 난이도 띠 */
+(function(){const s=$('#bandSvg');const x0=90,x1=745,X=v=>x0+(x1-x0)*v/100;
+ for(let v=0;v<=100;v+=10){s.append(el('line',{x1:X(v),x2:X(v),y1:14,y2:122,stroke:css('--line')}));s.append(el('text',{x:X(v),y:140,'text-anchor':'middle','font-size':11,class:'mute'},v+'%'))}
+ const B=[['쉬움',85,95,91,'--g-b'],['보통',70,85,78,'--g-c'],['어려움',50,70,60,'--g-a']];
+ B.forEach(([n,lo,hi,avg,c],i)=>{const y=20+i*34;s.append(el('text',{x:0,y:y+15,'font-size':13,'font-weight':800},n));s.append(el('rect',{x:X(lo),y,width:X(hi)-X(lo),height:22,rx:4,fill:css(c),opacity:.85}));s.append(el('text',{x:X(lo)-8,y:y+15,'text-anchor':'end','font-size':11.5,'font-weight':700},lo+'~'+hi+'% · 평균 '+avg+'%'));s.append(el('circle',{cx:X(avg),cy:y+11,r:5,fill:css('--paper'),stroke:css('--ink'),'stroke-width':2}))});
+})();
+
+/* 페널티 표 */
+(function(){const P={
+ 지시:{cost:['6령 −1 · 지시를 다시 내렸다','경계도 +10 · 시간을 끌었다'],fail:['4식 −1 · 지시가 엇갈렸다','6령 −2 · 우왕좌왕했다']},
+ 육성:{cost:['HP −1/8 · 긁혔다','경계도 +10 · 흔적을 남겼다'],fail:['「독」 · 독이 있는 것에 닿았다','HP −1/4 · 야생에게 물렸다']},
+ 통솔:{cost:['「혼란」 2턴 · 정신이 없다','6령 −1 · 숨이 찼다'],fail:['「혼란」 3턴 · 대열이 무너졌다','6령 −2 · 모두 지쳤다']},
+ 능력:{cost:['HP −1/8 · 무리했다','경계도 +10 · 소리를 냈다'],fail:['HP −1/4 · 「마비」 · 반동에 몸이 굳었다','HP −1/3 · 크게 휘말렸다']}};
+ const sub={지시:'지시가 엇갈림',육성:'야생 · 환경에 다침',통솔:'대열이 흔들림',능력:'몸으로 · 이능 반동'};
+ let h='<tr><th>자질</th><th>장면</th><th>대가 (둘 중 하나)</th><th>실패 (경계도 +20 과 함께, 둘 중 하나)</th></tr>';
+ for(const k in P)h+=`<tr><td><b>${k}</b></td><td class="small">${sub[k]}</td><td>${P[k].cost.map(x=>`<span class="chip c">${x}</span>`).join(' ')}</td><td>${P[k].fail.map(x=>`<span class="chip f">${x}</span>`).join(' ')}</td></tr>`;
+ $('#penTbl').innerHTML=h})();
+
+/* 특성 틀 */
+(function(){const T=[['react','「X」 기술을 받으면 S +1 (+2)','1 (1.5)','악의마음 · 주눅','피격 반응'],['touch','「접촉기」를 받으면 S +1 (+2)','1.5 (2)','대격분','피격 반응'],['cat','「물리/특수기」를 받으면 S −1 · S +2','1','깨어진갑옷 · 벗겨진도금','피격 반응'],['pinch','HP 1/3 이하 자기 타입 1.5배 (1/2 이하)','1 (1.5)','맹화 · 급류','자동'],['glare','【등장】 정면 S −1 (+1/8 대미지)','1.5 (2)','재뒤집어쓰기','자동'],['absorb','【방호】 X 기술 무효 (+S +1)','1.5 (2)','칼날잡기 · 방음','글만'],['cSt','접촉기를 받으면 3할로 상태 이상','1','마그마의비늘','피격 반응'],['cBack','접촉기를 받으면 공격한 쪽 1/8','1','가시비늘','피격 반응'],['heal','특정 상태일 때 턴 종료 1/8 회복','1','포이즌힐','시뮬 GM'],['imSt','(②줄) 상태 면역','+0.5','면역 · 유연 · 불면','글만']];
+ let h='<tr><th>틀</th><th>꼴</th><th class="n">TO</th><th>기준 특성</th><th>시뮬</th></tr>';for(const r of T)h+=`<tr><td class="mono small">${r[0]}</td><td>${r[1]}</td><td class="n mono">${r[2]}</td><td class="small">${r[3]}</td><td><span class="chip" style="${r[4]==='글만'?'color:var(--bad);border-color:var(--bad)':''}">${r[4]}</span></td></tr>`;$('#tplTbl').innerHTML=h})();
+
+/* 시뮬이 읽는 특성 */
+(function(){const s=$('#readSvg');const tot=795,txt=246,read=tot-txt;const x0=0,x1=760,X=v=>x0+(x1-x0)*v/tot;
+ s.append(el('rect',{x:0,y:8,width:X(read),height:28,fill:css('--g-b')}));s.append(el('rect',{x:X(read),y:8,width:X(tot)-X(read),height:28,fill:css('--bad'),opacity:.8}));
+ s.append(el('text',{x:8,y:27,'font-size':13,'font-weight':700,style:'fill:#fff'},`시뮬이 읽음 ${read}개 (${Math.round(read/tot*100)}%)`));
+ s.append(el('text',{x:X(read)+8,y:27,'font-size':13,'font-weight':700,style:'fill:#fff'},`글만 ${txt}개`));
+ s.append(el('text',{x:0,y:58,'font-size':11.5,class:'mute'},'읽는 방식: 자동 · 피격 반응 · 방어 · 스킨 · 스피드 · 급소 · 시뮬 GM · 이름'))})();
+
+/* 계단 사다리 */
+(function(){const s=$('#ladderSvg');const L=[['C',480,40,1,'--g-c'],['C+',503,43,1,'--g-c'],['B',525,45,1,'--g-b'],['B+',548,48,1,'--g-b'],['A',570,50,1.5,'--g-a']];
+ const x0=60,x1=740,lo=440,hi=620,X=v=>x0+(x1-x0)*(v-lo)/(hi-lo);
+ for(let v=440;v<=620;v+=20){s.append(el('line',{x1:X(v),x2:X(v),y1:20,y2:120,stroke:css('--line')}));s.append(el('text',{x:X(v),y:138,'text-anchor':'middle','font-size':11,class:'mute'},v))}
+ let prev=455;L.forEach(([n,cap,flo,to,c],i)=>{const y=24+i*19;const a=i===0?455:L[i-1][1];s.append(el('rect',{x:X(a),y,width:X(cap)-X(a),height:15,rx:3,fill:css(c),opacity:n.endsWith('+')?.65:1}));s.append(el('text',{x:X(a)-6,y:y+12,'text-anchor':'end','font-size':12,'font-weight':800},n));s.append(el('text',{x:X(cap)+6,y:y+12,'font-size':11,class:'mute'},`≤${cap} · 하한 ${flo} · TO ${to}`))});
+ s.append(el('text',{x:x0,y:162,'font-size':11.5,class:'mute'},'막대 = 그 계단의 안쪽 끝(바로 아래 계단 상한 초과 ~ 상한). C는 455 이상을 권장.'))})();
+(function(){const G=[['E','1~39','g-d'],['D','40~59','g-d'],['C','60~89','g-c'],['B','90~109','g-b'],['A','110~139','g-a'],['AA+','140~','g-aa']];$('#gradeRow').innerHTML=G.map(([n,r,c])=>`<span class="pill ${c}">${n} <span style="font-weight:400;opacity:.85">${r}</span></span>`).join('')})();
+
+/* 방 순서 */
+(function(){const s=$('#roomSvg');const R=[['입구','체크','--g-c'],['조우','야생 2체','--bad'],['체크','','--g-c'],['체크','','--g-c'],['세이프룸','체크 + 짧은 휴식','--ok'],['보스방','4~6체 · 레이드','--accent']];
+ const xs=R.map((_,i)=>70+i*150),y=70;
+ s.append(el('line',{x1:xs[0],x2:xs[xs.length-1],y1:y,y2:y,stroke:css('--mute'),'stroke-width':5}));
+ // 갈림길: 1~3
+ s.append(el('path',{d:`M${xs[1]},${y} C${xs[1]+20},${y+120} ${xs[3]-20},${y+120} ${xs[3]},${y}`,fill:'none',stroke:css('--g-a'),'stroke-width':4,'stroke-dasharray':'10 6'}));
+ s.append(el('circle',{cx:(xs[1]+xs[3])/2,cy:y+90,r:20,fill:css('--g-c'),stroke:css('--g-a'),'stroke-width':3,'stroke-dasharray':'6 3'}));s.append(el('text',{x:(xs[1]+xs[3])/2,y:y+94,'text-anchor':'middle','font-size':11,'font-weight':700,style:'fill:#fff'},'체크'));
+ s.append(el('text',{x:(xs[1]+xs[3])/2,y:y+126,'text-anchor':'middle','font-size':11.5,class:'mute'},'다른 길: 배틀 ↔ 체크 뒤집기'));
+ // 곁방
+ s.append(el('line',{x1:xs[2],x2:xs[2],y1:y,y2:y-48,stroke:css('--mute'),'stroke-width':2,'stroke-dasharray':'3 4'}));s.append(el('circle',{cx:xs[2],cy:y-52,r:12,fill:css('--g-a')}));s.append(el('text',{x:xs[2]+18,y:y-48,'font-size':11,class:'mute'},'곁방 (단서)'));
+ R.forEach(([n,d,c],i)=>{s.append(el('circle',{cx:xs[i],cy:y,r:24,fill:css(c)}));s.append(el('text',{x:xs[i],y:y+44,'text-anchor':'middle','font-size':13,'font-weight':800},n));if(d)s.append(el('text',{x:xs[i],y:y+60,'text-anchor':'middle','font-size':11,class:'mute'},d))});
+})();
+
+/* 경계도 */
+(function(){const s=$('#alSvg');const x0=10,x1=750,X=v=>x0+(x1-x0)*v/100;
+ const Z=[[0,30,'--ok','평소'],[30,70,'--warn','이후 야생 Lv +5'],[70,100,'--bad','이후 야생 Lv +10'],];
+ Z.forEach(([a,b,c,t])=>{s.append(el('rect',{x:X(a),y:20,width:X(b)-X(a),height:26,fill:css(c),opacity:.8}));s.append(el('text',{x:X(a)+8,y:38,'font-size':12,'font-weight':700,style:'fill:#fff'},t))});
+ [0,30,70,100].forEach(v=>s.append(el('text',{x:X(v),y:62,'text-anchor':v===100?'end':v===0?'start':'middle','font-size':11.5,class:'mute'},v)));
+ s.append(el('text',{x:X(100),y:14,'text-anchor':'end','font-size':11.5,'font-weight':800,style:'fill:'+css('--bad')},'100 → 체크 자동 실패'));
+ s.append(el('text',{x:x0,y:90,'font-size':12.5},'오르는 값: 체크 대가 +10 · 실패 +20 · 일반 조우가 끝나면 +5'));
+ s.append(el('text',{x:x0,y:110,'font-size':11.5,class:'mute'},'v8 기준 경계도 30을 넘는 판은 4~12%, 70을 넘는 판은 0~1%예요.'))})();
+
+/* 테스트 */
+const V7={easy:[45,73,85,78,77,82,57,18,77,78,67,92],normal:[77,67,35,58,68,67,72,15,73,78,55,75],hard:[20,23,15,32,42,48,38,3,17,22,17,45]};
+const V8={easy:[45,73,85,78,92,82,57,32,77,78,67,92],normal:[77,67,35,58,68,67,72,33,73,78,55,75],hard:[20,23,15,32,48,48,38,8,17,22,17,45]};
+const AVG={v7:{easy:69,normal:62,hard:27},v8:{easy:71,normal:63,hard:28}};const TGT={easy:80,normal:60,hard:30};const KO={easy:'쉬움',normal:'보통',hard:'어려움'};
+(function(){$('#kpis').innerHTML=['easy','normal','hard'].map(t=>`<div><b>${AVG.v8[t]}%</b><span>${KO[t]} · 목표 ${TGT[t]}% · 고치기 전 ${AVG.v7[t]}%</span></div>`).join('')})();
+(function(){const s=$('#perdSvg');const tiers=['easy','normal','hard'];const pw=900,ph=100,gx=40,bw=(pw-gx-10)/12;
+ tiers.forEach((t,ti)=>{const y0=ti*132+22;const Y=v=>y0+ph-v*ph/100;
+  s.append(el('text',{x:0,y:y0+ph-4,'font-size':12,'font-weight':800},KO[t]));
+  s.append(el('line',{x1:gx,x2:pw,y1:Y(TGT[t]),y2:Y(TGT[t]),stroke:css('--ink'),'stroke-dasharray':'4 4','stroke-width':1.2}));
+  s.append(el('line',{x1:gx,x2:pw,y1:Y(0),y2:Y(0),stroke:css('--line')}));
+  for(let i=0;i<12;i++){const x=gx+i*bw;const a=V7[t][i],b=V8[t][i];
+   s.append(el('rect',{x:x+3,y:Y(a),width:bw/2-4,height:Y(0)-Y(a),fill:css('--g-c'),opacity:.4}));
+   const low=b<TGT[t]-20;s.append(el('rect',{x:x+bw/2,y:Y(b),width:bw/2-4,height:Y(0)-Y(b),fill:low?css('--bad'):css('--g-c')}));
+   s.append(el('text',{x:x+bw*0.72,y:Y(b)-4,'text-anchor':'middle','font-size':10.5,class:low?'':'mute',style:low?'fill:'+css('--bad')+';font-weight:700':''},b));
+   s.append(el('text',{x:x+bw/2,y:y0+ph+13,'text-anchor':'middle','font-size':10.5,class:'mute'},'#'+(i+1)))}});
+})();
+
+/* 조건 비교 */
+const COND=[
+ {k:'base',n:'지금 설정',d:'야생 · 보스 Lv +5 · 배틀당 적 2',w:[69,62,27],r:['19~97','17~97','0~78']},
+ {k:'lv0',n:'Lv +0',d:'야생 · 보스 Lv +0',w:[80,70,42],r:['44~100','28~100','6~83']},
+ {k:'lv10',n:'Lv +10',d:'야생 · 보스 Lv +10',w:[56,46,14],r:['19~94','17~89','0~50']},
+ {k:'boss0',n:'보스만 Lv +0',d:'일반 야생 +5 그대로',w:[78,71,40],r:['31~97','31~100','6~89']},
+ {k:'foes1',n:'배틀당 적 1체',d:'사전 배틀 · 조우만 1체',w:[83,78,35],r:['42~100','50~100','6~75']},
+ {k:'ban',n:'2배 특성 보스 제외',d:'초인 · 수맥 보스 빼기',w:[71,59,27],r:['19~97','22~94','0~78']},
+ {k:'fix',n:'갈림길 고친 판',d:'다른 길 배틀 수 차이 1까지 (0be9eee)',w:[71,63,28],r:['22~100','19~97','0~75']},
+ {k:'verify',n:'검증 루프 켬',d:'60판 시험 후 벗어나면 다시 생성',w:[78,63,31],r:['33~100','17~100','0~75']}];
+(function(){const s=$('#condSvg');const T=[80,60,30];const tiers=['쉬움','보통','어려움'];const x0=170,x1=880,X=v=>x0+(x1-x0)*v/100;
+ for(let v=0;v<=100;v+=20){s.append(el('line',{x1:X(v),x2:X(v),y1:10,y2:560,stroke:css('--line')}));s.append(el('text',{x:X(v),y:576,'text-anchor':'middle','font-size':11,class:'mute'},v+'%'))}
+ tiers.forEach((tn,ti)=>{const y0=14+ti*186;s.append(el('text',{x:0,y:y0+10,'font-size':13,'font-weight':800},tn+' · 목표 '+T[ti]+'%'));
+  s.append(el('line',{x1:X(T[ti]),x2:X(T[ti]),y1:y0+16,y2:y0+16+COND.length*20,stroke:css('--ink'),'stroke-width':2}));
+  COND.forEach((c,ci)=>{const y=y0+18+ci*20;const v=c.w[ti];const dv=Math.abs(v-T[ti]);const col=dv<=5?css('--g-c'):dv<=10?css('--warn'):css('--bad');
+   s.append(el('text',{x:x0-8,y:y+12,'text-anchor':'end','font-size':11.5,class:c.k==='base'?'':'mute','font-weight':c.k==='base'?800:400},c.n));
+   s.append(el('rect',{x:x0,y,width:X(v)-x0,height:15,rx:3,fill:col,opacity:c.k==='base'?1:.85}));
+   s.append(el('text',{x:X(v)+6,y:y+12,'font-size':11.5,'font-weight':700},v+'%'))})});
+ let h='<tr><th>조건</th><th>무엇을 바꿨나</th><th class="n">쉬움</th><th class="n">보통</th><th class="n">어려움</th></tr>';
+ for(const c of COND)h+=`<tr><td><b>${c.n}</b></td><td class="small">${c.d}</td>${c.w.map((v,i)=>`<td class="n">${v}% <span class="small">(${c.r[i]})</span></td>`).join('')}</tr>`;
+ $('#condTbl').innerHTML=h+'<tr><td colspan="5" class="small">괄호 = 3인 조합별 승률 범위. 「갈림길 고친 판」 말고는 모두 고치기 전 코드로 잰 값이에요. 경계도 30을 넘는 판은 모든 조건에서 쉬움 · 어려움 10~12%, 보통 3~4%로 거의 같았어요. 퇴출(100)은 0%예요.</td></tr>'})();
+
+/* 검토 */
+const REV={
+ check:[['good','띠 안 100%','난이도마다 성공 확률이 띠 안에 들어요. 옛 방식은 같은 체크가 일행에 따라 42~95%로 갈렸어요.'],
+  ['mid','시뮬 던전은 아직 고정 목표','시뮬 던전의 체크는 7 · 9로 고정이라, 생성기가 만든 목표와 승률이 따로 놀아요. 던전 시뮬에서도 「목표 자동」을 쓰면 체크도 난이도를 따라가요. 바꾸면 승률을 다시 맞춰야 해요.'],
+  ['lo','혼자 d4가 16%','타입 조건 동료가 없으면 d4가 돼요. 의도한 긴장감이면 그대로 두면 돼요.']],
+ abil:[['mid','글만 특성이 31%','시뮬이 못 읽는 특성은 배틀 승률에 안 잡혀요. 생성은 덜 고르게 했지만, 손으로 짠 무리에는 들어갈 수 있어요.'],
+  ['lo','absorb · imSt 틀은 글만','방호(무효)와 상태 면역은 시뮬이 읽지 않아요. 「시뮬이 읽는 것만」을 켜면 빠져요.']],
+ wild:[['mid','「자기 타입 2배」 보스는 던전마다 다르게 작용','초인 · 수맥 보스를 빼 보니 #1은 쉬움 45 → 80%로 올랐어요. 그런데 대신 들어온 보스가 더 센 #6은 보통 67 → 45%로 내려갔어요. 평균은 거의 그대로라 일괄로 빼지는 않는 게 나아요.'],
+  ['mid','1:1 검토는 무리 안 시너지를 못 봄','꿈들소는 사이코필드 + 사념의박치기 + 초인인데 1:1 승률은 38%예요. 독 · 맹독으로 깎는 2체 조합처럼 무리로 붙을 때의 힘은 1:1로 안 보여요.'],
+  ['good','서식지 정리','평균 2.95곳(최대 6)에서 1.5곳으로 줄였어요. 서식지마다 C 15 · B 4 · A 2 이상은 지켜요.']],
+ dungeon:[['hi','갈림길 다른 길이 배틀을 2개 늘리던 버그 (고침)','2방 구간을 통째로 뒤집어서, 다른 길로 가면 사전 배틀이 1 → 3이 되는 던전이 있었어요(#8). 이제 두 길의 배틀 수 차이는 1까지예요. #8은 보통 15 → 33%로 올랐어요.'],
+  ['mid','던전별 폭이 큼','같은 난이도 안에서도 던전마다 8~92%로 벌어져요. 보스 한 체, 사전 배틀 무리 한 쌍에 크게 흔들려요. 검증 루프를 켜면 #8이 보통 58%로 돌아오는 식으로 튀는 던전이 다시 만들어져요.'],
+  ['mid','「어려운 길」 변형이 쉬움에서도 셈','#9(씨앗 909)는 체크 3개가 전부 목표 11이에요. 쉬움에서도 38~77%로 들쭉날쭉해서, 쉬움 던전에는 이 변형을 안 쓰는 게 맞아 보여요.'],
+  ['lo','calib 명령이 옛 생성기로 재던 버그 (고침)','조건 비교용 calib 명령이 지금 던전 생성기를 거치지 않아 쉬움이 40% 언저리로 나왔어요. 이제 지금 생성기로 재요.']]};
+function rev(id,list,title){const h=`<div class="revh">${title||'감우 검토'}</div>`+list.map(([lv,t,d])=>`<div><span class="lv ${lv}">${{hi:'높음',mid:'중간',lo:'낮음',good:'좋음'}[lv]}</span><div><p class="t">${t}</p><p class="small">${d}</p></div></div>`).join('');$('#'+id).innerHTML=h}
+rev('rev-check',REV.check);rev('rev-abil',REV.abil);rev('rev-wild',REV.wild);rev('rev-dungeon',REV.dungeon);
+const ALL=[['hi','검증 루프를 기본으로 켜기','한 가지만 바꾼 조건 중 세 난이도 모두 목표에 가장 가까웠어요(78 · 63 · 31%, 목표 80 · 60 · 30). 튀는 던전을 다시 만들어 주니 #8 같은 경우가 걸러져요. 던전 하나 만드는 데 수십 초가 더 걸려요.'],
+ ['mid','쉬움만 더 쉽게 하려면 「배틀당 적 1체」','지금 설정은 쉬움이 71%로 목표보다 9%p 낮아요. 쉬움에서만 사전 배틀을 1체로 하면 83%이고, 조합별 바닥도 42%까지 올라와요. 검증 루프만으로 충분하면 안 바꿔도 돼요.'],
+ ['mid','쉬움 던전에서는 「어려운 길」 변형 빼기','목표 11 체크 3개짜리 변형이 쉬움에 나오면 승률이 크게 흔들려요.'],
+ ['lo','레벨은 그대로 +5','Lv ±5마다 세 난이도가 고르게 10~15%p씩 움직여요. 보통 · 어려움은 지금 값이 목표에 맞으니 레벨은 건드리지 않는 게 좋아요.'],
+ ['lo','「자기 타입 2배」 보스는 그대로 두기','빼면 던전마다 오르고 내리는 게 섞여서 평균이 안 바뀌어요(74 · 60 · 28%). 검증 루프가 튀는 던전을 잡아 줘요.']];
+rev('rev-all',ALL,'제안');
+</script>
