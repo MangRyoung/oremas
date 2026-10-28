@@ -31,7 +31,11 @@ window.OM_IMPORT=(()=>{
    /* 10-25 망령: SP · 서포터 — 제작기 「포인트」 칸 아래에서 적는다. 자동화 구문은 고유 포텐셜과 같은 꼴로 */
    sps:(Array.isArray(d.sps)?d.sps:[]).filter(x=>x&&x.name).map(x=>{const o={name:String(x.name),prob:x.prob===''||x.prob==null?100:Math.max(0,Math.min(100,Math.round(+x.prob)||0)),theme:String(x.theme||''),eff:brN(x.eff||''),img:String(x.img||''),line:String(x.line||''),color:String(x.color||'')};const dsl=String(x.auto||'').trim();if(dsl){const r=window.OM_FX?window.OM_FX.parse(dsl):{ops:[]};o.auto={dsl,ops:r.ops}}return o}),
    /* 10-23 망령: 제작기 시트의 지시 체계 {preset:assoc|ten|wild|jam|manual, tc, base} */
-   mkOrders:d.orders&&d.orders.preset?Object.assign({preset:String(d.orders.preset),tc:+d.orders.tc||0,base:d.orders.base==null?1:Math.max(0,+d.orders.base||0)},(()=>{const ty={};const src=d.orders.type||{};for(const k in src)if(/^[oc]_[a-z]+$/.test(k)&&isFinite(+src[k]))ty[k]=Math.max(0,Math.min(8,Math.round(+src[k])));return Object.keys(ty).length?{type:ty}:{}})(),(()=>{/* 10-26 1인 기준(2체): 제작기에서 고른 ORDER · COMMAND 만 횟수, 나머지 0 */const pk=d.orders.pick;if(!d.solo||!pk||typeof pk!=='object')return {};const f=a=>(Array.isArray(a)?a:[]).filter(k=>/^[a-z]+$/.test(k));return {pick:{o:f(pk.o),c:f(pk.c)}}})()):null}}
+   mkOrders:d.orders&&d.orders.preset?Object.assign({preset:String(d.orders.preset),tc:+d.orders.tc||0,base:d.orders.base==null?1:Math.max(0,+d.orders.base||0)},(()=>{const ty={};const src=d.orders.type||{};for(const k in src)if(/^[oc]_[a-z]+$/.test(k)&&isFinite(+src[k]))ty[k]=Math.max(0,Math.min(8,Math.round(+src[k])));return Object.keys(ty).length?{type:ty}:{}})(),(()=>{/* 10-26 1인 기준(2체): 제작기에서 고른 ORDER · COMMAND 만 횟수, 나머지 0 */const pk=d.orders.pick;if(!d.solo||!pk||typeof pk!=='object')return {};const f=a=>(Array.isArray(a)?a:[]).filter(k=>/^[a-z]+$/.test(k));return {pick:{o:f(pk.o),c:f(pk.c)}}})(),(()=>{/* 10-28 미사그 대학: 각성체 대가(지시)로 뺀 ORDER · COMMAND 는 0 회 */const M=misagOf(d);if(!M||!M.pen.지시)return {};const o=M.ordOff.o,c=M.ordOff.c;return o.length||c.length?{off:{o,c}}:{}})()):null,
+   /* 10-28 망령: 미사그 대학 (4+2) — 제작기가 저장할 때 남긴 각성체 대가 요약 (misagOut). 통솔 B-2 · A-1 · A-2 는 배틀의 포텐셜 발동에서 막는다 */
+   misag:misagOf(d)}}
+ function misagOf(d){const M=d&&d.misag&&d.misagOut;if(!M||typeof M!=='object')return null;const f=a=>(Array.isArray(a)?a:[]).filter(k=>/^[a-z]+$/.test(k));const pen={};for(const k of ['지시','육성','통솔','능력'])if(M.pen&&(M.pen[k]==='B'||M.pen[k]==='A'))pen[k]=M.pen[k];
+  return {grade:String(M.grade||'').slice(0,4),pen,ordOff:{o:f((M.ordOff||{}).o),c:f((M.ordOff||{}).c)},items:(Array.isArray(M.items)?M.items:[]).filter(x=>x&&x.key).slice(0,4).map(x=>({key:String(x.key).slice(0,8),grade:String(x.grade||'').slice(0,2),desc:String(x.desc||'').slice(0,120),need:x.need==='type'||x.need==='role'?x.need:''})),type:String(M.type||'').slice(0,12),role:String(M.role||'').slice(0,20)}}
 
  /* 기술 이름 → 배틀용 기술 (기술 DB 복사) */
  function move(name,half){
@@ -68,7 +72,7 @@ window.OM_IMPORT=(()=>{
    moves:(()=>{const mv=(d.moves||[]).filter(m=>m&&m.name).map(m=>{const o=move(m.name,m.half);if(m.hide)o.hide=true;return o});   /* hide: 한 장 요약 · 도감에 안 보이는 기술 (10-22) */return mv.length?mv:[move('발버둥',false)]})(),
    pots,excl:d.excl&&d.excl.name&&d.excl.name!=='전용 포텐셜'?{name:d.excl.name,eff:brN(d.excl.eff||'')}:null,
    exclX:(d.exclX||[]).filter(x=>x&&x.name).map(x=>({name:x.name,eff:brN(x.eff||'')})),
-   role:roleOf(d),pride:d.pride||'',egg:[d.egg1||'-',d.egg2||'-'],partner:!!d.partner,image:d.image||'',stands:standsOf(d.stands),standActive:+d.standActive||0,memo:d.memo||'',
+   role:roleOf(d),pride:d.pride||'',egg:[d.egg1||'-',d.egg2||'-'],partner:!!d.partner,awaken:tr&&tr.misag&&(d.awaken==='free'||d.awaken==='c')?d.awaken:'',image:d.image||'',stands:standsOf(d.stands),standActive:+d.standActive||0,memo:d.memo||'',
    cutLine:(()=>{const out={};const src=d.cutLine||{};for(const k in src){const v=String(src[k]||'').trim();if(v)out[String(k).replace(/『|』/g,'').trim()]=v.slice(0,80)}return out})(),
    auto:(()=>{const out={};const src=d.auto||{};for(const k in src){const dsl=String(src[k]||'').trim();if(!dsl)continue;const r=window.OM_FX?window.OM_FX.parse(dsl):{ops:[]};out[String(k).replace(/『|』/g,'')]={dsl,ops:r.ops}}
     /* 제작기 「상세 조정」 탭: 상태 변화 사양 → 「상태수정」 줄 (OM_FX.stMod 가 읽는다) */

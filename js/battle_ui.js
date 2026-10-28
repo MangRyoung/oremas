@@ -341,6 +341,17 @@ window.OM_BATTLE_UI=(()=>{
   for(const k of ['Thrash','Recharge',...semi])if(st[k])why.push((db[k]||{}).ko||k);return why.join(' · ')}
  const NOORD_W={},THR_PICK={};
  function potSrc(m){return [...(m.pots||[]).filter(p=>p&&!p.ph&&p.name),...(m.excl?[m.excl]:[]),...(m.exclX||[])]}
+ /* 10-28 망령: 미사그 대학 (4+2) 각성체 대가 — 제작기 「각성체 대가」의 통솔 항목으로 포텐셜 발동을 막는다. 항목 이름 B-2 · A-1 · A-2 로 판정
+    B-2 지정 역할의 역할 포텐셜 · A-1 필드 위 다른 아군 중 지정 타입이 없으면 각성 (대가) 포켓몬의 포텐셜 · A-2 각성 (대가)가 필드에 있으면 다른 아군의 역할 포텐셜. 막은 이유를 돌려준다 */
+ function misagBlock(b,m,name){const t=((b&&b.trainers)||{})[m&&m.tid];const M=t&&t.misag;if(!M||!Array.isArray(M.items)||!M.items.length)return '';
+  const nm=x=>String(x||'').replace(/『|』/g,'').trim();const pot=potSrc(m).find(p=>nm(p.name)===nm(name));if(!pot)return '';
+  const keys=M.items.map(x=>x.key);const isRole=/역할/.test(String(pot.kind||''));const onF=x=>!!(x&&x.entry&&x.hp&&x.hp.cur>0);
+  const mates=Object.values(b.mons||{}).filter(x=>x&&x.tid===m.tid);const aw=mates.find(x=>x.awaken==='free');
+  const hasType=(x,ko)=>{const en=window.OM_STATS&&window.OM_STATS.typeEn?window.OM_STATS.typeEn(ko):ko;return (x.types||[]).includes(en)||(x.typesKo||[]).includes(ko)};
+  if(keys.includes('B-2')&&isRole&&M.role&&(String(m.role||'')===M.role||nm(pot.name).includes(M.role)))return `각성체 대가 B-2 — 역할 「${M.role}」은(는) 발동하지 않는다`;
+  if(keys.includes('A-1')&&M.type&&m.awaken==='free'){const others=mates.filter(x=>x.id!==m.id&&onF(x));if(!others.some(x=>hasType(x,M.type)))return `각성체 대가 A-1 — 필드 위 다른 아군 중 ${M.type} 타입이 없다`}
+  if(keys.includes('A-2')&&isRole&&aw&&aw.id!==m.id&&onF(aw))return `각성체 대가 A-2 — ${aw.name}이(가) 필드에 있는 한 아군의 역할은 무효`;
+  return ''}
  /* 고유 포텐셜 = 트레이너 것. 횟수는 battle.trainers[tid].uUses */
  function uniqList(t){return ((t&&t.unique)||[]).filter(u=>u&&u.name).map(u=>{const L=limOf(u,t.uUses||{},t.uTurn||{});return {p:u,kind:'고유',max:L.max,left:L.left,mmax:L.mmax,per:L.per}})}
  function potList(m){const out=[];const src=potSrc(m);
@@ -1586,6 +1597,7 @@ window.OM_BATTLE_UI=(()=>{
  /* 효과 하나를 돌려서 배틀에 적용한다. kind: pot|trait|item|order. 돌려줌: 적용했으면 true */
  async function fireAuto(mid,kind,name,opt){opt=opt||{};const c=ctx();const b0=c.b;const m0=b0.mons[mid];if(!m0)return false;const auto=opt.auto||FX().autoOf(m0,kind,name);   /* opt.auto: SP(서포터) 처럼 포켓몬 밖에 적힌 구문 */
   if(!auto||!auto.ops||!auto.ops.length||auto.manual){if(!opt.quiet)A().toast(auto&&auto.manual?`「${name}」은(는) 자동화가 없어 손으로 처리한다`:`「${name}」 자동화 없음`);return false}
+  if(kind==='pot'&&!opt.uq&&auto.src!=='card'){const bk=misagBlock(b0,m0,name);if(bk){A().sysLog(`【포텐셜】 ${m0.name} 『${name}』\n${bk} — 발동하지 않았다`,'battle',{mid:m0.id,img:m0.image||''});return false}}   /* 10-28 미사그 대학 */
   /* 확률 (10-24 망령): 레디메이드 특성은 글(text)이 비어 있어 확률을 못 읽었다 — 그 칸의 효과 글까지 본다. 「N할로」 · 「N% 확률」 은 여기서 굴리고, 줄마다 고르는 효과(①②)는 고른 줄에서 굴린다 */
   const etx=auto.text||slotEff(m0,kind,name);const tm=FX().timing(etx);const nb0=snap(b0),nb=snap(nb0);const m=nb.mons[mid];const L=[];
   const lc=!!(FX().lineChance&&FX().lineChance(auto.ops));const perLine=auto.ops.length===1&&auto.ops[0].k==='choice';/* 10-24 망령: 레디메이드에 적어 둔 확률(p)이 먼저 */const pExp=auto.p!=null&&auto.p!==''&&isFinite(+auto.p)&&+auto.p>0?Math.min(100,+auto.p):0;const ch=opt.noRoll?0:pExp?pExp:(!tm.percent&&!perLine&&!lc&&FX().chanceOf?FX().chanceOf(etx):0);
