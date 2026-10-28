@@ -41,10 +41,6 @@ window.OM_ITEMRULE=(()=>{
    if((x=e.match(/「([^」]+)」 기술의 대미지를 강화\((\d+(?:\.\d+)?)배\)/)))r.atk={types:x[1].split('/').map(tEn),v:+x[2]};
    else if((x=e.match(/「단일기 : ([^」]+)」의 위력을 강화\((\d+(?:\.\d+)?)배\)/)))r.atk={types:[tEn(x[1])],v:+x[2],single:1};
    else if((x=e.match(/「(물리기|특수기)」의 대미지를 강화\((\d+(?:\.\d+)?)배\)/)))r.atk={cat:KO_CAT[x[1]],v:+x[2]};
-   else if((x=e.match(/「(공격|방어|특공|특방|스피드)\s*:\s*([A-Z]+)」\s*이하일 때 「([^」]+)」(?:을|를) 강화\((\d+(?:\.\d+)?)배\)/))){   /* 10-28 망령 (마제망토): 「특방 : B」 이하일 때 「특방」 강화 — 종족치 등급 조건 */
-    const ks=x[3].split('/').map(k=>KO_STAT[k.trim()]).filter(Boolean);const v=+x[4];r.gle={st:KO_STAT[x[1]],g:x[2]};
-    if(ks.includes('attack')&&ks.includes('specialattack'))r.atk={v};else if(ks.includes('attack'))r.atk={cat:'물리',v};else if(ks.includes('specialattack'))r.atk={cat:'특수',v};
-    if(ks.includes('defense')&&ks.includes('specialdefense'))r.guard={v:num(1/v)};else if(ks.includes('defense'))r.guard={cat:'물리',v:num(1/v)};else if(ks.includes('specialdefense'))r.guard={cat:'특수',v:num(1/v)}}
    else if(!/이하일 때|이상일 때/.test(e)&&((x=e.match(/「([^」]+)」(?:을|를) 강화\((\d+(?:\.\d+)?)배\)/))||(x=e.match(/「([^」]+)」(?:을|를) (\d+(?:\.\d+)?)배로 만든다/)))){
     const ks=x[1].split('/').map(k=>KO_STAT[k.trim()]).filter(Boolean);const v=+x[2];
     if(ks.includes('attack')&&ks.includes('specialattack'))r.atk={v};else if(ks.includes('attack'))r.atk={cat:'물리',v};else if(ks.includes('specialattack'))r.atk={cat:'특수',v};
