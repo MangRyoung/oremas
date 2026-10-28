@@ -51,7 +51,9 @@
    "target": 0.8,
    "band": 0.15,
    "tries": 1,
-   "ok": true
+   "ok": true,
+   "at": "2026-10-28",
+   "note": "야생 기술 소켓 반영 뒤 다시 잼"
   }
  },
  "rooms": [
