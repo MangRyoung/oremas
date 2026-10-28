@@ -150,7 +150,7 @@ tr.hl td{background:var(--accent-soft)!important}
   <div class="row"><label class="f">지도 모양<select id="agShape"><option value="">무작위</option><option>곧은길</option><option>꺾인길</option><option>구불길</option></select></label>
    <label class="f">갈림길<select id="agBranch"><option value="">1 (기본)</option><option value="0">없음 (한 줄)</option><option value="2">2</option></select></label>
    <label class="f">곁방<input type="number" id="agSide" min="0" max="3" placeholder="0~2" style="width:80px"></label>
-   <label class="chk" title="시험 일행으로 돌려 목표 승률 ±15% 에 드는 씨앗만 (수십 초)"><input type="checkbox" id="agVer"> 검증 루프</label>
+   <label class="chk" title="시험 일행으로 돌려 목표 승률 ±15% 에 드는 씨앗만 (수십 초)"><input type="checkbox" id="agVer" checked> 검증 루프</label>
    <label class="chk" title="「돌리기」 탭에서 고른 일행으로 체크 목표를 셈한다 (lib/checkgen.js)"><input type="checkbox" id="agFit"> 체크 목표를 일행에 맞추기</label></div>
   <details><summary class="small">손잡이 바꾸기 (비우면 가이드라인 값)</summary><div class="row" style="margin-top:6px">
    <label class="f">사전 배틀<input type="number" id="agBattles" min="0" max="4" placeholder="난이도 값" style="width:90px"></label>
@@ -568,7 +568,7 @@ function agRender(){const d=AG.dungeon,out=$('#agOut');out.hidden=false;let map=
  $('#agSave').onclick=()=>doSave(false);$('#agSaveW').onclick=()=>doSave(true);
  $('#agCopy').onclick=async()=>{try{await navigator.clipboard.writeText(JSON.stringify(AG.webtool,null,1));toast('복사했어요')}catch(e){toast('복사 실패 — 아래 미리 보기에서 직접 복사')}}}
 /* ===== 생성기 탭 (10-28) — 조건을 고르고 뽑아 보고, 마음에 드는 것만 시뮬 DB 로 ===== */
-const GN={tab:'abil',meta:null,res:{},pick:{},c:{abil:{types:[],kind:'',to:'',fams:[],engine:'any',n:8},mon:{steps:['C','C+','B'],hab:'',kind:'',types:[],orig:45,n:6,review:false},pack:{hab:'',steps:['C','C','B'],boss:true,lvAdd:0,n:3,tn:60},chk:{tier:'normal',theme:'',n:4,stats:[],hint:1,lo:'',hi:''},dg:{tier:'normal',theme:'',shape:'',battles:'',checks:'',side:'',verify:false,fit:false,seed:''}}};
+const GN={tab:'abil',meta:null,res:{},pick:{},c:{abil:{types:[],kind:'',to:'',fams:[],engine:'any',n:8},mon:{steps:['C','C+','B'],hab:'',kind:'',types:[],orig:45,n:6,review:false},pack:{hab:'',steps:['C','C','B'],boss:true,lvAdd:0,n:3,tn:60},chk:{tier:'normal',theme:'',n:4,stats:[],hint:1,lo:'',hi:''},dg:{tier:'normal',theme:'',shape:'',battles:'',checks:'',side:'',verify:true,fit:false,seed:''}}};
 try{const o=JSON.parse(localStorage.getItem('sim_gen')||'null');if(o)for(const k in o)Object.assign(GN.c[k]||{},o[k])}catch(e){}
 const gSave=()=>{try{localStorage.setItem('sim_gen',JSON.stringify(GN.c))}catch(e){}};
 async function genInit(){if(!S){setTimeout(genInit,300);return}if(!GN.meta){try{GN.meta=await api('genMeta')}catch(e){$('#gOut').innerHTML=`<div class="gempty">생성기 정보를 못 읽었어요: ${esc(e.message)}</div>`;return}}gTab(GN.tab)}
