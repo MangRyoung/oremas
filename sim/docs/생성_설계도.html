@@ -195,7 +195,7 @@ svg .mute{fill:var(--mute)}
  <div class="scroll"><svg id="perdSvg" viewBox="0 0 900 420" style="min-width:680px;width:100%;height:auto" role="img" aria-label="던전별 승률"></svg></div>
  <div class="legend"><span><i style="background:var(--g-c);opacity:.45"></i>고치기 전</span><span><i style="background:var(--g-c)"></i>갈림길 고친 뒤</span><span><i style="background:var(--bad)"></i>목표에서 20%p 넘게 낮음</span></div>
  <h3>조건을 바꿔 본 결과 <span class="small">조건마다 난이도별 720판 (던전 12 × 조합 20 × 3판)</span></h3>
- <div class="scroll"><svg id="condSvg" viewBox="0 0 900 580" style="min-width:640px;width:100%;height:auto" role="img" aria-label="조건별 승률"></svg></div>
+ <div class="scroll"><svg id="condSvg" viewBox="0 0 900 640" style="min-width:640px;width:100%;height:auto" role="img" aria-label="조건별 승률"></svg></div>
  <div class="legend"><span><i style="background:var(--ink)"></i>목표</span><span><i style="background:var(--g-c)"></i>목표 ±5%p 안</span><span><i style="background:var(--warn)"></i>±5~10%p</span><span><i style="background:var(--bad)"></i>10%p 넘게 벗어남</span></div>
  <div class="scroll" style="margin-top:12px"><table id="condTbl"></table></div>
  <div id="condNote"></div>
@@ -319,10 +319,11 @@ const COND=[
  {k:'foes1',n:'배틀당 적 1체',d:'사전 배틀 · 조우만 1체',w:[83,78,35],r:['42~100','50~100','6~75']},
  {k:'ban',n:'2배 특성 보스 제외',d:'초인 · 수맥 보스 빼기',w:[71,59,27],r:['19~97','22~94','0~78']},
  {k:'fix',n:'갈림길 고친 판',d:'다른 길 배틀 수 차이 1까지 (0be9eee)',w:[71,63,28],r:['22~100','19~97','0~75']},
- {k:'verify',n:'검증 루프 켬',d:'60판 시험 후 벗어나면 다시 생성',w:[78,63,31],r:['33~100','17~100','0~75']}];
+ {k:'verify',n:'검증 루프 켬',d:'60판 시험 후 벗어나면 다시 생성',w:[78,63,31],r:['33~100','17~100','0~75']},
+ {k:'final',n:'최종 (지금 기본값)',d:'검증 루프 기본 + 갈림길 고침 + 쉬움 어려운 길 제외 (940c3a2)',w:[81,63,30],r:['42~100','17~100','0~75']}];
 (function(){const s=$('#condSvg');const T=[80,60,30];const tiers=['쉬움','보통','어려움'];const x0=170,x1=880,X=v=>x0+(x1-x0)*v/100;
- for(let v=0;v<=100;v+=20){s.append(el('line',{x1:X(v),x2:X(v),y1:10,y2:560,stroke:css('--line')}));s.append(el('text',{x:X(v),y:576,'text-anchor':'middle','font-size':11,class:'mute'},v+'%'))}
- tiers.forEach((tn,ti)=>{const y0=14+ti*186;s.append(el('text',{x:0,y:y0+10,'font-size':13,'font-weight':800},tn+' · 목표 '+T[ti]+'%'));
+ for(let v=0;v<=100;v+=20){s.append(el('line',{x1:X(v),x2:X(v),y1:10,y2:620,stroke:css('--line')}));s.append(el('text',{x:X(v),y:636,'text-anchor':'middle','font-size':11,class:'mute'},v+'%'))}
+ tiers.forEach((tn,ti)=>{const y0=14+ti*206;s.append(el('text',{x:0,y:y0+10,'font-size':13,'font-weight':800},tn+' · 목표 '+T[ti]+'%'));
   s.append(el('line',{x1:X(T[ti]),x2:X(T[ti]),y1:y0+16,y2:y0+16+COND.length*20,stroke:css('--ink'),'stroke-width':2}));
   COND.forEach((c,ci)=>{const y=y0+18+ci*20;const v=c.w[ti];const dv=Math.abs(v-T[ti]);const col=dv<=5?css('--g-c'):dv<=10?css('--warn'):css('--bad');
    s.append(el('text',{x:x0-8,y:y+12,'text-anchor':'end','font-size':11.5,class:c.k==='base'?'':'mute','font-weight':c.k==='base'?800:400},c.n));
@@ -330,7 +331,7 @@ const COND=[
    s.append(el('text',{x:X(v)+6,y:y+12,'font-size':11.5,'font-weight':700},v+'%'))})});
  let h='<tr><th>조건</th><th>무엇을 바꿨나</th><th class="n">쉬움</th><th class="n">보통</th><th class="n">어려움</th></tr>';
  for(const c of COND)h+=`<tr><td><b>${c.n}</b></td><td class="small">${c.d}</td>${c.w.map((v,i)=>`<td class="n">${v}% <span class="small">(${c.r[i]})</span></td>`).join('')}</tr>`;
- $('#condTbl').innerHTML=h+'<tr><td colspan="5" class="small">괄호 = 3인 조합별 승률 범위. 「갈림길 고친 판」 말고는 모두 고치기 전 코드로 잰 값이에요. 경계도 30을 넘는 판은 모든 조건에서 쉬움 · 어려움 10~12%, 보통 3~4%로 거의 같았어요. 퇴출(100)은 0%예요.</td></tr>'})();
+ $('#condTbl').innerHTML=h+'<tr><td colspan="5" class="small">최종 기본값은 81 · 63 · 30%로 세 난이도 모두 목표에 맞아요. 괄호 = 3인 조합별 승률 범위. 「갈림길 고친 판」 말고는 모두 고치기 전 코드로 잰 값이에요. 경계도 30을 넘는 판은 모든 조건에서 쉬움 · 어려움 10~12%, 보통 3~4%로 거의 같았어요. 퇴출(100)은 0%예요.</td></tr>'})();
 
 /* 검토 */
 const REV={
