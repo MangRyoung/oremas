@@ -30,6 +30,7 @@ nav.toc{position:sticky;top:env(safe-area-inset-top,0px);align-self:start;paddin
 nav.toc a{color:var(--mute);text-decoration:none;font-size:13.5px;padding:4px 10px;border-left:3px solid transparent}
 nav.toc a:hover,nav.toc a:focus-visible{color:var(--ink);border-left-color:var(--accent);outline:none}
 nav.toc b{font:13px var(--f-disp);letter-spacing:.06em;color:var(--accent);padding:0 10px 8px}
+@media(max-width:900px){nav.toc{display:none}}
 header.hero{padding:40px 0 18px;border-bottom:2px solid var(--ink);margin-bottom:28px}
 header.hero .eyebrow{font:700 11.5px var(--f-mono);letter-spacing:.14em;color:var(--accent)}
 h1{font:clamp(34px,6vw,54px)/1.05 var(--f-disp);margin:6px 0 10px;text-wrap:balance}
@@ -81,7 +82,7 @@ svg .mute{fill:var(--mute)}
 
 <div class="wrap">
 <nav class="toc" aria-label="목차"><b>목차</b>
- <a href="#overview">한눈에</a><a href="#check">스킬 체크</a><a href="#abil">특성</a><a href="#wild">야생 포켓몬</a><a href="#dungeon">던전</a><a href="#tests">테스트</a><a href="#review">감우 검토 · 제안</a>
+ <a href="#overview">한눈에</a><a href="#check">스킬 체크</a><a href="#abil">특성</a><a href="#wild">야생 포켓몬</a><a href="#dungeon">던전</a><a href="#verify">&nbsp;· 검증 루프</a><a href="#tests">테스트</a><a href="#review">감우 검토 · 제안</a>
 </nav>
 <main>
 <header class="hero">
@@ -182,8 +183,26 @@ svg .mute{fill:var(--mute)}
  <div class="scroll"><svg id="alSvg" viewBox="0 0 760 120" style="min-width:520px;width:100%;height:auto" role="img" aria-label="경계도 눈금"></svg></div>
  <div class="cols">
   <div class="box"><h4>휴식</h4><p class="small" style="margin:0"><b>짧은 휴식</b>(보스 앞): 전원 HP 1/4 · 빈사는 HP 1 · 상태 회복 · 파티 4식 1 · 6령 1.<br><b>숨돌리기</b>: 가장 다친 1체 HP 1/4 + 파티 6령 1.</p></div>
-  <div class="box"><h4>검증 루프</h4><p class="small" style="margin:0">만든 던전을 시험 일행 20조합 × 3판으로 돌려요. 목표 ±15% 밖이면 씨앗을 바꿔 다시 만들어요(최대 8번). 던전마다 튀는 폭이 쉬움 · 보통에서 절반쯤으로 줄었어요.</p></div>
-  <div class="box"><h4>체크 목표</h4><p class="small" style="margin:0">시뮬 던전은 목표 7 · 9(어려운 길은 9 · 11)로 고정돼 있어요. 웹툴로 보낼 때는 난이도 띠만 싣고, 웹툴이 그 일행으로 목표를 계산해요(목표 자동).</p></div>
+  <div class="box"><h4>체크 목표</h4><p class="small" style="margin:0">시뮬 던전은 목표 7 · 9(어려운 길은 9 · 11, 보통 · 어려움에만)로 고정돼 있어요. 웹툴로 보낼 때는 난이도 띠만 싣고, 웹툴이 그 일행으로 목표를 계산해요(목표 자동).</p></div>
+ </div>
+<h3 id="verify">검증 루프 <span class="small">lib/calib.js verified() · 10-28부터 기본으로 켜짐</span></h3>
+ <p class="small" style="max-width:68ch;margin:0 0 8px">평균 승률만 맞추면 던전 하나하나는 크게 흔들려요. 쉬움 12개가 40~100%로 갈렸어요. 그래서 던전을 만들자마자 직접 돌려 보고, 목표에서 많이 벗어난 던전은 버리고 다시 만들어요.</p>
+ <div class="flow">
+  <div class="st"><b>던전 만들기</b><span>난이도 · 테마 · 씨앗으로 autogen 이 방 · 체크 · 조우를 짜요.</span></div>
+  <div class="st"><b>바로 돌려 보기</b><span>시험 일행 3인 조합마다 몇 판씩 끝까지 돌려 승률을 재요.</span></div>
+  <div class="st"><b>목표와 비교</b><span>쉬움 80 · 보통 60 · 어려움 30%. 차이가 ±15%p 안이면 통과.</span></div>
+  <div class="st"><b>밖이면 다시</b><span>씨앗만 바꿔(+7919씩) 새로 만들어 2번부터 반복해요.</span></div>
+  <div class="st"><b>끝</b><span>통과한 던전, 끝까지 못 넣으면 목표에 가장 가까웠던 던전을 내놔요.</span></div>
+ </div>
+ <div class="scroll" style="margin-top:10px"><table>
+  <tr><th>어디서</th><th class="n">시험 조합</th><th class="n">조합당 판</th><th class="n">최대 다시 만들기</th><th>허용 폭</th></tr>
+  <tr><td>시뮬 「던전 생성」 탭 (검증 체크 기본 켜짐)</td><td class="n">10</td><td class="n">3</td><td class="n">6</td><td>±15%p</td></tr>
+  <tr><td>명령줄 auto · autocheck (끄려면 --verify 0)</td><td class="n">20</td><td class="n">3</td><td class="n">8</td><td>±15%p (--band)</td></tr>
+ </table></div>
+ <div class="cols" style="margin-top:12px">
+  <div class="box"><h4>무엇을 고정하나</h4><p class="small" style="margin:0">난이도 규칙(보스방 적 수 · 레이드 · 사전 배틀 · 레벨)은 그대로 두고 씨앗만 바꿔요. 그래서 「쉬움인데 보스가 6체」 같은 일은 안 생기고, 같은 규칙 안에서 운이 너무 나쁘거나 좋은 배치만 걸러져요.</p></div>
+  <div class="box"><h4>결과에 남는 것</h4><p class="small" style="margin:0">던전 JSON 의 gen.verify 에 잰 승률 · 목표 · 허용 폭 · 몇 번째 씨앗인지 · 통과 여부가 남아요. 명령줄은 「검증: 3번째 씨앗 · 승률 78% (목표 80±15)」처럼 찍어요.</p></div>
+  <div class="box"><h4>효과와 한계</h4><p class="small" style="margin:0">평균 81 · 63 · 30%로 목표에 붙었어요. 다만 시험 조합 3판짜리 측정이라 오차가 커서, 어려움 #1 · #3 · #6 은 실제로 13~20%가 나왔어요. 폭을 ±10으로 좁히면 더 붙는 대신 만드는 시간이 늘어요.</p></div>
  </div>
  <div class="rev" id="rev-dungeon"></div>
 </section>
