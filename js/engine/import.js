@@ -74,7 +74,7 @@ window.OM_IMPORT=(()=>{
     /* 제작기 「상세 조정」 탭: 상태 변화 사양 → 「상태수정」 줄 (OM_FX.stMod 가 읽는다) */
     const tst=((d.tune||{}).st||[]).filter(x=>x&&x.st&&/^\d+\/\d+$/.test(String(x.v||'').replace(/\s+/g,''))).map(x=>`상태수정 ${x.st} ${String(x.v).replace(/\s+/g,'')}`).join('\n');
     if(tst){const r=window.OM_FX?window.OM_FX.parse(tst):{ops:[]};out['상세 조정']={dsl:tst,ops:r.ops}}return out})(),
-   ...(!item0&&d.item&&(own||ET.it)?{itemOwn:{name:String(d.item),eff:brN(item.eff||''),auto:String(own?own.auto||'':ET.itAuto||''),cons:!!(own?own.cons:ET.itCons)}}:{}),
+   ...(!item0&&d.item&&(own||ET.it)?{itemOwn:{name:String(d.item),eff:brN(item.eff||''),auto:String(own?own.auto||'':ET.itAuto||''),cons:!!(own?own.cons:ET.itCons),sock:own?String(own.sock||''):''}}:{}),   /* 10-28 망령: 1번 칸도 소켓을 넘긴다 (찌르호크나이트 코스트 누락) */
    ...(()=>{const tu=d.tune||{};const dsl=String(tu.item||'').trim();return dsl?{itemTune:{item:String(tu.itemName||d.item||''),dsl}}:{}})(),
    ...(()=>{const c=(d.tune||{}).crit;if(!c||typeof c!=='object')return {};const r={};if(c.tbl!=null&&c.tbl!=='')r.tbl=+c.tbl;if(+c.add)r.add=+c.add;if(+c.guard)r.guard=+c.guard;if(+c.dmg)r.dmg=+c.dmg;if(c.sure)r.sure=1;if(c.never)r.never=1;return Object.keys(r).length?{critRule:r}:{}})(),   /* 제작기 상세 조정 「급소 규칙」 (10-23 망령) */
    ...(()=>{/* 10-27 망령: 제작기에서 정한 해석 차단 — 포켓몬 값, 없으면 트레이너 기본값 */const own=dexFwOf(d.dexFw);const fw=own!==''?own:(tr&&tr.dexFw!==''&&tr.dexFw!=null?+tr.dexFw:0);if(!fw)return {};const parts=own!==''?dexPartsOf(d.dexFwParts):Object.assign({},(tr&&tr.dexFwParts)||{});return {dexFw:fw,...(fw===3?{dexFwParts:parts}:{})}})(),

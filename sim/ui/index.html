@@ -123,7 +123,7 @@ table.wdb td.sc,table.wdb th.sc{text-align:center;padding-left:2px;padding-right
 .gstep{display:inline-grid;grid-template-columns:auto 52px;gap:4px 8px;align-items:center;font-size:12.5px}
 </style></head><body>
 <header><h1>망켓몬 던전 · 스킬 체크 시뮬레이터<small>약식 · 가이드라인 자료 수집용</small></h1><span class="small" id="snapInfo">…</span><span class="sp"></span><button class="b sm" id="btnFetch" title="제작기 공유 DB 에서 트레이너 · 포켓몬을 받아 data/snapshot.json 으로">제작기에서 받기</button><button class="b sm" id="btnReload">새로고침</button></header>
-<nav id="nav"><button data-t="run" class="on">돌리기</button><button data-t="pt">일행</button><button data-t="dg">던전</button><button data-t="gen">생성기</button><button data-t="auto">던전 생성</button><button data-t="wild">야생</button><button data-t="rec">기록 · 리포트</button><button data-t="fb">피드백 · 인수인계</button><button data-t="tbl">체크 확률표</button><button data-t="doc">설계도</button></nav>
+<nav id="nav"><button data-t="run" class="on">돌리기</button><button data-t="pt">일행</button><button data-t="dg">던전</button><button data-t="gen">생성기</button><button data-t="auto">던전 생성</button><button data-t="wild">야생</button><button data-t="sdb">특성 · 체크 DB</button><button data-t="rec">기록 · 리포트</button><button data-t="fb">피드백 · 인수인계</button><button data-t="tbl">체크 확률표</button><button data-t="doc">설계도</button></nav>
 <main>
 <section id="t-run">
  <div class="grid">
@@ -204,6 +204,7 @@ table.wdb td.sc,table.wdb th.sc{text-align:center;padding-left:2px;padding-right
  <div class="card"><div class="row"><b>records/feedback.md</b><span class="small">결정 · 발견 · 다음 할 일. 다른 세션이 이어받을 때 README 다음에 읽는 파일이에요.</span><span class="sp"></span><button class="b pri" id="fbSave">저장</button><span class="small" id="fbMsg"></span></div><textarea id="fbText" rows="28" style="margin-top:8px"></textarea></div>
 </section>
 <section id="t-doc" hidden><div class="row" style="margin-bottom:6px"><span class="small">스킬 체크 · 특성 · 야생 · 던전 생성 방식과 테스트 결과 (docs/생성_설계도.html). 생성 로직이 바뀌면 같이 고쳐요.</span><span class="sp"></span><a class="b sm" href="/docs/생성_설계도.html" target="_blank" rel="noopener">새 창으로</a></div><iframe id="docFrame" title="생성 설계도" style="width:100%;height:calc(100vh - 170px);min-height:480px;border:1px solid var(--line);border-radius:10px;background:var(--surface)"></iframe></section>
+<section id="t-sdb" hidden><div class="gsub" id="sdbSub"><button data-s="abil" class="on">특성 DB</button><button data-s="chk">체크 DB</button><span class="sp"></span><input id="sdbQ" class="inp" placeholder="이름 · 효과 · 장면 찾기" style="max-width:220px"></div><div id="sdbOut"></div></section>
 <section id="t-tbl" hidden><div class="card wrap" id="tbl"></div></section>
 </main>
 <div id="toast"></div>
@@ -229,7 +230,19 @@ const ratioCol=r=>r>=.9?'var(--g-aa)':r>=.75?'var(--g-a)':r>=.6?'var(--g-b)':r>=
 const HUE=['#C8362B','#2B5FB4','#1E8A62','#B07A00','#7A4FB4','#C4651A','#2A8C9C'];const hcol=s=>{let h=0;for(const c of String(s))h=(h*31+c.charCodeAt(0))>>>0;return HUE[h%HUE.length]};
 try{const t=localStorage.getItem('sim_tab');if(t&&$('#t-'+t))showTab(t)}catch(e){}
 $('#nav').onclick=e=>{const b=e.target.closest('button');if(!b)return;showTab(b.dataset.t)};
-function showTab(t){if(t==='doc'){const f=$('#docFrame');if(f&&!f.src)f.src='/docs/'+encodeURIComponent('생성_설계도')+'.html'}if(t==='gen')setTimeout(()=>window.genInit&&genInit(),0);$$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));$$('main>section').forEach(s=>s.hidden=s.id!=='t-'+t);try{localStorage.setItem('sim_tab',t)}catch(e){}}
+/* 10-28 망령: 체크 · 특성 DB 는 생성기 밖 따로 칸 */
+const SDB={tab:(()=>{try{return localStorage.getItem('sim_sdb')||'abil'}catch(x){return 'abil'}})()};
+async function sdbOut(){const out=$('#sdbOut');if(!out)return;try{if(!GN.meta)GN.meta=await api('genMeta')}catch(er){out.innerHTML='<div class="small">DB 를 못 읽었어요 — '+esc(er.message)+'</div>';return}
+ $$('#sdbSub [data-s]').forEach(b=>b.classList.toggle('on',b.dataset.s===SDB.tab));const M=GN.meta;const q=($('#sdbQ').value||'').trim().toLowerCase();const hit=o=>!q||JSON.stringify(o).toLowerCase().includes(q);
+ const A=(M.abilDb||[]).filter(hit),C=(M.checkDb||[]).filter(hit);let h='';
+  if(SDB.tab==='abil')h+=`<div class="card gdb"><h3>특성 DB <span class="small">${A.length}${q?' / '+M.abilDb.length:''}개 · 야생 생성이 「오리지널 특성」 자리에 먼저 끌어 써요 · data/abil/db.json</span></h3>${A.length?`<div class="wrap"><table><tr><th>이름</th><th>TO</th><th>타입</th><th>시뮬</th><th>효과</th><th></th></tr>${A.map(a=>`<tr><td><b>${esc(a.name)}</b></td><td class="n">${a.to}</td><td>${(a.types||[]).map(tchip).join('')}</td><td><span class="gbad ${engCls(a.engine)}">${esc(a.engine)}</span></td><td class="small" style="white-space:pre-line">${esc(a.desc)}</td><td><button class="b xs" data-gdel="${esc(a.name)}">빼기</button></td></tr>`).join('')}</table></div>`:'<div class="small">아직 비었어요 — 「생성기 → 특성」에서 골라 보내요</div>'}</div>`;
+  else h+=`<div class="card gdb"><h3>체크 DB <span class="small">${C.length}${q?' / '+M.checkDb.length:''}개 · data/checks/db.json</span></h3>${C.length?`<div class="wrap"><table><tr><th>자질</th><th class="n">목표</th><th>조건</th><th>장면</th><th>테마 · 난이도</th><th></th></tr>${C.map(c=>`<tr><td>${esc(c.stat)}</td><td class="n">${c.target}</td><td>${c.hint==='any'?'—':esc(c.hint.replace('type:',''))}</td><td style="white-space:normal">${esc(c.label)}</td><td class="small">${esc(c.theme||'')} ${esc(c.tier||'')}</td><td><button class="b xs" data-gcdel="${esc(c.id)}">빼기</button></td></tr>`).join('')}</table></div>`:'<div class="small">아직 비었어요 — 「생성기 → 체크」에서 골라 보내요</div>'}</div>`;
+ out.innerHTML=h}
+$('#sdbSub').onclick=e=>{const b=e.target.closest('[data-s]');if(!b)return;SDB.tab=b.dataset.s;try{localStorage.setItem('sim_sdb',SDB.tab)}catch(x){}sdbOut()};
+$('#sdbQ').oninput=()=>sdbOut();
+$('#sdbOut').onclick=async e=>{const dl=e.target.closest('[data-gdel]');if(dl){await api('abilDel',{names:[dl.dataset.gdel]});GN.meta=await api('genMeta');return sdbOut()}
+ const cdl=e.target.closest('[data-gcdel]');if(cdl){await api('checksDel',{ids:[cdl.dataset.gcdel]});GN.meta=await api('genMeta');return sdbOut()}};
+function showTab(t){if(t==='doc'){const f=$('#docFrame');if(f&&!f.src)f.src='/docs/'+encodeURIComponent('생성_설계도')+'.html'}if(t==='gen')setTimeout(()=>window.genInit&&genInit(),0);if(t==='sdb')setTimeout(sdbOut,0);$$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));$$('main>section').forEach(s=>s.hidden=s.id!=='t-'+t);try{localStorage.setItem('sim_tab',t)}catch(e){}}
 async function loadState(){S=await api('state');$('#snapInfo').textContent=(S.snapshot.sample?'시험용 파티 (제작기 스냅샷 없음 — 「제작기에서 받기」)':'제작기 스냅샷 '+S.snapshot.file+' · '+String(S.snapshot.at||'').slice(0,16).replace('T',' '))+' · 트레이너 '+S.trainers.length;
  renderTrainers();renderPt();renderDgSel();renderPacks();renderWdb();renderRecords();renderCombos();renderJournal();$('#fbText').value=S.feedback;renderTable();
  $('#bPack').innerHTML=Object.values(S.wild.packs).map(p=>`<option value="${esc(p.id)}">${esc(p.name)} (${p.mons.length}체)</option>`).join('')}
@@ -721,8 +734,7 @@ function gOut(){const t=GN.tab,r=GN.res[t],P=GN.pick[t]||(GN.pick[t]=new Set()),
  /* DB 보내기 띠 + 보관함 */
  const canDb={abil:['특성 DB 로 보내기','abilAdd'],mon:['야생 DB 로 보내기','monsAdd'],chk:['체크 DB 로 보내기','checksAdd']}[t];
  if(r&&canDb)h+=`<div class="gbulk" ${P.size?'':'hidden'}><b>${P.size}개 골랐어요</b><span class="sp"></span><button class="b sm" id="gAll">전부 고르기</button><button class="b sm" id="gNone">비우기</button><button class="b sm pri" id="gSend">${canDb[0]}</button></div>`;
- if(t==='abil')h+=`<div class="card gdb"><h3>특성 DB <span class="small">${GN.meta.abilDb.length}개 · 야생 생성이 「오리지널 특성」 자리에 먼저 끌어 써요 · data/abil/db.json</span></h3>${GN.meta.abilDb.length?`<div class="wrap"><table><tr><th>이름</th><th>TO</th><th>타입</th><th>시뮬</th><th>효과</th><th></th></tr>${GN.meta.abilDb.map(a=>`<tr><td><b>${esc(a.name)}</b></td><td class="n">${a.to}</td><td>${(a.types||[]).map(tchip).join('')}</td><td><span class="gbad ${engCls(a.engine)}">${esc(a.engine)}</span></td><td class="small" style="white-space:pre-line">${esc(a.desc)}</td><td><button class="b xs" data-gdel="${esc(a.name)}">빼기</button></td></tr>`).join('')}</table></div>`:'<div class="small">아직 비었어요 — 위에서 골라 보내요</div>'}</div>`;
- if(t==='chk')h+=`<div class="card gdb"><h3>체크 DB <span class="small">${GN.meta.checkDb.length}개 · data/checks/db.json</span></h3>${GN.meta.checkDb.length?`<div class="wrap"><table><tr><th>자질</th><th class="n">목표</th><th>조건</th><th>장면</th><th>테마 · 난이도</th><th></th></tr>${GN.meta.checkDb.map(c=>`<tr><td>${esc(c.stat)}</td><td class="n">${c.target}</td><td>${c.hint==='any'?'—':esc(c.hint.replace('type:',''))}</td><td style="white-space:normal">${esc(c.label)}</td><td class="small">${esc(c.theme||'')} ${esc(c.tier||'')}</td><td><button class="b xs" data-gcdel="${esc(c.id)}">빼기</button></td></tr>`).join('')}</table></div>`:'<div class="small">아직 비었어요</div>'}</div>`;
+ if(t==='abil'||t==='chk'){const n=t==='abil'?GN.meta.abilDb.length:GN.meta.checkDb.length;h+=`<div class="card gdb"><span class="small">${t==='abil'?'특성':'체크'} DB ${n}개는 「특성 · 체크 DB」 탭에서 봐요 (10-28 망령: DB 칸을 따로)</span> <button class="b sm" id="gToDb">열기</button></div>`}
  out.innerHTML=h;
  out.onclick=async e=>{const cb=e.target.closest('[data-gp]');if(cb){const i=+cb.dataset.gp;if(P.has(i))P.delete(i);else P.add(i);return gOut()}
   const card=e.target.closest('.gcard');if(card&&!e.target.closest('button,input,details,.mv1')&&card.querySelector('[data-gp]')){const i=+card.querySelector('[data-gp]').dataset.gp;if(P.has(i))P.delete(i);else P.add(i);return gOut()}
@@ -731,6 +743,7 @@ function gOut(){const t=GN.tab,r=GN.res[t],P=GN.pick[t]||(GN.pick[t]=new Set()),
     r.list=r.list.filter((_,i)=>!P.has(i));P.clear();GN.meta=await api('genMeta');if(t==='mon')loadState();gOut()}catch(er){toast('오류: '+er.message)}return}
   const dl=e.target.closest('[data-gdel]');if(dl){await api('abilDel',{names:[dl.dataset.gdel]});GN.meta=await api('genMeta');return gOut()}
   const cdl=e.target.closest('[data-gcdel]');if(cdl){await api('checksDel',{ids:[cdl.dataset.gcdel]});GN.meta=await api('genMeta');return gOut()}
+  if(e.target.closest('#gToDb')){SDB.tab=t==='chk'?'chk':'abil';showTab('sdb');return}
   if(e.target.closest('#gReroll'))return gGo();
   if(e.target.closest('#gTest')){if(!sel.size)return toast('왼쪽에서 일행을 골라요');const b=e.target.closest('#gTest');b.disabled=true;b.textContent='붙이는 중…';try{r.test=await api('packTest',{pack:r.pack,party:[...sel],n:GN.c.pack.tn});gOut()}catch(er){toast('오류: '+er.message);b.disabled=false}return}
   if(e.target.closest('#gPkSave')){try{const x=await api('packSave',{pack:r.pack,id:$('#gPkId').value.trim(),name:$('#gPkName').value.trim(),hab:GN.c.pack.hab});toast(`저장했어요 — 무리 「${x.pack.name}」 · 야생 DB ${x.added.length}체`);loadState()}catch(er){toast('오류: '+er.message)}return}
