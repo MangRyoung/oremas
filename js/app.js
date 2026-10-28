@@ -595,7 +595,15 @@ function avatarOf(r){const d=r.data||{};if(d.k&&window.OM_RP_UI&&window.OM_RP_UI
 /* 나만 보는 로그 (10-24 망령): 시트 · 상세 창에서 소지품을 착용 · 교체 · 뗀 줄은 서버에 남기지 않고 이 브라우저에만 (방마다 50줄까지 기억) */
 const SELFK=()=>'om_selflog_'+(ST.room||'');let SELFLOG=null;
 function selfRows(){if(SELFLOG&&SELFLOG.room===ST.room)return SELFLOG.rows;let rows=[];try{rows=JSON.parse(localStorage.getItem(SELFK())||'[]')||[]}catch(e){}SELFLOG={room:ST.room,rows};return rows}
-function selfLog(t){const rows=selfRows();rows.push({id:(ST.lastLogId||0)+0.5,kind:'self',at:new Date().toISOString(),data:{t:String(t)}});while(rows.length>50)rows.shift();try{localStorage.setItem(SELFK(),JSON.stringify(rows))}catch(e){}renderLog(true)}
+/* 10-28 망령: 혼자 소지품을 여럿 바꾸면 줄이 너무 많다 — 그 사이 다른 로그가 없고 5분 안이면 소지품 줄은 한 줄로 합친다 (같은 포켓몬은 마지막 것만) */
+const ITEM_RX=/^(?!⚠|【)(.+?) (소지품\d?.*)$/;
+function selfLog(t){const rows=selfRows();t=String(t);const id=(ST.lastLogId||0)+0.5,now=Date.now();
+ const m=t.match(ITEM_RX),last=rows[rows.length-1];
+ if(m&&last&&last.id===id&&last.data&&Array.isArray(last.data.it)&&now-Date.parse(last.at)<5*60e3){
+  const it=last.data.it.filter(x=>x[0]!==m[1]);it.push([m[1],m[2]]);
+  last.data={it,t:it.length>1?'소지품 — '+it.map(([n,x])=>n+' '+x.replace(/^소지품 → /,'').replace(/ \(시트\)$/,'')).join(' · '):it[0][0]+' '+it[0][1]};last.at=new Date().toISOString();
+  try{localStorage.setItem(SELFK(),JSON.stringify(rows))}catch(e){}return renderLog(true)}
+ rows.push({id,kind:'self',at:new Date().toISOString(),data:m?{t,it:[[m[1],m[2]]]}:{t}});while(rows.length>50)rows.shift();try{localStorage.setItem(SELFK(),JSON.stringify(rows))}catch(e){}renderLog(true)}
 /* 10-26 망령: 같은 소지품은 한 파티에 하나만 — 겹치면 [[소지품, [포켓몬 이름…]]] */
 function dupItems(mons){const by={};for(const m of mons||[]){const it=String((m&&m.item)||'').trim();if(!it)continue;(by[it]=by[it]||[]).push(m.name||m.id)}return Object.entries(by).filter(([k,v])=>v.length>1)}
 function dupItemText(name,d){return `⚠ ${name} — 같은 소지품이 겹친다 (한 파티에 하나만): ${d.map(([it,ns])=>`「${it}」 ${ns.join(' · ')}`).join(' / ')}`}
