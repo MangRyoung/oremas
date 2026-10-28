@@ -621,6 +621,8 @@ function renderLog(scroll){
  const el=$('#log');if(!el)return;const top0=el.scrollTop,h0=el.scrollHeight;const near=h0-top0-el.clientHeight<48;
  if(!el._nb){el._nb=1;el.addEventListener('scroll',()=>{if(LOGNEW&&el.scrollHeight-el.scrollTop-el.clientHeight<48){LOGNEW=false;const b=el.querySelector('.lognew');if(b)b.remove()}},{passive:true});el.addEventListener('click',e=>{if(e.target.closest('.lognew')){LOGNEW=false;e.target.closest('.lognew').remove();el.scrollTop=el.scrollHeight}})}
  const cut=+((ST.state.rp||{}).logClearAt)||0;
+ /* 10-28 망령: 로그를 완전히 지우면(서버가 남기는 「GM 이 로그를 지웠다.」 줄) 이 브라우저에만 있던 「나만 보임」 줄도 그 앞의 것은 버린다 */
+ const wipe=ST.log.reduce((a,r)=>r.kind==='sys'&&r.data&&r.data.t==='GM 이 로그를 지웠다.'&&r.id>a?r.id:a,0);if(wipe){const rs=selfRows();const k=rs.filter(r=>r.id>wipe);if(k.length<rs.length){rs.splice(0,rs.length,...k);try{localStorage.setItem(SELFK(),JSON.stringify(rs))}catch(e){}}}
  const SR=CHAN.cur==='o'?[]:selfRows().filter(r=>r.id>cut);
  el.innerHTML=(SR.length?ST.log.concat(SR).sort((a,b)=>a.id-b.id):ST.log).filter(logDup()).filter(r=>r.kind==='self'||(r.id>cut&&(CHAN.cur==='o'?isOoc(r):!isOoc(r)))).map(r=>{const d=r.data||{};const k=(r.kind==='chat'&&d.bat)?d.bat:r.kind;const t=fmtTime(r.at);
   if(k==='self')return `<div class="msg sys self"><div class="bub">${esc(d.t)} <span class="selftag">나만 보임</span></div></div>`;
