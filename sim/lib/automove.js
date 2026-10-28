@@ -81,6 +81,18 @@ function fill(W,m){const real=(m.moves||[]).filter(x=>x&&x.name&&x.name!=='발�
  for(let guard=0;guard<8&&cap!=null&&pick.reduce((a,p)=>a+sockOf(p.name),0)>cap;guard++){const i=pick.map((p,i)=>[sockOf(p.name),i]).sort((a,b)=>b[0]-a[0])[0][1];const cur=pick[i];const t=cur.type||(MV[cur.name]||{}).type;
   let alt=null;if(cur.status)alt=scored.map(o=>o.x).find(x=>x.sock<sockOf(cur.name)&&!pick.some(p=>p.name===x.name));else alt=P.filter(x=>x.type===t&&x.cat===(MV[cur.name]||{}).cat&&sockOf(x.name)<sockOf(cur.name)&&!pick.some(p=>p.name===x.name)).sort((a,b)=>sockOf(a.name)-sockOf(b.name)||b.score-a.score)[0];
   if(!alt){pick.splice(i,1);if(pick.length<4)break;continue}pick[i]=Object.assign({},alt,{status:cur.status})}
+ /* 10-28 망령 「대부분 기술 4개를 고집하느라 소켓을 제대로 활용 못한다」: 상한까지 남은 소켓을 쓴다.
+    ① 남은 소켓이 1.5 이상이면 기술을 하나 더 (최대 6개) — 어태커는 견제 공격기, 서포터 · 밸런스는 아직 없는 분류의 변화기 먼저.
+    ② 그래도 남으면 공격기를 같은 타입 · 범주의 더 센 기술(위력 × 명중)로 올린다 — 자속부터, 남은 소켓 안에서. */
+ if(cap!=null){const used=()=>pick.reduce((a,p)=>a+sockOf(p.name),0);const has=n=>pick.some(p=>p.name===n);
+  const addAtk=k=>{for(let j=0;j<cov.length;j++){const [t]=cov[(H(90+k)+j)%cov.length];if(pick.some(p=>!p.status&&(p.type||(MV[p.name]||{}).type)===t))continue;const mv=atkPick(t,j%2&&ctx.dual?cat2:cat,100+k*7+j);if(mv&&used()+sockOf(mv.name)<=cap)return mv}return null};
+  const addSt=()=>{const C=scored.filter(o=>!has(o.x.name)&&!o.x.cats.some(c=>usedCat.has(c))&&used()+o.x.sock<=cap).slice(0,6);if(!C.length)return null;const o=C[H(120+pick.length)%C.length];o.x.cats.forEach(c=>usedCat.add(c));return {name:o.x.name,type:o.x.type,status:true,sock:o.x.sock}};
+  for(let k=0;k<2&&pick.length<6&&cap-used()>=1.5-1e-9;k++){const first=group==='attacker'?addAtk(k):addSt();const mv=first||(group==='attacker'?addSt():addAtk(k));if(!mv)break;pick.push(mv)}
+  const val=n=>{const r=MV[n]||{};return (+r.pow||0)*Math.min(100,+r.acc||100)/100};
+  const atkIdx=pick.map((p,i)=>i).filter(i=>!pick[i].status).sort((a,b)=>(own.includes(pick[b].type)?1:0)-(own.includes(pick[a].type)?1:0));
+  for(const i of atkIdx){const cur=pick[i];const r=MV[cur.name]||{};const t=cur.type||r.type;const room=cap-used();if(room<0.5-1e-9)break;
+   const up=P.filter(x=>x.type===t&&x.cat===r.cat&&!x.orig&&!has(x.name)&&sockOf(x.name)>sockOf(cur.name)&&sockOf(x.name)-sockOf(cur.name)<=room+1e-9&&val(x.name)>=val(cur.name)+10).sort((a,b)=>val(b.name)-val(a.name)||sockOf(a.name)-sockOf(b.name))[0];
+   if(up)pick[i]=Object.assign({},up,{status:false})}}
  const doc={id:'auto',data:{name:m.name,t1:own[0]||'-',t2:own[1]||'-',base:[1,1,1,1,1,1],moves:pick.map(x=>({name:x.name})),pots:[]}};
  try{const tr=W.OM_IMPORT.trainer({id:'auto_t',data:{name:'auto',ranks:{육성:'C'},pids:[]}});const x=W.OM_IMPORT.pokemon(doc,tr);if(x.moves&&x.moves.length){m.moves=x.moves;m.autoMoves=true;m.movePlan={group,nAtk,nSt};return true}}catch(e){}
  return false}
