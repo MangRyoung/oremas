@@ -86,9 +86,9 @@ svg .mute{fill:var(--mute)}
 </nav>
 <main>
 <header class="hero">
- <div class="eyebrow">망각 · 시뮬레이터 · 2026-10-28 기준</div>
+ <div class="eyebrow">망각 · 시뮬레이터 · 2026-10-28 밤 기준</div>
  <h1>망켓몬 생성 설계도</h1>
- <p>시뮬레이터가 스킬 체크, 오리지널 특성, 야생 포켓몬, 던전을 어떤 순서와 숫자로 만드는지 한 장에 모았어요. 절마다 끝에 감우가 직접 검토한 결과를 붙였어요.</p>
+ <p>시뮬레이터가 스킬 체크, 오리지널 특성, 야생 포켓몬, 던전을 어떤 순서와 숫자로 만드는지 한 장에 모았어요. 절마다 끝에 감우가 직접 검토한 결과를 붙였어요. 시뮬레이터 「설계도」 탭에서도 같은 판을 볼 수 있고, 생성 로직이 바뀌면 같이 고쳐요.</p>
 </header>
 
 <section id="overview">
@@ -153,15 +153,17 @@ svg .mute{fill:var(--mute)}
   <div class="st"><b>흔들기 · 다듬기</b><span>칸마다 ±6~12 흔들고, 계산 종족치가 계단 안쪽 끝에 올 때까지 1~3씩</span></div>
   <div class="st"><b>콘셉트</b><span>타입 짝 표 · 체형에 맞는 이름 · 서식지 문장</span></div>
   <div class="st"><b>특성</b><span>기준 TO 안 점수제, 45%는 오리지널</span></div>
-  <div class="st"><b>기술</b><span>4개 이상 · 변화기 1개 이상 · 소켓 상한 안</span></div>
+  <div class="st"><b>기술</b><span>4~6개 · 변화기 1개 이상 · 소켓 상한까지 채움</span></div>
   <div class="st"><b>서식지</b><span>본 서식지 1 + 둘째 1 (평균 1.5곳)</span></div>
   <div class="st"><b>1:1 검토</b><span>같은 묶음 8체와 24판. 25% 미만 · 78% 초과면 다시 (최대 3회)</span></div>
+  <div class="st"><b>그림</b><span>이름 · 타입 · 역할 · 서식지로 이미지 프롬프트를 만들고, 만든 그림을 편집 창에 넣어요</span></div>
  </div>
  <h3>계단 사다리 (계산 종족치 상한)</h3>
  <div class="scroll"><svg id="ladderSvg" viewBox="0 0 760 170" style="min-width:560px;width:100%;height:auto" role="img" aria-label="계단 사다리"></svg></div>
  <div class="cols">
   <div class="box"><h4>계산 종족치</h4><p class="small mono" style="margin:0">실제 합 + 하한분 + 내구 할증 + HP 할증 + 화력·스피드 할증 − 쌍두 할인 + 특성 TO 조정</p><p class="small">특성 TO가 기준보다 0.5 높으면 +45, 1보다 0.5 낮으면 −25.</p></div>
   <div class="box"><h4>역할별 기술 구성</h4><p class="small" style="margin:0">어태커 공격 3 + 변화 1 (70%) · 서포터 공격 2 + 변화 2 (60%) · 밸런스 공격 2 + 변화 2 (60%). 첫 타입 자속은 반드시 넣어요. 선공기는 넣지 않아요.</p></div>
+  <div class="box"><h4>남은 소켓 쓰기 <span class="small">10-28 밤</span></h4><p class="small" style="margin:0">4개를 고른 뒤 상한까지 소켓이 1.5 이상 남으면 기술을 하나 더 넣어요(최대 6개). 어태커는 견제 공격기, 서포터 · 밸런스는 아직 없는 분류의 변화기부터요. 그래도 남으면 공격기를 같은 타입 · 범주의 더 센 기술로 올려요(자속부터).<br><b>소켓 사용 평균 4.47 → 6.27</b> (상한 평균 6.53) · 4개 51체 · 5개 141체 · 6개 108체.</p></div>
   <div class="box"><h4>종족치 등급 색</h4><p class="small" style="margin:0 0 6px">카드와 표의 막대는 제작기 등급 색을 따라요.</p><div id="gradeRow" style="display:flex;gap:4px;flex-wrap:wrap"></div></div>
  </div>
  <div class="rev" id="rev-wild"></div>
@@ -185,6 +187,21 @@ svg .mute{fill:var(--mute)}
   <div class="box"><h4>휴식</h4><p class="small" style="margin:0"><b>짧은 휴식</b>(보스 앞): 전원 HP 1/4 · 빈사는 HP 1 · 상태 회복 · 파티 4식 1 · 6령 1.<br><b>숨돌리기</b>: 가장 다친 1체 HP 1/4 + 파티 6령 1.</p></div>
   <div class="box"><h4>체크 목표</h4><p class="small" style="margin:0">시뮬 던전은 목표 7 · 9(어려운 길은 9 · 11, 보통 · 어려움에만)로 고정돼 있어요. 웹툴로 보낼 때는 난이도 띠만 싣고, 웹툴이 그 일행으로 목표를 계산해요(목표 자동).</p></div>
  </div>
+<h3>지금 시뮬에 들어 있는 던전 10개 <span class="small">PC 실제 일행 20조합 × 3판 · 야생 소켓 반영 뒤</span></h3>
+ <div class="scroll"><table>
+  <tr><th>난이도</th><th>던전</th><th>id</th><th class="n">승률</th><th class="n">목표</th></tr>
+  <tr><td rowspan="3"><b>쉬움</b></td><td>고목의 숲</td><td class="mono small">auto_easy_10920</td><td class="n">70%</td><td class="n" rowspan="3">80 ±15</td></tr>
+  <tr><td>난파선 해안</td><td class="mono small">auto_easy_2002</td><td class="n">72%</td></tr>
+  <tr><td>얼음 동굴</td><td class="mono small">auto_easy_2003</td><td class="n">67%</td></tr>
+  <tr><td rowspan="4"><b>보통</b></td><td>메아리 굴</td><td class="mono small">auto_normal_2004</td><td class="n">53%</td><td class="n" rowspan="4">60 ±15</td></tr>
+  <tr><td>흐느끼는 저택</td><td class="mono small">auto_normal_3005</td><td class="n">65%</td></tr>
+  <tr><td>잊힌 성채</td><td class="mono small">auto_normal_2006</td><td class="n">72%</td></tr>
+  <tr><td>지하 관측소</td><td class="mono small">auto_normal_2007</td><td class="n">65%</td></tr>
+  <tr><td rowspan="3"><b>어려움</b></td><td>버려진 별장</td><td class="mono small">auto_hard_10929</td><td class="n">27%</td><td class="n" rowspan="3">30 ±15</td></tr>
+  <tr><td>재의 고원</td><td class="mono small">auto_hard_17846</td><td class="n">22%</td></tr>
+  <tr><td>메아리 굴</td><td class="mono small">auto_hard_2009</td><td class="n">38%</td></tr>
+ </table></div>
+ <p class="small">다시 잴 때는 <span class="mono">node bin/sim.js recheck</span> (저장까지 하려면 --save). 쉬움 셋은 모두 목표보다 낮은 쪽이에요.</p>
 <h3 id="verify">검증 루프 <span class="small">lib/calib.js verified() · 10-28부터 기본으로 켜짐</span></h3>
  <p class="small" style="max-width:68ch;margin:0 0 8px">평균 승률만 맞추면 던전 하나하나는 크게 흔들려요. 쉬움 12개가 40~100%로 갈렸어요. 그래서 던전을 만들자마자 직접 돌려 보고, 목표에서 많이 벗어난 던전은 버리고 다시 만들어요.</p>
  <div class="flow">
@@ -361,10 +378,13 @@ const REV={
   ['lo','absorb · imSt 틀은 글만','방호(무효)와 상태 면역은 시뮬이 읽지 않아요. 「시뮬이 읽는 것만」을 켜면 빠져요.']],
  wild:[['mid','「자기 타입 2배」 보스는 던전마다 다르게 작용','초인 · 수맥 보스를 빼 보니 #1은 쉬움 45 → 80%로 올랐어요. 그런데 대신 들어온 보스가 더 센 #6은 보통 67 → 45%로 내려갔어요. 평균은 거의 그대로라 일괄로 빼지는 않는 게 나아요.'],
   ['mid','1:1 검토는 무리 안 시너지를 못 봄','꿈들소는 사이코필드 + 사념의박치기 + 초인인데 1:1 승률은 38%예요. 독 · 맹독으로 깎는 2체 조합처럼 무리로 붙을 때의 힘은 1:1로 안 보여요.'],
-  ['good','서식지 정리','평균 2.95곳(최대 6)에서 1.5곳으로 줄였어요. 서식지마다 C 15 · B 4 · A 2 이상은 지켜요.']],
+  ['good','서식지 정리','평균 2.95곳(최대 6)에서 1.5곳으로 줄였어요. 서식지마다 C 15 · B 4 · A 2 이상은 지켜요.'],
+  ['good','기술 소켓을 상한까지 씀 (10-28 적용)','전에는 300체 모두 기술 4개에 소켓 평균 4.5/6.5였어요. 이제 5~6개로 늘거나 더 센 기술로 바뀌어 6.3/6.5를 써요. 야생이 세진 만큼 던전 승률이 내려갔어요(아래 던전 표).'],
+  ['mid','표의 1:1 승률은 옛 기술 기준','기술을 다시 고른 뒤 1:1 검토는 아직 다시 안 돌렸어요. 등급 안 균형을 보려면 다시 재야 해요.']],
  dungeon:[['hi','갈림길 다른 길이 배틀을 2개 늘리던 버그 (고침)','2방 구간을 통째로 뒤집어서, 다른 길로 가면 사전 배틀이 1 → 3이 되는 던전이 있었어요(#8). 이제 두 길의 배틀 수 차이는 1까지예요. #8은 보통 15 → 33%로 올랐어요.'],
   ['mid','던전별 폭이 큼','같은 난이도 안에서도 던전마다 8~92%로 벌어져요. 보스 한 체, 사전 배틀 무리 한 쌍에 크게 흔들려요. 검증 루프를 켜면 #8이 보통 58%로 돌아오는 식으로 튀는 던전이 다시 만들어져요.'],
-  ['mid','「어려운 길」 변형이 쉬움에서도 셈','#9(씨앗 909)는 체크 3개가 전부 목표 11이에요. 쉬움에서도 38~77%로 들쭉날쭉해서, 쉬움 던전에는 이 변형을 안 쓰는 게 맞아 보여요.'],
+  ['mid','「어려운 길」 변형이 쉬움에서도 셈','#9(씨앗 909)는 체크 3개가 전부 목표 11이에요. 쉬움에서도 38~77%로 들쭉날쭉해서, 그래서 쉬움 던전에는 이 변형을 안 써요 (10-28 적용).'],
+  ['good','소켓 반영 뒤 던전 다시 재기','야생 기술이 세진 뒤 recheck 명령으로 10개를 다시 쟀어요. 범위 밖 3개(쉬움 62% · 보통 42% · 어려움 50%)는 새로 검증해 바꿨어요.'],
   ['lo','calib 명령이 옛 생성기로 재던 버그 (고침)','조건 비교용 calib 명령이 지금 던전 생성기를 거치지 않아 쉬움이 40% 언저리로 나왔어요. 이제 지금 생성기로 재요.']]};
 function rev(id,list,title){const h=`<div class="revh">${title||'감우 검토'}</div>`+list.map(([lv,t,d])=>`<div><span class="lv ${lv}">${{hi:'높음',mid:'중간',lo:'낮음',good:'좋음'}[lv]}</span><div><p class="t">${t}</p><p class="small">${d}</p></div></div>`).join('');$('#'+id).innerHTML=h}
 rev('rev-check',REV.check);rev('rev-abil',REV.abil);rev('rev-wild',REV.wild);rev('rev-dungeon',REV.dungeon);
