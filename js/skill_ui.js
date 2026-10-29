@@ -114,7 +114,7 @@ window.OM_SKILL_UI=(()=>{
  function compLock(tid){if(gm())return '';const k=tsk(tid);if(k.swap)return '';const live=k.comp.filter(id=>mons()[id]&&alive(mons()[id]));if(!live.length&&!pendingFor(tid))return '';return live.length?'동행 교대는 휴식(교대 가능) 때나 GM 이 할 수 있다':'체크가 제시된 동안은 동행을 정할 수 없다'}
  async function setComp(tid,mid){const t=trs()[tid];const m=mons()[mid];if(!t||!m||m.tid!==tid)return;const lk=compLock(tid);const k=tsk(tid);const cap=compCap(tid,'rp');let L=k.comp.filter(x=>mons()[x]&&alive(mons()[x]));
   if(L.includes(mid)){if(lk)return A().toast(lk);L=L.filter(x=>x!==mid)}else{if(!alive(m))return A().toast('쓰러진 포켓몬은 동행할 수 없다');if(lk&&!(L.length<cap&&!pendingFor(tid)&&!k.comp.length))return A().toast(lk);L.push(mid);if(L.length>cap)L=L.slice(-cap)}
-  await setT(tid,{comp:L});A().sysLog(`${t.name} 동행: ${L.map(x=>mons()[x].name).join(', ')||'없음'}`,'battle',{})}
+  await setT(tid,{comp:L});A().sysLog(`${t.name} 동행: ${L.map(x=>mons()[x].name).join(', ')||'없음'}`,'battle',{skComp:{tid,mids:L}})}
  async function clearSwap(ids){for(const id of ids||[])if(tsk(id).swap)await setT(id,{swap:0})}
  /* 적합: 제시한 타입 하나라도 → +1, 기술 또는 특성 → +1 (기타는 굴릴 때 고른다) */
  function fitOf(m,O){const F=(O&&O.fit)||{};const out=[];if(!m)return out;
@@ -402,7 +402,7 @@ ${penFields('fail',X)}</div></div>
    if(k==='exsave'){grabOffer(md);const name=prompt('예시 이름',F.label||'새 예시');if(name==null||!name.trim())return;const list=(st().presets||[]).slice();list.push({id:'p'+Date.now().toString(36),name:name.trim(),o:presetOf()});await A().set(['skill','presets'],list);A().toast('저장했다');return re('offer')}
    if(k==='offer'){grabOffer(md);const ids=F.ids;if(!ids.length)return A().toast('대상을 골라 줘');
     const o=mkOffer(presetOf(),ids);A().closeModal();await A().set(['skill','offer'],o);await A().set(['skill','res'],{});await clearSwap(ids);
-    A().sysLog(offerLog(o),'battle',{});try{window.OM_RP_UI&&window.OM_RP_UI.playSe('Ping2')}catch(e){}return openGm('offer')}
+    A().sysLog(offerLog(o),'battle',{skIds:o.ids});try{window.OM_RP_UI&&window.OM_RP_UI.playSe('Ping2')}catch(e){}return openGm('offer')}
    if(k==='close'){A().closeModal();await A().set(['skill','offer'],null);return A().sysLog('스킬 체크 제시를 거뒀다','battle')}
    if(k==='rollfor'){A().closeModal();return openPlayer(el.dataset.tid)}
    if(k==='settle'){const r=JSON.parse(JSON.stringify((st().res||{})[el.dataset.tid]||null));if(!r||!r.pend)return;A().closeModal();await settleFail(el.dataset.tid,r);await A().set(['skill','res',el.dataset.tid],r);return openGm('offer')}
@@ -549,7 +549,7 @@ ${penFields('fail',X)}</div></div>
   if(O.free){res.base=O.base;res.noStep=+O.noStep||0}
   if(ri===1){if(myosuMax(t)>k.myosu)res.pend=1;else res=await settleFail(tid,res)}
   await A().set(resPath(tid,O.free),res);const hist=(st().hist||[]).slice(-40);hist.push({ri,text:res.text,at:res.at});await A().set(['skill','hist'],hist);
-  A().closeModal();A().sysLog(text,'dice');try{if(window.OM_CUTIN)window.OM_CUTIN.phase(RES[ri],`${t.name} · ${O.stat} ${total}/${target}`)}catch(e){}
+  A().closeModal();A().sysLog(text,'dice',{sk:{tid,mid:ch.how==='mon'?(ch.mid||''):'',ri}});try{if(window.OM_CUTIN)window.OM_CUTIN.phase(RES[ri],`${t.name} · ${O.stat} ${total}/${target}`)}catch(e){}
   sync();setTimeout(()=>openPlayer(tid),300)}
  /* 묘수: 실패한 굴림을 같은 보정으로 다시 */
  async function myosu(tid,free){const t=trs()[tid];const k=tsk(tid);const r=JSON.parse(JSON.stringify(resOf(tid,free)||null));if(!r||!r.pend||myosuMax(t)<=k.myosu)return;
@@ -571,8 +571,40 @@ ${penFields('fail',X)}</div></div>
  async function present(o0,ids,by){if(!gm())return false;const T=trs();ids=(ids||[]).filter(i=>T[i]);if(!ids.length){A().toast('체크를 받을 트레이너가 없다');return false}
   const u=upOffer(o0||{});if(!(o0||{}).scene)u.scene='field';if(TIER[u.auto]&&!+u.npc)u.target=TIER[u.auto];
   const o=mkOffer(u,ids);await A().set(['skill','offer'],o);await A().set(['skill','res'],{});await clearSwap(ids);
-  A().sysLog(offerLog(o,by),'battle',{});try{window.OM_RP_UI&&window.OM_RP_UI.playSe('Ping2')}catch(e){}return true}
+  A().sysLog(offerLog(o,by),'battle',{skIds:o.ids});try{window.OM_RP_UI&&window.OM_RP_UI.playSe('Ping2')}catch(e){}return true}
  const sumOf=o=>offerSummary(Object.assign({stat:'지시',target:10},upOffer(o||{}),{npc:''}));
  const BAND=Object.fromEntries(Object.entries(TIER).map(([k,v])=>[k,[v,v,['쉬움','보통','어려움','매우 어려움'][['easy','normal','hard','vhard'].indexOf(k)]]]));
- return {setComp,compLock,up:upOffer,open,openGm,openPlayer,pending,applyRest,restCfg,KINDS,tsk,cfg,presetList,present,sumOf,autoTarget,oddsOf,BAND,TIER,STEP,stepTxt,sceneEnd,sync};
+ /* 10-29 망령 「채팅의 스킬 체크 카드 가시성이 엉망」: 【스킬 체크】 로그 글을 읽어 카드로 — 자질 · 장면 칩, 큰 목표치, 실패하면 줄, 대상은 얼굴 칩.
+    글만 읽으니 예전 로그도 같은 모양. 대상 id 는 새 로그의 skIds(같은 이름 둘 대비), 없으면 이름으로 찾는다 */
+ function logCard(d){const cp=compCard(d);if(cp)return cp;const m=String(d.t||'').match(/^【스킬 체크】\s*([^\n]*)\n?([\s\S]*)$/);if(!m)return '';const T=trs();
+  const tt=m[1].split(' · '),label=tt[0]||'판정',by=tt.slice(1).join(' · ');let head='',who=[];const ex=[];
+  for(const l of m[2].split('\n').filter(Boolean)){if(/^대상: /.test(l))who=l.slice(4).split(', ').filter(Boolean);else if(!head)head=l;else ex.push(l)}
+  let tgt='';const ch=[];for(const p of head.split(' · ')){const x=p.match(/^목표 (\d+)$/);if(x&&!tgt)tgt=x[1];else if(p)ch.push(p)}
+  const ids=Array.isArray(d.skIds)&&d.skIds.length===who.length?d.skIds:null;const byName=n=>Object.keys(T).find(id=>T[id].name===n);
+  const wc=who.map((n,i)=>{const t=T[ids?ids[i]:byName(n)]||{};return `<span class="skc-w">${av(t.image,n,'sm')}<b>${esc(n)}</b></span>`}).join('');
+  const xr=ex.map(l=>{const x=l.match(/^(적합|실패하면):\s*(.*)$/);return x?`<div class="skc-x ${x[1]==='실패하면'?'fail':''}"><i>${esc(x[1])}</i><span>${esc(x[2])}</span></div>`:`<div class="skc-x"><span>${esc(l)}</span></div>`}).join('');
+  return `<div class="bcard skc" style="--tc:#2b8fa8"><div class="bch"><span class="bctag">스킬 체크</span><b>${esc(label)}</b>${by?`<small class="skc-by">${esc(by)}</small>`:''}</div><div class="skc-b"><div class="skc-q"><span class="skc-ch">${ch.map((p,i)=>`<em class="${i?'':'st'}">${esc(p)}</em>`).join('')}</span>${tgt?`<span class="skc-tg"><small>목표</small><b>${esc(tgt)}</b></span>`:''}</div>${xr}${who.length?`<div class="skc-who"><small>대상 ${who.length}명</small><div class="skc-wl">${wc}</div></div>`:''}</div></div>`}
+ /* 10-29 망령 「굴린 로그도」: 굴림 결과 · 묘수 · 커버 (kind dice) 와 동행 줄을 카드로. 글을 읽어 그리니 예전 로그도 같은 모양 · 새 로그는 data.sk / data.skComp 로 그림을 정확히 */
+ const trByName=n=>{const T=trs();const id=Object.keys(T).find(i=>T[i].name===n);return id?T[id]:null};
+ const monOf=(tid,name,mid)=>{const M=mons();if(mid&&M[mid])return M[mid];return Object.values(M).find(x=>(!tid||x.tid===tid)&&x.name===name)||null};
+ const resBadge=ri=>`<span class="skr-res" style="--rc:${COL[ri]||'#555'}">${esc(RES[ri]||'')}</span>`;
+ function compCard(d){const t=String(d.t||'');if(/\n/.test(t))return '';const x=t.match(/^(.+) 동행: (.*)$/);if(!x)return '';const T=trs();
+  const tr=(d.skComp&&T[d.skComp.tid])||trByName(x[1]);if(!tr)return '';const ns=x[2]==='없음'?[]:x[2].split(', ');const ids=d.skComp&&Array.isArray(d.skComp.mids)&&d.skComp.mids.length===ns.length?d.skComp.mids:null;
+  return `<div class="skcp">${av(tr.image,tr.name,'')}<b>${esc(tr.name)}</b><span class="skcp-l">동행</span>${ns.length?ns.map((n,i)=>{const m=monOf(tr.id,n,ids&&ids[i]);return `<span class="skc-w">${av(m&&m.image,n,'sm')}<b>${esc(n)}</b></span>`}).join(''):'<span class="dim">없음</span>'}</div>`}
+ function rollCard(r){const d=r.data||{};const t=String(d.t||'');const L=t.split('\n');let x;
+  if((x=t.match(/^(.+) 묘수! 다시 굴려 합계 (\d+) \/ (\d+) → (\S+)$/))){const tr=trByName(x[1]);const ri=RES.indexOf(x[4]);
+   return `<div class="bcard skr mini" style="--tc:${COL[ri]||'#2b8fa8'}"><div class="bch"><span class="bctag">묘수</span>${tr?av(tr.image,tr.name,''):''}<b>${esc(x[1])}</b><span class="skr-sub">다시 굴림</span><span class="sp"></span><span class="skr-tot"><b>${x[2]}</b><small>/ ${x[3]}</small></span>${resBadge(ri)}</div></div>`}
+  if((x=t.match(/^(.*)의 (.+) 커버! HP −(\d+) · (.+) 「(.+)」 → 「(.+)」$/))){const tr=trByName(x[1]);const m=monOf(tr&&tr.id,x[2]);const tg=trByName(x[4]);
+   return `<div class="bcard skr mini" style="--tc:#2b8fa8"><div class="bch"><span class="bctag">커버</span>${av(m&&m.image,x[2],'')}<b>${esc(x[2])}</b><span class="skr-hp">HP −${x[3]}</span></div><div class="skr-b"><div class="skr-with">${tg?av(tg.image,tg.name,''):''}<span><small>대신 막아 줌</small><b>${esc(x[4])} 「${esc(x[5])}」 막음 · 「${esc(x[6])}」 유지</b></span></div></div></div>`}
+  if(!(x=L[0].match(/^(스킬 체크|자유 판정) · (.+?) · (.+? \+ .+?)(?: · (.+))?$/)))return '';
+  const tag=x[1],tn=x[2],stat=x[3],label=x[4]||'';const T=trs();const tr=(d.sk&&T[d.sk.tid])||trByName(tn)||{};
+  const how=L[1]||'',dl=L[2]||'',bl=L[3]||'',sl=L.find(l=>/^합계 /.test(l))||'',rl=L.find(l=>/^→ /.test(l))||'';
+  const ri=d.sk&&d.sk.ri!=null?+d.sk.ri:RES.indexOf(rl.slice(2).trim());
+  const dk=(dl.match(/^2d6 → (\d)\+(\d)/)||[]).slice(1);const dnote=dl.replace(/^2d6 → \d\+\d\s*/,'').replace(/^—\s*/,'').trim();
+  const bon=bl.replace(/^보정\s*/,'').split(' · ').filter(Boolean).map(p=>{const y=p.match(/^(.*?)\s*([+−-]\d+)$/);return `<span class="skr-b">${esc(y?y[1]:p)}${y?` <b class="${/^[−-]/.test(y[2])?'neg':''}">${esc(y[2])}</b>`:''}</span>`}).join('');
+  const sx=sl.match(/^합계 (\d+) \/ 목표 (\d+)(.*)$/)||[];
+  const pm=how.match(/^포켓몬 「(.+)」$/);const mon=pm?monOf(tr.id,pm[1],d.sk&&d.sk.mid):null;
+  const withH=pm?`${av(mon&&mon.image,pm[1],'')}<span><small>함께</small><b>${esc(pm[1])}</b></span>`:`<span><small>판정</small><b>${esc(how||'혼자')}</b></span>`;
+  return `<div class="bcard skr" style="--tc:${COL[ri]||'#2b8fa8'}"><div class="bch"><span class="bctag">${esc(tag)}</span>${av(tr.image,tn,'')}<b>${esc(tn)}</b><span class="skr-sub">${esc(stat)}${label?' · '+esc(label):''}</span><span class="sp"></span>${resBadge(ri)}</div><div class="skr-b"><div class="skr-with">${withH}</div><div class="skr-calc">${dk.length?`<span class="skr-dice">${dk.map(v=>`<i>${esc(v)}</i>`).join('')}</span>`:`<span class="skr-b">${esc(dl)}</span>`}${bon?`<span class="skr-op">+</span>${bon}`:''}<span class="skr-tot"><span class="skr-op">=</span><b>${esc(sx[1]||'?')}</b><small>/ 목표 ${esc(sx[2]||'?')}</small></span></div>${dnote||(sx[3]||'').trim()?`<div class="skr-note">${esc([dnote,(sx[3]||'').trim()].filter(Boolean).join(' · '))}</div>`:''}</div></div>`}
+ return {setComp,logCard,rollCard,compLock,up:upOffer,open,openGm,openPlayer,pending,applyRest,restCfg,KINDS,tsk,cfg,presetList,present,sumOf,autoTarget,oddsOf,BAND,TIER,STEP,stepTxt,sceneEnd,sync};
 })();

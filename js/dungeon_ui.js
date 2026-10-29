@@ -367,7 +367,7 @@ window.OM_DG_UI=(()=>{
  function edHTML(){const ds=all(),ids=Object.keys(ds);if(!ds[DG.ed])DG.ed=ids[0]||'';const d=edD();if(d&&!R(d)[DG.edSel])DG.edSel='';
   const r=d&&R(d)[DG.edSel],t=ty(r&&r.t);
   const head=`<div class="mhead"><h2>던전 관리</h2><span class="sp"></span><button class="btn ghost" data-e="close">닫기</button></div>`;
-  const top=`<div class="dg-ed-top"><select data-dgsel>${ids.map(id=>`<option value="${H(id)}" ${id===DG.ed?'selected':''}>${H(ds[id].n||'이름 없는 던전')}</option>`).join('')||'<option>던전 없음</option>'}</select><button class="btn sm pri" data-e="new">＋ 새 던전</button><button class="btn sm" data-e="sample">샘플 던전</button><button class="btn sm ${DG.imp?'pri':''}" data-e="imp">JSON 가져오기</button>${d?`<button class="btn sm ${DG.exp?'pri':''}" data-e="exp">JSON 내보내기</button><button class="btn sm danger" data-e="del">던전 삭제</button>`:''}</div>`;
+  const top=`<div class="dg-ed-top"><select data-dgsel>${ids.map(id=>`<option value="${H(id)}" ${id===DG.ed?'selected':''}>${H(ds[id].n||'이름 없는 던전')}</option>`).join('')||'<option>던전 없음</option>'}</select><button class="btn sm pri" data-e="new">＋ 새 던전</button><button class="btn sm" data-e="sample">샘플 던전</button><button class="btn sm ${DG.imp?'pri':''}" data-e="imp">JSON 가져오기</button>${d?`<button class="btn sm ${DG.exp?'pri':''}" data-e="exp">JSON 내보내기</button><button class="btn sm danger" data-e="del">던전 삭제</button>`:''}${window.OM_NOTES?'<button class="btn sm" data-ntdg title="세션 노트의 던전(지도 장소에 붙은 것)과 주고받는다 — 바뀐 것만">📓 노트와 주고받기</button>':''}</div>`;
   /* 10-28 망령 「웹툴 던전탭에 JSON 가져오기」: 시뮬 자동 생성(toWebtool) · 다른 방에서 내보낸 던전을 붙여 넣거나 파일로 */
   if(DG.imp)return head+top+`<div class="dg-ed-ev" style="margin-top:8px"><b>JSON 가져오기</b><p class="dg-help" style="margin:0">던전 시뮬 「자동 생성 → 웹툴로」 파일이나 「JSON 내보내기」로 받은 글을 붙여 넣는다. 여러 개면 배열 <code>[…]</code> 로. 새 던전으로 들어가고, 있던 던전은 그대로다.</p>
    <textarea id="dgImpTxt" rows="12" spellcheck="false" placeholder='{"n":"던전 이름","st":"entry","r":{"entry":{"n":"입구","t":"entry","x":95,"y":595}, …},"l":{"entry~b1":1, …}}' style="width:100%;font-family:ui-monospace,monospace;font-size:12px"></textarea>
@@ -516,5 +516,5 @@ window.OM_DG_UI=(()=>{
  function nameOf(id){const d=all()[id];return d?(d.n||'이름 없는 던전'):''}
  /* 10-28: 스킬 체크 패널티의 경계도(skill_ui pen.al) — 탐색 중인 던전의 경계도를 올린다. 경계도를 끈 던전 · 던전 밖이면 아무 일도 안 한다 */
  async function alAdd(delta,why){const d=cur();if(!d||!alOn(d)||!(+delta))return '';const before=clamp(+d.al||0,0,100),after=clamp(before+(+delta),0,100);if(after===before)return '';if(!await upd({[P0(d.id)+'al']:after}))return '';notice(`[${d.n||'던전'}] 경계도 ${after>before?'+':''}${after-before}${why?' ('+why+')':''} → ${after}%`);return `경계도 ${after>before?'+':''}${after-before} → ${after}%`}
- return {render,rpSync,onState,on,cur,TY,LV,lvOf,list,enter,nameOf,party,walkOf,startEnc,alAdd};
+ return {render,rpSync,onState,on,cur,TY,LV,lvOf,list,enter,nameOf,party,walkOf,startEnc,alAdd,dgNorm,dgOut,dgAll:all,dgUpd:upd,edOpen:id=>{DG.ed=id}};   /* 10-29 dgNorm · dgOut · dgAll · dgUpd: 세션 노트와 던전 주고받기(notes_link.js) */
 })();

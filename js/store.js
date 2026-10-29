@@ -119,11 +119,26 @@ async function shrinkUpload(blob,maxSide){try{if(!/^image\/(png|jpe?g|webp|bmp)$
  /* 10-26 망령: 세션 노트(nt_*) 읽기 — 공개 문서는 표에서, GM 비밀구가 있으면 nt_all 로 전부 */
  async function ntCampUpdate(camp,secret,data){return rpc('nt_camp_update',{p_camp:camp,p_secret:secret,p_name:null,p_data:data})}   /* 10-29: 방 ↔ 세션 노트 캠페인 잇기 (캠페인 data.om.room) */
  async function ntCamps(){const r=await sb().from('nt_camp').select('id,name,data,created_at').order('created_at');if(r.error)throw err(r.error);return r.data||[]}
- async function ntDocs(camp,secret,kinds){if(secret){const rows=await rpc('nt_all',{p_camp:camp,p_secret:secret,p_since:null});return (rows||[]).filter(x=>!kinds||kinds.includes(x.kind))}let q=sb().from('nt_docs').select('kind,id,data,vis').eq('camp',camp);if(kinds)q=q.in('kind',kinds);const r=await q;if(r.error)throw err(r.error);return r.data||[]}
+ /* 10-29 망령 「변동 사항만 주고받게」: 세션 노트 문서를 이 브라우저에 사본으로 두고(캠페인 · GM/공개 따로) 다음에는 그 뒤에 바뀐 것만 받는다.
+    지워진 것 · 안 보이게 바뀐 것은 id 목록(nt_ids · 내용 없음)으로 걸러 낸다. 7일 지나면 한 번 전부 새로 받는다 */
+ const NTSYNC={last:null};
+ async function ntSync(camp,secret){const key='om_ntc_'+camp+(secret?'_g':'_p');let c=null;try{c=JSON.parse(localStorage.getItem(key)||'null')}catch(e){}if(!c||c.v!==1||Date.now()-c.t>7*864e5)c={v:1,t:Date.now(),since:null,docs:{}};
+  const had=Object.keys(c.docs).length&&c.since;const ids=had?await rpc('nt_ids',{p_camp:camp,p_secret:secret||''}):null;let rows;
+  if(secret)rows=(await rpc('nt_all',{p_camp:camp,p_secret:secret,p_since:had?c.since:null}))||[];
+  else{let q=sb().from('nt_docs').select('kind,id,data,vis,updated_at').eq('camp',camp);if(had)q=q.gt('updated_at',c.since);const r=await q;if(r.error)throw err(r.error);rows=r.data||[]}
+  for(const x of rows){c.docs[x.kind+'/'+x.id]={kind:x.kind,id:x.id,data:x.data,vis:x.vis,updated_at:x.updated_at};if(!c.since||x.updated_at>c.since)c.since=x.updated_at}
+  if(ids){const have=new Set(ids.map(x=>x.kind+'/'+x.id).concat(rows.map(x=>x.kind+'/'+x.id)));for(const k of Object.keys(c.docs))if(!have.has(k))delete c.docs[k]}
+  try{const s=JSON.stringify(c);if(s.length<3e6)localStorage.setItem(key,s);else localStorage.removeItem(key)}catch(e){try{localStorage.removeItem(key)}catch(e2){}}
+  NTSYNC.last={camp,got:rows.length,all:Object.keys(c.docs).length,at:Date.now()};return Object.values(c.docs)}
+ async function ntDocs(camp,secret,kinds){const all=await ntSync(camp,secret||'');return all.filter(x=>!kinds||kinds.includes(x.kind))}
+ /* 문서 하나만 (던전 주고받기) · 쓰기 (GM 비밀구) */
+ async function ntGet(camp,secret,kind,id){if(secret){const r=await rpc('nt_get',{p_camp:camp,p_secret:secret,p_kind:kind,p_id:id});return (r||[])[0]||null}const r=await sb().from('nt_docs').select('kind,id,data,vis,updated_at').eq('camp',camp).eq('kind',kind).eq('id',id).maybeSingle();if(r.error)throw err(r.error);return r.data||null}
+ const ntPut=(camp,secret,kind,id,data,vis)=>rpc('nt_put',{p_camp:camp,p_secret:secret,p_kind:kind,p_id:id,p_data:data,p_vis:vis||null});
+ const ntPutMany=(camp,secret,rows)=>rpc('nt_put_many',{p_camp:camp,p_secret:secret,p_rows:rows});
  /* 10-27 망령: 전당 (supabase/patch_2026-10-27_전당.sql) — 방 상태 밖 om_hall 표. 목록은 요약만, 로그는 한 판을 열 때만 */
  const hall={list:(room,before,limit)=>rpc('om_hall_list',{p_room:room,p_before:before||null,p_limit:limit||60}),get:(room,id)=>rpc('om_hall_get',{p_room:room,p_id:id}),
   put:(room,secret,id,head,log)=>rpc('om_hall_put',{p_room:room,p_secret:secret,p_id:id,p_head:head,p_log:log??null}),
   del:(room,secret,id)=>rpc('om_hall_del',{p_room:room,p_secret:secret,p_id:id}),
   cm:(room,secret,id,by,t,del)=>rpc('om_hall_cm',{p_room:room,p_secret:secret,p_id:id,p_by:by||'',p_t:t??null,p_del:del??null}),noFn};
- return {patchesSince,hall,shrinkUpload,ntCamps,ntCampUpdate,ntDocs,rtReset,getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty};
+ return {patchesSince,hall,shrinkUpload,ntCamps,ntCampUpdate,ntDocs,ntSync,NTSYNC,ntGet,ntPut,ntPutMany,rtReset,getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty};
 })();

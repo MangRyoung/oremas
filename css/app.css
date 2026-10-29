@@ -4805,3 +4805,38 @@ html[data-vt="mm"] .memon .medet{border-color:rgba(20,16,12,.4)}
  .mebar .memons{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));width:100%;overflow:visible}
  .mecheck .mcks{grid-template-columns:repeat(auto-fill,minmax(80px,1fr));flex:1;min-width:0}
  .mebar .mecheck{align-items:flex-start}}
+/* 10-29 망령 「채팅의 스킬 체크 카드 가시성이 엉망」: 자질 · 장면 칩 + 큰 목표치 + 실패하면 줄 + 대상 얼굴 칩 (skill_ui logCard) */
+.bcard.skc .bch b{font-size:14px}.bcard.skc .skc-by{font-size:11px;opacity:.7}
+.skc-b{padding:7px 10px 9px;display:flex;flex-direction:column;gap:6px;font-size:12.5px}
+.skc-q{display:flex;align-items:center;gap:10px}
+.skc-ch{display:flex;flex-wrap:wrap;gap:4px;flex:1;min-width:0}
+.skc-ch em{font-style:normal;font-size:12px;padding:2px 8px;border-radius:10px;border:1px solid color-mix(in srgb,var(--tc) 55%,transparent);color:#dfe9ec;white-space:nowrap}
+.skc-ch em.st{background:var(--tc);border-color:var(--tc);color:#fff;font-weight:700}
+.skc-tg{flex:none;display:flex;flex-direction:column;align-items:center;line-height:1;padding:3px 10px 4px;border-radius:6px;background:color-mix(in srgb,var(--tc) 22%,#000);border:1px solid var(--tc)}
+.skc-tg small{font-size:9.5px;opacity:.75;color:#cfe3e8}.skc-tg b{font-size:20px;font-family:var(--lab);color:#fff}
+.skc-x{display:flex;gap:8px;align-items:baseline;font-size:12px;color:#cfd2d8}
+.skc-x i{font-style:normal;flex:none;font-size:10.5px;padding:0 6px;border-radius:3px;background:#2a2b31;color:#ddd}
+.skc-x.fail i{background:#7a1020;color:#fff}.skc-x.fail span{color:#f0a3ad}
+.skc-who{border-top:1px dashed #33343b;padding-top:6px}
+.skc-who>small{display:block;font-size:10.5px;opacity:.7;margin-bottom:4px}
+.skc-wl{display:flex;flex-wrap:wrap;gap:4px}
+.skc-w{display:inline-flex;align-items:center;gap:5px;padding:2px 8px 2px 2px;border-radius:12px;background:#22232a;font-size:12px;max-width:100%}
+.skc-w .skav.sm{margin-left:0;flex:none}.skc-w b{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#eee}
+/* 10-29 망령 「굴린 로그도」: 굴림 결과 카드(skill_ui rollCard) — 주사위 두 개 + 보정 칩 = 큰 합계 / 목표, 오른쪽 위 결과 배지. 묘수 · 커버는 한 줄 카드, 동행 줄은 얼굴 칩 */
+.bcard.skr .bch{align-items:center;gap:7px}.bcard.skr .bch .bctag{margin-top:0}.bcard.skr .bch>b{font-size:14px;white-space:nowrap}
+.bcard.skr .bch .skav{width:24px;height:24px}
+.skr-sub{font-size:12px;color:#c9ccd3;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
+.skr-res{flex:none;font-family:var(--lab);font-size:14px;font-weight:700;padding:2px 12px;border-radius:4px;background:var(--rc);color:#fff;letter-spacing:.06em;box-shadow:0 0 10px color-mix(in srgb,var(--rc) 60%,transparent)}
+.skr-b{padding:8px 10px 9px;display:flex;flex-direction:column;gap:7px}
+.skr-with{display:flex;align-items:center;gap:7px}.skr-with>span{display:flex;flex-direction:column;line-height:1.2}.skr-with small{font-size:10px;opacity:.65}.skr-with b{font-size:13px;color:#eee}
+.skr-calc{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.skr-dice{display:inline-flex;gap:4px}.skr-dice i{font-style:normal;width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border-radius:6px;background:#f3eadb;color:#14100c;font-family:var(--lab);font-weight:700;font-size:16px;box-shadow:inset 0 -2px 0 rgba(0,0,0,.25)}
+.skr-b .skr-b,.skr-calc .skr-b{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;background:#22232a;font-size:12px;color:#ddd;flex-direction:row}.skr-calc .skr-b b{color:#8fd19e}
+.skr-op{font-size:15px;opacity:.6;font-weight:700}
+.skr-tot{display:inline-flex;align-items:baseline;gap:4px}.skr-tot b{font-family:var(--lab);font-size:24px;color:#fff;line-height:1}.skr-tot small{font-size:12px;opacity:.7}
+.bcard.skr.mini .skr-tot b{font-size:18px}
+.skr-hp{font-size:12px;font-weight:700;color:#ff8a8a;white-space:nowrap}.skr-calc .skr-b b.neg{color:#ff8a8a}
+.skr-note{font-size:11.5px;color:#b9bcc4}
+.skcp{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:16px;background:#15161a;border:1px solid #2a2b31;font-size:12.5px;max-width:94%}
+.skcp>b{color:#eee}.skcp .skcp-l{font-size:10.5px;padding:0 6px;border-radius:8px;background:var(--yel2,#d6a23b);color:#000;font-weight:700}
+.msg.battle.sysc .skcp{margin:0 auto}

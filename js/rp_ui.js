@@ -1277,9 +1277,9 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  /* ----- 아래 띠: 내 캐릭터 · 굴림(스킬 체크) · 폰 · 대화(장면 등장) · 소지 포켓몬 현황 ----- */
  function meTrainer(){const ST=A().ST;const T=(ST.state.roster||{}).trainers||{};if(ST.role==='seat')return T[ST.seat]||null;if(gm()){const c=speakerChar();if(c&&c.kind==='pc')return T[c.id]||null;if(c&&c.kind==='pm'){const m=((ST.state.roster||{}).mons||{})[c.id];return m?T[m.tid]||null:null}}return null}
  /* 10-24 망령: 아래 띠 오른쪽 빈 곳에 지금 제시된 스킬 체크 — 상황 · 자질 · 목표와 대상별 결과. 누르면 스킬 체크 창 */
- function meCheck(O){if(!O)return '';const ST=A().ST;const T=(ST.state.roster||{}).trainers||{};const R=(ST.state.skill||{}).res||{};const RES=['대실패','실패','대가','성공','대성공'];
+ function meCheck(O){if(!O)return '';const ST=A().ST;const T=(ST.state.roster||{}).trainers||{};const R=(ST.state.skill||{}).res||{};const RES=['실패','실패','성공','성공','대성공'];/* 10-29 스킬 체크 v4 결과 이름 (skill_ui RES 와 같게 — 예전 「대실패 · 대가」 이름이 남아 있었다) */
   const ids=(O.ids||[]).filter(id=>T[id]);const done=ids.filter(id=>R[id]&&R[id].offerId===O.id);const mine=ST.role==='seat'&&ids.includes(ST.seat)&&!done.includes(ST.seat);
-  const chip=id=>{const r=R[id]&&R[id].offerId===O.id?R[id]:null;return `<span class="mck mk-${r?r.ri:'w'}${ST.role==='seat'&&id===ST.seat?' self':''}" title="${esc(T[id].name)} — ${r?RES[r.ri]:'아직 안 굴림'}"><b>${esc(T[id].name)}</b>${r?`<em>${RES[r.ri]}</em>`:''}</span>`};
+  const chip=id=>{const r=R[id]&&R[id].offerId===O.id?R[id]:null;return `<span class="mck mk-${r?[1,1,3,3,4][r.ri]:'w'}${ST.role==='seat'&&id===ST.seat?' self':''}" title="${esc(T[id].name)} — ${r?RES[r.ri]:'아직 안 굴림'}"><b>${esc(T[id].name)}</b>${r?`<em>${RES[r.ri]}</em>`:''}</span>`};
   /* 10-29 망령 「대기 칸도 일렬이 아니라 위아래를 다 쓰는 사각형으로」: 4줄까지 세로로 채우고 열을 늘린다 (9명 3×3 · 13명 4×4) */
   const cols=Math.max(1,Math.ceil(ids.length/4));
   return `<div class="mecheck ${mine?'me':''}" data-rp="roll" title="스킬 체크 창 열기"><div class="mcq"><small>스킬 체크${mine?' · <b>내 차례</b>':''} · ${done.length}/${ids.length}</small><b>${esc(O.label||'판정')}</b><span>${esc(O.stat||'')}${O.mode==='inou'?' · 이능':''} · 목표 ${esc(O.target)}${O.npc?' · 대항 '+esc(O.npc):''}</span></div><div class="mcks" style="--mc:${cols}">${ids.map(chip).join('')}</div></div>`}
