@@ -935,7 +935,7 @@ body.resizing{user-select:none;cursor:col-resize}
 .skrow.tog{cursor:pointer}.skrow.tog .sw{width:34px;height:18px;border-radius:9px;background:#333;position:relative;flex:none;transition:background .15s}.skrow.tog .sw::after{content:'';position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:#aaa;transition:left .15s}.skrow.tog.on .sw{background:var(--ok)}.skrow.tog.on .sw::after{left:18px;background:#fff}
 .skwho{min-width:160px}.skwho b{display:block}
 .skstat{display:inline-flex;flex-direction:column;align-items:center;min-width:52px;background:#0e0e10;padding:2px 8px;border-bottom:2px solid var(--line2)}.skstat small{font-size:10px;color:var(--mute);font-family:var(--lab)}.skstat b{font-family:var(--mono);font-size:14px;color:#fff}.skstat.bad b{color:var(--red)}
-.skres{font-family:var(--lab);color:#fff;padding:1px 8px;font-size:12px;clip-path:var(--slant)}
+.skres{font-family:var(--lab);color:#fff;padding:1px 8px;font-size:12px;clip-path:var(--slant);white-space:nowrap;flex:none}
 .skhist>div{border-left:3px solid #555;padding:2px 8px;margin:3px 0;font-size:12px;white-space:pre-wrap}
 .skpen{border:1px dashed var(--line2);padding:4px 8px;margin:6px 0}.pensum{flex:1;font-size:12.5px;line-height:1.5}.pensum i,.skpenline i{font-style:normal;font-family:var(--lab);font-size:10.5px;padding:0 6px;color:#fff;margin-right:4px}.penf{background:#8a1c2b}.penc{background:#8a6a12}
 .skpenline{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12px;margin-top:4px}
@@ -950,6 +950,44 @@ body.resizing{user-select:none;cursor:col-resize}
 .skbig{color:#fff;padding:10px 14px;display:flex;align-items:baseline;gap:14px;clip-path:var(--slant)}.skbigt{font-family:var(--head);font-size:26px}.skbigs{font-family:var(--mono);font-size:13px;opacity:.9}
 .btn.big{font-size:15px;padding:6px 22px}
 @media (max-width:900px){.skpencols,.skcols{grid-template-columns:1fr}}
+/* 10-29 망령 「스킬 체크 · 제시 창이 직관적이지 않다」: 제시는 1~5 단계 + 미리보기, 굴리기는 고르기 카드 + 식 + 결과 네 칸 */
+.skstep{border-top:1px solid var(--line);padding:10px 0 4px;margin-top:6px}
+.skstep>.skh,.skprev>.skh{display:flex;align-items:baseline;gap:8px;font-family:var(--lab);font-size:13.5px;color:#fff;margin-bottom:4px}
+.skh i{font-style:normal;display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;background:var(--yel2);color:#000;font-family:var(--mono);font-size:12px;font-weight:700;flex:none;align-self:center}
+.skh small{font-family:inherit;font-size:11.5px;color:var(--mute);font-weight:400;letter-spacing:0}
+details.skmod>summary{cursor:pointer;list-style:none}details.skmod>summary::-webkit-details-marker{display:none}
+details.skmod>summary::after{content:'▸';color:var(--mute);margin-left:auto}details.skmod[open]>summary::after{content:'▾'}
+.skinfo{margin:2px 0 4px 92px}
+.sktg{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--mute);margin-left:6px}.sktg input{font-size:15px;font-weight:700;width:56px}
+.sklad{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;margin-top:8px}
+.sklad span{display:flex;flex-direction:column;align-items:center;padding:4px 2px;background:color-mix(in srgb,var(--c) 30%,#0e0e10);border-top:3px solid var(--c);opacity:.85}
+.sklad span b{font-family:var(--lab);font-size:12px;color:#fff}.sklad span small{font-family:var(--mono);font-size:12px;color:#ddd}
+.sklad span.on{opacity:1;background:var(--c);outline:2px solid #fff;outline-offset:-2px}
+.skprev{background:#0e0e10;border:1px solid var(--line2);padding:8px 10px;margin-top:10px}
+.skdtx{font-family:var(--mono);font-size:12.5px;color:var(--yel2)}
+.skpb{display:inline-flex;width:90px;height:8px;background:#2a1216;overflow:hidden;flex:none}.skpb i{display:block;height:100%}
+.skpp{font-size:12px;color:var(--mute);white-space:nowrap}.skpp b{font-family:var(--mono);color:#fff;font-size:13px}
+.skgo{margin-top:12px}
+.skopts{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin:6px 0}
+.skopt{display:flex;align-items:center;gap:8px;background:#141518;border:2px solid #33363d;padding:6px 8px;cursor:pointer;min-width:0}
+.skopt .pic{width:38px;height:38px;flex:none;background:#0a0a0c center/cover no-repeat;display:flex;align-items:center;justify-content:center;font-family:var(--lab);color:var(--mute);font-size:13px}
+.skopt>div:nth-child(2){flex:1;min-width:0}.skopt b{display:block;font-family:var(--lab);color:#fff;font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.skopt small{display:block;font-size:11px;color:var(--mute)}
+.skopt em{font-style:normal;font-family:var(--mono);font-size:14px;color:var(--yel2);flex:none}
+.skopt:hover{border-color:#6a6d75}.skopt.on{border-color:var(--yel2);background:#2e2810}.skopt.on b{color:var(--yel2)}
+.skopt.off{opacity:.4;cursor:not-allowed}.skopt.alone{border-style:dashed}.skopt.inou .pic,.skopt.aa .pic{color:var(--yel2)}
+.skformula{display:flex;align-items:center;flex-wrap:wrap;gap:6px;background:#0e0e10;border:1px solid var(--line2);padding:8px 10px;margin-top:6px;min-height:44px;font-size:13px}
+.skformula>em{font-style:normal;color:var(--mute);font-family:var(--mono)}
+.skdie{display:inline-flex;flex-direction:column;align-items:center;min-width:48px;padding:2px 8px;background:#000;border-bottom:2px solid var(--yel2);font-family:var(--mono);font-size:17px;color:#fff;line-height:1.2}
+.skdie small{font-family:var(--lab);font-size:10px;color:var(--mute);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.skdie.tg{border-bottom-color:var(--line2)}.skdie.tot{border-bottom-color:var(--c,#fff);background:color-mix(in srgb,var(--c,#000) 35%,#000)}
+.skdet{margin-top:6px}.skdet summary{cursor:pointer;font-size:12px;color:var(--mute)}
+.skwrap .skrow>b{white-space:nowrap}.skwrap .sec{flex-wrap:wrap;row-gap:6px}.skwrap .sec .btn,.mhead h2{white-space:nowrap}
+@media (max-width:640px){
+ .skwrap .fr>.lbl{width:100%}.skinfo{margin-left:0}
+ .skopts{grid-template-columns:1fr 1fr}.skopt{padding:5px 6px;gap:6px}.skopt .pic{width:30px;height:30px}
+ .skprev .skrow{flex-wrap:wrap}.skpb{width:70px}
+ .sklad span b{font-size:11px}
+}
 
 /* 접속 중 표시 (상단 바) */
 .presence{display:inline-flex;align-items:center;gap:4px;margin-right:6px;max-width:40vw;overflow:hidden}.presence .pcount{font-family:var(--lab);font-size:11px;color:var(--ok);padding:0 6px}

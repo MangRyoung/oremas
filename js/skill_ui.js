@@ -100,16 +100,24 @@ window.OM_SKILL_UI=(()=>{
  const BAND={easy:[0.85,0.95,'쉬움'],normal:[0.70,0.85,'보통'],hard:[0.50,0.70,'어려움']};
  function okPlusOf(D,cs,o,target){const n=D.sides;const pa={};for(let r1=1;r1<=n;r1++){if(o.twice){for(let r2=1;r2<=n;r2++){const v=o.twice>0?Math.max(r1,r2):Math.min(r1,r2);pa[v]=(pa[v]||0)+1/(n*n)}}else pa[r1]=(pa[r1]||0)+1/n}
   let p=0;for(const k in pa){let av=+k;if(o.pm>0&&av===1)av=2;else if(o.pm<0&&av===n)av=n-1;for(let c=1;c<=cs;c++){if(av===1&&c===1)continue;if(av+(D.plus||0)+c>=target-2)p+=pa[k]/cs}}return p}
- function autoRoller(ids,o){const T=trs();let best=null;
-  for(const tid of ids||[]){const t=T[tid];if(!t)continue;const k=tsk(tid);const D=dieOf(t,o.stat,{inj:+k.inj||0,step:o.step||0});if(D.autofail)continue;let cs,how;
-   if(o.mode==='inou'){if((LAD[S().strip(rankOf(t,'능력'))]||0)<3||o.stat!=='능력')continue;const Dc=dieOf(t,'능력',{inj:cfg().both1?+k.inj||0:0,step:o.step||0});cs=Dc.sides;how='이능 d'+cs}
-   else{const ms=Object.values(mons()).filter(m=>m.tid===tid&&m.hp&&alive(m));if(ms.length){const bond=o.stat==='통솔'&&ms.some(hasBond);cs=bond?8:6;how=bond?'『유대』 d8':'포켓몬 d6'}else{cs=4;how='혼자 d4'}}
-   const sc=okPlusOf(D,cs,o,8);if(!best||sc>best.sc)best={tid,name:t.name,D,cs,how,sc}}
+ /* 한 사람이 이 체크를 굴릴 때의 주사위 (자질 D · 동료 cs). 굴릴 수 없으면 why 만 */
+ function rollerOf(tid,o){const t=trs()[tid];if(!t)return null;const k=tsk(tid);const D=dieOf(t,o.stat,{inj:+k.inj||0,step:o.step||0});if(D.autofail)return {tid,name:t.name,D,why:'자질 주사위가 d4 아래 — 자동 실패'};let cs,how;
+  if(o.mode==='inou'){if((LAD[S().strip(rankOf(t,'능력'))]||0)<3||o.stat!=='능력')return {tid,name:t.name,D,why:'이능은 능력 A 이상 · 「능력」 체크만'};const Dc=dieOf(t,'능력',{inj:cfg().both1?+k.inj||0:0,step:o.step||0});cs=Dc.sides;how='이능 d'+cs}
+  else{const ms=Object.values(mons()).filter(m=>m.tid===tid&&m.hp&&alive(m));if(ms.length){const bond=o.stat==='통솔'&&ms.some(hasBond);cs=bond?8:6;how=bond?'『유대』 d8':'포켓몬 d6'}else{cs=4;how='혼자 d4'}}
+  return {tid,name:t.name,D,cs,how}}
+ function autoRoller(ids,o){let best=null;
+  for(const tid of ids||[]){const r=rollerOf(tid,o);if(!r||r.why)continue;const sc=okPlusOf(r.D,r.cs,o,8);if(!best||sc>best.sc)best=Object.assign(r,{sc})}
   return best}
  function autoTarget(ids,o,tier){const B=BAND[tier];if(!B)return null;const r=autoRoller(ids,o);if(!r)return null;const mid=(B[0]+B[1])/2;let pick=null;
   for(let tg=2;tg<=20;tg++){const p=okPlusOf(r.D,r.cs,o,tg);const inb=p>=B[0]-1e-9&&p<=B[1]+1e-9;const d=Math.abs(p-mid);if(!pick||(inb&&!pick.inb)||(inb===pick.inb&&d<pick.d))pick={tg,p,inb,d}}
   return {target:pick.tg,p:pick.p,inb:pick.inb,who:r.name,die:'d'+r.D.sides+(r.D.plus?(r.D.plus>0?'+':'')+r.D.plus:''),how:r.how,tier,band:B}}
  const autoTxt=a=>a?`목표 ${a.target} — ${a.who} (${a.die} + ${a.how}) 기준 대가 포함 성공 ${Math.round(a.p*100)}%${a.inb?'':' (띠 밖: 이 일행엔 가장 가까운 값)'}`:'굴릴 수 있는 대상이 없다';
+ /* 10-29 망령 「스킬 체크 창이 직관적이지 않다」: 목표를 결과 네 칸으로 풀어 보여 준다 (judge 와 같은 경계). now = 합계가 있으면 그 칸에 표시 */
+ const dieTxt=D=>'d'+D.sides+(D.plus?(D.plus>0?'+':'')+D.plus:'');
+ function ladder(target,now){if(!(+target>0))return '';const t=+target;const seg=[[0,`${t-3} 이하`,null,t-3],[2,`${t-2}~${t-1}`,t-2,t-1],[3,`${t}~${t+4}`,t,t+4],[4,`${t+5} 이상`,t+5,null]];
+  const lab=['','','대가 성공','성공','대성공'];lab[0]='실패';
+  return `<div class="sklad">${seg.map(([ri,rg,lo,hi])=>{const on=now!=null&&(lo==null||now>=lo)&&(hi==null||now<=hi);return `<span class="${on?'on':''}" style="--c:${COL[ri]}"><b>${lab[ri]}</b><small>${rg}</small></span>`}).join('')}</div>`}
+ const pct=p=>Math.round(p*100)+'%';
  function judge(total,target,fumble,aLv){const diff=total-target;let ri=1;if(diff>=-2)ri=2;if(diff>=0)ri=3;if(diff>=5)ri=4;if(fumble)ri=aLv>=3?1:0;return ri}
 
  /* ===== 패널티 ===== */
@@ -206,18 +214,25 @@ ${penFields(t,X)}</div>`}).join('')}</div>
   const ids=F.ids||Object.keys(T);
   const offerTab=`${O?`<div class="skcard hit"><div class="sec">지금 제시된 체크 <span class="note">${esc(O.label||'')}</span><span class="sp"></span><button class="btn xs ghost" data-sk="close">마감 (제시 거두기)</button></div><div class="small">${offerSummary(O)}</div>${penLine(O.pen)}
      <div class="sklist" style="margin-top:6px">${(O.ids||[]).map(id=>{const r=R[id];const t=T[id]||{};const done=r&&r.offerId===O.id;return `<div class="skrow"><b>${esc(t.name)}</b>${done?`<span class="skres" style="background:${COL[r.ri]}">${RES[r.ri]}</span><span class="small dim">${esc(r.text.split('\n').slice(1,-1).join(' / '))}</span>${r.cover?`<span class="tag">커버 ${esc(T[r.cover.by]&&T[r.cover.by].name)}</span>`:''}${r.penDone?'<span class="tag">패널티 적용됨</span>':''}`:'<span class="small dim">아직 안 굴림</span>'}<span class="sp"></span>${done&&O.pen&&!r.penDone&&((r.ri<=1&&penHas(O.pen.fail))||(r.ri===2&&penHas(O.pen.cost)))?`<button class="btn xs" data-sk="penapply" data-tid="${id}">패널티 걸기</button>`:''}<button class="btn xs ghost" data-sk="rollfor" data-tid="${id}">대신 굴리기</button></div>`}).join('')}</div></div>`:''}
-    <div class="skcard"><div class="sec">새 체크 제시 <span class="sp"></span><select id="so_ex" title="예시·저장한 제시 불러오기"><option value="">예시 불러오기…</option>${presets.length?`<optgroup label="내가 저장한 것">${presets.map(p=>`<option value="my:${p.id}">${esc(p.name)}</option>`).join('')}</optgroup>`:''}<optgroup label="기본">${EX.map((e,i)=>exHide('check').includes(e.name)?'':`<option value="ex:${i}">${esc(e.name)}</option>`).join('')}</optgroup></select><button class="btn xs ghost" data-sk="exsave" title="지금 폼을 예시로 저장">저장</button><button class="btn xs" data-sk="exmgr" data-t="check" title="체크 · 패널티 예시를 한 번에 보고 이름 · 순서 · 삭제 · 덮어쓰기">예시 관리</button></div>
-     <div class="fr"><span class="lbl">상황</span><input type="text" id="so_label" placeholder="예) 겁먹은 야생 무리를 진정시킨다" value="${esc(F.label)}" style="flex:1"></div>
-     <div class="fr"><span class="lbl">자질</span>${seg('stat',SK.map(s=>[s,s]),F.stat)}${seg('mode',[['skill','기교 / 일반'],['inou','이능 (A 이상)'],['any','트레이너가 고름']],F.mode)}</div>
-     <div class="fr"><span class="lbl">난이도</span><span class="chips">${DIFF.map(([v,n])=>`<span class="chip ${!F.npc&&F.target===v?'on':''}" data-diff="${v}">${n} ${v}</span>`).join('')}</span><input type="number" class="n xs" id="so_target" value="${F.target}"></div>
-     <div class="fr"><span class="lbl">목표 자동</span>${seg('auto',[['','끔'],['easy','쉬움 85~95%'],['normal','보통 70~85%'],['hard','어려움 50~70%']],F.auto)}<span class="small dim" id="so_autoinfo"></span></div>
-     <div class="fr"><span class="lbl">대항 판정</span>${seg('npc',NPC.map(([v,n])=>[v,n]),F.npc)}</div>
-     <div class="fr"><span class="lbl">주사위 단계</span>${seg('step',[[-1,'불리'],[0,'없음'],[1,'유리']],F.step)}<span class="small dim">도구 · 환경 · 힘 차이</span></div>
-     <div class="fr"><span class="lbl">두 번 굴리기</span>${seg('twice',[[-1,'낮은 값'],[0,'없음'],[1,'높은 값']],F.twice)}<span class="small dim">시간 여유·정보 / 서두름·방해</span></div>
-     <div class="fr"><span class="lbl">숙련</span>${seg('pm',[[-1,'서투름'],[0,'없음'],[1,'능숙함']],F.pm)}<span class="small dim">서투름: 자질 최대값이면 −1 · 능숙함: 1이면 +1</span></div>
-     ${penBox(F.pen)}
-     <div class="fr" style="align-items:flex-start"><span class="lbl">대상</span><span class="chips">${Object.values(T).map(t=>`<label class="chip ${ids.includes(t.id)?'on':''}"><input type="checkbox" data-so-id="${t.id}" ${ids.includes(t.id)?'checked':''} hidden> ${esc(t.name)}</label>`).join('')||'<span class="dim small">로스터에 트레이너가 없다</span>'}</span></div>
-     <div class="row" style="margin-top:10px"><span class="small dim">제시하면 로그에 카드가 나가고, 대상은 상단 「스킬 체크」에서 굴린다</span><span class="sp"></span><button class="btn pri" data-sk="offer">제시 (모두에게)</button></div></div>
+    <div class="skcard sknew"><div class="sec">새 체크 제시 <span class="sp"></span><select id="so_ex" title="예시·저장한 제시 불러오기"><option value="">예시 불러오기…</option>${presets.length?`<optgroup label="내가 저장한 것">${presets.map(p=>`<option value="my:${p.id}">${esc(p.name)}</option>`).join('')}</optgroup>`:''}<optgroup label="기본">${EX.map((e,i)=>exHide('check').includes(e.name)?'':`<option value="ex:${i}">${esc(e.name)}</option>`).join('')}</optgroup></select><button class="btn xs ghost" data-sk="exsave" title="지금 폼을 예시로 저장">저장</button><button class="btn xs" data-sk="exmgr" data-t="check" title="체크 · 패널티 예시를 한 번에 보고 이름 · 순서 · 삭제 · 덮어쓰기">예시 관리</button></div>
+     <div class="skstep"><div class="skh"><i>1</i>무엇을 <small>상황과 굴릴 자질</small></div>
+      <div class="fr"><span class="lbl">상황</span><input type="text" id="so_label" placeholder="예) 겁먹은 야생 무리를 진정시킨다" value="${esc(F.label)}" style="flex:1;min-width:0"></div>
+      <div class="fr"><span class="lbl">자질</span>${seg('stat',SK.map(s=>[s,s]),F.stat)}</div>
+      <div class="fr"><span class="lbl">방식</span>${seg('mode',[['skill','기교 / 일반'],['inou','이능 (A 이상)'],['any','트레이너가 고름']],F.mode)}</div></div>
+     <div class="skstep"><div class="skh"><i>2</i>누가 <small>눌러서 넣고 빼기</small></div>
+      <span class="chips">${Object.values(T).map(t=>`<label class="chip ${ids.includes(t.id)?'on':''}"><input type="checkbox" data-so-id="${t.id}" ${ids.includes(t.id)?'checked':''} hidden> ${esc(t.name)}</label>`).join('')||'<span class="dim small">로스터에 트레이너가 없다</span>'}</span></div>
+     <div class="skstep"><div class="skh"><i>3</i>목표 <small>난이도를 고르거나 · 자동으로 맞추거나 · 상대와 겨룬다</small></div>
+      <div class="fr"><span class="lbl">난이도</span><span class="chips">${DIFF.map(([v,n])=>`<span class="chip ${!F.npc&&F.target===v?'on':''}" data-diff="${v}">${n} ${v}</span>`).join('')}</span><label class="sktg">목표 <input type="number" class="n xs" id="so_target" value="${F.target}"></label></div>
+      <div class="fr"><span class="lbl">목표 자동</span>${seg('auto',[['','끔'],['easy','쉬움 85~95%'],['normal','보통 70~85%'],['hard','어려움 50~70%']],F.auto)}</div><div class="small dim skinfo" id="so_autoinfo"></div>
+      <div class="fr"><span class="lbl">대항 판정</span>${seg('npc',NPC.map(([v,n])=>[v,n]),F.npc)}</div>
+      <div id="so_lad"></div></div>
+     <details class="skstep skmod" ${F.step||F.twice||F.pm?'open':''}><summary class="skh"><i>4</i>상황 보정 <small id="so_modsum"></small></summary>
+      <div class="fr"><span class="lbl">주사위 단계</span>${seg('step',[[-1,'불리'],[0,'없음'],[1,'유리']],F.step)}<span class="small dim">도구 · 환경 · 힘 차이</span></div>
+      <div class="fr"><span class="lbl">두 번 굴리기</span>${seg('twice',[[-1,'낮은 값'],[0,'없음'],[1,'높은 값']],F.twice)}<span class="small dim">시간 여유·정보 / 서두름·방해</span></div>
+      <div class="fr"><span class="lbl">숙련</span>${seg('pm',[[-1,'서투름'],[0,'없음'],[1,'능숙함']],F.pm)}<span class="small dim">서투름: 자질 최대값이면 −1 · 능숙함: 1이면 +1</span></div></details>
+     <div class="skstep"><div class="skh"><i>5</i>패널티 <small>실패 · 대가 성공 때 거는 것 (없어도 된다)</small></div>${penBox(F.pen)}</div>
+     <div class="skprev"><div class="skh">미리보기 <small>이대로 제시하면</small></div><div id="so_prev"></div></div>
+     <div class="row skgo"><span class="small dim">제시하면 로그에 카드가 나가고, 대상은 상단 「스킬 체크」에서 굴린다</span><span class="sp"></span><button class="btn pri big" data-sk="offer">제시 (모두에게)</button></div></div>
     <div class="skcard"><div class="sec">최근 판정 <span class="note">${(K.hist||[]).length}</span></div><div class="skhist">${(K.hist||[]).slice(-12).reverse().map(h=>`<div style="border-left-color:${COL[h.ri]}">${esc(h.text)}</div>`).join('')||'<span class="dim small">없음</span>'}</div></div>`;
   const statusTab=`<div class="skcard"><div class="sec">트레이너 자원 <span class="note">묘수 · 돌봄 · 이능 · AA 특권 · 부상 · 지침</span></div>
      <div class="sklist">${Object.values(T).map(t=>{const k=tsk(t.id);const mm=myosuMax(t);const can=S().strip(rankOf(t,'능력'));const isA=LAD[can]>=3;const tired=k.tired.map(id=>(mons()[id]||{}).name).filter(Boolean);
@@ -258,8 +273,20 @@ ${penFields(t,X)}</div>`}).join('')}</div>
    md.addEventListener('segchange',e=>{const sg=e.target.closest('[data-seg]');if(sg&&/^(auto|stat|mode|step|twice|pm|npc)$/.test(sg.dataset.seg))autoRe()});
    md.querySelectorAll('[data-diff]').forEach(c=>c.onclick=()=>{$('#so_target',md).value=c.dataset.diff;md.querySelectorAll('[data-diff]').forEach(x=>x.classList.toggle('on',x===c));autoOff()});
    {const ti=$('#so_target',md);if(ti)ti.addEventListener('input',autoOff)}
-   md.querySelectorAll('[data-so-id]').forEach(cb=>cb.onchange=()=>{cb.closest('.chip').classList.toggle('on',cb.checked);autoRe()});
-   autoRe();
+   md.querySelectorAll('[data-so-id]').forEach(cb=>cb.onchange=()=>{cb.closest('.chip').classList.toggle('on',cb.checked);autoRe();prev()});
+   /* 미리보기: 결과 네 칸 + 대상마다 굴릴 주사위와 확률 (목표 자동과 같은 계산) */
+   const prev=()=>{const o={stat:segVal(md,'stat')||'지시',mode:segVal(md,'mode')||'skill',step:+segVal(md,'step')||0,twice:+segVal(md,'twice')||0,pm:+segVal(md,'pm')||0};const npc=NPC.find(x=>x[0]===+segVal(md,'npc'));const tg=+($('#so_target',md)||{}).value||0;
+    const ms=[o.step?'주사위 '+(o.step>0?'유리':'불리'):'',o.twice?'두 번 굴려 '+(o.twice>0?'높은':'낮은')+' 값':'',o.pm?(o.pm>0?'능숙함':'서투름'):''].filter(Boolean);const sm=$('#so_modsum',md);if(sm)sm.textContent=ms.length?ms.join(' · '):'없음 — 눌러서 열기';
+    const L=$('#so_lad',md);if(L)L.innerHTML=npc&&npc[2]?`<div class="small dim skinfo">목표 = 굴릴 때 상대가 ${esc(npc[1])} 를 굴린 값</div>`:ladder(tg);
+    const ids=[...md.querySelectorAll('[data-so-id]:checked')].map(x=>x.dataset.soId);const P=$('#so_prev',md);if(!P)return;
+    if(!ids.length){P.innerHTML='<span class="small dim">대상을 고르면 각자 무엇을 굴리는지 보인다</span>';return}
+    P.innerHTML=`<div class="sklist">${ids.map(id=>{const r=rollerOf(id,o.mode==='any'?Object.assign({},o,{mode:'skill'}):o);if(!r)return '';const t=trs()[id];
+     if(r.why)return `<div class="skrow"><b>${esc(r.name)}</b><span class="small dim">${esc(o.stat)} ${esc(rankOf(t,o.stat)||'-')}</span><span class="sp"></span><span class="small warn">${esc(r.why)}</span></div>`;
+     const dice=`<span class="skdtx">${dieTxt(r.D)} + ${esc(r.how)}</span>`;if(npc&&npc[2])return `<div class="skrow"><b>${esc(r.name)}</b>${dice}<span class="sp"></span><span class="small dim">대 ${esc(npc[1])}</span></div>`;
+     const pOk=okPlusOf(r.D,r.cs,o,tg+2),pCost=okPlusOf(r.D,r.cs,o,tg);
+     return `<div class="skrow"><b>${esc(r.name)}</b>${dice}<span class="sp"></span><span class="skpb" title="성공 ${pct(pOk)} · 대가 성공까지 ${pct(pCost)}"><i style="width:${pOk*100}%;background:${COL[3]}"></i><i style="width:${Math.max(0,pCost-pOk)*100}%;background:${COL[2]}"></i></span><span class="skpp">성공 <b>${pct(pOk)}</b> · 대가 포함 <b>${pct(pCost)}</b></span></div>`}).join('')}</div>${o.mode==='any'?'<div class="small dim skinfo">방식 자유: 기교 기준으로 셈 (이능을 고르면 달라진다)</div>':''}`};
+   md.addEventListener('segchange',prev);{const ti=$('#so_target',md);if(ti)ti.addEventListener('input',prev)}md.querySelectorAll('[data-diff]').forEach(c=>c.addEventListener('click',prev));
+   autoRe();prev();
    md.querySelectorAll('[data-rk]').forEach(b=>b.onclick=()=>{grabOffer(md);const [t,k,dv]=b.dataset.rk.split('.');const X=penNorm(F.pen[t]);X.rk[k]=Math.max(-6,Math.min(6,(+X.rk[k]||0)+ +dv));F.pen[t]=X;re('offer')});
    const ex=$('#so_ex',md);if(ex)ex.onchange=()=>{const v=ex.value;if(!v)return;grabOffer(md);if(v.startsWith('ex:'))loadPreset(EX[+v.slice(3)].o);else{const p=presets.find(p=>p.id===v.slice(3));if(p)loadPreset(p.o)}re('offer')};
    md.querySelectorAll('[data-penex]').forEach(sl=>sl.onchange=()=>{const p=penExGet(sl.value);if(!p)return;grabOffer(md);F.pen[sl.dataset.penex]=penNorm(JSON.parse(JSON.stringify(p)));F.penOpen=true;re('offer')});
@@ -347,30 +374,38 @@ ${penFields(t,X)}</div>`}).join('')}</div>
    <div class="skme"><div class="skranks">${SK.map(s=>`<span><small>${s}</small><b>${esc(rankOf(t,s)||'-')}</b><em>d${SIDES[Math.min(4,lv(rankOf(t,s)))]}</em></span>`).join('')}</div>
     <div class="skres2"><span class="skstat"><small>묘수</small><b>${k.myosu}/${myosuMax(t)}</b></span><span class="skstat"><small>돌봄</small><b>${k.care?'사용':(LAD[S().strip(rankOf(t,'육성'))]>=2?'가능':'—')}</b></span><span class="skstat"><small>이능</small><b>${aLv>=3?inouLeft+'회':'—'}</b></span><span class="skstat"><small>AA 특권</small><b>${aLv>=4?(k.aa?'사용':'가능'):'—'}</b></span><span class="skstat ${k.inj?'bad':''}"><small>건강</small><b>${k.inj>=2?'중상':k.inj===1?'부상':'건강'}</b></span></div></div>
    ${!O?'<div class="skcard"><div class="small dim">제시된 체크가 없다. GM 이 제시하면 여기서 굴린다.</div></div>':!(O.ids||[]).includes(tid)&&!gm()?'<div class="skcard"><div class="small dim">이번 체크는 내 대상이 아니다.</div></div>':`
-   <div class="skcard hit"><div class="skoffer"><div class="skot">${esc(O.label||'스킬 체크')}</div><div class="skos">${offerSummary(O)}</div>${penLine(O.pen)}</div>
+   <div class="skcard hit"><div class="skoffer"><div class="skot">${esc(O.label||'스킬 체크')}</div><div class="skos">${offerSummary(O)}</div>${penLine(O.pen)}${O.npcDice?'':ladder(O.target,mine?mine.total:null)}</div>
     ${mine?resultHtml(mine,t,k):`
-    <div class="sec">어떻게 굴릴까 <span class="note">자질 d${D.sides}${D.plus?(D.plus>0?'+':'')+D.plus:''}${D.injStep?' (부상 −'+D.injStep+')':''}${D.autofail?' — 자동 실패':''}</span></div>
-    <div class="sklist">
-     ${mode!=='inou'?`<label class="skrow pick on"><input type="radio" name="how" value="mon" checked hidden><i class="dot"></i><div><b>포켓몬과 함께</b><small>동료 주사위 d6${stat==='통솔'?' (『유대』 d8)':''} · 쓴 포켓몬은 지친다</small></div></label>
-      <div class="pg" id="monpick">${myMons.map(m=>{const tired=Object.values(K.trainers||{}).some(x=>(x.tired||[]).includes(m.id));const own=m.tid===tid;return `<div class="pc ${tired?'off':''}" data-mp="${m.id}" ${tired?'title="지침"':''}><div class="pic" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div><div><b>${esc(m.name)}</b><div class="small dim">${own?'':esc((T[m.tid]||{}).name||'')+' · '}${tired?'지침':(stat==='통솔'&&hasBond(m)?'『유대』 d8':'d6')}${prideA(m)&&!hasBond(m)?' · 프라이드 A 고집':''}</div></div></div>`}).join('')||'<span class="small dim">포켓몬 없음</span>'}</div>
-      <label class="skrow pick"><input type="radio" name="how" value="alone" hidden><i class="dot"></i><div><b>혼자</b><small>동료 주사위 d4</small></div></label>`:''}
-     ${aLv>=3&&mode!=='skill'&&stat==='능력'?`<label class="skrow pick ${inouLeft<=0||(k.inj>=2&&C.noinou2)?'done':''}"><input type="radio" name="how" value="inou" ${mode==='inou'?'checked':''} ${inouLeft<=0||(k.inj>=2&&C.noinou2)?'disabled':''} hidden><i class="dot"></i><div><b>이능</b><small>2d${SIDES[Math.min(4,aLv)]} · 남은 ${inouLeft}회 · 실패하면 부상${k.inj>=2&&C.noinou2?' · 중상이라 불가':''}</small></div></label>
-      ${aLv>=4&&!k.aa&&O.target<=C.aa&&inouLeft>0&&!(k.inj>=2&&C.noinou2)?`<label class="skrow pick"><input type="radio" name="how" value="aa" hidden><i class="dot"></i><div><b>AA 특권</b><small>굴리지 않고 성공 (목표 ${C.aa} 이하 · 세션 1회 · 이능 1회 소모)</small></div></label>`:''}`:(mode==='inou'?'<div class="small dim">이능 판정은 능력 A 이상만 할 수 있다.</div>':'')}
+    <div class="sec">누구와 함께 굴릴까 <span class="note">내 자질 ${esc(stat)} ${esc(rankOf(t,stat)||'-')} → ${dieTxt(D)}${D.injStep?' (부상 −'+D.injStep+'단계)':''}${D.autofail?' — 자동 실패':''}</span></div>
+    <span hidden>${mode!=='inou'?'<input type="radio" name="how" value="mon"><input type="radio" name="how" value="alone">':''}${aLv>=3&&mode!=='skill'&&stat==='능력'?`<input type="radio" name="how" value="inou" ${mode==='inou'&&!(inouLeft<=0||(k.inj>=2&&C.noinou2))?'checked':''}><input type="radio" name="how" value="aa">`:''}</span>
+    <div class="skopts" id="monpick">
+     ${mode!=='inou'?myMons.map(m=>{const tired=Object.values(K.trainers||{}).some(x=>(x.tired||[]).includes(m.id));const own=m.tid===tid;const cs=stat==='통솔'&&hasBond(m)?8:6;return `<div class="skopt ${tired?'off':''}" data-mp="${m.id}" data-cs="${cs}" data-nm="${esc(m.name)}" ${tired?'title="지쳐서 쓸 수 없다 — 돌봄이나 휴식으로 회복"':''}><div class="pic" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div><div><b>${esc(m.name)}</b><small>${own?'':esc((T[m.tid]||{}).name||'')+' · '}${tired?'지침':(cs===8?'『유대』 d8':'d6')}${prideA(m)&&cs!==8?' · 프라이드 A 고집':''}</small></div><em>d${cs}</em></div>`}).join('')+`<div class="skopt alone" data-how="alone" data-cs="4" data-nm="혼자"><div class="pic">—</div><div><b>혼자</b><small>동료 없이</small></div><em>d4</em></div>`:''}
+     ${aLv>=3&&mode!=='skill'&&stat==='능력'?(()=>{const no=inouLeft<=0||(k.inj>=2&&C.noinou2);const cs=SIDES[Math.min(4,aLv)];return `<div class="skopt inou ${no?'off':''} ${mode==='inou'&&!no?'on':''}" data-how="inou" data-cs="${cs}" data-nm="이능"><div class="pic">能</div><div><b>이능</b><small>남은 ${inouLeft}회 · 실패하면 부상${k.inj>=2&&C.noinou2?' · 중상이라 불가':''}</small></div><em>d${cs}</em></div>`+(aLv>=4&&!k.aa&&O.target<=C.aa&&!no?`<div class="skopt aa" data-how="aa" data-nm="AA 특권"><div class="pic">AA</div><div><b>AA 특권</b><small>굴리지 않고 성공 · 목표 ${C.aa} 이하 · 세션 1회 · 이능 1회 소모</small></div><em>성공</em></div>`:'')})():(mode==='inou'?'<div class="small dim">이능 판정은 능력 A 이상만 할 수 있다.</div>':'')}
     </div>
-    <div class="row" style="margin-top:10px"><label class="small">보정 <input type="number" class="n xs" id="sk_bonus" value="0"></label><span class="sp"></span><button class="btn pri big" id="sk_roll">굴리기</button></div>`}
+    <div class="skformula" id="sk_formula"></div>
+    <div class="row" style="margin-top:10px"><label class="small" title="GM 이 따로 말한 ± 보정">보정 <input type="number" class="n xs" id="sk_bonus" value="0"></label><span class="sp"></span><button class="btn pri big" id="sk_roll">굴리기</button></div>`}
    </div>`}
    ${O&&Object.keys(K.res||{}).some(id=>id!==tid&&(K.res[id]||{}).offerId===O.id)?`<div class="skcard"><div class="sec">다른 트레이너의 결과 <span class="note">받치면 결과가 한 칸 오르고 내가 부상을 입는다</span></div><div class="sklist">${Object.keys(K.res).filter(id=>id!==tid&&K.res[id].offerId===O.id).map(id=>{const r=K.res[id];const tt=T[id]||{};const canCover=!r.cover&&r.ri<3&&r.ri>=0&&!(k.inj>=2&&C.nocover2);return `<div class="skrow"><b>${esc(tt.name)}</b><span class="skres" style="background:${COL[r.ri]}">${RES[r.ri]}</span>${r.cover?`<span class="tag">커버: ${esc((T[r.cover.by]||{}).name)}</span>`:''}<span class="sp"></span>${canCover?`<button class="btn xs" data-cover="${id}">내가 받칠게</button>`:''}</div>`}).join('')}</div></div>`:''}
    <div class="skcard"><div class="sec">돌봄 <span class="note">육성 B 이상 · 휴식 사이 1회 · 지친 포켓몬 1체 회복</span></div>${LAD[S().strip(rankOf(t,'육성'))]>=2&&!k.care?`<span class="chips">${Object.entries(K.trainers||{}).flatMap(([oid,x])=>(x.tired||[]).map(mid=>`<button class="chip" data-care="${mid}" data-owner="${oid}">${esc((mons()[mid]||{}).name||mid)}${oid!==tid?' ('+esc((T[oid]||{}).name)+')':''}</button>`)).join('')||'<span class="small dim">지친 포켓몬이 없다</span>'}</span>`:'<span class="small dim">쓸 수 없다</span>'}</div></div>`);
   md.classList.add('wide');
-  const syncPick=()=>md.querySelectorAll('.skrow.pick').forEach(l=>{const i=l.querySelector('input');l.classList.toggle('on',!!(i&&i.checked))});
-  const sel=md.querySelector('#monpick');let pickId=null;if(sel){sel.querySelectorAll('[data-mp]').forEach(el=>el.onclick=()=>{if(el.classList.contains('off'))return;pickId=el.dataset.mp;sel.querySelectorAll('[data-mp]').forEach(x=>x.classList.toggle('on',x===el));const r=md.querySelector('[name=how][value=mon]');if(r){r.checked=true;syncPick()}})}
-  md.querySelectorAll('[name=how]').forEach(i=>i.onchange=syncPick);syncPick();
-  const rb=$('#sk_roll',md);if(rb)rb.onclick=()=>roll(tid,O,md,pickId);
+  /* 10-29: 동료 · 혼자 · 이능 · AA 를 카드 한 줄에서 고르고, 고른 대로 「d10 + d6 → 성공 n%」 를 바로 보여 준다 */
+  const sel=md.querySelector('#monpick');let pickId=null;
+  const formula=()=>{const F_=$('#sk_formula',md),rb=$('#sk_roll',md);if(!F_||!D)return;const on=sel&&sel.querySelector('.skopt.on');const bonus=+($('#sk_bonus',md)||{}).value||0;
+   if(!on){F_.innerHTML='<span class="dim">위에서 함께 굴릴 포켓몬 · 혼자 · 이능 중 하나를 고른다</span>';if(rb)rb.textContent='굴리기';return}
+   if(on.dataset.how==='aa'){F_.innerHTML='<b>AA 특권</b> — 굴리지 않고 바로 <b>성공</b>';if(rb)rb.textContent='특권 쓰기';return}
+   const cs=+on.dataset.cs;const D2=Object.assign({},D,{plus:(D.plus||0)+bonus});const o={twice:O.twice||0,pm:O.pm||0};
+   const odds=O.npcDice||D.autofail?'':` <span class="sp"></span><span class="skpp">성공 <b>${pct(okPlusOf(D2,cs,o,O.target+2))}</b> · 대가 포함 <b>${pct(okPlusOf(D2,cs,o,O.target))}</b></span>`;
+   F_.innerHTML=D.autofail?'<span class="warn">자질 주사위가 d4 아래 — 자동 실패</span>':`<span class="skdie"><small>${esc(stat)}</small>${dieTxt(D)}</span><em>+</em><span class="skdie"><small>${esc(on.dataset.nm)}</small>d${cs}</span>${bonus?`<em>${bonus>0?'+':'−'}</em><span class="skdie"><small>보정</small>${Math.abs(bonus)}</span>`:''}<em>vs</em><span class="skdie tg"><small>목표</small>${O.npcDice?esc(O.npc):O.target}</span>${odds}`;
+   if(rb)rb.textContent=`굴리기 · ${dieTxt(D)} + d${cs}`};
+  if(sel)sel.querySelectorAll('.skopt').forEach(el=>el.onclick=()=>{if(el.classList.contains('off'))return;const how=el.dataset.mp?'mon':el.dataset.how;pickId=el.dataset.mp||null;sel.querySelectorAll('.skopt').forEach(x=>x.classList.toggle('on',x===el));const r=md.querySelector(`[name=how][value=${how}]`);if(r)r.checked=true;formula()});
+  {const bi=$('#sk_bonus',md);if(bi)bi.addEventListener('input',formula)}formula();
+  const rb=$('#sk_roll',md);if(rb)rb.onclick=()=>{if(!md.querySelector('[name=how]:checked'))return A().toast('누구와 함께 굴릴지 먼저 골라 줘');roll(tid,O,md,pickId)};
   md.querySelectorAll('[data-myosu]').forEach(b=>b.onclick=()=>myosu(tid,b.dataset.myosu));
   md.querySelectorAll('[data-cover]').forEach(b=>b.onclick=()=>cover(tid,b.dataset.cover));
   md.querySelectorAll('[data-care]').forEach(b=>b.onclick=()=>care(tid,b.dataset.owner,b.dataset.care))}
  function resultHtml(r,t,k){const O=st().offer;const canMyosu=O&&O.stat==='지시'&&(+k.myosu||0)<myosuMax(t)&&!r.myosu&&r.how!=='aa'&&r.ri>0;
-  return `<div class="skbig" style="background:${COL[r.ri]}"><div class="skbigt">${RES[r.ri]}</div><div class="skbigs">합계 ${r.total} / 목표 ${r.target}</div></div><div class="pre small" style="white-space:pre-wrap;margin-top:6px">${esc(r.text.split('\n').slice(1).join('\n'))}</div>${r.cover?`<div class="small" style="margin-top:4px">커버: ${esc((trs()[r.cover.by]||{}).name)} 이(가) 받쳐 ${RES[r.cover.from]} → ${RES[r.ri]}</div>`:''}
+  const a=r.a||{},c=r.c||{};const dice=a.sides&&c.sides?`<div class="skformula"><span class="skdie"><small>${esc(r.stat)} d${a.sides}${a.plus?(a.plus>0?'+':'')+a.plus:''}</small>${a.v}${a.plus?(a.plus>0?'+':'')+a.plus:''}</span><em>+</em><span class="skdie"><small>${c.kind==='inou'?'이능':c.kind==='mon'?esc(c.name):'혼자'} d${c.sides}</small>${c.v}</span>${r.bonus?`<em>${r.bonus>0?'+':'−'}</em><span class="skdie"><small>보정</small>${Math.abs(r.bonus)}</span>`:''}<em>=</em><span class="skdie tot" style="--c:${COL[r.ri]}"><small>합계</small>${r.total}</span><em>vs</em><span class="skdie tg"><small>목표</small>${r.target}</span></div>`:'';
+  return `<div class="skbig" style="background:${COL[r.ri]}"><div class="skbigt">${RES[r.ri]}</div><div class="skbigs">합계 ${r.total} / 목표 ${r.target}</div></div>${dice}<details class="skdet"><summary>굴림 자세히</summary><div class="pre small" style="white-space:pre-wrap">${esc(r.text.split('\n').slice(1).join('\n'))}</div></details>${r.cover?`<div class="small" style="margin-top:4px">커버: ${esc((trs()[r.cover.by]||{}).name)} 이(가) 받쳐 ${RES[r.cover.from]} → ${RES[r.ri]}</div>`:''}
    ${canMyosu?`<div class="row" style="margin-top:8px"><span class="small dim">묘수 (${k.myosu}/${myosuMax(t)}): 주사위 하나를 다시 굴린다</span><span class="sp"></span><button class="btn sm" data-myosu="a">자질 주사위 다시</button><button class="btn sm" data-myosu="c">${r.how==='inou'?'두 번째 주사위':'동료 주사위'} 다시</button></div>`:''}`}
  /* 굴리기 */
  async function roll(tid,O,md,pickId){const T=trs();const t=T[tid];const k=tsk(tid);const C=cfg();const how=(md.querySelector('[name=how]:checked')||{}).value||'alone';const bonus=+($('#sk_bonus',md)||{}).value||0;
