@@ -117,6 +117,7 @@ async function shrinkUpload(blob,maxSide){try{if(!/^image\/(png|jpe?g|webp|bmp)$
   return sb().storage.from('oremas').getPublicUrl(full).data.publicUrl}
 
  /* 10-26 망령: 세션 노트(nt_*) 읽기 — 공개 문서는 표에서, GM 비밀구가 있으면 nt_all 로 전부 */
+ async function ntCampUpdate(camp,secret,data){return rpc('nt_camp_update',{p_camp:camp,p_secret:secret,p_name:null,p_data:data})}   /* 10-29: 방 ↔ 세션 노트 캠페인 잇기 (캠페인 data.om.room) */
  async function ntCamps(){const r=await sb().from('nt_camp').select('id,name,data,created_at').order('created_at');if(r.error)throw err(r.error);return r.data||[]}
  async function ntDocs(camp,secret,kinds){if(secret){const rows=await rpc('nt_all',{p_camp:camp,p_secret:secret,p_since:null});return (rows||[]).filter(x=>!kinds||kinds.includes(x.kind))}let q=sb().from('nt_docs').select('kind,id,data,vis').eq('camp',camp);if(kinds)q=q.in('kind',kinds);const r=await q;if(r.error)throw err(r.error);return r.data||[]}
  /* 10-27 망령: 전당 (supabase/patch_2026-10-27_전당.sql) — 방 상태 밖 om_hall 표. 목록은 요약만, 로그는 한 판을 열 때만 */
@@ -124,5 +125,5 @@ async function shrinkUpload(blob,maxSide){try{if(!/^image\/(png|jpe?g|webp|bmp)$
   put:(room,secret,id,head,log)=>rpc('om_hall_put',{p_room:room,p_secret:secret,p_id:id,p_head:head,p_log:log??null}),
   del:(room,secret,id)=>rpc('om_hall_del',{p_room:room,p_secret:secret,p_id:id}),
   cm:(room,secret,id,by,t,del)=>rpc('om_hall_cm',{p_room:room,p_secret:secret,p_id:id,p_by:by||'',p_t:t??null,p_del:del??null}),noFn};
- return {patchesSince,hall,shrinkUpload,ntCamps,ntDocs,rtReset,getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty};
+ return {patchesSince,hall,shrinkUpload,ntCamps,ntCampUpdate,ntDocs,rtReset,getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty};
 })();

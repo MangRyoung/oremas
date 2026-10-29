@@ -1,21 +1,64 @@
 /* ---------- 세션 노트 연동 (10-26 망령) ----------
    세션 노트(mangketmon-notes · 같은 Supabase 의 nt_* 표)에서 지도(장소 · 루트)와 관계도(인물 · 조직 · 관계)를 이 방으로 가져온다.
-   공개(모두) 문서는 그냥 읽고, 세션 노트 GM 비밀구를 적으면 GM만 문서까지 읽는다. 가져온 것은 이 방의 것이 되어 따로 바뀐다(실시간 연동 아님). */
+   공개(모두) 문서는 그냥 읽고, 세션 노트 GM 비밀구를 적으면 GM만 문서까지 읽는다. 가져온 것은 이 방의 것이 되어 따로 바뀐다(실시간 연동 아님).
+   10-29 망령: 방 ↔ 캠페인 잇기. 이 방의 rp.notes = {camp, name} 이거나, 세션 노트 캠페인 설정의 「웹툴 방」(nt_camp.data.om.room)이 이 방이면 이어진 것.
+   이어져 있으면 캠페인을 다시 묻지 않고, 세션 노트와 주소(mangryoung.github.io)가 같아 이 브라우저에 남은 세션 노트 GM 비밀구(nt_sec_<캠페인>)를 그대로 쓴다.
+   세션 노트 시트의 「⚔ 웹툴로」 는 #r=<방>&add=<트레이너 id,…> 로 열리고, GM 이면 그 트레이너를 제작기에서 이 방 명단으로 가져온다. */
 "use strict";
 window.OM_NOTES=(()=>{
  const A=()=>window.OM_APP,S=()=>window.OM_STORE;const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const NOTES_URL=(window.OM_CONFIG&&OM_CONFIG.notesUrl)||'https://mangryoung.github.io/mangketmon-notes/';
  /* 캠페인 고르기 → {camp, secret, docs(kinds)} */
- async function pick(kinds,what){let camps=[];try{camps=await S().ntCamps()}catch(e){A().toast('세션 노트 표를 못 읽었다: '+e.message+' (schema.sql 을 아직 안 돌렸나?)');return null}
+ const hp=()=>{const o={};location.hash.replace(/^#/,'').split('&').forEach(kv=>{const [k,v]=kv.split('=');if(k)o[decodeURIComponent(k)]=decodeURIComponent(v||'')});return o};
+ const secOf=camp=>{try{return localStorage.getItem('nt_sec_'+camp)||''}catch(e){return ''}};
+ const LINK={room:'',camp:null,camps:null};
+ /* 이 방과 이어진 세션 노트 캠페인 {id,name,data} | null */
+ async function linked(force){const room=A().ST.room;if(!force&&LINK.room===room&&LINK.camps)return LINK.camp;
+  let camps=[];try{camps=await S().ntCamps()}catch(e){return null}const st=(A().ST.state.rp||{}).notes;
+  const c=(st&&st.camp&&camps.find(x=>x.id===st.camp))||camps.find(x=>((x.data||{}).om||{}).room===room)||null;
+  LINK.room=room;LINK.camps=camps;LINK.camp=c?{id:c.id,name:c.name,data:c.data||{}}:null;topBtn();return LINK.camp}
+ const notesLink=camp=>NOTES_URL.replace(/[?#].*$/,'')+'?c='+encodeURIComponent(camp)+'#c='+encodeURIComponent(camp);
+ /* 잇기: 방 쪽(rp.notes)에 적고, 세션 노트 GM 비밀구가 있으면 캠페인 쪽(data.om.room)에도 적는다 */
+ async function linkTo(camp,secret){const c=(LINK.camps||[]).find(x=>x.id===camp);if(!c)return;await A().set(['rp','notes'],{camp,name:c.name||''});
+  const sec=secret||secOf(camp);if(sec&&S().ntCampUpdate){try{const d=Object.assign({},c.data||{});d.om=Object.assign({},d.om||{},{room:A().ST.room});await S().ntCampUpdate(camp,sec,d);c.data=d}catch(e){console.warn('nt link',e)}}
+  LINK.camp={id:c.id,name:c.name,data:c.data||{}};topBtn();A().sysLog(`세션 노트: 「${c.name}」 캠페인과 이었다`)}
+ async function unlink(){await A().set(['rp','notes'],null);const L=LINK.camp;if(L){const sec=secOf(L.id);if(sec&&S().ntCampUpdate&&((L.data||{}).om||{}).room===A().ST.room){try{const d=Object.assign({},L.data);delete d.om;await S().ntCampUpdate(L.id,sec,d)}catch(e){}}}LINK.camp=null;LINK.camps=null;topBtn();A().toast('세션 노트 잇기를 풀었다')}
+ /* 위 막대 「📓 노트」 단추: 이어져 있으면 캠페인 이름 */
+ function topBtn(){const b=document.getElementById('ntBtn');if(!b)return;const L=LINK.room===A().ST.room?LINK.camp:null;b.textContent=L?'📓 '+(L.name||'노트'):'📓 노트';b.title=L?`세션 노트 「${L.name}」 — 열기 · 지도/관계도 가져오기`:'세션 노트와 잇기';b.classList.toggle('on',!!L)}
+ async function menu(){const L=await linked(true);const gm=A().ST.role==='gm';
+  if(!L&&!gm){A().toast('이 방은 세션 노트와 이어져 있지 않다');return}
+  const md=A().openModal(`<div class="mhead"><h2>📓 세션 노트</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+   ${L?`<p style="margin-top:0">이 방은 세션 노트의 <b>「${esc(L.name)}」</b> 캠페인과 이어져 있다.</p><div class="row" style="gap:6px;flex-wrap:wrap"><a class="btn pri" href="${esc(notesLink(L.id))}" target="mangketmon-notes" rel="noopener">세션 노트 열기 ↗</a>${gm?'<button class="btn" data-nt="map">지도 가져오기</button><button class="btn" data-nt="graph">관계도 가져오기</button>':''}</div>
+    ${gm?`<p class="small dim" style="margin-top:10px">${secOf(L.id)?'이 브라우저에 세션 노트 GM 비밀구가 있어 「GM만」 문서까지 가져온다.':'이 브라우저에는 세션 노트 GM 비밀구가 없어 「모두」로 공개된 것만 가져온다. 세션 노트를 GM 으로 한 번 열면 다음부터 같이 쓴다.'}</p><div class="row" style="gap:6px;margin-top:6px"><button class="btn sm ghost" data-nt="other">다른 캠페인과 잇기</button><button class="btn sm ghost" data-nt="unlink">잇기 풀기</button></div>`:''}`
+   :`<p style="margin-top:0">세션 노트 캠페인과 이으면, 지도 · 관계도를 캠페인을 다시 고르지 않고 한 번에 가져오고, 세션 노트 시트에서 「⚔ 웹툴로」 를 누르면 이 방으로 트레이너를 보낸다.</p><div class="row"><button class="btn pri" data-nt="other">캠페인 고르기</button></div>`}`);
+  md.querySelectorAll('[data-nt]').forEach(b=>b.onclick=async()=>{const k=b.dataset.nt;A().closeModal();if(k==='map')return importMap();if(k==='graph')return importGraph();if(k==='unlink')return unlink();
+   if(k==='other'){const r=await pick([],'',{ask:true,linkOnly:true});if(r)A().toast(`「${r.campName}」 캠페인과 이었다`)}})}
+ /* 세션 노트에서 보낸 트레이너 가져오기 (#…&add=t1,t2) — openRoom 끝에서 부른다 */
+ async function afterOpen(){const p=hp();linked(true);if(!p.add)return;const ids=p.add.split(',').map(x=>x.trim()).filter(Boolean);
+  try{history.replaceState(null,'',location.pathname+location.search+'#'+Object.entries(p).filter(([k])=>k!=='add').map(([k,v])=>encodeURIComponent(k)+'='+encodeURIComponent(v)).join('&'))}catch(e){}
+  if(A().ST.role!=='gm'){if(ids.length)A().toast('세션 노트에서 보낸 트레이너는 GM 만 가져올 수 있다');return}
+  const R=(A().ST.state.roster||{}).trainers||{};const fresh=ids.filter(id=>!Object.values(R).some(t=>t.id===id||t.mkId===id));
+  if(!confirm(`세션 노트에서 트레이너 ${ids.length}명을 보냈다.\n제작기에서 지금 값으로 이 방 명단에 가져올까?${ids.length-fresh.length?`\n(이미 있는 ${ids.length-fresh.length}명은 새 값으로 덮어쓴다 · HP·랭크·메모는 새로 시작)`:''}`))return;
+  const SU=window.OM_SHEET_UI;if(!SU||!SU.importTrainer)return A().toast('시트 화면이 아직 준비되지 않았다 — 새로 고친 뒤 다시');let n=0;
+  for(const id of ids){try{const mk=await (A().loadMakerParty?A().loadMakerParty(id):A().loadMaker(true));const tdoc=mk.trainers.find(t=>t.id===id);if(!tdoc){A().toast('제작기에서 못 찾았다: '+id);continue}await SU.importTrainer(tdoc,mk.pokemon,false,'');n++}catch(e){A().toast('가져오지 못했다: '+(e.message||e))}}
+  if(n){A().sysLog(`세션 노트에서 트레이너 ${n}명을 가져왔다`);A().toast(`트레이너 ${n}명을 가져왔다`);A().renderScene()}}
+ async function pick(kinds,what,opt){opt=opt||{};
+  /* 이어진 캠페인이 있으면 묻지 않는다 */
+  if(!opt.ask){const L=await linked();if(L){const secret=secOf(L.id);A().toast(`세션 노트 「${L.name}」에서 읽는 중…`);try{const docs=await S().ntDocs(L.id,secret||null,kinds);return {camp:L.id,secret,docs,campName:L.name}}catch(e){A().toast('못 읽었다: '+e.message);return null}}}
+  let camps=[];try{camps=await S().ntCamps()}catch(e){A().toast('세션 노트 표를 못 읽었다: '+e.message+' (schema.sql 을 아직 안 돌렸나?)');return null}
   if(!camps.length){A().toast('세션 노트에 캠페인이 없다');return null}
   const last=(()=>{try{return localStorage.getItem('om_nt_camp')||''}catch(e){return ''}})();
-  return new Promise(res=>{const md=A().openModal(`<div class="mhead"><h2>세션 노트에서 ${esc(what)} 가져오기</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+  return new Promise(res=>{const md=A().openModal(`<div class="mhead"><h2>${opt.linkOnly?'세션 노트 캠페인과 잇기':`세션 노트에서 ${esc(what)} 가져오기`}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    <label class="lbl">캠페인<select id="ntC">${camps.map(c=>`<option value="${esc(c.id)}" ${c.id===last?'selected':''}>${esc(c.name)}${c.data&&c.data.sub?' · '+esc(c.data.sub):''}</option>`).join('')}</select></label>
-   <label class="lbl" style="margin-top:8px">세션 노트 GM 비밀구 <small class="dim">(비우면 「모두」로 공개된 것만 가져온다)</small><input id="ntS" type="password" autocomplete="off"></label>
+   <label class="lbl" style="margin-top:8px">세션 노트 GM 비밀구 <small class="dim">(비우면 「모두」로 공개된 것만 가져온다 · 이 브라우저에 있으면 저절로 채운다)</small><input id="ntS" type="password" autocomplete="off"></label>
+   ${A().ST.role==='gm'?`<label class="chk" style="margin-top:8px;display:flex;gap:6px;align-items:center"><input type="checkbox" id="ntLk" checked> 이 방을 이 캠페인과 잇기 (다음부터 묻지 않는다)</label>`:''}
    <p class="small dim" style="margin-top:8px">가져온 것은 이 방의 것이 되어 세션 노트와 따로 바뀐다. 세션 노트: <a href="${esc(NOTES_URL)}" target="_blank" rel="noopener">${esc(NOTES_URL)}</a></p>
-   <div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn pri" id="ntOk">가져오기</button></div>`);
+   <div class="row" style="margin-top:12px;justify-content:flex-end"><button class="btn pri" id="ntOk">${opt.linkOnly?'잇기':'가져오기'}</button></div>`);
+   const cs=md.querySelector('#ntC'),si=md.querySelector('#ntS');const fill=()=>{si.value=secOf(cs.value)};fill();cs.onchange=fill;
    md.parentElement.addEventListener('click',e=>{if(e.target===md.parentElement||e.target.closest('[data-x]'))res(null)});
    md.querySelector('#ntOk').onclick=async()=>{const camp=md.querySelector('#ntC').value,secret=md.querySelector('#ntS').value.trim();try{localStorage.setItem('om_nt_camp',camp)}catch(e){}
+    const lk=md.querySelector('#ntLk');if((lk&&lk.checked)||opt.linkOnly){LINK.camps=camps;LINK.room=A().ST.room;try{await linkTo(camp,secret)}catch(e){A().toast('잇지 못했다: '+e.message)}}
+    if(opt.linkOnly){A().closeModal();res({camp,secret,docs:[],campName:(camps.find(c=>c.id===camp)||{}).name});return}
     A().toast('세션 노트에서 읽는 중…');try{const docs=await S().ntDocs(camp,secret||null,kinds);A().closeModal();res({camp,secret,docs,campName:(camps.find(c=>c.id===camp)||{}).name})}catch(e){A().toast('못 읽었다: '+e.message+(secret?' (비밀구가 틀렸나?)':''));res(null)}}})}
  const byKind=(docs,k)=>docs.filter(d=>d.kind===k).map(d=>Object.assign({id:d.id,_vis:d.vis},d.data));
  /* 지도: maps(첫 지도 또는 고른 지도) → rp.map.img, spots → locs(픽셀), routes.steps → routes(seq) */
@@ -41,5 +84,5 @@ window.OM_NOTES=(()=>{
   for(const q of rels){const a=idOf[q.a],b=idOf[q.b];if(has.has(a+'|'+b))continue;has.add(a+'|'+b);ae++;ops.push([['graph','edges','nt'+Math.random().toString(36).slice(2,9)],{a,b,rank:q.kind==='love'?3:q.kind==='ally'?2:q.kind==='rival'?1:1,label:q.label||'',shock:0,nt:q.id}])}
   if(!confirm(`「${r.campName}」의 관계도를 가져올까?\n새 인물 · 조직 ${add}명 · 이름이 같은 ${upd}명은 사진 · 메모를 덧씌움 · 새 관계선 ${ae}개\n(이 방에 이미 있는 노드와 선은 지우지 않는다)`))return;
   A().toast('가져오는 중…');await A().setMany(ops);A().sysLog(`관계도: 세션 노트 「${r.campName}」에서 가져옴 (${add+upd}명 · 선 ${ae}개)`);A().toast('관계도를 가져왔다');A().renderScene()}
- return {importMap,importGraph,pick,NOTES_URL};
+ return {importMap,importGraph,pick,NOTES_URL,linked,menu,afterOpen,topBtn,notesLink};
 })();
