@@ -10,7 +10,8 @@ window.OM_NOTES=(()=>{
  const NOTES_URL=(window.OM_CONFIG&&OM_CONFIG.notesUrl)||'https://mangryoung.github.io/mangketmon-notes/';
  /* 캠페인 고르기 → {camp, secret, docs(kinds)} */
  const hp=()=>{const o={};location.hash.replace(/^#/,'').split('&').forEach(kv=>{const [k,v]=kv.split('=');if(k)o[decodeURIComponent(k)]=decodeURIComponent(v||'')});return o};
- const secOf=camp=>{try{return localStorage.getItem('nt_sec_'+camp)||''}catch(e){return ''}};
+ /* 10-29 망령 「세션 노트랑 웹툴 로그인 체계를 같게」: 노트 비밀구가 없으면 웹툴 계정('u:'+로그인 표)으로 — 노트도 같은 계정 · 캠페인 권한을 쓴다 (노트 supabase/patch_2026-10-29_계정.sql) */
+ const secOf=camp=>{try{const s=localStorage.getItem('nt_sec_'+camp);if(s)return s;const a=JSON.parse(localStorage.getItem('om_acct')||sessionStorage.getItem('om_acct')||'null');return a&&a.token?'u:'+a.token:''}catch(e){return ''}};
  const LINK={room:'',camp:null,camps:null};
  /* 이 방과 이어진 세션 노트 캠페인 {id,name,data} | null */
  async function linked(force){const room=A().ST.room;if(!force&&LINK.room===room&&LINK.camps)return LINK.camp;
@@ -29,7 +30,7 @@ window.OM_NOTES=(()=>{
   if(!L&&!gm){A().toast('이 방은 세션 노트와 이어져 있지 않다');return}
   const md=A().openModal(`<div class="mhead"><h2>📓 세션 노트</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    ${L?`<p style="margin-top:0">이 방은 세션 노트의 <b>「${esc(L.name)}」</b> 캠페인과 이어져 있다.</p><div class="row" style="gap:6px;flex-wrap:wrap"><a class="btn pri" href="${esc(notesLink(L.id))}" target="mangketmon-notes" rel="noopener">세션 노트 열기 ↗</a>${gm?'<button class="btn" data-nt="map">지도 가져오기</button><button class="btn" data-nt="graph">관계도 가져오기</button><button class="btn" data-nt="dg">⛩ 던전 주고받기</button>':''}</div>${gm?`<div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><span class="small dim" style="align-self:center">노트로 보내기</span><button class="btn sm" data-nt="mappush" title="노트에서 가져온 지도의 핀 중 옮기거나 이름 · 배경을 바꾼 것 · 새로 찍은 것만">📍 지도 핀</button><button class="btn sm" data-nt="logpush" title="오늘 이 방 로그를 노트 「기록」에 (지난번 보낸 뒤만 · 귓속말 · 잡담 빼고)">📜 오늘 로그</button></div>`:''}
-    ${gm?`<p class="small dim" style="margin-top:10px">${secOf(L.id)?'이 브라우저에 세션 노트 GM 비밀구가 있어 「GM만」 문서까지 가져온다.':'이 브라우저에는 세션 노트 GM 비밀구가 없어 「모두」로 공개된 것만 가져온다. 세션 노트를 GM 으로 한 번 열면 다음부터 같이 쓴다.'}</p><div class="row" style="gap:6px;margin-top:6px"><button class="btn sm ghost" data-nt="other">다른 캠페인과 잇기</button><button class="btn sm ghost" data-nt="unlink">잇기 풀기</button></div>`:''}`
+    ${gm?`<p class="small dim" style="margin-top:10px">${secOf(L.id)?'이 브라우저의 세션 노트 권한(계정 또는 GM 비밀구)으로 가져온다 — 노트에서 GM 이면 「GM만」 문서까지.':'이 브라우저에는 세션 노트 GM 비밀구가 없어 「모두」로 공개된 것만 가져온다. 세션 노트를 GM 으로 한 번 열면 다음부터 같이 쓴다.'}</p><div class="row" style="gap:6px;margin-top:6px"><button class="btn sm ghost" data-nt="other">다른 캠페인과 잇기</button><button class="btn sm ghost" data-nt="unlink">잇기 풀기</button></div>`:''}`
    :`<p style="margin-top:0">세션 노트 캠페인과 이으면, 지도 · 관계도를 캠페인을 다시 고르지 않고 한 번에 가져오고, 세션 노트 시트에서 「⚔ 웹툴로」 를 누르면 이 방으로 트레이너를 보낸다.</p><div class="row"><button class="btn pri" data-nt="other">캠페인 고르기</button></div>`}`);
   md.querySelectorAll('[data-nt]').forEach(b=>b.onclick=async()=>{const k=b.dataset.nt;A().closeModal();if(k==='map')return importMap();if(k==='graph')return importGraph();if(k==='dg')return dgPanel();if(k==='mappush')return mapPush();if(k==='logpush')return logPush();if(k==='unlink')return unlink();
    if(k==='other'){const r=await pick([],'',{ask:true,linkOnly:true});if(r)A().toast(`「${r.campName}」 캠페인과 이었다`)}})}
