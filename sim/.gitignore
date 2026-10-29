@@ -10,3 +10,5 @@ report/private.*
 shortcut_log.txt
 data/webtool/
 data/img_cache/
+# 각성체 보낼 그림 · 코멘트 (PC 마다)
+data/awaken/
