@@ -11,7 +11,7 @@ window.OM_MECARD=(()=>{
  function el(){let e=document.getElementById('mecard');if(!e){e=document.createElement('div');e.id='mecard';e.className='mecard';document.body.appendChild(e)}return e}
  function draw(view){const t=me();const e=el();if(!t||HIDE.includes(view)){e.hidden=true;e.innerHTML='';return}e.hidden=false;
   const ST=A().ST;const mons=(t.pids||[]).map(id=>((ST.state.roster||{}).mons||{})[id]).filter(Boolean);const bm=(ST.state.battle||{}).mons||{};
-  const K=window.OM_SKILL_UI;const k=K&&K.tsk?K.tsk(t.id):{};const st=k.inj>=2?'<span class="bad">중상</span>':k.inj===1?'<span class="bad">부상</span>':'건강';
+  const K=window.OM_SKILL_UI;const k=K&&K.tsk?K.tsk(t.id):{};const st=k.inj>=3?'<span class="bad">빈사</span>':k.inj>=2?'<span class="bad">중상</span>':k.inj===1?'<span class="bad">부상</span>':'건강';
   const hpOf=m=>{const b=bm[m.id];const h=(b&&b.hp)||m.hp||{cur:0,max:0};const pct=h.max?Math.max(0,Math.min(100,h.cur>0?Math.max(1,Math.round(h.cur/h.max*100)):0)):0;return {h,pct,inB:!!(b&&b.entry)}};
   const av=(u,cls,txt)=>`<i class="${cls}" style="${u?`background-image:url('${cssu(u)}')`:''}">${u?'':esc(txt||'')}</i>`;
   const dots=mons.slice(0,6).map(m=>{const x=hpOf(m);return `<b class="${x.h.cur<=0?'ko':x.pct<=25?'low':x.pct<=50?'mid':''}"></b>`}).join('');

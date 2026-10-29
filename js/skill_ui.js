@@ -1,43 +1,54 @@
-/* ---------- 스킬 체크 (스킬 체크 룰 v3 · 맵툴 skill_gm / skill_mgr / skill_rest / skill_pen 을 옮김) ----------
-   자질 주사위: D d4 / C d6 / B d8 / A d10 / AA d12, ± 보정 ±1. 동료 주사위: 포켓몬 d6(『유대』 통솔 판정 d8) / 혼자 d4 / 이능(A 이상) 자기 능력 주사위 하나 더.
-   결과: 목표+5 대성공 · 목표 이상 성공 · 1~2 모자람 대가를 치르고 성공 · 그 아래 실패 · 두 주사위 모두 1 대실패(A 이상은 실패).
-   상황 보정: 주사위 단계 ±1(d4 아래면 자동 실패, d12 위면 d12+1) · 두 번 굴려 높은/낮은 값 · 숙련(서투름: 자질 최대값이면 −1 / 능숙함: 1이면 +1).
-   묘수(지시 A 1회 · AA 2회): 지시 판정 뒤 주사위 하나 다시. 돌봄(육성 B 이상, 휴식 사이 1회): 지친 포켓몬 1체 회복. 이능: 휴식 사이 2회, 실패하면 부상(부상 중이면 중상) + 소지 포켓몬 1체 HP 1/4.
-   AA 특권: 세션 1회, 목표 9 이하 이능 판정을 굴리지 않고 성공(이능 1회 소모). 커버: 다른 트레이너가 결과를 한 칸 올리고 부상(중상은 불가). 프라이드 A 고집: 동료 주사위 1 → 대가.
-   패널티(맵툴 skill_pen): 제시마다 「실패·대실패」「대가를 치르고 성공」 두 묶음 — 포켓몬 대미지·상태·랭크, 4식/6령 차감, 포텐셜 횟수 −n, 메모. 자동 적용이면 결과가 나오는 즉시 건다.
-   휴식(맵툴 skill_rest): 긴 휴식(대대적) · 짧은 휴식(상담함) · 숨돌리기(가벼움) 세 단계. 각 단계의 내용은 「휴식」 탭에서 고친다. 휴대폰 캘린더의 「회복」도 이것을 부른다.
-   상태: state.skill = {cfg, rest:{long,mid,short,breath}, presets:[], offer, trainers:{tid:{myosu,care,inou,aa,inj,tired:[mid]}}, res:{tid:{...}}, hist:[]} */
+/* ---------- 스킬 체크 v4 (10-29 망령 「다 뜯어 고치자」 · 룰북 「스킬 체크」 장) ----------
+   판정: 2d6 + 트레이너 자질(D 0 · C 1 · B 2 · A 3 · AA 4) + 포켓몬 종족값 랭크(59 이하 0 · 60 1 · 90 2 · 110 3 · 140 4) + 적합(최대 +3) ± 상황 ≥ 목표치.
+   목표치 쉬움 8 · 보통 10 · 어려움 12 · 매우 어려움 15. 결과 실패 · 성공 · 대성공(6·6 또는 목표 + cfg.crit). 1·1 은 언제나 실패.
+   보정은 ± 숫자와 두 번 굴리기(2d6 을 두 번, 합이 높은/낮은 쪽)만. 대결 판정: 상대도 2d6 + 보정, 동점은 막는 쪽.
+   포켓몬: RP 장면 = 동행(트레이너마다 1체, 통솔 A 이상 2체) · 던전 · 배틀 = 필드(배틀 중이면 에리어에 나온 포켓몬, 아니면 지정한 cfg.fieldMax 체). 없으면 혼자.
+   적합: GM 이 제시한 타입 +1 · 기술 또는 특성 +1 · 기타(GM 인정) +1.
+   실패: 판정한 트레이너 상태 한 단계 (건강 → 부상(될 때 6령 1 소실 · 판정 −1) → 중상(될 때 4식 1 소실 · 판정 불리) → 빈사(장면 참가 불가, 장면 끝에 중상)).
+         포켓몬과 굴렸으면 그 포켓몬이 GM 의 패널티 묶음도 받는다.
+   커버: 판정하지 않은 동행 · 필드 포켓몬(cfg.coverBall 이면 볼 안도)이 최대 HP cfg.coverHp 대미지를 받고 그 한 단계를 없던 일로. 패널티 묶음은 못 막는다.
+   특화(자질 A 이상): 지시 묘수(실패 뒤 다시 굴리기, 세션 A 1 · AA 2) · 육성 강인함(부상 −1 무시) · 통솔 동행 2체 · 능력 초상 능력(혼자 2d6 + 자질×2, 휴식 사이 A 1 · AA 2).
+   휴식: 상태 단계 회복 긴 2 · 중간 · 짧은 1 · 숨돌리기 0. 덱 연동: 설정의 「상태 카드」를 그 트레이너 손패에 붙인다 (GM 화면이 sync).
+   상태: state.skill = {cfg, rest:{long,mid,short,breath}, presets:[], penPresets:[], offer, trainers:{tid:{myosu,sup,inj 0~3,comp:[mid]}}, res:{tid:{...}}, hist:[]} */
 "use strict";
 window.OM_SKILL_UI=(()=>{
  const A=()=>window.OM_APP, S=()=>window.OM_STATS, DB=()=>window.OM_DB||{};
  const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
  const $=(s,r)=>(r||document).querySelector(s);
  const SK=['지시','육성','통솔','능력'];
- const DIFF=[[5,'쉬움'],[7,'보통'],[9,'어려움'],[11,'매우 어려움']];
- const NPC=[[0,'없음'],[1,'일반인 d4+d4',[4,4]],[2,'일반 트레이너 d6+d6',[6,6]],[3,'숙련 트레이너 d8+d6',[8,6]],[4,'『두목』 d10+d6',[10,6]]];
- const LAD={E:0,D:0,C:1,B:2,A:3,AA:4,AAA:4,S:4},SIDES=[4,6,8,10,12];
- const RES=['대실패','실패','대가를 치르고 성공','성공','대성공'];const COL=['#7a1020','#8a1c2b','#8a6a12','#1f7a4a','#1a6ad8'];
+ const BASE=['HP','공격','방어','특공','특방','스피드'];
+ const BASE_HINT=['꾸준히 하는 지구력','물리적인 파괴력','물리적인 방어력','계산력 · 지능','정신력 · 멘탈리티','순간의 민첩성'];
+ const BASE_OF={지시:3,육성:1,통솔:4,능력:3};   /* 예전 제시(종족값 없음)를 열 때 기본 짝 */
+ const DIFF=[[8,'쉬움'],[10,'보통'],[12,'어려움'],[15,'매우 어려움']];
+ const TIER={easy:8,normal:10,hard:12,vhard:15};
+ const NPC=[[0,'없음'],[1,'일반인',0],[2,'일반 트레이너',2],[3,'숙련 트레이너',4],[4,'『두목』',6],[9,'직접',null]];
+ const LAD={E:0,D:0,C:1,B:2,A:3,AA:4,AAA:4,S:4};const RKN=['D','C','B','A','AA'];
+ const TYPES=['노말','불꽃','물','전기','풀','얼음','격투','독','땅','비행','에스퍼','벌레','바위','고스트','드래곤','악','강철','페어리'];
+ /* 결과 칸: 예전 다섯 칸 번호를 그대로 쓴다 (mecard · rp_ui 가 ri 로 색을 고른다) — 1 실패 · 3 성공 · 4 대성공 */
+ const RES=['실패','실패','성공','성공','대성공'];const COL=['#7a1020','#8a1c2b','#1f7a4a','#1f7a4a','#1a6ad8'];
+ const STEP=['건강','부상','중상','빈사'];const STEPC=['#1f7a4a','#8a6a12','#8a1c2b','#3a0a12'];
  const RK=[['attack','공격'],['defense','방어'],['specialattack','특공'],['specialdefense','특방'],['speed','스피드'],['accuracy','명중'],['evasion','회피'],['critical','급소']];
- const CFG0={s1:1,s2:2,both1:1,noinou2:1,nocover2:1,hp1:'1/4',hp2:'1/4',rest:1,inou:2,aa:9,myosuA:1,myosuAA:2,penAuto:1};
+ const CFG0={crit:4,injPen:1,injOc:1,injOo:1,coverHp:'1/4',coverBall:0,fieldMax:1,myosuA:1,myosuAA:2,supA:1,supAA:2,penAuto:1,cards:{deck:'',c1:'',c2:'',c3:''}};
  const KINDS=[['long','긴 휴식','대대적'],['mid','중간 휴식','반쯤'],['short','짧은 휴식','상담함'],['breath','숨돌리기','가벼움']];   /* 10-28 망령: 중간 휴식 추가 */
- const REST0={long:{hp:'full',revive:1,revive_hp:'full',cure_ab:1,cure_sp:1,pot_pk_n:'all',ord_n:'all',pot_tr_n:'all',tired:1,care:1,inou:1,inj_n:2},
-  /* 10-28 망령 「짧은 휴식이 저 정도고 긴 휴식이 전부면 중간 휴식은 적절하게」 — 감우안: 전원 HP 1/2 · 빈사는 HP 1/4 · 상태 회복 ·
-     파티 4식 2 · 6령 3(3인 공용 4식 3 · 6령 6 의 절반) · 전용 · 고유 포텐셜 1씩 · 지침 · 돌봄 · 이능 · 부상 1단계 */
-  mid:{hp:'1/2',hp_one:0,revive:1,revive_hp:'1/4',cure_ab:1,cure_sp:1,pot_pk_n:'1',ord_n:'0',ord_po:2,ord_pc:3,pot_tr_n:'1',tired:1,care:1,inou:1,inj_n:1},
-  /* 10-28 망령(시뮬 맞춤): 짧은 휴식 = (22시: 전원) HP 1/4 · 빈사는 HP 1 · 상태 회복 · 파티 전체 4식 1 · 6령 1 (옛 기본: 전원 HP 1/2 · 상태 변화만) */
-  short:{hp:'1/4',hp_one:0,revive:1,revive_hp:'1',cure_ab:1,cure_sp:1,pot_pk_n:'0',ord_n:'0',ord_po:1,ord_pc:1,pot_tr_n:'0',tired:1,care:1,inou:1,inj_n:1},
-  /* 10-28 22시 망령: 짧은 휴식은 전원 HP 1/4, 숨돌리기 = 가장 다친 1체 HP 1/4 + 파티 6령 1 */
-  breath:{hp:'1/4',hp_one:1,revive:0,revive_hp:'1',cure_ab:0,cure_sp:0,pot_pk_n:'0',ord_n:'0',ord_po:0,ord_pc:1,pot_tr_n:'0',tired:1,care:0,inou:0,inj_n:0}};
+ /* inou = 초상 능력 횟수 회복 · inj_n = 상태 단계 회복 (10-29 망령: 긴 2 · 중간 · 짧은 1 · 숨돌리기 0) */
+ const REST0={long:{hp:'full',revive:1,revive_hp:'full',cure_ab:1,cure_sp:1,pot_pk_n:'all',ord_n:'all',pot_tr_n:'all',inou:1,inj_n:2},
+  /* 10-28 망령 「짧은 휴식이 저 정도고 긴 휴식이 전부면 중간 휴식은 적절하게」 — 전원 HP 1/2 · 빈사는 HP 1/4 · 상태 회복 · 파티 4식 2 · 6령 3 · 포텐셜 1씩 */
+  mid:{hp:'1/2',hp_one:0,revive:1,revive_hp:'1/4',cure_ab:1,cure_sp:1,pot_pk_n:'1',ord_n:'0',ord_po:2,ord_pc:3,pot_tr_n:'1',inou:1,inj_n:1},
+  /* 10-28 망령(시뮬 맞춤): 짧은 휴식 = 전원 HP 1/4 · 빈사는 HP 1 · 상태 회복 · 파티 전체 4식 1 · 6령 1 */
+  short:{hp:'1/4',hp_one:0,revive:1,revive_hp:'1',cure_ab:1,cure_sp:1,pot_pk_n:'0',ord_n:'0',ord_po:1,ord_pc:1,pot_tr_n:'0',inou:1,inj_n:1},
+  /* 10-28 22시 망령: 숨돌리기 = 가장 다친 1체 HP 1/4 + 파티 6령 1 */
+  breath:{hp:'1/4',hp_one:1,revive:0,revive_hp:'1',cure_ab:0,cure_sp:0,pot_pk_n:'0',ord_n:'0',ord_po:0,ord_pc:1,pot_tr_n:'0',inou:0,inj_n:0}};
  /* 체크 제시 예시 (자주 쓰는 모양). 「저장」으로 내 것을 더할 수 있다 */
  const EX=[
-  {name:'정보 수집 (지시 7)',o:{label:'정보 수집',stat:'지시',mode:'skill',target:7}},
-  {name:'설득·교섭 (통솔 7)',o:{label:'설득·교섭',stat:'통솔',mode:'skill',target:7}},
-  {name:'야생 무리 진정 (육성 7)',o:{label:'겁먹은 야생 무리를 진정시킨다',stat:'육성',mode:'skill',target:7}},
-  {name:'추적·수색 (육성 9 · 시간 여유)',o:{label:'흔적을 쫓아 수색',stat:'육성',mode:'skill',target:9,twice:1}},
-  {name:'위기 돌파 (능력 9 · 이능 · 반동)',o:{label:'위기 돌파 — 이능',stat:'능력',mode:'inou',target:9,pen:{fail:{dmg:'1/4',memo:'반동으로 휘말린다'},cost:{dmg:'1/8'}}}},
-  {name:'대항 — 숙련 트레이너 (지시)',o:{label:'상대 트레이너와 수 싸움',stat:'지시',mode:'skill',target:7,npc:3}},
-  {name:'잠입 (지시 9 · 불리 · 실패 시 경계)',o:{label:'들키지 않고 잠입',stat:'지시',mode:'skill',target:9,step:-1,pen:{fail:{memo:'경계 강화 — 다음 배틀 상대 「경계」 상태'},cost:{memo:'흔적을 남김'}}}}];
- /* 10-24 망령: 패널티 예시 (자주 쓰는 묶음). 「저장」으로 내 것을 더하고, 「예시 관리」에서 한 번에 보고 고친다 */
+  {name:'고대 문자 해독 (지시 + 특공 · 어려움 12)',o:{v:4,label:'고대 문자를 해독한다',stat:'지시',base:3,target:12,fit:{types:['에스퍼'],moves:['사이코키네시스'],abil:[]}}},
+  {name:'설득 · 교섭 (통솔 + 특방 · 보통 10)',o:{v:4,label:'설득 · 교섭',stat:'통솔',base:4,target:10,fit:{types:['페어리'],moves:[],abil:[]}}},
+  {name:'기로 누르기 (통솔 + 공격 · 대결)',o:{v:4,label:'깡패 트레이너를 기로 누른다',stat:'통솔',base:1,target:10,npc:2,fit:{types:['악'],moves:[],abil:['위협']}}},
+  {name:'추격대 따돌리기 (육성 + 스피드 · 보통 10)',o:{v:4,label:'추격대를 따돌린다',stat:'육성',base:5,target:10,fit:{types:['비행'],moves:['고속이동'],abil:[]}}},
+  {name:'무너지는 바위 받치기 (육성 + 방어 · 어려움 12)',o:{v:4,label:'무너지는 바위를 받친다',stat:'육성',base:2,target:12,fit:{types:['바위'],moves:['철벽'],abil:[]},pen:{fail:{dmg:'1/4',memo:'바위에 깔린다'}}}},
+  {name:'밤새 입구 지키기 (육성 + HP · 보통 10)',o:{v:4,label:'밤새 입구를 지킨다',stat:'육성',base:0,target:10,fit:{types:['노말'],moves:['잠자기'],abil:[]}}},
+  {name:'잠입 (지시 + 스피드 · 어려움 12 · 불리)',o:{v:4,label:'들키지 않고 잠입',stat:'지시',base:5,target:12,pm:-1,fit:{types:['고스트','악'],moves:[],abil:[]},pen:{fail:{al:10,memo:'경계 강화'}}}},
+  {name:'철문 비틀기 (능력 + 공격 · 어려움 12)',o:{v:4,label:'잠긴 철문을 비튼다',stat:'능력',base:1,target:12,fit:{types:['격투'],moves:['바위깨기'],abil:[]}}}];
+ /* 10-24 망령: 패널티 예시 (자주 쓰는 묶음) */
  const PEN_EX=[
   {name:'반동 — 대미지 1/4',p:{dmg:'1/4',memo:'반동으로 휘말린다'}},
   {name:'가벼운 반동 — 대미지 1/8',p:{dmg:'1/8'}},
@@ -48,93 +59,105 @@ window.OM_SKILL_UI=(()=>{
   {name:'잠듦 (지쳐 쓰러짐)',p:{st:'Sleep'}},
   {name:'기세가 꺾임 — 공격 · 특공 −1',p:{rk:{attack:-1,specialattack:-1}}},
   {name:'발이 묶임 — 스피드 −1',p:{rk:{speed:-1}}},
-  {name:'지시 혼선 — 4식 1개 차감',p:{oo:1}},
-  {name:'지쳐 버림 — 6령 1개 차감',p:{oc:1}},
   {name:'고유 포텐셜 1회 소모',p:{pot:{who:'tr',name:'',n:1}}},
-  {name:'경계 강화 (서술)',p:{memo:'경계 강화 — 다음 배틀 상대 「경계」 상태'}},
+  {name:'경계 강화 (경계도 +10)',p:{al:10,memo:'경계 강화'}},
   {name:'흔적을 남김 (서술)',p:{memo:'흔적을 남겼다 — 추적당할 수 있다'}},
   {name:'시간 지체 (서술)',p:{memo:'시간이 지체된다 — 다음 장면이 한 시간대 늦어진다'}}];
- const d=n=>1+Math.floor(Math.random()*n);
+ const d6=()=>1+Math.floor(Math.random()*6);
  const st=()=>A().ST.state.skill||{};
- const cfg=()=>Object.assign({},CFG0,st().cfg||{});
+ const cfg=()=>{const c=Object.assign({},CFG0,st().cfg||{});c.cards=Object.assign({},CFG0.cards,c.cards||{});return c};
  const restCfg=k=>Object.assign({},REST0[k]||REST0.long,((st().rest||{})[k])||{});
  const trs=()=>Object.assign({},(A().ST.state.roster||{}).trainers||{});
  const mons=()=>(A().ST.state.roster||{}).mons||{};
  const bmons=()=>((A().ST.state.battle||{}).mons)||{};
- const tsk=tid=>Object.assign({myosu:0,care:0,inou:0,aa:0,inj:0,tired:[]},(st().trainers||{})[tid]||{});
+ const tsk=tid=>{const x=Object.assign({myosu:0,sup:0,inj:0,comp:[]},(st().trainers||{})[tid]||{});x.inj=Math.max(0,Math.min(3,+x.inj||0));if(!Array.isArray(x.comp))x.comp=[];x.tired=[];return x};
  const rankOf=(t,stat)=>String(((t||{}).ranks||{})[stat]||'').trim();
- const lv=r=>LAD[S().strip(r)]??0;
- const sign=r=>/\+$/.test(r)?1:/-$/.test(r)?-1:0;
+ const qLv=(t,stat)=>LAD[S().strip(rankOf(t,stat))]??0;
+ const baseLv=v=>{v=+v||0;return v>=140?4:v>=110?3:v>=90?2:v>=60?1:0};
+ const baseVal=(m,i)=>+((m&&m.base)||[])[i]||0;
  const gm=()=>A().ST.role==='gm';
  const me=()=>A().ST.seat;
- const myosuMax=t=>{const r=S().strip(rankOf(t,'지시'));return r==='A'?cfg().myosuA:(LAD[r]>=4?cfg().myosuAA:0)};
- const hasBond=m=>[...(m.pots||[]),m.excl,...(m.exclX||[])].some(p=>p&&/유대/.test(p.name||''));
- const prideA=m=>/^A/.test(S().strip(m.pride||''));
+ const myosuMax=t=>{const l=qLv(t,'지시');return l>=4?+cfg().myosuAA:l>=3?+cfg().myosuA:0};
+ const supMax=t=>{const l=qLv(t,'능력');return l>=4?+cfg().supAA:l>=3?+cfg().supA:0};
+ const tough=t=>qLv(t,'육성')>=3;
+ const sgn=n=>(n>=0?'+':'−')+Math.abs(n);
+ const stepTxt=n=>STEP[Math.max(0,Math.min(3,+n||0))];
  const frac=(v,s)=>{s=String(s==null?'':s).trim();if(s==='full')return v;const m=s.match(/^(\d+)\s*\/\s*(\d+)$/);return m?Math.max(1,Math.floor(v*+m[1]/+m[2])):Math.max(0,Math.floor(+s||0))};
  const sdb=()=>((DB().states||{}).st)||{};
  const stKo=k=>(sdb()[k]||{}).ko||k;
  const stList=()=>Object.keys(sdb()).filter(k=>k!=='Dead').map(k=>[k,sdb()[k].ko||k,!!sdb()[k].abn]);
  /* 바뀐 칸만 쓴다 (점검 3-18) — 통째로 쓰면 그 사이 남이 바꾼 칸이 지워진다. 처음이면 통째로 */
- async function setT(tid,patch){const had=!!(st().trainers||{})[tid];const cur=tsk(tid);const before=JSON.parse(JSON.stringify(cur));const n=Object.assign(cur,patch);if(had)await A().setDiff(['skill','trainers',tid],before,n,1);else await A().set(['skill','trainers',tid],n);return n}
+ async function setT(tid,patch){const had=!!(st().trainers||{})[tid];const cur=tsk(tid);delete cur.tired;const before=JSON.parse(JSON.stringify(cur));const n=Object.assign(cur,patch);if(had)await A().setDiff(['skill','trainers',tid],before,n,1);else await A().set(['skill','trainers',tid],n);return n}
  /* 로스터 포켓몬을 고치고 배틀 쪽도 맞춘다 */
  async function putMon(mid,fn){const m=JSON.parse(JSON.stringify(mons()[mid]||null));if(!m)return null;const nm=JSON.parse(JSON.stringify(m));fn(nm,false);await A().setDiff(['roster','mons',mid],m,nm,1);const bm=JSON.parse(JSON.stringify(bmons()[mid]||null));if(bm){const nb=JSON.parse(JSON.stringify(bm));fn(nb,true);await A().setDiff(['battle','mons',mid],bm,nb,1)}return nm}
- /* 10-26: 시트(로스터) 포켓몬의 지금 HP · 상태는 sheetHp · sheetStates 다 (hp.cur · states 는 배틀 칸 것). 예전엔 로스터의 hp.cur 를 고쳐서
-    배틀 밖에서 쉰 회복 · 패널티 대미지가 시트에 안 남았다 — putMon 이 (x, 배틀 칸인가) 로 부르니 둘을 나눠 고친다 */
+ /* 10-26: 시트(로스터) 포켓몬의 지금 HP · 상태는 sheetHp · sheetStates 다 (hp.cur · states 는 배틀 칸 것) */
  const HP=(x,b)=>b?(+(x.hp||{}).cur||0):(x.sheetHp==null?x.hp.max:Math.max(0,Math.min(x.hp.max,+x.sheetHp||0)));
  const setHP=(x,b,v)=>{if(b)x.hp.cur=v;else x.sheetHp=v};
  const STS=(x,b)=>b?(x.states=x.states||{}):(x.sheetStates=x.sheetStates||{});
  const tidyST=(x,b)=>{if(!b&&x.sheetStates&&!Object.keys(x.sheetStates).length)delete x.sheetStates};
- const alive=m=>HP(m,false)>0&&!(m.sheetStates||{}).Dead;
- async function hpLoss(tid,mid,fracs,why){const m=mons()[mid];if(!m)return '';const loss=frac(m.hp.max,fracs);if(!loss)return '';await putMon(mid,(x,b)=>{setHP(x,b,Math.max(0,HP(x,b)-loss))});return `${m.name} HP −${loss} (${why})`}
- async function injure(tid,pickMid){const t=trs()[tid];const k=tsk(tid);const inj=Math.min(2,(+k.inj||0)+1);await setT(tid,{inj});const line=await hpLoss(tid,pickMid,inj>=2?cfg().hp2:cfg().hp1,inj>=2?'중상':'부상');return {inj,line:`${t.name} ${inj>=2?'「중상」':'「부상」'}${line?' · '+line:''}`}}
- function pickMon(tid,title,sub){return new Promise(res=>{const ms=Object.values(mons()).filter(m=>m.tid===tid&&alive(m));if(!ms.length)return res(null);
-  const md=A().openModal(`<div class="mhead"><h2>${esc(title)}</h2><span class="sp"></span></div><div class="small dim" style="margin-bottom:6px">${esc(sub||'소지 포켓몬 1체를 고른다')}</div><div class="pg">${ms.map(m=>`<div class="penc" data-pk="${m.id}"><div class="pic" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div><div><b>${esc(m.name)}</b><div class="small dim">HP ${HP(m,false)}/${m.hp.max}</div></div></div>`).join('')}</div>`);
-  md.querySelectorAll('[data-pk]').forEach(el=>el.onclick=()=>{A().closeModal();res(el.dataset.pk)})})}
+ const alive=m=>{if(!m||!m.hp)return false;const b=bmons()[m.id];if(b&&A().ST.state.battle&&A().ST.state.battle.started)return HP(b,true)>0;return HP(m,false)>0&&!(m.sheetStates||{}).Dead};
+ async function hpLoss(mid,fracs){const m=mons()[mid];if(!m)return 0;const loss=frac(m.hp.max,fracs);if(!loss)return 0;await putMon(mid,(x,b)=>{setHP(x,b,Math.max(0,HP(x,b)-loss))});return loss}
+
+ /* ===== 어떤 포켓몬이 판정하나 ===== */
+ const SCN={rp:'동행',field:'필드'};
+ function battleField(tid){const B=A().ST.state.battle||{};if(!B.started)return null;const L=Object.values(B.mons||{}).filter(m=>m.tid===tid&&m.entry&&(+(m.hp||{}).cur||0)>0).map(m=>m.id).filter(id=>mons()[id]);return L.length?L:null}
+ const compCap=(tid,scene)=>scene==='field'?Math.max(1,+cfg().fieldMax||1):(qLv(trs()[tid],'통솔')>=3?2:1);
+ /* → {ids, battle(배틀 에리어에서 자동), cap} */
+ function compOf(tid,scene){const cap=compCap(tid,scene);const bf=scene==='field'?battleField(tid):null;if(bf)return {ids:bf,battle:true,cap};
+  const k=tsk(tid);return {ids:k.comp.filter(id=>mons()[id]&&mons()[id].tid===tid&&alive(mons()[id])).slice(0,cap),battle:false,cap}}
+ /* 적합: 제시한 타입 하나라도 → +1, 기술 또는 특성 → +1 (기타는 굴릴 때 고른다) */
+ function fitOf(m,O){const F=(O&&O.fit)||{};const out=[];if(!m)return out;
+  if((F.types||[]).length&&(m.typesKo||[]).some(t=>F.types.includes(t)))out.push('타입');
+  const mv=(m.moves||[]).find(x=>(F.moves||[]).includes(x.name));if(mv)out.push('기술 「'+mv.name+'」');else if((F.abil||[]).includes(m.ability))out.push('특성 「'+m.ability+'」');
+  return out}
+ const fitTxt=O=>{const F=(O&&O.fit)||{};const L=[];if((F.types||[]).length)L.push('타입 '+F.types.join('·'));if((F.moves||[]).length)L.push('기술 '+F.moves.join('·'));if((F.abil||[]).length)L.push('특성 '+F.abil.join('·'));if(F.etc)L.push('기타 '+F.etc);return L.join(' / ')};
 
  /* ===== 판정 계산 ===== */
- function dieOf(t,stat,o){const r=rankOf(t,stat);let idx=lv(r)+(o.step||0);const injStep=o.inj>=2?cfg().s2:o.inj>=1?cfg().s1:0;idx-=injStep;
-  const autofail=idx<0;let plus=sign(r);if(idx>4){plus+=idx-4;idx=4}idx=Math.max(0,Math.min(4,idx));return {sides:SIDES[idx],plus,autofail,idx,injStep}}
- /* 10-28 망령 「목표 자동」 (시뮬 lib/checkgen.js 와 같은 계산): 대상 가운데 그 자질을 가장 잘 굴리는 사람의 주사위로,
-    「대가를 치르고 성공」 이상이 나올 확률이 난이도 띠에 드는 목표 중 띠 가운데에 가장 가까운 값을 고른다.
-    동료 주사위 = 살아 있는 포켓몬이 있으면 d6(통솔 + 『유대』 d8), 없으면 혼자 d4 · 이능 판정은 능력 주사위. 두 번 굴리기 · 숙련 · 단계 · 부상도 넣는다 */
- const BAND={easy:[0.85,0.95,'쉬움'],normal:[0.70,0.85,'보통'],hard:[0.50,0.70,'어려움']};
- function okPlusOf(D,cs,o,target){const n=D.sides;const pa={};for(let r1=1;r1<=n;r1++){if(o.twice){for(let r2=1;r2<=n;r2++){const v=o.twice>0?Math.max(r1,r2):Math.min(r1,r2);pa[v]=(pa[v]||0)+1/(n*n)}}else pa[r1]=(pa[r1]||0)+1/n}
-  let p=0;for(const k in pa){let av=+k;if(o.pm>0&&av===1)av=2;else if(o.pm<0&&av===n)av=n-1;for(let c=1;c<=cs;c++){if(av===1&&c===1)continue;if(av+(D.plus||0)+c>=target-2)p+=pa[k]/cs}}return p}
- /* 한 사람이 이 체크를 굴릴 때의 주사위 (자질 D · 동료 cs). 굴릴 수 없으면 why 만 */
- function rollerOf(tid,o){const t=trs()[tid];if(!t)return null;const k=tsk(tid);const D=dieOf(t,o.stat,{inj:+k.inj||0,step:o.step||0});if(D.autofail)return {tid,name:t.name,D,why:'자질 주사위가 d4 아래 — 자동 실패'};let cs,how;
-  if(o.mode==='inou'){if((LAD[S().strip(rankOf(t,'능력'))]||0)<3||o.stat!=='능력')return {tid,name:t.name,D,why:'이능은 능력 A 이상 · 「능력」 체크만'};const Dc=dieOf(t,'능력',{inj:cfg().both1?+k.inj||0:0,step:o.step||0});cs=Dc.sides;how='이능 d'+cs}
-  else{const ms=Object.values(mons()).filter(m=>m.tid===tid&&m.hp&&alive(m));if(ms.length){const bond=o.stat==='통솔'&&ms.some(hasBond);cs=bond?8:6;how=bond?'『유대』 d8':'포켓몬 d6'}else{cs=4;how='혼자 d4'}}
-  return {tid,name:t.name,D,cs,how}}
- function autoRoller(ids,o){let best=null;
-  for(const tid of ids||[]){const r=rollerOf(tid,o);if(!r||r.why)continue;const sc=okPlusOf(r.D,r.cs,o,8);if(!best||sc>best.sc)best=Object.assign(r,{sc})}
-  return best}
- function autoTarget(ids,o,tier){const B=BAND[tier];if(!B)return null;const r=autoRoller(ids,o);if(!r)return null;const mid=(B[0]+B[1])/2;let pick=null;
-  for(let tg=2;tg<=20;tg++){const p=okPlusOf(r.D,r.cs,o,tg);const inb=p>=B[0]-1e-9&&p<=B[1]+1e-9;const d=Math.abs(p-mid);if(!pick||(inb&&!pick.inb)||(inb===pick.inb&&d<pick.d))pick={tg,p,inb,d}}
-  return {target:pick.tg,p:pick.p,inb:pick.inb,who:r.name,die:'d'+r.D.sides+(r.D.plus?(r.D.plus>0?'+':'')+r.D.plus:''),how:r.how,tier,band:B}}
- const autoTxt=a=>a?`목표 ${a.target} — ${a.who} (${a.die} + ${a.how}) 기준 대가 포함 성공 ${Math.round(a.p*100)}%${a.inb?'':' (띠 밖: 이 일행엔 가장 가까운 값)'}`:'굴릴 수 있는 대상이 없다';
- /* 10-29 망령 「스킬 체크 창이 직관적이지 않다」: 목표를 결과 네 칸으로 풀어 보여 준다 (judge 와 같은 경계). now = 합계가 있으면 그 칸에 표시 */
- const dieTxt=D=>'d'+D.sides+(D.plus?(D.plus>0?'+':'')+D.plus:'');
- function ladder(target,now){if(!(+target>0))return '';const t=+target;const seg=[[0,`${t-3} 이하`,null,t-3],[2,`${t-2}~${t-1}`,t-2,t-1],[3,`${t}~${t+4}`,t,t+4],[4,`${t+5} 이상`,t+5,null]];
-  const lab=['','','대가 성공','성공','대성공'];lab[0]='실패';
-  return `<div class="sklad">${seg.map(([ri,rg,lo,hi])=>{const on=now!=null&&(lo==null||now>=lo)&&(hi==null||now<=hi);return `<span class="${on?'on':''}" style="--c:${COL[ri]}"><b>${lab[ri]}</b><small>${rg}</small></span>`}).join('')}</div>`}
+ /* ch = {how:'mon'|'alone'|'super', mid, etc(기타 적합), bonus} → {parts:[[이름,값]], mod, tw(두 번 굴리기 −1 · 0 · 1)} */
+ function calcOf(tid,O,ch){const t=trs()[tid];const k=tsk(tid);const C=cfg();const parts=[];const q=qLv(t,O.stat);
+  if(ch.how==='super')parts.push([`초상 능력 · 능력 ${RKN[q]} ×2`,q*2]);
+  else{parts.push([`${O.stat} ${rankOf(t,O.stat)||'D'}`,q]);
+   if(ch.how==='mon'){const m=mons()[ch.mid];if(m){const bv=baseVal(m,O.base);parts.push([`${m.name} ${BASE[O.base]} ${bv}`,baseLv(bv)]);
+    const f=fitOf(m,O);if(ch.etc)f.push('기타');const fit=Math.min(3,f.length);if(fit)parts.push([`적합 ${f.join(' · ')}`,fit])}}}
+  if(+O.pm)parts.push([+O.pm>0?'유리':'불리',+O.pm]);
+  if(k.inj===1&&+C.injPen)parts.push([tough(t)?'부상 (강인함으로 무시)':'부상',tough(t)?0:-(+C.injPen)]);
+  if(+ch.bonus)parts.push(['추가 보정',+ch.bonus]);
+  let tw=+O.twice||0;if(k.inj===2)tw=Math.max(-1,tw-1);
+  return {parts,mod:parts.reduce((a,p)=>a+p[1],0),tw}}
+ /* 정확한 확률 (2d6 열거). 1·1 실패 · 6·6 대성공 → {ok, crit} */
+ const PAIRS=[];for(let a=1;a<=6;a++)for(let b=1;b<=6;b++)PAIRS.push([a,b]);
+ function judge(k,total,target,crit){if(k[0]===1&&k[1]===1)return 1;if(k[0]===6&&k[1]===6)return 4;return total>=target+crit?4:total>=target?3:1}
+ function oddsOf(mod,target,tw,crit){crit=crit==null?+cfg().crit:crit;let ok=0,cr=0,n=0;const add=k=>{const r=judge(k,k[0]+k[1]+mod,target,crit);n++;if(r>=3)ok++;if(r===4)cr++};
+  if(!tw)PAIRS.forEach(add);else for(const x of PAIRS)for(const y of PAIRS){const sx=x[0]+x[1],sy=y[0]+y[1];add(tw>0?(sx>=sy?x:y):(sx<=sy?x:y))}
+  return {ok:ok/n,crit:cr/n}}
+ /* 대결: 상대 2d6 + 보정. 막는 쪽이 상대면 넘어야 이기고, 내가 막는 쪽이면 같아도 이긴다 */
+ function oddsVs(mod,tw,O){let ok=0,cr=0;for(const [a,b] of PAIRS){const need=a+b+(+O.npcMod||0)+(O.npcDef==='pc'?0:1);const o=oddsOf(mod,need,tw);ok+=o.ok/36;cr+=o.crit/36}return {ok,crit:cr}}
+ const oddsFor=(c,O)=>O.npc?oddsVs(c.mod,c.tw,O):oddsOf(c.mod,+O.target,c.tw);
+ function roll2(tw){const x=[d6(),d6()];if(!tw)return {k:x,all:[x]};const y=[d6(),d6()];const sx=x[0]+x[1],sy=y[0]+y[1];return {k:tw>0?(sx>=sy?x:y):(sx<=sy?x:y),all:[x,y]}}
  const pct=p=>Math.round(p*100)+'%';
- function judge(total,target,fumble,aLv){const diff=total-target;let ri=1;if(diff>=-2)ri=2;if(diff>=0)ri=3;if(diff>=5)ri=4;if(fumble)ri=aLv>=3?1:0;return ri}
+ /* 결과 칸 (실패 · 성공 · 대성공). now = 합계가 있으면 그 칸에 표시 */
+ function ladder(target,now){if(!(+target>0))return '';const t=+target,c=+cfg().crit;const seg=[[1,`${t-1} 이하`,null,t-1],[3,`${t}~${t+c-1}`,t,t+c-1],[4,`${t+c} 이상 · 6·6`,t+c,null]];
+  return `<div class="sklad" style="grid-template-columns:repeat(3,1fr)">${seg.map(([ri,rg,lo,hi])=>{const on=now!=null&&(lo==null||now>=lo)&&(hi==null||now<=hi);return `<span class="${on?'on':''}" style="--c:${COL[ri]}"><b>${RES[ri]}</b><small>${rg}</small></span>`}).join('')}</div>`}
+ /* 목표 자동 (던전 · 시뮬이 보내는 난이도 이름) → 고정 목표치 */
+ function autoTarget(ids,o,tier){const t=TIER[tier];return t?{target:t,tier,p:null,inb:true,who:'',die:'2d6',how:''}:null}
+ /* 예전(v3) 제시 모양을 v4 로: 목표 5 · 7 · 9 · 11 → 8 · 10 · 12 · 15, 주사위 단계 → ± 1, 종족값은 자질에 맞는 기본 짝 */
+ function upOffer(o){o=Object.assign({},o||{});if(+o.v>=4)return o;const T3={5:8,7:10,9:12,11:15};o.target=T3[+o.target]||(+o.target||7)+3;if(+o.step)o.pm=(+o.pm||0)*0+(+o.step>0?1:-1);else o.pm=0;delete o.step;if(o.base==null)o.base=BASE_OF[o.stat]??3;if(o.pen&&o.pen.cost)delete o.pen.cost;o.v=4;return o}
 
- /* ===== 패널티 ===== */
+ /* ===== 패널티 묶음 ===== */
  /* 10-28 망령 「대가 실패는 게임 수치로」: al = 경계도 +N (던전 탐색 중이면 그 던전 경계도를 올린다) */
- const PEN0=()=>({al:0,dmg:'',st:'',cnt:'',rk:{},oo:0,oc:0,pot:{who:'tr',name:'',n:0},memo:''});
+ const PEN0=()=>({al:0,dmg:'',st:'',cnt:'',rk:{},pot:{who:'tr',name:'',n:0},memo:''});
  function penNorm(x){const b=PEN0();x=x||{};for(const k in b)if(x[k]!=null&&x[k]!=='')b[k]=typeof b[k]==='object'?Object.assign({},b[k],x[k]):x[k];if(typeof b.rk!=='object')b.rk={};return b}
- function penHas(x){x=penNorm(x);return !!(+x.al>0||x.dmg||x.st||x.memo||Object.values(x.rk).some(v=>+v)||+x.oo>0||+x.oc>0||+x.pot.n>0)}
- function penTxt(x){x=penNorm(x);const t=[];if(+x.al>0)t.push('경계도 +'+x.al);if(x.dmg)t.push('대미지 '+x.dmg);if(x.st)t.push('「'+stKo(x.st)+'」'+(x.cnt&&+x.cnt>0?' '+x.cnt+'턴':''));RK.forEach(([k,n])=>{const v=+x.rk[k]||0;if(v)t.push(n+' '+(v>0?'+':'')+v)});if(+x.oo>0)t.push('4식 '+x.oo+'개 차감');if(+x.oc>0)t.push('6령 '+x.oc+'개 차감');if(+x.pot.n>0)t.push((x.pot.who==='pk'?'전용':'고유')+' 포텐셜'+(x.pot.name?' 『'+x.pot.name+'』':'')+' −'+x.pot.n);if(x.memo)t.push(x.memo);return t.join(' · ')}
- /* 결과가 나온 트레이너에게 패널티 묶음을 건다 (맵툴 pen_apply) */
- async function applyPenalty(tid,sub,why){sub=penNorm(sub);const t=trs()[tid];if(!t||!penHas(sub))return '';const L=[];
-  const needMon=!!(sub.dmg||sub.st||Object.values(sub.rk).some(v=>+v));
-  if(needMon){const mid=await pickMon(tid,`패널티 — ${why}`,'패널티를 받을 포켓몬 1체를 고른다');if(mid){await putMon(mid,(x,b)=>{const nm=x.name;
+ function penHas(x){x=penNorm(x);return !!(+x.al>0||x.dmg||x.st||x.memo||Object.values(x.rk).some(v=>+v)||+x.pot.n>0)}
+ function penTxt(x){x=penNorm(x);const t=[];if(+x.al>0)t.push('경계도 +'+x.al);if(x.dmg)t.push('대미지 '+x.dmg);if(x.st)t.push('「'+stKo(x.st)+'」'+(x.cnt&&+x.cnt>0?' '+x.cnt+'턴':''));RK.forEach(([k,n])=>{const v=+x.rk[k]||0;if(v)t.push(n+' '+(v>0?'+':'')+v)});if(+x.pot.n>0)t.push((x.pot.who==='pk'?'전용':'고유')+' 포텐셜'+(x.pot.name?' 『'+x.pot.name+'』':'')+' −'+x.pot.n);if(x.memo)t.push(x.memo);return t.join(' · ')}
+ /* 실패한 판정에 묶음을 건다: 대미지 · 상태 · 랭크는 판정한 포켓몬(mid), 나머지는 트레이너 · 일행 */
+ async function applyPenalty(tid,sub,why,mid){sub=penNorm(sub);const t=trs()[tid];if(!t||!penHas(sub))return '';const L=[];
+  const monPart=!!(sub.dmg||sub.st||Object.values(sub.rk).some(v=>+v));
+  if(monPart&&mid&&mons()[mid]){await putMon(mid,(x,b)=>{const nm=x.name;
     if(sub.dmg){const loss=frac(x.hp.max,sub.dmg);setHP(x,b,Math.max(0,HP(x,b)-loss));if(!b)L.push(`${nm} HP −${loss}`)}
-    if(sub.st){const XS=STS(x,b);const sd=sdb()[sub.st]||{};{const d=sd;XS[sub.st]=+sub.cnt>0?+sub.cnt:(d.min>=1000||!d.min?1000:(+d.max>+d.min&&+d.max<1000?+d.min+Math.floor(Math.random()*(+d.max-+d.min+1)):+d.min))}if(!b)L.push(`${nm} 「${stKo(sub.st)}」`)}
-    const rk=Object.entries(sub.rk).filter(([k,v])=>+v);if(rk.length){x.rank=x.rank||{};for(const [k,v] of rk){x.rank[k]=Math.max(-6,Math.min(6,(+x.rank[k]||0)+ +v))}if(!b)L.push(`${nm} `+rk.map(([k,v])=>(RK.find(r=>r[0]===k)||[k,k])[1]+(v>0?'+':'')+v).join(' '))}})}}
+    if(sub.st){const XS=STS(x,b);const sd=sdb()[sub.st]||{};XS[sub.st]=+sub.cnt>0?+sub.cnt:(sd.min>=1000||!sd.min?1000:(+sd.max>+sd.min&&+sd.max<1000?+sd.min+Math.floor(Math.random()*(+sd.max-+sd.min+1)):+sd.min));if(!b)L.push(`${nm} 「${stKo(sub.st)}」`)}
+    const rk=Object.entries(sub.rk).filter(([k,v])=>+v);if(rk.length){x.rank=x.rank||{};for(const [k,v] of rk){x.rank[k]=Math.max(-6,Math.min(6,(+x.rank[k]||0)+ +v))}if(!b)L.push(`${nm} `+rk.map(([k,v])=>(RK.find(r=>r[0]===k)||[k,k])[1]+(v>0?'+':'')+v).join(' '))}})}
+  else if(monPart)L.push('혼자 굴려 포켓몬 패널티는 없다');
   const bt=((A().ST.state.battle||{}).trainers||{})[tid];
-  if(+sub.oo>0||+sub.oc>0){if(bt){const nt=JSON.parse(JSON.stringify(bt));nt.orderCount=nt.orderCount||{};const cut=(pre,n)=>{let left=n;for(const k of Object.keys(nt.orderCount).filter(k=>k.startsWith(pre)).sort()){while(left>0&&(+nt.orderCount[k]||0)>0){nt.orderCount[k]--;left--}}return n-left};const a=cut('order_',+sub.oo||0),b=cut('command_',+sub.oc||0);await A().setDiff(['battle','trainers',tid],bt,nt,2);if(a)L.push(`4식 −${a}`);if(b)L.push(`6령 −${b}`)}else L.push(`4식/6령 차감은 배틀에 트레이너가 없어 손으로 (${sub.oo||0}/${sub.oc||0})`)}
   if(+sub.pot.n>0){let n=+sub.pot.n;let done=0;const uniq=(bt&&bt.unique)||[];
    for(const m of Object.values(bmons()).filter(m=>m.tid===tid)){if(n<=0)break;const all=[...(m.pots||[]),m.excl,...(m.exclX||[]),...uniq].filter(p=>p&&p.name&&/【(\d+)\/시】/.test(p.eff||''));const u=Object.assign({},m.potUses||{});let ch=false;
     for(const p of all){if(n<=0)break;if(sub.pot.name&&p.name!==sub.pot.name)continue;const max=+(String(p.eff||'').match(/【(\d+)\/시】/)||[0,0])[1];const cur=u[p.name]==null?max:+u[p.name];if(cur>0){u[p.name]=cur-1;n--;done++;ch=true}}
@@ -144,10 +167,28 @@ window.OM_SKILL_UI=(()=>{
   if(sub.memo)L.push(sub.memo);
   const txt=`【패널티】 ${t.name} 『${why}』\n${L.join('\n')||'(적용할 것 없음)'}`;A().sysLog(txt,'battle',{});return txt}
 
+ /* ===== 상태 단계 ===== */
+ /* 4식 · 6령을 n 개 뺀다 (배틀 중이면 배틀 쪽 횟수, 아니면 시트 쪽). 돌려줄 수 있게 뺀 칸을 적어 둔다 */
+ async function cutOrd(tid,pre,n){const B=A().ST.state.battle||{};const bT=(B.trainers||{})[tid];const inB=!!(bT&&bT.orderCount&&B.started);const src=inB?bT:trs()[tid];const lab=pre==='order_'?'4식':'6령';const out={n:0,want:n,lab,keys:[],inB,tid};if(!src)return out;
+  const cnt=Object.assign({},src.orderCount||{});let left=n;for(const kk of Object.keys(cnt).filter(k=>k.startsWith(pre)).sort()){while(left>0&&(+cnt[kk]||0)>0){cnt[kk]--;left--;out.keys.push(kk)}}
+  out.n=out.keys.length;if(out.n)await A().set(inB?['battle','trainers',tid,'orderCount']:['roster','trainers',tid,'orderCount'],cnt);return out}
+ async function refundOrd(c){if(!c||!c.n)return;const B=A().ST.state.battle||{};const src=c.inB?(B.trainers||{})[c.tid]:trs()[c.tid];if(!src)return;const cnt=Object.assign({},src.orderCount||{});for(const kk of c.keys)cnt[kk]=(+cnt[kk]||0)+1;await A().set(c.inB?['battle','trainers',c.tid,'orderCount']:['roster','trainers',c.tid,'orderCount'],cnt)}
+ /* 한 단계 나빠진다 → {prev, now, cut, line} */
+ async function stepUp(tid,why){const t=trs()[tid];const k=tsk(tid);const C=cfg();const prev=k.inj;if(prev>=3)return {prev,now:3,cut:null,line:`${t.name} 이미 「빈사」`};const now=prev+1;let cut=null;
+  if(now===1&&+C.injOc>0)cut=await cutOrd(tid,'command_',+C.injOc);if(now===2&&+C.injOo>0)cut=await cutOrd(tid,'order_',+C.injOo);
+  await setT(tid,{inj:now});
+  const cl=cut?(cut.n?` · ${cut.lab} −${cut.n}`:` · ${cut.lab} 뺄 것이 없다 (손으로)`):'';
+  return {prev,now,cut,line:`${t.name} 「${STEP[prev]}」 → 「${STEP[now]}」${cl}${now===2?' · 모든 판정 불리':now===1?(tough(t)?' · 강인함':' · 모든 판정 −'+C.injPen):' · 이 장면에서 빠진다'} (${why})`}}
+ async function stepUndo(tid,s){if(!s)return;await setT(tid,{inj:s.prev});await refundOrd(s.cut)}
+ /* 실패 확정: 단계 + 패널티 묶음 (자동이면) */
+ async function settleFail(tid,r){const O=st().offer;delete r.pend;if(O&&O.id===r.offerId&&O.noStep){r.text+='\n상태 단계는 오르지 않는 체크';}else{const s=await stepUp(tid,(r.label||'스킬 체크')+' 실패');r.step=s;r.text+='\n'+s.line;A().sysLog(s.line,'dice')}
+  if(O&&O.id===r.offerId&&O.pen&&O.pen.auto&&penHas(O.pen.fail)){await applyPenalty(tid,O.pen.fail,(O.label||'스킬 체크')+' · 실패',r.how==='mon'?r.mid:'');r.penDone=1}
+  return r}
+
  /* ===== 휴식 ===== */
  async function applyRest(kind,tids,opt){opt=opt||{};const R=restCfg(kind);const T=trs();const ids=(tids&&tids.length?tids:Object.keys(T)).filter(id=>T[id]);const kn=(KINDS.find(k=>k[0]===kind)||[])[1]||kind;const L=[];
   const SD=sdb();const bt=(A().ST.state.battle||{}).trainers||{};
-  /* 10-28: hp_one = 「HP」 회복은 일행 전체에서 가장 다친 1체만 (빈사 · 만피는 빼고 HP 비율이 가장 낮은 포켓몬) */
+  /* 10-28: hp_one = 「HP」 회복은 일행 전체에서 가장 다친 1체만 */
   let oneId='';if(+R.hp_one&&R.hp&&R.hp!=='0'){let best=2;for(const m0 of Object.values(mons()).filter(m=>ids.includes(m.tid))){const b0=bmons()[m0.id];const x0=b0||m0;const c0=HP(x0,!!b0);if(c0<=0||c0>=x0.hp.max)continue;const r0=c0/x0.hp.max;if(r0<best){best=r0;oneId=m0.id}}}
   for(const tid of ids){const t=T[tid];const k=tsk(tid);const lines=[];
    for(const m of Object.values(mons()).filter(m=>m.tid===tid)){let heal=0,rev=false,cured=[];
@@ -164,11 +205,11 @@ window.OM_SKILL_UI=(()=>{
     if(R.ord_n==='all'){try{nt.orderCount=OO.fill(nt,OO.styles(nt))}catch(e){for(const kk in nt.orderCount)nt.orderCount[kk]=nt.orderBase||1}lines.push('4식 6령 전부 회복')}
     else{let n=+R.ord_n;for(const kk of Object.keys(nt.orderCount).sort()){while(n>0&&(+nt.orderCount[kk]||0)<(nt.orderBase||1)){nt.orderCount[kk]++;n--}}lines.push(`4식 6령 +${+R.ord_n-n}`)}
     await A().setDiff(['battle','trainers',tid],bt[tid],nt,2)}
-   const patch={};if(+R.tired)patch.tired=[];if(+R.care)patch.care=0;if(+R.inou)patch.inou=0;if(+R.inj_n>0)patch.inj=Math.max(0,(+k.inj||0)-(+R.inj_n));
+   const patch={};if(+R.inou)patch.sup=0;if(+R.inj_n>0)patch.inj=Math.max(0,k.inj-(+R.inj_n));
    if(Object.keys(patch).length)await setT(tid,patch);
-   const tl=[];if(+R.tired&&k.tired.length)tl.push('지침 해제');if(+R.care)tl.push('돌봄');if(+R.inou)tl.push('이능');if(+R.inj_n>0&&k.inj)tl.push(`${k.inj>=2?'중상':'부상'} → ${patch.inj>=2?'중상':patch.inj===1?'부상':'건강'}`);if(tl.length)lines.push(tl.join(' · '));
+   const tl=[];if(+R.inou&&k.sup)tl.push('초상 능력 횟수');if(+R.inj_n>0&&k.inj)tl.push(`${STEP[k.inj]} → ${STEP[patch.inj]}`);if(tl.length)lines.push(tl.join(' · '));
    L.push(`${t.name}: ${lines.join(' · ')||'변화 없음'}`)}
-  /* 10-28: ord_po · ord_pc = 파티 전체에서 4식 · 6령을 n 개 회복 (배틀 중이면 배틀 쪽 횟수, 아니면 시트 쪽 — 던전 탭 ordSrc 와 같다). 제작한 값(가득)까지만 */
+  /* 10-28: ord_po · ord_pc = 파티 전체에서 4식 · 6령을 n 개 회복 (배틀 중이면 배틀 쪽, 아니면 시트 쪽). 제작한 값(가득)까지만 */
   if(+R.ord_po>0||+R.ord_pc>0){const OO=window.OM_ORDERS;const B=A().ST.state.battle||{};const LP=[];
    for(const [pre,n0,lab] of [['order_',+R.ord_po||0,'4식'],['command_',+R.ord_pc||0,'6령']]){let n=n0;
     for(const tid of ids){if(n<=0)break;const bT=(B.trainers||{})[tid];const inB=!!(bT&&bT.orderCount&&B.started);const src=inB?bT:T[tid];if(!src)continue;let FL={};try{FL=OO.fill(src,src.orderBase||1)}catch(e){}const cnt=Object.assign({},src.orderCount||{});let ch=0;
@@ -176,71 +217,102 @@ window.OM_SKILL_UI=(()=>{
      if(ch){await A().set(inB?['battle','trainers',tid,'orderCount']:['roster','trainers',tid,'orderCount'],cnt);LP.push(`${src.name||''} ${lab} +${ch}`)}}}
    if(LP.length)L.push('파티: '+LP.join(' · '))}
   const txt=`【휴식】 ${kn}${opt.by?' · '+opt.by:''}\n${L.join('\n')}`;A().sysLog(txt,'battle',{});try{window.OM_RP_UI&&window.OM_RP_UI.playSe('Ping')}catch(e){}return txt}
+ /* 장면 끝: 빈사 → 중상 */
+ async function sceneEnd(){const L=[];for(const tid of Object.keys(trs())){const k=tsk(tid);if(k.inj===3){await setT(tid,{inj:2});L.push(trs()[tid].name)}}A().sysLog(L.length?`◆ 장면 끝 — ${L.join(', ')} 「빈사」 → 「중상」`:'◆ 장면 끝','battle');return L}
+
+ /* ===== 덱 연동: 상태 카드 (GM 화면) =====
+    설정의 상태 카드(부상 · 중상 · 빈사)를 그 트레이너 손패에 하나만 둔다 — 단계가 바뀌면 다른 상태 카드는 버린 카드로, 새 카드는 덱 · 버린 카드에서 가져온다 */
+ let syncing=false,syncT=0;
+ function sync(){if(!gm()||syncing)return;clearTimeout(syncT);syncT=setTimeout(()=>{doSync().catch(e=>console.warn(e))},500)}
+ async function doSync(){const cd=cfg().cards;const D=A().ST.state.deck2;if(!cd.deck||!D||!D.decks||!D.decks[cd.deck])return;const dk=D.decks[cd.deck];const C3=[cd.c1,cd.c2,cd.c3];if(!C3.some(Boolean))return;
+  syncing=true;try{const nd=JSON.parse(JSON.stringify(dk));nd.hands=nd.hands||{};nd.holders=nd.holders||[];nd.pile=nd.pile||[];nd.disc=nd.disc||[];nd.rv=nd.rv||{};let ch=false;
+   for(const tid of Object.keys(trs())){const s=tsk(tid).inj;const w=s?C3[s-1]||'':'';const h=(nd.hands[tid]||[]).slice();
+    for(const c of C3){if(!c||c===w)continue;let i;while((i=h.indexOf(c))>=0){h.splice(i,1);nd.disc.push(c);ch=true}}
+    if(w&&!h.includes(w)){let i=nd.pile.indexOf(w);if(i>=0)nd.pile.splice(i,1);else{i=nd.disc.lastIndexOf(w);if(i>=0)nd.disc.splice(i,1)}h.push(w);ch=true;if(!nd.holders.includes(tid))nd.holders.push(tid);if(!nd.rv[tid])nd.rv[tid]=Object.fromEntries((nd.res||[]).map(r=>[r.n,+r.s||0]))}
+    if(h.length||nd.hands[tid])nd.hands[tid]=h}
+   if(ch)await A().setDiff(['deck2','decks',cd.deck],dk,nd,1)}finally{syncing=false}}
 
  /* ===== 창 공통 ===== */
  function open(){if(gm())return openGm();const tid=me();if(!tid)return A().toast('자리에 앉아야 한다');openPlayer(tid)}
  const seg=(name,opts,cur)=>`<span class="seg" data-seg="${name}">${opts.map(([v,n,t])=>`<span class="${String(cur)===String(v)?'on':''}" data-v="${esc(v)}" ${t?`title="${esc(t)}"`:''}>${n}</span>`).join('')}</span>`;
  const segVal=(md,name)=>{const on=md.querySelector(`[data-seg="${name}"] .on`);return on?on.dataset.v:''};
  function bindSeg(md){md.querySelectorAll('[data-seg]').forEach(sg=>sg.querySelectorAll('span[data-v]').forEach(sp=>sp.onclick=()=>{sg.querySelectorAll('span[data-v]').forEach(x=>x.classList.toggle('on',x===sp));sg.dispatchEvent(new CustomEvent('segchange',{bubbles:true,detail:sp.dataset.v}))}))}
- const F={label:'',stat:'지시',mode:'skill',target:7,npc:0,step:0,twice:0,pm:0,pen:{fail:PEN0(),cost:PEN0()},ids:null,penOpen:false,restKind:'long',auto:''};
- function offerSummary(O){return `${esc(O.stat)}${O.mode==='inou'?' · 이능':O.mode==='any'?' · 방식 자유':''} · 목표 ${O.target}${O.auto&&BAND[O.auto]?' (자동 · '+BAND[O.auto][2]+')':''}${O.npc?' (대항 '+esc(O.npc)+')':''}${O.step?' · 단계 '+(O.step>0?'유리':'불리'):''}${O.twice?' · 두 번 굴려 '+(O.twice>0?'높은':'낮은')+' 값':''}${O.pm?' · '+(O.pm>0?'능숙함':'서투름'):''}`}
- function penLine(P){if(!P||!(penHas(P.fail)||penHas(P.cost)))return '';return `<div class="skpenline">${penHas(P.fail)?`<span><i class="penf">실패</i> ${esc(penTxt(P.fail))}</span>`:''}${penHas(P.cost)?`<span><i class="penc">대가</i> ${esc(penTxt(P.cost))}</span>`:''}</div>`}
+ const F={noStep:0,label:'',stat:'지시',base:3,scene:'rp',target:10,npc:0,npcMod:2,npcDef:'npc',pm:0,twice:0,fit:{types:[],moves:[],abil:[],etc:''},pen:{fail:PEN0()},ids:null,penOpen:false,restKind:'long',auto:''};
+ const npcTxt=O=>O.npc?`대결 · ${esc(O.npc)} 2d6${sgn(+O.npcMod||0)} · 막는 쪽 ${O.npcDef==='pc'?'나':'상대'}`:'';
+ function offerSummary(O){O=upOffer(O);return `${esc(O.stat)} + ${BASE[O.base]??'?'} · ${O.scene==='field'?'필드':'동행'} · ${O.npc?npcTxt(O):'목표 '+O.target}${O.auto&&TIER[O.auto]?' (자동)':''}${+O.pm?' · '+(+O.pm>0?'유리 ':'불리 ')+sgn(+O.pm):''}${+O.twice?' · 두 번 굴려 '+(+O.twice>0?'높은':'낮은')+' 값':''}${fitTxt(O)?' · 적합 '+esc(fitTxt(O)):''}${O.noStep?' · 실패해도 상태 단계 그대로':''}`}
+ function penLine(P){if(!P||!penHas(P.fail))return '';return `<div class="skpenline"><span><i class="penf">실패</i> ${esc(penTxt(P.fail))}</span></div>`}
  const DMGS=['','1/8','1/4','1/3','1/2'];
- /* 패널티 한 칸 (실패 · 대가 · 예시 편집 창이 같이 쓴다). t = 칸 이름, X = 패널티 */
+ /* 패널티 한 칸 (제시 · 예시 편집 창이 같이 쓴다). t = 칸 이름, X = 패널티 */
  function penFields(t,X){return `   <div class="fr"><span class="lbl">대미지</span>${seg('pen_'+t+'_dmg',[['','없음'],['1/8','1/8'],['1/4','1/4'],['1/3','1/3'],['1/2','1/2']],DMGS.includes(X.dmg)?X.dmg:'x')}<input type="text" class="n xs" data-pen="${t}.dmg" value="${DMGS.includes(X.dmg)?'':esc(X.dmg)}" placeholder="직접"></div>
    <div class="fr"><span class="lbl">상태</span><select data-pen="${t}.st"><option value="">없음</option>${stList().map(([k,ko,abn])=>`<option value="${k}" ${X.st===k?'selected':''}>${esc(ko)}${abn?' (이상)':''}</option>`).join('')}</select><span class="small dim">턴</span><input type="number" class="n xs" data-pen="${t}.cnt" value="${esc(X.cnt)}" placeholder="기본"></div>
    <div class="fr" style="align-items:flex-start"><span class="lbl">랭크</span><div class="prk">${RK.map(([k,n])=>{const v=+X.rk[k]||0;return `<div class="prki ${v>0?'up':v<0?'dn':''}"><small>${n}</small><span data-rk="${t}.${k}.-1">−</span><b>${v>0?'+':''}${v}</b><span data-rk="${t}.${k}.1">＋</span></div>`}).join('')}</div></div>
    <div class="fr"><span class="lbl">경계도</span><span class="small dim">+</span><input type="number" class="n xs" data-pen="${t}.al" value="${+X.al||0}" step="5"><span class="small dim">던전 탐색 중이면 그 던전 경계도에 더한다</span></div>
-   <div class="fr"><span class="lbl">4식 6령</span><span class="small dim">4식</span><input type="number" class="n xs" data-pen="${t}.oo" value="${+X.oo||0}"><span class="small dim">6령</span><input type="number" class="n xs" data-pen="${t}.oc" value="${+X.oc||0}"><span class="small dim">개 차감 (배틀의 트레이너)</span></div>
    <div class="fr"><span class="lbl">포텐셜</span>${seg('pen_'+t+'_who',[['tr','고유'],['pk','전용']],X.pot.who||'tr')}<input type="text" class="n" data-pen="${t}.pot.name" value="${esc(X.pot.name||'')}" placeholder="이름 (비우면 아무거나)" style="width:150px"><input type="number" class="n xs" data-pen="${t}.pot.n" value="${+X.pot.n||0}"><span class="small dim">회 차감</span></div>
    <div class="fr"><span class="lbl">메모</span><input type="text" data-pen="${t}.memo" value="${esc(X.memo)}" placeholder="GM 이 손으로 할 것 · 서술" style="flex:1"></div>`}
- /* 패널티 칸 머리의 예시 고르기 (기본 예시 중 숨긴 것은 빼고, 내 것 먼저) */
  const exHide=k=>(((st().exHide)||{})[k])||[];
- function penExSel(t){const mine=st().penPresets||[];const hid=exHide('pen');return `<select data-penex="${t}" title="패널티 예시 불러오기 (이 칸에)"><option value="">예시…</option>${mine.length?`<optgroup label="내가 저장한 것">${mine.map(p=>`<option value="my:${esc(p.id)}">${esc(p.name)}</option>`).join('')}</optgroup>`:''}<optgroup label="기본">${PEN_EX.map((e,i)=>hid.includes(e.name)?'':`<option value="ex:${i}">${esc(e.name)}</option>`).join('')}</optgroup></select>`}
+ function penExSel(t){const mine=st().penPresets||[];const hid=exHide('pen');return `<select data-penex="${t}" title="패널티 예시 불러오기"><option value="">예시…</option>${mine.length?`<optgroup label="내가 저장한 것">${mine.map(p=>`<option value="my:${esc(p.id)}">${esc(p.name)}</option>`).join('')}</optgroup>`:''}<optgroup label="기본">${PEN_EX.map((e,i)=>hid.includes(e.name)?'':`<option value="ex:${i}">${esc(e.name)}</option>`).join('')}</optgroup></select>`}
  function penExGet(v){if(!v)return null;if(v.startsWith('ex:'))return (PEN_EX[+v.slice(3)]||{}).p||null;const p=(st().penPresets||[]).find(p=>p.id===v.slice(3));return p?p.p:null}
- /* 패널티 칸 읽기 (data-pen="t.…") */
- function grabPen(md,t,X0){const X=penNorm(X0);const q=k=>md.querySelector(`[data-pen="${t}.${k}"]`);if(!q('dmg'))return X;const dv=segVal(md,'pen_'+t+'_dmg');const di=q('dmg').value.trim();X.dmg=di||(dv==='x'?X.dmg:dv);X.al=Math.max(0,+((q('al')||{}).value)||0);X.st=q('st').value;X.cnt=q('cnt').value;X.oo=+q('oo').value||0;X.oc=+q('oc').value||0;X.pot.who=segVal(md,'pen_'+t+'_who')||'tr';X.pot.name=q('pot.name').value.trim();X.pot.n=+q('pot.n').value||0;X.memo=q('memo').value.trim();return X}
- function penBox(P){return `<div class="skpen"><div class="fr"><span class="lbl">패널티</span><div class="pensum">${penHas(P.fail)?`<div><i class="penf">실패 · 대실패</i> ${esc(penTxt(P.fail))}</div>`:''}${penHas(P.cost)?`<div><i class="penc">대가를 치르고 성공</i> ${esc(penTxt(P.cost))}</div>`:''}${!penHas(P.fail)&&!penHas(P.cost)?'<span class="dim small">없음</span>':''}</div><button class="btn xs" data-sk="penopen">${F.penOpen?'접기':'패널티 설정 ▸'}</button><button class="btn xs ghost" data-sk="exmgr" data-t="pen" title="패널티 예시를 한 번에 보고 관리">패널티 예시</button>${penHas(P.fail)||penHas(P.cost)?'<button class="btn xs ghost" data-sk="penclr">비우기</button>':''}</div>
-  ${F.penOpen?`<div class="skpencols">${[['fail','실패 · 대실패','penf'],['cost','대가를 치르고 성공','penc']].map(([t,title,cl])=>{const X=penNorm(P[t]);return `<div class="skpencol ${cl}"><div class="sec">${title}<span class="sp"></span>${penExSel(t)}<button class="btn xs ghost" data-sk="pensave" data-t="${t}" title="이 칸을 패널티 예시로 저장">저장</button></div>
-${penFields(t,X)}</div>`}).join('')}</div>
-   <label class="small tg" style="margin-top:6px;display:block"><input type="checkbox" id="pen_auto" ${cfg().penAuto?'checked':''}> 결과가 나오면 자동으로 건다 (끄면 GM 이 현황에서 손으로)</label>`:''}</div>`}
- function grabOffer(md){F.label=$('#so_label',md).value.trim();F.stat=segVal(md,'stat')||'지시';F.mode=segVal(md,'mode')||'skill';F.target=+$('#so_target',md).value||7;F.npc=+segVal(md,'npc')||0;F.step=+segVal(md,'step')||0;F.twice=+segVal(md,'twice')||0;F.pm=+segVal(md,'pm')||0;F.auto=segVal(md,'auto')||'';
-  F.ids=[...md.querySelectorAll('[data-so-id]:checked')].map(i=>i.dataset.soId);
-  if(F.penOpen){for(const t of ['fail','cost'])F.pen[t]=grabPen(md,t,F.pen[t])}}
- function loadPreset(o){Object.assign(F,{label:o.label||'',stat:o.stat||'지시',mode:o.mode||'skill',target:+o.target||7,auto:BAND[o.auto]?o.auto:'',npc:+o.npc||0,step:+o.step||0,twice:+o.twice||0,pm:+o.pm||0,pen:{fail:penNorm((o.pen||{}).fail),cost:penNorm((o.pen||{}).cost)}});F.penOpen=penHas(F.pen.fail)||penHas(F.pen.cost)}
+ function grabPen(md,t,X0){const X=penNorm(X0);const q=k=>md.querySelector(`[data-pen="${t}.${k}"]`);if(!q('dmg'))return X;const dv=segVal(md,'pen_'+t+'_dmg');const di=q('dmg').value.trim();X.dmg=di||(dv==='x'?X.dmg:dv);X.al=Math.max(0,+((q('al')||{}).value)||0);X.st=q('st').value;X.cnt=q('cnt').value;X.pot.who=segVal(md,'pen_'+t+'_who')||'tr';X.pot.name=q('pot.name').value.trim();X.pot.n=+q('pot.n').value||0;X.memo=q('memo').value.trim();return X}
+ function penBox(P){const X=penNorm(P.fail);return `<div class="skpen"><div class="fr"><span class="lbl">묶음</span><div class="pensum">${penHas(X)?`<div><i class="penf">실패</i> ${esc(penTxt(X))}</div>`:'<span class="dim small">없음 — 실패하면 트레이너 상태 한 단계만</span>'}</div><button class="btn xs" data-sk="penopen">${F.penOpen?'접기':'설정 ▸'}</button><button class="btn xs ghost" data-sk="exmgr" data-t="pen" title="패널티 예시를 한 번에 보고 관리">패널티 예시</button>${penHas(X)?'<button class="btn xs ghost" data-sk="penclr">비우기</button>':''}</div>
+  ${F.penOpen?`<div class="skpencols" style="grid-template-columns:1fr"><div class="skpencol penf"><div class="sec">실패했을 때 판정한 포켓몬이 받는 것 <span class="sp"></span>${penExSel('fail')}<button class="btn xs ghost" data-sk="pensave" data-t="fail" title="이 칸을 패널티 예시로 저장">저장</button></div>
+${penFields('fail',X)}</div></div>
+   <label class="small tg" style="margin-top:6px;display:block"><input type="checkbox" id="pen_auto" ${cfg().penAuto?'checked':''}> 실패가 확정되면 자동으로 건다 (끄면 GM 이 제시 탭에서 손으로)</label>`:''}</div>`}
+ const splitL=s=>String(s||'').split(/[,，、·\/]/).map(x=>x.trim()).filter(Boolean).slice(0,8);
+ function grabOffer(md){F.label=$('#so_label',md).value.trim();F.stat=segVal(md,'stat')||'지시';F.base=+segVal(md,'base')||0;F.scene=segVal(md,'scene')||'rp';F.target=+$('#so_target',md).value||10;F.npc=+segVal(md,'npc')||0;F.npcMod=+(($('#so_npcmod',md)||{}).value)||0;F.npcDef=segVal(md,'npcdef')||'npc';F.pm=+segVal(md,'pm')||0;F.twice=+segVal(md,'twice')||0;
+  F.fit={types:[...md.querySelectorAll('[data-fty].on')].map(x=>x.dataset.fty),moves:splitL($('#so_fmv',md).value),abil:splitL($('#so_fab',md).value),etc:$('#so_fetc',md).value.trim().slice(0,60)};
+  F.noStep=+segVal(md,'nostep')||0;F.ids=[...md.querySelectorAll('[data-so-id]:checked')].map(i=>i.dataset.soId);
+  if(F.penOpen)F.pen.fail=grabPen(md,'fail',F.pen.fail)}
+ function presetOf(){return {v:4,noStep:F.noStep?1:0,label:F.label,stat:F.stat,base:F.base,scene:F.scene,target:F.target,npc:F.npc,npcMod:F.npcMod,npcDef:F.npcDef,pm:F.pm,twice:F.twice,fit:JSON.parse(JSON.stringify(F.fit)),pen:{fail:F.pen.fail}}}
+ function loadPreset(o){o=upOffer(o);Object.assign(F,{noStep:+o.noStep?1:0,label:o.label||'',stat:o.stat||'지시',base:o.base??3,scene:o.scene||'rp',target:+o.target||10,auto:'',npc:+o.npc||0,npcMod:o.npcMod!=null?+o.npcMod:((NPC.find(x=>x[0]===+o.npc)||[])[2]??2),npcDef:o.npcDef||'npc',pm:+o.pm||0,twice:+o.twice||0,fit:Object.assign({types:[],moves:[],abil:[],etc:''},o.fit||{}),pen:{fail:penNorm((o.pen||{}).fail)}});F.penOpen=penHas(F.pen.fail)}
+ /* 제시 만들기 (GM 창 · 던전 공용) */
+ function mkOffer(o,ids){const npc=NPC.find(x=>x[0]===+o.npc&&x[0]);return {id:'o'+Date.now().toString(36),v:4,label:o.label||'',stat:o.stat||'지시',base:+o.base||0,scene:o.scene||'rp',target:+o.target||10,auto:o.auto||'',npc:npc?(npc[0]===9?'상대':npc[1]):'',npcMod:npc?+o.npcMod||0:0,npcDef:o.npcDef==='pc'?'pc':'npc',pm:+o.pm||0,twice:+o.twice||0,fit:Object.assign({types:[],moves:[],abil:[],etc:''},o.fit||{}),pen:{fail:penNorm((o.pen||{}).fail),auto:cfg().penAuto?1:0},ids,noStep:+o.noStep?1:0,at:Date.now()}}
+ function offerLog(o,by){const T=trs();return `【스킬 체크】 ${o.label||'판정'}${by?' · '+by:''}\n${o.stat} + ${BASE[o.base]} · ${o.scene==='field'?'필드 포켓몬':'동행 포켓몬'} · ${o.npc?`대결 (${o.npc} 2d6${sgn(o.npcMod)}, 막는 쪽 ${o.npcDef==='pc'?'우리':'상대'})`:'목표 '+o.target}${o.pm?' · '+(o.pm>0?'유리 ':'불리 ')+sgn(o.pm):''}${o.twice?' · 두 번 굴려 '+(o.twice>0?'높은':'낮은')+' 값':''}${fitTxt(o)?'\n적합: '+fitTxt(o):''}\n대상: ${o.ids.map(i=>(T[i]||{}).name).join(', ')}${penHas(o.pen.fail)?'\n실패하면: '+penTxt(o.pen.fail):''}${o.noStep?'\n이 체크는 실패해도 트레이너 상태 단계가 오르지 않는다':''}`}
+ /* 한 트레이너가 이 제시를 굴릴 때 고를 수 있는 것과 확률 (미리보기 · 플레이어 창) */
+ function optionsOf(tid,O){const t=trs()[tid];const k=tsk(tid);const out=[];if(!t)return out;
+  for(const mid of compOf(tid,O.scene).ids){const c=calcOf(tid,O,{how:'mon',mid});out.push({how:'mon',mid,name:mons()[mid].name,c,o:oddsFor(c,O)})}
+  {const c=calcOf(tid,O,{how:'alone'});out.push({how:'alone',name:'혼자',c,o:oddsFor(c,O)})}
+  if(O.stat==='능력'&&supMax(t)>0){const c=calcOf(tid,O,{how:'super'});out.push({how:'super',name:'초상 능력',c,o:oddsFor(c,O),left:supMax(t)-k.sup})}
+  return out}
 
  /* ----- GM 창 ----- */
- function openGm(tab){tab=tab||'offer';const K=st();const T=Object.fromEntries(Object.entries(trs()).filter(([,t])=>t&&t.kind!=='npc'));const O=K.offer;const R=K.res||{};const C=cfg();const presets=K.presets||[];
+ function openGm(tab){tab=tab||'offer';const K=st();const T=Object.fromEntries(Object.entries(trs()).filter(([,t])=>t&&t.kind!=='npc'));const O=K.offer?upOffer(K.offer):null;const R=K.res||{};const C=cfg();const presets=K.presets||[];
   const ids=F.ids||Object.keys(T);
+  const resCell=(id)=>{const r=R[id];const done=r&&O&&r.offerId===O.id;if(!done)return '<span class="small dim">아직 안 굴림</span>';
+   return `<span class="skres" style="background:${COL[r.ri]}">${RES[r.ri]}</span><span class="small dim">${esc(r.total)} / ${esc(r.target)} · ${esc(r.how==='mon'?r.monName:r.how==='super'?'초상 능력':'혼자')}</span>${r.pend?'<span class="tag">묘수 고민 중</span>':''}${r.step?`<span class="tag">${STEP[r.step.prev]} → ${STEP[r.step.now]}</span>`:''}${r.cover?`<span class="tag">커버 ${esc(r.cover.name)}</span>`:''}${r.penDone?'<span class="tag">묶음 적용됨</span>':''}`};
   const offerTab=`${O?`<div class="skcard hit"><div class="sec">지금 제시된 체크 <span class="note">${esc(O.label||'')}</span><span class="sp"></span><button class="btn xs ghost" data-sk="close">마감 (제시 거두기)</button></div><div class="small">${offerSummary(O)}</div>${penLine(O.pen)}
-     <div class="sklist" style="margin-top:6px">${(O.ids||[]).map(id=>{const r=R[id];const t=T[id]||{};const done=r&&r.offerId===O.id;return `<div class="skrow"><b>${esc(t.name)}</b>${done?`<span class="skres" style="background:${COL[r.ri]}">${RES[r.ri]}</span><span class="small dim">${esc(r.text.split('\n').slice(1,-1).join(' / '))}</span>${r.cover?`<span class="tag">커버 ${esc(T[r.cover.by]&&T[r.cover.by].name)}</span>`:''}${r.penDone?'<span class="tag">패널티 적용됨</span>':''}`:'<span class="small dim">아직 안 굴림</span>'}<span class="sp"></span>${done&&O.pen&&!r.penDone&&((r.ri<=1&&penHas(O.pen.fail))||(r.ri===2&&penHas(O.pen.cost)))?`<button class="btn xs" data-sk="penapply" data-tid="${id}">패널티 걸기</button>`:''}<button class="btn xs ghost" data-sk="rollfor" data-tid="${id}">대신 굴리기</button></div>`}).join('')}</div></div>`:''}
-    <div class="skcard sknew"><div class="sec">새 체크 제시 <span class="sp"></span><select id="so_ex" title="예시·저장한 제시 불러오기"><option value="">예시 불러오기…</option>${presets.length?`<optgroup label="내가 저장한 것">${presets.map(p=>`<option value="my:${p.id}">${esc(p.name)}</option>`).join('')}</optgroup>`:''}<optgroup label="기본">${EX.map((e,i)=>exHide('check').includes(e.name)?'':`<option value="ex:${i}">${esc(e.name)}</option>`).join('')}</optgroup></select><button class="btn xs ghost" data-sk="exsave" title="지금 폼을 예시로 저장">저장</button><button class="btn xs" data-sk="exmgr" data-t="check" title="체크 · 패널티 예시를 한 번에 보고 이름 · 순서 · 삭제 · 덮어쓰기">예시 관리</button></div>
-     <div class="skstep"><div class="skh"><i>1</i>무엇을 <small>상황과 굴릴 자질</small></div>
-      <div class="fr"><span class="lbl">상황</span><input type="text" id="so_label" placeholder="예) 겁먹은 야생 무리를 진정시킨다" value="${esc(F.label)}" style="flex:1;min-width:0"></div>
-      <div class="fr"><span class="lbl">자질</span>${seg('stat',SK.map(s=>[s,s]),F.stat)}</div>
-      <div class="fr"><span class="lbl">방식</span>${seg('mode',[['skill','기교 / 일반'],['inou','이능 (A 이상)'],['any','트레이너가 고름']],F.mode)}</div></div>
+     <div class="sklist" style="margin-top:6px">${(O.ids||[]).map(id=>{const r=R[id];const done=r&&r.offerId===O.id;const t=T[id]||trs()[id]||{};return `<div class="skrow wrap"><b>${esc(t.name)}</b>${resCell(id)}<span class="sp"></span>${done&&r.pend?`<button class="btn xs" data-sk="settle" data-tid="${id}" title="묘수를 쓰지 않고 실패를 확정한다">실패 확정</button>`:''}${done&&r.ri===1&&!r.pend&&!r.penDone&&penHas(O.pen.fail)?`<button class="btn xs" data-sk="penapply" data-tid="${id}">묶음 걸기</button>`:''}<button class="btn xs ghost" data-sk="rollfor" data-tid="${id}">${done?'열기':'대신 굴리기'}</button></div>`}).join('')}</div></div>`:''}
+    <div class="skcard sknew"><div class="sec">새 체크 제시 <span class="sp"></span><select id="so_ex" title="예시·저장한 제시 불러오기"><option value="">예시 불러오기…</option>${presets.length?`<optgroup label="내가 저장한 것">${presets.map(p=>`<option value="my:${p.id}">${esc(p.name)}</option>`).join('')}</optgroup>`:''}<optgroup label="기본">${EX.map((e,i)=>exHide('check').includes(e.name)?'':`<option value="ex:${i}">${esc(e.name)}</option>`).join('')}</optgroup></select><button class="btn xs ghost" data-sk="exsave" title="지금 폼을 예시로 저장">저장</button><button class="btn xs" data-sk="exmgr" data-t="check" title="체크 · 패널티 예시를 한 번에 보고 관리">예시 관리</button></div>
+     <div class="skstep"><div class="skh"><i>1</i>무엇을 <small>트레이너 자질 + 포켓몬 종족값</small></div>
+      <div class="fr"><span class="lbl">상황</span><input type="text" id="so_label" placeholder="예) 고대 문자를 해독한다" value="${esc(F.label)}" style="flex:1;min-width:0"></div>
+      <div class="fr"><span class="lbl">자질</span>${seg('stat',SK.map(s=>[s,s,{지시:'머리를 쓰는 일',육성:'신체를 쓰는 일',통솔:'대화 · 교섭 · 위압',능력:'기술과 이능'}[s]]),F.stat)}</div>
+      <div class="fr"><span class="lbl">종족값</span>${seg('base',BASE.map((b,i)=>[i,b,BASE_HINT[i]]),F.base)}</div>
+      <div class="fr"><span class="lbl">장면</span>${seg('scene',[['rp','RP · 동행 포켓몬'],['field','던전 · 배틀 · 필드 포켓몬']],F.scene)}</div></div>
      <div class="skstep"><div class="skh"><i>2</i>누가 <small>눌러서 넣고 빼기</small></div>
-      <span class="chips">${Object.values(T).map(t=>`<label class="chip ${ids.includes(t.id)?'on':''}"><input type="checkbox" data-so-id="${t.id}" ${ids.includes(t.id)?'checked':''} hidden> ${esc(t.name)}</label>`).join('')||'<span class="dim small">로스터에 트레이너가 없다</span>'}</span></div>
-     <div class="skstep"><div class="skh"><i>3</i>목표 <small>난이도를 고르거나 · 자동으로 맞추거나 · 상대와 겨룬다</small></div>
-      <div class="fr"><span class="lbl">난이도</span><span class="chips">${DIFF.map(([v,n])=>`<span class="chip ${!F.npc&&F.target===v?'on':''}" data-diff="${v}">${n} ${v}</span>`).join('')}</span><label class="sktg">목표 <input type="number" class="n xs" id="so_target" value="${F.target}"></label></div>
-      <div class="fr"><span class="lbl">목표 자동</span>${seg('auto',[['','끔'],['easy','쉬움 85~95%'],['normal','보통 70~85%'],['hard','어려움 50~70%']],F.auto)}</div><div class="small dim skinfo" id="so_autoinfo"></div>
-      <div class="fr"><span class="lbl">대항 판정</span>${seg('npc',NPC.map(([v,n])=>[v,n]),F.npc)}</div>
+      <span class="chips">${Object.values(T).map(t=>`<label class="chip ${ids.includes(t.id)?'on':''}"><input type="checkbox" data-so-id="${t.id}" ${ids.includes(t.id)?'checked':''} hidden> ${esc(t.name)}${tsk(t.id).inj?' · '+STEP[tsk(t.id).inj]:''}</label>`).join('')||'<span class="dim small">로스터에 트레이너가 없다</span>'}</span></div>
+     <div class="skstep"><div class="skh"><i>3</i>목표 <small>난이도를 고르거나 · 상대와 겨룬다</small></div>
+      <div class="fr"><span class="lbl">난이도</span><span class="chips">${DIFF.map(([v,n])=>`<span class="chip ${F.target===v?'on':''}" data-diff="${v}">${n} ${v}</span>`).join('')}</span><label class="sktg">목표 <input type="number" class="n xs" id="so_target" value="${F.target}"></label></div>
+      <div class="fr"><span class="lbl">대결 판정</span>${seg('npc',NPC.map(([v,n,m])=>[v,v&&m!=null?`${n} ${sgn(m)}`:n]),F.npc)}</div>
+      <div class="fr" id="so_npcrow" style="${F.npc?'':'display:none'}"><span class="lbl">상대</span><span class="small dim">2d6</span><input type="number" class="n xs" id="so_npcmod" value="${F.npcMod}" title="상대 자질 + 종족값 + 적합"><span class="small dim">막는 쪽 (동점이면 이긴다)</span>${seg('npcdef',[['npc','상대'],['pc','우리']],F.npcDef)}</div>
       <div id="so_lad"></div></div>
-     <details class="skstep skmod" ${F.step||F.twice||F.pm?'open':''}><summary class="skh"><i>4</i>상황 보정 <small id="so_modsum"></small></summary>
-      <div class="fr"><span class="lbl">주사위 단계</span>${seg('step',[[-1,'불리'],[0,'없음'],[1,'유리']],F.step)}<span class="small dim">도구 · 환경 · 힘 차이</span></div>
-      <div class="fr"><span class="lbl">두 번 굴리기</span>${seg('twice',[[-1,'낮은 값'],[0,'없음'],[1,'높은 값']],F.twice)}<span class="small dim">시간 여유·정보 / 서두름·방해</span></div>
-      <div class="fr"><span class="lbl">숙련</span>${seg('pm',[[-1,'서투름'],[0,'없음'],[1,'능숙함']],F.pm)}<span class="small dim">서투름: 자질 최대값이면 −1 · 능숙함: 1이면 +1</span></div></details>
-     <div class="skstep"><div class="skh"><i>5</i>패널티 <small>실패 · 대가 성공 때 거는 것 (없어도 된다)</small></div>${penBox(F.pen)}</div>
+     <div class="skstep"><div class="skh"><i>4</i>적합 <small>맞으면 하나마다 +1 · 최대 +3</small></div>
+      <div class="fr" style="align-items:flex-start"><span class="lbl">타입</span><span class="chips">${TYPES.map(ty=>`<span class="chip ${F.fit.types.includes(ty)?'on':''}" data-fty="${ty}">${ty}</span>`).join('')}</span></div>
+      <div class="fr"><span class="lbl">기술</span><input type="text" id="so_fmv" value="${esc(F.fit.moves.join(', '))}" placeholder="예) 사이코키네시스, 고속이동 (쉼표로)" style="flex:1;min-width:0"></div>
+      <div class="fr"><span class="lbl">특성</span><input type="text" id="so_fab" value="${esc(F.fit.abil.join(', '))}" placeholder="예) 위협" style="flex:1;min-width:0"></div>
+      <div class="fr"><span class="lbl">기타</span><input type="text" id="so_fetc" value="${esc(F.fit.etc)}" placeholder="예) 물에 뜰 수 있는 포켓몬 — 굴릴 때 고르면 +1" style="flex:1;min-width:0"></div></div>
+     <details class="skstep skmod" ${F.pm||F.twice?'open':''}><summary class="skh"><i>5</i>상황 보정 <small id="so_modsum"></small></summary>
+      <div class="fr"><span class="lbl">± 보정</span>${seg('pm',[[-2,'−2'],[-1,'−1'],[0,'없음'],[1,'+1'],[2,'+2']],F.pm)}<span class="small dim">도구 · 환경 · 준비 · 서두름</span></div>
+      <div class="fr"><span class="lbl">두 번 굴리기</span>${seg('twice',[[-1,'낮은 값'],[0,'없음'],[1,'높은 값']],F.twice)}<span class="small dim">굉장히 유리 / 불리</span></div></details>
+     <div class="skstep"><div class="skh"><i>6</i>실패하면 <small>트레이너 상태 단계 + 판정한 포켓몬의 패널티 묶음</small></div><div class="fr"><span class="lbl">상태 단계</span>${seg('nostep',[[0,'한 단계 오른다 (기본)'],[1,'오르지 않는다']],F.noStep?1:0)}</div>${penBox(F.pen)}</div>
      <div class="skprev"><div class="skh">미리보기 <small>이대로 제시하면</small></div><div id="so_prev"></div></div>
      <div class="row skgo"><span class="small dim">제시하면 로그에 카드가 나가고, 대상은 상단 「스킬 체크」에서 굴린다</span><span class="sp"></span><button class="btn pri big" data-sk="offer">제시 (모두에게)</button></div></div>
-    <div class="skcard"><div class="sec">최근 판정 <span class="note">${(K.hist||[]).length}</span></div><div class="skhist">${(K.hist||[]).slice(-12).reverse().map(h=>`<div style="border-left-color:${COL[h.ri]}">${esc(h.text)}</div>`).join('')||'<span class="dim small">없음</span>'}</div></div>`;
-  const statusTab=`<div class="skcard"><div class="sec">트레이너 자원 <span class="note">묘수 · 돌봄 · 이능 · AA 특권 · 부상 · 지침</span></div>
-     <div class="sklist">${Object.values(T).map(t=>{const k=tsk(t.id);const mm=myosuMax(t);const can=S().strip(rankOf(t,'능력'));const isA=LAD[can]>=3;const tired=k.tired.map(id=>(mons()[id]||{}).name).filter(Boolean);
+    <div class="skcard"><div class="sec">최근 판정 <span class="note">${(K.hist||[]).length}</span></div><div class="skhist">${(K.hist||[]).slice(-12).reverse().map(h=>`<div style="border-left-color:${COL[h.ri]||'#555'}">${esc(h.text)}</div>`).join('')||'<span class="dim small">없음</span>'}</div></div>`;
+  const statusTab=`<div class="skcard"><div class="sec">트레이너 상태 <span class="note">상태 단계 · 묘수 · 초상 능력 · 동행</span></div>
+     <div class="sklist">${Object.values(T).map(t=>{const k=tsk(t.id);const mm=myosuMax(t),sm=supMax(t);const comp=k.comp.map(id=>(mons()[id]||{}).name).filter(Boolean);
       return `<div class="skrow wrap"><div class="skwho"><b>${esc(t.name)}</b><small>${SK.map(s=>s+' '+esc(rankOf(t,s)||'-')).join(' · ')}</small></div>
-       <span class="skstat"><small>묘수</small><b>${k.myosu}/${mm}</b></span><span class="skstat"><small>돌봄</small><b>${k.care?'사용':(LAD[S().strip(rankOf(t,'육성'))]>=2?'가능':'—')}</b></span><span class="skstat"><small>이능</small><b>${isA?k.inou+'/'+C.inou:'—'}</b></span><span class="skstat"><small>AA</small><b>${LAD[can]>=4?(k.aa?'사용':'가능'):'—'}</b></span>
-       <span class="skstat"><small>부상</small>${seg('inj_'+t.id,[[0,'없음'],[1,'부상'],[2,'중상']],+k.inj||0)}</span>
-       <span class="skstat"><small>지침</small><span class="chips">${tired.length?tired.map((n,i)=>`<span class="chip on" data-sk="untire" data-tid="${t.id}" data-mid="${k.tired[i]}" title="눌러서 풀기">${esc(n)} ✕</span>`).join(''):'<span class="dim">없음</span>'}</span></span><span class="sp"></span><button class="btn xs ghost" data-sk="resetone" data-tid="${t.id}">초기화</button></div>`}).join('')||'<div class="dim small">로스터에 트레이너가 없다</div>'}</div>
-     <div class="row" style="margin-top:10px;gap:6px"><button class="btn ghost" data-sk="session" title="묘수 · AA 특권 · 지침 · 돌봄 · 이능 · 부상 모두 초기화">세션 시작 (전부 초기화)</button><span class="sp"></span><span class="small dim">휴식은 「휴식」 탭에서 단계별로</span></div></div>`;
+       <span class="skstat"><small>상태</small>${seg('inj_'+t.id,STEP.map((n,i)=>[i,n]),k.inj)}</span>
+       <span class="skstat"><small>묘수</small><b>${mm?k.myosu+'/'+mm:'—'}</b></span><span class="skstat"><small>초상 능력</small><b>${sm?k.sup+'/'+sm:'—'}</b></span><span class="skstat"><small>강인함</small><b>${tough(t)?'○':'—'}</b></span>
+       <span class="skstat"><small>동행 (${compCap(t.id,'rp')})</small><b style="font-size:12px">${comp.length?esc(comp.join(', ')):'—'}</b></span><span class="sp"></span><button class="btn xs ghost" data-sk="resetone" data-tid="${t.id}">초기화</button></div>`}).join('')||'<div class="dim small">로스터에 트레이너가 없다</div>'}</div>
+     <div class="row" style="margin-top:10px;gap:6px"><button class="btn" data-sk="scene" title="빈사인 트레이너를 중상으로 되돌린다">장면 끝 (빈사 → 중상)</button><button class="btn ghost" data-sk="session" title="묘수 · 초상 능력 · 상태 단계 모두 초기화">세션 시작 (전부 초기화)</button><span class="sp"></span><span class="small dim">휴식은 「휴식」 탭에서 단계별로</span></div></div>`;
   const restTab=(()=>{const kind=F.restKind||'long';const R=restCfg(kind);const kn=KINDS.find(k=>k[0]===kind);
    const tg=(k,lab,sub)=>`<label class="skrow tog ${+R[k]?'on':''}"><input type="checkbox" data-rest="${k}" ${+R[k]?'checked':''} hidden><i class="sw"></i><div><b>${lab}</b>${sub?`<small>${sub}</small>`:''}</div></label>`;
    const amt=(k,lab,list)=>`<div class="fr"><span class="lbl">${lab}</span>${seg('rest_'+k,list,list.some(o=>String(o[0])===String(R[k]))?String(R[k]):'x')}<input type="text" class="n xs" data-restv="${k}" value="${list.some(o=>String(o[0])===String(R[k]))?'':esc(R[k])}" placeholder="직접"></div>`;
@@ -251,46 +323,53 @@ ${penFields(t,X)}</div>`}).join('')}</div>
       ${tg('revive','빈사 포켓몬 부활','「HP」 0 인 포켓몬을 일으킨다')}${+R.revive?amt('revive_hp','부활 시 「HP」',[['1','1'],['1/4','1/4'],['1/2','1/2'],['full','전부']]):''}
       ${tg('cure_ab','상태 이상 치유','독 · 화상 · 마비 · 잠듦 · 얼음 등')}${tg('cure_sp','상태 변화 치유','혼란 · 랭크 외 일시 효과 등')}
       ${nsel('pot_pk_n','전용 포텐셜 횟수 회복','배틀에 있는 소지 포켓몬 (개수면 트레이너당 합계)')}</div>
-     <div><div class="sec">트레이너</div>${nsel('ord_n','4식 6령 회복','전부 = 제작한 값으로 (트레이너마다)')}<div class="skrow on"><div style="flex:1"><b>파티 4식 · 6령 회복</b><small>일행 전체에서 합쳐 n 개 (짧은 휴식 기본 1 · 1 · 숨돌리기 6령 1)</small></div>4식 <input type="number" class="n xs" data-restp="ord_po" value="${+R.ord_po||0}" min="0" max="9"> 6령 <input type="number" class="n xs" data-restp="ord_pc" value="${+R.ord_pc||0}" min="0" max="9"></div>${nsel('pot_tr_n','고유 포텐셜 횟수 회복','횟수 제한이 있는 고유 포텐셜')}
-      ${tg('tired','지친 포켓몬 회복','스킬 체크 동료 지침 해제')}${tg('care','돌봄 횟수 회복')}${tg('inou','이능 횟수 · 반동 회복')}
-      <div class="skrow on"><div style="flex:1"><b>부상 회복</b><small>중상 → 부상 → 없음</small></div>${seg('rest_inj_n',[[0,'안 함'],[1,'1단계'],[2,'2단계']],+R.inj_n||0)}</div></div></div>
+     <div><div class="sec">트레이너</div>${nsel('ord_n','4식 6령 회복','전부 = 제작한 값으로 (트레이너마다)')}<div class="skrow on"><div style="flex:1"><b>파티 4식 · 6령 회복</b><small>일행 전체에서 합쳐 n 개</small></div>4식 <input type="number" class="n xs" data-restp="ord_po" value="${+R.ord_po||0}" min="0" max="9"> 6령 <input type="number" class="n xs" data-restp="ord_pc" value="${+R.ord_pc||0}" min="0" max="9"></div>${nsel('pot_tr_n','고유 포텐셜 횟수 회복','횟수 제한이 있는 고유 포텐셜')}
+      ${tg('inou','초상 능력 횟수 회복','능력 A 이상의 특화')}
+      <div class="skrow on"><div style="flex:1"><b>상태 단계 회복</b><small>빈사 → 중상 → 부상 → 건강</small></div>${seg('rest_inj_n',[[0,'안 함'],[1,'1단계'],[2,'2단계'],[3,'전부']],+R.inj_n||0)}</div></div></div>
     <div class="row" style="margin-top:10px"><button class="btn ghost" data-sk="restdef">「${kn[1]}」 기본값</button><span class="sp"></span><button class="btn" data-sk="restsave">「${kn[1]}」 설정 저장</button></div></div>`})();
-  const cfgTab=`<div class="skcard"><div class="sec">부상 · 중상</div><div class="skcfg">
-     <label>부상: 자질 주사위 하강 <input type="number" class="n xs" id="sc_s1" value="${C.s1}"></label><label>중상: 하강 <input type="number" class="n xs" id="sc_s2" value="${C.s2}"></label><label class="tg"><input type="checkbox" id="sc_both1" ${C.both1?'checked':''}> 이능은 두 주사위 모두 하강</label>
-     <label>부상 때 포켓몬 HP 감소 <input type="text" class="n xs" id="sc_hp1" value="${esc(C.hp1)}"></label><label>중상 때 <input type="text" class="n xs" id="sc_hp2" value="${esc(C.hp2)}"></label>
-     <label class="tg"><input type="checkbox" id="sc_noinou2" ${C.noinou2?'checked':''}> 중상이면 이능 불가</label><label class="tg"><input type="checkbox" id="sc_nocover2" ${C.nocover2?'checked':''}> 중상이면 커버 불가</label></div>
-    <div class="sec" style="margin-top:10px">횟수</div><div class="skcfg"><label>휴식 사이 이능 횟수 <input type="number" class="n xs" id="sc_inou" value="${C.inou}"></label><label>AA 특권 목표 상한 <input type="number" class="n xs" id="sc_aa" value="${C.aa}"></label><label>묘수 A <input type="number" class="n xs" id="sc_myosuA" value="${C.myosuA}"></label><label>묘수 AA <input type="number" class="n xs" id="sc_myosuAA" value="${C.myosuAA}"></label><label class="tg"><input type="checkbox" id="sc_penAuto" ${C.penAuto?'checked':''}> 패널티 자동 적용 (기본)</label></div>
-    <div class="row" style="margin-top:10px"><span class="small dim">휴식 단계의 내용은 「휴식」 탭, 제시 예시는 「제시」 탭의 저장 버튼</span><span class="sp"></span><button class="btn pri" data-sk="cfgsave">저장</button></div></div>`;
-  const md=A().openModal(`<div class="mhead"><h2>스킬 체크 <span class="small dim">GM</span></h2><span class="tabs2" style="margin-left:14px;flex:0 1 420px">${[['offer','제시'],['status','현황'],['rest','휴식'],['cfg','설정']].map(([k,n])=>`<button class="tab2 ${tab===k?'on':''}" data-skt="${k}">${n}</button>`).join('')}</span><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="skwrap">${tab==='offer'?offerTab:tab==='status'?statusTab:tab==='rest'?restTab:cfgTab}</div>`);
+  const cfgTab=(()=>{const D=A().ST.state.deck2||{};const decks=Object.entries(D.decks||{});const dk=(D.decks||{})[C.cards.deck];const cards=dk?Object.entries(dk.cards||{}):[];
+   const csel=(k,lab)=>`<label>${lab} <select id="sc_${k}" ${dk?'':'disabled'}><option value="">없음</option>${cards.map(([cid,c])=>`<option value="${esc(cid)}" ${C.cards[k]===cid?'selected':''}>${esc(c.n||cid)}</option>`).join('')}</select></label>`;
+   return `<div class="skcard"><div class="sec">판정</div><div class="skcfg">
+     <label>대성공: 목표 + <input type="number" class="n xs" id="sc_crit" value="${C.crit}" min="1" max="12"> 이상 (6·6 은 언제나)</label></div>
+    <div class="sec" style="margin-top:10px">상태 단계</div><div class="skcfg">
+     <label>부상: 모든 판정 − <input type="number" class="n xs" id="sc_injPen" value="${C.injPen}" min="0" max="5"></label><label>부상 될 때 6령 <input type="number" class="n xs" id="sc_injOc" value="${C.injOc}" min="0" max="5"> 개 소실</label><label>중상 될 때 4식 <input type="number" class="n xs" id="sc_injOo" value="${C.injOo}" min="0" max="5"> 개 소실</label></div>
+    <div class="sec" style="margin-top:10px">커버</div><div class="skcfg">
+     <label>커버한 포켓몬 대미지 (최대 HP) <input type="text" class="n xs" id="sc_coverHp" value="${esc(C.coverHp)}" placeholder="1/4"></label><label class="tg"><input type="checkbox" id="sc_coverBall" ${+C.coverBall?'checked':''}> 볼 안의 포켓몬도 커버할 수 있다</label></div>
+    <div class="sec" style="margin-top:10px">포켓몬 · 특화 횟수</div><div class="skcfg">
+     <label>필드 포켓몬 수 (배틀 밖 던전) <input type="number" class="n xs" id="sc_fieldMax" value="${C.fieldMax}" min="1" max="6"></label>
+     <label>묘수 A <input type="number" class="n xs" id="sc_myosuA" value="${C.myosuA}"></label><label>묘수 AA <input type="number" class="n xs" id="sc_myosuAA" value="${C.myosuAA}"></label>
+     <label>초상 능력 A <input type="number" class="n xs" id="sc_supA" value="${C.supA}"></label><label>초상 능력 AA <input type="number" class="n xs" id="sc_supAA" value="${C.supAA}"></label>
+     <label class="tg"><input type="checkbox" id="sc_penAuto" ${C.penAuto?'checked':''}> 패널티 묶음 자동 적용 (기본)</label></div>
+    <div class="sec" style="margin-top:10px">덱 연동 · 상태 카드 <span class="note">단계가 바뀌면 그 트레이너 손패에 이 카드 하나만 둔다 (GM 화면이 켜져 있을 때)</span></div><div class="skcfg">
+     <label>덱 <select id="sc_deck"><option value="">쓰지 않음</option>${decks.map(([id,x])=>`<option value="${esc(id)}" ${C.cards.deck===id?'selected':''}>${esc(x.name||id)}</option>`).join('')}</select></label>${csel('c1','부상')}${csel('c2','중상')}${csel('c3','빈사')}</div>
+    <div class="row" style="margin-top:10px"><span class="small dim">휴식 단계의 내용은 「휴식」 탭, 제시 예시는 「제시」 탭의 저장 버튼</span><span class="sp"></span><button class="btn pri" data-sk="cfgsave">저장</button></div></div>`})();
+  const md=A().openModal(`<div class="mhead"><h2>스킬 체크 <span class="small dim">GM</span></h2><span class="tabs2" style="margin-left:14px;flex:0 1 420px">${[['offer','제시'],['status','상태'],['rest','휴식'],['cfg','설정']].map(([k,n])=>`<button class="tab2 ${tab===k?'on':''}" data-skt="${k}">${n}</button>`).join('')}</span><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="skwrap">${tab==='offer'?offerTab:tab==='status'?statusTab:tab==='rest'?restTab:cfgTab}</div>`);
   md.classList.add('wide');bindSeg(md);
   const re=t=>{A().closeModal();openGm(t||tab)};
   md.querySelectorAll('[data-skt]').forEach(b=>b.onclick=()=>{if(tab==='offer')grabOffer(md);re(b.dataset.skt)});
   if(tab==='offer'){
-   /* 목표 자동: 자질 · 방식 · 단계 · 두 번 · 숙련 · 대상이 바뀔 때마다 다시 셈한다. 난이도 칩이나 목표 칸을 손으로 고치면 자동은 꺼진다 */
-   const autoOff=()=>{const sg=md.querySelector('[data-seg="auto"]');if(sg)sg.querySelectorAll('span[data-v]').forEach(x=>x.classList.toggle('on',x.dataset.v===''));const i=$('#so_autoinfo',md);if(i)i.textContent=''};
-   const autoRe=()=>{const tier=segVal(md,'auto');const i=$('#so_autoinfo',md);if(!tier){if(i)i.textContent='';return}const ids=[...md.querySelectorAll('[data-so-id]:checked')].map(x=>x.dataset.soId);if(+segVal(md,'npc')){if(i)i.textContent='대항 판정은 상대 주사위가 목표라 자동을 쓰지 않는다';return}
-    const a=autoTarget(ids,{stat:segVal(md,'stat')||'지시',mode:segVal(md,'mode')||'skill',step:+segVal(md,'step')||0,twice:+segVal(md,'twice')||0,pm:+segVal(md,'pm')||0},tier);if(a){$('#so_target',md).value=a.target;md.querySelectorAll('[data-diff]').forEach(x=>x.classList.toggle('on',+x.dataset.diff===a.target))}if(i)i.textContent=ids.length?autoTxt(a):'대상을 골라 줘'};
-   md.addEventListener('segchange',e=>{const sg=e.target.closest('[data-seg]');if(sg&&/^(auto|stat|mode|step|twice|pm|npc)$/.test(sg.dataset.seg))autoRe()});
-   md.querySelectorAll('[data-diff]').forEach(c=>c.onclick=()=>{$('#so_target',md).value=c.dataset.diff;md.querySelectorAll('[data-diff]').forEach(x=>x.classList.toggle('on',x===c));autoOff()});
-   {const ti=$('#so_target',md);if(ti)ti.addEventListener('input',autoOff)}
-   md.querySelectorAll('[data-so-id]').forEach(cb=>cb.onchange=()=>{cb.closest('.chip').classList.toggle('on',cb.checked);autoRe();prev()});
-   /* 미리보기: 결과 네 칸 + 대상마다 굴릴 주사위와 확률 (목표 자동과 같은 계산) */
-   const prev=()=>{const o={stat:segVal(md,'stat')||'지시',mode:segVal(md,'mode')||'skill',step:+segVal(md,'step')||0,twice:+segVal(md,'twice')||0,pm:+segVal(md,'pm')||0};const npc=NPC.find(x=>x[0]===+segVal(md,'npc'));const tg=+($('#so_target',md)||{}).value||0;
-    const ms=[o.step?'주사위 '+(o.step>0?'유리':'불리'):'',o.twice?'두 번 굴려 '+(o.twice>0?'높은':'낮은')+' 값':'',o.pm?(o.pm>0?'능숙함':'서투름'):''].filter(Boolean);const sm=$('#so_modsum',md);if(sm)sm.textContent=ms.length?ms.join(' · '):'없음 — 눌러서 열기';
-    const L=$('#so_lad',md);if(L)L.innerHTML=npc&&npc[2]?`<div class="small dim skinfo">목표 = 굴릴 때 상대가 ${esc(npc[1])} 를 굴린 값</div>`:ladder(tg);
+   md.querySelectorAll('[data-diff]').forEach(c=>c.onclick=()=>{$('#so_target',md).value=c.dataset.diff;md.querySelectorAll('[data-diff]').forEach(x=>x.classList.toggle('on',x===c));prev()});
+   md.querySelectorAll('[data-fty]').forEach(c=>c.onclick=()=>{c.classList.toggle('on');prev()});
+   md.querySelectorAll('[data-so-id]').forEach(cb=>cb.onchange=()=>{cb.closest('.chip').classList.toggle('on',cb.checked);prev()});
+   /* 미리보기: 결과 칸 + 대상마다 고를 수 있는 포켓몬 · 혼자 · 초상 능력의 확률 */
+   const prev=()=>{const o={stat:segVal(md,'stat')||'지시',base:+segVal(md,'base')||0,scene:segVal(md,'scene')||'rp',target:+($('#so_target',md)||{}).value||0,pm:+segVal(md,'pm')||0,twice:+segVal(md,'twice')||0,
+     fit:{types:[...md.querySelectorAll('[data-fty].on')].map(x=>x.dataset.fty),moves:splitL($('#so_fmv',md).value),abil:splitL($('#so_fab',md).value)}};
+    const nv=+segVal(md,'npc')||0;const npc=NPC.find(x=>x[0]===nv&&nv);const nr=$('#so_npcrow',md);if(nr)nr.style.display=npc?'':'none';
+    if(npc){const mi=$('#so_npcmod',md);if(npc[2]!=null&&mi&&mi.dataset.npc!==String(nv)){mi.value=npc[2]}if(mi)mi.dataset.npc=String(nv);o.npc=npc[1];o.npcMod=+mi.value||0;o.npcDef=segVal(md,'npcdef')||'npc'}
+    const ms=[o.pm?(o.pm>0?'유리 ':'불리 ')+sgn(o.pm):'',o.twice?'두 번 굴려 '+(o.twice>0?'높은':'낮은')+' 값':''].filter(Boolean);const sm=$('#so_modsum',md);if(sm)sm.textContent=ms.length?ms.join(' · '):'없음 — 눌러서 열기';
+    const L=$('#so_lad',md);if(L)L.innerHTML=npc?`<div class="small dim skinfo">목표 = 굴릴 때 상대가 2d6${sgn(o.npcMod)} 를 굴린 값${o.npcDef==='pc'?' (같으면 우리가 이긴다)':' 보다 높아야 이긴다'}</div>`:ladder(o.target);
     const ids=[...md.querySelectorAll('[data-so-id]:checked')].map(x=>x.dataset.soId);const P=$('#so_prev',md);if(!P)return;
     if(!ids.length){P.innerHTML='<span class="small dim">대상을 고르면 각자 무엇을 굴리는지 보인다</span>';return}
-    P.innerHTML=`<div class="sklist">${ids.map(id=>{const r=rollerOf(id,o.mode==='any'?Object.assign({},o,{mode:'skill'}):o);if(!r)return '';const t=trs()[id];
-     if(r.why)return `<div class="skrow"><b>${esc(r.name)}</b><span class="small dim">${esc(o.stat)} ${esc(rankOf(t,o.stat)||'-')}</span><span class="sp"></span><span class="small warn">${esc(r.why)}</span></div>`;
-     const dice=`<span class="skdtx">${dieTxt(r.D)} + ${esc(r.how)}</span>`;if(npc&&npc[2])return `<div class="skrow"><b>${esc(r.name)}</b>${dice}<span class="sp"></span><span class="small dim">대 ${esc(npc[1])}</span></div>`;
-     const pOk=okPlusOf(r.D,r.cs,o,tg+2),pCost=okPlusOf(r.D,r.cs,o,tg);
-     return `<div class="skrow"><b>${esc(r.name)}</b>${dice}<span class="sp"></span><span class="skpb" title="성공 ${pct(pOk)} · 대가 성공까지 ${pct(pCost)}"><i style="width:${pOk*100}%;background:${COL[3]}"></i><i style="width:${Math.max(0,pCost-pOk)*100}%;background:${COL[2]}"></i></span><span class="skpp">성공 <b>${pct(pOk)}</b> · 대가 포함 <b>${pct(pCost)}</b></span></div>`}).join('')}</div>${o.mode==='any'?'<div class="small dim skinfo">방식 자유: 기교 기준으로 셈 (이능을 고르면 달라진다)</div>':''}`};
-   md.addEventListener('segchange',prev);{const ti=$('#so_target',md);if(ti)ti.addEventListener('input',prev)}md.querySelectorAll('[data-diff]').forEach(c=>c.addEventListener('click',prev));
-   autoRe();prev();
+    P.innerHTML=`<div class="sklist">${ids.map(id=>{const t=trs()[id];if(!t)return '';const k=tsk(id);if(k.inj>=3)return `<div class="skrow"><b>${esc(t.name)}</b><span class="sp"></span><span class="small warn">빈사 — 이 장면에 참가할 수 없다</span></div>`;
+     const op=optionsOf(id,o);const cp=compOf(id,o.scene);
+     return `<div class="skrow wrap"><b>${esc(t.name)}</b><span class="small dim">${esc(o.stat)} ${esc(rankOf(t,o.stat)||'D')}${k.inj?' · '+STEP[k.inj]:''}${cp.battle?' · 배틀 에리어':''}${!cp.ids.length?` · ${SCN[o.scene]} 포켓몬 없음`:''}</span><span class="sp"></span>${op.map(x=>`<span class="skpp" title="${esc(x.c.parts.map(p=>p[0]+' '+sgn(p[1])).join(' · '))}">${esc(x.name)} 2d6${sgn(x.c.mod)} <b>${pct(x.o.ok)}</b></span>`).join(' · ')}</div>`}).join('')}</div>`};
+   md.addEventListener('segchange',prev);['#so_target','#so_fmv','#so_fab','#so_npcmod'].forEach(s=>{const i=$(s,md);if(i)i.addEventListener('input',prev)});
+   prev();
    md.querySelectorAll('[data-rk]').forEach(b=>b.onclick=()=>{grabOffer(md);const [t,k,dv]=b.dataset.rk.split('.');const X=penNorm(F.pen[t]);X.rk[k]=Math.max(-6,Math.min(6,(+X.rk[k]||0)+ +dv));F.pen[t]=X;re('offer')});
    const ex=$('#so_ex',md);if(ex)ex.onchange=()=>{const v=ex.value;if(!v)return;grabOffer(md);if(v.startsWith('ex:'))loadPreset(EX[+v.slice(3)].o);else{const p=presets.find(p=>p.id===v.slice(3));if(p)loadPreset(p.o)}re('offer')};
-   md.querySelectorAll('[data-penex]').forEach(sl=>sl.onchange=()=>{const p=penExGet(sl.value);if(!p)return;grabOffer(md);F.pen[sl.dataset.penex]=penNorm(JSON.parse(JSON.stringify(p)));F.penOpen=true;re('offer')});
+   md.querySelectorAll('[data-penex]').forEach(sl=>sl.onchange=()=>{const p=penExGet(sl.value);if(!p)return;grabOffer(md);F.pen.fail=penNorm(JSON.parse(JSON.stringify(p)));F.penOpen=true;re('offer')});
    const pa=$('#pen_auto',md);if(pa)pa.onchange=async()=>{await A().set(['skill','cfg'],Object.assign({},st().cfg||{},{penAuto:pa.checked?1:0}))}}
+  if(tab==='cfg'){const dsel=$('#sc_deck',md);if(dsel)dsel.onchange=async()=>{await A().set(['skill','cfg'],Object.assign({},st().cfg||{},{cards:{deck:dsel.value,c1:'',c2:'',c3:''}}));re('cfg')}}
   function grabRest(){const kind=F.restKind||'long';const R=restCfg(kind);md.querySelectorAll('[data-rest]').forEach(cb=>R[cb.dataset.rest]=cb.checked?1:0);
    for(const k of ['hp','revive_hp']){if(!md.querySelector(`[data-seg="rest_${k}"]`))continue;const v=segVal(md,'rest_'+k);const inp=md.querySelector(`[data-restv="${k}"]`);R[k]=(inp&&inp.value.trim())||(v==='x'?R[k]:v)}
    for(const k of ['pot_pk_n','ord_n','pot_tr_n']){const v=segVal(md,'rest_'+k);const inp=md.querySelector(`[data-restn="${k}"]`);R[k]=v==='n'?String(Math.max(1,+inp.value||1)):v}
@@ -299,40 +378,39 @@ ${penFields(t,X)}</div>`}).join('')}</div>
    md.querySelectorAll('[data-rest]').forEach(cb=>cb.onchange=async()=>{cb.closest('.skrow').classList.toggle('on',cb.checked);if(cb.dataset.rest==='revive'){const R=grabRest();await A().set(['skill','rest',F.restKind||'long'],R);re('rest')}})}
   md.querySelectorAll('[data-sk]').forEach(el=>{el.onclick=async()=>{const k=el.dataset.sk;
    if(k==='penopen'){grabOffer(md);F.penOpen=!F.penOpen;return re('offer')}
-   if(k==='penclr'){F.pen={fail:PEN0(),cost:PEN0()};return re('offer')}
+   if(k==='penclr'){F.pen={fail:PEN0()};return re('offer')}
    if(k==='exmgr'){grabOffer(md);return openExMgr(el.dataset.t||'check')}
-   if(k==='pensave'){grabOffer(md);const t=el.dataset.t;const X=penNorm(F.pen[t]);if(!penHas(X))return A().toast('이 칸이 비어 있다');const name=prompt('패널티 예시 이름',penTxt(X).slice(0,40));if(name==null||!name.trim())return;const list=(st().penPresets||[]).slice();list.push({id:'q'+Date.now().toString(36),name:name.trim(),p:X});await A().set(['skill','penPresets'],list);A().toast('패널티 예시로 저장했다');return re('offer')}
-   if(k==='exsave'){grabOffer(md);const name=prompt('예시 이름',F.label||'새 예시');if(name==null||!name.trim())return;const list=(st().presets||[]).slice();list.push({id:'p'+Date.now().toString(36),name:name.trim(),o:{label:F.label,stat:F.stat,mode:F.mode,target:F.target,auto:F.auto,npc:F.npc,step:F.step,twice:F.twice,pm:F.pm,pen:{fail:F.pen.fail,cost:F.pen.cost}}});await A().set(['skill','presets'],list);A().toast('저장했다');return re('offer')}
-   if(k==='exdel'){const list=st().presets||[];if(!list.length)return;const name=prompt('지울 예시 번호\n'+list.map((p,i)=>(i+1)+'. '+p.name).join('\n'));const i=+name-1;if(!(i>=0&&i<list.length))return;await A().set(['skill','presets'],list.filter((p,j)=>j!==i));return re('offer')}
-   if(k==='offer'){grabOffer(md);const ids=F.ids;if(!ids.length)return A().toast('대상을 골라 줘');const npc=NPC.find(x=>x[0]===F.npc);
-    let auto='';if(F.auto&&!F.npc){const a=autoTarget(ids,F,F.auto);if(a){F.target=a.target;auto=F.auto}}
-    const o={id:'o'+Date.now().toString(36),label:F.label,stat:F.stat,mode:F.mode,target:F.target,auto,npc:npc&&npc[2]?npc[1]:'',npcDice:npc&&npc[2]?npc[2]:null,step:F.step,twice:F.twice,pm:F.pm,pen:{fail:penNorm(F.pen.fail),cost:penNorm(F.pen.cost),auto:cfg().penAuto?1:0},ids,at:Date.now()};
-    A().closeModal();await A().set(['skill','offer'],o);await A().set(['skill','res'],{});
-    A().sysLog(`【스킬 체크】 ${o.label||'판정'}\n${o.stat}${o.mode==='inou'?' · 이능':''} · 목표 ${o.target}${o.auto?' (자동 · '+BAND[o.auto][2]+')':''}${o.npc?' (대항 '+o.npc+')':''}${o.step?' · 단계 '+(o.step>0?'유리':'불리'):''}${o.twice?' · 두 번 굴려 '+(o.twice>0?'높은':'낮은')+' 값':''}${o.pm?' · '+(o.pm>0?'능숙함':'서투름'):''}\n대상: ${ids.map(i=>(T[i]||{}).name).join(', ')}${penHas(o.pen.fail)?'\n실패: '+penTxt(o.pen.fail):''}${penHas(o.pen.cost)?'\n대가: '+penTxt(o.pen.cost):''}`,'battle',{});try{window.OM_RP_UI&&window.OM_RP_UI.playSe('Ping2')}catch(e){}return openGm('offer')}
+   if(k==='pensave'){grabOffer(md);const X=penNorm(F.pen.fail);if(!penHas(X))return A().toast('이 칸이 비어 있다');const name=prompt('패널티 예시 이름',penTxt(X).slice(0,40));if(name==null||!name.trim())return;const list=(st().penPresets||[]).slice();list.push({id:'q'+Date.now().toString(36),name:name.trim(),p:X});await A().set(['skill','penPresets'],list);A().toast('패널티 예시로 저장했다');return re('offer')}
+   if(k==='exsave'){grabOffer(md);const name=prompt('예시 이름',F.label||'새 예시');if(name==null||!name.trim())return;const list=(st().presets||[]).slice();list.push({id:'p'+Date.now().toString(36),name:name.trim(),o:presetOf()});await A().set(['skill','presets'],list);A().toast('저장했다');return re('offer')}
+   if(k==='offer'){grabOffer(md);const ids=F.ids;if(!ids.length)return A().toast('대상을 골라 줘');
+    const o=mkOffer(presetOf(),ids);A().closeModal();await A().set(['skill','offer'],o);await A().set(['skill','res'],{});
+    A().sysLog(offerLog(o),'battle',{});try{window.OM_RP_UI&&window.OM_RP_UI.playSe('Ping2')}catch(e){}return openGm('offer')}
    if(k==='close'){A().closeModal();await A().set(['skill','offer'],null);return A().sysLog('스킬 체크 제시를 거뒀다','battle')}
    if(k==='rollfor'){A().closeModal();return openPlayer(el.dataset.tid)}
-   if(k==='penapply'){const r=(st().res||{})[el.dataset.tid];if(!r||!O)return;A().closeModal();await applyPenalty(el.dataset.tid,r.ri<=1?O.pen.fail:O.pen.cost,(O.label||'스킬 체크')+' · '+RES[r.ri]);await A().set(['skill','res',el.dataset.tid,'penDone'],1);return openGm('offer')}
-   if(k==='untire'){const t=tsk(el.dataset.tid);t.tired=t.tired.filter(x=>x!==el.dataset.mid);await setT(el.dataset.tid,{tired:t.tired});return re('status')}
-   if(k==='resetone'){await A().set(['skill','trainers',el.dataset.tid],{myosu:0,care:0,inou:0,aa:0,inj:0,tired:[]});return re('status')}
-   if(k==='session'){if(!confirm('묘수 · AA 특권 · 지침 · 돌봄 · 이능 · 부상을 모두 초기화할까?'))return;A().closeModal();await A().set(['skill','trainers'],{});await A().set(['skill','hist'],[]);return A().sysLog('◆ 세션 시작 — 스킬 체크 자원 모두 초기화','battle')}
+   if(k==='settle'){const r=JSON.parse(JSON.stringify((st().res||{})[el.dataset.tid]||null));if(!r||!r.pend)return;A().closeModal();await settleFail(el.dataset.tid,r);await A().set(['skill','res',el.dataset.tid],r);return openGm('offer')}
+   if(k==='penapply'){const r=(st().res||{})[el.dataset.tid];if(!r||!O)return;A().closeModal();await applyPenalty(el.dataset.tid,O.pen.fail,(O.label||'스킬 체크')+' · 실패',r.how==='mon'?r.mid:'');await A().set(['skill','res',el.dataset.tid,'penDone'],1);return openGm('offer')}
+   if(k==='resetone'){await A().set(['skill','trainers',el.dataset.tid],Object.assign({myosu:0,sup:0,inj:0},{comp:tsk(el.dataset.tid).comp}));return re('status')}
+   if(k==='scene'){await sceneEnd();return re('status')}
+   if(k==='session'){if(!confirm('묘수 · 초상 능력 · 상태 단계를 모두 초기화할까? (동행 지정은 남긴다)'))return;A().closeModal();const N={};for(const [tid,x] of Object.entries(st().trainers||{}))N[tid]={myosu:0,sup:0,inj:0,comp:(x&&x.comp)||[]};await A().set(['skill','trainers'],N);await A().set(['skill','hist'],[]);return A().sysLog('◆ 세션 시작 — 스킬 체크 자원 · 상태 단계 모두 초기화','battle')}
    if(k==='restsave'){const R=grabRest();await A().set(['skill','rest',F.restKind||'long'],R);A().toast('저장했다');return re('rest')}
    if(k==='restdef'){await A().set(['skill','rest',F.restKind||'long'],null);return re('rest')}
    if(k==='restgo'){const R=grabRest();const kind=F.restKind||'long';const kn=KINDS.find(x=>x[0]===kind)[1];if(!confirm(`「${kn}」 을 선언할까? (로스터 트레이너 전원 · 지금 설정도 저장)`))return;await A().set(['skill','rest',kind],R);A().closeModal();await applyRest(kind,null,{});return}
-   if(k==='cfgsave'){const g=id=>$('#'+id,md);const n=Object.assign({},st().cfg||{},{s1:+g('sc_s1').value||0,s2:+g('sc_s2').value||0,both1:g('sc_both1').checked?1:0,hp1:g('sc_hp1').value.trim(),hp2:g('sc_hp2').value.trim(),noinou2:g('sc_noinou2').checked?1:0,nocover2:g('sc_nocover2').checked?1:0,inou:+g('sc_inou').value||2,aa:+g('sc_aa').value||9,myosuA:+g('sc_myosuA').value||1,myosuAA:+g('sc_myosuAA').value||2,penAuto:g('sc_penAuto').checked?1:0});A().closeModal();await A().set(['skill','cfg'],n);return A().toast('저장했다')}}});
-  md.addEventListener('segchange',async e=>{const sg=e.target.closest('[data-seg]');if(!sg)return;const n=sg.dataset.seg;if(n.startsWith('inj_'))await setT(n.slice(4),{inj:+e.detail||0})})}
+   if(k==='cfgsave'){const g=id=>$('#'+id,md);const nv=(id,lo,hi,dv)=>{const v=+g(id).value;return isFinite(v)&&g(id).value!==''?Math.max(lo,Math.min(hi,Math.round(v))):dv};
+    const n=Object.assign({},st().cfg||{},{crit:nv('sc_crit',1,12,4),injPen:nv('sc_injPen',0,5,1),injOc:nv('sc_injOc',0,5,1),injOo:nv('sc_injOo',0,5,1),coverHp:g('sc_coverHp').value.trim()||'1/4',coverBall:g('sc_coverBall').checked?1:0,fieldMax:nv('sc_fieldMax',1,6,1),
+     myosuA:nv('sc_myosuA',0,9,1),myosuAA:nv('sc_myosuAA',0,9,2),supA:nv('sc_supA',0,9,1),supAA:nv('sc_supAA',0,9,2),penAuto:g('sc_penAuto').checked?1:0,
+     cards:{deck:g('sc_deck').value,c1:(g('sc_c1')||{}).value||'',c2:(g('sc_c2')||{}).value||'',c3:(g('sc_c3')||{}).value||''}});A().closeModal();await A().set(['skill','cfg'],n);sync();return A().toast('저장했다')}}});
+  md.addEventListener('segchange',async e=>{const sg=e.target.closest('[data-seg]');if(!sg)return;const n=sg.dataset.seg;if(n.startsWith('inj_')){await setT(n.slice(4),{inj:+e.detail||0});sync()}})}
 
- /* ----- 10-24 망령: 예시 관리 창 — 체크 제시 예시 · 패널티 예시를 한 번에 보고 고친다 -----
-    내 것(skill.presets · skill.penPresets): 불러오기 · 덮어쓰기/편집 · 이름 · 순서 · 삭제. 기본 예시: 불러오기 · 내 것으로 복사 · 숨기기(skill.exHide).
-    내보내기/가져오기(JSON)로 다른 방에 옮긴다 */
- function exSum(o){o=o||{};const n=NPC.find(x=>x[0]===+o.npc);return offerSummary(Object.assign({stat:'지시',target:7},o,{npc:n&&n[2]?n[1]:''}))}
+ /* ----- 10-24 망령: 예시 관리 창 — 체크 제시 예시 · 패널티 예시를 한 번에 보고 고친다 ----- */
+ function exSum(o){return offerSummary(Object.assign({stat:'지시',target:10},upOffer(o||{}),{npc:''}))}
  function openExMgr(tab){tab=tab==='pen'?'pen':'check';const K=st();const isP=tab==='pen';const mine=(isP?K.penPresets:K.presets)||[];const base=isP?PEN_EX:EX;const hid=exHide(tab);const key=isP?'penPresets':'presets';
   const sum=x=>isP?`<span class="exs">${esc(penTxt(x.p))||'<span class="dim">비어 있음</span>'}</span>`:`<span class="exs">${exSum(x.o)}${x.o&&x.o.label?' · 「'+esc(x.o.label)+'」':''}</span>${penLine((x.o||{}).pen)}`;
-  const load=(src,i)=>isP?`<button class="btn xs" data-em="lf" data-src="${src}" data-i="${i}" title="실패 · 대실패 칸에 넣는다">→ 실패</button><button class="btn xs" data-em="lc" data-src="${src}" data-i="${i}" title="대가를 치르고 성공 칸에 넣는다">→ 대가</button>`:`<button class="btn xs pri" data-em="load" data-src="${src}" data-i="${i}">불러오기</button>`;
+  const load=(src,i)=>isP?`<button class="btn xs" data-em="lf" data-src="${src}" data-i="${i}" title="제시의 패널티 묶음 칸에 넣는다">→ 묶음</button>`:`<button class="btn xs pri" data-em="load" data-src="${src}" data-i="${i}">불러오기</button>`;
   const rowM=(x,i)=>`<div class="exrow"><div class="exn"><b>${esc(x.name)}</b>${sum(x)}</div><span class="exb">${load('m',i)}${isP?`<button class="btn xs ghost" data-em="edit" data-i="${i}">편집</button>`:`<button class="btn xs ghost" data-em="over" data-i="${i}" title="스킬 체크 창에 지금 적혀 있는 폼으로 바꾼다">덮어쓰기</button>`}<button class="btn xs ghost" data-em="ren" data-i="${i}">이름</button><button class="btn xs ghost" data-em="up" data-i="${i}" ${i?'':'disabled'} title="위로">▲</button><button class="btn xs ghost" data-em="dn" data-i="${i}" ${i<mine.length-1?'':'disabled'} title="아래로">▼</button><button class="btn xs ghost danger" data-em="del" data-i="${i}">삭제</button></span></div>`;
   const rowB=(x,i)=>{const h=hid.includes(x.name);return `<div class="exrow ${h?'off':''}"><div class="exn"><b>${esc(x.name)}</b>${h?' <span class="tag">숨김</span>':''}${sum(isP?x:{o:x.o})}</div><span class="exb">${h?'':load('b',i)}<button class="btn xs ghost" data-em="copy" data-i="${i}" title="내 예시로 복사해서 고친다">복사</button><button class="btn xs ghost" data-em="hide" data-i="${i}">${h?'보이기':'숨기기'}</button></span></div>`};
   const md=A().openModal(`<div class="mhead"><h2>예시 관리 <span class="small dim">스킬 체크</span></h2><span class="tabs2" style="margin-left:14px;flex:0 1 300px">${[['check','체크 제시 예시'],['pen','패널티 예시']].map(([k,n])=>`<button class="tab2 ${tab===k?'on':''}" data-emt="${k}">${n}</button>`).join('')}</span><span class="sp"></span><button class="btn ghost" data-em="back">← 스킬 체크</button></div>
    <div class="skwrap exmgr"><div class="skcard"><div class="sec">내가 저장한 것 <span class="note">${mine.length}</span><span class="sp"></span>${isP?'<button class="btn xs pri" data-em="new">＋ 새 패널티 예시</button>':'<button class="btn xs pri" data-em="newf" title="스킬 체크 창에 적혀 있는 폼을 새 예시로">＋ 지금 폼을 새 예시로</button>'}<button class="btn xs ghost" data-em="exp" title="내 예시를 JSON 파일로 내려받는다">내보내기</button><button class="btn xs ghost" data-em="imp" title="JSON 파일에서 예시를 더한다">가져오기</button></div>
-    <div class="exlist">${mine.map(rowM).join('')||`<div class="empty small">아직 없다 — ${isP?'「＋ 새 패널티 예시」나 스킬 체크 창 패널티 칸의 「저장」':'스킬 체크 창의 「저장」이나 위 「＋ 지금 폼을 새 예시로」'}로 더한다</div>`}</div></div>
+    <div class="exlist">${mine.map(rowM).join('')||`<div class="empty small">아직 없다 — ${isP?'「＋ 새 패널티 예시」나 제시 창 패널티 칸의 「저장」':'스킬 체크 창의 「저장」이나 위 「＋ 지금 폼을 새 예시로」'}로 더한다</div>`}</div></div>
     <div class="skcard"><div class="sec">기본 예시 <span class="note">${base.length} · 숨긴 것은 고르기 목록에 안 나온다</span></div><div class="exlist">${base.map(rowB).join('')}</div></div>
     <input type="file" id="em_file" accept="application/json,.json" hidden></div>`);
   md.classList.add('wide');const re=()=>openExMgr(tab);const save=async L=>{await A().set(['skill',key],L);re()};const back=()=>openGm('offer');
@@ -341,9 +419,9 @@ ${penFields(t,X)}</div>`}).join('')}</div>
   md.querySelectorAll('[data-em]').forEach(b=>b.onclick=async()=>{const k=b.dataset.em;const i=+b.dataset.i;const L=(st()[key]||[]).slice();const src=b.dataset.src==='b'?base:L;
    if(k==='back')return back();
    if(k==='load'){loadPreset(src[i].o);return back()}
-   if(k==='lf'||k==='lc'){F.pen[k==='lf'?'fail':'cost']=penNorm(JSON.parse(JSON.stringify(src[i].p)));F.penOpen=true;return back()}
-   if(k==='newf'){const name=prompt('예시 이름',F.label||'새 예시');if(name==null||!name.trim())return;L.push({id:'p'+Date.now().toString(36),name:name.trim(),o:{label:F.label,stat:F.stat,mode:F.mode,target:F.target,auto:F.auto,npc:F.npc,step:F.step,twice:F.twice,pm:F.pm,pen:{fail:F.pen.fail,cost:F.pen.cost}}});return save(L)}
-   if(k==='over'){if(!confirm(`「${L[i].name}」 를 스킬 체크 창의 지금 폼으로 바꿀까?\n${F.label||'(상황 없음)'} · ${F.stat} · 목표 ${F.target}`))return;L[i]=Object.assign({},L[i],{o:{label:F.label,stat:F.stat,mode:F.mode,target:F.target,auto:F.auto,npc:F.npc,step:F.step,twice:F.twice,pm:F.pm,pen:{fail:F.pen.fail,cost:F.pen.cost}}});return save(L)}
+   if(k==='lf'){F.pen.fail=penNorm(JSON.parse(JSON.stringify(src[i].p)));F.penOpen=true;return back()}
+   if(k==='newf'){const name=prompt('예시 이름',F.label||'새 예시');if(name==null||!name.trim())return;L.push({id:'p'+Date.now().toString(36),name:name.trim(),o:presetOf()});return save(L)}
+   if(k==='over'){if(!confirm(`「${L[i].name}」 를 스킬 체크 창의 지금 폼으로 바꿀까?\n${F.label||'(상황 없음)'} · ${F.stat} + ${BASE[F.base]} · 목표 ${F.target}`))return;L[i]=Object.assign({},L[i],{o:presetOf()});return save(L)}
    if(k==='ren'){const n=prompt('새 이름',L[i].name);if(n==null||!n.trim())return;L[i]=Object.assign({},L[i],{name:n.trim()});return save(L)}
    if(k==='up'||k==='dn'){const j=k==='up'?i-1:i+1;if(j<0||j>=L.length)return;[L[i],L[j]]=[L[j],L[i]];return save(L)}
    if(k==='del'){if(!confirm(`「${L[i].name}」 를 지울까?`))return;L.splice(i,1);return save(L)}
@@ -367,98 +445,97 @@ ${penFields(t,X)}</div>`}).join('')}</div>
    if(i>=0&&L2[i])L2[i]=Object.assign({},L2[i],{name:nm,p:Y});else L2.push({id:'q'+Date.now().toString(36),name:nm,p:Y});await A().set(['skill','penPresets'],L2);A().toast('저장했다');openExMgr('pen')})}
 
  /* ----- 플레이어 창 ----- */
- function openPlayer(tid){const T=trs();const t=T[tid];if(!t)return;const K=st();const O=K.offer;const k=tsk(tid);const C=cfg();const R=(K.res||{})[tid];const mine=R&&O&&R.offerId===O.id?R:null;
-  const can=S().strip(rankOf(t,'능력'));const aLv=LAD[can]||0;const inouLeft=Math.max(0,C.inou-(+k.inou||0));/* 10-26 던전 시험: 방의 모든 포켓몬(야생 무리 · 상대 트레이너까지)이 다 떠서 고르기 어려웠다 — 내 포켓몬 먼저, 그다음 같은 체크를 받은 동료의 포켓몬만 */const mates=new Set([tid,...((O&&O.ids)||[])]);const myMons=Object.values(mons()).filter(m=>m.hp&&alive(m)&&mates.has(m.tid)).sort((x,y)=>(x.tid===tid?0:1)-(y.tid===tid?0:1));
-  const stat=O?O.stat:'지시';const mode=O?O.mode:'any';const D=O?dieOf(t,stat,{inj:+k.inj||0,step:O.step||0}):null;
+ const picOf=m=>`<div class="pic" style="${m&&m.image?`background-image:url('${cssu(m.image)}')`:''}"></div>`;
+ function openPlayer(tid){const T=trs();const t=T[tid];if(!t)return;const K=st();const O=K.offer?upOffer(K.offer):null;const k=tsk(tid);const C=cfg();const R=(K.res||{})[tid];const mine=R&&O&&R.offerId===O.id?R:null;
+  const scene=O?O.scene:'rp';const cp=compOf(tid,scene);const own=Object.values(mons()).filter(m=>m.tid===tid&&alive(m));const mm=myosuMax(t),sm=supMax(t);
+  const isMe=gm()||tid===me();
+  const compCard=`<div class="skcard"><div class="sec">${SCN[scene]} 포켓몬 <span class="note">${cp.battle?'배틀 에리어에 나온 포켓몬 (자동)':scene==='field'?`던전 · 배틀 밖 필드 — ${cp.cap}체까지`:`RP 장면 — ${cp.cap}체까지${qLv(t,'통솔')>=3?' (통솔 특화)':''}`} · 판정과 커버에 쓴다</span></div>
+    ${cp.battle?`<span class="chips">${cp.ids.map(id=>`<span class="chip on">${esc(mons()[id].name)}</span>`).join('')}</span>`:`<span class="chips">${own.map(m=>{const on=cp.ids.includes(m.id);return `<span class="chip ${on?'on':''}" ${isMe?`data-comp="${m.id}"`:''} title="${on?'눌러서 빼기':'눌러서 지정'}">${esc(m.name)}</span>`}).join('')||'<span class="small dim">살아 있는 포켓몬이 없다</span>'}</span>`}</div>`;
   const md=A().openModal(`<div class="mhead"><h2>스킬 체크 <span class="small dim">${esc(t.name)}</span></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="skwrap">
-   <div class="skme"><div class="skranks">${SK.map(s=>`<span><small>${s}</small><b>${esc(rankOf(t,s)||'-')}</b><em>d${SIDES[Math.min(4,lv(rankOf(t,s)))]}</em></span>`).join('')}</div>
-    <div class="skres2"><span class="skstat"><small>묘수</small><b>${k.myosu}/${myosuMax(t)}</b></span><span class="skstat"><small>돌봄</small><b>${k.care?'사용':(LAD[S().strip(rankOf(t,'육성'))]>=2?'가능':'—')}</b></span><span class="skstat"><small>이능</small><b>${aLv>=3?inouLeft+'회':'—'}</b></span><span class="skstat"><small>AA 특권</small><b>${aLv>=4?(k.aa?'사용':'가능'):'—'}</b></span><span class="skstat ${k.inj?'bad':''}"><small>건강</small><b>${k.inj>=2?'중상':k.inj===1?'부상':'건강'}</b></span></div></div>
+   <div class="skme"><div class="skranks">${SK.map(s=>`<span><small>${s}</small><b>${esc(rankOf(t,s)||'-')}</b><em>${sgn(qLv(t,s))}</em></span>`).join('')}</div>
+    <div class="skres2"><span class="skstat" style="border-bottom-color:${STEPC[k.inj]}"><small>상태</small><b>${STEP[k.inj]}</b></span><span class="skstat"><small>묘수</small><b>${mm?(mm-k.myosu)+'/'+mm:'—'}</b></span><span class="skstat"><small>초상 능력</small><b>${sm?(sm-k.sup)+'/'+sm:'—'}</b></span>${tough(t)?'<span class="skstat"><small>강인함</small><b>○</b></span>':''}</div></div>
+   ${k.inj===1?`<div class="small ${tough(t)?'dim':'warn'}" style="margin:4px 0">부상 — ${tough(t)?'강인함으로 판정 패널티 없음':'모든 판정 −'+C.injPen}</div>`:k.inj===2?'<div class="small warn" style="margin:4px 0">중상 — 모든 판정 불리 (두 번 굴려 낮은 값)</div>':''}
+   ${compCard}
    ${!O?'<div class="skcard"><div class="small dim">제시된 체크가 없다. GM 이 제시하면 여기서 굴린다.</div></div>':!(O.ids||[]).includes(tid)&&!gm()?'<div class="skcard"><div class="small dim">이번 체크는 내 대상이 아니다.</div></div>':`
-   <div class="skcard hit"><div class="skoffer"><div class="skot">${esc(O.label||'스킬 체크')}</div><div class="skos">${offerSummary(O)}</div>${penLine(O.pen)}${O.npcDice?'':ladder(O.target,mine?mine.total:null)}</div>
-    ${mine?resultHtml(mine,t,k):`
-    <div class="sec">누구와 함께 굴릴까 <span class="note">내 자질 ${esc(stat)} ${esc(rankOf(t,stat)||'-')} → ${dieTxt(D)}${D.injStep?' (부상 −'+D.injStep+'단계)':''}${D.autofail?' — 자동 실패':''}</span></div>
-    <span hidden>${mode!=='inou'?'<input type="radio" name="how" value="mon"><input type="radio" name="how" value="alone">':''}${aLv>=3&&mode!=='skill'&&stat==='능력'?`<input type="radio" name="how" value="inou" ${mode==='inou'&&!(inouLeft<=0||(k.inj>=2&&C.noinou2))?'checked':''}><input type="radio" name="how" value="aa">`:''}</span>
-    <div class="skopts" id="monpick">
-     ${mode!=='inou'?myMons.map(m=>{const tired=Object.values(K.trainers||{}).some(x=>(x.tired||[]).includes(m.id));const own=m.tid===tid;const cs=stat==='통솔'&&hasBond(m)?8:6;return `<div class="skopt ${tired?'off':''}" data-mp="${m.id}" data-cs="${cs}" data-nm="${esc(m.name)}" ${tired?'title="지쳐서 쓸 수 없다 — 돌봄이나 휴식으로 회복"':''}><div class="pic" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div><div><b>${esc(m.name)}</b><small>${own?'':esc((T[m.tid]||{}).name||'')+' · '}${tired?'지침':(cs===8?'『유대』 d8':'d6')}${prideA(m)&&cs!==8?' · 프라이드 A 고집':''}</small></div><em>d${cs}</em></div>`}).join('')+`<div class="skopt alone" data-how="alone" data-cs="4" data-nm="혼자"><div class="pic">—</div><div><b>혼자</b><small>동료 없이</small></div><em>d4</em></div>`:''}
-     ${aLv>=3&&mode!=='skill'&&stat==='능력'?(()=>{const no=inouLeft<=0||(k.inj>=2&&C.noinou2);const cs=SIDES[Math.min(4,aLv)];return `<div class="skopt inou ${no?'off':''} ${mode==='inou'&&!no?'on':''}" data-how="inou" data-cs="${cs}" data-nm="이능"><div class="pic">能</div><div><b>이능</b><small>남은 ${inouLeft}회 · 실패하면 부상${k.inj>=2&&C.noinou2?' · 중상이라 불가':''}</small></div><em>d${cs}</em></div>`+(aLv>=4&&!k.aa&&O.target<=C.aa&&!no?`<div class="skopt aa" data-how="aa" data-nm="AA 특권"><div class="pic">AA</div><div><b>AA 특권</b><small>굴리지 않고 성공 · 목표 ${C.aa} 이하 · 세션 1회 · 이능 1회 소모</small></div><em>성공</em></div>`:'')})():(mode==='inou'?'<div class="small dim">이능 판정은 능력 A 이상만 할 수 있다.</div>':'')}
-    </div>
+   <div class="skcard hit"><div class="skoffer"><div class="skot">${esc(O.label||'스킬 체크')}</div><div class="skos">${offerSummary(O)}</div>${penLine(O.pen)}${O.npc?'':ladder(O.target,mine?mine.total:null)}</div>
+    ${mine?resultHtml(mine,t,k):k.inj>=3?'<div class="small warn" style="margin-top:8px">빈사 — 이 장면에는 참가할 수 없다. 장면이 끝나면 중상으로 돌아온다.</div>':(()=>{const op=optionsOf(tid,O);
+     return `<div class="sec">누구와 굴릴까 <span class="note">${esc(O.stat)} + ${BASE[O.base]}</span></div>
+    <div class="skopts" id="monpick">${op.map(x=>{const off=x.how==='super'&&x.left<=0;const m=x.how==='mon'?mons()[x.mid]:null;
+      const sub=x.how==='mon'?`${BASE[O.base]} ${baseVal(m,O.base)} (${RKN[baseLv(baseVal(m,O.base))]})${fitOf(m,O).length?' · 적합 '+fitOf(m,O).length:''}`:x.how==='super'?`혼자 · 자질 ×2 · 『고유』 범위만 · 남은 ${x.left}회`:'포켓몬 없이 · 종족값 · 적합 없음';
+      return `<div class="skopt ${x.how==='alone'?'alone':x.how==='super'?'inou':''} ${off?'off':''}" data-how="${x.how}" ${x.mid?`data-mid="${x.mid}"`:''}>${x.how==='mon'?picOf(m):`<div class="pic">${x.how==='super'?'超':'—'}</div>`}<div><b>${esc(x.name)}</b><small>${esc(sub)}</small></div><em>${sgn(x.c.mod)}</em></div>`}).join('')}</div>
+    ${!cp.ids.length?`<div class="small dim">${SCN[scene]} 포켓몬을 위에서 지정하면 함께 굴릴 수 있다</div>`:''}
+    ${O.fit&&O.fit.etc?`<label class="small tg" style="display:block;margin-top:4px"><input type="checkbox" id="sk_etc"> 기타 적합 +1 — ${esc(O.fit.etc)} (GM 이 인정한 경우)</label>`:gm()?'<label class="small tg" style="display:block;margin-top:4px"><input type="checkbox" id="sk_etc"> 기타 적합 +1 (GM 인정)</label>':''}
     <div class="skformula" id="sk_formula"></div>
-    <div class="row" style="margin-top:10px"><label class="small" title="GM 이 따로 말한 ± 보정">보정 <input type="number" class="n xs" id="sk_bonus" value="0"></label><span class="sp"></span><button class="btn pri big" id="sk_roll">굴리기</button></div>`}
+    <div class="row" style="margin-top:10px"><label class="small" title="GM 이 따로 말한 ± 보정">추가 보정 <input type="number" class="n xs" id="sk_bonus" value="0"></label><span class="sp"></span><button class="btn pri big" id="sk_roll">굴리기</button></div>`})()}
    </div>`}
-   ${O&&Object.keys(K.res||{}).some(id=>id!==tid&&(K.res[id]||{}).offerId===O.id)?`<div class="skcard"><div class="sec">다른 트레이너의 결과 <span class="note">받치면 결과가 한 칸 오르고 내가 부상을 입는다</span></div><div class="sklist">${Object.keys(K.res).filter(id=>id!==tid&&K.res[id].offerId===O.id).map(id=>{const r=K.res[id];const tt=T[id]||{};const canCover=!r.cover&&r.ri<3&&r.ri>=0&&!(k.inj>=2&&C.nocover2);return `<div class="skrow"><b>${esc(tt.name)}</b><span class="skres" style="background:${COL[r.ri]}">${RES[r.ri]}</span>${r.cover?`<span class="tag">커버: ${esc((T[r.cover.by]||{}).name)}</span>`:''}<span class="sp"></span>${canCover?`<button class="btn xs" data-cover="${id}">내가 받칠게</button>`:''}</div>`}).join('')}</div></div>`:''}
-   <div class="skcard"><div class="sec">돌봄 <span class="note">육성 B 이상 · 휴식 사이 1회 · 지친 포켓몬 1체 회복</span></div>${LAD[S().strip(rankOf(t,'육성'))]>=2&&!k.care?`<span class="chips">${Object.entries(K.trainers||{}).flatMap(([oid,x])=>(x.tired||[]).map(mid=>`<button class="chip" data-care="${mid}" data-owner="${oid}">${esc((mons()[mid]||{}).name||mid)}${oid!==tid?' ('+esc((T[oid]||{}).name)+')':''}</button>`)).join('')||'<span class="small dim">지친 포켓몬이 없다</span>'}</span>`:'<span class="small dim">쓸 수 없다</span>'}</div></div>`);
+   ${coverHtml(tid,O,K)}</div>`);
   md.classList.add('wide');
-  /* 10-29: 동료 · 혼자 · 이능 · AA 를 카드 한 줄에서 고르고, 고른 대로 「d10 + d6 → 성공 n%」 를 바로 보여 준다 */
-  const sel=md.querySelector('#monpick');let pickId=null;
-  const formula=()=>{const F_=$('#sk_formula',md),rb=$('#sk_roll',md);if(!F_||!D)return;const on=sel&&sel.querySelector('.skopt.on');const bonus=+($('#sk_bonus',md)||{}).value||0;
-   if(!on){F_.innerHTML='<span class="dim">위에서 함께 굴릴 포켓몬 · 혼자 · 이능 중 하나를 고른다</span>';if(rb)rb.textContent='굴리기';return}
-   if(on.dataset.how==='aa'){F_.innerHTML='<b>AA 특권</b> — 굴리지 않고 바로 <b>성공</b>';if(rb)rb.textContent='특권 쓰기';return}
-   const cs=+on.dataset.cs;const D2=Object.assign({},D,{plus:(D.plus||0)+bonus});const o={twice:O.twice||0,pm:O.pm||0};
-   const odds=O.npcDice||D.autofail?'':` <span class="sp"></span><span class="skpp">성공 <b>${pct(okPlusOf(D2,cs,o,O.target+2))}</b> · 대가 포함 <b>${pct(okPlusOf(D2,cs,o,O.target))}</b></span>`;
-   F_.innerHTML=D.autofail?'<span class="warn">자질 주사위가 d4 아래 — 자동 실패</span>':`<span class="skdie"><small>${esc(stat)}</small>${dieTxt(D)}</span><em>+</em><span class="skdie"><small>${esc(on.dataset.nm)}</small>d${cs}</span>${bonus?`<em>${bonus>0?'+':'−'}</em><span class="skdie"><small>보정</small>${Math.abs(bonus)}</span>`:''}<em>vs</em><span class="skdie tg"><small>목표</small>${O.npcDice?esc(O.npc):O.target}</span>${odds}`;
-   if(rb)rb.textContent=`굴리기 · ${dieTxt(D)} + d${cs}`};
-  if(sel)sel.querySelectorAll('.skopt').forEach(el=>el.onclick=()=>{if(el.classList.contains('off'))return;const how=el.dataset.mp?'mon':el.dataset.how;pickId=el.dataset.mp||null;sel.querySelectorAll('.skopt').forEach(x=>x.classList.toggle('on',x===el));const r=md.querySelector(`[name=how][value=${how}]`);if(r)r.checked=true;formula()});
-  {const bi=$('#sk_bonus',md);if(bi)bi.addEventListener('input',formula)}formula();
-  const rb=$('#sk_roll',md);if(rb)rb.onclick=()=>{if(!md.querySelector('[name=how]:checked'))return A().toast('누구와 함께 굴릴지 먼저 골라 줘');roll(tid,O,md,pickId)};
-  md.querySelectorAll('[data-myosu]').forEach(b=>b.onclick=()=>myosu(tid,b.dataset.myosu));
-  md.querySelectorAll('[data-cover]').forEach(b=>b.onclick=()=>cover(tid,b.dataset.cover));
-  md.querySelectorAll('[data-care]').forEach(b=>b.onclick=()=>care(tid,b.dataset.owner,b.dataset.care))}
- function resultHtml(r,t,k){const O=st().offer;const canMyosu=O&&O.stat==='지시'&&(+k.myosu||0)<myosuMax(t)&&!r.myosu&&r.how!=='aa'&&r.ri>0;
-  const a=r.a||{},c=r.c||{};const dice=a.sides&&c.sides?`<div class="skformula"><span class="skdie"><small>${esc(r.stat)} d${a.sides}${a.plus?(a.plus>0?'+':'')+a.plus:''}</small>${a.v}${a.plus?(a.plus>0?'+':'')+a.plus:''}</span><em>+</em><span class="skdie"><small>${c.kind==='inou'?'이능':c.kind==='mon'?esc(c.name):'혼자'} d${c.sides}</small>${c.v}</span>${r.bonus?`<em>${r.bonus>0?'+':'−'}</em><span class="skdie"><small>보정</small>${Math.abs(r.bonus)}</span>`:''}<em>=</em><span class="skdie tot" style="--c:${COL[r.ri]}"><small>합계</small>${r.total}</span><em>vs</em><span class="skdie tg"><small>목표</small>${r.target}</span></div>`:'';
-  return `<div class="skbig" style="background:${COL[r.ri]}"><div class="skbigt">${RES[r.ri]}</div><div class="skbigs">합계 ${r.total} / 목표 ${r.target}</div></div>${dice}<details class="skdet"><summary>굴림 자세히</summary><div class="pre small" style="white-space:pre-wrap">${esc(r.text.split('\n').slice(1).join('\n'))}</div></details>${r.cover?`<div class="small" style="margin-top:4px">커버: ${esc((trs()[r.cover.by]||{}).name)} 이(가) 받쳐 ${RES[r.cover.from]} → ${RES[r.ri]}</div>`:''}
-   ${canMyosu?`<div class="row" style="margin-top:8px"><span class="small dim">묘수 (${k.myosu}/${myosuMax(t)}): 주사위 하나를 다시 굴린다</span><span class="sp"></span><button class="btn sm" data-myosu="a">자질 주사위 다시</button><button class="btn sm" data-myosu="c">${r.how==='inou'?'두 번째 주사위':'동료 주사위'} 다시</button></div>`:''}`}
+  const sel=md.querySelector('#monpick');
+  const choice=()=>{const on=sel&&sel.querySelector('.skopt.on');if(!on)return null;return {how:on.dataset.how,mid:on.dataset.mid||'',etc:on.dataset.how==='mon'&&!!($('#sk_etc',md)||{}).checked,bonus:+($('#sk_bonus',md)||{}).value||0}};
+  const formula=()=>{const F_=$('#sk_formula',md),rb=$('#sk_roll',md);if(!F_||!O)return;const ch=choice();
+   if(!ch){F_.innerHTML='<span class="dim">위에서 함께 굴릴 포켓몬 · 혼자 · 초상 능력 중 하나를 고른다</span>';if(rb)rb.textContent='굴리기';return}
+   const c=calcOf(tid,O,ch);const o=oddsFor(c,O);
+   F_.innerHTML=`<span class="skdie"><small>2d6${c.tw?(c.tw>0?' 두 번 높은':' 두 번 낮은'):''}</small>🎲</span>${c.parts.map(p=>`<em>${p[1]<0?'−':'+'}</em><span class="skdie"><small>${esc(p[0])}</small>${Math.abs(p[1])}</span>`).join('')}<em>vs</em><span class="skdie tg"><small>목표</small>${O.npc?esc(O.npc)+' 2d6'+sgn(+O.npcMod||0):O.target}</span><span class="sp"></span><span class="skpp">성공 <b>${pct(o.ok)}</b> · 대성공 <b>${pct(o.crit)}</b></span>`;
+   if(rb)rb.textContent=`굴리기 · 2d6${sgn(c.mod)}`};
+  if(sel)sel.querySelectorAll('.skopt').forEach(el=>el.onclick=()=>{if(el.classList.contains('off'))return;sel.querySelectorAll('.skopt').forEach(x=>x.classList.toggle('on',x===el));formula()});
+  {const bi=$('#sk_bonus',md);if(bi)bi.addEventListener('input',formula);const ei=$('#sk_etc',md);if(ei)ei.addEventListener('change',formula)}formula();
+  const rb=$('#sk_roll',md);if(rb)rb.onclick=()=>{const ch=choice();if(!ch)return A().toast('누구와 굴릴지 먼저 골라 줘');roll(tid,O,ch)};
+  md.querySelectorAll('[data-comp]').forEach(b=>b.onclick=async()=>{const id=b.dataset.comp;let L=tsk(tid).comp.filter(x=>mons()[x]&&alive(mons()[x]));const cap=compCap(tid,scene);
+   if(L.includes(id))L=L.filter(x=>x!==id);else{L.push(id);if(L.length>cap)L=L.slice(-cap)}await setT(tid,{comp:L});A().closeModal();openPlayer(tid)});
+  md.querySelectorAll('[data-myosu]').forEach(b=>b.onclick=()=>myosu(tid));
+  md.querySelectorAll('[data-accept]').forEach(b=>b.onclick=async()=>{const r=JSON.parse(JSON.stringify((st().res||{})[tid]||null));if(!r||!r.pend)return;A().closeModal();await settleFail(tid,r);await A().set(['skill','res',tid],r);setTimeout(()=>openPlayer(tid),200)});
+  md.querySelectorAll('[data-cover]').forEach(b=>b.onclick=()=>cover(b.dataset.cover,b.dataset.mid))}
+ /* 커버 칸: 이 제시에서 실패해 단계가 오른 사람 · 그 단계를 막아 줄 수 있는 내 포켓몬 (판정하지 않은 동행 · 필드, 설정이면 볼 안도) */
+ function coverCands(byTid,r,scene){const C=cfg();const pool=+C.coverBall?Object.values(mons()).filter(m=>m.tid===byTid&&alive(m)).map(m=>m.id):compOf(byTid,scene).ids;return pool.filter(id=>id!==r.mid)}
+ function coverHtml(tid,O,K){if(!O)return '';const T=trs();const R=K.res||{};const C=cfg();const can=(gm()||tid===me());
+  const list=Object.keys(R).filter(id=>{const r=R[id];return r&&r.offerId===O.id&&r.ri===1&&r.step&&r.step.now>r.step.prev&&!r.cover});if(!list.length)return '';
+  const mineIds=gm()?(O.ids||[]):[tid];
+  return `<div class="skcard"><div class="sec">커버 <span class="note">판정하지 않은 포켓몬이 최대 HP ${esc(C.coverHp)} 대미지를 받고 그 단계를 막는다 · 패널티 묶음은 그대로</span></div><div class="sklist">${list.map(id=>{const r=R[id];
+   const btns=can?mineIds.flatMap(by=>coverCands(by,r,O.scene).map(mid=>{const m=mons()[mid];return `<button class="btn xs" data-cover="${id}" data-mid="${mid}">${esc(m.name)}${by!==tid||gm()?' ('+esc((T[by]||{}).name)+')':''}로 막기 · HP −${frac(m.hp.max,C.coverHp)}</button>`})):[];
+   return `<div class="skrow wrap"><b>${esc((T[id]||{}).name)}</b><span class="tag">${STEP[r.step.prev]} → ${STEP[r.step.now]}</span><span class="sp"></span>${btns.join('')||'<span class="small dim">막아 줄 포켓몬이 없다</span>'}</div>`}).join('')}</div></div>`}
+ function resultHtml(r,t,k){const mm=myosuMax(t);const canMyosu=r.pend&&mm>k.myosu;
+  const dice=`<div class="skformula"><span class="skdie tot" style="--c:${COL[r.ri]}"><small>2d6${r.rolls&&r.rolls.length>1?' ('+r.rolls.map(x=>x.join('+')).join(' / ')+')':''}</small>${r.dice.join(' + ')}</span>${(r.parts||[]).map(p=>`<em>${p[1]<0?'−':'+'}</em><span class="skdie"><small>${esc(p[0])}</small>${Math.abs(p[1])}</span>`).join('')}<em>=</em><span class="skdie tot" style="--c:${COL[r.ri]}"><small>합계</small>${r.total}</span><em>vs</em><span class="skdie tg"><small>목표</small>${r.target}</span></div>`;
+  return `<div class="skbig" style="background:${COL[r.ri]}"><div class="skbigt">${RES[r.ri]}</div><div class="skbigs">합계 ${r.total} / 목표 ${r.target}${r.npcTxt?' · '+esc(r.npcTxt):''}</div></div>${dice}
+   ${r.pend?`<div class="row" style="margin-top:8px;gap:6px"><span class="small">실패 — 묘수로 다시 굴릴 수 있다 (${mm-k.myosu}/${mm})</span><span class="sp"></span>${canMyosu?'<button class="btn sm pri" data-myosu="1">묘수 · 다시 굴리기</button>':''}<button class="btn sm" data-accept="1">실패 받아들이기</button></div>`:''}
+   ${r.step?`<div class="small" style="margin-top:4px">상태: ${STEP[r.step.prev]} → <b>${STEP[r.step.now]}</b>${r.cover?` — ${esc(r.cover.name)} 이(가) 막아 「${STEP[r.step.prev]}」 그대로`:''}</div>`:''}
+   <details class="skdet"><summary>굴림 자세히</summary><div class="pre small" style="white-space:pre-wrap">${esc(r.text.split('\n').slice(1).join('\n'))}</div></details>`}
  /* 굴리기 */
- async function roll(tid,O,md,pickId){const T=trs();const t=T[tid];const k=tsk(tid);const C=cfg();const how=(md.querySelector('[name=how]:checked')||{}).value||'alone';const bonus=+($('#sk_bonus',md)||{}).value||0;
-  if(how==='mon'&&!pickId)return A().toast('함께할 포켓몬을 골라 줘');
-  const stat=O.stat;const inj=+k.inj||0;const aLv=LAD[S().strip(rankOf(t,'능력'))]||0;
-  let target=O.target,npcTxt='';if(O.npcDice){const n1=d(O.npcDice[0]),n2=d(O.npcDice[1]);target=n1+n2;npcTxt=`${O.npc} → ${n1}+${n2} = ${target}`}
-  const lines=[];let a={},c={},ri,total=0,fum=false;
-  if(how==='aa'){ri=3;total=target;lines.push(`AA 특권 — 굴리지 않고 성공 (이능 1회 소모)`);await setT(tid,{aa:1,inou:(+k.inou||0)+1})}
-  else{
-   const D=dieOf(t,stat,{inj,step:O.step||0});if(D.autofail){ri=1;lines.push(`자질 주사위가 d4 아래로 내려가 자동 실패`)}
-   else{
-    const twice=O.twice||0;const r1=d(D.sides),r2=twice?d(D.sides):null;let av=twice>0?Math.max(r1,r2):twice<0?Math.min(r1,r2):r1;let pmTxt='';
-    if(O.pm>0&&av===1){av=2;pmTxt=' (능숙함 1→2)'}else if(O.pm<0&&av===D.sides){av=D.sides-1;pmTxt=` (서투름 ${D.sides}→${av})`}
-    a={sides:D.sides,r1,r2,v:av,plus:D.plus};
-    if(how==='inou'){const Dc=dieOf(t,'능력',{inj:C.both1?inj:0,step:O.step||0});const cv=d(Dc.sides);c={sides:Dc.sides,v:cv,kind:'inou'};await setT(tid,{inou:(+k.inou||0)+1})}
-    else if(how==='mon'){const m=mons()[pickId];const bond=stat==='통솔'&&hasBond(m);const cs=bond?8:6;const cv=d(cs);c={sides:cs,v:cv,kind:'mon',mid:pickId,name:m.name,bond,pride:prideA(m)&&!bond};
-     const owner=m.tid;const ok=tsk(owner);if(!ok.tired.includes(pickId)){ok.tired.push(pickId);await setT(owner,{tired:ok.tired})}}
-    else{c={sides:4,v:d(4),kind:'alone'}}
-    total=av+(D.plus||0)+c.v+bonus;fum=av===1&&c.v===1;ri=judge(total,target,fum,how==='inou'?aLv:lv(rankOf(t,stat)));
-    lines.push(`자질 d${D.sides}${D.plus?(D.plus>0?'+':'')+D.plus:''} → ${av}${pmTxt}${twice?` (두 번 ${r1}, ${r2} 중 ${twice>0?'높은':'낮은'} 값)`:''}${D.injStep?` (${inj>=2?'중상':'부상'} −${D.injStep}단계)`:''}${O.step?` (상황 ${O.step>0?'↑':'↓'})`:''}`);
-    lines.push(c.kind==='inou'?`이능 주사위 d${c.sides} → ${c.v}`:c.kind==='mon'?`동료 「${c.name}」 d${c.sides}${c.bond?' (유대)':''} → ${c.v}${c.pride&&c.v===1?' — 프라이드 A 고집! 대가 하나':''}`:`혼자 d4 → ${c.v}`);
-    if(bonus)lines.push(`보정 ${bonus>0?'+':''}${bonus}`);if(fum)lines.push('두 주사위 모두 1 — '+(ri===0?'대실패':'A 이상이라 실패로'));}}
-  const text=`스킬 체크 · ${t.name} · ${stat}(${rankOf(t,stat)||'-'})${O.label?' · '+O.label:''}${how==='inou'?' · 이능':''}\n${lines.join('\n')}\n합계 ${total} / 목표 ${target}${npcTxt?' ('+npcTxt+')':''}\n→ ${RES[ri]}${c.pride&&c.v===1?' (+ 고집의 대가)':''}`;
-  const res={offerId:O.id,tid,how,stat,target,a,c,bonus,ri,total,text,at:Date.now()};
-  if(how==='inou'&&ri<=1){const mid=await pickMon(tid,'이능 실패 — 부상','반동을 받을 소지 포켓몬 1체');const r=await injure(tid,mid);res.inj={prev:inj,mid};res.text+='\n'+r.line}
+ async function roll(tid,O,ch){const t=trs()[tid];const k=tsk(tid);const C=cfg();if(k.inj>=3)return A().toast('빈사 — 이 장면에 참가할 수 없다');
+  if(ch.how==='super'&&supMax(t)-k.sup<=0)return A().toast('초상 능력 횟수가 없다');
+  const c=calcOf(tid,O,ch);let target=+O.target,npcTxt='';
+  if(O.npc){const n1=d6(),n2=d6();const nt=n1+n2+(+O.npcMod||0);target=nt+(O.npcDef==='pc'?0:1);npcTxt=`${O.npc} ${n1}+${n2}${sgn(+O.npcMod||0)} = ${nt}${O.npcDef==='pc'?' (같으면 우리)':' (넘어야 이김)'}`}
+  const R2=roll2(c.tw);const total=R2.k[0]+R2.k[1]+c.mod;const ri=judge(R2.k,total,target,+C.crit);
+  const m=ch.how==='mon'?mons()[ch.mid]:null;
+  if(ch.how==='super')await setT(tid,{sup:k.sup+1});
+  const lines=[`${ch.how==='mon'?`포켓몬 「${m.name}」`:ch.how==='super'?'초상 능력 (혼자 · 자질 ×2)':'혼자'}`,`2d6 → ${R2.k.join('+')}${R2.all.length>1?` (두 번 ${R2.all.map(x=>x.join('+')).join(', ')} 중 ${c.tw>0?'높은':'낮은'} 값)`:''}${R2.k[0]===1&&R2.k[1]===1?' — 1·1':R2.k[0]===6&&R2.k[1]===6?' — 6·6':''}`,'보정 '+c.parts.map(p=>`${p[0]} ${sgn(p[1])}`).join(' · ')];
+  const text=`스킬 체크 · ${t.name} · ${O.stat} + ${BASE[O.base]}${O.label?' · '+O.label:''}\n${lines.join('\n')}\n합계 ${total} / 목표 ${target}${npcTxt?' ('+npcTxt+')':''}\n→ ${RES[ri]}`;
+  let res={offerId:O.id,tid,label:O.label||'',how:ch.how,mid:ch.mid||'',monName:m?m.name:'',etc:!!ch.etc,bonus:+ch.bonus||0,stat:O.stat,target,npcTxt,parts:c.parts,mod:c.mod,tw:c.tw,dice:R2.k,rolls:R2.all,ri,total,text,at:Date.now()};
+  if(ri===1){if(myosuMax(t)>k.myosu)res.pend=1;else res=await settleFail(tid,res)}
   await A().set(['skill','res',tid],res);const hist=(st().hist||[]).slice(-40);hist.push({ri,text:res.text,at:res.at});await A().set(['skill','hist'],hist);
-  A().closeModal();A().sysLog(res.text,'dice');try{if(window.OM_CUTIN)window.OM_CUTIN.phase(RES[ri],`${t.name} · ${stat} ${total}/${target}`)}catch(e){}
-  if(O.pen&&O.pen.auto){const sub=ri<=1?O.pen.fail:ri===2?O.pen.cost:null;if(sub&&penHas(sub)){await applyPenalty(tid,sub,(O.label||'스킬 체크')+' · '+RES[ri]);await A().set(['skill','res',tid,'penDone'],1)}}
-  setTimeout(()=>openPlayer(tid),300)}
- /* 묘수: 주사위 하나 다시 */
- async function myosu(tid,which){const T=trs();const t=T[tid];const k=tsk(tid);const r=JSON.parse(JSON.stringify((st().res||{})[tid]));if(!r||r.myosu)return;
-  if(which==='a'){const nv=d(r.a.sides);r.text+=`\n묘수: 자질 주사위 다시 ${r.a.v} → ${nv}`;r.a.v=nv}else{const nv=d(r.c.sides);r.text+=`\n묘수: ${r.c.kind==='inou'?'이능':'동료'} 주사위 다시 ${r.c.v} → ${nv}`;r.c.v=nv}
-  r.total=(r.a.v||0)+(r.a.plus||0)+(r.c.v||0)+(r.bonus||0);const fum=r.a.v===1&&r.c.v===1;r.ri=judge(r.total,r.target,fum,r.how==='inou'?LAD[S().strip(rankOf(t,'능력'))]:lv(rankOf(t,r.stat)));r.text+=`\n합계 ${r.total} / 목표 ${r.target} → ${RES[r.ri]}`;r.myosu=1;
-  await setT(tid,{myosu:(+k.myosu||0)+1});await A().set(['skill','res',tid],r);A().closeModal();A().sysLog(`${t.name} 묘수! ${which==='a'?'자질':'동료'} 주사위 다시 → 합계 ${r.total} / ${r.target} → ${RES[r.ri]}`,'dice');setTimeout(()=>openPlayer(tid),200)}
- /* 커버 */
- async function cover(byTid,forTid){const T=trs();const k=tsk(byTid);const C=cfg();if(k.inj>=2&&C.nocover2)return A().toast('중상이라 받칠 수 없다');const r=JSON.parse(JSON.stringify((st().res||{})[forTid]));if(!r||r.cover||r.ri>=3)return;
-  if(!confirm(`${T[forTid].name}의 「${RES[r.ri]}」을(를) 한 칸 올리고 내가 부상을 입을까?`))return;
-  const from=r.ri;r.ri=Math.min(3,r.ri+1);r.cover={by:byTid,from};r.text+=`\n커버: ${T[byTid].name} 이(가) 받침 → ${RES[r.ri]}`;
-  if(r.inj){await setT(forTid,{inj:r.inj.prev});r.text+=`\n${T[forTid].name}의 반동(부상)은 없던 일로`;delete r.inj}
-  const mid=await pickMon(byTid,'커버 — 부상','부상을 받을 소지 포켓몬 1체');const inj=await injure(byTid,mid);r.text+='\n'+inj.line;
-  await A().set(['skill','res',forTid],r);A().closeModal();A().sysLog(`${T[byTid].name} 커버! ${T[forTid].name}: ${RES[from]} → ${RES[r.ri]} · ${inj.line}`,'dice');setTimeout(()=>openPlayer(byTid),200)}
- /* 돌봄 */
- async function care(tid,ownerTid,mid){const k=tsk(tid);if(k.care)return;const ok=tsk(ownerTid);ok.tired=ok.tired.filter(x=>x!==mid);await setT(ownerTid,{tired:ok.tired});await setT(tid,{care:1});A().closeModal();A().sysLog(`${trs()[tid].name} 돌봄 — 「${(mons()[mid]||{}).name}」 지침 회복`,'dice');setTimeout(()=>openPlayer(tid),200)}
+  A().closeModal();A().sysLog(text,'dice');try{if(window.OM_CUTIN)window.OM_CUTIN.phase(RES[ri],`${t.name} · ${O.stat} ${total}/${target}`)}catch(e){}
+  sync();setTimeout(()=>openPlayer(tid),300)}
+ /* 묘수: 실패한 굴림을 같은 보정으로 다시 */
+ async function myosu(tid){const t=trs()[tid];const k=tsk(tid);const r=JSON.parse(JSON.stringify((st().res||{})[tid]||null));if(!r||!r.pend||myosuMax(t)<=k.myosu)return;
+  const R2=roll2(r.tw);r.dice=R2.k;r.rolls=R2.all;r.total=R2.k[0]+R2.k[1]+r.mod;r.ri=judge(R2.k,r.total,r.target,+cfg().crit);r.myosu=1;delete r.pend;
+  r.text+=`\n묘수! 다시 2d6 → ${R2.k.join('+')} · 합계 ${r.total} / ${r.target} → ${RES[r.ri]}`;
+  await setT(tid,{myosu:k.myosu+1});A().closeModal();A().sysLog(`${t.name} 묘수! 다시 굴려 합계 ${r.total} / ${r.target} → ${RES[r.ri]}`,'dice');
+  if(r.ri===1)await settleFail(tid,r);
+  await A().set(['skill','res',tid],r);sync();setTimeout(()=>openPlayer(tid),200)}
+ /* 커버: 판정하지 않은 포켓몬이 대미지를 받고 단계 진행을 없던 일로 */
+ async function cover(forTid,mid){const T=trs();const m=mons()[mid];const r=JSON.parse(JSON.stringify((st().res||{})[forTid]||null));if(!m||!r||r.cover||!r.step)return;const C=cfg();
+  if(!confirm(`「${m.name}」 이(가) 최대 HP ${C.coverHp} 대미지를 받고 ${T[forTid].name}의 「${STEP[r.step.now]}」을(를) 막을까?`))return;
+  const loss=await hpLoss(mid,C.coverHp);await stepUndo(forTid,r.step);r.cover={by:m.tid,mid,name:m.name,loss};r.text+=`\n커버: ${m.name} HP −${loss} → ${T[forTid].name} 「${STEP[r.step.prev]}」 그대로`;
+  await A().set(['skill','res',forTid],r);A().closeModal();A().sysLog(`${(T[m.tid]||{}).name||''}의 ${m.name} 커버! HP −${loss} · ${T[forTid].name} 「${STEP[r.step.now]}」 → 「${STEP[r.step.prev]}」`,'dice');sync();
+  setTimeout(()=>openPlayer(gm()?forTid:(me()||forTid)),200)}
  /* 상단 버튼에 제시 표시 */
- function pending(){const O=st().offer;if(!O)return false;const tid=me();if(gm())return true;if(!tid||!(O.ids||[]).includes(tid))return false;const r=(st().res||{})[tid];return !(r&&r.offerId===O.id)}
- /* 10-26 던전 연계: 방에 넣어 둔 체크를 그대로 제시 (dungeon_ui). o0 = 예시 모양 {label,stat,mode,target,npc,step,twice,pm,pen} */
+ function pending(){const O=st().offer;if(!O)return false;const tid=me();if(gm())return true;if(!tid||!(O.ids||[]).includes(tid))return false;const r=(st().res||{})[tid];return !(r&&r.offerId===O.id)||!!r.pend}
+ /* 10-26 던전 연계: 방에 넣어 둔 체크를 그대로 제시 (dungeon_ui). 던전은 필드 장면 */
  function presetList(){return [...EX.map((e,i)=>({id:'ex'+i,name:e.name,o:e.o})),...(st().presets||[]).map(p=>({id:p.id,name:p.name,o:p.o}))]}
- async function present(o0,ids,by){if(!gm())return false;const T=trs();ids=(ids||[]).filter(i=>T[i]);if(!ids.length){A().toast('체크를 받을 트레이너가 없다');return false}o0=o0||{};const npc=NPC.find(x=>x[0]===+o0.npc);
-  /* 10-28: 던전 체크에 auto(easy · normal · hard)가 있으면 지금 일행으로 목표를 셈한다 (시뮬 자동 생성 던전은 난이도 띠만 적어 보낸다) */
-  let target=+o0.target||7,auto='';if(BAND[o0.auto]&&!(npc&&npc[2])){const a=autoTarget(ids,{stat:o0.stat||'지시',mode:o0.mode||'skill',step:+o0.step||0,twice:+o0.twice||0,pm:+o0.pm||0},o0.auto);if(a){target=a.target;auto=o0.auto}}
-  const o={id:'o'+Date.now().toString(36),label:o0.label||'',stat:o0.stat||'지시',mode:o0.mode||'skill',target,auto,npc:npc&&npc[2]?npc[1]:'',npcDice:npc&&npc[2]?npc[2]:null,step:+o0.step||0,twice:+o0.twice||0,pm:+o0.pm||0,pen:{fail:penNorm((o0.pen||{}).fail),cost:penNorm((o0.pen||{}).cost),auto:cfg().penAuto?1:0},ids,at:Date.now()};
-  await A().set(['skill','offer'],o);await A().set(['skill','res'],{});
-  A().sysLog(`【스킬 체크】 ${o.label||'판정'}${by?' · '+by:''}\n${o.stat}${o.mode==='inou'?' · 이능':''} · 목표 ${o.target}${o.auto?' (자동 · '+BAND[o.auto][2]+')':''}${o.npc?' (대항 '+o.npc+')':''}${o.step?' · 단계 '+(o.step>0?'유리':'불리'):''}${o.twice?' · 두 번 굴려 '+(o.twice>0?'높은':'낮은')+' 값':''}${o.pm?' · '+(o.pm>0?'능숙함':'서투름'):''}\n대상: ${ids.map(i=>(T[i]||{}).name).join(', ')}${penHas(o.pen.fail)?'\n실패: '+penTxt(o.pen.fail):''}${penHas(o.pen.cost)?'\n대가: '+penTxt(o.pen.cost):''}`,'battle',{});try{window.OM_RP_UI&&window.OM_RP_UI.playSe('Ping2')}catch(e){}return true}
- const sumOf=o=>offerSummary(Object.assign({stat:'지시',target:7},o||{},{npc:''}));
- return {open,openGm,openPlayer,pending,applyRest,restCfg,KINDS,tsk,cfg,presetList,present,sumOf,autoTarget,okPlusOf,BAND};
+ async function present(o0,ids,by){if(!gm())return false;const T=trs();ids=(ids||[]).filter(i=>T[i]);if(!ids.length){A().toast('체크를 받을 트레이너가 없다');return false}
+  const u=upOffer(o0||{});if(!(o0||{}).scene)u.scene='field';if(TIER[u.auto]&&!+u.npc)u.target=TIER[u.auto];
+  const o=mkOffer(u,ids);await A().set(['skill','offer'],o);await A().set(['skill','res'],{});
+  A().sysLog(offerLog(o,by),'battle',{});try{window.OM_RP_UI&&window.OM_RP_UI.playSe('Ping2')}catch(e){}return true}
+ const sumOf=o=>offerSummary(Object.assign({stat:'지시',target:10},upOffer(o||{}),{npc:''}));
+ const BAND=Object.fromEntries(Object.entries(TIER).map(([k,v])=>[k,[v,v,['쉬움','보통','어려움','매우 어려움'][['easy','normal','hard','vhard'].indexOf(k)]]]));
+ return {up:upOffer,open,openGm,openPlayer,pending,applyRest,restCfg,KINDS,tsk,cfg,presetList,present,sumOf,autoTarget,oddsOf,BAND,TIER,STEP,stepTxt,sceneEnd,sync};
 })();

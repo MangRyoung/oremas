@@ -682,7 +682,7 @@ let reconT=null;function reconcileNodes(){if(ST.role!=='gm')return;clearTimeout(
   if(!g.auto)await set(['graph','auto'],{});await set(['graph','auto',t.id],1)}},800)}
 function renderScene(){reconcileNodes();
  try{drawPresence()}catch(e){}
- try{const skb=$('#skillBtn');if(skb&&window.OM_SKILL_UI){const p=window.OM_SKILL_UI.pending();skb.classList.toggle('pri',p);skb.textContent='스킬 체크'+(p?' !':'')}}catch(e){}
+ try{const skb=$('#skillBtn');if(skb&&window.OM_SKILL_UI){const p=window.OM_SKILL_UI.pending();skb.classList.toggle('pri',p);skb.textContent='스킬 체크'+(p?' !':'');if(window.OM_SKILL_UI.sync)window.OM_SKILL_UI.sync()}}catch(e){}
  if(window.OM_DB_UI){window.OM_DB_UI.applyOverride(ST.state.dbx);if(ST.role==='gm'&&window.OM_DB_UI.startAuto)window.OM_DB_UI.startAuto()}   /* 10-24: 제작기 DB 자동 반영 (GM 화면) */
  /* GM 이 무대(RP/배틀)를 바꾸면 모두 그쪽으로 따라간다. 그 밖의 탭(시트·관계도·캘린더·제보)은 각자 본다 */
  if(scene()!==lastScene){lastScene=scene();VIEW=scene()}
