@@ -563,7 +563,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   const md=qbOpen(`<div class="qbtop"><div class="qbcur" style="${cur&&cur.src?`background-image:url('${cssu(cur.src)}')`:''}"><span><small>지금</small><b>${esc(cur&&cur.src?(cur.name||'이름 없는 배경'):'배경 없음')}</b></span></div>
     <div class="qbtopr"><input type="search" id="qbq" placeholder="배경 이름으로 찾기 (모든 그룹)" value="${esc(QB.q||'')}"><div class="row" style="justify-content:flex-end">${isGm&&r.bgList?'<button class="btn xs ghost" data-q="reset" title="방에서 고친 목록을 버리고 기본 목록으로">기본 목록으로</button>':''}<button class="btn sm ghost" data-q="bgx" ${cur?'':'disabled'}>배경 없애기</button></div></div></div>
    <div class="qbcols"><nav class="qbnav">${nav.map(x=>`<button class="qbn ${x.n===QB.g&&!QB.q?'on':''}" data-q="g" data-g="${esc(x.n)}"><span>${esc(x.l)}</span><em>${x.c}</em></button>`).join('')}${isGm?'<button class="qbn add" data-q="gadd"><span>＋ 그룹</span></button>':''}</nav>
-    <div class="qbmain">${isGm&&G&&!QB.q?`<div class="qbgh"><b>${esc(G.n)}</b><span class="dim small">${G.i.length}장</span><span class="sp"></span><button class="btn xs ghost" data-q="gren">이름</button><button class="btn xs ghost" data-q="gup" title="그룹 위로">↑</button><button class="btn xs ghost" data-q="gdn" title="그룹 아래로">↓</button><button class="btn xs ghost danger" data-q="gdel">그룹 삭제</button></div>`:''}<div class="qbgrid" id="qbgrid"></div></div></div>
+    <div class="qbmain">${isGm&&G&&!QB.q?`<div class="qbgh"><b>${esc(G.n)}</b><span class="dim small">${G.i.length}장</span><span class="sp"></span><button class="btn xs ghost" data-q="gren">이름</button><button class="btn xs ghost" data-q="gtop" title="그룹 맨 위로">⤒</button><button class="btn xs ghost" data-q="gup" title="그룹 위로">↑</button><button class="btn xs ghost" data-q="gdn" title="그룹 아래로">↓</button><button class="btn xs ghost danger" data-q="gdel">그룹 삭제</button></div>`:''}<div class="qbgrid" id="qbgrid"></div></div></div>
    <div class="qbadd"><div class="updz sm" id="qb_dz"><b>새 그림 끌어 놓기</b><span>여러 장 · 클릭 · Ctrl+V</span><input type="file" accept="image/*" multiple hidden></div>
     <div class="qbaddr"><div class="row"><input type="text" id="qbgu" placeholder="또는 그림 주소 https://…" style="flex:1"><input type="text" id="qbgn" placeholder="장소 이름" style="width:130px"><button class="btn sm pri" data-q="url">적용</button></div>
     <div class="small dim">${isGm&&G?`새 그림은 「${esc(G.n)}」 그룹에 들어가고, 한 장이면 바로 배경이 된다. 썸네일에 마우스를 올리면 ✎ 이름 · ◀ ▶ 순서 · × 삭제.`:'한 장이면 바로 배경이 된다.'}</div></div></div>`);
@@ -587,7 +587,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(fs.length===1){const u=await upImg(fs[0],'bg');return useUrl(u,lab(fs[0]))}
    if(!isGm||!G||QB.g===RC)return A().toast('여러 장은 그룹을 고른 뒤에 넣어 줘');for(const f of fs){const u=await upImg(f,'bg');addTo(u,lab(f))}A().toast(`배경 ${fs.length}장 추가`);return saveGs()},true);
   md.querySelectorAll('[data-q]').forEach(b=>b.onclick=async()=>{const k=b.dataset.q;
-   if(k==='g'){QB.g=b.dataset.g;QB.q='';return quickBg()}
+   if(k==='g'){if(Date.now()-(QB.dragAt||0)<400)return;QB.g=b.dataset.g;QB.q='';return quickBg()}
    if(k==='bgx'){if(!QB.con)A().closeModal();await A().set(['rp','bg'],null);if(QB.con)quickBg();return}
    if(k==='url')return useUrl($('#qbgu',md).value.trim(),$('#qbgn',md).value.trim());
    if(k==='reset'){if(!confirm('방에서 고친 배경 목록을 버리고 기본 목록으로 돌릴까?'))return;await A().set(['rp','bgList'],null);return quickBg()}
@@ -595,8 +595,20 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(!G)return;
    if(k==='gren'){const n=prompt('그룹 이름',G.n);if(!n||!n.trim()||n.trim()===G.n)return;if(groups.some(x=>x.n===n.trim()))return A().toast('같은 이름의 그룹이 있다');G.n=n.trim();QB.g=G.n;return saveGs()}
    if(k==='gdel'){if(!confirm(`「${G.n}」 그룹(${G.i.length}장)을 지울까?`))return;groups.splice(gi,1);QB.g='';return saveGs()}
+   if(k==='gtop'&&gi>0){const [mv]=groups.splice(gi,1);groups.unshift(mv);return saveGs()}
    if(k==='gup'&&gi>0){[groups[gi-1],groups[gi]]=[groups[gi],groups[gi-1]];return saveGs()}
-   if(k==='gdn'&&gi<groups.length-1){[groups[gi+1],groups[gi]]=[groups[gi],groups[gi+1]];return saveGs()}})}
+   if(k==='gdn'&&gi<groups.length-1){[groups[gi+1],groups[gi]]=[groups[gi],groups[gi+1]];return saveGs()}})
+  /* 10-30 망령 「배경 그룹을 끌어서 순서 조정」: GM 은 왼쪽 그룹 목록을 마우스로 끌어 옮긴다 (터치는 그룹 머리의 ⤒ ↑ ↓) */
+  if(isGm){const nav=md.querySelector('.qbnav');let drag=null;
+   const clr=()=>nav.querySelectorAll('.qbn').forEach(x=>x.classList.remove('dropb','dropa','dragging'));
+   const tgt=e=>{const row=getComputedStyle(nav).flexDirection==='row';let best=null;nav.querySelectorAll('.qbn[data-g]').forEach(x=>{if(x.dataset.g===RC)return;const rc=x.getBoundingClientRect();const inn=row?(e.clientX>=rc.left&&e.clientX<=rc.right):(e.clientY>=rc.top&&e.clientY<=rc.bottom);if(inn)best={x,after:row?e.clientX>rc.left+rc.width/2:e.clientY>rc.top+rc.height/2}});return best};
+   nav.querySelectorAll('.qbn[data-g]').forEach(b=>{if(b.dataset.g===RC)return;b.classList.add('qbdrag');b.title='끌어서 순서 바꾸기';
+    b.addEventListener('pointerdown',e=>{if(e.button!==0||e.pointerType==='touch')return;drag={b,g:b.dataset.g,x:e.clientX,y:e.clientY,on:false,id:e.pointerId,t:null}})});
+   nav.addEventListener('pointermove',e=>{if(!drag)return;if(!drag.on){if(Math.hypot(e.clientX-drag.x,e.clientY-drag.y)<6)return;drag.on=true;try{drag.b.setPointerCapture(drag.id)}catch(er){}}
+    e.preventDefault();clr();drag.b.classList.add('dragging');const t=tgt(e);drag.t=t&&t.x!==drag.b?t:null;if(drag.t)drag.t.x.classList.add(drag.t.after?'dropa':'dropb')});
+   nav.addEventListener('pointerup',async()=>{if(!drag)return;const d=drag;drag=null;clr();if(!d.on||!d.t)return;QB.dragAt=Date.now();
+    const from=groups.findIndex(x=>x.n===d.g);if(from<0)return;const [mv]=groups.splice(from,1);let to=groups.findIndex(x=>x.n===d.t.x.dataset.g);if(to<0)to=groups.length;if(d.t.after)to++;groups.splice(to,0,mv);await saveGs();A().toast(`「${mv.n}」 그룹을 옮겼다`)});
+   nav.addEventListener('pointercancel',()=>{drag=null;clr()})}}
  function quickBgm(){const md=A().openModal(`<div class="mhead"><h2>BGM</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div id="bgmpanel">${bgmPanelHtml()}</div>`);md.classList.add('wide');const re=()=>{const el=$('#bgmpanel');if(!el)return;el.innerHTML=bgmPanelHtml();bindBgmPanel(md,re)};bindBgmPanel(md,re)}
  /* ----- 대화 기록 ----- */
  let logOoc=false;
@@ -649,7 +661,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    <p class="small dim" style="margin-top:0">고른 그림이 이 장소의 배경이 된다. 장소 메뉴의 「이 배경으로」를 누르거나, 파티를 이 장소로 옮기면 무대 배경이 바뀐다 (지도 관리 「파티」 탭에서 끌 수 있다).</p>
    ${cur?`<div class="locbg cur"><i class="lbthumb" style="background-image:url('${cssu(cur.src)}')"></i><span class="small">지금: <b>${esc(cur.name||'')}</b></span></div>`:''}
    <div class="row" style="gap:6px;margin:8px 0"><input type="text" id="lb_url" placeholder="그림 주소 (https://…)" style="flex:1"><button class="btn sm" data-lb="url">주소로</button><label class="btn sm" style="cursor:pointer">⬆ 올리기<input type="file" accept="image/*" id="lb_file" style="display:none"></label></div>
-   <div class="lbgrid">${G.map(g=>`<div class="lbg"><div class="sec">${esc(g.n)}</div><div class="lbitems">${g.i.map(i=>`<button type="button" class="lbi ${cur&&cur.src===i.src?'on':''}" data-lbk="${esc(i.k)}" title="${esc(i.l)}"><i style="background-image:url('${cssu(i.src)}')"></i><span>${esc(i.l)}</span></button>`).join('')}</div></div>`).join('')}</div>`);
+   <div class="lbxgrid">${G.map(g=>`<div class="lbg"><div class="sec">${esc(g.n)}</div><div class="lbitems">${g.i.map(i=>`<button type="button" class="lbi ${cur&&cur.src===i.src?'on':''}" data-lbk="${esc(i.k)}" title="${esc(i.l)}"><i style="background-image:url('${cssu(i.src)}')"></i><span>${esc(i.l)}</span></button>`).join('')}</div></div>`).join('')}</div>`);
   md.classList.add('wide');
   const done=async bg=>{await setLocBg(n,bg);A().closeModal();A().toast(bg?`${l.name} 배경: ${bg.name}`:`${l.name} 배경을 뺐다`);if(back)back();else locMenu(n)};
   md.querySelectorAll('[data-lbk]').forEach(b=>b.onclick=()=>{const it=bgOf(b.dataset.lbk);if(it)done({src:it.src,name:it.l})});
