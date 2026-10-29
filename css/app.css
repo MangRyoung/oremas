@@ -4841,3 +4841,15 @@ html[data-vt="mm"] .memon .medet{border-color:rgba(20,16,12,.4)}
 .skcp{display:flex;flex-wrap:wrap;align-items:center;gap:6px;padding:4px 10px 4px 4px;border-radius:16px;background:#15161a;border:1px solid #2a2b31;font-size:12.5px;max-width:94%}
 .skcp>b{color:#eee}.skcp .skcp-l{font-size:10.5px;padding:0 6px;border-radius:8px;background:var(--yel2,#d6a23b);color:#000;font-weight:700}
 .msg.battle.sysc .skcp{margin:0 auto}
+/* 10-30 장소 배경 (rp_ui locBg · pickLocBg) */
+.locbg{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:10px;padding:8px 10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1)}
+.locbg .small{flex:1 1 140px;min-width:0}
+.lbthumb{flex:none;width:96px;height:56px;background:#111 center/cover no-repeat;border:1px solid rgba(255,255,255,.25)}
+.lbgrid{display:flex;flex-direction:column;gap:10px;max-height:min(60vh,560px);overflow:auto;padding-right:4px}
+.lbitems{display:grid;grid-template-columns:repeat(auto-fill,minmax(132px,1fr));gap:6px}
+.lbi{display:flex;flex-direction:column;gap:3px;padding:3px;background:#111;border:1px solid rgba(255,255,255,.12);color:inherit;cursor:pointer;text-align:left;font-size:12px}
+.lbi i{display:block;aspect-ratio:16/10;background:#000 center/cover no-repeat}
+.lbi span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lbi:hover{border-color:var(--yel,#ffd84a)}.lbi.on{outline:2px solid var(--red,#d9243f);border-color:var(--red,#d9243f)}
+.lbbtn{padding:1px 4px!important;min-width:0}.lbmini{display:inline-block;width:34px;height:20px;background:#111 center/cover no-repeat;vertical-align:middle}
+@media (max-width:760px){.lbitems{grid-template-columns:repeat(auto-fill,minmax(104px,1fr))}.lbthumb{width:72px;height:42px}}

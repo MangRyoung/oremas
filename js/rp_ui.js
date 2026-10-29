@@ -637,10 +637,29 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   el.querySelectorAll('[data-mapmgr]').forEach(mg=>mg.onclick=()=>openMapMgr(mg.dataset.t||'loc'))}
  async function saveMap(patch){const m=Object.assign({},R().map||{},patch);await A().set(['rp','map'],m)}
  async function toggleLoc(n){const M=mapS();const vis=Object.assign({},M.vis);const wasHidden=vis[n]==1;if(wasHidden)delete vis[n];else vis[n]=1;await saveMap({vis});const l=M.locs.find(x=>x.n===n);if(M.ann&&l)A().sysLog(`지도: ${l.name} ${wasHidden?'공개':'가림'}`)}
- async function partyMove(n){const M=mapS();const vis=Object.assign({},M.vis);let rev=false;if(M.reveal&&vis[n]==1){delete vis[n];rev=true}await saveMap({party:{n,vis:M.party.vis==null?1:M.party.vis},vis});const l=M.locs.find(x=>x.n===n);if(M.ann&&l)A().sysLog(`파티가 ${l.n}. ${l.name}(으)로 이동했습니다.${rev?' (장소 공개)':''}`)}
+ async function partyMove(n){const M=mapS();const vis=Object.assign({},M.vis);let rev=false;if(M.reveal&&vis[n]==1){delete vis[n];rev=true}await saveMap({party:{n,vis:M.party.vis==null?1:M.party.vis},vis});const l=M.locs.find(x=>x.n===n);if(l&&(R().map||{}).autoBg!==0)await useLocBg(l,true);if(M.ann&&l)A().sysLog(`파티가 ${l.n}. ${l.name}(으)로 이동했습니다.${rev?' (장소 공개)':''}`)}
+ /* 10-30 망령 「웹툴도 장소마다 배경 이미지」: loc.bg={src,name}. 장소 메뉴 · 지도 관리 · GM 콘솔에서 고르고 쓴다.
+    파티를 옮기면(map.autoBg, 기본 켬) 그 장소 배경으로 바뀐다. 세션 노트 장소의 「웹툴 배경」(spot.bg)은 「지도 가져오기」 때 따라온다 */
+ const locBg=l=>l&&l.bg&&l.bg.src?l.bg:null;
+ async function useLocBg(l,quiet){const b=locBg(l);if(!b)return false;const cur=R().bg;if(cur&&cur.src===b.src)return false;await A().set(['rp','bg'],{src:b.src,name:b.name||l.name,at:Date.now()});if(!quiet)A().toast(`배경: ${b.name||l.name}`);return true}
+ async function setLocBg(n,bg){const cur=mapS();await saveMap({locs:cur.locs.map(x=>x.n===n?Object.assign({},x,{bg:bg||null}):x)})}
+ function pickLocBg(n,back){const M=mapS();const l=M.locs.find(x=>x.n===n);if(!l)return;const cur=locBg(l);
+  const G=bgGroups().map(g=>({n:g.n,i:(g.i||[]).filter(i=>i.src)})).filter(g=>g.i.length);const hit=g=>g.i.some(i=>cur&&i.src===cur.src)||g.i.some(i=>l.name&&(l.name.includes(i.l)||i.l.includes(l.name)));G.sort((a,b)=>hit(b)-hit(a));
+  const md=A().openModal(`<div class="mhead"><h2>🖼 ${n}. ${esc(l.name)} — 장소 배경</h2><span class="sp"></span>${cur?'<button class="btn sm ghost danger" data-lb="clr">배경 빼기</button>':''}<button class="btn ghost" data-x>닫기</button></div>
+   <p class="small dim" style="margin-top:0">고른 그림이 이 장소의 배경이 된다. 장소 메뉴의 「이 배경으로」를 누르거나, 파티를 이 장소로 옮기면 무대 배경이 바뀐다 (지도 관리 「파티」 탭에서 끌 수 있다).</p>
+   ${cur?`<div class="locbg cur"><i class="lbthumb" style="background-image:url('${cssu(cur.src)}')"></i><span class="small">지금: <b>${esc(cur.name||'')}</b></span></div>`:''}
+   <div class="row" style="gap:6px;margin:8px 0"><input type="text" id="lb_url" placeholder="그림 주소 (https://…)" style="flex:1"><button class="btn sm" data-lb="url">주소로</button><label class="btn sm" style="cursor:pointer">⬆ 올리기<input type="file" accept="image/*" id="lb_file" style="display:none"></label></div>
+   <div class="lbgrid">${G.map(g=>`<div class="lbg"><div class="sec">${esc(g.n)}</div><div class="lbitems">${g.i.map(i=>`<button type="button" class="lbi ${cur&&cur.src===i.src?'on':''}" data-lbk="${esc(i.k)}" title="${esc(i.l)}"><i style="background-image:url('${cssu(i.src)}')"></i><span>${esc(i.l)}</span></button>`).join('')}</div></div>`).join('')}</div>`);
+  md.classList.add('wide');
+  const done=async bg=>{await setLocBg(n,bg);A().closeModal();A().toast(bg?`${l.name} 배경: ${bg.name}`:`${l.name} 배경을 뺐다`);if(back)back();else locMenu(n)};
+  md.querySelectorAll('[data-lbk]').forEach(b=>b.onclick=()=>{const it=bgOf(b.dataset.lbk);if(it)done({src:it.src,name:it.l})});
+  const cl=md.querySelector('[data-lb="clr"]');if(cl)cl.onclick=()=>done(null);
+  md.querySelector('[data-lb="url"]').onclick=()=>{const u=$('#lb_url',md).value.trim();if(!u)return A().toast('주소를 적어 줘');done({src:u,name:l.name})};
+  $('#lb_file',md).onchange=async e=>{const f=e.target.files[0];if(!f)return;A().toast('올리는 중…');try{done({src:await upImg(f,'locbg'),name:l.name})}catch(er){A().toast('올리기 실패: '+er.message)}}}
  function locMenu(n){const M=mapS();const l=M.locs.find(x=>x.n===n);if(!l)return;const h=M.vis[n]==1;
   const md=A().openModal(`<div class="mhead"><h2>${n}. ${esc(l.name)}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    <div class="row"><button class="btn ${h?'pri':''}" id="lopen">${h?'공개하기':'가리기'}</button><button class="btn" id="lparty">파티를 여기로</button><button class="btn ghost" id="lfocus">자막으로 알리기</button><button class="btn ghost" id="lmgr">지도 관리</button></div>
+   ${(()=>{const b=locBg(l);return `<div class="locbg">${b?`<i class="lbthumb" style="background-image:url('${cssu(b.src)}')"></i><span class="small"><b>🖼 배경</b> ${esc(b.name||'')}</span><button class="btn pri" id="lbuse">이 배경으로</button>`:'<span class="small"><b>🖼 배경</b> <span class="dim">없음 — 파티가 와도 무대 배경은 그대로</span></span>'}<button class="btn ghost" id="lbpick">${b?'바꾸기':'배경 고르기'}</button></div>`})()}
    ${(()=>{const DGU=window.OM_DG_UI;if(!DGU)return '';const L=DGU.list();const dn=l.dg?DGU.nameOf(l.dg):'';const now=dn&&DGU.on()&&(DGU.cur()||{}).id===l.dg;
     return `<div class="locdg"><span class="small"><b>⚔ 던전</b> 이 장소를 던전 입구로</span><select id="ldg"><option value="">연결 안 함</option>${L.map(d=>`<option value="${esc(d.id)}" ${l.dg===d.id?'selected':''}>${esc(d.n)} (방 ${d.rooms}개)</option>`).join('')}</select>${dn?(now?'<button class="btn pri" id="ldggo">던전 탭으로</button>':`<button class="btn pri" id="ldgin" title="파티를 여기로 옮기고 던전에 들어간다 — 모두의 화면이 던전 탭으로">⚔ 던전 진입</button>`):''}${L.length?'':'<span class="small dim">준비한 던전이 없다 — 위 탭 「던전」 → 던전 관리</span>'}</div>`})()}`);
   {const sel=$('#ldg',md);if(sel)sel.onchange=async()=>{const v=sel.value;const cur=mapS();await saveMap({locs:cur.locs.map(x=>x.n===n?Object.assign({},x,{dg:v||undefined}):x)});A().closeModal();locMenu(n);A().toast(v?`${l.name} = 던전 「${window.OM_DG_UI.nameOf(v)}」`:'던전 연결을 풀었다')}}
@@ -649,7 +668,9 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   $('#lopen',md).onclick=async()=>{A().closeModal();await toggleLoc(n)};
   $('#lparty',md).onclick=async()=>{A().closeModal();await partyMove(n)};
   $('#lfocus',md).onclick=async()=>{A().closeModal();await A().set(['rp','caption'],{name:'장소',text:l.name,at:Date.now(),fixed:false})};
-  $('#lmgr',md).onclick=()=>openMapMgr('loc')}
+  $('#lmgr',md).onclick=()=>openMapMgr('loc');
+  {const u=$('#lbuse',md);if(u)u.onclick=async()=>{A().closeModal();await useLocBg(l)}}
+  $('#lbpick',md).onclick=()=>{A().closeModal();pickLocBg(n)}}
  /* 지도 관리 창 (맵툴 Lib:map 의 두 탭) */
  const MM={tab:'loc',seq:[],col:'red',rname:'',pin:false,mode:'sel',hl:0};
  function openMapMgr(tab){if(tab)MM.tab=tab;const M=mapS();const ST=A().ST;const locName=n=>(M.locs.find(x=>x.n===n)||{}).name||'';
@@ -664,7 +685,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    :`<div class="mapprev big"><span class="dim">지도 그림이 없다 — 「지도 그림」 탭에서 먼저 올려 줘</span></div>`;
   const locTab=`<div class="mmcols mmloc"><div>${mini}</div>
    <div><div class="sec">장소 <span class="note">${M.locs.filter(l=>M.vis[l.n]!=1).length}/${M.locs.length} 공개</span><span class="sp"></span><button class="btn xs" data-mm="all" data-v="0">모두 공개</button><button class="btn xs ghost" data-mm="all" data-v="1">모두 가리기</button><button class="btn xs ${M.ann?'pri':'ghost'}" data-mm="ann" title="공개·가림·루트를 채팅에 알린다">알림 ${M.ann?'켬':'끔'}</button></div>
-    <div class="mmlist mmlocs">${M.locs.map(l=>{const h=M.vis[l.n]==1;return `<div class="mml ${h?'hid':''} ${MM.hl===l.n?'hl':''}" data-row="${l.n}"><span class="no">${l.n}</span><input type="text" class="mmname" data-mmren="${l.n}" value="${esc(l.name)}" title="고치면 바로 저장">${M.party.n===l.n?'<span class="tag me">파티</span>':''}<button class="btn xs ${h?'pri':'ghost'}" data-mm="t" data-n="${l.n}" title="${h?'지금 가림 — 눌러서 공개':'지금 공개 — 눌러서 가리기'}">${h?'🙈 가림':'👁 공개'}</button><button class="btn xs ghost danger" data-mm="del" data-n="${l.n}">×</button></div>`}).join('')||'<div class="empty small">장소가 없다 — 왼쪽에서 「＋ 장소 찍기」</div>'}</div>
+    <div class="mmlist mmlocs">${M.locs.map(l=>{const h=M.vis[l.n]==1;return `<div class="mml ${h?'hid':''} ${MM.hl===l.n?'hl':''}" data-row="${l.n}"><span class="no">${l.n}</span><input type="text" class="mmname" data-mmren="${l.n}" value="${esc(l.name)}" title="고치면 바로 저장">${M.party.n===l.n?'<span class="tag me">파티</span>':''}<button class="btn xs ${locBg(l)?'':'ghost'} lbbtn" data-mm="lbg" data-n="${l.n}" title="${locBg(l)?'배경: '+esc(l.bg.name||'')+' — 눌러서 바꾸기':'장소 배경 고르기'}">${locBg(l)?`<i class="lbmini" style="background-image:url('${cssu(l.bg.src)}')"></i>`:'🖼'}</button><button class="btn xs ${h?'pri':'ghost'}" data-mm="t" data-n="${l.n}" title="${h?'지금 가림 — 눌러서 공개':'지금 공개 — 눌러서 가리기'}">${h?'🙈 가림':'👁 공개'}</button><button class="btn xs ghost danger" data-mm="del" data-n="${l.n}">×</button></div>`}).join('')||'<div class="empty small">장소가 없다 — 왼쪽에서 「＋ 장소 찍기」</div>'}</div>
     <div class="sec" style="margin-top:12px">루트 <span class="sp"></span>${M.routes.length?'<button class="btn xs ghost danger" data-mm="wipe">모두 지우기</button>':''}</div>
     <div class="seq">${MM.seq.length?MM.seq.map((n,i)=>`${i?' → ':''}<b>${n}</b> ${esc(locName(n))}`).join(''):`<span class="dim small">${MM.mode==='route'?'지도에서 핀을 차례로 눌러 줘':'「〰 루트 그리기」를 켜고 핀을 차례로 누른다'}</span>`}</div>
     <div class="row"><button class="btn xs ghost" data-mm="undo" ${MM.seq.length?'':'disabled'}>하나 빼기</button><button class="btn xs ghost" data-mm="clr" ${MM.seq.length?'':'disabled'}>비우기</button><span class="sp"></span>${Object.entries(RCOL).map(([k,c])=>`<span class="sw ${MM.col===k?'on':''}" data-mm="col" data-c="${k}" style="background:${c}"></span>`).join('')}</div>
@@ -674,6 +695,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   const pcTab=`<div class="mmcols"><div><div class="sec">파티 현재 위치</div>
     <div class="partycard"><div class="ppin static"><span>PC</span></div><div style="flex:1"><small class="dim">지금 있는 곳</small><br><b>${M.party.n?M.party.n+'. '+esc(locName(M.party.n)):'—'}</b> ${M.party.vis?'<span class="chip on">플레이어에게 보임</span>':'<span class="chip">핀 숨김 (GM만)</span>'}</div><button class="btn sm ${M.party.vis?'':'pri'}" data-mm="pvis">${M.party.vis?'핀 숨기기':'핀 보이기'}</button></div>
     <label class="small"><input type="checkbox" data-mm="reveal" ${M.reveal?'checked':''}> 가려진 장소로 이동하면 그 장소도 함께 공개</label>
+    <label class="small"><input type="checkbox" data-mm="autobg" ${(R().map||{}).autoBg!==0?'checked':''}> 이동하면 그 장소 배경으로 무대 배경도 바꾸기 (배경을 넣은 장소만)</label>
     <div class="small dim" style="margin:6px 0">장소를 누르면 핀이 그곳으로 옮겨진다${M.ann?' (채팅에 알림)':''}</div>
     <div class="lgrid">${M.locs.map(l=>`<button class="lb ${M.party.n===l.n?'cur':''} ${M.vis[l.n]==1?'hid':''}" data-mm="pmove" data-n="${l.n}"><span class="no">${l.n}</span>${esc(l.name)}</button>`).join('')}</div></div>
    <div><div class="sec">주요 인물 배치</div>
@@ -733,6 +755,8 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(k==='wipe'){if(!confirm('루트를 모두 지울까?'))return;await saveMap({routes:[]});return re()}
    if(k==='pvis'){await saveMap({party:Object.assign({},M.party,{vis:M.party.vis?0:1})});return re()}
    if(k==='reveal'){await saveMap({reveal:b.checked?1:0});return}
+   if(k==='autobg'){await saveMap({autoBg:b.checked?1:0});return}
+   if(k==='lbg'){A().closeModal();return pickLocBg(+b.dataset.n,()=>openMapMgr('loc'))}
    if(k==='pmove'){await partyMove(+b.dataset.n);return re()}
    if(k==='nadd'){const sel=$('#mm_np',md);const opt=sel.options[sel.selectedIndex];const name=$('#mm_npn',md).value.trim()||sel.value;if(!name)return A().toast('인물을 고르거나 이름을 적어 줘');const img=(opt&&opt.dataset.img)||(pics.find(p=>p.name===name)||{}).img||'';
     await saveMap({npcs:[...M.npcs,{id:'p'+Date.now().toString(36),name,img,n:+$('#mm_nploc',md).value,size:$('#mm_npsz',md).value,vis:$('#mm_npvis',md).checked?1:0}]});return re()}
@@ -776,7 +800,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    const pins=M.img?M.locs.map(l=>{const h=M.vis[l.n]==1;return `<button class="gmp ${h?'hid':''} ${M.party.n===l.n?'pc':''}" data-gc="pgo" data-n="${l.n}" style="left:${l.x/W*100}%;top:${l.y/H*100}%" title="${esc(l.name)}${h?' (가림)':''} — 눌러서 파티 이동"><b>${M.party.n===l.n?'PC':l.n}</b></button>`}).join(''):'';
    body=`<div class="gcmap"><div>${M.img?`<div class="gmmini" style="aspect-ratio:${W}/${H};background-image:url('${cssu(M.img.src)}')">${pins}</div><div class="small dim" style="margin-top:4px">번호를 누르면 파티가 그곳으로 간다${M.reveal?' (가린 곳이면 함께 공개)':''}. 흐린 번호는 가린 장소.</div>`:`<div class="gcempty">지도 그림이 없다<br><button class="btn sm" data-gc="mapmgr" data-t="img">지도 그림 올리기</button></div>`}</div>
     <div>${sec('파티')}<div class="row"><button class="btn sm ${M.party.vis?'':'pri'}" data-gc="pvis">${M.party.vis?'👁 핀 보임':'🙈 핀 숨김'}</button><label class="small"><input type="checkbox" data-gc="reveal" ${M.reveal?'checked':''}> 가린 곳으로 가면 함께 공개</label></div>
-     ${sec('장소',`${M.locs.filter(l=>M.vis[l.n]!=1).length}/${M.locs.length} 공개`)}<div class="gmlocs">${M.locs.map(l=>{const h=M.vis[l.n]==1;return `<div class="gml ${h?'hid':''} ${M.party.n===l.n?'pc':''}"><span class="no">${l.n}</span><span class="nm">${esc(l.name)}</span>${M.party.n===l.n?'<span class="tag me">파티</span>':`<button class="btn xs ghost" data-gc="pgo" data-n="${l.n}">이동</button>`}<button class="btn xs ${h?'pri':'ghost'}" data-gc="lvis" data-n="${l.n}">${h?'🙈':'👁'}</button></div>`}).join('')||'<div class="small dim">장소가 없다</div>'}</div>
+     ${sec('장소',`${M.locs.filter(l=>M.vis[l.n]!=1).length}/${M.locs.length} 공개`)}<div class="gmlocs">${M.locs.map(l=>{const h=M.vis[l.n]==1;return `<div class="gml ${h?'hid':''} ${M.party.n===l.n?'pc':''}"><span class="no">${l.n}</span><span class="nm">${esc(l.name)}</span>${M.party.n===l.n?'<span class="tag me">파티</span>':`<button class="btn xs ghost" data-gc="pgo" data-n="${l.n}">이동</button>`}${locBg(l)?`<button class="btn xs ghost lbbtn" data-gc="lbguse" data-n="${l.n}" title="무대 배경을 「${esc(l.bg.name||'')}」 로"><i class="lbmini" style="background-image:url('${cssu(l.bg.src)}')"></i></button>`:''}<button class="btn xs ${h?'pri':'ghost'}" data-gc="lvis" data-n="${l.n}">${h?'🙈':'👁'}</button></div>`}).join('')||'<div class="small dim">장소가 없다</div>'}</div>
      <div class="row" style="margin-top:10px"><button class="btn sm" data-gc="mapmgr" data-t="loc">지도 관리 (장소 · 루트 · 인물)</button><button class="btn sm ghost" data-gc="mapopen">${mapOpen?'무대 지도 닫기':'무대에 지도 열기'}</button></div></div></div>`}
   else if(GC.tab==='stage'){const manual=r.stage||{};const chars=[{key:'gm',name:'GM'},...Object.keys(gmProfs()).filter(n=>gmProfs()[n]).map(n=>({key:'gm@'+n,name:'GM · '+n})),...Object.values((ST.state.roster||{}).trainers||{}).map(t=>({key:t.id,name:t.name})),...Object.values((ST.state.graph||{}).nodes||{}).filter(n=>n.kind!=='org').map(n=>({key:'npc:'+n.name,name:n.name+' (NPC)'}))];
    const slotCard=s=>{const m=manual[s]||{};const c=m.key?charOf(m.key):null;const src=c?standSrc(c):'';return `<div class="gss ${m.key?'set':''}"><div class="gssp ${m.flip?'flip':''}" style="${src?`background-image:url('${cssu(src)}')`:''}">${src?'':`<span>${m.key?'그림 없음':'자동'}</span>`}</div><b>${{left:'왼쪽',center:'가운데',right:'오른쪽'}[s]}</b><select data-slot="${s}"><option value="">(자동 — 말하는 사람)</option>${chars.map(x=>`<option value="${esc(x.key)}" ${m.key===x.key?'selected':''}>${esc(x.name)}</option>`).join('')}</select><label class="small"><input type="checkbox" data-flip="${s}" ${m.flip?'checked':''} ${m.key?'':'disabled'}> 좌우 반전</label></div>`};
@@ -836,6 +860,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(k==='nreset'){if(!confirm('공지를 기본 8개로 되돌릴까?'))return;await A().set(['rp','notices'],null);return re()}
    if(k==='pgo'){await partyMove(+b.dataset.n);return re()}
    if(k==='lvis'){await toggleLoc(+b.dataset.n);return re()}
+   if(k==='lbguse'){const l=mapS().locs.find(x=>x.n===+b.dataset.n);if(l)await useLocBg(l);return re()}
    if(k==='pvis'){const M=mapS();await saveMap({party:Object.assign({},M.party,{vis:M.party.vis?0:1})});return re()}
    if(k==='reveal'){await saveMap({reveal:b.checked?1:0});return re()}
    if(k==='mapmgr')return openMapMgr(b.dataset.t||'loc');
