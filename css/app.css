@@ -4756,6 +4756,10 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .chip.skty{background:var(--tb);color:var(--tf);opacity:.4}.chip.skty.on{opacity:1;box-shadow:inset 0 0 0 2px #fff}
 .skprow{display:inline-flex;align-items:center;gap:6px;flex-wrap:wrap;min-width:0}
 .skpo{display:inline-flex;align-items:center;gap:4px;background:#0e0e10;padding:2px 8px 2px 2px;border-radius:16px}
-.memon .mecomp{font-style:normal;font-size:9.5px;line-height:13px;padding:0 5px;border:1px solid #555;color:#aaa;border-radius:7px;cursor:pointer;white-space:nowrap}
+.memon{width:62px}.memon small{max-width:62px}
+.memon .mepills{display:flex;gap:2px;justify-content:center}
+.memon .mecomp,.memon .medet{font-style:normal;font-size:9.5px;line-height:13px;padding:0 4px;border:1px solid #555;color:#aaa;border-radius:7px;white-space:nowrap}
+.memon .medet{cursor:pointer}.memon .medet:hover{border-color:var(--yel2);color:var(--yel2)}
 .memon .mecomp.on{background:var(--yel2);border-color:var(--yel2);color:#000;font-weight:700}
+.mebar .mebtns{display:grid;grid-template-columns:repeat(3,auto);gap:4px;align-content:center}
 .memon.comp i{border-color:var(--yel2);box-shadow:0 0 0 2px var(--yel2)}
