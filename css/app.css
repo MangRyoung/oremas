@@ -4772,3 +4772,36 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .skhc i{display:block;height:46px;border-radius:5px;background:center/cover no-repeat}
 .skhc b{font-size:11px;line-height:1.25;word-break:keep-all}
 .skhc em{position:absolute;top:2px;right:2px;background:var(--hc);color:#fff;font-style:normal;font-size:10px;font-weight:700;border-radius:9px;padding:0 5px}
+/* 10-29 망령 「대기 칸을 위아래 다 쓰는 사각형으로, 늘린 공간으로 파티 현황을 더 보기 좋게」
+   체크 대기 칩 = 4줄까지 채우는 격자(열 수 --mc 는 rp_ui meCheck), 포켓몬 = 가로 카드 3열 (그림 · 이름 · HP · 상태 · 동행/상세) */
+.mebar{align-items:stretch}
+.mebar .meid,.mebar .mebtns,.mebar .melast{align-self:center}
+.mebar .mecheck{align-self:stretch;align-items:center}
+.mecheck .mcks{display:grid;grid-template-columns:repeat(var(--mc,1),84px);grid-auto-rows:minmax(22px,auto);gap:3px;align-content:center}
+.mck{flex-direction:row;justify-content:center;gap:5px;padding:2px 6px;min-width:0;white-space:nowrap}
+.mck b{font-weight:600;font-size:11px;min-width:0;overflow:hidden;text-overflow:ellipsis;color:#fff!important}
+.mck em{flex:none;font-size:9px;padding:0 3px;border-radius:6px;background:rgba(0,0,0,.28)}
+.mck.self{box-shadow:inset 0 0 0 1.5px #fff}
+.mebar .memons{display:grid;grid-template-columns:repeat(3,minmax(112px,168px));gap:5px;align-content:center;align-self:center;flex:0 1 auto;min-width:0}
+.memon{display:grid;grid-template-columns:38px minmax(0,1fr);align-items:center;gap:7px;width:auto;padding:4px 6px 4px 4px;border-radius:8px;background:rgba(128,128,128,.13);border:1px solid rgba(128,128,128,.28);cursor:default}
+.memon i{position:relative;width:38px;height:38px;cursor:pointer}
+.memon i u{position:absolute;right:-4px;top:-3px;text-decoration:none;font-size:9px;font-weight:700;line-height:13px;padding:0 3px;border-radius:6px;background:#1a6ad8;color:#fff!important}
+.memon i u.cp{top:auto;bottom:-5px;right:auto;left:50%;transform:translateX(-50%);background:var(--yel2);color:#000!important;font-size:8.5px;line-height:11px;padding:0 3px;white-space:nowrap}
+.mck em{margin-left:auto}
+.memon .mei{display:flex;flex-direction:column;gap:2px;min-width:0}
+.memon small{max-width:none;font-size:11.5px;font-weight:700;line-height:1.25}
+.memon .mhp{width:100%;height:5px;border-radius:3px;overflow:hidden}
+.memon .meft{display:flex;align-items:center;gap:4px;min-width:0}
+.memon .mhpt{flex:1;min-width:0;font-size:10px;line-height:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--mono);opacity:.85}
+.memon .mhpt s{text-decoration:none;color:#e0632a!important;font-family:var(--sans,inherit)}
+.memon .mepills{flex:none}
+.memon.comp{border-color:var(--yel2);background:color-mix(in srgb,var(--yel2) 16%,transparent)}
+.memon.ko{opacity:.6}.memon.ko .mhpt{color:var(--red)!important}
+html[data-vt="mm"] .memon{background:rgba(20,16,12,.06);border-color:rgba(20,16,12,.22)}
+html[data-vt="mm"] .memon.comp{background:rgba(207,174,110,.28);border-color:#b8913f}
+html[data-vt="mm"] .memon .mhp{background:rgba(20,16,12,.18)}
+html[data-vt="mm"] .memon .medet{border-color:rgba(20,16,12,.4)}
+@media (max-width:760px){
+ .mebar .memons{grid-template-columns:repeat(auto-fill,minmax(140px,1fr));width:100%;overflow:visible}
+ .mecheck .mcks{grid-template-columns:repeat(auto-fill,minmax(80px,1fr));flex:1;min-width:0}
+ .mebar .mecheck{align-items:flex-start}}
