@@ -176,7 +176,7 @@ table.wdb td.sc,table.wdb th.sc{text-align:center;padding-left:2px;padding-right
  <div class="card" id="agOut" hidden></div>
 </section>
 <section id="t-pt" hidden>
- <div class="card" id="ptBar"><div class="row"><b>일행</b><span id="ptSel" class="row" style="gap:4px"></span><span class="sp"></span><button class="b sm" id="ptClear">비우기</button><button class="b sm pri" id="ptAwk" title="트레이너마다 넣어 둔 각성체 그림 · 코멘트를 그림 한 장 + 글 하나로 묶어요 — 감우와 대화에 그대로 붙여 넣으면 한 번에 읽어요">📦 각성체 묶음 (감우에게)</button></div>
+ <div class="card" id="ptBar"><div class="row"><b>일행</b><span id="ptSel" class="row" style="gap:4px"></span><span class="sp"></span><button class="b sm" id="ptClear">비우기</button><button class="b sm pri" id="ptAwk" title="트레이너마다 넣어 둔 각성체 그림(없으면 제작기 각성체 포켓몬 그림) · 코멘트를 그림 한 장 + 글 하나로 묶어요 — 그림에 어울리는 원전을 찾아 받아요 — 감우와 대화에 그대로 붙여 넣으면 한 번에 읽어요">📦 각성체 묶음 (감우에게)</button></div>
   <div class="row" id="ptImg" style="margin-top:6px"></div>
   <div class="row" style="margin-top:8px"><input class="inp" id="ptQ" placeholder="이름 · 포켓몬 · 폴더 검색" style="min-width:200px"><span id="ptFolders" class="row" style="gap:2px"></span><span class="sp"></span><label class="f" style="flex-direction:row;align-items:center;gap:4px">정렬<select id="ptSort" class="inp"><option value="folder">폴더</option><option value="name">이름</option><option value="지시">지시 랭크</option><option value="육성">육성 랭크</option><option value="통솔">통솔 랭크</option><option value="능력">능력 랭크</option><option value="n">포켓몬 수</option></select></label></div></div>
  <div id="ptList"></div>
@@ -282,48 +282,55 @@ function renderPt(){partyImgBar();if(AWK==null){AWK={items:{}};awkLoad().then(()
  else $('#ptList').innerHTML=`<div class="ptgrid">${L.map(ptCard).join('')}</div>`||'<div class="small">없어요.</div>';
  $$('#ptList .ptc').forEach(c=>{const id=c.dataset.id;c.onclick=e=>{if(e.target.closest('[data-tsel]')){toggleSel(id);return}openPtModal(id)}})}
 function ptCard(t){const c=hcol(t.folder||t.name);const r=t.ranks||{};const wn=+$('#wn').value||2;const go=new Set(goMons(t,wn));
- return `<div class="ptc ${sel.has(t.id)?'on':''}" data-id="${esc(t.id)}" style="--tc:${c}"><div class="hd"><div class="avatar">${t.img?`<img src="${esc(t.img)}" alt="" onerror="this.remove()">`:''}${esc(String(t.name||'?').slice(0,1))}</div><div style="min-width:0;flex:1"><div class="tname">${esc(t.name)}</div><div class="ttitle">${t.kind==='npc'?'NPC':'PC'}${t.solo?' · 단독':''}${t.priv?' · 비공개':''}${t.ext?` · 기능 확장 ${t.ext}`:''}${AWK&&AWK.items[t.id]?' · <span class="awk-mk">✦ 각성체</span>':''}</div></div><button class="b xs ${sel.has(t.id)?'pri':''}" data-tsel>${sel.has(t.id)?'일행 ✓':'일행에 넣기'}</button></div><div class="tranks">${ranksHtml(r)}</div><div class="mons">${(t.mons||[]).map(m=>`<div style="--mc:${tcol((m.types||[])[0]).bg}" title="${esc((m.types||[]).join('/'))} · Lv${m.lv}">${m.img?mimg(m,18):''}${m.partner?'★ ':''}${go.has(m.name)?'<b>'+esc(m.name)+'</b>':esc(m.name)} <small>Lv${m.lv||'-'}</small></div>`).join('')||'<div class="small">포켓몬 없음</div>'}</div><div class="ft"><span>${(t.mons||[]).length}체 · 진한 글씨가 동행 ${wn}체</span><span class="sp"></span><span>누르면 시트</span></div></div>`}
+ return `<div class="ptc ${sel.has(t.id)?'on':''}" data-id="${esc(t.id)}" style="--tc:${c}"><div class="hd"><div class="avatar">${t.img?`<img src="${esc(t.img)}" alt="" onerror="this.remove()">`:''}${esc(String(t.name||'?').slice(0,1))}</div><div style="min-width:0;flex:1"><div class="tname">${esc(t.name)}</div><div class="ttitle">${t.kind==='npc'?'NPC':'PC'}${t.solo?' · 단독':''}${t.priv?' · 비공개':''}${t.ext?` · 기능 확장 ${t.ext}`:''}${AWK&&awkAny(t)?' · <span class="awk-mk">✦ 각성체</span>':''}</div></div><button class="b xs ${sel.has(t.id)?'pri':''}" data-tsel>${sel.has(t.id)?'일행 ✓':'일행에 넣기'}</button></div><div class="tranks">${ranksHtml(r)}</div><div class="mons">${(t.mons||[]).map(m=>`<div style="--mc:${tcol((m.types||[])[0]).bg}" title="${esc((m.types||[]).join('/'))} · Lv${m.lv}">${m.img?mimg(m,18):''}${m.partner?'★ ':''}${go.has(m.name)?'<b>'+esc(m.name)+'</b>':esc(m.name)} <small>Lv${m.lv||'-'}</small></div>`).join('')||'<div class="small">포켓몬 없음</div>'}</div><div class="ft"><span>${(t.mons||[]).length}체 · 진한 글씨가 동행 ${wn}체</span><span class="sp"></span><span>누르면 시트</span></div></div>`}
 function pkRow(m,i){const t1=(m.types||[])[0];const ks=['HP','공','방','특공','특방','스'];const st=m.stats||[];const mx=Math.max(1,...st);
  return `<div class="pk" style="--c1:${tcol(t1).bg}"><div class="pno">${m.img?mimg(m,40):i+1}</div><div><div class="pnm">${m.partner?'<small title="파트너">★</small> ':''}${esc(m.name)}</div><div class="row" style="gap:4px">${(m.types||[]).map(tchip).join('')}${m.pride?`<span class="rk">프라이드<b class="g-${esc(m.pride)}">${esc(m.pride)}</b></span>`:''}${m.ability?`<span class="small">${esc(m.ability)}</span>`:''}</div></div><div class="small">Lv <b class="mono" style="color:var(--ink)">${m.lv||'-'}</b><br>HP <b class="mono" style="color:var(--ink)">${m.hp||st[0]||'-'}</b></div><div class="pst">${ks.map((k,j)=>`<div>${k}<b>${st[j]??'-'}</b><div class="bar"><i style="width:${Math.round((st[j]||0)/mx*100)}%;background:${ratioCol((st[j]||0)/mx)}"></i></div></div>`).join('')}</div><div class="mvs">${(m.moves||[]).map(v=>`<span style="--mc:${tcol(v.t).bg}" title="${esc(v.cat||'')} ${v.pow||''}">${esc(v.n)}</span>`).join('')}</div></div>`}
 function openPtModal(id){const t=trById(id);if(!t)return;const M=$('#ptModal');M.hidden=false;$('#ptMTitle').innerHTML=`${esc(t.name)} <span class="small">${esc(t.folder||'')} · ${t.kind==='npc'?'NPC':'PC'}</span> <span style="margin-left:8px">${ranksHtml(t.ranks)}</span>`;
  const sb=$('[data-ptsel]',M);const paint=()=>{sb.textContent=sel.has(id)?'일행에서 빼기':'일행에 넣기';sb.classList.toggle('pri',!sel.has(id))};paint();sb.onclick=()=>{toggleSel(id);paint()};
  $('#ptMBody').innerHTML=awkSec(t)+((t.mons||[]).map((m,i)=>pkRow(m,i)).join('')||'<div class="small">포켓몬이 없어요.</div>');awkBind(t);
  $('[data-close]',M).onclick=()=>M.hidden=true;M.onclick=e=>{if(e.target===M)M.hidden=true}}
-/* ---- 10-29 각성체 보낼 그림 · 코멘트 (망령 「트레이너별로 이미지 넣어 놓고 코멘트도 적어서 한 번에 너한테 보낼 수 있게」) ----
-   서버 awkList · awkSave · awkImg · awkImgDel, 그림 /aimg/ (data/awaken, git 안 올림). 받은 답은 세션 노트 시트 > 각성체 「📋 묶음 결과 넣기」에 그대로 (트레이너 id = 노트 PC id). */
+/* ---- 10-29 각성체 그림 · 코멘트 (망령 「트레이너별로 이미지 넣어 놓고 코멘트도 적어서 한 번에 너한테 보낼 수 있게」
+   → 「트레이너에 어울리는 각성체가 아니야. 각성체 포트레이트를 줄 테니 거기에 어울리는 걸」): 트레이너마다 각성체 칸 둘(<id>~1 · ~2).
+   그림 = 여기 올린 것 → 없으면 제작기에서 각성체로 표시한 포켓몬 그림(t.aw, 일행 그림 받아 둔 것만). 서버 awkList · awkSave · awkImg · awkImgDel, 그림 /aimg/ (data/awaken, git 안 올림).
+   받은 답(JSON 배열 pc · slot)은 세션 노트 시트 > 각성체 「📋 묶음 결과 넣기」에 그대로 (트레이너 id = 노트 PC id). */
 let AWK=null;
 async function awkLoad(){try{AWK=await api('awkList')}catch(e){AWK={items:{}}}return AWK}
-const awkOf=id=>(AWK&&AWK.items[id])||{};
-const awkImgSrc=t=>{const a=awkOf(t.id);return a.img?'/aimg/'+encodeURIComponent(a.img)+'?'+(a.imgAt||''):(t.img||'')};
-function awkSec(t){const a=awkOf(t.id);return `<div class="awk-sec"><div class="awk-img ${a.img?'on':''}" id="awkImg" title="각성체 고를 때 감우에게 보낼 그림 — 끌어다 놓거나 눌러서 고르기. 없으면 트레이너 그림" style="${a.img?`background-image:url('${awkImgSrc(t)}')`:''}">${a.img?'':'✦ 각성체 그림<br><small>끌어다 놓기<br>· 누르기</small>'}</div>
-  <div style="flex:1;min-width:0"><div class="row" style="margin-bottom:4px"><b>✦ 각성체 — 감우에게</b><span class="small">바라는 분위기 · 피하고 싶은 것 · 좋아하는 인물이나 설화</span><span class="sp"></span>${a.img?'<button class="b xs" id="awkImgX">그림 빼기</button>':''}<button class="b xs pri" id="awkSave">저장</button></div>
-  <textarea id="awkNote" placeholder="예: 차분한 서기 캐릭터라 물 · 달 느낌. 너무 유명한 사람은 빼고, 동양 설화 쪽이 좋아요.">${esc(a.note||'')}</textarea></div><input type="file" accept="image/*" id="awkFile" hidden></div>`}
+const awkOf=sid=>(AWK&&AWK.items[sid])||{};
+function awkSlot(t,n){const sid=t.id+'~'+n;const a=awkOf(sid);const m=(t.aw||[])[n-1];return {sid,n,t,note:a.note||'',own:!!a.img,img:a.img?'/aimg/'+encodeURIComponent(a.img)+'?'+(a.imgAt||''):(m&&m.img)||'',mname:m?m.name:''}}
+const awkHas=x=>!!(x.img||x.note||x.mname);
+const awkAny=t=>[1,2].some(n=>awkHas(awkSlot(t,n)));
+function awkSec(t){return `<div class="awk-sec" style="flex-direction:column"><div class="row" style="width:100%"><b>✦ 각성체 — 그림에 어울리는 원전 찾기 (감우에게)</b><span class="small">각성체 그림을 넣고(없으면 제작기 각성체 포켓몬 그림) 바라는 점을 적어요</span></div>
+  ${[1,2].map(n=>{const x=awkSlot(t,n);return `<div class="row" style="width:100%;align-items:flex-start;gap:10px"><div class="awk-img ${x.img?'on':''}" data-aki="${n}" title="각성체 ${n} 그림 — 끌어다 놓거나 눌러서 고르기" style="${x.img?`background-image:url('${x.img}')`:''}">${x.img?'':`✦ 각성체 ${n}<br><small>끌어다 놓기<br>· 누르기</small>`}</div>
+   <div style="flex:1;min-width:0"><div class="row" style="margin-bottom:4px"><b>각성체 ${n}</b>${x.mname?`<span class="small">제작기 「${esc(x.mname)}」${x.own?' · 올린 그림':''}</span>`:x.own?'<span class="small">올린 그림</span>':''}<span class="sp"></span>${x.own?`<button class="b xs" data-akx="${n}">올린 그림 빼기</button>`:''}<button class="b xs pri" data-aks="${n}">저장</button></div>
+   <textarea data-akn="${n}" placeholder="예: 그림의 소품(거울 · 부채) · 분위기, 바라는 지역 · 시대, 피하고 싶은 인물">${esc(x.note)}</textarea></div><input type="file" accept="image/*" data-akf="${n}" hidden></div>`}).join('')}</div>`}
 function shrinkImg(file,max){return new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>{const im=new Image();im.onload=()=>{const s=Math.min(1,max/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.88))};im.onerror=()=>rej(new Error('그림을 못 읽었어요'));im.src=fr.result};fr.readAsDataURL(file)})}
-function awkBind(t){const box=$('#awkImg'),fi=$('#awkFile');if(!box)return;
- const put=async f=>{if(!f||!/^image\//.test(f.type))return;try{const d=await shrinkImg(f,1400);AWK=await api('awkImg',{id:t.id,data:d});toast('그림을 넣었어요');openPtModal(t.id);renderPt()}catch(e){toast('못 넣었어요: '+e.message)}};
- box.onclick=()=>fi.click();fi.onchange=()=>put(fi.files[0]);
- box.ondragover=e=>{e.preventDefault();box.classList.add('over')};box.ondragleave=()=>box.classList.remove('over');box.ondrop=e=>{e.preventDefault();box.classList.remove('over');put(e.dataTransfer.files[0])};
- $('#awkSave').onclick=async()=>{try{AWK=await api('awkSave',{id:t.id,note:$('#awkNote').value.trim()});toast('저장했어요');renderPt()}catch(e){toast('저장 실패: '+e.message)}};
- const x=$('#awkImgX');if(x)x.onclick=async()=>{AWK=await api('awkImgDel',{id:t.id});openPtModal(t.id);renderPt()}}
+function awkBind(t){const R=$('#ptMBody');$$('[data-aki]',R).forEach(box=>{const n=box.dataset.aki;const sid=t.id+'~'+n;const fi=$(`[data-akf="${n}"]`,R);
+  const put=async f=>{if(!f||!/^image\//.test(f.type))return;try{const d=await shrinkImg(f,1400);AWK=await api('awkImg',{id:sid,data:d});toast('그림을 넣었어요');openPtModal(t.id);renderPt()}catch(e){toast('못 넣었어요: '+e.message)}};
+  box.onclick=()=>fi.click();fi.onchange=()=>put(fi.files[0]);
+  box.ondragover=e=>{e.preventDefault();box.classList.add('over')};box.ondragleave=()=>box.classList.remove('over');box.ondrop=e=>{e.preventDefault();box.classList.remove('over');put(e.dataTransfer.files[0])}});
+ $$('[data-aks]',R).forEach(b=>b.onclick=async()=>{const n=b.dataset.aks;try{AWK=await api('awkSave',{id:t.id+'~'+n,note:$(`[data-akn="${n}"]`,R).value.trim()});toast('저장했어요');renderPt()}catch(e){toast('저장 실패: '+e.message)}});
+ $$('[data-akx]',R).forEach(b=>b.onclick=async()=>{AWK=await api('awkImgDel',{id:t.id+'~'+b.dataset.akx});openPtModal(t.id);renderPt()})}
 function awkLoadImg(src){return new Promise(r=>{if(!src)return r(null);const im=new Image();im.onload=()=>r(im);im.onerror=()=>r(null);im.src=src})}
+const awkName=x=>`${x.t.name} · 각성체 ${x.n}${x.mname?' ('+x.mname+')':''}`;
 async function awkSheet(L){const n=L.length,cols=Math.min(n,4),rows=Math.ceil(n/cols),W=420,H=560,LB=56,G=16;const cv=document.createElement('canvas');cv.width=cols*W+(cols+1)*G;cv.height=rows*(H+LB)+(rows+1)*G;const c=cv.getContext('2d');c.fillStyle='#16161c';c.fillRect(0,0,cv.width,cv.height);let bad=0;
- for(let i=0;i<n;i++){const t=L[i];const x=G+(i%cols)*(W+G),y=G+Math.floor(i/cols)*(H+LB+G);c.fillStyle='#000';c.fillRect(x,y,W,H);const im=await awkLoadImg(awkImgSrc(t));
+ for(let i=0;i<n;i++){const x0=L[i];const x=G+(i%cols)*(W+G),y=G+Math.floor(i/cols)*(H+LB+G);c.fillStyle='#000';c.fillRect(x,y,W,H);const im=await awkLoadImg(x0.img);
   if(im){const s=Math.max(W/im.width,H/im.height);const w=im.width*s,h=im.height*s;c.save();c.beginPath();c.rect(x,y,W,H);c.clip();c.drawImage(im,x+(W-w)/2,y+Math.min(0,(H-h)/4),w,h);c.restore()}else bad++;
-  c.fillStyle='#f4f0e6';c.fillRect(x,y+H,W,LB);c.fillStyle='#111';c.font='bold 30px sans-serif';c.textBaseline='middle';c.fillText(`${i+1}. ${t.name}`.slice(0,22),x+14,y+H+LB/2)}
+  c.fillStyle='#f4f0e6';c.fillRect(x,y+H,W,LB);c.fillStyle='#111';c.font='bold 26px sans-serif';c.textBaseline='middle';c.fillText(`${i+1}. ${awkName(x0)}`.slice(0,26),x+14,y+H+LB/2)}
  return {cv,bad}}
-function awkText(L){const o=['[각성체 추천 부탁 — 던전 시뮬레이터 일행]','그림 한 장에 번호 · 이름을 붙인 트레이너 그림이 있어요. 트레이너마다 각성체 후보를 골라 주세요.',''];
- L.forEach((t,i)=>{const a=awkOf(t.id);o.push(`${i+1}. ${t.name} (pc: ${t.id}${t.folder?' · '+t.folder:''})`);o.push(`   랭크: ${STATS.map(s=>s+' '+(t.ranks[s]||'-')).join(' · ')}${(t.mons||[]).length?' · 포켓몬: '+t.mons.map(m=>m.name).join(', '):''}`);if(a.note)o.push('   코멘트: '+a.note.replace(/\n/g,' / '));o.push('')});
- o.push('돌려받을 꼴: JSON 배열 하나. [{"pc":"<트레이너 id>","name":"<이름>","sum":"…","tags":[…],"picks":[{"id":"<DB id>","n":"<이름>","why":"…"}],"extra":[…]}]');
+function awkText(L){const o=['[각성체 원전 추천 부탁 — 던전 시뮬레이터 일행]','그림 한 장에 번호 · 이름을 붙인 각성체 그림이 있어요. 그림마다 그 모습에 어울리는 역사 · 설화 속 원전 인물(마이너하거나 열화된 모습)을 골라 주세요.',''];
+ L.forEach((x,i)=>{o.push(`${i+1}. ${awkName(x)} (pc: ${x.t.id}, slot: ${x.n})`);if(x.note)o.push('   코멘트: '+x.note.replace(/\n/g,' / '));o.push('')});
+ o.push('돌려받을 꼴: JSON 배열 하나. [{"pc":"<트레이너 id>","slot":<1|2>,"name":"<이름>","sum":"…","tags":[…],"picks":[{"id":"<DB id>","n":"<이름>","why":"…"}],"extra":[…]}]');
  o.push('(받은 것은 세션 노트 시트 > 각성체의 「📋 묶음 결과 넣기」에 붙여 넣어요)');return o.join('\n')}
-async function awkBundle(){await awkLoad();const all=S.trainers;let pick=new Set(all.filter(t=>AWK.items[t.id]).map(t=>t.id));if(!pick.size)pick=new Set([...sel]);
+async function awkBundle(){await awkLoad();const all=S.trainers.flatMap(t=>[1,2].map(n=>awkSlot(t,n)).filter((x,i)=>i===0?(awkHas(x)||sel.has(t.id)):awkHas(x)));
+ let pick=new Set(all.filter(x=>x.img).map(x=>x.sid));
  let M=$('#awkModal');if(!M){M=document.createElement('div');M.className='ovl';M.id='awkModal';document.body.appendChild(M)}M.hidden=false;
- M.innerHTML=`<div class="dlg" style="max-width:1000px;width:100%"><div class="dh"><b>📦 각성체 묶음 — 감우에게</b><span class="sp"></span><button class="b sm" data-close>닫기</button></div><div class="db">
-  <p class="small" style="margin-top:0">보낼 트레이너를 고르세요(✦ = 그림이나 코멘트를 넣어 둔 사람). <b>그림 복사</b>(또는 받기)와 <b>글 복사</b>를 해서 감우와 대화에 같이 붙여 넣으면 한 번에 후보를 드려요. 그림 · 코멘트는 일행 카드를 눌러 위쪽 「✦ 각성체」 칸에서 넣어요.</p>
-  <div class="awk-chips">${all.map(t=>`<span class="chip ${pick.has(t.id)?'on':''}" data-ak="${esc(t.id)}">${AWK.items[t.id]?'✦ ':''}${esc(t.name)}</span>`).join('')}</div>
+ M.innerHTML=`<div class="dlg" style="max-width:1000px;width:100%"><div class="dh"><b>📦 각성체 묶음 — 감우에게 (그림에 어울리는 원전)</b><span class="sp"></span><button class="b sm" data-close>닫기</button></div><div class="db">
+  <p class="small" style="margin-top:0">보낼 각성체를 고르세요. <b>그림 복사</b>(또는 받기)와 <b>글 복사</b>를 해서 감우와 대화에 같이 붙여 넣으면 그림마다 어울리는 원전 인물을 한 번에 드려요. 각성체 그림 · 코멘트는 일행 카드를 눌러 위쪽 「✦ 각성체」 칸에서 넣어요(제작기 각성체 포켓몬 그림은 「일행 그림 받기」를 해 두면 저절로).</p>
+  <div class="awk-chips">${all.map(x=>`<span class="chip ${pick.has(x.sid)?'on':''}" data-ak="${esc(x.sid)}">${esc(awkName(x))}${x.img?'':' · 그림 없음'}${x.note?' ✎':''}</span>`).join('')||'<span class="small">넣어 둔 각성체가 없어요 — 일행 카드를 눌러 「✦ 각성체」 칸에 넣거나, 제작기에서 포켓몬을 각성체로 표시해 주세요.</span>'}</div>
   <div class="awk-prev" id="awkPrev"></div><textarea id="awkTxt" class="inp" readonly style="width:100%;min-height:150px;margin-top:8px;font:12px/1.5 var(--mono,monospace)"></textarea>
   <div class="row" style="margin-top:8px"><span class="small" id="awkMsg"></span><span class="sp"></span><button class="b" id="awkDl">⬇ 그림 받기</button><button class="b" id="awkCpI">🖼 그림 복사</button><button class="b pri" id="awkCpT">📝 글 복사</button></div></div></div>`;
- let cur=null;const draw=async()=>{const L=all.filter(t=>pick.has(t.id));$('#awkTxt').value=L.length?awkText(L):'';const pv=$('#awkPrev');if(!L.length){pv.innerHTML='<span class="small">트레이너를 하나 이상 골라 주세요</span>';cur=null;$('#awkMsg').textContent='';return}
-  cur=await awkSheet(L);pv.innerHTML='';pv.appendChild(cur.cv);$('#awkMsg').textContent=`${L.length}명`+(cur.bad?` · 그림 없는 사람 ${cur.bad}명 (일행 그림을 받아 두거나 ✦ 칸에 넣어 주세요)`:'')};
+ let cur=null;const draw=async()=>{const L=all.filter(x=>pick.has(x.sid));$('#awkTxt').value=L.length?awkText(L):'';const pv=$('#awkPrev');if(!L.length){pv.innerHTML='<span class="small">각성체를 하나 이상 골라 주세요</span>';cur=null;$('#awkMsg').textContent='';return}
+  cur=await awkSheet(L);pv.innerHTML='';pv.appendChild(cur.cv);$('#awkMsg').textContent=`${L.length}체`+(cur.bad?` · 그림 없는 각성체 ${cur.bad}체`:'')};
  $$('[data-ak]',M).forEach(c=>c.onclick=()=>{const id=c.dataset.ak;pick.has(id)?pick.delete(id):pick.add(id);c.classList.toggle('on',pick.has(id));draw()});
  $('[data-close]',M).onclick=()=>M.hidden=true;M.onclick=e=>{if(e.target===M)M.hidden=true};
  $('#awkCpT').onclick=async()=>{try{await navigator.clipboard.writeText($('#awkTxt').value)}catch(e){$('#awkTxt').select();document.execCommand('copy')}toast('글을 복사했어요')};
