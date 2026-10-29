@@ -27,36 +27,37 @@ async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt
  const party=makeParty(parties,dg.wn||opt.wn||2);const ev=[];const say=(e)=>ev.push(e);
  const aliveMons=P=>P.mons.filter(m=>m.hp.cur>0);const anyAlive=()=>party.some(P=>aliveMons(P).length);
  const rankOf=(P,st)=>((P.trainer.ranks||{})[st]||'C');
- const dieIdx=(P,st)=>SK.dieOf(rankOf(P,st),{inj:P.inj}).idx-(SK.dieOf(rankOf(P,st),{inj:P.inj}).autofail?9:0);
- let round=0;const bond=m=>[...(m.pots||[]),m.excl,...(m.exclX||[])].some(p=>p&&/유대/.test(p.name||''));
- const prideA=m=>/^A/.test(String(m.pride||''));
- /* 동료 고르기 */
- const partnerFor=(P,ck)=>{if(pol.partner==='none'||ck.hint==='none')return null;const cands=P.mons.filter(m=>m.hp.cur>0&&!P.tired.has(m.id));if(!cands.length)return null;
-  if(pol.partner==='match'&&ck.hint&&ck.hint!=='any'){const [k,v]=String(ck.hint).split(':');if(k==='type'){const en=TYPE_KO[v]||v;const m=cands.find(m=>(m.types||[]).includes(en));return m||null}}
-  return cands[0]};
+ let round=0;
+ /* 10-29 스킬 체크 v4 (lib/skill.js): 판정할 사람 · 포켓몬 고르기 — 일행 모두 필드(동행 wn 체)에 있다고 보고, 보정 합이 가장 큰 짝을 고른다.
+    초상 능력(능력 A 이상 · 휴식 사이 A 1 · AA 2)은 「능력」 체크에서 포켓몬보다 나을 때만 (pol.inou 'no' 면 안 씀) */
+ const supMax=P=>{const l=SK.lv(rankOf(P,'능력'));return l>=4?2:l>=3?1:0};
+ const myosuMax=P=>{const l=SK.lv(rankOf(P,'지시'));return l>=4?2:l>=3?1:0};
+ const optFor=(P,ck)=>{const base={rank:rankOf(P,ck.stat),pm:(+ck.pm||0)+(+adj.stepAll||0),twice:+ck.twice||0,inj:P.inj,tough:SK.lv(rankOf(P,'육성'))>=3};const L=[];
+  if(pol.partner!=='none')for(const m of aliveMons(P)){const f=SK.monFit(m,ck);L.push(Object.assign({},base,{mon:f.mon,fit:pol.partner==='match'?f.fit:0,m,why:f.why}))}
+  L.push(Object.assign({},base,{mon:null,m:null}));
+  if(ck.stat==='능력'&&pol.inou!=='no'&&P.inou<supMax(P))L.push(Object.assign({},base,{super:true,m:null}));
+  return L.map(q=>Object.assign(q,{mod:SK.modOf(q)})).sort((a,b)=>b.mod-a.mod||(a.super?1:0)-(b.super?1:0))[0]};
  /* 체크 하나 */
- const doCheck=(room,ck)=>{const target=+ck.target+adj.target;let P;const cands=party.filter(P=>aliveMons(P).length||true);
-  if(pol.who==='round'){P=cands[round%cands.length];round++}else{P=cands.slice().sort((a,b)=>dieIdx(b,ck.stat)-dieIdx(a,ck.stat))[0]}
-  const rank=rankOf(P,ck.stat);const aLv=SK.lv(rank);
-  let mode='skill';if(ck.mode==='inou'&&ck.stat==='능력'&&aLv>=3&&P.inj<2&&P.inou<2&&pol.inou!=='no')mode='inou';
-  let partner=null,pt='alone';if(mode==='inou')pt='inou';else{partner=partnerFor(P,ck);if(partner){pt=(ck.stat==='통솔'&&bond(partner))?'bond':'mon'}}
-  const q={rank,target,partner:pt,step:(+ck.step||0)+adj.stepAll,twice:+ck.twice||0,inj:P.inj,prideA:!!(partner&&prideA(partner)&&!bond(partner)),myosu:(ck.stat==='지시'&&(aLv===3?1:aLv>=4?2:0)-P.myosu>0)?1:0};
-  /* AA 특권: 세션 1회, 목표 9 이하 이능은 굴리지 않고 성공 */
-  let r;if(mode==='inou'&&aLv>=4&&!P.aa&&target<=9){P.aa=1;P.inou++;r={ri:3,res:'성공',aa:true,a:0,p:0,total:0,myosuUsed:0,stubborn:false}}else r=SK.roll(q,rng);
-  if(r.myosuUsed)P.myosu++;if(mode==='inou')P.inou++;
-  if(partner)P.tired.add(partner.id);
-  const rec={room:room.id,label:ck.label,stat:ck.stat,target,who:P.trainer.name,rank,mode,partner:partner?partner.name:(pt==='inou'?'이능':'혼자'),pdie:r.pdie,die:r.die&&r.die.sides,a:r.a,p:r.p,total:r.total,ri0:r.ri,ri:r.ri,fumble:r.fumble,stubborn:r.stubborn,cover:'',pen:[]};
-  /* 커버 */
-  if(r.ri<=1&&pol.cover!=='never'||(r.ri===2&&pol.cover==='always')){const C=party.find(Q=>Q!==P&&Q.inj<2);if(C){rec.ri=Math.min(3,r.ri+1);rec.cover=C.trainer.name;C.stats.covers++;P.stats.covered++;injure(C,'커버',rec)}}
-  /* 이능 실패 → 부상 (커버로 올라갔으면 반동 없음) */
-  if(mode==='inou'&&rec.ri<=1)injure(P,'이능 반동',rec);
-  P.stats.checks++;if(rec.ri>=3)P.stats.ok++;if(rec.ri===4)P.stats.crit++;if(rec.ri===2)P.stats.cost++;if(rec.ri<=1)P.stats.fail++;if(rec.ri===0)P.stats.fumble++;if(mode==='inou')P.stats.inouUsed++;
-  /* 패널티 */
+ const doCheck=(room,ck0)=>{const ck=SK.up(ck0);const target=+ck.target+adj.target;const cands=party.filter(P=>P.inj<3);if(!cands.length)return null;let P;
+  if(pol.who==='round'){P=cands[round%cands.length];round++}else{P=cands.slice().sort((a,b)=>optFor(b,ck).mod-optFor(a,ck).mod)[0]}
+  const rank=rankOf(P,ck.stat);const q=optFor(P,ck);q.target=target;q.crit=adj.crit==null?4:+adj.crit;q.myosu=myosuMax(P)-P.myosu>0?1:0;
+  const r=SK.roll(q,rng);if(r.myosuUsed)P.myosu++;const mode=q.super?'inou':'skill';if(q.super)P.inou++;
+  const rec={room:room.id,label:ck.label,stat:ck.stat,target,who:P.trainer.name,rank,mode,partner:q.m?q.m.name:(q.super?'이능':'혼자'),mod:r.mod,fit:q.fit||0,pdie:6,die:6,a:r.a,p:r.p,total:r.total,ri0:r.ri,ri:r.ri,fumble:r.fumble,stubborn:false,cover:'',pen:[]};
+  /* 실패: 상태 한 단계 (제시가 noStep 이면 없음). 커버 = 판정하지 않은 포켓몬이 최대 HP adj.coverHp(1/4) 를 받고 막는다 (pol.cover 'never' 면 안 함) */
+  if(r.ri===1&&!+ck.noStep){let C=null;if(pol.cover!=='never'){const cs=party.flatMap(Q=>aliveMons(Q).map(m=>({Q,m}))).filter(x=>x.m!==q.m&&x.m.hp.cur>frac(x.m.hp.max,adj.coverHp||'1/4'));cs.sort((a,b)=>b.m.hp.cur/b.m.hp.max-a.m.hp.cur/a.m.hp.max);C=cs[0]||null}
+   if(C){const loss=frac(C.m.hp.max,adj.coverHp||'1/4');C.m.hp.cur=Math.max(0,C.m.hp.cur-loss);rec.cover=C.Q.trainer.name;C.Q.stats.covers++;P.stats.covered++;rec.pen.push(`[커버] ${C.m.name} HP −${loss}`)}
+   else injure(P,'실패',rec)}
+  P.stats.checks++;if(rec.ri>=3)P.stats.ok++;if(rec.ri===4)P.stats.crit++;if(rec.ri<=1)P.stats.fail++;if(mode==='inou')P.stats.inouUsed++;
+  /* 보상 · 패널티 묶음 (묶음은 판정한 포켓몬이 받는다 — 혼자면 포켓몬 몫은 없음) */
   if(rec.ri>=3&&ck.gain)applyPen(P,ck.gain,rec,'성공 보상');if(rec.ri===4&&ck.gainCrit)applyPen(P,ck.gainCrit,rec,'대성공 보상');
-  const pen=ck.pen||{};if(rec.ri<=1&&pen.fail)applyPen(P,pen.fail,rec,'실패');if((rec.ri===2||r.stubborn)&&pen.cost)applyPen(P,pen.cost,rec,r.stubborn&&rec.ri!==2?'고집':'대가');
+  const pen=ck.pen||{};if(rec.ri<=1&&pen.fail)applyPen(P,pen.fail,rec,'실패',q.m||null);
   say(Object.assign({k:'check'},rec));return rec};
- const injure=(P,why,rec)=>{P.inj=Math.min(2,P.inj+1);const m=aliveMons(P).sort((a,b)=>b.hp.cur-a.hp.cur)[0];let line=`${P.trainer.name} ${P.inj>=2?'중상':'부상'} (${why})`;if(m){const loss=frac(m.hp.max,P.inj>=2?'1/2':'1/4');m.hp.cur=Math.max(0,m.hp.cur-loss);line+=` · ${m.name} HP −${loss}`}rec.pen.push(line);say({k:'injury',who:P.trainer.name,inj:P.inj,why})};
- const applyPen=(P,sub,rec,why)=>{sub=sub||{};const L=[];const ms=aliveMons(P);const m=ms.length?ms[Math.floor(rng()*ms.length)]:null;
+ /* 상태 단계: 건강 → 부상(6령 −1 · 판정 −1) → 중상(4식 −1 · 불리) → 빈사(그 방에서 판정 못 함, 다음 방에서 중상) */
+ const injure=(P,why,rec)=>{if(P.inj>=3)return;P.inj++;const lab=['건강','부상','중상','빈사'][P.inj];const L=[`${P.trainer.name} 「${lab}」 (${why})`];
+  const cut=P.inj===1?['command',+(adj.injOc==null?1:adj.injOc)]:P.inj===2?['order',+(adj.injOo==null?1:adj.injOo)]:null;
+  if(cut&&cut[1]){if(adj.ordScope==='dungeon'){pool[cut[0]]=Math.max(0,pool[cut[0]]-cut[1])}else P.debt[cut[0]==='order'?'oo':'oc']+=cut[1];L.push(`${cut[0]==='order'?'4식':'6령'} −${cut[1]}`)}
+  rec.pen.push(L.join(' · '));say({k:'injury',who:P.trainer.name,inj:P.inj,why})};
+ const applyPen=(P,sub,rec,why,mon)=>{sub=sub||{};const L=[];const ms=aliveMons(P);const m=mon!==undefined?(mon&&mon.hp.cur>0?mon:null):ms.length?ms[Math.floor(rng()*ms.length)]:null;
   if(sub.dmg&&m){let loss=frac(m.hp.max,sub.dmg);loss=Math.max(1,Math.floor(loss*adj.penScale));m.hp.cur=Math.max(0,m.hp.cur-loss);P.stats.penDmg+=loss;L.push(`${m.name} HP −${loss}`)}
   if(sub.st&&m&&m.hp.cur>0){m.states[sub.st]=+sub.cnt>0?+sub.cnt:sub.st==='Sleep'?2:sub.st==='Confusion'?3:1000;L.push(`${m.name} 「${sub.st}」`)}
   if(sub.rk){for(const k in sub.rk)P.debt.rk[k]=(P.debt.rk[k]||0)+(+sub.rk[k]||0);L.push('랭크 '+JSON.stringify(sub.rk))}
@@ -110,12 +111,12 @@ async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt
   if(adj.ordScope==='dungeon'&&kind!=='breath'&&kind!=='none'){const o0=pool.order,c0=pool.command;pool.order=Math.min(pool0.order,pool.order+party.length*(+adj.restO||0));pool.command=Math.min(pool0.command,pool.command+party.length*(+adj.restC||0));if(pool.order>o0||pool.command>c0)say({k:'restOrd',room:room.id,order:pool.order-o0,command:pool.command-c0})}
   say({k:'rest',room:room.id,kind})};
  /* 돌봄(육성 B 이상, 휴식 사이 1회): 지친 포켓몬이 있고 쓸 수 있으면 체크 앞에서 */
- const care=()=>{for(const P of party){if(P.care)continue;if(SK.lv(rankOf(P,'육성'))<2)continue;const Q=party.find(Q=>Q.tired.size);if(!Q)break;const id=[...Q.tired][0];Q.tired.delete(id);P.care=1;say({k:'care',who:P.trainer.name,for:Q.trainer.name})}};
+ const care=()=>{};   /* 10-29 v4: 지침 · 돌봄 없음 */
 
  let ci=0,wipe=false,boss=false,endRoom='',lockdown=false;
  /* 10-28 갈림길(dg.branches): 판마다 갈림길에서 반반으로 한쪽 길(본길 구간 / 다른 길)을 걷는다 — opt.route = 'main' | 'alt' 로 고정할 수 있다 */
  const route=pathOf(dg,()=>opt.route==='main'?1:opt.route==='alt'?0:rng());if(dg.branches&&dg.branches.length)say({k:'route',path:route});
- for(const rid of route){const room=dg.rooms.find(r=>r.id===rid);if(!room)continue;endRoom=rid;say({k:'room',room:rid,t:room.t,name:room.name});
+ for(const rid of route){const room=dg.rooms.find(r=>r.id===rid);if(!room)continue;endRoom=rid;for(const P of party)if(P.inj===3)P.inj=2;say({k:'room',room:rid,t:room.t,name:room.name});
   if(room.check){ci++;/* checkEvery 2 = 체크를 하나 걸러 하나만 (제시 횟수를 줄이는 실험) */if(adj.checkEvery<=1||ci%adj.checkEvery===1){care();doCheck(room,room.check)}
    if(pend.al>=100){lockdown=true;wipe=true;break}
    while(pend.fights.length){const f=Object.assign({},pend.fights.shift(),{_extra:1});const r=await doBattle(room,f);if(!r||!r.win){wipe=true;break}}if(wipe)break}

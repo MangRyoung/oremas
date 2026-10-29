@@ -25,10 +25,10 @@ const stamp=()=>new Date().toISOString().replace(/[-:T]/g,'').slice(0,12);
  if(cmd==='help'){console.log(fs.readFileSync(__filename,'utf8').split('*/')[0].replace(/^[^\n]*\n/,''));return}
  if(cmd==='fetch'){const F=require('../lib/fetch.js');const r=await F.fetchAll(path.join(SIM,'data','snapshot.json'));console.log(`받았다: 트레이너 ${r.trainers} · 포켓몬 ${r.pokemon} · 폴더 ${r.folders} → ${r.file}`);return}
  if(cmd==='ui'){require('../lib/server.js').start({port:+opt.port||8470,open:!opt.noopen});return}
- if(cmd==='check'){const S=require('../lib/skill.js');const T=[5,7,9,11];
-  for(const pt of ['alone','mon','inou']){console.log(`\n[동료: ${pt==='alone'?'혼자 d4':pt==='mon'?'포켓몬 d6':'이능(능력 A 이상)'}]  성공 / 대가 포함 (%)`);console.log('랭크\t'+T.map(t=>`목표 ${t}`).join('\t'));
-   for(const r of ['D','C','B','A','AA']){if(pt==='inou'&&S.lv(r)<3)continue;console.log(r+'\t'+T.map(t=>{const s=S.summary({rank:r,target:t,partner:pt});return `${s.ok}/${s.okPlus}`}).join('\t'))}}
-  console.log('\n부상(−1단계) · C 포켓몬 기준: '+T.map(t=>{const s=S.summary({rank:'C',target:t,partner:'mon',inj:1});return `목표 ${t} ${s.ok}/${s.okPlus}`}).join(' · '));return}
+ if(cmd==='check'){/* 10-29 v4: 트레이너 자질 × 포켓몬 종족값 랭크 → 목표 8 · 10 · 12 · 15 성공률 */const S=require('../lib/skill.js');const T=[8,10,12,15];
+  for(const mon of [null,0,1,2,3,4]){console.log(`\n[${mon==null?'혼자':'포켓몬 종족값 '+['D 이하','C','B','A','AA'][mon]}]  성공 / 대성공 (%)`);console.log('자질\t'+T.map(t=>`목표 ${t}`).join('\t'));
+   for(const r of ['D','C','B','A','AA']){console.log(r+'\t'+T.map(t=>{const s=S.summary({rank:r,mon,target:t});return `${s.ok}/${s.crit}`}).join('\t'))}}
+  console.log('\n초상 능력: '+['A','AA'].map(r=>r+' '+T.map(t=>`목표 ${t} ${S.summary({rank:r,super:true,target:t}).ok}%`).join(' · ')).join(' / '));return}
  const {load}=require('../lib/env.js');const W=load().win;const P=require('../lib/party.js');
  if(cmd==='list'){const snap=P.readSnap(snapFile());if(!snap)return console.log('스냅샷이 없다 — fetch 먼저');console.log('스냅샷:',snapFile(),snap.at);for(const t of P.list(snap))console.log(`${t.folder||'(폴더 없음)'}/${t.name}\t${t.kind}\t지 ${t.ranks['지시']||'-'} 육 ${t.ranks['육성']||'-'} 통 ${t.ranks['통솔']||'-'} 능 ${t.ranks['능력']||'-'}\t${t.n}체${t.solo?' 1인':''}${t.priv?' 비공개':''}\tid:${t.id}`);return}
  const snap=P.readSnap(snapFile());if(!snap)return console.log('스냅샷이 없다 — fetch 먼저');
@@ -109,9 +109,9 @@ const stamp=()=>new Date().toISOString().replace(/[-:T]/g,'').slice(0,12);
  if(cmd==='checkgen'){/* 스킬 체크 생성 (lib/checkgen.js): --party a,b,c --tier normal --theme 숲 --n 4 [--seed N] · 검토: --review [--seeds 10 --t 20] */const CG=require('../lib/checkgen.js'),C=require('../lib/calib.js');
   if(opt.review){const pool=String(opt.pool||'id:4jie5w05,id:5leooo2r,id:6kqpeluy,id:d7pqlnhq,id:em94ge3p,id:hmt1rchl,id:mrsr7bn7,id:uudsvc3l').split(',');const built={};for(const s of pool)built[s]=P.pick(W,snap,s)[0];
    const r=CG.review(built,C.trios(pool,+opt.t||20,+opt.tseed||11),{seeds:+opt.seeds||10,n:+opt.n||4});const f=x=>(x*100).toFixed(0);
-   for(const [t,v] of Object.entries(r)){console.log(`${t} (띠 ${f(v.band[0])}~${f(v.band[1])}%)`);for(const k of ['old','new']){const x=v[k];console.log(`  ${k==='old'?'지금(7·9)':'생성기  '} 띠 안 ${f(x.inBand)}% · 대가 포함 성공 평균 ${f(x.avg)}% (10~90% 구간 ${f(x.q10)}~${f(x.q90)}, 최저 ${f(x.min)}) · 혼자 d4 ${f(x.alone)}% · 주인공 고루 ${f(x.spotlight)} · 4개 다 넘김 ${f(x.allPass)}%`)}}
+   for(const [t,v] of Object.entries(r)){console.log(`${t} (목표 ${v.band})`);for(const k of ['old','new']){const x=v[k];console.log(`  ${k==='old'?'지금(7·9)':'생성기  '} 띠 안 ${f(x.inBand)}% · 대가 포함 성공 평균 ${f(x.avg)}% (10~90% 구간 ${f(x.q10)}~${f(x.q90)}, 최저 ${f(x.min)}) · 혼자 d4 ${f(x.alone)}% · 주인공 고루 ${f(x.spotlight)} · 4개 다 넘김 ${f(x.allPass)}%`)}}
    const R=require('../lib/report.js');fs.mkdirSync(R.PRIV,{recursive:true});fs.writeFileSync(path.join(R.PRIV,'checkgen_review.json'),JSON.stringify(r,null,1));return}
   const parties=pickParties(opt.party);const L=CG.make(parties,{tier:opt.tier||'normal',theme:opt.theme,n:+opt.n||4,seed:+opt.seed||Date.now()%100000});
-  for(const c of L)console.log(`🎲 ${c.stat} ${c.target}${c.hint!=='any'?' ('+c.hint.replace('type:','타입 ')+')':''}${c.mode?' · 이능 가능':''} — 「${c.label}」 · 굴림 ${c.odds.who} ${c.odds.die}+${c.odds.partner==='alone'?'혼자 d4':c.odds.partner==='bond'?'유대 d8':'동료 d6'} · 대가 포함 성공 ${(c.odds.okPlus*100).toFixed(0)}% (깔끔 ${(c.odds.ok*100).toFixed(0)}%)${c.odds.inBand?'':' ⚠ 띠 밖'}\n   대가: ${c.pen.cost.memo} · 실패: ${c.pen.fail.memo}`);return}
+  for(const c of L)console.log(`🎲 ${c.stat} + ${['HP','공격','방어','특공','특방','스피드'][c.base]} ${c.target}${c.hint!=='any'?' (적합 '+c.hint.replace('type:','타입 ')+')':''} — 「${c.label}」 · 굴림 ${c.odds.who} ${c.odds.die} (${c.odds.partner==='alone'?'혼자':c.odds.partner}) · 성공 ${(c.odds.ok*100).toFixed(0)}%\n   실패: ${c.pen.fail.memo}`);return}
  if(cmd==='report'){const R=require('../lib/report.js');const rep=R.build();console.log(`시나리오 ${rep.n}개 → ${rep.html}`);return}
  console.log('모르는 명령:',cmd);})().catch(e=>{console.error('오류:',e.message);process.exit(1)});
