@@ -1286,7 +1286,8 @@ label.ph-item input[type=checkbox]{width:16px;height:16px;flex:none}
 }
 
 /* ===== 건의 · 제보 탭 ===== */
-.rpt{max-width:980px;margin:0 auto;padding:4px 2px 30px}
+div.rpt{max-width:980px;margin:0 auto;padding:4px 2px 30px}   /* 10-30: RP 위 띠 단추의 .rpt 와 이름이 겹쳐 단추마다 margin:auto 가 붙어 띠가 벌어졌다 → div 만 */
+.rpbtns .rpt{margin:0;max-width:none}
 .rpthead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 16px;background:#000;border:2px solid #fff;clip-path:var(--cut);margin-bottom:12px}
 .rpthead h2{font-size:24px;line-height:1.1}
 .rptform{display:flex;flex-direction:column;gap:8px;background:var(--panel);border:1px solid var(--line2);border-left:4px solid var(--red);padding:12px 14px;margin-bottom:12px}
