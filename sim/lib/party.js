@@ -5,9 +5,11 @@ const SNAP=path.resolve(__dirname,'..','data','snapshot.json');
 function readSnap(file){file=file||SNAP;if(!fs.existsSync(file))return null;return JSON.parse(fs.readFileSync(file,'utf8'))}
 const dOf=x=>(x&&x.data&&x.data.data)||(x&&x.data)||x||{};
 function folderName(snap,fid){const f=(snap.folders||[]).find(f=>f.id===fid);return f?String(dOf(f).name||''):''}
+/* 10-29 폴더 묶음: 제작기 폴더는 겹친다(parent). 맨 위 폴더 이름(root) · 경로(fpath) · 그 줄의 규칙(rule — 미사그 캠퍼스 = 'misag') */
+function folderChain(snap,fid){const out=[];const seen=new Set();let id=fid;while(id&&!seen.has(id)){seen.add(id);const f=(snap.folders||[]).find(f=>f.id===id);if(!f)break;out.unshift(dOf(f));id=dOf(f).parent}return out}
 /* 목록: 폴더 이름 · 트레이너 이름 · 랭크 · 포켓몬 수 */
 function list(snap){return (snap.trainers||[]).map(t=>{const d=dOf(t);const n=(snap.pokemon||[]).filter(p=>{const pd=dOf(p);return (d.pids||[]).includes(p.id)||pd.tid===t.id||(p.data&&p.data.tid===t.id)}).length;
- return {id:t.id,name:d.name||'',folder:folderName(snap,d.folder),ranks:d.ranks||{},kind:d.kind||'pc',solo:d.solo||false,priv:!!d.priv,n}})}
+ const ch=folderChain(snap,d.folder);return {id:t.id,name:d.name||'',folder:folderName(snap,d.folder),root:ch.length?String(ch[0].name||''):'',fpath:ch.map(x=>String(x.name||'')).join(' › '),rule:(ch.find(x=>x.rule)||{}).rule||'',ranks:d.ranks||{},kind:d.kind||'pc',solo:d.solo||false,priv:!!d.priv,n}})}
 /* 이름 · id · 폴더로 고른다. sel: 'id:xxx' | '폴더/이름' | '이름' | '폴더/*' */
 function pick(win,snap,sel){const L=list(snap);let hits;
  if(/^id:/.test(sel))hits=L.filter(x=>x.id===sel.slice(3));
