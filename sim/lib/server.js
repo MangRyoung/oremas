@@ -107,7 +107,7 @@ function start(opt){opt=opt||{};const port=+opt.port||8470;
     const AGg=AG.generate;dg=await C.verified(W,built,P.wildFrom(W,snap()),o.tier,{seed:o.seed,theme:o.theme,knobs:o.knobs,trios:C.trios(pl,+b.vt||10,11),n:+b.vn||3,tries:+b.tries||6});
     if(o.shape||o.sideRooms!=null||o.branches!=null){/* verified 는 shape · 곁방 손잡이를 모른다 → 같은 씨앗으로 다시 (지도만 달라지고 승률에 닿는 길은 같다) */const v=dg.gen.verify;dg=AG.generate(Object.assign({},o,{seed:dg.gen.seed}));dg.gen.verify=v}}
    else dg=AG.generate(o);
-   let fit=null;if(b.fitParty&&b.party&&b.party.length){/* 체크 목표를 고른 일행에 맞춤 (lib/checkgen.js) */const CG=require('./checkgen.js');const parties=pickParties(b.party);const info=CG.partyInfo(parties,+b.wn||2);const BT=require('./battle.js');const rng=BT.mkRng(o.seed+5);const band=CG.BAND[o.tier];fit=[];
+   let fit=null;if(b.fitParty&&b.party&&b.party.length){/* 체크 목표를 고른 일행에 맞춤 (lib/checkgen.js) */const CG=require('./checkgen.js');const parties=pickParties(b.party);const info=CG.partyInfo(parties,+b.wn||2,+b.fieldMax||1);const BT=require('./battle.js');const rng=BT.mkRng(o.seed+5);const band=CG.BAND[o.tier];fit=[];
     for(const r of dg.rooms)if(r.check&&!r.check.optional){const ro=CG.roller(info,r.check.stat,r.check.hint);const T=CG.pickTarget(rng,ro,band);const from=SK.up(r.check).target;fit.push({room:r.name,stat:r.check.stat,from,to:T.t,who:ro.P.name,okPlus:T.o.okPlus});Object.assign(r.check,SK.up(r.check),{target:T.t})}}
    return {dungeon:dg,webtool:AG.toWebtool(dg),fit}},
   prideCalc:b=>{const P2=require('./pride.js');const r=P2.calc(b.base||[],!!b.dual);return {ct:r.ct,step:r.step,real:r.real,legal:P2.legal(b.base||[])}},

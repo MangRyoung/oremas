@@ -86,7 +86,7 @@ svg .mute{fill:var(--mute)}
 </nav>
 <main>
 <header class="hero">
- <div class="eyebrow">망각 · 시뮬레이터 · 2026-10-28 밤 기준</div>
+ <div class="eyebrow">망각 · 시뮬레이터 · 2026-10-29 기준 (스킬 체크 v4)</div>
  <h1>망켓몬 생성 설계도</h1>
  <p>시뮬레이터가 스킬 체크, 오리지널 특성, 야생 포켓몬, 던전을 어떤 순서와 숫자로 만드는지 한 장에 모았어요. 절마다 끝에 감우가 직접 검토한 결과를 붙였어요. 시뮬레이터 「설계도」 탭에서도 같은 판을 볼 수 있고, 생성 로직이 바뀌면 같이 고쳐요.</p>
 </header>
@@ -98,22 +98,22 @@ svg .mute{fill:var(--mute)}
 </section>
 
 <section id="check">
- <h2>스킬 체크 <small>lib/checkgen.js · gen.js penFor</small></h2>
- <p class="lead">일행을 먼저 읽고, 그 일행이 굴렸을 때 성공 확률이 난이도 띠 안에 들도록 목표치를 정해요. 대가와 실패는 게임 수치로만 나와요.</p>
+ <h2>스킬 체크 <small>lib/skill.js · gen.js · checkgen.js · gen.js penFor</small></h2>
+ <p class="lead">10-29 v4 (룰북 「스킬 체크」 장): <b>2d6 + 트레이너 자질 + 필드 포켓몬 종족값 랭크 + 적합(최대 +3) ≥ 목표치</b>. 목표는 던전 난이도 그대로(쉬움 8 · 보통 10 · 어려움 12, 빡센 길 · 어려운 길은 한 칸 위 10 · 12 · 15). 대가는 없고, 실패하면 트레이너 상태 한 단계 + 판정한 포켓몬이 패널티 묶음을 받아요.</p>
  <div class="flow">
-  <div class="st"><b>일행 읽기</b><span>트레이너마다 지시 · 육성 · 통솔 · 능력 주사위, 동행 2체 타입 · 유대</span></div>
-  <div class="st"><b>굴릴 사람</b><span>그 자질 주사위가 가장 큰 사람. 동료 d6 · 통솔+유대 d8 · 조건 안 맞으면 혼자 d4</span></div>
+  <div class="st"><b>일행 읽기</b><span>트레이너마다 지시 · 육성 · 통솔 · 능력 랭크(D0 ~ AA4), 필드 포켓몬(기본 1체)의 종족값 · 타입 · 기술 · 특성</span></div>
+  <div class="st"><b>굴릴 사람</b><span>보정 합(자질 + 종족값 랭크 + 적합)이 가장 큰 사람 · 포켓몬. 능력 A 이상은 초상 능력(2d6 + 자질 × 2)도 견줘요</span></div>
   <div class="st"><b>자질 고르기</b><span>같은 자질 연속 금지, 덜 나온 사람이 주인공이 되게</span></div>
   <div class="st"><b>타입 조건</b><span>테마 타입 중 일행에 있는 타입을 8할로</span></div>
-  <div class="st"><b>목표치</b><span>정확한 확률로 계산해 띠 안 값 중 가운데에 가까운 값</span></div>
-  <div class="st"><b>대가 · 실패</b><span>자질별 수치표에서 하나씩, 난이도로 무게 조절</span></div>
+  <div class="st"><b>목표치</b><span>난이도 고정 8 · 10 · 12 (빡센 길 한 칸 위). 1·1 실패 · 6·6 또는 목표 +4 대성공</span></div>
+  <div class="st"><b>실패 · 대성공</b><span>실패 = 트레이너 상태 한 단계(커버 가능) + 자질별 패널티 묶음 하나. 대성공 = 경계도 −10</span></div>
  </div>
- <h3>난이도 띠 (대가 포함 성공 확률)</h3>
+ <h3>목표치별 성공 확률 <span class="small">막대 = 혼자 C ~ C+C 적합 +1, 점 = C 트레이너 + C 포켓몬</span></h3>
  <div class="scroll"><svg id="bandSvg" viewBox="0 0 760 150" style="min-width:520px;width:100%;height:auto" role="img" aria-label="난이도 띠"></svg></div>
- <h3>대가 · 실패 수치표 <span class="small">실패에는 늘 경계도 +20이 붙고, 대가에는 하나만 붙어요</span></h3>
+ <h3>실패 패널티 묶음 <span class="small">실패에는 늘 경계도 +20 과 트레이너 상태 한 단계가 붙어요 (v4 에서 「대가」 칸은 쓰지 않아요)</span></h3>
  <div class="scroll"><table id="penTbl"></table></div>
  <p class="small">쉬움은 HP 피해를 한 단계 가볍게(1/4 → 1/8), 어려움은 한 단계 무겁게(1/8 → 1/6, 1/4 → 1/3) 하고 실패의 4식 · 6령을 1씩 더 깎아요. 4식은 큰 페널티, 6령은 작은 페널티예요.</p>
- <h3>검토 결과 (시험 일행 20조합 × 40체크)</h3>
+ <h3>검토 결과 (시험 일행 20조합 × 40체크) <span class="small">10-28 v3(주사위) 때 값 — 참고용</span></h3>
  <div class="scroll"><table>
   <tr><th>난이도</th><th>방식</th><th class="n">띠 안</th><th class="n">성공 평균</th><th class="n">최저</th><th class="n">혼자 d4</th></tr>
   <tr><td rowspan="2">쉬움</td><td>옛 방식 (7 · 9 고정)</td><td class="n">29%</td><td class="n">76%</td><td class="n">42%</td><td class="n">21%</td></tr>
@@ -184,24 +184,24 @@ svg .mute{fill:var(--mute)}
  <h3>경계도</h3>
  <div class="scroll"><svg id="alSvg" viewBox="0 0 760 120" style="min-width:520px;width:100%;height:auto" role="img" aria-label="경계도 눈금"></svg></div>
  <div class="cols">
-  <div class="box"><h4>휴식</h4><p class="small" style="margin:0"><b>짧은 휴식</b>(보스 앞): 전원 HP 1/4 · 빈사는 HP 1 · 상태 회복 · 파티 4식 1 · 6령 1.<br><b>숨돌리기</b>: 가장 다친 1체 HP 1/4 + 파티 6령 1.</p></div>
-  <div class="box"><h4>체크 목표</h4><p class="small" style="margin:0">시뮬 던전은 목표 7 · 9(어려운 길은 9 · 11, 보통 · 어려움에만)로 고정돼 있어요. 웹툴로 보낼 때는 난이도 띠만 싣고, 웹툴이 그 일행으로 목표를 계산해요(목표 자동).</p></div>
+  <div class="box"><h4>휴식</h4><p class="small" style="margin:0"><b>짧은 휴식</b>(보스 앞): 전원 HP 1/4 · 빈사는 HP 1 · 상태 회복 · 파티 4식 1 · 6령 1 · 트레이너 상태 1단계.<br><b>중간 휴식</b>: 전원 HP 1/2 · 빈사 HP 1/4 · 상태 회복 · 4식 6령 절반 · 트레이너 1단계.<br><b>숨돌리기</b>: 가장 다친 1체 HP 1/4 + 파티 6령 1 (트레이너 상태는 그대로).<br><b>긴 휴식</b>(던전 밖): 전부 · 트레이너 2단계. 빈사는 다음 방(장면)에서 중상.</p></div>
+  <div class="box"><h4>체크 목표 · 판정</h4><p class="small" style="margin:0">10-29 v4: 목표 = 난이도(쉬움 8 · 보통 10 · 어려움 12), 빡센 길 · 어려운 길은 한 칸 위(10 · 12 · 15). 판정은 필드 포켓몬(트레이너당 1체, 웹툴 「필드 포켓몬 수」와 같음)만, 커버도 필드 포켓몬만. 빈사 트레이너는 그 방 배틀에 안 나가요. 웹툴로 보낼 때 sk 칸과 메모 줄이 같은 목표를 실어요.</p></div>
  </div>
-<h3>지금 시뮬에 들어 있는 던전 10개 <span class="small">PC 실제 일행 20조합 × 3판 · 야생 소켓 반영 뒤</span></h3>
+<h3>지금 시뮬에 들어 있는 던전 10개 <span class="small">PC 실제 일행 20조합 × 3판 · 10-29 스킬 체크 v4 · 필드 1체로 다시 잼 (괄호 = 10-28 값)</span></h3>
  <div class="scroll"><table>
   <tr><th>난이도</th><th>던전</th><th>id</th><th class="n">승률</th><th class="n">목표</th></tr>
-  <tr><td rowspan="3"><b>쉬움</b></td><td>고목의 숲</td><td class="mono small">auto_easy_10920</td><td class="n">70%</td><td class="n" rowspan="3">80 ±15</td></tr>
-  <tr><td>난파선 해안</td><td class="mono small">auto_easy_2002</td><td class="n">72%</td></tr>
-  <tr><td>얼음 동굴</td><td class="mono small">auto_easy_2003</td><td class="n">67%</td></tr>
-  <tr><td rowspan="4"><b>보통</b></td><td>메아리 굴</td><td class="mono small">auto_normal_2004</td><td class="n">53%</td><td class="n" rowspan="4">60 ±15</td></tr>
-  <tr><td>흐느끼는 저택</td><td class="mono small">auto_normal_3005</td><td class="n">65%</td></tr>
-  <tr><td>잊힌 성채</td><td class="mono small">auto_normal_2006</td><td class="n">72%</td></tr>
-  <tr><td>지하 관측소</td><td class="mono small">auto_normal_2007</td><td class="n">65%</td></tr>
-  <tr><td rowspan="3"><b>어려움</b></td><td>버려진 별장</td><td class="mono small">auto_hard_10929</td><td class="n">27%</td><td class="n" rowspan="3">30 ±15</td></tr>
-  <tr><td>재의 고원</td><td class="mono small">auto_hard_17846</td><td class="n">22%</td></tr>
-  <tr><td>메아리 굴</td><td class="mono small">auto_hard_2009</td><td class="n">38%</td></tr>
+  <tr><td rowspan="3"><b>쉬움</b></td><td>고목의 숲</td><td class="mono small">auto_easy_10920</td><td class="n">73% <span class="small">(70)</span></td><td class="n" rowspan="3">80 ±15</td></tr>
+  <tr><td>난파선 해안</td><td class="mono small">auto_easy_2002</td><td class="n">70% <span class="small">(72)</span></td></tr>
+  <tr><td>얼음 동굴</td><td class="mono small">auto_easy_2003</td><td class="n">67% <span class="small">(67)</span></td></tr>
+  <tr><td rowspan="4"><b>보통</b></td><td>메아리 굴</td><td class="mono small">auto_normal_2004</td><td class="n">67% <span class="small">(53)</span></td><td class="n" rowspan="4">60 ±15</td></tr>
+  <tr><td>흐느끼는 저택</td><td class="mono small">auto_normal_3005</td><td class="n">68% <span class="small">(65)</span></td></tr>
+  <tr><td>잊힌 성채</td><td class="mono small">auto_normal_2006</td><td class="n">55% <span class="small">(72)</span></td></tr>
+  <tr><td>지하 관측소</td><td class="mono small">auto_normal_2007</td><td class="n">65% <span class="small">(65)</span></td></tr>
+  <tr><td rowspan="3"><b>어려움</b></td><td>버려진 별장</td><td class="mono small">auto_hard_10929</td><td class="n">17% <span class="small">(27)</span></td><td class="n" rowspan="3">30 ±15</td></tr>
+  <tr><td>재의 고원</td><td class="mono small">auto_hard_17846</td><td class="n">15% <span class="small">(22)</span></td></tr>
+  <tr><td>메아리 굴</td><td class="mono small">auto_hard_2009</td><td class="n">30% <span class="small">(38)</span></td></tr>
  </table></div>
- <p class="small">다시 잴 때는 <span class="mono">node bin/sim.js recheck</span> (저장까지 하려면 --save). 쉬움 셋은 모두 목표보다 낮은 쪽이에요.</p>
+ <p class="small">다시 잴 때는 <span class="mono">node bin/sim.js recheck</span> (저장까지 하려면 --save). 10-29 v4 뒤: 쉬움 67~73 · 보통 55~68 · 어려움 15~30%로 모두 띠 안이에요. 쉬움은 여전히 목표보다 낮은 쪽, 어려움 재의 고원(15%)은 띠 아래 끝이에요.</p>
 <h3 id="verify">검증 루프 <span class="small">lib/calib.js verified() · 10-28부터 기본으로 켜짐</span></h3>
  <p class="small" style="max-width:68ch;margin:0 0 8px">평균 승률만 맞추면 던전 하나하나는 크게 흔들려요. 쉬움 12개가 40~100%로 갈렸어요. 그래서 던전을 만들자마자 직접 돌려 보고, 목표에서 많이 벗어난 던전은 버리고 다시 만들어요.</p>
  <div class="flow">
@@ -273,8 +273,8 @@ const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim
 /* 난이도 띠 */
 (function(){const s=$('#bandSvg');const x0=90,x1=745,X=v=>x0+(x1-x0)*v/100;
  for(let v=0;v<=100;v+=10){s.append(el('line',{x1:X(v),x2:X(v),y1:14,y2:122,stroke:css('--line')}));s.append(el('text',{x:X(v),y:140,'text-anchor':'middle','font-size':11,class:'mute'},v+'%'))}
- const B=[['쉬움',85,95,91,'--g-b'],['보통',70,85,78,'--g-c'],['어려움',50,70,60,'--g-a']];
- B.forEach(([n,lo,hi,avg,c],i)=>{const y=20+i*34;s.append(el('text',{x:0,y:y+15,'font-size':13,'font-weight':800},n));s.append(el('rect',{x:X(lo),y,width:X(hi)-X(lo),height:22,rx:4,fill:css(c),opacity:.85}));s.append(el('text',{x:X(lo)-8,y:y+15,'text-anchor':'end','font-size':11.5,'font-weight':700},lo+'~'+hi+'% · 평균 '+avg+'%'));s.append(el('circle',{cx:X(avg),cy:y+11,r:5,fill:css('--paper'),stroke:css('--ink'),'stroke-width':2}))});
+ const B=[['쉬움 8',58,83,72,'--g-b'],['보통 10',28,58,42,'--g-c'],['어려움 12',8,28,17,'--g-a']];   /* 10-29 v4: 혼자 C ~ C+C 적합 +1, 점 = C+C (매우 어려움 15 는 모두 3%) */
+ B.forEach(([n,lo,hi,avg,c],i)=>{const y=20+i*34;s.append(el('text',{x:0,y:y+15,'font-size':13,'font-weight':800},n));s.append(el('rect',{x:X(lo),y,width:X(hi)-X(lo),height:22,rx:4,fill:css(c),opacity:.85}));s.append(el('text',{x:X(lo)-8,y:y+15,'text-anchor':'end','font-size':11.5,'font-weight':700},lo+'~'+hi+'% · C+C '+avg+'%'));s.append(el('circle',{cx:X(avg),cy:y+11,r:5,fill:css('--paper'),stroke:css('--ink'),'stroke-width':2}))});
 })();
 
 /* 페널티 표 */
@@ -284,8 +284,8 @@ const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim
  통솔:{cost:['「혼란」 2턴 · 정신이 없다','6령 −1 · 숨이 찼다'],fail:['「혼란」 3턴 · 대열이 무너졌다','6령 −2 · 모두 지쳤다']},
  능력:{cost:['HP −1/8 · 무리했다','경계도 +10 · 소리를 냈다'],fail:['HP −1/4 · 「마비」 · 반동에 몸이 굳었다','HP −1/3 · 크게 휘말렸다']}};
  const sub={지시:'지시가 엇갈림',육성:'야생 · 환경에 다침',통솔:'대열이 흔들림',능력:'몸으로 · 이능 반동'};
- let h='<tr><th>자질</th><th>장면</th><th>대가 (둘 중 하나)</th><th>실패 (경계도 +20 과 함께, 둘 중 하나)</th></tr>';
- for(const k in P)h+=`<tr><td><b>${k}</b></td><td class="small">${sub[k]}</td><td>${P[k].cost.map(x=>`<span class="chip c">${x}</span>`).join(' ')}</td><td>${P[k].fail.map(x=>`<span class="chip f">${x}</span>`).join(' ')}</td></tr>`;
+ let h='<tr><th>자질</th><th>장면</th><th>실패 (경계도 +20 · 상태 한 단계와 함께, 둘 중 하나)</th></tr>';
+ for(const k in P)h+=`<tr><td><b>${k}</b></td><td class="small">${sub[k]}</td><td>${P[k].fail.map(x=>`<span class="chip f">${x}</span>`).join(' ')}</td></tr>`;
  $('#penTbl').innerHTML=h})();
 
 /* 특성 틀 */
@@ -326,7 +326,7 @@ const css=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim
  Z.forEach(([a,b,c,t])=>{s.append(el('rect',{x:X(a),y:20,width:X(b)-X(a),height:26,fill:css(c),opacity:.8}));s.append(el('text',{x:X(a)+8,y:38,'font-size':12,'font-weight':700,style:'fill:#fff'},t))});
  [0,30,70,100].forEach(v=>s.append(el('text',{x:X(v),y:62,'text-anchor':v===100?'end':v===0?'start':'middle','font-size':11.5,class:'mute'},v)));
  s.append(el('text',{x:X(100),y:14,'text-anchor':'end','font-size':11.5,'font-weight':800,style:'fill:'+css('--bad')},'100 → 체크 자동 실패'));
- s.append(el('text',{x:x0,y:90,'font-size':12.5},'오르는 값: 체크 대가 +10 · 실패 +20 · 일반 조우가 끝나면 +5'));
+ s.append(el('text',{x:x0,y:90,'font-size':12.5},'오르는 값: 체크 실패 +20 · 곁방 체크 +10 · 일반 조우가 끝나면 +5 · 대성공 −10'));
  s.append(el('text',{x:x0,y:110,'font-size':11.5,class:'mute'},'v8 기준 경계도 30을 넘는 판은 4~12%, 70을 넘는 판은 0~1%예요.'))})();
 
 /* 테스트 */
@@ -372,8 +372,8 @@ const COND=[
 /* 검토 */
 const REV={
  check:[['good','띠 안 100%','난이도마다 성공 확률이 띠 안에 들어요. 옛 방식은 같은 체크가 일행에 따라 42~95%로 갈렸어요.'],
-  ['mid','시뮬 던전은 아직 고정 목표','시뮬 던전의 체크는 7 · 9로 고정이라, 생성기가 만든 목표와 승률이 따로 놀아요. 던전 시뮬에서도 「목표 자동」을 쓰면 체크도 난이도를 따라가요. 바꾸면 승률을 다시 맞춰야 해요.'],
-  ['lo','혼자 d4가 16%','타입 조건 동료가 없으면 d4가 돼요. 의도한 긴장감이면 그대로 두면 돼요.']],
+  ['good','시뮬 던전 목표 = 난이도 (10-29 적용)','전엔 7 · 9 고정(v4 로 10 · 12)이라 난이도와 따로 놀았어요. 이제 쉬움 8 · 보통 10 · 어려움 12 로 만들고, 저장된 던전 10개도 바꿔 다시 쟀어요. 어려움 셋이 3~11%p 내려갔지만 모두 목표 띠 안이에요.'],
+  ['mid','어려움 빡센 길은 목표 15','어려움에서 사전 배틀이 모자라면 체크가 전부 매우 어려움(15)이 돼요. C+C 3% · B+B 적합 17% 라 거의 실패 + 커버 싸움이 돼요. 너무 세면 빡센 길을 「12 와 15 섞기」로 바꿀 수 있어요.']],
  abil:[['mid','글만 특성이 31%','시뮬이 못 읽는 특성은 배틀 승률에 안 잡혀요. 생성은 덜 고르게 했지만, 손으로 짠 무리에는 들어갈 수 있어요.'],
   ['lo','absorb · imSt 틀은 글만','방호(무효)와 상태 면역은 시뮬이 읽지 않아요. 「시뮬이 읽는 것만」을 켜면 빠져요.']],
  wild:[['mid','「자기 타입 2배」 보스는 던전마다 다르게 작용','초인 · 수맥 보스를 빼 보니 #1은 쉬움 45 → 80%로 올랐어요. 그런데 대신 들어온 보스가 더 센 #6은 보통 67 → 45%로 내려갔어요. 평균은 거의 그대로라 일괄로 빼지는 않는 게 나아요.'],

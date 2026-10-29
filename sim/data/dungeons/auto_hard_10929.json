@@ -46,11 +46,12 @@
    ]
   },
   "verify": {
-   "wr": 0.27,
+   "wr": 0.17,
    "target": 0.3,
    "band": 0.15,
    "tries": 2,
-   "ok": true
+   "ok": true,
+   "at": "2026-10-29"
   }
  },
  "rooms": [
@@ -61,7 +62,7 @@
    "check": {
     "label": "곰팡이 독을 가려낸다",
     "stat": "육성",
-    "target": 7,
+    "target": 12,
     "hint": "any",
     "pen": {
      "fail": {
@@ -69,11 +70,19 @@
       "st": "Poison",
       "memo": "독이 있는 것에 닿았다",
       "oc": 1
-     },
-     "cost": {
-      "dmg": "1/6",
-      "memo": "긁혔다"
      }
+    },
+    "pm": 0,
+    "base": 1,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
     }
    }
   },
@@ -100,7 +109,7 @@
    "check": {
     "label": "봉인된 문을 연다",
     "stat": "능력",
-    "target": 9,
+    "target": 12,
     "hint": "any",
     "pen": {
      "fail": {
@@ -109,11 +118,19 @@
       "st": "Paralysis",
       "memo": "반동에 몸이 굳었다",
       "oc": 1
-     },
-     "cost": {
-      "dmg": "1/6",
-      "memo": "무리했다"
      }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
     }
    }
   },
@@ -124,18 +141,28 @@
    "check": {
     "label": "거울 장치의 각도를 맞춘다",
     "stat": "지시",
-    "target": 7,
+    "target": 12,
     "hint": "type:악",
     "pen": {
      "fail": {
       "al": 20,
       "oc": 3,
       "memo": "우왕좌왕했다"
-     },
-     "cost": {
-      "oc": 1,
-      "memo": "지시를 다시 내렸다"
      }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [
+      "악"
+     ],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
     }
    }
   },
@@ -146,19 +173,26 @@
    "check": {
     "label": "어둠 속에서 대열을 지킨다",
     "stat": "통솔",
-    "target": 9,
+    "target": 12,
     "hint": "any",
     "pen": {
      "fail": {
       "al": 20,
       "oc": 3,
       "memo": "모두 지쳤다"
-     },
-     "cost": {
-      "st": "Confusion",
-      "cnt": 2,
-      "memo": "정신이 없다"
      }
+    },
+    "pm": 0,
+    "base": 4,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
     }
    }
   },
@@ -170,7 +204,7 @@
    "check": {
     "label": "겁먹은 야생 포켓몬을 달랜다",
     "stat": "육성",
-    "target": 7,
+    "target": 12,
     "hint": "any",
     "pen": {
      "fail": {
@@ -178,11 +212,19 @@
       "st": "Poison",
       "memo": "독이 있는 것에 닿았다",
       "oc": 1
-     },
-     "cost": {
-      "al": 10,
-      "memo": "흔적을 남겼다"
      }
+    },
+    "pm": 0,
+    "base": 1,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
     }
    }
   },
@@ -357,5 +399,5 @@
   "restBreath": "one",
   "restBC": 1
  },
- "note": "자동 생성 · 어려움 · 씨앗 10929 · 테마 폐가. 사전 배틀 1 · 체크 5 · 보스방 6체 · 레이드 배틀 : 3 · 지도 갈림길 1 · 꺾인길 + 곁방 2 · 야생 Lv +5."
+ "note": "자동 생성 · 어려움 · 씨앗 10929 · 테마 폐가. 사전 배틀 1 · 체크 5 · 보스방 6체 · 레이드 배틀 : 3 · 지도 갈림길 1 · 꺾인길 + 곁방 2 · 야생 Lv +5. (10-29 체크를 v4 목표로 바꿈)"
 }

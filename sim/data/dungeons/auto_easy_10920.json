@@ -47,11 +47,12 @@
    ]
   },
   "verify": {
-   "wr": 0.7,
+   "wr": 0.73,
    "target": 0.8,
    "band": 0.15,
    "tries": 2,
-   "ok": true
+   "ok": true,
+   "at": "2026-10-29"
   }
  },
  "rooms": [
@@ -62,18 +63,26 @@
    "check": {
     "label": "야생의 흔적을 쫓는다",
     "stat": "육성",
-    "target": 7,
+    "target": 8,
     "hint": "any",
     "pen": {
      "fail": {
       "al": 20,
       "st": "Poison",
       "memo": "독이 있는 것에 닿았다"
-     },
-     "cost": {
-      "al": 10,
-      "memo": "흔적을 남겼다"
      }
+    },
+    "pm": 0,
+    "base": 1,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
     }
    }
   },
@@ -100,7 +109,7 @@
    "check": {
     "label": "안개 속에서 대열을 지킨다",
     "stat": "통솔",
-    "target": 9,
+    "target": 8,
     "hint": "type:풀",
     "pen": {
      "fail": {
@@ -108,11 +117,21 @@
       "st": "Confusion",
       "cnt": 3,
       "memo": "대열이 무너졌다"
-     },
-     "cost": {
-      "oc": 1,
-      "memo": "숨이 찼다"
      }
+    },
+    "pm": 0,
+    "base": 4,
+    "fit": {
+     "types": [
+      "풀"
+     ],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
     }
    }
   },
@@ -124,7 +143,7 @@
    "check": {
     "label": "쓰러진 나무를 치운다",
     "stat": "능력",
-    "target": 7,
+    "target": 8,
     "hint": "any",
     "pen": {
      "fail": {
@@ -132,11 +151,19 @@
       "dmg": "1/8",
       "st": "Paralysis",
       "memo": "반동에 몸이 굳었다"
-     },
-     "cost": {
-      "al": 10,
-      "memo": "소리를 냈다"
      }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
     }
    }
   },
@@ -173,18 +200,26 @@
    "check": {
     "label": "숲의 속삭임을 듣는다",
     "stat": "능력",
-    "target": 9,
+    "target": 8,
     "hint": "any",
     "pen": {
      "fail": {
       "al": 20,
       "dmg": "1/4",
       "memo": "크게 휘말렸다"
-     },
-     "cost": {
-      "al": 10,
-      "memo": "소리를 냈다"
      }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
     }
    },
    "alt": "g1"
@@ -286,5 +321,5 @@
   "restBreath": "one",
   "restBC": 1
  },
- "note": "자동 생성 · 쉬움 · 씨앗 10920 · 테마 숲. 사전 배틀 1 · 체크 3 · 보스방 4체 · 레이드 배틀 : 2 · 지도 갈림길 1 · 꺾인길 + 곁방 1 · 야생 Lv +5."
+ "note": "자동 생성 · 쉬움 · 씨앗 10920 · 테마 숲. 사전 배틀 1 · 체크 3 · 보스방 4체 · 레이드 배틀 : 2 · 지도 갈림길 1 · 꺾인길 + 곁방 1 · 야생 Lv +5. (10-29 체크를 v4 목표로 바꿈)"
 }

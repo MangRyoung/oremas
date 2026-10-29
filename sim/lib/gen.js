@@ -2,10 +2,11 @@
    목적: 「던전 랜덤 생성 가이드라인」과 「스킬 체크 기준점」을 숫자로 맞추기 (10-27 망령: 3인 × 2체 기준, 쉬움 승률 8할 · 보통 6할 · 어려움 3할).
    난이도: easy = 보스방 4체 · 레이드 2 / normal = 4체 · 레이드 3 / hard = 6체 · 레이드 3 (레이드는 배리어식).
    knobs: battles 일반 배틀 수 · foes 배틀당 야생 수 · lv 일반 야생 레벨 가감 · bossLv 보스방 레벨 가감 · rest 보스 앞 휴식(none|breath|short|long)
-          checks 스킬 체크 수 · tgt 목표치 묶음('low' 5·7 / 'mid' 7·9 / 'high' 9·11 / 'mix' 7·7·9·9…) · pen 패널티 세기('light'|'mid'|'heavy') · hintTyped 타입 조건 체크 수
+          checks 스킬 체크 수 · tgt 목표치 묶음 — 10-29 v4: 'tier' 난이도 목표(쉬움 8 · 보통 10 · 어려움 12) / 'tierUp' 한 칸 위(10 · 12 · 15). 옛 v3 묶음('low' 5·7 / 'mid' 7·9 / 'high' 9·11 / 'mix' 7·7·9·9…)은 실행 때 skill.js up 이 v4 로 바꾼다
+          critAl 대성공 이득 = 경계도 −critAl (기본 10) · pen 패널티 세기('light'|'mid'|'heavy') · hintTyped 타입 조건 체크 수
    야생 풀: POOL (스냅샷 NPC 포켓몬 — 트레이너 id + 순번). 보스는 BOSS 에서, 호위 · 일반 야생은 POOL 에서 겹치지 않게 뽑는다. */
 "use strict";
-const BT=require('./battle.js');
+const BT=require('./battle.js'),SK=require('./skill.js');
 const H='id:eixp1i3f',A='id:cmouymoc',R='id:8erchipe',P='id:60mwn3bi';
 /* [트레이너, 순번, 이름] — 사제 세라핌(EX)은 뺀다 */
 const POOL=[[H,1,'모스맨'],[H,2,'밴시'],[H,3,'크로뱃'],[A,0,'야느와르몽'],[A,2,'애프룡'],[A,3,'쇼고스'],[R,1,'미-고'],[R,2,'렝의 거미'],[R,3,'나이트건트'],[R,4,'잠자는 숲속의 공주'],[R,5,'클락워크 드래곤'],[P,1,'하멜른'],[P,4,'엘모의 불'],[P,5,'네후스탄'],[P,6,'야곱']];
@@ -15,6 +16,8 @@ const STATS=['지시','육성','통솔','능력'];
 const TYPES=['물','풀','불꽃','전기','에스퍼','고스트','땅','비행','악','페어리'];
 const SRC=([t,i])=>t==='dex'?{sp:i}:t==='db'?{db:i}:{trainer:t,pick:[i]};   /* 풀 항목 → mix 항목. ['dex', 이름, 이름] = 도감 야생 · ['db', id, 이름] = 야생 DB(data/wild/db.json) */
 const TGT={low:[5,7],mid:[7,9],high:[9,11],mix:[7,9]};
+/* 10-29 스킬 체크 v4: 룰북 목표치 쉬움 8 · 보통 10 · 어려움 12 · 매우 어려움 15 — 던전 난이도 = 체크 난이도, 빡센 길 · 어려운 길은 한 칸 위 (checkgen.js BAND 와 같다) */
+const V4={easy:8,normal:10,hard:12},V4UP={8:10,10:12,12:15,15:15};
 /* 패널티 표 (웹툴 PEN_EX 꼴). 세기별로 실패 · 대가 */
 const PEN={
  light:{fail:[{memo:'시간 지체'},{dmg:'1/8',memo:'긁힘'}],cost:[{memo:'시간이 걸림'},{memo:'흔적을 남김'}]},
@@ -43,15 +46,16 @@ function penFor(stat,tier,rng,k){const T=PEN.num[stat]||PEN.num.지시;const pic
  const fx=o=>{if(o.al==='F')o.al=k.alFail==null?20:k.alFail;if(o.al==='C')o.al=k.alCost==null?10:k.alCost;if(o.dmg&&tier==='easy')o.dmg=DMG_DN[o.dmg]||o.dmg;if(o.dmg&&tier==='hard')o.dmg=DMG_UP[o.dmg]||o.dmg;return o};
  const fail=fx(pick(T.fail)),cost=fx(pick(T.cost));if(tier==='hard')fail.oc=(+fail.oc||0)+1;return {fail,cost}}
 const LABEL={지시:['옛 장치를 작동시킨다','함정의 순서를 읽는다','갈림길의 표식을 해독한다'],육성:['지친 포켓몬을 돌본다','야생의 흔적을 쫓는다','다친 야생 포켓몬을 달랜다'],통솔:['겁먹은 포켓몬을 진정시킨다','무너지는 다리를 함께 건넌다','대열을 지켜 안개를 지난다'],능력:['봉인된 문을 연다','속삭이는 목소리의 정체를 쫓는다','무너진 길을 몸으로 뚫는다']};
-const DEF={battles:2,foes:2,lv:0,bossLv:0,rest:'short',checks:3,tgt:'mix',pen:'alert',hintTyped:1,alCost:15,alFail:30};
+const DEF={battles:2,foes:2,lv:0,bossLv:0,rest:'short',checks:3,tgt:'tier',pen:'alert',hintTyped:1,alCost:15,alFail:30,critAl:10};
 function make(tier,knobs,seed){const T=TIER[tier];if(!T)throw new Error('난이도: easy | normal | hard');const k=Object.assign({},DEF,knobs||{});const rng=BT.mkRng(seed||1);
  const ri=n=>Math.floor(rng()*n);const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=ri(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
  const boss=BOSS[ri(BOSS.length)];const pool=shuffle(POOL);let pi=0;const take=n=>{const out=[];for(let i=0;i<n;i++){out.push(pool[pi%pool.length]);pi++}return out};
  /* 체크: 자질을 고루(같은 자질 연달아 X), 목표치 묶음, 타입 조건은 hintTyped 개만 */
  const sts=shuffle(STATS);const checks=[];const tg=TGT[k.tgt]||TGT.mix;const typedAt=new Set(shuffle([...Array(k.checks).keys()]).slice(0,k.hintTyped));
- for(let i=0;i<k.checks;i++){const st=sts[i%4];const target=k.tgt==='mix'?tg[i%2]:tg[ri(tg.length)];const pe=PEN[k.pen]||PEN.mid;
+ for(let i=0;i<k.checks;i++){const st=sts[i%4];const target=k.tgt==='tier'?V4[tier]:k.tgt==='tierUp'?V4UP[V4[tier]]:k.tgt==='mix'?tg[i%2]:tg[ri(tg.length)];const pe=PEN[k.pen]||PEN.mid;
   const fx=o=>{o=JSON.parse(JSON.stringify(o));if(o.al==='F')o.al=k.alFail;if(o.al==='C')o.al=k.alCost;if(typeof o.fight==='string'){const n=+o.fight.slice(1);o.fight={mix:take(n).map(SRC),lvAdd:k.lv}}return o};
-  const c={label:LABEL[st][ri(3)],stat:st,target,hint:typedAt.has(i)?'type:'+TYPES[ri(TYPES.length)]:'any',pen:k.pen==='alert'||k.pen==='num'?penFor(st,tier,rng,k):{fail:fx(pe.fail[ri(pe.fail.length)]),cost:fx(pe.cost[ri(pe.cost.length)])}};if(st==='능력'&&ri(2))c.mode='inou';checks.push(c)}
+  const c={label:LABEL[st][ri(3)],stat:st,target,hint:typedAt.has(i)?'type:'+TYPES[ri(TYPES.length)]:'any',pen:k.pen==='alert'||k.pen==='num'?penFor(st,tier,rng,k):{fail:fx(pe.fail[ri(pe.fail.length)]),cost:fx(pe.cost[ri(pe.cost.length)])}};if(st==='능력')ri(2);   /* 10-29 v4: 초상 능력은 시뮬이 고른다(옛 mode 'inou' 없음) — 씨앗마다 같은 던전이 나오게 주사위만 굴린다 */
+  const u=SK.up(c);if(k.tgt==='tier'||k.tgt==='tierUp')u.target=target;delete u.pen.cost;if(+k.critAl)u.gainCrit={al:-(+k.critAl),memo:'대성공 — 기척을 지웠다'};checks.push(u)}
  /* 방 배치: 입구(체크) → [배틀 · 체크 섞기] → (휴식 방 + 남은 체크) → 보스 */
  const rooms=[];let ci=0,rn=0;const nextCheck=()=>ci<checks.length?checks[ci++]:null;const cid=()=>'c'+(++rn);   /* 10-28: 방 id 가 겹치던 것 고침(전엔 'c'+ci 가 두 곳에서 같은 값 — 시뮬이 한 체크를 두 번 · 다른 하나는 건너뜀) */
  rooms.push({id:'entry',t:'entry',name:'입구',check:nextCheck()});
@@ -62,4 +66,4 @@ function make(tier,knobs,seed){const T=TIER[tier];if(!T)throw new Error('난이�
  const restRoom={id:'safe',t:'safe',name:'쉼터'};if(k.rest&&k.rest!=='none')restRoom.rest=k.rest;const c2=nextCheck();if(c2)restRoom.check=c2;if(restRoom.rest||restRoom.check)rooms.push(restRoom);
  const esc=take(T.bossN-1);rooms.push({id:'boss',t:'boss',name:'보스 · '+boss[2],enc:{mix:[SRC(boss)].concat(esc.map(SRC)),boss:true,bossAt:0,raid:T.raid,n:T.bossN,lvAdd:k.bossLv}});
  return {id:`gen_${tier}_${seed}`,name:`생성 · ${T.name} #${seed}`,wn:2,private:true,gen:{tier,knobs:k,seed,boss:boss[2]},rooms}}
-module.exports={make,TIER,POOL,BOSS,PEN,DEF,penFor};
+module.exports={make,TIER,POOL,BOSS,PEN,DEF,penFor,V4,V4UP};

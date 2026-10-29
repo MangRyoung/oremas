@@ -1,9 +1,11 @@
 /* 던전 진행기 — 던전(data/dungeons/*.json)의 방을 차례로 지나며 스킬 체크 · 야생 조우 · 휴식을 돌리고, 일행 상태를 끝까지 추적한다.
    던전: {id, name, wn 동행 수(기본 2), rooms:[{id, t 종류, name, check:{…}, enc:{pack, boss?}, rest:'breath'|'short'|'long'}], path:[방 id 순서]}
-   체크: {label, stat 지시|육성|통솔|능력, target 5|7|9|11, mode 'skill'|'inou'(능력 A 이상이면 이능으로), step ±1, twice ±1, hint 동료 조건 ('type:물' · 'any' · 'none'),
-          pen:{fail:{dmg:'1/4', st:'Poison', rk:{speed:-1}, oo:1, oc:1, memo}, cost:{…}}, gain:{…} (대성공 보너스, 지금은 기록만)}
-   일행 정책(policy): who 'best'(그 자질 주사위가 가장 큰 사람) | 'round'(돌아가며) · cover 'never' | 'fail'(실패를 받침) | 'always'(대가도 받침) · partner 'match'(조건 맞는 안 지친 포켓몬) | 'any' | 'none'
-   휴식은 오레마스 skill_ui 의 REST0 과 같은 표: 긴 휴식 전부 회복 · 짧은 휴식 HP 1/2 · 부상 1단계 · 숨돌리기 HP 1/4 · 지침만 풀림 */
+   체크 (10-29 v4, lib/skill.js): {v:4, label, stat 지시|육성|통솔|능력, base 종족값 칸(0 HP~5 스피드), target 8|10|12|15, pm ±, twice ±1, fit:{types, moves, abil, etcMons}, noStep,
+          (옛 v3 체크 target 5|7|9|11 · step · hint 는 skill.js up 이 v4 로 바꾼다)
+          pen:{fail:{dmg:'1/4', st:'Poison', rk:{speed:-1}, oo:1, oc:1, al, memo}}, gain:{…} 성공 보상 · gainCrit:{…} 대성공 이득 (생성기 기본 = 경계도 −10)}
+   일행 정책(policy): who 'best'(그 자질 주사위가 가장 큰 사람) | 'round'(돌아가며) · cover 'never' | 'fail'(실패를 받침, 'always' 도 같음 — v4 엔 대가가 없다) · partner 'match'(조건 맞는 안 지친 포켓몬) | 'any' | 'none'
+   조정값(adj): fieldMax 필드 포켓몬 수(기본 1, 웹툴 fieldMax) · coverBall 볼 안 커버 · coverHp · crit · injPen · dyingFight …
+   휴식: 상태 회복은 룰북 표(긴 2단계 · 중간 · 짧은 1단계 · 숨돌리기 0). HP · 4식 6령은 웹툴 skill_ui REST0 과 같은 표 — 자동 생성 던전은 RULES(10-28: 짧은 = 전원 HP 1/4 · 숨돌리기 = 1체 HP 1/4 + 6령 1 · 중간 = HP 1/2 · 빈사 1/4) */
 "use strict";
 const fs=require('fs'),path=require('path');
 const SK=require('./skill.js'),BT=require('./battle.js'),WD=require('./wild.js');
@@ -23,9 +25,11 @@ function makeParty(parties,wn){return parties.map(p=>{const t=clone(p.trainer);c
 
 function pathOf(dg,r){let P=(dg.path||dg.rooms.filter(x=>!x.alt).map(x=>x.id)).slice();for(const g of dg.branches||[]){if(r()<0.5){const i=P.indexOf(g.main[0]);if(i>=0)P.splice(i,g.main.length,...g.alt)}}return P}
 async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt.seed||1);const pol=Object.assign({who:'best',cover:'fail',partner:'match',inou:'yes'},opt.policy||{});
- const adj=Object.assign({ordScope:'dungeon',ordPer:1,cmdPer:2,target:0,penScale:1,checkEvery:1,stepAll:0,wildLv:0,wildExtra:0,bossN:0,raidX:null,raidMode:'barrier',restV:1,al0:0,al30:5,al70:10,alBattle:0,alScale:1},dg.rules||{},opt.adjust||{});   /* dg.rules = 던전에 박힌 규칙값(자동 생성 던전). 조정값(opt.adjust)이 그 위에 */
+ const adj=Object.assign({fieldMax:1,coverBall:0,ordScope:'dungeon',ordPer:1,cmdPer:2,target:0,penScale:1,checkEvery:1,stepAll:0,wildLv:0,wildExtra:0,bossN:0,raidX:null,raidMode:'barrier',restV:1,al0:0,al30:5,al70:10,alBattle:0,alScale:1},dg.rules||{},opt.adjust||{});   /* dg.rules = 던전에 박힌 규칙값(자동 생성 던전). 조정값(opt.adjust)이 그 위에 */
  const party=makeParty(parties,dg.wn||opt.wn||2);const ev=[];const say=(e)=>ev.push(e);
- const aliveMons=P=>P.mons.filter(m=>m.hp.cur>0);const anyAlive=()=>party.some(P=>aliveMons(P).length);
+ const aliveMons=P=>P.mons.filter(m=>m.hp.cur>0);
+ /* 10-29 필드 포켓몬 (룰북 「던전 · 배틀 중엔 필드 포켓몬만」 · 웹툴 skill_ui fieldMax 기본 1): 트레이너마다 살아 있는 동행 앞에서 adj.fieldMax 체. 커버도 필드만(adj.coverBall 1 이면 볼 안의 동행도) */
+ const fieldMons=P=>aliveMons(P).slice(0,Math.max(1,+adj.fieldMax||1));const anyAlive=()=>party.some(P=>aliveMons(P).length);
  const rankOf=(P,st)=>((P.trainer.ranks||{})[st]||'C');
  let round=0;
  /* 10-29 스킬 체크 v4 (lib/skill.js): 판정할 사람 · 포켓몬 고르기 — 일행 모두 필드(동행 wn 체)에 있다고 보고, 보정 합이 가장 큰 짝을 고른다.
@@ -33,7 +37,7 @@ async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt
  const supMax=P=>{const l=SK.lv(rankOf(P,'능력'));return l>=4?2:l>=3?1:0};
  const myosuMax=P=>{const l=SK.lv(rankOf(P,'지시'));return l>=4?2:l>=3?1:0};
  const optFor=(P,ck)=>{const base={rank:rankOf(P,ck.stat),pm:(+ck.pm||0)+(+adj.stepAll||0),twice:+ck.twice||0,inj:P.inj,tough:SK.lv(rankOf(P,'육성'))>=3};const L=[];
-  if(pol.partner!=='none')for(const m of aliveMons(P)){const f=SK.monFit(m,ck);L.push(Object.assign({},base,{mon:f.mon,fit:pol.partner==='match'?f.fit:0,m,why:f.why}))}
+  if(pol.partner!=='none')for(const m of fieldMons(P)){const f=SK.monFit(m,ck);L.push(Object.assign({},base,{mon:f.mon,fit:pol.partner==='match'?f.fit:0,m,why:f.why}))}
   L.push(Object.assign({},base,{mon:null,m:null}));
   if(ck.stat==='능력'&&pol.inou!=='no'&&P.inou<supMax(P))L.push(Object.assign({},base,{super:true,m:null}));
   return L.map(q=>Object.assign(q,{mod:SK.modOf(q)})).sort((a,b)=>b.mod-a.mod||(a.super?1:0)-(b.super?1:0))[0]};
@@ -44,7 +48,7 @@ async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt
   const r=SK.roll(q,rng);if(r.myosuUsed)P.myosu++;const mode=q.super?'inou':'skill';if(q.super)P.inou++;
   const rec={room:room.id,label:ck.label,stat:ck.stat,target,who:P.trainer.name,rank,mode,partner:q.m?q.m.name:(q.super?'이능':'혼자'),mod:r.mod,fit:q.fit||0,pdie:6,die:6,a:r.a,p:r.p,total:r.total,ri0:r.ri,ri:r.ri,fumble:r.fumble,stubborn:false,cover:'',pen:[]};
   /* 실패: 상태 한 단계 (제시가 noStep 이면 없음). 커버 = 판정하지 않은 포켓몬이 최대 HP adj.coverHp(1/4) 를 받고 막는다 (pol.cover 'never' 면 안 함) */
-  if(r.ri===1&&!+ck.noStep){let C=null;if(pol.cover!=='never'){const cs=party.flatMap(Q=>aliveMons(Q).map(m=>({Q,m}))).filter(x=>x.m!==q.m&&x.m.hp.cur>frac(x.m.hp.max,adj.coverHp||'1/4'));cs.sort((a,b)=>b.m.hp.cur/b.m.hp.max-a.m.hp.cur/a.m.hp.max);C=cs[0]||null}
+  if(r.ri===1&&!+ck.noStep){let C=null;if(pol.cover!=='never'){const cs=party.flatMap(Q=>(+adj.coverBall?aliveMons(Q):fieldMons(Q)).map(m=>({Q,m}))).filter(x=>x.m!==q.m&&x.m.hp.cur>frac(x.m.hp.max,adj.coverHp||'1/4'));cs.sort((a,b)=>b.m.hp.cur/b.m.hp.max-a.m.hp.cur/a.m.hp.max);C=cs[0]||null}
    if(C){const loss=frac(C.m.hp.max,adj.coverHp||'1/4');C.m.hp.cur=Math.max(0,C.m.hp.cur-loss);rec.cover=C.Q.trainer.name;C.Q.stats.covers++;P.stats.covered++;rec.pen.push(`[커버] ${C.m.name} HP −${loss}`)}
    else injure(P,'실패',rec)}
   P.stats.checks++;if(rec.ri>=3)P.stats.ok++;if(rec.ri===4)P.stats.crit++;if(rec.ri<=1)P.stats.fail++;if(mode==='inou')P.stats.inouUsed++;
@@ -67,7 +71,7 @@ async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt
   if(sub.fight){pend.fights.push(sub.fight);L.push(`추가 조우 ${(sub.fight.mix||[]).length||sub.fight.n||1}체`)}
   if(+sub.restDown){pend.restDown+=+sub.restDown;L.push(`다음 휴식 −${+sub.restDown}단계`)}
   if(+sub.foeLv){pend.foeLv+=+sub.foeLv;L.push(`다음 배틀 야생 Lv +${+sub.foeLv}`)}
-  if(+sub.al){const b=pend.al;pend.al=Math.min(100,pend.al+(+sub.al)*(+adj.alScale||1));L.push(`경계도 +${pend.al-b} → ${pend.al}`);say({k:'alert',from:b,to:pend.al})}
+  if(+sub.al){const b=pend.al;pend.al=Math.max(0,Math.min(100,pend.al+(+sub.al)*(+adj.alScale||1)));L.push(`경계도 ${pend.al>=b?'+':'−'}${Math.abs(pend.al-b)} → ${pend.al}`);say({k:'alert',from:b,to:pend.al})}
   if(+sub.bossLv){pend.bossLv+=+sub.bossLv;L.push(`보스방 Lv ${+sub.bossLv>0?'+':''}${+sub.bossLv}`)}
   if(sub.memo)L.push(sub.memo);rec.pen.push(`[${why}] `+L.join(' · '))};
  const pool0={order:party.length*(+adj.ordPer||0),command:party.length*(+adj.cmdPer||0)};const pool=Object.assign({},pool0);   /* 던전 공용 4식 · 6령 (10-28) */
@@ -86,7 +90,8 @@ async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt
    wild={trainer:tr,mons}}
   else if(enc.trainer){/* 제작기 스냅샷의 트레이너를 야생 무리로 (예: 무진 NPC/숲 속의 폐가) — opt.wildFrom 은 서버 · 명령줄이 넘긴다 */if(!opt.wildFrom)throw new Error('스냅샷 야생을 쓸 수 없음 (wildFrom 없음)');const fl=pend.foeLv+alLv();pend.foeLv=0;wild=opt.wildFrom(enc.trainer,{pick:enc.pick,take:enc.take,boss:enc.boss,lvAdd:(+enc.lvAdd||0)+(+adj.wildLv||0)+fl,extra:(+enc.extra||0)+(+adj.wildExtra||0)})}
   else{const packs=WD.packs();const pk=packs[enc.pack];if(!pk)throw new Error('야생 무리 없음: '+enc.pack);const pk2=Object.assign({},pk,{lvAdd:(+pk.lvAdd||0)+(+adj.wildLv||0),mons:pk.mons.concat(Array.from({length:+adj.wildExtra||0},(_,i)=>pk.mons[i%pk.mons.length]))});wild=WD.build(W,pk2)}
-  const parties=party.map(P=>{const t=clone(P.trainer);require('./party.js').orders(W,t,{mons:P.mons,autoPick:adj.autoPick!==0&&adj.autoPick!=='0'});const oc=t.orderCount||{};if(adj.ordScope==='dungeon'){/* 10-28 망령: 4식 · 6령은 던전 단위 — 1인 4식 1 · 6령 2 를 셋이 합친 공용 풀(pool). 종류마다 칸은 넉넉히 두고 풀이 한도 */for(const k of Object.keys(oc))if(oc[k]>0)oc[k]=9}/* 체크 패널티의 4식 · 6령 차감 */let oo=P.debt.oo,oc2=P.debt.oc;for(const k of Object.keys(oc).sort()){if(k.startsWith('order_')&&oo>0&&oc[k]>0){oc[k]--;oo--}if(k.startsWith('command_')&&oc2>0&&oc[k]>0){oc[k]--;oc2--}}P.debt.oo=0;P.debt.oc=0;
+  /* 10-29 빈사 트레이너는 그 장면(방)에 참가하지 못한다 — 같은 방 배틀에 그 트레이너 포켓몬도 안 나간다 (adj.dyingFight 1 이면 옛 방식) */
+  const parties=party.filter(P=>P.inj<3||+adj.dyingFight).map(P=>{const t=clone(P.trainer);require('./party.js').orders(W,t,{mons:P.mons,autoPick:adj.autoPick!==0&&adj.autoPick!=='0'});const oc=t.orderCount||{};if(adj.ordScope==='dungeon'){/* 10-28 망령: 4식 · 6령은 던전 단위 — 1인 4식 1 · 6령 2 를 셋이 합친 공용 풀(pool). 종류마다 칸은 넉넉히 두고 풀이 한도 */for(const k of Object.keys(oc))if(oc[k]>0)oc[k]=9}/* 체크 패널티의 4식 · 6령 차감 */let oo=P.debt.oo,oc2=P.debt.oc;for(const k of Object.keys(oc).sort()){if(k.startsWith('order_')&&oo>0&&oc[k]>0){oc[k]--;oo--}if(k.startsWith('command_')&&oc2>0&&oc[k]>0){oc[k]--;oc2--}}P.debt.oo=0;P.debt.oc=0;
    const mons=P.mons.filter(m=>m.hp.cur>0).map(m=>{const x=clone(m);x.rank=Object.assign({},P.debt.rk);return x});P.debt.rk={};return {trainer:t,mons}}).filter(p=>p.mons.length);
   if(!parties.length)return null;const fmt=Math.min(3,Math.max(1,parties.reduce((a,p)=>a+p.mons.length,0)>=3?3:2));
   const r=await BT.runBattle(W,{left:{parties},right:wild,rng,format:fmt,maxTurns:30,pool:adj.ordScope==='dungeon'?pool:null,poolBoss:!!enc.boss,poolInit:pool0});

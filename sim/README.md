@@ -95,12 +95,13 @@ node bin/sim.js report                                   records/*.summary.json 
 ```
 
 - `adjust`: `target` 목표치 가감 · `penScale` 패널티 대미지 배율 · `checkEvery` 2 면 체크를 하나 걸러 하나만 · `stepAll` 모든 체크 단계 보정 · `wildLv` 야생 레벨 가감 · `wildExtra` 야생 무리에 n 체 더 · `bossN` 보스방 적 수(mix) · `raidX` 레이드 X · `raidMode` barrier | cap.
-- `policy`: `who` best(그 자질 주사위가 가장 큰 사람) · round, `cover` never · fail(실패를 받침) · always(대가도 받침), `partner` match · any · none, `inou` yes · no.
+- `policy`: `who` best(보정 합이 가장 큰 사람) · round, `cover` never · fail(실패를 받침, always 도 같음), `partner` match · any · none, `inou` yes · no (초상 능력).
+- (10-29 v4) `adjust` 에 `fieldMax` 필드 포켓몬 수(기본 1 — 웹툴 「필드 포켓몬 수」) · `coverBall` 1 이면 볼 안 동행도 커버 · `crit` 대성공 기준(기본 +4) · `dyingFight` 1 이면 빈사 트레이너도 같은 방 배틀에 나감(옛 방식).
 - `variants: [{id, name, adjust, policy}]` 를 주면 짝지은 변형만 돈다(예: 보스방 4체 · 레이드 2 / 6체 · 레이드 3). sweep 보다 우선.
 - `sweep` 에 적은 키는 값마다 변형을 만든다 (정책 키 cover · who · partner · inou 는 정책으로, 나머지는 조정으로).
 
 ## 약식이라 다루지 않는 것 (해석할 때 주의)
 
 - 배틀(v3): 웹툴이 자동으로 하는 것은 다 된다. 웹툴에서도 손으로 하는 것(【N/시】 손 발동 · 고유 · 메가 · 효과 엔진이 못 읽는 글)은 `docs/지시_로직.md` 「아직 못 하는 것」.
-- 스킬 체크: 대성공 이득 · 대가의 내용은 패널티 칸에 적은 것만 반영한다(시간 지체 같은 서술은 기록만). 재시도 · 대항 판정은 없다.
+- 스킬 체크(10-29 v4, 룰북 「스킬 체크」 장): 2d6 + 자질 + 필드 포켓몬 종족값 랭크 + 적합(타입 · 기술/특성 · GM 기타 `fit.etcMons`, 최대 +3). 대가 없음. 실패 = 트레이너 상태 한 단계(커버 가능) + 패널티 칸, 대성공 이득은 `gainCrit` 칸(생성기 기본 경계도 −10)만 반영한다. 재시도 · 대결 판정 · RP 동행(통솔 2체)은 던전 시뮬에 없다.
 - 야생은 생성기로 만든 야생 DB 다(오리지널 + 제작기 도감 올드 타입). 캠페인 NPC 는 제작기에서 받아 쓴다(`enc.trainer`).
