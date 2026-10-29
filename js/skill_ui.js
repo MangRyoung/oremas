@@ -129,7 +129,7 @@ window.OM_SKILL_UI=(()=>{
   if(ch.how==='super')parts.push([`초상 능력 · 능력 ${RKN[q]} ×2`,q*2]);
   else{parts.push([`${O.stat} ${rankOf(t,O.stat)||'D'}`,q]);
    if(ch.how==='mon'){const m=mons()[ch.mid];if(m){const bv=baseVal(m,O.base);parts.push([`${m.name} ${BASE[O.base]} ${bv}`,baseLv(bv)]);
-    const f=fitOf(m,O);if(ch.etc)f.push('기타');const fit=Math.min(3,f.length);if(fit)parts.push([`적합 ${f.join(' · ')}`,fit])}}}
+    const f=O.free?Array.from({length:Math.min(3,+O.fitN||0)},()=>'선언'):fitOf(m,O);if(ch.etc)f.push('기타');const fit=Math.min(3,f.length);if(fit)parts.push([O.free?'적합 (선언)':`적합 ${f.join(' · ')}`,fit])}}}
   if(+O.pm)parts.push([+O.pm>0?'유리':'불리',+O.pm]);
   if(k.inj===1&&+C.injPen)parts.push([tough(t)?'부상 (강인함으로 무시)':'부상',tough(t)?0:-(+C.injPen)]);
   if(+ch.bonus)parts.push(['추가 보정',+ch.bonus]);
@@ -192,7 +192,7 @@ window.OM_SKILL_UI=(()=>{
   return {prev,now,cut,line:`${t.name} 「${STEP[prev]}」 → 「${STEP[now]}」${cl}${now===2?' · 모든 판정 불리':now===1?(tough(t)?' · 강인함':' · 모든 판정 −'+C.injPen):' · 이 장면에서 빠진다'} (${why})`}}
  async function stepUndo(tid,s){if(!s)return;await setT(tid,{inj:s.prev});await refundOrd(s.cut)}
  /* 실패 확정: 단계 + 패널티 묶음 (자동이면) */
- async function settleFail(tid,r){const O=st().offer;delete r.pend;if(O&&O.id===r.offerId&&O.noStep){r.text+='\n상태 단계는 오르지 않는 체크';}else{const s=await stepUp(tid,(r.label||'스킬 체크')+' 실패');r.step=s;r.text+='\n'+s.line;A().sysLog(s.line,'dice')}
+ async function settleFail(tid,r){const O=r.offerId==='free'?null:st().offer;delete r.pend;if(r.offerId==='free'?+r.noStep:(O&&O.id===r.offerId&&O.noStep)){r.text+='\n상태 단계는 오르지 않는 체크';}else{const s=await stepUp(tid,(r.label||'스킬 체크')+' 실패');r.step=s;r.text+='\n'+s.line;A().sysLog(s.line,'dice')}
   if(O&&O.id===r.offerId&&O.pen&&O.pen.auto&&penHas(O.pen.fail)){await applyPenalty(tid,O.pen.fail,(O.label||'스킬 체크')+' · 실패',r.how==='mon'?r.mid:'');r.penDone=1}
   return r}
 
@@ -464,8 +464,20 @@ ${penFields('fail',X)}</div></div>
 
  /* ----- 플레이어 창 ----- */
  const picOf=m=>`<div class="pic" style="${m&&m.image?`background-image:url('${cssu(m.image)}')`:''}"></div>`;
- function openPlayer(tid){const T=trs();const t=T[tid];if(!t)return;const K=st();const O=K.offer?upOffer(K.offer):null;const k=tsk(tid);const C=cfg();const R=(K.res||{})[tid];const mine=R&&O&&R.offerId===O.id?R:null;
-  const scene=O?O.scene:'rp';const cp=compOf(tid,scene);const own=Object.values(mons()).filter(m=>m.tid===tid&&alive(m));const mm=myosuMax(t),sm=supMax(t);
+ /* 10-29 망령 「제시된 체크가 없어도 트레이너가 굴릴 수 있게」: 자유 판정 — 짝 · 목표치를 직접 골라 굴린다. 결과는 skill.free[tid] (제시 결과 res 와 따로) */
+ const FREE={};
+ function freeOffer(tid){return Object.assign({id:'free',free:1,v:4,label:'자유 판정',scene:'rp',fit:{},pen:{},ids:[tid],npc:''},{stat:'지시',base:3,target:10,pm:0,twice:0,fitN:0,noStep:0},FREE[tid]||{})}
+ const resPath=(tid,free)=>['skill',free?'free':'res',tid];
+ const resOf=(tid,free)=>(st()[free?'free':'res']||{})[tid];
+ function freeHead(tid,O,O0,mine){const sel=(k,L)=>`<select data-fr="${k}">${L.map(([v,n])=>`<option value="${v}" ${String(O[k])===String(v)?'selected':''}>${n}</option>`).join('')}</select>`;
+  return `<div class="skot">자유 판정 <span class="small dim">${O0?'이번 제시는 내 대상이 아니다':'제시된 체크 없음'} · 짝과 목표치를 직접 골라 굴린다</span></div>
+   ${mine?'':`<div class="skfree"><label>자질 ${sel('stat',SK.map(x=>[x,x]))}</label><label>종족값 ${sel('base',BASE.map((x,i)=>[i,x]))}</label><label>목표 ${sel('target',[[8,'쉬움 8'],[10,'보통 10'],[12,'어려움 12'],[15,'매우 어려움 15']])}</label><label>두 번 굴리기 ${sel('twice',[[0,'없음'],[1,'유리 (높은 값)'],[-1,'불리 (낮은 값)']])}</label><label>적합 ${sel('fitN',[[0,'+0'],[1,'+1'],[2,'+2'],[3,'+3']])}</label><label class="tg"><input type="checkbox" data-fr="noStep" ${+O.noStep?'checked':''}> 실패해도 상태 단계 안 오름</label></div>`}`}
+ /* 10-29 망령 「굴림 창에 손패 · 카드 쓰기 · 무덤 확인 · 가져오기」 — 덱의 손패 화면(battleHand)을 그대로 연다 */
+ function handHtml(tid){const D=window.OM_DECK_UI;const h=D&&D.handInfo?D.handInfo(tid):null;if(!h)return '';
+  return `<div class="skcard"><div class="row"><div class="sec" style="margin:0">손패 <span class="note">${esc(h.name)} · ${h.cards.length}장${h.res?' · '+esc(h.res):''} · 누르면 크게 보고 쓴다</span></div><span class="sp"></span><button class="btn xs" data-hand="grave">🪦 무덤 ${h.disc}</button></div>
+   <div class="skhand">${h.cards.map((c,i)=>`<button class="skhc" data-hand="${i}" style="--hc:${c.col}" title="${esc(c.x||'')}">${c.img?`<i style="background-image:url('${cssu(c.img)}')"></i>`:''}<b>${esc(c.n)}</b>${c.c!==''&&c.c!=null?`<em>${esc(c.c)}</em>`:''}</button>`).join('')||'<span class="small dim">손패가 비었다</span>'}</div></div>`}
+ function openPlayer(tid){const T=trs();const t=T[tid];if(!t)return;const K=st();const O0=K.offer?upOffer(K.offer):null;const free=!(O0&&((O0.ids||[]).includes(tid)||gm()));const O=free?freeOffer(tid):O0;const k=tsk(tid);const C=cfg();const R=resOf(tid,free);const mine=R&&R.offerId===O.id?R:null;
+  const scene=O.scene;const cp=compOf(tid,scene);const own=Object.values(mons()).filter(m=>m.tid===tid&&alive(m));const mm=myosuMax(t),sm=supMax(t);
   const isMe=gm()||tid===me();
   const compCard=`<div class="skcard"><div class="sec">${SCN[scene]} 포켓몬 <span class="note">${cp.battle?'배틀 에리어에 나온 포켓몬 (자동)':scene==='field'?`던전 · 배틀 밖 필드 — ${cp.cap}체까지`:`RP 장면 — ${cp.cap}체까지${qLv(t,'통솔')>=3?' (통솔 특화)':''}`} · 판정과 커버에 쓴다</span></div>
     <span class="skprow">${cp.ids.map(id=>`${av(mons()[id].image,mons()[id].name,'big')}<b>${esc(mons()[id].name)}</b>`).join('')||'<span class="small dim">없음</span>'}</span>
@@ -475,9 +487,9 @@ ${penFields('fail',X)}</div></div>
     <div class="skres2"><span class="skstat" style="border-bottom-color:${STEPC[k.inj]}"><small>상태</small><b>${STEP[k.inj]}</b></span><span class="skstat"><small>묘수</small><b>${mm?(mm-k.myosu)+'/'+mm:'—'}</b></span><span class="skstat"><small>초상 능력</small><b>${sm?(sm-k.sup)+'/'+sm:'—'}</b></span>${tough(t)?'<span class="skstat"><small>강인함</small><b>○</b></span>':''}</div></div>
    ${k.inj===1?`<div class="small ${tough(t)?'dim':'warn'}" style="margin:4px 0">부상 — ${tough(t)?'강인함으로 판정 패널티 없음':'모든 판정 −'+C.injPen}</div>`:k.inj===2?'<div class="small warn" style="margin:4px 0">중상 — 모든 판정 불리 (두 번 굴려 낮은 값)</div>':''}
    ${compCard}
-   ${!O?'<div class="skcard"><div class="small dim">제시된 체크가 없다. GM 이 제시하면 여기서 굴린다.</div></div>':!(O.ids||[]).includes(tid)&&!gm()?'<div class="skcard"><div class="small dim">이번 체크는 내 대상이 아니다.</div></div>':`
-   <div class="skcard hit"><div class="skoffer"><div class="skot">${esc(O.label||'스킬 체크')}</div><div class="skos">${offerSummary(O)}</div>${penLine(O.pen)}${O.npc?'':ladder(O.target,mine?mine.total:null)}</div>
-    ${mine?resultHtml(mine,t,k):k.inj>=3?'<div class="small warn" style="margin-top:8px">빈사 — 이 장면에는 참가할 수 없다. 장면이 끝나면 중상으로 돌아온다.</div>':(()=>{const op=optionsOf(tid,O);
+   ${`
+   <div class="skcard ${free?'':'hit'}"><div class="skoffer">${free?freeHead(tid,O,O0,mine):`<div class="skot">${esc(O.label||'스킬 체크')}</div><div class="skos">${offerSummary(O)}</div>${penLine(O.pen)}`}${O.npc?'':ladder(free&&mine?mine.target:O.target,mine?mine.total:null)}</div>
+    ${mine?resultHtml(mine,t,k)+(free&&!mine.pend?'<div class="row" style="margin-top:8px"><span class="sp"></span><button class="btn sm pri" data-freenew="1">새로 굴리기</button></div>':''):k.inj>=3?'<div class="small warn" style="margin-top:8px">빈사 — 이 장면에는 참가할 수 없다. 장면이 끝나면 중상으로 돌아온다.</div>':(()=>{const op=optionsOf(tid,O);
      return `<div class="sec">누구와 굴릴까 <span class="note">${esc(O.stat)} + ${BASE[O.base]}</span></div>
     <div class="skopts" id="monpick">${op.map(x=>{const off=x.how==='super'&&x.left<=0;const m=x.how==='mon'?mons()[x.mid]:null;
       const sub=x.how==='mon'?`${BASE[O.base]} ${baseVal(m,O.base)} (${RKN[baseLv(baseVal(m,O.base))]})${fitOf(m,O).length?' · 적합 '+fitOf(m,O).length:''}`:x.how==='super'?`혼자 · 자질 ×2 · 『고유』 범위만 · 남은 ${x.left}회`:'포켓몬 없이 · 종족값 · 적합 없음';
@@ -487,7 +499,8 @@ ${penFields('fail',X)}</div></div>
     <div class="skformula" id="sk_formula"></div>
     <div class="row" style="margin-top:10px"><label class="small" title="GM 이 따로 말한 ± 보정">추가 보정 <input type="number" class="n xs" id="sk_bonus" value="0"></label><span class="sp"></span><button class="btn pri big" id="sk_roll">굴리기</button></div>`})()}
    </div>`}
-   ${coverHtml(tid,O,K)}</div>`);
+   <div id="sk_hand">${handHtml(tid)}</div>
+   ${free?'':coverHtml(tid,O,K)}</div>`);
   md.classList.add('wide');
   const sel=md.querySelector('#monpick');
   const choice=()=>{const on=sel&&sel.querySelector('.skopt.on');if(!on)return null;return {how:on.dataset.how,mid:on.dataset.mid||'',etc:on.dataset.how==='mon'&&!!($('#sk_etc',md)||{}).checked,bonus:+($('#sk_bonus',md)||{}).value||0}};
@@ -500,8 +513,13 @@ ${penFields('fail',X)}</div></div>
   {const bi=$('#sk_bonus',md);if(bi)bi.addEventListener('input',formula);const ei=$('#sk_etc',md);if(ei)ei.addEventListener('change',formula)}formula();
   const rb=$('#sk_roll',md);if(rb)rb.onclick=()=>{const ch=choice();if(!ch)return A().toast('누구와 굴릴지 먼저 골라 줘');roll(tid,O,ch)};
   md.querySelectorAll('[data-comp]').forEach(b=>b.onclick=async()=>{await setComp(tid,b.dataset.comp);A().closeModal();openPlayer(tid)});
-  md.querySelectorAll('[data-myosu]').forEach(b=>b.onclick=()=>myosu(tid));
-  md.querySelectorAll('[data-accept]').forEach(b=>b.onclick=async()=>{const r=JSON.parse(JSON.stringify((st().res||{})[tid]||null));if(!r||!r.pend)return;A().closeModal();await settleFail(tid,r);await A().set(['skill','res',tid],r);setTimeout(()=>openPlayer(tid),200)});
+  md.querySelectorAll('[data-myosu]').forEach(b=>b.onclick=()=>myosu(tid,free));
+  md.querySelectorAll('[data-accept]').forEach(b=>b.onclick=async()=>{const r=JSON.parse(JSON.stringify(resOf(tid,free)||null));if(!r||!r.pend)return;A().closeModal();await settleFail(tid,r);await A().set(resPath(tid,free),r);setTimeout(()=>openPlayer(tid),200)});
+  md.querySelectorAll('[data-fr]').forEach(el=>el.onchange=()=>{const f=FREE[tid]=Object.assign({},FREE[tid]||{});f[el.dataset.fr]=el.type==='checkbox'?(el.checked?1:0):(el.dataset.fr==='stat'?el.value:+el.value);
+   if(el.dataset.fr==='stat'&&!(FREE[tid]||{}).baseSet)f.base=BASE_OF[el.value]??3;if(el.dataset.fr==='base')f.baseSet=1;A().closeModal();openPlayer(tid)});
+  md.querySelectorAll('[data-freenew]').forEach(b=>b.onclick=async()=>{A().closeModal();await A().set(resPath(tid,true),null);setTimeout(()=>openPlayer(tid),150)});
+  const bindHand=()=>{const box=$('#sk_hand',md);if(!box)return;box.querySelectorAll('[data-hand]').forEach(b=>b.onclick=()=>{const D=window.OM_DECK_UI;if(!D)return;const v=b.dataset.hand;
+   D.battleHand(tid,{where:'rp',grave:v==='grave',focus:v==='grave'?-1:+v,onClose:()=>[400,1500,3500].forEach(ms=>setTimeout(()=>{if(document.body.contains(box)){box.innerHTML=handHtml(tid);bindHand()}},ms))})})};bindHand();
   md.querySelectorAll('[data-cover]').forEach(b=>b.onclick=()=>cover(b.dataset.cover,b.dataset.mid))}
  /* 커버 칸: 이 제시에서 실패해 단계가 오른 사람 · 그 단계를 막아 줄 수 있는 내 포켓몬 (판정하지 않은 동행 · 필드, 설정이면 볼 안도) */
  function coverCands(byTid,r,scene){const C=cfg();const pool=+C.coverBall?Object.values(mons()).filter(m=>m.tid===byTid&&alive(m)).map(m=>m.id):compOf(byTid,scene).ids;return pool.filter(id=>id!==r.mid)}
@@ -526,19 +544,20 @@ ${penFields('fail',X)}</div></div>
   const m=ch.how==='mon'?mons()[ch.mid]:null;
   if(ch.how==='super')await setT(tid,{sup:k.sup+1});
   const lines=[`${ch.how==='mon'?`포켓몬 「${m.name}」`:ch.how==='super'?'초상 능력 (혼자 · 자질 ×2)':'혼자'}`,`2d6 → ${R2.k.join('+')}${R2.all.length>1?` (두 번 ${R2.all.map(x=>x.join('+')).join(', ')} 중 ${c.tw>0?'높은':'낮은'} 값)`:''}${R2.k[0]===1&&R2.k[1]===1?' — 1·1':R2.k[0]===6&&R2.k[1]===6?' — 6·6':''}`,'보정 '+c.parts.map(p=>`${p[0]} ${sgn(p[1])}`).join(' · ')];
-  const text=`스킬 체크 · ${t.name} · ${O.stat} + ${BASE[O.base]}${O.label?' · '+O.label:''}\n${lines.join('\n')}\n합계 ${total} / 목표 ${target}${npcTxt?' ('+npcTxt+')':''}\n→ ${RES[ri]}`;
+  const text=`${O.free?'자유 판정':'스킬 체크'} · ${t.name} · ${O.stat} + ${BASE[O.base]}${O.label?' · '+O.label:''}\n${lines.join('\n')}\n합계 ${total} / 목표 ${target}${npcTxt?' ('+npcTxt+')':''}\n→ ${RES[ri]}`;
   let res={offerId:O.id,tid,label:O.label||'',how:ch.how,mid:ch.mid||'',monName:m?m.name:'',etc:!!ch.etc,bonus:+ch.bonus||0,stat:O.stat,target,npcTxt,parts:c.parts,mod:c.mod,tw:c.tw,dice:R2.k,rolls:R2.all,ri,total,text,at:Date.now()};
+  if(O.free){res.base=O.base;res.noStep=+O.noStep||0}
   if(ri===1){if(myosuMax(t)>k.myosu)res.pend=1;else res=await settleFail(tid,res)}
-  await A().set(['skill','res',tid],res);const hist=(st().hist||[]).slice(-40);hist.push({ri,text:res.text,at:res.at});await A().set(['skill','hist'],hist);
+  await A().set(resPath(tid,O.free),res);const hist=(st().hist||[]).slice(-40);hist.push({ri,text:res.text,at:res.at});await A().set(['skill','hist'],hist);
   A().closeModal();A().sysLog(text,'dice');try{if(window.OM_CUTIN)window.OM_CUTIN.phase(RES[ri],`${t.name} · ${O.stat} ${total}/${target}`)}catch(e){}
   sync();setTimeout(()=>openPlayer(tid),300)}
  /* 묘수: 실패한 굴림을 같은 보정으로 다시 */
- async function myosu(tid){const t=trs()[tid];const k=tsk(tid);const r=JSON.parse(JSON.stringify((st().res||{})[tid]||null));if(!r||!r.pend||myosuMax(t)<=k.myosu)return;
+ async function myosu(tid,free){const t=trs()[tid];const k=tsk(tid);const r=JSON.parse(JSON.stringify(resOf(tid,free)||null));if(!r||!r.pend||myosuMax(t)<=k.myosu)return;
   const R2=roll2(r.tw);r.dice=R2.k;r.rolls=R2.all;r.total=R2.k[0]+R2.k[1]+r.mod;r.ri=judge(R2.k,r.total,r.target,+cfg().crit);r.myosu=1;delete r.pend;
   r.text+=`\n묘수! 다시 2d6 → ${R2.k.join('+')} · 합계 ${r.total} / ${r.target} → ${RES[r.ri]}`;
   await setT(tid,{myosu:k.myosu+1});A().closeModal();A().sysLog(`${t.name} 묘수! 다시 굴려 합계 ${r.total} / ${r.target} → ${RES[r.ri]}`,'dice');
   if(r.ri===1)await settleFail(tid,r);
-  await A().set(['skill','res',tid],r);sync();setTimeout(()=>openPlayer(tid),200)}
+  await A().set(resPath(tid,free),r);sync();setTimeout(()=>openPlayer(tid),200)}
  /* 커버: 판정하지 않은 포켓몬이 대미지를 받고 단계 진행을 없던 일로 */
  async function cover(forTid,mid){const T=trs();const m=mons()[mid];const r=JSON.parse(JSON.stringify((st().res||{})[forTid]||null));if(!m||!r||r.cover||!r.step)return;const C=cfg();
   if(!confirm(`「${m.name}」 이(가) 최대 HP ${C.coverHp} 대미지를 받고 ${T[forTid].name}의 「${STEP[r.step.now]}」을(를) 막을까?`))return;

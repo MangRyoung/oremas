@@ -4763,3 +4763,12 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .memon .mecomp.on{background:var(--yel2);border-color:var(--yel2);color:#000;font-weight:700}
 .mebar .mebtns{display:grid;grid-template-columns:repeat(3,auto);gap:4px;align-content:center}
 .memon.comp i{border-color:var(--yel2);box-shadow:0 0 0 2px var(--yel2)}
+/* 10-29 스킬 체크 창: 자유 판정 · 손패 줄 */
+.skfree{display:flex;flex-wrap:wrap;gap:6px 12px;margin:6px 0 2px;font-size:12px;align-items:center}
+.skfree select{margin-left:4px;max-width:9.5em}
+.skhand{display:flex;gap:6px;overflow-x:auto;padding:6px 0 4px;-webkit-overflow-scrolling:touch}
+.skhc{flex:0 0 auto;width:80px;min-height:84px;border:2px solid var(--hc);border-radius:8px;background:color-mix(in srgb,var(--hc) 12%,transparent);display:flex;flex-direction:column;gap:3px;padding:3px;cursor:pointer;position:relative;color:inherit;font:inherit;text-align:left}
+.skhc:hover{transform:translateY(-2px)}
+.skhc i{display:block;height:46px;border-radius:5px;background:center/cover no-repeat}
+.skhc b{font-size:11px;line-height:1.25;word-break:keep-all}
+.skhc em{position:absolute;top:2px;right:2px;background:var(--hc);color:#fff;font-style:normal;font-size:10px;font-weight:700;border-radius:9px;padding:0 5px}

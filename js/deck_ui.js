@@ -415,7 +415,7 @@ window.OM_DECK_UI=(()=>{
    <div class="ho-hint">카드를 골라 · 다시 누르거나 「사용」으로 쓴다 · 「무덤으로」는 효과 없이 버림 · Esc 닫기</div>`;
   document.body.appendChild(ov);requestAnimationFrame(()=>ov.classList.add('on'));
   let sel=-1;const focus=ov.querySelector('.ho-focus');
-  const close=()=>{ov.classList.remove('on');ov.classList.add('off');setTimeout(()=>ov.remove(),280);document.removeEventListener('keydown',kd)};
+  const close=()=>{ov.classList.remove('on');ov.classList.add('off');setTimeout(()=>ov.remove(),280);document.removeEventListener('keydown',kd);if(o.onClose)try{o.onClose()}catch(e){}};
   const kd=e=>{if(e.key==='Escape')close()};document.addEventListener('keydown',kd);
   const pick=i=>{sel=i;ov.querySelectorAll('.ho-slot').forEach(s=>s.classList.toggle('sel',+s.dataset.hi===i));const c=dk.cards[hand[i]];
    focus.innerHTML=c?`<div class="ho-big">${bigCard(c)}</div><div class="ho-acts"><button class="ho-use" data-ho="use">사용</button><button class="ho-btn ho-dis" data-ho="discard" title="효과 · 비용 없이 버린 카드로">🪦 무덤으로</button><button class="ho-btn" data-ho="cancel">취소</button></div>`:'';ov.classList.toggle('picked',!!c)};
@@ -424,6 +424,8 @@ window.OM_DECK_UI=(()=>{
     if(k==='revive'){const cid=h.dataset.cid;close();PV.deck=did;const r=await run({op:'take',d:did,h:tid,from:'disc',ids:[cid]});if(r&&r.err)return A().toast(r.err);A().toast(`「${(dk.cards[cid]||{}).n||''}」 을(를) 손패로 되돌렸다`);setTimeout(()=>battleHand(tid,o),350);return}}
    if(sl){const i=+sl.dataset.hi;if(i===sel)return use(i);return pick(i)}
    if(t.classList.contains('ho-bg')||t.classList.contains('ho-stage'))close()});
+  /* 10-29 스킬 체크 창에서: 고른 카드를 바로 크게 · 무덤 칸부터 */
+  if(o.grave)grave();else if(o.focus>=0&&hand[o.focus])pick(o.focus);
   async function discard(i){const cid=hand[i];const card=dk.cards[cid];if(!card)return;const big=ov.querySelector('.ho-big');if(big)big.classList.add('toss');await new Promise(r=>setTimeout(r,380));close();PV.deck=did;const r=await run({op:'discard',d:did,h:tid,sel:[i],ids:[cid]});if(r&&r.err)return A().toast(r.err);A().toast(`「${card.n}」 → 무덤 (효과 없음)`)}
   function grave(){const g=ov.querySelector('.ho-gv');const L=dk.disc.slice().reverse();g.innerHTML=`<div class="ho-gh"><b>🪦 무덤</b><small>${L.length}장 · 최근 것이 왼쪽 · 누르면 손패로 되돌린다 (잘못 쓴 카드 되돌리기 — 구문으로 바뀐 HP · 랭크는 배틀 화면에서 직접 되돌려 줘)</small><span class="sp"></span><button class="ho-btn" data-ho="back">손패로 돌아가기</button></div><div class="ho-grow">${L.map(cid=>dk.cards[cid]?`<button class="ho-gc" data-ho="revive" data-cid="${esc(cid)}">${bigCard(dk.cards[cid])}<span>↩ 손패로</span></button>`:'').join('')||'<div class="ho-empty">무덤이 비었다</div>'}</div>`;ov.classList.add('gview')}
   async function use(i){const cid=hand[i];const card=dk.cards[cid];if(!card)return;const hasA=!!(card.a&&card.a.ops&&card.a.ops.length);let anchor='';
@@ -435,7 +437,10 @@ window.OM_DECK_UI=(()=>{
     const r=await run({op:'play',d:did,h:tid,sel:[i],ids:[cid],adj:0});if(r&&r.err)return A().toast(r.err+' (효과는 이미 적용됐다)');if(window.OM_CUTIN)window.OM_CUTIN.fire({tok:'card:'+tid,src:card.img||'',tag:`${hName(tid)}의 카드!`,ment:`『${card.n}』`,color:colOf(card.col),line:card.t||'',gh:'CARD'});return}
    const r=await run({op:'play',d:did,h:tid,sel:[i],ids:[cid],adj:0});if(r&&r.err)return A().toast(r.err);
    if(window.OM_CUTIN)window.OM_CUTIN.fire({tok:'card:'+tid,src:card.img||'',tag:`${hName(tid)}의 카드!`,ment:`『${card.n}』`,color:colOf(card.col),line:card.t||'',gh:'CARD'});
-   else if(hasA&&!anchor)A().toast(o.where==='dungeon'?'배틀 밖이라 구문은 건너뛰고 효과 글만 남긴다 — HP 같은 건 시트에서 직접':'필드에 기준 포켓몬이 없어 구문은 건너뛰고 효과 글만 남긴다');
-   await A().sysLog(`${head}${card.x?'\n'+card.x:''}`,o.where==='dungeon'?'sys':'battle')}}
- return {open,absorb,phone,bindPhone,openMgr,exec,seedDb,onAck,handCount,battleHand,importMakerDecks};
+   else if(hasA&&!anchor)A().toast(o.where==='dungeon'||o.where==='rp'?'배틀 밖이라 구문은 건너뛰고 효과 글만 남긴다 — HP 같은 건 시트에서 직접':'필드에 기준 포켓몬이 없어 구문은 건너뛰고 효과 글만 남긴다');
+   await A().sysLog(`${head}${card.x?'\n'+card.x:''}`,o.where==='dungeon'||o.where==='rp'?'sys':'battle')}}
+ /* 스킬 체크 창의 손패 줄 (작은 카드) */
+ function handInfo(tid){const x=deckFor(tid);if(!x)return null;const [did,dk]=x;const cr=dk.opt.cr;
+  return {did,name:dk.name,disc:dk.disc.length,res:cr?`${cr} ${((dk.rv[tid]||{})[cr])??0}`:'',cards:(dk.hands[tid]||[]).map(cid=>{const c=dk.cards[cid]||{};return {cid,n:c.n||'?',c:c.c,x:c.x||'',img:c.img||'',col:colOf(c.col)}})}}
+ return {open,absorb,phone,bindPhone,openMgr,exec,seedDb,onAck,handCount,handInfo,battleHand,importMakerDecks};
 })();
