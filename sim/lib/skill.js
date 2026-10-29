@@ -39,6 +39,7 @@ function summary(q){const o=dist(q);return {fail:pct(o[1]),cost:0,ok:pct(o[3]+o[
 const TYPE_KO={노말:'Normal',불꽃:'Fire',물:'Water',전기:'Electric',풀:'Grass',얼음:'Ice',격투:'Fighting',독:'Poison',땅:'Ground',비행:'Flying',에스퍼:'Psychic',벌레:'Bug',바위:'Rock',고스트:'Ghost',드래곤:'Dragon',악:'Dark',강철:'Steel',페어리:'Fairy'};
 function monFit(m,ck){ck=up(ck);const F=ck.fit||{};const why=[];const ty=new Set([...(m.typesKo||[]),...(m.types||[])]);
  if((F.types||[]).some(t=>ty.has(t)||ty.has(TYPE_KO[t])))why.push('타입');
- const mv=(m.moves||[]).map(x=>typeof x==='string'?x:x&&x.name);if((F.moves||[]).some(x=>mv.includes(x))||(F.abil||[]).includes(m.ability))why.push('기술 · 특성');
+ const ML=(m.moves||[]).map(x=>typeof x==='string'?{name:x}:x||{});const mv=ML.map(x=>x.name);const pw=+F.pow||0;const powHit=pw>0&&ML.some(x=>(+x.pow||0)>=pw&&(!F.powType||x.type===F.powType||x.typeEn===TYPE_KO[F.powType]));
+ if((F.moves||[]).some(x=>mv.includes(x))||powHit||(F.abil||[]).includes(m.ability))why.push('기술 · 특성');
  return {mon:baseLv(((m.base||[])[ck.base])),fit:why.length,why}}
 module.exports={LAD,RES,TIER,BASE,TYPE_KO,lv,strip,baseLv,up,modOf,judge,roll,dist,summary,monFit};
