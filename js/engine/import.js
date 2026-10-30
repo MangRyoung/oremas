@@ -109,6 +109,8 @@ window.OM_IMPORT=(()=>{
   /* 10-23 망령: pids 에 빠진 포켓몬도 그 트레이너 것(tid)이면 뒤에 붙인다 */
   for(const x of pokeDocs)if(x&&x.data&&x.data.tid===tr.id&&!tr.pids.includes(x.id))tr.pids.push(x.id);
   const mons=tr.pids.map(id=>byId.get(id)).filter(Boolean).map(x=>pokemon(x,tr));
+  /* 10-30 망령 「감우 학생 웹툴로 점검」: 제작기 프라이드가 「자동」(빈 칸)이면 제작기가 저장 때 남긴 계산값(ptUse.mons[id].pride)을 쓴다 */
+  const pu=((trDoc.data&&trDoc.data.data)||trDoc.data||trDoc||{}).ptUse;if(pu&&pu.mons)for(const m of mons){const u=pu.mons[m.id];if(!m.pride&&u&&u.pride)m.pride=String(u.pride).slice(0,4)}
   return {trainer:tr,mons}}
 
  return {trainer,pokemon,move,party,roleOf};
