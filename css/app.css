@@ -4861,3 +4861,7 @@ html[data-vt="mm"] .memon .medet{border-color:rgba(20,16,12,.4)}
 /* 10-30 망령 「웹툴 타이핑 중 창이 이상한 곳에서 뜬다」: 버튼 줄이 왼쪽 날짜 태그 옆까지 늘어난 뒤(위 min-width:761px 규칙)로
    「버튼 줄 왼쪽 바깥」 자리가 무대 왼쪽 끝 바깥이 되어 잘려 보였다 → 버튼 줄 바로 아래 오른쪽 끝에 띄운다 (떠 있으니 화면은 안 밀린다) */
 .rpbtns .typingslot{right:0;left:auto;top:calc(100% + 6px);transform:none;max-width:min(46vw,520px)}
+/* 10-30 망령 「대사 폰트 화질이 자글자글」: 기울인(rotate) 말풍선 글자 칸이 스크롤 칸이면 글자를 비트맵으로 찍어 돌려서 계단 · 번짐이 생긴다.
+   평소엔 스크롤 칸이 아니게 두고, 줄여도 넘칠 때만(rp_ui fitDlg 가 .ovf 를 붙임) 스크롤을 켠다 */
+.dlg.skin .dtext{overflow:hidden}
+.dlg.skin .dtext.ovf{overflow-y:auto}
