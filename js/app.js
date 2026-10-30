@@ -738,10 +738,11 @@ async function openLoadParty(side){
  const r=roster();const ids=Object.keys(r.trainers).sort((a,b)=>(r.trainers[a].ord||0)-(r.trainers[b].ord||0));
  const inB=B().trainers||{};
  const m=openModal(`<div class="mhead"><h2>${side==='left'?'좌측':'우측'} 진영에 파티 불러오기</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-  ${ids.length?`<ul class="pick">${ids.map(id=>{const t=r.trainers[id];const n=(t.pids||[]).length;return `<li><b>${esc(t.name)}</b><span class="small muted">${esc(['지시','육성','통솔','능력'].map(k=>k+' '+((t.ranks||{})[k]||'-')).join(' · '))} · ${n}체</span><span class="sp"></span>${inB[id]||Object.values(inB).some(x=>x&&x.srcTid===id)?'<span class="tag">배틀에 있음</span>':''}${(ST.role!=='gm'&&id!==ST.seat)?'<span class="tag" title="불러온 사람이 지시한다 (내 몫으로 올림)">빌려 쓰기</span>':''}<button class="btn sm pri" data-pick="${id}">불러오기</button></li>`}).join('')}</ul>`:'<div class="empty">로스터가 비어 있다.</div>'}
+  ${ids.length?`<ul class="pick">${ids.map(id=>{const t=r.trainers[id];const n=twoPids(t).length;const tw=twoAble(t)&&(ST.role==='gm'||id===ST.seat);return `<li><b>${esc(t.name)}</b><span class="small muted">${esc(['지시','육성','통솔','능력'].map(k=>k+' '+((t.ranks||{})[k]||'-')).join(' · '))} · ${n}체</span><span class="sp"></span>${inB[id]||Object.values(inB).some(x=>x&&x.srcTid===id)?'<span class="tag">배틀에 있음</span>':''}${(ST.role!=='gm'&&id!==ST.seat)?'<span class="tag" title="불러온 사람이 지시한다 (내 몫으로 올림)">빌려 쓰기</span>':''}${tw?`<button class="btn sm ${t.two?'on':'ghost'}" data-two="${id}" title="미사그 대학: 각성체 2체만 + 제작기 「2체 기준」 4식 · 6령 / 다시 누르면 6체">${t.two?'2체 기준 ✓':'6체 · 2체로'}</button>`:''}<button class="btn sm pri" data-pick="${id}">불러오기</button></li>`}).join('')}</ul>`:'<div class="empty">로스터가 비어 있다.</div>'}
   <div class="row" style="margin-top:10px"><span class="small muted">트레이너는 「시트」 탭에서 제작기에서 가져오거나 새로 만든다.</span><span class="sp"></span><button class="btn sm" id="goSheet">시트 탭으로</button></div>`);
  $('#goSheet',m).onclick=()=>{closeModal();VIEW='sheet';renderScene()};
- m.querySelectorAll('[data-pick]').forEach(btn=>btn.onclick=async()=>{closeModal();await loadFromRoster(btn.dataset.pick,side)})}
+ m.querySelectorAll('[data-pick]').forEach(btn=>btn.onclick=async()=>{closeModal();await loadFromRoster(btn.dataset.pick,side)});
+ m.querySelectorAll('[data-two]').forEach(btn=>btn.onclick=async()=>{const t=roster().trainers[btn.dataset.two];if(!t)return;if(await setTwo(t.id,!t.two)){closeModal();openLoadParty(side)}})}
 /* 배틀에 올릴 포켓몬 초기화: 시트의 남은 HP·상태 이상·빈사(결과 정리로 돌려받은 것)로 시작 */
 function prepMon(mon,side,i){mon.side=side;mon.slot=i;mon.entry='';mon.started=false;/* 10-26 던전 시험: 스킬 체크 패널티(「발이 묶임 — 스피드 −1」 등)가 시트 포켓몬의 랭크에 남는데 배틀을 차릴 때 0 으로 지워졌다 — 시트의 랭크를 들고 들어간다 (「결과 정리」가 시트 랭크를 다시 0 으로) */const rk0=mon.rank||{};mon.rank={attack:0,defense:0,specialattack:0,specialdefense:0,speed:0,accuracy:0,evasion:0,critical:0};for(const k in mon.rank)if(+rk0[k])mon.rank[k]=Math.max(-6,Math.min(6,+rk0[k]));mon.mod={};mon.states=Object.assign({},mon.sheetStates||{});mon.teraActive=false;delete mon.itemUsed;delete mon.form0;delete mon.formIdx;
  mon.hp={max:mon.stats[0],cur:mon.states.Dead?0:mon.sheetHp==null?mon.stats[0]:Math.min(mon.sheetHp,mon.stats[0])}}
@@ -799,9 +800,23 @@ async function mergePor(hostId,urls){try{urls=urls.filter(Boolean);if(urls.lengt
  const blob=await new Promise(r=>cv.toBlob(r,'image/webp',.9));if(!blob)return;
  const u=await DBS().uploadImage(`rooms/${ST.room}/merge_${hostId}_${Date.now().toString(36)}`,blob);if(!u)return;
  const H=(B().trainers||{})[hostId];if(!H)return;if(!H.image0)await set(['battle','trainers',hostId,'image0'],H.image||'');await set(['battle','trainers',hostId,'image'],u)}catch(e){console.warn('mergePor',e)}}
+/* ---------- 2체 기준 (10-30 망령: 「웹툴에서 파티 추가, 불러오기, 던전 참여할 때 2체 기준으로도 들어갈 수 있게」) ----------
+   미사그 대학 트레이너(각성체가 있는 로스터 트레이너)는 roster.trainers.<id>.two 를 켜면 각성체 2체만 배틀 · 던전에 들어간다.
+   지시는 제작기 지시 체계 「2체 기준」에서 고른 것(twoPick)만 남기고 나머지 횟수는 0 — 0 으로 만든 값은 twoSave 에 두었다가 끄면 돌려준다.
+   시트(로스터)의 포켓몬 목록은 그대로 6체. */
+function twoAble(t){const ms=roster().mons||{};return !!t&&(t.pids||[]).some(id=>ms[id]&&ms[id].awaken)}
+function twoPids(t){const ms=roster().mons||{};const L=(t&&t.pids)||[];return t&&t.two?L.filter(id=>ms[id]&&ms[id].awaken):L}
+function twoApply(t,on){const oc=Object.assign({},t.orderCount||{});const pk=t.twoPick;let sv=Object.assign({},t.twoSave||{});
+ for(const k in sv)if(k in oc)oc[k]=sv[k];sv={};   /* 먼저 되돌린다 */
+ if(on&&pk)for(const k of Object.keys(oc)){const m=k.match(/^(order|command)_([a-z]+)$/);if(!m)continue;const L=(m[1]==='order'?pk.o:pk.c)||[];if(!L.includes(m[2])&&+oc[k]){sv[k]=oc[k];oc[k]=0}}
+ return {two:!!on,orderCount:oc,twoSave:Object.keys(sv).length?sv:null}}
+async function setTwo(tid,on){const t=roster().trainers[tid];if(!t)return false;if(ST.role!=='gm'&&tid!==ST.seat){toast('내 트레이너만 바꿀 수 있다');return false}
+ if(on&&!twoAble(t)){toast('각성체가 없는 트레이너다');return false}const v=twoApply(t,on);
+ const ok=await setMany([[['roster','trainers',tid,'two'],v.two||null],[['roster','trainers',tid,'orderCount'],v.orderCount],[['roster','trainers',tid,'twoSave'],v.twoSave]]);
+ if(ok!==false){toast(`${t.name} — ${on?'2체 기준 (각성체 '+twoPids(Object.assign({},t,{two:true})).length+'체)':'6체 기준'}`+(on&&!t.twoPick?' · 제작기에서 2체 기준 4식 · 6령을 아직 안 골라 지시 횟수는 그대로':''));renderScene()}return ok!==false}
 async function loadFromRoster(tid,side){
  const r=roster();const t=r.trainers[tid];if(!t)return toast('로스터에 없는 트레이너다');
- const trainer=JSON.parse(JSON.stringify(t));const mons=(t.pids||[]).map(id=>r.mons[id]).filter(Boolean).map(x=>JSON.parse(JSON.stringify(x)));
+ const trainer=JSON.parse(JSON.stringify(t));const mons=twoPids(t).map(id=>r.mons[id]).filter(Boolean).map(x=>JSON.parse(JSON.stringify(x)));if(t.two)trainer.pids=twoPids(t);
  /* 비어 있는 특성·포텐셜 효과 글 채우기 (제작기 DB 에 새로 넣은 것) */
  {const DU=window.OM_DB_UI;if(DU&&DU.fillEff&&mons.some(m=>(m.ability&&!m.abilityEff)||(m.pots||[]).some(p=>!p.eff))){if(DU.ensureMaker)await DU.ensureMaker();for(const m of mons)DU.fillEff(m)}}
  if(!mons.length&&!confirm('이 트레이너는 포켓몬이 없다. 그래도 불러올까?'))return;
@@ -827,7 +842,7 @@ async function loadFromRoster(tid,side){
  /* 바뀐 칸만 쓴다 (점검 3-18) — 트레이너 → 진영 → 포켓몬 순. 좌석은 자기 트레이너·포켓몬·진영 칸만 (턴·필드 같은 기본값은 GM 만) */
  const rk={trainers:0,sides:1,mons:2};let ops=diffOps(['battle'],b0,nb,3);if(ST.role!=='gm')ops=ops.filter(o=>o[0][1] in rk);
  ops.sort((x,y)=>(rk[x[0][1]]??3)-(rk[y[0][1]]??3));const ok=await setMany(ops);
- if(ok){{const d=dupItems(mons);if(d.length&&B().started){   /* 시합 개시 전이면 배틀 화면의 준비 점검(dupWatch)이 한 번 알린다 */const tx=dupItemText(trainer.name,d);selfLog(tx);setTimeout(()=>toast(tx),400)}}toast(`${trainer.name} 파티 ${mons.length}체를 불러왔다`);sysLog(swapName?`${swapName} → ${trainer.name} 교체 (${side==='left'?'좌측':'우측'}) · ${mons.length}체`:`${trainer.name} (${side==='left'?'좌측':'우측'}${trainer.solo?' · 개인전':''}) 파티 등록 · ${mons.length}체`,'battle');VIEW='battle';renderScene()}}
+ if(ok){{const d=dupItems(mons);if(d.length&&B().started){   /* 시합 개시 전이면 배틀 화면의 준비 점검(dupWatch)이 한 번 알린다 */const tx=dupItemText(trainer.name,d);selfLog(tx);setTimeout(()=>toast(tx),400)}}toast(`${trainer.name} 파티 ${mons.length}체를 불러왔다`);sysLog(swapName?`${swapName} → ${trainer.name} 교체 (${side==='left'?'좌측':'우측'}) · ${mons.length}체`:`${trainer.name} (${side==='left'?'좌측':'우측'}${trainer.solo?' · 개인전':''}${t.two?' · 2체 기준':''}) 파티 등록 · ${mons.length}체`,'battle');VIEW='battle';renderScene()}}
 
 /* ---------- 던전 조우 (10-26 망령: 「위치에 야생 포켓몬을 배치해서 곧바로 배틀 진입」) ----------
    일행 트레이너(좌)와 방에 둔 야생 무리(우, 시트의 GM 트레이너)로 배틀 칸을 새로 차린다. 같은 진영 일행은 한 팀(개인전 아님).
@@ -838,7 +853,7 @@ async function encounter(o){if(ST.role!=='gm')return false;const r=roster();cons
  const b0=B();if(Object.keys(b0.trainers||{}).length&&!confirm('지금 배틀 칸을 비우고 조우 배틀을 차릴까? (좌석은 남는다)'))return false;
  const nb={turn:0,phase:0,mode:2,sides:{left:{trainers:[]},right:{trainers:[]}},trainers:{},mons:{},field:{},cmds:{},order:[],dg:o.dg||null};
  const seats=ST.state.seats||{};const all=[];
- const put=(tid,side)=>{const t=JSON.parse(JSON.stringify(r.trainers[tid]));const ms=(t.pids||[]).map(id=>r.mons[id]).filter(Boolean).map(x=>JSON.parse(JSON.stringify(x)));
+ const put=(tid,side)=>{const t=JSON.parse(JSON.stringify(r.trainers[tid]));if(t.two)t.pids=twoPids(t);const ms=(t.pids||[]).map(id=>r.mons[id]).filter(Boolean).map(x=>JSON.parse(JSON.stringify(x)));
   delete t.walk;delete t.solo;t.side=side;t.by=seats[tid]&&side==='left'?tid:'gm';nb.sides[side].trainers.push(tid);nb.trainers[tid]=t;ms.forEach((m,i)=>{prepMon(m,side,i);nb.mons[m.id]=m;all.push(m)});return ms};
  /* 10-26 던전 시험: 일행이 셋이고 에리어가 3칸인데 앞 사람의 동행 둘이 먼저 다 차지해 레온은 한 마리도 못 나갔다 — 트레이너마다 1번 동행부터 번갈아 (1번들 → 2번들 …) */const per=[];L.forEach(tid=>{const ms=put(tid,'left');const w=((o.walk||{})[tid]||[]);per.push(w.map(id=>ms.find(x=>x.id===id)).filter(m=>m&&m.hp.cur>0))});const lw=[];for(let i=0;per.some(x=>x[i]);i++)per.forEach(x=>{if(x[i])lw.push(x[i])});
  const rw=[];R.forEach(tid=>put(tid,'right').forEach(m=>{if(m.hp.cur>0)rw.push(m)}));
@@ -1152,6 +1167,6 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
 /* 이름으로 기본 초상 찾기: 그림이 따로 없으면 같은 이름의 로스터 트레이너 → 포켓몬 → 관계도 노드의 그림을 쓴다 */
 function portraitOf(name,img){if(img)return img;if(!name)return '';const ro=ST.state.roster||{};const t=Object.values(ro.trainers||{}).find(x=>x.name===name);if(t&&t.image)return t.image;const m=Object.values(ro.mons||{}).find(x=>x.name===name&&x.image);if(m)return m.image;const n=Object.values((ST.state.graph||{}).nodes||{}).find(x=>x.name===name&&x.img);return n?n.img:''}
-window.OM_APP={acctKey,presList,dupItems,dupItemText,logFill,bchOpen,selfLog,splitLog,contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,cleanupTrainer,openMon,openLoadParty,loadFromRoster,encounter,loadMaker,loadMakerParty,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,online:s=>!!s&&Object.values(PRES.who).some(v=>v.role==='seat'&&v.seat===s&&Date.now()-v.at<70000),get view(){return VIEW},goView:v=>{VIEW=v||scene();renderScene()},set view(v){VIEW=v}};
+window.OM_APP={twoAble,twoPids,twoApply,setTwo,acctKey,presList,dupItems,dupItemText,logFill,bchOpen,selfLog,splitLog,contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,cleanupTrainer,openMon,openLoadParty,loadFromRoster,encounter,loadMaker,loadMakerParty,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,online:s=>!!s&&Object.values(PRES.who).some(v=>v.role==='seat'&&v.seat===s&&Date.now()-v.at<70000),get view(){return VIEW},goView:v=>{VIEW=v||scene();renderScene()},set view(v){VIEW=v}};
 route();
 })();

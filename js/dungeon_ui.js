@@ -67,15 +67,16 @@ window.OM_DG_UI=(()=>{
  function party(d){const tr=RO().trainers||{};const ids=d&&d.pt?Object.keys(d.pt):Object.keys(SEATS()).filter(id=>tr[id]);return ids.filter(id=>tr[id]).sort((a,b)=>(tr[a].ord||0)-(tr[b].ord||0))}
  function monHp(m){const mx=Math.max(1,(m.hp&&m.hp.max)||(m.stats||[])[0]||1);const dead=!!((m.sheetStates||{}).Dead);const c=dead?0:m.sheetHp==null?mx:Math.max(0,Math.min(mx,+m.sheetHp||0));return {c,mx,dead:dead||c<=0}}
  const canWalk=tid=>gm()||(!!ST().seat&&ST().seat===tid);
- function walkOf(tid){const t=(RO().trainers||{})[tid]||{},ms=RO().mons||{};return (Array.isArray(t.walk)?t.walk:[]).filter(id=>ms[id]&&(t.pids||[]).includes(id))}
+ const tPids=t=>A().twoPids?A().twoPids(t):((t&&t.pids)||[]);   /* 10-30: 2체 기준이면 각성체 2체만 */
+ function walkOf(tid){const t=(RO().trainers||{})[tid]||{},ms=RO().mons||{};const P=tPids(t);return (Array.isArray(t.walk)?t.walk:[]).filter(id=>ms[id]&&P.includes(id))}
  function ptHTML(d){const ids=party(d),tr=RO().trainers||{},ms=RO().mons||{},n=WN(d);
   if(!ids.length)return gm()?'<div class="dgpt-empty">일행이 없다 — 좌석에 트레이너가 앉거나 던전 탭 「일행 편성」</div>':'';
-  return poolHTML(d)+ids.map(tid=>{const t=tr[tid],pids=(t.pids||[]).filter(id=>ms[id]),w=walkOf(tid),me=canWalk(tid);
+  return poolHTML(d)+ids.map(tid=>{const t=tr[tid],pids=tPids(t).filter(id=>ms[id]),w=walkOf(tid),me=canWalk(tid);const two=A().twoAble&&A().twoAble(t)?`<button type="button" class="dgpt-two${t.two?' on':''}" ${me?`data-dgtwo="${H(tid)}"`:'disabled'} title="미사그 대학: ${t.two?'2체 기준 (각성체 2체 · 제작기 「2체 기준」 4식 · 6령) — 눌러서 6체로':'6체 기준 — 눌러서 2체 기준(각성체만)으로'}">${t.two?'2체':'6체'}</button>`:'';
    const balls=pids.map(id=>{const h=monHp(ms[id]);return `<i class="${h.dead?'ko':h.c<h.mx?'hurt':''}${w.includes(id)?' w':''}" title="${H(ms[id].name)} ${h.c}/${h.mx}"></i>`}).join('');
    const chips=w.map(id=>{const m=ms[id],h=monHp(m),p=h.c/h.mx,st=Object.keys(m.sheetStates||{}).filter(k=>k!=='Dead'&&m.sheetStates[k]);
     const rkt=rkTxt(m);return `<div class="dgpt-mon${h.dead?' ko':''}" data-pm="${H(id)}" title="눌러서 HP · 상태 · 랭크 고치기"><span class="dgpt-img" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></span><span class="dgpt-mi"><b>${H(m.name)}</b><span class="dgpt-hp ${p<=.25?'low':p<=.5?'mid':''}"><i style="width:${Math.round(p*100)}%"></i></span><small>${h.dead?'빈사':h.c+'/'+h.mx}${st.length?' · '+H(st.map(stKo).join(' ')):''}${rkt?' · '+H(rkt):''}</small></span></div>`}).join('');
    const add=me&&w.length<n?`<button type="button" class="dgpt-add" data-walk="${H(tid)}">＋ 동행</button>`:'';
-   return `<div class="dgpt-row${me?' mine':''}" ${me?`data-walk="${H(tid)}" title="눌러서 동행 포켓몬 고르기 (최대 ${n}체)"`:''}><div class="dgpt-h"><b>${H(t.name||'')}</b>${cardChip(tid,me)}<span class="dgpt-balls">${balls}</span></div>${ordHTML(tid)}${chips||add?`<div class="dgpt-walk">${chips}${add}</div>`:''}</div>`}).join('')}
+   return `<div class="dgpt-row${me?' mine':''}" ${me?`data-walk="${H(tid)}" title="눌러서 동행 포켓몬 고르기 (최대 ${n}체)"`:''}><div class="dgpt-h"><b>${H(t.name||'')}</b>${two}${cardChip(tid,me)}<span class="dgpt-balls">${balls}</span></div>${ordHTML(tid)}${chips||add?`<div class="dgpt-walk">${chips}${add}</div>`:''}</div>`}).join('')}
  /* 10-26 망령: 던전에서도 손패 카드 · 4식 6령 남은 횟수.
     횟수는 배틀에 올라가 있으면 배틀 쪽(쓴 만큼 줄어든 것), 아니면 시트 쪽. 0 인 칸은 흐리게. */
  function ordSrc(tid){const B=ST().state.battle||{};const bt=(B.trainers||{})[tid];return bt&&bt.orderCount&&B.started?bt:(RO().trainers||{})[tid]||{}}
@@ -484,8 +485,8 @@ window.OM_DG_UI=(()=>{
    else if(b.dataset.meHeal==='revive')await setHp(Math.max(1,Math.floor(h.mx/4)),'빈사에서 일으킴');
    draw()})}
  function walkPick(tid){const d=cur();const t=(RO().trainers||{})[tid];if(!t||!canWalk(tid))return;const ms=RO().mons||{},n=WN(d);let sel=walkOf(tid);
-  const pids=(t.pids||[]).filter(id=>ms[id]);
-  const m=A().openModal(`<div class="mhead"><h2>${H(t.name||'')} — 동행 포켓몬</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small dim" style="margin:0 0 8px">탐색하며 데리고 다닐 포켓몬 <b>최대 ${n}체</b>. 야생 조우 때 이 순서대로 먼저 나간다.</p><ul class="pick dgwk" id="dgWk"></ul><div class="row" style="margin-top:10px"><button class="btn ghost" id="dgWkClr">모두 빼기</button><span class="sp"></span><button class="btn pri" id="dgWkOk">정하기</button></div>`);
+  const pids=tPids(t).filter(id=>ms[id]);
+  const m=A().openModal(`<div class="mhead"><h2>${H(t.name||'')} — 동행 포켓몬${t.two?' <small class="dim">2체 기준</small>':''}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small dim" style="margin:0 0 8px">탐색하며 데리고 다닐 포켓몬 <b>최대 ${n}체</b>. 야생 조우 때 이 순서대로 먼저 나간다.</p><ul class="pick dgwk" id="dgWk"></ul><div class="row" style="margin-top:10px"><button class="btn ghost" id="dgWkClr">모두 빼기</button><span class="sp"></span><button class="btn pri" id="dgWkOk">정하기</button></div>`);
   const draw=()=>{m.querySelector('#dgWk').innerHTML=pids.map(id=>{const x=ms[id],h=monHp(x),i=sel.indexOf(id),p=h.c/h.mx;return `<li class="${i>=0?'on':''}${h.dead?' ko':''}" data-id="${H(id)}"><span class="dgpt-img" style="${x.image?`background-image:url('${cssu(x.image)}')`:''}"></span><span class="dgpt-mi"><b>${H(x.name)}</b> <small class="dim">Lv.${H(x.lv||'?')}</small><span class="dgpt-hp ${p<=.25?'low':p<=.5?'mid':''}"><i style="width:${Math.round(p*100)}%"></i></span><small>${h.dead?'빈사 — 데려갈 수 없다':h.c+'/'+h.mx}</small></span><span class="sp"></span><b class="dgwk-n">${i>=0?i+1:''}</b></li>`}).join('')||'<li class="dim">포켓몬이 없다</li>'};
   draw();
   m.querySelector('#dgWk').onclick=e=>{const li=e.target.closest('li[data-id]');if(!li||li.classList.contains('ko'))return;const id=li.dataset.id;const i=sel.indexOf(id);if(i>=0)sel.splice(i,1);else{if(sel.length>=n)sel.shift();sel.push(id)}draw()};
@@ -500,6 +501,9 @@ window.OM_DG_UI=(()=>{
  async function startEnc(d,rid0){if(!gm())return;const id=rid0||d.at,r=R(d)[id];const e=encOf(r);if(!e)return A().toast('이 방에는 야생 포켓몬을 두지 않았다 — 던전 관리에서 배치');if(!e.t)return A().toast('이 방의 야생 무리 트레이너가 시트에 없다');
   const L=party(d),walk={};L.forEach(t=>walk[t]=walkOf(t));
   const ok=await A().encounter({left:L,right:[r.e],walk,dg:{did:d.id,rid:id},title:`${d.n||'던전'} · ${r.n||ty(r.t).k}`});}
+ {const st=document.createElement('style');st.textContent='.dgpt-two{font:inherit;font-size:11px;line-height:1;padding:3px 7px;margin:0 4px;border-radius:999px;border:1px solid currentColor;background:transparent;color:inherit;opacity:.65;cursor:pointer}.dgpt-two.on{opacity:1;font-weight:700;background:color-mix(in srgb,currentColor 14%,transparent)}.dgpt-two[disabled]{cursor:default}';document.head.appendChild(st)}
+ /* 10-30: 일행 줄의 「6체 / 2체」 칩 — 줄을 누르면 열리는 동행 고르기보다 먼저 받는다 */
+ document.addEventListener('click',async e=>{const b=e.target&&e.target.closest&&e.target.closest('[data-dgtwo]');if(!b)return;e.stopPropagation();e.preventDefault();const t=(RO().trainers||{})[b.dataset.dgtwo];if(t&&A().setTwo)await A().setTwo(t.id,!t.two)},true);
  document.addEventListener('click',e=>{if(e.target&&e.target.closest&&e.target.closest('button[data-s]'))setTimeout(()=>{try{retSync()}catch(_){}},60)});
  function retSync(){let el=document.getElementById('dgRet');const b=ST().state.battle||{},d=cur();/* 10-26 망령: RP 화면에서도 떠 있어 아래 줄과 겹쳤다 — 배틀 탭을 보고 있을 때만 */const want=gm()&&!!d&&ST().state.scene==='battle'&&!!b.dg&&b.dg.did===d.id&&!!document.querySelector('button[data-s="battle"].on');
   if(!want){if(el)el.remove();return}
