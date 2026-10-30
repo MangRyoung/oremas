@@ -49,7 +49,9 @@ window.OM_NOTES=(()=>{
   if(!confirm(`세션 노트에서 트레이너 ${ids.length}명을 보냈다.\n제작기에서 지금 값으로 이 방 명단에 가져올까?${ids.length-fresh.length?`\n(이미 있는 ${ids.length-fresh.length}명은 새 값으로 덮어쓴다 · HP·랭크·메모는 새로 시작)`:''}`))return;
   const SU=window.OM_SHEET_UI;if(!SU||!SU.importTrainer)return A().toast('시트 화면이 아직 준비되지 않았다 — 새로 고친 뒤 다시');let n=0;
   for(const id of ids){try{const mk=await (A().loadMakerParty?A().loadMakerParty(id):A().loadMaker(true));const tdoc=mk.trainers.find(t=>t.id===id);if(!tdoc){A().toast('제작기에서 못 찾았다: '+id);continue}await SU.importTrainer(tdoc,mk.pokemon,false,'');n++}catch(e){A().toast('가져오지 못했다: '+(e.message||e))}}
-  if(n){A().sysLog(`세션 노트에서 트레이너 ${n}명을 가져왔다`);A().toast(`트레이너 ${n}명을 가져왔다`);A().renderScene()}}
+  if(n){A().sysLog(`세션 노트에서 트레이너 ${n}명을 가져왔다`);A().toast(`트레이너 ${n}명을 가져왔다`);A().renderScene();
+   /* 10-30 망령 「덱은 가져오는거 개선할 방법 없어?」: 가져온 트레이너에게 제작기 덱이 있으면 휴대폰 「📥 제작기 덱 가져오기」까지 이어서 한다 (다시 해도 카드 · 장수만 맞춘다) */
+   const DU=window.OM_DECK_UI;if(DU&&DU.importMakerDecks){await new Promise(r=>setTimeout(r,800));const R2=(A().ST.state.roster||{}).trainers||{};if(Object.values(R2).some(t=>t&&(ids.includes(t.id)||ids.includes(t.mkId))&&Array.isArray(t.deck)&&t.deck.length)){try{await DU.importMakerDecks()}catch(e){A().toast('덱은 못 가져왔다: '+(e.message||e))}}}}}
  async function pick(kinds,what,opt){opt=opt||{};
   /* 이어진 캠페인이 있으면 묻지 않는다 */
   if(!opt.ask){const L=await linked();if(L){const secret=secOf(L.id);A().toast(`세션 노트 「${L.name}」에서 읽는 중…`);try{const docs=await S().ntDocs(L.id,secret||null,kinds);return {camp:L.id,secret,docs,campName:L.name}}catch(e){A().toast('못 읽었다: '+e.message);return null}}}
