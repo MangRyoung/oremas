@@ -1,0 +1,14 @@
+/* 10-30 휴대폰 연락처 건네기 · 파티 초대 (js/phone_ui.js) — app.css 는 커서 따로 둔다 */
+.ph-cardb{display:flex;align-items:center;gap:8px;min-width:190px}
+.ph-cardb>div{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.25}
+.ph-cardb small{font-size:10.5px;opacity:.75}
+.ph-cardb b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ph-cardb .ph-av.sm{flex:none}
+.ph-cardb .ph-av.ph-room{font-size:15px;background:#222}
+.ph-cardok{font-size:11px;opacity:.75;white-space:nowrap}
+.ph-cardin{border-color:var(--yel2,#e2c044)}
+.ph-head .btn.xs{flex:none}
+.ph-roomd{margin:8px 0 4px}
+.ph-roomd>summary{cursor:pointer;padding:4px 12px;font-size:12px;opacity:.8}
+.ph-cardb .ph-av{width:30px;height:30px;border-radius:50%;background:#222 center/cover no-repeat;display:grid;place-items:center;font-style:normal}
+.ph-msg.me .ph-cardb .ph-av{border:1px solid rgba(255,255,255,.5)}

@@ -1,4 +1,4 @@
-/* ---------- 휴대폰 (RP 보조 도구): 연락처(파티원 자동 + 내가 넣은 사람) · 문자 · 협력자(관계도의 관계 랭크·쇼크) · 캘린더(오늘 · 시간대 기록 · 회복 · 메모) · 메모장
+/* ---------- 휴대폰 (RP 보조 도구): 연락처(10-30 건네받아 넣는 내 연락처 · 등록 이름) · 문자 · 협력자(관계도의 관계 랭크·쇼크) · 캘린더(오늘 · 시간대 기록 · 회복 · 메모) · 메모장
    상태: 협력자 = state.graph.edges (a,b,rank,label,shock) · 캘린더 = state.calendar (today, phase, weather)
    내 기록 = state.pub[tid].phone = {log:{'YYYY-MM-DD':[{slot,kind,who,note,at}]}, memo, contacts:[nodeId|'t:'+tid], notes:[{id,title,body,at}]}
    그림은 따로 없으면 A().portraitOf(이름) — 같은 이름의 트레이너·포켓몬·관계도 노드의 기본 초상을 쓴다.
@@ -59,7 +59,7 @@ window.OM_PHONE_UI=(()=>{
   return `<div class="ph-wall"><div class="ph-clock"><b>${esc(dateKo(today()))}</b><small>${esc(cal().phase||'')}${cal().weather?' '+esc(cal().weather):''}</small></div>
    ${gm()?`<div class="ph-owner"><span class="small dim">누구의 휴대폰</span><select id="phOwner">${Object.values(T).map(x=>`<option value="${x.id}" ${x.id===PH.tid?'selected':''}>${esc(x.name)}</option>`).join('')}${Object.values(G().nodes||{}).filter(n=>!Object.values(T).some(x=>x.name===n.name)).map(n=>`<option value="n:${esc(n.id)}" ${'n:'+n.id===PH.tid?'selected':''}>${esc(n.name)} (관계도)</option>`).join('')}</select></div>`:''}
    ${(()=>{const rs=rooms().map(r=>({r,L:smsLogs(r.id)})).filter(x=>x.L.length).sort((a,b)=>b.L[b.L.length-1].id-a.L[a.L.length-1].id).slice(0,2);if(!rs.length)return '';
-    return `<div class="ph-recent">${rs.map(({r,L})=>{const l=L[L.length-1];const u=unread(r.id);return `<div class="ph-rc" data-ph="smsopen" data-room="${esc(r.id)}">${roomIcon(r)}<div class="ph-it"><b>${esc(r.name)}${u?` <em class="ph-badge inline">${u}</em>`:''}</b><small>${esc((l.data.as||l.who)+': '+(l.data.t?String(l.data.t).slice(0,34):l.data.img?'[사진]':''))}</small></div></div>`}).join('')}</div>`})()}
+    return `<div class="ph-recent">${rs.map(({r,L})=>{const l=L[L.length-1];const u=unread(r.id);return `<div class="ph-rc" data-ph="smsopen" data-room="${esc(r.id)}">${roomIcon(r)}<div class="ph-it"><b>${esc(r.name)}${u?` <em class="ph-badge inline">${u}</em>`:''}</b><small>${esc((l.data.as||l.who)+': '+preview(l.data).slice(0,34))}</small></div></div>`}).join('')}</div>`})()}
    <div class="ph-apps">${apps.map(([k,ic,n,on,bd])=>`<button class="ph-app ${on?'':'off'}" data-ph="${on?k:''}" ${on?'':'title="아직 준비 중"'}><i>${ic}${bd?`<em class="ph-badge">${bd}</em>`:''}</i><span>${n}</span></button>`).join('')}</div></div>`}
 /* ----- 문자: 캐릭터끼리의 톡 (로그 kind chat + data.sms=방 id).
    방 종류: 「파티」(모두) · GM 이 만든 방(rp.sms.rooms) · 누구나 만드는 방(로그에 data.room={name,members} 정의 한 줄) · 1:1(dm:a|b — 정의 없이 두 사람의 cid 로 정해진다)
@@ -73,6 +73,46 @@ window.OM_PHONE_UI=(()=>{
  function cidKey(cid){if(cid.startsWith('n:')){const n=(G().nodes||{})[cid.slice(2)];return n?'npc:'+n.name:''}return cid}
  /* 관계도 노드가 트레이너와 같은 이름이면 트레이너 cid 로 (휴대폰은 트레이너 것이니까) */
  function cidOfNode(n){const t=Object.values(trs()).find(x=>x.name===n.name);return t?t.id:'n:'+n.id}
+ /* 10-30 망령 「PC 와 NPC 가 각자 자기 연락처를 건네줘서 등록하고, 그걸 통해 연락하고 단톡방 파고 · 추가 · 등록 이름 수정 · 삭제」
+    내 연락처 = pub[주인].phone.book = [{cid, n(등록 이름 · 비면 본명), at}] — 관계도 선과 상관없다. 예전 contacts(관계도 노드 id)는 book 이 없을 때 그대로 옮겨 보인다.
+    건네기 = 1:1 문자에 연락처 카드 한 줄(data.card={cid,name}) → 받은 사람이 「저장」하면 그쪽 연락처에 들어간다.
+    파티 초대 = 단톡방에 초대 카드(data.inv={code}) → 「참가」하면 내 파티 코드(phone.room)가 그 코드가 된다 */
+ function bookOf(tid){const pd=phoneData(tid);if(Array.isArray(pd.book))return pd.book.filter(x=>x&&x.cid);const g=G();return (pd.contacts||[]).map(id=>(g.nodes||{})[id]).filter(Boolean).map(n=>({cid:cidOfNode(n),n:''}))}
+ const inBook=(cid,tid)=>bookOf(tid||PH.tid).some(x=>x.cid===cid);
+ function nm(cid){const e=bookOf(PH.tid).find(x=>x.cid===cid);return (e&&e.n)||cidName(cid)}
+ async function saveBook(list){const u=new Set();list=list.filter(x=>x&&x.cid&&!u.has(x.cid)&&u.add(x.cid));return savePhone(PH.tid,{book:list})}
+ function cidSub(cid){if(cid==='gm')return 'GM';if(cid.startsWith('n:')){const n=(G().nodes||{})[cid.slice(2)];return n?(KINDN[n.kind]||'NPC'):''}const t=trs()[cid];return t?(t.kind==='npc'?'NPC':'PC'):''}
+ /* 연락처를 건네거나 넣을 수 있는 사람: 이 방의 트레이너(비공개 시트 빼고) + 관계도의 NPC · 조직 */
+ function people(){const me=myCid();const out=new Map();const put=(cid,name,img)=>{if(cid&&cid!==me&&!out.has(cid))out.set(cid,{cid,name,img,sub:cidSub(cid)})};
+  for(const x of Object.values(trs()))if(gm()||shared(x.id))put(x.id,x.name,por(x.name,x.image));
+  for(const n of Object.values(G().nodes||{}))put(cidOfNode(n),n.name,por(n.name,n.img));
+  return [...out.values()].sort((a,b)=>String(a.name).localeCompare(String(b.name),'ko'))}
+ /* 이 휴대폰 주인이 들어가 있는 방인가 (GM 이 남의 휴대폰을 볼 때도 주인 기준) */
+ const memberOf=r=>!!r&&(r.kind==='party'?r.id==='party:'+roomOf2(PH.tid):r.kind==='gm'?true:(r.members||[]).includes(myCid()));
+ /* 받은 연락처 카드 중 아직 안 넣은 것 */
+ function cardsIn(){const me=myCid();const no=new Set(phoneData(PH.tid).cardx||[]);const out=new Map();
+  for(const r of allSmsRows()){const c=r.data.card;if(!c||!c.cid||c.cid===me||r.data.cid===me||no.has(r.id)||inBook(c.cid))continue;if(!memberOf(roomOf(r.data.sms)))continue;out.set(c.cid,{row:r,cid:c.cid,name:c.name||cidName(c.cid)})}
+  return [...out.values()]}
+ /* 받은 파티 초대 중 아직 안 들어간 것 */
+ function invitesIn(){const my=roomOf2(PH.tid);const out=new Map();
+  for(const r of allSmsRows()){const v=r.data.inv;if(!v||!v.code||v.code===my||r.data.cid===myCid())continue;const room=roomOf(r.data.sms);if(!memberOf(room))continue;out.set(v.code,{row:r,code:v.code,rname:room.name})}
+  return [...out.values()]}
+ const preview=d=>d.card?'📇 '+(d.card.name||'')+' 연락처':d.inv?'👥 파티 초대 · '+(d.inv.code||''):d.t?String(d.t):d.img?'[사진]':'';
+ async function sendCard(roomId){const S=spk();const ST=A().ST;await window.OM_STORE.addLog(ST.room,ST.secret,'chat',S.name||ST.name||'',{t:'',sms:roomId,as:S.name,k:S.key,cid:S.cid,card:{cid:S.cid,name:S.name}})}
+ /* 고르기 창 (건네기 · 추가 · 단톡방 초대) */
+ function pickSheet(title,hint,L,okLabel,extra,cb){const md=sheet(title,`<div class="small dim" style="margin-bottom:6px">${hint}</div><input type="search" class="sn-frq ph-pq" placeholder="이름으로 찾기">
+   <div class="ph-list" style="max-height:42vh;overflow:auto;padding:0">${L.map(c=>`<label class="ph-item" data-q="${esc(String(c.name).toLowerCase())}" style="cursor:pointer"><input type="checkbox" value="${esc(c.cid)}" data-pk>${av(c.name,c.img,'sm')}<div class="ph-it"><b>${esc(c.name)}</b><small>${esc(c.sub||'')}${c.cid!==myCid()&&inBook(c.cid)?' · 내 연락처':''}</small></div></label>`).join('')||'<div class="ph-empty sm">고를 사람이 없다</div>'}</div>
+   ${extra||''}<div class="row" style="margin-top:8px"><span class="sp"></span><button class="btn pri" data-pkok>${okLabel}</button></div>`);
+  const q=md.querySelector('.ph-pq');q.oninput=()=>{const v=q.value.trim().toLowerCase();md.querySelectorAll('[data-q]').forEach(l=>l.style.display=!v||l.dataset.q.includes(v)?'':'none')};
+  md.querySelector('[data-pkok]').onclick=async()=>{const cids=[...md.querySelectorAll('[data-pk]:checked')].map(x=>x.value);if(!cids.length)return A().toast('사람을 골라 줘');const opt={};md.querySelectorAll('[data-opt]').forEach(x=>opt[x.dataset.opt]=x.type==='checkbox'?x.checked:x.value);closeSheet();await cb(cids,opt)};return md}
+ function giveCard(roomId){const S=spk();if(roomId){return sendCard(roomId).then(()=>A().toast('연락처 카드를 보냈다')).catch(e=>A().toast('보내지 못했다: '+e.message))}
+  pickSheet('📇 내 연락처 건네기',`「${esc(S.name)}」의 연락처 카드를 1:1 문자로 보낸다. 받은 사람이 「저장」을 누르면 그쪽 연락처에 들어간다.`,people(),'건네기',
+   '<label class="small" style="display:block;margin-top:8px"><input type="checkbox" data-opt="back" checked> 받는 사람도 내 연락처에 넣기 (서로 주고받기)</label>',
+   async(cids,opt)=>{try{for(const c of cids){const id=dmId(myCid(),c);rememberOpen(id);await sendCard(id)}if(opt.back){const b=bookOf(PH.tid);await saveBook([...b,...cids.filter(c=>!b.some(x=>x.cid===c)).map(c=>({cid:c,n:'',at:Date.now()}))])}A().toast(`연락처를 ${cids.length}명에게 건넸다`)}catch(e){A().toast('건네지 못했다: '+e.message)}re()})}
+ function renameContact(cid){const e=bookOf(PH.tid).find(x=>x.cid===cid);if(!e)return;const real=cidName(cid);
+  const md=sheet('등록 이름',`<div class="small dim" style="margin-bottom:6px">「${esc(real)}」을(를) 내 휴대폰에 어떤 이름으로 둘까? 비우면 본명.</div><input type="text" id="cn_n" value="${esc(e.n||'')}" placeholder="${esc(real)}" maxlength="30" style="width:100%"><div class="row" style="margin-top:8px"><span class="sp"></span><button class="btn pri" id="cn_ok">저장</button></div>`);
+  const inp=$('#cn_n',md);inp.focus();inp.onkeydown=ev=>{if(ev.key==='Enter'&&!ev.isComposing)$('#cn_ok',md).click()};
+  $('#cn_ok',md).onclick=async()=>{const v=inp.value.trim().slice(0,30);closeSheet();await saveBook(bookOf(PH.tid).map(x=>x.cid===cid?Object.assign({},x,{n:v===real?'':v}):x));re()}}
  const dmId=(a,b)=>'dm:'+[a,b].sort().join('|');
  const dmMembers=id=>id.startsWith('dm:')?id.slice(3).split('|'):null;
  function openedRooms(){try{return JSON.parse(localStorage.getItem(OPEN_KEY)||'[]')}catch(e){return []}}
@@ -85,11 +125,12 @@ window.OM_PHONE_UI=(()=>{
   const myCode=roomOf2(PH.tid);if(myCode)put({id:'party:'+myCode,name:'파티 · '+myCode,members:[],kind:'party'});
   if(gm()){put({id:'party',name:'파티 (옛 방)',members:[],kind:'party'});for(const row of allSmsRows()){const id=row.data.sms;if(id.startsWith('party:'))put({id,name:'파티 · '+id.slice(6),members:[],kind:'party'})}}
   for(const r of (((A().ST.state.rp||{}).sms||{}).rooms||[]))if(r&&r.id)put(Object.assign({kind:'gm',members:[]},r));
-  for(const row of allSmsRows()){const d=row.data;if(d.room&&d.room.name)put({id:d.sms,name:d.room.name,members:d.room.members||[],kind:'group',by:d.cid||''});}
+  /* 10-30 단체방 정의는 나중 줄이 이긴다 — 사람 초대 · 나가기는 새 정의 한 줄 */
+  for(const row of allSmsRows()){const d=row.data;if(d.room&&d.room.name){const o=out.get(d.sms);if(!o||o.kind==='group')out.set(d.sms,{id:d.sms,name:d.room.name,members:d.room.members||[],kind:'group',by:(o&&o.by)||d.cid||''})}}
   for(const row of allSmsRows()){const m=dmMembers(row.data.sms);if(m)put({id:row.data.sms,members:m,kind:'dm'})}
   for(const id of openedRooms()){const m=dmMembers(id);if(m)put({id,members:m,kind:'dm'})}
   const list=[...out.values()].filter(r=>gm()||r.kind==='party'||r.kind==='gm'||(r.members||[]).includes(me));
-  for(const r of list)if(r.kind==='dm'){const other=(r.members||[]).find(x=>x!==me)||(r.members||[])[0];r.name=gm()&&!(r.members||[]).includes(me)?r.members.map(cidName).join(' · '):cidName(other);r.other=other}
+  for(const r of list)if(r.kind==='dm'){const other=(r.members||[]).find(x=>x!==me)||(r.members||[])[0];r.name=gm()&&!(r.members||[]).includes(me)?r.members.map(cidName).join(' · '):nm(other);r.other=other}
   const lastId=id=>{const L=smsLogs(id);return L.length?L[L.length-1].id:0};list.sort((a,b)=>lastId(b.id)-lastId(a.id));
   return list}
  function roomOf(id){return rooms().find(x=>x.id===id)}
@@ -100,18 +141,23 @@ window.OM_PHONE_UI=(()=>{
  function unreadAll(){return rooms().reduce((a,r)=>a+unread(r.id),0)}
  function spk(){const me=myCid();return {key:cidKey(me),cid:me,name:cidName(me)||A().ST.name||'',img:cidImg(me)}}
  function roomIcon(r){if(r.kind==='party')return '<i class="ph-av ph-room">👥</i>';if(r.kind==='dm'){const u=cidImg(r.other);return `<i class="ph-av" style="${u?`background-image:url('${cssu(u)}')`:''}"></i>`}return '<i class="ph-av ph-room">💬</i>'}
- function smsRooms(t){const rs=rooms();return `<div class="ph-head green"><button class="ph-back" data-ph="home">‹</button><div><b>문자</b><small>${esc(spk().name)} · 로그에는 안 보인다</small></div>${A().ST.role?'<button class="btn xs" data-ph="smsnew">＋ 새 문자</button>':''}</div>
-   <div class="ph-list">${rs.length?'':`<div class="ph-empty">${!A().ST.role?'자리에 앉아야 문자를 쓸 수 있다':!owner()?'아직 내 파티가 없다 — 시트 탭에서 「내 파티 불러오기」':'연락처에서 방 코드를 넣으면 파티 방이 생긴다. 1:1 은 연락처에서 사람을 눌러서.'}</div>`}${rs.map(r=>{const L=smsLogs(r.id);const last=L[L.length-1];const u=unread(r.id);const sub=last?esc((last.data.as||last.who)+': '+(last.data.t?String(last.data.t).slice(0,40):last.data.img?'[사진]':'')):(r.kind==='dm'?'아직 대화가 없다 — 첫 문자를 보내 봐':'아직 대화가 없다');const mem=r.kind==='group'?` <span class="small dim">· ${(r.members||[]).length}명</span>`:'';return `<div class="ph-item" data-ph="smsopen" data-room="${esc(r.id)}">${roomIcon(r)}<div class="ph-it"><b>${esc(r.name)}${u?` <em class="ph-badge inline">${u}</em>`:''}${mem}</b><small>${sub}</small></div>${last?`<small class="ph-when">${hmOf(last.at)}</small>`:''}${gm()&&r.kind==='gm'?`<button class="btn xs ghost" data-ph="smsdel" data-room="${esc(r.id)}">✕</button>`:''}</div>`}).join('')}</div>`}
+ function smsRooms(t){const rs=rooms();return `<div class="ph-head green"><button class="ph-back" data-ph="home">‹</button><div><b>문자</b><small>${esc(spk().name)} · 로그에는 안 보인다</small></div>${A().ST.role?'<button class="btn xs" data-ph="smsnew" title="1:1 · 단톡방">＋ 새 문자</button>':''}</div>
+   <div class="ph-list">${rs.length?'':`<div class="ph-empty">${!A().ST.role?'자리에 앉아야 문자를 쓸 수 있다':!owner()?'아직 내 파티가 없다 — 시트 탭에서 「내 파티 불러오기」':'연락처에서 사람을 누르면 1:1, 「＋ 새 문자」에서 여럿을 고르면 단톡방이 생긴다.'}</div>`}${rs.map(r=>{const L=smsLogs(r.id);const last=L[L.length-1];const u=unread(r.id);const sub=last?esc((last.data.as||last.who)+': '+preview(last.data).slice(0,40)):(r.kind==='dm'?'아직 대화가 없다 — 첫 문자를 보내 봐':'아직 대화가 없다');const mem=r.kind==='group'?` <span class="small dim">· ${(r.members||[]).length}명</span>`:'';return `<div class="ph-item" data-ph="smsopen" data-room="${esc(r.id)}">${roomIcon(r)}<div class="ph-it"><b>${esc(r.name)}${u?` <em class="ph-badge inline">${u}</em>`:''}${mem}</b><small>${sub}</small></div>${last?`<small class="ph-when">${hmOf(last.at)}</small>`:''}${gm()&&r.kind==='gm'?`<button class="btn xs ghost" data-ph="smsdel" data-room="${esc(r.id)}">✕</button>`:''}</div>`}).join('')}</div>`}
+ function cardBub(d,mine){const c=d.card;const have=c.cid===myCid()||inBook(c.cid);const img=cidImg(c.cid);
+  return `<div class="ph-bub ph-cardb"><i class="ph-av sm" style="${img?`background-image:url('${cssu(img)}')`:''}"></i><div><small>📇 연락처</small><b>${esc(c.name||cidName(c.cid))}</b></div>${!mine&&canWrite()?(have?'<span class="ph-cardok">저장됨</span>':`<button class="btn xs pri" data-ph="cardsave" data-cid="${esc(c.cid)}">저장</button>`):''}</div>`}
+ function invBub(d,mine){const v=d.inv;const my=roomOf2(PH.tid)===v.code;
+  return `<div class="ph-bub ph-cardb inv"><i class="ph-av sm ph-room">👥</i><div><small>파티 초대</small><b>${esc(v.code)}</b></div>${canWrite()?(my?'<span class="ph-cardok">참가 중</span>':mine?'':`<button class="btn xs pri" data-ph="invjoin" data-code="${esc(v.code)}">참가</button>`):''}</div>`}
  function smsRoom(t){const rs=rooms();const r=rs.find(x=>x.id===PH.room)||rs[0];if(!r){PH.screen='sms';return smsRooms(t)}PH.room=r.id;const L=smsLogs(r.id);const me=myCid();const R=window.OM_RP_UI;let lastDay='';
   let prevK='',prevAt=0;const rows=L.map(x=>{const d=x.data;const at=new Date(x.at);const day=isNaN(at)?'':`${at.getMonth()+1}/${at.getDate()}`;const hm=isNaN(at)?'':`${String(at.getHours()).padStart(2,'0')}:${String(at.getMinutes()).padStart(2,'0')}`;let head='';if(day&&day!==lastDay){lastDay=day;head=`<div class="ph-day">${day}</div>`}
-   const mine=d.cid?d.cid===me:d.k===spk().key;const img=d.cid?cidImg(d.cid):(d.k&&R&&R.imgOfKey?R.imgOfKey(d.k):'');const name=d.as||x.who;
+   const mine=d.cid?d.cid===me:d.k===spk().key;const img=d.cid?cidImg(d.cid):(d.k&&R&&R.imgOfKey?R.imgOfKey(d.k):'');const name=(d.cid&&!mine&&inBook(d.cid)?nm(d.cid):'')||d.as||x.who;
    /* 같은 사람이 3분 안에 이어 보내면 이름·얼굴을 한 번만 */
    const who=d.cid||d.k||name;const t0=+at||0;const cont=!head&&who===prevK&&t0-prevAt<180000;prevK=who;prevAt=t0;
    const txt=esc(d.t||'').replace(/@([^\s@]+)/g,'<span class="ph-at">@$1</span>');
    const pic=d.img?`<a class="ph-pic" href="${esc(d.img)}" target="_blank" rel="noopener"><img src="${esc(d.img)}" alt="" loading="lazy"></a>`:'';
-   return head+`<div class="ph-msg ${mine?'me':''} ${cont?'cont':''}">${mine?'':`<i class="ph-av sm" style="${img?`background-image:url('${cssu(img)}')`:''}"></i>`}<div class="ph-mb">${cont?'':`<small class="ph-mn">${esc(name)}</small>`}${pic?`<div class="ph-bub pic">${pic}</div>`:''}${d.t?`<div class="ph-bub">${txt}</div>`:''}<small class="ph-mt">${hm}</small></div></div>`}).join('');
-  const S=spk();const memLine=r.kind==='group'?(r.members||[]).map(cidName).join(' · '):r.kind==='dm'?'1:1':'모두';
-  return `<div class="ph-head green"><button class="ph-back" data-ph="sms">‹</button><div><b>${esc(r.name)}</b><small>${esc(memLine)} · ${L.length}개</small></div></div>
+   return head+`<div class="ph-msg ${mine?'me':''} ${cont?'cont':''}">${mine?'':`<i class="ph-av sm" style="${img?`background-image:url('${cssu(img)}')`:''}"></i>`}<div class="ph-mb">${cont?'':`<small class="ph-mn">${esc(name)}</small>`}${pic?`<div class="ph-bub pic">${pic}</div>`:''}${d.t?`<div class="ph-bub">${txt}</div>`:''}${d.card?cardBub(d,mine):''}${d.inv?invBub(d,mine):''}<small class="ph-mt">${hm}</small></div></div>`}).join('');
+  const S=spk();const memLine=r.kind==='group'?(r.members||[]).map(nm).join(' · '):r.kind==='dm'?'1:1':'모두';const can=!!A().ST.role&&memberOf(r);
+  const tools=can?`${r.kind!=='party'?'<button class="btn xs ghost" data-ph="cardsend" title="이 방에 내 연락처 카드를 보낸다">📇</button>':''}${r.kind==='group'?'<button class="btn xs ghost" data-ph="ginv" title="사람 초대">＋👤</button><button class="btn xs ghost" data-ph="pinv" title="이 단톡방 사람들과 파티를 맺는다">👥 파티</button><button class="btn xs ghost" data-ph="gleave" title="방에서 나간다">나가기</button>':''}`:'';
+  return `<div class="ph-head green"><button class="ph-back" data-ph="sms">‹</button><div><b>${esc(r.name)}</b><small>${esc(memLine)} · ${L.length}개</small></div>${tools}</div>
    <div class="ph-sms">${rows||'<div class="ph-empty">첫 메시지를 보내 봐</div>'}</div>
    ${A().ST.role?`<div class="ph-smsin"><i class="ph-av sm" title="${esc(S.name)}" style="${S.img?`background-image:url('${cssu(S.img)}')`:''}"></i><label class="ph-clip" title="그림 보내기 (끌어 놓기 · Ctrl+V 도 된다)">📎<input type="file" accept="image/*" id="smsFile" hidden></label><input type="text" id="smsIn" placeholder="${esc(S.name)} 으로 보내기 · @이름" value="${esc(PH.draft[r.id]||'')}"><button class="btn pri sm" data-ph="smssend">➤</button></div>`:''}`}
  /* ----- SNS (10-24 벨벳 NyangStar 참고): 방 모두가 보는 타임라인. 로그 kind chat + data.sms='sns' — 문자처럼 채팅 · 무대 · 세션 로그에서 빠진다.
@@ -170,12 +216,12 @@ window.OM_PHONE_UI=(()=>{
   if(openHere){draw(md);try{const mine=A().isMineLog?A().isMineLog(row):d.cid===myCid();if(!mine&&(d.t||d.img)&&(!A().alarm||A().alarm().sms)&&window.OM_PREFS)window.OM_PREFS.alert('smsin')}catch(e){}return}   /* 10-26: 그 방을 보고 있어도 짧게 */
   const isMine=A().isMineLog?A().isMineLog(row):d.cid===myCid();const room=roomOf(d.sms);const al=A().alarm?A().alarm().sms:1;
   /* 10-26 망령 「문자 왔을 때 알림음」: 문자 전용 소리(띠링띠링 · 효과음 목록에 sms 가 있으면 그 파일). 단체방 첫 메시지(d.room)도 울린다 */
-  if(!isMine&&room&&al&&(d.t||d.img)){popSms(row,room);try{if(window.OM_PREFS)window.OM_PREFS.alert('sms');else if(window.OM_RP_UI)window.OM_RP_UI.playSe('Ping',true)}catch(e){}}
+  if(!isMine&&room&&al&&(d.t||d.img||d.card||d.inv)){popSms(row,room);try{if(window.OM_PREFS)window.OM_PREFS.alert('sms');else if(window.OM_RP_UI)window.OM_RP_UI.playSe('Ping',true)}catch(e){}}
   if(md&&PH.screen==='sms')draw(md);A().renderScene()}
  /* 문자 알림: 왼쪽 아래에서 휴대폰이 올라오고 알림 카드가 뜬다. 여러 개면 위로 쌓이고(최대 3), 누르면 그 방이 열린다. 6초 뒤 내려간다 */
  const POP={list:[],t:null};
  function popSms(row,room){const d=row.data||{};const name=d.as||row.who||'';const img=d.cid?cidImg(d.cid):'';
-  POP.list.unshift({id:row.id,room:room.id,rname:room.kind==='dm'?'':room.name,name,img,t:String(d.t||(d.img?'[사진]':'')),at:Date.now()});POP.list=POP.list.slice(0,3);
+  POP.list.unshift({id:row.id,room:room.id,rname:room.kind==='dm'?'':room.name,name,img,t:preview(d),at:Date.now()});POP.list=POP.list.slice(0,3);
   let el=document.getElementById('smsPop');if(!el){el=document.createElement('div');el.id='smsPop';el.className='smspop';document.body.appendChild(el)}
   const now=new Date();const hm=`${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
   el.innerHTML=`<div class="sp-phone"><div class="sp-notch"></div><div class="sp-clock">${hm}</div>
@@ -189,20 +235,18 @@ window.OM_PHONE_UI=(()=>{
  function hidePop(clear){const el=document.getElementById('smsPop');if(el)el.classList.remove('show','buzz');if(clear)POP.list=[];else setTimeout(()=>{if(!(el&&el.classList.contains('show')))POP.list=[]},500)}
  /* 새 문자: 연락처에서 한 사람 고르면 1:1, 여럿 고르고 이름을 적으면 새 방 */
  function contactsForSms(){const me=myCid();const out=new Map();const put=(cid,name,sub)=>{if(cid&&cid!==me&&!out.has(cid))out.set(cid,{cid,name,sub})};
-  const pd=phoneData(PH.tid);const my=roomOf2(PH.tid);
-  for(const x of Object.values(trs())){if(gm()||x.id===PH.tid||(my&&roomOf2(x.id)===my&&shared(x.id)))put(x.id,x.name,'파티원'+(x.kind==='npc'?' · NPC':''))}
-  for(const id of (pd.contacts||[])){const n=(G().nodes||{})[id];if(n)put(cidOfNode(n),n.name,KINDN[n.kind]||'')}
+  const my=roomOf2(PH.tid);for(const e of bookOf(PH.tid))put(e.cid,e.n||cidName(e.cid),'내 연락처'+(e.n&&e.n!==cidName(e.cid)?' · '+cidName(e.cid):''));
+  for(const x of Object.values(trs())){if(gm()||(my&&roomOf2(x.id)===my&&shared(x.id)))put(x.id,x.name,(my&&roomOf2(x.id)===my?'파티원':'트레이너')+(x.kind==='npc'?' · NPC':''))}
   if(gm())for(const n of Object.values(G().nodes||{}))put(cidOfNode(n),n.name,KINDN[n.kind]||'');
   return [...out.values()]}
  function openDm(cid){const id=dmId(myCid(),cid);rememberOpen(id);PH.room=id;PH.screen='smsroom';return re()}
- function newSms(pre){const list=contactsForSms();if(!list.length)return A().toast('문자할 사람이 없다 — 연락처에 먼저 넣어 줘');
-  const md=sheet(`새 문자`,`
-   <div class="small dim" style="margin-bottom:6px">한 사람만 고르면 1:1 문자. 여럿을 고르고 방 이름을 적으면 새 방이 생긴다 (나도 들어간다).</div>
+ function newSms(pre){const list=contactsForSms();if(!list.length)return A().toast('문자할 사람이 없다 — 연락처에 먼저 넣어 줘 (📇 건네기 · ＋ 추가)');
+  const md=sheet(`새 문자 · 단톡방`,`
+   <div class="small dim" style="margin-bottom:6px">한 사람만 고르고 이름을 비우면 1:1 문자. 단톡방 이름을 적으면 (한 사람이어도) 단톡방이 생긴다 — 나도 들어간다.</div>
    <div class="ph-list" style="max-height:45vh;overflow:auto;padding:0">${list.map(c=>`<label class="ph-item" style="cursor:pointer"><input type="checkbox" value="${esc(c.cid)}" data-sc ${pre===c.cid?'checked':''}>${av(c.name,cidImg(c.cid),'sm')}<div class="ph-it"><b>${esc(c.name)}</b><small>${esc(c.sub)}</small></div></label>`).join('')}</div>
-   <div class="row" style="margin-top:10px"><input type="text" id="ns_name" placeholder="방 이름 (여럿일 때)" style="flex:1"><button class="btn pri" id="ns_ok">보내러 가기</button></div>`);
+   <div class="row" style="margin-top:10px"><input type="text" id="ns_name" placeholder="단톡방 이름 (여럿일 때)" style="flex:1"><button class="btn pri" id="ns_ok">보내러 가기</button></div>`);
   $('#ns_ok',md).onclick=async()=>{const cids=[...md.querySelectorAll('[data-sc]:checked')].map(x=>x.value);if(!cids.length)return A().toast('받을 사람을 골라 줘');
-   if(cids.length===1){closeSheet();return openDm(cids[0])}
-   const name=$('#ns_name',md).value.trim();if(!name)return A().toast('방 이름을 적어 줘');const id='g'+Date.now().toString(36);const S=spk();const ST=A().ST;closeSheet();
+   const name=$('#ns_name',md).value.trim();if(cids.length===1&&!name){closeSheet();return openDm(cids[0])}if(!name)return A().toast('단톡방 이름을 적어 줘');const id='g'+Date.now().toString(36);const S=spk();const ST=A().ST;closeSheet();
    try{await window.OM_STORE.addLog(ST.room,ST.secret,'chat',S.name||ST.name||'',{t:'',sms:id,as:S.name,k:S.key,cid:S.cid,room:{name,members:[...new Set([S.cid,...cids])]}})}catch(e){return A().toast('방을 만들지 못했다: '+e.message)}
    PH.room=id;PH.screen='smsroom';setTimeout(()=>{PH.room=id;PH.screen='smsroom';re()},250)}}
  /* ----- 연락처: 파티원은 로스터(시트 → 제작기에서 가져오기)에서 저절로 · 그 밖의 사람은 「＋ 추가」로 관계도 노드를 내 연락처에 넣는다 ----- */
@@ -210,34 +254,25 @@ window.OM_PHONE_UI=(()=>{
  const roomOf2=tid=>String((phoneData(tid).room||'')).trim();
  const shared=tid=>phoneData(tid).share!==false&&!(trs()[tid]||{}).priv;   /* 10-22 망령: 시트를 비공개로 두면 남의 연락처에도 안 뜬다 */
  /* 10-28 망령: 「파티」 앱 (js/ppool.js) — 같은 방 코드 파티원의 4식 · 6령을 합친 목록과 포켓몬 현황 */
- function partyScr(t){const my=roomOf2(PH.tid);const PP=window.OM_PPOOL;const tab=PH.ptab||'all';
-  const head=`<div class="ph-head"><button class="ph-back" data-ph="home">‹</button><div><b>파티</b><small>${my?'방 '+esc(my):'방 코드 없음'}</small></div></div>`;
-  if(!my)return head+`<div class="ph-empty">방 코드가 없다<br><span class="small">연락처에서 같은 방 코드를 넣으면 파티원의 4식 · 6령과 포켓몬이 여기 모인다</span><br><button class="btn sm" data-ph="contacts" style="margin-top:8px">연락처로</button></div>`;
+ function roomForm(my){return `<div class="ph-room"><div class="row"><input type="text" id="ph_room" value="${esc(my)}" placeholder="파티 코드 (예: velvet-01)" ${canWrite()?'':'readonly'}>${canWrite()?`<button class="btn sm pri" data-ph="roomgo">${my?'바꾸기':'맺기'}</button>`:''}${my&&canWrite()?'<button class="btn sm ghost" data-ph="roomout" title="파티에서 나간다">나가기</button>':''}</div>
+   ${canWrite()?`<label class="small"><input type="checkbox" id="ph_share" ${shared(PH.tid)?'checked':''}> 파티원 목록에 나를 보이기</label>`:''}<div class="small dim">같은 코드를 넣은 사람끼리 파티가 된다. 단톡방에서 「👥 파티」를 누르면 방 사람들에게 초대가 가고, 받은 사람은 「참가」 한 번이면 된다.</div></div>`}
+ function partyScr(t){const my=roomOf2(PH.tid);const PP=window.OM_PPOOL;const tab=PH.ptab||'all';const IV=invitesIn();
+  const inv=IV.length?`<div class="ph-sec">받은 초대 <span class="sp"></span><span class="small dim">${IV.length}</span></div><div class="ph-list">${IV.map(x=>`<div class="ph-item"><i class="ph-av ph-room">👥</i><div class="ph-it"><b>${esc(x.code)}</b><small>${esc(x.row.data.as||x.row.who||'')} · ${esc(x.rname||'')}</small></div>${canWrite()?`<button class="btn xs pri" data-ph="invjoin" data-code="${esc(x.code)}">참가</button>`:''}</div>`).join('')}</div>`:'';
+  const head=`<div class="ph-head"><button class="ph-back" data-ph="home">‹</button><div><b>파티</b><small>${my?'코드 '+esc(my):'아직 파티가 없다'}</small></div></div>`;
+  if(!my)return head+inv+`<div class="ph-sec">파티 맺기</div>`+roomForm(my);
   const tabs=[['all','전체'],['ord','4식 · 6령'],['mon','포켓몬']];
-  return head+`<div class="ph-pp">${PP.chip(my,PH.tid)}</div><div class="ph-ptab">${tabs.map(([k,n])=>`<button class="${tab===k?'on':''}" data-ph="ptab" data-v="${k}">${n}</button>`).join('')}</div><div class="ph-ppbody">${PP.html(my,{me:PH.tid,only:tab==='all'?'':tab})}</div>`}
- function contacts(t){const T=trs();const seats=A().ST.state.seats||{};const pd=phoneData(PH.tid);const g=G();const ids=(pd.contacts||[]).filter(id=>g.nodes[id]);const my=roomOf2(PH.tid);
-  const item=x=>{const o=seats[x.id];const n=Object.values(mons()).filter(m=>m.tid===x.id).length;const rc=roomOf2(x.id);const meItem=x.id===PH.tid;return `<div class="ph-item" data-ph="${meItem?'sheet':'dm'}" data-tid="${x.id}" data-cid="${x.id}">${av(x.name,x.image)}<div class="ph-it"><b>${esc(x.name)}${meItem?' <span class="ph-tag">나</span>':''}${x.kind==='npc'?' <span class="ph-tag">NPC</span>':''}</b><small>${o?'🟢 '+esc(o.name):'빈 자리'} · 포켓몬 ${n}${gm()&&rc?' · 방 '+esc(rc):''}${!shared(x.id)?' · 비공개':''}</small></div><button class="btn xs ghost" data-ph="sheet" data-tid="${x.id}" title="시트 보기">시트</button>${meItem?'':'<span class="ph-arrow" title="문자">💬</span>'}</div>`};
-  /* 코드가 있을 때만 같은 코드끼리. 코드가 없으면 나 혼자 */
-  const party=Object.values(T).filter(x=>x.id===PH.tid||(my&&roomOf2(x.id)===my&&shared(x.id)));const meName=t?t.name:(A().ST.name||'나');
-  const others=gm()?Object.values(T).filter(x=>!party.includes(x)):[];
-  return `<div class="ph-head"><button class="ph-back" data-ph="home">‹</button><div><b>연락처</b><small>${my?'방 '+esc(my):'방 코드 없음'} · 누르면 시트</small></div>${canWrite()?'<button class="btn xs" data-ph="ctadd">＋ 추가</button>':''}</div>
+  return head+inv+`<div class="ph-pp">${PP.chip(my,PH.tid)}</div><div class="ph-ptab">${tabs.map(([k,n])=>`<button class="${tab===k?'on':''}" data-ph="ptab" data-v="${k}">${n}</button>`).join('')}</div><div class="ph-ppbody">${PP.html(my,{me:PH.tid,only:tab==='all'?'':tab})}</div><details class="ph-roomd"><summary>파티 코드 · 나가기</summary>${roomForm(my)}</details>`}
+ function contacts(t){const B=bookOf(PH.tid);const P=cardsIn();const S=spk();
+  const item=e=>{const real=cidName(e.cid);const isT=!!trs()[e.cid];const sub=[e.n&&e.n!==real?real:'',cidSub(e.cid)].filter(Boolean).join(' · ');
+   return `<div class="ph-item" data-ph="dm" data-cid="${esc(e.cid)}">${av(real,cidImg(e.cid))}<div class="ph-it"><b>${esc(e.n||real)}</b><small>${esc(sub)}</small></div>${isT?`<button class="btn xs ghost" data-ph="sheet" data-tid="${esc(e.cid)}" title="시트 보기">시트</button>`:''}${canWrite()?`<button class="btn xs ghost" data-ph="ctname" data-cid="${esc(e.cid)}" title="등록 이름 바꾸기">✎</button><button class="btn xs ghost" data-ph="ctdel" data-cid="${esc(e.cid)}" title="연락처에서 지우기">✕</button>`:''}<span class="ph-arrow" title="문자">💬</span></div>`};
+  return `<div class="ph-head"><button class="ph-back" data-ph="home">‹</button><div><b>연락처</b><small>${esc(S.name||'')} · ${B.length}명 · 누르면 문자</small></div>${canWrite()?'<button class="btn xs" data-ph="ctgive" title="내 연락처 카드를 건넨다">📇 건네기</button><button class="btn xs" data-ph="ctadd">＋ 추가</button>':''}</div>
    <div class="ph-cq"><input type="search" id="ph_cq" placeholder="🔍 이름으로 찾기" value="${esc(PH.cq||'')}"></div>
-   <div class="ph-sec">방</div>
-   <div class="ph-room"><div class="row"><input type="text" id="ph_room" value="${esc(my)}" placeholder="방 코드 (예: velvet-01)" ${canWrite()?'':'readonly'}>${canWrite()?'<button class="btn sm pri" data-ph="roomgo">입장</button>':''}${my&&canWrite()?'<button class="btn sm ghost" data-ph="roomout" title="코드를 비운다">나가기</button>':''}</div>
-    ${canWrite()?`<label class="small"><input type="checkbox" id="ph_share" ${shared(PH.tid)?'checked':''}> 「${esc(meName)}」를 방에 공유 (끄면 남의 연락처에 안 뜬다)</label>`:''}
-    <div class="small dim">같은 코드를 넣은 사람끼리만 파티원으로 보인다. 코드가 없으면 아무도 안 보인다.</div></div>
-   <div class="ph-sec">파티원 <span class="sp"></span><span class="small dim">${party.length}</span>${my&&window.OM_PPOOL?'<button class="btn xs ghost" data-ph="party">👥 현황</button>':''}</div>
-   <div class="ph-list">${party.map(item).join('')||`<div class="ph-empty">${t?'':'아직 내 파티가 없다 — 시트 탭에서 「내 파티 불러오기」<br>'}${my?'이 코드로 들어온 사람이 아직 없다':'방 코드를 넣고 입장하면 같은 코드의 파티원이 보인다'}</div>`}</div>
-   <div class="small dim" style="padding:0 12px 6px">누르면 그 사람에게 문자. 「시트」는 보기 전용(자기 시트만 고칠 수 있다).</div>
-   ${others.length?`<div class="ph-sec">다른 방 · 비공개 <span class="small dim">(GM 만 본다)</span></div><div class="ph-list">${others.map(item).join('')}</div>`:''}
-   <div class="ph-sec">내 연락처 <span class="sp"></span><span class="small dim">${ids.length}</span></div>
-   <div class="ph-list">${ids.map(id=>{const n=g.nodes[id];return `<div class="ph-item" data-ph="dm" data-cid="${esc(cidOfNode(n))}">${av(n.name,n.img)}<div class="ph-it"><b>${esc(n.name)}</b><small>${esc(KINDN[n.kind]||n.kind||'')}${n.note?' · '+esc(String(n.note).split('\n')[0].slice(0,30)):''}</small></div>${gm()?`<button class="btn xs ghost" data-ph="ct1" data-id="${esc(id)}" title="노드 편집">✎</button>`:''}${canWrite()?`<button class="btn xs ghost" data-ph="ctdel" data-id="${esc(id)}">✕</button>`:''}<span class="ph-arrow" title="문자">💬</span></div>`}).join('')||'<div class="ph-empty small">「＋ 추가」로 관계도의 사람을 넣어 둬</div>'}</div>`}
- function addContact(){const g=G();const pd=phoneData(PH.tid);const have=new Set(pd.contacts||[]);const me=nodeOfTrainer(owner());const list=Object.values(g.nodes||{}).filter(n=>!have.has(n.id)&&(!me||n.id!==me.id)).sort((a,b)=>String(a.name).localeCompare(String(b.name),'ko'));
-  if(!list.length)return A().toast(gm()?'관계도에 더 넣을 사람이 없다 — 협력자 화면의 「＋ 노드」로 만들어 줘':'관계도에 더 넣을 사람이 없다 — GM 에게 부탁해');
-  const md=sheet(`연락처에 추가`,`<div class="small dim" style="margin-bottom:6px">관계도에 있는 사람 중에서 고른다${gm()?' · 새 사람은 협력자 화면의 「＋ 노드」':''}</div>
-   <div class="ph-list" style="max-height:50vh;overflow:auto;padding:0">${list.map(n=>`<label class="ph-item" style="cursor:pointer"><input type="checkbox" value="${esc(n.id)}" data-ct>${av(n.name,n.img,'sm')}<div class="ph-it"><b>${esc(n.name)}</b><small>${esc({pc:'PC',npc:'NPC',org:'조직'}[n.kind]||'')}</small></div></label>`).join('')}</div>
-   <div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn pri" id="ct_ok">추가</button></div>`);
-  $('#ct_ok',md).onclick=async()=>{const ids=[...md.querySelectorAll('[data-ct]:checked')].map(x=>x.value);closeSheet();if(!ids.length)return;await savePhone(PH.tid,{contacts:[...(pd.contacts||[]),...ids]});go('contacts')}}
+   ${P.length?`<div class="ph-sec">받은 연락처 <span class="sp"></span><span class="small dim">${P.length}</span></div><div class="ph-list">${P.map(c=>`<div class="ph-item ph-cardin">${av(c.name,cidImg(c.cid))}<div class="ph-it"><b>📇 ${esc(c.name)}</b><small>${esc(c.row.data.as||c.row.who||'')} 이(가) 건넨 연락처</small></div>${canWrite()?`<button class="btn xs pri" data-ph="cardsave" data-cid="${esc(c.cid)}">저장</button><button class="btn xs ghost" data-ph="cardx" data-id="${c.row.id}" title="넣지 않고 치운다">✕</button>`:''}</div>`).join('')}</div>`:''}
+   <div class="ph-sec">내 연락처 <span class="sp"></span><span class="small dim">${B.length}</span></div>
+   <div class="ph-list">${B.map(item).join('')||'<div class="ph-empty small">아직 아무도 없다.<br>「📇 건네기」로 내 연락처를 주거나, 받은 카드를 저장하거나, 「＋ 추가」로 넣어 둬.</div>'}</div>
+   ${window.OM_PPOOL?`<div class="ph-sec">파티 <span class="sp"></span><span class="small dim">${roomOf2(PH.tid)?'코드 '+esc(roomOf2(PH.tid)):'없음'}</span><button class="btn xs ghost" data-ph="party">👥 파티</button></div>`:''}`}
+ function addContact(){const L=people().filter(c=>!inBook(c.cid));if(!L.length)return A().toast('더 넣을 사람이 없다');
+  pickSheet('연락처에 추가','이 방의 사람 중에서 고른다. 등록 이름은 넣은 뒤 ✎ 로 바꿀 수 있다.',L,'추가','',async cids=>{await saveBook([...bookOf(PH.tid),...cids.map(c=>({cid:c,n:'',at:Date.now()}))]);go('contacts')})}
  /* ----- 협력자: 관계도의 선 ----- */
  function confidants(t){const g=G();if(!t)return `<div class="ph-head red"><button class="ph-back" data-ph="home">‹</button><div><b>협력자</b><small>${esc(A().ST.name||'')}</small></div></div><div class="ph-empty">아직 내 파티가 없다<br><span class="small">시트 탭에서 「내 파티 불러오기」를 하면 내 캐릭터의 협력자가 여기 보인다</span></div>`;const node=nodeOfTrainer(t);if(!node)return `<div class="ph-head red"><button class="ph-back" data-ph="home">‹</button><div><b>협력자</b><small>${esc(t?t.name:'')}</small></div>${gm()?'<button class="btn xs" data-ph="nodeadd">＋ 노드</button>':''}</div><div class="ph-empty">관계도에 「${esc(t?t.name:'')}」 노드가 아직 없다${gm()?'<br><br><button class="btn sm pri" data-ph="mynode">「'+esc(t?t.name:'')+'」 노드 만들기</button>':'<br><span class="small">GM 이 접속해 있으면 저절로 생긴다</span>'}</div>`;
   const edges=Object.values(g.edges||{}).filter(e=>e.a===node.id||e.b===node.id).map(e=>Object.assign({},e,{o:g.nodes[e.a===node.id?e.b:e.a]})).filter(e=>e.o).sort((x,y)=>(+y.rank||0)-(+x.rank||0));
@@ -320,9 +355,24 @@ window.OM_PHONE_UI=(()=>{
    if(k==='notesave')return saveNote(md);
    if(k==='notedel'){if(!confirm('이 메모를 지울까?'))return;const pd=phoneData(PH.tid);await savePhone(PH.tid,{notes:(pd.notes||[]).filter(x=>x.id!==b.dataset.id)});PH.screen='notes';return re()}
    if(k==='ctadd')return addContact();
-   if(k==='roomgo'){const code=$('#ph_room',md).value.trim();await savePhone(PH.tid,{room:code,share:$('#ph_share',md)?$('#ph_share',md).checked:true});A().toast(code?`방 ${code} 에 들어갔다`:'방 코드를 비웠다');return re()}
+   if(k==='ctgive')return giveCard();
+   if(k==='cardsend')return giveCard(PH.room);
+   if(k==='ctname')return renameContact(b.dataset.cid);
+   if(k==='cardsave'){const c=b.dataset.cid;if(inBook(c))return A().toast('이미 내 연락처에 있다');await saveBook([...bookOf(PH.tid),{cid:c,n:'',at:Date.now()}]);A().toast(`「${cidName(c)}」을(를) 연락처에 넣었다`);return re()}
+   if(k==='cardx'){const pd=phoneData(PH.tid);await savePhone(PH.tid,{cardx:[...(pd.cardx||[]),+b.dataset.id].slice(-100)});return re()}
+   if(k==='invjoin'){const code=b.dataset.code;await savePhone(PH.tid,{room:code});A().toast(`파티 「${code}」에 들어갔다`);return re()}
+   if(k==='pinv'||k==='ginv'||k==='gleave'){const r=roomOf(PH.room);if(!r||r.kind!=='group')return;const S=spk();const ST=A().ST;const add=d=>window.OM_STORE.addLog(ST.room,ST.secret,'chat',S.name||ST.name||'',Object.assign({t:'',sms:r.id,as:S.name,k:S.key,cid:S.cid},d));
+    if(k==='gleave'){if(!confirm(`「${r.name}」 단톡방에서 나갈까?`))return;await add({room:{name:r.name,members:(r.members||[]).filter(x=>x!==S.cid)}});PH.screen='sms';return re()}
+    if(k==='ginv'){const L=[...new Map([...bookOf(PH.tid).map(e=>({cid:e.cid,name:e.n||cidName(e.cid),img:cidImg(e.cid),sub:cidSub(e.cid)})),...(gm()?people():[])].map(x=>[x.cid,x])).values()].filter(x=>!(r.members||[]).includes(x.cid));
+     return pickSheet(`「${esc(r.name)}」에 초대`,'내 연락처에서 고른다.',L,'초대',`<label class="small" style="display:block;margin-top:8px"><input type="checkbox" data-opt="card" checked> 들어온 사람에게 내 연락처 카드도 보내기</label>`,async(cids,opt)=>{await add({room:{name:r.name,members:[...new Set([...(r.members||[]),...cids])]}});if(opt.card)await sendCard(r.id);A().toast(`${cids.length}명을 초대했다`);re()})}
+    let code=roomOf2(PH.tid);if(!code)code=(String(r.name).replace(/[^\w가-힣]+/g,'-').replace(/^-|-$/g,'').slice(0,14)||'party')+'-'+Math.random().toString(36).slice(2,5);
+    if(!confirm(`이 단톡방 사람들에게 파티 「${code}」 초대를 보낼까?${roomOf2(PH.tid)?'':'\n(나도 이 코드로 들어간다)'}`))return;
+    if(!roomOf2(PH.tid))await savePhone(PH.tid,{room:code});await add({inv:{code}});
+    if(gm()){const ts=(r.members||[]).filter(x=>trs()[x]&&roomOf2(x)!==code);if(ts.length&&confirm(`GM: 방 안의 트레이너 ${ts.length}명을 지금 바로 파티에 넣을까?`))for(const x of ts)await savePhone(x,{room:code})}
+    return re()}
+   if(k==='roomgo'){const code=$('#ph_room',md).value.trim();await savePhone(PH.tid,{room:code,share:$('#ph_share',md)?$('#ph_share',md).checked:true});A().toast(code?`파티 「${code}」 에 들어갔다`:'파티 코드를 비웠다');return re()}
    if(k==='roomout'){await savePhone(PH.tid,{room:''});return re()}
-   if(k==='ctdel'){const pd=phoneData(PH.tid);await savePhone(PH.tid,{contacts:(pd.contacts||[]).filter(x=>x!==b.dataset.id)});return re()}
+   if(k==='ctdel'){const c=b.dataset.cid;if(!confirm(`「${nm(c)}」을(를) 연락처에서 지울까? (주고받은 문자는 남는다)`))return;await saveBook(bookOf(PH.tid).filter(x=>x.cid!==c));return re()}
    if(k==='ct1'){const n=G().nodes[b.dataset.id];if(!n)return;if(gm()&&window.OM_GRAPH_UI&&window.OM_GRAPH_UI.editNode)return window.OM_GRAPH_UI.editNode(n.id);return}
    if(k==='nodeadd')return addNode();
    if(k==='mynode'){const t0=owner();if(!t0)return;return addNode({name:t0.name,kind:'pc',img:''})}
