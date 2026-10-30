@@ -135,10 +135,15 @@ async function shrinkUpload(blob,maxSide){try{if(!/^image\/(png|jpe?g|webp|bmp)$
  async function ntGet(camp,secret,kind,id){if(secret){const r=await rpc('nt_get',{p_camp:camp,p_secret:secret,p_kind:kind,p_id:id});return (r||[])[0]||null}const r=await sb().from('nt_docs').select('kind,id,data,vis,updated_at').eq('camp',camp).eq('kind',kind).eq('id',id).maybeSingle();if(r.error)throw err(r.error);return r.data||null}
  const ntPut=(camp,secret,kind,id,data,vis)=>rpc('nt_put',{p_camp:camp,p_secret:secret,p_kind:kind,p_id:id,p_data:data,p_vis:vis||null});
  const ntPutMany=(camp,secret,rows)=>rpc('nt_put_many',{p_camp:camp,p_secret:secret,p_rows:rows});
+ /* 10-30 망령 「노트 지도 ↔ 웹툴 지도 연동」: 노트 문서 지우기 · 노트 캠페인 실시간 신호(노트와 같은 채널 nt:<캠페인> — postgres_changes + 노트의 ping) */
+ const ntDel=(camp,secret,kind,id)=>rpc('nt_del',{p_camp:camp,p_secret:secret,p_kind:kind,p_id:id});
+ function ntWatch(camp,cb){const ch=sb().channel('nt:'+camp,{config:{broadcast:{self:false}}});
+  ch.on('postgres_changes',{event:'*',schema:'public',table:'nt_docs',filter:'camp=eq.'+camp},p=>{try{cb(p)}catch(e){}}).on('broadcast',{event:'nt'},p=>{try{cb(p)}catch(e){}}).subscribe();
+  return {stop(){try{sb().removeChannel(ch)}catch(e){}},ping(msg){try{ch.send({type:'broadcast',event:'nt',payload:msg})}catch(e){}}}}
  /* 10-27 망령: 전당 (supabase/patch_2026-10-27_전당.sql) — 방 상태 밖 om_hall 표. 목록은 요약만, 로그는 한 판을 열 때만 */
  const hall={list:(room,before,limit)=>rpc('om_hall_list',{p_room:room,p_before:before||null,p_limit:limit||60}),get:(room,id)=>rpc('om_hall_get',{p_room:room,p_id:id}),
   put:(room,secret,id,head,log)=>rpc('om_hall_put',{p_room:room,p_secret:secret,p_id:id,p_head:head,p_log:log??null}),
   del:(room,secret,id)=>rpc('om_hall_del',{p_room:room,p_secret:secret,p_id:id}),
   cm:(room,secret,id,by,t,del)=>rpc('om_hall_cm',{p_room:room,p_secret:secret,p_id:id,p_by:by||'',p_t:t??null,p_del:del??null}),noFn};
- return {patchesSince,hall,shrinkUpload,ntCamps,ntCampUpdate,ntDocs,ntSync,NTSYNC,ntGet,ntPut,ntPutMany,rtReset,getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty};
+ return {patchesSince,hall,shrinkUpload,ntCamps,ntCampUpdate,ntDocs,ntSync,NTSYNC,ntGet,ntPut,ntPutMany,ntDel,ntWatch,rtReset,getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty};
 })();

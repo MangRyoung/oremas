@@ -4856,3 +4856,5 @@ html[data-vt="mm"] .memon .medet{border-color:rgba(20,16,12,.4)}
 /* 10-30 배경 그룹 끌어 옮기기 (rp_ui quickBg) */
 .qbn.qbdrag{cursor:grab}.qbn.dragging{opacity:.45;cursor:grabbing}.qbn.dropb{box-shadow:inset 0 3px 0 var(--yel2,#ffd84a)}.qbn.dropa{box-shadow:inset 0 -3px 0 var(--yel2,#ffd84a)}
 @media (max-width:760px){.qbn.dropb{box-shadow:inset 3px 0 0 var(--yel2,#ffd84a)}.qbn.dropa{box-shadow:inset -3px 0 0 var(--yel2,#ffd84a)}}
+/* 10-30 지도 관리: 장소 배경 한꺼번에 줄 */
+.lbbulk{gap:6px;margin:6px 0 4px;flex-wrap:wrap}

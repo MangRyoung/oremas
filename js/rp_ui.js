@@ -654,6 +654,12 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
     파티를 옮기면(map.autoBg, 기본 켬) 그 장소 배경으로 바뀐다. 세션 노트 장소의 「웹툴 배경」(spot.bg)은 「지도 가져오기」 때 따라온다 */
  const locBg=l=>l&&l.bg&&l.bg.src?l.bg:null;
  async function useLocBg(l,quiet){const b=locBg(l);if(!b)return false;const cur=R().bg;if(cur&&cur.src===b.src)return false;await A().set(['rp','bg'],{src:b.src,name:b.name||l.name,at:Date.now()});if(!quiet)A().toast(`배경: ${b.name||l.name}`);return true}
+ /* 10-30 망령 「(노트의) 지도 배경 한번에 넣기를 웹툴 지도 기능에도」: 파일 이름 앞 번호(01_정문…) = 장소 번호, 아니면 이름으로 맞춘다 */
+ const lbKey=x=>String(x||'').replace(/\.[a-z0-9]+$/i,'').replace(/^\d+[_\s.-]*/,'').replace(/^미사그[_\s]*/,'').replace(/[\s_·・()（）\-]/g,'').toLowerCase();
+ async function bulkLocBg(files){const cur=mapS();const locs=cur.locs.map(l=>Object.assign({},l));let ok=0;const miss=[];
+  const match=f=>{const mm=/^(\d+)[_\s.-]/.exec(f.name||'');if(mm){const l=locs.find(x=>x.n===+mm[1]);if(l)return l}const k=lbKey(f.name);if(!k)return null;return locs.find(x=>lbKey(x.name)===k)||locs.find(x=>{const n=lbKey(x.name);return n&&(n.includes(k)||k.includes(n))})||null};
+  A().toast(`배경 ${files.length}장 올리는 중…`);for(const f of files){const l=match(f);if(!l){miss.push(f.name);continue}try{l.bg={src:await upImg(f,'locbg'),name:l.name};ok++}catch(e){miss.push(f.name)}}
+  if(ok)await saveMap({locs});A().toast(`장소 배경 ${ok}곳 넣었다${miss.length?` · 못 맞춘 것 ${miss.length}장: ${miss.slice(0,3).join(', ')}${miss.length>3?' …':''}`:''}`);openMapMgr('loc')}
  async function setLocBg(n,bg){const cur=mapS();await saveMap({locs:cur.locs.map(x=>x.n===n?Object.assign({},x,{bg:bg||null}):x)})}
  function pickLocBg(n,back){const M=mapS();const l=M.locs.find(x=>x.n===n);if(!l)return;const cur=locBg(l);
   const G=bgGroups().map(g=>({n:g.n,i:(g.i||[]).filter(i=>i.src)})).filter(g=>g.i.length);const hit=g=>g.i.some(i=>cur&&i.src===cur.src)||g.i.some(i=>l.name&&(l.name.includes(i.l)||i.l.includes(l.name)));G.sort((a,b)=>hit(b)-hit(a));
@@ -697,6 +703,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    :`<div class="mapprev big"><span class="dim">지도 그림이 없다 — 「지도 그림」 탭에서 먼저 올려 줘</span></div>`;
   const locTab=`<div class="mmcols mmloc"><div>${mini}</div>
    <div><div class="sec">장소 <span class="note">${M.locs.filter(l=>M.vis[l.n]!=1).length}/${M.locs.length} 공개</span><span class="sp"></span><button class="btn xs" data-mm="all" data-v="0">모두 공개</button><button class="btn xs ghost" data-mm="all" data-v="1">모두 가리기</button><button class="btn xs ${M.ann?'pri':'ghost'}" data-mm="ann" title="공개·가림·루트를 채팅에 알린다">알림 ${M.ann?'켬':'끔'}</button></div>
+    <div class="row lbbulk"><span class="small dim">장소 배경 ${M.locs.filter(locBg).length}/${M.locs.length}</span><span class="sp"></span><label class="btn xs" title="파일 이름 앞 번호(01_정문 …)나 장소 이름으로 알아서 맞춰 넣는다 (세션 노트 지도와 같은 방식)" style="cursor:pointer">🖼 배경 여러 장 한꺼번에<input type="file" accept="image/*" multiple data-mmbulk style="display:none"></label><button class="btn xs ghost" data-mm="lbgmatch" title="이 방 배경 목록(빠른 배경)에서 장소 이름과 같은 그림을 찾아 비어 있는 장소에 넣는다">배경 목록에서 이름 맞추기</button></div>
     <div class="mmlist mmlocs">${M.locs.map(l=>{const h=M.vis[l.n]==1;return `<div class="mml ${h?'hid':''} ${MM.hl===l.n?'hl':''}" data-row="${l.n}"><span class="no">${l.n}</span><input type="text" class="mmname" data-mmren="${l.n}" value="${esc(l.name)}" title="고치면 바로 저장">${M.party.n===l.n?'<span class="tag me">파티</span>':''}<button class="btn xs ${locBg(l)?'':'ghost'} lbbtn" data-mm="lbg" data-n="${l.n}" title="${locBg(l)?'배경: '+esc(l.bg.name||'')+' — 눌러서 바꾸기':'장소 배경 고르기'}">${locBg(l)?`<i class="lbmini" style="background-image:url('${cssu(l.bg.src)}')"></i>`:'🖼'}</button><button class="btn xs ${h?'pri':'ghost'}" data-mm="t" data-n="${l.n}" title="${h?'지금 가림 — 눌러서 공개':'지금 공개 — 눌러서 가리기'}">${h?'🙈 가림':'👁 공개'}</button><button class="btn xs ghost danger" data-mm="del" data-n="${l.n}">×</button></div>`}).join('')||'<div class="empty small">장소가 없다 — 왼쪽에서 「＋ 장소 찍기」</div>'}</div>
     <div class="sec" style="margin-top:12px">루트 <span class="sp"></span>${M.routes.length?'<button class="btn xs ghost danger" data-mm="wipe">모두 지우기</button>':''}</div>
     <div class="seq">${MM.seq.length?MM.seq.map((n,i)=>`${i?' → ':''}<b>${n}</b> ${esc(locName(n))}`).join(''):`<span class="dim small">${MM.mode==='route'?'지도에서 핀을 차례로 눌러 줘':'「〰 루트 그리기」를 켜고 핀을 차례로 누른다'}</span>`}</div>
@@ -731,6 +738,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   md.classList.add('wide');
   const re=()=>openMapMgr();
   if(MM.tab==='loc'){const mp=$('#mm_map',md);
+   {const bk=md.querySelector('[data-mmbulk]');if(bk)bk.onchange=()=>{const fs=[...bk.files];if(fs.length){A().closeModal();bulkLocBg(fs)}}}
    md.querySelectorAll('[data-mmren]').forEach(inp=>inp.onchange=async()=>{const n=+inp.dataset.mmren;const v=inp.value.trim();if(!v)return;const M2=mapS();await saveMap({locs:M2.locs.map(x=>x.n===n?Object.assign({},x,{name:v}):x)})});
    const hl=n=>{MM.hl=n;md.querySelectorAll('[data-row]').forEach(r=>r.classList.toggle('hl',+r.dataset.row===n));md.querySelectorAll('[data-pin]').forEach(p=>p.classList.toggle('hl',+p.dataset.pin===n));const r=md.querySelector(`[data-row="${n}"]`);if(r)r.scrollIntoView({block:'nearest'})};
    md.querySelectorAll('[data-row]').forEach(r=>r.onclick=e=>{if(e.target.closest('button,input'))return;hl(+r.dataset.row)});
@@ -769,6 +777,9 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(k==='reveal'){await saveMap({reveal:b.checked?1:0});return}
    if(k==='autobg'){await saveMap({autoBg:b.checked?1:0});return}
    if(k==='lbg'){A().closeModal();return pickLocBg(+b.dataset.n,()=>openMapMgr('loc'))}
+   if(k==='lbgmatch'){const cur=mapS();const items=bgGroups().flatMap(g=>(g.i||[]).filter(i=>i&&i.src).map(i=>({src:i.src,name:i.l||i.n||''})));const hits=[];
+    const locs=cur.locs.map(l=>{if(locBg(l))return l;const k=lbKey(l.name);if(!k)return l;const it=items.find(i=>lbKey(i.name)===k)||items.find(i=>{const q=lbKey(i.name);return q&&(q.includes(k)||k.includes(q))});if(!it)return l;hits.push(l.n+'. '+l.name);return Object.assign({},l,{bg:{src:it.src,name:it.name||l.name}})});
+    if(!hits.length)return A().toast('이름이 맞는 배경이 없다 (이미 배경이 있는 장소는 건너뛴다)');if(!confirm(`배경 목록에서 ${hits.length}곳을 찾았다. 넣을까?\n${hits.slice(0,12).join('\n')}${hits.length>12?'\n…':''}`))return;await saveMap({locs});A().toast(`장소 배경 ${hits.length}곳`);return openMapMgr('loc')}
    if(k==='pmove'){await partyMove(+b.dataset.n);return re()}
    if(k==='nadd'){const sel=$('#mm_np',md);const opt=sel.options[sel.selectedIndex];const name=$('#mm_npn',md).value.trim()||sel.value;if(!name)return A().toast('인물을 고르거나 이름을 적어 줘');const img=(opt&&opt.dataset.img)||(pics.find(p=>p.name===name)||{}).img||'';
     await saveMap({npcs:[...M.npcs,{id:'p'+Date.now().toString(36),name,img,n:+$('#mm_nploc',md).value,size:$('#mm_npsz',md).value,vis:$('#mm_npvis',md).checked?1:0}]});return re()}
