@@ -228,6 +228,7 @@ async function openAdmin(keepDraft){
     <div class="pf-note">PL 권한만 주면 그 사람이 방에 들어와 자리를 고른다. 자리를 옮기게 하려면 방의 「자리 관리」에서 비운다.</div>
     <div class="row" style="margin-top:10px"><button class="btn sm" id="admPw">비밀번호 초기화</button>${u.uid===me?'':'<button class="btn sm ghost danger" id="admDel">계정 지우기</button>'}</div></div>`:'<div class="empty">아직 계정이 없다</div>'}</div>`
   :ADM.tab==='defs'?defsHtml(users,rooms,me):`<div class="adm"><table class="admt"><thead><tr><th>방</th><th>계정 전용</th><th></th></tr></thead><tbody>${rooms.map(r=>`<tr><td><b>${esc(r.name||r.id)}</b> <span class="mono small muted">${esc(r.id)}</span></td><td><label class="lgkeep"><input type="checkbox" data-aonly="${esc(r.id)}" ${r.accountOnly?'checked':''}> 로그인해야 들어간다</label></td><td><a class="btn xs" href="#r=${esc(r.id)}">들어가기</a></td></tr>`).join('')}</tbody></table>
+   <div class="row" style="margin-top:10px"><button class="btn sm" id="admSlim" title="방 · 제작기에 걸린 큰 PNG · JPG 를 webp 로 줄여 다시 올리고 주소를 바꿔 끼운다">🗜 그림 줄이기 (PNG → webp)</button></div>
    <div class="pf-note">「계정 전용」을 켜면 로그인해야 들어오고, 「계정 · 권한」에서 PL 을 준 계정만 자리에 앉는다. 예전 방 링크 · GM 링크 · 이 기기에 기억된 자리로는 권한이 안 생긴다 (관리자는 언제나 GM). 끈 방은 로그인한 누구나 앉을 수 있다.</div></div>`}`);
  m.classList.add('setmodal');if(ADM.tab==='defs'){m.classList.add('dfmodal');bindDefs(m,t,users,rooms)}
  m.querySelectorAll('[data-atab]').forEach(b=>b.onclick=()=>{ADM.tab=b.dataset.atab;openAdmin()});
@@ -237,6 +238,7 @@ async function openAdmin(keepDraft){
  const aa=$('#admAdm',m);if(aa)aa.onchange=()=>run(()=>DBS().acct.adminUser(t,u.uid,{admin:aa.checked}),aa.checked?`${u.name} 에게 관리자를 줬다`:`${u.name} 의 관리자를 뺐다`);
  const ap=$('#admPw',m);if(ap)ap.onclick=()=>{const pw=prompt(`${u.name} (@${u.uid}) 의 새 비밀번호 (4자 이상) — 그 계정의 모든 기기 로그인이 끊긴다`);if(pw==null)return;if(pw.length<4)return toast('비밀번호는 4자 이상');run(()=>DBS().acct.adminUser(t,u.uid,{pw}),'비밀번호를 바꿨다 — 본인에게 알려 줘')};
  const ad=$('#admDel',m);if(ad)ad.onclick=()=>{if(!confirm(`${u.name} (@${u.uid}) 계정을 지울까? 방 권한도 같이 사라진다 (방에 남은 트레이너 · 로그는 그대로).`))return;ADM.sel='';run(()=>DBS().acct.adminUser(t,u.uid,{del:true}),'계정을 지웠다')};
+ {const sl=$('#admSlim',m);if(sl)sl.onclick=()=>{if(window.OM_SLIM)OM_SLIM.open(rooms);else toast('그림 줄이기 파일(js/slim_ui.js)이 없다')}}
  m.querySelectorAll('[data-aonly]').forEach(c=>c.onchange=()=>run(async()=>{const row=await DBS().getRoom(c.dataset.aonly);const s=Object.assign({},(row&&row.settings)||{},{accountOnly:c.checked});await DBS().roomUpdate(c.dataset.aonly,'u:'+t,null,s)},c.checked?'계정 전용으로 바꿨다':'예전 링크도 다시 된다'))}
 
 /* ---------- 로비 ---------- */

@@ -95,6 +95,9 @@ window.OM_STORE=(()=>{
   for(;;){let q=sb().from(cfg().makerTable||'docs').select('id,data,updated_at').eq('kind',kind);if(since)q=q.gt('updated_at',since);const r=await q.order('updated_at').range(from,from+999);
    if(r.error)throw err(r.error);const rows=r.data||[];out.push(...rows);if(!rows.length)break;from+=rows.length}
   return out}
+ /* 10-30 망령 「그림 줄이기」: 제작기 문서 한 장 읽기 · 쓰기 (관리자 패널의 그림 주소 바꿔 끼우기에서만) */
+ async function makerOne(kind,id){const r=await sb().from(cfg().makerTable||'docs').select('id,data').eq('kind',kind).eq('id',id).maybeSingle();if(r.error)throw err(r.error);return r.data||null}
+ async function makerPut(kind,id,data){const r=await sb().from(cfg().makerTable||'docs').upsert({kind,id,data},{onConflict:'kind,id'});if(r.error)throw err(r.error);return true}
  /* 트레이너 하나와 그 포켓몬만 (pids + data.tid) — 고를 때 전체를 다시 받지 않게 (10-23 이그레스) */
  async function makerParty(tid){const T=cfg().makerTable||'docs';const t=await sb().from(T).select('id,data').eq('kind','trainers').eq('id',tid);if(t.error)throw err(t.error);const tr=(t.data||[])[0];if(!tr)return {trainer:null,pokemon:[]};
   const d=(tr.data&&tr.data.data)||tr.data||{};const pids=(Array.isArray(d.pids)?d.pids:[]).filter(x=>typeof x==='string'&&x);
@@ -145,5 +148,5 @@ async function shrinkUpload(blob,maxSide){try{if(!/^image\/(png|jpe?g|webp|bmp)$
   put:(room,secret,id,head,log)=>rpc('om_hall_put',{p_room:room,p_secret:secret,p_id:id,p_head:head,p_log:log??null}),
   del:(room,secret,id)=>rpc('om_hall_del',{p_room:room,p_secret:secret,p_id:id}),
   cm:(room,secret,id,by,t,del)=>rpc('om_hall_cm',{p_room:room,p_secret:secret,p_id:id,p_by:by||'',p_t:t??null,p_del:del??null}),noFn};
- return {patchesSince,hall,shrinkUpload,ntCamps,ntCampUpdate,ntDocs,ntSync,NTSYNC,ntGet,ntPut,ntPutMany,ntDel,ntWatch,rtReset,getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty};
+ return {patchesSince,hall,shrinkUpload,ntCamps,ntCampUpdate,ntDocs,ntSync,NTSYNC,ntGet,ntPut,ntPutMany,ntDel,ntWatch,rtReset,getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty,makerOne,makerPut};
 })();
