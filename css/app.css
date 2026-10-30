@@ -4865,3 +4865,12 @@ html[data-vt="mm"] .memon .medet{border-color:rgba(20,16,12,.4)}
    평소엔 스크롤 칸이 아니게 두고, 줄여도 넘칠 때만(rp_ui fitDlg 가 .ovf 를 붙임) 스크롤을 켠다 */
 .dlg.skin .dtext{overflow:hidden}
 .dlg.skin .dtext.ovf{overflow-y:auto}
+/* 10-30 망령 「이름 칸 테두리도 묘하게 자글거린다」: 이름표(흰 테 + 검은 칸)가 clip-path 두 겹이라 기울이면 테두리 경계가 계단이 졌다.
+   그림 말풍선의 이름표만 같은 모양의 SVG 배경으로 그린다 (도형은 벡터라 기울여도 매끈) */
+.dlg.skin .dname{clip-path:none;padding:2px 22px 2px 16px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 40' preserveAspectRatio='none'%3E%3Cpath d='M0 0H200L188 40H0Z' fill='%23fff'/%3E%3Cpath d='M2 2H196.4L186.6 38H2Z' fill='%23000'/%3E%3C/svg%3E") 0 0/100% 100% no-repeat}
+.dlg.skin .dname span{background:none;clip-path:none;padding:0}
+/* 10-30 망령 「줄이 조금만 길어져도 대사 글자가 자글거린다 — 원래는 안 이랬다」: 타자 중 깜빡이는 커서(::after)가 opacity 애니메이션이라
+   브라우저가 그 커서를 따로 합성(GPU 층)하고, 그러면 커서를 품은 기울인 글자 칸 전체가 「그림으로 찍어 돌리는」 방식으로 바뀌어 글자 · 테두리가 계단이 졌다.
+   대사가 길수록 타자 시간이 길어 눈에 띈 것. 커서 깜빡임을 합성하지 않는 visibility 로 바꾼다 */
+.dlg.twing .tw-on::after{animation:twcaret .7s steps(1) infinite}
+@keyframes twcaret{50%{visibility:hidden}}
