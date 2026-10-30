@@ -4874,3 +4874,6 @@ html[data-vt="mm"] .memon .medet{border-color:rgba(20,16,12,.4)}
    대사가 길수록 타자 시간이 길어 눈에 띈 것. 커서 깜빡임을 합성하지 않는 visibility 로 바꾼다 */
 .dlg.twing .tw-on::after{animation:twcaret .7s steps(1) infinite}
 @keyframes twcaret{50%{visibility:hidden}}
+/* 10-30 망령 「굴림 결과는 시간 지나면 내려가도록」: 무대 바의 마지막 굴림은 20초 뒤 사라진다 (남은 시간 = --left, rp_ui meBarHtml) */
+.mebar .melast{animation:melastOut .6s ease-in var(--left,20s) forwards}
+@keyframes melastOut{to{opacity:0;visibility:hidden}}

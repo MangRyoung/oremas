@@ -505,3 +505,7 @@ html[data-vt="mm"] .rmt{background:rgba(15,13,11,.94)!important;border:1px solid
 html[data-vt="mm"] .rmt:hover{border-color:#cfae6e!important;box-shadow:0 0 14px rgba(163,24,42,.4)!important}
 html[data-vt="mm"] input[type=checkbox]{accent-color:#a3182a}
 html[data-vt="mm"] a{color:#cfae6e}
+/* 10-31 망령 「망각 테마에서만 대사 글자가 자글거린다」: 이 테마만 body 배경이 background-attachment:fixed 였다.
+   fixed 배경이 있으면 브라우저가 화면을 층으로 나눠 합성하면서, 기울인(rotate) 말풍선 글자 칸을 「그림으로 찍어 돌리는」 쪽으로 보내 계단이 졌다.
+   웹툴 화면은 거의 스크롤되지 않아 fixed 가 하는 일이 없으니 scroll 로 돌린다 */
+html[data-vt="mm"] body{background-attachment:scroll!important}
