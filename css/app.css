@@ -4858,3 +4858,6 @@ html[data-vt="mm"] .memon .medet{border-color:rgba(20,16,12,.4)}
 @media (max-width:760px){.qbn.dropb{box-shadow:inset 3px 0 0 var(--yel2,#ffd84a)}.qbn.dropa{box-shadow:inset -3px 0 0 var(--yel2,#ffd84a)}}
 /* 10-30 지도 관리: 장소 배경 한꺼번에 줄 */
 .lbbulk{gap:6px;margin:6px 0 4px;flex-wrap:wrap}
+/* 10-30 망령 「웹툴 타이핑 중 창이 이상한 곳에서 뜬다」: 버튼 줄이 왼쪽 날짜 태그 옆까지 늘어난 뒤(위 min-width:761px 규칙)로
+   「버튼 줄 왼쪽 바깥」 자리가 무대 왼쪽 끝 바깥이 되어 잘려 보였다 → 버튼 줄 바로 아래 오른쪽 끝에 띄운다 (떠 있으니 화면은 안 밀린다) */
+.rpbtns .typingslot{right:0;left:auto;top:calc(100% + 6px);transform:none;max-width:min(46vw,520px)}
