@@ -48,6 +48,19 @@ window.OM_RP_UI=(()=>{
  function mapImg(){const m=R().map||{};if(m.img&&m.img.src)return m.img;if(m.preset==='mujin')return MAP_IMG;if(m.preset==='none')return null;const legacy=!!(m.vis||m.party||m.routes||m.npcs||(m.locs&&m.locs.length));return legacy?MAP_IMG:null}
  function mapIsMujin(){const m=R().map||{};return !(m.img&&m.img.src)&&m.preset!=='none'&&mapImg()===MAP_IMG}
  function mapS(){const m=R().map||{};const locs=m.locs&&m.locs.length?m.locs:(mapIsMujin()?DEFAULT_LOCS:[]);return {locs,vis:m.vis||{},party:m.party||{n:0,vis:1},routes:m.routes||[],npcs:m.npcs||[],ann:m.ann==null?1:m.ann,reveal:m.reveal==null?1:m.reveal,img:mapImg()}}
+ /* 10-30 망령 「웹툴에도 인물 추가 기능 세션 노트랑 비슷하게 넣어서 보낼 수 있어야지」: 지도 인물 상태(감정 이모지 + 한 줄) — 노트 지도의 st={e,m,at} 와 같은 모양.
+    GM 은 rp.map.npcs[].st 를 쓰고, 플레이어는 자기 트레이너와 같은 이름의 인물만 pub.<좌석>.mapSt 로 쓴다. 더 최근(at) 쪽이 보인다. 노트 지도와는 지도 연동(notes_link)이 주고받는다 */
+ const MEMO=[['surprise','❗','놀람'],['question','❓','의문'],['angry','💢','화남'],['happy','🎵','기쁨'],['heart','💗','하트'],['sweat','💦','당황'],['sad','💧','슬픔'],['shy','☺️','부끄'],['think','💭','생각'],['idea','💡','번뜩'],['sigh','😮‍💨','한숨'],['sleepy','💤','졸림'],['sparkle','✨','반짝'],['fear','😱','오싹'],['nod','👍','끄덕'],['no','🙅','도리도리']];
+ const emoOf=k=>(MEMO.find(x=>x[0]===k)||[])[1]||'';
+ const trName=id=>{const ST=A().ST;const t=((ST.state.battle||{}).trainers||{})[id]||((ST.state.roster||{}).trainers||{})[id];return t&&t.name||''};
+ const seatOfNpc=n=>{const pub=A().ST.state.pub||{};return n&&n.name?Object.keys(pub).find(id=>pub[id]&&pub[id].mapSt&&trName(id)===n.name)||'':''};
+ function stRaw(n){let s=n&&n.st||null;const sid=seatOfNpc(n);const p=sid?A().ST.state.pub[sid].mapSt:null;if(p&&(+p.at||0)>(+(s&&s.at)||0))s=p;return s}
+ const effSt=n=>{const s=stRaw(n);return s&&(s.e||s.m)?s:null};
+ window.OM_MAP_ST=stRaw;
+ const myNpc=n=>A().ST.role==='seat'&&!!(n&&n.name)&&trName(A().ST.seat)===n.name;
+ const npKey=(n,i)=>n.id||('#'+i);
+ const npFind=key=>{const L=mapS().npcs;return L.find((x,i)=>npKey(x,i)===key)};
+ const stBub=st=>st?`<b class="mnst">${st.e?`<span>${emoOf(st.e)}</span>`:''}${st.m?esc(st.m):''}</b>`:'';
  function notices(){return (R().notices&&R().notices.length)?R().notices:DEFAULT_NOTICES}
  function bgGroups(){return R().bgList||DB().bg||[]}
  function bgOf(k){for(const g of bgGroups())for(const i of g.i)if(i.k===k)return Object.assign({g:g.n},i);return null}
@@ -629,10 +642,10 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    return `<div class="loc ${h?'hid':''} ${M.party.n===l.n&&(M.party.vis||isGm)?'party':''} ${dgn?'dgl':''} ${dgNow?'dgon':''}" data-loc="${l.n}" style="${px(l.x,l.y)}" title="${esc(l.name)}${dgn?' — 던전: '+esc(dgn):''}"><span class="ln">${l.n}</span><span class="lt">${esc(l.name)}${h?' (가림)':''}</span>${dgn?`<span class="ldg" title="던전: ${esc(dgn)}">⚔</span>`:''}</div>`}).join('');
   const pin=(()=>{const l=M.locs.find(x=>x.n===M.party.n);if(!l||(!M.party.vis&&!isGm))return '';return `<div class="ppin ${M.party.vis?'':'hid'}" style="${px(l.x,l.y)}" title="파티"><span>PC</span></div>`})();
   const routes=`<svg class="routes" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">${M.routes.filter(rt=>rt.vis||isGm).map(rt=>{const pts=rt.seq.map(n=>M.locs.find(x=>x.n===n)).filter(Boolean);if(pts.length<2)return '';const d=pts.map((p,i)=>(i?'L':'M')+p.x+' '+p.y).join(' ');const c=RCOL[rt.color]||rt.color||'#d63f4f';return `<path d="${d}" stroke="${c}" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round" opacity="${rt.vis?.85:.35}" stroke-dasharray="${rt.vis?'':'18 14'}"/>${pts.map(p=>`<circle cx="${p.x}" cy="${p.y}" r="11" fill="${c}" stroke="#fff" stroke-width="3"/>`).join('')}<text x="${(pts[0].x+pts[1].x)/2+14}" y="${(pts[0].y+pts[1].y)/2-10}" font-size="28" fill="${c}" stroke="#000" stroke-width="4" paint-order="stroke" font-weight="bold">${esc(rt.name||rt.seq.join('→'))}</text>`}).join('')}</svg>`;
-  const npcs=M.npcs.filter(n=>n.vis||isGm).map(n=>{const l=M.locs.find(x=>x.n===n.n);if(!l)return '';const sz={s:34,m:48,l:64}[n.size||'s'];const idx=M.npcs.filter(x=>x.n===n.n).indexOf(n);return `<div class="mnpc ${n.vis?'':'hid'}" style="${px(l.x+30+idx*(sz*0.8),l.y-10)};width:${sz}px;height:${sz}px;${n.img?`background-image:url('${cssu(n.img)}')`:''}" title="${esc(n.name)}${n.vis?'':' (숨김)'}"><i>${esc(n.name)}</i></div>`}).join('');
+  const npcs=M.npcs.map((n,i)=>[n,i]).filter(([n])=>n.vis||isGm).map(([n,i],_,all)=>{const l=M.locs.find(x=>x.n===n.n);if(!l)return '';const sz={s:34,m:48,l:64}[n.size||'s'];const idx=all.filter(([x])=>x.n===n.n).findIndex(([x])=>x===n);const can=isGm||myNpc(n);return `<div class="mnpc ${n.vis?'':'hid'} ${can?'can':''} ${n.img?'':'noimg'}" data-np="${esc(npKey(n,i))}" style="${px(l.x+30+idx*(sz*0.8),l.y-10)};width:${sz}px;height:${sz}px;${n.img?`background-image:url('${cssu(n.img)}')`:''}" title="${esc(n.name)}${n.vis?'':' (숨김)'}${isGm?' — 누르면 메뉴 · 끌어서 다른 핀에':can?' — 눌러서 상태 말풍선':''}">${n.img?'':`<u>${esc([...(n.name||'?')][0]||'?')}</u>`}${stBub(effSt(n))}<i>${esc(n.name)}</i></div>`}).join('');
   const shown=M.locs.filter(l=>!hid(l.n)).length;
   return `<div class="mapov"><div class="mapwrap ${isGm&&MM.pin?'pinmode':''}" data-mapw><img src="${esc(M.img.src)}" alt="" draggable="false">${routes}${locHtml}${npcs}${pin}</div>
-   <div class="maplist">${isGm?`<button class="btn xs ${MM.pin?'pri':''}" data-pinmode title="켜면 지도를 눌러 그 자리에 핀을 꽂는다">${MM.pin?'핀 찍기 중 — 지도를 눌러':'📍 핀 찍기'}</button>`:''}<span class="chip">${shown}/${M.locs.length} 공개</span>${M.party.n?`<span class="chip on">파티: ${M.party.n}. ${esc((M.locs.find(x=>x.n===M.party.n)||{}).name||'')}${M.party.vis?'':' (핀 숨김)'}</span>`:''}${M.routes.filter(r=>r.vis).map(r=>`<span class="chip" style="border-color:${RCOL[r.color]||'#888'}">${esc(r.name||r.seq.join('→'))}</span>`).join('')}${isGm?'<span class="sp"></span><button class="btn sm pri" data-mapmgr>지도 관리</button><span class="dim small">핀 클릭 = 메뉴 · 끌면 이동</span>':''}</div></div>`}
+   <div class="maplist">${isGm?`<button class="btn xs ${MM.pin?'pri':''}" data-pinmode title="켜면 지도를 눌러 그 자리에 핀을 꽂는다">${MM.pin?'핀 찍기 중 — 지도를 눌러':'📍 핀 찍기'}</button>`:''}<span class="chip">${shown}/${M.locs.length} 공개</span>${M.party.n?`<span class="chip on">파티: ${M.party.n}. ${esc((M.locs.find(x=>x.n===M.party.n)||{}).name||'')}${M.party.vis?'':' (핀 숨김)'}</span>`:''}${M.routes.filter(r=>r.vis).map(r=>`<span class="chip" style="border-color:${RCOL[r.color]||'#888'}">${esc(r.name||r.seq.join('→'))}</span>`).join('')}${isGm?'<span class="sp"></span><button class="btn sm" data-mppl title="관계도 · 트레이너 · 세션 노트 인물을 핀에 놓는다">👤 인물 놓기</button><button class="btn sm pri" data-mapmgr>지도 관리</button><span class="dim small">핀 · 얼굴 클릭 = 메뉴 · 끌면 이동</span>':''}</div></div>`}
  function bindMap(el){const isGm=gm();const wrap=el.querySelector('[data-mapw]');const M=mapS();const W=(M.img||{}).w||1000,H=(M.img||{}).h||700;
   const toXY=e=>{const r=wrap.getBoundingClientRect();return {x:Math.round(Math.max(0,Math.min(1,(e.clientX-r.left)/r.width))*W),y:Math.round(Math.max(0,Math.min(1,(e.clientY-r.top)/r.height))*H)}};
   el.querySelectorAll('[data-loc]').forEach(b=>{const n=+b.dataset.loc;
@@ -646,7 +659,64 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    b.onpointercancel=()=>{st=null;b.classList.remove('drag');A().renderScene()}});
   if(wrap&&isGm&&MM.pin){wrap.onclick=async e=>{if(e.target.closest('[data-loc],.mnpc,.ppin'))return;const p=toXY(e);const nm=prompt('새 장소 이름');if(nm==null||!nm.trim())return;const cur=mapS();const n=Math.max(0,...cur.locs.map(x=>x.n))+1;await saveMap({locs:[...cur.locs,{n,name:nm.trim(),x:p.x,y:p.y}]});if(cur.ann)A().sysLog(`지도: ${n}. ${nm.trim()} 추가`)}}
   const pm=el.querySelector('[data-pinmode]');if(pm)pm.onclick=()=>{MM.pin=!MM.pin;A().renderScene()};
-  el.querySelectorAll('[data-mapmgr]').forEach(mg=>mg.onclick=()=>openMapMgr(mg.dataset.t||'loc'))}
+  el.querySelectorAll('[data-mapmgr]').forEach(mg=>mg.onclick=()=>openMapMgr(mg.dataset.t||'loc'));
+  {const pp=el.querySelector('[data-mppl]');if(pp)pp.onclick=()=>peoplePick(0)}
+  /* 인물 얼굴: GM 은 누르면 메뉴, 끌어서 다른 핀 근처에 놓으면 그 장소로. 플레이어는 자기 캐릭터 얼굴을 눌러 상태 말풍선 */
+  el.querySelectorAll('[data-np]').forEach(f=>{const key=f.dataset.np;
+   if(!isGm){f.onclick=e=>{e.stopPropagation();const n=npFind(key);if(!n)return;if(myNpc(n))return npcMenu(key);const st=effSt(n);A().toast(n.name+(st?' — '+(st.e?emoOf(st.e)+' ':'')+(st.m||''):''))};return}
+   let s0=null,mv=false,tg=null;const near=p=>{const r=wrap.getBoundingClientRect();const lim=W*56/Math.max(1,r.width);let best=null,bd=1e9;for(const l of mapS().locs){const d=Math.hypot(l.x-p.x,l.y-p.y);if(d<bd){bd=d;best=l}}return best&&bd<=lim?best:null};
+   const hl=l=>{el.querySelectorAll('.loc.droptgt').forEach(x=>x.classList.remove('droptgt'));if(l){const d=el.querySelector(`[data-loc="${l.n}"]`);if(d)d.classList.add('droptgt')}};
+   f.onpointerdown=e=>{if(e.button!==0)return;s0={x:e.clientX,y:e.clientY};mv=false;tg=null;try{f.setPointerCapture(e.pointerId)}catch(er){}e.preventDefault();e.stopPropagation()};
+   f.onpointermove=e=>{if(!s0)return;if(!mv&&Math.hypot(e.clientX-s0.x,e.clientY-s0.y)<5)return;mv=true;const p=toXY(e);f.style.left=(p.x/W*100)+'%';f.style.top=(p.y/H*100)+'%';f.classList.add('drag');tg=near(p);hl(tg)};
+   f.onpointerup=async e=>{if(!s0)return;const was=mv;s0=null;f.classList.remove('drag');hl(null);e.stopPropagation();if(!was)return npcMenu(key);const n=npFind(key);
+    if(!n||!tg){A().toast('핀 가까이에 놓아 줘');return A().renderScene()}if(tg.n===n.n)return A().renderScene();await npcPatch(key,{n:tg.n});A().toast(`${n.name} → ${tg.n}. ${tg.name}`)};
+   f.onpointercancel=()=>{s0=null;hl(null);A().renderScene()};f.onclick=e=>e.stopPropagation()})}
+ /* 인물 하나 고치기 (patch=null 이면 빼기). 예전 인물에 id 가 없으면 이참에 붙인다 */
+ async function npcPatch(key,patch){const src=mapS().npcs;const i=src.findIndex((x,j)=>npKey(x,j)===key);if(i<0)return;const L=src.map((x,j)=>x.id?x:Object.assign({},x,{id:'p'+j+Date.now().toString(36)}));if(patch===null)L.splice(i,1);else L[i]=Object.assign({},L[i],patch);await saveMap({npcs:L})}
+ const NPM={e:''};
+ function npcMenu(key){const M=mapS();const n=npFind(key);if(!n)return;const isGm=gm();const st=effSt(n)||{};NPM.e=st.e||'';const nt=String(n.id||'').startsWith('nt:');const ln=(M.locs.find(l=>l.n===n.n)||{}).name||'';
+  const md=A().openModal(`<div class="mhead"><i class="tpic" style="${n.img?`background-image:url('${cssu(n.img)}')`:''}"></i><h2>${esc(n.name)}</h2>${nt?'<span class="chip" title="세션 노트 인물 — 옮기거나 상태를 바꾸면 노트 지도에도 간다 (지도 연동이 켜져 있을 때)">📓 노트 인물</span>':''}<span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+   <div class="sec">상태 말풍선 <span class="note">지도 얼굴 위에 뜬다${nt?' · 노트 지도와 같이':''}</span></div>
+   <div class="npemo">${MEMO.map(([k,e,t])=>`<button class="btn xs ${NPM.e===k?'pri':'ghost'}" data-npe="${k}" title="${t}">${e}</button>`).join('')}</div>
+   <div class="row"><input type="text" id="npstm" maxlength="40" placeholder="한 줄 상태 (예: 도서관에서 리포트 마감 중)" value="${esc(st.m||'')}" style="flex:1"><button class="btn sm pri" data-npa="st">올리기</button><button class="btn sm ghost" data-npa="stx">내리기</button></div>
+   ${isGm?`<div class="sec" style="margin-top:12px">자리 <span class="note">지금 ${n.n}. ${esc(ln)} · 지도에서 얼굴을 끌어 다른 핀에 놓아도 된다</span></div>
+   <div class="lgrid">${M.locs.map(l=>`<button class="lb ${l.n===n.n?'cur':''} ${M.vis[l.n]==1?'hid':''}" data-npa="mv" data-n="${l.n}"><span class="no">${l.n}</span>${esc(l.name)}</button>`).join('')}</div>
+   <div class="row" style="margin-top:10px"><select id="npsz"><option value="s" ${(n.size||'s')==='s'?'selected':''}>작게</option><option value="m" ${n.size==='m'?'selected':''}>보통</option><option value="l" ${n.size==='l'?'selected':''}>크게</option></select><button class="btn sm ${n.vis?'':'pri'}" data-npa="vis">${n.vis?'🙈 숨기기':'👁 공개'}</button><span class="sp"></span><button class="btn sm ghost danger" data-npa="del">지도에서 빼기</button></div>`:''}`);
+  md.querySelectorAll('[data-npe]').forEach(b=>b.onclick=()=>{NPM.e=NPM.e===b.dataset.npe?'':b.dataset.npe;md.querySelectorAll('[data-npe]').forEach(x=>{x.classList.toggle('pri',x.dataset.npe===NPM.e);x.classList.toggle('ghost',x.dataset.npe!==NPM.e)})});
+  const inp=$('#npstm',md);inp.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing){e.preventDefault();md.querySelector('[data-npa="st"]').click()}};
+  const putSt=async(e,m)=>{const v={e,m,at:Date.now()};if(isGm)await npcPatch(key,{st:v});else await A().set(['pub',A().ST.seat,'mapSt'],v)};
+  const sz=$('#npsz',md);if(sz)sz.onchange=()=>npcPatch(key,{size:sz.value});
+  md.querySelectorAll('[data-npa]').forEach(b=>b.onclick=async()=>{const k=b.dataset.npa;
+   if(k==='st'){const m=inp.value.trim().slice(0,40);A().closeModal();await putSt(m||NPM.e?NPM.e:'',m);return A().toast(m||NPM.e?'말풍선을 올렸다':'말풍선을 내렸다')}
+   if(k==='stx'){A().closeModal();await putSt('','');return A().toast('말풍선을 내렸다')}
+   if(!isGm)return;
+   if(k==='mv'){const to=+b.dataset.n;A().closeModal();await npcPatch(key,{n:to});return A().toast(`${n.name} → ${to}. ${(M.locs.find(l=>l.n===to)||{}).name||''}`)}
+   if(k==='vis'){A().closeModal();return npcPatch(key,{vis:n.vis?0:1})}
+   if(k==='del'){if(!confirm(`「${n.name}」을(를) 지도에서 뺄까?${nt?'\n(지도 연동이 켜져 있으면 노트 지도에서도 이 장소에서 빠진다)':''}`))return;A().closeModal();return npcPatch(key,null)}})}
+ /* 인물 고르기: 세션 노트 인물(이어진 캠페인) · 관계도 · 트레이너 · 포켓몬 → 고른 장소 핀에 놓는다 (이미 놓인 인물은 옮긴다) */
+ const MPK={q:'',n:0,sz:'s',vis:1};
+ async function peoplePick(n0){const M0=mapS();if(!M0.locs.length)return A().toast('먼저 장소 핀을 찍어 줘');const ST=A().ST;
+  MPK.n=n0||MPK.n||M0.party.n||M0.locs[0].n;if(!M0.locs.some(l=>l.n===MPK.n))MPK.n=M0.locs[0].n;
+  let nt=[];try{if(window.OM_NOTES&&OM_NOTES.people)nt=await OM_NOTES.people()}catch(e){}
+  const local=[...Object.values((ST.state.graph||{}).nodes||{}).map(n=>({name:n.name,img:A().portraitOf(n.name,n.img),tag:'관계도'})),...Object.values((ST.state.roster||{}).trainers||{}).map(t=>({name:t.name,img:t.image||'',tag:'트레이너'})),...Object.values((ST.state.roster||{}).mons||{}).map(m=>({name:m.name,img:m.image||'',tag:'포켓몬'}))].filter(p=>p.name);
+  const all=[...nt.map(p=>({id:p.id,name:p.name,img:p.img||A().portraitOf(p.name,''),tag:'📓 노트 '+({pc:'PC',npc:'NPC',ents:'인물'}[p.kind]||''),nvis:p.vis})),...local.filter(p=>!nt.some(q=>q.name===p.name))].filter((p,i,a)=>a.findIndex(q=>(q.id||q.name)===(p.id||p.name))===i);
+  const md=A().openModal(`<div class="mhead"><h2>👤 인물 놓기</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+   <div class="row"><select id="ppk_loc" style="flex:1">${M0.locs.map(l=>`<option value="${l.n}" ${l.n===MPK.n?'selected':''}>${l.n}. ${esc(l.name)}${M0.vis[l.n]==1?' (가림)':''}</option>`).join('')}</select><select id="ppk_sz"><option value="s">작게</option><option value="m">보통</option><option value="l">크게</option></select><label class="small"><input type="checkbox" id="ppk_vis" ${MPK.vis?'checked':''}> 바로 공개</label></div>
+   <div class="row"><input type="text" id="ppk_q" placeholder="이름 찾기" value="${esc(MPK.q)}" style="flex:1"><button class="btn sm ghost" id="ppk_new" title="목록에 없는 인물을 이름으로">＋ 이름 직접</button></div>
+   <div class="small dim">${nt.length?`세션 노트 인물 ${nt.length}명 — 지도 연동이 켜져 있으면 노트 지도에도 같은 장소로 간다`:'세션 노트 인물은 노트와 이어진 방(📓)에서 보인다'} · 누르면 고른 장소에 놓이고, 이미 있는 인물은 그리로 옮긴다</div>
+   <div class="pplist" id="ppk_list"></div>`);
+  $('#ppk_sz',md).value=MPK.sz;
+  const draw=()=>{const M=mapS();const q=MPK.q.trim().toLowerCase();const at=p=>M.npcs.find(x=>p.id?x.id===p.id:(!String(x.id||'').startsWith('nt:')&&x.name===p.name));
+   $('#ppk_list',md).innerHTML=all.filter(p=>!q||p.name.toLowerCase().includes(q)).map((p,i)=>{const h=at(p);const l=h&&M.locs.find(x=>x.n===h.n);return `<button type="button" class="ppc ${h?'on':''}" data-ppi="${all.indexOf(p)}"><i style="${p.img?`background-image:url('${cssu(p.img)}')`:''}">${p.img?'':esc([...p.name][0]||'?')}</i><span><b>${esc(p.name)}</b><small>${esc(p.tag||'')}${h?` · 📍 ${l?l.n+'. '+esc(l.name):'?'}`:''}</small></span></button>`}).join('')||'<div class="empty small">맞는 인물이 없다</div>';
+   md.querySelectorAll('[data-ppi]').forEach(b=>b.onclick=()=>place(all[+b.dataset.ppi]))};
+  const place=async p=>{const M=mapS();const n=+$('#ppk_loc',md).value;MPK.n=n;MPK.sz=$('#ppk_sz',md).value;MPK.vis=$('#ppk_vis',md).checked?1:0;const ln=(M.locs.find(l=>l.n===n)||{}).name||'';
+   const i=M.npcs.findIndex(x=>p.id?x.id===p.id:(!String(x.id||'').startsWith('nt:')&&x.name===p.name));
+   if(i>=0){if(M.npcs[i].n===n)return A().toast(`${p.name} — 이미 ${n}. ${ln}`);await npcPatch(npKey(M.npcs[i],i),{n})}
+   else await saveMap({npcs:[...M.npcs,{id:p.id||'p'+Date.now().toString(36),name:p.name,img:p.img||'',n,size:MPK.sz,vis:MPK.vis}]});
+   A().toast(`${p.name} → ${n}. ${ln}`);draw()};
+  $('#ppk_q',md).oninput=e=>{MPK.q=e.target.value;draw()};
+  $('#ppk_new',md).onclick=()=>{const nm=prompt('인물 이름');if(!nm||!nm.trim())return;place({name:nm.trim(),img:A().portraitOf(nm.trim(),'')})};
+  draw()}
  async function saveMap(patch){const m=Object.assign({},R().map||{},patch);await A().set(['rp','map'],m)}
  async function toggleLoc(n){const M=mapS();const vis=Object.assign({},M.vis);const wasHidden=vis[n]==1;if(wasHidden)delete vis[n];else vis[n]=1;await saveMap({vis});const l=M.locs.find(x=>x.n===n);if(M.ann&&l)A().sysLog(`지도: ${l.name} ${wasHidden?'공개':'가림'}`)}
  async function partyMove(n){const M=mapS();const vis=Object.assign({},M.vis);let rev=false;if(M.reveal&&vis[n]==1){delete vis[n];rev=true}await saveMap({party:{n,vis:M.party.vis==null?1:M.party.vis},vis});const l=M.locs.find(x=>x.n===n);if(l&&(R().map||{}).autoBg!==0)await useLocBg(l,true);if(M.ann&&l)A().sysLog(`파티가 ${l.n}. ${l.name}(으)로 이동했습니다.${rev?' (장소 공개)':''}`)}
@@ -676,7 +746,8 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   $('#lb_file',md).onchange=async e=>{const f=e.target.files[0];if(!f)return;A().toast('올리는 중…');try{done({src:await upImg(f,'locbg'),name:l.name})}catch(er){A().toast('올리기 실패: '+er.message)}}}
  function locMenu(n){const M=mapS();const l=M.locs.find(x=>x.n===n);if(!l)return;const h=M.vis[n]==1;
   const md=A().openModal(`<div class="mhead"><h2>${n}. ${esc(l.name)}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-   <div class="row"><button class="btn ${h?'pri':''}" id="lopen">${h?'공개하기':'가리기'}</button><button class="btn" id="lparty">파티를 여기로</button><button class="btn ghost" id="lfocus">자막으로 알리기</button><button class="btn ghost" id="lmgr">지도 관리</button></div>
+   <div class="row"><button class="btn ${h?'pri':''}" id="lopen">${h?'공개하기':'가리기'}</button><button class="btn" id="lparty">파티를 여기로</button><button class="btn ghost" id="lfocus">자막으로 알리기</button><button class="btn" id="lppl">👤 인물 놓기</button><button class="btn ghost" id="lmgr">지도 관리</button></div>
+   ${(()=>{const ps=M.npcs.map((x,i)=>[x,i]).filter(([x])=>x.n===n);return ps.length?`<div class="locppl"><span class="small"><b>👤 여기 있는 인물</b></span>${ps.map(([x,i])=>`<button class="btn xs ${x.vis?'':'ghost'}" data-lnp="${esc(npKey(x,i))}">${esc(x.name)}${effSt(x)?' 💬':''}</button>`).join('')}</div>`:''})()}
    ${(()=>{const b=locBg(l);return `<div class="locbg">${b?`<i class="lbthumb" style="background-image:url('${cssu(b.src)}')"></i><span class="small"><b>🖼 배경</b> ${esc(b.name||'')}</span><button class="btn pri" id="lbuse">이 배경으로</button>`:'<span class="small"><b>🖼 배경</b> <span class="dim">없음 — 파티가 와도 무대 배경은 그대로</span></span>'}<button class="btn ghost" id="lbpick">${b?'바꾸기':'배경 고르기'}</button></div>`})()}
    ${(()=>{const DGU=window.OM_DG_UI;if(!DGU)return '';const L=DGU.list();const dn=l.dg?DGU.nameOf(l.dg):'';const now=dn&&DGU.on()&&(DGU.cur()||{}).id===l.dg;
     return `<div class="locdg"><span class="small"><b>⚔ 던전</b> 이 장소를 던전 입구로</span><select id="ldg"><option value="">연결 안 함</option>${L.map(d=>`<option value="${esc(d.id)}" ${l.dg===d.id?'selected':''}>${esc(d.n)} (방 ${d.rooms}개)</option>`).join('')}</select>${dn?(now?'<button class="btn pri" id="ldggo">던전 탭으로</button>':`<button class="btn pri" id="ldgin" title="파티를 여기로 옮기고 던전에 들어간다 — 모두의 화면이 던전 탭으로">⚔ 던전 진입</button>`):''}${L.length?'':'<span class="small dim">준비한 던전이 없다 — 위 탭 「던전」 → 던전 관리</span>'}</div>`})()}`);
@@ -687,6 +758,8 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   $('#lparty',md).onclick=async()=>{A().closeModal();await partyMove(n)};
   $('#lfocus',md).onclick=async()=>{A().closeModal();await A().set(['rp','caption'],{name:'장소',text:l.name,at:Date.now(),fixed:false})};
   $('#lmgr',md).onclick=()=>openMapMgr('loc');
+  $('#lppl',md).onclick=()=>{A().closeModal();peoplePick(n)};
+  md.querySelectorAll('[data-lnp]').forEach(b=>b.onclick=()=>{A().closeModal();npcMenu(b.dataset.lnp)});
   {const u=$('#lbuse',md);if(u)u.onclick=async()=>{A().closeModal();await useLocBg(l)}}
   $('#lbpick',md).onclick=()=>{A().closeModal();pickLocBg(n)}}
  /* 지도 관리 창 (맵툴 Lib:map 의 두 탭) */

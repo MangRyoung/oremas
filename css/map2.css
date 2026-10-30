@@ -1,0 +1,26 @@
+/* 10-30 망령 「웹툴에도 인물 추가 기능 세션 노트랑 비슷하게」: 지도 인물 얼굴 · 상태 말풍선 · 인물 놓기 */
+.mnpc{cursor:default;touch-action:none}
+.mnpc.can{cursor:pointer}
+.mnpc.can:hover{border-color:var(--yel2);z-index:6}
+.mnpc.drag{z-index:9;opacity:.9;box-shadow:0 0 0 3px var(--yel2),0 4px 12px rgba(0,0,0,.7)}
+.mnpc.noimg{background:#3a3c44}
+.mnpc u{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-decoration:none;color:#fff;font-weight:700;font-size:14px}
+.mnpc .mnst{position:absolute;left:50%;bottom:calc(100% + 8px);transform:translateX(-50%);width:max-content;max-width:150px;background:#fff;color:#1a1a1a;border:1.5px solid #2a2a2a;border-radius:10px;padding:2px 8px;font-size:11px;font-weight:600;line-height:1.35;text-align:center;white-space:normal;word-break:keep-all;overflow-wrap:anywhere;box-shadow:0 2px 6px rgba(0,0,0,.5);pointer-events:none;z-index:5}
+.mnpc .mnst:after{content:'';position:absolute;left:50%;top:100%;margin-left:-5px;border:5px solid transparent;border-top-color:#2a2a2a}
+.mnpc .mnst span{font-size:13px;margin-right:2px}
+.mnpc .mnst span:only-child{margin:0}
+.loc.droptgt{filter:drop-shadow(0 0 6px var(--yel2))}
+.loc.droptgt .ln{outline:3px solid var(--yel2);outline-offset:2px}
+.npemo{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0}
+.npemo .btn{font-size:16px;min-width:34px;padding:2px 4px}
+.locppl{display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:8px}
+.locppl .small{margin-right:4px}
+.pplist{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:6px;max-height:52vh;overflow:auto;margin-top:8px}
+.ppc{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);text-align:left;cursor:pointer;color:var(--fg);font:inherit}
+.ppc:hover{border-color:var(--red2)}
+.ppc.on{border-color:var(--yel2)}
+.ppc i{width:36px;height:36px;border-radius:50%;background:#3a3c44 center/cover no-repeat;flex:none;display:flex;align-items:center;justify-content:center;font-style:normal;font-weight:700;border:1.5px solid var(--line2)}
+.ppc span{min-width:0}
+.ppc b{display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ppc small{display:block;font-size:10px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mhead .tpic{width:40px;height:40px;border-radius:50%;background:#3a3c44 center/cover no-repeat;flex:none;margin-right:8px}

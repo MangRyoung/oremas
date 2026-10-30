@@ -29,10 +29,10 @@ window.OM_NOTES=(()=>{
  async function menu(){const L=await linked(true);const gm=A().ST.role==='gm';
   if(!L&&!gm){A().toast('이 방은 세션 노트와 이어져 있지 않다');return}
   const md=A().openModal(`<div class="mhead"><h2>📓 세션 노트</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-   ${L?`<p style="margin-top:0">이 방은 세션 노트의 <b>「${esc(L.name)}」</b> 캠페인과 이어져 있다.</p><div class="row" style="gap:6px;flex-wrap:wrap"><a class="btn pri" href="${esc(notesLink(L.id))}" target="mangketmon-notes" rel="noopener">세션 노트 열기 ↗</a>${gm?'<button class="btn" data-nt="map">지도 가져오기</button><button class="btn" data-nt="graph">관계도 가져오기</button><button class="btn" data-nt="dg">⛩ 던전 주고받기</button>':''}</div>${gm?`<div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><span class="small dim" style="align-self:center">노트로 보내기</span><button class="btn sm" data-nt="mappush" title="노트에서 가져온 지도의 핀 중 옮기거나 이름 · 배경을 바꾼 것 · 새로 찍은 것만">📍 지도 핀</button>${(()=>{const s=srcOf(curMapS());return s&&s.camp===L.id?`<button class="btn sm ${curMapS().live==1?'pri':''}" data-nt="live" title="켜 두면 장소 핀 · 루트 · 인물 배치 · PC 위치가 노트 지도와 서로 따라간다 (GM 이 이 방을 열어 둔 동안)">🔗 지도 연동 ${curMapS().live==1?'켬':'끔'}</button>`:''})()}<button class="btn sm" data-nt="logpush" title="오늘 이 방 로그를 노트 「기록」에 (지난번 보낸 뒤만 · 귓속말 · 잡담 빼고)">📜 오늘 로그</button></div>`:''}
+   ${L?`<p style="margin-top:0">이 방은 세션 노트의 <b>「${esc(L.name)}」</b> 캠페인과 이어져 있다.</p><div class="row" style="gap:6px;flex-wrap:wrap"><a class="btn pri" href="${esc(notesLink(L.id))}" target="mangketmon-notes" rel="noopener">세션 노트 열기 ↗</a>${gm?'<button class="btn" data-nt="map">지도 가져오기</button><button class="btn" data-nt="graph">관계도 가져오기</button><button class="btn" data-nt="dg">⛩ 던전 주고받기</button>':''}</div>${gm?`<div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><span class="small dim" style="align-self:center">노트로 보내기</span><button class="btn sm" data-nt="mappush" title="노트에서 가져온 지도의 핀 중 옮기거나 이름 · 배경을 바꾼 것 · 새로 찍은 것만">📍 지도 핀</button>${(()=>{const s=srcOf(curMapS());return s&&s.camp===L.id?`<button class="btn sm ${curMapS().live==1?'pri':''}" data-nt="live" title="켜 두면 장소 핀 · 루트 · 인물 배치 · PC 위치가 노트 지도와 서로 따라간다 (GM 이 이 방을 열어 둔 동안)">🔗 지도 연동 ${curMapS().live==1?'켬':'끔'}</button>`:''})()}<button class="btn sm ${(A().ST.state.graph||{}).live==1?'pri':''}" data-nt="grlive" title="켜 두면 인물 · 조직 · PC 노드와 관계선 · 자리가 노트 관계도와 서로 따라간다 (노트에서 「모두」 공개인 것만, GM 이 이 방을 열어 둔 동안)">🔗 관계도 연동 ${(A().ST.state.graph||{}).live==1?'켬':'끔'}</button><button class="btn sm" data-nt="logpush" title="오늘 이 방 로그를 노트 「기록」에 (지난번 보낸 뒤만 · 귓속말 · 잡담 빼고)">📜 오늘 로그</button></div>`:''}
     ${gm?`<p class="small dim" style="margin-top:10px">${secOf(L.id)?'이 브라우저의 세션 노트 권한(계정 또는 GM 비밀구)으로 가져온다 — 노트에서 GM 이면 「GM만」 문서까지.':'이 브라우저에는 세션 노트 GM 비밀구가 없어 「모두」로 공개된 것만 가져온다. 세션 노트를 GM 으로 한 번 열면 다음부터 같이 쓴다.'}</p><div class="row" style="gap:6px;margin-top:6px"><button class="btn sm ghost" data-nt="other">다른 캠페인과 잇기</button><button class="btn sm ghost" data-nt="unlink">잇기 풀기</button></div>`:''}`
    :`<p style="margin-top:0">세션 노트 캠페인과 이으면, 지도 · 관계도를 캠페인을 다시 고르지 않고 한 번에 가져오고, 세션 노트 시트에서 「⚔ 웹툴로」 를 누르면 이 방으로 트레이너를 보낸다.</p><div class="row"><button class="btn pri" data-nt="other">캠페인 고르기</button></div>`}`);
-  md.querySelectorAll('[data-nt]').forEach(b=>b.onclick=async()=>{const k=b.dataset.nt;A().closeModal();if(k==='map')return importMap();if(k==='graph')return importGraph();if(k==='dg')return dgPanel();if(k==='mappush')return mapPush();if(k==='logpush')return logPush();if(k==='live')return liveSet(curMapS().live!=1);if(k==='unlink')return unlink();
+  md.querySelectorAll('[data-nt]').forEach(b=>b.onclick=async()=>{const k=b.dataset.nt;A().closeModal();if(k==='map')return importMap();if(k==='graph')return importGraph();if(k==='dg')return dgPanel();if(k==='mappush')return mapPush();if(k==='logpush')return logPush();if(k==='live')return liveSet(curMapS().live!=1);if(k==='grlive')return grSet((A().ST.state.graph||{}).live!=1);if(k==='unlink')return unlink();
    if(k==='other'){const r=await pick([],'',{ask:true,linkOnly:true});if(r)A().toast(`「${r.campName}」 캠페인과 이었다`)}})}
  /* 세션 노트에서 보낸 트레이너 가져오기 (#…&add=t1,t2) — openRoom 끝에서 부른다 */
  async function afterOpen(){const p=hp();linked(true);
@@ -196,21 +196,97 @@ window.OM_NOTES=(()=>{
  const rid8=()=>Math.random().toString(36).slice(2,10);
  const RHEX={red:'#d63f4f',blue:'#2e86de',gold:'#f0aa1e',green:'#28a064',purple:'#8e5bd6'};
  const isPerson=(k,d)=>k!=='ents'||d.type==='인물'||!!d.face;
+ /* 10-30 지도 인물 상태 말풍선 st={e,m,at} — 방 쪽 값은 rp_ui 의 OM_MAP_ST (GM 이 쓴 npc.st 와 플레이어 pub.mapSt 중 최근 것) */
+ const stOf=n=>(window.OM_MAP_ST||(x=>x&&x.st))(n)||null;
+ const stPull=(n,x)=>{const d=x.data.st;if(d&&(d.e||d.m))return {st:{e:d.e||'',m:d.m||'',at:+d.at||0}};const e=n&&stOf(n);return e&&(e.e||e.m)?{st:{e:'',m:'',at:Date.now()}}:{}};
  const curMapS=()=>(A().ST.state.rp||{}).map||{};
  const srcOf=mp=>{const m=String((mp||{}).src||'').match(/^nt:([^/]+)\/(.+)$/);return m?{camp:m[1],mapId:m[2]}:null};
  /* 방 → 노트로 볼 모양 (보기 상태인 가림 · 루트 공개 · 웹툴만의 인물은 뺀다) */
  function shape(mp){return JSON.stringify({l:(mp.locs||[]).map(l=>[l.n,Math.round(l.x),Math.round(l.y),l.name||'',l.bg&&l.bg.src?absU(l.bg.src):'',l.nt||'']),
-  r:(mp.routes||[]).map(r=>[r.rid,(r.seq||[]).join(','),r.name||'',r.color||'']),p:(mp.npcs||[]).filter(n=>String(n.id||'').startsWith('nt:')).map(n=>[n.id,n.n]),pt:(mp.party||{}).n||0})}
+  r:(mp.routes||[]).map(r=>[r.rid,(r.seq||[]).join(','),r.name||'',r.color||'']),p:(mp.npcs||[]).filter(n=>String(n.id||'').startsWith('nt:')).map(n=>{const t=stOf(n)||{};return [n.id,n.n,t.e||'',t.m||'']}),pt:(mp.party||{}).n||0})}
  const liveOn=()=>{const mp=curMapS();return A().ST.role==='gm'&&mp.live==1&&!!srcOf(mp)};
  function liveTick(){const ST=A().ST;const L=ST&&ST.room&&ST.role==='gm'&&LINK.room===ST.room?LINK.camp:null;
   if(!L){if(LV.w){LV.w.stop();LV.w=null}LV.camp='';LV.last=null;LV.calLast=null;return}
   if(LV.camp!==L.id){if(LV.w)LV.w.stop();LV.camp=L.id;LV.last=null;LV.calLast=null;
-   LV.w=S().ntWatch?S().ntWatch(L.id,()=>{clearTimeout(LV.t);LV.t=setTimeout(()=>{liveRun('sig');calRun()},1200)}):null;liveRun('sig');calRun();return}
+   LV.w=S().ntWatch?S().ntWatch(L.id,()=>{clearTimeout(LV.t);LV.t=setTimeout(()=>{liveRun('sig');calRun();grRun()},1200)}):null;liveRun('sig');calRun();LV.grLast=null;grRun();return}
   const s=liveOn()?srcOf(curMapS()):null;const mapOn=s&&s.camp===L.id;if(!mapOn)LV.last=null;
   if(mapOn&&LV.mapId&&LV.mapId!==s.mapId)LV.last=null;   /* 다른 노트 지도로 바뀌면 처음부터 (읽기 먼저) */
   if(mapOn&&(LV.last==null||shape(curMapS())!==LV.last))return liveRun('push');
   if(LV.calLast!=null&&calShape()!==LV.calLast)return calRun();
-  if(Date.now()-LV.pullAt>30000){LV.pullAt=Date.now();liveRun('sig');calRun()}}
+  if(grOn()&&(LV.grLast==null||grShape()!==LV.grLast))return grRun();
+  if(Date.now()-LV.pullAt>30000){LV.pullAt=Date.now();liveRun('sig');calRun();grRun()}}
+
+ /* ---------- 10-30 망령 「세션 노트에 관계도도 시트 옆에 넣고 수정해서 웹툴과 서로 공유 되게」: 노트 관계도 ↔ 이 방 관계도 ----------
+    켜기: graph.live = 1 (📓 메뉴 · 관계도 탭의 「🔗 노트 연동」). 이어진 캠페인과, GM 이 이 방을 열어 둔 동안 (지도 연동과 같은 신호 · 2초 확인).
+    노드: 노트 항목(인물 · 조직 · 얼굴 있는 것) ↔ nt = 항목 id · 노트 PC 시트 ↔ 'pc:'+id (처음엔 같은 이름의 PC 노드와 짝) · NPC 시트 ↔ 'npc:'+id.
+    선: 노트 rels ↔ edges (nt = rel id). 이 방의 랭크 · 쇼크는 노트 rel 의 om:{rank,shock} 에 둔다.
+    공개: 이 방 관계도는 플레이어도 보므로 노트에서 「모두」 공개인 것만 가져온다. 이 방에서 만든 것은 노트에 「모두」 로 쓴다.
+    자리: 노트 gx · gy (1600×1000) ↔ 이 방 x · y (가운데 0, ×0.9 — 「관계도 가져오기」 와 같은 비율).
+    지우기: 선은 어느 쪽에서 지워도 같이 지워진다. 노드는 노트에서 지우거나 비공개로 돌리면 이 방에서 빠진다.
+      이 방에서 지우면 이 방에서 만든 항목(om:1)은 노트에서도 지우고, 나머지(노트 인물 · 시트)는 이 방에서만 감춘다(graph.ntK.hide).
+    graph.ntK = {n:[노드 nt], e:[rel id], hide:{nt:1}} = 지난번 맞춘 목록 */
+ const grNow=()=>A().ST.state.graph||{};
+ const grOn=()=>A().ST.role==='gm'&&grNow().live==1&&!!LINK.camp&&LINK.room===A().ST.room;
+ function grShape(g){g=g||grNow();return JSON.stringify({n:Object.values(g.nodes||{}).map(n=>[n.id,n.name||'',Math.round(+n.x||0),Math.round(+n.y||0),n.nt||'',n.kind||'',n.img||'']).sort(),e:Object.values(g.edges||{}).map(e=>[e.id,e.a,e.b,e.label||'',+e.rank||0,e.shock?1:0,e.nt||'']).sort()})}
+ const gx2x=v=>Math.round((+v-800)*.9),gy2y=v=>Math.round((+v-500)*.9),x2gx=v=>Math.round((+v||0)/.9+800),y2gy=v=>Math.round((+v||0)/.9+500);
+ const grKey=x=>x.kind==='ents'?x.id:x.kind+':'+x.id;
+ const grIsNode=x=>x.kind==='pc'||x.kind==='npc'||(x.kind==='ents'&&(['인물','조직'].includes(x.data.type)||!!x.data.face));
+ const grName=x=>x.kind==='ents'?(x.data.title||''):(x.data.name||'');
+ const grImg=x=>x.kind==='ents'?(x.data.face||x.data.photo||''):(x.data.image||x.data.face||'');
+ const grDocId=k=>{const i=String(k||'').indexOf(':');return i<0?k:k.slice(i+1)};
+ async function grRun(){if(LV.gbusy){LV.gdirty=true;return}if(!grOn())return;const camp=LINK.camp.id;const secret=secOf(camp);if(!secret)return;LV.gbusy=true;try{
+   if(LV.grLast!=null&&grShape()!==LV.grLast)await grPush(camp,secret);   /* 이 방에서 바뀐 게 있으면 먼저 보내고 읽는다 */
+   await grPull(camp,secret)}
+  catch(e){console.warn('[관계도 연동]',e);if(LV.warned!=='g'+e.message){LV.warned='g'+e.message;A().toast('관계도 연동 실패: '+(e.message||e))}}
+  finally{LV.gbusy=false;if(LV.gdirty){LV.gdirty=false;setTimeout(grRun,300)}}}
+ async function grSave(g,nodes,edges,hide){const ntK={n:Object.values(nodes).filter(n=>n.nt).map(n=>n.nt),e:Object.values(edges).filter(e=>e.nt).map(e=>e.nt),hide};const patch=Object.assign({},g,{nodes,edges,ntK});
+  const ops=A().diffOps(['graph'],g,patch,2);if(ops.length)await A().setMany(ops);LV.grLast=grShape(ops.length?patch:g);return ops.length}
+ /* 노트 → 방 */
+ async function grPull(camp,secret){const sh0=grShape();const docs=await S().ntDocs(camp,secret,['ents','pc','npc','rels']);const g=grNow();if(grShape(g)!==sh0){LV.gdirty=true;return}
+  const K=Object.assign({n:[],e:[],hide:{}},g.ntK||{});const hide=Object.assign({},K.hide);const nodes=JSON.parse(JSON.stringify(g.nodes||{})),edges=JSON.parse(JSON.stringify(g.edges||{}));
+  const pubN=docs.filter(x=>x.vis==='pub'&&grIsNode(x));const byKey={};pubN.forEach(x=>byKey[grKey(x)]=x);
+  const byNt={};Object.values(nodes).forEach(n=>{if(n.nt)byNt[n.nt]=n});
+  const fresh=pubN.filter(x=>!byNt[grKey(x)]&&!hide[grKey(x)]);let ring=0;
+  for(const x of fresh){const k=grKey(x);let n=x.kind==='pc'?Object.values(nodes).find(m=>!m.nt&&m.kind==='pc'&&m.name===grName(x)):null;   /* 이 방 PC 노드와 이름으로 짝 */
+   if(!n){const id='nt'+rid8();const a=ring++/Math.max(1,fresh.length)*6.283;n={id,name:grName(x)||'?',kind:x.kind==='pc'?'pc':x.data.type==='조직'?'org':'npc',x:Math.round(Math.cos(a)*320),y:Math.round(Math.sin(a)*320),img:'',note:''};nodes[id]=n}
+   n.nt=k;byNt[k]=n}
+  for(const [k,n] of Object.entries(byNt)){const x=byKey[k];
+   if(!x){if(K.n.includes(k)){delete nodes[n.id];for(const [eid,e] of Object.entries(edges))if(e.a===n.id||e.b===n.id)delete edges[eid]}continue}   /* 노트에서 지웠거나 비공개로 */
+   const nm=grName(x);if(nm&&n.name!==nm)n.name=nm;const im=grImg(x);if(im&&n.img!==im)n.img=im;
+   if(x.kind==='ents'){const note=[x.data.sub,x.data.body].filter(Boolean).join('\n').slice(0,600);if(note&&n.note!==note)n.note=note;if(x.data.color&&n.color!==x.data.color)n.color=x.data.color}
+   if(x.data.gx!=null&&x.data.gy!=null){const nx=gx2x(x.data.gx),ny=gy2y(x.data.gy);if(Math.abs(nx-(+n.x||0))>2||Math.abs(ny-(+n.y||0))>2){n.x=nx;n.y=ny}}}
+  const refK=id=>byKey[id]?id:byKey['pc:'+id]?'pc:'+id:byKey['npc:'+id]?'npc:'+id:'';const nid=id=>{const n=byNt[refK(id)];return n&&nodes[n.id]?n.id:''};
+  const pubR=docs.filter(x=>x.kind==='rels'&&x.vis==='pub');const R={};pubR.forEach(r=>R[r.id]=r);const eByNt={};
+  for(const [eid,e] of Object.entries(edges)){if(!e.nt)continue;if(!R[e.nt]&&K.e.includes(e.nt)){delete edges[eid];continue}eByNt[e.nt]=e}
+  for(const r of pubR){const a=nid(r.data.a),b=nid(r.data.b);if(!a||!b)continue;const om=r.data.om||{};let e=eByNt[r.id];
+   if(!e){if(K.e.includes(r.id))continue;e={id:'nt'+rid8(),a,b,rank:om.rank!=null?+om.rank:1,label:r.data.label||'',shock:!!om.shock,nt:r.id};edges[e.id]=e;continue}
+   if(!((e.a===a&&e.b===b)||(e.a===b&&e.b===a))){e.a=a;e.b=b}if((e.label||'')!==(r.data.label||''))e.label=r.data.label||'';if(om.rank!=null&&+e.rank!==+om.rank)e.rank=+om.rank;if(om.shock!=null&&!!e.shock!==!!om.shock)e.shock=!!om.shock}
+  if(await grSave(g,nodes,edges,hide))A().renderScene()}
+ /* 방 → 노트 */
+ async function grPush(camp,secret){const docs=await S().ntDocs(camp,secret,['ents','pc','npc','rels']);const g=grNow();const K=Object.assign({n:[],e:[],hide:{}},g.ntK||{});const hide=Object.assign({},K.hide);
+  const nodes=JSON.parse(JSON.stringify(g.nodes||{})),edges=JSON.parse(JSON.stringify(g.edges||{}));const D={};docs.filter(x=>x.kind!=='rels').forEach(x=>D[grKey(x)]=x);const R={};docs.filter(x=>x.kind==='rels').forEach(x=>R[x.id]=x);
+  const rows=[],dels=[];const pend=new Map();const upd=(x,f)=>{const d=pend.get(x)||JSON.parse(JSON.stringify(x.data));f(d);pend.set(x,d)};const liveN=new Set();
+  for(const n of Object.values(nodes)){
+   if(!n.nt){if(n.kind==='pc'){const x=docs.find(d=>d.kind==='pc'&&d.vis==='pub'&&(d.data.name||'')===n.name);if(!x)continue;n.nt=grKey(x)}   /* 노트에 없는 PC 는 이 방에만 */
+    else{const id='e'+rid8();rows.push({kind:'ents',id,data:{type:n.kind==='org'?'조직':'인물',title:n.name||'?',sub:'',body:n.note||'',rows:[],tags:[],teams:[],face:/^https?:/.test(n.img||'')?n.img:'',photo:'',at:[],gx:x2gx(n.x),gy:y2gy(n.y),created:Date.now(),om:1},vis:'pub'});n.nt=id;liveN.add(id);continue}}
+   liveN.add(n.nt);const x=D[n.nt];if(!x)continue;const gx=x2gx(n.x),gy=y2gy(n.y);
+   if(x.data.gx==null||Math.abs(gx-(+x.data.gx))>2||Math.abs(gy-(+x.data.gy))>2)upd(x,d=>{d.gx=gx;d.gy=gy});
+   if(x.kind==='ents'&&n.name&&n.name!==x.data.title)upd(x,d=>{d.title=n.name});if(x.kind==='npc'&&n.name&&n.name!==x.data.name)upd(x,d=>{d.name=n.name})}
+  for(const k of K.n){if(liveN.has(k)||hide[k])continue;const x=D[k];if(!x)continue;   /* 이 방에서 지운 노드 */
+   if(x.kind==='ents'&&x.data.om==1){dels.push({kind:'ents',id:x.id});for(const r of Object.values(R))if(r.data.a===x.id||r.data.b===x.id)dels.push({kind:'rels',id:r.id})}else hide[k]=1}
+  const docOf=id=>{const n=nodes[id];return n&&n.nt?grDocId(n.nt):''};const liveE=new Set();
+  for(const e of Object.values(edges)){const a=docOf(e.a),b=docOf(e.b);if(!a||!b)continue;
+   if(!e.nt){const id='r'+rid8();rows.push({kind:'rels',id,data:{a,b,label:e.label||'',kind:e.shock?'rival':'',two:true,note:'',om:{rank:+e.rank||0,shock:!!e.shock}},vis:'pub'});e.nt=id;liveE.add(id);continue}
+   liveE.add(e.nt);const r=R[e.nt];if(!r)continue;const om=r.data.om||{};
+   if(!((r.data.a===a&&r.data.b===b)||(r.data.a===b&&r.data.b===a)))upd(r,d=>{d.a=a;d.b=b});if((r.data.label||'')!==(e.label||''))upd(r,d=>{d.label=e.label||''});
+   if(+om.rank!==(+e.rank||0)||!!om.shock!==!!e.shock)upd(r,d=>{d.om={rank:+e.rank||0,shock:!!e.shock}})}
+  for(const id of K.e){if(liveE.has(id)||!R[id])continue;if(!dels.some(d=>d.id===id))dels.push({kind:'rels',id})}
+  for(const [x,d] of pend)if(JSON.stringify(d)!==JSON.stringify(x.data))rows.push({kind:x.kind,id:x.id,data:d,vis:x.vis});
+  if(rows.length)await S().ntPutMany(camp,secret,rows.map(r=>({kind:r.kind,id:r.id,data:r.data,vis:r.vis||'pub'})));
+  for(const d of dels)await S().ntDel(camp,secret,d.kind,d.id);
+  if(LV.w){for(const r of rows)if(r.vis&&r.vis!=='pub')LV.w.ping({t:'doc',kind:r.kind,id:r.id});for(const d of dels)LV.w.ping({t:'del',kind:d.kind,id:d.id})}
+  await grSave(g,nodes,edges,hide)}
+ async function grSet(on){if(on&&!LINK.camp)return A().toast('먼저 📓 노트 메뉴에서 이 방을 세션 노트 캠페인과 이어 줘');await A().set(['graph','live'],on?1:0);LV.grLast=null;if(on)grRun();A().toast(on?'관계도 연동을 켰다 — 노트 관계도와 이 방 관계도가 서로 따라간다 (노트에서 「모두」 공개인 것만)':'관계도 연동을 껐다')}
  async function liveRun(why){if(LV.busy){LV.dirty=true;return}LV.busy=true;try{
    const mp=curMapS();const s=srcOf(mp);if(!s||!liveOn()||s.camp!==LV.camp)return;const secret=secOf(s.camp);if(!secret){if(LV.warned!==s.camp){LV.warned=s.camp;A().toast('지도 연동: 이 브라우저에 세션 노트 권한이 없어 쓰지 못한다 — 노트를 GM 으로 한 번 열어 줘')}return}
    if(LV.last!=null&&shape(curMapS())!==LV.last)await livePush(s,secret);   /* 이 방에서 바뀐 게 있으면 늘 먼저 보내고 읽는다 (읽기가 덮지 않게) */
@@ -220,7 +296,8 @@ window.OM_NOTES=(()=>{
  async function liveDocs(s,secret){const docs=await S().ntDocs(s.camp,secret,['maps','spots','routes','ents','pc','npc']);const md=docs.find(x=>x.kind==='maps'&&x.id===s.mapId);
   if(!md)throw new Error('노트에서 이 지도를 찾지 못했다');const sp=docs.filter(x=>x.kind==='spots'&&x.data.map===s.mapId);return {docs,md,sp,sid:new Set(sp.map(x=>x.id))}}
  /* 노트 → 방 */
- async function livePull(s,secret){const {docs,md,sp,sid}=await liveDocs(s,secret);const cur=curMapS();const W=+md.data.w||(cur.img&&cur.img.w)||1000,H=+md.data.h||(cur.img&&cur.img.h)||700;
+ async function livePull(s,secret){const sh0=shape(curMapS());const {docs,md,sp,sid}=await liveDocs(s,secret);const cur=curMapS();if(shape(cur)!==sh0){LV.dirty=true;return}   /* 10-30 노트를 읽는 사이 이 방에서 또 바뀌었으면(인물 끌기 등) 덮지 않고 다음 차례에 먼저 보낸다 */
+ const W=+md.data.w||(cur.img&&cur.img.w)||1000,H=+md.data.h||(cur.img&&cur.img.h)||700;
   const K=Object.assign({r:[],p:[],l:[]},cur.ntK||{});const hide=Object.assign({},cur.hideR||{});const hideL=Object.assign({},cur.hideL||{});const vis=Object.assign({},cur.vis||{});
   const locs=(cur.locs||[]).map(l=>Object.assign({},l));const byNt={};locs.forEach(l=>{if(l.nt)byNt[l.nt]=l});let nMax=Math.max(0,...locs.map(l=>+l.n||0));
   for(const d of sp.slice().sort((a,b)=>String(a.data.num||'').localeCompare(String(b.data.num||''),'ko',{numeric:true}))){const x=Math.round((+d.data.x||0)/100*W),y=Math.round((+d.data.y||0)/100*H);let l=byNt[d.id];
@@ -238,11 +315,11 @@ window.OM_NOTES=(()=>{
   for(const [rid,h] of Object.entries(nr)){if(seen.has(rid)||hide[rid]||K.r.includes(rid))continue;if(h.seq.length<2)continue;routes.push({rid,name:h.x.data.name||'루트',color:h.x.data.color||'#e4002b',seq:h.seq,vis:h.x.data.visible!==false&&h.x.vis==='pub'?1:0})}
   /* 인물 */
   const pl={};for(const x of docs.filter(x=>x.kind==='ents'||x.kind==='pc'||x.kind==='npc')){if(!isPerson(x.kind,x.data))continue;const at=(x.data.at||[]).find(a=>sid.has(a));if(!at||!nOf(at))continue;
-   if(x.kind==='ents'&&!x.data.face)continue;pl['nt:'+x.kind+':'+x.id]={x,n:nOf(at)}}
+   if(x.kind==='ents'&&!x.data.face&&!(cur.npcs||[]).some(n=>n.id==='nt:ents:'+x.id))continue;pl['nt:'+x.kind+':'+x.id]={x,n:nOf(at)}}
   const npcs=[];const pseen=new Set();
   for(const n of cur.npcs||[]){const id=String(n.id||'');if(!id.startsWith('nt:')){npcs.push(n);continue}pseen.add(id);const h=pl[id];if(!h)continue;
-   npcs.push(Object.assign({},n,{n:h.n,name:h.x.data.title||h.x.data.name||n.name,img:h.x.data.face||h.x.data.image||n.img||''}))}
-  for(const [id,h] of Object.entries(pl)){if(pseen.has(id))continue;npcs.push({id,name:h.x.data.title||h.x.data.name||'',img:h.x.data.face||h.x.data.image||'',n:h.n,size:'s',vis:h.x.vis==='pub'?1:0})}
+   npcs.push(Object.assign({},n,{n:h.n,name:h.x.data.title||h.x.data.name||n.name,img:h.x.data.face||h.x.data.image||n.img||''},stPull(n,h.x)))}
+  for(const [id,h] of Object.entries(pl)){if(pseen.has(id))continue;npcs.push(Object.assign({id,name:h.x.data.title||h.x.data.name||'',img:h.x.data.face||h.x.data.image||'',n:h.n,size:'s',vis:h.x.vis==='pub'?1:0},stPull(null,h.x)))}
   /* 파티(PC) 위치 */
   const pn=md.data.party&&sid.has(md.data.party)?nOf(md.data.party):0;const party=Object.assign({vis:1},cur.party||{},{n:pn});
   const ntK={r:routes.filter(r=>String(r.rid||'').startsWith('nt_')).map(r=>r.rid).concat(Object.keys(hide)),p:npcs.filter(n=>String(n.id||'').startsWith('nt:')).map(n=>n.id),l:locs.filter(l=>l.nt).map(l=>l.nt)};
@@ -264,16 +341,20 @@ window.OM_NOTES=(()=>{
   for(const rid of K.r){if(live.has(rid)||hide[rid])continue;const doc=RT[rid.slice(3)];if(!doc)continue;if(doc.data.om==1)dels.push({kind:'routes',id:doc.id,vis:doc.vis});else hide[rid]=1}
   /* 인물: 웹툴에서 옮긴 · 뺀 노트 인물 → 그 문서의 at (이 지도의 장소만 바꾸고 다른 지도에 놓인 곳은 그대로) */
   const P=Object.fromEntries(docs.filter(x=>x.kind==='ents'||x.kind==='pc'||x.kind==='npc').map(x=>['nt:'+x.kind+':'+x.id,x]));const nowP=new Set();
-  const setAt=(x,to)=>{const a=(x.data.at||[]).filter(q=>!sid.has(q));if(to)a.push(to);const old=(x.data.at||[]).join(',');if(a.join(',')!==old)rows.push({kind:x.kind,id:x.id,data:Object.assign({},x.data,{at:a}),vis:x.vis})};
-  for(const n of cur.npcs||[]){const id=String(n.id||'');if(!id.startsWith('nt:'))continue;nowP.add(id);const x=P[id];if(!x)continue;const to=ntOf(n.n);const here=(x.data.at||[]).find(q=>sid.has(q))||'';if(to&&to!==here)setAt(x,to)}
+  const pend=new Map();const upd=(x,f)=>{const d=pend.get(x)||Object.assign({},x.data);f(d);pend.set(x,d)};
+  const setAt=(x,to)=>upd(x,d=>{const a=(d.at||[]).filter(q=>!sid.has(q));if(to)a.push(to);d.at=a});
+  for(const n of cur.npcs||[]){const id=String(n.id||'');if(!id.startsWith('nt:'))continue;nowP.add(id);const x=P[id];if(!x)continue;const to=ntOf(n.n);const here=(x.data.at||[]).find(q=>sid.has(q))||'';if(to&&to!==here)setAt(x,to);
+   const t=stOf(n),ds=x.data.st||{};if(t&&((t.e||'')!==(ds.e||'')||(t.m||'')!==(ds.m||'')))upd(x,d=>{if(!t.e&&!t.m)delete d.st;else d.st={e:t.e||'',m:t.m||'',at:+t.at||Date.now()}})}   /* 10-30 상태 말풍선도 노트 문서 st 로 */
   for(const id of K.p){if(nowP.has(id))continue;const x=P[id];if(x&&(x.data.at||[]).some(q=>sid.has(q)))setAt(x,'')}
+  for(const [x,d] of pend)if(JSON.stringify(d)!==JSON.stringify(x.data))rows.push({kind:x.kind,id:x.id,data:d,vis:x.vis});
   /* 파티 위치 */
   const pt=ntOf((cur.party||{}).n||0);if((md.data.party||'')!==pt)rows.push({kind:'maps',id:md.id,data:Object.assign({},md.data,{party:pt}),vis:md.vis});
   if(rows.length)await S().ntPutMany(s.camp,secret,rows.map(r=>({kind:r.kind,id:r.id,data:r.data,vis:r.vis||'pub'})));
   for(const d of dels)await S().ntDel(s.camp,secret,d.kind,d.id);
   if(LV.w){for(const r of rows)if(r.vis&&r.vis!=='pub')LV.w.ping({t:'doc',kind:r.kind,id:r.id});for(const d of dels)LV.w.ping({t:'del',kind:d.kind,id:d.id})}
   const patch=Object.assign({},cur,{locs,routes,hideR:hide});const ops=A().diffOps(['rp','map'],cur,patch,1);if(ops.length)await A().setMany(ops);
-  if(rows.length||dels.length)A().sysLog(`지도 연동: 노트로 ${rows.length+dels.length}건 (장소 · 루트 · 인물 · 파티)`);LV.last=shape(patch)}
+  /* 10-30 인물 자리 · 상태 말풍선만 바뀐 것은 채팅에 남기지 않는다 (인물을 자주 옮기면 로그가 찬다) */
+  const loud=rows.filter(r=>!['ents','pc','npc'].includes(r.kind)).length+dels.length;if(loud)A().sysLog(`지도 연동: 노트로 ${loud}건 (장소 · 루트 · 파티)`);LV.last=shape(patch)}
 /* ---------- 10-30 망령 「캘린더도 연동」 (양쪽 다) — 이어진 캠페인이면 늘 (지도 연동 스위치와 따로) ----------
     노트 → 웹툴: 노트 「일정」의 세션(날짜가 있는 것) = 이 방 캘린더의 「세션」 일정(id nt_<문서>). 노트에서 지우거나 날짜를 빼면 빠진다.
     웹툴 → 노트: 이 방의 게임 속 오늘 · 날씨 · 일정(노트에서 온 것 빼고) = 노트 plan 문서 omcal_<방> {t:'omcal', room, name, today, weather, events}. 노트 「일정」 탭에 「웹툴 게임 달력」으로 보인다 */
@@ -296,5 +377,8 @@ window.OM_NOTES=(()=>{
  async function liveSet(on){const mp=curMapS();if(on&&!srcOf(mp))return A().toast('이 방 지도가 노트 지도에서 온 게 아니다 — 먼저 「지도 가져오기」');await A().set(['rp','map','live'],on?1:0);LV.last=null;if(on){LV.camp='';liveTick()}A().toast(on?'지도 연동을 켰다 — 노트와 이 방 지도가 서로 따라간다':'지도 연동을 껐다')}
  LV.iv=setInterval(()=>{try{liveTick()}catch(e){}},2000);
  document.addEventListener('click',e=>{if(e.target.closest('[data-ntdg]')){e.preventDefault();dgPanel()}});
- return {importMap,importGraph,pick,NOTES_URL,linked,menu,afterOpen,topBtn,notesLink,dgPull,dgPush,dgPanel,mapPush,logPush,dgH,liveSet,liveRun,calRun,LV};
+ /* 10-30 망령 「웹툴에도 인물 추가 기능」: 지도 「👤 인물 놓기」 목록 — 이 방 지도가 온 캠페인(없으면 이어진 캠페인)의 인물 (ents 인물 · pc · npc) */
+ async function people(){const s=srcOf(curMapS());let camp=s&&s.camp;if(!camp){try{const L=await linked();camp=L&&L.id}catch(e){}}if(!camp)return [];
+  const docs=await S().ntDocs(camp,secOf(camp),['ents','pc','npc']);return docs.filter(x=>isPerson(x.kind,x.data)&&(x.data.title||x.data.name)).map(x=>({id:'nt:'+x.kind+':'+x.id,name:x.data.title||x.data.name,img:x.data.face||x.data.image||'',kind:x.kind,vis:x.vis}))}
+return {grSet,grRun,people,importMap,importGraph,pick,NOTES_URL,linked,menu,afterOpen,topBtn,notesLink,dgPull,dgPush,dgPanel,mapPush,logPush,dgH,liveSet,liveRun,calRun,LV};
 })();
