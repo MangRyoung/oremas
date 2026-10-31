@@ -51,5 +51,7 @@ window.OM_AI_UI=(()=>{
   m.addEventListener('click',e=>{const t=e.target.closest('[data-aitask]');if(!t)return;m.querySelectorAll('[data-aitask]').forEach(b=>{const on=b===t;b.classList.toggle('pri',on);b.classList.toggle('ghost',!on)});pv()});
   $('#aiCopy').onclick=()=>copy(mkPrompt(read(),false),'복사했어요 — AI 대화창에 붙여 넣어요');
   $('#aiFull').onclick=async()=>{const b=$('#aiFull');b.disabled=true;b.textContent='지침 읽는 중…';try{const d=await fetchDocs();await copy(mkPrompt(read(),true)+d,'지침까지 복사했어요 — AI 대화창에 붙여 넣어요')}catch(e){A().toast('지침을 읽지 못했어요: '+e.message)}finally{b.disabled=false;b.textContent='지침까지 통째로 복사'}}}
+ /* 배틀 조작판의 「🤖 AI 에게 맡기기」(data-aihand) — 위 띠는 자리가 없어 배틀 화면에 둔다 (10-31 망령) */
+ document.addEventListener('click',e=>{const b=e.target&&e.target.closest&&e.target.closest('[data-aihand]');if(!b)return;e.preventDefault();e.stopPropagation();open()},true);
  return {open,mkPrompt,roomInfo};
 })();
