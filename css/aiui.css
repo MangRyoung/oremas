@@ -10,3 +10,5 @@
 html:not(#_) .aiu label{text-align:left;align-items:stretch}
 html:not(#_) .aiu label>span:has(input[type=checkbox]){display:flex;align-items:center;gap:6px}
 html:not(#_) .aiu label input[type=checkbox]{width:auto}
+/* 위 띠의 옛 「🤖 AI」 단추는 숨긴다 — 단추는 배틀 조작판으로 옮겼다 (10-31 망령 「목록이 밀려버려」). app.js 가 옛 판이어도 띠가 밀리지 않게 */
+#aiBtn{display:none!important}

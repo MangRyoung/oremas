@@ -8,7 +8,7 @@ window.OM_AI_UI=(()=>{
  const A=()=>window.OM_APP;const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
  const BASE=new URL('ai/',location.origin+location.pathname.replace(/[^/]*$/,'')).href;
  const LK='om_ai_pref';
- const TASKS=[['battle','배틀 진행','이 방의 배틀을 GM 대리로 진행해 줘 (판정 · 두 트레이너 지시 · RP · 후일담).'],['rp','배틀 RP 만','배틀 판정과 지시는 내가 한다. 너는 트레이너 독백 · 반응 · 나레이션 · 후일담만 맡아 줘.'],['review','배틀 정리 문서','끝난 배틀의 로그로 지침 5절대로 정리 문서(평가 · 격파 기록 · 반성문)를 만들어 줘.']];
+ const TASKS=[['battle','배틀 통째로','이 방의 배틀을 GM 대리로 진행해 줘 (판정 · 두 트레이너 지시 · RP · 후일담).','AI 가 웹툴을 직접 조작해 양쪽 지시 · 판정 · 대사 · 후일담까지 전부 한다 (AI 끼리 붙는 배틀 · NPC 전)'],['rp','대사 · 연출만','배틀 판정과 지시는 내가 한다. 너는 트레이너 독백 · 반응 · 나레이션 · 후일담만 맡아 줘.','판정과 지시는 GM(망령)이 하고, AI 는 트레이너 대사 · 나레이션 · 후일담만 쓴다'],['review','끝난 배틀 정리','끝난 배틀의 로그로 지침 5절대로 정리 문서(평가 · 격파 기록 · 반성문)를 만들어 줘.','배틀이 끝난 뒤 로그를 읽고 결과표 · 평가 · 격파 기록 · 반성문을 정리 문서로 만든다']];
  const FMT=['','싱글','더블','트리플'];
  const pref=()=>{try{return Object.assign({task:'battle',fmt:'더블',vs:'',n:'',items:'',hp:'',narr:'1',memo:''},JSON.parse(localStorage.getItem(LK)||'{}'))}catch(e){return {task:'battle',fmt:'더블',vs:'',n:'',items:'',hp:'',narr:'1',memo:''}}};
  const save=p=>{try{localStorage.setItem(LK,JSON.stringify(p))}catch(e){}};
@@ -33,7 +33,7 @@ window.OM_AI_UI=(()=>{
   const m=A().openModal(`<div class="mhead"><h2>🤖 AI 에게 맡기기</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    <p class="small dim" style="margin:0 0 10px">고르고 「복사」를 누른 뒤, 아무 AI 대화창(Claude · ChatGPT · Gemini …)에 붙여 넣으면 돼요. 지침은 <a href="${esc(BASE)}" target="_blank" rel="noopener">AI 진행 지침 ↗</a>에 있어요.</p>
    <div class="aiu">
-    <label class="w2">할 일<span class="aiu-seg">${TASKS.map(([k,l])=>`<button type="button" class="btn sm ${p.task===k?'pri':'ghost'}" data-aitask="${k}">${l}</button>`).join('')}</span></label>
+    <label class="w2">할 일<span class="aiu-seg">${TASKS.map(([k,l,,d])=>`<button type="button" class="btn sm ${p.task===k?'pri':'ghost'}" data-aitask="${k}" title="${esc(d)}">${l}</button>`).join('')}</span><small class="dim" id="aiTaskD">${esc((TASKS.find(x=>x[0]===p.task)||TASKS[0])[3])}</small></label>
     <label class="w2">대전 <small class="dim">(비우면 AI 가 묻는다)</small><input id="aiVs" value="${esc(p.vs)}" placeholder="${esc(R.names.length>1?R.names.join(' VS '):'서서 VS 카네코 마리')}"></label>
     <label>형식<select id="aiFmt">${FMT.map(f=>`<option ${p.fmt===f?'selected':''} value="${f}">${f||'(묻기)'}</option>`).join('')}</select></label>
     <label>몇 대 몇<input id="aiN" value="${esc(p.n)}" placeholder="6:6"></label>
@@ -48,7 +48,7 @@ window.OM_AI_UI=(()=>{
   const read=()=>{const q=pref();q.vs=$('#aiVs').value;q.fmt=$('#aiFmt').value;q.n=$('#aiN').value;q.items=$('#aiItems').value;q.hp=$('#aiHp').value;q.narr=$('#aiNarr').checked?'1':'0';q.memo=$('#aiMemo').value;q.task=(m.querySelector('[data-aitask].pri')||{}).dataset?.aitask||q.task;return q};
   const pv=()=>{const q=read();save(q);$('#aiPv').textContent=mkPrompt(q,false)};pv();
   m.addEventListener('input',pv);m.addEventListener('change',pv);
-  m.addEventListener('click',e=>{const t=e.target.closest('[data-aitask]');if(!t)return;m.querySelectorAll('[data-aitask]').forEach(b=>{const on=b===t;b.classList.toggle('pri',on);b.classList.toggle('ghost',!on)});pv()});
+  m.addEventListener('click',e=>{const t=e.target.closest('[data-aitask]');if(!t)return;m.querySelectorAll('[data-aitask]').forEach(b=>{const on=b===t;b.classList.toggle('pri',on);b.classList.toggle('ghost',!on)});$('#aiTaskD').textContent=(TASKS.find(x=>x[0]===t.dataset.aitask)||TASKS[0])[3];pv()});
   $('#aiCopy').onclick=()=>copy(mkPrompt(read(),false),'복사했어요 — AI 대화창에 붙여 넣어요');
   $('#aiFull').onclick=async()=>{const b=$('#aiFull');b.disabled=true;b.textContent='지침 읽는 중…';try{const d=await fetchDocs();await copy(mkPrompt(read(),true)+d,'지침까지 복사했어요 — AI 대화창에 붙여 넣어요')}catch(e){A().toast('지침을 읽지 못했어요: '+e.message)}finally{b.disabled=false;b.textContent='지침까지 통째로 복사'}}}
  /* 배틀 조작판의 「🤖 AI 에게 맡기기」(data-aihand) — 위 띠는 자리가 없어 배틀 화면에 둔다 (10-31 망령) */
