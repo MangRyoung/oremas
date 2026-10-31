@@ -1,0 +1,12 @@
+/* 10-31 「🤖 AI 에게 맡기기」 창 (js/ai_ui.js) */
+.aiu{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
+.aiu label{display:flex;flex-direction:column;gap:4px;font-size:12px;min-width:0}
+.aiu label.w2{grid-column:1/-1}
+.aiu input,.aiu select,.aiu textarea{width:100%}
+.aiu-seg{display:flex;gap:6px;flex-wrap:wrap}
+.aiu-pv{margin-top:10px}
+.aiu-pv pre{white-space:pre-wrap;font-size:12px;line-height:1.55;max-height:240px;overflow:auto;padding:8px 10px;border:1px solid var(--line2,#444);background:rgba(0,0,0,.25)}
+@media (max-width:560px){.aiu{grid-template-columns:1fr}}
+html:not(#_) .aiu label{text-align:left;align-items:stretch}
+html:not(#_) .aiu label>span:has(input[type=checkbox]){display:flex;align-items:center;gap:6px}
+html:not(#_) .aiu label input[type=checkbox]{width:auto}

@@ -17,7 +17,9 @@
 | 배틀 진행 지침 | https://mangryoung.github.io/oremas/ai/#guide | https://mangryoung.github.io/oremas/ai/battle-guide.md |
 | 배틀 진행 기록 | https://mangryoung.github.io/oremas/ai/#log | https://mangryoung.github.io/oremas/ai/battle-log.md |
 
-다른 AI 에게는 이렇게만 말하면 됩니다:
+웹툴 GM 화면 위 띠의 **「🤖 AI」** 단추를 누르면, 아래 문장에 이 방 정보 · 정해 둔 것(형식 · 소지품 · HP …)까지 붙여 한 번에 복사됩니다. 링크를 못 여는 AI 에게는 같은 창의 「지침까지 통째로 복사」를 씁니다.
+
+손으로 쓸 때는 이렇게만 말하면 됩니다:
 ```
 https://mangryoung.github.io/oremas/ai/README.md 를 읽고, 거기 적힌 순서대로 지침을 읽은 다음 배틀을 진행해 줘.
 ```
