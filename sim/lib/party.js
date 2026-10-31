@@ -29,7 +29,7 @@ function wild(win,snap,sel,enc){enc=enc||{};const L=list(snap);const id=/^id:/.t
  const r=build(win,snap,id,{lvAdd:enc.lvAdd,two:false});const tr=r.trainer;tr.wild=true;tr.orderCount={};tr.ranks=Object.assign({},tr.ranks,{지시:'D',통솔:'D',능력:'D'});
  let mons=Array.isArray(enc.pick)?enc.pick.map(i=>r.mons[i]).filter(Boolean):r.mons.slice();if(+enc.take)mons=mons.slice(0,+enc.take);const extra=+enc.extra||0;for(let i=0;i<extra;i++){const x=JSON.parse(JSON.stringify(mons[i%mons.length]));x.id=x.id+'_x'+i;mons.push(x)}
  const bi=enc.boss?Math.max(0,mons.findIndex(m=>m.partner)):-1;
- mons.forEach((x,i)=>{const k=i===bi?1.5:1.25;x.mod={attack:k,defense:k,specialattack:k,specialdefense:k,speed:k};x.boss=i===bi;x.role=i===bi?'와일드 보스':'와일드';x.hp.cur=x.hp.max});
+ mons.forEach((x,i)=>{require('./wild.js').tag(x,i===bi);x.hp.cur=x.hp.max});   /* 10-31: 배율은 포텐셜 『와일드』 · 『와일드 보스』 로 (웹툴과 같은 길) */
  return {trainer:tr,mons,name:dOf((snap.trainers||[]).find(t=>t.id===id)).name,priv:tr.priv}}
 /* 던전 진행기에 넘길 「스냅샷 야생」 만들기 함수 (같은 조건이면 한 번만 빌드하고 복사본을 준다) */
 function wildFrom(win,snap){const C={};return (sel,enc)=>{const k=sel+'|'+JSON.stringify(enc||{});if(!C[k])C[k]=wild(win,snap,sel,enc);return JSON.parse(JSON.stringify(C[k]))}}

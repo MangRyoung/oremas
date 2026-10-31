@@ -4877,3 +4877,7 @@ html[data-vt="mm"] .memon .medet{border-color:rgba(20,16,12,.4)}
 /* 10-30 망령 「굴림 결과는 시간 지나면 내려가도록」: 무대 바의 마지막 굴림은 20초 뒤 사라진다 (남은 시간 = --left, rp_ui meBarHtml) */
 .mebar .melast{animation:melastOut .6s ease-in var(--left,20s) forwards}
 @keyframes melastOut{to{opacity:0;visibility:hidden}}
+
+/* 10-31 망령: 마감한 스킬 체크 카드 */
+.bcard.skc .skc-end{display:none;margin-left:auto;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;border:1px solid currentColor;opacity:.8}
+.bcard.skc.skc-closed{opacity:.62;filter:saturate(.35)}.bcard.skc.skc-closed .skc-end{display:inline-block}

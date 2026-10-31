@@ -550,11 +550,11 @@ window.OM_BATTLE_UI=(()=>{
   return false}
  function upCounts(t,ups){for(const n of ups||[]){const u=((t&&t.unique)||[]).find(q=>q&&q.name===n);if(TS(u&&u.eff)||(!u&&TS(rmText(n))))return true}return false}
  async function turnInfo(c,b){let rows=[];try{rows=(await DBS().secretGet(c.ST.room,c.ST.secret,'cmd')||[]).filter(r=>cmdFresh(r,b))}catch(e){}
-  const SEC={},PRE={};const live=mid=>{const mm=(b.mons||{})[mid];return mm&&mm.entry&&mm.hp.cur>0};
-  for(const r of rows){const d=r.data||{};if(!(b.trainers||{})[r.id])continue;if(upCounts(b.trainers[r.id],d.upots))PRE[r.id]=1;for(const mid in (d.mons||{})){const x=d.mons[mid]||{};SEC[mid]=x;if(live(mid)&&preCounts(b.trainers[r.id],x,b.mons[mid]))PRE[r.id]=1}}
+  const SEC={},PRE={},UP={};const live=mid=>{const mm=(b.mons||{})[mid];return mm&&mm.entry&&mm.hp.cur>0};
+  for(const r of rows){const d=r.data||{};if(!(b.trainers||{})[r.id])continue;if(upCounts(b.trainers[r.id],d.upots))PRE[r.id]=UP[r.id]=1;for(const mid in (d.mons||{})){const x=d.mons[mid]||{};SEC[mid]=x;if(live(mid)&&preCounts(b.trainers[r.id],x,b.mons[mid]))PRE[r.id]=1}}
   const tk=turnKey(b);for(const tid in b.trainers||{}){const ok=((b.cmds||{})[tid]||{}).ok;if(!ok||ok.key!==tk)continue;if(ok.pre)PRE[tid]=1;for(const mid in (ok.m||{}))if(ok.m[mid].pi&&live(mid))PRE[tid]=1}   /* 교대로 나간 포켓몬의 선행은 세지 않는다 */
   const keyOf=m=>{if(SEC[m.id])return okeyOf(m,SEC[m.id]);const ok=((b.cmds||{})[m.tid]||{}).ok;if(ok&&ok.key===tk&&ok.m&&ok.m[m.id])return ok.m[m.id];const px=(((b.cmds||{})[m.tid]||{}).mons||{})[m.id];return px?okeyOf(m,px):null};
-  return {SEC,PRE,keyOf}}
+  return {SEC,PRE,UP,keyOf}}
  async function stepTurn(){const c=ctx();if(!c.mgr)return;const b=c.b;if((+b.phase||0)!==1)return;const st=+b.tstep||0;const I=await turnInfo(c,b);const slots=allEntered(b);const TN=tid=>((b.trainers||{})[tid]||{}).name||'?';
   if(st<1){const sw=slots.filter(s=>{const k=I.keyOf(s.mon);return k&&k.sw});
    if(sw.length){const swTo=mo=>{const k=I.keyOf(mo)||{};const id=k.st||(I.SEC[mo.id]||{}).switch||((((b.cmds||{})[mo.tid]||{}).mons||{})[mo.id]||{}).switch;return (b.mons||{})[id]||null};   /* 10-28 망령: 「교대 대상 미정」 — 비밀 지시(SEC) · 확정 지시(ok.m)에 든 교대 대상을 먼저 본다 (공개 지시 칸은 비어 있을 때가 있다) */   /* 10-27 망령: 교대 알림에 누구와 바꾸는지 · 그림 */
@@ -567,10 +567,17 @@ window.OM_BATTLE_UI=(()=>{
     await A().set(['battle','tstep'],1);await A().set(['battle','swPur'],pur.map(o=>o.mid));await A().set(['battle','swOut'],sw.map(s=>s.mon.id));if(pur.length){await A().set(['battle','order'],pur);await A().set(['battle','orderIdx'],0)}
     cutPhase('교대',sw.map(s=>s.mon.name).join(' · '));
     A().sysLog(`【교대 알림】\n${L.join('\n')}${pl.length?'\n'+pl.join('\n'):''}\n교대를 마치면 「턴 진행 ▶」`,'battle',{rv:RV,rvx:[...pl,'교대를 마치면 「턴 진행 ▶」']});return}}
-  if(st<2){const tids=Object.keys(I.PRE).filter(t=>(b.trainers||{})[t]);
+  if(st<2){let tids=Object.keys(I.PRE).filter(t=>(b.trainers||{})[t]);
+   /* 10-31 망령 「4식 · 6령 쓰는 방식이 시뮬과 다르다 — 꼭 고쳐」: 선행 입력한 지령(6령)은 턴 개시 때 저절로 「선행 발동」 (시뮬과 같다 — 시뮬은 지시 때 정한 지령을 그 자리에서 건다).
+      횟수는 이미 턴 개시에서 깎였으니 효과만 건다. 4식은 맞을 때 공격 창이 쓰고(버텨라 · 피해라 …), 선행 포텐셜 · 「턴 개시」 4식은 그대로 「포텐셜 발동」에서 */
+   {const AL=[];for(const [mid,x] of Object.entries(I.SEC)){const mm=(b.mons||{})[mid];if(!x||!x.command||!mm||!mm.entry||!(+(mm.hp||{}).cur>0))continue;const tid=mm.tid;if(!(b.trainers||{})[tid])continue;
+     const fd=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid])||{};if(fd.command)continue;try{await fireOrder(tid,mid,'command',x.command,'pre');const f2=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid])||{};if(f2.command)AL.push(`${TN(tid)} · ${mm.name} 『${OO().commandName((b.trainers||{})[tid],x.command)}』`)}catch(e){console.warn('지령 자동 발동',e)}}
+    if(AL.length)A().sysLog(`【지령 자동 발동】 선행 입력한 6령\n${AL.join('\n')}`,'battle');
+    const rest=tid=>{const t=(b.trainers||{})[tid];if(I.UP[tid]||((((b.cmds||{})[tid]||{}).ok)||{}).pre)return true;return Object.entries(I.SEC).some(([mid,x])=>{const mm=(b.mons||{})[mid];return mm&&mm.tid===tid&&mm.entry&&+(mm.hp||{}).cur>0&&preCounts(t,Object.assign({},x,{command:''}),mm)})};
+    tids=tids.filter(rest)}
    if(tids.length){await A().set(['battle','tstep'],2);
     for(const tid of tids){const t=b.trainers[tid];cutFire('t:'+tid,trainerImg(t),'『지령』 & 『포텐셜』 발동',t.name,t.side==='left'?'#1f6fd1':'#e3101f','You used the Potential!')   /* 10-24 제보: 긴 영문이 큰 글자 칸에서 겹쳤다 — 이름은 크게, 영문은 대사 칸으로 */}
-    A().sysLog(`【『지령』 & 『포텐셜』 발동】\n${tids.map(TN).join(' · ')}\n선행 입력한 것은 「포텐셜 발동」 → 「선행 발동」 (놓쳤으면 행동 순서 · 행동 처리 중에도 발동할 수 있다)\n끝나면 「턴 진행 ▶」`,'battle');return}}
+    A().sysLog(`【『지령』 & 『포텐셜』 발동】\n${tids.map(TN).join(' · ')}\n선행 입력한 포텐셜 · 명령은 「포텐셜 발동」 → 「선행 발동」 (지령은 저절로 걸었다 · 놓쳤으면 행동 순서 · 행동 처리 중에도 발동할 수 있다)\n끝나면 「턴 진행 ▶」`,'battle');return}}
   return computeOrder()}
  async function action(d,val){
   const c=ctx();const b=c.b;
@@ -731,7 +738,8 @@ window.OM_BATTLE_UI=(()=>{
  async function startBattle(){const c=ctx();if(!c.mgr)return;const b=c.b;if(b.started)return;for(const k in FAINT_SEEN)delete FAINT_SEEN[k];
   if(simAny(b)){const n=await applyPending();if(!n&&!Object.values(b.mons||{}).some(m=>m.entry)){if(!(await askYes('예약된 포켓몬이 없다. 그래도 시합을 개시할까?')))return}}
   for(const tid of Object.keys(b.trainers||{}))if((b.trainers[tid]||{}).time)await A().set(['battle','trainers',tid,'time'],null);
-  await A().set(['battle','started'],true);if(!(+b.turn||0))await A().set(['battle','turn'],1);await A().set(['battle','log0'],+A().ST.lastLogId||0);await A().set(['battle','at0'],Date.now());   /* log0 · at0: 전당의 간략 로그를 여기서부터 (hall_ui.js) */
+  await A().set(['battle','started'],true);if(b.done)await A().set(['battle','done'],null);   /* 10-31: 던전으로 돌아온(done) 배틀을 다시 열면 살아 있는 배틀 */
+  if(!(+b.turn||0))await A().set(['battle','turn'],1);await A().set(['battle','log0'],+A().ST.lastLogId||0);await A().set(['battle','at0'],Date.now());   /* log0 · at0: 전당의 간략 로그를 여기서부터 (hall_ui.js) */
   await autoEntryAll(Object.values(ctx().b.mons||{}).filter(m=>m.entry).map(m=>m.id));   /* 선발 전원이 나온 뒤 등장 효과 (스피드 순) */
   A().sysLog('시합 개시! — TURN 1','battle');battleStartCut(ctx().b)}
  /* 퇴장 정리 (맵툴 out_area): 랭크·배율·임시 효과·발동 중인 포텐셜 효과·타입/특성 변경·하늘 위·급소 방호 를 되돌리고, 상태 이상(abn) 과 원념·빈사 빼고는 상태도 푼다.
@@ -1438,7 +1446,7 @@ window.OM_BATTLE_UI=(()=>{
     if(on('uses')){ops.push([[...P,'potUses'],Object.keys(r.uses).length?r.uses:null])}
     if(on('item')&&r.used&&!r.item){ops.push([[...P,'item'],'']);ops.push([[...P,'itemEff'],'']);bits.push(r.used+' 소모')}
     L.push(`${(m.form0||{}).name||m.name}: ${bits.join(' · ')||'반영'}`)}
-   if(!ops.length)return A().toast('반영할 것이 없다');A().closeModal();if(!await A().setMany(ops))return;
+   if(!ops.length)return A().toast('반영할 것이 없다');A().closeModal();ops.push([['battle','resultAt'],Date.now()]);   /* 10-31 망령 「결과 정리를 했는데 던전 귀환 창이 『결과 정리 먼저』」: 했다는 표시 */if(!await A().setMany(ops))return;
    A().sysLog(`【배틀 결과】 시트에 반영\n${L.join('\n')}`,'battle');A().toast('시트에 반영했다');
    {const HL=window.OM_HALL_UI;const nb=ctx().b;if(HL&&HL.worth(nb))await HL.offer(nb,{})}   /* 10-27 망령: 결과 정리 때도 전당에 남길지 */
    if($('#rsclear',md).checked){CMD={};await A().set(['battle'],{turn:0,phase:0,mode:mode(b),sides:{left:{trainers:[]},right:{trainers:[]}},trainers:{},mons:{},field:{},cmds:{},order:[]})}}}

@@ -18,6 +18,8 @@ window.OM_DG_UI=(()=>{
  const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
  const H=esc;const $=(s,r)=>(r||document).querySelector(s);
  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+ /* 10-31 망령 「던전 로그의 (으)로」: 이름 끝 글자 받침에 맞춰 「으로 / 로」 (한글 · 숫자가 아니면 그대로) */
+ const ro=w=>{w=String(w==null?'':w);const c=w.replace(/[\s」』)\]]+$/,'').slice(-1);if(/\d/.test(c))return w+('0136'.includes(c)?'으로':'로');const k=c.charCodeAt(0)-0xAC00;if(!(k>=0&&k<11172))return w+'(으)로';const j=k%28;return w+(j===0||j===8?'로':'으로')};
  const TY={
   entry:{k:'입구',en:'ENTRANCE',ic:'⛩',c:'#59b6ff',h:16,r:'던전으로 들어오고 나가는 곳. 여기서 돌아가면 이번 탐색이 끝난다.'},
   room:{k:'통로',en:'PASSAGE',ic:'◇',c:'#8fa3bf',h:10,r:'특별한 것은 보이지 않는다. 스킬 체크로 살피면 숨은 것을 찾을 수도 있다.'},
@@ -265,7 +267,15 @@ window.OM_DG_UI=(()=>{
    if(c&&DG.clueLocal!==c.rid)DG.clueHide=c.at;DG.clueLocal='';RPH.clueSig='';if(dd)clueSync(stage,dd)})}
   const c=r.cl;box.innerHTML=`<div class="dgcl-card"><div class="dgcl-h"><small>CLUE · ${H(r.n||ty(r.t).k)}</small><b>🔍 ${H(c.t||'단서')}</b><span class="sp"></span>${gm()&&!mine?'<button type="button" data-clx="all" title="모두의 화면에서 내리기">모두 닫기</button>':''}<button type="button" data-clx="me" title="닫기">✕</button></div>${c.img?`<img src="${H(c.img)}" alt="${H(c.t||'단서')}">`:''}${c.d?`<p>${H(c.d).replace(/\n/g,'<br>')}</p>`:''}</div>`}
  async function showClue(d,rid){const r=R(d)[rid];if(!r||!r.cl||!gm())return;const at=Date.now();if(await upd({clue:{did:d.id,rid,at},[P0(d.id)+'r/'+rid+'/cs']:1})){DG.clueHide=0;notice(`🔍 단서 — ${r.cl.t||'단서'}${r.cl.d?'\n'+r.cl.d:''}`);try{window.OM_RP_UI&&window.OM_RP_UI.playSe('Draw',true)}catch(e){}}}
- async function skOffer(d,rid){const r=R(d)[rid];if(!r||!r.sk||!gm())return;const K=SKU();if(!K||!K.present)return A().toast('스킬 체크 기능을 불러오지 못했다');const L=party(d);if(await K.present(r.sk,L,`${d.n||'던전'} · ${r.n||ty(r.t).k}`))A().toast('스킬 체크를 제시했다 — 결과는 「스킬 체크」 창에서')}
+ /* 10-31 망령 「5. 대표 한 명만 체크해서 한 번만 오르는 거야」: 던전 방 체크는 일행 중 대표 한 명이 한 번 굴린다 (실패해도 단계 · 경계도 · 패널티는 한 번).
+    GM 이 대표를 고른다 — 각자 가장 좋은 성공률 순으로 보여 주고, 맨 위(가장 높은 사람)가 기본 */
+ async function skOffer(d,rid){const r=R(d)[rid];if(!r||!r.sk||!gm())return;const K=SKU();if(!K||!K.present)return A().toast('스킬 체크 기능을 불러오지 못했다');const T=RO().trainers||{};const L=party(d).filter(t=>T[t]);if(!L.length)return A().toast('체크를 받을 일행이 없다');
+  const by=`${d.n||'던전'} · ${r.n||ty(r.t).k}`;const go=async id=>{if(await K.present(r.sk,[id],`${by} · 대표 ${(T[id]||{}).name||''}`))A().toast(`스킬 체크를 제시했다 — 대표 ${(T[id]||{}).name||''}`)};
+  if(L.length===1)return go(L[0]);
+  const rows=L.map(t=>({t,b:K.bestOdds?K.bestOdds(t,r.sk):null})).sort((a,b)=>((b.b||{}).ok??-1)-((a.b||{}).ok??-1));const pc=v=>v==null?'—':Math.round(v*100)+'%';
+  const m=A().openModal(`<div class="mhead"><h2>🎲 대표 고르기 <span class="small dim">${H(r.sk.label||r.sk.name||'스킬 체크')}</span></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small dim" style="margin:0 0 8px">던전 체크는 일행 중 <b>한 명</b>이 대표로 한 번 굴린다. 실패하면 대표의 상태 단계 · 경계도 · 패널티가 한 번만 붙는다.</p>
+   <div style="display:flex;flex-direction:column;gap:6px">${rows.map((x,i)=>`<button class="btn ${i?'':'pri'}" data-rep="${H(x.t)}" style="display:flex;gap:10px;align-items:center;text-align:left"><b style="flex:1">${H(T[x.t].name||x.t)}${i?'':' <small>(추천)</small>'}</b><span class="small">${x.b?H(x.b.name)+' · ':''}성공 <b>${pc(x.b&&x.b.ok)}</b></span></button>`).join('')}</div>`);
+  m.querySelectorAll('[data-rep]').forEach(b=>b.onclick=()=>{A().closeModal();go(b.dataset.rep)})}
  async function restHere(d,rid){const r=R(d)[rid];if(!r||!gm())return;const K=SKU();if(!K||!K.applyRest)return A().toast('휴식 기능을 불러오지 못했다');if(r.ru&&!r.rmany)return A().toast('이 휴식처에서는 이미 쉬었다');
   const k=rkOf(r),L=party(d);if(!L.length)return A().toast('쉴 일행이 없다');
   const m=A().openModal(`<div class="mhead"><h2>☗ 휴식 — ${H(r.n||'세이프룸')}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small" style="margin:0 0 8px">일행 ${L.length}명(${H(L.map(t=>((RO().trainers||{})[t]||{}).name).join(', '))})이 쉰다. 단계마다 회복하는 것은 스킬 체크 창 「휴식」 탭의 설정을 따른다.</p><div class="row" style="gap:6px;flex-wrap:wrap">${RKO.map(x=>`<button class="btn ${x[0]===k[0]?'pri':''}" data-rk="${x[0]}">${x[1]} <small>(${x[2]})</small></button>`).join('')}</div>${r.rmany?'':'<p class="small dim" style="margin:8px 0 0">이 휴식처는 한 번만 쓸 수 있다.</p>'}`);
@@ -315,7 +325,7 @@ window.OM_DG_UI=(()=>{
   if(!d)return;
   if(k==='exit'){if(confirm('던전에서 나와 모두를 무대로 돌려보낼까?')&&await upd({'field/mode':'','field/t':Date.now()}))notice(`🏠 던전에서 나왔다 — ${d.n||'던전'}`);return}
   if(k==='kick'){if(await upd({'field/mode':'','field/t':Date.now()}))notice(`[${d.n||'던전'}] 경계도 100% — 강제 퇴출. 이번 탐색은 여기까지.`);return}
-  if(k==='move'){if(!R(d)[v])return;const p=P0(d.id);if(await upd({[p+'at']:v,[p+'r/'+v+'/s']:1})){DG.sel=v;notice(`[${d.n||'던전'}] ▶ ${(R(d)[v].n||ty(R(d)[v].t).k)} (으)로 이동`)}return}
+  if(k==='move'){if(!R(d)[v])return;const p=P0(d.id);if(await upd({[p+'at']:v,[p+'r/'+v+'/s']:1})){DG.sel=v;notice(`[${d.n||'던전'}] ▶ ${ro(R(d)[v].n||ty(R(d)[v].t).k)} 이동`)}return}
   if(k==='seen'){const r=R(d)[v];if(r)upd({[P0(d.id)+'r/'+v+'/s']:r.s?null:1});return}
   if(k==='clear'){const r=R(d)[v];if(r)upd({[P0(d.id)+'r/'+v+'/c']:r.c?null:1});return}
   if(k==='nav'){const n=nbrs(d,d.at).filter(id=>!R(d)[id].s);if(!n.length)return A().toast('주변에 새로 밝힐 방이 없다');const o={};n.forEach(id=>o[P0(d.id)+'r/'+id+'/s']=1);if(await upd(o))notice(`[${d.n||'던전'}] 📡 주변 방 ${n.length}곳이 지도에 드러났다`);return}
@@ -337,6 +347,26 @@ window.OM_DG_UI=(()=>{
  const DG_ROOM_MAX=60,DG_LINK_MAX=240;
  const sKey=k=>String(k==null?'':k).replace(/[^A-Za-z0-9_]/g,'').slice(0,12);
  const sTxt=(v,n)=>v==null?'':String(v).slice(0,n);
+ /* ---------- 10-31 망령 「1. 야생 시트도 같이」: 시뮬 toWebtool 의 방 w (야생 시트 설계: 종 · 타입 · 종족값 · 특성 · 기술 · 포텐셜) ----------
+    가져올 때 방 시트에 야생 트레이너 · 포켓몬을 만들어 r.e 로 잇는다. 내보낼 때는 r.e 의 시트를 w 로 다시 적어 다른 방에서도 그대로 만든다.
+    『와일드』(×1.25) · 『와일드 보스』(×1.5) · 「레이드 배틀 : N」 은 포텐셜로 실려 배틀이 그대로 건다 */
+ function wNorm(w){if(!w||typeof w!=='object'||!Array.isArray(w.mons))return null;
+  const mons=w.mons.slice(0,6).filter(m=>m&&m.name).map(m=>{const b=(Array.isArray(m.base)?m.base:[]).slice(0,6).map(v=>clamp(Math.round(+v||0),1,255));while(b.length<6)b.push(60);
+   const o={name:sTxt(m.name,30),t1:sTxt(m.t1||'-',8),t2:sTxt(m.t2||'-',8),base:b,ability:sTxt(m.ability||'',30),abilityEff:sTxt(m.abilityEff||'',600),item:sTxt(m.item||'',30),moves:(Array.isArray(m.moves)?m.moves:[]).slice(0,8).map(x=>sTxt(typeof x==='string'?x:x&&x.name,30)).filter(Boolean),pride:sTxt(m.pride||'C',4),dist:clamp(Math.round(+m.dist||0),-30,60),boss:!!m.boss,pots:(Array.isArray(m.pots)?m.pots:[]).slice(0,6).map(x=>sTxt(typeof x==='string'?x:x&&x.name,30).replace(/『|』/g,'')).filter(Boolean)};
+   if(m.auto&&typeof m.auto==='object'&&JSON.stringify(m.auto).length<4000)o.auto=JSON.parse(JSON.stringify(m.auto));if(m.image&&/^https?:\/\//.test(String(m.image)))o.image=sTxt(m.image,600);
+   if(!o.pots.some(x=>/^와일드( 보스)?$/.test(x)))o.pots.unshift(o.boss?'와일드 보스':'와일드');return o});
+  return mons.length?{name:sTxt(w.name,40)||'야생',rank:['D','C','B','A'].includes(w.rank)?w.rank:'C',mons}:null}
+ function wBuild(w,tid){const I=window.OM_IMPORT;if(!I||!I.trainer||!I.pokemon)throw new Error('가져오기 엔진(OM_IMPORT)이 없다');
+  const tr=I.trainer({id:tid,data:{name:w.name,kind:'npc',ranks:{육성:w.rank||'C',지시:'D',통솔:'D',능력:'D'},pids:[]}});tr.id=tid;tr.name=w.name;tr.kind='npc';tr.wild=true;tr.src='sim';tr.orderCount={};tr.pids=[];const mons={};
+  w.mons.forEach((s0,i)=>{const id=tid+'m'+i;const x=I.pokemon({id,data:{name:s0.name,t1:s0.t1,t2:s0.t2,base:s0.base.slice(),ability:s0.ability,item:s0.item,moves:s0.moves.map(n=>({name:n})),pride:s0.pride,dist:s0.dist,pots:s0.pots.slice()}},tr);
+   x.id=id;x.tid=tid;if(s0.abilityEff)x.abilityEff=s0.abilityEff;if(s0.auto)x.auto=Object.assign({},x.auto||{},s0.auto);if(s0.image)x.image=s0.image;x.boss=!!s0.boss;x.role=s0.pots.find(p=>/^와일드( 보스)?$/.test(p))||x.role||'';if(x.hp)x.hp.cur=x.hp.max;
+   mons[id]=JSON.parse(JSON.stringify(x));tr.pids.push(id)});
+  return {tr:JSON.parse(JSON.stringify(tr)),mons}}
+ function wOut(tid){const T=RO().trainers||{},M=RO().mons||{};const t=T[tid];if(!t)return null;const ms=(t.pids||[]).map(id=>M[id]).filter(Boolean);if(!ms.length)return null;
+  return {name:t.name||'야생',rank:(t.ranks||{}).육성||'C',mons:ms.slice(0,6).map(m=>{const tk=m.typesKo||[];const o={name:m.species||m.name,t1:tk[0]||'-',t2:tk[1]||'-',base:(m.base0||m.base||[]).slice(0,6),ability:m.ability||'',abilityEff:m.abilityEff||'',item:m.item||'',moves:(m.moves||[]).map(v=>v&&v.name).filter(n=>n&&n!=='발버둥'),pride:m.pride||'C',dist:+(m.mkDist??m.dist)||0,boss:!!m.boss,pots:(m.pots||[]).map(p=>p&&p.name).filter(Boolean)};if(m.auto&&Object.keys(m.auto).length)o.auto=m.auto;if(m.image)o.image=m.image;return o})}}
+ /* 방 시트에 야생을 만든다 → 만든 트레이너 id (ops 에 쓰기 목록을 더한다) */
+ function wMake(w,rid,ops){const T=RO().trainers||{};let tid;do tid='wd'+String(rid||'').replace(/[^\w]/g,'').slice(0,5)+Math.random().toString(36).slice(2,5);while(T[tid]||ops.some(o=>o[0][2]===tid));
+  const b=wBuild(w,tid);ops.push([['roster','trainers',tid],b.tr]);for(const [id,m] of Object.entries(b.mons))ops.push([['roster','mons',id],m]);return tid}
  function dgNorm(src,warn){if(!src||typeof src!=='object'||Array.isArray(src))throw new Error('던전 하나는 { } 객체여야 한다');
   const r0=src.r&&typeof src.r==='object'?src.r:null;if(!r0||!Object.keys(r0).length)throw new Error('방(r)이 없다');
   const ks=Object.keys(r0);if(ks.length>DG_ROOM_MAX)throw new Error(`방이 너무 많다 (${ks.length} > ${DG_ROOM_MAX})`);
@@ -349,20 +379,25 @@ window.OM_DG_UI=(()=>{
     if(k2.name)sk.name=sTxt(k2.name,60);for(const f of ['step','twice','pm'])if(+k2[f])sk[f]=+k2[f];if(['easy','normal','hard','vhard'].includes(k2.auto))sk.auto=k2.auto;if(+k2.v>=4){sk.v=4;sk.base=clamp(Math.round(+k2.base||0),0,5);if(+k2.noStep)sk.noStep=1;if(k2.scene==='rp')sk.scene='rp';if(k2.fit&&typeof k2.fit==='object')sk.fit={types:(k2.fit.types||[]).slice(0,8).map(x=>sTxt(x,10)),moves:(k2.fit.moves||[]).slice(0,8).map(x=>sTxt(x,30)),abil:(k2.fit.abil||[]).slice(0,8).map(x=>sTxt(x,30)),etc:sTxt(k2.fit.etc||'',60)};if(+k2.npcMod)sk.npcMod=Math.round(+k2.npcMod);if(k2.npcDef==='pc')sk.npcDef='pc'}if(k2.npc)sk.npc=sTxt(k2.npc,40);if(k2.pen&&typeof k2.pen==='object')sk.pen=JSON.parse(JSON.stringify(k2.pen));o.sk=sk}
    if(x.rk&&rk.has(x.rk))o.rk=x.rk;if(+x.rmany)o.rmany=1;
    if(x.cl&&typeof x.cl==='object'){const c={t:sTxt(x.cl.t,60),d:sTxt(x.cl.d,1200)};if(x.cl.img&&/^https?:\/\//.test(String(x.cl.img)))c.img=sTxt(x.cl.img,600);if(c.t||c.d)o.cl=c}
-   if(x.e){if(tr[x.e]){o.e=String(x.e);if(+x.eh)o.eh=1}else warn.push(`「${o.n}」 야생 무리 ${x.e} 는 이 방 시트에 없어서 뺐다 (GM 메모를 보고 배치)`)}
+   if(x.e){if(tr[x.e]){o.e=String(x.e);if(+x.eh)o.eh=1}else if(!x.w)warn.push(`「${o.n}」 야생 무리 ${x.e} 는 이 방 시트에 없어서 뺐다 (GM 메모를 보고 배치)`)}
+   if(!o.e&&x.w){const w=wNorm(x.w);if(w){o.w=w;if(+x.eh)o.eh=1}}   /* 10-31: 야생 시트 설계 — 가져오기(dgImport)가 시트를 만들고 e 로 바꾼다 */
+   for(const f of ['aw','alo'])if(x[f]!=null&&x[f]!==''&&Number.isFinite(+x[f]))o[f]=clamp(Math.round(+x[f]),-100,100);   /* 10-31 망령 「배틀 승/패 경계도를 전투마다」 */
    r[id]=o});
   const l={};let nl=0;for(const k of Object.keys(src.l||{})){const [a,b]=String(k).split('~');const A1=map[a],B1=map[b];if(!A1||!B1||A1===B1)continue;l[lk(A1,B1)]=1;if(++nl>DG_LINK_MAX)throw new Error('통로가 너무 많다')}
   let st=map[src.st];if(!st){st=(Object.keys(r).find(id=>r[id].t==='entry'))||Object.keys(r)[0];if(src.st)warn.push('시작 방(st)이 없어서 '+r[st].n+' 으로')}
   const d={n:sTxt(src.n,60)||'가져온 던전',al:0,st,r,l};if(src.o)d.o=sTxt(src.o,60);if(src.a)d.a=sTxt(src.a,60);if(src.d)d.d=sTxt(src.d,60);
-  const wn=Math.round(+src.wn);if(wn>=1&&wn<=3&&wn!==2)d.wn=wn;if(+src.noal)d.noal=1;
+  const wn=Math.round(+src.wn);if(wn>=1&&wn<=3&&wn!==2)d.wn=wn;if(+src.noal)d.noal=1;for(const f of ['aw','alo'])if(src[f]!=null&&src[f]!==''&&Number.isFinite(+src[f]))d[f]=clamp(Math.round(+src[f]),-100,100);
   if(src.gen&&typeof src.gen==='object')d.src=JSON.parse(JSON.stringify({tier:src.gen.tier||'',seed:src.gen.seed||'',theme:src.gen.theme||''}));
   /* 통로로 안 이어진 방 알림 */const seen=new Set([st]),q=[st];const adj={};Object.keys(l).forEach(k=>{const [a,b]=k.split('~');(adj[a]=adj[a]||[]).push(b);(adj[b]=adj[b]||[]).push(a)});while(q.length){const c=q.shift();for(const n of adj[c]||[])if(!seen.has(n)){seen.add(n);q.push(n)}}
   const lone=Object.keys(r).filter(id=>!seen.has(id));if(lone.length)warn.push(`시작 방에서 못 가는 방 ${lone.length}개: ${lone.map(id=>r[id].n).join(', ')}`);
   return d}
- function dgOut(d){const r={};for(const [id,x] of Object.entries(R(d))){const o=Object.assign({},x);delete o.c;delete o.cs;delete o.ru;r[id]=o}const o={n:d.n||'',st:d.st,r,l:Object.assign({},d.l||{})};for(const f of ['o','a','d','wn','noal','src'])if(d[f]!=null&&d[f]!=='')o[f]=d[f];return o}
+ function dgOut(d){const r={};for(const [id,x] of Object.entries(R(d))){const o=Object.assign({},x);delete o.c;delete o.cs;delete o.ru;if(o.e&&!o.w){try{const w=wOut(o.e);if(w)o.w=w}catch(e){}}r[id]=o}const o={n:d.n||'',st:d.st,r,l:Object.assign({},d.l||{})};for(const f of ['o','a','d','wn','noal','src','aw','alo'])if(d[f]!=null&&d[f]!=='')o[f]=d[f];return o}   /* 10-31: 야생 시트도 w 로 같이 내보낸다 */
  async function dgImport(txt){let j;try{j=JSON.parse(String(txt||'').trim())}catch(e){throw new Error('JSON 을 읽지 못했다 — '+e.message)}
   const list=Array.isArray(j)?j:(j&&Array.isArray(j.dungeons)?j.dungeons:[j]);if(!list.length)throw new Error('비어 있다');if(list.length>20)throw new Error('한 번에 20개까지');
   const warn=[],o={};let last='';list.forEach((x,i)=>{const w=[];const d=dgNorm(x,w);const id=Math.random().toString(36).slice(2,8);o['list/'+id]=d;last=id;w.forEach(t=>warn.push((list.length>1?`[${i+1}] `:'')+t))});
+  /* 10-31 망령 「1. 야생 시트도 같이」: w 가 있는 방은 방 시트에 야생 트레이너를 만들어 잇는다 */
+  {const ops=[];let nw=0;for(const d of Object.values(o))for(const [rid,r] of Object.entries(d.r||{})){if(!r.w||r.e)continue;try{r.e=wMake(r.w,rid,ops);delete r.w;nw++}catch(e){warn.push(`「${r.n}」 야생 시트를 못 만들었다 — ${e.message}`)}}
+   if(ops.length){if(!await A().setMany(ops))throw new Error('야생 시트를 시트에 쓰지 못했다');warn.push(`야생 시트 ${nw}개를 시트 탭에 만들어 방에 배치했다`)}}
   if(!await upd(o))return null;return {n:list.length,last,warn}}
 
  function edHTML(){const ds=all(),ids=Object.keys(ds);if(!ds[DG.ed])DG.ed=ids[0]||'';const d=edD();if(d&&!R(d)[DG.edSel])DG.edSel='';
@@ -382,7 +417,7 @@ window.OM_DG_UI=(()=>{
   const tool=`<div class="dg-acts" style="margin:0 0 8px"><button class="btn sm ${DG.edMode==='move'?'pri':''}" data-e="mode" data-v="move">✥ 배치 · 이동</button><button class="btn sm ${DG.edMode==='link'?'pri':''}" data-e="mode" data-v="link">⟷ 통로 연결</button></div>`;
   const sideHTML=r?`<div class="dg-ed-side"><b style="font-size:15px">${t.ic} 방 편집</b><label>이름<input data-dgr="n" value="${H(r.n||'')}"></label><label>종류<select data-dgr="t">${TORDER.map(k=>`<option value="${k}" ${k===(r.t in TY?r.t:'room')?'selected':''}>${TY[k].ic} ${TY[k].k}</option>`).join('')}</select></label><p class="dg-help" style="margin:0">${t.r}</p><label>GM 메모 (GM 화면에만)<textarea data-dgr="m" rows="3">${H(r.m||'')}</textarea></label>
    ${(()=>{const tr=RO().trainers||{},ms=RO().mons||{},pt=new Set(party(d));const ids=Object.keys(tr).filter(id=>!pt.has(id)||id===r.e).sort((a,b)=>(tr[a].ord||0)-(tr[b].ord||0));
-    return `<label>야생 포켓몬 배치 <small class="dim">(시트의 GM 트레이너 = 야생 무리)</small><select data-dge="e"><option value="">— 없음 —</option>${ids.map(id=>{const t=tr[id],n=(t.pids||[]).filter(x=>ms[x]);return `<option value="${H(id)}" ${id===r.e?'selected':''}>${H(t.name||id)} · ${n.length}체${n.length?' ('+H(n.slice(0,3).map(x=>ms[x].name).join(', '))+(n.length>3?' …':'')+')':''}</option>`}).join('')}</select></label>${r.e?`<label class="dg-chk"><input type="checkbox" data-dge="eh" ${r.eh?'checked':''}> 플레이어 지도에 「!」 숨기기 (기습)</label>`:''}<p class="dg-help" style="margin:0">야생 무리는 <b>시트</b> 탭 「+ 새 트레이너」(이름 예: 야생 · 터빈실)에 포켓몬을 넣거나 제작기에서 가져와 만든다. 플레이 중 이 방에서 「⚔ 야생 조우」를 누르면 일행 VS 이 무리로 배틀이 차려진다.</p>`})()}
+    return `<label>야생 포켓몬 배치 <small class="dim">(시트의 GM 트레이너 = 야생 무리)</small><select data-dge="e"><option value="">— 없음 —</option>${ids.map(id=>{const t=tr[id],n=(t.pids||[]).filter(x=>ms[x]);return `<option value="${H(id)}" ${id===r.e?'selected':''}>${H(t.name||id)} · ${n.length}체${n.length?' ('+H(n.slice(0,3).map(x=>ms[x].name).join(', '))+(n.length>3?' …':'')+')':''}</option>`}).join('')}</select></label>${r.e?`<label class="dg-chk"><input type="checkbox" data-dge="eh" ${r.eh?'checked':''}> 플레이어 지도에 「!」 숨기기 (기습)</label>`:''}${r.w&&!r.e?`<div class="dg-acts"><button class="btn sm pri" data-e="wmake" title="시뮬레이터가 보낸 야생 설계로 시트 탭에 야생 트레이너를 만들어 이 방에 배치">야생 시트 만들기 · ${r.w.mons.length}체 (${H(r.w.mons.map(m=>m.name).join(', '))})</button></div>`:''}${r.e||r.w||r.t==='battle'||r.t==='boss'?`<div class="dg-ed-row" title="10-31: 이 방 전투가 끝나고 던전으로 돌아갈 때 오르는 경계도 (비우면 던전 기본값)"><label>이기면 경계도 +<input type="number" data-dga="aw" value="${r.aw??''}" placeholder="${d.aw??0}" style="width:64px"></label><label>지면 +<input type="number" data-dga="alo" value="${r.alo??''}" placeholder="${d.alo??0}" style="width:64px"></label></div>`:''}<p class="dg-help" style="margin:0">야생 무리는 <b>시트</b> 탭 「+ 새 트레이너」(이름 예: 야생 · 터빈실)에 포켓몬을 넣거나 제작기에서 가져와 만든다. 플레이 중 이 방에서 「⚔ 야생 조우」를 누르면 일행 VS 이 무리로 배틀이 차려진다.</p>`})()}
    ${(()=>{const K=SKU();const L=K&&K.presetList?K.presetList():[];const sk=r.sk&&K&&K.up?K.up(r.sk):r.sk;
     return `<div class="dg-ed-ev"><b>🎲 스킬 체크</b><select data-dgk="pick"><option value="">${sk?'— 다른 예시로 바꾸기 —':'— 없음 —'}</option>${L.map(p=>`<option value="${H(p.id)}">${H(p.name)}</option>`).join('')}<option value="new">+ 직접 만들기</option></select>${sk?`<div class="dg-ed-row"><label>내용<input data-dgk="label" value="${H(sk.label||'')}" placeholder="예: 잠긴 문을 연다"></label><label>능력<select data-dgk="stat">${['지시','육성','통솔','능력'].map(x=>`<option ${x===sk.stat?'selected':''}>${x}</option>`).join('')}</select></label><label>종족값<select data-dgk="base">${['HP','공격','방어','특공','특방','스피드'].map((x,i)=>`<option value="${i}" ${i===+(sk.base??3)?'selected':''}>${x}</option>`).join('')}</select></label><label>목표<input type="number" min="2" max="20" data-dgk="target" value="${+sk.target||10}"></label><label title="난이도 이름으로 목표를 정한다 (쉬움 8 · 보통 10 · 어려움 12 · 매우 어려움 15)">난이도<select data-dgk="auto">${[['','직접 (목표 칸)'],['easy','쉬움 8'],['normal','보통 10'],['hard','어려움 12'],['vhard','매우 어려움 15']].map(([v,n])=>`<option value="${v}" ${(sk.auto||'')===v?'selected':''}>${n}</option>`).join('')}</select></label></div><p class="dg-help" style="margin:0">${H(skSum(sk))}${sk.pen?' · 패널티는 예시에 붙은 것':''} <button type="button" class="btn xs ghost" data-e="skdel">체크 빼기</button></p>`:'<p class="dg-help" style="margin:0">플레이 중 이 방에서 「🎲 스킬 체크 제시」를 누르면 일행에게 바로 제시된다. 예시는 스킬 체크 창에서 저장한 것까지 나온다.</p>'}</div>`})()}
    <div class="dg-ed-ev"><b>🔍 단서</b><label>제목<input data-dgc="t" value="${H((r.cl||{}).t||'')}" placeholder="예: 찢어진 작업 일지"></label><label>설명<textarea data-dgc="d" rows="3" placeholder="공개하면 모두의 무대에 그림과 함께 뜬다">${H((r.cl||{}).d||'')}</textarea></label><label>그림 주소<input data-dgc="img" value="${H((r.cl||{}).img||'')}" placeholder="https://… (비워도 된다)"></label><div class="dg-acts"><label class="btn sm">단서 그림 올리기<input type="file" accept="image/*" data-e="climg" hidden></label>${r.cl?'<button class="btn sm ghost" data-e="cldel">단서 빼기</button>':''}</div></div>
@@ -403,6 +438,7 @@ window.OM_DG_UI=(()=>{
    let sk=Object.assign({},R(d)[DG.edSel].sk||{});if(SKU()&&SKU().up)sk=SKU().up(sk);if(f==='base')sk.base=Math.max(0,Math.min(5,+i.value||0));else if(f==='target')sk.target=Math.max(2,Math.min(20,+i.value||10));else if(f==='auto'){if(i.value)sk.auto=i.value;else delete sk.auto}else sk[f]=i.value.trim().slice(0,60);await upd({[p]:sk});edDraw()});
   box.querySelectorAll('[data-dgc]').forEach(i=>i.onchange=async()=>{const d=edD();if(!d||!R(d)[DG.edSel])return;const cl=Object.assign({},R(d)[DG.edSel].cl||{});const f=i.dataset.dgc;cl[f]=i.value.trim().slice(0,f==='d'?1200:f==='img'?600:60);Object.keys(cl).forEach(k=>{if(!cl[k])delete cl[k]});await upd({[P0(d.id)+'r/'+DG.edSel+'/cl']:Object.keys(cl).length?cl:null});edDraw()});
   box.querySelectorAll('[data-dgs]').forEach(i=>i.onchange=async()=>{const d=edD();if(!d||!R(d)[DG.edSel])return;const f=i.dataset.dgs,p=P0(d.id)+'r/'+DG.edSel+'/';if(f==='rk')await upd({[p+'rk']:i.value==='short'?null:i.value});else await upd({[p+'rmany']:i.checked?1:null});edDraw()});
+  box.querySelectorAll('[data-dga]').forEach(i=>i.onchange=async()=>{const d=edD();if(!d||!R(d)[DG.edSel])return;const v=i.value.trim();await upd({[P0(d.id)+'r/'+DG.edSel+'/'+i.dataset.dga]:v===''||!Number.isFinite(+v)?null:clamp(Math.round(+v),-100,100)});edDraw()});
   box.querySelectorAll('[data-dge]').forEach(i=>i.onchange=async()=>{const d=edD();if(!d||!R(d)[DG.edSel])return;const f=i.dataset.dge,p=P0(d.id)+'r/'+DG.edSel+'/';if(f==='e'){const o={[p+'e']:i.value||null};if(!i.value)o[p+'eh']=null;await upd(o)}else await upd({[p+'eh']:i.checked?1:null});edDraw()});
   box.querySelectorAll('[data-dgr]').forEach(i=>i.onchange=()=>{const d=edD();if(d&&R(d)[DG.edSel]){const f=i.dataset.dgr;upd({[P0(d.id)+'r/'+DG.edSel+'/'+f]:i.value.trim().slice(0,f==='m'?400:f==='b'?600:40)||null})}});
   const svg=$('#dgEdSvg',box);if(svg)svgBind(svg);
@@ -427,6 +463,7 @@ window.OM_DG_UI=(()=>{
  async function edAct(k,b){const d=edD();
   if(k==='close'){A().closeModal();DG.edOpen=false;return A().renderScene()}
   if(k==='mode'){DG.edMode=b.dataset.v;DG.edFrom='';return edDraw()}
+  if(k==='wmake'){const r=d&&R(d)[DG.edSel];if(!r||!r.w)return;const ops=[];let tid;try{tid=wMake(r.w,DG.edSel,ops)}catch(e){return A().toast('야생 시트를 못 만들었다 — '+e.message)}if(!await A().setMany(ops))return;await upd({[P0(d.id)+'r/'+DG.edSel+'/e']:tid,[P0(d.id)+'r/'+DG.edSel+'/w']:null});A().toast(`야생 시트를 만들었다 — ${r.w.name}`);return edDraw()}
   if(k==='imp'){DG.imp=!DG.imp;DG.exp=false;return edDraw()}
   if(k==='impx'){DG.imp=false;return edDraw()}
   if(k==='impfile'){const f=b.files&&b.files[0];if(!f)return;if(f.size>2e6)return A().toast('파일이 너무 크다 (2MB 까지)');try{const t=await f.text();const ta=$('#dgImpTxt');if(ta)ta.value=t}catch(e){A().toast('파일을 읽지 못했다')}return}
@@ -508,10 +545,23 @@ window.OM_DG_UI=(()=>{
  function retSync(){let el=document.getElementById('dgRet');const b=ST().state.battle||{},d=cur();/* 10-26 망령: RP 화면에서도 떠 있어 아래 줄과 겹쳤다 — 배틀 탭을 보고 있을 때만 */const want=gm()&&!!d&&ST().state.scene==='battle'&&!!b.dg&&b.dg.did===d.id&&!!document.querySelector('button[data-s="battle"].on');
   if(!want){if(el)el.remove();return}
   if(!el){el=document.createElement('button');el.id='dgRet';el.type='button';el.className='dg-ret';el.textContent='⛩ 던전으로 돌아가기';el.title='배틀을 마치고 던전 방으로 (결과 정리 · 클리어 표시)';el.onclick=retOpen;document.body.append(el)}}
- function retOpen(){const d=cur(),b=ST().state.battle||{};if(!d||!b.dg)return;const rid0=b.dg.rid,r=R(d)[rid0]||{};const foes=Object.values(b.mons||{}).filter(m=>m.side==='right');const win=foes.length>0&&foes.every(m=>((m.hp||{}).cur||0)<=0);
-  const m=A().openModal(`<div class="mhead"><h2>⛩ 던전으로 돌아가기</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small" style="margin:0 0 8px">${win?'야생 포켓몬을 모두 쓰러뜨렸다.':'아직 서 있는 야생 포켓몬이 있다 (도망 · 포획 · 중단).'} 일행의 HP · 상태를 시트에 남기려면 먼저 <b>결과 정리</b>를 한다.</p><label class="row" style="gap:6px"><input type="checkbox" id="dgRetClr" ${win?'checked':''}> 「${H(r.n||ty(r.t).k)}」 클리어 표시 (야생 기척 없애기)</label><div class="row" style="margin-top:12px"><button class="btn" id="dgRetRes">📋 결과 정리 먼저</button><span class="sp"></span><button class="btn pri" id="dgRetGo">⛩ 던전으로</button></div>`);
+ /* 10-31 망령 개수: 「9. 결과 정리를 했는데도 『결과 정리 먼저』」 — battle.resultAt(battle_ui 결과 정리)로 이미 했는지 본다.
+    「4. 배틀 승/패 경계도를 전투마다」 — 방 r.aw(이김) · r.alo(짐), 없으면 던전 d.aw · d.alo. 이김/짐/올리지 않음을 고르고 수치를 고칠 수 있다.
+    「4식 · 6령」 — 배틀에서 쓴 횟수(배틀 쪽 사본)를 시트에 돌려 적고 배틀을 done 으로 (파티 현황 · 체크 · 휴식이 시트 쪽을 본다) */
+ function retOpen(){const d=cur(),b=ST().state.battle||{};if(!d||!b.dg)return;const rid0=b.dg.rid,r=R(d)[rid0]||{};const MS=Object.values(b.mons||{});const foes=MS.filter(m=>m.side==='right'),mine=MS.filter(m=>m.side==='left');const dead=m=>((m.hp||{}).cur||0)<=0;
+  const win=foes.length>0&&foes.every(dead),lose=!win&&mine.length>0&&mine.every(dead);const res=!!b.resultAt;const al=alOn(d);
+  const aw=r.aw??d.aw??0,alo=r.alo??d.alo??0;const pick=win?'w':lose?'l':'n';
+  const m=A().openModal(`<div class="mhead"><h2>⛩ 던전으로 돌아가기</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small" style="margin:0 0 8px">${win?'야생 포켓몬을 모두 쓰러뜨렸다.':lose?'일행의 포켓몬이 모두 쓰러졌다.':'아직 서 있는 포켓몬이 있다 (도망 · 포획 · 중단).'} ${res?'<b>결과 정리를 마쳤다</b> — 일행의 HP · 상태가 시트에 남았다.':'일행의 HP · 상태를 시트에 남기려면 먼저 <b>결과 정리</b>를 한다.'}</p><label class="row" style="gap:6px"><input type="checkbox" id="dgRetClr" ${win?'checked':''}> 「${H(r.n||ty(r.t).k)}」 클리어 표시 (야생 기척 없애기)</label>
+   ${al?`<div class="row" style="gap:6px;margin-top:8px;align-items:center"><span class="small">경계도</span><select id="dgRetAl"><option value="w" ${pick==='w'?'selected':''}>이겼다 (+${aw})</option><option value="l" ${pick==='l'?'selected':''}>졌다 (+${alo})</option><option value="n" ${pick==='n'?'selected':''}>올리지 않음</option></select><span class="small">+</span><input type="number" id="dgRetAlN" value="${pick==='w'?aw:pick==='l'?alo:0}" style="width:64px"><span class="small dim">지금 ${clamp(+d.al||0,0,100)}%</span></div>`:''}
+   <div class="row" style="margin-top:12px"><button class="btn ${res?'ghost':''}" id="dgRetRes">${res?'📋 결과 정리 다시':'📋 결과 정리 먼저'}</button><span class="sp"></span><button class="btn pri" id="dgRetGo">⛩ 던전으로</button></div>`);
+  const sel=m.querySelector('#dgRetAl'),num=m.querySelector('#dgRetAlN');if(sel)sel.onchange=()=>{num.value=sel.value==='w'?aw:sel.value==='l'?alo:0};
   m.querySelector('#dgRetRes').onclick=()=>{A().closeModal();try{window.OM_BATTLE_UI.action({act:'result'})}catch(e){}};
-  m.querySelector('#dgRetGo').onclick=async()=>{const clr=m.querySelector('#dgRetClr').checked;A().closeModal();if(clr&&R(d)[rid0])await upd({[P0(d.id)+'r/'+rid0+'/c']:1});await A().set(['battle','dg'],null);await A().set(['scene'],'rp');notice(`⛩ ${d.n||'던전'}(으)로 돌아왔다${clr?` — 「${r.n||ty(r.t).k}」 클리어`:''}`);try{A().goView('rp')}catch(e){}}}
+  m.querySelector('#dgRetGo').onclick=async()=>{const clr=m.querySelector('#dgRetClr').checked;const ak=sel?sel.value:'n',an=num?Math.round(+num.value||0):0;A().closeModal();
+   /* 배틀에서 쓴 4식 · 6령 → 시트 */{const RT=RO().trainers||{};const ops=[];const seen=new Set();for(const tid of ((b.sides||{}).left||{}).trainers||[]){const bt=(b.trainers||{})[tid];if(!bt||!bt.orderCount)continue;const id=RT[tid]?tid:(bt.srcTid&&RT[bt.srcTid]?bt.srcTid:'');if(!id||seen.has(id))continue;seen.add(id);const oc=Object.assign({},RT[id].orderCount||{});let ch=false;for(const [k,v] of Object.entries(bt.orderCount))if(/^(order|command)_/.test(k)&&!/@/.test(k)&&(+oc[k]||0)!==(+v||0)){oc[k]=Math.max(0,+v||0);ch=true}if(ch)ops.push([['roster','trainers',id,'orderCount'],oc])}
+    ops.push([['battle','done'],1]);await A().setMany(ops)}
+   if(clr&&R(d)[rid0])await upd({[P0(d.id)+'r/'+rid0+'/c']:1});
+   let alTxt='';if(al&&ak!=='n'&&an)alTxt=await alAdd(an,ak==='w'?'배틀 승리':'배틀 패배');
+   await A().set(['battle','dg'],null);await A().set(['scene'],'rp');notice(`⛩ ${ro(d.n||'던전')} 돌아왔다${clr?` — 「${r.n||ty(r.t).k}」 클리어`:''}`);try{A().goView('rp')}catch(e){}}}
 
  /* 지도 연계 (10-26 망령): 지도 장소에 던전을 걸어 두고 그 핀에서 바로 진입 — rp_ui 의 지도 메뉴가 부른다 */
  function list(){return Object.entries(all()).map(([id,d])=>({id,n:d.n||'이름 없는 던전',rooms:Object.keys(R(d)).length,opts:startOptions(d)}))}

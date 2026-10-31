@@ -854,6 +854,8 @@ async function encounter(o){if(ST.role!=='gm')return false;const r=roster();cons
  const nb={turn:0,phase:0,mode:2,sides:{left:{trainers:[]},right:{trainers:[]}},trainers:{},mons:{},field:{},cmds:{},order:[],dg:o.dg||null};
  const seats=ST.state.seats||{};const all=[];
  const put=(tid,side)=>{const t=JSON.parse(JSON.stringify(r.trainers[tid]));if(t.two)t.pids=twoPids(t);const ms=(t.pids||[]).map(id=>r.mons[id]).filter(Boolean).map(x=>JSON.parse(JSON.stringify(x)));
+  /* 10-31 망령 「『와일드』 ×1.25 가 웹툴에서 사라진다」: prepMon 이 mod 를 비우니 배율은 포텐셜로만 건다 — 야생 시트에 『와일드』 · 『와일드 보스』 포텐셜이 없으면 붙인다 */
+  if(side==='right'&&t.wild)ms.forEach(m=>{m.pots=Array.isArray(m.pots)?m.pots:[];if(!m.pots.some(p=>p&&/^와일드( 보스)?$/.test(p.name))){const nm=m.boss?'와일드 보스':'와일드';m.pots.push({slot:m.pots.length,name:nm,kind:'',eff:m.boss?'모든 능력치 ×1.5':'모든 능력치 ×1.25',ph:false});if(!m.role)m.role=nm}});
   delete t.walk;delete t.solo;t.side=side;t.by=seats[tid]&&side==='left'?tid:'gm';nb.sides[side].trainers.push(tid);nb.trainers[tid]=t;ms.forEach((m,i)=>{prepMon(m,side,i);nb.mons[m.id]=m;all.push(m)});return ms};
  /* 10-26 던전 시험: 일행이 셋이고 에리어가 3칸인데 앞 사람의 동행 둘이 먼저 다 차지해 레온은 한 마리도 못 나갔다 — 트레이너마다 1번 동행부터 번갈아 (1번들 → 2번들 …) */const per=[];L.forEach(tid=>{const ms=put(tid,'left');const w=((o.walk||{})[tid]||[]);per.push(w.map(id=>ms.find(x=>x.id===id)).filter(m=>m&&m.hp.cur>0))});const lw=[];for(let i=0;per.some(x=>x[i]);i++)per.forEach(x=>{if(x[i])lw.push(x[i])});
  const rw=[];R.forEach(tid=>put(tid,'right').forEach(m=>{if(m.hp.cur>0)rw.push(m)}));

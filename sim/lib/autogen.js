@@ -20,7 +20,7 @@ const COMMON={lv:5,bossLv:5,   /* 10-28 03:50 망령 「+1 은 웃기다 · +5/+
    체크만 3개면 = 어려운 길: 목표 한 칸 위만 (체크 수 3 · 4 · 5 는 승률 59 · 58 · 58% 로 거의 같다) */
 const TOUGH={tgt:'tierUp',alFail:45,alCost:20};
 const DEX_BST={wild:[400,520],boss:[520,600]};   /* 도감 야생 종족치 범위 — 보스는 600족까지(전설 · 환상 680 이상은 안 나옴) */
-const RULES={restV:2,alBattle:5,al30:5,al70:10,   /* 10-28 03:23 망령: 조우 경계도 +10 → +5, 경계도 단계의 레벨 상승(+5 · +10)은 그대로 */
+const RULES={restV:2,alBattle:5,alLose:10,   /* 10-31 망령: 배틀에 지면(웹툴에서 물러나면) 경계도 +10 — 방마다 enc.alLose 로 바꾼다 */al30:5,al70:10,   /* 10-28 03:23 망령: 조우 경계도 +10 → +5, 경계도 단계의 레벨 상승(+5 · +10)은 그대로 */
  restShort:'all',restPO:1,restPC:1,restBreath:'one',restBC:1};   /* 10-28 22시 망령: 짧은 휴식 전원 HP 1/4 · 숨돌리기 = 1체 HP 1/4 + 6령 1 */   /* 10-28 03:25 망령: 짧은 휴식 = 파티 4식 · 6령 1개씩 + 가장 다친 1체 HP 1/4 + 빈사 HP 1 + 상태 회복 (lib/dungeon.js doRest) */
 const PRESET={easy:{battles:[0,1]},   /* 10-28 03:50 Lv +5 · 던전 단위 자원에서: 0 → 92% · 1 → 69% · 0~1 → 82% */
  normal:{battles:[1]},   /* 10-28 01:38 망령: 2 → 1~2. 03:50 Lv +5 · 던전 단위 자원에서 1~2 → 51% · 1 → 58% 라 1 로 (망령 확인 대기) */
@@ -166,10 +166,19 @@ function toWebtool(dg,names){names=names||{};for(const [t,i,n] of G.POOL.concat(
    memo.push(`🎲 ${c0.stat} + ${require('./skill.js').BASE[u.base]||''} · ${TN[+u.target]||''} ${u.target} · 적합 ${ft.length?'타입 '+ft.join('/'):'아무 포켓몬'}`);memo.push(`  실패: 트레이너 상태 한 단계${c0.noStep?' 없음':''} · ${PEN_KO(c0.pen&&c0.pen.fail)}`);if(c0.gainCrit)memo.push(`  대성공: ${PEN_KO(c0.gainCrit)}`);if(c0.reward)memo.push(`  보상: ${c0.reward}`)}
   if(x.enc&&x.enc.mix){const mons=x.enc.mix.flatMap(m=>m.sp?[m.sp]:m.db?[nameOf('db',m.db)]:(m.pick||[]).map(i=>nameOf(m.trainer,i)));   /* 10-28: 야생 DB(m.db) 이름이 빠져 「야생 0체」로 나가던 것 고침 */const lv=+x.enc.lvAdd||0;
    memo.push(`${x.enc.boss?'♛ 보스방':'⚔ 야생'} ${mons.length}체 · Lv ${lv>=0?'+':''}${lv} (경계도 30↑ +${dg.rules&&dg.rules.al30||5} · 70↑ +${dg.rules&&dg.rules.al70||10})`);
-   memo.push('  '+mons.map((n,j)=>x.enc.boss&&j===(+x.enc.bossAt||0)?`★${n}『와일드 보스』${x.enc.raid?' 「레이드 배틀 : '+x.enc.raid+'」':''}`:`${n}『와일드』`).join(' · '));if(!x.enc.boss&&dg.rules&&dg.rules.alBattle)memo.push(`  배틀이 끝나면 경계도 +${dg.rules.alBattle}`)}
+   memo.push('  '+mons.map((n,j)=>x.enc.boss&&j===(+x.enc.bossAt||0)?`★${n}『와일드 보스』${x.enc.raid?' 「레이드 배틀 : '+x.enc.raid+'」':''}`:`${n}『와일드』`).join(' · '));{const RU=dg.rules||{};const aw=x.enc.alWin!=null&&x.enc.alWin!==''?+x.enc.alWin:(x.enc.boss?0:+RU.alBattle||0),alo=x.enc.alLose!=null&&x.enc.alLose!==''?+x.enc.alLose:(RU.alLose!=null?+RU.alLose||0:RULES.alLose);o.aw=aw;o.alo=alo;if(aw||alo)memo.push(`  이기면 경계도 ${aw>=0?'+':''}${aw} · 지면 ${alo>=0?'+':''}${alo}`)}
+   /* 10-31 망령 「야생도 같이 보내기」: 웹툴이 이 방의 야생 시트를 바로 만들 수 있게 종 · 능력치 · 기술 · 포텐셜을 싣는다 (o.w). 웹툴 가져오기가 시트를 만들고 방 e 에 잇는다 */
+   try{const w=wildSpec(x,dg);if(w&&w.mons.length)o.w=w}catch(e){memo.push('  (야생 시트를 못 실었다: '+e.message+')')}}
   if(x.rest)o.rk=x.rest;   /* 10-28 웹툴에 중간 휴식(mid)이 생김 */
   if(x.clue)o.cl={t:x.clue.t,d:x.clue.d};
   if(memo.length)o.m=memo.join('\n').slice(0,400);r[id]=o;if(!M&&i)l[[rid(rs[i-1]),id].sort().join('~')]=1});
  if(M)for(const k of Object.keys(M.links)){const [a,b]=k.split('~').map(z=>rid(rs.find(x=>x.id===z)));l[[a,b].sort().join('~')]=1}
  return {n:dg.name,o:dg.owner?`(자동 생성) ${dg.owner}`:'',a:THEMES[dg.theme]?THEMES[dg.theme].a:(dg.theme||''),al:0,st:rid(rs[0]),wn:dg.wn||2,r,l,gen:{tier:dg.gen.tier,seed:dg.gen.seed,theme:dg.theme,rules:dg.rules}}}
-module.exports={DEX_BST,generate,toWebtool,THEMES,PRESET,COMMON,RULES,TIER_KO,HINT_T};
+/* 웹툴로 보낼 야생 시트 (던전 진행기 lib/dungeon.js 의 mix 빌드와 같은 꼴 — 야생 DB · 도감 야생. 스냅샷 트레이너 야생(m.trainer)은 웹툴에 없으니 뺀다) */
+let ENVW=null;const envW=()=>ENVW||(ENVW=require('./env.js').load().win);
+function wildSpec(x,dg){const enc=x.enc;if(!enc||!enc.mix)return null;const W=envW();const WB=require('./wilddb.js');const lvAdd=+enc.lvAdd||0;let mons=[];
+ for(const src of enc.mix){if(src.db){const e=(WB._cache=WB._cache||WB.fullV2()).find(q=>q.id===src.db||q.name===src.db);if(!e)continue;mons.push(WB.buildEntry(W,e,{lvAdd}).mon)}else if(src.sp){mons.push(require('./dex.js').build(W,src.sp,{lvAdd}).mon)}}
+ const N=+enc.n||mons.length;while(mons.length&&mons.length<N)mons.push(mons[mons.length%Math.max(1,enc.mix.length)]);mons=mons.slice(0,N);const bi=enc.boss?(+enc.bossAt||0):-1,X=enc.boss?(+enc.raid||0):0;
+ return {name:(enc.boss?'야생 보스 · ':'야생 · ')+(x.name||'방'),rank:'C',mons:mons.map((m,i)=>{const boss=i===bi;const pots=[boss?'와일드 보스':'와일드'];if(boss&&X>0)pots.push('레이드 배틀 : '+X);
+  const tk=m.typesKo||[];return {name:m.name,t1:tk[0]||'-',t2:tk[1]||'-',base:(m.base||[]).slice(0,6),ability:m.ability||'',abilityEff:m.abilityEff||'',auto:m.auto&&Object.keys(m.auto).length?m.auto:undefined,item:m.item||'',moves:(m.moves||[]).map(v=>v&&v.name).filter(Boolean),pride:m.pride||'C',dist:+m.dist||0,boss,pots}})}}
+module.exports={DEX_BST,generate,toWebtool,wildSpec,THEMES,PRESET,COMMON,RULES,TIER_KO,HINT_T};
