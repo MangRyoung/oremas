@@ -55,12 +55,15 @@ window.OM_PHONE_UI=(()=>{
  /* ----- 설정: 내 환경 설정 (OM_PREFS 판을 휴대폰 크기로) ----- */
  function settings(){return `<div class="ph-head set"><button class="ph-back" data-ph="home">‹</button><div><b>설정</b><small>이 기기에서만 · 나만 적용</small></div></div><div class="ph-setwrap"><div id="phPrefs" class="pf-host cmp">${window.OM_PREFS?window.OM_PREFS.html({compact:true}):'<div class="dim">설정을 불러오지 못했다</div>'}</div></div>`}
  /* ----- 홈 ----- */
+ /* 10-31 망령 「제작기(세션 노트) 폰 UI 이쁘네, 웹툴도 이런 느낌으로」: 프로필 머리(초상 · 이름 · 파티 코드) → 둥근 앱 4칸 → 최근 문자 줄. 모양은 css/phone3.css */
  function home(t){const T=trs();const un=unreadAll();const apps=[['contacts','📞','연락처',1],['party','👥','파티',!!window.OM_PPOOL],['sms','💬','문자',1,un],['conf','🤝','협력자',1],['cal','📅','캘린더',1],['notes','📝','메모장',1],['sns','📸','SNS',1,snsUnread()],['deck','🃏','덱',!!window.OM_DECK_UI],['set','⚙️','설정',1]];
-  return `<div class="ph-wall"><div class="ph-clock"><b>${esc(dateKo(today()))}</b><small>${esc(cal().phase||'')}${cal().weather?' '+esc(cal().weather):''}</small></div>
-   ${gm()?`<div class="ph-owner"><span class="small dim">누구의 휴대폰</span><select id="phOwner">${Object.values(T).map(x=>`<option value="${x.id}" ${x.id===PH.tid?'selected':''}>${esc(x.name)}</option>`).join('')}${Object.values(G().nodes||{}).filter(n=>!Object.values(T).some(x=>x.name===n.name)).map(n=>`<option value="n:${esc(n.id)}" ${'n:'+n.id===PH.tid?'selected':''}>${esc(n.name)} (관계도)</option>`).join('')}</select></div>`:''}
-   ${(()=>{const rs=rooms().map(r=>({r,L:smsLogs(r.id)})).filter(x=>x.L.length).sort((a,b)=>b.L[b.L.length-1].id-a.L[a.L.length-1].id).slice(0,2);if(!rs.length)return '';
-    return `<div class="ph-recent">${rs.map(({r,L})=>{const l=L[L.length-1];const u=unread(r.id);return `<div class="ph-rc" data-ph="smsopen" data-room="${esc(r.id)}">${roomIcon(r)}<div class="ph-it"><b>${esc(r.name)}${u?` <em class="ph-badge inline">${u}</em>`:''}</b><small>${esc((l.data.as||l.who)+': '+preview(l.data).slice(0,34))}</small></div></div>`}).join('')}</div>`})()}
-   <div class="ph-apps">${apps.map(([k,ic,n,on,bd])=>`<button class="ph-app ${on?'':'off'}" data-ph="${on?k:''}" ${on?'':'title="아직 준비 중"'}><i>${ic}${bd?`<em class="ph-badge">${bd}</em>`:''}</i><span>${n}</span></button>`).join('')}</div></div>`}
+  const code=t&&!t.npc?roomOf2(t.id):'';const when=[dateKo(today()),cal().phase||'',cal().weather||''].filter(Boolean).join(' · ');
+  const rs=rooms().map(r=>({r,L:smsLogs(r.id)})).filter(x=>x.L.length).sort((a,b)=>b.L[b.L.length-1].id-a.L[a.L.length-1].id).slice(0,3);
+  return `<div class="ph-wall ph-wall3">
+   <div class="ph-me">${av(t?t.name:'',t&&t.image,'big')}<div class="ph-mei"><b>${esc(t?t.name:'—')}</b><small>${t&&t.npc?esc(KINDN[t.kind]||'NPC')+' · 관계도':code?'파티 코드 '+esc(code):'파티 코드 없음'}</small><small class="ph-when">${esc(when)}</small></div></div>
+   ${gm()?`<div class="ph-owner"><span>누구의 휴대폰</span><select id="phOwner">${Object.values(T).map(x=>`<option value="${x.id}" ${x.id===PH.tid?'selected':''}>${esc(x.name)}</option>`).join('')}${Object.values(G().nodes||{}).filter(n=>!Object.values(T).some(x=>x.name===n.name)).map(n=>`<option value="n:${esc(n.id)}" ${'n:'+n.id===PH.tid?'selected':''}>${esc(n.name)} (관계도)</option>`).join('')}</select></div>`:''}
+   <div class="ph-apps">${apps.map(([k,ic,n,on,bd])=>`<button class="ph-app ${on?'':'off'}" data-ph="${on?k:''}" ${on?'':'title="아직 준비 중"'}><i>${ic}${bd?`<em class="ph-badge">${bd}</em>`:''}</i><span>${n}</span></button>`).join('')}</div>
+   ${rs.length?`<div class="ph-sec3">최근 문자</div><div class="ph-recent">${rs.map(({r,L})=>{const l=L[L.length-1];const u=unread(r.id);return `<div class="ph-rc" data-ph="smsopen" data-room="${esc(r.id)}">${roomIcon(r)}<div class="ph-it"><b>${esc(r.name)}${u?` <em class="ph-badge inline">${u}</em>`:''}</b><small>${esc((l.data.as||l.who)+': '+preview(l.data).slice(0,40))}</small></div><small class="ph-rtm">${esc(hmOf(l.at))}</small></div>`}).join('')}</div>`:''}</div>`}
 /* ----- 문자: 캐릭터끼리의 톡 (로그 kind chat + data.sms=방 id).
    방 종류: 「파티」(모두) · GM 이 만든 방(rp.sms.rooms) · 누구나 만드는 방(로그에 data.room={name,members} 정의 한 줄) · 1:1(dm:a|b — 정의 없이 두 사람의 cid 로 정해진다)
    cid(문자 쪽 신분) = 트레이너 id · 'n:'+관계도 노드 id · 'gm'. 휴대폰 주인이 곧 보내는 사람. ----- */
@@ -84,8 +87,11 @@ window.OM_PHONE_UI=(()=>{
  function cidSub(cid){if(cid==='gm')return 'GM';if(cid.startsWith('n:')){const n=(G().nodes||{})[cid.slice(2)];return n?(KINDN[n.kind]||'NPC'):''}const t=trs()[cid];return t?(t.kind==='npc'?'NPC':'PC'):''}
  /* 연락처를 건네거나 넣을 수 있는 사람: 이 방의 트레이너(비공개 시트 빼고) + 관계도의 NPC · 조직 */
  function people(){const me=myCid();const out=new Map();const put=(cid,name,img)=>{if(cid&&cid!==me&&!out.has(cid))out.set(cid,{cid,name,img,sub:cidSub(cid)})};
-  for(const x of Object.values(trs()))if(gm()||shared(x.id))put(x.id,x.name,por(x.name,x.image));
-  for(const n of Object.values(G().nodes||{}))put(cidOfNode(n),n.name,por(n.name,n.img));
+  /* 10-30 망령 「숨김 · NPC 는 연락처 건네기를 받기 전엔 추가 목록에 안 떠야」: 숨김(share=false · 비공개 시트) · NPC 트레이너 · 관계도의 NPC/조직 노드는 GM 이 아니면 이미 내 연락처에 있을 때만.
+     (관계도 노드가 같은 이름의 트레이너로 이어질 때도 그 트레이너 기준으로 거른다 — 예전엔 숨긴 트레이너가 관계도 노드로 새어 나왔다) */
+  const okT=x=>gm()||inBook(x.id)||(shared(x.id)&&x.kind!=='npc');
+  for(const x of Object.values(trs()))if(okT(x))put(x.id,x.name,por(x.name,x.image));
+  for(const n of Object.values(G().nodes||{})){const t=Object.values(trs()).find(x=>x.name===n.name);if(t?okT(t):(gm()||n.kind==='pc'||inBook('n:'+n.id)))put(cidOfNode(n),n.name,por(n.name,n.img))}
   return [...out.values()].sort((a,b)=>String(a.name).localeCompare(String(b.name),'ko'))}
  /* 이 휴대폰 주인이 들어가 있는 방인가 (GM 이 남의 휴대폰을 볼 때도 주인 기준) */
  const memberOf=r=>!!r&&(r.kind==='party'?r.id==='party:'+roomOf2(PH.tid):r.kind==='gm'?true:(r.members||[]).includes(myCid()));
@@ -113,6 +119,8 @@ window.OM_PHONE_UI=(()=>{
   const md=sheet('등록 이름',`<div class="small dim" style="margin-bottom:6px">「${esc(real)}」을(를) 내 휴대폰에 어떤 이름으로 둘까? 비우면 본명.</div><input type="text" id="cn_n" value="${esc(e.n||'')}" placeholder="${esc(real)}" maxlength="30" style="width:100%"><div class="row" style="margin-top:8px"><span class="sp"></span><button class="btn pri" id="cn_ok">저장</button></div>`);
   const inp=$('#cn_n',md);inp.focus();inp.onkeydown=ev=>{if(ev.key==='Enter'&&!ev.isComposing)$('#cn_ok',md).click()};
   $('#cn_ok',md).onclick=async()=>{const v=inp.value.trim().slice(0,30);closeSheet();await saveBook(bookOf(PH.tid).map(x=>x.cid===cid?Object.assign({},x,{n:v===real?'':v}):x));re()}}
+ /* 10-30 받침에 맞는 「로 / 으로」 (감우로 · 반디로 · 시온으로 · 서울로) */
+ const ro=w=>{const c=String(w||'').trim().slice(-1).charCodeAt(0)-0xAC00;if(!(c>=0&&c<11172))return '(으)로';const j=c%28;return j===0||j===8?'로':'으로'};
  const dmId=(a,b)=>'dm:'+[a,b].sort().join('|');
  const dmMembers=id=>id.startsWith('dm:')?id.slice(3).split('|'):null;
  function openedRooms(){try{return JSON.parse(localStorage.getItem(OPEN_KEY)||'[]')}catch(e){return []}}
@@ -131,7 +139,7 @@ window.OM_PHONE_UI=(()=>{
   for(const id of openedRooms()){const m=dmMembers(id);if(m)put({id,members:m,kind:'dm'})}
   const list=[...out.values()].filter(r=>gm()||r.kind==='party'||r.kind==='gm'||(r.members||[]).includes(me));
   for(const r of list)if(r.kind==='dm'){const other=(r.members||[]).find(x=>x!==me)||(r.members||[])[0];r.name=gm()&&!(r.members||[]).includes(me)?r.members.map(cidName).join(' · '):nm(other);r.other=other}
-  const lastId=id=>{const L=smsLogs(id);return L.length?L[L.length-1].id:0};list.sort((a,b)=>lastId(b.id)-lastId(a.id));
+  const LAST={};for(const row of allSmsRows()){const k=row.data.sms;if(!LAST[k]||row.id>LAST[k])LAST[k]=row.id}const lastId=id=>LAST[id]||0;list.sort((a,b)=>lastId(b.id)-lastId(a.id));   /* 10-30 방 정의 줄(단톡방 만들기 · 초대)도 순서에 넣는다 */
   return list}
  function roomOf(id){return rooms().find(x=>x.id===id)}
  function smsLogs(room){return allSmsRows().filter(r=>!r.data.room&&(!room||r.data.sms===room))}
@@ -159,7 +167,7 @@ window.OM_PHONE_UI=(()=>{
   const tools=can?`${r.kind!=='party'?'<button class="btn xs ghost" data-ph="cardsend" title="이 방에 내 연락처 카드를 보낸다">📇</button>':''}${r.kind==='group'?'<button class="btn xs ghost" data-ph="ginv" title="사람 초대">＋👤</button><button class="btn xs ghost" data-ph="pinv" title="이 단톡방 사람들과 파티를 맺는다">👥 파티</button><button class="btn xs ghost" data-ph="gleave" title="방에서 나간다">나가기</button>':''}`:'';
   return `<div class="ph-head green"><button class="ph-back" data-ph="sms">‹</button><div><b>${esc(r.name)}</b><small>${esc(memLine)} · ${L.length}개</small></div>${tools}</div>
    <div class="ph-sms">${rows||'<div class="ph-empty">첫 메시지를 보내 봐</div>'}</div>
-   ${A().ST.role?`<div class="ph-smsin"><i class="ph-av sm" title="${esc(S.name)}" style="${S.img?`background-image:url('${cssu(S.img)}')`:''}"></i><label class="ph-clip" title="그림 보내기 (끌어 놓기 · Ctrl+V 도 된다)">📎<input type="file" accept="image/*" id="smsFile" hidden></label><input type="text" id="smsIn" placeholder="${esc(S.name)} 으로 보내기 · @이름" value="${esc(PH.draft[r.id]||'')}"><button class="btn pri sm" data-ph="smssend">➤</button></div>`:''}`}
+   ${A().ST.role?`<div class="ph-smsin"><i class="ph-av sm" title="${esc(S.name)}" style="${S.img?`background-image:url('${cssu(S.img)}')`:''}"></i><label class="ph-clip" title="그림 보내기 (끌어 놓기 · Ctrl+V 도 된다)">📎<input type="file" accept="image/*" id="smsFile" hidden></label><input type="text" id="smsIn" placeholder="${esc(S.name)}${ro(S.name)} 보내기 · @이름" value="${esc(PH.draft[r.id]||'')}"><button class="btn pri sm" data-ph="smssend">➤</button></div>`:''}`}
  /* ----- SNS (10-24 벨벳 NyangStar 참고): 방 모두가 보는 타임라인. 로그 kind chat + data.sms='sns' — 문자처럼 채팅 · 무대 · 세션 로그에서 빠진다.
     글 {t,img?} · 댓글 {re:글 id} · 좋아요 {like:글 id} (같은 사람이 다시 누르면 취소) · 지우기 {del:글 id, 쓴 사람 · GM}.
     올리는 이름은 휴대폰 주인 — GM 은 홈에서 「누구의 휴대폰」으로 NPC · 조직(체육관 · 로켓단 계정)을 골라 올린다 ----- */
@@ -248,7 +256,7 @@ window.OM_PHONE_UI=(()=>{
   $('#ns_ok',md).onclick=async()=>{const cids=[...md.querySelectorAll('[data-sc]:checked')].map(x=>x.value);if(!cids.length)return A().toast('받을 사람을 골라 줘');
    const name=$('#ns_name',md).value.trim();if(cids.length===1&&!name){closeSheet();return openDm(cids[0])}if(!name)return A().toast('단톡방 이름을 적어 줘');const id='g'+Date.now().toString(36);const S=spk();const ST=A().ST;closeSheet();
    try{await window.OM_STORE.addLog(ST.room,ST.secret,'chat',S.name||ST.name||'',{t:'',sms:id,as:S.name,k:S.key,cid:S.cid,room:{name,members:[...new Set([S.cid,...cids])]}})}catch(e){return A().toast('방을 만들지 못했다: '+e.message)}
-   PH.room=id;PH.screen='smsroom';setTimeout(()=>{PH.room=id;PH.screen='smsroom';re()},250)}}
+   let tries=0;const go=()=>{if(roomOf(id)||++tries>25){PH.room=id;PH.screen='smsroom';re()}else setTimeout(go,200)};setTimeout(go,150)}}
  /* ----- 연락처: 파티원은 로스터(시트 → 제작기에서 가져오기)에서 저절로 · 그 밖의 사람은 「＋ 추가」로 관계도 노드를 내 연락처에 넣는다 ----- */
  /* 방 코드: pub[tid].phone.room — 같은 코드를 넣은 사람끼리 파티원으로 보인다 (코드가 비어 있으면 코드 없는 사람들끼리). share=false 면 남의 목록에 안 뜬다. GM 은 코드별로 전부 본다 */
  const roomOf2=tid=>String((phoneData(tid).room||'')).trim();

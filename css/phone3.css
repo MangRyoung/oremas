@@ -1,0 +1,93 @@
+/* ---------- 휴대폰 새 옷 (10-31 망령 「제작기(세션 노트) 폰 UI 이쁘네, 웹툴도 이런 느낌으로」) ----------
+   세션 노트 휴대폰(mangketmon-notes css/univ.css .ntph-*)과 같은 모양: 둥근 검은 기기 · 프로필 머리 · 둥근 앱 칸 · 최근 문자 줄 · 둥근 말풍선.
+   테마(P5 · P3 · P4 · 망각)의 휴대폰 규칙보다 세게 걸리도록 모두 html:not(#_) .phone-modal 아래에 둔다. vtheme.css 다음에 읽는다. */
+html:not(#_) .phone-modal{--pb:#0d0f14;--pp:#161a22;--pl:#262c38;--pt:#eef1f6;--pm:#8d96a8;--pg:#2fb36b;--pr:#e4002b}
+html:not(#_) .phone-modal .phone-dev{background:var(--pb);color:var(--pt);border:8px solid #050608;border-radius:34px;box-shadow:0 0 0 1.5px #3a404c,0 24px 60px rgba(0,0,0,.7);font-family:'IBM Plex Sans KR','Noto Sans KR',sans-serif;clip-path:none}
+html:not(#_) .phone-modal .phone-dev::before,html:not(#_) .phone-modal .phone-dev::after{display:none}
+
+/* 위 띠 · 아래 홈 막대 */
+html:not(#_) .phone-modal .ph-status{padding:8px 18px 4px;font-family:inherit;font-size:12px;font-weight:600;color:var(--pt);letter-spacing:0;background:transparent;border:0}
+html:not(#_) .phone-modal .ph-bat{color:var(--pg)}
+html:not(#_) .phone-modal .ph-x{border:0;background:rgba(255,255,255,.08);color:var(--pt);width:24px;height:24px;border-radius:50%;box-shadow:none;clip-path:none}
+html:not(#_) .phone-modal .ph-screen{background:var(--pb)}
+html:not(#_) .phone-modal .ph-home{background:var(--pb);border:0;padding:6px 0 10px}
+html:not(#_) .phone-modal .ph-hb{width:110px;height:5px;border-radius:3px;background:#cfd5e0;opacity:.7}
+html:not(#_) .phone-modal .ph-hb:hover{opacity:1}
+html:not(#_) .phone-modal .ph-close{font:600 12px inherit;color:var(--pm);background:var(--pp);border:1px solid var(--pl);border-radius:999px;padding:4px 16px;box-shadow:none;clip-path:none;transform:none}
+html:not(#_) .phone-modal .ph-close:hover{color:var(--pt)}
+
+/* 홈 */
+html:not(#_) .phone-modal .ph-wall.ph-wall3{background:var(--pb);padding:4px 12px 12px;gap:0}
+html:not(#_) .phone-modal .ph-me{display:flex;align-items:center;gap:12px;padding:14px 6px 10px}
+html:not(#_) .phone-modal .ph-mei{display:flex;flex-direction:column;min-width:0}
+html:not(#_) .phone-modal .ph-mei b{font-size:17px;color:var(--pt);font-family:inherit}
+html:not(#_) .phone-modal .ph-mei small{color:var(--pm);font-size:12px}
+html:not(#_) .phone-modal .ph-mei .ph-when{font-size:11px;opacity:.8}
+html:not(#_) .phone-modal .ph-av.big{width:58px;height:58px;border:0;box-shadow:0 0 0 2px var(--pg);background-color:#2b3240}
+html:not(#_) .phone-modal .ph-owner{display:flex;align-items:center;gap:8px;margin:0 4px 6px;padding:6px 10px;background:var(--pp);border-radius:12px;font-size:11.5px;color:var(--pm)}
+html:not(#_) .phone-modal .ph-owner select{flex:1;min-width:0;background:var(--pl);color:var(--pt);border:0;border-radius:8px;padding:3px 6px}
+html:not(#_) .phone-modal .ph-apps{display:grid;grid-template-columns:repeat(4,1fr);gap:14px 10px;padding:8px 4px 14px}
+html:not(#_) .phone-modal .ph-app{display:flex;flex-direction:column;align-items:center;gap:5px;font-family:inherit;font-size:11.5px;color:var(--pt);background:transparent;border:0;transform:none}
+html:not(#_) .phone-modal .ph-app i{position:relative;width:52px;height:52px;border-radius:15px;display:grid;place-items:center;font-size:24px;color:inherit;background:linear-gradient(160deg,#2a3242,#1a1f2a);border:0;box-shadow:0 4px 10px rgba(0,0,0,.4);clip-path:none;transform:none;transition:transform .12s ease,background .12s ease}
+html:not(#_) .phone-modal .ph-app:hover i{background:linear-gradient(160deg,#34405a,#202736);transform:translateY(-2px)}
+html:not(#_) .phone-modal .ph-app.off{opacity:.35}
+html:not(#_) .phone-modal .ph-badge{top:-5px;right:-5px;min-width:17px;height:17px;padding:0 4px;border-radius:9px;background:var(--pr);color:#fff;font-size:10.5px;font-weight:700;line-height:1;border:0;box-shadow:none}
+html:not(#_) .phone-modal .ph-badge.inline{position:static;display:inline-grid;place-items:center;margin-left:4px;vertical-align:1px}
+html:not(#_) .phone-modal .ph-sec3{font-size:11.5px;color:var(--pm);margin:10px 4px 4px;letter-spacing:.04em}
+html:not(#_) .phone-modal .ph-recent{display:flex;flex-direction:column;gap:0;margin:0}
+html:not(#_) .phone-modal .ph-rc{display:flex;align-items:center;gap:10px;padding:8px 6px;background:transparent;border:0;border-radius:12px;backdrop-filter:none;cursor:pointer}
+html:not(#_) .phone-modal .ph-rc:hover{background:var(--pp)}
+html:not(#_) .phone-modal .ph-rc .ph-av{width:38px;height:38px}
+html:not(#_) .phone-modal .ph-rtm{flex:none;color:var(--pm);font-size:11px}
+
+/* 공통: 초상 · 목록 · 머리 띠 */
+html:not(#_) .phone-modal .ph-av{border:0;background-color:#2b3240}
+html:not(#_) .phone-modal .ph-av.ph-room{background:var(--pl)}
+html:not(#_) .phone-modal .ph-it b{font-family:inherit;color:var(--pt);font-size:14px}
+html:not(#_) .phone-modal .ph-it small{color:var(--pm);font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+html:not(#_) .phone-modal .ph-head{position:sticky;top:0;z-index:2;gap:8px;padding:8px 12px;background:var(--pp);border-bottom:1px solid var(--pl);box-shadow:none;clip-path:none}
+html:not(#_) .phone-modal .ph-head.green{background:linear-gradient(90deg,#155b3a,#1d4a5c)}
+html:not(#_) .phone-modal .ph-head b{font-family:inherit;font-size:15px;color:var(--pt)}
+html:not(#_) .phone-modal .ph-head small{color:#c7d0dd;opacity:1;font-size:11.5px}
+html:not(#_) .phone-modal .ph-back{color:var(--pt);font-size:26px}
+html:not(#_) .phone-modal .ph-list{gap:2px;padding:6px 8px}
+html:not(#_) .phone-modal .ph-item{background:transparent;border:0;border-radius:12px;padding:8px 6px;box-shadow:none;clip-path:none}
+html:not(#_) .phone-modal .ph-item:hover{background:var(--pp);border-color:transparent}
+html:not(#_) .phone-modal .ph-item.conf,html:not(#_) .phone-modal .ph-item.ph-noteit{border-left:3px solid var(--pl);border-radius:0 12px 12px 0}
+html:not(#_) .phone-modal .ph-item.conf.shock{border-left-color:#ffd166}
+html:not(#_) .phone-modal .ph-sec{color:var(--pm);font-family:inherit;font-size:11.5px;letter-spacing:.04em;padding:10px 12px 4px}
+
+/* 문자 방 */
+html:not(#_) .phone-modal .ph-sms{background:var(--pb);gap:3px;padding:6px 10px 8px}
+html:not(#_) .phone-modal .ph-msg{gap:6px;max-width:86%}
+html:not(#_) .phone-modal .ph-msg.me{align-self:flex-end}
+html:not(#_) .phone-modal .ph-mn{color:var(--pm);margin-left:4px}
+html:not(#_) .phone-modal .ph-mt{color:var(--pm)}
+html:not(#_) .phone-modal .ph-bub{background:var(--pl);color:var(--pt);border:0;border-radius:16px 16px 16px 4px;box-shadow:none;clip-path:none;padding:7px 11px;font-size:13.5px;line-height:1.45}
+html:not(#_) .phone-modal .ph-msg.me .ph-bub{background:var(--pg);color:#fff;border-radius:16px 16px 4px 16px;box-shadow:none;clip-path:none}
+html:not(#_) .phone-modal .ph-bub.pic,html:not(#_) .phone-modal .ph-msg.me .ph-bub.pic{background:transparent;padding:0}
+html:not(#_) .phone-modal .ph-pic img{border-radius:12px}
+html:not(#_) .phone-modal .ph-smsin{background:var(--pb);border-top:1px solid var(--pl);padding:6px 10px 8px}
+html:not(#_) .phone-modal .ph-smsin input[type=text],html:not(#_) .phone-modal .ph-smsin input:not([type]),html:not(#_) .phone-modal .ph-smsin textarea{background:var(--pp);border:1px solid var(--pl);color:var(--pt);border-radius:18px;padding:8px 12px;box-shadow:none}
+html:not(#_) .phone-modal .ph-smsin .btn{border-radius:18px;box-shadow:none;clip-path:none}
+
+/* 아래에서 올라오는 작은 창 */
+html:not(#_) .phone-modal .ph-sheet{background:var(--pp);border-top:0;border-radius:20px 20px 0 0;box-shadow:0 -10px 30px rgba(0,0,0,.5)}
+html:not(#_) .phone-modal .ph-sheeth{border-bottom:1px solid var(--pl)}
+html:not(#_) .phone-modal .ph-shx{border:0;background:rgba(255,255,255,.08);color:var(--pt);width:24px;height:24px;border-radius:50%}
+
+@media (max-width:560px){html:not(#_) .phone-modal .phone-dev{border-radius:0;border:0;box-shadow:none}}
+/* 닫기 단추 · 머리 띠 단추 (app.css 의 !important 규칙 위로) */
+html:not(#_) .phone-modal .phone-dev .ph-home .ph-close{font:600 12px 'IBM Plex Sans KR',sans-serif!important;color:var(--pm)!important;background:var(--pp)!important;border:1px solid var(--pl)!important;border-radius:999px!important;padding:4px 18px!important;box-shadow:none!important;clip-path:none!important;transform:none!important;min-height:0!important;height:auto!important}
+html:not(#_) .phone-modal .phone-dev .ph-home .ph-close:hover{color:var(--pt)!important}
+html:not(#_) .phone-modal .ph-head .btn{border-radius:999px;box-shadow:none;clip-path:none;transform:none;background:rgba(255,255,255,.12);color:var(--pt);border:1px solid rgba(255,255,255,.25);font-family:inherit}
+html:not(#_) .phone-modal .ph-head .btn:hover{background:rgba(255,255,255,.22)}
+/* 휴대폰 안의 입력칸 · 단추: 테마의 기울인 단추 대신 둥근 폰 단추 */
+html:not(#_) .phone-modal .phone-dev :is(input[type=text],input[type=search],input[type=number],input[type=date],input:not([type]),select,textarea){background:var(--pp)!important;color:var(--pt)!important;border:1px solid var(--pl)!important;border-radius:12px!important;box-shadow:none!important;clip-path:none!important;font-family:inherit!important}
+html:not(#_) .phone-modal .phone-dev :is(input,select,textarea):focus{border-color:var(--pg)!important;outline:0}
+html:not(#_) .phone-modal .phone-dev .ph-screen .btn,html:not(#_) .phone-modal .phone-dev .ph-sheet .btn{border-radius:999px!important;clip-path:none!important;transform:none!important;box-shadow:none!important;background:var(--pl)!important;color:var(--pt)!important;border:1px solid transparent!important;font-family:inherit!important;font-weight:600}
+html:not(#_) .phone-modal .phone-dev .ph-screen .btn:hover,html:not(#_) .phone-modal .phone-dev .ph-sheet .btn:hover{background:#323a4a!important}
+html:not(#_) .phone-modal .phone-dev .ph-screen .btn.pri,html:not(#_) .phone-modal .phone-dev .ph-sheet .btn.pri,html:not(#_) .phone-modal .phone-dev .ph-screen .btn.on{background:var(--pg)!important;color:#fff!important}
+html:not(#_) .phone-modal .phone-dev .ph-screen .btn.ghost{background:transparent!important;border-color:var(--pl)!important}
+html:not(#_) .phone-modal .phone-dev .ph-head .btn{background:rgba(255,255,255,.12)!important;border-color:rgba(255,255,255,.25)!important}
+html:not(#_) .phone-modal .phone-dev .ph-smsin .btn{width:36px;height:36px;padding:0!important;display:grid;place-items:center}
