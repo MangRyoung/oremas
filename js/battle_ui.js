@@ -571,7 +571,10 @@ window.OM_BATTLE_UI=(()=>{
    /* 10-31 망령 「4식 · 6령 쓰는 방식이 시뮬과 다르다 — 꼭 고쳐」: 선행 입력한 지령(6령)은 턴 개시 때 저절로 「선행 발동」 (시뮬과 같다 — 시뮬은 지시 때 정한 지령을 그 자리에서 건다).
       횟수는 이미 턴 개시에서 깎였으니 효과만 건다. 4식은 맞을 때 공격 창이 쓰고(버텨라 · 피해라 …), 선행 포텐셜 · 「턴 개시」 4식은 그대로 「포텐셜 발동」에서 */
    {const AL=[];for(const [mid,x] of Object.entries(I.SEC)){const mm=(b.mons||{})[mid];if(!x||!x.command||!mm||!mm.entry||!(+(mm.hp||{}).cur>0))continue;const tid=mm.tid;if(!(b.trainers||{})[tid])continue;
-     const fd=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid])||{};if(fd.command)continue;try{await fireOrder(tid,mid,'command',x.command,'pre');const f2=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid])||{};if(f2.command)AL.push(`${TN(tid)} · ${mm.name} 『${OO().commandName((b.trainers||{})[tid],x.command)}』`)}catch(e){console.warn('지령 자동 발동',e)}}
+     const fd=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid])||{};if(fd.command)continue;
+     /* 턴 개시 차감(preCharge) 뒤에 지시를 넣었으면(예: 시합 개시와 턴 개시를 한 번에 누른 1턴) 여기서 1 깎고 건다 — 횟수 없이 공짜로 걸리지 않게 */
+     {const tt=snap((ctx().b.trainers||{})[tid]||{});if(tt.pcTurn!==turnKey(ctx().b)&&!(c.fair&&seatOwned(c,tid))){const ck='command_'+x.command;tt.orderCount=tt.orderCount||{};if(!(+tt.orderCount[ck]>0)){AL.push(`${TN(tid)} · ${mm.name} 『${OO().commandName((b.trainers||{})[tid],x.command)}』 — 남은 횟수가 없어 걸지 않았다`);continue}const t2=snap(tt);t2.orderCount[ck]=(+t2.orderCount[ck]||0)-1;const sk=OO().shareKey(t2,x.command);if(sk)t2.orderCount['command_'+sk]=Math.max(0,(+t2.orderCount['command_'+sk]||0)-1);await A().setDiff(['battle','trainers',tid],tt,t2,1)}}
+     try{await fireOrder(tid,mid,'command',x.command,'pre');const f2=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid])||{};if(f2.command)AL.push(`${TN(tid)} · ${mm.name} 『${OO().commandName((b.trainers||{})[tid],x.command)}』`)}catch(e){console.warn('지령 자동 발동',e)}}
     if(AL.length)A().sysLog(`【지령 자동 발동】 선행 입력한 6령\n${AL.join('\n')}`,'battle');
     const rest=tid=>{const t=(b.trainers||{})[tid];if(I.UP[tid]||((((b.cmds||{})[tid]||{}).ok)||{}).pre)return true;return Object.entries(I.SEC).some(([mid,x])=>{const mm=(b.mons||{})[mid];return mm&&mm.tid===tid&&mm.entry&&+(mm.hp||{}).cur>0&&preCounts(t,Object.assign({},x,{command:''}),mm)})};
     tids=tids.filter(rest)}
