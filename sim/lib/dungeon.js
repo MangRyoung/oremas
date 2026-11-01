@@ -34,9 +34,10 @@ const CARD={key:{n:'열쇠 카드',ic:['★'],v:9,eff:'autopass'},sneak:{n:'발�
  retry:{n:'다른 길로',ic:['지시'],v:4,eff:'retry'},firstaid:{n:'응급 처치',ic:['육성'],v:4,eff:'heal'},craft:{n:'손재주',ic:['능력','육성'],v:4,eff:'easy'},food:{n:'비상식량',ic:['육성','통솔'],v:3,eff:'restUp'},
  breath:{n:'숨 고르기',ic:['★'],v:3,eff:'breath'},salt:{n:'소금기 어린 부적',ic:['능력'],v:3,eff:''},reso:{n:'은빛 공명',ic:['★'],v:2,eff:'cycle'},cover0:{n:'함께 버티자',ic:['통솔'],v:2,eff:'cover0'},
  note:{n:'관찰 노트',ic:['지시'],v:1,eff:''},map:{n:'지도 펼치기',ic:['지시','능력'],v:1,eff:''},pair:{n:'호흡 맞추기',ic:['통솔','지시'],v:1,eff:''},back:{n:'물러서!',ic:['통솔'],v:1,eff:''},call:{n:'불러내기',ic:['능력'],v:1,eff:''},
- dead:{n:'광기 카드',ic:[],v:-1,eff:'dead'}};
+ keyc:{n:'열쇠 카드 (바치기만)',ic:['★'],v:9,eff:''},dead:{n:'광기 카드',ic:[],v:-1,eff:'dead'}};
 const CARD_DECKS={base:['key','key','reroll','bandage','gust','nocrit','retry','reso'],sneak:['key','key','reroll','bandage','gust','nocrit','sneak','reso'],
- check:['key','key','reso','breath','gust','craft','retry','bandage'],battle:['key','key','reroll','reroll','nocrit','nocrit','firstaid','reso']};
+ check:['key','key','reso','breath','gust','craft','retry','bandage'],battle:['key','key','reroll','reroll','nocrit','nocrit','firstaid','reso'],
+ nokey:['keyc','keyc','reroll','bandage','gust','nocrit','retry','reso']};   /* 열쇠 카드를 「판정 없이 통과」 없이 ★ 바치기로만 쓸 때 */
 async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt.seed||1);const pol=Object.assign({who:'best',cover:'fail',partner:'match',inou:'yes'},opt.policy||{});
  const adj=Object.assign({fieldMax:1,coverBall:0,ordScope:'dungeon',ordPer:1,cmdPer:2,target:0,penScale:1,checkEvery:1,stepAll:0,wildLv:0,wildExtra:0,bossN:0,raidX:null,raidMode:'barrier',restV:1,al0:0,al30:5,al70:10,alBattle:0,alLose:10,alScale:1},dg.rules||{},opt.adjust||{});   /* 10-31 망령 「꼭 고쳐」: alLose 는 규칙에 없는 옛 던전도 +10 (autogen RULES 와 같다) */   /* dg.rules = 던전에 박힌 규칙값(자동 생성 던전). 조정값(opt.adjust)이 그 위에 */
  const party=makeParty(parties,dg.wn||opt.wn||2);const ev=[];const say=(e)=>ev.push(e);
