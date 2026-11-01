@@ -126,6 +126,10 @@ function start(opt){opt=opt||{};const port=+opt.port||8470;
   saveFeedback:b=>{fs.mkdirSync(path.join(SIM,'records'),{recursive:true});fs.writeFileSync(path.join(SIM,'records','feedback.md'),String(b.text||''));return {ok:1}},
   deleteRecord:b=>{const RD=R.findRec(String(b.id))||R.REC;for(const ext of ['.summary.json','.jsonl']){const f=safe(RD,String(b.id)+ext);if(fs.existsSync(f))fs.unlinkSync(f)}R.build();return {ok:1}},
   fetch:async()=>{const F=require('./fetch.js');const r=await F.fetchAll(path.join(SIM,'data','snapshot.json'));SNAP=null;return r},
+  /* 11-01 망령 「시뮬레이터가 세션 노트 쪽을 반영 못 한다」: 노트에서 만든 각성체 · 고친 시트는 제작기 공유 DB 에 들어가는데, 시뮬은 「제작기에서 받기」로 받은 사본만 읽었다.
+     화면을 열 때 · 창으로 돌아올 때 사본이 min 분(기본 10)보다 오래됐으면 저절로 다시 받는다. 받지 못하면(인터넷 · Supabase) 조용히 옛 사본을 쓴다 */
+  fetchIfStale:async b=>{const f=path.join(SIM,'data','snapshot.json');let at=0;try{if(fs.existsSync(f))at=Date.parse(snap().at||'')||0}catch(e){}const age=at?Date.now()-at:Infinity;
+   if(age<Math.max(1,+(b&&b.min)||10)*60000)return {fetched:0,age};try{const F=require('./fetch.js');const r=await F.fetchAll(f);SNAP=null;return Object.assign({fetched:1},r)}catch(e){return {fetched:0,age,err:String(e&&e.message||e)}}},
   report:()=>R.build(),
   record:b=>{const f=safe(R.findRec(String(b.id))||R.REC,String(b.id)+'.jsonl');if(!fs.existsSync(f))return {rows:[]};const rows=fs.readFileSync(f,'utf8').trim().split('\n').slice(0,+b.limit||200).map(l=>JSON.parse(l));return {rows}}};
  const srv=http.createServer(async(req,res)=>{try{const u=url.parse(req.url,true);

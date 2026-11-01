@@ -944,7 +944,11 @@ function renderTable(){const T=[8,10,12,15];const names={alone:'혼자 (2d6 + �
  $('#tbl').innerHTML=Object.entries(S.checkTable).map(([pt,rows])=>`<h3 style="font:16px var(--display);margin:6px 0">${names[pt]}</h3><table style="margin-bottom:14px"><thead><tr><th>자질</th>${T.map(t=>`<th class="n">목표 ${t}</th>`).join('')}</tr></thead><tbody>${Object.entries(rows).map(([r,L])=>`<tr><td>${rk('',r)}</td>${L.map(s=>`<td class="n"><b>${s.ok}%</b> <span class="small">/ 대성공 ${s.crit}%</span></td>`).join('')}</tr>`).join('')}</tbody></table>`).join('')+'<div class="small">룰북 「스킬 체크」 장(v4)과 같은 식이에요. 적합 · 보정 없음 기준, 성공 = 대성공 포함. 적합이 하나 맞을 때마다 한 줄 아래 포켓몬 랭크와 비슷해져요.</div>'}
 $('#btnReload').onclick=()=>loadState().then(()=>toast('새로고침'));
 $('#btnFetch').onclick=async()=>{if(!confirm('제작기 공유 DB 에서 트레이너 · 포켓몬 전부를 받아 data/snapshot.json 에 저장할까요? (읽기만 해요)'))return;$('#btnFetch').disabled=true;try{const r=await api('fetch',{});toast(`받았어요: 트레이너 ${r.trainers} · 포켓몬 ${r.pokemon}`);sel.clear();await loadState()}catch(e){toast('오류: '+e.message+' (이 컴퓨터에서 Supabase 에 닿아야 해요)')}$('#btnFetch').disabled=false};
-loadState().catch(e=>toast('불러오기 오류: '+e.message));
+loadState().then(()=>autoFetch()).catch(e=>toast('불러오기 오류: '+e.message));
+/* 11-01 망령 「세션 노트 쪽을 반영 못 한다」: 열 때 · 창으로 돌아올 때(5분마다까지) 제작기 사본이 10분보다 오래됐으면 저절로 받는다 — 노트에서 만든 각성체 · 고친 시트도 같이 들어온다 */
+let afT=0,afBusy=false;async function autoFetch(force){if(afBusy||(!force&&Date.now()-afT<300000))return;afBusy=true;afT=Date.now();const si=$('#snapInfo');const was=si.textContent;si.textContent=was+' · 받는 중…';
+ try{const r=await api('fetchIfStale',{min:force?0:10});if(r.fetched){await loadState();toast(`제작기 · 세션 노트 변경을 받아 왔어요 (트레이너 ${r.trainers} · 포켓몬 ${r.pokemon})`)}else{si.textContent=was+(r.err?' · 자동 받기 실패 — 「제작기에서 받기」':'');if(r.err)si.title=r.err}}catch(e){si.textContent=was}afBusy=false}
+window.addEventListener('focus',()=>autoFetch());document.addEventListener('visibilitychange',()=>{if(!document.hidden)autoFetch()});
 
 /* ---- 던전 자동 생성 (10-27) ---- */
 let AG=null;
