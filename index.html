@@ -15,6 +15,7 @@
 <link rel="stylesheet" href="css/vtheme.css?v=202610310940"><!-- VELVET 테마 P5 · P3 · P4 (app.css 위에 덮는다) -->
 <link rel="stylesheet" href="css/phone3.css?v=1"><!-- 10-31 휴대폰 새 옷 (세션 노트 휴대폰과 같은 모양 · 테마 위에 덮는다) -->
 <link rel="stylesheet" href="css/aiui.css?v=3"><!-- 10-31 AI 에게 맡기기 창 -->
+<link rel="stylesheet" href="css/bbs.css?v=1"><!-- 11-02 학교 게시판 -->
 <script src="js/vtheme.js?v=202610291030"></script><!-- 테마 고르기 · 그리기 전에 html[data-vt] 를 단다 -->
 </head>
 <body>
@@ -22,7 +23,7 @@
 <div id="toast" role="status"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.49.4/dist/umd/supabase.min.js"></script>
 <script src="js/config.js?v=202610250800"></script>
-<script src="js/store.js?v=202611301130"></script>
+<script src="js/store.js?v=202612030020"></script>
 <script src="js/guide_ui.js?v=202611292300"></script><!-- 튜토리얼 탭 -->
 <script src="js/report_ui.js?v=202610210100"></script><!-- 건의 · 제보 탭 — 오류를 일찍부터 모으려고 앞쪽에 둔다 -->
 <script src="data/const.js?v=202611011815"></script>
@@ -43,12 +44,12 @@
 <script src="js/engine/itemrule.js?v=202611081300"></script><!-- 소지품 구문: 효과 글 ↔ 구문 ↔ 규칙 -->
 <script src="js/engine/items.js?v=202611081100"></script><!-- 소지품 자동화: 소지품 DB 구문(없으면 효과 글) → 규칙 -->
 <script src="js/engine/field.js?v=202612021100"></script>
-<script src="https://mangryoung.github.io/mangketmon-maker/js/fx/fx.js?v=202611050300"></script><!-- fx 원본은 제작기 저장소 js/fx/ 하나뿐 (예전 사본 js/engine/fx.js 는 안 쓴다) -->
+<script src="https://mangryoung.github.io/mangketmon-maker/js/fx/fx.js?v=202611050310"></script><!-- fx 원본은 제작기 저장소 js/fx/ 하나뿐 (예전 사본 js/engine/fx.js 는 안 쓴다) -->
 <script src="https://mangryoung.github.io/mangketmon-maker/js/fx/moveauto.js?v=202610241500"></script><!-- 기술 자동화: 기술 DB 효과 글 → 굴림·적용 -->
 <script src="js/engine/import.js?v=202611302000"></script>
 <script src="js/engine/battle.js?v=202611050900"></script>
 <script src="js/ppool.js?v=202612010040"></script><!-- 파티 현황: 4식 · 6령 합친 목록 + 포켓몬 (휴대폰 방 코드) -->
-<script src="js/battle_ui.js?v=202612022355"></script>
+<script src="js/battle_ui.js?v=202612030010"></script>
 <script src="js/stage_ui.js?v=202610291100"></script>
 <script src="js/sp_ui.js?v=202611012100"></script><!-- SP (서포터) 효과 -->
 <script src="js/pick_ui.js?v=202610221200"></script><!-- 바꾸기 창: 18 타입 · 종족치 ▲▼ · 폼 편집 (배틀 상세 · 시트) -->
@@ -61,6 +62,7 @@
 <script src="js/dungeon_ui.js?v=202612021940"></script><!-- 던전 탭 (VELVET PLAY 던전 이식) -->
 <script src="js/calendar_ui.js?v=202610290100"></script>
 <script src="js/hall_ui.js?v=202611051410"></script>
+<script src="js/bbs_ui.js?v=1"></script><!-- 11-02 학교 게시판 (supabase/patch_2026-11-02_게시판.sql) -->
 <script src="js/skill_ui.js?v=202612022235"></script>
 <script src="js/phone_ui.js?v=202610310700"></script>
 <script src="js/prefs_ui.js?v=202610241800"></script>
@@ -77,6 +79,6 @@
 <script src="https://mangryoung.github.io/mangketmon-maker/js/fx/fx_ui.js?v=202611021900"></script><!-- fx 원본은 제작기 저장소 js/fx/ 하나뿐 (예전 사본 js/fx_ui.js 는 안 쓴다) -->
 <script src="js/dex_ui.js?v=202610292300"></script>
 <script src="js/slim_ui.js?v=202611301130"></script><!-- 10-30 관리자 「그림 줄이기」 (PNG → webp) -->
-<script src="js/app.js?v=202612021300"></script>
+<script src="js/app.js?v=202612030020"></script>
 </body>
 </html>

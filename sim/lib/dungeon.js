@@ -36,11 +36,11 @@ const CARD={key:{n:'열쇠 카드',ic:['★'],v:9,eff:'autopass'},sneak:{n:'발�
  note:{n:'관찰 노트',ic:['지시'],v:1,eff:''},map:{n:'지도 펼치기',ic:['지시','능력'],v:1,eff:''},pair:{n:'호흡 맞추기',ic:['통솔','지시'],v:1,eff:''},back:{n:'물러서!',ic:['통솔'],v:1,eff:''},call:{n:'불러내기',ic:['능력'],v:1,eff:''},
  keyc:{n:'열쇠 카드 (바치기만)',ic:['★'],v:9,eff:''},dead:{n:'광기 카드',ic:[],v:-1,eff:'dead',pen:'mad'},scar:{n:'상흔 카드',ic:[],v:-1,eff:'dead',pen:'scar'}};
 /* 11-01 망령 「코스트」: 효과로 쓸 때만 코스트 (바치기는 무료). 트레이너마다 5점 · 긴 휴식에 5로 */
-const CARD_COST={"key":2,"sneak":3,"gust":1,"bandage":1,"reroll":2,"nocrit":2,"retry":2,"firstaid":2,"craft":2,"food":1,"breath":1,"salt":1,"reso":1,"cover0":1,"note":1,"map":0,"pair":1,"back":1,"call":0,"keyc":2};for(const k in CARD)CARD[k].c=CARD_COST[k]||0;
+const CARD_COST={"key":2,"sneak":3,"gust":1,"bandage":1,"reroll":2,"nocrit":2,"retry":2,"firstaid":2,"craft":2,"food":1,"breath":1,"salt":1,"reso":1,"cover0":2,"note":1,"map":0,"pair":1,"back":1,"call":0,"keyc":2};for(const k in CARD)CARD[k].c=CARD_COST[k]||0;
 const CARD_DECKS={base:['key','key','reroll','bandage','gust','nocrit','retry','reso'],sneak:['key','key','reroll','bandage','gust','nocrit','sneak','reso'],
  check:['key','key','reso','breath','gust','craft','retry','bandage'],battle:['key','key','reroll','reroll','nocrit','nocrit','firstaid','reso'],
  nokey:['keyc','keyc','reroll','bandage','gust','nocrit','retry','reso']};   /* 열쇠 카드를 「판정 없이 통과」 없이 ★ 바치기로만 쓸 때 */
-async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt.seed||1);const pol=Object.assign({who:'best',cover:'fail',partner:'match',inou:'yes'},opt.policy||{});
+async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt.seed||1);const pol=Object.assign({who:'best',cover:opt.cards&&!(opt.adjust&&+opt.adjust.coverOn)?'never':'fail',partner:'match',inou:'yes'},opt.policy||{});   /* 11-01 23:56 망령: 은열쇠 덱이 있으면 커버 없음 (adj.coverOn 1 이면 켬) */
  const adj=Object.assign({fieldMax:1,coverBall:0,ordScope:'dungeon',ordPer:1,cmdPer:2,target:0,penScale:1,checkEvery:1,stepAll:0,wildLv:0,wildExtra:0,bossN:0,raidX:null,raidMode:'barrier',restV:1,al0:0,al30:5,al70:10,alBattle:0,alLose:10,alScale:1},dg.rules||{},opt.adjust||{});   /* 10-31 망령 「꼭 고쳐」: alLose 는 규칙에 없는 옛 던전도 +10 (autogen RULES 와 같다) */   /* dg.rules = 던전에 박힌 규칙값(자동 생성 던전). 조정값(opt.adjust)이 그 위에 */
  const party=makeParty(parties,dg.wn||opt.wn||2);const ev=[];const say=(e)=>ev.push(e);
  /* 11-01 은열쇠 카드 */
@@ -95,7 +95,7 @@ async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt
   /* 실패: 상태 한 단계 (제시가 noStep 이면 없음). 커버 = 판정하지 않은 포켓몬이 최대 HP adj.coverHp(1/4) 를 받고 막는다 (pol.cover 'never' 면 안 함) */
   if(r.ri===1&&!+ck.noStep){let C=null;if(pol.cover!=='never'){const cs=(+adj.coverN===0||P.coverUsed<(adj.coverN==null?1:+adj.coverN))?party.flatMap(Q=>(+adj.coverBall?aliveMons(Q):fieldMons(Q)).map(m=>({Q,m}))).filter(x=>x.m!==q.m&&x.m.hp.cur>frac(x.m.hp.max,adj.coverHp||'1/4')):[];cs.sort((a,b)=>b.m.hp.cur/b.m.hp.max-a.m.hp.cur/a.m.hp.max);C=cs[0]||null}
    if(C){const c0=cFind('cover0');let loss=frac(C.m.hp.max,adj.coverHp||'1/4');if(c0){cUse(c0.P,c0.k);loss=0}C.m.hp.cur=Math.max(0,C.m.hp.cur-loss);rec.cover=C.Q.trainer.name;P.coverUsed=(P.coverUsed||0)+1;C.Q.stats.covers++;P.stats.covered++;rec.pen.push(`[커버] ${C.m.name} HP −${loss}`)}
-   else injure(P,'실패',rec)}
+   else{const c0=CD&&pol.cover==='never'?cFind('cover0'):null;if(c0&&cUse(c0.P,c0.k))rec.pen.push('[함께 버티자] 상태 그대로');else injure(P,'실패',rec)}}   /* 11-01: 커버가 없으면 「함께 버티자」가 실패의 상태 진행을 막는다 */
   P.stats.checks++;if(rec.ri>=3)P.stats.ok++;if(rec.ri===4)P.stats.crit++;if(rec.ri<=1)P.stats.fail++;if(mode==='inou')P.stats.inouUsed++;
   /* 보상 · 패널티 묶음 (묶음은 판정한 포켓몬이 받는다 — 혼자면 포켓몬 몫은 없음) */
   if(rec.ri>=3&&ck.gain)applyPen(P,ck.gain,rec,'성공 보상');if(rec.ri===4&&ck.gainCrit)applyPen(P,ck.gainCrit,rec,'대성공 보상');

@@ -148,5 +148,12 @@ async function shrinkUpload(blob,maxSide){try{if(!/^image\/(png|jpe?g|webp|bmp)$
   put:(room,secret,id,head,log)=>rpc('om_hall_put',{p_room:room,p_secret:secret,p_id:id,p_head:head,p_log:log??null}),
   del:(room,secret,id)=>rpc('om_hall_del',{p_room:room,p_secret:secret,p_id:id}),
   cm:(room,secret,id,by,t,del)=>rpc('om_hall_cm',{p_room:room,p_secret:secret,p_id:id,p_by:by||'',p_t:t??null,p_del:del??null}),noFn};
- return {patchesSince,hall,shrinkUpload,ntCamps,ntCampUpdate,ntDocs,ntSync,NTSYNC,ntGet,ntPut,ntPutMany,ntDel,ntWatch,rtReset,getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty,makerOne,makerPut};
+ /* 11-02 망령: 학교 게시판 (supabase/patch_2026-11-02_게시판.sql) — 방 상태 밖 om_bbs · om_bbs_board 표. feed 는 ver 뒤에 바뀐 줄만 */
+ const bbs={boards:(room,secret)=>rpc('om_bbs_boards',{p_room:room,p_secret:secret||''}),
+  boardPut:(room,secret,id,o)=>rpc('om_bbs_board_put',{p_room:room,p_secret:secret,p_id:id,p_name:o.name??null,p_descr:o.descr??null,p_hidden:o.hidden??null,p_ord:o.ord??null,p_del:!!o.del}),
+  feed:(room,secret,after)=>rpc('om_bbs_feed',{p_room:room,p_secret:secret||'',p_after:after||0}),
+  post:(room,secret,board,parent,who,anon,body,img)=>rpc('om_bbs_post',{p_room:room,p_secret:secret,p_board:board,p_parent:parent||null,p_who:who||{},p_anon:!!anon,p_body:body||'',p_img:img||''}),
+  del:(room,secret,id)=>rpc('om_bbs_del',{p_room:room,p_secret:secret,p_id:id}),
+  like:(room,secret,id)=>rpc('om_bbs_like',{p_room:room,p_secret:secret,p_id:id}),noFn};
+ return {patchesSince,hall,bbs,shrinkUpload,ntCamps,ntCampUpdate,ntDocs,ntSync,NTSYNC,ntGet,ntPut,ntPutMany,ntDel,ntWatch,rtReset,getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty,makerOne,makerPut};
 })();

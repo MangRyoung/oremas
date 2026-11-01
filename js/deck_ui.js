@@ -498,7 +498,7 @@ window.OM_DECK_UI=(()=>{
  const MAD0=[{n:'안개 속의 목소리',t:'증상',c:'2',x:'뽑으면 바로 공개한다. 손패 한 칸을 차지한다. 바칠 수 없다. 손패에 있는 동안 내 지시 체크 −1.\n치우기 — 통솔 체크(보통 10), 또는 코스트 2. 치워도 버린 카드로 갈 뿐 덱에 남는다.',col:'black'},
   {n:'뒤돌아본 그림자',t:'증상',c:'2',x:'뽑는 순간 경계도 +10. 그다음엔 손패 한 칸을 차지한다. 바칠 수 없다.\n치우기 — 통솔 체크(보통 10), 또는 코스트 2.',col:'black'}];
  const SCAR0=[];
- const COST0={'관찰 노트':1,'지도 펼치기':0,'다른 길로':2,'실타래 되감기':2,'응급 처치':2,'붕대와 진통제':1,'발소리 죽이기':3,'비상식량':1,'함께 버티자':1,'호흡 맞추기':1,'물러서!':1,'기세 올리기':1,'안개의 환영':2,'소금기 어린 부적':1,'손재주':2,'불러내기':0,'은빛 공명':1,'숨 고르기':1};
+ const COST0={'관찰 노트':1,'지도 펼치기':0,'다른 길로':2,'실타래 되감기':2,'응급 처치':2,'붕대와 진통제':1,'발소리 죽이기':3,'비상식량':1,'함께 버티자':2,'호흡 맞추기':1,'물러서!':1,'기세 올리기':1,'안개의 환영':2,'소금기 어린 부적':1,'손재주':2,'불러내기':0,'은빛 공명':1,'숨 고르기':1};
  async function skPreset(dids){if(!gm())return A().toast('GM 화면에서만');if(!dids.length)return A().toast('트레이너 덱이 없다');let mad=MAD0,scar=SCAR0;
   try{const rows=await window.OM_STORE.makerDocs('dbedit');const L=[],S=[];for(const r of rows){const d=r.data||{};if(d.kind!=='cards'||d.deleted)continue;const w=d.row||[];if(!w[1])continue;const c={n:w[1],t:String(w[2]||''),c:String(w[3]||''),x:String(w[4]||'').replace(/<br\s*\/?>/g,'\n'),col:colKey(w[5]||'black'),img:String(w[6]||'')};if(/광기|증상/.test(String(w[0]||''))){c.t=/광기|증상/.test(c.t)?c.t:'증상';L.push(c)}else if(/상흔/.test(String(w[0]||''))){c.t=/상흔/.test(c.t)?c.t:'상흔';S.push(c)}}if(L.length>=1)mad=L.slice(0,3);if(S.length)scar=S.slice(0,2)}catch(e){}
   const db0=DB();if(!db0)return;const db=clone(db0);let n=0;
@@ -508,7 +508,8 @@ window.OM_DECK_UI=(()=>{
    for(const m of [...mad,...scar])if(!dk.order.some(id=>dk.cards[id]&&dk.cards[id].n===m.n))exec(db,{op:'cardSave',d:did,card:Object.assign({q:0},m)},'gm',true);
    for(const id of dk.order){const c=dk.cards[id];if(!c)continue;if(COST0[c.n]!=null&&(c.c==null||String(c.c).trim()===''))c.c=String(COST0[c.n]);if(/^(열쇠|key)/i.test(String(c.t||''))&&(c.c==null||String(c.c).trim()===''))c.c='2'}
    for(const h of dk.holders){ensureHolder(dk,h);const rv=dk.rv[h];delete rv['은열쇠'];delete rv['광기'];if(rv['코스트']==null)rv['코스트']=res[0].s}n++}
-  if(!await A().setDiff(['deck2'],db0,db,3))return A().toast('저장하지 못했다');A().toast(`은열쇠 기본값을 덱 ${n}개에 맞췄다 — 손패 4 (박자마다 4장까지) · 코스트 5 · 증상 칸 2`)}
+  if(!await A().setDiff(['deck2'],db0,db,3))return A().toast('저장하지 못했다');try{const sc=((ST().state.skill||{}).cfg)||{};if(+sc.coverOn)await A().set(['skill','cfg','coverOn'],0)}catch(e){}   /* 11-01 23:56: 은열쇠 덱이 있으면 커버는 끈다 */
+  A().toast(`은열쇠 기본값을 덱 ${n}개에 맞췄다 — 손패 4 (박자마다 4장까지) · 코스트 5 · 증상 칸 2 · 커버 끔`)}
  /* 11-01 패널티 (GM 화면): kind = mad(빈사 · GM 사건 → 증상 카드) · mill({n}: 부상 1 · 중상 2) · unmill({ids}) · heal(증상 1장 빼기) · undo({cid}) → {cid,milled,collapse} */
  async function penalty(tid,kind,why,x){x=x||{};if(!gm())return null;const db0=DB();if(!db0)return null;const db=clone(db0);const did=deckIdOf(db,tid);if(!did)return null;const dk=fixDeck(db.decks[did]);if(!dk.opt.pk)return null;
   const before=JSON.stringify(Object.fromEntries(dk.order.map(id=>[id,+(dk.cards[id]||{}).q||0])));const R=exec(db,{op:'pen',d:did,h:tid,kind,why,cid:x.cid,n:x.n,ids:x.ids},'gm',true);if(R.err){A().toast(R.err);return null}if(!R.pub.length)return null;
