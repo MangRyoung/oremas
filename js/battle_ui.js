@@ -1536,12 +1536,13 @@ window.OM_BATTLE_UI=(()=>{
  const FC_LAY={압정뿌리기:3,독압정:2};
  const fcEnd=x=>x.k==='o'&&/^haz/.test(objCat(x.n)[0])?'철거':'끝';   /* 설치기는 「철거」, 벽 · 날씨 · 룸은 「끝」 */
  function fcDur(x){if(x.end)return '끝';if(x.k==='o'&&FC_LAY[x.n])return (+x.c||1)+'겹';return (!+x.c||+x.c>=1000)?'계속':(+x.c)+'턴'}
- function fcInfo(x,b){const n=x.n,L=[];let note='';const tk=t=>S().typeKo(t);const ws=mode(b||{})>=2?0.67:0.5;
+ function fcInfo(x,b){const n=x.n,L=[];let note='',EXL=[];const tk=t=>S().typeKo(t);const ws=mode(b||{})>=2?0.67:0.5;
   if(x.k==='w'){const M=WEATHER_MUL[n]||{};const up=Object.keys(M).filter(t=>M[t]>1);if(up.length)L.push(`${up.map(tk).join(' · ')} 기술 ×${M[up[0]]}`);for(const t of Object.keys(M).filter(t=>M[t]<1))L.push(M[t]?`${tk(t)} 기술 ×${M[t]}`:`${tk(t)} 기술 무효 (×0)`);
    if(n==='모래바람')L.push('바위 타입 특방 ×1.5','턴 끝 1/16 대미지 (바위 · 땅 · 강철 · 방진고글 제외)');
    if(['눈','싸라기눈','극한'].includes(n))L.push('얼음 타입 방어 ×1.5');if(n==='싸라기눈')L.push('턴 끝 대미지 없음');
    if(n==='짙은안개')L.push('명중 ×0.9 (독 · 페어리는 영향 없음)');if(n==='별하늘')L.push('명중 ×1.1');
-   if(['큰가뭄','폭우','난기류','극한','깊은밤'].includes(n))note='특성이 부르는 날씨 — 부른 포켓몬이 필드 위에 있는 한'}
+   if(['큰가뭄','폭우','난기류','극한','깊은밤'].includes(n))note='특성이 부르는 날씨 — 부른 포켓몬이 필드 위에 있는 한';
+   EXL=wxLinks(b,n)}
   else if(x.k==='t'){note='땅 위 포켓몬에게만';L.push(...(({그래스필드:['풀 기술 ×1.3','턴 끝 HP 1/16 회복'],일렉트릭필드:['전기 기술 ×1.3','「잠듦」 · 「하품」에 걸리지 않는다'],미스트필드:['받는 드래곤 기술 ×0.5','상태 이상 · 「혼란」에 걸리지 않는다'],사이코필드:['에스퍼 기술 ×1.3','상대의 선공기(우선도 +1 이상)를 받지 않는다']})[n]||[]))}
   else if(x.k==='r'||x.k==='e')L.push(...(({트릭룸:['스피드가 느린 포켓몬부터 행동'],매직룸:['소지품 효과 없음'],원더룸:['방어 ↔ 특방 실수치를 바꾼다'],블랙룸:['공격 기술이 모두 고스트 타입'],중력:['명중 ×1.67','하늘에 떠오를 수 없다'],물놀이:['불꽃 기술 위력 ×0.5'],흙놀이:['전기 기술 위력 ×0.5']})[n]||[]));
   else{const FD=window.OM_FIELD||{};const H=(FD.HAZ||[]).find(h=>h.k===n);const R=(FD.RM||{})[n];
@@ -1564,7 +1565,21 @@ window.OM_BATTLE_UI=(()=>{
    else note=objCat(n)[1]||''}
   /* 규칙 표에 없는 것은 기술 DB 효과 글을 줄여서 */
   if(!L.length){const e=String((((DB().moves||{})[n])||{}).eff||'').replace(/「(?:우선도|설치기)[^」]*」[^.]*\.\s*/g,'').replace(/\s*「[^」]+」\s*기술\.\s*$/,'').trim();if(e&&e!=='-')L.push(e.length>90?e.slice(0,88)+'…':e)}
-  return {L:L.slice(0,4),note}}
+  return {L:[...L.slice(0,4),...EXL],note}}
+ /* 11-01 망령 「날씨 효과 위력만 있고 부가 효과가 없다」: 이 배틀에 나온 포켓몬의 기술 · 특성 · 포텐셜 중 이 날씨를 따르는 것을 카드에 덧붙인다.
+    기술 글의 「날씨 : X, Y」일 때 … 문장을 읽어 필중 · 명중 N · 차지 없이 · 위력 반감 · 회복 ↑↓ 로 묶고, 그 밖은 이름만. 눈 ↔ 싸라기눈은 같은 것으로 본다 (spMulOf 와 같게) */
+ const wxSame=(x,W)=>x===W||(x==='눈'&&W==='싸라기눈')||(x==='싸라기눈'&&W==='눈');
+ const wxIn=(s,W)=>{const re=/「날씨\s*:\s*([^」]+)」/g;let r;while((r=re.exec(s)))if(r[1].split(/[,，/]\s*/).some(x=>wxSame(x.trim(),W)))return true;return false};
+ function wxLinks(b,W){if(!W||!b||!b.mons)return [];const G=new Map(),add=(k,v)=>{if(!G.has(k))G.set(k,[]);const a=G.get(k);if(!a.includes(v))a.push(v)};
+  for(const m of Object.values(b.mons)){if(!m||!m.name)continue;const who=String(m.name);
+   for(const mv of (m.moves||[])){if(!mv||!mv.name)continue;const e=String(mv.eff||'');const nm=`${who} 「${mv.name}」`;
+    for(const sen of e.split(/(?<=\.)\s*/)){if(!wxIn(sen,W)){if(/「날씨」(?:가 전개되어 있을 때|와 같은)/.test(sen))add('날씨 연동',nm);continue}
+     const ac=sen.match(/「명중\s*:\s*(\d+)」/);
+     if(/「필중기」/.test(sen))add('필중',nm);else if(ac)add('명중 '+ac[1],nm);else if(/「차지」를 생략/.test(sen))add('차지 없이 바로',nm);else if(/위력을 반감/.test(sen))add('위력 반감',nm);
+     else if(/회복량이 강화\(([^)]*)\)/.test(sen))add('회복 '+sen.match(/회복량이 강화\(([^)]*)\)/)[1],nm);else if(/회복량이 저하\(([^)]*)\)/.test(sen))add('회복 '+sen.match(/회복량이 저하\(([^)]*)\)/)[1],nm);else add('효과',nm)}}
+   for(const [an,ae] of [[m.ability,m.abilityEff],...potSrc(m).map(p=>[p.name,p.eff])]){if(an&&wxIn(String(ae||''),W))add('특성 · 포텐셜',`${who} 「${an}」`)}}
+  const ORD=['필중','명중 50','차지 없이 바로','위력 반감','특성 · 포텐셜'];const ks=[...G.keys()].sort((a,c)=>(ORD.indexOf(a)+1||9)-(ORD.indexOf(c)+1||9));
+  return ks.map(k=>{const v=G.get(k);return `이 배틀 · ${k}: ${v.slice(0,4).join(' · ')}${v.length>4?` 외 ${v.length-4}`:''}`}).slice(0,6)}
  /* 앞(a) 뒤(z) 필드 → [{k:w|t|r|e|o, n, c(턴 · 겹), side, prev(바뀐 날씨 · 필드), re(갱신), end(걷힘)}] — 턴 종료에 줄기만 한 것은 넣지 않는다 */
  function fieldDiff(a,z){const F0=fieldOf({field:a}),F1=fieldOf({field:z});const out=[];
   for(const [k,g] of [['w','weather'],['t','terrain']]){const p=F0[g]||{},q=F1[g]||{};const c0=+p.count||0,c1=+q.count||0;
@@ -1906,7 +1921,7 @@ window.OM_BATTLE_UI=(()=>{
  const FOUL_RE=/대상의\s*「공격」으로\s*대미지\s*계산/;
  function foulAtk(atk,def,mv){if(!def||!FOUL_RE.test(String((mv||{}).eff||'')))return atk;const x=Object.assign({},atk);x.stats=(atk.stats||[]).slice();x.stats[1]=(def.stats||[])[1]||x.stats[1];x.rank=Object.assign({},atk.rank||{},{attack:+((def.rank||{}).attack||0)});x.mod=Object.assign({},atk.mod||{},{attack:+((def.mod||{}).attack||1)});return x}
  /* 이제 창이 알아서 하는 「손으로」 문장 (속임수 · 날씨 차지 생략 · 날씨 위력 반감 · 난동부리기) */
- const autoNote=t=>FOUL_RE.test(String(t))||/「날씨\s*:[^」]*」일 때 「차지」를 생략|「날씨\s*:[^」]*」일 때 위력을 반감|「기술 방어」\s*상태가 된다|^「난동부리기\s*\(혼란\)\s*:\s*\d+~\d+회」$/.test(String(t).trim());
+ const autoNote=t=>FOUL_RE.test(String(t))||/「날씨\s*:[^」]*」일 때 「차지」를 생략|「날씨\s*:[^」]*」일 때 「필중기」|「날씨\s*:[^」]*」일 때 「명중\s*:\s*\d+」|「날씨\s*:[^」]*」일 때 위력을 반감|「기술 방어」\s*상태가 된다|^「난동부리기\s*\(혼란\)\s*:\s*\d+~\d+회」$/.test(String(t).trim());
  const protMove=mv=>/「(기술|공격) 방어」\s*상태가 된다/.test(String((mv||{}).eff||''));
  const protBypass=mv=>{const e=String((mv||{}).eff||'');if(!/「방어」(?:「[^」]*」)*\s*상태를\s*무시/.test(e))return '';return /무시\(해제\)|해제한다/.test(e)?'clear':'pass'};
  /* 10-26 망령: 숙달 지령 ② 는 정해진 때에 【임의】로 쓸 수 있다 — 명중굴림 전(공격 창)에 쓸 수 있는 것을 알려 준다.
@@ -1958,6 +1973,7 @@ window.OM_BATTLE_UI=(()=>{
   md.querySelectorAll('[data-at]').forEach(t=>t.onclick=()=>{const cb=md.querySelector(`[data-t="${t.dataset.at}"]`);if(cb){cb.checked=!cb.checked;syncBoard()}});
   md.querySelectorAll('[data-amv]').forEach(cd=>cd.onclick=()=>{if(extGone(MVS(atk)[+cd.dataset.amv]))A().toast('이 기능 확장은 이번 시합에서 다 썼다 — 판정을 바로잡을 때만 쓴다');mvSel.value=cd.dataset.amv;md.querySelectorAll('[data-amv]').forEach(q=>q.classList.toggle('on',q===cd));syncMove()});
   const syncMove=()=>{const mv=MVS(atk)[+mvSel.value]||{};const pst=powStepOf(mv);$('#apow',md).value=mv.pow||pst||0;{const h=$('#amhint',md),mn=+mv.min||1,mx=+mv.max||1;if(h)h.textContent=(mx<=1?'':mn===mx?`${mx}회 연속기 — 매 회 명중 판정`:`${mn}~${mx}회 연속기 — 첫 명중 뒤 확정`)+(pst?` · 맞을 때마다 위력 +${pst} (위력 칸 = 1타)`:'')}{const oe=(b.order||[]).find(o=>o.mid===mid&&o.pursuitHit);const pv=oe&&b.mons[oe.pursuitHit];if(oe&&pv&&pv.entry&&String(mv.name)===String(oe.move)){const x2=pursuitX2(mv);if(x2)$('#apow',md).value=(+mv.pow||0)*2;setTimeout(()=>{const e2=$('#amef',md);if(e2)e2.textContent='【따라가때리기 — 교대하려는 '+pv.name+'에게 먼저'+(x2?' · 위력 2배':'')+'】 '+e2.textContent},0)}}{const a=moveAuto(mv);$('#acritforce',md).checked=!!(a&&a.critSure)}{const e=String(mv.eff||''),W=String(f.weather.type||'');const wl=(re)=>{const r=e.match(re);return r?r[1].split(/[,，]\s*/).map(x=>x.trim()):null};const skip=wl(/「날씨\s*:\s*([^」]+)」일 때 「차지」를 생략/),half=wl(/「날씨\s*:\s*([^」]+)」일 때 위력을 반감/);const nt=[];
+    /* 11-01 망령 「날씨 부가 효과」: 「날씨 : X」일 때 「필중기」 · 「명중 : N」도 창이 맞춘다 (번개 · 폭풍 · 눈보라 · 코멧펀치 …) */const wsure=wl(/「날씨\s*:\s*([^」]+)」일 때 「필중기」/),wacm=e.match(/「날씨\s*:\s*([^」]+)」일 때 「명중\s*:\s*(\d+)」/);md.dataset.wsure=wsure&&W&&wsure.some(x=>wxSame(x,W))?'1':'';md.dataset.wacc=wacm&&W&&wacm[1].split(/[,，]\s*/).some(x=>wxSame(x.trim(),W))?wacm[2]:'';if(md.dataset.wsure)nt.push('「'+W+'」 — 필중');if(md.dataset.wacc)nt.push('「'+W+'」 — 명중 '+md.dataset.wacc);
     if(skip&&W&&skip.includes(W))nt.push('「'+W+'」 — 차지 없이 바로');else if(/「차지」/.test(e))nt.push('「차지」 기술 — 첫 턴은 모으기');if(half&&W&&half.includes(W)){$('#apow',md).value=Math.floor((+mv.pow||0)/2);nt.push('「'+W+'」 — 위력 반감')}
     if(nt.length)setTimeout(()=>{const e2=$('#amef',md);if(e2)e2.textContent='【'+nt.join(' · ')+'】 '+e2.textContent},0)}
    if(FOUL_RE.test(String(mv.eff||'')))setTimeout(()=>{const e2=$('#amef',md);if(e2)e2.textContent='【대상의 「공격」으로 계산 — 자동】 '+e2.textContent},0);{const st=atk.states||{};$('#acharge',md).checked=mv.cat!=='변화'&&Object.keys(CHARGE_ST).some(k=>st[k]&&tyOf(mv)===CHARGE_ST[k])}$('#amef',md).textContent=(SPMAP[String(mv.name||'').trim()]?'【변칙 위력 — 대상마다 자동 계산】 ':'')+String(mv.eff||'').replace(/<br\s*\/?>/gi,'\n');{const col=S().typeColor(tyOf(mv));$('#amhd',md).innerHTML=`<span class="amty" style="background:${col.bg};color:${col.fg}">${esc(S().typeKo(tyOf(mv))||mv.type||'')}</span><b>${esc(mv.name||'')}</b><span class="dim">${esc(mv.cat||'')} · 위력 ${mv.pow||'-'} · 명중 ${mv.acc||'필중'}${mv.prio?' · 우선 '+mv.prio:''} · ${esc(mv.range||'')}${mv.tag&&mv.tag!=='-'?' · '+esc(mv.tag):''}</span>`}const T0=tyOf(mv);const wm=WEATHER_MUL[f.weather.type]||{};$('#aweather',md).value=wm[T0]!=null?wm[T0]:1;{const sk=!ATY&&skinOf(atk,mv);$('#atrait',md).value=sk?sk.mul:1;if(sk)setTimeout(()=>{const e2=$('#amef',md);if(e2)e2.textContent='【특성 「'+sk.name+'」 '+S().typeKo(sk.ty)+' 기술 · 위력 ×'+sk.mul+'】 '+e2.textContent},0)}
@@ -2014,13 +2030,13 @@ window.OM_BATTLE_UI=(()=>{
    const res=[];const multiTarget=targets.length>1;const SPW=specialPowFor(mv.name,atk);const MAU0=moveAuto(mv),MAU=MA()&&MA().auto(MAU0)?MAU0:null;   /* 변칙 위력 기술: 대상마다 위력 자동 (매그니튜드 같은 무작위는 한 번만 굴림) */
    for(const slot of targets){const [side,area]=slot.split('_');const def=entered(b,side)[area];if(!def)continue;
     const AF=atk.flags||{},DF=def.flags||{};const phys=mv.cat==='물리',spec=mv.cat==='특수';
-    const sure=ck('asure')||AF.surehit||(phys&&AF.hitPhys)||(spec&&AF.hitSpec)||!!(FX()&&FX().nextOf&&FX().nextOf(atk).some(e=>e.sure));const IG=FX()?iuIgnore(atk,def):{};
+    const sure=ck('asure')||md.dataset.wsure==='1'||AF.surehit||(phys&&AF.hitPhys)||(spec&&AF.hitSpec)||!!(FX()&&FX().nextOf&&FX().nextOf(atk).some(e=>e.sure));const IG=FX()?iuIgnore(atk,def):{};
     const sureMv=sure||!(+mv.acc);/* 10-26 망령 판정: 「필중기」는 『피해라!』『물러나!』로 피할 수 없다 */const autoMiss=((phys&&DF.dodgePhys)||(spec&&DF.dodgeSpec))&&!sureMv||AF.acc0;
     /* 사이코필드: 땅 위의 포켓몬은 상대의 선공 기술(우선도 +1 이상)을 받지 않는다 */
     const psyBlock=f.terrain.type==='사이코필드'&&!sameT(def,atk)&&grd(def)&&(FX()?FX().prioOf(atk,mv):(+mv.prio||0))>0;
     const itImm=OI()&&mv.cat!=='변화'?OI().immune(def,moveTypes):'';
     /* 와이드가드(「전체기 방어」): 그 진영이 받는 전체기(대상 2체 이상 · 범위가 전체인 기술)를 막는다 — 같은 편 전체기도 */const wideBlock=def!==atk&&+(((f.objects||{})[def.side]||{})['와이드가드']||0)>0&&(multiTarget||/전체|자신\s*이외/.test(String(mv.range||'')));
-    const protBlock=def!==atk&&!PBY&&(def.flags||{}).protect===(+b.turn||0)&&def.hp.cur>0;const accRoll=()=>protBlock?{prot:1,sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:`${def.name} 「기술 방어」 — 기술을 막았다`,prot:1}:wideBlock?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:`${SIDE_KO[def.side]} 「와이드가드」 — 전체기를 막았다`}:itImm?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:`${def.name}의 「${itImm}」 — 효과가 없다`}:psyBlock?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:'사이코필드 — 땅 위라 선공 기술 무효'}:autoMiss?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:'지령으로 회피/명중 0'}:B().accuracy(atk,def,{acc:mv.acc},{accMult:n('aacc'),sureHit:sure,starry:f.weather.type==='별하늘',fog:f.weather.type==='짙은안개',fogImmune:moveTypes.some(t=>t==='Poison'||t==='Fairy')||tysOf(atk).some(t=>t==='Poison'||t==='Fairy'),gravity:(f.etc||{})['중력']>0,wideLens:IT(atk)==='광각렌즈',ignoreAcc:IG.acc,ignoreEva:IG.eva});const acc=accRoll();
+    const protBlock=def!==atk&&!PBY&&(def.flags||{}).protect===(+b.turn||0)&&def.hp.cur>0;const accRoll=()=>protBlock?{prot:1,sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:`${def.name} 「기술 방어」 — 기술을 막았다`,prot:1}:wideBlock?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:`${SIDE_KO[def.side]} 「와이드가드」 — 전체기를 막았다`}:itImm?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:`${def.name}의 「${itImm}」 — 효과가 없다`}:psyBlock?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:'사이코필드 — 땅 위라 선공 기술 무효'}:autoMiss?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:'지령으로 회피/명중 0'}:B().accuracy(atk,def,{acc:md.dataset.wacc?+md.dataset.wacc:mv.acc},{accMult:n('aacc'),sureHit:sure,starry:f.weather.type==='별하늘',fog:f.weather.type==='짙은안개',fogImmune:moveTypes.some(t=>t==='Poison'||t==='Fairy')||tysOf(atk).some(t=>t==='Poison'||t==='Fairy'),gravity:(f.etc||{})['중력']>0,wideLens:IT(atk)==='광각렌즈',ignoreAcc:IG.acc,ignoreEva:IG.eva});const acc=accRoll();
     /* 효과 엔진: 상성을 먼저 보고 강화·완화·급소 조건을 맞춘다 */
     const effPre=mv.cat==='변화'?null:B().effectiveness(moveTypes,def,{multiMode:+g('amulti').value,atkTypes,force:g('aforce').value===''?null:+g('aforce').value,floating:(def.states||{}).MagnetRise||(def.states||{}).Telekinesis||(FX()&&FX().floating(def))||IT(def)==='풍선'});
     const mods=FX()?FX().attackMods(roleV(atk),roleV(def),Object.assign(moveQuery(atk,def,mv,moveTypes,effPre?effPre.value:1,!multiTarget),{stab:!!(effPre&&effPre.stab)})):{boost:1,guard:1,cg:0,cr:0,cx:'',names:[]};
