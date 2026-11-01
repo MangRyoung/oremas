@@ -88,12 +88,12 @@ window.OM_DECK_UI=(()=>{
   if(!canSee(dk,who,isGm))return E('이 덱은 볼 수 없어.');
   const own=isOwner(dk,who,isGm);const cards=dk.cards;const cn=cid=>(cards[cid]||{}).n||'?';
   const H=p.h||who;const by=H===who||!who||who==='gm'?hName(H):`${hName(H)} (${hName(who)} 조작)`;
-  const HOLDER_OPS=['draw','play','reveal','discard','top','bottom','give','exile','mull','res','take'];
+  const HOLDER_OPS=['draw','play','reveal','discard','commit','top','bottom','give','exile','mull','res','take'];
   if(HOLDER_OPS.includes(op)){if(!H||H==='gm')return E('손패 주인을 골라 줘.');if(!isGm&&H!==who)return E('다른 사람의 손패는 건드릴 수 없어.');ensureHolder(dk,H)}
   const hand=HOLDER_OPS.includes(op)?dk.hands[H]:null;
   /* 손패에서 고른 카드 (인덱스와 카드 id 가 둘 다 맞아야 함) */
   let picked=[],pickIdx=[];
-  if(['play','reveal','discard','top','bottom','give','exile'].includes(op)){const sel=p.sel||[],ids=p.ids||[];if(!sel.length)return E('카드를 먼저 골라 줘.');if(sel.length!==ids.length)return E('선택이 이상해. 다시 골라 줘.');
+  if(['play','reveal','discard','commit','top','bottom','give','exile'].includes(op)){const sel=p.sel||[],ids=p.ids||[];if(!sel.length)return E('카드를 먼저 골라 줘.');if(sel.length!==ids.length)return E('선택이 이상해. 다시 골라 줘.');
    const seen=new Set();for(let i=0;i<sel.length;i++){const ix=+sel[i];if(seen.has(ix))return E('같은 카드를 두 번 골랐어.');seen.add(ix);if(hand[ix]!==ids[i])return E('손패가 그새 바뀌었어. 다시 골라 줘.');picked.push(ids[i])}
    pickIdx=[...sel].map(Number).sort((a,b)=>b-a)}
   const names=picked.map(c=>'「'+cn(c)+'」').join(', ');const take=()=>{for(const ix of pickIdx)hand.splice(ix,1)};
@@ -109,7 +109,7 @@ window.OM_DECK_UI=(()=>{
    if(kind==='mad'){const cap=Math.max(0,+dk.opt.pc||2),n=penN('mad');if(n>=cap)return `\n⚠ 퇴장 — ${hName(h)}의 증상 칸(${cap}장)이 이미 가득 찼다${why?' ('+why+')':''}. 던전에서 이탈한다.`;const id=L.slice().sort((a,b)=>(+dk.cards[a].q||0)-(+dk.cards[b].q||0))[0];qtyAdj(dk,id,1);return `\n증상 카드 「${dk.cards[id].n}」 1장을 덱에 섞었어 (증상 ${n+1}/${cap})${why?' — '+why:''}`}
    const id=L[0];qtyAdj(dk,id,1);return `\n상흔 카드 「${dk.cards[id].n}」 1장을 덱에 섞었어 (긴 휴식에 빠진다)${why?' — '+why:''}`};
   /* 덱 맨 위 n장 버리기 (부상 · 중상 · 코스트 부족). 덱이 비면 버린 카드를 섞어 채우고 증상 카드 */
-  const mill=(h,n,why)=>{const ids=[];let line='';for(let i=0;i<n;i++){if(!dk.pile.length&&dk.disc.length){const ex=exemptSet(p.d);const back=dk.disc.filter(c=>!isExempt(dk,c,ex));if(back.length){dk.pile=shuffle(back);dk.disc=dk.disc.filter(c=>isExempt(dk,c,ex));line+='\n덱이 바닥나 버린 카드를 섞어 다시 채웠어.';if(dk.opt.pk)line+=penIns(h,'mad','덱이 바닥남')}}if(!dk.pile.length)break;const c=dk.pile.shift();dk.disc.push(c);ids.push(c)}
+  const mill=(h,n,why)=>{const ids=[];let line='',left=n,guard=0;const exS=exemptSet(p.d);while(left>0&&guard++<40){if(!dk.pile.length&&dk.disc.length){const ex=exemptSet(p.d);const back=dk.disc.filter(c=>!isExempt(dk,c,ex));if(back.length){dk.pile=shuffle(back);dk.disc=dk.disc.filter(c=>isExempt(dk,c,ex));line+='\n덱이 바닥나 버린 카드를 섞어 다시 채웠어.';if(dk.opt.pk)line+=penIns(h,'mad','덱이 바닥남')}}if(!dk.pile.length)break;const c=dk.pile.shift();const cc=dk.cards[c]||{};if(/증상|광기|상흔/.test(String(cc.t||''))||isExempt(dk,c,exS)){if(h){ensureHolder(dk,h);dk.hands[h].push(c)}line+=`\n「${cn(c)}」은(는) 버려지지 않고 손으로 왔어${/증상|광기/.test(String(cc.t||''))?' (뽑을 때 효과가 있으면 일어나)':''} — 한 장 더 버려.`;continue}dk.disc.push(c);ids.push(c);left--}
    return {ids,line:`덱 맨 위 ${ids.length}장을 버렸어${why?' ('+why+')':''}${ids.length?': '+ids.map(c=>'「'+cn(c)+'」').join(' '):''} · 덱 ${dk.pile.length}장 남음${line}`}};
   switch(op){
    case 'draw':{const n=Math.floor(+p.n||1);const mx=+dk.opt.md||10;if(n<1)return E('몇 장 뽑을지 1 이상으로 적어 줘.');if(n>mx)return E(`한 번에 ${mx}장까지만 뽑을 수 있어. (설정에서 바꿀 수 있어)`);
@@ -137,6 +137,7 @@ window.OM_DECK_UI=(()=>{
     take();dk.disc.push(...picked);
     R.pub.push(`${by} · 카드 사용${cost&&cr?` (비용 ${cost})`:''}${costLine}${ovLine}${ovAlerts.length?'\n'+ovAlerts.join('\n'):''}\n${picked.map(c=>cardLine(cards[c])).join('\n')}`);logL(`${by} · ${names} 사용${ovLine?' ('+ovLine.trim().replace(/.*\s(\S+ \d+ → \d+)$/,'$1')+')':''}`);R.msg=`${names} 사용했어.`;return R}
    case 'reveal':R.pub.push(`${by} · 손패 공개\n${picked.map(c=>cardLine(cards[c])).join('\n')}`);logL(`${by} · ${names} 공개`);R.msg='모두에게 보여 줬어.';return R;
+   case 'commit':{/* 11-01 스킬 체크에 바치기: 그 카드를 버리고, 패널티가 켜진 덱이면 덱 맨 위 1장도 버린다 */take();dk.disc.push(...picked);let line=`${by} · 바침: ${names}`;if(dk.opt.pk){const m=mill(H,1,'바치기');line+='\n'+m.line;R.milled=m.ids}R.pub.push(line);logL(`${by} · ${names} 바침`);R.msg='바쳤어.';return R}
    case 'discard':take();dk.disc.push(...picked);R.pub.push(`${by} · 버림: ${names}`);logL(`${by} · ${names} 버림`);R.msg='버렸어.';return R;
    case 'exile':take();dk.out.push(...picked);R.pub.push(`${by} · 제외: ${names}`);logL(`${by} · ${names} 제외`);R.msg='제외했어.';return R;
    case 'top':take();dk.pile.unshift(...picked.slice().reverse());R.pub.push(`${by} · ${picked.length}장을 덱 맨 위로`);logL(`${by} · ${picked.length}장 덱 위로`);R.msg='덱 맨 위에 올렸어.';return R;
@@ -515,6 +516,6 @@ window.OM_DECK_UI=(()=>{
   if(!await A().setDiff(['deck2'],db0,db,3)){A().toast('덱을 저장하지 못했다');return null}A().sysLog(`🃏 〔${dk.name}〕 ${R.pub.join('\n')}`,'sys');redrawSoon();return {cid:kind==='mad'?added:'',milled:R.milled||[],collapse:!!(R.pen&&R.pen.collapse),line:R.pub[0]}}
  /* 스킬 체크에 바치기: 손패에서 그 카드를 버린 카드로 (효과 없이). 성공하면 카드 정보를 돌려준다 */
  async function commitCard(tid,cid,stat){const x=deckFor(tid);if(!x)return {err:'덱이 없다'};const [did,dk]=x;const hand=dk.hands[tid]||[];const i=hand.indexOf(cid);const c=dk.cards[cid];if(i<0||!c)return {err:'그 카드가 손패에 없다'};
-  if(!icFits(c,stat))return {err:`「${c.n}」 은(는) ${stat} 아이콘이 없다`};const r=await run({op:'discard',d:did,h:tid,sel:[i],ids:[cid]});if(r&&r.err)return {err:r.err};return {n:c.n,ic:icOf(c).join(' '),did,cid}}
+  if(!icFits(c,stat))return {err:`「${c.n}」 은(는) ${stat} 아이콘이 없다`};const r=await run({op:'commit',d:did,h:tid,sel:[i],ids:[cid]});if(r&&r.err)return {err:r.err};return {n:c.n,ic:icOf(c).join(' '),did,cid}}
  return {open,absorb,phone,bindPhone,openMgr,exec,seedDb,onAck,handCount,handInfo,battleHand,importMakerDecks,beat,skPreset,commitCard,icOf,icFits,penalty};
 })();

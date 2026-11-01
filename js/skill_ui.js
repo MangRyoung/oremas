@@ -114,7 +114,7 @@ window.OM_SKILL_UI=(()=>{
  const SCN={rp:'동행',field:'필드',solo:'트레이너만'};   /* 11-01 망령 「스킬 체크 — 트레이너만 · 대표 1명 / 전원」: solo = 포켓몬 없이 */
  const isRep=O=>!!O&&O.who==='rep';
  /* 11-01 망령 「은열쇠」: 바친 카드 — skill.trainers.<바친 사람>.bk = {oid 제시 id, to 받는 트레이너 | 'rep'(대표), n, ic, at}. 한 사람 한 장 · 판정 하나에 최대 2장 · 1장당 +1 */
- const BK_MAX=2;
+ const BK_MAX=1;   /* 11-01 22:2x 망령: 판정 하나에 바치기 1장 · 바치면 덱 맨 위 1장도 버린다 (deck_ui commit) */
  function bkFor(tid,O){if(!O)return [];const TT=st().trainers||{};const L=[];for(const [by,x] of Object.entries(TT)){const b=x&&x.bk;if(!b||b.oid!==O.id)continue;if(O.free&&Date.now()-(+b.at||0)>3*3600e3)continue;
    if(b.to===tid||(b.to==='rep'&&isRep(O)&&(O.ids||[]).includes(tid)))L.push(Object.assign({by},b))}L.sort((a,b)=>(+a.at||0)-(+b.at||0));return L.slice(0,BK_MAX)}
  /* 대표 1명 제시에서 이미 굴린 사람 (먼저 굴린 한 명) — 없으면 '' */
@@ -149,7 +149,7 @@ window.OM_SKILL_UI=(()=>{
   if(+O.pm)parts.push([+O.pm>0?'유리':'불리',+O.pm]);
   if(k.inj===1&&+C.injPen)parts.push([tough(t)?'부상 (강인함으로 무시)':'부상',tough(t)?0:-(+C.injPen)]);
   if(+ch.bonus)parts.push(['추가 보정',+ch.bonus]);
-  for(const b of bkFor(tid,O))parts.push([`카드 「${b.n}」${b.by!==tid?' · '+((trs()[b.by]||{}).name||''):''}`,1]);   /* 11-01 은열쇠: 바친 카드 1장당 +1 (최대 2장) */
+  for(const b of bkFor(tid,O))parts.push([`카드 「${b.n}」${b.by!==tid?' · '+((trs()[b.by]||{}).name||''):''}`,1]);   /* 11-01 은열쇠: 바친 카드 +1 (판정 하나에 1장) */
   let tw=+O.twice||0;if(k.inj===2)tw=Math.max(-1,tw-1);
   return {parts,mod:parts.reduce((a,p)=>a+p[1],0),tw}}
  /* 정확한 확률 (2d6 열거). 1·1 실패 · 6·6 대성공 → {ok, crit} */
@@ -574,7 +574,7 @@ ${penFields('fail',X)}</div></div>
   else{const sel=targets.length>1?`<select id="sk_bkto">${targets.map(to=>`<option value="${esc(to)}" ${to===tid?'selected':''} ${got(to).length>=BK_MAX?'disabled':''}>${esc(nm(to))}${got(to).length>=BK_MAX?' (가득)':''}</option>`).join('')}</select>`:`<input type="hidden" id="sk_bkto" value="${esc(targets[0]||tid)}"><span class="small">→ ${esc(nm(targets[0]||tid))}</span>`;
    const full=targets.length===1&&got(targets[0]).length>=BK_MAX;
    act=full?'<span class="small dim">이 판정에는 이미 2장이 들어갔다</span>':`${sel}<span class="skbkc">${fit.map(c=>`<button type="button" class="skhc" data-bk="${esc(c.cid)}" style="--hc:${c.col}" title="${esc(c.x||'')}"><b>${esc(c.n)}</b><em>${esc(c.ic.join('·'))}</em></button>`).join('')}</span>`}
-  return `<div class="skcard skbkbox"><div class="sec" style="margin:0">카드 바치기 <span class="note">은열쇠 · 굴리기 전에 · ${esc(O.stat)} 또는 ★ 아이콘 · 1장당 +1 · 판정 하나에 최대 ${BK_MAX}장 · 한 사람 1장${rep?' · 대표 1명 체크는 「대표」에게 거든다':''}</span></div>${list?`<div class="skbkl">${list}</div>`:''}<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:6px">${act}</div></div>`}
+  return `<div class="skcard skbkbox"><div class="sec" style="margin:0">카드 바치기 <span class="note">은열쇠 · 굴리기 전에 · ${esc(O.stat)} 또는 ★ 아이콘 · +1 · 판정 하나에 ${BK_MAX}장 · 바치면 덱 맨 위 1장도 버림${rep?' · 대표 1명 체크는 「대표」에게 거든다':''}</span></div>${list?`<div class="skbkl">${list}</div>`:''}<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:6px">${act}</div></div>`}
  async function bkGive(tid,O,cid,to){const DK=window.OM_DECK_UI;if(!DK||!DK.commitCard)return;const T=trs();to=to||tid;
   const cur=tsk(tid).bk;if(cur&&cur.oid===O.id)return A().toast('이 체크에는 이미 한 장 바쳤다');
   const got=to==='rep'?bkFor((O.ids||[]).find(id=>T[id])||tid,O):bkFor(to,O);if(got.length>=BK_MAX)return A().toast(`그 판정에는 이미 ${BK_MAX}장이 들어갔다`);
