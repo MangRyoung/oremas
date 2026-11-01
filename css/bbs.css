@@ -86,3 +86,61 @@ body:has(#mecard:not([hidden])) .bbsfab{bottom:62px}
 .bbs-embed .bbs-av{width:28px;height:28px;font-size:12px}
 .bbs-embed .bbs-body{font-size:13px}
 .ph-bbs{min-height:0;overflow-y:auto;flex:1}
+/* 11-02 망령 「칸 훨씬 키워서 가독성」: 글씨 · 칸 · 초상을 키운다 (휴대폰 안은 조금 작게) */
+.modal.bbsmodal{width:min(1040px,97vw)}
+.bbs-wrap{grid-template-columns:210px minmax(0,1fr);gap:18px}
+.bbs-bd{padding:10px 12px;font-size:14px}
+.bbs-bhead h3{font-size:24px}
+.bbs-bhead p{font-size:13px}
+.bbs-compose{padding:14px;gap:10px}
+.bbs-compose textarea{min-height:110px;font-size:16px;line-height:1.7;padding:10px 12px}
+.bbs-crow{gap:10px}
+.bbs-anon{font-size:13px}
+.bbs-post{padding:14px 16px}
+.bbs-feed{gap:12px}
+.bbs-av{width:42px;height:42px;font-size:16px}
+.bbs-nm b{font-size:16px}
+.bbs-nm time{font-size:12px}
+.bbs-body{font-size:16px;line-height:1.75;margin-top:8px}
+.bbs-act{padding:5px 12px;font-size:13px}
+.bbs-cm .bbs-av{width:32px;height:32px;font-size:13px}
+.bbs-cm .bbs-body{font-size:14.5px}
+.bbs-cform input[type=text]{padding:9px 10px;font-size:15px}
+.bbs-empty{font-size:15px}
+/* 글쓴이 단추 · 고르기 창 (웹툴 RP 화자 고르기처럼) */
+.bbs-who{display:inline-flex;align-items:center;gap:8px;min-width:0;max-width:280px;padding:5px 12px 5px 10px;border:1px solid var(--line2,#555);border-radius:999px;background:#000;color:var(--fg,#f4f4f4);font:inherit;cursor:pointer;text-align:left}
+.bbs-who:hover,.bbs-who:focus-visible{border-color:var(--yel,#ffd12e)}
+.bbs-who span:first-child,.bbs-whos{display:flex;flex-direction:column;min-width:0;line-height:1.25}
+.bbs-who b,.bbs-whos b{font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bbs-who small,.bbs-whos small{font-size:11px;color:var(--mute,#8a8a8a);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bbs-car{opacity:.6;font-size:11px}
+.bbs-wp{position:fixed;z-index:9500;display:flex;flex-direction:column;background:#111;color:var(--fg,#f4f4f4);border:2px solid var(--yel,#ffd12e);border-radius:12px;box-shadow:6px 6px 0 var(--red,#e4002b),0 10px 40px rgba(0,0,0,.6);overflow:hidden}
+.bbs-wq{padding:8px;border-bottom:1px solid var(--line2,#555)}
+.bbs-wq input{width:100%;box-sizing:border-box;padding:8px 10px;font-size:15px;background:#000;color:inherit;border:1px solid var(--line2,#555);border-radius:6px}
+.bbs-wb{overflow:auto;padding:8px 10px 12px;display:flex;flex-direction:column;gap:8px}
+.bbs-wh{font-size:12px;font-weight:700;color:var(--yel,#ffd12e);padding:4px 2px;border-bottom:1px solid var(--line2,#555);margin-bottom:4px}
+.bbs-wh small{color:var(--mute,#8a8a8a);font-weight:400;margin-left:4px}
+.bbs-wg{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:4px}
+.bbs-wi{display:flex;align-items:center;gap:8px;min-width:0;padding:5px 7px;border-radius:8px;border:1px solid transparent;background:transparent;color:inherit;font:inherit;cursor:pointer;text-align:left}
+.bbs-wi:hover,.bbs-wi:focus-visible{background:#1d1d22;border-color:var(--line2,#555)}
+.bbs-wi.on{border-color:var(--yel,#ffd12e);background:rgba(255,209,46,.08)}
+.bbs-wi .bbs-av{width:36px;height:36px;font-size:13px}
+.bbs-wi span{display:flex;flex-direction:column;min-width:0}
+.bbs-wi b{font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bbs-wi small{font-size:11px;color:var(--mute,#8a8a8a);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* 세션 노트 창(bbs-in, 한 줄) · 휴대폰 안(bbs-embed) */
+.bbs-in .bbs-wrap{grid-template-columns:1fr}
+.bbs-in .bbs-boards{flex-direction:row;flex-wrap:wrap;gap:6px}
+.bbs-in .bbs-bd{width:auto;flex:none;border-radius:16px;padding:7px 14px}
+.bbs-in .bbs-bd.on{box-shadow:none;background:var(--yel,#ffd12e);color:#000}
+.bbs-embed .bbs-compose textarea{min-height:76px;font-size:15px}
+.bbs-embed .bbs-body{font-size:15px;line-height:1.7}
+.bbs-embed .bbs-av{width:34px;height:34px;font-size:13px}
+.bbs-embed .bbs-nm b{font-size:15px}
+.bbs-embed .bbs-post{padding:10px 12px}
+.bbs-embed .bbs-boards{flex-wrap:nowrap}
+@media (max-width:760px){
+ .bbs-wrap{grid-template-columns:1fr}
+ .bbs-compose textarea{min-height:90px}
+ .bbs-wg{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+}

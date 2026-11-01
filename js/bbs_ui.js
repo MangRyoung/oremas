@@ -14,6 +14,8 @@ window.OM_BBS_UI=(()=>{
  const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
  const $=(s,r)=>(r||document).querySelector(s);
  const img=u=>typeof u==='string'&&/^https?:\/\//.test(u)&&u.length<1000?u:'';
+ /* 11-02: 세션 노트에는 전역 cssu 가 없다 (그림 있는 글쓴이에서 멈추던 원인) */
+ const cssu=s=>String(s??'').replace(/[\s"'()\\<>]/g,c=>'%'+c.charCodeAt(0).toString(16).padStart(2,'0').toUpperCase());
  const LS={get:(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
  const S={rows:new Map(),boards:[],ver:0,board:'free',open:false,md:null,open2:new Set(),draft:'',anon:false,imgUrl:'',busy:false,err:'',noSql:false,cdraft:{},room:'',lastPoll:0,unread:0,env:null,who:null,embed:false,ekey:''};
  const isNoFn=e=>{const m=String((e&&(e.message||e.details||e.code))||'');return /PGRST202|Could not find the function|function .* does not exist/i.test(m)};
@@ -35,14 +37,34 @@ window.OM_BBS_UI=(()=>{
  const noSqlMsg='게시판 표가 아직 없어요 — Supabase SQL Editor 에서 supabase/patch_2026-11-02_게시판.sql 을 한 번 실행해 주세요';
 
  /* ----- 글쓴이 (캐릭터) ----- */
- function omAuthors(){const s=ST(),st=s.state||{};const T=((st.roster||{}).trainers)||{};const out=[];
-  if(role()==='seat'){const t=T[s.seat];if(t)out.push({cid:t.id,n:t.name||'?',img:A().portraitOf(t.name,t.image)});else out.push({cid:s.seat,n:s.name||'?',img:''});return out}
-  if(role()==='gm'){out.push({cid:'gm',n:'GM'+(s.gmNick?' · '+s.gmNick:''),img:''});
-   for(const t of Object.values(T))if(t&&t.name)out.push({cid:t.id,n:t.name,img:A().portraitOf(t.name,t.image)});
-   const N=((st.graph||{}).nodes)||{};const have=new Set(out.map(x=>x.n));for(const [id,n] of Object.entries(N)){if(!n||!n.name||have.has(n.name)||n.kind==='org')continue;have.add(n.name);out.push({cid:'n:'+id,n:n.name,img:A().portraitOf(n.name,n.img)})}}
+ /* 글쓴이 목록 — {cid,n,img,sub,grp}. 좌석: 내 트레이너 + 내 포켓몬, GM: GM · PC · 포켓몬 · 관계도 NPC */
+ function omAuthors(){const s=ST(),st=s.state||{};const T=((st.roster||{}).trainers)||{};const M=((st.roster||{}).mons)||{};const out=[];const P=(n,i)=>A().portraitOf(n,i);
+  const monsOf=tid=>Object.values(M).filter(m=>m&&m.tid===tid&&m.name).map(m=>({cid:'pm:'+m.id,n:m.name,img:P(m.name,m.image),sub:'포켓몬 · '+((T[tid]||{}).name||''),grp:role()==='gm'?'포켓몬':'내 캐릭터'}));
+  if(role()==='seat'){const t=T[s.seat];if(t)out.push({cid:t.id,n:t.name||'?',img:P(t.name,t.image),sub:'내 트레이너',grp:'내 캐릭터'},...monsOf(t.id));else out.push({cid:s.seat,n:s.name||'?',img:'',sub:'나',grp:'내 캐릭터'});return out}
+  if(role()==='gm'){out.push({cid:'gm',n:'GM'+(s.gmNick?' · '+s.gmNick:''),img:'',sub:'운영 · 공지',grp:''});
+   for(const t of Object.values(T))if(t&&t.name)out.push({cid:t.id,n:t.name,img:P(t.name,t.image),sub:t.kind==='npc'?'NPC 트레이너':'PC',grp:t.kind==='npc'?'NPC':'PC'});
+   const KN={pc:'PC',npc:'NPC',org:'조직'};const N=((st.graph||{}).nodes)||{};const have=new Set(out.map(x=>x.n));for(const [id,n] of Object.entries(N)){if(!n||!n.name||have.has(n.name)||n.kind==='org')continue;have.add(n.name);out.push({cid:'n:'+id,n:n.name,img:P(n.name,n.img),sub:'관계도 '+(KN[n.kind]||'인물'),grp:'NPC'})}
+   for(const t of Object.values(T))if(t&&t.name)out.push(...monsOf(t.id))}
   return out}
  function authors(){if(S.who)return [S.who];return (E().authors||(()=>[]))()}
  function curAuthor(){const L=authors();const k=LS.get('om_bbs_who_'+room(),'');return L.find(x=>x.cid===k)||L[0]||null}
+ /* ----- 글쓴이 고르기 창 (웹툴 RP 화자 고르기처럼: 찾기 · 최근 · 묶음 · 초상) ----- */
+ const RECK='om_bbs_recent';
+ function setAuthor(cid){LS.set('om_bbs_who_'+room(),cid);const r=(LS.get(RECK,[])||[]).filter(x=>x!==cid);r.unshift(cid);LS.set(RECK,r.slice(0,8));closeWho();draw()}
+ function closeWho(){const p=document.querySelector('.bbs-wp');if(p){p.remove();document.removeEventListener('pointerdown',whoOut,true)}}
+ function whoOut(e){const p=document.querySelector('.bbs-wp');if(!p)return;if(p.contains(e.target)||e.target.closest('[data-bb="who"]'))return;closeWho()}
+ function openWho(anchor){if(document.querySelector('.bbs-wp')){closeWho();return}const L=authors();const cur=curAuthor();const by=new Map();
+  const rec=(LS.get(RECK,[])||[]).map(c=>L.find(x=>x.cid===c)).filter(Boolean).filter(x=>x.cid!=='gm');
+  const secs=[];const top=L.filter(x=>!x.grp);if(top.length)secs.push({n:'',L:top});if(rec.length&&L.length>6)secs.push({n:'🕘 최근',L:rec});
+  for(const x of L){if(!x.grp)continue;if(!by.has(x.grp))by.set(x.grp,[]);by.get(x.grp).push(x)}for(const [g,G] of by)secs.push({n:g,L:G});
+  const it=x=>`<button type="button" class="bbs-wi ${cur&&cur.cid===x.cid?'on':''}" data-wcid="${esc(x.cid)}" data-q="${esc((x.n+' '+(x.sub||'')).toLowerCase())}">${avatar(x,false)}<span><b>${esc(x.n)}</b><small>${esc(x.sub||'')}</small></span></button>`;
+  const p=document.createElement('div');p.className='bbs-wp';p.setAttribute('role','dialog');p.setAttribute('aria-label','글쓴이 고르기');
+  p.innerHTML=`${L.length>8?'<div class="bbs-wq"><input type="search" placeholder="이름으로 찾기" autocomplete="off" aria-label="글쓴이 찾기"></div>':''}<div class="bbs-wb">${secs.map(s=>`<div class="bbs-ws">${s.n?`<div class="bbs-wh">${esc(s.n)} <small>${s.L.length}</small></div>`:''}<div class="bbs-wg">${s.L.map(it).join('')}</div></div>`).join('')}</div>`;
+  document.body.appendChild(p);const r=anchor.getBoundingClientRect();const W=Math.min(420,innerWidth-16);p.style.width=W+'px';p.style.left=Math.max(8,Math.min(innerWidth-W-8,r.left))+'px';
+  const below=innerHeight-r.bottom-10,above=r.top-10;const up=below<300&&above>below;p.style.maxHeight=Math.max(200,Math.min(520,up?above:below))+'px';if(up)p.style.bottom=(innerHeight-r.top+6)+'px';else p.style.top=(r.bottom+6)+'px';
+  p.querySelectorAll('[data-wcid]').forEach(b=>b.onclick=()=>setAuthor(b.dataset.wcid));
+  const q=p.querySelector('input[type=search]');if(q){q.oninput=()=>{const v=q.value.trim().toLowerCase();p.querySelectorAll('.bbs-ws').forEach(sec=>{let n=0;sec.querySelectorAll('[data-wcid]').forEach(b=>{const ok=!v||b.dataset.q.includes(v);b.style.display=ok?'':'none';if(ok)n++});sec.style.display=n?'':'none'})};if(matchMedia('(pointer:fine)').matches)setTimeout(()=>q.focus(),20)}
+  p.addEventListener('keydown',e=>{if(e.key==='Escape'){closeWho();anchor.focus()}});setTimeout(()=>document.addEventListener('pointerdown',whoOut,true),0)}
 
  /* ----- 받아 오기 ----- */
  async function pull(full){if(!room())return;try{const ek=E().key+'|'+room();if(ek!==S.ekey){S.ekey=ek;S.rows.clear();S.boards=[];S.ver=0;full=true}
@@ -79,7 +101,7 @@ window.OM_BBS_UI=(()=>{
   const B=boardList();if(!B.some(b=>b.id===S.board))S.board=B[0].id;const cur=B.find(b=>b.id===S.board)||B[0];
   const rows=[...S.rows.values()].filter(r=>r.board===cur.id);const tops=rows.filter(r=>!r.parent).sort((a,b)=>+b.id-+a.id);const kidsOf=id=>rows.filter(r=>String(r.parent)===String(id)).sort((a,b)=>+a.id-+b.id);
   const au=curAuthor();const AL=authors();const canEditB=cur&&!cur.virt&&(role()==='gm'||(role()==='seat'&&cur.w===mySeat()));
-  md.classList.toggle('bbs-embed',!!S.embed);md.innerHTML=`${S.embed?`<div class="bbs-ehead"><b>학교 게시판</b><small>${esc((E().roomName||(()=>''))())}</small><span class="sp"></span><button type="button" class="btn xs ghost" data-bb="refresh" title="새로 받아 오기">↻</button></div>`:`<div class="mhead"><h2>학교 게시판</h2><span class="small dim">${esc((E().roomName||(()=>''))())}</span><span class="sp"></span><button type="button" class="btn ghost" data-bb="refresh" title="새로 받아 오기">↻</button><button type="button" class="btn ghost" data-x>닫기</button></div>`}
+  md.classList.toggle('bbs-embed',!!S.embed&&S.compact!==false);md.classList.toggle('bbs-in',!!S.embed);md.innerHTML=`${S.embed?`<div class="bbs-ehead">${S.compact===false?'':'<b>학교 게시판</b>'}<small>${esc((E().roomName||(()=>''))())}</small><span class="sp"></span><button type="button" class="btn xs ghost" data-bb="refresh" title="새로 받아 오기">↻</button></div>`:`<div class="mhead"><h2>학교 게시판</h2><span class="small dim">${esc((E().roomName||(()=>''))())}</span><span class="sp"></span><button type="button" class="btn ghost" data-bb="refresh" title="새로 받아 오기">↻</button><button type="button" class="btn ghost" data-x>닫기</button></div>`}
   ${S.noSql?`<p class="bbs-warn">${esc(noSqlMsg)}</p>`:''}${S.err?`<p class="bbs-warn">${esc(S.err)}</p>`:''}
   <div class="bbs-wrap">
    <nav class="bbs-boards" aria-label="게시판">${B.map(b=>`<button type="button" class="bbs-bd ${b.id===cur.id?'on':''} ${b.hidden?'hid':''}" data-bb="board" data-id="${esc(b.id)}"><span>${esc(b.name)}</span>${(S.unreadBy||{})[b.id]&&b.id!==cur.id?`<b class="bbs-dot" aria-label="새 글">${S.unreadBy[b.id]}</b>`:''}</button>`).join('')}
@@ -87,7 +109,7 @@ window.OM_BBS_UI=(()=>{
    <section class="bbs-main">
     <div class="bbs-bhead"><div><h3>${esc(cur.name)}${cur.hidden?' <small class="dim">(숨김)</small>':''}</h3>${cur.descr?`<p class="small dim">${esc(cur.descr)}</p>`:''}</div><span class="sp"></span>${canEditB?`<button type="button" class="btn xs ghost" data-bb="editb">고치기</button>${role()==='gm'?`<button type="button" class="btn xs ghost" data-bb="hideb">${cur.hidden?'보이기':'숨기기'}</button>`:''}<button type="button" class="btn xs ghost danger" data-bb="delb">지우기</button>`:''}</div>
     ${canWrite()&&!S.noSql?`<form class="bbs-compose" data-bb-form="post">
-     <div class="bbs-crow">${avatar(S.anon?{n:'익명'}:au||{},S.anon)}${AL.length>1?`<select data-bb-who aria-label="글쓴이">${AL.map(x=>`<option value="${esc(x.cid)}" ${au&&au.cid===x.cid?'selected':''}>${esc(x.n)}</option>`).join('')}</select>`:`<b>${esc(au?au.n:'?')}</b>`}<label class="bbs-anon"><input type="checkbox" data-bb-anon ${S.anon?'checked':''}> 익명</label></div>
+     <div class="bbs-crow">${avatar(S.anon?{n:'익명'}:au||{},S.anon)}${AL.length>1?`<button type="button" class="bbs-who" data-bb="who" aria-haspopup="dialog" title="글쓴이 고르기"><span><b>${esc(au?au.n:'?')}</b><small>${esc(au&&au.sub||'')}</small></span><span class="bbs-car" aria-hidden="true">▾</span></button>`:`<span class="bbs-whos"><b>${esc(au?au.n:'?')}</b>${au&&au.sub?`<small>${esc(au.sub)}</small>`:''}</span>`}<label class="bbs-anon"><input type="checkbox" data-bb-anon ${S.anon?'checked':''}> 익명</label></div>
      <textarea maxlength="4000" rows="3" placeholder="무슨 일이 있었나요?" data-bb-text aria-label="글">${esc(S.draft)}</textarea>
      ${S.imgUrl?`<div class="bbs-pimg"><img src="${esc(S.imgUrl)}" alt=""><button type="button" class="bbs-x" data-bb="noimg" aria-label="그림 빼기">✕</button></div>`:''}
      <div class="bbs-crow"><label class="btn xs ghost bbs-file">🖼 그림<input type="file" accept="image/*" data-bb-file hidden></label><span class="small dim">${S.anon?'남에게는 「익명」, GM 에게만 이름이 보여요':''}</span><span class="sp"></span><button type="submit" class="btn xs pri" ${S.busy?'disabled':''}>${S.busy?'올리는 중…':'올리기'}</button></div></form>`:(!canWrite()?'<p class="small dim">관전 중에는 읽기만 할 수 있어요.</p>':'')}
@@ -100,6 +122,7 @@ window.OM_BBS_UI=(()=>{
  const toast=t=>{try{E().toast(t)}catch(e){}};
  async function act(fn,okMsg){try{await fn();if(okMsg)toast(okMsg);notify();await pull()}catch(e){toast(API().noFn(e)?noSqlMsg:String((e&&e.message)||e))}}
  function onClick(e){const b=e.target.closest('[data-bb]');if(!b||!S.md||!S.md.contains(b))return;const k=b.dataset.bb,id=b.dataset.id;
+  if(k==='who'){openWho(b);return}
   if(k==='board'){S.board=id;draw();return}
   if(k==='refresh'){pull(true);return}
   if(k==='like'){act(()=>API().like(room(),sec(),+id));return}
@@ -127,9 +150,9 @@ window.OM_BBS_UI=(()=>{
   if(t.matches('[data-bb-file]')){const f=t.files&&t.files[0];t.value='';if(!f)return;if(f.size>15*1024*1024){toast('그림이 너무 커요 (15MB)');return}
    S.busy=true;draw();try{S.imgUrl=await E().upload(f)}catch(er){toast('그림을 올리지 못했어요: '+((er&&er.message)||er))}S.busy=false;draw()}}
 
- function mount(el,o){o=o||{};S.env=o.env||null;S.who=o.who||null;S.embed=true;S.md=el;S.open=true;draw();if(Date.now()-S.lastPoll>3000||(S.env&&S.env.key)+'|'+room()!==S.ekey)pull().then(markSeen);else markSeen()}
- function openBoard(){S.env=null;S.who=null;S.embed=false;if(!room())return;S.open=true;S.md=A().openModal('<div class="mhead"><h2>학교 게시판</h2><span class="sp"></span><button type="button" class="btn ghost" data-x>닫기</button></div><p class="small dim">불러오는 중…</p>');S.md.classList.add('bbsmodal');draw();pull(!S.rows.size).then(markSeen)}
- function close(){S.open=false;S.md=null;if(window.OM_APP)A().closeModal();markSeen()}
+ function mount(el,o){o=o||{};S.env=o.env||null;S.who=o.who||null;S.embed=true;S.compact=o.compact!==false;closeWho();S.md=el;S.open=true;draw();if(Date.now()-S.lastPoll>3000||(S.env&&S.env.key)+'|'+room()!==S.ekey)pull().then(markSeen);else markSeen()}
+ function openBoard(){S.env=null;S.who=null;S.embed=false;S.compact=true;closeWho();if(!room())return;S.open=true;S.md=A().openModal('<div class="mhead"><h2>학교 게시판</h2><span class="sp"></span><button type="button" class="btn ghost" data-x>닫기</button></div><p class="small dim">불러오는 중…</p>');S.md.classList.add('bbsmodal');draw();pull(!S.rows.size).then(markSeen)}
+ function close(){closeWho();S.open=false;S.md=null;if(window.OM_APP)A().closeModal();markSeen()}
  function onEvent(p){if(!p||(p.room&&p.room!==room()))return;pull().then(()=>{if(S.open)markSeen()})}
 
  /* 열려 있으면 20초 · 닫혀 있으면(웹툴만) 90초마다 새 줄. 닫히면 웹툴 기본 env 로 돌아간다 */
