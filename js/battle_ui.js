@@ -53,8 +53,9 @@ window.OM_BATTLE_UI=(()=>{
  /* 바뀐 칸만 쓴다 (점검 2-4) — 배틀을 통째로 쓰면 그 사이 남이 바꾼 칸(다른 포켓몬의 피해, 지시 공개 …)이 지워진다.
     nb0 = 사본을 뜰 때의 배틀, nb = 고친 사본 (f 를 주면 필드도 그걸로). 포켓몬은 칸(hp · states …) 하나 단위로, 턴·페이즈는 맨 끝에 쓴다 */
  const snap=x=>JSON.parse(JSON.stringify(x===undefined?ctx().b:x));
- function saveBattle(nb0,nb,f,by){if(f!==undefined)nb.field=f;const FL=faintSweep(nb0,nb);const ops=A().diffOps(['battle'],nb0,nb,3);const last=p=>(p[1]==='turn'||p[1]==='phase')?1:0;ops.sort((x,y)=>last(x[0])-last(y[0]));const fa=snap(nb0.field||{}),fz=snap(nb.field||{});   /* 11-01 망령: by = 전개한 쪽 {n,s,img} — 필드가 바뀌었으면 전개 카드 (fieldLog) */
-  return A().setMany(ops).then(r=>{if(r&&ops.length)itemKick();if(r&&FL.length)A().sysLog(FL.join('\n'),'battle');if(r&&ops.length)fieldLog(fa,fz,by,nb,350);return r})}
+ function saveBattle(nb0,nb,f,by){if(f!==undefined)nb.field=f;const FL=faintSweep(nb0,nb);const ops=A().diffOps(['battle'],nb0,nb,3);const last=p=>(p[1]==='turn'||p[1]==='phase')?1:0;ops.sort((x,y)=>last(x[0])-last(y[0]));const fa=snap(nb0.field||{}),fz=snap(nb.field||{});   /* 11-01 망령: by = 전개한 쪽 {n,s,img} — 필드가 바뀌었으면 전개 카드 (fieldLog) */const sa=stSnap(nb0),sz=stSnap(nb);   /* 11-01 망령 「상태 변화도 효과 로그」: 상태가 걸리거나 풀렸으면 상태 카드 (stLogAll) */
+  return A().setMany(ops).then(r=>{if(r&&ops.length)itemKick();if(r&&FL.length)A().sysLog(FL.join('\n'),'battle');if(r&&ops.length){fieldLog(fa,fz,by,nb,350);stLogAll(sa,sz,by,350)}return r})}
+ const stSnap=b=>{const o={};for(const id in (b||{}).mons||{}){const m=b.mons[id];if(m)o[id]={id,name:m.name,image:m.image,side:m.side,entry:m.entry,hp:{cur:(m.hp||{}).cur},states:Object.assign({},m.states||{})}}return {mons:o}};
  /* 10-23 망령: 쓰러진 포켓몬이 다른 포켓몬에게 건 포텐셜 · 특성 효과(옵저버 …)와 「필드 위에 있는 한」 효과도 퇴장처럼 푼다 */
  function faintSweep(nb0,nb){const L=[];if(!FX()||!nb0||!nb)return L;for(const id in nb.mons||{}){const m=nb.mons[id],o=(nb0.mons||{})[id];if(!o||!o.entry||!m||m.entry||m.hp.cur>0)continue;L.push(...auraOff(nb,m).L);if(FX().release)L.push(...FX().release(nb,m))}return L}
  async function faintOff(mid){const nb0=snap(),nb=snap(nb0);const m=nb.mons[mid];if(!m||m.hp.cur>0||!FX())return;const L=[...auraOff(nb,m).L,...(FX().release?FX().release(nb,m):[])];if(!L.length)return;if(await A().setMany(A().diffOps(['battle'],nb0,nb,3)))A().sysLog(L.join('\n'),'battle')}
@@ -701,7 +702,7 @@ window.OM_BATTLE_UI=(()=>{
    else{if(XLL.length)A().sysLog(`${occ.name} ${opt.forced?'강제 퇴장':'퇴장'}\n${XLL.join('\n')}`,'battle');
     A().sysLog(`${m.name} 등장 (${SIDE_KO[m.side]} ${area.toUpperCase()})${EL.length?'\n'+EL.join('\n'):''}`,'battle')}}
   /* 배턴터치 받기 */
-  {const nb0=snap(),nb=snap(nb0);const t=nb.trainers[m.tid];if(t&&t.batton&&t.batton.from!==m.name){const L=applyBatton(nb,nb.mons[mid]);await saveMon(nb0.mons[mid],mid,nb.mons[mid]);await A().set(['battle','trainers',m.tid,'batton'],null);if(L.length)A().sysLog(L.join('\n'),'battle')}}
+  {const nb0=snap(),nb=snap(nb0);const t=nb.trainers[m.tid];if(t&&t.batton&&t.batton.from!==m.name){const L=applyBatton(nb,nb.mons[mid]);await saveMon(nb0.mons[mid],mid,nb.mons[mid]);await A().set(['battle','trainers',m.tid,'batton'],null);if(L.length)A().sysLog(L.join('\n'),'battle');stLog(nb0.mons[mid],nb.mons[mid],{n:t.batton.from||'',s:'배턴터치'},300)}}   /* 11-01 망령 「상태 변화도 효과 로그」: 넘겨받은 상태도 카드로 */
   /* 설치기 (맵툴 hazard_eval): 등장한 쪽의 설치기를 평가한다 */
   if(F()){const nb0=snap(),nb=snap(nb0);const nm=nb.mons[mid];nm.entry=area;const f=fieldOf(nb);const oppSide=m.side==='left'?'right':'left';const opp=entered(nb,oppSide);
    const r=F().hazardsOnEntry(nm,f,opp);if(r.lines.length){if(nm.hp.cur<=0){nm.entry='';r.lines.push(`${nm.name}은(는) 쓰러졌다!`)}else if(r.forced){nm.entry='';r.lines.push(`${nm.name}은(는) 튕겨 나갔다 — 다른 포켓몬을 내보내야 한다`)}
@@ -1517,10 +1518,10 @@ window.OM_BATTLE_UI=(()=>{
    if($('#etemp',md).checked){nm.tempRank=nm.tempRank||{};for(const k in delta)nm.tempRank[k]=(+nm.tempRank[k]||0)+delta[k]}
    nm.states={};md.querySelectorAll('[data-st]').forEach(cb=>{if(!cb.checked)return;const k=cb.dataset.st;const ci=md.querySelector(`[data-stc="${k}"]`);const d=sdb.st[k]||{};nm.states[k]=ci&&ci.value!==''?+ci.value:(+(m.states||{})[k]||(d.min>=1000||!d.min?1000:(+d.max>+d.min&&+d.max<1000?+d.min+Math.floor(Math.random()*(+d.max-+d.min+1)):+d.min)))});if(nm.states.LeechSeed&&!(m.states||{}).LeechSeed){const sf=seedSrc(b,m);if(sf)nm.seedFrom=sf;else delete nm.seedFrom}
    if(nm.hp.cur<=0)nm.entry='';
-   A().closeModal();if(await saveMon(m,mid,nm)){const ch=[];for(const k in STAT_KO){const a=+m.rank[k]||0,b2=+rank[k]||0;if(a!==b2)ch.push(`${STAT_KO[k]} ${a}→${b2>0?'+':''}${b2}`)}
+   A().closeModal();if(await saveMon(m,mid,nm)){const SC=stLog(m,nm,fcMan('랭크·상태 창'));const ch=[];   /* 11-01 망령 「상태 변화도 효과 로그」: 걸리고 풀린 상태는 카드로 — 이 줄에서는 뺀다 */for(const k in STAT_KO){const a=+m.rank[k]||0,b2=+rank[k]||0;if(a!==b2)ch.push(`${STAT_KO[k]} ${a}→${b2>0?'+':''}${b2}`)}
     const sa=Object.keys(m.states||{}).filter(k=>m.states[k]),sb=Object.keys(nm.states);const on=sb.filter(k=>!sa.includes(k)).map(k=>(sdb.st[k]||{}).ko||k),off=sa.filter(k=>!sb.includes(k)).map(k=>(sdb.st[k]||{}).ko||k);
-    if(on.length)ch.push('+'+on.join(','));if(off.length)ch.push('−'+off.join(','));if(nm.hp.cur!==m.hp.cur)ch.push(`HP ${m.hp.cur}→${nm.hp.cur}`);const itCh=(nm.item||'')!==(m.item||'')?`소지품 ${nm.item||'없음'}`:'';
-    const dsc=sb.filter(k=>!sa.includes(k)).map(k=>{const ds=stDesc(k);return ds.length?`「${stName(k)}」 ${ds.join(' ')}`:''}).filter(Boolean);if(ch.length)A().sysLog(`${m.name}: ${ch.join(' · ')}${dsc.length?'\n'+dsc.join('\n'):''}`,'battle',{mid,img:m.image||''});if(itCh&&A().selfLog)A().selfLog(`${m.name}: ${itCh}`)}}}
+    if(on.length&&!SC)ch.push('+'+on.join(','));if(off.length&&!SC)ch.push('−'+off.join(','));if(nm.hp.cur!==m.hp.cur)ch.push(`HP ${m.hp.cur}→${nm.hp.cur}`);const itCh=(nm.item||'')!==(m.item||'')?`소지품 ${nm.item||'없음'}`:'';
+    const dsc=SC?[]:sb.filter(k=>!sa.includes(k)).map(k=>{const ds=stDesc(k);return ds.length?`「${stName(k)}」 ${ds.join(' ')}`:''}).filter(Boolean);if(ch.length)A().sysLog(`${m.name}: ${ch.join(' · ')}${dsc.length?'\n'+dsc.join('\n'):''}`,'battle',{mid,img:m.image||''});if(itCh&&A().selfLog)A().selfLog(`${m.name}: ${itCh}`)}}}
 
  /* ---------- 11-01 망령 「필드 · 날씨 · 설치물 전개 때 효과 UI 를 로그에」 ----------
     배틀을 쓸 때(saveBattle · 필드 창 · 설치물 창) 쓰기 전후 필드를 견주어(fieldDiff) 새로 깔리거나 갱신된 날씨 · 필드 · 룸 · 필드의 상태 · 설치물마다
@@ -1588,6 +1589,42 @@ window.OM_BATTLE_UI=(()=>{
   const sub=[x.re?(mx?'겹 추가':'갱신'):'',x.prev?`「${x.prev}」에서 바뀜`:'',x.note||''].filter(Boolean).map(String);const L=(Array.isArray(x.L)?x.L:[]).map(String);
   const by=x.by&&x.by.n?`<div class="fcby"><span class="fcbl">전개</span>${x.by.img?`<span class="fcbav" style="background-image:url('${cssu(x.by.img)}')"></span>`:''}<span>${esc(x.by.n)}${x.by.s?` 『${esc(x.by.s)}』`:''}</span></div>`:'';
   return `<div class="bcard fcard" style="--tc:${col};--tf:${tf}">${th}<div class="fcm"><div class="fch">${head}<span class="sp"></span>${dur}</div>${sub.length?`<div class="fcsub">${sub.map(esc).join(' · ')}</div>`:''}${L.length?`<div class="fcl">${L.map(l=>`<div>${esc(l)}</div>`).join('')}</div>`:''}${by}</div></div>`}
+
+ /* ---------- 11-01 망령 「상태 변화도 효과 로그」 ----------
+    필드 전개 카드(fieldLog)와 같은 길: 쓰기 전후 포켓몬의 states 를 견주어(stDiff) 새로 걸린 상태마다 카드 한 장(data.sc)을 배틀 로그에, 풀리면 작은 「풀림」 카드.
+    한 번의 쓰기에서 한 포켓몬에게 여럿이 걸리면 한 장에 줄로 모은다. 숨김 상태(DB hidden) · DB 에 없는 내부 상태는 넣지 않고, 쓰러짐 · 필드를 떠나며 풀린 것 · 한 번짜리(풀죽음 등) 풀림은 적지 않는다.
+    글(data.t)에는 설명을 넣지 않는다 — 효과음 자동(rp_ui)이 「풀이 죽어 …」 같은 설명 글에 반응하지 않게. 설명은 카드(statusCard)에서 상태 DB desc 로 */
+ const ST_COL={Burn:'#e0562a',Poison:'#9a62c0',Toxic:'#7b3fa8',Paralysis:'#e2b81c',Freeze:'#5fc4e0',Sleep:'#7a86c0',Comatose:'#7a86c0'};
+ const STG_COL={'상태 이상':'#c8362b','피해 증가':'#e07a2a','자신':'#3f9f8a','행동 방해':'#d68a4f','멘탈 효과':'#d65fa0','교대 관련':'#5f86b8','비례 대미지':'#8a5a9a','기술 타입 변화':'#4f8ad6','지연 발생':'#8a8f5a','필중':'#c0a03a','미래예지':'#6a5cc4','내성 변화':'#6f8fa8'};
+ function stMeta(k){const D=DB().states||{};const d=(D.st||{})[k];if(!d||(D.hidden||[]).includes(k))return null;const g=((D.groups||[]).find(x=>(x.s||[]).includes(k))||{}).l||'';return {k,ko:d.ko||k,abn:!!d.abn,g,prog:d.prog||'',col:ST_COL[k]||STG_COL[g]||'#6f8fa8'}}
+ /* 앞(m0) 뒤(m1) 한 포켓몬 → {add:[{k,ko,g,abn,c}], off:[{k,ko}]} */
+ function stDiff(m0,m1){const out={add:[],off:[]};if(!m0||!m1)return out;const a=m0.states||{},z=m1.states||{};const dead=!(m1.hp&&m1.hp.cur>0),left=!!m0.entry&&!m1.entry;
+  for(const k in z){if(!z[k]||a[k]||dead)continue;const x=stMeta(k);if(x)out.add.push(Object.assign(x,{c:+z[k]||0}))}
+  for(const k in a){if(!a[k]||z[k]||dead||left)continue;const x=stMeta(k);if(x&&x.prog!=='once')out.off.push(x)}
+  return out}
+ /* 카드 줄 만들기 — 돌려줌: [글, data.sc] 또는 null */
+ function stRow(m0,m1,by){const D=stDiff(m0,m1);if(!D.add.length&&!D.off.length)return null;fixStDesc();const S0=(DB().states||{}).st||{};const one=D.add.length===1;
+  const add=D.add.map(x=>({k:x.k,ko:x.ko,g:x.g,abn:x.abn?1:0,c:x.c,col:x.col,L:(S0[x.k].desc||[]).map(t=>String(t).replace(/<[^>]+>/g,'').trim()).filter(Boolean).slice(0,one?3:1).map(t=>t.length>80?t.slice(0,78)+'…':t)}));
+  const off=D.off.map(x=>({k:x.k,ko:x.ko}));const who=by&&by.n&&add.length?{n:String(by.n),s:String(by.s||''),img:String(by.img||'')}:null;
+  const tag=add.length?(add.some(x=>x.abn)?'상태 이상':'상태 변화'):'상태 회복';const at=m1.entry?`${SIDE_KO[m1.side]||''} ${String(m1.entry).toUpperCase()}`.trim():'';
+  const sc={mid:m1.id||'',n:m1.name||'',img:m1.image||'',side:m1.side||'',at,add,off,col:add.length?add[0].col:'#6f8fa8'};if(who)sc.by=who;
+  const dur=c=>(!c||c>=1000)?'계속':c+'턴';
+  const t=[`【${tag}】 ${m1.name}${at?' ('+at+')':''}`,...add.map(x=>`「${x.ko}」 ${x.g||''}${x.g?' · ':''}${dur(x.c)}`),...(off.length?[`${off.map(x=>'「'+x.ko+'」').join(' ')} 풀림`]:[]),...(who?[`원인: ${who.n}${who.s?' 『'+who.s+'』':''}`]:[])].join('\n');
+  return [t,sc]}
+ /* 한 포켓몬 (상세 창 · 랭크·상태 창) */
+ function stLog(m0,m1,by,ms){const r=stRow(m0,m1,by);if(!r)return 0;setTimeout(()=>A().sysLog(r[0],'battle',{sc:r[1]}),ms||0);return 1}
+ /* 배틀 전체 (saveBattle) — 포켓몬마다 한 장 */
+ function stLogAll(b0,b1,by,ms){const M0=(b0||{}).mons||{},M1=(b1||{}).mons||{};const rows=[];for(const id in M1){const r=stRow(M0[id],M1[id],by);if(r)rows.push(r)}if(!rows.length)return 0;
+  setTimeout(async()=>{for(const [t,sc] of rows)await A().sysLog(t,'battle',{sc})},ms||0);return rows.length}
+ function statusCard(d){const x=d&&d.sc;if(!x||!x.n)return '';const hex=v=>/^#[0-9a-f]{6}$/i.test(String(v||''))?v:'#6f8fa8';const col=hex(x.col);const tf=[1,3,5].map(j=>parseInt(col.substr(j,2),16)/255).reduce((a,v,j)=>a+v*[.299,.587,.114][j],0)>.62?'#111':'#fff';const add=Array.isArray(x.add)?x.add:[],off=Array.isArray(x.off)?x.off:[];
+  const side=SIDES.includes(x.side)?x.side:'';const ic=k=>{const u=simg(k);return `<span class="scic"${u?` style="background-image:url('${cssu(u)}')"`:''}></span>`};
+  const head=`${x.img?`<span class="bcav" style="background-image:url('${cssu(x.img)}')"></span>`:''}<span class="bctag">${esc(add.length?(add.some(a=>a.abn)?'상태 이상':'상태 변화'):'상태 회복')}</span><b>${esc(x.n)}</b>${x.at?`<span class="fcside ${side}">${esc(x.at)}</span>`:''}`;
+  const offL=off.length?`<div class="scoff">${add.length?'<span class="scofl">풀림</span>':''}${off.map(o=>`<span class="scoffi">${ic(o.k)}<s>${esc(o.ko)}</s></span>`).join('')}${add.length?'':'<span class="fcend">풀림</span>'}</div>`:'';
+  if(!add.length)return `<div class="bcard scard end" style="--tc:${col};--tf:${tf}"><div class="fch">${head}<span class="sp"></span>${offL}</div></div>`;
+  const dur=c=>(!+c||+c>=1000)?'계속':(+c)+'턴';
+  const rows=add.map(a=>`<div class="scr" style="--sc:${hex(a.col)}">${ic(a.k)}<div class="scm"><div class="sct"><b>「${esc(a.ko)}」</b>${a.g&&a.g!=='상태 이상'?`<span class="scg">${esc(a.g)}</span>`:''}<span class="sp"></span><span class="fcd">${esc(dur(a.c))}</span></div>${(Array.isArray(a.L)?a.L:[]).map(l=>`<div class="scd">${esc(l)}</div>`).join('')}</div></div>`).join('');
+  const by=x.by&&x.by.n?`<div class="fcby"><span class="fcbl">원인</span>${x.by.img?`<span class="fcbav" style="background-image:url('${cssu(x.by.img)}')"></span>`:''}<span>${esc(x.by.n)}${x.by.s?` 『${esc(x.by.s)}』`:''}</span></div>`:'';
+  return `<div class="bcard scard" style="--tc:${col};--tf:${tf}"><div class="fch">${head}</div><div class="scb">${rows}</div>${off.length?`<div class="scfoot">${offL}</div>`:''}${by}</div>`}
 
  /* ---------- 필드 (GM) ---------- */
  const fcMan=s=>({n:ctx().gm?'GM':(A().ST.name||''),s});   /* 11-01 망령: 창에서 손으로 깐 것 — 전개 카드엔 「GM 『필드 설정』」 · 카드가 하나라도 오르면 예전 한 줄 요약은 남기지 않는다 */
@@ -2212,7 +2249,7 @@ ${PR?`「기술 방어」 ${PR.ok?'성공':'실패'}${PR.k?` (연속 ${PR.k+1}�
    const m0b=box.querySelector('[data-nmx0]');if(m0b)m0b.onclick=async()=>{const m0=mon(),k=o.sel;const ms=((m0.fx&&m0.fx.mults)||[]).filter(e=>e&&e.stats&&e.stats[k]!=null);const prod=Math.round(ms.reduce((a,e)=>a*(+e.stats[k]||1),1)*1000)/1000;nowQueue(m0);const nm=Object.assign({},m0.mod||{});if(Math.abs(prod-1)<0.002)delete nm[k];else nm[k]=prod;await A().set(P('mod'),nm);redraw()};
    const r0=box.querySelector('[data-nrk0]');if(r0)r0.onclick=async()=>{const m=mon();const any=NOW_K.some(k=>+(m.rank||{})[k]||(+(m.mod||{})[k]||1)!==1);if(!any)return A().toast('바꿀 랭크·배율이 없다');if(!confirm(`${m.name}의 랭크·배율을 전부 원래대로 돌릴까?`))return;nowQueue(m);
     await A().set(P('rank'),{});await A().set(P('mod'),{});if(m.tempRank)await A().set(P('tempRank'),null);if(m.tempMod)await A().set(P('tempMod'),null);if(m.fx&&m.fx.mults&&m.fx.mults.length){const nf=JSON.parse(JSON.stringify(m.fx));nf.mults=[];await A().set(P('fx'),nf)}nowFlush(mid);redraw()};
-   box.querySelectorAll('[data-nsoff]').forEach(b=>b.onclick=async()=>{const m=mon(),k=b.dataset.nsoff;const ns=Object.assign({},m.states||{});delete ns[k];await A().set(P('states'),ns);A().sysLog(`【상태】 ${m.name}의 「${stName(k)}」이(가) 풀렸다`,'battle',{mid,img:m.image||''});redraw()});
+   box.querySelectorAll('[data-nsoff]').forEach(b=>b.onclick=async()=>{const m=mon(),k=b.dataset.nsoff;const ns=Object.assign({},m.states||{});delete ns[k];await A().set(P('states'),ns);if(!stLog(m,Object.assign({},m,{states:ns})))A().sysLog(`【상태】 ${m.name}의 「${stName(k)}」이(가) 풀렸다`,'battle',{mid,img:m.image||''});redraw()});
    const ad=box.querySelector('[data-nsadd]');if(ad)ad.onclick=()=>{o.pk=!o.pk;o.q='';redraw(o.pk)};
    /* 검색칸은 목록만 다시 그린다 (칸째 다시 그리면 한글 조합이 끊긴다) */
    const q=box.querySelector('[data-nsq]');if(q)q.oninput=()=>{o.q=q.value;const g=box.querySelector('.dxspg'),m=mon();if(!g||!m)return;g.innerHTML=nowEditHtml(m,true,Object.assign({},o,{listOnly:1}));bindAdd()};
@@ -2221,8 +2258,8 @@ ${PR?`「기술 방어」 ${PR.ok?'성공':'실패'}${PR.k?` (연속 ${PR.k+1}�
     await A().set(P('states'),Object.assign({},m.states||{},{[k]:c}));A().sysLog(`【상태】 ${m.name}의 「${stName(k)}」 남은 턴 → ${c<1000?c+'턴':'계속'}`,'battle',{mid,img:m.image||''});redraw()});
    bindAdd()};
   const bindAdd=()=>box.querySelectorAll('[data-nsadd1]').forEach(b=>b.onclick=async()=>{const m=mon(),k=b.dataset.nsadd1;const d=((DB().states||{}).st||{})[k]||{};const n=Math.round(+o.n);const c=n>0?Math.min(n,999):(d.min>=1000||!d.min?1000:(+d.max>+d.min&&+d.max<1000?+d.min+Math.floor(Math.random()*(+d.max-+d.min+1)):+d.min));const ns=Object.assign({},m.states||{},{[k]:c});await A().set(P('states'),ns);if(k==='LeechSeed')await A().set(P('seedFrom'),seedSrc(ctx().b,m));
-    const ds=stDesc(k);A().sysLog(`【상태】 ${m.name} 「${stName(k)}」${c<1000?` (${c}턴)`:''}${ds.length?'\n'+ds.join('\n'):''}`,'battle',{mid,img:m.image||''});o.pk=false;o.q='';o.n='';redraw()});
+    const ds=stDesc(k);/* 11-01 망령 「상태 변화도 효과 로그」: 상태 카드가 되면 예전 줄은 남기지 않는다 */if(!stLog(m,Object.assign({},m,{states:ns}),fcMan('상세 창')))A().sysLog(`【상태】 ${m.name} 「${stName(k)}」${c<1000?` (${c}턴)`:''}${ds.length?'\n'+ds.join('\n'):''}`,'battle',{mid,img:m.image||''});o.pk=false;o.q='';o.n='';redraw()});
   bind()}
  function nowParts(m){return {rank:rankChips(m),state:stateChips(m),fx:flagChips(m)+(FX()?FX().chips(m).map(ch=>`<span class="rk fxc" title="${esc(ch.title)}">${esc(ch.t)}</span>`).join(''):'')}}
- return {askYes,canSeeStx:tid=>stxOk(ctx(),tid),canEditMon:mid=>{const c=ctx();const m=((c.b||{}).mons||{})[mid];return !!m&&canEdit(c,m)},fireAuto,render,nowParts,nowEditHtml,bindNowEdit,watch,ctx,entered,allEntered,fieldOf,fieldCard,futureFire,trapWarn,resetLocal:()=>{CMD={}},startCut:(m)=>battleStartCut(ctx().b,m),openHp,action,hotkey};
+ return {askYes,canSeeStx:tid=>stxOk(ctx(),tid),canEditMon:mid=>{const c=ctx();const m=((c.b||{}).mons||{})[mid];return !!m&&canEdit(c,m)},fireAuto,render,nowParts,nowEditHtml,bindNowEdit,watch,ctx,entered,allEntered,fieldOf,fieldCard,statusCard,futureFire,trapWarn,resetLocal:()=>{CMD={}},startCut:(m)=>battleStartCut(ctx().b,m),openHp,action,hotkey};
 })();

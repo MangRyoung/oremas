@@ -4906,3 +4906,20 @@ html[data-vt="mm"] .memon .medet{border-color:rgba(20,16,12,.4)}
 .bcard.fcard.end{background:#15161a;opacity:.82}.bcard.fcard.end .fcth{width:36px;filter:saturate(.45) brightness(.8)}.bcard.fcard.end .fcth.gly i{font-size:14px}
 .bcard.fcard.end .fch{background:none;padding:4px 10px}.bcard.fcard.end .fch b{font-size:13px;color:#cfd0d6;text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--tc) 70%,transparent)}
 .fcend{flex:none;font-size:11px;color:#a6a8b2;border:1px dashed #555;padding:0 8px;border-radius:999px}
+
+/* 11-01 망령 「상태 변화도 효과 로그」: 상태 카드 (battle_ui statusCard) — 머리(그림 · 꼬리표 · 이름 · 자리)는 전개 카드의 .fch 를 같이 쓴다. 줄마다 상태 아이콘 · 「이름」 · 분류 · 남은 턴 · 설명 */
+.bcard.scard{background:linear-gradient(100deg,color-mix(in srgb,var(--tc) 8%,#15161a),#15161a 60%)}
+.bcard.scard .fch .bcav{width:24px;height:24px}
+.scb{display:flex;flex-direction:column;gap:7px;padding:6px 10px 7px}
+.scr{display:flex;align-items:flex-start;gap:8px}
+.scic{flex:none;width:30px;height:30px;border-radius:6px;background:color-mix(in srgb,var(--sc,var(--tc)) 22%,#0c0c0e) center/80% no-repeat;border:1px solid color-mix(in srgb,var(--sc,var(--tc)) 55%,#000)}
+.scm{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.sct{display:flex;align-items:center;flex-wrap:wrap;gap:4px 6px}.sct b{font-size:14px;font-weight:700;color:#fff;white-space:nowrap}
+.scg{flex:none;font-size:10.5px;line-height:1.5;color:color-mix(in srgb,var(--sc) 80%,#fff);border:1px solid color-mix(in srgb,var(--sc) 60%,transparent);padding:0 6px;border-radius:3px}
+.scr .fcd{border-color:var(--sc);background:color-mix(in srgb,var(--sc) 22%,transparent)}
+.scd{font-size:calc(var(--chatfs) - 1px);color:#c9cbd3;line-height:1.45}
+.scfoot{padding:0 10px 6px}
+.scoff{display:flex;align-items:center;flex-wrap:wrap;gap:4px 8px;font-size:12px;color:#a6a8b2}
+.scofl{font-size:10px;letter-spacing:.08em;border:1px dashed #555;padding:0 5px;border-radius:2px}
+.scoffi{display:inline-flex;align-items:center;gap:4px}.scoffi .scic{width:18px;height:18px;border-radius:4px;filter:saturate(.45) brightness(.85)}.scoffi s{color:#cfd0d6;text-decoration-color:color-mix(in srgb,var(--tc) 70%,transparent)}
+.bcard.scard.end{background:#15161a;opacity:.85}.bcard.scard.end .fch{background:none;padding:4px 10px}.bcard.scard.end .fch b{font-size:13px;color:#cfd0d6}
