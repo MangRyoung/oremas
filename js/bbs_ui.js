@@ -49,21 +49,22 @@ window.OM_BBS_UI=(()=>{
  function authors(){if(S.who)return [S.who];return (E().authors||(()=>[]))()}
  function curAuthor(){const L=authors();const k=LS.get('om_bbs_who_'+room(),'');return L.find(x=>x.cid===k)||L[0]||null}
  /* ----- 글쓴이 고르기 창 (웹툴 RP 화자 고르기처럼: 찾기 · 최근 · 묶음 · 초상) ----- */
- const RECK='om_bbs_recent';
+ const RECK='om_bbs_recent',FOLDK='om_bbs_wfold';   /* 접어 둔 묶음(PC · NPC …)은 기억한다. 지금 고른 글쓴이가 든 묶음은 늘 펼쳐서 */
  function setAuthor(cid){LS.set('om_bbs_who_'+room(),cid);const r=(LS.get(RECK,[])||[]).filter(x=>x!==cid);r.unshift(cid);LS.set(RECK,r.slice(0,8));closeWho();draw()}
  function closeWho(){const p=document.querySelector('.bbs-wp');if(p){p.remove();document.removeEventListener('pointerdown',whoOut,true)}}
  function whoOut(e){const p=document.querySelector('.bbs-wp');if(!p)return;if(p.contains(e.target)||e.target.closest('[data-bb="who"]'))return;closeWho()}
  function openWho(anchor){if(document.querySelector('.bbs-wp')){closeWho();return}const L=authors();const cur=curAuthor();const by=new Map();
   const rec=(LS.get(RECK,[])||[]).map(c=>L.find(x=>x.cid===c)).filter(Boolean).filter(x=>x.cid!=='gm');
-  const secs=[];const top=L.filter(x=>!x.grp);if(top.length)secs.push({n:'',L:top});if(rec.length&&L.length>6)secs.push({n:'🕘 최근',L:rec});
+  const secs=[];const top=L.filter(x=>!x.grp);if(top.length)secs.push({n:'',L:top});if(rec.length&&L.length>6)secs.push({n:'🕘 최근',L:rec});const FD=new Set(LS.get(FOLDK,[])||[]);
   for(const x of L){if(!x.grp)continue;if(!by.has(x.grp))by.set(x.grp,[]);by.get(x.grp).push(x)}for(const [g,G] of by)secs.push({n:g,L:G});
   const it=x=>`<button type="button" class="bbs-wi ${cur&&cur.cid===x.cid?'on':''}" data-wcid="${esc(x.cid)}" data-q="${esc((x.n+' '+(x.sub||'')).toLowerCase())}">${avatar(x,false)}<span><b>${esc(x.n)}</b><small>${esc(x.sub||'')}</small></span></button>`;
   const p=document.createElement('div');p.className='bbs-wp';p.setAttribute('role','dialog');p.setAttribute('aria-label','글쓴이 고르기');
-  p.innerHTML=`${L.length>8?'<div class="bbs-wq"><input type="search" placeholder="이름으로 찾기" autocomplete="off" aria-label="글쓴이 찾기"></div>':''}<div class="bbs-wb">${secs.map(s=>`<div class="bbs-ws">${s.n?`<div class="bbs-wh">${esc(s.n)} <small>${s.L.length}</small></div>`:''}<div class="bbs-wg">${s.L.map(it).join('')}</div></div>`).join('')}</div>`;
+  p.innerHTML=`${L.length>8?'<div class="bbs-wq"><input type="search" placeholder="이름으로 찾기" autocomplete="off" aria-label="글쓴이 찾기"></div>':''}<div class="bbs-wb">${secs.map(s=>{const fd=!!s.n&&FD.has(s.n)&&!s.L.some(x=>cur&&x.cid===cur.cid);return `<div class="bbs-ws ${fd?'fold':''}">${s.n?`<button type="button" class="bbs-wh" data-wfold="${esc(s.n)}" aria-expanded="${!fd}"><i class="bbs-wcar" aria-hidden="true">▾</i>${esc(s.n)} <small>${s.L.length}</small></button>`:''}<div class="bbs-wg">${s.L.map(it).join('')}</div></div>`}).join('')}</div>`;
   document.body.appendChild(p);const r=anchor.getBoundingClientRect();const W=Math.min(420,innerWidth-16);p.style.width=W+'px';p.style.left=Math.max(8,Math.min(innerWidth-W-8,r.left))+'px';
   const below=innerHeight-r.bottom-10,above=r.top-10;const up=below<300&&above>below;p.style.maxHeight=Math.max(200,Math.min(520,up?above:below))+'px';if(up)p.style.bottom=(innerHeight-r.top+6)+'px';else p.style.top=(r.bottom+6)+'px';
   p.querySelectorAll('[data-wcid]').forEach(b=>b.onclick=()=>setAuthor(b.dataset.wcid));
-  const q=p.querySelector('input[type=search]');if(q){q.oninput=()=>{const v=q.value.trim().toLowerCase();p.querySelectorAll('.bbs-ws').forEach(sec=>{let n=0;sec.querySelectorAll('[data-wcid]').forEach(b=>{const ok=!v||b.dataset.q.includes(v);b.style.display=ok?'':'none';if(ok)n++});sec.style.display=n?'':'none'})};if(matchMedia('(pointer:fine)').matches)setTimeout(()=>q.focus(),20)}
+  p.querySelectorAll('[data-wfold]').forEach(b=>b.onclick=()=>{const sec=b.parentNode;const f=!sec.classList.contains('fold');sec.classList.toggle('fold',f);b.setAttribute('aria-expanded',String(!f));const s=new Set(LS.get(FOLDK,[])||[]);if(f)s.add(b.dataset.wfold);else s.delete(b.dataset.wfold);LS.set(FOLDK,[...s])});
+  const q=p.querySelector('input[type=search]');if(q){q.oninput=()=>{const v=q.value.trim().toLowerCase();p.classList.toggle('q',!!v);p.querySelectorAll('.bbs-ws').forEach(sec=>{let n=0;sec.querySelectorAll('[data-wcid]').forEach(b=>{const ok=!v||b.dataset.q.includes(v);b.style.display=ok?'':'none';if(ok)n++});sec.style.display=n?'':'none'})};if(matchMedia('(pointer:fine)').matches)setTimeout(()=>q.focus(),20)}
   p.addEventListener('keydown',e=>{if(e.key==='Escape'){closeWho();anchor.focus()}});setTimeout(()=>document.addEventListener('pointerdown',whoOut,true),0)}
 
  /* ----- 받아 오기 ----- */
@@ -77,11 +78,15 @@ window.OM_BBS_UI=(()=>{
  function countUnread(){const seen=+LS.get(seenKey(),0)||0;let n=0;const by={};for(const r of S.rows.values()){if(r.del||+r.ver<=seen)continue;if(r.w&&role()==='seat'&&r.w===mySeat())continue;if(role()==='gm'&&r.w==='gm')continue;n++;by[r.board]=(by[r.board]||0)+1}S.unread=n;S.unreadBy=by;fab()}
  function markSeen(){LS.set(seenKey(),S.ver);countUnread()}
 
- /* ----- 아이콘 ----- */
+ /* ----- 아이콘: 채팅창 위 빈 줄(●●● · 시계 사이)에. 그 줄이 숨는 모바일은 채팅 버튼(🧹 📌 💾 ⚙) 맨 앞에 ----- */
  function fab(){if(!window.OM_APP)return;let e=document.getElementById('bbsfab');const inRoom=!!ST().room&&!!document.getElementById('scene');
-  if(!inRoom){if(e)e.hidden=true;return}
-  if(!e){e=document.createElement('button');e.type='button';e.id='bbsfab';e.className='bbsfab';e.title='학교 게시판';e.setAttribute('aria-label','학교 게시판 열기');e.onclick=openBoard;document.body.appendChild(e)}
-  e.hidden=false;e.innerHTML=`<span class="bbsfab-i" aria-hidden="true">✎</span><span class="bbsfab-t">게시판</span>${S.unread?`<b class="bbsfab-n">${S.unread>99?'99+':S.unread}</b>`:''}`}
+  const pb=document.querySelector('.phone .pbar'),pl=document.querySelector('.phone .ptitle .plogs');const usePb=!!pb&&getComputedStyle(pb).display!=='none';const host=usePb?pb:pl;
+  if(!inRoom||!host){if(e)e.remove();return}
+  if(!e){e=document.createElement('button');e.type='button';e.id='bbsfab';e.title='학교 게시판';e.onclick=openBoard}
+  const cls=usePb?'bbsfab':'btn xs ghost plog bbsfab-p';if(e.className!==cls)e.className=cls;
+  if(usePb){const tm=pb.querySelector('.ptime');if(e.parentNode!==pb||e.nextSibling!==tm)pb.insertBefore(e,tm)}else if(e.parentNode!==pl||pl.firstChild!==e)pl.insertBefore(e,pl.firstChild);
+  const n=S.unread;const h=`<span aria-hidden="true">📋</span><span class="plt bbsfab-t">${usePb?'':' '}학교 게시판</span>${n?`<b class="bbsfab-n">${n>99?'99+':n}</b>`:''}`;
+  if(e._h!==h){e.innerHTML=h;e._h=h;e.setAttribute('aria-label','학교 게시판 열기'+(n?` (새 글 ${n})`:''))}}
 
  /* ----- 그리기 ----- */
  function avatar(who,anon){const u=anon&&!who.img?'':img(who.img);const ch=[...String(anon&&who.n==='익명'?'?':who.n||'?')][0];return `<i class="bbs-av ${u?'':'txt'}" style="${u?`background-image:url('${cssu(u)}')`:''}">${u?'':esc(ch)}</i>`}
@@ -112,7 +117,7 @@ window.OM_BBS_UI=(()=>{
      <div class="bbs-crow">${avatar(S.anon?{n:'익명'}:au||{},S.anon)}${AL.length>1?`<button type="button" class="bbs-who" data-bb="who" aria-haspopup="dialog" title="글쓴이 고르기"><span><b>${esc(au?au.n:'?')}</b><small>${esc(au&&au.sub||'')}</small></span><span class="bbs-car" aria-hidden="true">▾</span></button>`:`<span class="bbs-whos"><b>${esc(au?au.n:'?')}</b>${au&&au.sub?`<small>${esc(au.sub)}</small>`:''}</span>`}<label class="bbs-anon"><input type="checkbox" data-bb-anon ${S.anon?'checked':''}> 익명</label></div>
      <textarea maxlength="4000" rows="3" placeholder="무슨 일이 있었나요?" data-bb-text aria-label="글">${esc(S.draft)}</textarea>
      ${S.imgUrl?`<div class="bbs-pimg"><img src="${esc(S.imgUrl)}" alt=""><button type="button" class="bbs-x" data-bb="noimg" aria-label="그림 빼기">✕</button></div>`:''}
-     <div class="bbs-crow"><label class="btn xs ghost bbs-file">🖼 그림<input type="file" accept="image/*" data-bb-file hidden></label><span class="small dim">${S.anon?'남에게는 「익명」, GM 에게만 이름이 보여요':''}</span><span class="sp"></span><button type="submit" class="btn xs pri" ${S.busy?'disabled':''}>${S.busy?'올리는 중…':'올리기'}</button></div></form>`:(!canWrite()?'<p class="small dim">관전 중에는 읽기만 할 수 있어요.</p>':'')}
+     <div class="bbs-crow"><label class="btn xs ghost bbs-file">🖼 그림<input type="file" accept="image/*" data-bb-file hidden></label><span class="small dim">${S.anon?'남에게는 「익명」, GM 에게만 이름이 보여요':'그림은 여기로 끌어다 놓거나 Ctrl+V 로 붙여 넣어도 돼요'}</span><span class="sp"></span><button type="submit" class="btn xs pri" ${S.busy?'disabled':''}>${S.busy?'올리는 중…':'올리기'}</button></div></form>`:(!canWrite()?'<p class="small dim">관전 중에는 읽기만 할 수 있어요.</p>':'')}
     <div class="bbs-feed">${tops.length?tops.map(r=>postHtml(r,kidsOf(r.id))).join(''):'<p class="bbs-empty">아직 글이 없어요. 첫 글을 올려 보세요.</p>'}</div>
    </section></div>`;
   if(!S.embed)md.querySelectorAll('[data-x]').forEach(b=>b.onclick=close)}
@@ -147,8 +152,18 @@ window.OM_BBS_UI=(()=>{
  async function onChange(e){const t=e.target;if(!S.md||!S.md.contains(t))return;
   if(t.matches('[data-bb-who]')){LS.set('om_bbs_who_'+room(),t.value);draw();return}
   if(t.matches('[data-bb-anon]')){S.anon=t.checked;draw();return}
-  if(t.matches('[data-bb-file]')){const f=t.files&&t.files[0];t.value='';if(!f)return;if(f.size>15*1024*1024){toast('그림이 너무 커요 (15MB)');return}
-   S.busy=true;draw();try{S.imgUrl=await E().upload(f)}catch(er){toast('그림을 올리지 못했어요: '+((er&&er.message)||er))}S.busy=false;draw()}}
+  if(t.matches('[data-bb-file]')){const f=t.files&&t.files[0];t.value='';upImg(f)}}
+ async function upImg(f){if(!f||S.busy)return;if(!/^image\//.test(f.type||'')){toast('그림 파일만 올릴 수 있어요');return}if(f.size>15*1024*1024){toast('그림이 너무 커요 (15MB)');return}
+  S.busy=true;draw();try{S.imgUrl=await E().upload(f)}catch(er){toast('그림을 올리지 못했어요: '+((er&&er.message)||er))}S.busy=false;draw()}
+ /* 끌어다 놓기 · 붙여 넣기: 게시판 창 어디에 놓아도 글쓰기 칸의 그림이 된다 (파일 · 다른 웹 페이지의 그림 주소) */
+ function dropForm(t){if(!S.open||!S.md||!t||!t.closest||!S.md.contains(t)||!canWrite()||S.noSql)return null;return S.md.querySelector('[data-bb-form="post"]')}
+ const dtHas=e=>{const T=[...((e.dataTransfer||{}).types||[])];return T.includes('Files')||T.includes('text/uri-list')};
+ let dragT=0;function dragOff(){const f=S.md&&S.md.querySelector('.bbs-compose.drag');if(f)f.classList.remove('drag')}
+ function onDragOver(e){const f=dropForm(e.target);if(!f||!dtHas(e))return;e.preventDefault();e.dataTransfer.dropEffect='copy';f.classList.add('drag');clearTimeout(dragT);dragT=setTimeout(dragOff,180)}
+ function onDrop(e){const f=dropForm(e.target);if(!f||!dtHas(e))return;e.preventDefault();dragOff();const dt=e.dataTransfer;const file=[...(dt.files||[])].find(x=>/^image\//.test(x.type||''));
+  if(file){upImg(file);return}if((dt.files||[]).length){toast('그림 파일만 올릴 수 있어요');return}
+  const u=img(String(dt.getData('text/uri-list')||dt.getData('text/plain')||'').split(/\r?\n/).find(x=>x&&x[0]!=='#')||'');if(u){S.imgUrl=u;draw()}else toast('그림을 알아보지 못했어요 — 파일로 저장해서 놓아 주세요')}
+ function onPaste(e){if(!dropForm(e.target))return;const it=[...((e.clipboardData||{}).items||[])].find(x=>x.kind==='file'&&/^image\//.test(x.type));if(!it)return;e.preventDefault();upImg(it.getAsFile())}
 
  function mount(el,o){o=o||{};S.env=o.env||null;S.who=o.who||null;S.embed=true;S.compact=o.compact!==false;closeWho();S.md=el;S.open=true;draw();if(Date.now()-S.lastPoll>3000||(S.env&&S.env.key)+'|'+room()!==S.ekey)pull().then(markSeen);else markSeen()}
  function openBoard(){S.env=null;S.who=null;S.embed=false;S.compact=true;closeWho();if(!room())return;S.open=true;S.md=A().openModal('<div class="mhead"><h2>학교 게시판</h2><span class="sp"></span><button type="button" class="btn ghost" data-x>닫기</button></div><p class="small dim">불러오는 중…</p>');S.md.classList.add('bbsmodal');draw();pull(!S.rows.size).then(markSeen)}
@@ -160,5 +175,5 @@ window.OM_BBS_UI=(()=>{
   if(!S.open&&S.env){S.env=null;S.who=null;S.embed=false}
   if(window.OM_APP&&window.OM_STORE)fab();if(!room())return;
   const gap=S.open?20000:(window.OM_APP?90000:0);if(gap&&Date.now()-S.lastPoll>gap&&!S.noSql)pull()},2000);
- document.addEventListener('click',onClick);document.addEventListener('submit',onSubmit);document.addEventListener('input',onInput);document.addEventListener('change',onChange);
- return {V:4,openBoard,mount,onEvent,pull,apiFromRpc,unread:()=>S.unread}})();   /* V: 세션 노트가 이보다 옛 것을 들고 있으면 다시 불러온다 */
+ document.addEventListener('click',onClick);document.addEventListener('submit',onSubmit);document.addEventListener('input',onInput);document.addEventListener('change',onChange);document.addEventListener('dragover',onDragOver);document.addEventListener('drop',onDrop);document.addEventListener('paste',onPaste);
+ return {V:5,openBoard,mount,onEvent,pull,apiFromRpc,unread:()=>S.unread}})();   /* V: 세션 노트가 이보다 옛 것을 들고 있으면 다시 불러온다 */
