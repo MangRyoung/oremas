@@ -24,9 +24,34 @@ function makeParty(parties,wn){return parties.map(p=>{const t=clone(p.trainer);c
  return {trainer:t,mons:ms,inj:0,tired:new Set(),inou:0,myosu:0,care:0,aa:0,debt:{oo:0,oc:0,rk:{}},stats:{checks:0,ok:0,cost:0,fail:0,fumble:0,crit:0,covers:0,covered:0,inouUsed:0,penDmg:0}}})}
 
 function pathOf(dg,r){let P=(dg.path||dg.rooms.filter(x=>!x.alt).map(x=>x.id)).slice();for(const g of dg.branches||[]){if(r()<0.5){const i=P.indexOf(g.main[0]);if(i>=0)P.splice(i,g.main.length,...g.alt)}}return P}
+/* ---------- 11-01 망령 「은열쇠」 카드 덱 (룰북 「은열쇠 (카드 덱)」) ----------
+   opt.cards = 덱 이름(CARD_DECKS) 또는 카드 키 배열 8장. 비우면 카드 없이 (예전과 같다).
+   1인 덱 8장 · 손패 3 · 시작 3 · 배틀 시작 1 · 짧은 휴식 1 · 중간 2 · 긴 휴식 = 다시 섞고 3 · 덱이 바닥나 섞으면 광기 +1 (광기 3 · 5 에 죽은 카드 1장씩).
+   체크: 굴리기 전 아이콘 맞는 카드를 최대 2장(한 사람 1장) +1 씩 — 성공률이 0.9 미만일 때만. 배틀: 보험형(실타래 되감기 · 안개의 환영)만 fight.js 가 쓴다.
+   모델에 없는 것: 관찰 노트 · 호흡 맞추기 · 물러서! · 소금기 어린 부적 · 지도 펼치기 · 불러내기 (아이콘으로 바치는 데만 쓰인다) */
+const CARD={key:{n:'열쇠 카드',ic:['★'],v:9,eff:'autopass'},sneak:{n:'발소리 죽이기',ic:['육성','지시'],v:8,eff:'skip'},gust:{n:'기세 올리기',ic:['통솔'],v:6,eff:'al'},
+ bandage:{n:'붕대와 진통제',ic:['육성'],v:5,eff:'heal_inj'},reroll:{n:'실타래 되감기',ic:['지시'],v:5,eff:'reroll',battle:1},nocrit:{n:'안개의 환영',ic:['능력'],v:5,eff:'noCrit',battle:1},
+ retry:{n:'다른 길로',ic:['지시'],v:4,eff:'retry'},firstaid:{n:'응급 처치',ic:['육성'],v:4,eff:'heal'},craft:{n:'손재주',ic:['능력','육성'],v:4,eff:'easy'},food:{n:'비상식량',ic:['육성','통솔'],v:3,eff:'restUp'},
+ breath:{n:'숨 고르기',ic:['★'],v:3,eff:'breath'},salt:{n:'소금기 어린 부적',ic:['능력'],v:3,eff:''},reso:{n:'은빛 공명',ic:['★'],v:2,eff:'cycle'},cover0:{n:'함께 버티자',ic:['통솔'],v:2,eff:'cover0'},
+ note:{n:'관찰 노트',ic:['지시'],v:1,eff:''},map:{n:'지도 펼치기',ic:['지시','능력'],v:1,eff:''},pair:{n:'호흡 맞추기',ic:['통솔','지시'],v:1,eff:''},back:{n:'물러서!',ic:['통솔'],v:1,eff:''},call:{n:'불러내기',ic:['능력'],v:1,eff:''},
+ dead:{n:'광기 카드',ic:[],v:-1,eff:'dead'}};
+const CARD_DECKS={base:['key','key','reroll','bandage','gust','nocrit','retry','reso'],sneak:['key','key','reroll','bandage','gust','nocrit','sneak','reso'],
+ check:['key','key','reso','breath','gust','craft','retry','bandage'],battle:['key','key','reroll','reroll','nocrit','nocrit','firstaid','reso']};
 async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt.seed||1);const pol=Object.assign({who:'best',cover:'fail',partner:'match',inou:'yes'},opt.policy||{});
  const adj=Object.assign({fieldMax:1,coverBall:0,ordScope:'dungeon',ordPer:1,cmdPer:2,target:0,penScale:1,checkEvery:1,stepAll:0,wildLv:0,wildExtra:0,bossN:0,raidX:null,raidMode:'barrier',restV:1,al0:0,al30:5,al70:10,alBattle:0,alLose:10,alScale:1},dg.rules||{},opt.adjust||{});   /* 10-31 망령 「꼭 고쳐」: alLose 는 규칙에 없는 옛 던전도 +10 (autogen RULES 와 같다) */   /* dg.rules = 던전에 박힌 규칙값(자동 생성 던전). 조정값(opt.adjust)이 그 위에 */
  const party=makeParty(parties,dg.wn||opt.wn||2);const ev=[];const say=(e)=>ev.push(e);
+ /* 11-01 은열쇠 카드 */
+ const CD=opt.cards?(Array.isArray(opt.cards)?opt.cards:CARD_DECKS[opt.cards]||CARD_DECKS.base):null;const cstat={use:{},commit:0,mad:0,dead:0,skip:0,autopass:0,retryOk:0,draws:0,reshuffle:0};
+ const shuf=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+ if(CD)for(const P of party)P.cd={pile:shuf(CD),hand:[],disc:[],mad:0,dead:0};
+ const cDraw=(P,n)=>{if(!P.cd)return;for(let i=0;i<n;i++){if(!P.cd.pile.length){if(!P.cd.disc.length)break;P.cd.pile=shuf(P.cd.disc);P.cd.disc=[];P.cd.mad++;cstat.mad++;cstat.reshuffle++;if((P.cd.mad===3||P.cd.mad===5)&&P.cd.dead<2){P.cd.dead++;cstat.dead++;P.cd.pile.splice(Math.floor(rng()*(P.cd.pile.length+1)),0,'dead')}}
+   P.cd.hand.push(P.cd.pile.shift());cstat.draws++}
+  while(P.cd.hand.length>3){const real=P.cd.hand.filter(k=>k!=='dead');if(!real.length)break;real.sort((a,b)=>CARD[a].v-CARD[b].v);const k=real[0];P.cd.hand.splice(P.cd.hand.indexOf(k),1);P.cd.disc.push(k)}};
+ const cUse=(P,k)=>{const i=P.cd.hand.indexOf(k);if(i<0)return false;P.cd.hand.splice(i,1);P.cd.disc.push(k);cstat.use[k]=(cstat.use[k]||0)+1;return true};
+ const cFind=(eff,who)=>{if(!CD)return null;for(const P of (who?[who]:party)){if(!P.cd||P.inj>=3)continue;const k=P.cd.hand.find(x=>CARD[x].eff===eff);if(k)return {P,k}}return null};
+ const cReset=P=>{if(!P.cd)return;P.cd.pile=shuf([...P.cd.pile,...P.cd.hand,...P.cd.disc]);P.cd.hand=[];P.cd.disc=[];cDraw(P,3)};
+ const pOk=q=>{const d=SK.dist(q);return d[3]+d[4]};
+ if(CD)for(const P of party)cDraw(P,3);
  const aliveMons=P=>P.mons.filter(m=>m.hp.cur>0);
  /* 10-29 필드 포켓몬 (룰북 「던전 · 배틀 중엔 필드 포켓몬만」 · 웹툴 skill_ui fieldMax 기본 1): 트레이너마다 살아 있는 동행 앞에서 adj.fieldMax 체. 커버도 필드만(adj.coverBall 1 이면 볼 안의 동행도) */
  const fieldMons=P=>aliveMons(P).slice(0,Math.max(1,+adj.fieldMax||1));const anyAlive=()=>party.some(P=>aliveMons(P).length);
@@ -45,11 +70,19 @@ async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt
  const doCheck=(room,ck0)=>{const ck=SK.up(ck0);const target=+ck.target+adj.target;const cands=party.filter(P=>P.inj<3);if(!cands.length)return null;let P;
   if(pol.who==='round'){P=cands[round%cands.length];round++}else{P=cands.slice().sort((a,b)=>optFor(b,ck).mod-optFor(a,ck).mod)[0]}
   const rank=rankOf(P,ck.stat);const q=optFor(P,ck);q.target=target;q.crit=adj.crit==null?4:+adj.crit;q.myosu=myosuMax(P)-P.myosu>0?1:0;
-  const r=SK.roll(q,rng);if(r.myosuUsed)P.myosu++;const mode=q.super?'inou':'skill';if(q.super)P.inou++;
-  const rec={room:room.id,label:ck.label,stat:ck.stat,target,who:P.trainer.name,rank,mode,partner:q.m?q.m.name:(q.super?'이능':'혼자'),mod:r.mod,fit:q.fit||0,pdie:6,die:6,a:r.a,p:r.p,total:r.total,ri0:r.ri,ri:r.ri,fumble:r.fumble,stubborn:false,cover:'',pen:[]};
+  /* 11-01 은열쇠: 손재주(함정 · 기믹 · 수수께끼 목표 −2) → 열쇠 카드(함정 · 수수께끼 · 어려운 체크를 판정 없이) → 아이콘 바치기 (성공률 0.9 미만일 때, 최대 2장 · 한 사람 1장) */
+  let keyPass=false;const cardRec=[];
+  if(CD){const trapish=['trap','puzzle'].includes(room.t);
+   if(trapish){const c=cFind('easy');if(c&&pOk(q)<0.9){cUse(c.P,c.k);q.target-=2;cardRec.push(CARD[c.k].n)}}
+   if((trapish||q.target>=12)&&pOk(q)<0.75){const c=cFind('autopass');if(c){cUse(c.P,c.k);keyPass=true;cstat.autopass++;cardRec.push(CARD[c.k].n)}}
+   if(!keyPass){const usedBy=new Set();q.bonus=0;while(q.bonus<2&&pOk(q)<0.9){let best=null;for(const Q of party){if(!Q.cd||Q.inj>=3||usedBy.has(Q))continue;for(const k of Q.cd.hand){const C=CARD[k];if(!C.ic.length||!(C.ic.includes('★')||C.ic.includes(ck.stat))||C.eff==='autopass'||C.eff==='skip')continue;if(!best||C.v<best.v)best={Q,k,v:C.v}}}
+     if(!best)break;cUse(best.Q,best.k);usedBy.add(best.Q);q.bonus++;cstat.commit++;cardRec.push(CARD[best.k].n+' +1')}}}
+  let r=keyPass?{ri:3,mod:SK.modOf(q),a:0,p:0,total:0,fumble:false}:SK.roll(q,rng);
+  if(CD&&!keyPass&&r.ri===1){const c=cFind('retry');if(c){cUse(c.P,c.k);cardRec.push(CARD[c.k].n);const r2=SK.roll(q,rng);if(r2.ri>=3)cstat.retryOk++;r=r2}}if(r.myosuUsed)P.myosu++;const mode=q.super?'inou':'skill';if(q.super)P.inou++;
+  const rec={cards:cardRec,room:room.id,label:ck.label,stat:ck.stat,target,who:P.trainer.name,rank,mode,partner:q.m?q.m.name:(q.super?'이능':'혼자'),mod:r.mod,fit:q.fit||0,pdie:6,die:6,a:r.a,p:r.p,total:r.total,ri0:r.ri,ri:r.ri,fumble:r.fumble,stubborn:false,cover:'',pen:[]};
   /* 실패: 상태 한 단계 (제시가 noStep 이면 없음). 커버 = 판정하지 않은 포켓몬이 최대 HP adj.coverHp(1/4) 를 받고 막는다 (pol.cover 'never' 면 안 함) */
   if(r.ri===1&&!+ck.noStep){let C=null;if(pol.cover!=='never'){const cs=party.flatMap(Q=>(+adj.coverBall?aliveMons(Q):fieldMons(Q)).map(m=>({Q,m}))).filter(x=>x.m!==q.m&&x.m.hp.cur>frac(x.m.hp.max,adj.coverHp||'1/4'));cs.sort((a,b)=>b.m.hp.cur/b.m.hp.max-a.m.hp.cur/a.m.hp.max);C=cs[0]||null}
-   if(C){const loss=frac(C.m.hp.max,adj.coverHp||'1/4');C.m.hp.cur=Math.max(0,C.m.hp.cur-loss);rec.cover=C.Q.trainer.name;C.Q.stats.covers++;P.stats.covered++;rec.pen.push(`[커버] ${C.m.name} HP −${loss}`)}
+   if(C){const c0=cFind('cover0');let loss=frac(C.m.hp.max,adj.coverHp||'1/4');if(c0){cUse(c0.P,c0.k);loss=0}C.m.hp.cur=Math.max(0,C.m.hp.cur-loss);rec.cover=C.Q.trainer.name;C.Q.stats.covers++;P.stats.covered++;rec.pen.push(`[커버] ${C.m.name} HP −${loss}`)}
    else injure(P,'실패',rec)}
   P.stats.checks++;if(rec.ri>=3)P.stats.ok++;if(rec.ri===4)P.stats.crit++;if(rec.ri<=1)P.stats.fail++;if(mode==='inou')P.stats.inouUsed++;
   /* 보상 · 패널티 묶음 (묶음은 판정한 포켓몬이 받는다 — 혼자면 포켓몬 몫은 없음) */
@@ -94,14 +127,16 @@ async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt
   const parties=party.filter(P=>P.inj<3||+adj.dyingFight).map(P=>{const t=clone(P.trainer);require('./party.js').orders(W,t,{mons:P.mons,autoPick:adj.autoPick!==0&&adj.autoPick!=='0'});const oc=t.orderCount||{};if(adj.ordScope==='dungeon'){/* 10-28 망령: 4식 · 6령은 던전 단위 — 1인 4식 1 · 6령 2 를 셋이 합친 공용 풀(pool). 종류마다 칸은 넉넉히 두고 풀이 한도 */for(const k of Object.keys(oc))if(oc[k]>0)oc[k]=9}/* 체크 패널티의 4식 · 6령 차감 */let oo=P.debt.oo,oc2=P.debt.oc;for(const k of Object.keys(oc).sort()){if(k.startsWith('order_')&&oo>0&&oc[k]>0){oc[k]--;oo--}if(k.startsWith('command_')&&oc2>0&&oc[k]>0){oc[k]--;oc2--}}P.debt.oo=0;P.debt.oc=0;
    const mons=P.mons.filter(m=>m.hp.cur>0).map(m=>{const x=clone(m);x.rank=Object.assign({},P.debt.rk);return x});P.debt.rk={};return {trainer:t,mons}}).filter(p=>p.mons.length);
   if(!parties.length)return null;const fmt=Math.min(3,Math.max(1,parties.reduce((a,p)=>a+p.mons.length,0)>=3?3:2));
-  const r=await BT.runBattle(W,{left:{parties},right:wild,rng,format:fmt,maxTurns:30,pool:adj.ordScope==='dungeon'?pool:null,poolBoss:!!enc.boss,poolInit:pool0});
+  let cards=null;if(CD){for(const P of party)if(P.inj<3)cDraw(P,1);cards={list:party.flatMap(P=>(P.cd?P.cd.hand:[]).filter(k=>CARD[k].battle&&CARD[k].eff).map(k=>({tid:P.trainer.id,P,k,eff:CARD[k].eff,used:false}))),turn:{}}}
+  const r=await BT.runBattle(W,{left:{parties},right:wild,rng,format:fmt,maxTurns:30,pool:adj.ordScope==='dungeon'?pool:null,poolBoss:!!enc.boss,poolInit:pool0,cards});
+  if(cards)for(const c of cards.list)if(c.used)cUse(c.P,c.k);
   /* 결과를 시트로 */for(const P of party)for(const m of P.mons){const x=r.left.find(y=>y.id===m.id);if(x){m.hp.cur=x.hp;m.states={};for(const k of x.states)if(['Poison','Toxic','Burn','Paralysis','Freeze','Sleep'].includes(k))m.states[k]=1000;
    /* 10-28 03:50 망령: 소지품도 던전 단위 — 쓴 열매 · 띠는 다음 배틀에 없다. 포텐셜 횟수도 이어진다 */if(adj.ordScope==='dungeon'){if(m.item&&!x.item){const nm=m.item;if(W.OM_FX&&W.OM_FX.removeByName)W.OM_FX.removeByName(m,nm);m.item='';m.itemEff='';m.itemUsed=x.itemUsed||{name:nm};say({k:'itemGone',mon:m.name,item:nm})}if(x.potUses)m.potUses=JSON.parse(JSON.stringify(x.potUses))}}}
   const used={order:0,command:0};for(const t of Object.values(r.trainers.left)){used.order+=t.used.order;used.command+=t.used.command}
   /* 10-31 망령 「배틀 승/패에 따른 경계도를 던전 전투마다」: 방의 enc.alWin · enc.alLose 가 있으면 그 값, 없으면 규칙(이기면 alBattle — 보스방 0 · 지면 alLose). 웹툴 방의 aw · alo 와 같다 */
   {const win=r.winner==='left';const dA=win?(enc.alWin!=null&&enc.alWin!==''?+enc.alWin:(enc.boss?0:+adj.alBattle||0)):(enc.alLose!=null&&enc.alLose!==''?+enc.alLose:+adj.alLose||0);if(dA){const b0=pend.al;pend.al=Math.max(0,Math.min(100,pend.al+dA));say({k:'alert',from:b0,to:pend.al,why:win?'battleWin':'battleLose'})}}
   const rec={k:'battle',extra:!!enc._extra,alert:pend.al,room:room.id,pack:enc.pack||enc.trainer||'mix',boss:!!enc.boss,foes:wild.mons.length,raidX:(wild.mons.find(m=>m.raid)||{raid:{}}).raid.segments||0,phases:(r.raid||[]).length,bossHp:(()=>{const b=r.right.find(y=>wild.mons.find(m=>m.boss&&m.id===y.id));return b?+(b.hp/b.max).toFixed(2):null})(),win:r.winner==='left',turns:r.turns,kos:r.kos.filter(k=>k.side==='left').length,wildKos:r.kos.filter(k=>k.side==='right').length,used,hpAfter:party.map(P=>P.mons.map(m=>+(m.hp.cur/m.hp.max).toFixed(2)))};say(rec);return rec};
- const doRest=(room,kind)=>{const ORD=['none','breath','short','mid','long'];if(pend.restDown){const k0=kind;kind=ORD[Math.max(0,ORD.indexOf(kind)-pend.restDown)];pend.restDown=0;say({k:'restDown',room:room.id,from:k0,to:kind});if(kind==='none')return}const TB=(+adj.restV===2||kind==='mid')?REST2:REST;const R=TB[kind]||TB.breath;
+ const doRest=(room,kind)=>{const ORD=['none','breath','short','mid','long'];if(CD&&kind==='short'){const c=cFind('restUp');if(c){cUse(c.P,c.k);kind='mid'}}if(CD){if(kind==='long')party.forEach(cReset);else{const n=kind==='mid'?2:kind==='short'?1:0;if(n)for(const P of party)cDraw(P,n)}}if(pend.restDown){const k0=kind;kind=ORD[Math.max(0,ORD.indexOf(kind)-pend.restDown)];pend.restDown=0;say({k:'restDown',room:room.id,from:k0,to:kind});if(kind==='none')return}const TB=(+adj.restV===2||kind==='mid')?REST2:REST;const R=TB[kind]||TB.breath;
   /* 10-28 03:23~25 망령: 짧은 휴식 = 파티에서 4식 · 6령 1개씩 + 가장 다친 1체 HP 1/4 + 빈사는 HP 1 + 상태 회복 (restShort:'one'. 'add' 는 원래 짧은 휴식에 더하는 실험용) */
   const SN=kind==='short'&&adj.restShort?adj.restShort:'';
   /* 10-28 22시 망령: 짧은 휴식은 전원 HP 1/4 (restShort:'all'), 숨돌리기 = 가장 다친 1체 HP 1/4 + 6령 1 (restBreath:'one' · restBC) */
@@ -123,16 +158,21 @@ async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt
  /* 10-28 갈림길(dg.branches): 판마다 갈림길에서 반반으로 한쪽 길(본길 구간 / 다른 길)을 걷는다 — opt.route = 'main' | 'alt' 로 고정할 수 있다 */
  const route=pathOf(dg,()=>opt.route==='main'?1:opt.route==='alt'?0:rng());if(dg.branches&&dg.branches.length)say({k:'route',path:route});
  for(const rid of route){const room=dg.rooms.find(r=>r.id===rid);if(!room)continue;endRoom=rid;for(const P of party)if(P.inj===3)P.inj=2;say({k:'room',room:rid,t:room.t,name:room.name});
+  if(CD){for(const P of party)if(P.inj===1){const c=cFind('heal_inj',P)||(P.inj===1&&cFind('heal_inj'));if(c){cUse(c.P,c.k);P.inj=0}}
+   while(pend.al>=20){const c=cFind('al');if(!c)break;cUse(c.P,c.k);const b0=pend.al;pend.al=Math.max(0,pend.al-10);say({k:'alert',from:b0,to:pend.al,why:'card'})}
+   if(room.enc&&room.enc.boss){const lo=party.flatMap(P=>aliveMons(P)).sort((a,b)=>a.hp.cur/a.hp.max-b.hp.cur/b.hp.max)[0];if(lo&&lo.hp.cur/lo.hp.max<0.5){const c=cFind('breath');if(c){cUse(c.P,c.k);doRest(room,'breath')}}
+    for(let i=0;i<3;i++){const m=party.flatMap(P=>aliveMons(P)).sort((a,b)=>a.hp.cur/a.hp.max-b.hp.cur/b.hp.max)[0];if(!m||m.hp.cur/m.hp.max>=0.75)break;const c=cFind('heal');if(!c)break;cUse(c.P,c.k);m.hp.cur=Math.min(m.hp.max,m.hp.cur+frac(m.hp.max,'1/4'))}}}
   if(room.check){ci++;/* checkEvery 2 = 체크를 하나 걸러 하나만 (제시 횟수를 줄이는 실험) */if(adj.checkEvery<=1||ci%adj.checkEvery===1){care();doCheck(room,room.check)}
    if(pend.al>=100){lockdown=true;wipe=true;break}
    while(pend.fights.length){const f=Object.assign({},pend.fights.shift(),{_extra:1});const r=await doBattle(room,f);if(!r||!r.win){wipe=true;break}}if(wipe)break}
+  if(room.enc&&CD&&!room.enc.boss){const c=cFind('skip');if(c){cUse(c.P,c.k);cstat.skip++;say({k:'skip',room:rid});if(room.rest)doRest(room,room.rest);continue}}
   if(room.enc){const r=await doBattle(room,room.enc);if(!r||!r.win){wipe=true;break}if(room.enc.boss)boss=true}
   if(pend.al>=100){lockdown=true;wipe=true;break}
   if(room.rest)doRest(room,room.rest);
   if(!anyAlive()){wipe=true;break}}
  const checks=ev.filter(e=>e.k==='check'),battles=ev.filter(e=>e.k==='battle');
  const endHp=party.map(P=>P.mons.reduce((a,m)=>a+m.hp.cur/m.hp.max,0)/P.mons.length);
- return {dungeon:dg.id,wipe,lockdown,alert:pend.al,boss,endRoom,rooms:ev.filter(e=>e.k==='room').length,
+ return {cards:CD?Object.assign({},cstat,{hand:party.map(P=>P.cd.hand.slice())}):null,dungeon:dg.id,wipe,lockdown,alert:pend.al,boss,endRoom,rooms:ev.filter(e=>e.k==='room').length,
   checks:{n:checks.length,ok:checks.filter(c=>c.ri>=3).length,crit:checks.filter(c=>c.ri===4).length,cost:checks.filter(c=>c.ri===2).length,fail:checks.filter(c=>c.ri<=1).length,fumble:checks.filter(c=>c.ri===0).length,covers:checks.filter(c=>c.cover).length,inou:checks.filter(c=>c.mode==='inou').length,alone:checks.filter(c=>c.partner==='혼자').length},
   extraFights:battles.filter(b=>b.extra).length,restDowns:ev.filter(e=>e.k==='restDown').length,
   bossLvDebt:pend.bossLv,poolLeft:Object.assign({},pool),
@@ -142,4 +182,4 @@ async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt
   endHp:endHp.map(x=>+x.toFixed(2)),endHpAvg:+(endHp.reduce((a,b)=>a+b,0)/endHp.length).toFixed(3),faintedEnd:party.reduce((a,P)=>a+P.mons.filter(m=>m.hp.cur<=0).length,0),monsTotal:party.reduce((a,P)=>a+P.mons.length,0),
   checkRows:checks.map(c=>({l:c.label,t:c.target,ri:c.ri,ri0:c.ri0,w:c.who,p:c.partner,m:c.mode,cv:c.cover?1:0})),
   party:party.map(P=>({name:P.trainer.name,ranks:P.trainer.ranks,stats:P.stats})),events:opt.events?ev:undefined}}
-module.exports={pathOf,dungeons,run,makeParty,REST,REST2,DIR};
+module.exports={pathOf,dungeons,run,makeParty,REST,REST2,DIR,CARD,CARD_DECKS};

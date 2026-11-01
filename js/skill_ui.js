@@ -34,13 +34,13 @@ window.OM_SKILL_UI=(()=>{
  const CFG0={crit:4,injPen:1,injOc:1,injOo:1,coverHp:'1/4',coverBall:0,fieldMax:1,myosuA:1,myosuAA:2,supA:1,supAA:2,penAuto:1,cards:{deck:'',c1:'',c2:'',c3:''}};
  const KINDS=[['long','긴 휴식','대대적'],['mid','중간 휴식','반쯤'],['short','짧은 휴식','상담함'],['breath','숨돌리기','가벼움']];   /* 10-28 망령: 중간 휴식 추가 */
  /* inou = 초상 능력 횟수 회복 · inj_n = 상태 단계 회복 (10-29 망령: 긴 2 · 중간 · 짧은 1 · 숨돌리기 0) */
- const REST0={long:{hp:'full',revive:1,revive_hp:'full',cure_ab:1,cure_sp:1,pot_pk_n:'all',ord_n:'all',pot_tr_n:'all',inou:1,inj_n:2,swap:1,key_n:'all'},
+ const REST0={long:{hp:'full',revive:1,revive_hp:'full',cure_ab:1,cure_sp:1,pot_pk_n:'all',ord_n:'all',pot_tr_n:'all',inou:1,inj_n:2,swap:1,key_n:'0',card_n:'reset'},
   /* 10-28 망령 「짧은 휴식이 저 정도고 긴 휴식이 전부면 중간 휴식은 적절하게」 — 전원 HP 1/2 · 빈사는 HP 1/4 · 상태 회복 · 파티 4식 2 · 6령 3 · 포텐셜 1씩 */
-  mid:{hp:'1/2',hp_one:0,revive:1,revive_hp:'1/4',cure_ab:1,cure_sp:1,pot_pk_n:'1',ord_n:'0',ord_po:2,ord_pc:3,pot_tr_n:'1',inou:1,inj_n:1,swap:1,key_n:'1'},
+  mid:{hp:'1/2',hp_one:0,revive:1,revive_hp:'1/4',cure_ab:1,cure_sp:1,pot_pk_n:'1',ord_n:'0',ord_po:2,ord_pc:3,pot_tr_n:'1',inou:1,inj_n:1,swap:1,key_n:'0',card_n:'2'},
   /* 10-28 망령(시뮬 맞춤): 짧은 휴식 = 전원 HP 1/4 · 빈사는 HP 1 · 상태 회복 · 파티 전체 4식 1 · 6령 1 */
-  short:{hp:'1/4',hp_one:0,revive:1,revive_hp:'1',cure_ab:1,cure_sp:1,pot_pk_n:'0',ord_n:'0',ord_po:1,ord_pc:1,pot_tr_n:'0',inou:1,inj_n:1,swap:1,key_n:'0'},
+  short:{hp:'1/4',hp_one:0,revive:1,revive_hp:'1',cure_ab:1,cure_sp:1,pot_pk_n:'0',ord_n:'0',ord_po:1,ord_pc:1,pot_tr_n:'0',inou:1,inj_n:1,swap:1,key_n:'0',card_n:'1'},
   /* 10-28 22시 망령: 숨돌리기 = 가장 다친 1체 HP 1/4 + 파티 6령 1 */
-  breath:{hp:'1/4',hp_one:1,revive:0,revive_hp:'1',cure_ab:0,cure_sp:0,pot_pk_n:'0',ord_n:'0',ord_po:0,ord_pc:1,pot_tr_n:'0',inou:0,inj_n:0,swap:0,key_n:'0'}};
+  breath:{hp:'1/4',hp_one:1,revive:0,revive_hp:'1',cure_ab:0,cure_sp:0,pot_pk_n:'0',ord_n:'0',ord_po:0,ord_pc:1,pot_tr_n:'0',inou:0,inj_n:0,swap:0,key_n:'0',card_n:'0'}};   /* 11-01 은열쇠: card_n = 휴식 박자 드로우 (긴 = 손패 · 버린 카드를 섞고 다시 · 중간 2 · 짧은 1 · 숨돌리기 0). key_n(예전 은열쇠 자원)은 끔 */
  /* 체크 제시 예시 (자주 쓰는 모양). 「저장」으로 내 것을 더할 수 있다 */
  const EX=[
   {name:'고대 문자 해독 (지시 + 특공 · 어려움 12)',o:{v:4,label:'고대 문자를 해독한다',stat:'지시',base:3,target:12,fit:{types:['에스퍼'],moves:['사이코키네시스'],abil:[]}}},
@@ -113,6 +113,10 @@ window.OM_SKILL_UI=(()=>{
  /* ===== 어떤 포켓몬이 판정하나 ===== */
  const SCN={rp:'동행',field:'필드',solo:'트레이너만'};   /* 11-01 망령 「스킬 체크 — 트레이너만 · 대표 1명 / 전원」: solo = 포켓몬 없이 */
  const isRep=O=>!!O&&O.who==='rep';
+ /* 11-01 망령 「은열쇠」: 바친 카드 — skill.trainers.<바친 사람>.bk = {oid 제시 id, to 받는 트레이너 | 'rep'(대표), n, ic, at}. 한 사람 한 장 · 판정 하나에 최대 2장 · 1장당 +1 */
+ const BK_MAX=2;
+ function bkFor(tid,O){if(!O)return [];const TT=st().trainers||{};const L=[];for(const [by,x] of Object.entries(TT)){const b=x&&x.bk;if(!b||b.oid!==O.id)continue;if(O.free&&Date.now()-(+b.at||0)>3*3600e3)continue;
+   if(b.to===tid||(b.to==='rep'&&isRep(O)&&(O.ids||[]).includes(tid)))L.push(Object.assign({by},b))}L.sort((a,b)=>(+a.at||0)-(+b.at||0));return L.slice(0,BK_MAX)}
  /* 대표 1명 제시에서 이미 굴린 사람 (먼저 굴린 한 명) — 없으면 '' */
  function repRoller(O,R){if(!isRep(O))return '';R=R||st().res||{};let b='';for(const id of O.ids||[]){const r=R[id];if(r&&r.offerId===O.id&&(!b||(+r.at||0)<(+R[b].at||0)))b=id}return b}
  function battleField(tid){const B=A().ST.state.battle||{};if(!B.started||B.done)return null;const L=Object.values(B.mons||{}).filter(m=>m.tid===tid&&m.entry&&(+(m.hp||{}).cur||0)>0).map(m=>m.id).filter(id=>mons()[id]);return L.length?L:null}
@@ -145,6 +149,7 @@ window.OM_SKILL_UI=(()=>{
   if(+O.pm)parts.push([+O.pm>0?'유리':'불리',+O.pm]);
   if(k.inj===1&&+C.injPen)parts.push([tough(t)?'부상 (강인함으로 무시)':'부상',tough(t)?0:-(+C.injPen)]);
   if(+ch.bonus)parts.push(['추가 보정',+ch.bonus]);
+  for(const b of bkFor(tid,O))parts.push([`카드 「${b.n}」${b.by!==tid?' · '+((trs()[b.by]||{}).name||''):''}`,1]);   /* 11-01 은열쇠: 바친 카드 1장당 +1 (최대 2장) */
   let tw=+O.twice||0;if(k.inj===2)tw=Math.max(-1,tw-1);
   return {parts,mod:parts.reduce((a,p)=>a+p[1],0),tw}}
  /* 정확한 확률 (2d6 열거). 1·1 실패 · 6·6 대성공 → {ok, crit} */
@@ -248,6 +253,8 @@ window.OM_SKILL_UI=(()=>{
     for(const tid of ids){if(!rv[tid])continue;const cur=+rv[tid]['은열쇠']||0;const mx=+res.m||0;const to=R.key_n==='all'?(mx||cur):Math.min(mx||1e9,cur+(+R.key_n||0));if(to>cur){rv[tid]['은열쇠']=to;ch=true;LK.push(`${T[tid].name} ${cur} → ${to}`)}}
     if(ch)await A().setDiff(['deck2','decks',did,'rv'],dk.rv||{},rv,2)}}
    if(LK.length)L.push('은열쇠: '+LK.join(' · '))}
+  /* 11-01 은열쇠: 휴식 박자 드로우 — 덱 설정 「시작 손패」 · 「덱이 바닥나 섞으면 +1」을 따른다 */
+  if(R.card_n&&String(R.card_n)!=='0'){const DK=window.OM_DECK_UI;if(!gm())L.push('은열쇠 카드 뽑기는 GM 화면에서');else if(DK&&DK.beat){const got=await DK.beat('rest',ids,String(R.card_n)==='reset'?'reset':+R.card_n);if(got.length)L.push(`은열쇠: ${String(R.card_n)==='reset'?'손패 · 버린 카드를 섞고 다시 뽑음':R.card_n+'장씩 뽑음'} (자세한 건 덱 로그)`)}}
   const txt=`【휴식】 ${kn}${opt.by?' · '+opt.by:''}\n${L.join('\n')}`;A().sysLog(txt,'battle',{});try{window.OM_RP_UI&&window.OM_RP_UI.playSe('Ping')}catch(e){}return txt}
  /* 장면 끝: 빈사 → 중상 */
  async function sceneEnd(){const L=[];for(const tid of Object.keys(trs())){const k=tsk(tid);if(k.inj===3){await setT(tid,{inj:2});L.push(trs()[tid].name)}}A().sysLog(L.length?`◆ 장면 끝 — ${L.join(', ')} 「빈사」 → 「중상」`:'◆ 장면 끝','battle');return L}
@@ -363,7 +370,7 @@ ${penFields('fail',X)}</div></div>
       ${nsel('pot_pk_n','전용 포텐셜 횟수 회복','배틀에 있는 소지 포켓몬 (개수면 트레이너당 합계)')}</div>
      <div><div class="sec">트레이너</div>${nsel('ord_n','4식 6령 회복','전부 = 제작한 값으로 (트레이너마다)')}<div class="skrow on"><div style="flex:1"><b>파티 4식 · 6령 회복</b><small>일행 전체에서 합쳐 n 개</small></div>4식 <input type="number" class="n xs" data-restp="ord_po" value="${+R.ord_po||0}" min="0" max="9"> 6령 <input type="number" class="n xs" data-restp="ord_pc" value="${+R.ord_pc||0}" min="0" max="9"></div>${nsel('pot_tr_n','고유 포텐셜 횟수 회복','횟수 제한이 있는 고유 포텐셜')}
       ${tg('inou','초상 능력 횟수 회복','능력 A 이상의 특화')}${tg('swap','동행 포켓몬 교대 가능','쉰 뒤 다음 제시까지 플레이어가 동행(등장) 포켓몬을 바꿀 수 있다')}
-      ${nsel('key_n','은열쇠 회복','덱 자원 「은열쇠」 — 전부 = 최대치까지 (GM 화면에서 선언할 때)')}
+      ${amt('card_n','은열쇠 카드 뽑기',[['0','안 함'],['1','1장'],['2','2장'],['reset','전부 섞고 다시']])}
       <div class="skrow on"><div style="flex:1"><b>상태 단계 회복</b><small>빈사 → 중상 → 부상 → 건강</small></div>${seg('rest_inj_n',[[0,'안 함'],[1,'1단계'],[2,'2단계'],[3,'전부']],+R.inj_n||0)}</div></div></div>
     <div class="row" style="margin-top:10px"><button class="btn ghost" data-sk="restdef">「${kn[1]}」 기본값</button><span class="sp"></span><button class="btn" data-sk="restsave">「${kn[1]}」 설정 저장</button></div></div>`})();
   const cfgTab=(()=>{const D=A().ST.state.deck2||{};const decks=Object.entries(D.decks||{});const dk=(D.decks||{})[C.cards.deck];const cards=dk?Object.entries(dk.cards||{}):[];
@@ -411,7 +418,7 @@ ${penFields('fail',X)}</div></div>
    const pa=$('#pen_auto',md);if(pa)pa.onchange=async()=>{await A().set(['skill','cfg'],Object.assign({},st().cfg||{},{penAuto:pa.checked?1:0}))}}
   if(tab==='cfg'){const dsel=$('#sc_deck',md);if(dsel)dsel.onchange=async()=>{await A().set(['skill','cfg'],Object.assign({},st().cfg||{},{cards:{deck:dsel.value,c1:'',c2:'',c3:''}}));re('cfg')}}
   function grabRest(){const kind=F.restKind||'long';const R=restCfg(kind);md.querySelectorAll('[data-rest]').forEach(cb=>R[cb.dataset.rest]=cb.checked?1:0);
-   for(const k of ['hp','revive_hp']){if(!md.querySelector(`[data-seg="rest_${k}"]`))continue;const v=segVal(md,'rest_'+k);const inp=md.querySelector(`[data-restv="${k}"]`);R[k]=(inp&&inp.value.trim())||(v==='x'?R[k]:v)}
+   for(const k of ['hp','revive_hp','card_n']){if(!md.querySelector(`[data-seg="rest_${k}"]`))continue;const v=segVal(md,'rest_'+k);const inp=md.querySelector(`[data-restv="${k}"]`);R[k]=(inp&&inp.value.trim())||(v==='x'?R[k]:v)}
    for(const k of ['pot_pk_n','ord_n','pot_tr_n','key_n']){const v=segVal(md,'rest_'+k);const inp=md.querySelector(`[data-restn="${k}"]`);R[k]=v==='n'?String(Math.max(1,+inp.value||1)):v}
    R.inj_n=+segVal(md,'rest_inj_n')||0;md.querySelectorAll('[data-restp]').forEach(i=>R[i.dataset.restp]=Math.max(0,Math.min(9,+i.value||0)));return R}
   if(tab==='rest'){md.addEventListener('segchange',e=>{const sg=e.target.closest('[data-seg]');if(!sg)return;const n=sg.dataset.seg;if(n==='restkind'){F.restKind=e.detail;re('rest')}else if(/^rest_(pot_pk_n|ord_n|pot_tr_n|key_n)$/.test(n)){const inp=md.querySelector(`[data-restn="${n.slice(5)}"]`);inp.style.visibility=e.detail==='n'?'visible':'hidden';if(e.detail==='n'&&!inp.value)inp.value='1'}});
@@ -509,6 +516,7 @@ ${penFields('fail',X)}</div></div>
     <div class="skres2"><span class="skstat" style="border-bottom-color:${STEPC[k.inj]}"><small>상태</small><b>${STEP[k.inj]}</b></span><span class="skstat"><small>묘수</small><b>${mm?(mm-k.myosu)+'/'+mm:'—'}</b></span><span class="skstat"><small>초상 능력</small><b>${sm?(sm-k.sup)+'/'+sm:'—'}</b></span>${tough(t)?'<span class="skstat"><small>강인함</small><b>○</b></span>':''}</div></div>
    ${k.inj===1?`<div class="small ${tough(t)?'dim':'warn'}" style="margin:4px 0">부상 — ${tough(t)?'강인함으로 판정 패널티 없음':'모든 판정 −'+C.injPen}</div>`:k.inj===2?'<div class="small warn" style="margin:4px 0">중상 — 모든 판정 불리 (두 번 굴려 낮은 값)</div>':''}
    ${compCard}
+   ${bkHtml(tid,O,free,mine,repR)}
    ${`
    <div class="skcard ${free?'':'hit'}"><div class="skoffer">${free?freeHead(tid,O,O0,mine):`<div class="skot">${esc(O.label||'스킬 체크')}</div><div class="skos">${offerSummary(O)}</div>${penLine(O.pen)}${isRep(O)&&(O.ids||[]).length>1?`<div class="skwho2 rep"><b>대표 1명</b> ${rr?`— 대표 ${esc(rn)} 가 굴렸다`:'— 대상 중 먼저 굴린 한 명의 결과가 모두의 결과 · 실패 대가도 그 사람에게 한 번'}</div>`:(O.ids||[]).length>1?'<div class="skwho2"><b>전원 각자</b> — 대상 모두가 한 번씩 굴린다</div>':''}`}${O.npc?'':ladder(free&&mine?mine.target:O.target,mine?mine.total:repR&&!repR.pend?repR.total:null)}</div>
     ${mine?resultHtml(mine,t,k)+(free&&!mine.pend?'<div class="row" style="margin-top:8px"><span class="sp"></span><button class="btn sm pri" data-freenew="1">새로 굴리기</button></div>':''):repR?`<div class="skrepdone">${repR.pend?`<div class="small">대표 <b>${esc(rn)}</b> 가 굴렸다 — 묘수를 고민하는 중</div>`:`<div class="skbig" style="background:${COL[repR.ri]}"><div class="skbigt">${RES[repR.ri]}</div><div class="skbigs">대표 ${esc(rn)} 가 굴렸다 · 합계 ${repR.total} / 목표 ${repR.target}</div></div>`}<div class="small dim" style="margin-top:6px">대표 1명 체크 — 이 결과가 모두의 결과다. 따로 굴리지 않는다.</div></div>`:k.inj>=3?'<div class="small warn" style="margin-top:8px">빈사 — 이 장면에는 참가할 수 없다. 장면이 끝나면 중상으로 돌아온다.</div>':(()=>{const op=optionsOf(tid,O);
@@ -542,8 +550,34 @@ ${penFields('fail',X)}</div></div>
   md.querySelectorAll('[data-freenew]').forEach(b=>b.onclick=async()=>{A().closeModal();await A().set(resPath(tid,true),null);setTimeout(()=>openPlayer(tid),150)});
   const bindHand=()=>{const box=$('#sk_hand',md);if(!box)return;box.querySelectorAll('[data-hand]').forEach(b=>b.onclick=()=>{const D=window.OM_DECK_UI;if(!D)return;const v=b.dataset.hand;
    D.battleHand(tid,{where:'rp',grave:v==='grave',focus:v==='grave'?-1:+v,onClose:()=>[400,1500,3500].forEach(ms=>setTimeout(()=>{if(document.body.contains(box)){box.innerHTML=handHtml(tid);bindHand()}},ms))})})};bindHand();
-  md.querySelectorAll('[data-cover]').forEach(b=>b.onclick=()=>cover(b.dataset.cover,b.dataset.mid))}
+  md.querySelectorAll('[data-cover]').forEach(b=>b.onclick=()=>cover(b.dataset.cover,b.dataset.mid));
+  md.querySelectorAll('[data-bk]').forEach(b=>b.onclick=()=>bkGive(tid,O,b.dataset.bk,($('#sk_bkto',md)||{}).value||''))}
  /* 커버 칸: 이 제시에서 실패해 단계가 오른 사람 · 그 단계를 막아 줄 수 있는 내 포켓몬 (판정하지 않은 동행 · 필드, 설정이면 볼 안도) */
+ /* 11-01 망령 「은열쇠」 카드 바치기 칸: 굴리기 전에 손패에서 체크 자질과 아이콘이 맞는 카드(★ 포함)를 낸다. 동료는 대표(또는 고른 사람)에게 「거들기」 */
+ function bkHtml(tid,O,free,mine,repR){const DK=window.OM_DECK_UI;if(!DK||!DK.handInfo||!O)return '';const h=DK.handInfo(tid);const T=trs();
+  const rep=isRep(O)&&!free;const myBk=(tsk(tid).bk&&tsk(tid).bk.oid===O.id)?tsk(tid).bk:null;
+  const targets=free?[tid]:rep?['rep']:(O.ids||[]).filter(id=>T[id]&&!(((st().res||{})[id]||{}).offerId===O.id));
+  const got=(to)=>to==='rep'?bkFor((O.ids||[]).find(id=>T[id])||tid,O):bkFor(to,O);
+  const nm=to=>to==='rep'?'대표':to===tid?'나':((T[to]||{}).name||'?');
+  const list=targets.map(to=>{const g=got(to);return g.length?`<span class="skbk">${esc(nm(to))} ← ${g.map(b=>`『${esc(b.n)}』${b.by!==to?'<small>('+esc((T[b.by]||{}).name||'')+')</small>':''}`).join(' ')} <b>+${g.length}</b></span>`:''}).join('');
+  const done=!!(mine||repR);
+  const fit=h?h.cards.filter(c=>!c.ex&&c.ic&&c.ic.length&&(c.ic.includes('★')||c.ic.includes(O.stat))):[];
+  let act='';
+  if(myBk)act=`<span class="small">바침: 『${esc(myBk.n)}』 → ${esc(nm(myBk.to))} (이 체크에 한 장만)</span>`;
+  else if(done)act='<span class="small dim">이미 굴렸다</span>';
+  else if(!h)act='<span class="small dim">덱이 없다</span>';
+  else if(!fit.length)act=`<span class="small dim">손패에 ${esc(O.stat)} · ★ 아이콘 카드가 없다</span>`;
+  else{const sel=targets.length>1?`<select id="sk_bkto">${targets.map(to=>`<option value="${esc(to)}" ${to===tid?'selected':''} ${got(to).length>=BK_MAX?'disabled':''}>${esc(nm(to))}${got(to).length>=BK_MAX?' (가득)':''}</option>`).join('')}</select>`:`<input type="hidden" id="sk_bkto" value="${esc(targets[0]||tid)}"><span class="small">→ ${esc(nm(targets[0]||tid))}</span>`;
+   const full=targets.length===1&&got(targets[0]).length>=BK_MAX;
+   act=full?'<span class="small dim">이 판정에는 이미 2장이 들어갔다</span>':`${sel}<span class="skbkc">${fit.map(c=>`<button type="button" class="skhc" data-bk="${esc(c.cid)}" style="--hc:${c.col}" title="${esc(c.x||'')}"><b>${esc(c.n)}</b><em>${esc(c.ic.join('·'))}</em></button>`).join('')}</span>`}
+  return `<div class="skcard skbkbox"><div class="sec" style="margin:0">카드 바치기 <span class="note">은열쇠 · 굴리기 전에 · ${esc(O.stat)} 또는 ★ 아이콘 · 1장당 +1 · 판정 하나에 최대 ${BK_MAX}장 · 한 사람 1장${rep?' · 대표 1명 체크는 「대표」에게 거든다':''}</span></div>${list?`<div class="skbkl">${list}</div>`:''}<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:6px">${act}</div></div>`}
+ async function bkGive(tid,O,cid,to){const DK=window.OM_DECK_UI;if(!DK||!DK.commitCard)return;const T=trs();to=to||tid;
+  const cur=tsk(tid).bk;if(cur&&cur.oid===O.id)return A().toast('이 체크에는 이미 한 장 바쳤다');
+  const got=to==='rep'?bkFor((O.ids||[]).find(id=>T[id])||tid,O):bkFor(to,O);if(got.length>=BK_MAX)return A().toast(`그 판정에는 이미 ${BK_MAX}장이 들어갔다`);
+  const r=await DK.commitCard(tid,cid,O.stat);if(!r||r.err)return A().toast((r&&r.err)||'바치지 못했다');
+  await setT(tid,{bk:{oid:O.id,to,n:r.n,ic:r.ic,at:Date.now()}});
+  A().sysLog(`【카드 바침】 ${T[tid].name} 『${r.n}』 → ${to==='rep'?'대표':to===tid?'자기':((T[to]||{}).name||'')} 판정 +1${O.label?' · '+O.label:''}`,'dice',{});
+  A().closeModal();setTimeout(()=>openPlayer(tid),250)}
  function coverCands(byTid,r,scene){if(scene==='solo')return [];const C=cfg();const pool=+C.coverBall?Object.values(mons()).filter(m=>m.tid===byTid&&alive(m)).map(m=>m.id):compOf(byTid,scene).ids;return pool.filter(id=>id!==r.mid)}
  function coverHtml(tid,O,K){if(!O||O.scene==='solo')return '';   /* 트레이너만: 포켓몬이 없어 커버도 없다 */const T=trs();const R=K.res||{};const C=cfg();const can=(gm()||tid===me());
   const list=Object.keys(R).filter(id=>{const r=R[id];return r&&r.offerId===O.id&&r.ri===1&&r.step&&r.step.now>r.step.prev&&!r.cover});if(!list.length)return '';
@@ -571,7 +605,8 @@ ${penFields('fail',X)}</div></div>
   let res={offerId:O.id,tid,label:O.label||'',how:ch.how,mid:ch.mid||'',monName:m?m.name:'',etc:!!ch.etc,bonus:+ch.bonus||0,stat:O.stat,target,npcTxt,parts:c.parts,mod:c.mod,tw:c.tw,dice:R2.k,rolls:R2.all,ri,total,text,at:Date.now()};
   if(O.free){res.base=O.base;res.noStep=+O.noStep||0}
   if(ri===1){if(myosuMax(t)>k.myosu)res.pend=1;else res=await settleFail(tid,res)}
-  await A().set(resPath(tid,O.free),res);const hist=(st().hist||[]).slice(-40);hist.push({ri,text:res.text,at:res.at});await A().set(['skill','hist'],hist);
+  await A().set(resPath(tid,O.free),res);for(const b of bkFor(tid,O))await setT(b.by,{bk:null});   /* 11-01 은열쇠: 쓴 카드는 판정 한 번으로 끝 */
+  const hist=(st().hist||[]).slice(-40);hist.push({ri,text:res.text,at:res.at});await A().set(['skill','hist'],hist);
   A().closeModal();A().sysLog(text,'dice',{sk:{tid,mid:ch.how==='mon'?(ch.mid||''):'',ri}});try{if(window.OM_CUTIN)window.OM_CUTIN.phase(RES[ri],`${t.name} · ${O.stat} ${total}/${target}`)}catch(e){}
   sync();setTimeout(()=>openPlayer(tid),300)}
  /* 묘수: 실패한 굴림을 같은 보정으로 다시 */
