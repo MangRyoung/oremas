@@ -8,6 +8,7 @@
 -- 제한(서버가 막는다): 글 4000자 · 그림 주소 1000자 · 캐릭터 정보 2KB · 방마다 글 5000줄
 -- 읽기: 방 링크를 가진 누구나(관전 포함, 익명은 가린 채). 쓰기: 방에 앉은 사람(GM · 좌석)
 -- 여러 번 실행해도 된다. 데이터를 지우지 않는다.
+-- 11-02 고침: 목록 · 받아 오기 함수를 stable → volatile (om_who 가 계정 접속 시각을 고쳐 써서 「cannot execute UPDATE in a read-only transaction」이 났다)
 
 create table if not exists public.om_bbs_board (
   room   text not null references public.om_rooms(id) on delete cascade,
@@ -44,7 +45,7 @@ create index if not exists om_bbs_room_ver on public.om_bbs(room, ver);
 -- 게시판 목록. 숨긴 판은 GM 에게만
 create or replace function public.om_bbs_boards(p_room text, p_secret text)
 returns table(id text, name text, descr text, w text, ord int, hidden boolean, at timestamptz)
-language plpgsql stable security definer set search_path = public as $$
+language plpgsql volatile security definer set search_path = public as $$
 declare who text;
 begin
   who := om_who(p_room, coalesce(p_secret, ''));
@@ -85,7 +86,7 @@ end $$;
 -- 글 · 댓글 받아 오기: p_after 보다 뒤에 바뀐 줄. 익명 · 지운 글은 가려서
 create or replace function public.om_bbs_feed(p_room text, p_secret text, p_after bigint)
 returns table(id bigint, board text, parent bigint, w text, who jsonb, anon boolean, body text, img text, likes jsonb, del boolean, at timestamptz, ver bigint)
-language plpgsql stable security definer set search_path = public as $$
+language plpgsql volatile security definer set search_path = public as $$
 declare me text;
 begin
   me := om_who(p_room, coalesce(p_secret, ''));
