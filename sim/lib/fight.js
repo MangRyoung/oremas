@@ -57,7 +57,7 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
   const wideBlock=def!==atk&&+(((f.objects||{})[def.side]||{})['와이드가드']||0)>0&&(multiTarget||/전체|자신\s*이외/.test(String(mv.range||'')));
   const protBlock=def!==atk&&!PBY&&(def.flags||{}).protect===(+b.turn||0)&&def.hp.cur>0;
   const accRoll=()=>protBlock?{prot:1,sure:false,hit:false}:wideBlock?{sure:false,hit:false,note:'와이드가드'}:itImm?{sure:false,hit:false,note:itImm}:psyBlock?{sure:false,hit:false,note:'사이코필드'}:autoMiss?{sure:false,hit:false,note:'회피'}:
-   B.accuracy(atk,def,{acc:mv.acc},{accMult:accMul,sureHit:sure,starry:f.weather.type==='별하늘',fog:f.weather.type==='짙은안개',fogImmune:moveTypes.some(t=>t==='Poison'||t==='Fairy')||FN.tysOf(atk).some(t=>t==='Poison'||t==='Fairy'),gravity:(f.etc||{})['중력']>0,wideLens:FN.IT(atk)==='광각렌즈',ignoreAcc:IG.acc,ignoreEva:IG.eva,rng:rnd});
+   B.accuracy(atk,def,{acc:mv.acc},{accMult:accMul,sureHit:sure,starry:f.weather.type==='별하늘',fog:f.weather.type==='짙은안개',fogImmune:FN.tysOf(atk).some(t=>t==='Poison'||t==='Fairy'),gravity:(f.etc||{})['중력']>0,wideLens:FN.IT(atk)==='광각렌즈',ignoreAcc:IG.acc,ignoreEva:IG.eva,rng:rnd});
   let acc=accRoll();if(!acc.hit&&!acc.prot&&!acc.note&&mv.cat!=='변화'&&atk.side==='left'&&cardTake(H,'reroll',+b.turn||0))acc=accRoll();   /* 「실타래 되감기」 */
   const floating=(def.states||{}).MagnetRise||(def.states||{}).Telekinesis||(FX&&FX.floating(def))||FN.IT(def)==='풍선';
   const effPre=mv.cat==='변화'?null:B.effectiveness(moveTypes,def,{multiMode:0,atkTypes,force:null,floating});
@@ -73,7 +73,7 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
   if(objs['얼음의장벽']>0&&tyOf(mv)==='Fire'&&mv.cat!=='변화'){const nb0=FN.snap(),nb=FN.snap(nb0);const fo=FN.fieldOf(nb);delete fo.objects[side]['얼음의장벽'];nb.field=fo;await FN.saveBattle(nb0,nb)}
   const spw=SPW?SPW(def):null;const powT=spw&&spw.pow!=null?spw.pow:pow;
   const dTy=FN.tysOf(def),dS=mv.cat==='특수'?'specialdefense':'defense';const fieldT=fm*(f.terrain.type==='미스트필드'&&moveTypes.includes('Dragon')&&FN.grd(def)?0.5:1);
-  const wt=f.weather.type;const defMul=(['눈','싸라기눈','극한'].includes(wt)&&dTy.includes('Ice')&&dS==='defense')?1.5:(wt==='모래바람'&&dTy.includes('Rock')&&dS==='specialdefense')?1.5:1;
+  const wt=f.weather.type;const defMul=(wt==='극한'&&dTy.includes('Ice')&&dS==='defense')?2:(['눈','싸라기눈'].includes(wt)&&dTy.includes('Ice')&&dS==='defense')?1.5:(wt==='모래바람'&&dTy.includes('Rock')&&dS==='specialdefense')?1.5:1;
   let MVP=null,DOPT=null;const dmg=mv.cat==='변화'||!powT||(spw&&spw.fixed)||(MAU&&MAU.delay)||!hits.length?null:B.damage(FN.foulAtk(atk,def,mv),def,MVP=Object.assign({},mv,{pow:powT},ATY?{typeEn:ATY,type:S.typeKo(ATY)}:sk?{typeEn:sk.ty,type:S.typeKo(sk.ty)}:{}),DOPT={critMul:FN.critMulOf(atk),hits:hits.map(h=>h.v),powStep:spw?0:FN.powStepOf(mv),free1:1*(mods.boost||1),free2:1,item1,item2:1,trait:traitMul,weather:wMul,fieldMul:fieldT,defMul,wonder:RM('원더룸'),helping:false,charge,lifeOrb:false,multiTarget,wall,wallSize:FN.mode(b)>=2?2:1,ignoreAtk:igAtk,ignoreDef:igDef,watersport:(f.etc||{})['물놀이']>0,mudsport:(f.etc||{})['흙놀이']>0,scarf:FN.IT(atk)==='구애스카프',choiceDef:false,tailwindDef:((f.objects||{})[side]||{})['순풍']>0,swampDef:((f.objects||{})[side]||{})['습원']>0,rng:rnd});
   /* 고정 · 변칙 피해(spw.fixed): 웹툴은 HP 창에서 손으로 — 시뮬은 spw.dmg 가 있으면 그 값 */
   const eff=dmg?B.effectiveness(moveTypes,def,{multiMode:0,atkTypes,force:null,floating}):(effPre||null);
@@ -170,7 +170,7 @@ function estimate(H,W,atk,def,mv,o){o=o||{};const FN=H.fn,B=W.OM_BATTLE,FX=W.OM_
  const mods=FX?FX.attackMods(atk,def,Object.assign(FN.moveQuery(atk,def,mv,moveTypes,eff.value,!o.multi),{stab:!!eff.stab})):{boost:1,guard:1};const ig=OI&&OI.defGuard(def,mv.cat);if(ig)mods.guard=(mods.guard||1)*ig.v;
  const wm=FN.WEATHER_MUL[f.weather.type]||{};const wMul=wm[T0]!=null?wm[T0]:1;let fm=1;const ft=f.terrain.type;if(FN.grd(atk)){if(ft==='그래스필드'&&T0==='Grass')fm=1.3;if(ft==='일렉트릭필드'&&T0==='Electric')fm=1.3;if(ft==='사이코필드'&&T0==='Psychic')fm=1.3}if(ft==='미스트필드'&&moveTypes.includes('Dragon')&&FN.grd(def))fm*=0.5;
  const im=OI?OI.atkMul(atk,{types:moveTypes,cat:mv.cat,single:String(mv.range||'')==='1체'}):null;
- const dTy=FN.tysOf(def),dS=mv.cat==='특수'?'specialdefense':'defense';const wt=f.weather.type;const defMul=(['눈','싸라기눈','극한'].includes(wt)&&dTy.includes('Ice')&&dS==='defense')?1.5:(wt==='모래바람'&&dTy.includes('Rock')&&dS==='specialdefense')?1.5:1;
+ const dTy=FN.tysOf(def),dS=mv.cat==='특수'?'specialdefense':'defense';const wt=f.weather.type;const defMul=(wt==='극한'&&dTy.includes('Ice')&&dS==='defense')?2:(['눈','싸라기눈'].includes(wt)&&dTy.includes('Ice')&&dS==='defense')?1.5:(wt==='모래바람'&&dTy.includes('Rock')&&dS==='specialdefense')?1.5:1;
  const objs=(f.objects||{})[def.side]||{};const wall={};for(const k in FN.WALLS)if(objs[k]>0&&!(k==='얼음의장벽'&&T0==='Fire'))wall[FN.WALLS[k]]=1;
  const spw=FN.specialPowFor(mv.name,atk);const sp=spw?spw(def):null;const pow=sp&&sp.pow!=null?sp.pow:+mv.pow;if(!pow)return 0;
  const n=Math.max(1,(+mv.min||1)+(+mv.max||1))/2;

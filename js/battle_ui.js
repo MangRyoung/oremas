@@ -22,7 +22,7 @@ window.OM_BATTLE_UI=(()=>{
  const STAT_KO={attack:'공격',defense:'방어',specialattack:'특공',specialdefense:'특방',speed:'스피드',accuracy:'명중',evasion:'회피',critical:'급소'};
  const ORDER_KEYS=['retreat','dodge','endure','return','snipe'];const COMMAND_KEYS=['attack','defense','specialattack','specialdefense','speed','heal','snipe','evasion'];
  const WEATHER=['','맑음','비','모래바람','싸라기눈','눈','짙은안개','밤','별하늘','큰가뭄','폭우','난기류','극한','깊은밤'];
- const WEATHER_MUL={맑음:{Fire:1.5,Water:0.5},큰가뭄:{Fire:1.5,Water:0},비:{Water:1.5,Fire:0.5},폭우:{Water:1.5,Fire:0},밤:{Ghost:1.33,Dark:1.33},깊은밤:{Ghost:1.33,Dark:1.33},별하늘:{Normal:1.33,Dragon:1.33},짙은안개:{Poison:1.33,Fairy:1.33}};/* 10-24 제보: 밤 · 별하늘 · 짙은안개(깊은밤 포함)는 ×1.33 — 맑음 · 비만 ×1.5 */
+ const WEATHER_MUL={극한:{Fire:0.25},맑음:{Fire:1.5,Water:0.5},큰가뭄:{Fire:1.5,Water:0},비:{Water:1.5,Fire:0.5},폭우:{Water:1.5,Fire:0},밤:{Ghost:1.33,Dark:1.33},깊은밤:{Ghost:1.33,Dark:1.33},별하늘:{Normal:1.33,Dragon:1.33},짙은안개:{Poison:1.33,Fairy:1.33}};/* 10-24 제보: 밤 · 별하늘 · 짙은안개(깊은밤 포함)는 ×1.33 — 맑음 · 비만 ×1.5 */
  const TERRAIN=['','그래스필드','일렉트릭필드','미스트필드','사이코필드'];
  const ROOMS=['트릭룸','매직룸','원더룸','블랙룸'];const ETC=['중력','물놀이','흙놀이'];
  const OBJECTS=()=>String(((DB().const||{}).lists||{}).list_object_kor||'').split(',').map(x=>x.trim()).filter(Boolean);
@@ -1538,10 +1538,15 @@ window.OM_BATTLE_UI=(()=>{
  function fcDur(x){if(x.end)return '끝';if(x.k==='o'&&FC_LAY[x.n])return (+x.c||1)+'겹';return (!+x.c||+x.c>=1000)?'계속':(+x.c)+'턴'}
  function fcInfo(x,b){const n=x.n,L=[];let note='',EXL=[];const tk=t=>S().typeKo(t);const ws=mode(b||{})>=2?0.67:0.5;
   if(x.k==='w'){const M=WEATHER_MUL[n]||{};const up=Object.keys(M).filter(t=>M[t]>1);if(up.length)L.push(`${up.map(tk).join(' · ')} 기술 ×${M[up[0]]}`);for(const t of Object.keys(M).filter(t=>M[t]<1))L.push(M[t]?`${tk(t)} 기술 ×${M[t]}`:`${tk(t)} 기술 무효 (×0)`);
+   /* 11-01 망령 「맵툴 캠페인 읽고 날씨 부가 효과」: print_effect_weather 의 줄을 옮김 (싸라기눈 · 깊은밤 배율 · 짙은안개 0.9 는 웹툴 결정 유지) */
+   if(n==='맑음'||n==='큰가뭄')L.push('「얼음」 상태가 되지 않는다');
+   if(n==='밤'||n==='깊은밤')L.push('고스트 · 악 타입은 「잠듦」 상태가 되지 않는다');if(n==='깊은밤')L.push('「명중 : 90」 이하인 기술은 무효');
    if(n==='모래바람')L.push('바위 타입 특방 ×1.5','턴 끝 1/16 대미지 (바위 · 땅 · 강철 · 방진고글 제외)');
-   if(['눈','싸라기눈','극한'].includes(n))L.push('얼음 타입 방어 ×1.5');if(n==='싸라기눈')L.push('턴 끝 대미지 없음');
-   if(n==='짙은안개')L.push('명중 ×0.9 (독 · 페어리는 영향 없음)');if(n==='별하늘')L.push('명중 ×1.1');
-   if(['큰가뭄','폭우','난기류','극한','깊은밤'].includes(n))note='특성이 부르는 날씨 — 부른 포켓몬이 필드 위에 있는 한';
+   if(n==='극한')L.push('얼음 타입 방어 ×2','물 기술이 얼음 기술이 된다','「얼음」 상태 내성이 무효');
+   if(['눈','싸라기눈'].includes(n))L.push('얼음 타입 방어 ×1.5');if(n==='싸라기눈')L.push('턴 끝 대미지 없음');
+   if(n==='짙은안개')L.push('명중 ×0.9 (독 · 페어리 타입 포켓몬은 영향 없음)');if(n==='별하늘')L.push('명중 ×1.1');
+   if(n==='난기류')L.push('비행 타입의 약점을 없앤다 (상성 2배 → 1배)');
+   if(['큰가뭄','폭우','난기류','극한','깊은밤'].includes(n))note='특성이 부르는 날씨 — 부른 포켓몬이 필드 위에 있는 한 · 상위 날씨나 「삼천세계」로만 덮어쓴다';
    EXL=wxLinks(b,n)}
   else if(x.k==='t'){note='땅 위 포켓몬에게만';L.push(...(({그래스필드:['풀 기술 ×1.3','턴 끝 HP 1/16 회복'],일렉트릭필드:['전기 기술 ×1.3','「잠듦」 · 「하품」에 걸리지 않는다'],미스트필드:['받는 드래곤 기술 ×0.5','상태 이상 · 「혼란」에 걸리지 않는다'],사이코필드:['에스퍼 기술 ×1.3','상대의 선공기(우선도 +1 이상)를 받지 않는다']})[n]||[]))}
   else if(x.k==='r'||x.k==='e')L.push(...(({트릭룸:['스피드가 느린 포켓몬부터 행동'],매직룸:['소지품 효과 없음'],원더룸:['방어 ↔ 특방 실수치를 바꾼다'],블랙룸:['공격 기술이 모두 고스트 타입'],중력:['명중 ×1.67','하늘에 떠오를 수 없다'],물놀이:['불꽃 기술 위력 ×0.5'],흙놀이:['전기 기술 위력 ×0.5']})[n]||[]));
@@ -2036,7 +2041,7 @@ window.OM_BATTLE_UI=(()=>{
     const psyBlock=f.terrain.type==='사이코필드'&&!sameT(def,atk)&&grd(def)&&(FX()?FX().prioOf(atk,mv):(+mv.prio||0))>0;
     const itImm=OI()&&mv.cat!=='변화'?OI().immune(def,moveTypes):'';
     /* 와이드가드(「전체기 방어」): 그 진영이 받는 전체기(대상 2체 이상 · 범위가 전체인 기술)를 막는다 — 같은 편 전체기도 */const wideBlock=def!==atk&&+(((f.objects||{})[def.side]||{})['와이드가드']||0)>0&&(multiTarget||/전체|자신\s*이외/.test(String(mv.range||'')));
-    const protBlock=def!==atk&&!PBY&&(def.flags||{}).protect===(+b.turn||0)&&def.hp.cur>0;const accRoll=()=>protBlock?{prot:1,sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:`${def.name} 「기술 방어」 — 기술을 막았다`,prot:1}:wideBlock?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:`${SIDE_KO[def.side]} 「와이드가드」 — 전체기를 막았다`}:itImm?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:`${def.name}의 「${itImm}」 — 효과가 없다`}:psyBlock?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:'사이코필드 — 땅 위라 선공 기술 무효'}:autoMiss?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:'지령으로 회피/명중 0'}:B().accuracy(atk,def,{acc:md.dataset.wacc?+md.dataset.wacc:mv.acc},{accMult:n('aacc'),sureHit:sure,starry:f.weather.type==='별하늘',fog:f.weather.type==='짙은안개',fogImmune:moveTypes.some(t=>t==='Poison'||t==='Fairy')||tysOf(atk).some(t=>t==='Poison'||t==='Fairy'),gravity:(f.etc||{})['중력']>0,wideLens:IT(atk)==='광각렌즈',ignoreAcc:IG.acc,ignoreEva:IG.eva});const acc=accRoll();
+    const protBlock=def!==atk&&!PBY&&(def.flags||{}).protect===(+b.turn||0)&&def.hp.cur>0;const accRoll=()=>protBlock?{prot:1,sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:`${def.name} 「기술 방어」 — 기술을 막았다`,prot:1}:wideBlock?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:`${SIDE_KO[def.side]} 「와이드가드」 — 전체기를 막았다`}:itImm?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:`${def.name}의 「${itImm}」 — 효과가 없다`}:psyBlock?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:'사이코필드 — 땅 위라 선공 기술 무효'}:autoMiss?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:'지령으로 회피/명중 0'}:B().accuracy(atk,def,{acc:md.dataset.wacc?+md.dataset.wacc:mv.acc},{accMult:n('aacc'),sureHit:sure,starry:f.weather.type==='별하늘',fog:f.weather.type==='짙은안개',fogImmune:tysOf(atk).some(t=>t==='Poison'||t==='Fairy')/* 11-01 망령: 독 · 페어리 「타입」 포켓몬만 면제 (맵툴 캠페인 calculate_attack) */,gravity:(f.etc||{})['중력']>0,wideLens:IT(atk)==='광각렌즈',ignoreAcc:IG.acc,ignoreEva:IG.eva});const acc=accRoll();
     /* 효과 엔진: 상성을 먼저 보고 강화·완화·급소 조건을 맞춘다 */
     const effPre=mv.cat==='변화'?null:B().effectiveness(moveTypes,def,{multiMode:+g('amulti').value,atkTypes,force:g('aforce').value===''?null:+g('aforce').value,floating:(def.states||{}).MagnetRise||(def.states||{}).Telekinesis||(FX()&&FX().floating(def))||IT(def)==='풍선'});
     const mods=FX()?FX().attackMods(roleV(atk),roleV(def),Object.assign(moveQuery(atk,def,mv,moveTypes,effPre?effPre.value:1,!multiTarget),{stab:!!(effPre&&effPre.stab)})):{boost:1,guard:1,cg:0,cr:0,cx:'',names:[]};
@@ -2056,7 +2061,7 @@ window.OM_BATTLE_UI=(()=>{
     const spw=SPW?SPW(def):null;const powT=spw&&spw.pow!=null?spw.pow:+g('apow').value;
     /* 미스트필드: 땅 위 대상이 받는 드래곤 반감 · 눈(싸라기눈) 얼음 타입 방어 1.5 · 모래바람 바위 타입 특방 1.5 · 원더룸 방어↔특방 실수치 */
     const dTy=tysOf(def),dS=g('adef').value||(mv.cat==='특수'?'specialdefense':'defense');const fieldT=n('afield')*(f.terrain.type==='미스트필드'&&moveTypes.includes('Dragon')&&grd(def)?0.5:1);
-    const wt=f.weather.type;const defMul=(['눈','싸라기눈','극한'].includes(wt)&&dTy.includes('Ice')&&dS==='defense')?1.5:(wt==='모래바람'&&dTy.includes('Rock')&&dS==='specialdefense')?1.5:1;
+    const wt=f.weather.type;const defMul=(wt==='극한'&&dTy.includes('Ice')&&dS==='defense')?2:(['눈','싸라기눈'].includes(wt)&&dTy.includes('Ice')&&dS==='defense')?1.5:(wt==='모래바람'&&dTy.includes('Rock')&&dS==='specialdefense')?1.5:1;
     if(defMul!==1&&mods.names)mods.names.push({key:'_w',who:def.id,txt:`${def.name} 「${wt}」 ${dS==='defense'?'방어':'특방'} ×1.5`});if(fieldT!==n('afield')&&mods.names)mods.names.push({key:'_t',who:def.id,txt:`${def.name} 「미스트필드」 드래곤 ×0.5`});
     let MVP=null,DOPT=null;const dmg=mv.cat==='변화'||!powT||(spw&&spw.fixed)||(MAU&&MAU.delay)?null:B().damage(foulAtk(atk,def,mv),def,MVP=Object.assign({},mv,{pow:powT},ATY?{typeEn:ATY,type:S().typeKo(ATY)}:skinOf(atk,mv)?{typeEn:skinOf(atk,mv).ty,type:S().typeKo(skinOf(atk,mv).ty)}:{}),DOPT={critMul:(+g('acritmul').value||critMulOf(atk)),hits:hits.map(h=>h.v),powStep:spw?0:powStepOf(mv),free1:n('afree1')*(mods.boost||1),free2:n('afree2'),item1:n('aitem1'),item2:n('aitem2'),trait:n('atrait'),weather:n('aweather'),fieldMul:fieldT,defMul,wonder:RM('원더룸'),helping:ck('ahelp'),charge:ck('acharge'),lifeOrb:ck('alife'),multiTarget,wall,wallSize:mode(b)>=2?2:1,atkStat:g('aatk').value||undefined,defStat:g('adef').value||undefined,ignoreAtk:igAtk,ignoreDef:igDef,watersport:(f.etc||{})['물놀이']>0,mudsport:(f.etc||{})['흙놀이']>0,scarf:IT(atk)==='구애스카프',choiceDef:false,tailwindDef:((f.objects||{})[side]||{})['순풍']>0,swampDef:((f.objects||{})[side]||{})['습원']>0});
     const eff=dmg?B().effectiveness(moveTypes,def,{multiMode:+g('amulti').value,atkTypes,force:g('aforce').value===''?null:+g('aforce').value,floating:(def.states||{}).MagnetRise||(def.states||{}).Telekinesis||(FX()&&FX().floating(def))||IT(def)==='풍선'}):null;
