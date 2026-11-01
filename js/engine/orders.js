@@ -1,6 +1,7 @@
 /* ---------- 명령(4식, ORDER)·지령(6령, COMMAND) — 맵툴 js_trainer / js_order 와 같은 표 ----------
-   · 명령 계열 tc (0~9, const.lists.list_command 순서) → 지령 계열 tord (0~3, list_order 순서) 가 따라온다 (tordOf).
+   · 명령 계열 tc (0~10, const.lists.list_command 순서) → 지령 계열 tord (0~3, list_order 순서) 가 따라온다 (tordOf).
    · 11-01 망령: 지시 D 의 십계 = tc 9 「십계-결계(지시 D)」 — 『결계』 2종(물리 · 특수)만, 『영창』 없음.
+   · 11-01 망령 「지시 D 는 4식인데 지령이 나온다」: 지시 D(E) 의 협회식 = tc 10 「기본-4식(지시 D)」 — 『4식』만, 『6령』 없음.
    · 「지령 종류」(협회식/십계/야생/방해) 를 고르면 트레이너의 지시 랭크로 세부 계열이 자동으로 정해진다 (presetTc).
    · 항목(retreat/attack …)마다 다른 계열을 쓸 수 있다: t.orderType = {o_<k>: tord', c_<k>: tc'} (맵툴 type_order_<k>/type_command_<k>).
      이름은 그 항목의 계열 목록(list_order_<tord>/list_command_<tc>)에서 읽고, 그 계열에 없는 항목은 이름이 없어 0 이 된다.
@@ -12,7 +13,7 @@ window.OM_ORDERS=(()=>{
  const LC=['attack','defense','specialattack','specialdefense','speed','heal','accuracy','evasion'];
  const OK={0:['retreat','dodge','endure','return','snipe'],1:['retreat','dodge','endure','snipe'],2:['retreat','dodge','endure','return','snipe','special'],3:['retreat']};
  const CKALL=LC;
- const CK={0:CKALL,1:CKALL,2:CKALL,3:CKALL.slice(0,5),4:['attack','defense','specialattack','specialdefense','speed','accuracy','evasion'],5:['attack','defense','specialattack','specialdefense','speed','accuracy','evasion'],6:CKALL,7:['attack','defense'],8:CKALL.slice(0,5),9:[]};
+ const CK={0:CKALL,1:CKALL,2:CKALL,3:CKALL.slice(0,5),4:['attack','defense','specialattack','specialdefense','speed','accuracy','evasion'],5:['attack','defense','specialattack','specialdefense','speed','accuracy','evasion'],6:CKALL,7:['attack','defense'],8:CKALL.slice(0,5),9:[],10:[]};
  const KO={retreat:'물러나',dodge:'피해라',endure:'버텨라',return:'바꿔라',snipe:'맞춰라',special:'특수',attack:'공격',defense:'방어',specialattack:'특공',specialdefense:'특방',speed:'스피드',heal:'회복',accuracy:'명중',evasion:'회피'};
  const PRESETS=[['assoc','협회식'],['ten','십계'],['wild','야생'],['jam','방해']];
  const csv=s=>String(s||'').split(',').map(x=>x.trim()).filter(Boolean);
@@ -24,7 +25,7 @@ window.OM_ORDERS=(()=>{
  /* 지시 랭크 → 세부 계열 (맵툴 rankLv / tcOf) */
  function rankLv(r){const b=String(r||'').replace(/[+\-]/g,'').toUpperCase();const m={E:0,D:0,C:1,B:2,A:3,AA:4,AAA:5,S:6,EX:6};return m.hasOwnProperty(b)?m[b]:1}
  function ordRank(t){const r=((t||{}).ranks||{})['지시'];return String(r==null?'':r).trim()}
- function presetTc(preset,rank){const lv=rankLv(rank);if(preset==='assoc')return lv>=3?2:(lv>=2?1:0);if(preset==='ten')return lv>=4?5:(lv>=3?4:(lv>=2?3:(lv>=1?8:9)));if(preset==='wild')return 7;if(preset==='jam')return 6;return NaN}
+ function presetTc(preset,rank){const lv=rankLv(rank);if(preset==='assoc')return lv>=3?2:(lv>=2?1:(lv>=1?0:10));if(preset==='ten')return lv>=4?5:(lv>=3?4:(lv>=2?3:(lv>=1?8:9)));if(preset==='wild')return 7;if(preset==='jam')return 6;return NaN}
  function presetName(p){const x=PRESETS.find(q=>q[0]===p);return x?x[1]:''}
  /* 항목별 계열 */
  const sp=k=>{k=String(k==null?'':k);const i=k.indexOf('@');return i<0?[k,0]:[k.slice(0,i),+k.slice(i+1)||0]};
@@ -47,7 +48,7 @@ window.OM_ORDERS=(()=>{
  function orderStyles(){return csv(lists().list_order)}
  /* 0 이 되는 항목 (맵툴 zeros) */
  function zeros(tord,tc){let z=[];if(tord===0)z=['special'];if(tord===1)z=['return','special'];if(tord===2)z=['heal'];if(tord===3)z=['dodge','endure','return','snipe','special'];
-  if(tord===0&&tc<=1)z.push('snipe','accuracy','evasion');if(tord===0&&tc===2)z.push('snipe');
+  if(tord===0&&(tc<=1||tc===10))z.push('snipe','accuracy','evasion');if(tord===0&&tc===2)z.push('snipe');
   if(tord===2&&tc===3)z.push('special','accuracy','evasion');if(tord===2&&tc===4)z.push('special');if(tord===2&&(tc===8||tc===9))z.push('endure','return','snipe','special','accuracy','evasion');return z}
  /* 횟수 채우기 (맵툴 fillKeys): 이름 없는 항목·0 규칙 항목은 0, 나머지 nn. 항목별 예외 계열은 그대로 둔다 */
  function fill(t,nn){const st=styles(t);nn=+nn||0;const z=zeros(st.tord,st.tc);const cnt={};
