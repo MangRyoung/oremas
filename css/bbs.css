@@ -70,3 +70,19 @@ body:has(#mecard:not([hidden])) .bbsfab{bottom:62px}
  .bbs-boards{flex-direction:row;overflow-x:auto;padding-bottom:4px}
  .bbs-bd{width:auto;flex:none;max-width:60vw}
 }
+/* 11-02 휴대폰 · 세션 노트 안에 그릴 때 (mount) — 한 줄 칸, 게시판은 가로 칩 */
+.bbs-embed{padding:6px 8px 10px;font-size:13px}
+.bbs-ehead{display:flex;align-items:center;gap:6px;margin:2px 0 6px}
+.bbs-ehead b{font:400 15px/1.2 var(--head,sans-serif)}
+.bbs-ehead small{color:var(--mute,#8a8a8a);font-size:11px}
+.bbs-embed .bbs-wrap{grid-template-columns:1fr;gap:8px;margin-top:0}
+.bbs-embed .bbs-boards{flex-direction:row;overflow-x:auto;padding-bottom:4px;gap:4px}
+.bbs-embed .bbs-bd{width:auto;flex:none;max-width:70%;padding:5px 9px;font-size:12px;border-radius:14px}
+.bbs-embed .bbs-bd.on{box-shadow:none;background:var(--yel,#ffd12e);color:#000}
+.bbs-embed .bbs-bhead h3{font-size:16px}
+.bbs-embed .bbs-compose{padding:8px}
+.bbs-embed .bbs-compose textarea{min-height:52px;font-size:13px}
+.bbs-embed .bbs-post{padding:8px 10px}
+.bbs-embed .bbs-av{width:28px;height:28px;font-size:12px}
+.bbs-embed .bbs-body{font-size:13px}
+.ph-bbs{min-height:0;overflow-y:auto;flex:1}

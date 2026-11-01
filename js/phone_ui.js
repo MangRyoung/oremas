@@ -48,15 +48,15 @@ window.OM_PHONE_UI=(()=>{
  /* 뒤로 가기: 메모를 고치던 중이면 저장부터 */
  async function backTo(s,md){md=md||$('.modal.phone-modal');if(PH.screen==='note1'&&md&&canWrite()&&noteDirty(md))await saveNote(md,true);PH.screen=s;re()}
  function draw(md){md=md||$('.modal');const el=$('#phScreen',md);if(!el)return;const t=owner();
-  el.innerHTML=PH.screen==='contacts'?contacts(t):PH.screen==='party'&&window.OM_PPOOL?partyScr(t):PH.screen==='conf'?confidants(t):PH.screen==='cal'?calendar(t):PH.screen==='sms'?smsRooms(t):PH.screen==='smsroom'?smsRoom(t):PH.screen==='notes'?notes(t):PH.screen==='sns'?sns(t):PH.screen==='note1'?noteEdit(t):PH.screen==='callog'?calLog(t):PH.screen==='set'?settings():PH.screen==='deck'&&window.OM_DECK_UI?window.OM_DECK_UI.phone(t,canWrite()):home(t);
-  bind(md);if(PH.screen==='deck'&&window.OM_DECK_UI)window.OM_DECK_UI.bindPhone(md,re,t);if(PH.screen==='set'){const r=$('#phPrefs',md);if(r&&window.OM_PREFS)window.OM_PREFS.bind(r)}if(PH.screen==='sns')snsSeen();if(PH.screen==='smsroom'){const lg=$('.ph-sms',md);if(lg){lg.scrollTop=lg.scrollHeight;lg.querySelectorAll('img').forEach(im=>im.addEventListener('load',()=>{lg.scrollTop=lg.scrollHeight},{once:true}))}markSeen(PH.room)}}
+  el.innerHTML=PH.screen==='contacts'?contacts(t):PH.screen==='party'&&window.OM_PPOOL?partyScr(t):PH.screen==='conf'?confidants(t):PH.screen==='cal'?calendar(t):PH.screen==='sms'?smsRooms(t):PH.screen==='smsroom'?smsRoom(t):PH.screen==='notes'?notes(t):PH.screen==='sns'?sns(t):PH.screen==='bbs'&&window.OM_BBS_UI?bbsScr(t):PH.screen==='note1'?noteEdit(t):PH.screen==='callog'?calLog(t):PH.screen==='set'?settings():PH.screen==='deck'&&window.OM_DECK_UI?window.OM_DECK_UI.phone(t,canWrite()):home(t);
+  bind(md);if(PH.screen==='deck'&&window.OM_DECK_UI)window.OM_DECK_UI.bindPhone(md,re,t);if(PH.screen==='set'){const r=$('#phPrefs',md);if(r&&window.OM_PREFS)window.OM_PREFS.bind(r)}if(PH.screen==='sns')snsSeen();if(PH.screen==='bbs'&&window.OM_BBS_UI&&t){const el=$('#phBbs',md);if(el)window.OM_BBS_UI.mount(el,{who:{cid:t.id,n:t.name||'?',img:t.image||''}})}if(PH.screen==='smsroom'){const lg=$('.ph-sms',md);if(lg){lg.scrollTop=lg.scrollHeight;lg.querySelectorAll('img').forEach(im=>im.addEventListener('load',()=>{lg.scrollTop=lg.scrollHeight},{once:true}))}markSeen(PH.room)}}
  const re=()=>draw();
  const hmOf=at=>{const d=new Date(at);if(isNaN(d))return '';const n=new Date();return d.toDateString()===n.toDateString()?`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`:`${d.getMonth()+1}/${d.getDate()}`};
  /* ----- 설정: 내 환경 설정 (OM_PREFS 판을 휴대폰 크기로) ----- */
  function settings(){return `<div class="ph-head set"><button class="ph-back" data-ph="home">‹</button><div><b>설정</b><small>이 기기에서만 · 나만 적용</small></div></div><div class="ph-setwrap"><div id="phPrefs" class="pf-host cmp">${window.OM_PREFS?window.OM_PREFS.html({compact:true}):'<div class="dim">설정을 불러오지 못했다</div>'}</div></div>`}
  /* ----- 홈 ----- */
  /* 10-31 망령 「제작기(세션 노트) 폰 UI 이쁘네, 웹툴도 이런 느낌으로」: 프로필 머리(초상 · 이름 · 파티 코드) → 둥근 앱 4칸 → 최근 문자 줄. 모양은 css/phone3.css */
- function home(t){const T=trs();const un=unreadAll();const apps=[['contacts','📞','연락처',1],['party','👥','파티',!!window.OM_PPOOL],['sms','💬','문자',1,un],['conf','🤝','협력자',1],['cal','📅','캘린더',1],['notes','📝','메모장',1],['sns','📸','SNS',1,snsUnread()],['deck','🃏','덱',!!window.OM_DECK_UI],['set','⚙️','설정',1]];
+ function home(t){const T=trs();const un=unreadAll();const apps=[['contacts','📞','연락처',1],['party','👥','파티',!!window.OM_PPOOL],['sms','💬','문자',1,un],['conf','🤝','협력자',1],['cal','📅','캘린더',1],['notes','📝','메모장',1],['sns','📸','SNS',1,snsUnread()],['bbs','📋','게시판',!!window.OM_BBS_UI,window.OM_BBS_UI?window.OM_BBS_UI.unread():0],['deck','🃏','덱',!!window.OM_DECK_UI],['set','⚙️','설정',1]];
   const code=t&&!t.npc?roomOf2(t.id):'';const when=[dateKo(today()),cal().phase||'',cal().weather||''].filter(Boolean).join(' · ');
   const rs=rooms().map(r=>({r,L:smsLogs(r.id)})).filter(x=>x.L.length).sort((a,b)=>b.L[b.L.length-1].id-a.L[a.L.length-1].id).slice(0,3);
   return `<div class="ph-wall ph-wall3">
@@ -191,6 +191,8 @@ window.OM_PHONE_UI=(()=>{
  const snsFmt=t=>esc(t).replace(/(^|\s)#([^\s#@]+)/g,'$1<span class="sn-tag">#$2</span>').replace(/@([^\s@]+)/g,'<span class="ph-at">@$1</span>');
  const snsAgo=at=>{const d=new Date(at);if(isNaN(d))return '';const s=(Date.now()-d)/1000;return s<60?'방금':s<3600?Math.floor(s/60)+'분 전':s<86400?Math.floor(s/3600)+'시간 전':`${d.getMonth()+1}/${d.getDate()}`};
  function snsCan(){return !!A().ST.role&&(gm()||!!owner())}
+ /* 11-02 망령 「PC 들 휴대폰으로도 게시판」: 학교 게시판(js/bbs_ui.js)을 휴대폰 화면 안에 — 글쓴이는 휴대폰 주인 */
+ function bbsScr(t){return `<div class="ph-head"><button class="ph-back" data-ph="home">‹</button><div><b>학교 게시판</b><small>${t?esc(t.name||'')+(canWrite()?'(으)로 써요':' · 보기만'):''}</small></div></div><div id="phBbs" class="ph-bbs"></div>`}
  function sns(t){const S=spk();const M=snsModel();const me=myCid();
   const avs=(cid,cls)=>{const u=cidImg(cid);return `<i class="ph-av ${cls||'sm'}" style="${u?`background-image:url('${cssu(u)}')`:''}"></i>`};
   const compose=snsCan()?`<div class="sn-new">${avs(S.cid)}<div class="sn-nb"><textarea id="snIn" rows="2" placeholder="${esc(S.name)} 으로 올리기 · #태그 · @이름">${esc(PH.snDraft||'')}</textarea>
@@ -344,7 +346,7 @@ window.OM_PHONE_UI=(()=>{
  /* ----- 묶기 ----- */
  function bind(md){const t=owner();
   md.querySelectorAll('[data-ph]').forEach(b=>b.onclick=async(e)=>{if(e&&e.stopPropagation)e.stopPropagation();const k=b.dataset.ph;if(!k)return;
-   if(['home','contacts','conf','cal','sms','notes','callog','set','deck','sns','party'].includes(k))return backTo(k,md);
+   if(['home','contacts','conf','cal','sms','notes','callog','set','deck','sns','party','bbs'].includes(k))return backTo(k,md);
    if(k==='ptab'){PH.ptab=b.dataset.v||'all';return re()}
    if(k==='snpost')return snsPost(md);
    if(k==='snimgx'){PH.snImg='';return re()}
