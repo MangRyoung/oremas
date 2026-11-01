@@ -1,0 +1,330 @@
+{
+ "id": "auto_easy_56534",
+ "name": "식물원 뒤 금지림 (쉬움)",
+ "wn": 2,
+ "private": true,
+ "gen": {
+  "tier": "easy",
+  "knobs": {
+   "battles": 0,
+   "foes": 2,
+   "lv": 5,
+   "bossLv": 5,
+   "rest": "short",
+   "checks": 4,
+   "tgt": "tierUp",
+   "pen": "alert",
+   "hintTyped": 1,
+   "alCost": 20,
+   "alFail": 45,
+   "critAl": 10
+  },
+  "seed": 56534,
+  "boss": "덩굴달팽이",
+  "v": 1,
+  "auto": true,
+  "tough": "full",
+  "shape": "꺾인길",
+  "theme": "숲",
+  "rules": {
+   "restV": 2,
+   "alBattle": 5,
+   "alLose": 10,
+   "al30": 5,
+   "al70": 10,
+   "restShort": "all",
+   "restPO": 1,
+   "restPC": 1,
+   "restBreath": "one",
+   "restBC": 1
+  },
+  "source": "db",
+  "grades": {
+   "wild": [
+    "C"
+   ],
+   "boss": [
+    "B",
+    "A"
+   ]
+  },
+  "verify": {
+   "wr": 0.88,
+   "target": 0.8,
+   "band": 0.1,
+   "tries": 8,
+   "ok": true,
+   "at": "2026-11-01",
+   "re200": {
+    "wr": 0.85,
+    "trio": [
+     0.2,
+     0.9,
+     1
+    ],
+    "lock": 0.03,
+    "n": 200,
+    "note": "시험 일행 20조합 × 10판 (11-01)"
+   }
+  }
+ },
+ "rooms": [
+  {
+   "id": "entry",
+   "t": "entry",
+   "name": "이정표 앞",
+   "check": {
+    "label": "덩굴의 매듭을 푼다",
+    "stat": "지시",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 45,
+      "oc": 2,
+      "memo": "우왕좌왕했다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "c1",
+   "t": "trap",
+   "name": "덩굴 장벽",
+   "check": {
+    "label": "숲의 속삭임을 듣는다",
+    "stat": "능력",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 45,
+      "dmg": "1/8",
+      "st": "Paralysis",
+      "memo": "반동에 몸이 굳었다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "c2",
+   "t": "puzzle",
+   "name": "길 잃은 오솔길",
+   "check": {
+    "label": "안개 속에서 대열을 지킨다",
+    "stat": "통솔",
+    "target": 10,
+    "hint": "type:풀",
+    "pen": {
+     "fail": {
+      "al": 45,
+      "st": "Confusion",
+      "cnt": 3,
+      "memo": "대열이 무너졌다"
+     }
+    },
+    "pm": 0,
+    "base": 4,
+    "fit": {
+     "types": [
+      "고스트"
+     ],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "safe",
+   "t": "safe",
+   "name": "나무꾼 오두막",
+   "rest": "short",
+   "check": {
+    "label": "야생의 흔적을 쫓는다",
+    "stat": "육성",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 45,
+      "st": "Poison",
+      "memo": "독이 있는 것에 닿았다"
+     }
+    },
+    "pm": 0,
+    "base": 1,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "boss",
+   "t": "boss",
+   "name": "고목의 심장",
+   "enc": {
+    "mix": [
+     {
+      "db": "w203"
+     },
+     {
+      "db": "w091"
+     },
+     {
+      "db": "w067"
+     },
+     {
+      "db": "w115"
+     }
+    ],
+    "boss": true,
+    "bossAt": 0,
+    "raid": 2,
+    "n": 4,
+    "lvAdd": 5
+   }
+  },
+  {
+   "id": "tr",
+   "t": "treasure",
+   "side": 1,
+   "name": "새 둥지",
+   "clue": {
+    "t": "주인의 흔적",
+    "d": "깊은 곳의 주인 — 「풀」 기운이 서려 있다.\n「불꽃」 · 「얼음」 · 「독」 쪽을 꺼리는 흔적이 남아 있다.\n「풀의맹세」의 자국이 벽에 새겨져 있다.",
+    "auto": 1
+   },
+   "from": "safe"
+  },
+  {
+   "id": "s1",
+   "t": "room",
+   "side": 1,
+   "name": "덤불 속 공터",
+   "memo": "곁방 · 숨은 물건 — 살피면 소지품 · 열매 하나(GM 이 정한다). 찾는 데 체크는 없다",
+   "from": "c1"
+  },
+  {
+   "id": "s2",
+   "t": "room",
+   "side": 1,
+   "name": "이끼 바위",
+   "memo": "곁방 · 흔적 — 보스나 다음 방에 대한 단서 하나(GM 이 채운다)",
+   "from": "c2"
+  }
+ ],
+ "branches": [],
+ "path": [
+  "entry",
+  "c1",
+  "c2",
+  "safe",
+  "boss"
+ ],
+ "map": {
+  "grid": {
+   "cols": 6,
+   "rows": 4,
+   "x0": 95,
+   "dx": 162,
+   "y0": 85,
+   "dy": 170
+  },
+  "shape": "꺾인길",
+  "turns": 0,
+  "cells": {
+   "entry": [
+    0,
+    3
+   ],
+   "c1": [
+    1,
+    3
+   ],
+   "c2": [
+    2,
+    3
+   ],
+   "safe": [
+    3,
+    3
+   ],
+   "boss": [
+    4,
+    3
+   ],
+   "tr": [
+    3,
+    2
+   ],
+   "s1": [
+    1,
+    2
+   ],
+   "s2": [
+    2,
+    2
+   ]
+  },
+  "links": {
+   "c1~entry": 1,
+   "c1~c2": 1,
+   "c2~safe": 1,
+   "boss~safe": 1,
+   "safe~tr": 1,
+   "c1~s1": 1,
+   "c2~s2": 1
+  }
+ },
+ "theme": "숲",
+ "owner": "덩굴달팽이",
+ "rules": {
+  "restV": 2,
+  "alBattle": 5,
+  "alLose": 10,
+  "al30": 5,
+  "al70": 10,
+  "restShort": "all",
+  "restPO": 1,
+  "restPC": 1,
+  "restBreath": "one",
+  "restBC": 1
+ },
+ "note": "자동 생성 · 쉬움 · 씨앗 56534 · 테마 숲. 사전 배틀 0 · 체크 4 · 보스방 4체 · 레이드 배틀 : 2 · 지도 꺾인길 + 곁방 3 · 야생 Lv +5 · 빡센 길(체크 목표 10, 경계도 실패 +45)."
+}

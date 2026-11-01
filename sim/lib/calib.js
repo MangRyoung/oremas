@@ -24,7 +24,7 @@ function grid(spec){/* "lv=-10,-5,0;battles=1,2" → [{lv:-10,battles:1},…] */
 const TGT={easy:0.8,normal:0.6,hard:0.3};
 async function quickWin(W,built,wf,dg,trios,n,seed0){let w=0,k=0;for(const c of trios)for(let i=0;i<n;i++){const r=await D.run(W,dg,c.map(x=>built[x]),{seed:seed0+k+1,wildFrom:wf});k++;if(!r.wipe)w++}return k?w/k:0}
 async function verified(W,built,wf,tier,o){const AG=require('./autogen.js');const tg=o.target!=null?+o.target:TGT[tier];const band=o.band!=null?+o.band:0.15;let best=null;
- for(let t=0;t<(o.tries||8);t++){const seed=(+o.seed||1)+t*7919;const dg=AG.generate({tier,seed,knobs:o.knobs,theme:o.theme,grades:o.grades});
+ for(let t=0;t<(o.tries||8);t++){const seed=(+o.seed||1)+t*7919;const dg=AG.generate(Object.assign({tier,seed,knobs:o.knobs,theme:o.theme,grades:o.grades},o.extra||{}));   /* 11-01: o.extra = {name, id, avoidNames} (명령 auto --name · --id) */
   const wr=await quickWin(W,built,wf,dg,o.trios,o.n||8,777000+t*1000);const d=Math.abs(wr-tg);if(!best||d<best.d)best={dg,wr,d,tries:t+1};if(d<=band)break}
  best.dg.gen.verify={wr:+best.wr.toFixed(2),target:tg,band,tries:best.tries,ok:best.d<=band};return best.dg}
 /* 자동 생성 검증: generate() 로 뽑은 던전(규칙값 dg.rules 포함)을 그대로 돌린다 */

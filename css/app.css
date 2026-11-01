@@ -4923,3 +4923,8 @@ html[data-vt="mm"] .memon .medet{border-color:rgba(20,16,12,.4)}
 .scofl{font-size:10px;letter-spacing:.08em;border:1px dashed #555;padding:0 5px;border-radius:2px}
 .scoffi{display:inline-flex;align-items:center;gap:4px}.scoffi .scic{width:18px;height:18px;border-radius:4px;filter:saturate(.45) brightness(.85)}.scoffi s{color:#cfd0d6;text-decoration-color:color-mix(in srgb,var(--tc) 70%,transparent)}
 .bcard.scard.end{background:#15161a;opacity:.85}.bcard.scard.end .fch{background:none;padding:4px 10px}.bcard.scard.end .fch b{font-size:13px;color:#cfd0d6}
+
+/* 11-01 망령 「스킬 체크 — 트레이너만 · 대표 1명 / 전원」: 누가 굴리나 띠 · 대표가 굴린 뒤 다른 사람 창 */
+.skwho2{margin:6px 0 4px;padding:4px 10px;font-size:12.5px;color:#d9dbe2;border-left:3px solid #5f86b8;background:rgba(95,134,184,.12)}
+.skwho2 b{color:#fff;margin-right:4px}.skwho2.rep{border-left-color:var(--yel,#ffd12e);background:rgba(255,209,46,.10)}
+.skrepdone{margin-top:8px}

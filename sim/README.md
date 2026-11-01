@@ -21,9 +21,10 @@ node bin/sim.js battle --party 카이 --wild lab_bossA --n 200 --wn 2 [--log]
 node bin/sim.js gendb --n 300 --seed 31 --mix 0.5          야생 DB 생성(오리지널 3 : 올드 1 · 7:2:1 · 검토 루프) → data/wild/db.json + 무리 48 다시 짜기
 node bin/sim.js mon --step B --kind 쌍두 --types 물,독 --n 5   오리지널몬 한 줌 미리보기
 node bin/sim.js run --scenario data/scenarios/base.json [--n 1000]
-node bin/sim.js run --dungeon auto_normal_2004 --party 카이,미오,레온 --n 500 --adjust target=2,penScale=0.5 --policy cover=never
+node bin/sim.js run --dungeon auto_normal_16943 --party 카이,미오,레온 --n 500 --adjust target=2,penScale=0.5 --policy cover=never
 node bin/sim.js combos --pool id:a,id:b,… --size 3 --dungeons x,y --n 100 --id 이름   후보 중 n명 조합 전부 × 던전들 (기록 탭에 표)
-node bin/sim.js auto --tier normal [--theme 숲] [--seed 42] [--save] [--webtool 1] [--test 200 --party a,b,c]   던전 자동 생성 (가이드라인 기본값, docs/던전_자동생성.md)
+node bin/sim.js auto --tier normal [--theme 숲] [--seed 42] [--name 이름] [--id 파일id] [--save] [--webtool 1] [--test 200 --party a,b,c]   던전 자동 생성 (가이드라인 기본값 · 검증 루프, docs/던전_자동생성.md)
+node bin/sim.js recheck [--dungeon a,b] [--save]           저장된 던전을 검증 조건(시험 일행 20조합 × 3판) 그대로 다시 잰다
 node bin/sim.js autocheck [--g 12 --t 20 --n 10]          자동 생성 검증 — 난이도별 승률
 node bin/sim.js gen --tier easy|normal|hard --seed 3 [--knobs battles=1,checks=4] [--save]   던전 하나 무작위 생성 (lib/gen.js)
 node bin/sim.js calib --tier easy,normal --base 'lv=-5,bossLv=-5' --grid 'battles=0,1,2;checks=3,4' --g 12 --t 20 --n 10   생성기 맞추기 → records/private/calib_*.json
@@ -69,8 +70,8 @@ node bin/sim.js report                                   records/*.summary.json 
 ```json
 {"id":"factory","name":"버려진 발전소","wn":2,
  "rooms":[
-  {"id":"gate","t":"entry","name":"정문","check":{"label":"정문 안내판을 해독한다","stat":"지시","target":7,"hint":"any",
-      "pen":{"fail":{"memo":"시간 지체"},"cost":{"memo":"흔적을 남김"}}}},
+  {"id":"gate","t":"entry","name":"정문","check":{"v":4,"label":"정문 안내판을 해독한다","stat":"지시","base":3,"target":10,
+      "fit":{"types":["전기"],"moves":[],"abil":[]},"pen":{"fail":{"al":20,"oc":2,"memo":"우왕좌왕했다"}},"gainCrit":{"al":-10}}},
   {"id":"line","t":"battle","name":"조립 라인","enc":{"pack":"factory_pack"}},
   {"id":"safe","t":"safe","name":"휴게실","rest":"breath"},
   {"id":"core","t":"boss","name":"발전기 심부","enc":{"pack":"factory_boss","boss":true}}],
@@ -78,14 +79,16 @@ node bin/sim.js report                                   records/*.summary.json 
 ```
 
 - `t` 방 종류는 웹툴 던전 탭과 같다: entry · room · battle · trap · puzzle · treasure · safe · boss.
-- `check`: `stat` 지시 · 육성 · 통솔 · 능력, `target` 5 · 7 · 9 · 11, `mode` `inou` 면 능력 A 이상은 이능으로, `step` ±1 단계 보정, `twice` 1 높은 값 · −1 낮은 값, `hint` 동료 조건(`type:물` · `any` · `none`), `pen.fail` · `pen.cost` 패널티(`dmg` 분수 · `st` 상태 · `rk` 랭크 · `oo` 4식 차감 · `oc` 6령 차감 · `memo`). 패널티 꼴은 웹툴 `skill_ui.js` 의 PEN_EX 와 같다.
+- `check` (10-29 스킬 체크 v4, `lib/skill.js`): 2d6 + 자질(D0 C1 B2 A3 AA4) + 필드 포켓몬 종족값 랭크(`base` 칸, 0~4) + 적합(`fit` 타입 · 기술 · 특성 · `etcMons`, 최대 +3). `stat` 지시 · 육성 · 통솔 · 능력, `target` 8 쉬움 · 10 보통 · 12 어려움 · 15 매우 어려움, `pm` ±, `twice` 1 높은 값 · −1 낮은 값, `noStep` 실패해도 상태 단계 없음. 대성공 = 6·6 또는 목표 +4. 실패 = 트레이너 상태 한 단계(건강 → 부상 → 중상 → 빈사, 커버 가능) + `pen.fail`(`al` 경계도 · `dmg` 분수 · `st` 상태 · `cnt` 턴 · `rk` 랭크 · `oo` 4식 · `oc` 6령 차감 · `memo`). `gainCrit` 대성공 이득. 대가(`pen.cost`)는 없다. 대표 한 명만 굴린다(10-31). 옛 v3 체크(`target` 5 · 7 · 9 · 11 · `step` · `hint`)는 실행 때 `skill.up` 이 v4 로 바꾼다.
 - `enc.pack` 은 `data/wild/` 의 무리 id. `boss:true` 면 보스 방으로 센다.
 - `enc.trainer` 는 제작기 스냅샷의 트레이너를 야생 무리로(`"id:xxxx"`). `pick:[순번…]` 으로 포켓몬을 고르고, `boss:true` 면 파트너(없으면 첫째)가 『와일드 보스』 ×1.5, 나머지 『와일드』 ×1.25.
 - `enc.mix` 는 여러 트레이너의 포켓몬을 섞은 야생 무리: `"mix":[{"trainer":"id:xxxx","pick":[0,1]},…]` 를 순서대로 이어 붙여 앞에서 `n` 체. `boss:true` 면 `bossAt` 번째(기본 0)가 『와일드 보스』 ×1.5, `raid: X` 면 그 보스가 「레이드 배틀 : X」. 보스 방은 조정값 `bossN`(적 수) · `raidX`(X, 0 = 없음) · `raidMode`(barrier · cap)가 파일 값보다 우선한다 — 무진 최종 보스 기본값 4체 · 레이드 2 / 6체 · 레이드 3 (10-27 망령).
 - 레이드 배틀: 기본은 웹툴 · 맵툴과 같은 **배리어식**(최대 HP × k/X 자리마다 배리어 — 닿으면 그 피해는 배리어에서 멈추고 깨짐, 같은 턴에 다음 공격은 그 아래로 들어감). `raidMode: cap` 은 포텐셜 글 그대로 **턴당 상한식**(한 턴에 HP 1/X 넘게 안 깎임). 깨진(상한에 닿은) 턴이 끝나면 「트리거 : 페이즈 체인지」 — 자신의 부정적인 상태 · 능력치 하락 초기화, 나와 있는 적 능력치 상승 초기화. 「레이드 배틀 : 4」 이상의 「3」 배수 턴 추가 행동은 아직 없다.
 - 비공개: 파일 이름을 `*.private.json` 으로(화면의 「비공개」 칸). 비공개 트레이너가 일행에 있거나 던전이 비공개면 기록은 `records/private/`, 리포트는 `report/private.html` — 전부 git 제외.
 - 기술이 빈 포켓몬은 `lib/automove.js` 가 시험용 표준 기술(자속 + 견제)을 채운다(제작기에 기술이 있으면 그쪽).
-- `rest`: breath(HP 1/4 · 지침 해제) · short(HP 1/2 · 상태 치유 · 부상 1단계 · 이능 · 돌봄 회복) · long(전부).
+- `rest`: breath · short · mid · long. 자동 생성 던전은 `rules`(autogen RULES)가 박혀서 짧은 휴식 = 전원 HP 1/4 · 빈사 HP 1 · 상태 회복 · 파티 4식 1 · 6령 1, 숨돌리기 = 가장 다친 1체 HP 1/4 + 6령 1 (10-28 22시). 규칙 없는 옛 던전은 옛 표(breath HP 1/4 · short HP 1/2 …).
+- 방 배틀 경계도(10-31): `enc.alWin` 이기면 · `enc.alLose` 지면(비우면 규칙 — 이기면 일반 +5 · 보스 0, 지면 +10). 웹툴 방의 `aw` · `alo`.
+- 자동 생성 던전 저장(`auto --save`, 11-01): 야생 DB · 도감 야생만 쓰면 `data/dungeons/<id>.json`(git 에 올라감), 스냅샷 트레이너가 야생으로 들어가면 `<id>.private.json`.
 
 ## 시나리오 파일 꼴
 

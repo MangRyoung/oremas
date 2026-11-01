@@ -6,8 +6,10 @@
    node bin/sim.js check                         스킬 체크 성공률 표 (룰북 열지도와 같은 식)
    node bin/sim.js battle --party 카이 --wild factory_boss [--n 200] [--log] [--snap 파일]
    node bin/sim.js run --scenario data/scenarios/base.json [--n 1000]      시나리오대로 던전을 N 판 돌려 records/ 에 기록
-   node bin/sim.js run --dungeon auto_normal_2004 --party 카이,미오,레온 [--n 500] [--seed 1] [--adjust target=2,penScale=0.5] [--policy cover=never]
+   node bin/sim.js run --dungeon auto_normal_16943 --party 카이,미오,레온 [--n 500] [--seed 1] [--adjust target=2,penScale=0.5] [--policy cover=never]
    node bin/sim.js combos --pool 이름,이름,… --size 3 --dungeons a,b --n 100 [--id x --name 이름]   조합 훑기
+   node bin/sim.js auto --tier easy|normal|hard [--theme 숲] [--seed N] [--name 이름] [--id 파일id] [--save] [--webtool 1] [--test 200 --party a,b,c]   던전 자동 생성(검증 루프 기본)
+   node bin/sim.js recheck [--dungeon a,b] [--save]   저장된 던전을 검증 조건 그대로 다시 잰다
    node bin/sim.js gendb [--seed 27]                야생 DB 200체 (오리지널 150 생성 + 올드 50) → data/wild/db.json
    node bin/sim.js mon --step B --kind 쌍두 --types 물,독 --n 5   오리지널몬 한 줌 만들어 보기
    node bin/sim.js report                        records/*.summary.json → report/index.html · report.md
@@ -70,18 +72,21 @@ const stamp=()=>new Date().toISOString().replace(/[-:T]/g,'').slice(0,12);
  if(cmd==='recheck'){/* 저장된 던전을 검증 루프와 같은 조건(시험 일행 20조합 × 3판)으로 다시 잰다: --dungeon a,b,c (비우면 auto_* 전부) [--save] → gen.verify 갱신 */
   const C=require('../lib/calib.js'),D=require('../lib/dungeon.js');const all=D.dungeons();const ids=opt.dungeon?String(opt.dungeon).split(','):Object.keys(all).filter(k=>/^auto_/.test(k));
   const pool=String(opt.pool||'id:4jie5w05,id:5leooo2r,id:6kqpeluy,id:d7pqlnhq,id:em94ge3p,id:hmt1rchl,id:mrsr7bn7,id:uudsvc3l').split(',');const built={};for(const s of pool)built[s]=P.pick(W,snap,s)[0];const wf=P.wildFrom(W,snap);
-  for(const id of ids){const dg=all[id];if(!dg){console.log(id,'없음');continue}const tier=(id.match(/^auto_(easy|normal|hard)_/)||[])[1]||'normal';const wr=await C.quickWin(W,built,wf,dg,C.trios(pool,20,+opt.tseed||11),+opt.vn||3,777000);const tg=C.TGT[tier];const old=(dg.gen||{}).verify;
+  for(const id of ids){const dg=all[id];if(!dg){console.log(id,'없음');continue}const tier=(dg.gen&&dg.gen.tier)||(id.match(/^auto_(easy|normal|hard)_/)||[])[1]||'normal';   /* 11-01: 난이도는 던전에 적힌 값(id 꼴에 기대지 않는다) */const wr=await C.quickWin(W,built,wf,dg,C.trios(pool,20,+opt.tseed||11),+opt.vn||3,777000);const tg=C.TGT[tier];const old=(dg.gen||{}).verify;
    console.log(`${id} ${dg.name}: ${(wr*100).toFixed(0)}% (목표 ${tg*100}±15${old?` · 전 ${(old.wr*100).toFixed(0)}%`:''})${Math.abs(wr-tg)<=0.15?'':' — 범위 밖'}`);
-   if(opt.save){const f=path.join(SIM,'data','dungeons',id+'.json');if(fs.existsSync(f)){const j=JSON.parse(fs.readFileSync(f,'utf8'));j.gen=Object.assign({},j.gen,{verify:Object.assign({},j.gen&&j.gen.verify,{wr:+wr.toFixed(2),target:tg,band:0.15,ok:Math.abs(wr-tg)<=0.15,at:new Date().toISOString().slice(0,10)})});fs.writeFileSync(f,JSON.stringify(j,null,1))}}}return}
+   if(opt.save){const f=[id+'.json',id+'.private.json'].map(x=>path.join(SIM,'data','dungeons',x)).find(x=>fs.existsSync(x));if(f){const j=JSON.parse(fs.readFileSync(f,'utf8'));j.gen=Object.assign({},j.gen,{verify:Object.assign({},j.gen&&j.gen.verify,{wr:+wr.toFixed(2),target:tg,band:0.15,ok:Math.abs(wr-tg)<=0.15,at:new Date().toISOString().slice(0,10)})});fs.writeFileSync(f,JSON.stringify(j,null,1))}}}return}
  if(cmd==='auto'){/* 던전 자동 생성 (lib/autogen.js · docs/던전_자동생성.md): --tier easy|normal|hard [--seed N] [--theme 폐가|동굴|숲|연구소|유적|바다|화산|설원] [--save] [--webtool 파일] [--test 200 --party a,b,c] */
   const AG=require('../lib/autogen.js'),D=require('../lib/dungeon.js'),R=require('../lib/report.js');let dg;
+  /* 11-01: --name 이름 · --id 파일 id (비우면 auto_<난이도>_<씨앗>) — 이름을 안 주면 이미 있는 던전 이름은 피한다 */const extra={avoidNames:Object.values(D.dungeons()).filter(d=>d.id!==opt.id).map(d=>d.name)};if(opt.name)extra.name=String(opt.name);if(opt.id)extra.id=String(opt.id);
   if(opt.verify==null||!['0','false'].includes(String(opt.verify))){/* 10-28 망령 결정: 검증 루프가 기본 (끄려면 --verify 0). --verify — 시험 일행 20조합 × 3판을 돌려 목표 승률(쉬움 80 · 보통 60 · 어려움 30%) ±15% 안에 드는 씨앗까지 다시 만든다 (--band 0.15 --tries 8 --vn 3) */const C=require('../lib/calib.js');
    const pool=String(opt.pool||'id:4jie5w05,id:5leooo2r,id:6kqpeluy,id:d7pqlnhq,id:em94ge3p,id:hmt1rchl,id:mrsr7bn7,id:uudsvc3l').split(',');const built={};for(const s of pool)built[s]=P.pick(W,snap,s)[0];
-   dg=await C.verified(W,built,P.wildFrom(W,snap),opt.tier||'normal',{seed:+opt.seed||Math.floor(Math.random()*1e6),theme:opt.theme,knobs:kv(opt.knobs),trios:C.trios(pool,20,+opt.tseed||11),n:+opt.vn||3,band:opt.band,tries:+opt.tries||8});
+   dg=await C.verified(W,built,P.wildFrom(W,snap),opt.tier||'normal',{seed:+opt.seed||Math.floor(Math.random()*1e6),theme:opt.theme,knobs:kv(opt.knobs),trios:C.trios(pool,20,+opt.tseed||11),n:+opt.vn||3,band:opt.band,tries:+opt.tries||8,extra});
    const v=dg.gen.verify;console.log(`검증: ${v.tries}번째 씨앗 · 승률 ${(v.wr*100).toFixed(0)}% (목표 ${(v.target*100).toFixed(0)}±${(v.band*100).toFixed(0)})${v.ok?'':' — 범위 밖, 가장 가까운 것'}`)}
-  else dg=AG.generate({tier:opt.tier||'normal',seed:+opt.seed||undefined,theme:opt.theme,knobs:kv(opt.knobs)});
+  else dg=AG.generate(Object.assign({tier:opt.tier||'normal',seed:+opt.seed||undefined,theme:opt.theme,knobs:kv(opt.knobs)},extra));
   console.log(`${dg.name} — ${dg.note}`);for(const r of dg.rooms)console.log(`  ${r.t.padEnd(8)} ${r.name}${r.check?` · 🎲 ${r.check.stat} ${r.check.target}${r.check.hint&&r.check.hint!=='any'?' ('+r.check.hint.replace('type:','타입 ')+')':''}`:''}${r.enc?` · ${r.enc.boss?'♛':'⚔'} ${r.enc.mix.length}체${r.enc.raid?' 레이드 '+r.enc.raid:''}`:''}${r.rest?' · ☗ '+r.rest:''}`);
-  if(opt.save){const f=path.join(SIM,'data','dungeons',dg.id+'.private.json');fs.writeFileSync(f,JSON.stringify(dg,null,1));console.log('저장:',f)}
+  if(opt.save){/* 11-01: 야생 DB · 도감 야생만 쓴 던전은 <id>.json (git 에 올라가는 data/dungeons 꼴 — 10-28 던전 10개와 같다), 스냅샷 트레이너가 야생으로 들어가면 <id>.private.json (git 제외). --private 1 이면 언제나 비공개 */
+   const usesSnap=dg.rooms.some(r=>r.enc&&(r.enc.trainer||(r.enc.mix||[]).some(m=>m.trainer)));const priv=usesSnap||!!opt.private;const dir=path.join(SIM,'data','dungeons');const f=path.join(dir,dg.id+(priv?'.private.json':'.json'));const other=path.join(dir,dg.id+(priv?'.json':'.private.json'));
+   fs.writeFileSync(f,JSON.stringify(dg,null,1));if(fs.existsSync(other))fs.unlinkSync(other);console.log('저장:',f)}
   if(opt.webtool){const f=path.resolve(opt.webtool===' 1'||opt.webtool==='1'?path.join(SIM,'data','webtool',dg.id+'.json'):opt.webtool);fs.mkdirSync(path.dirname(f),{recursive:true});fs.writeFileSync(f,JSON.stringify(AG.toWebtool(dg),null,1));console.log('웹툴 꼴:',f)}
   if(opt.test){const parties=pickParties(opt.party||'id:4jie5w05,id:6kqpeluy,id:hmt1rchl');const wf=P.wildFrom(W,snap);const rows=[];for(let i=0;i<+opt.test;i++)rows.push(await D.run(W,dg,parties,{seed:i+1,wildFrom:wf}));const a=R.aggregate(rows);console.log(`시험 ${opt.test}판 — 승률 ${((1-a.wipe)*100).toFixed(0)}% · 보스전 승 ${(a.bossWin*100).toFixed(0)}% · 끝 HP ${(a.endHp*100).toFixed(0)}% · 체크 성공 ${(a.ok*100).toFixed(0)} 대가 ${(a.cost*100).toFixed(0)} 실패 ${(a.fail*100).toFixed(0)}`)}
   return}

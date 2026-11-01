@@ -66,4 +66,4 @@ function make(tier,knobs,seed){const T=TIER[tier];if(!T)throw new Error('난이�
  const restRoom={id:'safe',t:'safe',name:'쉼터'};if(k.rest&&k.rest!=='none')restRoom.rest=k.rest;const c2=nextCheck();if(c2)restRoom.check=c2;if(restRoom.rest||restRoom.check)rooms.push(restRoom);
  const esc=take(T.bossN-1);rooms.push({id:'boss',t:'boss',name:'보스 · '+boss[2],enc:{mix:[SRC(boss)].concat(esc.map(SRC)),boss:true,bossAt:0,raid:T.raid,n:T.bossN,lvAdd:k.bossLv}});
  return {id:`gen_${tier}_${seed}`,name:`생성 · ${T.name} #${seed}`,wn:2,private:true,gen:{tier,knobs:k,seed,boss:boss[2]},rooms}}
-module.exports={make,TIER,POOL,BOSS,PEN,DEF,penFor,V4,V4UP};
+module.exports={make,TIER,POOL,BOSS,PEN,DEF,penFor,V4,V4UP,LABEL};

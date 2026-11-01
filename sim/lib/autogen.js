@@ -3,11 +3,12 @@
      generate({tier, seed, theme, knobs, wild, boss, name})  → 시뮬 던전 JSON (dungeon.run 으로 그대로 돌린다. dg.rules = 던전 규칙값)
      toWebtool(dg, names)                                    → 웹툴 던전 탭 꼴 {n,o,a,al,st,wn,r:{rid:{n,t,x,y,sk,rk,m}},l}
    가이드라인(records/feedback.md 「10-27 저녁 개정」, docs/던전_자동생성.md):
-     공통  야생 · 보스 Lv +1(10-28 4식 · 6령 던전 단위 기준 · 그 전 +10 · 옛 −5) · 체크 3~5 (10-29 v4: 목표 = 난이도 쉬움 8 · 보통 10 · 어려움 12, 빡센 길이면 한 칸 위 · 타입 조건 1개, 자질 넷 고루) · 보스 앞 짧은 휴식 하나(휴식 2안)
-           경계도: 대가 +15 · 실패 +30 · 일반 조우 +10 · 30 → 야생 Lv +5 · 70 → +10 · 100 → 자동 실패
-     쉬움  보스방 4체 · 레이드 2 · 사전 배틀 1   (승률 약 8할 — v3 검증 78%)
-     보통  보스방 4체 · 레이드 3 · 사전 배틀 1~2 (약 6할)
-     어려움 보스방 6체 · 레이드 3 · 사전 배틀 0~1 (약 3할 — v3 31%) */
+     공통  야생 · 보스 Lv +5 (10-28 03:50) · 체크 3~5 (10-29 v4: 목표 = 난이도 쉬움 8 · 보통 10 · 어려움 12, 빡센 길 · 어려운 길이면 한 칸 위 10 · 12 · 15 · 타입 조건 1개, 자질 넷 고루, 대가 없음)
+           · 보스 앞 짧은 휴식 하나(RULES: 전원 HP 1/4 · 빈사 HP 1 · 상태 회복 · 파티 4식 1 · 6령 1)
+           경계도: 체크 실패 +20(빡센 길 +45) · 대성공 −10 · 일반 배틀 이기면 +5 · 지면 +10(10-31, 방마다 enc.alWin · alLose) · 30 → 야생 Lv +5 · 70 → +10 · 100 → 자동 실패
+     쉬움  보스방 4체 · 레이드 2 · 사전 배틀 0~1 (목표 8할)
+     보통  보스방 4체 · 레이드 3 · 사전 배틀 1   (6할)
+     어려움 보스방 6체 · 레이드 3 · 사전 배틀 0~1 (3할) — 숫자는 docs/던전_자동생성.md 맨 위 절 */
 "use strict";
 const fs=require('fs');
 const G=require('./gen.js'),BT=require('./battle.js');
@@ -92,7 +93,12 @@ function addBranches(rng,dg,donor,n){const pick=a=>a[Math.floor(rng()*a.length)]
   if(!C.length)break;const [i,j,seg]=pick(C);const alt=[];
   /* 10-28 테스트: 2방 구간을 통째로 뒤집으면 다른 길 배틀이 2개 늘어(#8 씨앗 908: 본길 1 · 다른 길 3) 난이도 표가 깨진다 → 두 길의 배틀 수 차이는 1까지. 넘으면 마지막 방은 본길과 같은 종류 */
   const wants=seg.map(r=>r.t==='battle'?'check':'battle');const nb=a=>a.filter(x=>x==='battle').length;if(Math.abs(nb(wants)-seg.filter(r=>r.t==='battle').length)>1)wants[wants.length-1]=seg[seg.length-1].t==='battle'?'battle':'check';
-  for(const [wi,r] of seg.entries()){const want=wants[wi];const src=spare[want].shift();if(!src)break;const x=JSON.parse(JSON.stringify(src));x.id='g'+g+'a'+(alt.length+1);x.alt='g'+g;alt.push(x)}
+  /* 11-01: 다른 길 방을 아무거나(첫째) 집지 않고 — 체크는 앞뒤 방과 다른 자질(같은 자질 연달아 X, 전엔 25% 던전에서 다른 길에 연달아 나옴), 배틀은 본길에 이미 나온 야생이 없는 것을 먼저 */
+  const encKey=m=>m.db||m.sp||(m.trainer+':'+(m.pick||[]).join(','));const seenW=new Set(main.filter(x=>x.enc).flatMap(x=>x.enc.mix.map(encKey)));
+  for(const [wi,r] of seg.entries()){const want=wants[wi];let k=0;
+   if(want==='check'){/* 배틀을 사이에 둬도 바로 앞 · 뒤 체크와 다른 자질 */const before=main.slice(0,i+1).concat(alt).filter(x=>x.check),after=wants.slice(wi+1).includes('check')?[]:main.slice(j).filter(x=>x.check);const bad=new Set([before.length&&before[before.length-1].check.stat,after.length&&after[0].check.stat].filter(Boolean));const f=spare.check.findIndex(c=>!bad.has(c.check.stat));if(f>=0)k=f}
+   else{const f=spare.battle.findIndex(b=>!b.enc.mix.some(m=>seenW.has(encKey(m))));if(f>=0)k=f}
+   const src=spare[want].splice(k,1)[0];if(!src)break;const x=JSON.parse(JSON.stringify(src));x.id='g'+g+'a'+(alt.length+1);x.alt='g'+g;alt.push(x)}
   if(alt.length!==seg.length)break;seg.forEach(r=>taken.add(r.id));dg.rooms.push(...alt);dg.branches.push({id:'g'+g,from:main[i].id,to:main[j].id,main:seg.map(r=>r.id),alt:alt.map(r=>r.id)})}}
 /* 격자에서 a → b 를 정확히 k 걸음으로 잇는 빈칸 길 (끝점 빼고 used 를 피한다) */
 function gridPath(rng,a,b,k,used){const key=(c,r)=>c+','+r;const P=[a];const seen=new Set([key(...a)]);
@@ -137,30 +143,30 @@ function generate(o){o=o||{};const tier=o.tier||'normal';if(!PRESET[tier])throw 
  /* 테마 문구 입히기 */
  const used=new Set(),usedLab=new Set();const nm=list=>{const L=list.filter(x=>!used.has(x));const v=L.length?pick(L):pick(list)+' '+(used.size+1);used.add(v);return v};
  for(const r of dg.rooms){if(r.t==='entry')r.name=nm(th.entry);else if(r.t==='battle')r.name=nm(th.battle);else if(r.t==='safe')r.name=nm(th.safe);else if(r.t==='boss')r.name=nm(th.boss);else r.name=nm(th.check);
-  if(r.check){const L=th.chk[r.check.stat];if(L){const F=L.filter(x=>!usedLab.has(x));r.check.label=pick(F.length?F:L);usedLab.add(r.check.label)}   /* 10-28: 체크 5개면 같은 문구가 두 번 나오던 것 막음 */
+  if(r.check){const L=th.chk[r.check.stat];if(L){const F=L.filter(x=>!usedLab.has(x)),F2=(G.LABEL[r.check.stat]||[]).filter(x=>!usedLab.has(x));r.check.label=pick(F.length?F:F2.length?F2:L);usedLab.add(r.check.label)}   /* 10-28: 체크 5개면 같은 문구가 두 번 나오던 것 막음. 11-01: 테마 문구(자질마다 2개)가 떨어지면 일반 문구(gen.js LABEL) — 갈림길까지 같은 자질 체크가 셋이면 겹쳤다(180개 중 12개) */
    if(String(r.check.hint||'').startsWith('type:')&&HINT_T[thName])r.check.hint='type:'+pick(HINT_T[thName])}}   /* 10-28: 「이 타입 동료」를 테마에 맞는 타입에서 (전엔 고정 10타입 무작위 — 화산에 풀 같은 줄) */
  /* 보물 방 하나(체크 · 조우 없음) — 지도 꾸밈 · 웹툴에서 단서 자리 */
  if(o.treasure!==false)dg.rooms.push({id:'tr',t:'treasure',side:1,name:nm(th.treasure),clue:bossClue(dg,rng)||{t:'단서',d:'(GM 이 채운다 — 보스의 약점 · 다음 장면의 실마리 등)'}});
  /* 곁방 0~2 — 막다른 통로(웹툴 「통로」). 시뮬은 안 걷는다(dg.path 밖). GM 이 숨은 것 · 단서 · 기습을 채울 자리 */
  const nSide=o.sideRooms!=null?+o.sideRooms:ri(3);const SK=['지시','육성','통솔','능력'];
  for(let i=0;i<nSide;i++){const kind=pick(SIDE_KIND);const r={id:'s'+(i+1),t:kind.t,side:1,name:nm(th.side||th.check),memo:'곁방 · '+kind.n+' — '+kind.memo};
-  if(kind.k==='check'){const st=pick(SK);const L=(th.chk[st]||[]).filter(x=>!usedLab.has(x));r.check=Object.assign(require('./skill.js').up({label:L.length?pick(L):kind.n,stat:st,target:9,hint:'any'}),{target:G.V4[tier],optional:1,pen:{fail:{al:knobs.alCost||15,memo:'헛걸음 — 기척을 남겼다'}},reward:'성공하면 경계도 −10 또는 단서 하나'})}   /* 10-29 v4: 곁방 선택 체크도 난이도 목표 · 대가 없음 */
+  if(kind.k==='check'){const st=pick(SK);const L0=(th.chk[st]||[]).filter(x=>!usedLab.has(x)),L=L0.length?L0:(G.LABEL[st]||[]).filter(x=>!usedLab.has(x));const lab=L.length?pick(L):kind.n;usedLab.add(lab);   /* 11-01: 곁방 선택 체크 둘이 같은 문구였다 */r.check=Object.assign(require('./skill.js').up({label:lab,stat:st,target:9,hint:'any'}),{target:G.V4[tier],optional:1,pen:{fail:{al:knobs.alCost||15,memo:'헛걸음 — 기척을 남겼다'}},reward:'성공하면 경계도 −10 또는 단서 하나'})}   /* 10-29 v4: 곁방 선택 체크도 난이도 목표 · 대가 없음 */
   if(kind.k==='ambush'){r.ambush=1}
   dg.rooms.push(r)}
  layout(rng,dg,o,nm,th);
  if(!dg.map&&dg.branches&&dg.branches.length){/* 격자에 갈림길이 안 들어가면 갈림길 없이 */const A=new Set(dg.branches.flatMap(g=>g.alt));dg.rooms=dg.rooms.filter(r=>!A.has(r.id));dg.branches=[];layout(rng,dg,o,nm,th)}
  const bossName=dg.gen.boss;
- dg.id=o.id||`auto_${tier}_${seed}`;dg.name=o.name||`${pick(th.name)} (${TIER_KO[tier]})`;dg.theme=thName;dg.owner=bossName;
+ dg.id=o.id||`auto_${tier}_${seed}`;const avoid=new Set((o.avoidNames||[]).map(x=>String(x).replace(/ \(.*\)$/,'')));const nmL=th.name.filter(x=>!avoid.has(x));const nm0=pick(th.name);dg.name=o.name||`${nmL.length&&avoid.has(nm0)?nmL[Math.floor(rng()*nmL.length)]:nm0} (${TIER_KO[tier]})`;   /* 11-01: o.avoidNames — 이미 있는 던전 이름은 피한다(전엔 「메아리 굴」이 보통 · 어려움에 둘) */dg.theme=thName;dg.owner=bossName;
  dg.rules=Object.assign({},RULES,o.rules||{});dg.private=true;
  dg.note=`자동 생성 · ${TIER_KO[tier]} · 씨앗 ${seed} · 테마 ${thName}. 사전 배틀 ${knobs.battles} · 체크 ${knobs.checks} · 보스방 ${G.TIER[tier].bossN}체 · ${RAIDN[G.TIER[tier].raid]} · 지도 ${dg.branches&&dg.branches.length?'갈림길 '+dg.branches.length+' · ':''}${dg.map?dg.map.shape+(dg.rooms.some(r=>r.side)?' + 곁방 '+dg.rooms.filter(r=>r.side).length:''):'일자'} · 야생 Lv ${knobs.lv>=0?'+':''}${knobs.lv}${tough==='full'?` · 빡센 길(체크 목표 ${G.V4UP[G.V4[tier]]}, 경계도 실패 +45)`:tough==='hard'?` · 어려운 길(체크 목표 ${G.V4UP[G.V4[tier]]})`:''}.`;
  dg.gen=Object.assign({},dg.gen,{v:1,auto:true,tough,shape:dg.map&&dg.map.shape,theme:thName,rules:dg.rules,source,grades:source==='db'?gr:undefined});
  return dg}
 /* 웹툴 던전 탭 꼴로 — 지도 좌표(dg.map 격자, 없으면 옛 지그재그) · 통로 · 방마다 sk(스킬 체크) · rk(휴식 단계) · m(GM 메모: 조우 구성 · 경계도 패널티 · 단서) */
-const PEN_KO=p=>{if(!p)return '';const L=[];if(p.al)L.push('경계도 '+(p.al>0?'+':'−')+Math.abs(p.al));if(p.dmg)L.push('HP −'+p.dmg);if(p.st)L.push('상태 '+({Paralysis:'마비',Poison:'독',Confusion:'혼란',Burn:'화상',Sleep:'잠듦'}[p.st]||p.st)+(+p.cnt>0?' '+p.cnt+'턴':''));if(p.oo)L.push('다음 배틀 4식 −'+p.oo);if(p.oc)L.push('다음 배틀 6령 −'+p.oc);if(p.rk)L.push('랭크 '+Object.entries(p.rk).map(([k,v])=>k+(v>0?'+':'')+v).join(' '));if(p.memo)L.push(p.memo);return L.join(' · ')};
+const PEN_KO=p=>{if(!p)return '';const L=[];if(p.al)L.push('경계도 '+(p.al>0?'+':'−')+Math.abs(p.al));if(p.dmg)L.push('HP −'+p.dmg);if(p.st)L.push('상태 '+({Paralysis:'마비',Poison:'독',Confusion:'혼란',Burn:'화상',Sleep:'잠듦'}[p.st]||p.st)+(+p.cnt>0?' '+p.cnt+'턴':''));if(p.oo)L.push('4식 −'+p.oo);if(p.oc)L.push('6령 −'+p.oc);   /* 11-01: 공용 칸에서 바로 뺀다(10-28 던전 단위 · 10-31 웹툴 「판정한 트레이너 → 일행」) — 「다음 배틀」이 아니다 */if(p.rk)L.push('랭크 '+Object.entries(p.rk).map(([k,v])=>k+(v>0?'+':'')+v).join(' '));if(p.memo)L.push(p.memo);return L.join(' · ')};
 function toWebtool(dg,names){names=names||{};for(const [t,i,n] of G.POOL.concat(G.BOSS)){names[t]=names[t]||{};if(names[t][i]==null)names[t][i]=n}let DBN=null;const dbName=i=>{if(!DBN){try{const WB=require('./wilddb.js');DBN=Object.fromEntries((WB._cache=WB._cache||WB.fullV2()).map(e=>[e.id,e.name]))}catch(e){DBN={}}}return DBN[i]||i};const nameOf=(t,i)=>t==='dex'?i:t==='db'?((names.db||{})[i]||dbName(i)):(names[t]&&names[t][i])||`${t} #${i}`;const rs=dg.rooms;const COLS=4,cw=200,rh=180;
  const r={},l={};const rid=x=>x.id.replace(/[^\w]/g,'').slice(0,8)||('r'+Math.random().toString(36).slice(2,6));
  const M=dg.map;rs.forEach((x,i)=>{const row=Math.floor(i/COLS),col=i%COLS,c=row%2?COLS-1-col:col;const id=rid(x);const cell=M&&M.cells[x.id];const o={n:x.name,t:x.t,x:cell?M.grid.x0+cell[0]*M.grid.dx:110+c*cw,y:cell?M.grid.y0+cell[1]*M.grid.dy:140+row*rh};const memo=[];if(x.memo)memo.push(x.memo);
-  if(x.check){const c0=x.check;const u=require('./skill.js').up(c0);/* 10-29 v4: 웹툴 스킬 체크 v4 모양 (자질 + 종족값 · 적합 타입 · 목표 8~15) */o.sk={v:4,label:c0.label,stat:c0.stat,base:u.base,scene:'field',target:+u.target,fit:u.fit,name:c0.label,auto:dg.gen&&dg.gen.tier};if(u.pm)o.sk.pm=u.pm;if(c0.twice)o.sk.twice=c0.twice;
+  if(x.check){const c0=x.check;const u=require('./skill.js').up(c0);/* 10-29 v4: 웹툴 스킬 체크 v4 모양 (자질 + 종족값 · 적합 타입 · 목표 8~15) */o.sk={v:4,label:c0.label,stat:c0.stat,base:u.base,scene:'field',target:+u.target,fit:u.fit,name:c0.label,auto:({8:'easy',10:'normal',12:'hard',15:'vhard'})[+u.target]||(dg.gen&&dg.gen.tier)};   /* 11-01: auto 는 이 체크의 목표에 맞는 난이도 — 웹툴은 auto 가 있으면 목표를 TIER[auto] 로 덮어쓴다(skill_ui bestOdds · 제시). 전엔 던전 난이도를 실어서 빡센 길 체크(10 · 12 · 15)가 웹툴에선 8 · 10 · 12 로 나갔다 */if(u.pm)o.sk.pm=u.pm;if(c0.twice)o.sk.twice=c0.twice;
    const pf=Object.assign({},c0.pen&&c0.pen.fail);/* 10-28: 웹툴 패널티에 경계도(al) 칸이 생겨 그대로 싣는다 — 던전 탐색 중이면 웹툴이 경계도를 올린다. 10-29 v4: 대가(cost) 없음 */o.sk.pen={fail:pf};if(c0.noStep)o.sk.noStep=1;if(u.fit&&u.fit.etcMons)o.sk.fit=Object.assign({},u.fit,{etc:u.fit.etc||('GM 인정: '+u.fit.etcMons.join(' · '))});
    const TN={8:'쉬움',10:'보통',12:'어려움',15:'매우 어려움'};const ft=(u.fit&&u.fit.types)||[];   /* 10-29 v4: 메모도 sk 와 같은 목표 · 적합 (전엔 옛 목표 7 · 9 와 「대가」 줄) */
    memo.push(`🎲 ${c0.stat} + ${require('./skill.js').BASE[u.base]||''} · ${TN[+u.target]||''} ${u.target} · 적합 ${ft.length?'타입 '+ft.join('/'):'아무 포켓몬'}`);memo.push(`  실패: 트레이너 상태 한 단계${c0.noStep?' 없음':''} · ${PEN_KO(c0.pen&&c0.pen.fail)}`);if(c0.gainCrit)memo.push(`  대성공: ${PEN_KO(c0.gainCrit)}`);if(c0.reward)memo.push(`  보상: ${c0.reward}`)}

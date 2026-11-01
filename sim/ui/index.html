@@ -1,13 +1,17 @@
 <!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>망켓몬 던전 시뮬레이터</title>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>망켓몬 시뮬레이션 열람실</title>
+<!-- 11-01 망령 「시뮬레이터 UI 미사그 테마」: 명조 · Cinzel (못 받으면 Noto Serif CJK · 바탕 · Georgia 로) -->
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700;900&amp;family=Noto+Serif+KR:wght@500;700;900&amp;display=swap">
 <style>
-/* 제작기(maker.css) 색 · 등급 색을 따르고, 던전 지도는 웹툴 던전 탭(dungeon_ui)의 어두운 지도 그대로 */
-:root{--bg:#E9EDF2;--surface:#FFFFFF;--sunk:#F2F4F7;--sunk2:#E3E8EF;--ink:#17202C;--muted:#5C6778;--faint:#8D97A6;--line:#D5DCE5;
- --accent:#C8362B;--accent-ink:#fff;--accent-soft:#FBE7E4;--blue:#2B5FB4;--blue-soft:#E2EAF8;--ok:#1E8A62;--ok-soft:#DFF3EA;--warn:#B4231B;--warn-soft:#FBE3E1;--cost:#B07A00;--tag-bg:#E3EAF5;--tag-ink:#25446F;
- --g-aa:#C46A12;--g-a:#B08800;--g-b:#2E8A4F;--g-c:#2B6CB4;--g-d:#6A6FA8;--g-e:#8D97A6;--shadow:0 1px 2px rgba(20,30,45,.06),0 4px 14px rgba(20,30,45,.06);
- --map:#0b0e17;--map-line:#5b6b8c;--display:"Do Hyeon","IBM Plex Sans KR","Malgun Gothic",sans-serif;--body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Consolas,monospace}
-@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#0F141B;--surface:#171E28;--sunk:#1D2531;--sunk2:#252F3D;--ink:#E6EBF2;--muted:#9CA6B6;--faint:#6F7A8B;--line:#2B3544;--accent:#FF6A5E;--accent-ink:#1A0C0A;--accent-soft:#3A1E1B;--blue:#7AA3EE;--blue-soft:#1E2B42;--ok:#45C08E;--ok-soft:#173329;--warn:#FF7B70;--warn-soft:#3A1C1A;--cost:#E3C23A;--tag-bg:#1F2E45;--tag-ink:#A9C6F2;--g-aa:#F2A33A;--g-a:#E3C23A;--g-b:#52C47E;--g-c:#6FA3EE;--g-d:#9DA1D8;--g-e:#6F7A8B;--shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.25);color-scheme:dark}}
-:root[data-theme=dark]{--bg:#0F141B;--surface:#171E28;--sunk:#1D2531;--sunk2:#252F3D;--ink:#E6EBF2;--muted:#9CA6B6;--faint:#6F7A8B;--line:#2B3544;--accent:#FF6A5E;--accent-ink:#1A0C0A;--accent-soft:#3A1E1B;--blue:#7AA3EE;--blue-soft:#1E2B42;--ok:#45C08E;--ok-soft:#173329;--warn:#FF7B70;--warn-soft:#3A1C1A;--cost:#E3C23A;--tag-bg:#1F2E45;--tag-ink:#A9C6F2;--g-aa:#F2A33A;--g-a:#E3C23A;--g-b:#52C47E;--g-c:#6FA3EE;--g-d:#9DA1D8;--g-e:#6F7A8B;--shadow:0 1px 2px rgba(0,0,0,.3),0 4px 14px rgba(0,0,0,.25);color-scheme:dark}
+/* 11-01 망령 「시뮬레이터 UI 미사그 테마」: 미사그 대학 열람실 — 어두운 벨벳 바탕(망각 테마) 위에 뼈빛 종이 판 · 먹 글씨 · 진홍 · 고금색 (노트 「대학」 꾸밈 · 서가와 같은 색).
+   바탕(:root)은 어두운 벨벳 변수, 종이 판(.card · .dlg · .gcard · .ptc …)에 들어가면 아래 「종이 판」 절에서 같은 변수를 먹색으로 바꾼다. 밝은/어두운 모드 구분 없이 한 가지. 던전 지도는 웹툴 RP 미니맵(아이소메트릭) 꼴 */
+:root{--bg:#0a0908;--surface:#13110e;--sunk:#0d0b09;--sunk2:#1d1914;--ink:#e8dfcb;--muted:#b0a38a;--faint:#7a705f;--line:#3a3023;
+ --accent:#a3182a;--accent-ink:#f3eadb;--accent-soft:rgba(163,24,42,.2);--blue:#86a3cc;--blue-soft:#141a24;--ok:#8cc092;--ok-soft:#14201a;--warn:#e47a83;--warn-soft:#2a1013;--cost:#cfae6e;--tag-bg:#1b1610;--tag-ink:#cfae6e;
+ --g-aa:#b4561a;--g-a:#a07a10;--g-b:#3d7a4f;--g-c:#2f5f8f;--g-d:#5f5f8f;--g-e:#6f6656;--shadow:0 10px 24px rgba(0,0,0,.45);
+ --map:#15110d;--map-line:#5e4f33;--field:#0b0a08;--field-line:#3e3426;
+ --gold:#cfae6e;--gold2:#8f7b52;--gold3:#5e4f33;--crim:#6e1019;--crim2:#8f1a26;--crim3:#a3182a;--paper:#efe6d2;--paper2:#e4d8bd;--sumi:#1a140d;
+ --display:"Noto Serif KR","Noto Serif CJK KR","Nanum Myeongjo","AppleMyungjo","Batang",serif;--latin:"Cinzel","Noto Serif KR","Noto Serif CJK KR",Georgia,serif;
+ --body:"IBM Plex Sans KR","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothic","Noto Sans CJK KR",system-ui,sans-serif;--mono:"IBM Plex Mono",ui-monospace,Consolas,monospace;color-scheme:dark}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 var(--body)}
 header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px max(16px,env(safe-area-inset-right,0px)) 10px max(16px,env(safe-area-inset-left,0px));background:var(--surface);border-bottom:1px solid var(--line)}
 header h1{font:22px/1.1 var(--display);margin:0;letter-spacing:.01em}header h1 small{font:12px var(--body);color:var(--muted);margin-left:8px}
@@ -132,8 +136,225 @@ table.wdb td.sc,table.wdb th.sc{text-align:center;padding-left:2px;padding-right
 .awk-prev canvas{max-width:100%;max-height:46vh}
 .awk-fixed{border:2px solid #d4a017;border-radius:8px;padding:6px 8px;box-shadow:inset 0 0 0 3px var(--surface),inset 0 0 0 4px #d4a017;background:linear-gradient(135deg,rgba(212,160,23,.12),transparent 60%)}
 .awk-fx{font-size:11px;font-weight:700;padding:0 6px;border:1px solid #d4a017;color:#b8860b;border-radius:4px}
+/* ===== 11-01 망령 「시뮬레이터 UI 미사그 테마」 — 미사그 대학 열람실 꾸밈 층 =====
+   위 규칙은 그대로 두고 여기서 덮는다. 색 · 글꼴은 노트 css/skin.css(univ) · univ.css · shelf.css, 제작기 css/vtheme.css(망각 mm) 와 같은 값.
+   바탕 = 어두운 벨벳(진홍 빛 번짐 + 고운 잡음) · 판 = 뼈빛 종이(먹 글씨, 금테 두 줄) · 제목 = Noto Serif KR 900 · 숫자/라틴 = Cinzel */
+html{background:#0a0908;scrollbar-color:#5e4f33 #0d0b09}
+body{background:#0a0908;background-image:radial-gradient(1200px 520px at 50% -12%,rgba(120,14,24,.38),transparent 70%),radial-gradient(1000px 700px at 50% 115%,rgba(0,0,0,.9),transparent 60%),url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .9 0 0 0 0 .85 0 0 0 0 .75 0 0 0 .07 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");background-attachment:fixed;min-height:100vh}
+::selection{background:rgba(163,24,42,.45);color:#f3eadb}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+a{color:var(--gold)}.card a,.dlg a{color:var(--crim2)}
+
+/* --- 종이 판: 판 안에서는 글씨 · 선 변수를 먹색으로 (노트 univ 의 「종이 판 공통」과 같은 방식) --- */
+.card,.dlg,.gcard,.ptc,.tcard{--surface:#efe6d2;--sunk:#e6dbc2;--sunk2:#d6c8aa;--ink:#1a140d;--muted:#5a4a33;--faint:#7a6a50;--line:#c9b994;
+ --accent:#8f1a26;--accent-ink:#f3eadb;--accent-soft:rgba(143,26,38,.12);--blue:#1f4f86;--blue-soft:rgba(31,79,134,.1);--ok:#2f6a3f;--ok-soft:rgba(47,106,63,.13);--warn:#a3182a;--warn-soft:rgba(163,24,42,.1);--cost:#8a6200;
+ --tag-bg:#e0d3b4;--tag-ink:#4a3f30;--field:#f8f3e7;--field-line:#c9b994;--shadow:0 2px 6px rgba(60,40,20,.14);color-scheme:light;color:var(--ink)}
+.paper-tex,.card,.dlg .db{background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.7' numOctaves='3'/><feColorMatrix values='0 0 0 0 .35 0 0 0 0 .25 0 0 0 0 .15 0 0 0 .08 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>")}
+
+/* --- 머리: 방패 문장 · 열람실 이름 · 금 두 줄 --- */
+header{background:linear-gradient(#0f0c0a,#0a0908);border-bottom:1px solid var(--gold2);box-shadow:0 1px 0 #0a0908,0 3px 0 #4b3f29;padding-top:12px;padding-bottom:12px;gap:14px}
+header .crest{width:34px;height:39px;flex:none;color:var(--gold);filter:drop-shadow(0 0 8px rgba(163,24,42,.55))}header .crest svg{display:block;width:100%;height:100%}
+header .ttl{display:flex;flex-direction:column;gap:2px;min-width:0}
+header .ttl .en{font:600 10px/1 var(--latin);letter-spacing:.32em;color:var(--gold)}
+header h1{font:900 23px/1.15 var(--display);letter-spacing:.06em;color:#efe6d2;text-shadow:0 0 16px rgba(163,24,42,.7)}
+header h1 small{font:500 12px var(--body);letter-spacing:0;color:var(--muted);margin-left:10px;text-shadow:none}
+header #snapInfo{font-size:11.5px;color:var(--faint);border-left:1px solid var(--gold3);padding-left:12px}
+
+/* --- 탭 = 서가 색인 (책등 색 띠 · 고른 탭은 종이) --- */
+nav{background:linear-gradient(#0d0b09,#0a0908);border-bottom:1px solid var(--gold2);gap:4px;padding-top:10px;align-items:flex-end}
+nav button{--bk:#6e1019;position:relative;font:700 13.5px var(--display);letter-spacing:.04em;color:#b0a38a;background:linear-gradient(#1a1611,#120f0c);border:1px solid #3e3426;border-bottom:0;border-top:3px solid var(--bk);border-radius:4px 4px 0 0;padding:7px 14px 6px;margin-bottom:0;transform:translateY(2px);transition:transform .12s,color .12s,background .12s}
+nav button:nth-child(7n+2){--bk:#1d2a3c}nav button:nth-child(7n+3){--bk:#24402f}nav button:nth-child(7n+4){--bk:#7a5418}nav button:nth-child(7n+5){--bk:#4e1f4f}nav button:nth-child(7n+6){--bk:#16474a}nav button:nth-child(7n+7){--bk:#2b2722;border-top-color:#5e4f33}
+nav button:hover{color:#efe6d2;transform:translateY(0)}
+nav button.on{color:#1a140d;background:#efe6d2;border-color:var(--gold2);border-top-color:var(--bk);transform:none;box-shadow:0 -4px 12px rgba(163,24,42,.25);z-index:1}
+nav button.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:#efe6d2}
+@media(max-width:760px){nav{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}nav::-webkit-scrollbar{display:none}nav button{flex:none;padding:7px 11px 6px;font-size:13px}header h1{font-size:19px}header .ttl{flex:1 1 220px}header .crest{width:30px;height:34px}header h1 small{display:block;margin:2px 0 0}header #snapInfo{border:0;padding:0;flex-basis:100%}}
+
+main{max-width:1440px;padding-block:18px}
+
+/* --- 판(카드): 종이 · 금테 두 줄 · 먹 바깥 테 --- */
+.card{background-color:#efe6d2;border:1px solid var(--gold2);border-radius:2px;outline:1px solid rgba(143,123,82,.55);outline-offset:-6px;box-shadow:0 0 0 3px #0a0908,0 0 0 4px #4b3f29,0 16px 32px rgba(0,0,0,.5);padding:16px 18px;margin-bottom:20px}
+.grid{gap:20px}
+.card>h3{font:900 17px/1.3 var(--display);letter-spacing:.05em;color:#1a140d;padding-bottom:7px;margin:0 0 10px;border-bottom:3px double var(--gold2)}
+.card>h3::before{content:"✠";font:400 12px var(--display);color:var(--crim2);margin-right:-2px}
+.card>h3 .small{font-family:var(--body);letter-spacing:0;font-weight:400;color:var(--muted)}
+.small{color:var(--muted)}
+details>summary{color:inherit}details>summary::marker{color:var(--crim2)}
+
+/* --- 입력 · 단추: 각진 칸 · 금빛 밑줄 (망각 테마) --- */
+label.f{color:var(--muted);letter-spacing:.02em}
+label.f>input,label.f>select,label.f>textarea,.inp,textarea,select,input:not([type=checkbox]):not([type=radio]):not([type=range]){background:var(--field);color:var(--ink);border:1px solid var(--field-line);border-bottom-color:var(--gold2);border-radius:0}
+input:focus,select:focus,textarea:focus{outline:0;border-color:var(--gold2);box-shadow:0 0 0 2px rgba(163,24,42,.28)}
+input::placeholder,textarea::placeholder{color:var(--faint)}
+input[type=checkbox],input[type=radio],input[type=range]{accent-color:var(--crim2)}
+fieldset{border:1px solid var(--line);border-radius:0;background:rgba(255,255,255,.18)}legend{font:700 12px var(--display);letter-spacing:.06em;color:var(--crim2);padding:0 6px}
+button.b,a.b{font:700 13px var(--display);letter-spacing:.03em;border-radius:1px;background:#0f0d0b;color:#d9c9a3;border:1px solid #5e4f33;box-shadow:inset 0 0 0 1px #0a0908}
+button.b:hover,a.b:hover{background:#1a1611;border-color:var(--gold);color:#f3eadb}
+.card button.b,.card a.b,.dlg .db button.b,.gcard button.b,.ptc button.b{background:#f6f0e2;color:#1a140d;border-color:#a8936a;box-shadow:inset 0 -1px 0 rgba(90,70,40,.18)}
+.card button.b:hover,.card a.b:hover,.dlg .db button.b:hover,.gcard button.b:hover,.ptc button.b:hover{background:#e9dcc0;border-color:#6e5a36;color:#1a140d}
+button.b.pri,.card button.b.pri,.dlg .db button.b.pri,.gcard button.b.pri,.ptc button.b.pri{background:linear-gradient(#8f1a26,#5c0d16);color:#f3eadb;border-color:#8f7b52;box-shadow:inset 0 0 0 1px #3a070d,0 0 12px rgba(163,24,42,.3)}
+button.b.pri:hover,.card button.b.pri:hover,.dlg .db button.b.pri:hover,.gcard button.b.pri:hover{background:linear-gradient(#a3182a,#6e1019);color:#fff;border-color:var(--gold)}
+button.b.danger{color:var(--warn)}.card button.b.danger,.dlg .db button.b.danger{color:#a3182a;border-color:#c79a8f}
+button.b.ghost{border-style:dashed;background:transparent}
+button.b:disabled{opacity:.45}
+.chip{border-radius:2px;border-color:var(--line);background:transparent;font-family:var(--body)}.chip:hover{border-color:var(--gold2)}
+.chip.on{background:linear-gradient(#8f1a26,#6e1019);color:#f3eadb;border-color:#6e1019}
+.tag{border-radius:2px;letter-spacing:.02em}
+.gsub button{font:700 13px var(--display);letter-spacing:.04em;border-radius:1px;background:#120f0c;color:#b0a38a;border:1px solid #4b3f29}
+.gsub button:hover{color:#efe6d2;border-color:var(--gold2)}
+.gsub button.on{background:#efe6d2;color:#1a140d;border-color:var(--gold);box-shadow:0 0 0 1px #0a0908,0 0 0 2px var(--gold2)}
+
+/* --- 표: 머리줄 명조 · 금빛 선 --- */
+th{font:700 12px var(--display);letter-spacing:.04em;color:#6e1019;border-bottom:1px solid var(--gold2);background:rgba(143,123,82,.1)}
+td{border-bottom-color:rgba(168,147,106,.45)}
+tr:hover td{background:rgba(143,26,38,.05)}
+td.n,th.n,.mono{font-variant-numeric:tabular-nums}
+
+/* --- 수치 판 (KPI) · 막대 --- */
+.kpi{gap:10px}.kpi div{background:#f7f1e3;border:1px solid #c9b994;border-top:2px solid var(--crim2);border-radius:0;padding:9px 12px 8px;box-shadow:inset 0 0 0 3px #f7f1e3,inset 0 0 0 4px rgba(201,185,148,.55)}
+.kpi b{font:700 23px/1.15 var(--latin);color:#1a140d;letter-spacing:.01em}.kpi b.bad{color:#a3182a}.kpi span{font-family:var(--display);letter-spacing:.03em}
+.bar,.stk{border-radius:1px}.bar i{border-radius:1px}
+.stk .o{background:#3d7a4f}.stk .c{background:#b08a2a}.stk .f{background:#a3182a}
+.log{background:#f7f1e3;border-color:#c9b994;border-radius:0;color:#1a140d}
+.ev{border-left-width:3px}.ev.room{font-family:var(--display);color:#4a3f30;letter-spacing:.03em}
+.bad{color:var(--warn)}.ok{color:var(--ok)}
+
+/* --- 알림 · 창 --- */
+#toast{background:#0f0c0a;color:#efe6d2;border:1px solid var(--gold2);border-radius:0;box-shadow:0 0 0 3px #0a0908,0 0 0 4px #4b3f29,0 10px 26px rgba(0,0,0,.6);font-family:var(--display);letter-spacing:.03em}
+.ovl{background:rgba(5,4,3,.72);backdrop-filter:blur(2px)}
+.dlg{background:#efe6d2;border:1px solid var(--gold2);border-radius:2px;box-shadow:0 0 0 4px #efe6d2,0 0 0 5px var(--gold2),12px 14px 0 rgba(0,0,0,.6)}
+.dlg .dh{--ink:#f3eadb;--muted:#e9dcc0;--line:#8f7b52;background:linear-gradient(90deg,#6e1019,#3a070d);color:#f3eadb;border-bottom:2px solid var(--gold2);border-radius:0;font-family:var(--display);letter-spacing:.04em}
+.dlg .dh b{font-weight:900}.dlg .dh .small{color:#e9dcc0}
+.dlg .dh button.b{background:rgba(10,9,8,.35);color:#f3e2c4;border-color:rgba(207,174,110,.6);box-shadow:none}.dlg .dh button.b:hover{background:rgba(207,174,110,.18);color:#fff}
+.dlg .dh .rk{color:#e9dcc0}
+
+/* --- 등급 · 타입 칸: 각지게 --- */
+.rk b,.gd,.rkp,table.wdb td.sc b{border-radius:1px}
+.tc{border-radius:2px}
+
+/* --- 돌리기: 트레이너 색인 카드 --- */
+.trc{background:#f7f1e3;border:1px solid #c9b994;border-left:4px solid var(--tc);border-radius:1px;box-shadow:0 1px 0 rgba(90,70,40,.12)}
+.trc:hover{background:#fbf7ee;border-color:#a8936a}
+.trc.on{background:#f3e2c4;outline:2px solid var(--crim2);outline-offset:-1px;box-shadow:inset 0 0 0 1px #f7f1e3,0 2px 8px rgba(110,16,25,.25)}
+.trc .nm{font-family:var(--display);font-weight:900;letter-spacing:.02em}
+.trc .ms span{border-radius:1px;background:rgba(255,255,255,.35)}.trc .ms span.go{background:#efe6d2;border-color:#a8936a}
+#trList>.small{font:900 13px var(--display)!important;letter-spacing:.08em;color:#6e1019;border-bottom:1px dashed #c9b994;padding-bottom:2px}
+.dg-strip i{box-shadow:0 0 0 1px #1a140d,0 0 0 2px rgba(207,174,110,.55)}
+
+/* --- 일행: 학생증 카드 --- */
+#ptList>h3{font:900 16px var(--display)!important;letter-spacing:.08em;color:#efe6d2!important;margin:18px 0 8px!important;padding-bottom:5px;border-bottom:1px solid var(--gold3);display:flex;align-items:baseline;gap:8px}
+#ptList>h3::before{content:"";width:8px;height:8px;background:var(--crim3);transform:rotate(45deg);flex:none;align-self:center}
+#ptList>h3 .small{color:var(--muted);font-family:var(--body);letter-spacing:0}
+.ptgrid{gap:14px}
+.ptc{border:0;border-radius:6px;padding:24px 12px 11px 16px;background:linear-gradient(var(--crim),#4a0a12) top/100% 15px no-repeat,linear-gradient(100deg,color-mix(in srgb,var(--tc) 13%,#efe6d2),#efe6d2 60%,#e8dcc2);box-shadow:0 0 0 1px #b9a77f,0 8px 18px rgba(0,0,0,.45)}
+.ptc::before{top:15px;border-radius:0 0 0 6px}
+.ptc::after{content:"MISAG UNIVERSITY · 학생증";position:absolute;left:12px;top:2px;font:700 8.5px/11px var(--latin);letter-spacing:.2em;color:var(--gold)}
+.ptc:hover{box-shadow:0 0 0 1px var(--gold),0 10px 22px rgba(0,0,0,.5)}
+.ptc.on{outline:0;box-shadow:0 0 0 2px var(--crim2),0 0 0 4px var(--gold),0 10px 22px rgba(0,0,0,.5)}
+.ptc .tname,.tcard .tname{font-family:var(--display);font-weight:900;letter-spacing:.03em}
+.ptc .mons div{background:rgba(255,255,255,.4);border-radius:1px;border-color:#c9b994}
+.avatar{border-radius:2px;background:#1a140d;color:var(--gold);font-family:var(--display);font-weight:900;outline:1px solid #8f7b52;outline-offset:2px}
+.tcard{border-radius:2px;border-color:var(--gold2)}
+.pk{border-radius:1px;background:#f7f1e3;border-color:#c9b994}
+.pk .pno{font:900 20px var(--latin);color:var(--crim)}
+.pk .mvs span,.mv1,.mvedit .mv,.wdb .mvs span{border-radius:1px}
+.awk-sec{border-radius:0;border-color:#c9b994;background:#f7f1e3}.awk-img{border-radius:0;border-color:#a8936a}.awk-mk{color:var(--crim2)}
+.awk-sec textarea{border-radius:0}
+
+/* --- 생성기 · 야생 판 --- */
+.gcard{background-color:#efe6d2;border:1px solid var(--gold2);border-radius:2px;box-shadow:0 0 0 3px #0a0908,0 0 0 4px #4b3f29,0 10px 22px rgba(0,0,0,.45)}
+.gcard.pick{border-color:var(--crim2);box-shadow:0 0 0 2px var(--crim2),0 0 0 4px var(--gold),0 10px 22px rgba(0,0,0,.45)}
+.gcard h4{font:900 17px var(--display);letter-spacing:.03em;padding-bottom:5px;border-bottom:1px dashed #c9b994}
+.gdesc{background:#e6dbc2;border-radius:0;border-left:3px solid var(--crim2)}
+.gbulk{background:linear-gradient(90deg,#6e1019,#3a070d);color:#f3eadb;border:1px solid var(--gold2);border-radius:0;box-shadow:0 0 0 3px #0a0908,0 10px 26px rgba(0,0,0,.6)}
+.gempty{border-color:var(--gold3);border-radius:0;color:var(--muted)}
+.gres,.gpk{gap:16px}.gwin{font-family:var(--latin)}
+.gchips.gpt{border-radius:0}
+.pack,.pk2{border-radius:1px;border-color:#c9b994;background:#f7f1e3}
+.pack>.ph,.pk2 .ph{background:#e6dbc2;border-bottom:1px solid #a8936a;border-radius:0}
+.pack>.ph .pnm,.pk2 .ph input.pnm{font-family:var(--display);font-weight:900;letter-spacing:.03em}
+.mchip{border-radius:1px;background:#fbf7ee}.mchip.boss{border-color:#b08a2a;box-shadow:0 0 0 1px #b08a2a;background:#f6ead0}
+.mchip .pop,.picker .pop{border-radius:0;border-color:var(--gold2);background:#f7f1e3;box-shadow:0 0 0 3px #f7f1e3,0 0 0 4px var(--gold2),0 12px 28px rgba(0,0,0,.4)}
+.spc,.wdet,.jr,.rs-b,.rs-m{border-radius:1px}
+.wdb .grp td{background:#e6dbc2;font-family:var(--display);letter-spacing:.04em}
+.imgdrop{border-radius:0}
+
+/* --- 기록 · 일지 --- */
+.jr{background:#f7f1e3}.jr .jk{border-radius:1px}.jr .jt{font-family:var(--display);font-weight:900;letter-spacing:.02em}
+.jform{border-radius:0;border-color:#a8936a;background:#e9dfc8}.refpick{border-radius:0}
+.cmt{border-radius:0}
+#repFrame,#docFrame{border:1px solid var(--gold2)!important;border-radius:0!important;box-shadow:0 0 0 3px #0a0908,0 0 0 4px #4b3f29}
+#fbText{font:13px/1.65 var(--mono);background:#f8f3e7;border-color:#c9b994;min-height:60vh}
+
+/* --- 방 요약 (지도 옆) --- */
+.rs-h{border-radius:0;background:linear-gradient(90deg,#1a140d,#2a2118);color:#efe6d2;border-left:6px solid var(--rc);box-shadow:inset 0 -2px 0 color-mix(in srgb,var(--rc) 55%,transparent);position:relative}
+.rs-h .ic{color:var(--rc);text-shadow:0 0 10px color-mix(in srgb,var(--rc) 60%,transparent)}.rs-h small{color:#b0a38a;opacity:1}
+.rs-h b{font-family:var(--display);font-weight:900;letter-spacing:.04em}
+.dgprev{margin-top:6px}.dgprev .dgi{margin-top:8px}.dgprev .dg-node{cursor:default}
+.rs-b{background:#f7f1e3;border-color:#c9b994}.rs-t{font-family:var(--display);letter-spacing:.03em}.rs-big b{font-family:var(--latin)}
+.rs-pen .k{border-radius:1px}.rs-pen.f .k{background:#8f1a26}
+.dg-ev{background:#e9dfc8;border-color:#c9b994;border-radius:0}.dg-ev>b{font-family:var(--display);font-weight:900;letter-spacing:.03em}
+
+/* --- 평면 지도 (예전 2D): 도면 틀 --- */
+.dg-svg{background:#15110d;border:1px solid var(--gold2);border-radius:0;box-shadow:0 0 0 3px #0a0908,0 0 0 4px var(--gold2),6px 7px 0 4px rgba(110,16,25,.6);margin:5px 5px 12px;width:calc(100% - 10px)}
+.dg-svg>path{stroke:rgba(207,174,110,.08)}
+.dg-svg .dg-ln{stroke:#5e4f33}.dg-svg>polygon{fill:#cfae6e}
+.dg-svg line[stroke="#8fa3bf"]{stroke:#8f7b52}.dg-svg line[stroke="#6b7d99"]{stroke:#5e4f33}
+.dg-svg .dg-node .nm{fill:#efe6d2;stroke:#0a0908;font-family:var(--display);font-weight:900}
+.dg-svg .dg-node .mn{fill:#e9c46a;stroke:#0a0908}.dg-svg .dg-node .st{fill:#cfae6e;font-family:var(--latin)}
+.dg-svg .dg-node.on circle.c{stroke:#f3e2c4}.dg-svg .dg-node circle.c{stroke:#0a0908;stroke-width:2}
+.dg-svg .dg-cap{fill:#b0a38a;font-family:var(--latin);letter-spacing:.14em}
+.dg-help{color:var(--muted)}
+
+/* ===== 던전 지도 = 웹툴 RP 미니맵 (11-01 망령 「던전 ui 는 rp 에서 미니맵을 띄우는 구조를 참조해서」) =====
+   웹툴 css/app.css 의 .dg-map3d · .dg-tilt · .dg-haze · .dg-hud · .dg-map-cap · .dg-legend 를 dgi- 이름으로 옮기고 미사그 색(먹 · 금테 · 진홍)으로. */
+.dgi{display:flex;flex-direction:column;gap:8px;min-width:0}
+.dgi-map{container-type:inline-size;position:relative;overflow:hidden;isolation:isolate;touch-action:manipulation;margin:5px;border:1px solid var(--gold2);
+ background:radial-gradient(ellipse at 50% 28%,rgba(120,14,24,.30),transparent 60%),radial-gradient(ellipse at 50% 38%,#231b14 0,#130f0c 58%,#070605 100%);
+ box-shadow:0 0 0 3px #0a0908,0 0 0 4px var(--gold2),6px 7px 0 4px rgba(110,16,25,.6)}
+.dgi-map::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:4;background:radial-gradient(ellipse 85% 80% at 50% 50%,transparent 55%,rgba(3,2,1,.55));box-shadow:inset 0 0 0 1px rgba(207,174,110,.18)}
+.dgi-tilt{position:absolute;inset:0;transform:perspective(1200px) rotateX(var(--rx,9deg)) rotateY(var(--ry,0deg)) scale(.97);transform-origin:50% 60%;transition:transform .35s ease-out;will-change:transform}
+.dgi-tilt svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.dgi-haze{position:absolute;inset:-12%;pointer-events:none;z-index:3;opacity:.3;mix-blend-mode:screen;background:radial-gradient(closest-side at 22% 30%,rgba(207,174,110,.22),transparent),radial-gradient(closest-side at 72% 64%,rgba(163,24,42,.25),transparent),radial-gradient(closest-side at 48% 88%,rgba(233,220,192,.14),transparent);animation:dgiHaze 18s ease-in-out infinite alternate;will-change:transform}
+@keyframes dgiHaze{to{transform:translate3d(6%,-3%,0) scale(1.06)}}
+.dgi-map .dg-node{cursor:pointer}.dgi-map .dg-node:hover .tp{filter:brightness(1.2)}
+.dgi-map .dg-node .ic{font:700 32px sans-serif;fill:#fff;text-anchor:middle;dominant-baseline:central;pointer-events:none;paint-order:stroke;stroke:rgba(0,0,0,.3);stroke-width:3px}
+.dgi-map .dg-node.on .tp{stroke:#f3e2c4;stroke-width:3.5}
+.dgi-map .dg-node.alt .tp{stroke:#e8b84a;stroke-width:2.5;stroke-dasharray:8 5}
+.dgi-pulse{fill:none;stroke:#cfae6e;stroke-width:3;transform-box:fill-box;transform-origin:center;animation:dgiPulse 1.7s ease-out infinite;pointer-events:none}
+@keyframes dgiPulse{from{transform:scale(.6);opacity:1}to{transform:scale(1.45);opacity:0}}
+.dgi-lb{position:absolute;inset:0;pointer-events:none}
+.dgi-lb>div{position:absolute;transform:translate(-50%,0);text-align:center;white-space:nowrap;line-height:1.2}
+.dgi-lb>div:has(.dgi-nm){z-index:2}.dgi-nm{background:rgba(10,9,8,.52);padding:1px 6px 2px;box-shadow:0 0 8px rgba(10,9,8,.5)}
+.dgi-nm b{display:inline-block;font:900 clamp(9.5px,1.35cqw,13px) var(--display);letter-spacing:.03em;color:#f3eadb;max-width:150px;overflow:hidden;text-overflow:ellipsis;text-shadow:0 1px 0 #000,0 0 4px #000,0 0 8px #000}
+.dgi-nm small{display:block;font:600 clamp(9px,1.1cqw,11px) var(--body);color:#e9c46a;text-shadow:0 1px 0 #000,0 0 4px #000,0 0 7px #000}
+.dgi-nm.side b{font-size:11px;color:#d9c9a3}
+.dgi-bd{display:flex;gap:3px;transform:translate(-50%,-100%)!important}
+.dgi-bd span{display:grid;place-items:center;width:clamp(15px,2.1cqw,21px);height:clamp(15px,2.1cqw,21px);border-radius:50%;background:#0a0908;color:#f3eadb;border:1.5px solid var(--c);font-size:clamp(8.5px,1.1cqw,11px);line-height:1;box-shadow:0 2px 4px rgba(0,0,0,.6)}
+.dgi-st{transform:translate(-50%,-100%)!important;font:700 9.5px/1 var(--latin);letter-spacing:.3em;color:#0a0908;background:var(--gold);padding:3px 5px 3px 8px;box-shadow:0 0 0 1px #0a0908,0 0 0 2px var(--gold2)}
+.dgi-hud{position:absolute;inset:0;pointer-events:none;z-index:6}
+.dgi-loc{position:absolute;left:14px;top:14px;display:flex;flex-direction:column;gap:3px;padding:7px 14px 8px;max-width:min(60%,300px);background:rgba(10,9,8,.9);border:1px solid var(--gold2);outline:1px solid rgba(143,123,82,.45);outline-offset:-4px;box-shadow:4px 4px 0 rgba(110,16,25,.85)}
+.dgi-loc span{font:700 9.5px/1 var(--latin);letter-spacing:.3em;color:var(--c,var(--gold))}
+.dgi-loc b{font:900 19px/1.2 var(--display);letter-spacing:.04em;color:#efe6d2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dgi-loc em{font:600 11.5px/1.3 var(--body);font-style:normal;color:#b0a38a;border-left:3px solid var(--c,#888);padding-left:6px;margin-top:2px}
+.dgi-sum{position:absolute;right:14px;top:14px;display:flex;gap:1px;background:var(--gold2);border:1px solid var(--gold2);box-shadow:4px 4px 0 rgba(0,0,0,.6)}
+.dgi-sum div{display:flex;flex-direction:column;align-items:center;gap:2px;padding:5px 10px 6px;background:rgba(10,9,8,.92);min-width:52px}
+.dgi-sum small{font:700 8.5px/1 var(--latin);letter-spacing:.22em;color:var(--gold)}.dgi-sum b{font:700 18px/1 var(--latin);color:#efe6d2}
+.dgi-cap{position:absolute;left:12px;bottom:10px;z-index:6;font:600 11px/1.4 var(--body);color:#d9c9a3;background:rgba(10,9,8,.78);border:1px solid rgba(143,123,82,.6);padding:3px 10px;pointer-events:none;max-width:calc(100% - 24px);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dgi-cap b{font-family:var(--latin);letter-spacing:.2em;color:var(--gold);margin-right:8px}
+.dgi-foot{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;margin:4px 5px 0}
+.dgi-legend{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:11.5px;color:var(--muted)}
+.dgi-legend span{display:inline-flex;align-items:center;gap:4px}.dgi-legend i{font-style:normal;color:var(--c);display:inline-grid;place-items:center;width:17px;height:17px;background:#1a140d;border-radius:1px;font-size:10.5px}
+.dgi-legend .ln{display:inline-block;width:22px;height:0;border-top:4px solid #5e4f33;vertical-align:middle}.dgi-legend .ln.alt{border-top:3px dashed #e8b84a}.dgi-legend .ln.side{border-top:2px dashed #8f7b52}
+.dgi-view{display:inline-flex;margin-left:auto;border:1px solid var(--gold2)}
+.dgi-view button{border:0;background:transparent;color:var(--muted);font:700 12px var(--display);letter-spacing:.06em;padding:3px 11px;cursor:pointer}
+.dgi-view button+button{border-left:1px solid var(--gold2)}
+.dgi-view button.on{background:#1a140d;color:var(--gold)}
+@media(max-width:700px){.dgi-nm small{display:none}.dgi-nm b{font-size:10.5px;max-width:84px}.dgi-loc{left:8px;top:8px;padding:5px 9px 6px}.dgi-loc b{font-size:15px}.dgi-loc em{display:none}.dgi-sum{right:8px;top:8px}.dgi-sum div{min-width:38px;padding:4px 6px}.dgi-sum b{font-size:14px}.dgi-sum small{font-size:7.5px;letter-spacing:.12em}.dgi-bd span{width:16px;height:16px;font-size:9px}.dgi-st{font-size:8px}}
+@container (max-width:720px){.dgi-nm small{display:none}.dgi-loc em{display:none}.dgi-loc b{font-size:15px}.dgi-sum div{min-width:40px;padding:4px 7px}.dgi-sum b{font-size:14px}}
+.dgi.pv .dgi-loc{display:none}@container (max-width:520px){.dgi-loc{display:none}.dgi-cap{font-size:10px;padding:2px 7px;left:6px;bottom:6px}}
+@media(prefers-reduced-motion:reduce){.dgi-haze,.dgi-pulse{animation:none!important}.dgi-tilt{transition:none}}
 </style></head><body>
-<header><h1>망켓몬 던전 · 스킬 체크 시뮬레이터<small>약식 · 가이드라인 자료 수집용</small></h1><span class="small" id="snapInfo">…</span><span class="sp"></span><button class="b sm" id="btnFetch" title="제작기 공유 DB 에서 트레이너 · 포켓몬을 받아 data/snapshot.json 으로">제작기에서 받기</button><button class="b sm" id="btnReload">새로고침</button></header>
+<header><span class="crest"><svg viewBox="0 0 40 46" aria-hidden="true"><path d="M20 2 37 8v14c0 11-7.5 18.5-17 22C10.5 40.5 3 33 3 22V8Z" fill="rgba(110,16,25,.55)" stroke="currentColor" stroke-width="2"/><path d="M11 16h18v14H11zM20 16v14" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="20" cy="9.5" r="2.2" fill="currentColor"/></svg></span><div class="ttl"><small class="en">MISAG UNIVERSITY · SIMULATION ROOM</small><h1>시뮬레이션 열람실<small>망켓몬 던전 · 스킬 체크 시뮬레이터 — 가이드라인 자료 수집용</small></h1></div><span class="small" id="snapInfo">…</span><span class="sp"></span><button class="b sm" id="btnFetch" title="제작기 공유 DB 에서 트레이너 · 포켓몬을 받아 data/snapshot.json 으로">제작기에서 받기</button><button class="b sm" id="btnReload">새로고침</button></header>
 <nav id="nav"><button data-t="run" class="on">돌리기</button><button data-t="pt">일행</button><button data-t="dg">던전</button><button data-t="gen">생성기</button><button data-t="auto">던전 생성</button><button data-t="wild">야생</button><button data-t="sdb">특성 · 체크 DB</button><button data-t="rec">기록 · 리포트</button><button data-t="fb">피드백 · 인수인계</button><button data-t="tbl">체크 확률표</button><button data-t="doc">설계도</button></nav>
 <main>
 <section id="t-run">
@@ -142,7 +363,7 @@ table.wdb td.sc,table.wdb th.sc{text-align:center;padding-left:2px;padding-right
    <div class="row" style="margin-bottom:6px"><input class="inp" id="trQ" placeholder="이름 · 포켓몬 검색" style="width:160px"><select class="inp" id="trF"><option value="">폴더 전부</option></select><span class="small">파트너 먼저, 그다음 순서대로 동행이 돼요 — 진하게 표시된 포켓몬이 이번에 가요.</span></div>
    <div id="trList" class="trgrid"></div><div id="trSum" class="small" style="margin-top:8px"></div></div>
   <div class="card col"><h3>던전 · 설정</h3>
-   <label class="f">던전<select id="dgSel"></select></label><div class="dg-strip small" id="dgStrip"></div>
+   <label class="f">던전<select id="dgSel"></select></label><div class="dg-strip small" id="dgStrip"></div><details class="dgprev" id="dgPrevBox"><summary class="small">지도 미리 보기</summary><div id="dgPrev"></div></details>
    <div class="row"><label class="f">판 수<input type="number" id="n" value="300" min="1" max="5000"></label><label class="f">씨앗<input type="number" id="seed" value="1"></label><label class="f" style="flex:1;min-width:160px">기록 이름<input id="recId" placeholder="비우면 「던전 · 조정」 으로"></label></div>
    <fieldset><legend>조정 (룰 값을 흔들어 본다)</legend><div class="row"><label class="f">목표치 가감<input type="number" id="aTarget" value="0" step="1"></label><label class="f">패널티 배율<input type="number" id="aPen" value="1" step="0.5"></label><label class="f">체크 간격<select id="aEvery"><option value="1">모두</option><option value="2">하나 걸러</option><option value="3">셋에 하나</option></select></label><label class="f">단계 보정(전체)<input type="number" id="aStep" value="0" step="1"></label><label class="f">야생 레벨 +<input type="number" id="aWildLv" value="0" step="5"></label><label class="f">야생 추가 체<input type="number" id="aWildExtra" value="0" step="1" min="0" max="3"></label><label class="f" title="mix 로 만든 보스 방의 적 수 (비우면 던전 파일 값)">보스방 적 수<select id="aBossN"><option value="0">던전 값</option><option value="4">4체</option><option value="6">6체</option><option value="3">3체</option><option value="5">5체</option></select></label><label class="f" title="보스의 「레이드 배틀 : X」 (비우면 던전 파일 값, 0 = 레이드 없음)">레이드 X<input type="number" id="aRaidX" value="" min="0" step="1" placeholder="던전 값"></label><label class="f" title="배리어식 = 웹툴 · 맵툴 처리 / 턴당 상한식 = 포텐셜 글 「턴 중 HP 1/X 초과 피해를 받지 않는다」">레이드 방식<select id="aRaidMode"><option value="barrier">배리어식</option><option value="cap">턴당 상한식</option></select></label></div></fieldset>
    <fieldset><legend>정책 (탁자에서 사람이 하는 선택)</legend><div class="row"><label class="f">누가 굴리나<select id="pWho"><option value="best">보정 합 큰 사람</option><option value="round">돌아가며</option></select></label><label class="f">커버<select id="pCover"><option value="fail">실패를 받침</option><option value="never">안 받침</option></select></label><label class="f">동료<select id="pPartner"><option value="match">조건 맞는 포켓몬</option><option value="any">아무 포켓몬</option><option value="none">늘 혼자</option></select></label><label class="f">초상 능력<select id="pInou"><option value="yes">씀</option><option value="no">안 씀</option></select></label><label class="f">필드 포켓몬<select id="aField" title="판정 · 커버에 쓰는 트레이너당 포켓몬 수 (웹툴 스킬 체크 설정 「필드 포켓몬 수」)"><option value="1">1체 (웹툴 기본)</option><option value="2">2체 (동행 전부)</option></select></label></div></fieldset>
@@ -364,7 +585,7 @@ $('#ptQ').oninput=e=>{PTQ=e.target.value;renderPt()};$('#ptSort').onchange=e=>{P
 /* ---- 돌리기 ---- */
 function dgStrip(d){return (d.path?d.path.map(id=>d.rooms.find(r=>r.id===id)).filter(Boolean):d.rooms).map(r=>{const t=ty(r.t);return `<i style="background:${t.c}" title="${esc(r.name||t.k)}${r.check?' · 🎲':''}${r.enc?' · ⚔':''}${r.rest?' · ☗':''}">${t.ic}</i>`}).join('<span style="color:var(--faint)">›</span>')}
 function renderDgSel(){const o=Object.values(S.dungeons).map(d=>`<option value="${esc(d.id)}">${esc(d.name)} — 체크 ${d.rooms.filter(r=>r.check).length} · 배틀 ${d.rooms.filter(r=>r.enc).length} · 휴식 ${d.rooms.filter(r=>r.rest).length}</option>`).join('');const cur=$('#dgSel').value,cur2=$('#dgEdSel').value;$('#dgSel').innerHTML=o;$('#dgEdSel').innerHTML=o;if(cur&&S.dungeons[cur])$('#dgSel').value=cur;if(cur2&&S.dungeons[cur2])$('#dgEdSel').value=cur2;upStrip();loadDgEditor()}
-function upStrip(){const d=S.dungeons[$('#dgSel').value];$('#dgStrip').innerHTML=d?dgStrip(d)+(d.note?` <span class="small" style="margin-left:6px">${esc(d.note)}</span>`:''):''}
+function upStrip(){const d=S.dungeons[$('#dgSel').value];$('#dgStrip').innerHTML=d?dgStrip(d)+(d.note?` <span class="small" style="margin-left:6px">${esc(d.note)}</span>`:''):'';$('#dgPrev').innerHTML=d?isoSVG(d,{mode:'graph',noView:1}):''}   /* 11-01 돌리기 탭 지도 미리 보기 (웹툴 미니맵 꼴) */
 $('#dgSel').onchange=upStrip;
 const adjust=()=>({target:+$('#aTarget').value||0,penScale:+$('#aPen').value||1,checkEvery:+$('#aEvery').value||1,stepAll:+$('#aStep').value||0,wildLv:+$('#aWildLv').value||0,wildExtra:+$('#aWildExtra').value||0,bossN:+$('#aBossN').value||0,raidX:$('#aRaidX').value===''?null:+$('#aRaidX').value,raidMode:$('#aRaidMode').value,fieldMax:+$('#aField').value||1});
 const policy=()=>({who:$('#pWho').value,cover:$('#pCover').value,partner:$('#pPartner').value,inou:$('#pInou').value});
@@ -389,7 +610,7 @@ $('#dgEdSel').onchange=loadDgEditor;let rsT;addEventListener('resize',()=>{clear
 const selRoom=()=>DG&&DG.rooms.find(r=>r.id===DGSEL);
 function renderDg(){if(!DG){$('#dgMap').innerHTML='<div class="small">던전이 없어요. 「＋ 새 던전」으로 시작해요.</div>';$('#dgSide').innerHTML='';return}$('#dgId').value=DG.id||'';$('#dgName').value=DG.name||'';$('#dgWn').value=String(DG.wn||2);$('#dgNote').value=DG.note||'';$('#dgPriv').checked=!!DG.private;
  if(!selRoom())DGSEL=DG.rooms[0]?DG.rooms[0].id:'';
- $('#dgMap').innerHTML=mapSVG();$('#dgSide').innerHTML=sideHTML();$('#dgJson').value=JSON.stringify(DG,null,1);
+ $('#dgMap').innerHTML=dgMapHTML();$('#dgSide').innerHTML=sideHTML();$('#dgJson').value=JSON.stringify(DG,null,1);
  $$('#dgMap .dg-node').forEach(g=>g.onclick=()=>{DGSEL=g.dataset.r;renderDg()});
  $$('#dgSide [data-f]').forEach(el=>el.onchange=()=>{const r=selRoom();if(!r)return;const f=el.dataset.f;let v=el.type==='checkbox'?el.checked:el.type==='number'?(el.value===''?'':+el.value):el.value;if(f==='enc.pickTxt'){const L=String(v).split(',').map(x=>x.trim()).filter(x=>x!=='').map(Number).filter(n=>!isNaN(n));if(L.length)r.enc.pick=L;else delete r.enc.pick;renderDg();return}if(f==='id'){const nid=v.trim();if(!nid||DG.rooms.some(x=>x!==r&&x.id===nid))return toast('방 id 가 비었거나 겹쳐요');r.id=nid;DGSEL=nid}else setPath(r,f,v);renderDg()});
  $$('#dgSide [data-act]').forEach(b=>b.onclick=()=>{const i=DG.rooms.findIndex(r=>r.id===DGSEL),r=DG.rooms[i],a=b.dataset.act;
@@ -435,6 +656,63 @@ function gridSVG(d){const M=d.map;if(!M||!M.cells)return '';const narrow=innerWi
   return `<g class="dg-node${r.id===(AG&&AG.sel)?' on':''}" data-r="${esc(r.id)}" transform="translate(${p.x} ${p.y})"><title>${esc(roomTip(r))}</title><circle class="c" r="${R*sm}" fill="${t.c}" ${r.alt?`stroke="#e8b84a" stroke-width="${narrow?6:4}" stroke-dasharray="${narrow?'10 6':'7 4'}"`:''}/><text>${t.ic}</text><text class="nm" y="${R*sm+(narrow?26:18)}">${esc(r.name||t.k)}</text>${monLabel(r,R*sm+(narrow?52:35),narrow)}${r.id===(d.path||[])[0]?`<text class="st" y="${-R-(narrow?40:30)}">START</text>`:''}${bd.map((b,j)=>`<g transform="translate(${(j-(bd.length-1)/2)*(narrow?32:22)} ${-R*sm-8})"><circle r="${narrow?15:10}" fill="#05060a" stroke="${t.c}" stroke-width="1.5"/><text class="bd">${b}</text></g>`).join('')}</g>`}).join('');
  const nb=(d.branches||[]).length,ns=d.rooms.filter(r=>r.side).length;
  return `<svg class="dg-svg${narrow?' narrow':''}" viewBox="0 0 ${W} ${H}">${ln}${nd}<text class="dg-cap" x="12" y="${H-10}">━ 본길${nb?'  ┅ 갈림길 다른 길 '+nb:''}${ns?'  ┈ 곁방 '+ns:''}  ·  방 ${d.rooms.length}</text></svg>`}
+/* ---- 11-01 망령 「던전 ui 는 rp 에서 미니맵을 띄우는 구조를 참조해서 꾸며볼 순 없어? 시뮬레이터도 마찬가지로」 ----
+   웹툴 js/dungeon_ui.js 의 아이소메트릭 지도를 옮긴 것: P(u,v,z) 투영 · prism() 방 블록(윗면 그라데이션 · 옆면 그늘, 종류 색) · strip() 솟은 통로 · 바닥 격자,
+   틀은 shell() 꼴 (.dgi-map = .dg-map3d · .dgi-tilt 마우스 따라 기울기 · .dgi-haze · HUD · MAP 캡션 · 범례).
+   방 자리: d.map.cells(자동 생성 격자)가 방을 다 덮으면 그 칸, 아니면 순서대로 뱀길. 길: mode 'order' = 방 순서(편집기, 방향 표시) · 'graph' = d.map.links (본길 · 갈림길 · 곁방).
+   방 이름 · 몬스터 · 표지는 SVG 위 HTML 층이라 지도 크기와 상관없이 같은 글씨 크기. 방(.dg-node[data-r])을 누르는 편집은 예전 평면 지도와 같고, 「평면」 단추로 예전 지도. */
+const TYX={entry:['ENTRANCE',16],room:['PASSAGE',10],battle:['ENCOUNTER',18],trap:['GIMMICK',14],puzzle:['PUZZLE',14],treasure:['TREASURE',12],safe:['SAFE ROOM',16],boss:['DEPTHS',30]};
+const ISO={K:.866,RW:54,S:170,n:0};
+const isoP=(u,v,z=0)=>[(u-v)*ISO.K,(u+v)*.5-z];
+const isoPts=a=>a.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
+const isoShade=(hex,f)=>{const n=parseInt(String(hex).slice(1),16),m=x=>Math.round(f<0?x*(1+f):x+(255-x)*f);return`rgb(${m(n>>16)},${m(n>>8&255)},${m(n&255)})`};
+function isoPrism(u,v,h,rw){const q=[[u-rw,v-rw],[u+rw,v-rw],[u+rw,v+rw],[u-rw,v+rw]],f=(p,z)=>isoP(p[0],p[1],z),k=rw*.17;
+ return{top:q.map(p=>f(p,h)),inset:[[u-rw+k,v-rw+k],[u+rw-k,v-rw+k],[u+rw-k,v+rw-k],[u-rw+k,v+rw-k]].map(p=>f(p,h)),left:[f(q[3],0),f(q[2],0),f(q[2],h),f(q[3],h)],right:[f(q[2],0),f(q[1],0),f(q[1],h),f(q[2],h)],base:q.map(p=>f(p,0)),c:f([u,v],h),f0:f([u,v],0)}}
+function isoStrip(a,b,w,z){const du=b[0]-a[0],dv=b[1]-a[1],L=Math.hypot(du,dv)||1,nu=-dv/L*w,nv=du/L*w;return[isoP(a[0]+nu,a[1]+nv,z),isoP(b[0]+nu,b[1]+nv,z),isoP(b[0]-nu,b[1]-nv,z),isoP(a[0]-nu,a[1]-nv,z)]}
+let DGVIEW=(()=>{try{return localStorage.getItem('sim_dg_view')||'iso'}catch(e){return 'iso'}})();
+function isoLayout(d,mode){const rs=d.rooms||[],S=ISO.S,cells=d.map&&d.map.cells;const pos={};
+ const ok=!!cells&&rs.length>0&&rs.every(r=>Array.isArray(cells[r.id]))&&new Set(rs.map(r=>String(cells[r.id]))).size===rs.length;
+ if(ok)rs.forEach(r=>{pos[r.id]=[cells[r.id][0]*S,cells[r.id][1]*S]});
+ else{const C=Math.max(2,Math.min(5,Math.ceil(Math.sqrt(rs.length*1.6))));rs.forEach((r,i)=>{const row=Math.floor(i/C),col=i%C,c=row%2?C-1-col:col;pos[r.id]=[c*S,row*S]})}
+ const byId=Object.fromEntries(rs.map(r=>[r.id,r]));const kind=r=>r&&r.alt?'alt':r&&r.side?'side':'main';let links=[];
+ if(mode==='graph'&&ok&&d.map.links)links=Object.keys(d.map.links).map(k=>k.split('~')).filter(([a,b])=>byId[a]&&byId[b]).map(([a,b])=>{const ka=kind(byId[a]),kb=kind(byId[b]);return [a,b,ka==='alt'||kb==='alt'?'alt':ka==='side'||kb==='side'?'side':'main']});
+ else{const order=mode==='graph'&&d.path?d.path.filter(id=>byId[id]):rs.map(r=>r.id);for(let i=1;i<order.length;i++)links.push([order[i-1],order[i],'main'])}
+ return {pos,links,byId,start:(mode==='graph'&&d.path&&d.path[0])||(rs[0]&&rs[0].id)}}
+function isoSVG(d,o={}){const rs=d.rooms||[];if(!rs.length)return '<div class="small">방이 없어요.</div>';const narrow=innerWidth<700;const mode=o.mode||'order';
+ const {pos,links,byId,start}=isoLayout(d,mode);const gid='dgiT'+(++ISO.n)+'_';   /* 그라데이션 id 는 지도마다 따로 (숨은 탭의 같은 id 를 집으면 안 칠해진다) */const xs=[],ys=[],add=p=>{xs.push(p[0]);ys.push(p[1])};
+ let defs='',cor='',body='';const used=new Set,lab=[];
+ links.forEach(([a,b,k])=>{const A1=pos[a],B1=pos[b];const w=k==='side'?9:14;const sh=isoStrip([A1[0]+6,A1[1]+6],[B1[0]+6,B1[1]+6],w+1,0),tp=isoStrip(A1,B1,w,4);sh.concat(tp).forEach(add);
+  cor+=`<polygon points="${isoPts(sh)}" fill="#000" opacity=".5"/><polygon points="${isoPts(tp)}" fill="${k==='side'?'#1f1913':'#2c241a'}" stroke="${k==='alt'?'#e8b84a':k==='side'?'rgba(207,174,110,.35)':'rgba(207,174,110,.45)'}" stroke-width="${k==='alt'?2.5:1.5}"${k!=='main'?` stroke-dasharray="${k==='alt'?'12 7':'5 6'}"`:''}/>`;
+  if(mode==='order'){const du=B1[0]-A1[0],dv=B1[1]-A1[1],L=Math.hypot(du,dv)||1,ux=du/L,uy=dv/L,mu=(A1[0]+B1[0])/2,mv=(A1[1]+B1[1])/2;
+   cor+=`<polygon points="${isoPts([isoP(mu+ux*13,mv+uy*13,5),isoP(mu-ux*8-uy*10,mv-uy*8+ux*10,5),isoP(mu-ux*3,mv-uy*3,5),isoP(mu-ux*8+uy*10,mv-uy*8-ux*10,5)])}" fill="#cfae6e" opacity=".9"/>`}});
+ const ids=rs.map(r=>r.id).sort((a,b)=>(pos[a][0]+pos[a][1])-(pos[b][0]+pos[b][1]));
+ ids.forEach(id=>{const r=byId[id],t=ty(r.t),tk=r.t in TY?r.t:'room',[u,v]=pos[id],sm=r.side?.72:1,rw=ISO.RW*sm,h=(TYX[tk]||TYX.room)[1]*1.5*sm,pr=isoPrism(u,v,h,rw),on=id===o.sel;used.add(tk);
+  [...pr.base,...pr.top].forEach(add);const sh=isoPrism(u+10,v+8,0,rw).base;
+  body+=`${on?`<ellipse class="dgi-pulse" cx="${pr.f0[0].toFixed(1)}" cy="${pr.f0[1].toFixed(1)}" rx="${(rw*1.9).toFixed(0)}" ry="${(rw*1.1).toFixed(0)}"/>`:''}<g class="dg-node${on?' on':''}${r.alt?' alt':''}" data-r="${esc(id)}"><title>${esc(roomTip(r))}</title><polygon points="${isoPts(sh)}" fill="#000" opacity=".45"/><polygon points="${isoPts(pr.left)}" fill="${isoShade(t.c,-.48)}"/><polygon points="${isoPts(pr.right)}" fill="${isoShade(t.c,-.68)}"/><polygon class="tp" points="${isoPts(pr.top)}" fill="url(#${gid}${tk})"/><polygon points="${isoPts(pr.inset)}" fill="none" stroke="rgba(243,234,219,.45)" stroke-width="1.2"/><text class="ic" x="${pr.c[0].toFixed(1)}" y="${pr.c[1].toFixed(1)}"${r.side?' style="font-size:24px"':''}>${t.ic}</text></g>`;
+  const bd=[r.check?'🎲':'',r.enc?(r.enc.boss?'♛':'⚔'):'',r.rest?'☗':'',r.clue?'🔍':''].filter(Boolean);
+  lab.push({x:pr.f0[0],y:pr.f0[1]+rw+4,h:`<div class="dgi-nm${r.side?' side':''}"><b>${esc(r.name||t.k)}</b>${narrow?'':monLines(r,11,2).map(s=>`<small>${esc(s)}</small>`).join('')}</div>`});
+  const topY=pr.c[1]-rw*.5-4;if(bd.length)lab.push({x:pr.c[0],y:topY,h:`<div class="dgi-bd">${bd.map(b=>`<span style="--c:${t.c}">${b}</span>`).join('')}</div>`});
+  if(id===start)lab.push({x:pr.c[0],y:topY-(bd.length?(narrow?20:26):0),h:'<div class="dgi-st">START</div>'})});
+ used.forEach(k=>{const c=TY[k].c;defs+=`<linearGradient id="${gid}${k}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${isoShade(c,.35)}"/><stop offset="1" stop-color="${c}"/></linearGradient>`});
+ /* 보기 상자: 글씨(HTML)가 들어갈 위아래 여유를 두고, 화면 비율은 내용 비율을 좁은/넓은 화면 범위 안으로 */
+ let x0=Math.min(...xs)-80,x1=Math.max(...xs)+80,y0=Math.min(...ys)-(narrow?70:95),y1=Math.max(...ys)+(narrow?55:85);y0-=(y1-y0)*(o.noView?.1:.16);   /* 위 HUD(장소 · 개수) 자리 */
+ const A=Math.min(narrow?1.5:2.1,Math.max(narrow?1.05:1.45,(x1-x0)/(y1-y0)));const cx=(x0+x1)/2,cy=(y0+y1)/2;const w=Math.max(x1-x0,(y1-y0)*A,560),hh=w/A;x0=cx-w/2;y0=cy-hh/2;
+ const grid=[];for(let k=-2000;k<=3000;k+=ISO.S/2)grid.push(`M${isoPts([isoP(k,-2000)])}L${isoPts([isoP(k,3000)])}M${isoPts([isoP(-2000,k)])}L${isoPts([isoP(3000,k)])}`);
+ const floor=`<path d="${grid.join('')}" stroke="rgba(207,174,110,.075)" stroke-width="1.5" fill="none"/>`;
+ const L=lab.map(l=>`<div style="left:${((l.x-x0)/w*100).toFixed(2)}%;top:${((l.y-y0)/hh*100).toFixed(2)}%">${l.h}</div>`).join('');
+ const sr=byId[o.sel]||byId[start]||rs[0],st=ty(sr.t),sx=TYX[sr.t]||TYX.room;
+ const nC=rs.filter(r=>r.check).length,nB=rs.filter(r=>r.enc).length,nR=rs.filter(r=>r.rest).length;
+ const nAlt=links.filter(l=>l[2]==='alt').length,nSide=links.filter(l=>l[2]==='side').length;
+ return `<div class="dgi${o.noView?' pv':''}"><div class="dgi-map" style="aspect-ratio:${w.toFixed(0)}/${hh.toFixed(0)}"><div class="dgi-tilt"><svg viewBox="${x0.toFixed(0)} ${y0.toFixed(0)} ${w.toFixed(0)} ${hh.toFixed(0)}" preserveAspectRatio="xMidYMid meet"><defs>${defs}</defs>${floor}${cor}${body}</svg><div class="dgi-lb">${L}</div></div><div class="dgi-haze"></div>
+  <div class="dgi-hud"><div class="dgi-loc" style="--c:${st.c}"><span>${sx[0]}</span><b>${esc(sr.name||st.k)}</b><em>${st.ic} ${esc(st.k)}${sr.check?' · 체크 '+esc(sr.check.stat)+' '+esc(sr.check.target):''}${sr.enc?(sr.enc.boss?' · 보스':' · 조우'):''}${sr.rest?' · '+esc(RESTKO(sr.rest)):''}</em></div><div class="dgi-sum"><div><small>ROOMS</small><b>${rs.length}</b></div><div><small>CHECK</small><b>${nC}</b></div><div><small>BATTLE</small><b>${nB}</b></div><div><small>REST</small><b>${nR}</b></div></div></div>
+  <div class="dgi-cap"><b>MAP</b>${esc(d.name||'이름 없는 던전')}</div></div>
+  <div class="dgi-foot"><div class="dgi-legend">${[...used].map(k=>`<span style="--c:${TY[k].c}"><i>${TY[k].ic}</i>${TY[k].k}</span>`).join('')}${mode==='order'?'<span><i style="color:#cfae6e">➤</i>지나가는 순서</span>':'<span><b class="ln"></b>본길</span>'+(nAlt?'<span><b class="ln alt"></b>갈림길 다른 길</span>':'')+(nSide?'<span><b class="ln side"></b>곁방</span>':'')}</div>${o.noView?'':dgViewBar('iso')}</div></div>`}
+function dgViewBar(v){return `<span class="dgi-view" role="group" aria-label="지도 보기"><button type="button" data-dgview="iso" class="${v==='iso'?'on':''}" title="웹툴 RP 미니맵 꼴 (아이소메트릭)">입체</button><button type="button" data-dgview="flat" class="${v==='flat'?'on':''}" title="예전 평면 지도">평면</button></span>`}
+/* 던전 탭 지도: 입체(기본) · 평면 */
+function dgMapHTML(){return DGVIEW==='flat'?mapSVG()+`<div class="dgi-foot">${dgViewBar('flat')}</div>`:isoSVG(DG,{sel:DGSEL,mode:'order'})}
+{let raf=0;document.addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;const m=e.target.closest&&e.target.closest('.dgi-map');if(!m)return;const t=m.querySelector('.dgi-tilt'),b=m.getBoundingClientRect(),dx=(e.clientX-b.left)/b.width-.5,dy=(e.clientY-b.top)/b.height-.5;cancelAnimationFrame(raf);raf=requestAnimationFrame(()=>{t.style.setProperty('--rx',(9-dy*8).toFixed(2)+'deg');t.style.setProperty('--ry',(dx*10).toFixed(2)+'deg')})});
+ document.addEventListener('pointerout',e=>{const m=e.target.closest&&e.target.closest('.dgi-map');if(!m||m.contains(e.relatedTarget))return;const t=m.querySelector('.dgi-tilt');t.style.removeProperty('--rx');t.style.removeProperty('--ry')});
+ document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('[data-dgview]');if(!b)return;DGVIEW=b.dataset.dgview;try{localStorage.setItem('sim_dg_view',DGVIEW)}catch(_){}if(b.closest('#agOut'))agRender();else renderDg()})}
 function arrow(a,b){const dx=b.x-a.x,dy=b.y-a.y,L=Math.hypot(dx,dy)||1,ux=dx/L,uy=dy/L;const nr=innerWidth<700?50:34;const tx=b.x-ux*nr,ty_=b.y-uy*nr;const s=innerWidth<700?14:9;return `${tx},${ty_} ${tx-ux*s-uy*s*.7},${ty_-uy*s+ux*s*.7} ${tx-ux*s+uy*s*.7},${ty_-uy*s-ux*s*.7}`}
 function sideHTML(){const r=selRoom();if(!r)return '<div class="dg-ev"><b>사용법</b><p class="dg-help">지도에서 방을 누르면 여기서 고쳐요. 던전에 방이 없으면 아래에서 첫 방을 만들어요.</p><button class="b" data-act="add">＋ 첫 방</button></div>';const t=ty(r.t),i=DG.rooms.findIndex(x=>x.id===r.id);const c=r.check;
  return `${roomSum(r,{where:t.r})}<div class="small" style="font-weight:700;margin-top:10px;padding-top:8px;border-top:1px dashed var(--line)">✎ 고치기</div>
@@ -465,7 +743,7 @@ $('#dgPr').onclick=()=>{if(DG){syncMeta();dgPrompt(DG)}};
 $('#dgSave').onclick=async()=>{if(!DG)return;syncMeta();const ids=DG.rooms.map(r=>r.id);if(new Set(ids).size!==ids.length)return toast('방 id 가 겹쳐요');try{await api('saveDungeon',{id:DG.id,data:DG});toast('저장했어요: data/dungeons/'+DG.id+'.json');S=await api('state');renderDgSel();$('#dgEdSel').value=DG.id;loadDgEditor()}catch(e){toast('오류: '+e.message)}};
 $('#dgFromJson').onclick=()=>{try{DG=JSON.parse($('#dgJson').value);if(DG.path){DG.rooms=DG.path.map(id=>DG.rooms.find(r=>r.id===id)).filter(Boolean);delete DG.path}renderDg();toast('편집기로 가져왔어요 (저장은 따로)')}catch(e){toast('JSON 오류: '+e.message)}};
 function syncMeta(){if(!DG)return;DG.id=$('#dgId').value.trim();DG.name=$('#dgName').value.trim();DG.wn=+$('#dgWn').value||2;DG.note=$('#dgNote').value;if($('#dgPriv').checked)DG.private=true;else delete DG.private;$('#dgJson').value=JSON.stringify(DG,null,1)}
-['dgId','dgName','dgWn','dgNote','dgPriv'].forEach(id=>$('#'+id).onchange=()=>{syncMeta();if(id==='dgName')$('#dgMap').innerHTML=mapSVG(),$$('#dgMap .dg-node').forEach(g=>g.onclick=()=>{DGSEL=g.dataset.r;renderDg()})});
+['dgId','dgName','dgWn','dgNote','dgPriv'].forEach(id=>$('#'+id).onchange=()=>{syncMeta();if(id==='dgName')$('#dgMap').innerHTML=dgMapHTML(),$$('#dgMap .dg-node').forEach(g=>g.onclick=()=>{DGSEL=g.dataset.r;renderDg()})});
 /* ---- 야생 (10-27 밤 2차: 무리 칩 카드 · DB 표(종족치 랭크 · 기술 · 폴더 · 묶기) · 모달 편집) ---- */
 let WILD=null,WDB=null,WF={grade:'',hab:'',type:'',origin:'',folder:'',q:'',group:'',sort:'id'},WSEL='',WCHK=new Set();
 const GCOL={C:'var(--g-c)','C+':'var(--g-c)',B:'var(--g-b)','B+':'var(--g-b)',A:'var(--g-a)'};
@@ -692,7 +970,7 @@ function agRoom(){const box=$('#agRoom');if(!box)return;const d=AG.dungeon;const
  $$('[data-ae]',box).forEach(el=>el.onchange=()=>{const path=el.dataset.ae.split('.');let v=el.type==='checkbox'?el.checked:el.type==='number'?(el.value===''?'':+el.value):el.value;let o=r;for(const k of path.slice(0,-1))o=o[k]=o[k]||{};const last=path[path.length-1];if(v===''||v===false)delete o[last];else o[last]=v;redo()});
  $$('[data-aem]',box).forEach(b=>b.onclick=()=>{r.enc.mix.splice(+b.dataset.aem,1);redo()});
  const am=$('#agAddMon');if(am)am.onchange=()=>{const e=((S.wild.db||{}).entries||[]).find(x=>x.name===am.value.trim()||x.id===am.value.trim());if(!e)return toast('야생 DB 에 없는 이름이에요');r.enc.mix.push({db:e.id});redo()}}
-function agRender(){const d=AG.dungeon,out=$('#agOut');out.hidden=false;let map=gridSVG(d);if(!map){const keep=DG;DG=JSON.parse(JSON.stringify(d));map=mapSVG();DG=keep}const g=d.gen,k=g.knobs,R=d.rules||{};const v=g.verify;
+function agRender(){const d=AG.dungeon,out=$('#agOut');out.hidden=false;let map;if(DGVIEW!=='flat')map=isoSVG(d,{sel:AG.sel,mode:'graph'});else{map=gridSVG(d);if(!map){const keep=DG;DG=JSON.parse(JSON.stringify(d));map=mapSVG();DG=keep}map+=`<div class="dgi-foot">${dgViewBar('flat')}</div>`}   /* 11-01 입체(웹툴 미니맵) 기본 · 평면 */const g=d.gen,k=g.knobs,R=d.rules||{};const v=g.verify;
  /* 표 순서: 본길 → 그 갈림길의 다른 길(갈라지는 구간 바로 뒤) → 곁방 */
  const byId=Object.fromEntries(d.rooms.map(r=>[r.id,r]));const order=[];for(const id of d.path||[]){order.push(byId[id]);for(const b of d.branches||[])if(b.main[b.main.length-1]===id)order.push(...b.alt.map(a=>byId[a]))}for(const r of d.rooms)if(!order.includes(r))order.push(r);
  const brOf=r=>(d.branches||[]).find(b=>b.alt.includes(r.id)||b.main.includes(r.id));

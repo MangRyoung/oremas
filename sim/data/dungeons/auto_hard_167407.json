@@ -1,0 +1,447 @@
+{
+ "id": "auto_hard_167407",
+ "name": "유황 협곡의 분화구 (어려움)",
+ "wn": 2,
+ "private": true,
+ "gen": {
+  "tier": "hard",
+  "knobs": {
+   "battles": 1,
+   "foes": 2,
+   "lv": 5,
+   "bossLv": 5,
+   "rest": "short",
+   "checks": 5,
+   "tgt": "tier",
+   "pen": "alert",
+   "hintTyped": 1,
+   "alCost": 10,
+   "alFail": 20,
+   "critAl": 10
+  },
+  "seed": 167407,
+  "boss": "흙거북",
+  "v": 1,
+  "auto": true,
+  "tough": "",
+  "shape": "곧은길",
+  "theme": "화산",
+  "rules": {
+   "restV": 2,
+   "alBattle": 5,
+   "alLose": 10,
+   "al30": 5,
+   "al70": 10,
+   "restShort": "all",
+   "restPO": 1,
+   "restPC": 1,
+   "restBreath": "one",
+   "restBC": 1
+  },
+  "source": "db",
+  "grades": {
+   "wild": [
+    "C"
+   ],
+   "boss": [
+    "A"
+   ]
+  },
+  "verify": {
+   "wr": 0.18,
+   "target": 0.3,
+   "band": 0.1,
+   "tries": 22,
+   "ok": false,
+   "at": "2026-11-01",
+   "re200": {
+    "wr": 0.2,
+    "trio": [
+     0,
+     0.1,
+     0.7
+    ],
+    "lock": 0.04,
+    "n": 200,
+    "note": "시험 일행 20조합 × 10판 (11-01)"
+   }
+  }
+ },
+ "rooms": [
+  {
+   "id": "entry",
+   "t": "entry",
+   "name": "갈라진 땅",
+   "check": {
+    "label": "먹을 수 있는 열매를 가려낸다",
+    "stat": "육성",
+    "target": 12,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "st": "Poison",
+      "memo": "독이 있는 것에 닿았다",
+      "oc": 1
+     }
+    },
+    "pm": 0,
+    "base": 1,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "b1",
+   "t": "battle",
+   "name": "용암 강가",
+   "enc": {
+    "mix": [
+     {
+      "db": "w267"
+     },
+     {
+      "db": "w005"
+     }
+    ],
+    "lvAdd": 5
+   }
+  },
+  {
+   "id": "c1",
+   "t": "room",
+   "name": "용암 징검다리",
+   "check": {
+    "label": "열기 속에서 대열을 지킨다",
+    "stat": "통솔",
+    "target": 12,
+    "hint": "type:바위",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "st": "Confusion",
+      "cnt": 3,
+      "memo": "대열이 무너졌다",
+      "oc": 1
+     }
+    },
+    "pm": 0,
+    "base": 4,
+    "fit": {
+     "types": [
+      "불꽃"
+     ],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "c2",
+   "t": "room",
+   "name": "무너지는 비탈",
+   "check": {
+    "label": "가스가 덜한 길을 고른다",
+    "stat": "지시",
+    "target": 12,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "oc": 3,
+      "memo": "우왕좌왕했다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "c3",
+   "t": "puzzle",
+   "name": "유독 가스 지대",
+   "check": {
+    "label": "떨어지는 바위를 막는다",
+    "stat": "능력",
+    "target": 12,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "dmg": "1/3",
+      "memo": "크게 휘말렸다",
+      "oc": 1
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "safe",
+   "t": "safe",
+   "name": "식은 용암 굴",
+   "rest": "short",
+   "check": {
+    "label": "화상 입은 포켓몬을 돌본다",
+    "stat": "육성",
+    "target": 12,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "dmg": "1/3",
+      "memo": "야생에게 물렸다",
+      "oc": 1
+     }
+    },
+    "pm": 0,
+    "base": 1,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "boss",
+   "t": "boss",
+   "name": "용암 호수",
+   "enc": {
+    "mix": [
+     {
+      "db": "w205"
+     },
+     {
+      "db": "w025"
+     },
+     {
+      "db": "w055"
+     },
+     {
+      "db": "w236"
+     },
+     {
+      "db": "w026"
+     },
+     {
+      "db": "w015"
+     }
+    ],
+    "boss": true,
+    "bossAt": 0,
+    "raid": 3,
+    "n": 6,
+    "lvAdd": 5
+   }
+  },
+  {
+   "id": "g1a1",
+   "t": "trap",
+   "name": "갈라진 동굴",
+   "check": {
+    "label": "용암 흐름을 읽는다",
+    "stat": "지시",
+    "target": 12,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 20,
+      "oo": 1,
+      "memo": "지시가 엇갈렸다",
+      "oc": 1
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "alt": "g1"
+  },
+  {
+   "id": "tr",
+   "t": "treasure",
+   "side": 1,
+   "name": "굳은 화석층",
+   "clue": {
+    "t": "주인의 흔적",
+    "d": "깊은 곳의 주인 — 「땅」 기운이 서려 있다.\n「물」 · 「풀」 · 「얼음」 쪽을 꺼리는 흔적이 남아 있다.\n「블로킹」의 자국이 벽에 새겨져 있다.",
+    "auto": 1
+   },
+   "from": "c3"
+  },
+  {
+   "id": "s1",
+   "t": "room",
+   "side": 1,
+   "name": "검은 모래톱",
+   "memo": "곁방 · 숨은 물건 — 살피면 소지품 · 열매 하나(GM 이 정한다). 찾는 데 체크는 없다",
+   "from": "c2"
+  },
+  {
+   "id": "s2",
+   "t": "battle",
+   "side": 1,
+   "name": "식은 용암관",
+   "memo": "곁방 · 기습 — 들어오면 야생 1~2체가 덮친다(웹툴 「기습」 — 플레이어에게 안 보임). 이기면 숨은 물건 하나",
+   "ambush": 1,
+   "from": "safe"
+  }
+ ],
+ "branches": [
+  {
+   "id": "g1",
+   "from": "entry",
+   "to": "c1",
+   "main": [
+    "b1"
+   ],
+   "alt": [
+    "g1a1"
+   ]
+  }
+ ],
+ "map": {
+  "grid": {
+   "cols": 6,
+   "rows": 4,
+   "x0": 95,
+   "dx": 162,
+   "y0": 85,
+   "dy": 170
+  },
+  "shape": "곧은길",
+  "turns": 1,
+  "cells": {
+   "entry": [
+    5,
+    1
+   ],
+   "b1": [
+    5,
+    0
+   ],
+   "c1": [
+    4,
+    0
+   ],
+   "c2": [
+    3,
+    0
+   ],
+   "c3": [
+    2,
+    0
+   ],
+   "safe": [
+    1,
+    0
+   ],
+   "boss": [
+    0,
+    0
+   ],
+   "g1a1": [
+    4,
+    1
+   ],
+   "tr": [
+    2,
+    1
+   ],
+   "s1": [
+    3,
+    1
+   ],
+   "s2": [
+    1,
+    1
+   ]
+  },
+  "links": {
+   "b1~entry": 1,
+   "b1~c1": 1,
+   "c1~c2": 1,
+   "c2~c3": 1,
+   "c3~safe": 1,
+   "boss~safe": 1,
+   "entry~g1a1": 1,
+   "c1~g1a1": 1,
+   "c3~tr": 1,
+   "c2~s1": 1,
+   "s2~safe": 1
+  }
+ },
+ "path": [
+  "entry",
+  "b1",
+  "c1",
+  "c2",
+  "c3",
+  "safe",
+  "boss"
+ ],
+ "theme": "화산",
+ "owner": "흙거북",
+ "rules": {
+  "restV": 2,
+  "alBattle": 5,
+  "alLose": 10,
+  "al30": 5,
+  "al70": 10,
+  "restShort": "all",
+  "restPO": 1,
+  "restPC": 1,
+  "restBreath": "one",
+  "restBC": 1
+ },
+ "note": "자동 생성 · 어려움 · 씨앗 167407 · 테마 화산. 사전 배틀 1 · 체크 5 · 보스방 6체 · 레이드 배틀 : 3 · 지도 갈림길 1 · 곧은길 + 곁방 3 · 야생 Lv +5."
+}
