@@ -1,0 +1,1592 @@
+{
+ "at": "2026-11-01",
+ "decks": [
+  "",
+  "base",
+  "sneak"
+ ],
+ "trios": 20,
+ "vn": 3,
+ "rows": [
+  {
+   "id": "auto_easy_10920",
+   "name": "고목의 숲 (쉬움)",
+   "tier": "easy",
+   "wr": {
+    "없음": 0.733,
+    "base": 0.817,
+    "sneak": 0.967
+   },
+   "st": {
+    "없음": {
+     "runs": 60,
+     "commit": 0,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 0,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {}
+    },
+    "base": {
+     "runs": 60,
+     "commit": 53,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 16,
+     "retryOk": 6,
+     "lock": 0,
+     "use": {
+      "nocrit": 29,
+      "reroll": 11,
+      "key": 16,
+      "retry": 6
+     },
+     "costSpent": 123,
+     "madIn": 0,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 809,
+     "mill": 1,
+     "overpay": 1,
+     "madOut": 0
+    },
+    "sneak": {
+     "runs": 60,
+     "commit": 54,
+     "mad": 0,
+     "dead": 0,
+     "skip": 31,
+     "autopass": 16,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {
+      "nocrit": 19,
+      "sneak": 31,
+      "reroll": 12,
+      "key": 16,
+      "gust": 4,
+      "bandage": 1
+     },
+     "costSpent": 192,
+     "madIn": 0,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 828,
+     "mill": 1,
+     "overpay": 0,
+     "madOut": 0
+    }
+   }
+  },
+  {
+   "id": "auto_easy_16941",
+   "name": "북쪽 산장의 얼음 동굴 (쉬움)",
+   "tier": "easy",
+   "wr": {
+    "없음": 0.7,
+    "base": 0.75,
+    "sneak": 0.733
+   },
+   "st": {
+    "없음": {
+     "runs": 60,
+     "commit": 0,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 0,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {}
+    },
+    "base": {
+     "runs": 60,
+     "commit": 78,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 1,
+     "retryOk": 6,
+     "lock": 0,
+     "use": {
+      "retry": 7,
+      "nocrit": 29,
+      "reroll": 3,
+      "gust": 3,
+      "key": 1
+     },
+     "costSpent": 83,
+     "madIn": 0,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 814,
+     "mill": 0,
+     "overpay": 0,
+     "madOut": 0
+    },
+    "sneak": {
+     "runs": 60,
+     "commit": 81,
+     "mad": 0,
+     "dead": 0,
+     "skip": 31,
+     "autopass": 1,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {
+      "sneak": 31,
+      "nocrit": 28,
+      "reroll": 1,
+      "gust": 4,
+      "key": 1
+     },
+     "costSpent": 157,
+     "madIn": 0,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 838,
+     "mill": 0,
+     "overpay": 0,
+     "madOut": 0
+    }
+   }
+  },
+  {
+   "id": "auto_easy_2002",
+   "name": "난파선 해안 (쉬움)",
+   "tier": "easy",
+   "wr": {
+    "없음": 0.717,
+    "base": 0.7,
+    "sneak": 0.783
+   },
+   "st": {
+    "없음": {
+     "runs": 60,
+     "commit": 0,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 0,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {}
+    },
+    "base": {
+     "runs": 60,
+     "commit": 186,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 0,
+     "retryOk": 11,
+     "lock": 0,
+     "use": {
+      "nocrit": 25,
+      "retry": 14,
+      "reroll": 6,
+      "gust": 9
+     },
+     "costSpent": 99,
+     "madIn": 0,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 931,
+     "mill": 0,
+     "overpay": 0,
+     "madOut": 0
+    },
+    "sneak": {
+     "runs": 60,
+     "commit": 170,
+     "mad": 0,
+     "dead": 0,
+     "skip": 23,
+     "autopass": 0,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {
+      "sneak": 23,
+      "nocrit": 21,
+      "reroll": 8,
+      "gust": 25
+     },
+     "costSpent": 152,
+     "madIn": 0,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 939,
+     "mill": 1,
+     "overpay": 0,
+     "madOut": 0
+    }
+   }
+  },
+  {
+   "id": "auto_easy_2003",
+   "name": "얼음 동굴 (쉬움)",
+   "tier": "easy",
+   "wr": {
+    "없음": 0.667,
+    "base": 0.717,
+    "sneak": 0.883
+   },
+   "st": {
+    "없음": {
+     "runs": 60,
+     "commit": 0,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 0,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {}
+    },
+    "base": {
+     "runs": 60,
+     "commit": 52,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 15,
+     "retryOk": 5,
+     "lock": 0,
+     "use": {
+      "nocrit": 38,
+      "retry": 5,
+      "reroll": 7,
+      "key": 15
+     },
+     "costSpent": 128,
+     "madIn": 0,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 807,
+     "mill": 2,
+     "overpay": 2,
+     "madOut": 0
+    },
+    "sneak": {
+     "runs": 60,
+     "commit": 62,
+     "mad": 0,
+     "dead": 0,
+     "skip": 70,
+     "autopass": 12,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {
+      "sneak": 70,
+      "nocrit": 23,
+      "reroll": 4,
+      "key": 12,
+      "gust": 2
+     },
+     "costSpent": 290,
+     "madIn": 0,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 870,
+     "mill": 0,
+     "overpay": 0,
+     "madOut": 0
+    }
+   }
+  },
+  {
+   "id": "auto_easy_32778",
+   "name": "후문 너머 난파선 해안 (쉬움)",
+   "tier": "easy",
+   "wr": {
+    "없음": 0.733,
+    "base": 0.767,
+    "sneak": 0.9
+   },
+   "st": {
+    "없음": {
+     "runs": 60,
+     "commit": 0,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 0,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {}
+    },
+    "base": {
+     "runs": 60,
+     "commit": 56,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 4,
+     "retryOk": 9,
+     "lock": 0,
+     "use": {
+      "reroll": 21,
+      "nocrit": 25,
+      "retry": 10,
+      "key": 4,
+      "gust": 2
+     },
+     "costSpent": 122,
+     "madIn": 0,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 803,
+     "mill": 0,
+     "overpay": 0,
+     "madOut": 0
+    },
+    "sneak": {
+     "runs": 60,
+     "commit": 59,
+     "mad": 0,
+     "dead": 0,
+     "skip": 70,
+     "autopass": 4,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {
+      "sneak": 70,
+      "reroll": 12,
+      "nocrit": 24,
+      "key": 4,
+      "gust": 7
+     },
+     "costSpent": 294,
+     "madIn": 0,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 865,
+     "mill": 3,
+     "overpay": 3,
+     "madOut": 0
+    }
+   }
+  },
+  {
+   "id": "auto_easy_56534",
+   "name": "식물원 뒤 금지림 (쉬움)",
+   "tier": "easy",
+   "wr": {
+    "없음": 0.9,
+    "base": 0.95,
+    "sneak": 0.95
+   },
+   "st": {
+    "없음": {
+     "runs": 60,
+     "commit": 0,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 0,
+     "retryOk": 0,
+     "lock": 1,
+     "use": {}
+    },
+    "base": {
+     "runs": 60,
+     "commit": 182,
+     "mad": 3,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 60,
+     "retryOk": 10,
+     "lock": 0,
+     "use": {
+      "retry": 11,
+      "nocrit": 17,
+      "key": 60,
+      "reroll": 6,
+      "gust": 12
+     },
+     "costSpent": 195,
+     "madIn": 3,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 985,
+     "mill": 5,
+     "overpay": 5,
+     "madOut": 0
+    },
+    "sneak": {
+     "runs": 60,
+     "commit": 176,
+     "mad": 3,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 60,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {
+      "gust": 30,
+      "key": 60,
+      "nocrit": 15,
+      "reroll": 5
+     },
+     "costSpent": 185,
+     "madIn": 3,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 986,
+     "mill": 5,
+     "overpay": 5,
+     "madOut": 0
+    }
+   }
+  },
+  {
+   "id": "auto_hard_10929",
+   "name": "버려진 별장 (어려움)",
+   "tier": "hard",
+   "wr": {
+    "없음": 0.167,
+    "base": 0.317,
+    "sneak": 0.317
+   },
+   "st": {
+    "없음": {
+     "runs": 60,
+     "commit": 0,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 0,
+     "retryOk": 0,
+     "lock": 1,
+     "use": {}
+    },
+    "base": {
+     "runs": 60,
+     "commit": 114,
+     "mad": 5,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 185,
+     "retryOk": 11,
+     "lock": 0,
+     "use": {
+      "key": 185,
+      "nocrit": 50,
+      "reroll": 12,
+      "retry": 15,
+      "gust": 8
+     },
+     "costSpent": 507,
+     "madIn": 5,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 1059,
+     "mill": 25,
+     "overpay": 25,
+     "madOut": 0
+    },
+    "sneak": {
+     "runs": 60,
+     "commit": 131,
+     "mad": 20,
+     "dead": 0,
+     "skip": 70,
+     "autopass": 170,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {
+      "key": 170,
+      "sneak": 70,
+      "nocrit": 56,
+      "gust": 23,
+      "reroll": 8
+     },
+     "costSpent": 617,
+     "madIn": 20,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 1118,
+     "mill": 84,
+     "overpay": 84,
+     "madOut": 0
+    }
+   }
+  },
+  {
+   "id": "auto_hard_167407",
+   "name": "유황 협곡의 분화구 (어려움)",
+   "tier": "hard",
+   "wr": {
+    "없음": 0.183,
+    "base": 0.417,
+    "sneak": 0.4
+   },
+   "st": {
+    "없음": {
+     "runs": 60,
+     "commit": 0,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 0,
+     "retryOk": 0,
+     "lock": 1,
+     "use": {}
+    },
+    "base": {
+     "runs": 60,
+     "commit": 203,
+     "mad": 11,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 182,
+     "retryOk": 16,
+     "lock": 0,
+     "use": {
+      "key": 182,
+      "reroll": 7,
+      "retry": 23,
+      "nocrit": 44,
+      "gust": 17
+     },
+     "costSpent": 502,
+     "madIn": 11,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 1151,
+     "mill": 28,
+     "overpay": 27,
+     "madOut": 0
+    },
+    "sneak": {
+     "runs": 60,
+     "commit": 209,
+     "mad": 15,
+     "dead": 0,
+     "skip": 31,
+     "autopass": 172,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {
+      "key": 172,
+      "reroll": 11,
+      "gust": 33,
+      "nocrit": 43,
+      "sneak": 31,
+      "bandage": 1
+     },
+     "costSpent": 539,
+     "madIn": 15,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 1168,
+     "mill": 43,
+     "overpay": 40,
+     "madOut": 0
+    }
+   }
+  },
+  {
+   "id": "auto_hard_17846",
+   "name": "재의 고원 (어려움)",
+   "tier": "hard",
+   "wr": {
+    "없음": 0.15,
+    "base": 0.233,
+    "sneak": 0.367
+   },
+   "st": {
+    "없음": {
+     "runs": 60,
+     "commit": 0,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 0,
+     "retryOk": 0,
+     "lock": 1,
+     "use": {}
+    },
+    "base": {
+     "runs": 60,
+     "commit": 171,
+     "mad": 9,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 192,
+     "retryOk": 11,
+     "lock": 0,
+     "use": {
+      "key": 192,
+      "nocrit": 53,
+      "retry": 14,
+      "gust": 5,
+      "reroll": 6
+     },
+     "costSpent": 505,
+     "madIn": 9,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 1,
+     "penClear": 1,
+     "noCost": 0,
+     "draws": 1114,
+     "mill": 30,
+     "overpay": 30,
+     "madOut": 0
+    },
+    "sneak": {
+     "runs": 60,
+     "commit": 186,
+     "mad": 17,
+     "dead": 0,
+     "skip": 54,
+     "autopass": 172,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {
+      "key": 172,
+      "sneak": 54,
+      "nocrit": 40,
+      "gust": 26,
+      "reroll": 2
+     },
+     "costSpent": 567,
+     "madIn": 17,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 1,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 1159,
+     "mill": 51,
+     "overpay": 49,
+     "madOut": 0
+    }
+   }
+  },
+  {
+   "id": "auto_hard_2009",
+   "name": "메아리 굴 (어려움)",
+   "tier": "hard",
+   "wr": {
+    "없음": 0.317,
+    "base": 0.467,
+    "sneak": 0.633
+   },
+   "st": {
+    "없음": {
+     "runs": 60,
+     "commit": 0,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 0,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {}
+    },
+    "base": {
+     "runs": 60,
+     "commit": 54,
+     "mad": 2,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 149,
+     "retryOk": 6,
+     "lock": 0,
+     "use": {
+      "key": 149,
+      "nocrit": 40,
+      "retry": 9,
+      "reroll": 9,
+      "gust": 4
+     },
+     "costSpent": 398,
+     "madIn": 2,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 953,
+     "mill": 20,
+     "overpay": 20,
+     "madOut": 0
+    },
+    "sneak": {
+     "runs": 60,
+     "commit": 70,
+     "mad": 12,
+     "dead": 0,
+     "skip": 70,
+     "autopass": 148,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {
+      "key": 148,
+      "sneak": 70,
+      "nocrit": 43,
+      "reroll": 13,
+      "gust": 12
+     },
+     "costSpent": 568,
+     "madIn": 12,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 1025,
+     "mill": 62,
+     "overpay": 62,
+     "madOut": 0
+    }
+   }
+  },
+  {
+   "id": "auto_hard_2109",
+   "name": "각성 연구소 봉쇄 구역 (어려움)",
+   "tier": "hard",
+   "wr": {
+    "없음": 0.2,
+    "base": 0.5,
+    "sneak": 0.55
+   },
+   "st": {
+    "없음": {
+     "runs": 60,
+     "commit": 0,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 0,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {}
+    },
+    "base": {
+     "runs": 60,
+     "commit": 40,
+     "mad": 2,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 158,
+     "retryOk": 4,
+     "lock": 0,
+     "use": {
+      "key": 158,
+      "nocrit": 42,
+      "retry": 16,
+      "reroll": 14,
+      "gust": 12
+     },
+     "costSpent": 453,
+     "madIn": 2,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 954,
+     "mill": 19,
+     "overpay": 19,
+     "madOut": 0
+    },
+    "sneak": {
+     "runs": 60,
+     "commit": 59,
+     "mad": 13,
+     "dead": 0,
+     "skip": 54,
+     "autopass": 148,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {
+      "key": 148,
+      "sneak": 54,
+      "nocrit": 30,
+      "gust": 20,
+      "reroll": 8
+     },
+     "costSpent": 514,
+     "madIn": 13,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 1,
+     "penClear": 1,
+     "noCost": 0,
+     "draws": 1004,
+     "mill": 42,
+     "overpay": 40,
+     "madOut": 0
+    }
+   }
+  },
+  {
+   "id": "auto_hard_40705",
+   "name": "시계탑 아래 잠든 신전 (어려움)",
+   "tier": "hard",
+   "wr": {
+    "없음": 0.367,
+    "base": 0.55,
+    "sneak": 0.733
+   },
+   "st": {
+    "없음": {
+     "runs": 60,
+     "commit": 0,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 0,
+     "retryOk": 0,
+     "lock": 2,
+     "use": {}
+    },
+    "base": {
+     "runs": 60,
+     "commit": 178,
+     "mad": 9,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 182,
+     "retryOk": 14,
+     "lock": 0,
+     "use": {
+      "key": 182,
+      "nocrit": 51,
+      "retry": 22,
+      "gust": 11,
+      "reroll": 14
+     },
+     "costSpent": 513,
+     "madIn": 9,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 1,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 1123,
+     "mill": 37,
+     "overpay": 36,
+     "madOut": 0
+    },
+    "sneak": {
+     "runs": 60,
+     "commit": 190,
+     "mad": 12,
+     "dead": 0,
+     "skip": 31,
+     "autopass": 172,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {
+      "key": 172,
+      "nocrit": 44,
+      "sneak": 31,
+      "bandage": 1,
+      "gust": 31,
+      "reroll": 9
+     },
+     "costSpent": 531,
+     "madIn": 12,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 1147,
+     "mill": 46,
+     "overpay": 44,
+     "madOut": 0
+    }
+   }
+  },
+  {
+   "id": "auto_normal_1106",
+   "name": "종탑 아래 메아리 갱도 (보통)",
+   "tier": "normal",
+   "wr": {
+    "없음": 0.55,
+    "base": 0.717,
+    "sneak": 0.833
+   },
+   "st": {
+    "없음": {
+     "runs": 60,
+     "commit": 0,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 0,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {}
+    },
+    "base": {
+     "runs": 60,
+     "commit": 63,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 146,
+     "retryOk": 6,
+     "lock": 0,
+     "use": {
+      "key": 146,
+      "nocrit": 37,
+      "retry": 7,
+      "gust": 3,
+      "reroll": 8
+     },
+     "costSpent": 388,
+     "madIn": 0,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 944,
+     "mill": 11,
+     "overpay": 11,
+     "madOut": 0
+    },
+    "sneak": {
+     "runs": 60,
+     "commit": 64,
+     "mad": 5,
+     "dead": 0,
+     "skip": 31,
+     "autopass": 142,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {
+      "key": 142,
+      "sneak": 31,
+      "gust": 7,
+      "nocrit": 37,
+      "reroll": 4
+     },
+     "costSpent": 439,
+     "madIn": 5,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 965,
+     "mill": 27,
+     "overpay": 27,
+     "madOut": 0
+    }
+   }
+  },
+  {
+   "id": "auto_normal_1107",
+   "name": "제2 연구동 지하 사육실 (보통)",
+   "tier": "normal",
+   "wr": {
+    "없음": 0.633,
+    "base": 0.767,
+    "sneak": 0.833
+   },
+   "st": {
+    "없음": {
+     "runs": 60,
+     "commit": 0,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 0,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {}
+    },
+    "base": {
+     "runs": 60,
+     "commit": 27,
+     "mad": 1,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 138,
+     "retryOk": 4,
+     "lock": 0,
+     "use": {
+      "key": 138,
+      "nocrit": 27,
+      "retry": 6,
+      "gust": 2,
+      "reroll": 10
+     },
+     "costSpent": 353,
+     "madIn": 1,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 901,
+     "mill": 11,
+     "overpay": 11,
+     "madOut": 0
+    },
+    "sneak": {
+     "runs": 60,
+     "commit": 41,
+     "mad": 8,
+     "dead": 0,
+     "skip": 54,
+     "autopass": 131,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {
+      "key": 131,
+      "sneak": 54,
+      "reroll": 10,
+      "nocrit": 22,
+      "gust": 9
+     },
+     "costSpent": 459,
+     "madIn": 8,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 957,
+     "mill": 38,
+     "overpay": 38,
+     "madOut": 0
+    }
+   }
+  },
+  {
+   "id": "auto_normal_16943",
+   "name": "옛 기록 보관소 지하 서고 (보통)",
+   "tier": "normal",
+   "wr": {
+    "없음": 0.5,
+    "base": 0.617,
+    "sneak": 0.667
+   },
+   "st": {
+    "없음": {
+     "runs": 60,
+     "commit": 0,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 0,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {}
+    },
+    "base": {
+     "runs": 60,
+     "commit": 170,
+     "mad": 2,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 47,
+     "retryOk": 9,
+     "lock": 0,
+     "use": {
+      "reroll": 10,
+      "key": 47,
+      "nocrit": 37,
+      "retry": 11,
+      "gust": 3
+     },
+     "costSpent": 207,
+     "madIn": 2,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 964,
+     "mill": 6,
+     "overpay": 6,
+     "madOut": 0
+    },
+    "sneak": {
+     "runs": 60,
+     "commit": 161,
+     "mad": 6,
+     "dead": 0,
+     "skip": 70,
+     "autopass": 51,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {
+      "sneak": 70,
+      "key": 51,
+      "nocrit": 36,
+      "reroll": 12,
+      "gust": 10
+     },
+     "costSpent": 393,
+     "madIn": 6,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 1015,
+     "mill": 25,
+     "overpay": 25,
+     "madOut": 0
+    }
+   }
+  },
+  {
+   "id": "auto_normal_2004",
+   "name": "메아리 굴 (보통)",
+   "tier": "normal",
+   "wr": {
+    "없음": 0.683,
+    "base": 0.733,
+    "sneak": 0.8
+   },
+   "st": {
+    "없음": {
+     "runs": 60,
+     "commit": 0,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 0,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {}
+    },
+    "base": {
+     "runs": 60,
+     "commit": 238,
+     "mad": 2,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 52,
+     "retryOk": 15,
+     "lock": 0,
+     "use": {
+      "key": 52,
+      "nocrit": 25,
+      "retry": 17,
+      "gust": 4,
+      "reroll": 6
+     },
+     "costSpent": 199,
+     "madIn": 2,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 1043,
+     "mill": 5,
+     "overpay": 5,
+     "madOut": 0
+    },
+    "sneak": {
+     "runs": 60,
+     "commit": 221,
+     "mad": 4,
+     "dead": 0,
+     "skip": 54,
+     "autopass": 53,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {
+      "sneak": 54,
+      "key": 53,
+      "nocrit": 19,
+      "gust": 19,
+      "reroll": 5,
+      "bandage": 1
+     },
+     "costSpent": 325,
+     "madIn": 4,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 1070,
+     "mill": 15,
+     "overpay": 11,
+     "madOut": 0
+    }
+   }
+  },
+  {
+   "id": "auto_normal_2006",
+   "name": "잊힌 성채 (보통)",
+   "tier": "normal",
+   "wr": {
+    "없음": 0.55,
+    "base": 0.667,
+    "sneak": 0.717
+   },
+   "st": {
+    "없음": {
+     "runs": 60,
+     "commit": 0,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 0,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {}
+    },
+    "base": {
+     "runs": 60,
+     "commit": 60,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 146,
+     "retryOk": 6,
+     "lock": 0,
+     "use": {
+      "key": 146,
+      "reroll": 8,
+      "nocrit": 32,
+      "retry": 7,
+      "gust": 1
+     },
+     "costSpent": 381,
+     "madIn": 0,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 939,
+     "mill": 6,
+     "overpay": 6,
+     "madOut": 0
+    },
+    "sneak": {
+     "runs": 60,
+     "commit": 66,
+     "mad": 5,
+     "dead": 0,
+     "skip": 31,
+     "autopass": 142,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {
+      "key": 142,
+      "sneak": 31,
+      "nocrit": 36,
+      "reroll": 8,
+      "gust": 6
+     },
+     "costSpent": 439,
+     "madIn": 5,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 965,
+     "mill": 32,
+     "overpay": 32,
+     "madOut": 0
+    }
+   }
+  },
+  {
+   "id": "auto_normal_2007",
+   "name": "지하 관측소 (보통)",
+   "tier": "normal",
+   "wr": {
+    "없음": 0.617,
+    "base": 0.717,
+    "sneak": 0.9
+   },
+   "st": {
+    "없음": {
+     "runs": 60,
+     "commit": 0,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 0,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {}
+    },
+    "base": {
+     "runs": 60,
+     "commit": 27,
+     "mad": 1,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 128,
+     "retryOk": 1,
+     "lock": 0,
+     "use": {
+      "key": 128,
+      "nocrit": 35,
+      "reroll": 12,
+      "retry": 3,
+      "gust": 2
+     },
+     "costSpent": 348,
+     "madIn": 1,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 889,
+     "mill": 10,
+     "overpay": 10,
+     "madOut": 0
+    },
+    "sneak": {
+     "runs": 60,
+     "commit": 39,
+     "mad": 6,
+     "dead": 0,
+     "skip": 54,
+     "autopass": 122,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {
+      "sneak": 54,
+      "key": 122,
+      "nocrit": 32,
+      "reroll": 9,
+      "gust": 3
+     },
+     "costSpent": 459,
+     "madIn": 6,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 940,
+     "mill": 32,
+     "overpay": 32,
+     "madOut": 0
+    }
+   }
+  },
+  {
+   "id": "auto_normal_3005",
+   "name": "흐느끼는 저택 (보통)",
+   "tier": "normal",
+   "wr": {
+    "없음": 0.633,
+    "base": 0.783,
+    "sneak": 0.767
+   },
+   "st": {
+    "없음": {
+     "runs": 60,
+     "commit": 0,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 0,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {}
+    },
+    "base": {
+     "runs": 60,
+     "commit": 62,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 146,
+     "retryOk": 1,
+     "lock": 0,
+     "use": {
+      "key": 146,
+      "nocrit": 28,
+      "retry": 2,
+      "reroll": 6,
+      "gust": 2
+     },
+     "costSpent": 359,
+     "madIn": 0,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 934,
+     "mill": 7,
+     "overpay": 7,
+     "madOut": 0
+    },
+    "sneak": {
+     "runs": 60,
+     "commit": 69,
+     "mad": 3,
+     "dead": 0,
+     "skip": 31,
+     "autopass": 142,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {
+      "key": 142,
+      "nocrit": 34,
+      "sneak": 31,
+      "gust": 3,
+      "reroll": 3
+     },
+     "costSpent": 437,
+     "madIn": 3,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 965,
+     "mill": 17,
+     "overpay": 17,
+     "madOut": 0
+    }
+   }
+  },
+  {
+   "id": "auto_normal_9023",
+   "name": "폐쇄된 구 기숙사 (보통)",
+   "tier": "normal",
+   "wr": {
+    "없음": 0.633,
+    "base": 0.633,
+    "sneak": 0.767
+   },
+   "st": {
+    "없음": {
+     "runs": 60,
+     "commit": 0,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 0,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {}
+    },
+    "base": {
+     "runs": 60,
+     "commit": 288,
+     "mad": 4,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 33,
+     "retryOk": 10,
+     "lock": 0,
+     "use": {
+      "retry": 13,
+      "nocrit": 43,
+      "key": 33,
+      "reroll": 16,
+      "gust": 7
+     },
+     "costSpent": 214,
+     "madIn": 4,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 1086,
+     "mill": 3,
+     "overpay": 3,
+     "madOut": 0
+    },
+    "sneak": {
+     "runs": 60,
+     "commit": 248,
+     "mad": 1,
+     "dead": 0,
+     "skip": 70,
+     "autopass": 37,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {
+      "sneak": 70,
+      "nocrit": 38,
+      "key": 37,
+      "reroll": 3,
+      "gust": 10
+     },
+     "costSpent": 371,
+     "madIn": 1,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 1093,
+     "mill": 7,
+     "overpay": 5,
+     "madOut": 0
+    }
+   }
+  }
+ ],
+ "note": "11-01 21:58 덱 = 체력: 손패 4 · 배틀 시작 · 짧은 · 중간 휴식에 4장까지 · 부상 1 · 중상 2 덱 버리기 · 빈사 증상 · 코스트 부족분 덱 버리기 · 증상 칸 2 → 퇴장 · 긴 휴식 증상 1장 빼기 · 커버 휴식 사이 1회. 결과: base 쉬움 78.3 · 보통 70.4 · 어려움 41.4%, sneak 86.9 · 78.5 · 50.0%. 1200판(3명)당 덱 소진 base 0.04 · sneak 0.11번, 덱 버리기 0.19 · 0.44장, 퇴장 0. 시뮬 AI는 체크가 적고(던전당 3.5번) 거의 실패하지 않아 다치지 않음 — 덱 시계는 실제 플레이보다 훨씬 느리게 나온다"
+}
