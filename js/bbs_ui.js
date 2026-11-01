@@ -161,4 +161,4 @@ window.OM_BBS_UI=(()=>{
   if(window.OM_APP&&window.OM_STORE)fab();if(!room())return;
   const gap=S.open?20000:(window.OM_APP?90000:0);if(gap&&Date.now()-S.lastPoll>gap&&!S.noSql)pull()},2000);
  document.addEventListener('click',onClick);document.addEventListener('submit',onSubmit);document.addEventListener('input',onInput);document.addEventListener('change',onChange);
- return {openBoard,mount,onEvent,pull,apiFromRpc,unread:()=>S.unread}})();
+ return {V:4,openBoard,mount,onEvent,pull,apiFromRpc,unread:()=>S.unread}})();   /* V: 세션 노트가 이보다 옛 것을 들고 있으면 다시 불러온다 */
