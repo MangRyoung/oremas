@@ -96,5 +96,5 @@ const FX=()=>window.OM_FX;
    if(h.st){if(setState(m,h.st))lines.push(`${m.name} 「${h.k}」 → 「${ko(h.st)}」`);continue}
    if(h.f){dmg(m,frac(m,1,h.f),lines,`「${h.k}」 1/${h.f}`);if(h.once){delete objs[h.k];removed.push(h.k)}}}
   return {lines,removed,forced}}
- return {actionCheck,confusionHit,turnEndStates,turnEndField,hazardsOnEntry,grounded,itemOf};
+ return {actionCheck,confusionHit,turnEndStates,turnEndField,hazardsOnEntry,grounded,itemOf,HAZ,RM};   /* 11-01 망령: HAZ · RM 은 설치물 전개 카드(battle_ui fcInfo)가 효과 글을 만드는 데 읽는다 */
 })();

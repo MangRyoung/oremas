@@ -4881,3 +4881,28 @@ html[data-vt="mm"] .memon .medet{border-color:rgba(20,16,12,.4)}
 /* 10-31 망령: 마감한 스킬 체크 카드 */
 .bcard.skc .skc-end{display:none;margin-left:auto;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;border:1px solid currentColor;opacity:.8}
 .bcard.skc.skc-closed{opacity:.62;filter:saturate(.35)}.bcard.skc.skc-closed .skc-end{display:inline-block}
+
+/* 11-01 망령 「필드 · 날씨 · 설치물 전개 때 효과 UI 를 로그에」: 전개 카드 (battle_ui fieldCard) — 왼쪽 그림 · 이름 · 남은 턴(겹 점) · 효과 줄 · 전개한 쪽. --tc = 날씨 · 필드마다 색 */
+.bcard.fcard{display:flex;align-items:stretch;background:linear-gradient(100deg,color-mix(in srgb,var(--tc) 9%,#15161a),#15161a 60%)}
+.fcth{flex:none;width:68px;position:relative;background:#000 center/cover no-repeat;border-right:1px solid color-mix(in srgb,var(--tc) 45%,#000)}
+.fcth::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 55%,color-mix(in srgb,var(--tc) 45%,transparent)),linear-gradient(90deg,transparent 70%,rgba(21,22,26,.55))}
+.fcth.gly{display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--tc) 85%,#fff),color-mix(in srgb,var(--tc) 30%,#101114) 75%)}
+.fcth.gly::after{background:repeating-linear-gradient(135deg,rgba(255,255,255,.06) 0 3px,transparent 3px 8px)}
+.fcth.gly i{font-style:normal;font-size:22px;line-height:1;color:#fff;text-shadow:0 1px 0 rgba(0,0,0,.45);position:relative;z-index:1}
+.fcm{flex:1;min-width:0;display:flex;flex-direction:column}
+.fch{display:flex;align-items:center;flex-wrap:wrap;gap:4px 7px;padding:5px 10px;background:linear-gradient(90deg,color-mix(in srgb,var(--tc) 30%,#0c0c0e),transparent 85%)}
+.fch .bctag{flex:none;color:var(--tf,#fff)}
+.fch b{font-family:var(--font);font-weight:700;font-size:15px;line-height:1.35;color:#fff;letter-spacing:.01em;white-space:nowrap}
+.fcside{flex:none;font-size:10.5px;line-height:1.5;padding:0 6px;border:1px solid currentColor;border-radius:3px;font-weight:700}.fcside.left{color:var(--left)}.fcside.right{color:var(--right)}
+.fcd{flex:none;margin-left:auto;display:inline-flex;align-items:center;gap:3px;font-family:var(--mono);font-size:11.5px;font-weight:500;color:#fff;white-space:nowrap;padding:1px 9px;border-radius:999px;border:1px solid var(--tc);background:color-mix(in srgb,var(--tc) 24%,transparent)}
+.fcd.lay i{display:inline-block;width:7px;height:7px;border-radius:50%;border:1px solid var(--tc)}.fcd.lay i.on{background:var(--tc);box-shadow:0 0 4px color-mix(in srgb,var(--tc) 70%,transparent)}.fcd.lay small{font-size:11px;margin-left:3px}
+.fcsub{font-size:11.5px;color:#a6a8b2;padding:4px 10px 0;line-height:1.4}
+.fcl{display:flex;flex-direction:column;gap:1px;padding:4px 10px 6px;font-size:calc(var(--chatfs) - .5px);line-height:1.45}
+.fcl div{position:relative;padding-left:12px;color:#e6e6ea}.fcl div::before{content:'›';position:absolute;left:2px;color:var(--tc);font-weight:700}
+.fcby{display:flex;align-items:center;gap:6px;padding:0 10px 7px;font-size:11.5px;color:#a6a8b2;min-width:0}
+.fcby span:last-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fcbl{flex:none;font-size:10px;letter-spacing:.08em;color:var(--tc);border:1px solid color-mix(in srgb,var(--tc) 60%,transparent);padding:0 5px;border-radius:2px}
+.fcbav{flex:none;width:18px;height:18px;border-radius:3px;background:#000 center/cover no-repeat;border:1px solid #444}
+.bcard.fcard.end{background:#15161a;opacity:.82}.bcard.fcard.end .fcth{width:36px;filter:saturate(.45) brightness(.8)}.bcard.fcard.end .fcth.gly i{font-size:14px}
+.bcard.fcard.end .fch{background:none;padding:4px 10px}.bcard.fcard.end .fch b{font-size:13px;color:#cfd0d6;text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--tc) 70%,transparent)}
+.fcend{flex:none;font-size:11px;color:#a6a8b2;border:1px dashed #555;padding:0 8px;border-radius:999px}

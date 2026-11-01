@@ -53,7 +53,8 @@ window.OM_BATTLE_UI=(()=>{
  /* 바뀐 칸만 쓴다 (점검 2-4) — 배틀을 통째로 쓰면 그 사이 남이 바꾼 칸(다른 포켓몬의 피해, 지시 공개 …)이 지워진다.
     nb0 = 사본을 뜰 때의 배틀, nb = 고친 사본 (f 를 주면 필드도 그걸로). 포켓몬은 칸(hp · states …) 하나 단위로, 턴·페이즈는 맨 끝에 쓴다 */
  const snap=x=>JSON.parse(JSON.stringify(x===undefined?ctx().b:x));
- function saveBattle(nb0,nb,f){if(f!==undefined)nb.field=f;const FL=faintSweep(nb0,nb);const ops=A().diffOps(['battle'],nb0,nb,3);const last=p=>(p[1]==='turn'||p[1]==='phase')?1:0;ops.sort((x,y)=>last(x[0])-last(y[0]));return A().setMany(ops).then(r=>{if(r&&ops.length)itemKick();if(r&&FL.length)A().sysLog(FL.join('\n'),'battle');return r})}
+ function saveBattle(nb0,nb,f,by){if(f!==undefined)nb.field=f;const FL=faintSweep(nb0,nb);const ops=A().diffOps(['battle'],nb0,nb,3);const last=p=>(p[1]==='turn'||p[1]==='phase')?1:0;ops.sort((x,y)=>last(x[0])-last(y[0]));const fa=snap(nb0.field||{}),fz=snap(nb.field||{});   /* 11-01 망령: by = 전개한 쪽 {n,s,img} — 필드가 바뀌었으면 전개 카드 (fieldLog) */
+  return A().setMany(ops).then(r=>{if(r&&ops.length)itemKick();if(r&&FL.length)A().sysLog(FL.join('\n'),'battle');if(r&&ops.length)fieldLog(fa,fz,by,nb,350);return r})}
  /* 10-23 망령: 쓰러진 포켓몬이 다른 포켓몬에게 건 포텐셜 · 특성 효과(옵저버 …)와 「필드 위에 있는 한」 효과도 퇴장처럼 푼다 */
  function faintSweep(nb0,nb){const L=[];if(!FX()||!nb0||!nb)return L;for(const id in nb.mons||{}){const m=nb.mons[id],o=(nb0.mons||{})[id];if(!o||!o.entry||!m||m.entry||m.hp.cur>0)continue;L.push(...auraOff(nb,m).L);if(FX().release)L.push(...FX().release(nb,m))}return L}
  async function faintOff(mid){const nb0=snap(),nb=snap(nb0);const m=nb.mons[mid];if(!m||m.hp.cur>0||!FX())return;const L=[...auraOff(nb,m).L,...(FX().release?FX().release(nb,m):[])];if(!L.length)return;if(await A().setMany(A().diffOps(['battle'],nb0,nb,3)))A().sysLog(L.join('\n'),'battle')}
@@ -959,7 +960,7 @@ window.OM_BATTLE_UI=(()=>{
   if(!fx.length&&FX()){const a=FX().rm(name)||FX().rm(String(name).replace(/\s*[:：]\s*/,' / '));if(a&&a.ops&&a.ops.length&&!a.manual){const r=await FX().run(a.ops,uiCtx(b,m,name,m.entry));fx.push(...r.lines)}}
   if(!fx.length)fx.push(`「${name}」 — 손으로 처리`);
   A().closeModal();
-  const okT=await A().setDiff(['battle','trainers',tid],b0.trainers[tid],t,1);if(!okT)return;if(String(((A().ST.state.rp||{}).cutin||{}).ord)!=='0')cutFire('t:'+tid,trainerImg(t),`${t.name}의 지시!`,`『${name}』`,t.side==='left'?'#1f6fd1':'#e3101f');b.trainers[tid]=b0.trainers[tid];await saveBattle(b0,b,f);await A().set(['battle','cmds',tid,'fired',mid,kind],key);
+  const okT=await A().setDiff(['battle','trainers',tid],b0.trainers[tid],t,1);if(!okT)return;if(String(((A().ST.state.rp||{}).cutin||{}).ord)!=='0')cutFire('t:'+tid,trainerImg(t),`${t.name}의 지시!`,`『${name}』`,t.side==='left'?'#1f6fd1':'#e3101f');b.trainers[tid]=b0.trainers[tid];await saveBattle(b0,b,f,{n:t.name,s:name,img:trainerImg(t)});await A().set(['battle','cmds',tid,'fired',mid,kind],key);
   const oeff=(FX()&&FX().rm&&(FX().rm(name)||{}).text)||'';
   A().sysLog(`【${kind==='order'?'명령':'지령'}】 ${t.name}의 지시! 『${name}』 → ${m.name} (에리어 ${String(m.entry).toUpperCase()}) 【${Math.max(0,+t.orderCount[ck]||0)}/시】${tag}${fx.length?'\n'+fx.join('\n'):''}`,'battle',{mid:m.id,img:trainerImg(t),eff:String(oeff).replace(/<br\s*\/?>/g,'\n').slice(0,400)})}
  /* 【사전】 태그: 지시 준비(페이즈 0)에도 쓸 수 있다 — 효과 글은 레디메이드 · 제작기 포텐셜 표에서 */
@@ -1408,11 +1409,11 @@ window.OM_BATTLE_UI=(()=>{
     if(ops.length){const res=await FX().run(ops,{b,self:m,name,pick:list=>list.find(x=>x.id===tg.id)||null,confirm:async()=>true,choose:async()=>[0]});L.push(...res.lines.map(x=>pre+String(x).replace(/(」(?: \d+턴)?) — .*$/,'$1')+roll))   /* 상태 설명 글은 줄인다 */}
     if(ru.setTrait){if(FX().setAb)FX().setAb(tg,ru.setTrait,name);else{if(tg.abilityOrig==null)tg.abilityOrig=tg.ability||'';tg.abilityBy=name;tg.ability=ru.setTrait;tg.abilityEff=((DB().traits||{})[ru.setTrait]||{}).multi||''}L.push(`${pre}${tg.name} 특성 → 「${ru.setTrait}」${roll}`)}}}
   if(!L.length)return;for(const id in b.mons){const x=b.mons[id];if(x.entry&&x.hp.cur<=0)x.entry=''}
-  if(await saveBattle(b0,b))A().sysLog(`【특성】 ${m.name} 「${abNm(m)}」${n>1?' · '+n+'번 맞음':''}\n${L.join('\n')}`,'battle',{mid,img:m.image||''})}
+  if(await saveBattle(b0,b,undefined,{n:m.name,s:abNm(m),img:m.image||''}))A().sysLog(`【특성】 ${m.name} 「${abNm(m)}」${n>1?' · '+n+'번 맞음':''}\n${L.join('\n')}`,'battle',{mid,img:m.image||''})}
  /* 맞은 뒤 소지품 반응 (약점보험 · 울퉁불퉁멧 · 옐로우카드 · 풍선 · 구근 …): 받는 쪽 화면에서, 공격한 쪽도 함께 고친다 */
  async function itemHitReact(mid,lh,dealt,n){const b0=snap(),b=snap(b0);const m=b.mons[mid];if(!m)return;let L=[];try{L=OI().onHit(b,m,lh,dealt,n)}catch(e){console.warn(e);return}if(!L.length)return;
   for(const id in b.mons){const x=b.mons[id];if(x.entry&&x.hp.cur<=0)x.entry=''}
-  if(await saveBattle(b0,b))A().sysLog(`【소지품】 ${m.name} 『${(b0.mons[mid]||{}).item||''}』\n${L.join('\n')}`,'battle',{mid,img:m.image||'',eff:String(((DB().items||{})[String((b0.mons[mid]||{}).item||'').replace(/『|』/g,'').trim()]||{}).eff||'').slice(0,300)})}
+  if(await saveBattle(b0,b,undefined,{n:m.name,s:(b0.mons[mid]||{}).item||'',img:m.image||''}))A().sysLog(`【소지품】 ${m.name} 『${(b0.mons[mid]||{}).item||''}』\n${L.join('\n')}`,'battle',{mid,img:m.image||'',eff:String(((DB().items||{})[String((b0.mons[mid]||{}).item||'').replace(/『|』/g,'').trim()]||{}).eff||'').slice(0,300)})}
  async function itemConsume(mid,undo){const m0=snap(ctx().b.mons[mid]);if(!m0)return;const x=snap(m0);
   if(undo){const u=x.itemUsed;if(!u||x.item)return;x.item=u.name;x.itemEff=u.eff||'';delete x.itemUsed;await saveMon(m0,mid,x);return A().sysLog(`${x.name} 「${u.name}」 소모 되돌림`,'battle')}
   if(!x.item)return;const name=x.item;x.itemUsed={name,eff:x.itemEff||'',turn:+ctx().b.turn||0};if(FX())FX().removeByName(x,name);x.item='';x.itemEff='';
@@ -1521,7 +1522,75 @@ window.OM_BATTLE_UI=(()=>{
     if(on.length)ch.push('+'+on.join(','));if(off.length)ch.push('−'+off.join(','));if(nm.hp.cur!==m.hp.cur)ch.push(`HP ${m.hp.cur}→${nm.hp.cur}`);const itCh=(nm.item||'')!==(m.item||'')?`소지품 ${nm.item||'없음'}`:'';
     const dsc=sb.filter(k=>!sa.includes(k)).map(k=>{const ds=stDesc(k);return ds.length?`「${stName(k)}」 ${ds.join(' ')}`:''}).filter(Boolean);if(ch.length)A().sysLog(`${m.name}: ${ch.join(' · ')}${dsc.length?'\n'+dsc.join('\n'):''}`,'battle',{mid,img:m.image||''});if(itCh&&A().selfLog)A().selfLog(`${m.name}: ${itCh}`)}}}
 
+ /* ---------- 11-01 망령 「필드 · 날씨 · 설치물 전개 때 효과 UI 를 로그에」 ----------
+    배틀을 쓸 때(saveBattle · 필드 창 · 설치물 창) 쓰기 전후 필드를 견주어(fieldDiff) 새로 깔리거나 갱신된 날씨 · 필드 · 룸 · 필드의 상태 · 설치물마다
+    배틀 로그 한 줄(data.fc)을 남긴다 — 다른 배틀 카드처럼 로그 표로 모두에게 간다. 그리는 건 fieldCard (app.js battleCard 가 부른다), 걷히면 작은 카드.
+    글(data.t)은 「【날씨】 비 — 5턴」 + 효과 줄이라 카드를 모르는 곳(로그 저장 · 정리기)에서도 보통 배틀 카드로 읽힌다. 효과 글은 실제 계산 규칙(WEATHER_MUL · field.js HAZ/RM · 공격 창 배율)에서 */
+ const FC_KIND={w:'날씨',t:'필드',r:'룸',e:'필드의 상태',o:'설치물'};
+ const FC_COL={맑음:'#f08a24',큰가뭄:'#e5531a',비:'#3b8fe0',폭우:'#2a5fd0',모래바람:'#c49a5a',싸라기눈:'#6fc9de',눈:'#9fe3ef',극한:'#58c0e0',짙은안개:'#9aa0b4',밤:'#6a5cc4',깊은밤:'#4b3aa6',별하늘:'#7486ea',난기류:'#6fb7a3',
+  그래스필드:'#3fae5a',일렉트릭필드:'#f2c418',미스트필드:'#ef7fb8',사이코필드:'#a65fd6',트릭룸:'#c75fd0',매직룸:'#4f8ad6',원더룸:'#d6894f',블랙룸:'#6d7290',중력:'#7a6fd0',물놀이:'#3fa6d6',흙놀이:'#a07a4a',
+  wall:'#4fb3c9',aid:'#5cbf8c',hazA:'#8d877c',hazB:'#8d877c',etc:'#9a8fb0',guard:'#7d93b0',스텔스록:'#a8875a',독압정:'#9a62c0',불바다:'#e0562a'};
+ const FC_GLY={wall:'◆',aid:'✦',hazA:'▲',hazB:'▲',etc:'●',guard:'◆'};
+ const FC_LAY={압정뿌리기:3,독압정:2};
+ const fcEnd=x=>x.k==='o'&&/^haz/.test(objCat(x.n)[0])?'철거':'끝';   /* 설치기는 「철거」, 벽 · 날씨 · 룸은 「끝」 */
+ function fcDur(x){if(x.end)return '끝';if(x.k==='o'&&FC_LAY[x.n])return (+x.c||1)+'겹';return (!+x.c||+x.c>=1000)?'계속':(+x.c)+'턴'}
+ function fcInfo(x,b){const n=x.n,L=[];let note='';const tk=t=>S().typeKo(t);const ws=mode(b||{})>=2?0.67:0.5;
+  if(x.k==='w'){const M=WEATHER_MUL[n]||{};const up=Object.keys(M).filter(t=>M[t]>1);if(up.length)L.push(`${up.map(tk).join(' · ')} 기술 ×${M[up[0]]}`);for(const t of Object.keys(M).filter(t=>M[t]<1))L.push(M[t]?`${tk(t)} 기술 ×${M[t]}`:`${tk(t)} 기술 무효 (×0)`);
+   if(n==='모래바람')L.push('바위 타입 특방 ×1.5','턴 끝 1/16 대미지 (바위 · 땅 · 강철 · 방진고글 제외)');
+   if(['눈','싸라기눈','극한'].includes(n))L.push('얼음 타입 방어 ×1.5');if(n==='싸라기눈')L.push('턴 끝 대미지 없음');
+   if(n==='짙은안개')L.push('명중 ×0.9 (독 · 페어리는 영향 없음)');if(n==='별하늘')L.push('명중 ×1.1');
+   if(['큰가뭄','폭우','난기류','극한','깊은밤'].includes(n))note='특성이 부르는 날씨 — 부른 포켓몬이 필드 위에 있는 한'}
+  else if(x.k==='t'){note='땅 위 포켓몬에게만';L.push(...(({그래스필드:['풀 기술 ×1.3','턴 끝 HP 1/16 회복'],일렉트릭필드:['전기 기술 ×1.3','「잠듦」 · 「하품」에 걸리지 않는다'],미스트필드:['받는 드래곤 기술 ×0.5','상태 이상 · 「혼란」에 걸리지 않는다'],사이코필드:['에스퍼 기술 ×1.3','상대의 선공기(우선도 +1 이상)를 받지 않는다']})[n]||[]))}
+  else if(x.k==='r'||x.k==='e')L.push(...(({트릭룸:['스피드가 느린 포켓몬부터 행동'],매직룸:['소지품 효과 없음'],원더룸:['방어 ↔ 특방 실수치를 바꾼다'],블랙룸:['공격 기술이 모두 고스트 타입'],중력:['명중 ×1.67','하늘에 떠오를 수 없다'],물놀이:['불꽃 기술 위력 ×0.5'],흙놀이:['전기 기술 위력 ×0.5']})[n]||[]));
+  else{const FD=window.OM_FIELD||{};const H=(FD.HAZ||[]).find(h=>h.k===n);const R=(FD.RM||{})[n];
+   const W=({리플렉터:[`받는 물리기 대미지 ×${ws}`,'급소면 무시'],빛의장막:[`받는 특수기 대미지 ×${ws}`,'급소면 무시'],오로라베일:[`받는 기술 대미지 ×${ws}`,'급소면 무시'],얼음의장벽:[`받는 기술 대미지 ×${ws}`,'불꽃 기술을 맞으면 녹아 철거'],신비의부적:['다른 포켓몬이 거는 상태 이상 · 「혼란」을 막는다'],흰안개:['능력 감소를 막는다'],주술:['급소에 맞지 않는다'],검은숲:['랭크 변화가 ±0'],
+    순풍:['스피드 ×2'],습원:['스피드 ×0.25'],불바다:['턴 끝 1/8 대미지 (불꽃 타입 제외)'],돌격:['「공격」 ×2'],신기루:['받는 물리기 명중률 반감'],희망사항:['다음 턴 끝에 HP 1/2 회복'],와이드가드:['이번 턴 전체기를 막는다']})[n];
+   if(W)L.push(...W);
+   else if(H){const lay=Math.max(1,+x.c||1);
+    if(H.kind==='spike')L.push(`등장 때 HP 1/${10-2*Math.min(3,lay)} 대미지`,'1겹 1/8 → 2겹 1/6 → 3겹 1/4');
+    else if(H.kind==='tspike')L.push(`등장 때 「${lay>=2?'맹독':'독'}」 (1겹 독 → 2겹 맹독)`,'독 · 강철 타입 · 이미 상태 이상이면 영향 없음');
+    else if(H.kind==='net')L.push('등장 때 스피드 −1');
+    else if(H.kind==='mine')L.push('등장 때 「마비」 · 한 번 쓰면 사라진다');
+    else if(H.kind==='bounce')L.push('등장하면 강제 교대 · 한 번 쓰면 사라진다');
+    else if(H.kind==='rose')L.push('등장 때 HP 1/8 드레인 — 같은 에리어 상대가 회복');
+    else if(H.kind==='iceburn')L.push('등장한 포켓몬의 첫 기술 「우선도 : -1」');
+    else if(H.ty)L.push(`등장 때 ${tk(H.ty)} 상성 × 1/8 대미지`);
+    else if(H.st)L.push(`등장 때 「${((((DB().states||{}).st||{})[H.st])||{}).ko||H.st}」 상태로`);
+    else if(H.f)L.push(`등장 때 HP 1/${H.f} 대미지${H.once?' · 한 번 쓰면 사라진다':''}`);
+    if(R)L.push(`${R.g?'땅 위의 ':''}${R.t.map(tk).join(' · ')} 타입이 등장하면 철거`);
+    note=(H.c==='A'?'땅 위 포켓몬만':'모든 포켓몬')+' · 통굽부츠면 영향 없음'}
+   else note=objCat(n)[1]||''}
+  /* 규칙 표에 없는 것은 기술 DB 효과 글을 줄여서 */
+  if(!L.length){const e=String((((DB().moves||{})[n])||{}).eff||'').replace(/「(?:우선도|설치기)[^」]*」[^.]*\.\s*/g,'').replace(/\s*「[^」]+」\s*기술\.\s*$/,'').trim();if(e&&e!=='-')L.push(e.length>90?e.slice(0,88)+'…':e)}
+  return {L:L.slice(0,4),note}}
+ /* 앞(a) 뒤(z) 필드 → [{k:w|t|r|e|o, n, c(턴 · 겹), side, prev(바뀐 날씨 · 필드), re(갱신), end(걷힘)}] — 턴 종료에 줄기만 한 것은 넣지 않는다 */
+ function fieldDiff(a,z){const F0=fieldOf({field:a}),F1=fieldOf({field:z});const out=[];
+  for(const [k,g] of [['w','weather'],['t','terrain']]){const p=F0[g]||{},q=F1[g]||{};const c0=+p.count||0,c1=+q.count||0;
+   if(q.type&&(q.type!==p.type||c1>c0))out.push({k,n:q.type,c:c1,prev:q.type!==p.type?p.type||'':'',re:q.type===p.type?1:0});
+   else if(p.type&&!q.type)out.push({k,n:p.type,end:1})}
+  const cmp=(k,o0,o1,side)=>{o0=o0||{};o1=o1||{};for(const n of new Set([...Object.keys(o0),...Object.keys(o1)])){const v0=+o0[n]||0,v1=+o1[n]||0;const sd=side?{side}:{};
+   if(v1>0&&v1>v0)out.push(Object.assign({k,n,c:v1,re:v0>0?1:0},sd));else if(v0>0&&v1<=0)out.push(Object.assign({k,n,end:1},sd))}};
+  cmp('r',F0.rooms,F1.rooms);cmp('e',F0.etc,F1.etc);for(const s of SIDES)cmp('o',(F0.objects||{})[s],(F1.objects||{})[s],s);
+  return out}
+ /* by = {n: 누가, s: 무엇으로(기술 · 특성 …), img}. ms 뒤에 남긴다 (saveBattle 은 부른 쪽의 【특성】 · 【전달】 카드가 먼저 오르게). 돌려줌: 카드 수 */
+ function fieldLog(a,z,by,b,ms){const D=fieldDiff(a,z);if(!D.length)return 0;const B0=b||ctx().b;
+  const rows=D.map(x=>{const I=x.end?{L:[],note:''}:fcInfo(x,B0);const col=FC_COL[x.n]||(x.k==='o'?FC_COL[objCat(x.n)[0]]:'')||'#777';const who=by&&by.n&&!x.end?by:null;
+   const fc=Object.assign({},x,{L:I.L,note:I.note,col},who?{by:{n:String(who.n),s:String(who.s||''),img:String(who.img||'')}}:{});const head=`【${FC_KIND[x.k]}】 ${x.side?SIDE_KO[x.side]+' ':''}${x.n} — ${x.end?fcEnd(x):fcDur(x)}`;
+   return [x.end?head:[head,...(x.prev?[`「${x.prev}」에서 바뀜`]:[]),...I.L,...(who?[`전개: ${who.n}${who.s?' 『'+who.s+'』':''}`]:[])].join('\n'),fc]});
+  setTimeout(async()=>{for(const [t,fc] of rows)await A().sysLog(t,'battle',{fc})},ms||0);return rows.length}
+ /* 로그 카드: 왼쪽 그림(날씨 · 필드 · 룸 그림, 설치물은 색 칸 + 기호) · 이름 · 남은 턴(압정 · 독압정은 겹 점) · 효과 줄 · 전개한 쪽 */
+ function fieldCard(d){const x=d&&d.fc;if(!x||!x.n)return '';const col=/^#[0-9a-f]{6}$/i.test(String(x.col||''))?x.col:'#777777';const lum=(i=>[1,3,5].map(j=>parseInt(col.substr(j,2),16)/255).reduce((a,v,j)=>a+v*[.299,.587,.114][j],0))();const tf=lum>.62?'#111':'#fff';   /* 밝은 색(눈 · 일렉트릭필드)은 꼬리표 글자를 검게 */const k=FC_KIND[x.k]?x.k:'t';const side=SIDES.includes(x.side)?x.side:'';
+  const im=k==='w'?fimg(W_IMG[x.n]):k==='o'?'':fimg(T_IMG[x.n]);const th=`<span class="fcth${im?'':' gly'}"${im?` style="background-image:url('${cssu(im)}')"`:''}>${im?'':`<i>${esc(FC_GLY[k==='o'?objCat(x.n)[0]:'etc']||'◆')}</i>`}</span>`;
+  const head=`<span class="bctag">${esc(FC_KIND[k])}</span>${side?`<span class="fcside ${side}">${esc(SIDE_KO[side])}</span>`:''}<b>${esc(x.n)}</b>`;
+  if(x.end)return `<div class="bcard fcard end" style="--tc:${col};--tf:${tf}">${th}<div class="fcm"><div class="fch">${head}<span class="sp"></span><span class="fcend">${fcEnd({k,n:x.n})}</span></div></div></div>`;
+  const c=Math.max(0,Math.min(9999,+x.c||0)),mx=k==='o'?(FC_LAY[x.n]||0):0;
+  const dur=mx?`<span class="fcd lay" title="${Math.max(1,c)}겹">${Array.from({length:mx},(_,i)=>`<i class="${i<Math.max(1,c)?'on':''}"></i>`).join('')}<small>${Math.max(1,c)}겹</small></span>`:`<span class="fcd">${esc(fcDur({k,n:x.n,c}))}</span>`;
+  const sub=[x.re?(mx?'겹 추가':'갱신'):'',x.prev?`「${x.prev}」에서 바뀜`:'',x.note||''].filter(Boolean).map(String);const L=(Array.isArray(x.L)?x.L:[]).map(String);
+  const by=x.by&&x.by.n?`<div class="fcby"><span class="fcbl">전개</span>${x.by.img?`<span class="fcbav" style="background-image:url('${cssu(x.by.img)}')"></span>`:''}<span>${esc(x.by.n)}${x.by.s?` 『${esc(x.by.s)}』`:''}</span></div>`:'';
+  return `<div class="bcard fcard" style="--tc:${col};--tf:${tf}">${th}<div class="fcm"><div class="fch">${head}<span class="sp"></span>${dur}</div>${sub.length?`<div class="fcsub">${sub.map(esc).join(' · ')}</div>`:''}${L.length?`<div class="fcl">${L.map(l=>`<div>${esc(l)}</div>`).join('')}</div>`:''}${by}</div></div>`}
+
  /* ---------- 필드 (GM) ---------- */
+ const fcMan=s=>({n:ctx().gm?'GM':(A().ST.name||''),s});   /* 11-01 망령: 창에서 손으로 깐 것 — 전개 카드엔 「GM 『필드 설정』」 · 카드가 하나라도 오르면 예전 한 줄 요약은 남기지 않는다 */
  function openField(){const c=ctx();if(!c.mgr)return;const f=fieldOf(c.b);
   const pic=n=>{const im=fimg(n);return im?`<img src="${esc(im)}" alt="">`:'<span class="fnoimg"></span>'};
   const one=(id,list,imgs,cur,cnt,kind)=>`<div class="row fpick ${kind}" data-fp="${id}">${list.filter(Boolean).map(w=>`<span class="fchip ${kind} ${cur===w?'on':''}" data-fv="${esc(w)}" title="${esc(w)}">${pic(imgs[w])}<b>${esc(w)}</b></span>`).join('')}<span class="fchip none ${cur?'':'on'}" data-fv="" title="없음"><b>없음</b></span></div>
@@ -1543,7 +1612,7 @@ window.OM_BATTLE_UI=(()=>{
    const nf={weather:{type:wt,count:wt?cnt('fw'):0},terrain:{type:tt,count:tt?cnt('ft'):0},rooms:{},etc:{},objects:{}};
    md.querySelectorAll('[data-fgv]').forEach(i=>{if(+i.value>0)nf[i.dataset.fgv][i.dataset.fk]=+i.value});
    nf.objects=JSON.parse(JSON.stringify(f.objects||{left:{},right:{}}));if(f.stage)nf.stage=f.stage;const tl=v=>(v>=1000||!v)?'':' '+v+'T';
-   A().closeModal();if(await A().setDiff(['battle','field'],f,nf,2))A().sysLog(`필드 갱신: ${[nf.weather.type&&'날씨 '+nf.weather.type+tl(nf.weather.count),nf.terrain.type&&nf.terrain.type+tl(nf.terrain.count),...Object.entries(nf.rooms).map(([k,v])=>k+tl(v)),...Object.entries(nf.etc).map(([k,v])=>k+tl(v)),...SIDES.flatMap(s=>Object.entries(nf.objects[s]||{}).map(([k,v])=>SIDE_KO[s]+' '+k+tl(v)))].filter(Boolean).join(' · ')||'없음'}`,'battle')}}
+   A().closeModal();if(await A().setDiff(['battle','field'],f,nf,2)&&!fieldLog(f,nf,fcMan('필드 설정'),c.b))A().sysLog(`필드 갱신: ${[nf.weather.type&&'날씨 '+nf.weather.type+tl(nf.weather.count),nf.terrain.type&&nf.terrain.type+tl(nf.terrain.count),...Object.entries(nf.rooms).map(([k,v])=>k+tl(v)),...Object.entries(nf.etc).map(([k,v])=>k+tl(v)),...SIDES.flatMap(s=>Object.entries(nf.objects[s]||{}).map(([k,v])=>SIDE_KO[s]+' '+k+tl(v)))].filter(Boolean).join(' · ')||'없음'}`,'battle')}}
 
  /* 진영별 설치기: 분류별 칩, 누르면 기본 지속으로 놓고, 다시 누르면 치운다. 숫자는 겹/턴 */
  function openObjects(side){const c=ctx();if(!c.mgr)return;const f=fieldOf(c.b);const cur=Object.assign({},(f.objects||{})[side]||{});
@@ -1553,7 +1622,7 @@ window.OM_BATTLE_UI=(()=>{
   md.querySelectorAll('[data-oc]').forEach(ch=>ch.addEventListener('click',e=>{if(e.target.tagName==='INPUT')return;const inp=ch.querySelector('input');const o=ch.dataset.oc;if(+inp.value>0){inp.value='';ch.classList.remove('on')}else{inp.value=(o==='압정뿌리기'||o==='독압정')?1:+ch.dataset.dur;ch.classList.add('on')}}));
   md.querySelectorAll('[data-ov]').forEach(i=>i.addEventListener('input',()=>i.closest('.objchip').classList.toggle('on',+i.value>0)));
   $('#oclear',md).onclick=()=>{md.querySelectorAll('[data-ov]').forEach(i=>{i.value='';i.closest('.objchip').classList.remove('on')})};
-  $('#osave',md).onclick=async()=>{const n={};md.querySelectorAll('[data-ov]').forEach(i=>{if(+i.value>0)n[i.dataset.ov]=+i.value});A().closeModal();const nf=JSON.parse(JSON.stringify(f));nf.objects=nf.objects||{left:{},right:{}};nf.objects[side]=n;if(await A().setDiff(['battle','field','objects',side],(f.objects||{})[side]||{},n,1))A().sysLog(`${SIDE_KO[side]} 설치물: ${Object.entries(n).map(([k,v])=>k+(v>=1000?'':' '+v)).join(' · ')||'없음'}`,'battle')}}
+  $('#osave',md).onclick=async()=>{const n={};md.querySelectorAll('[data-ov]').forEach(i=>{if(+i.value>0)n[i.dataset.ov]=+i.value});A().closeModal();const nf=JSON.parse(JSON.stringify(f));nf.objects=nf.objects||{left:{},right:{}};nf.objects[side]=n;if(await A().setDiff(['battle','field','objects',side],(f.objects||{})[side]||{},n,1)&&!fieldLog(f,nf,fcMan('설치물 설정'),c.b))A().sysLog(`${SIDE_KO[side]} 설치물: ${Object.entries(n).map(([k,v])=>k+(v>=1000?'':' '+v)).join(' · ')||'없음'}`,'battle')}}
  /* ---------- 포텐셜 설정 (지령·명령 + 고유·전용 포텐셜 남은 횟수) ---------- */
  function spCntHtml(tid){const b=ctx().b;const t=b.trainers[tid];const U=uniqList(t);const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid);
   const cell=(x,attrs,sub)=>`<div class="oc2 ${x.max!=null&&x.left<=0?'zero':''}"><div class="nm">『${esc(x.p.name)}』<small>${esc(sub)}</small></div>${x.max!=null?`<span class="step"><button type="button" ${attrs} data-d="-1">−</button><b>${x.left}<small class="dim">/${x.max}${x.per&&x.mmax==null?(x.per==='turn'?' · 이번 턴':' · 탈진'):''}</small></b><button type="button" ${attrs} data-d="1">+</button></span>`:'<span class="small dim">횟수 없음</span>'}</div>`;
@@ -1624,7 +1693,7 @@ window.OM_BATTLE_UI=(()=>{
   const r=await FX().run(ops,Object.assign(uiCtx(nb,m,name,opt.area),opt.noRoll?{noRoll:1}:{},adj,hold));L.push(...r.lines);if(hold.hold&&(m.holds||[]).length)L.push('(필드를 떠나면 풀린다)');
   const raidNew=await raidFix(m,m0,name,L);if(raidNew===null)return false;
   const f=fieldOf(nb);for(const id in nb.mons){const x=nb.mons[id];if(x.entry&&x.hp.cur<=0){x.entry='';L.push(`${x.name}은(는) 쓰러졌다!`)}}
-  if(!await saveBattle(nb0,nb,f))return false;if(raidNew)raidCut(m);
+  if(!await saveBattle(nb0,nb,f,{n:m.name,s:name,img:opt.img!=null?opt.img:(m.image||'')}))return false;if(raidNew)raidCut(m);
   if(kind==='item'&&oneShot(m0)&&!opt.quiet&&await askYes(`「${name}」을(를) 다 썼나? (소지품 칸에서 뺀다)`,'뺀다','남긴다'))setTimeout(()=>itemConsume(mid),50);
   A().sysLog(opt.head?`${opt.head}${L.length?'\n'+L.join('\n'):''}`:`【${({pot:'포텐셜',trait:'특성',item:'소지품',order:'지령'})[kind]||'효과'}】 ${m.name} 『${name}』${L.length?'\n'+L.join('\n'):''}`,'battle',{mid:m.id,img:opt.img!=null?opt.img:(m.image||''),eff:String(opt.eff||auto.text||(kind==='trait'?m.abilityEff:kind==='item'?m.itemEff:((potSrc(m).find(p=>p&&p.name===name)||{}).eff))||'').replace(/<br\s*\/?>/g,'\n').slice(0,300)});return true}
  function slotEff(m,kind,name){const n=String(name||'').replace(/『|』/g,'');if(kind==='trait')return m.abilityEff||(FX()&&FX().effOf?FX().effOf('trait',n):'');if(kind==='item'){const x=n===m.item?m:(m.items2||[]).find(q=>q&&q.item===n);return (x&&x.itemEff)||''}return ((potSrc(m).find(p=>p&&p.name===n)||{}).eff)||''}
@@ -2043,7 +2112,7 @@ ${PR?`「기술 방어」 ${PR.ok?'성공':'실패'}${PR.k?` (연속 ${PR.k+1}�
    nb.mons[mid].lastDealt={total:RESULT.targets.filter(r=>r.acc.hit&&r.dmg).reduce((a,r)=>a+(r.hp?r.hp.final:0),0),targets:RESULT.targets.filter(r=>r.acc.hit&&r.dmg).map(r=>r.def.name).join(', '),at:Date.now()};
    const AU2=RESULT.auto;const xck=t=>{if(!AU2)return false;const ex=[...(AU2.recoil?['recoil']:[]),...(AU2.drain?['drain']:[]),...(AU2.selfFaint?['faint']:[]),...(AU2.forceSwitch?['fsw']:[]),...(AU2.selfSwitch?['ssw']:[])];const el=md.querySelector(`[data-agx="${ex.indexOf(t)}"]`);return !!(el&&el.checked)};
    const doF=AU2&&AU2.forceSwitch&&xck('fsw'),doS=AU2&&AU2.selfSwitch&&xck('ssw');const swS=doS?AU2.selfSwitch:(RESULT.nextU?'free':'');   /* 선행유턴처럼 「다음 기술」에 붙은 유턴도 */
-   A().closeModal();if(!await saveBattle(nb0,nb))return;A().sysLog(`【전달】 ${atk.name} 『${RESULT.mv.name}』\n${lines.join('\n')}`,'battle',{mid:atk.id,img:atk.image||''});
+   A().closeModal();if(!await saveBattle(nb0,nb,undefined,{n:atk.name,s:RESULT.mv.name,img:atk.image||''}))return;A().sysLog(`【전달】 ${atk.name} 『${RESULT.mv.name}』\n${lines.join('\n')}`,'battle',{mid:atk.id,img:atk.image||''});
    /* 교대는 저장 뒤에 (퇴장·등장이 각자 저장한다) */
    if(doF)for(const r of RESULT.targets){if(!r.acc.hit||r.def.id===mid)continue;const d=ctx().b.mons[r.def.id];if(!d||!d.entry||d.hp.cur<=0)continue;const g=await switchGuard(d);
     if(g){A().sysLog(`${d.name} 강제 교대를 받지 않는다 (${g})`,'battle');continue}
@@ -2155,5 +2224,5 @@ ${PR?`「기술 방어」 ${PR.ok?'성공':'실패'}${PR.k?` (연속 ${PR.k+1}�
     const ds=stDesc(k);A().sysLog(`【상태】 ${m.name} 「${stName(k)}」${c<1000?` (${c}턴)`:''}${ds.length?'\n'+ds.join('\n'):''}`,'battle',{mid,img:m.image||''});o.pk=false;o.q='';o.n='';redraw()});
   bind()}
  function nowParts(m){return {rank:rankChips(m),state:stateChips(m),fx:flagChips(m)+(FX()?FX().chips(m).map(ch=>`<span class="rk fxc" title="${esc(ch.title)}">${esc(ch.t)}</span>`).join(''):'')}}
- return {askYes,canSeeStx:tid=>stxOk(ctx(),tid),canEditMon:mid=>{const c=ctx();const m=((c.b||{}).mons||{})[mid];return !!m&&canEdit(c,m)},fireAuto,render,nowParts,nowEditHtml,bindNowEdit,watch,ctx,entered,allEntered,fieldOf,futureFire,trapWarn,resetLocal:()=>{CMD={}},startCut:(m)=>battleStartCut(ctx().b,m),openHp,action,hotkey};
+ return {askYes,canSeeStx:tid=>stxOk(ctx(),tid),canEditMon:mid=>{const c=ctx();const m=((c.b||{}).mons||{})[mid];return !!m&&canEdit(c,m)},fireAuto,render,nowParts,nowEditHtml,bindNowEdit,watch,ctx,entered,allEntered,fieldOf,fieldCard,futureFire,trapWarn,resetLocal:()=>{CMD={}},startCut:(m)=>battleStartCut(ctx().b,m),openHp,action,hotkey};
 })();
