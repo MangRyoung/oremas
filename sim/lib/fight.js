@@ -6,7 +6,7 @@
    웹툴과 다른 점: 「행동 판정」(혼란 · 마비 …)을 늘 켠다 · 창을 다시 여는 일 · 손으로 바꾸는 칸 · 「손으로」 문장(notes)은 없다. */
 "use strict";
 /* 11-01 은열쇠(시뮬): 보험형 배틀 카드 — H.cards = {list:[{tid,eff:'reroll'|'noCrit',used}], turn:{tid:턴}} · 트레이너마다 한 턴 1장 */
-function cardTake(H,eff,turn){const C=H&&H.cards;if(!C)return null;C.turn=C.turn||{};const c=(C.list||[]).find(x=>!x.used&&x.eff===eff&&C.turn[x.tid]!==turn);if(!c)return null;c.used=true;C.turn[c.tid]=turn;return c}
+function cardTake(H,eff,turn){const C=H&&H.cards;if(!C)return null;C.turn=C.turn||{};const c=(C.list||[]).find(x=>!x.used&&x.eff===eff&&C.turn[x.tid]!==turn&&(!x.pay||x.pay()));   /* 11-01 코스트: 낼 수 있을 때만 */if(!c)return null;c.used=true;C.turn[c.tid]=turn;return c}
 async function attack(H,W,mid,idx,targets,o){o=o||{};
  const FN=H.fn,B=W.OM_BATTLE,FX=W.OM_FX,OI=W.OM_ITEMS,F=W.OM_FIELD,MA=W.OM_MOVEAUTO,S=W.OM_STATS,DB=W.OM_DB||{};const R=Math.random.bind(W.Math);const rnd=()=>W.Math.random();
  const c=FN.ctx();const b=c.b;const atk0=b.mons[mid];if(!atk0||!atk0.entry||atk0.hp.cur<=0)return {skip:'없음'};const f=FN.fieldOf(b);

@@ -208,9 +208,12 @@ window.OM_SKILL_UI=(()=>{
  async function stepUp(tid,why){const t=trs()[tid];const k=tsk(tid);const C=cfg();const prev=k.inj;if(prev>=3)return {prev,now:3,cut:null,line:`${t.name} 이미 「빈사」`};const now=prev+1;let cut=null;
   if(now===1&&+C.injOc>0)cut=await cutOrd(tid,'command_',+C.injOc);if(now===2&&+C.injOo>0)cut=await cutOrd(tid,'order_',+C.injOo);
   await setT(tid,{inj:now});
+  const pen=await penFor(tid,prev,now);
   const cl=cut?(cut.n?` · ${cut.lab} −${cut.n}`:` · ${cut.lab} 뺄 것이 없다 (손으로)`):'';
-  return {prev,now,cut,line:`${t.name} 「${STEP[prev]}」 → 「${STEP[now]}」${cl}${now===2?' · 모든 판정 불리':now===1?(tough(t)?' · 강인함':' · 모든 판정 −'+C.injPen):' · 이 장면에서 빠진다'} (${why})`}}
- async function stepUndo(tid,s){if(!s)return;await setT(tid,{inj:s.prev});await refundOrd(s.cut)}
+  return {prev,now,cut,pen,line:`${t.name} 「${STEP[prev]}」 → 「${STEP[now]}」${cl}${now===2?' · 모든 판정 불리':now===1?(tough(t)?' · 강인함':' · 모든 판정 −'+C.injPen):' · 이 장면에서 빠진다'} (${why})${pen.map(x=>'\n'+x.line).join('')}`}}
+ /* 11-01 은열쇠 패널티 카드: 중상이 되면 상흔 카드, 빈사가 되면 광기 카드를 그 트레이너 덱에 섞는다 (덱 설정 「패널티 카드」가 켜진 덱만 · GM 화면) */
+ async function penFor(tid,prev,now){const DK=window.OM_DECK_UI;const out=[];if(!DK||!DK.penalty||!gm())return out;try{if(prev<2&&now>=2){const r=await DK.penalty(tid,'scar','중상');if(r)out.push(r)}if(prev<3&&now>=3){const r=await DK.penalty(tid,'mad','빈사');if(r)out.push(r)}}catch(e){}return out}
+ async function stepUndo(tid,s){if(!s)return;await setT(tid,{inj:s.prev});await refundOrd(s.cut);const DK=window.OM_DECK_UI;if(DK&&DK.penalty)for(const x of (s.pen||[]))if(x&&x.cid)try{await DK.penalty(tid,'undo','',x.cid)}catch(e){}}
  /* 실패 확정: 단계 + 패널티 묶음 (자동이면) */
  async function settleFail(tid,r){const O=r.offerId==='free'?null:st().offer;delete r.pend;if(r.offerId==='free'?+r.noStep:(O&&O.id===r.offerId&&O.noStep)){r.text+='\n상태 단계는 오르지 않는 체크';}else{const s=await stepUp(tid,(r.label||'스킬 체크')+' 실패');r.step=s;r.text+='\n'+s.line;A().sysLog(s.line,'dice')}
   if(O&&O.id===r.offerId&&O.pen&&O.pen.auto&&penHas(O.pen.fail)){await applyPenalty(tid,O.pen.fail,(O.label||'스킬 체크')+' · 실패',r.how==='mon'?r.mid:'');r.penDone=1}
@@ -446,7 +449,7 @@ ${penFields('fail',X)}</div></div>
     const n=Object.assign({},st().cfg||{},{crit:nv('sc_crit',1,12,4),injPen:nv('sc_injPen',0,5,1),injOc:nv('sc_injOc',0,5,1),injOo:nv('sc_injOo',0,5,1),coverHp:g('sc_coverHp').value.trim()||'1/4',coverBall:g('sc_coverBall').checked?1:0,fieldMax:nv('sc_fieldMax',1,6,1),
      myosuA:nv('sc_myosuA',0,9,1),myosuAA:nv('sc_myosuAA',0,9,2),supA:nv('sc_supA',0,9,1),supAA:nv('sc_supAA',0,9,2),penAuto:g('sc_penAuto').checked?1:0,
      cards:{deck:g('sc_deck').value,c1:(g('sc_c1')||{}).value||'',c2:(g('sc_c2')||{}).value||'',c3:(g('sc_c3')||{}).value||''}});A().closeModal();await A().set(['skill','cfg'],n);sync();return A().toast('저장했다')}}});
-  md.addEventListener('segchange',async e=>{const sg=e.target.closest('[data-seg]');if(!sg)return;const n=sg.dataset.seg;if(n.startsWith('inj_')){await setT(n.slice(4),{inj:+e.detail||0});sync()}})}
+  md.addEventListener('segchange',async e=>{const sg=e.target.closest('[data-seg]');if(!sg)return;const n=sg.dataset.seg;if(n.startsWith('inj_')){const tid=n.slice(4);const prev=tsk(tid).inj;const now=+e.detail||0;await setT(tid,{inj:now});await penFor(tid,prev,now);sync()}})}
 
  /* ----- 10-24 망령: 예시 관리 창 — 체크 제시 예시 · 패널티 예시를 한 번에 보고 고친다 ----- */
  function exSum(o){return offerSummary(Object.assign({stat:'지시',target:10},upOffer(o||{}),{npc:''}))}

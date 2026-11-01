@@ -19,7 +19,7 @@ window.OM_DECK_UI=(()=>{
  const PAL=[['red','#c8504a','빨강'],['orange','#d9822b','주황'],['gold','#b8932a','금색'],['green','#4f9a5a','초록'],['teal','#2f948f','청록'],['blue','#4573c4','파랑'],['purple','#8a5cc4','보라'],['pink','#c45c9a','분홍'],['gray','#6b7286','회색'],['black','#30343f','검정']];
  const colOf=k=>(PAL.find(p=>p[0]===k)||PAL[8])[1];
  const colKey=v=>{v=String(v||'').trim();const p=PAL.find(x=>x[0]===v||x[2]===v);return p?p[0]:'gray'};
- const OPT0={pv:1,dp:0,hp:0,ar:1,ps:0,sfx:1,md:10,hl:0,cr:'',bd:0,sd:0,rp:''};   /* 11-01 은열쇠: bd 배틀 시작에 뽑기 · sd 시작 손패(던전 시작 · 긴 휴식) · rp 덱이 바닥나 다시 섞을 때 +1 하는 자원 */
+ const OPT0={pv:1,dp:0,hp:0,ar:1,ps:0,sfx:1,md:10,hl:0,cr:'',bd:0,sd:0,rp:'',pk:0,pc:2};   /* 11-01 개정: pk 패널티 카드(덱 소진 · 빈사 → 광기 카드 · 중상 → 상흔 카드) · pc 광기 칸 (가득 찬 뒤 또 들어오면 붕괴) */   /* 11-01 은열쇠: bd 배틀 시작에 뽑기 · sd 시작 손패(던전 시작 · 긴 휴식) · rp 덱이 바닥나 다시 섞을 때 +1 하는 자원 */
  /* ---------- 11-01 망령 「은열쇠」: 카드 아이콘 (지시 · 육성 · 통솔 · 능력 · ★) — 스킬 체크에 바치면 +1 · 룰북 「은열쇠 (카드 덱)」 ---------- */
  const ICN=['지시','육성','통솔','능력','★'];
  const icOf=c=>[...new Set(String((c&&c.ic)||'').replace(/[*＊☆]/g,'★').split(/[\s,·\/|]+/).map(x=>x.trim()).filter(x=>ICN.includes(x)))];
@@ -102,13 +102,26 @@ window.OM_DECK_UI=(()=>{
   /* 11-01 은열쇠: 자원 단계에 「| 카드 이름」이 있으면 그 단계를 넘을 때 그 카드 1장을 덱에 섞는다 (광기 카드) */
   const madIns=(def,b,a)=>{let s='';for(const x of ((def&&def.a)||[]))if(x.c&&b<+x.t&&a>=+x.t){const cid=dk.order.find(id=>dk.cards[id]&&dk.cards[id].n===x.c);if(!cid){s+=`\n(「${x.c}」 카드가 이 덱에 없어서 섞지 못했어)`;continue}qtyAdj(dk,cid,1);s+=`\n「${x.c}」 1장을 덱에 섞었어.`}return s};
   const bump=(h,name,dv)=>{const def=resDef(name);if(!def)return '';ensureHolder(dk,h);const rv=dk.rv[h];const b=+rv[name]||0;const a2=clampRes(def,b+dv);if(a2===b)return '';rv[name]=a2;const al=alerts(def,b,a2);return `\n${name} ${b} → ${a2}${al.length?'\n'+al.join('\n'):''}${madIns(def,b,a2)}`};
+  /* 11-01 개정 「패널티 카드」: 종류에 「광기」 · 「상흔」이 든 카드. 광기 카드는 칸(opt.pc)까지만, 넘치면 붕괴(던전 이탈) */
+  const penIds=kind=>dk.order.filter(id=>dk.cards[id]&&new RegExp(kind==='scar'?'상흔':'광기').test(String(dk.cards[id].t||'')));
+  const penN=kind=>penIds(kind).reduce((a,id)=>a+(+dk.cards[id].q||0),0);
+  const penIns=(h,kind,why)=>{const L=penIds(kind);const nm=kind==='scar'?'상흔':'광기';if(!L.length)return `\n(${nm} 카드가 이 덱에 없어서 섞지 못했어 — 「은열쇠 기본값」으로 넣을 수 있어)`;
+   if(kind==='mad'){const cap=Math.max(0,+dk.opt.pc||2),n=penN('mad');if(n>=cap)return `\n⚠ 붕괴 — ${hName(h)}의 광기 칸(${cap}장)이 이미 가득 찼다${why?' ('+why+')':''}. 던전에서 이탈한다.`;const id=L.slice().sort((a,b)=>(+dk.cards[a].q||0)-(+dk.cards[b].q||0))[0];qtyAdj(dk,id,1);return `\n광기 카드 「${dk.cards[id].n}」 1장을 덱에 섞었어 (광기 ${n+1}/${cap})${why?' — '+why:''}`}
+   const id=L[0];qtyAdj(dk,id,1);return `\n상흔 카드 「${dk.cards[id].n}」 1장을 덱에 섞었어 (긴 휴식에 빠진다)${why?' — '+why:''}`};
   switch(op){
    case 'draw':{const n=Math.floor(+p.n||1);const mx=+dk.opt.md||10;if(n<1)return E('몇 장 뽑을지 1 이상으로 적어 줘.');if(n>mx)return E(`한 번에 ${mx}장까지만 뽑을 수 있어. (설정에서 바꿀 수 있어)`);
-    const got=[];let rec=0;for(let i=0;i<n;i++){if(!dk.pile.length&&dk.disc.length&&dk.opt.ar){const ex=exemptSet(p.d);const back=dk.disc.filter(c=>!isExempt(dk,c,ex));if(back.length){dk.pile=shuffle(back);dk.disc=dk.disc.filter(c=>isExempt(dk,c,ex));rec++}}if(!dk.pile.length)break;const c=dk.pile.shift();got.push(c);hand.push(c)}
+    const got=[];let rec=0,penL='';for(let i=0;i<n;i++){if(!dk.pile.length&&dk.disc.length&&dk.opt.ar){const ex=exemptSet(p.d);const back=dk.disc.filter(c=>!isExempt(dk,c,ex));if(back.length){dk.pile=shuffle(back);dk.disc=dk.disc.filter(c=>isExempt(dk,c,ex));rec++;if(dk.opt.pk)penL+=penIns(H,'mad','덱이 바닥남')}}if(!dk.pile.length)break;const c=dk.pile.shift();got.push(c);hand.push(c)}
     if(!got.length)return E('덱에 남은 카드가 없어.');
-    let line=`${by} · 카드 ${got.length}장 뽑음 (덱 ${dk.pile.length}장 남음)`;if(got.length<n)line+=`\n덱이 모자라서 ${got.length}장만 뽑았어.`;if(rec)line+='\n버린 카드를 섞어 덱을 다시 채웠어.';if(rec&&dk.opt.rp)line+=bump(H,dk.opt.rp,rec);   /* 11-01 은열쇠: 덱이 바닥나 다시 섞으면 광기 +1 */
+    let line=`${by} · 카드 ${got.length}장 뽑음 (덱 ${dk.pile.length}장 남음)`;if(got.length<n)line+=`\n덱이 모자라서 ${got.length}장만 뽑았어.`;if(rec)line+='\n버린 카드를 섞어 덱을 다시 채웠어.';if(rec&&dk.opt.rp)line+=bump(H,dk.opt.rp,rec);line+=penL;   /* 11-01: 다시 섞을 때 광기 카드도 함께 섞였다 */   /* 11-01 은열쇠: 덱이 바닥나 다시 섞으면 광기 +1 */
     R.pub.push(dk.opt.dp?line+'\n'+got.map(c=>cardLine(cards[c])).join('\n'):line);logL(`${by} · ${got.length}장 뽑음`);R.drawn=got;
-    R.msg=`${got.length}장 뽑았어: ${got.map(c=>'「'+cn(c)+'」').join(' ')}`;const hl=+dk.opt.hl||0;if(hl>0&&handLoad(dk,p.d,H)>hl)R.msg+=` · 손패가 한도(${hl}장)를 넘었어. 버릴 카드를 골라 줘.`;return R}
+    R.msg=`${got.length}장 뽑았어: ${got.map(c=>'「'+cn(c)+'」').join(' ')}`;const hl=+dk.opt.hl||0;if(hl>0&&handLoad(dk,p.d,H)>hl)R.msg+=` · 손패가 한도(${hl}장)를 넘었어. 버릴 카드를 골라 줘.${dk.opt.pk?' (상흔 · 광기 카드는 한도로 버릴 수 없어)':''}`;return R}
+   case 'pen':{/* 11-01 패널티 카드: kind = mad · scar (덱에 섞기) · heal (회복 장면: 광기 카드 1장 덱에서 빼기) · scarOut (상흔 전부 빼기) */if(!own)return E('GM(덱 주인)만 할 수 있어.');const h=p.h||'';if(h)ensureHolder(dk,h);let line='';
+    if(p.kind==='mad'||p.kind==='scar')line=penIns(h,p.kind,p.why||'').trim();
+    else if(p.kind==='heal'){const L=penIds('mad').filter(id=>+dk.cards[id].q>0).sort((a,b)=>(+dk.cards[b].q||0)-(+dk.cards[a].q||0));if(!L.length)return E('덱에 광기 카드가 없어.');qtyAdj(dk,L[0],-1);line=`회복 장면 — 광기 카드 「${dk.cards[L[0]].n}」 1장을 덱에서 뺐어 (광기 ${penN('mad')}/${+dk.opt.pc||2})`}
+    else if(p.kind==='scarOut'){let n=0;for(const id of penIds('scar')){const q=+dk.cards[id].q||0;if(q>0){qtyAdj(dk,id,-q);n+=q}}if(!n)return R;line=`상흔 카드 ${n}장을 덱에서 뺐어`}
+    else if(p.kind==='undo'&&p.cid&&dk.cards[p.cid]&&+dk.cards[p.cid].q>0){qtyAdj(dk,p.cid,-1);line=`되돌림 — 「${dk.cards[p.cid].n}」 1장을 덱에서 뺐어`}
+    else return E('모르는 패널티 동작');
+    if(line){R.pub.push(`${h?hName(h)+' · ':''}${line}`);logL(line.split('\n')[0]);R.pen={mad:penN('mad'),cap:+dk.opt.pc||2,collapse:/붕괴/.test(line)}}R.msg=line||'바뀐 게 없어.';return R}
    case 'play':{/* 비용 자원이 모자라면 그 자원의 「대신 오르는 자원」이 모자란 만큼 오른다 (예: 은열쇠 대신 광기) */
     const cr=dk.opt.cr||'';let cost=0;for(const c of picked){const v=num((cards[c]||{}).c);if(v!=null)cost+=v}if(num(p.adj)!=null)cost=Math.max(0,cost+num(p.adj));
     const rv=dk.rv[H];let costLine='',ovLine='',ovAlerts=[];
@@ -158,7 +171,7 @@ window.OM_DECK_UI=(()=>{
    case 'deckRename':{if(!own)return E('이 덱을 고칠 권한이 없어.');const n=nameOk(p.name);if(!n)return E('이름을 적어 줘.');dk.name=n===dk.name?n:uniq(n);R.msg='이름을 바꿨어.';return R}
    case 'deckDel':{if(!own)return E('이 덱을 지울 권한이 없어.');if(Object.keys(db.decks).length<2)return E('마지막 덱은 지울 수 없어.');const nm=dk.name;delete db.decks[p.d];if(db.cur===p.d)db.cur=Object.keys(db.decks)[0];R.msg=`「${nm}」 덱을 지웠어.`;R.pub.push(`덱 「${nm}」 삭제`);return R}
    case 'deckCur':if(!isGm)return E('GM 만 정할 수 있어.');db.cur=p.d;R.msg=`「${dk.name}」을(를) 플레이어 기본 덱으로 했어.`;return R;
-   case 'opt':{if(!own)return E('이 덱을 고칠 권한이 없어.');const o=p.opt||{};const no=Object.assign({},dk.opt);for(const k of ['pv','dp','hp','ar','ps','sfx'])if(o[k]!=null)no[k]=o[k]?1:0;
+   case 'opt':{if(!own)return E('이 덱을 고칠 권한이 없어.');const o=p.opt||{};const no=Object.assign({},dk.opt);for(const k of ['pv','dp','hp','ar','ps','sfx','pk'])if(o[k]!=null)no[k]=o[k]?1:0;if(o.pc!=null)no.pc=Math.max(0,Math.min(9,Math.floor(+o.pc||0)));
     if(o.md!=null)no.md=Math.max(1,Math.min(30,Math.floor(+o.md||10)));if(o.hl!=null)no.hl=Math.max(0,Math.min(99,Math.floor(+o.hl||0)));if(o.cr!=null)no.cr=String(o.cr);for(const k of ['bd','sd'])if(o[k]!=null)no[k]=Math.max(0,Math.min(5,Math.floor(+o[k]||0)));if(o.rp!=null)no.rp=String(o.rp);
     if(Array.isArray(p.res)){const names=new Set();dk.res=p.res.map(r=>({n:nameOk(r.n),s:Math.round(+r.s||0),m:Math.max(0,Math.round(+r.m||0)),o:String(r.o||''),a:(r.a||[]).filter(x=>x&&(String(x.x||'').trim()||String(x.c||'').trim())).map(x=>Object.assign({t:Math.round(+x.t||0),x:String(x.x||'').trim()},String(x.c||'').trim()?{c:String(x.c).trim().slice(0,40)}:{})).sort((a,b)=>a.t-b.t)})).filter(r=>r.n&&!names.has(r.n)&&names.add(r.n));
      for(const r of dk.res)if(r.o===r.n||!dk.res.some(x=>x.n===r.o))r.o='';for(const h of dk.holders)ensureHolder(dk,h)}
@@ -322,9 +335,9 @@ window.OM_DECK_UI=(()=>{
      <div class="sec" style="margin-top:14px">여러 장 한꺼번에 <span class="note">한 줄에 한 장: 이름 | 종류 | 비용 | 장수 | 효과 | 색 (엑셀에서 붙여 넣은 탭도 된다)</span></div>
      <textarea id="mf_b" rows="4" placeholder="상처약 | 도구 | 1 | 3 | HP 를 20 회복한다 | 초록">${esc(MG.bulk)}</textarea><div class="row"><span class="small dim" id="mf_bp"></span><span class="sp"></span><button class="btn sm" data-mg="bulk">한꺼번에 넣기</button></div></div>`:`<div class="dmform"><div class="small dim">카드를 고치는 건 GM(덱 주인)만 한다.</div><div class="pdhand">${dk.order.map(c=>cardHtml(dk.cards[c],{badge:'×'+dk.cards[c].q})).join('')}</div></div>`}</div>`}
   else if(MG.tab==='opt'){const o=MG.optDraft&&MG.resDid===did?Object.assign({},dk.opt,MG.optDraft):dk.opt;const ck=(k,n,tip)=>`<label class="dmck" title="${esc(tip)}"><input type="checkbox" data-mo="${k}" ${o[k]?'checked':''}> ${n}</label>`;
-   body=`<div class="dmopt">${ck('pv','플레이어에게 보이기','끄면 GM(덱 주인)만 이 덱을 본다')}${ck('dp','뽑은 카드 공개','켜면 뽑은 카드 이름 · 효과가 채팅에 나온다')}${ck('hp','손패 공개','켜면 모두가 서로의 손패를 본다')}${ck('ar','덱이 비면 버린 카드 섞기','뽑을 때 덱이 비어 있으면 버린 카드를 섞어 다시 채운다')}${ck('ps','플레이어도 찾기','플레이어도 덱에서 카드를 찾아 가져오고 엿볼 수 있다')}</div>
+   body=`<div class="dmopt">${ck('pv','플레이어에게 보이기','끄면 GM(덱 주인)만 이 덱을 본다')}${ck('dp','뽑은 카드 공개','켜면 뽑은 카드 이름 · 효과가 채팅에 나온다')}${ck('hp','손패 공개','켜면 모두가 서로의 손패를 본다')}${ck('ar','덱이 비면 버린 카드 섞기','뽑을 때 덱이 비어 있으면 버린 카드를 섞어 다시 채운다')}${ck('ps','플레이어도 찾기','플레이어도 덱에서 카드를 찾아 가져오고 엿볼 수 있다')}${ck('pk','패널티 카드 (은열쇠)','덱이 바닥나거나 빈사가 되면 광기 카드, 중상이 되면 상흔 카드를 덱에 섞는다. 상흔은 긴 휴식에 빠진다')}</div>
     <div class="row" style="gap:14px;margin:8px 0"><label>한 번에 뽑기 최대 <input type="number" class="n" id="mo_md" min="1" max="30" value="${o.md}"></label><label>손패 한도 <input type="number" class="n" id="mo_hl" min="0" max="99" value="${o.hl}" title="0 = 없음"></label><label>비용 자원 <select id="mo_cr"><option value="">없음</option>${dk.res.map(r=>`<option ${o.cr===r.n?'selected':''}>${esc(r.n)}</option>`).join('')}</select></label></div>
-    <div class="row" style="gap:14px;margin:0 0 8px;flex-wrap:wrap" title="11-01 은열쇠 박자 드로우 — GM 화면이 켜져 있을 때 저절로 뽑아 준다"><label>배틀 시작에 <input type="number" class="n" id="mo_bd" min="0" max="5" value="${+o.bd||0}">장</label><label>시작 손패 <input type="number" class="n" id="mo_sd" min="0" max="5" value="${+o.sd||0}" title="던전에 들어갈 때 손패가 비어 있으면 · 긴 휴식 뒤 이만큼 뽑는다 (0 = 안 함)">장</label><label>바닥나 섞으면 +1 <select id="mo_rp"><option value="">없음</option>${dk.res.map(r=>`<option ${o.rp===r.n?'selected':''}>${esc(r.n)}</option>`).join('')}</select></label>${own?`<span class="sp"></span><button class="btn sm" data-mg="skpre" title="손패 3 · 시작 3 · 배틀 시작 1 · 바닥나면 광기 +1 · 광기 3/5 에 광기 카드 · 비용 없음">🗝 은열쇠 기본값</button>${gm()?'<button class="btn sm ghost" data-mg="skpreall" title="트레이너가 손패 주인인 모든 덱에">모든 덱에</button>':''}`:''}</div>
+    <div class="row" style="gap:14px;margin:0 0 8px;flex-wrap:wrap" title="11-01 은열쇠 박자 드로우 — GM 화면이 켜져 있을 때 저절로 뽑아 준다"><label>배틀 시작에 <input type="number" class="n" id="mo_bd" min="0" max="5" value="${+o.bd||0}">장</label><label>시작 손패 <input type="number" class="n" id="mo_sd" min="0" max="5" value="${+o.sd||0}" title="던전에 들어갈 때 손패가 비어 있으면 · 긴 휴식 뒤 이만큼 뽑는다 (0 = 안 함)">장</label><label title="광기 카드가 들어올 칸 — 가득 찬 뒤 또 들어와야 하면 붕괴(던전 이탈)">광기 칸 <input type="number" class="n" id="mo_pc" min="0" max="9" value="${o.pc==null?2:+o.pc}">장</label><label>바닥나 섞으면 +1 <select id="mo_rp"><option value="">없음</option>${dk.res.map(r=>`<option ${o.rp===r.n?'selected':''}>${esc(r.n)}</option>`).join('')}</select></label>${own?`<span class="sp"></span><button class="btn sm" data-mg="skpre" title="손패 3 · 시작 3 · 배틀 시작 1 · 코스트 5 · 패널티 카드(광기 칸 2) · 상흔 · 광기 카드 넣기 · 공통 카드 코스트 채우기">🗝 은열쇠 기본값</button>${gm()?'<button class="btn sm ghost" data-mg="skpreall" title="트레이너가 손패 주인인 모든 덱에">모든 덱에</button>':''}`:''}</div>
     <div class="sec">자원 <span class="note">손패 주인마다 따로 · 「대신 오르는 자원」 = 비용이 모자랄 때 모자란 만큼 오르는 자원 (예: 은열쇠 → 광기) · 단계 알림은 한 줄에 「숫자: 문구」 · 「| 카드 이름」을 붙이면 그 단계를 넘을 때 그 카드 1장을 덱에 섞는다 (은열쇠 광기 카드)</span></div>
     <div id="mo_res">${(MG.resDraft&&MG.resDid===did?MG.resDraft:dk.res).map((r,i)=>resRow(r,i,dk)).join('')}</div><div class="row"><button class="btn sm ghost" data-mg="resadd">＋ 자원</button><span class="sp"></span><button class="btn pri" data-mg="optsave">설정 · 자원 저장</button></div>
     <div class="sec" style="margin-top:14px">손패 주인 <span class="note">빼면 그 손패는 버린 카드로</span></div>
@@ -389,7 +402,7 @@ window.OM_DECK_UI=(()=>{
   return `<div class="dmres" data-ri="${i}"><input type="text" data-rk="n" value="${esc(src.n)}" placeholder="이름 (예: 은열쇠)" style="width:110px"><label>시작 <input type="number" class="n xs" data-rk="s" value="${+src.s||0}"></label><label>최대 <input type="number" class="n xs" data-rk="m" value="${+src.m||0}" title="0 = 없음"></label>
    <label>모자라면 <select data-rk="o"><option value="">—</option>${names.filter(n=>n!==src.n).map(n=>`<option ${src.o===n?'selected':''}>${esc(n)}</option>`).join('')}</select></label><button class="btn xs ghost danger" data-mgr-del="${i}">×</button>
    <textarea data-rk="a" rows="4" placeholder="단계 알림: 3: 정보 수집 불리 (한 줄에 하나 · 「| 카드 이름」을 붙이면 그 단계에 그 카드를 덱에 섞는다)">${esc((src.a||[]).map(x=>x.t+': '+(x.x||'')+(x.c?' | '+x.c:'')).join('\n'))}</textarea></div>`}
- function readOpt(md){const o={};md.querySelectorAll('[data-mo]').forEach(x=>o[x.dataset.mo]=x.checked?1:0);o.md=$('#mo_md',md).value;o.hl=$('#mo_hl',md).value;o.cr=$('#mo_cr',md).value;for(const k of ['bd','sd','rp']){const el=$('#mo_'+k,md);if(el)o[k]=el.value}return o}
+ function readOpt(md){const o={};md.querySelectorAll('[data-mo]').forEach(x=>o[x.dataset.mo]=x.checked?1:0);o.md=$('#mo_md',md).value;o.hl=$('#mo_hl',md).value;o.cr=$('#mo_cr',md).value;for(const k of ['bd','sd','rp','pc']){const el=$('#mo_'+k,md);if(el)o[k]=el.value}return o}
  function readRes(md){return [...md.querySelectorAll('.dmres')].map(el=>{const g=k=>(el.querySelector(`[data-rk="${k}"]`)||{}).value||'';
   return {n:g('n').trim(),s:+g('s')||0,m:+g('m')||0,o:g('o'),a:g('a').split('\n').map(l=>{const m=l.match(/^\s*(-?\d+)\s*[:：=]\s*(.+)$/);if(!m)return null;const [x,c]=m[2].split('|').map(v=>v.trim());return Object.assign({t:+m[1],x:x||''},c?{c}:{})}).filter(Boolean)}})}
  /* 예전 「덱」 버튼 · 단축키가 부르는 자리 */
@@ -465,25 +478,36 @@ window.OM_DECK_UI=(()=>{
   for(const tid of [...new Set(tids||[])]){const did=deckIdOf(db,tid);if(!did)continue;const dk=fixDeck(db.decks[did]);ensureHolder(dk,tid);let k=0;
    if(kind==='battle')k=+dk.opt.bd||0;
    else if(kind==='start'){if(!(+dk.opt.sd)||handLoad(dk,did,tid)>0)continue;k=+dk.opt.sd}
-   else if(kind==='rest'){if(n==='reset'){const ex=exemptSet(did);const hand=dk.hands[tid]||[];const back=hand.filter(c=>!isExempt(dk,c,ex));dk.hands[tid]=hand.filter(c=>isExempt(dk,c,ex));const solo=(dk.holders||[]).length<=1;const disc=solo?dk.disc.filter(c=>!isExempt(dk,c,ex)):[];if(solo)dk.disc=dk.disc.filter(c=>isExempt(dk,c,ex));dk.pile=shuffle([...dk.pile,...back,...disc]);L.push(`〔${dk.name}〕 ${hName(tid)} · 긴 휴식 — 손패 ${back.length}장${solo?` · 버린 카드 ${disc.length}장`:''}을 덱에 섞음`);k=+dk.opt.sd||3}else k=Math.max(0,Math.floor(+n||0))}
+   else if(kind==='rest'){if(n==='reset'){const ex=exemptSet(did);const hand=dk.hands[tid]||[];const back=hand.filter(c=>!isExempt(dk,c,ex));dk.hands[tid]=hand.filter(c=>isExempt(dk,c,ex));const solo=(dk.holders||[]).length<=1;const disc=solo?dk.disc.filter(c=>!isExempt(dk,c,ex)):[];if(solo)dk.disc=dk.disc.filter(c=>isExempt(dk,c,ex));dk.pile=shuffle([...dk.pile,...back,...disc]);L.push(`〔${dk.name}〕 ${hName(tid)} · 긴 휴식 — 손패 ${back.length}장${solo?` · 버린 카드 ${disc.length}장`:''}을 덱에 섞음`);
+    if(dk.opt.pk){const R2=exec(db,{op:'pen',d:did,h:tid,kind:'scarOut'},'gm',true);if(R2.pub&&R2.pub.length)L.push(`〔${dk.name}〕 ${R2.pub[0]}`)}   /* 11-01: 상흔은 긴 휴식에 빠진다 */
+    {const cr=dk.opt.cr;const def=cr&&dk.res.find(r=>r.n===cr);if(def){const rv=dk.rv[tid];const b=+rv[cr]||0;const s0=+def.s||0;if(b!==s0){rv[cr]=s0;L.push(`〔${dk.name}〕 ${hName(tid)} · ${cr} ${b} → ${s0}`)}}}   /* 11-01: 코스트는 긴 휴식에만 처음 값으로 */
+    k=+dk.opt.sd||3}else k=Math.max(0,Math.floor(+n||0))}
    if(k<=0)continue;const R=exec(db,{op:'draw',d:did,h:tid,n:k},'gm',true);if(R.err){L.push(`〔${dk.name}〕 ${hName(tid)} · ${R.err}`);continue}
    L.push(...R.pub.map(x=>`〔${dk.name}〕 ${x}`));if(R.msg&&/한도/.test(R.msg))L.push(`〔${dk.name}〕 ${hName(tid)} · 손패가 한도(${+dk.opt.hl}장)를 넘었다 — 골라 버린다`)}
   if(!L.length)return [];if(!await A().setDiff(['deck2'],db0,db,3)){A().toast('덱을 저장하지 못했다');return []}
   const head={battle:'배틀 시작',start:'시작 손패',rest:n==='reset'?'긴 휴식':'휴식'}[kind]||'';A().sysLog(`🃏 ${head} · 은열쇠 뽑기\n${L.join('\n')}`,'sys');redrawSoon();return L}
- /* 은열쇠 기본값: 손패 3 · 시작 3 · 배틀 시작 1 · 바닥나면 광기 +1 · 광기 3 / 5 에 광기 카드 · 비용 없음 · 「은열쇠」 자원은 뺀다 (은열쇠 = 덱 이름) */
- const MAD0=[{n:'안개 속의 목소리',t:'광기',x:'뽑으면 바로 공개한다. 손패 한 칸을 차지한다. 바칠 수 없다.\n치우기 — 통솔 체크(보통 10), 또는 굴리는 대신 손패 2장 버리기. 치워도 버린 카드로 갈 뿐 덱에 남는다.',col:'black'},
-  {n:'뒤돌아본 그림자',t:'광기',x:'뽑는 순간 경계도 +10. 그다음엔 손패 한 칸을 차지한다. 바칠 수 없다.\n치우기 — 통솔 체크(보통 10), 또는 굴리는 대신 손패 2장 버리기.',col:'black'}];
- async function skPreset(dids){if(!gm())return A().toast('GM 화면에서만');if(!dids.length)return A().toast('트레이너 덱이 없다');let mad=MAD0;
-  try{const rows=await window.OM_STORE.makerDocs('dbedit');const L=[];for(const r of rows){const d=r.data||{};if(d.kind!=='cards'||d.deleted)continue;const w=d.row||[];if(/광기/.test(String(w[0]||''))&&w[1])L.push({n:w[1],t:String(w[2]||'광기'),x:String(w[4]||'').replace(/<br\s*\/?>/g,'\n'),col:colKey(w[5]||'black'),img:String(w[6]||'')})}if(L.length>=2)mad=L.slice(0,2)}catch(e){}
+ /* 은열쇠 기본값 (11-01 개정): 손패 3 · 시작 3 · 배틀 시작 1 · 코스트 5(긴 휴식에 5로) · 패널티 카드(광기 칸 2) · 상흔 1종 · 광기 2종 · 공통 카드 코스트. 옛 「광기」 숫자 자원 · 「은열쇠」 자원은 뺀다 */
+ const MAD0=[{n:'안개 속의 목소리',t:'광기',c:'2',x:'뽑으면 바로 공개한다. 손패 한 칸을 차지한다. 바칠 수 없다. 손패에 있는 동안 내 지시 체크 −1.\n치우기 — 통솔 체크(보통 10), 또는 코스트 2. 치워도 버린 카드로 갈 뿐 덱에 남는다.',col:'black'},
+  {n:'뒤돌아본 그림자',t:'광기',c:'2',x:'뽑는 순간 경계도 +10. 그다음엔 손패 한 칸을 차지한다. 바칠 수 없다.\n치우기 — 통솔 체크(보통 10), 또는 코스트 2.',col:'black'}];
+ const SCAR0=[{n:'욱신거리는 상처',t:'상흔',c:'1',x:'중상이 될 때 덱에 섞인다. 뽑으면 공개하고 손패 한 칸을 차지한다. 바칠 수 없다.\n치우기 — 코스트 1, 또는 다른 손패 1장을 같이 버리기. 긴 휴식에 덱에서 빠진다.',col:'black'}];
+ const COST0={'관찰 노트':1,'지도 펼치기':0,'다른 길로':2,'실타래 되감기':2,'응급 처치':2,'붕대와 진통제':1,'발소리 죽이기':3,'비상식량':1,'함께 버티자':1,'호흡 맞추기':1,'물러서!':1,'기세 올리기':1,'안개의 환영':2,'소금기 어린 부적':1,'손재주':2,'불러내기':0,'은빛 공명':1,'숨 고르기':1};
+ async function skPreset(dids){if(!gm())return A().toast('GM 화면에서만');if(!dids.length)return A().toast('트레이너 덱이 없다');let mad=MAD0,scar=SCAR0;
+  try{const rows=await window.OM_STORE.makerDocs('dbedit');const L=[],S=[];for(const r of rows){const d=r.data||{};if(d.kind!=='cards'||d.deleted)continue;const w=d.row||[];if(!w[1])continue;const c={n:w[1],t:String(w[2]||''),c:String(w[3]||''),x:String(w[4]||'').replace(/<br\s*\/?>/g,'\n'),col:colKey(w[5]||'black'),img:String(w[6]||'')};if(/광기/.test(String(w[0]||''))){c.t=/광기/.test(c.t)?c.t:'광기';L.push(c)}else if(/상흔/.test(String(w[0]||''))){c.t=/상흔/.test(c.t)?c.t:'상흔';S.push(c)}}if(L.length>=1)mad=L.slice(0,3);if(S.length)scar=S.slice(0,2)}catch(e){}
   const db0=DB();if(!db0)return;const db=clone(db0);let n=0;
-  for(const did of dids){const dk0=db.decks[did];if(!dk0)continue;const dk=fixDeck(dk0);const keep=dk.res.filter(r=>r.n!=='광기'&&r.n!=='은열쇠');const old=dk.res.find(r=>r.n==='광기');
-   const res=[{n:'광기',s:0,m:old&&+old.m||9,o:'',a:[{t:3,x:'광기 3',c:mad[0].n},{t:5,x:'광기 5',c:mad[1].n},{t:7,x:'광기 7'},{t:9,x:'광기 9'}]},...keep];
-   exec(db,{op:'opt',d:did,opt:{hl:3,sd:3,bd:1,rp:'광기',ar:1,cr:''},res},'gm',true);
-   for(const m of mad)if(!dk.order.some(id=>dk.cards[id]&&dk.cards[id].n===m.n))exec(db,{op:'cardSave',d:did,card:Object.assign({q:0},m)},'gm',true);
-   for(const h of dk.holders){ensureHolder(dk,h);const rv=dk.rv[h];delete rv['은열쇠']}n++}
-  if(!await A().setDiff(['deck2'],db0,db,3))return A().toast('저장하지 못했다');A().toast(`은열쇠 기본값을 덱 ${n}개에 맞췄다 — 손패 3 · 시작 3 · 배틀 시작 1 · 바닥나면 광기 +1`)}
+  for(const did of dids){const dk0=db.decks[did];if(!dk0)continue;const dk=fixDeck(dk0);const keep=dk.res.filter(r=>!['광기','은열쇠','코스트'].includes(r.n));const old=dk.res.find(r=>r.n==='코스트');
+   const res=[{n:'코스트',s:old&&+old.s||5,m:old&&+old.m||5,o:'',a:[]},...keep];
+   exec(db,{op:'opt',d:did,opt:{hl:3,sd:3,bd:1,rp:'',ar:1,cr:'코스트',pk:1,pc:2},res},'gm',true);
+   for(const m of [...mad,...scar])if(!dk.order.some(id=>dk.cards[id]&&dk.cards[id].n===m.n))exec(db,{op:'cardSave',d:did,card:Object.assign({q:0},m)},'gm',true);
+   for(const id of dk.order){const c=dk.cards[id];if(!c)continue;if(COST0[c.n]!=null&&(c.c==null||String(c.c).trim()===''))c.c=String(COST0[c.n]);if(/^(열쇠|key)/i.test(String(c.t||''))&&(c.c==null||String(c.c).trim()===''))c.c='2'}
+   for(const h of dk.holders){ensureHolder(dk,h);const rv=dk.rv[h];delete rv['은열쇠'];delete rv['광기'];if(rv['코스트']==null)rv['코스트']=res[0].s}n++}
+  if(!await A().setDiff(['deck2'],db0,db,3))return A().toast('저장하지 못했다');A().toast(`은열쇠 기본값을 덱 ${n}개에 맞췄다 — 손패 3 · 시작 3 · 배틀 시작 1 · 코스트 5 · 광기 칸 2`)}
+ /* 11-01 패널티 카드 (GM 화면): kind = mad(덱 소진 · 빈사 · GM 사건) · scar(중상) · heal(회복 장면) · undo(cid) → {cid,collapse} */
+ async function penalty(tid,kind,why,cid){if(!gm())return null;const db0=DB();if(!db0)return null;const db=clone(db0);const did=deckIdOf(db,tid);if(!did)return null;const dk=fixDeck(db.decks[did]);if(!dk.opt.pk)return null;
+  const before=JSON.stringify(Object.fromEntries(dk.order.map(id=>[id,+(dk.cards[id]||{}).q||0])));const R=exec(db,{op:'pen',d:did,h:tid,kind,why,cid},'gm',true);if(R.err){A().toast(R.err);return null}if(!R.pub.length)return null;
+  let added='';const b=JSON.parse(before);for(const id of dk.order)if((+(dk.cards[id]||{}).q||0)>(b[id]||0))added=id;
+  if(!await A().setDiff(['deck2'],db0,db,3)){A().toast('덱을 저장하지 못했다');return null}A().sysLog(`🃏 〔${dk.name}〕 ${R.pub.join('\n')}`,'sys');redrawSoon();return {cid:added,collapse:!!(R.pen&&R.pen.collapse),line:R.pub[0]}}
  /* 스킬 체크에 바치기: 손패에서 그 카드를 버린 카드로 (효과 없이). 성공하면 카드 정보를 돌려준다 */
  async function commitCard(tid,cid,stat){const x=deckFor(tid);if(!x)return {err:'덱이 없다'};const [did,dk]=x;const hand=dk.hands[tid]||[];const i=hand.indexOf(cid);const c=dk.cards[cid];if(i<0||!c)return {err:'그 카드가 손패에 없다'};
   if(!icFits(c,stat))return {err:`「${c.n}」 은(는) ${stat} 아이콘이 없다`};const r=await run({op:'discard',d:did,h:tid,sel:[i],ids:[cid]});if(r&&r.err)return {err:r.err};return {n:c.n,ic:icOf(c).join(' '),did,cid}}
- return {open,absorb,phone,bindPhone,openMgr,exec,seedDb,onAck,handCount,handInfo,battleHand,importMakerDecks,beat,skPreset,commitCard,icOf,icFits};
+ return {open,absorb,phone,bindPhone,openMgr,exec,seedDb,onAck,handCount,handInfo,battleHand,importMakerDecks,beat,skPreset,commitCard,icOf,icFits,penalty};
 })();
