@@ -27,7 +27,8 @@ window.OM_BBS_UI=(()=>{
   del:(r,s,id)=>rpc('om_bbs_del',{p_room:r,p_secret:s,p_id:id}),like:(r,s,id)=>rpc('om_bbs_like',{p_room:r,p_secret:s,p_id:id}),
   hookGet:(r,s)=>rpc('om_bbs_hook_get',{p_room:r,p_secret:s}),
   hookPut:(r,s,o)=>rpc('om_bbs_hook_put',{p_room:r,p_secret:s,p_url:o.url??null,p_thread:o.thread??'',p_tname:o.tname??'',p_boards:o.boards??null,p_cm:o.cm??null,p_on:o.on??null,p_cthread:o.cthread??''}),
-  hookTest:(r,s)=>rpc('om_bbs_hook_test',{p_room:r,p_secret:s}),hookResult:(r,s,id)=>rpc('om_bbs_hook_result',{p_room:r,p_secret:s,p_id:id})}}
+  hookTest:(r,s)=>rpc('om_bbs_hook_test',{p_room:r,p_secret:s}),hookResult:(r,s,id)=>rpc('om_bbs_hook_result',{p_room:r,p_secret:s,p_id:id}),
+  hallGet:(r,s)=>rpc('om_dc_hall_get',{p_room:r,p_secret:s}),hallPut:(r,s,o)=>rpc('om_dc_hall_put',{p_room:r,p_secret:s,p_url:o.url??null,p_thread:o.thread??''})}}
  /* 웹툴 기본 env */
  function omEnv(){return {key:'om',room:()=>ST().room||'',secret:()=>ST().secret||'',role:()=>ST().role||'view',seat:()=>ST().seat||'',api:()=>DBS().bbs,
   upload:f=>DBS().uploadImage('bbs/'+(ST().room||'')+'/'+(ST().seat||'gm'),f),toast:t=>A().toast(t),notify:()=>{try{DBS().broadcast({t:'bbs',room:ST().room,at:Date.now()})}catch(e){}},authors:omAuthors,roomName:()=>(ST().roomRow&&ST().roomRow.name)||''}}
@@ -181,12 +182,21 @@ window.OM_BBS_UI=(()=>{
    <div class="bbs-dcf"><b>보낼 게시판</b><div class="bbs-dcb"><label class="bbs-anon"><input type="checkbox" name="all" ${all?'checked':''}> 전부</label>${B.filter(b=>!b.hidden).map(b=>`<label class="bbs-anon"><input type="checkbox" name="bd" value="${esc(b.id)}" ${all||sel.has(b.id)?'checked':''} ${all?'disabled':''}> ${esc(b.name)}</label>`).join('')}</div><small>숨긴 게시판은 골라도 보내지 않아요.</small></div>
    <div class="bbs-dcb"><label class="bbs-anon"><input type="checkbox" name="cm" ${c.cm?'checked':''}> 댓글도 보내기</label><label class="bbs-anon"><input type="checkbox" name="on" ${c.set?(c.on?'checked':''):'checked'}> 켜기</label></div>
    <div class="bbs-crow"><button type="submit" class="btn xs pri" ${st.busy?'disabled':''}>저장</button><button type="button" class="btn xs" data-dc="test" ${c.set&&!st.busy?'':'disabled'}>${st.testing?'보내는 중…':'시험 보내기'}</button><span class="sp"></span>${c.set?'<button type="button" class="btn xs ghost danger" data-dc="off">연동 끊기</button>':''}</div>
-   ${rs?`<p class="bbs-dcr ${rs[0]}">${esc(rs[1])}</p>`:''}</form>`}
+   ${rs?`<p class="bbs-dcr ${rs[0]}">${esc(rs[1])}</p>`:''}</form>${dcHallHtml()}`}
+ /* 11-02 밤 망령 「전당도 디코로 보내기」 — 전당 한 판 「디코로」가 올리는 곳. 전당 채널이 다르면 그 채널 웹후크를 따로 */
+ const HALL_DEF='https://discord.com/channels/524267589900304417/1159658452134662155';
+ function dcHallHtml(){const h=DC.st.hall;if(h===undefined)return '';if(h&&h.err)return `<p class="bbs-warn" style="margin-top:12px">전당 설정: ${esc(h.err)}</p>`;
+  return `<form class="bbs-dc" data-dc-hall autocomplete="off" style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--line,#444)">
+   <div class="bbs-dcst ${h.hset||h.main?'on':''}"><i aria-hidden="true"></i>🏆 전당 → ${h.hset?`전당 웹후크 <code>…${esc(h.htail||'')}</code>`:h.main?'게시판 웹후크로':'아직 보낼 곳이 없어요'}${h.hthread?` · 스레드 <code>${esc(h.hthread)}</code>`:''}</div>
+   <label class="bbs-dcf"><b>전당 웹후크 주소 <span class="dim">(전당 채널이 게시판과 다를 때)</span></b><input type="password" name="hurl" placeholder="${h.hset?'저장되어 있어요 — 바꿀 때만':'비우면 위 게시판 웹후크로 보내요'}" spellcheck="false"><small>디스코드 웹후크는 자기 채널과 그 안의 스레드에만 보낼 수 있어요. 전당 스레드가 다른 채널에 있으면 그 채널에서 웹후크를 만들어 넣어 주세요.</small></label>
+   <label class="bbs-dcf"><b>전당 스레드 링크</b><input type="text" name="hthread" value="${esc(h.hthread||(h.hset||h.main?'':HALL_DEF))}" placeholder="비우면 그 웹후크의 채널 본문" spellcheck="false"><small>전당 한 판의 「디코로」가 올리는 곳이에요. 방에 앉은 사람 누구나 보낼 수 있어요.</small></label>
+   <div class="bbs-crow"><button type="submit" class="btn xs pri">전당 저장</button>${h.hset?'<span class="sp"></span><button type="button" class="btn xs ghost" data-dc="hoff">전당 웹후크 지우기</button>':''}</div></form>`}
  function dcDraw(){if(!DC.el||!DC.el.isConnected)return;DC.el.innerHTML=dcHtml()}
  function dcRead(f){const g=n=>f.querySelector(`[name="${n}"]`);const all=g('all').checked;const bd=[...f.querySelectorAll('[name="bd"]:checked')].map(x=>x.value);const u=g('url').value.trim();
   return {url:u?u:null,thread:g('thread').value.trim(),cthread:g('cthread').value.trim(),tname:g('tname').value.trim(),boards:all?[]:bd,cm:g('cm').checked,on:g('on').checked}}
  async function dcLoad(){DC.st={busy:true};dcDraw();if((DE().role()||'')!=='gm'){DC.st={};dcDraw();return}
-  try{const [cfg,b]=await Promise.all([DAPI().hookGet(DROOM(),DSEC()),DAPI().boards(DROOM(),DSEC()).catch(()=>[])]);DC.st={cfg:cfg||{set:false}};DC.boards=b||[]}catch(e){DC.st={err:dcErr(e)}}dcDraw()}
+  try{const [cfg,b]=await Promise.all([DAPI().hookGet(DROOM(),DSEC()),DAPI().boards(DROOM(),DSEC()).catch(()=>[])]);DC.st={cfg:cfg||{set:false}};DC.boards=b||[]}catch(e){DC.st={err:dcErr(e)}}
+  if(DAPI().hallGet&&!DC.st.err){try{DC.st.hall=await DAPI().hallGet(DROOM(),DSEC())||{}}catch(e){DC.st.hall={err:/function|PGRST202/i.test(String(e&&e.message||e))?'Supabase 에 supabase/patch_2026-11-02_전당_디스코드.sql 을 실행해 주세요':dcErr(e)}}}dcDraw()}
  async function dcSave(f){const o=dcRead(f);if(!(DC.st.cfg||{}).set&&!o.url){dcToast('웹후크 주소를 넣어 주세요');return}DC.st.busy=true;DC.st.res=null;dcDraw();
   try{DC.st.cfg=await DAPI().hookPut(DROOM(),DSEC(),o);dcToast('저장했어요')}catch(e){DC.st.res={error:dcErr(e)}}DC.st.busy=false;dcDraw()}
  async function dcTest(){DC.st.testing=true;DC.st.busy=true;DC.st.res=null;const f=DC.el.querySelector('[data-dc-form]');const o=f?dcRead(f):null;dcDraw();let r=null;
@@ -196,9 +206,10 @@ window.OM_BBS_UI=(()=>{
   DC.st.res=r;DC.st.testing=false;DC.st.busy=false;dcDraw()}
  function dcMount(el,o){o=o||{};DC.el=el;DC.env=o.env||null;DC.st={};el.classList.add('bbs-dcwrap');
   if(!el._dcb){el._dcb=1;
-   el.addEventListener('submit',e=>{const f=e.target.closest('[data-dc-form]');if(!f)return;e.preventDefault();dcSave(f)});
+   el.addEventListener('submit',e=>{const hf=e.target.closest('[data-dc-hall]');if(hf){e.preventDefault();(async()=>{const u=hf.querySelector('[name="hurl"]').value.trim();try{DC.st.hall=await DAPI().hallPut(DROOM(),DSEC(),{url:u?u:null,thread:hf.querySelector('[name="hthread"]').value.trim()});dcToast('전당 설정을 저장했어요')}catch(er){dcToast(dcErr(er))}dcDraw()})();return}const f=e.target.closest('[data-dc-form]');if(!f)return;e.preventDefault();dcSave(f)});
    el.addEventListener('click',e=>{const b=e.target.closest('[data-dc]');if(!b)return;const k=b.dataset.dc;
     if(k==='test')dcTest();
+    if(k==='hoff'){(async()=>{try{DC.st.hall=await DAPI().hallPut(DROOM(),DSEC(),{url:'',thread:(DC.st.hall||{}).hthread||''});dcToast('전당 웹후크를 지웠어요 — 게시판 웹후크로 보내요')}catch(er){dcToast(dcErr(er))}dcDraw()})()}
     if(k==='off'){if(!confirm('디스코드 연동을 끊을까요? (웹후크 주소를 지워요)'))return;(async()=>{try{DC.st.cfg=await DAPI().hookPut(DROOM(),DSEC(),{url:'',thread:'',cthread:'',tname:'',boards:[],cm:false,on:false});DC.st.res=null;dcToast('끊었어요')}catch(er){DC.st.res={error:dcErr(er)}}dcDraw()})()}});
    el.addEventListener('change',e=>{const t=e.target;if(t.matches('[name="all"]'))t.closest('.bbs-dcb').querySelectorAll('[name="bd"]').forEach(x=>{x.disabled=t.checked;if(t.checked)x.checked=true})})}
   dcLoad()}
@@ -277,4 +288,4 @@ window.OM_BBS_UI=(()=>{
  document.addEventListener('click',onClick);document.addEventListener('submit',onSubmit);document.addEventListener('input',onInput);document.addEventListener('change',onChange);document.addEventListener('dragover',onDragOver);document.addEventListener('drop',onDrop);document.addEventListener('paste',onPaste);
  /* 글 쓰는 중에 새 글이 와도 칸을 다시 그리지 않는다 (쓰던 칸이 풀리던 것) — 칸을 떠나면 그때 */
  document.addEventListener('focusout',e=>{if(!S.pend||!S.md||!S.md.contains(e.target))return;setTimeout(()=>{if(S.pend&&!typing())redraw()},0)});
- return {V:10,dcMount,openBoard,mount,onEvent,pull,apiFromRpc,unread:()=>S.unread}})();   /* V: 세션 노트가 이보다 옛 것을 들고 있으면 다시 불러온다 */
+ return {V:11,dcMount,openBoard,mount,onEvent,pull,apiFromRpc,unread:()=>S.unread}})();   /* V: 세션 노트가 이보다 옛 것을 들고 있으면 다시 불러온다 */

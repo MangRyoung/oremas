@@ -162,6 +162,10 @@ async function shrinkUpload(blob,maxSide){try{if(!/^image\/(png|jpe?g|webp|bmp)$
   hookResult:(room,secret,id)=>rpc('om_bbs_hook_result',{p_room:room,p_secret:secret,p_id:id}),
   /* 11-02 시트 「한 장 요약」 → 디코로 (방에 앉은 사람) */
   dcCard:(room,secret,o)=>rpc('om_dc_card',{p_room:room,p_secret:secret,p_title:o.title||'',p_sub:o.sub||'',p_img:o.img,p_who:o.who||{}}),
-  dcCardResult:(room,secret,id)=>rpc('om_dc_card_result',{p_room:room,p_secret:secret,p_id:id}),noFn};
+  dcCardResult:(room,secret,id)=>rpc('om_dc_card_result',{p_room:room,p_secret:secret,p_id:id}),
+  /* 11-02 밤 전당 → 디코로 (supabase/patch_2026-11-02_전당_디스코드.sql) */
+  dcHall:(room,secret,o)=>rpc('om_dc_hall',{p_room:room,p_secret:secret,p_title:o.title||'',p_sub:o.sub||'',p_img:o.img,p_who:o.who||{}}),
+  hallGet:(room,secret)=>rpc('om_dc_hall_get',{p_room:room,p_secret:secret}),
+  hallPut:(room,secret,o)=>rpc('om_dc_hall_put',{p_room:room,p_secret:secret,p_url:o.url??null,p_thread:o.thread??''}),noFn};
  return {patchesSince,hall,bbs,shrinkUpload,ntCamps,ntCampUpdate,ntDocs,ntSync,NTSYNC,ntGet,ntPut,ntPutMany,ntDel,ntWatch,rtReset,getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty,makerOne,makerPut};
 })();

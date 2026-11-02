@@ -121,7 +121,7 @@ window.OM_HALL_UI=(()=>{
  async function openOne(id){let x;try{x=await DBS().hall.get(ST().room,id)}catch(e){return A().toast('불러오지 못했다: '+e.message)}if(!x)return A().toast('그 기록이 없다 (지워졌을 수 있다)');
   const h=x.head||{};let lines=null;const canEd=mine(x.w);
   const cmHtml=c=>`<div class="hcm" data-ci="${esc(c.i)}"><b>${esc(c.by||'?')}</b> <span class="small dim">${fmtT(c.at)}</span>${mine(c.w)?'<button class="btn xs ghost danger hcmdel" title="지우기">×</button>':''}<div>${esc(c.t)}</div></div>`;
-  const md=A().openModal(`<div class="mhead"><h2>🏆 전당</h2><span class="sp"></span>${canEd?'<button class="btn sm" data-ho="edt" title="제목 · 승패 고치기 · 기록 지우기">✎ 편집</button>':''}<button class="btn sm" data-ho="copy" title="요약 · 코멘트를 그림으로 클립보드에">PNG 복사</button><button class="btn sm" data-ho="save">PNG 저장</button><button class="btn ghost" data-x>닫기</button></div>
+  const md=A().openModal(`<div class="mhead"><h2>🏆 전당</h2><span class="sp"></span>${canEd?'<button class="btn sm" data-ho="edt" title="제목 · 승패 고치기 · 기록 지우기">✎ 편집</button>':''}${(ST().role==='gm'||ST().role==='seat')&&DBS().bbs&&DBS().bbs.dcHall?'<button class="btn sm" data-ho="dc" title="요약 · 코멘트를 그림으로 만들어 디스코드 전당 스레드에 올린다 (GM 이 설정 「디스코드」 탭에서 정한 곳)">디코로</button>':''}<button class="btn sm" data-ho="copy" title="요약 · 코멘트를 그림으로 클립보드에">PNG 복사</button><button class="btn sm" data-ho="save">PNG 저장</button><button class="btn ghost" data-x>닫기</button></div>
    ${canEd?`<div class="hedit" id="hEd" hidden><label class="hall-fl"><span>제목</span><input type="text" id="hEdT" maxlength="80" value="${esc(h.t||'')}"></label><label class="hall-fl"><span>승패</span><select id="hEdR">${[['left',trNames(h.sides.left)+' 승'],['right',trNames(h.sides.right)+' 승'],['draw','무승부'],['','승패 없음']].map(([k,n])=>`<option value="${k}" ${(h.r||'')===k?'selected':''}>${esc(n)}</option>`).join('')}</select></label><div class="row" style="gap:6px"><button class="btn sm ghost danger" data-ho="del">기록 지우기</button><span class="sp"></span><button class="btn sm ghost" data-ho="edt">그만두기</button><button class="btn sm pri" data-ho="ed">저장</button></div></div>`:''}
    <div class="hallshot"><div class="hshot-h"><span>HALL OF FAME</span><span class="sp"></span><span>${esc(fmtT(x.at))}${h.by?' · '+esc(h.by):''}</span></div>${sumHtml(h,false)}<div class="hcms" id="hcms">${(x.cm||[]).map(cmHtml).join('')}</div></div>
    ${canWrite()?`<div class="hcmin"><textarea id="hcmT" rows="3" maxlength="4000" placeholder="코멘트 — 여러 줄 그대로 남는다 · Ctrl+Enter 로 달기"></textarea><div class="row"><label class="small hlogpng"><input type="checkbox" id="hlogpng"> PNG 에 간략 로그도 넣기</label><span class="sp"></span><span class="small dim" id="hcmN"></span><button class="btn sm pri" data-ho="cm">코멘트 달기</button></div></div>`:'<div class="row"><label class="small hlogpng"><input type="checkbox" id="hlogpng"> PNG 에 간략 로그도 넣기</label><span class="sp"></span><span class="small dim">자리에 앉으면 코멘트를 쓸 수 있다.</span></div>'}
@@ -140,6 +140,7 @@ window.OM_HALL_UI=(()=>{
    if(k==='cm')return post();
    if(k==='edt'){const e=$('#hEd',md);if(e){e.hidden=!e.hidden;if(!e.hidden)$('#hEdT',md).focus()}return}
    if(k==='copy'||k==='save')return shot(md,h,k,$('#hlogpng',md).checked?await showLog():null);
+   if(k==='dc')return sendDc(md,h,b,$('#hlogpng',md).checked?await showLog():null);
    if(k==='ed'){const nh=Object.assign({},h,{r:$('#hEdR',md).value,t:$('#hEdT',md).value.trim().slice(0,80)||h.t});try{await DBS().hall.put(ST().room,ST().secret,id,nh,null);LIST=null;END=false;ping();A().toast('고쳤다');openOne(id)}catch(e){A().toast(e.message)}return}
    if(k==='del'){if(!confirm(`「${h.t}」 기록을 전당에서 지울까? 되돌릴 수 없다.`))return;try{await DBS().hall.del(ST().room,ST().secret,id);LIST=null;END=false;ping();A().closeModal();A().toast('지웠다');if(A().view==='hall')A().renderScene()}catch(e){A().toast(e.message)}}})}
 
@@ -151,8 +152,22 @@ window.OM_HALL_UI=(()=>{
   try{await h2c();const cv=await window.html2canvas(box,{backgroundColor:'#141414',scale:2,useCORS:true,onclone:(cd,ce)=>{try{window.OM_PNGFIX&&window.OM_PNGFIX(cd,ce)}catch(e){}}});
    const name=String(h.t||'전당').replace(/[\\/:*?"<>|]/g,'_').slice(0,60)+'.png';
    if(k==='copy'){try{const blob=await new Promise(r=>cv.toBlob(r,'image/png'));await navigator.clipboard.write([new ClipboardItem({'image/png':blob})]);A().toast('PNG 를 복사했다')}catch(e){A().toast('이 브라우저는 그림 복사가 안 된다 — 대신 저장한다');k='save'}}
+   if(k==='cv')return cv;
    if(k==='save'){const a=document.createElement('a');a.download=name;a.href=cv.toDataURL('image/png');a.click()}}
   catch(e){A().toast('PNG 로 만들지 못했다 ('+e.message+')')}finally{host.remove()}}
+
+ /* 11-02 밤 망령 「전당도 디코로 보내기」: 요약 그림(webp) → 저장소 dc/<방>/ → om_dc_hall → 전당 스레드. 결과는 om_dc_card_result 로 */
+ async function sendDc(md,h,bt,lines){if(bt.disabled)return;const lab=bt.textContent;bt.disabled=true;bt.textContent='그리는 중…';
+  try{const cv=await shot(md,h,'cv',lines);if(!cv)throw new Error('그림을 만들지 못했다');const blob=await new Promise(r=>cv.toBlob(r,'image/webp',.9));if(!blob)throw new Error('그림을 만들지 못했다');
+   bt.textContent='올리는 중…';const url=await DBS().uploadImage('dc/'+ST().room+'/hall',blob);
+   const res=h.r==='draw'?'무승부':h.r&&h.sides&&h.sides[h.r]?trNames(h.sides[h.r])+' 승':'';const vs=SIDES.map(s=>trNames((h.sides||{})[s]||{})).filter(Boolean).join(' VS ');
+   bt.textContent='보내는 중…';const id=await DBS().bbs.dcHall(ST().room,ST().secret,{title:h.t||'전당',sub:[vs,res].filter(Boolean).join(' · '),img:url,who:{n:'전당'}});
+   let r=null;for(let i=0;i<12;i++){await new Promise(z=>setTimeout(z,900));try{r=await DBS().bbs.dcCardResult(ST().room,ST().secret,id)}catch(e){r=null;break}if(r&&!r.wait)break}
+   if(!r||r.wait)A().toast('디스코드로 보냈다 (대답은 아직 — 디스코드에서 확인해 줘)');
+   else if(r.status>=200&&r.status<300)A().toast('디스코드 전당에 올렸다');
+   else{let c=0,msg='';try{const j=JSON.parse(r.body||'{}');c=j.code;msg=j.message||''}catch(e){}A().toast('디스코드가 거절했다 — '+(c===10003?'스레드를 찾지 못했다 (전당 스레드가 다른 채널이면 GM 이 설정 「디스코드」 탭에 그 채널의 웹후크를 넣어 줘)':c===10015?'웹후크가 없다 (GM: 다시 이어 줘)':(r.error||msg||('오류 '+r.status))))}}
+  catch(err){const msg=String((err&&err.message)||err);A().toast(/function|PGRST202/i.test(msg)?'전당 디스코드가 아직 없다 — Supabase 에 supabase/patch_2026-11-02_전당_디스코드.sql 을 실행해 줘':'디스코드로 보내지 못했다: '+msg)}
+  finally{bt.disabled=false;bt.textContent=lab}}
 
  return {render,offer,worth,onEvent,snap}
 })();
