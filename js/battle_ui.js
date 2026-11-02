@@ -34,6 +34,11 @@ window.OM_BATTLE_UI=(()=>{
  const wallNames=(objs,cat,ty)=>Object.keys(WALLS).filter(k=>(objs||{})[k]>0&&(k==='리플렉터'?cat==='physical':k==='빛의장막'?cat==='special':k==='얼음의장벽'?ty!=='Fire':true));
  const catEn=c=>/물리|physical/.test(String(c||''))?'physical':/특수|special/.test(String(c||''))?'special':'';
  const slotOf=(side,area)=>side+'_'+area;
+ /* 11-02 망령 「에리어 바꾸면 자신 대상과 아군 대상이 섞인다」: 지시의 대상은 자리(left_a …)로 적혀 있어, 지시한 뒤 에리어 교대를 하면 「자신」이 옆 아군 자리를 가리켰다.
+    지시를 저장할 때 자리마다 그때 있던 포켓몬(tm)을 함께 적고, 쓸 때 같은 편 대상은 그 포켓몬이 지금 있는 자리로 바꾼다(자신 · 아군은 포켓몬을 따라간다).
+    상대 대상은 예전처럼 자리 그대로 — 상대가 자리를 바꾸면 그 자리에 온 포켓몬이 맞는다(사이드체인지와 같은 방식). 교대로 들어간 포켓몬이면 자리 그대로 */
+ function tmOf(b,targets){const o={};for(const s of targets||[]){const i=String(s).indexOf('_');if(i<0)continue;const m=Object.values(b.mons||{}).find(q=>q.side===s.slice(0,i)&&q.entry===s.slice(i+1));if(m)o[s]=m.id}return o}
+ function tgNow(b,x,me){const L=(x&&x.targets)||[];const tm=(x&&x.tm)||{};const out=[];for(const s of L){let r=s;const mid=tm[s];const m=mid&&(b.mons||{})[mid];if(m&&m.entry&&m.hp&&(!me||m.side===me.side)&&String(s).startsWith(m.side+'_'))r=slotOf(m.side,m.entry);if(!out.includes(r))out.push(r)}return out}
  const TM=(x,b)=>window.OM_TEAM(b||ctx().b,x);const sameT=(x,y,b)=>{const p=TM(x,b);return !!p&&p===TM(y,b)};   /* 같은 편인가 (개인전 반영) */
  const lists=()=>((DB().const||{}).lists||{});
  const csv=s=>String(s||'').split(',').map(x=>x.trim()).filter(Boolean);
@@ -533,7 +538,7 @@ window.OM_BATTLE_UI=(()=>{
  function okeyOf(m,x){x=x||{};const pm={},om={};for(const k in (x.prio||{}))if(x.prio[k]!=='')pm[k]=+x.prio[k];for(const k in (x.ochg||{}))if(x.ochg[k]!=='')om[k]=+x.ochg[k];
   const mv=(x.move!==''&&x.move!=='switch'&&x.move!=null)?MVS(m)[+x.move]:null;
   const o={sw:x.move==='switch'?1:0,...(x.move==='switch'&&x.switch?{st:String(x.switch)}:{}),pm,om,pr:mv?(FX()?FX().prioOf(m,mv):(+mv.prio||0)):0,mv:mv?1:0};
-  if(mv&&(isPursuit(mv,m)||x.pur)){o.pn=mv.name;o.tg=x.targets||[];o.psrc=isPursuit(mv,m)?((m.flags||{}).pursuit?(m.flags.pursuitBy||''):''):(x.pur||'')}
+  if(mv&&(isPursuit(mv,m)||x.pur)){o.pn=mv.name;o.tg=tgNow(ctx().b,x,m);o.psrc=isPursuit(mv,m)?((m.flags||{}).pursuit?(m.flags.pursuitBy||''):''):(x.pur||'')}
   const pimm=x.pimm||((m.flags||{}).pursuitImmune?(m.flags.pursuitImmuneBy||'추격 무시'):'');if(pimm)o.pimm=pimm;if(mv&&(isUturn(mv,m)||x.ut||x.uman))o.ut=1;return o}
  /* 좌석: 턴 개시 때 내 순서 열쇠를 cmds[내 자리].ok 에 올린다 (진행하는 사람이 남의 비밀 지시를 못 읽어도 순서를 계산하게) */
  async function publishOk(tid0){const c=ctx();const b=c.b;const tid=tid0||c.seat;if(c.role!=='seat'||!tid||!(b.trainers||{})[tid])return;const key=turnKey(b);const cur=((b.cmds||{})[tid]||{}).ok;if((cur&&cur.key===key)||BUSY.ok===key+tid)return;BUSY.ok=key+tid;const t=b.trainers[tid];try{
@@ -812,9 +817,9 @@ window.OM_BATTLE_UI=(()=>{
 
  /* ----- 지시 저장 · 준비 · 공개 ----- */
  /* 저장한 지시엔 턴 번호를 붙인다 (10-24 망령): 지난 턴 지시(선행 포텐셜 · 지령)를 다음 턴에 또 읽어 「선행」이 풀리지 않던 것 */
- function cleanCmd(cur){const out={mons:{},detail:cur.detail||'',upots:cur.upots||[],turn:+ctx().b.turn||1};   /* 시합 개시 전(턴 0)에 넣은 지시는 TURN 1 것 */for(const k in cur.mons){const x=cur.mons[k];out.mons[k]={move:x.move,switch:x.switch,targets:x.targets||[],prio:x.prio||{},ochg:x.ochg||{},order:x.order||'',command:x.command||'',pots:x.pots||[],pman:x.pman?1:0,pur:x.pur||'',pimm:x.pimm||'',uman:x.uman?1:0,ut:x.ut||'',tman:x.tman?1:0}}return out}
+ function cleanCmd(cur){const out={mons:{},detail:cur.detail||'',upots:cur.upots||[],turn:+ctx().b.turn||1};   /* 시합 개시 전(턴 0)에 넣은 지시는 TURN 1 것 */for(const k in cur.mons){const x=cur.mons[k];out.mons[k]={move:x.move,switch:x.switch,targets:x.targets||[],tm:tmOf(ctx().b,x.targets),prio:x.prio||{},ochg:x.ochg||{},order:x.order||'',command:x.command||'',pots:x.pots||[],pman:x.pman?1:0,pur:x.pur||'',pimm:x.pimm||'',uman:x.uman?1:0,ut:x.ut||'',tman:x.tman?1:0}}return out}
  /* 공개용: 선행 입력(지령·명령)은 뺀다 — 발동할 때 드러난다 */
- function pubMon(x){x=x||{};return {move:x.move,switch:x.switch,targets:x.targets||[],prio:x.prio||{},ochg:x.ochg||{},tman:x.tman?1:0}}
+ function pubMon(x){x=x||{};return {move:x.move,switch:x.switch,targets:x.targets||[],tm:x.tm||{},prio:x.prio||{},ochg:x.ochg||{},tman:x.tman?1:0}}
  async function saveCmd(tid,quiet){const c=ctx();const cur=CMD[tid];if(!cur)return;{const t=(c.b.trainers||{})[tid]||{};for(const mid in cur.mons){const m=c.b.mons[mid];if(!m)continue;const pp=prePursuit(t,m,cur.mons[mid],cur.upots);cur.mons[mid].pur=pp.pur;cur.mons[mid].pimm=pp.pimm;cur.mons[mid].ut=pp.ut}}
   try{await DBS().secretPut(c.ST.room,c.ST.secret,'cmd',tid,cleanCmd(cur));if(coOf(c,tid).length&&!(c.gm&&c.fair))try{await A().set(['pub',tid,'csav'],{at:Date.now(),by:c.gm?'gm':c.seat,name:c.gm?'GM':(c.ST.name||c.seat)})}catch(e){}   /* 함께 지시하는 화면들이 이걸 보고 불러온다 */if(!quiet)A().toast('지시를 저장했다 (공개 전까지 GM만 본다)');if((c.ST.state.ready||{})[tid])await putShape(tid);return true}catch(e){A().toast('저장 실패: '+e.message);return false}}
  /* 지시의 「꼴」만 공개 칸에 둔다 — 「타임」이 보는 건 교대인지 기술인지뿐 (맵툴 active_command_expert 와 같다) */
@@ -990,13 +995,13 @@ window.OM_BATTLE_UI=(()=>{
  function revealCardText(b,t,m,x){if(x.move==='switch')return `${t.name} · ${m.name} (${slotName(b,m.side+'_'+m.entry).replace(/<[^>]+>/g,'')}): 「교대」 → ${monName(b,x.switch)}`;
   if(x.move===''||x.move==null)return `${t.name} · ${m.name}: (행동 없음)`;const mv=MVS(m)[+x.move]||{};
   const thr=(m.states||{}).Thrash&&!x.tman&&mv.cat!=='변화'&&!/전체|적진|자진|자신/.test(String(mv.range||''));   /* 10-26: 난동부리기면 대상은 공격할 때 랜덤 */
-  return `${t.name} · ${m.name} (${SIDE_KO[m.side]} ${String(m.entry).toUpperCase()}): 「${mv.name||'?'}」 ${mv.type||''}·${mv.cat||''} · 위력 ${mv.pow||'-'} · 명중 ${mv.acc||'-'}${mv.prio?' · 우선도 '+mv.prio:''}${thr?' → 적진에서 랜덤 (「난동부리기」)':x.targets&&x.targets.length?' → '+x.targets.map(sl=>slotName(b,sl).replace(/<[^>]+>/g,'')).join(', '):''}${mv.eff&&mv.eff!=='-'?'\n   '+mv.eff:''}`}
+  return `${t.name} · ${m.name} (${SIDE_KO[m.side]} ${String(m.entry).toUpperCase()}): 「${mv.name||'?'}」 ${mv.type||''}·${mv.cat||''} · 위력 ${mv.pow||'-'} · 명중 ${mv.acc||'-'}${mv.prio?' · 우선도 '+mv.prio:''}${thr?' → 적진에서 랜덤 (「난동부리기」)':x.targets&&x.targets.length?' → '+tgNow(b,x,m).map(sl=>slotName(b,sl).replace(/<[^>]+>/g,'')).join(', '):''}${mv.eff&&mv.eff!=='-'?'\n   '+mv.eff:''}`}
  /* 공개 카드 그림용 (10-24 망령): 누가 · 무엇을 · 누구에게 — 로그가 그림 칩으로 그린다 */
  function revealData(b,t,m,x){const at=sl=>{const [s,a]=String(sl).split('_');const q=Object.values(b.mons||{}).find(q=>q.side===s&&q.entry===a&&q.hp&&q.hp.cur>0);return {slot:sl,side:s,area:String(a||'').toUpperCase(),name:q?q.name:'',img:q?q.image||'':'',mid:q?q.id:''}};
   const o={tr:t.name||'',mid:m.id,name:m.name,img:m.image||'',side:m.side,area:String(m.entry||'').toUpperCase()};
   if(x.move==='switch'){const w=(b.mons||{})[x.switch]||{};return Object.assign(o,{sw:{name:w.name||monName(b,x.switch)||'',img:w.image||''}})}
   if(x.move===''||x.move==null)return Object.assign(o,{none:1});const mv=MVS(m)[+x.move]||{};
-  return Object.assign(o,{mv:{name:mv.name||'?',type:mv.typeEn||'',typeKo:mv.type||'',cat:mv.cat||'',pow:mv.pow||'-',acc:mv.acc||'-',prio:+mv.prio||0},tg:(x.targets||[]).map(at)})}
+  return Object.assign(o,{mv:{name:mv.name||'?',type:mv.typeEn||'',typeKo:mv.type||'',cat:mv.cat||'',pow:mv.pow||'-',acc:mv.acc||'-',prio:+mv.prio||0},tg:tgNow(b,x,m).map(at)})}
  let autoT=null;
  function autoAdvance(){const c=ctx();const b=c.b;if(!c.mgr)return;const me=c.gm?'gm':c.seat;if((b.host||'gm')!==me)return;if(me==='gm'&&!isLeader(c))return;   /* 10-27: GM 창 여럿이면 리더 하나만 */if((+b.phase||0)!==1||b.tstep)return;if(unrevealed(b).length)return;clearTimeout(autoT);autoT=setTimeout(async()=>{const c2=ctx();if((+c2.b.phase||0)!==1||c2.b.tstep||unrevealed(c2.b).length)return;A().sysLog('지시가 모두 공개됐다','battle');await stepTurn()},800)}
  /* 같은 포켓몬 공개가 여러 길(자동 공개 · 내 차례 공개 · 버튼)로 겹쳐 들어오면 로그가 두 번 찍혔다 (10-24 망령) — 진행 중이면 무시하고, 기다린 뒤 다시 확인 */
@@ -1224,7 +1229,7 @@ window.OM_BATTLE_UI=(()=>{
   /* GM 은 바로 본다 */
   const rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd');const r=(rows||[]).filter(x=>cmdFresh(x)).find(x=>x.id===m.tid);const x=r&&r.data&&r.data.mons&&r.data.mons[mid];
   A().openModal(`<div class="mhead"><h2>타임 — ${esc(m.name)}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="pre">${esc(x?describeCmd(b,m,x):'아직 저장된 지시가 없다')}</div>`)}
- function describeCmd(b,m,x){if(!x)return '(없음)';if(x.move==='switch')return `교대 → ${monName(b,x.switch)}`;if(x.move===''||x.move==null)return '(행동 없음)';const mv=MVS(m)[+x.move];return `${mv?mv.name:'?'}${x.targets&&x.targets.length?' → '+x.targets.map(sl=>slotName(b,sl).replace(/<[^>]+>/g,'')).join(', '):''}`}
+ function describeCmd(b,m,x){if(!x)return '(없음)';if(x.move==='switch')return `교대 → ${monName(b,x.switch)}`;if(x.move===''||x.move==null)return '(행동 없음)';const mv=MVS(m)[+x.move];return `${mv?mv.name:'?'}${x.targets&&x.targets.length?' → '+tgNow(b,x,m).map(sl=>slotName(b,sl).replace(/<[^>]+>/g,'')).join(', '):''}`}
  async function grantTime(seat){const c=ctx();if(!c.mgr)return;const b=c.b;const req=((c.ST.state.pub||{})[seat]||{}).time;if(!req)return;const m=b.mons[req.mid];const t=b.trainers[seat];
   const rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd');const r=(rows||[]).filter(x=>cmdFresh(x)).find(x=>x.id===(m||{}).tid);const x=r&&r.data&&r.data.mons&&r.data.mons[req.mid];
   await DBS().secretPut(c.ST.room,c.ST.secret,'peek',seat,{mid:req.mid,name:m?m.name:'?',text:m?describeCmd(b,m,x):'?',turn:b.turn||0,at:Date.now()});
@@ -1976,7 +1981,7 @@ window.OM_BATTLE_UI=(()=>{
   /* 10-24 제안: 공격 창에서 기술 타입을 바꾼다 (타입을 바꾸는 특성 · 포텐셜 · 웨더볼 등) — 고르면 그 한 타입으로 상성 · 자속 · 날씨 · 소지품을 다시 본다 */
   const mtys=mv=>ATY?[ATY]:(RM('블랙룸')&&mv.cat!=='변화'?['Ghost']:skinOf(atk,mv)?[skinOf(atk,mv).ty]:String(mv.type||'').split(/[()/,]/).map(t=>t.trim()).filter(Boolean).map(S().typeEn));
   const TYS=['Normal','Fire','Water','Grass','Electric','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'];   /* 블랙룸: 모든 공격 기술이 고스트 */
-  const x=(((b.cmds||{})[atk.tid]||{}).mons||{})[mid]||{};const slots=allEntered(b);
+  const x0=(((b.cmds||{})[atk.tid]||{}).mons||{})[mid]||{};const x=x0.tm?Object.assign({},x0,{targets:tgNow(b,x0,atk)}):x0;const slots=allEntered(b);
   /* 10-26 망령: 따라가때리기(교대 전 선제)처럼 지시가 아직 공개되지 않은 채 창을 열면 순서 칸에 적힌 기술 · 대상으로 */
   const OE=(b.order||[]).find(o=>o.mid===mid&&o.move);const oeIdx=OE?MVS(atk).findIndex(q=>String(q.name)===String(OE.move)):-1;
   const defMoveIdx=x.move!==''&&x.move!=='switch'&&x.move!=null?+x.move:oeIdx>=0?oeIdx:((atk.states||{}).Oblivion?MVS(atk).findIndex(q=>q.name==='발버둥'):0);
