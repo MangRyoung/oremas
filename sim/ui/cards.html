@@ -261,7 +261,7 @@ async function save(){const doc={ids:pick.slice(),names:pick.map(id=>byId[id]&&b
 function load(doc){if(doc&&Array.isArray(doc.ids)){if(doc.edits&&typeof doc.edits==='object'){ED={};for(const [k,v] of Object.entries(doc.edits))if(BASE.some(c=>c.id===k)&&v&&typeof v==='object')ED[k]=v;rebuild()}pick=doc.ids.filter(id=>byId[id]);render();return true}return false}
 function showAnalysis(a){const ins=BASE.filter(c=>!(c.off&&c.off.length)).length,off=BASE.length-ins,nw=BASE.filter(c=>c.new).length;
  $('#eyebrow').textContent=`은열쇠 · 공통 카드 후보 ${ins}장 (결이 다른 ${off}장은 숨김) → 확정 카드풀`;
- $('#sub').innerHTML=`망령 님이 고른 확정 ${a.n}장의 결을 읽고 후보를 다시 짰어요. 그 결에 맞는 기존 후보 ${ins-nw}장 + 새로 만든 카드 ${nw}장이에요. 추천 ${REC.length}장 = 확정 ${a.n}장 + 칸을 맞춘 ${REC.length-a.n}장. 고른 결과 · 고친 것은 시뮬레이터 records/silverkey_pool.json 에 저장돼요.`;
+ $('#sub').innerHTML=`망령 님이 고른 확정 ${a.n}장의 결을 읽고 후보를 다시 짰어요. 그 결에 맞는 기존 후보 ${ins-nw}장 + 새로 만든 카드 ${nw}장이에요. ${REC.length>a.n?`추천 ${REC.length}장 = 확정 ${a.n}장 + 칸을 맞춘 ${REC.length-a.n}장.`:`추천 = 망령 님 확정 ${a.n}장.`} 고른 결과 · 고친 것은 시뮬레이터 records/silverkey_pool.json 에 저장돼요.`;
  $('#scoreNote').innerHTML='<b>결 점수</b>(20점)는 망령 님 확정 카드의 결에 얼마나 맞는지예요. <b>룰 한 칸</b> 있는 규칙 이름을 그대로 쓰는가 · <b>한 가지 일</b> 글이 짧고 일이 하나인가 · <b>보험 · 운영</b> 사고를 줄이거나 휴식 · 회복을 다루는가 · <b>완성도</b>. 「결이 다름」 딱지는 확정 카드에 없던 결(★ · 경계도 조작 · 건너뛰기 · 길 정보 · 코스트 3 · 뽑기 · 큰 역전)이에요.';$('#whyL').innerHTML=`<h2>${esc(a.title)}</h2><ul>${a.points.map(x=>`<li>${x}</li>`).join('')}</ul><p style="margin-top:8px">${esc(a.how)}</p>`}
 /* ---------- 고치기 ---------- */
 const LIMS=['','덱 1장','손패 1장'];let EDID=null,EV=null;
