@@ -31,7 +31,7 @@ function pathOf(dg,r){let P=(dg.path||dg.rooms.filter(x=>!x.alt).map(x=>x.id)).s
    모델에 없는 것: 관찰 노트 · 호흡 맞추기 · 물러서! · 소금기 어린 부적 · 지도 펼치기 · 불러내기 (아이콘으로 바치는 데만 쓰인다) */
 const CARD={key:{n:'열쇠 카드',ic:['★'],v:9,eff:'autopass'},sneak:{n:'발소리 죽이기',ic:['육성','지시'],v:8,eff:'skip'},gust:{n:'기세 올리기',ic:['통솔'],v:6,eff:'al'},
  bandage:{n:'붕대와 진통제',ic:['육성'],v:5,eff:'heal_inj'},reroll:{n:'실타래 되감기',ic:['지시'],v:5,eff:'reroll',battle:1},nocrit:{n:'안개의 환영',ic:['능력'],v:5,eff:'noCrit',battle:1},
- retry:{n:'다른 길로',ic:['지시'],v:4,eff:'retry'},firstaid:{n:'응급 처치',ic:['육성'],v:4,eff:'heal'},craft:{n:'손재주',ic:['능력','육성'],v:4,eff:'easy'},food:{n:'비상식량',ic:['육성','통솔'],v:3,eff:'restUp'},
+ retry:{n:'다른 길로',ic:['지시'],v:4,eff:'retry'},firstaid:{n:'응급 처치',ic:['육성'],v:4,eff:'heal'},craft:{n:'손재주',ic:['능력','육성'],v:4,eff:'easy'},food:{n:'비상식량',ic:['통솔'],v:3,eff:'restUp'},
  breath:{n:'숨 고르기',ic:['★'],v:3,eff:'breath'},salt:{n:'소금기 어린 부적',ic:['능력'],v:3,eff:''},reso:{n:'은빛 공명',ic:['★'],v:2,eff:'cycle'},cover0:{n:'함께 버티자',ic:['통솔'],v:2,eff:'cover0'},
  note:{n:'관찰 노트',ic:['지시'],v:1,eff:''},map:{n:'지도 펼치기',ic:['지시','능력'],v:1,eff:''},pair:{n:'호흡 맞추기',ic:['통솔','지시'],v:1,eff:''},back:{n:'물러서!',ic:['통솔'],v:1,eff:''},call:{n:'불러내기',ic:['능력'],v:1,eff:''},
  keyc:{n:'열쇠 카드 (바치기만)',ic:['★'],v:9,eff:''},
@@ -39,7 +39,7 @@ const CARD={key:{n:'열쇠 카드',ic:['★'],v:9,eff:'autopass'},sneak:{n:'발�
  suk:{n:'숙련',ic:['지시'],v:4,eff:'plus',plus:2,stat:'지시'},lead:{n:'리더십',ic:['통솔'],v:4,eff:'plus',plus:2,stat:'통솔'},body:{n:'체력 단련',ic:['육성'],v:4,eff:'plus',plus:2,stat:'육성'},inou2:{n:'이능 해방',ic:['능력'],v:4,eff:'plus',plus:2,stat:'능력'},
  bae:{n:'배수진',ic:['능력'],v:3,eff:'plus',plus:2,risk:2},k15:{n:'결정적 순간',ic:['★'],v:4,eff:'plus',plus:2,only15:1},k15x:{n:'결정적 순간(+1안)',ic:['★'],v:4,eff:'plus',plus:1,only15:1},last:{n:'마지막 힘',ic:['★'],v:3,eff:'plus',plus:2,deckLe:2},adv:{n:'역경',ic:['★'],v:3,eff:'plus',plus:1,injGe:1,plus2At:2},
  medkit:{n:'구급 상자',ic:['육성'],v:4,eff:'heal_inj2'},cheer:{n:'격려',ic:['통솔'],v:2,eff:'nomill'},muri:{n:'무리하지 마',ic:['통솔'],v:3,eff:'cover1'},
- sotr:{n:'급소 털어내기',ic:['능력'],v:2,eff:'critReroll',battle:1},mend:{n:'상비약',ic:['육성'],v:2,eff:'cure',battle:1},rise:{n:'다시 일어서',ic:['육성'],v:2,eff:'actReroll',battle:1},bless:{n:'축복',ic:['능력'],v:2,eff:''},calm:{n:'침착한 대처',ic:['통솔'],v:2,eff:''},scout:{n:'정찰 비행',ic:['지시'],v:1,eff:''},clock:{n:'시계 맞추기',ic:['지시'],v:1,eff:''},dead:{n:'광기 카드',ic:[],v:-1,eff:'dead',pen:'mad'},scar:{n:'상흔 카드',ic:[],v:-1,eff:'dead',pen:'scar'}};
+ sotr:{n:'급소 털어내기',ic:['능력'],v:2,eff:'critReroll',battle:1},mend:{n:'상비약',ic:['육성'],v:2,eff:'cure',battle:1},rise:{n:'다시 일어서',ic:['지시','육성'],v:2,eff:'actReroll',battle:1},bless:{n:'축복',ic:['능력'],v:2,eff:''},calm:{n:'침착한 대처',ic:['통솔','지시'],v:2,eff:''},scout:{n:'정찰 비행',ic:['지시'],v:1,eff:''},clock:{n:'시계 맞추기',ic:['지시'],v:1,eff:''},dead:{n:'광기 카드',ic:[],v:-1,eff:'dead',pen:'mad'},scar:{n:'상흔 카드',ic:[],v:-1,eff:'dead',pen:'scar'}};
 /* 11-01 망령 「코스트」: 효과로 쓸 때만 코스트 (바치기는 무료). 트레이너마다 5점 · 긴 휴식에 5로 */
 const CARD_COST={"key":2,"sneak":3,"gust":1,"bandage":1,"reroll":2,"nocrit":2,"retry":2,"firstaid":2,"craft":2,"food":1,"breath":1,"salt":1,"reso":1,"cover0":2,"note":1,"map":0,"pair":1,"back":1,"call":0,"keyc":2,"suk":2,"lead":2,"body":2,"inou2":2,"bae":0,"k15":2,"k15x":2,"last":1,"adv":0,"medkit":2,"cheer":1,"muri":1,"sotr":1,"mend":2,"bless":1,"calm":1,"scout":1,"clock":0,"rise":1};for(const k in CARD)CARD[k].c=CARD_COST[k]||0;
 const CARD_DECKS={base:['key','key','reroll','bandage','gust','nocrit','retry','reso'],sneak:['key','key','reroll','bandage','gust','nocrit','sneak','reso'],
