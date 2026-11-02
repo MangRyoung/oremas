@@ -120,6 +120,8 @@ async function runBattle(W,opt){
   if(!active('left').length||!active('right').length)break;
   await FN.setPhase(1);await flush();turn=+C().turn||turn+1;
   const hp0=hpMap();
+  /* 11-02 「상비약」: 턴 개시 때 아군 1체의 상태 이상 하나를 치유 (주된 상태 이상이 있는 가장 앞 포켓몬) */
+  if(H.cards){const MJ=['Sleep','Paralysis','Freeze','Burn','Toxic','Poison'];const m=active('left').find(x=>MJ.some(k=>(x.states||{})[k]));if(m&&FG.cardTake(H,'cure',turn)){const nb0=FN.snap(),nb=FN.snap(nb0);const x=nb.mons[m.id];if(x){x.states=Object.assign({},x.states);for(const k of MJ)delete x.states[k];await FN.saveBattle(nb0,nb)}}}
   /* 1. 지시 */
   const acts=[];const plans={left:new Map(),right:new Map()};const cmds={};
   for(const sd of ['left','right'])for(const m of active(sd)){const sw=wantSwitch(sd,m);if(sw){acts.push({sd,m,sw});continue}const a=choose(sd,m,plans[sd]);if(a)acts.push(Object.assign({sd,m},a))}
