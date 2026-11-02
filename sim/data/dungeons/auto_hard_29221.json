@@ -2,7 +2,6 @@
  "id": "auto_hard_29221",
  "name": "불 꺼진 여관 (어려움)",
  "wn": 2,
- "private": true,
  "gen": {
   "tier": "hard",
   "knobs": {
@@ -50,12 +49,13 @@
    ]
   },
   "verify": {
-   "wr": 0.32,
+   "wr": 0.33,
    "target": 0.3,
-   "band": 0.1,
+   "band": 0.15,
    "tries": 2,
    "ok": true,
-   "cards": "base"
+   "cards": "base",
+   "at": "2026-11-02"
   }
  },
  "rooms": [
@@ -165,7 +165,7 @@
     "base": 3,
     "fit": {
      "types": [
-      "페어리"
+      "악"
      ],
      "moves": [],
      "abil": []

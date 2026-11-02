@@ -2,7 +2,6 @@
  "id": "auto_easy_44859",
  "name": "난파선 해안 (쉬움)",
  "wn": 2,
- "private": true,
  "gen": {
   "tier": "easy",
   "knobs": {
@@ -51,12 +50,13 @@
    ]
   },
   "verify": {
-   "wr": 0.87,
+   "wr": 0.85,
    "target": 0.8,
-   "band": 0.1,
+   "band": 0.15,
    "tries": 4,
    "ok": true,
-   "cards": "base"
+   "cards": "base",
+   "at": "2026-11-02"
   }
  },
  "rooms": [
@@ -156,7 +156,7 @@
     "base": 4,
     "fit": {
      "types": [
-      "전기"
+      "얼음"
      ],
      "moves": [],
      "abil": []
@@ -253,7 +253,7 @@
     "base": 3,
     "fit": {
      "types": [
-      "물"
+      "얼음"
      ],
      "moves": [],
      "abil": []

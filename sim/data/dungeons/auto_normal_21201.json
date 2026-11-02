@@ -2,7 +2,6 @@
  "id": "auto_normal_21201",
  "name": "흐느끼는 저택 (보통)",
  "wn": 2,
- "private": true,
  "gen": {
   "tier": "normal",
   "knobs": {
@@ -51,10 +50,11 @@
   "verify": {
    "wr": 0.65,
    "target": 0.6,
-   "band": 0.1,
+   "band": 0.15,
    "tries": 1,
    "ok": true,
-   "cards": "base"
+   "cards": "base",
+   "at": "2026-11-02"
   }
  },
  "rooms": [
@@ -185,7 +185,7 @@
     "base": 3,
     "fit": {
      "types": [
-      "물"
+      "에스퍼"
      ],
      "moves": [],
      "abil": []
@@ -322,7 +322,7 @@
     "base": 4,
     "fit": {
      "types": [
-      "불꽃"
+      "악"
      ],
      "moves": [],
      "abil": []

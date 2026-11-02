@@ -2,7 +2,6 @@
  "id": "auto_normal_37041",
  "name": "지하 관측소 (보통)",
  "wn": 2,
- "private": true,
  "gen": {
   "tier": "normal",
   "knobs": {
@@ -51,12 +50,13 @@
    ]
   },
   "verify": {
-   "wr": 0.67,
+   "wr": 0.77,
    "target": 0.6,
-   "band": 0.1,
+   "band": 0.15,
    "tries": 3,
-   "ok": true,
-   "cards": "base"
+   "ok": false,
+   "cards": "base",
+   "at": "2026-11-02"
   }
  },
  "rooms": [
@@ -157,7 +157,7 @@
     "base": 3,
     "fit": {
      "types": [
-      "페어리"
+      "독"
      ],
      "moves": [],
      "abil": []
@@ -246,7 +246,7 @@
     "base": 3,
     "fit": {
      "types": [
-      "고스트"
+      "전기"
      ],
      "moves": [],
      "abil": []

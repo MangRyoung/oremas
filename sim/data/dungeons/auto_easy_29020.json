@@ -2,7 +2,6 @@
  "id": "auto_easy_29020",
  "name": "속삭이는 숲 (쉬움)",
  "wn": 2,
- "private": true,
  "gen": {
   "tier": "easy",
   "knobs": {
@@ -51,12 +50,13 @@
    ]
   },
   "verify": {
-   "wr": 0.78,
+   "wr": 0.7,
    "target": 0.8,
-   "band": 0.1,
+   "band": 0.15,
    "tries": 2,
    "ok": true,
-   "cards": "base"
+   "cards": "base",
+   "at": "2026-11-02"
   }
  },
  "rooms": [
@@ -156,7 +156,7 @@
     "base": 1,
     "fit": {
      "types": [
-      "페어리"
+      "벌레"
      ],
      "moves": [],
      "abil": []
@@ -314,7 +314,7 @@
     "base": 1,
     "fit": {
      "types": [
-      "땅"
+      "비행"
      ],
      "moves": [],
      "abil": []

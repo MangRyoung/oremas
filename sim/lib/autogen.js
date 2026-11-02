@@ -156,7 +156,7 @@ function generate1(o){o=o||{};const tier=o.tier||'normal';if(!PRESET[tier])throw
  const used=new Set(),usedLab=new Set();const nm=list=>{const L=list.filter(x=>!used.has(x));const v=L.length?pick(L):pick(list)+' '+(used.size+1);used.add(v);return v};
  for(const r of dg.rooms){if(r.t==='entry')r.name=nm(th.entry);else if(r.t==='battle')r.name=nm(th.battle);else if(r.t==='safe')r.name=nm(th.safe);else if(r.t==='boss')r.name=nm(th.boss);else if(r.filler)r.name=nm(th.side||th.check);else r.name=nm(th.check);
   if(r.check){const L=th.chk[r.check.stat];if(L){const F=L.filter(x=>!usedLab.has(x)),F2=(G.LABEL[r.check.stat]||[]).filter(x=>!usedLab.has(x));r.check.label=pick(F.length?F:F2.length?F2:L);usedLab.add(r.check.label)}   /* 10-28: 체크 5개면 같은 문구가 두 번 나오던 것 막음. 11-01: 테마 문구(자질마다 2개)가 떨어지면 일반 문구(gen.js LABEL) — 갈림길까지 같은 자질 체크가 셋이면 겹쳤다(180개 중 12개) */
-   if(String(r.check.hint||'').startsWith('type:')&&HINT_T[thName])r.check.hint='type:'+pick(HINT_T[thName])}}   /* 10-28: 「이 타입 동료」를 테마에 맞는 타입에서 (전엔 고정 10타입 무작위 — 화산에 풀 같은 줄) */
+   if(String(r.check.hint||'').startsWith('type:')&&HINT_T[thName]){r.check.hint='type:'+pick(HINT_T[thName]);if(r.check.fit)r.check.fit.types=[r.check.hint.slice(5)]}}}   /* 11-02: 적합 타입(fit)도 테마 타입으로 — 전엔 hint 만 바뀌고 fit 은 gen.js 의 무작위 타입이 남아(화산 던전에 「적합 전기」), 시뮬 판정 · 웹툴 내보내기가 fit 을 썼다 */   /* 10-28: 「이 타입 동료」를 테마에 맞는 타입에서 (전엔 고정 10타입 무작위 — 화산에 풀 같은 줄) */
  /* 보물 방 하나(체크 · 조우 없음) — 지도 꾸밈 · 웹툴에서 단서 자리 */
  if(o.treasure!==false)dg.rooms.push({id:'tr',t:'treasure',side:1,name:nm(th.treasure),clue:bossClue(dg,rng)||{t:'단서',d:'(GM 이 채운다 — 보스의 약점 · 다음 장면의 실마리 등)'}});
  /* 곁방 0~2 — 막다른 통로(웹툴 「통로」). 시뮬은 안 걷는다(dg.path 밖). GM 이 숨은 것 · 단서 · 기습을 채울 자리 */
@@ -169,7 +169,7 @@ function generate1(o){o=o||{};const tier=o.tier||'normal';if(!PRESET[tier])throw
  if(!dg.map&&dg.branches&&dg.branches.length){/* 격자에 아무것도 안 들어가면 갈림길 없이 */const A=new Set(dg.branches.flatMap(g=>g.alt));dg.rooms=dg.rooms.filter(r=>!A.has(r.id));dg.branches=[];layout(rng,dg,o,nm,th)}
  const bossName=dg.gen.boss;
  dg.id=o.id||`auto_${tier}_${seed}`;const avoid=new Set((o.avoidNames||[]).map(x=>String(x).replace(/ \(.*\)$/,'')));const nmL=th.name.filter(x=>!avoid.has(x));const nm0=pick(th.name);dg.name=o.name||`${nmL.length&&avoid.has(nm0)?nmL[Math.floor(rng()*nmL.length)]:nm0} (${TIER_KO[tier]})`;   /* 11-01: o.avoidNames — 이미 있는 던전 이름은 피한다(전엔 「메아리 굴」이 보통 · 어려움에 둘) */dg.theme=thName;dg.owner=bossName;
- dg.rules=Object.assign({},RULES,o.rules||{});dg.private=true;
+ dg.rules=Object.assign({},RULES,o.rules||{});if(dg.rooms.some(r=>r.enc&&(r.enc.trainer||(r.enc.mix||[]).some(m=>m.trainer))))dg.private=true;   /* 11-02: 비공개는 스냅샷 트레이너가 야생으로 들어간 던전만 (전엔 늘 private — 던전 탭에서 「비공개」로 보이고 저장하면 .private.json 으로 옮겨졌다) */
  dg.note=`자동 생성 · ${TIER_KO[tier]} · 씨앗 ${seed} · 테마 ${thName}. 사전 배틀 ${knobs.battles} · 체크 ${knobs.checks} · 보스방 ${G.TIER[tier].bossN}체 · ${RAIDN[G.TIER[tier].raid]} · 지도 ${dg.branches&&dg.branches.length?'갈림길 '+dg.branches.length+' · ':''}${dg.map?dg.map.shape+(dg.rooms.some(r=>r.side)?' + 곁방 '+dg.rooms.filter(r=>r.side).length:''):'일자'} · 야생 Lv ${knobs.lv>=0?'+':''}${knobs.lv}${tough==='full'?` · 빡센 길(체크 목표 ${G.V4UP[G.V4[tier]]}, 경계도 실패 +45)`:tough==='hard'?` · 어려운 길(체크 목표 ${G.V4UP[G.V4[tier]]})`:''}.`;
  dg.gen=Object.assign({},dg.gen,{seed,sub:o._sub||undefined,v:1,auto:true,tough,shape:dg.map&&dg.map.shape,theme:thName,rules:dg.rules,source,grades:source==='db'?gr:undefined});
  return dg}

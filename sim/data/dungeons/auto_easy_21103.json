@@ -2,7 +2,6 @@
  "id": "auto_easy_21103",
  "name": "백야의 협곡 (쉬움)",
  "wn": 2,
- "private": true,
  "gen": {
   "tier": "easy",
   "knobs": {
@@ -52,10 +51,11 @@
   "verify": {
    "wr": 0.73,
    "target": 0.8,
-   "band": 0.1,
+   "band": 0.15,
    "tries": 1,
    "ok": true,
-   "cards": "base"
+   "cards": "base",
+   "at": "2026-11-02"
   }
  },
  "rooms": [
@@ -218,7 +218,7 @@
     "base": 3,
     "fit": {
      "types": [
-      "물"
+      "강철"
      ],
      "moves": [],
      "abil": []
