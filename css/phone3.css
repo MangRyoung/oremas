@@ -91,3 +91,7 @@ html:not(#_) .phone-modal .phone-dev .ph-screen .btn.pri,html:not(#_) .phone-mod
 html:not(#_) .phone-modal .phone-dev .ph-screen .btn.ghost{background:transparent!important;border-color:var(--pl)!important}
 html:not(#_) .phone-modal .phone-dev .ph-head .btn{background:rgba(255,255,255,.12)!important;border-color:rgba(255,255,255,.25)!important}
 html:not(#_) .phone-modal .phone-dev .ph-smsin .btn{width:36px;height:36px;padding:0!important;display:grid;place-items:center}
+/* 11-02 망령 「두 글자 쳤는데 세로가 된다」: 내 말풍선 줄(.ph-msg.me)은 글 길이만큼만 넓어지는데 안쪽 .ph-mb 가 그 78% 로 묶여서 한 글자씩 꺾였다 — 폭은 바깥 줄(86%)이 정한다 */
+html:not(#_) .phone-modal .ph-mb{max-width:100%;min-width:0}
+html:not(#_) .phone-modal .ph-msg:not(.me){max-width:86%}
+html:not(#_) .phone-modal .ph-bub{overflow-wrap:break-word;word-break:keep-all}

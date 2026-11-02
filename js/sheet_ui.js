@@ -563,10 +563,24 @@ if(old){for(const k of ['orderStyle','commandStyle','orderCount','orderBase','or
   </div><div class="opc-ptc">${formsH}${XL.length?`<div class="opc-h">전용 포텐셜</div>${XL.map(x=>`<div class="opc-x"><b>『${esc(x.name)}』</b>${x.eff?`<div class="opc-e">${potFmt(String(x.eff).replace(/<br\s*\/?>/gi,'\n'))}</div>`:''}</div>`).join('')}`:''}
   ${pots.length?`<div class="opc-h">포텐셜 <span class="dim small">${pots.length}</span></div><div class="opc-ptg">${pots.map(p=>{const k=potKind(p.kind);return `<div class="opc-p" style="--ph:${POT_HUE[k.lab]||'#3fc7c0'}"><span class="opc-pk">${esc(k.lab||'')}</span><b>『${esc(p.name)}』</b>${p.eff?`<div class="opc-e">${potFmt(String(p.eff).replace(/<br\s*\/?>/gi,'\n'))}</div>`:''}</div>`}).join('')}</div>`:''}
   ${m.memo?`<div class="opc-h">메모</div><div class="opc-e opc-memo">${esc(m.memo)}</div>`:''}</div></div></div>`}
- function openCard(m,trName){if(!m)return;const md=A().openModal(`<div class="mhead"><h2>한 장 요약</h2><span class="sp"></span><button class="btn sm" data-opng title="이 요약을 그림 파일로 저장">PNG 저장</button><button class="btn ghost" data-x>닫기</button></div><div class="opc-wrap">${cardHTML(m,trName)}</div>`);
+ function openCard(m,trName){if(!m)return;const ST=A().ST;const canDc=!!(DBS()&&DBS().bbs&&DBS().bbs.dcCard)&&(ST.role==='gm'||ST.role==='seat');
+  const md=A().openModal(`<div class="mhead"><h2>한 장 요약</h2><span class="sp"></span>${canDc?'<button class="btn sm" data-odc title="이 요약을 그림으로 만들어 디스코드의 정해 둔 스레드에 올린다 (GM 이 학교 게시판 「🔗 디스코드」에서 이어 둔 곳)">디코로</button>':''}<button class="btn sm" data-opng title="이 요약을 그림 파일로 저장">PNG 저장</button><button class="btn ghost" data-x>닫기</button></div><div class="opc-wrap">${cardHTML(m,trName)}</div>`);
   md.classList.add('wide','opcbox');
-  $('[data-opng]',md).onclick=async()=>{const el=$('.opc',md);try{if(!window.html2canvas)await new Promise((ok,no)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';sc.onload=ok;sc.onerror=()=>no(new Error('html2canvas 를 불러오지 못했다'));document.head.appendChild(sc)});
-   const cv=await window.html2canvas(el,{backgroundColor:'#141414',scale:2,useCORS:true,onclone:(cd,ce)=>{try{window.OM_PNGFIX&&window.OM_PNGFIX(cd,ce)}catch(e){}}});const a=document.createElement('a');a.download=(m.name||'포켓몬')+'.png';a.href=cv.toDataURL('image/png');a.click()}catch(err){A().toast('PNG 로 저장하지 못했다 ('+err.message+')')}}}
+  const shot=async()=>{const el=$('.opc',md);if(!window.html2canvas)await new Promise((ok,no)=>{const sc=document.createElement('script');sc.src='https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';sc.onload=ok;sc.onerror=()=>no(new Error('html2canvas 를 불러오지 못했다'));document.head.appendChild(sc)});
+   return window.html2canvas(el,{backgroundColor:'#141414',scale:2,useCORS:true,onclone:(cd,ce)=>{try{window.OM_PNGFIX&&window.OM_PNGFIX(cd,ce)}catch(e){}}})};
+  $('[data-opng]',md).onclick=async()=>{try{const cv=await shot();const a=document.createElement('a');a.download=(m.name||'포켓몬')+'.png';a.href=cv.toDataURL('image/png');a.click()}catch(err){A().toast('PNG 로 저장하지 못했다 ('+err.message+')')}};
+  /* 11-02 망령 「한 장 요약 옆에 디코로 버튼 — 지정해 둔 스레드에」: 그림(webp) → 저장소 oremas/dc/<방>/ → om_dc_card (서버가 웹후크로 보낸다) */
+  const bd=$('[data-odc]',md);if(bd)bd.onclick=async()=>{if(bd.disabled)return;const lab=bd.textContent;bd.disabled=true;bd.textContent='그리는 중…';
+   try{const cv=await shot();const blob=await new Promise(r=>cv.toBlob(r,'image/webp',.9));if(!blob)throw new Error('그림을 만들지 못했다');
+    bd.textContent='올리는 중…';const url=await DBS().uploadImage('dc/'+ST.room+'/'+(m.id||'card'),blob);
+    const t=((ST.state.roster||{}).trainers||{})[m.tid]||{};const tn=trName||t.name||'';const av=tn&&A().portraitOf?A().portraitOf(tn,t.image):(t.image||'');
+    bd.textContent='보내는 중…';const id=await DBS().bbs.dcCard(ST.room,ST.secret,{title:m.name||'포켓몬',sub:tn,img:url,who:{n:tn||m.name||'',img:/^https?:\/\//.test(av||'')?av:''}});
+    let r=null;for(let i=0;i<12;i++){await new Promise(z=>setTimeout(z,900));try{r=await DBS().bbs.dcCardResult(ST.room,ST.secret,id)}catch(e){r=null;break}if(r&&!r.wait)break}
+    if(!r||r.wait)A().toast('디스코드로 보냈다 (대답은 아직 — 디스코드에서 확인해 줘)');
+    else if(r.status>=200&&r.status<300)A().toast('디스코드에 올렸다');
+    else{let c=0,msg='';try{const j=JSON.parse(r.body||'{}');c=j.code;msg=j.message||''}catch(e){}A().toast('디스코드가 거절했다 — '+(c===10003?'스레드를 찾지 못했다 (GM: 게시판 「🔗 디스코드」에서 스레드 링크 다시)':c===10015?'웹후크가 없다 (GM: 다시 이어 줘)':(r.error||msg||('오류 '+r.status))))}}
+   catch(err){const msg=String((err&&err.message)||err);A().toast(/function|PGRST202/i.test(msg)?'디스코드 연동이 아직 없다 — Supabase 에 supabase/patch_2026-11-02_게시판_디스코드.sql 을 실행해 줘':'디스코드로 보내지 못했다: '+msg)}
+   bd.disabled=false;bd.textContent=lab}}
  /* 10-24 망령: 제작기에서 스탠딩을 나중에 넣은 시트 — 방의 시트에 스탠딩이 비어 있으면 제작기에서 스탠딩 · 그림을 채운다 (비어 있는 칸만, 방에서 고친 건 그대로).
     GM 화면에서 방에 들어올 때 한 번 (트레이너마다 제작기 문서 하나씩만 읽는다) */
  let FILLED=false;

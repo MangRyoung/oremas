@@ -26,7 +26,7 @@ window.OM_BBS_UI=(()=>{
   post:(r,s,board,parent,who,anon,body,im)=>rpc('om_bbs_post',{p_room:r,p_secret:s,p_board:board,p_parent:parent||null,p_who:who||{},p_anon:!!anon,p_body:body||'',p_img:im||''}),
   del:(r,s,id)=>rpc('om_bbs_del',{p_room:r,p_secret:s,p_id:id}),like:(r,s,id)=>rpc('om_bbs_like',{p_room:r,p_secret:s,p_id:id}),
   hookGet:(r,s)=>rpc('om_bbs_hook_get',{p_room:r,p_secret:s}),
-  hookPut:(r,s,o)=>rpc('om_bbs_hook_put',{p_room:r,p_secret:s,p_url:o.url??null,p_thread:o.thread??'',p_tname:o.tname??'',p_boards:o.boards??null,p_cm:o.cm??null,p_on:o.on??null}),
+  hookPut:(r,s,o)=>rpc('om_bbs_hook_put',{p_room:r,p_secret:s,p_url:o.url??null,p_thread:o.thread??'',p_tname:o.tname??'',p_boards:o.boards??null,p_cm:o.cm??null,p_on:o.on??null,p_cthread:o.cthread??''}),
   hookTest:(r,s)=>rpc('om_bbs_hook_test',{p_room:r,p_secret:s}),hookResult:(r,s,id)=>rpc('om_bbs_hook_result',{p_room:r,p_secret:s,p_id:id})}}
  /* 웹툴 기본 env */
  function omEnv(){return {key:'om',room:()=>ST().room||'',secret:()=>ST().secret||'',role:()=>ST().role||'view',seat:()=>ST().seat||'',api:()=>DBS().bbs,
@@ -170,13 +170,14 @@ window.OM_BBS_UI=(()=>{
    <div class="bbs-dcst ${c.set?(c.on?'on':'off'):''}"><i aria-hidden="true"></i>${c.set?(c.on?`이어져 있어요 · 주소 끝 <code>…${esc(c.tail||'')}</code>`:'주소는 있지만 꺼 두었어요'):'아직 이어지지 않았어요'}${c.set&&c.thread?` · 스레드 <code>${esc(c.thread)}</code>`:c.set?' · 채널 본문으로':''}</div>
    <label class="bbs-dcf"><b>웹후크 주소</b><input type="password" name="url" placeholder="${c.set?'저장되어 있어요 — 바꿀 때만 넣어 주세요':'https://discord.com/api/webhooks/…'}" spellcheck="false"><small>디스코드 채널 설정 → 연동 → 웹후크 → 「웹후크 URL 복사」. 저장한 뒤에는 이 화면에도 다시 보이지 않아요.</small></label>
    <label class="bbs-dcf"><b>스레드 링크</b><input type="text" name="thread" value="${esc(c.thread||'')}" placeholder="비우면 채널 본문에 올라가요" spellcheck="false"><small>일반 채널: 디스코드에서 스레드를 만들고, 스레드 이름 우클릭 → 「링크 복사」를 붙여 넣어 주세요.</small></label>
+   <label class="bbs-dcf"><b>시트 카드 스레드 링크</b><input type="text" name="cthread" value="${esc(c.cthread||'')}" placeholder="비우면 위 게시판 스레드로 가요" spellcheck="false"><small>시트 「한 장 요약」의 「디코로」 버튼이 올리는 곳이에요. 방에 앉은 사람 누구나 보낼 수 있어요.</small></label>
    <label class="bbs-dcf"><b>새 포럼 글 이름 <span class="dim">(포럼 채널일 때만)</span></b><input type="text" name="tname" value="${esc(c.tname||'')}" placeholder="학교 게시판" maxlength="90"><small>스레드 링크를 비우고 「시험 보내기」를 누르면 이 이름으로 포럼 글을 만들고, 그 뒤 새 글은 그 안으로 가요.</small></label>
    <div class="bbs-dcf"><b>보낼 게시판</b><div class="bbs-dcb"><label class="bbs-anon"><input type="checkbox" name="all" ${all?'checked':''}> 전부</label>${B.filter(b=>!b.hidden).map(b=>`<label class="bbs-anon"><input type="checkbox" name="bd" value="${esc(b.id)}" ${all||sel.has(b.id)?'checked':''} ${all?'disabled':''}> ${esc(b.name)}</label>`).join('')}</div><small>숨긴 게시판은 골라도 보내지 않아요.</small></div>
    <div class="bbs-dcb"><label class="bbs-anon"><input type="checkbox" name="cm" ${c.cm?'checked':''}> 댓글도 보내기</label><label class="bbs-anon"><input type="checkbox" name="on" ${c.set?(c.on?'checked':''):'checked'}> 켜기</label></div>
    <div class="bbs-crow"><button type="submit" class="btn xs pri" ${st.busy?'disabled':''}>저장</button><button type="button" class="btn xs" data-bb="dctest" ${c.set&&!st.busy?'':'disabled'}>${st.testing?'보내는 중…':'시험 보내기'}</button><span class="sp"></span>${c.set?'<button type="button" class="btn xs ghost danger" data-bb="dcoff">연동 끊기</button>':''}</div>
    ${rs?`<p class="bbs-dcr ${rs[0]}">${esc(rs[1])}</p>`:''}</form>`}
  function dcRead(f){const g=n=>f.querySelector(`[name="${n}"]`);const all=g('all').checked;const bd=[...f.querySelectorAll('[name="bd"]:checked')].map(x=>x.value);const u=g('url').value.trim();
-  return {url:u?u:null,thread:g('thread').value.trim(),tname:g('tname').value.trim(),boards:all?[]:bd,cm:g('cm').checked,on:g('on').checked}}
+  return {url:u?u:null,thread:g('thread').value.trim(),cthread:g('cthread').value.trim(),tname:g('tname').value.trim(),boards:all?[]:bd,cm:g('cm').checked,on:g('on').checked}}
  async function dcSave(f){const o=dcRead(f);if(!(S.dcs.cfg||{}).set&&!o.url){toast('웹후크 주소를 넣어 주세요');return}S.dcs.busy=true;S.dcs.res=null;draw();
   try{S.dcs.cfg=await API().hookPut(room(),sec(),o);toast('저장했어요')}catch(e){toast(String((e&&e.message)||e))}S.dcs.busy=false;draw()}
  async function dcTest(){S.dcs.testing=true;S.dcs.busy=true;S.dcs.res=null;draw();let r=null;
@@ -264,4 +265,4 @@ window.OM_BBS_UI=(()=>{
  document.addEventListener('click',onClick);document.addEventListener('submit',onSubmit);document.addEventListener('input',onInput);document.addEventListener('change',onChange);document.addEventListener('dragover',onDragOver);document.addEventListener('drop',onDrop);document.addEventListener('paste',onPaste);
  /* 글 쓰는 중에 새 글이 와도 칸을 다시 그리지 않는다 (쓰던 칸이 풀리던 것) — 칸을 떠나면 그때 */
  document.addEventListener('focusout',e=>{if(!S.pend||!S.md||!S.md.contains(e.target))return;setTimeout(()=>{if(S.pend&&!typing())redraw()},0)});
- return {V:8,openBoard,mount,onEvent,pull,apiFromRpc,unread:()=>S.unread}})();   /* V: 세션 노트가 이보다 옛 것을 들고 있으면 다시 불러온다 */
+ return {V:9,openBoard,mount,onEvent,pull,apiFromRpc,unread:()=>S.unread}})();   /* V: 세션 노트가 이보다 옛 것을 들고 있으면 다시 불러온다 */

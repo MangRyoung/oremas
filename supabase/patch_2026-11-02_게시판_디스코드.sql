@@ -27,6 +27,10 @@ create table if not exists public.om_bbs_hook (
   at      timestamptz not null default now()
 );
 alter table public.om_bbs_hook enable row level security;   -- 정책 없음: 아래 함수로만
+-- 11-02 저녁 「시트 한 장 요약 → 디코로」: 카드는 따로 정한 스레드(비면 게시판 스레드)로
+alter table public.om_bbs_hook add column if not exists cthread text not null default '';
+alter table public.om_bbs_hook add column if not exists creq bigint;
+alter table public.om_bbs_hook add column if not exists cat timestamptz;
 
 -- 디스코드가 거절하는 이름 조각을 피한다 (discord · clyde), 1~80자
 create or replace function public.om_bbs_dc_name(p text) returns text language sql immutable as $$
@@ -87,13 +91,14 @@ begin
   select * into h from om_bbs_hook where room = p_room;
   if not found then return jsonb_build_object('set', false); end if;
   return jsonb_build_object('set', h.url <> '', 'tail', right(h.url, 4), 'thread', h.thread, 'tname', h.tname,
-    'boards', h.boards, 'cm', h.cm, 'on', h."on", 'at', h.at);
+    'boards', h.boards, 'cm', h.cm, 'on', h."on", 'at', h.at, 'cthread', h.cthread);
 end $$;
 
--- GM: 설정 바꾸기. p_url 이 null 이면 주소는 그대로, '' 이면 지운다
-create or replace function public.om_bbs_hook_put(p_room text, p_secret text, p_url text, p_thread text, p_tname text, p_boards jsonb, p_cm boolean, p_on boolean)
+-- GM: 설정 바꾸기. p_url 이 null 이면 주소는 그대로, '' 이면 지운다. p_cthread = 시트 카드 스레드 (비면 게시판 스레드)
+drop function if exists public.om_bbs_hook_put(text, text, text, text, text, jsonb, boolean, boolean);
+create or replace function public.om_bbs_hook_put(p_room text, p_secret text, p_url text, p_thread text, p_tname text, p_boards jsonb, p_cm boolean, p_on boolean, p_cthread text default '')
 returns jsonb language plpgsql security definer set search_path = public as $$
-declare u text; t text;
+declare u text; t text; ct text;
 begin
   if om_who(p_room, p_secret) is distinct from 'gm' then raise exception 'GM 만 바꿀 수 있습니다'; end if;
   u := btrim(coalesce(p_url, ''));
@@ -102,10 +107,11 @@ begin
   end if;
   -- 스레드: 링크(https://discord.com/channels/서버/스레드)든 숫자든 마지막 숫자만
   t := coalesce(substring(btrim(coalesce(p_thread, '')) from '(\d{15,25})/?$'), '');
+  ct := coalesce(substring(btrim(coalesce(p_cthread, '')) from '(\d{15,25})/?$'), '');
   if p_boards is not null and jsonb_typeof(p_boards) <> 'array' then raise exception '잘못된 게시판 목록'; end if;
-  insert into om_bbs_hook(room, url, thread, tname, boards, cm, "on")
-    values (p_room, case when p_url is null then '' else u end, t, left(btrim(coalesce(p_tname, '')), 90), coalesce(p_boards, '[]'::jsonb), coalesce(p_cm, false), coalesce(p_on, true))
-  on conflict (room) do update set
+  insert into om_bbs_hook(room, url, thread, tname, boards, cm, "on", cthread)
+    values (p_room, case when p_url is null then '' else u end, t, left(btrim(coalesce(p_tname, '')), 90), coalesce(p_boards, '[]'::jsonb), coalesce(p_cm, false), coalesce(p_on, true), ct)
+  on conflict (room) do update set cthread = ct,
     url = case when p_url is null then om_bbs_hook.url else u end,
     thread = t, tname = left(btrim(coalesce(p_tname, '')), 90), boards = coalesce(p_boards, om_bbs_hook.boards),
     cm = coalesce(p_cm, om_bbs_hook.cm), "on" = coalesce(p_on, om_bbs_hook."on"), at = now();
@@ -151,7 +157,48 @@ begin
 end $$;
 
 grant execute on function public.om_bbs_hook_get(text, text) to anon, authenticated;
-grant execute on function public.om_bbs_hook_put(text, text, text, text, text, jsonb, boolean, boolean) to anon, authenticated;
+grant execute on function public.om_bbs_hook_put(text, text, text, text, text, jsonb, boolean, boolean, text) to anon, authenticated;
 grant execute on function public.om_bbs_hook_test(text, text) to anon, authenticated;
 grant execute on function public.om_bbs_hook_result(text, text, bigint) to anon, authenticated;
 revoke execute on function public.om_bbs_dc_payload(public.om_bbs) from public, anon, authenticated;
+
+-- 11-02 저녁 망령 「시트 한 장 요약 → 디코로 버튼, 지정해 둔 스레드에」
+-- 방에 앉은 사람(GM · 좌석)이 웹툴 「한 장 요약」 그림(이 프로젝트 저장소 oremas 에 올린 것)을 디스코드로 보낸다.
+-- 스레드 = cthread (비면 게시판 스레드). 그림 주소는 이 Supabase 의 oremas 저장소만. 방마다 8초에 한 장
+create or replace function public.om_dc_card(p_room text, p_secret text, p_title text, p_sub text, p_img text, p_who jsonb) returns bigint
+language plpgsql security definer set search_path = public as $$
+declare me text; h record; th text; nm text; av text; j jsonb; rid bigint;
+begin
+  me := om_who(p_room, p_secret);
+  if me is null then raise exception '방에 앉은 사람만 보낼 수 있습니다'; end if;
+  select * into h from om_bbs_hook where room = p_room;
+  if not found or h.url = '' or not h."on" then raise exception '디스코드 연동이 아직 없습니다 — GM 이 학교 게시판 「🔗 디스코드」에서 이어 주세요'; end if;
+  if coalesce(p_img, '') !~ '^https://jsnvqcvwspxzfnhdethl\.supabase\.co/storage/v1/object/public/oremas/' or length(p_img) > 1000 then raise exception '잘못된 그림 주소'; end if;
+  if h.cat is not null and h.cat > now() - interval '8 seconds' then raise exception '조금 뒤에 다시 보내 주세요'; end if;
+  nm := coalesce(nullif(btrim(p_who->>'n'), ''), '학교 게시판'); av := coalesce(p_who->>'img', '');
+  if av !~ '^https?://' or length(av) > 1000 then av := ''; end if;
+  j := jsonb_build_object('username', om_bbs_dc_name(nm), 'allowed_mentions', jsonb_build_object('parse', '[]'::jsonb),
+    'content', '-# 🃏 한 장 요약' || E'\n' || '**' || left(coalesce(p_title, ''), 100) || '**' || case when coalesce(p_sub, '') <> '' then ' · ' || left(p_sub, 100) else '' end,
+    'embeds', jsonb_build_array(jsonb_build_object('image', jsonb_build_object('url', p_img))));
+  if av <> '' then j := j || jsonb_build_object('avatar_url', av); end if;
+  th := coalesce(nullif(h.cthread, ''), h.thread);
+  rid := net.http_post(url := h.url, body := j,
+    params := case when th <> '' then jsonb_build_object('thread_id', th, 'wait', 'true') else jsonb_build_object('wait', 'true') end,
+    timeout_milliseconds := 8000);
+  update om_bbs_hook set creq = rid, cat = now() where room = p_room;
+  return rid;
+end $$;
+
+-- 보낸 결과 (방에 앉은 사람, 그 방의 마지막 카드 요청만)
+create or replace function public.om_dc_card_result(p_room text, p_secret text, p_id bigint) returns jsonb
+language plpgsql volatile security definer set search_path = public as $$
+declare r record;
+begin
+  if om_who(p_room, p_secret) is null then raise exception '권한이 없습니다'; end if;
+  if not exists (select 1 from om_bbs_hook where room = p_room and creq = p_id) then raise exception '이 방의 카드 요청이 아닙니다'; end if;
+  select status_code, content, timed_out, error_msg into r from net._http_response where id = p_id;
+  if not found then return jsonb_build_object('wait', true); end if;
+  return jsonb_build_object('wait', false, 'status', r.status_code, 'timeout', coalesce(r.timed_out, false), 'error', coalesce(r.error_msg, ''), 'body', left(coalesce(r.content, ''), 300));
+end $$;
+grant execute on function public.om_dc_card(text, text, text, text, text, jsonb) to anon, authenticated;
+grant execute on function public.om_dc_card_result(text, text, bigint) to anon, authenticated;

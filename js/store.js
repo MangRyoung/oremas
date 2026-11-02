@@ -157,8 +157,11 @@ async function shrinkUpload(blob,maxSide){try{if(!/^image\/(png|jpe?g|webp|bmp)$
   like:(room,secret,id)=>rpc('om_bbs_like',{p_room:room,p_secret:secret,p_id:id}),
   /* 11-02 디스코드 (supabase/patch_2026-11-02_게시판_디스코드.sql) — GM 만. 웹후크 주소는 보내기만 하고 돌려받지 않는다(끝 4자) */
   hookGet:(room,secret)=>rpc('om_bbs_hook_get',{p_room:room,p_secret:secret}),
-  hookPut:(room,secret,o)=>rpc('om_bbs_hook_put',{p_room:room,p_secret:secret,p_url:o.url??null,p_thread:o.thread??'',p_tname:o.tname??'',p_boards:o.boards??null,p_cm:o.cm??null,p_on:o.on??null}),
+  hookPut:(room,secret,o)=>rpc('om_bbs_hook_put',{p_room:room,p_secret:secret,p_url:o.url??null,p_thread:o.thread??'',p_tname:o.tname??'',p_boards:o.boards??null,p_cm:o.cm??null,p_on:o.on??null,p_cthread:o.cthread??''}),
   hookTest:(room,secret)=>rpc('om_bbs_hook_test',{p_room:room,p_secret:secret}),
-  hookResult:(room,secret,id)=>rpc('om_bbs_hook_result',{p_room:room,p_secret:secret,p_id:id}),noFn};
+  hookResult:(room,secret,id)=>rpc('om_bbs_hook_result',{p_room:room,p_secret:secret,p_id:id}),
+  /* 11-02 시트 「한 장 요약」 → 디코로 (방에 앉은 사람) */
+  dcCard:(room,secret,o)=>rpc('om_dc_card',{p_room:room,p_secret:secret,p_title:o.title||'',p_sub:o.sub||'',p_img:o.img,p_who:o.who||{}}),
+  dcCardResult:(room,secret,id)=>rpc('om_dc_card_result',{p_room:room,p_secret:secret,p_id:id}),noFn};
  return {patchesSince,hall,bbs,shrinkUpload,ntCamps,ntCampUpdate,ntDocs,ntSync,NTSYNC,ntGet,ntPut,ntPutMany,ntDel,ntWatch,rtReset,getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty,makerOne,makerPut};
 })();
