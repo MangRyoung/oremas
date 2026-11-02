@@ -2,7 +2,7 @@
    결과는 records/private/calib_<id>.json (조합 · 던전마다 값 포함). 명령: node bin/sim.js calib --tier easy --grid lv=-10,-5,0;battles=1,2 --g 8 --t 12 --n 10 */
 "use strict";
 const D=require('./dungeon.js'),G=require('./gen.js'),BT=require('./battle.js');
-function trios(pool,k,seed){const all=[];const rec=(s,c)=>{if(c.length===3){all.push(c.slice());return}for(let i=s;i<pool.length;i++){c.push(pool[i]);rec(i+1,c);c.pop()}};rec(0,[]);
+function trios(pool,k,seed,size){size=+size||3;const all=[];const rec=(s,c)=>{if(c.length===size){all.push(c.slice());return}for(let i=s;i<pool.length;i++){c.push(pool[i]);rec(i+1,c);c.pop()}};rec(0,[]);
  if(!k||k>=all.length)return all;const rng=BT.mkRng(seed||7);for(let i=all.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[all[i],all[j]]=[all[j],all[i]]}return all.slice(0,k)}
 async function evalCfg(W,built,wf,tier,knobs,o){const g=o.g||8,n=o.n||10;const TR=o.trios;let runs=0,wins=0;const perD=[],perT={};const ck={n:0,ok:0,cost:0,fail:0,cover:0,inj:0,alone:0};const byDebt={},byAl={};let lock=0,alSum=0;let bossReach=0,bossWin=0,bossTurns=0,phases=0,endHp=0,preHp=0;
  for(let s=1;s<=g;s++){/* 10-28: 지금 던전 생성기(autogen — 공통 Lv +5 · 체크 3~5 · 야생 DB · 휴식 · 경계도 규칙)로 만든다. 옛 gen.js 그대로 재려면 --raw 1 */const dg=o.raw?G.make(tier,knobs,(o.seed0||100)+s):require('./autogen.js').generate({tier,seed:(o.seed0||100)+s,knobs});let dw=0,dn=0;

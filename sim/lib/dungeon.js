@@ -48,16 +48,22 @@ const CARD_DECKS={base:['key','key','reroll','bandage','gust','nocrit','retry','
  /* 11-02 확정 40장에서 짠 덱 (열쇠 2 + 준비 6) — 시뮬 records/silverkey_pool.json 검토용 */
  p_check:['key','key','bae','k15','suk','lead','cover0','last'],p_care:['key','key','cover0','bandage','medkit','food','gust','cheer'],
  p_mix:['key','key','bae','k15','cover0','bandage','food','reroll'],p_star:['key','key','k15','last','adv','breath','reso','cover0'],
- p_stat:['key','key','suk','lead','body','inou2','cover0','bandage'],p_battle:['key','key','reroll','nocrit','sotr','mend','rise','cover0'],p_typ:['key','key','k15','bae','mend','nocrit','food','cover0'],p_check1:['key','key','bae','k15x','suk','lead','cover0','last']};   /* 열쇠 카드를 「판정 없이 통과」 없이 ★ 바치기로만 쓸 때 */
+ p_stat:['key','key','suk','lead','body','inou2','cover0','bandage'],p_battle:['key','key','reroll','nocrit','sotr','mend','rise','cover0'],p_typ:['key','key','k15','bae','mend','nocrit','food','cover0'],p_check1:['key','key','bae','k15x','suk','lead','cover0','last'],
+ /* 11-02 18시 망령 「객원 2명 · 여러 조합」: 확정 40장(아이콘 지시 9 · 육성 9)만으로 짠 덱 — 열쇠 2 + 준비 6 */
+ d_check:['key','key','bae','k15','suk','lead','cover0','last'],d_care:['key','key','cover0','bandage','medkit','food','gust','cheer'],d_battle:['key','key','reroll','nocrit','sotr','mend','rise','cover0'],
+ d_star:['key','key','k15','last','adv','breath','reso','cover0'],d_stat:['key','key','suk','lead','body','inou2','cover0','bandage'],d_dgn:['key','key','gust','craft','food','breath','bandage','muri'],
+ d_bal:['key','key','reroll','nocrit','cover0','bandage','k15','gust'],d_guard:['key','key','cover0','muri','cheer','bandage','medkit','nocrit']};   /* 열쇠 카드를 「판정 없이 통과」 없이 ★ 바치기로만 쓸 때 */
 async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt.seed||1);const pol=Object.assign({who:'best',cover:opt.cards&&!(opt.adjust&&+opt.adjust.coverOn)?'never':'fail',partner:'match',inou:'yes'},opt.policy||{});   /* 11-01 23:56 망령: 은열쇠 덱이 있으면 커버 없음 (adj.coverOn 1 이면 켬) */
  const adj=Object.assign({fieldMax:1,coverBall:0,ordScope:'dungeon',ordPer:1,cmdPer:2,target:0,penScale:1,checkEvery:1,stepAll:0,wildLv:0,wildExtra:0,bossN:0,raidX:null,raidMode:'barrier',restV:1,al0:0,al30:5,al70:10,alBattle:0,alLose:10,alScale:1},dg.rules||{},opt.adjust||{});   /* 10-31 망령 「꼭 고쳐」: alLose 는 규칙에 없는 옛 던전도 +10 (autogen RULES 와 같다) */   /* dg.rules = 던전에 박힌 규칙값(자동 생성 던전). 조정값(opt.adjust)이 그 위에 */
  const party=makeParty(parties,dg.wn||opt.wn||2);const ev=[];const say=(e)=>ev.push(e);
  /* 11-01 은열쇠 카드 */
- const CD=opt.cards?(Array.isArray(opt.cards)?opt.cards:CARD_DECKS[opt.cards]||CARD_DECKS.base):null;const cstat={use:{},commit:0,mad:0,dead:0,skip:0,autopass:0,retryOk:0,draws:0,reshuffle:0,costSpent:0,madIn:0,scarIn:0,collapse:0,penDrawn:0,penClear:0,noCost:0,mill:0,overpay:0,madOut:0};
+ const deckOf=x=>Array.isArray(x)?x:CARD_DECKS[x]||CARD_DECKS.base;   /* 11-02 18시: 「a+b」 또는 [덱, 덱] = 트레이너마다 다른 덱(순서대로 돌려 씀) */
+ const CDL=opt.cards?(typeof opt.cards==='string'&&opt.cards.includes('+')?opt.cards.split('+').map(deckOf):Array.isArray(opt.cards)&&Array.isArray(opt.cards[0])?opt.cards.map(deckOf):null):null;
+ const CD=opt.cards?(CDL?CDL[0]:deckOf(opt.cards)):null;const cstat={use:{},commit:0,mad:0,dead:0,skip:0,autopass:0,retryOk:0,draws:0,reshuffle:0,costSpent:0,madIn:0,scarIn:0,collapse:0,penDrawn:0,penClear:0,noCost:0,mill:0,overpay:0,madOut:0};
  const shuf=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
  const COST0=adj.cost0==null?5:+adj.cost0,MADCAP=adj.madCap==null?2:+adj.madCap,HAND=adj.hand==null?4:+adj.hand;   /* 11-01 21:58 망령: 손패 4 · 박자마다 4장까지 채움 · 부상 1장 · 중상 2장 덱 맨 위 버림 · 빈사 = 증상 1장 · 코스트 모자라면 그만큼 덱 맨 위 버림 · 커버는 트레이너마다 휴식 사이 1회 */   /* 11-01 망령: 코스트 5 · 광기 칸 2 (3장째면 붕괴 = 던전 이탈) · adj.madStart = 이미 덱에 든 광기 카드 */
  for(const P of party)P.coverUsed=0;
- if(CD)for(const P of party){P.cd={pile:shuf(CD),hand:[],disc:[],mad:0,dead:0,cost:COST0,madN:0};for(let i=0;i<(+adj.madStart||0)&&i<MADCAP;i++){P.cd.madN++;P.cd.pile.splice(Math.floor(rng()*(P.cd.pile.length+1)),0,'dead')}}
+ if(CD)for(const [pi,P] of party.entries()){P.cd={pile:shuf(CDL?CDL[pi%CDL.length]:CD),hand:[],disc:[],mad:0,dead:0,cost:COST0,madN:0};for(let i=0;i<(+adj.madStart||0)&&i<MADCAP;i++){P.cd.madN++;P.cd.pile.splice(Math.floor(rng()*(P.cd.pile.length+1)),0,'dead')}}
  /* 패널티 카드: 중상 → 상흔 · 빈사 / 덱 소진 → 광기. 광기는 칸(2)이 차 있으면 붕괴. 뽑아도 대신 뽑기 없음 */
  const penIns=(P,kind)=>{if(!P.cd||P.gone)return;if(kind==='mad'){if(P.cd.madN>=MADCAP){P.gone=true;P.inj=3;cstat.collapse++;say({k:'collapse',who:P.trainer.name});return}P.cd.madN++;cstat.madIn++;P.cd.pile.splice(Math.floor(rng()*(P.cd.pile.length+1)),0,'dead')}else{cstat.scarIn++;P.cd.pile.splice(Math.floor(rng()*(P.cd.pile.length+1)),0,'scar')}};
  const refill=P=>{if(!P.cd.pile.length){if(!P.cd.disc.length)return false;P.cd.pile=shuf(P.cd.disc);P.cd.disc=[];P.cd.mad++;cstat.mad++;cstat.reshuffle++;penIns(P,'mad');if(P.gone)return false}return true};
