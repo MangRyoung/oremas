@@ -37,7 +37,7 @@ window.OM_TOUR=(()=>{
   flow:[{v:'battle',s:'.bstat .phases,.bstat',t:'단계',d:'지시 → 공개 → 행동 → 턴 종료. GM 이 넘긴다.'}],
   orders:[{v:'battle',s:'#cmdForm',t:'지시 입력',d:'에리어마다 행동 · 대상을 고르고 「준비 완료」.'}],
   attack:[{v:'battle',s:'[data-act="attack"]',t:'공격',d:'자기 차례 포켓몬 카드의 「공격」(A).'}],
-  hp:[{v:'battle',s:'[data-act="hp"]',t:'HP',d:'공격을 받으면 「피해 판정 받음」 — 여기서 판정한다.'}],
+  hp:[{v:'battle',s:'[data-act="hp"]',t:'HP',d:'공격을 받으면 카드에 「피격 … 적용」 한 줄 — 여기서 판정한다.'}],
   status:[{v:'battle',s:'[data-act="edit"]',t:'랭크 · 상태',d:'랭크 ± · 상태 · 소지품 · 테라스탈 (S).'},{v:'battle',s:'.autock',t:'자동화 확인',d:'자동으로 처리되는 포텐셜 · 특성 · 소지품을 한눈에.'}],
   tactics:[{v:'battle',s:'#cmdForm',t:'묘수 · 도감',d:'지시 준비 중에 쓴다.'},{s:'#dexBtn',t:'도감',d:'해석한 만큼 보인다.'}],
   more:[{s:TAB('graph'),t:'관계도',d:'전체 관계도와 「내 인연」 보드.'},{s:TAB('calendar'),t:'캘린더',d:'오늘 날짜 · 날씨 · 일정 · 예보.'}],
