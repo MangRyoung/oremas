@@ -1,0 +1,433 @@
+{
+ "id": "auto_normal_549195",
+ "name": "빙하 틈 (보통)",
+ "wn": 2,
+ "private": true,
+ "gen": {
+  "tier": "normal",
+  "knobs": {
+   "battles": 1,
+   "foes": 2,
+   "lv": 5,
+   "bossLv": 5,
+   "rest": "short",
+   "checks": 5,
+   "tgt": "v4mix",
+   "pen": "alert",
+   "hintTyped": 1,
+   "alCost": 10,
+   "alFail": 10,
+   "critAl": 10
+  },
+  "seed": 549195,
+  "boss": "소금수달",
+  "brWant": 3,
+  "v": 1,
+  "auto": true,
+  "tough": "",
+  "shape": "곧은길",
+  "theme": "설원",
+  "rules": {
+   "restV": 2,
+   "alBattle": 5,
+   "alLose": 10,
+   "al30": 5,
+   "al70": 10,
+   "restShort": "all",
+   "restPO": 1,
+   "restPC": 1,
+   "restBreath": "one",
+   "restBC": 1
+  },
+  "source": "db",
+  "grades": {
+   "wild": [
+    "C"
+   ],
+   "boss": [
+    "A"
+   ]
+  },
+  "verify": {
+   "wr": 0.45,
+   "target": 0.6,
+   "band": 0.15,
+   "tries": 2,
+   "ok": true,
+   "cards": "base"
+  }
+ },
+ "rooms": [
+  {
+   "id": "entry",
+   "t": "entry",
+   "name": "눈 덮인 산길",
+   "check": {
+    "label": "얼어붙은 문을 깬다",
+    "stat": "능력",
+    "target": 12,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "dmg": "1/4",
+      "st": "Paralysis",
+      "memo": "반동에 몸이 굳었다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "b1",
+   "t": "battle",
+   "name": "눈 무덤",
+   "enc": {
+    "mix": [
+     {
+      "db": "w054"
+     },
+     {
+      "db": "w122"
+     }
+    ],
+    "lvAdd": 5
+   }
+  },
+  {
+   "id": "c1",
+   "t": "puzzle",
+   "name": "눈 덮인 크레바스",
+   "check": {
+    "label": "화이트아웃 속 대열을 지킨다",
+    "stat": "통솔",
+    "target": 12,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "oc": 2,
+      "memo": "모두 지쳤다"
+     }
+    },
+    "pm": 0,
+    "base": 4,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "c2",
+   "t": "trap",
+   "name": "고드름 동굴",
+   "check": {
+    "label": "얼음판의 두께를 읽는다",
+    "stat": "지시",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "oc": 2,
+      "memo": "우왕좌왕했다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "c3",
+   "t": "trap",
+   "name": "화이트아웃",
+   "check": {
+    "label": "눈 아래 먹이를 찾는다",
+    "stat": "육성",
+    "target": 15,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "st": "Poison",
+      "memo": "독이 있는 것에 닿았다"
+     }
+    },
+    "pm": 0,
+    "base": 1,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "safe",
+   "t": "safe",
+   "name": "바람 막힌 바위굴",
+   "rest": "short",
+   "check": {
+    "label": "빙벽을 오른다",
+    "stat": "능력",
+    "target": 10,
+    "hint": "type:강철",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "dmg": "1/3",
+      "memo": "크게 휘말렸다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [
+      "강철"
+     ],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "boss",
+   "t": "boss",
+   "name": "얼음 신전",
+   "enc": {
+    "mix": [
+     {
+      "db": "w222"
+     },
+     {
+      "db": "w047"
+     },
+     {
+      "db": "w072"
+     },
+     {
+      "db": "w132"
+     }
+    ],
+    "boss": true,
+    "bossAt": 0,
+    "raid": 3,
+    "n": 4,
+    "lvAdd": 5
+   }
+  },
+  {
+   "id": "g2a1",
+   "t": "battle",
+   "name": "서리 언덕",
+   "enc": {
+    "mix": [
+     {
+      "db": "w272"
+     },
+     {
+      "db": "w152"
+     }
+    ],
+    "lvAdd": 5
+   },
+   "alt": "g2"
+  },
+  {
+   "id": "g3a1",
+   "t": "puzzle",
+   "name": "미끄러운 빙판길",
+   "check": {
+    "label": "눈보라 속 표식을 찾는다",
+    "stat": "지시",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "oc": 2,
+      "memo": "우왕좌왕했다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "alt": "g3"
+  },
+  {
+   "id": "tr",
+   "t": "treasure",
+   "side": 1,
+   "name": "얼음 속 유물",
+   "clue": {
+    "t": "주인의 흔적",
+    "d": "깊은 곳의 주인 — 「물」 기운이 서려 있다.\n「전기」 · 「풀」 쪽을 꺼리는 흔적이 남아 있다.\n「스톤에지」의 자국이 벽에 새겨져 있다.",
+    "auto": 1
+   },
+   "from": "g2a1"
+  }
+ ],
+ "branches": [
+  {
+   "id": "g2",
+   "from": "c2",
+   "to": "safe",
+   "main": [
+    "c3"
+   ],
+   "alt": [
+    "g2a1"
+   ]
+  },
+  {
+   "id": "g3",
+   "from": "entry",
+   "to": "c1",
+   "main": [
+    "b1"
+   ],
+   "alt": [
+    "g3a1"
+   ]
+  }
+ ],
+ "map": {
+  "grid": {
+   "cols": 7,
+   "rows": 5,
+   "x0": 80,
+   "dx": 140,
+   "y0": 65,
+   "dy": 130
+  },
+  "shape": "곧은길",
+  "turns": 2,
+  "cells": {
+   "entry": [
+    3,
+    3
+   ],
+   "b1": [
+    3,
+    4
+   ],
+   "c1": [
+    4,
+    4
+   ],
+   "c2": [
+    5,
+    4
+   ],
+   "c3": [
+    6,
+    4
+   ],
+   "safe": [
+    6,
+    3
+   ],
+   "boss": [
+    6,
+    2
+   ],
+   "g2a1": [
+    5,
+    3
+   ],
+   "g3a1": [
+    4,
+    3
+   ],
+   "tr": [
+    5,
+    2
+   ]
+  },
+  "links": {
+   "b1~entry": 1,
+   "b1~c1": 1,
+   "c1~c2": 1,
+   "c2~c3": 1,
+   "c3~safe": 1,
+   "boss~safe": 1,
+   "c2~g2a1": 1,
+   "g2a1~safe": 1,
+   "entry~g3a1": 1,
+   "c1~g3a1": 1,
+   "g2a1~tr": 1
+  }
+ },
+ "path": [
+  "entry",
+  "b1",
+  "c1",
+  "c2",
+  "c3",
+  "safe",
+  "boss"
+ ],
+ "theme": "설원",
+ "owner": "소금수달",
+ "rules": {
+  "restV": 2,
+  "alBattle": 5,
+  "alLose": 10,
+  "al30": 5,
+  "al70": 10,
+  "restShort": "all",
+  "restPO": 1,
+  "restPC": 1,
+  "restBreath": "one",
+  "restBC": 1
+ },
+ "note": "자동 생성 · 보통 · 씨앗 549195 · 테마 설원. 사전 배틀 1 · 체크 5 · 보스방 4체 · 레이드 배틀 : 3 · 지도 갈림길 2 · 곧은길 + 곁방 1 · 야생 Lv +5."
+}

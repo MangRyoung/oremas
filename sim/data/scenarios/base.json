@@ -2,9 +2,9 @@
  "id": "base",
  "name": "기본",
  "dungeon": [
-  "auto_easy_29020",
-  "auto_normal_21202",
-  "auto_hard_163843"
+  "auto_easy_163481",
+  "auto_normal_186233",
+  "auto_hard_988453"
  ],
  "party": [
   "카이",

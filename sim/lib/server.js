@@ -34,6 +34,10 @@ function start(opt){opt=opt||{};const port=+opt.port||8470;
  const awkWrite=d=>{fs.mkdirSync(path.dirname(awkF()),{recursive:true});fs.writeFileSync(awkF(),JSON.stringify(d,null,1))};
  const api={
   state:()=>state(),
+  /* 11-02 망령 「카드풀은 아티팩트가 아니라 시뮬레이터에」: 은열쇠 공통 카드 후보 300 → 확정 카드풀 (ui/cards.html). 고른 것 · 고친 것은 records/silverkey_pool.json */
+  cardPool:()=>{const R=f=>path.join(SIM,'records',f);const cards=JSON.parse(fs.readFileSync(R('silverkey_candidates_2026-11-02.json'),'utf8'));let pool=null;try{if(fs.existsSync(R('silverkey_pool.json')))pool=JSON.parse(fs.readFileSync(R('silverkey_pool.json'),'utf8'))}catch(e){}return {cards,pool}},
+  cardPoolSave:b=>{if(!b||!Array.isArray(b.ids))throw new Error('ids 가 없어요');const ids=b.ids.map(String).slice(0,400);const edits={};for(const [k,v] of Object.entries(b.edits||{}))if(v&&typeof v==='object')edits[String(k)]={name:String(v.name||'').slice(0,40),cost:Math.max(0,Math.min(9,+v.cost||0)),icons:(v.icons||[]).map(String).slice(0,2),tags:(v.tags||[]).map(String).slice(0,4),lim:String(v.lim||'').slice(0,20),eff:String(v.eff||'').slice(0,400)};
+   const doc={ids,names:(b.names||[]).map(String).slice(0,400),n:ids.length,edits,at:new Date().toISOString()};fs.writeFileSync(path.join(SIM,'records','silverkey_pool.json'),JSON.stringify(doc,null,1));return {ok:1,at:doc.at}},
   run:async b=>{const dg=D.dungeons()[b.dungeon];if(!dg)throw new Error('던전 없음');const parties=pickParties(b.party||[]);if(!parties.length)throw new Error('일행을 고르세요');const n=Math.max(1,Math.min(5000,+b.n||200));const rows=[];const t0=Date.now();
    const wf=P.wildFrom(W,snap());const priv=P.isPrivate(parties,dg);
    for(let i=0;i<n;i++)rows.push(await D.run(W,dg,parties,{seed:(+b.seed||1)+i,adjust:b.adjust||{},policy:b.policy||{},wn:+b.wn||undefined,wildFrom:wf}));

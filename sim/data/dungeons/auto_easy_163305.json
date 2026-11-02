@@ -1,16 +1,17 @@
 {
- "id": "auto_normal_21202",
- "name": "잊힌 성채 (보통)",
+ "id": "auto_easy_163305",
+ "name": "고문서 번역소 (쉬움)",
  "wn": 2,
+ "private": true,
  "gen": {
-  "tier": "normal",
+  "tier": "easy",
   "knobs": {
-   "battles": 1,
+   "battles": 0,
    "foes": 2,
    "lv": 5,
    "bossLv": 5,
    "rest": "short",
-   "checks": 6,
+   "checks": 4,
    "tgt": "v4mix",
    "pen": "alert",
    "hintTyped": 1,
@@ -18,13 +19,14 @@
    "alFail": 10,
    "critAl": 10
   },
-  "seed": 21202,
-  "boss": "메타그로스",
-  "brWant": 3,
+  "seed": 163305,
+  "boss": "망나뇽",
+  "brWant": 2,
+  "sub": 3,
   "v": 1,
   "auto": true,
   "tough": "",
-  "shape": "꺾인길",
+  "shape": "곧은길",
   "theme": "유적",
   "rules": {
    "restV": 2,
@@ -44,17 +46,17 @@
     "C"
    ],
    "boss": [
+    "B",
     "A"
    ]
   },
   "verify": {
-   "wr": 0.62,
-   "target": 0.6,
+   "wr": 0.67,
+   "target": 0.8,
    "band": 0.15,
-   "tries": 1,
+   "tries": 4,
    "ok": true,
-   "cards": "base",
-   "at": "2026-11-02"
+   "cards": "base"
   }
  },
  "rooms": [
@@ -63,86 +65,10 @@
    "t": "entry",
    "name": "모래 계단",
    "check": {
-    "label": "바닥 장치의 순서를 읽는다",
-    "stat": "지시",
-    "target": 10,
-    "hint": "any",
-    "pen": {
-     "fail": {
-      "al": 10,
-      "oo": 1,
-      "memo": "지시가 엇갈렸다"
-     }
-    },
-    "pm": 0,
-    "base": 3,
-    "fit": {
-     "types": [],
-     "moves": [],
-     "abil": []
-    },
-    "v": 4,
-    "gainCrit": {
-     "al": -10,
-     "memo": "대성공 — 기척을 지웠다"
-    }
-   }
-  },
-  {
-   "id": "b1",
-   "t": "battle",
-   "name": "기둥의 방",
-   "enc": {
-    "mix": [
-     {
-      "db": "w263"
-     },
-     {
-      "db": "w133"
-     }
-    ],
-    "lvAdd": 5
-   }
-  },
-  {
-   "id": "c1",
-   "t": "room",
-   "name": "거울 회랑",
-   "check": {
-    "label": "유물의 기억을 읽는다",
-    "stat": "능력",
-    "target": 12,
-    "hint": "any",
-    "pen": {
-     "fail": {
-      "al": 10,
-      "dmg": "1/3",
-      "memo": "크게 휘말렸다"
-     }
-    },
-    "pm": 0,
-    "base": 3,
-    "fit": {
-     "types": [],
-     "moves": [],
-     "abil": []
-    },
-    "v": 4,
-    "gainCrit": {
-     "al": -10,
-     "memo": "대성공 — 기척을 지웠다"
-    }
-   }
-  },
-  {
-   "id": "c2",
-   "t": "trap",
-   "name": "무너진 다리",
-   "check": {
     "label": "석상에 깃든 포켓몬을 달랜다",
     "stat": "육성",
     "target": 12,
-    "hint": "type:바위",
+    "hint": "any",
     "pen": {
      "fail": {
       "al": 10,
@@ -153,9 +79,7 @@
     "pm": 0,
     "base": 1,
     "fit": {
-     "types": [
-      "바위"
-     ],
+     "types": [],
      "moves": [],
      "abil": []
     },
@@ -167,13 +91,13 @@
    }
   },
   {
-   "id": "c3",
-   "t": "trap",
-   "name": "봉인의 문",
+   "id": "c1",
+   "t": "puzzle",
+   "name": "거울 회랑",
    "check": {
     "label": "어둠 속 대열을 지킨다",
     "stat": "통솔",
-    "target": 12,
+    "target": 10,
     "hint": "any",
     "pen": {
      "fail": {
@@ -198,13 +122,13 @@
    }
   },
   {
-   "id": "c4",
-   "t": "room",
-   "name": "물이 찬 통로",
+   "id": "c2",
+   "t": "trap",
+   "name": "무너진 다리",
    "check": {
     "label": "옛 문자를 해독한다",
     "stat": "지시",
-    "target": 15,
+    "target": 10,
     "hint": "any",
     "pen": {
      "fail": {
@@ -236,18 +160,21 @@
     "label": "봉인을 푼다",
     "stat": "능력",
     "target": 10,
-    "hint": "any",
+    "hint": "type:바위",
     "pen": {
      "fail": {
       "al": 10,
-      "dmg": "1/3",
-      "memo": "크게 휘말렸다"
+      "dmg": "1/8",
+      "st": "Paralysis",
+      "memo": "반동에 몸이 굳었다"
      }
     },
     "pm": 0,
     "base": 3,
     "fit": {
-     "types": [],
+     "types": [
+      "바위"
+     ],
      "moves": [],
      "abil": []
     },
@@ -265,44 +192,43 @@
    "enc": {
     "mix": [
      {
-      "db": "w294"
+      "db": "w295"
      },
      {
-      "db": "w117"
+      "db": "w245"
      },
      {
-      "db": "w090"
+      "db": "w135"
      },
      {
-      "db": "w265"
+      "db": "w228"
      }
     ],
     "boss": true,
     "bossAt": 0,
-    "raid": 3,
+    "raid": 2,
     "n": 4,
     "lvAdd": 5
    }
   },
   {
    "id": "g1a1",
-   "t": "puzzle",
-   "name": "문자 석판",
+   "t": "room",
+   "name": "별자리 천장",
    "check": {
-    "label": "움직이는 바닥을 함께 건넌다",
-    "stat": "통솔",
+    "label": "바닥 장치의 순서를 읽는다",
+    "stat": "지시",
     "target": 10,
     "hint": "any",
     "pen": {
      "fail": {
       "al": 10,
-      "st": "Confusion",
-      "cnt": 3,
-      "memo": "대열이 무너졌다"
+      "oo": 1,
+      "memo": "지시가 엇갈렸다"
      }
     },
     "pm": 0,
-    "base": 4,
+    "base": 3,
     "fit": {
      "types": [],
      "moves": [],
@@ -317,24 +243,72 @@
    "alt": "g1"
   },
   {
-   "id": "g2a1",
+   "id": "g1a2",
+   "t": "battle",
+   "name": "기둥의 방",
+   "enc": {
+    "mix": [
+     {
+      "db": "w090"
+     },
+     {
+      "db": "w118"
+     }
+    ],
+    "lvAdd": 5
+   },
+   "alt": "g1"
+  },
+  {
+   "id": "g1a3",
    "t": "room",
-   "alt": "g2",
+   "alt": "g1",
    "filler": 1,
    "memo": "돌아가는 길 · 숨은 물건 — 살피면 소지품 · 열매 하나(GM 이 정한다). 체크 없음",
-   "name": "갈라진 벽틈"
+   "name": "작은 사당"
+  },
+  {
+   "id": "g2a1",
+   "t": "room",
+   "name": "봉인의 문",
+   "check": {
+    "label": "유물의 기억을 읽는다",
+    "stat": "능력",
+    "target": 12,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "dmg": "1/4",
+      "memo": "크게 휘말렸다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "alt": "g2"
   },
   {
    "id": "g2a2",
    "t": "battle",
-   "name": "석상 회랑",
+   "name": "계단식 광장",
    "enc": {
     "mix": [
      {
-      "db": "w240"
+      "db": "w249"
      },
      {
-      "db": "w232"
+      "db": "w248"
      }
     ],
     "lvAdd": 5
@@ -344,65 +318,10 @@
   {
    "id": "g2a3",
    "t": "room",
-   "name": "바람 구멍",
-   "check": {
-    "label": "속삭이는 목소리의 정체를 쫓는다",
-    "stat": "능력",
-    "target": 12,
-    "hint": "any",
-    "pen": {
-     "fail": {
-      "al": 10,
-      "dmg": "1/4",
-      "st": "Paralysis",
-      "memo": "반동에 몸이 굳었다"
-     }
-    },
-    "pm": 0,
-    "base": 3,
-    "fit": {
-     "types": [],
-     "moves": [],
-     "abil": []
-    },
-    "v": 4,
-    "gainCrit": {
-     "al": -10,
-     "memo": "대성공 — 기척을 지웠다"
-    }
-   },
-   "alt": "g2"
-  },
-  {
-   "id": "g2a4",
-   "t": "room",
-   "name": "별자리 천장",
-   "check": {
-    "label": "함정의 순서를 읽는다",
-    "stat": "지시",
-    "target": 12,
-    "hint": "any",
-    "pen": {
-     "fail": {
-      "al": 10,
-      "oc": 2,
-      "memo": "우왕좌왕했다"
-     }
-    },
-    "pm": 0,
-    "base": 3,
-    "fit": {
-     "types": [],
-     "moves": [],
-     "abil": []
-    },
-    "v": 4,
-    "gainCrit": {
-     "al": -10,
-     "memo": "대성공 — 기척을 지웠다"
-    }
-   },
-   "alt": "g2"
+   "alt": "g2",
+   "filler": 1,
+   "memo": "돌아가는 길 · 숨은 물건 — 살피면 소지품 · 열매 하나(GM 이 정한다). 체크 없음",
+   "name": "벽화의 방"
   },
   {
    "id": "tr",
@@ -411,45 +330,38 @@
    "name": "봉헌함",
    "clue": {
     "t": "주인의 흔적",
-    "d": "깊은 곳의 주인 — 「강철 · 에스퍼」 기운이 서려 있다.\n「불꽃」 · 「땅」 · 「고스트」 쪽을 꺼리는 흔적이 남아 있다.\n「중력」의 자국이 벽에 새겨져 있다.",
+    "d": "깊은 곳의 주인 — 「드래곤 · 비행」 기운이 서려 있다.\n「얼음」 · 「바위」 · 「드래곤」 쪽을 꺼리는 흔적이 남아 있다.\n「회전부리」의 자국이 벽에 새겨져 있다.",
     "auto": 1
    },
-   "from": "g2a4"
-  },
-  {
-   "id": "s1",
-   "t": "room",
-   "side": 1,
-   "name": "벽화의 방",
-   "memo": "곁방 · 숨은 물건 — 살피면 소지품 · 열매 하나(GM 이 정한다). 찾는 데 체크는 없다",
-   "from": "g2a2"
+   "from": "g1a1"
   }
  ],
  "branches": [
   {
    "id": "g1",
-   "from": "entry",
-   "to": "c1",
+   "from": "c1",
+   "to": "safe",
    "main": [
-    "b1"
+    "c2"
    ],
    "alt": [
-    "g1a1"
-   ]
+    "g1a1",
+    "g1a2",
+    "g1a3"
+   ],
+   "detour": 1
   },
   {
    "id": "g2",
-   "from": "c2",
-   "to": "safe",
+   "from": "entry",
+   "to": "c2",
    "main": [
-    "c3",
-    "c4"
+    "c1"
    ],
    "alt": [
     "g2a1",
     "g2a2",
-    "g2a3",
-    "g2a4"
+    "g2a3"
    ],
    "detour": 1
   }
@@ -463,101 +375,83 @@
    "y0": 65,
    "dy": 130
   },
-  "shape": "꺾인길",
-  "turns": 1,
+  "shape": "곧은길",
+  "turns": 0,
   "cells": {
    "entry": [
-    0,
-    3
-   ],
-   "b1": [
-    0,
+    1,
     4
    ],
    "c1": [
     1,
-    4
+    3
    ],
    "c2": [
-    2,
-    4
-   ],
-   "c3": [
-    3,
-    4
-   ],
-   "c4": [
-    4,
-    4
+    1,
+    2
    ],
    "safe": [
-    5,
-    4
+    1,
+    1
    ],
    "boss": [
-    6,
-    4
+    1,
+    0
    ],
    "g1a1": [
-    1,
-    3
-   ],
-   "g2a1": [
     2,
     3
    ],
+   "g1a2": [
+    2,
+    2
+   ],
+   "g1a3": [
+    2,
+    1
+   ],
+   "g2a1": [
+    0,
+    4
+   ],
    "g2a2": [
-    3,
+    0,
     3
    ],
    "g2a3": [
-    4,
-    3
-   ],
-   "g2a4": [
-    5,
-    3
+    0,
+    2
    ],
    "tr": [
-    5,
-    2
-   ],
-   "s1": [
     3,
-    2
+    3
    ]
   },
   "links": {
-   "b1~entry": 1,
-   "b1~c1": 1,
+   "c1~entry": 1,
    "c1~c2": 1,
-   "c2~c3": 1,
-   "c3~c4": 1,
-   "c4~safe": 1,
+   "c2~safe": 1,
    "boss~safe": 1,
-   "entry~g1a1": 1,
    "c1~g1a1": 1,
-   "c2~g2a1": 1,
+   "g1a1~g1a2": 1,
+   "g1a2~g1a3": 1,
+   "g1a3~safe": 1,
+   "entry~g2a1": 1,
    "g2a1~g2a2": 1,
    "g2a2~g2a3": 1,
-   "g2a3~g2a4": 1,
-   "g2a4~safe": 1,
-   "g2a4~tr": 1,
-   "g2a2~s1": 1
+   "c2~g2a3": 1,
+   "g1a1~tr": 1
   }
  },
  "path": [
   "entry",
-  "b1",
   "c1",
   "c2",
-  "c3",
-  "c4",
   "safe",
   "boss"
  ],
  "theme": "유적",
- "owner": "메타그로스",
+ "owner": "망나뇽",
  "rules": {
   "restV": 2,
   "alBattle": 5,
@@ -570,5 +464,5 @@
   "restBreath": "one",
   "restBC": 1
  },
- "note": "자동 생성 · 보통 · 씨앗 21202 · 테마 유적. 사전 배틀 1 · 체크 6 · 보스방 4체 · 레이드 배틀 : 3 · 지도 갈림길 2 · 꺾인길 + 곁방 2 · 야생 Lv +5."
+ "note": "자동 생성 · 쉬움 · 씨앗 163305 · 테마 유적. 사전 배틀 0 · 체크 4 · 보스방 4체 · 레이드 배틀 : 2 · 지도 갈림길 2 · 곧은길 + 곁방 1 · 야생 Lv +5."
 }

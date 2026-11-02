@@ -282,7 +282,7 @@ td.n,th.n,.mono{font-variant-numeric:tabular-nums}
 .jr{background:#f7f1e3}.jr .jk{border-radius:1px}.jr .jt{font-family:var(--display);font-weight:900;letter-spacing:.02em}
 .jform{border-radius:0;border-color:#a8936a;background:#e9dfc8}.refpick{border-radius:0}
 .cmt{border-radius:0}
-#repFrame,#docFrame{border:1px solid var(--gold2)!important;border-radius:0!important;box-shadow:0 0 0 3px #0a0908,0 0 0 4px #4b3f29}
+#repFrame,#docFrame,#cardsFrame{border:1px solid var(--gold2)!important;border-radius:0!important;box-shadow:0 0 0 3px #0a0908,0 0 0 4px #4b3f29}
 #fbText{font:13px/1.65 var(--mono);background:#f8f3e7;border-color:#c9b994;min-height:60vh}
 
 /* --- 방 요약 (지도 옆) --- */
@@ -355,7 +355,7 @@ td.n,th.n,.mono{font-variant-numeric:tabular-nums}
 @media(prefers-reduced-motion:reduce){.dgi-haze,.dgi-pulse{animation:none!important}.dgi-tilt{transition:none}}
 </style></head><body>
 <header><span class="crest"><svg viewBox="0 0 40 46" aria-hidden="true"><path d="M20 2 37 8v14c0 11-7.5 18.5-17 22C10.5 40.5 3 33 3 22V8Z" fill="rgba(110,16,25,.55)" stroke="currentColor" stroke-width="2"/><path d="M11 16h18v14H11zM20 16v14" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="20" cy="9.5" r="2.2" fill="currentColor"/></svg></span><div class="ttl"><small class="en">MISAG UNIVERSITY · SIMULATION ROOM</small><h1>시뮬레이션 열람실<small>망켓몬 던전 · 스킬 체크 시뮬레이터 — 가이드라인 자료 수집용</small></h1></div><span class="small" id="snapInfo">…</span><span class="sp"></span><button class="b sm" id="btnFetch" title="제작기 공유 DB 에서 트레이너 · 포켓몬을 받아 data/snapshot.json 으로">제작기에서 받기</button><button class="b sm" id="btnReload">새로고침</button></header>
-<nav id="nav"><button data-t="run" class="on">돌리기</button><button data-t="pt">일행</button><button data-t="dg">던전</button><button data-t="gen">생성기</button><button data-t="auto">던전 생성</button><button data-t="wild">야생</button><button data-t="sdb">특성 · 체크 DB</button><button data-t="rec">기록 · 리포트</button><button data-t="fb">피드백 · 인수인계</button><button data-t="tbl">체크 확률표</button><button data-t="doc">설계도</button></nav>
+<nav id="nav"><button data-t="run" class="on">돌리기</button><button data-t="pt">일행</button><button data-t="dg">던전</button><button data-t="gen">생성기</button><button data-t="auto">던전 생성</button><button data-t="wild">야생</button><button data-t="sdb">특성 · 체크 DB</button><button data-t="rec">기록 · 리포트</button><button data-t="fb">피드백 · 인수인계</button><button data-t="tbl">체크 확률표</button><button data-t="doc">설계도</button><button data-t="cards">은열쇠 카드풀</button></nav>
 <main>
 <section id="t-run">
  <div class="grid">
@@ -385,12 +385,12 @@ td.n,th.n,.mono{font-variant-numeric:tabular-nums}
    <button class="b pri" id="agGen">생성</button><button class="b" id="agAgain" title="같은 설정 · 새 씨앗">다시 뽑기</button><span class="small" id="agMsg"></span></div>
   <div class="row"><label class="f">지도 모양<select id="agShape"><option value="">무작위</option><option>곧은길</option><option>꺾인길</option><option>구불길</option></select></label>
    <label class="f">갈림길<select id="agBranch"><option value="">2~3 (기본)</option><option value="0">없음 (한 줄)</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></label>
-   <label class="f">곁방<input type="number" id="agSide" min="0" max="3" placeholder="1~3" style="width:80px"></label>
+   <label class="f">곁방<input type="number" id="agSide" min="0" max="3" placeholder="0~1" style="width:80px"></label>
    <label class="chk" title="시험 일행으로 돌려 목표 승률 ±15% 에 드는 씨앗만 (수십 초)"><input type="checkbox" id="agVer" checked> 검증 루프</label>
    <label class="chk" title="「돌리기」 탭에서 고른 일행으로 체크 목표를 셈한다 (lib/checkgen.js)"><input type="checkbox" id="agFit"> 체크 목표를 일행에 맞추기</label></div>
   <details><summary class="small">손잡이 바꾸기 (비우면 가이드라인 값)</summary><div class="row" style="margin-top:6px">
    <label class="f">사전 배틀<input type="number" id="agBattles" min="0" max="4" placeholder="난이도 값" style="width:90px"></label>
-   <label class="f">체크 수<input type="number" id="agChecks" min="0" max="6" placeholder="4~6" style="width:80px"></label>
+   <label class="f">체크 수<input type="number" id="agChecks" min="0" max="6" placeholder="3~5" style="width:80px"></label>
    <label class="f">야생 Lv<input type="number" id="agLv" step="5" placeholder="+5" style="width:80px"></label>
    <label class="f">곁방 체크 경계도<input type="number" id="agAlC" step="5" placeholder="10" style="width:80px"></label>
    <label class="f">실패 경계도<input type="number" id="agAlF" step="5" placeholder="10" style="width:80px"></label>
@@ -435,6 +435,7 @@ td.n,th.n,.mono{font-variant-numeric:tabular-nums}
 <section id="t-fb" hidden>
  <div class="card"><div class="row"><b>records/feedback.md</b><span class="small">결정 · 발견 · 다음 할 일. 다른 세션이 이어받을 때 README 다음에 읽는 파일이에요.</span><span class="sp"></span><button class="b pri" id="fbSave">저장</button><span class="small" id="fbMsg"></span></div><textarea id="fbText" rows="28" style="margin-top:8px"></textarea></div>
 </section>
+<section id="t-cards" hidden><div class="row" style="margin-bottom:6px"><span class="small">은열쇠 공통 카드 후보 300장 → 확정 카드풀. 끌어 넣기 · 「고치기」로 코스트 · 아이콘 · 효과를 바꾸면 records/silverkey_pool.json 에 저장돼요.</span><span class="sp"></span><a class="b sm" href="/cards.html" target="_blank" rel="noopener">새 창으로</a></div><iframe id="cardsFrame" title="은열쇠 카드풀" style="width:100%;height:calc(100vh - 170px);min-height:480px;border:1px solid var(--line);border-radius:10px;background:var(--surface)"></iframe></section>
 <section id="t-doc" hidden><div class="row" style="margin-bottom:6px"><span class="small">스킬 체크 · 특성 · 야생 · 던전 생성 방식과 테스트 결과 (docs/생성_설계도.html). 생성 로직이 바뀌면 같이 고쳐요.</span><span class="sp"></span><a class="b sm" href="/docs/생성_설계도.html" target="_blank" rel="noopener">새 창으로</a></div><iframe id="docFrame" title="생성 설계도" style="width:100%;height:calc(100vh - 170px);min-height:480px;border:1px solid var(--line);border-radius:10px;background:var(--surface)"></iframe></section>
 <section id="t-sdb" hidden><div class="gsub" id="sdbSub"><button data-s="abil" class="on">특성 DB</button><button data-s="chk">체크 DB</button><span class="sp"></span><input id="sdbQ" class="inp" placeholder="이름 · 효과 · 장면 찾기" style="max-width:220px"></div><div id="sdbOut"></div></section>
 <section id="t-tbl" hidden><div class="card wrap" id="tbl"></div></section>
@@ -477,7 +478,7 @@ $('#sdbSub').onclick=e=>{const b=e.target.closest('[data-s]');if(!b)return;SDB.t
 $('#sdbQ').oninput=()=>sdbOut();
 $('#sdbOut').onclick=async e=>{const dl=e.target.closest('[data-gdel]');if(dl){await api('abilDel',{names:[dl.dataset.gdel]});GN.meta=await api('genMeta');return sdbOut()}
  const cdl=e.target.closest('[data-gcdel]');if(cdl){await api('checksDel',{ids:[cdl.dataset.gcdel]});GN.meta=await api('genMeta');return sdbOut()}};
-function showTab(t){if(t==='doc'){const f=$('#docFrame');if(f&&!f.src)f.src='/docs/'+encodeURIComponent('생성_설계도')+'.html'}if(t==='gen')setTimeout(()=>window.genInit&&genInit(),0);if(t==='sdb')setTimeout(sdbOut,0);$$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));$$('main>section').forEach(s=>s.hidden=s.id!=='t-'+t);try{localStorage.setItem('sim_tab',t)}catch(e){}}
+function showTab(t){if(t==='cards'){const f=$('#cardsFrame');if(f&&!f.src)f.src='/cards.html'}if(t==='doc'){const f=$('#docFrame');if(f&&!f.src)f.src='/docs/'+encodeURIComponent('생성_설계도')+'.html'}if(t==='gen')setTimeout(()=>window.genInit&&genInit(),0);if(t==='sdb')setTimeout(sdbOut,0);$$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));$$('main>section').forEach(s=>s.hidden=s.id!=='t-'+t);try{localStorage.setItem('sim_tab',t)}catch(e){}}
 async function loadState(){S=await api('state');$('#snapInfo').textContent=(S.snapshot.sample?'시험용 파티 (제작기 스냅샷 없음 — 「제작기에서 받기」)':'제작기 스냅샷 '+S.snapshot.file+' · '+String(S.snapshot.at||'').slice(0,16).replace('T',' '))+' · 트레이너 '+S.trainers.length;
  renderTrainers();renderPt();renderDgSel();renderPacks();renderWdb();renderRecords();renderCombos();renderJournal();$('#fbText').value=S.feedback;renderTable();
  $('#bPack').innerHTML=Object.values(S.wild.packs).map(p=>`<option value="${esc(p.id)}">${esc(p.name)} (${p.mons.length}체)</option>`).join('')}
@@ -1061,7 +1062,7 @@ function gCond(){const M=GN.meta,t=GN.tab,c=GN.c[t];let h='';
   <div class="gf"><b>난이도</b>${gSel('gTier',[['easy','쉬움 — 승률 약 8할'],['normal','보통 — 약 6할'],['hard','어려움 — 약 3할']],c.tier)}</div>
   <div class="gf"><b>테마</b>${gSel('gTheme',[['','무작위']].concat(M.themes.map(x=>[x,x])),c.theme)}</div>
   <div class="gf"><b>지도 모양</b>${gSel('gShape',[['','무작위'],['곧은길','곧은길'],['꺾인길','꺾인길'],['구불길','구불길']],c.shape)}</div>
-  <div class="row"><label class="f">사전 배틀<input type="number" id="gBat" min="0" max="4" placeholder="기본" value="${c.battles}"></label><label class="f">체크 수<input type="number" id="gChecks" min="0" max="6" placeholder="4~6" value="${c.checks}"></label><label class="f">곁방<input type="number" id="gSide" min="0" max="3" placeholder="1~3" value="${c.side}"></label></div>
+  <div class="row"><label class="f">사전 배틀<input type="number" id="gBat" min="0" max="4" placeholder="기본" value="${c.battles}"></label><label class="f">체크 수<input type="number" id="gChecks" min="0" max="6" placeholder="3~5" value="${c.checks}"></label><label class="f">곁방<input type="number" id="gSide" min="0" max="3" placeholder="1~3" value="${c.side}"></label></div>
   <div class="gf" style="margin-top:8px"><label class="chk"><input type="checkbox" id="gVer" ${c.verify?'checked':''}> 검증 루프 — 시험 일행으로 돌려 목표 승률 ±15% 에 드는 것만 (수십 초)</label><label class="chk"><input type="checkbox" id="gFit" ${c.fit?'checked':''}> 체크 목표를 아래 일행에 맞추기</label></div>
   ${c.fit?gParty():''}
   <div class="row"><label class="f">씨앗<input type="number" id="gSeed" placeholder="무작위" value="${c.seed}" style="width:110px"></label><span class="sp"></span><button class="b pri" id="gGo">뽑기</button></div>`;

@@ -1,0 +1,390 @@
+{
+ "id": "auto_hard_988453",
+ "name": "봉쇄된 실험동 (어려움)",
+ "wn": 2,
+ "private": true,
+ "gen": {
+  "tier": "hard",
+  "knobs": {
+   "battles": 1,
+   "foes": 2,
+   "lv": 5,
+   "bossLv": 5,
+   "rest": "short",
+   "checks": 3,
+   "tgt": "v4mix",
+   "pen": "alert",
+   "hintTyped": 1,
+   "alCost": 10,
+   "alFail": 10,
+   "critAl": 10,
+   "rest2": 7,
+   "mixUp": 1
+  },
+  "seed": 988453,
+  "boss": "둥근토끼",
+  "brWant": 2,
+  "v": 1,
+  "auto": true,
+  "tough": "hard",
+  "shape": "꺾인길",
+  "theme": "연구소",
+  "rules": {
+   "restV": 2,
+   "alBattle": 5,
+   "alLose": 10,
+   "al30": 5,
+   "al70": 10,
+   "restShort": "all",
+   "restPO": 1,
+   "restPC": 1,
+   "restBreath": "one",
+   "restBC": 1
+  },
+  "source": "db",
+  "grades": {
+   "wild": [
+    "C"
+   ],
+   "boss": [
+    "A"
+   ]
+  },
+  "verify": {
+   "wr": 0.33,
+   "target": 0.3,
+   "band": 0.15,
+   "tries": 1,
+   "ok": true,
+   "cards": "base"
+  }
+ },
+ "rooms": [
+  {
+   "id": "entry",
+   "t": "entry",
+   "name": "화물 승강기",
+   "check": {
+    "label": "배전반 회로를 맞춘다",
+    "stat": "지시",
+    "target": 12,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "oo": 1,
+      "memo": "지시가 엇갈렸다",
+      "oc": 1
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "b1",
+   "t": "battle",
+   "name": "조립 라인",
+   "enc": {
+    "mix": [
+     {
+      "db": "w116"
+     },
+     {
+      "db": "w230"
+     }
+    ],
+    "lvAdd": 5
+   }
+  },
+  {
+   "id": "c1",
+   "t": "room",
+   "name": "배전반",
+   "check": {
+    "label": "기록의 암호를 읽는다",
+    "stat": "능력",
+    "target": 15,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "dmg": "1/3",
+      "st": "Paralysis",
+      "memo": "반동에 몸이 굳었다",
+      "oc": 1
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "safe",
+   "t": "safe",
+   "name": "휴게실",
+   "rest": "short",
+   "check": {
+    "label": "무너지는 통로를 함께 지난다",
+    "stat": "통솔",
+    "target": 12,
+    "hint": "type:독",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "st": "Confusion",
+      "cnt": 3,
+      "memo": "대열이 무너졌다",
+      "oc": 1
+     }
+    },
+    "pm": 0,
+    "base": 4,
+    "fit": {
+     "types": [
+      "독"
+     ],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "boss",
+   "t": "boss",
+   "name": "중앙 제어실",
+   "enc": {
+    "mix": [
+     {
+      "db": "w212"
+     },
+     {
+      "db": "w271"
+     },
+     {
+      "db": "w060"
+     },
+     {
+      "db": "w032"
+     },
+     {
+      "db": "w241"
+     },
+     {
+      "db": "w127"
+     }
+    ],
+    "boss": true,
+    "bossAt": 0,
+    "raid": 3,
+    "n": 6,
+    "lvAdd": 5
+   }
+  },
+  {
+   "id": "g1a1",
+   "t": "battle",
+   "name": "부서진 검사실",
+   "enc": {
+    "mix": [
+     {
+      "db": "w033"
+     },
+     {
+      "db": "w065"
+     }
+    ],
+    "lvAdd": 5
+   },
+   "alt": "g1"
+  },
+  {
+   "id": "g2a1",
+   "t": "room",
+   "name": "멈춘 컨베이어",
+   "check": {
+    "label": "정전 속에서 대열을 지킨다",
+    "stat": "통솔",
+    "target": 12,
+    "hint": "type:전기",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "st": "Confusion",
+      "cnt": 3,
+      "memo": "대열이 무너졌다",
+      "oc": 1
+     }
+    },
+    "pm": 0,
+    "base": 4,
+    "fit": {
+     "types": [
+      "전기"
+     ],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "alt": "g2"
+  },
+  {
+   "id": "tr",
+   "t": "treasure",
+   "side": 1,
+   "name": "잠긴 사물함",
+   "clue": {
+    "t": "주인의 흔적",
+    "d": "깊은 곳의 주인 — 「노말」 기운이 서려 있다.\n「격투」 쪽을 꺼리는 흔적이 남아 있다.\n「스톤에지」의 자국이 벽에 새겨져 있다.",
+    "auto": 1
+   },
+   "from": "g1a1"
+  },
+  {
+   "id": "s1",
+   "t": "room",
+   "side": 1,
+   "name": "환기 덕트",
+   "memo": "곁방 · 흔적 — 보스나 다음 방에 대한 단서 하나(GM 이 채운다)",
+   "from": "g1a1"
+  }
+ ],
+ "branches": [
+  {
+   "id": "g1",
+   "from": "b1",
+   "to": "safe",
+   "main": [
+    "c1"
+   ],
+   "alt": [
+    "g1a1"
+   ]
+  },
+  {
+   "id": "g2",
+   "from": "entry",
+   "to": "c1",
+   "main": [
+    "b1"
+   ],
+   "alt": [
+    "g2a1"
+   ]
+  }
+ ],
+ "map": {
+  "grid": {
+   "cols": 7,
+   "rows": 5,
+   "x0": 80,
+   "dx": 140,
+   "y0": 65,
+   "dy": 130
+  },
+  "shape": "꺾인길",
+  "turns": 2,
+  "cells": {
+   "entry": [
+    5,
+    3
+   ],
+   "b1": [
+    4,
+    3
+   ],
+   "c1": [
+    4,
+    4
+   ],
+   "safe": [
+    3,
+    4
+   ],
+   "boss": [
+    2,
+    4
+   ],
+   "g1a1": [
+    3,
+    3
+   ],
+   "g2a1": [
+    5,
+    4
+   ],
+   "tr": [
+    2,
+    3
+   ],
+   "s1": [
+    3,
+    2
+   ]
+  },
+  "links": {
+   "b1~entry": 1,
+   "b1~c1": 1,
+   "c1~safe": 1,
+   "boss~safe": 1,
+   "b1~g1a1": 1,
+   "g1a1~safe": 1,
+   "entry~g2a1": 1,
+   "c1~g2a1": 1,
+   "g1a1~tr": 1,
+   "g1a1~s1": 1
+  }
+ },
+ "path": [
+  "entry",
+  "b1",
+  "c1",
+  "safe",
+  "boss"
+ ],
+ "theme": "연구소",
+ "owner": "둥근토끼",
+ "rules": {
+  "restV": 2,
+  "alBattle": 5,
+  "alLose": 10,
+  "al30": 5,
+  "al70": 10,
+  "restShort": "all",
+  "restPO": 1,
+  "restPC": 1,
+  "restBreath": "one",
+  "restBC": 1
+ },
+ "note": "자동 생성 · 어려움 · 씨앗 988453 · 테마 연구소. 사전 배틀 1 · 체크 3 · 보스방 6체 · 레이드 배틀 : 3 · 지도 갈림길 2 · 꺾인길 + 곁방 2 · 야생 Lv +5 · 어려운 길(체크 목표 15)."
+}

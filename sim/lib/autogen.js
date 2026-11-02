@@ -13,7 +13,7 @@
 const fs=require('fs');
 const G=require('./gen.js'),BT=require('./battle.js');
 const COMMON={lv:5,bossLv:5,   /* 10-28 03:50 망령 「+1 은 웃기다 · +5/+10 기준으로 다른 걸 조정」 → 공통 Lv +5 (배틀마다 채우던 때 +10, 약식 엔진 −5) — docs/던전_자동생성.md */
- checks:[4,5,6],   /* 10-28 01:48 망령: 체크 수 3~5 무작위(전 난이도). 11-02 망령 「방 갯수는 조금씩 더 늘려도」 → 4~6 */
+ checks:[3,4,5],   /* 10-28 01:48 망령: 체크 수 3~5 무작위(전 난이도). 11-02 망령 「방 갯수는 조금씩 더 늘려도」 → 4~6. 11-02 14시 망령 「방이 또 너무 많다 · 8~12개」 → 다시 3~5 (방 수는 generate 가 ROOMS 로 맞춘다) */
  tgt:'v4mix',   /* 11-02 망령: 체크 목표를 보통 · 어려움 · 매우 어려움 섞기(gen.js MIX — 쉬움 던전 6:3:1 · 보통 4:4:2 · 어려움 2:5:3), 쉬움(8) 체크 없음 */pen:'alert',alCost:10,alFail:10,   /* 11-02 망령: 체크 실패 경계도 +20 → +10 (객원 2체 × 3명으로 재 보니 경계도 30↑ 이 88~98% 판 · 퇴출 22~45%) */   /* 10-29 v4: 체크 목표 = 난이도(쉬움 8 · 보통 10 · 어려움 12, gen.js V4) — 전엔 7 · 9 섞기(실행 때 10 · 12) */   /* 10-28 03:23 망령: 경계도 완화(옛 15 · 30) */
  rest:'short',hintTyped:1,foes:2};
 /* 「빡센 길」(10-28 01:48 망령 「수가 줄면 조금 더 어렵게나 빡세게」) — 03시 2단계로:
@@ -160,7 +160,7 @@ function generate1(o){o=o||{};const tier=o.tier||'normal';if(!PRESET[tier])throw
  /* 보물 방 하나(체크 · 조우 없음) — 지도 꾸밈 · 웹툴에서 단서 자리 */
  if(o.treasure!==false)dg.rooms.push({id:'tr',t:'treasure',side:1,name:nm(th.treasure),clue:bossClue(dg,rng)||{t:'단서',d:'(GM 이 채운다 — 보스의 약점 · 다음 장면의 실마리 등)'}});
  /* 곁방 0~2 — 막다른 통로(웹툴 「통로」). 시뮬은 안 걷는다(dg.path 밖). GM 이 숨은 것 · 단서 · 기습을 채울 자리 */
- const nSide=o.sideRooms!=null?+o.sideRooms:1+ri(3);   /* 11-02: 곁방 0~2 → 1~3 */const SK=['지시','육성','통솔','능력'];
+ const nSide=o.sideRooms!=null?+o.sideRooms:ri(2);   /* 11-02: 곁방 0~2 → 1~3. 14시 망령 「8~12개」 → 0~1 (보물 방은 따로 1) */const SK=['지시','육성','통솔','능력'];
  for(let i=0;i<nSide;i++){const kind=pick(SIDE_KIND);const r={id:'s'+(i+1),t:kind.t,side:1,name:nm(th.side||th.check),memo:'곁방 · '+kind.n+' — '+kind.memo};
   if(kind.k==='check'){const st=pick(SK);const L0=(th.chk[st]||[]).filter(x=>!usedLab.has(x)),L=L0.length?L0:(G.LABEL[st]||[]).filter(x=>!usedLab.has(x));const lab=L.length?pick(L):kind.n;usedLab.add(lab);   /* 11-01: 곁방 선택 체크 둘이 같은 문구였다 */r.check=Object.assign(require('./skill.js').up({label:lab,stat:st,target:9,hint:'any'}),{target:G.mixPick(G.MIX[tier]||G.MIX.normal,rng),optional:1,pen:{fail:{al:knobs.alCost||15,memo:'헛걸음 — 기척을 남겼다'}},reward:'성공하면 경계도 −10 또는 단서 하나'})}   /* 10-29 v4: 곁방 선택 체크도 난이도 목표 · 대가 없음 */
   if(kind.k==='ambush'){r.ambush=1}
@@ -201,6 +201,13 @@ function wildSpec(x,dg){const enc=x.enc;if(!enc||!enc.mix)return null;const W=en
   const tk=m.typesKo||[];return {name:m.name,t1:tk[0]||'-',t2:tk[1]||'-',base:(m.base||[]).slice(0,6),ability:m.ability||'',abilityEff:m.abilityEff||'',auto:m.auto&&Object.keys(m.auto).length?m.auto:undefined,item:m.item||'',moves:(m.moves||[]).map(v=>v&&v.name).filter(Boolean),pride:m.pride||'C',dist:+m.dist||0,boss,pots}})}}
 /* 11-02 망령 「갈림길이 거의 없는 1자형」: 갈림길 수를 정하지 않았으면 2개 이상 들어간 판이 나올 때까지 같은 씨앗 안에서 6번까지 다시 짠다.
    (첫 판에 2개 이상이면 11-02 첫 판과 같은 던전 — 씨앗이 같으면 늘 같은 던전) */
-function generate(o){o=o||{};if(o.branches!=null)return generate1(o);const seed=+o.seed||Math.floor(Math.random()*1e6);let best=null;
- for(let k=0;k<6;k++){const d=generate1(Object.assign({},o,{seed,_sub:k}));if(!best||(d.branches||[]).length>(best.branches||[]).length)best=d;if((d.branches||[]).length>=2)break}return best}
-module.exports={DEX_BST,generate,generate1,toWebtool,wildSpec,THEMES,PRESET,COMMON,RULES,TIER_KO,HINT_T};
+/* 11-02 14시 망령 「방이 또 너무 많다 · 8~12개로」: 방 수(입구 · 보스 · 다른 길 · 곁방 · 보물 방 모두) = ROOMS 안. 갈림길은 2개 이상을 먼저 노린다 */
+const ROOMS=[8,12];
+function generate(o){o=o||{};if(o.branches!=null)return generate1(o);const seed=+o.seed||Math.floor(Math.random()*1e6);const [lo,hi]=o.rooms||ROOMS;let best=null,bs=-1e9;
+ const score=d=>{const n=d.rooms.length,b=(d.branches||[]).length;const out=n<lo?lo-n:n>hi?n-hi:0;return -out*10+Math.min(b,2)*3-Math.abs(n-(lo+hi)/2)*0.1};
+ for(let k=0;k<30;k++){const d=generate1(Object.assign({},o,{seed,_sub:k}));
+  /* 넘치면 곁방(보물 방 빼고)부터 덜어 본다 */
+  while(d.rooms.length>hi){const i=d.rooms.findIndex(r=>r.side&&r.t!=='treasure');if(i<0)break;const id=d.rooms[i].id;d.rooms.splice(i,1);if(d.map&&d.map.cells)delete d.map.cells[id];if(d.map&&d.map.links)for(const k of Object.keys(d.map.links))if(k.split('~').includes(id))delete d.map.links[k]}
+  const sc=score(d);if(sc>bs){bs=sc;best=d}const n=d.rooms.length;if(n>=lo&&n<=hi&&(d.branches||[]).length>=2)break}
+ return best}
+module.exports={ROOMS,DEX_BST,generate,generate1,toWebtool,wildSpec,THEMES,PRESET,COMMON,RULES,TIER_KO,HINT_T};

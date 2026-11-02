@@ -1,0 +1,465 @@
+{
+ "id": "auto_easy_542894",
+ "name": "가라앉은 신전 (쉬움)",
+ "wn": 2,
+ "private": true,
+ "gen": {
+  "tier": "easy",
+  "knobs": {
+   "battles": 0,
+   "foes": 2,
+   "lv": 5,
+   "bossLv": 5,
+   "rest": "short",
+   "checks": 4,
+   "tgt": "v4mix",
+   "pen": "alert",
+   "hintTyped": 1,
+   "alCost": 10,
+   "alFail": 10,
+   "critAl": 10
+  },
+  "seed": 542894,
+  "boss": "환고양이",
+  "brWant": 2,
+  "v": 1,
+  "auto": true,
+  "tough": "",
+  "shape": "꺾인길",
+  "theme": "유적",
+  "rules": {
+   "restV": 2,
+   "alBattle": 5,
+   "alLose": 10,
+   "al30": 5,
+   "al70": 10,
+   "restShort": "all",
+   "restPO": 1,
+   "restPC": 1,
+   "restBreath": "one",
+   "restBC": 1
+  },
+  "source": "db",
+  "grades": {
+   "wild": [
+    "C"
+   ],
+   "boss": [
+    "B",
+    "A"
+   ]
+  },
+  "verify": {
+   "wr": 0.93,
+   "target": 0.8,
+   "band": 0.15,
+   "tries": 3,
+   "ok": true,
+   "cards": "base"
+  }
+ },
+ "rooms": [
+  {
+   "id": "entry",
+   "t": "entry",
+   "name": "모래 계단",
+   "check": {
+    "label": "바닥 장치의 순서를 읽는다",
+    "stat": "지시",
+    "target": 12,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "oc": 2,
+      "memo": "우왕좌왕했다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "c1",
+   "t": "trap",
+   "name": "바람 구멍",
+   "check": {
+    "label": "유물의 진위를 가린다",
+    "stat": "육성",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "dmg": "1/8",
+      "memo": "야생에게 물렸다"
+     }
+    },
+    "pm": 0,
+    "base": 1,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "c2",
+   "t": "room",
+   "name": "거울 회랑",
+   "check": {
+    "label": "유물의 기억을 읽는다",
+    "stat": "능력",
+    "target": 15,
+    "hint": "type:고스트",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "dmg": "1/4",
+      "memo": "크게 휘말렸다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [
+      "고스트"
+     ],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "safe",
+   "t": "safe",
+   "name": "순례자의 방",
+   "rest": "short",
+   "check": {
+    "label": "어둠 속 대열을 지킨다",
+    "stat": "통솔",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "oc": 2,
+      "memo": "모두 지쳤다"
+     }
+    },
+    "pm": 0,
+    "base": 4,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "boss",
+   "t": "boss",
+   "name": "금서고",
+   "enc": {
+    "mix": [
+     {
+      "db": "w165"
+     },
+     {
+      "db": "w135"
+     },
+     {
+      "db": "w029"
+     },
+     {
+      "db": "w031"
+     }
+    ],
+    "boss": true,
+    "bossAt": 0,
+    "raid": 2,
+    "n": 4,
+    "lvAdd": 5
+   }
+  },
+  {
+   "id": "g1a1",
+   "t": "room",
+   "alt": "g1",
+   "filler": 1,
+   "memo": "돌아가는 길 · 숨은 물건 — 살피면 소지품 · 열매 하나(GM 이 정한다). 체크 없음",
+   "name": "벽화의 방"
+  },
+  {
+   "id": "g1a2",
+   "t": "puzzle",
+   "name": "별자리 천장",
+   "check": {
+    "label": "석상에 깃든 포켓몬을 달랜다",
+    "stat": "육성",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "st": "Poison",
+      "memo": "독이 있는 것에 닿았다"
+     }
+    },
+    "pm": 0,
+    "base": 1,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "alt": "g1"
+  },
+  {
+   "id": "g1a3",
+   "t": "battle",
+   "name": "제단 앞",
+   "enc": {
+    "mix": [
+     {
+      "db": "w240"
+     },
+     {
+      "db": "w248"
+     }
+    ],
+    "lvAdd": 5
+   },
+   "alt": "g1"
+  },
+  {
+   "id": "g2a1",
+   "t": "puzzle",
+   "name": "물이 찬 통로",
+   "check": {
+    "label": "옛 문자를 해독한다",
+    "stat": "지시",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "oc": 2,
+      "memo": "우왕좌왕했다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "alt": "g2"
+  },
+  {
+   "id": "g2a2",
+   "t": "battle",
+   "name": "지하 납골당",
+   "enc": {
+    "mix": [
+     {
+      "db": "w232"
+     },
+     {
+      "db": "w154"
+     }
+    ],
+    "lvAdd": 5
+   },
+   "alt": "g2"
+  },
+  {
+   "id": "g2a3",
+   "t": "room",
+   "alt": "g2",
+   "filler": 1,
+   "memo": "돌아가는 길 · 숨은 물건 — 살피면 소지품 · 열매 하나(GM 이 정한다). 체크 없음",
+   "name": "갈라진 벽틈"
+  },
+  {
+   "id": "tr",
+   "t": "treasure",
+   "side": 1,
+   "name": "봉헌함",
+   "clue": {
+    "t": "주인의 흔적",
+    "d": "깊은 곳의 주인 — 「에스퍼」 기운이 서려 있다.\n「벌레」 · 「고스트」 · 「악」 쪽을 꺼리는 흔적이 남아 있다.\n「사이코브레이크」의 자국이 벽에 새겨져 있다.",
+    "auto": 1
+   },
+   "from": "safe"
+  }
+ ],
+ "branches": [
+  {
+   "id": "g1",
+   "from": "entry",
+   "to": "c2",
+   "main": [
+    "c1"
+   ],
+   "alt": [
+    "g1a1",
+    "g1a2",
+    "g1a3"
+   ],
+   "detour": 1
+  },
+  {
+   "id": "g2",
+   "from": "c1",
+   "to": "safe",
+   "main": [
+    "c2"
+   ],
+   "alt": [
+    "g2a1",
+    "g2a2",
+    "g2a3"
+   ],
+   "detour": 1
+  }
+ ],
+ "map": {
+  "grid": {
+   "cols": 7,
+   "rows": 5,
+   "x0": 80,
+   "dx": 140,
+   "y0": 65,
+   "dy": 130
+  },
+  "shape": "꺾인길",
+  "turns": 0,
+  "cells": {
+   "entry": [
+    6,
+    1
+   ],
+   "c1": [
+    5,
+    1
+   ],
+   "c2": [
+    4,
+    1
+   ],
+   "safe": [
+    3,
+    1
+   ],
+   "boss": [
+    2,
+    1
+   ],
+   "g1a1": [
+    6,
+    2
+   ],
+   "g1a2": [
+    5,
+    2
+   ],
+   "g1a3": [
+    4,
+    2
+   ],
+   "g2a1": [
+    5,
+    0
+   ],
+   "g2a2": [
+    4,
+    0
+   ],
+   "g2a3": [
+    3,
+    0
+   ],
+   "tr": [
+    3,
+    2
+   ]
+  },
+  "links": {
+   "c1~entry": 1,
+   "c1~c2": 1,
+   "c2~safe": 1,
+   "boss~safe": 1,
+   "entry~g1a1": 1,
+   "g1a1~g1a2": 1,
+   "g1a2~g1a3": 1,
+   "c2~g1a3": 1,
+   "c1~g2a1": 1,
+   "g2a1~g2a2": 1,
+   "g2a2~g2a3": 1,
+   "g2a3~safe": 1,
+   "safe~tr": 1
+  }
+ },
+ "path": [
+  "entry",
+  "c1",
+  "c2",
+  "safe",
+  "boss"
+ ],
+ "theme": "유적",
+ "owner": "환고양이",
+ "rules": {
+  "restV": 2,
+  "alBattle": 5,
+  "alLose": 10,
+  "al30": 5,
+  "al70": 10,
+  "restShort": "all",
+  "restPO": 1,
+  "restPC": 1,
+  "restBreath": "one",
+  "restBC": 1
+ },
+ "note": "자동 생성 · 쉬움 · 씨앗 542894 · 테마 유적. 사전 배틀 0 · 체크 4 · 보스방 4체 · 레이드 배틀 : 2 · 지도 갈림길 2 · 꺾인길 + 곁방 1 · 야생 Lv +5."
+}
