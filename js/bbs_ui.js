@@ -17,7 +17,7 @@ window.OM_BBS_UI=(()=>{
  /* 11-02: 세션 노트에는 전역 cssu 가 없다 (그림 있는 글쓴이에서 멈추던 원인) */
  const cssu=s=>String(s??'').replace(/[\s"'()\\<>]/g,c=>'%'+c.charCodeAt(0).toString(16).padStart(2,'0').toUpperCase());
  const LS={get:(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
- const S={rows:new Map(),boards:[],ver:0,board:'free',open:false,md:null,open2:new Set(),draft:'',anon:false,imgUrl:'',busy:false,err:'',noSql:false,cdraft:{},room:'',lastPoll:0,unread:0,env:null,who:null,embed:false,ekey:''};
+ const S={rows:new Map(),boards:[],ver:0,board:'free',open:false,md:null,open2:new Set(),draft:'',anon:false,imgUrl:'',busy:false,err:'',noSql:false,cdraft:{},room:'',lastPoll:0,unread:0,env:null,who:null,embed:false,ekey:'',more:new Set(),pmore:false,pend:false};
  const isNoFn=e=>{const m=String((e&&(e.message||e.details||e.code))||'');return /PGRST202|Could not find the function|function .* does not exist/i.test(m)};
  /* om_bbs_* RPC 를 아무 rpc(fn,args) 함수로 */
  function apiFromRpc(rpc){return {noFn:isNoFn,boards:(r,s)=>rpc('om_bbs_boards',{p_room:r,p_secret:s||''}),
@@ -73,7 +73,7 @@ window.OM_BBS_UI=(()=>{
    const L=await API().feed(room(),sec(),full?0:S.ver);if(full)S.rows.clear();
    for(const r of L||[]){S.rows.set(String(r.id),r);if(+r.ver>S.ver)S.ver=+r.ver}
    S.noSql=false;S.err=''}catch(e){if(API().noFn(e))S.noSql=true;else S.err=String((e&&e.message)||e)}
-  S.lastPoll=Date.now();countUnread();if(S.open)draw()}
+  S.lastPoll=Date.now();countUnread();redraw()}
  function boardList(){const L=S.boards.filter(b=>b&&b.id);if(!L.some(b=>b.id==='free'))L.unshift({id:'free',name:'자유게시판',descr:'아무 이야기나',w:'gm',ord:0,virt:1});return L.sort((a,b)=>(+a.ord||0)-(+b.ord||0))}
  function countUnread(){const seen=+LS.get(seenKey(),0)||0;let n=0;const by={};for(const r of S.rows.values()){if(r.del||+r.ver<=seen)continue;if(r.w&&role()==='seat'&&r.w===mySeat())continue;if(role()==='gm'&&r.w==='gm')continue;n++;by[r.board]=(by[r.board]||0)+1}S.unread=n;S.unreadBy=by;fab()}
  function markSeen(){LS.set(seenKey(),S.ver);countUnread()}
@@ -102,24 +102,61 @@ window.OM_BBS_UI=(()=>{
  function commentsHtml(r,kids,open){if(!open)return '';const d=S.cdraft[r.id]||'';
   return `<div class="bbs-cms">${kids.map(c=>{const who=c.who||{};if(c.del)return '<div class="bbs-cm gone">지운 댓글</div>';return `<div class="bbs-cm">${avatar(c.anon&&who.n!=='익명'?{n:'익명'}:who,c.anon)}<div><div class="bbs-nm">${nameOf(c)}<time>${esc(fmtT(c.at))}</time>${mine(c.w)&&c.w?`<button type="button" class="bbs-x" data-bb="del" data-id="${c.id}" title="지우기" aria-label="댓글 지우기">✕</button>`:''}</div><div class="bbs-body">${bodyHtml(c.body)}</div></div></div>`}).join('')}
    ${canWrite()&&!r.del?`<form class="bbs-cform" data-cf="${r.id}"><input type="text" maxlength="1000" placeholder="댓글 달기" value="${esc(d)}" data-cin="${r.id}" aria-label="댓글"><label class="bbs-anon"><input type="checkbox" data-canon="${r.id}"> 익명</label><button type="submit" class="btn xs">달기</button></form>`:''}</div>`}
+ /* ----- 11-02 망령 「게시판 창 양쪽으로 — 왼쪽은 휴대폰처럼(내 입력칸 · 연락처), 오른쪽은 게시물. 6개쯤 보이고 그 뒤는 접어서」 -----
+   웹툴 창(embed 아님)만 두 칸. 휴대폰 · 세션 노트 안은 한 줄 그대로(접기만 같이). 휴대폰 앱 · 연락처는 OM_PHONE_UI(bookFor · openFor) */
+ const FOLD=6;
+ const typing=()=>{const a=document.activeElement;return !!(S.md&&a&&S.md.contains(a)&&a.matches('input[type=text],input[type=search],textarea'))};
+ function redraw(){if(!S.open)return;if(typing()){S.pend=true;return}S.pend=false;draw()}
+ function myCids(){const au=curAuthor();if(role()==='seat')return new Set(authors().map(x=>x.cid));return new Set(au?[au.cid]:[])}
+ /* 휴대폰 주인: 좌석은 내 트레이너, GM 은 지금 글쓴이(포켓몬이면 그 트레이너, 관계도 인물은 n:id, GM 은 없음) */
+ function phoneTid(au){if(role()==='seat')return mySeat();const c=(au&&au.cid)||'';if(!c||c==='gm')return '';if(c.startsWith('pm:')){const m=((((ST().state||{}).roster||{}).mons)||{})[c.slice(3)];return (m&&m.tid)||''}return c}
+ const PHONE=()=>!S.embed&&window.OM_APP&&window.OM_PHONE_UI&&window.OM_PHONE_UI.openFor?window.OM_PHONE_UI:null;
+ function composeHtml(au,AL,cur){if(!canWrite())return '<p class="small dim">관전 중에는 읽기만 할 수 있어요.</p>';if(S.noSql)return '';const split=!S.embed;
+  const whoRow=split?'':`<div class="bbs-crow">${avatar(S.anon?{n:'익명'}:au||{},S.anon)}${AL.length>1?`<button type="button" class="bbs-who" data-bb="who" aria-haspopup="dialog" title="글쓴이 고르기"><span><b>${esc(au?au.n:'?')}</b><small>${esc(au&&au.sub||'')}</small></span><span class="bbs-car" aria-hidden="true">▾</span></button>`:`<span class="bbs-whos"><b>${esc(au?au.n:'?')}</b>${au&&au.sub?`<small>${esc(au.sub)}</small>`:''}</span>`}<label class="bbs-anon"><input type="checkbox" data-bb-anon ${S.anon?'checked':''}> 익명</label></div>`;
+  return `<form class="bbs-compose" data-bb-form="post">${whoRow}${split?`<div class="bbs-to"><span>📋 <b>${esc(cur.name)}</b>에 올려요</span><span class="sp"></span><label class="bbs-sw" title="남에게는 「익명」, GM 에게만 이름이 보여요"><input type="checkbox" data-bb-anon ${S.anon?'checked':''}><i aria-hidden="true"></i>익명</label></div>`:''}
+     <textarea maxlength="4000" rows="3" placeholder="${split?'오늘 학교에서 무슨 일이 있었나요?':'무슨 일이 있었나요?'}" data-bb-text aria-label="글">${esc(S.draft)}</textarea>
+     ${S.imgUrl?`<div class="bbs-pimg"><img src="${esc(S.imgUrl)}" alt=""><button type="button" class="bbs-x" data-bb="noimg" aria-label="그림 빼기">✕</button></div>`:''}
+     <div class="bbs-crow"><label class="btn xs ghost bbs-file">🖼 그림<input type="file" accept="image/*" data-bb-file hidden></label>${split?'':`<span class="small dim">${S.anon?'남에게는 「익명」, GM 에게만 이름이 보여요':'그림은 여기로 끌어다 놓거나 Ctrl+V 로 붙여 넣어도 돼요'}</span>`}<span class="sp"></span><button type="submit" class="btn xs pri" ${S.busy?'disabled':''}>${S.busy?'올리는 중…':'올리기'}</button></div>
+     ${split?`<p class="bbs-hint">${S.anon?'남에게는 「익명」, GM 과 나에게만 이름이 보여요':'그림은 끌어다 놓거나 Ctrl+V 로 붙여 넣어도 돼요'}</p>`:''}</form>`}
+ /* 오른쪽(또는 한 줄) 글 목록: 앞 6개 + 「이전 글 N개 더 보기」 */
+ function feedHtml(cur,tops,kidsOf){const open=S.more.has(cur.id);const rest=tops.length-FOLD;const L=open||rest<=0?tops:tops.slice(0,FOLD);
+  return `<div class="bbs-feed">${tops.length?L.map(r=>postHtml(r,kidsOf(r.id))).join(''):'<p class="bbs-empty">아직 글이 없어요. 첫 글을 올려 보세요.</p>'}</div>
+   ${rest>0?`<button type="button" class="bbs-more ${open?'on':''}" data-bb="more" aria-expanded="${open}">${open?'▴ 접기 — 최근 6개만 보기':`▾ 이전 글 ${rest}개 더 보기`}</button>`:''}`}
+ /* 왼쪽 휴대폰 칸 */
+ function phoneHtml(au,AL,cur){const all=[...S.rows.values()].filter(r=>!r.del);const me=myCids();const mineR=all.filter(r=>r.who&&me.has(r.who.cid));
+  const nPost=mineR.filter(r=>!r.parent).length,nCm=mineR.filter(r=>r.parent).length,nLike=mineR.reduce((a,r)=>a+(Array.isArray(r.likes)?r.likes.length:0),0);
+  const myPost=new Map(all.filter(r=>!r.parent&&r.who&&me.has(r.who.cid)).map(r=>[String(r.id),r]));
+  const noti=all.filter(r=>r.parent&&myPost.has(String(r.parent))&&!(r.who&&me.has(r.who.cid))).sort((a,b)=>+b.id-+a.id).slice(0,5);
+  const BN=Object.fromEntries(boardList().map(b=>[b.id,b.name]));
+  const cal=((ST().state||{}).calendar)||{};const when=[cal.today?(()=>{const d=new Date(cal.today+'T00:00:00');return isNaN(d)?cal.today:`${d.getMonth()+1}월 ${d.getDate()}일 ${'일월화수목금토'[d.getDay()]}요일`})():'',cal.phase||''].filter(Boolean).join(' · ');
+  const P=PHONE();const tid=phoneTid(au);let book=[];if(P&&tid&&P.bookFor)try{book=P.bookFor(tid)||[]}catch(e){book=[]}
+  const un=P&&role()==='seat'&&P.unreadAll?(()=>{try{return P.unreadAll()}catch(e){return 0}})():0;
+  const apps=[['contacts','📞','연락처'],['sms','💬','문자',un],['sns','📸','SNS'],['cal','📅','캘린더'],['notes','📝','메모장'],['home','📱','휴대폰']];
+  const prof=`${avatar(S.anon?{n:'익명'}:au||{},S.anon)}<span class="bbs-pmi"><b>${esc(S.anon?'익명':au?au.n:'?')}</b><small>${esc(S.anon?(au?au.n+' (GM · 나만 알아요)':''):(au&&au.sub)||'')}</small><small class="bbs-pstat">글 ${nPost} · 댓글 ${nCm} · ♥ ${nLike}</small></span>`;
+  return `<aside class="bbs-phone ${S.pmore?'more':''}" aria-label="내 휴대폰">
+   <div class="bbs-pst"><span>${esc(when||'학교 게시판')}</span><span class="sp"></span><span class="bbs-bat" aria-hidden="true">▮▮▮</span></div>
+   ${canWrite()&&AL.length>1?`<button type="button" class="bbs-pme" data-bb="who" aria-haspopup="dialog" title="글쓴이 고르기">${prof}<span class="bbs-pch">바꾸기 ▾</span></button>`:`<div class="bbs-pme">${prof}</div>`}
+   ${composeHtml(au,AL,cur)}
+   ${P||noti.length?`<button type="button" class="bbs-pmorebtn" data-bb="pmore" aria-expanded="${!!S.pmore}">${S.pmore?'▴ 휴대폰 접기':'▾ 휴대폰 — 앱 · 알림 · 연락처'}${noti.length?` <em class="bbs-dot">${noti.length}</em>`:''}</button>`:''}
+   <div class="bbs-pextra">
+    ${P?`<div class="bbs-apps">${apps.map(([k,ic,n,bd])=>`<button type="button" class="bbs-app" data-bb="app" data-scr="${k}" ${tid||k==='home'?'':'disabled title="GM 이름으로는 휴대폰이 없어요 — 글쓴이를 사람으로 바꿔 주세요"'}><i>${ic}${bd?`<em class="bbs-dot">${bd>99?'99+':bd}</em>`:''}</i><span>${n}</span></button>`).join('')}</div>`:''}
+    <div class="bbs-psec">내 글 반응 <span class="sp"></span><small>${noti.length?'최근 댓글':''}</small></div>
+    <div class="bbs-plist">${noti.length?noti.map(c=>{const p=myPost.get(String(c.parent));const w=c.anon?{n:'익명'}:c.who||{};return `<button type="button" class="bbs-pit" data-bb="goto" data-id="${p.id}">${avatar(w,c.anon)}<span class="bbs-pit-t"><b>${esc(c.anon?'익명':w.n||'?')} <small>· ${esc(BN[p.board]||'')}</small></b><small>${esc(String(c.body||'').slice(0,60))}</small></span><time>${esc(fmtT(c.at))}</time></button>`}).join(''):`<p class="bbs-pempty">${nPost?'아직 내 글에 달린 댓글이 없어요':'글을 올리면 달린 댓글이 여기 모여요'}</p>`}</div>
+    ${P&&tid?`<div class="bbs-psec">연락처 <span class="sp"></span><button type="button" class="bbs-plink" data-bb="app" data-scr="contacts">모두 보기 ›</button></div>
+    <div class="bbs-plist">${book.length?book.slice(0,8).map(c=>`<button type="button" class="bbs-pit" data-bb="dm" data-cid="${esc(c.cid)}" title="${esc(c.n)}에게 문자">${avatar({n:c.n,img:c.img},false)}<span class="bbs-pit-t"><b>${esc(c.n)}</b><small>${esc(c.sub||'')}</small></span><span class="bbs-pdm" aria-hidden="true">💬</span></button>`).join('')+(book.length>8?`<p class="bbs-pempty">… ${book.length-8}명 더 — 「모두 보기」</p>`:''):'<p class="bbs-pempty">아직 연락처가 없어요 — 휴대폰 「연락처」에서 건네거나 넣어 주세요</p>'}</div>`:''}
+   </div></aside>`}
  function draw(){const md=S.md;if(!md||!document.body.contains(md)){S.open=false;return}
   const B=boardList();if(!B.some(b=>b.id===S.board))S.board=B[0].id;const cur=B.find(b=>b.id===S.board)||B[0];
   const rows=[...S.rows.values()].filter(r=>r.board===cur.id);const tops=rows.filter(r=>!r.parent).sort((a,b)=>+b.id-+a.id);const kidsOf=id=>rows.filter(r=>String(r.parent)===String(id)).sort((a,b)=>+a.id-+b.id);
-  const au=curAuthor();const AL=authors();const canEditB=cur&&!cur.virt&&(role()==='gm'||(role()==='seat'&&cur.w===mySeat()));
-  md.classList.toggle('bbs-embed',!!S.embed&&S.compact!==false);md.classList.toggle('bbs-in',!!S.embed);md.innerHTML=`${S.embed?`<div class="bbs-ehead">${S.compact===false?'':'<b>학교 게시판</b>'}<small>${esc((E().roomName||(()=>''))())}</small><span class="sp"></span><button type="button" class="btn xs ghost" data-bb="refresh" title="새로 받아 오기">↻</button></div>`:`<div class="mhead"><h2>학교 게시판</h2><span class="small dim">${esc((E().roomName||(()=>''))())}</span><span class="sp"></span><button type="button" class="btn ghost" data-bb="refresh" title="새로 받아 오기">↻</button><button type="button" class="btn ghost" data-x>닫기</button></div>`}
+  const au=curAuthor();const AL=authors();const canEditB=cur&&!cur.virt&&(role()==='gm'||(role()==='seat'&&cur.w===mySeat()));const split=!S.embed;
+  const boardsNav=`<nav class="bbs-boards" aria-label="게시판">${B.map(b=>`<button type="button" class="bbs-bd ${b.id===cur.id?'on':''} ${b.hidden?'hid':''}" data-bb="board" data-id="${esc(b.id)}" aria-pressed="${b.id===cur.id}"><span>${esc(b.name)}</span>${(S.unreadBy||{})[b.id]&&b.id!==cur.id?`<b class="bbs-dot" aria-label="새 글">${S.unreadBy[b.id]}</b>`:''}</button>`).join('')}
+    ${canWrite()?`<button type="button" class="bbs-bd add" data-bb="newb">＋ 게시판 만들기</button>`:''}</nav>`;
+  const bhead=`<div class="bbs-bhead"><div><h3>${esc(cur.name)}${cur.hidden?' <small class="dim">(숨김)</small>':''} <small class="bbs-cnt">${tops.length}</small></h3>${cur.descr?`<p class="small dim">${esc(cur.descr)}</p>`:''}</div><span class="sp"></span>${canEditB?`<button type="button" class="btn xs ghost" data-bb="editb">고치기</button>${role()==='gm'?`<button type="button" class="btn xs ghost" data-bb="hideb">${cur.hidden?'보이기':'숨기기'}</button>`:''}<button type="button" class="btn xs ghost danger" data-bb="delb">지우기</button>`:''}</div>`;
+  md.classList.toggle('bbs-embed',!!S.embed&&S.compact!==false);md.classList.toggle('bbs-in',!!S.embed);md.classList.toggle('bbs-split',split);
+  md.innerHTML=`${S.embed?`<div class="bbs-ehead">${S.compact===false?'':'<b>학교 게시판</b>'}<small>${esc((E().roomName||(()=>''))())}</small><span class="sp"></span><button type="button" class="btn xs ghost" data-bb="refresh" title="새로 받아 오기">↻</button></div>`:`<div class="mhead"><h2>학교 게시판</h2><span class="small dim">${esc((E().roomName||(()=>''))())}</span><span class="sp"></span><button type="button" class="btn ghost" data-bb="refresh" title="새로 받아 오기">↻</button><button type="button" class="btn ghost" data-x>닫기</button></div>`}
   ${S.noSql?`<p class="bbs-warn">${esc(noSqlMsg)}</p>`:''}${S.err?`<p class="bbs-warn">${esc(S.err)}</p>`:''}
-  <div class="bbs-wrap">
-   <nav class="bbs-boards" aria-label="게시판">${B.map(b=>`<button type="button" class="bbs-bd ${b.id===cur.id?'on':''} ${b.hidden?'hid':''}" data-bb="board" data-id="${esc(b.id)}"><span>${esc(b.name)}</span>${(S.unreadBy||{})[b.id]&&b.id!==cur.id?`<b class="bbs-dot" aria-label="새 글">${S.unreadBy[b.id]}</b>`:''}</button>`).join('')}
-    ${canWrite()?`<button type="button" class="bbs-bd add" data-bb="newb">＋ 게시판 만들기</button>`:''}</nav>
-   <section class="bbs-main">
-    <div class="bbs-bhead"><div><h3>${esc(cur.name)}${cur.hidden?' <small class="dim">(숨김)</small>':''}</h3>${cur.descr?`<p class="small dim">${esc(cur.descr)}</p>`:''}</div><span class="sp"></span>${canEditB?`<button type="button" class="btn xs ghost" data-bb="editb">고치기</button>${role()==='gm'?`<button type="button" class="btn xs ghost" data-bb="hideb">${cur.hidden?'보이기':'숨기기'}</button>`:''}<button type="button" class="btn xs ghost danger" data-bb="delb">지우기</button>`:''}</div>
-    ${canWrite()&&!S.noSql?`<form class="bbs-compose" data-bb-form="post">
-     <div class="bbs-crow">${avatar(S.anon?{n:'익명'}:au||{},S.anon)}${AL.length>1?`<button type="button" class="bbs-who" data-bb="who" aria-haspopup="dialog" title="글쓴이 고르기"><span><b>${esc(au?au.n:'?')}</b><small>${esc(au&&au.sub||'')}</small></span><span class="bbs-car" aria-hidden="true">▾</span></button>`:`<span class="bbs-whos"><b>${esc(au?au.n:'?')}</b>${au&&au.sub?`<small>${esc(au.sub)}</small>`:''}</span>`}<label class="bbs-anon"><input type="checkbox" data-bb-anon ${S.anon?'checked':''}> 익명</label></div>
-     <textarea maxlength="4000" rows="3" placeholder="무슨 일이 있었나요?" data-bb-text aria-label="글">${esc(S.draft)}</textarea>
-     ${S.imgUrl?`<div class="bbs-pimg"><img src="${esc(S.imgUrl)}" alt=""><button type="button" class="bbs-x" data-bb="noimg" aria-label="그림 빼기">✕</button></div>`:''}
-     <div class="bbs-crow"><label class="btn xs ghost bbs-file">🖼 그림<input type="file" accept="image/*" data-bb-file hidden></label><span class="small dim">${S.anon?'남에게는 「익명」, GM 에게만 이름이 보여요':'그림은 여기로 끌어다 놓거나 Ctrl+V 로 붙여 넣어도 돼요'}</span><span class="sp"></span><button type="submit" class="btn xs pri" ${S.busy?'disabled':''}>${S.busy?'올리는 중…':'올리기'}</button></div></form>`:(!canWrite()?'<p class="small dim">관전 중에는 읽기만 할 수 있어요.</p>':'')}
-    <div class="bbs-feed">${tops.length?tops.map(r=>postHtml(r,kidsOf(r.id))).join(''):'<p class="bbs-empty">아직 글이 없어요. 첫 글을 올려 보세요.</p>'}</div>
-   </section></div>`;
+  ${split?`<div class="bbs-split2">${phoneHtml(au,AL,cur)}<section class="bbs-main bbs-right">${boardsNav}${bhead}${feedHtml(cur,tops,kidsOf)}</section></div>`
+  :`<div class="bbs-wrap">${boardsNav}<section class="bbs-main">${bhead}${composeHtml(au,AL,cur)}${feedHtml(cur,tops,kidsOf)}</section></div>`}`;
   if(!S.embed)md.querySelectorAll('[data-x]').forEach(b=>b.onclick=close)}
 
  /* ----- 동작 ----- */
@@ -128,7 +165,12 @@ window.OM_BBS_UI=(()=>{
  async function act(fn,okMsg){try{await fn();if(okMsg)toast(okMsg);notify();await pull()}catch(e){toast(API().noFn(e)?noSqlMsg:String((e&&e.message)||e))}}
  function onClick(e){const b=e.target.closest('[data-bb]');if(!b||!S.md||!S.md.contains(b))return;const k=b.dataset.bb,id=b.dataset.id;
   if(k==='who'){openWho(b);return}
-  if(k==='board'){S.board=id;draw();return}
+  if(k==='board'){S.board=id;draw();const r=S.md.querySelector('.bbs-right');if(r)r.scrollTop=0;return}
+  if(k==='more'){const bd=S.board;const was=S.more.has(bd);if(was)S.more.delete(bd);else S.more.add(bd);draw();if(was){const r=S.md.querySelector('.bbs-right');const m=S.md.querySelector('.bbs-more');if(m)m.scrollIntoView({block:'nearest'});else if(r)r.scrollTop=0}return}
+  if(k==='pmore'){S.pmore=!S.pmore;draw();return}
+  if(k==='goto'){const r=S.rows.get(String(id));if(!r)return;S.board=r.board;S.open2.add(String(r.id));const tops=[...S.rows.values()].filter(x=>x.board===r.board&&!x.parent).sort((a,b)=>+b.id-+a.id);if(tops.findIndex(x=>String(x.id)===String(r.id))>=FOLD)S.more.add(r.board);draw();
+   const el=S.md.querySelector(`.bbs-post[data-pid="${r.id}"]`);if(el){el.scrollIntoView({block:'center',behavior:'smooth'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1600)}return}
+  if(k==='app'||k==='dm'){const P=PHONE();if(!P)return;const tid=phoneTid(curAuthor());const scr=b.dataset.scr||'home';const cid=k==='dm'?b.dataset.cid:'';close();P.openFor(tid,scr,cid);return}
   if(k==='refresh'){pull(true);return}
   if(k==='like'){act(()=>API().like(room(),sec(),+id));return}
   if(k==='cm'){const s=String(id);if(S.open2.has(s))S.open2.delete(s);else S.open2.add(s);draw();const i=S.md.querySelector(`[data-cin="${s}"]`);if(i)i.focus();return}
@@ -176,4 +218,6 @@ window.OM_BBS_UI=(()=>{
   if(window.OM_APP&&window.OM_STORE)fab();if(!room())return;
   const gap=S.open?20000:(window.OM_APP?90000:0);if(gap&&Date.now()-S.lastPoll>gap&&!S.noSql)pull()},2000);
  document.addEventListener('click',onClick);document.addEventListener('submit',onSubmit);document.addEventListener('input',onInput);document.addEventListener('change',onChange);document.addEventListener('dragover',onDragOver);document.addEventListener('drop',onDrop);document.addEventListener('paste',onPaste);
- return {V:5,openBoard,mount,onEvent,pull,apiFromRpc,unread:()=>S.unread}})();   /* V: 세션 노트가 이보다 옛 것을 들고 있으면 다시 불러온다 */
+ /* 글 쓰는 중에 새 글이 와도 칸을 다시 그리지 않는다 (쓰던 칸이 풀리던 것) — 칸을 떠나면 그때 */
+ document.addEventListener('focusout',e=>{if(!S.pend||!S.md||!S.md.contains(e.target))return;setTimeout(()=>{if(S.pend&&!typing())redraw()},0)});
+ return {V:6,openBoard,mount,onEvent,pull,apiFromRpc,unread:()=>S.unread}})();   /* V: 세션 노트가 이보다 옛 것을 들고 있으면 다시 불러온다 */

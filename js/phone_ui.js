@@ -416,5 +416,9 @@ window.OM_PHONE_UI=(()=>{
   const cq=$('#ph_cq',md);if(cq){const f=()=>{const q=cq.value.trim().toLowerCase();PH.cq=cq.value;md.querySelectorAll('#phScreen .ph-list .ph-item').forEach(it=>{it.style.display=!q||it.textContent.toLowerCase().includes(q)?'':'none'})};cq.oninput=f;if(cq.value)f()}}
  /* 상태가 바뀌면 열린 화면 중 남이 바꾸는 것(덱)만 다시 그린다 — 입력 중이면 건드리지 않는다 */
  let rfT=0;function refresh(){if(PH.screen!=='deck'&&PH.screen!=='party')return;clearTimeout(rfT);rfT=setTimeout(()=>{const md=$('.modal.phone-modal');if(!md)return;const a=document.activeElement;if(a&&md.contains(a)&&a.matches('input,textarea,select'))return;draw(md)},60)}
- return {open,onSms,unreadAll,popSms,refresh};
+ /* 11-02 망령 「게시판 왼쪽을 휴대폰처럼」: 학교 게시판 창(js/bbs_ui.js)이 휴대폰 주인의 연락처를 보여 주고, 앱 · 연락처를 누르면 휴대폰을 그 화면으로 연다.
+    tid = 휴대폰 주인(트레이너 id 또는 'n:'+관계도 노드). 좌석은 늘 내 트레이너. cid 를 주면 그 사람과의 1:1 문자 */
+ function bookFor(tid){if(!tid)return [];return bookOf(tid).map(e=>{const real=cidName(e.cid);return {cid:e.cid,n:e.n||real,img:cidImg(e.cid),sub:[e.n&&e.n!==real?real:'',cidSub(e.cid)].filter(Boolean).join(' · ')}})}
+ function openFor(tid,screen,cid){if(gm()&&tid)PH.tid=tid;screen=screen||'home';if(cid&&owner()){const id=dmId(myCid(),cid);rememberOpen(id);PH.room=id;screen='smsroom'}return open(screen,gm()&&tid?{tid}:null)}
+ return {open,onSms,unreadAll,popSms,refresh,bookFor,openFor};
 })();
