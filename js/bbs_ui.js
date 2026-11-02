@@ -109,7 +109,7 @@ window.OM_BBS_UI=(()=>{
    웹툴 창(embed 아님)만 두 칸. 휴대폰 · 세션 노트 안은 한 줄 그대로(접기만 같이). 휴대폰 앱 · 연락처는 OM_PHONE_UI(bookFor · openFor) */
  const FOLD=6;
  const typing=()=>{const a=document.activeElement;return !!(S.md&&a&&S.md.contains(a)&&a.matches('input[type=text],input[type=search],textarea'))};
- function redraw(){if(!S.open)return;if(typing()||S.dc){S.pend=true;return}S.pend=false;draw()}
+ function redraw(){if(!S.open)return;if(typing()){S.pend=true;return}S.pend=false;draw()}
  function myCids(){const au=curAuthor();if(role()==='seat')return new Set(authors().map(x=>x.cid));return new Set(au?[au.cid]:[])}
  /* 휴대폰 주인: 좌석은 내 트레이너, GM 은 지금 글쓴이(포켓몬이면 그 트레이너, 관계도 인물은 n:id, GM 은 없음) */
  function phoneTid(au){if(role()==='seat')return mySeat();const c=(au&&au.cid)||'';if(!c||c==='gm')return '';if(c.startsWith('pm:')){const m=((((ST().state||{}).roster||{}).mons)||{})[c.slice(3)];return (m&&m.tid)||''}return c}
@@ -153,38 +153,55 @@ window.OM_BBS_UI=(()=>{
     ${P&&tid?`<div class="bbs-psec">연락처 <span class="sp"></span><button type="button" class="bbs-plink" data-bb="app" data-scr="${esc((apps.find(a=>/^(contacts|book)$/.test(a[0]))||['contacts'])[0])}">모두 보기 ›</button></div>
     <div class="bbs-plist">${book.length?book.slice(0,8).map(c=>`<button type="button" class="bbs-pit" data-bb="dm" data-cid="${esc(c.cid)}" title="${esc(c.n)}에게 문자">${avatar({n:c.n,img:c.img},false)}<span class="bbs-pit-t"><b>${esc(c.n)}</b><small>${esc(c.sub||'')}</small></span><span class="bbs-pdm" aria-hidden="true">💬</span></button>`).join('')+(book.length>8?`<p class="bbs-pempty">… ${book.length-8}명 더 — 「모두 보기」</p>`:''):'<p class="bbs-pempty">아직 연락처가 없어요 — 휴대폰 「연락처」에서 건네거나 넣어 주세요</p>'}</div>`:''}
    </div></aside>`}
- /* ----- 11-02 망령 「게시판을 디스코드랑」: GM 설정 칸 (오른쪽 칸 자리에). 보내기는 Supabase 트리거가 한다 (patch_2026-11-02_게시판_디스코드.sql) ----- */
- const DCNOSQL='디스코드 연동 함수가 아직 없어요 — Supabase SQL Editor 에서 supabase/patch_2026-11-02_게시판_디스코드.sql 을 한 번 실행해 주세요';
- const canDc=()=>!!S.split&&role()==='gm'&&!!(API()&&API().hookGet);
- async function dcLoad(){S.dcs={busy:true};draw();try{S.dcs={cfg:await API().hookGet(room(),sec())||{set:false}}}catch(e){S.dcs={err:API().noFn(e)?DCNOSQL:String((e&&e.message)||e)}}if(S.dc)draw()}
+ /* ----- 11-02 망령 「게시판을 디스코드랑」 → 18:58 「설정은 웹툴 설정 창(방 설정 옆) · 세션 노트 오른쪽 위 웹툴 옆 버튼」 -----
+   dcMount(칸, {env}) = 디스코드 연동 설정을 어디든 그린다 (GM 만). 보내기는 Supabase 트리거가 한다 (patch_2026-11-02_게시판_디스코드.sql)
+   env 없으면 웹툴 방. 세션 노트는 bbsEnv 를 넘긴다 */
+ const DCNOSQL='디스코드 연동 함수가 없거나 옛 것이에요 — Supabase SQL Editor 에서 supabase/patch_2026-11-02_게시판_디스코드.sql 을 (다시) 한 번 실행해 주세요';
+ const DC={el:null,env:null,st:{},boards:[]};
+ const DE=()=>DC.env||omEnv(),DAPI=()=>DE().api(),DROOM=()=>DE().room()||'',DSEC=()=>DE().secret()||'';
+ const dcErr=e=>(DAPI().noFn&&DAPI().noFn(e))?DCNOSQL:String((e&&e.message)||e);
+ function dcToast(t){try{DE().toast(t)}catch(e){}}
  function dcMsg(r){if(!r)return '';if(r.timeout)return ['bad','디스코드가 대답하지 않았어요 (시간 초과). 잠시 뒤 다시 눌러 주세요'];if(r.error&&!r.status)return ['bad','보내지 못했어요: '+r.error];
-  if(r.status>=200&&r.status<300)return ['ok','보냈어요. 디스코드에서 확인해 보세요'+(r.thread&&r.thread!==((S.dcs.cfg||{}).thread)?' — 새 포럼 글을 만들고 그 글로 이어 두었어요':'')];
+  if(r.status>=200&&r.status<300)return ['ok','보냈어요. 디스코드에서 확인해 보세요'+(r.thread&&r.thread!==((DC.st.cfg||{}).thread)?' — 새 포럼 글을 만들고 그 글로 이어 두었어요':'')];
   let c=0,m='';try{const j=JSON.parse(r.body||'{}');c=j.code;m=j.message||''}catch(e){}
   const K={220003:'일반 채팅 채널에서는 웹후크가 스레드를 만들 수 없어요. 디스코드에서 스레드를 직접 만들고, 스레드 이름을 우클릭 → 「링크 복사」를 「스레드 링크」 칸에 붙여 넣어 주세요',10015:'웹후크가 없어요 (지워졌거나 주소가 틀려요). 채널 설정에서 다시 복사해 주세요',10003:'그 스레드를 찾지 못했어요. 스레드 링크를 다시 복사해 주세요',50001:'웹후크가 그 스레드에 들어갈 수 없어요 (보관된 스레드거나 다른 채널의 스레드예요)',220001:'포럼 채널에는 「새 포럼 글 이름」이나 스레드 링크가 있어야 해요',50035:'디스코드가 형식을 거절했어요'};
   return ['bad',(K[c]||('디스코드 오류 '+r.status))+(m&&!K[c]?' — '+m:'')+(c?` (코드 ${c})`:'')]}
- function dcHtml(){const st=S.dcs||{};const c=st.cfg||{};const B=boardList();const sel=new Set(Array.isArray(c.boards)?c.boards:[]);const all=!sel.size;const rs=dcMsg(st.res);
-  const head=`<div class="bbs-bhead"><div><h3>🔗 디스코드로 보내기</h3><p class="small dim">새 글이 올라오면 디스코드 채널(또는 스레드)에 글쓴이 이름 · 초상으로 올라가요. 익명은 「익명」으로만, 숨긴 게시판은 보내지 않아요. 고치기 · 지우기 · 좋아요는 보내지 않아요.</p></div><span class="sp"></span><button type="button" class="btn xs ghost" data-bb="dc">← 게시판으로</button></div>`;
+ function dcBoards(){const L=(DC.boards||[]).filter(b=>b&&b.id);if(!L.some(b=>b.id==='free'))L.unshift({id:'free',name:'자유게시판'});return L.sort((a,b)=>(+a.ord||0)-(+b.ord||0))}
+ function dcHtml(){const st=DC.st||{};const c=st.cfg||{};const B=dcBoards();const sel=new Set(Array.isArray(c.boards)?c.boards:[]);const all=!sel.size;const rs=dcMsg(st.res);
+  const head=`<p class="bbs-dcintro">학교 게시판에 새 글이 올라오면 디스코드 채널(또는 스레드)에 글쓴이 이름 · 초상으로 올라가요. 익명은 「익명」으로만, 숨긴 게시판은 보내지 않아요. 고치기 · 지우기 · 좋아요는 보내지 않아요. 시트 「한 장 요약」의 「디코로」도 여기 정한 곳으로 가요.</p>`;
+  if((DE().role()||'')!=='gm')return head+'<p class="bbs-warn">GM 만 바꿀 수 있어요 — 이 방에 GM 으로 들어온 브라우저에서 열어 주세요.</p>';
   if(st.busy&&!c.set&&!st.err)return head+'<p class="small dim">불러오는 중…</p>';
   if(st.err)return head+`<p class="bbs-warn">${esc(st.err)}</p>`;
-  return head+`<form class="bbs-dc" data-bb-form="dc" autocomplete="off">
-   <div class="bbs-dcst ${c.set?(c.on?'on':'off'):''}"><i aria-hidden="true"></i>${c.set?(c.on?`이어져 있어요 · 주소 끝 <code>…${esc(c.tail||'')}</code>`:'주소는 있지만 꺼 두었어요'):'아직 이어지지 않았어요'}${c.set&&c.thread?` · 스레드 <code>${esc(c.thread)}</code>`:c.set?' · 채널 본문으로':''}</div>
+  return head+`<form class="bbs-dc" data-dc-form autocomplete="off">
+   <div class="bbs-dcst ${c.set?(c.on?'on':'off'):''}"><i aria-hidden="true"></i>${c.set?(c.on?`이어져 있어요 · 주소 끝 <code>…${esc(c.tail||'')}</code>`:'주소는 있지만 꺼 두었어요'):'아직 이어지지 않았어요'}${c.set&&c.thread?` · 게시판 스레드 <code>${esc(c.thread)}</code>`:c.set?' · 게시판은 채널 본문으로':''}${c.set&&c.cthread?` · 시트 카드 스레드 <code>${esc(c.cthread)}</code>`:''}</div>
    <label class="bbs-dcf"><b>웹후크 주소</b><input type="password" name="url" placeholder="${c.set?'저장되어 있어요 — 바꿀 때만 넣어 주세요':'https://discord.com/api/webhooks/…'}" spellcheck="false"><small>디스코드 채널 설정 → 연동 → 웹후크 → 「웹후크 URL 복사」. 저장한 뒤에는 이 화면에도 다시 보이지 않아요.</small></label>
-   <label class="bbs-dcf"><b>스레드 링크</b><input type="text" name="thread" value="${esc(c.thread||'')}" placeholder="비우면 채널 본문에 올라가요" spellcheck="false"><small>일반 채널: 디스코드에서 스레드를 만들고, 스레드 이름 우클릭 → 「링크 복사」를 붙여 넣어 주세요.</small></label>
+   <label class="bbs-dcf"><b>게시판 스레드 링크</b><input type="text" name="thread" value="${esc(c.thread||'')}" placeholder="비우면 채널 본문에 올라가요" spellcheck="false"><small>일반 채널: 디스코드에서 스레드를 만들고, 스레드 이름 우클릭 → 「링크 복사」를 붙여 넣어 주세요.</small></label>
    <label class="bbs-dcf"><b>시트 카드 스레드 링크</b><input type="text" name="cthread" value="${esc(c.cthread||'')}" placeholder="비우면 위 게시판 스레드로 가요" spellcheck="false"><small>시트 「한 장 요약」의 「디코로」 버튼이 올리는 곳이에요. 방에 앉은 사람 누구나 보낼 수 있어요.</small></label>
-   <label class="bbs-dcf"><b>새 포럼 글 이름 <span class="dim">(포럼 채널일 때만)</span></b><input type="text" name="tname" value="${esc(c.tname||'')}" placeholder="학교 게시판" maxlength="90"><small>스레드 링크를 비우고 「시험 보내기」를 누르면 이 이름으로 포럼 글을 만들고, 그 뒤 새 글은 그 안으로 가요.</small></label>
+   <label class="bbs-dcf"><b>새 포럼 글 이름 <span class="dim">(포럼 채널일 때만)</span></b><input type="text" name="tname" value="${esc(c.tname||'')}" placeholder="학교 게시판" maxlength="90"><small>게시판 스레드 링크를 비우고 「시험 보내기」를 누르면 이 이름으로 포럼 글을 만들고, 그 뒤 새 글은 그 안으로 가요.</small></label>
    <div class="bbs-dcf"><b>보낼 게시판</b><div class="bbs-dcb"><label class="bbs-anon"><input type="checkbox" name="all" ${all?'checked':''}> 전부</label>${B.filter(b=>!b.hidden).map(b=>`<label class="bbs-anon"><input type="checkbox" name="bd" value="${esc(b.id)}" ${all||sel.has(b.id)?'checked':''} ${all?'disabled':''}> ${esc(b.name)}</label>`).join('')}</div><small>숨긴 게시판은 골라도 보내지 않아요.</small></div>
    <div class="bbs-dcb"><label class="bbs-anon"><input type="checkbox" name="cm" ${c.cm?'checked':''}> 댓글도 보내기</label><label class="bbs-anon"><input type="checkbox" name="on" ${c.set?(c.on?'checked':''):'checked'}> 켜기</label></div>
-   <div class="bbs-crow"><button type="submit" class="btn xs pri" ${st.busy?'disabled':''}>저장</button><button type="button" class="btn xs" data-bb="dctest" ${c.set&&!st.busy?'':'disabled'}>${st.testing?'보내는 중…':'시험 보내기'}</button><span class="sp"></span>${c.set?'<button type="button" class="btn xs ghost danger" data-bb="dcoff">연동 끊기</button>':''}</div>
+   <div class="bbs-crow"><button type="submit" class="btn xs pri" ${st.busy?'disabled':''}>저장</button><button type="button" class="btn xs" data-dc="test" ${c.set&&!st.busy?'':'disabled'}>${st.testing?'보내는 중…':'시험 보내기'}</button><span class="sp"></span>${c.set?'<button type="button" class="btn xs ghost danger" data-dc="off">연동 끊기</button>':''}</div>
    ${rs?`<p class="bbs-dcr ${rs[0]}">${esc(rs[1])}</p>`:''}</form>`}
+ function dcDraw(){if(!DC.el||!DC.el.isConnected)return;DC.el.innerHTML=dcHtml()}
  function dcRead(f){const g=n=>f.querySelector(`[name="${n}"]`);const all=g('all').checked;const bd=[...f.querySelectorAll('[name="bd"]:checked')].map(x=>x.value);const u=g('url').value.trim();
   return {url:u?u:null,thread:g('thread').value.trim(),cthread:g('cthread').value.trim(),tname:g('tname').value.trim(),boards:all?[]:bd,cm:g('cm').checked,on:g('on').checked}}
- async function dcSave(f){const o=dcRead(f);if(!(S.dcs.cfg||{}).set&&!o.url){toast('웹후크 주소를 넣어 주세요');return}S.dcs.busy=true;S.dcs.res=null;draw();
-  try{S.dcs.cfg=await API().hookPut(room(),sec(),o);toast('저장했어요')}catch(e){toast(String((e&&e.message)||e))}S.dcs.busy=false;draw()}
- async function dcTest(){S.dcs.testing=true;S.dcs.busy=true;S.dcs.res=null;draw();let r=null;
-  try{const f=S.md.querySelector('[data-bb-form="dc"]');if(f){const o=dcRead(f);S.dcs.cfg=await API().hookPut(room(),sec(),o)}
-   const id=await API().hookTest(room(),sec());for(let i=0;i<14;i++){await new Promise(z=>setTimeout(z,900));r=await API().hookResult(room(),sec(),id);if(r&&!r.wait)break}
-   if(!r||r.wait)r={error:'디스코드 대답을 아직 못 받았어요 — 잠시 뒤 디스코드를 확인해 주세요'};S.dcs.cfg=await API().hookGet(room(),sec())}catch(e){r={error:String((e&&e.message)||e)}}
-  S.dcs.res=r;S.dcs.testing=false;S.dcs.busy=false;if(S.dc)draw()}
+ async function dcLoad(){DC.st={busy:true};dcDraw();if((DE().role()||'')!=='gm'){DC.st={};dcDraw();return}
+  try{const [cfg,b]=await Promise.all([DAPI().hookGet(DROOM(),DSEC()),DAPI().boards(DROOM(),DSEC()).catch(()=>[])]);DC.st={cfg:cfg||{set:false}};DC.boards=b||[]}catch(e){DC.st={err:dcErr(e)}}dcDraw()}
+ async function dcSave(f){const o=dcRead(f);if(!(DC.st.cfg||{}).set&&!o.url){dcToast('웹후크 주소를 넣어 주세요');return}DC.st.busy=true;DC.st.res=null;dcDraw();
+  try{DC.st.cfg=await DAPI().hookPut(DROOM(),DSEC(),o);dcToast('저장했어요')}catch(e){DC.st.res={error:dcErr(e)}}DC.st.busy=false;dcDraw()}
+ async function dcTest(){DC.st.testing=true;DC.st.busy=true;DC.st.res=null;const f=DC.el.querySelector('[data-dc-form]');const o=f?dcRead(f):null;dcDraw();let r=null;
+  try{if(o)DC.st.cfg=await DAPI().hookPut(DROOM(),DSEC(),o);
+   const id=await DAPI().hookTest(DROOM(),DSEC());for(let i=0;i<14;i++){await new Promise(z=>setTimeout(z,900));r=await DAPI().hookResult(DROOM(),DSEC(),id);if(r&&!r.wait)break}
+   if(!r||r.wait)r={error:'디스코드 대답을 아직 못 받았어요 — 잠시 뒤 디스코드를 확인해 주세요'};DC.st.cfg=await DAPI().hookGet(DROOM(),DSEC())}catch(e){r={error:dcErr(e)}}
+  DC.st.res=r;DC.st.testing=false;DC.st.busy=false;dcDraw()}
+ function dcMount(el,o){o=o||{};DC.el=el;DC.env=o.env||null;DC.st={};el.classList.add('bbs-dcwrap');
+  if(!el._dcb){el._dcb=1;
+   el.addEventListener('submit',e=>{const f=e.target.closest('[data-dc-form]');if(!f)return;e.preventDefault();dcSave(f)});
+   el.addEventListener('click',e=>{const b=e.target.closest('[data-dc]');if(!b)return;const k=b.dataset.dc;
+    if(k==='test')dcTest();
+    if(k==='off'){if(!confirm('디스코드 연동을 끊을까요? (웹후크 주소를 지워요)'))return;(async()=>{try{DC.st.cfg=await DAPI().hookPut(DROOM(),DSEC(),{url:'',thread:'',cthread:'',tname:'',boards:[],cm:false,on:false});DC.st.res=null;dcToast('끊었어요')}catch(er){DC.st.res={error:dcErr(er)}}dcDraw()})()}});
+   el.addEventListener('change',e=>{const t=e.target;if(t.matches('[name="all"]'))t.closest('.bbs-dcb').querySelectorAll('[name="bd"]').forEach(x=>{x.disabled=t.checked;if(t.checked)x.checked=true})})}
+  dcLoad()}
  function draw(){const md=S.md;if(!md||!document.body.contains(md)){S.open=false;return}
   const B=boardList();if(!B.some(b=>b.id===S.board))S.board=B[0].id;const cur=B.find(b=>b.id===S.board)||B[0];
   const rows=[...S.rows.values()].filter(r=>r.board===cur.id);const tops=rows.filter(r=>!r.parent).sort((a,b)=>+b.id-+a.id);const kidsOf=id=>rows.filter(r=>String(r.parent)===String(id)).sort((a,b)=>+a.id-+b.id);
@@ -193,9 +210,9 @@ window.OM_BBS_UI=(()=>{
     ${canWrite()?`<button type="button" class="bbs-bd add" data-bb="newb">＋ 게시판 만들기</button>`:''}</nav>`;
   const bhead=`<div class="bbs-bhead"><div><h3>${esc(cur.name)}${cur.hidden?' <small class="dim">(숨김)</small>':''} <small class="bbs-cnt">${tops.length}</small></h3>${cur.descr?`<p class="small dim">${esc(cur.descr)}</p>`:''}</div><span class="sp"></span>${canEditB?`<button type="button" class="btn xs ghost" data-bb="editb">고치기</button>${role()==='gm'?`<button type="button" class="btn xs ghost" data-bb="hideb">${cur.hidden?'보이기':'숨기기'}</button>`:''}<button type="button" class="btn xs ghost danger" data-bb="delb">지우기</button>`:''}</div>`;
   md.classList.toggle('bbs-embed',!!S.embed&&S.compact!==false);md.classList.toggle('bbs-in',!!S.embed);md.classList.toggle('bbs-split',split);
-  md.innerHTML=`${S.embed?`<div class="bbs-ehead">${S.compact===false?'':'<b>학교 게시판</b>'}<small>${esc((E().roomName||(()=>''))())}</small><span class="sp"></span>${canDc()?`<button type="button" class="btn xs ghost ${S.dc?'on':''}" data-bb="dc" title="디스코드로 보내기 (GM)" aria-label="디스코드로 보내기">🔗<span class="bbs-dcl"> 디스코드</span></button>`:''}<button type="button" class="btn xs ghost" data-bb="refresh" title="새로 받아 오기">↻</button></div>`:`<div class="mhead"><h2>학교 게시판</h2><span class="small dim">${esc((E().roomName||(()=>''))())}</span><span class="sp"></span>${canDc()?`<button type="button" class="btn ghost ${S.dc?'on':''}" data-bb="dc" title="디스코드로 보내기 (GM)" aria-label="디스코드로 보내기">🔗<span class="bbs-dcl"> 디스코드</span></button>`:''}<button type="button" class="btn ghost" data-bb="refresh" title="새로 받아 오기">↻</button><button type="button" class="btn ghost" data-x>닫기</button></div>`}
+  md.innerHTML=`${S.embed?`<div class="bbs-ehead">${S.compact===false?'':'<b>학교 게시판</b>'}<small>${esc((E().roomName||(()=>''))())}</small><span class="sp"></span><button type="button" class="btn xs ghost" data-bb="refresh" title="새로 받아 오기">↻</button></div>`:`<div class="mhead"><h2>학교 게시판</h2><span class="small dim">${esc((E().roomName||(()=>''))())}</span><span class="sp"></span><button type="button" class="btn ghost" data-bb="refresh" title="새로 받아 오기">↻</button><button type="button" class="btn ghost" data-x>닫기</button></div>`}
   ${S.noSql?`<p class="bbs-warn">${esc(noSqlMsg)}</p>`:''}${S.err?`<p class="bbs-warn">${esc(S.err)}</p>`:''}
-  ${split?`<div class="bbs-split2">${phoneHtml(au,AL,cur)}<section class="bbs-main bbs-right">${S.dc&&canDc()?dcHtml():boardsNav+bhead+feedHtml(cur,tops,kidsOf)}</section></div>`
+  ${split?`<div class="bbs-split2">${phoneHtml(au,AL,cur)}<section class="bbs-main bbs-right">${boardsNav+bhead+feedHtml(cur,tops,kidsOf)}</section></div>`
   :`<div class="bbs-wrap">${boardsNav}<section class="bbs-main">${bhead}${composeHtml(au,AL,cur)}${feedHtml(cur,tops,kidsOf)}</section></div>`}`;
   if(!S.embed)md.querySelectorAll('[data-x]').forEach(b=>b.onclick=close)}
 
@@ -208,9 +225,6 @@ window.OM_BBS_UI=(()=>{
   if(k==='board'){S.board=id;draw();const r=S.md.querySelector('.bbs-right');if(r)r.scrollTop=0;return}
   if(k==='more'){const bd=S.board;const was=S.more.has(bd);if(was)S.more.delete(bd);else S.more.add(bd);draw();if(was){const r=S.md.querySelector('.bbs-right');const m=S.md.querySelector('.bbs-more');if(m)m.scrollIntoView({block:'nearest'});else if(r)r.scrollTop=0}return}
   if(k==='pmore'){S.pmore=!S.pmore;draw();return}
-  if(k==='dc'){S.dc=!S.dc;if(S.dc)dcLoad();else draw();return}
-  if(k==='dctest'){dcTest();return}
-  if(k==='dcoff'){if(!confirm('디스코드 연동을 끊을까요? (웹후크 주소를 지워요)'))return;(async()=>{try{S.dcs.cfg=await API().hookPut(room(),sec(),{url:'',thread:'',tname:'',boards:[],cm:false,on:false});S.dcs.res=null;toast('끊었어요')}catch(e){toast(String((e&&e.message)||e))}draw()})();return}
   if(k==='goto'){const r=S.rows.get(String(id));if(!r)return;S.board=r.board;S.open2.add(String(r.id));const tops=[...S.rows.values()].filter(x=>x.board===r.board&&!x.parent).sort((a,b)=>+b.id-+a.id);if(tops.findIndex(x=>String(x.id)===String(r.id))>=FOLD)S.more.add(r.board);draw();
    const el=S.md.querySelector(`.bbs-post[data-pid="${r.id}"]`);if(el){el.scrollIntoView({block:'center',behavior:'smooth'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1600)}return}
   if(k==='app'||k==='dm'){const P=PHONE();if(!P)return;const tid=PTID(curAuthor());if(!tid)return;const scr=b.dataset.scr||'home';const cid=k==='dm'?b.dataset.cid:'';close();P.open(tid,scr,cid);return}
@@ -226,7 +240,6 @@ window.OM_BBS_UI=(()=>{
   if(k==='hideb'){const cur=boardList().find(x=>x.id===S.board);if(!cur||cur.virt)return;act(async()=>{await API().boardPut(room(),sec(),cur.id,{name:cur.name,hidden:!cur.hidden});S.boards=[]});return}
   if(k==='delb'){const cur=boardList().find(x=>x.id===S.board);if(!cur||cur.virt)return;if(!confirm(`「${cur.name}」 게시판과 그 글을 모두 지울까요?`))return;act(async()=>{await API().boardPut(room(),sec(),cur.id,{del:true});S.board='free';S.boards=[]},'게시판을 지웠어요');return}}
  async function onSubmit(e){const f=e.target;if(!S.md||!S.md.contains(f))return;
-  if(f.matches('[data-bb-form="dc"]')){e.preventDefault();dcSave(f);return}
   if(f.matches('[data-bb-form="post"]')){e.preventDefault();const t=String(S.draft||'').trim();if(!t&&!S.imgUrl)return;const au=curAuthor();if(!au)return;S.busy=true;draw();
    try{await API().post(room(),sec(),S.board,null,{n:au.n,img:img(au.img),cid:au.cid},S.anon,t,S.imgUrl);S.draft='';S.imgUrl='';notify()}catch(er){toast(API().noFn(er)?noSqlMsg:String((er&&er.message)||er))}
    S.busy=false;await pull();markSeen();return}
@@ -238,7 +251,6 @@ window.OM_BBS_UI=(()=>{
  async function onChange(e){const t=e.target;if(!S.md||!S.md.contains(t))return;
   if(t.matches('[data-bb-who]')){LS.set('om_bbs_who_'+room(),t.value);draw();return}
   if(t.matches('[data-bb-anon]')){S.anon=t.checked;draw();return}
-  if(t.matches('.bbs-dc [name="all"]')){t.closest('.bbs-dcb').querySelectorAll('[name="bd"]').forEach(x=>{x.disabled=t.checked;if(t.checked)x.checked=true});return}
   if(t.matches('[data-bb-file]')){const f=t.files&&t.files[0];t.value='';upImg(f)}}
  async function upImg(f){if(!f||S.busy)return;if(!/^image\//.test(f.type||'')){toast('그림 파일만 올릴 수 있어요');return}if(f.size>15*1024*1024){toast('그림이 너무 커요 (15MB)');return}
   S.busy=true;draw();try{S.imgUrl=await E().upload(f)}catch(er){toast('그림을 올리지 못했어요: '+((er&&er.message)||er))}S.busy=false;draw()}
@@ -252,8 +264,8 @@ window.OM_BBS_UI=(()=>{
   const u=img(String(dt.getData('text/uri-list')||dt.getData('text/plain')||'').split(/\r?\n/).find(x=>x&&x[0]!=='#')||'');if(u){S.imgUrl=u;draw()}else toast('그림을 알아보지 못했어요 — 파일로 저장해서 놓아 주세요')}
  function onPaste(e){if(!dropForm(e.target))return;const it=[...((e.clipboardData||{}).items||[])].find(x=>x.kind==='file'&&/^image\//.test(x.type));if(!it)return;e.preventDefault();upImg(it.getAsFile())}
 
- function mount(el,o){o=o||{};S.env=o.env||null;S.who=o.who||null;S.embed=true;S.compact=o.compact!==false;S.split=!!o.split;S.dc=false;closeWho();S.md=el;S.open=true;draw();if(Date.now()-S.lastPoll>3000||(S.env&&S.env.key)+'|'+room()!==S.ekey)pull().then(markSeen);else markSeen()}
- function openBoard(){S.dc=false;S.split=true;S.env=null;S.who=null;S.embed=false;S.compact=true;closeWho();if(!room())return;S.open=true;S.md=A().openModal('<div class="mhead"><h2>학교 게시판</h2><span class="sp"></span><button type="button" class="btn ghost" data-x>닫기</button></div><p class="small dim">불러오는 중…</p>');S.md.classList.add('bbsmodal');draw();pull(!S.rows.size).then(markSeen)}
+ function mount(el,o){o=o||{};S.env=o.env||null;S.who=o.who||null;S.embed=true;S.compact=o.compact!==false;S.split=!!o.split;closeWho();S.md=el;S.open=true;draw();if(Date.now()-S.lastPoll>3000||(S.env&&S.env.key)+'|'+room()!==S.ekey)pull().then(markSeen);else markSeen()}
+ function openBoard(){S.split=true;S.env=null;S.who=null;S.embed=false;S.compact=true;closeWho();if(!room())return;S.open=true;S.md=A().openModal('<div class="mhead"><h2>학교 게시판</h2><span class="sp"></span><button type="button" class="btn ghost" data-x>닫기</button></div><p class="small dim">불러오는 중…</p>');S.md.classList.add('bbsmodal');draw();pull(!S.rows.size).then(markSeen)}
  function close(){closeWho();S.open=false;S.md=null;if(window.OM_APP)A().closeModal();markSeen()}
  function onEvent(p){if(!p||(p.room&&p.room!==room()))return;pull().then(()=>{if(S.open)markSeen()})}
 
@@ -265,4 +277,4 @@ window.OM_BBS_UI=(()=>{
  document.addEventListener('click',onClick);document.addEventListener('submit',onSubmit);document.addEventListener('input',onInput);document.addEventListener('change',onChange);document.addEventListener('dragover',onDragOver);document.addEventListener('drop',onDrop);document.addEventListener('paste',onPaste);
  /* 글 쓰는 중에 새 글이 와도 칸을 다시 그리지 않는다 (쓰던 칸이 풀리던 것) — 칸을 떠나면 그때 */
  document.addEventListener('focusout',e=>{if(!S.pend||!S.md||!S.md.contains(e.target))return;setTimeout(()=>{if(S.pend&&!typing())redraw()},0)});
- return {V:9,openBoard,mount,onEvent,pull,apiFromRpc,unread:()=>S.unread}})();   /* V: 세션 노트가 이보다 옛 것을 들고 있으면 다시 불러온다 */
+ return {V:10,dcMount,openBoard,mount,onEvent,pull,apiFromRpc,unread:()=>S.unread}})();   /* V: 세션 노트가 이보다 옛 것을 들고 있으면 다시 불러온다 */

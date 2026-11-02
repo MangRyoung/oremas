@@ -264,3 +264,8 @@ button.bbs-pme:hover .bbs-pch{color:var(--pt);border-color:var(--pm)}
 .bbs-in.bbs-split .bbs-ehead{flex:none;margin:0 0 6px}
 .bbs-in.bbs-split .bbs-ehead small{font-size:13px}
 @media (max-width:760px){.bbs-in.bbs-split{height:auto;display:block;overflow:visible}}
+/* 11-02 디스코드 설정이 설정 창 「디스코드」 탭 · 세션 노트 버튼으로 옮겨감 (dcMount) */
+.bbs-dcwrap{padding:4px 2px 10px;text-align:left}
+.bbs-dcintro{margin:0 0 12px;font-size:13.5px;line-height:1.65;color:var(--fg2,#c9c9c9);max-width:640px}
+.bbs-dcwrap .bbs-dc{max-width:680px}
+.bbs-dcf small,.bbs-dcf>b{text-align:left;align-self:stretch}

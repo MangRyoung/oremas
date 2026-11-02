@@ -1140,12 +1140,14 @@ function openRoomSettings(tab){
   ${card('🪑','자리',`<div class="row"><button class="btn sm" id="seatMgr">자리 관리</button></div>`)}
   ${card('🔐','입장',`${sw('acctOnly',!!((r.settings||{}).accountOnly),'계정 전용 방','켜면 로그인해야 들어오고, 관리자가 PL 권한을 준 계정만 자리에 앉는다. 예전 방 링크 · GM 링크 · 기기에 기억된 자리는 안 먹힌다 (관리자는 언제나 GM)')}<div class="pf-note">GM · PL 권한은 로비의 「계정 관리」(관리자)에서 준다. 끈 방에서는 로그인한 누구나 들어와 자리에 앉을 수 있고, 앉으면 그 자리가 계정에 붙는다 (PL 권한이 저절로 생긴다).</div>`)}</div>`:'';
  const m=openModal(`<div class="mhead"><h2>설정</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-  <div class="pf-tabs"><button data-stab="me" class="${SET_TAB==='me'?'on':''}"><span>내 설정</span></button>${isGm?`<button data-stab="room" class="${SET_TAB==='room'?'on':''}"><span>방 설정</span></button>`:`<button class="ghost" id="seatMgr2"><span>자리 바꾸기</span></button>`}</div>
-  <div id="setBody" class="pf-host">${SET_TAB==='room'&&isGm?room:(window.OM_PREFS?window.OM_PREFS.html():'')}</div>`);
+  <div class="pf-tabs"><button data-stab="me" class="${SET_TAB==='me'?'on':''}"><span>내 설정</span></button>${isGm?`<button data-stab="room" class="${SET_TAB==='room'?'on':''}"><span>방 설정</span></button>${window.OM_BBS_UI&&window.OM_BBS_UI.dcMount?`<button data-stab="dc" class="${SET_TAB==='dc'?'on':''}"><span>디스코드</span></button>`:''}`:`<button class="ghost" id="seatMgr2"><span>자리 바꾸기</span></button>`}</div>
+  <div id="setBody" class="pf-host">${SET_TAB==='room'&&isGm?room:SET_TAB==='dc'&&isGm?'':(window.OM_PREFS?window.OM_PREFS.html():'')}</div>`);
  m.classList.add('setmodal');
  m.querySelectorAll('[data-stab]').forEach(b=>b.onclick=()=>{SET_TAB=b.dataset.stab;openRoomSettings()});
  const s2=$('#seatMgr2',m);if(s2)s2.onclick=()=>{closeModal();openSeatPicker()};
  if(SET_TAB==='me'||!isGm){const host=$('#setBody',m);if(window.OM_PREFS)window.OM_PREFS.bind(host);return}
+ /* 11-02 망령 「디스코드 설정은 설정 → 방 설정 옆에」: 학교 게시판 · 시트 「한 장 요약 → 디코로」가 가는 곳 (js/bbs_ui.js dcMount) */
+ if(SET_TAB==='dc'){const host=$('#setBody',m);if(window.OM_BBS_UI&&window.OM_BBS_UI.dcMount)window.OM_BBS_UI.dcMount(host);return}
  const pb=$('#plBattle',m),so=$('#seatOwn',m);
  /* ①·② 는 둘 중 하나만 — 하나가 켜져 있으면 다른 칸은 막아 둔다 */
  const lockPair=()=>{if(!pb||!so)return;pb.disabled=so.checked;so.disabled=pb.checked;for(const x of [pb,so]){const l=x.closest('.pf-sw');if(l){l.classList.toggle('off',x.disabled);l.title=x.disabled?'다른 쪽을 끄면 고를 수 있다':''}}};lockPair();
