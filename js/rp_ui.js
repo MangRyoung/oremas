@@ -194,6 +194,12 @@ window.OM_RP_UI=(()=>{
   $('#mapov',el).innerHTML=mapOpen?mapOverlay():'';drawVote(el);oocTick();
   /* 그림 말풍선 (rp.bubble) — 대사 전용: 말하는 사람이 왼쪽 자리면 꼬리 왼쪽 그림을 그 오른편에, 오른쪽이면 반대, 가운데·무대 밖이면 꼬리 왼쪽 그림을 화면 가운데 오른편에(mid).
      지문(비문)·고정 자막은 꼬리 없는 그림 — 그게 없으면 기본 검은 띠 */
+  /* 11-02 망령 「스탠딩 일러 절반을 대사창이 가린다 — 모드를 켜면 대사 · 스탠딩을 좌우로 떼되 가운데를 비우고 서로 붙여서」:
+     21:07 망령 「개인 보기 말고 방 토글로 — GM 줄 오른쪽 여백에」: 방 상태 rp.dsplit (GM 이 무대 아래 GM 줄 「◧ 좌우 분리」로 켜고 끔, 모두에게 같이).
+     말하는 사람이 오른쪽 자리면 스탠딩 오른쪽 · 대사 왼쪽, 아니면 반대. 좁은 화면(760px 미만) · 던전 탐사 중에는 쓰지 않는다 (CSS 도 막음) */
+  const dsOn=!!r.dsplit&&!(window.OM_DG_UI&&window.OM_DG_UI.cur&&window.OM_DG_UI.cur());
+  const dsSide=(()=>{const sk=!cap.text&&lastChat?speakerKey(lastChat):'';const sl=sk?SLOTS.find(x=>slots[x]===sk):'';return sl==='right'?'r':'l'})();
+  {const stg0=$('#rpstage',el);if(stg0){stg0.classList.toggle('dsplit',dsOn);stg0.dataset.dside=dsSide}}
   const bub=r.bubble||{};let skin=null;if(bub.on&&dlgHtml){const narr=!!cap.text||!lastChat||LF(lastChat.data||{}).narr;
    /* 10-23 망령: 칸을 비우면 오레마스 기본 그림(img/bubble/*.svg — 직접 그린 것). 절대 주소로 — CSS 변수 안의 상대 주소는 css/ 기준으로 풀려 버린다 */
    const DEF=k=>new URL('img/bubble/'+({c:'plain',l:'left',m:'mid'})[k]+'.svg?v=3',location.href).href;
@@ -202,8 +208,9 @@ window.OM_RP_UI=(()=>{
    else{const sk=speakerKey(lastChat);const sl=sk?SLOTS.find(x=>slots[x]===sk):'';const want=sl==='right'?'r':'l';const alt=want==='l'?'r':'l';
     /* 10-21 망령: 가운데(·무대 밖) 화자는 「꼬리 가운데」 그림이 있으면 그걸로 */
     /* 10-26 망령: 던전 탐사 중엔 HUD 때문에 좌우 대사칸이 좁아져 쓰기 어렵다 — 모두 가운데 대사칸 */const inDg=!!(window.OM_DG_UI&&window.OM_DG_UI.cur&&window.OM_DG_UI.cur());
-    if(inDg||(sl!=='left'&&sl!=='right')){skin={v:'m',src:bub.m||DEF('m')};if(inDg&&(sl==='left'||sl==='right'))skin.at=sl}   /* 10-26 망령: 던전에선 가운데 말풍선 그림을 쓰되 자리는 말하는 사람 위로 (skin.at → 아래에서 스탠딩 가운데에 맞춘다) */else if(bub[want])skin={v:want,src:bub[want]};else if(bub[alt])skin={v:want,src:bub[alt],flip:1};else skin={v:want,src:DEF('l'),flip:want==='r'?1:0};
-    if(skin.v!=='c'&&skin.v!=='m'&&sl!=='left'&&sl!=='right')skin.mid=1}}
+    if(dsOn){const w2=dsSide;skin=bub[w2]?{v:w2,src:bub[w2]}:bub[w2==='l'?'r':'l']?{v:w2,src:bub[w2==='l'?'r':'l'],flip:1}:{v:w2,src:DEF('l'),flip:w2==='r'?1:0}}   /* 좌우 분리: 가운데 화자도 한쪽 꼬리 그림으로 */
+    else if(inDg||(sl!=='left'&&sl!=='right')){skin={v:'m',src:bub.m||DEF('m')};if(inDg&&(sl==='left'||sl==='right'))skin.at=sl}   /* 10-26 망령: 던전에선 가운데 말풍선 그림을 쓰되 자리는 말하는 사람 위로 (skin.at → 아래에서 스탠딩 가운데에 맞춘다) */else if(bub[want])skin={v:want,src:bub[want]};else if(bub[alt])skin={v:want,src:bub[alt],flip:1};else skin={v:want,src:DEF('l'),flip:want==='r'?1:0};
+    if(!dsOn&&skin.v!=='c'&&skin.v!=='m'&&sl!=='left'&&sl!=='right')skin.mid=1}}
   const dlg=$('#dlg',el);if(dlgHtml){if(dlg.dataset.k!==dlgKey){dlg.innerHTML=dlgHtml;dlg.dataset.k=dlgKey;dlg.classList.remove('pop');void dlg.offsetWidth;dlg.classList.add('pop');if(anim&&!cap.text)dqType(dlg)}dlg.style.display=''}else{dlg.style.display='none';dlg.dataset.k=''}
   {let mo=dlg.querySelector('.dq-more');const n=cap.text?0:DQ.q.length;if(n){if(!mo){mo=document.createElement('i');mo.className='dq-more';dlg.appendChild(mo)}mo.textContent=`+${n}줄`}else if(mo)mo.remove()}
   dlg.onclick=()=>{if(!cap.text)dqSkip(dlg)};dlg.classList.toggle('dqable',!cap.text&&DQ.phase!=='done');
@@ -414,6 +421,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    else if(SPK.key&&SPK.key.startsWith('pm:')){const c=charOf(SPK.key);await DBS().addLog(ST.room,ST.secret,'chat',c?c.name:ST.name,Object.assign({t,as:c?c.name:'',k:SPK.key,nf:1},SX))}
    else{const c=charOf(ST.seat);const nm=c?c.name:ST.name;await DBS().addLog(ST.room,ST.secret,'chat',nm,Object.assign(c?{t,as:nm,k:ST.seat,nf:1}:{t,nf:1},SX))}}catch(e)   /* 좌석이 자기 캐릭터로 말하면 캐릭터 이름으로 남긴다 (플레이어 닉 X) */{A().toast('보내지 못했다: '+e.message)}}
  function act(k){
+  if(k==='dsplit'){if(!gm())return;const on=!R().dsplit;(async()=>{await A().set(['rp','dsplit'],on?true:null);A().toast(on?'좌우 분리 — 모두의 무대에서 대사 상자를 스탠딩 옆으로':'좌우 분리 끔')})();return}
   if(k==='fold'){rpFold=!rpFold;try{localStorage.setItem('om_rpfold',rpFold?'1':'')}catch(e){}return A().renderScene()}
   if(k==='map'){mapOpen=!mapOpen;return A().renderScene()}
   if(k==='deck')return window.OM_DECK_UI.open();
@@ -1451,6 +1459,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   const lastDice0=[...(ST.log||[])].reverse().find(r=>r.kind==='dice');const diceLeft=lastDice0?DICE_TTL-(Date.now()-(Date.parse(lastDice0.at)||0)):0;const lastDice=diceLeft>0?lastDice0:null;
   return `<div class="mebar">${t?`<div class="meid"><i class="ph-av" style="${t.image?`background-image:url('${cssu(t.image)}')`:''}"></i><div><b>${esc(t.name)}</b><small>${k.inj>=3?'<span class="bad">빈사</span>':k.inj>=2?'<span class="bad">중상</span>':k.inj===1?'<span class="bad">부상</span>':'건강'}${k.tired&&k.tired.length?' · 지침 '+k.tired.length:''}${O&&(O.ids||[]).includes(t.id)?' · <span class="warn">체크 대기</span>':''}</small></div></div>`:`<div class="meid"><div><b>${gm()?'GM':esc(ST.name||'')}</b><small>${gm()?'화자로 PC 를 고르면 그 캐릭터가 여기 선다':'자리 없음'}</small></div></div>`}
    <div class="mebtns"><button class="btn sm ${pend?'pri':''}" data-rp="roll" title="스킬 체크 창">🎲 굴림${pend?' !':''}</button><button class="btn sm" data-rp="phone" title="휴대폰">📱 폰</button><button class="btn sm ghost" data-rp="talk" title="${t?t.name+' (으)로 말하기 — 무대에 선다':'대사 입력'}">💬 대화</button>${gm()?`<button class="btn sm ghost" data-rp="notice" title="공지 띄우기 (GM 콘솔 「공지」)">📢 공지</button><button class="btn sm ghost ${mapOpen?'on':''}" data-rp="map" title="지도 펴기 / 접기">🗺 지도</button><button class="btn sm ghost ${(R().clue)?'on':''}" data-rp="clues" title="단서 카드 (GM 콘솔 「연출」)">🔍 단서</button>`:''}</div>
+   ${gm()?`<label class="medsplit ${R().dsplit?'on':''}" title="방 전체 — 켜면 모두의 무대에서 대사 상자를 말하는 사람 스탠딩 반대쪽으로 떼어 일러를 가리지 않는다 (좁은 화면 · 던전은 그대로)"><input type="checkbox" data-rp="dsplit" ${R().dsplit?'checked':''}><i aria-hidden="true"></i><span><b>◧ 좌우 분리</b><small>스탠딩 다 보이기 · 방 전체</small></span></label>`:''}
    ${meCheck(O)}
    <div class="memons">${mons.map(m=>memonHtml(m,bm[m.id],!!(t&&K&&(K.tsk(t.id).comp||[]).includes(m.id)))).join('')}</div>
    ${lastDice?`<div class="melast" style="--left:${Math.round(diceLeft)}ms" title="${esc(lastDice.data.t||'')}">🎲 ${esc((lastDice.who||'')+' · '+String(lastDice.data.t||'').split('\n').slice(-2).join(' · '))}</div>`:''}</div>`}
