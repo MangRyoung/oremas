@@ -4967,5 +4967,11 @@ html[data-vt="mm"] .memon .medet{border-color:rgba(20,16,12,.4)}
 @media (max-width:760px){.mebar .medsplit{display:none}}
 
 /* 11-02 망령 「소지가 너무 많아지면 — 6체 이후는 스크롤」: GM 줄 · 내 줄의 포켓몬 칸은 두 줄(3 × 2)까지, 그 뒤는 칸 안에서 스크롤 */
-.mebar .memons{max-height:104px;overflow-y:auto;scrollbar-width:thin;padding-right:2px;overscroll-behavior:contain}
+.mebar .memons{max-height:104px;overflow-y:auto;scrollbar-width:thin;padding-right:2px;overscroll-behavior:contain;align-content:safe center}   /* safe: 넘칠 때 가운데 맞춤이 윗줄을 잘라 버리지 않게 */
 .mebar .memons::-webkit-scrollbar{width:5px}.mebar .memons::-webkit-scrollbar-thumb{background:rgba(128,128,128,.5);border-radius:3px}
+
+/* 11-02 망령 「좌우 분리 칸은 원래 스킬 제시 칸 자리인데 괜찮아?」: 스킬 체크 칸(.mecheck)이 뜨면 맨 오른쪽은 체크 칸, 좌우 분리는 그 바로 왼쪽에 작게 */
+.mebar .medsplit{align-self:center}
+.mebar:has(> .mecheck) .medsplit{margin-left:auto}
+.mebar:has(> .mecheck) > .mecheck{margin-left:0}
+.mebar:has(> .mecheck) .medsplit small{display:none}
