@@ -63,7 +63,7 @@ window.OM_STATUS_UI=(()=>{
  /* 소지품 칸 고치기: fn(사본) → 로그 줄(빈 글이면 안 바꿈) */
  async function edit(mid,fn){const b=A().ST.state.battle||{};const m0=(b.mons||{})[mid];if(!m0||!canEd(mid))return;const x=JSON.parse(JSON.stringify(m0));const line=fn(x);if(!line)return;
   x.items2=(x.items2||[]).slice(0,X2);
-  if(await A().setDiff(['battle','mons',mid],m0,x)){A().sysLog(`${m0.name} ${line}`,'battle');
+  if(await A().setDiff(['battle','mons',mid],m0,x)){/* 11-02 망령 「소지품 요약에서 넣으면 로그가 전원에게 보인다 — 자기에게만」: 상세 창 소지품 바꾸기처럼 내 로그(selfLog, 이 브라우저만)로 */if(A().selfLog)A().selfLog(`${m0.name} ${line}`);else A().sysLog(`${m0.name} ${line}`,'battle');
    const nb=A().ST.state.battle||{};const rows=Object.values(nb.mons||{}).filter(q=>q.tid===m0.tid).flatMap(q=>[q,...(q.items2||[])].map(o=>({item:(o||{}).item,name:q.name})));const d=A().dupItems?A().dupItems(rows):[];if(d.length)A().toast(A().dupItemText(m0.name,d))}
   open(TID)}
  const setX=(x,k,n)=>{const FX=window.OM_FX;const it=(DB().items||{})[n]||{};const eff=String(it.eff||'');
