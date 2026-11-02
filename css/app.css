@@ -4988,3 +4988,5 @@ html[data-vt="mm"] .memon .medet{border-color:rgba(20,16,12,.4)}
  .bstat #typingBat{display:inline-block;visibility:hidden;flex:6 1 0;min-width:170px;max-width:340px;box-sizing:border-box}   /* 21:23 「치는 사람이 거의 안 보인다」: 늘 170px 는 잡아 두고(비면 투명) 남는 만큼 늘린다 — 나타나도 줄은 안 바뀐다 */
  .bstat #typingBat.on{visibility:visible}
 }
+/* 11-02 망령 「대사가 살짝 위 칸(말풍선 테두리)에 걸칠 때가 있다」: 글자 칸이 기울어(±3°) 있어 칸을 꽉 채우면 첫 줄 끝이 테두리 위로 솟았다 — 칸 안쪽에 여백을 두어 그만큼 덜 차게 (넘치면 fitDlg 가 글자를 줄인다) */
+.dlg.skin .dtext{padding:.34em .3em .2em}
