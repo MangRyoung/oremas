@@ -115,15 +115,15 @@ dialog.ed::backdrop{background:rgba(0,0,0,.6)}
 <div class="wrap">
 <header class="top">
  <div>
-  <div class="eyebrow">은열쇠 · 공통 카드 후보 300 → 확정 카드풀</div>
+  <div class="eyebrow" id="eyebrow">은열쇠 · 공통 카드 후보 → 확정 카드풀</div>
   <h1>은열쇠 공통 카드풀</h1>
-  <p class="sub">감우가 300장을 채점해 순위를 매기고 40장을 추천 배치했어요. 왼쪽에서 오른쪽으로 끌어 넣거나(휴대폰은 「＋ 확정」), 오른쪽에서 빼서 공통 카드풀을 정해요. 고른 결과는 시뮬레이터 records/silverkey_pool.json 에 저장돼요(감우가 읽어요). 카드마다 「고치기」로 이름 · 코스트 · 아이콘 · 쓰는 곳 · 덱 제한 · 효과를 바꿀 수 있고, 고친 것도 같이 저장돼요.</p>
+  <p class="sub" id="sub">감우가 300장을 채점해 순위를 매기고 40장을 추천 배치했어요. 왼쪽에서 오른쪽으로 끌어 넣거나(휴대폰은 「＋ 확정」), 오른쪽에서 빼서 공통 카드풀을 정해요. 고른 결과는 시뮬레이터 records/silverkey_pool.json 에 저장돼요(감우가 읽어요). 카드마다 「고치기」로 이름 · 코스트 · 아이콘 · 쓰는 곳 · 덱 제한 · 효과를 바꿀 수 있고, 고친 것도 같이 저장돼요.</p>
  </div>
  <div class="tally" id="tally"></div>
 </header>
 
 <section class="why">
- <div class="panel">
+ <div class="panel" id="whyL">
   <h2>공통 카드풀은 몇 장이 알맞을까</h2>
   <p class="verdict">40장에 찬성해요. 처음 시즌은 40장으로 열고, 쓰이지 않는 카드를 빼며 32~40장 사이로 다듬는 걸 권해요.</p>
   <ul>
@@ -139,7 +139,7 @@ dialog.ed::backdrop{background:rgba(0,0,0,.6)}
   <h2>확정 카드풀의 칸 채우기</h2>
   <div style="overflow-x:auto"><table class="mtx" id="mtx"></table></div>
   <div class="legend"><span>숫자 = 그 아이콘과 쓰는 곳을 가진 카드 수</span><span style="color:var(--bad)">0 = 빈 칸 (★ 배틀은 일부러 비움)</span><span style="color:var(--warn)">1 = 얇음</span></div>
-  <p style="margin-top:10px">점수(20점)는 강함이 아니라 네 가지를 각 5점으로 봤어요. <b>밸런스</b> 코스트 대비 효과가 알맞은가 · <b>완성도</b> 글이 한 번에 읽히고 타이밍이 하나인가 · <b>필요성</b> 빈 칸을 메우고 다른 카드와 겹치지 않는가 · <b>게임성</b> 언제 쓸지 고민이 생기는가.</p>
+  <p style="margin-top:10px" id="scoreNote">점수(20점)는 강함이 아니라 네 가지를 각 5점으로 봤어요. <b>밸런스</b> 코스트 대비 효과가 알맞은가 · <b>완성도</b> 글이 한 번에 읽히고 타이밍이 하나인가 · <b>필요성</b> 빈 칸을 메우고 다른 카드와 겹치지 않는가 · <b>게임성</b> 언제 쓸지 고민이 생기는가.</p>
  </div>
 </section>
 
@@ -152,7 +152,7 @@ dialog.ed::backdrop{background:rgba(0,0,0,.6)}
    <div class="filters">
     <input id="q" type="search" placeholder="이름 · 효과 찾기" aria-label="카드 찾기">
     <select id="sort" aria-label="정렬"><option value="rank">순위</option><option value="cost">코스트</option><option value="tag">쓰는 곳</option><option value="name">이름</option></select>
-    <button class="chip" id="fHide" aria-pressed="false">확정한 카드 숨기기</button><button class="chip" id="fTop" aria-pressed="false">상위 100위만</button>
+    <button class="chip" id="fHide" aria-pressed="false">확정한 카드 숨기기</button><button class="chip" id="fTop" aria-pressed="false">상위 100위만</button><button class="chip" id="fOff" aria-pressed="false">결이 다른 카드도 보기</button>
    </div>
   </div>
   <div class="list drop" id="left" data-zone="left"></div>
@@ -162,7 +162,7 @@ dialog.ed::backdrop{background:rgba(0,0,0,.6)}
    <h2>확정 카드풀 <small id="rightCount"></small></h2>
    <div class="stats" id="stats"></div>
    <div class="tools">
-    <button class="btn" id="bRec">추천 40장으로 되돌리기</button>
+    <button class="btn" id="bRec">추천으로 되돌리기</button>
     <button class="btn dim" id="bClear">비우기</button>
     <button class="btn" id="bCopy">제작기 불러오기용 JSON 복사</button>
     <button class="btn" id="bDown">JSON 파일 받기</button>
@@ -204,29 +204,30 @@ function rebuild(){CARDS=BASE.map(c=>{const e=ED[c.id];if(!e)return c;const x=Ob
 const ICONS=['지시','육성','통솔','능력','★'];
 const TAGS=['체크','던전','배틀 · 선행','배틀 · 대응'];
 const TAGC={'체크':'var(--t-chk)','던전':'var(--t-dg)','배틀 · 선행':'var(--t-bat)','배틀 · 대응':'var(--t-bat)'};
-let pick=[],F={tag:'',icon:'',q:'',sort:'rank',hide:false,top:false},saveT=0;
+let pick=[],F={tag:'',icon:'',q:'',sort:'rank',hide:false,top:false,off:false},saveT=0;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
 const tcol=c=>TAGC[c.tags[0]]||'var(--gold2)';
 function cardHTML(c,zone){const inR=pick.includes(c.id);const s=c.s;const bar=(k,lab)=>`<span>${lab}</span><span class="bar ${k==='need'?'need':''}"><i style="width:${s[k]*20}%"></i></span><span>${s[k]}</span>`;
  return `<article class="card${zone==='left'&&inR?' in':''}" draggable="true" tabindex="0" data-id="${c.id}" style="--tc:${tcol(c)}" aria-label="${esc(c.name)}">
  <div class="hd"><span class="rk">#${c.rank}</span><span class="nm">${esc(c.name)}</span><span class="cost" title="코스트 ${c.cost}">${[0,1,2].map(i=>`<i class="${i<c.cost?'f':''}"></i>`).join('')}${c.cost>3?'':''}<em>${c.cost}</em></span></div>
- <div class="meta">${c.icons.map(i=>`<span class="ic ${i}">${i}</span>`).join('')}${c.tags.map(t=>`<span class="tg" style="--tc:${TAGC[t]}">${t}</span>`).join('')}${c.lim?`<span class="bdg lim">${c.lim}</span>`:''}${c.rec?'<span class="bdg rec">추천</span>':''}${c.grp==='기존'?'<span class="bdg old">기존</span>':''}${c.edited?'<span class="bdg ed">고침</span>':''}</div>
+ <div class="meta">${c.icons.map(i=>`<span class="ic ${i}">${i}</span>`).join('')}${c.tags.map(t=>`<span class="tg" style="--tc:${TAGC[t]}">${t}</span>`).join('')}${c.lim?`<span class="bdg lim">${c.lim}</span>`:''}${c.rec?'<span class="bdg rec">추천</span>':''}${c.grp==='기존'?'<span class="bdg old">기존</span>':''}${c.new?'<span class="bdg ed">새 결</span>':''}${c.picked?'<span class="bdg rec">망령 확정</span>':''}${c.edited?'<span class="bdg ed">고침</span>':''}</div>
  <div class="eff">${esc(c.eff)}</div>
- <div class="sc"><span class="score" style="grid-column:1/-1">${c.score} / 20</span>${bar('bal','밸런스')}${bar('fin','완성도')}${bar('need','필요성')}${bar('fun','게임성')}</div>
+ ${c.t?(()=>{const t=c.t,b=(k,lab)=>`<span>${lab}</span><span class="bar ${k==='rule'?'need':''}"><i style="width:${t[k]*20}%"></i></span><span>${t[k]}</span>`;return `<div class="sc"><span class="score" style="grid-column:1/-1">결 점수 ${t.rule+t.one+t.role+t.fin} / 20${c.kind?' · '+esc(c.kind):''}</span>${b('rule','룰 한 칸')}${b('one','한 가지 일')}${b('role','보험 · 운영')}${b('fin','완성도')}</div>`})():`<div class="sc"><span class="score" style="grid-column:1/-1">${c.score} / 20</span>${bar('bal','밸런스')}${bar('fin','완성도')}${bar('need','필요성')}${bar('fun','게임성')}</div>`}
+ ${c.off&&c.off.length?`<div class="meta">${c.off.map(w=>`<span class="bdg lim">결이 다름 · ${esc(w)}</span>`).join('')}</div>`:''}
  <details><summary>감우 메모 · 웹툴 ${esc(c.auto)}</summary><p>${esc(c.note)}</p></details>
  <div class="act"><button class="btn dim" data-ed="1">고치기</button><span style="flex:1"></span>${inR?(zone==='right'?'<button class="btn dim" data-mv="out">빼기</button>':'<span class="status">확정에 있음</span>'):'<button class="btn" data-mv="in">＋ 확정</button>'}</div>
  </article>`}
-function leftList(){let L=CARDS.filter(c=>(!F.tag||c.tags.includes(F.tag))&&(!F.icon||c.icons.includes(F.icon))&&(!F.hide||!pick.includes(c.id))&&(!F.top||c.rank<=100)&&(!F.q||(c.name+c.eff+c.note).includes(F.q)));
+function leftList(){let L=CARDS.filter(c=>(F.off||!(c.off&&c.off.length)||pick.includes(c.id))&&(!F.tag||c.tags.includes(F.tag))&&(!F.icon||c.icons.includes(F.icon))&&(!F.hide||!pick.includes(c.id))&&(!F.top||c.rank<=100)&&(!F.q||(c.name+c.eff+c.note).includes(F.q)));
  const S={rank:(a,b)=>a.rank-b.rank,cost:(a,b)=>a.cost-b.cost||a.rank-b.rank,tag:(a,b)=>TAGS.indexOf(a.tags[0])-TAGS.indexOf(b.tags[0])||a.rank-b.rank,name:(a,b)=>a.name.localeCompare(b.name,'ko')}[F.sort];return L.sort(S)}
 function render(){const L=leftList();$('#left').innerHTML=L.map(c=>cardHTML(c,'left')).join('')||'<div class="empty">조건에 맞는 카드가 없어요.</div>';
  const R=pick.map(id=>byId[id]).filter(Boolean).sort((a,b)=>TAGS.indexOf(a.tags[0])-TAGS.indexOf(b.tags[0])||a.rank-b.rank);
  $('#right').innerHTML=R.map(c=>cardHTML(c,'right')).join('')||'<div class="empty">여기로 카드를 끌어 놓아요.</div>';
  $('#leftCount').textContent=`${L.length}장 보임 · 전체 ${CARDS.length}`;$('#rightCount').textContent=`${R.length}장`;
  const ic=Object.fromEntries(ICONS.map(i=>[i,R.filter(c=>c.icons.includes(i)).length])),tg=Object.fromEntries(TAGS.map(t=>[t,R.filter(c=>c.tags.includes(t)).length]));
- const avg=R.length?(R.reduce((a,c)=>a+c.cost,0)/R.length).toFixed(2):'-',sc=R.length?(R.reduce((a,c)=>a+c.score,0)/R.length).toFixed(1):'-';
- $('#stats').innerHTML=ICONS.map(i=>`<span>${i} <b>${ic[i]}</b></span>`).join('')+'<span>·</span>'+TAGS.map(t=>`<span>${t} <b>${tg[t]}</b></span>`).join('')+`<span>·</span><span>평균 코스트 <b>${avg}</b></span><span>평균 점수 <b>${sc}</b></span><span>덱 제한 <b>${R.filter(c=>c.lim).length}</b></span><span>고친 카드 <b>${Object.keys(ED).length}</b></span>`;
- const n=R.length;$('#tally').innerHTML=`<div class="tile"><small>후보</small><b>${CARDS.length}</b></div><div class="tile"><small>추천</small><b>40</b></div><div class="tile"><small>확정</small><b class="${n===40?'hit':n>48?'over':''}">${n}</b></div><div class="tile"><small>추천과 다른 카드</small><b>${pick.filter(id=>!REC.includes(id)).length+REC.filter(id=>!pick.includes(id)).length}</b></div>`;
+ const avg=R.length?(R.reduce((a,c)=>a+c.cost,0)/R.length).toFixed(2):'-',sc=R.length?(R.reduce((a,c)=>a+(c.t?c.t.rule+c.t.one+c.t.role+c.t.fin:c.score),0)/R.length).toFixed(1):'-';
+ $('#stats').innerHTML=ICONS.map(i=>`<span>${i} <b>${ic[i]}</b></span>`).join('')+'<span>·</span>'+TAGS.map(t=>`<span>${t} <b>${tg[t]}</b></span>`).join('')+`<span>·</span><span>평균 코스트 <b>${avg}</b></span><span>평균 결 점수 <b>${sc}</b></span><span>덱 제한 <b>${R.filter(c=>c.lim).length}</b></span><span>고친 카드 <b>${Object.keys(ED).length}</b></span>`;
+ const n=R.length;$('#tally').innerHTML=`<div class="tile"><small>후보</small><b>${CARDS.filter(c=>!(c.off&&c.off.length)).length}</b></div><div class="tile"><small>추천</small><b>${REC.length}</b></div><div class="tile"><small>확정</small><b class="${n===40?'hit':n>48?'over':''}">${n}</b></div><div class="tile"><small>추천과 다른 카드</small><b>${pick.filter(id=>!REC.includes(id)).length+REC.filter(id=>!pick.includes(id)).length}</b></div>`;
  let m='<tr><th></th>'+TAGS.map(t=>`<th>${t}</th>`).join('')+'<th>합</th></tr>';for(const i of ICONS){m+=`<tr><th>${i}</th>`+TAGS.map(t=>{const k=R.filter(c=>c.icons.includes(i)&&c.tags.includes(t)).length;return `<td class="${k===0?'z':k===1?'lo':''}">${k}</td>`}).join('')+`<td class="tot">${ic[i]}</td></tr>`}$('#mtx').innerHTML=m;bindCards()}
 function bindCards(){document.querySelectorAll('.card').forEach(el=>{el.ondragstart=e=>{e.dataTransfer.setData('text/plain',el.dataset.id);e.dataTransfer.effectAllowed='move';el.classList.add('drag')};el.ondragend=()=>el.classList.remove('drag');
  el.querySelectorAll('[data-mv]').forEach(b=>b.onclick=e=>{e.stopPropagation();move(el.dataset.id,b.dataset.mv==='in')});el.querySelectorAll('[data-ed]').forEach(b=>b.onclick=e=>{e.stopPropagation();openEd(el.dataset.id)});
@@ -237,6 +238,7 @@ function chips(host,list,key,lab){host.innerHTML=[['',lab]].concat(list.map(x=>[
 chips($('#fTag'),TAGS,'tag','쓰는 곳 전부');chips($('#fIcon'),ICONS,'icon','아이콘 전부');
 $('#q').oninput=e=>{F.q=e.target.value.trim();render()};$('#sort').onchange=e=>{F.sort=e.target.value;render()};
 $('#fHide').onclick=e=>{F.hide=!F.hide;e.target.classList.toggle('on',F.hide);e.target.setAttribute('aria-pressed',F.hide);render()};
+$('#fOff').onclick=e=>{F.off=!F.off;e.target.classList.toggle('on',F.off);e.target.setAttribute('aria-pressed',F.off);render()};
 $('#fTop').onclick=e=>{F.top=!F.top;e.target.classList.toggle('on',F.top);e.target.setAttribute('aria-pressed',F.top);render()};
 $('#bRec').onclick=()=>{pick=REC.slice();render();queueSave()};
 $('#bClear').onclick=()=>{pick=[];render();queueSave()};
@@ -257,6 +259,10 @@ async function save(){const doc={ids:pick.slice(),names:pick.map(id=>byId[id]&&b
  try{const r=await fetch('/api/cardPoolSave',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(doc)});if(!r.ok)throw new Error(r.status);setStatus(`저장했어요 · ${new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})} · records/silverkey_pool.json`)}
  catch(e){setStatus('이 브라우저에만 저장했어요 (시뮬레이터 서버에 못 씀: '+(e&&e.message||e)+')')}}
 function load(doc){if(doc&&Array.isArray(doc.ids)){if(doc.edits&&typeof doc.edits==='object'){ED={};for(const [k,v] of Object.entries(doc.edits))if(BASE.some(c=>c.id===k)&&v&&typeof v==='object')ED[k]=v;rebuild()}pick=doc.ids.filter(id=>byId[id]);render();return true}return false}
+function showAnalysis(a){const ins=BASE.filter(c=>!(c.off&&c.off.length)).length,off=BASE.length-ins,nw=BASE.filter(c=>c.new).length;
+ $('#eyebrow').textContent=`은열쇠 · 공통 카드 후보 ${ins}장 (결이 다른 ${off}장은 숨김) → 확정 카드풀`;
+ $('#sub').innerHTML=`망령 님이 고른 확정 ${a.n}장의 결을 읽고 후보를 다시 짰어요. 그 결에 맞는 기존 후보 ${ins-nw}장 + 새로 만든 카드 ${nw}장이에요. ${REC.length>a.n?`추천 ${REC.length}장 = 확정 ${a.n}장 + 칸을 맞춘 ${REC.length-a.n}장.`:`추천 = 망령 님 확정 ${a.n}장.`} 고른 결과 · 고친 것은 시뮬레이터 records/silverkey_pool.json 에 저장돼요.`;
+ $('#scoreNote').innerHTML='<b>결 점수</b>(20점)는 망령 님 확정 카드의 결에 얼마나 맞는지예요. <b>룰 한 칸</b> 있는 규칙 이름을 그대로 쓰는가 · <b>한 가지 일</b> 글이 짧고 일이 하나인가 · <b>보험 · 운영</b> 사고를 줄이거나 휴식 · 회복을 다루는가 · <b>완성도</b>. 「결이 다름」 딱지는 확정 카드에 없던 결(★ · 경계도 조작 · 건너뛰기 · 길 정보 · 코스트 3 · 뽑기 · 큰 역전)이에요.';$('#whyL').innerHTML=`<h2>${esc(a.title)}</h2><ul>${a.points.map(x=>`<li>${x}</li>`).join('')}</ul><p style="margin-top:8px">${esc(a.how)}</p>`}
 /* ---------- 고치기 ---------- */
 const LIMS=['','덱 1장','손패 1장'];let EDID=null,EV=null;
 function edChips(host,opts,isOn,onTap){host.innerHTML=opts.map(([v,n])=>`<button type="button" class="chip${isOn(v)?' on':''}" data-v="${esc(v)}" aria-pressed="${isOn(v)}">${esc(n)}</button>`).join('');host.querySelectorAll('button').forEach(b=>b.onclick=()=>{onTap(b.dataset.v);edDraw()})}
@@ -273,7 +279,7 @@ $('#eReset').onclick=()=>{delete ED[EDID];rebuild();$('#ed').close();render();qu
 $('#eOk').onclick=()=>{const b=BASE.find(x=>x.id===EDID);EV.name=$('#eN').value.trim()||b.name;EV.eff=$('#eX').value.trim()||b.eff;
  const same=EV.name===b.name&&EV.cost===b.cost&&EV.icons.join()===b.icons.join()&&EV.tags.join()===b.tags.join()&&(EV.lim||'')===(b.lim||'')&&EV.eff===b.eff;
  if(same)delete ED[EDID];else ED[EDID]={name:EV.name,cost:EV.cost,icons:EV.icons,tags:EV.tags,lim:EV.lim,eff:EV.eff};rebuild();$('#ed').close();render();queueSave()};
-(async()=>{try{const r=await fetch('/api/cardPool');const d=await r.json();BASE=d.cards||[];REC=BASE.filter(c=>c.rec).map(c=>c.id);pick=REC.slice();rebuild();render();
+(async()=>{try{const r=await fetch('/api/cardPool');const d=await r.json();BASE=d.cards||[];REC=BASE.filter(c=>c.rec).map(c=>c.id);if(d.analysis)showAnalysis(d.analysis);pick=REC.slice();rebuild();render();
   if(d.pool&&load(d.pool))setStatus(`저장된 확정 카드풀 ${d.pool.n}장을 불러왔어요${d.pool.at?' · '+new Date(d.pool.at).toLocaleString('ko-KR'):''}${Object.keys(ED).length?' · 고친 카드 '+Object.keys(ED).length+'장':''}`);
   else{let l=null;try{l=JSON.parse(localStorage.getItem('sk_pool_sim')||'null')}catch(e){}if(load(l))setStatus('이 브라우저에 남은 카드풀을 불러왔어요 — 바꾸면 서버에 저장돼요');else setStatus('추천 40장으로 시작했어요 — 바꾸면 저장돼요')}}
  catch(e){setStatus('후보 카드를 못 불러왔어요: '+(e&&e.message||e));render()}})();

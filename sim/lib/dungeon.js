@@ -34,12 +34,21 @@ const CARD={key:{n:'열쇠 카드',ic:['★'],v:9,eff:'autopass'},sneak:{n:'발�
  retry:{n:'다른 길로',ic:['지시'],v:4,eff:'retry'},firstaid:{n:'응급 처치',ic:['육성'],v:4,eff:'heal'},craft:{n:'손재주',ic:['능력','육성'],v:4,eff:'easy'},food:{n:'비상식량',ic:['육성','통솔'],v:3,eff:'restUp'},
  breath:{n:'숨 고르기',ic:['★'],v:3,eff:'breath'},salt:{n:'소금기 어린 부적',ic:['능력'],v:3,eff:''},reso:{n:'은빛 공명',ic:['★'],v:2,eff:'cycle'},cover0:{n:'함께 버티자',ic:['통솔'],v:2,eff:'cover0'},
  note:{n:'관찰 노트',ic:['지시'],v:1,eff:''},map:{n:'지도 펼치기',ic:['지시','능력'],v:1,eff:''},pair:{n:'호흡 맞추기',ic:['통솔','지시'],v:1,eff:''},back:{n:'물러서!',ic:['통솔'],v:1,eff:''},call:{n:'불러내기',ic:['능력'],v:1,eff:''},
- keyc:{n:'열쇠 카드 (바치기만)',ic:['★'],v:9,eff:''},dead:{n:'광기 카드',ic:[],v:-1,eff:'dead',pen:'mad'},scar:{n:'상흔 카드',ic:[],v:-1,eff:'dead',pen:'scar'}};
+ keyc:{n:'열쇠 카드 (바치기만)',ic:['★'],v:9,eff:''},
+ /* 11-02 망령 확정 공통 카드 40장 (records/silverkey_pool.json) — 체크 · 던전 쪽 효과만 모델. 배틀 정보 · 대응 카드는 아이콘으로만(바치기) */
+ suk:{n:'숙련',ic:['지시'],v:4,eff:'plus',plus:2,stat:'지시'},lead:{n:'리더십',ic:['통솔'],v:4,eff:'plus',plus:2,stat:'통솔'},body:{n:'체력 단련',ic:['육성'],v:4,eff:'plus',plus:2,stat:'육성'},inou2:{n:'이능 해방',ic:['능력'],v:4,eff:'plus',plus:2,stat:'능력'},
+ bae:{n:'배수진',ic:['능력'],v:3,eff:'plus',plus:2,risk:2},k15:{n:'결정적 순간',ic:['★'],v:4,eff:'plus',plus:2,only15:1},k15x:{n:'결정적 순간(+1안)',ic:['★'],v:4,eff:'plus',plus:1,only15:1},last:{n:'마지막 힘',ic:['★'],v:3,eff:'plus',plus:2,deckLe:2},adv:{n:'역경',ic:['★'],v:3,eff:'plus',plus:1,injGe:1,plus2At:2},
+ medkit:{n:'구급 상자',ic:['육성'],v:4,eff:'heal_inj2'},cheer:{n:'격려',ic:['통솔'],v:2,eff:'nomill'},muri:{n:'무리하지 마',ic:['통솔'],v:3,eff:'cover1'},
+ sotr:{n:'급소 털어내기',ic:['능력'],v:2,eff:'critReroll',battle:1},mend:{n:'상비약',ic:['육성'],v:2,eff:'cure',battle:1},rise:{n:'다시 일어서',ic:['육성'],v:2,eff:'actReroll',battle:1},bless:{n:'축복',ic:['능력'],v:2,eff:''},calm:{n:'침착한 대처',ic:['통솔'],v:2,eff:''},scout:{n:'정찰 비행',ic:['지시'],v:1,eff:''},clock:{n:'시계 맞추기',ic:['지시'],v:1,eff:''},dead:{n:'광기 카드',ic:[],v:-1,eff:'dead',pen:'mad'},scar:{n:'상흔 카드',ic:[],v:-1,eff:'dead',pen:'scar'}};
 /* 11-01 망령 「코스트」: 효과로 쓸 때만 코스트 (바치기는 무료). 트레이너마다 5점 · 긴 휴식에 5로 */
-const CARD_COST={"key":2,"sneak":3,"gust":1,"bandage":1,"reroll":2,"nocrit":2,"retry":2,"firstaid":2,"craft":2,"food":1,"breath":1,"salt":1,"reso":1,"cover0":2,"note":1,"map":0,"pair":1,"back":1,"call":0,"keyc":2};for(const k in CARD)CARD[k].c=CARD_COST[k]||0;
+const CARD_COST={"key":2,"sneak":3,"gust":1,"bandage":1,"reroll":2,"nocrit":2,"retry":2,"firstaid":2,"craft":2,"food":1,"breath":1,"salt":1,"reso":1,"cover0":2,"note":1,"map":0,"pair":1,"back":1,"call":0,"keyc":2,"suk":2,"lead":2,"body":2,"inou2":2,"bae":0,"k15":2,"k15x":2,"last":1,"adv":0,"medkit":2,"cheer":1,"muri":1,"sotr":1,"mend":2,"bless":1,"calm":1,"scout":1,"clock":0,"rise":1};for(const k in CARD)CARD[k].c=CARD_COST[k]||0;
 const CARD_DECKS={base:['key','key','reroll','bandage','gust','nocrit','retry','reso'],sneak:['key','key','reroll','bandage','gust','nocrit','sneak','reso'],
  check:['key','key','reso','breath','gust','craft','retry','bandage'],battle:['key','key','reroll','reroll','nocrit','nocrit','firstaid','reso'],
- nokey:['keyc','keyc','reroll','bandage','gust','nocrit','retry','reso']};   /* 열쇠 카드를 「판정 없이 통과」 없이 ★ 바치기로만 쓸 때 */
+ nokey:['keyc','keyc','reroll','bandage','gust','nocrit','retry','reso'],
+ /* 11-02 확정 40장에서 짠 덱 (열쇠 2 + 준비 6) — 시뮬 records/silverkey_pool.json 검토용 */
+ p_check:['key','key','bae','k15','suk','lead','cover0','last'],p_care:['key','key','cover0','bandage','medkit','food','gust','cheer'],
+ p_mix:['key','key','bae','k15','cover0','bandage','food','reroll'],p_star:['key','key','k15','last','adv','breath','reso','cover0'],
+ p_stat:['key','key','suk','lead','body','inou2','cover0','bandage'],p_battle:['key','key','reroll','nocrit','sotr','mend','rise','cover0'],p_typ:['key','key','k15','bae','mend','nocrit','food','cover0'],p_check1:['key','key','bae','k15x','suk','lead','cover0','last']};   /* 열쇠 카드를 「판정 없이 통과」 없이 ★ 바치기로만 쓸 때 */
 async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt.seed||1);const pol=Object.assign({who:'best',cover:opt.cards&&!(opt.adjust&&+opt.adjust.coverOn)?'never':'fail',partner:'match',inou:'yes'},opt.policy||{});   /* 11-01 23:56 망령: 은열쇠 덱이 있으면 커버 없음 (adj.coverOn 1 이면 켬) */
  const adj=Object.assign({fieldMax:1,coverBall:0,ordScope:'dungeon',ordPer:1,cmdPer:2,target:0,penScale:1,checkEvery:1,stepAll:0,wildLv:0,wildExtra:0,bossN:0,raidX:null,raidMode:'barrier',restV:1,al0:0,al30:5,al70:10,alBattle:0,alLose:10,alScale:1},dg.rules||{},opt.adjust||{});   /* 10-31 망령 「꼭 고쳐」: alLose 는 규칙에 없는 옛 던전도 +10 (autogen RULES 와 같다) */   /* dg.rules = 던전에 박힌 규칙값(자동 생성 던전). 조정값(opt.adjust)이 그 위에 */
  const party=makeParty(parties,dg.wn||opt.wn||2);const ev=[];const say=(e)=>ev.push(e);
@@ -88,14 +97,19 @@ async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt
    if(trapish){const c=cFind('easy');if(c&&pOk(q)<0.9){cUse(c.P,c.k);q.target-=2;cardRec.push(CARD[c.k].n)}}
    if((trapish||(adj.keyTrap!=null&&+adj.keyTrap===0&&q.target>=12))&&pOk(q)<0.75){const c=cFind('autopass');if(c){cUse(c.P,c.k);keyPass=true;cstat.autopass++;cardRec.push(CARD[c.k].n)}}
    if(!keyPass){const usedBy=new Set();q.bonus=0;while(q.bonus<(adj.bkMax==null?1:+adj.bkMax)&&pOk(q)<0.9){let best=null;for(const Q of party){if(!Q.cd||Q.inj>=3||usedBy.has(Q))continue;for(const k of Q.cd.hand){const C=CARD[k];if(!C.ic.length||!(C.ic.includes('★')||C.ic.includes(ck.stat))||C.eff==='autopass'||C.eff==='skip')continue;if(!best||C.v<best.v)best={Q,k,v:C.v}}}
-     if(!best)break;cUse(best.Q,best.k,false);if(+adj.bkMill!==0)cMill(best.Q,1);usedBy.add(best.Q);q.bonus++;cstat.commit++;   /* 바치면 덱 맨 위 1장도 버림 */cardRec.push(CARD[best.k].n+' +1')}}}
+     if(!best)break;cUse(best.Q,best.k,false);if(+adj.bkMill!==0&&CARD[best.k].eff!=='nomill')cMill(best.Q,1);usedBy.add(best.Q);q.bonus++;cstat.commit++;   /* 바치면 덱 맨 위 1장도 버림 */cardRec.push(CARD[best.k].n+' +1')}}}
+  /* 11-02 확정 40장: 체크 +N 카드(숙련 · 리더십 · 체력 단련 · 이능 해방 · 배수진 · 결정적 순간 · 마지막 힘 · 역경) — 한 체크에 1장, 성공률 0.75 미만일 때. 배수진은 실패하면 상태 두 단계 */
+  let riskN=0,plusUsed=false;if(CD&&!keyPass&&pOk(q)<(adj.plusAt==null?0.75:+adj.plusAt)){let best=null;for(const Q of party){if(!Q.cd||Q.inj>=3)continue;for(const k of Q.cd.hand){const C=CARD[k];if(C.eff!=='plus')continue;if(C.stat&&C.stat!==ck.stat)continue;if(C.only15&&target<15)continue;if(C.deckLe!=null&&Q.cd.pile.length>C.deckLe)continue;if(C.injGe!=null&&Math.max(...party.map(X=>X.inj||0))<C.injGe)continue;   /* 11-02 2차: 역경 = 일행 누구든 부상 이상 */if(C.risk&&pOk(Object.assign({},q,{bonus:(q.bonus||0)+C.plus}))<0.7)continue;if((Q.cd.cost<(C.c||0))&&Q.cd.madN>=MADCAP)continue;const sc=C.plus*10-(C.risk?5:0)-(C.c||0);if(!best||sc>best.sc)best={Q,k,sc}}}
+   if(best&&cUse(best.Q,best.k)){const C0=CARD[best.k];const pl=C0.plus2At!=null&&Math.max(...party.map(X=>X.inj||0))>=C0.plus2At?2:C0.plus;plusUsed=true;q.bonus=(q.bonus||0)+pl;riskN=CARD[best.k].risk||0;cstat.plus=(cstat.plus||0)+1;cardRec.push(C0.n+' +'+pl)}}
   let r=keyPass?{ri:3,mod:SK.modOf(q),a:0,p:0,total:0,fumble:false}:SK.roll(q,rng);
-  if(CD&&!keyPass&&r.ri===1){const c=cFind('retry');if(c){cUse(c.P,c.k);cardRec.push(CARD[c.k].n);const r2=SK.roll(q,rng);if(r2.ri>=3)cstat.retryOk++;r=r2}}if(r.myosuUsed)P.myosu++;const mode=q.super?'inou':'skill';if(q.super)P.inou++;
+  if(CD&&!keyPass&&r.ri===1&&!(plusUsed&&(adj.oneEff==null||+adj.oneEff!==0))){const c=cFind('retry');if(c){cUse(c.P,c.k);cardRec.push(CARD[c.k].n);const r2=SK.roll(q,rng);if(r2.ri>=3)cstat.retryOk++;r=r2}}if(r.myosuUsed)P.myosu++;const mode=q.super?'inou':'skill';if(q.super)P.inou++;
   const rec={cards:cardRec,room:room.id,label:ck.label,stat:ck.stat,target,who:P.trainer.name,rank,mode,partner:q.m?q.m.name:(q.super?'이능':'혼자'),mod:r.mod,fit:q.fit||0,pdie:6,die:6,a:r.a,p:r.p,total:r.total,ri0:r.ri,ri:r.ri,fumble:r.fumble,stubborn:false,cover:'',pen:[]};
   /* 실패: 상태 한 단계 (제시가 noStep 이면 없음). 커버 = 판정하지 않은 포켓몬이 최대 HP adj.coverHp(1/4) 를 받고 막는다 (pol.cover 'never' 면 안 함) */
   if(r.ri===1&&!+ck.noStep){let C=null;if(pol.cover!=='never'){const cs=(+adj.coverN===0||P.coverUsed<(adj.coverN==null?1:+adj.coverN))?party.flatMap(Q=>(+adj.coverBall?aliveMons(Q):fieldMons(Q)).map(m=>({Q,m}))).filter(x=>x.m!==q.m&&x.m.hp.cur>frac(x.m.hp.max,adj.coverHp||'1/4')):[];cs.sort((a,b)=>b.m.hp.cur/b.m.hp.max-a.m.hp.cur/a.m.hp.max);C=cs[0]||null}
    if(C){const c0=cFind('cover0');let loss=frac(C.m.hp.max,adj.coverHp||'1/4');if(c0){cUse(c0.P,c0.k);loss=0}C.m.hp.cur=Math.max(0,C.m.hp.cur-loss);rec.cover=C.Q.trainer.name;P.coverUsed=(P.coverUsed||0)+1;C.Q.stats.covers++;P.stats.covered++;rec.pen.push(`[커버] ${C.m.name} HP −${loss}`)}
-   else{const c0=CD&&pol.cover==='never'?cFind('cover0'):null;if(c0&&cUse(c0.P,c0.k))rec.pen.push('[함께 버티자] 상태 그대로');else injure(P,'실패',rec)}}   /* 11-01: 커버가 없으면 「함께 버티자」가 실패의 상태 진행을 막는다 */
+   else{let saved=false;const one=adj.oneEff==null||+adj.oneEff!==0;   /* 11-02 감우 제안 규칙: 체크 하나에 효과로 쓰는 체크 카드는 1장 (누가 내든) — adjust oneEff=0 이면 끔 */const c0=CD&&pol.cover==='never'&&riskN<2&&!(one&&plusUsed)?cFind('cover0'):null;if(c0&&cUse(c0.P,c0.k)){rec.pen.push('[함께 버티자] 상태 그대로');saved=true}
+    if(!saved&&CD&&pol.cover==='never'&&riskN<2&&!(one&&plusUsed))for(const Q of party){if(Q===P||!Q.cd||Q.inj>=3)continue;const k=Q.cd.hand.find(x=>CARD[x].eff==='cover1');if(k&&cUse(Q,k)){cMill(Q,2);rec.pen.push('[무리하지 마] 상태 그대로 · 대신 덱 2장');saved=true;break}}
+    if(!saved){injure(P,'실패',rec);if(riskN>=2)injure(P,'배수진',rec)}}}   /* 11-01: 커버가 없으면 「함께 버티자」가 실패의 상태 진행을 막는다 */
   P.stats.checks++;if(rec.ri>=3)P.stats.ok++;if(rec.ri===4)P.stats.crit++;if(rec.ri<=1)P.stats.fail++;if(mode==='inou')P.stats.inouUsed++;
   /* 보상 · 패널티 묶음 (묶음은 판정한 포켓몬이 받는다 — 혼자면 포켓몬 몫은 없음) */
   if(rec.ri>=3&&ck.gain)applyPen(P,ck.gain,rec,'성공 보상');if(rec.ri===4&&ck.gainCrit)applyPen(P,ck.gainCrit,rec,'대성공 보상');
@@ -170,7 +184,8 @@ async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt
  /* 10-28 갈림길(dg.branches): 판마다 갈림길에서 반반으로 한쪽 길(본길 구간 / 다른 길)을 걷는다 — opt.route = 'main' | 'alt' 로 고정할 수 있다 */
  const route=pathOf(dg,()=>opt.route==='main'?1:opt.route==='alt'?0:rng());if(dg.branches&&dg.branches.length)say({k:'route',path:route});
  for(const rid of route){const room=dg.rooms.find(r=>r.id===rid);if(!room)continue;endRoom=rid;for(const P of party)if(P.inj===3&&!P.gone)P.inj=2;if(CD){for(const P of party)cClear(P);if(cstat.alQ){pend.al=Math.min(100,pend.al+cstat.alQ);cstat.alQ=0}}say({k:'room',room:rid,t:room.t,name:room.name});
-  if(CD){for(const P of party)if(P.inj===1){const c=cFind('heal_inj',P)||(P.inj===1&&cFind('heal_inj'));if(c){cUse(c.P,c.k);P.inj=0}}
+  if(CD){for(const P of party)if(P.inj===2){const c=cFind('heal_inj2',P)||cFind('heal_inj2');if(c){cUse(c.P,c.k);P.inj=1}}   /* 11-02 구급 상자: 중상 → 부상 */
+   for(const P of party)if(P.inj===1){const c=cFind('heal_inj',P)||(P.inj===1&&cFind('heal_inj'));if(c){cUse(c.P,c.k);P.inj=0}}
    while(pend.al>=20){const c=cFind('al');if(!c)break;cUse(c.P,c.k);const b0=pend.al;pend.al=Math.max(0,pend.al-10);say({k:'alert',from:b0,to:pend.al,why:'card'})}
    if(room.enc&&room.enc.boss){const lo=party.flatMap(P=>aliveMons(P)).sort((a,b)=>a.hp.cur/a.hp.max-b.hp.cur/b.hp.max)[0];if(lo&&lo.hp.cur/lo.hp.max<0.5){const c=cFind('breath');if(c){cUse(c.P,c.k);doRest(room,'breath')}}
     for(let i=0;i<3;i++){const m=party.flatMap(P=>aliveMons(P)).sort((a,b)=>a.hp.cur/a.hp.max-b.hp.cur/b.hp.max)[0];if(!m||m.hp.cur/m.hp.max>=0.75)break;const c=cFind('heal');if(!c)break;cUse(c.P,c.k);m.hp.cur=Math.min(m.hp.max,m.hp.cur+frac(m.hp.max,'1/4'))}}}
@@ -185,7 +200,7 @@ async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt
  const checks=ev.filter(e=>e.k==='check'),battles=ev.filter(e=>e.k==='battle');
  const endHp=party.map(P=>P.mons.reduce((a,m)=>a+m.hp.cur/m.hp.max,0)/P.mons.length);
  return {cards:CD?Object.assign({},cstat,{hand:party.map(P=>P.cd.hand.slice())}):null,dungeon:dg.id,wipe,lockdown,alert:pend.al,boss,endRoom,rooms:ev.filter(e=>e.k==='room').length,
-  checks:{n:checks.length,ok:checks.filter(c=>c.ri>=3).length,crit:checks.filter(c=>c.ri===4).length,cost:checks.filter(c=>c.ri===2).length,fail:checks.filter(c=>c.ri<=1).length,fumble:checks.filter(c=>c.ri===0).length,covers:checks.filter(c=>c.cover).length,inou:checks.filter(c=>c.mode==='inou').length,alone:checks.filter(c=>c.partner==='혼자').length},
+  checks:{n15:checks.filter(c=>c.target>=15).length,ok15:checks.filter(c=>c.target>=15&&c.ri>=3).length,n:checks.length,ok:checks.filter(c=>c.ri>=3).length,crit:checks.filter(c=>c.ri===4).length,cost:checks.filter(c=>c.ri===2).length,fail:checks.filter(c=>c.ri<=1).length,fumble:checks.filter(c=>c.ri===0).length,covers:checks.filter(c=>c.cover).length,inou:checks.filter(c=>c.mode==='inou').length,alone:checks.filter(c=>c.partner==='혼자').length},
   extraFights:battles.filter(b=>b.extra).length,restDowns:ev.filter(e=>e.k==='restDown').length,
   bossLvDebt:pend.bossLv,poolLeft:Object.assign({},pool),
   bossBattle:(()=>{const b=battles.find(x=>x.boss);return b?{win:b.win,turns:b.turns,kos:b.kos,foes:b.foes,raidX:b.raidX,phases:b.phases,bossHp:b.bossHp,hpAfter:b.hpAfter}:null})(),

@@ -18,7 +18,8 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
  const out={mv:mv.name,lines:[],hits:[],fail:''};
  /* 행동 판정 (창의 「행동 판정」 칸 — 시뮬은 늘 켠다) */
  let chk=null;
- if(F&&['Flinch','Sleep','Paralysis','Freeze','Attract','Confusion'].some(k=>(atk0.states||{})[k])){const am=JSON.parse(JSON.stringify(atk0));const r=F.actionCheck(am);
+ if(F&&['Flinch','Sleep','Paralysis','Freeze','Attract','Confusion'].some(k=>(atk0.states||{})[k])){let am=JSON.parse(JSON.stringify(atk0));let r=F.actionCheck(am);
+  if(!r.ok&&atk0.side==='left'&&['Paralysis','Freeze','Confusion'].some(k=>(atk0.states||{})[k])&&!(atk0.states||{}).Flinch&&cardTake(H,'actReroll',+b.turn||0)){am=JSON.parse(JSON.stringify(atk0));r=F.actionCheck(am)}   /* 11-02 「다시 일어서」: 마비 · 혼란 · 얼음 행동 판정 한 번 다시 */
   if(!r.ok){let self=0;if(r.selfHit){self=F.confusionHit(am);am.hp.cur=Math.max(0,am.hp.cur-self);r.lines.push(`${am.name} 자작 대미지 −${self}`)}
    const nb0=FN.snap(),nb=FN.snap(nb0);const x=nb.mons[mid];x.states=am.states;if(self){x.hp.latest=x.hp.cur;x.hp.cur=Math.max(0,x.hp.cur-self)}if(x.hp.cur<=0)x.entry='';await FN.saveBattle(nb0,nb);
    out.fail=r.lines.join(' / ');out.lines.push(...r.lines);if(H.logOn)W.OM_APP.sysLog(`【행동 실패】 ${atk0.name} — ${out.fail}`,'battle');return out}
@@ -68,7 +69,7 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
   if(mods.cx!=='none'&&FN.CRR(def).never)mods.cx='none';
   if(mods.cx!=='none'){const nc=[[def.ability,def.abilityEff],...FN.potSrc(def).map(p=>[p.name,p.eff])].find(([n,e])=>n&&/자신의\s*급소에\s*맞지\s*않는다/.test(String(e||'')));if(nc)mods.cx='none'}
   let hits=[];if(acc.hit){const mx=+mv.max||1,mn=+mv.min||1;const cnt=B.multiHits(mv,{skillLink:skill,rng:rnd});const fixedN=mx>1&&mn===mx&&!skill&&!acc.sure;const stage=B.critStage(atk,def,{input:0,order:OC.v+(mods.cr||0)-(mods.cg||0)+FN.itemCrit(atk,def)+FN.crAdj(atk,def)});
-   for(let i=0;i<cnt;i++){if(i>0&&fixedN){const a2=accRoll();if(!a2.hit)break}let cr=mods.cx==='none'?{crit:false}:B.critical(stage,{type:+FN.CRR(atk).tbl||0,forced:critForce||mods.cx==='sure'||!!FN.CRR(atk).sure,rng:rnd});if(cr.crit&&def.side==='left'&&atk.side!=='left'&&cardTake(H,'noCrit',+b.turn||0))cr={crit:false};   /* 「안개의 환영」 */hits.push({v:cr.crit?2:1,cr})}}
+   for(let i=0;i<cnt;i++){if(i>0&&fixedN){const a2=accRoll();if(!a2.hit)break}let cr=mods.cx==='none'?{crit:false}:B.critical(stage,{type:+FN.CRR(atk).tbl||0,forced:critForce||mods.cx==='sure'||!!FN.CRR(atk).sure,rng:rnd});if(cr.crit&&def.side==='left'&&atk.side!=='left'&&H.cards&&H.cards.shield&&H.cards.shield[def.id]===(+b.turn||0))cr={crit:false};else if(cr.crit&&def.side==='left'&&atk.side!=='left'&&cardTake(H,'noCrit',+b.turn||0)){cr={crit:false};H.cards.shield=H.cards.shield||{};H.cards.shield[def.id]=+b.turn||0}   /* 「안개의 환영」 11-02: 이번 턴 그 아군이 받는 급소를 모두 막는다 */else if(cr.crit&&def.side==='left'&&atk.side!=='left'&&cardTake(H,'critReroll',+b.turn||0))cr=B.critical(stage,{type:+FN.CRR(atk).tbl||0,forced:critForce||mods.cx==='sure'||!!FN.CRR(atk).sure,rng:rnd});   /* 11-02 「급소 털어내기」: 한 번 다시 굴림 */hits.push({v:cr.crit?2:1,cr})}}
   const objs=(f.objects||{})[side]||{};const wall={};for(const k in FN.WALLS)if(objs[k]>0&&!(k==='얼음의장벽'&&tyOf(mv)==='Fire'))wall[FN.WALLS[k]]=1;
   if(objs['얼음의장벽']>0&&tyOf(mv)==='Fire'&&mv.cat!=='변화'){const nb0=FN.snap(),nb=FN.snap(nb0);const fo=FN.fieldOf(nb);delete fo.objects[side]['얼음의장벽'];nb.field=fo;await FN.saveBattle(nb0,nb)}
   const spw=SPW?SPW(def):null;const powT=spw&&spw.pow!=null?spw.pow:pow;
@@ -211,5 +212,5 @@ function statusPick(H,W,c){const FN=H.fn,MA=W.OM_MOVEAUTO,B=W.OM_BATTLE;const {m
     else if(op.o==='순풍'&&fs.some(tg=>c.spd(tg)>c.spd(m)))out.push({mv,tg:m,score:0.35,why:'순풍'})}
    else if(op.k==='object'&&op.side==='enemy'){if(pol==='C')continue;const objs=(f.objects||{})[fs[0].side]||{};if(+objs[op.o]>0)continue;const benchN=Object.values(b.mons).filter(x=>x.side===fs[0].side&&!x.entry&&x.hp.cur>0).length;if(benchN)out.push({mv,tg:fs[0],score:0.08+0.07*benchN,why:op.o})}}}
  if(!out.length)return null;out.sort((a,x)=>x.score-a.score);return out[0]}
-module.exports={attack,applyHit,estimate,statusPick};
+module.exports={attack,applyHit,estimate,statusPick,cardTake};
 
