@@ -4409,10 +4409,10 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .ho-btn:hover{border-color:#fff}
 .ho-stage{position:relative;flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
 .ho-focus{display:flex;align-items:center;gap:26px}
-.ho-big .hc{width:min(300px,62vw);height:auto;aspect-ratio:5/7;animation:hobig .35s cubic-bezier(.2,1.4,.4,1)}
-.ho-big.play .hc{animation:hoplay .5s ease forwards}
+.ho-big .skc{width:min(300px,62vw);height:auto;aspect-ratio:5/7;animation:hobig .35s cubic-bezier(.2,1.4,.4,1)}
+.ho-big.play .skc{animation:hoplay .5s ease forwards}
 @keyframes hobig{from{transform:translateY(80px) scale(.6) rotate(-6deg);opacity:0}to{transform:none;opacity:1}}
-@keyframes hoplay{40%{transform:scale(1.12);filter:brightness(1.6) drop-shadow(0 0 30px var(--hc))}100%{transform:translateY(-120vh) scale(.8) rotate(8deg);opacity:0}}
+@keyframes hoplay{40%{transform:scale(1.12);filter:brightness(1.6) drop-shadow(0 0 30px var(--skc))}100%{transform:translateY(-120vh) scale(.8) rotate(8deg);opacity:0}}
 .ho-acts{display:flex;flex-direction:column;gap:10px}
 .ho-use{background:var(--yel,#ffd12e);color:#000;border:0;padding:14px 34px;font:400 26px/1 var(--head,'Black Han Sans',sans-serif);cursor:pointer;transform:skewX(-10deg);box-shadow:5px 5px 0 #000,0 0 30px rgba(255,209,46,.4);letter-spacing:.06em}
 .ho-use:hover{transform:skewX(-10deg) translateY(-2px);box-shadow:7px 7px 0 #000,0 0 40px rgba(255,209,46,.6)}
@@ -4422,13 +4422,13 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .hand-ov.on .ho-slot:hover{transform:translateX(var(--x)) translateY(-46px) rotate(0) scale(1.12);z-index:5;transition-delay:0s}
 .hand-ov.on .ho-slot.sel{transform:translateX(var(--x)) translateY(-30px) rotate(0);z-index:4;filter:brightness(.55) grayscale(.4)}
 .hand-ov.playing .ho-fan{opacity:.3;transition:opacity .3s}
-.ho-slot .hc{width:150px;aspect-ratio:5/7}
+.ho-slot .skc{width:150px;aspect-ratio:5/7}
 .ho-empty{color:#aaa;align-self:center}
 .ho-hint{position:relative;text-align:center;color:rgba(255,255,255,.5);font-size:12px;padding:6px 0 max(10px,env(safe-area-inset-bottom))}
 /* 카드 얼굴 */
 .hc{position:relative;border-radius:12px;padding:5px;background:linear-gradient(145deg,color-mix(in srgb,var(--hc) 85%,#fff),var(--hc) 40%,color-mix(in srgb,var(--hc) 60%,#000));box-shadow:0 10px 26px rgba(0,0,0,.6),inset 0 0 0 1px rgba(255,255,255,.35);color:#1b1b1b;user-select:none}
 .hc::after{content:"";position:absolute;inset:0;border-radius:12px;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.35) 45%,transparent 60%);background-size:250% 100%;background-position:120% 0;transition:background-position .6s;pointer-events:none}
-.ho-slot:hover .hc::after,.ho-big .hc::after{background-position:-30% 0}
+.ho-slot:hover .skc-fr::after,.ho-big .skc-fr::after{background-position:-30% 0}
 .hc-in{height:100%;border-radius:8px;background:#f6f2e8;display:flex;flex-direction:column;overflow:hidden;position:relative}
 .hc-top{display:flex;align-items:center;gap:6px;padding:7px 9px 5px;background:linear-gradient(#fff,#efe8d8);border-bottom:2px solid var(--hc)}
 .hc-n{flex:1;min-width:0;font:700 14px/1.15 var(--head,inherit);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -4445,15 +4445,15 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .ho-big .hc-x{font-size:14px;padding:12px 16px;overflow:auto}
 .hc-auto{position:absolute;right:6px;bottom:6px;font:700 9px/1 var(--mono,monospace);letter-spacing:.1em;color:#fff;background:#111;padding:3px 6px;border-radius:3px;box-shadow:0 0 0 1px var(--hc)}
 .ho-big .hc-auto{font-size:11px;padding:4px 8px}
-@media(max-width:760px){.ho-head h2{font-size:22px}.ho-fan{height:200px}.ho-slot,.ho-slot .hc{width:110px}.ho-slot{margin-left:-55px}.ho-focus{flex-direction:column;gap:14px}.ho-acts{flex-direction:row}.ho-use{font-size:20px;padding:10px 26px}}
+@media(max-width:760px){.ho-head h2{font-size:22px}.ho-fan{height:200px}.ho-slot,.ho-slot .skc{width:110px}.ho-slot{margin-left:-55px}.ho-focus{flex-direction:column;gap:14px}.ho-acts{flex-direction:row}.ho-use{font-size:20px;padding:10px 26px}}
 .ho-head h2{white-space:nowrap}
-@media(min-width:1000px){.ho-slot,.ho-slot .hc{width:176px}.ho-slot{margin-left:-88px}.ho-fan{height:300px}}
+@media(min-width:1000px){.ho-slot,.ho-slot .skc{width:176px}.ho-slot{margin-left:-88px}.ho-fan{height:300px}}
 @media(max-width:760px){.ho-head{flex-wrap:wrap;gap:8px}.ho-head h2{font-size:20px}.ho-cnt{font-size:24px}}
 
 /* 손패: 무덤 · 버리기 · 카드 버튼 (10-26) */
 .ho-grave b{color:var(--yel,#ffd12e);margin-left:2px}
 .ho-dis{border-color:rgba(255,120,120,.6)}
-.ho-big.toss .hc{animation:hotoss .38s ease forwards}
+.ho-big.toss .skc{animation:hotoss .38s ease forwards}
 @keyframes hotoss{to{transform:translateY(60vh) rotate(-24deg) scale(.6);opacity:0;filter:grayscale(1)}}
 .ho-gv{display:none}
 .hand-ov.gview .ho-stage,.hand-ov.gview .ho-fan{display:none}
@@ -4461,7 +4461,7 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .ho-gh{display:flex;align-items:center;gap:10px;color:#fff;flex-wrap:wrap}.ho-gh b{font:400 22px/1 var(--head,sans-serif)}.ho-gh small{color:rgba(255,255,255,.6);font-size:12px;flex:1;min-width:200px}
 .ho-grow{display:flex;gap:14px;overflow-x:auto;padding:18px 4px;align-items:flex-start;flex:1}
 .ho-gc{all:unset;flex:none;width:160px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;filter:grayscale(.55) brightness(.85);transition:filter .2s,transform .2s}
-.ho-gc .hc{width:160px;aspect-ratio:5/7}
+.ho-gc .skc{width:160px;aspect-ratio:5/7}
 .ho-gc>span{color:#fff;font-size:12px;opacity:0;transition:opacity .2s}
 .ho-gc:hover{filter:none;transform:translateY(-6px)}.ho-gc:hover>span{opacity:1}
 /* 배틀 카드 버튼 · 이름 줄 작은 버튼 */

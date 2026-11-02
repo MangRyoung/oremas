@@ -221,9 +221,10 @@ window.OM_DECK_UI=(()=>{
  const pendingN=()=>Object.keys(PEND).filter(k=>Date.now()-PEND[k].at<60000).length;
 
  /* ---------- 카드 그림 ---------- */
- function cardHtml(c,o){o=o||{};if(!c)return '';const col=colOf(c.col);const cost=c.c!==''&&c.c!=null;
+ const skNorm=c=>({n:c.n,t:c.t,c:c.c,x:c.x,img:c.img,col:colOf(c.col),ic:icOf(c),src:c.src||'',lim:c.lim||'',auto:!!(c.a&&c.a.ops&&c.a.ops.length)});
+ function cardHtml(c,o){o=o||{};if(!c)return '';if(window.SKCARD)return window.SKCARD.flat(skNorm(c),o);const col=colOf(c.col);const cost=c.c!==''&&c.c!=null;
   return `<div class="dc ${o.sel?'sel':''} ${o.cls||''}" style="--dc:${col}" ${o.attr||''}>${o.badge?`<em class="dcb">${o.badge}</em>`:''}<div class="dch"><b>${esc(c.n)}</b>${cost?`<span class="dcc">${esc(c.c)}</span>`:''}</div>${c.img?`<div class="dci" style="background-image:url('${cssu(c.img)}')"></div>`:''}${c.t||c.ic?`<div class="dct">${icHtml(c)}${esc(c.t||'')}</div>`:''}<div class="dcx">${esc(c.x||'')}</div>${c.a&&c.a.ops&&c.a.ops.length?'<em class="dca" title="자동화 구문이 있다">⚙</em>':''}</div>`}
- const backHtml=n=>`<div class="dc back"><span>🃏</span>${n!=null?`<em>${n}</em>`:''}</div>`;
+ const backHtml=n=>window.SKCARD?window.SKCARD.flatBack(n):`<div class="dc back"><span>🃏</span>${n!=null?`<em>${n}</em>`:''}</div>`;
 
  /* ---------- 휴대폰 「덱」 앱 ---------- */
  const PV={deck:'',tab:'hand',sel:[],q:'',zsel:{},zone:'disc',peek:null,adj:0,give:'',n:1,arm:'',armT:0};
@@ -337,7 +338,7 @@ window.OM_DECK_UI=(()=>{
       <label class="wide">효과<textarea id="mf_x" rows="5" placeholder="카드 효과 · 여러 줄 가능">${esc(f.x)}</textarea></label>
       <label class="wide">자동화 구문 <span class="note">배틀에서 「🃏 카드」로 쓰면 이 구문이 돈다 · 비우면 효과 글만 로그에 (SP · 포텐셜과 같은 구문)</span><textarea id="mf_a" rows="3" style="font-family:var(--mono);font-size:12.5px" placeholder="예) 회복 1/4 아군1체 · 랭크 공격+1 임시 자신 · 상태확률 마비 30% 상대1체">${esc(f.a&&f.a.dsl||'')}</textarea><div class="small" id="mf_ap" style="white-space:pre-wrap"></div><details class="spgen"><summary class="small">⚙ 생성기 — 골라서 구문 만들기</summary><div id="mf_ag"></div></details></label>
       <label class="wide">그림<span class="row" style="gap:6px"><input type="text" id="mf_i" value="${esc(f.img)}" placeholder="https://… (비워도 된다)" style="flex:1"><label class="btn sm ghost">올리기<input type="file" id="mf_f" accept="image/*" hidden style="display:none"></label></span></label></div>
-     <div class="dmprev" id="mf_p">${cardHtml(f)}</div>
+     <div class="dmprev" id="mf_p">${bigCard(f)}</div>
      <div class="row" style="margin-top:8px">${MG.edit&&dk.cards[MG.edit]?`<button class="btn sm ghost danger" data-mg="del">삭제</button><button class="btn sm ghost" data-mg="dup">복제</button><span class="sp"></span><button class="btn pri" data-mg="save">저장</button>`:'<span class="sp"></span><button class="btn pri" data-mg="save">덱에 추가</button>'}</div>
      <div class="sec" style="margin-top:14px">여러 장 한꺼번에 <span class="note">한 줄에 한 장: 이름 | 종류 | 비용 | 장수 | 효과 | 색 (엑셀에서 붙여 넣은 탭도 된다)</span></div>
      <textarea id="mf_b" rows="4" placeholder="상처약 | 도구 | 1 | 3 | HP 를 20 회복한다 | 초록">${esc(MG.bulk)}</textarea><div class="row"><span class="small dim" id="mf_bp"></span><span class="sp"></span><button class="btn sm" data-mg="bulk">한꺼번에 넣기</button></div></div>`:`<div class="dmform"><div class="small dim">카드를 고치는 건 GM(덱 주인)만 한다.</div><div class="pdhand">${dk.order.map(c=>cardHtml(dk.cards[c],{badge:'×'+dk.cards[c].q})).join('')}</div></div>`}</div>`}
@@ -362,7 +363,7 @@ window.OM_DECK_UI=(()=>{
   const bg=md.parentElement;if(bg)bg.onclick=e=>{if(e.target===bg)back()};
   md.querySelectorAll('[data-mgt]').forEach(b=>b.onclick=()=>{MG.tab=b.dataset.mgt;MG.resDraft=null;MG.optDraft=null;re()});
   /* 카드 폼 */
-  const rd=()=>{const g=id=>($('#'+id,md)||{}).value;if(!$('#mf_n',md))return;MG.form=Object.assign(MG.form||{},{n:g('mf_n'),ic:g('mf_ic')||'',t:g('mf_t'),c:g('mf_c'),q:+g('mf_q')||0,x:g('mf_x'),img:g('mf_i')});{const dsl=String(g('mf_a')||'').trim();const K=window.OM_FX;if(dsl){const r=K?K.parse(dsl):{ops:[],errs:[]};MG.form.a={dsl,ops:r.ops};const ap=$('#mf_ap',md);if(ap)ap.innerHTML=(r.ops.length?'미리보기: '+esc(K.unparse(r.ops).join(' / ')):'')+(r.errs&&r.errs.length?` <span style="color:var(--red)">모르는 줄: ${esc(r.errs.join(' / '))}</span>`:'')}else{MG.form.a=null;const ap=$('#mf_ap',md);if(ap)ap.innerHTML=''}}const p=$('#mf_p',md);if(p)p.innerHTML=cardHtml(MG.form)};
+  const rd=()=>{const g=id=>($('#'+id,md)||{}).value;if(!$('#mf_n',md))return;MG.form=Object.assign(MG.form||{},{n:g('mf_n'),ic:g('mf_ic')||'',t:g('mf_t'),c:g('mf_c'),q:+g('mf_q')||0,x:g('mf_x'),img:g('mf_i')});{const dsl=String(g('mf_a')||'').trim();const K=window.OM_FX;if(dsl){const r=K?K.parse(dsl):{ops:[],errs:[]};MG.form.a={dsl,ops:r.ops};const ap=$('#mf_ap',md);if(ap)ap.innerHTML=(r.ops.length?'미리보기: '+esc(K.unparse(r.ops).join(' / ')):'')+(r.errs&&r.errs.length?` <span style="color:var(--red)">모르는 줄: ${esc(r.errs.join(' / '))}</span>`:'')}else{MG.form.a=null;const ap=$('#mf_ap',md);if(ap)ap.innerHTML=''}}const p=$('#mf_p',md);if(p)p.innerHTML=bigCard(MG.form)};
   ['mf_n','mf_t','mf_ic','mf_c','mf_q','mf_x','mf_i','mf_a'].forEach(id=>{const el=$('#'+id,md);if(el)el.oninput=rd});
   {const ta=$('#mf_a',md),gh=$('#mf_ag',md);if(ta&&gh&&window.OM_FX_UI&&window.OM_FX_UI.mountGen)window.OM_FX_UI.mountGen(gh,ta,{toast:t=>A().toast(t)});if(ta)rd()}
   md.querySelectorAll('[data-mgc]').forEach(b=>b.onclick=()=>{rd();MG.form.col=b.dataset.mgc;md.querySelectorAll('[data-mgc]').forEach(x=>x.classList.toggle('on',x===b));rd()});
@@ -429,16 +430,14 @@ window.OM_DECK_UI=(()=>{
   let db=DB()?clone(DB()):seedDb();if(!DB()){db.decks={};db.cur=''}const K=window.OM_FX;let nd=0,nc=0,miss=[];
   for(const t of list){const id='mk_'+t.id;const old=db.decks[id]?fixDeck(db.decks[id]):null;const dk=old||blank(t.deckName||((t.name||'트레이너')+'의 덱'));dk.name=t.deckName||dk.name;ensureHolder(dk,t.id);
    const keep=new Set();for(const x of t.deck){const r=byName[x.n];if(!r){miss.push(x.n);continue}const cid='k'+[...x.n].reduce((h,c)=>((h*31+c.codePointAt(0))>>>0),7).toString(36);keep.add(cid);
-    const dsl=String(r[9]||'').trim();const v={n:x.n,ic:String(r[10]||''),t:String(r[2]||''),c:r[3]==null?'':String(r[3]),x:String(r[4]||''),col:colKey(r[5]),img:String(r[6]||''),q:Math.max(0,+x.q||+r[7]||1)};if(dsl){const p=K?K.parse(dsl):{ops:[]};v.a={dsl,ops:p.ops}}
+    const dsl=String(r[9]||'').trim();const v={n:x.n,ic:String(r[10]||''),t:String(r[2]||''),c:r[3]==null?'':String(r[3]),x:String(r[4]||''),col:colKey(r[5]),img:String(r[6]||''),src:String(r[11]||''),q:Math.max(0,+x.q||+r[7]||1)};if(dsl){const p=K?K.parse(dsl):{ops:[]};v.a={dsl,ops:p.ops}}
     const was=dk.cards[cid];const q0=was?(+was.q||0):0;dk.cards[cid]=Object.assign({},v,{q:q0});if(!dk.order.includes(cid))dk.order.push(cid);qtyAdj(dk,cid,v.q-q0);nc++}
    for(const cid of dk.order.slice())if(!keep.has(cid)&&String(cid).startsWith('k')){qtyAdj(dk,cid,-(+dk.cards[cid].q||0));dk.order=dk.order.filter(x=>x!==cid);delete dk.cards[cid];for(const z of ['pile','disc','out'])dk[z]=dk[z].filter(x=>x!==cid)}
    if(!old)dk.pile=shuffle(dk.pile);db.decks[id]=dk;if(!db.cur)db.cur=id;nd++}
   await A().set(['deck2'],db);A().toast(`제작기 덱 ${nd}개 · 카드 ${nc}종을 가져왔다${miss.length?` · 카드 DB 에 없는 것: ${[...new Set(miss)].slice(0,4).join(', ')}`:''}`);redrawSoon()}
  /* 손패 화면: 어두운 무대 위 부채꼴 손패 → 카드를 고르면 가운데로 크게 떠오르고 「사용」 */
- function bigCard(c){const col=colOf(c.col);const cost=c.c!==''&&c.c!=null;const auto=!!(c.a&&c.a.ops&&c.a.ops.length);
-  return `<div class="hc" style="--hc:${col}"><div class="hc-in"><div class="hc-top"><b class="hc-n">${esc(c.n)}</b>${cost?`<span class="hc-cost">${esc(c.c)}</span>`:''}</div>
-   <div class="hc-art" style="${c.img?`background-image:url('${cssu(c.img)}')`:''}">${c.img?'':`<span class="hc-mono">${esc([...(c.n||'?')][0])}</span>`}</div>
-   ${c.t||c.ic?`<div class="hc-type">${icHtml(c)}<span>${esc(c.t||'')}</span></div>`:''}<div class="hc-x">${esc(c.x||'')}</div>${auto?'<div class="hc-auto" title="자동화 구문이 돈다">⚙ AUTO</div>':''}</div></div>`}
+ /* 11-02 감우: 손패 · 무덤 · 고른 카드 = 은열쇠 카드 (skcard.js 공용 모양 — 제작기 덱 관리와 같은 그림) */
+ function bigCard(c,o){return window.SKCARD?window.SKCARD.html(skNorm(c||{}),o):''}
  function battleHand(tid,o){o=o||{};const x=deckFor(tid);const BU=window.OM_BATTLE_UI;if(!x){if(gm()&&confirm('이 방에 덱이 없다. 제작기 트레이너 시트의 덱을 가져올까?'))return importMakerDecks().then(()=>{if(deckFor(tid))battleHand(tid,o)});return A().toast('덱이 없다 — GM 이 휴대폰 「덱」에서 덱을 만들거나 제작기 덱을 가져와야 한다')}const [did,dk]=x;const hand=(dk.hands[tid]||[]).slice();
   document.querySelectorAll('.hand-ov').forEach(e=>e.remove());
   const ov=document.createElement('div');ov.className='hand-ov';const n=hand.length;const spread=Math.min(64,Math.max(28,520/Math.max(n,1)));const ang=Math.min(8,40/Math.max(n,1));
@@ -476,7 +475,7 @@ window.OM_DECK_UI=(()=>{
    await A().sysLog(`${head}${card.x?'\n'+card.x:''}`,o.where==='dungeon'||o.where==='rp'?'sys':'battle')}}
  /* 스킬 체크 창의 손패 줄 (작은 카드) */
  function handInfo(tid){const x=deckFor(tid);if(!x)return null;const [did,dk]=x;const cr=dk.opt.cr;
-  const ex=exemptSet(did);return {did,name:dk.name,disc:dk.disc.length,load:handLoad(dk,did,tid),hl:+dk.opt.hl||0,res:cr?`${cr} ${((dk.rv[tid]||{})[cr])??0}`:'',cards:(dk.hands[tid]||[]).map(cid=>{const c=dk.cards[cid]||{};return {cid,n:c.n||'?',c:c.c,x:c.x||'',img:c.img||'',col:colOf(c.col),ic:icOf(c),ex:isExempt(dk,cid,ex)}})}}
+  const ex=exemptSet(did);return {did,name:dk.name,disc:dk.disc.length,load:handLoad(dk,did,tid),hl:+dk.opt.hl||0,res:cr?`${cr} ${((dk.rv[tid]||{})[cr])??0}`:'',cards:(dk.hands[tid]||[]).map(cid=>{const c=dk.cards[cid]||{};return {cid,n:c.n||'?',t:c.t||'',c:c.c,x:c.x||'',img:c.img||'',col:colOf(c.col),ic:icOf(c),src:c.src||'',auto:!!(c.a&&c.a.ops&&c.a.ops.length),ex:isExempt(dk,cid,ex)}})}}
  /* ---------- 11-01 망령 「은열쇠」 박자 드로우 · 기본값 · 체크에 바치기 ---------- */
  /* 그 트레이너의 덱: 제작기에서 가져온 자기 덱(mk_<id>) → 손패 주인으로 든 덱 */
  function deckIdOf(db,tid){const D=(db||{}).decks||{};if(D['mk_'+tid])return 'mk_'+tid;const L=Object.keys(D).filter(id=>(D[id].holders||[]).includes(tid));return L.find(id=>id===db.cur)||L[0]||''}
