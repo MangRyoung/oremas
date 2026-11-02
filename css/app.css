@@ -4941,22 +4941,16 @@ html[data-vt="mm"] .memon .medet{border-color:rgba(20,16,12,.4)}
 .skbkc .skhc{min-height:44px;width:auto;min-width:80px;padding:4px 8px;position:relative;cursor:pointer}
 .skbkc .skhc em{position:static;align-self:flex-start;margin-top:2px}
 
-/* ---------- 11-02 망령 「좌우 분리」 — 대사 상자가 스탠딩 일러를 가리지 않게 (이 기기 설정 dsplit · 무대 「◧ 분리」) ----------
-   말하는 사람 쪽(data-dside l/r) 절반에 스탠딩을 모으고, 반대쪽 절반에 대사 상자를 가운데 쪽으로 붙여 둔다. 좁은 화면은 쓰지 않는다 */
+/* ---------- 11-02 망령 「좌우 분리」 (방 토글 rp.dsplit) — 말풍선은 말하는 스탠딩 바로 옆(js 가 left 를 정함), 가운데 자리는 안 쓰고 좌우를 조금 안쪽으로 ---------- */
 @media (min-width:761px){
- .rpstage.dsplit[data-dside="l"] .stand.left{left:1%;right:auto}
- .rpstage.dsplit[data-dside="l"] .stand.center{left:25%}
- .rpstage.dsplit[data-dside="l"] .stand.right{left:auto;right:51%}
- .rpstage.dsplit[data-dside="r"] .stand.right{right:1%;left:auto}
- .rpstage.dsplit[data-dside="r"] .stand.center{left:75%}
- .rpstage.dsplit[data-dside="r"] .stand.left{left:51%;right:auto}
- .rpstage.dsplit .stand img{max-width:min(36vw,46%)}
- .rpstage.dsplit[data-dside="l"] .dlg{left:50%;right:2%;bottom:9%}
- .rpstage.dsplit[data-dside="r"] .dlg{left:2%;right:50%;bottom:9%}
- .rpstage.dsplit[data-dside="l"] .dlg.skin{left:48.5%;right:auto;width:min(49%,var(--bubw,760px));bottom:9%}
- .rpstage.dsplit[data-dside="r"] .dlg.skin{right:48.5%;left:auto;width:min(49%,var(--bubw,760px));bottom:9%}
+ .rpstage.dsplit .stand.left{left:7%}
+ .rpstage.dsplit .stand.right{right:7%}
+ .rpstage.dsplit .stand.center.ds-l{left:7%;transform:none}
+ .rpstage.dsplit .stand.center.ds-r{left:auto;right:7%;transform:none}
+ .rpstage.dsplit .stand.center.ds-l.on,.rpstage.dsplit .stand.center.ds-r.on{transform:scale(1.03)}
+ .rpstage.dsplit .dlg.skin{width:min(46%,var(--bubw,740px))}
+ .rpstage.dsplit .dlg:not(.skin)[data-ds]{width:46%}
 }
-
 /* GM 줄 오른쪽 「◧ 좌우 분리」 (방 토글 rp.dsplit) */
 .mebar .medsplit{order:8;margin-left:auto;display:inline-flex;align-items:center;gap:8px;padding:4px 10px 4px 8px;border:1px dashed currentColor;border-radius:8px;cursor:pointer;user-select:none;flex:none;opacity:.85}
 .mebar .medsplit:hover{opacity:1;border-style:solid}
@@ -4971,3 +4965,7 @@ html[data-vt="mm"] .memon .medet{border-color:rgba(20,16,12,.4)}
 .mebar .medsplit b{font-size:13px;white-space:nowrap}
 .mebar .medsplit small{font-size:10.5px;opacity:.75;white-space:nowrap}
 @media (max-width:760px){.mebar .medsplit{display:none}}
+
+/* 11-02 망령 「소지가 너무 많아지면 — 6체 이후는 스크롤」: GM 줄 · 내 줄의 포켓몬 칸은 두 줄(3 × 2)까지, 그 뒤는 칸 안에서 스크롤 */
+.mebar .memons{max-height:104px;overflow-y:auto;scrollbar-width:thin;padding-right:2px;overscroll-behavior:contain}
+.mebar .memons::-webkit-scrollbar{width:5px}.mebar .memons::-webkit-scrollbar-thumb{background:rgba(128,128,128,.5);border-radius:3px}
