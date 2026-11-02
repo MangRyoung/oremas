@@ -576,7 +576,7 @@ function openChatPrefs(){const y=chatSty();const md=openModal(`<div class="mhead
  const pv=()=>{const a=styAttr({sty:rd()});g('cp_pv').setAttribute('style',a.bub);g('cp_pvw').setAttribute('style',a.who);g('cp_fs_v').textContent=g('cp_fs').value+'px';g('cp_av_v').textContent=g('cp_av').value+'px';UI.chat=+g('cp_fs').value;UI.av=+g('cp_av').value;applyUi()};
  md.querySelectorAll('input').forEach(i=>{i.oninput=pv;i.onchange=pv});['tc','nc','bc'].forEach(k=>g('cp_'+k).addEventListener('input',()=>{g('cp_'+k+'_on').checked=true;pv()}));pv();
  g('cp_reset').onclick=()=>{for(const k of ['tc','nc','bc'])g('cp_'+k+'_on').checked=false;g('cp_fs').value=UI_DEF.chat;g('cp_av').value=UI_DEF.av;pv()};
- g('cp_ok').onclick=()=>{try{localStorage.setItem('om_chatsty',JSON.stringify(rd()));localStorage.setItem('om_ui',JSON.stringify(UI))}catch(e){}closeModal();toast('채팅 설정을 저장했다');renderLog&&renderLog()}}
+ g('cp_ok').onclick=()=>{try{localStorage.setItem('om_chatsty',JSON.stringify(rd()));localStorage.setItem('om_ui',JSON.stringify(UI))}catch(e){}closeModal();toast('채팅 설정을 저장했다');LOGV++;renderLog&&renderLog()}}
 async function sendChat(){
  const inp=$('#chatIn');const t=inp.value.trim();if(!t)return;LOGMINE=Date.now();const SY=chatSty();const ch=Object.assign(CHAN.cur==='o'?{ch:'ooc'}:{},Object.keys(SY).length?{sty:SY}:{});const nf=CHAN.cur==='o'?{}:{nf:1};inp.value='';if(window.OM_RP_UI&&window.OM_RP_UI.typingStop)window.OM_RP_UI.typingStop();
  try{
@@ -617,6 +617,7 @@ function splitLog(name,L,kind){const it=L.filter(x=>/^소지품/.test(x)),rest=L
 /* 채팅 고정 (10-24 망령): 켜 두면 새 글이 와도 스크롤을 그대로 둔다 — 고정 단추에 새 글 표시만 */
 /* 10-25 망령: 채팅창은 처음 들어올 때만 맨 아래로. 그 뒤로는 끌어내리지 않는다 — 맨 아래를 보고 있을 때만 새 글을 따라가고, 위를 읽는 중이면 「↓ 새 글」만 띄운다. 내가 보낸 글은 따라간다 */
 var LOGNEW=false,LOGMINE=0;
+const LOGMAX=400;let LOGV=0;   /* LOGV 를 올리면 다음 renderLog 는 전부 다시 그린다 (채팅 설정 · 아바타처럼 지난 줄 모양이 바뀔 때) */
 var LOGPIN=(()=>{try{return localStorage.getItem('om_logpin')==='1'}catch(e){return false}})();
 /* 같은 GM 이 두 창(또는 두 기기)에서 방을 열고 있으면 자동 공개 같은 배틀 로그가 거의 동시에 두 번 들어온다 (10-26 FFA 시험) — 같은 사람 · 같은 글 · 4초 안이면 한 번만 보인다 */
 function logDup(){const seen=[];return r=>{if(r.kind!=='battle'&&!(r.kind==='chat'&&(r.data||{}).bat))return true;const t=String((r.data||{}).t||'');if(!t)return true;const at=Date.parse(r.at)||0;const hit=seen.find(q=>q.t===t&&q.w===r.who&&Math.abs(at-q.at)<4000);seen.push({t,w:r.who,at});if(seen.length>6)seen.shift();return !hit}}
@@ -627,7 +628,14 @@ function renderLog(scroll){
  /* 10-28 망령: 로그를 완전히 지우면(서버가 남기는 「GM 이 로그를 지웠다.」 줄) 이 브라우저에만 있던 「나만 보임」 줄도 그 앞의 것은 버린다 */
  const wipe=ST.log.reduce((a,r)=>r.kind==='sys'&&r.data&&r.data.t==='GM 이 로그를 지웠다.'&&r.id>a?r.id:a,0);if(wipe){const rs=selfRows();const k=rs.filter(r=>r.id>wipe);if(k.length<rs.length){rs.splice(0,rs.length,...k);try{localStorage.setItem(SELFK(),JSON.stringify(rs))}catch(e){}}}
  const SR=CHAN.cur==='o'?[]:selfRows().filter(r=>r.id>cut);
- el.innerHTML=(SR.length?ST.log.concat(SR).sort((a,b)=>a.id-b.id):ST.log).filter(logDup()).filter(r=>r.kind==='self'||(r.id>cut&&(CHAN.cur==='o'?isOoc(r):!isOoc(r)))).map(r=>{const d=r.data||{};const k=(r.kind==='chat'&&d.bat)?d.bat:r.kind;const t=fmtTime(r.at);
+ /* 11-02 망령 「채팅 렉」: 새 줄이 올 때마다 로그 전체(배틀 카드 포함 수백 줄)를 다시 만들던 것 → 앞부분이 그대로면 새 줄만 뒤에 붙인다.
+    화면에는 최근 LOGMAX 줄만 둔다(더 위는 「로그 저장」 · 정리기로). 채널 · 지우기 · 끼워 넣은 줄이 있으면 예전처럼 전부 다시 */
+ const LIST=(SR.length?ST.log.concat(SR).sort((a,b)=>a.id-b.id):ST.log).filter(logDup()).filter(r=>r.kind==='self'||(r.id>cut&&(CHAN.cur==='o'?isOoc(r):!isOoc(r))));
+ const KEY=[CHAN.cur,cut,ST.role,ST.seat,ST.gmNick||'',LOGV].join('|');const LM=el._lm;
+ const app=LM&&LM.key===KEY&&LIST.length>=LM.n&&LM.n>0&&LIST[LM.n-1].id===LM.last&&LIST[0]&&LIST[0].id===LM.first&&el.querySelector('.msg');
+ const rows=app?LIST.slice(LM.n):LIST.slice(-LOGMAX);
+ el._lm={key:KEY,n:LIST.length,last:LIST.length?LIST[LIST.length-1].id:null,first:LIST.length?LIST[0].id:null};
+ const HTML=rows.map(r=>{const d=r.data||{};const k=(r.kind==='chat'&&d.bat)?d.bat:r.kind;const t=fmtTime(r.at);
   if(k==='self')return `<div class="msg sys self"><div class="bub">${esc(d.t)} <span class="selftag">나만 보임</span></div></div>`;
   if(k==='sys')return `<div class="msg sys"><div class="bub">${esc(d.t)}</div></div>`;
   if(k==='chat'&&d.clear)return `<div class="msg sys"><div class="bub">무대를 비웠다</div></div>`;
@@ -641,10 +649,11 @@ function renderLog(scroll){
   const lf=k==='chat'&&!isOoc(r)?lineFmt(d):{narr:false,text:String(d.t||'')};
   const sa=styAttr(d);
   return `<div class="msg ${k} ${mine?'me':''} ${lf.narr?'narr':''}"><div class="av" style="${av?`background-image:url('${cssu(av)}')`:''}"></div><div class="bub" style="${sa.bub}"><span class="who" style="${sa.who}">${who}</span>${d.img?`<a href="${esc(d.img)}" target="_blank" rel="noopener"><img class="cimg" src="${esc(d.img)}" alt=""></a>`:''}${esc(lf.text)}</div><span class="time">${t}</span></div>`}).join('');
+ if(app){if(HTML){const nb=el.querySelector('.lognew');if(nb)nb.remove();el.insertAdjacentHTML('beforeend',HTML);let k=el.querySelectorAll(':scope>.msg').length-LOGMAX;while(k-->0){const f=el.querySelector(':scope>.msg');if(!f)break;f.remove()}}}else el.innerHTML=HTML;
  el.querySelectorAll('[data-lmid]').forEach(bt=>bt.onclick=()=>{if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.action)window.OM_BATTLE_UI.action({act:'pots',mid:bt.dataset.lmid,only:String(bt.dataset.lnm||'').split('|').filter(Boolean)})});
  if(!el.innerHTML&&CHAN.cur==='o')el.innerHTML='<div class="msg sys"><div class="bub">잡담 창 — 여기서 한 말은 세션 로그·무대에 나오지 않는다</div></div>';chanDots();
  const follow=scroll==='force'||(!LOGPIN&&scroll!==false&&(near||Date.now()-LOGMINE<5000));
- if(follow){LOGNEW=false;el.scrollTop=el.scrollHeight}else{el.scrollTop=top0;if(el.scrollHeight>h0+2&&scroll!==false){if(LOGPIN){const pn=$('#pinLog');if(pn)pn.classList.add('new')}else LOGNEW=true}if(LOGNEW&&!LOGPIN)el.insertAdjacentHTML('beforeend','<button type="button" class="lognew">↓ 새 글</button>')}}
+ if(follow){LOGNEW=false;el.scrollTop=el.scrollHeight}else{el.scrollTop=top0;if(el.scrollHeight>h0+2&&scroll!==false){if(LOGPIN){const pn=$('#pinLog');if(pn)pn.classList.add('new')}else LOGNEW=true}if(LOGNEW&&!LOGPIN){const ob=el.querySelector('.lognew');if(ob)ob.remove();el.insertAdjacentHTML('beforeend','<button type="button" class="lognew">↓ 새 글</button>')}}}
 
 /* ---------- 씬 ---------- */
 function scene(){return ST.state.scene||'rp'}
