@@ -31,17 +31,20 @@ window.OM_PICK=(()=>{
  const gi=v=>{const g=G();let k=-1;for(let i=0;i<g.length;i++)if(v>=g[i][0])k=i;return k};
  function step(v,d){const g=G();if(!g.length)return Math.max(1,v+d*10);const k=gi(v);const n=Math.max(0,Math.min(g.length-1,k+d));if(n===k)return v;return Math.max(1,g[n][0])}
  function base(cur,opt,done){opt=opt||{};const K=S().STATS_KO;let b=(cur||[]).map(v=>+v||0);const b0=b.slice();
+  /* 11-02 제보 「배틀 중 종족치를 손으로 바꾼 뒤 처음 값을 눌러도 안 돌아간다」: 「처음 값」이 이 창을 연 때의 값이라, 한 번 적용하고 다시 열면 바뀐 값이 「처음」이었다.
+     opt.orig(바꾸기 전 원래 종족치)를 받으면 그 값으로 돌린다 */
+  const R0=Array.isArray(opt.orig)&&opt.orig.length===b.length?opt.orig.map(v=>+v||0):b0;const rsLab=R0!==b0&&R0.join()!==b0.join()?`원래대로 (${R0.join('/')})`:'처음 값';
   const md=A().openModal(`<div class="mhead"><h2>${esc(opt.title||'종족치 변경')}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    ${opt.note?`<div class="small dim" style="margin-bottom:8px">${esc(opt.note)}</div>`:''}
    <div class="pkb">${K.map((k,i)=>`<div class="pkbs" data-i="${i}"><small>${esc(k)}</small><b class="pkg"></b><div class="pkbr"><button type="button" class="btn sm" data-d="-1" title="랭크 한 단계 낮추기">▼</button><input type="number" class="n" min="1" max="255" data-v value=""><button type="button" class="btn sm" data-d="1" title="랭크 한 단계 올리기">▲</button></div><em class="pkst"></em></div>`).join('')}</div>
-   <div class="row small" style="margin-top:8px"><span>합 <b class="mono" id="pk_sum"></b> <span class="dim" id="pk_sum0"></span></span><span class="sp"></span><button class="btn sm ghost" id="pk_rs">처음 값</button><button class="btn pri" id="pk_ok">적용</button></div>`);
+   <div class="row small" style="margin-top:8px"><span>합 <b class="mono" id="pk_sum"></b> <span class="dim" id="pk_sum0"></span></span><span class="sp"></span><button class="btn sm ghost" id="pk_rs">${esc(rsLab)}</button><button class="btn pri" id="pk_ok">적용</button></div>`);
   md.classList.add('pkmodal');
   const draw=()=>{md.querySelectorAll('.pkbs').forEach(el=>{const i=+el.dataset.i;const v=b[i];el.querySelector('.pkg').textContent=S().gradeOf(v);const inp=el.querySelector('[data-v]');if(document.activeElement!==inp)inp.value=v;el.classList.toggle('chg',v!==b0[i]);
     let st='';if(opt.lv){try{st='실수치 '+S().statsOf(b,opt.iv||[0,0,0,0,0,0],opt.ev||[0,0,0,0,0,0],opt.lv)[i]}catch(e){}}el.querySelector('.pkst').textContent=(v!==b0[i]?b0[i]+' → '+v+(st?' · ':''):'')+st});
    const s=b.reduce((a,x)=>a+x,0),s0=b0.reduce((a,x)=>a+x,0);$('#pk_sum',md).textContent=s;$('#pk_sum0',md).textContent=s!==s0?'(처음 '+s0+')':''};
   md.querySelectorAll('.pkbs').forEach(el=>{const i=+el.dataset.i;el.querySelectorAll('[data-d]').forEach(bt=>bt.onclick=()=>{b[i]=step(b[i],+bt.dataset.d);draw()});
    const inp=el.querySelector('[data-v]');inp.oninput=()=>{b[i]=Math.max(1,Math.min(255,+inp.value||0));draw()};inp.onblur=()=>draw()});
-  $('#pk_rs',md).onclick=()=>{b=b0.slice();draw()};
+  $('#pk_rs',md).onclick=()=>{b=R0.slice();draw()};
   $('#pk_ok',md).onclick=async()=>{A().closeModal();await done(b.map(v=>Math.max(1,v)))};draw()}
 
  /* 폼체인지 · 메가진화 편집 (제작기 formsHtml 과 같은 칸). m = 시트 포켓몬, f = 고칠 폼(없으면 새로). done(폼) */
