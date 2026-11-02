@@ -939,17 +939,22 @@ window.OM_BATTLE_UI=(()=>{
   /* 11-02 망령 「상태 미라클아이 상대1체 2턴 — 상대가 안 뜨고 아군만 보인다」: 고유 구문이 「상대 1체」를 고르면 대상 목록을 상대 포켓몬으로 (기준은 이 트레이너의 나와 있는 포켓몬) */
   const ua0=FX()?FX().autoOf({tid},'pot',name):null;const foeT=!!(ua0&&ua0.ops&&JSON.stringify(ua0.ops).includes('"tgt":"enemy1"'));
   const mons=Object.values(b.mons||{}).filter(m=>(foeT?(m.side!==t.side&&m.tid!==tid):m.tid===tid)&&m.entry&&m.hp.cur>0).sort((p,q)=>p.entry.localeCompare(q.entry));const ph=+b.phase||0;
+  /* 11-02 망령 「트레이너 고유 때도 누가 기준일지 고를 수 있게」: 이 트레이너의 나와 있는 포켓몬 중 기준(구문의 「자신」)을 고른다. 대상이 내 포켓몬이면 대상을 고를 때 기준도 같이 따라간다 */
+  const own=Object.values(b.mons||{}).filter(m=>m.tid===tid&&m.entry&&m.hp.cur>0).sort((p,q)=>p.entry.localeCompare(q.entry));
   const md=A().openModal(`<div class="mhead"><h2><span class="tag uqt">고유</span> 『${esc(name)}』</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    <div class="small" style="margin-bottom:8px;white-space:pre-wrap">${esc(String(x.p.eff||'').replace(/<br\s*\/?>/g,'\n'))}</div>
    <div class="small dim">${esc(t.name)} · ${x.max!=null?pips(x.left,x.max):'횟수 없음'}</div>
    <div class="sec">대상${foeT?' <span class="dim small">— 상대 1체</span>':''}</div><div class="pool">${mons.map((m,i)=>`<div class="oc ${i===0?'mine':''}" data-ut="${m.id}"><b>${esc(m.name)}</b><small>${foeT?'상대 · ':''}에리어 ${m.entry.toUpperCase()}</small></div>`).join('')}<div class="oc ${mons.length?'':'mine'}" data-ut=""><b>대상 없음</b><small>${foeT?'발동할 때 고른다':'트레이너만'}</small></div></div>
+   ${own.length>1||(foeT&&own.length)?`<div class="sec">기준 <span class="dim small">— 구문의 「자신」 · 예고 공격 등의 능력치는 이 포켓몬</span></div><div class="pool" id="ubase">${own.map((m,i)=>`<div class="oc ${i===0?'mine':''}" data-ub="${m.id}"><b>${esc(m.name)}</b><small>에리어 ${m.entry.toUpperCase()}</small></div>`).join('')}</div>`:''}
    <div class="small dim" id="upre" style="margin-top:6px">선행 입력 확인 중…</div>
    <div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn pri" data-uf="pre" hidden>선행 발동</button><button class="btn" data-uf="free" ${x.left===null||x.left>0?'':'disabled'}>임의 발동</button>${c.gm?'<button class="btn ghost" data-uf="force">강제</button>':''}</div>`);
-  let tgt=mons[0]?mons[0].id:'';md.querySelectorAll('[data-ut]').forEach(el=>el.onclick=()=>{tgt=el.dataset.ut;md.querySelectorAll('[data-ut]').forEach(o=>o.classList.toggle('mine',o===el))});
-  md.querySelectorAll('[data-uf]').forEach(bt=>bt.onclick=()=>fireSpecial(tid,tgt,'uq',name,bt.dataset.uf));
+  let tgt=mons[0]?mons[0].id:'',base=own[0]?own[0].id:'';const markB=()=>md.querySelectorAll('[data-ub]').forEach(o=>o.classList.toggle('mine',o.dataset.ub===base));
+  md.querySelectorAll('[data-ut]').forEach(el=>el.onclick=()=>{tgt=el.dataset.ut;md.querySelectorAll('[data-ut]').forEach(o=>o.classList.toggle('mine',o===el));if(!foeT&&tgt&&own.some(m=>m.id===tgt)){base=tgt;markB()}});
+  md.querySelectorAll('[data-ub]').forEach(el=>el.onclick=()=>{base=el.dataset.ub;markB();if(!foeT&&tgt&&tgt!==base&&own.some(m=>m.id===tgt)){tgt=base;md.querySelectorAll('[data-ut]').forEach(o=>o.classList.toggle('mine',o.dataset.ut===tgt))}});
+  md.querySelectorAll('[data-uf]').forEach(bt=>bt.onclick=()=>fireSpecial(tid,tgt,'uq',name,bt.dataset.uf,base));
   try{const rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd');const r=(rows||[]).filter(q=>cmdFresh(q)).find(q=>q.id===tid);const cm=r&&(r.data||r.v||r.value||r);const up=(cm&&cm.upots)||[];const el=$('#upre',md);if(el)el.textContent=up.includes(name)?'이번 턴에 선행 입력했다':'선행 입력 안 함';if(up.includes(name)&&ph>=1){const p=md.querySelector('[data-uf=pre]');if(p)p.hidden=false}}catch(e){const el=$('#upre',md);if(el)el.textContent=''}}
  /* 고유(트레이너) · 전용 포텐셜 발동: 선행(지시에서 선행 입력한 것) · 임의 · 강제(GM). 횟수는 발동할 때 1 깎는다(강제 제외). 자동화가 있으면 대상 포켓몬에 걸고, 없으면 효과를 로그 카드로 */
- async function fireSpecial(tid,mid,sk,name,how){const c=ctx();const b=c.b;const t=(b.trainers||{})[tid];const m=(b.mons||{})[mid]||null;if(!t||(!m&&sk!=='uq'))return;if(!c.gm&&!ownT(c,tid))return;if(how==='force'&&!c.gm)return;
+ async function fireSpecial(tid,mid,sk,name,how,baseId){const c=ctx();const b=c.b;const t=(b.trainers||{})[tid];const m=(b.mons||{})[mid]||null;if(!t||(!m&&sk!=='uq'))return;if(!c.gm&&!ownT(c,tid))return;if(how==='force'&&!c.gm)return;
   const x=sk==='uq'?uniqList(t).find(q=>q.p.name===name):specialPots(m).find(q=>q.p.name===name);if(!x)return;
   if(how!=='force'&&x.left!==null&&x.left<=0)return A().toast('남은 횟수가 없다');
   A().closeModal();const tag=how==='pre'?'【선행】':how==='free'?'【임의】':'【강제】';const LB=sk==='uq'?'고유':'전용';
@@ -959,11 +964,11 @@ window.OM_BATTLE_UI=(()=>{
   await A().set(['battle','cmds',tid,'fired',m?mid:'_t','pot',(sk==='uq'?'u:':'e:')+name],1);
   if(sk==='uq'){if(String(((A().ST.state.rp||{}).cutin||{}).ord)!=='0')cutFire('t:'+tid,trainerImg(t),`${t.name}의 고유!`,`『${name}』`,t.side==='left'?'#1f6fd1':'#e3101f')}else if(wantCut(m,name))cutFire('m:'+m.id,m.image,m.name,`『${name}』`,m.side==='left'?'#1f6fd1':'#e3101f');
   const left=x.max!=null?` 【${how==='force'?x.left:Math.max(0,x.left-1)}/${x.max}】`:'';
-  const who=sk==='uq'?t.name:m.name;const tgt=sk==='uq'?(m?` → ${m.name} (에리어 ${String(m.entry).toUpperCase()})`:''):'';const img=sk==='uq'?trainerImg(t):(m.image||'');
+  const who=sk==='uq'?t.name:m.name;const bm0=sk==='uq'&&baseId&&(!m||m.side!==t.side)?(b.mons||{})[baseId]:null;const tgt=sk==='uq'?((m?` → ${m.name} (에리어 ${String(m.entry).toUpperCase()})`:'')+(bm0?` · 기준 ${bm0.name}`:'')):'';const img=sk==='uq'?trainerImg(t):(m.image||'');
   /* 10-28 망령 (빛의장막 고유): 고유 구문은 트레이너에서 바로 찾는다 — 대상을 안 골랐거나 상대 포켓몬을 골라도 돌게. 대상이 없으면 그 트레이너의 나와 있는 포켓몬을 기준으로 건다 */
   const foe=sk==='uq'&&m&&m.side!==t.side;   /* 고른 대상이 상대 포켓몬 — 구문의 「상대 1체」로 그 포켓몬을 쓰고, 기준(자신)은 이 트레이너의 포켓몬 */
   const ua=sk==='uq'&&FX()?(FX().autoOf({tid},'pot',name)||(m&&!foe&&FX().autoOf(m,'pot',name))):null;
-  const cm=(foe?null:m)||(ua?Object.values(b.mons||{}).find(q=>q&&q.tid===tid&&q.entry)||Object.values(b.mons||{}).find(q=>q&&q.tid===tid):null);const cmid=cm?cm.id:mid;
+  const bm=sk==='uq'&&baseId?(b.mons||{})[baseId]:null;const cm=(foe?null:m)||(bm&&bm.tid===tid&&bm.entry?bm:null)||(ua?Object.values(b.mons||{}).find(q=>q&&q.tid===tid&&q.entry)||Object.values(b.mons||{}).find(q=>q&&q.tid===tid):null);const cmid=cm?cm.id:mid;
   const a=sk==='uq'?ua:m&&FX()&&FX().autoOf(m,'pot',name);const pr0=prioNow(cmid);
   if(cm&&a&&a.ops&&a.ops.length&&!a.manual){setTimeout(()=>reprio(cmid,pr0),0);await fireAuto(cmid,'pot',name,{auto:a,quiet:true,uq:sk==='uq'&&!foe,pickId:foe?m.id:'',head:`【${LB}】 ${who} 『${name}』${left}${tag}${tgt}`,img,eff:String(x.p.eff||'')});return}
   A().sysLog(`【${LB}】 ${who} 『${name}』${left}${tag}${tgt?'\n대상:'+tgt.replace(' →',''):''}`,'battle',{mid:m?m.id:'',img,eff:String(x.p.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,400)})}
