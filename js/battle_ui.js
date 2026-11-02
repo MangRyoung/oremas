@@ -777,7 +777,7 @@ window.OM_BATTLE_UI=(()=>{
   m.rank={};delete m.tempRank;m.mod={};delete m.tempMod;delete m.critBuff;if(m.fx)m.fx.mults=[];
   const gone=[];for(const k in (m.states||{})){if(!m.states[k])continue;const d=st[k]||{};if(d.abn||k==='Grudge'||k==='Dead')continue;delete m.states[k];gone.push(d.ko||k)}
   if(m.form0&&((m.forms||[])[m.formIdx]||{}).revert)L.push(...formSet(m,-1));
-  delete m.flags;delete m.prioDown;delete m.fxDone;delete m.futRsv;/* 11-02 망령: 「테라스탈」은 교대해도 풀리지 않는다 (상태 DB 설명) — 배틀을 차릴 때(prepMon)만 끈다 */m.entry='';
+  delete m.flags;delete m.prioDown;delete m.fxDone;delete m.futRsv;if(m.statsOrig){m.stats=m.statsOrig;delete m.statsOrig}   /* 11-02: 배틀 실수치 변경(실수치변경 구문)은 교대하면 원래대로 *//* 11-02 망령: 「테라스탈」은 교대해도 풀리지 않는다 (상태 DB 설명) — 배틀을 차릴 때(prepMon)만 끈다 */m.entry='';
   if(gone.length)L.push(`${m.name} 상태 해제: ${gone.join('·')}`);return L}
  /* 10-22 망령: 나가는 포켓몬이 다른 포켓몬에게 걸어 둔 포텐셜·특성 효과(옵저버 같은 아군 배율)도 같이 꺼진다. 기술로 건 효과는 남긴다 */
  function auraOff(nb,m){const L=[],ids=[];if(!FX())return {L,ids};const mv=new Set((m.moves||[]).map(x=>x&&String(x.name||'').replace(/『|』/g,'').trim()).filter(Boolean));const tail=' ← '+m.name;

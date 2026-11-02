@@ -55,6 +55,9 @@ window.OM_IMPORT=(()=>{
   const mkIv=Array.isArray(d.ivs)&&d.ivs.length===6?d.ivs.map(v=>Math.max(0,Math.min(31,Math.round(+v)||0))):null;
   iv=mkIv||[0,0,0,0,0,0];
   const stats=S().statsOf(base,iv,ev,L);
+  /* 11-02 망령: 제작기 시트 실수치 보정(구문 「실수치 스피드 +20」 · 「실수치 공격 =특공」) — 제작기가 저장해 둔 statAdd · statCp */
+  const SA=Array.isArray(d.statAdd)&&d.statAdd.length===6?d.statAdd.map(v=>+v||0):null,SC=Array.isArray(d.statCp)&&d.statCp.length===6?d.statCp:null;
+  if(SC){const raw=stats.slice();SC.forEach((j,i)=>{if(j!=null&&j!==''&&raw[+j]!=null&&i>0)stats[i]=raw[+j]})}if(SA)SA.forEach((v,i)=>{if(v)stats[i]=Math.max(1,stats[i]+v)});
   const tko=[d.t1,d.t2,d.t3].map(x=>x&&x!=='-'?x:'-');
   const pots=[];
   /* 효과 글: 시트에 직접 적은 글 → 제작기가 시트에 남긴 사본(effTxt, 제작기 DB·새로 만든 항목 포함) → 오레마스 DB (10-21 망령: DB 에 없어도 시트에 있으면 가져온다) */
@@ -69,7 +72,7 @@ window.OM_IMPORT=(()=>{
   return {id:doc.id||d.id,tid:tr?tr.id:(doc.data&&doc.data.tid)||'',name:String(d.nick||'').trim()||d.name||'',species:d.name||'',nick:String(d.nick||'').trim(),gender:d.gender||'-',lv:L,dist:nz(d.dist),mkDist:nz(d.dist),
    typesKo:tko,types:tko.map(S().typeEn),tera:d.tera&&d.tera!=='-'?d.tera:'-',teraEn:d.tera&&d.tera!=='-'?S().typeEn(d.tera):'-',
    ability:d.ability||'',abilityEff:brN(abil.multi||abil.single||''),item:d.item||'',itemEff:brN(item.eff||''),items2:itemsX(d,ET),
-   base,ranks:base.map(S().gradeOf),iv,ev,stats,...(mkIv?{mkIvSig:mkIv.join('/')}:{}),...(d.ivRolls&&Array.isArray(d.ivRolls.rolls)&&d.ivRolls.rolls.length?{ivRolls:{rolls:d.ivRolls.rolls.filter(r=>Array.isArray(r)&&r.length===6).map(r=>r.map(v=>Math.max(0,Math.min(31,Math.round(+v)||0)))),x:+d.ivRolls.x||0,r:+d.ivRolls.r||0}}:{}),   /* 10-24: 제작기에서 굴려 둔 알까기 후보 */...(BU?{base0,baseUp:(BU.up||[]).map(u=>({i:+u.i,from:+u.from,to:+u.to,by:(u.by||[]).slice(0,4)}))}:{}),hp:{max:stats[0],cur:stats[0]},
+   base,ranks:base.map(S().gradeOf),iv,ev,stats,...(SA?{statAdd:SA}:{}),...(SC?{statCp:SC}:{}),...(mkIv?{mkIvSig:mkIv.join('/')}:{}),...(d.ivRolls&&Array.isArray(d.ivRolls.rolls)&&d.ivRolls.rolls.length?{ivRolls:{rolls:d.ivRolls.rolls.filter(r=>Array.isArray(r)&&r.length===6).map(r=>r.map(v=>Math.max(0,Math.min(31,Math.round(+v)||0)))),x:+d.ivRolls.x||0,r:+d.ivRolls.r||0}}:{}),   /* 10-24: 제작기에서 굴려 둔 알까기 후보 */...(BU?{base0,baseUp:(BU.up||[]).map(u=>({i:+u.i,from:+u.from,to:+u.to,by:(u.by||[]).slice(0,4)}))}:{}),hp:{max:stats[0],cur:stats[0]},
    moves:(()=>{const mv=(d.moves||[]).filter(m=>m&&m.name).map(m=>{const o=move(m.name,m.half);if(m.hide)o.hide=true;return o});   /* hide: 한 장 요약 · 도감에 안 보이는 기술 (10-22) */return mv.length?mv:[move('발버둥',false)]})(),
    pots,excl:d.excl&&d.excl.name&&d.excl.name!=='전용 포텐셜'?{name:d.excl.name,eff:brN(d.excl.eff||'')}:null,
    exclX:(d.exclX||[]).filter(x=>x&&x.name).map(x=>({name:x.name,eff:brN(x.eff||'')})),

@@ -396,7 +396,7 @@ window.OM_SHEET_UI=(()=>{
   else if(k.startsWith('pot_')){const [,f,i]=k.split('_');m.pots[+i]=m.pots[+i]||{name:'',kind:'',eff:''};m.pots[+i][f]=v;if(f==='name')m.pots[+i].ph=false}
   else if(k.startsWith('exclx_')){const [,f,i]=k.split('_');m.exclX=m.exclX||[];m.exclX[+i]=m.exclX[+i]||{name:'',eff:''};m.exclX[+i][f]=v}
   else if(k==='excl_name'){m.excl=m.excl||{name:'',eff:''};m.excl.name=v}else if(k==='excl_eff'){m.excl=m.excl||{name:'',eff:''};m.excl.eff=v}}
- function recalc(m,t){m.lv=S().levelOf(t,m);m.stats=S().statsOf(m.base,m.iv,m.ev,m.lv);m.ranks=m.base.map(S().gradeOf);const oldMax=m.hp.max;m.hp.max=m.stats[0];if(m.sheetHp==null||m.sheetHp>=oldMax)m.sheetHp=m.hp.max;else m.sheetHp=Math.min(m.sheetHp,m.hp.max);m.hp.cur=Math.min(m.hp.cur,m.hp.max)}
+ function recalc(m,t){m.lv=S().levelOf(t,m);m.stats=S().statsOf(m.base,m.iv,m.ev,m.lv);{const raw=m.stats.slice();(m.statCp||[]).forEach((j,i)=>{if(j!=null&&j!==''&&i>0)m.stats[i]=raw[+j]});(m.statAdd||[]).forEach((v,i)=>{if(+v)m.stats[i]=Math.max(1,m.stats[i]+(+v))})}   /* 11-02: 제작기 시트 실수치 보정 */m.ranks=m.base.map(S().gradeOf);const oldMax=m.hp.max;m.hp.max=m.stats[0];if(m.sheetHp==null||m.sheetHp>=oldMax)m.sheetHp=m.hp.max;else m.sheetHp=Math.min(m.sheetHp,m.hp.max);m.hp.cur=Math.min(m.hp.cur,m.hp.max)}
 
  /* ---------- 동작 ---------- */
  async function action(d){if((pending.tr||pending.mon||pending.g)&&flushRef){clearTimeout(saveT);await flushRef()}const c=ctx();const t=c.r.trainers[UI.tid];
