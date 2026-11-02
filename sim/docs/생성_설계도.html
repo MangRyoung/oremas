@@ -86,7 +86,7 @@ svg .mute{fill:var(--mute)}
 </nav>
 <main>
 <header class="hero">
- <div class="eyebrow">망각 · 시뮬레이터 · 2026-10-29 기준 (스킬 체크 v4)</div>
+ <div class="eyebrow">망각 · 시뮬레이터 · 2026-11-02 기준 (체크 섞기 · 갈림길 · 객원 일행)</div>
  <h1>망켓몬 생성 설계도</h1>
  <p>시뮬레이터가 스킬 체크, 오리지널 특성, 야생 포켓몬, 던전을 어떤 순서와 숫자로 만드는지 한 장에 모았어요. 절마다 끝에 감우가 직접 검토한 결과를 붙였어요. 시뮬레이터 「설계도」 탭에서도 같은 판을 볼 수 있고, 생성 로직이 바뀌면 같이 고쳐요.</p>
 </header>
@@ -99,18 +99,18 @@ svg .mute{fill:var(--mute)}
 
 <section id="check">
  <h2>스킬 체크 <small>lib/skill.js · gen.js · checkgen.js · gen.js penFor</small></h2>
- <p class="lead">10-29 v4 (룰북 「스킬 체크」 장): <b>2d6 + 트레이너 자질 + 필드 포켓몬 종족값 랭크 + 적합(최대 +3) ≥ 목표치</b>. 목표는 던전 난이도 그대로(쉬움 8 · 보통 10 · 어려움 12, 빡센 길 · 어려운 길은 한 칸 위 10 · 12 · 15). 대가는 없고, 실패하면 트레이너 상태 한 단계 + 판정한 포켓몬이 패널티 묶음을 받아요.</p>
+ <p class="lead">10-29 v4 (룰북 「스킬 체크」 장): <b>2d6 + 트레이너 자질 + 필드 포켓몬 종족값 랭크 + 적합(최대 +3) ≥ 목표치</b>. 11-02부터 던전 체크 목표는 보통 10 · 어려움 12 · 매우 어려움 15 를 섞어요(쉬움 던전 6:3:1 · 보통 4:4:2 · 어려움 2:5:3, 빡센 길 · 어려운 길은 한 칸 위 비율). 쉬움 8 은 내지 않고, 매우 어려움은 어느 길로 가도 1개까지(어려움 빡센 길만 2개). 대가는 없고, 실패하면 트레이너 상태 한 단계 + 판정한 포켓몬이 패널티 묶음을 받아요.</p>
  <div class="flow">
   <div class="st"><b>일행 읽기</b><span>트레이너마다 지시 · 육성 · 통솔 · 능력 랭크(D0 ~ AA4), 필드 포켓몬(기본 1체)의 종족값 · 타입 · 기술 · 특성</span></div>
   <div class="st"><b>굴릴 사람</b><span>보정 합(자질 + 종족값 랭크 + 적합)이 가장 큰 사람 · 포켓몬. 능력 A 이상은 초상 능력(2d6 + 자질 × 2)도 견줘요</span></div>
   <div class="st"><b>자질 고르기</b><span>같은 자질 연속 금지, 덜 나온 사람이 주인공이 되게</span></div>
   <div class="st"><b>타입 조건</b><span>테마 타입 중 일행에 있는 타입을 8할로</span></div>
-  <div class="st"><b>목표치</b><span>난이도 고정 8 · 10 · 12 (빡센 길 한 칸 위). 1·1 실패 · 6·6 또는 목표 +4 대성공</span></div>
+  <div class="st"><b>목표치</b><span>10 · 12 · 15 를 던전 난이도 비율로 섞기 (11-02). 1·1 실패 · 6·6 또는 목표 +4 대성공</span></div>
   <div class="st"><b>실패 · 대성공</b><span>실패 = 트레이너 상태 한 단계(커버 가능) + 자질별 패널티 묶음 하나. 대성공 = 경계도 −10</span></div>
  </div>
  <h3>목표치별 성공 확률 <span class="small">막대 = 혼자 C ~ C+C 적합 +1, 점 = C 트레이너 + C 포켓몬</span></h3>
  <div class="scroll"><svg id="bandSvg" viewBox="0 0 760 150" style="min-width:520px;width:100%;height:auto" role="img" aria-label="난이도 띠"></svg></div>
- <h3>실패 패널티 묶음 <span class="small">실패에는 늘 경계도 +20 과 트레이너 상태 한 단계가 붙어요 (v4 에서 「대가」 칸은 쓰지 않아요)</span></h3>
+ <h3>실패 패널티 묶음 <span class="small">실패에는 늘 경계도 +10(빡센 길 +20, 11-02 — 전엔 +20 · +45)과 트레이너 상태 한 단계가 붙어요 (v4 에서 「대가」 칸은 쓰지 않아요)</span></h3>
  <div class="scroll"><table id="penTbl"></table></div>
  <p class="small">쉬움은 HP 피해를 한 단계 가볍게(1/4 → 1/8), 어려움은 한 단계 무겁게(1/8 → 1/6, 1/4 → 1/3) 하고 실패의 4식 · 6령을 1씩 더 깎아요. 4식은 큰 페널티, 6령은 작은 페널티예요.</p>
  <h3>검토 결과 (시험 일행 20조합 × 40체크) <span class="small">10-28 v3(주사위) 때 값 — 참고용</span></h3>
@@ -174,39 +174,39 @@ svg .mute{fill:var(--mute)}
  <p class="lead">난이도는 보스방 적 수, 레이드, 사전 배틀, 경계도로 가르고 레벨은 모든 던전에서 같아요(야생 · 보스 Lv +5). 4식 · 6령, 소지품, 포텐셜은 던전 내내 이어 써요.</p>
  <div class="scroll"><table>
   <tr><th>난이도</th><th>보스방</th><th>사전 배틀</th><th>체크</th><th>일반 / 보스 등급</th><th class="n">목표</th></tr>
-  <tr><td><b>쉬움</b></td><td>4체 · 레이드 2</td><td>0~1</td><td>3~5</td><td><span class="pill g-c">C</span> / <span class="pill g-b">B</span> · <span class="pill g-a">A</span></td><td class="n">80%</td></tr>
-  <tr><td><b>보통</b></td><td>4체 · 레이드 3</td><td>1</td><td>3~5</td><td><span class="pill g-c">C</span> / <span class="pill g-a">A</span></td><td class="n">60%</td></tr>
-  <tr><td><b>어려움</b></td><td>6체 · 레이드 3</td><td>0~1</td><td>3~5</td><td><span class="pill g-c">C</span> / <span class="pill g-a">A</span></td><td class="n">30%</td></tr>
+  <tr><td><b>쉬움</b></td><td>4체 · 레이드 2</td><td>0~1</td><td>4~6</td><td><span class="pill g-c">C</span> / <span class="pill g-b">B</span> · <span class="pill g-a">A</span></td><td class="n">80%</td></tr>
+  <tr><td><b>보통</b></td><td>4체 · 레이드 3</td><td>1</td><td>4~6</td><td><span class="pill g-c">C</span> / <span class="pill g-a">A</span></td><td class="n">60%</td></tr>
+  <tr><td><b>어려움</b></td><td>6체 · 레이드 3 · 7방↑ 쉼터 2</td><td>0~1</td><td>4~6</td><td><span class="pill g-c">C</span> / <span class="pill g-a">A</span></td><td class="n">30%</td></tr>
  </table></div>
  <h3>방 순서와 갈림길</h3>
  <div class="scroll"><svg id="roomSvg" viewBox="0 0 900 210" style="min-width:680px;width:100%;height:auto" role="img" aria-label="방 순서"></svg></div>
- <p class="small">갈림길은 본길 1~2방 구간과 나란한 다른 길이에요. 다른 길은 배틀과 체크를 뒤집어 채워요(싸우며 뚫는 길과 머리 쓰는 길). 시뮬은 판마다 반반으로 한쪽을 골라요. 120개 중 105개 던전에 들어가요.</p>
+ <p class="small">갈림길은 본길 1~3방 구간과 나란한 다른 길이에요(11-02: 한 던전에 2~3개, 격자 7×5). 다른 길은 배틀과 체크를 뒤집어 채워요(싸우며 뚫는 길과 머리 쓰는 길). 40%는 「돌아가는 길」로 2방 더 길고, 체크 하나와 숨은 물건 방이 붙어요. 갈림길이 2개 안 들어가면 같은 씨앗 안에서 다시 짜서, 씨앗 180개가 모두 2~3개예요. 시뮬은 판마다 갈림길마다 반반으로 한쪽을 골라요.</p>
  <h3>경계도</h3>
  <div class="scroll"><svg id="alSvg" viewBox="0 0 760 120" style="min-width:520px;width:100%;height:auto" role="img" aria-label="경계도 눈금"></svg></div>
  <div class="cols">
   <div class="box"><h4>휴식</h4><p class="small" style="margin:0"><b>짧은 휴식</b>(보스 앞): 전원 HP 1/4 · 빈사는 HP 1 · 상태 회복 · 파티 4식 1 · 6령 1 · 트레이너 상태 1단계.<br><b>중간 휴식</b>: 전원 HP 1/2 · 빈사 HP 1/4 · 상태 회복 · 4식 6령 절반 · 트레이너 1단계.<br><b>숨돌리기</b>: 가장 다친 1체 HP 1/4 + 파티 6령 1 (트레이너 상태는 그대로).<br><b>긴 휴식</b>(던전 밖): 전부 · 트레이너 2단계. 빈사는 다음 방(장면)에서 중상.</p></div>
-  <div class="box"><h4>체크 목표 · 판정</h4><p class="small" style="margin:0">10-29 v4: 목표 = 난이도(쉬움 8 · 보통 10 · 어려움 12), 빡센 길 · 어려운 길은 한 칸 위(10 · 12 · 15). 판정은 필드 포켓몬(트레이너당 1체, 웹툴 「필드 포켓몬 수」와 같음)만, 커버도 필드 포켓몬만. 빈사 트레이너는 그 방 배틀에 안 나가요. 웹툴로 보낼 때 sk 칸과 메모 줄이 같은 목표를 실어요.</p></div>
+  <div class="box"><h4>체크 목표 · 판정</h4><p class="small" style="margin:0">11-02: 목표 = 보통 10 · 어려움 12 · 매우 어려움 15 섞기(쉬움 던전 6:3:1 · 보통 4:4:2 · 어려움 2:5:3), 빡센 길 · 어려운 길은 한 칸 위 비율, 쉬움 던전엔 빡센 길 없음. 매우 어려움은 한 길에 1개까지. 판정은 필드 포켓몬(트레이너당 1체, 웹툴 「필드 포켓몬 수」와 같음)만, 커버도 필드 포켓몬만. 빈사 트레이너는 그 방 배틀에 안 나가요. 웹툴로 보낼 때 sk 칸과 메모 줄이 같은 목표를 실어요.</p></div>
  </div>
-<h3>지금 시뮬에 들어 있는 던전 10개 <span class="small">PC 실제 일행 20조합 × 3판 · 10-29 스킬 체크 v4 · 필드 1체로 다시 잼 (괄호 = 10-28 값)</span></h3>
+<h3>지금 시뮬에 들어 있는 던전 10개 <span class="small">11-02 새로 · 객원 12명 20조합 × 3판 두 번(검증 / 다른 조합) · 소지품 자동 · 은열쇠 기본 덱</span></h3>
  <div class="scroll"><table>
-  <tr><th>난이도</th><th>던전</th><th>id</th><th class="n">승률</th><th class="n">목표</th></tr>
-  <tr><td rowspan="3"><b>쉬움</b></td><td>고목의 숲</td><td class="mono small">auto_easy_10920</td><td class="n">73% <span class="small">(70)</span></td><td class="n" rowspan="3">80 ±15</td></tr>
-  <tr><td>난파선 해안</td><td class="mono small">auto_easy_2002</td><td class="n">70% <span class="small">(72)</span></td></tr>
-  <tr><td>얼음 동굴</td><td class="mono small">auto_easy_2003</td><td class="n">67% <span class="small">(67)</span></td></tr>
-  <tr><td rowspan="4"><b>보통</b></td><td>메아리 굴</td><td class="mono small">auto_normal_2004</td><td class="n">67% <span class="small">(53)</span></td><td class="n" rowspan="4">60 ±15</td></tr>
-  <tr><td>흐느끼는 저택</td><td class="mono small">auto_normal_3005</td><td class="n">68% <span class="small">(65)</span></td></tr>
-  <tr><td>잊힌 성채</td><td class="mono small">auto_normal_2006</td><td class="n">55% <span class="small">(72)</span></td></tr>
-  <tr><td>지하 관측소</td><td class="mono small">auto_normal_2007</td><td class="n">65% <span class="small">(65)</span></td></tr>
-  <tr><td rowspan="3"><b>어려움</b></td><td>버려진 별장</td><td class="mono small">auto_hard_10929</td><td class="n">17% <span class="small">(27)</span></td><td class="n" rowspan="3">30 ±15</td></tr>
-  <tr><td>재의 고원</td><td class="mono small">auto_hard_17846</td><td class="n">15% <span class="small">(22)</span></td></tr>
-  <tr><td>메아리 굴</td><td class="mono small">auto_hard_2009</td><td class="n">30% <span class="small">(38)</span></td></tr>
+  <tr><th>난이도</th><th>던전</th><th>id</th><th>서식지</th><th class="n">방 · 갈림길</th><th class="n">검증</th><th class="n">다른 조합</th><th class="n">평균</th><th class="n">목표</th></tr>
+  <tr><td rowspan="3"><b>쉬움</b></td><td>백야의 협곡</td><td class="mono small">auto_easy_21103</td><td>설원</td><td class="n">12 · 2</td><td class="n">73%</td><td class="n">75%</td><td class="n"><b>74%</b></td><td class="n" rowspan="3">80 ±10</td></tr>
+  <tr><td>속삭이는 숲</td><td class="mono small">auto_easy_29020</td><td>숲</td><td class="n">18 · 2</td><td class="n">78%</td><td class="n">83%</td><td class="n"><b>80%</b></td></tr>
+  <tr><td>난파선 해안</td><td class="mono small">auto_easy_44859</td><td>바다</td><td class="n">15 · 2</td><td class="n">87%</td><td class="n">88%</td><td class="n"><b>88%</b></td></tr>
+  <tr><td rowspan="4"><b>보통</b></td><td>흐느끼는 저택</td><td class="mono small">auto_normal_21201</td><td>폐가</td><td class="n">16 · 2</td><td class="n">65%</td><td class="n">80%</td><td class="n"><b>72%</b></td><td class="n" rowspan="4">60 ±10</td></tr>
+  <tr><td>잊힌 성채</td><td class="mono small">auto_normal_21202</td><td>유적</td><td class="n">15 · 2</td><td class="n">60%</td><td class="n">50%</td><td class="n"><b>55%</b></td></tr>
+  <tr><td>지하 관측소</td><td class="mono small">auto_normal_37041</td><td>연구소</td><td class="n">14 · 2</td><td class="n">67%</td><td class="n">75%</td><td class="n"><b>71%</b></td></tr>
+  <tr><td>이끼 낀 갱도</td><td class="mono small">auto_normal_84556</td><td>동굴</td><td class="n">19 · 3</td><td class="n">63%</td><td class="n">52%</td><td class="n"><b>58%</b></td></tr>
+  <tr><td rowspan="3"><b>어려움</b></td><td>재의 고원</td><td class="mono small">auto_hard_163843</td><td>화산</td><td class="n">16 · 2</td><td class="n">22%</td><td class="n">32%</td><td class="n"><b>27%</b></td><td class="n" rowspan="3">30 ±10</td></tr>
+  <tr><td>불 꺼진 여관</td><td class="mono small">auto_hard_29221</td><td>폐가</td><td class="n">14 · 2</td><td class="n">32%</td><td class="n">40%</td><td class="n"><b>36%</b></td></tr>
+  <tr><td>봉쇄된 실험동</td><td class="mono small">auto_hard_37141</td><td>연구소</td><td class="n">15 · 3</td><td class="n">22%</td><td class="n">25%</td><td class="n"><b>24%</b></td></tr>
  </table></div>
- <p class="small">다시 잴 때는 <span class="mono">node bin/sim.js recheck</span> (저장까지 하려면 --save). 10-29 v4 뒤: 쉬움 67~73 · 보통 55~68 · 어려움 15~30%로 모두 띠 안이에요. 쉬움은 여전히 목표보다 낮은 쪽, 어려움 재의 고원(15%)은 띠 아래 끝이에요.</p>
+ <p class="small">10-28 · 11-01 던전은 지웠어요. 서식지 8곳이 다 들어가고 보스는 겹치지 않아요. 측정이 60판씩이라 같은 던전도 조합에 따라 ±10%p 흔들려요 — 흐느끼는 저택(73)과 지하 관측소(71)는 보통치고 쉬운 편, 봉쇄된 실험동(24)은 어려움 아래쪽이에요. 다시 잴 때는 <span class="mono">node bin/sim.js recheck --tseed 12</span>.</p>
 <h3 id="verify">검증 루프 <span class="small">lib/calib.js verified() · 10-28부터 기본으로 켜짐</span></h3>
  <p class="small" style="max-width:68ch;margin:0 0 8px">평균 승률만 맞추면 던전 하나하나는 크게 흔들려요. 쉬움 12개가 40~100%로 갈렸어요. 그래서 던전을 만들자마자 직접 돌려 보고, 목표에서 많이 벗어난 던전은 버리고 다시 만들어요.</p>
  <div class="flow">
   <div class="st"><b>던전 만들기</b><span>난이도 · 테마 · 씨앗으로 autogen 이 방 · 체크 · 조우를 짜요.</span></div>
-  <div class="st"><b>바로 돌려 보기</b><span>시험 일행 3인 조합마다 몇 판씩 끝까지 돌려 승률을 재요.</span></div>
+  <div class="st"><b>바로 돌려 보기</b><span>시험 일행 3인 조합마다 몇 판씩 끝까지 돌려 승률을 재요. 11-02부터 시험 일행은 미사그 캠퍼스 객원 12명(각성체 2체) · 빈 소지품 자동 착용 · 은열쇠 기본 덱.</span></div>
   <div class="st"><b>목표와 비교</b><span>쉬움 80 · 보통 60 · 어려움 30%. 차이가 ±15%p 안이면 통과.</span></div>
   <div class="st"><b>밖이면 다시</b><span>씨앗만 바꿔(+7919씩) 새로 만들어 2번부터 반복해요.</span></div>
   <div class="st"><b>끝</b><span>통과한 던전, 끝까지 못 넣으면 목표에 가장 가까웠던 던전을 내놔요.</span></div>
@@ -214,7 +214,7 @@ svg .mute{fill:var(--mute)}
  <div class="scroll" style="margin-top:10px"><table>
   <tr><th>어디서</th><th class="n">시험 조합</th><th class="n">조합당 판</th><th class="n">최대 다시 만들기</th><th>허용 폭</th></tr>
   <tr><td>시뮬 「던전 생성」 탭 (검증 체크 기본 켜짐)</td><td class="n">10</td><td class="n">3</td><td class="n">6</td><td>±15%p</td></tr>
-  <tr><td>명령줄 auto · autocheck (끄려면 --verify 0)</td><td class="n">20</td><td class="n">3</td><td class="n">8</td><td>±15%p (--band)</td></tr>
+  <tr><td>명령줄 auto · autocheck (끄려면 --verify 0)</td><td class="n">20</td><td class="n">3</td><td class="n">8 (시험 던전은 16 · 24)</td><td>±15%p (시험 던전은 --band 0.1)</td></tr>
  </table></div>
  <div class="cols" style="margin-top:12px">
   <div class="box"><h4>무엇을 고정하나</h4><p class="small" style="margin:0">난이도 규칙(보스방 적 수 · 레이드 · 사전 배틀 · 레벨)은 그대로 두고 씨앗만 바꿔요. 그래서 「쉬움인데 보스가 6체」 같은 일은 안 생기고, 같은 규칙 안에서 운이 너무 나쁘거나 좋은 배치만 걸러져요.</p></div>
@@ -381,7 +381,10 @@ const REV={
   ['good','서식지 정리','평균 2.95곳(최대 6)에서 1.5곳으로 줄였어요. 서식지마다 C 15 · B 4 · A 2 이상은 지켜요.'],
   ['good','기술 소켓을 상한까지 씀 (10-28 적용)','전에는 300체 모두 기술 4개에 소켓 평균 4.5/6.5였어요. 이제 5~6개로 늘거나 더 센 기술로 바뀌어 6.3/6.5를 써요. 야생이 세진 만큼 던전 승률이 내려갔어요(아래 던전 표).'],
   ['good','1:1 재검사 · 기술로 약함/과강 고치기 (10-28 밤)','새 기술로 1:1을 다시 쟀어요. 약함(25% 미만) · 과강(78% 초과) 42체는 같은 몬의 다른 기술 구성 8가지를 시험해 50%에 가장 가까운 것으로 바꿨어요(25체 고침). 표시 남은 몬: 44 → 26체. 기술로 안 고쳐지는 17체는 종족치 · 특성 쪽 문제예요.']],
- dungeon:[['hi','갈림길 다른 길이 배틀을 2개 늘리던 버그 (고침)','2방 구간을 통째로 뒤집어서, 다른 길로 가면 사전 배틀이 1 → 3이 되는 던전이 있었어요(#8). 이제 두 길의 배틀 수 차이는 1까지예요. #8은 보통 15 → 33%로 올랐어요.'],
+ dungeon:[['good','갈림길 2~3개 · 방 13~14개 (11-02 적용)','망령 「갈림길이 거의 없는 1자형」: 격자 7×5, 갈림길 2~3 · 구간 1~3방 · 돌아가는 길, 체크 4~6 · 곁방 1~3. 배치가 막히면 갈림길을 통째로 버리던 것을 고쳐, 씨앗 180개가 모두 갈림길 2개 이상이에요.'],
+  ['good','체크 목표 섞기 (11-02 적용)','쉬움 8 체크를 빼고 보통 · 어려움 위주에 매우 어려움을 조금(한 길 1개까지). 실패 경계도 +10 · 빡센 길 +20, 쉬움엔 빡센 길 없음, 어려움 7방↑ 쉼터 2.'],
+  ['mid','객원 일행은 보스방에 약해요 (11-02)','시험 일행을 미사그 객원 12명으로 바꾸니 소지품 · 덱 없이 39 · 37 · 7%. 소지품 자동 착용 + 은열쇠 덱을 켜야 60 · 51 · 23%. 패배는 거의 다 보스방이라, 목표에 맞추는 건 지금은 검증 루프(씨앗 고르기)에 기대고 있어요.'],
+  ['hi','갈림길 다른 길이 배틀을 2개 늘리던 버그 (고침)','2방 구간을 통째로 뒤집어서, 다른 길로 가면 사전 배틀이 1 → 3이 되는 던전이 있었어요(#8). 이제 두 길의 배틀 수 차이는 1까지예요. #8은 보통 15 → 33%로 올랐어요.'],
   ['mid','던전별 폭이 큼','같은 난이도 안에서도 던전마다 8~92%로 벌어져요. 보스 한 체, 사전 배틀 무리 한 쌍에 크게 흔들려요. 검증 루프를 켜면 #8이 보통 58%로 돌아오는 식으로 튀는 던전이 다시 만들어져요.'],
   ['mid','「어려운 길」 변형이 쉬움에서도 셈','#9(씨앗 909)는 체크 3개가 전부 목표 11이에요. 쉬움에서도 38~77%로 들쭉날쭉해서, 그래서 쉬움 던전에는 이 변형을 안 써요 (10-28 적용).'],
   ['good','소켓 반영 뒤 던전 다시 재기','야생 기술이 세진 뒤 recheck 명령으로 10개를 다시 쟀어요. 범위 밖 3개(쉬움 62% · 보통 42% · 어려움 50%)는 새로 검증해 바꿨어요.'],

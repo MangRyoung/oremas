@@ -23,7 +23,9 @@ function build(win,snap,tid,opt){opt=opt||{};const tdoc=(snap.trainers||[]).find
  /* 10-30 미사그 대학: 일행에 넣을 때는 각성체 2체만 동행 · 1인 2체 기준(파트너 없음, 각성체는 통솔점 검사 안 함). opt.two=false 면 옛 방식(전부) */
  const td=dOf(tdoc);const isMisag=!!td.misag||folderChain(snap,td.folder).some(x=>x.rule==='misag');
  if(isMisag&&opt.two!==false){const aw=r.mons.filter(m=>m.awaken);if(aw.length){r.mons=aw.slice(0,2);for(const m of r.mons)m.partner=false;r.trainer.two=true}else r.trainer.twoMissing=true}
- /* 기술이 비어 있으면 시험용 표준 기술 (lib/automove.js) */const A=require('./automove.js');for(const m of r.mons)A.fill(win,m);return r}
+ /* 기술이 비어 있으면 시험용 표준 기술 (lib/automove.js) */const A=require('./automove.js');for(const m of r.mons)A.fill(win,m);
+ /* 11-02 망령 「소지품 착용 시키고」: 빈 소지품 칸은 시뮬이 채운다 (lib/autoitem.js — 지침 1-6 · 2체 소켓). opt.autoItem=false 면 시트 그대로 */
+ if(opt.autoItem!==false)require('./autoitem.js').equip(win,r);return r}
 /* 스냅샷 트레이너를 야생 무리로: 『와일드』 ×1.25, enc.boss 면 파트너(★, 없으면 첫째)만 『와일드 보스』 ×1.5. pick:[순번…] 으로 고르거나 take 로 앞에서부터 n 체. */
 function wild(win,snap,sel,enc){enc=enc||{};const L=list(snap);const id=/^id:/.test(sel)?sel.slice(3):((L.find(x=>x.name===sel||(x.folder+'/'+x.name)===sel)||{}).id);if(!id)throw new Error('야생으로 쓸 트레이너 없음: '+sel);
  const r=build(win,snap,id,{lvAdd:enc.lvAdd,two:false});const tr=r.trainer;tr.wild=true;tr.orderCount={};tr.ranks=Object.assign({},tr.ranks,{지시:'D',통솔:'D',능력:'D'});
@@ -58,4 +60,12 @@ function ordersTwo(win,t,opt){const OD=win.OM_ORDERS;const mo=t.mkOrders||{prese
  const off=mo.off||{o:[],c:[]};const oc=Object.assign({},t.orderCount||{});
  for(const k of Object.keys(oc)){const m=k.match(/^(order|command)_([a-z]+)$/);if(!m)continue;const w=m[1]==='order'?'o':'c';if((off[w]||[]).includes(m[2])||(pk&&!(pk[w]||[]).includes(m[2])))oc[k]=0}
  t.orderCount=oc;t.twoPick=pk||null;return t}
-module.exports={readSnap,list,pick,build,wild,wildFrom,isPrivate,orders,autoPick,SNAP};
+/* 시험 일행 (검증 루프 · recheck · autocheck · calib 의 기본 풀)
+   11-02 망령 「시뮬레이팅 대상을 미사그 캠퍼스의 객원으로 변경해」: 세션 노트 「미사그 대학」 캠페인에서 시트 분류가 객원(cls = guest)인 트레이너 — 미사그 2체(각성체) 기준.
+   객원 목록은 받기(fetch)가 세션 노트 공개 시트에서 읽어 snapshot.notes 에 둔다. 각성체가 비어 있는(twoMissing) 사람은 뺀다.
+   스냅샷에 객원 정보가 없으면 예전 풀(무진 NPC 2체 1인 8명, 10-28~11-01 검증 기준) */
+const OLD_POOL=['id:4jie5w05','id:5leooo2r','id:6kqpeluy','id:d7pqlnhq','id:em94ge3p','id:hmt1rchl','id:mrsr7bn7','id:uudsvc3l'];
+function guestIds(snap){const N=snap&&snap.notes;if(!N||!N.cls)return [];return Object.entries(N.cls).filter(([,c])=>c==='guest').map(([id])=>id).filter(id=>(snap.trainers||[]).some(t=>t.id===id))}
+function testPool(snap,o){o=o||{};const G=guestIds(snap);if(!G.length||o.old)return OLD_POOL.slice();
+ return G.filter(id=>{try{const L=list(snap).find(x=>x.id===id);return L&&L.n>=2}catch(e){return true}}).sort().map(id=>'id:'+id)}
+module.exports={readSnap,list,pick,build,wild,wildFrom,isPrivate,orders,autoPick,SNAP,testPool,guestIds,OLD_POOL};

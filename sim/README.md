@@ -21,7 +21,7 @@ node bin/sim.js battle --party 카이 --wild lab_bossA --n 200 --wn 2 [--log]
 node bin/sim.js gendb --n 300 --seed 31 --mix 0.5          야생 DB 생성(오리지널 3 : 올드 1 · 7:2:1 · 검토 루프) → data/wild/db.json + 무리 48 다시 짜기
 node bin/sim.js mon --step B --kind 쌍두 --types 물,독 --n 5   오리지널몬 한 줌 미리보기
 node bin/sim.js run --scenario data/scenarios/base.json [--n 1000]
-node bin/sim.js run --dungeon auto_normal_16943 --party 카이,미오,레온 --n 500 --adjust target=2,penScale=0.5 --policy cover=never
+node bin/sim.js run --dungeon auto_normal_21202 --party 카이,미오,레온 --n 500 --adjust target=2,penScale=0.5 --policy cover=never
 node bin/sim.js combos --pool id:a,id:b,… --size 3 --dungeons x,y --n 100 --id 이름   후보 중 n명 조합 전부 × 던전들 (기록 탭에 표)
 node bin/sim.js auto --tier normal [--theme 숲] [--seed 42] [--name 이름] [--id 파일id] [--save] [--webtool 1] [--test 200 --party a,b,c]   던전 자동 생성 (가이드라인 기본값 · 검증 루프, docs/던전_자동생성.md)
 node bin/sim.js recheck [--dungeon a,b] [--save]           저장된 던전을 검증 조건(시험 일행 20조합 × 3판) 그대로 다시 잰다
@@ -31,6 +31,9 @@ node bin/sim.js calib --tier easy,normal --base 'lv=-5,bossLv=-5' --grid 'battle
 node bin/sim.js report                                   records/*.summary.json → report/index.html · report.md
 ```
 
+- **시험 일행 (11-02)**: 검증 루프 · `recheck` · `autocheck` · `calib` · `cards` 의 기본 풀은 **세션 노트 「미사그 대학」 캠페인에서 시트 분류가 객원(guest)인 트레이너**(미사그 2체 = 각성체 2체 기준, `lib/party.js` testPool). `fetch` 가 세션 노트 공개 시트(nt_docs)의 분류를 같이 받아 `snapshot.notes` 에 둔다. 객원 정보가 없는 옛 스냅샷이면 예전 풀(무진 NPC 8명). `--pool id:a,id:b,…` 로 바꿀 수 있다.
+- **소지품 자동 착용 (11-02)**: 일행 포켓몬의 빈 소지품 칸을 시뮬이 채운다(`lib/autoitem.js` — 배틀 진행 지침 1-6 · 2체 소지품 소켓 · 한 파티에 같은 것 하나). 시트에 든 소지품은 그대로. 끄려면 build 의 `autoItem:false`.
+- **은열쇠 덱 (11-02)**: 검증 · `auto --test` · `autocheck` · `recheck` 는 기본으로 은열쇠 기본 덱(`base`)을 켠다. `--cards 0` 이면 카드 없이, `--cards sneak` 처럼 다른 덱.
 - `--snap` 을 안 주면 `data/snapshot.json`, 그것도 없으면 `data/sample_snapshot.json` (시험용 트레이너 4명: 카이 · 미오 · 레온 · 단) 을 쓴다.
 - 트레이너 고르기: `이름` · `폴더/이름` · `폴더/*` · `id:xxxx`.
 
@@ -87,6 +90,8 @@ node bin/sim.js report                                   records/*.summary.json 
 - 비공개: 파일 이름을 `*.private.json` 으로(화면의 「비공개」 칸). 비공개 트레이너가 일행에 있거나 던전이 비공개면 기록은 `records/private/`, 리포트는 `report/private.html` — 전부 git 제외.
 - 기술이 빈 포켓몬은 `lib/automove.js` 가 시험용 표준 기술(자속 + 견제)을 채운다(제작기에 기술이 있으면 그쪽).
 - `rest`: breath · short · mid · long. 자동 생성 던전은 `rules`(autogen RULES)가 박혀서 짧은 휴식 = 전원 HP 1/4 · 빈사 HP 1 · 상태 회복 · 파티 4식 1 · 6령 1, 숨돌리기 = 가장 다친 1체 HP 1/4 + 6령 1 (10-28 22시). 규칙 없는 옛 던전은 옛 표(breath HP 1/4 · short HP 1/2 …).
+- 자동 생성 던전의 체크 목표(11-02): 던전 난이도 하나가 아니라 보통 10 · 어려움 12 · 매우 어려움 15 를 섞는다(쉬움 던전 6:3:1 · 보통 4:4:2 · 어려움 2:5:3, 빡센 길 · 어려운 길은 한 칸 위 비율). 쉬움 8 체크는 내지 않는다. 매우 어려움은 어느 길로 가도 1개까지(어려움 빡센 길만 2개). 실패 경계도 +10(빡센 길 +20).
+- 자동 생성 던전의 지도(11-02): 격자 7×5, 갈림길 2~3(구간 1~3방, 40% 는 2방 더 긴 「돌아가는 길」 = 체크 1 + 숨은 물건 방), 체크 4~6, 곁방 1~3(다른 길 방 옆에도). 어려움은 본길 7방 이상이면 가운데 쉼터 하나 더(`safe2`).
 - 방 배틀 경계도(10-31): `enc.alWin` 이기면 · `enc.alLose` 지면(비우면 규칙 — 이기면 일반 +5 · 보스 0, 지면 +10). 웹툴 방의 `aw` · `alo`.
 - 자동 생성 던전 저장(`auto --save`, 11-01): 야생 DB · 도감 야생만 쓰면 `data/dungeons/<id>.json`(git 에 올라감), 스냅샷 트레이너가 야생으로 들어가면 `<id>.private.json`.
 

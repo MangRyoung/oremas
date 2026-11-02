@@ -1,33 +1,36 @@
 {
- "id": "auto_normal_2004",
- "name": "메아리 굴 (보통)",
+ "id": "auto_easy_21103",
+ "name": "백야의 협곡 (쉬움)",
  "wn": 2,
  "private": true,
  "gen": {
-  "tier": "normal",
+  "tier": "easy",
   "knobs": {
    "battles": 1,
    "foes": 2,
    "lv": 5,
    "bossLv": 5,
    "rest": "short",
-   "checks": 5,
-   "tgt": "mix",
+   "checks": 6,
+   "tgt": "v4mix",
    "pen": "alert",
    "hintTyped": 1,
    "alCost": 10,
-   "alFail": 20
+   "alFail": 10,
+   "critAl": 10
   },
-  "seed": 2004,
-  "boss": "한파까마귀",
+  "seed": 21103,
+  "boss": "킹드라",
+  "brWant": 2,
   "v": 1,
   "auto": true,
   "tough": "",
   "shape": "구불길",
-  "theme": "동굴",
+  "theme": "설원",
   "rules": {
    "restV": 2,
    "alBattle": 5,
+   "alLose": 10,
    "al30": 5,
    "al70": 10,
    "restShort": "all",
@@ -42,33 +45,33 @@
     "C"
    ],
    "boss": [
+    "B",
     "A"
    ]
   },
   "verify": {
-   "wr": 0.67,
-   "target": 0.6,
-   "band": 0.15,
+   "wr": 0.73,
+   "target": 0.8,
+   "band": 0.1,
    "tries": 1,
    "ok": true,
-   "at": "2026-10-29",
-   "note": "야생 기술 소켓 반영 뒤 다시 잼"
+   "cards": "base"
   }
  },
  "rooms": [
   {
    "id": "entry",
    "t": "entry",
-   "name": "바위틈",
+   "name": "얼음 계곡 입구",
    "check": {
-    "label": "어둠 속 기척을 읽는다",
+    "label": "얼어붙은 문을 깬다",
     "stat": "능력",
     "target": 10,
     "hint": "any",
     "pen": {
      "fail": {
-      "al": 20,
-      "dmg": "1/4",
+      "al": 10,
+      "dmg": "1/8",
       "st": "Paralysis",
       "memo": "반동에 몸이 굳었다"
      }
@@ -90,14 +93,14 @@
   {
    "id": "b1",
    "t": "battle",
-   "name": "박쥐 굴",
+   "name": "얼음 들판",
    "enc": {
     "mix": [
      {
-      "db": "w154"
+      "db": "w250"
      },
      {
-      "db": "w097"
+      "db": "w030"
      }
     ],
     "lvAdd": 5
@@ -105,16 +108,77 @@
   },
   {
    "id": "c1",
-   "t": "puzzle",
-   "name": "낙석 구간",
+   "t": "trap",
+   "name": "화이트아웃",
    "check": {
-    "label": "야생의 발자국을 쫓는다",
-    "stat": "육성",
+    "label": "눈보라 속 표식을 찾는다",
+    "stat": "지시",
     "target": 10,
     "hint": "any",
     "pen": {
      "fail": {
-      "al": 20,
+      "al": 10,
+      "oc": 2,
+      "memo": "우왕좌왕했다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "c2",
+   "t": "trap",
+   "name": "얇은 얼음판",
+   "check": {
+    "label": "눈사태 비탈을 함께 지난다",
+    "stat": "통솔",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "st": "Confusion",
+      "cnt": 3,
+      "memo": "대열이 무너졌다"
+     }
+    },
+    "pm": 0,
+    "base": 4,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "c3",
+   "t": "trap",
+   "name": "눈 덮인 크레바스",
+   "check": {
+    "label": "눈 아래 먹이를 찾는다",
+    "stat": "육성",
+    "target": 12,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
       "st": "Poison",
       "memo": "독이 있는 것에 닿았다"
      }
@@ -134,17 +198,51 @@
    }
   },
   {
-   "id": "c2",
-   "t": "trap",
-   "name": "지하 물길",
+   "id": "c4",
+   "t": "puzzle",
+   "name": "빙하 틈새",
    "check": {
-    "label": "무너질 바위를 읽는다",
+    "label": "빙벽을 오른다",
+    "stat": "능력",
+    "target": 12,
+    "hint": "type:강철",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "dmg": "1/8",
+      "st": "Paralysis",
+      "memo": "반동에 몸이 굳었다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [
+      "물"
+     ],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "safe",
+   "t": "safe",
+   "name": "바람 막힌 바위굴",
+   "rest": "short",
+   "check": {
+    "label": "얼음판의 두께를 읽는다",
     "stat": "지시",
     "target": 10,
     "hint": "any",
     "pen": {
      "fail": {
-      "al": 20,
+      "al": 10,
       "oo": 1,
       "memo": "지시가 엇갈렸다"
      }
@@ -164,136 +262,42 @@
    }
   },
   {
-   "id": "c3",
-   "t": "room",
-   "name": "좁은 틈",
-   "check": {
-    "label": "겁먹은 포켓몬을 진정시킨다",
-    "stat": "통솔",
-    "target": 10,
-    "hint": "type:바위",
-    "pen": {
-     "fail": {
-      "al": 20,
-      "oc": 2,
-      "memo": "모두 지쳤다"
-     }
-    },
-    "pm": 0,
-    "base": 4,
-    "fit": {
-     "types": [
-      "바위"
-     ],
-     "moves": [],
-     "abil": []
-    },
-    "v": 4,
-    "gainCrit": {
-     "al": -10,
-     "memo": "대성공 — 기척을 지웠다"
-    }
-   }
-  },
-  {
-   "id": "safe",
-   "t": "safe",
-   "name": "버려진 광부 쉼터",
-   "rest": "short",
-   "check": {
-    "label": "낙석을 막아 선다",
-    "stat": "능력",
-    "target": 10,
-    "hint": "any",
-    "pen": {
-     "fail": {
-      "al": 20,
-      "dmg": "1/3",
-      "memo": "크게 휘말렸다"
-     }
-    },
-    "pm": 0,
-    "base": 3,
-    "fit": {
-     "types": [],
-     "moves": [],
-     "abil": []
-    },
-    "v": 4,
-    "gainCrit": {
-     "al": -10,
-     "memo": "대성공 — 기척을 지웠다"
-    }
-   }
-  },
-  {
    "id": "boss",
    "t": "boss",
-   "name": "가장 깊은 굴",
+   "name": "빙하 심부",
    "enc": {
     "mix": [
      {
-      "db": "w218"
+      "db": "w286"
      },
      {
-      "db": "w058"
+      "db": "w064"
      },
      {
-      "db": "w146"
+      "db": "w272"
      },
      {
-      "db": "w127"
+      "db": "w142"
      }
     ],
     "boss": true,
     "bossAt": 0,
-    "raid": 3,
+    "raid": 2,
     "n": 4,
     "lvAdd": 5
    }
   },
   {
    "id": "g1a1",
-   "t": "trap",
-   "name": "메아리 방",
-   "check": {
-    "label": "다친 포켓몬을 응급 처치한다",
-    "stat": "육성",
-    "target": 10,
-    "hint": "any",
-    "pen": {
-     "fail": {
-      "al": 20,
-      "dmg": "1/4",
-      "memo": "야생에게 물렸다"
-     }
-    },
-    "pm": 0,
-    "base": 1,
-    "fit": {
-     "types": [],
-     "moves": [],
-     "abil": []
-    },
-    "v": 4,
-    "gainCrit": {
-     "al": -10,
-     "memo": "대성공 — 기척을 지웠다"
-    }
-   },
-   "alt": "g1"
-  },
-  {
-   "id": "g1a2",
    "t": "battle",
-   "name": "수정 회랑",
+   "name": "서리 언덕",
    "enc": {
     "mix": [
      {
-      "db": "w141"
+      "db": "w235"
      },
      {
-      "db": "w058"
+      "db": "w088"
      }
     ],
     "lvAdd": 5
@@ -301,108 +305,126 @@
    "alt": "g1"
   },
   {
+   "id": "g2a1",
+   "t": "battle",
+   "name": "서리 숲",
+   "enc": {
+    "mix": [
+     {
+      "db": "w047"
+     },
+     {
+      "db": "w054"
+     }
+    ],
+    "lvAdd": 5
+   },
+   "alt": "g2"
+  },
+  {
    "id": "tr",
    "t": "treasure",
    "side": 1,
-   "name": "광석 더미",
+   "name": "얼음 속 유물",
    "clue": {
     "t": "주인의 흔적",
-    "d": "깊은 곳의 주인 — 「고스트 · 얼음」 기운이 서려 있다.\n「불꽃」 · 「바위」 · 「고스트」 쪽을 꺼리는 흔적이 남아 있다.\n「설경」의 자국이 벽에 새겨져 있다.",
+    "d": "깊은 곳의 주인 — 「물 · 드래곤」 기운이 서려 있다.\n「드래곤」 · 「페어리」 쪽을 꺼리는 흔적이 남아 있다.\n「용의날개」의 자국이 벽에 새겨져 있다.",
     "auto": 1
    },
-   "from": "c3"
+   "from": "g2a1"
   },
   {
    "id": "s1",
    "t": "room",
    "side": 1,
-   "name": "광부 창고",
-   "memo": "곁방 · 숨 고르기 — 한 번만 「숨돌리기」(가장 다친 1체 HP 1/4 · 6령 1). 경계도 30 이상이면 쉴 수 없다",
-   "from": "c1"
-  },
-  {
-   "id": "s2",
-   "t": "room",
-   "side": 1,
-   "name": "좁은 굴",
-   "memo": "곁방 · 숨 고르기 — 한 번만 「숨돌리기」(가장 다친 1체 HP 1/4 · 6령 1). 경계도 30 이상이면 쉴 수 없다",
-   "from": "b1"
+   "name": "얼음 동굴",
+   "memo": "곁방 · 숨은 물건 — 살피면 소지품 · 열매 하나(GM 이 정한다). 찾는 데 체크는 없다",
+   "from": "g1a1"
   }
  ],
  "branches": [
   {
    "id": "g1",
-   "from": "entry",
+   "from": "b1",
    "to": "c2",
    "main": [
-    "b1",
     "c1"
    ],
    "alt": [
-    "g1a1",
-    "g1a2"
+    "g1a1"
+   ]
+  },
+  {
+   "id": "g2",
+   "from": "c2",
+   "to": "c4",
+   "main": [
+    "c3"
+   ],
+   "alt": [
+    "g2a1"
    ]
   }
  ],
  "map": {
   "grid": {
-   "cols": 6,
-   "rows": 4,
-   "x0": 95,
-   "dx": 162,
-   "y0": 85,
-   "dy": 170
+   "cols": 7,
+   "rows": 5,
+   "x0": 80,
+   "dx": 140,
+   "y0": 65,
+   "dy": 130
   },
   "shape": "구불길",
   "turns": 5,
   "cells": {
    "entry": [
-    1,
-    1
+    4,
+    4
    ],
    "b1": [
-    1,
-    2
+    4,
+    3
    ],
    "c1": [
-    2,
-    2
+    5,
+    3
    ],
    "c2": [
-    2,
-    1
+    5,
+    2
    ],
    "c3": [
-    3,
+    6,
+    2
+   ],
+   "c4": [
+    6,
     1
    ],
    "safe": [
-    3,
-    2
+    6,
+    0
    ],
    "boss": [
+    5,
+    0
+   ],
+   "g1a1": [
     4,
     2
    ],
-   "g1a1": [
-    1,
-    0
-   ],
-   "g1a2": [
-    2,
-    0
+   "g2a1": [
+    5,
+    1
    ],
    "tr": [
-    3,
-    0
+    4,
+    1
    ],
    "s1": [
-    2,
-    3
-   ],
-   "s2": [
-    1,
-    3
+    3,
+    2
    ]
   },
   "links": {
@@ -410,14 +432,15 @@
    "b1~c1": 1,
    "c1~c2": 1,
    "c2~c3": 1,
-   "c3~safe": 1,
+   "c3~c4": 1,
+   "c4~safe": 1,
    "boss~safe": 1,
-   "entry~g1a1": 1,
-   "g1a1~g1a2": 1,
-   "c2~g1a2": 1,
-   "c3~tr": 1,
-   "c1~s1": 1,
-   "b1~s2": 1
+   "b1~g1a1": 1,
+   "c2~g1a1": 1,
+   "c2~g2a1": 1,
+   "c4~g2a1": 1,
+   "g2a1~tr": 1,
+   "g1a1~s1": 1
   }
  },
  "path": [
@@ -426,14 +449,16 @@
   "c1",
   "c2",
   "c3",
+  "c4",
   "safe",
   "boss"
  ],
- "theme": "동굴",
- "owner": "한파까마귀",
+ "theme": "설원",
+ "owner": "킹드라",
  "rules": {
   "restV": 2,
   "alBattle": 5,
+  "alLose": 10,
   "al30": 5,
   "al70": 10,
   "restShort": "all",
@@ -442,5 +467,5 @@
   "restBreath": "one",
   "restBC": 1
  },
- "note": "자동 생성 · 보통 · 씨앗 2004 · 테마 동굴. 사전 배틀 1 · 체크 5 · 보스방 4체 · 레이드 배틀 : 3 · 지도 갈림길 1 · 구불길 + 곁방 3 · 야생 Lv +5. (10-29 체크를 v4 목표로 바꿈)"
+ "note": "자동 생성 · 쉬움 · 씨앗 21103 · 테마 설원. 사전 배틀 1 · 체크 6 · 보스방 4체 · 레이드 배틀 : 2 · 지도 갈림길 2 · 구불길 + 곁방 2 · 야생 Lv +5."
 }

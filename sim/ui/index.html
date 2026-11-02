@@ -384,16 +384,16 @@ td.n,th.n,.mono{font-variant-numeric:tabular-nums}
    <label class="f">씨앗<input type="number" id="agSeed" placeholder="비우면 무작위" style="width:120px"></label>
    <button class="b pri" id="agGen">생성</button><button class="b" id="agAgain" title="같은 설정 · 새 씨앗">다시 뽑기</button><span class="small" id="agMsg"></span></div>
   <div class="row"><label class="f">지도 모양<select id="agShape"><option value="">무작위</option><option>곧은길</option><option>꺾인길</option><option>구불길</option></select></label>
-   <label class="f">갈림길<select id="agBranch"><option value="">1 (기본)</option><option value="0">없음 (한 줄)</option><option value="2">2</option></select></label>
-   <label class="f">곁방<input type="number" id="agSide" min="0" max="3" placeholder="0~2" style="width:80px"></label>
+   <label class="f">갈림길<select id="agBranch"><option value="">2~3 (기본)</option><option value="0">없음 (한 줄)</option><option value="1">1</option><option value="2">2</option><option value="3">3</option></select></label>
+   <label class="f">곁방<input type="number" id="agSide" min="0" max="3" placeholder="1~3" style="width:80px"></label>
    <label class="chk" title="시험 일행으로 돌려 목표 승률 ±15% 에 드는 씨앗만 (수십 초)"><input type="checkbox" id="agVer" checked> 검증 루프</label>
    <label class="chk" title="「돌리기」 탭에서 고른 일행으로 체크 목표를 셈한다 (lib/checkgen.js)"><input type="checkbox" id="agFit"> 체크 목표를 일행에 맞추기</label></div>
   <details><summary class="small">손잡이 바꾸기 (비우면 가이드라인 값)</summary><div class="row" style="margin-top:6px">
    <label class="f">사전 배틀<input type="number" id="agBattles" min="0" max="4" placeholder="난이도 값" style="width:90px"></label>
-   <label class="f">체크 수<input type="number" id="agChecks" min="0" max="6" placeholder="4" style="width:80px"></label>
-   <label class="f">야생 Lv<input type="number" id="agLv" step="5" placeholder="−5" style="width:80px"></label>
-   <label class="f">곁방 체크 경계도<input type="number" id="agAlC" step="5" placeholder="15" style="width:80px"></label>
-   <label class="f">실패 경계도<input type="number" id="agAlF" step="5" placeholder="30" style="width:80px"></label>
+   <label class="f">체크 수<input type="number" id="agChecks" min="0" max="6" placeholder="4~6" style="width:80px"></label>
+   <label class="f">야생 Lv<input type="number" id="agLv" step="5" placeholder="+5" style="width:80px"></label>
+   <label class="f">곁방 체크 경계도<input type="number" id="agAlC" step="5" placeholder="10" style="width:80px"></label>
+   <label class="f">실패 경계도<input type="number" id="agAlF" step="5" placeholder="10" style="width:80px"></label>
    <label class="f">보스 앞 휴식<select id="agRest"><option value="">짧은 휴식</option><option value="breath">숨돌리기</option><option value="mid">중간 휴식</option><option value="none">없음</option></select></label></div></details>
  </div>
  <div class="card" id="agOut" hidden></div>
@@ -1044,7 +1044,7 @@ function gCond(){const M=GN.meta,t=GN.tab,c=GN.c[t];let h='';
   <div class="gf"><b>난이도</b>${gSel('gTier',[['easy','쉬움 — 승률 약 8할'],['normal','보통 — 약 6할'],['hard','어려움 — 약 3할']],c.tier)}</div>
   <div class="gf"><b>테마</b>${gSel('gTheme',[['','무작위']].concat(M.themes.map(x=>[x,x])),c.theme)}</div>
   <div class="gf"><b>지도 모양</b>${gSel('gShape',[['','무작위'],['곧은길','곧은길'],['꺾인길','꺾인길'],['구불길','구불길']],c.shape)}</div>
-  <div class="row"><label class="f">사전 배틀<input type="number" id="gBat" min="0" max="4" placeholder="기본" value="${c.battles}"></label><label class="f">체크 수<input type="number" id="gChecks" min="0" max="6" placeholder="3~5" value="${c.checks}"></label><label class="f">곁방<input type="number" id="gSide" min="0" max="3" placeholder="0~2" value="${c.side}"></label></div>
+  <div class="row"><label class="f">사전 배틀<input type="number" id="gBat" min="0" max="4" placeholder="기본" value="${c.battles}"></label><label class="f">체크 수<input type="number" id="gChecks" min="0" max="6" placeholder="4~6" value="${c.checks}"></label><label class="f">곁방<input type="number" id="gSide" min="0" max="3" placeholder="1~3" value="${c.side}"></label></div>
   <div class="gf" style="margin-top:8px"><label class="chk"><input type="checkbox" id="gVer" ${c.verify?'checked':''}> 검증 루프 — 시험 일행으로 돌려 목표 승률 ±15% 에 드는 것만 (수십 초)</label><label class="chk"><input type="checkbox" id="gFit" ${c.fit?'checked':''}> 체크 목표를 아래 일행에 맞추기</label></div>
   ${c.fit?gParty():''}
   <div class="row"><label class="f">씨앗<input type="number" id="gSeed" placeholder="무작위" value="${c.seed}" style="width:110px"></label><span class="sp"></span><button class="b pri" id="gGo">뽑기</button></div>`;

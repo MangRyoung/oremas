@@ -2,7 +2,7 @@
    목적: 「던전 랜덤 생성 가이드라인」과 「스킬 체크 기준점」을 숫자로 맞추기 (10-27 망령: 3인 × 2체 기준, 쉬움 승률 8할 · 보통 6할 · 어려움 3할).
    난이도: easy = 보스방 4체 · 레이드 2 / normal = 4체 · 레이드 3 / hard = 6체 · 레이드 3 (레이드는 배리어식).
    knobs: battles 일반 배틀 수 · foes 배틀당 야생 수 · lv 일반 야생 레벨 가감 · bossLv 보스방 레벨 가감 · rest 보스 앞 휴식(none|breath|short|long)
-          checks 스킬 체크 수 · tgt 목표치 묶음 — 10-29 v4: 'tier' 난이도 목표(쉬움 8 · 보통 10 · 어려움 12) / 'tierUp' 한 칸 위(10 · 12 · 15). 옛 v3 묶음('low' 5·7 / 'mid' 7·9 / 'high' 9·11 / 'mix' 7·7·9·9…)은 실행 때 skill.js up 이 v4 로 바꾼다
+          checks 스킬 체크 수 · tgt 목표치 묶음 — 11-02 'v4mix' 보통 · 어려움 · 매우 어려움 섞기(MIX, mixUp 1 = 한 칸 위 비율) / 10-29 v4: 'tier' 난이도 목표(쉬움 8 · 보통 10 · 어려움 12) / 'tierUp' 한 칸 위(10 · 12 · 15). 옛 v3 묶음('low' 5·7 / 'mid' 7·9 / 'high' 9·11 / 'mix' 7·7·9·9…)은 실행 때 skill.js up 이 v4 로 바꾼다
           critAl 대성공 이득 = 경계도 −critAl (기본 10) · pen 패널티 세기('light'|'mid'|'heavy') · hintTyped 타입 조건 체크 수
    야생 풀: POOL (스냅샷 NPC 포켓몬 — 트레이너 id + 순번). 보스는 BOSS 에서, 호위 · 일반 야생은 POOL 에서 겹치지 않게 뽑는다. */
 "use strict";
@@ -18,6 +18,17 @@ const SRC=([t,i])=>t==='dex'?{sp:i}:t==='db'?{db:i}:{trainer:t,pick:[i]};   /* �
 const TGT={low:[5,7],mid:[7,9],high:[9,11],mix:[7,9]};
 /* 10-29 스킬 체크 v4: 룰북 목표치 쉬움 8 · 보통 10 · 어려움 12 · 매우 어려움 15 — 던전 난이도 = 체크 난이도, 빡센 길 · 어려운 길은 한 칸 위 (checkgen.js BAND 와 같다) */
 const V4={easy:8,normal:10,hard:12},V4UP={8:10,10:12,12:15,15:15};
+/* 11-02 망령 「쉬움은 테스트로 내는 의미가 거~의 없어 · 보통/어려움 위주에 매우 어려움을 좀 섞는 느낌」 — 체크 목표를 던전 난이도 하나로 두지 않고 섞는다.
+   MIX[난이도] = 보통(10) · 어려움(12) · 매우 어려움(15) 비율. 쉬움(8) 체크는 내지 않는다. 빡센 길 · 어려운 길은 한 칸 위 비율(MIXUP).
+   목표 15 는 「매우 어려움」 체크로만 나온다(11-02 망령 — 전엔 어려움 던전 빡센 길이 체크 전부를 15 로 올렸다) */
+const MIX_T=[10,12,15],MIX={easy:[6,3,1],normal:[4,4,2],hard:[2,5,3],hardUp:[1,5,4]},MIXUP={easy:'normal',normal:'hard',hard:'hardUp'};
+/* 11-02 망령 「어렵다고 매우 어려움 체크만 마구 내면 안 돼. 매우 어려움은 뚫기 어려우니까」 — 매우 어려움(15)은 한 길에 1개까지(어려움 던전 빡센 길만 2개). 넘친 것은 어려움(12)으로 */
+const CAP15={easy:1,normal:1,hard:1,hardUp:2};
+/* n 개 체크에 비율대로 목표를 나눠 준다 — 큰 나머지 순(같으면 무작위), 순서는 섞는다 */
+function mixTargets(w,n,rng,cap){const S=w.reduce((a,b)=>a+b,0);const q=w.map(x=>x*n/S);const c=q.map(Math.floor);let left=n-c.reduce((a,b)=>a+b,0);
+ const ord=q.map((x,i)=>({i,r:x-Math.floor(x)+rng()*1e-6})).sort((a,b)=>b.r-a.r);for(const {i} of ord){if(left<=0)break;c[i]++;left--}
+ const L=[];c.forEach((k,i)=>{for(let j=0;j<k;j++)L.push(MIX_T[i])});if(cap!=null){let k=0;for(let i=0;i<L.length;i++)if(L[i]===15&&++k>cap)L[i]=12}for(let i=L.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[L[i],L[j]]=[L[j],L[i]]}return L}
+function mixPick(w,rng){const S=w.reduce((a,b)=>a+b,0);let x=rng()*S;for(let i=0;i<w.length;i++){x-=w[i];if(x<0)return MIX_T[i]}return MIX_T[0]}
 /* 패널티 표 (웹툴 PEN_EX 꼴). 세기별로 실패 · 대가 */
 const PEN={
  light:{fail:[{memo:'시간 지체'},{dmg:'1/8',memo:'긁힘'}],cost:[{memo:'시간이 걸림'},{memo:'흔적을 남김'}]},
@@ -51,11 +62,11 @@ function make(tier,knobs,seed){const T=TIER[tier];if(!T)throw new Error('난이�
  const ri=n=>Math.floor(rng()*n);const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=ri(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
  const boss=BOSS[ri(BOSS.length)];const pool=shuffle(POOL);let pi=0;const take=n=>{const out=[];for(let i=0;i<n;i++){out.push(pool[pi%pool.length]);pi++}return out};
  /* 체크: 자질을 고루(같은 자질 연달아 X), 목표치 묶음, 타입 조건은 hintTyped 개만 */
- const sts=shuffle(STATS);const checks=[];const tg=TGT[k.tgt]||TGT.mix;const typedAt=new Set(shuffle([...Array(k.checks).keys()]).slice(0,k.hintTyped));
- for(let i=0;i<k.checks;i++){const st=sts[i%4];const target=k.tgt==='tier'?V4[tier]:k.tgt==='tierUp'?V4UP[V4[tier]]:k.tgt==='mix'?tg[i%2]:tg[ri(tg.length)];const pe=PEN[k.pen]||PEN.mid;
+ const sts=shuffle(STATS);const checks=[];const tg=TGT[k.tgt]||TGT.mix;const mixT=k.tgt==='v4mix'?mixTargets(MIX[k.mixUp?MIXUP[tier]:tier]||MIX.normal,k.checks,rng,CAP15[k.mixUp?MIXUP[tier]:tier]):null;const typedAt=new Set(shuffle([...Array(k.checks).keys()]).slice(0,k.hintTyped));
+ for(let i=0;i<k.checks;i++){const st=sts[i%4];const target=mixT?mixT[i]:k.tgt==='tier'?V4[tier]:k.tgt==='tierUp'?V4UP[V4[tier]]:k.tgt==='mix'?tg[i%2]:tg[ri(tg.length)];const pe=PEN[k.pen]||PEN.mid;
   const fx=o=>{o=JSON.parse(JSON.stringify(o));if(o.al==='F')o.al=k.alFail;if(o.al==='C')o.al=k.alCost;if(typeof o.fight==='string'){const n=+o.fight.slice(1);o.fight={mix:take(n).map(SRC),lvAdd:k.lv}}return o};
   const c={label:LABEL[st][ri(3)],stat:st,target,hint:typedAt.has(i)?'type:'+TYPES[ri(TYPES.length)]:'any',pen:k.pen==='alert'||k.pen==='num'?penFor(st,tier,rng,k):{fail:fx(pe.fail[ri(pe.fail.length)]),cost:fx(pe.cost[ri(pe.cost.length)])}};if(st==='능력')ri(2);   /* 10-29 v4: 초상 능력은 시뮬이 고른다(옛 mode 'inou' 없음) — 씨앗마다 같은 던전이 나오게 주사위만 굴린다 */
-  const u=SK.up(c);if(k.tgt==='tier'||k.tgt==='tierUp')u.target=target;delete u.pen.cost;if(+k.critAl)u.gainCrit={al:-(+k.critAl),memo:'대성공 — 기척을 지웠다'};checks.push(u)}
+  const u=SK.up(c);if(k.tgt==='tier'||k.tgt==='tierUp'||mixT)u.target=target;delete u.pen.cost;if(+k.critAl)u.gainCrit={al:-(+k.critAl),memo:'대성공 — 기척을 지웠다'};checks.push(u)}
  /* 방 배치: 입구(체크) → [배틀 · 체크 섞기] → (휴식 방 + 남은 체크) → 보스 */
  const rooms=[];let ci=0,rn=0;const nextCheck=()=>ci<checks.length?checks[ci++]:null;const cid=()=>'c'+(++rn);   /* 10-28: 방 id 가 겹치던 것 고침(전엔 'c'+ci 가 두 곳에서 같은 값 — 시뮬이 한 체크를 두 번 · 다른 하나는 건너뜀) */
  rooms.push({id:'entry',t:'entry',name:'입구',check:nextCheck()});
@@ -64,6 +75,8 @@ function make(tier,knobs,seed){const T=TIER[tier];if(!T)throw new Error('난이�
  /* 10-27 저녁: 남은 체크는 휴식 방 앞에 둔다(마지막 하나는 휴식 방 안). 전엔 휴식 뒤에 남아 HP 패널티가 그대로 보스로 갔다 */
  while(checks.length-ci>1)rooms.push({id:cid(),t:['puzzle','trap','room'][ri(3)],name:'방 '+ci,check:nextCheck()});
  const restRoom={id:'safe',t:'safe',name:'쉼터'};if(k.rest&&k.rest!=='none')restRoom.rest=k.rest;const c2=nextCheck();if(c2)restRoom.check=c2;if(restRoom.rest||restRoom.check)rooms.push(restRoom);
- const esc=take(T.bossN-1);rooms.push({id:'boss',t:'boss',name:'보스 · '+boss[2],enc:{mix:[SRC(boss)].concat(esc.map(SRC)),boss:true,bossAt:0,raid:T.raid,n:T.bossN,lvAdd:k.bossLv}});
+ /* 11-02 망령 「어려움이 방이 많을 경우엔 회복 방을 2개 배치한다던가?」: knobs.rest2 = 본길 방이 그 수 이상이면 본길 가운데쯤에 쉼터(짧은 휴식) 하나 더 */
+ if(+k.rest2>0&&rooms.length+1>=+k.rest2){const mid=Math.max(2,Math.floor(rooms.length/2));if(rooms[mid-1].t!=='safe'&&(!rooms[mid]||rooms[mid].t!=='safe'))rooms.splice(mid,0,{id:'safe2',t:'safe',name:'쉼터 2',rest:k.rest&&k.rest!=='none'?k.rest:'short'})}
+ const bN=+k.bossN||T.bossN,rX=k.raid!=null&&k.raid!==''?+k.raid:T.raid;   /* 11-02: knobs.bossN · raid 로 보스방 수 · 레이드 바꾸기(실험 · 결정 뒤 기본값) */const esc=take(bN-1);rooms.push({id:'boss',t:'boss',name:'보스 · '+boss[2],enc:{mix:[SRC(boss)].concat(esc.map(SRC)),boss:true,bossAt:0,raid:rX,n:bN,lvAdd:k.bossLv}});
  return {id:`gen_${tier}_${seed}`,name:`생성 · ${T.name} #${seed}`,wn:2,private:true,gen:{tier,knobs:k,seed,boss:boss[2]},rooms}}
-module.exports={make,TIER,POOL,BOSS,PEN,DEF,penFor,V4,V4UP,LABEL};
+module.exports={make,TIER,POOL,BOSS,PEN,DEF,penFor,V4,V4UP,LABEL,MIX,MIX_T,MIXUP,CAP15,mixTargets,mixPick};

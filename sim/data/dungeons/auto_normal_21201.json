@@ -1,0 +1,585 @@
+{
+ "id": "auto_normal_21201",
+ "name": "흐느끼는 저택 (보통)",
+ "wn": 2,
+ "private": true,
+ "gen": {
+  "tier": "normal",
+  "knobs": {
+   "battles": 1,
+   "foes": 2,
+   "lv": 5,
+   "bossLv": 5,
+   "rest": "short",
+   "checks": 6,
+   "tgt": "v4mix",
+   "pen": "alert",
+   "hintTyped": 1,
+   "alCost": 10,
+   "alFail": 10,
+   "critAl": 10
+  },
+  "seed": 21201,
+  "boss": "밤고양이",
+  "brWant": 2,
+  "v": 1,
+  "auto": true,
+  "tough": "",
+  "shape": "꺾인길",
+  "theme": "폐가",
+  "rules": {
+   "restV": 2,
+   "alBattle": 5,
+   "alLose": 10,
+   "al30": 5,
+   "al70": 10,
+   "restShort": "all",
+   "restPO": 1,
+   "restPC": 1,
+   "restBreath": "one",
+   "restBC": 1
+  },
+  "source": "db",
+  "grades": {
+   "wild": [
+    "C"
+   ],
+   "boss": [
+    "A"
+   ]
+  },
+  "verify": {
+   "wr": 0.65,
+   "target": 0.6,
+   "band": 0.1,
+   "tries": 1,
+   "ok": true,
+   "cards": "base"
+  }
+ },
+ "rooms": [
+  {
+   "id": "entry",
+   "t": "entry",
+   "name": "녹슨 철문",
+   "check": {
+    "label": "곰팡이 독을 가려낸다",
+    "stat": "육성",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "st": "Poison",
+      "memo": "독이 있는 것에 닿았다"
+     }
+    },
+    "pm": 0,
+    "base": 1,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "b1",
+   "t": "battle",
+   "name": "쥐가 드나드는 부엌",
+   "enc": {
+    "mix": [
+     {
+      "db": "w153"
+     },
+     {
+      "db": "w084"
+     }
+    ],
+    "lvAdd": 5
+   }
+  },
+  {
+   "id": "c1",
+   "t": "room",
+   "name": "뒤틀린 계단참",
+   "check": {
+    "label": "무너지는 계단을 함께 건넌다",
+    "stat": "통솔",
+    "target": 15,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "oc": 2,
+      "memo": "모두 지쳤다"
+     }
+    },
+    "pm": 0,
+    "base": 4,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "c2",
+   "t": "puzzle",
+   "name": "먼지 낀 피아노방",
+   "check": {
+    "label": "흐느끼는 소리의 정체를 쫓는다",
+    "stat": "능력",
+    "target": 12,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "dmg": "1/4",
+      "st": "Paralysis",
+      "memo": "반동에 몸이 굳었다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "c3",
+   "t": "trap",
+   "name": "잠긴 아이 방",
+   "check": {
+    "label": "흩어진 일기장의 순서를 맞춘다",
+    "stat": "지시",
+    "target": 12,
+    "hint": "type:에스퍼",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "oo": 1,
+      "memo": "지시가 엇갈렸다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [
+      "물"
+     ],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "c4",
+   "t": "puzzle",
+   "name": "거울의 방",
+   "check": {
+    "label": "겁먹은 야생 포켓몬을 달랜다",
+    "stat": "육성",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "st": "Poison",
+      "memo": "독이 있는 것에 닿았다"
+     }
+    },
+    "pm": 0,
+    "base": 1,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "safe",
+   "t": "safe",
+   "name": "다락 아래 골방",
+   "rest": "short",
+   "check": {
+    "label": "어둠 속에서 대열을 지킨다",
+    "stat": "통솔",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "st": "Confusion",
+      "cnt": 3,
+      "memo": "대열이 무너졌다"
+     }
+    },
+    "pm": 0,
+    "base": 4,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "boss",
+   "t": "boss",
+   "name": "다락",
+   "enc": {
+    "mix": [
+     {
+      "db": "w217"
+     },
+     {
+      "db": "w037"
+     },
+     {
+      "db": "w273"
+     },
+     {
+      "db": "w124"
+     }
+    ],
+    "boss": true,
+    "bossAt": 0,
+    "raid": 3,
+    "n": 4,
+    "lvAdd": 5
+   }
+  },
+  {
+   "id": "g1a1",
+   "t": "battle",
+   "name": "벽지 벗겨진 복도",
+   "enc": {
+    "mix": [
+     {
+      "db": "w140"
+     },
+     {
+      "db": "w017"
+     }
+    ],
+    "lvAdd": 5
+   },
+   "alt": "g1"
+  },
+  {
+   "id": "g2a1",
+   "t": "room",
+   "name": "잠긴 서랍장",
+   "check": {
+    "label": "겁먹은 포켓몬을 진정시킨다",
+    "stat": "통솔",
+    "target": 12,
+    "hint": "type:악",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "oc": 2,
+      "memo": "모두 지쳤다"
+     }
+    },
+    "pm": 0,
+    "base": 4,
+    "fit": {
+     "types": [
+      "불꽃"
+     ],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "alt": "g2"
+  },
+  {
+   "id": "g2a2",
+   "t": "puzzle",
+   "name": "삐걱이는 다락문",
+   "check": {
+    "label": "다친 야생 포켓몬을 달랜다",
+    "stat": "육성",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "st": "Poison",
+      "memo": "독이 있는 것에 닿았다"
+     }
+    },
+    "pm": 0,
+    "base": 1,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "alt": "g2"
+  },
+  {
+   "id": "g2a3",
+   "t": "room",
+   "alt": "g2",
+   "filler": 1,
+   "memo": "돌아가는 길 · 숨은 물건 — 살피면 소지품 · 열매 하나(GM 이 정한다). 체크 없음",
+   "name": "깨진 온실"
+  },
+  {
+   "id": "tr",
+   "t": "treasure",
+   "side": 1,
+   "name": "먼지 쌓인 금고",
+   "clue": {
+    "t": "주인의 흔적",
+    "d": "깊은 곳의 주인 — 「악」 기운이 서려 있다.\n「격투」 · 「벌레」 · 「페어리」 쪽을 꺼리는 흔적이 남아 있다.\n「자연의힘」의 자국이 벽에 새겨져 있다.",
+    "auto": 1
+   },
+   "from": "safe"
+  },
+  {
+   "id": "s1",
+   "t": "puzzle",
+   "side": 1,
+   "name": "하녀 계단",
+   "memo": "곁방 · 선택 체크 — 해도 되고 안 해도 되는 체크 — 성공하면 경계도 −10 또는 단서, 실패하면 경계도가 오른다",
+   "check": {
+    "label": "봉인된 문을 연다",
+    "stat": "능력",
+    "target": 10,
+    "hint": "any",
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "optional": 1,
+    "pen": {
+     "fail": {
+      "al": 10,
+      "memo": "헛걸음 — 기척을 남겼다"
+     }
+    },
+    "reward": "성공하면 경계도 −10 또는 단서 하나"
+   },
+   "from": "g2a1"
+  },
+  {
+   "id": "s2",
+   "t": "room",
+   "side": 1,
+   "name": "먼지 쌓인 창고",
+   "memo": "곁방 · 흔적 — 보스나 다음 방에 대한 단서 하나(GM 이 채운다)",
+   "from": "g2a2"
+  },
+  {
+   "id": "s3",
+   "t": "room",
+   "side": 1,
+   "name": "부서진 옷장",
+   "memo": "곁방 · 숨은 물건 — 살피면 소지품 · 열매 하나(GM 이 정한다). 찾는 데 체크는 없다",
+   "from": "g2a3"
+  }
+ ],
+ "branches": [
+  {
+   "id": "g1",
+   "from": "c2",
+   "to": "c4",
+   "main": [
+    "c3"
+   ],
+   "alt": [
+    "g1a1"
+   ]
+  },
+  {
+   "id": "g2",
+   "from": "entry",
+   "to": "c1",
+   "main": [
+    "b1"
+   ],
+   "alt": [
+    "g2a1",
+    "g2a2",
+    "g2a3"
+   ],
+   "detour": 1
+  }
+ ],
+ "map": {
+  "grid": {
+   "cols": 7,
+   "rows": 5,
+   "x0": 80,
+   "dx": 140,
+   "y0": 65,
+   "dy": 130
+  },
+  "shape": "꺾인길",
+  "turns": 1,
+  "cells": {
+   "entry": [
+    0,
+    0
+   ],
+   "b1": [
+    0,
+    1
+   ],
+   "c1": [
+    0,
+    2
+   ],
+   "c2": [
+    0,
+    3
+   ],
+   "c3": [
+    0,
+    4
+   ],
+   "c4": [
+    1,
+    4
+   ],
+   "safe": [
+    2,
+    4
+   ],
+   "boss": [
+    3,
+    4
+   ],
+   "g1a1": [
+    1,
+    3
+   ],
+   "g2a1": [
+    1,
+    0
+   ],
+   "g2a2": [
+    1,
+    1
+   ],
+   "g2a3": [
+    1,
+    2
+   ],
+   "tr": [
+    2,
+    3
+   ],
+   "s1": [
+    2,
+    0
+   ],
+   "s2": [
+    2,
+    1
+   ],
+   "s3": [
+    2,
+    2
+   ]
+  },
+  "links": {
+   "b1~entry": 1,
+   "b1~c1": 1,
+   "c1~c2": 1,
+   "c2~c3": 1,
+   "c3~c4": 1,
+   "c4~safe": 1,
+   "boss~safe": 1,
+   "c2~g1a1": 1,
+   "c4~g1a1": 1,
+   "entry~g2a1": 1,
+   "g2a1~g2a2": 1,
+   "g2a2~g2a3": 1,
+   "c1~g2a3": 1,
+   "safe~tr": 1,
+   "g2a1~s1": 1,
+   "g2a2~s2": 1,
+   "g2a3~s3": 1
+  }
+ },
+ "path": [
+  "entry",
+  "b1",
+  "c1",
+  "c2",
+  "c3",
+  "c4",
+  "safe",
+  "boss"
+ ],
+ "theme": "폐가",
+ "owner": "밤고양이",
+ "rules": {
+  "restV": 2,
+  "alBattle": 5,
+  "alLose": 10,
+  "al30": 5,
+  "al70": 10,
+  "restShort": "all",
+  "restPO": 1,
+  "restPC": 1,
+  "restBreath": "one",
+  "restBC": 1
+ },
+ "note": "자동 생성 · 보통 · 씨앗 21201 · 테마 폐가. 사전 배틀 1 · 체크 6 · 보스방 4체 · 레이드 배틀 : 3 · 지도 갈림길 2 · 꺾인길 + 곁방 4 · 야생 Lv +5."
+}
