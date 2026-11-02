@@ -930,11 +930,13 @@ window.OM_BATTLE_UI=(()=>{
   md.querySelectorAll('[data-sfire]').forEach(bt=>bt.onclick=()=>fireSpecial(tid,bt.dataset.sfire==='pre'?preMid('',null,bt.dataset.sk,bt.dataset.sn):m.id,bt.dataset.sk,bt.dataset.sn,bt.dataset.sfire))}
  /* 트레이너 칸의 고유 「발동」: 대상(필드의 내 포켓몬 · 없으면 대상 없이) · 선행/임의/강제 를 고른다 */
  async function openUfire(tid,name){const c=ctx();const b=c.b;const t=(b.trainers||{})[tid];if(!t)return;if(!c.gm&&!ownT(c,tid))return;const x=uniqList(t).find(q=>q.p.name===name);if(!x)return;
-  const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid&&m.entry&&m.hp.cur>0).sort((p,q)=>p.entry.localeCompare(q.entry));const ph=+b.phase||0;
+  /* 11-02 망령 「상태 미라클아이 상대1체 2턴 — 상대가 안 뜨고 아군만 보인다」: 고유 구문이 「상대 1체」를 고르면 대상 목록을 상대 포켓몬으로 (기준은 이 트레이너의 나와 있는 포켓몬) */
+  const ua0=FX()?FX().autoOf({tid},'pot',name):null;const foeT=!!(ua0&&ua0.ops&&JSON.stringify(ua0.ops).includes('"tgt":"enemy1"'));
+  const mons=Object.values(b.mons||{}).filter(m=>(foeT?(m.side!==t.side&&m.tid!==tid):m.tid===tid)&&m.entry&&m.hp.cur>0).sort((p,q)=>p.entry.localeCompare(q.entry));const ph=+b.phase||0;
   const md=A().openModal(`<div class="mhead"><h2><span class="tag uqt">고유</span> 『${esc(name)}』</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    <div class="small" style="margin-bottom:8px;white-space:pre-wrap">${esc(String(x.p.eff||'').replace(/<br\s*\/?>/g,'\n'))}</div>
    <div class="small dim">${esc(t.name)} · ${x.max!=null?pips(x.left,x.max):'횟수 없음'}</div>
-   <div class="sec">대상</div><div class="pool">${mons.map((m,i)=>`<div class="oc ${i===0?'mine':''}" data-ut="${m.id}"><b>${esc(m.name)}</b><small>에리어 ${m.entry.toUpperCase()}</small></div>`).join('')}<div class="oc ${mons.length?'':'mine'}" data-ut=""><b>대상 없음</b><small>트레이너만</small></div></div>
+   <div class="sec">대상${foeT?' <span class="dim small">— 상대 1체</span>':''}</div><div class="pool">${mons.map((m,i)=>`<div class="oc ${i===0?'mine':''}" data-ut="${m.id}"><b>${esc(m.name)}</b><small>${foeT?'상대 · ':''}에리어 ${m.entry.toUpperCase()}</small></div>`).join('')}<div class="oc ${mons.length?'':'mine'}" data-ut=""><b>대상 없음</b><small>${foeT?'발동할 때 고른다':'트레이너만'}</small></div></div>
    <div class="small dim" id="upre" style="margin-top:6px">선행 입력 확인 중…</div>
    <div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn pri" data-uf="pre" hidden>선행 발동</button><button class="btn" data-uf="free" ${x.left===null||x.left>0?'':'disabled'}>임의 발동</button>${c.gm?'<button class="btn ghost" data-uf="force">강제</button>':''}</div>`);
   let tgt=mons[0]?mons[0].id:'';md.querySelectorAll('[data-ut]').forEach(el=>el.onclick=()=>{tgt=el.dataset.ut;md.querySelectorAll('[data-ut]').forEach(o=>o.classList.toggle('mine',o===el))});
@@ -953,10 +955,11 @@ window.OM_BATTLE_UI=(()=>{
   const left=x.max!=null?` 【${how==='force'?x.left:Math.max(0,x.left-1)}/${x.max}】`:'';
   const who=sk==='uq'?t.name:m.name;const tgt=sk==='uq'?(m?` → ${m.name} (에리어 ${String(m.entry).toUpperCase()})`:''):'';const img=sk==='uq'?trainerImg(t):(m.image||'');
   /* 10-28 망령 (빛의장막 고유): 고유 구문은 트레이너에서 바로 찾는다 — 대상을 안 골랐거나 상대 포켓몬을 골라도 돌게. 대상이 없으면 그 트레이너의 나와 있는 포켓몬을 기준으로 건다 */
-  const ua=sk==='uq'&&FX()?(FX().autoOf({tid},'pot',name)||(m&&FX().autoOf(m,'pot',name))):null;
-  const cm=m||(ua?Object.values(b.mons||{}).find(q=>q&&q.tid===tid&&q.entry)||Object.values(b.mons||{}).find(q=>q&&q.tid===tid):null);const cmid=cm?cm.id:mid;
+  const foe=sk==='uq'&&m&&m.side!==t.side;   /* 고른 대상이 상대 포켓몬 — 구문의 「상대 1체」로 그 포켓몬을 쓰고, 기준(자신)은 이 트레이너의 포켓몬 */
+  const ua=sk==='uq'&&FX()?(FX().autoOf({tid},'pot',name)||(m&&!foe&&FX().autoOf(m,'pot',name))):null;
+  const cm=(foe?null:m)||(ua?Object.values(b.mons||{}).find(q=>q&&q.tid===tid&&q.entry)||Object.values(b.mons||{}).find(q=>q&&q.tid===tid):null);const cmid=cm?cm.id:mid;
   const a=sk==='uq'?ua:m&&FX()&&FX().autoOf(m,'pot',name);const pr0=prioNow(cmid);
-  if(cm&&a&&a.ops&&a.ops.length&&!a.manual){setTimeout(()=>reprio(cmid,pr0),0);await fireAuto(cmid,'pot',name,{auto:a,quiet:true,uq:sk==='uq',head:`【${LB}】 ${who} 『${name}』${left}${tag}${tgt}`,img,eff:String(x.p.eff||'')});return}
+  if(cm&&a&&a.ops&&a.ops.length&&!a.manual){setTimeout(()=>reprio(cmid,pr0),0);await fireAuto(cmid,'pot',name,{auto:a,quiet:true,uq:sk==='uq'&&!foe,pickId:foe?m.id:'',head:`【${LB}】 ${who} 『${name}』${left}${tag}${tgt}`,img,eff:String(x.p.eff||'')});return}
   A().sysLog(`【${LB}】 ${who} 『${name}』${left}${tag}${tgt?'\n대상:'+tgt.replace(' →',''):''}`,'battle',{mid:m?m.id:'',img,eff:String(x.p.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,400)})}
  async function fireOrder(tid,mid,kind,key,how){const c=ctx();const b0=snap(c.b),b=snap(b0);const t=b.trainers[tid];const m=b.mons[mid];if(!t||!m)return;
   const name=kind==='order'?OO().orderName(t,key):OO().commandName(t,key);const ck=(kind==='order'?'order_':'command_')+key;t.orderCount=t.orderCount||{};
@@ -1771,7 +1774,8 @@ window.OM_BATTLE_UI=(()=>{
   /* 10-26 망령: 트레이너 고유는 고른 포켓몬이 곧 대상 — 구문의 「아군 1체」는 「고른 포켓몬」으로 (예전엔 고른 포켓몬을 뺀 다른 아군에게 걸렸다) */
   /* 10-26 덱 시험: 카드의 「아군 1체」가 기준 포켓몬(자기 편 첫 포켓몬)을 빼고 물었다 — 트레이너가 쓰는 카드는 기준 포켓몬도 고를 수 있게 (ally1s) */
   const ops=opt.uq?JSON.parse(JSON.stringify(auto.ops).replace(/"tgt":"ally1"/g,'"tgt":"self"')):auto.src==='card'?JSON.parse(JSON.stringify(auto.ops).replace(/"tgt":"ally1"/g,'"tgt":"ally1s"')):auto.ops;
-  const r=await FX().run(ops,Object.assign(uiCtx(nb,m,name,opt.area),opt.noRoll?{noRoll:1}:{},adj,hold));L.push(...r.lines);if(hold.hold&&(m.holds||[]).length)L.push('(필드를 떠나면 풀린다)');
+  const ux=uiCtx(nb,m,name,opt.area);if(opt.pickId){const up=ux.pick;ux.pick=(list,label)=>{const f=list.find(x=>x.id===opt.pickId);return f?Promise.resolve(f):up(list,label)}}   /* 11-02: 창에서 이미 고른 대상 */
+  const r=await FX().run(ops,Object.assign(ux,opt.noRoll?{noRoll:1}:{},adj,hold));L.push(...r.lines);if(hold.hold&&(m.holds||[]).length)L.push('(필드를 떠나면 풀린다)');
   const raidNew=await raidFix(m,m0,name,L);if(raidNew===null)return false;
   const f=fieldOf(nb);for(const id in nb.mons){const x=nb.mons[id];if(x.entry&&x.hp.cur<=0){x.entry='';L.push(`${x.name}은(는) 쓰러졌다!`)}}
   if(!await saveBattle(nb0,nb,f,{n:m.name,s:name,img:opt.img!=null?opt.img:(m.image||'')}))return false;if(raidNew)raidCut(m);
