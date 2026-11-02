@@ -12,7 +12,7 @@ window.SKCARD=window.SKCARD||(()=>{
  /* 쓰는 곳 → 갈래 (색 점) */
  const kindOf=t=>{t=String(t||'');return /배틀/.test(t)?(/대응/.test(t)?'re':'bt'):/체크/.test(t)?'ck':/던전/.test(t)?'dg':/상태|증상|광기/.test(t)?'st':/열쇠/.test(t)?'ky':'etc'};
  /* 효과 글: 『』 「」 용어와 ±숫자를 굵게 (escape 한 뒤라 안전) */
- const fx=x=>esc(x).replace(/\r/g,'').replace(/<br\s*\/?>/gi,'\n')
+ const fx=x=>esc(String(x??'').replace(/<br\s*\/?>/gi,'\n')).replace(/\r/g,'')
    .replace(/(『[^』\n]{1,24}』|「[^」\n]{1,24}」)/g,'<b class="skk">$1</b>')
    .replace(/(^|[\s(（])([+＋−\-–]\s?\d+(?:\/\d+)?%?)/g,'$1<b class="skn">$2</b>')
    .replace(/\n/g,'<br>');
