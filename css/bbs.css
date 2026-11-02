@@ -259,3 +259,8 @@ button.bbs-pme:hover .bbs-pch{color:var(--pt);border-color:var(--pm)}
 .bbs-split .mhead>.small.dim{min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 @media (max-width:760px){.bbs-split .bbs-dcl{display:none}.bbs-dc{padding:12px}}
 .bbs-dcf>b{align-self:flex-start;text-align:left;display:block;width:100%}
+/* 11-02 세션 노트 「✎ 게시판」 창도 두 칸 (mount {split:true} — 칸이 모달이 아니라 노트 모달 안의 상자) */
+.bbs-in.bbs-split{height:min(82vh,940px);display:flex;flex-direction:column;overflow:hidden;font-size:inherit}
+.bbs-in.bbs-split .bbs-ehead{flex:none;margin:0 0 6px}
+.bbs-in.bbs-split .bbs-ehead small{font-size:13px}
+@media (max-width:760px){.bbs-in.bbs-split{height:auto;display:block;overflow:visible}}

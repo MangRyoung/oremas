@@ -24,7 +24,10 @@ window.OM_BBS_UI=(()=>{
   boardPut:(r,s,id,o)=>rpc('om_bbs_board_put',{p_room:r,p_secret:s,p_id:id,p_name:o.name??null,p_descr:o.descr??null,p_hidden:o.hidden??null,p_ord:o.ord??null,p_del:!!o.del}),
   feed:(r,s,after)=>rpc('om_bbs_feed',{p_room:r,p_secret:s||'',p_after:after||0}),
   post:(r,s,board,parent,who,anon,body,im)=>rpc('om_bbs_post',{p_room:r,p_secret:s,p_board:board,p_parent:parent||null,p_who:who||{},p_anon:!!anon,p_body:body||'',p_img:im||''}),
-  del:(r,s,id)=>rpc('om_bbs_del',{p_room:r,p_secret:s,p_id:id}),like:(r,s,id)=>rpc('om_bbs_like',{p_room:r,p_secret:s,p_id:id})}}
+  del:(r,s,id)=>rpc('om_bbs_del',{p_room:r,p_secret:s,p_id:id}),like:(r,s,id)=>rpc('om_bbs_like',{p_room:r,p_secret:s,p_id:id}),
+  hookGet:(r,s)=>rpc('om_bbs_hook_get',{p_room:r,p_secret:s}),
+  hookPut:(r,s,o)=>rpc('om_bbs_hook_put',{p_room:r,p_secret:s,p_url:o.url??null,p_thread:o.thread??'',p_tname:o.tname??'',p_boards:o.boards??null,p_cm:o.cm??null,p_on:o.on??null}),
+  hookTest:(r,s)=>rpc('om_bbs_hook_test',{p_room:r,p_secret:s}),hookResult:(r,s,id)=>rpc('om_bbs_hook_result',{p_room:r,p_secret:s,p_id:id})}}
  /* 웹툴 기본 env */
  function omEnv(){return {key:'om',room:()=>ST().room||'',secret:()=>ST().secret||'',role:()=>ST().role||'view',seat:()=>ST().seat||'',api:()=>DBS().bbs,
   upload:f=>DBS().uploadImage('bbs/'+(ST().room||'')+'/'+(ST().seat||'gm'),f),toast:t=>A().toast(t),notify:()=>{try{DBS().broadcast({t:'bbs',room:ST().room,at:Date.now()})}catch(e){}},authors:omAuthors,roomName:()=>(ST().roomRow&&ST().roomRow.name)||''}}
@@ -110,8 +113,14 @@ window.OM_BBS_UI=(()=>{
  function myCids(){const au=curAuthor();if(role()==='seat')return new Set(authors().map(x=>x.cid));return new Set(au?[au.cid]:[])}
  /* 휴대폰 주인: 좌석은 내 트레이너, GM 은 지금 글쓴이(포켓몬이면 그 트레이너, 관계도 인물은 n:id, GM 은 없음) */
  function phoneTid(au){if(role()==='seat')return mySeat();const c=(au&&au.cid)||'';if(!c||c==='gm')return '';if(c.startsWith('pm:')){const m=((((ST().state||{}).roster||{}).mons)||{})[c.slice(3)];return (m&&m.tid)||''}return c}
- const PHONE=()=>!S.embed&&window.OM_APP&&window.OM_PHONE_UI&&window.OM_PHONE_UI.openFor?window.OM_PHONE_UI:null;
- function composeHtml(au,AL,cur){if(!canWrite())return '<p class="small dim">관전 중에는 읽기만 할 수 있어요.</p>';if(S.noSql)return '';const split=!S.embed;
+ /* 휴대폰 잇기: env.phone = {apps(tid) → [[화면,아이콘,이름,딱지]], book(tid) → [{cid,n,img,sub}], open(tid,화면,cid), tidOf(글쓴이)} — 세션 노트는 제 휴대폰(js/phone.js)을 넣는다.
+    웹툴 창(env 없음)은 OM_PHONE_UI */
+ function omPhone(){const P=window.OM_PHONE_UI;if(!window.OM_APP||!P||!P.openFor)return null;
+  return {apps:()=>{const un=role()==='seat'&&P.unreadAll?(()=>{try{return P.unreadAll()}catch(e){return 0}})():0;return [['contacts','📞','연락처'],['sms','💬','문자',un],['sns','📸','SNS'],['cal','📅','캘린더'],['notes','📝','메모장'],['home','📱','휴대폰']]},
+   book:tid=>P.bookFor?P.bookFor(tid):[],open:(tid,scr,cid)=>P.openFor(tid,scr,cid),tidOf:phoneTid}}
+ const PHONE=()=>{if(!S.split)return null;const e=E();if(e.phone)return e.phone;return S.env?null:omPhone()};
+ const PTID=au=>{const P=PHONE();return P?((P.tidOf||phoneTid)(au)||''):''};
+ function composeHtml(au,AL,cur){if(!canWrite())return '<p class="small dim">관전 중에는 읽기만 할 수 있어요.</p>';if(S.noSql)return '';const split=!!S.split;
   const whoRow=split?'':`<div class="bbs-crow">${avatar(S.anon?{n:'익명'}:au||{},S.anon)}${AL.length>1?`<button type="button" class="bbs-who" data-bb="who" aria-haspopup="dialog" title="글쓴이 고르기"><span><b>${esc(au?au.n:'?')}</b><small>${esc(au&&au.sub||'')}</small></span><span class="bbs-car" aria-hidden="true">▾</span></button>`:`<span class="bbs-whos"><b>${esc(au?au.n:'?')}</b>${au&&au.sub?`<small>${esc(au.sub)}</small>`:''}</span>`}<label class="bbs-anon"><input type="checkbox" data-bb-anon ${S.anon?'checked':''}> 익명</label></div>`;
   return `<form class="bbs-compose" data-bb-form="post">${whoRow}${split?`<div class="bbs-to"><span>📋 <b>${esc(cur.name)}</b>에 올려요</span><span class="sp"></span><label class="bbs-sw" title="남에게는 「익명」, GM 에게만 이름이 보여요"><input type="checkbox" data-bb-anon ${S.anon?'checked':''}><i aria-hidden="true"></i>익명</label></div>`:''}
      <textarea maxlength="4000" rows="3" placeholder="${split?'오늘 학교에서 무슨 일이 있었나요?':'무슨 일이 있었나요?'}" data-bb-text aria-label="글">${esc(S.draft)}</textarea>
@@ -128,10 +137,9 @@ window.OM_BBS_UI=(()=>{
   const myPost=new Map(all.filter(r=>!r.parent&&r.who&&me.has(r.who.cid)).map(r=>[String(r.id),r]));
   const noti=all.filter(r=>r.parent&&myPost.has(String(r.parent))&&!(r.who&&me.has(r.who.cid))).sort((a,b)=>+b.id-+a.id).slice(0,5);
   const BN=Object.fromEntries(boardList().map(b=>[b.id,b.name]));
-  const cal=((ST().state||{}).calendar)||{};const when=[cal.today?(()=>{const d=new Date(cal.today+'T00:00:00');return isNaN(d)?cal.today:`${d.getMonth()+1}월 ${d.getDate()}일 ${'일월화수목금토'[d.getDay()]}요일`})():'',cal.phase||''].filter(Boolean).join(' · ');
-  const P=PHONE();const tid=phoneTid(au);let book=[];if(P&&tid&&P.bookFor)try{book=P.bookFor(tid)||[]}catch(e){book=[]}
-  const un=P&&role()==='seat'&&P.unreadAll?(()=>{try{return P.unreadAll()}catch(e){return 0}})():0;
-  const apps=[['contacts','📞','연락처'],['sms','💬','문자',un],['sns','📸','SNS'],['cal','📅','캘린더'],['notes','📝','메모장'],['home','📱','휴대폰']];
+  const cal=(E().calendar?E().calendar():((ST().state||{}).calendar))||{};const when=[cal.today?(()=>{const d=new Date(cal.today+'T00:00:00');return isNaN(d)?cal.today:`${d.getMonth()+1}월 ${d.getDate()}일 ${'일월화수목금토'[d.getDay()]}요일`})():'',cal.phase||''].filter(Boolean).join(' · ');
+  const P=PHONE();const tid=PTID(au);let book=[];if(P&&tid&&P.book)try{book=P.book(tid)||[]}catch(e){book=[]}
+  let apps=[];if(P)try{apps=P.apps(tid)||[]}catch(e){apps=[]}
   const prof=`${avatar(S.anon?{n:'익명'}:au||{},S.anon)}<span class="bbs-pmi"><b>${esc(S.anon?'익명':au?au.n:'?')}</b><small>${esc(S.anon?(au?au.n+' (GM · 나만 알아요)':''):(au&&au.sub)||'')}</small><small class="bbs-pstat">글 ${nPost} · 댓글 ${nCm} · ♥ ${nLike}</small></span>`;
   return `<aside class="bbs-phone ${S.pmore?'more':''}" aria-label="내 휴대폰">
    <div class="bbs-pst"><span>${esc(when||'학교 게시판')}</span><span class="sp"></span><span class="bbs-bat" aria-hidden="true">▮▮▮</span></div>
@@ -139,15 +147,15 @@ window.OM_BBS_UI=(()=>{
    ${composeHtml(au,AL,cur)}
    ${P||noti.length?`<button type="button" class="bbs-pmorebtn" data-bb="pmore" aria-expanded="${!!S.pmore}">${S.pmore?'▴ 휴대폰 접기':'▾ 휴대폰 — 앱 · 알림 · 연락처'}${noti.length?` <em class="bbs-dot">${noti.length}</em>`:''}</button>`:''}
    <div class="bbs-pextra">
-    ${P?`<div class="bbs-apps">${apps.map(([k,ic,n,bd])=>`<button type="button" class="bbs-app" data-bb="app" data-scr="${k}" ${tid||k==='home'?'':'disabled title="GM 이름으로는 휴대폰이 없어요 — 글쓴이를 사람으로 바꿔 주세요"'}><i>${ic}${bd?`<em class="bbs-dot">${bd>99?'99+':bd}</em>`:''}</i><span>${n}</span></button>`).join('')}</div>`:''}
+    ${P&&apps.length?`<div class="bbs-apps" style="grid-template-columns:repeat(${apps.length},1fr)">${apps.map(([k,ic,n,bd])=>`<button type="button" class="bbs-app" data-bb="app" data-scr="${k}" ${tid?'':'disabled title="이 글쓴이는 휴대폰이 없어요 — 글쓴이를 트레이너로 바꿔 주세요"'}><i>${ic}${bd?`<em class="bbs-dot">${bd>99?'99+':bd}</em>`:''}</i><span>${n}</span></button>`).join('')}</div>`:''}
     <div class="bbs-psec">내 글 반응 <span class="sp"></span><small>${noti.length?'최근 댓글':''}</small></div>
     <div class="bbs-plist">${noti.length?noti.map(c=>{const p=myPost.get(String(c.parent));const w=c.anon?{n:'익명'}:c.who||{};return `<button type="button" class="bbs-pit" data-bb="goto" data-id="${p.id}">${avatar(w,c.anon)}<span class="bbs-pit-t"><b>${esc(c.anon?'익명':w.n||'?')} <small>· ${esc(BN[p.board]||'')}</small></b><small>${esc(String(c.body||'').slice(0,60))}</small></span><time>${esc(fmtT(c.at))}</time></button>`}).join(''):`<p class="bbs-pempty">${nPost?'아직 내 글에 달린 댓글이 없어요':'글을 올리면 달린 댓글이 여기 모여요'}</p>`}</div>
-    ${P&&tid?`<div class="bbs-psec">연락처 <span class="sp"></span><button type="button" class="bbs-plink" data-bb="app" data-scr="contacts">모두 보기 ›</button></div>
+    ${P&&tid?`<div class="bbs-psec">연락처 <span class="sp"></span><button type="button" class="bbs-plink" data-bb="app" data-scr="${esc((apps.find(a=>/^(contacts|book)$/.test(a[0]))||['contacts'])[0])}">모두 보기 ›</button></div>
     <div class="bbs-plist">${book.length?book.slice(0,8).map(c=>`<button type="button" class="bbs-pit" data-bb="dm" data-cid="${esc(c.cid)}" title="${esc(c.n)}에게 문자">${avatar({n:c.n,img:c.img},false)}<span class="bbs-pit-t"><b>${esc(c.n)}</b><small>${esc(c.sub||'')}</small></span><span class="bbs-pdm" aria-hidden="true">💬</span></button>`).join('')+(book.length>8?`<p class="bbs-pempty">… ${book.length-8}명 더 — 「모두 보기」</p>`:''):'<p class="bbs-pempty">아직 연락처가 없어요 — 휴대폰 「연락처」에서 건네거나 넣어 주세요</p>'}</div>`:''}
    </div></aside>`}
  /* ----- 11-02 망령 「게시판을 디스코드랑」: GM 설정 칸 (오른쪽 칸 자리에). 보내기는 Supabase 트리거가 한다 (patch_2026-11-02_게시판_디스코드.sql) ----- */
  const DCNOSQL='디스코드 연동 함수가 아직 없어요 — Supabase SQL Editor 에서 supabase/patch_2026-11-02_게시판_디스코드.sql 을 한 번 실행해 주세요';
- const canDc=()=>!S.embed&&role()==='gm'&&!!(API()&&API().hookGet);
+ const canDc=()=>!!S.split&&role()==='gm'&&!!(API()&&API().hookGet);
  async function dcLoad(){S.dcs={busy:true};draw();try{S.dcs={cfg:await API().hookGet(room(),sec())||{set:false}}}catch(e){S.dcs={err:API().noFn(e)?DCNOSQL:String((e&&e.message)||e)}}if(S.dc)draw()}
  function dcMsg(r){if(!r)return '';if(r.timeout)return ['bad','디스코드가 대답하지 않았어요 (시간 초과). 잠시 뒤 다시 눌러 주세요'];if(r.error&&!r.status)return ['bad','보내지 못했어요: '+r.error];
   if(r.status>=200&&r.status<300)return ['ok','보냈어요. 디스코드에서 확인해 보세요'+(r.thread&&r.thread!==((S.dcs.cfg||{}).thread)?' — 새 포럼 글을 만들고 그 글로 이어 두었어요':'')];
@@ -179,12 +187,12 @@ window.OM_BBS_UI=(()=>{
  function draw(){const md=S.md;if(!md||!document.body.contains(md)){S.open=false;return}
   const B=boardList();if(!B.some(b=>b.id===S.board))S.board=B[0].id;const cur=B.find(b=>b.id===S.board)||B[0];
   const rows=[...S.rows.values()].filter(r=>r.board===cur.id);const tops=rows.filter(r=>!r.parent).sort((a,b)=>+b.id-+a.id);const kidsOf=id=>rows.filter(r=>String(r.parent)===String(id)).sort((a,b)=>+a.id-+b.id);
-  const au=curAuthor();const AL=authors();const canEditB=cur&&!cur.virt&&(role()==='gm'||(role()==='seat'&&cur.w===mySeat()));const split=!S.embed;
+  const au=curAuthor();const AL=authors();const canEditB=cur&&!cur.virt&&(role()==='gm'||(role()==='seat'&&cur.w===mySeat()));const split=!!S.split;
   const boardsNav=`<nav class="bbs-boards" aria-label="게시판">${B.map(b=>`<button type="button" class="bbs-bd ${b.id===cur.id?'on':''} ${b.hidden?'hid':''}" data-bb="board" data-id="${esc(b.id)}" aria-pressed="${b.id===cur.id}"><span>${esc(b.name)}</span>${(S.unreadBy||{})[b.id]&&b.id!==cur.id?`<b class="bbs-dot" aria-label="새 글">${S.unreadBy[b.id]}</b>`:''}</button>`).join('')}
     ${canWrite()?`<button type="button" class="bbs-bd add" data-bb="newb">＋ 게시판 만들기</button>`:''}</nav>`;
   const bhead=`<div class="bbs-bhead"><div><h3>${esc(cur.name)}${cur.hidden?' <small class="dim">(숨김)</small>':''} <small class="bbs-cnt">${tops.length}</small></h3>${cur.descr?`<p class="small dim">${esc(cur.descr)}</p>`:''}</div><span class="sp"></span>${canEditB?`<button type="button" class="btn xs ghost" data-bb="editb">고치기</button>${role()==='gm'?`<button type="button" class="btn xs ghost" data-bb="hideb">${cur.hidden?'보이기':'숨기기'}</button>`:''}<button type="button" class="btn xs ghost danger" data-bb="delb">지우기</button>`:''}</div>`;
   md.classList.toggle('bbs-embed',!!S.embed&&S.compact!==false);md.classList.toggle('bbs-in',!!S.embed);md.classList.toggle('bbs-split',split);
-  md.innerHTML=`${S.embed?`<div class="bbs-ehead">${S.compact===false?'':'<b>학교 게시판</b>'}<small>${esc((E().roomName||(()=>''))())}</small><span class="sp"></span><button type="button" class="btn xs ghost" data-bb="refresh" title="새로 받아 오기">↻</button></div>`:`<div class="mhead"><h2>학교 게시판</h2><span class="small dim">${esc((E().roomName||(()=>''))())}</span><span class="sp"></span>${canDc()?`<button type="button" class="btn ghost ${S.dc?'on':''}" data-bb="dc" title="디스코드로 보내기 (GM)" aria-label="디스코드로 보내기">🔗<span class="bbs-dcl"> 디스코드</span></button>`:''}<button type="button" class="btn ghost" data-bb="refresh" title="새로 받아 오기">↻</button><button type="button" class="btn ghost" data-x>닫기</button></div>`}
+  md.innerHTML=`${S.embed?`<div class="bbs-ehead">${S.compact===false?'':'<b>학교 게시판</b>'}<small>${esc((E().roomName||(()=>''))())}</small><span class="sp"></span>${canDc()?`<button type="button" class="btn xs ghost ${S.dc?'on':''}" data-bb="dc" title="디스코드로 보내기 (GM)" aria-label="디스코드로 보내기">🔗<span class="bbs-dcl"> 디스코드</span></button>`:''}<button type="button" class="btn xs ghost" data-bb="refresh" title="새로 받아 오기">↻</button></div>`:`<div class="mhead"><h2>학교 게시판</h2><span class="small dim">${esc((E().roomName||(()=>''))())}</span><span class="sp"></span>${canDc()?`<button type="button" class="btn ghost ${S.dc?'on':''}" data-bb="dc" title="디스코드로 보내기 (GM)" aria-label="디스코드로 보내기">🔗<span class="bbs-dcl"> 디스코드</span></button>`:''}<button type="button" class="btn ghost" data-bb="refresh" title="새로 받아 오기">↻</button><button type="button" class="btn ghost" data-x>닫기</button></div>`}
   ${S.noSql?`<p class="bbs-warn">${esc(noSqlMsg)}</p>`:''}${S.err?`<p class="bbs-warn">${esc(S.err)}</p>`:''}
   ${split?`<div class="bbs-split2">${phoneHtml(au,AL,cur)}<section class="bbs-main bbs-right">${S.dc&&canDc()?dcHtml():boardsNav+bhead+feedHtml(cur,tops,kidsOf)}</section></div>`
   :`<div class="bbs-wrap">${boardsNav}<section class="bbs-main">${bhead}${composeHtml(au,AL,cur)}${feedHtml(cur,tops,kidsOf)}</section></div>`}`;
@@ -204,7 +212,7 @@ window.OM_BBS_UI=(()=>{
   if(k==='dcoff'){if(!confirm('디스코드 연동을 끊을까요? (웹후크 주소를 지워요)'))return;(async()=>{try{S.dcs.cfg=await API().hookPut(room(),sec(),{url:'',thread:'',tname:'',boards:[],cm:false,on:false});S.dcs.res=null;toast('끊었어요')}catch(e){toast(String((e&&e.message)||e))}draw()})();return}
   if(k==='goto'){const r=S.rows.get(String(id));if(!r)return;S.board=r.board;S.open2.add(String(r.id));const tops=[...S.rows.values()].filter(x=>x.board===r.board&&!x.parent).sort((a,b)=>+b.id-+a.id);if(tops.findIndex(x=>String(x.id)===String(r.id))>=FOLD)S.more.add(r.board);draw();
    const el=S.md.querySelector(`.bbs-post[data-pid="${r.id}"]`);if(el){el.scrollIntoView({block:'center',behavior:'smooth'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1600)}return}
-  if(k==='app'||k==='dm'){const P=PHONE();if(!P)return;const tid=phoneTid(curAuthor());const scr=b.dataset.scr||'home';const cid=k==='dm'?b.dataset.cid:'';close();P.openFor(tid,scr,cid);return}
+  if(k==='app'||k==='dm'){const P=PHONE();if(!P)return;const tid=PTID(curAuthor());if(!tid)return;const scr=b.dataset.scr||'home';const cid=k==='dm'?b.dataset.cid:'';close();P.open(tid,scr,cid);return}
   if(k==='refresh'){pull(true);return}
   if(k==='like'){act(()=>API().like(room(),sec(),+id));return}
   if(k==='cm'){const s=String(id);if(S.open2.has(s))S.open2.delete(s);else S.open2.add(s);draw();const i=S.md.querySelector(`[data-cin="${s}"]`);if(i)i.focus();return}
@@ -243,17 +251,17 @@ window.OM_BBS_UI=(()=>{
   const u=img(String(dt.getData('text/uri-list')||dt.getData('text/plain')||'').split(/\r?\n/).find(x=>x&&x[0]!=='#')||'');if(u){S.imgUrl=u;draw()}else toast('그림을 알아보지 못했어요 — 파일로 저장해서 놓아 주세요')}
  function onPaste(e){if(!dropForm(e.target))return;const it=[...((e.clipboardData||{}).items||[])].find(x=>x.kind==='file'&&/^image\//.test(x.type));if(!it)return;e.preventDefault();upImg(it.getAsFile())}
 
- function mount(el,o){o=o||{};S.env=o.env||null;S.who=o.who||null;S.embed=true;S.compact=o.compact!==false;closeWho();S.md=el;S.open=true;draw();if(Date.now()-S.lastPoll>3000||(S.env&&S.env.key)+'|'+room()!==S.ekey)pull().then(markSeen);else markSeen()}
- function openBoard(){S.dc=false;S.env=null;S.who=null;S.embed=false;S.compact=true;closeWho();if(!room())return;S.open=true;S.md=A().openModal('<div class="mhead"><h2>학교 게시판</h2><span class="sp"></span><button type="button" class="btn ghost" data-x>닫기</button></div><p class="small dim">불러오는 중…</p>');S.md.classList.add('bbsmodal');draw();pull(!S.rows.size).then(markSeen)}
+ function mount(el,o){o=o||{};S.env=o.env||null;S.who=o.who||null;S.embed=true;S.compact=o.compact!==false;S.split=!!o.split;S.dc=false;closeWho();S.md=el;S.open=true;draw();if(Date.now()-S.lastPoll>3000||(S.env&&S.env.key)+'|'+room()!==S.ekey)pull().then(markSeen);else markSeen()}
+ function openBoard(){S.dc=false;S.split=true;S.env=null;S.who=null;S.embed=false;S.compact=true;closeWho();if(!room())return;S.open=true;S.md=A().openModal('<div class="mhead"><h2>학교 게시판</h2><span class="sp"></span><button type="button" class="btn ghost" data-x>닫기</button></div><p class="small dim">불러오는 중…</p>');S.md.classList.add('bbsmodal');draw();pull(!S.rows.size).then(markSeen)}
  function close(){closeWho();S.open=false;S.md=null;if(window.OM_APP)A().closeModal();markSeen()}
  function onEvent(p){if(!p||(p.room&&p.room!==room()))return;pull().then(()=>{if(S.open)markSeen()})}
 
  /* 열려 있으면 20초 · 닫혀 있으면(웹툴만) 90초마다 새 줄. 닫히면 웹툴 기본 env 로 돌아간다 */
  setInterval(()=>{if(S.open&&(!S.md||!document.body.contains(S.md)))S.open=false;
-  if(!S.open&&S.env){S.env=null;S.who=null;S.embed=false}
+  if(!S.open&&S.env){S.env=null;S.who=null;S.embed=false;S.split=false}
   if(window.OM_APP&&window.OM_STORE)fab();if(!room())return;
   const gap=S.open?20000:(window.OM_APP?90000:0);if(gap&&Date.now()-S.lastPoll>gap&&!S.noSql)pull()},2000);
  document.addEventListener('click',onClick);document.addEventListener('submit',onSubmit);document.addEventListener('input',onInput);document.addEventListener('change',onChange);document.addEventListener('dragover',onDragOver);document.addEventListener('drop',onDrop);document.addEventListener('paste',onPaste);
  /* 글 쓰는 중에 새 글이 와도 칸을 다시 그리지 않는다 (쓰던 칸이 풀리던 것) — 칸을 떠나면 그때 */
  document.addEventListener('focusout',e=>{if(!S.pend||!S.md||!S.md.contains(e.target))return;setTimeout(()=>{if(S.pend&&!typing())redraw()},0)});
- return {V:6,openBoard,mount,onEvent,pull,apiFromRpc,unread:()=>S.unread}})();   /* V: 세션 노트가 이보다 옛 것을 들고 있으면 다시 불러온다 */
+ return {V:8,openBoard,mount,onEvent,pull,apiFromRpc,unread:()=>S.unread}})();   /* V: 세션 노트가 이보다 옛 것을 들고 있으면 다시 불러온다 */
