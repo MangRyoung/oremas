@@ -114,11 +114,11 @@ window.OM_RP_UI=(()=>{
    if(d.clear){STAGE.slots={left:null,center:null,right:null};STAGE.active=null;continue}
    const k=speakerKey(r);if(!k||!d.t)continue;if(isGmK(k)&&window.OM_LINE&&window.OM_LINE(d).narr)continue;expire(at);STAGE.last[k]=at;STAGE.active=k;
    if(Object.values(STAGE.slots).includes(k))continue;
-   const free=['center','left','right'].find(s=>!STAGE.slots[s]);if(free){STAGE.slots[free]=k;continue}
-   const oldest=SLOTS.slice().sort((a,b)=>(STAGE.last[STAGE.slots[a]]||0)-(STAGE.last[STAGE.slots[b]]||0))[0];STAGE.slots[oldest]=k}}
+   const DS=!!R().dsplit;const free=(DS?['left','right']:['center','left','right']).find(s=>!STAGE.slots[s]);if(free){STAGE.slots[free]=k;continue}   /* 11-02 좌우 분리: 가운데 자리는 안 쓴다 */
+   const oldest=(DS?['left','right']:SLOTS).slice().sort((a,b)=>(STAGE.last[STAGE.slots[a]]||0)-(STAGE.last[STAGE.slots[b]]||0))[0];STAGE.slots[oldest]=k}}
  /* 대사 없이 무대에 올린다 (감정 연출 「!한숨」 등) — 대사가 들어온 것처럼 빈 자리 · 가장 오래된 자리에 */
  /* opt.brief(ms): 대사 없는 감정 연출 — 새로 올린 인물은 그만큼만 섰다가 내려간다 (10-26 망령: 애니메이션은 금방 끝나는데 스탠딩이 한참 남았다). 이미 서 있던 인물은 시간을 건드리지 않는다 */
- function stageEnter(k,opt){if(!k)return;opt=opt||{};const now=Date.now();expire(now);const was=Object.values(STAGE.slots).includes(k);if(opt.brief){if(!was)STAGE.last[k]=now-STAND_TTL+opt.brief}else STAGE.last[k]=now;STAGE.active=k;if(!was){const free=['center','left','right'].find(s=>!STAGE.slots[s]);if(free)STAGE.slots[free]=k;else{const oldest=SLOTS.slice().sort((a,b)=>(STAGE.last[STAGE.slots[a]]||0)-(STAGE.last[STAGE.slots[b]]||0))[0];STAGE.slots[oldest]=k}}if(A().view==='rp')A().renderScene()}
+ function stageEnter(k,opt){if(!k)return;opt=opt||{};const now=Date.now();expire(now);const was=Object.values(STAGE.slots).includes(k);if(opt.brief){if(!was)STAGE.last[k]=now-STAND_TTL+opt.brief}else STAGE.last[k]=now;STAGE.active=k;if(!was){const DS=!!R().dsplit;const free=(DS?['left','right']:['center','left','right']).find(s=>!STAGE.slots[s]);if(free)STAGE.slots[free]=k;else{const oldest=(DS?['left','right']:SLOTS).slice().sort((a,b)=>(STAGE.last[STAGE.slots[a]]||0)-(STAGE.last[STAGE.slots[b]]||0))[0];STAGE.slots[oldest]=k}}if(A().view==='rp')A().renderScene()}
  function expire(now){now=now||Date.now();for(const s of SLOTS){const k=STAGE.slots[s];if(k&&now-(STAGE.last[k]||0)>STAND_TTL){STAGE.slots[s]=null;if(STAGE.active===k)STAGE.active=null}}}
  let expT=null;
  function scheduleExpire(){clearTimeout(expT);const keys=Object.values(STAGE.slots).filter(Boolean);if(!keys.length)return;const next=Math.min(...keys.map(k=>(STAGE.last[k]||0)+STAND_TTL))-Date.now();expT=setTimeout(()=>{if(A().view==='rp')A().renderScene()},Math.max(200,next+50))}
@@ -168,6 +168,11 @@ window.OM_RP_UI=(()=>{
   const LF=window.OM_LINE||(d=>({narr:false,text:String(d.t||''),q:true}));
   /* 10-26 망령: 세 자리를 모두 고정해 두면 자리에 없는 사람이 말해도 스탠딩이 안 섰다 — 그 사람이 말하는 동안만 가운데에 잠깐 끼어든다 */
   {const sk0=lastChat&&!LF(lastChat.data||{}).narr?speakerKey(lastChat):'';if(sk0&&!isGmK(sk0)&&!SLOTS.some(x=>slots[x]===sk0)&&SLOTS.every(x=>manual[x]&&manual[x].key))slots.center=sk0}
+  /* 11-02 망령 「좌우 분리 했을 때도 가운데가 여전히 나온다」: 이 모드에선 가운데 자리를 아예 비운다 — 가운데 사람은 빈 쪽으로,
+     양쪽이 다 차 있으면 말하는 사람이면 양쪽 중 오래 말 안 한 쪽을 대신하고, 말하는 사람이 아니면 내려간다 (좁은 화면 · 던전은 그대로) */
+  if(r.dsplit&&!(window.OM_DG_UI&&window.OM_DG_UI.cur&&window.OM_DG_UI.cur())&&innerWidth>=761&&slots.center){const c=slots.center;slots.center=null;
+   const spk=lastChat&&!LF(lastChat.data||{}).narr?speakerKey(lastChat):'';
+   if(!slots.left)slots.left=c;else if(!slots.right)slots.right=c;else if(c===spk){const v=['left','right'].filter(x=>slots[x]!==spk).sort((a,b)=>(STAGE.last[slots[a]]||0)-(STAGE.last[slots[b]]||0))[0];if(v)slots[v]=c}}
   const line=(name,d,tw)=>{const f=LF(d);const tx=f.narr?esc(f.text):(f.q?esc(f.text.trim()):'"'+esc(f.text)+'"');return `<div class="dname"><span>${esc(name)}</span></div><div class="dtext ${f.narr?'narr':''}">${tw?`<span class="tw-on"></span><span class="tw-off">${tx}</span>`:tx}</div>`};
   /* 10-23 망령: 무대를 비웠거나(clear 줄) 말한 인물이 무대에서 사라졌으면 대사 상자도 내린다 (지문은 그대로) */
   const clearAfter=!!lastChat&&(A().ST.log||[]).some(x=>x.id>lastChat.id&&x.kind==='chat'&&x.data&&x.data.clear);
