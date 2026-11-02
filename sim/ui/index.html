@@ -170,6 +170,7 @@ nav button.on::after{content:"";position:absolute;left:0;right:0;bottom:-1px;hei
 @media(max-width:760px){nav{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}nav::-webkit-scrollbar{display:none}nav button{flex:none;padding:7px 11px 6px;font-size:13px}header h1{font-size:19px}header .ttl{flex:1 1 220px}header .crest{width:30px;height:34px}header h1 small{display:block;margin:2px 0 0}header #snapInfo{border:0;padding:0;flex-basis:100%}}
 
 main{max-width:1440px;padding-block:18px}
+body[data-tab=cards] main{max-width:none;padding-left:10px;padding-right:10px}   /* 11-02 망령 「카드풀 좌우로 좁다」: 카드풀 탭은 화면 폭을 다 쓴다 */
 
 /* --- 판(카드): 종이 · 금테 두 줄 · 먹 바깥 테 --- */
 .card{background-color:#efe6d2;border:1px solid var(--gold2);border-radius:2px;outline:1px solid rgba(143,123,82,.55);outline-offset:-6px;box-shadow:0 0 0 3px #0a0908,0 0 0 4px #4b3f29,0 16px 32px rgba(0,0,0,.5);padding:16px 18px;margin-bottom:20px}
@@ -478,7 +479,7 @@ $('#sdbSub').onclick=e=>{const b=e.target.closest('[data-s]');if(!b)return;SDB.t
 $('#sdbQ').oninput=()=>sdbOut();
 $('#sdbOut').onclick=async e=>{const dl=e.target.closest('[data-gdel]');if(dl){await api('abilDel',{names:[dl.dataset.gdel]});GN.meta=await api('genMeta');return sdbOut()}
  const cdl=e.target.closest('[data-gcdel]');if(cdl){await api('checksDel',{ids:[cdl.dataset.gcdel]});GN.meta=await api('genMeta');return sdbOut()}};
-function showTab(t){if(t==='cards'){const f=$('#cardsFrame');if(f&&!f.src)f.src='/cards.html'}if(t==='doc'){const f=$('#docFrame');if(f&&!f.src)f.src='/docs/'+encodeURIComponent('생성_설계도')+'.html'}if(t==='gen')setTimeout(()=>window.genInit&&genInit(),0);if(t==='sdb')setTimeout(sdbOut,0);$$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));$$('main>section').forEach(s=>s.hidden=s.id!=='t-'+t);try{localStorage.setItem('sim_tab',t)}catch(e){}}
+function showTab(t){document.body.dataset.tab=t;if(t==='cards'){const f=$('#cardsFrame');if(f&&!f.src)f.src='/cards.html'}if(t==='doc'){const f=$('#docFrame');if(f&&!f.src)f.src='/docs/'+encodeURIComponent('생성_설계도')+'.html'}if(t==='gen')setTimeout(()=>window.genInit&&genInit(),0);if(t==='sdb')setTimeout(sdbOut,0);$$('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));$$('main>section').forEach(s=>s.hidden=s.id!=='t-'+t);try{localStorage.setItem('sim_tab',t)}catch(e){}}
 async function loadState(){S=await api('state');$('#snapInfo').textContent=(S.snapshot.sample?'시험용 파티 (제작기 스냅샷 없음 — 「제작기에서 받기」)':'제작기 스냅샷 '+S.snapshot.file+' · '+String(S.snapshot.at||'').slice(0,16).replace('T',' '))+' · 트레이너 '+S.trainers.length;
  renderTrainers();renderPt();renderDgSel();renderPacks();renderWdb();renderRecords();renderCombos();renderJournal();$('#fbText').value=S.feedback;renderTable();
  $('#bPack').innerHTML=Object.values(S.wild.packs).map(p=>`<option value="${esc(p.id)}">${esc(p.name)} (${p.mons.length}체)</option>`).join('')}
