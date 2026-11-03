@@ -4118,7 +4118,7 @@ button.tag.solo:hover{border-color:var(--yel2)}
 .dg-meter i{grid-column:1/-1;display:block;height:8px;margin-top:6px;background:repeating-linear-gradient(90deg,#1b1f2a 0 calc(10% - 2px),#000 calc(10% - 2px) 10%)}
 .dg-meter i::after{content:'';display:block;height:100%;width:calc(var(--p)*100%);background:var(--lc);transition:width .5s}
 .dg-meter span{grid-column:1/-1;font:700 12px/1.6 sans-serif;color:var(--lc)}
-.dg-meter.lv1{--lc:#ffd84a}.dg-meter.lv2{--lc:#ff7a2f;animation:dgHot 1.2s ease-in-out infinite}.dg-meter.lv3{--lc:#ff2a3d;animation:dgHot .6s ease-in-out infinite}
+.dg-meter.lv1{--lc:#ffd84a}.dg-meter.lv2{--lc:#ffb02e}.dg-meter.lv3{--lc:#ff7a2f;animation:dgHot 1.2s ease-in-out infinite}.dg-meter.lv4{--lc:#ff2a3d;animation:dgHot .6s ease-in-out infinite}
 @keyframes dgHot{50%{box-shadow:5px 5px 0 var(--lc),0 0 28px var(--lc)}}
 .dg-lock{position:absolute;inset:0;display:grid;place-items:center;align-content:center;gap:6px;background:repeating-linear-gradient(-45deg,rgba(255,30,50,.18) 0 22px,rgba(0,0,0,.35) 22px 44px);color:#fff;text-align:center}
 .dg-lock strong{font:clamp(34px,7vw,80px)/1 'Black Han Sans',sans-serif;letter-spacing:.08em;text-shadow:5px 5px 0 #000}.dg-lock span{font:700 15px sans-serif;background:#000;padding:3px 12px}

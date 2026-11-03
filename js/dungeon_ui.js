@@ -30,9 +30,11 @@ window.OM_DG_UI=(()=>{
   safe:{k:'세이프룸',en:'SAFE ROOM',ic:'☗',c:'#3ee0a1',h:16,r:'경계도가 오르지 않는 안전한 곳. 숨을 고를 수 있고, 다음 진입 때 여기서 시작할 수 있다.'},
   boss:{k:'심층부',en:'DEPTHS',ic:'♛',c:'#ff2a6d',h:30,r:'던전의 주인이 기다리는 곳. 결전이 벌어진다.'}};
  const TORDER=Object.keys(TY);
- const LV=[[0,'평온','CALM','아직 아무도 눈치채지 못했다.'],[30,'경계','ALERT','무언가 낌새를 챘다. 조우가 늘어날 수 있다.'],[70,'위험','DANGER','적이 경계 태세다. 세이프룸 밖에서는 쉴 수 없다.'],[100,'퇴출','LOCKDOWN','더 버틸 수 없다! 일행은 던전 밖으로 밀려난다.']];
+ /* 11-04 망령 경계도 개편 (노트 27): 30~70 사이를 오가게 — 들어설 때 30 · 처음 들어가는 방마다 +5 · 휴식 −10. 단계: 30 미만 = 휴식 한 단계 위 · 50 이상 = 보스방 Lv +5 · 70 이상 = 야생 Lv +5(보스 합 +10) · 100 = 퇴출 */
+ const AL0=30,AL_ROOM=5,AL_REST=-10;
+ const LV=[[0,'고요','QUIET','기척이 없다. 휴식이 한 단계 위가 된다.'],[30,'경계','ALERT','무언가 낌새를 챘다.'],[50,'주목','WATCHED','깊은 곳의 주인이 눈치챘다. 보스방 Lv +5.'],[70,'위험','DANGER','던전 전체가 경계 태세다. 야생 Lv +5 (보스방은 +10).'],[100,'퇴출','LOCKDOWN','더 버틸 수 없다! 일행은 던전 밖으로 밀려난다.']];
  const lvOf=a=>LV.reduce((r,l,i)=>a>=l[0]?i:r,0);
- const LVC=['#3ee0a1','#ffd84a','#ff7a2f','#ff2a3d'];
+ const LVC=['#3ee0a1','#ffd84a','#ffb02e','#ff7a2f','#ff2a3d'];
  const DG={prev:null,sel:'',frame:'',ed:'',edSel:'',edMode:'move',edFrom:'',drag:null,mapSig:'',tiltRaf:0,edOpen:false};
  const ST=()=>A().ST;const gm=()=>ST().role==='gm';
  const ty=t=>TY[t]||TY.room;
@@ -285,7 +287,7 @@ window.OM_DG_UI=(()=>{
  async function restHere(d,rid){const r=R(d)[rid];if(!r||!gm())return;const K=SKU();if(!K||!K.applyRest)return A().toast('휴식 기능을 불러오지 못했다');if(r.ru&&!r.rmany)return A().toast('이 휴식처에서는 이미 쉬었다');
   const k=rkOf(r),L=party(d);if(!L.length)return A().toast('쉴 일행이 없다');
   const m=A().openModal(`<div class="mhead"><h2>☗ 휴식 — ${H(r.n||'세이프룸')}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small" style="margin:0 0 8px">일행 ${L.length}명(${H(L.map(t=>((RO().trainers||{})[t]||{}).name).join(', '))})이 쉰다. 단계마다 회복하는 것은 스킬 체크 창 「휴식」 탭의 설정을 따른다.</p><div class="row" style="gap:6px;flex-wrap:wrap">${RKO.map(x=>`<button class="btn ${x[0]===k[0]?'pri':''}" data-rk="${x[0]}">${x[1]} <small>(${x[2]})</small></button>`).join('')}</div>${r.rmany?'':'<p class="small dim" style="margin:8px 0 0">이 휴식처는 한 번만 쓸 수 있다.</p>'}`);
-  m.querySelectorAll('[data-rk]').forEach(b=>b.onclick=async()=>{A().closeModal();await K.applyRest(b.dataset.rk,L,{by:`${d.n||'던전'} · ${r.n||'세이프룸'}`,did:d.id});if(!r.rmany)await upd({[P0(d.id)+'r/'+rid+'/ru']:1})})}
+  m.querySelectorAll('[data-rk]').forEach(b=>b.onclick=async()=>{A().closeModal();let rk=b.dataset.rk;/* 11-04 망령 「30 이하일 때 보너스는 회복 단계를 올려 주자」 · 휴식 경계도 −10 */const a0=clamp(+d.al||0,0,100);if(alOn(d)&&a0<30){const UP={breath:'short',short:'mid'};if(UP[rk]){notice(`[${d.n||'던전'}] 경계도 ${a0}% — 고요: 휴식이 한 단계 위로`);rk=UP[rk]}}await K.applyRest(rk,L,{by:`${d.n||'던전'} · ${r.n||'세이프룸'}`,did:d.id});if(alOn(d)&&rk!=='long')await alAdd(AL_REST,'휴식');if(!r.rmany)await upd({[P0(d.id)+'r/'+rid+'/ru']:1})})}
  function side(d,isGm,al,lv){
   const rs=R(d),id=DG.sel,r=rs[id],t=ty(r&&r.t),here=id===d.at;
   const meta=`<div class="dg-card"><h4>${H(d.n||'이름 없는 던전')} <small>DUNGEON</small></h4>${d.o?`<span class="dg-chip">주인 · ${H(d.o)}</span>`:''}${d.a?`<span class="dg-chip">${H(d.a)}</span>`:''}${d.d?`<span class="dg-chip on">기한 · ${H(d.d)}</span>`:''}${mapLoc(d.id)}
@@ -314,7 +316,7 @@ window.OM_DG_UI=(()=>{
    if(s.mode==='dungeon'){cut('INFILTRATION','던전 진입',d.n||'','');try{A().goView('rp')}catch(e){}}   /* 탐색은 RP 무대에서 (방 화면이 배경) — 큰 지도는 던전 탭 */
    else{cut('ESCAPE','던전 귀환','무대로 돌아왔다','out');try{if(A().view==='dungeon'&&!gm())A().goView('')}catch(e){}}
    return}
-  if(s.mode==='dungeon'&&alOn(d)){const a=lvOf(p.al),b=lvOf(s.al);if(b>a)cut('SECURITY',b===3?'강제 퇴출':'경계도 '+LV[b][1],`${s.al}% · ${LV[b][3]}`,b===3?'lock':'warn')}}
+  if(s.mode==='dungeon'&&alOn(d)){const a=lvOf(p.al),b=lvOf(s.al);if(b>a)cut('SECURITY',b===4?'강제 퇴출':'경계도 '+LV[b][1],`${s.al}% · ${LV[b][3]}`,b===4?'lock':'warn')}}
  const typingInModal=()=>{const a=document.activeElement;return !!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&a.closest('.dg-ed'))};
 
  /* ---------- 클릭 (탭 화면) ---------- */
@@ -327,11 +329,11 @@ window.OM_DG_UI=(()=>{
   if(!gm())return;
   if(k==='ptset'&&d)return ptSet(d);
   if(k==='manage'){if(d)DG.ed=d.id;return openEd()}
-  if(k==='enter'){const id=v,s=b.dataset.s,dd=all()[id];if(!dd||!R(dd)[s])return;const p=P0(id);if(await upd({field:{mode:'dungeon',did:id,t:Date.now()},[p+'at']:s,[p+'r/'+s+'/s']:1,[p+'al']:0})){notice(`⚔ 던전 진입 — ${dd.n||'던전'}`);skStart(dd)}return}
+  if(k==='enter'){const id=v,s=b.dataset.s,dd=all()[id];if(!dd||!R(dd)[s])return;const p=P0(id);if(await upd({field:{mode:'dungeon',did:id,t:Date.now()},[p+'at']:s,[p+'r/'+s+'/s']:1,[p+'al']:alOn(dd)?AL0:0})){notice(`⚔ 던전 진입 — ${dd.n||'던전'}${alOn(dd)?` · 경계도 ${AL0}%`:''}`);skStart(dd)}return}
   if(!d)return;
   if(k==='exit'){if(confirm('던전에서 나와 모두를 무대로 돌려보낼까?')&&await upd({'field/mode':'','field/t':Date.now()}))notice(`🏠 던전에서 나왔다 — ${d.n||'던전'}`);return}
   if(k==='kick'){if(await upd({'field/mode':'','field/t':Date.now()}))notice(`[${d.n||'던전'}] 경계도 100% — 강제 퇴출. 이번 탐색은 여기까지.`);return}
-  if(k==='move'){if(!R(d)[v])return;const p=P0(d.id);if(await upd({[p+'at']:v,[p+'r/'+v+'/s']:1})){DG.sel=v;notice(`[${d.n||'던전'}] ▶ ${ro(R(d)[v].n||ty(R(d)[v].t).k)} 이동`)}return}
+  if(k==='move'){if(!R(d)[v])return;const p=P0(d.id);const first=!R(d)[v].s&&R(d)[v].t!=='entry';if(await upd({[p+'at']:v,[p+'r/'+v+'/s']:1})){DG.sel=v;notice(`[${d.n||'던전'}] ▶ ${ro(R(d)[v].n||ty(R(d)[v].t).k)} 이동`);/* 11-04: 처음 들어가는 방마다 경계도 +5 */if(first&&alOn(d))await alAdd(AL_ROOM,'새 방')}return}
   if(k==='seen'){const r=R(d)[v];if(r)upd({[P0(d.id)+'r/'+v+'/s']:r.s?null:1});return}
   if(k==='clear'){const r=R(d)[v];if(r)upd({[P0(d.id)+'r/'+v+'/c']:r.c?null:1});return}
   if(k==='nav'){const n=nbrs(d,d.at).filter(id=>!R(d)[id].s);if(!n.length)return A().toast('주변에 새로 밝힐 방이 없다');const o={};n.forEach(id=>o[P0(d.id)+'r/'+id+'/s']=1);if(await upd(o))notice(`[${d.n||'던전'}] 📡 주변 방 ${n.length}곳이 지도에 드러났다`);return}
@@ -575,7 +577,7 @@ window.OM_DG_UI=(()=>{
  /* 지도 연계 (10-26 망령): 지도 장소에 던전을 걸어 두고 그 핀에서 바로 진입 — rp_ui 의 지도 메뉴가 부른다 */
  function list(){return Object.entries(all()).map(([id,d])=>({id,n:d.n||'이름 없는 던전',rooms:Object.keys(R(d)).length,opts:startOptions(d)}))}
  async function enter(id,s,from){const d=all()[id];if(!d||!gm())return false;const o=startOptions(d);s=s&&R(d)[s]?s:(o[0]||[])[0];if(!s)return A().toast('던전에 방이 없다 — 던전 관리에서 만든다'),false;
-  const p=P0(id);if(await upd({field:{mode:'dungeon',did:id,t:Date.now()},[p+'at']:s,[p+'r/'+s+'/s']:1,[p+'al']:0})){notice(`⚔ 던전 진입 — ${d.n||'던전'}${from?' ('+from+')':''}`);skStart(d);return true}return false}
+  const p=P0(id);if(await upd({field:{mode:'dungeon',did:id,t:Date.now()},[p+'at']:s,[p+'r/'+s+'/s']:1,[p+'al']:alOn(d)?AL0:0})){notice(`⚔ 던전 진입 — ${d.n||'던전'}${from?' ('+from+')':''}${alOn(d)?` · 경계도 ${AL0}%`:''}`);skStart(d);return true}return false}
  /* 11-01 은열쇠: 던전 시작 — 손패가 빈 일행은 덱 설정 「시작 손패」만큼 뽑는다 */
  /* 11-04 05:12 망령 「응 가득 채워. 물론 대가로 빼 둔 걸 제외하고」: 던전에 들어갈 때 일행의 4식 · 6령을 가득으로(fullOf = 2체 기준 고른 것 · 각성체 대가 0) */
  async function ordFill(d){const RT=RO().trainers||{};const ops=[],L=[];for(const tid of party(d)){const t=RT[tid];if(!t)continue;const F=fullOf(tid,t);if(!F||!Object.keys(F).length)continue;const cur=t.orderCount||{};const nx=Object.assign({},cur,F);let up=0;for(const k in F)if((+cur[k]||0)!==(+F[k]||0))up++;if(!up)continue;ops.push([['roster','trainers',tid,'orderCount'],nx]);L.push(t.name||tid)}
@@ -584,5 +586,7 @@ window.OM_DG_UI=(()=>{
  function nameOf(id){const d=all()[id];return d?(d.n||'이름 없는 던전'):''}
  /* 10-28: 스킬 체크 패널티의 경계도(skill_ui pen.al) — 탐색 중인 던전의 경계도를 올린다. 경계도를 끈 던전 · 던전 밖이면 아무 일도 안 한다 */
  async function alAdd(delta,why){const d=cur();if(!d||!alOn(d)||!(+delta))return '';const before=clamp(+d.al||0,0,100),after=clamp(before+(+delta),0,100);if(after===before)return '';if(!await upd({[P0(d.id)+'al']:after}))return '';notice(`[${d.n||'던전'}] 경계도 ${after>before?'+':''}${after-before}${why?' ('+why+')':''} → ${after}%`);return `경계도 ${after>before?'+':''}${after-before} → ${after}%`}
- return {render,rpSync,onState,on,cur,TY,LV,lvOf,list,enter,nameOf,party,walkOf,startEnc,alAdd,dgNorm,dgOut,dgAll:all,dgUpd:upd,edOpen:id=>{DG.ed=id}};   /* 10-29 dgNorm · dgOut · dgAll · dgUpd: 세션 노트와 던전 주고받기(notes_link.js) */
+ /* 11-04: 조우 때 야생 Lv — 경계도 50 이상 보스방 +5 · 70 이상 +5 (app.js encounter 가 쓴다) */
+ function alFoe(did,rid){const d=all()[did];if(!d||!alOn(d))return 0;const a=clamp(+d.al||0,0,100);const boss=((R(d)[rid]||{}).t==='boss');return (a>=70?5:0)+(boss&&a>=50?5:0)}
+ return {alFoe,render,rpSync,onState,on,cur,TY,LV,lvOf,list,enter,nameOf,party,walkOf,startEnc,alAdd,dgNorm,dgOut,dgAll:all,dgUpd:upd,edOpen:id=>{DG.ed=id}};   /* 10-29 dgNorm · dgOut · dgAll · dgUpd: 세션 노트와 던전 주고받기(notes_link.js) */
 })();

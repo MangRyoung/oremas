@@ -890,13 +890,15 @@ function askOk(q,yes,no){return new Promise(res=>{const md=openModal(`<div class
 async function encounter(o){if(ST.role!=='gm')return false;const r=roster();const L=(o.left||[]).filter(id=>r.trainers[id]),R=(o.right||[]).filter(id=>r.trainers[id]&&!L.includes(id));
  if(!R.length){toast('야생 무리 트레이너가 시트에 없다');return false}
  const b0=B();if(Object.keys(b0.trainers||{}).length&&!(await askOk('지금 배틀 칸을 비우고 조우 배틀을 차릴까? (좌석은 남는다)','차린다','그만둔다')))return false;
- const WN=Math.max(1,Math.min(3,+o.wn||2));const gk=acctKey();
+ const WN=Math.max(1,Math.min(3,+o.wn||2));const gk=acctKey();const ALF=(o.dg&&window.OM_DG_UI&&window.OM_DG_UI.alFoe)?(+window.OM_DG_UI.alFoe(o.dg.did,o.dg.rid)||0):0;
  const nb={turn:0,phase:0,mode:2,sides:{left:{trainers:[]},right:{trainers:[]}},trainers:{},mons:{},field:{},cmds:{},order:[],dg:o.dg||null};
  const seats=ST.state.seats||{};const all=[];
  const put=(tid,side)=>{const t=JSON.parse(JSON.stringify(r.trainers[tid]));if(t.two)t.pids=twoPids(t);
   if(side==='left'){const w=((o.walk||{})[tid]||[]).filter(id=>(t.pids||[]).includes(id)&&r.mons[id]);t.pids=w.length?w:(t.pids||[]).filter(id=>r.mons[id]&&((r.mons[id].hp||{}).cur??1)>0).slice(0,WN)}
   const ms=(t.pids||[]).map(id=>r.mons[id]).filter(Boolean).map(x=>JSON.parse(JSON.stringify(x)));
   /* 10-31 망령 「『와일드』 ×1.25 가 웹툴에서 사라진다」: prepMon 이 mod 를 비우니 배율은 포텐셜로만 건다 — 야생 시트에 『와일드』 · 『와일드 보스』 포텐셜이 없으면 붙인다 */
+  /* 11-04 망령 경계도 단계(노트 27): 던전 조우면 경계도 70 이상 야생 Lv +5 · 50 이상 보스방 Lv +5 — 레벨을 올리고 실수치를 다시 셈 */
+  if(side==='right'&&ALF>0)ms.forEach(m=>{const S=window.OM_STATS;if(!S||!Array.isArray(m.base))return;m.lv=(+m.lv||0)+ALF;const full=!m.hp||m.hp.cur>=m.hp.max;m.stats=S.statsOf(m.base,m.iv,m.ev,m.lv);{const raw=m.stats.slice();(m.statCp||[]).forEach((j,i)=>{if(j!=null&&j!==''&&i>0)m.stats[i]=raw[+j]});(m.statAdd||[]).forEach((v,i)=>{if(+v)m.stats[i]=Math.max(1,m.stats[i]+(+v))})}m.hp=m.hp||{};m.hp.max=m.stats[0];m.hp.cur=full?m.hp.max:Math.min(+m.hp.cur||0,m.hp.max);if(m.sheetHp!=null)m.sheetHp=m.hp.max});
   if(side==='right'&&t.wild)ms.forEach(m=>{m.pots=Array.isArray(m.pots)?m.pots:[];if(!m.pots.some(p=>p&&/^와일드( 보스)?$/.test(p.name))){const nm=m.boss?'와일드 보스':'와일드';m.pots.push({slot:m.pots.length,name:nm,kind:'',eff:m.boss?'모든 능력치 ×1.5':'모든 능력치 ×1.25',ph:false});if(!m.role)m.role=nm}});
   /* 11-04 망령 「레이드 배틀 자동화가 안되있어?」: 「레이드 배틀 : X」 포텐셜이 있는 야생은 조우 때 배리어를 바로 건다 (상세 창 「레이드」 칸과 같은 기본값). 예전엔 포텐셜 글만 실리고 m.raid 가 비어 GM 이 손으로 넣어야 했다 — 봉인 서고 보스가 배리어 없이 한 방에 쓰러진 것 */
   if(side==='right'&&t.wild)ms.forEach(m=>{const p=(m.pots||[]).find(p=>p&&/레이드 배틀\s*:\s*\d+/.test(String(p.name||'')));if(!p||(m.raid&&+m.raid.segments>0))return;const X=+String(p.name).match(/레이드 배틀\s*:\s*(\d+)/)[1];if(X>0)m.raid={cure:1,cstat:1,rup:1,rmod:0,cond:'cap',segments:X,broken:0,phase:1,brk:0}});
@@ -907,6 +909,7 @@ async function encounter(o){if(ST.role!=='gm')return false;const r=roster();cons
  const AR=['a','b','c'];const n=Math.max(1,Math.min(2,rw.length||2));nb.mode=n;
  lw.slice(0,n).forEach((m,i)=>m.pend=AR[i]);rw.slice(0,n).forEach((m,i)=>m.pend=AR[i]);
  if(!await set(['battle'],nb))return false;await set(['scene'],'battle');
+ if(ALF>0)sysLog(`⚠ 경계도 — 야생 Lv +${ALF} (50 이상 보스방 +5 · 70 이상 +5, 조우 때 자동)`,'battle');
  {const rd=rw.filter(m=>m.raid&&+m.raid.segments>0);if(rd.length)sysLog(rd.map(m=>`♛ ${m.name} 「레이드 배틀 : ${m.raid.segments}」 — 최대 HP 1/${m.raid.segments} 마다 배리어 (조우 때 자동)`).join('\n'),'battle')}
  sysLog(`⚔ 야생 조우${o.title?' — '+o.title:''}\n${L.map(t=>r.trainers[t].name).join(' · ')||'일행'} VS ${rw.map(m=>'야생의 '+m.name).join(' · ')||R.map(t=>r.trainers[t].name).join(' · ')}${lw.length?`\n먼저 나갈 포켓몬(예약): ${lw.slice(0,n).map(m=>m.name).join(' · ')}`:''}${lw.length>n?` — 에리어가 ${n}칸이라 ${lw.slice(n).map(m=>m.name).join(' · ')} 은(는) 벤치에`:''}\n「시합 개시」를 누르면 시작`,'battle');
  VIEW='battle';renderScene();return true}
