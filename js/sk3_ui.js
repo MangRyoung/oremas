@@ -41,7 +41,7 @@ window.OM_SK3=(()=>{
   A().toast(what+mk);try{A().renderScene()}catch(e){}}
  async function take(tid,i){const tr=(((A().ST.state.roster||{}).trainers)||{})[tid];const v=vaultOf(tr)[i];if(!v)return;
   const b=document.querySelector(`[data-sk3del="${i}"][data-tid="${CSS.escape(tid)}"]`);if(b&&!b.dataset.arm){b.dataset.arm='1';b.textContent='빼기?';b.classList.add('warn');setTimeout(()=>{if(b.isConnected){delete b.dataset.arm;b.textContent='✕';b.classList.remove('warn')}},2500);return}
-  await write(tid,L=>L.filter(x=>x.n!==v.n),`「${v.n}」 을(를) ${tr.name||''} 보관소에서 뺐다`)}
+  await write(tid,L=>L.filter(x=>x.n!==v.n),`「${v.n}」 을(를) ${tr.name||'트레이너'}의 보관소에서 뺐다`)}
  /* GM 카드 건네주기 창: 검색 · 종류 · 덱 거르기 → 카드를 누르고 얻은 곳을 적어 건넨다 */
  const G={q:'',k:'',deck:'',sel:'',src:''};
  function give(tid){if(A().ST.role!=='gm')return A().toast('GM 만 건넬 수 있다');const tr=(((A().ST.state.roster||{}).trainers)||{})[tid];if(!tr)return;
@@ -69,6 +69,6 @@ window.OM_SK3=(()=>{
   m.querySelector('[data-gdecks]').onchange=e=>{G.deck=e.target.value;draw()};
   m.querySelector('[data-ggo]').onclick=async()=>{const n=G.sel;if(!n)return;const src=m.querySelector('[data-gsrc]').value.trim().slice(0,80);A().closeModal();
    const at=new Date(Date.now()+9*3600e3).toISOString().slice(0,10);
-   await write(tid,L=>L.some(x=>x.n===n)?null:L.concat([{n,src,at}]),`「${n}」 을(를) ${tr.name||''} 에게 건넸다`)};
+   await write(tid,L=>L.some(x=>x.n===n)?null:L.concat([{n,src,at}]),`「${n}」 을(를) ${tr.name||'트레이너'}에게 건넸다`)};
   draw();if(!D){const iv=setInterval(()=>{if(!document.getElementById('sk3Give')){clearInterval(iv);return}if(DB){clearInterval(iv);draw()}},300)}}
  return {sec,bind,give,db}})();
