@@ -5121,10 +5121,10 @@ body:has(.modalbg) .tour-ask{display:none}
 .rpmore .rpmob{display:none}
 @media (max-width:760px){.rpbtns .rpdesk{display:none}.rpmore .rpmob{display:flex}.rpmore{min-width:140px}}
 .rpstage .stagetags{gap:4px}
-.rpstage .daytag{background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.55);box-shadow:none;padding:2px 10px 2px 8px;gap:5px;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+.rpstage .daytag{background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.55);box-shadow:none;padding:2px 10px 2px 8px;gap:5px}
 .rpstage .daytag b{font-size:17px}.rpstage .daytag i{font-size:12px}.rpstage .daytag em{font-size:11px}
 .rpstage .daytag .phase{font-size:11px;padding:2px 7px}
-.rpstage .stagetags .bgname{background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.55);box-shadow:none;font-size:13px;padding:2px 12px 2px 8px;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+.rpstage .stagetags .bgname{background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.55);box-shadow:none;font-size:13px;padding:2px 12px 2px 8px}
 .rpstage .ddaytag{box-shadow:none;opacity:.92}
 html[data-vt] .rpstage .daytag b{font-size:20px!important}
 html[data-vt] .rpstage .daytag .phase{font-size:11px!important;padding:2px 7px!important}
