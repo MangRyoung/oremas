@@ -228,6 +228,7 @@ window.OM_SKILL_UI=(()=>{
  /* 실패 확정: 단계 + 패널티 묶음 (자동이면) */
  async function settleFail(tid,r){const O=r.offerId==='free'?null:st().offer;delete r.pend;if(r.offerId==='free'?+r.noStep:(O&&O.id===r.offerId&&O.noStep)){r.text+='\n상태 단계는 오르지 않는 체크';}else{const s=await stepUp(tid,(r.label||'스킬 체크')+' 실패',r.how==='mon'?r.mid:'');r.step=s;r.text+='\n'+s.line;A().sysLog(s.line,'dice')}
   if(O&&O.id===r.offerId&&O.pen&&O.pen.auto&&penHas(O.pen.fail)){await applyPenalty(tid,O.pen.fail,(O.label||'스킬 체크')+' · 실패',r.how==='mon'?r.mid:'');r.penDone=1}
+  /* 11-04 던전 기믹: 체크 실패 → OM_DG_UI.gimEvent('check') (탐색 중인 던전 · 기믹이 있을 때만) */try{const DG=window.OM_DG_UI;if(DG&&DG.gimEvent)await DG.gimEvent('check',{fail:true,tid})}catch(e){}
   return r}
 
  /* ===== 휴식 ===== */
@@ -687,5 +688,5 @@ ${penFields('fail',X)}</div></div>
   const pm=how.match(/^포켓몬 「(.+)」$/);const mon=pm?monOf(tr.id,pm[1],d.sk&&d.sk.mid):null;
   const withH=pm?`${av(mon&&mon.image,pm[1],'')}<span><small>함께</small><b>${esc(pm[1])}</b></span>`:`<span><small>판정</small><b>${esc(how||'혼자')}</b></span>`;
   return `<div class="bcard skr" style="--tc:${COL[ri]||'#2b8fa8'}"><div class="bch"><span class="bctag">${esc(tag)}</span>${av(tr.image,tn,'')}<b>${esc(tn)}</b><span class="skr-sub">${esc(stat)}${label?' · '+esc(label):''}</span><span class="sp"></span>${resBadge(ri)}</div><div class="skr-b"><div class="skr-with">${withH}</div><div class="skr-calc">${dk.length?`<span class="skr-dice">${dk.map(v=>`<i>${esc(v)}</i>`).join('')}</span>`:`<span class="skr-b">${esc(dl)}</span>`}${bon?`<span class="skr-op">+</span>${bon}`:''}<span class="skr-tot"><span class="skr-op">=</span><b>${esc(sx[1]||'?')}</b><small>/ 목표 ${esc(sx[2]||'?')}</small></span></div>${dnote||(sx[3]||'').trim()?`<div class="skr-note">${esc([dnote,(sx[3]||'').trim()].filter(Boolean).join(' · '))}</div>`:''}</div></div>`}
- return {bestOdds,setComp,logCard,rollCard,compLock,up:upOffer,open,openGm,openPlayer,pending,applyRest,restCfg,KINDS,tsk,cfg,presetList,present,sumOf,autoTarget,oddsOf,BAND,TIER,STEP,stepTxt,sceneEnd,sync};
+ return {stepUp,bestOdds,setComp,logCard,rollCard,compLock,up:upOffer,open,openGm,openPlayer,pending,applyRest,restCfg,KINDS,tsk,cfg,presetList,present,sumOf,autoTarget,oddsOf,BAND,TIER,STEP,stepTxt,sceneEnd,sync};
 })();

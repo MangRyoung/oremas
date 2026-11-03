@@ -197,7 +197,8 @@ function toWebtool(dg,names){names=names||{};for(const [t,i,n] of G.POOL.concat(
   if(x.img)o.b=IMG_BASE+String(x.img).split('/').map(encodeURIComponent).join('/');   /* 11-03 미사그 던전 8: 방 그림 = 웹툴 방 배경 (GitHub Pages 의 sim/data/dungeon_img) */
   if(memo.length)o.m=memo.join('\n').slice(0,400);r[id]=o;if(!M&&i)l[[rid(rs[i-1]),id].sort().join('~')]=1});
  if(M)for(const k of Object.keys(M.links)){const [a,b]=k.split('~').map(z=>rid(rs.find(x=>x.id===z)));l[[a,b].sort().join('~')]=1}
- return {n:dg.name,o:dg.owner?`(자동 생성) ${dg.owner}`:'',a:THEMES[dg.theme]?THEMES[dg.theme].a:(dg.theme||''),al:0,st:rid(rs[0]),wn:dg.wn||2,r,l,gen:{tier:dg.gen.tier,seed:dg.gen.seed,theme:dg.theme,rules:dg.rules}}}
+ /* 11-04 던전 기믹 · 곁방 보상 표식 — 웹툴 d.gim · 방 rw */for(const x of rs){if(x.reward&&r[rid(x)])r[rid(x)].rw=Object.assign({},x.reward)}
+ return {n:dg.name,o:dg.owner?`(자동 생성) ${dg.owner}`:'',a:THEMES[dg.theme]?THEMES[dg.theme].a:(dg.theme||''),al:0,st:rid(rs[0]),wn:dg.wn||2,r,l,gim:Array.isArray(dg.gim)&&dg.gim.length?dg.gim:undefined,gen:{tier:dg.gen.tier,seed:dg.gen.seed,theme:dg.theme,rules:dg.rules}}}
 /* 웹툴로 보낼 야생 시트 (던전 진행기 lib/dungeon.js 의 mix 빌드와 같은 꼴 — 야생 DB · 도감 야생. 스냅샷 트레이너 야생(m.trainer)은 웹툴에 없으니 뺀다) */
 let ENVW=null;const envW=()=>ENVW||(ENVW=require('./env.js').load().win);
 function wildSpec(x,dg){const enc=x.enc;if(!enc||!enc.mix)return null;const W=envW();const WB=require('./wilddb.js');const lvAdd=+enc.lvAdd||0;let mons=[];
