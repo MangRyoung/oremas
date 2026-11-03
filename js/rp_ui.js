@@ -1145,21 +1145,23 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  const gshort=g=>String(g).replace(/^[0-9.]+\s*/,'');
  function bgmMeta(g){const M=(DB().bgm||{}).meta||{};return M[g]||{b:'',d:''}}
  function bgmPanelHtml(){const r=R();const G=bgmGroups();const gs=Object.keys(G).sort();if(BG.g&&!gs.includes(BG.g))BG.g='';const now=r.bgm||{};const q=BG.q.trim().toLowerCase();const bands=((DB().bgm||{}).bands||['장면','배틀','분위기']).concat(['']);
-  const row=(g,sn,withGroup)=>{const on=now.title===sn&&now.group===g;return `<div class="song ${on?'cur':''}"><button class="pv ${PV.g===g&&PV.s===sn?'on':''}" data-bq="pv" data-g="${esc(g)}" data-s="${esc(sn)}" title="나만 미리듣기">▶</button><span class="sn" data-bq="play" data-g="${esc(g)}" data-s="${esc(sn)}"><b>${esc(sn)}</b>${withGroup?`<small class="dim"> ${esc(gshort(g))}</small>`:''}${on?'<em class="nowtag">재생 중</em>':''}</span><span class="sp"></span><button class="btn xs pri" data-bq="play" data-g="${esc(g)}" data-s="${esc(sn)}">모두에게 재생</button>${withGroup?'':`<button class="btn xs ghost" data-bq="sedit" data-g="${esc(g)}" data-s="${esc(sn)}" title="곡 수정">✎</button><button class="btn xs ghost danger" data-bq="sdel" data-g="${esc(g)}" data-s="${esc(sn)}" title="곡 삭제">✕</button>`}</div>`};
+  const row=(g,sn,withGroup)=>{const on=now.title===sn&&now.group===g;const bad=BGMBAD[bgmUrl(g,sn)];const ck=BGCK.res[bgmUrl(g,sn)];return `<div class="song ${on?'cur':''} ${bad?'bad':''}"><button class="pv ${PV.g===g&&PV.s===sn?'on':''}" data-bq="pv" data-g="${esc(g)}" data-s="${esc(sn)}" title="나만 미리듣기">▶</button><span class="sn" data-bq="play" data-g="${esc(g)}" data-s="${esc(sn)}">${bad?`<i class="bgmbad" title="재생 실패: ${esc(bad.m)}">⚠</i>`:ck==='ok'?'<i class="bgmok" title="링크 확인됨">✓</i>':ck==='?'?'<i class="bgmbad dim" title="응답이 없다 (시간 초과)">?</i>':''}<b>${esc(sn)}</b>${withGroup?`<small class="dim"> ${esc(gshort(g))}</small>`:''}${on?'<em class="nowtag">재생 중</em>':''}</span><span class="sp"></span><button class="btn xs pri" data-bq="play" data-g="${esc(g)}" data-s="${esc(sn)}">모두에게 재생</button>${withGroup?'':`<button class="btn xs ghost" data-bq="sedit" data-g="${esc(g)}" data-s="${esc(sn)}" title="곡 수정">✎</button><button class="btn xs ghost danger" data-bq="sdel" data-g="${esc(g)}" data-s="${esc(sn)}" title="곡 삭제">✕</button>`}</div>`};
   let head='',list='';
-  const bar=`<div class="np"><div class="eq ${now.src?'':'off'}">♪</div><div style="flex:1;min-width:0"><small class="dim">지금 재생 (모두에게)</small><br><b>${esc(now.title?(now.group?gshort(now.group)+' - ':'')+now.title:'재생 중인 곡 없음')}</b>${PV.title?`<br><small style="color:var(--yel2)">미리듣기: ${esc(PV.title)}</small>`:''}</div><label class="small">내 음량 <input type="range" min="0" max="1" step="0.05" value="${vol}" id="gvol"></label>${now.group&&G[now.group]?`<button class="btn sm" data-bq="rand" data-g="${esc(now.group)}" title="같은 그룹에서 다른 곡">⟳ 다른 곡</button>`:''}${PV.audio?'<button class="btn sm ghost" data-bq="pvstop">미리듣기 정지</button>':''}<button class="btn sm ghost danger" data-bq="stop">■ 정지</button></div>`;
+  const bar=`<div class="np"><div class="eq ${now.src?'':'off'}">♪</div><div style="flex:1;min-width:0"><small class="dim">지금 재생 (모두에게)</small><br><b>${esc(now.title?(now.group?gshort(now.group)+' - ':'')+now.title:'재생 중인 곡 없음')}</b>${PV.title?`<br><small style="color:var(--yel2)">미리듣기: ${esc(PV.title)}</small>`:''}</div><label class="small">내 음량 <input type="range" min="0" max="1" step="0.05" value="${vol}" id="gvol"></label>${now.group&&G[now.group]?`<button class="btn sm" data-bq="rand" data-g="${esc(now.group)}" title="같은 그룹에서 다른 곡">⟳ 다른 곡</button>`:''}${now.q&&now.group&&G[now.group]?`<button class="btn sm" data-bq="next" title="이어 재생 — 다음 곡으로">⏭ 다음</button>`:''}${PV.audio?'<button class="btn sm ghost" data-bq="pvstop">미리듣기 정지</button>':''}<button class="btn sm ghost danger" data-bq="stop">■ 정지</button></div>
+  ${gm()?`<div class="row bgmmode"><span class="small dim">재생 방식</span><select id="gbmode" title="곡이 끝났을 때">${[['','한 곡 반복'],['seq','그룹 이어 재생 (순서)'],['shuf','그룹 이어 재생 (섞기)']].map(([v,l])=>`<option value="${v}" ${bgmMode()===v?'selected':''}>${l}</option>`).join('')}</select><span class="small dim">${now.q?`이어 재생 중 (${now.q==='shuf'?'섞기':'순서'}) — 곡이 끝나면 GM 화면이 다음 곡을 모두에게 건다`:'곡 하나를 반복한다'}</span>${Object.keys(BGMBAD).length?`<span class="sp"></span><span class="small" style="color:var(--yel2)">⚠ 실패한 곡 ${Object.keys(BGMBAD).length}</span><button class="btn xs ghost" data-bq="badclr" title="⚠ 표시를 모두 지운다">표시 지우기</button>`:''}</div>`:''}`;
   if(!BG.g){const tot=gs.reduce((a,g)=>a+Object.keys(G[g]).length,0);
    head=`<div class="sec"><b>그룹 ${gs.length}개 · ${tot}곡</b><span class="note">▶ 랜덤은 그 그룹에서 아무 곡이나 모두에게</span><span class="sp"></span>${Object.keys((r.bgmX||{}).del||{}).length?'<button class="btn xs ghost" data-bq="undel">지운 것 되살리기</button>':''}<button class="btn xs" data-bq="gadd">＋ 그룹 추가</button></div><div class="row" style="margin-bottom:6px"><input type="text" id="bgq" placeholder="전체 곡 검색 (곡 이름 일부나 그룹 이름)" value="${esc(BG.q)}" style="flex:1"></div>`;
    if(q){let n=0;for(const g of gs){const gm=gshort(g).toLowerCase().includes(q);for(const sn of Object.keys(G[g]).sort()){if(n>=150)break;if(gm||sn.toLowerCase().includes(q)){list+=row(g,sn,true);n++}}}list=`<div class="songlist" style="max-height:56vh">${list||'<div class="empty small">찾는 곡이 없다</div>'}${n>=150?'<div class="small dim">150곡까지만 — 검색어를 더 적어 줘</div>':''}</div>`}
    else{for(const b of bands){const tiles=gs.filter(g=>bgmMeta(g).b===b).map(g=>{const m=bgmMeta(g);const on=now.group===g;return `<div class="btile ${on?'on':''}"><a class="tn" data-bq="open" data-g="${esc(g)}">${esc(gshort(g))}</a><div class="td">${esc(m.d||'')}</div><div class="ta"><button class="btn xs pri" data-bq="rand" data-g="${esc(g)}">▶ 랜덤 재생</button><a class="tc" data-bq="open" data-g="${esc(g)}">${Object.keys(G[g]).length}곡 ▸</a><span class="sp"></span><button class="btn xs ghost" data-bq="gren" data-g="${esc(g)}" title="그룹 이름 변경">✎</button><button class="btn xs ghost danger" data-bq="gdel" data-g="${esc(g)}" title="그룹 삭제">✕</button></div></div>`}).join('');if(tiles)list+=`<div class="band b_${{장면:'scene',배틀:'battle',분위기:'mood'}[b]||'etc'}"><h4>${esc(b||'그 밖의 그룹')}</h4><div class="bgrid">${tiles}</div></div>`}
     if(!gs.length)list='<div class="empty">아직 그룹이 없다 — ＋ 그룹 추가</div>'}}
   else{const g=BG.g;const S=Object.keys(G[g]||{}).sort();const m=bgmMeta(g);
-   head=`<div class="sec gh"><a class="back" data-bq="home">◂ 그룹 목록</a><div style="flex:1;min-width:0"><b>${esc(gshort(g))} <span class="small dim">${S.length}곡</span></b><div class="small dim">${esc(m.d||'')}</div></div><button class="btn sm pri" data-bq="rand" data-g="${esc(g)}">▶ 랜덤 재생</button><button class="btn sm" data-bq="sadd" data-g="${esc(g)}">＋ 곡 추가</button></div><div class="row" style="margin-bottom:6px"><input type="text" id="bgq" placeholder="이 그룹에서 곡 검색" value="${esc(BG.q)}" style="flex:1"></div>`;
+   head=`<div class="sec gh"><a class="back" data-bq="home">◂ 그룹 목록</a><div style="flex:1;min-width:0"><b>${esc(gshort(g))} <span class="small dim">${S.length}곡</span></b><div class="small dim">${esc(m.d||'')}</div></div><button class="btn sm pri" data-bq="rand" data-g="${esc(g)}">▶ 랜덤 재생</button>${gm()?`<button class="btn sm" data-bq="sadd" data-g="${esc(g)}">＋ 곡 추가</button><button class="btn sm ghost" data-bq="check" data-g="${esc(g)}" title="그룹의 곡을 차례로 불러 보며 죽은 링크를 찾는다 (재생은 안 한다)">${BGCK.g===g&&BGCK.busy?'■ 점검 중단':'🔗 링크 점검'}</button>`:''}</div>${BGCK.g===g&&(BGCK.busy||BGCK.msg)?`<div class="small bgck">${esc(BGCK.msg)}</div>`:''}<div class="row" style="margin-bottom:6px"><input type="text" id="bgq" placeholder="이 그룹에서 곡 검색" value="${esc(BG.q)}" style="flex:1"></div>`;
    const rows=S.filter(sn=>!q||sn.toLowerCase().includes(q)).map(sn=>row(g,sn,false)).join('');list=`<div class="songlist" style="max-height:56vh">${rows||'<div class="empty small">'+(S.length?'찾는 곡이 없다':'이 그룹엔 아직 곡이 없다')+'</div>'}</div>`}
   if(!gm())return `<div class="bgmro">${bar+head+list}</div><div class="small dim" style="margin-top:6px">방 설정 「플레이어도 배틀 진행」이라 플레이어도 BGM 을 고를 수 있다 (모두에게). 목록 고치기는 GM 만.</div>`;
   return bar+head+list+`<div class="small dim" style="margin-top:6px">플레이어 화면에서는 「소리 켜기」를 한 번 눌러야 들린다. 음량은 각자. 기본 목록은 파일에 있고 여기서 더하거나 지운 것만 방에 저장된다.</div>`}
  function bindBgmPanel(md,re){const G=bgmGroups();
   const vr=$('#gvol',md);if(vr)vr.oninput=()=>{vol=+vr.value;try{localStorage.setItem('om_vol',vol)}catch(e){}if(audio)audio.volume=vol;if(PV.audio)PV.audio.volume=vol};
+  const mo=$('#gbmode',md);if(mo)mo.onchange=async()=>{const m=mo.value||null;await A().set(['rp','bgmMode'],m);const now=R().bgm;if(now&&now.src){await A().set(['rp','bgm'],Object.assign({},now,m?{q:m}:{q:undefined}))}A().toast(m?'이어 재생 — 지금 곡이 끝나면 다음 곡으로':'한 곡 반복');re()};
   const qi=$('#bgq',md);if(qi)qi.oninput=()=>{BG.q=qi.value;const pos=qi.selectionStart;re();const n=$('#bgq');if(n){n.focus();n.setSelectionRange(pos,pos)}};
   md.querySelectorAll('[data-bq]').forEach(b=>b.onclick=async()=>{const k=b.dataset.bq;const g=b.dataset.g,sn=b.dataset.s;
    if(k==='home'){BG.g='';BG.q='';return re()}
@@ -1169,6 +1171,9 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(k==='pv'){if(PV.g===g&&PV.s===sn){pvStop();syncBgm(true);return re()}pvStop();const u=bgmUrl(g,sn);if(!u)return;PV.audio=new Audio(u);PV.audio.volume=vol;PV.audio.play().catch(()=>A().toast('재생하지 못했다'));PV.g=g;PV.s=sn;PV.title=sn;if(audio)audio.pause();return re()}
    if(k==='pvstop'){pvStop();syncBgm(true);return re()}
    if(k==='stop'){pvStop();await A().set(['rp','bgm'],null);return re()}
+   if(k==='next'){const now=R().bgm||{};if(!now.q)return;BGQ.busy=false;const pick=bgmNextPick(now);if(pick){pvStop();await playAll(now.group,pick,null,now.q)}return re()}
+   if(k==='badclr'){for(const u of Object.keys(BGMBAD))bgmBadSet(u,null);return re()}
+   if(k==='check'){if(BGCK.busy&&BGCK.g===g){BGCK.stop=true;return}bgmCheck(g,re);return re()}
    if(k==='sadd'){const t=prompt('곡 제목');if(!t||!t.trim())return;const u=prompt('주소 (Dropbox 공유 링크도 됨)');if(!u||!u.trim())return;const X=bgmX();X.add[g]=X.add[g]||{};X.add[g][t.trim()]=direct(u);delete X.del[g+'\u0001'+t.trim()];await A().set(['rp','bgmX'],X);return re()}
    if(k==='sedit'){const t=prompt('곡 제목',sn);if(t==null||!t.trim())return;const u=prompt('주소',G[g][sn]);if(u==null||!u.trim())return;const X=bgmX();if(X.add[g]&&X.add[g][sn])delete X.add[g][sn];else X.del[g+'\u0001'+sn]=1;X.add[g]=X.add[g]||{};X.add[g][t.trim()]=direct(u);delete X.del[g+'\u0001'+t.trim()];await A().set(['rp','bgmX'],X);return re()}
    if(k==='sdel'){if(!confirm(`「${sn}」 곡을 지울까?`))return;const X=bgmX();if(X.add[g]&&X.add[g][sn])delete X.add[g][sn];else X.del[g+'\u0001'+sn]=1;await A().set(['rp','bgmX'],X);return re()}
@@ -1176,12 +1181,21 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(k==='gren'){const n=prompt('그룹 이름',g);if(!n||!n.trim()||n.trim()===g)return;const X=bgmX();X.add[n.trim()]=Object.assign({},X.add[n.trim()]||{},G[g]);X.del[g]=1;await A().set(['rp','bgmX'],X);return re()}
    if(k==='gdel'){if(!confirm(`「${gshort(g)}」 그룹(${Object.keys(G[g]||{}).length}곡)을 목록에서 지울까?`))return;const X=bgmX();X.del[g]=1;delete X.add[g];if(BG.g===g)BG.g='';await A().set(['rp','bgmX'],X);return re()}
    if(k==='undel'){const X=bgmX();X.del={};await A().set(['rp','bgmX'],X);return re()}})}
+ /* 11-03: 링크 점검 — 그룹의 곡을 하나씩 audio 요소로 메타데이터만 받아 본다 (HEAD 는 CORS 에 막히니 audio 의 error 이벤트로). 10초 넘으면 ? */
+ const BGCK={g:'',busy:false,stop:false,msg:'',res:{}};
+ function bgmProbe(u){return new Promise(res=>{const a=new Audio();a.preload='metadata';a.muted=true;let done=false;const fin=v=>{if(done)return;done=true;clearTimeout(tm);try{a.src='';a.load()}catch(e){}res(v)};
+  const tm=setTimeout(()=>fin({r:'?'}),10000);a.onloadedmetadata=()=>fin({r:'ok'});a.oncanplay=()=>fin({r:'ok'});a.onerror=()=>fin({r:'bad',m:bgmErrMsg(a)});a.src=u;try{a.load()}catch(e){fin({r:'bad',m:'불러오지 못함'})}})}
+ async function bgmCheck(g,re){if(BGCK.busy)return;const G=bgmGroups();const S=Object.keys(G[g]||{}).sort();if(!S.length)return;BGCK.g=g;BGCK.busy=true;BGCK.stop=false;let bad=0,unk=0;
+  for(let i=0;i<S.length;i++){if(BGCK.stop)break;const sn=S[i];const u=bgmUrl(g,sn);BGCK.msg=`점검 중 ${i+1}/${S.length} — ${sn}`;if(re)re();
+   const r=u?await bgmProbe(u):{r:'bad',m:'주소가 없다'};BGCK.res[u]=r.r;if(r.r==='bad'){bad++;bgmBadSet(u,r.m)}else if(r.r==='?')unk++;else bgmBadSet(u,null)}
+  BGCK.busy=false;BGCK.msg=BGCK.stop?'점검을 멈췄다':`점검 끝 — ${S.length}곡 중 실패 ${bad}${unk?' · 응답 없음 '+unk:''}`;if(re)re();if(bad)A().toast(`⚠ 「${gshort(g)}」 에 재생 못 하는 곡 ${bad}개`)}
  /* 브금 미리듣기(나만) · 모두에게 재생 · 방 차이 저장 */
  const PV={audio:null,g:'',s:'',title:''};
  function pvStop(){if(PV.audio){PV.audio.pause();PV.audio=null}PV.g='';PV.s='';PV.title=''}
  function bgmX(){const X=JSON.parse(JSON.stringify(R().bgmX||{}));X.add=X.add||{};X.del=X.del||{};return X}
  function direct(u){u=String(u||'').trim();const m=u.match(/^https?:\/\/(?:www\.)?dropbox\.com\/(scl\/fi\/[^?]+|s\/[^?]+)(\?.*)?$/);if(m){const q=(m[2]||'').replace(/[?&]dl=\d/,'').replace(/^&/,'?');return 'https://dl.dropboxusercontent.com/'+m[1]+(q==='?'?'':q)}return u}
- async function playAll(g,s,re){const u=bgmUrl(g,s);if(!u)return A().toast('주소가 없다');unlocked=true;await A().set(['rp','bgm'],{src:u,title:s,group:g,at:Date.now()});const rec=[{g,s},...(R().recentBgm||[]).filter(x=>!(x.g===g&&x.s===s))].slice(0,10);await A().set(['rp','recentBgm'],rec);syncBgm(true);if(re)re()}
+ function bgmMode(){const m=R().bgmMode;return m==='seq'||m==='shuf'?m:''}
+ async function playAll(g,s,re,q){const u=bgmUrl(g,s);if(!u)return A().toast('주소가 없다');unlocked=true;const v={src:u,title:s,group:g,at:Date.now()};const qm=q===undefined?bgmMode():q;if(qm)v.q=qm;await A().set(['rp','bgm'],v);const rec=[{g,s},...(R().recentBgm||[]).filter(x=>!(x.g===g&&x.s===s))].slice(0,10);await A().set(['rp','recentBgm'],rec);syncBgm(true);if(re)re()}
  async function fireNotice(n,sub){const ment=sub||n.ment||'';await A().set(['rp','banner'],{title:n.title||n.name,text:ment,color:n.color||'#d9243f',at:Date.now()});await A().sysLog(`[${n.title||n.name}]${ment?' '+ment.replace(/\n/g,' '):''}`);if(n.bgm==='stop')await A().set(['rp','bgm'],null)}
 
  /* ----- 스탠딩(표정) 편집: 트레이너는 로스터에, NPC 는 관계도 노드에 ----- */
@@ -1302,12 +1316,36 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   document.querySelectorAll('body > .banner').forEach(x=>x.remove());document.body.appendChild(el);
   clearTimeout(bannerT);bannerT=setTimeout(()=>el.remove(),6000)}
  const bgmOff=()=>!!(window.OM_PREFS&&window.OM_PREFS.get().bgmMute);
- function bgmMuted(on){if(on){if(audio){audio.pause();audio=null}lastBgm=''}else syncBgm(true)}
- function syncBgm(force){const b=R().bgm;const src=b&&b.src||'';
-  if(bgmOff()){if(audio){audio.pause();audio=null}lastBgm='';return}   /* 내 설정에서 BGM 정지 */
-  if(!src){if(audio){audio.pause();audio=null}lastBgm='';return}
-  if(!unlocked)return;
-  if(src!==lastBgm||force){if(audio)audio.pause();audio=new Audio(src);audio.loop=true;audio.volume=vol;audio.play().catch(()=>{});lastBgm=src}}
+ function bgmMuted(on){if(on&&!(gm()&&(R().bgm||{}).q)){if(audio){fadeOut(audio);audio=null}lastBgm=''}else syncBgm(true)}
+ /* 11-03 망령: ① 그룹 「이어 재생」(rp.bgm.q = seq 순서 · shuf 섞기) — 곡이 끝나면 GM 화면이 다음 곡을 모두에게 건다 (GM 이 소리를 꺼 두었어도 소리 없이 재생해 끝을 잰다)
+    ② 곡이 바뀔 때 0.8초 페이드(각자 브라우저) ③ 재생 실패(죽은 링크 · 디코딩 오류)는 GM 에게 토스트 + 콘솔 목록 ⚠, 이어 재생 중이면 다음 곡으로 */
+ const FADE_MS=800;
+ function fadeOut(a){if(!a)return;try{a.loop=false;a.onended=null;a.onerror=null}catch(e){}const v0=a.volume,t0=Date.now();const iv=setInterval(()=>{const k=1-(Date.now()-t0)/FADE_MS;if(k<=0){clearInterval(iv);try{a.pause();a.src='';a.load()}catch(e){}return}try{a.volume=Math.max(0,v0*k)}catch(e){}},50)}
+ function fadeIn(a){if(!a)return;const t0=Date.now();a._fading=true;try{a.volume=0}catch(e){}const iv=setInterval(()=>{if(audio!==a){clearInterval(iv);return}const k=(Date.now()-t0)/FADE_MS;if(k>=1){clearInterval(iv);a._fading=false;try{a.volume=vol}catch(e){}return}try{a.volume=vol*k}catch(e){}},50)}
+ const BGMBAD=(()=>{try{return JSON.parse(localStorage.getItem('om_bgmbad')||'{}')||{}}catch(e){return {}}})();
+ function bgmBadSet(src,msg){if(!src)return;if(msg===null)delete BGMBAD[src];else BGMBAD[src]={m:String(msg||'재생 실패').slice(0,80),at:Date.now()};try{localStorage.setItem('om_bgmbad',JSON.stringify(BGMBAD))}catch(e){}}
+ function bgmErrMsg(a){const e=a&&a.error;if(!e)return '재생 실패';return ({1:'중단됨',2:'받지 못함 (주소 · 네트워크)',3:'디코딩 오류 (파일이 깨졌거나 형식)',4:'지원하지 않는 형식 · 없는 주소'})[e.code]||'재생 실패'}
+ function bgmNextPick(b){const G=bgmGroups();const ss=Object.keys(G[b.group]||{}).sort();if(!ss.length)return null;const i=ss.indexOf(b.title);
+  if(b.q==='shuf'){if(ss.length===1)return ss[0];let p=ss[Math.floor(Math.random()*ss.length)];if(p===b.title)p=ss[(ss.indexOf(p)+1)%ss.length];return p}
+  return ss[(i+1)%ss.length]}
+ const BGQ={busy:false};
+ async function bgmAdvance(b,why){if(!gm()||!b||!b.q||BGQ.busy)return;BGQ.busy=true;try{
+   await new Promise(r=>setTimeout(r,200+Math.random()*500));   /* GM 창이 둘이면 한쪽만 — 잠깐 기다렸다가 아직 그 곡이면 */
+   const cur=R().bgm||{};if(cur.src!==b.src||cur.at!==b.at)return;
+   const G=bgmGroups();const ss=Object.keys(G[b.group]||{});const tried=new Set([b.title]);let pick=bgmNextPick(b);
+   while(pick&&BGMBAD[bgmUrl(b.group,pick)]&&tried.size<ss.length){tried.add(pick);pick=bgmNextPick(Object.assign({},b,{title:pick}))}   /* 실패로 표시된 곡은 건너뛴다 */
+   if(!pick||(ss.length>1&&pick===b.title&&why==='error'))return;
+   await playAll(b.group,pick,null,b.q)}finally{BGQ.busy=false}}
+ function bgmHook(a,b){a.loop=!b.q;a.onended=()=>{if(audio!==a||!b.q)return;bgmAdvance(b,'ended')};a.onplaying=()=>{if(audio===a)BGQ.errs=0};
+  a.onerror=()=>{if(audio!==a)return;const msg=bgmErrMsg(a);bgmBadSet(b.src,msg);console.warn('[오레마스] BGM 재생 실패',b.title,msg);if(gm()){A().toast(`⚠ BGM 재생 실패 — ${b.title||'곡'}: ${msg}`);if(b.q){BGQ.errs=(BGQ.errs||0)+1;if(BGQ.errs>=3){A().toast('⚠ 곡이 연달아 실패해서 이어 재생을 멈춘다 — 「링크 점검」으로 확인해 줘');return}bgmAdvance(b,'error')}}}}
+ function syncBgm(force){const b=R().bgm;const src=b&&b.src||'';const drive=!!(gm()&&b&&b.q&&src);   /* drive: 소리를 못 내도 끝을 재야 한다 */
+  const stop=()=>{if(audio){fadeOut(audio);audio=null}lastBgm=''};
+  if(bgmOff()&&!drive){stop();return}   /* 내 설정에서 BGM 정지 */
+  if(!src){stop();return}
+  if(!unlocked&&!drive)return;
+  const silent=bgmOff()||!unlocked;
+  if(src===lastBgm&&!force&&audio){if(audio.muted!==silent){audio.muted=silent;if(!silent&&!audio._fading)audio.volume=vol}bgmHook(audio,b);return}
+  if(src!==lastBgm||force){if(audio)fadeOut(audio);const a=new Audio(src);a.preload='auto';a.muted=silent;bgmBadSet(src,null);bgmHook(a,b);audio=a;lastBgm=src;a.play().catch(e=>{if(audio===a&&!/NotAllowed|NotSupported|Abort/.test(String(e&&e.name)))console.warn('[오레마스] BGM',e)});if(!silent)fadeIn(a)}}
  /* ----- 10-25 망령: 화자 고르기 창 — RP 입력줄 · 채팅 입력칸 공용. 긴 select 목록 대신 찾기 · 배틀 중 · 최근 · 폴더별 묶음을 그림과 함께 -----
     고른 화자는 이 브라우저의 최근 목록(om_spk_recent, 8명)에 남는다. 폴더 접힘은 om_spkp_fold */
  const SPKR_LS='om_spk_recent';
@@ -1480,11 +1518,12 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  /* 배틀 상단용 작은 BGM 위젯: 지금 곡 · 내 음량 · (GM) 다른 곡/BGM 창 · (플레이어) 소리 켜기 */
  let bgmOpen=false;   /* 10-26 망령: 폰에서는 BGM 위젯을 작게 — ♪ 를 누르면 음량 · ⟳ · ■ 가 펼쳐진다 */
  const bgmNarrow=()=>{try{return matchMedia('(max-width:760px)').matches}catch(e){return false}};
- function bgmWidgetHtml(){const now=R().bgm||{};const G=bgmGroups();const ok=bgmOk();return `<div class="bgmw ${bgmOpen?'open':''}"><span class="eq ${now.src?'':'off'} ${ok?'lk':''}" data-bw="${ok?'open':'fold'}" title="${ok?'BGM 고르기 (폰: 음량 펼치기)':'폰: 음량 펼치기'}">♪</span><span class="bt ${ok?'lk':''}" ${ok?'data-bw="open"':''} title="${esc(now.title?(now.group?gshort(now.group)+' - ':'')+now.title:'재생 중인 곡 없음')}${ok?' — 누르면 BGM 고르기':''}">${esc(now.title||'BGM 없음')}</span><input type="range" min="0" max="1" step="0.05" value="${vol}" data-bw="vol" title="내 음량">${!unlocked&&now.src?'<button class="btn xs pri" data-bw="sound" title="브라우저가 소리를 막아서 한 번 눌러야 들린다">소리 켜기</button>':''}${ok?`${now.group&&G[now.group]?`<button class="btn xs ghost" data-bw="rand" title="같은 그룹에서 다른 곡">⟳</button>`:''}${now.src?'<button class="btn xs ghost" data-bw="stop" title="모두에게 정지">■</button>':''}<button class="btn xs" data-bw="open" title="BGM 고르기 (모두에게)">BGM</button>`:''}</div>`}
+ function bgmWidgetHtml(){const now=R().bgm||{};const G=bgmGroups();const ok=bgmOk();return `<div class="bgmw ${bgmOpen?'open':''}"><span class="eq ${now.src?'':'off'} ${ok?'lk':''}" data-bw="${ok?'open':'fold'}" title="${ok?'BGM 고르기 (폰: 음량 펼치기)':'폰: 음량 펼치기'}">♪</span><span class="bt ${ok?'lk':''}" ${ok?'data-bw="open"':''} title="${esc(now.title?(now.group?gshort(now.group)+' - ':'')+now.title:'재생 중인 곡 없음')}${ok?' — 누르면 BGM 고르기':''}">${esc(now.title||'BGM 없음')}</span><input type="range" min="0" max="1" step="0.05" value="${vol}" data-bw="vol" title="내 음량">${!unlocked&&now.src?'<button class="btn xs pri" data-bw="sound" title="브라우저가 소리를 막아서 한 번 눌러야 들린다">소리 켜기</button>':''}${ok?`${now.group&&G[now.group]?`<button class="btn xs ghost" data-bw="rand" title="같은 그룹에서 다른 곡">⟳</button>`:''}${now.q&&now.group&&G[now.group]?`<button class="btn xs ghost" data-bw="next" title="이어 재생 — 다음 곡">⏭</button>`:''}${now.src?'<button class="btn xs ghost" data-bw="stop" title="모두에게 정지">■</button>':''}<button class="btn xs" data-bw="open" title="BGM 고르기 (모두에게)">BGM</button>`:''}</div>`}
  function bindBgmWidget(root){root.querySelectorAll('[data-bw]').forEach(el=>{const k=el.dataset.bw;
   if(k==='vol'){el.oninput=()=>setVolume('bgm',+el.value);return}
   el.onclick=async()=>{if(k==='sound'){userMuted=false;unlocked=true;syncBgm(true);return A().renderScene()}if((k==='open'||k==='fold')&&el.classList.contains('eq')&&bgmNarrow()){bgmOpen=!bgmOpen;root.querySelectorAll('.bgmw').forEach(w=>w.classList.toggle('open',bgmOpen));return}if(k==='fold')return;if(k==='open')return quickBgm();
    if(k==='stop'){await A().set(['rp','bgm'],null);return}
+   if(k==='next'){const now=R().bgm||{};if(!now.q)return;const pick=bgmNextPick(now);if(pick){pvStop();await playAll(now.group,pick,null,now.q)}return}
    if(k==='rand'){const now=R().bgm||{};const G=bgmGroups();const ss=Object.keys(G[now.group]||{});if(!ss.length)return;let pick=ss[Math.floor(Math.random()*ss.length)];if(ss.length>1&&pick===now.title)pick=ss[(ss.indexOf(pick)+1)%ss.length];pvStop();await playAll(now.group,pick)}}})}
  /* ----- 아래 띠: 내 캐릭터 · 굴림(스킬 체크) · 폰 · 대화(장면 등장) · 소지 포켓몬 현황 ----- */
  function meTrainer(){const ST=A().ST;const T=(ST.state.roster||{}).trainers||{};if(ST.role==='seat')return T[ST.seat]||null;if(gm()){const c=speakerChar();if(c&&c.kind==='pc')return T[c.id]||null;if(c&&c.kind==='pm'){const m=((ST.state.roster||{}).mons||{})[c.id];return m?T[m.tid]||null:null}}return null}
