@@ -61,6 +61,7 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
   const accRoll=()=>protBlock?{prot:1,sure:false,hit:false}:wideBlock?{sure:false,hit:false,note:'와이드가드'}:itImm?{sure:false,hit:false,note:itImm}:psyBlock?{sure:false,hit:false,note:'사이코필드'}:autoMiss?{sure:false,hit:false,note:'회피'}:
    B.accuracy(atk,def,{acc:mv.acc},{accMult:accMul,sureHit:sure,starry:f.weather.type==='별하늘',fog:f.weather.type==='짙은안개',fogImmune:FN.tysOf(atk).some(t=>t==='Poison'||t==='Fairy'),gravity:(f.etc||{})['중력']>0,wideLens:FN.IT(atk)==='광각렌즈',ignoreAcc:IG.acc,ignoreEva:IG.eva,rng:rnd});
   let acc=accRoll();if(!acc.hit&&!acc.prot&&!acc.note&&mv.cat!=='변화'&&atk.side==='left'&&cardTake(H,'reroll',+b.turn||0,atk.tid))acc=accRoll();   /* 「실타래 되감기」 */
+  /* 11-04 「빗나가라!」(세 칸 배틀 · c073): 상대 기술(명중 100 미만 · 필중 아님)이 아군에 맞으면 명중 다시 */if(acc.hit&&!acc.sure&&!sure&&mv.cat!=='변화'&&atk.side!=='left'&&def.side==='left'&&(+mv.acc||100)<100&&cardTake(H,'dodgeReroll',+b.turn||0,def.tid))acc=accRoll();
   const floating=(def.states||{}).MagnetRise||(def.states||{}).Telekinesis||(FX&&FX.floating(def))||FN.IT(def)==='풍선';
   const effPre=mv.cat==='변화'?null:B.effectiveness(moveTypes,def,{multiMode:0,atkTypes,force:null,floating});
   const mods=FX?FX.attackMods(atk,def,Object.assign(FN.moveQuery(atk,def,mv,moveTypes,effPre?effPre.value:1,!multiTarget),{stab:!!(effPre&&effPre.stab)})):{boost:1,guard:1,cg:0,cr:0,cx:'',names:[]};

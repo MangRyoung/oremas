@@ -107,6 +107,16 @@ dialog.ed::backdrop{background:rgba(0,0,0,.6)}
 .edrow .lab{font-size:13px;color:var(--bone2);min-width:64px}
 .edw .orig{font-size:12px;color:var(--mute);border-left:2px solid var(--line);padding-left:8px}
 .edf{position:sticky;bottom:0;background:var(--ink2);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding:12px 18px;border-top:1px solid var(--line)}
+/* 11-04 세 칸: 오른쪽은 체크 · 던전 · 배틀 칸이 8장씩 · 코스트는 없앰 */
+.cost,.edrow.costrow{display:none!important}
+.slots{display:flex;flex-direction:column;gap:14px}
+.sz h3{font-size:15px;margin:0 0 6px;display:flex;gap:8px;align-items:baseline}
+.sz h3 small{font-size:12px;color:var(--mute)}
+.sz h3 small.hit{color:var(--gold)}
+.sz h3 small.over{color:var(--bad)}
+.sz .list{min-height:90px}
+.sz .card .sc,.sz .card details{display:none}   /* 칸 안은 짧게 — 점수 · 메모는 왼쪽 후보에서 */
+.mis{font-size:11px;color:var(--bad)}
 @media (max-width:420px){h1{font-size:24px}.list{grid-template-columns:1fr}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -162,7 +172,7 @@ dialog.ed::backdrop{background:rgba(0,0,0,.6)}
    <h2>확정 카드풀 <small id="rightCount"></small></h2>
    <div class="stats" id="stats"></div>
    <div class="tools">
-    <button class="btn" id="bRec">추천으로 되돌리기</button>
+    <button class="btn" id="bRec">감우 초안 24장으로</button>
     <button class="btn dim" id="bClear">비우기</button>
     <button class="btn" id="bCopy">제작기 불러오기용 JSON 복사</button>
     <button class="btn" id="bDown">JSON 파일 받기</button>
@@ -170,7 +180,7 @@ dialog.ed::backdrop{background:rgba(0,0,0,.6)}
    </div>
    <div class="status" id="status">불러오는 중…</div>
   </div>
-  <div class="list drop" id="right" data-zone="right"></div>
+  <div class="slots" id="right"><div class="sz"><h3>체크 칸 <small id="nc"></small></h3><div class="list drop" id="z_c" data-zone="c"></div></div><div class="sz"><h3>던전 칸 <small id="nd"></small></h3><div class="list drop" id="z_d" data-zone="d"></div></div><div class="sz"><h3>배틀 칸 <small id="nb"></small></h3><div class="list drop" id="z_b" data-zone="b"></div></div></div>
  </div>
 </section>
 
@@ -183,7 +193,7 @@ dialog.ed::backdrop{background:rgba(0,0,0,.6)}
 <dialog class="ed" id="ed" aria-labelledby="edT"><form method="dialog" class="edw" id="edF">
  <h2 id="edT">카드 고치기</h2>
  <label>이름<input type="text" id="eN" maxlength="30"></label>
- <div class="edrow"><span class="lab">코스트</span><span id="eC"></span></div>
+ <div class="edrow costrow"><span class="lab">코스트</span><span id="eC"></span></div>
  <div class="edrow"><span class="lab">아이콘</span><span id="eI"></span><span class="status">2개까지 · ★ 는 혼자</span></div>
  <div class="edrow"><span class="lab">쓰는 곳</span><span id="eT"></span></div>
  <div class="edrow"><span class="lab">덱 제한</span><span id="eL"></span><input type="text" id="eL2" placeholder="직접 적기" style="width:130px"></div>
@@ -204,6 +214,10 @@ function rebuild(){CARDS=BASE.map(c=>{const e=ED[c.id];if(!e)return c;const x=Ob
 const ICONS=['지시','육성','통솔','능력','★'];
 const TAGS=['체크','던전','배틀 · 선행','배틀 · 대응'];
 const TAGC={'체크':'var(--t-chk)','던전':'var(--t-dg)','배틀 · 선행':'var(--t-bat)','배틀 · 대응':'var(--t-bat)'};
+/* 11-04 망령 「8장씩 24장」: 세 칸 — SL = {c:체크, d:던전, b:배틀} 카드 id. pick = 셋을 합친 것 */
+const PER=8,KINDS=[['c','체크'],['d','던전'],['b','배틀']];let SL={c:[],d:[],b:[]};
+const PRESET={c:['c105','c106','c107','c108','c009','c121','c023','c111'],d:['c012','c156','c008','c006','c097','c177','c015','c035'],b:['c004','c073','c252','c013','c246','c074','c014','c218']};
+const natK=c=>c.tags[0]==='체크'?'c':c.tags[0]==='던전'?'d':'b';const kOf=id=>KINDS.map(k=>k[0]).find(w=>SL[w].includes(id))||'';const syncPick=()=>{pick=[...SL.c,...SL.d,...SL.b]};
 let pick=[],F={tag:'',icon:'',q:'',sort:'rank',hide:false,top:false,off:false},saveT=0;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
@@ -212,36 +226,36 @@ function cardHTML(c,zone){const inR=pick.includes(c.id);const s=c.s;const bar=(k
  return `<article class="card${zone==='left'&&inR?' in':''}" draggable="true" tabindex="0" data-id="${c.id}" style="--tc:${tcol(c)}" aria-label="${esc(c.name)}">
  <div class="hd"><span class="rk">#${c.rank}</span><span class="nm">${esc(c.name)}</span><span class="cost" title="코스트 ${c.cost}">${[0,1,2].map(i=>`<i class="${i<c.cost?'f':''}"></i>`).join('')}${c.cost>3?'':''}<em>${c.cost}</em></span></div>
  <div class="meta">${c.icons.map(i=>`<span class="ic ${i}">${i}</span>`).join('')}${c.tags.map(t=>`<span class="tg" style="--tc:${TAGC[t]}">${t}</span>`).join('')}${c.lim?`<span class="bdg lim">${c.lim}</span>`:''}${c.rec?'<span class="bdg rec">추천</span>':''}${c.grp==='기존'?'<span class="bdg old">기존</span>':''}${c.new?'<span class="bdg ed">새 결</span>':''}${c.picked?'<span class="bdg rec">망령 확정</span>':''}${c.edited?'<span class="bdg ed">고침</span>':''}</div>
- <div class="eff">${esc(c.eff)}</div>
+ <div class="eff">${esc(c.eff)}</div>${zone!=='left'&&natK(c)!==zone?`<div class="mis">쓰는 곳이 「${esc(c.tag)}」인데 ${({c:'체크',d:'던전',b:'배틀'})[zone]} 칸에 있어요</div>`:''}
  ${c.t?(()=>{const t=c.t,b=(k,lab)=>`<span>${lab}</span><span class="bar ${k==='rule'?'need':''}"><i style="width:${t[k]*20}%"></i></span><span>${t[k]}</span>`;return `<div class="sc"><span class="score" style="grid-column:1/-1">결 점수 ${t.rule+t.one+t.role+t.fin} / 20${c.kind?' · '+esc(c.kind):''}</span>${b('rule','룰 한 칸')}${b('one','한 가지 일')}${b('role','보험 · 운영')}${b('fin','완성도')}</div>`})():`<div class="sc"><span class="score" style="grid-column:1/-1">${c.score} / 20</span>${bar('bal','밸런스')}${bar('fin','완성도')}${bar('need','필요성')}${bar('fun','게임성')}</div>`}
  ${c.off&&c.off.length?`<div class="meta">${c.off.map(w=>`<span class="bdg lim">결이 다름 · ${esc(w)}</span>`).join('')}</div>`:''}
  <details><summary>감우 메모 · 웹툴 ${esc(c.auto)}</summary><p>${esc(c.note)}</p></details>
- <div class="act"><button class="btn dim" data-ed="1">고치기</button><span style="flex:1"></span>${inR?(zone==='right'?'<button class="btn dim" data-mv="out">빼기</button>':'<span class="status">확정에 있음</span>'):'<button class="btn" data-mv="in">＋ 확정</button>'}</div>
+ <div class="act"><button class="btn dim" data-ed="1">고치기</button><span style="flex:1"></span>${inR?(zone!=='left'?'<button class="btn dim" data-mv="out">빼기</button>':'<span class="status">확정에 있음</span>'):'<button class="btn" data-mv="in">＋ 확정</button>'}</div>
  </article>`}
 function leftList(){let L=CARDS.filter(c=>(F.off||!(c.off&&c.off.length)||pick.includes(c.id))&&(!F.tag||c.tags.includes(F.tag))&&(!F.icon||c.icons.includes(F.icon))&&(!F.hide||!pick.includes(c.id))&&(!F.top||c.rank<=100)&&(!F.q||(c.name+c.eff+c.note).includes(F.q)));
  const S={rank:(a,b)=>a.rank-b.rank,cost:(a,b)=>a.cost-b.cost||a.rank-b.rank,tag:(a,b)=>TAGS.indexOf(a.tags[0])-TAGS.indexOf(b.tags[0])||a.rank-b.rank,name:(a,b)=>a.name.localeCompare(b.name,'ko')}[F.sort];return L.sort(S)}
 function render(){const L=leftList();$('#left').innerHTML=L.map(c=>cardHTML(c,'left')).join('')||'<div class="empty">조건에 맞는 카드가 없어요.</div>';
- const R=pick.map(id=>byId[id]).filter(Boolean).sort((a,b)=>TAGS.indexOf(a.tags[0])-TAGS.indexOf(b.tags[0])||a.rank-b.rank);
- $('#right').innerHTML=R.map(c=>cardHTML(c,'right')).join('')||'<div class="empty">여기로 카드를 끌어 놓아요.</div>';
- $('#leftCount').textContent=`${L.length}장 보임 · 전체 ${CARDS.length}`;$('#rightCount').textContent=`${R.length}장`;
+ syncPick();const R=pick.map(id=>byId[id]).filter(Boolean);
+ for(const [w,lab] of KINDS){const L=SL[w].map(id=>byId[id]).filter(Boolean);document.getElementById('z_'+w).innerHTML=L.map(c=>cardHTML(c,w)).join('')||`<div class="empty">${lab} 카드를 여기로 끌어 놓아요.</div>`;const el=document.getElementById('n'+w);el.textContent=`${L.length} / ${PER}`;el.className=L.length===PER?'hit':L.length>PER?'over':''}
+ $('#leftCount').textContent=`${L.length}장 보임 · 전체 ${CARDS.length}`;$('#rightCount').textContent=`${R.length} / ${PER*3}장 · 세 칸 8장씩`;
  const ic=Object.fromEntries(ICONS.map(i=>[i,R.filter(c=>c.icons.includes(i)).length])),tg=Object.fromEntries(TAGS.map(t=>[t,R.filter(c=>c.tags.includes(t)).length]));
  const avg=R.length?(R.reduce((a,c)=>a+c.cost,0)/R.length).toFixed(2):'-',sc=R.length?(R.reduce((a,c)=>a+(c.t?c.t.rule+c.t.one+c.t.role+c.t.fin:c.score),0)/R.length).toFixed(1):'-';
- $('#stats').innerHTML=ICONS.map(i=>`<span>${i} <b>${ic[i]}</b></span>`).join('')+'<span>·</span>'+TAGS.map(t=>`<span>${t} <b>${tg[t]}</b></span>`).join('')+`<span>·</span><span>평균 코스트 <b>${avg}</b></span><span>평균 결 점수 <b>${sc}</b></span><span>덱 제한 <b>${R.filter(c=>c.lim).length}</b></span><span>고친 카드 <b>${Object.keys(ED).length}</b></span>`;
- const n=R.length;$('#tally').innerHTML=`<div class="tile"><small>후보</small><b>${CARDS.filter(c=>!(c.off&&c.off.length)).length}</b></div><div class="tile"><small>추천</small><b>${REC.length}</b></div><div class="tile"><small>확정</small><b class="${n===40?'hit':n>48?'over':''}">${n}</b></div><div class="tile"><small>추천과 다른 카드</small><b>${pick.filter(id=>!REC.includes(id)).length+REC.filter(id=>!pick.includes(id)).length}</b></div>`;
- let m='<tr><th></th>'+TAGS.map(t=>`<th>${t}</th>`).join('')+'<th>합</th></tr>';for(const i of ICONS){m+=`<tr><th>${i}</th>`+TAGS.map(t=>{const k=R.filter(c=>c.icons.includes(i)&&c.tags.includes(t)).length;return `<td class="${k===0?'z':k===1?'lo':''}">${k}</td>`}).join('')+`<td class="tot">${ic[i]}</td></tr>`}$('#mtx').innerHTML=m;bindCards()}
+ $('#stats').innerHTML=ICONS.map(i=>`<span>${i} <b>${ic[i]}</b></span>`).join('')+`<span>·</span><span>평균 결 점수 <b>${sc}</b></span><span>덱 제한 <b>${R.filter(c=>c.lim).length}</b></span><span>고친 카드 <b>${Object.keys(ED).length}</b></span>`;
+ const n=R.length;$('#tally').innerHTML=`<div class="tile"><small>후보</small><b>${CARDS.filter(c=>!(c.off&&c.off.length)).length}</b></div><div class="tile"><small>추천</small><b>${REC.length}</b></div><div class="tile"><small>확정</small><b class="${n===PER*3?'hit':n>PER*3?'over':''}">${n}</b></div><div class="tile"><small>초안과 다른 카드</small><b>${KINDS.reduce((a,[w])=>a+SL[w].filter(id=>!PRESET[w].includes(id)).length,0)}</b></div>`;
+ let m='<tr><th></th>'+KINDS.map(([w,l])=>`<th>${l} 칸</th>`).join('')+'<th>합</th></tr>';for(const i of ICONS){m+=`<tr><th>${i}</th>`+KINDS.map(([w])=>{const k=SL[w].map(id=>byId[id]).filter(c=>c&&c.icons.includes(i)).length;return `<td class="${k===0?'z':k===1?'lo':''}">${k}</td>`}).join('')+`<td class="tot">${ic[i]}</td></tr>`}$('#mtx').innerHTML=m;bindCards()}
 function bindCards(){document.querySelectorAll('.card').forEach(el=>{el.ondragstart=e=>{e.dataTransfer.setData('text/plain',el.dataset.id);e.dataTransfer.effectAllowed='move';el.classList.add('drag')};el.ondragend=()=>el.classList.remove('drag');
  el.querySelectorAll('[data-mv]').forEach(b=>b.onclick=e=>{e.stopPropagation();move(el.dataset.id,b.dataset.mv==='in')});el.querySelectorAll('[data-ed]').forEach(b=>b.onclick=e=>{e.stopPropagation();openEd(el.dataset.id)});
  el.onkeydown=e=>{if(e.key==='Enter'&&e.target===el)move(el.dataset.id,!pick.includes(el.dataset.id))}})}
-function move(id,toRight){const has=pick.includes(id);if(toRight&&!has)pick.push(id);else if(!toRight&&has)pick=pick.filter(x=>x!==id);else return;render();queueSave()}
-for(const z of ['left','right']){const el=document.getElementById(z);el.ondragover=e=>{e.preventDefault();el.classList.add('over')};el.ondragleave=e=>{if(!el.contains(e.relatedTarget))el.classList.remove('over')};el.ondrop=e=>{e.preventDefault();el.classList.remove('over');const id=e.dataTransfer.getData('text/plain');if(byId[id])move(id,z==='right')}}
+function move(id,to){/* to: false = 빼기 · true = 제 쓰는 곳 칸 · 'c'|'d'|'b' = 그 칸 */const c=byId[id];if(!c)return;const w=to===true?natK(c):to;const was=kOf(id);if(!w){if(!was)return;SL[was]=SL[was].filter(x=>x!==id)}else{if(was===w)return;if(was)SL[was]=SL[was].filter(x=>x!==id);SL[w].push(id)}syncPick();render();queueSave()}
+for(const z of ['left','z_c','z_d','z_b']){const el=document.getElementById(z);el.ondragover=e=>{e.preventDefault();el.classList.add('over')};el.ondragleave=e=>{if(!el.contains(e.relatedTarget))el.classList.remove('over')};el.ondrop=e=>{e.preventDefault();el.classList.remove('over');const id=e.dataTransfer.getData('text/plain');if(byId[id])move(id,z==='left'?false:z.slice(2))}}
 function chips(host,list,key,lab){host.innerHTML=[['',lab]].concat(list.map(x=>[x,x])).map(([v,n])=>`<button class="chip${F[key]===v?' on':''}" data-v="${esc(v)}" aria-pressed="${F[key]===v}">${esc(n)}</button>`).join('');host.querySelectorAll('button').forEach(b=>b.onclick=()=>{F[key]=b.dataset.v;chips(host,list,key,lab);render()})}
 chips($('#fTag'),TAGS,'tag','쓰는 곳 전부');chips($('#fIcon'),ICONS,'icon','아이콘 전부');
 $('#q').oninput=e=>{F.q=e.target.value.trim();render()};$('#sort').onchange=e=>{F.sort=e.target.value;render()};
 $('#fHide').onclick=e=>{F.hide=!F.hide;e.target.classList.toggle('on',F.hide);e.target.setAttribute('aria-pressed',F.hide);render()};
 $('#fOff').onclick=e=>{F.off=!F.off;e.target.classList.toggle('on',F.off);e.target.setAttribute('aria-pressed',F.off);render()};
 $('#fTop').onclick=e=>{F.top=!F.top;e.target.classList.toggle('on',F.top);e.target.setAttribute('aria-pressed',F.top);render()};
-$('#bRec').onclick=()=>{pick=REC.slice();render();queueSave()};
-$('#bClear').onclick=()=>{pick=[];render();queueSave()};
+$('#bRec').onclick=()=>{SL=JSON.parse(JSON.stringify(PRESET));syncPick();render();queueSave()};
+$('#bClear').onclick=()=>{SL={c:[],d:[],b:[]};syncPick();render();queueSave()};
 /* 제작기 「백업 불러오기 → 지금 목록에 추가」 꼴 (카드 DB 행: 덱 · 이름 · 종류 · 비용 · 효과 · 색 · 그림 주소 · 기본 장수 · 비고 · 자동화 구문 · 아이콘 · 출처) */
 const COLOR={'체크':'teal','던전':'green','배틀 · 선행':'red','배틀 · 대응':'red'};
 function makerJSON(){const R=pick.map(id=>byId[id]).filter(Boolean).sort((a,b)=>a.rank-b.rank);
@@ -254,11 +268,11 @@ $('#bDown').onclick=()=>{const a=document.createElement('a');a.href=URL.createOb
 function setStatus(t){$('#status').textContent=t}
 /* 저장: 페이지 db(감우가 읽는 곳) → 없으면 이 브라우저 */
 function queueSave(){clearTimeout(saveT);setStatus('저장 대기…');saveT=setTimeout(save,700)}
-async function save(){const doc={ids:pick.slice(),names:pick.map(id=>byId[id]&&byId[id].name),n:pick.length,edits:ED,at:new Date().toISOString()};
+async function save(){syncPick();const doc={slots:JSON.parse(JSON.stringify(SL)),ids:pick.slice(),names:pick.map(id=>byId[id]&&byId[id].name),n:pick.length,edits:ED,at:new Date().toISOString()};
  try{localStorage.setItem('sk_pool_sim',JSON.stringify(doc))}catch(e){}
  try{const r=await fetch('/api/cardPoolSave',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(doc)});if(!r.ok)throw new Error(r.status);setStatus(`저장했어요 · ${new Date().toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})} · records/silverkey_pool.json`)}
  catch(e){setStatus('이 브라우저에만 저장했어요 (시뮬레이터 서버에 못 씀: '+(e&&e.message||e)+')')}}
-function load(doc){if(doc&&Array.isArray(doc.ids)){if(doc.edits&&typeof doc.edits==='object'){ED={};for(const [k,v] of Object.entries(doc.edits))if(BASE.some(c=>c.id===k)&&v&&typeof v==='object')ED[k]=v;rebuild()}pick=doc.ids.filter(id=>byId[id]);render();return true}return false}
+function load(doc){if(doc&&Array.isArray(doc.ids)){if(doc.edits&&typeof doc.edits==='object'){ED={};for(const [k,v] of Object.entries(doc.edits))if(BASE.some(c=>c.id===k)&&v&&typeof v==='object')ED[k]=v;rebuild()}if(doc.slots){SL={c:[],d:[],b:[]};for(const [w] of KINDS)SL[w]=(doc.slots[w]||[]).filter(id=>byId[id])}else{SL={c:[],d:[],b:[]};for(const id of doc.ids)if(byId[id])SL[natK(byId[id])].push(id)}syncPick();render();return true}return false}
 function showAnalysis(a){const ins=BASE.filter(c=>!(c.off&&c.off.length)).length,off=BASE.length-ins,nw=BASE.filter(c=>c.new).length;
  $('#eyebrow').textContent=`은열쇠 · 공통 카드 후보 ${ins}장 (결이 다른 ${off}장은 숨김) → 확정 카드풀`;
  $('#sub').innerHTML=`망령 님이 고른 확정 ${a.n}장의 결을 읽고 후보를 다시 짰어요. 그 결에 맞는 기존 후보 ${ins-nw}장 + 새로 만든 카드 ${nw}장이에요. ${REC.length>a.n?`추천 ${REC.length}장 = 확정 ${a.n}장 + 칸을 맞춘 ${REC.length-a.n}장.`:`추천 = 망령 님 확정 ${a.n}장.`} 고른 결과 · 고친 것은 시뮬레이터 records/silverkey_pool.json 에 저장돼요.`;
@@ -279,9 +293,10 @@ $('#eReset').onclick=()=>{delete ED[EDID];rebuild();$('#ed').close();render();qu
 $('#eOk').onclick=()=>{const b=BASE.find(x=>x.id===EDID);EV.name=$('#eN').value.trim()||b.name;EV.eff=$('#eX').value.trim()||b.eff;
  const same=EV.name===b.name&&EV.cost===b.cost&&EV.icons.join()===b.icons.join()&&EV.tags.join()===b.tags.join()&&(EV.lim||'')===(b.lim||'')&&EV.eff===b.eff;
  if(same)delete ED[EDID];else ED[EDID]={name:EV.name,cost:EV.cost,icons:EV.icons,tags:EV.tags,lim:EV.lim,eff:EV.eff};rebuild();$('#ed').close();render();queueSave()};
-(async()=>{try{const r=await fetch('/api/cardPool');const d=await r.json();BASE=d.cards||[];REC=BASE.filter(c=>c.rec).map(c=>c.id);if(d.analysis)showAnalysis(d.analysis);pick=REC.slice();rebuild();render();
+(async()=>{try{const r=await fetch('/api/cardPool');const d=await r.json();BASE=d.cards||[];REC=BASE.filter(c=>c.rec).map(c=>c.id);if(d.analysis)showAnalysis(d.analysis);SL=JSON.parse(JSON.stringify(PRESET));rebuild();syncPick();render();
   if(d.pool&&load(d.pool))setStatus(`저장된 확정 카드풀 ${d.pool.n}장을 불러왔어요${d.pool.at?' · '+new Date(d.pool.at).toLocaleString('ko-KR'):''}${Object.keys(ED).length?' · 고친 카드 '+Object.keys(ED).length+'장':''}`);
-  else{let l=null;try{l=JSON.parse(localStorage.getItem('sk_pool_sim')||'null')}catch(e){}if(load(l))setStatus('이 브라우저에 남은 카드풀을 불러왔어요 — 바꾸면 서버에 저장돼요');else setStatus('추천 40장으로 시작했어요 — 바꾸면 저장돼요')}}
+  else{let l=null;try{l=JSON.parse(localStorage.getItem('sk_pool_sim')||'null')}catch(e){}if(load(l))setStatus('이 브라우저에 남은 카드풀을 불러왔어요 — 바꾸면 서버에 저장돼요');else setStatus('감우 초안 24장으로 시작했어요 — 바꾸면 저장돼요')}
+  $('#sub').innerHTML='<b>11-04 세 칸</b> — 트레이너마다 체크 · 던전 · 배틀 칸에 1장씩 + 예비 칸 1장. 시작 카드풀은 칸마다 <b>8장씩 24장</b>. 코스트는 없어요. 왼쪽 후보를 오른쪽 칸으로 끌어 놓거나(휴대폰은 「＋ 확정」 → 쓰는 곳 칸으로), 칸끼리 옮겨요. 저장하면 세 칸 시뮬(<code>--cards slot</code>)이 이 목록에서 골라요.'}
  catch(e){setStatus('후보 카드를 못 불러왔어요: '+(e&&e.message||e));render()}})();
 </script>
 </body>
