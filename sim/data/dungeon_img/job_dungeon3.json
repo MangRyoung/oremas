@@ -1,0 +1,537 @@
+{
+ "memo": "2026-11-03 17시 감우 · 몹 배역 v2(lib/cast.js) 뒤 새로 들어온 몹 포트 — 1024×1024 · 28스텝 · 3장씩 · Sub. 화풍 = job_dungeon.json mstyle(오리지널은 fakemon 줄)",
+ "slots": [
+  {
+   "dg": "md1_forest",
+   "dir": "던전/01 온실 뒤 덩굴숲",
+   "kind": "mon",
+   "it": {
+    "file": "그린몰",
+    "id": "w115",
+    "tags": "1.3::original fakemon creature based on a mole::, grass type creature, leaves, vines and moss growing on the body, color palette green and brown, shielded by a calm protective aura, small to medium size, cute but wild, simple readable silhouette, background: a misty overgrown forest with vines",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md1_forest",
+   "dir": "던전/01 온실 뒤 덩굴숲",
+   "kind": "mon",
+   "it": {
+    "file": "버니람",
+    "id": "w041",
+    "tags": "1.3::original fakemon creature based on a squirrel::, normal and fighting type creature, plain fur, soft rounded shapes, muscular build, wrapped fists, martial stance, color palette cream and beige and red and tan, charging an energy blast, small size, cute but wild, simple readable silhouette, background: a misty overgrown forest with vines",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md1_forest",
+   "dir": "던전/01 온실 뒤 덩굴숲",
+   "kind": "mon",
+   "it": {
+    "file": "루루넛",
+    "id": "w152",
+    "tags": "1.3::original fakemon creature based on a squirrel::, fairy type creature, ribbons, sparkles, pastel petals, color palette pastel pink and white, alert and ready, small to medium size, cute but wild, simple readable silhouette, background: a misty overgrown forest with vines",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md1_forest",
+   "dir": "던전/01 온실 뒤 덩굴숲",
+   "kind": "mon",
+   "it": {
+    "file": "훨배트",
+    "id": "w060",
+    "tags": "1.3::original fakemon creature based on a bat::, psychic and flying type creature, glowing eyes, floating aura, gem on the forehead, feathered wings, light airy body, color palette pink and violet and sky blue and white, dynamic pose using both strength and energy, small size, cute but wild, simple readable silhouette, background: a misty overgrown forest with vines",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md1_forest",
+   "dir": "던전/01 온실 뒤 덩굴숲",
+   "kind": "mon",
+   "it": {
+    "file": "비틀네",
+    "id": "w084",
+    "tags": "1.3::original fakemon creature based on a centipede::, poison and bug type creature, toxic spots, dripping venom, chitin shell, segmented limbs, antennae, color palette purple and magenta and lime and yellow-green, lunging forward in an attacking pose, small size, cute but wild, simple readable silhouette, background: a misty overgrown forest with vines",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md1_forest",
+   "dir": "던전/01 온실 뒤 덩굴숲",
+   "kind": "mon",
+   "it": {
+    "file": "쉿페럿",
+    "id": "w009",
+    "tags": "1.3::original fakemon creature based on a weasel::, dark type creature, sharp claws, sly grin, shadowy fur, color palette black and crimson, alert and ready, small size, cute but wild, simple readable silhouette, background: a misty overgrown forest with vines",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md1_forest",
+   "dir": "던전/01 온실 뒤 덩굴숲",
+   "kind": "mon",
+   "it": {
+    "file": "웨이쉘",
+    "id": "w088",
+    "tags": "1.3::original fakemon creature based on a conch shell snail::, water type creature, fins, glossy wet skin, water droplets, color palette blue and aqua, shielded by a calm protective aura, small size, cute but wild, simple readable silhouette, background: a misty overgrown forest with vines",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md1_forest",
+   "dir": "던전/01 온실 뒤 덩굴숲",
+   "kind": "mon",
+   "it": {
+    "file": "살랑냥",
+    "id": "w019",
+    "tags": "1.3::original fakemon creature based on a cat::, fairy type creature, ribbons, sparkles, pastel petals, color palette pastel pink and white, charging an energy blast, small size, cute but wild, simple readable silhouette, background: a misty overgrown forest with vines",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md2_sea",
+   "dir": "던전/02 등대 아래 조수 동굴",
+   "kind": "mon",
+   "it": {
+    "file": "메탈캣",
+    "id": "w120",
+    "tags": "1.3::original fakemon creature based on a cat::, steel and electric type creature, metallic plating, rivets and blades, zigzag lightning marks, static sparks, color palette silver and steel gray and yellow and black, charging an energy blast, small to medium size, cute but wild, simple readable silhouette, background: a sea cave with tide pools and turquoise water",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md2_sea",
+   "dir": "던전/02 등대 아래 조수 동굴",
+   "kind": "mon",
+   "it": {
+    "file": "비조도",
+    "id": "w275",
+    "tags": "1.4::Mienshao (pokemon)::, accurate official design, background: a sea cave with tide pools and turquoise water"
+   }
+  },
+  {
+   "dg": "md2_sea",
+   "dir": "던전/02 등대 아래 조수 동굴",
+   "kind": "mon",
+   "it": {
+    "file": "프로실",
+    "id": "w150",
+    "tags": "1.3::original fakemon creature based on a seal::, ice type creature, frost crystals, icy translucent parts, color palette pale blue and white, shielded by a calm protective aura, small to medium size, cute but wild, simple readable silhouette, background: a sea cave with tide pools and turquoise water",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md2_sea",
+   "dir": "던전/02 등대 아래 조수 동굴",
+   "kind": "mon",
+   "it": {
+    "file": "펄스멍",
+    "id": "w241",
+    "tags": "1.4::Boltund (pokemon)::, accurate official design, background: a sea cave with tide pools and turquoise water"
+   }
+  },
+  {
+   "dg": "md2_sea",
+   "dir": "던전/02 등대 아래 조수 동굴",
+   "kind": "mon",
+   "it": {
+    "file": "깃펠리",
+    "id": "w101",
+    "tags": "1.3::original fakemon creature based on a pelican::, psychic and flying type creature, glowing eyes, floating aura, gem on the forehead, feathered wings, light airy body, color palette pink and violet and sky blue and white, alert and ready, small to medium size, cute but wild, simple readable silhouette, background: a sea cave with tide pools and turquoise water",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md3_snow",
+   "dir": "던전/03 북쪽 관측소 빙벽길",
+   "kind": "mon",
+   "it": {
+    "file": "퐁오리",
+    "id": "w158",
+    "tags": "1.3::original fakemon creature based on a stingray::, water type creature, fins, glossy wet skin, water droplets, color palette blue and aqua, dynamic pose using both strength and energy, small to medium size, cute but wild, simple readable silhouette, background: a snowy mountain with rocky cliffs and pine trees",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md3_snow",
+   "dir": "던전/03 북쪽 관측소 빙벽길",
+   "kind": "mon",
+   "it": {
+    "file": "암거북",
+    "id": "w058",
+    "tags": "1.3::original fakemon creature based on a turtle::, rock type creature, rocky armor plates, boulder chunks, color palette gray and brown, shielded by a calm protective aura, small size, cute but wild, simple readable silhouette, background: a snowy mountain with rocky cliffs and pine trees",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md3_snow",
+   "dir": "던전/03 북쪽 관측소 빙벽길",
+   "kind": "mon",
+   "it": {
+    "file": "몽롱콘",
+    "id": "w004",
+    "tags": "1.3::original fakemon creature based on a fox::, psychic type creature, glowing eyes, floating aura, gem on the forehead, color palette pink and violet, dynamic pose using both strength and energy, small size, cute but wild, simple readable silhouette, background: a snowy mountain with rocky cliffs and pine trees",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md3_snow",
+   "dir": "던전/03 북쪽 관측소 빙벽길",
+   "kind": "mon",
+   "it": {
+    "file": "스틸니",
+    "id": "w138",
+    "tags": "1.3::original fakemon creature based on a cogwheel::, steel type creature, metallic plating, rivets and blades, color palette silver and steel gray, alert and ready, small to medium size, cute but wild, simple readable silhouette, background: a snowy mountain with rocky cliffs and pine trees",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md3_snow",
+   "dir": "던전/03 북쪽 관측소 빙벽길",
+   "kind": "mon",
+   "it": {
+    "file": "쇠고미",
+    "id": "w047",
+    "tags": "1.3::original fakemon creature based on a bear::, fighting and steel type creature, muscular build, wrapped fists, martial stance, metallic plating, rivets and blades, color palette red and tan and silver and steel gray, standing firm in a defensive stance, small size, cute but wild, simple readable silhouette, background: a snowy mountain with rocky cliffs and pine trees",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md3_snow",
+   "dir": "던전/03 북쪽 관측소 빙벽길",
+   "kind": "mon",
+   "it": {
+    "file": "프리염",
+    "id": "w130",
+    "tags": "1.3::original fakemon creature based on a goat::, ghost and ice type creature, wispy translucent edges, eerie glow, frost crystals, icy translucent parts, color palette dark purple and lavender and pale blue and white, shielded by a calm protective aura, small to medium size, cute but wild, simple readable silhouette, background: a snowy mountain with rocky cliffs and pine trees",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md4_cave",
+   "dir": "던전/04 종탑 지하 수맥 갱도",
+   "kind": "mon",
+   "it": {
+    "file": "암리자",
+    "id": "w002",
+    "tags": "1.3::original fakemon creature based on a lizard::, rock and ground type creature, rocky armor plates, boulder chunks, earthy hide, clay and sand texture, color palette gray and brown and ochre, charging an energy blast, small size, cute but wild, simple readable silhouette, background: an old underground mine tunnel with wooden beams and lanterns",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md4_cave",
+   "dir": "던전/04 종탑 지하 수맥 갱도",
+   "kind": "mon",
+   "it": {
+    "file": "유령팟",
+    "id": "w114",
+    "tags": "1.3::original fakemon creature based on a clay pot::, ghost type creature, wispy translucent edges, eerie glow, color palette dark purple and lavender, standing firm in a defensive stance, small to medium size, cute but wild, simple readable silhouette, background: an old underground mine tunnel with wooden beams and lanterns",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md4_cave",
+   "dir": "던전/04 종탑 지하 수맥 갱도",
+   "kind": "mon",
+   "it": {
+    "file": "팬텀키",
+    "id": "w154",
+    "tags": "1.3::original fakemon creature based on a key::, ghost type creature, wispy translucent edges, eerie glow, color palette dark purple and lavender, alert and ready, small to medium size, cute but wild, simple readable silhouette, background: an old underground mine tunnel with wooden beams and lanterns",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md4_cave",
+   "dir": "던전/04 종탑 지하 수맥 갱도",
+   "kind": "mon",
+   "it": {
+    "file": "바스방",
+    "id": "w083",
+    "tags": "1.3::original fakemon creature based on a moth::, bug type creature, chitin shell, segmented limbs, antennae, color palette lime and yellow-green, charging an energy blast, small size, cute but wild, simple readable silhouette, background: an old underground mine tunnel with wooden beams and lanterns",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md4_cave",
+   "dir": "던전/04 종탑 지하 수맥 갱도",
+   "kind": "mon",
+   "it": {
+    "file": "줄메에",
+    "id": "w078",
+    "tags": "1.3::original fakemon creature based on a sheep::, electric type creature, zigzag lightning marks, static sparks, color palette yellow and black, standing firm in a defensive stance, small size, cute but wild, simple readable silhouette, background: an old underground mine tunnel with wooden beams and lanterns",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md4_cave",
+   "dir": "던전/04 종탑 지하 수맥 갱도",
+   "kind": "mon",
+   "it": {
+    "file": "물바범",
+    "id": "w024",
+    "tags": "1.3::original fakemon creature based on a seal::, water type creature, fins, glossy wet skin, water droplets, color palette blue and aqua, alert and ready, small size, cute but wild, simple readable silhouette, background: an old underground mine tunnel with wooden beams and lanterns",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md5_house",
+   "dir": "던전/05 구 교직원 관사",
+   "kind": "mon",
+   "it": {
+    "file": "유령등",
+    "id": "w034",
+    "tags": "1.3::original fakemon creature based on a lantern::, ghost and poison type creature, wispy translucent edges, eerie glow, toxic spots, dripping venom, color palette dark purple and lavender and purple and magenta, alert and ready, small size, cute but wild, simple readable silhouette, background: a dusty abandoned victorian house interior with moonlight",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md5_house",
+   "dir": "던전/05 구 교직원 관사",
+   "kind": "mon",
+   "it": {
+    "file": "둥실라이드",
+    "id": "w228",
+    "tags": "1.4::Drifblim (pokemon)::, accurate official design, background: a dusty abandoned victorian house interior with moonlight"
+   }
+  },
+  {
+   "dg": "md5_house",
+   "dir": "던전/05 구 교직원 관사",
+   "kind": "mon",
+   "it": {
+    "file": "퍼피토",
+    "id": "w057",
+    "tags": "1.3::original fakemon creature based on a rabbit::, normal type creature, plain fur, soft rounded shapes, color palette cream and beige, alert and ready, small size, cute but wild, simple readable silhouette, background: a dusty abandoned victorian house interior with moonlight",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md5_house",
+   "dir": "던전/05 구 교직원 관사",
+   "kind": "mon",
+   "it": {
+    "file": "덩달팽",
+    "id": "w003",
+    "tags": "1.3::original fakemon creature based on a snail::, grass type creature, leaves, vines and moss growing on the body, color palette green and brown, standing firm in a defensive stance, small size, cute but wild, simple readable silhouette, background: a dusty abandoned victorian house interior with moonlight",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md5_house",
+   "dir": "던전/05 구 교직원 관사",
+   "kind": "mon",
+   "it": {
+    "file": "위스열",
+    "id": "w097",
+    "tags": "1.3::original fakemon creature based on a key::, ghost type creature, wispy translucent edges, eerie glow, color palette dark purple and lavender, dynamic pose using both strength and energy, small to medium size, cute but wild, simple readable silhouette, background: a dusty abandoned victorian house interior with moonlight",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md5_house",
+   "dir": "던전/05 구 교직원 관사",
+   "kind": "mon",
+   "it": {
+    "file": "파워곰",
+    "id": "w026",
+    "tags": "1.3::original fakemon creature based on a bear::, fighting type creature, muscular build, wrapped fists, martial stance, color palette red and tan, standing firm in a defensive stance, small size, cute but wild, simple readable silhouette, background: a dusty abandoned victorian house interior with moonlight",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md6_ruin",
+   "dir": "던전/06 기록보관소 아래 봉인 서고",
+   "kind": "mon",
+   "it": {
+    "file": "룡스네",
+    "id": "w013",
+    "tags": "1.3::original fakemon creature based on a snake::, dragon type creature, scales, horns, draconic features, color palette indigo and teal, charging an energy blast, small size, cute but wild, simple readable silhouette, background: ancient stone ruins with carved runes",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md6_ruin",
+   "dir": "던전/06 기록보관소 아래 봉인 서고",
+   "kind": "mon",
+   "it": {
+    "file": "검하이",
+    "id": "w153",
+    "tags": "1.3::original fakemon creature based on a hyena::, dark type creature, sharp claws, sly grin, shadowy fur, color palette black and crimson, lunging forward in an attacking pose, small to medium size, cute but wild, simple readable silhouette, background: ancient stone ruins with carved runes",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md6_ruin",
+   "dir": "던전/06 기록보관소 아래 봉인 서고",
+   "kind": "mon",
+   "it": {
+    "file": "파비코리",
+    "id": "w248",
+    "tags": "1.4::Altaria (pokemon)::, accurate official design, background: ancient stone ruins with carved runes"
+   }
+  },
+  {
+   "dg": "md6_ruin",
+   "dir": "던전/06 기록보관소 아래 봉인 서고",
+   "kind": "mon",
+   "it": {
+    "file": "짱하마",
+    "id": "w090",
+    "tags": "1.3::original fakemon creature based on a hippopotamus::, rock and ground type creature, rocky armor plates, boulder chunks, earthy hide, clay and sand texture, color palette gray and brown and ochre, lunging forward in an attacking pose, small size, cute but wild, simple readable silhouette, background: ancient stone ruins with carved runes",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md6_ruin",
+   "dir": "던전/06 기록보관소 아래 봉인 서고",
+   "kind": "mon",
+   "it": {
+    "file": "사각딱",
+    "id": "w035",
+    "tags": "1.3::original fakemon creature based on a beetle::, bug and steel type creature, chitin shell, segmented limbs, antennae, metallic plating, rivets and blades, color palette lime and yellow-green and silver and steel gray, standing firm in a defensive stance, small size, cute but wild, simple readable silhouette, background: ancient stone ruins with carved runes",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md6_ruin",
+   "dir": "던전/06 기록보관소 아래 봉인 서고",
+   "kind": "mon",
+   "it": {
+    "file": "오라방",
+    "id": "w157",
+    "tags": "1.3::original fakemon creature based on a moth::, psychic type creature, glowing eyes, floating aura, gem on the forehead, color palette pink and violet, standing firm in a defensive stance, small to medium size, cute but wild, simple readable silhouette, background: ancient stone ruins with carved runes",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md7_lab",
+   "dir": "던전/07 제2 연구동 지하 격리층",
+   "kind": "mon",
+   "it": {
+    "file": "스틸종",
+    "id": "w032",
+    "tags": "1.3::original fakemon creature based on a bell::, steel type creature, metallic plating, rivets and blades, color palette silver and steel gray, shielded by a calm protective aura, small size, cute but wild, simple readable silhouette, background: an old brick laboratory basement with brass pipes, wooden shelves and gas lamps",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md7_lab",
+   "dir": "던전/07 제2 연구동 지하 격리층",
+   "kind": "mon",
+   "it": {
+    "file": "배우르",
+    "id": "w229",
+    "tags": "1.4::Dubwool (pokemon)::, accurate official design, background: an old brick laboratory basement with brass pipes, wooden shelves and gas lamps"
+   }
+  },
+  {
+   "dg": "md7_lab",
+   "dir": "던전/07 제2 연구동 지하 격리층",
+   "kind": "mon",
+   "it": {
+    "file": "코그늑",
+    "id": "w068",
+    "tags": "1.3::original fakemon creature based on a wolf::, electric and steel type creature, zigzag lightning marks, static sparks, metallic plating, rivets and blades, color palette yellow and black and silver and steel gray, lunging forward in an attacking pose, small size, cute but wild, simple readable silhouette, background: an old brick laboratory basement with brass pipes, wooden shelves and gas lamps",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md7_lab",
+   "dir": "던전/07 제2 연구동 지하 격리층",
+   "kind": "mon",
+   "it": {
+    "file": "출렁게",
+    "id": "w112",
+    "tags": "1.3::original fakemon creature based on a crab::, water type creature, fins, glossy wet skin, water droplets, color palette blue and aqua, alert and ready, small to medium size, cute but wild, simple readable silhouette, background: an old brick laboratory basement with brass pipes, wooden shelves and gas lamps",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md7_lab",
+   "dir": "던전/07 제2 연구동 지하 격리층",
+   "kind": "mon",
+   "it": {
+    "file": "비틀미",
+    "id": "w011",
+    "tags": "1.3::original fakemon creature based on a spider::, bug type creature, chitin shell, segmented limbs, antennae, color palette lime and yellow-green, alert and ready, small size, cute but wild, simple readable silhouette, background: an old brick laboratory basement with brass pipes, wooden shelves and gas lamps",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md7_lab",
+   "dir": "던전/07 제2 연구동 지하 격리층",
+   "kind": "mon",
+   "it": {
+    "file": "짜릿냐",
+    "id": "w012",
+    "tags": "1.3::original fakemon creature based on a cat::, electric type creature, zigzag lightning marks, static sparks, color palette yellow and black, lunging forward in an attacking pose, small size, cute but wild, simple readable silhouette, background: an old brick laboratory basement with brass pipes, wooden shelves and gas lamps",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md7_lab",
+   "dir": "던전/07 제2 연구동 지하 격리층",
+   "kind": "mon",
+   "it": {
+    "file": "더시마사리",
+    "id": "w230",
+    "tags": "1.4::Toxapex (pokemon)::, accurate official design, background: an old brick laboratory basement with brass pipes, wooden shelves and gas lamps"
+   }
+  },
+  {
+   "dg": "md8_volc",
+   "dir": "던전/08 뒷산 분화구 지열 동굴",
+   "kind": "mon",
+   "it": {
+    "file": "쉿크로",
+    "id": "w049",
+    "tags": "1.3::original fakemon creature based on a crow::, dark type creature, sharp claws, sly grin, shadowy fur, color palette black and crimson, shielded by a calm protective aura, small size, cute but wild, simple readable silhouette, background: a volcanic cave with black rock and glowing lava cracks",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md8_volc",
+   "dir": "던전/08 뒷산 분화구 지열 동굴",
+   "kind": "mon",
+   "it": {
+    "file": "메테노 코어의 모습",
+    "id": "w234",
+    "tags": "1.4::Minior (Core Form) (pokemon)::, accurate official design, background: a volcanic cave with black rock and glowing lava cracks"
+   }
+  },
+  {
+   "dg": "md8_volc",
+   "dir": "던전/08 뒷산 분화구 지열 동굴",
+   "kind": "mon",
+   "it": {
+    "file": "먼지북",
+    "id": "w125",
+    "tags": "1.3::original fakemon creature based on a turtle::, ground type creature, earthy hide, clay and sand texture, color palette brown and ochre, alert and ready, small to medium size, cute but wild, simple readable silhouette, background: a volcanic cave with black rock and glowing lava cracks",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md8_volc",
+   "dir": "던전/08 뒷산 분화구 지열 동굴",
+   "kind": "mon",
+   "it": {
+    "file": "룡레이",
+    "id": "w031",
+    "tags": "1.3::original fakemon creature based on a stingray::, dragon type creature, scales, horns, draconic features, color palette indigo and teal, alert and ready, small size, cute but wild, simple readable silhouette, background: a volcanic cave with black rock and glowing lava cracks",
+    "fk": 1
+   }
+  },
+  {
+   "dg": "md8_volc",
+   "dir": "던전/08 뒷산 분화구 지열 동굴",
+   "kind": "mon",
+   "it": {
+    "file": "폼폼깡",
+    "id": "w156",
+    "tags": "1.3::original fakemon creature based on a rabbit::, normal type creature, plain fur, soft rounded shapes, color palette cream and beige, charging an energy blast, small to medium size, cute but wild, simple readable silhouette, background: a volcanic cave with black rock and glowing lava cracks",
+    "fk": 1
+   }
+  }
+ ]
+}
