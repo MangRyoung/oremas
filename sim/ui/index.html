@@ -608,6 +608,7 @@ function evHtml(e){if(e.k==='room'){const t=ty(e.t);return `<div class="ev room"
  if(e.k==='battle')return `<div class="ev battle"><b>배틀</b> ${esc(e.pack)}${e.boss?' (보스)':''} — <b class="${e.win?'ok':'bad'}">${e.win?'승리':'패배'}</b> ${e.turns}턴 · 아군 빈사 ${e.kos} · 야생 격파 ${e.wildKos} · 4식 ${e.used.order} 6령 ${e.used.command}<div class="small">끝 HP ${e.hpAfter.map(p=>p.map(x=>pct(x)).join('/')).join(' | ')}</div></div>`;
  if(e.k==='rest')return `<div class="ev rest">휴식 — ${({long:'긴 휴식',short:'짧은 휴식',breath:'숨돌리기'})[e.kind]||e.kind}</div>`;
  if(e.k==='injury')return `<div class="ev injury">${esc(e.who)} ${e.inj>=2?'중상':'부상'} (${esc(e.why)})</div>`;
+ if(e.k==='items')return `<div class="ev">소지품 — 일행 소켓 ${e.spent} / ${e.cap}${e.log&&e.log.length?' · '+esc(e.log.join(' · ')):''}${e.over?' · <b class="bad">넘침</b>':''}</div>`;
  if(e.k==='care')return `<div class="ev">${esc(e.who)} 돌봄 → ${esc(e.for)}의 지친 포켓몬 회복</div>`;return ''}
 $('#btnBattle').onclick=async()=>{if(!sel.size)return toast('일행을 먼저 고르세요');$('#bMsg').textContent='…';try{const r=await api('battle',{party:partySel(),pack:$('#bPack').value,n:+$('#bN').value,wn:+$('#wn').value,seed:+$('#seed').value});$('#bMsg').textContent=`승률 ${pct(r.win)} · 평균 ${r.turns.toFixed(1)}턴 · 남은 HP ${pct(r.hp)} (${r.n}판)`;$('#bLog').hidden=false;$('#bLog').textContent=r.log.join('\n')}catch(e){toast('오류: '+e.message)}};
 /* ---- 던전 편집 (지도 + 옆 패널, 웹툴 dg-ed 꼴) ---- */

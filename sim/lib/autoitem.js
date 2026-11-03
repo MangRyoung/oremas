@@ -27,4 +27,18 @@ function equip(win,r){const DBI=((win.OM_DB||{}).items)||{};const t=r.trainer;co
   const c=choices(m,role,DBI).find(n=>!used.has(n)&&spent+(+DBI[n].sock||0)<=cap-keep+1e-9);if(!c)return;
   m.item=c;m.itemEff=String(DBI[c].eff||'').replace(/<br\s*\/?>/g,'\n');m.itemAuto=1;used.add(c);spent+=+DBI[c].sock||0;out.push({mon:m.name,item:c,why:role})});
  t.autoItems=out;t.itemSock={cap,spent};return out}
-module.exports={equip,roleOf,mainType,SOCK2,BAN};
+/* 11-04 망령 「2체일 땐 2체 소지품 TO 중에서 장착하고 다 같이 합쳐야지」: 던전 일행 = 한 파티.
+   소켓 상한 = 트레이너마다 1인 기준(2체) 상한을 더한 값, 같은 소지품은 일행 전체에서 하나만.
+   equip 은 트레이너마다 따로 채우므로, 일행이 모인 뒤 여기서 겹친 것 · 넘친 것을 다시 맞춘다.
+   겹치면 뒤의 포켓몬을 다른 것으로(없으면 뗀다), 넘치면 자동으로 채운 것부터 뗀다. parties = makeParty 결과(트레이너 · 동행) */
+function pool(win,parties){const DBI=((win.OM_DB||{}).items)||{};const sk=n=>(n&&DBI[n]?+DBI[n].sock||0:0);
+ const cap=parties.reduce((a,p)=>a+(SOCK2[rankKey(((p.trainer||{}).ranks||{})['지시'])]||3),0);const used=new Set();const log=[];let spent=0;
+ const all=[];parties.forEach(p=>p.mons.forEach(m=>all.push({p,m})));
+ for(const {p,m} of all){const it=m.item;if(!it)continue;
+  if(used.has(it)){const alt=choices(m,roleOf(m),DBI).find(n=>!used.has(n));const was=it;if(alt){m.item=alt;m.itemEff=String(DBI[alt].eff||'').replace(/<br\s*\/?>/g,'\n');m.itemAuto=1;log.push(`${m.name}: ${was} 겹침 → ${alt}`)}else{m.item='';m.itemEff='';log.push(`${m.name}: ${was} 겹침 → 뗌`)}}
+  if(m.item){used.add(m.item);spent+=sk(m.item)}}
+ /* 넘치면 자동으로 채운 것 중 소켓이 큰 것부터 뗀다 */
+ const auto=all.filter(x=>x.m.item&&x.m.itemAuto).sort((a,b)=>sk(b.m.item)-sk(a.m.item));
+ for(const {m} of auto){if(spent<=cap+1e-9)break;spent-=sk(m.item);log.push(`${m.name}: ${m.item} 뗌 (일행 소켓 넘침)`);m.item='';m.itemEff=''}
+ const r={cap,spent:Math.round(spent*10)/10,over:spent>cap+1e-9,log};parties.forEach(p=>{p.trainer.partySock=r});return r}
+module.exports={equip,pool,roleOf,mainType,SOCK2,BAN};
