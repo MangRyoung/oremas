@@ -1188,7 +1188,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
     <button class="gccl-th" data-gc="cluelib" data-id="${esc(c.id)}" title="눌러서 ${all?'모두에게 띄우기':esc(clueToLabel(to))+' 에게 보내기'}" style="${c.img?`background-image:url('${cssu(c.img)}')`:''}">${c.img?'':'<span>🔍</span>'}${live?'<i>무대에</i>':''}</button>
     <div class="gccl-bd"><b title="${esc(c.t||'')}">${esc(c.t||'(제목 없음)')}</b>${c.g?`<em>${esc(c.g)}</em>`:''}<p>${esc(c.d||'')}</p></div>
     <div class="gccl-ac"><button class="btn xs pri" data-gc="cluelib" data-id="${esc(c.id)}">${all?'띄우기':'보내기'}</button><button class="btn xs" data-gc="clueed" data-id="${esc(c.id)}" title="위 칸에 불러와 고치기">고치기</button><span class="sp"></span><button class="btn xs ghost" data-gc="cluemv" data-id="${esc(c.id)}" data-d="-1" title="앞으로" ${i<=0?'disabled':''}>◀</button><button class="btn xs ghost" data-gc="cluemv" data-id="${esc(c.id)}" data-d="1" title="뒤로" ${i>=L.length-1?'disabled':''}>▶</button><button class="btn xs ghost danger" data-gc="cluedel" data-id="${esc(c.id)}" title="지우기">×</button></div></div>`}).join('')||'<div class="small dim">이 묶음에 단서가 없다</div>'}</div>`:'<div class="gccl-empty small dim">저장한 단서가 없다 — 위에 쓰고 「＋ 저장」을 누르면 여기에 카드로 모인다. 세션 전에 미리 만들어 두고 한 번에 띄우면 된다.</div>';
-  return gcCard('clue','단서 카드','받는 사람을 고르면 그 사람에게만 (남은 못 본다)','<button class="btn ghost" data-gc="cluebox" title="보낸 단서 전체 · 좌석별 · 회수">보관함</button>',form,'gcclue')+gcCard('lib',`저장한 단서 <small>${L.length}</small>`,L.length?'카드 그림을 누르면 바로 띄운다':'','',lib,'gcclib')}
+  return gcCard('clue','단서 카드','받는 사람을 고르면 그 사람에게만 (남은 못 본다)','<button class="btn ghost" data-gc="cluebox" title="보낸 단서 전체 · 좌석별 · 회수">보관함</button>',form,'gcclue')+gcCard('lib',`저장한 단서 <small>${L.length}</small>`,L.length?'카드 그림을 누르면 바로 띄운다':'','<button class="btn ghost" data-gc="cluebox" title="단서 보관함 「📚 단서 목록」에서 만들기 · 고치기 · 복제 · 삭제">보관함에서 관리 ›</button>',lib,'gcclib')}
  /* 10-26 망령 「던전 단서 출력 기능을 RP 쪽에도」: rp.clue = {t,d,img,at} — 모두의 무대에 카드. 플레이어는 ✕ 로 내 화면에서만 닫고 「🔍 단서」로 다시 연다. GM 의 「모두 닫기」는 모두에게서 내린다
     11-03 망령 「개인 단서 · 단서 보관함」: 대상이 「모두」면 예전처럼 rp.clue (+ rp.clueLog 에 기록), 특정 좌석이면 서버 비밀 칸 om_secret(kind 'clue', id = 좌석) 에 그 사람 목록으로 — 남은 못 읽는다 (schema 그대로, SQL 추가 없음).
     받은 사람은 'clue' 신호(없으면 30초 폴링)로 읽어 무대 카드 + 토스트, 「🔍 단서」 창에서 받은 것을 다시 본다. GM 은 전체 목록 · 회수 */
@@ -1224,15 +1224,17 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  /* 「🔍 단서」 창: 받은 단서 목록 (나에게만 + 모두). GM 은 좌석별 전체 목록 · 회수
     11-03 14:01 망령 「단서카드 보관소 UI 개선」: 카드 격자(썸네일 · 제목 · 묶음 · 시간 · 받는 사람 배지) · 묶음별로 접는 머리 · 찾기 · 누르면 크게 보기.
     GM 은 위 탭 「모두 단서 / 좌석별」(이 브라우저 om_cbtab), 회수 · 지우기는 카드 ⋯ 메뉴 안 (실수 방지). 데이터(rp.clueLog · om_secret 'clue')는 그대로 */
- const CBX={q:'',fold:{},tab:(()=>{try{return localStorage.getItem('om_cbtab')||'pub'}catch(e){return 'pub'}})()};
- async function openClueBox(){const ST=A().ST;const tm=x=>{const d=new Date(x.at||0);return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`};
+ const CBX={q:'',fold:{},ed:null,dirty:false,to:[],tab:(()=>{try{return localStorage.getItem('om_cbtab')||'pub'}catch(e){return 'pub'}})()};
+ /* 11-03 14:22 망령 「단서 누르면 이 보관함에서 추가/수정/삭제 관리도」: GM 은 맨 앞 탭 「📚 단서 목록」(rp.clueLib — 연출 탭 「저장한 단서」와 같은 데이터)이 기본.
+    카드를 누르면 오른쪽(모바일은 전체) 편집 패널 — 그림 · 제목 · 설명 · 묶음 · 받는 사람 → 띄우기/보내기(showClueRp 그대로) · 저장 · 복제 · 삭제. 항목 필드 {id,t,d,img,g} 그대로 */
+ async function openClueBox(keep){const ST=A().ST;if(!keep){CBX.ed=null;CBX.dirty=false;if(gm())CBX.tab='lib'}const tm=x=>{const d=new Date(x.at||0);return `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`};
   const pub=(Array.isArray(R().clueLog)?R().clueLog:[]).map(x=>Object.assign({},x,{pub:true}));
   const lib=Array.isArray(R().clueLib)?R().clueLib:[];const grpOf=c=>c.g||((c.id&&lib.find(x=>x.id===c.id))||{}).g||'';
   const isGm=gm();let per=[],L=[];
   if(isGm){const seats=clueTargets();let rows=PCL.gmAll;if(!rows){try{rows=await DBS().secretGet(ST.room,ST.secret,'clue')||[]}catch(e){rows=[];A().toast('단서 칸을 읽지 못했다: '+e.message)}PCL.gmAll=rows}
    per=seats.map(sx=>{const row=rows.find(r=>r.id===sx.id);const l=row&&row.data&&Array.isArray(row.data.list)?row.data.list:[];return {seat:sx,L:l.slice().sort((a,b)=>(b.at||0)-(a.at||0))}})}
   else{if(ST.role==='seat')await clueFetch(true);L=[...PCL.list.map(x=>Object.assign({},x)),...pub].sort((a,b)=>(b.at||0)-(a.at||0))}
-  const nSeat=per.reduce((n,x)=>n+x.L.length,0);const tab=isGm?(CBX.tab==='seat'?'seat':'pub'):'me';
+  const nSeat=per.reduce((n,x)=>n+x.L.length,0);const tab=isGm?(['seat','pub','lib'].includes(CBX.tab)?CBX.tab:'lib'):'me';
   const seatName=id=>(per.find(x=>x.seat.id===id)||{seat:{name:id}}).seat.name||id;
   /* 카드 하나 — 같은 모양을 GM 콘솔 「저장한 단서」(gccl-card)에서 빌린다 */
   const card=(c,ref)=>{const g=grpOf(c);const badge=c.pub?'<span class="clc-b all">모두</span>':isGm?`<span class="clc-b me">${esc(seatName(c.to))}</span>`:'<span class="clc-b me">나에게만</span>';
@@ -1246,37 +1248,80 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   const fold=(key,title,n,inner)=>`<details class="clg" data-clg="${esc(key)}" ${CBX.fold[key]?'':'open'}><summary><i aria-hidden="true">▸</i><b>${title}</b><small>${n}</small></summary><div class="gccl-grid clgrid">${inner}</div></details>`;
   const byGroup=(list,seat,pre)=>{const G=new Map();for(const c of list){const g=grpOf(c);if(!G.has(g))G.set(g,[]);G.get(g).push(c)}const ks=[...G.keys()].sort((a,b)=>(a===''?1:0)-(b===''?1:0));return ks.map(g=>fold(pre+'g:'+g,g?esc(g):'묶음 없음',G.get(g).length,G.get(g).map(c=>card(c,put(c,seat))).join(''))).join('')};
   let inner='';
-  if(tab==='seat')inner=per.map(({seat,L:l})=>l.length?fold('s:'+seat.id,'👤 '+esc(seat.name),l.length,l.map(c=>card(c,put(c,seat))).join('')):`<div class="clg-none"><b>👤 ${esc(seat.name)}</b><span class="small dim">받은 개인 단서가 없다</span></div>`).join('')||'<div class="clbx-empty">자리에 앉은 플레이어가 없다</div>';
-  else if(tab==='pub')inner=pub.length?byGroup(pub,null,'p'):'<div class="clbx-empty">아직 모두에게 띄운 단서가 없다<br><span class="small dim">「＋ 보내기」 → GM 콘솔 「연출 › 단서 카드」에서 띄운다</span></div>';
+  /* 📚 단서 목록 — 띄운 횟수 · 마지막 시각은 띄운 기록(rp.clueLog) + 좌석 단서에서 id 로 */
+  const use={};if(isGm){for(const c of [...pub,...per.flatMap(x=>x.L)]){if(!c.id)continue;const u=use[c.id]||(use[c.id]={n:0,at:0});u.n++;u.at=Math.max(u.at,c.at||0)}}
+  const libCard=c=>{const u=use[c.id];const on=CBX.ed&&CBX.ed.id===c.id;return `<div class="gccl-card clc cll ${on?'sel':''}" data-q="${esc(((c.t||'')+' '+(c.d||'')+' '+(c.g||'')).toLowerCase())}"><button type="button" class="gccl-th clc-th" data-cbl="edit" data-id="${esc(c.id)}" title="눌러서 고치기" style="${c.img?`background-image:url('${cssu(c.img)}')`:''}">${c.img?'':'<span>🔍</span>'}${u?`<span class="clc-b use" title="띄운 적 있음 — ${u.n}번, 마지막 ${esc(tm(u))}">띄움 ${u.n}</span>`:''}</button>
+    <div class="gccl-bd"><button type="button" class="clc-t" data-cbl="edit" data-id="${esc(c.id)}" title="${esc(c.t||'')}">${esc(c.t||'(제목 없음)')}</button>${c.g?`<em>${esc(c.g)}</em>`:''}<small class="clc-m">${u?`마지막 ${esc(tm(u))}`:'아직 안 띄움'}</small></div>
+    <div class="gccl-ac"><button class="btn xs pri" data-cbl="fire" data-id="${esc(c.id)}" title="모두에게 바로 띄우기">띄우기</button><button class="btn xs" data-cbl="edit" data-id="${esc(c.id)}">고치기</button></div></div>`};
+  const newCard=`<button type="button" class="cll-new ${CBX.ed&&!CBX.ed.id?'sel':''}" data-cbl="new"><b>＋</b><span>새 단서</span></button>`;
+  const panel=()=>{const e=CBX.ed;if(!e)return '';const T=clueTargets(),to=(CBX.to||[]).filter(id=>T.some(x=>x.id===id)),all=!to.length;const groups=[...new Set(lib.map(c=>c.g).filter(Boolean))];
+   return `<aside class="cled"><div class="cled-h"><b>${e.id?'단서 고치기':'새 단서'}</b>${CBX.dirty?'<span class="cled-dirty">고침 · 저장 안 함</span>':''}<span class="sp"></span><button type="button" class="btn xs ghost" data-cbl="close" title="편집 닫기">✕</button></div>
+    <div class="cled-b"><div class="updz mini gccl-dz cled-dz" id="cbz" title="그림 올리기 — 끌어 놓기 · 클릭 · Ctrl+V">${e.img?`<div class="gccl-pv" style="background-image:url('${cssu(e.img)}')"></div>`:'<div class="gccl-pv none">그림 없음</div>'}<b>＋ 그림</b><span>끌어 놓기 · 클릭 · Ctrl+V</span><input type="file" accept="image/*" hidden></div>
+     <label class="cled-f"><span>제목</span><input type="text" data-cef="t" maxlength="60" placeholder="예: 찢어진 작업 일지" value="${esc(e.t||'')}"></label>
+     <label class="cled-f"><span>설명</span><textarea data-cef="d" rows="4" maxlength="1200" placeholder="줄바꿈 그대로">${esc(e.d||'')}</textarea></label>
+     <label class="cled-f"><span>묶음</span><input type="text" data-cef="g" maxlength="30" list="cbgl" placeholder="고르거나 새로 입력 (예: 무진 3화)" value="${esc(e.g||'')}"><datalist id="cbgl">${groups.map(g=>`<option value="${esc(g)}">`).join('')}</datalist></label>
+     ${groups.length?`<div class="cled-gs">${groups.map(g=>`<button type="button" class="chip ${e.g===g?'on':''}" data-cbl="grp" data-g="${esc(g)}">${esc(g)}</button>`).join('')}</div>`:''}
+     <label class="cled-f"><span>그림 주소</span><input type="text" data-cef="img" maxlength="600" placeholder="비워도 된다 · 위 칸에 올려도 된다" value="${esc(e.img||'')}"></label>
+     <div class="cled-f"><span>받는 사람</span><div class="gccl-tos"><button type="button" class="gcto ${all?'on':''}" data-cbl="to" data-id="" aria-pressed="${all}"><i aria-hidden="true">${all?'✓':''}</i>모두</button>${T.map(x=>{const o=to.includes(x.id);return `<button type="button" class="gcto ${o?'on':''}" data-cbl="to" data-id="${esc(x.id)}" aria-pressed="${o}" title="${esc(x.name)} 에게만"><i aria-hidden="true">${o?'✓':''}</i>${esc(x.name)}</button>`}).join('')}${T.length?'':'<span class="small dim">자리에 앉은 플레이어가 없다 — 모두에게만</span>'}</div></div></div>
+    <div class="cled-foot"><button class="btn pri" data-cbl="send" title="${all?'모두의 무대에 띄운다':esc(clueToLabel(to))+' 에게만 보낸다'}">${all?'🔍 모두에게 띄우기':`🔍 보내기 · ${to.length}명`}</button><span class="sp"></span><button class="btn" data-cbl="save" title="단서 목록에 저장">저장</button>${e.id?`<details class="clc-menu up"><summary title="더보기" aria-label="더보기">⋯</summary><div><button type="button" data-cbl="dup">복제</button><button type="button" class="danger" data-cbl="del">삭제</button></div></details>`:''}</div></aside>`};
+  if(tab==='lib'){const G=new Map();for(const c of lib){const g=c.g||'';if(!G.has(g))G.set(g,[]);G.get(g).push(c)}const ks=[...G.keys()].sort((a,b)=>(a===''?1:0)-(b===''?1:0));
+   const list=`<div class="cll-top">${newCard}${lib.length?'':'<div class="cll-hint">저장한 단서가 없다 — 「＋ 새 단서」로 만들어 두면 세션 중에 바로 띄울 수 있다. 연출 탭 「저장한 단서」와 같은 목록.</div>'}</div>${ks.map(g=>fold('lg:'+g,g?esc(g):'묶음 없음',G.get(g).length,G.get(g).map(libCard).join(''))).join('')}`;
+   inner=`<div class="cllw ${CBX.ed?'editing':''}"><div class="cll-list">${list}<div class="clbx-empty clbx-nohit" hidden>찾는 단서가 없다</div></div>${panel()}</div>`}
+  else if(tab==='seat')inner=per.map(({seat,L:l})=>l.length?fold('s:'+seat.id,'👤 '+esc(seat.name),l.length,l.map(c=>card(c,put(c,seat))).join('')):`<div class="clg-none"><b>👤 ${esc(seat.name)}</b><span class="small dim">받은 개인 단서가 없다</span></div>`).join('')||'<div class="clbx-empty">자리에 앉은 플레이어가 없다</div>';
+  else if(tab==='pub')inner=pub.length?byGroup(pub,null,'p'):'<div class="clbx-empty">아직 모두에게 띄운 단서가 없다<br><span class="small dim">「📚 단서 목록」에서 단서를 골라 「🔍 모두에게 띄우기」</span></div>';
   else inner=L.length?byGroup(L,null,'m'):'<div class="clbx-empty">아직 받은 단서가 없다<br><span class="small dim">GM 이 띄우거나 나에게 보내면 여기에 모인다</span></div>';
-  const total=isGm?(tab==='seat'?nSeat:pub.length):L.length;
-  const md=A().openModal(`<div class="mhead clbx-h"><h2>🔍 단서 보관함</h2>${isGm?'<span class="clbx-gm">GM</span>':`<span class="small dim">${L.length}개</span>`}<span class="sp"></span>${isGm?'<button class="btn sm ghost" data-cb="refresh" title="좌석 단서를 서버에서 새로 읽기">⟳</button><button class="btn sm" data-cb="send" title="GM 콘솔 「연출 › 단서 카드」 로">＋ 보내기</button>':''}<button class="btn sm ghost" data-x>닫기</button></div>
-   ${isGm?`<div class="clbx-tabs" role="tablist"><button type="button" role="tab" class="${tab==='pub'?'on':''}" data-cbt="pub" aria-selected="${tab==='pub'}">모두 단서 <small>${pub.length}</small></button><button type="button" role="tab" class="${tab==='seat'?'on':''}" data-cbt="seat" aria-selected="${tab==='seat'}">좌석별 <small>${nSeat}</small></button></div>`:''}
+  const total=isGm?(tab==='seat'?nSeat:tab==='lib'?lib.length:pub.length):L.length;
+  const md=A().openModal(`<div class="mhead clbx-h"><h2>🔍 단서 보관함</h2>${isGm?'<span class="clbx-gm">GM</span>':`<span class="small dim">${L.length}개</span>`}<span class="sp"></span>${isGm?'<button class="btn sm ghost" data-cb="refresh" title="좌석 단서를 서버에서 새로 읽기">⟳</button><button class="btn sm" data-cb="send" title="📚 단서 목록에 새 단서 쓰기">＋ 새로</button>':''}<button class="btn sm ghost" data-x>닫기</button></div>
+   ${isGm?`<div class="clbx-tabs" role="tablist"><button type="button" role="tab" class="${tab==='lib'?'on':''}" data-cbt="lib" aria-selected="${tab==='lib'}">📚 단서 목록 <small>${lib.length}</small></button><button type="button" role="tab" class="${tab==='pub'?'on':''}" data-cbt="pub" aria-selected="${tab==='pub'}">띄운 기록 <small>${pub.length}</small></button><button type="button" role="tab" class="${tab==='seat'?'on':''}" data-cbt="seat" aria-selected="${tab==='seat'}">좌석별 <small>${nSeat}</small></button></div>`:''}
    ${total>3?`<div class="clbx-bar"><input type="search" id="cbq" placeholder="찾기 — 제목 · 설명 · 묶음 · 장소" value="${esc(CBX.q)}"></div>`:''}
-   <div class="clbx2">${inner}<div class="clbx-empty clbx-nohit" hidden>찾는 단서가 없다</div></div>`);
-  md.classList.add('wide','clbxm');
+   <div class="clbx2 ${tab==='lib'?'lib':''}">${inner}${tab==='lib'?'':'<div class="clbx-empty clbx-nohit" hidden>찾는 단서가 없다</div>'}</div>`);
+  md.classList.add('wide','clbxm');md.classList.toggle('cled-on',tab==='lib'&&!!CBX.ed);
+  md.querySelectorAll('[data-x]').forEach(b=>b.onclick=()=>{if(!leaveOk())return;A().closeModal()});
   /* 찾기: 다시 그리지 않고 숨기기만 */
   const q=$('#cbq',md);const flt=()=>{const w=CBX.q.trim().toLowerCase();let hit=0;md.querySelectorAll('.clg').forEach(g=>{let n=0;g.querySelectorAll('.clc').forEach(c=>{const on=!w||c.dataset.q.includes(w);c.hidden=!on;if(on)n++});g.hidden=!n;hit+=n;if(w&&n)g.open=true});md.querySelectorAll('.clg-none').forEach(x=>x.hidden=!!w);const nh=md.querySelector('.clbx-nohit');if(nh)nh.hidden=!(w&&!hit)};
   if(q){q.oninput=()=>{CBX.q=q.value;flt()};flt()}
   md.querySelectorAll('.clg').forEach(g=>g.addEventListener('toggle',()=>{if(!CBX.q.trim()){if(g.open)delete CBX.fold[g.dataset.clg];else CBX.fold[g.dataset.clg]=1}}));
-  md.querySelectorAll('[data-cbt]').forEach(b=>b.onclick=()=>{CBX.tab=b.dataset.cbt;try{localStorage.setItem('om_cbtab',CBX.tab)}catch(e){}openClueBox()});
+  md.querySelectorAll('[data-cbt]').forEach(b=>b.onclick=()=>{if(b.dataset.cbt!=='lib'&&!leaveOk())return;CBX.tab=b.dataset.cbt;try{localStorage.setItem('om_cbtab',CBX.tab)}catch(e){}openClueBox(true)});
   /* ⋯ 메뉴는 하나만 열리게 */
   md.addEventListener('click',e=>{const open=md.querySelectorAll('.clc-menu[open]');open.forEach(d=>{if(!d.contains(e.target))d.open=false})});
   const stageShow=c=>{const cc=Object.assign({},c);delete cc.pub;PCL.show=cc;CLUE.hide=0;CLUE.sig='';A().closeModal();A().renderScene()};
   const act=async(k,it)=>{const c=it&&it.c;
    if(k==='show'){if(c)stageShow(c);return}
-   if(k==='reshow'){if(!c)return;await showClueRp({t:c.t,d:c.d,img:c.img,id:c.id},'all');return openClueBox()}
-   if(k==='recall'){const row=it&&per.find(x=>x.seat.id===(it.seat||{}).id);if(!c||!row||!confirm(`「${c.t||'단서'}」 를 ${row.seat.name} 에게서 거둘까?`))return;const nl=row.L.filter(x=>x.k!==c.k).sort((a,b)=>(a.at||0)-(b.at||0));try{await DBS().secretPut(ST.room,ST.secret,'clue',row.seat.id,{list:nl});DBS().broadcast({t:'clue',to:[row.seat.id],rm:c.k,at:Date.now()});PCL.gmAll=null;A().toast('거뒀다');return openClueBox()}catch(e){return A().toast('거두지 못했다: '+e.message)}}
-   if(k==='pubdel'){if(!c||!confirm(`「${c.t||'단서'}」 기록을 지울까?`))return;const nl=pub.filter(x=>x.k!==c.k).map(x=>{const y=Object.assign({},x);delete y.pub;return y});const ops=[[['rp','clueLog'],nl.length?nl:null]];if((R().clue||{}).k===c.k)ops.push([['rp','clue'],null]);await A().setMany(ops);return openClueBox()}};
+   if(k==='reshow'){if(!c)return;await showClueRp({t:c.t,d:c.d,img:c.img,id:c.id},'all');return openClueBox(true)}
+   if(k==='recall'){const row=it&&per.find(x=>x.seat.id===(it.seat||{}).id);if(!c||!row||!confirm(`「${c.t||'단서'}」 를 ${row.seat.name} 에게서 거둘까?`))return;const nl=row.L.filter(x=>x.k!==c.k).sort((a,b)=>(a.at||0)-(b.at||0));try{await DBS().secretPut(ST.room,ST.secret,'clue',row.seat.id,{list:nl});DBS().broadcast({t:'clue',to:[row.seat.id],rm:c.k,at:Date.now()});PCL.gmAll=null;A().toast('거뒀다');return openClueBox(true)}catch(e){return A().toast('거두지 못했다: '+e.message)}}
+   if(k==='pubdel'){if(!c||!confirm(`「${c.t||'단서'}」 기록을 지울까?`))return;const nl=pub.filter(x=>x.k!==c.k).map(x=>{const y=Object.assign({},x);delete y.pub;return y});const ops=[[['rp','clueLog'],nl.length?nl:null]];if((R().clue||{}).k===c.k)ops.push([['rp','clue'],null]);await A().setMany(ops);return openClueBox(true)}};
+  /* ---- 📚 단서 목록 편집 ---- */
+  function leaveOk(){if(!CBX.ed||!CBX.dirty)return true;if(!confirm('고친 내용을 저장하지 않았다 — 버리고 넘어갈까?'))return false;CBX.dirty=false;return true}
+  const edRead=()=>{if(!CBX.ed)return;md.querySelectorAll('[data-cef]').forEach(x=>{CBX.ed[x.dataset.cef]=x.value})};
+  const edVal=()=>{const e=CBX.ed;return {t:String(e.t||'').trim().slice(0,60),d:String(e.d||'').trim().slice(0,1200),img:String(e.img||'').trim().slice(0,600),g:String(e.g||'').trim().slice(0,30)}};
+  md.querySelectorAll('[data-cef]').forEach(x=>x.addEventListener('input',()=>{CBX.ed[x.dataset.cef]=x.value;if(!CBX.dirty){CBX.dirty=true;const h=md.querySelector('.cled-h b');if(h&&!md.querySelector('.cled-dirty'))h.insertAdjacentHTML('afterend','<span class="cled-dirty">고침 · 저장 안 함</span>')}if(x.dataset.cef==='img'){const pv=md.querySelector('.cled-dz .gccl-pv');if(pv){const v=x.value.trim();pv.classList.toggle('none',!v);pv.style.backgroundImage=v?`url('${cssu(v)}')`:'';pv.textContent=v?'':'그림 없음'}}}));
+  if($('#cbz',md))bindDz(md,'#cbz',async fs=>{edRead();A().toast('올리는 중…');const u=await upImg(await shrinkPic(fs[0],1600,1600),'clue');if(!u)return A().toast('그림을 올리지 못했다');CBX.ed.img=u;CBX.dirty=true;openClueBox(true)});
+  const libAct=async(k,b)=>{const LB=(Array.isArray(R().clueLib)?R().clueLib:[]).slice();const id=b.dataset.id;
+   if(k==='new'){if(CBX.ed&&!CBX.ed.id&&!CBX.dirty)return;if(!leaveOk())return;CBX.ed={id:'',t:'',d:'',img:'',g:''};CBX.dirty=false;openClueBox(true);setTimeout(()=>{const f=document.querySelector('[data-cef=t]');if(f)f.focus()},40);return}
+   if(k==='edit'){if(CBX.ed&&CBX.ed.id===id)return;const c=LB.find(x=>x.id===id);if(!c||!leaveOk())return;CBX.ed={id:c.id,t:c.t||'',d:c.d||'',img:c.img||'',g:c.g||''};CBX.dirty=false;return openClueBox(true)}
+   if(k==='fire'){const c=LB.find(x=>x.id===id);if(c){await showClueRp(c,'all');A().toast(`「${c.t||'단서'}」 모두에게 띄움`)}return openClueBox(true)}
+   if(k==='close'){if(!leaveOk())return;CBX.ed=null;return openClueBox(true)}
+   if(!CBX.ed)return;edRead();
+   if(k==='grp'){CBX.ed.g=b.dataset.g||'';CBX.dirty=true;return openClueBox(true)}
+   if(k==='to'){if(!id)CBX.to=[];else{const T=(CBX.to||[]).slice();const i=T.indexOf(id);if(i>=0)T.splice(i,1);else T.push(id);CBX.to=T}return openClueBox(true)}
+   const v=edVal();
+   if(k==='save'){if(!v.t&&!v.d&&!v.img)return A().toast('제목 · 설명 · 그림 중 하나는 있어야 한다');
+    if(CBX.ed.id){const j=LB.findIndex(x=>x.id===CBX.ed.id);if(j<0){CBX.ed.id=''}else{LB[j]=Object.assign({},LB[j],v)}}
+    if(!CBX.ed.id){const it=Object.assign({id:'c'+Date.now().toString(36)},v);LB.unshift(it);CBX.ed.id=it.id}
+    await A().set(['rp','clueLib'],LB.slice(0,120));CBX.dirty=false;A().toast('단서 목록에 저장했다');return openClueBox(true)}
+   if(k==='dup'){const j=LB.findIndex(x=>x.id===CBX.ed.id);const it=Object.assign({},j>=0?LB[j]:{},v,{id:'c'+Date.now().toString(36),t:((v.t||'단서')+' (사본)').slice(0,60)});LB.splice(j>=0?j+1:0,0,it);await A().set(['rp','clueLib'],LB.slice(0,120));CBX.ed=Object.assign({id:it.id},{t:it.t,d:it.d||'',img:it.img||'',g:it.g||''});CBX.dirty=false;A().toast('복제했다 — 사본을 고치는 중');return openClueBox(true)}
+   if(k==='del'){const c=LB.find(x=>x.id===CBX.ed.id);if(!c||!confirm(`「${c.t||'단서'}」 를 단서 목록에서 지울까? (띄운 기록 · 받은 사람 목록은 남는다)`))return;const nl=LB.filter(x=>x.id!==c.id);if(GC.clEdit===c.id)GC.clEdit='';await A().set(['rp','clueLib'],nl.length?nl:null);CBX.ed=null;CBX.dirty=false;A().toast('지웠다');return openClueBox(true)}
+   if(k==='send'){if(!v.t&&!v.d&&!v.img)return A().toast('제목 · 설명 · 그림 중 하나는 있어야 한다');const to=(CBX.to||[]).length?CBX.to:'all';await showClueRp(Object.assign({},v,CBX.ed.id?{id:CBX.ed.id}:{}),to);return openClueBox(true)}};
+  md.querySelectorAll('[data-cbl]').forEach(b=>{if(b.tagName==='SUMMARY')return;b.onclick=e=>{e.stopPropagation();const d=b.closest('details.clc-menu');if(d)d.open=false;libAct(b.dataset.cbl,b)}});
   /* 크게 보기 — 같은 창 안에서 바꿔 그리고 「← 목록」으로 돌아온다 */
   const zoom=it=>{const c=it.c;const g=grpOf(c);const badge=c.pub?'<span class="clc-b all">모두</span>':`<span class="clc-b me">${isGm?esc(seatName(c.to)):'나에게만'}</span>`;
    const z=A().openModal(`<div class="mhead clbx-h"><button class="btn sm ghost" data-cz="back" title="목록으로">← 목록</button><h2 class="clz-t" title="${esc(c.t||'')}">${esc(c.t||'(제목 없음)')}</h2><span class="sp"></span><button class="btn sm ghost" data-x>닫기</button></div>
     <div class="clz">${c.img?`<img class="clz-img" src="${esc(c.img)}" alt="${esc(c.t||'단서')}">`:'<div class="clz-noimg">🔍 그림 없는 단서</div>'}<div class="clz-bd"><div class="clz-meta">${badge}${g?`<em>${esc(g)}</em>`:''}<small>${esc(tm(c))}${c.scene?' · '+esc(c.scene):''}</small></div>${c.d?`<p>${esc(c.d).replace(/\n/g,'<br>')}</p>`:'<p class="dim">설명 없음</p>'}</div></div>
     <div class="clz-foot">${isGm&&c.pub?'<button class="btn pri" data-cz="reshow">다시 띄우기</button><button class="btn" data-cz="show">내 화면에 보기</button>':`<button class="btn pri" data-cz="show">${isGm?'내 화면에 보기':'무대에 보기'}</button>`}<span class="sp"></span>${isGm?`<details class="clc-menu up"><summary title="더보기" aria-label="더보기">⋯</summary><div>${c.pub?'<button type="button" class="danger" data-cz="pubdel">기록 지우기</button>':'<button type="button" class="danger" data-cz="recall">회수</button>'}</div></details>`:''}</div>`);
-   z.classList.add('wide','clbxm','clzm');z.querySelectorAll('[data-cz]').forEach(b=>b.onclick=()=>{const k=b.dataset.cz;if(k==='back')return openClueBox();act(k,it)})};
+   z.classList.add('wide','clbxm','clzm');z.querySelectorAll('[data-cz]').forEach(b=>b.onclick=()=>{const k=b.dataset.cz;if(k==='back')return openClueBox(true);act(k,it)})};
   md.querySelectorAll('[data-cb]').forEach(b=>b.onclick=async e=>{e.stopPropagation();const k=b.dataset.cb;
-   if(k==='refresh'){PCL.gmAll=null;return openClueBox()}
-   if(k==='send')return gcGoClue();
+   if(k==='refresh'){PCL.gmAll=null;return openClueBox(true)}
+   if(k==='send'){if(!leaveOk())return;CBX.tab='lib';CBX.ed={id:'',t:'',d:'',img:'',g:''};CBX.dirty=false;openClueBox(true);setTimeout(()=>{const f=document.querySelector('[data-cef=t]');if(f)f.focus()},40);return}
    const it=REF[+b.dataset.ref];if(!it)return;if(k==='zoom')return zoom(it);const d=b.closest('details');if(d)d.open=false;return act(k,it)});
   return md}
  /* 올리기 전에 줄인다 (Supabase 전송량) */

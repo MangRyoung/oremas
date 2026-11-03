@@ -5328,3 +5328,48 @@ html[data-vt="mm"] .clc-menu>div,html[data-vt="mm"] .clc-menu>summary{background
  .mhead .clz-t{font-size:16px}}
 .gcfx .gccl-th:hover,.clbxm .gccl-th:hover{filter:none;outline:2px solid var(--gfa);outline-offset:-2px}
 .gccl-tos>.small{align-self:center}
+/* 11-03 14:22 망령 「보관함에서 단서 추가/수정/삭제」 — 📚 단서 목록 탭: 왼쪽 카드 격자 + 오른쪽 편집 패널 (모바일은 패널이 전체) */
+.clbx2.lib{overflow:hidden;padding-bottom:0}
+.cllw{flex:1;min-height:0;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:minmax(0,1fr);gap:14px}
+.cllw.editing{grid-template-columns:minmax(0,1fr) 370px}
+.cll-list{min-height:0;overflow:auto;display:flex;flex-direction:column;gap:10px;padding-bottom:16px}
+.cll-top{display:flex;align-items:stretch;gap:12px}
+.cll-new{flex:none;width:180px;min-height:76px;display:flex;align-items:center;justify-content:center;gap:10px;border:2px dashed var(--gfa);background:var(--gfc);color:var(--fg);cursor:pointer;font:inherit}
+.cll-new b{font-size:26px;line-height:1;color:var(--gfa);font-weight:700}
+.cll-new span{font:16px var(--lab)}
+.cll-new:hover,.cll-new.sel{border-style:solid;background:var(--gfh)}
+.cll-hint{flex:1;min-width:0;display:flex;align-items:center;padding:10px 14px;border:1px dashed var(--line2);color:var(--fg2);font-size:13px;line-height:1.6}
+.cll.sel{outline:3px solid var(--gfa);outline-offset:-1px}
+.clc-b.use{left:6px;right:auto;background:#0b0c10;color:var(--gfa);border:1px solid var(--gfa)}
+.cled{min-height:0;display:flex;flex-direction:column;border:2px solid var(--gfa);background:var(--gfc);box-shadow:4px 4px 0 #000;margin-bottom:16px}
+.cled-h{flex:none;display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--gfh);border-bottom:1px solid var(--line2)}
+.cled-h b{font:16px var(--lab);font-weight:400;color:var(--fg);white-space:nowrap}
+.cled-dirty{font-size:11px;font-weight:700;line-height:1;padding:3px 6px;background:var(--gfa);color:var(--gfi);white-space:nowrap}
+.cled-b{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:12px}
+.cled .cled-dz{display:grid!important;grid-template-columns:120px minmax(0,1fr);grid-template-rows:auto auto;column-gap:12px;row-gap:2px;align-items:center;justify-items:start;padding:8px!important;border-radius:0;white-space:normal;text-align:left;flex:none}
+.cled .cled-dz .gccl-pv{grid-row:1 / 3;width:120px;height:90px;aspect-ratio:auto}
+.cled .cled-dz b{font-size:13px;align-self:end}.cled .cled-dz span{font-size:11px;align-self:start}
+.cled-f{display:flex;flex-direction:column;gap:4px;min-width:0}
+.cled-f>span{font-size:12px;color:var(--mute)}
+.cled-f input,.cled-f textarea{width:100%;box-sizing:border-box;min-width:0}
+.cled-f textarea{resize:vertical}
+.cled-gs{display:flex;flex-wrap:wrap;gap:5px;margin-top:-4px}
+.cled-gs .chip{cursor:pointer;font-size:12px;padding:3px 9px;color:var(--fg)}
+.cled-gs .chip.on{background:var(--gfa);border-color:var(--gfa);color:var(--gfi)}
+.cled-foot{flex:none;display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--gfh);border-top:2px solid var(--gfa);flex-wrap:nowrap}
+.cled-foot .btn{white-space:nowrap;padding:7px 14px;font-size:14px;flex:none}
+.cled-foot .btn.pri{min-width:0;overflow:hidden;text-overflow:ellipsis;flex:0 1 auto}
+@media (max-width:1000px){.cllw.editing{grid-template-columns:minmax(0,1fr) 320px}}
+@media (max-width:760px){
+ .cllw.editing{grid-template-columns:minmax(0,1fr)}
+ .cllw.editing .cll-list{display:none}
+ .cled{margin-bottom:10px;box-shadow:none}
+ .cll-top{flex-direction:column;gap:8px}
+ .cll-new{width:100%;min-height:52px}
+ .cled .cled-dz{grid-template-columns:90px minmax(0,1fr)}
+ .cled .cled-dz .gccl-pv{width:90px;height:68px}
+ .cled-foot{padding:8px 10px}
+ .cled-foot .btn{padding:7px 10px}}
+.cled-f{text-align:left;align-items:stretch}.cled-f>span{text-align:left}
+.clbx-bar input{background:#0b0c10;color:var(--fg);border:1px solid var(--line2);border-radius:0}
+@media (max-width:760px){.modal.clbxm.cled-on .clbx-bar{display:none}}
