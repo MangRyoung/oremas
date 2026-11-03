@@ -6,7 +6,8 @@
    웹툴과 다른 점: 「행동 판정」(혼란 · 마비 …)을 늘 켠다 · 창을 다시 여는 일 · 손으로 바꾸는 칸 · 「손으로」 문장(notes)은 없다. */
 "use strict";
 /* 11-01 은열쇠(시뮬): 보험형 배틀 카드 — H.cards = {list:[{tid,eff:'reroll'|'noCrit',used}], turn:{tid:턴}} · 트레이너마다 한 턴 1장 */
-function cardTake(H,eff,turn){const C=H&&H.cards;if(!C)return null;C.turn=C.turn||{};const c=(C.list||[]).find(x=>!x.used&&x.eff===eff&&C.turn[x.tid]!==turn&&(!x.pay||x.pay()));   /* 11-01 코스트: 낼 수 있을 때만 */if(!c)return null;c.used=true;C.turn[c.tid]=turn;return c}
+/* 11-04 망령 「아군에겐 못써야 의미있지」: 세 칸 방식(H.cards.own)이면 그 포켓몬의 트레이너 카드만 (ownTid) */
+function cardTake(H,eff,turn,ownTid){const C=H&&H.cards;if(!C)return null;C.turn=C.turn||{};const c=(C.list||[]).find(x=>!x.used&&x.eff===eff&&C.turn[x.tid]!==turn&&(!C.own||!ownTid||x.tid===ownTid)&&(!x.pay||x.pay()));   /* 11-01 코스트: 낼 수 있을 때만 */if(!c)return null;c.used=true;C.turn[c.tid]=turn;return c}
 async function attack(H,W,mid,idx,targets,o){o=o||{};
  const FN=H.fn,B=W.OM_BATTLE,FX=W.OM_FX,OI=W.OM_ITEMS,F=W.OM_FIELD,MA=W.OM_MOVEAUTO,S=W.OM_STATS,DB=W.OM_DB||{};const R=Math.random.bind(W.Math);const rnd=()=>W.Math.random();
  const c=FN.ctx();const b=c.b;const atk0=b.mons[mid];if(!atk0||!atk0.entry||atk0.hp.cur<=0)return {skip:'없음'};const f=FN.fieldOf(b);
@@ -19,7 +20,7 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
  /* 행동 판정 (창의 「행동 판정」 칸 — 시뮬은 늘 켠다) */
  let chk=null;
  if(F&&['Flinch','Sleep','Paralysis','Freeze','Attract','Confusion'].some(k=>(atk0.states||{})[k])){let am=JSON.parse(JSON.stringify(atk0));let r=F.actionCheck(am);
-  if(!r.ok&&atk0.side==='left'&&['Paralysis','Freeze','Confusion'].some(k=>(atk0.states||{})[k])&&!(atk0.states||{}).Flinch&&cardTake(H,'actReroll',+b.turn||0)){am=JSON.parse(JSON.stringify(atk0));r=F.actionCheck(am)}   /* 11-02 「다시 일어서」: 마비 · 혼란 · 얼음 행동 판정 한 번 다시 */
+  if(!r.ok&&atk0.side==='left'&&['Paralysis','Freeze','Confusion'].some(k=>(atk0.states||{})[k])&&!(atk0.states||{}).Flinch&&cardTake(H,'actReroll',+b.turn||0,atk0.tid)){am=JSON.parse(JSON.stringify(atk0));r=F.actionCheck(am)}   /* 11-02 「다시 일어서」: 마비 · 혼란 · 얼음 행동 판정 한 번 다시 */
   if(!r.ok){let self=0;if(r.selfHit){self=F.confusionHit(am);am.hp.cur=Math.max(0,am.hp.cur-self);r.lines.push(`${am.name} 자작 대미지 −${self}`)}
    const nb0=FN.snap(),nb=FN.snap(nb0);const x=nb.mons[mid];x.states=am.states;if(self){x.hp.latest=x.hp.cur;x.hp.cur=Math.max(0,x.hp.cur-self)}if(x.hp.cur<=0)x.entry='';await FN.saveBattle(nb0,nb);
    out.fail=r.lines.join(' / ');out.lines.push(...r.lines);if(H.logOn)W.OM_APP.sysLog(`【행동 실패】 ${atk0.name} — ${out.fail}`,'battle');return out}
@@ -59,7 +60,7 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
   const protBlock=def!==atk&&!PBY&&(def.flags||{}).protect===(+b.turn||0)&&def.hp.cur>0;
   const accRoll=()=>protBlock?{prot:1,sure:false,hit:false}:wideBlock?{sure:false,hit:false,note:'와이드가드'}:itImm?{sure:false,hit:false,note:itImm}:psyBlock?{sure:false,hit:false,note:'사이코필드'}:autoMiss?{sure:false,hit:false,note:'회피'}:
    B.accuracy(atk,def,{acc:mv.acc},{accMult:accMul,sureHit:sure,starry:f.weather.type==='별하늘',fog:f.weather.type==='짙은안개',fogImmune:FN.tysOf(atk).some(t=>t==='Poison'||t==='Fairy'),gravity:(f.etc||{})['중력']>0,wideLens:FN.IT(atk)==='광각렌즈',ignoreAcc:IG.acc,ignoreEva:IG.eva,rng:rnd});
-  let acc=accRoll();if(!acc.hit&&!acc.prot&&!acc.note&&mv.cat!=='변화'&&atk.side==='left'&&cardTake(H,'reroll',+b.turn||0))acc=accRoll();   /* 「실타래 되감기」 */
+  let acc=accRoll();if(!acc.hit&&!acc.prot&&!acc.note&&mv.cat!=='변화'&&atk.side==='left'&&cardTake(H,'reroll',+b.turn||0,atk.tid))acc=accRoll();   /* 「실타래 되감기」 */
   const floating=(def.states||{}).MagnetRise||(def.states||{}).Telekinesis||(FX&&FX.floating(def))||FN.IT(def)==='풍선';
   const effPre=mv.cat==='변화'?null:B.effectiveness(moveTypes,def,{multiMode:0,atkTypes,force:null,floating});
   const mods=FX?FX.attackMods(atk,def,Object.assign(FN.moveQuery(atk,def,mv,moveTypes,effPre?effPre.value:1,!multiTarget),{stab:!!(effPre&&effPre.stab)})):{boost:1,guard:1,cg:0,cr:0,cx:'',names:[]};
@@ -69,7 +70,7 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
   if(mods.cx!=='none'&&FN.CRR(def).never)mods.cx='none';
   if(mods.cx!=='none'){const nc=[[def.ability,def.abilityEff],...FN.potSrc(def).map(p=>[p.name,p.eff])].find(([n,e])=>n&&/자신의\s*급소에\s*맞지\s*않는다/.test(String(e||'')));if(nc)mods.cx='none'}
   let hits=[];if(acc.hit){const mx=+mv.max||1,mn=+mv.min||1;const cnt=B.multiHits(mv,{skillLink:skill,rng:rnd});const fixedN=mx>1&&mn===mx&&!skill&&!acc.sure;const stage=B.critStage(atk,def,{input:0,order:OC.v+(mods.cr||0)-(mods.cg||0)+FN.itemCrit(atk,def)+FN.crAdj(atk,def)});
-   for(let i=0;i<cnt;i++){if(i>0&&fixedN){const a2=accRoll();if(!a2.hit)break}let cr=mods.cx==='none'?{crit:false}:B.critical(stage,{type:+FN.CRR(atk).tbl||0,forced:critForce||mods.cx==='sure'||!!FN.CRR(atk).sure,rng:rnd});if(cr.crit&&def.side==='left'&&atk.side!=='left'&&H.cards&&H.cards.shield&&H.cards.shield[def.id]===(+b.turn||0))cr={crit:false};else if(cr.crit&&def.side==='left'&&atk.side!=='left'&&cardTake(H,'noCrit',+b.turn||0)){cr={crit:false};H.cards.shield=H.cards.shield||{};H.cards.shield[def.id]=+b.turn||0}   /* 「안개의 환영」 11-02: 이번 턴 그 아군이 받는 급소를 모두 막는다 */else if(cr.crit&&def.side==='left'&&atk.side!=='left'&&cardTake(H,'critReroll',+b.turn||0))cr=B.critical(stage,{type:+FN.CRR(atk).tbl||0,forced:critForce||mods.cx==='sure'||!!FN.CRR(atk).sure,rng:rnd});   /* 11-02 「급소 털어내기」: 한 번 다시 굴림 */hits.push({v:cr.crit?2:1,cr})}}
+   for(let i=0;i<cnt;i++){if(i>0&&fixedN){const a2=accRoll();if(!a2.hit)break}let cr=mods.cx==='none'?{crit:false}:B.critical(stage,{type:+FN.CRR(atk).tbl||0,forced:critForce||mods.cx==='sure'||!!FN.CRR(atk).sure,rng:rnd});if(cr.crit&&def.side==='left'&&atk.side!=='left'&&H.cards&&H.cards.shield&&H.cards.shield[def.id]===(+b.turn||0))cr={crit:false};else if(cr.crit&&def.side==='left'&&atk.side!=='left'&&cardTake(H,'noCrit',+b.turn||0,def.tid)){cr={crit:false};H.cards.shield=H.cards.shield||{};H.cards.shield[def.id]=+b.turn||0}   /* 「안개의 환영」 11-02: 이번 턴 그 아군이 받는 급소를 모두 막는다 */else if(cr.crit&&def.side==='left'&&atk.side!=='left'&&cardTake(H,'critReroll',+b.turn||0,def.tid))cr=B.critical(stage,{type:+FN.CRR(atk).tbl||0,forced:critForce||mods.cx==='sure'||!!FN.CRR(atk).sure,rng:rnd});   /* 11-02 「급소 털어내기」: 한 번 다시 굴림 */hits.push({v:cr.crit?2:1,cr})}}
   const objs=(f.objects||{})[side]||{};const wall={};for(const k in FN.WALLS)if(objs[k]>0&&!(k==='얼음의장벽'&&tyOf(mv)==='Fire'))wall[FN.WALLS[k]]=1;
   if(objs['얼음의장벽']>0&&tyOf(mv)==='Fire'&&mv.cat!=='변화'){const nb0=FN.snap(),nb=FN.snap(nb0);const fo=FN.fieldOf(nb);delete fo.objects[side]['얼음의장벽'];nb.field=fo;await FN.saveBattle(nb0,nb)}
   const spw=SPW?SPW(def):null;const powT=spw&&spw.pow!=null?spw.pow:pow;
