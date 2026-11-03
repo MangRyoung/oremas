@@ -1,8 +1,9 @@
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 /* ---------- 칼데아 테마 (웹툴) — 11-04 망령 「여기(웹툴)도 저렇게 칼데아 테마 추가해줄 수 있어?」 ----------
    11-04 망령 「칼데아 밤을 칼데아로 덮어쓰고 기존 칼데아는 지워도 좋아」: 흰 판 낮 테마는 지우고 밤(지구본 남흑 · 시안 · 하얀 테)을 칼데아(cd) 하나로.
    세션 노트(mangketmon-notes css/chaldea.css)와 같은 키 om_vt. 예전에 「칼데아 밤」(cdn)을 골라 둔 브라우저는 js/vtheme.js get() 이 cd 로 바꿔 읽는다.
    P3 자리(css/vtheme.css 의 html[data-vt="p3"] 규칙)를 그대로 따라 색만 바꿔 덮는다.
-   문장 그림 img/chaldea_emblem_w.png(흰 문장) · chaldea_mark_n.png(워터마크) — 원본은 망령이 준 칼데아 문장. */
+   문장 그림 img/chaldea_emblem_w.png(흰 문장) · chaldea_emblem_w.png 를 오른쪽 아래 LED 문장으로도(body::before) — 원본은 망령이 준 칼데아 문장. */
 
 /* ============================ 칼데아 cd ============================ */
 html[data-vt="cd"]{--bg:#050b16;--bg2:#08111f;--panel:rgba(9,19,36,.92);--panel2:#0c1a2e;--line:rgba(235,244,255,.3);--line2:rgba(235,244,255,.62);--fg:#e4efff;--fg2:#bcd0e6;--mute:#8aa3bf;--red:#5fd2ff;--red2:#7fe0ff;--blue:#5fd2ff;--cd:#5fd2ff}
@@ -104,7 +105,8 @@ html[data-vt="cd"] .gds-top small{color:#7fe0ff}
 html[data-vt="cd"] .gd-list{scrollbar-color:#5fd2ff transparent}
 html[data-vt="cd"] .gd-sel{background:rgba(4,10,22,.85);border-color:rgba(235,244,255,.8);border-radius:6px;color:#e4efff}
 html[data-vt="cd"] :is(.gcfx,.clbxm){--gfa:#5fd2ff;--gfi:#06121f;--gfc:#071434;--gfh:#0a1d47}
-html[data-vt="cd"] body{background:url("../img/chaldea_mark_n.png") no-repeat right 3% bottom 4%/min(420px,46vw) auto fixed,radial-gradient(70vmax 50vmax at 30% 20%,rgba(60,170,255,.16),transparent 70%) fixed,linear-gradient(rgba(95,210,255,.06) 1px,transparent 1px) 0 0/44px 44px,linear-gradient(90deg,rgba(95,210,255,.06) 1px,transparent 1px) 0 0/44px 44px,#050b16!important}
+html[data-vt="cd"]{background:radial-gradient(70vmax 50vmax at 30% 20%,rgba(60,170,255,.16),transparent 70%) fixed,linear-gradient(rgba(95,210,255,.06) 1px,transparent 1px) 0 0/44px 44px,linear-gradient(90deg,rgba(95,210,255,.06) 1px,transparent 1px) 0 0/44px 44px,#050b16!important}
+html[data-vt="cd"] body{background:transparent!important}   /* 바탕은 html 에 — body::before(LED 문장)가 바탕과 글 사이에 오게 */
 html[data-vt="cd"] .top{border-bottom:1px solid #fff!important;box-shadow:0 1px 0 rgba(95,210,255,.6),0 0 22px rgba(95,210,255,.2)!important}
 html[data-vt="cd"] .top .name{font-family:Cinzel,'Noto Serif KR',serif!important}
 html[data-vt="cd"] .top .name::before{content:"";display:inline-block;width:1.2em;height:1.2em;margin-right:.45em;vertical-align:-.2em;background:url("../img/chaldea_emblem_w.png") center/contain no-repeat;filter:drop-shadow(0 0 6px rgba(95,210,255,.55))}
@@ -116,3 +118,56 @@ html[data-vt="cd"] input,html[data-vt="cd"] select,html[data-vt="cd"] textarea{b
 html[data-vt="cd"] .modal{background:rgba(6,14,28,.97)!important;border:1px solid #fff!important;box-shadow:0 0 0 1px rgba(95,210,255,.35),0 0 28px rgba(95,210,255,.18),0 20px 40px rgba(0,0,0,.6)!important}
 html[data-vt="cd"] .rpstage{border-color:#fff!important}
 html[data-vt="cd"] ::selection{background:rgba(95,210,255,.35);color:#fff}
+
+/* ======================================================================
+   칼데아 — 디지털 리디자인 (11-04 망령 「칼데아 테마를 좀 디지털 느낌나게 리디자인 · 색감은 지금 그대로」)
+   색은 그대로(지구본 남흑 #050b16 · 시안 #5fd2ff · 하얀 테). 바뀌는 것: 글꼴(Chakra Petch · IBM Plex Mono) · 판 모서리의 HUD 꺾쇠 ·
+   잘린 모서리 단추 · 화면 주사선 · 위 띠의 흐르는 빛줄 · 탭 [ ] 괄호 · // 제목 머리 · 가는 시안 스크롤바.
+   ====================================================================== */
+html[data-vt="cd"]{--cdf:'Chakra Petch','IBM Plex Sans KR','Noto Sans KR',sans-serif;--cdm:'IBM Plex Mono',ui-monospace,monospace;
+  --hud:linear-gradient(#5fd2ff,#5fd2ff);scrollbar-color:rgba(95,210,255,.55) rgba(4,10,22,.6)}
+html[data-vt="cd"] ::-webkit-scrollbar{width:8px;height:8px}
+html[data-vt="cd"] ::-webkit-scrollbar-track{background:rgba(4,10,22,.6)}
+html[data-vt="cd"] ::-webkit-scrollbar-thumb{background:rgba(95,210,255,.45);border:1px solid rgba(235,244,255,.35)}
+/* 화면 주사선 — 아주 옅게, 누를 수 없게 */
+html[data-vt="cd"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:2147483000;background:repeating-linear-gradient(180deg,rgba(255,255,255,.018) 0 1px,transparent 1px 3px);mix-blend-mode:screen}
+/* 위 띠 — 흐르는 빛줄 */
+html[data-vt="cd"] .top{position:relative}
+html[data-vt="cd"] .top::after{content:"";position:absolute;left:0;right:0;bottom:-2px;height:2px;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(95,210,255,.95) 45%,#fff 50%,rgba(95,210,255,.95) 55%,transparent) 0 0/40% 100% no-repeat;animation:cdscan 6s linear infinite}
+@keyframes cdscan{from{background-position:-40% 0}to{background-position:140% 0}}
+@media (prefers-reduced-motion:reduce){html[data-vt="cd"] .top::after{animation:none;background-position:50% 0}}
+html[data-vt="cd"] .top .name{font-family:var(--cdf)!important;font-weight:600!important;letter-spacing:.16em!important;text-transform:uppercase}
+html[data-vt="cd"] .top .name::after{content:"_";margin-left:.15em;color:#5fd2ff;animation:cdblink 1.1s steps(1) infinite}
+@keyframes cdblink{50%{opacity:0}}
+/* 탭 — [ 이름 ] */
+html[data-vt="cd"] #sceneTabs button,html[data-vt="cd"] .top .tabs button{font-family:var(--cdf)!important;font-weight:600!important;letter-spacing:.06em!important}
+html[data-vt="cd"] #sceneTabs button.on::before,html[data-vt="cd"] .top .tabs button.on::before{content:"[";margin-right:.3em;color:#5fd2ff;font-family:var(--cdm)}
+html[data-vt="cd"] #sceneTabs button.on::after,html[data-vt="cd"] .top .tabs button.on::after{content:"]";margin-left:.3em;color:#5fd2ff;font-family:var(--cdm)}
+/* 단추 — 잘린 모서리 · 고정폭 느낌 */
+html[data-vt="cd"] .btn{font-family:var(--cdf)!important;letter-spacing:.04em;border-radius:0!important;clip-path:polygon(0 0,calc(100% - 7px) 0,100% 7px,100% 100%,7px 100%,0 calc(100% - 7px))}
+html[data-vt="cd"] .btn.pri,html[data-vt="cd"] #rpsend{background:linear-gradient(90deg,#5fd2ff,#9be7ff)!important;color:#06121f!important}
+/* 입력 칸 — 고정폭 · 아래 빛줄 */
+html[data-vt="cd"] input:not([type=checkbox]):not([type=radio]):not([type=range]),html[data-vt="cd"] select,html[data-vt="cd"] textarea{border-radius:0!important;font-family:var(--cdf)}
+html[data-vt="cd"] input:focus,html[data-vt="cd"] select:focus,html[data-vt="cd"] textarea:focus{box-shadow:0 2px 0 #5fd2ff,0 0 12px rgba(95,210,255,.3)!important}
+/* 판 · 창 — HUD 꺾쇠 네 모서리 */
+html[data-vt="cd"] :is(.modal,.tile,.card,.phone,.spcard,.globeview){border-radius:0!important;
+  background-image:var(--hud),var(--hud),var(--hud),var(--hud),var(--hud),var(--hud),var(--hud),var(--hud)!important;
+  background-size:14px 2px,2px 14px,14px 2px,2px 14px,14px 2px,2px 14px,14px 2px,2px 14px!important;
+  background-position:0 0,0 0,100% 0,100% 0,0 100%,0 100%,100% 100%,100% 100%!important;background-repeat:no-repeat!important}
+html[data-vt="cd"] .globeview{background-color:#050b16!important}
+/* 제목 — // 머리 · 디지털 글꼴 */
+html[data-vt="cd"] :is(.toolbar h2,.mhead h2,.sheet h3,.sheet h4,.phone .ptitle){font-family:var(--cdf)!important;font-weight:600!important;letter-spacing:.08em!important}
+html[data-vt="cd"] :is(.toolbar h2,.mhead h2)::before{content:"// ";color:#5fd2ff;font-family:var(--cdm);font-weight:500;letter-spacing:0}
+html[data-vt="cd"] :is(.small,.muted,small){font-family:var(--cdf)}
+html[data-vt="cd"] .badge{font-family:var(--cdm)!important;border-radius:0!important}
+html[data-vt="cd"] .phone{background-color:rgba(6,14,28,.94)!important}
+html[data-vt="cd"] :is(.tile,.card,.spcard){background-color:rgba(9,19,36,.86)!important}
+
+/* 칼데아 문장 LED — 11-04 망령 「오른쪽 하단의 칼데아 문양도 LED처럼 · 너무 과하진 않고 하얀색으로 깜빡 · 멎어가는 심장 고동처럼 천천히」
+   바탕 그림이던 워터마크를 body::before 로 옮겨 따로 숨쉬게 한다. → 망령 「맥이 뛰는 느낌보다 천천히 숨쉬듯 빛이 들어왔다가 천천히 꺼지기를 반복」: 4.5초에 걸쳐 밝아지고 4.5초에 걸쳐 꺼진다(한 숨 9초). → 「더 선명하게 새하얀 색」: 가장 밝을 때 불투명도 .85 → 「너무 밝아 · 중간 정도가 최대치」: .5. */
+html[data-vt="cd"] body::before{content:"";position:fixed;right:3%;bottom:4%;width:min(420px,46vw);aspect-ratio:1/1;z-index:-1;pointer-events:none;
+  background:url("../img/chaldea_emblem_w.png") center/contain no-repeat;opacity:.06;animation:cdbreath 4.5s ease-in-out infinite alternate}
+@keyframes cdbreath{
+  from{opacity:.06;filter:brightness(1.1) drop-shadow(0 0 0 rgba(255,255,255,0))}
+  to{opacity:.5;filter:brightness(1.2) drop-shadow(0 0 6px rgba(255,255,255,.7)) drop-shadow(0 0 22px rgba(255,255,255,.4)) drop-shadow(0 0 44px rgba(200,240,255,.22))}}
+@media (prefers-reduced-motion:reduce){html[data-vt="cd"] body::before{animation:none;opacity:.25}}
