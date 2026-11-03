@@ -347,7 +347,10 @@ const PATCH={pend:new Map(),t:null,last:0,pull:null};
 function putPath(o,path,value){const root=Object.assign({},o||{});let x=root;
  for(let i=0;i<path.length-1;i++){const c=x[path[i]];const n=c&&typeof c==='object'&&!Array.isArray(c)?Object.assign({},c):{};x[path[i]]=n;x=n}
  const k=path[path.length-1];if(value===null||value===undefined)delete x[k];else x[k]=value;return root}
-function stateChanged(){renderScene();if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.watch)window.OM_BATTLE_UI.watch().catch(e=>console.warn(e))}
+/* 11-03 감우: 신호가 잇달아 오면(여러 칸 쓰기 · 턴 종료) 신호마다 전체를 다시 그리던 것 — 한 프레임에 한 번만. 가려진 탭은 rAF 가 멈추니 짧은 타이머로 */
+let SC_P=false;
+function stateChanged(){if(SC_P)return;SC_P=true;const run=()=>{SC_P=false;renderScene();if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.watch)window.OM_BATTLE_UI.watch().catch(e=>console.warn(e))};
+ if(document.visibilityState==='visible')requestAnimationFrame(run);else setTimeout(run,40)}
 function onPatch(p){if(!p||!ST.room)return;const v=+p.v||0;PATCH.last=Date.now();if(!(v>ST.v))return;
  if(p.full||(!p.same&&!(Array.isArray(p.path)&&p.path.length))){pullState('전체 신호',true);return}
  PATCH.pend.set(v,p);if(drainPatch())stateChanged()}
@@ -458,16 +461,15 @@ function copy(t,msg){navigator.clipboard.writeText(t).then(()=>toast(msg),()=>pr
 
 /* ---------- 상태 쓰기 ---------- */
 async function setRaw(path,value){
-  /* 서버의 jsonb_set 은 중간 키가 없으면 조용히 실패한다 — 옛 schema 를 쓰는 방이어도 되게 부모를 먼저 만든다 */
-  if(path&&path.length>1&&ST.role==='gm'){let o=ST.state;for(let i=0;i<path.length-1;i++){if(typeof o[path[i]]!=='object'||o[path[i]]===null){await DBS().setState(ST.room,ST.secret,path.slice(0,i+1),{});o[path[i]]={}}o=o[path[i]]}}
-  /* 좌석도 경로 그대로 쓴다 — 중간 상자는 서버 om_jset 이 만들어 준다. (2026-10-20: 예전엔 부모까지 올라가 통째로 썼는데, 서버에 이미 있던 칸을 덮을 수 있고 권한 검사의 NULL 구멍에 기대고 있어서 뺐다) */
-  let wpath=path,wval=value;
-  const v=await DBS().setState(ST.room,ST.secret,wpath,wval);
-  /* 낙관적 반영: 실시간이 오기 전에 화면부터 */
-  if(path&&path.length){let o=ST.state;for(let i=0;i<path.length-1;i++){if(typeof o[path[i]]!=='object'||o[path[i]]==null)o[path[i]]={};o=o[path[i]]}
-   if(value===null||value===undefined)delete o[path[path.length-1]];else o[path[path.length-1]]=value}else ST.state=value||{};
+  /* 2026-11-03: GM 이 중간 칸을 {} 로 먼저 쓰던 선행 쓰기를 뺐다 — 서버 om_jset 이 중간 칸을 만들어 주고, 좌석이 막 만든 칸(지시 · 준비)을 GM 화면의 옛 사본 기준 {} 로 덮을 수 있었다.
+     좌석 · GM 모두 경로 그대로 쓴다. (2026-10-20: 예전엔 부모까지 올라가 통째로 썼는데, 서버에 이미 있던 칸을 덮을 수 있고 권한 검사의 NULL 구멍에 기대고 있어서 뺐다) */
+  const v=await DBS().setState(ST.room,ST.secret,path,value);
+  applyLocal(path,value);
   /* 10-23 이그레스: 버전은 여기서 올리지 않는다 — 그 사이 남이 쓴 칸의 신호를 버리지 않게. 내 쓰기도 'st' 신호(또는 패치 전 서버의 onState)로 돌아와 버전이 오른다 */
   return v}
+/* 낙관적 반영: 실시간이 오기 전에 화면부터 */
+function applyLocal(path,value){if(path&&path.length){let o=ST.state;for(let i=0;i<path.length-1;i++){if(typeof o[path[i]]!=='object'||o[path[i]]==null)o[path[i]]={};o=o[path[i]]}
+  if(value===null||value===undefined)delete o[path[path.length-1]];else o[path[path.length-1]]=value}else ST.state=value||{}}
 async function set(path,value){try{await setRaw(path,value);renderScene();return true}catch(e){toast('저장 실패: '+e.message);return false}}
 /* 바뀐 칸만 쓴다 (점검 2-4 · 3-18) — 읽어서 고친 사본을 통째로 쓰면, 그 사이 남이 바꾼 칸이 지워진다.
    before = 사본을 뜰 때의 모습, after = 고친 사본. depth 단계까지 내려가 바뀐 칸만 쓰고, 그 아래(배열 포함)는 통째로 */
@@ -477,9 +479,14 @@ function diffOps(path,before,after,depth,out){out=out||[];if(sameJ(before,after)
  if(!(depth>0)||!isObj(before)||!isObj(after)){out.push([path,after===undefined?null:after]);return out}
  for(const k of new Set([...Object.keys(before),...Object.keys(after)]))diffOps(path.concat(k),before[k],after[k],depth-1,out);
  return out}
-/* 여러 칸을 차례로 쓰고 화면은 한 번만. 하나가 막혀도 나머지는 쓴다 (실패 알림은 첫 번째 것만) */
-async function setMany(ops){let ok=true,msg='';for(const [p,v] of ops){try{await setRaw(p,v)}catch(e){ok=false;if(!msg)msg=e.message}}
- if(ops.length)renderScene();if(msg)toast('저장 실패: '+msg);return ok}
+/* 여러 칸을 쓰고 화면은 한 번만.
+   11-03 감우: 두 칸 이상이면 서버 om_jset_many 로 한 번에(한 트랜잭션 — 하나라도 막히면 전부 되돌아온다). 그 함수가 없는 DB 면(null) 예전처럼 칸마다 — 하나가 막혀도 나머지는 쓴다 (실패 알림은 첫 번째 것만) */
+async function setMany(ops){ops=(ops||[]).filter(x=>Array.isArray(x)&&Array.isArray(x[0])&&x[0].length);if(!ops.length)return true;let ok=true,msg='';
+ if(ops.length>1&&DBS().setStateMany){let r=null;try{r=await DBS().setStateMany(ST.room,ST.secret,ops.map(([p,v])=>({path:p.map(String),value:v===undefined?null:v})))}catch(e){ok=false;msg=e.message||String(e)}
+  if(ok&&r!==null){for(const [p,v] of ops)applyLocal(p,v);renderScene();return true}
+  if(!ok){renderScene();toast('저장 실패: '+msg);return false}}
+ for(const [p,v] of ops){try{await setRaw(p,v)}catch(e){ok=false;if(!msg)msg=e.message}}
+ renderScene();if(msg)toast('저장 실패: '+msg);return ok}
 function setDiff(path,before,after,depth){return setMany(diffOps(path,before,after,depth==null?1:depth))}
 /* 좌석은 서버가 'battle' 로그를 막을 수 있다(옛 schema) — 그러면 'chat' + bat 표시로 다시 써서 채팅 창에는 배틀 카드로 보이게 한다 */
 /* 10-24 망령: 「은(는) · 이(가) · 을(를) · 과(와) · (으)로」를 앞 글자 받침에 맞춰 하나로 (영문 · 기호 뒤는 그대로) */

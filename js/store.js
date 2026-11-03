@@ -50,6 +50,15 @@ window.OM_STORE=(()=>{
  async function setState(room,secret,path,value){const args={p_room:room,p_secret:secret,p_path:path||null,p_value:value===undefined?null:value};
   if(SPLIT!==false){const r=await sb().rpc('om_put',args);if(!r.error){SPLIT=true;return r.data}if(!noFn(r.error))throw err(r.error);SPLIT=false}
   return rpc('om_set_state',args)}
+ /* 11-03 감우 「여러 칸 한 번에」 (supabase/patch_2026-11-03_배틀.sql om_jset_many): patches = [{path:[..],value}] 를 한 트랜잭션에.
+    함수가 없는 DB 면 null 을 돌려주고 (한 번 알고 나서는 묻지 않는다) 호출한 쪽이 칸마다 setState 로 쓴다 */
+ let MANY=null;
+ async function setStateMany(room,secret,patches){if(MANY===false)return null;const r=await sb().rpc('om_jset_many',{p_room:room,p_secret:secret,p_patches:patches});
+  if(r.error){if(noFn(r.error)){MANY=false;return null}throw err(r.error)}MANY=true;return r.data}
+ /* 11-03 감우 「턴 체크포인트 · 배틀 저장」 (같은 패치 om_snap): 방 상태 밖 표. 함수가 없으면 noFn 으로 알아채 이 브라우저에만 남긴다 (battle_ui snapStore) */
+ const snap={put:(room,secret,id,kind,name,turn,data)=>rpc('om_snap_put',{p_room:room,p_secret:secret,p_id:id,p_kind:kind,p_name:name||'',p_turn:+turn||0,p_data:data}),
+  list:(room,secret,kind)=>rpc('om_snap_list',{p_room:room,p_secret:secret,p_kind:kind||null}),get:(room,secret,id)=>rpc('om_snap_get',{p_room:room,p_secret:secret,p_id:id}),
+  del:(room,secret,id)=>rpc('om_snap_del',{p_room:room,p_secret:secret,p_id:id}),noFn};
 
  /* ----- 로그 ----- */
  async function getLog(room,after,limit){
@@ -167,5 +176,5 @@ async function shrinkUpload(blob,maxSide){try{if(!/^image\/(png|jpe?g|webp|bmp)$
   dcHall:(room,secret,o)=>rpc('om_dc_hall',{p_room:room,p_secret:secret,p_title:o.title||'',p_sub:o.sub||'',p_img:o.img,p_who:o.who||{}}),
   hallGet:(room,secret)=>rpc('om_dc_hall_get',{p_room:room,p_secret:secret}),
   hallPut:(room,secret,o)=>rpc('om_dc_hall_put',{p_room:room,p_secret:secret,p_url:o.url??null,p_thread:o.thread??''}),noFn};
- return {patchesSince,hall,bbs,shrinkUpload,ntCamps,ntCampUpdate,ntDocs,ntSync,NTSYNC,ntGet,ntPut,ntPutMany,ntDel,ntWatch,rtReset,getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty,makerOne,makerPut};
+ return {patchesSince,setStateMany,snap,hall,bbs,shrinkUpload,ntCamps,ntCampUpdate,ntDocs,ntSync,NTSYNC,ntGet,ntPut,ntPutMany,ntDel,ntWatch,rtReset,getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty,makerOne,makerPut};
 })();
