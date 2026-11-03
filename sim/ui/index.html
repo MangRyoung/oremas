@@ -542,7 +542,7 @@ function awkSlot(t,n){const sid=t.id+'~'+n;const a=awkOf(sid);const m=(t.aw||[])
 const AWK_G={C:'격 낮음 — 이름만 남은 사람 · 민담 조연 (지명도 1~2) · 대가 없음',B:'격 중간 — 한 고장 전설 · 야사의 주인공 (지명도 2~3) · 대가 B',A:'격 높음 — 한 나라에 알려진 인물 · 신화 조연급, 유명 인물은 열화된 한 시절 (지명도 3~4) · 대가 A (B 포함)',EX:'EX — 격 · 대가는 GM 이 정함'};
 const awkGrade=x=>{if(x.kind==='c')return 'C';const v=String(x.pride||'').toUpperCase();return /^EX/.test(v)?'EX':/^A/.test(v)?'A':/^B/.test(v)?'B':/^C/.test(v)?'C':''};
 const awkGLine=x=>{const g=awkGrade(x);return `${x.kind==='c'?'각성 (보조) · ':x.kind==='free'?'각성 (대가) · ':''}프라이드 ${x.pride||'모름'}${g?' → '+AWK_G[g]:''}`};
-const AWK_COST='대가 목록 (룰북 「각성체와 대가」): 지시 B 『6령』 2개 빼기 / A 『4식』 1개 더 · 육성 B 분배레벨 −10 / A −10 더 · 통솔 B-1 PT 에 특정 타입 2체 이상 · B-2 『역할』 1개 무효 / A-1 필드 위 다른 아군에 지정 타입이 없으면 자기 포텐셜 무효 · A-2 필드 위 아군 한 체의 『역할』 무효 · 능력 B 『전용 포텐셜』 −1 / A 고유 포텐셜 점수 −0.5';
+const AWK_COST='대가 목록 (룰북 「각성체와 대가」): 지시 B 『6령』 2개 빼기 / A 『4식』 1개 더 · 육성 B 분배레벨 −15 / A −15 더 · 통솔 B-1 PT 에 특정 타입 3체 이상 (각성체 2체 모두 지정 타입 + PL 1체 이상, 2체로 나서면 각성체 2체 모두) · B-2 『역할』 1개 무효 / A-1 필드 위 다른 아군에 지정 타입이 없으면 자기 행동 불능 · A-2 필드 위 아군 한 체의 『역할』 무효 · 능력 B 『전용 포텐셜』 −1 / A 고유 포텐셜 점수 −0.5';
 const awkHas=x=>!!(x.img||x.note||x.mname);
 const awkAny=t=>[1,2].some(n=>awkHas(awkSlot(t,n)));
 function awkSec(t){return `<div class="awk-sec" style="flex-direction:column"><div class="row" style="width:100%"><b>✦ 각성체 — 그림에 어울리는 원전 찾기 (감우에게)</b><span class="small">각성체 그림을 넣고(없으면 제작기 각성체 포켓몬 그림) 바라는 점을 적어요</span></div>
