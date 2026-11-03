@@ -1631,7 +1631,7 @@ label.tgc:has(input:focus-visible){outline:2px solid var(--yel)}
  .bc{grid-template-columns:24px minmax(0,1fr)}.bc .bop{width:24px;height:24px}
 }
 /* 10-22 「PL 권한으로」는 조작판 둘째 줄 오른쪽 끝 (BGM 칸 바로 아래) */
-.gmrow .gmh{margin-left:auto}
+.gmrow .gmh{margin-left:0}   /* 11-03 13:22 망령 「PL 권한으로 삐져 나왔다」: 오른쪽 끝으로 밀지 않고 줄에 이어 붙인다 */
 .chip.pvpc{background:#5a2330;border-color:#c0405c;color:#ffd7df;font-weight:700;letter-spacing:1px}   /* 11-03 PVP 설정 띠 */
 /* 바로 고치기 (시트 · 상세 창) */
 .qe,.dxed{cursor:pointer;border-radius:4px;outline:1px dashed transparent;outline-offset:2px;transition:outline-color .12s,background .12s}
@@ -5003,7 +5003,7 @@ html[data-vt="mm"] .memon .medet{border-color:rgba(20,16,12,.4)}
 .bdlt{font-family:var(--lab);font-size:14px;padding:1px 8px;border:1px solid var(--yel);color:var(--yel);white-space:nowrap}
 .bdlt.hot{border-color:var(--red);color:var(--red);animation:bdlblink 1s steps(2) infinite}.bdlt.over{background:var(--red);color:#fff;border-color:var(--red)}
 @keyframes bdlblink{50%{opacity:.35}}
-.dlset{display:inline-flex;align-items:center;gap:3px;font-size:12px;color:var(--mute);white-space:nowrap}.dlset input{width:54px;padding:2px 4px;font-size:13px}
+.dlset{display:inline-flex;align-items:center;gap:3px;font-size:12px;color:var(--mute);white-space:nowrap}.dlset input{width:46px;padding:2px 4px;font-size:13px}
 .snapbtns{display:inline-flex;gap:4px;flex-wrap:wrap}
 .stc[data-stinfo],.stchip[data-stinfo]{cursor:help}
 .stpop{position:fixed;z-index:120;background:var(--panel,#1b1b22);color:var(--fg,#fff);border:2px solid var(--yel);box-shadow:4px 4px 0 #000;padding:8px 10px;font-size:13px;line-height:1.5;max-height:50vh;overflow:auto}
