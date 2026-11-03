@@ -14,7 +14,8 @@ window.OM_PPOOL=(()=>{
  /* 배틀 중이면 배틀 쪽 사본 (빌려 쓴 트레이너는 srcTid · 포켓몬은 rid 로 찾는다) */
  const B=()=>{const b=S().battle||{};return b.started&&!b.done?b:null};   /* 10-31: 던전으로 돌아온 배틀(done)은 끝난 것 — 시트 쪽 횟수를 본다 */
  /* 10-31 망령 「2체 3파티가 디폴트」: 2체 기준 트레이너는 제작기에서 고른 4식 · 6령(twoPick)만 가득 값이 있다 (1인 4식 1 · 6령 2). 나머지 항목은 0 */
- function maxOf(tid,src){const t=RT()[tid]||{};src=src||t;let FL={};try{FL=OO().fill(src,src.orderBase||1)||{}}catch(e){FL={}}if(!t.two||!t.twoPick)return FL;const pk=t.twoPick;const o={};for(const k in FL){const m=k.match(/^(order|command)_([a-z]+)$/);o[k]=m&&((m[1]==='order'?pk.o:pk.c)||[]).includes(m[2])?FL[k]:0}return o}
+ /* 11-04 망령 「아니스는 각성체 패널티 아냐?」: 미사그 각성체 대가(지시)로 0회가 된 종류(misag.ordOff)는 가득 값도 0 — 쉼터 휴식이 대가로 뺀 4식 · 6령을 다시 채우던 것 */
+ function maxOf(tid,src){const t=RT()[tid]||{};src=src||t;let FL={};try{FL=OO().fill(src,src.orderBase||1)||{}}catch(e){FL={}}{const off=((t.misag||src.misag||{}).ordOff)||null;if(off){const o2={};for(const k in FL){const m=k.match(/^(order|command)_([a-z]+)$/);o2[k]=m&&((m[1]==='order'?off.o:off.c)||[]).includes(m[2])?0:FL[k]}FL=o2}}if(!t.two||!t.twoPick)return FL;const pk=t.twoPick;const o={};for(const k in FL){const m=k.match(/^(order|command)_([a-z]+)$/);o[k]=m&&((m[1]==='order'?pk.o:pk.c)||[]).includes(m[2])?FL[k]:0}return o}
  const bTr=tid=>{const b=B();if(!b)return null;const T=b.trainers||{};return T[tid]||Object.values(T).find(x=>x&&x.srcTid===tid)||null};
  const bMon=mid=>{const b=B();if(!b)return null;const M=b.mons||{};return M[mid]||Object.values(M).find(x=>x&&x.rid===mid)||null};
  /* 한 사람의 4식 · 6령: [{tid, kind, key, name, left, max}] — max = 제작한 값(가득) */

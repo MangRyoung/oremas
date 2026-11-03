@@ -1,0 +1,111 @@
+{
+ "id": "md4_cave_202611031020",
+ "name": "md4_cave_202611031020",
+ "dungeon": "md4_cave",
+ "party": [
+  "id:3qkrhgl5",
+  "id:83782wd6",
+  "id:b3s7uh4z"
+ ],
+ "n": 60,
+ "seed": 1,
+ "adjust": {},
+ "policy": {},
+ "at": "2026-11-03T10:21:09.600Z",
+ "snapshot": "snapshot.json",
+ "agg": {
+  "n": 60,
+  "wipe": 0.8,
+  "boss": 0.2,
+  "endHp": 0.03651666666666666,
+  "fainted": 5.533333333333333,
+  "monsTotal": 6,
+  "checks": 4.15,
+  "ok": 0.5381526104417671,
+  "crit": 0.3373493975903614,
+  "cost": 0,
+  "fail": 0.46184738955823296,
+  "fumble": 0,
+  "alone": 0,
+  "covers": 1.6666666666666667,
+  "inou": 2,
+  "injuries": 0.25,
+  "injAny": 0,
+  "injSevere": 0,
+  "penDmg": 0,
+  "perCheck": {
+   "낙석을 막아 선다 (10)": {
+    "n": 60,
+    "ok": 59,
+    "cost": 0,
+    "fail": 1,
+    "alone": 0,
+    "inou": 60,
+    "cover": 1,
+    "who": {
+     "오토나시 코유키": 60
+    }
+   },
+   "무너질 바위를 읽는다 (15)": {
+    "n": 60,
+    "ok": 0,
+    "cost": 0,
+    "fail": 60,
+    "alone": 0,
+    "inou": 0,
+    "cover": 59,
+    "who": {
+     "오토나시 코유키": 60
+    }
+   },
+   "어둠 속 기척을 읽는다 (10)": {
+    "n": 60,
+    "ok": 56,
+    "cost": 0,
+    "fail": 4,
+    "alone": 0,
+    "inou": 60,
+    "cover": 0,
+    "who": {
+     "오토나시 코유키": 60
+    }
+   },
+   "다친 포켓몬을 응급 처치한다 (12)": {
+    "n": 36,
+    "ok": 5,
+    "cost": 0,
+    "fail": 31,
+    "alone": 0,
+    "inou": 0,
+    "cover": 31,
+    "who": {
+     "전은영": 36
+    }
+   },
+   "물길을 함께 건넌다 (12)": {
+    "n": 33,
+    "ok": 14,
+    "cost": 0,
+    "fail": 19,
+    "alone": 0,
+    "inou": 0,
+    "cover": 9,
+    "who": {
+     "전은영": 33
+    }
+   }
+  },
+  "bossReach": 1,
+  "bossWin": 0.2,
+  "bossTurns": 4.483333333333333,
+  "bossKos": 5.533333333333333,
+  "bossPhases": 2.533333333333333,
+  "bossFoes": 4,
+  "bossRaid": 3,
+  "battles": 2.85,
+  "bturns": 3.0935672514619883,
+  "bkos": 7.566666666666666,
+  "orders": 1.75,
+  "commands": 3.6166666666666667
+ }
+}
