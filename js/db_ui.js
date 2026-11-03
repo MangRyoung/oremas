@@ -38,7 +38,7 @@ window.OM_DB_UI=(()=>{
   $('#dbkinds',md).innerHTML=KINDS.map(([k,n])=>`<button class="tab2 ${UI.kind===k?'on':''}" data-kind="${k}">${n} <small>${all(k).length}</small></button>`).join('');
   $('#dbkinds',md).querySelectorAll('[data-kind]').forEach(b=>b.onclick=()=>{UI.kind=b.dataset.kind;UI.tag='';UI.sel='';UI.lim=200;render()});
   $('#dbtitle',md).textContent=(UI.pick?'고르기 — ':'')+KINDS.find(x=>x[0]===UI.kind)[1];
-  const tb=$('#dbtools',md);if(tb){tb.innerHTML=A().ST.role==='gm'?`${UI.kind!=='state'?'<button class="btn sm" id="dbnew">+ 새로</button>':''}<button class="btn sm ghost" id="dbsync" title="제작기 DB 수정은 GM 화면이 2분마다 · 창으로 돌아올 때 자동으로 가져온다. 이 단추는 전부 다시 읽기">제작기 다시 읽기</button>`:'';const nw=$('#dbnew',md);if(nw)nw.onclick=()=>openEdit(UI.kind,'',true);const sy=$('#dbsync',md);if(sy)sy.onclick=syncMaker}
+  const tb=$('#dbtools',md);if(tb){tb.innerHTML=A().ST.role==='gm'?`${UI.kind!=='state'?'<button class="btn sm" id="dbnew">+ 새로</button>':''}<button class="btn sm ghost" id="dbsync" title="제작기 DB 수정은 GM 화면이 2분마다 · 창으로 돌아올 때 자동으로 가져온다. 이 단추는 전부 다시 읽기">제작기 다시 읽기</button>${roomRm().length?`<button class="btn sm" id="dbpushrm" title="이 방에서 직접 고친 레디메이드 구문을 제작기 레디메이드 DB 로 올린다">방 레디메이드 → 제작기 (${roomRm().length})</button>`:''}`:'';{const pr=$('#dbpushrm',md);if(pr)pr.onclick=pushRm}const nw=$('#dbnew',md);if(nw)nw.onclick=()=>openEdit(UI.kind,'',true);const sy=$('#dbsync',md);if(sy)sy.onclick=syncMaker}
   const cnt={};all(UI.kind).forEach(r=>r.tags.forEach(t=>{const b=t.replace(/\s*\(.*\)$/,'');cnt[b]=(cnt[b]||0)+1}));
   const top=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]).slice(0,14);
   $('#dbtags',md).innerHTML=top.map(t=>`<button class="chip ${UI.tag===t?'on':''}" data-tag="${esc(t)}">${esc(t)} <small>${cnt[t]}</small></button>`).join('');
@@ -169,5 +169,26 @@ window.OM_DB_UI=(()=>{
  function startAuto(){if(AUTO)return;AUTO=true;setTimeout(pullMaker,5000);setInterval(pullMaker,120000);addEventListener('focus',()=>setTimeout(pullMaker,300));document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(pullMaker,300)})}
  /* 시트·배틀에서 쓰는 한 줄 요약 (특성/소지품 이름 → 효과 문구 HTML) */
  function effectHtml(kind,name){const d=DB();if(kind==='trait'){const v=(d.traits||{})[name];return v?pretty(v.multi||v.single):''}if(kind==='item'){const v=(d.items||{})[name];return v?pretty(v.eff):''}return ''}
- return {open,pretty,effectHtml,applyOverride,syncMaker,pullMaker,startAuto,ensureMaker,fillEff};
+
+ /* 11-03 22:45 망령 「레디메이드 DB 를 (제작기로) 따로 뺐는데 여기에 구문 있는 걸 아무것도 안 옮겼잖니」: 이 방에서 고친 레디메이드(dbx.rm 의 src 'room' · 옛 것은 src 없음)를
+    제작기 레디메이드 DB 수정 행(docs kind dbedit · id rm.<키 hex> · 제작기 dbEditDocs 와 같은 꼴)으로 올린다. 올린 것은 이 방에서 src 'maker' 로 바꿔 앞으로 제작기를 따른다 */
+ const fnv=s=>{let h=2166136261;for(const c of String(s)){h^=c.codePointAt(0);h=Math.imul(h,16777619)>>>0}return h.toString(16)};
+ const keySeg=k=>{const h=[...new TextEncoder().encode(String(k))].map(b=>b.toString(16).padStart(2,'0')).join('');return h.length<=180?h:'h'+fnv(k)+h.slice(0,40)};
+ function roomRm(){const ov=((A().ST.state.dbx||{}).rm)||{};return Object.entries(ov).filter(([k,v])=>v&&!v.deleted&&(v.src==='room'||!v.src)&&k)}
+ async function pushRm(){if(A().ST.role!=='gm')return A().toast('GM 만');const FX=window.OM_FX;if(!FX)return A().toast('구문 엔진을 아직 못 불러왔다');if(!window.OM_STORE||!window.OM_STORE.makerPut)return A().toast('제작기 저장소에 쓸 수 없다');
+  const L=roomRm();const RB=(window.OM_DB||{}).readymade||{};
+  if(!L.length)return A().toast('이 방에서 직접 고친 레디메이드가 없다 — 옮길 것 없음');
+  const dsl=o=>FX.unparse((o&&o.ops)||[]).join('\n');
+  const rows=L.map(([k,v])=>{const b=RB[k];const same=b&&dsl(b)===dsl(v)&&!!b.manual===!!v.manual&&String(b.text||'')===String(v.text||'');return {k,v,b,same}}).sort((x,y)=>(x.same-y.same)||x.k.localeCompare(y.k,'ko'));
+  const md=A().openModal(`<div class="mhead"><h2>방 레디메이드 → 제작기 레디메이드 DB</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+   <p class="small dim" style="margin:0 0 6px">이 방에서 직접 고친 레디메이드 ${rows.length}개. 체크한 것을 제작기 레디메이드 DB(공유)에 올리고, 이 방은 앞으로 제작기 것을 따른다. 기본 구문과 같은 것은 꺼 두었다.</p>
+   <div style="max-height:60vh;overflow:auto"><table class="small" style="width:100%;border-collapse:collapse">${rows.map((r,i)=>`<tr style="border-top:1px solid var(--line)"><td style="width:24px;vertical-align:top"><input type="checkbox" data-pr="${i}" ${r.same?'':'checked'}></td><td style="vertical-align:top;white-space:nowrap"><b>${esc(r.k)}</b>${r.b?'':' <span class="chip">새 이름</span>'}${r.same?' <span class="dim">기본과 같음</span>':''}</td><td style="vertical-align:top;white-space:pre-wrap;font-family:ui-monospace,Consolas,monospace">${esc(dsl(r.v)||(r.v.manual?'(손으로)':'(비어 있음)'))}${r.b&&!r.same?`<div class="dim" style="margin-top:2px">기본: ${esc(dsl(r.b)||'(없음)')}</div>`:''}</td></tr>`).join('')}</table></div>
+   <div class="row" style="margin-top:8px"><span class="sp"></span><button class="btn" data-x>취소</button><button class="btn pri" id="prgo">체크한 것 올리기</button></div>`);
+  $('#prgo',md).onclick=async()=>{const pick=[...md.querySelectorAll('[data-pr]')].filter(x=>x.checked).map(x=>rows[+x.dataset.pr]);if(!pick.length)return A().toast('고른 것이 없다');
+   $('#prgo',md).disabled=true;let ok=0;const fail=[];
+   for(const r of pick){const v=r.v;const row=[r.k,String(v.text||''),dsl(v),v.manual?'O':'',v.p!=null&&+v.p>0?String(v.p):''];
+    try{await window.OM_STORE.makerPut('dbedit','rm.'+keySeg(r.k),{kind:'rm',key:r.k,row,custom:false,pos:RB[r.k]?-1:99999});ok++}catch(e){fail.push(r.k+' ('+e.message+')')}}
+   const ov=JSON.parse(JSON.stringify(((A().ST.state.dbx||{}).rm)||{}));for(const r of pick)if(!fail.some(f=>f.startsWith(r.k+' ('))&&ov[r.k])ov[r.k].src='maker';await A().set(['dbx','rm'],ov);
+   A().closeModal();A().toast(`제작기 레디메이드 DB 에 ${ok}개 올렸다${fail.length?` · 실패 ${fail.length}`:''} — 제작기는 새로고침하면 보인다`);if(fail.length)A().sysLog('【레디메이드 옮기기 실패】\n'+fail.join('\n'),'sys')}}
+ return {open,pretty,effectHtml,applyOverride,syncMaker,pullMaker,startAuto,ensureMaker,fillEff,pushRm,roomRm};
 })();
