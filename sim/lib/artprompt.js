@@ -3,6 +3,7 @@
    = 괴물 바탕 줄(C, 늘) + 변이 특징 몇 개(D, 몹마다 무작위 — 공통 묶음 + 타입 묶음에서) + 등급별 위압감.
    같은 몹 id 면 같은 특징이 나온다(씨앗 = id). 'cute but wild' 는 쓰지 않는다. */
 'use strict';
+(function(){
 const BASE='1.3::fearsome monster, mutated beast, predatory body, dark fantasy monster design, monster-collecting game creature but menacing, readable silhouette::';
 const NEG='-1.2::cute, chibi, kawaii, round eyes, plush, cuddly::, -1.5::frame, border, vignette, circle background, white background, card::';
 /* 변이 특징 — 공통 (몸의 꼴이 어긋남 · 낯선 부속 · 질감) */
@@ -27,11 +28,9 @@ function mutation(e,o){o=o||{};const r=rngOf(o.seed||e.id||e.name);const g=o.bos
  const pool=COMMON.slice();const ty=[].concat(...(e.types||[]).map(t=>BY_TYPE[t]||[]));const out=[];if(ty.length)out.push(ty[Math.floor(r()*ty.length)]);
  while(out.length<n&&pool.length){const i=Math.floor(r()*pool.length);const t=pool.splice(i,1)[0];if(FACE.test(t)&&out.some(x=>FACE.test(x)))continue;out.push(t)}
  return {traits:out,style:`${BASE}, 1.5::${out.join(', ')}::, ${SIZE[g]||SIZE.C}, ${NEG}`}}
-module.exports={BASE,NEG,COMMON,BY_TYPE,FACE,mutation};
 /* 옛 포트 태그(job_dungeon3 의 it.tags)에서 아기자기 쪽 말을 걷어내고 변이 줄을 붙인다 */
 const SOFT=/,\s*(cute but wild|cute|soft rounded shapes|simple readable silhouette|small to medium size|small size|medium size|large size[^,]*|large and imposing size|huge[^,]*|shielded by a calm protective aura)(?=,|$)/g;
 function retag(tags,e,o){const m=mutation(e,o);const t=(','+tags).replace(SOFT,'').slice(1).trim();return {traits:m.traits,tags:`${t}, ${m.style}`}}
-module.exports.retag=retag;module.exports.SOFT=SOFT;
 /* 11-03 20:10 망령 「아직 포켓몬 그림체풍이 너무 진하다」 — 원인: 몹 바탕 줄(job.mstyleFk)에 fakemon · pokemon (creature) · thick outlines ·
    kimhiro 1.5 · kankan33333(포켓몬 팬아트 쪽 작가), 태그 첫머리 'original fakemon creature' · 'X type creature', 네거티브의 extra limbs · bad anatomy(변이를 막음).
    → 변이체 전용 바탕 줄 두 갈래(시안). 포켓몬 말은 네거티브로. */
@@ -52,9 +51,18 @@ MSTYLE.H2=ART(1.0,1.1)+'1.4::no humans, monster, creature, solo::, 1.2::dark fan
 const MNEG='1.5::pokemon (creature), pokemon, fakemon, digimon, mascot, anime creature::, 1.2::cute, chibi, kawaii, round eyes, plush, cuddly, simple shading, flat color, thick outlines::, 1.5::frame, border, vignette, circle background, white background, card::';
 /* H2 용: thick outlines 는 작가 줄에 있으니 네거티브에서 뺌, 틀 · 동그란 눈을 더 세게 */
 const MNEG2='1.5::pokemon (creature), pokemon, fakemon, digimon, mascot, anime creature::, 1.3::cute, chibi, kawaii, round eyes, big eyes, dot eyes, innocent, plush, cuddly, smiling happily::, 1.8::frame, picture frame, border, white border, vignette, circle frame, round frame, porthole, framed, letterboxing, card, white background::';
-module.exports.MNEG2=MNEG2;
+
 const MNEG_BASE='human, humanoid, 1girl, 1boy, multiple views, multiple creatures, text, caption, english text, trading card, card frame, border, watermark, signature, logo, cropped, out of frame, lowres, worst quality, gore';
 /* 태그에서 포켓몬 말 걷기 */
 function depoke(t){return t.replace(/original (fakemon|pokemon-style|pokemon-like|pokemon) creature based on (an? )?/g,'monstrous creature based on $2').replace(/(\w+(?: and \w+)*) type creature/g,'$1 element').replace(/,\s*0?\.?\d*::pokemon \(creature\)::/g,'')}
 function mtags(tags,e,o){const r=retag(tags,e,o);return {traits:r.traits,tags:depoke(r.tags.replace(BASE,'1.3::mutated beast, predatory body, menacing, readable silhouette::').replace(NEG+'','').replace(/,\s*$/,''))}}
-module.exports.MSTYLE=MSTYLE;module.exports.MNEG=MNEG;module.exports.MNEG_BASE=MNEG_BASE;module.exports.depoke=depoke;module.exports.mtags=mtags;
+
+/* 11-03 21:50 망령 「생성 규칙엔 다 반영 했어?」 → 새 몹 포트도 이 규칙으로: 바탕 태그(baseTags) → 변이 + 포켓몬 말 걷기(mtags) → H3 바탕 줄(MSTYLE.H2) · 금지 칸(MNEG_BASE + MNEG2).
+   T = 표 {TYPE_EN, KIND_EN, SIZE_EN, ROOT_EN} (시뮬 화면 ui/index.html 의 것 — 화면은 그대로 넘기고, 노드 도구는 tools/portrait_job.js 가 화면 파일에서 읽어 온다). bg = 배경 한 줄. */
+function baseTags(e,T,o){o=o||{};const TT=(e.types||[]).map(t=>(T.TYPE_EN||{})[t]||[t,'','']);const an=(T.ROOT_EN||{})[e.root]||'creature';const K=(T.KIND_EN||{})[e.kind]||['',''];
+ const col=[...new Set(TT.flatMap(x=>String(x[2]).split(', ')).filter(Boolean))].join(' and ');
+ return [`1.3::monstrous creature based on a ${an}::`,`${TT.map(x=>String(x[0]).toLowerCase()).join(' and ')} element`,TT.map(x=>x[1]).filter(Boolean).join(', '),col?`color palette ${col}`:'',K[1]||'',o.boss?'1.2::imposing boss presence, slightly larger and fiercer::':'',o.bg?`background: ${o.bg}`:''].filter(Boolean).join(', ')}
+function portrait(e,T,o){o=o||{};const m=mtags(o.tags||baseTags(e,T,o),e,{seed:o.seed||e.id,boss:o.boss});return {prompt:MSTYLE.H2+m.tags,neg:MNEG_BASE+', '+MNEG2,traits:m.traits}}
+const API={BASE,NEG,COMMON,BY_TYPE,FACE,mutation,retag,SOFT,MSTYLE,MNEG,MNEG2,MNEG_BASE,depoke,mtags,baseTags,portrait};
+if(typeof module!=='undefined'&&module.exports)module.exports=API;else window.ARTP=API;
+})();

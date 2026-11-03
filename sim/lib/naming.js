@@ -106,7 +106,7 @@ const MCLIP={여우:['호'],늑대:['랑'],고양이:['묘'],곰:['웅'],매:['�
 const MEND={C:['르','스','크','드','그','트','른','브','로','라'],B:['로스','라크','고르','렌','투스','마르','락','디스','로크','반'],A:['고스','아스','네스','로크','투르','모르','라스','디온','가르','에스']};
 const MDRAGON=['곤','드라','니르'];
 /* 낱말로 읽히면 뺀다 (11-03 시험에서 나온 것 — 잔소리 등) */
-const WORDS=new Set(['잔소리','무소리','도마뱀','해파리','소라게','개구리','두꺼비','허수','공수','회충','독사','토사','흑사','백사','해충','익충','화사','진사','묘사','토끼','오리','망사','환수','몽사','공사','회사','동사','석사','철사','강사','명사','귀수','야수','요수','동충','풍조','길조','흉조','해달','해마','도오']);
+const WORDS=new Set(['잔소리','무소리','도마뱀','해파리','소라게','개구리','두꺼비','허수','공수','회충','독사','토사','흑사','백사','해충','익충','화사','진사','묘사','토끼','오리','망사','환수','몽사','공사','회사','동사','석사','철사','강사','명사','귀수','야수','요수','동충','풍조','길조','흉조','해달','해마','도오','사서','토하']);
 const CUTE=/(깡|링|냥|츄|꼬|뽀|퐁|폼|콩|몽실|보송|토실|방긋|솜|리본|뿌직|꼬물|붕붕|댕|멍|고미|메에|부기|쪽|미$|코$|롱$|이$|니$|키$)/;
 /* 두 결을 섞지 않는다(11-03 시험: 「마르뱀 · 몽호크 · 잔소리」처럼 라틴 뿌리 + 한자 조각이 어색) —
    ① 라틴 결: 라틴 · 신화 뿌리(2음절) + 영어 · 라틴 조각 + 끝(등급)     예) 녹스루프 · 아비스크라켄 · 에테랜턴
@@ -153,7 +153,7 @@ function nameM(rng,o){const ty=(o.types||[]).filter(t=>MROOT[t]);if(!ty.length)t
  const style=clips.some(isH)&&(!clipsEn.length||rng()<(o.hanja!=null?o.hanja:HANJA))?'hanja':'latin';
  let C=[...new Set(mCands(rng,ty,clips,ends,g,clipsEn,beast,style))].filter(n=>ok(n,Object.assign({},o,{grade:'A'}))&&!/(.).*\1/.test(n)&&!WORDS.has(n));   /* 같은 음절이 어디든 두 번(사뱀사)이면 뺀다 */
  if(!C.length&&style==='hanja')C=[...new Set(mCands(rng,ty,clips,ends,g,clipsEn,beast,'latin'))].filter(n=>ok(n,Object.assign({},o,{grade:'A'}))&&!/(.).*\1/.test(n)&&!WORDS.has(n));
- const mine=o.mine||(o.mine=new Set());   /* 이번 묶음에서 새로 지은 이름만 겹침 검사(실제 포켓몬 이름까지 보면 너무 좁아짐) */
+ const mine=o.mine||(o.used&&(o.used.__mine||(o.used.__mine=new Set())))||(o.mine=new Set());   /* 한 생성 묶음(같은 used)끼리 앞머리 겹침을 본다 */   /* 이번 묶음에서 새로 지은 이름만 겹침 검사(실제 포켓몬 이름까지 보면 너무 좁아짐) */
  if(C.length){const sc=new Map(C.map(n=>[n,mScore(n,g,rng,mine)]));C.sort((a,b)=>sc.get(b)-sc.get(a));o.used.add(C[0]);mine.add(C[0]);return C[0]}
  let k=2,n;do n=pick(rng,MROOT[ty[0]])+(clipsEn[0]||clips[0]||'')+k++;while(o.used.has(n));o.used.add(n);mine.add(n);return n}
 /* 실제 포켓몬 한국어 이름 (제작기 data/db.js 의 old) — 겹치지 않게 */

@@ -443,6 +443,7 @@ td.n,th.n,.mono{font-variant-numeric:tabular-nums}
 <section id="t-tbl" hidden><div class="card wrap" id="tbl"></div></section>
 </main>
 <div id="toast"></div>
+<script src="/lib/artprompt.js"></script>
 <script>
 const $=(s,r)=>(r||document).querySelector(s),$$=(s,r)=>[...(r||document).querySelectorAll(s)];
 const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -859,7 +860,10 @@ const rootOf=n=>{n=String(n||'');let best='';for(const k of Object.keys(ROOT_EN)
 let IMGSTYLE=(()=>{try{return localStorage.getItem('sim_imgstyle')||''}catch(x){return ''}})()||'original creature in the style of official Pokémon artwork (Ken Sugimori), clean line art, cel shading, full body, centered, plain white background, no text, no watermark';
 function imgPrompt(e){const ty=e.types||[];const T=ty.map(t=>TYPE_EN[t]||[t,'','']);const hab=(e.hab||[])[0];const K=KIND_EN[e.kind]||['',''];const ks=['HP','공격','방어','특공','특방','스피드'];const ke=['bulky body','strong jaws and limbs','thick armor','glowing energy organs','protective shell or aura','sleek streamlined body'];const b=e.base||[];const top=b.length?b.indexOf(Math.max(...b)):-1;
  if(e.origin==='old'){const sp=e.sp||e.name;return {ko:`포켓몬 「${sp}」 공식 일러스트 스타일, 전신, 흰 배경, 글자 없음`,en:`${sp} (Pokémon) official artwork, ${IMGSTYLE}`}}
- const r=e.root||rootOf(e.oldName||e.name);const an=ROOT_EN[r]||'creature';
+ const r=e.root||rootOf(e.prevName||e.oldName||e.name);const an=ROOT_EN[r]||'creature';
+ /* 11-03 망령 「생성 규칙엔 다 반영?」: 오리지널은 미사그 변이체 그림체(H3 — lib/artprompt.js). NAI 프롬프트 + 금지 칸(UC). 옛 「Ken Sugimori 공식 일러스트」 줄은 실제 포켓몬만 */
+ if(window.ARTP){const P=ARTP.portrait(Object.assign({},e,{root:r}),{TYPE_EN,KIND_EN,SIZE_EN,ROOT_EN},{bg:hab?(HAB_EN[hab]||hab):'',boss:e.role==='보스'});
+  return {ko:`미사그 변이체 「${e.name}」 — ${r||'?'} 바탕 · 타입 ${ty.join(' · ')}${e.kind?' · '+e.kind:''} · 변이: ${P.traits.join(', ')}\n(NovelAI V5 · 1024×1024 · 프롬프트 = 영어 칸, 금지 칸 = 영어 칸 맨 아래 UC 줄)`,en:P.prompt+'\n\nUC: '+P.neg}}
  const ko=[`오리지널 포켓몬 「${e.name}」`,r?`${r}를 바탕으로 한 생물`:'',`타입 ${ty.join(' · ')}`,e.kind?`역할 ${e.kind}`:'',top>=0?`가장 높은 능력 ${ks[top]}`:'',e.pride?`크기 ${({C:'작음',['C+']:'작음~보통',B:'보통',['B+']:'큼',A:'아주 큼'})[e.pride]||''}`:'',hab?`서식지 ${hab}`:'',e.concept?`설정: ${e.concept}`:'',e.ability?`특성 ${e.ability}`:'','포켓몬 공식 일러스트 스타일, 전신, 흰 배경, 글자 없음'].filter(Boolean).join(', ');
  const en=[`An original Pokémon-like creature based on a ${an}`,`${T.map(x=>x[0]).join('/')} type`,T.map(x=>x[1]).filter(Boolean).join(', '),`color palette: ${[...new Set(T.flatMap(x=>String(x[2]).split(', ')).filter(Boolean))].join(', ')}`,K[0]?`${K[0]}, ${K[1]}`:'',top>=0?`emphasis on ${ke[top]}`:'',e.pride?`${SIZE_EN[e.pride]||''} size`:'',hab?`suits ${HAB_EN[hab]||hab} (background stays plain)`:'',IMGSTYLE].filter(Boolean).join(', ');
  return {ko,en}}

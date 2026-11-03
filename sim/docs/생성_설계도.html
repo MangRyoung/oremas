@@ -128,7 +128,7 @@ svg .mute{fill:var(--mute)}
 
 <section id="abil">
  <h2>오리지널 특성 <small>lib/abilgen.js · abilread.js</small></h2>
- <p class="lead">제작기에 실제로 있는 특성 꼴을 틀로 삼아요. 틀마다 기준 특성의 TO를 출발점으로 두고, 세기 손잡이 하나마다 TO를 0.5씩 올리거나 내려요.</p>
+ <p class="lead"><b>11-03 망령 「오리지널 특성은 엉망 — 이름만 바꾼 것 · 밸런스」 → 야생엔 더 안 써요(origAbilRate 0).</b> 대신 기존 특성 고르기(야생 절)와 손으로 짠 <a href="#misag">미사그 고유 특성 12</a>. 아래는 옛 생성기 기록이에요. 제작기에 실제로 있는 특성 꼴을 틀로 삼아요. 틀마다 기준 특성의 TO를 출발점으로 두고, 세기 손잡이 하나마다 TO를 0.5씩 올리거나 내려요.</p>
  <div class="flow">
   <div class="st"><b>틀 고르기</b><span>제작기 특성에 있는 효과 꼴 10가지</span></div>
   <div class="st"><b>기준 TO</b><span>그 꼴의 기존 특성 TO (예: 악의마음 1)</span></div>
@@ -152,12 +152,12 @@ svg .mute{fill:var(--mute)}
   <div class="st"><b>역할형 씨앗</b><span>물리 · 특수 스위퍼, 물리 탱커, 특수 벽, 밸런스, 쌍두</span></div>
   <div class="st"><b>흔들기 · 다듬기</b><span>칸마다 ±6~12 흔들고, 계산 종족치가 계단 안쪽 끝에 올 때까지 1~3씩</span></div>
   <div class="st"><b>콘셉트</b><span>타입 짝 표 · 체형에 맞는 동물 바탕(root) · 서식지 문장</span></div>
-  <div class="st"><b>이름 (11-03 적용)</b><span>lib/naming.js — 타입 소리 뿌리(우리말 찌릿 · 첨벙 · 꽁 / 영어 볼트 · 아쿠 · 프로) + 동물 조각(냥 · 부기 · 울프 · 캣) + 끝음절(작은 것 리 · 츄, 보스급 스 · 라스 · 왕), 3~4음절(A 는 5까지). 실제 포켓몬 1136종 · 쓴 이름 · 같은 음절 연달아 피함, 받침 · 영어 조각 뒤엔 작은 끝음절 안 붙임. 「수식어 낱말 + 동물 낱말」(철권완력개)은 안 씀. 다시 짓기 = sim.js rename --save (손질한 이름 nameFix 는 지킴)</span></div>
-  <div class="st"><b>특성</b><span>기준 TO 안 점수제, 45%는 오리지널</span></div>
+  <div class="st"><b>이름 v4 (11-03 밤)</b><span>lib/naming.js nameM — 미사그 변이체 결. 라틴 · 신화 뿌리(타입마다 16) + 외신 조각 24(아자 · 니아 · 크솔 · 샤그 · 바엘 …) + 동물 조각 + 등급 끝. 꼴 다섯(뿌리+조각 · 조각+뿌리 끝 · 외신+조각 · 뿌리 첫 음절+조각 · 뿌리+외신) + 동양풍 요괴 결 약 4할(흑묘수 · 익랑귀왕). 한 묶음 안 앞 두 음절이 같으면 크게 깎음(225종 겹침 55 → 0~2). 귀여운 끝말 · 낱말로 읽히는 것 · 같은 음절 두 번 뺌.</span></div>
+  <div class="st"><b>특성 v2 (11-03 밤)</b><span>lib/abilpick.js — 제작기 기존 특성만(이름만 바꾼 생성 특성은 기본 0%). 같은 TO · 타입/역할 점수 · 시뮬이 읽는 것 먼저 · 한 특성 2~3번까지. 뺌: 타입 추가 · 걸리지 않는 상태 조건 · 자기 상태 이상 조건 · 날씨/필드(제 타입 아닌) · 성별 · 교체/소지품 · 기술 갈래 의존 · 남의 타입 강화. 같은 던전 안 겹침 없음(cast 도 같은 특성 몹을 피함).</span></div>
   <div class="st"><b>기술</b><span>4~6개 · 변화기 1개 이상 · 소켓 상한까지 채움</span></div>
   <div class="st"><b>서식지</b><span>본 서식지 1 + 둘째 1 (평균 1.5곳)</span></div>
   <div class="st"><b>1:1 검토</b><span>같은 묶음 8체와 24판. 25% 미만 · 78% 초과면 다시 (최대 3회)</span></div>
-  <div class="st"><b>그림</b><span>동물 바탕 · 타입 · 역할 · 서식지로 이미지 프롬프트를 만들고, 만든 그림을 편집 창에 넣어요. (11-03) 미사그 던전 몬스터는 NAI 포트(1024², 던전 배경)를 data/wild/img 에</span></div>
+  <div class="st"><b>그림 H3 (11-03 밤)</b><span>lib/artprompt.js portrait — 인물 · 구역 그림과 같은 작가 9명 줄 + 괴물 바탕 + 변이 특징 무작위(공통 31 + 타입 묶음, C 1~2 · B 2 · A/보스 2~3, 얼굴 쪽은 하나, 씨앗 = 몹 id). 포켓몬 말은 금지 칸. 시뮬 야생 편집 창 프롬프트 · tools/portrait_job.js 가 같은 규칙. 실제 포켓몬은 공식 그림 줄.</span></div>
  </div>
  <h3>계단 사다리 (계산 종족치 상한)</h3>
  <div class="scroll"><svg id="ladderSvg" viewBox="0 0 760 170" style="min-width:560px;width:100%;height:auto" role="img" aria-label="계단 사다리"></svg></div>
@@ -168,6 +168,35 @@ svg .mute{fill:var(--mute)}
   <div class="box"><h4>종족치 등급 색</h4><p class="small" style="margin:0 0 6px">카드와 표의 막대는 제작기 등급 색을 따라요.</p><div id="gradeRow" style="display:flex;gap:4px;flex-wrap:wrap"></div></div>
  </div>
  <div class="rev" id="rev-wild"></div>
+</section>
+
+<section id="misag">
+ <h2>미사그 변이체 <small>11-03 · tools/draft_wild.js → apply_wild_v4.js</small></h2>
+ <p class="lead">세계관(학칙 제1장: 외신의 시선 · 타르와 물처럼 뒤섞인 세계 · 생명은 변이, 정신은 광기)에 맞춰 야생 오리지널 225종을 「캠퍼스 변이체」로 다시 짰어요. 이름 v4 · 특성 v2 · 그림 H3 은 야생 절 흐름에 있어요.</p>
+ <h3>미사그 고유 특성 12 <span class="small">한 특성 = 한 몹 · 강점 + 대가 · 글은 웹툴 엔진이 읽는 꼴 + ops(야생 DB abilityAuto)</span></h3>
+ <div class="scroll"><table>
+  <tr><th>특성</th><th class="n">TO</th><th>몹</th><th>효과</th></tr>
+  <tr><td>외신의시선</td><td class="n">1.5</td><td>둠캣모르 (관사 보스)</td><td>등장 때 상대 전체 명중 −1 / 효과가 별로인 기술로 받는 대미지 1.5배</td></tr>
+  <tr><td>은열쇠공명</td><td class="n">1.5</td><td>톡스모르그 (격리층 보스)</td><td>등장 턴 스피드 2배 · 정면 명중 −1</td></tr>
+  <tr><td>굶주린촉수</td><td class="n">1</td><td>니브레기 (바다 보스)</td><td>접촉기를 받으면 상대 스피드 −1 · 1/16 되갚기</td></tr>
+  <tr><td>포자군락</td><td class="n">1</td><td>엽와패 (숲 보스)</td><td>턴 끝 HP 1/16 회복 / 불꽃 2배</td></tr>
+  <tr><td>개변된과거</td><td class="n">1.5</td><td>w214 (A 물 탱커)</td><td>한 번, HP 1/3 이하가 되면 1/2 회복</td></tr>
+  <tr><td>타르피부 · 변이가속 · 광기전염 · 심연응시 · 단절된미래 · 뒤틀린껍질 · 마음의용량</td><td class="n">1</td><td>던전 밖 B 7체</td><td>data/abil/misag_unique_draft.json</td></tr>
+ </table></div>
+ <p class="small">상시 구문(위력 완화 등)은 글 ①에 둬야 등장 때 저절로 걸려요(웹툴 상시 판정은 첫 줄만 봐요). 피격 반응은 글(hitRules)이 읽어요. 한 효과 안에 위력 완화가 둘이면 op.slot.</p>
+ <h3>미사그 던전 8 · 200판 <span class="small">11-03 21시 적용 뒤 · recheck --vn 10</span></h3>
+ <div class="scroll"><table>
+  <tr><th>던전</th><th>난이도</th><th class="n">승률</th><th class="n">목표</th></tr>
+  <tr><td>온실 뒤 덩굴숲</td><td>쉬움</td><td class="n">95%</td><td class="n" rowspan="3">80 ±15</td></tr>
+  <tr><td>등대 아래 조수 동굴</td><td>쉬움</td><td class="n">84%</td></tr>
+  <tr><td>북쪽 관측소 빙벽길</td><td>쉬움</td><td class="n">92%</td></tr>
+  <tr><td>종탑 지하 수맥 갱도</td><td>보통</td><td class="n">73%</td><td class="n" rowspan="3">60 ±15</td></tr>
+  <tr><td>구 교직원 관사</td><td>보통</td><td class="n">62%</td></tr>
+  <tr><td>기록보관소 아래 봉인 서고</td><td>보통</td><td class="n">67%</td></tr>
+  <tr><td>제2 연구동 지하 격리층</td><td>어려움</td><td class="n">24%</td><td class="n" rowspan="2">30 ±15</td></tr>
+  <tr><td>뒷산 분화구 지열 동굴</td><td>어려움</td><td class="n">19%</td></tr>
+ </table></div>
+ <p class="small">NAI 주의: 금지 칸(UC) 안의 −N:: 은 거꾸로 그 말을 불러요(둥근 틀 · 액자의 원인). UC 에는 + 무게만. 긴 문장 특징은 잘 안 따라서 짧은 태그꼴 + 무게 1.5.</p>
 </section>
 
 <section id="dungeon">
@@ -188,7 +217,7 @@ svg .mute{fill:var(--mute)}
   <div class="box"><h4>휴식</h4><p class="small" style="margin:0"><b>짧은 휴식</b>(보스 앞): 전원 HP 1/4 · 빈사는 HP 1 · 상태 회복 · 파티 4식 1 · 6령 1 · 트레이너 상태 1단계.<br><b>중간 휴식</b>: 전원 HP 1/2 · 빈사 HP 1/4 · 상태 회복 · 4식 6령 절반 · 트레이너 1단계.<br><b>숨돌리기</b>: 가장 다친 1체 HP 1/4 + 파티 6령 1 (트레이너 상태는 그대로).<br><b>긴 휴식</b>(던전 밖): 전부 · 트레이너 2단계. 빈사는 다음 방(장면)에서 중상.</p></div>
   <div class="box"><h4>체크 목표 · 판정</h4><p class="small" style="margin:0">11-02: 목표 = 보통 10 · 어려움 12 · 매우 어려움 15 섞기(쉬움 던전 6:3:1 · 보통 4:4:2 · 어려움 2:5:3), 빡센 길 · 어려운 길은 한 칸 위 비율, 쉬움 던전엔 빡센 길 없음. 매우 어려움은 한 길에 1개까지. 판정은 필드 포켓몬(트레이너당 1체, 웹툴 「필드 포켓몬 수」와 같음)만, 커버도 필드 포켓몬만. 빈사 트레이너는 그 방 배틀에 안 나가요. 웹툴로 보낼 때 sk 칸과 메모 줄이 같은 목표를 실어요.</p></div>
  </div>
-<h3>지금 시뮬에 들어 있는 던전 10개 <span class="small">11-02 새로 · 객원 12명 20조합 × 3판 두 번(검증 / 다른 조합) · 소지품 자동 · 은열쇠 기본 덱</span></h3>
+<h3>(옛 기록) 11-02 자동 던전 10개 — 11-03 지움, 지금은 <a href="#misag">미사그 던전 8</a> <span class="small">11-02 새로 · 객원 12명 20조합 × 3판 두 번(검증 / 다른 조합) · 소지품 자동 · 은열쇠 기본 덱</span></h3>
  <div class="scroll"><table>
   <tr><th>난이도</th><th>던전</th><th>id</th><th>서식지</th><th class="n">방 · 갈림길</th><th class="n">검증</th><th class="n">다른 조합</th><th class="n">평균</th><th class="n">목표</th></tr>
   <tr><td rowspan="3"><b>쉬움</b></td><td>백야의 협곡</td><td class="mono small">auto_easy_21103</td><td>설원</td><td class="n">12 · 2</td><td class="n">73%</td><td class="n">75%</td><td class="n"><b>74%</b></td><td class="n" rowspan="3">80 ±10</td></tr>
