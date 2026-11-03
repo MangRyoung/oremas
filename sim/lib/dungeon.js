@@ -150,17 +150,19 @@ async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt
  const pend={fights:[],restDown:0,foeLv:0,bossLv:0,al:+adj.al0||0};const alTrack={n:0,lo:0,mid:0,hi:0,boss:null,max:0};
  /* 경계도 (웹툴 던전 탭과 같은 단계): 30 이상 → 야생 Lv +al30, 70 이상 → +al70, 100 → 자동 실패 */
  const alLv=()=>pend.al>=70?(+adj.al70||0):pend.al>=30?(+adj.al30||0):0;
+ /* 11-04 06:46 망령 「50 이상으로 보스레벨 +5, 70 이상으로 추가로 야생 레벨 +5」: adj.alB50 = 경계도 50 이상이면 보스방 Lv + · adj.alB70 = 70 이상이면 보스방에 더 + (기본 0) — 보스방 레벨은 alLv 에 더한다 */
+ const alBoss=()=>(pend.al>=50?(+adj.alB50||0):0)+(pend.al>=70?(+adj.alB70||0):0);
  /* 조우 */
  const doBattle=async(room,enc)=>{let wild;
   if(enc.mix){/* 여러 트레이너의 포켓몬을 섞은 야생 무리: mix:[{trainer,pick}], 순서대로 이어 붙여 앞에서 n 체(보스 방은 adjust.bossN 이 우선). bossAt 번째가 『와일드 보스』(×1.5), raid:X 면 「레이드 배틀 : X」 */
-   if(!opt.wildFrom&&enc.mix.some(m=>!m.sp&&!m.db))throw new Error('스냅샷 야생을 쓸 수 없음 (wildFrom 없음)');const lvAdd=(+enc.lvAdd||0)+(+adj.wildLv||0)+(enc._extra?0:pend.foeLv)+(enc.boss?pend.bossLv:0)+alLv();if(!enc._extra)pend.foeLv=0;let mons=[],tr=null;
+   if(!opt.wildFrom&&enc.mix.some(m=>!m.sp&&!m.db))throw new Error('스냅샷 야생을 쓸 수 없음 (wildFrom 없음)');const lvAdd=(+enc.lvAdd||0)+(+adj.wildLv||0)+(enc._extra?0:pend.foeLv)+(enc.boss?pend.bossLv+alBoss():0)+alLv();if(!enc._extra)pend.foeLv=0;let mons=[],tr=null;
    for(const src of enc.mix){if(src.db){/* 야생 DB (lib/wilddb.js v2) */const WB=require('./wilddb.js');const e=(WB._cache=WB._cache||WB.fullV2()).find(x=>x.id===src.db||x.name===src.db);if(!e)throw new Error('야생 DB 에 없음: '+src.db);const r=WB.buildEntry(W,e,{lvAdd});tr=tr||r.trainer;mons.push(r.mon);continue}if(src.sp){/* 도감 야생 (lib/dex.js) */const r=require('./dex.js').build(W,src.sp,{lvAdd});tr=tr||r.trainer;mons.push(r.mon);continue}const w=opt.wildFrom(src.trainer,{pick:src.pick,take:src.take,lvAdd});tr=tr||w.trainer;mons=mons.concat(w.mons)}
    const N=enc.boss&&+adj.bossN?+adj.bossN:(+enc.n||mons.length);while(mons.length<N)mons.push(clone(mons[mons.length%Math.max(1,enc.mix.length)]));mons=mons.slice(0,N);
    const seen={};mons.forEach((x,i)=>{seen[x.id]=(seen[x.id]||0)+1;if(seen[x.id]>1)x.id=x.id+'_d'+i});
    const bi=enc.boss?(+enc.bossAt||0):-1;const X=enc.boss?(adj.raidX!=null&&adj.raidX!==''?+adj.raidX:(+enc.raid||0)):0;
    mons.forEach((x,i)=>{require('./wild.js').tag(x,i===bi);x.hp.cur=x.hp.max;delete x.raid;if(i===bi&&X>0)x.raid={segments:X,broken:0,phase:1,mode:adj.raidMode==='cap'?'cap':'barrier'}});
    wild={trainer:tr,mons}}
-  else if(enc.trainer){/* 제작기 스냅샷의 트레이너를 야생 무리로 (예: 무진 NPC/숲 속의 폐가) — opt.wildFrom 은 서버 · 명령줄이 넘긴다 */if(!opt.wildFrom)throw new Error('스냅샷 야생을 쓸 수 없음 (wildFrom 없음)');const fl=pend.foeLv+alLv();pend.foeLv=0;wild=opt.wildFrom(enc.trainer,{pick:enc.pick,take:enc.take,boss:enc.boss,lvAdd:(+enc.lvAdd||0)+(+adj.wildLv||0)+fl,extra:(+enc.extra||0)+(+adj.wildExtra||0)})}
+  else if(enc.trainer){/* 제작기 스냅샷의 트레이너를 야생 무리로 (예: 무진 NPC/숲 속의 폐가) — opt.wildFrom 은 서버 · 명령줄이 넘긴다 */if(!opt.wildFrom)throw new Error('스냅샷 야생을 쓸 수 없음 (wildFrom 없음)');const fl=pend.foeLv+alLv()+(enc.boss?alBoss():0);pend.foeLv=0;wild=opt.wildFrom(enc.trainer,{pick:enc.pick,take:enc.take,boss:enc.boss,lvAdd:(+enc.lvAdd||0)+(+adj.wildLv||0)+fl,extra:(+enc.extra||0)+(+adj.wildExtra||0)})}
   else{const packs=WD.packs();const pk=packs[enc.pack];if(!pk)throw new Error('야생 무리 없음: '+enc.pack);const pk2=Object.assign({},pk,{lvAdd:(+pk.lvAdd||0)+(+adj.wildLv||0),mons:pk.mons.concat(Array.from({length:+adj.wildExtra||0},(_,i)=>pk.mons[i%pk.mons.length]))});wild=WD.build(W,pk2)}
   /* 10-29 빈사 트레이너는 그 장면(방)에 참가하지 못한다 — 같은 방 배틀에 그 트레이너 포켓몬도 안 나간다 (adj.dyingFight 1 이면 옛 방식) */
   /* 11-04 망령 「나」: 일행 몫은 남이 고른 종류도 빌려 쓴다 — 일행 누구든 고른(>0) 종류를 모두 쓸 수 있게(지시 체계가 달라도 · 각성체 대가 종류도 빌린다) */const OKS=new Set();if(adj.ordScope==='dungeon'&&adj.ordLend!==0&&adj.ordLend!=='0')for(const P of party){const t0=clone(P.trainer);require('./party.js').orders(W,t0,{mons:P.mons,autoPick:adj.autoPick!==0&&adj.autoPick!=='0'});for(const [k,v] of Object.entries(t0.orderCount||{}))if(v>0&&!k.includes('@'))OKS.add(k)}
