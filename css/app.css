@@ -5373,3 +5373,11 @@ html[data-vt="mm"] .clc-menu>div,html[data-vt="mm"] .clc-menu>summary{background
 .cled-f{text-align:left;align-items:stretch}.cled-f>span{text-align:left}
 .clbx-bar input{background:#0b0c10;color:var(--fg);border:1px solid var(--line2);border-radius:0}
 @media (max-width:760px){.modal.clbxm.cled-on .clbx-bar{display:none}}
+
+/* 11-03 망령 「2번으로」: 휴대폰에서 지도가 열려 있으면 무대 버튼을 ⋯ 와 지도 닫기만 남기고 접는다 (데스크톱은 그대로) */
+.rpbtns .rpmfb{display:none}
+@media (max-width:760px){
+ .rpbtns.mapon .rpmfb{display:inline-flex;align-items:center;justify-content:center;min-width:34px;font-weight:700}
+ .rpbtns.mfold>*:not(.rpmfb):not([data-rp="map"]):not(.typingslot){display:none!important}
+ .rpbtns.mfold{left:auto!important;padding-left:0!important}
+}
