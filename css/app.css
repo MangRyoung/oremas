@@ -5049,7 +5049,7 @@ html[data-vt="mm"] .memon .medet{border-color:rgba(20,16,12,.4)}
 .bstat .bspkfold>summary::-webkit-details-marker{display:none}
 .bstat .bspkfold[open]>summary{color:#fff;margin-bottom:4px}
 .bstat.fold .bspkfold{display:none}
-/* 15-③ 벤치 양옆 3열은 뺐다 (11-03 13:18 망령 「줄이니까 가독성도 UI 도 다 깨졌다」) — 벤치 150~185px 에 트레이너 카드 · 포켓몬 2열이 눌려 글자가 잘렸다. 예전대로 위아래 흐름 + 위에 붙는 진행 바(15-①)만 둔다 */
+/* 15-③ (11-03 13:18 망령 「원래 느낌 괜찮았는데 왜 줄였냐」) 벤치를 150~185px 로 좁히던 규칙은 뺐다 — 원래대로 벤치 양옆 250px(컨테이너 ≤1180 은 210px, ≤960 만 한 줄). 위에 붙는 진행 바(15-①)만 둔다 */
 /* 16. 공격 창 — 휴대폰 sticky 요약 줄 */
 .asum1{display:none}
 @media (max-width:760px){
