@@ -271,7 +271,7 @@ window.OM_RP_UI=(()=>{
  addEventListener('resize',()=>{clearTimeout(standFit.t);standFit.t=setTimeout(()=>document.querySelectorAll('#stands .stand img').forEach(standFit),120)});
  function syncStands(box,slots,manual){const want={};const pr=dqRow(),pk=pr?speakerKey(pr):'',psx=pr&&pr.data?pr.data.sx:null;
   for(const s of SLOTS){let c=charOf(slots[s]);if(c&&psx!=null&&c.key===pk&&(c.stands||[])[psx])c=Object.assign({},c,{active:psx});   /* 큐에서 찍는 줄은 보낼 때의 표정으로 */const src=standSrc(c);if(c&&src)want[s]={key:c.key,src,name:c.name,point:standPoint(c),waist:standWaist(c),kind:standKind(c),scale:+c.scale||0,flip:!!(manual[s]||{}).flip,on:((dqRow()?speakerKey(dqRow()):'')||STAGE.active)===c.key||!STAGE.active}}
-  [...box.children].forEach(ch=>{const s=ch.dataset.slot;if(!want[s]||want[s].key!==ch.dataset.key){ch.classList.add('out');setTimeout(()=>ch.remove(),350)}});
+  [...box.children].forEach(ch=>{const s=ch.dataset.slot;if(!want[s]||want[s].key!==ch.dataset.key){ch.classList.add('out');setTimeout(()=>ch.remove(),420)   /* 11-03: 퇴장 0.4s (어두워지며 옆으로) — css 「11-03 RP 연출」 */}});
   for(const s of SLOTS){const w=want[s];if(!w)continue;let ch=[...box.children].find(x=>x.dataset.slot===s&&x.dataset.key===w.key&&!x.classList.contains('out'));
    if(!ch){ch=document.createElement('div');ch.dataset.slot=s;ch.dataset.key=w.key;ch.className=`stand ${s} in`;ch.innerHTML=`<img alt=""><div class="stname"></div>`;box.appendChild(ch)}
    const img=ch.querySelector('img');if(img.getAttribute('src')!==w.src){img.src=w.src;ch.classList.remove('portrait');img.onload=()=>{const k=ch.dataset.kind||(img.naturalHeight/Math.max(1,img.naturalWidth)<1.45?'portrait':'stand');ch.classList.toggle('portrait',k==='portrait')}}
