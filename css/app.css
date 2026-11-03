@@ -5381,3 +5381,5 @@ html[data-vt="mm"] .clc-menu>div,html[data-vt="mm"] .clc-menu>summary{background
  .rpbtns.mfold>*:not(.rpmfb):not([data-rp="map"]):not(.typingslot){display:none!important}
  .rpbtns.mfold{left:auto!important;padding-left:0!important}
 }
+/* 11-03 20:14 망령 「배틀 중엔 줄이 밀린다 — 결과 정리 부근부터는 아랫줄로」: GM 줄을 늘 두 줄로 — 결과 정리 · 비우기 · 대사창 · PVP · PL 권한은 아랫줄 */
+.gmrow .gmbr{flex-basis:100%;height:0;margin:0;padding:0}
