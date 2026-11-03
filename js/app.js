@@ -712,6 +712,7 @@ let reconT=null;function reconcileNodes(){if(ST.role!=='gm')return;clearTimeout(
  for(const t of Object.values(trs)){if(!t||!t.name||auto[t.id])continue;if(!have.has(t.name)){have.add(t.name);const id='t_'+t.id;await set(['graph','nodes',id],{id,name:t.name,kind:t.kind==='npc'?'npc':'pc',img:'',note:'',x:120+(i%6)*140,y:120+Math.floor(i/6)*140,stands:[],standActive:0});i++}
   if(!g.auto)await set(['graph','auto'],{});await set(['graph','auto',t.id],1)}},800)}
 function renderScene(){reconcileNodes();
+ try{if(VIEW!=='rp'&&window.OM_RP_UI&&window.OM_RP_UI.psClear)window.OM_RP_UI.psClear()}catch(e){}   /* 11-03: 채팅창 머리의 RP BGM · 콘솔 칸은 RP 에서만 */
  try{drawPresence()}catch(e){}
  try{const skb=$('#skillBtn');if(skb&&window.OM_SKILL_UI){const p=window.OM_SKILL_UI.pending();skb.classList.toggle('pri',p);skb.textContent='스킬 체크'+(p?' !':'');if(window.OM_SKILL_UI.sync)window.OM_SKILL_UI.sync()}}catch(e){}
  if(window.OM_DB_UI){window.OM_DB_UI.applyOverride(ST.state.dbx);if(ST.role==='gm'&&window.OM_DB_UI.startAuto)window.OM_DB_UI.startAuto()}   /* 10-24: 제작기 DB 자동 반영 (GM 화면) */

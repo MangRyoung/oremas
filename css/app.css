@@ -5110,3 +5110,12 @@ body:has(.modalbg) .tour-ask{display:none}
 .gcr:hover{border-color:#fff;color:#fff}.gcr.on{border-color:var(--yel2);color:#fff}
 .gcr.nt{border-left:4px solid var(--c,#d9243f)}
 @media (max-width:760px){.gcrecent{padding:6px 10px;gap:4px}.gcr{max-width:46%;font-size:12px}}
+/* 11-03 13:46 망령: RP 의 BGM 위젯 · GM 콘솔을 무대 위(오른쪽 스탠딩을 가렸다) 대신 채팅창 머리 방 이름 줄 빈 곳에 (넓은 화면만, js psSync). 자리가 모자라면 그 아래 한 줄(.prprow) */
+.phone .ptitle .prpslot{order:1;flex:none;margin-left:auto}
+.prpslot{display:inline-flex;flex-wrap:nowrap;align-items:center;gap:4px;padding:2px;background:#111;border:1px solid #000;font-family:var(--font);font-size:12px;letter-spacing:0}
+.prpslot .rpbgmw{display:inline-flex}
+.prpslot .plog{white-space:nowrap;font-size:12px;position:static!important}
+html:not(#_) .prpslot .bgmw .bt{color:#ddd!important}
+.phone .prprow{display:flex;justify-content:flex-end;padding:4px 8px;background:transparent;border-bottom:1px solid rgba(255,255,255,.12)}
+html[data-vt] .phone .prprow .btn{color:var(--yel2,#ffe100)}
+.prpslot .bgmw input[type=range]{width:72px}.prpslot .bgmw .bt{max-width:110px}

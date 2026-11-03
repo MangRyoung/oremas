@@ -516,3 +516,9 @@ html[data-vt="mm"] body{background-image:radial-gradient(1200px 560px at 50% -12
 /* 10-31 망령 「(종이 결을 바꿔도) 여전하다 — 무대 그림자도 바꿔」: P4 와 다른 남은 하나가 무대(.rpstage)의 흐린 그림자(0 10px 24px)였다.
    흐린 그림자 대신 P4 처럼 번지지 않는 단단한 그림자로 */
 html[data-vt="mm"] .rpstage{box-shadow:6px 6px 0 #000!important}
+/* 11-03 13:51 망령 「망각 테마만 대사가 자글거린다(P3 · P4 · P5 는 괜찮다)」: 10-31 에 무대 그림자를 단단하게 바꾼 것과 같은 계열 —
+   무대 안에 남은 흐린 그림자(날짜 태그 0 10px 24px · 「GM 콘솔」 같은 .btn.pri 의 빨간 번짐 0 0 14px)가 있으면 기울인 말풍선 글자가 계단이 진다.
+   무대(.rpstage) 안에서는 망각 테마도 흐린 그림자 · 글자 그림자를 쓰지 않는다 */
+html[data-vt="mm"] .rpstage :is(.btn,.bgname,.bgmw,.stagetags *,.rpbtns *,.typing,.typingslot){box-shadow:none!important;text-shadow:none!important}
+html[data-vt="mm"] .rpstage .daytag{box-shadow:5px 5px 0 rgba(0,0,0,.6)!important}
+html[data-vt="mm"] .rpstage .btn.pri{box-shadow:0 0 0 2px #a3182a!important}
