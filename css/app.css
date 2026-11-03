@@ -5552,5 +5552,5 @@ html[data-vt="mm"] .clc-menu>div,html[data-vt="mm"] .clc-menu>summary{background
 .sk3c.empty{aspect-ratio:5/7;display:flex;align-items:center;justify-content:center;border:2px dashed color-mix(in srgb,var(--kc) 50%,transparent);color:var(--mute);font-size:12px;cursor:default}
 .sk3v{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px 10px;margin-top:6px}
 .sk3vi{display:flex;flex-direction:column;gap:2px;min-width:0}.sk3vi .small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sk3pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px 8px;margin-top:10px;max-height:52vh;overflow:auto;padding:4px}
+.sk3pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px 8px;margin-top:10px;max-height:52vh;overflow:auto;padding:4px}
 .sk3pk{all:unset;box-sizing:border-box;cursor:pointer;padding:3px;border-radius:10px;border:2px solid transparent}.sk3pk .skc{width:100%}.sk3pk.on{border-color:var(--acc,#ffd84a)}.sk3pk.has{opacity:.5}.sk3pk:focus-visible{outline:2px solid var(--acc,#ffd84a)}

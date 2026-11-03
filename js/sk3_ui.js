@@ -50,7 +50,7 @@ window.OM_SK3=(()=>{
    const rows=D2?[...D2.values()].filter(r=>r&&r[1]):[];const decks=[...new Set(rows.map(r=>String(r[0]||'')).filter(Boolean))];
    const q=G.q.trim().toLowerCase();const L=rows.filter(r=>(!G.k||kinds(r).includes(G.k))&&(!G.deck||String(r[0]||'')===G.deck)&&(!q||(String(r[1])+' '+String(r[4]||'')).toLowerCase().includes(q)));
    m.querySelector('[data-gdecks]').innerHTML=`<option value="">덱 전부</option>${decks.map(d=>`<option ${d===G.deck?'selected':''}>${esc(d)}</option>`).join('')}`;
-   m.querySelector('[data-glist]').innerHTML=!D2?'<p class="small dim">카드 DB 를 읽는 중…</p>':L.length?L.slice(0,120).map(r=>`<button type="button" class="sk3pk${G.sel===r[1]?' on':''}${have.has(r[1])?' has':''}" data-gpk="${esc(r[1])}" title="${esc(r[1])}${have.has(r[1])?' — 이미 보관소에 있다':''}">${card(r[1],{cls:'skc-mini',badge:have.has(r[1])?'있음':'',sel:G.sel===r[1]})}</button>`).join(''):'<p class="small dim">맞는 카드가 없다</p>';
+   m.querySelector('[data-glist]').innerHTML=!D2?'<p class="small dim">카드 DB 를 읽는 중…</p>':L.length?L.slice(0,120).map(r=>`<button type="button" class="sk3pk${G.sel===r[1]?' on':''}${have.has(r[1])?' has':''}" data-gpk="${esc(r[1])}" title="${esc(r[1])}${have.has(r[1])?' — 이미 보관소에 있다':''}">${card(r[1],{badge:have.has(r[1])?'있음':''})}</button>`).join(''):'<p class="small dim">맞는 카드가 없다</p>';
    const go=m.querySelector('[data-ggo]');go.disabled=!G.sel||have.has(G.sel);go.textContent=G.sel?(have.has(G.sel)?`「${G.sel}」 이미 있다`:`「${G.sel}」 건네주기`):'카드를 고르세요';
    m.querySelectorAll('[data-gpk]').forEach(b=>b.onclick=()=>{G.sel=b.dataset.gpk;draw()})};
   A().openModal(`<div id="sk3Give"><div class="mhead"><h2>🎁 카드 건네주기 — ${esc(tr.name||'')}</h2><span class="sp"></span><button class="btn ghost" data-gx>닫기</button></div>
