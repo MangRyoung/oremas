@@ -1,0 +1,499 @@
+{
+ "id": "md4_cave",
+ "name": "종탑 지하 수맥 갱도",
+ "wn": 2,
+ "gen": {
+  "tier": "normal",
+  "knobs": {
+   "battles": 1,
+   "foes": 2,
+   "lv": 5,
+   "bossLv": 5,
+   "rest": "short",
+   "checks": 5,
+   "tgt": "v4mix",
+   "pen": "alert",
+   "hintTyped": 1,
+   "alCost": 10,
+   "alFail": 10,
+   "critAl": 10
+  },
+  "seed": 74001,
+  "boss": "한카리아스",
+  "brWant": 2,
+  "sub": 4,
+  "v": 1,
+  "auto": true,
+  "tough": "",
+  "shape": "구불길",
+  "theme": "동굴",
+  "rules": {
+   "restV": 2,
+   "alBattle": 5,
+   "alLose": 10,
+   "al30": 5,
+   "al70": 10,
+   "restShort": "all",
+   "restPO": 1,
+   "restPC": 1,
+   "restBreath": "one",
+   "restBC": 1
+  },
+  "source": "db",
+  "grades": {
+   "wild": [
+    "C"
+   ],
+   "boss": [
+    "A"
+   ]
+  },
+  "verify": {
+   "wr": 0.58,
+   "target": 0.6,
+   "band": 0.15,
+   "tries": 1,
+   "ok": true,
+   "cards": "base",
+   "at": "2026-11-03"
+  }
+ },
+ "rooms": [
+  {
+   "id": "entry",
+   "t": "entry",
+   "name": "종탑 우물 아래",
+   "check": {
+    "label": "낙석을 막아 선다",
+    "stat": "능력",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "dmg": "1/3",
+      "memo": "크게 휘말렸다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "desc": "종탑 아래 막아 둔 우물을 타고 내려온 곳. 머리 위에서 돌가루가 떨어진다.",
+   "memo": "종탑 아래 막아 둔 우물을 타고 내려온 곳. 머리 위에서 돌가루가 떨어진다.\nGM: 우물 바닥. 낙석을 막아 서는 능력 체크. 줄사다리로 되돌아갈 수 있다는 걸 알려 주면 긴장이 덜하다.",
+   "art": "the bottom of an old stone well shaft opening into a mine tunnel, a rope ladder hanging down, falling dust and pebbles, beam of light from above",
+   "gm": "우물 바닥. 낙석을 막아 서는 능력 체크. 줄사다리로 되돌아갈 수 있다는 걸 알려 주면 긴장이 덜하다.",
+   "okText": "떨어지는 돌을 포켓몬이 받아 냈다.",
+   "failText": "돌가루를 뒤집어썼다. 머리 위 구멍이 조금 넓어졌다."
+  },
+  {
+   "id": "b1",
+   "t": "battle",
+   "name": "지하 호수",
+   "enc": {
+    "mix": [
+     {
+      "db": "w082"
+     },
+     {
+      "db": "w141"
+     }
+    ],
+    "lvAdd": 5
+   },
+   "desc": "갱도가 끝나는 곳에 고요한 지하 호수가 있다. 수면이 흔들린다.",
+   "memo": "갱도가 끝나는 곳에 고요한 지하 호수가 있다. 수면이 흔들린다.\nGM: 지하 호수 배틀. 물가 묘사 · 첨벙거리는 소리.",
+   "art": "a calm underground lake in a large cavern, still black water reflecting lantern light, stalactites, wooden walkway along the shore",
+   "gm": "지하 호수 배틀. 물가 묘사 · 첨벙거리는 소리."
+  },
+  {
+   "id": "c1",
+   "t": "puzzle",
+   "name": "지하 물길",
+   "check": {
+    "label": "다친 포켓몬을 응급 처치한다",
+    "stat": "육성",
+    "target": 12,
+    "hint": "type:땅",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "st": "Poison",
+      "memo": "독이 있는 것에 닿았다"
+     }
+    },
+    "pm": 0,
+    "base": 1,
+    "fit": {
+     "types": [
+      "땅"
+     ],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "desc": "물길 옆에 다친 포켓몬이 웅크리고 있다. 서둘러 응급 처치를 해야 한다.",
+   "memo": "물길 옆에 다친 포켓몬이 웅크리고 있다. 서둘러 응급 처치를 해야 한다.\nGM: 다친 포켓몬 응급 처치(육성 12). 성공하면 그 포켓몬이 잠깐 길을 안내하는 묘사.",
+   "art": "an underground stream flowing through a narrow mine tunnel, wet rocks, old wooden planks as a bridge, lantern glow",
+   "gm": "다친 포켓몬 응급 처치(육성 12). 성공하면 그 포켓몬이 잠깐 길을 안내하는 묘사.",
+   "okText": "붕대를 감아 주자 녀석이 물길 옆 마른 길을 가리켰다.",
+   "failText": "놀란 녀석이 물을 끼얹고 달아났다."
+  },
+  {
+   "id": "c2",
+   "t": "room",
+   "name": "버려진 수레길",
+   "check": {
+    "label": "물길을 함께 건넌다",
+    "stat": "통솔",
+    "target": 12,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "st": "Confusion",
+      "cnt": 3,
+      "memo": "대열이 무너졌다"
+     }
+    },
+    "pm": 0,
+    "base": 4,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "desc": "광석 수레가 다니던 레일. 레일 아래로 물이 불어 함께 건너야 한다.",
+   "memo": "광석 수레가 다니던 레일. 레일 아래로 물이 불어 함께 건너야 한다.\nGM: 불어난 레일 건너기(통솔 12).",
+   "art": "abandoned mine cart rails running through a flooded tunnel, a rusty mine cart, water flowing over the tracks, support beams",
+   "gm": "불어난 레일 건너기(통솔 12).",
+   "okText": "수레를 다리 삼아 차례로 건넜다.",
+   "failText": "수레가 미끄러져 한 명이 물에 빠졌다."
+  },
+  {
+   "id": "c3",
+   "t": "room",
+   "name": "종유석 틈",
+   "check": {
+    "label": "무너질 바위를 읽는다",
+    "stat": "지시",
+    "target": 15,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "oo": 1,
+      "memo": "지시가 엇갈렸다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "desc": "천장의 종유석이 금이 갔다. 어디로 무너질지 읽고 지나가야 한다.",
+   "memo": "천장의 종유석이 금이 갔다. 어디로 무너질지 읽고 지나가야 한다.\nGM: 본길에서 가장 어려운 체크(지시 15). 실패 묘사를 크게.",
+   "art": "a narrow passage under cracked hanging stalactites in a limestone cave, dripping water, crumbling rock",
+   "gm": "본길에서 가장 어려운 체크(지시 15). 실패 묘사를 크게.",
+   "okText": "금 간 종유석이 떨어질 순간을 정확히 짚었다.",
+   "failText": "우르릉 — 바로 뒤에서 종유석이 부서졌다."
+  },
+  {
+   "id": "safe",
+   "t": "safe",
+   "name": "광부 쉼터",
+   "rest": "short",
+   "check": {
+    "label": "어둠 속 기척을 읽는다",
+    "stat": "능력",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "dmg": "1/4",
+      "st": "Paralysis",
+      "memo": "반동에 몸이 굳었다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "desc": "광부들이 쉬던 작은 방. 낡은 침상과 녹슨 등이 남았다. 어둠 너머 기척이 있다.",
+   "memo": "광부들이 쉬던 작은 방. 낡은 침상과 녹슨 등이 남았다. 어둠 너머 기척이 있다.\nGM: 광부 쉼터. 어둠 속 기척(능력 10) — 성공하면 숨어 있던 포켓몬이 그냥 지나간다.",
+   "art": "a small rest room carved in a mine, old wooden bunks, rusty lanterns on hooks, a table with tin cups, cozy dim light",
+   "gm": "광부 쉼터. 어둠 속 기척(능력 10) — 성공하면 숨어 있던 포켓몬이 그냥 지나간다.",
+   "okText": "기척이 멀어질 때까지 숨을 죽였다.",
+   "failText": "기척이 다가왔다가, 등불에 놀라 물러났다."
+  },
+  {
+   "id": "boss",
+   "t": "boss",
+   "name": "수정 공동",
+   "enc": {
+    "mix": [
+     {
+      "db": "w300"
+     },
+     {
+      "db": "w095"
+     },
+     {
+      "db": "w146"
+     },
+     {
+      "db": "w149"
+     }
+    ],
+    "boss": true,
+    "bossAt": 0,
+    "raid": 3,
+    "n": 4,
+    "lvAdd": 5
+   },
+   "desc": "갱도 맨 끝의 거대한 공동. 바닥부터 천장까지 수정이 자랐고, 그 한가운데 모래 둔덕이 숨 쉬듯 오르내린다.",
+   "memo": "갱도 맨 끝의 거대한 공동. 바닥부터 천장까지 수정이 자랐고, 그 한가운데 모래 둔덕이 숨 쉬듯 오르내린다.",
+   "art": "a huge underground cavern full of giant glowing crystals growing from floor to ceiling, a sand mound in the center, purple and blue light, awe inspiring"
+  },
+  {
+   "id": "g1a1",
+   "t": "battle",
+   "name": "물웅덩이 굴",
+   "enc": {
+    "mix": [
+     {
+      "db": "w042"
+     },
+     {
+      "db": "w127"
+     }
+    ],
+    "lvAdd": 5
+   },
+   "alt": "g1",
+   "desc": "물이 고인 낮은 굴. 등껍질 같은 바위가 물 위로 솟아 있다.",
+   "memo": "물이 고인 낮은 굴. 등껍질 같은 바위가 물 위로 솟아 있다.\nGM: 돌아가는 길 배틀.",
+   "art": "a low cave with a wide shallow pool, rocks like turtle shells sticking out of the water, dripping ceiling",
+   "gm": "돌아가는 길 배틀."
+  },
+  {
+   "id": "g2a1",
+   "t": "battle",
+   "name": "수정 회랑",
+   "enc": {
+    "mix": [
+     {
+      "db": "w082"
+     },
+     {
+      "db": "w018"
+     }
+    ],
+    "lvAdd": 5
+   },
+   "alt": "g2",
+   "desc": "벽마다 작은 수정이 박혀 반짝이는 회랑.",
+   "memo": "벽마다 작은 수정이 박혀 반짝이는 회랑.\nGM: 수정 회랑 배틀 — 보스방 분위기를 미리 보여 준다.",
+   "art": "a corridor in a cave with small crystals embedded in the walls glittering, soft colorful light",
+   "gm": "수정 회랑 배틀 — 보스방 분위기를 미리 보여 준다."
+  },
+  {
+   "id": "tr",
+   "t": "treasure",
+   "side": 1,
+   "name": "광석 더미",
+   "clue": {
+    "t": "광부 반장의 경고문",
+    "d": "「바닥이 숨을 쉬면 멈춰라. 그 아래 있는 건 얼음과 용을 꺼린다.」\n깊은 곳의 주인 — 「드래곤 · 땅」 기운이 서려 있다.\n「얼음」 · 「드래곤」 · 「페어리」 쪽을 꺼리는 흔적이 남아 있다.\n「용의날개」의 자국이 벽에 새겨져 있다.",
+    "auto": 1
+   },
+   "from": "c1",
+   "desc": "광부들이 두고 간 광석 더미. 그 속에 오래된 갱도 지도가 끼어 있다.",
+   "memo": "광부들이 두고 간 광석 더미. 그 속에 오래된 갱도 지도가 끼어 있다.\nGM: 보스 단서 · 갱도 지도.",
+   "art": "a pile of raw ore and gems in a mine corner, an old rolled tunnel map tucked in, a pickaxe leaning on the wall",
+   "gm": "보스 단서 · 갱도 지도.",
+   "clueAuto": "깊은 곳의 주인 — 「드래곤 · 땅」 기운이 서려 있다.\n「얼음」 · 「드래곤」 · 「페어리」 쪽을 꺼리는 흔적이 남아 있다.\n「용의날개」의 자국이 벽에 새겨져 있다."
+  },
+  {
+   "id": "s1",
+   "t": "battle",
+   "side": 1,
+   "name": "곰팡이 굴",
+   "memo": "곰팡이가 희게 핀 막다른 굴. 축축한 공기가 무겁다.\nGM: 막다른 곁방. 버섯빛만 있다(보상 없음 — 쉬어 가는 장면).",
+   "ambush": 1,
+   "from": "g1a1",
+   "desc": "곰팡이가 희게 핀 막다른 굴. 축축한 공기가 무겁다.",
+   "art": "a dead end cave covered in pale glowing mushrooms and white mold, damp air, faint bioluminescence",
+   "gm": "막다른 곁방. 버섯빛만 있다(보상 없음 — 쉬어 가는 장면)."
+  }
+ ],
+ "branches": [
+  {
+   "id": "g1",
+   "from": "b1",
+   "to": "c2",
+   "main": [
+    "c1"
+   ],
+   "alt": [
+    "g1a1"
+   ]
+  },
+  {
+   "id": "g2",
+   "from": "c1",
+   "to": "c3",
+   "main": [
+    "c2"
+   ],
+   "alt": [
+    "g2a1"
+   ]
+  }
+ ],
+ "map": {
+  "grid": {
+   "cols": 7,
+   "rows": 5,
+   "x0": 80,
+   "dx": 140,
+   "y0": 65,
+   "dy": 130
+  },
+  "shape": "구불길",
+  "turns": 5,
+  "cells": {
+   "entry": [
+    0,
+    4
+   ],
+   "b1": [
+    0,
+    3
+   ],
+   "c1": [
+    1,
+    3
+   ],
+   "c2": [
+    1,
+    2
+   ],
+   "c3": [
+    2,
+    2
+   ],
+   "safe": [
+    2,
+    1
+   ],
+   "boss": [
+    1,
+    1
+   ],
+   "g1a1": [
+    0,
+    2
+   ],
+   "g2a1": [
+    2,
+    3
+   ],
+   "tr": [
+    1,
+    4
+   ],
+   "s1": [
+    0,
+    1
+   ]
+  },
+  "links": {
+   "b1~entry": 1,
+   "b1~c1": 1,
+   "c1~c2": 1,
+   "c2~c3": 1,
+   "c3~safe": 1,
+   "boss~safe": 1,
+   "b1~g1a1": 1,
+   "c2~g1a1": 1,
+   "c1~g2a1": 1,
+   "c3~g2a1": 1,
+   "c1~tr": 1,
+   "g1a1~s1": 1
+  }
+ },
+ "path": [
+  "entry",
+  "b1",
+  "c1",
+  "c2",
+  "c3",
+  "safe",
+  "boss"
+ ],
+ "theme": "동굴",
+ "owner": "한카리아스",
+ "rules": {
+  "restV": 2,
+  "alBattle": 5,
+  "alLose": 10,
+  "al30": 5,
+  "al70": 10,
+  "restShort": "all",
+  "restPO": 1,
+  "restPC": 1,
+  "restBreath": "one",
+  "restBC": 1
+ },
+ "note": "자동 생성 · 보통 · 씨앗 74001 · 테마 동굴. 사전 배틀 1 · 체크 5 · 보스방 4체 · 레이드 배틀 : 3 · 지도 갈림길 2 · 구불길 + 곁방 2 · 야생 Lv +5.",
+ "intro": "예배당 종탑 아래 막아 둔 우물이 옛 광산 갱도와 이어져 있었다. 종이 울릴 때마다 갱도 깊은 곳에서 무언가 대답한다는 소문 — 지하 물길을 따라 내려가면 수정이 자라는 공동에서 한카리아스가 잠들어 있다.",
+ "art": {
+  "look": "1.2::old underground mine tunnels, wooden support beams, damp rough rock walls, underground water, warm lantern light, earthy brown and deep blue palette, mysterious but adventurous::, -1.2::crystals, gems, glowing crystals::, "
+ },
+ "story": {
+  "hook": "예배당 종지기 노인이 털어놓는다. 「요즘 종을 치면 발밑에서 대답이 와. 막아 둔 우물 아래서 말이지. 겁이 나서 종을 못 치겠어.」",
+  "boss": "수정 기둥 사이 모래 둔덕이 터지듯 일어선다. 날개 같은 지느러미가 수정을 긁자 공동 전체가 종처럼 운다 — 종탑의 「대답」은 이 소리였다.",
+  "end": "한카리아스가 모래 속으로 파고들어 깊은 곳으로 사라진다. 공동의 울림이 잦아들고, 위에서 희미하게 종소리가 내려온다.",
+  "reward": "수정 조각(학과 연구 재료) · 옛 갱도 지도 · 종지기 노인의 신뢰"
+ },
+ "test": true
+}

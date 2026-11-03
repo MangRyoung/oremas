@@ -175,6 +175,7 @@ function generate1(o){o=o||{};const tier=o.tier||'normal';if(!PRESET[tier])throw
  return dg}
 /* 웹툴 던전 탭 꼴로 — 지도 좌표(dg.map 격자, 없으면 옛 지그재그) · 통로 · 방마다 sk(스킬 체크) · rk(휴식 단계) · m(GM 메모: 조우 구성 · 경계도 패널티 · 단서) */
 const PEN_KO=p=>{if(!p)return '';const L=[];if(p.al)L.push('경계도 '+(p.al>0?'+':'−')+Math.abs(p.al));if(p.dmg)L.push('HP −'+p.dmg);if(p.st)L.push('상태 '+({Paralysis:'마비',Poison:'독',Confusion:'혼란',Burn:'화상',Sleep:'잠듦'}[p.st]||p.st)+(+p.cnt>0?' '+p.cnt+'턴':''));if(p.oo)L.push('4식 −'+p.oo);if(p.oc)L.push('6령 −'+p.oc);   /* 11-01: 공용 칸에서 바로 뺀다(10-28 던전 단위 · 10-31 웹툴 「판정한 트레이너 → 일행」) — 「다음 배틀」이 아니다 */if(p.rk)L.push('랭크 '+Object.entries(p.rk).map(([k,v])=>k+(v>0?'+':'')+v).join(' '));if(p.memo)L.push(p.memo);return L.join(' · ')};
+const IMG_BASE='https://mangryoung.github.io/oremas/sim/data/dungeon_img/';
 function toWebtool(dg,names){names=names||{};for(const [t,i,n] of G.POOL.concat(G.BOSS)){names[t]=names[t]||{};if(names[t][i]==null)names[t][i]=n}let DBN=null;const dbName=i=>{if(!DBN){try{const WB=require('./wilddb.js');DBN=Object.fromEntries((WB._cache=WB._cache||WB.fullV2()).map(e=>[e.id,e.name]))}catch(e){DBN={}}}return DBN[i]||i};const nameOf=(t,i)=>t==='dex'?i:t==='db'?((names.db||{})[i]||dbName(i)):(names[t]&&names[t][i])||`${t} #${i}`;const rs=dg.rooms;const COLS=4,cw=200,rh=180;
  const r={},l={};const rid=x=>x.id.replace(/[^\w]/g,'').slice(0,8)||('r'+Math.random().toString(36).slice(2,6));
  const M=dg.map;rs.forEach((x,i)=>{const row=Math.floor(i/COLS),col=i%COLS,c=row%2?COLS-1-col:col;const id=rid(x);const cell=M&&M.cells[x.id];const o={n:x.name,t:x.t,x:cell?M.grid.x0+cell[0]*M.grid.dx:110+c*cw,y:cell?M.grid.y0+cell[1]*M.grid.dy:140+row*rh};const memo=[];if(x.memo)memo.push(x.memo);
@@ -189,6 +190,7 @@ function toWebtool(dg,names){names=names||{};for(const [t,i,n] of G.POOL.concat(
    try{const w=wildSpec(x,dg);if(w&&w.mons.length)o.w=w}catch(e){memo.push('  (야생 시트를 못 실었다: '+e.message+')')}}
   if(x.rest)o.rk=x.rest;   /* 10-28 웹툴에 중간 휴식(mid)이 생김 */
   if(x.clue)o.cl={t:x.clue.t,d:x.clue.d};
+  if(x.img)o.b=IMG_BASE+String(x.img).split('/').map(encodeURIComponent).join('/');   /* 11-03 미사그 던전 8: 방 그림 = 웹툴 방 배경 (GitHub Pages 의 sim/data/dungeon_img) */
   if(memo.length)o.m=memo.join('\n').slice(0,400);r[id]=o;if(!M&&i)l[[rid(rs[i-1]),id].sort().join('~')]=1});
  if(M)for(const k of Object.keys(M.links)){const [a,b]=k.split('~').map(z=>rid(rs.find(x=>x.id===z)));l[[a,b].sort().join('~')]=1}
  return {n:dg.name,o:dg.owner?`(자동 생성) ${dg.owner}`:'',a:THEMES[dg.theme]?THEMES[dg.theme].a:(dg.theme||''),al:0,st:rid(rs[0]),wn:dg.wn||2,r,l,gen:{tier:dg.gen.tier,seed:dg.gen.seed,theme:dg.theme,rules:dg.rules}}}
@@ -210,4 +212,4 @@ function generate(o){o=o||{};if(o.branches!=null)return generate1(o);const seed=
   while(d.rooms.length>hi){const i=d.rooms.findIndex(r=>r.side&&r.t!=='treasure');if(i<0)break;const id=d.rooms[i].id;d.rooms.splice(i,1);if(d.map&&d.map.cells)delete d.map.cells[id];if(d.map&&d.map.links)for(const k of Object.keys(d.map.links))if(k.split('~').includes(id))delete d.map.links[k]}
   const sc=score(d);if(sc>bs){bs=sc;best=d}const n=d.rooms.length;if(n>=lo&&n<=hi&&(d.branches||[]).length>=2)break}
  return best}
-module.exports={ROOMS,DEX_BST,generate,generate1,toWebtool,wildSpec,THEMES,PRESET,COMMON,RULES,TIER_KO,HINT_T};
+module.exports={ROOMS,DEX_BST,generate,generate1,toWebtool,wildSpec,THEMES,PRESET,COMMON,RULES,TIER_KO,HINT_T,bossClue};

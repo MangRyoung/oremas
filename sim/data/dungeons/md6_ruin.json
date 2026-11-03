@@ -1,0 +1,542 @@
+{
+ "id": "md6_ruin",
+ "name": "기록보관소 아래 봉인 서고",
+ "wn": 2,
+ "gen": {
+  "tier": "normal",
+  "knobs": {
+   "battles": 1,
+   "foes": 2,
+   "lv": 5,
+   "bossLv": 5,
+   "rest": "short",
+   "checks": 5,
+   "tgt": "v4mix",
+   "pen": "alert",
+   "hintTyped": 1,
+   "alCost": 10,
+   "alFail": 10,
+   "critAl": 10
+  },
+  "seed": 83920,
+  "boss": "메타그로스",
+  "brWant": 3,
+  "sub": 5,
+  "v": 1,
+  "auto": true,
+  "tough": "",
+  "shape": "꺾인길",
+  "theme": "유적",
+  "rules": {
+   "restV": 2,
+   "alBattle": 5,
+   "alLose": 10,
+   "al30": 5,
+   "al70": 10,
+   "restShort": "all",
+   "restPO": 1,
+   "restPC": 1,
+   "restBreath": "one",
+   "restBC": 1
+  },
+  "source": "db",
+  "grades": {
+   "wild": [
+    "C"
+   ],
+   "boss": [
+    "A"
+   ]
+  },
+  "verify": {
+   "wr": 0.72,
+   "target": 0.6,
+   "band": 0.15,
+   "tries": 2,
+   "ok": true,
+   "cards": "base",
+   "at": "2026-11-03"
+  }
+ },
+ "rooms": [
+  {
+   "id": "entry",
+   "t": "entry",
+   "name": "금고 바닥 아래",
+   "check": {
+    "label": "봉인을 푼다",
+    "stat": "능력",
+    "target": 15,
+    "hint": "type:바위",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "dmg": "1/3",
+      "memo": "크게 휘말렸다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [
+      "바위"
+     ],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "desc": "기록보관소 금고 바닥이 꺼진 곳. 계단 아래 봉인된 아치가 있다.",
+   "memo": "기록보관소 금고 바닥이 꺼진 곳. 계단 아래 봉인된 아치가 있다.\nGM: 첫 방부터 매우 어려운 봉인(능력 15) — 실패해도 들어갈 수 있지만 경계도가 오른다는 걸 보여 주는 방.",
+   "art": "a broken floor of an old archive vault revealing stone stairs going down to an ancient sealed stone arch with runes, dust and old files scattered",
+   "gm": "첫 방부터 매우 어려운 봉인(능력 15) — 실패해도 들어갈 수 있지만 경계도가 오른다는 걸 보여 주는 방.",
+   "okText": "아치의 문양이 차례로 꺼지며 길이 열렸다.",
+   "failText": "봉인이 터지듯 풀리며 먼지가 일었다 — 깊은 곳에서 무언가 깼다."
+  },
+  {
+   "id": "b1",
+   "t": "battle",
+   "name": "기둥의 방",
+   "enc": {
+    "mix": [
+     {
+      "db": "w245"
+     },
+     {
+      "db": "w069"
+     }
+    ],
+    "lvAdd": 5
+   },
+   "desc": "거대한 기둥이 늘어선 방. 기둥 사이 그림자가 움직인다.",
+   "memo": "거대한 기둥이 늘어선 방. 기둥 사이 그림자가 움직인다.\nGM: 기둥 사이 배틀.",
+   "art": "a hall of giant carved stone pillars in an underground ruin, shafts of dusty light, shadows between the pillars",
+   "gm": "기둥 사이 배틀."
+  },
+  {
+   "id": "c1",
+   "t": "room",
+   "name": "봉인의 문",
+   "check": {
+    "label": "옛 문자를 해독한다",
+    "stat": "지시",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "oc": 2,
+      "memo": "우왕좌왕했다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "desc": "옛 문자로 덮인 거대한 문. 해독하면 길이 열린다.",
+   "memo": "옛 문자로 덮인 거대한 문. 해독하면 길이 열린다.\nGM: 옛 문자 해독(지시 10). 성공하면 문구 한 줄(「기록은 지켜진다」)을 읽어 준다.",
+   "art": "a huge stone door covered in ancient script and glowing runes, a reading stand with an open book in front of it",
+   "gm": "옛 문자 해독(지시 10). 성공하면 문구 한 줄(「기록은 지켜진다」)을 읽어 준다.",
+   "okText": "「기록은 지켜진다」 — 문이 그 말에 대답하듯 열렸다.",
+   "failText": "엉뚱한 글자를 눌러 문이 한 번 덜컥 닫혔다."
+  },
+  {
+   "id": "c2",
+   "t": "trap",
+   "name": "석상의 회랑",
+   "check": {
+    "label": "석상에 깃든 포켓몬을 달랜다",
+    "stat": "육성",
+    "target": 12,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "dmg": "1/4",
+      "memo": "야생에게 물렸다"
+     }
+    },
+    "pm": 0,
+    "base": 1,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "desc": "포켓몬 석상이 늘어선 회랑. 석상 하나에 무언가 깃들어 있다.",
+   "memo": "포켓몬 석상이 늘어선 회랑. 석상 하나에 무언가 깃들어 있다.\nGM: 석상에 깃든 포켓몬 달래기(육성 12).",
+   "art": "a long gallery lined with stone statues of strange creatures, one statue with faintly glowing eyes, warm lamplight",
+   "gm": "석상에 깃든 포켓몬 달래기(육성 12).",
+   "okText": "석상의 눈빛이 부드러워지며 고개를 숙였다.",
+   "failText": "석상이 삐걱 고개를 돌려 노려본다."
+  },
+  {
+   "id": "c3",
+   "t": "trap",
+   "name": "움직이는 석판",
+   "check": {
+    "label": "움직이는 바닥을 함께 건넌다",
+    "stat": "통솔",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "st": "Confusion",
+      "cnt": 3,
+      "memo": "대열이 무너졌다"
+     }
+    },
+    "pm": 0,
+    "base": 4,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "desc": "바닥 석판이 천천히 움직인다. 함께 박자를 맞춰 건너야 한다.",
+   "memo": "바닥 석판이 천천히 움직인다. 함께 박자를 맞춰 건너야 한다.\nGM: 움직이는 바닥(통솔 10) — 박자 맞추기 묘사.",
+   "art": "a room with a floor of large moving stone tiles over a dark pit, carved symbols on each tile",
+   "gm": "움직이는 바닥(통솔 10) — 박자 맞추기 묘사.",
+   "okText": "하나 둘, 하나 둘 — 모두 같은 박자로 건넜다.",
+   "failText": "한 박자 늦은 누군가가 구멍 가장자리에 매달렸다."
+  },
+  {
+   "id": "safe",
+   "t": "safe",
+   "name": "순례자의 방",
+   "rest": "short",
+   "check": {
+    "label": "유물의 기억을 읽는다",
+    "stat": "능력",
+    "target": 12,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "dmg": "1/3",
+      "memo": "크게 휘말렸다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "desc": "옛 순례자가 쉬던 방. 벽에 남은 유물이 기억을 들려준다.",
+   "memo": "옛 순례자가 쉬던 방. 벽에 남은 유물이 기억을 들려준다.\nGM: 순례자의 방. 유물의 기억(능력 12) — 성공하면 보스 이야기를 미리 들려준다.",
+   "art": "a quiet small chamber with stone benches, old candles, offerings and relics on a shelf, warm and peaceful light",
+   "gm": "순례자의 방. 유물의 기억(능력 12) — 성공하면 보스 이야기를 미리 들려준다.",
+   "okText": "유물이 기억을 보여 준다 — 강철 문지기가 처음 깨어난 날.",
+   "failText": "머리가 지끈거린다. 잠깐 누워야 했다."
+  },
+  {
+   "id": "boss",
+   "t": "boss",
+   "name": "왕의 기록실",
+   "enc": {
+    "mix": [
+     {
+      "db": "w294"
+     },
+     {
+      "db": "w117"
+     },
+     {
+      "db": "w265"
+     },
+     {
+      "db": "w042"
+     }
+    ],
+    "boss": true,
+    "bossAt": 0,
+    "raid": 3,
+    "n": 4,
+    "lvAdd": 5
+   },
+   "desc": "가장 깊은 방. 석판 서가가 천장까지 이어지고, 가운데 강철빛 문지기가 서 있다.",
+   "memo": "가장 깊은 방. 석판 서가가 천장까지 이어지고, 가운데 강철빛 문지기가 서 있다.",
+   "art": "a grand underground record chamber with stone tablet shelves reaching the ceiling, a raised platform in the center, cold metallic blue light mixing with gold, majestic"
+  },
+  {
+   "id": "g2a1",
+   "t": "battle",
+   "name": "지하 납골당",
+   "enc": {
+    "mix": [
+     {
+      "db": "w151"
+     },
+     {
+      "db": "w135"
+     }
+    ],
+    "lvAdd": 5
+   },
+   "alt": "g2",
+   "desc": "유골 대신 책이 묻힌 납골당. 도깨비불이 떠다닌다.",
+   "memo": "유골 대신 책이 묻힌 납골당. 도깨비불이 떠다닌다.\nGM: 돌아가는 길 배틀 — 도깨비불.",
+   "art": "an underground crypt with niches filled with old books instead of bones, floating blue will-o-wisp lights, quiet",
+   "gm": "돌아가는 길 배틀 — 도깨비불."
+  },
+  {
+   "id": "g3a1",
+   "t": "battle",
+   "name": "부서진 신상 앞",
+   "enc": {
+    "mix": [
+     {
+      "db": "w023"
+     },
+     {
+      "db": "w015"
+     }
+    ],
+    "lvAdd": 5
+   },
+   "alt": "g3",
+   "desc": "부서진 신상의 머리가 바닥에 굴러 있다.",
+   "memo": "부서진 신상의 머리가 바닥에 굴러 있다.\nGM: 다른 길 배틀.",
+   "art": "a broken giant stone idol with its head lying on the floor in an ancient ruin, rubble, light from a crack above",
+   "gm": "다른 길 배틀."
+  },
+  {
+   "id": "g3a2",
+   "t": "room",
+   "name": "바람 구멍",
+   "check": {
+    "label": "바닥 장치의 순서를 읽는다",
+    "stat": "지시",
+    "target": 12,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "oo": 1,
+      "memo": "지시가 엇갈렸다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "alt": "g3",
+   "desc": "바람이 새는 구멍에서 피리 소리가 난다. 바닥 장치 순서를 읽어야 한다.",
+   "memo": "바람이 새는 구멍에서 피리 소리가 난다. 바닥 장치 순서를 읽어야 한다.\nGM: 바닥 장치 순서(지시 12).",
+   "art": "a ruin room with holes in the wall where wind whistles, pressure plates in the floor with symbols",
+   "gm": "바닥 장치 순서(지시 12).",
+   "okText": "피리 소리 순서대로 밟자 바람이 멎었다.",
+   "failText": "잘못 밟은 판에서 모래가 쏟아졌다."
+  },
+  {
+   "id": "g3a3",
+   "t": "room",
+   "alt": "g3",
+   "filler": 1,
+   "memo": "석관이 줄지어 놓인 조용한 방.\nGM: 석관 방 — 조용히 지나가는 장면.",
+   "name": "석관 방",
+   "desc": "석관이 줄지어 놓인 조용한 방.",
+   "art": "a silent stone room with rows of carved stone sarcophagi, candles, dust",
+   "gm": "석관 방 — 조용히 지나가는 장면."
+  },
+  {
+   "id": "tr",
+   "t": "treasure",
+   "side": 1,
+   "name": "봉헌함",
+   "clue": {
+    "t": "순례자의 낙서",
+    "d": "「문지기는 불과 땅과 그림자를 싫어한다. 쇠를 녹이는 것, 발밑을 흔드는 것, 생각을 흐리는 것.」\n깊은 곳의 주인 — 「강철 · 에스퍼」 기운이 서려 있다.\n「불꽃」 · 「땅」 · 「고스트」 쪽을 꺼리는 흔적이 남아 있다.\n「아이언헤드」의 자국이 벽에 새겨져 있다.",
+    "auto": 1
+   },
+   "from": "g3a1",
+   "desc": "옛 사람들이 무언가를 바친 함. 문지기에 대한 기록이 있다.",
+   "memo": "옛 사람들이 무언가를 바친 함. 문지기에 대한 기록이 있다.\nGM: 봉헌함 = 보스 단서.",
+   "art": "an ancient stone offering box with an open lid on a pedestal, scrolls and coins inside, beam of light",
+   "gm": "봉헌함 = 보스 단서.",
+   "clueAuto": "깊은 곳의 주인 — 「강철 · 에스퍼」 기운이 서려 있다.\n「불꽃」 · 「땅」 · 「고스트」 쪽을 꺼리는 흔적이 남아 있다.\n「아이언헤드」의 자국이 벽에 새겨져 있다."
+  }
+ ],
+ "branches": [
+  {
+   "id": "g2",
+   "from": "c2",
+   "to": "safe",
+   "main": [
+    "c3"
+   ],
+   "alt": [
+    "g2a1"
+   ]
+  },
+  {
+   "id": "g3",
+   "from": "b1",
+   "to": "c2",
+   "main": [
+    "c1"
+   ],
+   "alt": [
+    "g3a1",
+    "g3a2",
+    "g3a3"
+   ],
+   "detour": 1
+  }
+ ],
+ "map": {
+  "grid": {
+   "cols": 7,
+   "rows": 5,
+   "x0": 80,
+   "dx": 140,
+   "y0": 65,
+   "dy": 130
+  },
+  "shape": "꺾인길",
+  "turns": 1,
+  "cells": {
+   "entry": [
+    4,
+    0
+   ],
+   "b1": [
+    4,
+    1
+   ],
+   "c1": [
+    4,
+    2
+   ],
+   "c2": [
+    4,
+    3
+   ],
+   "c3": [
+    4,
+    4
+   ],
+   "safe": [
+    5,
+    4
+   ],
+   "boss": [
+    6,
+    4
+   ],
+   "g2a1": [
+    5,
+    3
+   ],
+   "g3a1": [
+    3,
+    1
+   ],
+   "g3a2": [
+    3,
+    2
+   ],
+   "g3a3": [
+    3,
+    3
+   ],
+   "tr": [
+    3,
+    0
+   ]
+  },
+  "links": {
+   "b1~entry": 1,
+   "b1~c1": 1,
+   "c1~c2": 1,
+   "c2~c3": 1,
+   "c3~safe": 1,
+   "boss~safe": 1,
+   "c2~g2a1": 1,
+   "g2a1~safe": 1,
+   "b1~g3a1": 1,
+   "g3a1~g3a2": 1,
+   "g3a2~g3a3": 1,
+   "c2~g3a3": 1,
+   "g3a1~tr": 1
+  }
+ },
+ "path": [
+  "entry",
+  "b1",
+  "c1",
+  "c2",
+  "c3",
+  "safe",
+  "boss"
+ ],
+ "theme": "유적",
+ "owner": "메타그로스",
+ "rules": {
+  "restV": 2,
+  "alBattle": 5,
+  "alLose": 10,
+  "al30": 5,
+  "al70": 10,
+  "restShort": "all",
+  "restPO": 1,
+  "restPC": 1,
+  "restBreath": "one",
+  "restBC": 1
+ },
+ "note": "자동 생성 · 보통 · 씨앗 83920 · 테마 유적. 사전 배틀 1 · 체크 5 · 보스방 4체 · 레이드 배틀 : 3 · 지도 갈림길 2 · 꺾인길 + 곁방 2 · 야생 Lv +5.",
+ "intro": "옛 기록보관소 지하 금고 바닥 아래, 대학이 세워지기 전부터 있던 석조 유적. 벽마다 읽을 수 없는 문자가 새겨져 있고, 가장 깊은 방에는 메타그로스가 옛 왕의 기록을 지키는 문지기로 서 있다.",
+ "art": {
+  "look": "1.2::ancient underground stone ruins, carved runes, stone pillars, old books and scrolls, golden lamplight and dust, scholarly and mysterious::, "
+ },
+ "story": {
+  "hook": "기록보관소 사서가 조용히 부른다. 「금고 바닥이 꺼졌어요. 그 아래 계단이… 대학 도면에 없는 계단이에요. 학교가 알기 전에 먼저 봐 줄래요?」",
+  "boss": "석판 서가 사이, 강철 다리 네 개가 바닥을 울린다. 메타그로스의 눈이 하나씩 켜지며 침입자를 기록한다 — 「열람 자격 없음.」",
+  "end": "메타그로스가 무릎을 꿇듯 낮아진다. 가운데 단 위 석판 하나가 빛나며 미사그 대학보다 오래된 이름을 드러낸다.",
+  "reward": "옛 석판 탁본(대학 설립 이전 기록) · 사서의 비밀 열람 허가"
+ },
+ "test": true
+}

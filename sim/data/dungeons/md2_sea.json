@@ -1,0 +1,449 @@
+{
+ "id": "md2_sea",
+ "name": "등대 아래 조수 동굴",
+ "wn": 2,
+ "gen": {
+  "tier": "easy",
+  "knobs": {
+   "battles": 1,
+   "foes": 2,
+   "lv": 5,
+   "bossLv": 5,
+   "rest": "short",
+   "checks": 3,
+   "tgt": "v4mix",
+   "pen": "alert",
+   "hintTyped": 1,
+   "alCost": 10,
+   "alFail": 10,
+   "critAl": 10
+  },
+  "seed": 72001,
+  "boss": "소라여우",
+  "brWant": 2,
+  "sub": 2,
+  "v": 1,
+  "auto": true,
+  "tough": "",
+  "shape": "꺾인길",
+  "theme": "바다",
+  "rules": {
+   "restV": 2,
+   "alBattle": 5,
+   "alLose": 10,
+   "al30": 5,
+   "al70": 10,
+   "restShort": "all",
+   "restPO": 1,
+   "restPC": 1,
+   "restBreath": "one",
+   "restBC": 1
+  },
+  "source": "db",
+  "grades": {
+   "wild": [
+    "C"
+   ],
+   "boss": [
+    "B",
+    "A"
+   ]
+  },
+  "verify": {
+   "wr": 0.72,
+   "target": 0.8,
+   "band": 0.15,
+   "tries": 1,
+   "ok": true,
+   "cards": "base",
+   "at": "2026-11-03"
+  }
+ },
+ "rooms": [
+  {
+   "id": "entry",
+   "t": "entry",
+   "name": "썰물 모래톱",
+   "check": {
+    "label": "상한 해산물을 가려낸다",
+    "stat": "육성",
+    "target": 12,
+    "hint": "type:비행",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "st": "Poison",
+      "memo": "독이 있는 것에 닿았다"
+     }
+    },
+    "pm": 0,
+    "base": 1,
+    "fit": {
+     "types": [
+      "비행"
+     ],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "desc": "물이 빠진 모래톱에 조개와 해초가 널려 있다. 동굴로 들어가기 전 먹을 것과 상한 것을 가려 둔다.",
+   "memo": "물이 빠진 모래톱에 조개와 해초가 널려 있다. 동굴로 들어가기 전 먹을 것과 상한 것을 가려 둔다.",
+   "art": "a wide tidal sand flat at low tide at the foot of a cliff with an old white lighthouse above, shells and seaweed scattered, a dark sea cave mouth in the cliff"
+  },
+  {
+   "id": "b1",
+   "t": "battle",
+   "name": "좌초 실습선 갑판",
+   "enc": {
+    "mix": [
+     {
+      "db": "w085"
+     },
+     {
+      "db": "w022"
+     }
+    ],
+    "lvAdd": 5
+   },
+   "desc": "기울어진 실습선 갑판. 따개비 낀 난간 위에서 바닷새 포켓몬이 침입자를 노려본다.",
+   "memo": "기울어진 실습선 갑판. 따개비 낀 난간 위에서 바닷새 포켓몬이 침입자를 노려본다.",
+   "art": "the tilted wooden deck of an old wrecked training ship stuck inside a sea cave, barnacles on the railings, light from a hole in the cave ceiling"
+  },
+  {
+   "id": "c1",
+   "t": "puzzle",
+   "name": "소용돌이 물길",
+   "check": {
+    "label": "물때를 읽어 길을 고른다",
+    "stat": "지시",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "oo": 1,
+      "memo": "지시가 엇갈렸다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "desc": "동굴 바닥을 가로지르는 물길. 물때를 잘못 읽으면 소용돌이에 휩쓸린다.",
+   "memo": "동굴 바닥을 가로지르는 물길. 물때를 잘못 읽으면 소용돌이에 휩쓸린다.",
+   "art": "an underground sea channel with swirling whirlpool currents inside a cave, stepping stones, blue light reflecting on the cave walls"
+  },
+  {
+   "id": "safe",
+   "t": "safe",
+   "name": "등대지기 창고",
+   "rest": "short",
+   "check": {
+    "label": "녹슨 문을 비튼다",
+    "stat": "능력",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "dmg": "1/4",
+      "memo": "크게 휘말렸다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "desc": "등대지기가 쓰던 바위 속 창고. 녹슨 철문만 열면 마른 담요와 램프가 있다.",
+   "memo": "등대지기가 쓰던 바위 속 창고. 녹슨 철문만 열면 마른 담요와 램프가 있다.",
+   "art": "a small storage room carved in rock below a lighthouse, a rusty iron door, oil lamps, ropes and folded blankets, warm lamplight, safe and quiet"
+  },
+  {
+   "id": "boss",
+   "t": "boss",
+   "name": "서리 낀 선창",
+   "enc": {
+    "mix": [
+     {
+      "db": "w184"
+     },
+     {
+      "db": "w038"
+     },
+     {
+      "db": "w094"
+     },
+     {
+      "db": "w237"
+     }
+    ],
+    "boss": true,
+    "bossAt": 0,
+    "raid": 2,
+    "n": 4,
+    "lvAdd": 5
+   },
+   "desc": "실습선의 깊은 선창. 바닷물이 얼어 서리꽃이 피었고, 그 가운데 서리콘가 둥지를 지킨다.",
+   "memo": "실습선의 깊은 선창. 바닷물이 얼어 서리꽃이 피었고, 그 가운데 서리콘가 둥지를 지킨다.",
+   "art": "the deep cargo hold of a wrecked ship flooded with seawater, frost and ice crystals covering the wooden beams, pale blue cold light, an icy nest in the middle"
+  },
+  {
+   "id": "g1a1",
+   "t": "battle",
+   "name": "해초 숲 웅덩이",
+   "enc": {
+    "mix": [
+     {
+      "db": "w044"
+     },
+     {
+      "db": "w142"
+     }
+    ],
+    "lvAdd": 5
+   },
+   "alt": "g1",
+   "desc": "허리까지 차는 조수 웅덩이에 해초가 숲처럼 자랐다. 물속에서 번쩍이는 것이 지나간다.",
+   "memo": "허리까지 차는 조수 웅덩이에 해초가 숲처럼 자랐다. 물속에서 번쩍이는 것이 지나간다.",
+   "art": "a large tide pool inside a sea cave filled with tall swaying kelp like a forest, clear water, sunlight shafts"
+  },
+  {
+   "id": "g2a1",
+   "t": "puzzle",
+   "name": "미끄러운 바위길",
+   "check": {
+    "label": "소용돌이를 거슬러 헤엄친다",
+    "stat": "능력",
+    "target": 10,
+    "hint": "type:비행",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "dmg": "1/4",
+      "memo": "크게 휘말렸다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [
+      "비행"
+     ],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "alt": "g2",
+   "desc": "파도가 들이치는 바위 턱. 소용돌이를 거슬러 헤엄쳐야 다음 바위에 닿는다.",
+   "memo": "파도가 들이치는 바위 턱. 소용돌이를 거슬러 헤엄쳐야 다음 바위에 닿는다.",
+   "art": "slippery wet rocks along a cave wall with waves crashing in, foam and spray, a gap of rough water between the rocks"
+  },
+  {
+   "id": "g2a2",
+   "t": "room",
+   "alt": "g2",
+   "filler": 1,
+   "memo": "실습생들이 쓰던 선실. 무릎까지 물이 찼고 낡은 해도가 벽에 붙어 있다.",
+   "name": "물 고인 선실",
+   "desc": "실습생들이 쓰던 선실. 무릎까지 물이 찼고 낡은 해도가 벽에 붙어 있다.",
+   "art": "a half flooded cabin of an old ship, water up to the knees, an old nautical chart pinned on the wall, round porthole light"
+  },
+  {
+   "id": "g2a3",
+   "t": "puzzle",
+   "name": "그물 걸린 모래톱",
+   "check": {
+    "label": "그물에 걸린 포켓몬을 풀어 준다",
+    "stat": "육성",
+    "target": 12,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "st": "Poison",
+      "memo": "독이 있는 것에 닿았다"
+     }
+    },
+    "pm": 0,
+    "base": 1,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "alt": "g2",
+   "desc": "버려진 어망이 모래톱에 엉켜 있다. 그 안에서 작은 포켓몬이 버둥거린다.",
+   "memo": "버려진 어망이 모래톱에 엉켜 있다. 그 안에서 작은 포켓몬이 버둥거린다.",
+   "art": "a small cave beach tangled with an abandoned fishing net, buoys and driftwood, gentle waves, soft light"
+  },
+  {
+   "id": "tr",
+   "t": "treasure",
+   "side": 1,
+   "name": "떠밀려 온 상자",
+   "clue": {
+    "t": "주인의 흔적",
+    "d": "깊은 곳의 주인 — 「얼음 · 물」 기운이 서려 있다.\n「전기」 · 「풀」 · 「격투」 쪽을 꺼리는 흔적이 남아 있다.\n「에어로블라스트」의 자국이 벽에 새겨져 있다.",
+    "auto": 1
+   },
+   "from": "g1a1",
+   "desc": "파도에 떠밀려 온 나무 상자. 실습선의 항해 일지가 방수포에 싸여 있다.",
+   "memo": "파도에 떠밀려 온 나무 상자. 실습선의 항해 일지가 방수포에 싸여 있다.",
+   "art": "a weathered wooden chest washed up on a cave beach, wrapped in canvas, starfish and shells around it, beam of light"
+  }
+ ],
+ "branches": [
+  {
+   "id": "g1",
+   "from": "b1",
+   "to": "safe",
+   "main": [
+    "c1"
+   ],
+   "alt": [
+    "g1a1"
+   ]
+  },
+  {
+   "id": "g2",
+   "from": "entry",
+   "to": "c1",
+   "main": [
+    "b1"
+   ],
+   "alt": [
+    "g2a1",
+    "g2a2",
+    "g2a3"
+   ],
+   "detour": 1
+  }
+ ],
+ "map": {
+  "grid": {
+   "cols": 7,
+   "rows": 5,
+   "x0": 80,
+   "dx": 140,
+   "y0": 65,
+   "dy": 130
+  },
+  "shape": "꺾인길",
+  "turns": 1,
+  "cells": {
+   "entry": [
+    2,
+    3
+   ],
+   "b1": [
+    1,
+    3
+   ],
+   "c1": [
+    0,
+    3
+   ],
+   "safe": [
+    0,
+    2
+   ],
+   "boss": [
+    0,
+    1
+   ],
+   "g1a1": [
+    1,
+    2
+   ],
+   "g2a1": [
+    2,
+    4
+   ],
+   "g2a2": [
+    1,
+    4
+   ],
+   "g2a3": [
+    0,
+    4
+   ],
+   "tr": [
+    1,
+    1
+   ]
+  },
+  "links": {
+   "b1~entry": 1,
+   "b1~c1": 1,
+   "c1~safe": 1,
+   "boss~safe": 1,
+   "b1~g1a1": 1,
+   "g1a1~safe": 1,
+   "entry~g2a1": 1,
+   "g2a1~g2a2": 1,
+   "g2a2~g2a3": 1,
+   "c1~g2a3": 1,
+   "g1a1~tr": 1
+  }
+ },
+ "path": [
+  "entry",
+  "b1",
+  "c1",
+  "safe",
+  "boss"
+ ],
+ "theme": "바다",
+ "owner": "소라여우",
+ "rules": {
+  "restV": 2,
+  "alBattle": 5,
+  "alLose": 10,
+  "al30": 5,
+  "al70": 10,
+  "restShort": "all",
+  "restPO": 1,
+  "restPC": 1,
+  "restBreath": "one",
+  "restBC": 1
+ },
+ "note": "자동 생성 · 쉬움 · 씨앗 72001 · 테마 바다. 사전 배틀 1 · 체크 3 · 보스방 4체 · 레이드 배틀 : 2 · 지도 갈림길 2 · 꺾인길 + 곁방 1 · 야생 Lv +5.",
+ "intro": "후문 너머 절벽 끝 폐등대 아래, 썰물 때만 입을 여는 해식 동굴. 오래전 좌초한 실습선이 동굴 안쪽에 박혀 있고, 선창 깊은 곳에는 서리콘 무리가 서리 낀 둥지를 틀었다. 물때가 바뀌기 전에 돌아 나와야 한다.",
+ "art": {
+  "look": "1.2::seaside sea cave area, tide pools, turquoise water, wet rocks, barnacles, salty spray, bright and refreshing::, "
+ }
+}

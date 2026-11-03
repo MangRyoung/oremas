@@ -86,7 +86,7 @@ svg .mute{fill:var(--mute)}
 </nav>
 <main>
 <header class="hero">
- <div class="eyebrow">망각 · 시뮬레이터 · 2026-11-02 기준 (체크 섞기 · 갈림길 · 객원 일행)</div>
+ <div class="eyebrow">망각 · 시뮬레이터 · 2026-11-03 기준 (몬스터 이름 로직 · 미사그 던전 4 테스트 기준)</div>
  <h1>망켓몬 생성 설계도</h1>
  <p>시뮬레이터가 스킬 체크, 오리지널 특성, 야생 포켓몬, 던전을 어떤 순서와 숫자로 만드는지 한 장에 모았어요. 절마다 끝에 감우가 직접 검토한 결과를 붙였어요. 시뮬레이터 「설계도」 탭에서도 같은 판을 볼 수 있고, 생성 로직이 바뀌면 같이 고쳐요.</p>
 </header>
@@ -151,12 +151,13 @@ svg .mute{fill:var(--mute)}
   <div class="st"><b>계획</b><span>300체 = 오리지널 3 : 올드 1, 등급 C 7 : B 2 : A 1</span></div>
   <div class="st"><b>역할형 씨앗</b><span>물리 · 특수 스위퍼, 물리 탱커, 특수 벽, 밸런스, 쌍두</span></div>
   <div class="st"><b>흔들기 · 다듬기</b><span>칸마다 ±6~12 흔들고, 계산 종족치가 계단 안쪽 끝에 올 때까지 1~3씩</span></div>
-  <div class="st"><b>콘셉트</b><span>타입 짝 표 · 체형에 맞는 이름 · 서식지 문장</span></div>
+  <div class="st"><b>콘셉트</b><span>타입 짝 표 · 체형에 맞는 동물 바탕(root) · 서식지 문장</span></div>
+  <div class="st"><b>이름 (11-03 적용)</b><span>lib/naming.js — 타입 소리 뿌리(우리말 찌릿 · 첨벙 · 꽁 / 영어 볼트 · 아쿠 · 프로) + 동물 조각(냥 · 부기 · 울프 · 캣) + 끝음절(작은 것 리 · 츄, 보스급 스 · 라스 · 왕), 3~4음절(A 는 5까지). 실제 포켓몬 1136종 · 쓴 이름 · 같은 음절 연달아 피함, 받침 · 영어 조각 뒤엔 작은 끝음절 안 붙임. 「수식어 낱말 + 동물 낱말」(철권완력개)은 안 씀. 다시 짓기 = sim.js rename --save (손질한 이름 nameFix 는 지킴)</span></div>
   <div class="st"><b>특성</b><span>기준 TO 안 점수제, 45%는 오리지널</span></div>
   <div class="st"><b>기술</b><span>4~6개 · 변화기 1개 이상 · 소켓 상한까지 채움</span></div>
   <div class="st"><b>서식지</b><span>본 서식지 1 + 둘째 1 (평균 1.5곳)</span></div>
   <div class="st"><b>1:1 검토</b><span>같은 묶음 8체와 24판. 25% 미만 · 78% 초과면 다시 (최대 3회)</span></div>
-  <div class="st"><b>그림</b><span>이름 · 타입 · 역할 · 서식지로 이미지 프롬프트를 만들고, 만든 그림을 편집 창에 넣어요</span></div>
+  <div class="st"><b>그림</b><span>동물 바탕 · 타입 · 역할 · 서식지로 이미지 프롬프트를 만들고, 만든 그림을 편집 창에 넣어요. (11-03) 미사그 던전 몬스터는 NAI 포트(1024², 던전 배경)를 data/wild/img 에</span></div>
  </div>
  <h3>계단 사다리 (계산 종족치 상한)</h3>
  <div class="scroll"><svg id="ladderSvg" viewBox="0 0 760 170" style="min-width:560px;width:100%;height:auto" role="img" aria-label="계단 사다리"></svg></div>

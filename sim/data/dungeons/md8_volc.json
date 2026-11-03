@@ -1,0 +1,475 @@
+{
+ "id": "md8_volc",
+ "name": "뒷산 분화구 지열 동굴",
+ "wn": 2,
+ "gen": {
+  "tier": "hard",
+  "knobs": {
+   "battles": 1,
+   "foes": 2,
+   "lv": 5,
+   "bossLv": 5,
+   "rest": "short",
+   "checks": 3,
+   "tgt": "v4mix",
+   "pen": "alert",
+   "hintTyped": 1,
+   "alCost": 10,
+   "alFail": 10,
+   "critAl": 10,
+   "rest2": 7,
+   "mixUp": 1
+  },
+  "seed": 78001,
+  "boss": "브리두라스",
+  "brWant": 2,
+  "v": 1,
+  "auto": true,
+  "tough": "hard",
+  "shape": "구불길",
+  "theme": "화산",
+  "rules": {
+   "restV": 2,
+   "alBattle": 5,
+   "alLose": 10,
+   "al30": 5,
+   "al70": 10,
+   "restShort": "all",
+   "restPO": 1,
+   "restPC": 1,
+   "restBreath": "one",
+   "restBC": 1
+  },
+  "source": "db",
+  "grades": {
+   "wild": [
+    "C"
+   ],
+   "boss": [
+    "A"
+   ]
+  },
+  "verify": {
+   "wr": 0.18,
+   "target": 0.3,
+   "band": 0.15,
+   "tries": 1,
+   "ok": true,
+   "cards": "base",
+   "at": "2026-11-03"
+  }
+ },
+ "rooms": [
+  {
+   "id": "entry",
+   "t": "entry",
+   "name": "재 덮인 등산로",
+   "check": {
+    "label": "달아오른 바위를 밀어낸다",
+    "stat": "능력",
+    "target": 12,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "dmg": "1/3",
+      "st": "Paralysis",
+      "memo": "반동에 몸이 굳었다",
+      "oc": 1
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "desc": "재가 내려앉은 등산로. 달아오른 바위가 길을 막았다.",
+   "memo": "재가 내려앉은 등산로. 달아오른 바위가 길을 막았다.",
+   "art": "an ash covered mountain trail on a dormant volcano, old rusty geothermal pipes running along it, a hot glowing boulder blocking the way, hazy sky"
+  },
+  {
+   "id": "b1",
+   "t": "battle",
+   "name": "지열관 굴",
+   "enc": {
+    "mix": [
+     {
+      "db": "w025"
+     },
+     {
+      "db": "w119"
+     }
+    ],
+    "lvAdd": 5
+   },
+   "desc": "지열관이 지나가는 굴. 관 틈으로 열기가 새어 나온다.",
+   "memo": "지열관이 지나가는 굴. 관 틈으로 열기가 새어 나온다.",
+   "art": "a tunnel carved in volcanic rock with large old geothermal pipes along the wall, heat haze and steam leaking from the joints, orange light"
+  },
+  {
+   "id": "c1",
+   "t": "trap",
+   "name": "증기 틈",
+   "check": {
+    "label": "화상 입은 포켓몬을 돌본다",
+    "stat": "육성",
+    "target": 12,
+    "hint": "type:땅",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "st": "Poison",
+      "memo": "독이 있는 것에 닿았다",
+      "oc": 1
+     }
+    },
+    "pm": 0,
+    "base": 1,
+    "fit": {
+     "types": [
+      "땅"
+     ],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "desc": "바위 틈에서 증기가 뿜어 나온다. 다친 포켓몬이 쓰러져 있다.",
+   "memo": "바위 틈에서 증기가 뿜어 나온다. 다친 포켓몬이 쓰러져 있다.",
+   "art": "a rocky volcanic slope with steam vents hissing from cracks, wet rocks, white steam clouds"
+  },
+  {
+   "id": "safe",
+   "t": "safe",
+   "name": "식은 용암관",
+   "rest": "short",
+   "check": {
+    "label": "용암 흐름을 읽는다",
+    "stat": "지시",
+    "target": 15,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "oc": 3,
+      "memo": "우왕좌왕했다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "desc": "굳은 용암 관 속. 열기가 가라앉아 숨을 돌릴 수 있다.",
+   "memo": "굳은 용암 관 속. 열기가 가라앉아 숨을 돌릴 수 있다.",
+   "art": "inside a cooled lava tube, smooth black rock walls, a faint glow far away, calm and warm, safe resting place"
+  },
+  {
+   "id": "boss",
+   "t": "boss",
+   "name": "분화구 바닥",
+   "enc": {
+    "mix": [
+     {
+      "db": "w298"
+     },
+     {
+      "db": "w055"
+     },
+     {
+      "db": "w106"
+     },
+     {
+      "db": "w053"
+     },
+     {
+      "db": "w015"
+     },
+     {
+      "db": "w007"
+     }
+    ],
+    "boss": true,
+    "bossAt": 0,
+    "raid": 3,
+    "n": 6,
+    "lvAdd": 5
+   },
+   "desc": "분화구 바닥. 붉게 갈라진 땅 한가운데 강철빛 거체가 지열을 빨아들인다.",
+   "memo": "분화구 바닥. 붉게 갈라진 땅 한가운데 강철빛 거체가 지열을 빨아들인다.",
+   "art": "the floor of a volcanic crater with glowing red cracks in black rock, rising heat and sparks, steep crater walls, a dramatic red sky above"
+  },
+  {
+   "id": "g1a1",
+   "t": "puzzle",
+   "name": "갈라진 동굴",
+   "check": {
+    "label": "먹을 수 있는 열매를 가려낸다",
+    "stat": "육성",
+    "target": 15,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "dmg": "1/3",
+      "memo": "야생에게 물렸다",
+      "oc": 1
+     }
+    },
+    "pm": 0,
+    "base": 1,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "alt": "g1",
+   "desc": "갈라진 동굴 벽에 열매 덩굴이 매달렸다. 먹을 수 있는 것을 골라야 한다.",
+   "memo": "갈라진 동굴 벽에 열매 덩굴이 매달렸다. 먹을 수 있는 것을 골라야 한다.",
+   "art": "a cracked volcanic cave with strange heat loving fruit vines growing on the walls, orange glow from cracks"
+  },
+  {
+   "id": "g1a2",
+   "t": "battle",
+   "name": "검은 바위 지대",
+   "enc": {
+    "mix": [
+     {
+      "db": "w267"
+     },
+     {
+      "db": "w227"
+     }
+    ],
+    "lvAdd": 5
+   },
+   "alt": "g1",
+   "desc": "굳은 용암이 검게 깔린 들판.",
+   "memo": "굳은 용암이 검게 깔린 들판.",
+   "art": "a wide field of black solidified lava rock, scattered small fires, smoke, distant volcano peak"
+  },
+  {
+   "id": "g1a3",
+   "t": "room",
+   "alt": "g1",
+   "filler": 1,
+   "memo": "식은 용암이 계곡을 이룬 길.",
+   "name": "식은 용암 계곡",
+   "desc": "식은 용암이 계곡을 이룬 길.",
+   "art": "a narrow valley of cooled lava flows with rippled black rock, sulfur yellow stains, steam"
+  },
+  {
+   "id": "g2a1",
+   "t": "room",
+   "name": "흔들리는 화구벽",
+   "check": {
+    "label": "가스가 덜한 길을 고른다",
+    "stat": "지시",
+    "target": 10,
+    "hint": "type:불꽃",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "oo": 1,
+      "memo": "지시가 엇갈렸다",
+      "oc": 1
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [
+      "불꽃"
+     ],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "alt": "g2",
+   "desc": "화구벽이 흔들린다. 가스가 덜한 길을 골라야 한다.",
+   "memo": "화구벽이 흔들린다. 가스가 덜한 길을 골라야 한다.",
+   "art": "a crumbling crater wall path with toxic yellow gas drifting, loose rocks falling"
+  },
+  {
+   "id": "tr",
+   "t": "treasure",
+   "side": 1,
+   "name": "굳은 화석층",
+   "clue": {
+    "t": "주인의 흔적",
+    "d": "깊은 곳의 주인 — 「강철 · 드래곤」 기운이 서려 있다.\n「격투」 · 「땅」 쪽을 꺼리는 흔적이 남아 있다.\n「러스터캐논」의 자국이 벽에 새겨져 있다.",
+    "auto": 1
+   },
+   "from": "g1a3",
+   "desc": "굳은 용암 속에 화석이 박혀 있다.",
+   "memo": "굳은 용암 속에 화석이 박혀 있다.",
+   "art": "a layer of fossils embedded in cooled lava rock wall, glowing amber stones"
+  },
+  {
+   "id": "s1",
+   "t": "room",
+   "side": 1,
+   "name": "유황 결정 굴",
+   "memo": "노란 유황 결정이 자란 작은 굴.",
+   "from": "g2a1",
+   "desc": "노란 유황 결정이 자란 작은 굴.",
+   "art": "a small cave filled with bright yellow sulfur crystals, steam, warm light"
+  }
+ ],
+ "branches": [
+  {
+   "id": "g1",
+   "from": "b1",
+   "to": "safe",
+   "main": [
+    "c1"
+   ],
+   "alt": [
+    "g1a1",
+    "g1a2",
+    "g1a3"
+   ],
+   "detour": 1
+  },
+  {
+   "id": "g2",
+   "from": "entry",
+   "to": "c1",
+   "main": [
+    "b1"
+   ],
+   "alt": [
+    "g2a1"
+   ]
+  }
+ ],
+ "map": {
+  "grid": {
+   "cols": 7,
+   "rows": 5,
+   "x0": 80,
+   "dx": 140,
+   "y0": 65,
+   "dy": 130
+  },
+  "shape": "구불길",
+  "turns": 3,
+  "cells": {
+   "entry": [
+    0,
+    4
+   ],
+   "b1": [
+    0,
+    3
+   ],
+   "c1": [
+    1,
+    3
+   ],
+   "safe": [
+    1,
+    2
+   ],
+   "boss": [
+    2,
+    2
+   ],
+   "g1a1": [
+    0,
+    2
+   ],
+   "g1a2": [
+    0,
+    1
+   ],
+   "g1a3": [
+    1,
+    1
+   ],
+   "g2a1": [
+    1,
+    4
+   ],
+   "tr": [
+    1,
+    0
+   ],
+   "s1": [
+    2,
+    4
+   ]
+  },
+  "links": {
+   "b1~entry": 1,
+   "b1~c1": 1,
+   "c1~safe": 1,
+   "boss~safe": 1,
+   "b1~g1a1": 1,
+   "g1a1~g1a2": 1,
+   "g1a2~g1a3": 1,
+   "g1a3~safe": 1,
+   "entry~g2a1": 1,
+   "c1~g2a1": 1,
+   "g1a3~tr": 1,
+   "g2a1~s1": 1
+  }
+ },
+ "path": [
+  "entry",
+  "b1",
+  "c1",
+  "safe",
+  "boss"
+ ],
+ "theme": "화산",
+ "owner": "브리두라스",
+ "rules": {
+  "restV": 2,
+  "alBattle": 5,
+  "alLose": 10,
+  "al30": 5,
+  "al70": 10,
+  "restShort": "all",
+  "restPO": 1,
+  "restPC": 1,
+  "restBreath": "one",
+  "restBC": 1
+ },
+ "note": "자동 생성 · 어려움 · 씨앗 78001 · 테마 화산. 사전 배틀 1 · 체크 3 · 보스방 6체 · 레이드 배틀 : 3 · 지도 갈림길 2 · 구불길 + 곁방 2 · 야생 Lv +5 · 어려운 길(체크 목표 15).",
+ "intro": "대학 온실을 데우던 지열관을 따라 뒷산 휴화산으로 이어진 길. 요즘 지열관이 들끓기 시작했다 — 분화구 바닥에서 브리두라스가 지열을 빨아들이며 몸을 달구고 있다. 화상과 증기, 무너지는 화구벽을 견뎌야 한다.",
+ "art": {
+  "look": "1.2::dormant volcano area, cooled black lava, glowing orange cracks, steam vents, sulfur crystals, dramatic but not apocalyptic::, "
+ }
+}

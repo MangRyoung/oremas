@@ -1,0 +1,451 @@
+{
+ "id": "md5_house",
+ "name": "구 교직원 관사",
+ "wn": 2,
+ "gen": {
+  "tier": "normal",
+  "knobs": {
+   "battles": 1,
+   "foes": 2,
+   "lv": 5,
+   "bossLv": 5,
+   "rest": "short",
+   "checks": 3,
+   "tgt": "v4mix",
+   "pen": "alert",
+   "hintTyped": 1,
+   "alCost": 10,
+   "alFail": 10,
+   "critAl": 10,
+   "mixUp": 1
+  },
+  "seed": 122515,
+  "boss": "검은고양이",
+  "brWant": 2,
+  "sub": 2,
+  "v": 1,
+  "auto": true,
+  "tough": "hard",
+  "shape": "구불길",
+  "theme": "폐가",
+  "rules": {
+   "restV": 2,
+   "alBattle": 5,
+   "alLose": 10,
+   "al30": 5,
+   "al70": 10,
+   "restShort": "all",
+   "restPO": 1,
+   "restPC": 1,
+   "restBreath": "one",
+   "restBC": 1
+  },
+  "source": "db",
+  "grades": {
+   "wild": [
+    "C"
+   ],
+   "boss": [
+    "A"
+   ]
+  },
+  "verify": {
+   "wr": 0.85,
+   "target": 0.6,
+   "band": 0.15,
+   "tries": 7,
+   "ok": false,
+   "cards": "base",
+   "at": "2026-11-03"
+  }
+ },
+ "rooms": [
+  {
+   "id": "entry",
+   "t": "entry",
+   "name": "무너진 현관",
+   "check": {
+    "label": "봉인된 문을 연다",
+    "stat": "능력",
+    "target": 12,
+    "hint": "type:악",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "dmg": "1/3",
+      "memo": "크게 휘말렸다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [
+      "악"
+     ],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "desc": "현관 지붕이 내려앉았다. 안쪽 문은 사감이 잠근 그대로다.",
+   "memo": "현관 지붕이 내려앉았다. 안쪽 문은 사감이 잠근 그대로다.",
+   "art": "the collapsed front porch of an old abandoned mansion in a forest, broken wooden steps, a heavy locked front door, ivy, moonlit evening"
+  },
+  {
+   "id": "b1",
+   "t": "battle",
+   "name": "쥐가 드나드는 부엌",
+   "enc": {
+    "mix": [
+     {
+      "db": "w076"
+     },
+     {
+      "db": "w129"
+     }
+    ],
+    "lvAdd": 5
+   },
+   "desc": "먼지 쌓인 부엌. 찬장 문이 저절로 여닫힌다.",
+   "memo": "먼지 쌓인 부엌. 찬장 문이 저절로 여닫힌다.",
+   "art": "a dusty old victorian kitchen, iron stove, hanging pots, cupboard doors ajar, moonlight through a small window"
+  },
+  {
+   "id": "c1",
+   "t": "trap",
+   "name": "잠긴 아이 방",
+   "check": {
+    "label": "거울 장치의 각도를 맞춘다",
+    "stat": "지시",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "oo": 1,
+      "memo": "지시가 엇갈렸다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "desc": "사감의 아이가 쓰던 방. 거울 장치로 빛을 모아야 문이 열린다.",
+   "memo": "사감의 아이가 쓰던 방. 거울 장치로 빛을 모아야 문이 열린다.",
+   "art": "a locked child bedroom in an old mansion, small bed, toys and a rocking horse, several standing mirrors reflecting a beam of moonlight"
+  },
+  {
+   "id": "safe",
+   "t": "safe",
+   "name": "다락 아래 골방",
+   "rest": "short",
+   "check": {
+    "label": "겁먹은 야생 포켓몬을 달랜다",
+    "stat": "육성",
+    "target": 15,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "st": "Poison",
+      "memo": "독이 있는 것에 닿았다"
+     }
+    },
+    "pm": 0,
+    "base": 1,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "desc": "다락 계단 아래 숨은 골방. 겁먹은 포켓몬이 담요 속에 숨어 있다.",
+   "memo": "다락 계단 아래 숨은 골방. 겁먹은 포켓몬이 담요 속에 숨어 있다.",
+   "art": "a small hidden room under attic stairs, old blankets and cushions, a candle, cozy and safe, slanted ceiling"
+  },
+  {
+   "id": "boss",
+   "t": "boss",
+   "name": "지하 예배실",
+   "enc": {
+    "mix": [
+     {
+      "db": "w209"
+     },
+     {
+      "db": "w113"
+     },
+     {
+      "db": "w268"
+     },
+     {
+      "db": "w124"
+     },
+     {
+      "db": "w089"
+     }
+    ],
+    "boss": true,
+    "bossAt": 0,
+    "raid": 3,
+    "n": 5,
+    "lvAdd": 5
+   },
+   "desc": "관사 지하의 작은 예배실. 촛대 사이 제단 위에 열쇠 꾸러미가 놓여 있다.",
+   "memo": "관사 지하의 작은 예배실. 촛대 사이 제단 위에 열쇠 꾸러미가 놓여 있다.",
+   "art": "a small private chapel in the basement of a mansion, rows of wooden pews, candelabras, a bunch of old keys on the altar, stained glass faintly lit, solemn"
+  },
+  {
+   "id": "g1a1",
+   "t": "puzzle",
+   "name": "곰팡이 핀 복도",
+   "check": {
+    "label": "곰팡이 독을 가려낸다",
+    "stat": "육성",
+    "target": 12,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "st": "Poison",
+      "memo": "독이 있는 것에 닿았다"
+     }
+    },
+    "pm": 0,
+    "base": 1,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "alt": "g1",
+   "desc": "벽지가 부풀고 곰팡이가 핀 복도. 숨을 참고 지나가야 한다.",
+   "memo": "벽지가 부풀고 곰팡이가 핀 복도. 숨을 참고 지나가야 한다.",
+   "art": "a long corridor in an abandoned mansion with peeling wallpaper and patches of mold, portraits on the walls, dim light"
+  },
+  {
+   "id": "g2a1",
+   "t": "room",
+   "alt": "g2",
+   "filler": 1,
+   "memo": "좁은 하인 방. 이름표가 붙은 침대가 나란히 있다.",
+   "name": "하인 방",
+   "desc": "좁은 하인 방. 이름표가 붙은 침대가 나란히 있다.",
+   "art": "narrow servants quarters in an old mansion, simple iron beds in a row with name tags, a wash basin, grey light"
+  },
+  {
+   "id": "g2a2",
+   "t": "battle",
+   "name": "지하 창고",
+   "enc": {
+    "mix": [
+     {
+      "db": "w089"
+     },
+     {
+      "db": "w137"
+     }
+    ],
+    "lvAdd": 5
+   },
+   "alt": "g2",
+   "desc": "와인병과 잡동사니가 쌓인 창고. 어둠 속에서 눈이 빛난다.",
+   "memo": "와인병과 잡동사니가 쌓인 창고. 어둠 속에서 눈이 빛난다.",
+   "art": "a basement storage cellar with wine racks, crates and old furniture under sheets, darkness"
+  },
+  {
+   "id": "g2a3",
+   "t": "trap",
+   "name": "잠긴 서랍장 방",
+   "check": {
+    "label": "어둠 속에서 대열을 지킨다",
+    "stat": "통솔",
+    "target": 12,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "st": "Confusion",
+      "cnt": 3,
+      "memo": "대열이 무너졌다"
+     }
+    },
+    "pm": 0,
+    "base": 4,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "alt": "g2",
+   "desc": "거대한 서랍장이 벽을 다 차지한 방. 불이 나가 어둠 속을 더듬어야 한다.",
+   "memo": "거대한 서랍장이 벽을 다 차지한 방. 불이 나가 어둠 속을 더듬어야 한다.",
+   "art": "a room with a huge antique chest of drawers covering the whole wall, many small drawers, darkness with a thin line of light"
+  },
+  {
+   "id": "tr",
+   "t": "treasure",
+   "side": 1,
+   "name": "사감의 금고",
+   "clue": {
+    "t": "주인의 흔적",
+    "d": "깊은 곳의 주인 — 「악」 기운이 서려 있다.\n「격투」 · 「벌레」 · 「페어리」 쪽을 꺼리는 흔적이 남아 있다.\n「냉동펀치」의 자국이 벽에 새겨져 있다.",
+    "auto": 1
+   },
+   "from": "g2a3",
+   "desc": "사감 방 벽장 속 금고. 관사 일지가 들어 있다.",
+   "memo": "사감 방 벽장 속 금고. 관사 일지가 들어 있다.",
+   "art": "an old iron safe inside a closet of a headmistress room, a leather diary on top, dust in the air"
+  }
+ ],
+ "branches": [
+  {
+   "id": "g1",
+   "from": "entry",
+   "to": "c1",
+   "main": [
+    "b1"
+   ],
+   "alt": [
+    "g1a1"
+   ]
+  },
+  {
+   "id": "g2",
+   "from": "b1",
+   "to": "safe",
+   "main": [
+    "c1"
+   ],
+   "alt": [
+    "g2a1",
+    "g2a2",
+    "g2a3"
+   ],
+   "detour": 1
+  }
+ ],
+ "map": {
+  "grid": {
+   "cols": 7,
+   "rows": 5,
+   "x0": 80,
+   "dx": 140,
+   "y0": 65,
+   "dy": 130
+  },
+  "shape": "구불길",
+  "turns": 2,
+  "cells": {
+   "entry": [
+    5,
+    0
+   ],
+   "b1": [
+    4,
+    0
+   ],
+   "c1": [
+    4,
+    1
+   ],
+   "safe": [
+    4,
+    2
+   ],
+   "boss": [
+    5,
+    2
+   ],
+   "g1a1": [
+    5,
+    1
+   ],
+   "g2a1": [
+    3,
+    0
+   ],
+   "g2a2": [
+    3,
+    1
+   ],
+   "g2a3": [
+    3,
+    2
+   ],
+   "tr": [
+    2,
+    2
+   ]
+  },
+  "links": {
+   "b1~entry": 1,
+   "b1~c1": 1,
+   "c1~safe": 1,
+   "boss~safe": 1,
+   "entry~g1a1": 1,
+   "c1~g1a1": 1,
+   "b1~g2a1": 1,
+   "g2a1~g2a2": 1,
+   "g2a2~g2a3": 1,
+   "g2a3~safe": 1,
+   "g2a3~tr": 1
+  }
+ },
+ "path": [
+  "entry",
+  "b1",
+  "c1",
+  "safe",
+  "boss"
+ ],
+ "theme": "폐가",
+ "owner": "검은고양이",
+ "rules": {
+  "restV": 2,
+  "alBattle": 5,
+  "alLose": 10,
+  "al30": 5,
+  "al70": 10,
+  "restShort": "all",
+  "restPO": 1,
+  "restPC": 1,
+  "restBreath": "one",
+  "restBC": 1
+ },
+ "note": "자동 생성 · 보통 · 씨앗 122515 · 테마 폐가. 사전 배틀 1 · 체크 3 · 보스방 4체 · 레이드 배틀 : 3 · 지도 갈림길 2 · 구불길 + 곁방 1 · 야생 Lv +5 · 어려운 길(체크 목표 12).",
+ "intro": "캠퍼스 서쪽 숲 속, 문을 닫은 지 이십 년 된 교직원 관사. 마지막 사감이 떠난 뒤로 밤마다 불이 켜졌다 꺼진다. 지하 예배실에는 녹스팬서가 사감의 열쇠 꾸러미를 지키고 앉아 있다.",
+ "art": {
+  "look": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, "
+ }
+}

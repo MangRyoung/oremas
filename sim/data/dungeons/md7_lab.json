@@ -1,0 +1,504 @@
+{
+ "id": "md7_lab",
+ "name": "제2 연구동 지하 격리층",
+ "wn": 2,
+ "gen": {
+  "tier": "hard",
+  "knobs": {
+   "battles": 1,
+   "foes": 2,
+   "lv": 5,
+   "bossLv": 5,
+   "rest": "short",
+   "checks": 3,
+   "tgt": "v4mix",
+   "pen": "alert",
+   "hintTyped": 1,
+   "alCost": 10,
+   "alFail": 10,
+   "critAl": 10,
+   "rest2": 7,
+   "mixUp": 1
+  },
+  "seed": 84920,
+  "boss": "진흙뱀",
+  "brWant": 2,
+  "sub": 1,
+  "v": 1,
+  "auto": true,
+  "tough": "hard",
+  "shape": "구불길",
+  "theme": "연구소",
+  "rules": {
+   "restV": 2,
+   "alBattle": 5,
+   "alLose": 10,
+   "al30": 5,
+   "al70": 10,
+   "restShort": "all",
+   "restPO": 1,
+   "restPC": 1,
+   "restBreath": "one",
+   "restBC": 1
+  },
+  "source": "db",
+  "grades": {
+   "wild": [
+    "C"
+   ],
+   "boss": [
+    "A"
+   ]
+  },
+  "verify": {
+   "wr": 0.37,
+   "target": 0.3,
+   "band": 0.15,
+   "tries": 2,
+   "ok": true,
+   "cards": "base",
+   "at": "2026-11-03"
+  }
+ },
+ "rooms": [
+  {
+   "id": "entry",
+   "t": "entry",
+   "name": "화물 승강기",
+   "check": {
+    "label": "폭주한 실험체를 진정시킨다",
+    "stat": "육성",
+    "target": 15,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "dmg": "1/3",
+      "memo": "야생에게 물렸다",
+      "oc": 1
+     }
+    },
+    "pm": 0,
+    "base": 1,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "desc": "지하 3층에 멈춘 화물 승강기. 문이 열리자마자 폭주한 실험체가 날뛴다.",
+   "memo": "지하 3층에 멈춘 화물 승강기. 문이 열리자마자 폭주한 실험체가 날뛴다.\nGM: 승강기가 열리자마자 매우 어려운 체크(육성 15). 실패가 흔하다 — 이 던전이 어렵다는 걸 바로 알린다.",
+   "art": "the inside of a large freight elevator stopped at an underground lab floor, doors opening to a dim corridor with emergency lights",
+   "gm": "승강기가 열리자마자 매우 어려운 체크(육성 15). 실패가 흔하다 — 이 던전이 어렵다는 걸 바로 알린다.",
+   "okText": "손바닥을 펴고 천천히 다가가자 실험체가 숨을 골랐다.",
+   "failText": "실험체가 날뛰며 승강기 벽을 들이받았다. 경보등이 켜진다."
+  },
+  {
+   "id": "b1",
+   "t": "battle",
+   "name": "조립 라인",
+   "enc": {
+    "mix": [
+     {
+      "db": "w020"
+     },
+     {
+      "db": "w028"
+     }
+    ],
+    "lvAdd": 5
+   },
+   "desc": "장비를 만들던 조립 라인. 멈춘 기계 팔 사이에서 불꽃이 튄다.",
+   "memo": "장비를 만들던 조립 라인. 멈춘 기계 팔 사이에서 불꽃이 튄다.\nGM: 조립 라인 배틀 — 전기 · 강철 위주.",
+   "art": "a stopped assembly line in an underground facility, robotic arms frozen mid motion, sparks from broken cables, metal parts",
+   "gm": "조립 라인 배틀 — 전기 · 강철 위주."
+  },
+  {
+   "id": "c1",
+   "t": "trap",
+   "name": "소독 구역",
+   "check": {
+    "label": "보안 장치를 해제한다",
+    "stat": "지시",
+    "target": 12,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "oo": 1,
+      "memo": "지시가 엇갈렸다",
+      "oc": 1
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "desc": "소독 구역 보안 장치가 아직 살아 있다. 해제하지 않으면 문이 닫힌다.",
+   "memo": "소독 구역 보안 장치가 아직 살아 있다. 해제하지 않으면 문이 닫힌다.\nGM: 보안 장치 해제(지시 12).",
+   "art": "a disinfection airlock area with white tiles, security panels with blinking lights, nozzles on the walls, glass doors",
+   "gm": "보안 장치 해제(지시 12).",
+   "okText": "초록 불이 하나씩 켜지며 소독문이 열렸다.",
+   "failText": "소독 안개가 뿜어져 모두 콜록거렸다."
+  },
+  {
+   "id": "safe",
+   "t": "safe",
+   "name": "비상 대피소",
+   "rest": "short",
+   "check": {
+    "label": "무너지는 통로를 함께 지난다",
+    "stat": "통솔",
+    "target": 12,
+    "hint": "type:강철",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "st": "Confusion",
+      "cnt": 3,
+      "memo": "대열이 무너졌다",
+      "oc": 1
+     }
+    },
+    "pm": 0,
+    "base": 4,
+    "fit": {
+     "types": [
+      "강철"
+     ],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "desc": "비상 대피소. 통로가 무너지기 전에 모두 들어와야 한다.",
+   "memo": "비상 대피소. 통로가 무너지기 전에 모두 들어와야 한다.\nGM: 비상 대피소. 무너지는 통로(통솔 12)를 다 같이 지나야 들어간다.",
+   "art": "an emergency shelter room in a lab basement, metal bunks, supply lockers, green emergency light, a heavy door",
+   "gm": "비상 대피소. 무너지는 통로(통솔 12)를 다 같이 지나야 들어간다.",
+   "okText": "마지막 사람이 들어오자마자 뒤에서 천장이 내려앉았다.",
+   "failText": "먼지 속에서 서로를 찾느라 진이 빠졌다."
+  },
+  {
+   "id": "boss",
+   "t": "boss",
+   "name": "실험 심부",
+   "enc": {
+    "mix": [
+     {
+      "db": "w204"
+     },
+     {
+      "db": "w124"
+     },
+     {
+      "db": "w092"
+     },
+     {
+      "db": "w065"
+     },
+     {
+      "db": "w271"
+     },
+     {
+      "db": "w261"
+     }
+    ],
+    "boss": true,
+    "bossAt": 0,
+    "raid": 3,
+    "n": 6,
+    "lvAdd": 5
+   },
+   "desc": "배양조가 깨진 실험 심부. 바닥에 보라빛 독액이 고여 있다.",
+   "memo": "배양조가 깨진 실험 심부. 바닥에 보라빛 독액이 고여 있다.",
+   "art": "the core experiment chamber of a lab with huge broken glass cultivation tanks, purple liquid pooled on the floor, cables hanging, eerie violet light"
+  },
+  {
+   "id": "g1a1",
+   "t": "room",
+   "alt": "g1",
+   "filler": 1,
+   "memo": "직원 샤워실. 물이 계속 흐른다.\nGM: 샤워실 — 물소리만. 쉬어 가는 장면.",
+   "name": "직원 샤워실",
+   "desc": "직원 샤워실. 물이 계속 흐른다.",
+   "art": "an old staff shower room in a facility, tiled walls, water still running from a showerhead, steam",
+   "gm": "샤워실 — 물소리만. 쉬어 가는 장면."
+  },
+  {
+   "id": "g1a2",
+   "t": "trap",
+   "name": "보안 문",
+   "check": {
+    "label": "감전 복도를 돌파한다",
+    "stat": "능력",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "dmg": "1/3",
+      "st": "Paralysis",
+      "memo": "반동에 몸이 굳었다",
+      "oc": 1
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "alt": "g1",
+   "desc": "전류가 흐르는 보안 문 복도. 뚫고 지나가야 한다.",
+   "memo": "전류가 흐르는 보안 문 복도. 뚫고 지나가야 한다.\nGM: 전류 복도 돌파(능력 10).",
+   "art": "a security door corridor with electric arcs crackling across, warning stripes on the floor, red light",
+   "gm": "전류 복도 돌파(능력 10).",
+   "okText": "전류가 끊기는 틈을 타 한 번에 지나갔다.",
+   "failText": "찌릿 — 손끝이 저려 온다."
+  },
+  {
+   "id": "g1a3",
+   "t": "battle",
+   "name": "사육실",
+   "enc": {
+    "mix": [
+     {
+      "db": "w081"
+     },
+     {
+      "db": "w127"
+     }
+    ],
+    "lvAdd": 5
+   },
+   "alt": "g1",
+   "desc": "실험 포켓몬을 기르던 사육실. 우리 문이 열려 있다.",
+   "memo": "실험 포켓몬을 기르던 사육실. 우리 문이 열려 있다.\nGM: 사육실 배틀 — 열린 우리.",
+   "art": "a creature breeding room with rows of open cages, straw, feeding bowls, observation windows",
+   "gm": "사육실 배틀 — 열린 우리."
+  },
+  {
+   "id": "g2a1",
+   "t": "puzzle",
+   "name": "비상 계단",
+   "check": {
+    "label": "정전 속에서 대열을 지킨다",
+    "stat": "통솔",
+    "target": 15,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "oc": 3,
+      "memo": "모두 지쳤다"
+     }
+    },
+    "pm": 0,
+    "base": 4,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "alt": "g2",
+   "desc": "정전된 비상 계단. 손전등 하나로 대열을 지켜야 한다.",
+   "memo": "정전된 비상 계단. 손전등 하나로 대열을 지켜야 한다.\nGM: 정전 계단(통솔 15) — 이 던전의 「어려운 길」.",
+   "art": "a dark emergency stairwell in a facility during a blackout, a single flashlight beam, metal railings",
+   "gm": "정전 계단(통솔 15) — 이 던전의 「어려운 길」.",
+   "okText": "손전등 하나에 의지해 한 계단씩, 아무도 놓치지 않았다.",
+   "failText": "누군가 계단에서 굴렀다. 어둠 속에서 무언가 웃는 소리."
+  },
+  {
+   "id": "tr",
+   "t": "treasure",
+   "side": 1,
+   "name": "잠긴 사물함",
+   "clue": {
+    "t": "사고 보고서 일부",
+    "d": "「개체 07 은 땅과 정신 계열 자극에 약함. 독액은 바닥에 고인다 — 낮은 곳을 피할 것.」\n깊은 곳의 주인 — 「독」 기운이 서려 있다.\n「땅」 · 「에스퍼」 쪽을 꺼리는 흔적이 남아 있다.\n「거품광선」의 자국이 벽에 새겨져 있다.",
+    "auto": 1
+   },
+   "from": "g2a1",
+   "desc": "연구원 사물함. 사고 보고서가 들어 있다.",
+   "memo": "연구원 사물함. 사고 보고서가 들어 있다.\nGM: 사물함 = 사고 보고서(보스 단서).",
+   "art": "a row of researcher lockers, one locker open with documents and a lab coat inside, dim light",
+   "gm": "사물함 = 사고 보고서(보스 단서).",
+   "clueAuto": "깊은 곳의 주인 — 「독」 기운이 서려 있다.\n「땅」 · 「에스퍼」 쪽을 꺼리는 흔적이 남아 있다.\n「거품광선」의 자국이 벽에 새겨져 있다."
+  },
+  {
+   "id": "s1",
+   "t": "battle",
+   "side": 1,
+   "name": "청소 도구함",
+   "memo": "좁은 청소 도구함. 무언가 웅크리고 있다.\nGM: 청소 도구함 배틀 — 기습.",
+   "ambush": 1,
+   "from": "g1a2",
+   "desc": "좁은 청소 도구함. 무언가 웅크리고 있다.",
+   "art": "a cramped janitor closet with mops, buckets and shelves of cleaning supplies, a dim bulb",
+   "gm": "청소 도구함 배틀 — 기습."
+  }
+ ],
+ "branches": [
+  {
+   "id": "g1",
+   "from": "b1",
+   "to": "safe",
+   "main": [
+    "c1"
+   ],
+   "alt": [
+    "g1a1",
+    "g1a2",
+    "g1a3"
+   ],
+   "detour": 1
+  },
+  {
+   "id": "g2",
+   "from": "entry",
+   "to": "c1",
+   "main": [
+    "b1"
+   ],
+   "alt": [
+    "g2a1"
+   ]
+  }
+ ],
+ "map": {
+  "grid": {
+   "cols": 7,
+   "rows": 5,
+   "x0": 80,
+   "dx": 140,
+   "y0": 65,
+   "dy": 130
+  },
+  "shape": "구불길",
+  "turns": 3,
+  "cells": {
+   "entry": [
+    1,
+    4
+   ],
+   "b1": [
+    2,
+    4
+   ],
+   "c1": [
+    2,
+    3
+   ],
+   "safe": [
+    3,
+    3
+   ],
+   "boss": [
+    3,
+    2
+   ],
+   "g1a1": [
+    3,
+    4
+   ],
+   "g1a2": [
+    4,
+    4
+   ],
+   "g1a3": [
+    4,
+    3
+   ],
+   "g2a1": [
+    1,
+    3
+   ],
+   "tr": [
+    1,
+    2
+   ],
+   "s1": [
+    5,
+    4
+   ]
+  },
+  "links": {
+   "b1~entry": 1,
+   "b1~c1": 1,
+   "c1~safe": 1,
+   "boss~safe": 1,
+   "b1~g1a1": 1,
+   "g1a1~g1a2": 1,
+   "g1a2~g1a3": 1,
+   "g1a3~safe": 1,
+   "entry~g2a1": 1,
+   "c1~g2a1": 1,
+   "g2a1~tr": 1,
+   "g1a2~s1": 1
+  }
+ },
+ "path": [
+  "entry",
+  "b1",
+  "c1",
+  "safe",
+  "boss"
+ ],
+ "theme": "연구소",
+ "owner": "진흙뱀",
+ "rules": {
+  "restV": 2,
+  "alBattle": 5,
+  "alLose": 10,
+  "al30": 5,
+  "al70": 10,
+  "restShort": "all",
+  "restPO": 1,
+  "restPC": 1,
+  "restBreath": "one",
+  "restBC": 1
+ },
+ "note": "자동 생성 · 어려움 · 씨앗 84920 · 테마 연구소. 사전 배틀 1 · 체크 3 · 보스방 6체 · 레이드 배틀 : 3 · 지도 갈림길 2 · 구불길 + 곁방 2 · 야생 Lv +5 · 어려운 길(체크 목표 15).",
+ "intro": "각성 연구소가 있는 제2 연구동 지하 3층, 사고 뒤 봉쇄된 격리층. 비상 전원만 켜진 복도에 실험체들이 풀려 있다. 가장 안쪽 실험 심부에서는 독을 흘리는 스모그뱀이 배양조를 깨고 나와 둥지를 틀었다 — 체크가 까다롭고 보스방이 길다.",
+ "art": {
+  "look": "1.2::sealed underground research facility level, old but well built laboratory, emergency lights, glass tanks, pipes, quiet tense atmosphere, clean not gory::, "
+ },
+ "story": {
+  "hook": "각성연구소 조교가 창백한 얼굴로 찾아온다. 「지하 3층 격리층… 전원이 나간 뒤 실험체 기록이 하나 비어요. 연구소장님은 출장 중이고요. 조용히, 빨리.」",
+  "boss": "깨진 배양조 너머 보랏빛 독액이 꿈틀 솟는다. 몸을 일으킨 스모그뱀의 비늘 사이로 실험 태그가 번쩍인다 — 「개체 07 · 격리 해제 금지」.",
+  "end": "스모그뱀이 지쳐 배양조 잔해 속에 몸을 말자 비상 전원이 다시 들어온다. 격리 셔터가 하나씩 내려온다.",
+  "reward": "사고 보고서(연구소의 숨긴 기록) · 조교의 빚 · 독 해독제 한 병"
+ },
+ "test": true
+}
