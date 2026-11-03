@@ -28,6 +28,7 @@ window.OM_CUTIN=(()=>{
   const k=parseFloat(getComputedStyle(sd).getPropertyValue('--k'))||1;const nar=r.classList.contains('c2-nar');const aw=nar||!po?innerWidth*.88:innerWidth-po.offsetWidth-14*innerWidth/100;const ah=sd.offsetHeight*.8;
   const f=Math.min(1,aw/Math.max(1,t.offsetWidth),ah/Math.max(1,t.offsetHeight));if(f<1)t.style.setProperty('--k',k*f)})}
  function fireLocal(list){const C=cfg();if(String(C.on)==='0')return;list=(list||[]).slice(0,2);if(!list.length)return;const dual=list.length>1;
+  if(dual&&list[0].side==='right'&&list[1].side==='left')list=[list[1],list[0]];   /* 11-03: 좌측 진영이 왼쪽 자리에 (side 는 battle_ui cutFire 가 준다) */
   let K=parseFloat(C.sc);if(!(K>0))K=70;K=Math.max(40,Math.min(120,K))/70;   /* 방 설정 「컷인 크기」 70 이 기본 크기 */
   {const pc=window.OM_PREFS?+window.OM_PREFS.get().cutin:100;if(pc>0)K*=pc/100}   /* 내 설정 「컷인」 크기 */
   const POS=C.pos||'mid',DIM=String(C.dim)==='0'?0:1,DUR=parseFloat(C.dur);const END=DUR>0?DUR:(dual?3.6:3.1);
@@ -36,10 +37,12 @@ window.OM_CUTIN=(()=>{
   let h=`<div class="c2-dim" ${DIM?'':'style="display:none"'}></div><div class="c2-shake">`;
   list.forEach((c,i)=>{const L=!dual||i===0;const nm=String(c.ment||c.name||'');let fs=dual?10:12.5;if(nm.length>7)fs=fs*7/nm.length;
    const y=dual?'':`--y:${POS==='top'?30:POS==='bot'?70:50}vh;`;const gh=c.gh||(/지시|지령/.test(String(c.tag||''))?'ORDER':'POTENTIAL');const pic=!!c.src;
-   h+=`<div class="c2-side ${L?'c2-L':'c2-R'}" style="${y}--pc:${esc(c.color||'#e3101f')};--rot:${dual?-9:-7}deg;--org:${L?'0%':'100%'};--d0:0s;--fs:calc(var(--u)*${fs});--px:${L?-60:60}vw;--tx:${L?40:-40}vw">
+   /* 11-03 감우 (검토 10): 동시 컷인은 좌/우 진영을 색 보더(--pc: 좌 파랑 · 우 빨강, 부르는 쪽이 준다)와 작은 PLAYER / RIVAL 글자로 가른다 (VS 컷인 v3-side 와 같은 말) */
+   const who=dual?`<span class="c2-who">${c.side?(c.side==='left'?'PLAYER':'RIVAL'):(L?'PLAYER':'RIVAL')}</span>`:'';
+   h+=`<div class="c2-side ${L?'c2-L':'c2-R'}" style="${y}--pc:${esc(c.color||(dual&&L?'#1f6fd1':'#e3101f'))};--rot:${dual?-9:-7}deg;--org:${L?'0%':'100%'};--d0:0s;--fs:calc(var(--u)*${fs});--px:${L?-60:60}vw;--tx:${L?40:-40}vw">
     <div class="c2-band"><div class="c2-w"></div><div class="c2-c"></div><div class="c2-k"></div><div class="c2-g">${gh} ${gh} ${gh}</div></div>
     ${pic?`<div class="c2-por" style="${L?'left:7vw':'right:7vw'}"><div class="c2-sh"></div><div class="c2-fr"></div><div class="c2-im" style="background-image:url('${esc(c.src)}')"></div></div>`:''}
-    <div class="c2-txt" style="${nar||!pic?(L?'left:6vw':'right:6vw;text-align:right'):(L?'left:calc(7vw + var(--u)*42*var(--k))':'right:calc(7vw + var(--u)*42*var(--k));text-align:right')}">${c.tag?`<span class="c2-tag">${esc(c.tag)}</span>`:''}<span class="c2-name">${letters(nm)}</span>${c.line?`<span class="c2-line">${/^[\x20-\x7e]+$/.test(String(c.line))?esc(c.line):'「'+esc(String(c.line).replace(/^「|」$/g,''))+'」'}</span>`:''}</div></div>`});
+    <div class="c2-txt" style="${nar||!pic?(L?'left:6vw':'right:6vw;text-align:right'):(L?'left:calc(7vw + var(--u)*42*var(--k))':'right:calc(7vw + var(--u)*42*var(--k));text-align:right')}">${who}${c.tag?`<span class="c2-tag">${esc(c.tag)}</span>`:''}<span class="c2-name">${letters(nm)}</span>${c.line?`<span class="c2-line">${/^[\x20-\x7e]+$/.test(String(c.line))?esc(c.line):'「'+esc(String(c.line).replace(/^「|」$/g,''))+'」'}</span>`:''}</div></div>`});
   if(dual){let sp='';for(let a=0;a<360;a+=30)sp+=`<i style="--a:${a+8}deg"></i>`;
    h+=`<div class="c2-crack"><svg viewBox="0 0 100 100" preserveAspectRatio="none"><polyline points="0,62 22,55 30,58 41,50 47,53 53,46 60,49 70,42 79,45 100,36" fill="none" stroke="#fff" vector-effect="non-scaling-stroke" style="stroke-width:6px"/></svg></div><div class="c2-ring"></div><div class="c2-spark">${sp}</div><div class="c2-vsw"><div class="c2-burst"></div><b>VS</b></div>`}
   h+='</div><div class="c2-flash"></div>';r.innerHTML=h;fitTxt(r);[120,400].forEach(ms=>setTimeout(()=>{if(r.parentNode)fitTxt(r)},ms));   /* 글꼴이 늦게 오면 한 번 더 잰다 */
@@ -120,8 +123,9 @@ window.OM_CUTIN=(()=>{
  function raid(D){raidLocal(D);DBS().broadcast({t:'cutin',k:'raid',D})}
 
  /* ----- 페이즈 띠 (turn_overlay): 화면 위 가운데에 잠깐 ----- */
- function phaseLocal(text,sub){const r=root('phov');r.className='phov';r.innerHTML=`<div class="phin"><div class="pht">${esc(text)}</div>${sub?`<div class="phs">${esc(sub)}</div>`:''}</div>`;setTimeout(()=>r.classList.add('out'),1800);setTimeout(()=>r.remove(),2300)}
- function phase(text,sub){phaseLocal(text,sub);DBS().broadcast({t:'cutin',k:'phase',text,sub})}
+ /* 11-03 감우 (검토 9): small = 작은 띠 0.9s (교대 · 행동 순서 · 행동 처리) — 큰 띠(턴 개시 · 턴 종료)는 2.3s 그대로 */
+ function phaseLocal(text,sub,small){const r=root('phov');r.className='phov'+(small?' sm':'');r.innerHTML=`<div class="phin"><div class="pht">${esc(text)}</div>${sub?`<div class="phs">${esc(sub)}</div>`:''}</div>`;const hold=small?600:1800,end=small?900:2300;setTimeout(()=>r.classList.add('out'),hold);setTimeout(()=>{if(r.parentNode)r.remove()},end)}
+ function phase(text,sub,small){phaseLocal(text,sub,small);DBS().broadcast({t:'cutin',k:'phase',text,sub,small:small?1:0})}
 
  /* ----- 진화 연출: 메가진화(빛 고치 → 실루엣 깜빡임 → 번쩍 → 새 모습 + 무지개 고리) · 폼체인지(띠 위에서 실루엣이 돌며 바뀜) · 폼 복귀 ----- */
  function evoLocal(D){D=D||{};if(String(cfg().on)==='0')return;const r=root('cut');r.className='cutov evo '+(D.kind==='mega'?'ev-mega':'ev-form');fit(r);
@@ -139,6 +143,6 @@ window.OM_CUTIN=(()=>{
    setTimeout(()=>r.remove(),3400)}}
  function evo(D){evoLocal(D);se('cut');DBS().broadcast({t:'cutin',k:'evo',D})}
 
- function onEvent(p){if(!p||p.t!=='cutin')return;if(p.k==='fire'){if(p.se&&p.se!=='cut')se(p.se);if(p.c)showFire(p.c);else if(p.list)fireLocal(p.list)}else if(p.k==='vs'){vsLocal(p)}else if(p.k==='raid'){raidLocal(p.D)}else if(p.k==='phase')phaseLocal(p.text,p.sub);else if(p.k==='evo'){se('cut');evoLocal(p.D)}}
+ function onEvent(p){if(!p||p.t!=='cutin')return;if(p.k==='fire'){if(p.se&&p.se!=='cut')se(p.se);if(p.c)showFire(p.c);else if(p.list)fireLocal(p.list)}else if(p.k==='vs'){vsLocal(p)}else if(p.k==='raid'){raidLocal(p.D)}else if(p.k==='phase')phaseLocal(p.text,p.sub,!!p.small);else if(p.k==='evo'){se('cut');evoLocal(p.D)}}
  return {synth,preview,fire,vs,raid,phase,evo,evoLocal,onEvent,fireLocal,vsLocal,raidLocal};
 })();

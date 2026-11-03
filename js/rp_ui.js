@@ -1382,7 +1382,9 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  function playSe(name,localOnly){if(seOff()&&localOnly!=='force')return;const u=/^https?:/.test(name)?name:seUrl(name);if(!u)return;if(!gm())localOnly=true;/* 좌석은 rp 를 못 쓰니 내 쪽에서만 울린다 */if(localOnly){seAudio(u,SE_TUNE[name]);return}A().set(['rp','se'],{name,src:u,at:Date.now()})}
  /* 로그를 보고 자동 효과음: 주사위 → dice, 지시 공개 → Draw, 턴 개시 → Ping2, 공격 명중 → Blow, 급소 → cut_critical, 빗나감 → evasion, 빈사 → Dead */
  let seenLog=new Set(),lastBall=0;
- function autoSe(row){if(!row||!row.id||seenLog.has(row.id))return;seenLog.add(row.id);if(seenLog.size>500)seenLog=new Set([...seenLog].slice(-200));if(row.at&&Date.now()-new Date(row.at).getTime()>15000)return;if(!unlocked)return;
+ function autoSe(row){if(!row||!row.id||seenLog.has(row.id))return;seenLog.add(row.id);if(seenLog.size>500)seenLog=new Set([...seenLog].slice(-200));if(row.at&&Date.now()-new Date(row.at).getTime()>15000)return;
+  try{if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.logFx)window.OM_BATTLE_UI.logFx(row)}catch(e){}   /* 11-03 감우 (검토 6 · 7): 피해 · 급소 · 빈사 · 턴 종료 순차 — 카드 연출은 소리 설정과 상관없이 (battle_ui logFx) */
+  if(!unlocked)return;
   const t=String((row.data||{}).t||'');let n='';if(row.kind==='dice')n='dice';else if(row.kind==='battle'){if(/^【공개】/.test(t))n='Draw';else if(/^턴 개시/.test(t))n='Ping2';else if(/급소!/.test(t))n='cut_critical';else if(/명중\(|필중/.test(t))n='Blow';else if(/빗나감/.test(t))n='evasion';else if(/풀이 죽어|잠자고|저려서|얼어붙어|홀딱 반해|스스로를 공격/.test(t))n=seUrl('fail')?'fail':'Ping'}
   /* 10-24 망령: 파일 없이 브라우저에서 만드는 소리 — 등장(볼 열림) · 랭크 상승/하강 · 회복 · 양측 지시 준비 완료 */
   if(!n&&row.kind==='battle'){const sy=k=>{try{if(window.OM_CUTIN&&window.OM_CUTIN.synth)window.OM_CUTIN.synth(k)}catch(e){}};const h=(row.data||{}).hp;

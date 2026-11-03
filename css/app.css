@@ -5012,3 +5012,93 @@ html[data-vt="mm"] .memon .medet{border-color:rgba(20,16,12,.4)}
 .hand-ov.on .ho-slot.unfit{filter:grayscale(.85) brightness(.5)}.hand-ov.on .ho-slot.unfit:hover{filter:grayscale(.6) brightness(.7)}
 .ho-big.unfit{filter:grayscale(.7) brightness(.75)}.ho-unfit{color:var(--yel2);font-size:13px;margin:4px 0 6px;text-align:center}.ho-use[disabled]{opacity:.35;cursor:not-allowed;box-shadow:none}
 .skc-cls{font-size:.8em;margin-left:4px;padding:0 4px;border:1px solid currentColor;opacity:.8}
+/* 11-03 배틀 연출 (감우 · 검토 노트 20번 — 배틀 쪽만. RP · GM 콘솔 규칙은 다른 작업자가 위에서 고친다) */
+/* 6. 피해 · 급소 · 빈사 · 회복 — 로그를 받은 화면이 battle_ui logFx 로 한 번 붙였다 뗀다 */
+.mon.hit{animation:bHit .5s cubic-bezier(.36,.07,.19,.97) both}
+.mon.crit{animation:bCrit .5s ease-out both}
+.mon.heal{animation:bHeal .5s ease-out both}
+.mon.ko{animation:bKo .8s ease-in both}
+@keyframes bHit{10%,90%{transform:translate(-1px,0)}20%,80%{transform:translate(3px,0)}30%,50%,70%{transform:translate(-5px,0)}40%,60%{transform:translate(5px,0)}}
+@keyframes bCrit{0%{box-shadow:0 0 0 0 rgba(228,0,43,.9),inset 0 0 0 200px rgba(228,0,43,.55)}100%{box-shadow:3px 3px 0 var(--red),inset 0 0 0 200px rgba(228,0,43,0)}}
+@keyframes bHeal{0%{box-shadow:0 0 0 6px rgba(61,220,132,.8)}100%{box-shadow:3px 3px 0 var(--red)}}
+@keyframes bKo{from{opacity:1;filter:grayscale(0);transform:translateY(0)}to{opacity:.4;filter:grayscale(1);transform:translateY(6px)}}
+.mon.ko.fainted{opacity:.4;filter:grayscale(1)}
+/* 8. 지금 차례 · 피격 대기 */
+.mon.big.now{border-color:var(--yel2);box-shadow:0 0 0 2px var(--yel2),4px 4px 0 var(--red)}
+.mon.big.now .nowtag,.mon.big.wait .waittag{flex:none;font-family:var(--lab);font-size:10px;letter-spacing:.04em;padding:0 6px;line-height:16px;border-radius:2px}
+.mon.big.now .nowtag{background:var(--yel2);color:#1a1400}
+.mon.big.wait .waittag{background:#444;color:#ddd}
+.mon.big.wait .pic{filter:saturate(.75) brightness(.92)}
+/* 9. 작은 페이즈 띠 (교대 · 행동 순서 · 행동 처리 — 0.9s) */
+.phov.sm{top:56px;animation-duration:.25s}.phov.sm .phin{padding:3px 22px;min-width:160px;border-width:2px;box-shadow:3px 3px 0 var(--red)}.phov.sm .pht{font-size:17px;letter-spacing:.06em}.phov.sm.out{animation-duration:.3s}
+/* 10. 동시 컷인 좌/우 — 색 보더(--pc) + PLAYER / RIVAL */
+.c2-vs .c2-who{display:block;font:700 calc(var(--u)*2.6*var(--k))/1 'Rajdhani','IBM Plex Sans KR',sans-serif;letter-spacing:.14em;color:#fff;background:var(--pc);padding:calc(var(--u)*.3) calc(var(--u)*1.4);width:max-content;margin-bottom:calc(var(--u)*.6);box-shadow:calc(var(--u)*.4) calc(var(--u)*.4) 0 #0c0c0e}
+.c2-vs .c2-side.c2-R .c2-who{margin-left:auto}
+.c2-vs .c2-por{outline:calc(var(--u)*.9) solid var(--pc);outline-offset:calc(var(--u)*.3)}
+/* 15-①. 얇은 sticky 바 — 조작판이 화면 밖으로 나가면 (battle_ui stickyWatch) */
+.bsticky{position:sticky;top:-13px;z-index:12;display:none;align-items:center;gap:6px;flex-wrap:wrap;margin:-12px -14px 8px;padding:6px 12px;background:#0d0d10;border-bottom:2px solid #fff;box-shadow:0 4px 12px rgba(0,0,0,.5)}
+.bsticky.on{display:flex}
+.bsticky .bstk{display:inline-flex;align-items:center;gap:6px}.bsticky .bstk b{font-family:var(--head);font-size:14px;color:var(--yel2);letter-spacing:.06em}.bsticky .bstk i{font-style:normal;font-family:var(--lab);font-size:13px;color:#fff}
+.bsticky .bstf{display:inline-flex;gap:4px;flex-wrap:wrap;align-items:center}.bsticky .bstf.clickable{cursor:pointer}.bsticky .chip{font-size:11px;padding:0 7px;line-height:18px}
+.bsticky .btn.xs small{font-weight:400;opacity:.8;margin-left:3px}
+@media (max-width:760px){.bsticky{top:-9px;margin:-8px -8px 8px;padding:5px 8px;gap:4px}.bsticky .bstf{display:none}.bsticky .btn.xs{min-height:34px}}
+/* 15-②. 배틀 탭의 화자 칩 줄 — 기본 접힘 */
+.bstat .bspkfold{flex:1 0 100%}
+.bstat .bspkfold>summary{cursor:pointer;list-style:none;font-family:var(--lab);font-size:12px;color:var(--mute);padding:2px 0;user-select:none}
+.bstat .bspkfold>summary::-webkit-details-marker{display:none}
+.bstat .bspkfold[open]>summary{color:#fff;margin-bottom:4px}
+.bstat.fold .bspkfold{display:none}
+/* 15-③. 1100px 이상에서는 벤치를 필드 양옆 세로 칸(한 줄 2체)으로 — 컨테이너 쿼리(960px 이하)가 위아래로 풀어 두던 것 */
+@media (min-width:1100px){
+ .stadium{grid-template-columns:minmax(150px,185px) minmax(0,1fr) minmax(150px,185px)}
+ .stadium .bcol .bench{grid-template-columns:1fr 1fr}
+ .stadium .bcol .shead{flex-wrap:wrap;gap:3px}
+ .stadium .fgrid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+}
+/* 필드 칸이 좁아지는 폭(채팅 창과 나란히)에서는 큰 카드를 압축 — 이름 줄 wrap · 단추 3열 (휴대폰 규칙과 같은 꼴) */
+@media (min-width:1100px) and (max-width:1500px){
+ .stadium .fgrid .mon.big .nm{flex-wrap:wrap;gap:3px 6px}.stadium .fgrid .mon.big .nm .nmb{flex:1 1 100%;justify-content:flex-end;gap:3px}
+ .stadium .fgrid .mon.big .mbtns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px}.stadium .fgrid .mon.big .mbtns .btn{justify-content:center;padding:0 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+ .stadium .fgrid .mon.big .mbtns .exg{display:contents}
+ .stadium .fgrid .mon.big .mbtns .mmore{display:none}
+ .stadium .fstrip{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);gap:8px;padding:6px 8px}
+}
+/* 16. 공격 창 — 휴대폰 sticky 요약 줄 */
+.asum1{display:none}
+@media (max-width:760px){
+ .asum1.on{display:flex;position:sticky;top:38px;z-index:3;gap:6px;flex-wrap:wrap;align-items:center;margin:0 -12px 8px;padding:6px 12px;background:#0d0d10;border-bottom:2px solid var(--yel2);font-size:13px;color:#fff}
+ .asum1 em{font-style:normal;color:var(--red2)}.asum1 small{color:var(--mute)}.asum1 .asep{color:#444}
+}
+/* 17 · 13. (JS — 창 안 확인) */
+/* 18. 피해 받는 쪽 알림 */
+.hittoast{position:fixed;left:50%;bottom:72px;transform:translateX(-50%) translateY(20px);z-index:45;background:#2b1414;color:#ffd0d0;border:2px solid var(--red);box-shadow:4px 4px 0 #000;padding:8px 16px;font:14px var(--lab);cursor:pointer;opacity:0;transition:.25s;pointer-events:none;max-width:calc(100vw - 32px)}
+.hittoast.on{opacity:1;transform:translateX(-50%) translateY(0);pointer-events:auto}
+.hittoast b{color:#fff}.hittoast .hta{color:var(--yel2);font-weight:700;margin-left:4px}
+.cmdfab.hit{opacity:1;transform:none;pointer-events:auto}
+.cmdfab[data-badge]:not([data-badge=""])::after{content:attr(data-badge);position:absolute;top:-8px;right:-8px;min-width:20px;height:20px;padding:0 5px;border-radius:10px;background:var(--red);color:#fff;font:700 12px/20px var(--lab);text-align:center;border:2px solid #000}
+@media (max-width:760px){
+ .cmdfab{bottom:calc(68px + env(safe-area-inset-bottom,0px));z-index:41}   /* 점검: 휴대폰 아래 바(.mbar 58px · z 40)에 가려 안 보이던 「지시 입력」 단추를 바 위로 */
+ .hittoast{bottom:calc(122px + env(safe-area-inset-bottom,0px))}
+}
+/* 19. 처음 둘러보기 쪽지 — 모달 아래 · 창이 열리면 숨김 · 20초 뒤 접힘 */
+.tour-ask{z-index:40}
+body:has(.modalbg) .tour-ask{display:none}
+.tour-ask.fold{width:auto;padding:6px 12px;cursor:pointer}
+.tour-ask.fold span,.tour-ask.fold .tour-f{display:none}
+.tour-ask.fold b{font-size:14px}.tour-ask.fold b::after{content:' ▸';color:var(--mute)}
+/* 20. 휴대폰(거친 포인터) 44px — 큰 카드 단추 · 페이즈 단추 · 필드/SP 단추 (벤치 작은 카드는 빼고) */
+@media (pointer:coarse){
+ .mon.big .mbtns .btn.xs,.ph,.bstat .gmrow .btn,.bstat .gmrow label.dlset,.tbtns .btn.xs,.tnmini,.shead2 .btn.xs,.shead .btn.xs,.fstrip .fobjs,.revealstat .btn.xs,.orderbox .ohead .btn.xs{min-height:40px}
+ .mon.big .mbtns{flex-wrap:wrap}.mon.big .mbtns .btn.xs{display:inline-flex;align-items:center}
+ .phases{flex-wrap:wrap}
+}
+/* 21. HP 창 — 「피해 적용」 sticky 푸터 · 되돌리기 줄 wrap */
+.modal .afoot.hpfoot{justify-content:flex-end}.modal .afoot.hpfoot #h_prev{flex:1;min-width:0}
+.hpundo{display:inline-flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.hphead .row.small{flex-wrap:wrap;gap:4px 8px}
+@media (max-width:760px){.modal .afoot.hpfoot .btn.xs{flex:0 0 auto;min-height:42px}}
+/* 22. 휴대폰 지시 입력 — 「선행 입력 ▸」 한 묶음 */
+.cfold.pregrp>summary{font-weight:600}.pregrpin{padding:4px 0 0 6px;border-left:2px solid var(--line2);margin:4px 0 0 2px}
+.pregrpin .cfold{margin-left:0}
+/* 점검: sticky 바가 켜져 있을 때 scrollIntoView 로 간 곳이 바 뒤에 숨지 않게 */
+#cmdForm,.cmdt,.cfold,.mon.big,.orderbox,.endq,#ares{scroll-margin-top:52px}
