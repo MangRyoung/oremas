@@ -314,7 +314,7 @@
    "root": "도마뱀",
    "oldName": "진흙도마뱀",
    "img": "w002.webp",
-   "imgAt": 1793695898957,
+   "imgAt": 1793709284899,
    "prevName": "암리자",
    "abilityReads": true
   },
@@ -392,7 +392,7 @@
    "root": "달팽이",
    "oldName": "솔방울달팽이",
    "img": "w003.webp",
-   "imgAt": 1793695900708,
+   "imgAt": 1793709284899,
    "prevName": "덩달팽",
    "abilityReads": true
   },
@@ -476,7 +476,7 @@
    "root": "여우",
    "oldName": "달여우",
    "img": "w004.webp",
-   "imgAt": 1793695898385,
+   "imgAt": 1793709284899,
    "prevName": "몽롱콘",
    "abilityReads": true
   },
@@ -712,7 +712,7 @@
    "root": "불나방",
    "oldName": "열사불나방",
    "img": "w007.webp",
-   "imgAt": 1793691018264,
+   "imgAt": 1793709284899,
    "prevName": "번모스",
    "abilityReads": true
   },
@@ -878,7 +878,7 @@
    "root": "족제비",
    "oldName": "도둑족제비",
    "img": "w009.webp",
-   "imgAt": 1793695896500,
+   "imgAt": 1793709284899,
    "prevName": "쉿페럿",
    "abilityReads": true
   },
@@ -1039,7 +1039,7 @@
    "root": "거미",
    "oldName": "꿀거미",
    "img": "w011.webp",
-   "imgAt": 1793695903134,
+   "imgAt": 1793709284899,
    "prevName": "비틀미",
    "abilityReads": true
   },
@@ -1117,7 +1117,7 @@
    "root": "고양이",
    "oldName": "번개고양이",
    "img": "w012.webp",
-   "imgAt": 1793695903277,
+   "imgAt": 1793709284899,
    "prevName": "짜릿냐",
    "abilityReads": true
   },
@@ -1196,7 +1196,7 @@
    "root": "뱀",
    "oldName": "사룡뱀",
    "img": "w013.webp",
-   "imgAt": 1793695901141,
+   "imgAt": 1793709284899,
    "prevName": "룡스네",
    "abilityReads": true
   },
@@ -1674,7 +1674,7 @@
    "root": "고양이",
    "oldName": "리본고양이",
    "img": "w019.webp",
-   "imgAt": 1793695896864,
+   "imgAt": 1793709284899,
    "prevName": "살랑냥",
    "abilityReads": true
   },
@@ -1921,7 +1921,7 @@
    "root": "소라",
    "oldName": "이슬소라",
    "img": "w022.webp",
-   "imgAt": 1793691005697,
+   "imgAt": 1793709284899,
    "prevName": "퐁소라",
    "abilityReads": true
   },
@@ -1995,7 +1995,7 @@
    "root": "도마뱀",
    "oldName": "돌도마뱀",
    "img": "w023.webp",
-   "imgAt": 1793686037730,
+   "imgAt": 1793709284899,
    "prevName": "돌도마",
    "abilityReads": true
   },
@@ -2070,7 +2070,7 @@
    "root": "물범",
    "oldName": "소라물범",
    "img": "w024.webp",
-   "imgAt": 1793695899975,
+   "imgAt": 1793709284899,
    "prevName": "물바범",
    "abilityReads": true
   },
@@ -2229,7 +2229,7 @@
    "root": "곰",
    "oldName": "발차기곰",
    "img": "w026.webp",
-   "imgAt": 1793695901015,
+   "imgAt": 1793709284899,
    "prevName": "파워곰",
    "abilityReads": true
   },
@@ -2618,7 +2618,7 @@
    "root": "가오리",
    "oldName": "뿔가오리",
    "img": "w031.webp",
-   "imgAt": 1793695904116,
+   "imgAt": 1793709284899,
    "prevName": "룡레이",
    "abilityReads": true
   },
@@ -2701,7 +2701,7 @@
    "root": "종",
    "oldName": "나사종",
    "img": "w032.webp",
-   "imgAt": 1793695902288,
+   "imgAt": 1793709284899,
    "prevName": "스틸종",
    "abilityReads": true
   },
@@ -2857,7 +2857,7 @@
    "root": "등불",
    "oldName": "진흙등불",
    "img": "w034.webp",
-   "imgAt": 1793695900103,
+   "imgAt": 1793709284899,
    "prevName": "유령등",
    "abilityReads": true
   },
@@ -2937,7 +2937,7 @@
    "root": "딱정벌레",
    "oldName": "쇠딱정벌레",
    "img": "w035.webp",
-   "imgAt": 1793695901968,
+   "imgAt": 1793709284899,
    "prevName": "사각딱",
    "abilityReads": true
   },
@@ -3186,7 +3186,7 @@
    "root": "수달",
    "oldName": "이슬수달",
    "img": "w038.webp",
-   "imgAt": 1793691005933,
+   "imgAt": 1793709284899,
    "prevName": "아쿠달",
    "abilityReads": true
   },
@@ -3428,7 +3428,7 @@
    "root": "다람쥐",
    "oldName": "완력다람쥐",
    "img": "w041.webp",
-   "imgAt": 1793695895878,
+   "imgAt": 1793709284899,
    "prevName": "버니람",
    "abilityReads": true
   },
@@ -3508,7 +3508,7 @@
    "root": "거북",
    "oldName": "저주거북",
    "img": "w042.webp",
-   "imgAt": 1793686032898,
+   "imgAt": 1793709284899,
    "prevName": "짱터틀",
    "abilityReads": true
   },
@@ -3889,7 +3889,7 @@
    "root": "곰",
    "oldName": "강철곰",
    "img": "w047.webp",
-   "imgAt": 1793695898635,
+   "imgAt": 1793709284899,
    "prevName": "쇠고미",
    "abilityReads": true
   },
@@ -4045,7 +4045,7 @@
    "root": "까마귀",
    "oldName": "검은까마귀",
    "img": "w049.webp",
-   "imgAt": 1793695903548,
+   "imgAt": 1793709284899,
    "prevName": "쉿크로",
    "abilityReads": true
   },
@@ -4522,7 +4522,7 @@
    "root": "도마뱀",
    "oldName": "잿도마뱀",
    "img": "w055.webp",
-   "imgAt": 1793691017932,
+   "imgAt": 1793709284899,
    "prevName": "홧도마",
    "abilityReads": true
   },
@@ -4692,7 +4692,7 @@
    "root": "토끼",
    "oldName": "들토끼",
    "img": "w057.webp",
-   "imgAt": 1793695900576,
+   "imgAt": 1793709284899,
    "prevName": "퍼피토",
    "abilityReads": true
   },
@@ -4773,7 +4773,7 @@
    "root": "거북",
    "oldName": "광석거북",
    "img": "w058.webp",
-   "imgAt": 1793695898249,
+   "imgAt": 1793709284899,
    "prevName": "암거북",
    "abilityReads": true
   },
@@ -4936,7 +4936,7 @@
    "root": "박쥐",
    "oldName": "꿈박쥐",
    "img": "w060.webp",
-   "imgAt": 1793695896136,
+   "imgAt": 1793709284899,
    "prevName": "훨배트",
    "abilityReads": true
   },
@@ -5573,7 +5573,7 @@
    "root": "늑대",
    "oldName": "철갑늑대",
    "img": "w068.webp",
-   "imgAt": 1793695902832,
+   "imgAt": 1793709284899,
    "prevName": "코그늑",
    "abilityReads": true
   },
@@ -6384,7 +6384,7 @@
    "root": "양",
    "oldName": "번개양",
    "img": "w078.webp",
-   "imgAt": 1793695899830,
+   "imgAt": 1793709284899,
    "prevName": "줄메에",
    "abilityReads": true
   },
@@ -6538,7 +6538,7 @@
    "root": "양",
    "oldName": "달콤회오리양",
    "img": "w080.webp",
-   "imgAt": 1793686027541,
+   "imgAt": 1793709284899,
    "prevName": "하늘램",
    "abilityReads": true
   },
@@ -6686,7 +6686,7 @@
    "root": "곰",
    "oldName": "근육곰",
    "img": "w082.webp",
-   "imgAt": 1793686032012,
+   "imgAt": 1793709284899,
    "prevName": "불끈곰",
    "abilityReads": true
   },
@@ -6764,7 +6764,7 @@
    "root": "나방",
    "oldName": "실더듬이나방",
    "img": "w083.webp",
-   "imgAt": 1793695899669,
+   "imgAt": 1793709284899,
    "prevName": "바스방",
    "abilityReads": true
   },
@@ -6845,7 +6845,7 @@
    "root": "지네",
    "oldName": "실지네",
    "img": "w084.webp",
-   "imgAt": 1793695896330,
+   "imgAt": 1793709284899,
    "prevName": "비틀네",
    "abilityReads": true
   },
@@ -6930,7 +6930,7 @@
    "root": "매",
    "oldName": "거울매",
    "img": "w085.webp",
-   "imgAt": 1793691005578,
+   "imgAt": 1793709284899,
    "prevName": "신호크",
    "abilityReads": true
   },
@@ -7159,7 +7159,7 @@
    "root": "소라",
    "oldName": "거품소라",
    "img": "w088.webp",
-   "imgAt": 1793695896678,
+   "imgAt": 1793709284899,
    "prevName": "웨이쉘",
    "abilityReads": true
   },
@@ -7317,7 +7317,7 @@
    "root": "하마",
    "oldName": "광석하마",
    "img": "w090.webp",
-   "imgAt": 1793695901832,
+   "imgAt": 1793709284899,
    "prevName": "짱하마",
    "abilityReads": true
   },
@@ -7473,7 +7473,7 @@
    "oldName": "들두더지",
    "nameFix": 1,
    "img": "w092.webp",
-   "imgAt": 1793686041666,
+   "imgAt": 1793709284899,
    "prevName": "콩몰",
    "abilityReads": true
   },
@@ -7873,7 +7873,7 @@
    "root": "열쇠",
    "oldName": "등불열쇠",
    "img": "w097.webp",
-   "imgAt": 1793695900896,
+   "imgAt": 1793709284899,
    "prevName": "위스열",
    "abilityReads": true
   },
@@ -8192,7 +8192,7 @@
    "root": "펠리컨",
    "oldName": "거울펠리컨",
    "img": "w101.webp",
-   "imgAt": 1793695897806,
+   "imgAt": 1793709284899,
    "prevName": "깃펠리",
    "abilityReads": true
   },
@@ -8438,7 +8438,7 @@
    "root": "다람쥐",
    "oldName": "요정별다람쥐",
    "img": "w104.webp",
-   "imgAt": 1793691010107,
+   "imgAt": 1793709284899,
    "prevName": "오라쥐",
    "abilityReads": true
   },
@@ -8593,7 +8593,7 @@
    "root": "두루미",
    "oldName": "철권두루미",
    "img": "w106.webp",
-   "imgAt": 1793691018034,
+   "imgAt": 1793709284899,
    "prevName": "차두루",
    "abilityReads": true
   },
@@ -9066,7 +9066,7 @@
    "root": "게",
    "oldName": "물보라이슬게",
    "img": "w112.webp",
-   "imgAt": 1793695902981,
+   "imgAt": 1793709284899,
    "prevName": "출렁게",
    "abilityReads": true
   },
@@ -9228,7 +9228,7 @@
    "root": "항아리",
    "oldName": "유령항아리",
    "img": "w114.webp",
-   "imgAt": 1793695899309,
+   "imgAt": 1793709284899,
    "prevName": "유령팟",
    "abilityReads": true
   },
@@ -9306,7 +9306,7 @@
    "root": "두더지",
    "oldName": "덩굴두더지",
    "img": "w115.webp",
-   "imgAt": 1793695895483,
+   "imgAt": 1793709284899,
    "prevName": "그린몰",
    "abilityReads": true
   },
@@ -9695,7 +9695,7 @@
    "root": "고양이",
    "oldName": "철갑고양이",
    "img": "w120.webp",
-   "imgAt": 1793695897043,
+   "imgAt": 1793709284899,
    "prevName": "메탈캣",
    "abilityReads": true
   },
@@ -9854,7 +9854,7 @@
    "root": "두루미",
    "oldName": "나사두루미",
    "img": "w122.webp",
-   "imgAt": 1793691009873,
+   "imgAt": 1793709284899,
    "prevName": "차루미",
    "abilityReads": true
   },
@@ -10024,7 +10024,7 @@
    "oldName": "둥근여우",
    "nameFix": 1,
    "img": "w124.webp",
-   "imgAt": 1793691014136,
+   "imgAt": 1793709284899,
    "prevName": "퍼피콘",
    "abilityReads": true
   },
@@ -10104,7 +10104,7 @@
    "root": "거북",
    "oldName": "모래거북",
    "img": "w125.webp",
-   "imgAt": 1793695904008,
+   "imgAt": 1793709284899,
    "prevName": "먼지북",
    "abilityReads": true
   },
@@ -10422,7 +10422,7 @@
    "root": "족제비",
    "oldName": "들족제비",
    "img": "w129.webp",
-   "imgAt": 1793691013575,
+   "imgAt": 1793709284899,
    "prevName": "방실족",
    "abilityReads": true
   },
@@ -10507,7 +10507,7 @@
    "root": "염소",
    "oldName": "망령염소",
    "img": "w130.webp",
-   "imgAt": 1793695898766,
+   "imgAt": 1793709284899,
    "prevName": "프리염",
    "abilityReads": true
   },
@@ -11153,7 +11153,7 @@
    "root": "톱니",
    "oldName": "강철톱니",
    "img": "w138.webp",
-   "imgAt": 1793695898514,
+   "imgAt": 1793709284899,
    "prevName": "스틸니",
    "abilityReads": true
   },
@@ -12108,7 +12108,7 @@
    "root": "물범",
    "oldName": "서리물범",
    "img": "w150.webp",
-   "imgAt": 1793695897498,
+   "imgAt": 1793709284899,
    "prevName": "프로실",
    "abilityReads": true
   },
@@ -12188,7 +12188,7 @@
    "root": "불나방",
    "oldName": "유령불나방",
    "img": "w151.webp",
-   "imgAt": 1793686037480,
+   "imgAt": 1793709284899,
    "prevName": "블레방",
    "abilityReads": true
   },
@@ -12273,7 +12273,7 @@
    "root": "다람쥐",
    "oldName": "달콤다람쥐",
    "img": "w152.webp",
-   "imgAt": 1793695896009,
+   "imgAt": 1793709284899,
    "prevName": "루루넛",
    "abilityReads": true
   },
@@ -12351,7 +12351,7 @@
    "root": "하이에나",
    "oldName": "도둑하이에나",
    "img": "w153.webp",
-   "imgAt": 1793695901526,
+   "imgAt": 1793709284899,
    "prevName": "검하이",
    "abilityReads": true
   },
@@ -12431,7 +12431,7 @@
    "root": "열쇠",
    "oldName": "그림자열쇠",
    "img": "w154.webp",
-   "imgAt": 1793695899475,
+   "imgAt": 1793709284899,
    "prevName": "팬텀키",
    "abilityReads": true
   },
@@ -12584,7 +12584,7 @@
    "root": "토끼",
    "oldName": "회색토끼",
    "img": "w156.webp",
-   "imgAt": 1793695904247,
+   "imgAt": 1793709284899,
    "prevName": "폼폼깡",
    "abilityReads": true
   },
@@ -12668,7 +12668,7 @@
    "root": "나방",
    "oldName": "별나방",
    "img": "w157.webp",
-   "imgAt": 1793695902089,
+   "imgAt": 1793709284899,
    "prevName": "오라방",
    "abilityReads": true
   },
@@ -12752,7 +12752,7 @@
    "root": "가오리",
    "oldName": "물가오리",
    "img": "w158.webp",
-   "imgAt": 1793695897931,
+   "imgAt": 1793709284899,
    "prevName": "퐁오리",
    "abilityReads": true
   },
@@ -14849,7 +14849,7 @@
    "oldName": "소라여우",
    "nameFix": 1,
    "img": "w184.webp",
-   "imgAt": 1793691005817,
+   "imgAt": 1793709284899,
    "prevName": "서리콘",
    "abilityUnique": true,
    "abilityReads": true
@@ -16423,7 +16423,7 @@
    "root": "달팽이",
    "oldName": "덩굴달팽이",
    "img": "w203.webp",
-   "imgAt": 1793686027837,
+   "imgAt": 1793709284899,
    "prevName": "싹팽이",
    "abilityUnique": true,
    "abilityAuto": {
@@ -16535,7 +16535,7 @@
    "root": "뱀",
    "oldName": "진흙뱀",
    "img": "w204.webp",
-   "imgAt": 1793686041536,
+   "imgAt": 1793709284899,
    "prevName": "스모그뱀",
    "abilityUnique": true,
    "abilityAuto": {
@@ -16875,7 +16875,7 @@
    "oldName": "바람늑대",
    "nameFix": 1,
    "img": "w208.webp",
-   "imgAt": 1793691009615,
+   "imgAt": 1793709284899,
    "prevName": "휘울프",
    "abilityReads": true
   },
@@ -16954,7 +16954,7 @@
    "oldName": "검은고양이",
    "nameFix": 1,
    "img": "w209.webp",
-   "imgAt": 1793691013739,
+   "imgAt": 1793709284899,
    "prevName": "녹스팬서",
    "abilityUnique": true,
    "abilityAuto": {
