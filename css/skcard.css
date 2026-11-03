@@ -105,3 +105,5 @@
 .skhc .dcp{display:flex;gap:2px;margin-top:2px}
 .skhc .dcp i{width:16px;height:16px;border-radius:50%;display:grid;place-items:center;font:400 10px/1 var(--lab,'Do Hyeon'),sans-serif;font-style:normal;color:#fff;background:var(--ic);box-shadow:0 0 0 1.5px #f3ecd9}
 .skhc .dcp i[title="★"]{color:#3a2c00}
+/* 11-04: 웹툴 스킬 체크 창의 .skc-x(flex) 와 이름이 겹쳐 효과 글 「+2」 · 「HP」 가 세로로 쪼개지던 것 */
+.skc .skc-x{display:block;gap:0;align-items:normal;font-size:7.4cqw;color:var(--ski)}
