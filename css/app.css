@@ -5111,64 +5111,6 @@ body:has(.modalbg) .tour-ask{display:none}
 @keyframes standoutR{to{opacity:0;filter:brightness(.4);transform:translateX(48px)}}
 @keyframes standoutC{to{opacity:0;filter:brightness(.4);transform:translateX(-50%) translateY(18px)}}
 .stand.center.ds-l.out{animation-name:standoutL}.stand.center.ds-r.out{animation-name:standoutR}
-/* 20-4 무대 위 버튼: 배경 · 씬 · 기록 · BGM 만 줄에, 나머지는 「⋯ 더보기」 메뉴. 날짜 · 배경 이름 태그는 반투명하게 작게 */
-.rpbtns{align-items:flex-start}
-.rpbtns .rpmorew{position:relative;display:inline-flex;pointer-events:auto}
-.rpbtns .rpmoreb.on{background:#fff;color:#000}
-.rpmore{display:none;position:absolute;right:0;top:calc(100% + 4px);z-index:9;min-width:150px;flex-direction:column;gap:3px;padding:5px;background:rgba(12,12,14,.96);border:2px solid #fff;box-shadow:4px 4px 0 #000}
-.rpmore.open{display:flex}
-.rpmore .btn{width:100%;justify-content:flex-start;text-align:left;margin:0;white-space:nowrap}
-.rpmore .rpmob{display:none}
-@media (max-width:760px){.rpbtns .rpdesk{display:none}.rpmore .rpmob{display:flex}.rpmore{min-width:140px}}
-.rpstage .stagetags{gap:4px}
-.rpstage .daytag{background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.55);box-shadow:none;padding:2px 10px 2px 8px;gap:5px}
-.rpstage .daytag b{font-size:17px}.rpstage .daytag i{font-size:12px}.rpstage .daytag em{font-size:11px}
-.rpstage .daytag .phase{font-size:11px;padding:2px 7px}
-.rpstage .stagetags .bgname{background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.55);box-shadow:none;font-size:13px;padding:2px 12px 2px 8px}
-.rpstage .ddaytag{box-shadow:none;opacity:.92}
-html[data-vt] .rpstage .daytag b{font-size:20px!important}
-html[data-vt] .rpstage .daytag .phase{font-size:11px!important;padding:2px 7px!important}
-html[data-vt] .rpstage .stagetags .bgname{font-size:13px!important;padding:2px 12px 2px 8px!important}
-html[data-vt="p5"] .rpstage .stagetags .bgname{padding:8px 12px!important;background-color:rgba(11,11,13,.8)!important}   /* P5 는 위아래 점선 장식이 글자를 지나가지 않게 제 여백 */
-html[data-vt="p5"] .rpstage .daytag,html[data-vt="p3"] .rpstage .daytag{background:rgba(0,0,0,.5)!important;border:1px solid rgba(255,255,255,.55)!important;padding:2px 10px 2px 8px!important;transform:skewX(-8deg)}
-@media (max-width:760px){html[data-vt] .rpstage .daytag b{font-size:17px!important}.rpstage .daytag b{font-size:15px}}
-/* 20-4 모바일: 버튼 줄이 두 줄에서 끝나게 — BGM 위젯은 곡 이름을 짧게 */
-@media (max-width:760px){
- .rpbtns .rpbgmw .bgmw{max-width:min(46vw,180px)!important}
- .rpbtns .rpbgmw .bgmw:not(.open) .bt{max-width:50px!important}
- .rpbtns .rpbgmw .bgmw.open{max-width:min(62vw,250px)!important}
-}
-@media (max-width:760px){.rpstage .daytag em{display:none}}   /* 모바일 날짜 태그: 날씨 글자는 빼서 버튼 줄 자리를 넓힌다 (GM: 배경 · BGM / 더보기 · 콘솔 두 줄, 기록은 메뉴 안) */
-/* 20-5 넓은 화면의 화자 칩 줄: 44px 아바타만, 이름은 고른 칩 · 마우스 올린 칩만 (폴더 · 인물/표정/정리 칩은 작은 글씨 그대로) */
-@media (min-width:761px){
- #rpu_bar .spkbar{padding:2px 2px 3px;gap:5px}
- #rpu_bar .spk{flex-direction:row;align-items:center;gap:0;padding:1px;min-width:0;min-height:0;height:46px;box-sizing:border-box}
- #rpu_bar .spk i{width:40px;height:40px;flex:none}
- #rpu_bar .spk span{font-size:12px;padding:0 7px 0 5px;max-width:110px}
- #rpu_bar .spk[data-spk]:not(.on) span{display:none}
- #rpu_bar .spk[data-spk]:not(.on):hover span,#rpu_bar .spk[data-spk]:not(.on):focus-visible span{display:inline}
- #rpu_bar .spk.folder i,#rpu_bar .spk.add i{width:32px;height:32px;font-size:17px}
- #rpu_bar .spkbar.sub.inl{padding:1px 4px 1px 2px}
- #rpu_bar .spkdrop{align-self:center}
- html[data-vt="p5"] #rpu_bar .spk{transform:skewX(-4deg)}
-}
-/* 20-5 내 캐릭터 띠 접기 (기본 접힘 · om_mefold): 접히면 이름 · 체크 칸 · 대기 중인 굴림 단추만 */
-.mebar .mefold{order:0;flex:none;width:22px;height:26px;padding:0;margin:0 -4px 0 -4px;background:transparent;border:0;color:inherit;opacity:.7;cursor:pointer;font-size:14px;line-height:1}
-.mebar .mefold:hover{opacity:1}
-.mebar.fold{padding-top:4px;padding-bottom:4px;gap:8px}
-.mebar.fold .mebtns>.btn:not(.pri),.mebar.fold .medsplit,.mebar.fold .memons,.mebar.fold .melast{display:none}
-.mebar.fold .mebtns{margin-left:0}
-.mebar.fold .meid .ph-av{width:28px;height:28px}
-.mebar.fold .meid b{font-size:14px}.mebar.fold .meid small{display:none}
-.mebar .mefhint{order:9;margin-left:auto;background:transparent;border:1px dashed currentColor;color:inherit;opacity:.65;padding:1px 8px;font-size:12px;cursor:pointer;white-space:nowrap}.mebar .mefhint:hover{opacity:1}
-.mebar.fold:has(> .mecheck) .mefhint{margin-left:0;order:8}
-html[data-vt] .mebar.fold .meid b{font-size:15px!important}
-@media (max-width:760px){.mebar .mefold{height:22px}}
-/* 20-5 넓은 화면의 무대 높이: 2.15:1 비율 대신 화면에 남는 높이를 무대가 다 쓴다 (칩 줄 · 띠가 작아진 만큼 무대가 커진다). 던전 · 좁은 화면은 그대로 */
-@media (min-width:761px){
- .rpwrap{min-height:100%}
- .rpwrap>.rpstage{aspect-ratio:auto;flex:1 1 auto;min-height:380px;max-height:calc(100vh - 150px)}
-}
 /* 20-12 GM 콘솔 「최근」 띠: 배경 3 · 곡 3 · 공지 2 */
 .gcrecent{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 14px 8px;border-bottom:1px solid var(--line2);background:rgba(255,255,255,.02)}
 .gcrecent>small{font-family:var(--lab);color:var(--yel2);letter-spacing:.08em;margin-right:2px}
