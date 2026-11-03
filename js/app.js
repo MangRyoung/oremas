@@ -898,6 +898,8 @@ async function encounter(o){if(ST.role!=='gm')return false;const r=roster();cons
   const ms=(t.pids||[]).map(id=>r.mons[id]).filter(Boolean).map(x=>JSON.parse(JSON.stringify(x)));
   /* 10-31 망령 「『와일드』 ×1.25 가 웹툴에서 사라진다」: prepMon 이 mod 를 비우니 배율은 포텐셜로만 건다 — 야생 시트에 『와일드』 · 『와일드 보스』 포텐셜이 없으면 붙인다 */
   if(side==='right'&&t.wild)ms.forEach(m=>{m.pots=Array.isArray(m.pots)?m.pots:[];if(!m.pots.some(p=>p&&/^와일드( 보스)?$/.test(p.name))){const nm=m.boss?'와일드 보스':'와일드';m.pots.push({slot:m.pots.length,name:nm,kind:'',eff:m.boss?'모든 능력치 ×1.5':'모든 능력치 ×1.25',ph:false});if(!m.role)m.role=nm}});
+  /* 11-04 망령 「레이드 배틀 자동화가 안되있어?」: 「레이드 배틀 : X」 포텐셜이 있는 야생은 조우 때 배리어를 바로 건다 (상세 창 「레이드」 칸과 같은 기본값). 예전엔 포텐셜 글만 실리고 m.raid 가 비어 GM 이 손으로 넣어야 했다 — 봉인 서고 보스가 배리어 없이 한 방에 쓰러진 것 */
+  if(side==='right'&&t.wild)ms.forEach(m=>{const p=(m.pots||[]).find(p=>p&&/레이드 배틀\s*:\s*\d+/.test(String(p.name||'')));if(!p||(m.raid&&+m.raid.segments>0))return;const X=+String(p.name).match(/레이드 배틀\s*:\s*(\d+)/)[1];if(X>0)m.raid={cure:1,cstat:1,rup:1,rmod:0,cond:'cap',segments:X,broken:0,phase:1,brk:0}});
   delete t.walk;delete t.solo;t.side=side;t.by=seats[tid]&&side==='left'?tid:'gm';if(t.by==='gm'&&gk)t.byAcct=gk;else delete t.byAcct;nb.sides[side].trainers.push(tid);nb.trainers[tid]=t;ms.forEach((m,i)=>{prepMon(m,side,i);nb.mons[m.id]=m;all.push(m)});return ms};
  /* 10-26 던전 시험: 일행이 셋이고 에리어가 3칸인데 앞 사람의 동행 둘이 먼저 다 차지해 레온은 한 마리도 못 나갔다 — 트레이너마다 1번 동행부터 번갈아 (1번들 → 2번들 …) */const per=[];L.forEach(tid=>{const ms=put(tid,'left');per.push(ms.filter(m=>m&&m.hp.cur>0))});   /* 11-04: put 이 동행(없으면 앞 wn 체)만 남기므로 그 순서 그대로 */const lw=[];for(let i=0;per.some(x=>x[i]);i++)per.forEach(x=>{if(x[i])lw.push(x[i])});
  const rw=[];R.forEach(tid=>put(tid,'right').forEach(m=>{if(m.hp.cur>0)rw.push(m)}));
@@ -905,6 +907,7 @@ async function encounter(o){if(ST.role!=='gm')return false;const r=roster();cons
  const AR=['a','b','c'];const n=Math.max(1,Math.min(2,rw.length||2));nb.mode=n;
  lw.slice(0,n).forEach((m,i)=>m.pend=AR[i]);rw.slice(0,n).forEach((m,i)=>m.pend=AR[i]);
  if(!await set(['battle'],nb))return false;await set(['scene'],'battle');
+ {const rd=rw.filter(m=>m.raid&&+m.raid.segments>0);if(rd.length)sysLog(rd.map(m=>`♛ ${m.name} 「레이드 배틀 : ${m.raid.segments}」 — 최대 HP 1/${m.raid.segments} 마다 배리어 (조우 때 자동)`).join('\n'),'battle')}
  sysLog(`⚔ 야생 조우${o.title?' — '+o.title:''}\n${L.map(t=>r.trainers[t].name).join(' · ')||'일행'} VS ${rw.map(m=>'야생의 '+m.name).join(' · ')||R.map(t=>r.trainers[t].name).join(' · ')}${lw.length?`\n먼저 나갈 포켓몬(예약): ${lw.slice(0,n).map(m=>m.name).join(' · ')}`:''}${lw.length>n?` — 에리어가 ${n}칸이라 ${lw.slice(n).map(m=>m.name).join(' · ')} 은(는) 벤치에`:''}\n「시합 개시」를 누르면 시작`,'battle');
  VIEW='battle';renderScene();return true}
 
