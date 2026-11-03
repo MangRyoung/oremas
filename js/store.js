@@ -129,7 +129,7 @@ async function shrinkUpload(blob,maxSide){try{if(!/^image\/(png|jpe?g|webp|bmp)$
   const ext=(blob.type||'').includes('png')?'png':(blob.type||'').includes('webp')?'webp':(blob.type||'').includes('gif')?'gif':'jpg';
   /* 10-23 이그레스: 올릴 때마다 새 이름 → 브라우저가 1년 동안 다시 받지 않아도 된다 */
   const full=path+'_'+Date.now().toString(36)+'.'+ext;
-  const r=await sb().storage.from('oremas').upload(full,blob,{upsert:true,contentType:blob.type||'image/jpeg',cacheControl:'31536000'});
+  const r=await sb().storage.from('oremas').upload(full,blob,{upsert:false,contentType:blob.type||'image/jpeg',cacheControl:'31536000'});
   if(r.error){const m=String(r.error.message||r.error);if(/bucket not found|NoSuchBucket/i.test(m))throw new Error('그림 저장소(버킷 oremas)가 아직 없다 — Supabase SQL Editor 에서 supabase/schema.sql 을 다시 실행해 줘');throw err(r.error)}
   return sb().storage.from('oremas').getPublicUrl(full).data.publicUrl}
 
