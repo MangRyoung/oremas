@@ -82,7 +82,9 @@ window.OM_TOUR=(()=>{
  const mark=()=>{try{localStorage.setItem(KEY(),'1')}catch(e){}};
  function offer(){if(seen()||document.querySelector('.tour-ask'))return;const d=document.createElement('div');d.className='tour-ask';
   d.innerHTML=`<b>처음이야?</b><span>단추 몇 개만 30초 안에 짚어 줄게.</span><div class="tour-f"><button class="btn xs ghost" data-ta="no">괜찮아</button><button class="btn sm pri" data-ta="go">둘러보기</button></div>`;
-  document.body.appendChild(d);d.onclick=e=>{const b=e.target.closest('[data-ta]');if(!b)return;mark();d.remove();if(b.dataset.ta==='go')run(BASE,{title:'처음 둘러보기'})}}
+  document.body.appendChild(d);d.onclick=e=>{const b=e.target.closest('[data-ta]');if(!b){if(d.classList.contains('fold'))d.classList.remove('fold');return}mark();d.remove();if(b.dataset.ta==='go')run(BASE,{title:'처음 둘러보기'})};
+  /* 11-03 감우 (검토 19): 20초 뒤 작은 칩으로 접힌다 (누르면 다시 펼침). 창(모달)이 열려 있는 동안은 CSS 가 숨긴다 */
+  setTimeout(()=>{if(d.isConnected)d.classList.add('fold')},20000)}
  /* 방 화면이 그려지면 한 번 (app.js 는 고치지 않는다) */
  let tick=setInterval(()=>{const app=A();if(!app||!app.ST||!app.ST.room)return;if(!document.querySelector('#sceneTabs button'))return;clearInterval(tick);tick=null;setTimeout(offer,900)},700);
  return {run,find,has,close,base:()=>run(BASE,{title:'처음 둘러보기'}),FIND};
