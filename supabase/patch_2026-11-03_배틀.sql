@@ -69,9 +69,10 @@ begin
 end $$;
 
 -- 목록 (데이터 없이)
+-- ★ 11-03 13:17 망령 「cannot execute UPDATE in a read-only transaction」: om_who → om_uid 가 세션 last_at 을 update 하므로 list · get 을 stable 로 두면 안 된다(stable 은 GET = 읽기 전용 트랜잭션). 둘 다 volatile 로.
 create or replace function public.om_snap_list(p_room text, p_secret text, p_kind text)
 returns table(id text, kind text, name text, turn int, w text, at timestamptz, bytes int)
-language plpgsql stable security definer set search_path = public as $$
+language plpgsql security definer set search_path = public as $$
 begin
   if om_who(p_room, p_secret) is null then raise exception '방에 앉은 사람만 볼 수 있습니다'; end if;
   return query select s.id, s.kind, s.name, s.turn, s.w, s.at, octet_length(s.data::text) from om_snap s
@@ -80,7 +81,7 @@ end $$;
 
 -- 하나 전부
 create or replace function public.om_snap_get(p_room text, p_secret text, p_id text)
-returns jsonb language plpgsql stable security definer set search_path = public as $$
+returns jsonb language plpgsql security definer set search_path = public as $$
 declare r record;
 begin
   if om_who(p_room, p_secret) is null then raise exception '방에 앉은 사람만 볼 수 있습니다'; end if;
