@@ -10,6 +10,7 @@
    node bin/sim.js combos --pool 이름,이름,… --size 3 --dungeons a,b --n 100 [--id x --name 이름]   조합 훑기
    node bin/sim.js auto --tier easy|normal|hard [--theme 숲] [--seed N] [--name 이름] [--id 파일id] [--save] [--webtool 1] [--test 200 --party a,b,c]   던전 자동 생성(검증 루프 기본)
    node bin/sim.js recheck [--dungeon a,b] [--save]   저장된 던전을 검증 조건 그대로 다시 잰다
+   node bin/sim.js recast --dungeon a,b [--seed 1] [--tries 4] [--vn 10] [--save]   던전 몹 배역만 다시(lib/cast.js — 중복 · 타입 쏠림 막기)
    node bin/sim.js gendb [--seed 27]                야생 DB 200체 (오리지널 150 생성 + 올드 50) → data/wild/db.json
    node bin/sim.js mon --step B --kind 쌍두 --types 물,독 --n 5   오리지널몬 한 줌 만들어 보기
    node bin/sim.js report                        records/*.summary.json → report/index.html · report.md
@@ -76,6 +77,21 @@ const stamp=()=>new Date().toISOString().replace(/[-:T]/g,'').slice(0,12);
   for(const id of ids){const dg=all[id];if(!dg){console.log(id,'없음');continue}const tier=(dg.gen&&dg.gen.tier)||(id.match(/^auto_(easy|normal|hard)_/)||[])[1]||'normal';   /* 11-01: 난이도는 던전에 적힌 값(id 꼴에 기대지 않는다) */const wr=await C.quickWin(W,built,wf,dg,C.trios(pool,20,+opt.tseed||11),+opt.vn||3,777000,CARDS);const tg=C.TGT[tier];const old=(dg.gen||{}).verify;
    console.log(`${id} ${dg.name}: ${(wr*100).toFixed(0)}% (목표 ${tg*100}±15${old?` · 전 ${(old.wr*100).toFixed(0)}%`:''})${Math.abs(wr-tg)<=0.15?'':' — 범위 밖'}`);
    if(opt.save){const f=[id+'.json',id+'.private.json'].map(x=>path.join(SIM,'data','dungeons',x)).find(x=>fs.existsSync(x));if(f){const j=JSON.parse(fs.readFileSync(f,'utf8'));j.gen=Object.assign({},j.gen,{verify:Object.assign({},j.gen&&j.gen.verify,{wr:+wr.toFixed(2),target:tg,band:0.15,ok:Math.abs(wr-tg)<=0.15,at:new Date().toISOString().slice(0,10)})});fs.writeFileSync(f,JSON.stringify(j,null,1))}}}return}
+ if(cmd==='recast'){/* 11-03 망령 「몬스터 로직 다시」: 저장된 던전의 몹 배역만 lib/cast.js 로 다시 채운다(방 · 체크 · 보스는 그대로). 다른 던전 몹은 피한다.
+   --dungeon a,b (필수) --seed N(기본 1) --tries 4 --vn 10 [--save] → 검증(시험 일행 20조합 × vn판)이 목표 ±15 안인 첫 배역(없으면 가장 가까운 것)을 저장 */
+  const C=require('../lib/calib.js'),D=require('../lib/dungeon.js'),CA=require('../lib/cast.js'),WB=require('../lib/wilddb.js'),BT=require('../lib/battle.js');const allW=WB.fullV2();const nm=Object.fromEntries(allW.map(e=>[e.id,e.name]));
+  if(!opt.dungeon)throw new Error('--dungeon a,b 를 적어 주세요');const ids=String(opt.dungeon).split(',');
+  const pool=String(opt.pool||P.testPool(snap).join(',')).split(',');const built={};for(const s of pool)built[s]=P.pick(W,snap,s)[0];const wf=P.wildFrom(W,snap);
+  for(const id of ids){const all=D.dungeons();const dg0=all[id];if(!dg0){console.log(id,'없음');continue}const tier=(dg0.gen&&dg0.gen.tier)||'normal';const tg=C.TGT[tier];const th=dg0.theme||(dg0.gen||{}).theme;
+   const avoid=new Set();for(const [k,x] of Object.entries(all))if(k!==id)for(const s0 of CA.slotsOf(x))avoid.add(s0.m.db);
+   const before=CA.typeSpread(dg0,allW);let best=null;
+   for(let t=0;t<(+opt.tries||4);t++){const dg=JSON.parse(JSON.stringify(dg0));const seed=(+opt.seed||1)+t;const r=CA.cast(dg,{theme:th,grades:((dg0.gen||{}).grades||{}).wild||['C'],all:allW,avoid,rng:BT.mkRng(seed*7919+13)});
+    const wr=await C.quickWin(W,built,wf,dg,C.trios(pool,20,+opt.tseed||11),+opt.vn||10,777000,CARDS);const sp=CA.typeSpread(dg,allW);
+    console.log(`${id} 씨앗 ${seed}: ${(wr*100).toFixed(0)}% (목표 ${tg*100}±15) · 타입 ${before.distinct}→${sp.distinct} 최다 ${before.top}→${sp.top} · 떠돌이 ${r.guests}`);
+    const d=Math.abs(wr-tg);if(!best||d<best.d)best={dg,wr,d,seed,r};if(d<=0.15)break}
+   console.log('   ',best.dg.rooms.filter(x=>x.enc).map(x=>x.id+':'+x.enc.mix.map(m=>nm[m.db]).join('·')).join('  '));
+   if(opt.save){const f=[id+'.json',id+'.private.json'].map(x=>path.join(SIM,'data','dungeons',x)).find(x=>fs.existsSync(x));const j=best.dg;delete j._file;delete j.private;
+    j.gen=Object.assign({},j.gen,{cast:Object.assign({},best.r,{seed:best.seed,at:new Date().toISOString().slice(0,10)}),verify:Object.assign({},j.gen&&j.gen.verify,{wr:+best.wr.toFixed(2),target:tg,band:0.15,ok:best.d<=0.15,at:new Date().toISOString().slice(0,10)})});fs.writeFileSync(f,JSON.stringify(j,null,1))}}return}
  if(cmd==='cards'){/* 11-01 망령 「은열쇠」: 카드 없이 vs 덱별 던전 승률 — recheck 와 같은 시험 일행 · 같은 씨앗. --decks base,sneak --dungeon a,b (비우면 auto_*) --t 20 --vn 3 [--size 2 (일행 인원, 기본 3)] [--out 파일] · 덱 「a+b」 = 트레이너마다 다른 덱 */
   const C=require('../lib/calib.js'),D=require('../lib/dungeon.js');const all=D.dungeons();const ids=opt.dungeon?String(opt.dungeon).split(','):Object.keys(all).filter(k=>/^auto_/.test(k)).sort();
   const pool=String(opt.pool||P.testPool(snap).join(',')).split(',');const built={};for(const s of pool)built[s]=P.pick(W,snap,s)[0];const wf=P.wildFrom(W,snap);
