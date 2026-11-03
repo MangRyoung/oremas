@@ -19,7 +19,7 @@ async function runBattle(W,opt){
  const rng=opt.rng||mkRng(opt.seed||1);H.setRng(rng);H.logOn=!!opt.log;H.cards=opt.cards||null;   /* 11-01 은열쇠: 보험형 배틀 카드 (fight.js cardTake) */
  const fmt=Math.max(1,Math.min(3,opt.format||2)),maxT=opt.maxTurns||30;
  /* ---- 배틀 차리기 (웹툴 encounter · prepMon 과 같은 꼴) ---- */
- const b={turn:0,phase:0,mode:fmt,sides:{left:{trainers:[]},right:{trainers:[]}},trainers:{},mons:{},field:{},cmds:{},order:[]};
+ const b={turn:0,phase:0,mode:fmt,sides:{left:{trainers:[]},right:{trainers:[]}},trainers:{},mons:{},field:{},cmds:{},order:[],ordPool:opt.pool?1:0};   /* 11-04: 던전 공용 풀이면 웹툴 battle_ui 의 일행 몫 이름(pName)이 다른 지시 체계 종류도 빌려 준 사람 이름으로 건다 */
  const POLS={};let wildN=0;
  const addParty=(side,pt,k)=>{const t=clone(pt.trainer||{name:side+k,ranks:{}});const wild=!!t.wild;const tid=wild?'wild_'+side+'_'+(wildN++):(t.id||side+k);t.id=tid;t.side=side;delete t.solo;if(!t.orderCount)t.orderCount={};
   b.sides[side].trainers.push(tid);b.trainers[tid]=t;POLS[tid]=pt.policy||(wild?'wild':POL((t.ranks||{})['지시']));

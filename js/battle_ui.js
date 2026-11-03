@@ -1039,7 +1039,7 @@ window.OM_BATTLE_UI=(()=>{
    if(T.length>=2&&T.every(t=>R[t]))A().sysLog(`【준비 완료】 양측 모두 지시 준비를 마쳤다${c.mgr?'':' — GM 의 「턴 개시」를 기다린다'}`,'battle')}}
 /* 11-04 망령 「2체 기준 들고 가는 4식 6령 — 합산 아니니?」 → 「나」: 던전 배틀(b.dg)은 같은 진영 일행의 4식 · 6령을 합쳐 쓴다.
     남이 고른 종류도 빌려 쓴다(각성체 대가로 0 인 종류도 일행 몫이 있으면 쓴다). 내 몫을 먼저 쓰고, 없으면 일행 몫(진영 순서)에서 뺀다. 공동 지휘(@) 몫은 빌리지 않는다 */
- function pMates(b,tid){if(!b||!b.dg)return [];const S=b.sides||{};for(const sd of ['left','right']){const L=((S[sd]||{}).trainers)||[];if(L.includes(tid))return L.filter(x=>x!==tid&&(b.trainers||{})[x])}return []}
+ function pMates(b,tid){if(!b||!(b.dg||b.ordPool))return [];const S=b.sides||{};for(const sd of ['left','right']){const L=((S[sd]||{}).trainers)||[];if(L.includes(tid))return L.filter(x=>x!==tid&&(b.trainers||{})[x])}return []}
  function pN(b,tid,ck,T){T=T||b.trainers||{};let n=Math.max(0,+(((T[tid]||{}).orderCount)||{})[ck]||0);if(String(ck).includes('@'))return n;for(const o of pMates(b,tid))n+=Math.max(0,+(((T[o]||{}).orderCount)||{})[ck]||0);return n}
  function pBorrow(b,tid,ck,T){if(String(ck).includes('@'))return '';T=T||b.trainers||{};for(const o of pMates(b,tid)){const oc=(T[o]||{}).orderCount||{};if((+oc[ck]||0)>0){T[o].orderCount=Object.assign({},oc,{[ck]:(+oc[ck]||0)-1});return o}}return ''}
  /* 내 몫이 있으면 내 것에서, 없으면 일행에서 하나 — t 는 내 트레이너(고칠 사본), T 는 일행을 고칠 사본(없으면 빌린 키만 돌려준다) */

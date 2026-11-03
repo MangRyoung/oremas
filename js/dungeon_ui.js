@@ -577,7 +577,10 @@ window.OM_DG_UI=(()=>{
  async function enter(id,s,from){const d=all()[id];if(!d||!gm())return false;const o=startOptions(d);s=s&&R(d)[s]?s:(o[0]||[])[0];if(!s)return A().toast('던전에 방이 없다 — 던전 관리에서 만든다'),false;
   const p=P0(id);if(await upd({field:{mode:'dungeon',did:id,t:Date.now()},[p+'at']:s,[p+'r/'+s+'/s']:1,[p+'al']:0})){notice(`⚔ 던전 진입 — ${d.n||'던전'}${from?' ('+from+')':''}`);skStart(d);return true}return false}
  /* 11-01 은열쇠: 던전 시작 — 손패가 빈 일행은 덱 설정 「시작 손패」만큼 뽑는다 */
- function skStart(d){try{const DK=window.OM_DECK_UI;if(DK&&DK.beat)DK.beat('start',party(d)).catch(e=>console.warn(e))}catch(e){}}
+ /* 11-04 05:12 망령 「응 가득 채워. 물론 대가로 빼 둔 걸 제외하고」: 던전에 들어갈 때 일행의 4식 · 6령을 가득으로(fullOf = 2체 기준 고른 것 · 각성체 대가 0) */
+ async function ordFill(d){const RT=RO().trainers||{};const ops=[],L=[];for(const tid of party(d)){const t=RT[tid];if(!t)continue;const F=fullOf(tid,t);if(!F||!Object.keys(F).length)continue;const cur=t.orderCount||{};const nx=Object.assign({},cur,F);let up=0;for(const k in F)if((+cur[k]||0)!==(+F[k]||0))up++;if(!up)continue;ops.push([['roster','trainers',tid,'orderCount'],nx]);L.push(t.name||tid)}
+  if(!ops.length)return;try{if(await A().setMany(ops))notice(`【4식 · 6령】 던전 진입 — 가득 채움 (각성체 대가 칸 제외): ${L.join(' · ')}`)}catch(e){console.warn('ordFill',e)}}
+ function skStart(d){ordFill(d).catch(e=>console.warn(e));try{const DK=window.OM_DECK_UI;if(DK&&DK.beat)DK.beat('start',party(d)).catch(e=>console.warn(e))}catch(e){}}
  function nameOf(id){const d=all()[id];return d?(d.n||'이름 없는 던전'):''}
  /* 10-28: 스킬 체크 패널티의 경계도(skill_ui pen.al) — 탐색 중인 던전의 경계도를 올린다. 경계도를 끈 던전 · 던전 밖이면 아무 일도 안 한다 */
  async function alAdd(delta,why){const d=cur();if(!d||!alOn(d)||!(+delta))return '';const before=clamp(+d.al||0,0,100),after=clamp(before+(+delta),0,100);if(after===before)return '';if(!await upd({[P0(d.id)+'al']:after}))return '';notice(`[${d.n||'던전'}] 경계도 ${after>before?'+':''}${after-before}${why?' ('+why+')':''} → ${after}%`);return `경계도 ${after>before?'+':''}${after-before} → ${after}%`}
