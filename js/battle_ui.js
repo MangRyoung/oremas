@@ -737,6 +737,12 @@ window.OM_BATTLE_UI=(()=>{
     if(AL.length)A().sysLog(`【지령 자동 발동】 선행 입력한 6령\n${AL.join('\n')}`,'battle');
     /* 11-03 21:00 망령 「교대 뒤 선행 포텐셜」 · 「선행 포텐셜도 지령처럼 저절로」 · 「메진 전용을 선행 입력해 둬도 턴 개시에 알려 주지도 발동하지도 않아 깜빡」:
        선행 입력한 포텐셜 중 턴 개시에 쓰는 것(preWhen 'now')은 여기서 저절로 — 전용은 fireSpecial(횟수 · 컷인 · 구문), 메가진화 전용은 폼도 바꾼다, 일반은 「사용」(횟수 −1 · 구문). 조건 때 쓰는 것 · 구문 없는 효과는 이름을 적어 알린다 */
+    /* 11-03 21:54: 십계 4식(결계 · 법계 — 명령 칸)과 글에 「턴 개시」가 있는 4식도 선행 입력했으면 여기서 저절로 「선행 발동」 (횟수는 턴 개시에 깎였다). 버텨라! · 피해라! 처럼 맞을 때 쓰는 4식은 그대로 공격 창에서 */
+    {const OL=[];for(const [mid,x] of Object.entries(I.SEC)){const mm=(ctx().b.mons||{})[mid];if(!x||!x.order||!mm||!mm.entry||!(+(mm.hp||{}).cur>0))continue;const tid=mm.tid;const t=(ctx().b.trainers||{})[tid];if(!t)continue;
+      const fd=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid])||{};if(fd.order)continue;if(c.fair&&seatOwned(c,tid))continue;
+      const on=OO().orderName(t,x.order);const row=potRowOf(on);const turnStart=(row&&row[0]==='5계')||/결계|법계/.test(on)||TS(row&&row[2])||(!row&&TS(rmText(on)));if(!turnStart)continue;
+      try{await fireOrder(tid,mid,'order',x.order,'pre');const f2=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid])||{};if(f2.order)OL.push(`${TN(tid)} · ${mm.name} 『${on}』`)}catch(e){console.warn('4식 자동 발동',e)}}
+     if(OL.length)A().sysLog(`【명령 자동 발동】 선행 입력한 결계 · 턴 개시 4식\n${OL.join('\n')}`,'battle')}
     const MANT=new Set();{const PL=[],MAN=[];
      for(const [mid,x] of Object.entries(I.SEC)){const mm=(ctx().b.mons||{})[mid];if(!x||!(x.pots||[]).length||!mm||!mm.entry||!(+(mm.hp||{}).cur>0))continue;const tid=mm.tid;if(!(ctx().b.trainers||{})[tid])continue;
       for(const pn of x.pots){const fpot=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid]||{}).pot||{};const cur=(ctx().b.mons||{})[mid]||mm;
@@ -754,7 +760,7 @@ window.OM_BATTLE_UI=(()=>{
          await A().set(['battle','cmds',tid,'fired',mid,'pot','p:'+pn],1);PL.push(`${cur.name} 『${pn}』`);if(!auto){MAN.push(`${cur.name} 『${pn}』 — 효과는 손으로`);MANT.add(tid)}}}
        catch(e){console.warn('선행 포텐셜',e)}}}
      if(PL.length||MAN.length)A().sysLog(`【선행 발동】${PL.length?'\n저절로: '+PL.join(' · '):''}${MAN.length?'\n'+MAN.join('\n'):''}`,'battle')}
-    const rest=tid=>{const t=(b.trainers||{})[tid];if(I.UP[tid]||MANT.has(tid))return true;return Object.entries(I.SEC).some(([mid,x])=>{const mm=(b.mons||{})[mid];return mm&&mm.tid===tid&&mm.entry&&+(mm.hp||{}).cur>0&&x.order&&preCounts(t,{order:x.order},mm)})};
+    const rest=tid=>{const t=(b.trainers||{})[tid];if(I.UP[tid]||MANT.has(tid))return true;return Object.entries(I.SEC).some(([mid,x])=>{const mm=(b.mons||{})[mid];const fo=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid]||{}).order;return mm&&mm.tid===tid&&mm.entry&&+(mm.hp||{}).cur>0&&x.order&&!fo&&preCounts(t,{order:x.order},mm)})};
     tids=tids.filter(rest)}
    if(tids.length){await A().set(['battle','tstep'],2);
     for(const tid of tids){const t=b.trainers[tid];cutFire('t:'+tid,trainerImg(t),'『지령』 & 『포텐셜』 발동',t.name,t.side==='left'?'#1f6fd1':'#e3101f','You used the Potential!')   /* 10-24 제보: 긴 영문이 큰 글자 칸에서 겹쳤다 — 이름은 크게, 영문은 대사 칸으로 */}
@@ -1162,7 +1168,8 @@ window.OM_BATTLE_UI=(()=>{
   if(!fx.length)fx.push(`「${name}」 — 손으로 처리`);
   A().closeModal();
   const okT=await A().setDiff(['battle','trainers',tid],b0.trainers[tid],t,1);if(!okT)return;if(String(((A().ST.state.rp||{}).cutin||{}).ord)!=='0')cutFire('t:'+tid,trainerImg(t),`${t.name}의 지시!`,`『${name}』`,t.side==='left'?'#1f6fd1':'#e3101f');b.trainers[tid]=b0.trainers[tid];await saveBattle(b0,b,f,{n:t.name,s:name,img:trainerImg(t)});await A().set(['battle','cmds',tid,'fired',mid,kind],key);
-  const oeff=(FX()&&FX().rm&&(FX().rm(name)||{}).text)||'';
+  /* 11-03 21:54 망령 「4식이나 지령 발동할 때 효과도 UI 에 넣어서 나와야지」: 레디메이드 글이 비어 있으면 제작기 포텐셜 표(4식 · 6령 · 5계 · 영창 …)의 효과 글 */
+  const oeff=(FX()&&FX().rm&&(FX().rm(name)||{}).text)||((potRowOf(name)||potRowOf(String(name).replace(/[!！]$/,''))||[])[2])||((potRowOf(name+'!')||[])[2])||'';
   A().sysLog(`【${kind==='order'?'명령':'지령'}】 ${t.name}의 지시! 『${name}』 → ${m.name} (에리어 ${String(m.entry).toUpperCase()}) 【${Math.max(0,+t.orderCount[ck]||0)}/시】${tag}${fx.length?'\n'+fx.join('\n'):''}`,'battle',{mid:m.id,img:trainerImg(t),eff:String(oeff).replace(/<br\s*\/?>/g,'\n').slice(0,400)})}
  /* 【사전】 태그: 지시 준비(페이즈 0)에도 쓸 수 있다 — 효과 글은 레디메이드 · 제작기 포텐셜 표에서 */
  function preTag(name){const t=((FX()&&FX().rm&&FX().rm(name))||{}).text||(((DB().maker||{}).pots||[]).find(r=>r[1]===name)||[])[2]||'';return /【\s*사전\s*】/.test(String(t))}
