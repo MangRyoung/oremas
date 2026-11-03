@@ -32,3 +32,18 @@ module.exports={BASE,NEG,COMMON,BY_TYPE,FACE,mutation};
 const SOFT=/,\s*(cute but wild|cute|soft rounded shapes|simple readable silhouette|small to medium size|small size|medium size|large size[^,]*|large and imposing size|huge[^,]*|shielded by a calm protective aura)(?=,|$)/g;
 function retag(tags,e,o){const m=mutation(e,o);const t=(','+tags).replace(SOFT,'').slice(1).trim();return {traits:m.traits,tags:`${t}, ${m.style}`}}
 module.exports.retag=retag;module.exports.SOFT=SOFT;
+/* 11-03 20:10 망령 「아직 포켓몬 그림체풍이 너무 진하다」 — 원인: 몹 바탕 줄(job.mstyleFk)에 fakemon · pokemon (creature) · thick outlines ·
+   kimhiro 1.5 · kankan33333(포켓몬 팬아트 쪽 작가), 태그 첫머리 'original fakemon creature' · 'X type creature', 네거티브의 extra limbs · bad anatomy(변이를 막음).
+   → 변이체 전용 바탕 줄 두 갈래(시안). 포켓몬 말은 네거티브로. */
+const Q='::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, ';
+const MSTYLE={
+ /* E 악마 도감 — 카네코 카즈마 쪽 기괴한 괴물 디자인, 그림책 느낌은 약하게 */
+ E:'1.1::artist:kazuma kaneko ::, 0.5::artist:nishikujic ::, 0.6::artist:ciloranko ::, '+Q+'1.4::no humans, monster, creature, solo::, 1.2::dark fantasy, creature design, eldritch, unsettling::, painterly, dramatic lighting, 1.2::full body, centered, the whole creature inside the frame::, detailed background, ',
+ /* F 괴수 원화 — 실사에 가까운 컨셉 아트 질감 */
+ F:'0.6::artist:kazuma kaneko ::, 0.5::artist:ciloranko ::, '+Q+'1.4::no humans, monster, creature, solo::, 1.3::dark fantasy creature concept art, realistic, detailed texture, wet skin and bone, eldritch::, cinematic lighting, 1.2::full body, centered, the whole creature inside the frame::, detailed background, '};
+const MNEG='-1.5::pokemon (creature), pokemon, fakemon, digimon, mascot, anime creature::, -1.2::cute, chibi, kawaii, round eyes, plush, cuddly, simple shading, flat color, thick outlines::, -1.5::frame, border, vignette, circle background, white background, card::';
+const MNEG_BASE='human, humanoid, 1girl, 1boy, multiple views, multiple creatures, text, caption, english text, trading card, card frame, border, watermark, signature, logo, cropped, out of frame, lowres, worst quality, gore';
+/* 태그에서 포켓몬 말 걷기 */
+function depoke(t){return t.replace(/original (fakemon|pokemon-style|pokemon) creature based on (an? )?/g,'monstrous creature based on $2').replace(/(\w+(?: and \w+)*) type creature/g,'$1 element').replace(/,\s*0?\.?\d*::pokemon \(creature\)::/g,'')}
+function mtags(tags,e,o){const r=retag(tags,e,o);return {traits:r.traits,tags:depoke(r.tags.replace(BASE,'1.3::mutated beast, predatory body, menacing, readable silhouette::').replace(NEG+'','').replace(/,\s*$/,''))}}
+module.exports.MSTYLE=MSTYLE;module.exports.MNEG=MNEG;module.exports.MNEG_BASE=MNEG_BASE;module.exports.depoke=depoke;module.exports.mtags=mtags;
