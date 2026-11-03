@@ -5173,6 +5173,8 @@ html[data-vt="p5"] .rpstage .daytag,html[data-vt="p3"] .rpstage .daytag{backgrou
 .mebar.fold .mebtns{margin-left:0}
 .mebar.fold .meid .ph-av{width:28px;height:28px}
 .mebar.fold .meid b{font-size:14px}.mebar.fold .meid small{display:none}
+.mebar .mefhint{order:9;margin-left:auto;background:transparent;border:1px dashed currentColor;color:inherit;opacity:.65;padding:1px 8px;font-size:12px;cursor:pointer;white-space:nowrap}.mebar .mefhint:hover{opacity:1}
+.mebar.fold:has(> .mecheck) .mefhint{margin-left:0;order:8}
 html[data-vt] .mebar.fold .meid b{font-size:15px!important}
 @media (max-width:760px){.mebar .mefold{height:22px}}
 /* 20-5 넓은 화면의 무대 높이: 2.15:1 비율 대신 화면에 남는 높이를 무대가 다 쓴다 (칩 줄 · 띠가 작아진 만큼 무대가 커진다). 던전 · 좁은 화면은 그대로 */
