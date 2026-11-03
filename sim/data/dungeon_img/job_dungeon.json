@@ -1,0 +1,847 @@
+{
+ "key": "sub",
+ "model": "nai-diffusion-5-full",
+ "count": {
+  "room": 2,
+  "mon": 2
+ },
+ "style": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.6::artist:kazuma kaneko ::, 0.6::background:tsukushi akihito ::, 0.6::background:kuroimori ::, 0.6::background:yoshida akihiko ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, ::ultra complexity ::, 1.3::no humans, scenery::, detailed background, wide shot, cinematic composition, atmospheric perspective, painterly lighting, 1.2::adventure dungeon area, mysterious but not horror, beautiful::, 1.3::visual novel background, eye level view::, 1.1::open uncluttered space in the center foreground for characters to stand::, no text, ",
+ "neg": "people, person, 1girl, 1boy, character, human, text, watermark, signature, logo, ui, map icons, grid, blurry, lowres, worst quality, gore, blood, corpse, skeleton",
+ "mstyle": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::no humans, pokemon (creature), creature, solo::, 1.2::full body, centered, the whole creature inside the frame::, looking at viewer, dynamic but compact pose, detailed background, soft rim light, ",
+ "mneg": "human, humanoid, 1girl, 1boy, multiple views, multiple creatures, text, watermark, signature, logo, cropped, out of frame, lowres, worst quality, bad anatomy, extra limbs, gore",
+ "memo": "2026-11-03 감우 · 미사그 던전 8 — 구역(방)마다 1216×832 2장, 배치 몬스터 포트 1024×1024 2장 (Opus 무료 범위 · 28스텝 · 한 장씩). 시뮬 data/dungeons/md*.json · _md_overlay.js 와 짝.",
+ "dungeons": [
+  {
+   "dir": "던전/01 온실 뒤 덩굴숲",
+   "id": "md1_forest",
+   "name": "온실 뒤 덩굴숲",
+   "rooms": [
+    {
+     "file": "01_녹슨 출입 금지 팻말",
+     "rid": "entry",
+     "tags": "1.2::overgrown enchanted forest behind an old victorian glasshouse, thick ivy and flowering vines covering everything, soft green and gold light, gentle and calm::, 1.3::a rusty iron \"keep out\" sign half wrapped in ivy beside a small door in an old brick wall, a fallen mossy tree trunk lying across the forest path ahead, morning light through leaves::"
+    },
+    {
+     "file": "02_가시 장미 터널",
+     "rid": "b1",
+     "tags": "1.2::overgrown enchanted forest behind an old victorian glasshouse, thick ivy and flowering vines covering everything, soft green and gold light, gentle and calm::, 1.3::a tunnel path formed by wild climbing roses with thorns arching overhead, scattered pink petals on the ground, dappled sunlight::"
+    },
+    {
+     "file": "03_약초 비탈",
+     "rid": "c1",
+     "tags": "1.2::overgrown enchanted forest behind an old victorian glasshouse, thick ivy and flowering vines covering everything, soft green and gold light, gentle and calm::, 1.3::a gentle forest slope covered with many kinds of herbs and wild medicinal plants, old faded wooden plant labels stuck in the soil, soft mist::"
+    },
+    {
+     "file": "04_뿌리 늪",
+     "rid": "c2",
+     "tags": "1.2::overgrown enchanted forest behind an old victorian glasshouse, thick ivy and flowering vines covering everything, soft green and gold light, gentle and calm::, 1.3::a shallow forest swamp crisscrossed by huge tangled tree roots like a net, still dark water reflecting the canopy, lily pads, fireflies::"
+    },
+    {
+     "file": "05_옛 정원사 오두막",
+     "rid": "safe",
+     "tags": "1.2::overgrown enchanted forest behind an old victorian glasshouse, thick ivy and flowering vines covering everything, soft green and gold light, gentle and calm::, 1.3::a small old gardener cottage in a forest clearing, door wrapped by knotted vines, rusty watering cans and clay pots by the porch, warm cozy feeling::"
+    },
+    {
+     "file": "06_안개 연못",
+     "rid": "boss",
+     "tags": "1.2::overgrown enchanted forest behind an old victorian glasshouse, thick ivy and flowering vines covering everything, soft green and gold light, gentle and calm::, 1.3::a misty forest pond at the heart of the woods, a large mossy boulder in the water, thick drifting fog, vines hanging from giant trees around, mystical green light::"
+    },
+    {
+     "file": "07_안개 샛길",
+     "rid": "g1a1",
+     "tags": "1.2::overgrown enchanted forest behind an old victorian glasshouse, thick ivy and flowering vines covering everything, soft green and gold light, gentle and calm::, 1.3::a narrow shortcut path between ferns swallowed by dense white fog, faint silhouettes of trees, a single path visible for a few steps::"
+    },
+    {
+     "file": "08_늪가 둔덕",
+     "rid": "g2a1",
+     "tags": "1.2::overgrown enchanted forest behind an old victorian glasshouse, thick ivy and flowering vines covering everything, soft green and gold light, gentle and calm::, 1.3::a grassy raised bank winding around a forest swamp, reeds and cattails, small insects glittering over the water, afternoon light::"
+    },
+    {
+     "file": "09_까치 둥지 고목",
+     "rid": "tr",
+     "tags": "1.2::overgrown enchanted forest behind an old victorian glasshouse, thick ivy and flowering vines covering everything, soft green and gold light, gentle and calm::, 1.3::a huge bird nest high in an old hollow tree, shiny trinkets glass marbles and old keys inside the nest, sunbeam through leaves::"
+    }
+   ],
+   "mons": [
+    {
+     "file": "하늘양",
+     "id": "w080",
+     "tags": "1.3::original pokemon-like creature based on a sheep::, fairy and flying type creature, ribbons, sparkles, pastel petals, feathered wings, light airy body, color palette pastel pink and white and sky blue, standing firm in a defensive stance, small size, cute but wild, simple readable silhouette, background: a misty overgrown forest with vines"
+    },
+    {
+     "file": "데굴콘",
+     "id": "w075",
+     "tags": "1.3::original pokemon-like creature based on a fox::, grass and ground type creature, leaves, vines and moss growing on the body, earthy hide, clay and sand texture, color palette green and brown and ochre, charging an energy blast, small size, cute but wild, simple readable silhouette, background: a misty overgrown forest with vines"
+    },
+    {
+     "file": "풀팽이",
+     "id": "w203",
+     "tags": "1.3::original pokemon-like creature based on a snail::, grass type creature, leaves, vines and moss growing on the body, color palette green and brown, shielded by a calm protective aura, large size, cute but wild, simple readable silhouette, 1.2::imposing boss presence, slightly larger and fiercer::, background: a misty overgrown forest with vines"
+    },
+    {
+     "file": "잎두더",
+     "id": "w059",
+     "tags": "1.3::original pokemon-like creature based on a mole::, grass type creature, leaves, vines and moss growing on the body, color palette green and brown, standing firm in a defensive stance, small size, cute but wild, simple readable silhouette, background: a misty overgrown forest with vines"
+    },
+    {
+     "file": "팔랑냥",
+     "id": "w128",
+     "tags": "1.3::original pokemon-like creature based on a cat::, fairy and flying type creature, ribbons, sparkles, pastel petals, feathered wings, light airy body, color palette pastel pink and white and sky blue, alert and ready, small to medium size, cute but wild, simple readable silhouette, background: a misty overgrown forest with vines"
+    },
+    {
+     "file": "히스이 붐볼",
+     "id": "w257",
+     "tags": "1.4::Hisuian Voltorb (pokemon)::, accurate official design, background: a misty overgrown forest with vines"
+    },
+    {
+     "file": "사각딱",
+     "id": "w123",
+     "tags": "1.3::original pokemon-like creature based on a beetle::, bug type creature, chitin shell, segmented limbs, antennae, color palette lime and yellow-green, standing firm in a defensive stance, small to medium size, cute but wild, simple readable silhouette, background: a misty overgrown forest with vines"
+    },
+    {
+     "file": "훨매기",
+     "id": "w070",
+     "tags": "1.3::original pokemon-like creature based on a seagull::, water and flying type creature, fins, glossy wet skin, water droplets, feathered wings, light airy body, color palette blue and aqua and sky blue and white, alert and ready, small size, cute but wild, simple readable silhouette, background: a misty overgrown forest with vines"
+    }
+   ]
+  },
+  {
+   "dir": "던전/02 등대 아래 조수 동굴",
+   "id": "md2_sea",
+   "name": "등대 아래 조수 동굴",
+   "rooms": [
+    {
+     "file": "01_썰물 모래톱",
+     "rid": "entry",
+     "tags": "1.2::seaside sea cave under an old white lighthouse, tide pools, turquoise water, wet rocks, salty spray, bright and refreshing::, 1.3::a wide tidal sand flat at low tide at the foot of a cliff with an old white lighthouse above, shells and seaweed scattered, a dark sea cave mouth in the cliff::"
+    },
+    {
+     "file": "02_좌초 실습선 갑판",
+     "rid": "b1",
+     "tags": "1.2::seaside sea cave under an old white lighthouse, tide pools, turquoise water, wet rocks, salty spray, bright and refreshing::, 1.3::the tilted wooden deck of an old wrecked training ship stuck inside a sea cave, barnacles on the railings, light from a hole in the cave ceiling::"
+    },
+    {
+     "file": "03_소용돌이 물길",
+     "rid": "c1",
+     "tags": "1.2::seaside sea cave under an old white lighthouse, tide pools, turquoise water, wet rocks, salty spray, bright and refreshing::, 1.3::an underground sea channel with swirling whirlpool currents inside a cave, stepping stones, blue light reflecting on the cave walls::"
+    },
+    {
+     "file": "04_등대지기 창고",
+     "rid": "safe",
+     "tags": "1.2::seaside sea cave under an old white lighthouse, tide pools, turquoise water, wet rocks, salty spray, bright and refreshing::, 1.3::a small storage room carved in rock below a lighthouse, a rusty iron door, oil lamps, ropes and folded blankets, warm lamplight, safe and quiet::"
+    },
+    {
+     "file": "05_서리 낀 선창",
+     "rid": "boss",
+     "tags": "1.2::seaside sea cave under an old white lighthouse, tide pools, turquoise water, wet rocks, salty spray, bright and refreshing::, 1.3::the deep cargo hold of a wrecked ship flooded with seawater, frost and ice crystals covering the wooden beams, pale blue cold light, an icy nest in the middle::"
+    },
+    {
+     "file": "06_해초 숲 웅덩이",
+     "rid": "g1a1",
+     "tags": "1.2::seaside sea cave under an old white lighthouse, tide pools, turquoise water, wet rocks, salty spray, bright and refreshing::, 1.3::a large tide pool inside a sea cave filled with tall swaying kelp like a forest, clear water, sunlight shafts::"
+    },
+    {
+     "file": "07_미끄러운 바위길",
+     "rid": "g2a1",
+     "tags": "1.2::seaside sea cave under an old white lighthouse, tide pools, turquoise water, wet rocks, salty spray, bright and refreshing::, 1.3::slippery wet rocks along a cave wall with waves crashing in, foam and spray, a gap of rough water between the rocks::"
+    },
+    {
+     "file": "08_물 고인 선실",
+     "rid": "g2a2",
+     "tags": "1.2::seaside sea cave under an old white lighthouse, tide pools, turquoise water, wet rocks, salty spray, bright and refreshing::, 1.3::a half flooded cabin of an old ship, water up to the knees, an old nautical chart pinned on the wall, round porthole light::"
+    },
+    {
+     "file": "09_그물 걸린 모래톱",
+     "rid": "g2a3",
+     "tags": "1.2::seaside sea cave under an old white lighthouse, tide pools, turquoise water, wet rocks, salty spray, bright and refreshing::, 1.3::a small cave beach tangled with an abandoned fishing net, buoys and driftwood, gentle waves, soft light::"
+    },
+    {
+     "file": "10_떠밀려 온 상자",
+     "rid": "tr",
+     "tags": "1.2::seaside sea cave under an old white lighthouse, tide pools, turquoise water, wet rocks, salty spray, bright and refreshing::, 1.3::a weathered wooden chest washed up on a cave beach, wrapped in canvas, starfish and shells around it, beam of light::"
+    }
+   ],
+   "mons": [
+    {
+     "file": "후루매",
+     "id": "w085",
+     "tags": "1.3::original pokemon-like creature based on a falcon::, psychic and flying type creature, glowing eyes, floating aura, gem on the forehead, feathered wings, light airy body, color palette pink and violet and sky blue and white, alert and ready, small size, cute but wild, simple readable silhouette, background: a sea cave with tide pools"
+    },
+    {
+     "file": "퐁소라",
+     "id": "w022",
+     "tags": "1.3::original pokemon-like creature based on a conch shell snail::, water type creature, fins, glossy wet skin, water droplets, color palette blue and aqua, shielded by a calm protective aura, small size, cute but wild, simple readable silhouette, background: a sea cave with tide pools"
+    },
+    {
+     "file": "출렁콘",
+     "id": "w184",
+     "tags": "1.3::original pokemon-like creature based on a fox::, ice and water type creature, frost crystals, icy translucent parts, fins, glossy wet skin, water droplets, color palette pale blue and white and blue and aqua, dynamic pose using both strength and energy, medium size, cute but wild, simple readable silhouette, 1.2::imposing boss presence, slightly larger and fiercer::, background: a sea cave with tide pools"
+    },
+    {
+     "file": "첨벙달",
+     "id": "w038",
+     "tags": "1.3::original pokemon-like creature based on a otter::, water type creature, fins, glossy wet skin, water droplets, color palette blue and aqua, lunging forward in an attacking pose, small size, cute but wild, simple readable silhouette, background: a sea cave with tide pools"
+    },
+    {
+     "file": "파닥토",
+     "id": "w094",
+     "tags": "1.3::original pokemon-like creature based on a rabbit::, flying and normal type creature, feathered wings, light airy body, plain fur, soft rounded shapes, color palette sky blue and white and cream and beige, charging an energy blast, small size, cute but wild, simple readable silhouette, background: a sea cave with tide pools"
+    },
+    {
+     "file": "아머까오",
+     "id": "w237",
+     "tags": "1.4::Corviknight (pokemon)::, accurate official design, background: a sea cave with tide pools"
+    },
+    {
+     "file": "깃오리",
+     "id": "w044",
+     "tags": "1.3::original pokemon-like creature based on a stingray::, electric and flying type creature, zigzag lightning marks, static sparks, feathered wings, light airy body, color palette yellow and black and sky blue and white, charging an energy blast, small size, cute but wild, simple readable silhouette, background: a sea cave with tide pools"
+    },
+    {
+     "file": "꽁하울",
+     "id": "w142",
+     "tags": "1.3::original pokemon-like creature based on a wolf::, ice type creature, frost crystals, icy translucent parts, color palette pale blue and white, lunging forward in an attacking pose, small to medium size, cute but wild, simple readable silhouette, background: a sea cave with tide pools"
+    }
+   ]
+  },
+  {
+   "dir": "던전/03 북쪽 관측소 빙벽길",
+   "id": "md3_snow",
+   "name": "북쪽 관측소 빙벽길",
+   "rooms": [
+    {
+     "file": "01_눈 덮인 산길",
+     "rid": "entry",
+     "tags": "1.2::snowy mountain path to an abandoned weather observatory, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::a snow covered mountain trail with old wooden signposts pointing to an observatory, frozen ground under the snow, pine trees, pale morning sky::"
+    },
+    {
+     "file": "02_얼음 다리",
+     "rid": "c1",
+     "tags": "1.2::snowy mountain path to an abandoned weather observatory, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::an old wooden rope bridge completely frozen and covered in icicles spanning a snowy ravine, wind blown snow::"
+    },
+    {
+     "file": "03_얼어붙은 관측 장비",
+     "rid": "c2",
+     "tags": "1.2::snowy mountain path to an abandoned weather observatory, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::a snowy slope after an avalanche, old brass weather instruments and a frozen equipment crate blocking the path, ice crystals glittering::"
+    },
+    {
+     "file": "04_바람 막힌 바위굴",
+     "rid": "safe",
+     "tags": "1.2::snowy mountain path to an abandoned weather observatory, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::a small cave in a rocky cliff sheltered from the wind, snow at the entrance, dry ground inside, a small campfire spot, quiet and safe::"
+    },
+    {
+     "file": "05_무너진 관측탑",
+     "rid": "boss",
+     "tags": "1.2::snowy mountain path to an abandoned weather observatory, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::the top of a ruined stone weather observatory tower with its dome roof broken open to a stormy snowy sky, a spinning broken weathervane, frost swirling, dramatic::"
+    },
+    {
+     "file": "06_언 강가",
+     "rid": "g1a1",
+     "tags": "1.2::snowy mountain path to an abandoned weather observatory, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::a frozen river in a snowy valley, cracked blue ice, snow covered rocks along the bank, soft sunlight::"
+    },
+    {
+     "file": "07_화이트아웃",
+     "rid": "g1a2",
+     "tags": "1.2::snowy mountain path to an abandoned weather observatory, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::a whiteout blizzard on a snowy plateau, everything white, faint shapes of rocks, swirling snow, low visibility::"
+    },
+    {
+     "file": "08_버려진 썰매",
+     "rid": "g1a3",
+     "tags": "1.2::snowy mountain path to an abandoned weather observatory, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::an old wooden supply sled half buried in snow on a mountain path, crates and ropes on it, calm after the snow::"
+    },
+    {
+     "file": "09_얼음 들판",
+     "rid": "g2a1",
+     "tags": "1.2::snowy mountain path to an abandoned weather observatory, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::a wide flat ice field swept by wind, polished blue ice, distant snowy peaks, sharp clear light::"
+    },
+    {
+     "file": "10_얼음 속 유물",
+     "rid": "tr",
+     "tags": "1.2::snowy mountain path to an abandoned weather observatory, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::a wooden logbook box trapped inside a clear block of ice in a snow cave, light refracting through the ice::"
+    },
+    {
+     "file": "11_얼음 틈",
+     "rid": "s1",
+     "tags": "1.2::snowy mountain path to an abandoned weather observatory, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::a narrow crevasse between two glacier ice walls, deep blue translucent ice, light from above::"
+    }
+   ],
+   "mons": [
+    {
+     "file": "오싹하울",
+     "id": "w208",
+     "tags": "1.3::original pokemon-like creature based on a wolf::, ice and flying type creature, frost crystals, icy translucent parts, feathered wings, light airy body, color palette pale blue and white and sky blue, lunging forward in an attacking pose, large and imposing size, cute but wild, simple readable silhouette, 1.2::imposing boss presence, slightly larger and fiercer::, background: a snowy mountain with ice walls"
+    },
+    {
+     "file": "두빅굴",
+     "id": "w264",
+     "tags": "1.4::Seismitoad (pokemon)::, accurate official design, background: a snowy mountain with ice walls"
+    },
+    {
+     "file": "차루미",
+     "id": "w122",
+     "tags": "1.3::original pokemon-like creature based on a crane::, fighting and steel type creature, muscular build, wrapped fists, martial stance, metallic plating, rivets and blades, color palette red and tan and silver and steel gray, dynamic pose using both strength and energy, small to medium size, cute but wild, simple readable silhouette, background: a snowy mountain with ice walls"
+    },
+    {
+     "file": "두드리짱",
+     "id": "w272",
+     "tags": "1.4::Tinkaton (pokemon)::, accurate official design, background: a snowy mountain with ice walls"
+    },
+    {
+     "file": "아롱람",
+     "id": "w104",
+     "tags": "1.3::original pokemon-like creature based on a squirrel::, fairy and psychic type creature, ribbons, sparkles, pastel petals, glowing eyes, floating aura, gem on the forehead, color palette pastel pink and white and pink and violet, alert and ready, small to medium size, cute but wild, simple readable silhouette, background: a snowy mountain with ice walls"
+    },
+    {
+     "file": "지지냥",
+     "id": "w132",
+     "tags": "1.3::original pokemon-like creature based on a cat::, electric and fairy type creature, zigzag lightning marks, static sparks, ribbons, sparkles, pastel petals, color palette yellow and black and pastel pink and white, lunging forward in an attacking pose, small to medium size, cute but wild, simple readable silhouette, background: a snowy mountain with ice walls"
+    },
+    {
+     "file": "핫삼",
+     "id": "w235",
+     "tags": "1.4::Scizor (pokemon)::, accurate official design, background: a snowy mountain with ice walls"
+    },
+    {
+     "file": "징톱리",
+     "id": "w074",
+     "tags": "1.3::original pokemon-like creature based on a cogwheel::, steel type creature, metallic plating, rivets and blades, color palette silver and steel gray, standing firm in a defensive stance, small size, cute but wild, simple readable silhouette, background: a snowy mountain with ice walls"
+    }
+   ]
+  },
+  {
+   "dir": "던전/04 종탑 지하 수맥 갱도",
+   "id": "md4_cave",
+   "name": "종탑 지하 수맥 갱도",
+   "rooms": [
+    {
+     "file": "01_종탑 우물 아래",
+     "rid": "entry",
+     "tags": "1.2::underground mine tunnels beneath an old bell tower, wooden support beams, glowing crystals, underground water, lantern light, mysterious but adventurous::, 1.3::the bottom of an old stone well shaft opening into a mine tunnel, a rope ladder hanging down, falling dust and pebbles, beam of light from above::"
+    },
+    {
+     "file": "02_지하 호수",
+     "rid": "b1",
+     "tags": "1.2::underground mine tunnels beneath an old bell tower, wooden support beams, glowing crystals, underground water, lantern light, mysterious but adventurous::, 1.3::a calm underground lake in a large cavern, still black water reflecting lantern light, stalactites, wooden walkway along the shore::"
+    },
+    {
+     "file": "03_지하 물길",
+     "rid": "c1",
+     "tags": "1.2::underground mine tunnels beneath an old bell tower, wooden support beams, glowing crystals, underground water, lantern light, mysterious but adventurous::, 1.3::an underground stream flowing through a narrow mine tunnel, wet rocks, old wooden planks as a bridge, lantern glow::"
+    },
+    {
+     "file": "04_버려진 수레길",
+     "rid": "c2",
+     "tags": "1.2::underground mine tunnels beneath an old bell tower, wooden support beams, glowing crystals, underground water, lantern light, mysterious but adventurous::, 1.3::abandoned mine cart rails running through a flooded tunnel, a rusty mine cart, water flowing over the tracks, support beams::"
+    },
+    {
+     "file": "05_종유석 틈",
+     "rid": "c3",
+     "tags": "1.2::underground mine tunnels beneath an old bell tower, wooden support beams, glowing crystals, underground water, lantern light, mysterious but adventurous::, 1.3::a narrow passage under cracked hanging stalactites in a limestone cave, dripping water, crumbling rock::"
+    },
+    {
+     "file": "06_광부 쉼터",
+     "rid": "safe",
+     "tags": "1.2::underground mine tunnels beneath an old bell tower, wooden support beams, glowing crystals, underground water, lantern light, mysterious but adventurous::, 1.3::a small rest room carved in a mine, old wooden bunks, rusty lanterns on hooks, a table with tin cups, cozy dim light::"
+    },
+    {
+     "file": "07_수정 공동",
+     "rid": "boss",
+     "tags": "1.2::underground mine tunnels beneath an old bell tower, wooden support beams, glowing crystals, underground water, lantern light, mysterious but adventurous::, 1.3::a huge underground cavern full of giant glowing crystals growing from floor to ceiling, a sand mound in the center, purple and blue light, awe inspiring::"
+    },
+    {
+     "file": "08_물웅덩이 굴",
+     "rid": "g1a1",
+     "tags": "1.2::underground mine tunnels beneath an old bell tower, wooden support beams, glowing crystals, underground water, lantern light, mysterious but adventurous::, 1.3::a low cave with a wide shallow pool, rocks like turtle shells sticking out of the water, dripping ceiling::"
+    },
+    {
+     "file": "09_수정 회랑",
+     "rid": "g2a1",
+     "tags": "1.2::underground mine tunnels beneath an old bell tower, wooden support beams, glowing crystals, underground water, lantern light, mysterious but adventurous::, 1.3::a corridor in a cave with small crystals embedded in the walls glittering, soft colorful light::"
+    },
+    {
+     "file": "10_광석 더미",
+     "rid": "tr",
+     "tags": "1.2::underground mine tunnels beneath an old bell tower, wooden support beams, glowing crystals, underground water, lantern light, mysterious but adventurous::, 1.3::a pile of raw ore and gems in a mine corner, an old rolled tunnel map tucked in, a pickaxe leaning on the wall::"
+    },
+    {
+     "file": "11_곰팡이 굴",
+     "rid": "s1",
+     "tags": "1.2::underground mine tunnels beneath an old bell tower, wooden support beams, glowing crystals, underground water, lantern light, mysterious but adventurous::, 1.3::a dead end cave covered in pale glowing mushrooms and white mold, damp air, faint bioluminescence::"
+    }
+   ],
+   "mons": [
+    {
+     "file": "퍽고미",
+     "id": "w082",
+     "tags": "1.3::original pokemon-like creature based on a bear::, fighting type creature, muscular build, wrapped fists, martial stance, color palette red and tan, standing firm in a defensive stance, small size, cute but wild, simple readable silhouette, background: an underground mine cavern with crystals"
+    },
+    {
+     "file": "바위곰",
+     "id": "w141",
+     "tags": "1.3::original pokemon-like creature based on a bear::, rock type creature, rocky armor plates, boulder chunks, color palette gray and brown, alert and ready, small to medium size, cute but wild, simple readable silhouette, background: an underground mine cavern with crystals"
+    },
+    {
+     "file": "한카리아스",
+     "id": "w300",
+     "tags": "1.4::Garchomp (pokemon)::, accurate official design, 1.2::imposing boss presence, slightly larger and fiercer::, background: an underground mine cavern with crystals"
+    },
+    {
+     "file": "타닥자",
+     "id": "w095",
+     "tags": "1.3::original pokemon-like creature based on a lion::, fire and ground type creature, flame tail or mane, ember sparks, earthy hide, clay and sand texture, color palette red and orange and brown and ochre, lunging forward in an attacking pose, small size, cute but wild, simple readable silhouette, background: an underground mine cavern with crystals"
+    },
+    {
+     "file": "으랏멍",
+     "id": "w146",
+     "tags": "1.3::original pokemon-like creature based on a dog::, fighting type creature, muscular build, wrapped fists, martial stance, color palette red and tan, alert and ready, small to medium size, cute but wild, simple readable silhouette, background: an underground mine cavern with crystals"
+    },
+    {
+     "file": "흙가오",
+     "id": "w149",
+     "tags": "1.3::original pokemon-like creature based on a stingray::, ground and water type creature, earthy hide, clay and sand texture, fins, glossy wet skin, water droplets, color palette brown and ochre and blue and aqua, dynamic pose using both strength and energy, small to medium size, cute but wild, simple readable silhouette, background: an underground mine cavern with crystals"
+    },
+    {
+     "file": "돌부기",
+     "id": "w042",
+     "tags": "1.3::original pokemon-like creature based on a turtle::, rock and ghost type creature, rocky armor plates, boulder chunks, wispy translucent edges, eerie glow, color palette gray and brown and dark purple and lavender, standing firm in a defensive stance, small size, cute but wild, simple readable silhouette, background: an underground mine cavern with crystals"
+    },
+    {
+     "file": "돌코뿔",
+     "id": "w127",
+     "tags": "1.3::original pokemon-like creature based on a rhinoceros::, rock and steel type creature, rocky armor plates, boulder chunks, metallic plating, rivets and blades, color palette gray and brown and silver and steel gray, standing firm in a defensive stance, small to medium size, cute but wild, simple readable silhouette, background: an underground mine cavern with crystals"
+    },
+    {
+     "file": "어슴키",
+     "id": "w018",
+     "tags": "1.3::original pokemon-like creature based on a key::, ghost type creature, wispy translucent edges, eerie glow, color palette dark purple and lavender, charging an energy blast, small size, cute but wild, simple readable silhouette, background: an underground mine cavern with crystals"
+    }
+   ]
+  },
+  {
+   "dir": "던전/05 구 교직원 관사",
+   "id": "md5_house",
+   "name": "구 교직원 관사",
+   "rooms": [
+    {
+     "file": "01_무너진 현관",
+     "rid": "entry",
+     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::the collapsed front porch of an old abandoned mansion in a forest, broken wooden steps, a heavy locked front door, ivy, moonlit evening::"
+    },
+    {
+     "file": "02_쥐가 드나드는 부엌",
+     "rid": "b1",
+     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::a dusty old victorian kitchen, iron stove, hanging pots, cupboard doors ajar, moonlight through a small window::"
+    },
+    {
+     "file": "03_잠긴 아이 방",
+     "rid": "c1",
+     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::a locked child bedroom in an old mansion, small bed, toys and a rocking horse, several standing mirrors reflecting a beam of moonlight::"
+    },
+    {
+     "file": "04_다락 아래 골방",
+     "rid": "safe",
+     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::a small hidden room under attic stairs, old blankets and cushions, a candle, cozy and safe, slanted ceiling::"
+    },
+    {
+     "file": "05_지하 예배실",
+     "rid": "boss",
+     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::a small private chapel in the basement of a mansion, rows of wooden pews, candelabras, a bunch of old keys on the altar, stained glass faintly lit, solemn::"
+    },
+    {
+     "file": "06_곰팡이 핀 복도",
+     "rid": "g1a1",
+     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::a long corridor in an abandoned mansion with peeling wallpaper and patches of mold, portraits on the walls, dim light::"
+    },
+    {
+     "file": "07_하인 방",
+     "rid": "g2a1",
+     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::narrow servants quarters in an old mansion, simple iron beds in a row with name tags, a wash basin, grey light::"
+    },
+    {
+     "file": "08_지하 창고",
+     "rid": "g2a2",
+     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::a basement storage cellar with wine racks, crates and old furniture under sheets, darkness::"
+    },
+    {
+     "file": "09_잠긴 서랍장 방",
+     "rid": "g2a3",
+     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::a room with a huge antique chest of drawers covering the whole wall, many small drawers, darkness with a thin line of light::"
+    },
+    {
+     "file": "10_사감의 금고",
+     "rid": "tr",
+     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::an old iron safe inside a closet of a headmistress room, a leather diary on top, dust in the air::"
+    }
+   ],
+   "mons": [
+    {
+     "file": "독배미",
+     "id": "w076",
+     "tags": "1.3::original pokemon-like creature based on a snake::, poison and grass type creature, toxic spots, dripping venom, leaves, vines and moss growing on the body, color palette purple and magenta and green and brown, alert and ready, small size, cute but wild, simple readable silhouette, background: a dusty abandoned mansion interior"
+    },
+    {
+     "file": "폭신족",
+     "id": "w129",
+     "tags": "1.3::original pokemon-like creature based on a weasel::, normal type creature, plain fur, soft rounded shapes, color palette cream and beige, lunging forward in an attacking pose, small to medium size, cute but wild, simple readable silhouette, background: a dusty abandoned mansion interior"
+    },
+    {
+     "file": "쉿냥가스",
+     "id": "w209",
+     "tags": "1.3::original pokemon-like creature based on a cat::, dark type creature, sharp claws, sly grin, shadowy fur, color palette black and crimson, lunging forward in an attacking pose, large and imposing size, cute but wild, simple readable silhouette, 1.2::imposing boss presence, slightly larger and fiercer::, background: a dusty abandoned mansion interior"
+    },
+    {
+     "file": "흑하울",
+     "id": "w113",
+     "tags": "1.3::original pokemon-like creature based on a wolf::, dark type creature, sharp claws, sly grin, shadowy fur, color palette black and crimson, alert and ready, small to medium size, cute but wild, simple readable silhouette, background: a dusty abandoned mansion interior"
+    },
+    {
+     "file": "돈크로우",
+     "id": "w268",
+     "tags": "1.4::Honchkrow (pokemon)::, accurate official design, background: a dusty abandoned mansion interior"
+    },
+    {
+     "file": "아리콘",
+     "id": "w124",
+     "tags": "1.3::original pokemon-like creature based on a fox::, psychic and normal type creature, glowing eyes, floating aura, gem on the forehead, plain fur, soft rounded shapes, color palette pink and violet and cream and beige, shielded by a calm protective aura, small to medium size, cute but wild, simple readable silhouette, background: a dusty abandoned mansion interior"
+    },
+    {
+     "file": "쉿배미",
+     "id": "w089",
+     "tags": "1.3::original pokemon-like creature based on a snake::, dark and poison type creature, sharp claws, sly grin, shadowy fur, toxic spots, dripping venom, color palette black and crimson and purple and magenta, dynamic pose using both strength and energy, small size, cute but wild, simple readable silhouette, background: a dusty abandoned mansion interior"
+    },
+    {
+     "file": "탁사마",
+     "id": "w137",
+     "tags": "1.3::original pokemon-like creature based on a mantis::, dark and fighting type creature, sharp claws, sly grin, shadowy fur, muscular build, wrapped fists, martial stance, color palette black and crimson and red and tan, alert and ready, small to medium size, cute but wild, simple readable silhouette, background: a dusty abandoned mansion interior"
+    }
+   ]
+  },
+  {
+   "dir": "던전/06 기록보관소 아래 봉인 서고",
+   "id": "md6_ruin",
+   "name": "기록보관소 아래 봉인 서고",
+   "rooms": [
+    {
+     "file": "01_금고 바닥 아래",
+     "rid": "entry",
+     "tags": "1.2::ancient stone ruins hidden beneath an old university archive, carved runes, stone pillars, old bookshelves merged with ruins, golden lamplight and dust, scholarly and mysterious::, 1.3::a broken floor of an old archive vault revealing stone stairs going down to an ancient sealed stone arch with runes, dust and old files scattered::"
+    },
+    {
+     "file": "02_기둥의 방",
+     "rid": "b1",
+     "tags": "1.2::ancient stone ruins hidden beneath an old university archive, carved runes, stone pillars, old bookshelves merged with ruins, golden lamplight and dust, scholarly and mysterious::, 1.3::a hall of giant carved stone pillars in an underground ruin, shafts of dusty light, shadows between the pillars::"
+    },
+    {
+     "file": "03_봉인의 문",
+     "rid": "c1",
+     "tags": "1.2::ancient stone ruins hidden beneath an old university archive, carved runes, stone pillars, old bookshelves merged with ruins, golden lamplight and dust, scholarly and mysterious::, 1.3::a huge stone door covered in ancient script and glowing runes, a reading stand with an open book in front of it::"
+    },
+    {
+     "file": "04_석상의 회랑",
+     "rid": "c2",
+     "tags": "1.2::ancient stone ruins hidden beneath an old university archive, carved runes, stone pillars, old bookshelves merged with ruins, golden lamplight and dust, scholarly and mysterious::, 1.3::a long gallery lined with stone statues of strange creatures, one statue with faintly glowing eyes, warm lamplight::"
+    },
+    {
+     "file": "05_움직이는 석판",
+     "rid": "c3",
+     "tags": "1.2::ancient stone ruins hidden beneath an old university archive, carved runes, stone pillars, old bookshelves merged with ruins, golden lamplight and dust, scholarly and mysterious::, 1.3::a room with a floor of large moving stone tiles over a dark pit, carved symbols on each tile::"
+    },
+    {
+     "file": "06_순례자의 방",
+     "rid": "safe",
+     "tags": "1.2::ancient stone ruins hidden beneath an old university archive, carved runes, stone pillars, old bookshelves merged with ruins, golden lamplight and dust, scholarly and mysterious::, 1.3::a quiet small chamber with stone benches, old candles, offerings and relics on a shelf, warm and peaceful light::"
+    },
+    {
+     "file": "07_왕의 기록실",
+     "rid": "boss",
+     "tags": "1.2::ancient stone ruins hidden beneath an old university archive, carved runes, stone pillars, old bookshelves merged with ruins, golden lamplight and dust, scholarly and mysterious::, 1.3::a grand underground record chamber with stone tablet shelves reaching the ceiling, a raised platform in the center, cold metallic blue light mixing with gold, majestic::"
+    },
+    {
+     "file": "08_지하 납골당",
+     "rid": "g2a1",
+     "tags": "1.2::ancient stone ruins hidden beneath an old university archive, carved runes, stone pillars, old bookshelves merged with ruins, golden lamplight and dust, scholarly and mysterious::, 1.3::an underground crypt with niches filled with old books instead of bones, floating blue will-o-wisp lights, quiet::"
+    },
+    {
+     "file": "09_부서진 신상 앞",
+     "rid": "g3a1",
+     "tags": "1.2::ancient stone ruins hidden beneath an old university archive, carved runes, stone pillars, old bookshelves merged with ruins, golden lamplight and dust, scholarly and mysterious::, 1.3::a broken giant stone idol with its head lying on the floor in an ancient ruin, rubble, light from a crack above::"
+    },
+    {
+     "file": "10_바람 구멍",
+     "rid": "g3a2",
+     "tags": "1.2::ancient stone ruins hidden beneath an old university archive, carved runes, stone pillars, old bookshelves merged with ruins, golden lamplight and dust, scholarly and mysterious::, 1.3::a ruin room with holes in the wall where wind whistles, pressure plates in the floor with symbols::"
+    },
+    {
+     "file": "11_석관 방",
+     "rid": "g3a3",
+     "tags": "1.2::ancient stone ruins hidden beneath an old university archive, carved runes, stone pillars, old bookshelves merged with ruins, golden lamplight and dust, scholarly and mysterious::, 1.3::a silent stone room with rows of carved stone sarcophagi, candles, dust::"
+    },
+    {
+     "file": "12_봉헌함",
+     "rid": "tr",
+     "tags": "1.2::ancient stone ruins hidden beneath an old university archive, carved runes, stone pillars, old bookshelves merged with ruins, golden lamplight and dust, scholarly and mysterious::, 1.3::an ancient stone offering box with an open lid on a pedestal, scrolls and coins inside, beam of light::"
+    }
+   ],
+   "mons": [
+    {
+     "file": "묘두기",
+     "id": "w245",
+     "tags": "1.4::Houndstone (pokemon)::, accurate official design, background: ancient stone ruins with carved runes"
+    },
+    {
+     "file": "루나콘",
+     "id": "w069",
+     "tags": "1.3::original pokemon-like creature based on a fox::, psychic type creature, glowing eyes, floating aura, gem on the forehead, color palette pink and violet, dynamic pose using both strength and energy, small size, cute but wild, simple readable silhouette, background: ancient stone ruins with carved runes"
+    },
+    {
+     "file": "메타그로스",
+     "id": "w294",
+     "tags": "1.4::Metagross (pokemon)::, accurate official design, 1.2::imposing boss presence, slightly larger and fiercer::, background: ancient stone ruins with carved runes"
+    },
+    {
+     "file": "용크로",
+     "id": "w117",
+     "tags": "1.3::original pokemon-like creature based on a crocodile::, dragon type creature, scales, horns, draconic features, color palette indigo and teal, standing firm in a defensive stance, small to medium size, cute but wild, simple readable silhouette, background: ancient stone ruins with carved runes"
+    },
+    {
+     "file": "프테라",
+     "id": "w265",
+     "tags": "1.4::Aerodactyl (pokemon)::, accurate official design, background: ancient stone ruins with carved runes"
+    },
+    {
+     "file": "도깨방",
+     "id": "w151",
+     "tags": "1.3::original pokemon-like creature based on a tiger moth::, fire and ghost type creature, flame tail or mane, ember sparks, wispy translucent edges, eerie glow, color palette red and orange and dark purple and lavender, charging an energy blast, small to medium size, cute but wild, simple readable silhouette, background: ancient stone ruins with carved runes"
+    },
+    {
+     "file": "용배미",
+     "id": "w135",
+     "tags": "1.3::original pokemon-like creature based on a snake::, dragon and ground type creature, scales, horns, draconic features, earthy hide, clay and sand texture, color palette indigo and teal and brown and ochre, alert and ready, small to medium size, cute but wild, simple readable silhouette, background: ancient stone ruins with carved runes"
+    },
+    {
+     "file": "짱도마",
+     "id": "w023",
+     "tags": "1.3::original pokemon-like creature based on a lizard::, rock type creature, rocky armor plates, boulder chunks, color palette gray and brown, charging an energy blast, small size, cute but wild, simple readable silhouette, background: ancient stone ruins with carved runes"
+    },
+    {
+     "file": "망항아",
+     "id": "w015",
+     "tags": "1.3::original pokemon-like creature based on a clay pot::, fire and ghost type creature, flame tail or mane, ember sparks, wispy translucent edges, eerie glow, color palette red and orange and dark purple and lavender, standing firm in a defensive stance, small size, cute but wild, simple readable silhouette, background: ancient stone ruins with carved runes"
+    }
+   ]
+  },
+  {
+   "dir": "던전/07 제2 연구동 지하 격리층",
+   "id": "md7_lab",
+   "name": "제2 연구동 지하 격리층",
+   "rooms": [
+    {
+     "file": "01_화물 승강기",
+     "rid": "entry",
+     "tags": "1.2::sealed underground research facility level, old but well built laboratory, emergency lights, glass tanks, pipes, quiet tense atmosphere, clean not gory::, 1.3::the inside of a large freight elevator stopped at an underground lab floor, doors opening to a dim corridor with emergency lights::"
+    },
+    {
+     "file": "02_조립 라인",
+     "rid": "b1",
+     "tags": "1.2::sealed underground research facility level, old but well built laboratory, emergency lights, glass tanks, pipes, quiet tense atmosphere, clean not gory::, 1.3::a stopped assembly line in an underground facility, robotic arms frozen mid motion, sparks from broken cables, metal parts::"
+    },
+    {
+     "file": "03_소독 구역",
+     "rid": "c1",
+     "tags": "1.2::sealed underground research facility level, old but well built laboratory, emergency lights, glass tanks, pipes, quiet tense atmosphere, clean not gory::, 1.3::a disinfection airlock area with white tiles, security panels with blinking lights, nozzles on the walls, glass doors::"
+    },
+    {
+     "file": "04_비상 대피소",
+     "rid": "safe",
+     "tags": "1.2::sealed underground research facility level, old but well built laboratory, emergency lights, glass tanks, pipes, quiet tense atmosphere, clean not gory::, 1.3::an emergency shelter room in a lab basement, metal bunks, supply lockers, green emergency light, a heavy door::"
+    },
+    {
+     "file": "05_실험 심부",
+     "rid": "boss",
+     "tags": "1.2::sealed underground research facility level, old but well built laboratory, emergency lights, glass tanks, pipes, quiet tense atmosphere, clean not gory::, 1.3::the core experiment chamber of a lab with huge broken glass cultivation tanks, purple liquid pooled on the floor, cables hanging, eerie violet light::"
+    },
+    {
+     "file": "06_직원 샤워실",
+     "rid": "g1a1",
+     "tags": "1.2::sealed underground research facility level, old but well built laboratory, emergency lights, glass tanks, pipes, quiet tense atmosphere, clean not gory::, 1.3::an old staff shower room in a facility, tiled walls, water still running from a showerhead, steam::"
+    },
+    {
+     "file": "07_보안 문",
+     "rid": "g1a2",
+     "tags": "1.2::sealed underground research facility level, old but well built laboratory, emergency lights, glass tanks, pipes, quiet tense atmosphere, clean not gory::, 1.3::a security door corridor with electric arcs crackling across, warning stripes on the floor, red light::"
+    },
+    {
+     "file": "08_사육실",
+     "rid": "g1a3",
+     "tags": "1.2::sealed underground research facility level, old but well built laboratory, emergency lights, glass tanks, pipes, quiet tense atmosphere, clean not gory::, 1.3::a creature breeding room with rows of open cages, straw, feeding bowls, observation windows::"
+    },
+    {
+     "file": "09_비상 계단",
+     "rid": "g2a1",
+     "tags": "1.2::sealed underground research facility level, old but well built laboratory, emergency lights, glass tanks, pipes, quiet tense atmosphere, clean not gory::, 1.3::a dark emergency stairwell in a facility during a blackout, a single flashlight beam, metal railings::"
+    },
+    {
+     "file": "10_잠긴 사물함",
+     "rid": "tr",
+     "tags": "1.2::sealed underground research facility level, old but well built laboratory, emergency lights, glass tanks, pipes, quiet tense atmosphere, clean not gory::, 1.3::a row of researcher lockers, one locker open with documents and a lab coat inside, dim light::"
+    },
+    {
+     "file": "11_청소 도구함",
+     "rid": "s1",
+     "tags": "1.2::sealed underground research facility level, old but well built laboratory, emergency lights, glass tanks, pipes, quiet tense atmosphere, clean not gory::, 1.3::a cramped janitor closet with mops, buckets and shelves of cleaning supplies, a dim bulb::"
+    }
+   ],
+   "mons": [
+    {
+     "file": "방실솔",
+     "id": "w020",
+     "tags": "1.3::original pokemon-like creature based on a badger::, normal and fighting type creature, plain fur, soft rounded shapes, muscular build, wrapped fists, martial stance, color palette cream and beige and red and tan, standing firm in a defensive stance, small size, cute but wild, simple readable silhouette, background: a dim sealed laboratory corridor"
+    },
+    {
+     "file": "찌릿딩",
+     "id": "w028",
+     "tags": "1.3::original pokemon-like creature based on a bell::, electric and steel type creature, zigzag lightning marks, static sparks, metallic plating, rivets and blades, color palette yellow and black and silver and steel gray, charging an energy blast, small size, cute but wild, simple readable silhouette, background: a dim sealed laboratory corridor"
+    },
+    {
+     "file": "보글배미",
+     "id": "w204",
+     "tags": "1.3::original pokemon-like creature based on a snake::, poison type creature, toxic spots, dripping venom, color palette purple and magenta, charging an energy blast, large and imposing size, cute but wild, simple readable silhouette, 1.2::imposing boss presence, slightly larger and fiercer::, background: a dim sealed laboratory corridor"
+    },
+    {
+     "file": "뽀더지",
+     "id": "w092",
+     "tags": "1.3::original pokemon-like creature based on a mole::, normal type creature, plain fur, soft rounded shapes, color palette cream and beige, shielded by a calm protective aura, small size, cute but wild, simple readable silhouette, background: a dim sealed laboratory corridor"
+    },
+    {
+     "file": "폭신솔",
+     "id": "w065",
+     "tags": "1.3::original pokemon-like creature based on a badger::, normal type creature, plain fur, soft rounded shapes, color palette cream and beige, standing firm in a defensive stance, small size, cute but wild, simple readable silhouette, background: a dim sealed laboratory corridor"
+    },
+    {
+     "file": "전룡",
+     "id": "w271",
+     "tags": "1.4::Ampharos (pokemon)::, accurate official design, background: a dim sealed laboratory corridor"
+    },
+    {
+     "file": "노고고치",
+     "id": "w261",
+     "tags": "1.4::Three-Segment Form (pokemon)::, accurate official design, background: a dim sealed laboratory corridor"
+    },
+    {
+     "file": "보송람",
+     "id": "w081",
+     "tags": "1.3::original pokemon-like creature based on a squirrel::, normal type creature, plain fur, soft rounded shapes, color palette cream and beige, dynamic pose using both strength and energy, small size, cute but wild, simple readable silhouette, background: a dim sealed laboratory corridor"
+    }
+   ]
+  },
+  {
+   "dir": "던전/08 뒷산 분화구 지열 동굴",
+   "id": "md8_volc",
+   "name": "뒷산 분화구 지열 동굴",
+   "rooms": [
+    {
+     "file": "01_재 덮인 등산로",
+     "rid": "entry",
+     "tags": "1.2::dormant volcano behind a university, geothermal pipes, cooled black lava, glowing orange cracks, steam vents, sulfur crystals, dramatic but not apocalyptic::, 1.3::an ash covered mountain trail on a dormant volcano, old rusty geothermal pipes running along it, a hot glowing boulder blocking the way, hazy sky::"
+    },
+    {
+     "file": "02_지열관 굴",
+     "rid": "b1",
+     "tags": "1.2::dormant volcano behind a university, geothermal pipes, cooled black lava, glowing orange cracks, steam vents, sulfur crystals, dramatic but not apocalyptic::, 1.3::a tunnel carved in volcanic rock with large old geothermal pipes along the wall, heat haze and steam leaking from the joints, orange light::"
+    },
+    {
+     "file": "03_증기 틈",
+     "rid": "c1",
+     "tags": "1.2::dormant volcano behind a university, geothermal pipes, cooled black lava, glowing orange cracks, steam vents, sulfur crystals, dramatic but not apocalyptic::, 1.3::a rocky volcanic slope with steam vents hissing from cracks, wet rocks, white steam clouds::"
+    },
+    {
+     "file": "04_식은 용암관",
+     "rid": "safe",
+     "tags": "1.2::dormant volcano behind a university, geothermal pipes, cooled black lava, glowing orange cracks, steam vents, sulfur crystals, dramatic but not apocalyptic::, 1.3::inside a cooled lava tube, smooth black rock walls, a faint glow far away, calm and warm, safe resting place::"
+    },
+    {
+     "file": "05_분화구 바닥",
+     "rid": "boss",
+     "tags": "1.2::dormant volcano behind a university, geothermal pipes, cooled black lava, glowing orange cracks, steam vents, sulfur crystals, dramatic but not apocalyptic::, 1.3::the floor of a volcanic crater with glowing red cracks in black rock, rising heat and sparks, steep crater walls, a dramatic red sky above::"
+    },
+    {
+     "file": "06_갈라진 동굴",
+     "rid": "g1a1",
+     "tags": "1.2::dormant volcano behind a university, geothermal pipes, cooled black lava, glowing orange cracks, steam vents, sulfur crystals, dramatic but not apocalyptic::, 1.3::a cracked volcanic cave with strange heat loving fruit vines growing on the walls, orange glow from cracks::"
+    },
+    {
+     "file": "07_검은 바위 지대",
+     "rid": "g1a2",
+     "tags": "1.2::dormant volcano behind a university, geothermal pipes, cooled black lava, glowing orange cracks, steam vents, sulfur crystals, dramatic but not apocalyptic::, 1.3::a wide field of black solidified lava rock, scattered small fires, smoke, distant volcano peak::"
+    },
+    {
+     "file": "08_식은 용암 계곡",
+     "rid": "g1a3",
+     "tags": "1.2::dormant volcano behind a university, geothermal pipes, cooled black lava, glowing orange cracks, steam vents, sulfur crystals, dramatic but not apocalyptic::, 1.3::a narrow valley of cooled lava flows with rippled black rock, sulfur yellow stains, steam::"
+    },
+    {
+     "file": "09_흔들리는 화구벽",
+     "rid": "g2a1",
+     "tags": "1.2::dormant volcano behind a university, geothermal pipes, cooled black lava, glowing orange cracks, steam vents, sulfur crystals, dramatic but not apocalyptic::, 1.3::a crumbling crater wall path with toxic yellow gas drifting, loose rocks falling::"
+    },
+    {
+     "file": "10_굳은 화석층",
+     "rid": "tr",
+     "tags": "1.2::dormant volcano behind a university, geothermal pipes, cooled black lava, glowing orange cracks, steam vents, sulfur crystals, dramatic but not apocalyptic::, 1.3::a layer of fossils embedded in cooled lava rock wall, glowing amber stones::"
+    },
+    {
+     "file": "11_유황 결정 굴",
+     "rid": "s1",
+     "tags": "1.2::dormant volcano behind a university, geothermal pipes, cooled black lava, glowing orange cracks, steam vents, sulfur crystals, dramatic but not apocalyptic::, 1.3::a small cave filled with bright yellow sulfur crystals, steam, warm light::"
+    }
+   ],
+   "mons": [
+    {
+     "file": "쾅쪽이",
+     "id": "w025",
+     "tags": "1.3::original pokemon-like creature based on a weasel::, dark and fighting type creature, sharp claws, sly grin, shadowy fur, muscular build, wrapped fists, martial stance, color palette black and crimson and red and tan, lunging forward in an attacking pose, small size, cute but wild, simple readable silhouette, background: a volcanic cave with glowing lava cracks"
+    },
+    {
+     "file": "타닥콘",
+     "id": "w119",
+     "tags": "1.3::original pokemon-like creature based on a fox::, fire type creature, flame tail or mane, ember sparks, color palette red and orange, lunging forward in an attacking pose, small to medium size, cute but wild, simple readable silhouette, background: a volcanic cave with glowing lava cracks"
+    },
+    {
+     "file": "브리두라스",
+     "id": "w298",
+     "tags": "1.4::Archaludon (pokemon)::, accurate official design, 1.2::imposing boss presence, slightly larger and fiercer::, background: a volcanic cave with glowing lava cracks"
+    },
+    {
+     "file": "활도마",
+     "id": "w055",
+     "tags": "1.3::original pokemon-like creature based on a lizard::, fire type creature, flame tail or mane, ember sparks, color palette red and orange, alert and ready, small size, cute but wild, simple readable silhouette, background: a volcanic cave with glowing lava cracks"
+    },
+    {
+     "file": "차두루",
+     "id": "w106",
+     "tags": "1.3::original pokemon-like creature based on a crane::, fighting type creature, muscular build, wrapped fists, martial stance, color palette red and tan, charging an energy blast, small to medium size, cute but wild, simple readable silhouette, background: a volcanic cave with glowing lava cracks"
+    },
+    {
+     "file": "드라지",
+     "id": "w053",
+     "tags": "1.3::original pokemon-like creature based on a centipede::, dragon type creature, scales, horns, draconic features, color palette indigo and teal, lunging forward in an attacking pose, small size, cute but wild, simple readable silhouette, background: a volcanic cave with glowing lava cracks"
+    },
+    {
+     "file": "후끈방",
+     "id": "w007",
+     "tags": "1.3::original pokemon-like creature based on a tiger moth::, fire type creature, flame tail or mane, ember sparks, color palette red and orange, lunging forward in an attacking pose, small size, cute but wild, simple readable silhouette, background: a volcanic cave with glowing lava cracks"
+    },
+    {
+     "file": "나인테일",
+     "id": "w267",
+     "tags": "1.4::Ninetales (pokemon)::, accurate official design, background: a volcanic cave with glowing lava cracks"
+    },
+    {
+     "file": "팔데아 켄타로스 블레이즈종",
+     "id": "w227",
+     "tags": "1.4::Paldean Tauros (Blaze Breed) (pokemon)::, accurate official design, background: a volcanic cave with glowing lava cracks"
+    }
+   ]
+  }
+ ]
+}
