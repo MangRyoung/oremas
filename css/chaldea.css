@@ -164,10 +164,10 @@ html[data-vt="cd"] .phone{background-color:rgba(6,14,28,.94)!important}
 html[data-vt="cd"] :is(.tile,.card,.spcard){background-color:rgba(9,19,36,.86)!important}
 
 /* 칼데아 문장 LED — 11-04 망령 「오른쪽 하단의 칼데아 문양도 LED처럼 · 너무 과하진 않고 하얀색으로 깜빡 · 멎어가는 심장 고동처럼 천천히」
-   바탕 그림이던 워터마크를 body::before 로 옮겨 따로 숨쉬게 한다. → 망령 「맥이 뛰는 느낌보다 천천히 숨쉬듯 빛이 들어왔다가 천천히 꺼지기를 반복」: 4.5초에 걸쳐 밝아지고 4.5초에 걸쳐 꺼진다(한 숨 9초). */
+   바탕 그림이던 워터마크를 body::before 로 옮겨 따로 숨쉬게 한다. → 망령 「맥이 뛰는 느낌보다 천천히 숨쉬듯 빛이 들어왔다가 천천히 꺼지기를 반복」: 4.5초에 걸쳐 밝아지고 4.5초에 걸쳐 꺼진다(한 숨 9초). → 「더 선명하게 새하얀 색」: 가장 밝을 때 불투명도 .85 · 하얀 빛 번짐. */
 html[data-vt="cd"] body::before{content:"";position:fixed;right:3%;bottom:4%;width:min(420px,46vw);aspect-ratio:1/1;z-index:-1;pointer-events:none;
-  background:url("../img/chaldea_emblem_w.png") center/contain no-repeat;opacity:.05;filter:drop-shadow(0 0 0 rgba(255,255,255,0));animation:cdbreath 4.5s ease-in-out infinite alternate}
+  background:url("../img/chaldea_emblem_w.png") center/contain no-repeat;opacity:.08;animation:cdbreath 4.5s ease-in-out infinite alternate}
 @keyframes cdbreath{
-  from{opacity:.04;filter:drop-shadow(0 0 0 rgba(255,255,255,0))}
-  to{opacity:.2;filter:drop-shadow(0 0 10px rgba(255,255,255,.5)) drop-shadow(0 0 28px rgba(160,230,255,.3))}}
-@media (prefers-reduced-motion:reduce){html[data-vt="cd"] body::before{animation:none;opacity:.07}}
+  from{opacity:.08;filter:brightness(1.15) drop-shadow(0 0 0 rgba(255,255,255,0))}
+  to{opacity:.85;filter:brightness(1.25) drop-shadow(0 0 6px rgba(255,255,255,.95)) drop-shadow(0 0 22px rgba(255,255,255,.6)) drop-shadow(0 0 48px rgba(200,240,255,.35))}}
+@media (prefers-reduced-motion:reduce){html[data-vt="cd"] body::before{animation:none;opacity:.35}}
