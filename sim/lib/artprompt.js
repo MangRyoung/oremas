@@ -55,6 +55,6 @@ const MNEG2='1.5::pokemon (creature), pokemon, fakemon, digimon, mascot, anime c
 module.exports.MNEG2=MNEG2;
 const MNEG_BASE='human, humanoid, 1girl, 1boy, multiple views, multiple creatures, text, caption, english text, trading card, card frame, border, watermark, signature, logo, cropped, out of frame, lowres, worst quality, gore';
 /* 태그에서 포켓몬 말 걷기 */
-function depoke(t){return t.replace(/original (fakemon|pokemon-style|pokemon) creature based on (an? )?/g,'monstrous creature based on $2').replace(/(\w+(?: and \w+)*) type creature/g,'$1 element').replace(/,\s*0?\.?\d*::pokemon \(creature\)::/g,'')}
+function depoke(t){return t.replace(/original (fakemon|pokemon-style|pokemon-like|pokemon) creature based on (an? )?/g,'monstrous creature based on $2').replace(/(\w+(?: and \w+)*) type creature/g,'$1 element').replace(/,\s*0?\.?\d*::pokemon \(creature\)::/g,'')}
 function mtags(tags,e,o){const r=retag(tags,e,o);return {traits:r.traits,tags:depoke(r.tags.replace(BASE,'1.3::mutated beast, predatory body, menacing, readable silhouette::').replace(NEG+'','').replace(/,\s*$/,''))}}
 module.exports.MSTYLE=MSTYLE;module.exports.MNEG=MNEG;module.exports.MNEG_BASE=MNEG_BASE;module.exports.depoke=depoke;module.exports.mtags=mtags;
