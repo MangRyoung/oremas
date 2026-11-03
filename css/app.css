@@ -5472,3 +5472,26 @@ html[data-vt="mm"] .clc-menu>div,html[data-vt="mm"] .clc-menu>summary{background
  .bstat.fold .gmrow>.gmh{order:3}.bstat.fold .gmrow>.gmty{order:4!important;margin-left:2px!important}.bstat.fold .gmrow>.gmbr{order:5}
  .bstat.fold>.bspkfold,.bstat.fold>details{order:7}
 }
+/* 11-03 23:22 망령 「모바일은 개판」: DB 창 머리 — 제목 · 단추 줄 / 종류 탭은 아랫줄 가로 스크롤, 단추 글자 세로로 쪼개짐 · 목록 오른쪽 넘침 */
+@media (max-width:760px){
+ .modal.dbmodal{height:92vh;padding:10px}
+ .dbmodal .mhead{flex-wrap:wrap;row-gap:6px;align-items:center}
+ .dbmodal .mhead h2{flex:0 0 auto;font-size:20px;margin-right:4px}
+ .dbmodal .mhead .sp{display:none}
+ .dbmodal .mhead #dbtools{flex:1 1 auto;flex-wrap:wrap;gap:4px;justify-content:flex-end}
+ .dbmodal .mhead .btn{white-space:nowrap;writing-mode:horizontal-tb;padding:4px 9px;font-size:12.5px}
+ .dbmodal .mhead .tabs2{order:5;flex:1 0 100%;margin:0;overflow-x:auto;scrollbar-width:none}
+ .dbmodal .tab2{font-size:13px;padding:3px 9px}
+ .dbwrap{gap:8px}
+ .dbwrap>*{min-width:0}
+ .dbleft input{font-size:16px}
+ .dbtags{flex-wrap:nowrap!important;overflow-x:auto;scrollbar-width:none}
+ .dbtags>*{flex:none}
+ .dblist{min-width:0}
+ .dbright:empty{display:none}
+}
+/* 11-03 23:22: 휴대폰에서 창 머리 단추가 화면 밖으로 밀리던 것(레디메이드 창의 「방 → 제작기」 · 닫기 등) — 머리는 줄을 넘긴다 */
+@media (max-width:760px){
+ .modal .mhead{flex-wrap:wrap;row-gap:6px}
+ .modal .mhead>.btn,.modal .mhead .row>.btn{white-space:nowrap;writing-mode:horizontal-tb}
+}

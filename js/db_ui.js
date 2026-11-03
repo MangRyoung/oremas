@@ -38,7 +38,7 @@ window.OM_DB_UI=(()=>{
   $('#dbkinds',md).innerHTML=KINDS.map(([k,n])=>`<button class="tab2 ${UI.kind===k?'on':''}" data-kind="${k}">${n} <small>${all(k).length}</small></button>`).join('');
   $('#dbkinds',md).querySelectorAll('[data-kind]').forEach(b=>b.onclick=()=>{UI.kind=b.dataset.kind;UI.tag='';UI.sel='';UI.lim=200;render()});
   $('#dbtitle',md).textContent=(UI.pick?'고르기 — ':'')+KINDS.find(x=>x[0]===UI.kind)[1];
-  const tb=$('#dbtools',md);if(tb){tb.innerHTML=A().ST.role==='gm'?`${UI.kind!=='state'?'<button class="btn sm" id="dbnew">+ 새로</button>':''}<button class="btn sm ghost" id="dbsync" title="제작기 DB 수정은 GM 화면이 2분마다 · 창으로 돌아올 때 자동으로 가져온다. 이 단추는 전부 다시 읽기">제작기 다시 읽기</button>${roomRm().length?`<button class="btn sm" id="dbpushrm" title="이 방에서 직접 고친 레디메이드 구문을 제작기 레디메이드 DB 로 올린다">방 레디메이드 → 제작기 (${roomRm().length})</button>`:''}`:'';{const pr=$('#dbpushrm',md);if(pr)pr.onclick=pushRm}const nw=$('#dbnew',md);if(nw)nw.onclick=()=>openEdit(UI.kind,'',true);const sy=$('#dbsync',md);if(sy)sy.onclick=syncMaker}
+  const tb=$('#dbtools',md);if(tb){tb.innerHTML=A().ST.role==='gm'?`${UI.kind!=='state'?'<button class="btn sm" id="dbnew">+ 새로</button>':''}<button class="btn sm ghost" id="dbsync" title="제작기 DB 수정은 GM 화면이 2분마다 · 창으로 돌아올 때 자동으로 가져온다. 이 단추는 전부 다시 읽기">제작기 다시 읽기</button><button class="btn sm ${roomRm().length?'pri':'ghost'}" id="dbpushrm" title="이 방에서 직접 고친 레디메이드 구문을 제작기 레디메이드 DB 로 올린다 (0 이면 이 방엔 옮길 것이 없다)">방 → 제작기 (${roomRm().length})</button>`:'';{const pr=$('#dbpushrm',md);if(pr)pr.onclick=pushRm}const nw=$('#dbnew',md);if(nw)nw.onclick=()=>openEdit(UI.kind,'',true);const sy=$('#dbsync',md);if(sy)sy.onclick=syncMaker}
   const cnt={};all(UI.kind).forEach(r=>r.tags.forEach(t=>{const b=t.replace(/\s*\(.*\)$/,'');cnt[b]=(cnt[b]||0)+1}));
   const top=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a]).slice(0,14);
   $('#dbtags',md).innerHTML=top.map(t=>`<button class="chip ${UI.tag===t?'on':''}" data-tag="${esc(t)}">${esc(t)} <small>${cnt[t]}</small></button>`).join('');
@@ -177,7 +177,7 @@ window.OM_DB_UI=(()=>{
  function roomRm(){const ov=((A().ST.state.dbx||{}).rm)||{};return Object.entries(ov).filter(([k,v])=>v&&!v.deleted&&(v.src==='room'||!v.src)&&k)}
  async function pushRm(){if(A().ST.role!=='gm')return A().toast('GM 만');const FX=window.OM_FX;if(!FX)return A().toast('구문 엔진을 아직 못 불러왔다');if(!window.OM_STORE||!window.OM_STORE.makerPut)return A().toast('제작기 저장소에 쓸 수 없다');
   const L=roomRm();const RB=(window.OM_DB||{}).readymade||{};
-  if(!L.length)return A().toast('이 방에서 직접 고친 레디메이드가 없다 — 옮길 것 없음');
+  if(!L.length){const ov=((A().ST.state.dbx||{}).rm)||{};const nm=Object.values(ov).filter(v=>v&&v.src==='maker').length;return A().toast(`이 방에서 직접 고친 레디메이드는 0개 — 옮길 것 없음${nm?` (제작기에서 받은 것 ${nm}개는 이미 제작기에 있다)`:''}. 다른 방(원본 등)에서 고쳤다면 그 방에서 눌러 주세요`)}
   const dsl=o=>FX.unparse((o&&o.ops)||[]).join('\n');
   const rows=L.map(([k,v])=>{const b=RB[k];const same=b&&dsl(b)===dsl(v)&&!!b.manual===!!v.manual&&String(b.text||'')===String(v.text||'');return {k,v,b,same}}).sort((x,y)=>(x.same-y.same)||x.k.localeCompare(y.k,'ko'));
   const md=A().openModal(`<div class="mhead"><h2>방 레디메이드 → 제작기 레디메이드 DB</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
