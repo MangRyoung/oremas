@@ -159,6 +159,15 @@ window.OM_RP_UI=(()=>{
  addEventListener('resize',()=>{const d=document.getElementById('dlg');if(d&&d.isConnected)fitDlg(d)});
  function dqSkip(dlg){if(DQ.phase==='typing'){const on=dlg.querySelector('.tw-on'),off=dlg.querySelector('.tw-off');if(on&&off){on.textContent+=off.textContent;off.textContent=''}clearTimeout(DQ.t);dlg.classList.remove('twing');DQ.phase='hold';DQ.t=setTimeout(dqNext,Math.min(twCfg().hold,900))}else if(DQ.phase==='hold')dqNext()}
 
+ /* 11-03 감우 (검토 20-1): 배경 크로스페이드 — .rpstage 의 background-image 는 transition 이 안 먹는다(--stbg 교체).
+    배경이 바뀌면 이전 그림을 .stbgold 한 장으로 덧대어 0.5초 동안 투명하게(씬 프리셋 · 장소 배경 · 지도 배경 모두 rp.bg 로 오니 한 길). 무대를 새로 그린 첫 번째는 페이드 없이.
+    10-24 망령: VELVET 테마(P3·P4·P5)의 .rpstage{background:…!important} 가 그림을 덮어 배경이 안 보였다 — 변수 + hasbg 로 테마보다 앞에 깐다 (css/vtheme.css 끝). 변수 속 상대 주소는 css/ 기준으로 풀리니 절대 주소로 */
+ function setStageBg(stage,src){let au='';if(src){au=src;try{au=new URL(src,location.href).href}catch(e){}}
+  const prev=stage._bg===undefined?null:stage._bg;stage._bg=au;
+  stage.style.backgroundImage=au?`url('${cssu(au)}')`:'';if(au)stage.style.setProperty('--stbg',`url('${cssu(au)}')`);else stage.style.removeProperty('--stbg');stage.classList.toggle('hasbg',!!au);
+  if(prev===null||prev===au)return;
+  let old=stage.querySelector(':scope>.stbgold');if(!old){old=document.createElement('div');old.className='stbgold';stage.prepend(old)}
+  old.style.backgroundImage=prev?`url('${cssu(prev)}')`:'';clearTimeout(old._t);old.classList.remove('fade');void old.offsetWidth;old.classList.add('fade');old._t=setTimeout(()=>old.remove(),560)}
  /* ----- 무대 ----- */
  function render(el){
   feedLog(A().ST.log||[]);expire();if(gm())mapBake();
@@ -189,9 +198,7 @@ window.OM_RP_UI=(()=>{
   /* 뼈대는 한 번만 — 스탠딩이 매번 다시 그려져 애니메이션이 되풀이되지 않게 */
   let stage=$('#rpstage',el);
   if(!stage){el.innerHTML=`<div class="rpwrap"><div class="rpstage" id="rpstage"><div class="stands" id="stands"></div><div class="dlg" id="dlg"></div><div class="typing" id="typing"></div><div id="bgname"></div><div id="centerimg"></div><div class="rpbtns" id="rpbtns"></div><div id="mapov"></div><div id="voteov"></div></div><div id="rpunder"></div></div>`;stage=$('#rpstage',el)}
-  stage.style.backgroundImage=bg.src?`url('${cssu(bg.src)}')`:'';
-  /* 10-24 망령: VELVET 테마(P3·P4·P5)의 .rpstage{background:…!important} 가 위 그림을 덮어 배경이 안 보였다 — 변수 + hasbg 로 테마보다 앞에 깐다 (css/vtheme.css 끝) */
-  if(bg.src){let au=bg.src;try{au=new URL(bg.src,location.href).href}catch(e){}stage.style.setProperty('--stbg',`url('${cssu(au)}')`)}   /* 변수 속 상대 주소는 css/ 기준으로 풀리니 절대 주소로 */else stage.style.removeProperty('--stbg');stage.classList.toggle('hasbg',!!bg.src);
+  setStageBg(stage,bg.src||'');
   const cal=ST.state.calendar||{};/* 10-24 망령: 캘린더 「RP 에 날짜 표기」 — 켜면 오늘(정한 날이 없으면 실제 날짜)을 배경명 위에, 끄면 숨김. 안 정했으면 예전처럼 날짜를 정했을 때만 */const tdy=cal.rpDate===0?'':(cal.today||(cal.rpDate?(()=>{const n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0')})():''));const dt=tdy?(()=>{const d=new Date(tdy+'T00:00:00');return {md:tdy.slice(5).replace('-','/'),wd:['일','월','화','수','목','금','토'][d.getDay()]}})():null;
   $('#bgname',el).innerHTML=`<div class="stagetags">${dt?`<div class="daytag" ${gm()?'data-rp="phase" title="눌러서 시간대 바꾸기"':''}><b>${esc(dt.md)}</b><i>${dt.wd}</i>${cal.weather?`<em>${esc(cal.weather)}</em>`:''}${cal.phase?`<span class="phase ${({아침:'morning',저녁:'evening',밤:'night',심야:'night'})[cal.phase]||''}">${esc(cal.phase)}</span>`:''}</div>`:''}${bg.name?`<div class="bgname">${esc(bg.name)}</div>`:''}${(()=>{const CU=window.OM_CAL_UI;const nx=CU&&CU.next&&cal.today?CU.next(cal,14):null;return nx?`<div class="ddaytag ${nx.n===0?'on':''}" data-rp="calview" title="${esc(nx.date)} ${esc(nx.t)} — 눌러서 캘린더">${CU.ddL(nx.n)}<span>${esc(nx.t)}</span></div>`:''})()}</div>`;
   $('#centerimg',el).innerHTML=r.center&&r.center.src?`<div class="centerimg"><img src="${esc(r.center.src)}" alt="">${gm()?'<button class="btn xs" data-rp="centerx">닫기</button>':''}</div>`:'';

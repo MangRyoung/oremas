@@ -5102,3 +5102,8 @@ body:has(.modalbg) .tour-ask{display:none}
 .pregrpin .cfold{margin-left:0}
 /* 점검: sticky 바가 켜져 있을 때 scrollIntoView 로 간 곳이 바 뒤에 숨지 않게 */
 #cmdForm,.cmdt,.cfold,.mon.big,.orderbox,.endq,#ares{scroll-margin-top:52px}
+/* 11-03 RP 연출 (감우 · 검토 20) — 배경 크로스페이드 · 공지 배너 · 스탠딩 퇴장 · 무대 버튼 정리 · 화자 칩 줄 · 내 캐릭터 띠 · 콘솔 최근 띠 */
+/* 20-1 배경: 바뀌기 전 그림을 .stbgold 로 덧대고 0.5초 동안 투명하게 (js setStageBg). 스탠딩(z 1) 아래, 무대 그라데이션(::after) 아래 */
+.rpstage>.stbgold{position:absolute;inset:0;z-index:0;background:#0d0e11 center/cover no-repeat;pointer-events:none;opacity:1}
+.rpstage>.stbgold.fade{animation:stbgfade .5s ease forwards}
+@keyframes stbgfade{from{opacity:1}to{opacity:0}}
