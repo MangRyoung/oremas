@@ -5434,3 +5434,5 @@ html[data-vt="mm"] .clc-menu>div,html[data-vt="mm"] .clc-menu>summary{background
 .tuq .pot.sp.uq{display:flex;align-items:center;gap:4px;width:100%;max-width:100%;min-width:0;box-sizing:border-box}
 .tuq .pot.sp.uq .potn{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tuq .pot.sp.uq>em,.tuq .pot.sp.uq>.pips,.tuq .pot.sp.uq>.btn,.tuq .pot.sp.uq>small{flex:none}
+/* 11-03 21:36 일반 포텐셜 【탈진】 · 【소진】 — 못 쓰는 턴엔 발동 자리에 같은 크기의 칩 */
+.btn.potrest{background:#5a5a5a!important;color:#ddd!important;border-color:#777!important;cursor:help;box-shadow:none!important;opacity:.85}
