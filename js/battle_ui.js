@@ -2007,7 +2007,7 @@ window.OM_BATTLE_UI=(()=>{
    A().sysLog(`【${K}】 ${m.name} 『${name}』\n${roll}`,'battle',{mid:m.id,img:m.image||'',eff:String(tx).replace(/<br\s*\/?>/g,'\n').slice(0,300)})}}}
  /* 등장·상시 자동 발동: 글에 【등장】/【상시】 표식이 있는 특성·소지품·포텐셜 */
  /* 지속형 구문: 걸어 두면 공격 창 · 순서 · HP 창이 알아서 읽는 것들 */
- const PASSIVE_K=['boost','guard','mult','immune','nodrop','ignoreup','noind','float','prio','chance','pursuit','cond','sp'];
+ const PASSIVE_K=['boost','guard','mult','immune','nodrop','ignoreup','noind','float','prio','chance','pursuit','cond','sp','role'];   /* 11-03 22:50: 「역할 추가」(타이트엔드 = 어태커 · 블로커 취급)도 늘 켜짐 */
  /* 맨 앞 「조건」(아군빈사 · HP≤ · 상태)을 미리 본다 — 안 맞으면 조용히 넘기고 나중(아군 빈사 등)에 다시 */
  function condNow(b,m,ops){if(!m)return false;for(const o of ops||[]){if(o.k!=='cond')break;if(o.c==='ally_fainted'){if(!Object.values(b.mons||{}).some(x=>x.id!==m.id&&sameT(x,m,b)&&x.hp.cur<=0))return false}else if(o.c==='self_state'){if(!(m.states||{})[o.st])return false}else return false}return true}
  /* 아군 빈사 (10-26 망령): 새로 쓰러진 포켓몬이 생기면 — 같은 편 필드 포켓몬의 「아군빈사」 조건 상시(에이스 …)를 걸고, 【자동】 「아군이 「빈사」 상태가 되었을 때」 포텐셜을 발동, 그 밖의 그런 고유 · 포텐셜은 알림 */
