@@ -46,7 +46,13 @@ const MSTYLE={
 const ART=(kim,kan)=>`0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, ${kan}::artist:kazuma kaneko ::, 0.6::background:tsukushi akihito ::, 0.6::background:kuroimori ::, 0.6::background:yoshida akihiko ::, 0.8::artist:kankan33333 ::, ${kim}::artist:kimhiro ::, 1.1::artist:ciloranko ::, `+Q+'thick outlines, ::ultra complexity ::, ';
 const BODY='1.4::no humans, monster, creature, solo::, 1.2::dark fantasy, eldritch, unsettling::, 1.2::full body, centered, the whole creature inside the frame::, detailed background, ';
 MSTYLE.G=ART(1.5,0.6)+BODY;MSTYLE.H=ART(1.0,1.1)+BODY;
-const MNEG='-1.5::pokemon (creature), pokemon, fakemon, digimon, mascot, anime creature::, -1.2::cute, chibi, kawaii, round eyes, plush, cuddly, simple shading, flat color, thick outlines::, -1.5::frame, border, vignette, circle background, white background, card::';
+/* 11-03 20:25 망령 「H 로 해서 좀 더 개선」 → H2: 액자 · 둥근 틀 막기(배경이 화면 끝까지) · 약한 몹도 노려보는 눈빛(동그란 눈 막기). 이게 기본. */
+MSTYLE.H2=ART(1.0,1.1)+'1.4::no humans, monster, creature, solo::, 1.2::dark fantasy, eldritch, unsettling::, 1.1::menacing, predatory gaze, hostile::, 1.2::full body, centered, the whole creature inside the frame::, 1.2::detailed background filling the whole image, edge to edge scenery::, ';
+/* 주의(11-03 20:35): 네거티브 칸(UC) 안에서 -N:: 은 「덜 빼라」 = 거꾸로 그 말을 부른다. UC 에는 + 무게만 쓴다. (E/F/G/H 시험은 이 실수로 틀 · 둥근 창이 더 나왔다) */
+const MNEG='1.5::pokemon (creature), pokemon, fakemon, digimon, mascot, anime creature::, 1.2::cute, chibi, kawaii, round eyes, plush, cuddly, simple shading, flat color, thick outlines::, 1.5::frame, border, vignette, circle background, white background, card::';
+/* H2 용: thick outlines 는 작가 줄에 있으니 네거티브에서 뺌, 틀 · 동그란 눈을 더 세게 */
+const MNEG2='1.5::pokemon (creature), pokemon, fakemon, digimon, mascot, anime creature::, 1.3::cute, chibi, kawaii, round eyes, big eyes, dot eyes, innocent, plush, cuddly, smiling happily::, 1.8::frame, picture frame, border, white border, vignette, circle frame, round frame, porthole, framed, letterboxing, card, white background::';
+module.exports.MNEG2=MNEG2;
 const MNEG_BASE='human, humanoid, 1girl, 1boy, multiple views, multiple creatures, text, caption, english text, trading card, card frame, border, watermark, signature, logo, cropped, out of frame, lowres, worst quality, gore';
 /* 태그에서 포켓몬 말 걷기 */
 function depoke(t){return t.replace(/original (fakemon|pokemon-style|pokemon) creature based on (an? )?/g,'monstrous creature based on $2').replace(/(\w+(?: and \w+)*) type creature/g,'$1 element').replace(/,\s*0?\.?\d*::pokemon \(creature\)::/g,'')}
