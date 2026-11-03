@@ -58,13 +58,14 @@ window.OM_BATTLE_UI=(()=>{
  /* 바뀐 칸만 쓴다 (점검 2-4) — 배틀을 통째로 쓰면 그 사이 남이 바꾼 칸(다른 포켓몬의 피해, 지시 공개 …)이 지워진다.
     nb0 = 사본을 뜰 때의 배틀, nb = 고친 사본 (f 를 주면 필드도 그걸로). 포켓몬은 칸(hp · states …) 하나 단위로, 턴·페이즈는 맨 끝에 쓴다 */
  const snap=x=>JSON.parse(JSON.stringify(x===undefined?ctx().b:x));
- function saveBattle(nb0,nb,f,by){if(f!==undefined)nb.field=f;const FL=faintSweep(nb0,nb);const ops=A().diffOps(['battle'],nb0,nb,3);const last=p=>(p[1]==='turn'||p[1]==='phase')?1:0;ops.sort((x,y)=>last(x[0])-last(y[0]));const fa=snap(nb0.field||{}),fz=snap(nb.field||{});   /* 11-01 망령: by = 전개한 쪽 {n,s,img} — 필드가 바뀌었으면 전개 카드 (fieldLog) */const sa=stSnap(nb0),sz=stSnap(nb);   /* 11-01 망령 「상태 변화도 효과 로그」: 상태가 걸리거나 풀렸으면 상태 카드 (stLogAll) */
+ function saveBattle(nb0,nb,f,by,extra){if(f!==undefined)nb.field=f;const FL=faintSweep(nb0,nb);const ops=A().diffOps(['battle'],nb0,nb,3);const last=p=>(p[1]==='turn'||p[1]==='phase')?1:0;ops.sort((x,y)=>last(x[0])-last(y[0]));if(extra&&extra.length)ops.push(...extra);   /* 11-03: extra = 배틀 밖 칸(ready …)도 같은 묶음에 */const fa=snap(nb0.field||{}),fz=snap(nb.field||{});   /* 11-01 망령: by = 전개한 쪽 {n,s,img} — 필드가 바뀌었으면 전개 카드 (fieldLog) */const sa=stSnap(nb0),sz=stSnap(nb);   /* 11-01 망령 「상태 변화도 효과 로그」: 상태가 걸리거나 풀렸으면 상태 카드 (stLogAll) */
   return A().setMany(ops).then(r=>{if(r&&ops.length)itemKick();if(r&&FL.length)A().sysLog(FL.join('\n'),'battle');if(r&&ops.length){fieldLog(fa,fz,by,nb,350);stLogAll(sa,sz,by,350)}return r})}
  const stSnap=b=>{const o={};for(const id in (b||{}).mons||{}){const m=b.mons[id];if(m)o[id]={id,name:m.name,image:m.image,side:m.side,entry:m.entry,hp:{cur:(m.hp||{}).cur},states:Object.assign({},m.states||{})}}return {mons:o}};
  /* 10-23 망령: 쓰러진 포켓몬이 다른 포켓몬에게 건 포텐셜 · 특성 효과(옵저버 …)와 「필드 위에 있는 한」 효과도 퇴장처럼 푼다 */
  function faintSweep(nb0,nb){const L=[];if(!FX()||!nb0||!nb)return L;for(const id in nb.mons||{}){const m=nb.mons[id],o=(nb0.mons||{})[id];if(!o||!o.entry||!m||m.entry||m.hp.cur>0)continue;L.push(...auraOff(nb,m).L);if(FX().release)L.push(...FX().release(nb,m))}return L}
  async function faintOff(mid){const nb0=snap(),nb=snap(nb0);const m=nb.mons[mid];if(!m||m.hp.cur>0||!FX())return;const L=[...auraOff(nb,m).L,...(FX().release?FX().release(nb,m):[])];if(!L.length)return;if(await A().setMany(A().diffOps(['battle'],nb0,nb,3)))A().sysLog(L.join('\n'),'battle')}
- function saveMon(m0,mid,nm){return A().setDiff(['battle','mons',mid],m0,nm,1).then(r=>{if(r)itemKick();return r})}
+ /* 11-03 감우: 1단계 비교라 states · rank · mod · fx 같은 묶음이 통째로 쓰여, 같은 포켓몬을 둘이 동시에 고치면 한쪽 잎이 사라졌다 — 2단계까지 내려가 바뀐 잎만 (지운 키는 null) */
+ function saveMon(m0,mid,nm){return A().setDiff(['battle','mons',mid],m0,nm,2).then(r=>{if(r)itemKick();return r})}
  /* 소지품 저장 뒤 점검 (2026-10-23): 내가 저장한 뒤에만, 내가 고칠 수 있는 포켓몬의 HP 열매 · 치유 열매 · 시드 · 룸서비스 · 하양허브 … 를 터트린다 */
  let ITK=0;function itemKick(){clearTimeout(ITK);ITK=setTimeout(itemSweep,150)}
  async function itemSweep(){if(!OI())return;const c=ctx();if(!c||!c.b||!c.b.mons)return;const b0=snap(c.b),b=snap(b0);const f=fieldOf(b);let out=[];try{out=OI().sweep(b,f,m=>canEdit(c,m))}catch(e){console.warn(e);return}if(!out.length)return;
@@ -107,16 +108,21 @@ window.OM_BATTLE_UI=(()=>{
   const phases=[[0,'지시 준비'],[1,'턴 개시'],[2,'행동 순서'],[3,'행동 처리'],[5,'턴 종료']];
   const chips=[f.weather.type?`날씨 ${f.weather.type}${f.weather.count?' '+f.weather.count+'T':''}`:'',f.terrain.type?`${f.terrain.type}${f.terrain.count?' '+f.terrain.count+'T':''}`:'',...ROOMS.filter(r=>(f.rooms||{})[r]>0).map(r=>`${r} ${f.rooms[r]}T`),...ETC.filter(r=>(f.etc||{})[r]>0).map(r=>`${r} ${f.etc[r]}T`)].filter(Boolean);
   const mySide=c.mgr?'left':((b.trainers||{})[myTrainers(c)[0]]||{}).side||'left';const top=mySide==='left'?'right':'left';
+  /* 11-03 감우: #scene 을 통째로 다시 그리면 치고 있던 입력칸(지시 상세 · 우선도 · 제한 시간)의 포커스가 빠졌다 — rp_ui 처럼 어느 칸이었는지(id 또는 data 열쇠) 와 커서를 기억했다가 그린 뒤 되찾는다.
+     지시 입력 영역(#cmdForm)은 HTML 이 지난번과 같으면 옛 요소를 그대로 다시 붙인다 (접힌 칸 · 스크롤 유지) */
+  const FK=x=>x?(x.id?'#'+x.id:x.dataset&&x.dataset.f?`[data-f="${x.dataset.f}"]${x.dataset.mid?`[data-mid="${x.dataset.mid}"]`:''}${x.dataset.slot?`[data-slot="${x.dataset.slot}"]`:''}`:''):'';
+  const ae=document.activeElement;const keep=ae&&el.contains(ae)&&/^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)?{sel:FK(ae),v:ae.value,s:ae.selectionStart,e:ae.selectionEnd}:null;
+  const oldForm=$('#cmdForm',el);const cmdH=cmdPanel(c,ready);const sameCmd=!!(oldForm&&oldForm._h===cmdH);
   el.innerHTML=`
   <div class="bstat ${BFOLD.open?'':'fold'}">
    <div class="turn ${c.mgr?'clickable':''}" ${c.mgr?'data-act="turnset" title="눌러서 턴 번호 조정"':''}><span class="tlab">TURN</span><span class="tnum">${b.turn||0}</span></div>${(c.gm||(c.role==='seat'&&c.seat))?`<button class="btn sm ghost aihandb" data-aihand title="AI 에게 맡기기 — 지침 주소 · 이 방 · 정해 둔 것을 한 번에 복사해 아무 AI 대화창에 붙여 넣어요${c.gm?'':' (PL: 내 트레이너 지시 · 대사)'} (js/ai_ui.js)">🤖 AI</button>`:''}
-   <span class="phnow">${esc((phases.find(([p])=>p===(+b.phase||0))||[,''])[1])}${(+b.phase||0)===1&&b.tstep?(+b.tstep===1?' · 교대':' · 포텐셜 발동'):''}</span><button class="btn sm ghost bfold" data-bfold title="조작판 펼치기 · 접기">${BFOLD.open?'접기 ▴':'펼치기 ▾'}</button>
+   <span class="phnow">${esc((phases.find(([p])=>p===(+b.phase||0))||[,''])[1])}${(+b.phase||0)===1&&b.tstep?(+b.tstep===1?' · 교대':' · 포텐셜 발동'):''}</span><span id="bdl" class="bdl">${dlHtml(c,b)}</span><button class="btn sm ghost bfold" data-bfold title="조작판 펼치기 · 접기">${BFOLD.open?'접기 ▴':'펼치기 ▾'}</button>
    <div class="phases">${phases.map(([p,n])=>`<button class="ph ${(+b.phase||0)===p?'on':''}" data-phase="${p}" ${c.mgr?'':'disabled'}>${n}</button>`).join('')}</div>${(c.mgr||c.seat)?'<button class="btn sm autock" data-act="autock" title="내 트레이너 · 필드 위 내 포켓몬에서 자동으로 처리되는 것 (포텐셜 · 특성 · 소지품 · 기술 · 지령)">⚙ 자동화 확인</button>':''}
    <span class="sp"></span><span id="typingBat" class="typingslot">${window.OM_RP_UI&&window.OM_RP_UI.typingHtml?window.OM_RP_UI.typingHtml():''}</span><span class="sp"></span>${window.OM_RP_UI&&window.OM_RP_UI.bgmWidgetHtml?window.OM_RP_UI.bgmWidgetHtml():''}
    ${c.mgr?`<div class="gmrow"><label title="${b.started?'시합 중에는 바꿀 수 없다 — 「배틀 비우기」 뒤에':'싱글 1 · 더블 2 · 트리플 3 에리어'}">에리어 <select data-act="mode" ${b.started?'disabled':''}>${[[1,'싱글'],[2,'더블'],[3,'트리플']].map(([n,l])=>`<option value="${n}" ${mode(b)===n?'selected':''}>${l}</option>`).join('')}</select>${b.started?' 🔒':''}</label>
     ${!b.started?`<button class="btn sm pri" data-act="start" title="연출(VS/경고)과 함께 시합을 시작한다. 동시 내밀기가 켜져 있으면 예약한 포켓몬이 한꺼번에 나온다">시합 개시</button>`:''}
     <button class="btn sm pri" data-act="progress" title="지시 준비 → 턴 개시 → 행동 순서 → 행동 처리 → 턴 종료 → 다음 턴">턴 진행 ▶ ${(+b.phase||0)===1?(+b.tstep===2?'행동 순서':'다음'):['턴 개시','행동 순서','행동 처리','','','턴 종료'][+b.phase||0]||''}</button>${simAny(b)?(()=>{const np=Object.values(b.mons||{}).filter(m=>m.pend).length;return `<button class="btn sm ${np?'pri':'ghost'}" data-act="pendgo" ${np?'':'disabled'} title="예약한 포켓몬을 양쪽 동시에 내보낸다">동시 내밀기 실행${np?' ('+np+')':''}</button>`})():''}${c.gm&&(+b.phase||0)===1?'<button class="btn sm ghost" data-act="reveal" title="아직 안 연 지시를 한꺼번에">모두 공개</button>':''}<button class="btn sm" data-act="field" title="날씨 · 그래스필드 등 · 룸 · 필드의 상태">필드</button>
-    <button class="btn sm ghost" data-act="resetcmd">지시 초기화</button>${c.gm?'<button class="btn sm" data-act="result" title="HP·빈사·상태 이상·포텐셜 횟수·쓴 소지품을 시트에 돌려준다">결과 정리</button>':''}<button class="btn sm ghost danger" data-act="clear">배틀 비우기</button>${c.gm&&window.OM_RP_UI&&window.OM_RP_UI.bsayToggleHtml?window.OM_RP_UI.bsayToggleHtml():''}${c.gm?`<button class="btn sm gmh ${c.fair?'pri':'ghost'}" data-act="gmhands" title="켜면 GM 도 플레이어처럼 — 플레이어가 올린 트레이너의 지시·준비·HP·상태는 그 플레이어만. GM 이 불러온 파티·NPC 는 GM 이 그대로 지시하고 진행한다 (방 설정 「GM 불간섭」과 같음)"><span class="lbl">${c.fair?'PL 권한 중 ↩ GM':'PL 권한으로'}</span><span class="sh">${c.fair?'↩ GM':'PL'}</span></button>`:''}
+    <button class="btn sm ghost" data-act="resetcmd">지시 초기화</button>${(+b.phase||0)===0?`<label class="dlset" title="지시 입력 제한 시간(분) — 비우면 제한 없음. 시간이 지나면 「준비 안 된 자리를 행동 없음으로 두고 진행」 단추가 뜬다">⏱ <input type="number" id="dlmin" min="0" max="180" data-act="deadline" value="${+b.deadline>Date.now()?Math.max(1,Math.ceil((+b.deadline-Date.now())/60000)):''}" placeholder="분"></label>`:''}<span class="snapbtns">${canRewind(c)?`<button class="btn sm ghost" data-act="rewind" title="이 턴의 턴 개시 직후(체크포인트)로 배틀을 되돌린다 — 턴 개시 때마다 남는다 (최근 3턴)">↶ 이 턴 처음으로</button>`:''}<button class="btn sm ghost" data-act="bsave" title="지금 배틀 전체를 이름 붙여 저장 (방 상태 밖)">배틀 저장</button><button class="btn sm ghost" data-act="bresume" title="저장한 배틀 목록 — 「이어서 하기」">이어서 하기</button></span>${c.gm?'<button class="btn sm" data-act="result" title="HP·빈사·상태 이상·포텐셜 횟수·쓴 소지품을 시트에 돌려준다">결과 정리</button>':''}<button class="btn sm ghost danger" data-act="clear">배틀 비우기</button>${c.gm&&window.OM_RP_UI&&window.OM_RP_UI.bsayToggleHtml?window.OM_RP_UI.bsayToggleHtml():''}${c.gm?`<button class="btn sm gmh ${c.fair?'pri':'ghost'}" data-act="gmhands" title="켜면 GM 도 플레이어처럼 — 플레이어가 올린 트레이너의 지시·준비·HP·상태는 그 플레이어만. GM 이 불러온 파티·NPC 는 GM 이 그대로 지시하고 진행한다 (방 설정 「GM 불간섭」과 같음)"><span class="lbl">${c.fair?'PL 권한 중 ↩ GM':'PL 권한으로'}</span><span class="sh">${c.fair?'↩ GM':'PL'}</span></button>`:''}
     ${Object.entries(c.ST.state.pub||{}).filter(([k,v])=>v&&v.time).map(([k,v])=>`<span class="chip" style="border-color:var(--yel)">타임 요청: ${esc((b.trainers[k]||{}).name||k)} → ${esc(monName(b,v.time.mid))} <button class="btn xs pri" data-act="timeok" data-seat="${k}">허가</button></span>`).join('')}</div>`:''}
    ${c.gm&&window.OM_RP_UI&&window.OM_RP_UI.bspkHtml?window.OM_RP_UI.bspkHtml():''}
   </div>
@@ -127,14 +133,16 @@ window.OM_BATTLE_UI=(()=>{
    ${benchRow(c,'right',ready)}
   </div>
   ${orderBox(c)}
-  ${cmdPanel(c,ready)}`;
+  ${sameCmd?'<form id="cmdForm" class="cmdpanel"></form>':cmdH}`;
+  if(sameCmd){const ph=$('#cmdForm',el);if(ph)ph.replaceWith(oldForm)}else{const nf=$('#cmdForm',el);if(nf)nf._h=cmdH}
   el.querySelectorAll('[data-phase]').forEach(bt=>bt.onclick=()=>setPhase(+bt.dataset.phase));autoAdvance();
   try{if(window.OM_RP_UI&&window.OM_RP_UI.bspkBind)window.OM_RP_UI.bspkBind(el)}catch(e){console.warn(e)}
   if(window.OM_RP_UI&&window.OM_RP_UI.bindBgmWidget)window.OM_RP_UI.bindBgmWidget(el);
   {const fb=el.querySelector('[data-bfold]');if(fb)fb.onclick=()=>{BFOLD.open=!BFOLD.open;try{localStorage.setItem('om_bfold',BFOLD.open?'1':'0')}catch(e){}const bs=fb.closest('.bstat');bs.classList.toggle('fold',!BFOLD.open);fb.textContent=BFOLD.open?'접기 ▴':'펼치기 ▾'}}
-  el.querySelectorAll('[data-act]').forEach(bt=>{if(bt.tagName==='SELECT')bt.onchange=()=>action(bt.dataset,bt.value);else if(bt.type==='checkbox')bt.onchange=()=>action(bt.dataset,bt.checked);else bt.onclick=()=>action(bt.dataset)});
+  el.querySelectorAll('[data-act]').forEach(bt=>{if(bt.tagName==='SELECT')bt.onchange=()=>action(bt.dataset,bt.value);else if(bt.type==='checkbox')bt.onchange=()=>action(bt.dataset,bt.checked);else if(bt.tagName==='INPUT')bt.onchange=()=>action(bt.dataset,bt.value);else bt.onclick=()=>action(bt.dataset)});
   el.querySelectorAll('[data-mon]').forEach(cd=>cd.onclick=e=>{if(e.target.closest('[data-act]'))return;A().openMon(cd.dataset.mon)});
-  const form=$('#cmdForm',el);if(form)bindCmdForm(form,c);cmdFab(form);refreshSide(c)}
+  const form=$('#cmdForm',el);if(form)bindCmdForm(form,c);cmdFab(form);refreshSide(c);
+  if(keep&&keep.sel){try{const t=el.querySelector(keep.sel);if(t&&!t.disabled){if(t.value!==keep.v&&/^(INPUT|TEXTAREA)$/.test(t.tagName)&&t.type!=='number')t.value=keep.v;t.focus({preventScroll:true});if(keep.s!=null&&t.setSelectionRange)try{t.setSelectionRange(keep.s,keep.e)}catch(e){}}}catch(e){}}}
  /* 폰: 카드 「⋯」로 나머지 버튼 펼치기 */
  document.addEventListener('click',e=>{const h=e.target.closest('[data-bfold]');if(!h||e.target.closest('button,label,input,select,a,.chip')||!matchMedia('(max-width:760px)').matches)return;const sd=h.dataset.bfold;UIC.bfold=UIC.bfold||{};UIC.bfold[sd]=!UIC.bfold[sd];const col=h.closest('.bcol');if(col)col.classList.toggle('fold',UIC.bfold[sd])});
  document.addEventListener('click',e=>{const t=e.target.closest('[data-mmore]');if(!t)return;e.stopPropagation();const box=t.closest('.mbtns');const on=box.classList.toggle('open');t.setAttribute('aria-expanded',on?'true':'false')},true);
@@ -316,7 +324,7 @@ window.OM_BATTLE_UI=(()=>{
   const md=m.mod||{};for(const k in md){const v=+md[k];if(v&&v!==1)out.push(`<span class="rk ${v>1?'up':'dn'}">${STAT_KO[k]||k}×${v}</span>`)}return out.join('')}
  const FLAG_KO={endure:'버텨라!',surehit:'맞춰라!',dodgePhys:'물러나!',dodgeSpec:'피해라!',swap:'바꿔라!',return:'돌아와!',hitPhys:'지킬 수 없다!',hitSpec:'피할 수 없다!',noEndure:'버틸 수 없다!',acc0:'맞출 수 없다!',dodgeOnce:'주인의 칙령',nullify:'파계',rebirth:'윤회의 법계',protect:'기술 방어'};
  function flagChips(m){return Object.keys(m.flags||{}).filter(k=>m.flags[k]&&FLAG_KO[k]&&(k!=='protect'||m.flags[k]===(+ctx().b.turn||0))).map(k=>`<span class="rk flag">${esc(FLAG_KO[k]||k)}</span>`).join('')+(m.prioDown?'<span class="rk flag" title="아이스번 — 다음 기술 우선도 −1">우선도 −1</span>':'')}
- function stateChips(m){const st=m.states||{};const db=(DB().states||{}).st||{};return Object.keys(st).filter(k=>st[k]).map(k=>{const im=simg(k);return `<span class="stc ${db[k]&&db[k].abn?'abn':''}" title="${esc((db[k]&&db[k].desc||[]).join(' '))}">${im?`<img src="${esc(im)}" alt="">`:''}${esc(db[k]?db[k].ko:k)}${+st[k]>1&&+st[k]<1000?' '+st[k]:''}</span>`}).join('')}
+ function stateChips(m){const st=m.states||{};const db=(DB().states||{}).st||{};return Object.keys(st).filter(k=>st[k]).map(k=>{const im=simg(k);return `<span class="stc ${db[k]&&db[k].abn?'abn':''}" data-stinfo="${esc(k)}" title="${esc((db[k]&&db[k].desc||[]).join(' '))}">${im?`<img src="${esc(im)}" alt="">`:''}${esc(db[k]?db[k].ko:k)}${+st[k]>1&&+st[k]<1000?' '+st[k]:''}</span>`}).join('')}
  function bigCard(c,m,slot){const full=canEdit(c,m);const cmd=cmdOf(c.b,m);
   return `<div class="mon big ${m.hp.cur<=0?'fainted':''}" data-mon="${m.id}"><div class="pic" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div>
    <div class="minfo"><div class="nm"><span class="nmt">${esc(m.name)}</span><span class="lv">Lv.${m.lv}</span><span class="nmb">${((!full&&c.seat)||c.gm)?`<button class="btn xs ghost dexb" data-act="dex" data-mid="${m.id}" title="도감 정보 · 해석">도감</button>`:''}${full&&mode(c.b)>=2&&m.hp.cur>0?`<button class="btn xs ghost dexb" data-act="areaswap" data-mid="${m.id}" title="같은 편 다른 에리어와 자리 바꾸기 (사이드체인지 등)">⇄ 에리어</button>`:''}${(!full&&c.seat&&!sameT(c.seat,m,c.b)&&(+c.b.phase||0)===0)||c.gm&&!full?`<button class="btn xs ghost dexb" data-act="time" data-mid="${m.id}" title="「타임」 — 상대 지시의 꼴 엿보기">타임</button>`:''}</span></div><div class="ty">${tyHtml(c,m)}${m.teraActive?`<span class="rk up">테라 ${esc(m.tera)}</span>`:''}</div>
@@ -491,10 +499,10 @@ window.OM_BATTLE_UI=(()=>{
  function fsum(L){L=(L||[]).filter(Boolean);return L.length?L.map(n=>esc(n)).join(' · '):'—'}
  /* 지시를 고칠 때마다 벤치 아래 지시 현황도 */
  function refreshSide(c){document.querySelectorAll('[data-bside]').forEach(el=>{const tmp=document.createElement('div');tmp.innerHTML=sidePanel(c,el.dataset.bside,c.ST.state.ready||{});if(tmp.firstElementChild)el.replaceWith(tmp.firstElementChild)});document.querySelectorAll('[data-bside]').forEach(el=>el.ontoggle=()=>{UIC.bside=UIC.bside||{};UIC.bside[el.dataset.bside]=el.open})}
- function rerenderCmd(){const old=$('#cmdForm');if(!old)return;const c=ctx();const tmp=document.createElement('div');tmp.innerHTML=cmdPanel(c,c.ST.state.ready||{});const nf=tmp.firstElementChild;if(!nf){old.remove();return}old.replaceWith(nf);refreshSide(c);nf.querySelectorAll('[data-act]').forEach(bt=>bt.onclick=()=>action(bt.dataset));bindCmdForm(nf,c)}
- function bindCmdForm(form,c){
-  form.querySelectorAll('.cmdt').forEach(blk=>{const tid=blk.dataset.tid;const cur=CMD[tid];const mid=UIC.tab[tid];const x=cur.mons[mid];
-   blk.querySelectorAll('[data-fold]').forEach(d=>d.addEventListener('toggle',()=>{UIC.fold[d.dataset.fold]=d.open}));
+ function rerenderCmd(){const old=$('#cmdForm');if(!old)return;const c=ctx();const tmp=document.createElement('div');const h=cmdPanel(c,c.ST.state.ready||{});tmp.innerHTML=h;const nf=tmp.firstElementChild;if(!nf){old.remove();return}nf._h=h;old.replaceWith(nf);refreshSide(c);nf.querySelectorAll('[data-act]').forEach(bt=>bt.onclick=()=>action(bt.dataset));bindCmdForm(nf,c)}
+ function bindCmdForm(form,c){const bnd=!form._bnd;form._bnd=1;   /* 11-03: 같은 요소를 다시 묶을 때(render 가 옛 폼을 되붙임) addEventListener 는 한 번만 */
+  form.querySelectorAll('.cmdt').forEach(blk=>{const tid=blk.dataset.tid;const cur=CMD[tid];if(!cur)return;const mid=UIC.tab[tid];const x=cur.mons[mid]||(cur.mons[mid]={move:'',switch:'',targets:[],prio:{},ochg:{},order:'',command:'',pots:[]});
+   if(bnd)blk.querySelectorAll('[data-fold]').forEach(d=>d.addEventListener('toggle',()=>{UIC.fold[d.dataset.fold]=d.open}));
    if(blk.classList.contains('locked')){blk.querySelectorAll('[data-ctab]').forEach(el=>el.onclick=()=>{UIC.tab[tid]=el.dataset.ctab;rerenderCmd()});return}
    blk.querySelectorAll('[data-ctab]').forEach(el=>el.onclick=()=>{UIC.tab[tid]=el.dataset.ctab;rerenderCmd()});
    blk.querySelectorAll('[data-upre]').forEach(el=>el.onclick=()=>{if(el.classList.contains('dis'))return;const n=el.dataset.upre;cur.upots=cur.upots||[];const i=cur.upots.indexOf(n);if(i>=0)cur.upots.splice(i,1);else cur.upots.push(n);rerenderCmd()});
@@ -509,7 +517,7 @@ window.OM_BATTLE_UI=(()=>{
    blk.querySelectorAll('[data-ord]').forEach(el=>el.onclick=()=>{if(el.classList.contains('dis'))return;if(x.order!==el.dataset.ord&&oneOf('order','4식(명령)'))return;if(x.order!==el.dataset.ord&&noOrdGate())return;x.order=x.order===el.dataset.ord?'':el.dataset.ord;rerenderCmd()});
    blk.querySelectorAll('[data-cmd]').forEach(el=>el.onclick=()=>{if(el.classList.contains('dis'))return;if(x.command!==el.dataset.cmd&&oneOf('command','6령(지령)'))return;if(x.command!==el.dataset.cmd&&noOrdGate())return;x.command=x.command===el.dataset.cmd?'':el.dataset.cmd;rerenderCmd()});
    blk.querySelectorAll('[data-pdecl]').forEach(el=>el.onclick=()=>{if(el.classList.contains('dis'))return;const n=el.dataset.pdecl;x.pots=x.pots||[];const i=x.pots.indexOf(n);if(i>=0)x.pots.splice(i,1);else x.pots.push(n);rerenderCmd()});
-   blk.querySelectorAll('[data-f]').forEach(el=>{const h=()=>{const f=el.dataset.f;const xm=cur.mons[el.dataset.mid]||x;if(f==='prio')xm.prio[el.dataset.slot]=el.value;if(f==='ochg')xm.ochg[el.dataset.slot]=el.value;if(f==='detail')cur.detail=el.value};el.addEventListener('input',h);el.addEventListener('change',h)})})}
+   if(bnd)blk.querySelectorAll('[data-f]').forEach(el=>{const h=()=>{const f=el.dataset.f;const cu=CMD[tid];if(!cu)return;/* 폼을 되붙여 써도 지금의 CMD 를 본다 */const xm=cu.mons[el.dataset.mid]||cu.mons[UIC.tab[tid]];if(!xm)return;if(f==='prio')xm.prio[el.dataset.slot]=el.value;if(f==='ochg')xm.ochg[el.dataset.slot]=el.value;if(f==='detail')cu.detail=el.value};el.addEventListener('input',h);el.addEventListener('change',h)})})}
  const MULTI_RANGE=/전체|적진|자진|자신 이외|[2-9]체/;
  /* 11-03 특수 효과(sp) 와 기술이 맞나: 타입(e.types · 기술 타입 영문) · 태그(e.tg) · 분류(물리 · 특수 · 변화 · 접촉) */
  function spHit(e,mv,tys){if(!e||!mv)return false;if(e.types&&e.types.length&&!(tys||[]).some(t=>e.types.includes(t)))return false;
@@ -530,18 +538,77 @@ window.OM_BATTLE_UI=(()=>{
   if(mv.name==='발버둥'&&enemies.length)return [enemies[Math.floor(Math.random()*enemies.length)].slot];   /* 무작위한 상대에게 */
   return enemies.map(s=>s.slot).slice(0,1)}
 
+ /* ---------- 11-03 감우: 턴 체크포인트 · 배틀 저장 · 이어서 하기 ----------
+    턴 개시 처리가 끝난 모습(state.battle 전체)을 방 상태 밖 om_snap 표에 남긴다 (supabase/patch_2026-11-03_배틀.sql · kind 'turn' 은 방마다 최근 3턴).
+    함수가 없는 DB 면 이 브라우저(localStorage om_bsnap_<방>)에만 — 다른 화면에서는 안 보인다. 복원은 battle 전체를 한 번에 쓴다 */
+ const SNAPC={server:null};
+ const snapKey=()=>'om_bsnap_'+A().ST.room;
+ function snapLocal(){try{const x=JSON.parse(localStorage.getItem(snapKey())||'null');if(x&&Array.isArray(x.turns)&&Array.isArray(x.saves))return x}catch(e){}return {turns:[],saves:[]}}
+ function snapLocalSave(x){for(let i=0;i<8;i++){try{localStorage.setItem(snapKey(),JSON.stringify(x));return true}catch(e){if(x.saves.length)x.saves.shift();else if(x.turns.length)x.turns.shift();else return false}}return false}
+ const snapNoFn=e=>{const S=DBS().snap;return !!(S&&S.noFn&&(S.noFn((e&&e.raw)||e)||S.noFn(e)))};
+ async function snapPut(kind,name,data){const ST=A().ST;const id=(kind==='turn'?'t':'s')+Date.now().toString(36)+Math.random().toString(36).slice(2,6);const turn=+data.turn||0;
+  if(SNAPC.server!==false&&DBS().snap){try{await DBS().snap.put(ST.room,ST.secret,id,kind,name,turn,data);SNAPC.server=true;return {id,server:true}}catch(e){if(!snapNoFn(e))throw e;SNAPC.server=false}}
+  const x=snapLocal();const row={id,kind,name,turn,at:Date.now(),w:ST.role==='gm'?'gm':ST.seat,data};if(kind==='turn'){x.turns.push(row);while(x.turns.length>3)x.turns.shift()}else x.saves.push(row);
+  if(!snapLocalSave(x))A().toast('이 브라우저에 저장할 자리가 없다');return {id,server:false}}
+ async function snapList(kind){const ST=A().ST;if(SNAPC.server!==false&&DBS().snap){try{const L=await DBS().snap.list(ST.room,ST.secret,kind);SNAPC.server=true;return (L||[]).map(r=>Object.assign({},r,{at:+new Date(r.at)||0}))}catch(e){if(!snapNoFn(e))throw e;SNAPC.server=false}}
+  const x=snapLocal();return [...(kind==='turn'?x.turns:kind==='save'?x.saves:[...x.turns,...x.saves])].map(r=>Object.assign({},r,{data:undefined})).sort((a,b)=>b.at-a.at)}
+ async function snapGet(id){const ST=A().ST;if(SNAPC.server){const r=await DBS().snap.get(ST.room,ST.secret,id);return r&&r.data?r.data:null}const x=snapLocal();const r=[...x.turns,...x.saves].find(r=>r.id===id);return r?r.data:null}
+ async function snapDel(id){const ST=A().ST;if(SNAPC.server)return DBS().snap.del(ST.room,ST.secret,id);const x=snapLocal();x.turns=x.turns.filter(r=>r.id!==id);x.saves=x.saves.filter(r=>r.id!==id);snapLocalSave(x);return true}
+ async function snapTurn(){const b=snap(ctx().b);if(!b.started)return;const r=await snapPut('turn','TURN '+(+b.turn||0),b);SNAPC.last={id:r.id,turn:+b.turn||0,server:r.server}}
+ /* 되돌리기는 GM, 또는 GM 이 접속해 있지 않은 모의전(진행 권한이 있는 좌석) */
+ function canRewind(c){if(c.gm)return true;if(!c.mgr)return false;const P=A().presList?A().presList():[];return !P.some(p=>p.role==='gm')}
+ async function restoreBattle(data,why){if(!data||typeof data!=='object')return false;CMD={};for(const k in FAINT_SEEN)delete FAINT_SEEN[k];
+  const ok=await A().setMany([[['battle'],data],[['ready'],{}]]);if(!ok)return false;A().sysLog(why,'battle');return true}
+ async function rewindTurn(){const c=ctx();if(!canRewind(c))return A().toast('되돌리기는 GM 또는 GM 없는 모의전에서만');let L=[];try{L=await snapList('turn')}catch(e){return A().toast('체크포인트를 읽지 못했다: '+e.message)}
+  const T=+c.b.turn||0;const r=L.find(x=>+x.turn===T)||L[0];if(!r)return A().toast('체크포인트가 없다 — 턴 개시 뒤에 생긴다');
+  const when=r.at?new Date(r.at).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'}):'';
+  if(!(await askYes(`TURN ${r.turn} 턴 개시 직후${when?' ('+when+')':''}로 되돌릴까?${+r.turn!==T?`\n(지금은 TURN ${T} — 이 턴의 체크포인트가 없어 가장 가까운 것)`:''}\n그 뒤의 공격 · HP · 상태 · 공개된 지시가 전부 지워진다 (로그는 남는다 · 선행 입력한 비밀 지시는 남는다)`,'되돌린다','그대로')))return;
+  let data=null;try{data=await snapGet(r.id)}catch(e){return A().toast('읽지 못했다: '+e.message)}if(!data)return A().toast('체크포인트가 비어 있다');
+  if(await restoreBattle(data,`↶ 되돌리기 — TURN ${r.turn} 턴 개시 직후로 (${c.gm?'GM':c.ST.name||c.seat})`))A().toast(`TURN ${r.turn} 처음으로 되돌렸다`)}
+ async function saveBattleAs(){const c=ctx();if(!c.mgr)return;const b=c.b;if(!b.trainers||!Object.keys(b.trainers).length)return A().toast('저장할 배틀이 없다');
+  const d=new Date();const def=`TURN ${+b.turn||0} · ${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  const name=prompt('저장 이름',def);if(name==null)return;try{const r=await snapPut('save',String(name).trim()||def,snap(b));A().toast(r.server?`「${String(name).trim()||def}」 저장했다`:`「${String(name).trim()||def}」 — 이 브라우저에만 저장했다 (SQL 패치 전)`);A().sysLog(`배틀 저장 「${String(name).trim()||def}」`,'battle')}catch(e){A().toast('저장 실패: '+e.message)}}
+ async function openResume(){const c=ctx();if(!c.mgr)return;const md=A().openModal(`<div class="mhead"><h2>배틀 저장 · 이어서 하기</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div id="snapls" class="small dim">읽는 중…</div>`);
+  const draw=async()=>{let L=[];try{L=await snapList('save')}catch(e){$('#snapls',md).innerHTML=`<div class="small" style="color:var(--red)">읽지 못했다: ${esc(e.message)}</div>`;return}
+   const me=c.gm?'gm':c.seat;const fmt=t=>t?new Date(t).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'}):'';
+   $('#snapls',md).innerHTML=`<div class="small dim" style="margin-bottom:8px">${SNAPC.server===false?'⚠ 서버에 om_snap 이 아직 없어 이 브라우저의 저장만 보인다 (supabase/patch_2026-11-03_배틀.sql)':'방마다 60개까지 · 이어서 하면 지금 배틀을 덮는다 (먼저 「배틀 저장」으로 남겨 둘 것)'}</div>
+    ${L.length?L.map(r=>`<div class="row" style="gap:8px;padding:6px 0;border-bottom:1px dashed var(--line)"><div style="flex:1;min-width:160px"><b>${esc(r.name||'(이름 없음)')}</b><div class="small dim">TURN ${+r.turn||0} · ${fmt(r.at)}${r.w?' · '+esc(r.w==='gm'?'GM':(((c.b.trainers||{})[r.w]||{}).name||r.w)):''}${r.bytes?' · '+Math.round(r.bytes/1024)+'KB':''}</div></div><button class="btn sm pri" data-rs="${esc(r.id)}">이어서 하기</button>${(c.gm||r.w===me||!r.w)?`<button class="btn sm ghost danger" data-rd="${esc(r.id)}">삭제</button>`:''}</div>`).join(''):'<div class="small dim">저장한 배틀이 없다 — 배틀 화면의 「배틀 저장」</div>'}`;
+   md.querySelectorAll('[data-rs]').forEach(b=>b.onclick=async()=>{const r=L.find(x=>x.id===b.dataset.rs);if(!r)return;if(!(await askYes(`「${r.name}」 (TURN ${+r.turn||0}) 를 불러와 지금 배틀을 덮을까?\n지시는 다시 입력한다`,'이어서 한다','그대로')))return;let data=null;try{data=await snapGet(r.id)}catch(e){return A().toast('읽지 못했다: '+e.message)}if(!data)return A().toast('저장이 비어 있다');A().closeModal();if(await restoreBattle(data,`▶ 이어서 하기 — 저장 「${r.name}」 (TURN ${+r.turn||0}) 불러옴`))A().toast(`「${r.name}」 에서 이어서 한다`)});
+   md.querySelectorAll('[data-rd]').forEach(b=>b.onclick=async()=>{const r=L.find(x=>x.id===b.dataset.rd);if(!r||!confirm(`「${r.name}」 저장을 지울까?`))return;try{await snapDel(r.id)}catch(e){return A().toast('지우지 못했다: '+e.message)}draw()})};
+  draw()}
+ /* ---------- 11-03 감우: 지시 입력 제한 시간 — battle.deadline (ms). 띠의 숫자 칸(#bdl)만 1초마다 갱신, 시간이 지나면 진행 권한에게 「행동 없음으로 두고 진행」 ---------- */
+ function dlHtml(c,b){const dl=+b.deadline||0;if(!dl||(+b.phase||0)!==0)return '';const left=dl-Date.now();if(left>0){const s=Math.ceil(left/1000);return `<span class="bdlt ${s<=30?'hot':''}" title="지시 입력 제한 시간">⏱ ${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}</span>`}
+  return `<span class="bdlt over">⏱ 시간 종료</span>${c.mgr?`<button class="btn xs pri" data-act="dlgo" title="아직 준비 완료가 아닌 자리는 행동 없음으로 두고 턴을 개시한다">준비 안 된 자리를 행동 없음으로 두고 진행</button>`:''}`}
+ function dlTick(){const el=document.getElementById('bdl');if(!el)return;const c=ctx();const h=dlHtml(c,c.b);if(el._h===h)return;el.innerHTML=h;el._h=h;el.querySelectorAll('[data-act]').forEach(bt=>bt.onclick=()=>action(bt.dataset))}
+ setInterval(()=>{try{dlTick()}catch(e){}},1000);
+ /* ---------- 11-03 감우: 휴대폰에서 상태 칩 설명 — title 은 터치로 못 보니 칩을 누르면 작은 팝오버 (마우스도 같다) ---------- */
+ function stPop(anchor,k,txt){document.querySelectorAll('.stpop').forEach(e=>e.remove());const db=(DB().states||{}).st||{};const d=db[k]||{};const body=txt||(d.desc||[]).join(' ');if(!body&&!d.ko)return;
+  const p=document.createElement('div');p.className='stpop';p.innerHTML=`<b>${esc(d.ko||k)}</b>${d.abn?' <span class="tag" style="color:var(--red)">상태 이상</span>':''}<div class="stpb">${esc(body||'설명이 없다')}</div><button class="btn xs ghost" data-x>닫기</button>`;document.body.appendChild(p);
+  const r=anchor.getBoundingClientRect();const W=Math.min(300,window.innerWidth-16);p.style.width=W+'px';let x=Math.max(8,Math.min(window.innerWidth-W-8,r.left));let y=r.bottom+6;if(y+p.offsetHeight>window.innerHeight-8)y=r.top-p.offsetHeight-6;y=Math.max(8,Math.min(window.innerHeight-p.offsetHeight-8,y));p.style.left=x+'px';p.style.top=y+'px';
+  const off=ev=>{if(ev&&ev.type==='click'&&p.contains(ev.target)&&!ev.target.closest('[data-x]'))return;p.remove();document.removeEventListener('click',off,true);document.removeEventListener('keydown',kd);window.removeEventListener('scroll',off,true)};const kd=e=>{if(e.key==='Escape')off()};
+  setTimeout(()=>{document.addEventListener('click',off,true);document.addEventListener('keydown',kd)},0);setTimeout(()=>{if(p.isConnected)window.addEventListener('scroll',off,true)},400)}
+ document.addEventListener('click',e=>{const t=e.target.closest('[data-stinfo]');if(!t||e.target.closest('[data-sd],[data-soff],.stx'))return;e.preventDefault();e.stopPropagation();stPop(t,t.dataset.stinfo,t.getAttribute('title')||'')},true);
  /* ---------- 동작 ---------- */
  /* 페이즈 버튼 = 그 단계의 처리까지 (맵툴 progress_turn 처럼). 「턴 진행 ▶」은 다음 단계로 */
- async function setPhase(p){const c=ctx();if(!c.mgr)return;const b=c.b;p=+p;
-  if(p===0){await A().set(['battle','cmds'],{});await A().set(['ready'],{});await A().set(['battle','order'],[]);await A().set(['battle','phase'],0);A().sysLog('페이즈: 지시 준비 — 지시를 입력하고 「준비 완료」','battle');return}
-  if(p===1){const tids=Object.keys(b.trainers||{});const ready=c.ST.state.ready||{};const seats=c.ST.state.seats||{};const notReady=tids.filter(t=>seats[t]&&!ready[t]);if(notReady.length&&!(await askYes(`아직 준비 완료가 아닌 트레이너: ${notReady.map(t=>b.trainers[t].name).join(', ')}\n그래도 턴을 개시할까?`)))return;
+ /* 11-03 감우: 페이즈 버튼으로 지금보다 앞 단계로 갈 때는 묻는다 (지시 준비로 가면 지시 · 준비 · 순서가 지워진다). 「턴 진행 ▶」의 정상 진행은 묻지 않는다 (o.force) */
+ const PH_NAME={0:'지시 준비',1:'턴 개시',2:'행동 순서',3:'행동 처리',5:'턴 종료'};
+ async function setPhase(p,o){o=o||{};const c=ctx();if(!c.mgr)return;const b=c.b;p=+p;const cur=+b.phase||0;
+  if(!o.force&&p<cur){const q=p===0?`「지시 준비」로 돌아가면 이번 턴의 공개된 지시 · 준비 완료 · 행동 순서가 지워진다 (비밀 지시는 남는다).\n지금 단계: ${PH_NAME[cur]||cur}`:`지금 「${PH_NAME[cur]||cur}」인데 앞 단계 「${PH_NAME[p]||p}」로 돌아갈까?\n(그 단계의 처리를 다시 한다)`;if(!(await askYes(q,'돌아간다','그대로')))return}
+  if(p===0){await A().setMany([[['battle','cmds'],{}],[['ready'],{}],[['battle','order'],[]],[['battle','phase'],0]]);A().sysLog('페이즈: 지시 준비 — 지시를 입력하고 「준비 완료」','battle');return}
+  if(p===1){const tids=Object.keys(b.trainers||{});const ready=c.ST.state.ready||{};const seats=c.ST.state.seats||{};const notReady=tids.filter(t=>seats[t]&&!ready[t]);
+   if(notReady.length&&!o.force&&!(await askYes(`아직 준비 완료가 아닌 트레이너: ${notReady.map(t=>b.trainers[t].name).join(', ')}\n그래도 턴을 개시할까?`)))return;
+   if(notReady.length&&o.timeout)A().sysLog(`제한 시간 종료 — 준비 안 된 자리(${notReady.map(t=>(b.trainers[t]||{}).name||t).join(' · ')})는 행동 없음으로 두고 진행`,'battle');
    if(!b.started){await startBattle();if(!ctx().b.started)return;await new Promise(r=>setTimeout(r,2600))}
-   await A().set(['ready'],{});await A().set(['battle','cmds'],{});await A().set(['battle','host'],c.gm?'gm':c.seat);if(b.tstep)await A().set(['battle','tstep'],null);if(b.swPur)await A().set(['battle','swPur'],null);if(b.swOut)await A().set(['battle','swOut'],null);await A().set(['battle','phase'],1);
+   /* 11-03 감우: 칸마다 따로 쓰던 것을 한 번에 (om_jset_many · 없으면 칸마다) */
+   const ops=[[['ready'],{}],[['battle','cmds'],{}],[['battle','host'],c.gm?'gm':c.seat]];if(b.deadline)ops.push([['battle','deadline'],null]);if(b.tstep)ops.push([['battle','tstep'],null]);if(b.swPur)ops.push([['battle','swPur'],null]);if(b.swOut)ops.push([['battle','swOut'],null]);ops.push([['battle','phase'],1]);
    /* 맵툴 set_turn_start: 턴을 연 순간 필드에 있던 포켓몬은 started (이 턴 도중에 들어온 포켓몬만 「교대 등장」) */
-   for(const m of Object.values(ctx().b.mons||{}))if(m.entry&&!m.started)await A().set(['battle','mons',m.id,'started'],true);
-   await preCharge();const TN=+ctx().b.turn||1;cutPhase('턴 개시',`TURN ${TN}`);A().sysLog(`턴 개시 — TURN ${TN}${TN<=1?'\n「턴 진행 ▶」: 교대 알림 → 『지령』 & 『포텐셜』 발동 → 행동 순서 · 지시는 행동 순서가 오면 차례대로 공개':''}`,'battle');try{await autoTurnStart()}catch(e){console.warn('턴 개시 자동',e)}return}
+   for(const m of Object.values(ctx().b.mons||{}))if(m.entry&&!m.started)ops.push([['battle','mons',m.id,'started'],true]);
+   if(!await A().setMany(ops))return;
+   await preCharge();const TN=+ctx().b.turn||1;cutPhase('턴 개시',`TURN ${TN}`);A().sysLog(`턴 개시 — TURN ${TN}${TN<=1?'\n「턴 진행 ▶」: 교대 알림 → 『지령』 & 『포텐셜』 발동 → 행동 순서 · 지시는 행동 순서가 오면 차례대로 공개':''}`,'battle');try{await autoTurnStart()}catch(e){console.warn('턴 개시 자동',e)}
+   /* 11-03 감우: 턴 개시 처리가 끝난 모습을 체크포인트로 (「↶ 이 턴 처음으로」) — 방 상태 밖 om_snap, 없으면 이 브라우저 */
+   try{await snapTurn()}catch(e){console.warn('턴 체크포인트',e)}return}
   if(p===2)return computeOrder();
-  if(p===3){await A().set(['battle','orderIdx'],0);await A().set(['battle','phase'],3);cutPhase('행동 처리','순서대로 공격');A().sysLog('행동 처리 — 순서대로 「공격」, 끝나면 「다음 행동 ▶」','battle');return}
+  if(p===3){await A().setMany([[['battle','orderIdx'],0],[['battle','phase'],3]]);cutPhase('행동 처리','순서대로 공격');A().sysLog('행동 처리 — 순서대로 「공격」, 끝나면 「다음 행동 ▶」','battle');return}
   if(p===5)return endFlow()}
  /* 행동 순서에서 이 포켓몬 차례가 왔나 (지금 · 지난 차례) */
  function turnReached(b,m){const ord=b.order||[];const i=ord.findIndex(o=>o.mid===m.id);return i>=0&&i<=(+b.orderIdx||0)}
@@ -567,7 +634,7 @@ window.OM_BATTLE_UI=(()=>{
  function unrevealed(b){const out=[];for(const tid in b.trainers||{}){const t=b.trainers[tid];const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid&&m.entry&&m.hp.cur>0);for(const m of mons)if(!revealed(b,tid,m.id))out.push(`${t.name} ${String(m.entry).toUpperCase()}`)}return out}
  async function progressTurn(){const c=ctx();if(!c.mgr)return;const p=+c.b.phase||0;
   /* 10-26: 행동 처리 중에 「턴 진행」을 또 누르면 남은 행동이 통째로 건너뛰어졌다 — 물어본다 */
-  if(p===3){const O=c.b.order||[];const i0=+c.b.orderIdx||0;if(O.slice(i0).some(o=>{const m=(c.b.mons||{})[o.mid];return m&&m.entry&&m.hp.cur>0})&&!(await askYes('아직 행동하지 않은 포켓몬이 있다. 그래도 턴 종료로 넘어갈까?','넘어간다','돌아간다')))return}if(p===1)return stepTurn();const next={0:1,1:2,2:3,3:5,5:0}[p];if(next==null)return;return setPhase(next)}
+  if(p===3){const O=c.b.order||[];const i0=+c.b.orderIdx||0;if(O.slice(i0).some(o=>{const m=(c.b.mons||{})[o.mid];return m&&m.entry&&m.hp.cur>0})&&!(await askYes('아직 행동하지 않은 포켓몬이 있다. 그래도 턴 종료로 넘어갈까?','넘어간다','돌아간다')))return}if(p===1)return stepTurn();const next={0:1,1:2,2:3,3:5,5:0}[p];if(next==null)return;return setPhase(next,{force:true})}
  /* ----- 턴 개시 단계 (맵툴 set_turn_start → 1.5 set_turn_potential → 2): ① 교대가 있으면 교대 알림 · 교대 처리 → ② 선행 입력이 있으면 『지령』 & 『포텐셜』 발동 알림 → 행동 순서 (10-21 망령) ----- */
  /* 턴 개시 「『지령』 & 『포텐셜』 발동」 컷인에 세는 선행 (10-24 망령): 4식(버텨라! · 물러나! …)은 공격받을 때 쓰는 것이라 턴 개시에 뜨지 않는다 — 글에 「턴 개시」 가 있으면 센다 */
  /* 10-23 망령: 선행 포텐셜은 글에 「턴 개시」 가 있을 때만 · 지령(6령)은 늘 · 결계 · 법계(5계)는 늘 · 4식 등 다른 지시는 「턴 개시」 가 있을 때만 */
@@ -594,7 +661,7 @@ window.OM_BATTLE_UI=(()=>{
     const pl=[],pur=[];for(const s of slots){const k=I.keyOf(s.mon);if(!k||!k.pn)continue;for(const tg of (k.tg||[])){const v=sw.find(z=>z.slot===tg);if(!v)continue;const kv=I.keyOf(v.mon)||{};
       if(kv.pimm){pl.push(`${v.mon.name}의 『${kv.pimm}』 — ${s.mon.name}의 따라가때리기를 무시했다`);continue}
       pl.push(`${s.mon.name}의 「${k.pn}」 — 교대하려는 ${v.mon.name}을(를) 교대 전에 먼저 때린다! (공격 창에서 처리한 뒤 교대)`);pur.push({slot:s.slot,mid:s.mon.id,name:s.mon.name,side:s.mon.side,change:false,started:true,order:20,prio:0,speed:0,dice:0,move:k.pn,targets:[tg],pursuit:true,pursuitHit:v.mon.id,pursuitSrc:k.psrc||''});break}}
-    await A().set(['battle','tstep'],1);await A().set(['battle','swPur'],pur.map(o=>o.mid));await A().set(['battle','swOut'],sw.map(s=>s.mon.id));if(pur.length){await A().set(['battle','order'],pur);await A().set(['battle','orderIdx'],0)}
+    {const ops=[[['battle','tstep'],1],[['battle','swPur'],pur.map(o=>o.mid)],[['battle','swOut'],sw.map(s=>s.mon.id)]];if(pur.length)ops.push([['battle','order'],pur],[['battle','orderIdx'],0]);await A().setMany(ops)}
     cutPhase('교대',sw.map(s=>s.mon.name).join(' · '));
     A().sysLog(`【교대 알림】\n${L.join('\n')}${pl.length?'\n'+pl.join('\n'):''}\n교대를 마치면 「턴 진행 ▶」`,'battle',{rv:RV,rvx:[...pl,'교대를 마치면 「턴 진행 ▶」']});return}}
   if(st<2){let tids=Object.keys(I.PRE).filter(t=>(b.trainers||{})[t]);
@@ -619,6 +686,12 @@ window.OM_BATTLE_UI=(()=>{
    case 'unload':return A().unloadTrainer(d.tid);
    case 'clear':{const HL=window.OM_HALL_UI;if(HL&&HL.worth(b)){const r=await HL.offer(b,{clear:true});if(r==='cancel')return}else if(!confirm('배틀 상태를 전부 비울까? (좌석은 남는다)'))return}   /* 10-27 망령: 시합이 있었으면 전당에 남길지 묻는 창이 비우기 확인을 겸한다 */CMD={};for(const k in FAINT_SEEN)delete FAINT_SEEN[k];return A().set(['battle'],{turn:0,phase:0,mode:mode(b),sides:{left:{trainers:[]},right:{trainers:[]}},trainers:{},mons:{},field:{},cmds:{},order:[]});
    case 'iv':return A().openHatch(d.tid);
+   /* 11-03 감우: 제한 시간 · 체크포인트 · 저장 */
+   case 'deadline':{if(!c.mgr)return;const min=Math.max(0,Math.min(180,+val||0));const dl=min>0?Date.now()+min*60000:null;await A().set(['battle','deadline'],dl);A().sysLog(dl?`지시 입력 제한 시간 ${min}분 — ${new Date(dl).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})} 까지`:'지시 입력 제한 시간 없음','battle');return}
+   case 'dlgo':{if(!c.mgr)return;if((+b.phase||0)!==0)return;if(!(await askYes('제한 시간이 지났다. 아직 준비 완료가 아닌 자리는 행동 없음으로 두고 턴을 개시할까?','개시한다','기다린다')))return;return setPhase(1,{force:true,timeout:true})}
+   case 'rewind':return rewindTurn();
+   case 'bsave':return saveBattleAs();
+   case 'bresume':return openResume();
    case 'mode':if(c.b.started){A().toast('시합 중에는 에리어를 바꿀 수 없다');return A().renderScene()}return A().set(['battle','mode'],+val);
    case 'gmtake':{if(!c.gm)return;const t=(c.b.trainers||{})[d.tid];if(!t)return;const on=!t.gmTake;await A().set(['battle','trainers',d.tid,'gmTake'],on?true:null);A().sysLog(`${t.name} — ${on?'GM 이 맡는다 (빌려쓰기)':'플레이어에게 돌려줌'}`,'battle');return}
    case 'gmhands':{if(!c.gm)return;const on=!c.fair;await A().set(['rp','gmHands'],on?false:null);A().sysLog(on?'GM 이 PL 권한으로 전환 — 플레이어의 지시·상태를 건드리지 않는다':'GM 권한으로 복귀','battle');return}   /* 방 설정 「GM 불간섭」과 같은 값 */
@@ -1092,7 +1165,8 @@ window.OM_BATTLE_UI=(()=>{
    if(i>j){order.splice(i,1);order.splice(j,0,o)}o.pursuitHit=v.mid;notes.push(`${o.name}의 「${o.move}」 — 교대하려는 ${v.name}을(를) 먼저 때린다!`);purs.push([o,v]);break}
   for(const o of order){if(!o.pursuitHit){delete o.pursuitSrc;o.pursuit=false;o.move='';o.targets=[]}delete o.pimm;delete o.ut}   /* 기술 이름·대상은 차례가 와서 공개될 때까지 순서표에 남기지 않는다 (걸린 따라가때리기만 예외) */   /* 걸리지 않은 선행 추격·추격 무시는 공개 순서표에 남기지 않는다 */
   for(const m of iceUsed)await A().set(['battle','mons',m.id,'prioDown'],null);
-  await A().set(['battle','order'],order);{let i0=0;while(i0<order.length&&order[i0].noact){A().sysLog(`${order[i0].name} — ${order[i0].noact} (차례를 건너뛴다)`,'battle');i0++}await A().set(['battle','orderIdx'],i0)}await A().set(['battle','orderNotes'],notes);await A().set(['battle','phase'],2);if(b.tstep)await A().set(['battle','tstep'],null);if(b.swPur)await A().set(['battle','swPur'],null);
+  {let i0=0;while(i0<order.length&&order[i0].noact){A().sysLog(`${order[i0].name} — ${order[i0].noact} (차례를 건너뛴다)`,'battle');i0++}
+   /* 11-03 감우: 순서 · 색인 · 메모 · 페이즈를 한 번에 (om_jset_many) */const ops=[[['battle','order'],order],[['battle','orderIdx'],i0],[['battle','orderNotes'],notes],[['battle','phase'],2]];if(b.tstep)ops.push([['battle','tstep'],null]);if(b.swPur)ops.push([['battle','swPur'],null]);if(!await A().setMany(ops))return}
   cutPhase('행동 순서','');for(const [o,v] of purs){const pm=b.mons[o.mid]||{};A().sysLog(`【따라가때리기】 ${o.name} 『${o.move}』 발동!${o.pursuitSrc?'\n선행 『'+o.pursuitSrc+'』에 묻어 있던 추격':''}\n${v.utHit?'「유턴」으로 빠지려는':'교대하려는'} ${v.name}을(를) 교대 전에 먼저 때린다${pursuitX2(((b.mons[o.mid]||{}).moves||[]).find(q=>q.name===o.move))?' → 위력 2배':''}`,'battle',{mid:o.mid,img:pm.image||''});setTimeout(()=>cutFire('m:'+o.mid,pm.image,`${o.name}의 따라가때리기!`,`『${o.move}』 → ${v.name}`,pm.side==='left'?'#1f6fd1':'#e3101f'),1600)}A().sysLog('행동 순서\n'+order.map((o,i)=>`${i+1}. ${o.name} (${o.change?'교대 · ':''}${o.order!==20?'순서 '+o.order+' · ':''}${o.prio?'우선 '+o.prio+' · ':''}스피드 ${Math.round(o.speed)}${order.some(q=>q!==o&&Math.round(q.speed)===Math.round(o.speed)&&(+q.prio||0)===(+o.prio||0)&&q.order===o.order)?' · 동속 주사위 '+o.dice:''})`).join('\n')+(spNotes.length?'\n'+spNotes.map(x=>'· '+x).join('\n'):''),'battle',{ord:order.map(o=>({n:o.name,img:(b.mons[o.mid]||{}).image||'',side:o.side,s:Math.round(o.speed),cap:!o.started?'교대 등장':o.change?'통상 교대':o.order!==20?orderValueName(o.order):'우선도 '+(o.prio>0?'+':'')+o.prio+(o.pursuitHit?' · 따라가때리기':'')}))})}
 
  /* 10-27 망령: 행동 순서 다시 계산 — 턴 도중 바뀐 상황(스피드 랭크 · 마비 · 트릭룸 · 순풍 · 습원 · 스카프 · 날씨 특성)을 아직 행동하지 않은 차례에만 적용한다.
@@ -1109,7 +1183,7 @@ window.OM_BATTLE_UI=(()=>{
   rest.sort((a,b2)=>((b2.started?1:0)-(a.started?1:0))||((b2.change?1:0)-(a.change?1:0))||(b2.order-a.order)||(b2.prio-a.prio)||(b2.speed-a.speed)||(b2.dice-a.dice));
   const order=[...O.slice(0,st),...rest];const moved=rest.some((o,i)=>o.mid!==before[i]);
   const notes=(b.orderNotes||[]).filter(x=>!/^「트릭룸」/.test(x));if(trick)notes.unshift('「트릭룸」이 시공간을 뒤틀었다! (스피드 역순)');
-  await A().set(['battle','order'],order);await A().set(['battle','orderNotes'],notes);
+  await A().setMany([[['battle','order'],order],[['battle','orderNotes'],notes]]);
   A().sysLog(`【행동 순서 다시 계산】 ${st+1}번째 차례부터${moved?'':' — 순서는 그대로'}\n`+rest.map((o,i)=>`${st+i+1}. ${o.name} (${o.change?'교대 · ':''}${o.order!==20?'순서 '+o.order+' · ':''}${o.prio?'우선 '+o.prio+' · ':''}스피드 ${Math.round(Math.abs(o.speed))}${trick?' · 트릭룸':''})`).join('\n'),'battle')}
 
  /* ----- 턴 종료 ----- */
@@ -1193,8 +1267,8 @@ window.OM_BATTLE_UI=(()=>{
   if(window.OM_STAGE_UI)fieldL.push(...window.OM_STAGE_UI.turnEnd(b,f));
   for(const k of ROOMS)if(dec(f.rooms,k))fieldL.push(`「${k}」 끝`);for(const k of ETC)if(dec(f.etc,k))fieldL.push(`「${k}」 끝`);
   for(const s of SIDES){f.objects[s]=f.objects[s]||{};for(const k in f.objects[s])if(!/^haz/.test(objCat(k)[0])/* 10-24 제보: 설치기(압정뿌리기 · 독압정의 「겹」 수)는 턴으로 줄지 않는다 */&&dec(f.objects[s],k))fieldL.push(`${SIDE_KO[s]} 「${k}」 끝`)}
-  b.field=f;b.cmds={};b.order=[];b.phase=0;b.turn=(+b.turn||0)+1;CMD={};
-  await saveBattle(b0,b);await A().set(['ready'],{});
+  b.field=f;b.cmds={};b.order=[];b.phase=0;b.turn=(+b.turn||0)+1;delete b.deadline;CMD={};
+  await saveBattle(b0,b,undefined,undefined,[[['ready'],{}]]);   /* 11-03: ready 비우기도 같은 묶음에 */
   cutPhase('턴 종료',`다음 턴 ${b.turn} · 지시 준비`);const sec=(h,L)=>L.length?[`▸ ${h}`,...L.map(x=>'  '+String(x).replace(/\n/g,'\n  '))]:[];const relL=Object.keys(rel).map(n=>`${n} — ${rel[n].join(' · ')}`);
   const body=[...sec('포켓몬',lines),...sec('풀린 것',relL),...sec('필드',fieldL),...sec('레이드',raidL)];
   A().sysLog(`【턴 ${b.turn-1} 종료】${body.length?'\n'+body.join('\n'):'\n  처리할 것 없음'}\n— 턴 ${b.turn} 지시 준비`,'battle')}
@@ -1551,7 +1625,7 @@ window.OM_BATTLE_UI=(()=>{
   $('#ehpfull',md).onclick=()=>{$('#ehp',md).value=m.hp.max};
   const updOn=()=>{const L=[...md.querySelectorAll('[data-st]:checked')].map(cb=>cb.dataset.st);md.querySelectorAll('[data-st]').forEach(cb=>cb.closest('.stt').classList.toggle('on',cb.checked));
    $('#ston',md).innerHTML=L.length?L.map(k=>{const d=sdb.st[k]||{ko:k};const im=simg(k);const ci=md.querySelector(`[data-stc="${k}"]`);const v=ci?(ci.value===''?'':+ci.value):null;
-    return `<span class="stchip ${d.abn?'abn':''}">${im?`<img src="${esc(im)}" alt="">`:''}${esc(d.ko)}${ci?`<span class="stcnt"><b data-sd="${k}" data-d="-1">−</b><i>${v===''||v>=1000?'계속':v}</i><b data-sd="${k}" data-d="1">+</b></span>`:''}<b class="stx" data-soff="${k}" title="풀기">✕</b></span>`}).join(''):'<span class="small dim">없음</span>';
+    return `<span class="stchip ${d.abn?'abn':''}" data-stinfo="${esc(k)}" title="${esc((d.desc||[]).join(' '))}">${im?`<img src="${esc(im)}" alt="">`:''}${esc(d.ko)}${ci?`<span class="stcnt"><b data-sd="${k}" data-d="-1">−</b><i>${v===''||v>=1000?'계속':v}</i><b data-sd="${k}" data-d="1">+</b></span>`:''}<b class="stx" data-soff="${k}" title="풀기">✕</b></span>`}).join(''):'<span class="small dim">없음</span>';
    md.querySelectorAll('[data-soff]').forEach(x=>x.onclick=()=>{const cb=md.querySelector(`[data-st="${x.dataset.soff}"]`);if(cb){cb.checked=false;updOn()}});
    md.querySelectorAll('[data-sd]').forEach(x=>x.onclick=()=>{const ci=md.querySelector(`[data-stc="${x.dataset.sd}"]`);if(!ci)return;ci.value=Math.max(1,Math.min(999,(+ci.value||0)+(+x.dataset.d)));updOn()})};
   md.querySelectorAll('[data-st],[data-stc]').forEach(cb=>cb.addEventListener('input',updOn));updOn();
@@ -1809,7 +1883,8 @@ window.OM_BATTLE_UI=(()=>{
   if(!await saveBattle(nb0,nb,f,{n:m.name,s:name,img:opt.img!=null?opt.img:(m.image||'')}))return false;if(raidNew)raidCut(m);
   if(kind==='item'&&oneShot(m0)&&!opt.quiet&&await askYes(`「${name}」을(를) 다 썼나? (소지품 칸에서 뺀다)`,'뺀다','남긴다'))setTimeout(()=>itemConsume(mid),50);
   A().sysLog(opt.head?`${opt.head}${L.length?'\n'+L.join('\n'):''}`:`【${({pot:'포텐셜',trait:'특성',item:'소지품',order:'지령'})[kind]||'효과'}】 ${m.name} 『${name}』${L.length?'\n'+L.join('\n'):''}`,'battle',{mid:m.id,img:opt.img!=null?opt.img:(m.image||''),eff:String(opt.eff||auto.text||(kind==='trait'?m.abilityEff:kind==='item'?m.itemEff:((potSrc(m).find(p=>p&&p.name===name)||{}).eff))||'').replace(/<br\s*\/?>/g,'\n').slice(0,300)});return true}
- function slotEff(m,kind,name){const n=String(name||'').replace(/『|』/g,'');if(kind==='trait')return m.abilityEff||(FX()&&FX().effOf?FX().effOf('trait',n):'');if(kind==='item'){const x=n===m.item?m:(m.items2||[]).find(q=>q&&q.item===n);return (x&&x.itemEff)||''}return ((potSrc(m).find(p=>p&&p.name===n)||{}).eff)||''}
+ function slotEff(m,kind,name){const n=String(name||'').replace(/『|』/g,'');if(kind==='trait')return m.abilityEff||(FX()&&FX().effOf?FX().effOf('trait',n):'');if(kind==='item'){const x=n===m.item?m:(m.items2||[]).find(q=>q&&q.item===n);return (x&&x.itemEff)||''}
+  const pe=((potSrc(m).find(p=>p&&p.name===n)||{}).eff)||'';if(pe)return pe;/* 11-03: 트레이너 고유 포텐셜의 효과 글도 (autoOnEntry · fireAuto) */const t=m&&m.tid?((ctx().b.trainers||{})[m.tid]):null;const u=t&&(t.unique||[]).find(q=>q&&String(q.name||'').replace(/『|』/g,'')===n);return (u&&u.eff)||''}
  /* 턴 개시 자동 (10-24 망령): 「턴 개시 시」 · 【턴 개시】 가 적힌 특성 · 소지품 · 포텐셜 — 구문이 있으면 (확률을 굴려) 발동, 없으면 확률만 굴려 손으로 할 일을 알린다 */
  async function autoTurnStart(){if(!FX())return;const b=ctx().b;for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0)continue;const list=[];
   if(m.ability)list.push(['trait',m.ability]);if(m.item)list.push(['item',m.item]);for(const x of (m.items2||[]))if(x&&x.item)list.push(['item',x.item]);for(const p of potSrc(m))if(p&&p.name&&!p.ph)list.push(['pot',p.name]);
@@ -1862,8 +1937,10 @@ window.OM_BATTLE_UI=(()=>{
   r=t.match(/자신의 기술을 「노말」 기술로 (?:만들고|변경하고)[^.]*?강화\((\d+(?:\.\d+)?)배\)/);if(r)return {ty:'Normal',mul:+r[1],name:m.ability};return null}
  async function autoOnEntry(mid,o2){o2=o2||{};const c=ctx();const m=c.b.mons[mid];if(!m||!FX())return;const list=[];
   if(m.ability)list.push(['trait',m.ability]);if(m.item)list.push(['item',m.item]);for(const p of [...(m.pots||[]),...(m.excl?[m.excl]:[]),...(m.exclX||[])])if(p&&p.name&&!p.ph)list.push(['pot',p.name]);
-  for(const [kind,name] of list){const a=FX().autoOf(m,kind,name);if(!a||!a.ops||!a.ops.length||a.manual)continue;/* 시트에 직접 쓴 구문은 글이 없으니 그 칸의 효과 글에서 【등장】/【상시】 를 읽는다 */const tm=FX().timing(a.text||(kind==='trait'?m.abilityEff:kind==='item'?m.itemEff:((potSrc(m).find(p=>p&&p.name===name)||{}).eff))||'');
-   const etx2=a.text||(kind==='trait'?m.abilityEff:kind==='item'?m.itemEff:((potSrc(m).find(p=>p&&p.name===name)||{}).eff))||'';
+  /* 11-03 감우: 트레이너 고유 포텐셜도 같은 길로 — 【등장】 · 【상시】 이고 구문이 있으면 그 트레이너의 포켓몬이 나올 때 건다 (autoOf 가 m.tid 로 고유 구문을 읽는다). 횟수(【N/시】)가 있는 고유는 손으로(선행 · 임의 발동) */
+  {const t=(c.b.trainers||{})[m.tid];for(const u of ((t&&t.unique)||[]))if(u&&u.name&&!/【\s*\d+\s*\/\s*(시|턴)\s*】/.test(String(u.eff||''))&&!list.some(([k,n])=>k==='pot'&&n===u.name))list.push(['pot',u.name])}
+  for(const [kind,name] of list){const a=FX().autoOf(m,kind,name);if(!a||!a.ops||!a.ops.length||a.manual)continue;/* 시트에 직접 쓴 구문은 글이 없으니 그 칸의 효과 글에서 【등장】/【상시】 를 읽는다 */const tm=FX().timing(a.text||slotEff(m,kind,name)||'');
+   const etx2=a.text||slotEff(m,kind,name)||'';
    /* 10-26 망령: 표시 없는 상시 특성 · 포텐셜 (테크니션 · 적응력 · 철주먹 · 멀티스케일 …) — 지속형 구문뿐이고 계기 말(받았을 때 · 턴 종료 …)이 없으면 등장 때 건다.
       「공격 : B」 이하일 때 같은 자기 등급 조건(천하장사 · 순수한힘 · 퍼코트 …)은 등급을 보고 맞으면 건다 */
    const gc=!tm.entry&&!tm.passive&&!tm.turnEnd?gradeCond(m,a.ops,etx2):null;
