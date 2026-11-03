@@ -5140,3 +5140,191 @@ html:not(#_) .prpslot .bgmw .bt{color:#ddd!important;max-width:64px;font-size:11
 html:not(#_) .prpslot .bgmw .btn{height:22px;min-height:0;padding:0 7px!important;font-size:11px!important}
 .phone .prprow{display:flex;padding:6px 8px;background:#121317;border-bottom:2px solid #000}
 .rpbtns.pslot{pointer-events:none}.rpbtns.pslot>*{pointer-events:auto}
+
+/* ---------- 11-03 14:01 망령 「연출이랑 단서카드 보관소 UI 개선」 — GM 콘솔 「연출」 탭 카드 · 단서 보관함 카드 격자 ----------
+   GM 콘솔 모달과 단서 창 안만 (무대 .rpstage 는 건드리지 않는다). 흐린 그림자 · backdrop-filter · filter 없음 — 그림자는 단단하게.
+   --gfa = 강조색, --gfi = 강조색 위 글자 (테마마다 아래에서 바꾼다) */
+.gcfx,.clbxm{--gfa:var(--yel2,#f0c84a);--gfi:#111;--gfc:#121318;--gfh:#1a1b21}
+.gcfx{display:flex;flex-direction:column;gap:14px}
+.gcard{border:1px solid var(--line2);background:var(--gfc);min-width:0}
+.gcard-h{display:flex;align-items:center;gap:10px;padding:8px 10px 8px 0;background:var(--gfh);border-bottom:2px solid var(--gfa);min-height:48px;box-sizing:border-box}
+.gcard.fold .gcard-h{border-bottom-color:transparent}
+.gcard-tg{display:flex;align-items:center;gap:8px;background:none;border:0;padding:4px 4px 4px 12px;color:var(--fg);cursor:pointer;font:inherit;min-width:0;flex:none;max-width:60%}
+.gcard-tg i{font-style:normal;color:var(--gfa);font-size:12px;width:12px;display:inline-block;transition:transform .12s}
+.gcard.fold .gcard-tg i{transform:rotate(-90deg)}
+.gcard-tg b{font:17px var(--lab);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:var(--fg)}
+.gcard-tg b small{font-size:12px;color:var(--mute);margin-left:4px}
+.gcard-h .note{font-size:12px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
+.gcard-go{display:flex;gap:8px;flex:none;flex-wrap:nowrap}
+.gcard-go .btn{white-space:nowrap;padding:6px 14px;font-size:14px;min-width:64px}
+.gcard-b{padding:12px}
+.gcard.fold .gcard-b{display:none}
+/* 컷인 설정: 두 묶음(켜고 끄기 · 모양), 줄마다 이름 ··· 칸 */
+.gfgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 22px}
+.gfcol{display:flex;flex-direction:column;gap:6px;min-width:0}
+.gfcol>small{font-size:11px;letter-spacing:.08em;color:var(--gfa);padding-bottom:2px;border-bottom:1px dashed var(--line2)}
+.gfrow{display:flex;align-items:center;gap:10px;min-height:34px}
+.gfrow>span{flex:1;min-width:0;font-size:13px;color:var(--fg2)}
+.gfrow>select,.gfrow>input{width:190px;flex:none;box-sizing:border-box}
+.gfrow>input.n{width:90px}
+/* 중앙 그림 */
+.gcfx .gcctr{display:flex;gap:12px;align-items:stretch}
+.gcfx .gcpv{position:relative;width:220px}
+.gcfx .gcpv i{position:absolute;left:6px;top:6px;font-style:normal;font-size:11px;font-weight:700;line-height:1;padding:3px 6px;background:var(--gfa);color:var(--gfi)}
+.gcctr-r{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.gcctr-r input{width:100%;box-sizing:border-box}
+.gcctr-r .updz.mini{flex:1;flex-direction:column;justify-content:center;white-space:normal;min-height:64px}
+/* 단서 카드 쓰기: 왼쪽 그림 칸 + 오른쪽 입력 */
+.gcfx .gcclue .gcard-b{padding:0}
+.gcfx .gccl-live{display:flex;align-items:center;gap:8px;padding:7px 12px;font-size:13px;background:var(--gfh);border-bottom:1px solid var(--line2);color:var(--fg)}
+.gcfx .gccl-live i{font-style:normal;color:var(--gfa)}
+.gcfx .gccl-live span:not(.sp){white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.gcfx .gccl-form{border:0;background:none;padding:12px 12px 0;gap:12px}
+.gcfx .gccl-form.editing{background:none;box-shadow:inset 3px 0 0 var(--gfa)}
+.gcfx .gccl-edbar{gap:8px;padding:6px 8px;background:var(--gfh);border:1px dashed var(--gfa);color:var(--gfa)}
+.gcfx .gccl-fgrid{display:grid;grid-template-columns:190px minmax(0,1fr);gap:12px}
+.gcfx .gccl-dz{display:grid!important;grid-template-rows:minmax(0,1fr) auto auto;justify-items:center;gap:4px;padding:8px!important;min-height:150px;overflow:hidden;border-radius:0}
+.gcfx .gccl-dz .gccl-pv{width:100%;height:100%;min-height:96px;aspect-ratio:auto;align-self:stretch}
+.gcfx .gccl-dz b{font-size:13px}.gcfx .gccl-dz span{font-size:10px;white-space:nowrap}
+.gcfx .gccl-fl{gap:8px}
+.gccl-r1{display:grid;grid-template-columns:minmax(0,1fr) 10em;gap:8px}
+.gccl-r1 input,.gcfx .gccl-fl>input,.gcfx .gccl-fl textarea{width:100%;box-sizing:border-box;min-width:0}
+/* 받는 사람: 줄바꿈되는 큰 칩 */
+.gcfx .gccl-to{display:flex;align-items:flex-start;gap:10px;margin:0}
+.gccl-tol{flex:none;font-size:12px;color:var(--mute);padding-top:9px;width:5.2em}
+.gccl-tos{flex:1;min-width:0;display:flex;flex-wrap:wrap;gap:6px}
+.gcto{display:inline-flex;align-items:center;gap:6px;max-width:100%;min-height:34px;padding:6px 14px 6px 10px;border:2px solid var(--line2);background:#0b0c10;color:var(--fg);font:600 14px/1.2 inherit;font-family:inherit;cursor:pointer;border-radius:999px;box-sizing:border-box;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.gcto i{font-style:normal;width:16px;height:16px;flex:none;display:inline-flex;align-items:center;justify-content:center;font-size:11px;border:1.5px solid var(--line2);border-radius:50%}
+.gcto:hover{border-color:var(--fg2)}
+.gcto.on{background:var(--gfa);border-color:var(--gfa);color:var(--gfi)}
+.gcto.on i{background:var(--gfi);color:var(--gfa);border-color:var(--gfi)}
+/* 보내기 줄: 폼 아래 고정 (콘솔 본문이 스크롤돼도 보인다) */
+.gccl-foot{position:sticky;bottom:0;z-index:3;display:flex;align-items:center;gap:8px;margin:0 -12px;padding:10px 12px;background:var(--gfh);border-top:2px solid var(--gfa);flex-wrap:nowrap}
+.gccl-foot .btn{white-space:nowrap;padding:7px 16px;font-size:14px;flex:none}
+.gccl-foot .gccl-send{font-size:15px;padding:8px 20px}
+.gccl-tow{font-size:12px;color:var(--fg2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;flex:0 1 auto}
+.gcfx .gccl-libh{margin-top:0;margin-bottom:8px}
+.gcfx .gccl-grps{margin:0 0 4px}
+.gcfx .gccl-grps .chip{font-size:13px;padding:3px 10px;cursor:pointer}
+.gcfx .gccl-grps .chip.on{background:var(--gfa);border-color:var(--gfa);color:var(--gfi)}
+.gcfx .gccl-empty{margin-top:0}
+/* 저장한 단서 · 보관함 카드 공통 */
+.gcfx .gccl-card,.clbxm .gccl-card{border:1px solid var(--line2);background:#0e0f13}
+.gcfx .gccl-card:hover,.clbxm .gccl-card:hover{border-color:var(--fg2)}
+.gcfx .gccl-card.live{border:2px solid var(--gfa)}
+.gcfx .gccl-th i,.clbxm .gccl-th i{background:var(--gfa);color:var(--gfi)}
+.gcfx .gccl-bd em,.clbxm .gccl-bd em{color:var(--gfa)}
+.gcfx .gccl-bd b{color:var(--fg)}
+.gcfx .gccl-bd p{color:var(--fg2)}
+/* ---- 단서 보관함 창 ---- */
+.modal.clbxm{display:flex;flex-direction:column;height:min(86vh,860px);overflow:hidden;padding:14px 16px 0;box-sizing:border-box}
+.modal.clbxm .mhead{flex:none;flex-wrap:nowrap;min-width:0}
+.modal.clbxm .mhead h2{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.modal.clbxm .mhead .btn{white-space:nowrap;flex:none}
+.clbx-gm{flex:none;font-size:11px;font-weight:700;line-height:1;padding:3px 7px;background:var(--gfa);color:var(--gfi)}
+.clbx-tabs{flex:none;display:flex;gap:0;margin:0 0 10px;border-bottom:1px solid var(--line2)}
+.clbx-tabs button{flex:1;max-width:220px;background:none;border:0;border-bottom:3px solid transparent;margin-bottom:-1px;padding:9px 12px;color:var(--fg2);font:15px var(--lab);cursor:pointer;white-space:nowrap}
+.clbx-tabs button small{font-size:12px;color:var(--mute);margin-left:4px}
+.clbx-tabs button:hover{color:var(--fg)}
+.clbx-tabs button.on{color:var(--fg);border-bottom-color:var(--gfa);background:var(--gfh)}
+.clbx-tabs button.on small{color:var(--gfa)}
+.clbx-bar{flex:none;margin-bottom:10px}
+.clbx-bar input{width:100%;box-sizing:border-box;padding:8px 10px;font-size:14px}
+.clbx2{flex:1;min-height:0;overflow:auto;display:flex;flex-direction:column;gap:10px;padding-bottom:16px}
+.clg{border:1px solid var(--line2);background:var(--gfc)}
+.clg>summary{display:flex;align-items:center;gap:8px;padding:8px 12px;cursor:pointer;list-style:none;background:var(--gfh);color:var(--fg)}
+.clg>summary::-webkit-details-marker{display:none}
+.clg>summary i{font-style:normal;color:var(--gfa);font-size:12px;transition:transform .12s}
+.clg[open]>summary i{transform:rotate(90deg)}
+.clg[open]>summary{border-bottom:1px solid var(--line2)}
+.clg>summary b{font:16px var(--lab);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.clg>summary small{font-size:12px;color:var(--gfi);background:var(--gfa);padding:1px 7px;line-height:1.4;flex:none}
+.clgrid{margin:0!important;padding:10px;grid-template-columns:repeat(auto-fill,minmax(180px,1fr))!important}
+.clg-none{display:flex;align-items:center;gap:10px;padding:8px 12px;border:1px dashed var(--line2);color:var(--fg2)}
+.clg-none b{font-weight:400;font-size:14px}
+.clbx-empty{padding:28px 16px;text-align:center;border:1px dashed var(--line2);color:var(--fg2);line-height:1.7}
+.clc .gccl-th{position:relative;aspect-ratio:16/10}
+.clc-b{position:absolute;right:6px;bottom:6px;font-style:normal;font-size:11px;font-weight:700;line-height:1;padding:4px 7px;max-width:calc(100% - 12px);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-sizing:border-box}
+.clc-b.all{background:#0b0c10;color:#fff;border:1px solid #fff}
+.clc-b.me{background:var(--gfa);color:var(--gfi)}
+.clc.mine{border-left:3px solid var(--gfa)}
+.clc-t{display:block;width:100%;text-align:left;background:none;border:0;padding:0;color:var(--fg);font:600 14px/1.35 inherit;font-family:inherit;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.clc-t:hover{text-decoration:underline}
+.clc .gccl-bd{gap:3px;padding-bottom:6px}
+.clc .gccl-bd em{font-size:11px}
+.clc-m{font-size:11px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.clc .gccl-ac{flex-wrap:nowrap;margin-top:auto}
+.clc .gccl-ac .btn{white-space:nowrap}
+/* ⋯ 메뉴 (회수 · 지우기는 여기 안에만) */
+.clc-menu{position:relative;flex:none}
+.clc-menu>summary{list-style:none;cursor:pointer;width:30px;height:26px;display:flex;align-items:center;justify-content:center;border:1px solid var(--line2);color:var(--fg);font-size:16px;line-height:1;background:#0b0c10;box-sizing:border-box}
+.clc-menu>summary::-webkit-details-marker{display:none}
+.clc-menu[open]>summary,.clc-menu>summary:hover{border-color:var(--gfa);color:var(--gfa)}
+.clc-menu>div{position:absolute;right:0;top:calc(100% + 4px);z-index:6;display:flex;flex-direction:column;min-width:130px;background:#0b0c10;border:1px solid var(--fg2);box-shadow:4px 4px 0 #000}
+.clc-menu.up>div{top:auto;bottom:calc(100% + 4px)}
+.clc-menu>div button{background:none;border:0;border-bottom:1px solid var(--line);padding:9px 12px;text-align:left;color:var(--fg);font:13px inherit;font-family:inherit;cursor:pointer;white-space:nowrap}
+.clc-menu>div button:last-child{border-bottom:0}
+.clc-menu>div button:hover{background:var(--gfh)}
+.clc-menu>div button.danger{color:#ff6b7f}
+.clc-menu>div button.danger:hover{background:#7a1020;color:#fff}
+/* 크게 보기 */
+.clz{flex:1;min-height:0;overflow:auto;display:grid;align-content:start;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start;padding-bottom:12px}
+.clz-img{display:block;width:100%;max-height:62vh;object-fit:contain;background:#000;border:1px solid var(--line2)}
+.clz-noimg{display:flex;align-items:center;justify-content:center;aspect-ratio:4/3;border:1px dashed var(--line2);color:var(--mute);font-size:15px;background:#0b0c10}
+.clz-bd{display:flex;flex-direction:column;gap:10px;min-width:0}
+.clz-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.clz-meta .clc-b{position:static}
+.clz-meta em{font-style:normal;font-size:12px;color:var(--gfa)}
+.clz-meta small{font-size:12px;color:var(--mute)}
+.clz-bd p{margin:0;font-size:15px;line-height:1.7;color:var(--fg);white-space:normal;word-break:keep-all;overflow-wrap:anywhere}
+.clz-foot{flex:none;display:flex;align-items:center;gap:8px;padding:10px 0 14px;border-top:1px solid var(--line2);flex-wrap:nowrap}
+.clz-foot .btn{white-space:nowrap}
+.mhead .clz-t{font-size:19px}
+/* 테마 (vtheme 가 .btn 은 덮는다 — 여기선 강조색 · 칸 바탕만) */
+html[data-vt="p3"] :is(.gcfx,.clbxm){--gfa:#4fc3ff;--gfi:#03122e;--gfc:#071434;--gfh:#0a1d47}
+html[data-vt="p4"] :is(.gcfx,.clbxm){--gfa:#ffe100;--gfi:#111;--gfc:#161616;--gfh:#222}
+html[data-vt="mm"] :is(.gcfx,.clbxm){--gfa:#cfae6e;--gfi:#14100c;--gfc:#0f0d0b;--gfh:#17140f}
+html[data-vt="mm"] .gcto{background:#0b0a08;color:#e8dfcb;border-color:#3e3426}
+html[data-vt="mm"] .gcto.on{background:#cfae6e;color:#14100c;border-color:#cfae6e}
+html[data-vt="mm"] .clc-menu>div,html[data-vt="mm"] .clc-menu>summary{background:#0b0a08}
+@media (max-width:760px){
+ .gcfx{gap:10px}
+ .gcard-h{padding:6px 8px 6px 0;gap:6px}
+ .gcard-h .note{display:none}
+ .gcard-tg{max-width:none;flex:1;padding-left:10px}
+ .gcard-tg b{font-size:15px}
+ .gcard-go{gap:6px}
+ .gcard-go{gap:5px}
+ .gcard-go .btn{padding:5px 8px;font-size:12px;min-width:0}
+ .gcard-tg{gap:6px;padding-left:8px}
+ .gcard-b{padding:10px}
+ .gfgrid{grid-template-columns:1fr}
+ .gfrow>select,.gfrow>input{width:56%}
+ .gfrow>input.n{width:90px}
+ .gcfx .gcctr{flex-direction:column}.gcfx .gcpv{width:100%;aspect-ratio:auto;height:120px}
+ .gcfx .gccl-form{padding:10px 10px 0}
+ .gcfx .gccl-fgrid{grid-template-columns:1fr}
+ .gcfx .gccl-dz{grid-template-rows:auto;grid-template-columns:84px auto;grid-auto-flow:column;align-items:center;justify-items:start;min-height:0}
+ .gcfx .gccl-dz .gccl-pv{width:84px;height:63px;min-height:0}
+ .gcfx .gccl-dz span{display:none}
+ .gccl-r1{grid-template-columns:minmax(0,1fr) 7.5em}
+ .gcfx .gccl-to{flex-direction:column;gap:6px}
+ .gccl-tol{padding-top:0;width:auto}
+ .gcto{min-height:38px;font-size:14px}
+ .gccl-foot{margin:0 -10px;padding:8px 10px}
+ .gccl-foot .gccl-send{flex:1 1 auto;min-width:0;padding:8px 10px;overflow:hidden;text-overflow:ellipsis}
+ .gccl-foot .btn{padding:7px 12px}
+ .gccl-tow{display:none}
+ .modal.clbxm{height:100dvh;padding:10px 10px 0}
+ .modal.clbxm .mhead{gap:6px}
+ .modal.clbxm .mhead h2{font-size:18px}
+ .clbx-tabs button{max-width:none;padding:9px 6px;font-size:14px}
+ .clgrid{grid-template-columns:repeat(2,minmax(0,1fr))!important;padding:8px;gap:8px}
+ .clc .gccl-ac{padding:4px 5px 6px;gap:4px}
+ .clc .gccl-ac .btn.xs{padding:4px 7px;font-size:11px}
+ .clz{grid-template-columns:1fr}
+ .clz-img{max-height:46vh}
+ .clz-foot{padding-bottom:12px}
+ .mhead .clz-t{font-size:16px}}
+.gcfx .gccl-th:hover,.clbxm .gccl-th:hover{filter:none;outline:2px solid var(--gfa);outline-offset:-2px}
+.gccl-tos>.small{align-self:center}
