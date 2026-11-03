@@ -178,7 +178,7 @@ function generate1(o){o=o||{};const tier=o.tier||'normal';if(!PRESET[tier])throw
  return dg}
 /* 웹툴 던전 탭 꼴로 — 지도 좌표(dg.map 격자, 없으면 옛 지그재그) · 통로 · 방마다 sk(스킬 체크) · rk(휴식 단계) · m(GM 메모: 조우 구성 · 경계도 패널티 · 단서) */
 const PEN_KO=p=>{if(!p)return '';const L=[];if(p.al)L.push('경계도 '+(p.al>0?'+':'−')+Math.abs(p.al));if(p.dmg)L.push('HP −'+p.dmg);if(p.st)L.push('상태 '+({Paralysis:'마비',Poison:'독',Confusion:'혼란',Burn:'화상',Sleep:'잠듦'}[p.st]||p.st)+(+p.cnt>0?' '+p.cnt+'턴':''));if(p.oo)L.push('4식 −'+p.oo);if(p.oc)L.push('6령 −'+p.oc);   /* 11-01: 공용 칸에서 바로 뺀다(10-28 던전 단위 · 10-31 웹툴 「판정한 트레이너 → 일행」) — 「다음 배틀」이 아니다 */if(p.rk)L.push('랭크 '+Object.entries(p.rk).map(([k,v])=>k+(v>0?'+':'')+v).join(' '));if(p.memo)L.push(p.memo);return L.join(' · ')};
-const IMG_BASE='https://mangryoung.github.io/oremas/sim/data/dungeon_img/';
+const IMG_BASE='https://mangryoung.github.io/oremas/sim/data/dungeon_img/';const WIMG_BASE='https://mangryoung.github.io/oremas/sim/data/wild/img/';
 function toWebtool(dg,names){names=names||{};for(const [t,i,n] of G.POOL.concat(G.BOSS)){names[t]=names[t]||{};if(names[t][i]==null)names[t][i]=n}let DBN=null;const dbName=i=>{if(!DBN){try{const WB=require('./wilddb.js');DBN=Object.fromEntries((WB._cache=WB._cache||WB.fullV2()).map(e=>[e.id,e.name]))}catch(e){DBN={}}}return DBN[i]||i};const nameOf=(t,i)=>t==='dex'?i:t==='db'?((names.db||{})[i]||dbName(i)):(names[t]&&names[t][i])||`${t} #${i}`;const rs=dg.rooms;const COLS=4,cw=200,rh=180;
  const r={},l={};const rid=x=>x.id.replace(/[^\w]/g,'').slice(0,8)||('r'+Math.random().toString(36).slice(2,6));
  const M=dg.map;rs.forEach((x,i)=>{const row=Math.floor(i/COLS),col=i%COLS,c=row%2?COLS-1-col:col;const id=rid(x);const cell=M&&M.cells[x.id];const o={n:x.name,t:x.t,x:cell?M.grid.x0+cell[0]*M.grid.dx:110+c*cw,y:cell?M.grid.y0+cell[1]*M.grid.dy:140+row*rh};const memo=[];if(x.memo)memo.push(x.memo);
@@ -200,10 +200,10 @@ function toWebtool(dg,names){names=names||{};for(const [t,i,n] of G.POOL.concat(
 /* 웹툴로 보낼 야생 시트 (던전 진행기 lib/dungeon.js 의 mix 빌드와 같은 꼴 — 야생 DB · 도감 야생. 스냅샷 트레이너 야생(m.trainer)은 웹툴에 없으니 뺀다) */
 let ENVW=null;const envW=()=>ENVW||(ENVW=require('./env.js').load().win);
 function wildSpec(x,dg){const enc=x.enc;if(!enc||!enc.mix)return null;const W=envW();const WB=require('./wilddb.js');const lvAdd=+enc.lvAdd||0;let mons=[];
- for(const src of enc.mix){if(src.db){const e=(WB._cache=WB._cache||WB.fullV2()).find(q=>q.id===src.db||q.name===src.db);if(!e)continue;mons.push(WB.buildEntry(W,e,{lvAdd}).mon)}else if(src.sp){mons.push(require('./dex.js').build(W,src.sp,{lvAdd}).mon)}}
+ for(const src of enc.mix){if(src.db){const e=(WB._cache=WB._cache||WB.fullV2()).find(q=>q.id===src.db||q.name===src.db);if(!e)continue;const mm=WB.buildEntry(W,e,{lvAdd}).mon;if(e.img)mm._img=WIMG_BASE+encodeURIComponent(e.img)+(e.imgAt?'?'+e.imgAt:'');mons.push(mm)}else if(src.sp){mons.push(require('./dex.js').build(W,src.sp,{lvAdd}).mon)}}
  const N=+enc.n||mons.length;while(mons.length&&mons.length<N)mons.push(mons[mons.length%Math.max(1,enc.mix.length)]);mons=mons.slice(0,N);const bi=enc.boss?(+enc.bossAt||0):-1,X=enc.boss?(+enc.raid||0):0;
  return {name:(enc.boss?'야생 보스 · ':'야생 · ')+(x.name||'방'),rank:'C',mons:mons.map((m,i)=>{const boss=i===bi;const pots=[boss?'와일드 보스':'와일드'];if(boss&&X>0)pots.push('레이드 배틀 : '+X);
-  const tk=m.typesKo||[];return {name:m.name,t1:tk[0]||'-',t2:tk[1]||'-',base:(m.base||[]).slice(0,6),ability:m.ability||'',abilityEff:m.abilityEff||'',auto:m.auto&&Object.keys(m.auto).length?m.auto:undefined,item:m.item||'',moves:(m.moves||[]).map(v=>v&&v.name).filter(Boolean),pride:m.pride||'C',dist:+m.dist||0,boss,pots}})}}
+  const tk=m.typesKo||[];return {name:m.name,t1:tk[0]||'-',t2:tk[1]||'-',base:(m.base||[]).slice(0,6),ability:m.ability||'',abilityEff:m.abilityEff||'',auto:m.auto&&Object.keys(m.auto).length?m.auto:undefined,item:m.item||'',moves:(m.moves||[]).map(v=>v&&v.name).filter(Boolean),pride:m.pride||'C',dist:+m.dist||0,boss,pots,image:m._img||undefined}})}}   /* 11-04 포트(미사그 변이체 H3)도 웹툴 야생 시트 그림으로 */
 /* 11-02 망령 「갈림길이 거의 없는 1자형」: 갈림길 수를 정하지 않았으면 2개 이상 들어간 판이 나올 때까지 같은 씨앗 안에서 6번까지 다시 짠다.
    (첫 판에 2개 이상이면 11-02 첫 판과 같은 던전 — 씨앗이 같으면 늘 같은 던전) */
 /* 11-02 14시 망령 「방이 또 너무 많다 · 8~12개로」: 방 수(입구 · 보스 · 다른 길 · 곁방 · 보물 방 모두) = ROOMS 안. 갈림길은 2개 이상을 먼저 노린다 */
