@@ -469,10 +469,13 @@ function renderRoom(){
 function copy(t,msg){navigator.clipboard.writeText(t).then(()=>toast(msg),()=>prompt('복사해서 쓰기',t))}
 
 /* ---------- 상태 쓰기 ---------- */
+/* 11-04 망령 (관사 보스방): 「저장 실패: canceling statement due to statement timeout」 한 번에 피격 적용이 날아갔다 — 잠깐 막힌 쓰기(시간 초과 · 연결)는 두 번까지 다시 쓴다 */
+const TRANSIENT=/timeout|statement|fetch|network|load failed|50[234]|gateway|ECONN|socket/i;
+async function retryT(fn){let last;for(let i=0;i<3;i++){try{return await fn()}catch(e){last=e;if(!TRANSIENT.test(String((e&&e.message)||e))||i===2)throw e;await new Promise(r=>setTimeout(r,500*(i+1)))}}throw last}
 async function setRaw(path,value){
   /* 2026-11-03: GM 이 중간 칸을 {} 로 먼저 쓰던 선행 쓰기를 뺐다 — 서버 om_jset 이 중간 칸을 만들어 주고, 좌석이 막 만든 칸(지시 · 준비)을 GM 화면의 옛 사본 기준 {} 로 덮을 수 있었다.
      좌석 · GM 모두 경로 그대로 쓴다. (2026-10-20: 예전엔 부모까지 올라가 통째로 썼는데, 서버에 이미 있던 칸을 덮을 수 있고 권한 검사의 NULL 구멍에 기대고 있어서 뺐다) */
-  const v=await DBS().setState(ST.room,ST.secret,path,value);
+  const v=await retryT(()=>DBS().setState(ST.room,ST.secret,path,value));
   applyLocal(path,value);
   /* 10-23 이그레스: 버전은 여기서 올리지 않는다 — 그 사이 남이 쓴 칸의 신호를 버리지 않게. 내 쓰기도 'st' 신호(또는 패치 전 서버의 onState)로 돌아와 버전이 오른다 */
   return v}
@@ -491,7 +494,7 @@ function diffOps(path,before,after,depth,out){out=out||[];if(sameJ(before,after)
 /* 여러 칸을 쓰고 화면은 한 번만.
    11-03 감우: 두 칸 이상이면 서버 om_jset_many 로 한 번에(한 트랜잭션 — 하나라도 막히면 전부 되돌아온다). 그 함수가 없는 DB 면(null) 예전처럼 칸마다 — 하나가 막혀도 나머지는 쓴다 (실패 알림은 첫 번째 것만) */
 async function setMany(ops){ops=(ops||[]).filter(x=>Array.isArray(x)&&Array.isArray(x[0])&&x[0].length);if(!ops.length)return true;let ok=true,msg='';
- if(ops.length>1&&DBS().setStateMany){let r=null;try{r=await DBS().setStateMany(ST.room,ST.secret,ops.map(([p,v])=>({path:p.map(String),value:v===undefined?null:v})))}catch(e){ok=false;msg=e.message||String(e)}
+ if(ops.length>1&&DBS().setStateMany){let r=null;try{r=await retryT(()=>DBS().setStateMany(ST.room,ST.secret,ops.map(([p,v])=>({path:p.map(String),value:v===undefined?null:v}))))}catch(e){ok=false;msg=e.message||String(e)}
   if(ok&&r!==null){for(const [p,v] of ops)applyLocal(p,v);renderScene();return true}
   if(!ok){renderScene();toast('저장 실패: '+msg);return false}}
  for(const [p,v] of ops){try{await setRaw(p,v)}catch(e){ok=false;if(!msg)msg=e.message}}
@@ -597,7 +600,7 @@ async function sendChat(){
  const inp=$('#chatIn');const t=inp.value.trim();if(!t)return;LOGMINE=Date.now();const SY=chatSty();const ch=Object.assign(CHAN.cur==='o'?{ch:'ooc'}:{},Object.keys(SY).length?{sty:SY}:{});const nf=CHAN.cur==='o'?{}:{nf:1};inp.value='';if(window.OM_RP_UI&&window.OM_RP_UI.typingStop)window.OM_RP_UI.typingStop();
  try{
   let m;
-  if((m=t.match(/^\/r(?:oll)?\s+(.+)$/i))){const r=roll(m[1]);if(!r)return toast('주사위 식을 모르겠다 (예: 1d100, 2d6+3)');await DBS().addLog(ST.room,ST.secret,'dice',ST.name,Object.assign({t:`${m[1]} → ${r.text} = ${r.total}`,total:r.total},ch))}
+  if((m=t.match(/^\/r(?:oll)?\s+(.+)$/i))){/* 11-04 망령: 「/r 1d10 활솜씨 판정」처럼 식 뒤에 붙인 글은 메모로 — 앞에서부터 굴릴 수 있는 만큼이 식 */const W=m[1].trim().split(/\s+/);let r=null,k=W.length;for(;k>0;k--){r=roll(W.slice(0,k).join(' '));if(r)break}if(!r)return toast('주사위 식을 모르겠다 (예: 1d100, 2d6+3 · 뒤에 메모를 붙여도 된다)');const ex=W.slice(0,k).join(' '),memo=W.slice(k).join(' ');await DBS().addLog(ST.room,ST.secret,'dice',ST.name,Object.assign({t:`${ex} → ${r.text} = ${r.total}${memo?'  · '+memo:''}`,total:r.total},ch))}
   else if((m=t.match(/^\/gr(?:oll)?\s+(.+)$/i))){if(ST.role!=='gm')return toast('/gr 는 GM 의 비밀 굴림 — 플레이어는 /r 로 굴려 줘');const r=roll(m[1]);if(!r)return toast('주사위 식을 모르겠다 (예: 1d100, 2d6+3)');selfLog(`🎲 비밀 굴림 ${m[1]} → ${r.text} = ${r.total}`,{gr:{e:m[1],x:r.text,n:r.total}});toast('비밀 굴림 — 나만 보인다. 줄의 「공개」로 모두에게')}   /* 11-03: GM 비밀 굴림 */
   else if((m=t.match(/^\/w\s+(\S+)\s+(.+)$/))){const to=resolveSeat(m[1]);if(!to)return toast('그런 자리가 없다: '+m[1]);await DBS().addLog(ST.room,ST.secret,'whisper',ST.name,{t:m[2],to,toName:m[1]});pollWhispers()}
   else if((m=t.match(/^\/as\s+(\S+)\s+(.+)$/))){if(ST.role!=='gm')return toast('/as 는 GM 만');await DBS().addLog(ST.room,ST.secret,'chat',m[1],{t:m[2],as:m[1],nf:1})}
@@ -878,20 +881,28 @@ async function loadFromRoster(tid,side){
 /* ---------- 던전 조우 (10-26 망령: 「위치에 야생 포켓몬을 배치해서 곧바로 배틀 진입」) ----------
    일행 트레이너(좌)와 방에 둔 야생 무리(우, 시트의 GM 트레이너)로 배틀 칸을 새로 차린다. 같은 진영 일행은 한 팀(개인전 아님).
    동행 포켓몬(roster.trainers.<id>.walk)은 에리어 A·B·C 순으로 내밀기 예약 — 「시합 개시」를 누르면 바로 나온다. 야생도 같은 수만큼 예약.
-   o = {left:[트레이너 id], right:[트레이너 id], walk:{tid:[mid]}, dg:{did,rid}} */
+   o = {left:[트레이너 id], right:[트레이너 id], walk:{tid:[mid]}, wn:동행 수, dg:{did,rid}}
+   11-04 망령 「3:2 가 아니야. 2:2지」 · 「던전 배틀에는 동행만」: 일행은 동행 포켓몬만 배틀 칸에 넣는다(동행을 안 골랐으면 살아 있는 앞 wn 체).
+   에리어는 2칸(야생이 1체면 1칸) — 일행 동행 수가 아니라 야생 수로 정한다. 보스방(야생 5체)도 2:2.
+   불러온 GM 계정(byAcct)을 일행 · 야생 트레이너에 적는다 — PL 권한 중인 다른 GM 화면에 야생 지시 창이 뜨던 것.
+   배틀 칸이 차 있을 때 묻는 것은 브라우저 confirm 대신 웹툴 창(자동 진행이 멈추지 않게). */
+function askOk(q,yes,no){return new Promise(res=>{const md=openModal(`<div class="mhead"><h2>확인</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="small" style="white-space:pre-wrap;margin-bottom:10px">${esc(String(q||''))}</div><div class="row"><span class="sp"></span><button class="btn" data-ok="0">${esc(no||'아니요')}</button><button class="btn pri" data-ok="1">${esc(yes||'예')}</button></div>`);let done=false;const fin=v=>{if(done)return;done=true;closeModal();res(v)};md.querySelectorAll('[data-ok]').forEach(b=>b.onclick=()=>fin(b.dataset.ok==='1'));const x=md.querySelector('[data-x]');if(x)x.addEventListener('click',()=>{if(!done){done=true;res(false)}})})}
 async function encounter(o){if(ST.role!=='gm')return false;const r=roster();const L=(o.left||[]).filter(id=>r.trainers[id]),R=(o.right||[]).filter(id=>r.trainers[id]&&!L.includes(id));
  if(!R.length){toast('야생 무리 트레이너가 시트에 없다');return false}
- const b0=B();if(Object.keys(b0.trainers||{}).length&&!confirm('지금 배틀 칸을 비우고 조우 배틀을 차릴까? (좌석은 남는다)'))return false;
+ const b0=B();if(Object.keys(b0.trainers||{}).length&&!(await askOk('지금 배틀 칸을 비우고 조우 배틀을 차릴까? (좌석은 남는다)','차린다','그만둔다')))return false;
+ const WN=Math.max(1,Math.min(3,+o.wn||2));const gk=acctKey();
  const nb={turn:0,phase:0,mode:2,sides:{left:{trainers:[]},right:{trainers:[]}},trainers:{},mons:{},field:{},cmds:{},order:[],dg:o.dg||null};
  const seats=ST.state.seats||{};const all=[];
- const put=(tid,side)=>{const t=JSON.parse(JSON.stringify(r.trainers[tid]));if(t.two)t.pids=twoPids(t);const ms=(t.pids||[]).map(id=>r.mons[id]).filter(Boolean).map(x=>JSON.parse(JSON.stringify(x)));
+ const put=(tid,side)=>{const t=JSON.parse(JSON.stringify(r.trainers[tid]));if(t.two)t.pids=twoPids(t);
+  if(side==='left'){const w=((o.walk||{})[tid]||[]).filter(id=>(t.pids||[]).includes(id)&&r.mons[id]);t.pids=w.length?w:(t.pids||[]).filter(id=>r.mons[id]&&((r.mons[id].hp||{}).cur??1)>0).slice(0,WN)}
+  const ms=(t.pids||[]).map(id=>r.mons[id]).filter(Boolean).map(x=>JSON.parse(JSON.stringify(x)));
   /* 10-31 망령 「『와일드』 ×1.25 가 웹툴에서 사라진다」: prepMon 이 mod 를 비우니 배율은 포텐셜로만 건다 — 야생 시트에 『와일드』 · 『와일드 보스』 포텐셜이 없으면 붙인다 */
   if(side==='right'&&t.wild)ms.forEach(m=>{m.pots=Array.isArray(m.pots)?m.pots:[];if(!m.pots.some(p=>p&&/^와일드( 보스)?$/.test(p.name))){const nm=m.boss?'와일드 보스':'와일드';m.pots.push({slot:m.pots.length,name:nm,kind:'',eff:m.boss?'모든 능력치 ×1.5':'모든 능력치 ×1.25',ph:false});if(!m.role)m.role=nm}});
-  delete t.walk;delete t.solo;t.side=side;t.by=seats[tid]&&side==='left'?tid:'gm';nb.sides[side].trainers.push(tid);nb.trainers[tid]=t;ms.forEach((m,i)=>{prepMon(m,side,i);nb.mons[m.id]=m;all.push(m)});return ms};
+  delete t.walk;delete t.solo;t.side=side;t.by=seats[tid]&&side==='left'?tid:'gm';if(t.by==='gm'&&gk)t.byAcct=gk;else delete t.byAcct;nb.sides[side].trainers.push(tid);nb.trainers[tid]=t;ms.forEach((m,i)=>{prepMon(m,side,i);nb.mons[m.id]=m;all.push(m)});return ms};
  /* 10-26 던전 시험: 일행이 셋이고 에리어가 3칸인데 앞 사람의 동행 둘이 먼저 다 차지해 레온은 한 마리도 못 나갔다 — 트레이너마다 1번 동행부터 번갈아 (1번들 → 2번들 …) */const per=[];L.forEach(tid=>{const ms=put(tid,'left');const w=((o.walk||{})[tid]||[]);per.push(w.map(id=>ms.find(x=>x.id===id)).filter(m=>m&&m.hp.cur>0))});const lw=[];for(let i=0;per.some(x=>x[i]);i++)per.forEach(x=>{if(x[i])lw.push(x[i])});
  const rw=[];R.forEach(tid=>put(tid,'right').forEach(m=>{if(m.hp.cur>0)rw.push(m)}));
  {const DU=window.OM_DB_UI;if(DU&&DU.fillEff&&all.some(m=>(m.ability&&!m.abilityEff)||(m.pots||[]).some(p=>!p.eff))){try{if(DU.ensureMaker)await DU.ensureMaker();all.forEach(m=>DU.fillEff(m))}catch(e){}}}
- const AR=['a','b','c'];const n=Math.max(1,Math.min(3,lw.length||2));nb.mode=n;
+ const AR=['a','b','c'];const n=Math.max(1,Math.min(2,rw.length||2));nb.mode=n;
  lw.slice(0,n).forEach((m,i)=>m.pend=AR[i]);rw.slice(0,n).forEach((m,i)=>m.pend=AR[i]);
  if(!await set(['battle'],nb))return false;await set(['scene'],'battle');
  sysLog(`⚔ 야생 조우${o.title?' — '+o.title:''}\n${L.map(t=>r.trainers[t].name).join(' · ')||'일행'} VS ${rw.map(m=>'야생의 '+m.name).join(' · ')||R.map(t=>r.trainers[t].name).join(' · ')}${lw.length?`\n먼저 나갈 포켓몬(예약): ${lw.slice(0,n).map(m=>m.name).join(' · ')}`:''}${lw.length>n?` — 에리어가 ${n}칸이라 ${lw.slice(n).map(m=>m.name).join(' · ')} 은(는) 벤치에`:''}\n「시합 개시」를 누르면 시작`,'battle');

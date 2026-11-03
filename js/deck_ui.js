@@ -420,7 +420,8 @@ window.OM_DECK_UI=(()=>{
  /* ---------- 배틀에서 카드 쓰기 (10-26 망령) ----------
    트레이너 칸의 「🃏 카드 n」 → 그 트레이너(=덱 주인 holder) 손패 → 「사용」: 덱의 play(비용 · 버린 더미) + 카드에 자동화 구문이 있으면 SP 처럼 기준 포켓몬에서 돌린다.
    쓸 수 있는 덱: 지금 보는 덱(PV.deck) → 기본 덱 → 그 손패가 있는 덱 순 */
- function deckFor(H){const L=visDecks();const has=([,d])=>(d.hands[H]||[]).length;return L.find(x=>x[0]===PV.deck&&has(x))||L.find(x=>x[0]===(DB()||{}).cur&&has(x))||L.find(has)||L.find(([,d])=>(d.holders||[]).includes(H))||L.find(x=>x[0]===(DB()||{}).cur)||L[0]||null}
+ /* 11-04 망령 (관사): 덱이 없는 트레이너(코유키)의 스킬 체크 창에 감우 덱 「서리꽃 업무철」이 보였다 — 남의 개인 덱(mk_<트레이너>)으로는 넘어가지 않는다. 같이 쓰는 방 덱만 */
+ function deckFor(H){const L=visDecks();const has=([,d])=>(d.hands[H]||[]).length;const mine=([id,d])=>id==='mk_'+H||(d.holders||[]).includes(H);const shared=([id])=>!/^mk_/.test(id);return L.find(x=>x[0]===PV.deck&&has(x))||L.find(x=>x[0]===(DB()||{}).cur&&has(x))||L.find(has)||L.find(mine)||L.find(x=>x[0]===(DB()||{}).cur&&shared(x))||L.find(shared)||null}
  function handCount(tid){const x=deckFor(tid);return x?(x[1].hands[tid]||[]).length:0}
  /* 10-26 망령: 제작기 덱 → 이 방 덱. 트레이너 시트의 「덱 관리」(t.deck=[{n,q}] · deckName) + 카드 DB(dbedit kind cards: 덱·이름·종류·비용·효과·색·그림·기본 장수·비고·자동화 구문)
     로스터(시트)의 트레이너마다 덱 'mk_<tid>' 를 새로 만든다(같은 덱이 있으면 카드 · 장수만 고치고 손패 · 자원은 둔다). GM 만 */

@@ -123,7 +123,10 @@ window.OM_SKILL_UI=(()=>{
  const compCap=(tid,scene)=>scene==='solo'?0:scene==='field'?Math.max(1,+cfg().fieldMax||1):(qLv(trs()[tid],'통솔')>=3?2:1);
  /* → {ids, battle(배틀 에리어에서 자동), cap} */
  function compOf(tid,scene){if(scene==='solo')return {ids:[],battle:false,cap:0};const cap=compCap(tid,scene);const bf=scene==='field'?battleField(tid):null;if(bf)return {ids:bf,battle:true,cap};
-  const k=tsk(tid);return {ids:k.comp.filter(id=>mons()[id]&&mons()[id].tid===tid&&alive(mons()[id])&&twoOk(tid,id)).slice(0,cap),battle:false,cap}}
+  const k=tsk(tid);const ok=id=>mons()[id]&&mons()[id].tid===tid&&alive(mons()[id])&&twoOk(tid,id);const L=k.comp.filter(ok).slice(0,cap);
+  /* 11-04 망령 (관사): 스킬 체크 동행을 따로 안 정했으면 던전 동행(walk) 중에서 고른다 — 대표 고르기에서 메이링 · 루시안이 「혼자 3%」로만 나오던 것 */
+  if(!L.length){const W=(((A().ST.state.roster||{}).trainers||{})[tid]||{}).walk;if(Array.isArray(W)){const wl=W.filter(ok);if(wl.length)return {ids:wl,battle:false,cap,walk:true}}}
+  return {ids:L,battle:false,cap}}
  /* 동행 지정 (무대 바의 포켓몬 아이콘에서). 10-29 망령 「판정이 나왔을 때 멋대로 동행을 못 바꾸게」:
     GM 은 언제나 · 플레이어는 처음 지정(제시 대기 중 아닐 때)과 「교대 가능」 휴식 뒤(다음 제시까지)만 */
  const pendingFor=tid=>{const O=st().offer;if(!O||!(O.ids||[]).includes(tid))return false;{const rr=repRoller(O);if(rr&&rr!==tid)return false}const r=(st().res||{})[tid];return !(r&&r.offerId===O.id)};
@@ -179,6 +182,12 @@ window.OM_SKILL_UI=(()=>{
  function penHas(x){x=penNorm(x);return !!(+x.al>0||+x.oo>0||+x.oc>0||x.dmg||x.st||x.memo||Object.values(x.rk).some(v=>+v)||+x.pot.n>0)}
  function penTxt(x){x=penNorm(x);const t=[];if(+x.al>0)t.push('경계도 +'+x.al);if(x.dmg)t.push('대미지 '+x.dmg);if(x.st)t.push('「'+stKo(x.st)+'」'+(x.cnt&&+x.cnt>0?' '+x.cnt+'턴':''));RK.forEach(([k,n])=>{const v=+x.rk[k]||0;if(v)t.push(n+' '+(v>0?'+':'')+v)});if(+x.pot.n>0)t.push((x.pot.who==='pk'?'전용':'고유')+' 포텐셜'+(x.pot.name?' 『'+x.pot.name+'』':'')+' −'+x.pot.n);if(+x.oo>0)t.push('4식 −'+x.oo);if(+x.oc>0)t.push('6령 −'+x.oc);if(x.memo)t.push(x.memo);return t.join(' · ')}
  /* 실패한 판정에 묶음을 건다: 대미지 · 상태 · 랭크는 판정한 포켓몬(mid), 나머지는 트레이너 · 일행 */
+ /* 11-04 망령 「6령 4식 지불할 게 없으면 소지 1체 1/2 대미지로 하자」: 패널티 · 상태 단계로 4식 · 6령을 빼야 하는데 뺄 것이 없으면,
+    못 낸 개수만큼 그 트레이너의 소지 포켓몬 1체가 최대 HP 1/2 피해를 받는다 (판정한 포켓몬 → 동행 → 나머지 순, 되도록 다른 포켓몬) */
+ async function halfHit(tid,mid,k,lab){k=Math.max(0,+k||0);if(!k)return '';const T=trs()[tid]||{};const all=Object.values(mons()).filter(m=>m.tid===tid&&alive(m));if(!all.length)return `${lab} ${k}개를 낼 것도, 대신 받을 포켓몬도 없다`;
+  const W=(T.walk||[]),C=tsk(tid).comp||[];const ord=[mid,...C,...W,...all.slice().sort((a,b)=>(b.hp.cur||0)-(a.hp.cur||0)).map(m=>m.id)].filter((x,i,a)=>x&&a.indexOf(x)===i&&all.some(m=>m.id===x));const L=[];
+  for(let i=0;i<k;i++){const id=ord[i%ord.length];await putMon(id,(x,b)=>{const loss=frac(x.hp.max,'1/2');setHP(x,b,Math.max(0,HP(x,b)-loss));if(!b)L.push(`${x.name} HP −${loss}`)})}
+  return `${lab} ${k}개를 낼 것이 없어 대신 소지 포켓몬이 1/2 피해: ${L.join(' · ')}`}
  async function applyPenalty(tid,sub,why,mid){sub=penNorm(sub);const t=trs()[tid];if(!t||!penHas(sub))return '';const L=[];
   const monPart=!!(sub.dmg||sub.st||Object.values(sub.rk).some(v=>+v));
   if(monPart&&mid&&mons()[mid]){await putMon(mid,(x,b)=>{const nm=x.name;
@@ -193,7 +202,7 @@ window.OM_SKILL_UI=(()=>{
     if(ch)await A().set(['battle','mons',m.id,'potUses'],u)}
    L.push(done?`포텐셜 횟수 −${done}`:'포텐셜 횟수 차감할 것이 없다')}
   if(+sub.oo>0||+sub.oc>0){/* 판정한 트레이너 먼저, 모자라면 일행(탐색 중인 던전의 일행 → 휴대폰 파티)에서 */let mem=[tid];try{const DG=window.OM_DG_UI,PP=window.OM_PPOOL;const d=DG&&DG.cur&&DG.cur();const dp=d&&DG.party?DG.party(d):[];if(dp.includes(tid))mem=[tid,...dp.filter(x=>x!==tid)];else if(PP){const c=PP.codeOf(tid);if(c)mem=[tid,...PP.members(c,tid).filter(x=>x!==tid)]}}catch(e){}
-   for(const [pre,n0,lab] of [['order_',+sub.oo||0,'4식'],['command_',+sub.oc||0,'6령']]){if(n0<=0)continue;let n=n0;const got=[];for(const m of mem){if(n<=0)break;const c=await cutOrd(m,pre,n);if(c.n){n-=c.n;got.push(`${(trs()[m]||{}).name||m} −${c.n}`)}}L.push(got.length?`${lab} −${n0-n} (${got.join(' · ')})${n>0?` · ${n}개는 뺄 것이 없다`:''}`:`${lab} −${n0}: 일행에 남은 ${lab}이 없다`)}}
+   for(const [pre,n0,lab] of [['order_',+sub.oo||0,'4식'],['command_',+sub.oc||0,'6령']]){if(n0<=0)continue;let n=n0;const got=[];for(const m of mem){if(n<=0)break;const c=await cutOrd(m,pre,n);if(c.n){n-=c.n;got.push(`${(trs()[m]||{}).name||m} −${c.n}`)}}L.push(got.length?`${lab} −${n0-n} (${got.join(' · ')})`:`${lab} −${n0}: 일행에 남은 ${lab}이 없다`);if(n>0)L.push(await halfHit(tid,mid,n,lab))}}
   if(+sub.al>0){const DG=window.OM_DG_UI;let r='';try{r=DG&&DG.alAdd?await DG.alAdd(+sub.al,(why||'').split(' · ')[0]):''}catch(e){}L.push(r||`경계도 +${+sub.al} (던전 밖 — 적용 안 함)`)}
   if(sub.memo)L.push(sub.memo);
   const txt=`【패널티】 ${t.name} 『${why}』\n${L.join('\n')||'(적용할 것 없음)'}`;A().sysLog(txt,'battle',{});return txt}
@@ -205,18 +214,19 @@ window.OM_SKILL_UI=(()=>{
   out.n=out.keys.length;if(out.n)await A().set(inB?['battle','trainers',tid,'orderCount']:['roster','trainers',tid,'orderCount'],cnt);return out}
  async function refundOrd(c){if(!c||!c.n)return;const B=A().ST.state.battle||{};const src=c.inB?(B.trainers||{})[c.tid]:trs()[c.tid];if(!src)return;const cnt=Object.assign({},src.orderCount||{});for(const kk of c.keys)cnt[kk]=(+cnt[kk]||0)+1;await A().set(c.inB?['battle','trainers',c.tid,'orderCount']:['roster','trainers',c.tid,'orderCount'],cnt)}
  /* 한 단계 나빠진다 → {prev, now, cut, line} */
- async function stepUp(tid,why){const t=trs()[tid];const k=tsk(tid);const C=cfg();const prev=k.inj;if(prev>=3)return {prev,now:3,cut:null,line:`${t.name} 이미 「빈사」`};const now=prev+1;let cut=null;
+ async function stepUp(tid,why,mid){const t=trs()[tid];const k=tsk(tid);const C=cfg();const prev=k.inj;if(prev>=3)return {prev,now:3,cut:null,line:`${t.name} 이미 「빈사」`};const now=prev+1;let cut=null;
   if(now===1&&+C.injOc>0)cut=await cutOrd(tid,'command_',+C.injOc);if(now===2&&+C.injOo>0)cut=await cutOrd(tid,'order_',+C.injOo);
   await setT(tid,{inj:now});
   const pen=await penFor(tid,prev,now);
-  const cl=cut?(cut.n?` · ${cut.lab} −${cut.n}`:` · ${cut.lab} 뺄 것이 없다 (손으로)`):'';
+  let hh='';if(cut&&cut.n<cut.want)hh=await halfHit(tid,mid,cut.want-cut.n,cut.lab);
+  const cl=(cut&&cut.n?` · ${cut.lab} −${cut.n}`:'')+(hh?` · ${hh}`:'');
   return {prev,now,cut,pen,line:`${t.name} 「${STEP[prev]}」 → 「${STEP[now]}」${cl}${now===2?' · 모든 판정 불리':now===1?(tough(t)?' · 강인함':' · 모든 판정 −'+C.injPen):' · 이 장면에서 빠진다'} (${why})${pen.map(x=>'\n'+x.line).join('')}`}}
  /* 11-01 은열쇠 패널티 카드: 중상이 되면 상흔 카드, 빈사가 되면 광기 카드를 그 트레이너 덱에 섞는다 (덱 설정 「패널티 카드」가 켜진 덱만 · GM 화면) */
  async function penFor(tid,prev,now){const DK=window.OM_DECK_UI;const out=[];if(!DK||!DK.penalty||!gm())return out;try{   /* 11-01 21:58 망령: 부상 = 덱 맨 위 1장 · 중상 = 2장 버림 · 빈사 = 증상 카드 1장 */
    if(prev<1&&now>=1){const r=await DK.penalty(tid,'mill','부상',{n:1});if(r)out.push(r)}if(prev<2&&now>=2){const r=await DK.penalty(tid,'mill','중상',{n:2});if(r)out.push(r)}if(prev<3&&now>=3){const r=await DK.penalty(tid,'mad','빈사');if(r)out.push(r)}}catch(e){}return out}
  async function stepUndo(tid,s){if(!s)return;await setT(tid,{inj:s.prev});await refundOrd(s.cut);const DK=window.OM_DECK_UI;if(DK&&DK.penalty)for(const x of (s.pen||[]).slice().reverse())try{if(x&&x.milled&&x.milled.length)await DK.penalty(tid,'unmill','',{ids:x.milled});else if(x&&x.cid)await DK.penalty(tid,'undo','',{cid:x.cid})}catch(e){}}
  /* 실패 확정: 단계 + 패널티 묶음 (자동이면) */
- async function settleFail(tid,r){const O=r.offerId==='free'?null:st().offer;delete r.pend;if(r.offerId==='free'?+r.noStep:(O&&O.id===r.offerId&&O.noStep)){r.text+='\n상태 단계는 오르지 않는 체크';}else{const s=await stepUp(tid,(r.label||'스킬 체크')+' 실패');r.step=s;r.text+='\n'+s.line;A().sysLog(s.line,'dice')}
+ async function settleFail(tid,r){const O=r.offerId==='free'?null:st().offer;delete r.pend;if(r.offerId==='free'?+r.noStep:(O&&O.id===r.offerId&&O.noStep)){r.text+='\n상태 단계는 오르지 않는 체크';}else{const s=await stepUp(tid,(r.label||'스킬 체크')+' 실패',r.how==='mon'?r.mid:'');r.step=s;r.text+='\n'+s.line;A().sysLog(s.line,'dice')}
   if(O&&O.id===r.offerId&&O.pen&&O.pen.auto&&penHas(O.pen.fail)){await applyPenalty(tid,O.pen.fail,(O.label||'스킬 체크')+' · 실패',r.how==='mon'?r.mid:'');r.penDone=1}
   return r}
 

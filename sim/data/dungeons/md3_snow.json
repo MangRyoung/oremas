@@ -200,7 +200,7 @@
    "check": {
     "label": "눈 아래 먹이를 찾는다",
     "stat": "육성",
-    "target": 15,
+    "target": 12,
     "hint": "any",
     "pen": {
      "fail": {
@@ -223,9 +223,9 @@
     }
    },
    "desc": "바람이 닿지 않는 바위굴. 눈 아래를 파면 겨울 열매가 나온다.",
-   "memo": "바람이 닿지 않는 바위굴. 눈 아래를 파면 겨울 열매가 나온다.\nGM: 쉼터. 눈 아래 먹이 찾기(육성 15) — 어렵다. 실패해도 쉼은 된다.",
+   "memo": "바람이 닿지 않는 바위굴. 눈 아래를 파면 겨울 열매가 나온다.\nGM: 쉼터. 눈 아래 먹이 찾기(육성 12) — 어렵다. 실패해도 쉼은 된다.",
    "art": "a small shallow cave in a dark grey rocky cliff sheltered from the wind, snow only at the entrance, dry rock floor inside, a small crackling campfire with warm orange light, quiet and safe",
-   "gm": "쉼터. 눈 아래 먹이 찾기(육성 15) — 어렵다. 실패해도 쉼은 된다.",
+   "gm": "쉼터. 눈 아래 먹이 찾기(육성 12) — 어렵다. 실패해도 쉼은 된다.",
    "okText": "눈을 헤치자 겨울 열매가 소복이 나왔다. 포켓몬들이 반긴다.",
    "failText": "헛손질만 했다. 배고픈 포켓몬이 시무룩하다.",
    "img": "md3_snow/safe.webp"

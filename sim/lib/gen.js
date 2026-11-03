@@ -74,7 +74,7 @@ function make(tier,knobs,seed){const T=TIER[tier];if(!T)throw new Error('난이�
   const left=checks.length-ci,slots=k.battles-b;if(left>1&&(left>slots||ri(2))){const c=nextCheck();if(c)rooms.push({id:cid(),t:['puzzle','trap','room'][ri(3)],name:'방 '+ci,check:c})}}
  /* 10-27 저녁: 남은 체크는 휴식 방 앞에 둔다(마지막 하나는 휴식 방 안). 전엔 휴식 뒤에 남아 HP 패널티가 그대로 보스로 갔다 */
  while(checks.length-ci>1)rooms.push({id:cid(),t:['puzzle','trap','room'][ri(3)],name:'방 '+ci,check:nextCheck()});
- const restRoom={id:'safe',t:'safe',name:'쉼터'};if(k.rest&&k.rest!=='none')restRoom.rest=k.rest;const c2=nextCheck();if(c2)restRoom.check=c2;if(restRoom.rest||restRoom.check)rooms.push(restRoom);
+ const restRoom={id:'safe',t:'safe',name:'쉼터'};if(k.rest&&k.rest!=='none')restRoom.rest=k.rest;const c2=nextCheck();if(c2){if(+c2.target===15)c2.target=12;restRoom.check=c2}   /* 11-04 망령 「난이도 15는 육성형이 있는데도 그럼 문제가 조금」: 쉼터 체크(덤 · 실패 대가가 큼)는 매우 어려움(15)을 내지 않고 어려움(12)까지 */if(restRoom.rest||restRoom.check)rooms.push(restRoom);
  /* 11-02 망령 「어려움이 방이 많을 경우엔 회복 방을 2개 배치한다던가?」: knobs.rest2 = 본길 방이 그 수 이상이면 본길 가운데쯤에 쉼터(짧은 휴식) 하나 더 */
  if(+k.rest2>0&&rooms.length+1>=+k.rest2){const mid=Math.max(2,Math.floor(rooms.length/2));if(rooms[mid-1].t!=='safe'&&(!rooms[mid]||rooms[mid].t!=='safe'))rooms.splice(mid,0,{id:'safe2',t:'safe',name:'쉼터 2',rest:k.rest&&k.rest!=='none'?k.rest:'short'})}
  const bN=+k.bossN||T.bossN,rX=k.raid!=null&&k.raid!==''?+k.raid:T.raid;   /* 11-02: knobs.bossN · raid 로 보스방 수 · 레이드 바꾸기(실험 · 결정 뒤 기본값) */const esc=take(bN-1);rooms.push({id:'boss',t:'boss',name:'보스 · '+boss[2],enc:{mix:[SRC(boss)].concat(esc.map(SRC)),boss:true,bossAt:0,raid:rX,n:bN,lvAdd:k.bossLv}});

@@ -185,7 +185,7 @@
    "check": {
     "label": "용암 흐름을 읽는다",
     "stat": "지시",
-    "target": 15,
+    "target": 12,
     "hint": "any",
     "pen": {
      "fail": {
@@ -208,9 +208,9 @@
     }
    },
    "desc": "굳은 용암 관 속. 열기가 가라앉아 숨을 돌릴 수 있다.",
-   "memo": "굳은 용암 관 속. 열기가 가라앉아 숨을 돌릴 수 있다.\nGM: 쉼터. 용암 흐름 읽기(지시 15) — 어렵고, 실패하면 시간을 크게 잃는다.",
+   "memo": "굳은 용암 관 속. 열기가 가라앉아 숨을 돌릴 수 있다.\nGM: 쉼터. 용암 흐름 읽기(지시 12) — 어렵고, 실패하면 시간을 크게 잃는다.",
    "art": "inside a cooled old lava tube tunnel, smooth rounded dark rock walls, no lava, dry sandy floor, soft dim light from an opening far away, calm and warm, safe resting place",
-   "gm": "쉼터. 용암 흐름 읽기(지시 15) — 어렵고, 실패하면 시간을 크게 잃는다.",
+   "gm": "쉼터. 용암 흐름 읽기(지시 12) — 어렵고, 실패하면 시간을 크게 잃는다.",
    "okText": "굳은 표면의 결을 따라 식은 용암관 입구를 찾아냈다.",
    "failText": "갈림길에서 우왕좌왕하다 한참을 헤맸다.",
    "img": "md8_volc/safe.webp"

@@ -543,7 +543,7 @@ window.OM_DG_UI=(()=>{
  /* ---------- 야생 조우 → 배틀 (app.js encounter) · 돌아오기 ---------- */
  async function startEnc(d,rid0){if(!gm())return;const id=rid0||d.at,r=R(d)[id];const e=encOf(r);if(!e)return A().toast('이 방에는 야생 포켓몬을 두지 않았다 — 던전 관리에서 배치');if(!e.t)return A().toast('이 방의 야생 무리 트레이너가 시트에 없다');
   const L=party(d),walk={};L.forEach(t=>walk[t]=walkOf(t));
-  const ok=await A().encounter({left:L,right:[r.e],walk,dg:{did:d.id,rid:id},title:`${d.n||'던전'} · ${r.n||ty(r.t).k}`});}
+  const ok=await A().encounter({left:L,right:[r.e],walk,wn:WN(d),dg:{did:d.id,rid:id},title:`${d.n||'던전'} · ${r.n||ty(r.t).k}`});}
  {const st=document.createElement('style');st.textContent='.dgpt-two{font:inherit;font-size:11px;line-height:1;padding:3px 7px;margin:0 4px;border-radius:999px;border:1px solid currentColor;background:transparent;color:inherit;opacity:.65;cursor:pointer}.dgpt-two.on{opacity:1;font-weight:700;background:color-mix(in srgb,currentColor 14%,transparent)}.dgpt-two[disabled]{cursor:default}';document.head.appendChild(st)}
  /* 10-30: 일행 줄의 「6체 / 2체」 칩 — 줄을 누르면 열리는 동행 고르기보다 먼저 받는다 */
  document.addEventListener('click',async e=>{const b=e.target&&e.target.closest&&e.target.closest('[data-dgtwo]');if(!b)return;e.stopPropagation();e.preventDefault();const t=(RO().trainers||{})[b.dataset.dgtwo];if(t&&A().setTwo)await A().setTwo(t.id,!t.two)},true);
