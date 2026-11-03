@@ -41,6 +41,11 @@ const MSTYLE={
  E:'1.1::artist:kazuma kaneko ::, 0.5::artist:nishikujic ::, 0.6::artist:ciloranko ::, '+Q+'1.4::no humans, monster, creature, solo::, 1.2::dark fantasy, creature design, eldritch, unsettling::, painterly, dramatic lighting, 1.2::full body, centered, the whole creature inside the frame::, detailed background, ',
  /* F 괴수 원화 — 실사에 가까운 컨셉 아트 질감 */
  F:'0.6::artist:kazuma kaneko ::, 0.5::artist:ciloranko ::, '+Q+'1.4::no humans, monster, creature, solo::, 1.3::dark fantasy creature concept art, realistic, detailed texture, wet skin and bone, eldritch::, cinematic lighting, 1.2::full body, centered, the whole creature inside the frame::, detailed background, '};
+/* 11-03 20:20 망령 「인물이나 배경이랑 그림체 비슷한 느낌 나게 유지할 순 없어?」 — 인물(NPC 스탠딩) · 구역 그림과 같은 작가 9명 줄을 그대로 쓰고,
+   포켓몬 말만 빼는 갈래. G = 작가 줄 그대로(kimhiro 1.5 · kaneko 0.6), H = 같은 9명에 kimhiro 1.0 · kaneko 1.1 (괴물 쪽으로 살짝). */
+const ART=(kim,kan)=>`0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, ${kan}::artist:kazuma kaneko ::, 0.6::background:tsukushi akihito ::, 0.6::background:kuroimori ::, 0.6::background:yoshida akihiko ::, 0.8::artist:kankan33333 ::, ${kim}::artist:kimhiro ::, 1.1::artist:ciloranko ::, `+Q+'thick outlines, ::ultra complexity ::, ';
+const BODY='1.4::no humans, monster, creature, solo::, 1.2::dark fantasy, eldritch, unsettling::, 1.2::full body, centered, the whole creature inside the frame::, detailed background, ';
+MSTYLE.G=ART(1.5,0.6)+BODY;MSTYLE.H=ART(1.0,1.1)+BODY;
 const MNEG='-1.5::pokemon (creature), pokemon, fakemon, digimon, mascot, anime creature::, -1.2::cute, chibi, kawaii, round eyes, plush, cuddly, simple shading, flat color, thick outlines::, -1.5::frame, border, vignette, circle background, white background, card::';
 const MNEG_BASE='human, humanoid, 1girl, 1boy, multiple views, multiple creatures, text, caption, english text, trading card, card frame, border, watermark, signature, logo, cropped, out of frame, lowres, worst quality, gore';
 /* 태그에서 포켓몬 말 걷기 */
