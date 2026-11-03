@@ -112,7 +112,9 @@ window.OM_DG_GIM=(()=>{
  function mqInject(t,did){const L=mqFor(did);if(!L.length)return 0;t.unique=Array.isArray(t.unique)?t.unique.filter(u=>!(u&&u.mq)):[];for(const p of L){const u={name:p.name,eff:p.eff,mq:1};if(p.auto)u.auto=p.auto;t.unique.push(u)}return L.length}
 
  /* ---------- 편집 창 ---------- */
- const E={did:'',tab:'gim',gim:[],mq:[],open:-1,dirty:false};
+ const E={did:'',tab:'gim',gim:[],mq:[],depth:'',open:-1,dirty:false};
+ /* 룰북 「야생 · 레이드」 심도별 능력: 심도 3 = 미궁 1 · 야생 3(상시 1) / 심도 4 = 미궁 2 · 야생 6(상시 3). 상시 = 【N/시】 가 없는 것(감우 읽기) */
+ const DEPTH={3:{mq:1,wp:3,on:1},4:{mq:2,wp:6,on:3}};const isOn=x=>!/【\s*\d+\s*\/\s*시\s*】/.test(String((x&&x.eff)||''));
  const dOf=()=>((ST().dg||{}).list||{})[E.did];
  const roomsOf=d=>Object.entries((d&&d.r)||{}).map(([id,r])=>({id,n:r.n||id,t:r.t}));
  const TYK=()=>{const T=(DGU()&&DGU().TY)||{};return Object.entries(T).map(([k,v])=>[k,v.k||k])};
@@ -139,6 +141,11 @@ window.OM_DG_GIM=(()=>{
    <datalist id="gmFlags">${fls.map(f=>`<option value="${H(f)}">`).join('')}</datalist></div>`}
  function mqCard(p,i){return `<div class="gmk mq" data-mi="${i}"><div class="gmk-g2"><label>이름<input type="text" data-mf="name" value="${H(p.name)}" maxlength="30" placeholder="예: 이계의 숨결"></label><span class="gmk-ac" style="align-self:end"><button class="btn xs ${p.auto?'pri':''}" data-ma="auto" title="효과 엔진 구문">${p.auto?'⚙ 자동화 있음':'⚙ 자동화'}</button><button class="btn xs ghost" data-ma="up">▲</button><button class="btn xs ghost" data-ma="dn">▼</button><button class="btn xs ghost gmk-del" data-ma="del">✕</button></span></div>
    <label class="gmk-lab">효과 <small>(【N/시】【선행】 같은 태그 그대로 — 고유 포텐셜과 같은 글)</small><textarea data-mf="eff" rows="3" placeholder="예: 【2/시】【선행】/이번 턴 아군 전체의 스피드를 강화(1.5배)한다.">${H(p.eff)}</textarea></label></div>`}
+ function depthHTML(d){const L=DEPTH[E.depth];const RO=ST().roster||{},T=RO.trainers||{},M=RO.mons||{};const rows=[];
+  for(const [rid,r] of Object.entries((d&&d.r)||{})){const t=r.e&&T[r.e];if(!t)continue;const ex=(t.pids||[]).flatMap(id=>{const m=M[id]||{};return [m.excl,...(m.exclX||[])].filter(x=>x&&x.name)});const on=ex.filter(isOn).length;const bad=L&&(ex.length>L.wp||on>L.on);rows.push(`<tr class="${bad?'warn':''}"><td>${H(r.n||rid)}</td><td>${H(t.name||r.e)}</td><td class="n">${ex.length}${L?' / '+L.wp:''}</td><td class="n">${on}${L?' / '+L.on:''}</td></tr>`)}
+  const mqBad=L&&E.mq.length>L.mq;
+  return `<div class="gmk-depth"><label>심도 ${sel('data-gdep',[['','정하지 않음'],['3','심도 3 — 미궁 1 · 야생 3 (상시 1)'],['4','심도 4 — 미궁 2 · 야생 6 (상시 3)']],E.depth)}</label><span class="small ${mqBad?'warn':'dim'}">미궁 포텐셜 <b>${E.mq.length}</b>${L?' / '+L.mq:''}${mqBad?' — 넘었다':''}</span></div>
+   ${rows.length?`<table class="gmk-tb"><tr><th>방</th><th>야생 시트</th><th>야생 포텐셜</th><th>상시</th></tr>${rows.join('')}</table><p class="dg-help" style="margin:4px 0 0">야생 포텐셜 = 그 방 야생 포켓몬들의 전용(커스텀) 합 · 상시 = 【N/시】 가 없는 것. 고치는 곳은 시트 탭의 그 야생 트레이너.</p>`:'<p class="dim small">야생 시트가 놓인 방이 없다.</p>'}`}
  function logHTML(){const L=logOf(E.did).slice().reverse();if(!L.length)return '<p class="dim small">아직 걸린 기믹이 없다.</p>';
   return L.map((e,i)=>`<div class="gmk-log"><div class="row" style="gap:8px;align-items:center"><b>${(e.names||[]).map(n=>'『'+H(n)+'』').join(' ')}</b><small class="dim">${H((ONM[e.on]||[0,e.on])[1])} · ${new Date(e.at).toLocaleString('ko-KR',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</small><span class="sp"></span>${i===0?'<button class="btn xs" data-gundo>↶ 되돌리기</button>':''}</div><pre>${H((e.lines||[]).join('\n'))}</pre></div>`).join('')+'<p class="dg-help">되돌리기는 가장 최근 것부터 하나씩 — 그때 바뀐 상태 단계 · 4식 6령 · 은열쇠 덱 · 동행 HP · 경계도 · 표식을 전 값으로 돌린다.</p>'}
  function html(){const d=dOf();if(!d)return '<p>던전이 없다</p>';const nG=E.gim.length,nM=E.mq.length,nL=logOf(E.did).length;
@@ -147,7 +154,7 @@ window.OM_DG_GIM=(()=>{
   if(E.tab==='gim')body=`<p class="dg-help" style="margin:0 0 8px">탐사 중(방 · 휴식 · 체크 · 조우)에 저절로 걸리는 던전 규칙. 카드를 눌러 펼쳐 고친다. 끄기 스위치로 잠깐 멈출 수 있다.</p><div class="gmk-list">${E.gim.map((g,i)=>gimCard(g,i,d)).join('')||'<p class="dim small">기믹이 없다.</p>'}</div>
    <div class="row" style="gap:6px;margin-top:8px"><select data-gnew>${TPL.map((t,i)=>`<option value="${i}">${H(t[0])}</option>`).join('')}</select><button class="btn sm" data-gadd>＋ 기믹 더하기</button></div>`;
   else if(E.tab==='mq')body=`<p class="dg-help" style="margin:0 0 8px">『미궁 포텐셜』 = 던전 배틀 안에서 쓰는 야생 쪽 <b>고유</b>. 이 던전의 조우마다 그 방 야생 트레이너의 고유로 붙어서, 배틀 「포텐셜 발동」 · 자동화가 고유와 똑같이 돈다. 룰북: 심도 3 = 1개 · 심도 4 = 2개. 『야생 포텐셜』(전용)은 시트에서 야생 포켓몬의 「전용 포텐셜」로.</p>
-   <div class="gmk-list">${E.mq.map(mqCard).join('')||'<p class="dim small">미궁 포텐셜이 없다.</p>'}</div><button class="btn sm" data-madd style="margin-top:8px">＋ 미궁 포텐셜 더하기</button>`;
+   ${depthHTML(d)}<div class="gmk-list" style="margin-top:10px">${E.mq.map(mqCard).join('')||'<p class="dim small">미궁 포텐셜이 없다.</p>'}</div><button class="btn sm" data-madd style="margin-top:8px">＋ 미궁 포텐셜 더하기</button>`;
   else if(E.tab==='log')body=logHTML();
   else body=`<p class="dg-help" style="margin:0 0 6px">고급 — 기믹(gim) · 미궁 포텐셜(mq)을 JSON 으로 한꺼번에. 「JSON 적용」을 누르면 위 칸들에 들어간다(저장은 따로).</p><textarea data-gjson rows="14" style="width:100%;font:12px/1.4 var(--mono,monospace)">${H(JSON.stringify({gim:E.gim,mq:E.mq},null,1))}</textarea><div class="row" style="gap:6px;margin-top:6px"><button class="btn sm" data-gjapply>JSON 적용</button></div>`;
   return `<div class="mhead"><h2>⛰ ${H(d.n||'던전')} — 기믹 · 미궁 포텐셜</h2><span class="sp"></span><button class="btn ghost" data-gx>닫기</button></div>
@@ -186,12 +193,13 @@ window.OM_DG_GIM=(()=>{
     else if(a==='up'&&i>0){[E.mq[i-1],E.mq[i]]=[E.mq[i],E.mq[i-1]];mark();draw()}else if(a==='dn'&&i<E.mq.length-1){[E.mq[i+1],E.mq[i]]=[E.mq[i],E.mq[i+1]];mark();draw()}
     else if(a==='auto'){const FU=window.OM_FX_UI;if(!FU||!FU.openEditor)return A().toast('효과 엔진 편집기를 아직 못 불러왔다');if(!p.name)return A().toast('이름을 먼저 적어 줘');const snapE=clone({gim:E.gim,mq:E.mq,tab:E.tab,dirty:E.dirty});
      FU.openEditor({mon:{name:(dOf()||{}).n||'미궁',auto:p.auto?{[p.name]:p.auto}:{},tid:''},kind:'pot',name:p.name,text:p.eff||'',save:async auto=>{const d=dOf();Object.assign(E,{gim:snapE.gim,mq:snapE.mq,tab:'mq',dirty:true});if(auto)E.mq[i].auto=auto;else delete E.mq[i].auto;open(E.did,true);A().toast(auto?'구문을 넣었다 — 「저장」을 눌러야 던전에 남는다':'구문을 뺐다')}})}})});
+  const dp=m.querySelector('[data-gdep]');if(dp)dp.onchange=()=>{E.depth=dp.value;mark();draw()};
   const ma=m.querySelector('[data-madd]');if(ma)ma.onclick=()=>{E.mq.push({name:'',eff:''});mark();draw()};
   /* 기록 · JSON */
   const gu=m.querySelector('[data-gundo]');if(gu)gu.onclick=async()=>{if(!confirm('가장 최근 기믹을 되돌릴까? (그때 바뀐 상태 단계 · 4식 6령 · HP · 경계도 · 표식)'))return;await undoLast(E.did);setTimeout(draw,400)};
   const gj=m.querySelector('[data-gjapply]');if(gj)gj.onclick=()=>{let o;try{o=JSON.parse(m.querySelector('[data-gjson]').value)}catch(e){return A().toast('JSON 을 읽지 못했다: '+e.message)}E.gim=norm(Array.isArray(o)?o:o.gim||[]);if(!Array.isArray(o))E.mq=mqNorm(o.mq||[]);mark();A().toast(`기믹 ${E.gim.length} · 미궁 포텐셜 ${E.mq.length} 을 칸에 넣었다 — 「저장」`);E.tab='gim';draw()}}
- function load(did){const d=((ST().dg||{}).list||{})[did]||{};E.did=did;E.gim=norm(d.gim);E.mq=mqNorm(d.mq);E.dirty=false}
+ function load(did){const d=((ST().dg||{}).list||{})[did]||{};E.did=did;E.gim=norm(d.gim);E.mq=mqNorm(d.mq);E.depth=DEPTH[d.depth]?String(d.depth):'';E.dirty=false}
  async function save(){const d=dOf();if(!d)return;const G=norm(E.gim),M=mqNorm(E.mq);const bad=E.mq.filter(p=>!(p.name||'').trim()).length;
-  const ok=await DGU().dgUpd({['list/'+E.did+'/gim']:G.length?G:null,['list/'+E.did+'/mq']:M.length?M:null});if(!ok)return;E.gim=G;E.mq=M;E.dirty=false;A().toast(`저장 — 기믹 ${G.length} · 미궁 포텐셜 ${M.length}${bad?` (이름 없는 ${bad}개는 뺐다)`:''}`);draw()}
+  const ok=await DGU().dgUpd({['list/'+E.did+'/gim']:G.length?G:null,['list/'+E.did+'/mq']:M.length?M:null,['list/'+E.did+'/depth']:DEPTH[E.depth]?+E.depth:null});if(!ok)return;E.gim=G;E.mq=M;E.dirty=false;A().toast(`저장 — 기믹 ${G.length} · 미궁 포텐셜 ${M.length}${bad?` (이름 없는 ${bad}개는 뺐다)`:''}`);draw()}
  function open(did,keep){if(!keep)load(did);else E.did=did;if(!keep){E.tab='gim';E.open=-1}MD=A().openModal(html());MD.classList.add('gmk-modal');bind()}
  return {norm,mqNorm,run,undoLast,logOf,mqInject,mqFor,open,sumTxt,ON,FX,TPL}})();
