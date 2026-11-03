@@ -105,7 +105,7 @@ const MCLIP={여우:['호'],늑대:['랑'],고양이:['묘'],곰:['웅'],매:['�
 const MEND={C:['르','스','크','드','그','트','른','브','로','라'],B:['로스','라크','고르','렌','투스','마르','락','디스','로크','반'],A:['고스','아스','네스','로크','투르','모르','라스','디온','가르','에스']};
 const MDRAGON=['곤','드라','니르'];
 /* 낱말로 읽히면 뺀다 (11-03 시험에서 나온 것 — 잔소리 등) */
-const WORDS=new Set(['잔소리','무소리','도마뱀','해파리','소라게','개구리','두꺼비','허수','공수','회충','독사','토사','흑사','백사','해충','익충','화사','진사','묘사','토끼','오리','망사','환수','몽사','공사','회사','동사','석사','철사','강사','명사','귀수','야수','요수','동충','풍조','길조','흉조']);
+const WORDS=new Set(['잔소리','무소리','도마뱀','해파리','소라게','개구리','두꺼비','허수','공수','회충','독사','토사','흑사','백사','해충','익충','화사','진사','묘사','토끼','오리','망사','환수','몽사','공사','회사','동사','석사','철사','강사','명사','귀수','야수','요수','동충','풍조','길조','흉조','해달','해마','도오']);
 const CUTE=/(깡|링|냥|츄|꼬|뽀|퐁|폼|콩|몽실|보송|토실|방긋|솜|리본|뿌직|꼬물|붕붕|댕|멍|고미|메에|부기|쪽|미$|코$|롱$|이$|니$|키$)/;
 /* 두 결을 섞지 않는다(11-03 시험: 「마르뱀 · 몽호크 · 잔소리」처럼 라틴 뿌리 + 한자 조각이 어색) —
    ① 라틴 결: 라틴 · 신화 뿌리(2음절) + 영어 · 라틴 조각 + 끝(등급)     예) 녹스루프 · 아비스크라켄 · 에테랜턴
@@ -116,19 +116,40 @@ const KIND_OF={수탉:'조',올빼미:'조',매:'조',까마귀:'조',갈매기:
  불나방:'충',나방:'충',사마귀:'충',반딧불:'충',딱정벌레:'충',거미:'충',벌:'충',매미:'충',잠자리:'충',개미:'충',지네:'충',전갈:'충',나비:'충',지렁이:'충',
  뱀:'사',도마뱀:'사',살라만더:'사',악어:'사',거북:'귀',개구리:'와',두꺼비:'와',
  등불:'귀',인형:'귀',가면:'귀',촛불:'귀',항아리:'귀',거울:'귀',열쇠:'귀',갑옷:'귀',톱니:'귀',종:'귀',골렘:'귀'};
-function mCands(rng,ty,clips,ends,g,clipsEn,beast){const out=[];for(let i=0;i<140;i++){const t=pick(rng,ty);const R=MROOT[t];const H=R.filter(isH),L=R.filter(w=>!isH(w));const x=rng();
+/* ===== 11-03 20:42 v4 — 망령 「앞머리 겹침도 개선해 · 이름 생성 로직 훨씬 더 랜덤성이나 복잡하게」 =====
+   v3 는 「타입 뿌리 + 동물 조각 + 끝」 한 꼴뿐이라 같은 타입이면 앞머리가 겹쳤다(74종 중 13묶음: 머스몰 · 머스헬릭 …).
+   ① 뿌리를 타입마다 늘림(MROOT2) + 타입과 상관없는 외신 · 변이 조각(MYTH)
+   ② 꼴을 여럿: 뿌리+조각(+끝) · 조각+뿌리끝 · 외신+조각 · 뿌리 첫 음절+조각+끝 · 뿌리+외신(조각 없음, B/A) · 요괴 결(한자)
+   ③ 이미 쓴 이름과 앞 두 음절 · 뒤 두 음절이 겹치면 크게 깎는다 → 한 번에 고르는 게 아니라 쓴 것을 보며 고른다. */
+const MROOT2={노말:['칼로','베스','오렌','수르','이벤','파르'],불꽃:['플레게','소른','카타','에스트','이그니','바르칸'],물:['탈라','네르','글라우','벤토','오케','펠라'],
+ 전기:['갈바','키르','페르','엘렉','라디','볼타'],풀:['실바','라민','텐드','바실','호르','미르'],얼음:['킬레','니브','시베','하일','스카디','펠스'],격투:['마카','크라토','베르','도르','아르케','팔레'],
+ 독:['비리','아코','키마','라테','스토르','모르보'],땅:['키토','루테','발로','크론','호루','텔루'],비행:['아우라','제피','키르로','알라','펜나','노토'],에스퍼:['소미','프시','노우','이도','칼시','메모'],
+ 벌레:['키노','포르마','롤리','이소','베스파','아라'],바위:['페트로','카스트','오르테','라테르','스칼','바스'],고스트:['마네','레무','팔리','오르쿠','시아','노크'],드래곤:['드레크','타라','파프','라돈','비벨','오로'],
+ 악:['우르','스코르','네파','카코','둠브','에레보'],강철:['칼리브','페로','스타노','몰리','크롬','플룸'],페어리:['파타','실프','오리엘','네리','글리마','팍스']};
+const MYTH=['아자','니아','크솔','이드','요스','샤그','투엘','보르','엘드','운가','카르코','야그','오르스','셀레','하스','바엘','지르','네브','모르그','이테','쿠아','레기','오쿨','스틱'];
+const head=n=>[...n].slice(0,2).join(''),tail=n=>[...n].slice(-2).join('');
+function mCands(rng,ty,clips,ends,g,clipsEn,beast){const out=[];for(let i=0;i<320;i++){const t=pick(rng,ty);const R=MROOT[t].concat(MROOT2[t]||[]);const H=R.filter(isH),L=R.filter(w=>!isH(w));const x=rng();
   const hanja=g!=='A'&&clips.some(isH)&&rng()<0.2;
-  if(hanja){const r=pick(rng,H),c=pick(rng,clips.filter(isH));let k=KIND_OF[beast]||pick(rng,['수','수','요','마']);if(ty.includes('고스트')&&/[수요마]/.test(k))k=rng()<0.6?'귀':'령';if(k===c||k===r)continue;out.push(r+c+k)}
-  else{if(!clipsEn.length)continue;const r=pick(rng,L),c=pick(rng,clipsEn),e=pick(rng,ends);const n0=r+c;const Ln=hangul(n0);
-   const bt=hasBat(c);   /* 받침으로 끝난 조각(캣 · 셸 · 램) 뒤에 끝을 또 붙이면 「캣에스 · 램드」처럼 덜컥거린다 */
-   if(g==='A')out.push(Ln>=5||(Ln>=4&&x<0.3)||(bt&&Ln>=3)?n0:n0+e);else if(g==='B')out.push(Ln>=4||(bt&&Ln>=3)?n0:n0+e);else out.push(Ln>=3?n0:n0+e.slice(-1))}}return out}
-function mScore(n,g,r){const L=hangul(n);let s=0;if(g==='A')s+=L===4?2:L===5?1.5:L===3?0.5:-3;else if(g==='B')s+=L===4?2:L===3?1.5:L===5?0:-3;else s+=L===3||L===4?2:-3;
- if(CUTE.test(n))s-=4;if(/수$/.test(n))s-=0.7;if(/(스|르)(스|르)$/.test(n))s-=1;s+=r()*1.5;return s}
+  if(hanja){const r=pick(rng,H),c=pick(rng,clips.filter(isH));let k=KIND_OF[beast]||pick(rng,['수','수','요','마']);if(ty.includes('고스트')&&/[수요마]/.test(k))k=rng()<0.6?'귀':'령';if(k===c||k===r)continue;out.push(r+c+k);continue}
+  if(!clipsEn.length)continue;const r=pick(rng,L),c=pick(rng,clipsEn),e=pick(rng,ends),m=pick(rng,MYTH);const bt=hasBat(c);const y=rng();
+  const fin=n0=>{const Ln=hangul(n0);if(g==='A')return Ln>=5||(Ln>=4&&x<0.3)||(bt&&Ln>=3)?n0:n0+e;if(g==='B')return Ln>=4||(bt&&Ln>=3)?n0:n0+e;return Ln>=3?n0:bt?'':n0+e.slice(-1)};   /* 받침 조각 뒤 한 음절 끝(볼캣브)은 안 만든다 */
+  if(y<0.38)out.push(fin(r+c));                                   /* 뿌리 + 조각        녹스루프 · 필로헬릭 */
+  else if(y<0.52){const rt=[...r].slice(-1)[0];if(!(hasBat(rt)||rt==="스")||hangul(c)<2)continue;out.push(fin(c+rt))}   /* 조각 + 뿌리 끝(받침 · 센소리만)  모스칸 · 셸론 — 「리자루 · 불프모」 같은 건 뺌 */
+  else if(y<0.70)out.push(fin(m+c));                              /* 외신 + 조각        니아폭스 · 크솔몰 */
+  else if(y<0.86){const r1=[...r][0];if(!hasBat(r1))continue;out.push(fin(r1+c))}   /* 뿌리 첫 음절(받침 있는 것만) + 조각  녹펠리 · 칼울프 — 「에캣드 · 미램프」 뺌 */
+  else if(g!=='C'){const n0=r+m;out.push(hangul(n0)>=4?n0:n0+e)}   /* 뿌리 + 외신 (B/A)   녹스엘드 · 마레샤그 */
+  else out.push(fin(r+c))}return out.filter(Boolean)}
+function mScore(n,g,r,used){const L=hangul(n);let s=0;if(g==='A')s+=L===4?2:L===5?1.5:L===3?0.5:-3;else if(g==='B')s+=L===4?2:L===3?1.5:L===5?0:-3;else s+=L===3||L===4?2:-3;
+ if(CUTE.test(n))s-=4;if(/수$/.test(n))s-=0.7;if(/(스|르)(스|르)$/.test(n))s-=1;
+ if(/^(스네일|스파이|배트|베어|캣|램|몰|오터|하이엔)/.test(n))s-=1.5;   /* 영어 낱말이 머리에 오면 「베어라 · 배트모」처럼 읽힘 */
+ if(used){const h=head(n),t=tail(n);let hh=0,tt=0;for(const u of used){if(head(u)===h)hh++;if(tail(u)===t)tt++}s-=hh*3+tt*1.5}
+ s+=r()*2.5;return s}
 function nameM(rng,o){const ty=(o.types||[]).filter(t=>MROOT[t]);if(!ty.length)ty.push('노말');const beast=o.beast||'';const clips=MCLIP[beast]||[];const clipsEn=MCLIP_EN[beast]||[];
  const g=o.grade==='A'?'A':o.grade==='B'?'B':'C';const ends=ty.includes('드래곤')&&g!=='C'?MEND[g].concat(MDRAGON):MEND[g];
  const C=[...new Set(mCands(rng,ty,clips,ends,g,clipsEn,beast))].filter(n=>ok(n,Object.assign({},o,{grade:'A'}))&&!/(.).*\1/.test(n)&&!WORDS.has(n));   /* 같은 음절이 어디든 두 번(사뱀사)이면 뺀다 */
- if(C.length){C.sort((a,b)=>mScore(b,g,rng)-mScore(a,g,rng));o.used.add(C[0]);return C[0]}
- let k=2,n;do n=pick(rng,MROOT[ty[0]])+(clipsEn[0]||clips[0]||'')+k++;while(o.used.has(n));o.used.add(n);return n}
+ const mine=o.mine||(o.mine=new Set());   /* 이번 묶음에서 새로 지은 이름만 겹침 검사(실제 포켓몬 이름까지 보면 너무 좁아짐) */
+ if(C.length){const sc=new Map(C.map(n=>[n,mScore(n,g,rng,mine)]));C.sort((a,b)=>sc.get(b)-sc.get(a));o.used.add(C[0]);mine.add(C[0]);return C[0]}
+ let k=2,n;do n=pick(rng,MROOT[ty[0]])+(clipsEn[0]||clips[0]||'')+k++;while(o.used.has(n));o.used.add(n);mine.add(n);return n}
 /* 실제 포켓몬 한국어 이름 (제작기 data/db.js 의 old) — 겹치지 않게 */
 function realNames(){try{global.window=global.window||global;const p=require('path').join(__dirname,'..','..','..','mangketmon-maker','data','db.js');if(!global.MKM_DB)(0,eval)(require('fs').readFileSync(p,'utf8'));return new Set((global.MKM_DB.old||[]).map(r=>String(r[1]).replace(/\s.*$/,'')))}catch(e){return new Set()}}
-module.exports={ROOT,ROOT_EN,CLIP,CLIP_EN,END,MROOT,MCLIP,MCLIP_EN,MEND,name,nameM,rootOf,realNames};
+module.exports={ROOT,ROOT_EN,CLIP,CLIP_EN,END,MROOT,MROOT2,MYTH,MCLIP,MCLIP_EN,MEND,name,nameM,rootOf,realNames};
