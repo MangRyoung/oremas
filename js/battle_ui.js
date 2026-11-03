@@ -1922,7 +1922,7 @@ window.OM_BATTLE_UI=(()=>{
   const roll=p=>FX().rollP?FX().rollP(m,p,adj):(()=>{const r=Math.floor(Math.random()*100)+1;return {ok:r<=p,r,p,adj:''}})();
   if(ch&&(ch<100||Object.keys(adj).length||((m.fx||{}).chance||[]).length)){const rr=roll(ch);if(!rr.ok){A().sysLog(`【${KN}】 ${m.name} 『${name}』\n${rr.p}% 판정 실패 (${rr.r}/${rr.p})${rr.adj} — 발동하지 않았다`,'battle',{mid:m.id,img:m.image||''});return false}L.push(`${rr.p}% 판정 성공 (${rr.r}/${rr.p})${rr.adj}`)}
   if(tm.percent&&!opt.noRoll&&!pExp){const rr=roll(FX().percentOf(tm.percent));if(!rr.ok){A().sysLog(`【${KN}】 ${m.name} 『${name}』\n${tm.percent} 판정 실패 (${rr.r}/${rr.p})${rr.adj} — 발동하지 않았다`,'battle',{mid:m.id,img:m.image||''});return false}L.push(`${tm.percent} 판정 성공 (${rr.r}/${rr.p})${rr.adj}`)}
-  /* 「필드 위에 있는 한」 · 「필드에 있는 동안」: 이 효과가 바꾼 것은 쓴 포켓몬이 필드를 떠나면 되돌린다 */const hold=FX().release&&/필드\s*(?:위)?에\s*있는\s*(?:한|동안)|나와\s*있는\s*(?:한|동안)/.test(etx)?{hold:1}:{};
+  /* 「필드 위에 있는 한」 · 「필드에 있는 동안」: 이 효과가 바꾼 것은 쓴 포켓몬이 필드를 떠나면 되돌린다 */const hold=Object.assign(FX().release&&(/필드\s*(?:위)?에\s*있는\s*(?:한|동안)|나와\s*있는\s*(?:한|동안)/.test(etx)||(opt.aura&&/【방호】/.test(etx)))?{hold:1}:{},/【유일】/.test(etx)?{uniq:1}:{});   /* 11-03 20:44 망령 「커맨더 · 옵저버」: 【방호】 아군 효과(opt.aura)도 「있는 한」처럼 · 【유일】 은 같은 이름 효과를 이미 받은 대상에겐 안 건다 */
   /* 10-26 망령: 트레이너 고유는 고른 포켓몬이 곧 대상 — 구문의 「아군 1체」는 「고른 포켓몬」으로 (예전엔 고른 포켓몬을 뺀 다른 아군에게 걸렸다) */
   /* 10-26 덱 시험: 카드의 「아군 1체」가 기준 포켓몬(자기 편 첫 포켓몬)을 빼고 물었다 — 트레이너가 쓰는 카드는 기준 포켓몬도 고를 수 있게 (ally1s) */
   const ops=opt.uq?JSON.parse(JSON.stringify(auto.ops).replace(/"tgt":"ally1"/g,'"tgt":"self"')):auto.src==='card'?JSON.parse(JSON.stringify(auto.ops).replace(/"tgt":"ally1"/g,'"tgt":"ally1s"')):auto.ops;
@@ -1968,6 +1968,12 @@ window.OM_BATTLE_UI=(()=>{
   if(EVENT_RE.test(first)||/\d할(?:로|의)|\d+%\s*(?:확률|로)/.test(first))return false;
   /* 고르는 대상(아군 1체 · 상대 1체 · 에리어)이 든 구문은 등장 때 묻게 되니 손으로 */
   return ops.every(o=>o&&PASSIVE_K.includes(o.k)&&!o.p&&!o.pl&&!['ally1','enemy1','area'].includes(o.tgt))}
+ /* 11-03 20:44 망령 「커맨더 · 옵저버 · 프렌드가드」: 【방호】(또는 「필드 위에 있는 한」) 줄이 아군 · 상대에게 거는 지속 효과인데, 다른 줄의 계기(【탈진】 …)나 「아군 1체」 대상 때문에 등장 때 안 걸리던 것.
+    그 줄에 계기 말이 없으면 등장 때 건다 — 「아군 1체」 → 자신 제외 아군 전체, 「상대 1체」 → 상대 전체. 필드에 있는 동안 새로 나온 포켓몬에게도(reAura), 떠나면 풀린다(release) */
+ function auraOf(a,etx){const ops=a&&a.ops;if(!ops||!ops.length||ops.some(o=>!o||o.k==='choice'||!PASSIVE_K.includes(o.k)||o.p||o.pl))return null;
+  if(!ops.some(o=>['ally1','enemy1','allyx','ally','enemy','others','all'].includes(o.tgt))||passiveOps(ops,etx))return null;
+  const cl=String(etx||'').split(/(?=[①②③④⑤])/).find(c=>/【방호】|필드\s*(?:위)?에\s*있는\s*(?:한|동안)/.test(c)&&/아군|상대|이외/.test(c)&&!EVENT_RE.test(c.replace(/【(?:방호|유일|수세)】/g,'')));
+  if(!cl)return null;return JSON.parse(JSON.stringify(ops).replace(/"tgt":"ally1"/g,'"tgt":"allyx"').replace(/"tgt":"enemy1"/g,'"tgt":"enemy"'))}
  /* 자기 등급 조건: 「공격 : B」 이하일 때 · 「방어 : C」 이하일 때 — 포켓몬 등급표(m.ranks: HP 공격 방어 특공 특방 스피드)를 본다 */
  const GR_IDX={HP:0,공격:1,방어:2,특공:3,특방:4,스피드:5};
  function gradeVal(g){g=String(g||'').trim();const base=S().strip?S().strip(g):g.replace(/[+-]$/,'');const i=(S().RANKS||['E','D','C','B','A','AA','AAA','S']).indexOf(base);if(i<0)return null;return i*3+(/\+$/.test(g)?1:/-$/.test(g)?-1:0)}
@@ -1995,6 +2001,7 @@ window.OM_BATTLE_UI=(()=>{
       「공격 : B」 이하일 때 같은 자기 등급 조건(천하장사 · 순수한힘 · 퍼코트 …)은 등급을 보고 맞으면 건다 */
    const gc=!tm.entry&&!tm.passive&&!tm.turnEnd?gradeCond(m,a.ops,etx2):null;
    if(gc){if(gc.ok){const cur=ctx().b.mons[mid];if(cur&&(cur.fxDone||{})[name])continue;if(await fireAuto(mid,kind,name,{quiet:true,noRoll:true,auto:{ops:gc.ops,text:a.text}})){const d=Object.assign({},(ctx().b.mons[mid]||{}).fxDone||{});d[name]=1;await A().set(['battle','mons',mid,'fxDone'],d)}}continue}
+   {const au=!tm.entry?auraOf(a,etx2):null;if(au){const cur=ctx().b.mons[mid];if(cur&&(cur.fxDone||{})[name])continue;if(await fireAuto(mid,kind,name,{quiet:true,noRoll:true,aura:1,auto:{ops:au,text:etx2}})){const d=Object.assign({},(ctx().b.mons[mid]||{}).fxDone||{});d[name]=1;await A().set(['battle','mons',mid,'fxDone'],d)}continue}}
    /* 줄마다 고르는 효과(선택:)에서 늘 켜져 있어야 할 줄만 (하이 블로커 ① 방호수세 …): 계기 말이 없는 지속형 줄을 등장 때 건다 */
    if(!tm.entry&&a.ops.length===1&&a.ops[0].k==='choice'){const po=(a.ops[0].opts||[]).filter(o=>o&&o.label&&/^[\s-]*[①②③④⑤]/.test(o.label)&&!/조건|등장|턴 종료|함성|보급|선행|사전|교대|빈사|받았을|했을|\d할/.test(o.label)&&passiveOps(o.ops,''));
     if(po.length){const cur=ctx().b.mons[mid];if(cur&&(cur.fxDone||{})[name])continue;if(await fireAuto(mid,kind,name,{quiet:true,noRoll:true,auto:{ops:po.flatMap(o=>o.ops),text:a.text}})){const d=Object.assign({},(ctx().b.mons[mid]||{}).fxDone||{});d[name]=1;await A().set(['battle','mons',mid,'fxDone'],d)}}continue}
