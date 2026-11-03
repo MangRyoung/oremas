@@ -20,6 +20,14 @@ const isMineLog=r=>{const d=(r&&r.data)||{};return d.from===(ST.role==='gm'?'gm'
 let titleT=null;function flashTitle(msg){if(!document.hidden)return;const base=document.title.replace(/^\(.*?\) /,'');document.title=`(${msg}) ${base}`;clearTimeout(titleT);const back=()=>{document.title=base;document.removeEventListener('visibilitychange',back)};document.addEventListener('visibilitychange',back);titleT=setTimeout(back,60000)}
 function notifyLog(r){if(!r||r.kind!=='chat'||!r.data||r.data.sms||!(r.data.t))return;if(isMineLog(r))return;if(r.at&&Date.now()-new Date(r.at).getTime()>15000)return;if(!alarm().chat)return;try{if(window.OM_PREFS)window.OM_PREFS.notify('chat');else if(window.OM_RP_UI)window.OM_RP_UI.playSe('Ping',true)}catch(e){}flashTitle('새 메시지')}   /* 부드러운 알림음 · 화면을 보고 있으면 울리지 않는다 (내 설정) */
 let toastT=null;function toast(m){if(window.OM_REPORT_UI)window.OM_REPORT_UI.note('toast',m);const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2400)}
+/* 11-03 망령 「첫 로딩 줄이기」: 창을 열 때만 쓰는 모듈(튜토리얼 · 관계도 · 던전 · 전당 · 휴대폰 · 게시판 · 둘러보기 · 그림 줄이기)은 index.html 의 OM_LAZY 표를 보고 그때 불러온다.
+   ensure('guide') 처럼 쓴다 — 이미 있으면 바로, 없으면 <script> 를 붙이고 기다린다. 실패하면 토스트 + 다시 시도할 수 있게 기억을 지운다 */
+const LAZYG={guide:'OM_GUIDE_UI',graph:'OM_GRAPH_UI',dungeon:'OM_DG_UI',hall:'OM_HALL_UI',phone:'OM_PHONE_UI',bbs:'OM_BBS_UI',tour:'OM_TOUR',slim:'OM_SLIM'};
+const LAZYP={};
+function loadScript(src){return LAZYP[src]||(LAZYP[src]=new Promise((ok,no)=>{const s=document.createElement('script');s.src=src;s.onload=()=>ok(true);s.onerror=()=>{delete LAZYP[src];no(new Error('파일을 불러오지 못했다: '+src.split('?')[0]))};document.head.appendChild(s)}))}
+function loadCss(href){return LAZYP[href]||(LAZYP[href]=new Promise(ok=>{const l=document.createElement('link');l.rel='stylesheet';l.href=href;l.onload=l.onerror=()=>ok(true);document.head.appendChild(l)}))}
+async function ensure(k){const g=LAZYG[k];if(g&&window[g])return window[g];const L=window.OM_LAZY||{};const src=L[k];if(!src){if(g&&window[g])return window[g];throw new Error('모르는 모듈: '+k)}
+ try{if(L[k+'_css'])await loadCss(L[k+'_css']);await loadScript(src)}catch(e){toast(e.message+' — 다시 눌러 봐');throw e}return g?window[g]:true}
 function fmtTime(s){const d=new Date(s);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')}
 function contactOf(mv){const c=mv&&mv.contact;if(c==='O'||c==='X')return c;const d=((window.OM_DB||{}).moves||{})[mv&&mv.name];return d&&d.contact||'-'}
 function typeChip(en){const c=S().typeColor(en);return `<span class="type" style="background:${c.bg};color:${c.fg}">${esc(S().typeKo(en))}</span>`}
@@ -238,7 +246,7 @@ async function openAdmin(keepDraft){
  const aa=$('#admAdm',m);if(aa)aa.onchange=()=>run(()=>DBS().acct.adminUser(t,u.uid,{admin:aa.checked}),aa.checked?`${u.name} 에게 관리자를 줬다`:`${u.name} 의 관리자를 뺐다`);
  const ap=$('#admPw',m);if(ap)ap.onclick=()=>{const pw=prompt(`${u.name} (@${u.uid}) 의 새 비밀번호 (4자 이상) — 그 계정의 모든 기기 로그인이 끊긴다`);if(pw==null)return;if(pw.length<4)return toast('비밀번호는 4자 이상');run(()=>DBS().acct.adminUser(t,u.uid,{pw}),'비밀번호를 바꿨다 — 본인에게 알려 줘')};
  const ad=$('#admDel',m);if(ad)ad.onclick=()=>{if(!confirm(`${u.name} (@${u.uid}) 계정을 지울까? 방 권한도 같이 사라진다 (방에 남은 트레이너 · 로그는 그대로).`))return;ADM.sel='';run(()=>DBS().acct.adminUser(t,u.uid,{del:true}),'계정을 지웠다')};
- {const sl=$('#admSlim',m);if(sl)sl.onclick=()=>{if(window.OM_SLIM)OM_SLIM.open(rooms);else toast('그림 줄이기 파일(js/slim_ui.js)이 없다')}}
+ {const sl=$('#admSlim',m);if(sl)sl.onclick=()=>{ensure('slim').then(()=>OM_SLIM.open(rooms)).catch(()=>{})}}
  m.querySelectorAll('[data-aonly]').forEach(c=>c.onchange=()=>run(async()=>{const row=await DBS().getRoom(c.dataset.aonly);const s=Object.assign({},(row&&row.settings)||{},{accountOnly:c.checked});await DBS().roomUpdate(c.dataset.aonly,'u:'+t,null,s)},c.checked?'계정 전용으로 바꿨다':'예전 링크도 다시 된다'))}
 
 /* ---------- 로비 ---------- */
@@ -292,6 +300,7 @@ async function openRoom(id,gm,asPl){
  if(ST.role==='gm'){try{const a=JSON.parse(sessionStorage.getItem('om_aspl_'+id)||'null');if(a){ST.asPlGm={secret:ST.secret,gmNick:ST.gmNick};ST.role=a.seat?'seat':null;ST.seat=a.seat||'';{const t=a.seat?(((ST.state.roster||{}).trainers||{})[a.seat]||(((ST.state.battle||{}).trainers)||{})[a.seat]||((ST.state.seats||{})[a.seat])||{}):{};ST.name=t.name||a.seat||'구경'}ST.canGm=true}}catch(e){}}
  ST.asPlGm=ST.asPlGm&&ST.role!=='gm'?ST.asPlGm:null;
  CHAN.cur='s';ST._toBottom=true;renderRoom();
+ setTimeout(()=>{if(ST.room!==id)return;for(const k of ['phone','bbs','tour','hall'])ensure(k).catch(()=>{})},2500);   /* 11-03: 휴대폰 · 게시판 · 둘러보기 · 전당(배틀 비우기 때 저장 제안)은 방이 뜬 뒤 한숨 돌리고 */
  ST.subH={onPatch,onEvent:p=>{PATCH.last=Date.now();if(p&&p.t==='hello')onHello(p);if(window.OM_RP_UI&&p&&p.t==='typing')window.OM_RP_UI.onTyping(p);if(window.OM_CUTIN&&p&&p.t==='cutin')window.OM_CUTIN.onEvent(p);if(window.OM_EMO&&p&&p.t==='emo'&&VIEW==='rp')window.OM_EMO.onEvent(p);if(window.OM_HALL_UI&&p&&p.t==='hall')window.OM_HALL_UI.onEvent(p);if(window.OM_BBS_UI&&p&&p.t==='bbs')window.OM_BBS_UI.onEvent(p);if(window.OM_RP_UI&&p&&p.t==='clue'&&window.OM_RP_UI.onClueEv)window.OM_RP_UI.onClueEv(p)},onState:(d,v)=>{if(v>=ST.v){ST.state=d;ST.v=v;renderScene();if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.watch)window.OM_BATTLE_UI.watch().catch(e=>console.warn(e))}},onLog:r=>{PATCH.last=Date.now();logFill();if(r.id>ST.lastLogId){ST.log.push(r);ST.lastLogId=r.id;renderLog(true);notifyLog(r);mobNote(r);if(window.OM_RP_UI)window.OM_RP_UI.onChat(r)}else if(!ST.log.some(x=>x.id===r.id)){ST.log.push(r);ST.log.sort((x,y)=>x.id-y.id);renderLog(true)}},
   onStatus:s=>{const el=$('#conn');if(el){el.textContent=s==='SUBSCRIBED'?'● 실시간':'○ '+s;el.style.color=s==='SUBSCRIBED'?'var(--acc2)':'var(--mute)'}RT.st=s;RT.at=Date.now();if(s==='SUBSCRIBED'){startPresence();if(ST._sub)resync('재연결');else checkState('구독');ST._sub=true}}};
  ST.unsub=DBS().subscribe(id,ST.subH);
@@ -420,7 +429,7 @@ addEventListener('resize',()=>{try{bchTick()}catch(e){}});addEventListener('keyd
 function openMobMenu(){const items=[['skillBtn','스킬 체크'],['dexBtn','도감'],['ntBtn','📓 세션 노트'],['dbBtn','DB'],['rmBtn','레디메이드'],['copyLink','플레이어 링크'],['copyGm','GM 링크'],['seatBtn','자리'],['roomSet','⚙ 설정'],['saveLog','로그 저장'],['presence','내 이름'],['asPlBtn','PL 로 보기 (권한만)'],['asGmBtn','GM 으로 돌아가기'],['toLobby','← 로비로']].filter(([id])=>$('#'+id));
  const m=openModal(`<div class="mhead"><h2>메뉴</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="mmenu">${items.map(([id,l])=>`<button class="btn" data-mm="${id}">${esc(l)}</button>`).join('')}</div><div class="small dim" style="margin-top:10px">접속 중: ${esc(($('#presence')||{}).textContent||'')}</div>`);
  m.querySelectorAll('[data-mm]').forEach(b=>b.onclick=()=>{closeModal();const t=$('#'+b.dataset.mm);if(t)t.click()})}
-function bindMobile(){const bar=$('#mbar');if(!bar)return;bar.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;if(k==='menu')return openMobMenu();if(k==='phone'){if(window.OM_PHONE_UI)window.OM_PHONE_UI.open('home');return}if(k==='top'){const el=MOB.mode==='chat'?$('#log'):$('#scene');if(el)el.scrollTo({top:0,behavior:'smooth'});return}if(k==='chat'&&MOB.mode==='chat')return mobMode(MOB.prev||'scene');mobMode(k)});mobMode(MOB.mode)}
+function bindMobile(){const bar=$('#mbar');if(!bar)return;bar.querySelectorAll('[data-m]').forEach(b=>b.onclick=()=>{const k=b.dataset.m;if(k==='menu')return openMobMenu();if(k==='phone'){if(!window.OM_PHONE_UI)return ensure('phone').then(()=>window.OM_PHONE_UI.open('home')).catch(()=>{});window.OM_PHONE_UI.open('home');return}if(k==='top'){const el=MOB.mode==='chat'?$('#log'):$('#scene');if(el)el.scrollTo({top:0,behavior:'smooth'});return}if(k==='chat'&&MOB.mode==='chat')return mobMode(MOB.prev||'scene');mobMode(k)});mobMode(MOB.mode)}
 function renderRoom(){
  const app=$('#app');const r=ST.roomRow;
  app.innerHTML=`<div class="room">
@@ -709,6 +718,7 @@ function renderScene(){reconcileNodes();
  /* GM 이 무대(RP/배틀)를 바꾸면 모두 그쪽으로 따라간다. 그 밖의 탭(시트·관계도·캘린더·제보)은 각자 본다 */
  if(scene()!==lastScene){lastScene=scene();VIEW=scene()}
  if(!VIEW)VIEW=scene();
+ if(!window.OM_DG_UI&&ST.room&&(ST.role==='gm'||((ST.state.dg||{}).field||{}).mode==='dungeon')&&!LAZYP._dg){LAZYP._dg=1;ensure('dungeon').then(()=>renderScene()).catch(()=>{LAZYP._dg=0})}   /* 11-03: 던전은 GM 이거나 탐색 중일 때만 */
  const tabs=$('#sceneTabs');if(tabs){const DGU=window.OM_DG_UI,dgOn=!!(DGU&&DGU.on());   /* 10-26 던전 탭 (dungeon_ui.js): GM 전용 — 플레이어는 RP 무대의 작은 지도(크게 펼치기)로 본다 */
   tabs.innerHTML=VIEWS.filter(([k])=>k!=='dungeon'||(DGU&&ST.role==='gm')).map(([k,n])=>`<button data-s="${k}" class="${VIEW===k?'on':''} ${scene()===k||(k==='dungeon'&&dgOn)?'stage':''} ${k==='dungeon'&&dgOn&&VIEW!=='dungeon'?'dgnew':''}" title="${scene()===k?'지금 무대':k==='dungeon'&&dgOn?'던전 탐색 중':''}">${n}</button>`).join('')+(ST.role==='gm'?`<button class="btn xs ghost" id="stageBtn" title="모두를 이 탭으로 부른다">무대로</button>`:'');
   tabs.querySelectorAll('button[data-s]').forEach(b=>b.onclick=()=>{VIEW=b.dataset.s;renderScene()});
@@ -718,14 +728,16 @@ function renderScene(){reconcileNodes();
  if(VIEW!=='report'&&VIEW!=='guide')ST.lastView=VIEW;
  try{if(window.OM_MECARD)window.OM_MECARD.draw(VIEW)}catch(e){}   /* 내 트레이너 미니 카드 (10-24) — 탭 그리기가 실패해도 숨김/보임은 먼저 맞춘다 */
  /* 10-24 망령: 탭 그리기가 실패하면 탭만 바뀌고 화면은 그대로 남았다 (휴대폰 시트) — 실패를 화면에 보이고 나머지는 계속 돈다 */
+ /* 11-03: 나중에 불러오는 탭 — 아직 없으면 「불러오는 중」을 보이고 오면 다시 그린다 */
+ const lazyView=k=>{if(window[LAZYG[k]])return false;el.innerHTML='<div class="lobby muted">불러오는 중…</div>';const v=VIEW;ensure(k).then(()=>{if(VIEW===v)renderScene()}).catch(()=>{if(VIEW===v){VIEW=ST.lastView&&ST.lastView!==v?ST.lastView:'rp';renderScene()}});return true};
  try{if(VIEW==='battle')renderBattle(el);
  else if(VIEW==='sheet')window.OM_SHEET_UI.render(el);
- else if(VIEW==='graph')window.OM_GRAPH_UI.render(el);
+ else if(VIEW==='graph'){if(!lazyView('graph'))window.OM_GRAPH_UI.render(el)}
  else if(VIEW==='calendar')window.OM_CAL_UI.render(el);
- else if(VIEW==='dungeon'){if(window.OM_DG_UI)window.OM_DG_UI.render(el)}
- else if(VIEW==='hall'){if(window.OM_HALL_UI)window.OM_HALL_UI.render(el)}
+ else if(VIEW==='dungeon'){if(!lazyView('dungeon'))window.OM_DG_UI.render(el)}
+ else if(VIEW==='hall'){if(!lazyView('hall'))window.OM_HALL_UI.render(el)}
  else if(VIEW==='report')window.OM_REPORT_UI.render(el);
- else if(VIEW==='guide'){if(window.OM_GUIDE_UI)window.OM_GUIDE_UI.render(el)}
+ else if(VIEW==='guide'){if(!lazyView('guide'))window.OM_GUIDE_UI.render(el)}
  else window.OM_RP_UI.render(el)}
  catch(err){console.error(err);const n=(VIEWS.find(x=>x[0]===VIEW)||[0,VIEW])[1];el.innerHTML=`<div class="empty vfail"><b>「${esc(n)}」 화면을 그리지 못했다.</b><div class="small dim" style="margin:6px 0 10px;word-break:break-all">${esc(err&&err.message||err)}</div><button class="btn sm" id="vfailRe">다시 그리기</button> <button class="btn sm ghost" id="vfailRp">RP 로</button><div class="small dim" style="margin-top:8px">이 글을 캡처해서 보내 주면 고칠 수 있다.</div></div>`;const r1=$('#vfailRe');if(r1)r1.onclick=()=>renderScene();const r2=$('#vfailRp');if(r2)r2.onclick=()=>{VIEW='rp';renderScene()}}
  if(window.OM_RP_UI)window.OM_RP_UI.onState();
@@ -1167,7 +1179,7 @@ function openRoomSettings(tab){
  const s2=$('#seatMgr2',m);if(s2)s2.onclick=()=>{closeModal();openSeatPicker()};
  if(SET_TAB==='me'||!isGm){const host=$('#setBody',m);if(window.OM_PREFS)window.OM_PREFS.bind(host);return}
  /* 11-02 망령 「디스코드 설정은 설정 → 방 설정 옆에」: 학교 게시판 · 시트 「한 장 요약 → 디코로」가 가는 곳 (js/bbs_ui.js dcMount) */
- if(SET_TAB==='dc'){const host=$('#setBody',m);if(window.OM_BBS_UI&&window.OM_BBS_UI.dcMount)window.OM_BBS_UI.dcMount(host);return}
+ if(SET_TAB==='dc'){const host=$('#setBody',m);if(!window.OM_BBS_UI){host.innerHTML='<div class="small dim">불러오는 중…</div>';ensure('bbs').then(()=>{if(host.isConnected&&window.OM_BBS_UI.dcMount)window.OM_BBS_UI.dcMount(host)}).catch(()=>{});return}if(window.OM_BBS_UI.dcMount)window.OM_BBS_UI.dcMount(host);return}
  const pb=$('#plBattle',m),so=$('#seatOwn',m);
  /* ①·② 는 둘 중 하나만 — 하나가 켜져 있으면 다른 칸은 막아 둔다 */
  const lockPair=()=>{if(!pb||!so)return;pb.disabled=so.checked;so.disabled=pb.checked;for(const x of [pb,so]){const l=x.closest('.pf-sw');if(l){l.classList.toggle('off',x.disabled);l.title=x.disabled?'다른 쪽을 끄면 고를 수 있다':''}}};lockPair();
@@ -1191,6 +1203,6 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
 /* 이름으로 기본 초상 찾기: 그림이 따로 없으면 같은 이름의 로스터 트레이너 → 포켓몬 → 관계도 노드의 그림을 쓴다 */
 function portraitOf(name,img){if(img)return img;if(!name)return '';const ro=ST.state.roster||{};const t=Object.values(ro.trainers||{}).find(x=>x.name===name);if(t&&t.image)return t.image;const m=Object.values(ro.mons||{}).find(x=>x.name===name&&x.image);if(m)return m.image;const n=Object.values((ST.state.graph||{}).nodes||{}).find(x=>x.name===name&&x.img);return n?n.img:''}
-window.OM_APP={twoAble,twoPids,twoApply,setTwo,acctKey,presList,dupItems,dupItemText,logFill,bchOpen,selfLog,splitLog,contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,cleanupTrainer,openMon,openLoadParty,loadFromRoster,encounter,loadMaker,loadMakerParty,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,online:s=>!!s&&Object.values(PRES.who).some(v=>v.role==='seat'&&v.seat===s&&Date.now()-v.at<70000),get view(){return VIEW},goView:v=>{VIEW=v||scene();renderScene()},set view(v){VIEW=v}};
+window.OM_APP={ensure,loadScript,twoAble,twoPids,twoApply,setTwo,acctKey,presList,dupItems,dupItemText,logFill,bchOpen,selfLog,splitLog,contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,cleanupTrainer,openMon,openLoadParty,loadFromRoster,encounter,loadMaker,loadMakerParty,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,online:s=>!!s&&Object.values(PRES.who).some(v=>v.role==='seat'&&v.seat===s&&Date.now()-v.at<70000),get view(){return VIEW},goView:v=>{VIEW=v||scene();renderScene()},set view(v){VIEW=v}};
 route();
 })();
