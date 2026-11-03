@@ -316,57 +316,57 @@
     {
      "file": "01_종탑 우물 아래",
      "rid": "entry",
-     "tags": "1.2::old underground mine tunnels, wooden support beams, glowing crystals, underground water, lantern light, mysterious but adventurous::, 1.3::the bottom of an old stone well shaft opening into a mine tunnel, a rope ladder hanging down, falling dust and pebbles, beam of light from above::"
+     "tags": "1.2::old underground mine tunnels, wooden support beams, damp rough rock walls, underground water, warm lantern light, earthy brown and deep blue palette, mysterious but adventurous::, -1.2::crystals, gems, glowing crystals::, 1.3::the bottom of an old stone well shaft opening into a mine tunnel, a rope ladder hanging down, falling dust and pebbles, beam of light from above::"
     },
     {
      "file": "02_지하 호수",
      "rid": "b1",
-     "tags": "1.2::old underground mine tunnels, wooden support beams, glowing crystals, underground water, lantern light, mysterious but adventurous::, 1.3::a calm underground lake in a large cavern, still black water reflecting lantern light, stalactites, wooden walkway along the shore::"
+     "tags": "1.2::old underground mine tunnels, wooden support beams, damp rough rock walls, underground water, warm lantern light, earthy brown and deep blue palette, mysterious but adventurous::, -1.2::crystals, gems, glowing crystals::, 1.3::a calm underground lake in a large cavern, still black water reflecting lantern light, stalactites, wooden walkway along the shore::"
     },
     {
      "file": "03_지하 물길",
      "rid": "c1",
-     "tags": "1.2::old underground mine tunnels, wooden support beams, glowing crystals, underground water, lantern light, mysterious but adventurous::, 1.3::an underground stream flowing through a narrow mine tunnel, wet rocks, old wooden planks as a bridge, lantern glow::"
+     "tags": "1.2::old underground mine tunnels, wooden support beams, damp rough rock walls, underground water, warm lantern light, earthy brown and deep blue palette, mysterious but adventurous::, -1.2::crystals, gems, glowing crystals::, 1.3::an underground stream flowing through a narrow mine tunnel, wet rocks, old wooden planks as a bridge, lantern glow::"
     },
     {
      "file": "04_버려진 수레길",
      "rid": "c2",
-     "tags": "1.2::old underground mine tunnels, wooden support beams, glowing crystals, underground water, lantern light, mysterious but adventurous::, 1.3::abandoned mine cart rails running through a flooded tunnel, a rusty mine cart, water flowing over the tracks, support beams::"
+     "tags": "1.2::old underground mine tunnels, wooden support beams, damp rough rock walls, underground water, warm lantern light, earthy brown and deep blue palette, mysterious but adventurous::, -1.2::crystals, gems, glowing crystals::, 1.3::abandoned mine cart rails running through a flooded tunnel, a rusty mine cart, water flowing over the tracks, support beams::"
     },
     {
      "file": "05_종유석 틈",
      "rid": "c3",
-     "tags": "1.2::old underground mine tunnels, wooden support beams, glowing crystals, underground water, lantern light, mysterious but adventurous::, 1.3::a narrow passage under cracked hanging stalactites in a limestone cave, dripping water, crumbling rock::"
+     "tags": "1.2::old underground mine tunnels, wooden support beams, damp rough rock walls, underground water, warm lantern light, earthy brown and deep blue palette, mysterious but adventurous::, -1.2::crystals, gems, glowing crystals::, 1.3::a narrow passage under cracked hanging stalactites in a limestone cave, dripping water, crumbling rock::"
     },
     {
      "file": "06_광부 쉼터",
      "rid": "safe",
-     "tags": "1.2::old underground mine tunnels, wooden support beams, glowing crystals, underground water, lantern light, mysterious but adventurous::, 1.3::a small rest room carved in a mine, old wooden bunks, rusty lanterns on hooks, a table with tin cups, cozy dim light::"
+     "tags": "1.2::old underground mine tunnels, wooden support beams, damp rough rock walls, underground water, warm lantern light, earthy brown and deep blue palette, mysterious but adventurous::, -1.2::crystals, gems, glowing crystals::, 1.3::a small rest room carved in a mine, old wooden bunks, rusty lanterns on hooks, a table with tin cups, cozy dim light::"
     },
     {
      "file": "07_수정 공동",
      "rid": "boss",
-     "tags": "1.2::old underground mine tunnels, wooden support beams, glowing crystals, underground water, lantern light, mysterious but adventurous::, 1.3::a huge underground cavern full of giant glowing crystals growing from floor to ceiling, a sand mound in the center, purple and blue light, awe inspiring::"
+     "tags": "1.2::old underground mine tunnels, wooden support beams, damp rough rock walls, underground water, warm lantern light, earthy brown and deep blue palette, mysterious but adventurous::, -1.2::crystals, gems, glowing crystals::, 1.3::a huge underground cavern full of giant glowing crystals growing from floor to ceiling, a sand mound in the center, purple and blue light, awe inspiring::"
     },
     {
      "file": "08_물웅덩이 굴",
      "rid": "g1a1",
-     "tags": "1.2::old underground mine tunnels, wooden support beams, glowing crystals, underground water, lantern light, mysterious but adventurous::, 1.3::a low cave with a wide shallow pool, rocks like turtle shells sticking out of the water, dripping ceiling::"
+     "tags": "1.2::old underground mine tunnels, wooden support beams, damp rough rock walls, underground water, warm lantern light, earthy brown and deep blue palette, mysterious but adventurous::, -1.2::crystals, gems, glowing crystals::, 1.3::a low cave with a wide shallow pool, rocks like turtle shells sticking out of the water, dripping ceiling::"
     },
     {
      "file": "09_수정 회랑",
      "rid": "g2a1",
-     "tags": "1.2::old underground mine tunnels, wooden support beams, glowing crystals, underground water, lantern light, mysterious but adventurous::, 1.3::a corridor in a cave with small crystals embedded in the walls glittering, soft colorful light::"
+     "tags": "1.2::old underground mine tunnels, wooden support beams, damp rough rock walls, underground water, warm lantern light, earthy brown and deep blue palette, mysterious but adventurous::, -1.2::crystals, gems, glowing crystals::, 1.3::a corridor in a cave with small crystals embedded in the walls glittering, soft colorful light::"
     },
     {
      "file": "10_광석 더미",
      "rid": "tr",
-     "tags": "1.2::old underground mine tunnels, wooden support beams, glowing crystals, underground water, lantern light, mysterious but adventurous::, 1.3::a pile of raw ore and gems in a mine corner, an old rolled tunnel map tucked in, a pickaxe leaning on the wall::"
+     "tags": "1.2::old underground mine tunnels, wooden support beams, damp rough rock walls, underground water, warm lantern light, earthy brown and deep blue palette, mysterious but adventurous::, -1.2::crystals, gems, glowing crystals::, 1.3::a pile of raw ore and gems in a mine corner, an old rolled tunnel map tucked in, a pickaxe leaning on the wall::"
     },
     {
      "file": "11_곰팡이 굴",
      "rid": "s1",
-     "tags": "1.2::old underground mine tunnels, wooden support beams, glowing crystals, underground water, lantern light, mysterious but adventurous::, 1.3::a dead end cave covered in pale glowing mushrooms and white mold, damp air, faint bioluminescence::"
+     "tags": "1.2::old underground mine tunnels, wooden support beams, damp rough rock walls, underground water, warm lantern light, earthy brown and deep blue palette, mysterious but adventurous::, -1.2::crystals, gems, glowing crystals::, 1.3::a dead end cave covered in pale glowing mushrooms and white mold, damp air, faint bioluminescence::"
     }
    ],
    "mons": [
