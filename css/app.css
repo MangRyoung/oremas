@@ -1632,6 +1632,7 @@ label.tgc:has(input:focus-visible){outline:2px solid var(--yel)}
 }
 /* 10-22 「PL 권한으로」는 조작판 둘째 줄 오른쪽 끝 (BGM 칸 바로 아래) */
 .gmrow .gmh{margin-left:auto}
+.chip.pvpc{background:#5a2330;border-color:#c0405c;color:#ffd7df;font-weight:700;letter-spacing:1px}   /* 11-03 PVP 설정 띠 */
 /* 바로 고치기 (시트 · 상세 창) */
 .qe,.dxed{cursor:pointer;border-radius:4px;outline:1px dashed transparent;outline-offset:2px;transition:outline-color .12s,background .12s}
 .qe:hover,.dxed:hover{outline-color:var(--line2,#555);background:rgba(255,255,255,.04)}

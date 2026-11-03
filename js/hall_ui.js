@@ -30,7 +30,7 @@ window.OM_HALL_UI=(()=>{
     mons:mons.map(m=>{const hp=m.hp||{};const dead=(+hp.cur||0)<=0||!!(m.states||{}).Dead;const st=Object.keys(m.states||{}).filter(k=>(m.states||{})[k]&&SHOW_ST.includes(k)&&k!=='Dead').map(stKo).slice(0,3);
      return Object.assign({n:String((m.form0||{}).name||m.name||'?').slice(0,30),img:img(m.image),lv:+m.lv||0,hp:Math.max(0,+hp.cur||0),mx:+hp.max||0},st.length?{st}:{},m.item?{it:String(m.item).slice(0,30)}:{},m.entry&&!dead?{on:1}:{},dead?{dead:1}:{})})}}
   const f=b.field||{};const fld=[(f.weather||{}).type&&'날씨 '+f.weather.type,(f.terrain||{}).type,...Object.keys(f.rooms||{}).filter(k=>(f.rooms||{})[k])].filter(Boolean).slice(0,6);
-  return {sides,mode:+b.mode||1,turn:+b.turn||0,fld,at0:+b.at0||0}}
+  return Object.assign({sides,mode:+b.mode||1,turn:+b.turn||0,fld,at0:+b.at0||0},b.pvp?{pvp:1}:{})}   /* 11-03: PVP 설정이었는지 한 칸 */
  function alive(sd){return (sd.mons||[]).filter(m=>!m.dead).length}
  function guess(h){const l=alive(h.sides.left),r=alive(h.sides.right);if(l&&!r)return 'left';if(r&&!l)return 'right';if(!l&&!r)return 'draw';return ''}
  const trNames=sd=>(sd.tr||[]).map(t=>t.n).join(' · ')||'?';
@@ -82,7 +82,7 @@ window.OM_HALL_UI=(()=>{
   return `<div class="hs ${s} ${win?'win':''} ${lose?'lose':''}"><div class="hst">${(sd.tr||[]).map(t=>`<span class="htr">${t.img?`<img src="${esc(t.img)}" alt="" crossorigin="anonymous" loading="lazy">`:''}<b>${esc(t.n)}</b></span>`).join('')}${win?'<em class="hwin">WIN</em>':lose?'<em class="hlose">LOSE</em>':''}<span class="hcnt">${alive(sd)}/${(sd.mons||[]).length}</span></div><div class="hms">${(sd.mons||[]).map(monHtml).join('')}</div></div>`}
  function sumHtml(h,mini){return `<div class="hsum ${mini?'mini':''}">${h.t?`<div class="hsumt"><b>${esc(h.t)}</b><span class="hres ${h.r||'none'}">${esc(resTxt(h))}</span></div>`:''}
   <div class="hvs">${sideHtml(h,'left')}<div class="hvsx">VS</div>${sideHtml(h,'right')}</div>
-  <div class="small dim hmeta">${[h.mode>=3?'트리플':h.mode===2?'더블':'싱글',h.turn?'턴 '+h.turn+'에 마무리':'',...(h.fld||[])].filter(Boolean).map(esc).join(' · ')}</div></div>`}
+  <div class="small dim hmeta">${[h.mode>=3?'트리플':h.mode===2?'더블':'싱글',h.pvp?'PVP (도감 공개)':'',h.turn?'턴 '+h.turn+'에 마무리':'',...(h.fld||[])].filter(Boolean).map(esc).join(' · ')}</div></div>`}
 
  /* ----- 목록 ----- */
  /* 10-27 망령: 판이 많이 쌓인다 — 목록은 한 줄씩 촘촘하게(날짜 · 제목 · 승패 · 양쪽 트레이너와 남은 수 · 턴 · 코멘트 수), 누르면 상세 · 편집.
