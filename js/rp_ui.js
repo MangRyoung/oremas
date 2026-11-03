@@ -677,7 +677,9 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  let logOoc=false;
  const LG={rows:[],room:'',oldest:0,done:false,busy:false,q:'',who:'',day:''};
  function lgChatRow(x){return x.kind==='chat'&&x.data&&!x.data.bat&&!x.data.sms&&!x.data.clear&&(x.data.t||x.data.img)}
- function lgMerge(rows){const have=new Set(LG.rows.map(r=>r.id));for(const r of rows||[])if(!have.has(r.id)){LG.rows.push(r);have.add(r.id)}LG.rows.sort((a,b)=>a.id-b.id);if(LG.rows.length)LG.oldest=LG.rows[0].id}
+ function lgMerge(rows){const have=new Set(LG.rows.map(r=>r.id));for(const r of rows||[])if(!have.has(r.id)){LG.rows.push(r);have.add(r.id)}LG.rows.sort((a,b)=>a.id-b.id);
+  /* GM 이 서버에서 완전히 지웠으면(「GM 이 로그를 지웠다.」 줄) 그 앞은 버린다 */const wipe=LG.rows.reduce((a,r)=>r.kind==='sys'&&r.data&&r.data.t==='GM 이 로그를 지웠다.'&&r.id>a?r.id:a,0);if(wipe){LG.rows=LG.rows.filter(r=>r.id>=wipe);LG.done=true}
+  if(LG.rows.length)LG.oldest=LG.rows[0].id}
  async function lgMore(all,onStep){if(LG.busy||LG.done)return;LG.busy=true;const room=LG.room;try{
    for(let i=0;i<(all?200:1);i++){const rows=await DBS().getLogBefore(room,LG.oldest,500);if(LG.room!==room)return;if(!rows.length){LG.done=true;break}lgMerge(rows);if(rows.length<500){LG.done=true;break}if(onStep)onStep()}
   }catch(e){A().toast('기록을 읽지 못했다: '+e.message)}finally{LG.busy=false}}
@@ -1152,14 +1154,14 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  function clueTargets(){const ST=A().ST;const T=(ST.state.roster||{}).trainers||{};return Object.keys(ST.state.seats||{}).map(k=>({id:k,name:(T[k]||{}).name||((ST.state.seats||{})[k]||{}).name||k}))}
  function clueToLabel(to){if(!to||to==='all')return '모두';const N=Object.fromEntries(clueTargets().map(x=>[x.id,x.name]));return to.map(k=>N[k]||k).join(' · ')}
  async function showClueRp(c,to){const v={t:c.t||'',d:c.d||'',img:c.img||'',at:Date.now(),k:clueKey(),scene:(R().bg||{}).name||''};if(c.id)v.id=c.id;
-  const all=!to||to==='all'||!to.length;
+  if(Array.isArray(to)&&to.length){const ok=new Set(clueTargets().map(x=>x.id));to=to.filter(id=>ok.has(id));if(!to.length)return A().toast('받는 사람이 자리에 없다 — 다시 골라 줘')}const all=!to||to==='all'||!to.length;
   if(all){const L=[v,...(Array.isArray(R().clueLog)?R().clueLog:[])].slice(0,60);if(await A().setMany([[['rp','clue'],v],[['rp','clueLog'],L]])){CLUE.hide=0;A().sysLog(`🔍 단서 — ${v.t||'단서'}${v.d?'\n'+v.d:''}`);try{playSe('Draw',true)}catch(e){}}return}
   const ST=A().ST;let rows=[];try{rows=await DBS().secretGet(ST.room,ST.secret,'clue')||[]}catch(e){return A().toast('단서 칸을 읽지 못했다: '+e.message)}
   let n=0;for(const sid of to){const row=rows.find(r=>r.id===sid);const L=(row&&row.data&&Array.isArray(row.data.list)?row.data.list:[]).slice(-80);L.push(Object.assign({},v,{to:sid}));try{await DBS().secretPut(ST.room,ST.secret,'clue',sid,{list:L});n++}catch(e){A().toast(`${clueToLabel([sid])} 에게 보내지 못했다: ${e.message}`)}}
   if(!n)return;try{DBS().broadcast({t:'clue',to,at:v.at})}catch(e){}
   if(A().selfLog)A().selfLog(`🔍 단서 「${v.t||'단서'}」 → ${clueToLabel(to)} (그 사람에게만)`);A().toast(`${clueToLabel(to)} 에게만 보냈다`);PCL.gmAll=null}
  /* 좌석: 내 단서 읽기 (처음 읽을 때는 조용히, 그 뒤 새로 온 것만 카드 + 토스트) */
- async function clueFetch(quiet){const ST=A().ST;if(!ST.role||!ST.secret||!ST.room)return;if(gm())return;const room=ST.room;let rows;try{rows=await DBS().secretGet(room,ST.secret,'clue')||[]}catch(e){return}if(A().ST.room!==room)return;
+ async function clueFetch(quiet){const ST=A().ST;if(!ST.role||!ST.secret||!ST.room)return;if(gm())return;const room=ST.room;PCL.tried=room;let rows;try{rows=await DBS().secretGet(room,ST.secret,'clue')||[]}catch(e){console.warn('[오레마스] 단서 읽기 실패',e);return}if(A().ST.room!==room)return;
   const me=rows.find(r=>r.id===ST.seat);const L=me&&me.data&&Array.isArray(me.data.list)?me.data.list:[];const first=PCL.room!==room;const had=new Set(PCL.list.map(x=>x.k));PCL.list=L;PCL.room=room;
   if(PCL.show&&!L.some(x=>x.k===PCL.show.k)){PCL.show=null;CLUE.sig='';A().renderScene()}   /* GM 이 회수했다 */
   const fresh=first?[]:L.filter(x=>!had.has(x.k));
@@ -1169,7 +1171,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  setInterval(()=>{try{if(document.visibilityState==='visible'&&A()&&A().ST.role==='seat')clueFetch()}catch(e){}},30000);
  const CLUE={hide:0,sig:''};
  function clueCur(){const c=R().clue;const p=PCL.show;if(p&&(!c||(p.at||0)>=(c.at||0)))return p;return c&&(c.t||c.d||c.img)?c:null}
- function clueRp(stage){if(!stage)return;if(!gm()&&PCL.room!==A().ST.room&&A().ST.role==='seat')clueFetch(true);const c=clueCur();let box=stage.querySelector(':scope>.rpclue');
+ function clueRp(stage){if(!stage)return;if(!gm()&&PCL.tried!==A().ST.room&&A().ST.role==='seat')clueFetch(true);const c=clueCur();let box=stage.querySelector(':scope>.rpclue');
   if(!c){if(box)box.remove();CLUE.sig='';return}
   const hidden=CLUE.hide===c.at;const sig=JSON.stringify([c,hidden]);if(box&&CLUE.sig===sig)return;CLUE.sig=sig;
   if(!box){box=document.createElement('div');box.className='rpclue';stage.append(box);box.addEventListener('click',e=>{const b=e.target.closest('[data-rcl]');if(!b)return;e.stopPropagation();const k=b.dataset.rcl;const cc=clueCur();if(!cc)return;
