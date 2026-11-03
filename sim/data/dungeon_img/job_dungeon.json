@@ -638,57 +638,57 @@
     {
      "file": "01_화물 승강기",
      "rid": "entry",
-     "tags": "1.2::sealed underground research facility level, old but well built laboratory, emergency lights, glass tanks, pipes, quiet tense atmosphere, clean not gory::, 1.3::the inside of a large freight elevator stopped at an underground lab floor, doors opening to a dim corridor with emergency lights::"
+     "tags": "1.2::sealed underground laboratory level beneath an old gothic university building, early 20th century, stone walls and brick arches, brass pipes and valves, riveted iron doors, wooden cabinets, dim amber gas lamps, quiet and tense, clean not gory::, -1.2::sci-fi, futuristic, neon, green glowing liquid, glowing tanks, hologram::, 1.3::an old iron cage freight elevator with a folding brass gate stopped at an underground floor, opening to a dim brick corridor lit by gas lamps::"
     },
     {
      "file": "02_조립 라인",
      "rid": "b1",
-     "tags": "1.2::sealed underground research facility level, old but well built laboratory, emergency lights, glass tanks, pipes, quiet tense atmosphere, clean not gory::, 1.3::a stopped assembly line in an underground facility, robotic arms frozen mid motion, sparks from broken cables, metal parts::"
+     "tags": "1.2::sealed underground laboratory level beneath an old gothic university building, early 20th century, stone walls and brick arches, brass pipes and valves, riveted iron doors, wooden cabinets, dim amber gas lamps, quiet and tense, clean not gory::, -1.2::sci-fi, futuristic, neon, green glowing liquid, glowing tanks, hologram::, 1.3::a stopped early industrial assembly line of brass gears, belts and conveyor rollers in a brick vaulted hall, sparks from a broken cable, scattered metal parts::"
     },
     {
      "file": "03_소독 구역",
      "rid": "c1",
-     "tags": "1.2::sealed underground research facility level, old but well built laboratory, emergency lights, glass tanks, pipes, quiet tense atmosphere, clean not gory::, 1.3::a disinfection airlock area with white tiles, security panels with blinking lights, nozzles on the walls, glass doors::"
+     "tags": "1.2::sealed underground laboratory level beneath an old gothic university building, early 20th century, stone walls and brick arches, brass pipes and valves, riveted iron doors, wooden cabinets, dim amber gas lamps, quiet and tense, clean not gory::, -1.2::sci-fi, futuristic, neon, green glowing liquid, glowing tanks, hologram::, 1.3::an old disinfection room with white glazed tiles, brass spray nozzles on the walls, a heavy riveted door with a wheel lock, a wall panel of brass levers and dials::"
     },
     {
      "file": "04_비상 대피소",
      "rid": "safe",
-     "tags": "1.2::sealed underground research facility level, old but well built laboratory, emergency lights, glass tanks, pipes, quiet tense atmosphere, clean not gory::, 1.3::an emergency shelter room in a lab basement, metal bunks, supply lockers, green emergency light, a heavy door::"
+     "tags": "1.2::sealed underground laboratory level beneath an old gothic university building, early 20th century, stone walls and brick arches, brass pipes and valves, riveted iron doors, wooden cabinets, dim amber gas lamps, quiet and tense, clean not gory::, -1.2::sci-fi, futuristic, neon, green glowing liquid, glowing tanks, hologram::, 1.3::an emergency shelter room in a basement, iron bunk beds, wooden supply crates and lockers, a single warm lamp, a heavy vault door::"
     },
     {
      "file": "05_실험 심부",
      "rid": "boss",
-     "tags": "1.2::sealed underground research facility level, old but well built laboratory, emergency lights, glass tanks, pipes, quiet tense atmosphere, clean not gory::, 1.3::the core experiment chamber of a lab with huge broken glass cultivation tanks, purple liquid pooled on the floor, cables hanging, eerie violet light::"
+     "tags": "1.2::sealed underground laboratory level beneath an old gothic university building, early 20th century, stone walls and brick arches, brass pipes and valves, riveted iron doors, wooden cabinets, dim amber gas lamps, quiet and tense, clean not gory::, -1.2::sci-fi, futuristic, neon, green glowing liquid, glowing tanks, hologram::, 1.3::the core experiment chamber under a brick dome, huge cracked glass cultivation tanks with brass frames, purple liquid pooled on the stone floor, hanging cables, eerie violet light::"
     },
     {
      "file": "06_직원 샤워실",
      "rid": "g1a1",
-     "tags": "1.2::sealed underground research facility level, old but well built laboratory, emergency lights, glass tanks, pipes, quiet tense atmosphere, clean not gory::, 1.3::an old staff shower room in a facility, tiled walls, water still running from a showerhead, steam::"
+     "tags": "1.2::sealed underground laboratory level beneath an old gothic university building, early 20th century, stone walls and brick arches, brass pipes and valves, riveted iron doors, wooden cabinets, dim amber gas lamps, quiet and tense, clean not gory::, -1.2::sci-fi, futuristic, neon, green glowing liquid, glowing tanks, hologram::, 1.3::an old staff washroom with white tiles and brass shower heads, water still running, steam, a wooden bench::"
     },
     {
      "file": "07_보안 문",
      "rid": "g1a2",
-     "tags": "1.2::sealed underground research facility level, old but well built laboratory, emergency lights, glass tanks, pipes, quiet tense atmosphere, clean not gory::, 1.3::a security door corridor with electric arcs crackling across, warning stripes on the floor, red light::"
+     "tags": "1.2::sealed underground laboratory level beneath an old gothic university building, early 20th century, stone walls and brick arches, brass pipes and valves, riveted iron doors, wooden cabinets, dim amber gas lamps, quiet and tense, clean not gory::, -1.2::sci-fi, futuristic, neon, green glowing liquid, glowing tanks, hologram::, 1.3::a narrow brick corridor with a riveted iron security door, electric arcs crackling between exposed copper coils, red warning lamp::"
     },
     {
      "file": "08_사육실",
      "rid": "g1a3",
-     "tags": "1.2::sealed underground research facility level, old but well built laboratory, emergency lights, glass tanks, pipes, quiet tense atmosphere, clean not gory::, 1.3::a creature breeding room with rows of open cages, straw, feeding bowls, observation windows::"
+     "tags": "1.2::sealed underground laboratory level beneath an old gothic university building, early 20th century, stone walls and brick arches, brass pipes and valves, riveted iron doors, wooden cabinets, dim amber gas lamps, quiet and tense, clean not gory::, -1.2::sci-fi, futuristic, neon, green glowing liquid, glowing tanks, hologram::, 1.3::a creature keeping room with rows of open iron cages, straw on the floor, feeding bowls, an observation window with wooden frame::"
     },
     {
      "file": "09_비상 계단",
      "rid": "g2a1",
-     "tags": "1.2::sealed underground research facility level, old but well built laboratory, emergency lights, glass tanks, pipes, quiet tense atmosphere, clean not gory::, 1.3::a dark emergency stairwell in a facility during a blackout, a single flashlight beam, metal railings::"
+     "tags": "1.2::sealed underground laboratory level beneath an old gothic university building, early 20th century, stone walls and brick arches, brass pipes and valves, riveted iron doors, wooden cabinets, dim amber gas lamps, quiet and tense, clean not gory::, -1.2::sci-fi, futuristic, neon, green glowing liquid, glowing tanks, hologram::, 1.3::a dark spiral stone stairwell during a blackout, iron railings, a single lantern beam cutting the darkness::"
     },
     {
      "file": "10_잠긴 사물함",
      "rid": "tr",
-     "tags": "1.2::sealed underground research facility level, old but well built laboratory, emergency lights, glass tanks, pipes, quiet tense atmosphere, clean not gory::, 1.3::a row of researcher lockers, one locker open with documents and a lab coat inside, dim light::"
+     "tags": "1.2::sealed underground laboratory level beneath an old gothic university building, early 20th century, stone walls and brick arches, brass pipes and valves, riveted iron doors, wooden cabinets, dim amber gas lamps, quiet and tense, clean not gory::, -1.2::sci-fi, futuristic, neon, green glowing liquid, glowing tanks, hologram::, 1.3::a row of old wooden researcher lockers, one open with papers and a white lab coat inside, a desk lamp::"
     },
     {
      "file": "11_청소 도구함",
      "rid": "s1",
-     "tags": "1.2::sealed underground research facility level, old but well built laboratory, emergency lights, glass tanks, pipes, quiet tense atmosphere, clean not gory::, 1.3::a cramped janitor closet with mops, buckets and shelves of cleaning supplies, a dim bulb::"
+     "tags": "1.2::sealed underground laboratory level beneath an old gothic university building, early 20th century, stone walls and brick arches, brass pipes and valves, riveted iron doors, wooden cabinets, dim amber gas lamps, quiet and tense, clean not gory::, -1.2::sci-fi, futuristic, neon, green glowing liquid, glowing tanks, hologram::, 1.3::a cramped janitor closet with mops, tin buckets and shelves of glass bottles, a single bare bulb::"
     }
    ],
    "mons": [

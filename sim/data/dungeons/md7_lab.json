@@ -93,7 +93,7 @@
    },
    "desc": "지하 3층에 멈춘 화물 승강기. 문이 열리자마자 폭주한 실험체가 날뛴다.",
    "memo": "지하 3층에 멈춘 화물 승강기. 문이 열리자마자 폭주한 실험체가 날뛴다.\nGM: 승강기가 열리자마자 매우 어려운 체크(육성 15). 실패가 흔하다 — 이 던전이 어렵다는 걸 바로 알린다.",
-   "art": "the inside of a large freight elevator stopped at an underground lab floor, doors opening to a dim corridor with emergency lights",
+   "art": "an old iron cage freight elevator with a folding brass gate stopped at an underground floor, opening to a dim brick corridor lit by gas lamps",
    "gm": "승강기가 열리자마자 매우 어려운 체크(육성 15). 실패가 흔하다 — 이 던전이 어렵다는 걸 바로 알린다.",
    "okText": "손바닥을 펴고 천천히 다가가자 실험체가 숨을 골랐다.",
    "failText": "실험체가 날뛰며 승강기 벽을 들이받았다. 경보등이 켜진다."
@@ -115,7 +115,7 @@
    },
    "desc": "장비를 만들던 조립 라인. 멈춘 기계 팔 사이에서 불꽃이 튄다.",
    "memo": "장비를 만들던 조립 라인. 멈춘 기계 팔 사이에서 불꽃이 튄다.\nGM: 조립 라인 배틀 — 전기 · 강철 위주.",
-   "art": "a stopped assembly line in an underground facility, robotic arms frozen mid motion, sparks from broken cables, metal parts",
+   "art": "a stopped early industrial assembly line of brass gears, belts and conveyor rollers in a brick vaulted hall, sparks from a broken cable, scattered metal parts",
    "gm": "조립 라인 배틀 — 전기 · 강철 위주."
   },
   {
@@ -150,7 +150,7 @@
    },
    "desc": "소독 구역 보안 장치가 아직 살아 있다. 해제하지 않으면 문이 닫힌다.",
    "memo": "소독 구역 보안 장치가 아직 살아 있다. 해제하지 않으면 문이 닫힌다.\nGM: 보안 장치 해제(지시 12).",
-   "art": "a disinfection airlock area with white tiles, security panels with blinking lights, nozzles on the walls, glass doors",
+   "art": "an old disinfection room with white glazed tiles, brass spray nozzles on the walls, a heavy riveted door with a wheel lock, a wall panel of brass levers and dials",
    "gm": "보안 장치 해제(지시 12).",
    "okText": "초록 불이 하나씩 켜지며 소독문이 열렸다.",
    "failText": "소독 안개가 뿜어져 모두 콜록거렸다."
@@ -191,7 +191,7 @@
    },
    "desc": "비상 대피소. 통로가 무너지기 전에 모두 들어와야 한다.",
    "memo": "비상 대피소. 통로가 무너지기 전에 모두 들어와야 한다.\nGM: 비상 대피소. 무너지는 통로(통솔 12)를 다 같이 지나야 들어간다.",
-   "art": "an emergency shelter room in a lab basement, metal bunks, supply lockers, green emergency light, a heavy door",
+   "art": "an emergency shelter room in a basement, iron bunk beds, wooden supply crates and lockers, a single warm lamp, a heavy vault door",
    "gm": "비상 대피소. 무너지는 통로(통솔 12)를 다 같이 지나야 들어간다.",
    "okText": "마지막 사람이 들어오자마자 뒤에서 천장이 내려앉았다.",
    "failText": "먼지 속에서 서로를 찾느라 진이 빠졌다."
@@ -229,7 +229,7 @@
    },
    "desc": "배양조가 깨진 실험 심부. 바닥에 보라빛 독액이 고여 있다.",
    "memo": "배양조가 깨진 실험 심부. 바닥에 보라빛 독액이 고여 있다.",
-   "art": "the core experiment chamber of a lab with huge broken glass cultivation tanks, purple liquid pooled on the floor, cables hanging, eerie violet light"
+   "art": "the core experiment chamber under a brick dome, huge cracked glass cultivation tanks with brass frames, purple liquid pooled on the stone floor, hanging cables, eerie violet light"
   },
   {
    "id": "g1a1",
@@ -239,7 +239,7 @@
    "memo": "직원 샤워실. 물이 계속 흐른다.\nGM: 샤워실 — 물소리만. 쉬어 가는 장면.",
    "name": "직원 샤워실",
    "desc": "직원 샤워실. 물이 계속 흐른다.",
-   "art": "an old staff shower room in a facility, tiled walls, water still running from a showerhead, steam",
+   "art": "an old staff washroom with white tiles and brass shower heads, water still running, steam, a wooden bench",
    "gm": "샤워실 — 물소리만. 쉬어 가는 장면."
   },
   {
@@ -276,7 +276,7 @@
    "alt": "g1",
    "desc": "전류가 흐르는 보안 문 복도. 뚫고 지나가야 한다.",
    "memo": "전류가 흐르는 보안 문 복도. 뚫고 지나가야 한다.\nGM: 전류 복도 돌파(능력 10).",
-   "art": "a security door corridor with electric arcs crackling across, warning stripes on the floor, red light",
+   "art": "a narrow brick corridor with a riveted iron security door, electric arcs crackling between exposed copper coils, red warning lamp",
    "gm": "전류 복도 돌파(능력 10).",
    "okText": "전류가 끊기는 틈을 타 한 번에 지나갔다.",
    "failText": "찌릿 — 손끝이 저려 온다."
@@ -299,7 +299,7 @@
    "alt": "g1",
    "desc": "실험 포켓몬을 기르던 사육실. 우리 문이 열려 있다.",
    "memo": "실험 포켓몬을 기르던 사육실. 우리 문이 열려 있다.\nGM: 사육실 배틀 — 열린 우리.",
-   "art": "a creature breeding room with rows of open cages, straw, feeding bowls, observation windows",
+   "art": "a creature keeping room with rows of open iron cages, straw on the floor, feeding bowls, an observation window with wooden frame",
    "gm": "사육실 배틀 — 열린 우리."
   },
   {
@@ -334,7 +334,7 @@
    "alt": "g2",
    "desc": "정전된 비상 계단. 손전등 하나로 대열을 지켜야 한다.",
    "memo": "정전된 비상 계단. 손전등 하나로 대열을 지켜야 한다.\nGM: 정전 계단(통솔 15) — 이 던전의 「어려운 길」.",
-   "art": "a dark emergency stairwell in a facility during a blackout, a single flashlight beam, metal railings",
+   "art": "a dark spiral stone stairwell during a blackout, iron railings, a single lantern beam cutting the darkness",
    "gm": "정전 계단(통솔 15) — 이 던전의 「어려운 길」.",
    "okText": "손전등 하나에 의지해 한 계단씩, 아무도 놓치지 않았다.",
    "failText": "누군가 계단에서 굴렀다. 어둠 속에서 무언가 웃는 소리."
@@ -352,7 +352,7 @@
    "from": "g2a1",
    "desc": "연구원 사물함. 사고 보고서가 들어 있다.",
    "memo": "연구원 사물함. 사고 보고서가 들어 있다.\nGM: 사물함 = 사고 보고서(보스 단서).",
-   "art": "a row of researcher lockers, one locker open with documents and a lab coat inside, dim light",
+   "art": "a row of old wooden researcher lockers, one open with papers and a white lab coat inside, a desk lamp",
    "gm": "사물함 = 사고 보고서(보스 단서).",
    "clueAuto": "깊은 곳의 주인 — 「독」 기운이 서려 있다.\n「땅」 · 「에스퍼」 쪽을 꺼리는 흔적이 남아 있다.\n「거품광선」의 자국이 벽에 새겨져 있다."
   },
@@ -365,7 +365,7 @@
    "ambush": 1,
    "from": "g1a2",
    "desc": "좁은 청소 도구함. 무언가 웅크리고 있다.",
-   "art": "a cramped janitor closet with mops, buckets and shelves of cleaning supplies, a dim bulb",
+   "art": "a cramped janitor closet with mops, tin buckets and shelves of glass bottles, a single bare bulb",
    "gm": "청소 도구함 배틀 — 기습."
   }
  ],
@@ -492,7 +492,7 @@
  "note": "자동 생성 · 어려움 · 씨앗 84920 · 테마 연구소. 사전 배틀 1 · 체크 3 · 보스방 6체 · 레이드 배틀 : 3 · 지도 갈림길 2 · 구불길 + 곁방 2 · 야생 Lv +5 · 어려운 길(체크 목표 15).",
  "intro": "각성 연구소가 있는 제2 연구동 지하 3층, 사고 뒤 봉쇄된 격리층. 비상 전원만 켜진 복도에 실험체들이 풀려 있다. 가장 안쪽 실험 심부에서는 독을 흘리는 스모그뱀이 배양조를 깨고 나와 둥지를 틀었다 — 체크가 까다롭고 보스방이 길다.",
  "art": {
-  "look": "1.2::sealed underground research facility level, old but well built laboratory, emergency lights, glass tanks, pipes, quiet tense atmosphere, clean not gory::, "
+  "look": "1.2::sealed underground laboratory level beneath an old gothic university building, early 20th century, stone walls and brick arches, brass pipes and valves, riveted iron doors, wooden cabinets, dim amber gas lamps, quiet and tense, clean not gory::, -1.2::sci-fi, futuristic, neon, green glowing liquid, glowing tanks, hologram::, "
  },
  "story": {
   "hook": "각성연구소 조교가 창백한 얼굴로 찾아온다. 「지하 3층 격리층… 전원이 나간 뒤 실험체 기록이 하나 비어요. 연구소장님은 출장 중이고요. 조용히, 빨리.」",
