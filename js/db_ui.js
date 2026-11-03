@@ -139,13 +139,15 @@ window.OM_DB_UI=(()=>{
  function mergeMaker(dbx,rows,full){dbx.trait=dbx.trait||{};dbx.item=dbx.item||{};dbx.pot=dbx.pot||{};dbx.st=dbx.st||{};dbx.rm=dbx.rm||{};let n=0,ns=0,nr=0;
   const st0=full?JSON.parse(JSON.stringify(dbx.st)):null;if(full)for(const k in dbx.st)if(dbx.st[k]&&dbx.st[k].src==='maker')delete dbx.st[k];/* 제작기 것은 매번 새로 받는다 (원래대로 되돌린 상태도 따라가게) */
   const num=v=>{const x=+v;return v===''||v==null||isNaN(x)?0:x};const FX=window.OM_FX;const RB=(window.OM_DB||{}).readymade||{};
+  /* 11-03 23:35: 제작기 버그로 레디메이드 기본 행 전부에 「지움」이 올라간 적이 있다 — 한 번에 30개 넘는 레디메이드 지움은 따르지 않는다 */
+  const massDel=(rows||[]).filter(r=>r&&r.data&&r.data.kind==='rm'&&r.data.deleted).length>=30;
   for(const r of rows||[]){const d=r.data||{};const row=d.row||[];if(!d.key)continue;
    if(d.kind==='abil'){const cur=(dbx.trait[d.key]||{});if(cur.src==='room')continue;if(d.deleted){if(cur.src==='maker'){delete dbx.trait[d.key];n++}continue}const eff=String(row[2]||'');const base=BASE&&BASE.traits[d.key];if(base&&base.multi===eff){if(cur.src==='maker'){delete dbx.trait[d.key];n++}continue}n+=setIf(dbx.trait,d.key,{multi:eff,single:(base&&base.single)||eff,cost:row[0]||'',src:'maker'})}
    else if(d.kind==='st'){if((dbx.st[d.key]||{}).src==='room')continue;if(d.deleted){ns+=setIf(dbx.st,d.key,{del:1,src:'maker'});continue}const r=row;ns+=setIf(dbx.st,d.key,{group:String(r[2]||''),e:{ko:r[1]||d.key,min:num(r[3]),max:num(r[4]),roll:r[5]||'',prog:r[6]||'turn',abn:r[7]==='O'?1:0,neg:r[8]==='O'?1:0,bat:r[9]==='O'?1:0,desc:String(r[10]||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean),memo:r[11]||'',img:r[12]||((BASE&&BASE.states&&BASE.states.st[d.key])||((DB().states||{}).st||{})[d.key]||{}).img||''},src:'maker'})}
    else if(d.kind==='items'){const cur=(dbx.item[d.key]||{});if(cur.src==='room')continue;if(d.deleted){if(cur.src==='maker'){delete dbx.item[d.key];n++}continue}const it=mkItem(row);const base=BASE&&BASE.items[d.key];if(base&&base.eff===it.eff&&String(base.auto||'')===it.auto){if(cur.src==='maker'){delete dbx.item[d.key];n++}continue}n+=setIf(dbx.item,d.key,Object.assign(it,{src:'maker'}))}
    else if(d.kind==='pots'){const cur=(dbx.pot[d.key]||{});if(cur.src==='room')continue;if(d.deleted){if(cur.src==='maker'){delete dbx.pot[d.key];n++}continue}const base=BASE&&BASE.pots.find(p=>p[1]===d.key);if(base&&base[2]===row[2]){if(cur.src==='maker'){delete dbx.pot[d.key];n++}continue}n+=setIf(dbx.pot,d.key,{group:row[0]||'',eff:row[2]||'',note:row[3]||'',src:'maker'})}
    else if(d.kind==='rm'&&FX){const cur=dbx.rm[d.key]||{};if(cur.src==='room')continue;
-    if(d.deleted){if(RB[d.key]&&!cur.deleted){dbx.rm[d.key]={deleted:1,src:'maker'};nr++}continue}
+    if(d.deleted){if(massDel)continue;if(RB[d.key]&&!cur.deleted){dbx.rm[d.key]={deleted:1,src:'maker'};nr++}continue}
     const text=String(row[1]||''),dsl=String(row[2]||''),manual=row[3]==='O';const pc=String(row[4]==null?'':row[4]).trim();const b=RB[d.key];
     if(b&&b.text===text&&FX.unparse(b.ops||[]).join('\n')===dsl&&!!b.manual===manual&&String(b.p==null?'':b.p)===pc){if(cur.src==='maker'){delete dbx.rm[d.key];nr++}continue}
     const v={text,ops:FX.parse(dsl).ops,src:'maker'};if(manual)v.manual=1;if(pc!==''&&+pc>0)v.p=Math.min(100,+pc);if(JSON.stringify(Object.assign({},cur,{src:''}))===JSON.stringify(Object.assign({},v,{src:''})))continue;dbx.rm[d.key]=v;nr++}}
@@ -166,7 +168,9 @@ window.OM_DB_UI=(()=>{
    dbx.at=Date.now();await A().set(['dbx'],dbx);MKX=null;mkxP=null;
    const tot=c.n+c.ns+c.nr;if(tot&&since)A().toast(`제작기 DB 변경 ${tot}개를 반영했다`);if(document.querySelector('.dbmodal'))refresh()}
   catch(e){console.warn('제작기 DB 자동 반영',e)}finally{PULL=false}}
- function startAuto(){if(AUTO)return;AUTO=true;setTimeout(pullMaker,5000);setInterval(pullMaker,120000);addEventListener('focus',()=>setTimeout(pullMaker,300));document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(pullMaker,300)})}
+ /* 11-03 23:35 망령 「레디메이드 DB 다 어디 갔니?」: 그 버그로 방 DB 에 들어온 「제작기가 지움」 표시(src maker · deleted)가 30개 넘으면 전부 버린다 — 방의 레디메이드 자동화가 기본으로 돌아온다 */
+ async function healRm(){if(A().ST.role!=='gm')return 0;const ov=((A().ST.state.dbx||{}).rm)||{};const ks=Object.keys(ov).filter(k=>ov[k]&&ov[k].deleted&&ov[k].src==='maker');if(ks.length<30)return 0;const nv=Object.assign({},ov);for(const k of ks)delete nv[k];await A().set(['dbx','rm'],nv);A().toast(`레디메이드 ${ks.length}개에 잘못 붙은 「제작기에서 지움」 표시를 되돌렸다 — 자동화가 기본으로 돌아온다`);return ks.length}
+ function startAuto(){if(AUTO)return;AUTO=true;setTimeout(()=>healRm().catch(e=>console.warn('healRm',e)),2500);setTimeout(pullMaker,5000);setInterval(pullMaker,120000);addEventListener('focus',()=>setTimeout(pullMaker,300));document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(pullMaker,300)})}
  /* 시트·배틀에서 쓰는 한 줄 요약 (특성/소지품 이름 → 효과 문구 HTML) */
  function effectHtml(kind,name){const d=DB();if(kind==='trait'){const v=(d.traits||{})[name];return v?pretty(v.multi||v.single):''}if(kind==='item'){const v=(d.items||{})[name];return v?pretty(v.eff):''}return ''}
 
@@ -190,5 +194,5 @@ window.OM_DB_UI=(()=>{
     try{await window.OM_STORE.makerPut('dbedit','rm.'+keySeg(r.k),{kind:'rm',key:r.k,row,custom:false,pos:RB[r.k]?-1:99999});ok++}catch(e){fail.push(r.k+' ('+e.message+')')}}
    const ov=JSON.parse(JSON.stringify(((A().ST.state.dbx||{}).rm)||{}));for(const r of pick)if(!fail.some(f=>f.startsWith(r.k+' ('))&&ov[r.k])ov[r.k].src='maker';await A().set(['dbx','rm'],ov);
    A().closeModal();A().toast(`제작기 레디메이드 DB 에 ${ok}개 올렸다${fail.length?` · 실패 ${fail.length}`:''} — 제작기는 새로고침하면 보인다`);if(fail.length)A().sysLog('【레디메이드 옮기기 실패】\n'+fail.join('\n'),'sys')}}
- return {open,pretty,effectHtml,applyOverride,syncMaker,pullMaker,startAuto,ensureMaker,fillEff,pushRm,roomRm};
+ return {open,pretty,effectHtml,applyOverride,syncMaker,pullMaker,startAuto,ensureMaker,fillEff,pushRm,roomRm,healRm};
 })();
