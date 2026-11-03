@@ -5110,12 +5110,23 @@ body:has(.modalbg) .tour-ask{display:none}
 .gcr:hover{border-color:#fff;color:#fff}.gcr.on{border-color:var(--yel2);color:#fff}
 .gcr.nt{border-left:4px solid var(--c,#d9243f)}
 @media (max-width:760px){.gcrecent{padding:6px 10px;gap:4px}.gcr{max-width:46%;font-size:12px}}
-/* 11-03 13:46 망령: RP 의 BGM 위젯 · GM 콘솔을 무대 위(오른쪽 스탠딩을 가렸다) 대신 채팅창 머리 방 이름 줄 빈 곳에 (넓은 화면만, js psSync). 자리가 모자라면 그 아래 한 줄(.prprow) */
+/* 11-03 13:46 · 14:01 망령: RP 의 배경 · 씬 · 지도 · 단서 · ⋯ 더보기 · BGM · GM 콘솔을 무대 위 대신 채팅창 머리에 (넓은 화면만, js psSync). 방 이름 줄에 다 들어가면 거기, 아니면 그 아래 한 줄(.prprow) */
 .phone .ptitle .prpslot{order:1;flex:none;margin-left:auto}
-.prpslot{display:inline-flex;flex-wrap:nowrap;align-items:center;gap:4px;padding:2px;background:#111;border:1px solid #000;font-family:var(--font);font-size:12px;letter-spacing:0}
+.prpslot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:4px 8px;font-family:var(--font);font-size:12px;letter-spacing:0;width:100%}
+.phone .ptitle .prpslot{width:auto}
+.prpslot .prpl,.prpslot .prpr{display:inline-flex;align-items:center;gap:4px;flex-wrap:nowrap}
+.prpslot .prpr{margin-left:auto;padding:2px;background:#111;border:1px solid #000}
 .prpslot .rpbgmw{display:inline-flex}
 .prpslot .plog{white-space:nowrap;font-size:12px;position:static!important}
+.prpslot .plog.on{background:#ffd84a;color:#1a1a1a!important;border-color:#ffd84a}
 html:not(#_) .prpslot .bgmw .bt{color:#ddd!important}
-.phone .prprow{display:flex;justify-content:flex-end;padding:4px 8px;background:transparent;border-bottom:1px solid rgba(255,255,255,.12)}
-html[data-vt] .phone .prprow .btn{color:var(--yel2,#ffe100)}
-.prpslot .bgmw input[type=range]{width:72px}.prpslot .bgmw .bt{max-width:110px}
+.prpslot .bgmw input[type=range]{width:60px}.prpslot .bgmw .bt{max-width:84px}
+.prpslot .prpmw{position:relative;display:inline-flex}
+.prpslot .prpmore{display:none;position:absolute;left:0;top:calc(100% + 4px);z-index:30;flex-direction:column;gap:3px;padding:5px;background:#111;border:2px solid #000;box-shadow:4px 4px 0 rgba(0,0,0,.5);min-width:120px}
+.prpslot .prpmw.open .prpmore{display:flex}
+.prpslot .prpmore .plog{width:100%;justify-content:flex-start;text-align:left}
+.phone .prprow{display:flex;padding:5px 8px;background:#15161a;border-bottom:1px solid rgba(255,255,255,.12)}
+html:not(#_) .phone .prprow .plog{color:#e9e9e9;border-color:rgba(255,255,255,.35);background:#202228}
+html:not(#_) .phone .prprow .plog:hover{border-color:#fff}
+html:not(#_) .phone .prprow .plog.on{background:#ffd84a;color:#1a1a1a!important;border-color:#ffd84a}
+.rpbtns.pslot{pointer-events:none}.rpbtns.pslot>*{pointer-events:auto}
