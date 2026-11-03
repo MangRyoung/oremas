@@ -5180,3 +5180,12 @@ html[data-vt] .mebar.fold .meid b{font-size:15px!important}
  .rpwrap{min-height:100%}
  .rpwrap>.rpstage{aspect-ratio:auto;flex:1 1 auto;min-height:380px;max-height:calc(100vh - 150px)}
 }
+/* 20-12 GM 콘솔 「최근」 띠: 배경 3 · 곡 3 · 공지 2 */
+.gcrecent{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 14px 8px;border-bottom:1px solid var(--line2);background:rgba(255,255,255,.02)}
+.gcrecent>small{font-family:var(--lab);color:var(--yel2);letter-spacing:.08em;margin-right:2px}
+.gcr{display:inline-flex;align-items:center;gap:6px;padding:2px 8px 2px 2px;border:1px solid var(--line2);background:#15161a;color:var(--fg2);font-size:12.5px;cursor:pointer;max-width:200px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gcr i{width:34px;height:22px;flex:none;background:#000 center/cover no-repeat;border-right:1px solid var(--line2)}
+.gcr:not(:has(i)){padding-left:8px}
+.gcr:hover{border-color:#fff;color:#fff}.gcr.on{border-color:var(--yel2);color:#fff}
+.gcr.nt{border-left:4px solid var(--c,#d9243f)}
+@media (max-width:760px){.gcrecent{padding:6px 10px;gap:4px}.gcr{max-width:46%;font-size:12px}}

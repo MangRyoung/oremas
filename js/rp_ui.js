@@ -976,7 +976,8 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  /* ----- GM 콘솔 (맵툴 Lib:GM 콘솔 = 배경 · 음악 · 공지 · 지도 · 무대 · 연출) -----
     왼쪽 탭 + 위 「지금」 띠(배경 · BGM · 자막 · 중앙 그림 · 파티 위치, 눌러 그 탭으로 · × 로 바로 끄기). 배경 탭은 배경 창(quickBg)을 그대로 안에 띄운다.
     설정 칸은 고치면 바로 저장(저장 버튼 없음). 창을 닫지 않고 계속 쓴다 */
- const GC={tab:'bg',nEdit:false,seQ:''};
+ /* 11-03 감우 (검토 20-12): 콘솔은 마지막에 쓴 탭으로 열린다 (이 브라우저 om_gctab) · 맨 위 「최근」 띠 (배경 3 · 곡 3 · 공지 2 — rp.recentBg · rp.recentBgm · rp.recentNt) */
+ const GC={tab:(()=>{try{return localStorage.getItem('om_gctab')||'bg'}catch(e){return 'bg'}})(),nEdit:false,seQ:''};
  const GC_TABS=[['bg','🖼','배경'],['bgm','♪','음악'],['notice','📢','공지'],['map','🗺','지도'],['stage','🎭','무대'],['scene','🎬','씬'],['etc','✨','연출'],['se','🔊','효과음'],['misc','✉','귓속말 · 명령']];
  function gcShell(tab,inner){const r=R();const M=mapS();const loc=M.locs.find(x=>x.n===M.party.n);const cap=r.caption||{};
   const now=[`<button class="gcn ${r.bg&&r.bg.src?'':'off'}" data-gnow="bg"><i class="th" style="${r.bg&&r.bg.src?`background-image:url('${cssu(r.bg.src)}')`:''}"></i><span><small>배경</small><b>${esc(r.bg&&r.bg.src?(r.bg.name||'이름 없음'):'없음')}</b></span>${r.bg&&r.bg.src?'<u data-gx="bgx" title="배경 지우기">×</u>':''}</button>`,
@@ -984,15 +985,20 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    cap.fixed&&cap.text?`<button class="gcn" data-gnow="stage"><i class="ic">💬</i><span><small>고정 자막</small><b>${esc(cap.text)}</b></span><u data-gx="capx" title="자막 풀기">×</u></button>`:'',
    r.center&&r.center.src?`<button class="gcn" data-gnow="etc"><i class="th" style="background-image:url('${cssu(r.center.src)}')"></i><span><small>중앙 그림</small><b>띄우는 중</b></span><u data-gx="centerx" title="내리기">×</u></button>`:'',
    M.img&&M.locs.length?`<button class="gcn ${loc?'':'off'}" data-gnow="map"><i class="ic">📍</i><span><small>파티</small><b>${loc?loc.n+'. '+esc(loc.name):'—'}</b></span></button>`:''].join('');
-  const md=A().openModal(`<div class="gcx"><div class="gchead"><h2>GM 콘솔</h2><div class="gcnow">${now}</div><button class="btn ghost" data-x>닫기</button></div>
+  const rb=(r.recentBg||[]).map(bgOf).filter(x=>x&&x.src).slice(0,3),rm=(r.recentBgm||[]).filter(x=>x&&bgmUrl(x.g,x.s)).slice(0,3),rn=(r.recentNt||[]).map(id=>notices().find(n=>n.id===id)).filter(Boolean).slice(0,2);
+  const recent=rb.length+rm.length+rn.length?`<div class="gcrecent"><small>최근</small>${rb.map(x=>`<button class="gcr ${r.bg&&r.bg.src===x.src?'on':''}" data-grb="${esc(x.k)}" title="배경 「${esc(x.l)}」 — 바로 적용"><i style="background-image:url('${cssu(x.src)}')"></i>${esc(x.l)}</button>`).join('')}${rm.map(x=>`<button class="gcr ${r.bgm&&r.bgm.title===x.s&&r.bgm.group===x.g?'on':''}" data-grm="${esc(x.g)}\u0001${esc(x.s)}" title="${esc(gshort(x.g))} — 모두에게 재생">♪ ${esc(x.s)}</button>`).join('')}${rn.map(n=>`<button class="gcr nt" data-grn="${esc(n.id)}" style="--c:${esc(n.color||'#d9243f')}" title="공지 「${esc(n.title||n.name)}」 — 바로 띄우기">📢 ${esc(n.name)}</button>`).join('')}</div>`:'';
+  const md=A().openModal(`<div class="gcx"><div class="gchead"><h2>GM 콘솔</h2><div class="gcnow">${now}</div><button class="btn ghost" data-x>닫기</button></div>${recent}
    <div class="gccols"><nav class="gcnav">${GC_TABS.map(([k,ic,n])=>`<button class="gct ${tab===k?'on':''}" data-gcn="${k}"><i>${ic}</i><span>${n}</span></button>`).join('')}</nav><div class="gcmain" id="gcmain">${inner}</div></div></div>`);
   md.classList.add('gcmodal');
   md.querySelectorAll('[data-gcn]').forEach(b=>b.onclick=()=>openConsole(b.dataset.gcn));
+  md.querySelectorAll('[data-grb]').forEach(b=>b.onclick=async()=>{const it=bgOf(b.dataset.grb);if(!it)return;await A().set(['rp','bg'],{src:it.src,name:it.l,at:Date.now()});await A().set(['rp','recentBg'],[it.k,...(R().recentBg||[]).filter(x=>x!==it.k)].slice(0,12));A().toast(`배경: ${it.l}`);openConsole()});
+  md.querySelectorAll('[data-grm]').forEach(b=>b.onclick=()=>{const [g,sn]=b.dataset.grm.split('\u0001');playAll(g,sn,()=>openConsole())});
+  md.querySelectorAll('[data-grn]').forEach(b=>b.onclick=async()=>{const n=notices().find(x=>x.id===b.dataset.grn);if(!n)return;await fireNotice(n);A().toast(`공지: ${n.name}`);openConsole()});
   md.querySelectorAll('[data-gnow]').forEach(b=>b.onclick=async e=>{const x=e.target.closest('[data-gx]');if(!x)return openConsole(b.dataset.gnow);e.stopPropagation();const k=x.dataset.gx;
    if(k==='bgx')await A().set(['rp','bg'],null);else if(k==='bgmx')await A().set(['rp','bgm'],null);else if(k==='capx')await A().set(['rp','caption'],null);else if(k==='centerx')await A().set(['rp','center'],null);openConsole()});
   const mn=$('#gcmain',md);if(mn)mn.scrollTop=GC.top&&GC.top.t===tab?GC.top.y:0;if(mn)mn.addEventListener('scroll',()=>{GC.top={t:tab,y:mn.scrollTop}});
   return md}
- function openConsole(tab){if(tab&&tab!==GC.tab){GC.tab=tab;GC.top=null}const r=R();const ST=A().ST;
+ function openConsole(tab){if(!GC_TABS.some(x=>x[0]===GC.tab))GC.tab='bg';if(tab&&tab!==GC.tab){GC.tab=tab;GC.top=null;try{localStorage.setItem('om_gctab',tab)}catch(e){}}const r=R();const ST=A().ST;
   if(GC.tab==='bg'){QB.con=true;return quickBg()}
   const re=()=>openConsole();let body='';
   const sec=(t,note)=>`<div class="gcsec"><h3>${t}</h3>${note?`<span class="note">${note}</span>`:''}</div>`;
