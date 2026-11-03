@@ -3,10 +3,10 @@
    고르는 단추: PC 는 위 띠 「⚙ 설정」 옆, 휴대폰은 ☰ 메뉴 창 맨 아래. */
 "use strict";
 window.OM_VT=(()=>{
- const K='om_vt',L=[['p5','P5'],['p3','P3'],['p4','P4'],['mm','망각'],['cd','칼데아'],['cdn','칼데아 밤']];   /* 11-04 망령: 칼데아(낮 cd · 밤 cdn) — css/chaldea.css, 세션 노트와 같은 키 */
+ const K='om_vt',L=[['p5','P5'],['p3','P3'],['p4','P4'],['mm','망각'],['cd','칼데아']];   /* 11-04 망령: 칼데아(cd) — css/chaldea.css, 세션 노트와 같은 키 · 예전 cdn(칼데아 밤)은 cd 로 읽는다 */
  /* 10-24 망령: 기본을 P4 로 — 그 전에 골라 둔 테마도 한 번만 P4 로 돌려 놓는다 (그 뒤 고른 건 그대로) */
  try{if(localStorage.getItem(K+'_d')!=='p4'){localStorage.setItem(K+'_d','p4');localStorage.removeItem(K)}}catch(e){}
- const get=()=>{try{const v=localStorage.getItem(K);return L.some(x=>x[0]===v)?v:'p4'}catch(e){return 'p4'}};
+ const get=()=>{try{let v=localStorage.getItem(K);if(v==='cdn')v='cd';return L.some(x=>x[0]===v)?v:'p4'}catch(e){return 'p4'}};
  const set=v=>{if(!L.some(x=>x[0]===v))v='p4';document.documentElement.setAttribute('data-vt',v);try{localStorage.setItem(K,v)}catch(e){}
   document.querySelectorAll('.vtsw button[data-vt]').forEach(b=>b.classList.toggle('on',b.dataset.vt===v));document.querySelectorAll('.vtsw .vtcur').forEach(b=>b.firstChild.textContent=(L.find(x=>x[0]===v)||[])[1]||'P4');document.querySelectorAll('.vtsw.open').forEach(x=>x.classList.remove('open'))};
  document.documentElement.setAttribute('data-vt',get());
