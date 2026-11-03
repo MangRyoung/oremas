@@ -5418,3 +5418,11 @@ html[data-vt="mm"] .clc-menu>div,html[data-vt="mm"] .clc-menu>summary{background
  .mon.big>.minfo>.mbtns{margin-left:-66px;display:flex;flex-wrap:nowrap;gap:3px}
  .mon.big>.minfo>.mbtns>.btn{flex:1 1 auto;min-width:0;padding:2px 4px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;justify-content:center;text-align:center}
 }
+/* 11-03 21:11 망령 「모바일에선 의미 없는 … 이 붙어서 줄을 하나 늘리고 있다」: 접기 단추(…)를 없애고 다 보인다 — 공격 · HP · 포텐셜 / 랭크·상태 · 퇴장 · (특수) 두 줄 */
+@media (max-width:760px){
+ .mon.big .mbtns .mmore{display:none!important}
+ .mon.big .mbtns .mx{display:inline-flex!important}
+ .mon.big .mbtns{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}
+@media (max-width:760px){.mon.big .mbtns>.btn{font-size:11px!important;padding:0 2px!important;letter-spacing:-.03em;min-width:0;overflow:hidden;text-overflow:clip}}   /* 21:11 「랭크·상태가 칸에서 튀어나간다 — 글씨 줄이기」 */
+@media (max-width:760px){.mon.big .mbtns>.btn[data-act=edit]{font-size:9.5px!important;letter-spacing:-.06em}}
