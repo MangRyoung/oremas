@@ -74,7 +74,10 @@ window.OM_BATTLE_UI=(()=>{
  function saveMon(m0,mid,nm){return A().setDiff(['battle','mons',mid],m0,nm,2).then(r=>{if(r)itemKick();return r})}
  /* 소지품 저장 뒤 점검 (2026-10-23): 내가 저장한 뒤에만, 내가 고칠 수 있는 포켓몬의 HP 열매 · 치유 열매 · 시드 · 룸서비스 · 하양허브 … 를 터트린다 */
  let ITK=0;function itemKick(){clearTimeout(ITK);ITK=setTimeout(itemSweep,150)}
- async function itemSweep(){if(!OI())return;const c=ctx();if(!c||!c.b||!c.b.mons)return;const b0=snap(c.b),b=snap(b0);const f=fieldOf(b);let out=[];try{out=OI().sweep(b,f,m=>canEdit(c,m))}catch(e){console.warn(e);return}if(!out.length)return;
+ /* 11-03 20:54 (PL 「저번 판엔 자동이던 시드가 이번엔 자동이 아니다」): 저장 뒤 점검은 「내가 저장한 뒤」에만 돌아서, 상대 화면이 필드를 바꾸면(일렉트릭메이커 …) 내 포켓몬의 시드가 안 터졌다.
+    남이 바꾼 상태가 들어와도 점검한다 — 둘이 같은 포켓몬을 두 번 터트리지 않게 이때는 주인 몫만: GM 은 GM 이 올린 파티 · NPC, 좌석은 자기 트레이너 */
+ let ITR=0;function itemKickRemote(){clearTimeout(ITR);ITR=setTimeout(()=>itemSweep(m=>{const c=ctx();return c.gm?!seatOwned(c,m.tid)&&canEdit(c,m):ownT(c,m.tid)&&canEdit(c,m)}),400)}
+ async function itemSweep(own){if(!OI())return;const c=ctx();if(!c||!c.b||!c.b.mons)return;const b0=snap(c.b),b=snap(b0);const f=fieldOf(b);let out=[];try{out=OI().sweep(b,f,typeof own==='function'?own:m=>canEdit(c,m))}catch(e){console.warn(e);return}if(!out.length)return;
   if(!await saveBattle(b0,b,f))return;for(const x of out){const m=b.mons[x.mid]||{};A().sysLog(`【소지품】 ${m.name} 『${x.name}』\n${x.lines.join('\n')}`,'battle',{mid:x.mid,img:m.image||'',eff:String(x.eff||'').slice(0,300)})}}
  /* 플레이어 몫인 트레이너 = 플레이어가 배틀에 올린 것 (trainers[tid].by = 좌석 id). GM 이 불러온 파티(by:'gm')는 PL 권한 중에도 GM 이 그대로 지시·진행한다.
     by 가 없는 예전 배틀은 예전처럼 「주인이 앉아 있는 자리」로 본다 (gmTake 도 GM 몫) */
@@ -683,9 +686,12 @@ window.OM_BATTLE_UI=(()=>{
  const TS=s=>/턴\s*개시/.test(String(s||'').replace(/<br\s*\/?>/g,' '));
  const potRowOf=n=>((DB().maker||{}).pots||[]).find(r=>r[1]===n||r[1]==='『'+n+'』');
  const rmText=n=>{const R=(window.OM_DB||{}).readymade||{};return (R[n]||{}).text||''};
+ const PRE_LATER=/받(?:을|았을|으면|는)|맞(?:을|았을|으면)|명중\s*굴림|명중굴림|공격(?:할|하기|을 받|받을)|기술을\s*(?:쓸|사용할|낼)|다음\s*(?:기술|공격|행동)|행동(?:할|하기|한 뒤|했을)|쓰러|빈사|교대|등장|퇴장|턴\s*종료|【\s*(?:임의|사전)\s*】/;
  function preCounts(t,x,m){x=x||{};if(x.command)return true;
   if(x.order){const n=OO().orderName(t||{},x.order);const row=potRowOf(n);if((row&&row[0]==='5계')||/결계|법계/.test(n))return true;if(row&&TS(row[2]))return true;if(!row&&TS(rmText(n)))return true}
-  for(const pn of x.pots||[]){const p=m?potSrc(m).find(q=>q.name===pn):null;const row=potRowOf(pn);if(TS(p&&p.eff)||TS(row&&row[2])||(!p&&!row&&TS(rmText(pn))))return true}
+  for(const pn of x.pots||[]){const p=m?potSrc(m).find(q=>q.name===pn):null;const row=potRowOf(pn);const tx=(p&&p.eff)||(row&&row[2])||rmText(pn)||'';if(TS(p&&p.eff)||TS(row&&row[2])||(!p&&!row&&TS(rmText(pn))))return true;
+   /* 11-03 20:52 망령 「결계를 선행 입력했는데 턴 개시에 안 잡아 준다」: 【선행】인데 따로 때(받을 때 · 명중굴림 · 다음 기술 …)가 없는 것(물리결계 · 특수결계 …)도 턴 개시에 센다 */
+   if(/결계|법계/.test(pn)||(/【\s*선행\s*】/.test(tx)&&!PRE_LATER.test(String(tx).replace(/<br\s*\/?>/g,' '))))return true}
   return false}
  function upCounts(t,ups){for(const n of ups||[]){const u=((t&&t.unique)||[]).find(q=>q&&q.name===n);if(TS(u&&u.eff)||(!u&&TS(rmText(n))))return true}return false}
  async function turnInfo(c,b){let rows=[];try{rows=(await DBS().secretGet(c.ST.room,c.ST.secret,'cmd')||[]).filter(r=>cmdFresh(r,b))}catch(e){}
@@ -1032,7 +1038,7 @@ window.OM_BATTLE_UI=(()=>{
      if(li===0&&a&&a.ops&&a.ops.length&&!a.manual){fireAuto(m.id,kind,name,{quiet:true,head:`【지연】 ${lab} — 나온 지 ${N}턴째, 발동`}).catch(e=>console.warn('delay',e))}
      else notes.push(`${lab} — 나온 지 ${N}턴째, 이번 턴부터 (손으로)`)})}}
   if(notes.length)A().sysLog(`【지연】 ${T}턴\n${notes.join('\n')}`,'battle')}
- async function watch(){const c=ctx();const b=c.b;try{dupWatch(c,b)}catch(e){console.warn('dup',e)}delayWatch(c,b).catch(e=>console.warn('delay',e));try{coWatch()}catch(e){}faintWatch().catch(e=>console.warn('faint',e));hpFormWatch().catch(e=>console.warn('hpform',e));answerAsks().catch(e=>console.warn('asks',e));if(b.endq&&b.endq.step)endAdvance();if((+b.phase||0)>=2)return autoRevealTurn();if((+b.phase||0)!==1)return;
+ async function watch(){const c=ctx();const b=c.b;try{dupWatch(c,b)}catch(e){console.warn('dup',e)}if(b&&b.started&&(c.gm||c.role==='seat'))itemKickRemote();delayWatch(c,b).catch(e=>console.warn('delay',e));try{coWatch()}catch(e){}faintWatch().catch(e=>console.warn('faint',e));hpFormWatch().catch(e=>console.warn('hpform',e));answerAsks().catch(e=>console.warn('asks',e));if(b.endq&&b.endq.step)endAdvance();if((+b.phase||0)>=2)return autoRevealTurn();if((+b.phase||0)!==1)return;
   if(c.role==='seat')for(const tid of myTrainers(c).filter(t=>lead(c,t))){await selfCharge(tid);await publishOk(tid);   /* 함께 지시하는 트레이너도 (주인이 없을 때) */
    const key=turnKey(b);if(String(b.revealReq||'')===key&&!BUSY.rv){const left=Object.values(b.mons||{}).filter(m=>m.tid===tid&&m.entry&&m.hp.cur>0&&!revealed(b,tid,m.id)&&!SENT[key+':'+m.id]);
     if(left.length){BUSY.rv=1;try{for(const m of left){if(revealed(ctx().b,tid,m.id))continue;SENT[key+':'+m.id]=1;await revealOne(tid,m.id,true)}}finally{BUSY.rv=0}}}}
