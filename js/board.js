@@ -16,7 +16,8 @@ window.NT_BOARD=(()=>{
  /* PL(편집 못 하는 쪽)이 카드를 옮기면 한 번만 알려 준다 — 제 브라우저에만 남는다는 것 */
  function plMoveHint(){try{if(sessionStorage.getItem('nt_board_plmove'))return;sessionStorage.setItem('nt_board_plmove','1')}catch(e){}if(window.NT&&NT.toast)NT.toast('내 화면에서만 옮겨져요 — 모두에게 옮기려면 GM 에게')}
  function mount(el,opt){const W=opt.W||2200,H=opt.H||1400;const key=opt.key||'nt-board';const D={nodes:opt.nodes||[],edges:opt.edges||[],groups:opt.groups||{}};const byId={};D.nodes.forEach(n=>byId[n.id]=n);
-  let scale=1,sel=null,linkFrom=null,labels=false;const hidden={};try{const s=JSON.parse(localStorage.getItem(key+':ui')||'{}');labels=!!s.labels;Object.assign(hidden,s.hidden||{})}catch(e){}
+  /* 11-03 감우: 실 메모(관계 이름)는 기본으로 보인다 — 끈 사람만 그대로 숨김 */
+  let scale=1,sel=null,linkFrom=null,labels=true;const hidden={};try{const s=JSON.parse(localStorage.getItem(key+':ui')||'{}');labels=s.labels==null?true:!!s.labels;Object.assign(hidden,s.hidden||{})}catch(e){}
   const saveUi=()=>{try{localStorage.setItem(key+':ui',JSON.stringify({labels,hidden}))}catch(e){}};
   const gcol=g=>(D.groups[g]&&D.groups[g].color)||PAL[Math.abs(hash(String(g||'')))%PAL.length];
   el.innerHTML=`<div class="cb-top"><div class="cb-groups"></div><span class="cb-sp"></span>${opt.canEdit?`<button type="button" class="cb-btn" data-cb="link">🧵 실 잇기</button><button type="button" class="cb-btn" data-cb="new">＋ 인물</button>`:''}<button type="button" class="cb-btn" data-cb="labels" aria-pressed="${labels}">${labels?'실 메모 숨기기':'실 메모 보기'}</button><span class="cb-sep"></span><button type="button" class="cb-btn" data-cb="out" title="축소">−</button><button type="button" class="cb-btn" data-cb="fit">맞춤</button><button type="button" class="cb-btn" data-cb="in" title="확대">+</button></div>
@@ -37,9 +38,9 @@ window.NT_BOARD=(()=>{
   /* 실 */
   const pairCount={};D.edges=D.edges.filter(e=>byId[e.a]&&byId[e.b]);
   D.edges.forEach(e=>{const k=[e.a,e.b].sort().join('|');e.k=pairCount[k]=(pairCount[k]||0)+1;
-   e.sh=document.createElementNS(NS,'path');e.sh.setAttribute('class','sh');e.el=document.createElementNS(NS,'path');e.el.setAttribute('class','str '+(e.kind||'tie')+(e.gmOnly?' gm':''));e.hit=document.createElementNS(NS,'path');e.hit.setAttribute('class','hit');e.hit.setAttribute('stroke','transparent');e.hit.setAttribute('stroke-width','16');e.hit.setAttribute('fill','none');
+   e.sh=document.createElementNS(NS,'path');e.sh.setAttribute('class','sh'+(e.gmOnly?' gm':''));e.el=document.createElementNS(NS,'path');e.el.setAttribute('class','str '+(e.kind||'tie')+(e.gmOnly?' gm':''));e.hit=document.createElementNS(NS,'path');e.hit.setAttribute('class','hit');e.hit.setAttribute('stroke','transparent');e.hit.setAttribute('stroke-width','16');e.hit.setAttribute('fill','none');
    svg.appendChild(e.sh);svg.appendChild(e.el);svg.appendChild(e.hit);
-   const t=document.createElement('div');t.className='cb-tag '+(e.kind||'tie');t.style.setProperty('--r',(((hash(e.a+e.b)%7)-3)*1.2)+'deg');t.innerHTML=(e.redacted?'<span class="bar">██████</span>':esc(e.label||''))+(e.glabel?`<span class="g">· ${esc(e.glabel)}</span>`:'')+(e.gmOnly?'<span class="g">🔒</span>':'');board.appendChild(t);e.tag=t;
+   const t=document.createElement('div');t.className='cb-tag '+(e.kind||'tie')+(e.gmOnly?' gm':'');t.style.setProperty('--r',(((hash(e.a+e.b)%7)-3)*1.2)+'deg');t.innerHTML=(e.redacted?'<span class="bar">██████</span>':esc(e.label||''))+(e.glabel?`<span class="g">· ${esc(e.glabel)}</span>`:'')+(e.gmOnly?'<span class="g">🔒</span>':'');board.appendChild(t);e.tag=t;
    e.hit.addEventListener('mouseenter',()=>t.classList.add('on'));e.hit.addEventListener('mouseleave',()=>t.classList.remove('on'));
    /* 10-26 망령: 터치는 올려놓기가 없으니 실을 톡 치면 메모가 2.5초 보인다 */
    e.hit.addEventListener('pointerup',ev=>{if(ev.pointerType!=='touch')return;t.classList.add('show');clearTimeout(e._showT);e._showT=setTimeout(()=>t.classList.remove('show'),2500)});e.hit.addEventListener('click',ev=>{ev.stopPropagation();if(opt.onEdge)opt.onEdge(e.id)})});
@@ -68,7 +69,8 @@ window.NT_BOARD=(()=>{
   function setScale(s,ax,ay){const old=scale;scale=Math.max(.15,Math.min(1.6,s));frame.style.transform=`scale(${scale})`;sizer.style.width=((W+40)*scale)+'px';sizer.style.height=((H+40)*scale)+'px';
    if(ax!=null){const bx=(vp.scrollLeft+ax)/old,by=(vp.scrollTop+ay)/old;vp.scrollLeft=bx*scale-ax;vp.scrollTop=by*scale-ay}}
   /* 맞춤: 판 전체가 한눈에 — 가로 · 세로 둘 다 들어가게, 보는 창 높이도 판에 맞춘다 (스크롤 막대 없이) */
-  const fit=()=>{const maxH=Math.max(320,innerHeight-(innerWidth<980?150:200));const sc=Math.min(vp.clientWidth/(W+40),maxH/(H+40),1);vp.style.height=Math.round((H+40)*sc)+'px';setScale(sc);vp.scrollLeft=0;vp.scrollTop=0};
+  /* 11-03: 발표 모드(body.present · 세션 노트)면 창 높이를 다 쓴다 */
+  const fit=()=>{const maxH=document.body.classList.contains('present')?innerHeight:Math.max(320,innerHeight-(innerWidth<980?150:200));const sc=Math.min(vp.clientWidth/(W+40),maxH/(H+40),1);vp.style.height=Math.round((H+40)*sc)+'px';setScale(sc);vp.scrollLeft=0;vp.scrollTop=0};
   /* 빈 곳을 끌면 판이 움직인다 · 휠 = 확대/축소 (마우스 자리 기준) */
   /* 10-26 망령: 손가락 두 개 확대 (NT.pinch 가 있을 때 — 오레마스에서는 없을 수 있다) */
   if(window.NT&&NT.pinch)NT.pinch(vp,()=>({zoom:scale,px:-vp.scrollLeft,py:-vp.scrollTop}),s=>{setScale(s.zoom);vp.scrollLeft=-s.px;vp.scrollTop=-s.py},[.15,1.6]);

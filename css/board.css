@@ -27,6 +27,9 @@
 .cb-strings .str.tie{stroke:var(--cb-red);stroke-width:2.4}
 .cb-strings .str.doubt{stroke:var(--cb-gold);stroke-width:2.4}
 .cb-strings .str.secret{stroke:var(--cb-noir);stroke-width:2.2;stroke-dasharray:7 5}
+/* 11-03: 우호(초록) · 애정(분홍 · 점선) */
+.cb-strings .str.ally{stroke:#2f9a52;stroke-width:2.4}
+.cb-strings .str.love{stroke:#d0507f;stroke-width:2.4;stroke-dasharray:12 5}
 .cb-strings .str.gm{stroke-dasharray:3 6;opacity:.85}
 .cb-strings .sh{fill:none;stroke:rgba(0,0,0,.32);stroke-width:3;transform:translate(2px,4px)}
 .cb-card{position:absolute;z-index:2;width:136px;background:var(--cb-paper);padding:8px 8px 10px;border-radius:2px;cursor:grab;touch-action:none;user-select:none;box-shadow:0 2px 2px rgba(0,0,0,.25),0 10px 20px rgba(0,0,0,.28);transition:opacity .2s,box-shadow .2s;color:var(--cb-ink);box-sizing:border-box}
@@ -49,6 +52,9 @@
 .cb-tag{position:absolute;z-index:4;transform:translate(-50%,-50%) rotate(var(--r,0deg));background:#f6f0de;color:#2a2118;font:19px/1.15 var(--f-hand);padding:3px 9px 2px;box-shadow:0 2px 5px rgba(0,0,0,.35);white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;clip-path:polygon(0 4%,8% 0,22% 5%,38% 0,55% 4%,72% 0,88% 5%,100% 1%,99% 96%,85% 100%,66% 95%,48% 100%,30% 95%,12% 100%,0 96%)}
 .cb-tag.secret{background:#26211b;color:#f2e7d0}
 .cb-tag.doubt{background:#fff3bf}
+.cb-tag.ally{background:#e4f5e8}
+.cb-tag.love{background:#fde4ec}
+.cb-dossier .rels i.love{border-top-style:dashed}
 .cb-tag .g{color:var(--cb-red);margin-left:4px}
 .cb-tag.secret .g{color:#ff8a8a}
 .cb-board.labels .cb-tag,.cb-tag.on{opacity:1}
@@ -83,3 +89,5 @@
 @media(max-width:980px){.cb-wrap{grid-template-columns:minmax(0,1fr)}.cb-dossier{position:static;max-height:none}}
 .cb-dossier .acts button.del{border-color:#c46a6a;color:#9b1c1c}
 .cb-dossier .cb-mini{all:unset;cursor:pointer;font-size:12px;color:#6c5a33;padding:0 4px}
+/* 10-26 망령: 터치로 실을 톡 치면 메모가 잠깐 보인다 */
+.cb-board .cb-tag.show,.cb-board.focus .cb-tag.show{opacity:1}

@@ -1704,12 +1704,15 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   const inp=$('#oocIn',d);if(inp){inp.disabled=!ST.role;inp.placeholder=ST.role?'잡담 · /r 1d100':'자리에 앉으면 말할 수 있다'}}
  addEventListener('resize',()=>{try{oocTick()}catch(e){}});
  /* 11-03 감우 (검토 20-14): 단축키 — GM 만, 칸에 치는 중 · 창이 떠 있을 때는 무시. B = 배경 창, / = 채팅 입력칸.
-    app.js 에 등록 표 OM_KEYS 가 있으면 거기에 `OM_KEYS.add({key,label,gm,when,fn,src:'rp'})` 로 넣고(한 번만), 없으면 여기 keydown 이 직접 본다 (app.js 가 뒤에 실리므로 첫 키를 받을 때 다시 확인) */
- const KEYS=[{key:'b',label:'배경 창',gm:true,fn:()=>{QB.con=false;quickBg()}},{key:'/',label:'채팅 입력칸으로',gm:true,fn:()=>{const c=document.getElementById('chatIn');if(c){c.focus();c.scrollIntoView&&c.scrollIntoView({block:'nearest'})}}}];
+    prefs_ui 의 등록 표 window.OM_KEYS.add({id,label,key,grp:'r',run}) 에 넣는다(한 번만 · grp 'r' = RP 화면에서만 · 입력칸 포커스는 표가 거른다 · run 이 false 를 돌려주면 preventDefault 안 함).
+    표의 일반 묶음에 같은 키가 이미 있으면(예: '/' = chat) 그쪽이 먼저 받으니 겹쳐 넣지 않는다. 표가 없으면(prefs_ui 가 빠졌을 때) 여기 keydown 이 직접 본다 — 표가 있으면 이 fallback 은 꺼진다 */
+ const KEYS=[{id:'rBg',key:'b',label:'배경 창 (GM)',gm:true,fn:()=>{QB.con=false;quickBg()}},{id:'rChat',key:'/',label:'채팅 입력칸으로 (GM)',gm:true,fn:()=>{const c=document.getElementById('chatIn');if(c){c.focus();c.scrollIntoView&&c.scrollIntoView({block:'nearest'})}}}];
  const keyFree=e=>{const t=e.target;if(t&&(t.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName||'')))return false;return !e.isComposing&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!document.querySelector('.modalbg')};
  const keyOk=()=>{const Ap=A();return !!(Ap&&Ap.ST&&Ap.ST.room)&&gm()};
  let keysReg=false;
- function regKeys(){if(keysReg)return true;const K=window.OM_KEYS;if(!K||typeof K.add!=='function')return false;keysReg=true;for(const k of KEYS){try{K.add({key:k.key,label:k.label,gm:!!k.gm,src:'rp',when:keyOk,fn:k.fn})}catch(e){console.warn('OM_KEYS',e)}}return true}
+ function regKeys(){if(keysReg)return true;const K=window.OM_KEYS;if(!K||typeof K.add!=='function')return false;keysReg=true;
+  let taken=[];try{taken=(K.list?K.list():[]).filter(x=>!x.grp).map(x=>x.key)}catch(e){}
+  for(const k of KEYS){if(taken.includes(k.key))continue;try{K.add({id:k.id,label:k.label,key:k.key,grp:'r',run:()=>{if(!keyOk()||document.querySelector('.modalbg'))return false;k.fn();return true}})}catch(e){console.warn('OM_KEYS',e)}}return true}
  setTimeout(regKeys,0);
  document.addEventListener('keydown',e=>{if(regKeys())return;if(!keyFree(e)||!keyOk())return;const key=(e.key||'').toLowerCase();const k=KEYS.find(x=>x.key===key);if(!k)return;e.preventDefault();k.fn()});
  return {onClueEv,openClueBox,stageEnter,bspkHtml,bspkBind,bsayToggleHtml,openSpkPick,spkBtnFill,spkInfo,pushRecent,curSpk,battleSay,bsayPlace,bsayClear,typingHtml,autoFolder,bgmMuted,seUrlOf:seUrl,render,allSpeakers,onChat,feedLog,onState,onTyping,typingPing,typingStop,drawTyping,mapData:mapS,openConsole,openStands,openPeople,setMyStand,charOf,playSe,setVolume,bgmWidgetHtml,bindBgmWidget,gmKeyOf,imgOfKey:k=>{if(k==='gm')return gmImg();const c=charOf(k);return c?(c.img||standSrc(c)):''},curSpeaker:()=>{const ST=A().ST;const c=speakerChar();if(c)return {key:c.key,name:c.name,img:c.img||standSrc(c)};return gm()?{key:'gm',name:'GM',img:myGmImg()}:{key:'me',name:ST.name||'',img:''}}};
