@@ -1039,7 +1039,7 @@ window.OM_BATTLE_UI=(()=>{
    if(T.length>=2&&T.every(t=>R[t]))A().sysLog(`【준비 완료】 양측 모두 지시 준비를 마쳤다${c.mgr?'':' — GM 의 「턴 개시」를 기다린다'}`,'battle')}}
  /* 턴 개시: 선행 입력한 지령·명령의 횟수를 미리 깎는다 (맵툴 set_turn_start). 주인의 호령(tc 7)은 능력·회복이 횟수를 같이 쓴다 */
  function chargeOne(t,data,b,used){t.orderCount=t.orderCount||{};const tc=OO().styles(t).tc;t.pcList={};   /* 11-03 20:47 (이토리 시온 「지령 선행 입력이 턴 개시에 자동 발동됐는데 횟수가 안 빠졌다」): 이번 턴에 무엇을 깎았는지 남긴다 — 깎은 뒤에 넣거나 바꾼 지령은 발동 때 깎는다 */
-  for(const mid in (data.mons||{})){const m=b.mons[mid];if(!m||!m.entry||m.hp.cur<=0)continue;const x=data.mons[mid];
+  for(const mid in (data.mons||{})){const m=b.mons[mid];if(!m)continue;const x=data.mons[mid];   /* 11-03 22:20 이토리 시온 「물러나 · 피해라 · 바꿔라 · 방어지령 · 특방지령 횟수가 안 빠졌다」: 늦게 깎을 때(턴 진행 뒤) 교대로 나갔거나 쓰러진 포켓몬 몫을 건너뛰지 않는다 — 지시는 필드에 있을 때만 넣을 수 있으니 넣은 것은 다 깎는다 */
    if(x.order){const k='order_'+x.order;t.orderCount[k]=Math.max(0,(+t.orderCount[k]||0)-1);if(used)used.o++}
    if(x.order||x.command)t.pcList[mid]={o:x.order||'',c:x.command||''};
    if(x.command){const dec=k=>{t.orderCount[k]=Math.max(0,(+t.orderCount[k]||0)-1)};dec('command_'+x.command);if(used)used.c++;const sk=OO().shareKey(t,x.command);if(sk)dec('command_'+sk)}}}
@@ -1051,8 +1051,16 @@ window.OM_BATTLE_UI=(()=>{
   if(any)await A().setDiff(['battle','trainers'],trs0,trs,2)}
  /* 좌석: 내 지시의 선입력분은 내 화면이 깎는다 (모의전 · GM 불간섭 · GM 이 없을 때) */
  const BUSY={},SENT={};
- async function selfCharge(tid0){const c=ctx();const b=c.b;const tid=tid0||c.seat;const t=(b.trainers||{})[tid];if(c.role!=='seat'||!t)return;const key=turnKey(b);if(t.pcTurn===key||BUSY.pc===key)return;BUSY.pc=key;
-  const cm=await myCmd(c,tid,true);const t0=snap((ctx().b.trainers||{})[tid]||t),t2=snap(t0);if(t2.pcTurn===key)return;const used={o:0,c:0};if(cm)chargeOne(t2,cm,ctx().b,used);else t2.pcList={};t2.pcTurn=key;await A().setDiff(['battle','trainers',tid],t0,t2,1)}
+ /* 11-03 22:20 (PL 권한 판에서 선행 입력 횟수가 턴마다 들쭉날쭉 빠지던 것): ① 예전엔 페이즈 1(턴 개시 ~ 행동 순서)을 내 화면이 「보는 동안」에만 깎았다 — 진행자가 곧장 행동 단계로 넘기거나 휴대폰이 뒤에 있으면 그 턴을 통째로 건너뛰었다 → 시합 중이고 페이즈 1 이상이면 언제든 이번 턴 몫을 깎는다.
+    ② 지시를 못 읽었을 때(통신 오류)도 「깎음」으로 적어 버려 다시 안 깎았다 → 못 읽으면 적지 않고 다음에 다시. ③ 대기 표시(BUSY.pc)가 트레이너 구분 없이 하나라 함께 지시하는 두 번째 트레이너가 막혔다 */
+ async function selfCharge(tid0){const c=ctx();const b=c.b;const tid=tid0||c.seat;const t=(b.trainers||{})[tid];if(c.role!=='seat'||!t||!b.started||(+b.phase||0)<1)return;const key=turnKey(b);const bk='pc:'+tid;if(t.pcTurn===key||BUSY[bk]===key)return;BUSY[bk]=key;
+  try{let rows;try{rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd')}catch(e){BUSY[bk]=null;return}const r=(rows||[]).filter(x=>cmdFresh(x,ctx().b)).find(x=>x.id===tid);const cm=r&&r.data;
+   if(turnKey(ctx().b)!==key)return;const t0=snap((ctx().b.trainers||{})[tid]||t),t2=snap(t0);if(t2.pcTurn===key)return;const used={o:0,c:0};if(cm)chargeOne(t2,cm,ctx().b,used);else t2.pcList={};t2.pcTurn=key;if(!await A().setDiff(['battle','trainers',tid],t0,t2,1))BUSY[bk]=null}catch(e){BUSY[bk]=null;console.warn('선행 차감',e)}}
+ /* GM: PL 권한 중 좌석 트레이너 몫은 좌석 화면이 깎는데, 그 좌석(과 함께 지시하는 좌석)이 아무도 접속해 있지 않으면 GM 화면이 대신 깎는다 */
+ async function gmChargeOrphans(){const c=ctx();const b=c.b;if(!c.gm||!c.fair||!b.started||(+b.phase||0)<1)return;const key=turnKey(b);
+  const T=Object.keys(b.trainers||{}).filter(tid=>seatOwned(c,tid)&&(b.trainers[tid]||{}).pcTurn!==key&&!A().online(tid)&&!coOf(c,tid).some(s=>A().online(s)));if(!T.length||BUSY.gpc===key+':'+T.join(','))return;BUSY.gpc=key+':'+T.join(',');
+  let rows;try{rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd')}catch(e){BUSY.gpc=null;return}
+  for(const tid of T){const r=(rows||[]).filter(x=>cmdFresh(x,ctx().b)).find(x=>x.id===tid);const t0=snap((ctx().b.trainers||{})[tid]||{}),t2=snap(t0);if(t2.pcTurn===key)continue;if(r&&r.data)chargeOne(t2,r.data,ctx().b,{o:0,c:0});else t2.pcList={};t2.pcTurn=key;await A().setDiff(['battle','trainers',tid],t0,t2,1)}}
  /* 상태가 바뀔 때마다 (app.js onState): 턴 개시면 내 선입력 차감, 공개 요청이 오면 내 남은 지시를 연다, 진행자는 자동으로 넘긴다 */
  /* 10-26 망령: 배틀 준비(시합 개시 전) 중에 한 파티에 같은 소지품이 겹치면 그 파티를 다루는 사람(GM · 그 좌석)에게만 한 번 알린다. 소지품을 또 바꿔 다르게 겹치면 다시 */
  const DUP_SEEN={};
@@ -1077,9 +1085,9 @@ window.OM_BATTLE_UI=(()=>{
      if(li===0&&a&&a.ops&&a.ops.length&&!a.manual){fireAuto(m.id,kind,name,{quiet:true,head:`【지연】 ${lab} — 나온 지 ${N}턴째, 발동`}).catch(e=>console.warn('delay',e))}
      else notes.push(`${lab} — 나온 지 ${N}턴째, 이번 턴부터 (손으로)`)})}}
   if(notes.length)A().sysLog(`【지연】 ${T}턴\n${notes.join('\n')}`,'battle')}
- async function watch(){const c=ctx();const b=c.b;try{dupWatch(c,b)}catch(e){console.warn('dup',e)}if(b&&b.started&&(c.gm||c.role==='seat'))itemKickRemote();delayWatch(c,b).catch(e=>console.warn('delay',e));try{coWatch()}catch(e){}faintWatch().catch(e=>console.warn('faint',e));hpFormWatch().catch(e=>console.warn('hpform',e));answerAsks().catch(e=>console.warn('asks',e));if(b.endq&&b.endq.step)endAdvance();if((+b.phase||0)>=2)return autoRevealTurn();if((+b.phase||0)!==1)return;
+ async function watch(){const c=ctx();const b=c.b;try{dupWatch(c,b)}catch(e){console.warn('dup',e)}if(b&&b.started&&(c.gm||c.role==='seat'))itemKickRemote();delayWatch(c,b).catch(e=>console.warn('delay',e));try{coWatch()}catch(e){}faintWatch().catch(e=>console.warn('faint',e));hpFormWatch().catch(e=>console.warn('hpform',e));answerAsks().catch(e=>console.warn('asks',e));if(b.endq&&b.endq.step)endAdvance();if(b.started&&(+b.phase||0)>=1){if(c.role==='seat')for(const tid of myTrainers(c).filter(t=>lead(c,t)))selfCharge(tid).catch(e=>console.warn('선행 차감',e));gmChargeOrphans().catch(e=>console.warn('선행 차감(GM)',e))}if((+b.phase||0)>=2)return autoRevealTurn();if((+b.phase||0)!==1)return;
   if(c.gm)for(const tid of Object.keys(b.trainers||{}).filter(t=>!seatOwned(c,t)))await publishOk(tid);
-  if(c.role==='seat')for(const tid of myTrainers(c).filter(t=>lead(c,t))){await selfCharge(tid);await publishOk(tid);   /* 함께 지시하는 트레이너도 (주인이 없을 때) */
+  if(c.role==='seat')for(const tid of myTrainers(c).filter(t=>lead(c,t))){await publishOk(tid);   /* 함께 지시하는 트레이너도 (주인이 없을 때) */
    const key=turnKey(b);if(String(b.revealReq||'')===key&&!BUSY.rv){const left=Object.values(b.mons||{}).filter(m=>m.tid===tid&&m.entry&&m.hp.cur>0&&!revealed(b,tid,m.id)&&!SENT[key+':'+m.id]);
     if(left.length){BUSY.rv=1;try{for(const m of left){if(revealed(ctx().b,tid,m.id))continue;SENT[key+':'+m.id]=1;await revealOne(tid,m.id,true)}}finally{BUSY.rv=0}}}}
   autoAdvance()}
