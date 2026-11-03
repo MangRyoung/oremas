@@ -12,6 +12,8 @@ if errorlevel 1 (
   exit /b
 )
 if not exist "%~dp0시뮬레이터.lnk" powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0make_shortcut.ps1" -LocalOnly >nul 2>nul
+rem 11-03: 예전 서버가 8470 포트를 잡고 있으면 끄고 새로 켠다 (창을 닫아도 옛 서버가 남아 새 코드가 안 돌던 일)
+for /f "tokens=5" %%p in ('netstat -ano ^| findstr ":8470 " ^| findstr LISTENING') do taskkill /F /PID %%p >nul 2>nul
 start "" /b cmd /c "timeout /t 2 >nul & start http://localhost:8470"
 node bin\sim.js ui --noopen
 echo.
