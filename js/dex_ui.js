@@ -68,6 +68,7 @@ window.OM_DEX_UI=(()=>{
   if(parts.length&&want.length===prev.length)return A().toast('그 부분은 이미 해석했다');
   const fw=+m.dexFw||0;let isOpen=true,why='';
   if(!o.forced){if(fw===1){isOpen=false;why='해석 차단 (1회) — 차단이 풀렸다';await A().set(['battle','mons',mid,'dexFw'],0)}else if(fw===2){isOpen=false;why='완전 차단'}}
+  if(!o.forced&&isOpen){const nd=window.OM_FX&&window.OM_FX.spOf?window.OM_FX.spOf(m,'nodex')[0]:null;if(nd){isOpen=false;why=`해석 차단 — 「${nd.name}」`}}   /* 11-03 「해석차단」 구문 */
   let got=want;if(isOpen&&fw===3&&!o.forced){const allow=m.dexFwParts||{};got=want.filter(p=>allow[p]);if(!got.length){isOpen=false;why='일부 차단 — 허용된 부분이 없다'}else if(got.length<want.length)why='일부 차단 — '+got.map(p=>(PARTS.find(x=>x[0]===p)||[])[1]).join('·')+'만';}
   if(!o.free){d.used=(+d.used||0)+1}
   if(isOpen){const fullNow=got.length===3||(!parts.length&&got.length===3);if(fullNow){if(!d.list.includes(mid))d.list.push(mid);delete d.part[mid]}else d.part[mid]=got}

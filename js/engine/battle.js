@@ -117,9 +117,13 @@ window.OM_BATTLE=(()=>{
     moveTypes: 기술 타입(영문) 1~3개, def: 포켓몬, o:{multiMode 0 첫타입/1 최고/2 최저, atkTypes:공격자 타입, force:null|2|1|0.5|0, floating, tera} */
  function effectiveness(moveTypes,def,o){
   o=o||{};const defTypes=def.teraActive&&def.teraEn&&def.teraEn!=='-'?[def.teraEn]:(def.types||[]);
+  /* 11-03 「명중확장」(o.scrappy = [{types, vs, float}]): 그 기술 타입이 「타입 : vs」에 무효면 그 타입만 빼고 · float 면 땅 기술이 하늘 위에도 */
+  const SC=t=>(o.scrappy||[]).filter(e=>!(e.types&&e.types.length)||e.types.includes(t));
   const one=t=>{
    if(t==='Shadow'||t==='Wild')return 2;if(t==='God')return 1;
-   if(t==='Ground'&&(o.floating||has(def,'MagnetRise')||has(def,'Telekinesis')))return 0;
+   const sc=SC(t);
+   if(t==='Ground'&&(o.floating||has(def,'MagnetRise')||has(def,'Telekinesis'))&&!sc.some(e=>e.float))return 0;
+   if(sc.length){const ign=new Set(sc.flatMap(e=>e.vs||[]));const dt=defTypes.filter(x=>!(ign.has(x)&&S().effect(t,[x])===0));return dt.length?S().effect(t,dt):1}
    return S().effect(t,defTypes)};
   const vals=moveTypes.filter(t=>t&&t!=='-').map(t=>({type:t,v:one(t),stab:(o.atkTypes||[]).includes(t)}));
   if(!vals.length)return {value:1,type:'-',stab:false,all:vals};
