@@ -9,7 +9,8 @@ window.OM_STATS=(()=>{
 
  /* 트레이너 육성 랭크 → 기본 레벨 (제작기 lvl 표: [랭크, 경험치, 레벨, 종족치 상한]) */
  function baseLevel(rank){const L=(DB().maker||{}).lvl||[];const r=L.find(x=>x[0]===rank)||L.find(x=>x[0]===strip(rank));return r?+r[2]:100}
- function levelOf(trainer,p){return baseLevel(trainer&&trainer.ranks?trainer.ranks['육성']:'')+(+(p&&p.dist)||0)}
+ /* 11-03 감우: 분배레벨(dist)이 소수면 제작기 lv 와 같게 반올림 (제작기는 Math.round(dist)) — 전엔 그대로 더해 레벨이 소수로 어긋났다 */
+ function levelOf(trainer,p){return baseLevel(trainer&&trainer.ranks?trainer.ranks['육성']:'')+Math.round(+(p&&p.dist)||0)}
 
  /* 종족치 → 등급 (제작기 grade 표: [하한, 등급]) */
  function gradeOf(v){v=+v||0;const G=(DB().maker||{}).grade||[];let g='-';for(const [lo,name] of G){if(v>=+lo)g=name;else break}return g}
