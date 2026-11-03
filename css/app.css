@@ -5426,3 +5426,6 @@ html[data-vt="mm"] .clc-menu>div,html[data-vt="mm"] .clc-menu>summary{background
 }
 @media (max-width:760px){.mon.big .mbtns>.btn{font-size:11px!important;padding:0 2px!important;letter-spacing:-.03em;min-width:0;overflow:hidden;text-overflow:clip}}   /* 21:11 「랭크·상태가 칸에서 튀어나간다 — 글씨 줄이기」 */
 @media (max-width:760px){.mon.big .mbtns>.btn[data-act=edit]{font-size:9.5px!important;letter-spacing:-.06em}}
+/* 11-03 21:15 망령 「폼체인지나 메가 … 평소에 안 쓰는 버튼은 아래 줄 하나 더」: 폼 · 메가 · 테라는 둘째 줄 (21:17 「(특수)는 냅둬」 — 퇴장 · (특수)는 첫 줄 그대로) */
+.mbtns2{margin-top:3px}
+@media (min-width:761px){.mon.big>.minfo>.mbtns2>.btn{flex:0 1 auto}}
