@@ -96,7 +96,8 @@
    "art": "an old iron cage freight elevator with a folding brass gate stopped at an underground floor, opening to a dim brick corridor lit by gas lamps",
    "gm": "승강기가 열리자마자 매우 어려운 체크(육성 15). 실패가 흔하다 — 이 던전이 어렵다는 걸 바로 알린다.",
    "okText": "손바닥을 펴고 천천히 다가가자 실험체가 숨을 골랐다.",
-   "failText": "실험체가 날뛰며 승강기 벽을 들이받았다. 경보등이 켜진다."
+   "failText": "실험체가 날뛰며 승강기 벽을 들이받았다. 경보등이 켜진다.",
+   "img": "md7_lab/entry.webp"
   },
   {
    "id": "b1",
@@ -116,7 +117,8 @@
    "desc": "장비를 만들던 조립 라인. 멈춘 기계 팔 사이에서 불꽃이 튄다.",
    "memo": "장비를 만들던 조립 라인. 멈춘 기계 팔 사이에서 불꽃이 튄다.\nGM: 조립 라인 배틀 — 전기 · 강철 위주.",
    "art": "a stopped early industrial assembly line of brass gears, belts and conveyor rollers in a brick vaulted hall, sparks from a broken cable, scattered metal parts",
-   "gm": "조립 라인 배틀 — 전기 · 강철 위주."
+   "gm": "조립 라인 배틀 — 전기 · 강철 위주.",
+   "img": "md7_lab/b1.webp"
   },
   {
    "id": "c1",
@@ -153,7 +155,8 @@
    "art": "an old disinfection room with white glazed tiles, brass spray nozzles on the walls, a heavy riveted door with a wheel lock, a wall panel of brass levers and dials",
    "gm": "보안 장치 해제(지시 12).",
    "okText": "초록 불이 하나씩 켜지며 소독문이 열렸다.",
-   "failText": "소독 안개가 뿜어져 모두 콜록거렸다."
+   "failText": "소독 안개가 뿜어져 모두 콜록거렸다.",
+   "img": "md7_lab/c1.webp"
   },
   {
    "id": "safe",
@@ -194,7 +197,8 @@
    "art": "an emergency shelter room in a basement, iron bunk beds, wooden supply crates and lockers, a single warm lamp, a heavy vault door",
    "gm": "비상 대피소. 무너지는 통로(통솔 12)를 다 같이 지나야 들어간다.",
    "okText": "마지막 사람이 들어오자마자 뒤에서 천장이 내려앉았다.",
-   "failText": "먼지 속에서 서로를 찾느라 진이 빠졌다."
+   "failText": "먼지 속에서 서로를 찾느라 진이 빠졌다.",
+   "img": "md7_lab/safe.webp"
   },
   {
    "id": "boss",
@@ -229,7 +233,8 @@
    },
    "desc": "배양조가 깨진 실험 심부. 바닥에 보라빛 독액이 고여 있다.",
    "memo": "배양조가 깨진 실험 심부. 바닥에 보라빛 독액이 고여 있다.",
-   "art": "the core experiment chamber under a brick dome, huge cracked glass cultivation tanks with brass frames, purple liquid pooled on the stone floor, hanging cables, eerie violet light"
+   "art": "the core experiment chamber under a brick dome, huge cracked glass cultivation tanks with brass frames, purple liquid pooled on the stone floor, hanging cables, eerie violet light",
+   "img": "md7_lab/boss.webp"
   },
   {
    "id": "g1a1",
@@ -240,7 +245,8 @@
    "name": "직원 샤워실",
    "desc": "직원 샤워실. 물이 계속 흐른다.",
    "art": "an old staff washroom with white tiles and brass shower heads, water still running, steam, a wooden bench",
-   "gm": "샤워실 — 물소리만. 쉬어 가는 장면."
+   "gm": "샤워실 — 물소리만. 쉬어 가는 장면.",
+   "img": "md7_lab/g1a1.webp"
   },
   {
    "id": "g1a2",
@@ -279,7 +285,8 @@
    "art": "a narrow brick corridor with a riveted iron security door, electric arcs crackling between exposed copper coils, red warning lamp",
    "gm": "전류 복도 돌파(능력 10).",
    "okText": "전류가 끊기는 틈을 타 한 번에 지나갔다.",
-   "failText": "찌릿 — 손끝이 저려 온다."
+   "failText": "찌릿 — 손끝이 저려 온다.",
+   "img": "md7_lab/g1a2.webp"
   },
   {
    "id": "g1a3",
@@ -300,7 +307,8 @@
    "desc": "실험 포켓몬을 기르던 사육실. 우리 문이 열려 있다.",
    "memo": "실험 포켓몬을 기르던 사육실. 우리 문이 열려 있다.\nGM: 사육실 배틀 — 열린 우리.",
    "art": "a creature keeping room with rows of open iron cages, straw on the floor, feeding bowls, an observation window with wooden frame",
-   "gm": "사육실 배틀 — 열린 우리."
+   "gm": "사육실 배틀 — 열린 우리.",
+   "img": "md7_lab/g1a3.webp"
   },
   {
    "id": "g2a1",
@@ -337,7 +345,8 @@
    "art": "a dark spiral stone stairwell during a blackout, iron railings, a single lantern beam cutting the darkness",
    "gm": "정전 계단(통솔 15) — 이 던전의 「어려운 길」.",
    "okText": "손전등 하나에 의지해 한 계단씩, 아무도 놓치지 않았다.",
-   "failText": "누군가 계단에서 굴렀다. 어둠 속에서 무언가 웃는 소리."
+   "failText": "누군가 계단에서 굴렀다. 어둠 속에서 무언가 웃는 소리.",
+   "img": "md7_lab/g2a1.webp"
   },
   {
    "id": "tr",
@@ -354,7 +363,8 @@
    "memo": "연구원 사물함. 사고 보고서가 들어 있다.\nGM: 사물함 = 사고 보고서(보스 단서).",
    "art": "a row of old wooden researcher lockers, one open with papers and a white lab coat inside, a desk lamp",
    "gm": "사물함 = 사고 보고서(보스 단서).",
-   "clueAuto": "깊은 곳의 주인 — 「독」 기운이 서려 있다.\n「땅」 · 「에스퍼」 쪽을 꺼리는 흔적이 남아 있다.\n「거품광선」의 자국이 벽에 새겨져 있다."
+   "clueAuto": "깊은 곳의 주인 — 「독」 기운이 서려 있다.\n「땅」 · 「에스퍼」 쪽을 꺼리는 흔적이 남아 있다.\n「거품광선」의 자국이 벽에 새겨져 있다.",
+   "img": "md7_lab/tr.webp"
   },
   {
    "id": "s1",
@@ -366,7 +376,8 @@
    "from": "g1a2",
    "desc": "좁은 청소 도구함. 무언가 웅크리고 있다.",
    "art": "a cramped janitor closet with mops, tin buckets and shelves of glass bottles, a single bare bulb",
-   "gm": "청소 도구함 배틀 — 기습."
+   "gm": "청소 도구함 배틀 — 기습.",
+   "img": "md7_lab/s1.webp"
   }
  ],
  "branches": [

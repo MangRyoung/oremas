@@ -95,7 +95,8 @@
    "art": "a broken floor of an old archive vault revealing stone stairs going down to an ancient sealed stone arch with runes, dust and old files scattered",
    "gm": "첫 방부터 매우 어려운 봉인(능력 15) — 실패해도 들어갈 수 있지만 경계도가 오른다는 걸 보여 주는 방.",
    "okText": "아치의 문양이 차례로 꺼지며 길이 열렸다.",
-   "failText": "봉인이 터지듯 풀리며 먼지가 일었다 — 깊은 곳에서 무언가 깼다."
+   "failText": "봉인이 터지듯 풀리며 먼지가 일었다 — 깊은 곳에서 무언가 깼다.",
+   "img": "md6_ruin/entry.webp"
   },
   {
    "id": "b1",
@@ -115,7 +116,8 @@
    "desc": "거대한 기둥이 늘어선 방. 기둥 사이 그림자가 움직인다.",
    "memo": "거대한 기둥이 늘어선 방. 기둥 사이 그림자가 움직인다.\nGM: 기둥 사이 배틀.",
    "art": "a hall of giant carved stone pillars in an underground ruin, shafts of dusty light, shadows between the pillars",
-   "gm": "기둥 사이 배틀."
+   "gm": "기둥 사이 배틀.",
+   "img": "md6_ruin/b1.webp"
   },
   {
    "id": "c1",
@@ -151,7 +153,8 @@
    "art": "a huge stone door covered in ancient script and glowing runes, a reading stand with an open book in front of it",
    "gm": "옛 문자 해독(지시 10). 성공하면 문구 한 줄(「기록은 지켜진다」)을 읽어 준다.",
    "okText": "「기록은 지켜진다」 — 문이 그 말에 대답하듯 열렸다.",
-   "failText": "엉뚱한 글자를 눌러 문이 한 번 덜컥 닫혔다."
+   "failText": "엉뚱한 글자를 눌러 문이 한 번 덜컥 닫혔다.",
+   "img": "md6_ruin/c1.webp"
   },
   {
    "id": "c2",
@@ -187,7 +190,8 @@
    "art": "a long gallery lined with stone statues of strange creatures, one statue with faintly glowing eyes, warm lamplight",
    "gm": "석상에 깃든 포켓몬 달래기(육성 12).",
    "okText": "석상의 눈빛이 부드러워지며 고개를 숙였다.",
-   "failText": "석상이 삐걱 고개를 돌려 노려본다."
+   "failText": "석상이 삐걱 고개를 돌려 노려본다.",
+   "img": "md6_ruin/c2.webp"
   },
   {
    "id": "c3",
@@ -224,7 +228,8 @@
    "art": "a room with a floor of large moving stone tiles over a dark pit, carved symbols on each tile",
    "gm": "움직이는 바닥(통솔 10) — 박자 맞추기 묘사.",
    "okText": "하나 둘, 하나 둘 — 모두 같은 박자로 건넜다.",
-   "failText": "한 박자 늦은 누군가가 구멍 가장자리에 매달렸다."
+   "failText": "한 박자 늦은 누군가가 구멍 가장자리에 매달렸다.",
+   "img": "md6_ruin/c3.webp"
   },
   {
    "id": "safe",
@@ -261,7 +266,8 @@
    "art": "a quiet small chamber with stone benches, old candles, offerings and relics on a shelf, warm and peaceful light",
    "gm": "순례자의 방. 유물의 기억(능력 12) — 성공하면 보스 이야기를 미리 들려준다.",
    "okText": "유물이 기억을 보여 준다 — 강철 문지기가 처음 깨어난 날.",
-   "failText": "머리가 지끈거린다. 잠깐 누워야 했다."
+   "failText": "머리가 지끈거린다. 잠깐 누워야 했다.",
+   "img": "md6_ruin/safe.webp"
   },
   {
    "id": "boss",
@@ -290,7 +296,8 @@
    },
    "desc": "가장 깊은 방. 석판 서가가 천장까지 이어지고, 가운데 강철빛 문지기가 서 있다.",
    "memo": "가장 깊은 방. 석판 서가가 천장까지 이어지고, 가운데 강철빛 문지기가 서 있다.",
-   "art": "a grand underground record chamber with stone tablet shelves reaching the ceiling, a raised platform in the center, cold metallic blue light mixing with gold, majestic"
+   "art": "a grand underground record chamber with stone tablet shelves reaching the ceiling, a raised platform in the center, cold metallic blue light mixing with gold, majestic",
+   "img": "md6_ruin/boss.webp"
   },
   {
    "id": "g2a1",
@@ -311,7 +318,8 @@
    "desc": "유골 대신 책이 묻힌 납골당. 도깨비불이 떠다닌다.",
    "memo": "유골 대신 책이 묻힌 납골당. 도깨비불이 떠다닌다.\nGM: 돌아가는 길 배틀 — 도깨비불.",
    "art": "an underground crypt with niches filled with old books instead of bones, floating blue will-o-wisp lights, quiet",
-   "gm": "돌아가는 길 배틀 — 도깨비불."
+   "gm": "돌아가는 길 배틀 — 도깨비불.",
+   "img": "md6_ruin/g2a1.webp"
   },
   {
    "id": "g3a1",
@@ -332,7 +340,8 @@
    "desc": "부서진 신상의 머리가 바닥에 굴러 있다.",
    "memo": "부서진 신상의 머리가 바닥에 굴러 있다.\nGM: 다른 길 배틀.",
    "art": "a broken giant stone idol with its head lying on the floor in an ancient ruin, rubble, light from a crack above",
-   "gm": "다른 길 배틀."
+   "gm": "다른 길 배틀.",
+   "img": "md6_ruin/g3a1.webp"
   },
   {
    "id": "g3a2",
@@ -369,7 +378,8 @@
    "art": "a ruin room with holes in the wall where wind whistles, pressure plates in the floor with symbols",
    "gm": "바닥 장치 순서(지시 12).",
    "okText": "피리 소리 순서대로 밟자 바람이 멎었다.",
-   "failText": "잘못 밟은 판에서 모래가 쏟아졌다."
+   "failText": "잘못 밟은 판에서 모래가 쏟아졌다.",
+   "img": "md6_ruin/g3a2.webp"
   },
   {
    "id": "g3a3",
@@ -380,7 +390,8 @@
    "name": "석관 방",
    "desc": "석관이 줄지어 놓인 조용한 방.",
    "art": "a silent stone room with rows of carved stone sarcophagi, candles, dust",
-   "gm": "석관 방 — 조용히 지나가는 장면."
+   "gm": "석관 방 — 조용히 지나가는 장면.",
+   "img": "md6_ruin/g3a3.webp"
   },
   {
    "id": "tr",
@@ -397,7 +408,8 @@
    "memo": "옛 사람들이 무언가를 바친 함. 문지기에 대한 기록이 있다.\nGM: 봉헌함 = 보스 단서.",
    "art": "an ancient stone offering box with an open lid on a pedestal, scrolls and coins inside, beam of light",
    "gm": "봉헌함 = 보스 단서.",
-   "clueAuto": "깊은 곳의 주인 — 「강철 · 에스퍼」 기운이 서려 있다.\n「불꽃」 · 「땅」 · 「고스트」 쪽을 꺼리는 흔적이 남아 있다.\n「아이언헤드」의 자국이 벽에 새겨져 있다."
+   "clueAuto": "깊은 곳의 주인 — 「강철 · 에스퍼」 기운이 서려 있다.\n「불꽃」 · 「땅」 · 「고스트」 쪽을 꺼리는 흔적이 남아 있다.\n「아이언헤드」의 자국이 벽에 새겨져 있다.",
+   "img": "md6_ruin/tr.webp"
   }
  ],
  "branches": [

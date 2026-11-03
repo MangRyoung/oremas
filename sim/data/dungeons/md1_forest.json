@@ -96,7 +96,8 @@
    "art": "a rusty iron \"keep out\" sign half wrapped in ivy beside a small door in an old brick wall, a fallen mossy tree trunk lying across the forest path ahead, morning light through leaves",
    "gm": "튜토리얼 방. 체크 하나로 규칙을 보여 준다. 실패해도 길은 열린다(시간만 든다).",
    "okText": "고목이 굴러 비탈 아래로 떨어진다. 숲의 숨소리가 열린다.",
-   "failText": "끙끙 밀어 겨우 틈을 냈다 — 소란에 숲이 깨어났다."
+   "failText": "끙끙 밀어 겨우 틈을 냈다 — 소란에 숲이 깨어났다.",
+   "img": "md1_forest/entry.webp"
   },
   {
    "id": "b1",
@@ -116,7 +117,8 @@
    "desc": "온실에서 넘어온 장미 덩굴이 가시 터널을 이룬 길. 꽃잎 사이에서 무언가 바스락거린다.",
    "memo": "온실에서 넘어온 장미 덩굴이 가시 터널을 이룬 길. 꽃잎 사이에서 무언가 바스락거린다.\nGM: 첫 배틀. 가시 터널이라 접촉기를 쓸 때 묘사를 곁들이면 좋다.",
    "art": "a tunnel path formed by wild climbing roses with thorns arching overhead, scattered pink petals on the ground, dappled sunlight",
-   "gm": "첫 배틀. 가시 터널이라 접촉기를 쓸 때 묘사를 곁들이면 좋다."
+   "gm": "첫 배틀. 가시 터널이라 접촉기를 쓸 때 묘사를 곁들이면 좋다.",
+   "img": "md1_forest/b1.webp"
   },
   {
    "id": "c1",
@@ -152,7 +154,8 @@
    "art": "a gentle forest slope covered with many kinds of herbs and wild medicinal plants, old faded wooden plant labels stuck in the soil, soft mist",
    "gm": "독초 · 약초 구별. 성공하면 약초 한 줌을 얻었다고 묘사해도 된다(효과는 없음).",
    "okText": "흐린 표찰 대신 잎맥과 냄새로 가려냈다. 주머니에 약초 한 줌.",
-   "failText": "잘못 만진 잎에서 따끔한 수액이 튀었다."
+   "failText": "잘못 만진 잎에서 따끔한 수액이 튀었다.",
+   "img": "md1_forest/c1.webp"
   },
   {
    "id": "c2",
@@ -189,7 +192,8 @@
    "art": "a shallow forest swamp crisscrossed by huge tangled tree roots like a net, still dark water reflecting the canopy, lily pads, fireflies",
    "gm": "함께 건너기(통솔). 대열 묘사.",
    "okText": "서로 뿌리를 짚어 주며 한 줄로 건넜다.",
-   "failText": "누군가 발이 빠져 모두 흙투성이가 되었다."
+   "failText": "누군가 발이 빠져 모두 흙투성이가 되었다.",
+   "img": "md1_forest/c2.webp"
   },
   {
    "id": "safe",
@@ -226,7 +230,8 @@
    "art": "a small old gardener cottage in a forest clearing, door wrapped by knotted vines, rusty watering cans and clay pots by the porch, warm cozy feeling",
    "gm": "쉼터. 문을 묶은 덩굴 매듭(지시 12)을 풀어야 들어간다. 정원사 일지 이야기를 여기서 흘려도 된다.",
    "okText": "매듭의 끝을 찾아 한 번에 풀었다. 오두막 안은 마른 흙냄새.",
-   "failText": "덩굴을 끊다 손을 긁혔다. 그래도 문은 열렸다."
+   "failText": "덩굴을 끊다 손을 긁혔다. 그래도 문은 열렸다.",
+   "img": "md1_forest/safe.webp"
   },
   {
    "id": "boss",
@@ -258,7 +263,8 @@
    },
    "desc": "숲 한가운데 안개가 고인 연못. 수면 위 바위에서 이끼 덮인 거대한 달팽이 껍데기가 천천히 움직인다.",
    "memo": "숲 한가운데 안개가 고인 연못. 수면 위 바위에서 이끼 덮인 거대한 달팽이 껍데기가 천천히 움직인다.",
-   "art": "a misty forest pond at the heart of the woods, a large mossy boulder in the water, thick drifting fog, vines hanging from giant trees around, mystical green light"
+   "art": "a misty forest pond at the heart of the woods, a large mossy boulder in the water, thick drifting fog, vines hanging from giant trees around, mystical green light",
+   "img": "md1_forest/boss.webp"
   },
   {
    "id": "g1a1",
@@ -296,7 +302,8 @@
    "art": "a narrow shortcut path between ferns swallowed by dense white fog, faint silhouettes of trees, a single path visible for a few steps",
    "gm": "지름길 — 짧지만 체크가 더 어렵다(통솔 12).",
    "okText": "이름을 불러 가며 안개 속을 한 줄로 빠져나왔다.",
-   "failText": "안개 속에서 한 명이 엉뚱한 쪽으로 걸어갔다 — 찾느라 한참."
+   "failText": "안개 속에서 한 명이 엉뚱한 쪽으로 걸어갔다 — 찾느라 한참.",
+   "img": "md1_forest/g1a1.webp"
   },
   {
    "id": "g2a1",
@@ -317,7 +324,8 @@
    "desc": "늪을 크게 돌아가는 둔덕길. 물가에서 벌레와 물새 포켓몬이 날갯짓한다.",
    "memo": "늪을 크게 돌아가는 둔덕길. 물가에서 벌레와 물새 포켓몬이 날갯짓한다.\nGM: 돌아가는 길 — 배틀 하나 대신 체크 없음.",
    "art": "a grassy raised bank winding around a forest swamp, reeds and cattails, small insects glittering over the water, afternoon light",
-   "gm": "돌아가는 길 — 배틀 하나 대신 체크 없음."
+   "gm": "돌아가는 길 — 배틀 하나 대신 체크 없음.",
+   "img": "md1_forest/g2a1.webp"
   },
   {
    "id": "tr",
@@ -334,7 +342,8 @@
    "memo": "고목 꼭대기 근처의 커다란 둥지. 반짝이는 것을 모으는 새가 살았던 듯 유리구슬과 열쇠가 섞여 있다.\nGM: 곁방 보물. 정원사 일지 = 보스 단서.",
    "art": "a huge bird nest high in an old hollow tree, shiny trinkets glass marbles and old keys inside the nest, sunbeam through leaves",
    "gm": "곁방 보물. 정원사 일지 = 보스 단서.",
-   "clueAuto": "깊은 곳의 주인 — 「풀」 기운이 서려 있다.\n「불꽃」 · 「얼음」 · 「독」 쪽을 꺼리는 흔적이 남아 있다.\n「가시원」의 자국이 벽에 새겨져 있다."
+   "clueAuto": "깊은 곳의 주인 — 「풀」 기운이 서려 있다.\n「불꽃」 · 「얼음」 · 「독」 쪽을 꺼리는 흔적이 남아 있다.\n「가시원」의 자국이 벽에 새겨져 있다.",
+   "img": "md1_forest/tr.webp"
   }
  ],
  "branches": [
