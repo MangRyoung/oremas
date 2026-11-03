@@ -671,15 +671,52 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    nav.addEventListener('pointercancel',()=>{drag=null;clr()})}}
  function quickBgm(){const md=A().openModal(`<div class="mhead"><h2>BGM</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div id="bgmpanel">${bgmPanelHtml()}</div>`);md.classList.add('wide');const re=()=>{const el=$('#bgmpanel');if(!el)return;el.innerHTML=bgmPanelHtml();bindBgmPanel(md,re)};bindBgmPanel(md,re)}
  /* ----- 대화 기록 ----- */
+ /* 11-03: 화면에 받아 둔 로그(처음 200줄)만 보여 줘서 새로고침하면 이전 대화가 빠졌다 — 뒤에서부터 한 쪽(500줄)씩 더 읽고 「전부 불러오기」, 화자 · 글 검색(강조), 날짜로 건너뛰기 */
  let logOoc=false;
- function openLog(){const ST=A().ST;const isO=x=>x.data.ch==='ooc';const rows=(ST.log||[]).filter(x=>x.kind==='chat'&&x.data&&!x.data.bat&&!x.data.sms&&(x.data.t||x.data.img)&&(logOoc||!isO(x)));
+ const LG={rows:[],room:'',oldest:0,done:false,busy:false,q:'',who:'',day:''};
+ function lgChatRow(x){return x.kind==='chat'&&x.data&&!x.data.bat&&!x.data.sms&&!x.data.clear&&(x.data.t||x.data.img)}
+ function lgMerge(rows){const have=new Set(LG.rows.map(r=>r.id));for(const r of rows||[])if(!have.has(r.id)){LG.rows.push(r);have.add(r.id)}LG.rows.sort((a,b)=>a.id-b.id);if(LG.rows.length)LG.oldest=LG.rows[0].id}
+ async function lgMore(all,onStep){if(LG.busy||LG.done)return;LG.busy=true;const room=LG.room;try{
+   for(let i=0;i<(all?200:1);i++){const rows=await DBS().getLogBefore(room,LG.oldest,500);if(LG.room!==room)return;if(!rows.length){LG.done=true;break}lgMerge(rows);if(rows.length<500){LG.done=true;break}if(onStep)onStep()}
+  }catch(e){A().toast('기록을 읽지 못했다: '+e.message)}finally{LG.busy=false}}
+ function lgHl(t,q){t=String(t||'');if(!q)return esc(t);const L=t.toLowerCase(),out=[];let i=0;while(true){const j=L.indexOf(q,i);if(j<0){out.push(esc(t.slice(i)));break}out.push(esc(t.slice(i,j)),'<mark>',esc(t.slice(j,j+q.length)),'</mark>');i=j+q.length}return out.join('')}
+ function openLog(){const ST=A().ST;const isO=x=>x.data.ch==='ooc';
+  if(LG.room!==ST.room){LG.rows=[];LG.room=ST.room;LG.oldest=0;LG.done=false;LG.busy=false;LG.q='';LG.who='';LG.day=''}
+  lgMerge(ST.log||[]);const cut=+(R().logClearAt)||0;
   const name=x=>x.data.as||(charOf(speakerKey(x))||{}).name||x.who;const tm=x=>{const d=new Date(x.at);return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
-  const md=A().openModal(`<div class="mhead"><h2>대화 기록</h2><span class="small dim">${rows.length}줄</span><span class="sp"></span><label class="small" title="잡담 탭에서 한 말도 같이 보이고, 복사·파일에도 들어간다"><input type="checkbox" id="lgooc" ${logOoc?'checked':''}> 잡담 포함</label><button class="btn sm ghost" id="lgcopy">글로 복사</button><button class="btn sm ghost" id="lgdl">파일로</button><button class="btn ghost" data-x>닫기</button></div>
-   <div class="rplog">${rows.map(x=>{const f=isO(x)?{narr:false,text:String(x.data.t||'')}:(window.OM_LINE?window.OM_LINE(x.data):{narr:false,text:String(x.data.t||'')});return `<div class="rl ${f.narr?'narr':''}"><span class="rt">${tm(x)}</span><b class="rn">${esc(name(x))}${isO(x)?' <small class="dim">· 잡담</small>':''}</b><span class="rx">${x.data.img?`<a href="${esc(x.data.img)}" target="_blank" rel="noopener">[그림]</a> `:''}${esc(f.text)}</span></div>`}).join('')||'<div class="empty">아직 대화가 없다</div>'}</div>`);
-  md.classList.add('wide');$('#lgooc',md).onchange=e=>{logOoc=e.target.checked;A().closeModal();openLog()};const text=rows.map(x=>`[${tm(x)}] ${isO(x)?'[잡담] ':''}${name(x)}: ${x.data.t||x.data.img||''}`).join('\n');
-  $('#lgcopy',md).onclick=()=>navigator.clipboard.writeText(text).then(()=>A().toast('복사했다'),()=>prompt('복사해서 쓰기',text));
-  $('#lgdl',md).onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/plain'}));a.download=`대화기록_${ST.room}_${new Date().toISOString().slice(0,10)}.txt`;a.click()};
-  const lg=md.querySelector('.rplog');lg.scrollTop=lg.scrollHeight}
+  const day=x=>{const d=new Date(x.at);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+  const dayL=k=>{const d=new Date(k+'T00:00:00');return `${d.getMonth()+1}/${d.getDate()} (${['일','월','화','수','목','금','토'][d.getDay()]})`};
+  const md=A().openModal(`<div class="mhead"><h2>대화 기록</h2><span class="small dim" id="lgcnt"></span><span class="sp"></span><label class="small" title="잡담 탭에서 한 말도 같이 보이고, 복사·파일에도 들어간다"><input type="checkbox" id="lgooc" ${logOoc?'checked':''}> 잡담 포함</label><button class="btn sm ghost" id="lgcopy" title="보이는 줄을 글로">글로 복사</button><button class="btn sm ghost" id="lgdl" title="보이는 줄을 txt 파일로">파일로</button><button class="btn ghost" data-x>닫기</button></div>
+   <div class="row lgtools"><input type="search" id="lgq" placeholder="찾기 — 대사 · 지문" value="${esc(LG.q)}" style="flex:1;min-width:120px"><select id="lgwho" title="화자"></select><select id="lgday" title="날짜로 건너뛰기"><option value="">날짜…</option></select><button class="btn sm ghost" id="lgprev" title="더 오래된 기록을 500줄 더 읽는다">↑ 이전 500줄</button><button class="btn sm" id="lgall" title="이 방의 대화를 처음부터 전부 읽는다">전부 불러오기</button></div>
+   <div class="rplog" id="lgbox"></div>`);
+  md.classList.add('wide');md.classList.add('lgm');
+  const box=$('#lgbox',md);let lastRows=[];
+  const rowsNow=()=>LG.rows.filter(x=>x.id>cut&&lgChatRow(x)&&(logOoc||!isO(x)));
+  const draw=(keepTop)=>{const all=rowsNow();const q=LG.q.trim().toLowerCase();const who=LG.who;
+   const rows=all.filter(x=>(!who||name(x)===who)&&(!q||String(x.data.t||'').toLowerCase().includes(q)||name(x).toLowerCase().includes(q)));lastRows=rows;
+   const top=box.scrollTop,h0=box.scrollHeight;let lastDay='';
+   box.innerHTML=(rows.map(x=>{const f=isO(x)?{narr:false,text:String(x.data.t||'')}:(window.OM_LINE?window.OM_LINE(x.data):{narr:false,text:String(x.data.t||'')});const dk=day(x);const head=dk!==lastDay?`<div class="rlday" data-day="${dk}">${esc(dayL(dk))}</div>`:'';lastDay=dk;
+    return `${head}<div class="rl ${f.narr?'narr':''}"><span class="rt">${tm(x)}</span><b class="rn">${lgHl(name(x),q)}${isO(x)?' <small class="dim">· 잡담</small>':''}</b><span class="rx">${x.data.img?`<a href="${esc(x.data.img)}" target="_blank" rel="noopener">[그림]</a> `:''}${lgHl(f.text,q)}</span></div>`}).join(''))||`<div class="empty">${q||who?'맞는 줄이 없다':'아직 대화가 없다'}</div>`;
+   if(!LG.done)box.insertAdjacentHTML('afterbegin',`<div class="rlmore small dim">${LG.busy?'읽는 중…':'더 오래된 기록이 있을 수 있다 — 「↑ 이전 500줄」 또는 「전부 불러오기」'}</div>`);
+   $('#lgcnt',md).textContent=`${rows.length}줄${rows.length!==all.length?' / '+all.length:''}${LG.done?' · 전부':''}`;
+   /* 화자 · 날짜 목록 */
+   {const ws=[...new Set(all.map(name))].sort((a,b)=>a.localeCompare(b,'ko'));const sel=$('#lgwho',md);sel.innerHTML=`<option value="">화자 전체</option>${ws.map(w=>`<option value="${esc(w)}" ${w===who?'selected':''}>${esc(w)}</option>`).join('')}`;
+    const ds=[...new Set(all.map(day))];const dsel=$('#lgday',md);dsel.innerHTML=`<option value="">날짜…</option>${ds.map(d=>`<option value="${d}">${esc(dayL(d))}</option>`).join('')}`}
+   $('#lgprev',md).disabled=LG.done||LG.busy;$('#lgall',md).disabled=LG.done||LG.busy;$('#lgall',md).textContent=LG.busy?'읽는 중…':LG.done?'전부 읽었다':'전부 불러오기';
+   if(keepTop==='keep')box.scrollTop=top+(box.scrollHeight-h0);else if(keepTop==='top')box.scrollTop=0;else box.scrollTop=box.scrollHeight};
+  draw();
+  $('#lgooc',md).onchange=e=>{logOoc=e.target.checked;draw()};
+  let qt=null;$('#lgq',md).oninput=e=>{LG.q=e.target.value;clearTimeout(qt);qt=setTimeout(async()=>{draw('top');if(LG.q.trim()&&!LG.done){await lgMore(true,()=>draw('top'));draw('top')}},250)};
+  $('#lgwho',md).onchange=e=>{LG.who=e.target.value;draw('top')};
+  $('#lgday',md).onchange=e=>{const d=e.target.value;if(!d)return;const el=box.querySelector(`.rlday[data-day="${d}"]`);if(el)box.scrollTop=el.offsetTop-box.offsetTop-4;e.target.value=''};
+  $('#lgprev',md).onclick=async()=>{draw('keep');await lgMore(false);draw('keep')};
+  $('#lgall',md).onclick=async()=>{draw('keep');await lgMore(true,()=>draw('keep'));draw('keep');A().toast(LG.done?'전부 읽었다':'읽기를 멈췄다')};
+  box.addEventListener('scroll',()=>{if(box.scrollTop<40&&!LG.busy&&!LG.done&&!LG.q.trim()){const h0=box.scrollHeight;lgMore(false).then(()=>{draw('keep')})}});
+  const text=()=>lastRows.map(x=>`[${day(x)} ${tm(x)}] ${isO(x)?'[잡담] ':''}${name(x)}: ${x.data.t||x.data.img||''}`).join('\n');
+  $('#lgcopy',md).onclick=()=>{const t=text();navigator.clipboard.writeText(t).then(()=>A().toast('복사했다'),()=>prompt('복사해서 쓰기',t))};
+  $('#lgdl',md).onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text()],{type:'text/plain'}));a.download=`대화기록_${ST.room}_${new Date().toISOString().slice(0,10)}.txt`;a.click()};
+  /* 처음 열 때 200줄도 안 되면 자동으로 한 쪽 더 */
+  if(!LG.done&&rowsNow().length<60)lgMore(false).then(()=>draw())}
 
  /* ----- 지도 ----- */
  function mapOverlay(){const M=mapS();const isGm=gm();if(!M.img)return `<div class="mapov"><div class="mapempty"><b>지도가 없다</b><div class="small dim">${isGm?'「지도 관리」에서 그림을 올리고 핀을 꽂아 줘':'GM 이 아직 지도를 올리지 않았다'}</div>${isGm?'<button class="btn sm pri" data-mapmgr data-t="img">지도 관리</button>':''}</div></div>`;

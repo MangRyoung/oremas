@@ -68,6 +68,11 @@ window.OM_STORE=(()=>{
  async function getLogTail(room,limit){
   const r=await sb().from('om_log').select('*').eq('room',room).order('id',{ascending:false}).limit(limit||200);
   if(r.error)throw err(r.error);return (r.data||[]).reverse()}
+ /* 11-03: 대화 기록 창 — 뒤에서부터 한 쪽씩 (before 보다 작은 id, 오래된 순으로 돌려준다) */
+ async function getLogBefore(room,before,limit){
+  let q=sb().from('om_log').select('*').eq('room',room).order('id',{ascending:false}).limit(limit||500);
+  if(before)q=q.lt('id',before);
+  const r=await q;if(r.error)throw err(r.error);return (r.data||[]).reverse()}
  /* 10-26 덱 시험: 내가 쓴 로그가 실시간으로 되돌아오지 않아 화면에서 빠지는 일이 잦았다 — 쓰고 나면 2.5초 뒤 서버를 한 번 더 읽어 채운다 (app.logFill) */
  async function addLog(room,secret,kind,who,data){return rpc('om_log_add',{p_room:room,p_secret:secret,p_kind:kind,p_who:who,p_data:data||{}}).then(r=>{try{const A=window.OM_APP;if(A&&A.logFill)A.logFill()}catch(e){}return r})}
  async function logClear(room,secret,keepSms){return rpc('om_log_clear',{p_room:room,p_secret:secret,p_keep_sms:!!keepSms})}
@@ -176,5 +181,5 @@ async function shrinkUpload(blob,maxSide){try{if(!/^image\/(png|jpe?g|webp|bmp)$
   dcHall:(room,secret,o)=>rpc('om_dc_hall',{p_room:room,p_secret:secret,p_title:o.title||'',p_sub:o.sub||'',p_img:o.img,p_who:o.who||{}}),
   hallGet:(room,secret)=>rpc('om_dc_hall_get',{p_room:room,p_secret:secret}),
   hallPut:(room,secret,o)=>rpc('om_dc_hall_put',{p_room:room,p_secret:secret,p_url:o.url??null,p_thread:o.thread??''}),noFn};
- return {patchesSince,setStateMany,snap,hall,bbs,shrinkUpload,ntCamps,ntCampUpdate,ntDocs,ntSync,NTSYNC,ntGet,ntPut,ntPutMany,ntDel,ntWatch,rtReset,getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty,makerOne,makerPut};
+ return {patchesSince,setStateMany,snap,hall,bbs,shrinkUpload,ntCamps,ntCampUpdate,ntDocs,ntSync,NTSYNC,ntGet,ntPut,ntPutMany,ntDel,ntWatch,rtReset,getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,getLogBefore,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty,makerOne,makerPut};
 })();
