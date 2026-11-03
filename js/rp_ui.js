@@ -459,7 +459,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   if(k==='roll'){const K=window.OM_SKILL_UI;if(!K)return;const t=gm()?meTrainer():null;return t?K.openPlayer(t.id):K.open()}   /* 10-29 망령: GM 이 화자로 PC 를 골랐으면 그 트레이너 굴림 창 */
   if(k==='talk'){const ST=A().ST;if(ST.role==='seat'){SPK.key='me'}else{const t=meTrainer();if(t)SPK.key='as:'+t.name}A().renderScene();const inp=$('#rpline');if(inp)inp.focus();return}
   if(k==='sound'){userMuted=false;unlocked=true;syncBgm(true);A().renderScene();return}
-  if(k==='bgmstop'){if(!confirm('BGM 을 모두에게 정지할까?'))return;A().set(['rp','bgm'],null);return}
+  if(k==='bgmstop'){(async()=>{if(!(await askOk('BGM 을 모두에게 정지할까?','정지','그만')))return;A().set(['rp','bgm'],null)})();return}
   if(k==='mute'){userMuted=true;unlocked=false;if(audio){audio.pause();audio=null}lastBgm='';A().renderScene();return}
   if(k==='gm')return openConsole();
   if(k==='centerx')return A().set(['rp','center'],null);
@@ -544,7 +544,9 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(!confirm(`「${f.name}」 폴더를 지울까?${n?`\n안의 ${n}명은 「폴더 없음」으로 나온다 (인물은 지워지지 않는다).`:''}`))return;
    C.order=C.order.filter(x=>x!=='f:'+id);C.order.push(...(f.keys||[]));delete C.folders[id];if(typeof SPK!=='undefined'&&SPK.fo)SPK.fo=SPK.fo.filter(x=>x!==id);await saveSpk(C);A().toast('폴더를 지웠다');re()})}
  /* 10-26 망령: 인물 지우기 — 인물 관리 · 화자 칩 우클릭 둘 다에서. confirm() 이 막히는 창도 있어 askYes 로 묻는다 */
- async function askOk(q,yes,no){const B=window.OM_BATTLE_UI;if(B&&B.askYes)return B.askYes(q,yes||'지운다',no||'그만');return confirm(q)}
+ /* 11-03 감우 (검토 20-13): 진행류 확인(정지 · 되돌리기 · 덮어쓰기 · 취소 …)은 app.js 의 askYes 창으로 — 없으면 battle_ui 의 것, 그것도 없으면 confirm. 지우기(삭제)류만 confirm 그대로.
+    askYes 는 열려 있던 창(콘솔 등)을 닫으니, 부르는 쪽은 예/아니요 뒤에 창을 다시 연다 */
+ async function askOk(q,yes,no){const Ap=A();const Y=(Ap&&Ap.askYes)||((window.OM_BATTLE_UI||{}).askYes);if(Y)return Y(q,yes||'지운다',no||'그만');return confirm(q)}
  async function ppDelNpc(key){const ST=A().ST;const name=String(key).replace(/^npc:/,'');const g=ST.state.graph||{};const ids=Object.keys(g.nodes||{}).filter(id=>(g.nodes[id]||{}).name===name&&g.nodes[id].kind!=='org');const lines=Object.entries(g.edges||{}).filter(([,ed])=>ids.includes(ed.a)||ids.includes(ed.b));
   if(!(await askOk(`「${name}」 인물을 지울까?\n관계도에서도 빠지고${lines.length?` 이어진 선 ${lines.length}개도 지워진다`:''}. 되돌릴 수 없다.`)))return false;
   for(const [eid] of lines)await A().set(['graph','edges',eid],null);for(const id of ids)await A().set(['graph','nodes',id],null);
@@ -668,7 +670,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(k==='g'){if(Date.now()-(QB.dragAt||0)<400)return;QB.g=b.dataset.g;QB.q='';return quickBg()}
    if(k==='bgx'){if(!QB.con)A().closeModal();await A().set(['rp','bg'],null);if(QB.con)quickBg();return}
    if(k==='url')return useUrl($('#qbgu',md).value.trim(),$('#qbgn',md).value.trim());
-   if(k==='reset'){if(!confirm('방에서 고친 배경 목록을 버리고 기본 목록으로 돌릴까?'))return;await A().set(['rp','bgList'],null);return quickBg()}
+   if(k==='reset'){const ok=await askOk('방에서 고친 배경 목록을 버리고 기본 목록으로 돌릴까?','기본 목록으로','그만');if(ok)await A().set(['rp','bgList'],null);return quickBg()}
    if(k==='gadd'){const n=prompt('새 그룹 이름');if(!n||!n.trim())return;if(groups.some(x=>x.n===n.trim()))return A().toast('같은 이름의 그룹이 있다');groups.push({n:n.trim(),i:[]});QB.g=n.trim();QB.q='';return saveGs()}
    if(!G)return;
    if(k==='gren'){const n=prompt('그룹 이름',G.n);if(!n||!n.trim()||n.trim()===G.n)return;if(groups.some(x=>x.n===n.trim()))return A().toast('같은 이름의 그룹이 있다');G.n=n.trim();QB.g=G.n;return saveGs()}
@@ -940,9 +942,9 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(k==='mode'){MM.mode=b.dataset.v;const rn=$('#mm_rname',md);if(rn)MM.rname=rn.value;return re()}
    if(k==='url'){const u=$('#mm_url',md).value.trim();if(!u)return;return applyImg(u)}
    if(k==='hist'){const h=hist[+b.dataset.i];if(h)return applyImg(h.src);return}
-   if(k==='mujin'){if(!confirm('무진 기본 지도를 쓸까? (핀이 없으면 기본 장소 목록이 들어간다)'))return;await saveMap({img:null,preset:'mujin',locs:M.locs.length&&!isMujin?M.locs:[]});return re()}
+   if(k==='mujin'){if(!(await askOk('무진 기본 지도를 쓸까? (핀이 없으면 기본 장소 목록이 들어간다)','쓴다','그만')))return re();await saveMap({img:null,preset:'mujin',locs:M.locs.length&&!isMujin?M.locs:[]});return re()}
    if(k==='notes'){A().closeModal();return window.OM_NOTES&&OM_NOTES.importMap()}
-   if(k==='noimg'){if(!confirm('지도를 비울까? (핀·루트·인물은 남는다)'))return;await saveMap({img:null,preset:'none'});return re()}
+   if(k==='noimg'){if(!(await askOk('지도를 비울까? (핀·루트·인물은 남는다)','비운다','그만')))return re();await saveMap({img:null,preset:'none'});return re()}
    if(k==='wipeall'){if(!confirm('핀·루트·인물을 모두 지울까?'))return;await saveMap({locs:[],vis:{},routes:[],npcs:[],party:{n:0,vis:1},preset:(R().map||{}).preset||((R().map||{}).img?'':'none')});return re()}
    if(k==='ann'){await saveMap({ann:M.ann?0:1});return re()}
    if(k==='all'){const vis={};if(b.dataset.v==='1')M.locs.forEach(l=>vis[l.n]=1);await saveMap({vis});if(M.ann)A().sysLog(b.dataset.v==='1'?'지도: 모든 장소 가림':'지도: 모든 장소 공개');return re()}
@@ -963,7 +965,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(k==='lbg'){A().closeModal();return pickLocBg(+b.dataset.n,()=>openMapMgr('loc'))}
    if(k==='lbgmatch'){const cur=mapS();const items=bgGroups().flatMap(g=>(g.i||[]).filter(i=>i&&i.src).map(i=>({src:i.src,name:i.l||i.n||''})));const hits=[];
     const locs=cur.locs.map(l=>{if(locBg(l))return l;const k=lbKey(l.name);if(!k)return l;const it=items.find(i=>lbKey(i.name)===k)||items.find(i=>{const q=lbKey(i.name);return q&&(q.includes(k)||k.includes(q))});if(!it)return l;hits.push(l.n+'. '+l.name);return Object.assign({},l,{bg:{src:it.src,name:it.name||l.name}})});
-    if(!hits.length)return A().toast('이름이 맞는 배경이 없다 (이미 배경이 있는 장소는 건너뛴다)');if(!confirm(`배경 목록에서 ${hits.length}곳을 찾았다. 넣을까?\n${hits.slice(0,12).join('\n')}${hits.length>12?'\n…':''}`))return;await saveMap({locs});A().toast(`장소 배경 ${hits.length}곳`);return openMapMgr('loc')}
+    if(!hits.length)return A().toast('이름이 맞는 배경이 없다 (이미 배경이 있는 장소는 건너뛴다)');if(!(await askOk(`배경 목록에서 ${hits.length}곳을 찾았다. 넣을까?\n${hits.slice(0,12).join('\n')}${hits.length>12?'\n…':''}`,'넣는다','그만')))return openMapMgr('loc');await saveMap({locs});A().toast(`장소 배경 ${hits.length}곳`);return openMapMgr('loc')}
    if(k==='pmove'){await partyMove(+b.dataset.n);return re()}
    if(k==='nadd'){const sel=$('#mm_np',md);const opt=sel.options[sel.selectedIndex];const name=$('#mm_npn',md).value.trim()||sel.value;if(!name)return A().toast('인물을 고르거나 이름을 적어 줘');const img=(opt&&opt.dataset.img)||(pics.find(p=>p.name===name)||{}).img||'';
     await saveMap({npcs:[...M.npcs,{id:'p'+Date.now().toString(36),name,img,n:+$('#mm_nploc',md).value,size:$('#mm_npsz',md).value,vis:$('#mm_npvis',md).checked?1:0,at:Date.now()}]});return re()}
@@ -1079,7 +1081,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(k==='cut'){await A().sysLog('────────────────────');return A().toast('절취선')}
    if(k==='nadd'){GC.nEdit=true;await A().set(['rp','notices'],[...notices(),{id:'n'+Date.now().toString(36),name:'새 공지',title:'',ment:'',color:'#d9243f'}]);return re()}
    if(k==='ndel'){await A().set(['rp','notices'],notices().filter((x,i)=>i!==+b.dataset.i));return re()}
-   if(k==='nreset'){if(!confirm('공지를 기본 8개로 되돌릴까?'))return;await A().set(['rp','notices'],null);return re()}
+   if(k==='nreset'){if(!(await askOk('공지를 기본 8개로 되돌릴까?','되돌린다','그만')))return re();await A().set(['rp','notices'],null);return re()}
    if(k==='pgo'){await partyMove(+b.dataset.n);return re()}
    if(k==='lvis'){await toggleLoc(+b.dataset.n);return re()}
    if(k==='lbguse'){const l=mapS().locs.find(x=>x.n===+b.dataset.n);if(l)await useLocBg(l);return re()}
@@ -1090,7 +1092,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(k==='scsave'){const n=$('#gscn',md).value.trim();if(!n)return A().toast('프리셋 이름을 적어 줘');GC.scWx=$('#gscwx',md).checked;const sc=sceneNow(n,GC.scWx);await sceneWrite(sc.id,sc);A().toast(`「${n}」 프리셋을 저장했다`);return re()}
    if(k==='scuse'){const sc=sceneOf(b.dataset.id);if(sc)await sceneApply(sc);return re()}
    if(k==='scren'){const sc=sceneOf(b.dataset.id);if(!sc)return;const n=prompt('프리셋 이름',sc.name||'');if(n==null||!n.trim())return;sc.name=n.trim();await sceneWrite(sc.id,sc);return re()}
-   if(k==='scover'){const sc=sceneOf(b.dataset.id);if(!sc||!confirm(`「${sc.name}」 을 지금 무대 모습으로 덮어쓸까?`))return;const nv=Object.assign(sceneNow(sc.name,!!(sc.wx||sc.ph)),{id:sc.id,_k:sc._k,ord:scOrd(sc),at:sc.at||Date.now()});if(sc.from)nv.from=sc.from;await sceneWrite(sc.id,nv);A().toast('덮어썼다');return re()}
+   if(k==='scover'){const sc=sceneOf(b.dataset.id);if(!sc)return;if(!(await askOk(`「${sc.name}」 을 지금 무대 모습으로 덮어쓸까?`,'덮어쓴다','그만')))return re();const nv=Object.assign(sceneNow(sc.name,!!(sc.wx||sc.ph)),{id:sc.id,_k:sc._k,ord:scOrd(sc),at:sc.at||Date.now()});if(sc.from)nv.from=sc.from;await sceneWrite(sc.id,nv);A().toast('덮어썼다');return re()}
    if(k==='scmv'){const L=scenes();const j=L.findIndex(x=>x.id===b.dataset.id),t=j+(+b.dataset.d);if(j<0||t<0||t>=L.length)return;[L[j],L[t]]=[L[t],L[j]];await sceneReorder(L);return re()}
    if(k==='scdel'){const sc=sceneOf(b.dataset.id);if(!sc||!confirm(`「${sc.name}」 프리셋을 지울까?`))return;await sceneWrite(sc.id,null);return re()}
    if(k==='stageclear'){await A().set(['rp','stage'],null);await DBS().addLog(ST.room,ST.secret,'chat',ST.name,{t:'',clear:1});return re()}
@@ -1612,7 +1614,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   if(k==='close'){const t=tally(v);const top=Math.max(0,...Object.values(t.n));const win=top>0?v.opts.filter(o=>t.n[o.id]===top).map(o=>o.id):[];
    await A().set(['rp','vote'],Object.assign({},v,{open:false,res:{n:t.n,win,total:t.total},end:Date.now()}));
    const line=v.opts.map(o=>`${o.t} ${t.n[o.id]}`).join(' · ');A().sysLog(`🗳 투표 결과 「${v.q}」 — ${line}${win.length?` → ${win.map(id=>(v.opts.find(o=>o.id===id)||{}).t).join(', ')}${win.length>1?' (동점)':''}`:' (표 없음)'}`);return}
-  if(k==='cancel'){if(!confirm('이 투표를 취소할까? 결과를 남기지 않고 내린다.'))return;await A().set(['rp','vote'],null);A().sysLog(`🗳 투표 취소 「${v.q}」`);return}
+  if(k==='cancel'){if(!(await askOk('이 투표를 취소할까? 결과를 남기지 않고 내린다.','취소한다','그만')))return;await A().set(['rp','vote'],null);A().sysLog(`🗳 투표 취소 「${v.q}」`);return}
   if(k==='again'){await A().set(['rp','vote'],Object.assign({},v,{id:Date.now().toString(36),open:true,res:null,at:Date.now()}));A().sysLog(`🗳 다시 투표 「${v.q}」`);return}
   if(k==='dismiss')return A().set(['rp','vote'],null)}
  /* 새 투표가 열리면 한 번 알림 (내가 연 건 빼고) */
@@ -1701,5 +1703,14 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   if(near||box._first!==ST.room){box.scrollTop=box.scrollHeight;box._first=ST.room}
   const inp=$('#oocIn',d);if(inp){inp.disabled=!ST.role;inp.placeholder=ST.role?'잡담 · /r 1d100':'자리에 앉으면 말할 수 있다'}}
  addEventListener('resize',()=>{try{oocTick()}catch(e){}});
+ /* 11-03 감우 (검토 20-14): 단축키 — GM 만, 칸에 치는 중 · 창이 떠 있을 때는 무시. B = 배경 창, / = 채팅 입력칸.
+    app.js 에 등록 표 OM_KEYS 가 있으면 거기에 `OM_KEYS.add({key,label,gm,when,fn,src:'rp'})` 로 넣고(한 번만), 없으면 여기 keydown 이 직접 본다 (app.js 가 뒤에 실리므로 첫 키를 받을 때 다시 확인) */
+ const KEYS=[{key:'b',label:'배경 창',gm:true,fn:()=>{QB.con=false;quickBg()}},{key:'/',label:'채팅 입력칸으로',gm:true,fn:()=>{const c=document.getElementById('chatIn');if(c){c.focus();c.scrollIntoView&&c.scrollIntoView({block:'nearest'})}}}];
+ const keyFree=e=>{const t=e.target;if(t&&(t.isContentEditable||/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName||'')))return false;return !e.isComposing&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!document.querySelector('.modalbg')};
+ const keyOk=()=>{const Ap=A();return !!(Ap&&Ap.ST&&Ap.ST.room)&&gm()};
+ let keysReg=false;
+ function regKeys(){if(keysReg)return true;const K=window.OM_KEYS;if(!K||typeof K.add!=='function')return false;keysReg=true;for(const k of KEYS){try{K.add({key:k.key,label:k.label,gm:!!k.gm,src:'rp',when:keyOk,fn:k.fn})}catch(e){console.warn('OM_KEYS',e)}}return true}
+ setTimeout(regKeys,0);
+ document.addEventListener('keydown',e=>{if(regKeys())return;if(!keyFree(e)||!keyOk())return;const key=(e.key||'').toLowerCase();const k=KEYS.find(x=>x.key===key);if(!k)return;e.preventDefault();k.fn()});
  return {onClueEv,openClueBox,stageEnter,bspkHtml,bspkBind,bsayToggleHtml,openSpkPick,spkBtnFill,spkInfo,pushRecent,curSpk,battleSay,bsayPlace,bsayClear,typingHtml,autoFolder,bgmMuted,seUrlOf:seUrl,render,allSpeakers,onChat,feedLog,onState,onTyping,typingPing,typingStop,drawTyping,mapData:mapS,openConsole,openStands,openPeople,setMyStand,charOf,playSe,setVolume,bgmWidgetHtml,bindBgmWidget,gmKeyOf,imgOfKey:k=>{if(k==='gm')return gmImg();const c=charOf(k);return c?(c.img||standSrc(c)):''},curSpeaker:()=>{const ST=A().ST;const c=speakerChar();if(c)return {key:c.key,name:c.name,img:c.img||standSrc(c)};return gm()?{key:'gm',name:'GM',img:myGmImg()}:{key:'me',name:ST.name||'',img:''}}};
 })();
