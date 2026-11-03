@@ -101,7 +101,8 @@ const MCLIP_EN={두더지:['몰'],토끼:['래빗','레프'],다람쥐:['스쿼'
  민달팽이:['슬러그','리막'],코뿔소:['라이노'],아르마딜로:['딜로'],하마:['히포'],지렁이:['웜','룸브'],매:['호크','팔코'],까마귀:['크로우','코르브','레이븐'],박쥐:['배트','베스퍼'],갈매기:['걸','라루'],제비:['스왈로','히룬'],펠리컨:['펠리'],콘도르:['콘도','벌처'],딱정벌레:['비틀','스카랍'],거미:['스파이','아라크'],벌:['비','베스파'],매미:['시카'],
  잠자리:['플라이','오도'],골렘:['골렘'],등불:['랜턴','램프'],인형:['돌','푸펫'],가면:['마스크','페르소'],촛불:['캔들','왁스'],항아리:['팟','암포'],거울:['미러','스펙'],열쇠:['키','클라비'],악어:['크로코','게이터'],하이에나:['하이엔'],갑옷:['아머','카라'],톱니:['기어','코그'],개미:['앤트','포르미'],종:['벨','캄파'],나비:['파피','버터']};
 /* 우리말 조각은 아기말(냥 · 깡 · 멍 · 댕 · 고미 · 꼬끼 · 메에 · 부기)을 빼고 단단한 한 음절 위주 */
-const MCLIP={여우:['호'],늑대:['랑'],고양이:['묘'],곰:['웅'],매:['응'],까마귀:['오'],올빼미:['효'],두루미:['학'],사슴:['록'],원숭이:['원','후'],수탉:['계'],개:['견'],두꺼비:['섬'],제비:['연'],벌:['봉'],매미:['선'],잠자리:['청'],거미:['주'],인형:['우'],갑옷:['갑'],거울:['경'],항아리:['옹'],촛불:['촉'],가면:['면'],개미:['의'],종:['종'],톱니:['륜'],나비:['접'],뱀:['사'],사자:['사'],멧돼지:['저'],양:['양'],토끼:['토'],게:['해'],문어:['문'],악어:['악'],등불:['등'],반딧불:['형'],사마귀:['랑'],수달:['달'],물범:['범'],하이에나:['견']};   /* 한자 조각만 (우리말 낱말 조각은 라틴 결과 섞여 어색해서 뺐다) */
+const MCLIP={여우:['호'],늑대:['랑'],고양이:['묘'],곰:['웅'],매:['응'],까마귀:['오'],올빼미:['효'],두루미:['학'],사슴:['록'],원숭이:['원','후'],수탉:['계'],개:['견'],두꺼비:['섬'],제비:['연'],벌:['봉'],매미:['선'],잠자리:['청'],거미:['주'],인형:['우'],갑옷:['갑'],거울:['경'],항아리:['옹'],촛불:['촉'],가면:['면'],개미:['의'],종:['종'],톱니:['륜'],나비:['접'],뱀:['사'],사자:['사'],멧돼지:['저'],양:['양'],토끼:['토'],게:['해'],문어:['문'],악어:['악'],등불:['등'],반딧불:['형'],사마귀:['랑'],수달:['달'],물범:['범'],하이에나:['견'],
+ /* 11-03 20:46 동양풍 3~4할 → 빠진 동물 한자 조각 */ 두더지:['서'],도마뱀:['석','척'],달팽이:['와'],지렁이:['인'],불나방:['아'],족제비:['초'],열쇠:['약'],오소리:['환'],소라:['라'],거북:['구','귀'],전갈:['갈'],가오리:['홍'],딱정벌레:['갑'],다람쥐:['율'],박쥐:['복'],민달팽이:['와'],지네:['오'],해파리:['수'],갈매기:['구'],나방:['아'],펠리컨:['제'],하마:['하'],코뿔소:['서'],살라만더:['룡'],나무늘보:['라'],염소:['고'],골렘:['상'],개구리:['와'],들소:['우']};   /* 한자 조각만 (우리말 낱말 조각은 라틴 결과 섞여 어색해서 뺐다) */
 const MEND={C:['르','스','크','드','그','트','른','브','로','라'],B:['로스','라크','고르','렌','투스','마르','락','디스','로크','반'],A:['고스','아스','네스','로크','투르','모르','라스','디온','가르','에스']};
 const MDRAGON=['곤','드라','니르'];
 /* 낱말로 읽히면 뺀다 (11-03 시험에서 나온 것 — 잔소리 등) */
@@ -128,9 +129,12 @@ const MROOT2={노말:['칼로','베스','오렌','수르','이벤','파르'],불
  악:['우르','스코르','네파','카코','둠브','에레보'],강철:['칼리브','페로','스타노','몰리','크롬','플룸'],페어리:['파타','실프','오리엘','네리','글리마','팍스']};
 const MYTH=['아자','니아','크솔','이드','요스','샤그','투엘','보르','엘드','운가','카르코','야그','오르스','셀레','하스','바엘','지르','네브','모르그','이테','쿠아','레기','오쿨','스틱'];
 const head=n=>[...n].slice(0,2).join(''),tail=n=>[...n].slice(-2).join('');
-function mCands(rng,ty,clips,ends,g,clipsEn,beast){const out=[];for(let i=0;i<320;i++){const t=pick(rng,ty);const R=MROOT[t].concat(MROOT2[t]||[]);const H=R.filter(isH),L=R.filter(w=>!isH(w));const x=rng();
-  const hanja=g!=='A'&&clips.some(isH)&&rng()<0.2;
-  if(hanja){const r=pick(rng,H),c=pick(rng,clips.filter(isH));let k=KIND_OF[beast]||pick(rng,['수','수','요','마']);if(ty.includes('고스트')&&/[수요마]/.test(k))k=rng()<0.6?'귀':'령';if(k===c||k===r)continue;out.push(r+c+k);continue}
+/* 11-03 20:46 망령 「동양풍은 3~4할 정도로 늘려도 될듯」 → 몹마다 결을 먼저 정한다(HANJA 비율, 기본 0.35). A 급 요괴 결은 끝을 두 음절(마왕 · 신수 …)로 */
+const NOT_HJ=new Set(['잿','볼','힘','번','펠','틴','델','림']);   /* 한 음절이지만 한자가 아닌 뿌리 — 요괴 결에 안 씀 */
+const HANJA=0.4,HEND_A=['마왕','귀왕','신수','대요','요왕'];
+function mCands(rng,ty,clips,ends,g,clipsEn,beast,style){const out=[];for(let i=0;i<320;i++){const t=pick(rng,ty);const R=MROOT[t].concat(MROOT2[t]||[]);const H=R.filter(w=>isH(w)&&!NOT_HJ.has(w)),L=R.filter(w=>!isH(w));const x=rng();
+  const hanja=style==='hanja';
+  if(hanja){const r=pick(rng,H),c=pick(rng,clips.filter(isH));if(!r||!c)continue;let k=g==='A'?pick(rng,HEND_A):(KIND_OF[beast]||pick(rng,['수','수','요','마']));if(g!=='A'&&ty.includes('고스트')&&/[수요마]/.test(k))k=rng()<0.6?'귀':'령';if(k===c||k===r||k.includes(c))continue;out.push(r+c+k);continue}
   if(!clipsEn.length)continue;const r=pick(rng,L),c=pick(rng,clipsEn),e=pick(rng,ends),m=pick(rng,MYTH);const bt=hasBat(c);const y=rng();
   const fin=n0=>{const Ln=hangul(n0);if(g==='A')return Ln>=5||(Ln>=4&&x<0.3)||(bt&&Ln>=3)?n0:n0+e;if(g==='B')return Ln>=4||(bt&&Ln>=3)?n0:n0+e;return Ln>=3?n0:bt?'':n0+e.slice(-1)};   /* 받침 조각 뒤 한 음절 끝(볼캣브)은 안 만든다 */
   if(y<0.38)out.push(fin(r+c));                                   /* 뿌리 + 조각        녹스루프 · 필로헬릭 */
@@ -146,7 +150,9 @@ function mScore(n,g,r,used){const L=hangul(n);let s=0;if(g==='A')s+=L===4?2:L===
  s+=r()*2.5;return s}
 function nameM(rng,o){const ty=(o.types||[]).filter(t=>MROOT[t]);if(!ty.length)ty.push('노말');const beast=o.beast||'';const clips=MCLIP[beast]||[];const clipsEn=MCLIP_EN[beast]||[];
  const g=o.grade==='A'?'A':o.grade==='B'?'B':'C';const ends=ty.includes('드래곤')&&g!=='C'?MEND[g].concat(MDRAGON):MEND[g];
- const C=[...new Set(mCands(rng,ty,clips,ends,g,clipsEn,beast))].filter(n=>ok(n,Object.assign({},o,{grade:'A'}))&&!/(.).*\1/.test(n)&&!WORDS.has(n));   /* 같은 음절이 어디든 두 번(사뱀사)이면 뺀다 */
+ const style=clips.some(isH)&&(!clipsEn.length||rng()<(o.hanja!=null?o.hanja:HANJA))?'hanja':'latin';
+ let C=[...new Set(mCands(rng,ty,clips,ends,g,clipsEn,beast,style))].filter(n=>ok(n,Object.assign({},o,{grade:'A'}))&&!/(.).*\1/.test(n)&&!WORDS.has(n));   /* 같은 음절이 어디든 두 번(사뱀사)이면 뺀다 */
+ if(!C.length&&style==='hanja')C=[...new Set(mCands(rng,ty,clips,ends,g,clipsEn,beast,'latin'))].filter(n=>ok(n,Object.assign({},o,{grade:'A'}))&&!/(.).*\1/.test(n)&&!WORDS.has(n));
  const mine=o.mine||(o.mine=new Set());   /* 이번 묶음에서 새로 지은 이름만 겹침 검사(실제 포켓몬 이름까지 보면 너무 좁아짐) */
  if(C.length){const sc=new Map(C.map(n=>[n,mScore(n,g,rng,mine)]));C.sort((a,b)=>sc.get(b)-sc.get(a));o.used.add(C[0]);mine.add(C[0]);return C[0]}
  let k=2,n;do n=pick(rng,MROOT[ty[0]])+(clipsEn[0]||clips[0]||'')+k++;while(o.used.has(n));o.used.add(n);mine.add(n);return n}
