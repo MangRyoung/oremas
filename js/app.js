@@ -712,7 +712,9 @@ let reconT=null;function reconcileNodes(){if(ST.role!=='gm')return;clearTimeout(
  {/* 10-24 망령: 새 시트(어디서 만들었든 — 제작기 가져오기 · 새 트레이너 · 플레이어의 내 파티 불러오기)는 화자 칸에 트레이너 폴더를 한 번 만든다. rp.spkAuto[tid] 로 한 번만 — 처음 켜질 때 이미 있던 트레이너는 건드리지 않는다 */
   const R=ST.state.rp||{};const done=R.spkAuto;const RP=window.OM_RP_UI;
   if(RP&&RP.autoFolder){if(!done){const all={};for(const id of Object.keys(trs))all[id]=1;await set(['rp','spkAuto'],all)}else{for(const id of Object.keys(trs)){if(done[id])continue;try{await RP.autoFolder(id)}catch(e){console.warn(e)}await set(['rp','spkAuto',id],1)}}}}const have=new Set(Object.values(nodes).map(n=>n.name));let i=Object.keys(nodes).length;
- for(const t of Object.values(trs)){if(!t||!t.name||auto[t.id])continue;if(!have.has(t.name)){have.add(t.name);const id='t_'+t.id;await set(['graph','nodes',id],{id,name:t.name,kind:t.kind==='npc'?'npc':'pc',img:'',note:'',x:120+(i%6)*140,y:120+Math.floor(i/6)*140,stands:[],standActive:0});i++}
+ /* 11-04 망령 「관계도에 이건 뭐니?」: 던전 야생 시트(t.wild — 「야생 · 방이름」)는 인물이 아니다 — 관계도 노드를 만들지 않고, 예전에 저절로 생긴 것(t_<id>, 이어진 선 · 메모 없음)은 걷는다 */
+ for(const t of Object.values(trs)){if(!t||!t.wild)continue;const nid='t_'+t.id,n=nodes[nid];if(n&&!String(n.note||'').trim()&&!Object.values(g.edges||{}).some(e=>e&&(e.a===nid||e.b===nid)))await set(['graph','nodes',nid],null);if(auto[t.id]==null){if(!g.auto)await set(['graph','auto'],{});await set(['graph','auto',t.id],-1)}}
+ for(const t of Object.values(trs)){if(!t||!t.name||t.wild||auto[t.id])continue;if(!have.has(t.name)){have.add(t.name);const id='t_'+t.id;await set(['graph','nodes',id],{id,name:t.name,kind:t.kind==='npc'?'npc':'pc',img:'',note:'',x:120+(i%6)*140,y:120+Math.floor(i/6)*140,stands:[],standActive:0});i++}
   if(!g.auto)await set(['graph','auto'],{});await set(['graph','auto',t.id],1)}},800)}
 function renderScene(){reconcileNodes();
  try{if(VIEW!=='rp'&&window.OM_RP_UI&&window.OM_RP_UI.psClear)window.OM_RP_UI.psClear()}catch(e){}   /* 11-03: 채팅창 머리의 RP BGM · 콘솔 칸은 RP 에서만 */
