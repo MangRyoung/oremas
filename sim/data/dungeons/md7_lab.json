@@ -517,14 +517,14 @@
   "restBC": 1
  },
  "note": "자동 생성 · 어려움 · 씨앗 84920 · 테마 연구소. 사전 배틀 1 · 체크 3 · 보스방 6체 · 레이드 배틀 : 3 · 지도 갈림길 2 · 구불길 + 곁방 2 · 야생 Lv +5 · 어려운 길(체크 목표 15).",
- "intro": "각성 연구소가 있는 제2 연구동 지하 3층, 사고 뒤 봉쇄된 격리층. 비상 전원만 켜진 복도에 실험체들이 풀려 있다. 가장 안쪽 실험 심부에서는 독을 흘리는 스모그뱀이 배양조를 깨고 나와 둥지를 틀었다 — 체크가 까다롭고 보스방이 길다.",
+ "intro": "각성 연구소가 있는 제2 연구동 지하 3층, 사고 뒤 봉쇄된 격리층. 비상 전원만 켜진 복도에 실험체들이 풀려 있다. 가장 안쪽 실험 심부에서는 독을 흘리는 톡스모르그가 배양조를 깨고 나와 둥지를 틀었다 — 체크가 까다롭고 보스방이 길다.",
  "art": {
   "look": "1.2::sealed underground laboratory level beneath an old gothic university building, early 20th century, stone walls and brick arches, brass pipes and valves, riveted iron doors, wooden cabinets, dim amber gas lamps, quiet and tense, clean not gory::, -1.2::sci-fi, futuristic, neon, green glowing liquid, glowing tanks, hologram::, "
  },
  "story": {
   "hook": "각성연구소 조교가 창백한 얼굴로 찾아온다. 「지하 3층 격리층… 전원이 나간 뒤 실험체 기록이 하나 비어요. 연구소장님은 출장 중이고요. 조용히, 빨리.」",
   "boss": "깨진 배양조 너머 보랏빛 독액이 꿈틀 솟는다. 몸을 일으킨 스모그뱀의 비늘 사이로 실험 태그가 번쩍인다 — 「개체 07 · 격리 해제 금지」.",
-  "end": "스모그뱀이 지쳐 배양조 잔해 속에 몸을 말자 비상 전원이 다시 들어온다. 격리 셔터가 하나씩 내려온다.",
+  "end": "톡스모르그가 지쳐 배양조 잔해 속에 몸을 말자 비상 전원이 다시 들어온다. 격리 셔터가 하나씩 내려온다.",
   "reward": "사고 보고서(연구소의 숨긴 기록) · 조교의 빚 · 독 해독제 한 병"
  },
  "test": true

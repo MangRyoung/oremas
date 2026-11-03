@@ -163,7 +163,7 @@
   {
    "id": "w001",
    "origin": "orig",
-   "name": "꼬더링",
+   "name": "칼로몰",
    "types": [
     "노말",
     "페어리"
@@ -176,9 +176,9 @@
     62,
     58
    ],
-   "ability": "노말스킨",
+   "ability": "하드쉘",
    "abilityTo": 1,
-   "abilityDesc": "①자신의 기술을 「노말」 기술로 만들고 기술의 위력을 강화(1.2배)한다.",
+   "abilityDesc": "①자신의 「방어」가 감소(저하)하지 않는다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -235,12 +235,14 @@
    "root": "두더지",
    "oldName": "별빛두더지",
    "img": "w001.webp",
-   "imgAt": 1793692553311
+   "imgAt": 1793692553311,
+   "prevName": "꼬더링",
+   "abilityReads": true
   },
   {
    "id": "w002",
    "origin": "orig",
-   "name": "암리자",
+   "name": "시스리자",
    "types": [
     "바위",
     "땅"
@@ -253,9 +255,9 @@
     79,
     101
    ],
-   "ability": "전격전",
+   "ability": "스타트러쉬",
    "abilityTo": 1,
-   "abilityDesc": "①【1/시】【등장】/「스피드 : +1」한다.",
+   "abilityDesc": "①【등장】/턴 종료 시까지 「스피드」가 2배가 된다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -312,12 +314,14 @@
    "root": "도마뱀",
    "oldName": "진흙도마뱀",
    "img": "w002.webp",
-   "imgAt": 1793695898957
+   "imgAt": 1793695898957,
+   "prevName": "암리자",
+   "abilityReads": true
   },
   {
    "id": "w003",
    "origin": "orig",
-   "name": "덩달팽",
+   "name": "헬릭민",
    "types": [
     "풀"
    ],
@@ -329,9 +333,9 @@
     62,
     65
    ],
-   "ability": "포이즌힐",
+   "ability": "두꺼운지방",
    "abilityTo": 1,
-   "abilityDesc": "①「독」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
+   "abilityDesc": "①【방호】/「불꽃/얼음」 기술로 받을 대미지를 반감한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -388,12 +392,14 @@
    "root": "달팽이",
    "oldName": "솔방울달팽이",
    "img": "w003.webp",
-   "imgAt": 1793695900708
+   "imgAt": 1793695900708,
+   "prevName": "덩달팽",
+   "abilityReads": true
   },
   {
    "id": "w004",
    "origin": "orig",
-   "name": "몽롱콘",
+   "name": "념호마",
    "types": [
     "에스퍼"
    ],
@@ -405,9 +411,9 @@
     66,
     74
    ],
-   "ability": "헤롱헤롱바디",
+   "ability": "칼솜씨",
    "abilityTo": 1,
-   "abilityDesc": "①「접촉기」를 받았을 때 5할로 자신을 공격한 포켓몬을 「헤롱헤롱」 상태로 만든다.",
+   "abilityDesc": "①2할로 공격을 회피한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -470,12 +476,14 @@
    "root": "여우",
    "oldName": "달여우",
    "img": "w004.webp",
-   "imgAt": 1793695898385
+   "imgAt": 1793695898385,
+   "prevName": "몽롱콘",
+   "abilityReads": true
   },
   {
    "id": "w005",
    "origin": "orig",
-   "name": "더스렁",
+   "name": "소른룸브",
    "types": [
     "땅",
     "불꽃"
@@ -488,9 +496,9 @@
     70,
     91
    ],
-   "ability": "단열",
+   "ability": "애널라이즈",
    "abilityTo": 1,
-   "abilityDesc": "①【방호】/「불꽃」 대미지를 무효화한다.",
+   "abilityDesc": "①가장 느리게 행동하면 기술의 대미지를 강화(1.3배)한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -544,12 +552,14 @@
    },
    "moveSalt": 2,
    "root": "지렁이",
-   "oldName": "불지렁이"
+   "oldName": "불지렁이",
+   "prevName": "더스렁",
+   "abilityReads": true
   },
   {
    "id": "w006",
    "origin": "orig",
-   "name": "플라게",
+   "name": "하스크랩",
    "types": [
     "물",
     "비행"
@@ -562,9 +572,9 @@
     67,
     61
    ],
-   "ability": "비상",
+   "ability": "매직가드",
    "abilityTo": 1,
-   "abilityDesc": "①자신에게 「타입 : 비행」을 추가한다.",
+   "abilityDesc": "①비례 대미지를 받지 않는다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -624,12 +634,14 @@
     ]
    },
    "root": "게",
-   "oldName": "회오리게"
+   "oldName": "회오리게",
+   "prevName": "플라게",
+   "abilityReads": true
   },
   {
    "id": "w007",
    "origin": "orig",
-   "name": "번모스",
+   "name": "레기모스",
    "types": [
     "불꽃"
    ],
@@ -641,9 +653,9 @@
     69,
     116
    ],
-   "ability": "맹화",
+   "ability": "단열",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「불꽃」 기술의 대미지를 강화(1.5배)한다.",
+   "abilityDesc": "①【방호】/「불꽃」 대미지를 무효화한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -700,12 +712,14 @@
    "root": "불나방",
    "oldName": "열사불나방",
    "img": "w007.webp",
-   "imgAt": 1793691018264
+   "imgAt": 1793691018264,
+   "prevName": "번모스",
+   "abilityReads": true
   },
   {
    "id": "w008",
    "origin": "orig",
-   "name": "첨벙울",
+   "name": "지르루프",
    "types": [
     "얼음",
     "물"
@@ -718,9 +732,9 @@
     75,
     111
    ],
-   "ability": "냉기",
+   "ability": "수상한비늘",
    "abilityTo": 1,
-   "abilityDesc": "①「접촉기」를 받았을 때 2할로 자신을 공격한 포켓몬을 「얼음」 상태로 만든다.",
+   "abilityDesc": "①「접촉기」를 받았을 때 4할로 자신을 공격한 포켓몬을 「혼란」 상태로 만든다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -781,12 +795,14 @@
     ]
    },
    "root": "늑대",
-   "oldName": "소금늑대"
+   "oldName": "소금늑대",
+   "prevName": "첨벙울",
+   "abilityReads": true
   },
   {
    "id": "w009",
    "origin": "orig",
-   "name": "쉿페럿",
+   "name": "암초마",
    "types": [
     "악"
    ],
@@ -798,9 +814,9 @@
     77,
     78
    ],
-   "ability": "정의의마음",
+   "ability": "방음",
    "abilityTo": 1,
-   "abilityDesc": "①「악」 기술을 받으면 「공격 : +1」한다.",
+   "abilityDesc": "①【방호】/「소리」 기술을 무효화한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -862,12 +878,14 @@
    "root": "족제비",
    "oldName": "도둑족제비",
    "img": "w009.webp",
-   "imgAt": 1793695896500
+   "imgAt": 1793695896500,
+   "prevName": "쉿페럿",
+   "abilityReads": true
   },
   {
    "id": "w010",
    "origin": "orig",
-   "name": "메탈종",
+   "name": "캄파언",
    "types": [
     "격투",
     "강철"
@@ -880,10 +898,10 @@
     62,
     79
    ],
-   "ability": "완력회생",
+   "ability": "엣지아머",
    "abilityTo": 1,
-   "abilityDesc": "①「독」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「접촉기」를 받았을 때 자신을 공격한 포켓몬에게 1/8의 비례 대미지를 입힌다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -938,12 +956,14 @@
     ]
    },
    "root": "종",
-   "oldName": "완력종"
+   "oldName": "완력종",
+   "prevName": "메탈종",
+   "abilityReads": true
   },
   {
    "id": "w011",
    "origin": "orig",
-   "name": "비틀미",
+   "name": "갑주충",
    "types": [
     "벌레"
    ],
@@ -955,10 +975,10 @@
     71,
     82
    ],
-   "ability": "갑각재생",
+   "ability": "마지막씨앗",
    "abilityTo": 1,
-   "abilityDesc": "①「잠듦」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「비접촉기」로 「빈사」 상태가 되었을 때 대상을 「씨뿌리기」 상태로 만든다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -1019,12 +1039,14 @@
    "root": "거미",
    "oldName": "꿀거미",
    "img": "w011.webp",
-   "imgAt": 1793695903134
+   "imgAt": 1793695903134,
+   "prevName": "비틀미",
+   "abilityReads": true
   },
   {
    "id": "w012",
    "origin": "orig",
-   "name": "짜릿냐",
+   "name": "전묘마",
    "types": [
     "전기"
    ],
@@ -1036,10 +1058,10 @@
     59,
     108
    ],
-   "ability": "전류집념",
+   "ability": "정전기",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「전기」 기술의 대미지를 강화(1.5배)한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「접촉기」를 받았을 때 3할로 자신을 공격한 포켓몬을 「마비」 상태로 만든다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -1095,12 +1117,14 @@
    "root": "고양이",
    "oldName": "번개고양이",
    "img": "w012.webp",
-   "imgAt": 1793695903277
+   "imgAt": 1793695903277,
+   "prevName": "짜릿냐",
+   "abilityReads": true
   },
   {
    "id": "w013",
    "origin": "orig",
-   "name": "룡스네",
+   "name": "라돈스네",
    "types": [
     "드래곤"
    ],
@@ -1112,10 +1136,10 @@
     62,
     112
    ],
-   "ability": "비늘집념",
+   "ability": "슬로우스타터",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「드래곤」 기술의 대미지를 강화(1.5배)한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①【지연 (4턴)】/턴 종료 시 「공격/방어/특공/특방/스피드 : +2」한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -1172,12 +1196,14 @@
    "root": "뱀",
    "oldName": "사룡뱀",
    "img": "w013.webp",
-   "imgAt": 1793695901141
+   "imgAt": 1793695901141,
+   "prevName": "룡스네",
+   "abilityReads": true
   },
   {
    "id": "w014",
    "origin": "orig",
-   "name": "훨오울",
+   "name": "키틴아울",
    "types": [
     "비행",
     "벌레"
@@ -1190,9 +1216,9 @@
     83,
     80
    ],
-   "ability": "비상",
+   "ability": "낙법",
    "abilityTo": 1,
-   "abilityDesc": "①자신에게 「타입 : 비행」을 추가한다.",
+   "abilityDesc": "①【방호】/「펀치」「킥」 기술을 무효화한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -1258,12 +1284,14 @@
     78
    ],
    "root": "올빼미",
-   "oldName": "껍질올빼미"
+   "oldName": "껍질올빼미",
+   "prevName": "훨오울",
+   "abilityReads": true
   },
   {
    "id": "w015",
    "origin": "orig",
-   "name": "스르팟",
+   "name": "적옹귀",
    "types": [
     "불꽃",
     "고스트"
@@ -1276,10 +1304,10 @@
     71,
     50
    ],
-   "ability": "그을음집념",
+   "ability": "두꺼운지방",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「불꽃」 기술의 대미지를 강화(1.5배)한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①【방호】/「불꽃/얼음」 기술로 받을 대미지를 반감한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -1339,12 +1367,14 @@
    "root": "항아리",
    "oldName": "그을음항아리",
    "img": "w015.webp",
-   "imgAt": 1793686037850
+   "imgAt": 1793686037850,
+   "prevName": "스르팟",
+   "abilityReads": true
   },
   {
    "id": "w016",
    "origin": "orig",
-   "name": "우람종",
+   "name": "권종귀",
    "types": [
     "강철",
     "격투"
@@ -1357,10 +1387,10 @@
     61,
     112
    ],
-   "ability": "톱니집념",
+   "ability": "복안",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「강철」 기술의 대미지를 강화(1.5배)한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신의 「명중」을 강화(1.3배)한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -1409,12 +1439,14 @@
     ]
    },
    "root": "종",
-   "oldName": "투사종"
+   "oldName": "투사종",
+   "prevName": "우람종",
+   "abilityReads": true
   },
   {
    "id": "w017",
    "origin": "orig",
-   "name": "잎토드",
+   "name": "아코토드",
    "types": [
     "독",
     "풀"
@@ -1427,9 +1459,9 @@
     71,
     76
    ],
-   "ability": "수상한비늘",
+   "ability": "깨지는칼날",
    "abilityTo": 1,
-   "abilityDesc": "①「접촉기」를 받았을 때 4할로 자신을 공격한 포켓몬을 「혼란」 상태로 만든다.",
+   "abilityDesc": "①자신의 「물리기」가 명중했을 때 「공격 : -1」, 「스피드 : +1」한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -1485,12 +1517,14 @@
    },
    "abilityPrev": "부식",
    "root": "두꺼비",
-   "oldName": "늪새싹두꺼비"
+   "oldName": "늪새싹두꺼비",
+   "prevName": "잎토드",
+   "abilityReads": true
   },
   {
    "id": "w018",
    "origin": "orig",
-   "name": "스펙키",
+   "name": "움키트",
    "types": [
     "고스트"
    ],
@@ -1502,10 +1536,10 @@
     62,
     102
    ],
-   "ability": "그림자치유",
+   "ability": "브레인포스",
    "abilityTo": 1,
-   "abilityDesc": "①「마비」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「상성 : 2배~8배」인 기술의 대미지를 강화(1.2배)한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -1562,12 +1596,14 @@
    "root": "열쇠",
    "oldName": "안개열쇠",
    "img": "w018.webp",
-   "imgAt": 1793686033174
+   "imgAt": 1793686033174,
+   "prevName": "스펙키",
+   "abilityReads": true
   },
   {
    "id": "w019",
    "origin": "orig",
-   "name": "살랑냥",
+   "name": "보르펠리",
    "types": [
     "페어리"
    ],
@@ -1638,12 +1674,14 @@
    "root": "고양이",
    "oldName": "리본고양이",
    "img": "w019.webp",
-   "imgAt": 1793695896864
+   "imgAt": 1793695896864,
+   "prevName": "살랑냥",
+   "abilityReads": true
   },
   {
    "id": "w020",
    "origin": "orig",
-   "name": "보송솔",
+   "name": "수르배저",
    "types": [
     "노말",
     "격투"
@@ -1656,10 +1694,10 @@
     75,
     59
    ],
-   "ability": "둥근막판",
+   "ability": "발광전염",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「노말」 기술의 대미지를 강화(1.5배)한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①턴 종료 시 5할로 필드에 있는 무작위한 포켓몬을 「혼란」 상태로 만든다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -1720,12 +1758,14 @@
    "root": "오소리",
    "oldName": "철권오소리",
    "img": "w020.webp",
-   "imgAt": 1793686041212
+   "imgAt": 1793686041212,
+   "prevName": "보송솔",
+   "abilityReads": true
   },
   {
    "id": "w021",
    "origin": "orig",
-   "name": "아리우",
+   "name": "령호요",
    "types": [
     "에스퍼",
     "페어리"
@@ -1738,10 +1778,10 @@
     87,
     85
    ],
-   "ability": "거울재생",
+   "ability": "발광",
    "abilityTo": 1,
-   "abilityDesc": "①「독」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①필드 위에 있는 한 상대 전체의 「명중」을 저하(0.9배)시킨다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -1798,12 +1838,14 @@
     ]
    },
    "root": "여우",
-   "oldName": "거울요정여우"
+   "oldName": "거울요정여우",
+   "prevName": "아리우",
+   "abilityReads": true
   },
   {
    "id": "w022",
    "origin": "orig",
-   "name": "퐁소라",
+   "name": "하이드셸",
    "types": [
     "물"
    ],
@@ -1815,10 +1857,10 @@
     102,
     53
    ],
-   "ability": "이슬심지",
+   "ability": "달마모드",
    "abilityTo": 1,
-   "abilityDesc": "①「전기」 기술을 받으면 「특공 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①【방호】/「HP : 1/2 이하」일 때 「방어/특방」을 2배로 만든다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -1879,12 +1921,14 @@
    "root": "소라",
    "oldName": "이슬소라",
    "img": "w022.webp",
-   "imgAt": 1793691005697
+   "imgAt": 1793691005697,
+   "prevName": "퐁소라",
+   "abilityReads": true
   },
   {
    "id": "w023",
    "origin": "orig",
-   "name": "돌도마",
+   "name": "각척사",
    "types": [
     "바위"
    ],
@@ -1896,9 +1940,9 @@
     65,
     111
    ],
-   "ability": "깨어진갑옷",
+   "ability": "승기",
    "abilityTo": 1,
-   "abilityDesc": "①「물리기」를 받으면 「방어 : -1」, 「스피드 : +2」한다.",
+   "abilityDesc": "①상대에 의해 자신의 능력이 감소했을 때 「특공 : +2」한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -1951,12 +1995,14 @@
    "root": "도마뱀",
    "oldName": "돌도마뱀",
    "img": "w023.webp",
-   "imgAt": 1793686037730
+   "imgAt": 1793686037730,
+   "prevName": "돌도마",
+   "abilityReads": true
   },
   {
    "id": "w024",
    "origin": "orig",
-   "name": "물바범",
+   "name": "해범수",
    "types": [
     "물"
    ],
@@ -2024,12 +2070,14 @@
    "root": "물범",
    "oldName": "소라물범",
    "img": "w024.webp",
-   "imgAt": 1793695899975
+   "imgAt": 1793695899975,
+   "prevName": "물바범",
+   "abilityReads": true
   },
   {
    "id": "w025",
    "origin": "orig",
-   "name": "다크족",
+   "name": "야초요",
    "types": [
     "악",
     "격투"
@@ -2042,10 +2090,10 @@
     80,
     107
    ],
-   "ability": "도둑각오",
+   "ability": "불꽃몸",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「악」 기술의 대미지를 강화(1.5배)한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「접촉기」를 받았을 때 3할로 자신을 공격한 포켓몬을 「화상」 상태로 만든다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -2102,12 +2150,14 @@
    "root": "족제비",
    "oldName": "투사족제비",
    "img": "w025.webp",
-   "imgAt": 1793691017569
+   "imgAt": 1793691017569,
+   "prevName": "다크족",
+   "abilityReads": true
   },
   {
    "id": "w026",
    "origin": "orig",
-   "name": "파워곰",
+   "name": "투엘베어",
    "types": [
     "격투"
    ],
@@ -2119,9 +2169,9 @@
     67,
     66
    ],
-   "ability": "칠흑",
+   "ability": "방탄",
    "abilityTo": 1,
-   "abilityDesc": "①【방호】/「상성 : 1/2~1/8배」인 기술로 받을 대미지를 반감한다.",
+   "abilityDesc": "①【방호】/「볼」「탄」 기술을 무효화한다.\n②【방호】/「자폭」「대폭발」의 대미지를 반감한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -2179,12 +2229,14 @@
    "root": "곰",
    "oldName": "발차기곰",
    "img": "w026.webp",
-   "imgAt": 1793695901015
+   "imgAt": 1793695901015,
+   "prevName": "파워곰",
+   "abilityReads": true
   },
   {
    "id": "w027",
    "origin": "orig",
-   "name": "잎터틀",
+   "name": "호르셸",
    "types": [
     "풀"
    ],
@@ -2196,10 +2248,10 @@
     65,
     51
    ],
-   "ability": "덩굴오기",
+   "ability": "방진",
    "abilityTo": 1,
-   "abilityDesc": "①「비행」 기술을 받으면 「방어 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①【방호】/자신에 대한 「가루」 기술을 무효화한다.\n②「날씨」에 의한 비례 대미지를 받지 않는다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -2253,12 +2305,14 @@
     ]
    },
    "root": "거북",
-   "oldName": "가시풀거북"
+   "oldName": "가시풀거북",
+   "prevName": "잎터틀",
+   "abilityReads": true
   },
   {
    "id": "w028",
    "origin": "orig",
-   "name": "쇼크종",
+   "name": "전종귀",
    "types": [
     "전기",
     "강철"
@@ -2271,10 +2325,10 @@
     63,
     104
    ],
-   "ability": "찌릿재생",
+   "ability": "빛나는별",
    "abilityTo": 1,
-   "abilityDesc": "①「마비」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신 이외에 의한 능력 감소(저하)를 무효화한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -2330,12 +2384,14 @@
    "root": "종",
    "oldName": "스파크종",
    "img": "w028.webp",
-   "imgAt": 1793686041356
+   "imgAt": 1793686041356,
+   "prevName": "쇼크종",
+   "abilityReads": true
   },
   {
    "id": "w029",
    "origin": "orig",
-   "name": "우르갈",
+   "name": "토갈충",
    "types": [
     "땅"
    ],
@@ -2347,10 +2403,10 @@
     64,
     73
    ],
-   "ability": "모래치유",
+   "ability": "크래커",
    "abilityTo": 1,
-   "abilityDesc": "①「잠듦」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「접촉기」를 받았을 때 3할로 자신을 공격한 포켓몬을 「마비」 상태로 만든다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -2410,12 +2466,14 @@
     ]
    },
    "root": "전갈",
-   "oldName": "모래전갈"
+   "oldName": "모래전갈",
+   "prevName": "우르갈",
+   "abilityReads": true
   },
   {
    "id": "w030",
    "origin": "orig",
-   "name": "스노늑",
+   "name": "동랑마",
    "types": [
     "얼음",
     "비행"
@@ -2428,10 +2486,10 @@
     67,
     116
    ],
-   "ability": "서리반골",
+   "ability": "칼솜씨",
    "abilityTo": 1,
-   "abilityDesc": "①「전기」 기술을 받으면 「공격 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①2할로 공격을 회피한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -2485,12 +2543,14 @@
     ]
    },
    "root": "늑대",
-   "oldName": "돌풍늑대"
+   "oldName": "돌풍늑대",
+   "prevName": "스노늑",
+   "abilityReads": true
   },
   {
    "id": "w031",
    "origin": "orig",
-   "name": "룡레이",
+   "name": "용홍어",
    "types": [
     "드래곤"
    ],
@@ -2502,9 +2562,9 @@
     69,
     76
    ],
-   "ability": "잡음",
+   "ability": "가로막기",
    "abilityTo": 1,
-   "abilityDesc": "①【방호】/「소리」 기술을 무효화한다.",
+   "abilityDesc": "①「접촉기」를 받으면 자신을 공격한 포켓몬에게 「스피드 : -1」한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -2558,12 +2618,14 @@
    "root": "가오리",
    "oldName": "뿔가오리",
    "img": "w031.webp",
-   "imgAt": 1793695904116
+   "imgAt": 1793695904116,
+   "prevName": "룡레이",
+   "abilityReads": true
   },
   {
    "id": "w032",
    "origin": "orig",
-   "name": "스틸종",
+   "name": "니아캄파",
    "types": [
     "강철"
    ],
@@ -2575,10 +2637,10 @@
     111,
     51
    ],
-   "ability": "철갑불씨",
+   "ability": "스틸스킨",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「강철」 기술의 대미지를 강화(1.5배)한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신이 내보낸 기술을 「강철」 기술로 만든다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -2639,12 +2701,14 @@
    "root": "종",
    "oldName": "나사종",
    "img": "w032.webp",
-   "imgAt": 1793695902288
+   "imgAt": 1793695902288,
+   "prevName": "스틸종",
+   "abilityReads": true
   },
   {
    "id": "w033",
    "origin": "orig",
-   "name": "방실쪽",
+   "name": "회초요",
    "types": [
     "노말"
    ],
@@ -2656,10 +2720,10 @@
     74,
     77
    ],
-   "ability": "얼룩회생",
+   "ability": "오기",
    "abilityTo": 1,
-   "abilityDesc": "①「마비」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①상대에 의해 자신의 능력이 감소했을 때 「공격 : +2」한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -2713,12 +2777,14 @@
     ]
    },
    "root": "족제비",
-   "oldName": "회색족제비"
+   "oldName": "회색족제비",
+   "prevName": "방실쪽",
+   "abilityReads": true
   },
   {
    "id": "w034",
    "origin": "orig",
-   "name": "유령등",
+   "name": "에테랜턴",
    "types": [
     "고스트",
     "독"
@@ -2731,9 +2797,9 @@
     72,
     76
    ],
-   "ability": "꾸덕꾸덕굳기",
+   "ability": "살인바이러스",
    "abilityTo": 1,
-   "abilityDesc": "①「물」 기술을 받으면 「방어 : +2」한다.",
+   "abilityDesc": "①자신의 「독」 기술의 추가 효과 발생률을 2배로 만든다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -2791,12 +2857,14 @@
    "root": "등불",
    "oldName": "진흙등불",
    "img": "w034.webp",
-   "imgAt": 1793695900103
+   "imgAt": 1793695900103,
+   "prevName": "유령등",
+   "abilityReads": true
   },
   {
    "id": "w035",
    "origin": "orig",
-   "name": "사각딱",
+   "name": "비틀틴",
    "types": [
     "벌레",
     "강철"
@@ -2809,9 +2877,9 @@
     75,
     47
    ],
-   "ability": "벌레의알림",
+   "ability": "칠흑",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「벌레」 기술의 대미지를 강화(1.5배)한다.",
+   "abilityDesc": "①【방호】/「상성 : 1/2~1/8배」인 기술로 받을 대미지를 반감한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -2869,12 +2937,14 @@
    "root": "딱정벌레",
    "oldName": "쇠딱정벌레",
    "img": "w035.webp",
-   "imgAt": 1793695901968
+   "imgAt": 1793695901968,
+   "prevName": "사각딱",
+   "abilityReads": true
   },
   {
    "id": "w036",
    "origin": "orig",
-   "name": "독꺼비",
+   "name": "이드부포",
    "types": [
     "독"
    ],
@@ -2886,10 +2956,10 @@
     90,
     86
    ],
-   "ability": "독액치유",
+   "ability": "붉은녹",
    "abilityTo": 1,
-   "abilityDesc": "①「마비」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신의 「독」 기술이 「타입 : 강철」에게도 명중한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -2951,12 +3021,14 @@
     ]
    },
    "root": "두꺼비",
-   "oldName": "가시독두꺼비"
+   "oldName": "가시독두꺼비",
+   "prevName": "독꺼비",
+   "abilityReads": true
   },
   {
    "id": "w037",
    "origin": "orig",
-   "name": "미르캣",
+   "name": "미라캣",
    "types": [
     "에스퍼",
     "노말"
@@ -2969,9 +3041,9 @@
     63,
     85
    ],
-   "ability": "염동력",
+   "ability": "잡음",
    "abilityTo": 1,
-   "abilityDesc": "①자신에게 「타입 : 에스퍼」를 추가한다.",
+   "abilityDesc": "①【방호】/「소리」 기술을 무효화한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -3031,12 +3103,14 @@
     ]
    },
    "root": "고양이",
-   "oldName": "얼룩고양이"
+   "oldName": "얼룩고양이",
+   "prevName": "미르캣",
+   "abilityReads": true
   },
   {
    "id": "w038",
    "origin": "orig",
-   "name": "아쿠달",
+   "name": "탈루트라",
    "types": [
     "물"
    ],
@@ -3048,10 +3122,10 @@
     72,
     104
    ],
-   "ability": "물보라재생",
+   "ability": "까칠한피부",
    "abilityTo": 1,
-   "abilityDesc": "①「잠듦」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「접촉기」를 받았을 때 자신을 공격한 포켓몬에게 1/8의 비례 대미지를 입힌다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -3112,12 +3186,14 @@
    "root": "수달",
    "oldName": "이슬수달",
    "img": "w038.webp",
-   "imgAt": 1793691005933
+   "imgAt": 1793691005933,
+   "prevName": "아쿠달",
+   "abilityReads": true
   },
   {
    "id": "w039",
    "origin": "orig",
-   "name": "파이웜",
+   "name": "플레게웜",
    "types": [
     "불꽃",
     "땅"
@@ -3130,10 +3206,10 @@
     73,
     51
    ],
-   "ability": "화염투지",
+   "ability": "필터",
    "abilityTo": 1,
-   "abilityDesc": "①「물」 기술을 받으면 「방어 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①【방호】/「상성 : 2배~8배」인 기술로 받을 대미지를 완화(0.75배)한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -3195,12 +3271,14 @@
    "root": "지렁이",
    "oldName": "화염지렁이",
    "img": "w039.webp",
-   "imgAt": 1793692555179
+   "imgAt": 1793692555179,
+   "prevName": "파이웜",
+   "abilityReads": true
   },
   {
    "id": "w040",
    "origin": "orig",
-   "name": "반짝비",
+   "name": "바엘파피",
    "types": [
     "페어리"
    ],
@@ -3212,10 +3290,10 @@
     61,
     88
    ],
-   "ability": "방울오기",
+   "ability": "하드록",
    "abilityTo": 1,
-   "abilityDesc": "①「독」 기술을 받으면 「공격 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①【방호】/「상성 : 2배~8배」인 기술로 받을 대미지를 완화(0.75배)한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -3270,12 +3348,14 @@
     ]
    },
    "root": "나비",
-   "oldName": "리본나비"
+   "oldName": "리본나비",
+   "prevName": "반짝비",
+   "abilityReads": true
   },
   {
    "id": "w041",
    "origin": "orig",
-   "name": "버니람",
+   "name": "요스넛",
    "types": [
     "노말",
     "격투"
@@ -3288,9 +3368,9 @@
     73,
     115
    ],
-   "ability": "투기",
+   "ability": "악의마음",
    "abilityTo": 1,
-   "abilityDesc": "①자신에게 「타입 : 격투」를 추가한다.",
+   "abilityDesc": "①「격투」 기술을 받으면 「공격 : +1」한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -3348,12 +3428,14 @@
    "root": "다람쥐",
    "oldName": "완력다람쥐",
    "img": "w041.webp",
-   "imgAt": 1793695895878
+   "imgAt": 1793695895878,
+   "prevName": "버니람",
+   "abilityReads": true
   },
   {
    "id": "w042",
    "origin": "orig",
-   "name": "짱터틀",
+   "name": "혼구귀",
    "types": [
     "바위",
     "고스트"
@@ -3366,10 +3448,10 @@
     68,
     50
    ],
-   "ability": "광석치유",
+   "ability": "나이트위저드",
    "abilityTo": 1,
-   "abilityDesc": "①「독」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신의 「고스트」 기술이 「타입 : 노말」에게도 명중한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -3426,12 +3508,14 @@
    "root": "거북",
    "oldName": "저주거북",
    "img": "w042.webp",
-   "imgAt": 1793686032898
+   "imgAt": 1793686032898,
+   "prevName": "짱터틀",
+   "abilityReads": true
   },
   {
    "id": "w043",
    "origin": "orig",
-   "name": "꽃사롱",
+   "name": "운가디어",
    "types": [
     "풀"
    ],
@@ -3443,9 +3527,9 @@
     76,
     105
    ],
-   "ability": "불꽃몸",
+   "ability": "건각",
    "abilityTo": 1,
-   "abilityDesc": "①「접촉기」를 받았을 때 3할로 자신을 공격한 포켓몬을 「화상」 상태로 만든다.",
+   "abilityDesc": "①비례 대미지를 받지 않는다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -3500,12 +3584,14 @@
     ]
    },
    "root": "사슴",
-   "oldName": "이끼버섯사슴"
+   "oldName": "이끼버섯사슴",
+   "prevName": "꽃사롱",
+   "abilityReads": true
   },
   {
    "id": "w044",
    "origin": "orig",
-   "name": "펑가오",
+   "name": "고홍어",
    "types": [
     "전기",
     "비행"
@@ -3518,10 +3604,10 @@
     63,
     107
    ],
-   "ability": "찌릿치유",
+   "ability": "칼날잡기",
    "abilityTo": 1,
-   "abilityDesc": "①「마비」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①【방호】/「베기」 기술을 무효화한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -3573,12 +3659,14 @@
    "root": "가오리",
    "oldName": "회오리가오리",
    "img": "w044.webp",
-   "imgAt": 1793691006304
+   "imgAt": 1793691006304,
+   "prevName": "펑가오",
+   "abilityReads": true
   },
   {
    "id": "w045",
    "origin": "orig",
-   "name": "샌드갈",
+   "name": "스콜피놈",
    "types": [
     "땅",
     "독"
@@ -3591,10 +3679,10 @@
     71,
     109
    ],
-   "ability": "모래각오",
+   "ability": "복안",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「땅」 기술의 대미지를 강화(1.5배)한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신의 「명중」을 강화(1.3배)한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -3644,12 +3732,14 @@
     ]
    },
    "root": "전갈",
-   "oldName": "가시독전갈"
+   "oldName": "가시독전갈",
+   "prevName": "샌드갈",
+   "abilityReads": true
   },
   {
    "id": "w046",
    "origin": "orig",
-   "name": "날배트",
+   "name": "펜베스퍼",
    "types": [
     "비행"
    ],
@@ -3661,9 +3751,9 @@
     68,
     108
    ],
-   "ability": "비상",
+   "ability": "나이트메어",
    "abilityTo": 1,
-   "abilityDesc": "①자신에게 「타입 : 비행」을 추가한다.",
+   "abilityDesc": "①턴 종료 시 「잠듦」 상태인 상대에게 1/8의 비례 대미지를 입힌다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -3713,12 +3803,14 @@
     ]
    },
    "root": "박쥐",
-   "oldName": "깃박쥐"
+   "oldName": "깃박쥐",
+   "prevName": "날배트",
+   "abilityReads": true
   },
   {
    "id": "w047",
    "origin": "orig",
-   "name": "쇠고미",
+   "name": "우르스롬",
    "types": [
     "격투",
     "강철"
@@ -3731,9 +3823,9 @@
     71,
     55
    ],
-   "ability": "투기",
+   "ability": "하드쉘",
    "abilityTo": 1,
-   "abilityDesc": "①자신에게 「타입 : 격투」를 추가한다.",
+   "abilityDesc": "①자신의 「방어」가 감소(저하)하지 않는다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -3797,12 +3889,14 @@
    "root": "곰",
    "oldName": "강철곰",
    "img": "w047.webp",
-   "imgAt": 1793695898635
+   "imgAt": 1793695898635,
+   "prevName": "쇠고미",
+   "abilityReads": true
   },
   {
    "id": "w048",
    "origin": "orig",
-   "name": "퐁오울",
+   "name": "동효조",
    "types": [
     "물",
     "얼음"
@@ -3815,9 +3909,9 @@
     102,
     35
    ],
-   "ability": "두꺼운모피",
+   "ability": "낙법",
    "abilityTo": 1,
-   "abilityDesc": "①【방호】/「얼음」 기술로 받을 대미지를 반감한다.\n②「얼음」 상태가 되지 않고 「날씨 : 싸라기눈」에 의한 비례 대미지를 무시한다.",
+   "abilityDesc": "①【방호】/「펀치」「킥」 기술을 무효화한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -3873,12 +3967,14 @@
     ]
    },
    "root": "올빼미",
-   "oldName": "소라올빼미"
+   "oldName": "소라올빼미",
+   "prevName": "퐁오울",
+   "abilityReads": true
   },
   {
    "id": "w049",
    "origin": "orig",
-   "name": "쉿크로",
+   "name": "녹크로우",
    "types": [
     "악"
    ],
@@ -3890,10 +3986,10 @@
     102,
     41
    ],
-   "ability": "도둑재생",
+   "ability": "정신력",
    "abilityTo": 1,
-   "abilityDesc": "①「마비」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「풀죽음」 상태가 되지 않는다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -3949,12 +4045,14 @@
    "root": "까마귀",
    "oldName": "검은까마귀",
    "img": "w049.webp",
-   "imgAt": 1793695903548
+   "imgAt": 1793695903548,
+   "prevName": "쉿크로",
+   "abilityReads": true
   },
   {
    "id": "w050",
    "origin": "orig",
-   "name": "스펙팟",
+   "name": "망옹귀",
    "types": [
     "고스트",
     "얼음"
@@ -3967,10 +4065,10 @@
     70,
     64
    ],
-   "ability": "등불심지",
+   "ability": "단열",
    "abilityTo": 1,
-   "abilityDesc": "①「악」 기술을 받으면 「특방 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①【방호】/「불꽃」 대미지를 무효화한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -4026,12 +4124,14 @@
     ]
    },
    "root": "항아리",
-   "oldName": "빙하항아리"
+   "oldName": "빙하항아리",
+   "prevName": "스펙팟",
+   "abilityReads": true
   },
   {
    "id": "w051",
    "origin": "orig",
-   "name": "워미뱀",
+   "name": "크솔오피",
    "types": [
     "벌레",
     "독"
@@ -4044,10 +4144,10 @@
     79,
     104
    ],
-   "ability": "갑각오기",
+   "ability": "날카로운눈",
    "abilityTo": 1,
-   "abilityDesc": "①「에스퍼」 기술을 받으면 「특공 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「명중」이 감소(저하)하지 않는다.\n②「회피」의 상승(강화)를 무시한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -4096,12 +4196,14 @@
     ]
    },
    "root": "뱀",
-   "oldName": "유충뱀"
+   "oldName": "유충뱀",
+   "prevName": "워미뱀",
+   "abilityReads": true
   },
   {
    "id": "w052",
    "origin": "orig",
-   "name": "보글팽",
+   "name": "액와패",
    "types": [
     "독"
    ],
@@ -4113,10 +4215,10 @@
     89,
     77
    ],
-   "ability": "진흙치유",
+   "ability": "깨지는칼날",
    "abilityTo": 1,
-   "abilityDesc": "①「화상」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신의 「물리기」가 명중했을 때 「공격 : -1」, 「스피드 : +1」한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -4185,12 +4287,14 @@
    ],
    "moveSalt": 7,
    "root": "민달팽이",
-   "oldName": "독액민달팽이"
+   "oldName": "독액민달팽이",
+   "prevName": "보글팽",
+   "abilityReads": true
   },
   {
    "id": "w053",
    "origin": "orig",
-   "name": "드라센티",
+   "name": "센티번",
    "types": [
     "드래곤"
    ],
@@ -4202,9 +4306,9 @@
     61,
     111
    ],
-   "ability": "용린",
+   "ability": "마이페이스",
    "abilityTo": 1,
-   "abilityDesc": "①자신에게 「타입 : 드래곤」을 추가한다.",
+   "abilityDesc": "①「혼란」「도발」 상태가 되지 않는다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -4264,12 +4368,14 @@
    "oldName": "사룡지네",
    "nameFix": 1,
    "img": "w053.webp",
-   "imgAt": 1793691018149
+   "imgAt": 1793691018149,
+   "prevName": "드라센티",
+   "abilityReads": true
   },
   {
    "id": "w054",
    "origin": "orig",
-   "name": "프리우",
+   "name": "오쿨폭스",
    "types": [
     "얼음"
    ],
@@ -4281,10 +4387,10 @@
     73,
     108
    ],
-   "ability": "서리투지",
+   "ability": "정전기",
    "abilityTo": 1,
-   "abilityDesc": "①「불꽃」 기술을 받으면 「스피드 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「접촉기」를 받았을 때 3할로 자신을 공격한 포켓몬을 「마비」 상태로 만든다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -4343,12 +4449,14 @@
     ]
    },
    "root": "여우",
-   "oldName": "얼음빙하여우"
+   "oldName": "얼음빙하여우",
+   "prevName": "프리우",
+   "abilityReads": true
   },
   {
    "id": "w055",
    "origin": "orig",
-   "name": "홧도마",
+   "name": "신사우르",
    "types": [
     "불꽃"
    ],
@@ -4360,10 +4468,10 @@
     89,
     79
    ],
-   "ability": "화염회생",
+   "ability": "불에기름",
    "abilityTo": 1,
-   "abilityDesc": "①「얼음」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신의 「불꽃」 기술의 추가 효과 발생률을 2배로 만든다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -4414,12 +4522,14 @@
    "root": "도마뱀",
    "oldName": "잿도마뱀",
    "img": "w055.webp",
-   "imgAt": 1793691017932
+   "imgAt": 1793691017932,
+   "prevName": "홧도마",
+   "abilityReads": true
   },
   {
    "id": "w056",
    "origin": "orig",
-   "name": "버즈벨",
+   "name": "아자벨",
    "types": [
     "강철",
     "벌레"
@@ -4432,10 +4542,10 @@
     69,
     82
    ],
-   "ability": "철갑불씨",
+   "ability": "미끈미끈",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「강철」 기술의 대미지를 강화(1.5배)한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「접촉기」를 받았을 때 자신을 공격한 포켓몬에게 「스피드 : -1」한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -4495,12 +4605,14 @@
     ]
    },
    "root": "종",
-   "oldName": "유충종"
+   "oldName": "유충종",
+   "prevName": "버즈벨",
+   "abilityReads": true
   },
   {
    "id": "w057",
    "origin": "orig",
-   "name": "퍼피토",
+   "name": "베스래빗",
    "types": [
     "노말"
    ],
@@ -4512,9 +4624,9 @@
     76,
     83
    ],
-   "ability": "매직가드",
+   "ability": "노말스킨",
    "abilityTo": 1,
-   "abilityDesc": "①비례 대미지를 받지 않는다.",
+   "abilityDesc": "①자신의 기술을 「노말」 기술로 만들고 기술의 위력을 강화(1.2배)한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -4580,12 +4692,14 @@
    "root": "토끼",
    "oldName": "들토끼",
    "img": "w057.webp",
-   "imgAt": 1793695900576
+   "imgAt": 1793695900576,
+   "prevName": "퍼피토",
+   "abilityReads": true
   },
   {
    "id": "w058",
    "origin": "orig",
-   "name": "암거북",
+   "name": "오르스셸",
    "types": [
     "바위"
    ],
@@ -4597,9 +4711,9 @@
     105,
     56
    ],
-   "ability": "슬로우스타터",
+   "ability": "정신력",
    "abilityTo": 1,
-   "abilityDesc": "①【지연 (4턴)】/턴 종료 시 「공격/방어/특공/특방/스피드 : +2」한다.",
+   "abilityDesc": "①「풀죽음」 상태가 되지 않는다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -4659,12 +4773,14 @@
    "root": "거북",
    "oldName": "광석거북",
    "img": "w058.webp",
-   "imgAt": 1793695898249
+   "imgAt": 1793695898249,
+   "prevName": "암거북",
+   "abilityReads": true
   },
   {
    "id": "w059",
    "origin": "orig",
-   "name": "이파몰",
+   "name": "근서요",
    "types": [
     "풀"
    ],
@@ -4676,10 +4792,10 @@
     63,
     66
    ],
-   "ability": "이끼오기",
+   "ability": "마지막씨앗",
    "abilityTo": 1,
-   "abilityDesc": "①「불꽃」 기술을 받으면 「방어 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「비접촉기」로 「빈사」 상태가 되었을 때 대상을 「씨뿌리기」 상태로 만든다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -4735,12 +4851,14 @@
    "root": "두더지",
    "oldName": "풀잎두더지",
    "img": "w059.webp",
-   "imgAt": 1793686027962
+   "imgAt": 1793686027962,
+   "prevName": "이파몰",
+   "abilityReads": true
   },
   {
    "id": "w060",
    "origin": "orig",
-   "name": "훨배트",
+   "name": "칼시배트",
    "types": [
     "에스퍼",
     "비행"
@@ -4753,9 +4871,9 @@
     76,
     87
    ],
-   "ability": "수상한비늘",
+   "ability": "룰러",
    "abilityTo": 1,
-   "abilityDesc": "①「접촉기」를 받았을 때 4할로 자신을 공격한 포켓몬을 「혼란」 상태로 만든다.",
+   "abilityDesc": "①「접촉기」를 받았을 때 5할로 자신을 공격한 포켓몬을 「사슬묶기」 상태로 만든다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -4818,12 +4936,14 @@
    "root": "박쥐",
    "oldName": "꿈박쥐",
    "img": "w060.webp",
-   "imgAt": 1793695896136
+   "imgAt": 1793695896136,
+   "prevName": "훨배트",
+   "abilityReads": true
   },
   {
    "id": "w061",
    "origin": "orig",
-   "name": "그라북",
+   "name": "묘구귀",
    "types": [
     "땅",
     "물"
@@ -4836,9 +4956,9 @@
     64,
     80
    ],
-   "ability": "승기",
+   "ability": "방음",
    "abilityTo": 1,
-   "abilityDesc": "①상대에 의해 자신의 능력이 감소했을 때 「특공 : +2」한다.",
+   "abilityDesc": "①【방호】/「소리」 기술을 무효화한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -4895,12 +5015,14 @@
    },
    "abilityPrev": "수은",
    "root": "거북",
-   "oldName": "거품거북"
+   "oldName": "거품거북",
+   "prevName": "그라북",
+   "abilityReads": true
   },
   {
    "id": "w062",
    "origin": "orig",
-   "name": "물젤리",
+   "name": "탈라메두",
    "types": [
     "물"
    ],
@@ -4912,9 +5034,9 @@
     81,
     83
    ],
-   "ability": "수생",
+   "ability": "클리어바디",
    "abilityTo": 1,
-   "abilityDesc": "①자신에게 「타입 : 물」을 추가한다.",
+   "abilityDesc": "①자신 이외에 의한 능력 감소(저하)를 무효화한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -4977,12 +5099,14 @@
     ]
    },
    "root": "해파리",
-   "oldName": "파도해파리"
+   "oldName": "파도해파리",
+   "prevName": "물젤리",
+   "abilityReads": true
   },
   {
    "id": "w063",
    "origin": "orig",
-   "name": "킥도기",
+   "name": "철견요",
    "types": [
     "격투",
     "강철"
@@ -4995,10 +5119,10 @@
     74,
     106
    ],
-   "ability": "투사오기",
+   "ability": "매직가드",
    "abilityTo": 1,
-   "abilityDesc": "①「불꽃」 기술을 받으면 「공격 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①비례 대미지를 받지 않는다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -5053,12 +5177,14 @@
     ]
    },
    "root": "개",
-   "oldName": "철권철갑개"
+   "oldName": "철권철갑개",
+   "prevName": "킥도기",
+   "abilityReads": true
   },
   {
    "id": "w064",
    "origin": "orig",
-   "name": "하늘양",
+   "name": "엘드오비",
    "types": [
     "페어리"
    ],
@@ -5070,10 +5196,10 @@
     70,
     63
    ],
-   "ability": "리본반골",
+   "ability": "발광",
    "abilityTo": 1,
-   "abilityDesc": "①「강철」 기술을 받으면 「특방 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①필드 위에 있는 한 상대 전체의 「명중」을 저하(0.9배)시킨다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -5133,12 +5259,14 @@
     ]
    },
    "root": "양",
-   "oldName": "방울양"
+   "oldName": "방울양",
+   "prevName": "하늘양",
+   "abilityReads": true
   },
   {
    "id": "w065",
    "origin": "orig",
-   "name": "플러솔",
+   "name": "잔환마",
    "types": [
     "노말"
    ],
@@ -5150,9 +5278,9 @@
     69,
     47
    ],
-   "ability": "포이즌힐",
+   "ability": "가로막기",
    "abilityTo": 1,
-   "abilityDesc": "①「독」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
+   "abilityDesc": "①「접촉기」를 받으면 자신을 공격한 포켓몬에게 「스피드 : -1」한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -5205,12 +5333,14 @@
    "root": "오소리",
    "oldName": "들오소리",
    "img": "w065.webp",
-   "imgAt": 1793686041808
+   "imgAt": 1793686041808,
+   "prevName": "플러솔",
+   "abilityReads": true
   },
   {
    "id": "w066",
    "origin": "orig",
-   "name": "팬텀팟",
+   "name": "념옹귀",
    "types": [
     "고스트",
     "에스퍼"
@@ -5223,10 +5353,10 @@
     74,
     53
    ],
-   "ability": "안개반골",
+   "ability": "방진",
    "abilityTo": 1,
-   "abilityDesc": "①「고스트」 기술을 받으면 「방어 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①【방호】/자신에 대한 「가루」 기술을 무효화한다.\n②「날씨」에 의한 비례 대미지를 받지 않는다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -5283,12 +5413,14 @@
    "root": "항아리",
    "oldName": "달항아리",
    "img": "w066.webp",
-   "imgAt": 1793692554355
+   "imgAt": 1793692554355,
+   "prevName": "팬텀팟",
+   "abilityReads": true
   },
   {
    "id": "w067",
    "origin": "orig",
-   "name": "퀴토드",
+   "name": "갑섬와",
    "types": [
     "벌레",
     "독"
@@ -5301,10 +5433,10 @@
     105,
     40
    ],
-   "ability": "갑각각오",
+   "ability": "컬리헤어",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「벌레」 기술의 대미지를 강화(1.5배)한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「접촉기」를 받았을 때 자신을 공격한 포켓몬에게 「스피드 : -1」한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -5361,12 +5493,14 @@
    "root": "두꺼비",
    "oldName": "더듬이두꺼비",
    "img": "w067.webp",
-   "imgAt": 1793692555051
+   "imgAt": 1793692555051,
+   "prevName": "퀴토드",
+   "abilityReads": true
   },
   {
    "id": "w068",
    "origin": "orig",
-   "name": "코그늑",
+   "name": "석랑요",
    "types": [
     "전기",
     "강철"
@@ -5379,10 +5513,10 @@
     66,
     109
    ],
-   "ability": "스파크반골",
+   "ability": "포자",
    "abilityTo": 1,
-   "abilityDesc": "①「땅」 기술을 받으면 「공격 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「접촉기」를 받았을 때 자신을 공격한 포켓몬을 3할로 「독/마비/잠듦」 중 무작위한 상태 이상으로 만든다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -5439,12 +5573,14 @@
    "root": "늑대",
    "oldName": "철갑늑대",
    "img": "w068.webp",
-   "imgAt": 1793695902832
+   "imgAt": 1793695902832,
+   "prevName": "코그늑",
+   "abilityReads": true
   },
   {
    "id": "w069",
    "origin": "orig",
-   "name": "드림여",
+   "name": "몽호수",
    "types": [
     "에스퍼"
    ],
@@ -5456,10 +5592,10 @@
     65,
     81
    ],
-   "ability": "거울반골",
+   "ability": "발광전염",
    "abilityTo": 1,
-   "abilityDesc": "①「악」 기술을 받으면 「특공 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①턴 종료 시 5할로 필드에 있는 무작위한 포켓몬을 「혼란」 상태로 만든다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -5521,12 +5657,14 @@
    "root": "여우",
    "oldName": "별여우",
    "img": "w069.webp",
-   "imgAt": 1793686036960
+   "imgAt": 1793686036960,
+   "prevName": "드림여",
+   "abilityReads": true
   },
   {
    "id": "w070",
    "origin": "orig",
-   "name": "스플걸",
+   "name": "해구조",
    "types": [
     "물",
     "비행"
@@ -5539,10 +5677,10 @@
     72,
     76
    ],
-   "ability": "소금불씨",
+   "ability": "월광접",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「물」 기술의 대미지를 강화(1.5배)한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「정면」보다 느릴 때 「스피드」를 강화(1.33배)한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -5604,12 +5742,14 @@
    "root": "갈매기",
    "oldName": "물갈매기",
    "img": "w070.webp",
-   "imgAt": 1793686028505
+   "imgAt": 1793686028505,
+   "prevName": "스플걸",
+   "abilityReads": false
   },
   {
    "id": "w071",
    "origin": "orig",
-   "name": "비늘뱀",
+   "name": "스네돈",
    "types": [
     "드래곤"
    ],
@@ -5621,10 +5761,10 @@
     58,
     82
    ],
-   "ability": "고룡막판",
+   "ability": "예측",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「드래곤」 기술의 대미지를 강화(1.5배)한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신의 공격에 「4할 : 미래예지」의 효과를 부여한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -5680,12 +5820,14 @@
    },
    "moveSalt": 5,
    "root": "뱀",
-   "oldName": "비늘뱀"
+   "oldName": "비늘뱀",
+   "prevName": "비늘뱀",
+   "abilityReads": false
   },
   {
    "id": "w072",
    "origin": "orig",
-   "name": "오싹콘",
+   "name": "킬불프",
    "types": [
     "얼음"
    ],
@@ -5697,10 +5839,10 @@
     110,
     49
    ],
-   "ability": "고드름막판",
+   "ability": "독체액",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「얼음」 기술의 대미지를 강화(1.5배)한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①기술 대미지로 「빈사」 상태가 되었을 때 「맹독」 상태로 만든다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -5760,12 +5902,14 @@
     ]
    },
    "root": "여우",
-   "oldName": "고드름여우"
+   "oldName": "고드름여우",
+   "prevName": "오싹콘",
+   "abilityReads": false
   },
   {
    "id": "w073",
    "origin": "orig",
-   "name": "어둑콘",
+   "name": "폭스립",
    "types": [
     "악"
    ],
@@ -5777,10 +5921,10 @@
     104,
     52
    ],
-   "ability": "어둠막판",
+   "ability": "부식",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「악」 기술의 대미지를 강화(1.5배)한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「타입 : 강철, 독」을 「독」 상태로 만들 수 있다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -5834,12 +5978,14 @@
     ]
    },
    "root": "여우",
-   "oldName": "밤여우"
+   "oldName": "밤여우",
+   "prevName": "어둑콘",
+   "abilityReads": false
   },
   {
    "id": "w074",
    "origin": "orig",
-   "name": "쨍기어",
+   "name": "철륜귀",
    "types": [
     "강철"
    ],
@@ -5851,9 +5997,9 @@
     67,
     56
    ],
-   "ability": "발끈",
+   "ability": "인분",
    "abilityTo": 1,
-   "abilityDesc": "①【유일】/「HP : 1/2 이하」일 때 「특공 : +1」한다.",
+   "abilityDesc": "①자신에 대한 기술의 추가 효과를 받지 않는다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -5916,12 +6062,14 @@
    "root": "톱니",
    "oldName": "무쇠톱니",
    "img": "w074.webp",
-   "imgAt": 1793691010470
+   "imgAt": 1793691010470,
+   "prevName": "쨍기어",
+   "abilityReads": false
   },
   {
    "id": "w075",
    "origin": "orig",
-   "name": "모래콘",
+   "name": "불프실",
    "types": [
     "풀",
     "땅"
@@ -5934,9 +6082,9 @@
     79,
     110
    ],
-   "ability": "주눅",
+   "ability": "유폭",
    "abilityTo": 1,
-   "abilityDesc": "①「고스트/악/벌레」 기술을 받으면 「스피드 : +1」한다.",
+   "abilityDesc": "①「접촉기」로 「빈사」 상태가 되었을 때 대상에게 1/4만큼의 비례 대미지를 입힌다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -5991,12 +6139,14 @@
    "root": "여우",
    "oldName": "점토여우",
    "img": "w075.webp",
-   "imgAt": 1793686027694
+   "imgAt": 1793686027694,
+   "prevName": "모래콘",
+   "abilityReads": false
   },
   {
    "id": "w076",
    "origin": "orig",
-   "name": "덩스네",
+   "name": "텐바이퍼",
    "types": [
     "독",
     "풀"
@@ -6009,10 +6159,10 @@
     77,
     79
    ],
-   "ability": "오염오기",
+   "ability": "살인바이러스",
    "abilityTo": 1,
-   "abilityDesc": "①「얼음」 기술을 받으면 「공격 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신의 「독」 기술의 추가 효과 발생률을 2배로 만든다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -6074,12 +6224,14 @@
    "root": "뱀",
    "oldName": "풀잎뱀",
    "img": "w076.webp",
-   "imgAt": 1793691013433
+   "imgAt": 1793691013433,
+   "prevName": "덩스네",
+   "abilityReads": true
   },
   {
    "id": "w077",
    "origin": "orig",
-   "name": "스톤북",
+   "name": "석구귀",
    "types": [
     "바위",
     "고스트"
@@ -6092,9 +6244,9 @@
     75,
     44
    ],
-   "ability": "유령",
+   "ability": "수은",
    "abilityTo": 1,
-   "abilityDesc": "①자신에게 「타입 : 고스트」을 추가한다.",
+   "abilityDesc": "①「타입 : 물」에 대한 자신의 「독/강철」 기술의 대미지가 2배가 된다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -6152,12 +6304,14 @@
    "root": "거북",
    "oldName": "유령거북",
    "img": "w077.webp",
-   "imgAt": 1793692553689
+   "imgAt": 1793692553689,
+   "prevName": "스톤북",
+   "abilityReads": false
   },
   {
    "id": "w078",
    "origin": "orig",
-   "name": "줄메에",
+   "name": "섬양마",
    "types": [
     "전기"
    ],
@@ -6169,9 +6323,9 @@
     81,
     44
    ],
-   "ability": "포이즌힐",
+   "ability": "통전",
    "abilityTo": 1,
-   "abilityDesc": "①「독」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
+   "abilityDesc": "①자신의 「전기」 기술이 「타입 : 땅」에게도 명중한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -6230,12 +6384,14 @@
    "root": "양",
    "oldName": "번개양",
    "img": "w078.webp",
-   "imgAt": 1793695899830
+   "imgAt": 1793695899830,
+   "prevName": "줄메에",
+   "abilityReads": true
   },
   {
    "id": "w079",
    "origin": "orig",
-   "name": "단단탉",
+   "name": "각계조",
    "types": [
     "불꽃",
     "바위"
@@ -6248,10 +6404,10 @@
     73,
     106
    ],
-   "ability": "용암집념",
+   "ability": "불옮기기",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「불꽃」 기술의 대미지를 강화(1.5배)한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신의 공격에 「4할 : 자연발화」의 효과를 부여한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -6300,12 +6456,14 @@
     ]
    },
    "root": "수탉",
-   "oldName": "광석수탉"
+   "oldName": "광석수탉",
+   "prevName": "단단탉",
+   "abilityReads": false
   },
   {
    "id": "w080",
    "origin": "orig",
-   "name": "하늘램",
+   "name": "오비멘",
    "types": [
     "페어리",
     "비행"
@@ -6318,9 +6476,9 @@
     63,
     60
    ],
-   "ability": "요정",
+   "ability": "발끈",
    "abilityTo": 1,
-   "abilityDesc": "①자신에게 「타입 : 페어리」을 추가한다.",
+   "abilityDesc": "①【유일】/「HP : 1/2 이하」일 때 「특공 : +1」한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -6380,12 +6538,14 @@
    "root": "양",
    "oldName": "달콤회오리양",
    "img": "w080.webp",
-   "imgAt": 1793686027541
+   "imgAt": 1793686027541,
+   "prevName": "하늘램",
+   "abilityReads": true
   },
   {
    "id": "w081",
    "origin": "orig",
-   "name": "버니쥐",
+   "name": "셀레넛",
    "types": [
     "노말"
    ],
@@ -6397,9 +6557,9 @@
     69,
     89
    ],
-   "ability": "노말스킨",
+   "ability": "간이무장",
    "abilityTo": 1,
-   "abilityDesc": "①자신의 기술을 「노말」 기술로 만들고 기술의 위력을 강화(1.2배)한다.",
+   "abilityDesc": "①【방호】/자신을 공격하는 포켓몬을 「C : ±0」으로 취급한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -6452,12 +6612,14 @@
    "root": "다람쥐",
    "oldName": "점박이다람쥐",
    "img": "w081.webp",
-   "imgAt": 1793686042189
+   "imgAt": 1793686042189,
+   "prevName": "버니쥐",
+   "abilityReads": false
   },
   {
    "id": "w082",
    "origin": "orig",
-   "name": "불끈곰",
+   "name": "골웅마",
    "types": [
     "격투"
    ],
@@ -6469,10 +6631,10 @@
     77,
     51
    ],
-   "ability": "주먹오기",
+   "ability": "불굴의방패",
    "abilityTo": 1,
-   "abilityDesc": "①「비행」 기술을 받으면 「특방 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①【1/시】【등장】/「방어 : +1」한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -6524,12 +6686,14 @@
    "root": "곰",
    "oldName": "근육곰",
    "img": "w082.webp",
-   "imgAt": 1793686032012
+   "imgAt": 1793686032012,
+   "prevName": "불끈곰",
+   "abilityReads": true
   },
   {
    "id": "w083",
    "origin": "orig",
-   "name": "바스방",
+   "name": "야그팔렌",
    "types": [
     "벌레"
    ],
@@ -6541,10 +6705,10 @@
     81,
     104
    ],
-   "ability": "껍질반골",
+   "ability": "전격전",
    "abilityTo": 1,
-   "abilityDesc": "①「비행」 기술을 받으면 「특공 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①【1/시】【등장】/「스피드 : +1」한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -6600,12 +6764,14 @@
    "root": "나방",
    "oldName": "실더듬이나방",
    "img": "w083.webp",
-   "imgAt": 1793695899669
+   "imgAt": 1793695899669,
+   "prevName": "바스방",
+   "abilityReads": true
   },
   {
    "id": "w084",
    "origin": "orig",
-   "name": "비틀네",
+   "name": "루트센티",
    "types": [
     "독",
     "벌레"
@@ -6679,12 +6845,14 @@
    "root": "지네",
    "oldName": "실지네",
    "img": "w084.webp",
-   "imgAt": 1793695896330
+   "imgAt": 1793695896330,
+   "prevName": "비틀네",
+   "abilityReads": true
   },
   {
    "id": "w085",
    "origin": "orig",
-   "name": "신호크",
+   "name": "환응조",
    "types": [
     "에스퍼",
     "비행"
@@ -6697,10 +6865,10 @@
     72,
     77
    ],
-   "ability": "최면반골",
+   "ability": "사이코스킨",
    "abilityTo": 1,
-   "abilityDesc": "①「악」 기술을 받으면 「공격 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신이 내보낸 기술을 「에스퍼」 기술로 만든다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -6762,12 +6930,14 @@
    "root": "매",
    "oldName": "거울매",
    "img": "w085.webp",
-   "imgAt": 1793691005578
+   "imgAt": 1793691005578,
+   "prevName": "신호크",
+   "abilityReads": true
   },
   {
    "id": "w086",
    "origin": "orig",
-   "name": "퐁리컨",
+   "name": "펠리스",
    "types": [
     "물",
     "비행"
@@ -6780,10 +6950,10 @@
     79,
     60
    ],
-   "ability": "이슬집념",
+   "ability": "배짱",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「물」 기술의 대미지를 강화(1.5배)한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신의 「노말/격투」 기술이 「타입 : 고스트」에게도 명중한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -6838,12 +7008,14 @@
     ]
    },
    "root": "펠리컨",
-   "oldName": "물펠리컨"
+   "oldName": "물펠리컨",
+   "prevName": "퐁리컨",
+   "abilityReads": false
   },
   {
    "id": "w087",
    "origin": "orig",
-   "name": "테라갈",
+   "name": "진갈충",
    "types": [
     "땅"
    ],
@@ -6855,10 +7027,10 @@
     69,
     109
    ],
-   "ability": "황토심지",
+   "ability": "독수",
    "abilityTo": 1,
-   "abilityDesc": "①「물」 기술을 받으면 「공격 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「접촉기」에 추가 효과로써 「3할 : 독」을 부여한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -6913,12 +7085,14 @@
    },
    "moveSalt": 1,
    "root": "전갈",
-   "oldName": "황토전갈"
+   "oldName": "황토전갈",
+   "prevName": "테라갈",
+   "abilityReads": false
   },
   {
    "id": "w088",
    "origin": "orig",
-   "name": "웨이쉘",
+   "name": "콘크스",
    "types": [
     "물"
    ],
@@ -6930,9 +7104,9 @@
     104,
     50
    ],
-   "ability": "급류",
+   "ability": "둔감",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「물」 기술의 대미지를 강화(1.5배)한다.",
+   "abilityDesc": "①「헤롱헤롱」「도발」 상태가 되지 않는다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -6985,12 +7159,14 @@
    "root": "소라",
    "oldName": "거품소라",
    "img": "w088.webp",
-   "imgAt": 1793695896678
+   "imgAt": 1793695896678,
+   "prevName": "웨이쉘",
+   "abilityReads": true
   },
   {
    "id": "w089",
    "origin": "orig",
-   "name": "끈스네",
+   "name": "오피닉",
    "types": [
     "악",
     "독"
@@ -7003,9 +7179,9 @@
     64,
     85
    ],
-   "ability": "흑심",
+   "ability": "이판사판",
    "abilityTo": 1,
-   "abilityDesc": "①자신에게 「타입 : 악」을 추가한다.",
+   "abilityDesc": "①「반동 비례 대미지」를 받는 기술의 대미지를 강화(1.2배)한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -7062,12 +7238,14 @@
    "root": "뱀",
    "oldName": "어둠뱀",
    "img": "w089.webp",
-   "imgAt": 1793691014264
+   "imgAt": 1793691014264,
+   "prevName": "끈스네",
+   "abilityReads": false
   },
   {
    "id": "w090",
    "origin": "orig",
-   "name": "짱하마",
+   "name": "발로히포",
    "types": [
     "바위",
     "땅"
@@ -7080,10 +7258,10 @@
     78,
     105
    ],
-   "ability": "화석회생",
+   "ability": "불꽃몸",
    "abilityTo": 1,
-   "abilityDesc": "①「독」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「접촉기」를 받았을 때 3할로 자신을 공격한 포켓몬을 「화상」 상태로 만든다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -7139,12 +7317,14 @@
    "root": "하마",
    "oldName": "광석하마",
    "img": "w090.webp",
-   "imgAt": 1793695901832
+   "imgAt": 1793695901832,
+   "prevName": "짱하마",
+   "abilityReads": true
   },
   {
    "id": "w091",
    "origin": "orig",
-   "name": "그린슴",
+   "name": "근록요",
    "types": [
     "풀"
    ],
@@ -7156,9 +7336,9 @@
     77,
     84
    ],
-   "ability": "심록",
+   "ability": "킥의오니",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「풀」 기술의 대미지를 강화(1.5배)한다.",
+   "abilityDesc": "①「킥」 기술의 명중률을 강화(1.33배)한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -7213,12 +7393,14 @@
     ]
    },
    "root": "사슴",
-   "oldName": "새싹사슴"
+   "oldName": "새싹사슴",
+   "prevName": "그린슴",
+   "abilityReads": false
   },
   {
    "id": "w092",
    "origin": "orig",
-   "name": "콩몰",
+   "name": "쿠아몰",
    "types": [
     "노말"
    ],
@@ -7230,10 +7412,10 @@
     106,
     49
    ],
-   "ability": "회색불씨",
+   "ability": "마이페이스",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「노말」 기술의 대미지를 강화(1.5배)한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「혼란」「도발」 상태가 되지 않는다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -7291,12 +7473,14 @@
    "oldName": "들두더지",
    "nameFix": 1,
    "img": "w092.webp",
-   "imgAt": 1793686041666
+   "imgAt": 1793686041666,
+   "prevName": "콩몰",
+   "abilityReads": true
   },
   {
    "id": "w093",
    "origin": "orig",
-   "name": "흙코뿔",
+   "name": "사서마",
    "types": [
     "드래곤",
     "땅"
@@ -7309,9 +7493,9 @@
     76,
     86
    ],
-   "ability": "불꽃몸",
+   "ability": "수은",
    "abilityTo": 1,
-   "abilityDesc": "①「접촉기」를 받았을 때 3할로 자신을 공격한 포켓몬을 「화상」 상태로 만든다.",
+   "abilityDesc": "①「타입 : 물」에 대한 자신의 「독/강철」 기술의 대미지가 2배가 된다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -7368,12 +7552,14 @@
    },
    "moveSalt": 6,
    "root": "코뿔소",
-   "oldName": "비늘코뿔소"
+   "oldName": "비늘코뿔소",
+   "prevName": "흙코뿔",
+   "abilityReads": false
   },
   {
    "id": "w094",
    "origin": "orig",
-   "name": "윙래빗",
+   "name": "알레프",
    "types": [
     "비행",
     "노말"
@@ -7386,10 +7572,10 @@
     63,
     115
    ],
-   "ability": "돌풍각오",
+   "ability": "싱크로",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「비행」 기술의 대미지를 강화(1.5배)한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신이 「화상/독/마비」 상태가 되었을 때 「정면」을 같은 상태 이상으로 만든다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C",
    "grade": "C",
@@ -7442,12 +7628,14 @@
    "root": "토끼",
    "oldName": "깃토끼",
    "img": "w094.webp",
-   "imgAt": 1793691006040
+   "imgAt": 1793691006040,
+   "prevName": "윙래빗",
+   "abilityReads": false
   },
   {
    "id": "w095",
    "origin": "orig",
-   "name": "번레오",
+   "name": "토사마",
    "types": [
     "불꽃",
     "땅"
@@ -7460,9 +7648,9 @@
     68,
     107
    ],
-   "ability": "흙덩이",
+   "ability": "불옮기기",
    "abilityTo": 1,
-   "abilityDesc": "①자신에게 「타입 : 땅」을 추가한다.",
+   "abilityDesc": "①자신의 공격에 「4할 : 자연발화」의 효과를 부여한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C",
@@ -7522,12 +7710,14 @@
    "oldName": "화염진흙사자",
    "nameFix": 1,
    "img": "w095.webp",
-   "imgAt": 1793686032433
+   "imgAt": 1793686032433,
+   "prevName": "번레오",
+   "abilityReads": false
   },
   {
    "id": "w096",
    "origin": "orig",
-   "name": "얼테디",
+   "name": "하일베어",
    "types": [
     "얼음"
    ],
@@ -7539,10 +7729,10 @@
     81,
     62
    ],
-   "ability": "한파재생",
+   "ability": "원격최면",
    "abilityTo": 1,
-   "abilityDesc": "①「잠듦」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신의 기술을 「접촉 : X」로 만든다.\n②자신의 기술에 「2할 : 잠듦」의 효과를 부여한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C+",
    "grade": "C",
@@ -7603,12 +7793,14 @@
     ]
    },
    "root": "곰",
-   "oldName": "빙하곰"
+   "oldName": "빙하곰",
+   "prevName": "얼테디",
+   "abilityReads": false
   },
   {
    "id": "w097",
    "origin": "orig",
-   "name": "위스열",
+   "name": "클라비펙",
    "types": [
     "고스트"
    ],
@@ -7620,9 +7812,9 @@
     74,
     84
    ],
-   "ability": "수상한비늘",
+   "ability": "크래커",
    "abilityTo": 1,
-   "abilityDesc": "①「접촉기」를 받았을 때 4할로 자신을 공격한 포켓몬을 「혼란」 상태로 만든다.",
+   "abilityDesc": "①「접촉기」를 받았을 때 3할로 자신을 공격한 포켓몬을 「마비」 상태로 만든다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -7681,12 +7873,14 @@
    "root": "열쇠",
    "oldName": "등불열쇠",
    "img": "w097.webp",
-   "imgAt": 1793695900896
+   "imgAt": 1793695900896,
+   "prevName": "위스열",
+   "abilityReads": true
   },
   {
    "id": "w098",
    "origin": "orig",
-   "name": "메탈벨",
+   "name": "스틱벨",
    "types": [
     "강철"
    ],
@@ -7698,10 +7892,10 @@
     73,
     67
    ],
-   "ability": "강철집념",
+   "ability": "감염원",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「강철」 기술의 대미지를 강화(1.5배)한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①필드 위에 있는 한 모든 포켓몬의 상태 이상을 유발하는 효과의 확률이 1할 상승한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C+",
    "grade": "C",
@@ -7752,12 +7946,14 @@
    "root": "종",
    "oldName": "무쇠종",
    "img": "w098.webp",
-   "imgAt": 1793692554693
+   "imgAt": 1793692554693,
+   "prevName": "메탈벨",
+   "abilityReads": false
   },
   {
    "id": "w099",
    "origin": "orig",
-   "name": "새싹미",
+   "name": "필아라크",
    "types": [
     "벌레",
     "풀"
@@ -7770,9 +7966,9 @@
     81,
     85
    ],
-   "ability": "벌레의알림",
+   "ability": "동결",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「벌레」 기술의 대미지를 강화(1.5배)한다.",
+   "abilityDesc": "①【등장 (효과 참조)】/「타입 : 물」이 필드에 등장했을 때 5할로 그 포켓몬을 「타입 : 얼음」으로 만든다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -7832,12 +8028,14 @@
     ]
    },
    "root": "거미",
-   "oldName": "풀잎거미"
+   "oldName": "풀잎거미",
+   "prevName": "새싹미",
+   "abilityReads": false
   },
   {
    "id": "w100",
    "origin": "orig",
-   "name": "쇠가오",
+   "name": "레이온",
    "types": [
     "전기",
     "강철"
@@ -7850,10 +8048,10 @@
     60,
     95
    ],
-   "ability": "스파크막판",
+   "ability": "예측",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「전기」 기술의 대미지를 강화(1.5배)한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신의 공격에 「4할 : 미래예지」의 효과를 부여한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C+",
    "grade": "C",
@@ -7909,12 +8107,14 @@
    },
    "moveSalt": 7,
    "root": "가오리",
-   "oldName": "철갑가오리"
+   "oldName": "철갑가오리",
+   "prevName": "쇠가오",
+   "abilityReads": false
   },
   {
    "id": "w101",
    "origin": "orig",
-   "name": "깃펠리",
+   "name": "제피펠리",
    "types": [
     "에스퍼",
     "비행"
@@ -7927,9 +8127,9 @@
     76,
     88
    ],
-   "ability": "비상",
+   "ability": "클리어바디",
    "abilityTo": 1,
-   "abilityDesc": "①자신에게 「타입 : 비행」을 추가한다.",
+   "abilityDesc": "①자신 이외에 의한 능력 감소(저하)를 무효화한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -7992,12 +8192,14 @@
    "root": "펠리컨",
    "oldName": "거울펠리컨",
    "img": "w101.webp",
-   "imgAt": 1793695897806
+   "imgAt": 1793695897806,
+   "prevName": "깃펠리",
+   "abilityReads": true
   },
   {
    "id": "w102",
    "origin": "orig",
-   "name": "퐁레이",
+   "name": "벤바티",
    "types": [
     "물"
    ],
@@ -8009,10 +8211,10 @@
     71,
     84
    ],
-   "ability": "소금회생",
+   "ability": "간이무장",
    "abilityTo": 1,
-   "abilityDesc": "①「마비」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①【방호】/자신을 공격하는 포켓몬을 「C : ±0」으로 취급한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C+",
    "grade": "C",
@@ -8072,12 +8274,14 @@
     ]
    },
    "root": "가오리",
-   "oldName": "이슬가오리"
+   "oldName": "이슬가오리",
+   "prevName": "퐁레이",
+   "abilityReads": false
   },
   {
    "id": "w103",
    "origin": "orig",
-   "name": "번살라",
+   "name": "알살라",
    "types": [
     "불꽃",
     "비행"
@@ -8090,9 +8294,9 @@
     115,
     46
    ],
-   "ability": "맹화",
+   "ability": "싱크로",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「불꽃」 기술의 대미지를 강화(1.5배)한다.",
+   "abilityDesc": "①자신이 「화상/독/마비」 상태가 되었을 때 「정면」을 같은 상태 이상으로 만든다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -8153,12 +8357,14 @@
     ]
    },
    "root": "살라만더",
-   "oldName": "구름살라만더"
+   "oldName": "구름살라만더",
+   "prevName": "번살라",
+   "abilityReads": false
   },
   {
    "id": "w104",
    "origin": "orig",
-   "name": "오라쥐",
+   "name": "환율요",
    "types": [
     "페어리",
     "에스퍼"
@@ -8171,9 +8377,9 @@
     83,
     82
    ],
-   "ability": "요정",
+   "ability": "건각",
    "abilityTo": 1,
-   "abilityDesc": "①자신에게 「타입 : 페어리」을 추가한다.",
+   "abilityDesc": "①비례 대미지를 받지 않는다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -8232,12 +8438,14 @@
    "root": "다람쥐",
    "oldName": "요정별다람쥐",
    "img": "w104.webp",
-   "imgAt": 1793691010107
+   "imgAt": 1793691010107,
+   "prevName": "오라쥐",
+   "abilityReads": true
   },
   {
    "id": "w105",
    "origin": "orig",
-   "name": "동글쪽",
+   "name": "노르위즐",
    "types": [
     "노말"
    ],
@@ -8249,9 +8457,9 @@
     66,
     117
    ],
-   "ability": "대운",
+   "ability": "월광접",
    "abilityTo": 1,
-   "abilityDesc": "①자신의 기술이 급소에 맞기 쉽다(C+1).",
+   "abilityDesc": "①「정면」보다 느릴 때 「스피드」를 강화(1.33배)한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -8302,12 +8510,14 @@
    },
    "abilityPrev": "동생뻘",
    "root": "족제비",
-   "oldName": "솜털족제비"
+   "oldName": "솜털족제비",
+   "prevName": "동글쪽",
+   "abilityReads": false
   },
   {
    "id": "w106",
    "origin": "orig",
-   "name": "차두루",
+   "name": "타우그루",
    "types": [
     "격투"
    ],
@@ -8319,10 +8529,10 @@
     73,
     108
    ],
-   "ability": "투사막판",
+   "ability": "주눅",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「격투」 기술의 대미지를 강화(1.5배)한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「고스트/악/벌레」 기술을 받으면 「스피드 : +1」한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C+",
    "grade": "C",
@@ -8383,12 +8593,14 @@
    "root": "두루미",
    "oldName": "철권두루미",
    "img": "w106.webp",
-   "imgAt": 1793691018034
+   "imgAt": 1793691018034,
+   "prevName": "차두루",
+   "abilityReads": true
   },
   {
    "id": "w107",
    "origin": "orig",
-   "name": "꽃느림",
+   "name": "슬로스실",
    "types": [
     "풀"
    ],
@@ -8400,10 +8612,10 @@
     86,
     54
    ],
-   "ability": "가시풀재생",
+   "ability": "원격최면",
    "abilityTo": 1,
-   "abilityDesc": "①「잠듦」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신의 기술을 「접촉 : X」로 만든다.\n②자신의 기술에 「2할 : 잠듦」의 효과를 부여한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C+",
    "grade": "C",
@@ -8457,12 +8669,14 @@
     ]
    },
    "root": "나무늘보",
-   "oldName": "꽃나무늘보"
+   "oldName": "꽃나무늘보",
+   "prevName": "꽃느림",
+   "abilityReads": false
   },
   {
    "id": "w108",
    "origin": "orig",
-   "name": "톡시몰",
+   "name": "역서수",
    "types": [
     "독",
     "풀"
@@ -8475,10 +8689,10 @@
     71,
     58
    ],
-   "ability": "오염불씨",
+   "ability": "부식",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「독」 기술의 대미지를 강화(1.5배)한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「타입 : 강철, 독」을 「독」 상태로 만들 수 있다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C+",
    "grade": "C",
@@ -8532,12 +8746,14 @@
     ]
    },
    "root": "두더지",
-   "oldName": "늪두더지"
+   "oldName": "늪두더지",
+   "prevName": "톡시몰",
+   "abilityReads": false
   },
   {
    "id": "w109",
    "origin": "orig",
-   "name": "그라뿔",
+   "name": "발라이노",
    "types": [
     "땅"
    ],
@@ -8549,9 +8765,9 @@
     82,
     86
    ],
-   "ability": "요정",
+   "ability": "이판사판",
    "abilityTo": 1,
-   "abilityDesc": "①자신에게 「타입 : 페어리」을 추가한다.",
+   "abilityDesc": "①「반동 비례 대미지」를 받는 기술의 대미지를 강화(1.2배)한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -8607,12 +8823,14 @@
    },
    "abilityPrev": "위험예지",
    "root": "코뿔소",
-   "oldName": "진흙코뿔소"
+   "oldName": "진흙코뿔소",
+   "prevName": "그라뿔",
+   "abilityReads": false
   },
   {
    "id": "w110",
    "origin": "orig",
-   "name": "휘리컨",
+   "name": "하피펠리",
    "types": [
     "비행"
    ],
@@ -8624,9 +8842,9 @@
     112,
     54
    ],
-   "ability": "슬로우스타터",
+   "ability": "정찰비행",
    "abilityTo": 1,
-   "abilityDesc": "①【지연 (4턴)】/턴 종료 시 「공격/방어/특공/특방/스피드 : +2」한다.",
+   "abilityDesc": "①하늘 위에 떠있을 때 자신의 「비행」 기술에 「유턴」 효과를 부여한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -8681,12 +8899,14 @@
     ]
    },
    "root": "펠리컨",
-   "oldName": "구름펠리컨"
+   "oldName": "구름펠리컨",
+   "prevName": "휘리컨",
+   "abilityReads": false
   },
   {
    "id": "w111",
    "origin": "orig",
-   "name": "락레이",
+   "name": "비홍어",
    "types": [
     "바위",
     "물"
@@ -8699,10 +8919,10 @@
     75,
     108
    ],
-   "ability": "광석투지",
+   "ability": "유폭",
    "abilityTo": 1,
-   "abilityDesc": "①「전기」 기술을 받으면 「스피드 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「접촉기」로 「빈사」 상태가 되었을 때 대상에게 1/4만큼의 비례 대미지를 입힌다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C+",
    "grade": "C",
@@ -8762,12 +8982,14 @@
     ]
    },
    "root": "가오리",
-   "oldName": "암가오리"
+   "oldName": "암가오리",
+   "prevName": "락레이",
+   "abilityReads": false
   },
   {
    "id": "w112",
    "origin": "orig",
-   "name": "출렁게",
+   "name": "벤토칸크",
    "types": [
     "물"
    ],
@@ -8779,10 +9001,10 @@
     84,
     87
    ],
-   "ability": "소금투지",
+   "ability": "냉기",
    "abilityTo": 1,
-   "abilityDesc": "①「전기」 기술을 받으면 「스피드 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「접촉기」를 받았을 때 2할로 자신을 공격한 포켓몬을 「얼음」 상태로 만든다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C+",
    "grade": "C",
@@ -8844,12 +9066,14 @@
    "root": "게",
    "oldName": "물보라이슬게",
    "img": "w112.webp",
-   "imgAt": 1793695902981
+   "imgAt": 1793695902981,
+   "prevName": "출렁게",
+   "abilityReads": true
   },
   {
    "id": "w113",
    "origin": "orig",
-   "name": "깜깜늑",
+   "name": "둠브하울",
    "types": [
     "악"
    ],
@@ -8861,9 +9085,9 @@
     76,
     89
    ],
-   "ability": "까칠한피부",
+   "ability": "킥의오니",
    "abilityTo": 1,
-   "abilityDesc": "①「접촉기」를 받았을 때 자신을 공격한 포켓몬에게 1/8의 비례 대미지를 입힌다.",
+   "abilityDesc": "①「킥」 기술의 명중률을 강화(1.33배)한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -8921,12 +9145,14 @@
    "root": "늑대",
    "oldName": "어둠늑대",
    "img": "w113.webp",
-   "imgAt": 1793691013873
+   "imgAt": 1793691013873,
+   "prevName": "깜깜늑",
+   "abilityReads": false
   },
   {
    "id": "w114",
    "origin": "orig",
-   "name": "유령팟",
+   "name": "나이트팟",
    "types": [
     "고스트"
    ],
@@ -8938,10 +9164,10 @@
     84,
     52
    ],
-   "ability": "저주오기",
+   "ability": "슬로우스타터",
    "abilityTo": 1,
-   "abilityDesc": "①「고스트」 기술을 받으면 「방어 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①【지연 (4턴)】/턴 종료 시 「공격/방어/특공/특방/스피드 : +2」한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C+",
    "grade": "C",
@@ -9002,12 +9228,14 @@
    "root": "항아리",
    "oldName": "유령항아리",
    "img": "w114.webp",
-   "imgAt": 1793695899309
+   "imgAt": 1793695899309,
+   "prevName": "유령팟",
+   "abilityReads": true
   },
   {
    "id": "w115",
    "origin": "orig",
-   "name": "그린몰",
+   "name": "머스몰",
    "types": [
     "풀"
    ],
@@ -9019,10 +9247,10 @@
     106,
     46
    ],
-   "ability": "버섯회생",
+   "ability": "심록",
    "abilityTo": 1,
-   "abilityDesc": "①「화상」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「풀」 기술의 대미지를 강화(1.5배)한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C+",
    "grade": "C",
@@ -9078,12 +9306,14 @@
    "root": "두더지",
    "oldName": "덩굴두더지",
    "img": "w115.webp",
-   "imgAt": 1793695895483
+   "imgAt": 1793695895483,
+   "prevName": "그린몰",
+   "abilityReads": true
   },
   {
    "id": "w116",
    "origin": "orig",
-   "name": "찌릿램",
+   "name": "뇌양요",
    "types": [
     "전기"
    ],
@@ -9095,10 +9325,10 @@
     67,
     55
    ],
-   "ability": "찌릿오기",
+   "ability": "하늘을달리는자",
    "abilityTo": 1,
-   "abilityDesc": "①「땅」 기술을 받으면 「방어 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「HP : 가득」일 때 자신의 「전기」 기술이 필중한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C+",
    "grade": "C",
@@ -9160,12 +9390,14 @@
     ]
    },
    "root": "양",
-   "oldName": "정전기양"
+   "oldName": "정전기양",
+   "prevName": "찌릿램",
+   "abilityReads": false
   },
   {
    "id": "w117",
    "origin": "orig",
-   "name": "드레이터",
+   "name": "역악사",
    "types": [
     "드래곤"
    ],
@@ -9177,9 +9409,9 @@
     81,
     56
    ],
-   "ability": "포이즌힐",
+   "ability": "필드록",
    "abilityTo": 1,
-   "abilityDesc": "①「독」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
+   "abilityDesc": "①필드 위에 있는 한 「필드」의 효과를 제거한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -9233,12 +9465,14 @@
    "oldName": "비늘악어",
    "nameFix": 1,
    "img": "w117.webp",
-   "imgAt": 1793686037213
+   "imgAt": 1793686037213,
+   "prevName": "드레이터",
+   "abilityReads": false
   },
   {
    "id": "w118",
    "origin": "orig",
-   "name": "더스뿔",
+   "name": "동서마",
    "types": [
     "얼음",
     "땅"
@@ -9251,10 +9485,10 @@
     74,
     100
    ],
-   "ability": "얼음회생",
+   "ability": "배짱",
    "abilityTo": 1,
-   "abilityDesc": "①「마비」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신의 「노말/격투」 기술이 「타입 : 고스트」에게도 명중한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C+",
    "grade": "C",
@@ -9309,12 +9543,14 @@
     ]
    },
    "root": "코뿔소",
-   "oldName": "빙하코뿔소"
+   "oldName": "빙하코뿔소",
+   "prevName": "더스뿔",
+   "abilityReads": false
   },
   {
    "id": "w119",
    "origin": "orig",
-   "name": "활폭스",
+   "name": "플폭스",
    "types": [
     "불꽃"
    ],
@@ -9326,9 +9562,9 @@
     77,
     109
    ],
-   "ability": "단열",
+   "ability": "독체액",
    "abilityTo": 1,
-   "abilityDesc": "①【방호】/「불꽃」 대미지를 무효화한다.",
+   "abilityDesc": "①기술 대미지로 「빈사」 상태가 되었을 때 「맹독」 상태로 만든다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -9380,12 +9616,14 @@
    "root": "여우",
    "oldName": "용암여우",
    "img": "w119.webp",
-   "imgAt": 1793691017691
+   "imgAt": 1793691017691,
+   "prevName": "활폭스",
+   "abilityReads": false
   },
   {
    "id": "w120",
    "origin": "orig",
-   "name": "메탈캣",
+   "name": "볼타캣",
    "types": [
     "강철",
     "전기"
@@ -9398,10 +9636,10 @@
     65,
     113
    ],
-   "ability": "강철치유",
+   "ability": "스틸스킨",
    "abilityTo": 1,
-   "abilityDesc": "①「독」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신이 내보낸 기술을 「강철」 기술로 만든다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C+",
    "grade": "C",
@@ -9457,12 +9695,14 @@
    "root": "고양이",
    "oldName": "철갑고양이",
    "img": "w120.webp",
-   "imgAt": 1793695897043
+   "imgAt": 1793695897043,
+   "prevName": "메탈캣",
+   "abilityReads": true
   },
   {
    "id": "w121",
    "origin": "orig",
-   "name": "플러양",
+   "name": "월양수",
    "types": [
     "노말",
     "페어리"
@@ -9475,10 +9715,10 @@
     81,
     58
    ],
-   "ability": "회색치유",
+   "ability": "독수",
    "abilityTo": 1,
-   "abilityDesc": "①「화상」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「접촉기」에 추가 효과로써 「3할 : 독」을 부여한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C+",
    "grade": "C",
@@ -9533,12 +9773,14 @@
    },
    "moveSalt": 4,
    "root": "양",
-   "oldName": "솜털양"
+   "oldName": "솜털양",
+   "prevName": "플러양",
+   "abilityReads": false
   },
   {
    "id": "w122",
    "origin": "orig",
-   "name": "차루미",
+   "name": "그루벳",
    "types": [
     "격투",
     "강철"
@@ -9551,9 +9793,9 @@
     69,
     81
    ],
-   "ability": "금속질",
+   "ability": "애널라이즈",
    "abilityTo": 1,
-   "abilityDesc": "①자신에게 「타입 : 강철」을 추가한다.",
+   "abilityDesc": "①가장 느리게 행동하면 기술의 대미지를 강화(1.3배)한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -9612,12 +9854,14 @@
    "root": "두루미",
    "oldName": "나사두루미",
    "img": "w122.webp",
-   "imgAt": 1793691009873
+   "imgAt": 1793691009873,
+   "prevName": "차루미",
+   "abilityReads": true
   },
   {
    "id": "w123",
    "origin": "orig",
-   "name": "실비틀",
+   "name": "롤스카랍",
    "types": [
     "벌레"
    ],
@@ -9629,10 +9873,10 @@
     70,
     53
    ],
-   "ability": "갑각오기",
+   "ability": "인분",
    "abilityTo": 1,
-   "abilityDesc": "①「불꽃」 기술을 받으면 「방어 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신에 대한 기술의 추가 효과를 받지 않는다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C+",
    "grade": "C",
@@ -9693,12 +9937,14 @@
    "root": "딱정벌레",
    "oldName": "갑각딱정벌레",
    "img": "w123.webp",
-   "imgAt": 1793686028368
+   "imgAt": 1793686028368,
+   "prevName": "실비틀",
+   "abilityReads": false
   },
   {
    "id": "w124",
    "origin": "orig",
-   "name": "퍼피콘",
+   "name": "오드불프",
    "types": [
     "에스퍼",
     "노말"
@@ -9711,9 +9957,9 @@
     114,
     43
    ],
-   "ability": "발끈",
+   "ability": "둔감",
    "abilityTo": 1,
-   "abilityDesc": "①【유일】/「HP : 1/2 이하」일 때 「특공 : +1」한다.",
+   "abilityDesc": "①「헤롱헤롱」「도발」 상태가 되지 않는다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -9778,12 +10024,14 @@
    "oldName": "둥근여우",
    "nameFix": 1,
    "img": "w124.webp",
-   "imgAt": 1793691014136
+   "imgAt": 1793691014136,
+   "prevName": "퍼피콘",
+   "abilityReads": true
   },
   {
    "id": "w125",
    "origin": "orig",
-   "name": "먼지북",
+   "name": "이테토르",
    "types": [
     "땅"
    ],
@@ -9795,9 +10043,9 @@
     87,
     82
    ],
-   "ability": "저주받은바디",
+   "ability": "미끈미끈",
    "abilityTo": 1,
-   "abilityDesc": "①공격을 받았을 때 3할로 대상을 「사슬묶기」 상태로 만든다.",
+   "abilityDesc": "①「접촉기」를 받았을 때 자신을 공격한 포켓몬에게 「스피드 : -1」한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -9856,12 +10104,14 @@
    "root": "거북",
    "oldName": "모래거북",
    "img": "w125.webp",
-   "imgAt": 1793695904008
+   "imgAt": 1793695904008,
+   "prevName": "먼지북",
+   "abilityReads": true
   },
   {
    "id": "w126",
    "origin": "orig",
-   "name": "방울라",
+   "name": "마레콘크",
    "types": [
     "물",
     "바위"
@@ -9874,10 +10124,10 @@
     88,
     80
    ],
-   "ability": "소라막판",
+   "ability": "의태",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「물」 기술의 대미지를 강화(1.5배)한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「일렉트릭필드」 등의 「필드」의 상태에 따라 자신의 타입이 변경된다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C+",
    "grade": "C",
@@ -9931,12 +10181,14 @@
     ]
    },
    "root": "소라",
-   "oldName": "화석소라"
+   "oldName": "화석소라",
+   "prevName": "방울라",
+   "abilityReads": false
   },
   {
    "id": "w127",
    "origin": "orig",
-   "name": "페블뿔",
+   "name": "철서요",
    "types": [
     "바위",
     "강철"
@@ -9949,10 +10201,10 @@
     74,
     60
    ],
-   "ability": "광석치유",
+   "ability": "필드록",
    "abilityTo": 1,
-   "abilityDesc": "①「마비」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①필드 위에 있는 한 「필드」의 효과를 제거한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C+",
    "grade": "C",
@@ -10004,12 +10256,14 @@
    "root": "코뿔소",
    "oldName": "광석코뿔소",
    "img": "w127.webp",
-   "imgAt": 1793686033033
+   "imgAt": 1793686033033,
+   "prevName": "페블뿔",
+   "abilityReads": false
   },
   {
    "id": "w128",
    "origin": "orig",
-   "name": "반짝냥",
+   "name": "팍스캣",
    "types": [
     "페어리",
     "비행"
@@ -10022,9 +10276,9 @@
     78,
     79
    ],
-   "ability": "비상",
+   "ability": "동결",
    "abilityTo": 1,
-   "abilityDesc": "①자신에게 「타입 : 비행」을 추가한다.",
+   "abilityDesc": "①【등장 (효과 참조)】/「타입 : 물」이 필드에 등장했을 때 5할로 그 포켓몬을 「타입 : 얼음」으로 만든다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -10084,12 +10338,14 @@
    "root": "고양이",
    "oldName": "깃고양이",
    "img": "w128.webp",
-   "imgAt": 1793686028105
+   "imgAt": 1793686028105,
+   "prevName": "반짝냥",
+   "abilityReads": false
   },
   {
    "id": "w129",
    "origin": "orig",
-   "name": "방실족",
+   "name": "위즐렌",
    "types": [
     "노말"
    ],
@@ -10101,9 +10357,9 @@
     78,
     113
    ],
-   "ability": "악의마음",
+   "ability": "헤롱헤롱바디",
    "abilityTo": 1,
-   "abilityDesc": "①「격투」 기술을 받으면 「공격 : +1」한다.",
+   "abilityDesc": "①「접촉기」를 받았을 때 5할로 자신을 공격한 포켓몬을 「헤롱헤롱」 상태로 만든다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -10166,12 +10422,14 @@
    "root": "족제비",
    "oldName": "들족제비",
    "img": "w129.webp",
-   "imgAt": 1793691013575
+   "imgAt": 1793691013575,
+   "prevName": "방실족",
+   "abilityReads": true
   },
   {
    "id": "w130",
    "origin": "orig",
-   "name": "프리염",
+   "name": "시아카프",
    "types": [
     "고스트",
     "얼음"
@@ -10184,9 +10442,9 @@
     114,
     46
    ],
-   "ability": "유령",
+   "ability": "나이트위저드",
    "abilityTo": 1,
-   "abilityDesc": "①자신에게 「타입 : 고스트」을 추가한다.",
+   "abilityDesc": "①자신의 「고스트」 기술이 「타입 : 노말」에게도 명중한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -10249,12 +10507,14 @@
    "root": "염소",
    "oldName": "망령염소",
    "img": "w130.webp",
-   "imgAt": 1793695898766
+   "imgAt": 1793695898766,
+   "prevName": "프리염",
+   "abilityReads": true
   },
   {
    "id": "w131",
    "origin": "orig",
-   "name": "싹터틀",
+   "name": "토르민",
    "types": [
     "풀"
    ],
@@ -10266,10 +10526,10 @@
     115,
     45
    ],
-   "ability": "덩굴투지",
+   "ability": "감염원",
    "abilityTo": 1,
-   "abilityDesc": "①「비행」 기술을 받으면 「특공 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①필드 위에 있는 한 모든 포켓몬의 상태 이상을 유발하는 효과의 확률이 1할 상승한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C+",
    "grade": "C",
@@ -10324,12 +10584,14 @@
    },
    "moveSalt": 5,
    "root": "거북",
-   "oldName": "버섯거북"
+   "oldName": "버섯거북",
+   "prevName": "싹터틀",
+   "abilityReads": false
   },
   {
    "id": "w132",
    "origin": "orig",
-   "name": "픽시캣",
+   "name": "페르캣",
    "types": [
     "전기",
     "페어리"
@@ -10342,9 +10604,9 @@
     66,
     109
    ],
-   "ability": "요정",
+   "ability": "하늘을달리는자",
    "abilityTo": 1,
-   "abilityDesc": "①자신에게 「타입 : 페어리」을 추가한다.",
+   "abilityDesc": "①「HP : 가득」일 때 자신의 「전기」 기술이 필중한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -10407,12 +10669,14 @@
    "root": "고양이",
    "oldName": "별빛고양이",
    "img": "w132.webp",
-   "imgAt": 1793691010225
+   "imgAt": 1793691010225,
+   "prevName": "픽시캣",
+   "abilityReads": false
   },
   {
    "id": "w133",
    "origin": "orig",
-   "name": "몽빼미",
+   "name": "프시아울",
    "types": [
     "에스퍼"
    ],
@@ -10424,10 +10688,10 @@
     88,
     89
    ],
-   "ability": "최면치유",
+   "ability": "의태",
    "abilityTo": 1,
-   "abilityDesc": "①「얼음」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「일렉트릭필드」 등의 「필드」의 상태에 따라 자신의 타입이 변경된다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C+",
    "grade": "C",
@@ -10487,12 +10751,14 @@
     ]
    },
    "root": "올빼미",
-   "oldName": "환올빼미"
+   "oldName": "환올빼미",
+   "prevName": "몽빼미",
+   "abilityReads": false
   },
   {
    "id": "w134",
    "origin": "orig",
-   "name": "파닥매",
+   "name": "네브호크",
    "types": [
     "비행"
    ],
@@ -10504,9 +10770,9 @@
     70,
     114
    ],
-   "ability": "불꽃몸",
+   "ability": "정찰비행",
    "abilityTo": 1,
-   "abilityDesc": "①「접촉기」를 받았을 때 3할로 자신을 공격한 포켓몬을 「화상」 상태로 만든다.",
+   "abilityDesc": "①하늘 위에 떠있을 때 자신의 「비행」 기술에 「유턴」 효과를 부여한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -10568,12 +10834,14 @@
    },
    "abilityPrev": "간이무장",
    "root": "매",
-   "oldName": "돌풍매"
+   "oldName": "돌풍매",
+   "prevName": "파닥매",
+   "abilityReads": false
   },
   {
    "id": "w135",
    "origin": "orig",
-   "name": "샌드스네",
+   "name": "바이퍼돈",
    "types": [
     "드래곤",
     "땅"
@@ -10586,9 +10854,9 @@
     86,
     79
    ],
-   "ability": "용린",
+   "ability": "하드쉘",
    "abilityTo": 1,
-   "abilityDesc": "①자신에게 「타입 : 드래곤」을 추가한다.",
+   "abilityDesc": "①자신의 「방어」가 감소(저하)하지 않는다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -10642,12 +10910,14 @@
    "oldName": "먼지뱀",
    "nameFix": 1,
    "img": "w135.webp",
-   "imgAt": 1793686037605
+   "imgAt": 1793686037605,
+   "prevName": "샌드스네",
+   "abilityReads": true
   },
   {
    "id": "w136",
    "origin": "orig",
-   "name": "물가오",
+   "name": "바티론",
    "types": [
     "물",
     "땅"
@@ -10660,10 +10930,10 @@
     78,
     84
    ],
-   "ability": "물보라치유",
+   "ability": "꾸덕꾸덕굳기",
    "abilityTo": 1,
-   "abilityDesc": "①「얼음」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「물」 기술을 받으면 「방어 : +2」한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C+",
    "grade": "C",
@@ -10723,12 +10993,14 @@
     ]
    },
    "root": "가오리",
-   "oldName": "진흙가오리"
+   "oldName": "진흙가오리",
+   "prevName": "물가오",
+   "abilityReads": true
   },
   {
    "id": "w137",
    "origin": "orig",
-   "name": "쉿맨티",
+   "name": "강랑충",
    "types": [
     "악",
     "격투"
@@ -10741,9 +11013,9 @@
     88,
     88
    ],
-   "ability": "악의마음",
+   "ability": "방탄",
    "abilityTo": 1,
-   "abilityDesc": "①「격투」 기술을 받으면 「공격 : +1」한다.",
+   "abilityDesc": "①【방호】/「볼」「탄」 기술을 무효화한다.\n②【방호】/「자폭」「대폭발」의 대미지를 반감한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -10802,12 +11074,14 @@
    "root": "사마귀",
    "oldName": "검은사마귀",
    "img": "w137.webp",
-   "imgAt": 1793691014399
+   "imgAt": 1793691014399,
+   "prevName": "쉿맨티",
+   "abilityReads": true
   },
   {
    "id": "w138",
    "origin": "orig",
-   "name": "스틸니",
+   "name": "칼코그",
    "types": [
     "강철"
    ],
@@ -10819,9 +11093,9 @@
     76,
     87
    ],
-   "ability": "포이즌힐",
+   "ability": "오기",
    "abilityTo": 1,
-   "abilityDesc": "①「독」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
+   "abilityDesc": "①상대에 의해 자신의 능력이 감소했을 때 「공격 : +2」한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -10879,12 +11153,14 @@
    "root": "톱니",
    "oldName": "강철톱니",
    "img": "w138.webp",
-   "imgAt": 1793695898514
+   "imgAt": 1793695898514,
+   "prevName": "스틸니",
+   "abilityReads": true
   },
   {
    "id": "w139",
    "origin": "orig",
-   "name": "톡모스",
+   "name": "모스틴",
    "types": [
     "벌레"
    ],
@@ -10896,9 +11172,9 @@
     78,
     85
    ],
-   "ability": "못된꾀",
+   "ability": "벌레의알림",
    "abilityTo": 1,
-   "abilityDesc": "①「비접촉기」를 받으면 자신을 공격한 포켓몬에게 1/8의 비례 대미지를 입힌다.",
+   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「벌레」 기술의 대미지를 강화(1.5배)한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -10953,12 +11229,14 @@
     ]
    },
    "root": "나방",
-   "oldName": "꿀나방"
+   "oldName": "꿀나방",
+   "prevName": "톡모스",
+   "abilityReads": true
   },
   {
    "id": "w140",
    "origin": "orig",
-   "name": "유령뱀",
+   "name": "레무오피",
    "types": [
     "독",
     "고스트"
@@ -10971,10 +11249,10 @@
     65,
     91
    ],
-   "ability": "오염투지",
+   "ability": "나이트위저드",
    "abilityTo": 1,
-   "abilityDesc": "①「에스퍼」 기술을 받으면 「특공 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신의 「고스트」 기술이 「타입 : 노말」에게도 명중한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C+",
    "grade": "C",
@@ -11031,12 +11309,14 @@
    "root": "뱀",
    "oldName": "저주뱀",
    "img": "w140.webp",
-   "imgAt": 1793692554004
+   "imgAt": 1793692554004,
+   "prevName": "유령뱀",
+   "abilityReads": true
   },
   {
    "id": "w141",
    "origin": "orig",
-   "name": "암고미",
+   "name": "라피베어",
    "types": [
     "바위"
    ],
@@ -11048,9 +11328,9 @@
     76,
     83
    ],
-   "ability": "마이페이스",
+   "ability": "두꺼운지방",
    "abilityTo": 1,
-   "abilityDesc": "①「혼란」「도발」 상태가 되지 않는다.",
+   "abilityDesc": "①【방호】/「불꽃/얼음」 기술로 받을 대미지를 반감한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -11110,12 +11390,14 @@
    "root": "곰",
    "oldName": "광석곰",
    "img": "w141.webp",
-   "imgAt": 1793686032161
+   "imgAt": 1793686032161,
+   "prevName": "암고미",
+   "abilityReads": true
   },
   {
    "id": "w142",
    "origin": "orig",
-   "name": "빙울프",
+   "name": "글울프",
    "types": [
     "얼음"
    ],
@@ -11127,9 +11409,9 @@
     65,
     109
    ],
-   "ability": "두꺼운모피",
+   "ability": "슬로우스타터",
    "abilityTo": 1,
-   "abilityDesc": "①【방호】/「얼음」 기술로 받을 대미지를 반감한다.\n②「얼음」 상태가 되지 않고 「날씨 : 싸라기눈」에 의한 비례 대미지를 무시한다.",
+   "abilityDesc": "①【지연 (4턴)】/턴 종료 시 「공격/방어/특공/특방/스피드 : +2」한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -11187,12 +11469,14 @@
    "root": "늑대",
    "oldName": "고드름늑대",
    "img": "w142.webp",
-   "imgAt": 1793691006440
+   "imgAt": 1793691006440,
+   "prevName": "빙울프",
+   "abilityReads": true
   },
   {
    "id": "w143",
    "origin": "orig",
-   "name": "타닥방",
+   "name": "샤그모스",
    "types": [
     "불꽃"
    ],
@@ -11204,9 +11488,9 @@
     66,
     84
    ],
-   "ability": "맹화",
+   "ability": "단열",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「불꽃」 기술의 대미지를 강화(1.5배)한다.",
+   "abilityDesc": "①【방호】/「불꽃」 대미지를 무효화한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -11266,12 +11550,14 @@
     ]
    },
    "root": "불나방",
-   "oldName": "화염불나방"
+   "oldName": "화염불나방",
+   "prevName": "타닥방",
+   "abilityReads": true
   },
   {
    "id": "w144",
    "origin": "orig",
-   "name": "물오리",
+   "name": "오케바티",
    "types": [
     "물"
    ],
@@ -11283,9 +11569,9 @@
     73,
     120
    ],
-   "ability": "주눅",
+   "ability": "급류",
    "abilityTo": 1,
-   "abilityDesc": "①「고스트/악/벌레」 기술을 받으면 「스피드 : +1」한다.",
+   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「물」 기술의 대미지를 강화(1.5배)한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -11342,12 +11628,14 @@
    },
    "abilityPrev": "수은",
    "root": "가오리",
-   "oldName": "거품가오리"
+   "oldName": "거품가오리",
+   "prevName": "물오리",
+   "abilityReads": true
   },
   {
    "id": "w145",
    "origin": "orig",
-   "name": "버니더",
+   "name": "바실몰",
    "types": [
     "노말",
     "풀"
@@ -11360,9 +11648,9 @@
     84,
     46
    ],
-   "ability": "두꺼운지방",
+   "ability": "노말스킨",
    "abilityTo": 1,
-   "abilityDesc": "①【방호】/「불꽃/얼음」 기술로 받을 대미지를 반감한다.",
+   "abilityDesc": "①자신의 기술을 「노말」 기술로 만들고 기술의 위력을 강화(1.2배)한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -11416,12 +11704,14 @@
    },
    "abilityPrev": "마성의미모",
    "root": "두더지",
-   "oldName": "점박이두더지"
+   "oldName": "점박이두더지",
+   "prevName": "버니더",
+   "abilityReads": true
   },
   {
    "id": "w146",
    "origin": "orig",
-   "name": "우람댕",
+   "name": "투견마",
    "types": [
     "격투"
    ],
@@ -11433,10 +11723,10 @@
     82,
     87
    ],
-   "ability": "근육오기",
+   "ability": "승기",
    "abilityTo": 1,
-   "abilityDesc": "①「페어리」 기술을 받으면 「공격 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①상대에 의해 자신의 능력이 감소했을 때 「특공 : +2」한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C+",
    "grade": "C",
@@ -11492,12 +11782,14 @@
    "root": "개",
    "oldName": "철권완력개",
    "img": "w146.webp",
-   "imgAt": 1793686032556
+   "imgAt": 1793686032556,
+   "prevName": "우람댕",
+   "abilityReads": true
   },
   {
    "id": "w147",
    "origin": "orig",
-   "name": "꽃폭스",
+   "name": "필로폭스",
    "types": [
     "풀",
     "페어리"
@@ -11510,10 +11802,10 @@
     67,
     111
    ],
-   "ability": "가시풀회생",
+   "ability": "대운",
    "abilityTo": 1,
-   "abilityDesc": "①「화상」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신의 기술이 급소에 맞기 쉽다(C+1).",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C+",
    "grade": "C",
@@ -11569,12 +11861,14 @@
     ]
    },
    "root": "여우",
-   "oldName": "꽃가루여우"
+   "oldName": "꽃가루여우",
+   "prevName": "꽃폭스",
+   "abilityReads": true
   },
   {
    "id": "w148",
    "origin": "orig",
-   "name": "찌릿양",
+   "name": "펄스램",
    "types": [
     "전기"
    ],
@@ -11586,10 +11880,10 @@
     68,
     46
    ],
-   "ability": "전류오기",
+   "ability": "달마모드",
    "abilityTo": 1,
-   "abilityDesc": "①「땅」 기술을 받으면 「특방 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①【방호】/「HP : 1/2 이하」일 때 「방어/특방」을 2배로 만든다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C+",
    "grade": "C",
@@ -11651,12 +11945,14 @@
     ]
    },
    "root": "양",
-   "oldName": "찌릿정전기양"
+   "oldName": "찌릿정전기양",
+   "prevName": "찌릿양",
+   "abilityReads": true
   },
   {
    "id": "w149",
    "origin": "orig",
-   "name": "흙가오",
+   "name": "네르바티",
    "types": [
     "땅",
     "물"
@@ -11669,10 +11965,10 @@
     59,
     92
    ],
-   "ability": "진흙치유",
+   "ability": "악의마음",
    "abilityTo": 1,
-   "abilityDesc": "①「독」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「격투」 기술을 받으면 「공격 : +1」한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C+",
    "grade": "C",
@@ -11728,12 +12024,14 @@
    "root": "가오리",
    "oldName": "모래가오리",
    "img": "w149.webp",
-   "imgAt": 1793686032760
+   "imgAt": 1793686032760,
+   "prevName": "흙가오",
+   "abilityReads": true
   },
   {
    "id": "w150",
    "origin": "orig",
-   "name": "프로실",
+   "name": "시베실",
    "types": [
     "얼음"
    ],
@@ -11745,9 +12043,9 @@
     111,
     48
    ],
-   "ability": "두꺼운모피",
+   "ability": "냉기",
    "abilityTo": 1,
-   "abilityDesc": "①【방호】/「얼음」 기술로 받을 대미지를 반감한다.\n②「얼음」 상태가 되지 않고 「날씨 : 싸라기눈」에 의한 비례 대미지를 무시한다.",
+   "abilityDesc": "①「접촉기」를 받았을 때 2할로 자신을 공격한 포켓몬을 「얼음」 상태로 만든다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -11810,12 +12108,14 @@
    "root": "물범",
    "oldName": "서리물범",
    "img": "w150.webp",
-   "imgAt": 1793695897498
+   "imgAt": 1793695897498,
+   "prevName": "프로실",
+   "abilityReads": true
   },
   {
    "id": "w151",
    "origin": "orig",
-   "name": "블레방",
+   "name": "신모스",
    "types": [
     "불꽃",
     "고스트"
@@ -11828,9 +12128,9 @@
     63,
     109
    ],
-   "ability": "유령",
+   "ability": "대운",
    "abilityTo": 1,
-   "abilityDesc": "①자신에게 「타입 : 고스트」을 추가한다.",
+   "abilityDesc": "①자신의 기술이 급소에 맞기 쉽다(C+1).",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -11888,12 +12188,14 @@
    "root": "불나방",
    "oldName": "유령불나방",
    "img": "w151.webp",
-   "imgAt": 1793686037480
+   "imgAt": 1793686037480,
+   "prevName": "블레방",
+   "abilityReads": true
   },
   {
    "id": "w152",
    "origin": "orig",
-   "name": "루루넛",
+   "name": "요율마",
    "types": [
     "페어리"
    ],
@@ -11905,9 +12207,9 @@
     80,
     86
    ],
-   "ability": "헤롱헤롱멘탈",
+   "ability": "철가시",
    "abilityTo": 1,
-   "abilityDesc": "①「비접촉기」를 받았을 때 5할로 자신을 공격한 포켓몬을 「헤롱헤롱」 상태로 만든다.",
+   "abilityDesc": "①「접촉기」를 받았을 때 자신을 공격한 포켓몬에게 1/8의 비례 대미지를 입힌다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -11971,12 +12273,14 @@
    "root": "다람쥐",
    "oldName": "달콤다람쥐",
    "img": "w152.webp",
-   "imgAt": 1793695896009
+   "imgAt": 1793695896009,
+   "prevName": "루루넛",
+   "abilityReads": true
   },
   {
    "id": "w153",
    "origin": "orig",
-   "name": "검하이",
+   "name": "녹하이엔",
    "types": [
     "악"
    ],
@@ -11988,9 +12292,9 @@
     67,
     118
    ],
-   "ability": "마지막씨앗",
+   "ability": "깨어진갑옷",
    "abilityTo": 1,
-   "abilityDesc": "①「비접촉기」로 「빈사」 상태가 되었을 때 대상을 「씨뿌리기」 상태로 만든다.",
+   "abilityDesc": "①「물리기」를 받으면 「방어 : -1」, 「스피드 : +2」한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -12047,12 +12351,14 @@
    "root": "하이에나",
    "oldName": "도둑하이에나",
    "img": "w153.webp",
-   "imgAt": 1793695901526
+   "imgAt": 1793695901526,
+   "prevName": "검하이",
+   "abilityReads": true
   },
   {
    "id": "w154",
    "origin": "orig",
-   "name": "팬텀키",
+   "name": "명약귀",
    "types": [
     "고스트"
    ],
@@ -12064,9 +12370,9 @@
     81,
     90
    ],
-   "ability": "스타트댄서",
+   "ability": "빛나는별",
    "abilityTo": 1,
-   "abilityDesc": "①【등장】/다음 「춤」 기술의 대미지를 강화(1.2배)한다.",
+   "abilityDesc": "①자신 이외에 의한 능력 감소(저하)를 무효화한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -12125,12 +12431,14 @@
    "root": "열쇠",
    "oldName": "그림자열쇠",
    "img": "w154.webp",
-   "imgAt": 1793695899475
+   "imgAt": 1793695899475,
+   "prevName": "팬텀키",
+   "abilityReads": true
   },
   {
    "id": "w155",
    "origin": "orig",
-   "name": "비틀벌",
+   "name": "고봉충",
    "types": [
     "벌레"
    ],
@@ -12202,12 +12510,14 @@
    },
    "moveSalt": 7,
    "root": "벌",
-   "oldName": "더듬이벌"
+   "oldName": "더듬이벌",
+   "prevName": "비틀벌",
+   "abilityReads": true
   },
   {
    "id": "w156",
    "origin": "orig",
-   "name": "폼폼깡",
+   "name": "래빗렌",
    "types": [
     "노말"
    ],
@@ -12219,9 +12529,9 @@
     66,
     111
    ],
-   "ability": "슬로우스타터",
+   "ability": "깨어진갑옷",
    "abilityTo": 1,
-   "abilityDesc": "①【지연 (4턴)】/턴 종료 시 「공격/방어/특공/특방/스피드 : +2」한다.",
+   "abilityDesc": "①「물리기」를 받으면 「방어 : -1」, 「스피드 : +2」한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -12274,12 +12584,14 @@
    "root": "토끼",
    "oldName": "회색토끼",
    "img": "w156.webp",
-   "imgAt": 1793695904247
+   "imgAt": 1793695904247,
+   "prevName": "폼폼깡",
+   "abilityReads": true
   },
   {
    "id": "w157",
    "origin": "orig",
-   "name": "오라방",
+   "name": "환아충",
    "types": [
     "에스퍼"
    ],
@@ -12291,9 +12603,9 @@
     86,
     47
    ],
-   "ability": "포이즌힐",
+   "ability": "사이코스킨",
    "abilityTo": 1,
-   "abilityDesc": "①「독」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
+   "abilityDesc": "①자신이 내보낸 기술을 「에스퍼」 기술로 만든다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "C+",
@@ -12356,12 +12668,14 @@
    "root": "나방",
    "oldName": "별나방",
    "img": "w157.webp",
-   "imgAt": 1793695902089
+   "imgAt": 1793695902089,
+   "prevName": "오라방",
+   "abilityReads": true
   },
   {
    "id": "w158",
    "origin": "orig",
-   "name": "퐁오리",
+   "name": "심홍어",
    "types": [
     "물"
    ],
@@ -12373,10 +12687,10 @@
     62,
     86
    ],
-   "ability": "거품막판",
+   "ability": "못된꾀",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「물」 기술의 대미지를 강화(1.5배)한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「비접촉기」를 받으면 자신을 공격한 포켓몬에게 1/8의 비례 대미지를 입힌다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "C+",
    "grade": "C",
@@ -12438,12 +12752,14 @@
    "root": "가오리",
    "oldName": "물가오리",
    "img": "w158.webp",
-   "imgAt": 1793695897931
+   "imgAt": 1793695897931,
+   "prevName": "퐁오리",
+   "abilityReads": true
   },
   {
    "id": "w159",
    "origin": "orig",
-   "name": "용거북",
+   "name": "신셸니르",
    "types": [
     "드래곤",
     "불꽃"
@@ -12456,9 +12772,9 @@
     88,
     50
    ],
-   "ability": "단열",
+   "ability": "맹화",
    "abilityTo": 1,
-   "abilityDesc": "①【방호】/「불꽃」 대미지를 무효화한다.",
+   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「불꽃」 기술의 대미지를 강화(1.5배)한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "B",
@@ -12509,12 +12825,14 @@
    },
    "moveSalt": 7,
    "root": "거북",
-   "oldName": "잿거북"
+   "oldName": "잿거북",
+   "prevName": "용거북",
+   "abilityReads": true
   },
   {
    "id": "w160",
    "origin": "orig",
-   "name": "메탈딩",
+   "name": "석종귀",
    "types": [
     "강철"
    ],
@@ -12526,9 +12844,9 @@
     106,
     57
    ],
-   "ability": "정신력",
+   "ability": "방탄",
    "abilityTo": 1,
-   "abilityDesc": "①「풀죽음」 상태가 되지 않는다.",
+   "abilityDesc": "①【방호】/「볼」「탄」 기술을 무효화한다.\n②【방호】/「자폭」「대폭발」의 대미지를 반감한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "B",
@@ -12585,12 +12903,14 @@
    },
    "abilityPrev": "스틸스킨",
    "root": "종",
-   "oldName": "톱니강철종"
+   "oldName": "톱니강철종",
+   "prevName": "메탈딩",
+   "abilityReads": true
   },
   {
    "id": "w161",
    "origin": "orig",
-   "name": "퀴센티",
+   "name": "비리네브",
    "types": [
     "독"
    ],
@@ -12602,10 +12922,10 @@
     76,
     118
    ],
-   "ability": "유독",
+   "ability": "변이가속",
    "abilityTo": 1,
-   "abilityDesc": "①자신에게 「타입 : 독」을 추가한다.",
-   "abilityOrig": false,
+   "abilityDesc": "①턴 종료 시 「스피드 : +1」한다.②턴 종료 시 「HP」를 1/16만큼 잃는다.",
+   "abilityOrig": true,
    "folder": "",
    "pride": "B",
    "grade": "B",
@@ -12660,12 +12980,36 @@
    },
    "abilityPrev": "부식",
    "root": "지네",
-   "oldName": "독지네"
+   "oldName": "독지네",
+   "prevName": "퀴센티",
+   "abilityUnique": true,
+   "abilityAuto": {
+    "ops": [
+     {
+      "k": "rank",
+      "tgt": "self",
+      "stats": {
+       "speed": 1
+      }
+     },
+     {
+      "k": "dmg",
+      "tgt": "self",
+      "value": "1/16",
+      "basis": "max",
+      "atype": "",
+      "xtype": "",
+      "st": "",
+      "nofaint": 1
+     }
+    ]
+   },
+   "abilityReads": true
   },
   {
    "id": "w162",
    "origin": "orig",
-   "name": "우직렘",
+   "name": "모노골렘",
    "types": [
     "바위",
     "땅"
@@ -12678,10 +13022,10 @@
     91,
     55
    ],
-   "ability": "자갈오기",
+   "ability": "칠흑",
    "abilityTo": 1,
-   "abilityDesc": "①「땅」 기술을 받으면 「특방 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①【방호】/「상성 : 1/2~1/8배」인 기술로 받을 대미지를 반감한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "B",
    "grade": "B",
@@ -12732,12 +13076,14 @@
     ]
    },
    "root": "골렘",
-   "oldName": "진흙골렘"
+   "oldName": "진흙골렘",
+   "prevName": "우직렘",
+   "abilityReads": true
   },
   {
    "id": "w163",
    "origin": "orig",
-   "name": "시드양",
+   "name": "오리엘램",
    "types": [
     "풀",
     "페어리"
@@ -12750,9 +13096,9 @@
     113,
     55
    ],
-   "ability": "방탄",
+   "ability": "심록",
    "abilityTo": 1,
-   "abilityDesc": "①【방호】/「볼」「탄」 기술을 무효화한다.\n②【방호】/「자폭」「대폭발」의 대미지를 반감한다.",
+   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「풀」 기술의 대미지를 강화(1.5배)한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "B",
@@ -12803,12 +13149,14 @@
     ]
    },
    "root": "양",
-   "oldName": "버섯양"
+   "oldName": "버섯양",
+   "prevName": "시드양",
+   "abilityReads": true
   },
   {
    "id": "w164",
    "origin": "orig",
-   "name": "방실소",
+   "name": "무고요",
    "types": [
     "노말"
    ],
@@ -12820,9 +13168,9 @@
     87,
     83
    ],
-   "ability": "노말스킨",
+   "ability": "하드록",
    "abilityTo": 1,
-   "abilityDesc": "①자신의 기술을 「노말」 기술로 만들고 기술의 위력을 강화(1.2배)한다.",
+   "abilityDesc": "①【방호】/「상성 : 2배~8배」인 기술로 받을 대미지를 완화(0.75배)한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "B",
@@ -12878,12 +13226,14 @@
    },
    "abilityPrev": "변환자재",
    "root": "염소",
-   "oldName": "회색염소"
+   "oldName": "회색염소",
+   "prevName": "방실소",
+   "abilityReads": true
   },
   {
    "id": "w165",
    "origin": "orig",
-   "name": "루미냐",
+   "name": "몽묘요",
    "types": [
     "에스퍼"
    ],
@@ -12895,9 +13245,9 @@
     119,
     55
    ],
-   "ability": "최면막판",
+   "ability": "마음의용량",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「에스퍼」 기술의 대미지를 강화(1.5배)한다.",
+   "abilityDesc": "①「특수기」를 받으면 자신을 공격한 포켓몬에게 「특공 : -1」한다.",
    "abilityOrig": true,
    "folder": "",
    "pride": "B",
@@ -12953,12 +13303,15 @@
     ]
    },
    "root": "고양이",
-   "oldName": "환고양이"
+   "oldName": "환고양이",
+   "prevName": "루미냐",
+   "abilityUnique": true,
+   "abilityReads": true
   },
   {
    "id": "w166",
    "origin": "orig",
-   "name": "날리컨",
+   "name": "나크샤그",
    "types": [
     "전기",
     "비행"
@@ -12971,10 +13324,10 @@
     78,
     54
    ],
-   "ability": "찌릿재생",
+   "ability": "달마모드",
    "abilityTo": 1,
-   "abilityDesc": "①「화상」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①【방호】/「HP : 1/2 이하」일 때 「방어/특방」을 2배로 만든다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "B",
    "grade": "B",
@@ -13029,12 +13382,14 @@
     ]
    },
    "root": "펠리컨",
-   "oldName": "찌릿펠리컨"
+   "oldName": "찌릿펠리컨",
+   "prevName": "날리컨",
+   "abilityReads": true
   },
   {
    "id": "w167",
    "origin": "orig",
-   "name": "팡두루",
+   "name": "골학조",
    "types": [
     "격투"
    ],
@@ -13046,9 +13401,9 @@
     79,
     122
    ],
-   "ability": "투기",
+   "ability": "악의마음",
    "abilityTo": 1,
-   "abilityDesc": "①자신에게 「타입 : 격투」를 추가한다.",
+   "abilityDesc": "①「격투」 기술을 받으면 「공격 : +1」한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "B",
@@ -13098,12 +13453,14 @@
     ]
    },
    "root": "두루미",
-   "oldName": "근육두루미"
+   "oldName": "근육두루미",
+   "prevName": "팡두루",
+   "abilityReads": true
   },
   {
    "id": "w168",
    "origin": "orig",
-   "name": "물레이",
+   "name": "해홍어",
    "types": [
     "물"
    ],
@@ -13115,9 +13472,9 @@
     63,
     118
    ],
-   "ability": "꾸덕꾸덕굳기",
+   "ability": "급류",
    "abilityTo": 1,
-   "abilityDesc": "①「물」 기술을 받으면 「방어 : +2」한다.",
+   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「물」 기술의 대미지를 강화(1.5배)한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "B",
@@ -13175,12 +13532,14 @@
    "abilityPrev": "수은",
    "moveSalt": 1,
    "root": "가오리",
-   "oldName": "파도가오리"
+   "oldName": "파도가오리",
+   "prevName": "물레이",
+   "abilityReads": true
   },
   {
    "id": "w169",
    "origin": "orig",
-   "name": "살금쥐",
+   "name": "크립운가",
    "types": [
     "악"
    ],
@@ -13192,9 +13551,9 @@
     110,
     50
    ],
-   "ability": "그늘집념",
+   "ability": "심연응시",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「악」 기술의 대미지를 강화(1.5배)한다.",
+   "abilityDesc": "①【등장】/「정면」에게 「특공 : -1」한다.",
    "abilityOrig": true,
    "folder": "",
    "pride": "B",
@@ -13254,12 +13613,26 @@
     ]
    },
    "root": "박쥐",
-   "oldName": "그늘박쥐"
+   "oldName": "그늘박쥐",
+   "prevName": "살금쥐",
+   "abilityUnique": true,
+   "abilityAuto": {
+    "ops": [
+     {
+      "k": "rank",
+      "tgt": "front",
+      "stats": {
+       "specialattack": -1
+      }
+     }
+    ]
+   },
+   "abilityReads": true
   },
   {
    "id": "w170",
    "origin": "orig",
-   "name": "블레웜",
+   "name": "마르오쿨",
    "types": [
     "땅",
     "불꽃"
@@ -13272,10 +13645,10 @@
     77,
     59
    ],
-   "ability": "진흙반골",
+   "ability": "맹화",
    "abilityTo": 1,
-   "abilityDesc": "①「물」 기술을 받으면 「방어 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「불꽃」 기술의 대미지를 강화(1.5배)한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "B",
    "grade": "B",
@@ -13330,12 +13703,14 @@
     ]
    },
    "root": "지렁이",
-   "oldName": "흙화염지렁이"
+   "oldName": "흙화염지렁이",
+   "prevName": "블레웜",
+   "abilityReads": true
   },
   {
    "id": "w171",
    "origin": "orig",
-   "name": "실나마",
+   "name": "갑아충",
    "types": [
     "벌레"
    ],
@@ -13347,9 +13722,9 @@
     75,
     93
    ],
-   "ability": "포자",
+   "ability": "수상한비늘",
    "abilityTo": 1,
-   "abilityDesc": "①「접촉기」를 받았을 때 자신을 공격한 포켓몬을 3할로 「독/마비/잠듦」 중 무작위한 상태 이상으로 만든다.",
+   "abilityDesc": "①「접촉기」를 받았을 때 4할로 자신을 공격한 포켓몬을 「혼란」 상태로 만든다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "B",
@@ -13405,12 +13780,14 @@
    },
    "moveSalt": 5,
    "root": "나방",
-   "oldName": "더듬이나방"
+   "oldName": "더듬이나방",
+   "prevName": "실나마",
+   "abilityReads": true
   },
   {
    "id": "w172",
    "origin": "orig",
-   "name": "늪토드",
+   "name": "베놈니아",
    "types": [
     "독"
    ],
@@ -13422,9 +13799,9 @@
     79,
     51
    ],
-   "ability": "진흙투지",
+   "ability": "타르피부",
    "abilityTo": 1,
-   "abilityDesc": "①「에스퍼」 기술을 받으면 「특방 : +1」한다.",
+   "abilityDesc": "①【방호】/「물」 기술로 받을 대미지를 반감한다.②「불꽃」 기술로 받을 대미지가 2배가 된다.③「접촉기」를 받았을 때 자신을 공격한 포켓몬에게 「스피드 : -1」한다.",
    "abilityOrig": true,
    "folder": "",
    "pride": "B",
@@ -13480,12 +13857,56 @@
     ]
    },
    "root": "두꺼비",
-   "oldName": "오염두꺼비"
+   "oldName": "오염두꺼비",
+   "prevName": "늪토드",
+   "abilityUnique": true,
+   "abilityAuto": {
+    "ops": [
+     {
+      "k": "guard",
+      "tgt": "self",
+      "v": 0.5,
+      "types": [
+       "Water"
+      ],
+      "cat": "all",
+      "eff": "all",
+      "rng": "all",
+      "uses": -1,
+      "turn": 0,
+      "tl": 0,
+      "ro": [],
+      "st": "",
+      "tg": [],
+      "sb": ""
+     },
+     {
+      "k": "guard",
+      "tgt": "self",
+      "v": 2,
+      "types": [
+       "Fire"
+      ],
+      "cat": "all",
+      "eff": "all",
+      "rng": "all",
+      "uses": -1,
+      "turn": 0,
+      "tl": 0,
+      "ro": [],
+      "st": "",
+      "tg": [],
+      "sb": "",
+      "slot": 2
+     }
+    ]
+   },
+   "abilityReads": true
   },
   {
    "id": "w173",
    "origin": "orig",
-   "name": "룡크로",
+   "name": "요르쿠아",
    "types": [
     "드래곤"
    ],
@@ -13497,9 +13918,9 @@
     70,
     52
    ],
-   "ability": "두꺼운지방",
+   "ability": "나이트메어",
    "abilityTo": 1,
-   "abilityDesc": "①【방호】/「불꽃/얼음」 기술로 받을 대미지를 반감한다.",
+   "abilityDesc": "①턴 종료 시 「잠듦」 상태인 상대에게 1/8의 비례 대미지를 입힌다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "B",
@@ -13549,12 +13970,14 @@
     ]
    },
    "root": "악어",
-   "oldName": "뿔악어"
+   "oldName": "뿔악어",
+   "prevName": "룡크로",
+   "abilityReads": true
   },
   {
    "id": "w174",
    "origin": "orig",
-   "name": "팔랑박",
+   "name": "알라셀레",
    "types": [
     "비행"
    ],
@@ -13566,10 +13989,10 @@
     67,
     101
    ],
-   "ability": "하늘반골",
+   "ability": "저주받은바디",
    "abilityTo": 1,
-   "abilityDesc": "①「전기」 기술을 받으면 「공격 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①공격을 받았을 때 3할로 대상을 「사슬묶기」 상태로 만든다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "B",
    "grade": "B",
@@ -13630,12 +14053,14 @@
    },
    "moveSalt": 2,
    "root": "박쥐",
-   "oldName": "회오리박쥐"
+   "oldName": "회오리박쥐",
+   "prevName": "팔랑박",
+   "abilityReads": true
   },
   {
    "id": "w175",
    "origin": "orig",
-   "name": "샌드웜",
+   "name": "크론요스",
    "types": [
     "불꽃",
     "땅"
@@ -13648,10 +14073,10 @@
     92,
     84
    ],
-   "ability": "화염투지",
+   "ability": "컬리헤어",
    "abilityTo": 1,
-   "abilityDesc": "①「땅」 기술을 받으면 「공격 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「접촉기」를 받았을 때 자신을 공격한 포켓몬에게 「스피드 : -1」한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "B",
    "grade": "B",
@@ -13710,12 +14135,14 @@
     ]
    },
    "root": "지렁이",
-   "oldName": "잿지렁이"
+   "oldName": "잿지렁이",
+   "prevName": "샌드웜",
+   "abilityReads": true
   },
   {
    "id": "w176",
    "origin": "orig",
-   "name": "웨이캣",
+   "name": "요묘수",
    "types": [
     "페어리",
     "물"
@@ -13728,9 +14155,9 @@
     84,
     91
    ],
-   "ability": "요정",
+   "ability": "헤롱헤롱멘탈",
    "abilityTo": 1,
-   "abilityDesc": "①자신에게 「타입 : 페어리」을 추가한다.",
+   "abilityDesc": "①「비접촉기」를 받았을 때 5할로 자신을 공격한 포켓몬을 「헤롱헤롱」 상태로 만든다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "B",
@@ -13791,12 +14218,14 @@
    },
    "moveSalt": 7,
    "root": "고양이",
-   "oldName": "소금고양이"
+   "oldName": "소금고양이",
+   "prevName": "웨이캣",
+   "abilityReads": true
   },
   {
    "id": "w177",
    "origin": "orig",
-   "name": "동글넛",
+   "name": "공율수",
    "types": [
     "노말"
    ],
@@ -13808,9 +14237,9 @@
     88,
     87
    ],
-   "ability": "깨어진갑옷",
+   "ability": "노말스킨",
    "abilityTo": 1,
-   "abilityDesc": "①「물리기」를 받으면 「방어 : -1」, 「스피드 : +2」한다.",
+   "abilityDesc": "①자신의 기술을 「노말」 기술로 만들고 기술의 위력을 강화(1.2배)한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "B",
@@ -13872,12 +14301,14 @@
    },
    "abilityPrev": "위험예지",
    "root": "다람쥐",
-   "oldName": "얼룩다람쥐"
+   "oldName": "얼룩다람쥐",
+   "prevName": "동글넛",
+   "abilityReads": true
   },
   {
    "id": "w178",
    "origin": "orig",
-   "name": "파이게",
+   "name": "칼칸크렌",
    "types": [
     "바위",
     "불꽃"
@@ -13890,9 +14321,9 @@
     90,
     65
    ],
-   "ability": "화정",
+   "ability": "불에기름",
    "abilityTo": 1,
-   "abilityDesc": "①자신에게 「타입 : 불꽃」을 추가한다.",
+   "abilityDesc": "①자신의 「불꽃」 기술의 추가 효과 발생률을 2배로 만든다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "B",
@@ -13950,12 +14381,14 @@
    },
    "moveSalt": 1,
    "root": "게",
-   "oldName": "그을음게"
+   "oldName": "그을음게",
+   "prevName": "파이게",
+   "abilityReads": true
   },
   {
    "id": "w179",
    "origin": "orig",
-   "name": "싹개굴",
+   "name": "텐드이테",
    "types": [
     "풀"
    ],
@@ -13967,10 +14400,10 @@
     81,
     83
    ],
-   "ability": "새싹집념",
+   "ability": "잡음",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「풀」 기술의 대미지를 강화(1.5배)한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①【방호】/「소리」 기술을 무효화한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "B",
    "grade": "B",
@@ -14024,12 +14457,14 @@
     ]
    },
    "root": "개구리",
-   "oldName": "꽃개구리"
+   "oldName": "꽃개구리",
+   "prevName": "싹개굴",
+   "abilityReads": true
   },
   {
    "id": "w180",
    "origin": "orig",
-   "name": "전부기",
+   "name": "이온엘드",
    "types": [
     "전기",
     "강철"
@@ -14042,10 +14477,10 @@
     98,
     79
    ],
-   "ability": "전기치유",
+   "ability": "통전",
    "abilityTo": 1,
-   "abilityDesc": "①「독」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신의 「전기」 기술이 「타입 : 땅」에게도 명중한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "B",
    "grade": "B",
@@ -14100,12 +14535,14 @@
     ]
    },
    "root": "거북",
-   "oldName": "찌릿거북"
+   "oldName": "찌릿거북",
+   "prevName": "전부기",
+   "abilityReads": true
   },
   {
    "id": "w181",
    "origin": "orig",
-   "name": "몽폭스",
+   "name": "소미야그",
    "types": [
     "에스퍼"
    ],
@@ -14117,9 +14554,9 @@
     87,
     84
    ],
-   "ability": "갈지자걸음",
+   "ability": "브레인포스",
    "abilityTo": 1,
-   "abilityDesc": "①「혼란」 상태일 때 「회피」가 2배가 된다.",
+   "abilityDesc": "①「상성 : 2배~8배」인 기술의 대미지를 강화(1.2배)한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "B",
@@ -14170,12 +14607,14 @@
    },
    "abilityPrev": "도플갱어",
    "root": "여우",
-   "oldName": "수정별여우"
+   "oldName": "수정별여우",
+   "prevName": "몽폭스",
+   "abilityReads": true
   },
   {
    "id": "w182",
    "origin": "orig",
-   "name": "촉촉북",
+   "name": "글셸투스",
    "types": [
     "물"
    ],
@@ -14187,9 +14626,9 @@
     81,
     88
    ],
-   "ability": "슬로우스타터",
+   "ability": "필터",
    "abilityTo": 1,
-   "abilityDesc": "①【지연 (4턴)】/턴 종료 시 「공격/방어/특공/특방/스피드 : +2」한다.",
+   "abilityDesc": "①【방호】/「상성 : 2배~8배」인 기술로 받을 대미지를 완화(0.75배)한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "B",
@@ -14246,12 +14685,14 @@
    },
    "abilityPrev": "동결",
    "root": "거북",
-   "oldName": "이슬거북"
+   "oldName": "이슬거북",
+   "prevName": "촉촉북",
+   "abilityReads": true
   },
   {
    "id": "w183",
    "origin": "orig",
-   "name": "탁숭이",
+   "name": "브루스틱",
    "types": [
     "격투"
    ],
@@ -14263,9 +14704,9 @@
     65,
     116
    ],
-   "ability": "정전기",
+   "ability": "까칠한피부",
    "abilityTo": 1,
-   "abilityDesc": "①「접촉기」를 받았을 때 3할로 자신을 공격한 포켓몬을 「마비」 상태로 만든다.",
+   "abilityDesc": "①「접촉기」를 받았을 때 자신을 공격한 포켓몬에게 1/8의 비례 대미지를 입힌다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "B",
@@ -14327,12 +14768,14 @@
    },
    "abilityPrev": "혼란을틈타",
    "root": "원숭이",
-   "oldName": "투사원숭이"
+   "oldName": "투사원숭이",
+   "prevName": "탁숭이",
+   "abilityReads": true
   },
   {
    "id": "w184",
    "origin": "orig",
-   "name": "서리콘",
+   "name": "니브레기",
    "types": [
     "얼음",
     "물"
@@ -14345,9 +14788,9 @@
     69,
     97
    ],
-   "ability": "얼음재생",
+   "ability": "굶주린촉수",
    "abilityTo": 1,
-   "abilityDesc": "①「잠듦」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
+   "abilityDesc": "①「접촉기」를 받았을 때 자신을 공격한 포켓몬에게 「스피드 : -1」한다.②「접촉기」를 받았을 때 자신을 공격한 포켓몬에게 1/16의 비례 대미지를 입힌다.",
    "abilityOrig": true,
    "folder": "",
    "pride": "B",
@@ -14406,12 +14849,15 @@
    "oldName": "소라여우",
    "nameFix": 1,
    "img": "w184.webp",
-   "imgAt": 1793691005817
+   "imgAt": 1793691005817,
+   "prevName": "서리콘",
+   "abilityUnique": true,
+   "abilityReads": true
   },
   {
    "id": "w185",
    "origin": "orig",
-   "name": "흑배트",
+   "name": "둠배트반",
    "types": [
     "악"
    ],
@@ -14423,9 +14869,9 @@
     65,
     120
    ],
-   "ability": "슬로우스타터",
+   "ability": "전격전",
    "abilityTo": 1,
-   "abilityDesc": "①【지연 (4턴)】/턴 종료 시 「공격/방어/특공/특방/스피드 : +2」한다.",
+   "abilityDesc": "①【1/시】【등장】/「스피드 : +1」한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "B",
@@ -14486,12 +14932,14 @@
    },
    "abilityPrev": "월광접",
    "root": "박쥐",
-   "oldName": "밤도둑박쥐"
+   "oldName": "밤도둑박쥐",
+   "prevName": "흑배트",
+   "abilityReads": true
   },
   {
    "id": "w186",
    "origin": "orig",
-   "name": "섀도열",
+   "name": "혼약귀",
    "types": [
     "고스트"
    ],
@@ -14503,10 +14951,10 @@
     82,
     96
    ],
-   "ability": "유령반골",
+   "ability": "포자",
    "abilityTo": 1,
-   "abilityDesc": "①「악」 기술을 받으면 「특공 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「접촉기」를 받았을 때 자신을 공격한 포켓몬을 3할로 「독/마비/잠듦」 중 무작위한 상태 이상으로 만든다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "B+",
    "grade": "B",
@@ -14565,12 +15013,14 @@
     ]
    },
    "root": "열쇠",
-   "oldName": "등불망령열쇠"
+   "oldName": "등불망령열쇠",
+   "prevName": "섀도열",
+   "abilityReads": true
   },
   {
    "id": "w187",
    "origin": "orig",
-   "name": "붕붕방",
+   "name": "절아충",
    "types": [
     "벌레"
    ],
@@ -14639,12 +15089,14 @@
     ]
    },
    "root": "나방",
-   "oldName": "유충갑각나방"
+   "oldName": "유충갑각나방",
+   "prevName": "붕붕방",
+   "abilityReads": true
   },
   {
    "id": "w188",
    "origin": "orig",
-   "name": "플러쥐",
+   "name": "이벤바엘",
    "types": [
     "노말",
     "풀"
@@ -14657,9 +15109,9 @@
     80,
     123
    ],
-   "ability": "슬로우스타터",
+   "ability": "주눅",
    "abilityTo": 1,
-   "abilityDesc": "①【지연 (4턴)】/턴 종료 시 「공격/방어/특공/특방/스피드 : +2」한다.",
+   "abilityDesc": "①「고스트/악/벌레」 기술을 받으면 「스피드 : +1」한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "B+",
@@ -14719,12 +15171,14 @@
     ]
    },
    "root": "다람쥐",
-   "oldName": "풀잎다람쥐"
+   "oldName": "풀잎다람쥐",
+   "prevName": "플러쥐",
+   "abilityReads": true
   },
   {
    "id": "w189",
    "origin": "orig",
-   "name": "굴코뿔",
+   "name": "호루아자",
    "types": [
     "땅"
    ],
@@ -14736,10 +15190,10 @@
     87,
     124
    ],
-   "ability": "진흙불씨",
+   "ability": "스타트러쉬",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「땅」 기술의 대미지를 강화(1.5배)한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①【등장】/턴 종료 시까지 「스피드」가 2배가 된다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "B+",
    "grade": "B",
@@ -14800,12 +15254,14 @@
     ]
    },
    "root": "코뿔소",
-   "oldName": "흙코뿔소"
+   "oldName": "흙코뿔소",
+   "prevName": "굴코뿔",
+   "abilityReads": true
   },
   {
    "id": "w190",
    "origin": "orig",
-   "name": "쉿오리",
+   "name": "네파지르",
    "types": [
     "물",
     "악"
@@ -14818,9 +15274,9 @@
     89,
     96
    ],
-   "ability": "정의의마음",
+   "ability": "급류",
    "abilityTo": 1,
-   "abilityDesc": "①「악」 기술을 받으면 「공격 : +1」한다.",
+   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「물」 기술의 대미지를 강화(1.5배)한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "B+",
@@ -14880,12 +15336,14 @@
     ]
    },
    "root": "가오리",
-   "oldName": "칠흑가오리"
+   "oldName": "칠흑가오리",
+   "prevName": "쉿오리",
+   "abilityReads": true
   },
   {
    "id": "w191",
    "origin": "orig",
-   "name": "파이방",
+   "name": "신더하스",
    "types": [
     "불꽃"
    ],
@@ -14897,10 +15355,10 @@
     81,
     122
    ],
-   "ability": "용암심지",
+   "ability": "대운",
    "abilityTo": 1,
-   "abilityDesc": "①「바위」 기술을 받으면 「특공 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신의 기술이 급소에 맞기 쉽다(C+1).",
+   "abilityOrig": false,
    "folder": "",
    "pride": "B+",
    "grade": "B",
@@ -14954,12 +15412,14 @@
     ]
    },
    "root": "불나방",
-   "oldName": "숯불나방"
+   "oldName": "숯불나방",
+   "prevName": "파이방",
+   "abilityReads": true
   },
   {
    "id": "w192",
    "origin": "orig",
-   "name": "폭삭톱",
+   "name": "동륜귀",
    "types": [
     "강철",
     "땅"
@@ -14972,10 +15432,10 @@
     82,
     61
    ],
-   "ability": "금속질",
+   "ability": "뒤틀린껍질",
    "abilityTo": 1,
-   "abilityDesc": "①자신에게 「타입 : 강철」을 추가한다.",
-   "abilityOrig": false,
+   "abilityDesc": "①【방호】/「상성 : 2배~8배」인 기술로 받을 대미지를 완화(0.75배)한다.②「상성 : 1/2~1/8배」인 기술로 받을 대미지가 1.5배가 된다.",
+   "abilityOrig": true,
    "folder": "",
    "pride": "B+",
    "grade": "B",
@@ -15034,12 +15494,52 @@
     ]
    },
    "root": "톱니",
-   "oldName": "모래톱니"
+   "oldName": "모래톱니",
+   "prevName": "폭삭톱",
+   "abilityUnique": true,
+   "abilityAuto": {
+    "ops": [
+     {
+      "k": "guard",
+      "tgt": "self",
+      "v": 0.75,
+      "types": [],
+      "cat": "all",
+      "eff": "super",
+      "rng": "all",
+      "uses": -1,
+      "turn": 0,
+      "tl": 0,
+      "ro": [],
+      "st": "",
+      "tg": [],
+      "sb": ""
+     },
+     {
+      "k": "guard",
+      "tgt": "self",
+      "v": 1.5,
+      "types": [],
+      "cat": "all",
+      "eff": "weak",
+      "rng": "all",
+      "uses": -1,
+      "turn": 0,
+      "tl": 0,
+      "ro": [],
+      "st": "",
+      "tg": [],
+      "sb": "",
+      "slot": 2
+     }
+    ]
+   },
+   "abilityReads": true
   },
   {
    "id": "w193",
    "origin": "orig",
-   "name": "늪젤리",
+   "name": "액수어",
    "types": [
     "독"
    ],
@@ -15051,10 +15551,10 @@
     118,
     65
    ],
-   "ability": "오염치유",
+   "ability": "붉은녹",
    "abilityTo": 1,
-   "abilityDesc": "①「독」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신의 「독」 기술이 「타입 : 강철」에게도 명중한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "B+",
    "grade": "B",
@@ -15110,12 +15610,14 @@
     ]
    },
    "root": "해파리",
-   "oldName": "오염해파리"
+   "oldName": "오염해파리",
+   "prevName": "늪젤리",
+   "abilityReads": true
   },
   {
    "id": "w194",
    "origin": "orig",
-   "name": "짱리자",
+   "name": "오브보르",
    "types": [
     "바위"
    ],
@@ -15127,10 +15629,10 @@
     69,
     126
    ],
-   "ability": "화석각오",
+   "ability": "헤롱헤롱멘탈",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「바위」 기술의 대미지를 강화(1.5배)한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「비접촉기」를 받았을 때 5할로 자신을 공격한 포켓몬을 「헤롱헤롱」 상태로 만든다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "B+",
    "grade": "B",
@@ -15190,12 +15692,14 @@
     ]
    },
    "root": "도마뱀",
-   "oldName": "화석도마뱀"
+   "oldName": "화석도마뱀",
+   "prevName": "짱리자",
+   "abilityReads": true
   },
   {
    "id": "w195",
    "origin": "orig",
-   "name": "꽃더지",
+   "name": "엽서수",
    "types": [
     "풀",
     "페어리"
@@ -15208,9 +15712,9 @@
     120,
     63
    ],
-   "ability": "방탄",
+   "ability": "날카로운눈",
    "abilityTo": 1,
-   "abilityDesc": "①【방호】/「볼」「탄」 기술을 무효화한다.\n②【방호】/「자폭」「대폭발」의 대미지를 반감한다.",
+   "abilityDesc": "①「명중」이 감소(저하)하지 않는다.\n②「회피」의 상승(강화)를 무시한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "B+",
@@ -15270,12 +15774,14 @@
     ]
    },
    "root": "두더지",
-   "oldName": "리본두더지"
+   "oldName": "리본두더지",
+   "prevName": "꽃더지",
+   "abilityReads": true
   },
   {
    "id": "w196",
    "origin": "orig",
-   "name": "줄레이",
+   "name": "아크이드",
    "types": [
     "전기"
    ],
@@ -15287,9 +15793,9 @@
     74,
     122
    ],
-   "ability": "찌릿불씨",
+   "ability": "단절된미래",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「전기」 기술의 대미지를 강화(1.5배)한다.",
+   "abilityDesc": "①「특수기」를 받으면 「특공 : +1」한다.②「물리기」를 받으면 「방어 : -1」한다.",
    "abilityOrig": true,
    "folder": "",
    "pride": "B+",
@@ -15340,12 +15846,15 @@
     ]
    },
    "root": "가오리",
-   "oldName": "뇌가오리"
+   "oldName": "뇌가오리",
+   "prevName": "줄레이",
+   "abilityUnique": true,
+   "abilityReads": true
   },
   {
    "id": "w197",
    "origin": "orig",
-   "name": "드림열",
+   "name": "령약귀",
    "types": [
     "에스퍼",
     "고스트"
@@ -15358,9 +15867,9 @@
     63,
     122
    ],
-   "ability": "수정각오",
+   "ability": "광기전염",
    "abilityTo": 1,
-   "abilityDesc": "①「HP : 1/3 이하」일 때 자신의 「에스퍼」 기술의 대미지를 강화(1.5배)한다.",
+   "abilityDesc": "①「혼란」 상태가 되지 않는다.②「접촉기」를 받았을 때 3할로 자신을 공격한 포켓몬을 「혼란」 상태로 만든다.",
    "abilityOrig": true,
    "folder": "",
    "pride": "B+",
@@ -15424,12 +15933,27 @@
    },
    "moveSalt": 1,
    "root": "열쇠",
-   "oldName": "별열쇠"
+   "oldName": "별열쇠",
+   "prevName": "드림열",
+   "abilityUnique": true,
+   "abilityAuto": {
+    "ops": [
+     {
+      "k": "immune",
+      "tgt": "self",
+      "mode": "on",
+      "states": [
+       "Confusion"
+      ]
+     }
+    ]
+   },
+   "abilityReads": true
   },
   {
    "id": "w198",
    "origin": "orig",
-   "name": "윙두루",
+   "name": "크레인릭",
    "types": [
     "비행",
     "벌레"
@@ -15442,10 +15966,10 @@
     63,
     129
    ],
-   "ability": "하늘투지",
+   "ability": "못된꾀",
    "abilityTo": 1,
-   "abilityDesc": "①「전기」 기술을 받으면 「스피드 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「비접촉기」를 받으면 자신을 공격한 포켓몬에게 1/8의 비례 대미지를 입힌다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "B+",
    "grade": "B",
@@ -15505,12 +16029,14 @@
     ]
    },
    "root": "두루미",
-   "oldName": "갑각두루미"
+   "oldName": "갑각두루미",
+   "prevName": "윙두루",
+   "abilityReads": true
   },
   {
    "id": "w199",
    "origin": "orig",
-   "name": "룡오리",
+   "name": "교홍어",
    "types": [
     "드래곤"
    ],
@@ -15522,9 +16048,9 @@
     75,
     101
    ],
-   "ability": "늑대",
+   "ability": "철가시",
    "abilityTo": 1,
-   "abilityDesc": "①공격이 명중했을 때 대상을 「특성 : 늑대」로 만든다.\n②①로 포켓몬을 「특성 : 늑대」로 만들었을 때 원래의 「특성」으로 돌아간다.",
+   "abilityDesc": "①「접촉기」를 받았을 때 자신을 공격한 포켓몬에게 1/8의 비례 대미지를 입힌다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "B+",
@@ -15576,12 +16102,14 @@
    },
    "abilityPrev": "게걸음",
    "root": "가오리",
-   "oldName": "비늘가오리"
+   "oldName": "비늘가오리",
+   "prevName": "룡오리",
+   "abilityReads": true
   },
   {
    "id": "w200",
    "origin": "orig",
-   "name": "글리슴",
+   "name": "요록마",
    "types": [
     "페어리"
    ],
@@ -15593,9 +16121,9 @@
     70,
     125
    ],
-   "ability": "요정",
+   "ability": "헤롱헤롱바디",
    "abilityTo": 1,
-   "abilityDesc": "①자신에게 「타입 : 페어리」을 추가한다.",
+   "abilityDesc": "①「접촉기」를 받았을 때 5할로 자신을 공격한 포켓몬을 「헤롱헤롱」 상태로 만든다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "B+",
@@ -15651,12 +16179,14 @@
     ]
    },
    "root": "사슴",
-   "oldName": "꽃가루사슴"
+   "oldName": "꽃가루사슴",
+   "prevName": "글리슴",
+   "abilityReads": true
   },
   {
    "id": "w201",
    "origin": "orig",
-   "name": "훨까악",
+   "name": "익오조",
    "types": [
     "노말",
     "비행"
@@ -15669,10 +16199,10 @@
     76,
     107
    ],
-   "ability": "털복치유",
+   "ability": "저주받은바디",
    "abilityTo": 1,
-   "abilityDesc": "①「화상」 상태일 때 턴 종료 시 「HP」를 1/8만큼 회복한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①공격을 받았을 때 3할로 대상을 「사슬묶기」 상태로 만든다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "B+",
    "grade": "B",
@@ -15732,12 +16262,14 @@
     ]
    },
    "root": "까마귀",
-   "oldName": "둥근까마귀"
+   "oldName": "둥근까마귀",
+   "prevName": "훨까악",
+   "abilityReads": true
   },
   {
    "id": "w202",
    "origin": "orig",
-   "name": "으스열",
+   "name": "미르키락",
    "types": [
     "고스트",
     "풀"
@@ -15750,9 +16282,9 @@
     80,
     102
    ],
-   "ability": "저주받은바디",
+   "ability": "룰러",
    "abilityTo": 1,
-   "abilityDesc": "①공격을 받았을 때 3할로 대상을 「사슬묶기」 상태로 만든다.",
+   "abilityDesc": "①「접촉기」를 받았을 때 5할로 자신을 공격한 포켓몬을 「사슬묶기」 상태로 만든다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "B+",
@@ -15813,12 +16345,14 @@
    },
    "abilityPrev": "나이트위저드",
    "root": "열쇠",
-   "oldName": "덩굴열쇠"
+   "oldName": "덩굴열쇠",
+   "prevName": "으스열",
+   "abilityReads": true
   },
   {
    "id": "w203",
    "origin": "orig",
-   "name": "싹팽이",
+   "name": "엽와패",
    "types": [
     "풀"
    ],
@@ -15830,10 +16364,10 @@
     123,
     53
    ],
-   "ability": "마이페이스",
+   "ability": "포자군락",
    "abilityTo": 1,
-   "abilityDesc": "①「혼란」「도발」 상태가 되지 않는다.",
-   "abilityOrig": false,
+   "abilityDesc": "①턴 종료 시 「HP」를 1/16만큼 회복한다.②「불꽃」 기술로 받을 대미지가 2배가 된다.",
+   "abilityOrig": true,
    "folder": "",
    "pride": "B+",
    "grade": "B",
@@ -15889,12 +16423,42 @@
    "root": "달팽이",
    "oldName": "덩굴달팽이",
    "img": "w203.webp",
-   "imgAt": 1793686027837
+   "imgAt": 1793686027837,
+   "prevName": "싹팽이",
+   "abilityUnique": true,
+   "abilityAuto": {
+    "ops": [
+     {
+      "k": "heal",
+      "tgt": "self",
+      "value": "1/16"
+     },
+     {
+      "k": "guard",
+      "tgt": "self",
+      "v": 2,
+      "types": [
+       "Fire"
+      ],
+      "cat": "all",
+      "eff": "all",
+      "rng": "all",
+      "uses": -1,
+      "turn": 0,
+      "tl": 0,
+      "ro": [],
+      "st": "",
+      "tg": [],
+      "sb": ""
+     }
+    ]
+   },
+   "abilityReads": true
   },
   {
    "id": "w204",
    "origin": "orig",
-   "name": "스모그뱀",
+   "name": "톡스모르그",
    "types": [
     "독"
    ],
@@ -15906,10 +16470,10 @@
     74,
     120
    ],
-   "ability": "독설",
+   "ability": "은열쇠공명",
    "abilityTo": 1.5,
-   "abilityDesc": "①【방호】/「독」 기술을 받으면 무효화하고 「HP」를 1/4만큼 회복한다.",
-   "abilityOrig": false,
+   "abilityDesc": "①【등장】/턴 종료 시까지 「스피드」가 2배가 된다.②【등장】/「정면」에게 「명중 : -1」한다.",
+   "abilityOrig": true,
    "folder": "",
    "pride": "A",
    "grade": "A",
@@ -15971,12 +16535,34 @@
    "root": "뱀",
    "oldName": "진흙뱀",
    "img": "w204.webp",
-   "imgAt": 1793686041536
+   "imgAt": 1793686041536,
+   "prevName": "스모그뱀",
+   "abilityUnique": true,
+   "abilityAuto": {
+    "ops": [
+     {
+      "k": "mult",
+      "tgt": "self",
+      "stats": {
+       "speed": 2
+      },
+      "temp": 1
+     },
+     {
+      "k": "rank",
+      "tgt": "front",
+      "stats": {
+       "accuracy": -1
+      }
+     }
+    ]
+   },
+   "abilityReads": true
   },
   {
    "id": "w205",
    "origin": "orig",
-   "name": "클레이북",
+   "name": "텔셸로크",
    "types": [
     "땅"
    ],
@@ -15988,9 +16574,9 @@
     78,
     121
    ],
-   "ability": "흙먹기",
+   "ability": "통뼈",
    "abilityTo": 1.5,
-   "abilityDesc": "①【방호】/「땅」 기술을 받으면 무효화하고 「HP」를 1/4만큼 회복한다.",
+   "abilityDesc": "①【방호】/「방어 : C」 이하일 때 「물리기」로 받을 대미지를 반감한다.\n②「땅」 기술로 받을 대미지가 2배가 된다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "A",
@@ -16046,12 +16632,14 @@
     ]
    },
    "root": "거북",
-   "oldName": "흙거북"
+   "oldName": "흙거북",
+   "prevName": "클레이북",
+   "abilityReads": true
   },
   {
    "id": "w206",
    "origin": "orig",
-   "name": "촉촉소라",
+   "name": "네레크솔",
    "types": [
     "물"
    ],
@@ -16063,10 +16651,10 @@
     130,
     55
    ],
-   "ability": "거품내성",
+   "ability": "정원사의마음",
    "abilityTo": 1.5,
-   "abilityDesc": "①「풀」 기술을 받으면 「특공 : +1」한다.\n②「얼음」 상태가 되지 않는다.",
-   "abilityOrig": true,
+   "abilityDesc": "①【방호】/「물」 기술을 받으면 무효화하고 「특공 : +1」한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "A",
    "grade": "A",
@@ -16126,12 +16714,14 @@
     ]
    },
    "root": "소라",
-   "oldName": "파도소라"
+   "oldName": "파도소라",
+   "prevName": "촉촉소라",
+   "abilityReads": true
   },
   {
    "id": "w207",
    "origin": "orig",
-   "name": "잉걸콘론",
+   "name": "신폭스가르",
    "types": [
     "불꽃"
    ],
@@ -16143,10 +16733,10 @@
     129,
     47
    ],
-   "ability": "그을음내성",
+   "ability": "열교환",
    "abilityTo": 1.5,
-   "abilityDesc": "①「땅」 기술을 받으면 「특공 : +1」한다.\n②「얼음」 상태가 되지 않는다.",
-   "abilityOrig": true,
+   "abilityDesc": "①「불꽃」 기술을 받으면 「공격 : +1」한다.\n②「화상」 상태가 되지 않는다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "A",
    "grade": "A",
@@ -16205,12 +16795,14 @@
     ]
    },
    "root": "여우",
-   "oldName": "숯여우"
+   "oldName": "숯여우",
+   "prevName": "잉걸콘론",
+   "abilityReads": true
   },
   {
    "id": "w208",
    "origin": "orig",
-   "name": "휘울프",
+   "name": "익랑귀왕",
    "types": [
     "얼음",
     "비행"
@@ -16223,10 +16815,10 @@
     81,
     129
    ],
-   "ability": "한파반격",
+   "ability": "풍신강림",
    "abilityTo": 1.5,
-   "abilityDesc": "①「접촉기」를 받으면 「공격 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①【등장】/턴 종료 시까지 다음 「비행」 기술의 대미지가 2배가 된다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "A",
    "grade": "A",
@@ -16283,12 +16875,14 @@
    "oldName": "바람늑대",
    "nameFix": 1,
    "img": "w208.webp",
-   "imgAt": 1793691009615
+   "imgAt": 1793691009615,
+   "prevName": "휘울프",
+   "abilityReads": true
   },
   {
    "id": "w209",
    "origin": "orig",
-   "name": "녹스팬서",
+   "name": "둠캣모르",
    "types": [
     "악"
    ],
@@ -16300,9 +16894,9 @@
     79,
     118
    ],
-   "ability": "도둑되갚기",
+   "ability": "외신의시선",
    "abilityTo": 1.5,
-   "abilityDesc": "①「접촉기」를 받으면 「스피드 : +1」한다.",
+   "abilityDesc": "①【등장】/상대 전체에게 「명중 : -1」한다.②「상성 : 1/2~1/8배」인 기술로 받을 대미지가 1.5배가 된다.",
    "abilityOrig": true,
    "folder": "",
    "pride": "A",
@@ -16360,12 +16954,42 @@
    "oldName": "검은고양이",
    "nameFix": 1,
    "img": "w209.webp",
-   "imgAt": 1793691013739
+   "imgAt": 1793691013739,
+   "prevName": "녹스팬서",
+   "abilityUnique": true,
+   "abilityAuto": {
+    "ops": [
+     {
+      "k": "rank",
+      "tgt": "enemy",
+      "stats": {
+       "accuracy": -1
+      }
+     },
+     {
+      "k": "guard",
+      "tgt": "self",
+      "v": 1.5,
+      "types": [],
+      "cat": "all",
+      "eff": "weak",
+      "rng": "all",
+      "uses": -1,
+      "turn": 0,
+      "tl": 0,
+      "ro": [],
+      "st": "",
+      "tg": [],
+      "sb": ""
+     }
+    ]
+   },
+   "abilityReads": true
   },
   {
    "id": "w210",
    "origin": "orig",
-   "name": "브로두루",
+   "name": "팔크레인",
    "types": [
     "격투"
    ],
@@ -16377,10 +17001,10 @@
     94,
     102
    ],
-   "ability": "근육되갚기",
+   "ability": "투혼",
    "abilityTo": 1.5,
-   "abilityDesc": "①「접촉기」를 받으면 「공격 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신의 「격투」 기술의 대미지를 2배로 만든다.\n②「격투」 기술로 받을 대미지가 2배가 된다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "A",
    "grade": "A",
@@ -16435,12 +17059,14 @@
     ]
    },
    "root": "두루미",
-   "oldName": "발차기두루미"
+   "oldName": "발차기두루미",
+   "prevName": "브로두루",
+   "abilityReads": true
   },
   {
    "id": "w211",
    "origin": "orig",
-   "name": "비틀지론",
+   "name": "갑오대요",
    "types": [
     "벌레"
    ],
@@ -16452,9 +17078,9 @@
     80,
     106
    ],
-   "ability": "초인",
+   "ability": "초식",
    "abilityTo": 1.5,
-   "abilityDesc": "①자신의 「에스퍼」 기술의 대미지를 2배로 만든다.\n②「에스퍼」 기술로 받을 대미지가 2배가 된다.",
+   "abilityDesc": "①【방호】/「풀」 기술을 받으면 무효화하고 「공격 : +1」한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "A",
@@ -16514,12 +17140,14 @@
     ]
    },
    "root": "지네",
-   "oldName": "유충지네"
+   "oldName": "유충지네",
+   "prevName": "비틀지론",
+   "abilityReads": true
   },
   {
    "id": "w212",
    "origin": "orig",
-   "name": "뽀버니론",
+   "name": "오렌네브",
    "types": [
     "노말"
    ],
@@ -16531,10 +17159,10 @@
     88,
     115
    ],
-   "ability": "털복굳은살",
+   "ability": "바싹쫓기",
    "abilityTo": 1.5,
-   "abilityDesc": "①「격투」 기술을 받으면 「스피드 : +1」한다.\n②「화상」 상태가 되지 않는다.",
-   "abilityOrig": true,
+   "abilityDesc": "①공격을 받았을 때 「스피드 : +1」한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "A",
    "grade": "A",
@@ -16594,12 +17222,14 @@
     ]
    },
    "root": "토끼",
-   "oldName": "둥근토끼"
+   "oldName": "둥근토끼",
+   "prevName": "뽀버니론",
+   "abilityReads": true
   },
   {
    "id": "w213",
    "origin": "orig",
-   "name": "오라냥론",
+   "name": "환묘마왕",
    "types": [
     "에스퍼"
    ],
@@ -16611,10 +17241,10 @@
     91,
     131
    ],
-   "ability": "수정굳은살",
+   "ability": "초인",
    "abilityTo": 1.5,
-   "abilityDesc": "①「악」 기술을 받으면 「공격 : +1」한다.\n②「마비」 상태가 되지 않는다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신의 「에스퍼」 기술의 대미지를 2배로 만든다.\n②「에스퍼」 기술로 받을 대미지가 2배가 된다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "A",
    "grade": "A",
@@ -16663,12 +17293,14 @@
     ]
    },
    "root": "고양이",
-   "oldName": "꿈달고양이"
+   "oldName": "꿈달고양이",
+   "prevName": "오라냥론",
+   "abilityReads": true
   },
   {
    "id": "w214",
    "origin": "orig",
-   "name": "마린크랩",
+   "name": "탈칸크아스",
    "types": [
     "물"
    ],
@@ -16680,10 +17312,10 @@
     83,
     66
    ],
-   "ability": "정원사의마음",
+   "ability": "개변된과거",
    "abilityTo": 1.5,
-   "abilityDesc": "①【방호】/「물」 기술을 받으면 무효화하고 「특공 : +1」한다.",
-   "abilityOrig": false,
+   "abilityDesc": "①【1/시】/「HP : 1/3 이하」가 되면 「HP」를 1/2만큼 회복한다.",
+   "abilityOrig": true,
    "folder": "",
    "pride": "A",
    "grade": "A",
@@ -16737,12 +17369,29 @@
     ]
    },
    "root": "게",
-   "oldName": "거품게"
+   "oldName": "거품게",
+   "prevName": "마린크랩",
+   "abilityUnique": true,
+   "abilityAuto": {
+    "ops": [
+     {
+      "k": "cond",
+      "c": "hp_le",
+      "frac": "1/3"
+     },
+     {
+      "k": "heal",
+      "tgt": "self",
+      "value": "1/2"
+     }
+    ]
+   },
+   "abilityReads": true
   },
   {
    "id": "w215",
    "origin": "orig",
-   "name": "돌도마론",
+   "name": "리자칼네스",
    "types": [
     "바위"
    ],
@@ -16754,9 +17403,9 @@
     78,
     121
    ],
-   "ability": "분노의경혈",
+   "ability": "돌먹기",
    "abilityTo": 1.5,
-   "abilityDesc": "①다른 포켓몬의 기술이 자신의 급소에 맞았을 때 「공격 : +12」한다.",
+   "abilityDesc": "①【방호】/「바위」 기술을 받으면 무효화하고 「공격 : +1」한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "A",
@@ -16811,12 +17460,14 @@
     ]
    },
    "root": "도마뱀",
-   "oldName": "석도마뱀"
+   "oldName": "석도마뱀",
+   "prevName": "돌도마론",
+   "abilityReads": true
   },
   {
    "id": "w216",
    "origin": "orig",
-   "name": "강벨라스",
+   "name": "아이언벨",
    "types": [
     "강철"
    ],
@@ -16828,10 +17479,10 @@
     86,
     107
    ],
-   "ability": "톱니단련",
+   "ability": "연금",
    "abilityTo": 1.5,
-   "abilityDesc": "①「땅」 기술을 받으면 「공격 : +1」한다.\n②「독」 상태가 되지 않는다.",
-   "abilityOrig": true,
+   "abilityDesc": "①【방호】/「강철」 기술을 받으면 무효화하고 「방어 : +1」한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "A",
    "grade": "A",
@@ -16891,12 +17542,14 @@
     ]
    },
    "root": "종",
-   "oldName": "톱니쇠종"
+   "oldName": "톱니쇠종",
+   "prevName": "강벨라스",
+   "abilityReads": true
   },
   {
    "id": "w217",
    "origin": "orig",
-   "name": "스닉캣스",
+   "name": "흑묘요왕",
    "types": [
     "악"
    ],
@@ -16908,9 +17561,9 @@
     90,
     66
    ],
-   "ability": "다크오라",
+   "ability": "태평함",
    "abilityTo": 1.5,
-   "abilityDesc": "①필드 위에 있는 한 모든 포켓몬의 「악」 기술의 대미지를 강화(1.3배)한다.",
+   "abilityDesc": "①자신의 기술이 대상의 「방어/특방/회피」의 상승(강화)를 무시한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "A",
@@ -16970,12 +17623,14 @@
     ]
    },
    "root": "고양이",
-   "oldName": "밤고양이"
+   "oldName": "밤고양이",
+   "prevName": "스닉캣스",
+   "abilityReads": true
   },
   {
    "id": "w218",
    "origin": "orig",
-   "name": "글레크로",
+   "name": "그림레이븐",
    "types": [
     "고스트",
     "얼음"
@@ -17052,12 +17707,14 @@
    },
    "abilityPrev": "얼어붙는세계",
    "root": "까마귀",
-   "oldName": "한파까마귀"
+   "oldName": "한파까마귀",
+   "prevName": "글레크로",
+   "abilityReads": true
   },
   {
    "id": "w219",
    "origin": "orig",
-   "name": "꼬물북왕",
+   "name": "실바투엘",
    "types": [
     "풀",
     "벌레"
@@ -17070,10 +17727,10 @@
     105,
     91
    ],
-   "ability": "이끼가시",
+   "ability": "초식",
    "abilityTo": 1.5,
-   "abilityDesc": "①「접촉기」를 받으면 「공격 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①【방호】/「풀」 기술을 받으면 무효화하고 「공격 : +1」한다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "A",
    "grade": "A",
@@ -17125,12 +17782,14 @@
    },
    "moveSalt": 1,
    "root": "거북",
-   "oldName": "껍질거북"
+   "oldName": "껍질거북",
+   "prevName": "꼬물북왕",
+   "abilityReads": true
   },
   {
    "id": "w220",
    "origin": "orig",
-   "name": "줄냥라스",
+   "name": "섬묘신수",
    "types": [
     "전기"
    ],
@@ -17142,10 +17801,10 @@
     84,
     122
    ],
-   "ability": "전기되갚기",
+   "ability": "뇌신강림",
    "abilityTo": 1.5,
-   "abilityDesc": "①「접촉기」를 받으면 「특공 : +1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①【등장】/턴 종료 시까지 다음 「전기」 기술의 대미지가 2배가 된다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "A",
    "grade": "A",
@@ -17207,12 +17866,14 @@
     ]
    },
    "root": "고양이",
-   "oldName": "전기고양이"
+   "oldName": "전기고양이",
+   "prevName": "줄냥라스",
+   "abilityReads": true
   },
   {
    "id": "w221",
    "origin": "orig",
-   "name": "미르네몽",
+   "name": "역오귀왕",
    "types": [
     "드래곤"
    ],
@@ -17224,10 +17885,10 @@
     70,
     128
    ],
-   "ability": "비늘기세",
+   "ability": "용맥",
    "abilityTo": 1.5,
-   "abilityDesc": "①【등장】/「정면」에게 「명중 : -1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신의 「드래곤」 기술의 대미지를 2배로 만든다.\n②「드래곤」 기술로 받을 대미지가 2배가 된다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "A",
    "grade": "A",
@@ -17283,12 +17944,14 @@
     ]
    },
    "root": "지네",
-   "oldName": "사룡용지네"
+   "oldName": "사룡용지네",
+   "prevName": "미르네몽",
+   "abilityReads": true
   },
   {
    "id": "w222",
    "origin": "orig",
-   "name": "스플달스",
+   "name": "글라우오터",
    "types": [
     "물"
    ],
@@ -17358,12 +18021,14 @@
     ]
    },
    "root": "수달",
-   "oldName": "소금수달"
+   "oldName": "소금수달",
+   "prevName": "스플달스",
+   "abilityReads": true
   },
   {
    "id": "w223",
    "origin": "orig",
-   "name": "타닥나왕",
+   "name": "적아마왕",
    "types": [
     "불꽃"
    ],
@@ -17375,10 +18040,10 @@
     81,
     128
    ],
-   "ability": "열사단련",
+   "ability": "염신강림",
    "abilityTo": 1.5,
-   "abilityDesc": "①「바위」 기술을 받으면 「특공 : +1」한다.\n②「독」 상태가 되지 않는다.",
-   "abilityOrig": true,
+   "abilityDesc": "①【등장】/턴 종료 시까지 다음 「불꽃」 기술의 대미지가 2배가 된다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "A",
    "grade": "A",
@@ -17428,12 +18093,14 @@
    },
    "moveSalt": 1,
    "root": "불나방",
-   "oldName": "잿불나방"
+   "oldName": "잿불나방",
+   "prevName": "타닥나왕",
+   "abilityReads": true
   },
   {
    "id": "w224",
    "origin": "orig",
-   "name": "루루양왕",
+   "name": "환양대요",
    "types": [
     "페어리"
    ],
@@ -17445,10 +18112,10 @@
     91,
     69
    ],
-   "ability": "방울위압",
+   "ability": "정령",
    "abilityTo": 1.5,
-   "abilityDesc": "①【등장】/「정면」에게 「명중 : -1」한다.",
-   "abilityOrig": true,
+   "abilityDesc": "①자신의 「페어리」 기술의 대미지를 2배로 만든다.\n②「페어리」 기술로 받을 대미지가 2배가 된다.",
+   "abilityOrig": false,
    "folder": "",
    "pride": "A",
    "grade": "A",
@@ -17502,12 +18169,14 @@
     ]
    },
    "root": "양",
-   "oldName": "방울꽃가루양"
+   "oldName": "방울꽃가루양",
+   "prevName": "루루양왕",
+   "abilityReads": true
   },
   {
    "id": "w225",
    "origin": "orig",
-   "name": "폼폼버펄",
+   "name": "메모보스",
    "types": [
     "노말",
     "에스퍼"
@@ -17520,9 +18189,9 @@
     83,
     65
    ],
-   "ability": "초인",
+   "ability": "공감",
    "abilityTo": 1.5,
-   "abilityDesc": "①자신의 「에스퍼」 기술의 대미지를 2배로 만든다.\n②「에스퍼」 기술로 받을 대미지가 2배가 된다.",
+   "abilityDesc": "①【방호】/「에스퍼」 기술을 받으면 무효화하고 「특공 : +1」한다.",
    "abilityOrig": false,
    "folder": "",
    "pride": "A",
@@ -17582,7 +18251,9 @@
     ]
    },
    "root": "들소",
-   "oldName": "꿈들소"
+   "oldName": "꿈들소",
+   "prevName": "폼폼버펄",
+   "abilityReads": true
   },
   {
    "id": "w226",
@@ -22273,5 +22944,9 @@
   }
  ],
  "at": "2026-10-28T14:01:08.966Z",
- "habTrim": "10-28 서식지 1~2곳 (mongen.trimHab, 씨앗 34)"
+ "habTrim": "10-28 서식지 1~2곳 (mongen.trimHab, 씨앗 34)",
+ "v4": {
+  "at": "2026-11-03",
+  "memo": "이름 v4 · 특성 v2 · 미사그 고유 특성 12 (tools/apply_wild_v4.js)"
+ }
 }

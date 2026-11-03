@@ -10,7 +10,7 @@ MNEG:"human, humanoid, 1girl, 1boy, multiple views, multiple creatures, text, ca
 D:{
 /* ───────── 1. 숲 · 쉬움 ───────── */
 md1_forest:{name:'온실 뒤 덩굴숲',
- intro:'식물원 유리 온실 뒷담 너머, 「출입 금지」 팻말 뒤로 덩굴이 길을 삼킨 숲. 몇 해 전 온실에서 빠져나간 덩굴이 숲 하나를 통째로 덮었고, 안개 연못 한가운데서 싹팽이가 이끼를 키우며 숲을 넓혀 간다. 첫 탐사에 알맞은 차분한 숲길 — 가시 · 늪 · 안개만 조심하면 된다.',
+ intro:'식물원 유리 온실 뒷담 너머, 「출입 금지」 팻말 뒤로 덩굴이 길을 삼킨 숲. 몇 해 전 온실에서 빠져나간 덩굴이 숲 하나를 통째로 덮었고, 안개 연못 한가운데서 엽와패가 이끼를 키우며 숲을 넓혀 간다. 첫 탐사에 알맞은 차분한 숲길 — 가시 · 늪 · 안개만 조심하면 된다.',
  look:'1.2::overgrown enchanted forest, giant old trees, thick ivy and flowering vines covering everything, soft green and gold light, gentle and calm::, ',
  rooms:{
   entry:['녹슨 출입 금지 팻말','온실 뒷담의 쪽문을 밀고 나오면 덩굴에 반쯤 감긴 녹슨 팻말이 반긴다. 바로 앞을 쓰러진 고목이 가로막고 있다.','a rusty iron "keep out" sign half wrapped in ivy beside a small door in an old brick wall, a fallen mossy tree trunk lying across the forest path ahead, morning light through leaves'],
@@ -24,14 +24,14 @@ md1_forest:{name:'온실 뒤 덩굴숲',
   tr:['까치 둥지 고목','고목 꼭대기 근처의 커다란 둥지. 반짝이는 것을 모으는 새가 살았던 듯 유리구슬과 열쇠가 섞여 있다.','a huge bird nest high in an old hollow tree, shiny trinkets glass marbles and old keys inside the nest, sunbeam through leaves']}},
 /* ───────── 2. 바다 · 쉬움 ───────── */
 md2_sea:{name:'등대 아래 조수 동굴',
- intro:'후문 너머 절벽 끝 폐등대 아래, 썰물 때만 입을 여는 해식 동굴. 오래전 좌초한 실습선이 동굴 안쪽에 박혀 있고, 선창 깊은 곳에는 서리콘 무리가 서리 낀 둥지를 틀었다. 물때가 바뀌기 전에 돌아 나와야 한다.',
+ intro:'후문 너머 절벽 끝 폐등대 아래, 썰물 때만 입을 여는 해식 동굴. 오래전 좌초한 실습선이 동굴 안쪽에 박혀 있고, 선창 깊은 곳에는 니브레기 무리가 서리 낀 둥지를 틀었다. 물때가 바뀌기 전에 돌아 나와야 한다.',
  look:'1.2::seaside sea cave area, tide pools, turquoise water, wet rocks, barnacles, salty spray, bright and refreshing::, ',noLook:['boss','g2a2'],noLookNeg:'sky, outdoors, sunny day, tropical',
  rooms:{
   entry:['썰물 모래톱','물이 빠진 모래톱에 조개와 해초가 널려 있다. 동굴로 들어가기 전 먹을 것과 상한 것을 가려 둔다.','a wide tidal sand flat at low tide at the foot of a cliff with an old white lighthouse above, shells and seaweed scattered, a dark sea cave mouth in the cliff'],
   b1:['좌초 실습선 갑판','기울어진 실습선 갑판. 따개비 낀 난간 위에서 바닷새 포켓몬이 침입자를 노려본다.','the tilted wooden deck of an old wrecked training ship stuck inside a sea cave, barnacles on the railings, light from a hole in the cave ceiling'],
   c1:['소용돌이 물길','동굴 바닥을 가로지르는 물길. 물때를 잘못 읽으면 소용돌이에 휩쓸린다.','an underground sea channel with swirling whirlpool currents inside a cave, stepping stones, blue light reflecting on the cave walls'],
   safe:['등대지기 창고','등대지기가 쓰던 바위 속 창고. 녹슨 철문만 열면 마른 담요와 램프가 있다.','a small storage room carved in rock below a lighthouse, a rusty iron door, oil lamps, ropes and folded blankets, warm lamplight, safe and quiet'],
-  boss:['서리 낀 선창','실습선의 깊은 선창. 바닷물이 얼어 서리꽃이 피었고, 그 가운데 서리콘이 둥지를 지킨다.','inside the dark deep cargo hold of an old wrecked wooden ship, curved wooden ribs and beams overhead, seawater on the floor frozen into ice, frost flowers and icicles covering the beams, pale blue cold light, a nest woven of ice in the middle'],
+  boss:['서리 낀 선창','실습선의 깊은 선창. 바닷물이 얼어 서리꽃이 피었고, 그 가운데 니브레기가 둥지를 지킨다.','inside the dark deep cargo hold of an old wrecked wooden ship, curved wooden ribs and beams overhead, seawater on the floor frozen into ice, frost flowers and icicles covering the beams, pale blue cold light, a nest woven of ice in the middle'],
   g1a1:['해초 숲 웅덩이','허리까지 차는 조수 웅덩이에 해초가 숲처럼 자랐다. 물속에서 번쩍이는 것이 지나간다.','a large tide pool inside a sea cave filled with tall swaying kelp like a forest, clear water, sunlight shafts'],
   g2a1:['미끄러운 바위길','파도가 들이치는 바위 턱. 소용돌이를 거슬러 헤엄쳐야 다음 바위에 닿는다.','slippery wet rocks along a cave wall with waves crashing in, foam and spray, a gap of rough water between the rocks'],
   g2a2:['물 고인 선실','실습생들이 쓰던 선실. 무릎까지 물이 찼고 낡은 해도가 벽에 붙어 있다.','interior of a half flooded cabin inside an old wrecked wooden ship, seawater up to the knees, wooden bunk beds, an old nautical chart pinned on the wooden wall, a round brass porthole letting in a beam of light, damp and dim'],
@@ -39,7 +39,7 @@ md2_sea:{name:'등대 아래 조수 동굴',
   tr:['떠밀려 온 상자','파도에 떠밀려 온 나무 상자. 실습선의 항해 일지가 방수포에 싸여 있다.','a weathered wooden chest washed up on a cave beach, wrapped in canvas, starfish and shells around it, beam of light']}},
 /* ───────── 3. 설원 · 쉬움 ───────── */
 md3_snow:{name:'북쪽 관측소 빙벽길',bossTo:'w208',
- intro:'캠퍼스 북쪽 산 중턱, 기상학과가 쓰다 버린 관측소로 오르는 빙벽길. 눈보라가 잦아든 틈을 타 올라가야 한다. 무너진 관측탑 꼭대기에서는 휘울프가 서리를 내뿜으며 산 전체의 날씨를 쥐고 있다.',
+ intro:'캠퍼스 북쪽 산 중턱, 기상학과가 쓰다 버린 관측소로 오르는 빙벽길. 눈보라가 잦아든 틈을 타 올라가야 한다. 무너진 관측탑 꼭대기에서는 익랑귀왕이 서리를 내뿜으며 산 전체의 날씨를 쥐고 있다.',
  look:'1.2::snowy high mountain, rocky cliffs and pine trees covered in snow, white and pale blue palette with warm sunlight accents, crisp cold air, clear and beautiful::, -1.2::crystals, giant ice crystals, ice palace::, ',
  rooms:{
   entry:['눈 덮인 산길','관측소로 가는 옛 산길. 눈 아래 얼음판이 숨어 있어 두께를 읽고 디뎌야 한다.','a snow covered mountain trail with old wooden signposts pointing to an observatory, frozen ground under the snow, pine trees, pale morning sky'],
@@ -71,7 +71,7 @@ md4_cave:{name:'종탑 지하 수맥 갱도',
   s1:['곰팡이 굴','곰팡이가 희게 핀 막다른 굴. 축축한 공기가 무겁다.','a dead end cave covered in pale glowing mushrooms and white mold, damp air, faint bioluminescence']}},
 /* ───────── 5. 폐가 · 보통 ───────── */
 md5_house:{name:'구 교직원 관사',
- intro:'캠퍼스 서쪽 숲 속, 문을 닫은 지 이십 년 된 교직원 관사. 마지막 사감이 떠난 뒤로 밤마다 불이 켜졌다 꺼진다. 지하 예배실에는 녹스팬서가 사감의 열쇠 꾸러미를 지키고 앉아 있다.',
+ intro:'캠퍼스 서쪽 숲 속, 문을 닫은 지 이십 년 된 교직원 관사. 마지막 사감이 떠난 뒤로 밤마다 불이 켜졌다 꺼진다. 지하 예배실에는 둠캣모르가 사감의 열쇠 꾸러미를 지키고 앉아 있다.',
  look:'1.2::abandoned old two-story faculty residence house of a university, ordinary house-sized rooms, dusty late victorian interior, wooden floorboards, faded wallpaper, old furniture under white sheets, moonlight through torn curtains, quiet melancholic and nostalgic, not scary::, -1::cathedral, church nave, huge hall, vaulted ceiling, gothic arches::, ',noLook:['entry'],
  rooms:{
   entry:['무너진 현관','현관 지붕이 내려앉았다. 안쪽 문은 사감이 잠근 그대로다.','exterior view of an abandoned two-story victorian house in a dark forest at dusk, the front porch roof collapsed, broken wooden steps, a heavy locked front door, ivy on the walls, one upstairs window faintly lit, moonlit evening, melancholic not scary'],
@@ -103,7 +103,7 @@ md6_ruin:{name:'기록보관소 아래 봉인 서고',
   tr:['봉헌함','옛 사람들이 무언가를 바친 함. 문지기에 대한 기록이 있다.','an ancient stone offering box with an open lid on a pedestal, scrolls and coins inside, beam of light']}},
 /* ───────── 7. 연구소 · 어려움 ───────── */
 md7_lab:{name:'제2 연구동 지하 격리층',
- intro:'각성 연구소가 있는 제2 연구동 지하 3층, 사고 뒤 봉쇄된 격리층. 비상 전원만 켜진 복도에 실험체들이 풀려 있다. 가장 안쪽 실험 심부에서는 독을 흘리는 스모그뱀이 배양조를 깨고 나와 둥지를 틀었다 — 체크가 까다롭고 보스방이 길다.',
+ intro:'각성 연구소가 있는 제2 연구동 지하 3층, 사고 뒤 봉쇄된 격리층. 비상 전원만 켜진 복도에 실험체들이 풀려 있다. 가장 안쪽 실험 심부에서는 독을 흘리는 톡스모르그가 배양조를 깨고 나와 둥지를 틀었다 — 체크가 까다롭고 보스방이 길다.',
  look:'1.2::sealed underground laboratory level beneath an old gothic university building, early 20th century, stone walls and brick arches, brass pipes and valves, riveted iron doors, wooden cabinets, dim amber gas lamps, quiet and tense, clean not gory::, -1.2::sci-fi, futuristic, neon, green glowing liquid, glowing tanks, hologram::, ',
  rooms:{
   entry:['화물 승강기','지하 3층에 멈춘 화물 승강기. 문이 열리자마자 폭주한 실험체가 날뛴다.','an old iron cage freight elevator with a folding brass gate stopped at an underground floor, opening to a dim brick corridor lit by gas lamps'],

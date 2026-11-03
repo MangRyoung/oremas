@@ -131,9 +131,9 @@
     "lvAdd": 5
    },
    "desc": "먼지 쌓인 부엌. 찬장 문이 저절로 여닫힌다.",
-   "memo": "먼지 쌓인 부엌. 찬장 문이 저절로 여닫힌다.\nGM: 첫 배틀. 찬장 문이 저절로 여닫히는 연출 — 범인은 유령등.",
+   "memo": "먼지 쌓인 부엌. 찬장 문이 저절로 여닫힌다.\nGM: 첫 배틀. 찬장 문이 저절로 여닫히는 연출 — 범인은 에테랜턴.",
    "art": "a dusty old victorian kitchen, iron stove, hanging pots, cupboard doors ajar, moonlight through a small window",
-   "gm": "첫 배틀. 찬장 문이 저절로 여닫히는 연출 — 범인은 유령등.",
+   "gm": "첫 배틀. 찬장 문이 저절로 여닫히는 연출 — 범인은 에테랜턴.",
    "img": "md5_house/b1.webp"
   },
   {
@@ -490,14 +490,14 @@
   "restBC": 1
  },
  "note": "자동 생성 · 보통 · 씨앗 122515 · 테마 폐가. 사전 배틀 1 · 체크 3 · 보스방 4체 · 레이드 배틀 : 3 · 지도 갈림길 2 · 구불길 + 곁방 1 · 야생 Lv +5 · 어려운 길(체크 목표 12).",
- "intro": "캠퍼스 서쪽 숲 속, 문을 닫은 지 이십 년 된 교직원 관사. 마지막 사감이 떠난 뒤로 밤마다 불이 켜졌다 꺼진다. 지하 예배실에는 녹스팬서가 사감의 열쇠 꾸러미를 지키고 앉아 있다.",
+ "intro": "캠퍼스 서쪽 숲 속, 문을 닫은 지 이십 년 된 교직원 관사. 마지막 사감이 떠난 뒤로 밤마다 불이 켜졌다 꺼진다. 지하 예배실에는 둠캣모르가 사감의 열쇠 꾸러미를 지키고 앉아 있다.",
  "art": {
   "look": "1.2::abandoned old two-story faculty residence house of a university, ordinary house-sized rooms, dusty late victorian interior, wooden floorboards, faded wallpaper, old furniture under white sheets, moonlight through torn curtains, quiet melancholic and nostalgic, not scary::, -1::cathedral, church nave, huge hall, vaulted ceiling, gothic arches::, "
  },
  "story": {
   "hook": "경비원 아저씨가 손전등을 만지작거린다. 「서쪽 숲 관사 말이야, 이십 년째 비어 있는데 밤마다 2층 창에 불이 켜졌다 꺼져. 마지막 사감님 열쇠 꾸러미가 아직 안에 있다던데… 나는 무서워서 못 들어가.」",
-  "boss": "지하 예배실 촛대에 하나씩 불이 붙는다. 제단 위 열쇠 꾸러미 옆, 어둠이 고양이 모양으로 일어선다 — 녹스팬서. 붉은 눈이 깜빡일 때마다 2층 창의 불도 함께 깜빡였던 것이다.",
-  "end": "녹스팬서가 제단에서 내려와 촛불을 하나씩 꺼뜨리며 그림자 속으로 사라진다. 열쇠 꾸러미가 쨍 하고 울린다. 관사가 오랜 숨을 내쉬는 것 같다.",
+  "boss": "지하 예배실 촛대에 하나씩 불이 붙는다. 제단 위 열쇠 꾸러미 옆, 어둠이 고양이 모양으로 일어선다 — 둠캣모르. 붉은 눈이 깜빡일 때마다 2층 창의 불도 함께 깜빡였던 것이다.",
+  "end": "둠캣모르가 제단에서 내려와 촛불을 하나씩 꺼뜨리며 그림자 속으로 사라진다. 열쇠 꾸러미가 쨍 하고 울린다. 관사가 오랜 숨을 내쉬는 것 같다.",
   "reward": "사감의 열쇠 꾸러미(어느 문인지 다 알 수는 없음 · 경비원의 감사) · 관사 일지"
  },
  "test": true

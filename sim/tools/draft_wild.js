@@ -19,4 +19,5 @@ const rows=db.entries.filter(e=>inDg[e.id]).map(e=>({id:e.id,old:e.name,neu:e.or
 const stat={orig:E.length,abKinds:Object.keys(ab.use).length,ab3:Object.values(ab.use).filter(v=>v>=3).length,gm:E.filter(e=>ab.out[e.id]&&!ab.out[e.id].reads).length,dgDupForced:ab.dupDg.length,dupBy,nameSeed:ns,abilSeed:as};
 fs.writeFileSync('data/wild/draft_v3.json',JSON.stringify({memo:'2026-11-03 감우 초안 — 이름 v4(앞머리 겹침 줄임 · 동양풍 약 4할, lib/naming.js) · 특성 v2(기존 특성만 · 같은 던전 안 겹침 피하기, lib/abilpick.js) · 미사그 던전 몹 74종. tools/draft_wild.js 로 만듦. 아직 db.json 에 안 넣음',stat,rows},null,1));
 fs.writeFileSync('data/wild/names_v4_draft.json',JSON.stringify({memo:'2026-11-03 감우 — 이름 v4 초안, 오리지널 225종 전부 (씨앗 '+ns+'). 확정 전엔 db.json 안 바꿈',names:E.map(e=>({id:e.id,old:e.name,neu:names[e.id],types:e.types,grade:e.grade,root:e.root}))},null,1));
+fs.writeFileSync('data/wild/abil_v2_draft.json',JSON.stringify({memo:'2026-11-03 감우 — 특성 v2 초안, 오리지널 225종 (씨앗 '+as+')',abil:ab.out},null,1));
 console.log(JSON.stringify(stat));
