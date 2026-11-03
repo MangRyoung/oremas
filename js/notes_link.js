@@ -319,7 +319,7 @@ window.OM_NOTES=(()=>{
    if(x.kind==='ents'&&!x.data.face&&!(cur.npcs||[]).some(n=>n.id==='nt:ents:'+x.id))continue;pl['nt:'+x.kind+':'+x.id]={x,n:nOf(at)}}
   const npcs=[];const pseen=new Set();
   for(const n of cur.npcs||[]){const id=String(n.id||'');if(!id.startsWith('nt:')){npcs.push(n);continue}pseen.add(id);const h=pl[id];if(!h)continue;
-   npcs.push(Object.assign({},n,{n:h.n,name:h.x.data.title||h.x.data.name||n.name,img:h.x.data.face||h.x.data.image||n.img||''},stPull(n,h.x)))}
+   npcs.push(Object.assign({},n,h.n!==n.n?{fx:null,fy:null}:{},{n:h.n,name:h.x.data.title||h.x.data.name||n.name,img:h.x.data.face||h.x.data.image||n.img||''},stPull(n,h.x)))}
   for(const [id,h] of Object.entries(pl)){if(pseen.has(id))continue;npcs.push(Object.assign({id,name:h.x.data.title||h.x.data.name||'',img:h.x.data.face||h.x.data.image||'',n:h.n,size:'s',vis:h.x.vis==='pub'?1:0},stPull(null,h.x)))}
   /* 파티(PC) 위치 */
   const pn=md.data.party&&sid.has(md.data.party)?nOf(md.data.party):0;const party=Object.assign({vis:1},cur.party||{},{n:pn});
