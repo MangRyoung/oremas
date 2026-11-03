@@ -5448,3 +5448,14 @@ html[data-vt="mm"] .clc-menu>div,html[data-vt="mm"] .clc-menu>summary{background
 /* 22:02 망령 「입력 중 칸은 오른쪽으로 땡기고」: GM 줄 아랫줄 맨 오른쪽 끝에 붙인다 (타임 요청 칩보다도 뒤) */
 .gmrow>.gmty{order:99;margin-left:auto;margin-right:0;justify-content:flex-end}
 .gmrow>.gmty #typingBat{margin-left:auto}
+/* 22:03 망령 정정 「오른쪽이 아니라 왼쪽으로 땡기고」: 입력 중 칸은 PL 권한 바로 옆에 붙인다 */
+.gmrow>.gmty{order:0!important;margin-left:6px!important;justify-content:flex-start!important}
+.gmrow>.gmty #typingBat{margin-left:0!important}
+/* 22:03 망령 「BGM 은 아예 아랫줄로 안 밀리게」: 넓은 화면은 BGM 을 턴 바 오른쪽 위에 고정(240px) — 윗줄 칸들은 그 왼쪽에서만 줄을 바꾸고, 그 아래 줄들(GM 줄 등)은 다시 전체 폭 */
+@media (min-width:761px){
+ .bstat{position:relative;padding-right:calc(230px + 22px)!important}
+ .bstat>.bgmw{position:absolute;top:10px;right:12px;width:230px;max-width:230px!important;min-width:0!important;margin:0!important;flex:none!important}
+ .bstat>.gmrow,.bstat>details,.bstat>.revealstat,.bstat>div:not(.turn):not(.phases):not(.bgmw){margin-right:calc(-230px - 10px)!important;width:auto!important;flex-basis:calc(100% + 240px)!important}
+}
+
+/* 22:05 망령 「자동화 확인 줄은 그대로 · 칸이 좁으면 AI 를 GM 권한 오른쪽으로」: 진행자 화면은 AI 단추를 GM 줄 아랫줄(PL 권한 옆)로 */
