@@ -152,6 +152,9 @@ function generate1(o){o=o||{};const tier=o.tier||'normal';if(!PRESET[tier])throw
  /* 11-02 매우 어려움(15) 상한: 다른 길 체크는 donor 던전에서 와서 따로 섞였다 → 어느 길로 가도 15 가 상한(CAP15)을 넘지 않게, 넘는 다른 길 체크는 12 로 */
  {const cap=G.CAP15[knobs.mixUp?G.MIXUP[tier]:tier];if(cap!=null){const n15=ids=>ids.map(id=>dg.rooms.find(r=>r.id===id)).filter(r=>r&&r.check&&+r.check.target===15).length;const mainN=n15(dg.rooms.filter(r=>!r.side&&!r.alt).map(r=>r.id));
   for(const g of dg.branches){const segN=n15(g.main);let room=cap-(mainN-segN);for(const id of g.alt){const r=dg.rooms.find(x=>x.id===id);if(r&&r.check&&+r.check.target===15){if(room>0)room--;else r.check.target=12}}}}}   /* 11-02 망령 「갈림길이 거의 없는 1자형만」: 갈림길 1 → 2~3 */
+ /* 11-03 망령 「타입이 너무 겹친다 · 중복도 그렇고 몬스터 로직 다시」: 몹 배역을 던전 단위로 다시 채운다(lib/cast.js) — 던전 안 중복 없음 · 다른 던전 몹 피하기 · 타입 고루 · 떠돌이 3할까지. o.cast=false 면 예전처럼 */
+ if(source==='db'&&o.cast!==false){const CA=require('./cast.js');let avoid=o.avoidMons;if(!avoid){avoid=new Set();try{const D=require('./dungeon.js').dungeons();for(const [id,x] of Object.entries(D)){if(id===o.id)continue;for(const s0 of CA.slotsOf(x))avoid.add(s0.m.db)}}catch(e){}}
+  dg.gen=Object.assign({},dg.gen,{cast:CA.cast(dg,{theme:thName,grades:gr.wild,all:WB.fullV2(),avoid:avoid instanceof Set?avoid:new Set(avoid),rng})})}
  /* 테마 문구 입히기 */
  const used=new Set(),usedLab=new Set();const nm=list=>{const L=list.filter(x=>!used.has(x));const v=L.length?pick(L):pick(list)+' '+(used.size+1);used.add(v);return v};
  for(const r of dg.rooms){if(r.t==='entry')r.name=nm(th.entry);else if(r.t==='battle')r.name=nm(th.battle);else if(r.t==='safe')r.name=nm(th.safe);else if(r.t==='boss')r.name=nm(th.boss);else if(r.filler)r.name=nm(th.side||th.check);else r.name=nm(th.check);
