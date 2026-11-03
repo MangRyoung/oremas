@@ -88,6 +88,7 @@ window.OM_SHEET_UI=(()=>{
   el.querySelectorAll('[data-stab]').forEach(b=>b.onclick=()=>{UI.tab=b.dataset.stab;A().renderScene()});
   el.querySelectorAll('[data-up]').forEach(inp=>inp.onchange=async()=>{const f=inp.files[0];if(!f)return;if(f.size>5*1024*1024)return A().toast('5MB 이하만');A().toast('그림을 올리는 중…');
    try{const url=await DBS().uploadImage(`rooms/${c.ST.room}/${inp.dataset.up==='tr'?'t_':'m_'}${inp.dataset.id}`,f);await A().set(['roster',inp.dataset.up==='tr'?'trainers':'mons',inp.dataset.id,'image'],url);A().toast('올렸다')}catch(e){A().toast('올리지 못했다: '+e.message)}});
+  if(window.OM_SK3)window.OM_SK3.bind(el);
   bindAuto(el,c);bindEdits(el,c);bindQuick(el,c)}
  function bindQuick(el,c){
   el.querySelectorAll('[data-qe]').forEach(q=>q.onclick=e=>{e.stopPropagation();UI.edit=true;UI.quick=true;UI.qf=q.dataset.qe;A().renderScene()});
@@ -178,7 +179,8 @@ window.OM_SHEET_UI=(()=>{
   const standSec=`<div class="spanel"><div class="sh">스탠딩 <span class="note">무대에 서는 전신 그림 · 제작기에서 넣으면 「제작기 동기화」로 따라온다</span><span class="sp"></span>${canEdit(c,t.id)?`<button class="btn sm" data-act="stands">표정·스탠딩 편집</button>`:''}</div>
    ${st.length?`<div class="stgrid">${st.map((s,i)=>`<div class="stcard ${i===act?'on':''}"><div class="sth" style="${s.src?`background-image:url('${cssu(s.src)}')`:''}"></div><b>${esc(s.label||'기본')}</b>${i===act?' <span class="tag me">기본</span>':''}</div>`).join('')}</div>`:`<div class="small dim">아직 없다 — 초상(위 그림)으로 선다</div>`}</div>`;
   const fieldSec=window.OM_STAGE_UI?window.OM_STAGE_UI.sheetSec(t.fields,canEdit(c,t.id),'tr:'+t.id):'';
-  return standSec+fieldSec+`<div class="spanel two">
+  const sk3Sec=window.OM_SK3?window.OM_SK3.sec(t,A().ST.role==='gm'):'';
+  return standSec+fieldSec+sk3Sec+`<div class="spanel two">
    ${E?`<div><div class="sh">자질</div><table class="t">${['지시','육성','통솔','능력'].map(k=>`<tr><th style="width:60px">${k} ${esc((t.ranks||{})[k]||'-')}</th><td>${E?`<input type="text" data-te="detail_${k}" value="${esc(d[k]||'')}" style="width:100%">`:qe('te:detail_'+k,esc(d[k]||''))}</td></tr>`).join('')}</table>
     <div class="sh" style="margin-top:12px">고유 포텐셜${t.wild?'<small class="dim" style="margin-left:6px">— 던전 전체의 『미궁 포텐셜』은 던전 편집 「⛰ 던전 기믹 · 미궁 포텐셜」에서 (조우 때 여기 고유로 붙는다)</small>':''}</div>${(t.unique||[]).length?`<table class="t">${t.unique.map((u,i)=>`<tr><th style="width:140px;white-space:normal">${E?`<input type="text" data-te="uniq_name_${i}" value="${esc(u.name)}" style="width:100%">`:qe(`te:uniq_name_${i}`,esc(u.name))}${u.name?uniqAutoBtn(u,i):''}${E?`<button class="btn xs ghost danger" data-act="deluniq" data-i="${i}" style="margin-top:4px">× 지우기</button>`:''}</th><td class="pre small">${E?`<textarea data-te="uniq_eff_${i}" rows="3" style="width:100%">${esc(u.eff)}</textarea>`:qe(`te:uniq_eff_${i}`,esc(u.eff),1)}</td></tr>`).join('')}</table>`:'<div class="dim small">없음</div>'}${E?`<button class="btn xs" data-act="adduniq">+ 고유</button>`:''}</div>
    ${bioSec(t)}`:charView(t,d)}
