@@ -2213,7 +2213,9 @@ window.OM_BATTLE_UI=(()=>{
        (예전에는 턴 개시 때 횟수만 빠지고 효과는 GM 이 「포텐셜 발동」에서 따로 눌러야 해서, 버텨라가 빠진 채 대미지가 들어갔다) */
  function chargeVanish(mv){const e=String((mv||{}).eff||'');const g=((DB().states||{}).groups||[]).find(x=>x.l==='반무적');const db=(DB().states||{}).st||{};const m=e.match(/「반무적\s*:\s*([^」]+)」/);if(!m)return '';const ko=m[1].trim();return ((g&&g.s)||Object.keys(db)).find(k=>db[k]&&db[k].ko===ko)||''}
  async function openAttackPre(mid){const c=ctx();const b=c.b;const atk=(b.mons||{})[mid];if(!atk||!c.gm||!canEdit(c,atk))return openAttack(mid);
-  const x0=(((b.cmds||{})[atk.tid]||{}).mons||{})[mid]||{};const T=+b.turn||0;
+  let x0=(((b.cmds||{})[atk.tid]||{}).mons||{})[mid]||{};const T=+b.turn||0;let SECO=null;
+  /* 11-04 감우 (봉인 서고: 이요 「문포스」 지시가 「미스트볼」로 열림 ×2): 「다음 행동 ▶」의 지시 공개(b.cmds)가 저장되기 전에 공격 창을 열면 지시가 비어 1번 기술로 열렸다 — GM 은 숨은 지시(secret cmd)를 바로 읽어 그 기술 · 대상으로 연다 */
+  if((x0.move==null||x0.move==='')&&!x0.switch&&c.ST&&c.ST.secret){try{const rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd');for(const r of rows||[]){if(!cmdFresh(r,b))continue;const y=((r.data||{}).mons||{})[mid];if(y&&y.move!=null&&y.move!==''&&y.move!=='switch'){x0=Object.assign({},y,{tm:y.tm||tmOf(b,y.targets)});SECO={mvIdx:+y.move,targets:tgNow(b,x0,atk)};break}}}catch(e){console.warn('숨은 지시 읽기',e)}}
   /* ①-2 모은 다음 턴: 그 기술 · 대상으로 */
   const CH=atk.charge;if(CH&&+CH.turn<T){const mi=MVS(atk).findIndex(q=>q&&q.name===CH.mv);const slots=allEntered(b);const tg=(CH.targets||[]).filter(sl=>slots.some(z=>z.slot===sl));return openAttack(mid,mi>=0?{mvIdx:mi,targets:tg.length?tg:undefined,chargeFire:1}:{})}
   const mv=x0.move!==''&&x0.move!=null&&x0.move!=='switch'?MVS(atk)[+x0.move]:null;
@@ -2230,7 +2232,7 @@ window.OM_BATTLE_UI=(()=>{
     const fit=nm==='버텨라!'||(nm==='물러나!'&&mv.cat==='물리')||(nm==='피해라!'&&mv.cat==='특수');if(!fit)continue;
     try{await fireOrder(dm.tid,dm.id,'order',sx.order,'pre');fired.push(`${dm.name} 『${nm}』`)}catch(e){console.warn('방어 4식 선행 발동',e)}}
    if(fired.length)A().toast('선행 발동 — '+fired.join(' · '))}
-  return openAttack(mid)}
+  return openAttack(mid,SECO||undefined)}
  function openAttack(mid,opt){opt=opt||{};const c=ctx();const b=c.b;const atk=b.mons[mid];if(!atk||!canEdit(c,atk))return;const f=fieldOf(b);const atkD=topShadow(atk,opt.baseTop);
   /* 11-03 「기술사용」 · 「추가공격」: opt.mvName(기술 이름 — 목록에 없으면 기술 DB 에서 잠시 붙인다) · opt.targets · opt.extra {pw, sure, left, name} */
   delete XMV[mid];let OPI=-1;if(opt.mvName){OPI=MVS(atk).findIndex(q=>q&&q.name===opt.mvName);if(OPI<0){const nm2=String(opt.mvName).trim();const mv=window.OM_IMPORT&&window.OM_IMPORT.move?window.OM_IMPORT.move(nm2,false):null;if(!mv||!mv.name){A().toast(`기술 「${nm2}」를 기술 DB 에서 못 찾았다`);return}XMV[mid]=Object.assign({},mv,{fromFx:opt.by||''});OPI=MVS(atk).length-1}}

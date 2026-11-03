@@ -319,7 +319,10 @@ ${penFields('fail',X)}</div></div>
  function presetOf(){return {v:4,noStep:F.noStep?1:0,label:F.label,stat:F.stat,base:F.base,scene:F.scene,who:F.who==='rep'?'rep':'all',target:F.target,npc:F.npc,npcMod:F.npcMod,npcDef:F.npcDef,pm:F.pm,twice:F.twice,fit:JSON.parse(JSON.stringify(F.fit)),pen:{fail:F.pen.fail}}}
  function loadPreset(o){o=upOffer(o);Object.assign(F,{noStep:+o.noStep?1:0,label:o.label||'',stat:o.stat||'지시',base:o.base??3,scene:SCN[o.scene]?o.scene:'rp',who:o.who==='rep'?'rep':'all',target:+o.target||10,auto:'',npc:+o.npc||0,npcMod:o.npcMod!=null?+o.npcMod:((NPC.find(x=>x[0]===+o.npc)||[])[2]??2),npcDef:o.npcDef||'npc',pm:+o.pm||0,twice:+o.twice||0,fit:Object.assign({types:[],moves:[],abil:[],etc:''},o.fit||{}),pen:{fail:penNorm((o.pen||{}).fail)}});F.penOpen=penHas(F.pen.fail)}
  /* 제시 만들기 (GM 창 · 던전 공용) */
- function mkOffer(o,ids){const npc=NPC.find(x=>x[0]===+o.npc&&x[0]);return {id:'o'+Date.now().toString(36),v:4,label:o.label||'',stat:o.stat||'지시',base:+o.base||0,scene:SCN[o.scene]?o.scene:'rp',who:o.who==='rep'?'rep':'all',target:+o.target||10,auto:o.auto||'',npc:npc?(npc[0]===9?'상대':npc[1]):'',npcMod:npc?+o.npcMod||0:0,npcDef:o.npcDef==='pc'?'pc':'npc',pm:+o.pm||0,twice:+o.twice||0,fit:Object.assign({types:[],moves:[],abil:[],etc:''},o.fit||{}),pen:{fail:penNorm((o.pen||{}).fail),auto:cfg().penAuto?1:0},ids,noStep:+o.noStep?1:0,at:Date.now()}}
+ function mkOffer(o,ids){const npc=NPC.find(x=>x[0]===+o.npc&&x[0]);return {id:'o'+Date.now().toString(36),v:4,label:o.label||'',stat:o.stat||'지시',base:+o.base||0,scene:SCN[o.scene]?o.scene:'rp',who:o.who==='rep'?'rep':'all',target:+o.target||10,auto:o.auto||'',npc:npc?(npc[0]===9?'상대':npc[1]):'',npcMod:npc?+o.npcMod||0:0,npcDef:o.npcDef==='pc'?'pc':'npc',pm:+o.pm||0,twice:+o.twice||0,fit:Object.assign({types:[],moves:[],abil:[],etc:''},o.fit||{}),pen:{fail:penNorm((o.pen||{}).fail),auto:cfg().penAuto?1:0},ids,noStep:+o.noStep?1:0,at:Date.now(),...gainOf(o)}}
+ /* 11-04 망령 「대성공 이득 고쳐」: 성공 보상(gain) · 대성공 이득(gainCrit) — 시뮬 dungeon.js 와 같은 칸. 지금은 경계도(al) · 메모만. 던전 생성기 기본 = 대성공 경계도 −10 (옛 방은 sk 에 없고 방 메모에만 「대성공: 경계도 −N」 → dgNorm 이 메모에서 읽어 채운다) */
+ function gainOf(o){const out={};for(const k of ['gain','gainCrit']){const g=o&&o[k];if(g&&typeof g==='object'&&(+g.al||g.memo))out[k]={al:Math.round(+g.al||0),memo:String(g.memo||'').slice(0,60)}}return out}
+ async function applyGain(O,ri){const L=[];for(const [k,need] of [['gain',3],['gainCrit',4]]){const g=O&&O[k];if(!g||ri<need)continue;let t='';if(+g.al){const DG=window.OM_DG_UI;try{t=DG&&DG.alAdd?await DG.alAdd(+g.al,(k==='gainCrit'?'대성공':'성공')+(g.memo?' — '+g.memo:'')):''}catch(e){console.warn(e)}}L.push(t||((k==='gainCrit'?'대성공 이득':'성공 보상')+(g.memo?' — '+g.memo:'')))}return L}
  function offerLog(o,by){const T=trs();return `【스킬 체크】 ${o.label||'판정'}${by?' · '+by:''}\n${o.scene==='solo'?o.stat+' · 트레이너만 (포켓몬 없이)':`${o.stat} + ${BASE[o.base]} · ${o.scene==='field'?'필드 포켓몬':'동행 포켓몬'}`}${isRep(o)?' · 대표 1명':o.ids.length>1?' · 전원 각자':''} · ${o.npc?`대결 (${o.npc} 2d6${sgn(o.npcMod)}, 막는 쪽 ${o.npcDef==='pc'?'우리':'상대'})`:'목표 '+o.target}${o.pm?' · '+(o.pm>0?'유리 ':'불리 ')+sgn(o.pm):''}${o.twice?' · 두 번 굴려 '+(o.twice>0?'높은':'낮은')+' 값':''}${fitTxt(o)?'\n적합: '+fitTxt(o):''}\n대상: ${o.ids.map(i=>(T[i]||{}).name).join(', ')}${penHas(o.pen.fail)?'\n실패하면: '+penTxt(o.pen.fail):''}${o.noStep?'\n이 체크는 실패해도 트레이너 상태 단계가 오르지 않는다':''}`}
  /* 한 트레이너가 이 제시를 굴릴 때 고를 수 있는 것과 확률 (미리보기 · 플레이어 창) */
  function optionsOf(tid,O){const t=trs()[tid];const k=tsk(tid);const out=[];if(!t)return out;
@@ -620,6 +623,7 @@ ${penFields('fail',X)}</div></div>
   let res={offerId:O.id,tid,label:O.label||'',how:ch.how,mid:ch.mid||'',monName:m?m.name:'',etc:!!ch.etc,bonus:+ch.bonus||0,stat:O.stat,target,npcTxt,parts:c.parts,mod:c.mod,tw:c.tw,dice:R2.k,rolls:R2.all,ri,total,text,at:Date.now()};
   if(O.free){res.base=O.base;res.noStep=+O.noStep||0}
   if(ri===1){if(myosuMax(t)>k.myosu)res.pend=1;else res=await settleFail(tid,res)}
+  if(ri>=3&&!O.free){const gl=await applyGain(O,ri);if(gl.length){res.text+='\n'+gl.join(' · ');res.gain=gl}}
   await A().set(resPath(tid,O.free),res);for(const b of bkFor(tid,O))await setT(b.by,{bk:null});   /* 11-01 은열쇠: 쓴 카드는 판정 한 번으로 끝 */
   const hist=(st().hist||[]).slice(-40);hist.push({ri,text:res.text,at:res.at});await A().set(['skill','hist'],hist);
   A().closeModal();A().sysLog(text,'dice',{sk:{tid,mid:ch.how==='mon'?(ch.mid||''):'',ri}});try{if(window.OM_CUTIN)window.OM_CUTIN.phase(RES[ri],`${t.name} · ${O.stat} ${total}/${target}`)}catch(e){}
@@ -630,6 +634,7 @@ ${penFields('fail',X)}</div></div>
   r.text+=`\n묘수! 다시 2d6 → ${R2.k.join('+')} · 합계 ${r.total} / ${r.target} → ${RES[r.ri]}`;
   await setT(tid,{myosu:k.myosu+1});A().closeModal();A().sysLog(`${t.name} 묘수! 다시 굴려 합계 ${r.total} / ${r.target} → ${RES[r.ri]}`,'dice');
   if(r.ri===1)await settleFail(tid,r);
+  else if(!free){const O=st().offer;if(O&&O.id===r.offerId){const gl=await applyGain(O,r.ri);if(gl.length){r.text+='\n'+gl.join(' · ');r.gain=gl}}}
   await A().set(resPath(tid,free),r);sync();setTimeout(()=>openPlayer(tid),200)}
  /* 커버: 판정하지 않은 포켓몬이 대미지를 받고 단계 진행을 없던 일로 */
  async function cover(forTid,mid){const T=trs();const m=mons()[mid];const r=JSON.parse(JSON.stringify((st().res||{})[forTid]||null));if(!m||!r||r.cover||!r.step)return;const C=cfg();
