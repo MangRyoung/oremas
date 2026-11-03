@@ -159,3 +159,5 @@ html[data-vt="cd"] :is(.toolbar h2,.mhead h2,.sheet h3,.sheet h4,.phone .ptitle)
 html[data-vt="cd"] :is(.toolbar h2,.mhead h2)::before{content:"// ";color:#5fd2ff;font-family:var(--cdm);font-weight:500;letter-spacing:0}
 html[data-vt="cd"] :is(.small,.muted,small){font-family:var(--cdf)}
 html[data-vt="cd"] .badge{font-family:var(--cdm)!important;border-radius:0!important}
+html[data-vt="cd"] .phone{background-color:rgba(6,14,28,.94)!important}
+html[data-vt="cd"] :is(.tile,.card,.spcard){background-color:rgba(9,19,36,.86)!important}
