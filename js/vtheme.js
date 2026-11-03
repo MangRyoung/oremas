@@ -3,7 +3,7 @@
    고르는 단추: PC 는 위 띠 「⚙ 설정」 옆, 휴대폰은 ☰ 메뉴 창 맨 아래. */
 "use strict";
 window.OM_VT=(()=>{
- const K='om_vt',L=[['p5','P5'],['p3','P3'],['p4','P4'],['mm','망각']];
+ const K='om_vt',L=[['p5','P5'],['p3','P3'],['p4','P4'],['mm','망각'],['cd','칼데아'],['cdn','칼데아 밤']];   /* 11-04 망령: 칼데아(낮 cd · 밤 cdn) — css/chaldea.css, 세션 노트와 같은 키 */
  /* 10-24 망령: 기본을 P4 로 — 그 전에 골라 둔 테마도 한 번만 P4 로 돌려 놓는다 (그 뒤 고른 건 그대로) */
  try{if(localStorage.getItem(K+'_d')!=='p4'){localStorage.setItem(K+'_d','p4');localStorage.removeItem(K)}}catch(e){}
  const get=()=>{try{const v=localStorage.getItem(K);return L.some(x=>x[0]===v)?v:'p4'}catch(e){return 'p4'}};
