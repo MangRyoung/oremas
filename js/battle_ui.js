@@ -461,7 +461,9 @@ window.OM_BATTLE_UI=(()=>{
   if(itemAnn)rows.push([5,itemAnn]);
   if(!rows.length)return '';
   rows.sort((x,y)=>x[0]-y[0]);   /* 같은 무리 안에서는 시트 순서 그대로 (안정 정렬) */
-  return `<div class="pots">${rows.map(r=>r[1]).join('')}</div>`}
+  /* 11-03 21:02 망령 「카드 길이가 왔다갔다 거슬린다 — 전용 · 포텐셜 · 소지품 순으로 나누고 옆 여백을 써서 한 줄에 두 칸씩」 · 21:04 「하나뿐이면 한 줄에 하나」: 무리(전용 · 고유 / 포텐셜 · 특성 / 소지품)마다 2열 격자, 하나면 한 칸 */
+  const G=[[0,1],[2,3,4],[5]];const grp=G.map(ks=>rows.filter(r=>ks.includes(r[0]))).filter(g=>g.length);
+  return `<div class="pots pgs">${grp.map(g=>`<div class="pgrp ${g.length===1?'one':''}">${g.map(r=>r[1]).join('')}</div>`).join('')}</div>`}
  function cmdOf(b,m){const cm=(b.cmds||{})[m.tid];if(!cm||!cm.mons||!cm.mons[m.id])return '';const x=cm.mons[m.id];
   const parts=[];if(x.move==='switch')parts.push(`<b>교대</b> → ${esc(monName(b,x.switch))}`);else if(x.move!=null&&x.move!==''){const mv=MVS(m)[+x.move];parts.push(`<b>${esc(mv?mv.name:'?')}</b>${mv?' '+typeChip(mv.typeEn):''}`);if(x.targets&&x.targets.length)parts.push('→ '+x.targets.map(s=>slotName(b,s)).join(', '))}
   if(x.prio&&Object.values(x.prio).some(v=>v!==''&&+v!==0))parts.push('우선도 '+Object.entries(x.prio).filter(([k,v])=>v!==''&&+v!==0).map(([k,v])=>slotName(b,k)+' '+v).join(', '));
