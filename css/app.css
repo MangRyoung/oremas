@@ -5396,3 +5396,5 @@ html[data-vt="mm"] .clc-menu>div,html[data-vt="mm"] .clc-menu>summary{background
 .bstat.fold .gmrow>.gmty:has(#typingBat.on){display:inline-flex!important}
 .bstat>.bgmw .eq{width:26px!important;height:26px!important;min-width:26px!important;font-size:13px!important;line-height:26px!important;flex:none}
 .bstat>.bgmw{flex:0 1 330px;min-width:200px}.bstat>.bgmw .bt{flex:1 1 auto;min-width:0}
+/* 11-03 20:54 망령 「대사 아닌 설명칸(지문)일 땐 여전히 자글거린다」: 기울인 대사창 위의 지문 글자가 가짜 기울임꼴(italic — 한글 글꼴엔 이탤릭이 없어 브라우저가 비틀어 그림)이라, 창의 회전과 겹쳐 글자가 계단처럼 깨졌다 — 무대 대사창의 지문은 똑바로 · 색으로만 구분 */
+.dlg .dtext.narr{font-style:normal!important;color:#d6d6d6}
