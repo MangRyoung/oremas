@@ -3,7 +3,7 @@
    11-04 망령 「칼데아 밤을 칼데아로 덮어쓰고 기존 칼데아는 지워도 좋아」: 흰 판 낮 테마는 지우고 밤(지구본 남흑 · 시안 · 하얀 테)을 칼데아(cd) 하나로.
    세션 노트(mangketmon-notes css/chaldea.css)와 같은 키 om_vt. 예전에 「칼데아 밤」(cdn)을 골라 둔 브라우저는 js/vtheme.js get() 이 cd 로 바꿔 읽는다.
    P3 자리(css/vtheme.css 의 html[data-vt="p3"] 규칙)를 그대로 따라 색만 바꿔 덮는다.
-   문장 그림 img/chaldea_emblem_w.png(흰 문장) · chaldea_mark_n.png(워터마크) — 원본은 망령이 준 칼데아 문장. */
+   문장 그림 img/chaldea_emblem_w.png(흰 문장) · chaldea_emblem_w.png 를 오른쪽 아래 LED 문장으로도(body::before) — 원본은 망령이 준 칼데아 문장. */
 
 /* ============================ 칼데아 cd ============================ */
 html[data-vt="cd"]{--bg:#050b16;--bg2:#08111f;--panel:rgba(9,19,36,.92);--panel2:#0c1a2e;--line:rgba(235,244,255,.3);--line2:rgba(235,244,255,.62);--fg:#e4efff;--fg2:#bcd0e6;--mute:#8aa3bf;--red:#5fd2ff;--red2:#7fe0ff;--blue:#5fd2ff;--cd:#5fd2ff}
@@ -105,7 +105,7 @@ html[data-vt="cd"] .gds-top small{color:#7fe0ff}
 html[data-vt="cd"] .gd-list{scrollbar-color:#5fd2ff transparent}
 html[data-vt="cd"] .gd-sel{background:rgba(4,10,22,.85);border-color:rgba(235,244,255,.8);border-radius:6px;color:#e4efff}
 html[data-vt="cd"] :is(.gcfx,.clbxm){--gfa:#5fd2ff;--gfi:#06121f;--gfc:#071434;--gfh:#0a1d47}
-html[data-vt="cd"] body{background:url("../img/chaldea_mark_n.png") no-repeat right 3% bottom 4%/min(420px,46vw) auto fixed,radial-gradient(70vmax 50vmax at 30% 20%,rgba(60,170,255,.16),transparent 70%) fixed,linear-gradient(rgba(95,210,255,.06) 1px,transparent 1px) 0 0/44px 44px,linear-gradient(90deg,rgba(95,210,255,.06) 1px,transparent 1px) 0 0/44px 44px,#050b16!important}
+html[data-vt="cd"] body{background:radial-gradient(70vmax 50vmax at 30% 20%,rgba(60,170,255,.16),transparent 70%) fixed,linear-gradient(rgba(95,210,255,.06) 1px,transparent 1px) 0 0/44px 44px,linear-gradient(90deg,rgba(95,210,255,.06) 1px,transparent 1px) 0 0/44px 44px,#050b16!important}
 html[data-vt="cd"] .top{border-bottom:1px solid #fff!important;box-shadow:0 1px 0 rgba(95,210,255,.6),0 0 22px rgba(95,210,255,.2)!important}
 html[data-vt="cd"] .top .name{font-family:Cinzel,'Noto Serif KR',serif!important}
 html[data-vt="cd"] .top .name::before{content:"";display:inline-block;width:1.2em;height:1.2em;margin-right:.45em;vertical-align:-.2em;background:url("../img/chaldea_emblem_w.png") center/contain no-repeat;filter:drop-shadow(0 0 6px rgba(95,210,255,.55))}
@@ -161,3 +161,15 @@ html[data-vt="cd"] :is(.small,.muted,small){font-family:var(--cdf)}
 html[data-vt="cd"] .badge{font-family:var(--cdm)!important;border-radius:0!important}
 html[data-vt="cd"] .phone{background-color:rgba(6,14,28,.94)!important}
 html[data-vt="cd"] :is(.tile,.card,.spcard){background-color:rgba(9,19,36,.86)!important}
+
+/* 칼데아 문장 LED — 11-04 망령 「오른쪽 하단의 칼데아 문양도 LED처럼 · 너무 과하진 않고 하얀색으로 깜빡 · 멎어가는 심장 고동처럼 천천히」
+   바탕 그림이던 워터마크를 body::before 로 옮겨 따로 숨쉬게 한다. 한 바퀴 7초: 약한 두 박(쿵 · 쿵) 뒤 긴 쉼, 둘째 박은 첫 박보다 약하다. */
+html[data-vt="cd"] body::before{content:"";position:fixed;right:3%;bottom:4%;width:min(420px,46vw);aspect-ratio:1/1;z-index:-1;pointer-events:none;
+  background:url("../img/chaldea_emblem_w.png") center/contain no-repeat;opacity:.05;filter:drop-shadow(0 0 0 rgba(255,255,255,0));animation:cdbeat 7s ease-in-out infinite}
+@keyframes cdbeat{
+  0%,100%{opacity:.05;filter:drop-shadow(0 0 0 rgba(255,255,255,0))}
+  6%{opacity:.2;filter:drop-shadow(0 0 10px rgba(255,255,255,.55)) drop-shadow(0 0 26px rgba(160,230,255,.35))}
+  13%{opacity:.07;filter:drop-shadow(0 0 2px rgba(255,255,255,.15))}
+  20%{opacity:.14;filter:drop-shadow(0 0 7px rgba(255,255,255,.4)) drop-shadow(0 0 18px rgba(160,230,255,.22))}
+  32%{opacity:.05;filter:drop-shadow(0 0 0 rgba(255,255,255,0))}}
+@media (prefers-reduced-motion:reduce){html[data-vt="cd"] body::before{animation:none;opacity:.07}}
