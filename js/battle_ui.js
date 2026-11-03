@@ -1441,7 +1441,7 @@ window.OM_BATTLE_UI=(()=>{
     내 트레이너(GM 은 고른 트레이너)와 지금 필드 위의 그 포켓몬에서, 구문이 있어 자동으로 처리되는 것을 한눈에: 언제 · 무엇을 · 어떻게 (자동 / 발동 버튼 / 공격·HP 창) ----- */
  const AK={tid:''};
  function autoRows(m,t){const out=[],man=[];const tm=a=>FX()?FX().timing(a.text||''):{};
-  const how=(a,kind)=>{const T=tm(a);if(kind==='지령 · 명령')return ['지시에서 고르면 걸린다','press'];if(T.entry)return ['등장하면 자동','auto'];if(T.passive)return ['늘 켜짐','auto'];if(/【턴 종료】/.test(a.text||''))return ['턴 종료 때 · 「발동」','press'];if(T.pre)return ['선행 · 「발동」','press'];return ['「발동」 버튼','press']};
+  const how=(a,kind)=>{const T=tm(a);if(kind==='지령 · 명령')return ['지시에서 고르면 걸린다','press'];/* 11-03 22:40: 배틀 효과 없음(없음) · 시트 몫(종족치 · 실수치)만 있는 포텐셜 */if((a.ops||[]).every(o=>o&&o.k==='none'))return ['배틀 효과 없음 (시트 · 파티 규칙)','auto'];if((a.ops||[]).every(o=>o&&['baseup','statadd','none'].includes(o.k)))return ['제작기 시트에 반영','auto'];if(T.entry)return ['등장하면 자동','auto'];if(T.passive)return ['늘 켜짐','auto'];if(/【턴 종료】/.test(a.text||''))return ['턴 종료 때 · 「발동」','press'];if(T.pre)return ['선행 · 「발동」','press'];return ['「발동」 버튼','press']};
   /* 11-03 22:05 망령 「자동화 확인에서 여전히 하이 어태커 · 에이스가 안 된 걸로」: 기본 레디메이드엔 구문이 있는데 방 DB(dbx.rm) · 제작기 DB 수정 행이 비거나 「손으로」로 덮은 경우 — 그 사실과 「기본으로」 단추 */
   const ovOf=(kind,name)=>{const key=kind==='특성'?'특성 : '+name:kind==='소지품'?'소지품 : '+name:String(name||'').replace(/『|』/g,'').trim();const base=((window.OM_DB||{}).readymade||{})[key];if(!base||!base.ops||!base.ops.length||base.manual)return null;const room=(((ctx().ST||{}).state||{}).dbx||{}).rm||{};return {key,src:room[key]?(room[key].src==='room'?'이 방 DB':'제작기 DB 수정(방에 옮겨짐)'):'제작기 DB 수정'}};
   const add=(kind,name,a,eff)=>{if(a&&a.ops&&a.ops.length&&!a.manual){const [w,c]=how(a,kind);out.push({kind,name,when:w+(tm(a).uses?` (${tm(a).uses}회)`:''),cls:c,what:FX().describe(a.ops)})}else man.push({kind,name,eff,ov:kind==='지령 · 명령'?null:(a&&a.src==='own'?null:ovOf(kind,name))})};
@@ -2024,7 +2024,7 @@ window.OM_BATTLE_UI=(()=>{
      const t=(ctx().b.trainers||{})[x.tid];if(t&&!doneT.has(t.id||x.tid)){doneT.add(t.id||x.tid);for(const u of uniqList(t)){if(RE.test(String(u.p.eff||''))&&(u.left===null||u.left>0))notes.push(`${t.name} 고유 『${u.p.name}』`)}}}}
    if(notes.length)A().sysLog(`【아군 빈사】 ${neu.map(m=>m.name).join(' · ')} — 발동 조건을 만족한 효과\n${[...new Set(notes)].join('\n')}\n(「발동」 버튼으로)`,'battle')}finally{faintBusy=false}}
  const EVENT_RE=/받았을 때|받을 때 \d할|맞았을 때|했을 때|내보낼 때|내보냈을 때|쓰러뜨렸을|빈사(?:가| 상태가)? 되었을|교대(?:했을|할) 때|등장했을 때|턴 개시|【(?:등장|턴 종료|선행|사전|퇴장|함성|보급|탈진|지연|자동)/;
- function passiveOps(ops,text){if(!ops||!ops.length)return false;
+ function passiveOps(ops,text){ops=(ops||[]).filter(o=>o&&!['baseup','statadd','none'].includes(o.k));if(!ops.length)return false;   /* 11-03 22:40: 시트 몫(종족치 · 실수치) · 「없음」은 빼고 본다 — 차원의 특권(종족치 + 면역 이상) 같은 것의 면역이 등장 때 걸리게 */
   /* 11-03: 특수 효과(sp — 추가공격 · 보호 · 회피 …)는 그 자체가 조건부 규칙이라 글에 「~했을 때」가 있어도 나올 때 걸어 둔다 */if(ops.every(o=>o&&o.k==='sp'))return true;
   /* 줄이 여럿(①②…)이면 첫 줄만 본다 — 구문은 대개 ① 몫이고, 뒤 줄의 계기(【등장 (죽어내밀기)】 · 【지연】 …)는 따로 (디스럽터 ① …) */
   const t=String(text||'');const first=/[①②③④⑤]/.test(t)?(t.split(/[②③④⑤]/)[0]):t;
