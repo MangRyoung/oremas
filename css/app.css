@@ -5413,3 +5413,8 @@ html[data-vt="mm"] .clc-menu>div,html[data-vt="mm"] .clc-menu>summary{background
 .pots.pgs .pgrp.one{grid-template-columns:minmax(0,1fr)}
 /* 칸이 좁아 이름이 잘리지 않게 — 포텐셜 칸은 그림 아래 자리까지 카드 폭을 다 쓴다 (그림 60px + 틈 6px) */
 @media (min-width:761px){.mon.big>.minfo>.pots.pgs{margin-left:-66px}}
+/* 11-03 21:06 망령 「공격 · HP · 포텐셜 · 랭크·상태 · 퇴장 · (특수)도 한 줄에」: 넓은 화면은 카드 폭을 다 써서 한 줄 (칸이 모자라면 글자부터 줄인다) */
+@media (min-width:761px){
+ .mon.big>.minfo>.mbtns{margin-left:-66px;display:flex;flex-wrap:nowrap;gap:3px}
+ .mon.big>.minfo>.mbtns>.btn{flex:1 1 auto;min-width:0;padding:2px 4px;font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;justify-content:center;text-align:center}
+}
