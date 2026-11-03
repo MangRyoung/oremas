@@ -131,7 +131,9 @@ window.OM_BATTLE_UI=(()=>{
   el.innerHTML=`${sticky}<div class="bstat ${BFOLD.open?'':'fold'}">
    <div class="turn ${c.mgr?'clickable':''}" ${c.mgr?'data-act="turnset" title="눌러서 턴 번호 조정"':''}><span class="tlab">TURN</span><span class="tnum">${b.turn||0}</span></div>${(c.gm||(c.role==='seat'&&c.seat))?`<button class="btn sm ghost aihandb" data-aihand title="AI 에게 맡기기 — 지침 주소 · 이 방 · 정해 둔 것을 한 번에 복사해 아무 AI 대화창에 붙여 넣어요${c.gm?'':' (PL: 내 트레이너 지시 · 대사)'} (js/ai_ui.js)">🤖 AI</button>`:''}
    <span class="phnow">${esc((phases.find(([p])=>p===(+b.phase||0))||[,''])[1])}${(+b.phase||0)===1&&b.tstep?(+b.tstep===1?' · 교대':' · 포텐셜 발동'):''}</span>${pvpChip}<span id="bdl" class="bdl">${dlHtml(c,b)}</span><button class="btn sm ghost bfold" data-bfold title="조작판 펼치기 · 접기">${BFOLD.open?'접기 ▴':'펼치기 ▾'}</button>
-   <div class="phases">${phases.map(([p,n])=>`<button class="ph ${(+b.phase||0)===p?'on':''}" data-phase="${p}" ${c.mgr?'':'disabled'}>${n}</button>`).join('')}</div>${(c.mgr||c.seat)?'<button class="btn sm autock" data-act="autock" title="내 트레이너 · 필드 위 내 포켓몬에서 자동으로 처리되는 것 (포텐셜 · 특성 · 소지품 · 기술 · 지령)">⚙ 자동화 확인</button>':''}
+   <div class="phases">${phases.map(([p,n])=>{const ph0=+b.phase||0,ts=+b.tstep||0;const on=ph0===p&&(p!==1||ts<1);const btn=`<button class="ph ${on?'on':''}" data-phase="${p}" ${c.mgr?'':'disabled'}>${n}</button>`;
+     /* 11-03 21:00 망령 「교대와 선행 입력 발동 타이밍은 다르니 페이즈를 나누자 — 교대 뒤 선행 포텐셜」: 턴 개시 안의 두 단계를 따로 보인다 (누르면 다음 단계로) */
+     return p!==1?btn:btn+`<button class="ph sub ${ph0===1&&ts===1?'on':''}" data-tstepb="1" ${c.mgr?'':'disabled'} title="교대 — 교대 지시가 있으면 여기서 바꾼다">교대</button><button class="ph sub ${ph0===1&&ts===2?'on':''}" data-tstepb="2" ${c.mgr?'':'disabled'} title="선행 발동 — 지령 · 선행 포텐셜 (턴 개시에 쓰는 것은 저절로)">선행 발동</button>`}).join('')}</div>${(c.mgr||c.seat)?'<button class="btn sm autock" data-act="autock" title="내 트레이너 · 필드 위 내 포켓몬에서 자동으로 처리되는 것 (포텐셜 · 특성 · 소지품 · 기술 · 지령)">⚙ 자동화 확인</button>':''}
    <span class="sp"></span>${c.mgr?'':`<span id="typingBat" class="typingslot">${window.OM_RP_UI&&window.OM_RP_UI.typingHtml?window.OM_RP_UI.typingHtml():''}</span><span class="sp"></span>`}${window.OM_RP_UI&&window.OM_RP_UI.bgmWidgetHtml?window.OM_RP_UI.bgmWidgetHtml():''}   <!-- 11-03 20:47 망령 「BGM 을 오른쪽 위로 올려 한 줄로 · 입력 중은 PVP · PL 권한 줄 오른쪽에」: 진행자(mgr)는 입력 중 칸이 GM 줄 아랫줄 끝으로 -->
    ${c.mgr?`<div class="gmrow"><label title="${b.started?'시합 중에는 바꿀 수 없다 — 「배틀 비우기」 뒤에':'싱글 1 · 더블 2 · 트리플 3 에리어'}">에리어 <select data-act="mode" ${b.started?'disabled':''}>${[[1,'싱글'],[2,'더블'],[3,'트리플']].map(([n,l])=>`<option value="${n}" ${mode(b)===n?'selected':''}>${l}</option>`).join('')}</select>${b.started?' 🔒':''}</label>
     ${!b.started?`<button class="btn sm pri" data-act="start" title="연출(VS/경고)과 함께 시합을 시작한다. 동시 내밀기가 켜져 있으면 예약한 포켓몬이 한꺼번에 나온다">시합 개시</button>`:''}
@@ -151,7 +153,7 @@ window.OM_BATTLE_UI=(()=>{
   ${sameCmd?'<form id="cmdForm" class="cmdpanel"></form>':cmdH}`;
   if(sameCmd){const ph=$('#cmdForm',el);if(ph)ph.replaceWith(oldForm)}else{const nf=$('#cmdForm',el);if(nf)nf._h=cmdH}
   stickyWatch(el);{const d=el.querySelector('[data-bspkfold]');if(d)d.addEventListener('toggle',()=>{BSPKF.open=d.open;try{localStorage.setItem('om_bspkfold',d.open?'1':'0')}catch(e){}const sm=d.querySelector('summary');if(sm)sm.textContent='화자 · 스탠딩 '+(d.open?'▾':'▸')})}
-  el.querySelectorAll('[data-phase]').forEach(bt=>bt.onclick=()=>setPhase(+bt.dataset.phase));autoAdvance();
+  el.querySelectorAll('[data-phase]').forEach(bt=>bt.onclick=()=>setPhase(+bt.dataset.phase));el.querySelectorAll('[data-tstepb]').forEach(bt=>bt.onclick=()=>{const b2=ctx().b;if((+b2.phase||0)!==1)return A().toast('턴 개시 뒤에 — 「턴 진행 ▶」으로 들어간다');if((+b2.tstep||0)>=+bt.dataset.tstepb)return;return stepTurn()});autoAdvance();
   try{if(window.OM_RP_UI&&window.OM_RP_UI.bspkBind)window.OM_RP_UI.bspkBind(el)}catch(e){console.warn(e)}
   if(window.OM_RP_UI&&window.OM_RP_UI.bindBgmWidget)window.OM_RP_UI.bindBgmWidget(el);
   {const fb=el.querySelector('[data-bfold]');if(fb)fb.onclick=()=>{BFOLD.open=!BFOLD.open;try{localStorage.setItem('om_bfold',BFOLD.open?'1':'0')}catch(e){}const bs=fb.closest('.bstat');bs.classList.toggle('fold',!BFOLD.open);fb.textContent=BFOLD.open?'접기 ▴':'펼치기 ▾'}}
@@ -687,11 +689,12 @@ window.OM_BATTLE_UI=(()=>{
  const potRowOf=n=>((DB().maker||{}).pots||[]).find(r=>r[1]===n||r[1]==='『'+n+'』');
  const rmText=n=>{const R=(window.OM_DB||{}).readymade||{};return (R[n]||{}).text||''};
  const PRE_LATER=/받(?:을|았을|으면|는)|맞(?:을|았을|으면)|명중\s*굴림|명중굴림|공격(?:할|하기|을 받|받을)|기술을\s*(?:쓸|사용할|낼)|다음\s*(?:기술|공격|행동)|행동(?:할|하기|한 뒤|했을)|쓰러|빈사|교대|등장|퇴장|턴\s*종료|【\s*(?:임의|사전)\s*】/;
+ /* 선행 입력한 포텐셜이 턴 개시(선행 발동)에 발동하나: 'now' — 글에 「턴 개시」 · 이름이 결계/법계 · 【선행】인데 따로 때(받을 때 · 명중굴림 · 다음 기술 …)가 없다 / 'later' — 조건 때 손으로 */
+ function preWhen(pn,m){const p=m?potSrc(m).find(q=>q.name===pn):null;const row=potRowOf(pn);const tx=String((p&&p.eff)||(row&&row[2])||rmText(pn)||'').replace(/<br\s*\/?>/g,' ');
+  if(TS(tx)||/결계|법계/.test(pn)||/메가진화/.test(pn+' '+tx)&&!PRE_LATER.test(tx.replace(/메가진화/g,'')))return 'now';if(/【\s*선행\s*】/.test(tx)&&!PRE_LATER.test(tx))return 'now';return 'later'}
  function preCounts(t,x,m){x=x||{};if(x.command)return true;
   if(x.order){const n=OO().orderName(t||{},x.order);const row=potRowOf(n);if((row&&row[0]==='5계')||/결계|법계/.test(n))return true;if(row&&TS(row[2]))return true;if(!row&&TS(rmText(n)))return true}
-  for(const pn of x.pots||[]){const p=m?potSrc(m).find(q=>q.name===pn):null;const row=potRowOf(pn);const tx=(p&&p.eff)||(row&&row[2])||rmText(pn)||'';if(TS(p&&p.eff)||TS(row&&row[2])||(!p&&!row&&TS(rmText(pn))))return true;
-   /* 11-03 20:52 망령 「결계를 선행 입력했는데 턴 개시에 안 잡아 준다」: 【선행】인데 따로 때(받을 때 · 명중굴림 · 다음 기술 …)가 없는 것(물리결계 · 특수결계 …)도 턴 개시에 센다 */
-   if(/결계|법계/.test(pn)||(/【\s*선행\s*】/.test(tx)&&!PRE_LATER.test(String(tx).replace(/<br\s*\/?>/g,' '))))return true}
+  for(const pn of x.pots||[])if(preWhen(pn,m)==='now')return true;
   return false}
  function upCounts(t,ups){for(const n of ups||[]){const u=((t&&t.unique)||[]).find(q=>q&&q.name===n);if(TS(u&&u.eff)||(!u&&TS(rmText(n))))return true}return false}
  async function turnInfo(c,b){let rows=[];try{rows=(await DBS().secretGet(c.ST.room,c.ST.secret,'cmd')||[]).filter(r=>cmdFresh(r,b))}catch(e){}
@@ -721,11 +724,30 @@ window.OM_BATTLE_UI=(()=>{
      {const tt=snap((ctx().b.trainers||{})[tid]||{});const pcK=tt.pcTurn===turnKey(ctx().b);const pcHad=!tt.pcList||((tt.pcList[mid]||{}).c===x.command);if(pcK?!pcHad:!(c.fair&&seatOwned(c,tid))){const ck='command_'+x.command;tt.orderCount=tt.orderCount||{};if(!(+tt.orderCount[ck]>0)){AL.push(`${TN(tid)} · ${mm.name} 『${OO().commandName((b.trainers||{})[tid],x.command)}』 — 남은 횟수가 없어 걸지 않았다`);continue}const t2=snap(tt);t2.orderCount[ck]=(+t2.orderCount[ck]||0)-1;if(pcK)t2.pcList=Object.assign({},t2.pcList||{},{[mid]:{o:((t2.pcList||{})[mid]||{}).o||'',c:x.command}});const sk=OO().shareKey(t2,x.command);if(sk)t2.orderCount['command_'+sk]=Math.max(0,(+t2.orderCount['command_'+sk]||0)-1);await A().setDiff(['battle','trainers',tid],tt,t2,1)}}
      try{await fireOrder(tid,mid,'command',x.command,'pre');const f2=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid])||{};if(f2.command)AL.push(`${TN(tid)} · ${mm.name} 『${OO().commandName((b.trainers||{})[tid],x.command)}』`)}catch(e){console.warn('지령 자동 발동',e)}}
     if(AL.length)A().sysLog(`【지령 자동 발동】 선행 입력한 6령\n${AL.join('\n')}`,'battle');
-    const rest=tid=>{const t=(b.trainers||{})[tid];if(I.UP[tid]||((((b.cmds||{})[tid]||{}).ok)||{}).pre)return true;return Object.entries(I.SEC).some(([mid,x])=>{const mm=(b.mons||{})[mid];return mm&&mm.tid===tid&&mm.entry&&+(mm.hp||{}).cur>0&&preCounts(t,Object.assign({},x,{command:''}),mm)})};
+    /* 11-03 21:00 망령 「교대 뒤 선행 포텐셜」 · 「선행 포텐셜도 지령처럼 저절로」 · 「메진 전용을 선행 입력해 둬도 턴 개시에 알려 주지도 발동하지도 않아 깜빡」:
+       선행 입력한 포텐셜 중 턴 개시에 쓰는 것(preWhen 'now')은 여기서 저절로 — 전용은 fireSpecial(횟수 · 컷인 · 구문), 메가진화 전용은 폼도 바꾼다, 일반은 「사용」(횟수 −1 · 구문). 조건 때 쓰는 것 · 구문 없는 효과는 이름을 적어 알린다 */
+    const MANT=new Set();{const PL=[],MAN=[];
+     for(const [mid,x] of Object.entries(I.SEC)){const mm=(ctx().b.mons||{})[mid];if(!x||!(x.pots||[]).length||!mm||!mm.entry||!(+(mm.hp||{}).cur>0))continue;const tid=mm.tid;if(!(ctx().b.trainers||{})[tid])continue;
+      for(const pn of x.pots){const fpot=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid]||{}).pot||{};const cur=(ctx().b.mons||{})[mid]||mm;
+       if(preWhen(pn,cur)!=='now'){MAN.push(`${TN(tid)} · ${cur.name} 『${pn}』 — 조건이 되면 「포텐셜 발동 → 선행 발동」`);MANT.add(tid);continue}
+       if(c.fair&&seatOwned(c,tid)){MAN.push(`${TN(tid)} · ${cur.name} 『${pn}』 — 주인이 「선행 발동」`);MANT.add(tid);continue}
+       const sp=specialPots(cur).find(q=>q.p.name===pn);const a=FX()&&FX().autoOf(cur,'pot',pn);const auto=!!(a&&a.ops&&a.ops.length&&!a.manual);
+       try{if(sp){if(fpot['e:'+pn])continue;if(sp.left!==null&&sp.left<=0){MAN.push(`${cur.name} 『${pn}』 — 남은 횟수가 없다`);MANT.add(tid);continue}
+         await fireSpecial(tid,mid,'ex',pn,'pre');const fk=/메가진화/.test(pn+' '+(sp.p.eff||''))?formsOf((ctx().b.mons||{})[mid]||cur).findIndex(f=>f&&f.kind==='메가진화'):-1;
+         if(fk>=0&&!((ctx().b.mons||{})[mid]||{}).form0)await doForm(mid,fk);
+         PL.push(`${cur.name} 『${pn}』${fk>=0?' → 메가진화':''}`);if(fk<0&&!auto){MAN.push(`${cur.name} 『${pn}』 — 효과는 손으로`);MANT.add(tid)}}
+        else{if(fpot['p:'+pn])continue;const pl=potList(cur).find(q=>q.name===pn);
+         if(pl){const left=(cur.potUses||{})[pn]==null?pl.max:+(cur.potUses||{})[pn];if(left<=0){MAN.push(`${cur.name} 『${pn}』 — 남은 횟수가 없다`);MANT.add(tid);continue}await action({act:'usepot',mid,pot:pn})}
+         else if(auto)await fireAuto(mid,'pot',pn,{quiet:true});
+         else{const src=potSrc(cur).find(q=>q&&q.name===pn)||{};A().sysLog(`【포텐셜】 ${cur.name} 『${pn}』 【선행】`,'battle',{mid,img:cur.image||'',eff:String(src.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,400)})}
+         await A().set(['battle','cmds',tid,'fired',mid,'pot','p:'+pn],1);PL.push(`${cur.name} 『${pn}』`);if(!auto){MAN.push(`${cur.name} 『${pn}』 — 효과는 손으로`);MANT.add(tid)}}}
+       catch(e){console.warn('선행 포텐셜',e)}}}
+     if(PL.length||MAN.length)A().sysLog(`【선행 발동】${PL.length?'\n저절로: '+PL.join(' · '):''}${MAN.length?'\n'+MAN.join('\n'):''}`,'battle')}
+    const rest=tid=>{const t=(b.trainers||{})[tid];if(I.UP[tid]||MANT.has(tid))return true;return Object.entries(I.SEC).some(([mid,x])=>{const mm=(b.mons||{})[mid];return mm&&mm.tid===tid&&mm.entry&&+(mm.hp||{}).cur>0&&x.order&&preCounts(t,{order:x.order},mm)})};
     tids=tids.filter(rest)}
    if(tids.length){await A().set(['battle','tstep'],2);
     for(const tid of tids){const t=b.trainers[tid];cutFire('t:'+tid,trainerImg(t),'『지령』 & 『포텐셜』 발동',t.name,t.side==='left'?'#1f6fd1':'#e3101f','You used the Potential!')   /* 10-24 제보: 긴 영문이 큰 글자 칸에서 겹쳤다 — 이름은 크게, 영문은 대사 칸으로 */}
-    A().sysLog(`【『지령』 & 『포텐셜』 발동】\n${tids.map(TN).join(' · ')}\n선행 입력한 포텐셜 · 명령은 「포텐셜 발동」 → 「선행 발동」 (지령은 저절로 걸었다 · 놓쳤으면 행동 순서 · 행동 처리 중에도 발동할 수 있다)\n끝나면 「턴 진행 ▶」`,'battle');return}}
+    A().sysLog(`【『지령』 & 『포텐셜』 발동】\n${tids.map(TN).join(' · ')}\n남은 선행(고유 · 명령 · 조건 때 쓰는 포텐셜)은 「포텐셜 발동」 → 「선행 발동」 (지령 · 턴 개시에 쓰는 선행 포텐셜은 저절로 걸었다 · 놓쳤으면 행동 순서 · 행동 처리 중에도 발동할 수 있다)\n끝나면 「턴 진행 ▶」`,'battle');return}}
   return computeOrder()}
  async function action(d,val){
   const c=ctx();const b=c.b;
