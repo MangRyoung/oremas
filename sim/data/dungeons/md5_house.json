@@ -92,8 +92,12 @@
     }
    },
    "desc": "현관 지붕이 내려앉았다. 안쪽 문은 사감이 잠근 그대로다.",
-   "memo": "현관 지붕이 내려앉았다. 안쪽 문은 사감이 잠근 그대로다.",
-   "art": "the collapsed front porch of an old abandoned mansion in a forest, broken wooden steps, a heavy locked front door, ivy, moonlit evening"
+   "memo": "현관 지붕이 내려앉았다. 안쪽 문은 사감이 잠근 그대로다.\nGM: 봉인된 현관문(능력 12). 악 타입이 있으면 쉽다. 실패 피해가 크니 미리 경고해 준다.",
+   "art": "exterior view of an abandoned two-story victorian house in a dark forest at dusk, the front porch roof collapsed, broken wooden steps, a heavy locked front door, ivy on the walls, one upstairs window faintly lit, moonlit evening, melancholic not scary",
+   "gm": "봉인된 현관문(능력 12). 악 타입이 있으면 쉽다. 실패 피해가 크니 미리 경고해 준다.",
+   "okText": "문틀째 뜯어내듯 현관문이 열렸다. 먼지가 쏟아진다.",
+   "failText": "문이 꿈쩍도 않다가 갑자기 열리며 모두 나동그라졌다.",
+   "img": "md5_house/entry.webp"
   },
   {
    "id": "b1",
@@ -111,8 +115,10 @@
     "lvAdd": 5
    },
    "desc": "먼지 쌓인 부엌. 찬장 문이 저절로 여닫힌다.",
-   "memo": "먼지 쌓인 부엌. 찬장 문이 저절로 여닫힌다.",
-   "art": "a dusty old victorian kitchen, iron stove, hanging pots, cupboard doors ajar, moonlight through a small window"
+   "memo": "먼지 쌓인 부엌. 찬장 문이 저절로 여닫힌다.\nGM: 첫 배틀. 찬장 문이 저절로 여닫히는 연출 — 범인은 덩스네.",
+   "art": "a dusty old victorian kitchen, iron stove, hanging pots, cupboard doors ajar, moonlight through a small window",
+   "gm": "첫 배틀. 찬장 문이 저절로 여닫히는 연출 — 범인은 덩스네.",
+   "img": "md5_house/b1.webp"
   },
   {
    "id": "c1",
@@ -144,8 +150,12 @@
     }
    },
    "desc": "사감의 아이가 쓰던 방. 거울 장치로 빛을 모아야 문이 열린다.",
-   "memo": "사감의 아이가 쓰던 방. 거울 장치로 빛을 모아야 문이 열린다.",
-   "art": "a locked child bedroom in an old mansion, small bed, toys and a rocking horse, several standing mirrors reflecting a beam of moonlight"
+   "memo": "사감의 아이가 쓰던 방. 거울 장치로 빛을 모아야 문이 열린다.\nGM: 거울 장치(지시 10). 성공하면 달빛이 아이 방 문의 열쇠 구멍을 비춘다.",
+   "art": "a locked child bedroom in an old mansion, small bed, toys and a rocking horse, several standing mirrors reflecting a beam of moonlight",
+   "gm": "거울 장치(지시 10). 성공하면 달빛이 아이 방 문의 열쇠 구멍을 비춘다.",
+   "okText": "거울 세 개를 맞추자 달빛이 문고리에 꽂히고, 찰칵 — 문이 열렸다.",
+   "failText": "빛이 엉뚱한 데로 튀었다. 지시가 엇갈려 포켓몬들이 우왕좌왕한다.",
+   "img": "md5_house/c1.webp"
   },
   {
    "id": "safe",
@@ -178,8 +188,12 @@
     }
    },
    "desc": "다락 계단 아래 숨은 골방. 겁먹은 포켓몬이 담요 속에 숨어 있다.",
-   "memo": "다락 계단 아래 숨은 골방. 겁먹은 포켓몬이 담요 속에 숨어 있다.",
-   "art": "a small hidden room under attic stairs, old blankets and cushions, a candle, cozy and safe, slanted ceiling"
+   "memo": "다락 계단 아래 숨은 골방. 겁먹은 포켓몬이 담요 속에 숨어 있다.\nGM: 쉼터. 겁먹은 포켓몬 달래기(육성 15) — 어렵다. 성공하면 녀석이 보스 쪽 계단을 알려 준다고 묘사.",
+   "art": "a small hidden room under attic stairs, old blankets and cushions, a candle, cozy and safe, slanted ceiling",
+   "gm": "쉼터. 겁먹은 포켓몬 달래기(육성 15) — 어렵다. 성공하면 녀석이 보스 쪽 계단을 알려 준다고 묘사.",
+   "okText": "담요째 안아 주자 떨던 녀석이 조용해졌다.",
+   "failText": "놀란 녀석이 독가루를 뿌리고 다락으로 달아났다.",
+   "img": "md5_house/safe.webp"
   },
   {
    "id": "boss",
@@ -211,7 +225,8 @@
    },
    "desc": "관사 지하의 작은 예배실. 촛대 사이 제단 위에 열쇠 꾸러미가 놓여 있다.",
    "memo": "관사 지하의 작은 예배실. 촛대 사이 제단 위에 열쇠 꾸러미가 놓여 있다.",
-   "art": "a small private chapel in the basement of a mansion, rows of wooden pews, candelabras, a bunch of old keys on the altar, stained glass faintly lit, solemn"
+   "art": "a small private chapel in the basement of a mansion, rows of wooden pews, candelabras, a bunch of old keys on the altar, stained glass faintly lit, solemn",
+   "img": "md5_house/boss.webp"
   },
   {
    "id": "g1a1",
@@ -244,18 +259,24 @@
    },
    "alt": "g1",
    "desc": "벽지가 부풀고 곰팡이가 핀 복도. 숨을 참고 지나가야 한다.",
-   "memo": "벽지가 부풀고 곰팡이가 핀 복도. 숨을 참고 지나가야 한다.",
-   "art": "a long corridor in an abandoned mansion with peeling wallpaper and patches of mold, portraits on the walls, dim light"
+   "memo": "벽지가 부풀고 곰팡이가 핀 복도. 숨을 참고 지나가야 한다.\nGM: 지름길 — 곰팡이 독 가리기(육성 12).",
+   "art": "a long corridor in an abandoned mansion with peeling wallpaper and patches of mold, portraits on the walls, dim light",
+   "gm": "지름길 — 곰팡이 독 가리기(육성 12).",
+   "okText": "벽지 아래 핀 곰팡이를 피해 숨을 참고 지나갔다.",
+   "failText": "곰팡이 포자를 들이마셨다. 목이 따끔하다.",
+   "img": "md5_house/g1a1.webp"
   },
   {
    "id": "g2a1",
    "t": "room",
    "alt": "g2",
    "filler": 1,
-   "memo": "좁은 하인 방. 이름표가 붙은 침대가 나란히 있다.",
+   "memo": "좁은 하인 방. 이름표가 붙은 침대가 나란히 있다.\nGM: 쉬어 가는 장면. 침대 이름표 중 하나가 사감의 아이 이름.",
    "name": "하인 방",
    "desc": "좁은 하인 방. 이름표가 붙은 침대가 나란히 있다.",
-   "art": "narrow servants quarters in an old mansion, simple iron beds in a row with name tags, a wash basin, grey light"
+   "art": "narrow servants quarters in an old mansion, simple iron beds in a row with name tags, a wash basin, grey light",
+   "gm": "쉬어 가는 장면. 침대 이름표 중 하나가 사감의 아이 이름.",
+   "img": "md5_house/g2a1.webp"
   },
   {
    "id": "g2a2",
@@ -274,8 +295,10 @@
    },
    "alt": "g2",
    "desc": "와인병과 잡동사니가 쌓인 창고. 어둠 속에서 눈이 빛난다.",
-   "memo": "와인병과 잡동사니가 쌓인 창고. 어둠 속에서 눈이 빛난다.",
-   "art": "a basement storage cellar with wine racks, crates and old furniture under sheets, darkness"
+   "memo": "와인병과 잡동사니가 쌓인 창고. 어둠 속에서 눈이 빛난다.\nGM: 멀리 도는 길 배틀 — 어둠 속 눈빛.",
+   "art": "a basement storage cellar with wine racks, crates and old furniture under sheets, darkness",
+   "gm": "멀리 도는 길 배틀 — 어둠 속 눈빛.",
+   "img": "md5_house/g2a2.webp"
   },
   {
    "id": "g2a3",
@@ -309,8 +332,12 @@
    },
    "alt": "g2",
    "desc": "거대한 서랍장이 벽을 다 차지한 방. 불이 나가 어둠 속을 더듬어야 한다.",
-   "memo": "거대한 서랍장이 벽을 다 차지한 방. 불이 나가 어둠 속을 더듬어야 한다.",
-   "art": "a room with a huge antique chest of drawers covering the whole wall, many small drawers, darkness with a thin line of light"
+   "memo": "거대한 서랍장이 벽을 다 차지한 방. 불이 나가 어둠 속을 더듬어야 한다.\nGM: 불 꺼진 방(통솔 12). 손잡고 벽 따라 걷는 묘사.",
+   "art": "a room with a huge antique chest of drawers covering the whole wall, many small drawers, darkness with a thin line of light",
+   "gm": "불 꺼진 방(통솔 12). 손잡고 벽 따라 걷는 묘사.",
+   "okText": "서로 어깨를 짚고 서랍장 벽을 따라 무사히 빠져나왔다.",
+   "failText": "서랍 하나가 와르르 쏟아지고 누군가 비명을 질렀다.",
+   "img": "md5_house/g2a3.webp"
   },
   {
    "id": "tr",
@@ -318,14 +345,17 @@
    "side": 1,
    "name": "사감의 금고",
    "clue": {
-    "t": "주인의 흔적",
-    "d": "깊은 곳의 주인 — 「악」 기운이 서려 있다.\n「격투」 · 「벌레」 · 「페어리」 쪽을 꺼리는 흔적이 남아 있다.\n「냉동펀치」의 자국이 벽에 새겨져 있다.",
+    "t": "사감의 관사 일지",
+    "d": "「예배실 그 아이는 요정 이야기를 해 주면 얌전해졌다. 아이들이 벌레 잡기 놀이를 하는 날엔 지하로 숨어 버리곤 했지.」\n깊은 곳의 주인 — 「악」 기운이 서려 있다.\n「격투」 · 「벌레」 · 「페어리」 쪽을 꺼리는 흔적이 남아 있다.\n「냉동펀치」의 자국이 벽에 새겨져 있다.",
     "auto": 1
    },
    "from": "g2a3",
    "desc": "사감 방 벽장 속 금고. 관사 일지가 들어 있다.",
-   "memo": "사감 방 벽장 속 금고. 관사 일지가 들어 있다.",
-   "art": "an old iron safe inside a closet of a headmistress room, a leather diary on top, dust in the air"
+   "memo": "사감 방 벽장 속 금고. 관사 일지가 들어 있다.\nGM: 곁방 보물. 사감의 일지 = 보스 단서.",
+   "art": "an old iron safe inside a closet of a headmistress room, a leather diary on top, dust in the air",
+   "gm": "곁방 보물. 사감의 일지 = 보스 단서.",
+   "clueAuto": "깊은 곳의 주인 — 「악」 기운이 서려 있다.\n「격투」 · 「벌레」 · 「페어리」 쪽을 꺼리는 흔적이 남아 있다.\n「냉동펀치」의 자국이 벽에 새겨져 있다.",
+   "img": "md5_house/tr.webp"
   }
  ],
  "branches": [
@@ -446,6 +476,13 @@
  "note": "자동 생성 · 보통 · 씨앗 122515 · 테마 폐가. 사전 배틀 1 · 체크 3 · 보스방 4체 · 레이드 배틀 : 3 · 지도 갈림길 2 · 구불길 + 곁방 1 · 야생 Lv +5 · 어려운 길(체크 목표 12).",
  "intro": "캠퍼스 서쪽 숲 속, 문을 닫은 지 이십 년 된 교직원 관사. 마지막 사감이 떠난 뒤로 밤마다 불이 켜졌다 꺼진다. 지하 예배실에는 녹스팬서가 사감의 열쇠 꾸러미를 지키고 앉아 있다.",
  "art": {
-  "look": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, "
- }
+  "look": "1.2::abandoned old two-story faculty residence house of a university, ordinary house-sized rooms, dusty late victorian interior, wooden floorboards, faded wallpaper, old furniture under white sheets, moonlight through torn curtains, quiet melancholic and nostalgic, not scary::, -1::cathedral, church nave, huge hall, vaulted ceiling, gothic arches::, "
+ },
+ "story": {
+  "hook": "경비원 아저씨가 손전등을 만지작거린다. 「서쪽 숲 관사 말이야, 이십 년째 비어 있는데 밤마다 2층 창에 불이 켜졌다 꺼져. 마지막 사감님 열쇠 꾸러미가 아직 안에 있다던데… 나는 무서워서 못 들어가.」",
+  "boss": "지하 예배실 촛대에 하나씩 불이 붙는다. 제단 위 열쇠 꾸러미 옆, 어둠이 고양이 모양으로 일어선다 — 녹스팬서. 붉은 눈이 깜빡일 때마다 2층 창의 불도 함께 깜빡였던 것이다.",
+  "end": "녹스팬서가 제단에서 내려와 촛불을 하나씩 꺼뜨리며 그림자 속으로 사라진다. 열쇠 꾸러미가 쨍 하고 울린다. 관사가 오랜 숨을 내쉬는 것 같다.",
+  "reward": "사감의 열쇠 꾸러미(어느 문인지 다 알 수는 없음 · 경비원의 감사) · 관사 일지"
+ },
+ "test": true
 }

@@ -39,7 +39,8 @@
     {
      "file": "05_서리 낀 선창",
      "rid": "boss",
-     "tags": "1.2::seaside sea cave area, tide pools, turquoise water, wet rocks, barnacles, salty spray, bright and refreshing::, 1.3::the deep cargo hold of a wrecked ship flooded with seawater, frost and ice crystals covering the wooden beams, pale blue cold light, an icy nest in the middle::"
+     "tags": "1.3::inside the dark deep cargo hold of an old wrecked wooden ship, curved wooden ribs and beams overhead, seawater on the floor frozen into ice, frost flowers and icicles covering the beams, pale blue cold light, a nest woven of ice in the middle::",
+     "neg": "sky, outdoors, sunny day, tropical"
     },
     {
      "file": "06_해초 숲 웅덩이",
@@ -54,12 +55,13 @@
     {
      "file": "08_물 고인 선실",
      "rid": "g2a2",
-     "tags": "1.2::seaside sea cave area, tide pools, turquoise water, wet rocks, barnacles, salty spray, bright and refreshing::, 1.3::a half flooded cabin of an old ship, water up to the knees, an old nautical chart pinned on the wall, round porthole light::"
+     "tags": "1.3::interior of a half flooded cabin inside an old wrecked wooden ship, seawater up to the knees, wooden bunk beds, an old nautical chart pinned on the wooden wall, a round brass porthole letting in a beam of light, damp and dim::",
+     "neg": "sky, outdoors, sunny day, tropical"
     },
     {
      "file": "09_그물 걸린 모래톱",
      "rid": "g2a3",
-     "tags": "1.2::seaside sea cave area, tide pools, turquoise water, wet rocks, barnacles, salty spray, bright and refreshing::, 1.3::a small cave beach tangled with an abandoned fishing net, buoys and driftwood, gentle waves, soft light::"
+     "tags": "1.2::seaside sea cave area, tide pools, turquoise water, wet rocks, barnacles, salty spray, bright and refreshing::, 1.3::a small cave beach where a big abandoned fishing net is tangled over rocks in the foreground, orange buoys and driftwood caught in the net, gentle waves, soft light::"
     },
     {
      "file": "10_떠밀려 온 상자",
@@ -140,57 +142,57 @@
     {
      "file": "01_눈 덮인 산길",
      "rid": "entry",
-     "tags": "1.2::snowy high mountain, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::a snow covered mountain trail with old wooden signposts pointing to an observatory, frozen ground under the snow, pine trees, pale morning sky::"
+     "tags": "1.2::snowy high mountain, rocky cliffs and pine trees covered in snow, white and pale blue palette with warm sunlight accents, crisp cold air, clear and beautiful::, -1.2::crystals, giant ice crystals, ice palace::, 1.3::a snow covered mountain trail with old wooden signposts pointing to an observatory, frozen ground under the snow, pine trees, pale morning sky::"
     },
     {
      "file": "02_얼음 다리",
      "rid": "c1",
-     "tags": "1.2::snowy high mountain, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::an old wooden rope bridge completely frozen and covered in icicles spanning a snowy ravine, wind blown snow::"
+     "tags": "1.2::snowy high mountain, rocky cliffs and pine trees covered in snow, white and pale blue palette with warm sunlight accents, crisp cold air, clear and beautiful::, -1.2::crystals, giant ice crystals, ice palace::, 1.3::an old wooden rope bridge completely frozen and covered in icicles spanning a snowy ravine, wind blown snow::"
     },
     {
      "file": "03_얼어붙은 관측 장비",
      "rid": "c2",
-     "tags": "1.2::snowy high mountain, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::a snowy slope after an avalanche, old brass weather instruments and a frozen equipment crate blocking the path, ice crystals glittering::"
+     "tags": "1.2::snowy high mountain, rocky cliffs and pine trees covered in snow, white and pale blue palette with warm sunlight accents, crisp cold air, clear and beautiful::, -1.2::crystals, giant ice crystals, ice palace::, 1.3::a snowy slope after an avalanche, old brass weather instruments and a frozen equipment crate blocking the path, ice crystals glittering::"
     },
     {
      "file": "04_바람 막힌 바위굴",
      "rid": "safe",
-     "tags": "1.2::snowy high mountain, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::a small cave in a rocky cliff sheltered from the wind, snow at the entrance, dry ground inside, a small campfire spot, quiet and safe::"
+     "tags": "1.2::snowy high mountain, rocky cliffs and pine trees covered in snow, white and pale blue palette with warm sunlight accents, crisp cold air, clear and beautiful::, -1.2::crystals, giant ice crystals, ice palace::, 1.3::a small shallow cave in a dark grey rocky cliff sheltered from the wind, snow only at the entrance, dry rock floor inside, a small crackling campfire with warm orange light, quiet and safe::"
     },
     {
      "file": "05_무너진 관측탑",
      "rid": "boss",
-     "tags": "1.2::snowy high mountain, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::the top of a ruined stone weather observatory tower with its dome roof broken open to a stormy snowy sky, a spinning broken weathervane, frost swirling, dramatic::"
+     "tags": "1.2::snowy high mountain, rocky cliffs and pine trees covered in snow, white and pale blue palette with warm sunlight accents, crisp cold air, clear and beautiful::, -1.2::crystals, giant ice crystals, ice palace::, 1.3::the top floor of a ruined early 20th century stone weather observatory tower, the copper dome roof torn open to a stormy snowy sky, broken brass instruments, a bent spinning weathervane, snow and frost swirling inside, dramatic::"
     },
     {
      "file": "06_언 강가",
      "rid": "g1a1",
-     "tags": "1.2::snowy high mountain, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::a frozen river in a snowy valley, cracked blue ice, snow covered rocks along the bank, soft sunlight::"
+     "tags": "1.2::snowy high mountain, rocky cliffs and pine trees covered in snow, white and pale blue palette with warm sunlight accents, crisp cold air, clear and beautiful::, -1.2::crystals, giant ice crystals, ice palace::, 1.3::a frozen river in a snowy valley, cracked blue ice, snow covered rocks along the bank, soft sunlight::"
     },
     {
      "file": "07_화이트아웃",
      "rid": "g1a2",
-     "tags": "1.2::snowy high mountain, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::a whiteout blizzard on a snowy plateau, everything white, faint shapes of rocks, swirling snow, low visibility::"
+     "tags": "1.2::snowy high mountain, rocky cliffs and pine trees covered in snow, white and pale blue palette with warm sunlight accents, crisp cold air, clear and beautiful::, -1.2::crystals, giant ice crystals, ice palace::, 1.3::a whiteout blizzard on a snowy plateau, everything white, faint shapes of rocks, swirling snow, low visibility::"
     },
     {
      "file": "08_버려진 썰매",
      "rid": "g1a3",
-     "tags": "1.2::snowy high mountain, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::an old wooden supply sled half buried in snow on a mountain path, crates and ropes on it, calm after the snow::"
+     "tags": "1.2::snowy high mountain, rocky cliffs and pine trees covered in snow, white and pale blue palette with warm sunlight accents, crisp cold air, clear and beautiful::, -1.2::crystals, giant ice crystals, ice palace::, 1.3::an old wooden supply sled half buried in snow on a mountain path, crates and ropes on it, calm after the snow::"
     },
     {
      "file": "09_얼음 들판",
      "rid": "g2a1",
-     "tags": "1.2::snowy high mountain, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::a wide flat ice field swept by wind, polished blue ice, distant snowy peaks, sharp clear light::"
+     "tags": "1.2::snowy high mountain, rocky cliffs and pine trees covered in snow, white and pale blue palette with warm sunlight accents, crisp cold air, clear and beautiful::, -1.2::crystals, giant ice crystals, ice palace::, 1.3::a wide flat ice field swept by wind, polished blue ice, distant snowy peaks, sharp clear light::"
     },
     {
      "file": "10_얼음 속 유물",
      "rid": "tr",
-     "tags": "1.2::snowy high mountain, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::a wooden logbook box trapped inside a clear block of ice in a snow cave, light refracting through the ice::"
+     "tags": "1.2::snowy high mountain, rocky cliffs and pine trees covered in snow, white and pale blue palette with warm sunlight accents, crisp cold air, clear and beautiful::, -1.2::crystals, giant ice crystals, ice palace::, 1.3::a wooden logbook box trapped inside a clear block of ice in a snow cave, light refracting through the ice::"
     },
     {
      "file": "11_얼음 틈",
      "rid": "s1",
-     "tags": "1.2::snowy high mountain, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::a narrow crevasse between two glacier ice walls, deep blue translucent ice, light from above::"
+     "tags": "1.2::snowy high mountain, rocky cliffs and pine trees covered in snow, white and pale blue palette with warm sunlight accents, crisp cold air, clear and beautiful::, -1.2::crystals, giant ice crystals, ice palace::, 1.3::a narrow crevasse between two glacier ice walls, deep blue translucent ice, light from above::"
     }
    ],
    "mons": [
@@ -262,52 +264,52 @@
     {
      "file": "01_무너진 현관",
      "rid": "entry",
-     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::the collapsed front porch of an old abandoned mansion in a forest, broken wooden steps, a heavy locked front door, ivy, moonlit evening::"
+     "tags": "1.3::exterior view of an abandoned two-story victorian house in a dark forest at dusk, the front porch roof collapsed, broken wooden steps, a heavy locked front door, ivy on the walls, one upstairs window faintly lit, moonlit evening, melancholic not scary::"
     },
     {
      "file": "02_쥐가 드나드는 부엌",
      "rid": "b1",
-     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::a dusty old victorian kitchen, iron stove, hanging pots, cupboard doors ajar, moonlight through a small window::"
+     "tags": "1.2::abandoned old two-story faculty residence house of a university, ordinary house-sized rooms, dusty late victorian interior, wooden floorboards, faded wallpaper, old furniture under white sheets, moonlight through torn curtains, quiet melancholic and nostalgic, not scary::, -1::cathedral, church nave, huge hall, vaulted ceiling, gothic arches::, 1.3::a dusty old victorian kitchen, iron stove, hanging pots, cupboard doors ajar, moonlight through a small window::"
     },
     {
      "file": "03_잠긴 아이 방",
      "rid": "c1",
-     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::a locked child bedroom in an old mansion, small bed, toys and a rocking horse, several standing mirrors reflecting a beam of moonlight::"
+     "tags": "1.2::abandoned old two-story faculty residence house of a university, ordinary house-sized rooms, dusty late victorian interior, wooden floorboards, faded wallpaper, old furniture under white sheets, moonlight through torn curtains, quiet melancholic and nostalgic, not scary::, -1::cathedral, church nave, huge hall, vaulted ceiling, gothic arches::, 1.3::a locked child bedroom in an old mansion, small bed, toys and a rocking horse, several standing mirrors reflecting a beam of moonlight::"
     },
     {
      "file": "04_다락 아래 골방",
      "rid": "safe",
-     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::a small hidden room under attic stairs, old blankets and cushions, a candle, cozy and safe, slanted ceiling::"
+     "tags": "1.2::abandoned old two-story faculty residence house of a university, ordinary house-sized rooms, dusty late victorian interior, wooden floorboards, faded wallpaper, old furniture under white sheets, moonlight through torn curtains, quiet melancholic and nostalgic, not scary::, -1::cathedral, church nave, huge hall, vaulted ceiling, gothic arches::, 1.3::a small hidden room under attic stairs, old blankets and cushions, a candle, cozy and safe, slanted ceiling::"
     },
     {
      "file": "05_지하 예배실",
      "rid": "boss",
-     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::a small private chapel in the basement of a mansion, rows of wooden pews, candelabras, a bunch of old keys on the altar, stained glass faintly lit, solemn::"
+     "tags": "1.2::abandoned old two-story faculty residence house of a university, ordinary house-sized rooms, dusty late victorian interior, wooden floorboards, faded wallpaper, old furniture under white sheets, moonlight through torn curtains, quiet melancholic and nostalgic, not scary::, -1::cathedral, church nave, huge hall, vaulted ceiling, gothic arches::, 1.3::a small private chapel in the basement of a mansion, rows of wooden pews, candelabras, a bunch of old keys on the altar, stained glass faintly lit, solemn::"
     },
     {
      "file": "06_곰팡이 핀 복도",
      "rid": "g1a1",
-     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::a long corridor in an abandoned mansion with peeling wallpaper and patches of mold, portraits on the walls, dim light::"
+     "tags": "1.2::abandoned old two-story faculty residence house of a university, ordinary house-sized rooms, dusty late victorian interior, wooden floorboards, faded wallpaper, old furniture under white sheets, moonlight through torn curtains, quiet melancholic and nostalgic, not scary::, -1::cathedral, church nave, huge hall, vaulted ceiling, gothic arches::, 1.3::a long corridor in an abandoned mansion with peeling wallpaper and patches of mold, portraits on the walls, dim light::"
     },
     {
      "file": "07_하인 방",
      "rid": "g2a1",
-     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::narrow servants quarters in an old mansion, simple iron beds in a row with name tags, a wash basin, grey light::"
+     "tags": "1.2::abandoned old two-story faculty residence house of a university, ordinary house-sized rooms, dusty late victorian interior, wooden floorboards, faded wallpaper, old furniture under white sheets, moonlight through torn curtains, quiet melancholic and nostalgic, not scary::, -1::cathedral, church nave, huge hall, vaulted ceiling, gothic arches::, 1.3::narrow servants quarters in an old mansion, simple iron beds in a row with name tags, a wash basin, grey light::"
     },
     {
      "file": "08_지하 창고",
      "rid": "g2a2",
-     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::a basement storage cellar with wine racks, crates and old furniture under sheets, darkness::"
+     "tags": "1.2::abandoned old two-story faculty residence house of a university, ordinary house-sized rooms, dusty late victorian interior, wooden floorboards, faded wallpaper, old furniture under white sheets, moonlight through torn curtains, quiet melancholic and nostalgic, not scary::, -1::cathedral, church nave, huge hall, vaulted ceiling, gothic arches::, 1.3::a basement storage cellar with wine racks, crates and old furniture under sheets, darkness::"
     },
     {
      "file": "09_잠긴 서랍장 방",
      "rid": "g2a3",
-     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::a room with a huge antique chest of drawers covering the whole wall, many small drawers, darkness with a thin line of light::"
+     "tags": "1.2::abandoned old two-story faculty residence house of a university, ordinary house-sized rooms, dusty late victorian interior, wooden floorboards, faded wallpaper, old furniture under white sheets, moonlight through torn curtains, quiet melancholic and nostalgic, not scary::, -1::cathedral, church nave, huge hall, vaulted ceiling, gothic arches::, 1.3::a room with a huge antique chest of drawers covering the whole wall, many small drawers, darkness with a thin line of light::"
     },
     {
      "file": "10_사감의 금고",
      "rid": "tr",
-     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::an old iron safe inside a closet of a headmistress room, a leather diary on top, dust in the air::"
+     "tags": "1.2::abandoned old two-story faculty residence house of a university, ordinary house-sized rooms, dusty late victorian interior, wooden floorboards, faded wallpaper, old furniture under white sheets, moonlight through torn curtains, quiet melancholic and nostalgic, not scary::, -1::cathedral, church nave, huge hall, vaulted ceiling, gothic arches::, 1.3::an old iron safe inside a closet of a headmistress room, a leather diary on top, dust in the air::"
     }
    ],
    "mons": [
@@ -383,57 +385,57 @@
     {
      "file": "01_재 덮인 등산로",
      "rid": "entry",
-     "tags": "1.2::dormant volcano area, cooled black lava, glowing orange cracks, steam vents, dramatic but not apocalyptic::, -1::crystals, gems::, 1.3::an ash covered mountain trail on a dormant volcano, old rusty geothermal pipes running along it, a hot glowing boulder blocking the way, hazy sky::"
+     "tags": "1.2::dormant volcano area, black and dark brown volcanic rock, grey ash, steam vents, warm orange glow only in a few places, varied rock textures, dramatic but not apocalyptic::, -1::crystals, gems, lava everywhere, glowing cracks everywhere::, 1.3::an ash covered mountain trail on a dormant volcano, old rusty geothermal pipes running along it, a hot glowing boulder blocking the way, hazy sky::"
     },
     {
      "file": "02_지열관 굴",
      "rid": "b1",
-     "tags": "1.2::dormant volcano area, cooled black lava, glowing orange cracks, steam vents, dramatic but not apocalyptic::, -1::crystals, gems::, 1.3::a tunnel carved in volcanic rock with large old geothermal pipes along the wall, heat haze and steam leaking from the joints, orange light::"
+     "tags": "1.2::dormant volcano area, black and dark brown volcanic rock, grey ash, steam vents, warm orange glow only in a few places, varied rock textures, dramatic but not apocalyptic::, -1::crystals, gems, lava everywhere, glowing cracks everywhere::, 1.3::a tunnel carved in volcanic rock with large old geothermal pipes along the wall, heat haze and steam leaking from the joints, orange light::"
     },
     {
      "file": "03_증기 틈",
      "rid": "c1",
-     "tags": "1.2::dormant volcano area, cooled black lava, glowing orange cracks, steam vents, dramatic but not apocalyptic::, -1::crystals, gems::, 1.3::a rocky volcanic slope with steam vents hissing from cracks, wet rocks, white steam clouds::"
+     "tags": "1.2::dormant volcano area, black and dark brown volcanic rock, grey ash, steam vents, warm orange glow only in a few places, varied rock textures, dramatic but not apocalyptic::, -1::crystals, gems, lava everywhere, glowing cracks everywhere::, 1.3::a rocky volcanic slope with steam vents hissing from cracks, wet rocks, white steam clouds::"
     },
     {
      "file": "04_식은 용암관",
      "rid": "safe",
-     "tags": "1.2::dormant volcano area, cooled black lava, glowing orange cracks, steam vents, dramatic but not apocalyptic::, -1::crystals, gems::, 1.3::inside a cooled lava tube, smooth black rock walls, a faint glow far away, calm and warm, safe resting place::"
+     "tags": "1.2::dormant volcano area, black and dark brown volcanic rock, grey ash, steam vents, warm orange glow only in a few places, varied rock textures, dramatic but not apocalyptic::, -1::crystals, gems, lava everywhere, glowing cracks everywhere::, 1.3::inside a cooled old lava tube tunnel, smooth rounded dark rock walls, no lava, dry sandy floor, soft dim light from an opening far away, calm and warm, safe resting place::"
     },
     {
      "file": "05_분화구 바닥",
      "rid": "boss",
-     "tags": "1.2::dormant volcano area, cooled black lava, glowing orange cracks, steam vents, dramatic but not apocalyptic::, -1::crystals, gems::, 1.3::the floor of a volcanic crater with glowing red cracks in black rock, rising heat and sparks, steep crater walls, a dramatic red sky above::"
+     "tags": "1.2::dormant volcano area, black and dark brown volcanic rock, grey ash, steam vents, warm orange glow only in a few places, varied rock textures, dramatic but not apocalyptic::, -1::crystals, gems, lava everywhere, glowing cracks everywhere::, 1.3::the floor of a volcanic crater with glowing red cracks in black rock, rising heat and sparks, steep crater walls, a dramatic red sky above::"
     },
     {
      "file": "06_갈라진 동굴",
      "rid": "g1a1",
-     "tags": "1.2::dormant volcano area, cooled black lava, glowing orange cracks, steam vents, dramatic but not apocalyptic::, -1::crystals, gems::, 1.3::a cracked volcanic cave with strange heat loving fruit vines growing on the walls, orange glow from cracks::"
+     "tags": "1.2::dormant volcano area, black and dark brown volcanic rock, grey ash, steam vents, warm orange glow only in a few places, varied rock textures, dramatic but not apocalyptic::, -1::crystals, gems, lava everywhere, glowing cracks everywhere::, 1.3::a cracked volcanic cave with strange heat loving fruit vines growing on the walls, orange glow from cracks::"
     },
     {
      "file": "07_검은 바위 지대",
      "rid": "g1a2",
-     "tags": "1.2::dormant volcano area, cooled black lava, glowing orange cracks, steam vents, dramatic but not apocalyptic::, -1::crystals, gems::, 1.3::a wide field of black solidified lava rock, scattered small fires, smoke, distant volcano peak::"
+     "tags": "1.2::dormant volcano area, black and dark brown volcanic rock, grey ash, steam vents, warm orange glow only in a few places, varied rock textures, dramatic but not apocalyptic::, -1::crystals, gems, lava everywhere, glowing cracks everywhere::, 1.3::a wide field of black solidified lava rock, scattered small fires, smoke, distant volcano peak::"
     },
     {
      "file": "08_식은 용암 계곡",
      "rid": "g1a3",
-     "tags": "1.2::dormant volcano area, cooled black lava, glowing orange cracks, steam vents, dramatic but not apocalyptic::, -1::crystals, gems::, 1.3::a narrow valley of cooled lava flows with rippled black rock, sulfur yellow stains, steam::"
+     "tags": "1.2::dormant volcano area, black and dark brown volcanic rock, grey ash, steam vents, warm orange glow only in a few places, varied rock textures, dramatic but not apocalyptic::, -1::crystals, gems, lava everywhere, glowing cracks everywhere::, 1.3::a narrow valley of cooled lava flows with rippled black rock, sulfur yellow stains, steam::"
     },
     {
      "file": "09_흔들리는 화구벽",
      "rid": "g2a1",
-     "tags": "1.2::dormant volcano area, cooled black lava, glowing orange cracks, steam vents, dramatic but not apocalyptic::, -1::crystals, gems::, 1.3::a crumbling crater wall path with toxic yellow gas drifting, loose rocks falling::"
+     "tags": "1.2::dormant volcano area, black and dark brown volcanic rock, grey ash, steam vents, warm orange glow only in a few places, varied rock textures, dramatic but not apocalyptic::, -1::crystals, gems, lava everywhere, glowing cracks everywhere::, 1.3::a crumbling crater wall path with toxic yellow gas drifting, loose rocks falling::"
     },
     {
      "file": "10_굳은 화석층",
      "rid": "tr",
-     "tags": "1.2::dormant volcano area, cooled black lava, glowing orange cracks, steam vents, dramatic but not apocalyptic::, -1::crystals, gems::, 1.3::a layer of fossils embedded in cooled lava rock wall, glowing amber stones::"
+     "tags": "1.2::dormant volcano area, black and dark brown volcanic rock, grey ash, steam vents, warm orange glow only in a few places, varied rock textures, dramatic but not apocalyptic::, -1::crystals, gems, lava everywhere, glowing cracks everywhere::, 1.3::a layer of fossils embedded in cooled lava rock wall, glowing amber stones::"
     },
     {
      "file": "11_유황 결정 굴",
      "rid": "s1",
-     "tags": "1.2::dormant volcano area, cooled black lava, glowing orange cracks, steam vents, dramatic but not apocalyptic::, 1.3::a small cave filled with bright yellow sulfur crystals, steam, warm light::"
+     "tags": "1.2::dormant volcano area, black and dark brown volcanic rock, grey ash, steam vents, warm orange glow only in a few places, varied rock textures, dramatic but not apocalyptic::, -1::lava everywhere, glowing cracks everywhere::, 1.3::a small cave filled with bright yellow sulfur crystals, steam, warm light::"
     }
    ],
    "mons": [

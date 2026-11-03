@@ -92,8 +92,12 @@
     }
    },
    "desc": "재가 내려앉은 등산로. 달아오른 바위가 길을 막았다.",
-   "memo": "재가 내려앉은 등산로. 달아오른 바위가 길을 막았다.",
-   "art": "an ash covered mountain trail on a dormant volcano, old rusty geothermal pipes running along it, a hot glowing boulder blocking the way, hazy sky"
+   "memo": "재가 내려앉은 등산로. 달아오른 바위가 길을 막았다.\nGM: 달아오른 바위(능력 12). 실패 피해가 크고 마비까지 — 어려운 던전이라는 걸 여기서 보여 준다.",
+   "art": "an ash covered mountain trail on a dormant volcano, old rusty geothermal pipes running along it, a hot glowing boulder blocking the way, hazy sky",
+   "gm": "달아오른 바위(능력 12). 실패 피해가 크고 마비까지 — 어려운 던전이라는 걸 여기서 보여 준다.",
+   "okText": "포켓몬이 어깨로 밀어붙이자 달아오른 바위가 비탈 아래로 굴러갔다.",
+   "failText": "바위가 되밀려 오며 열기가 덮쳤다. 몸이 저릿하게 굳는다.",
+   "img": "md8_volc/entry.webp"
   },
   {
    "id": "b1",
@@ -111,8 +115,10 @@
     "lvAdd": 5
    },
    "desc": "지열관이 지나가는 굴. 관 틈으로 열기가 새어 나온다.",
-   "memo": "지열관이 지나가는 굴. 관 틈으로 열기가 새어 나온다.",
-   "art": "a tunnel carved in volcanic rock with large old geothermal pipes along the wall, heat haze and steam leaking from the joints, orange light"
+   "memo": "지열관이 지나가는 굴. 관 틈으로 열기가 새어 나온다.\nGM: 지열관 굴 배틀. 관 틈에서 뿜는 증기 연출.",
+   "art": "a tunnel carved in volcanic rock with large old geothermal pipes along the wall, heat haze and steam leaking from the joints, orange light",
+   "gm": "지열관 굴 배틀. 관 틈에서 뿜는 증기 연출.",
+   "img": "md8_volc/b1.webp"
   },
   {
    "id": "c1",
@@ -147,8 +153,12 @@
     }
    },
    "desc": "바위 틈에서 증기가 뿜어 나온다. 다친 포켓몬이 쓰러져 있다.",
-   "memo": "바위 틈에서 증기가 뿜어 나온다. 다친 포켓몬이 쓰러져 있다.",
-   "art": "a rocky volcanic slope with steam vents hissing from cracks, wet rocks, white steam clouds"
+   "memo": "바위 틈에서 증기가 뿜어 나온다. 다친 포켓몬이 쓰러져 있다.\nGM: 화상 입은 포켓몬 돌보기(육성 12). 땅 타입이 있으면 쉽다(식은 흙으로 덮어 주는 묘사).",
+   "art": "a rocky volcanic slope with steam vents hissing from cracks, wet rocks, white steam clouds",
+   "gm": "화상 입은 포켓몬 돌보기(육성 12). 땅 타입이 있으면 쉽다(식은 흙으로 덮어 주는 묘사).",
+   "okText": "식은 흙을 덮어 열을 빼 주자 녀석이 숨을 고르고 굴로 돌아갔다.",
+   "failText": "놀란 녀석이 몸부림치다 뜨거운 증기를 터뜨렸다.",
+   "img": "md8_volc/c1.webp"
   },
   {
    "id": "safe",
@@ -181,8 +191,12 @@
     }
    },
    "desc": "굳은 용암 관 속. 열기가 가라앉아 숨을 돌릴 수 있다.",
-   "memo": "굳은 용암 관 속. 열기가 가라앉아 숨을 돌릴 수 있다.",
-   "art": "inside a cooled lava tube, smooth black rock walls, a faint glow far away, calm and warm, safe resting place"
+   "memo": "굳은 용암 관 속. 열기가 가라앉아 숨을 돌릴 수 있다.\nGM: 쉼터. 용암 흐름 읽기(지시 15) — 어렵고, 실패하면 시간을 크게 잃는다.",
+   "art": "inside a cooled old lava tube tunnel, smooth rounded dark rock walls, no lava, dry sandy floor, soft dim light from an opening far away, calm and warm, safe resting place",
+   "gm": "쉼터. 용암 흐름 읽기(지시 15) — 어렵고, 실패하면 시간을 크게 잃는다.",
+   "okText": "굳은 표면의 결을 따라 식은 용암관 입구를 찾아냈다.",
+   "failText": "갈림길에서 우왕좌왕하다 한참을 헤맸다.",
+   "img": "md8_volc/safe.webp"
   },
   {
    "id": "boss",
@@ -217,7 +231,8 @@
    },
    "desc": "분화구 바닥. 붉게 갈라진 땅 한가운데 강철빛 거체가 지열을 빨아들인다.",
    "memo": "분화구 바닥. 붉게 갈라진 땅 한가운데 강철빛 거체가 지열을 빨아들인다.",
-   "art": "the floor of a volcanic crater with glowing red cracks in black rock, rising heat and sparks, steep crater walls, a dramatic red sky above"
+   "art": "the floor of a volcanic crater with glowing red cracks in black rock, rising heat and sparks, steep crater walls, a dramatic red sky above",
+   "img": "md8_volc/boss.webp"
   },
   {
    "id": "g1a1",
@@ -251,8 +266,12 @@
    },
    "alt": "g1",
    "desc": "갈라진 동굴 벽에 열매 덩굴이 매달렸다. 먹을 수 있는 것을 골라야 한다.",
-   "memo": "갈라진 동굴 벽에 열매 덩굴이 매달렸다. 먹을 수 있는 것을 골라야 한다.",
-   "art": "a cracked volcanic cave with strange heat loving fruit vines growing on the walls, orange glow from cracks"
+   "memo": "갈라진 동굴 벽에 열매 덩굴이 매달렸다. 먹을 수 있는 것을 골라야 한다.\nGM: 멀리 도는 길 첫 방. 열매 가리기(육성 15) — 실패 피해가 크다.",
+   "art": "a cracked volcanic cave with strange heat loving fruit vines growing on the walls, orange glow from cracks",
+   "gm": "멀리 도는 길 첫 방. 열매 가리기(육성 15) — 실패 피해가 크다.",
+   "okText": "열에 강한 열매만 골라 땄다. 매콤달콤하다.",
+   "failText": "잘못 깨문 열매가 입 안에서 불처럼 터졌다.",
+   "img": "md8_volc/g1a1.webp"
   },
   {
    "id": "g1a2",
@@ -271,18 +290,22 @@
    },
    "alt": "g1",
    "desc": "굳은 용암이 검게 깔린 들판.",
-   "memo": "굳은 용암이 검게 깔린 들판.",
-   "art": "a wide field of black solidified lava rock, scattered small fires, smoke, distant volcano peak"
+   "memo": "굳은 용암이 검게 깔린 들판.\nGM: 멀리 도는 길 배틀 — 검은 들판의 불꽃 무리.",
+   "art": "a wide field of black solidified lava rock, scattered small fires, smoke, distant volcano peak",
+   "gm": "멀리 도는 길 배틀 — 검은 들판의 불꽃 무리.",
+   "img": "md8_volc/g1a2.webp"
   },
   {
    "id": "g1a3",
    "t": "room",
    "alt": "g1",
    "filler": 1,
-   "memo": "식은 용암이 계곡을 이룬 길.",
+   "memo": "식은 용암이 계곡을 이룬 길.\nGM: 쉬어 가는 장면. 유황 얼룩 사이로 온실 지열관이 처음 놓인 해의 표지석.",
    "name": "식은 용암 계곡",
    "desc": "식은 용암이 계곡을 이룬 길.",
-   "art": "a narrow valley of cooled lava flows with rippled black rock, sulfur yellow stains, steam"
+   "art": "a narrow valley of cooled lava flows with rippled black rock, sulfur yellow stains, steam",
+   "gm": "쉬어 가는 장면. 유황 얼룩 사이로 온실 지열관이 처음 놓인 해의 표지석.",
+   "img": "md8_volc/g1a3.webp"
   },
   {
    "id": "g2a1",
@@ -318,8 +341,12 @@
    },
    "alt": "g2",
    "desc": "화구벽이 흔들린다. 가스가 덜한 길을 골라야 한다.",
-   "memo": "화구벽이 흔들린다. 가스가 덜한 길을 골라야 한다.",
-   "art": "a crumbling crater wall path with toxic yellow gas drifting, loose rocks falling"
+   "memo": "화구벽이 흔들린다. 가스가 덜한 길을 골라야 한다.\nGM: 지름길 — 가스가 덜한 길 고르기(지시 10). 불꽃 타입이 있으면 쉽다.",
+   "art": "a crumbling crater wall path with toxic yellow gas drifting, loose rocks falling",
+   "gm": "지름길 — 가스가 덜한 길 고르기(지시 10). 불꽃 타입이 있으면 쉽다.",
+   "okText": "불꽃 포켓몬이 열기의 흐름을 읽어 가스 없는 길을 짚었다.",
+   "failText": "노란 가스 속을 지나며 모두 콜록거렸다.",
+   "img": "md8_volc/g2a1.webp"
   },
   {
    "id": "tr",
@@ -327,24 +354,29 @@
    "side": 1,
    "name": "굳은 화석층",
    "clue": {
-    "t": "주인의 흔적",
-    "d": "깊은 곳의 주인 — 「강철 · 드래곤」 기운이 서려 있다.\n「격투」 · 「땅」 쪽을 꺼리는 흔적이 남아 있다.\n「러스터캐논」의 자국이 벽에 새겨져 있다.",
+    "t": "지열관 공사 기록",
+    "d": "「분화구 바닥의 그 덩치는 땅이 흔들리면 중심을 잃는다. 맨손 격투를 하는 녀석들한테도 쩔쩔맸다는 이야기가 있다.」\n깊은 곳의 주인 — 「강철 · 드래곤」 기운이 서려 있다.\n「격투」 · 「땅」 쪽을 꺼리는 흔적이 남아 있다.\n「러스터캐논」의 자국이 벽에 새겨져 있다.",
     "auto": 1
    },
    "from": "g1a3",
    "desc": "굳은 용암 속에 화석이 박혀 있다.",
-   "memo": "굳은 용암 속에 화석이 박혀 있다.",
-   "art": "a layer of fossils embedded in cooled lava rock wall, glowing amber stones"
+   "memo": "굳은 용암 속에 화석이 박혀 있다.\nGM: 곁방 보물. 공사 기록 = 보스 단서 · 호박석.",
+   "art": "a layer of fossils embedded in cooled lava rock wall, glowing amber stones",
+   "gm": "곁방 보물. 공사 기록 = 보스 단서 · 호박석.",
+   "clueAuto": "깊은 곳의 주인 — 「강철 · 드래곤」 기운이 서려 있다.\n「격투」 · 「땅」 쪽을 꺼리는 흔적이 남아 있다.\n「러스터캐논」의 자국이 벽에 새겨져 있다.",
+   "img": "md8_volc/tr.webp"
   },
   {
    "id": "s1",
    "t": "room",
    "side": 1,
    "name": "유황 결정 굴",
-   "memo": "노란 유황 결정이 자란 작은 굴.",
+   "memo": "노란 유황 결정이 자란 작은 굴.\nGM: 막다른 유황 결정 굴. 따뜻한 빛만 — 숨 돌리는 장면.",
    "from": "g2a1",
    "desc": "노란 유황 결정이 자란 작은 굴.",
-   "art": "a small cave filled with bright yellow sulfur crystals, steam, warm light"
+   "art": "a small cave filled with bright yellow sulfur crystals, steam, warm light",
+   "gm": "막다른 유황 결정 굴. 따뜻한 빛만 — 숨 돌리는 장면.",
+   "img": "md8_volc/s1.webp"
   }
  ],
  "branches": [
@@ -470,6 +502,13 @@
  "note": "자동 생성 · 어려움 · 씨앗 78001 · 테마 화산. 사전 배틀 1 · 체크 3 · 보스방 6체 · 레이드 배틀 : 3 · 지도 갈림길 2 · 구불길 + 곁방 2 · 야생 Lv +5 · 어려운 길(체크 목표 15).",
  "intro": "대학 온실을 데우던 지열관을 따라 뒷산 휴화산으로 이어진 길. 요즘 지열관이 들끓기 시작했다 — 분화구 바닥에서 브리두라스가 지열을 빨아들이며 몸을 달구고 있다. 화상과 증기, 무너지는 화구벽을 견뎌야 한다.",
  "art": {
-  "look": "1.2::dormant volcano area, cooled black lava, glowing orange cracks, steam vents, dramatic but not apocalyptic::, -1::crystals, gems::, "
- }
+  "look": "1.2::dormant volcano area, black and dark brown volcanic rock, grey ash, steam vents, warm orange glow only in a few places, varied rock textures, dramatic but not apocalyptic::, -1::crystals, gems, lava everywhere, glowing cracks everywhere::, "
+ },
+ "story": {
+  "hook": "온실 관리인이 땀을 닦는다. 「지열관 온도가 매일 올라가요. 어제는 온실 바닥 타일이 갈라졌고요. 관을 따라 뒷산 분화구까지 가 봐야 하는데 — 열기가 보통이 아니에요. 각오하고 가세요.」",
+  "boss": "분화구 바닥, 붉은 금 사이로 열기가 솟는다. 지열관 끝을 끌어안은 거대한 강철 몸이 천천히 일어선다 — 브리두라스. 몸에 고인 열이 등줄기를 타고 번쩍일 때마다 산 전체가 웅웅 울린다.",
+  "end": "브리두라스가 지열관을 놓고 분화구 벽을 기어올라 산 너머로 사라진다. 땅의 붉은 금이 하나둘 어두워지고, 멀리 온실 쪽에서 김이 가라앉는다.",
+  "reward": "식은 지열관 밸브(관리인의 감사 · 온실 출입) · 화석층에서 캔 호박석"
+ },
+ "test": true
 }

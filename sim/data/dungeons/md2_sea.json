@@ -92,8 +92,12 @@
     }
    },
    "desc": "물이 빠진 모래톱에 조개와 해초가 널려 있다. 동굴로 들어가기 전 먹을 것과 상한 것을 가려 둔다.",
-   "memo": "물이 빠진 모래톱에 조개와 해초가 널려 있다. 동굴로 들어가기 전 먹을 것과 상한 것을 가려 둔다.",
-   "art": "a wide tidal sand flat at low tide at the foot of a cliff with an old white lighthouse above, shells and seaweed scattered, a dark sea cave mouth in the cliff"
+   "memo": "물이 빠진 모래톱에 조개와 해초가 널려 있다. 동굴로 들어가기 전 먹을 것과 상한 것을 가려 둔다.\nGM: 튜토리얼 체크(육성 12). 물때 이야기를 먼저 들려준다 — 너무 오래 끌면 밀물이 들어온다는 긴장만 주고 실제 시간 제한은 없다.",
+   "art": "a wide tidal sand flat at low tide at the foot of a cliff with an old white lighthouse above, shells and seaweed scattered, a dark sea cave mouth in the cliff",
+   "gm": "튜토리얼 체크(육성 12). 물때 이야기를 먼저 들려준다 — 너무 오래 끌면 밀물이 들어온다는 긴장만 주고 실제 시간 제한은 없다.",
+   "okText": "코를 대 보고 껍데기를 두드려 상한 것을 골라냈다. 도시락 주머니가 든든하다.",
+   "failText": "멀쩡해 보이던 조개 하나가 탈을 냈다. 배가 살살 아프다.",
+   "img": "md2_sea/entry.webp"
   },
   {
    "id": "b1",
@@ -111,8 +115,10 @@
     "lvAdd": 5
    },
    "desc": "기울어진 실습선 갑판. 따개비 낀 난간 위에서 바닷새 포켓몬이 침입자를 노려본다.",
-   "memo": "기울어진 실습선 갑판. 따개비 낀 난간 위에서 바닷새 포켓몬이 침입자를 노려본다.",
-   "art": "the tilted wooden deck of an old wrecked training ship stuck inside a sea cave, barnacles on the railings, light from a hole in the cave ceiling"
+   "memo": "기울어진 실습선 갑판. 따개비 낀 난간 위에서 바닷새 포켓몬이 침입자를 노려본다.\nGM: 첫 배틀. 기울어진 갑판 — 미끄러지는 묘사, 바닷새의 울음.",
+   "art": "the tilted wooden deck of an old wrecked training ship stuck inside a sea cave, barnacles on the railings, light from a hole in the cave ceiling",
+   "gm": "첫 배틀. 기울어진 갑판 — 미끄러지는 묘사, 바닷새의 울음.",
+   "img": "md2_sea/b1.webp"
   },
   {
    "id": "c1",
@@ -144,8 +150,12 @@
     }
    },
    "desc": "동굴 바닥을 가로지르는 물길. 물때를 잘못 읽으면 소용돌이에 휩쓸린다.",
-   "memo": "동굴 바닥을 가로지르는 물길. 물때를 잘못 읽으면 소용돌이에 휩쓸린다.",
-   "art": "an underground sea channel with swirling whirlpool currents inside a cave, stepping stones, blue light reflecting on the cave walls"
+   "memo": "동굴 바닥을 가로지르는 물길. 물때를 잘못 읽으면 소용돌이에 휩쓸린다.\nGM: 물때 읽기(지시 10). 성공하면 소용돌이 사이로 드러난 디딤돌을 짚어 준다.",
+   "art": "an underground sea channel with swirling whirlpool currents inside a cave, stepping stones, blue light reflecting on the cave walls",
+   "gm": "물때 읽기(지시 10). 성공하면 소용돌이 사이로 드러난 디딤돌을 짚어 준다.",
+   "okText": "파도가 물러나는 박자에 맞춰 디딤돌을 하나씩 건넜다.",
+   "failText": "한 박자 늦었다 — 소용돌이에 발목을 잡혀 한 바퀴 휘돌았다.",
+   "img": "md2_sea/c1.webp"
   },
   {
    "id": "safe",
@@ -178,8 +188,12 @@
     }
    },
    "desc": "등대지기가 쓰던 바위 속 창고. 녹슨 철문만 열면 마른 담요와 램프가 있다.",
-   "memo": "등대지기가 쓰던 바위 속 창고. 녹슨 철문만 열면 마른 담요와 램프가 있다.",
-   "art": "a small storage room carved in rock below a lighthouse, a rusty iron door, oil lamps, ropes and folded blankets, warm lamplight, safe and quiet"
+   "memo": "등대지기가 쓰던 바위 속 창고. 녹슨 철문만 열면 마른 담요와 램프가 있다.\nGM: 쉼터. 녹슨 철문(능력 10). 안에 마른 담요 · 램프. 노교수의 학생 시절 이름이 벽에 새겨져 있다고 흘려도 된다.",
+   "art": "a small storage room carved in rock below a lighthouse, a rusty iron door, oil lamps, ropes and folded blankets, warm lamplight, safe and quiet",
+   "gm": "쉼터. 녹슨 철문(능력 10). 안에 마른 담요 · 램프. 노교수의 학생 시절 이름이 벽에 새겨져 있다고 흘려도 된다.",
+   "okText": "끼이익 — 철문이 열리고 마른 공기가 흘러나왔다.",
+   "failText": "문을 비틀다 녹슨 경첩이 튀어 손을 긁었다. 그래도 문은 열렸다.",
+   "img": "md2_sea/safe.webp"
   },
   {
    "id": "boss",
@@ -208,7 +222,8 @@
    },
    "desc": "실습선의 깊은 선창. 바닷물이 얼어 서리꽃이 피었고, 그 가운데 서리콘이 둥지를 지킨다.",
    "memo": "실습선의 깊은 선창. 바닷물이 얼어 서리꽃이 피었고, 그 가운데 서리콘이 둥지를 지킨다.",
-   "art": "the deep cargo hold of a wrecked ship flooded with seawater, frost and ice crystals covering the wooden beams, pale blue cold light, an icy nest in the middle"
+   "art": "inside the dark deep cargo hold of an old wrecked wooden ship, curved wooden ribs and beams overhead, seawater on the floor frozen into ice, frost flowers and icicles covering the beams, pale blue cold light, a nest woven of ice in the middle",
+   "img": "md2_sea/boss.webp"
   },
   {
    "id": "g1a1",
@@ -227,8 +242,10 @@
    },
    "alt": "g1",
    "desc": "허리까지 차는 조수 웅덩이에 해초가 숲처럼 자랐다. 물속에서 번쩍이는 것이 지나간다.",
-   "memo": "허리까지 차는 조수 웅덩이에 해초가 숲처럼 자랐다. 물속에서 번쩍이는 것이 지나간다.",
-   "art": "a large tide pool inside a sea cave filled with tall swaying kelp like a forest, clear water, sunlight shafts"
+   "memo": "허리까지 차는 조수 웅덩이에 해초가 숲처럼 자랐다. 물속에서 번쩍이는 것이 지나간다.\nGM: 돌아가는 길 배틀 — 해초 숲 속 기습. 물속에서 번쩍이는 것은 펑가오.",
+   "art": "a large tide pool inside a sea cave filled with tall swaying kelp like a forest, clear water, sunlight shafts",
+   "gm": "돌아가는 길 배틀 — 해초 숲 속 기습. 물속에서 번쩍이는 것은 펑가오.",
+   "img": "md2_sea/g1a1.webp"
   },
   {
    "id": "g2a1",
@@ -263,18 +280,24 @@
    },
    "alt": "g2",
    "desc": "파도가 들이치는 바위 턱. 소용돌이를 거슬러 헤엄쳐야 다음 바위에 닿는다.",
-   "memo": "파도가 들이치는 바위 턱. 소용돌이를 거슬러 헤엄쳐야 다음 바위에 닿는다.",
-   "art": "slippery wet rocks along a cave wall with waves crashing in, foam and spray, a gap of rough water between the rocks"
+   "memo": "파도가 들이치는 바위 턱. 소용돌이를 거슬러 헤엄쳐야 다음 바위에 닿는다.\nGM: 멀리 도는 길 첫 방. 헤엄 체크(능력 10).",
+   "art": "slippery wet rocks along a cave wall with waves crashing in, foam and spray, a gap of rough water between the rocks",
+   "gm": "멀리 도는 길 첫 방. 헤엄 체크(능력 10).",
+   "okText": "파도가 꺼지는 틈을 타 단숨에 건넜다.",
+   "failText": "파도에 떠밀려 바위에 부딪혔다. 짠물을 한 바가지 마셨다.",
+   "img": "md2_sea/g2a1.webp"
   },
   {
    "id": "g2a2",
    "t": "room",
    "alt": "g2",
    "filler": 1,
-   "memo": "실습생들이 쓰던 선실. 무릎까지 물이 찼고 낡은 해도가 벽에 붙어 있다.",
+   "memo": "실습생들이 쓰던 선실. 무릎까지 물이 찼고 낡은 해도가 벽에 붙어 있다.\nGM: 쉬어 가는 장면. 벽의 낡은 해도에 배가 좌초한 날짜가 적혀 있다.",
    "name": "물 고인 선실",
    "desc": "실습생들이 쓰던 선실. 무릎까지 물이 찼고 낡은 해도가 벽에 붙어 있다.",
-   "art": "a half flooded cabin of an old ship, water up to the knees, an old nautical chart pinned on the wall, round porthole light"
+   "art": "interior of a half flooded cabin inside an old wrecked wooden ship, seawater up to the knees, wooden bunk beds, an old nautical chart pinned on the wooden wall, a round brass porthole letting in a beam of light, damp and dim",
+   "gm": "쉬어 가는 장면. 벽의 낡은 해도에 배가 좌초한 날짜가 적혀 있다.",
+   "img": "md2_sea/g2a2.webp"
   },
   {
    "id": "g2a3",
@@ -307,8 +330,12 @@
    },
    "alt": "g2",
    "desc": "버려진 어망이 모래톱에 엉켜 있다. 그 안에서 작은 포켓몬이 버둥거린다.",
-   "memo": "버려진 어망이 모래톱에 엉켜 있다. 그 안에서 작은 포켓몬이 버둥거린다.",
-   "art": "a small cave beach tangled with an abandoned fishing net, buoys and driftwood, gentle waves, soft light"
+   "memo": "버려진 어망이 모래톱에 엉켜 있다. 그 안에서 작은 포켓몬이 버둥거린다.\nGM: 그물 풀기(육성 12). 성공하면 풀려난 포켓몬이 감사하듯 주변을 맴돈다.",
+   "art": "a small cave beach where a big abandoned fishing net is tangled over rocks in the foreground, orange buoys and driftwood caught in the net, gentle waves, soft light",
+   "gm": "그물 풀기(육성 12). 성공하면 풀려난 포켓몬이 감사하듯 주변을 맴돈다.",
+   "okText": "그물코를 하나씩 끊어 주자 작은 포켓몬이 파도 속으로 돌아갔다.",
+   "failText": "버둥거리던 녀석이 독가시를 세웠다. 손끝이 저릿하다.",
+   "img": "md2_sea/g2a3.webp"
   },
   {
    "id": "tr",
@@ -316,14 +343,17 @@
    "side": 1,
    "name": "떠밀려 온 상자",
    "clue": {
-    "t": "주인의 흔적",
-    "d": "깊은 곳의 주인 — 「얼음 · 물」 기운이 서려 있다.\n「전기」 · 「풀」 · 「격투」 쪽을 꺼리는 흔적이 남아 있다.\n「에어로블라스트」의 자국이 벽에 새겨져 있다.",
+    "t": "실습선 항해 일지 마지막 장",
+    "d": "「선창의 냉기가 심상치 않다. 해초 덩굴에 감기면 잠잠해지고, 번개가 치는 밤이면 녀석이 꼼짝을 못 했다.」\n깊은 곳의 주인 — 「얼음 · 물」 기운이 서려 있다.\n「전기」 · 「풀」 · 「격투」 쪽을 꺼리는 흔적이 남아 있다.\n「에어로블라스트」의 자국이 벽에 새겨져 있다.",
     "auto": 1
    },
    "from": "g1a1",
    "desc": "파도에 떠밀려 온 나무 상자. 실습선의 항해 일지가 방수포에 싸여 있다.",
-   "memo": "파도에 떠밀려 온 나무 상자. 실습선의 항해 일지가 방수포에 싸여 있다.",
-   "art": "a weathered wooden chest washed up on a cave beach, wrapped in canvas, starfish and shells around it, beam of light"
+   "memo": "파도에 떠밀려 온 나무 상자. 실습선의 항해 일지가 방수포에 싸여 있다.\nGM: 곁방 보물. 방수포 속 항해 일지 = 보스 단서.",
+   "art": "a weathered wooden chest washed up on a cave beach, wrapped in canvas, starfish and shells around it, beam of light",
+   "gm": "곁방 보물. 방수포 속 항해 일지 = 보스 단서.",
+   "clueAuto": "깊은 곳의 주인 — 「얼음 · 물」 기운이 서려 있다.\n「전기」 · 「풀」 · 「격투」 쪽을 꺼리는 흔적이 남아 있다.\n「에어로블라스트」의 자국이 벽에 새겨져 있다.",
+   "img": "md2_sea/tr.webp"
   }
  ],
  "branches": [
@@ -445,5 +475,12 @@
  "intro": "후문 너머 절벽 끝 폐등대 아래, 썰물 때만 입을 여는 해식 동굴. 오래전 좌초한 실습선이 동굴 안쪽에 박혀 있고, 선창 깊은 곳에는 서리콘 무리가 서리 낀 둥지를 틀었다. 물때가 바뀌기 전에 돌아 나와야 한다.",
  "art": {
   "look": "1.2::seaside sea cave area, tide pools, turquoise water, wet rocks, barnacles, salty spray, bright and refreshing::, "
- }
+ },
+ "story": {
+  "hook": "항해학과 노교수가 연구실로 부른다. 「한여름인데 썰물 때마다 등대 아래 동굴에서 얼음 조각이 떠밀려 와. 삼십 년 전 그 안에 박힌 실습선 — 내가 학생 때 타던 배야. 항해 일지라도 건져 와 주겠나?」",
+  "boss": "선창 문을 밀자 숨이 하얗게 언다. 바닷물이 고인 채 얼어붙은 바닥 한가운데, 서리꽃으로 엮은 둥지 위에서 서리콘이 꼬리를 세운다. 녀석이 숨을 내쉴 때마다 배의 늑골에 서리가 한 겹씩 더 내려앉는다.",
+  "end": "서리콘이 깨진 선창 바닥 틈으로 바다를 향해 미끄러져 나간다. 얼음이 녹으며 배 전체가 끼익 — 길게 한숨을 쉰다. 물때가 바뀌기 전에 돌아 나가야 한다.",
+  "reward": "실습선 항해 일지(노교수의 감사 · 항해학과 연줄) · 선창에서 녹지 않은 서리 결정 한 조각"
+ },
+ "test": true
 }
