@@ -5101,16 +5101,6 @@ body:has(.modalbg) .tour-ask{display:none}
 .banner.out{animation:bannerout .4s ease-in forwards}
 @keyframes bannerout{from{transform:none;opacity:1}to{transform:translateX(40px);opacity:0}}
 @media (max-width:760px){.banner.instage .bt{font-size:22px}.banner.instage .bm{font-size:13px}.banner.instage{padding-top:10px;padding-bottom:10px}}
-/* 20-3 스탠딩: 화자 교체(밝기) 0.5초 · 퇴장은 살짝 어두워지며 바깥쪽으로 0.4초 (40초 TTL 만료도 같은 길 — syncStands 의 .out) */
-.stand{transition:filter .5s,opacity .5s,transform .5s}
-.stand img{transition:filter .5s}
-.stand.out{animation:standoutL .4s ease-in forwards;pointer-events:none}
-.stand.right.out{animation-name:standoutR}
-.stand.center.out{animation-name:standoutC}
-@keyframes standoutL{to{opacity:0;filter:brightness(.4);transform:translateX(-48px)}}
-@keyframes standoutR{to{opacity:0;filter:brightness(.4);transform:translateX(48px)}}
-@keyframes standoutC{to{opacity:0;filter:brightness(.4);transform:translateX(-50%) translateY(18px)}}
-.stand.center.ds-l.out{animation-name:standoutL}.stand.center.ds-r.out{animation-name:standoutR}
 /* 20-12 GM 콘솔 「최근」 띠: 배경 3 · 곡 3 · 공지 2 */
 .gcrecent{display:flex;align-items:center;gap:6px;flex-wrap:wrap;padding:6px 14px 8px;border-bottom:1px solid var(--line2);background:rgba(255,255,255,.02)}
 .gcrecent>small{font-family:var(--lab);color:var(--yel2);letter-spacing:.08em;margin-right:2px}
