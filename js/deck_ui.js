@@ -221,7 +221,7 @@ window.OM_DECK_UI=(()=>{
  const pendingN=()=>Object.keys(PEND).filter(k=>Date.now()-PEND[k].at<60000).length;
 
  /* ---------- 카드 그림 ---------- */
- const skNorm=c=>({n:c.n,t:c.t,c:c.c,x:c.x,img:c.img,col:colOf(c.col),ic:icOf(c),src:c.src||'',lim:c.lim||'',auto:!!(c.a&&c.a.ops&&c.a.ops.length),cls:c.cls||'',dmax:c.deckMax!=null&&c.deckMax!==''?c.deckMax:null});   /* 11-03: 제작기가 새로 넣을 cls(열쇠/준비/증상) · deckMax 는 있으면 표시만 */
+ const skNorm=c=>({n:c.n,t:c.t,c:c.c,x:c.x,img:c.img,col:colOf(c.col),ic:icOf(c),src:c.src||'',lim:c.lim||(c.deckMax!=null&&c.deckMax!==''&&+c.deckMax!==2?'최대 '+c.deckMax:''),auto:!!(c.a&&c.a.ops&&c.a.ops.length),cls:c.cls||''});   /* 11-03: 제작기가 넣는 cls(열쇠/준비/증상) · lim(덱 제한 글, 제작기와 같은 「최대 n」) 은 있으면 표시만 (skcard.js 는 제작기와 같은 파일) */
  /* 11-03 감우 「배틀 손패 거르기」: 카드의 「쓰는 곳」(t) 이 지금 자리(배틀 · 체크 · 던전)에 맞지 않으면 흐리게 보이고 「사용」은 막는다 (무덤으로 버리기는 된다). 쓰는 곳이 비었거나 열쇠 · 상태 · 기타는 어디서나 */
  function cardFit(c,where){if(where==='rp'||where==='dungeon')return '';/* 배틀 손패에서만 거른다 (체크 · 던전 창은 그대로) */const k=window.SKCARD&&window.SKCARD.kindOf?window.SKCARD.kindOf((c||{}).t):'etc';if(!c||!String(c.t||'').trim())return '';if(['etc','ky','st','bt','re'].includes(k))return '';return `쓰는 곳 「${String(c.t)}」 — 배틀에서는 쓸 수 없다`}
  function cardHtml(c,o){o=o||{};if(!c)return '';if(window.SKCARD)return window.SKCARD.flat(skNorm(c),o);const col=colOf(c.col);const cost=c.c!==''&&c.c!=null;
@@ -432,7 +432,7 @@ window.OM_DECK_UI=(()=>{
   let db=DB()?clone(DB()):seedDb();if(!DB()){db.decks={};db.cur=''}const K=window.OM_FX;let nd=0,nc=0,miss=[];
   for(const t of list){const id='mk_'+t.id;const old=db.decks[id]?fixDeck(db.decks[id]):null;const dk=old||blank(t.deckName||((t.name||'트레이너')+'의 덱'));dk.name=t.deckName||dk.name;ensureHolder(dk,t.id);
    const keep=new Set();for(const x of t.deck){const r=byName[x.n];if(!r){miss.push(x.n);continue}const cid='k'+[...x.n].reduce((h,c)=>((h*31+c.codePointAt(0))>>>0),7).toString(36);keep.add(cid);
-    const dsl=String(r[9]||'').trim();const v={n:x.n,ic:String(r[10]||''),t:String(r[2]||''),c:r[3]==null?'':String(r[3]),x:String(r[4]||''),col:colKey(r[5]),img:String(r[6]||''),src:String(r[11]||''),q:Math.max(0,+x.q||+r[7]||1)};if(dsl){const p=K?K.parse(dsl):{ops:[]};v.a={dsl,ops:p.ops}}
+    const dsl=String(r[9]||'').trim();const v={n:x.n,ic:String(r[10]||''),t:String(r[2]||''),c:r[3]==null?'':String(r[3]),x:String(r[4]||''),col:colKey(r[5]),img:String(r[6]||''),src:String(r[11]||''),cls:String(r[12]||''),lim:(()=>{const v=String(r[13]==null?'':r[13]).trim();const n=v===''?2:Math.round(+v);return isNaN(n)||n<1||n===2?'':'최대 '+n})(),q:Math.max(0,+x.q||+r[7]||1)};   /* 11-03: 12 분류 · 13 덱 제한 → 손패 카드에 표시 (제작기 cardMax 와 같은 셈) */if(dsl){const p=K?K.parse(dsl):{ops:[]};v.a={dsl,ops:p.ops}}
     const was=dk.cards[cid];const q0=was?(+was.q||0):0;dk.cards[cid]=Object.assign({},v,{q:q0});if(!dk.order.includes(cid))dk.order.push(cid);qtyAdj(dk,cid,v.q-q0);nc++}
    for(const cid of dk.order.slice())if(!keep.has(cid)&&String(cid).startsWith('k')){qtyAdj(dk,cid,-(+dk.cards[cid].q||0));dk.order=dk.order.filter(x=>x!==cid);delete dk.cards[cid];for(const z of ['pile','disc','out'])dk[z]=dk[z].filter(x=>x!==cid)}
    if(!old)dk.pile=shuffle(dk.pile);db.decks[id]=dk;if(!db.cur)db.cur=id;nd++}

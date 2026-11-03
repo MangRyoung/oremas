@@ -135,6 +135,9 @@ async function shrinkUpload(blob,maxSide){try{if(!/^image\/(png|jpe?g|webp|bmp)$
 
  /* 10-26 망령: 세션 노트(nt_*) 읽기 — 공개 문서는 표에서, GM 비밀구가 있으면 nt_all 로 전부 */
  async function ntCampUpdate(camp,secret,data){return rpc('nt_camp_update',{p_camp:camp,p_secret:secret,p_name:null,p_data:data})}   /* 10-29: 방 ↔ 세션 노트 캠페인 잇기 (캠페인 data.om.room) */
+ /* 11-03 감우: 캠페인 설정을 칸 단위로 합친다(노트 patch_2026-11-03_노트.sql 의 nt_camp_patch · null 이면 그 칸 지움). 함수가 없으면 지금 DB 값을 받아 1단계 키만 합쳐 통째 쓰기 */
+ async function ntCampPatch(camp,secret,patch){const r=await sb().rpc('nt_camp_patch',{p_camp:camp,p_secret:secret,p_patch:patch||{},p_name:null});if(!r.error)return r.data;if(!noFn(r.error))throw err(r.error);
+  const c=await sb().from('nt_camp').select('data').eq('id',camp).maybeSingle();if(c.error)throw err(c.error);const d=Object.assign({},(c.data&&c.data.data)||{});for(const k in patch||{}){if(patch[k]===null)delete d[k];else if(patch[k]&&typeof patch[k]==='object'&&!Array.isArray(patch[k])&&d[k]&&typeof d[k]==='object')d[k]=Object.assign({},d[k],patch[k]);else d[k]=patch[k]}await ntCampUpdate(camp,secret,d);return d}
  async function ntCamps(){const r=await sb().from('nt_camp').select('id,name,data,created_at').order('created_at');if(r.error)throw err(r.error);return r.data||[]}
  /* 10-29 망령 「변동 사항만 주고받게」: 세션 노트 문서를 이 브라우저에 사본으로 두고(캠페인 · GM/공개 따로) 다음에는 그 뒤에 바뀐 것만 받는다.
     지워진 것 · 안 보이게 바뀐 것은 id 목록(nt_ids · 내용 없음)으로 걸러 낸다. 7일 지나면 한 번 전부 새로 받는다 */
@@ -181,5 +184,5 @@ async function shrinkUpload(blob,maxSide){try{if(!/^image\/(png|jpe?g|webp|bmp)$
   dcHall:(room,secret,o)=>rpc('om_dc_hall',{p_room:room,p_secret:secret,p_title:o.title||'',p_sub:o.sub||'',p_img:o.img,p_who:o.who||{}}),
   hallGet:(room,secret)=>rpc('om_dc_hall_get',{p_room:room,p_secret:secret}),
   hallPut:(room,secret,o)=>rpc('om_dc_hall_put',{p_room:room,p_secret:secret,p_url:o.url??null,p_thread:o.thread??''}),noFn};
- return {patchesSince,setStateMany,snap,hall,bbs,shrinkUpload,ntCamps,ntCampUpdate,ntDocs,ntSync,NTSYNC,ntGet,ntPut,ntPutMany,ntDel,ntWatch,rtReset,getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,getLogBefore,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty,makerOne,makerPut};
+ return {patchesSince,setStateMany,snap,hall,bbs,shrinkUpload,ntCamps,ntCampUpdate,ntCampPatch,ntDocs,ntSync,NTSYNC,ntGet,ntPut,ntPutMany,ntDel,ntWatch,rtReset,getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,getLogBefore,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty,makerOne,makerPut};
 })();

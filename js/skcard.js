@@ -1,5 +1,6 @@
 /* 은열쇠 카드 한 장 그리기 (2026-11-02 감우) — 오레마스 웹툴 · 망켓몬 제작기가 같은 모양을 쓴다.
-   SKCARD.html(c, o) : c = {n 이름, t 종류(쓰는 곳), c 비용, x 효과, img 그림, col 테두리 색(#hex), ic [아이콘…], src 출처, lim 덱 제한 글, auto 자동화 있음, cls 카드 칸(열쇠/준비/증상 · 있으면), dmax 덱 제한 장수(있으면)}
+   SKCARD.html(c, o) : c = {n 이름, t 종류(쓰는 곳), c 비용, x 효과, img 그림, col 테두리 색(#hex), ic [아이콘…], src 출처, lim 덱 제한 글, auto 자동화 있음,
+                            cls 분류(열쇠 · 준비 · 증상 — 11-03, 제작기 카드 DB 12번 칸 · 덱 제한 장수는 13번 칸 deckMax)}
                        o = {cls 덧붙일 class, attr 덧붙일 속성 글, badge 오른쪽 위 딱지(×2 등), sel 골랐음}
    SKCARD.back(n)    : 카드 뒷면 (n = 장수 글, 없어도 된다)
    크기는 바깥에서 width 만 정하면 된다 — 글자 크기가 카드 너비를 따라간다 (container query). */
@@ -16,6 +17,8 @@ window.SKCARD=window.SKCARD||(()=>{
    .replace(/(『[^』\n]{1,24}』|「[^」\n]{1,24}」)/g,'<b class="skk">$1</b>')
    .replace(/(^|[\s(（])([+＋−\-–]\s?\d+(?:\/\d+)?%?)/g,'$1<b class="skn">$2</b>')
    .replace(/\n/g,'<br>');
+ /* 분류 (11-03): 열쇠 · 준비 · 증상 → 작은 딱지 색 */
+ const clsKey=v=>{v=String(v||'');return /열쇠/.test(v)?'ky':/준비/.test(v)?'pr':/증상|광기|상태/.test(v)?'sy':'etc'};
  const KEY='<svg viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><circle cx="22" cy="22" r="12"/><circle cx="22" cy="22" r="4.5"/><path d="M31 31 54 54M44 44l6-6M49 49l5-5"/></g></svg>';
  function html(c,o){c=c||{};o=o||{};
   const ic=icList(c.ic),cost=c.c!==''&&c.c!=null,k=kindOf(c.t);
@@ -25,9 +28,9 @@ window.SKCARD=window.SKCARD||(()=>{
    +`<div class="skc-art"${c.img?` style="background-image:url('${cssu(c.img)}')"`:''}>${c.img?'':`<span class="skc-wm">${KEY}</span>`}</div>`
    +`<div class="skc-top">${cost?`<span class="skc-cost" title="비용"><b>${esc(c.c)}</b></span>`:''}<b class="skc-n">${esc(c.n||'?')}</b></div>`
    +(ic.length?`<div class="skc-ic" title="아이콘 — 스킬 체크에 바치면 +1">${ic.map(x=>`<i style="--ic:${ICN[x][1]}" title="${esc(x)}">${ICN[x][0]}</i>`).join('')}</div>`:'')
-   +`<div class="skc-body"><div class="skc-t">${t.length?t.map((s,i)=>`<span${i?'':' class="m"'}>${esc(s)}</span>`).join(''):'<span class="m">카드</span>'}${c.cls?`<span class="skc-cls" title="카드 칸">${esc(c.cls)}</span>`:''}</div>`
+   +`<div class="skc-body"><div class="skc-t">${t.length?t.map((s,i)=>`<span${i?'':' class="m"'}>${esc(s)}</span>`).join(''):'<span class="m">카드</span>'}</div>`
    +`<div class="skc-x">${fx(c.x)}</div>`
-   +`<div class="skc-f"><span>${esc(c.src||'')}</span>${c.lim?`<u title="덱 제한">${esc(c.lim)}</u>`:''}${c.dmax!=null?`<u title="덱 제한 장수">덱 ${esc(c.dmax)}장</u>`:''}${c.auto?'<u class="a" title="자동화 구문이 돈다">AUTO</u>':''}</div></div>`
+   +`<div class="skc-f">${c.cls?`<i class="skc-cls c-${clsKey(c.cls)}" title="분류">${esc(c.cls)}</i>`:''}<span>${esc(c.src||'')}</span>${c.lim?`<u title="덱 제한">${esc(c.lim)}</u>`:''}${c.auto?'<u class="a" title="자동화 구문이 돈다">AUTO</u>':''}</div></div>`
    +`</div></div>${o.badge!=null&&o.badge!==''?`<em class="skc-q">${esc(o.badge)}</em>`:''}</div>`}
  const back=n=>`<div class="skc back"><div class="skc-fr"><div class="skc-in"><span class="skc-bk">${KEY}</span>${n!=null&&n!==''?`<em>${esc(n)}</em>`:''}</div></div></div>`;
  /* 휴대폰 덱 앱 같은 좁은 칸: 세로 비율 없이 글을 다 보여 주는 납작한 카드 (같은 옷) */
@@ -35,8 +38,8 @@ window.SKCARD=window.SKCARD||(()=>{
   return `<div class="dc skf k-${k}${o.sel?' sel':''}${o.cls?' '+o.cls:''}" style="--skc:${esc(c.col||'#6b7286')}" ${o.attr||''}>${o.badge!=null&&o.badge!==''?`<em class="dcb">${esc(o.badge)}</em>`:''}`
    +`<div class="dch">${cost?`<span class="dcc">${esc(c.c)}</span>`:''}<b>${esc(c.n||'?')}</b>${ic.length?`<span class="dcp">${ic.map(x=>`<i style="--ic:${ICN[x][1]}" title="${esc(x)}">${ICN[x][0]}</i>`).join('')}</span>`:''}</div>`
    +(c.img?`<div class="dci" style="background-image:url('${cssu(c.img)}')"></div>`:'')
-   +`<div class="dct">${t.length?t.map((s,i)=>`<span${i?'':' class="m"'}>${esc(s)}</span>`).join(''):'<span class="m">카드</span>'}${c.cls?`<span class="skc-cls">${esc(c.cls)}</span>`:''}</div>`
+   +`<div class="dct">${t.length?t.map((s,i)=>`<span${i?'':' class="m"'}>${esc(s)}</span>`).join(''):'<span class="m">카드</span>'}</div>`
    +`<div class="dcx">${fx(c.x)}</div>`
-   +(c.auto||c.lim||c.dmax!=null?`<div class="dcf">${c.lim?`<u>${esc(c.lim)}</u>`:''}${c.dmax!=null?`<u>덱 ${esc(c.dmax)}장</u>`:''}${c.auto?'<u class="a" title="자동화 구문이 돈다">AUTO</u>':''}</div>`:'')+`</div>`}
+   +(c.auto||c.lim||c.cls?`<div class="dcf">${c.cls?`<i class="skc-cls c-${clsKey(c.cls)}">${esc(c.cls)}</i>`:''}${c.lim?`<u>${esc(c.lim)}</u>`:''}${c.auto?'<u class="a" title="자동화 구문이 돈다">AUTO</u>':''}</div>`:'')+`</div>`}
  const flatBack=n=>`<div class="dc skf back"><span class="skc-bk">${KEY}</span>${n!=null&&n!==''?`<em>${esc(n)}</em>`:''}</div>`;
- return {html,back,flat,flatBack,fx,icList,ICN,kindOf}})();
+ return {html,back,flat,flatBack,fx,icList,ICN,kindOf,clsKey}})();

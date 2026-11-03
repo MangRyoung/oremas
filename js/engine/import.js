@@ -92,13 +92,14 @@ window.OM_IMPORT=(()=>{
  function itemsX(d,ET){return (Array.isArray(d.items2)?d.items2:[]).slice(0,2).map((x,k)=>{const n=String((x&&x.item)||'');if(!n)return {item:'',itemEff:''};const r=(DB().items||{})[n];const own=x.itemOwn&&x.itemOwn.name===n?x.itemOwn:null;const et=((ET.its2||[])[k])||{};const eff=brN(r?r.eff||'':own?own.eff||'':et.it||'');
   return Object.assign({item:n,itemEff:eff},!r&&(own||et.it)?{itemOwn:{name:n,eff,auto:String(own?own.auto||'':et.itAuto||''),cons:!!(own?own.cons:et.itCons),sock:own?String(own.sock||''):''}}:{})})}
  /* 폼체인지·메가진화 (제작기 시트 forms): 비운 칸은 원래 값 */
- function formsOf(d,base0,L){const out=(d.forms||[]).filter(f=>f&&(f.name||f.ability||(f.base||[]).some(v=>v!=='')||(f.pots||[]).some(x=>x&&x.name))).map(f=>{
+ /* 11-03 감우: 제작기 effSnap 이 폼마다 {ab, pots[], kinds[]} 를 effTxt.forms[k] 에 남긴다(d.forms 와 같은 차례 · pots/kinds 는 f.pots 와 같은 차례) — 제작기에서 새로 만든 특성 · 포텐셜도 글이 비지 않게 DB 보다 먼저 거기서 쓴다 */
+ function formsOf(d,base0,L){const EF=((d.effTxt||{}).forms)||[];const out=(d.forms||[]).map((f,k)=>[f,EF[k]||null]).filter(([f])=>f&&(f.name||f.ability||(f.base||[]).some(v=>v!=='')||(f.pots||[]).some(x=>x&&x.name))).map(([f,ef])=>{
    const base=Array.from({length:6},(_,i)=>{const v=(f.base||[])[i];return v===''||v==null?base0[i]:nz(v)});
    const tko=[f.t1,f.t2].map(x=>x&&x!=='-'?x:'-');const keepT=tko.every(x=>x==='-');
-   const ab=f.ability||'';const abil=ab?((DB().traits||{})[ab]||{}):null;
+   const ab=f.ability||'';const abil0=ab?((DB().traits||{})[ab]||{}):null;const abil=ab?(ef&&ef.ab?{multi:ef.ab}:abil0):null;
    return {name:f.name||'',kind:f.kind||'폼체인지',typesKo:keepT?null:[...tko,'-'],types:keepT?null:[...tko,'-'].map(S().typeEn),
     ability:ab,abilityEff:abil?brN(abil.multi||abil.single||''):null,base,image:f.image||'',cond:f.cond||'',revert:!!f.revert,
-    pots:(f.pots||[]).filter(x=>x&&x.name).map(x=>{const row=((DB().maker||{}).pots||[]).find(r=>r[1]===x.name);return {slot:+x.slot||0,name:String(x.name).replace(/『|』/g,''),kind:row?row[0]:'',eff:brN(x.eff||(row?row[2]:''))}})}});
+    pots:(f.pots||[]).map((x,i)=>[x,i]).filter(([x])=>x&&x.name).map(([x,i])=>{const row=((DB().maker||{}).pots||[]).find(r=>r[1]===x.name);const ep=ef?(ef.pots||[])[i]:'',ek=ef?(ef.kinds||[])[i]:'';return {slot:+x.slot||0,name:String(x.name).replace(/『|』/g,''),kind:ek||(row?row[0]:''),eff:brN(x.eff||ep||(row?row[2]:''))}})}});
   return out.length?out:null}
 
  /* 역할 포텐셜(00.x. 역할)에서 역할 이름 */

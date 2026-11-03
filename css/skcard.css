@@ -44,6 +44,9 @@
 .skc-f{display:flex;align-items:center;gap:1.6cqw;margin-top:1cqw;padding-top:1.6cqw;border-top:.4cqw solid color-mix(in srgb,var(--skc) 35%,transparent);font-size:4.6cqw;line-height:1;color:color-mix(in srgb,var(--ski) 55%,transparent);min-height:5.6cqw}
 .skc-f span{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:.04em}
 .skc-f u{text-decoration:none;font-weight:700;color:#fff;background:#3a3d48;border-radius:99px;padding:.9cqw 2.2cqw;white-space:nowrap}
+.skc-cls{flex:none;font-style:normal;font-weight:700;font-size:4.2cqw;line-height:1;padding:.9cqw 1.8cqw;border-radius:1.2cqw;color:#fff;background:#6b7286;letter-spacing:.04em}
+.skc-cls.c-ky{background:#7a7f8e}.skc-cls.c-pr{background:#1f8a83}.skc-cls.c-sy{background:#5a3c78}
+.dc.skf .dcf .skc-cls{font-size:10px;padding:2px 5px;border-radius:4px;margin-right:4px}
 .skc-f u.a{background:#16171c;font-family:var(--mono,monospace);letter-spacing:.08em;box-shadow:0 0 0 .4cqw var(--skc)}
 /* 골랐음 · 누를 수 있음 */
 .skc.sel .skc-fr{box-shadow:0 0 0 1.6cqw #b48cff,0 4cqw 9cqw rgba(0,0,0,.5)}

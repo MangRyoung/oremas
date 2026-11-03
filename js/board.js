@@ -13,6 +13,8 @@ window.NT_BOARD=(()=>{
  const hash=s=>{let h=0;for(let i=0;i<s.length;i++)h=(h*31+s.charCodeAt(i))|0;return h};
  const SIL='<svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="34" r="20"/><path d="M12 100c2-26 18-40 38-40s36 14 38 40z"/></svg>';
  const PAL=['#d22a2a','#2f6fd0','#e3b51e','#2f9a52','#8a4fc4','#e07a2f','#1b9aaa','#b5438c','#6b7280','#1b1b1b'];
+ /* PL(편집 못 하는 쪽)이 카드를 옮기면 한 번만 알려 준다 — 제 브라우저에만 남는다는 것 */
+ function plMoveHint(){try{if(sessionStorage.getItem('nt_board_plmove'))return;sessionStorage.setItem('nt_board_plmove','1')}catch(e){}if(window.NT&&NT.toast)NT.toast('내 화면에서만 옮겨져요 — 모두에게 옮기려면 GM 에게')}
  function mount(el,opt){const W=opt.W||2200,H=opt.H||1400;const key=opt.key||'nt-board';const D={nodes:opt.nodes||[],edges:opt.edges||[],groups:opt.groups||{}};const byId={};D.nodes.forEach(n=>byId[n.id]=n);
   let scale=1,sel=null,linkFrom=null,labels=false;const hidden={};try{const s=JSON.parse(localStorage.getItem(key+':ui')||'{}');labels=!!s.labels;Object.assign(hidden,s.hidden||{})}catch(e){}
   const saveUi=()=>{try{localStorage.setItem(key+':ui',JSON.stringify({labels,hidden}))}catch(e){}};
@@ -38,7 +40,9 @@ window.NT_BOARD=(()=>{
    e.sh=document.createElementNS(NS,'path');e.sh.setAttribute('class','sh');e.el=document.createElementNS(NS,'path');e.el.setAttribute('class','str '+(e.kind||'tie')+(e.gmOnly?' gm':''));e.hit=document.createElementNS(NS,'path');e.hit.setAttribute('class','hit');e.hit.setAttribute('stroke','transparent');e.hit.setAttribute('stroke-width','16');e.hit.setAttribute('fill','none');
    svg.appendChild(e.sh);svg.appendChild(e.el);svg.appendChild(e.hit);
    const t=document.createElement('div');t.className='cb-tag '+(e.kind||'tie');t.style.setProperty('--r',(((hash(e.a+e.b)%7)-3)*1.2)+'deg');t.innerHTML=(e.redacted?'<span class="bar">██████</span>':esc(e.label||''))+(e.glabel?`<span class="g">· ${esc(e.glabel)}</span>`:'')+(e.gmOnly?'<span class="g">🔒</span>':'');board.appendChild(t);e.tag=t;
-   e.hit.addEventListener('mouseenter',()=>t.classList.add('on'));e.hit.addEventListener('mouseleave',()=>t.classList.remove('on'));e.hit.addEventListener('click',ev=>{ev.stopPropagation();if(opt.onEdge)opt.onEdge(e.id)})});
+   e.hit.addEventListener('mouseenter',()=>t.classList.add('on'));e.hit.addEventListener('mouseleave',()=>t.classList.remove('on'));
+   /* 10-26 망령: 터치는 올려놓기가 없으니 실을 톡 치면 메모가 2.5초 보인다 */
+   e.hit.addEventListener('pointerup',ev=>{if(ev.pointerType!=='touch')return;t.classList.add('show');clearTimeout(e._showT);e._showT=setTimeout(()=>t.classList.remove('show'),2500)});e.hit.addEventListener('click',ev=>{ev.stopPropagation();if(opt.onEdge)opt.onEdge(e.id)})});
   function route(e){const A=anchor(e.a),B=anchor(e.b),dx=B.x-A.x,dy=B.y-A.y,L=Math.hypot(dx,dy)||1;const sag=Math.min(90,L*.1)+(e.k-1)*34;let mx=(A.x+B.x)/2,my=(A.y+B.y)/2+sag;if(e.k>1)mx+=-dy/L*(e.k-1)*26;const d=`M${A.x} ${A.y} Q${mx} ${my} ${B.x} ${B.y}`;e.el.setAttribute('d',d);e.sh.setAttribute('d',d);e.hit.setAttribute('d',d);e.tag.style.left=(.25*A.x+.5*mx+.25*B.x)+'px';e.tag.style.top=(.25*A.y+.5*my+.25*B.y)+'px'}
   function layoutAll(){D.nodes.forEach(n=>place(n.id));D.edges.forEach(route)}
   /* 메모지 */
@@ -55,8 +59,8 @@ window.NT_BOARD=(()=>{
   board.addEventListener('dblclick',e=>{if(!opt.canEdit||!opt.onNew)return;if(e.target!==board&&e.target!==svg)return;const r=board.getBoundingClientRect();opt.onNew((e.clientX-r.left)/scale,(e.clientY-r.top)/scale)});
   function drag(c,id){let sx,sy,ox,oy,moved=false,pid=null;
    c.addEventListener('pointerdown',e=>{if(e.button!==0)return;pid=e.pointerId;c.setPointerCapture(pid);sx=e.clientX;sy=e.clientY;ox=pos[id].x;oy=pos[id].y;moved=false});
-   c.addEventListener('pointermove',e=>{if(pid!==e.pointerId)return;const dx=(e.clientX-sx)/scale,dy=(e.clientY-sy)/scale;if(!moved&&Math.hypot(dx,dy)<4)return;moved=true;pos[id]={x:Math.max(70,Math.min(W-70,ox+dx)),y:Math.max(95,Math.min(H-95,oy+dy))};place(id);D.edges.forEach(ed=>{if(ed.a===id||ed.b===id)route(ed)})});
-   c.addEventListener('pointerup',e=>{if(pid!==e.pointerId)return;pid=null;if(moved){if(opt.canEdit&&opt.onMove)opt.onMove(id,Math.round(pos[id].x),Math.round(pos[id].y));else{try{const o=JSON.parse(localStorage.getItem(key+':pos')||'{}');o[id]=[Math.round(pos[id].x),Math.round(pos[id].y)];localStorage.setItem(key+':pos',JSON.stringify(o))}catch(x){}}return}
+   c.addEventListener('pointermove',e=>{if(pid!==e.pointerId)return;if(vp.dataset.pinching){pid=null;if(moved){pos[id]={x:ox,y:oy};place(id);D.edges.forEach(ed=>{if(ed.a===id||ed.b===id)route(ed)});moved=false}return}const dx=(e.clientX-sx)/scale,dy=(e.clientY-sy)/scale;if(!moved&&Math.hypot(dx,dy)<4)return;moved=true;pos[id]={x:Math.max(70,Math.min(W-70,ox+dx)),y:Math.max(95,Math.min(H-95,oy+dy))};place(id);D.edges.forEach(ed=>{if(ed.a===id||ed.b===id)route(ed)})});
+   c.addEventListener('pointerup',e=>{if(pid!==e.pointerId)return;pid=null;if(moved){if(opt.canEdit&&opt.onMove)opt.onMove(id,Math.round(pos[id].x),Math.round(pos[id].y));else{try{const o=JSON.parse(localStorage.getItem(key+':pos')||'{}');o[id]=[Math.round(pos[id].x),Math.round(pos[id].y)];localStorage.setItem(key+':pos',JSON.stringify(o))}catch(x){}plMoveHint()}return}
     if(board.classList.contains('linkmode')){if(!linkFrom){linkFrom=id;c.classList.add('from')}else if(linkFrom!==id){if(opt.onLink)opt.onLink(linkFrom,id);linkFrom=null;el.querySelectorAll('.cb-card.from').forEach(x=>x.classList.remove('from'))}return}
     select(id)})}
   /* PL(편집 못 하는 쪽)은 자기 브라우저에 둔 자리로 */
@@ -66,8 +70,10 @@ window.NT_BOARD=(()=>{
   /* 맞춤: 판 전체가 한눈에 — 가로 · 세로 둘 다 들어가게, 보는 창 높이도 판에 맞춘다 (스크롤 막대 없이) */
   const fit=()=>{const maxH=Math.max(320,innerHeight-(innerWidth<980?150:200));const sc=Math.min(vp.clientWidth/(W+40),maxH/(H+40),1);vp.style.height=Math.round((H+40)*sc)+'px';setScale(sc);vp.scrollLeft=0;vp.scrollTop=0};
   /* 빈 곳을 끌면 판이 움직인다 · 휠 = 확대/축소 (마우스 자리 기준) */
-  {let pan=null;vp.addEventListener('pointerdown',e=>{if(e.button!==0||e.target.closest('.cb-card,.hit'))return;pan={x:e.clientX,y:e.clientY,l:vp.scrollLeft,t:vp.scrollTop,id:e.pointerId,m:false}});
-   vp.addEventListener('pointermove',e=>{if(!pan||pan.id!==e.pointerId)return;const dx=e.clientX-pan.x,dy=e.clientY-pan.y;if(!pan.m&&Math.hypot(dx,dy)<4)return;pan.m=true;vp.classList.add('panning');vp.scrollLeft=pan.l-dx;vp.scrollTop=pan.t-dy});
+  /* 10-26 망령: 손가락 두 개 확대 (NT.pinch 가 있을 때 — 오레마스에서는 없을 수 있다) */
+  if(window.NT&&NT.pinch)NT.pinch(vp,()=>({zoom:scale,px:-vp.scrollLeft,py:-vp.scrollTop}),s=>{setScale(s.zoom);vp.scrollLeft=-s.px;vp.scrollTop=-s.py},[.15,1.6]);
+  {let pan=null;vp.addEventListener('pointerdown',e=>{if(e.button!==0||vp.dataset.pinching||e.target.closest('.cb-card,.hit'))return;pan={x:e.clientX,y:e.clientY,l:vp.scrollLeft,t:vp.scrollTop,id:e.pointerId,m:false}});
+   vp.addEventListener('pointermove',e=>{if(!pan||pan.id!==e.pointerId)return;if(vp.dataset.pinching){pan=null;vp.classList.remove('panning');return}const dx=e.clientX-pan.x,dy=e.clientY-pan.y;if(!pan.m&&Math.hypot(dx,dy)<4)return;pan.m=true;vp.classList.add('panning');vp.scrollLeft=pan.l-dx;vp.scrollTop=pan.t-dy});
    const end=()=>{if(pan&&pan.m){board.dataset.panned='1';setTimeout(()=>{delete board.dataset.panned},0)}pan=null;vp.classList.remove('panning')};vp.addEventListener('pointerup',end);vp.addEventListener('pointercancel',end);
    vp.addEventListener('wheel',e=>{e.preventDefault();const r=vp.getBoundingClientRect();setScale(scale*(e.deltaY<0?1.12:1/1.12),e.clientX-r.left,e.clientY-r.top)},{passive:false})}
   el.querySelector('.cb-top').addEventListener('click',e=>{const b=e.target.closest('[data-cb]');if(!b)return;const k=b.dataset.cb;
@@ -75,8 +81,14 @@ window.NT_BOARD=(()=>{
    else if(k==='labels'){labels=!labels;board.classList.toggle('labels',labels);b.setAttribute('aria-pressed',labels);b.textContent=labels?'실 메모 숨기기':'실 메모 보기';saveUi()}
    else if(k==='new'&&opt.onNew){opt.onNew(vp.scrollLeft/scale+vp.clientWidth/scale/2,vp.scrollTop/scale+vp.clientHeight/scale/2)}
    else if(k==='link'){linkFrom=null;el.querySelectorAll('.cb-card.from').forEach(x=>x.classList.remove('from'));b.classList.toggle('on');board.classList.toggle('linkmode',b.classList.contains('on'));b.textContent=b.classList.contains('on')?'🧵 실 잇기 중 — 두 사람을 차례로':'🧵 실 잇기'}});
-  layoutAll();applyHidden();fit();select(null);
-  let lastW=0;const ro=window.ResizeObserver?new ResizeObserver(()=>{if(Math.abs(vp.clientWidth-lastW)>8){lastW=vp.clientWidth;fit()}}):null;if(ro)ro.observe(vp);
-  return {select:id=>{select(id,true);scrollTo(id)},relayout:layoutAll,destroy:()=>{if(ro)ro.disconnect()}}}
+  layoutAll();applyHidden();
+  /* 10-26 망령: 다시 그릴 때 확대 · 스크롤 · 고른 카드 · 실 잇기 모드를 이어 간다 */
+  const S0=opt.state;if(S0&&S0.scale){vp.style.height=S0.h||'';setScale(S0.scale);vp.scrollLeft=S0.l||0;vp.scrollTop=S0.t||0;if(S0.sel&&cards[S0.sel])select(S0.sel,true);else select(null);if(S0.link){const lb=el.querySelector('[data-cb="link"]');if(lb){lb.classList.add('on');board.classList.add('linkmode');lb.textContent='🧵 실 잇기 중 — 두 사람을 차례로'}if(S0.linkFrom&&cards[S0.linkFrom]){linkFrom=S0.linkFrom;cards[S0.linkFrom].classList.add('from')}}}else{fit();select(null)}
+  /* 붙어 있을 때 마지막 모습 — 떼어진 뒤(다른 탭) 다시 그릴 때 이걸로 되살린다 */
+  const snap=()=>({scale,l:vp.scrollLeft,t:vp.scrollTop,h:vp.style.height,sel,link:board.classList.contains('linkmode'),linkFrom});let LAST=null;const keep=()=>{if(vp.isConnected&&vp.clientWidth>0)LAST=snap()};vp.addEventListener('scroll',keep,{passive:true});setTimeout(keep,0);
+  let lastW=vp.clientWidth;const ro=window.ResizeObserver?new ResizeObserver(()=>{if(!vp.isConnected||!vp.clientWidth)return;/* 10-29: 다른 탭으로 가며 떼어질 때(너비 0) 맞추면 판이 쪼그라든 채로 남았다 */if(Math.abs(vp.clientWidth-lastW)>8){lastW=vp.clientWidth;fit()}}):null;if(ro)ro.observe(vp);
+  /* 바깥(메뉴)에서 「이 사람부터 실 잇기」 */
+  function startLink(id){if(!opt.canEdit||!cards[id])return;const lb=el.querySelector('[data-cb="link"]');el.querySelectorAll('.cb-card.from').forEach(x=>x.classList.remove('from'));if(lb){lb.classList.add('on');lb.textContent='🧵 실 잇기 중 — 두 사람을 차례로'}board.classList.add('linkmode');linkFrom=id;cards[id].classList.add('from')}
+  return {select:id=>{select(id,true);scrollTo(id)},linkFrom:startLink,relayout:layoutAll,getState:()=>{const live=vp.isConnected&&vp.clientWidth>0;if(live)LAST=snap();return LAST},destroy:()=>{if(ro)ro.disconnect()}}}
  return {mount};
 })();

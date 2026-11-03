@@ -21,9 +21,10 @@ window.OM_NOTES=(()=>{
  const notesLink=camp=>NOTES_URL.replace(/[?#].*$/,'')+'?c='+encodeURIComponent(camp)+'#c='+encodeURIComponent(camp);
  /* 잇기: 방 쪽(rp.notes)에 적고, 세션 노트 GM 비밀구가 있으면 캠페인 쪽(data.om.room)에도 적는다 */
  async function linkTo(camp,secret){const c=(LINK.camps||[]).find(x=>x.id===camp);if(!c)return;await A().set(['rp','notes'],{camp,name:c.name||''});
-  const sec=secret||secOf(camp);if(sec&&S().ntCampUpdate){try{const d=Object.assign({},c.data||{});d.om=Object.assign({},d.om||{},{room:A().ST.room});await S().ntCampUpdate(camp,sec,d);c.data=d}catch(e){console.warn('nt link',e)}}
+  /* 11-03 감우: 받아 둔 옛 data 로 통째 덮지 않고 om.room 칸만 합친다(ntCampPatch → nt_camp_patch) */
+  const sec=secret||secOf(camp);if(sec&&(S().ntCampPatch||S().ntCampUpdate)){try{if(S().ntCampPatch){const d=await S().ntCampPatch(camp,sec,{om:{room:A().ST.room}});if(d)c.data=d}else{const d=Object.assign({},c.data||{});d.om=Object.assign({},d.om||{},{room:A().ST.room});await S().ntCampUpdate(camp,sec,d);c.data=d}}catch(e){console.warn('nt link',e)}}
   LINK.camp={id:c.id,name:c.name,data:c.data||{}};topBtn();A().sysLog(`세션 노트: 「${c.name}」 캠페인과 이었다`)}
- async function unlink(){await A().set(['rp','notes'],null);const L=LINK.camp;if(L){const sec=secOf(L.id);if(sec&&S().ntCampUpdate&&((L.data||{}).om||{}).room===A().ST.room){try{const d=Object.assign({},L.data);delete d.om;await S().ntCampUpdate(L.id,sec,d)}catch(e){}}}LINK.camp=null;LINK.camps=null;topBtn();A().toast('세션 노트 잇기를 풀었다')}
+ async function unlink(){await A().set(['rp','notes'],null);const L=LINK.camp;if(L){const sec=secOf(L.id);if(sec&&((L.data||{}).om||{}).room===A().ST.room){try{if(S().ntCampPatch)await S().ntCampPatch(L.id,sec,{om:null});else if(S().ntCampUpdate){const d=Object.assign({},L.data);delete d.om;await S().ntCampUpdate(L.id,sec,d)}}catch(e){}}}LINK.camp=null;LINK.camps=null;topBtn();A().toast('세션 노트 잇기를 풀었다')}
  /* 위 막대 「📓 노트」 단추: 이어져 있으면 캠페인 이름 */
  function topBtn(){const b=document.getElementById('ntBtn');if(!b)return;const L=LINK.room===A().ST.room?LINK.camp:null;b.textContent=L?'📓 '+(L.name||'노트'):'📓 노트';b.title=L?`세션 노트 「${L.name}」 — 열기 · 지도/관계도 가져오기`:'세션 노트와 잇기';b.classList.toggle('on',!!L)}
  async function menu(){const L=await linked(true);const gm=A().ST.role==='gm';
