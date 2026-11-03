@@ -470,6 +470,6 @@
  "note": "자동 생성 · 어려움 · 씨앗 78001 · 테마 화산. 사전 배틀 1 · 체크 3 · 보스방 6체 · 레이드 배틀 : 3 · 지도 갈림길 2 · 구불길 + 곁방 2 · 야생 Lv +5 · 어려운 길(체크 목표 15).",
  "intro": "대학 온실을 데우던 지열관을 따라 뒷산 휴화산으로 이어진 길. 요즘 지열관이 들끓기 시작했다 — 분화구 바닥에서 브리두라스가 지열을 빨아들이며 몸을 달구고 있다. 화상과 증기, 무너지는 화구벽을 견뎌야 한다.",
  "art": {
-  "look": "1.2::dormant volcano area, cooled black lava, glowing orange cracks, steam vents, sulfur crystals, dramatic but not apocalyptic::, "
+  "look": "1.2::dormant volcano area, cooled black lava, glowing orange cracks, steam vents, dramatic but not apocalyptic::, -1::crystals, gems::, "
  }
 }

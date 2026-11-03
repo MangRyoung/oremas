@@ -1,0 +1,509 @@
+{
+ "key": "main",
+ "model": "nai-diffusion-5-full",
+ "count": {
+  "room": 3,
+  "mon": 3
+ },
+ "style": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.6::artist:kazuma kaneko ::, 0.6::background:tsukushi akihito ::, 0.6::background:kuroimori ::, 0.6::background:yoshida akihiko ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, ::ultra complexity ::, 1.3::no humans, scenery::, detailed background, wide shot, cinematic composition, atmospheric perspective, painterly lighting, 1.2::adventure dungeon area, mysterious but not horror, beautiful::, 1.3::visual novel background, eye level view::, 1.1::open uncluttered space in the center foreground for characters to stand::, no text, ",
+ "neg": "people, person, 1girl, 1boy, character, human, text, watermark, signature, logo, ui, map icons, grid, blurry, lowres, worst quality, gore, blood, corpse, skeleton",
+ "mstyle": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::no humans, pokemon (creature), creature, solo::, 1.2::full body, centered, the whole creature inside the frame::, looking at viewer, dynamic but compact pose, detailed background, soft rim light, ",
+ "mneg": "human, humanoid, 1girl, 1boy, multiple views, multiple creatures, text, caption, english text, trading card, card frame, border, watermark, signature, logo, cropped, out of frame, lowres, worst quality, bad anatomy, extra limbs, gore",
+ "memo": "2026-11-03 감우 · 미사그 던전 나머지 4 (바다 · 설원 · 폐가 · 화산) — 구역 1216×832 3장, 배치 몬스터 포트 1024×1024 3장 (Opus 무료 범위 · 28스텝 · 한 장씩). 오리지널은 처음부터 fakemon 결.",
+ "dungeons": [
+  {
+   "dir": "던전/02 등대 아래 조수 동굴",
+   "id": "md2_sea",
+   "name": "등대 아래 조수 동굴",
+   "rooms": [
+    {
+     "file": "01_썰물 모래톱",
+     "rid": "entry",
+     "tags": "1.2::seaside sea cave area, tide pools, turquoise water, wet rocks, barnacles, salty spray, bright and refreshing::, 1.3::a wide tidal sand flat at low tide at the foot of a cliff with an old white lighthouse above, shells and seaweed scattered, a dark sea cave mouth in the cliff::"
+    },
+    {
+     "file": "02_좌초 실습선 갑판",
+     "rid": "b1",
+     "tags": "1.2::seaside sea cave area, tide pools, turquoise water, wet rocks, barnacles, salty spray, bright and refreshing::, 1.3::the tilted wooden deck of an old wrecked training ship stuck inside a sea cave, barnacles on the railings, light from a hole in the cave ceiling::"
+    },
+    {
+     "file": "03_소용돌이 물길",
+     "rid": "c1",
+     "tags": "1.2::seaside sea cave area, tide pools, turquoise water, wet rocks, barnacles, salty spray, bright and refreshing::, 1.3::an underground sea channel with swirling whirlpool currents inside a cave, stepping stones, blue light reflecting on the cave walls::"
+    },
+    {
+     "file": "04_등대지기 창고",
+     "rid": "safe",
+     "tags": "1.2::seaside sea cave area, tide pools, turquoise water, wet rocks, barnacles, salty spray, bright and refreshing::, 1.3::a small storage room carved in rock below a lighthouse, a rusty iron door, oil lamps, ropes and folded blankets, warm lamplight, safe and quiet::"
+    },
+    {
+     "file": "05_서리 낀 선창",
+     "rid": "boss",
+     "tags": "1.2::seaside sea cave area, tide pools, turquoise water, wet rocks, barnacles, salty spray, bright and refreshing::, 1.3::the deep cargo hold of a wrecked ship flooded with seawater, frost and ice crystals covering the wooden beams, pale blue cold light, an icy nest in the middle::"
+    },
+    {
+     "file": "06_해초 숲 웅덩이",
+     "rid": "g1a1",
+     "tags": "1.2::seaside sea cave area, tide pools, turquoise water, wet rocks, barnacles, salty spray, bright and refreshing::, 1.3::a large tide pool inside a sea cave filled with tall swaying kelp like a forest, clear water, sunlight shafts::"
+    },
+    {
+     "file": "07_미끄러운 바위길",
+     "rid": "g2a1",
+     "tags": "1.2::seaside sea cave area, tide pools, turquoise water, wet rocks, barnacles, salty spray, bright and refreshing::, 1.3::slippery wet rocks along a cave wall with waves crashing in, foam and spray, a gap of rough water between the rocks::"
+    },
+    {
+     "file": "08_물 고인 선실",
+     "rid": "g2a2",
+     "tags": "1.2::seaside sea cave area, tide pools, turquoise water, wet rocks, barnacles, salty spray, bright and refreshing::, 1.3::a half flooded cabin of an old ship, water up to the knees, an old nautical chart pinned on the wall, round porthole light::"
+    },
+    {
+     "file": "09_그물 걸린 모래톱",
+     "rid": "g2a3",
+     "tags": "1.2::seaside sea cave area, tide pools, turquoise water, wet rocks, barnacles, salty spray, bright and refreshing::, 1.3::a small cave beach tangled with an abandoned fishing net, buoys and driftwood, gentle waves, soft light::"
+    },
+    {
+     "file": "10_떠밀려 온 상자",
+     "rid": "tr",
+     "tags": "1.2::seaside sea cave area, tide pools, turquoise water, wet rocks, barnacles, salty spray, bright and refreshing::, 1.3::a weathered wooden chest washed up on a cave beach, wrapped in canvas, starfish and shells around it, beam of light::"
+    }
+   ],
+   "mons": [
+    {
+     "file": "신호크",
+     "id": "w085",
+     "old": 0,
+     "tags": "1.3::original fakemon creature based on a falcon::, psychic and flying type creature, glowing eyes, floating aura, gem on the forehead, feathered wings, light airy body, color palette pink and violet and sky blue and white, alert and ready, small size, cute but wild, simple readable silhouette, background: a sea cave with tide pools and turquoise water",
+     "style": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::no humans, fakemon, creature, solo::, 0.6::pokemon (creature)::, 1.2::full body, centered, the whole creature inside the frame::, looking at viewer, dynamic but compact pose, detailed background, soft rim light, ",
+     "fk": 1
+    },
+    {
+     "file": "퐁소라",
+     "id": "w022",
+     "old": 0,
+     "tags": "1.3::original fakemon creature based on a conch shell snail::, water type creature, fins, glossy wet skin, water droplets, color palette blue and aqua, shielded by a calm protective aura, small size, cute but wild, simple readable silhouette, background: a sea cave with tide pools and turquoise water",
+     "style": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::no humans, fakemon, creature, solo::, 0.6::pokemon (creature)::, 1.2::full body, centered, the whole creature inside the frame::, looking at viewer, dynamic but compact pose, detailed background, soft rim light, ",
+     "fk": 1
+    },
+    {
+     "file": "서리콘",
+     "id": "w184",
+     "old": 0,
+     "tags": "1.3::original fakemon creature based on a fox::, ice and water type creature, frost crystals, icy translucent parts, fins, glossy wet skin, water droplets, color palette pale blue and white and blue and aqua, dynamic pose using both strength and energy, medium size, cute but wild, simple readable silhouette, 1.2::imposing boss presence, slightly larger and fiercer::, background: a sea cave with tide pools and turquoise water",
+     "style": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::no humans, fakemon, creature, solo::, 0.6::pokemon (creature)::, 1.2::full body, centered, the whole creature inside the frame::, looking at viewer, dynamic but compact pose, detailed background, soft rim light, ",
+     "fk": 1
+    },
+    {
+     "file": "아쿠달",
+     "id": "w038",
+     "old": 0,
+     "tags": "1.3::original fakemon creature based on a otter::, water type creature, fins, glossy wet skin, water droplets, color palette blue and aqua, lunging forward in an attacking pose, small size, cute but wild, simple readable silhouette, background: a sea cave with tide pools and turquoise water",
+     "style": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::no humans, fakemon, creature, solo::, 0.6::pokemon (creature)::, 1.2::full body, centered, the whole creature inside the frame::, looking at viewer, dynamic but compact pose, detailed background, soft rim light, ",
+     "fk": 1
+    },
+    {
+     "file": "윙래빗",
+     "id": "w094",
+     "old": 0,
+     "tags": "1.3::original fakemon creature based on a rabbit::, flying and normal type creature, feathered wings, light airy body, plain fur, soft rounded shapes, color palette sky blue and white and cream and beige, charging an energy blast, small size, cute but wild, simple readable silhouette, background: a sea cave with tide pools and turquoise water",
+     "style": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::no humans, fakemon, creature, solo::, 0.6::pokemon (creature)::, 1.2::full body, centered, the whole creature inside the frame::, looking at viewer, dynamic but compact pose, detailed background, soft rim light, ",
+     "fk": 1
+    },
+    {
+     "file": "아머까오",
+     "id": "w237",
+     "old": 1,
+     "tags": "1.4::Corviknight (pokemon)::, accurate official design, background: a sea cave with tide pools and turquoise water"
+    },
+    {
+     "file": "펑가오",
+     "id": "w044",
+     "old": 0,
+     "tags": "1.3::original fakemon creature based on a stingray::, electric and flying type creature, zigzag lightning marks, static sparks, feathered wings, light airy body, color palette yellow and black and sky blue and white, charging an energy blast, small size, cute but wild, simple readable silhouette, background: a sea cave with tide pools and turquoise water",
+     "style": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::no humans, fakemon, creature, solo::, 0.6::pokemon (creature)::, 1.2::full body, centered, the whole creature inside the frame::, looking at viewer, dynamic but compact pose, detailed background, soft rim light, ",
+     "fk": 1
+    },
+    {
+     "file": "빙울프",
+     "id": "w142",
+     "old": 0,
+     "tags": "1.3::original fakemon creature based on a wolf::, ice type creature, frost crystals, icy translucent parts, color palette pale blue and white, lunging forward in an attacking pose, small to medium size, cute but wild, simple readable silhouette, background: a sea cave with tide pools and turquoise water",
+     "style": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::no humans, fakemon, creature, solo::, 0.6::pokemon (creature)::, 1.2::full body, centered, the whole creature inside the frame::, looking at viewer, dynamic but compact pose, detailed background, soft rim light, ",
+     "fk": 1
+    }
+   ]
+  },
+  {
+   "dir": "던전/03 북쪽 관측소 빙벽길",
+   "id": "md3_snow",
+   "name": "북쪽 관측소 빙벽길",
+   "rooms": [
+    {
+     "file": "01_눈 덮인 산길",
+     "rid": "entry",
+     "tags": "1.2::snowy high mountain, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::a snow covered mountain trail with old wooden signposts pointing to an observatory, frozen ground under the snow, pine trees, pale morning sky::"
+    },
+    {
+     "file": "02_얼음 다리",
+     "rid": "c1",
+     "tags": "1.2::snowy high mountain, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::an old wooden rope bridge completely frozen and covered in icicles spanning a snowy ravine, wind blown snow::"
+    },
+    {
+     "file": "03_얼어붙은 관측 장비",
+     "rid": "c2",
+     "tags": "1.2::snowy high mountain, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::a snowy slope after an avalanche, old brass weather instruments and a frozen equipment crate blocking the path, ice crystals glittering::"
+    },
+    {
+     "file": "04_바람 막힌 바위굴",
+     "rid": "safe",
+     "tags": "1.2::snowy high mountain, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::a small cave in a rocky cliff sheltered from the wind, snow at the entrance, dry ground inside, a small campfire spot, quiet and safe::"
+    },
+    {
+     "file": "05_무너진 관측탑",
+     "rid": "boss",
+     "tags": "1.2::snowy high mountain, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::the top of a ruined stone weather observatory tower with its dome roof broken open to a stormy snowy sky, a spinning broken weathervane, frost swirling, dramatic::"
+    },
+    {
+     "file": "06_언 강가",
+     "rid": "g1a1",
+     "tags": "1.2::snowy high mountain, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::a frozen river in a snowy valley, cracked blue ice, snow covered rocks along the bank, soft sunlight::"
+    },
+    {
+     "file": "07_화이트아웃",
+     "rid": "g1a2",
+     "tags": "1.2::snowy high mountain, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::a whiteout blizzard on a snowy plateau, everything white, faint shapes of rocks, swirling snow, low visibility::"
+    },
+    {
+     "file": "08_버려진 썰매",
+     "rid": "g1a3",
+     "tags": "1.2::snowy high mountain, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::an old wooden supply sled half buried in snow on a mountain path, crates and ropes on it, calm after the snow::"
+    },
+    {
+     "file": "09_얼음 들판",
+     "rid": "g2a1",
+     "tags": "1.2::snowy high mountain, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::a wide flat ice field swept by wind, polished blue ice, distant snowy peaks, sharp clear light::"
+    },
+    {
+     "file": "10_얼음 속 유물",
+     "rid": "tr",
+     "tags": "1.2::snowy high mountain, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::a wooden logbook box trapped inside a clear block of ice in a snow cave, light refracting through the ice::"
+    },
+    {
+     "file": "11_얼음 틈",
+     "rid": "s1",
+     "tags": "1.2::snowy high mountain, ice walls, blue and white palette, crisp cold air, clear and beautiful::, 1.3::a narrow crevasse between two glacier ice walls, deep blue translucent ice, light from above::"
+    }
+   ],
+   "mons": [
+    {
+     "file": "휘울프",
+     "id": "w208",
+     "old": 0,
+     "tags": "1.3::original fakemon creature based on a wolf::, ice and flying type creature, frost crystals, icy translucent parts, feathered wings, light airy body, color palette pale blue and white and sky blue, lunging forward in an attacking pose, large and imposing size, cute but wild, simple readable silhouette, 1.2::imposing boss presence, slightly larger and fiercer::, background: a snowy mountain with blue ice walls",
+     "style": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::no humans, fakemon, creature, solo::, 0.6::pokemon (creature)::, 1.2::full body, centered, the whole creature inside the frame::, looking at viewer, dynamic but compact pose, detailed background, soft rim light, ",
+     "fk": 1
+    },
+    {
+     "file": "두빅굴",
+     "id": "w264",
+     "old": 1,
+     "tags": "1.4::Seismitoad (pokemon)::, accurate official design, background: a snowy mountain with blue ice walls"
+    },
+    {
+     "file": "차루미",
+     "id": "w122",
+     "old": 0,
+     "tags": "1.3::original fakemon creature based on a crane::, fighting and steel type creature, muscular build, wrapped fists, martial stance, metallic plating, rivets and blades, color palette red and tan and silver and steel gray, dynamic pose using both strength and energy, small to medium size, cute but wild, simple readable silhouette, background: a snowy mountain with blue ice walls",
+     "style": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::no humans, fakemon, creature, solo::, 0.6::pokemon (creature)::, 1.2::full body, centered, the whole creature inside the frame::, looking at viewer, dynamic but compact pose, detailed background, soft rim light, ",
+     "fk": 1
+    },
+    {
+     "file": "두드리짱",
+     "id": "w272",
+     "old": 1,
+     "tags": "1.4::Tinkaton (pokemon)::, accurate official design, background: a snowy mountain with blue ice walls"
+    },
+    {
+     "file": "오라쥐",
+     "id": "w104",
+     "old": 0,
+     "tags": "1.3::original fakemon creature based on a squirrel::, fairy and psychic type creature, ribbons, sparkles, pastel petals, glowing eyes, floating aura, gem on the forehead, color palette pastel pink and white and pink and violet, alert and ready, small to medium size, cute but wild, simple readable silhouette, background: a snowy mountain with blue ice walls",
+     "style": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::no humans, fakemon, creature, solo::, 0.6::pokemon (creature)::, 1.2::full body, centered, the whole creature inside the frame::, looking at viewer, dynamic but compact pose, detailed background, soft rim light, ",
+     "fk": 1
+    },
+    {
+     "file": "픽시캣",
+     "id": "w132",
+     "old": 0,
+     "tags": "1.3::original fakemon creature based on a cat::, electric and fairy type creature, zigzag lightning marks, static sparks, ribbons, sparkles, pastel petals, color palette yellow and black and pastel pink and white, lunging forward in an attacking pose, small to medium size, cute but wild, simple readable silhouette, background: a snowy mountain with blue ice walls",
+     "style": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::no humans, fakemon, creature, solo::, 0.6::pokemon (creature)::, 1.2::full body, centered, the whole creature inside the frame::, looking at viewer, dynamic but compact pose, detailed background, soft rim light, ",
+     "fk": 1
+    },
+    {
+     "file": "핫삼",
+     "id": "w235",
+     "old": 1,
+     "tags": "1.4::Scizor (pokemon)::, accurate official design, background: a snowy mountain with blue ice walls"
+    },
+    {
+     "file": "쨍기어",
+     "id": "w074",
+     "old": 0,
+     "tags": "1.3::original fakemon creature based on a cogwheel::, steel type creature, metallic plating, rivets and blades, color palette silver and steel gray, standing firm in a defensive stance, small size, cute but wild, simple readable silhouette, background: a snowy mountain with blue ice walls",
+     "style": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::no humans, fakemon, creature, solo::, 0.6::pokemon (creature)::, 1.2::full body, centered, the whole creature inside the frame::, looking at viewer, dynamic but compact pose, detailed background, soft rim light, ",
+     "fk": 1
+    }
+   ]
+  },
+  {
+   "dir": "던전/05 구 교직원 관사",
+   "id": "md5_house",
+   "name": "구 교직원 관사",
+   "rooms": [
+    {
+     "file": "01_무너진 현관",
+     "rid": "entry",
+     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::the collapsed front porch of an old abandoned mansion in a forest, broken wooden steps, a heavy locked front door, ivy, moonlit evening::"
+    },
+    {
+     "file": "02_쥐가 드나드는 부엌",
+     "rid": "b1",
+     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::a dusty old victorian kitchen, iron stove, hanging pots, cupboard doors ajar, moonlight through a small window::"
+    },
+    {
+     "file": "03_잠긴 아이 방",
+     "rid": "c1",
+     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::a locked child bedroom in an old mansion, small bed, toys and a rocking horse, several standing mirrors reflecting a beam of moonlight::"
+    },
+    {
+     "file": "04_다락 아래 골방",
+     "rid": "safe",
+     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::a small hidden room under attic stairs, old blankets and cushions, a candle, cozy and safe, slanted ceiling::"
+    },
+    {
+     "file": "05_지하 예배실",
+     "rid": "boss",
+     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::a small private chapel in the basement of a mansion, rows of wooden pews, candelabras, a bunch of old keys on the altar, stained glass faintly lit, solemn::"
+    },
+    {
+     "file": "06_곰팡이 핀 복도",
+     "rid": "g1a1",
+     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::a long corridor in an abandoned mansion with peeling wallpaper and patches of mold, portraits on the walls, dim light::"
+    },
+    {
+     "file": "07_하인 방",
+     "rid": "g2a1",
+     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::narrow servants quarters in an old mansion, simple iron beds in a row with name tags, a wash basin, grey light::"
+    },
+    {
+     "file": "08_지하 창고",
+     "rid": "g2a2",
+     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::a basement storage cellar with wine racks, crates and old furniture under sheets, darkness::"
+    },
+    {
+     "file": "09_잠긴 서랍장 방",
+     "rid": "g2a3",
+     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::a room with a huge antique chest of drawers covering the whole wall, many small drawers, darkness with a thin line of light::"
+    },
+    {
+     "file": "10_사감의 금고",
+     "rid": "tr",
+     "tags": "1.2::abandoned old faculty residence mansion of a gothic university, dusty victorian interior, moonlight through curtains, quiet melancholic and nostalgic, not scary::, 1.3::an old iron safe inside a closet of a headmistress room, a leather diary on top, dust in the air::"
+    }
+   ],
+   "mons": [
+    {
+     "file": "덩스네",
+     "id": "w076",
+     "old": 0,
+     "tags": "1.3::original fakemon creature based on a snake::, poison and grass type creature, toxic spots, dripping venom, leaves, vines and moss growing on the body, color palette purple and magenta and green and brown, alert and ready, small size, cute but wild, simple readable silhouette, background: a dusty abandoned victorian mansion interior with moonlight",
+     "style": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::no humans, fakemon, creature, solo::, 0.6::pokemon (creature)::, 1.2::full body, centered, the whole creature inside the frame::, looking at viewer, dynamic but compact pose, detailed background, soft rim light, ",
+     "fk": 1
+    },
+    {
+     "file": "방실족",
+     "id": "w129",
+     "old": 0,
+     "tags": "1.3::original fakemon creature based on a weasel::, normal type creature, plain fur, soft rounded shapes, color palette cream and beige, lunging forward in an attacking pose, small to medium size, cute but wild, simple readable silhouette, background: a dusty abandoned victorian mansion interior with moonlight",
+     "style": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::no humans, fakemon, creature, solo::, 0.6::pokemon (creature)::, 1.2::full body, centered, the whole creature inside the frame::, looking at viewer, dynamic but compact pose, detailed background, soft rim light, ",
+     "fk": 1
+    },
+    {
+     "file": "녹스팬서",
+     "id": "w209",
+     "old": 0,
+     "tags": "1.3::original fakemon creature based on a cat::, dark type creature, sharp claws, sly grin, shadowy fur, color palette black and crimson, lunging forward in an attacking pose, large and imposing size, cute but wild, simple readable silhouette, 1.2::imposing boss presence, slightly larger and fiercer::, background: a dusty abandoned victorian mansion interior with moonlight",
+     "style": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::no humans, fakemon, creature, solo::, 0.6::pokemon (creature)::, 1.2::full body, centered, the whole creature inside the frame::, looking at viewer, dynamic but compact pose, detailed background, soft rim light, ",
+     "fk": 1
+    },
+    {
+     "file": "깜깜늑",
+     "id": "w113",
+     "old": 0,
+     "tags": "1.3::original fakemon creature based on a wolf::, dark type creature, sharp claws, sly grin, shadowy fur, color palette black and crimson, alert and ready, small to medium size, cute but wild, simple readable silhouette, background: a dusty abandoned victorian mansion interior with moonlight",
+     "style": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::no humans, fakemon, creature, solo::, 0.6::pokemon (creature)::, 1.2::full body, centered, the whole creature inside the frame::, looking at viewer, dynamic but compact pose, detailed background, soft rim light, ",
+     "fk": 1
+    },
+    {
+     "file": "돈크로우",
+     "id": "w268",
+     "old": 1,
+     "tags": "1.4::Honchkrow (pokemon)::, accurate official design, background: a dusty abandoned victorian mansion interior with moonlight"
+    },
+    {
+     "file": "퍼피콘",
+     "id": "w124",
+     "old": 0,
+     "tags": "1.3::original fakemon creature based on a fox::, psychic and normal type creature, glowing eyes, floating aura, gem on the forehead, plain fur, soft rounded shapes, color palette pink and violet and cream and beige, shielded by a calm protective aura, small to medium size, cute but wild, simple readable silhouette, background: a dusty abandoned victorian mansion interior with moonlight",
+     "style": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::no humans, fakemon, creature, solo::, 0.6::pokemon (creature)::, 1.2::full body, centered, the whole creature inside the frame::, looking at viewer, dynamic but compact pose, detailed background, soft rim light, ",
+     "fk": 1
+    },
+    {
+     "file": "끈스네",
+     "id": "w089",
+     "old": 0,
+     "tags": "1.3::original fakemon creature based on a snake::, dark and poison type creature, sharp claws, sly grin, shadowy fur, toxic spots, dripping venom, color palette black and crimson and purple and magenta, dynamic pose using both strength and energy, small size, cute but wild, simple readable silhouette, background: a dusty abandoned victorian mansion interior with moonlight",
+     "style": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::no humans, fakemon, creature, solo::, 0.6::pokemon (creature)::, 1.2::full body, centered, the whole creature inside the frame::, looking at viewer, dynamic but compact pose, detailed background, soft rim light, ",
+     "fk": 1
+    },
+    {
+     "file": "쉿맨티",
+     "id": "w137",
+     "old": 0,
+     "tags": "1.3::original fakemon creature based on a mantis::, dark and fighting type creature, sharp claws, sly grin, shadowy fur, muscular build, wrapped fists, martial stance, color palette black and crimson and red and tan, alert and ready, small to medium size, cute but wild, simple readable silhouette, background: a dusty abandoned victorian mansion interior with moonlight",
+     "style": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::no humans, fakemon, creature, solo::, 0.6::pokemon (creature)::, 1.2::full body, centered, the whole creature inside the frame::, looking at viewer, dynamic but compact pose, detailed background, soft rim light, ",
+     "fk": 1
+    }
+   ]
+  },
+  {
+   "dir": "던전/08 뒷산 분화구 지열 동굴",
+   "id": "md8_volc",
+   "name": "뒷산 분화구 지열 동굴",
+   "rooms": [
+    {
+     "file": "01_재 덮인 등산로",
+     "rid": "entry",
+     "tags": "1.2::dormant volcano area, cooled black lava, glowing orange cracks, steam vents, dramatic but not apocalyptic::, -1::crystals, gems::, 1.3::an ash covered mountain trail on a dormant volcano, old rusty geothermal pipes running along it, a hot glowing boulder blocking the way, hazy sky::"
+    },
+    {
+     "file": "02_지열관 굴",
+     "rid": "b1",
+     "tags": "1.2::dormant volcano area, cooled black lava, glowing orange cracks, steam vents, dramatic but not apocalyptic::, -1::crystals, gems::, 1.3::a tunnel carved in volcanic rock with large old geothermal pipes along the wall, heat haze and steam leaking from the joints, orange light::"
+    },
+    {
+     "file": "03_증기 틈",
+     "rid": "c1",
+     "tags": "1.2::dormant volcano area, cooled black lava, glowing orange cracks, steam vents, dramatic but not apocalyptic::, -1::crystals, gems::, 1.3::a rocky volcanic slope with steam vents hissing from cracks, wet rocks, white steam clouds::"
+    },
+    {
+     "file": "04_식은 용암관",
+     "rid": "safe",
+     "tags": "1.2::dormant volcano area, cooled black lava, glowing orange cracks, steam vents, dramatic but not apocalyptic::, -1::crystals, gems::, 1.3::inside a cooled lava tube, smooth black rock walls, a faint glow far away, calm and warm, safe resting place::"
+    },
+    {
+     "file": "05_분화구 바닥",
+     "rid": "boss",
+     "tags": "1.2::dormant volcano area, cooled black lava, glowing orange cracks, steam vents, dramatic but not apocalyptic::, -1::crystals, gems::, 1.3::the floor of a volcanic crater with glowing red cracks in black rock, rising heat and sparks, steep crater walls, a dramatic red sky above::"
+    },
+    {
+     "file": "06_갈라진 동굴",
+     "rid": "g1a1",
+     "tags": "1.2::dormant volcano area, cooled black lava, glowing orange cracks, steam vents, dramatic but not apocalyptic::, -1::crystals, gems::, 1.3::a cracked volcanic cave with strange heat loving fruit vines growing on the walls, orange glow from cracks::"
+    },
+    {
+     "file": "07_검은 바위 지대",
+     "rid": "g1a2",
+     "tags": "1.2::dormant volcano area, cooled black lava, glowing orange cracks, steam vents, dramatic but not apocalyptic::, -1::crystals, gems::, 1.3::a wide field of black solidified lava rock, scattered small fires, smoke, distant volcano peak::"
+    },
+    {
+     "file": "08_식은 용암 계곡",
+     "rid": "g1a3",
+     "tags": "1.2::dormant volcano area, cooled black lava, glowing orange cracks, steam vents, dramatic but not apocalyptic::, -1::crystals, gems::, 1.3::a narrow valley of cooled lava flows with rippled black rock, sulfur yellow stains, steam::"
+    },
+    {
+     "file": "09_흔들리는 화구벽",
+     "rid": "g2a1",
+     "tags": "1.2::dormant volcano area, cooled black lava, glowing orange cracks, steam vents, dramatic but not apocalyptic::, -1::crystals, gems::, 1.3::a crumbling crater wall path with toxic yellow gas drifting, loose rocks falling::"
+    },
+    {
+     "file": "10_굳은 화석층",
+     "rid": "tr",
+     "tags": "1.2::dormant volcano area, cooled black lava, glowing orange cracks, steam vents, dramatic but not apocalyptic::, -1::crystals, gems::, 1.3::a layer of fossils embedded in cooled lava rock wall, glowing amber stones::"
+    },
+    {
+     "file": "11_유황 결정 굴",
+     "rid": "s1",
+     "tags": "1.2::dormant volcano area, cooled black lava, glowing orange cracks, steam vents, dramatic but not apocalyptic::, 1.3::a small cave filled with bright yellow sulfur crystals, steam, warm light::"
+    }
+   ],
+   "mons": [
+    {
+     "file": "다크족",
+     "id": "w025",
+     "old": 0,
+     "tags": "1.3::original fakemon creature based on a weasel::, dark and fighting type creature, sharp claws, sly grin, shadowy fur, muscular build, wrapped fists, martial stance, color palette black and crimson and red and tan, lunging forward in an attacking pose, small size, cute but wild, simple readable silhouette, background: a volcanic cave with black rock and glowing lava cracks",
+     "style": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::no humans, fakemon, creature, solo::, 0.6::pokemon (creature)::, 1.2::full body, centered, the whole creature inside the frame::, looking at viewer, dynamic but compact pose, detailed background, soft rim light, ",
+     "fk": 1
+    },
+    {
+     "file": "활폭스",
+     "id": "w119",
+     "old": 0,
+     "tags": "1.3::original fakemon creature based on a fox::, fire type creature, flame tail or mane, ember sparks, color palette red and orange, lunging forward in an attacking pose, small to medium size, cute but wild, simple readable silhouette, background: a volcanic cave with black rock and glowing lava cracks",
+     "style": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::no humans, fakemon, creature, solo::, 0.6::pokemon (creature)::, 1.2::full body, centered, the whole creature inside the frame::, looking at viewer, dynamic but compact pose, detailed background, soft rim light, ",
+     "fk": 1
+    },
+    {
+     "file": "브리두라스",
+     "id": "w298",
+     "old": 1,
+     "tags": "1.4::Archaludon (pokemon)::, accurate official design, 1.2::imposing boss presence, slightly larger and fiercer::, background: a volcanic cave with black rock and glowing lava cracks"
+    },
+    {
+     "file": "홧도마",
+     "id": "w055",
+     "old": 0,
+     "tags": "1.3::original fakemon creature based on a lizard::, fire type creature, flame tail or mane, ember sparks, color palette red and orange, alert and ready, small size, cute but wild, simple readable silhouette, background: a volcanic cave with black rock and glowing lava cracks",
+     "style": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::no humans, fakemon, creature, solo::, 0.6::pokemon (creature)::, 1.2::full body, centered, the whole creature inside the frame::, looking at viewer, dynamic but compact pose, detailed background, soft rim light, ",
+     "fk": 1
+    },
+    {
+     "file": "차두루",
+     "id": "w106",
+     "old": 0,
+     "tags": "1.3::original fakemon creature based on a crane::, fighting type creature, muscular build, wrapped fists, martial stance, color palette red and tan, charging an energy blast, small to medium size, cute but wild, simple readable silhouette, background: a volcanic cave with black rock and glowing lava cracks",
+     "style": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::no humans, fakemon, creature, solo::, 0.6::pokemon (creature)::, 1.2::full body, centered, the whole creature inside the frame::, looking at viewer, dynamic but compact pose, detailed background, soft rim light, ",
+     "fk": 1
+    },
+    {
+     "file": "드라센티",
+     "id": "w053",
+     "old": 0,
+     "tags": "1.3::original fakemon creature based on a centipede::, dragon type creature, scales, horns, draconic features, color palette indigo and teal, lunging forward in an attacking pose, small size, cute but wild, simple readable silhouette, background: a volcanic cave with black rock and glowing lava cracks",
+     "style": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::no humans, fakemon, creature, solo::, 0.6::pokemon (creature)::, 1.2::full body, centered, the whole creature inside the frame::, looking at viewer, dynamic but compact pose, detailed background, soft rim light, ",
+     "fk": 1
+    },
+    {
+     "file": "번모스",
+     "id": "w007",
+     "old": 0,
+     "tags": "1.3::original fakemon creature based on a tiger moth::, fire type creature, flame tail or mane, ember sparks, color palette red and orange, lunging forward in an attacking pose, small size, cute but wild, simple readable silhouette, background: a volcanic cave with black rock and glowing lava cracks",
+     "style": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 0.8::artist:kankan33333 ::, 1.5::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, thick outlines, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::no humans, fakemon, creature, solo::, 0.6::pokemon (creature)::, 1.2::full body, centered, the whole creature inside the frame::, looking at viewer, dynamic but compact pose, detailed background, soft rim light, ",
+     "fk": 1
+    },
+    {
+     "file": "나인테일",
+     "id": "w267",
+     "old": 1,
+     "tags": "1.4::Ninetales (pokemon)::, accurate official design, background: a volcanic cave with black rock and glowing lava cracks"
+    },
+    {
+     "file": "팔데아 켄타로스 블레이즈종",
+     "id": "w227",
+     "old": 1,
+     "tags": "1.4::Paldean Tauros (Blaze Breed) (pokemon)::, accurate official design, background: a volcanic cave with black rock and glowing lava cracks"
+    }
+   ]
+  }
+ ]
+}
