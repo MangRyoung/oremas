@@ -24,3 +24,9 @@
 .pplist .ppc b{display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pplist .ppc small{display:block;font-size:10px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mhead .tpic{width:40px;height:40px;border-radius:50%;background:#3a3c44 center/cover no-repeat;flex:none;margin-right:8px}
+/* 11-03 14:08 망령 「핀 주변 인물들이 겹친다」: 같은 핀의 인물은 이름 폭만큼 띄워 한 줄(js stp), 상태 말풍선은 순서대로 계단처럼 위로, 이름은 칸 폭에서 줄임 */
+.mnpc i{max-width:var(--nw,60px);overflow:hidden;text-overflow:ellipsis}
+.mnpc:hover i{max-width:none;z-index:2}
+.mnpc .mnst{bottom:calc(100% + 8px + var(--bk,0) * 26px);max-width:170px}
+.mnpc .mnst:after{display:var(--tail,block)}
+.mnpc .mnst::before{content:'';position:absolute;left:50%;top:100%;width:2px;height:calc(var(--bk,0) * 26px + 6px);margin-left:-1px;background:#2a2a2a}
