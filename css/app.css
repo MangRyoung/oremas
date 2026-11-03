@@ -5436,3 +5436,15 @@ html[data-vt="mm"] .clc-menu>div,html[data-vt="mm"] .clc-menu>summary{background
 .tuq .pot.sp.uq>em,.tuq .pot.sp.uq>.pips,.tuq .pot.sp.uq>.btn,.tuq .pot.sp.uq>small{flex:none}
 /* 11-03 21:36 일반 포텐셜 【탈진】 · 【소진】 — 못 쓰는 턴엔 발동 자리에 같은 크기의 칩 */
 .btn.potrest{background:#5a5a5a!important;color:#ddd!important;border-color:#777!important;cursor:help;box-shadow:none!important;opacity:.85}
+/* 11-03 21:59 망령 「BGM 왜 오른쪽 위 칸으로 안 올렸음?」: 줄바꿈은 기본 폭(330px)으로 판단돼서 남은 자리가 있어도 내려갔다 — 기본 폭 200px 에서 330px 까지 늘어나게 */
+@media (min-width:761px){.bstat>.bgmw{flex:1 1 200px!important;max-width:330px;min-width:200px;margin-left:auto}.bstat>.sp{flex:1 1 0;min-width:0}}
+@media (min-width:761px){.bstat>.bgmw{flex-basis:170px!important;min-width:170px}}
+@media (min-width:761px){.bstat{column-gap:8px}.bstat>.sp{display:none}}
+/* BGM 칸이 좁아지면 음량 막대 → 곡 이름 순서로 숨긴다 (단추는 늘 보이게) */
+@media (min-width:761px){.bstat>.bgmw{container-type:inline-size;overflow:hidden}.bstat>.bgmw>*{flex-shrink:0}.bstat>.bgmw .bt{flex:1 1 auto;min-width:0}}
+@container (max-width:290px){.bstat>.bgmw input[type=range]{display:none}}
+@container (max-width:215px){.bstat>.bgmw .bt{display:none}}
+@container (max-width:215px){.bstat>.bgmw .btn{padding:2px 5px!important}.bstat>.bgmw{gap:3px!important}}
+/* 22:02 망령 「입력 중 칸은 오른쪽으로 땡기고」: GM 줄 아랫줄 맨 오른쪽 끝에 붙인다 (타임 요청 칩보다도 뒤) */
+.gmrow>.gmty{order:99;margin-left:auto;margin-right:0;justify-content:flex-end}
+.gmrow>.gmty #typingBat{margin-left:auto}
