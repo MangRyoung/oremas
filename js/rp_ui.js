@@ -992,7 +992,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    body=`${sec('공지 띄우기','누르면 모두에게 배너 + 로그')}<input type="text" id="gsub" class="gcwide" placeholder="멘트를 바꿔 보내기 — 비우면 저장된 멘트">
     <div class="gcnot">${ns.map((n,i)=>`<button class="gno" data-gc="note" data-i="${i}" style="--c:${esc(n.color)}"><b>${esc(n.name)}</b><span>${esc(n.title&&n.title!==n.name?n.title:'')}${n.ment?`${n.title&&n.title!==n.name?' · ':''}${esc(n.ment)}`:''}</span>${n.bgm==='stop'?'<em>BGM 정지</em>':''}</button>`).join('')}<button class="gno cut" data-gc="cut" style="--c:#5b6278"><b>절취선</b><span>로그에 가로줄</span></button></div>
     <details class="gcdet" id="gnd" ${GC.nEdit?'open':''}><summary>공지 고치기 <span class="note">고치면 바로 저장</span></summary>
-     <div class="gnrows" id="ntab">${ns.map((n,i)=>`<div class="gnr"><input type="color" data-nc value="${esc(n.color)}" title="색"><input type="text" data-nn value="${esc(n.name)}" placeholder="버튼 이름"><input type="text" data-nt value="${esc(n.title)}" placeholder="배너 제목"><input type="text" data-nm value="${esc(n.ment)}" placeholder="멘트"><select data-nb><option value="" ${!n.bgm?'selected':''}>BGM 그대로</option><option value="stop" ${n.bgm==='stop'?'selected':''}>BGM 정지</option></select><button class="btn xs ghost danger" data-gc="ndel" data-i="${i}" title="지우기">×</button></div>`).join('')}</div>
+     <div class="gnrows" id="ntab">${ns.map((n,i)=>`<div class="gnr"><input type="color" data-nc value="${esc(n.color)}" title="색"><input type="text" data-nn value="${esc(n.name)}" placeholder="버튼 이름"><input type="text" data-nt value="${esc(n.title)}" placeholder="배너 제목"><input type="text" data-nm value="${esc(n.ment)}" placeholder="멘트"><select data-nb><option value="" ${!n.bgm?'selected':''}>BGM 그대로</option><option value="stop" ${n.bgm==='stop'?'selected':''}>BGM 정지</option></select><select data-ns title="효과음"><option value="" ${!n.se?'selected':''}>효과음 자동</option>${[['none','소리 없음'],['Ping2','Ping2 (띵)'],['Draw','Draw (공개)'],['Ping','Ping (경고)'],['dice','dice (주사위)'],['Blow','Blow (타격)']].map(([v,l])=>`<option value="${v}" ${n.se===v?'selected':''}>${l}</option>`).join('')}</select><button class="btn xs ghost danger" data-gc="ndel" data-i="${i}" title="지우기">×</button></div>`).join('')}</div>
      <div class="row" style="margin-top:8px"><button class="btn xs" data-gc="nadd">＋ 공지</button><span class="sp"></span><button class="btn xs ghost" data-gc="nreset">기본값으로</button></div></details>`}
   else if(GC.tab==='map'){const M=mapS();const W=(M.img||{}).w||1000,H=(M.img||{}).h||700;
    const pins=M.img?M.locs.map(l=>{const h=M.vis[l.n]==1;return `<button class="gmp ${h?'hid':''} ${M.party.n===l.n?'pc':''}" data-gc="pgo" data-n="${l.n}" style="left:${l.x/W*100}%;top:${l.y/H*100}%" title="${esc(l.name)}${h?' (가림)':''} — 눌러서 파티 이동"><b>${M.party.n===l.n?'PC':l.n}</b></button>`}).join(''):'';
@@ -1049,7 +1049,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
     ${sec('채팅 명령')}<table class="t small gccmd"><tr><td><code>/as 이름 말</code></td><td>그 인물로 말하기 (관계도의 NPC 면 스탠딩·아바타가 따라온다)</td></tr><tr><td><code>@표정 말</code></td><td>표정(스탠딩)을 바꾸며 말하기</td></tr><tr><td><code>/s 라벨</code></td><td>표정만 바꾸기</td></tr><tr><td><code>*지문*</code></td><td>따옴표 없는 기울임 지문</td></tr><tr><td><code>/img 주소</code></td><td>채팅에 그림</td></tr><tr><td><code>/r 1d100</code></td><td>주사위</td></tr><tr><td><code>/gr 1d100</code></td><td>GM 비밀 굴림 — 나만 보이는 줄로, 줄의 「공개」를 누르면 같은 결과를 모두에게</td></tr><tr><td><code>/w 이름 말</code></td><td>귓속말 (GM 에게는 /w GM)</td></tr><tr><td><code>/clear</code></td><td>무대의 스탠딩 모두 내리기</td></tr></table>`}
   const md=gcShell(GC.tab,body);
   /* 공지 고치기: 칸을 고치면 바로 저장 */
-  const saveN=async()=>{const rows=[...md.querySelectorAll('#ntab .gnr')].map((tr,i)=>({id:'n'+i,name:tr.querySelector('[data-nn]').value.trim(),title:tr.querySelector('[data-nt]').value.trim(),ment:tr.querySelector('[data-nm]').value,color:tr.querySelector('[data-nc]').value,bgm:tr.querySelector('[data-nb]').value})).filter(x=>x.name);await A().set(['rp','notices'],rows);A().toast('공지를 저장했다')};
+  const saveN=async()=>{const rows=[...md.querySelectorAll('#ntab .gnr')].map((tr,i)=>({id:'n'+i,name:tr.querySelector('[data-nn]').value.trim(),title:tr.querySelector('[data-nt]').value.trim(),ment:tr.querySelector('[data-nm]').value,color:tr.querySelector('[data-nc]').value,bgm:tr.querySelector('[data-nb]').value,se:tr.querySelector('[data-ns]').value})).filter(x=>x.name);await A().set(['rp','notices'],rows);A().toast('공지를 저장했다')};
   md.querySelectorAll('#ntab input,#ntab select').forEach(x=>x.addEventListener('change',saveN));
   const nd=$('#gnd',md);if(nd)nd.ontoggle=()=>{GC.nEdit=nd.open};
   /* 연출 설정: 고치면 바로 저장 */
@@ -1289,7 +1289,10 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  function direct(u){u=String(u||'').trim();const m=u.match(/^https?:\/\/(?:www\.)?dropbox\.com\/(scl\/fi\/[^?]+|s\/[^?]+)(\?.*)?$/);if(m){const q=(m[2]||'').replace(/[?&]dl=\d/,'').replace(/^&/,'?');return 'https://dl.dropboxusercontent.com/'+m[1]+(q==='?'?'':q)}return u}
  function bgmMode(){const m=R().bgmMode;return m==='seq'||m==='shuf'?m:''}
  async function playAll(g,s,re,q){const u=bgmUrl(g,s);if(!u)return A().toast('주소가 없다');unlocked=true;const v={src:u,title:s,group:g,at:Date.now()};const qm=q===undefined?bgmMode():q;if(qm)v.q=qm;await A().set(['rp','bgm'],v);const rec=[{g,s},...(R().recentBgm||[]).filter(x=>!(x.g===g&&x.s===s))].slice(0,10);await A().set(['rp','recentBgm'],rec);syncBgm(true);if(re)re()}
- async function fireNotice(n,sub){const ment=sub||n.ment||'';await A().set(['rp','banner'],{title:n.title||n.name,text:ment,color:n.color||'#d9243f',at:Date.now()});await A().sysLog(`[${n.title||n.name}]${ment?' '+ment.replace(/\n/g,' '):''}`);if(n.bgm==='stop')await A().set(['rp','bgm'],null)}
+ /* 공지 효과음: 공지마다 고른 것(se) 이 없으면 이름으로 — 배틀 → Draw, 경고 · 출석 → Ping, 그 밖(씬 오픈 · 전환 · 종료) → Ping2 (모두 기존 효과음 재사용). 'none' 은 소리 없음 */
+ function noticeSe(n){if(n.se)return n.se;const t=String(n.name||'')+' '+String(n.title||'');return /배틀/.test(t)?'Draw':/경고|출석|주의/.test(t)?'Ping':'Ping2'}
+ async function fireNotice(n,sub){const ment=sub||n.ment||'';await A().set(['rp','banner'],{title:n.title||n.name,text:ment,color:n.color||'#d9243f',se:noticeSe(n),at:Date.now()});
+  if(n.id){const rec=[n.id,...(R().recentNt||[]).filter(x=>x!==n.id)].slice(0,4);try{await A().set(['rp','recentNt'],rec)}catch(e){}}   /* 11-03: 콘솔 「최근」 띠 */await A().sysLog(`[${n.title||n.name}]${ment?' '+ment.replace(/\n/g,' '):''}`);if(n.bgm==='stop')await A().set(['rp','bgm'],null)}
 
  /* ----- 스탠딩(표정) 편집: 트레이너는 로스터에, NPC 는 관계도 노드에 ----- */
  const ST_IMG=/\.(png|jpe?g|webp|gif|avif|bmp)$/i, isImg=f=>f&&(/^image\//.test(f.type||'')||ST_IMG.test(f.name||''));
@@ -1405,11 +1408,15 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
  function syncSe(){const se=R().se;if(!se||!se.at||se.at===lastSe)return;lastSe=se.at;if(Date.now()-se.at>8000)return;if(seOff())return;if(!unlocked&&!gm())return;seAudio(se.src)}
  function setVolume(kind,v){if(kind==='se'){volSe=v;try{localStorage.setItem('om_vol_se',v)}catch(e){}}else{vol=v;try{localStorage.setItem('om_vol',v)}catch(e){}if(audio)audio.volume=v;if(PV.audio)PV.audio.volume=v}}
  /* ----- 배너 / BGM / 상태 변화 ----- */
+ /* 11-03 감우 (검토 20-2): 배너는 무대 영역 폭에 맞추고(채팅 열 · 모달을 안 덮게 — 무대가 없는 화면이면 예전처럼 화면 폭), 5.6초 뒤 0.4초 퇴장 애니메이션, 공지에 담긴 효과음(se)을 각자 소리 설정대로 */
  function tickBanner(){const b=R().banner;if(!b||!b.at||b.at===lastBanner||Date.now()-b.at>15000)return;lastBanner=b.at;
   const el=document.createElement('div');el.className='banner';el.style.setProperty('--bc',b.color||'#d9243f');el.innerHTML=`<div class="bt">${esc(b.title||'')}</div>${b.text?`<div class="bm">${esc(b.text).replace(/\n/g,'<br>')}</div>`:''}`;
+  const st=document.getElementById('rpstage');const q=st&&st.offsetWidth?st.getBoundingClientRect():null;
+  if(q&&q.width>=280&&q.bottom>0&&q.top<innerHeight){el.classList.add('instage');el.style.left=Math.round(q.left)+'px';el.style.width=Math.round(q.width)+'px';el.style.top=Math.round(q.top+q.height*.16)+'px'}
   /* 6초 안에 새 공지가 오면 앞 배너를 바로 치운다 (예전엔 앞 배너의 타이머만 지워서 영영 남았다 · 점검 3-13) */
   document.querySelectorAll('body > .banner').forEach(x=>x.remove());document.body.appendChild(el);
-  clearTimeout(bannerT);bannerT=setTimeout(()=>el.remove(),6000)}
+  if(b.se&&b.se!=='none'&&Date.now()-b.at<8000){try{playSe(b.se,true)}catch(e){}}
+  clearTimeout(bannerT);bannerT=setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),420)},5600)}
  const bgmOff=()=>!!(window.OM_PREFS&&window.OM_PREFS.get().bgmMute);
  function bgmMuted(on){if(on&&!(gm()&&(R().bgm||{}).q)){if(audio){fadeOut(audio);audio=null}lastBgm=''}else syncBgm(true)}
  /* 11-03 망령: ① 그룹 「이어 재생」(rp.bgm.q = seq 순서 · shuf 섞기) — 곡이 끝나면 GM 화면이 다음 곡을 모두에게 건다 (GM 이 소리를 꺼 두었어도 소리 없이 재생해 끝을 잰다)

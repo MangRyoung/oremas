@@ -5107,3 +5107,10 @@ body:has(.modalbg) .tour-ask{display:none}
 .rpstage>.stbgold{position:absolute;inset:0;z-index:0;background:#0d0e11 center/cover no-repeat;pointer-events:none;opacity:1}
 .rpstage>.stbgold.fade{animation:stbgfade .5s ease forwards}
 @keyframes stbgfade{from{opacity:1}to{opacity:0}}
+/* 20-2 공지 배너: 무대 폭 안(js 가 left/width/top 을 잰다) · 모달(z 50) 아래 · 0.4초 퇴장 */
+.banner{z-index:40}
+.banner.instage{right:auto;padding-left:5%;padding-right:5%}
+.banner.instage .bt{font-size:28px}.banner.instage .bm{font-size:15px}
+.banner.out{animation:bannerout .4s ease-in forwards}
+@keyframes bannerout{from{transform:none;opacity:1}to{transform:translateX(40px);opacity:0}}
+@media (max-width:760px){.banner.instage .bt{font-size:22px}.banner.instage .bm{font-size:13px}.banner.instage{padding-top:10px;padding-bottom:10px}}
