@@ -5429,3 +5429,8 @@ html[data-vt="mm"] .clc-menu>div,html[data-vt="mm"] .clc-menu>summary{background
 /* 11-03 21:15 망령 「폼체인지나 메가 … 평소에 안 쓰는 버튼은 아래 줄 하나 더」: 폼 · 메가 · 테라는 둘째 줄 (21:17 「(특수)는 냅둬」 — 퇴장 · (특수)는 첫 줄 그대로) */
 .mbtns2{margin-top:3px}
 @media (min-width:761px){.mon.big>.minfo>.mbtns2>.btn{flex:0 1 auto}}
+/* 11-03 21:26 망령 「고유가 길어지면 발동 칸이 밀린다」: 벤치 트레이너의 고유 줄 — 칸 폭에 맞추고 이름은 줄임표(전체는 마우스를 올리면), 횟수 · 발동은 늘 오른쪽 끝에 */
+.tuq{display:flex;flex-direction:column;gap:3px;min-width:0}
+.tuq .pot.sp.uq{display:flex;align-items:center;gap:4px;width:100%;max-width:100%;min-width:0;box-sizing:border-box}
+.tuq .pot.sp.uq .potn{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tuq .pot.sp.uq>em,.tuq .pot.sp.uq>.pips,.tuq .pot.sp.uq>.btn,.tuq .pot.sp.uq>small{flex:none}
