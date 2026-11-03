@@ -5495,3 +5495,49 @@ html[data-vt="mm"] .clc-menu>div,html[data-vt="mm"] .clc-menu>summary{background
  .modal .mhead{flex-wrap:wrap;row-gap:6px}
  .modal .mhead>.btn,.modal .mhead .row>.btn{white-space:nowrap;writing-mode:horizontal-tb}
 }
+
+/* ---------- 11-04 던전 기믹 · 미궁 포텐셜 편집 창 (js/dg_gim.js) ---------- */
+.modal:has(.gmk-tabs){width:min(980px,100%)}
+.gmk-tabs{display:flex;gap:6px;flex-wrap:wrap;margin:-2px 0 12px}
+.gmk-tab{font:inherit;font-size:13px;padding:6px 12px;border:1px solid var(--line);background:transparent;color:var(--fg2);cursor:pointer;border-radius:999px}
+.gmk-tab.on{background:var(--red);border-color:var(--red);color:#fff;font-weight:700}
+.gmk-body{max-height:62vh;overflow:auto;padding-right:4px}
+.gmk-list{display:flex;flex-direction:column;gap:8px}
+.gmk{border:1px solid var(--line);border-left:3px solid var(--yel,#ffd84a);background:rgba(255,255,255,.025);padding:8px 10px}
+.gmk.off{border-left-color:var(--line);opacity:.6}
+.gmk.op{background:rgba(255,255,255,.045)}
+.gmk.mq{border-left-color:#b48cff;display:flex;flex-direction:column;gap:6px}
+.gmk-h{display:flex;align-items:flex-start;gap:10px}
+.gmk-sum{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px;text-align:left;background:none;border:0;padding:0;color:var(--fg);cursor:pointer;font:inherit}
+.gmk-sum b{font-size:15px}
+.gmk-on{font-size:12px;color:var(--yel,#ffd84a)}
+.gmk-fx{font-size:13px;color:var(--fg2)}
+.gmk-un{font-size:12px;color:var(--mute)}
+.gmk-ac{display:flex;gap:2px;flex:none}
+.gmk-del:hover{color:var(--red)!important}
+.gmk-tg{flex:none;width:34px;height:20px;border-radius:999px;border:1px solid var(--line);background:var(--bg2,#222);position:relative;cursor:pointer;margin-top:2px;padding:0}
+.gmk-tg i{position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--mute);transition:left .15s,background .15s}
+.gmk-tg[aria-pressed="true"]{background:color-mix(in srgb,var(--ok,#3ee0a1) 30%,transparent);border-color:var(--ok,#3ee0a1)}
+.gmk-tg[aria-pressed="true"] i{left:16px;background:var(--ok,#3ee0a1)}
+.gmk-f{display:flex;flex-direction:column;gap:10px;margin-top:10px;padding-top:10px;border-top:1px dashed var(--line)}
+.gmk-f fieldset{border:1px solid var(--line);padding:8px 10px 10px;margin:0;display:flex;flex-direction:column;gap:8px}
+.gmk-f legend{font-size:11px;letter-spacing:.12em;color:var(--mute);padding:0 4px}
+.gmk-g2,.gmk-g3{display:grid;gap:8px}
+.gmk-g2{grid-template-columns:1fr 2fr}.gmk-g3{grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+.gmk label,.gmk-lab{display:grid;gap:3px;font-size:12px;color:var(--mute)}
+.gmk input:not([type=checkbox]),.gmk select,.gmk textarea{width:100%;box-sizing:border-box}
+.gmk input.n{max-width:none}
+.gmk-chk{display:flex!important;flex-direction:row;align-items:center;gap:6px}
+.gmk-chk input{width:auto!important}
+.gmk-chips{display:flex;flex-wrap:wrap;gap:4px}
+.gmk-chips .chip{font-size:12px;padding:3px 9px}
+.gmk-sep{flex-basis:100%;height:0}
+.gmk-fxl{display:flex;flex-direction:column;gap:4px}
+.gmk-fxr{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) auto;gap:6px;align-items:center}
+.gmk-foot{display:flex;align-items:center;gap:8px;margin-top:12px;padding-top:10px;border-top:1px solid var(--line)}
+.gmk-foot .warn{color:var(--yel,#ffd84a)}
+.gmk-log{border:1px solid var(--line);padding:8px 10px;margin-bottom:6px}
+.gmk-log pre{white-space:pre-wrap;font:12px/1.5 var(--mono,monospace);color:var(--fg2);margin:6px 0 0}
+.dg-gimbox{grid-column:1/-1;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+@media (max-width:640px){.gmk-g2{grid-template-columns:1fr}.gmk-h{flex-wrap:wrap}.gmk-ac{width:100%;justify-content:flex-end}.gmk-fxr{grid-template-columns:1fr 1fr auto}.gmk-body{max-height:70vh}}
+@media (max-width:640px){.modal:has(.gmk-tabs) .mhead h2{font-size:17px;line-height:1.3}}
