@@ -9,10 +9,15 @@ window.OM_PREFS=(()=>{
  const KEY='om_prefs';
  const ACTS=[['chat','채팅 입력칸으로','/'],['phone','휴대폰 열기','p'],['settings','내 설정 열기',','],['bgm','BGM 정지 · 다시','m'],['vRp','RP 화면','1'],['vBattle','배틀 화면','2'],['vSheet','시트 화면','3'],['vGraph','관계도 화면','4'],['vCal','캘린더 화면','5'],
   /* 배틀 화면에서만 (g:'b') · 공격·상태 창이 열려 있을 때만 (g:'m') — battle_ui hotkey */
-  ['bProgress','턴 진행 ▶','n','b'],['bNext','다음 행동 ▶',']','b'],['bPrev','이전 행동 ◀','[','b'],['bAttack','지금 차례 공격','a','b'],['bHp','지금 차례 HP','h','b'],['bEdit','지금 차례 랭크·상태','s','b'],
+  /* 11-03 감우 (검토 14): N = 다음 행동, T = 턴 진행 (진행 권한이 있는 화면에서만 — battle_ui hotkey 가 거른다) */
+  ['bProgress','턴 진행 ▶','t','b'],['bNext','다음 행동 ▶','n','b'],['bPrev','이전 행동 ◀','[','b'],['bAttack','지금 차례 공격','a','b'],['bHp','지금 차례 HP','h','b'],['bEdit','지금 차례 랭크·상태','s','b'],
   ['bCmd','지시 입력으로','c','b'],['bReady','준비 완료 · 취소','y','b'],['bFire','포텐셜 발동','q','b'],['bReveal','모두 공개 (GM)','o','b'],['bField','필드','f','b'],['bTurnEnd','턴 종료 처리','e','b'],
   ['mRoll','공격 창 굴리기','r','m'],['mApply','공격·상태 창 적용','Enter','m']];
- const KGRP=[['','일반'],['b','배틀','배틀 화면에서 · 「지금 차례」= 행동 순서의 지금 칸'],['m','배틀 창','공격·상태 창이 열려 있을 때']];
+ const KGRP=[['','일반'],['r','RP','RP 화면에서'],['b','배틀','배틀 화면에서 · 「지금 차례」= 행동 순서의 지금 칸'],['m','배틀 창','공격·상태 창이 열려 있을 때']];
+ /* 11-03 감우: 단축키 등록 표 — 다른 모듈(rp_ui 등)이 window.OM_KEYS.add({id,label,key,grp,run}) 로 넣는다.
+    grp: '' 일반(어느 화면이든) · 'r' RP 화면 · 'b' 배틀 화면 · 'm' 배틀 창. run 이 없으면 battle_ui.hotkey(id) 로 간다. 기본 키는 내 설정 「단축키」 판에서 바꿀 수 있다 */
+ const RUNS={};
+ window.OM_KEYS={add(o){if(!o||!o.id||ACTS.some(a=>a[0]===o.id))return false;ACTS.push([o.id,o.label||o.id,o.key||'',o.grp||'']);DEF.keys[o.id]=o.key||'';if(P&&P.keys&&P.keys[o.id]==null)P.keys[o.id]=o.key||'';if(typeof o.run==='function')RUNS[o.id]=o.run;return true},list:()=>ACTS.map(a=>({id:a[0],label:a[1],key:(P&&P.keys&&P.keys[a[0]])??a[2],grp:a[3]||''}))};
  const DEF={keysOn:1,bgmMute:0,seMute:0,alertVol:0.35,alertSound:'soft',quiet:1,stand:100,cutin:100,tw:1,twSpeed:3,twHold:1.5,twFast:1,keys:Object.fromEntries(ACTS.map(a=>[a[0],a[2]]))};
  let P=load();
  function load(){let o={};try{o=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(e){}const p=Object.assign({},DEF,o);p.keys=Object.assign({},DEF.keys,o.keys||{});return p}
@@ -55,9 +60,10 @@ window.OM_PREFS=(()=>{
   if(!P.keysOn||e.ctrlKey||e.metaKey||e.altKey||e.isComposing||typing(e))return;
   const k=e.key.length===1?e.key.toLowerCase():e.key;const modal=!!document.querySelector('.modalbg');const app=A();const inBattle=!!app&&app.view==='battle';
   /* 같은 키가 여러 묶음에 있어도 지금 쓸 수 있는 것만: 창이 열려 있으면 「배틀 창」과 내 설정, 아니면 일반 + (배틀 화면이면) 배틀 */
-  const ok=a=>a[3]==='m'?modal&&inBattle:modal?a[0]==='settings':a[3]==='b'?inBattle:true;
+  const inRp=!!app&&app.view==='rp';
+  const ok=a=>{const g=a[3]||'';if(g==='m')return modal&&inBattle;if(modal)return a[0]==='settings';if(g==='b')return inBattle;if(g==='r')return inRp;return true};
   const hit=ACTS.find(a=>P.keys[a[0]]&&P.keys[a[0]]===k&&ok(a));if(!hit)return;
-  if(hit[3]){const BU=window.OM_BATTLE_UI;if(!BU||!BU.hotkey||!BU.hotkey(hit[0]))return}else run(hit[0]);e.preventDefault()},true);
+  if(RUNS[hit[0]]){if(RUNS[hit[0]](e)===false)return}else if(hit[3]){const BU=window.OM_BATTLE_UI;if(!BU||!BU.hotkey||!BU.hotkey(hit[0]))return}else run(hit[0]);e.preventDefault()},true);
 
  /* ----- 소리 연결 ----- */
  function setBgmMute(on){P.bgmMute=on?1:0;save();if(RP()&&RP().bgmMuted)RP().bgmMuted(!!on)}
@@ -99,7 +105,7 @@ window.OM_PREFS=(()=>{
    ${sl('cutin','컷인',50,150,5,P.cutin,'%',`<button class="pf-mute" data-pfb="cutTest" title="미리 보기">▶</button>`)}</section>
   <section class="pf-card"><header><i>⌨</i><b>단축키</b><small>키보드가 있을 때 · 입력칸 밖에서</small></header>
    ${sw('keysOn',P.keysOn,'단축키 쓰기','끄면 아래 키가 모두 멈춘다 (설정은 남는다)')}
-   <div class="pf-keywrap ${P.keysOn?'':'off'}">   ${KGRP.map(([g,gn,gs])=>`${g?`<div class="pf-kgrp"><b>${gn}</b>${gs?`<small>${gs}</small>`:''}</div>`:''}<div class="pf-keys">${ACTS.filter(a=>(a[3]||'')===g).map(([k,n])=>`<div class="pf-key ${dup(k)?'dup':''}"><span>${n}</span><button class="pf-cap ${capturing&&capturing.act===k?'rec':''}" data-pfk="${k}" ${dup(k)?'title="같은 묶음에 같은 키가 있다 — 위의 것만 동작"':''}>${capturing&&capturing.act===k?'키를 눌러 줘…':esc(keyName(P.keys[k]))}</button></div>`).join('')}</div>`).join('')}
+   <div class="pf-keywrap ${P.keysOn?'':'off'}">   ${KGRP.filter(([g])=>ACTS.some(a=>(a[3]||'')===g)).map(([g,gn,gs])=>`${g?`<div class="pf-kgrp"><b>${gn}</b>${gs?`<small>${gs}</small>`:''}</div>`:''}<div class="pf-keys">${ACTS.filter(a=>(a[3]||'')===g).map(([k,n])=>`<div class="pf-key ${dup(k)?'dup':''}"><span>${n}</span><button class="pf-cap ${capturing&&capturing.act===k?'rec':''}" data-pfk="${k}" ${dup(k)?'title="같은 묶음에 같은 키가 있다 — 위의 것만 동작"':''}>${capturing&&capturing.act===k?'키를 눌러 줘…':esc(keyName(P.keys[k]))}</button></div>`).join('')}</div>`).join('')}
    <div class="pf-note">칸을 누르고 키를 누르면 바뀐다 · Backspace 지우기 · Esc 취소 · 노란 칸은 겹친 키</div>
    <div class="pf-foot"><button class="btn xs ghost" data-pfb="keyreset">단축키만 기본으로</button></div></div></section>
   <div class="pf-foot"><button class="btn xs ghost" data-pfb="reset">모두 기본으로</button></div></div>`}
