@@ -37,7 +37,11 @@ window.OM_SHEET_UI=(()=>{
  const typeChip=en=>A().typeChip(en);
 
  /* ---------- 시트 폴더 (10-24 망령): 트레이너 탭이 많아지면 폴더로 묶는다. GM 이 정한 sfold → 없으면 제작기에서 가져올 때의 폴더 이름(folderName) ---------- */
- const foldOf=t=>String(t&&t.sfold!=null?t.sfold:((t&&t.folderName)||'')).trim();
+ const foldOf=t=>{const v=String(t&&t.sfold!=null?t.sfold:((t&&t.folderName)||'')).trim();return v||(t&&t.wild?'야생':'')};   /* 11-04: 폴더를 안 정한 던전 야생 시트는 「야생」 폴더로 */
+ /* 11-04 망령 「여기서도 폴더별로 접기 기능 · 야생 쪽은 접어두렴」: 「전체」 보기에서 폴더 머리를 누르면 접고 편다 — 이 브라우저에 방마다 저장 · 처음엔 「야생」만 접힘 */
+ const CK=()=>'om_sfcl_'+((ctx().ST||{}).room||'');
+ function closedF(){if(!UI.fcl){let o=null;try{o=JSON.parse(localStorage.getItem(CK())||'null')}catch(e){}UI.fcl=o&&typeof o==='object'?o:{'야생':1}}return UI.fcl}
+ function togF(f){const o=closedF();if(o[f])delete o[f];else o[f]=1;try{localStorage.setItem(CK(),JSON.stringify(o))}catch(e){}}
  const FK=()=>'om_sfold_'+((ctx().ST||{}).room||'');
  function curFold(){if(UI.fold==null){try{UI.fold=localStorage.getItem(FK())||'*'}catch(e){UI.fold='*'}}return UI.fold}
  function setFold(v){UI.fold=v;try{localStorage.setItem(FK(),v)}catch(e){}}
@@ -65,17 +69,19 @@ window.OM_SHEET_UI=(()=>{
   let F=folds.length?curFold():'*';if(F!=='*'&&(F===''?!nUn:!folds.includes(F)))F='*';
   const fo=id=>{const f=foldOf(trs[id]);return f?folds.indexOf(f):folds.length};
   const shown=F==='*'?ids.slice().sort((a,b)=>fo(a)-fo(b)):ids.filter(id=>foldOf(trs[id])===F);
-  if(!ids.includes(UI.tid)||(shown.length&&!shown.includes(UI.tid)))UI.tid=shown.includes(c.seat)?c.seat:(shown[0]||ids[0]||'');
+  const CL=F==='*'&&folds.length?closedF():{};const vis=shown.filter(id=>!CL[foldOf(trs[id])||'미분류']);
+  if(!ids.includes(UI.tid)||(shown.length&&!shown.includes(UI.tid)))UI.tid=vis.includes(c.seat)?c.seat:(vis[0]||shown[0]||ids[0]||'');
   const t=trs[UI.tid];
   const fchip=(v,lab,n)=>`<button type="button" class="tfold ${F===v?'on':''}" data-tfold="${esc(v)}">${v==='*'||v===''?'':'<i class="fic" aria-hidden="true"></i>'}${esc(lab)} <span class="n">${n}</span></button>`;
   let lastF=null;
   el.innerHTML=`<div class="sheet">
    ${folds.length?`<div class="tfolds">${fchip('*','전체',ids.length)}${folds.map(f=>fchip(f,f,ids.filter(id=>foldOf(trs[id])===f).length)).join('')}${nUn?fchip('','미분류',nUn):''}</div>`:''}
-   <div class="ttabs">${shown.map(id=>{const f=foldOf(trs[id]);const sep=F==='*'&&folds.length&&f!==lastF?`<span class="tfsep">${esc(f||'미분류')}</span>`:'';lastF=f;return sep+`<button class="ttab ${id===UI.tid?'on':''}" data-tid="${id}" ${c.gm?'draggable="true"':''}>${trs[id].priv?'<span class="tlock" title="비공개 — 주인과 GM 만 본다">🔒</span>':''}${esc(trs[id].name)}${id===c.seat?' <span class="tag me">ME</span>':''}</button>`}).join('')}
+   <div class="ttabs">${shown.map(id=>{const f=foldOf(trs[id]);const fk=f||'미분류';const cl=!!CL[fk];const sep=F==='*'&&folds.length&&f!==lastF?`<button type="button" class="tfsep${cl?' cl':''}" data-tfcl="${esc(fk)}" title="${cl?'펼치기':'접기'}">${cl?'▸':'▾'} ${esc(fk)}${cl?` <span class="n">${shown.filter(x=>(foldOf(trs[x])||'미분류')===fk).length}</span>`:''}</button>`:'';lastF=f;if(cl&&id!==UI.tid)return sep;return sep+`<button class="ttab ${id===UI.tid?'on':''}" data-tid="${id}" ${c.gm?'draggable="true"':''}>${trs[id].priv?'<span class="tlock" title="비공개 — 주인과 GM 만 본다">🔒</span>':''}${esc(trs[id].name)}${id===c.seat?' <span class="tag me">ME</span>':''}</button>`}).join('')}
     <span class="sp"></span>${c.gm?`<button class="btn sm" data-act="import">제작기에서 가져오기</button><button class="btn sm ghost" data-act="newtr">+ 새 트레이너</button><button class="btn sm ghost" data-act="sfolders" title="트레이너 탭을 폴더로 묶는다">폴더 정리</button>`:(c.seat?`<button class="btn sm ${trs[c.seat]?'ghost':'pri'}" data-act="import" title="제작기에 있는 내 트레이너를 내 자리로 가져온다">${trs[c.seat]?'내 파티 다시 불러오기':'내 파티 불러오기'}</button>`:'')}</div>
    ${t?trainerView(c,t):'<div class="empty">아직 트레이너가 없다.'+(c.gm?' 「제작기에서 가져오기」로 시작한다.':(c.seat?' 「내 파티 불러오기」로 제작기의 트레이너를 가져온다. 남의 시트는 휴대폰 연락처에서 같은 방 코드로 들어와야 보인다.':' 자리에 앉은 뒤 「내 파티 불러오기」.'))+'</div>'}
   </div>`;
   el.querySelectorAll('.ttab').forEach(b=>b.onclick=()=>{UI.tid=b.dataset.tid;UI.mid='';A().renderScene()});
+  el.querySelectorAll('[data-tfcl]').forEach(b=>b.onclick=()=>{togF(b.dataset.tfcl);A().renderScene()});
   el.querySelectorAll('.hsock').forEach(b=>b.onclick=()=>A().toast(String(b.title||'').replace(/\n/g,' · ')));
   el.querySelectorAll('[data-tfold]').forEach(b=>{b.onclick=()=>{setFold(b.dataset.tfold);UI.mid='';A().renderScene()};
    if(!c.gm||b.dataset.tfold==='*')return;b.ondragover=e=>{if([...e.dataTransfer.types].includes('text/om-tid')){e.preventDefault();b.classList.add('drop')}};b.ondragleave=()=>b.classList.remove('drop');

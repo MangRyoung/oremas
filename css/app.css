@@ -5555,3 +5555,7 @@ html[data-vt="mm"] .clc-menu>div,html[data-vt="mm"] .clc-menu>summary{background
 .sk3pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px 8px;margin-top:10px;max-height:52vh;overflow:auto;padding:4px}
 .sk3pk{all:unset;box-sizing:border-box;cursor:pointer;padding:3px;border-radius:10px;border:2px solid transparent}.sk3pk .skc{width:100%}.sk3pk.on{border-color:var(--acc,#ffd84a)}.sk3pk.has{opacity:.5}.sk3pk:focus-visible{outline:2px solid var(--acc,#ffd84a)}
 @media(max-width:760px){.sk3p .sh .note{display:none}}
+/* 11-04 시트 탭 폴더 접기 */
+button.tfsep{all:unset;box-sizing:border-box;cursor:pointer;font-family:var(--lab);font-size:11px;color:var(--yel2);opacity:.85;padding:3px 6px 3px 8px;border-radius:6px;white-space:nowrap}
+button.tfsep:hover{opacity:1;background:rgba(255,216,74,.1)}button.tfsep:focus-visible{outline:1px solid var(--yel2)}
+button.tfsep.cl{opacity:1;border:1px dashed color-mix(in srgb,var(--yel2) 55%,transparent);padding:3px 8px}button.tfsep .n{opacity:.7;margin-left:2px}

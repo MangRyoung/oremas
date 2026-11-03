@@ -293,7 +293,9 @@ window.OM_NOTES=(()=>{
   for(const id of K.e){if(liveE.has(id)||!R[id])continue;if(!dels.some(d=>d.id===id))dels.push({kind:'rels',id})}
   for(const [x,d] of pend)if(JSON.stringify(d)!==JSON.stringify(x.data))rows.push({kind:x.kind,id:x.id,data:d,vis:x.vis});
   if(rows.length)await S().ntPutMany(camp,secret,rows.map(r=>({kind:r.kind,id:r.id,data:r.data,vis:r.vis||'pub'})));
-  for(const d of dels)await S().ntDel(camp,secret,d.kind,d.id);
+  /* 11-04: 노트 지우기 권한이 없는 GM 창(노트에선 PL 계정)이 지우지 못한 노드를 다음 읽기에서 다시 살려 내던 것 — 못 지운 것은 이 방에서 감춘다 */
+  const failed=[];for(const d of dels){try{await S().ntDel(camp,secret,d.kind,d.id)}catch(e){failed.push(d)}}
+  for(const d of failed)if(d.kind==='ents')hide[d.id]=1;if(failed.length&&LV.warned!=='gdel'){LV.warned='gdel';A().toast(`관계도 연동: 노트에서 ${failed.length}개를 지우지 못했다 (이 계정은 노트 GM 이 아니다) — 이 방에서만 감췄다`)}
   if(LV.w){for(const r of rows)if(r.vis&&r.vis!=='pub')LV.w.ping({t:'doc',kind:r.kind,id:r.id});for(const d of dels)LV.w.ping({t:'del',kind:d.kind,id:d.id})}
   await grSave(g,nodes,edges,hide)}
  async function grSet(on){if(on&&!LINK.camp)return A().toast('먼저 📓 노트 메뉴에서 이 방을 세션 노트 캠페인과 이어 줘');await A().set(['graph','live'],on?1:0);LV.grLast=null;if(on)grRun();A().toast(on?'관계도 연동을 켰다 — 노트 관계도와 이 방 관계도가 서로 따라간다 (노트에서 「모두」 공개인 것만)':'관계도 연동을 껐다')}
