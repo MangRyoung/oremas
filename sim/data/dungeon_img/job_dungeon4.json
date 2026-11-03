@@ -1,0 +1,550 @@
+{
+ "memo": "2026-11-03 21시 미사그 변이체 포트 (H3 = artprompt MSTYLE.H2 + MNEG2, 후보 3장씩, 던전 오리지널 몹)",
+ "H": "0.6::artist:nishikujic ::, 0.6::artist:k-suwabe ::, 1.1::artist:kazuma kaneko ::, 0.6::background:tsukushi akihito ::, 0.6::background:kuroimori ::, 0.6::background:yoshida akihiko ::, 0.8::artist:kankan33333 ::, 1::artist:kimhiro ::, 1.1::artist:ciloranko ::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, thick outlines, ::ultra complexity ::, 1.4::no humans, monster, creature, solo::, 1.2::dark fantasy, eldritch, unsettling::, 1.1::menacing, predatory gaze, hostile::, 1.2::full body, centered, the whole creature inside the frame::, 1.2::detailed background filling the whole image, edge to edge scenery::, ",
+ "N": "human, humanoid, 1girl, 1boy, multiple views, multiple creatures, text, caption, english text, trading card, card frame, border, watermark, signature, logo, cropped, out of frame, lowres, worst quality, gore, 1.5::pokemon (creature), pokemon, fakemon, digimon, mascot, anime creature::, 1.3::cute, chibi, kawaii, round eyes, big eyes, dot eyes, innocent, plush, cuddly, smiling happily::, 1.8::frame, picture frame, border, white border, vignette, circle frame, round frame, porthole, framed, letterboxing, card, white background::",
+ "T": [
+  [
+   "w002",
+   "시스리자",
+   [
+    "body of mud and stones",
+    "vertical mouth"
+   ],
+   "1.3::monstrous creature based on a lizard::, rock and ground element, rocky armor plates, boulder chunks, earthy hide, clay and sand texture, color palette gray and brown and ochre, charging an energy blast, background: an old underground mine tunnel with wooden beams and lanterns, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::body of mud and stones, vertical mouth::, medium size"
+  ],
+  [
+   "w003",
+   "헬릭민",
+   [
+    "mushrooms growing on back",
+    "faceless"
+   ],
+   "1.3::monstrous creature based on a snail::, grass element, leaves, vines and moss growing on the body, color palette green and brown, standing firm in a defensive stance, background: a dusty abandoned victorian house interior with moonlight, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::mushrooms growing on back, faceless::, medium size"
+  ],
+  [
+   "w004",
+   "념호마",
+   [
+    "exposed brain pattern",
+    "skull mask"
+   ],
+   "1.3::monstrous creature based on a fox::, psychic element, glowing eyes, floating aura, gem on the forehead, color palette pink and violet, dynamic pose using both strength and energy, background: a snowy mountain with rocky cliffs and pine trees, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::exposed brain pattern, skull mask::, medium size"
+  ],
+  [
+   "w007",
+   "레기모스",
+   [
+    "magma cracks on body"
+   ],
+   "1.3::monstrous creature based on a tiger moth::, fire element, flame tail or mane, ember sparks, color palette red and orange, lunging forward in an attacking pose, background: a volcanic cave with black rock and glowing lava cracks, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::magma cracks on body::, medium size"
+  ],
+  [
+   "w009",
+   "암초마",
+   [
+    "grin too wide, wide mouth",
+    "stitched body, stitches"
+   ],
+   "1.3::monstrous creature based on a weasel::, dark element, sharp claws, sly grin, shadowy fur, color palette black and crimson, alert and ready, background: a misty overgrown forest with vines, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::grin too wide, wide mouth, stitched body, stitches::, medium size"
+  ],
+  [
+   "w011",
+   "갑주충",
+   [
+    "segmented abdomen"
+   ],
+   "1.3::monstrous creature based on a spider::, bug element, chitin shell, segmented limbs, antennae, color palette lime and yellow-green, alert and ready, background: an old brick laboratory basement with brass pipes, wooden shelves and gas lamps, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::segmented abdomen::, medium size"
+  ],
+  [
+   "w012",
+   "전묘마",
+   [
+    "exposed glowing coils",
+    "one oversized arm"
+   ],
+   "1.3::monstrous creature based on a cat::, electric element, zigzag lightning marks, static sparks, color palette yellow and black, lunging forward in an attacking pose, background: an old brick laboratory basement with brass pipes, wooden shelves and gas lamps, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::exposed glowing coils, one oversized arm::, medium size"
+  ],
+  [
+   "w013",
+   "라돈스네",
+   [
+    "mouths in scales"
+   ],
+   "1.3::monstrous creature based on a snake::, dragon element, scales, horns, draconic features, color palette indigo and teal, charging an energy blast, background: ancient stone ruins with carved runes, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::mouths in scales::, medium size"
+  ],
+  [
+   "w019",
+   "보르펠리",
+   [
+    "doll eyes, glossy eyes",
+    "tentacle hair"
+   ],
+   "1.3::monstrous creature based on a cat::, fairy element, ribbons, sparkles, pastel petals, color palette pastel pink and white, charging an energy blast, background: a misty overgrown forest with vines, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::doll eyes, glossy eyes, tentacle hair::, medium size"
+  ],
+  [
+   "w022",
+   "하이드셸",
+   [
+    "jelly body, translucent"
+   ],
+   "1.3::monstrous creature based on a conch shell snail::, water element, fins, glossy wet skin, water droplets, color palette blue and aqua, background: a sea cave with tide pools and turquoise water, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::jelly body, translucent::, medium size"
+  ],
+  [
+   "w023",
+   "각척사",
+   [
+    "stone growths fused to flesh"
+   ],
+   "1.3::monstrous creature based on a lizard::, rock element, rocky armor plates, boulder chunks, color palette gray and brown, charging an energy blast, background: ancient stone ruins with carved runes, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::stone growths fused to flesh::, medium size"
+  ],
+  [
+   "w024",
+   "해범수",
+   [
+    "black tar dripping body",
+    "vertical mouth"
+   ],
+   "1.3::monstrous creature based on a seal::, water element, fins, glossy wet skin, water droplets, color palette blue and aqua, alert and ready, background: an old underground mine tunnel with wooden beams and lanterns, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::black tar dripping body, vertical mouth::, medium size"
+  ],
+  [
+   "w026",
+   "투엘베어",
+   [
+    "overgrown muscles, veins",
+    "mouth on torso"
+   ],
+   "1.3::monstrous creature based on a bear::, fighting element, muscular build, wrapped fists, martial stance, color palette red and tan, standing firm in a defensive stance, background: a dusty abandoned victorian house interior with moonlight, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::overgrown muscles, veins, mouth on torso::, medium size"
+  ],
+  [
+   "w031",
+   "용홍어",
+   [
+    "horns piercing skull",
+    "tentacle hair"
+   ],
+   "1.3::monstrous creature based on a stingray::, dragon element, scales, horns, draconic features, color palette indigo and teal, alert and ready, background: a volcanic cave with black rock and glowing lava cracks, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::horns piercing skull, tentacle hair::, medium size"
+  ],
+  [
+   "w032",
+   "니아캄파",
+   [
+    "rusted rivets, exposed gears",
+    "extra eyes"
+   ],
+   "1.3::monstrous creature based on a bell::, steel element, metallic plating, rivets and blades, color palette silver and steel gray, background: an old brick laboratory basement with brass pipes, wooden shelves and gas lamps, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::rusted rivets, exposed gears, extra eyes::, medium size"
+  ],
+  [
+   "w034",
+   "에테랜턴",
+   [
+    "toxic gas from gills"
+   ],
+   "1.3::monstrous creature based on a lantern::, ghost and poison element, wispy translucent edges, eerie glow, toxic spots, dripping venom, color palette dark purple and lavender and purple and magenta, alert and ready, background: a dusty abandoned victorian house interior with moonlight, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::toxic gas from gills::, medium size"
+  ],
+  [
+   "w035",
+   "비틀틴",
+   [
+    "gear teeth"
+   ],
+   "1.3::monstrous creature based on a beetle::, bug and steel element, chitin shell, segmented limbs, antennae, metallic plating, rivets and blades, color palette lime and yellow-green and silver and steel gray, standing firm in a defensive stance, background: ancient stone ruins with carved runes, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::gear teeth::, medium size"
+  ],
+  [
+   "w038",
+   "탈루트라",
+   [
+    "torn fins"
+   ],
+   "1.3::monstrous creature based on a otter::, water element, fins, glossy wet skin, water droplets, color palette blue and aqua, lunging forward in an attacking pose, background: a sea cave with tide pools and turquoise water, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::torn fins::, medium size"
+  ],
+  [
+   "w041",
+   "요스넛",
+   [
+    "overgrown muscles, veins",
+    "cracked skin"
+   ],
+   "1.3::monstrous creature based on a squirrel::, normal and fighting element, plain fur, muscular build, wrapped fists, martial stance, color palette cream and beige and red and tan, charging an energy blast, background: a misty overgrown forest with vines, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::overgrown muscles, veins, cracked skin::, medium size"
+  ],
+  [
+   "w042",
+   "혼구귀",
+   [
+    "body dissolving into smoke"
+   ],
+   "1.3::monstrous creature based on a turtle::, rock and ghost element, rocky armor plates, boulder chunks, wispy translucent edges, eerie glow, color palette gray and brown and dark purple and lavender, standing firm in a defensive stance, background: an underground mine cavern with crystals, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::body dissolving into smoke::, medium size"
+  ],
+  [
+   "w047",
+   "우르스롬",
+   [
+    "rusted rivets, exposed gears",
+    "extra mouth"
+   ],
+   "1.3::monstrous creature based on a bear::, fighting and steel element, muscular build, wrapped fists, martial stance, metallic plating, rivets and blades, color palette red and tan and silver and steel gray, standing firm in a defensive stance, background: a snowy mountain with rocky cliffs and pine trees, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::rusted rivets, exposed gears, extra mouth::, medium size"
+  ],
+  [
+   "w049",
+   "녹크로우",
+   [
+    "shadow claws"
+   ],
+   "1.3::monstrous creature based on a crow::, dark element, sharp claws, sly grin, shadowy fur, color palette black and crimson, background: a volcanic cave with black rock and glowing lava cracks, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::shadow claws::, medium size"
+  ],
+  [
+   "w055",
+   "신사우르",
+   [
+    "magma cracks on body",
+    "wrong shadow, shadow with extra eyes"
+   ],
+   "1.3::monstrous creature based on a lizard::, fire element, flame tail or mane, ember sparks, color palette red and orange, alert and ready, background: a volcanic cave with black rock and glowing lava cracks, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::magma cracks on body, wrong shadow, shadow with extra eyes::, medium size"
+  ],
+  [
+   "w057",
+   "베스래빗",
+   [
+    "patchy fur, bald patches",
+    "tentacle hair"
+   ],
+   "1.3::monstrous creature based on a rabbit::, normal element, plain fur, color palette cream and beige, alert and ready, background: a dusty abandoned victorian house interior with moonlight, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::patchy fur, bald patches, tentacle hair::, medium size"
+  ],
+  [
+   "w058",
+   "오르스셸",
+   [
+    "cracked rock skin",
+    "empty eye sockets, glowing eye sockets"
+   ],
+   "1.3::monstrous creature based on a turtle::, rock element, rocky armor plates, boulder chunks, color palette gray and brown, background: a snowy mountain with rocky cliffs and pine trees, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::cracked rock skin, empty eye sockets, glowing eye sockets::, medium size"
+  ],
+  [
+   "w060",
+   "칼시배트",
+   [
+    "split beak"
+   ],
+   "1.3::monstrous creature based on a bat::, psychic and flying element, glowing eyes, floating aura, gem on the forehead, feathered wings, light airy body, color palette pink and violet and sky blue and white, dynamic pose using both strength and energy, background: a misty overgrown forest with vines, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::split beak::, medium size"
+  ],
+  [
+   "w068",
+   "석랑요",
+   [
+    "rusted rivets, exposed gears"
+   ],
+   "1.3::monstrous creature based on a wolf::, electric and steel element, zigzag lightning marks, static sparks, metallic plating, rivets and blades, color palette yellow and black and silver and steel gray, lunging forward in an attacking pose, background: an old brick laboratory basement with brass pipes, wooden shelves and gas lamps, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::rusted rivets, exposed gears::, medium size"
+  ],
+  [
+   "w078",
+   "섬양마",
+   [
+    "exposed glowing coils"
+   ],
+   "1.3::monstrous creature based on a sheep::, electric element, zigzag lightning marks, static sparks, color palette yellow and black, standing firm in a defensive stance, background: an old underground mine tunnel with wooden beams and lanterns, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::exposed glowing coils::, medium size"
+  ],
+  [
+   "w080",
+   "오비멘",
+   [
+    "grasping ribbon tentacles"
+   ],
+   "1.3::monstrous creature based on a sheep::, fairy and flying element, ribbons, sparkles, pastel petals, feathered wings, light airy body, color palette pastel pink and white and sky blue, standing firm in a defensive stance, background: a misty overgrown forest with vines, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::grasping ribbon tentacles::, medium size"
+  ],
+  [
+   "w082",
+   "골웅마",
+   [
+    "overgrown muscles, veins",
+    "wrong shadow, shadow with extra eyes"
+   ],
+   "1.3::monstrous creature based on a bear::, fighting element, muscular build, wrapped fists, martial stance, color palette red and tan, standing firm in a defensive stance, background: an underground mine cavern with crystals, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::overgrown muscles, veins, wrong shadow, shadow with extra eyes::, medium size"
+  ],
+  [
+   "w083",
+   "야그팔렌",
+   [
+    "segmented abdomen",
+    "hand on tail"
+   ],
+   "1.3::monstrous creature based on a moth::, bug element, chitin shell, segmented limbs, antennae, color palette lime and yellow-green, charging an energy blast, background: an old underground mine tunnel with wooden beams and lanterns, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::segmented abdomen, hand on tail::, medium size"
+  ],
+  [
+   "w084",
+   "루트센티",
+   [
+    "mandibles",
+    "hand on tail"
+   ],
+   "1.3::monstrous creature based on a centipede::, poison and bug element, toxic spots, dripping venom, chitin shell, segmented limbs, antennae, color palette purple and magenta and lime and yellow-green, lunging forward in an attacking pose, background: a misty overgrown forest with vines, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::mandibles, hand on tail::, medium size"
+  ],
+  [
+   "w085",
+   "환응조",
+   [
+    "third eye on forehead",
+    "wrong shadow, shadow with extra eyes"
+   ],
+   "1.3::monstrous creature based on a falcon::, psychic and flying element, glowing eyes, floating aura, gem on the forehead, feathered wings, light airy body, color palette pink and violet and sky blue and white, alert and ready, background: a sea cave with tide pools and turquoise water, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::third eye on forehead, wrong shadow, shadow with extra eyes::, medium size"
+  ],
+  [
+   "w088",
+   "콘크스",
+   [
+    "torn fins"
+   ],
+   "1.3::monstrous creature based on a conch shell snail::, water element, fins, glossy wet skin, water droplets, color palette blue and aqua, background: a misty overgrown forest with vines, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::torn fins::, medium size"
+  ],
+  [
+   "w090",
+   "발로히포",
+   [
+    "shovel claws",
+    "cracked skin"
+   ],
+   "1.3::monstrous creature based on a hippopotamus::, rock and ground element, rocky armor plates, boulder chunks, earthy hide, clay and sand texture, color palette gray and brown and ochre, lunging forward in an attacking pose, background: ancient stone ruins with carved runes, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::shovel claws, cracked skin::, medium size"
+  ],
+  [
+   "w092",
+   "쿠아몰",
+   [
+    "eyes inside ears"
+   ],
+   "1.3::monstrous creature based on a mole::, normal element, plain fur, color palette cream and beige, background: a dim sealed laboratory corridor, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::eyes inside ears::, medium size"
+  ],
+  [
+   "w097",
+   "클라비펙",
+   [
+    "floating chains",
+    "split jaw"
+   ],
+   "1.3::monstrous creature based on a key::, ghost element, wispy translucent edges, eerie glow, color palette dark purple and lavender, dynamic pose using both strength and energy, background: a dusty abandoned victorian house interior with moonlight, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::floating chains, split jaw::, medium size"
+  ],
+  [
+   "w101",
+   "제피펠리",
+   [
+    "split beak"
+   ],
+   "1.3::monstrous creature based on a pelican::, psychic and flying element, glowing eyes, floating aura, gem on the forehead, feathered wings, light airy body, color palette pink and violet and sky blue and white, alert and ready, background: a sea cave with tide pools and turquoise water, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::split beak::, medium size"
+  ],
+  [
+   "w104",
+   "환율요",
+   [
+    "exposed brain pattern"
+   ],
+   "1.3::monstrous creature based on a squirrel::, fairy and psychic element, ribbons, sparkles, pastel petals, glowing eyes, floating aura, gem on the forehead, color palette pastel pink and white and pink and violet, alert and ready, background: a snowy mountain with blue ice walls, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::exposed brain pattern::, medium size"
+  ],
+  [
+   "w106",
+   "타우그루",
+   [
+    "exposed bone knuckles",
+    "stitched body, stitches"
+   ],
+   "1.3::monstrous creature based on a crane::, fighting element, muscular build, wrapped fists, martial stance, color palette red and tan, charging an energy blast, background: a volcanic cave with black rock and glowing lava cracks, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::exposed bone knuckles, stitched body, stitches::, medium size"
+  ],
+  [
+   "w112",
+   "벤토칸크",
+   [
+    "torn fins",
+    "barnacles on skin"
+   ],
+   "1.3::monstrous creature based on a crab::, water element, fins, glossy wet skin, water droplets, color palette blue and aqua, alert and ready, background: an old brick laboratory basement with brass pipes, wooden shelves and gas lamps, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::torn fins, barnacles on skin::, medium size"
+  ],
+  [
+   "w114",
+   "나이트팟",
+   [
+    "faces in its body",
+    "bone spikes on spine"
+   ],
+   "1.3::monstrous creature based on a clay pot::, ghost element, wispy translucent edges, eerie glow, color palette dark purple and lavender, standing firm in a defensive stance, background: an old underground mine tunnel with wooden beams and lanterns, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::faces in its body, bone spikes on spine::, medium size"
+  ],
+  [
+   "w115",
+   "머스몰",
+   [
+    "moss in eye sockets",
+    "extra mouth"
+   ],
+   "1.3::monstrous creature based on a mole::, grass element, leaves, vines and moss growing on the body, color palette green and brown, background: a misty overgrown forest with vines, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::moss in eye sockets, extra mouth::, medium size"
+  ],
+  [
+   "w120",
+   "볼타캣",
+   [
+    "electric filament hair",
+    "faceless"
+   ],
+   "1.3::monstrous creature based on a cat::, steel and electric element, metallic plating, rivets and blades, zigzag lightning marks, static sparks, color palette silver and steel gray and yellow and black, charging an energy blast, background: a sea cave with tide pools and turquoise water, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::electric filament hair, faceless::, medium size"
+  ],
+  [
+   "w122",
+   "그루벳",
+   [
+    "gear teeth"
+   ],
+   "1.3::monstrous creature based on a crane::, fighting and steel element, muscular build, wrapped fists, martial stance, metallic plating, rivets and blades, color palette red and tan and silver and steel gray, dynamic pose using both strength and energy, background: a snowy mountain with blue ice walls, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::gear teeth::, medium size"
+  ],
+  [
+   "w124",
+   "오드불프",
+   [
+    "exposed brain pattern"
+   ],
+   "1.3::monstrous creature based on a fox::, psychic and normal element, glowing eyes, floating aura, gem on the forehead, plain fur, color palette pink and violet and cream and beige, background: a dusty abandoned victorian mansion interior with moonlight, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::exposed brain pattern::, medium size"
+  ],
+  [
+   "w125",
+   "이테토르",
+   [
+    "body of mud and stones",
+    "bone mask face"
+   ],
+   "1.3::monstrous creature based on a turtle::, ground element, earthy hide, clay and sand texture, color palette brown and ochre, alert and ready, background: a volcanic cave with black rock and glowing lava cracks, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::body of mud and stones, bone mask face::, medium size"
+  ],
+  [
+   "w129",
+   "위즐렌",
+   [
+    "patchy fur, bald patches",
+    "exposed ribs"
+   ],
+   "1.3::monstrous creature based on a weasel::, normal element, plain fur, color palette cream and beige, lunging forward in an attacking pose, background: a dusty abandoned victorian mansion interior with moonlight, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::patchy fur, bald patches, exposed ribs::, medium size"
+  ],
+  [
+   "w130",
+   "시아카프",
+   [
+    "body dissolving into smoke",
+    "hand on tail"
+   ],
+   "1.3::monstrous creature based on a goat::, ghost and ice element, wispy translucent edges, eerie glow, frost crystals, icy translucent parts, color palette dark purple and lavender and pale blue and white, background: a snowy mountain with rocky cliffs and pine trees, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::body dissolving into smoke, hand on tail::, medium size"
+  ],
+  [
+   "w138",
+   "칼코그",
+   [
+    "rusted rivets, exposed gears"
+   ],
+   "1.3::monstrous creature based on a cogwheel::, steel element, metallic plating, rivets and blades, color palette silver and steel gray, alert and ready, background: a snowy mountain with rocky cliffs and pine trees, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::rusted rivets, exposed gears::, medium size"
+  ],
+  [
+   "w150",
+   "시베실",
+   [
+    "cracked ice mask"
+   ],
+   "1.3::monstrous creature based on a seal::, ice element, frost crystals, icy translucent parts, color palette pale blue and white, background: a sea cave with tide pools and turquoise water, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::cracked ice mask::, medium size"
+  ],
+  [
+   "w151",
+   "신모스",
+   [
+    "charred black skin"
+   ],
+   "1.3::monstrous creature based on a tiger moth::, fire and ghost element, flame tail or mane, ember sparks, wispy translucent edges, eerie glow, color palette red and orange and dark purple and lavender, charging an energy blast, background: ancient stone ruins with carved runes, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::charred black skin::, medium size"
+  ],
+  [
+   "w152",
+   "요율마",
+   [
+    "grasping ribbon tentacles",
+    "mouth on torso"
+   ],
+   "1.3::monstrous creature based on a squirrel::, fairy element, ribbons, sparkles, pastel petals, color palette pastel pink and white, alert and ready, background: a misty overgrown forest with vines, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::grasping ribbon tentacles, mouth on torso::, medium size"
+  ],
+  [
+   "w153",
+   "녹하이엔",
+   [
+    "grin too wide, wide mouth",
+    "wrong shadow, shadow with extra eyes"
+   ],
+   "1.3::monstrous creature based on a hyena::, dark element, sharp claws, sly grin, shadowy fur, color palette black and crimson, lunging forward in an attacking pose, background: ancient stone ruins with carved runes, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::grin too wide, wide mouth, wrong shadow, shadow with extra eyes::, medium size"
+  ],
+  [
+   "w154",
+   "명약귀",
+   [
+    "body dissolving into smoke",
+    "floating eyes around head"
+   ],
+   "1.3::monstrous creature based on a key::, ghost element, wispy translucent edges, eerie glow, color palette dark purple and lavender, alert and ready, background: an old underground mine tunnel with wooden beams and lanterns, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::body dissolving into smoke, floating eyes around head::, medium size"
+  ],
+  [
+   "w156",
+   "래빗렌",
+   [
+    "patchy fur, bald patches"
+   ],
+   "1.3::monstrous creature based on a rabbit::, normal element, plain fur, color palette cream and beige, charging an energy blast, background: a volcanic cave with black rock and glowing lava cracks, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::patchy fur, bald patches::, medium size"
+  ],
+  [
+   "w157",
+   "환아충",
+   [
+    "floating detached body parts"
+   ],
+   "1.3::monstrous creature based on a moth::, psychic element, glowing eyes, floating aura, gem on the forehead, color palette pink and violet, standing firm in a defensive stance, background: ancient stone ruins with carved runes, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::floating detached body parts::, medium size"
+  ],
+  [
+   "w158",
+   "심홍어",
+   [
+    "black tar dripping body"
+   ],
+   "1.3::monstrous creature based on a stingray::, water element, fins, glossy wet skin, water droplets, color palette blue and aqua, dynamic pose using both strength and energy, background: a snowy mountain with rocky cliffs and pine trees, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::black tar dripping body::, medium size"
+  ],
+  [
+   "w184",
+   "니브레기",
+   [
+    "torn fins",
+    "multiple eyes on body"
+   ],
+   "1.3::monstrous creature based on a fox::, ice and water element, frost crystals, icy translucent parts, fins, glossy wet skin, water droplets, color palette pale blue and white and blue and aqua, dynamic pose using both strength and energy, 1.2::imposing boss presence, slightly larger and fiercer::, background: a sea cave with tide pools and turquoise water, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::torn fins, multiple eyes on body::, huge and imposing, boss-like presence"
+  ],
+  [
+   "w203",
+   "엽와패",
+   [
+    "mushrooms growing on back",
+    "barnacles on skin"
+   ],
+   "1.3::monstrous creature based on a snail::, grass element, leaves, vines and moss growing on the body, color palette green and brown, 1.2::imposing boss presence, slightly larger and fiercer::, background: a misty overgrown forest with vines, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::mushrooms growing on back, barnacles on skin::, huge and imposing, boss-like presence"
+  ],
+  [
+   "w204",
+   "톡스모르그",
+   [
+    "toxic gas from gills",
+    "mouth on torso",
+    "extra eyes"
+   ],
+   "1.3::monstrous creature based on a snake::, poison element, toxic spots, dripping venom, color palette purple and magenta, charging an energy blast, 1.2::imposing boss presence, slightly larger and fiercer::, background: a dim sealed laboratory corridor, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::toxic gas from gills, mouth on torso, extra eyes::, huge and imposing, boss-like presence"
+  ],
+  [
+   "w208",
+   "익랑귀왕",
+   [
+    "cracked ice mask",
+    "wrong shadow, shadow with extra eyes",
+    "hand on tail"
+   ],
+   "1.3::monstrous creature based on a wolf::, ice and flying element, frost crystals, icy translucent parts, feathered wings, light airy body, color palette pale blue and white and sky blue, lunging forward in an attacking pose, 1.2::imposing boss presence, slightly larger and fiercer::, background: a snowy mountain with blue ice walls, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::cracked ice mask, wrong shadow, shadow with extra eyes, hand on tail::, huge and imposing, boss-like presence"
+  ],
+  [
+   "w209",
+   "둠캣모르",
+   [
+    "shadow claws",
+    "extra eyes"
+   ],
+   "1.3::monstrous creature based on a cat::, dark element, sharp claws, sly grin, shadowy fur, color palette black and crimson, lunging forward in an attacking pose, 1.2::imposing boss presence, slightly larger and fiercer::, background: a dusty abandoned victorian mansion interior with moonlight, 1.3::mutated beast, predatory body, menacing, readable silhouette::, 1.5::shadow claws, extra eyes::, huge and imposing, boss-like presence"
+  ]
+ ]
+}
