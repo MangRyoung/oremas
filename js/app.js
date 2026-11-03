@@ -589,12 +589,13 @@ async function sendChat(){
  try{
   let m;
   if((m=t.match(/^\/r(?:oll)?\s+(.+)$/i))){const r=roll(m[1]);if(!r)return toast('주사위 식을 모르겠다 (예: 1d100, 2d6+3)');await DBS().addLog(ST.room,ST.secret,'dice',ST.name,Object.assign({t:`${m[1]} → ${r.text} = ${r.total}`,total:r.total},ch))}
+  else if((m=t.match(/^\/gr(?:oll)?\s+(.+)$/i))){if(ST.role!=='gm')return toast('/gr 는 GM 의 비밀 굴림 — 플레이어는 /r 로 굴려 줘');const r=roll(m[1]);if(!r)return toast('주사위 식을 모르겠다 (예: 1d100, 2d6+3)');selfLog(`🎲 비밀 굴림 ${m[1]} → ${r.text} = ${r.total}`,{gr:{e:m[1],x:r.text,n:r.total}});toast('비밀 굴림 — 나만 보인다. 줄의 「공개」로 모두에게')}   /* 11-03: GM 비밀 굴림 */
   else if((m=t.match(/^\/w\s+(\S+)\s+(.+)$/))){const to=resolveSeat(m[1]);if(!to)return toast('그런 자리가 없다: '+m[1]);await DBS().addLog(ST.room,ST.secret,'whisper',ST.name,{t:m[2],to,toName:m[1]});pollWhispers()}
   else if((m=t.match(/^\/as\s+(\S+)\s+(.+)$/))){if(ST.role!=='gm')return toast('/as 는 GM 만');await DBS().addLog(ST.room,ST.secret,'chat',m[1],{t:m[2],as:m[1],nf:1})}
   else if((m=t.match(/^\/s\s+(.+)$/))){await window.OM_RP_UI.setMyStand(m[1].trim())}
   else if((m=t.match(/^\/img\s+(\S+)$/))){await DBS().addLog(ST.room,ST.secret,'chat',ST.name,Object.assign({t:'',img:m[1]},ch))}
   else if(/^\/clear$/.test(t)){if(ST.role!=='gm')return toast('/clear 는 GM 만');await DBS().addLog(ST.room,ST.secret,'chat',ST.name,{t:'',clear:1})}
-  else if(t.startsWith('/'))return toast('모르는 명령이야: /r /w /as /s /img /clear');
+  else if(t.startsWith('/'))return toast('모르는 명령이야: /r /gr(GM) /w /as /s /img /clear');
   else if(ST.role==='gm'&&CHAN.cur!=='o'&&ST.chatAs&&ST.chatAs!=='gm'){const R=window.OM_RP_UI;const c=R&&R.charOf?R.charOf(ST.chatAs):null;const nm=c?c.name:ST.chatAs.replace(/^(npc|as|pm):/,'');await DBS().addLog(ST.room,ST.secret,'chat',nm,Object.assign({t,as:nm,k:ST.chatAs},nf))}   /* GM 이 고른 인물로 */
   else if(ST.role==='seat'&&CHAN.cur!=='o'&&ST.chatAs&&ST.chatAs.startsWith('pm:')&&(((ST.state.roster||{}).mons||{})[ST.chatAs.slice(3)]||{}).tid===ST.seat){const m=ST.state.roster.mons[ST.chatAs.slice(3)];await DBS().addLog(ST.room,ST.secret,'chat',m.name,Object.assign({t,as:m.name,k:ST.chatAs},ch,nf))}   /* 10-25: 좌석이 내 포켓몬으로 */
   else{const tr=(CHAN.cur!=='o'||ST.asPlGm)&&ST.role==='seat'?(((ST.state.roster||{}).trainers||{})[ST.seat]||((B().trainers||{})[ST.seat])):null;   /* 11-02 망령: GM 이 PL 권한으로 앉아 있으면 잡담 탭도 그 자리 캐릭터로 */const nm=tr&&tr.name?tr.name:ST.name;await DBS().addLog(ST.room,ST.secret,'chat',nm,Object.assign({t},ch,nf,tr&&tr.name?{as:nm,k:ST.seat}:{},ST.role==='gm'&&ST.gmNick?{gmn:ST.gmNick}:{}))}   /* 세션 탭: 좌석은 캐릭터 이름으로 · 잡담 탭은 플레이어 닉 */
@@ -607,13 +608,13 @@ const SELFK=()=>'om_selflog_'+(ST.room||'');let SELFLOG=null;
 function selfRows(){if(SELFLOG&&SELFLOG.room===ST.room)return SELFLOG.rows;let rows=[];try{rows=JSON.parse(localStorage.getItem(SELFK())||'[]')||[]}catch(e){}SELFLOG={room:ST.room,rows};return rows}
 /* 10-28 망령: 혼자 소지품을 여럿 바꾸면 줄이 너무 많다 — 그 사이 다른 로그가 없고 5분 안이면 소지품 줄은 한 줄로 합친다 (같은 포켓몬은 마지막 것만) */
 const ITEM_RX=/^(?!⚠|【)(.+?) (소지품\d?.*)$/;
-function selfLog(t){const rows=selfRows();t=String(t);const id=(ST.lastLogId||0)+0.5,now=Date.now();
+function selfLog(t,extra){const rows=selfRows();t=String(t);const id=(ST.lastLogId||0)+0.5,now=Date.now();
  const m=t.match(ITEM_RX),last=rows[rows.length-1];
  if(m&&last&&last.id===id&&last.data&&Array.isArray(last.data.it)&&now-Date.parse(last.at)<5*60e3){
   const it=last.data.it.filter(x=>x[0]!==m[1]);it.push([m[1],m[2]]);
   last.data={it,t:it.length>1?'소지품 — '+it.map(([n,x])=>n+' '+x.replace(/^소지품 → /,'').replace(/ \(시트\)$/,'')).join(' · '):it[0][0]+' '+it[0][1]};last.at=new Date().toISOString();
   try{localStorage.setItem(SELFK(),JSON.stringify(rows))}catch(e){}return renderLog(true)}
- rows.push({id,kind:'self',at:new Date().toISOString(),data:m?{t,it:[[m[1],m[2]]]}:{t}});while(rows.length>50)rows.shift();try{localStorage.setItem(SELFK(),JSON.stringify(rows))}catch(e){}renderLog(true)}
+ rows.push({id:extra?id+Math.random()*1e-3:id,kind:'self',at:new Date().toISOString(),data:Object.assign(m?{t,it:[[m[1],m[2]]]}:{t},extra||{})});while(rows.length>50)rows.shift();try{localStorage.setItem(SELFK(),JSON.stringify(rows))}catch(e){}renderLog(true)}
 /* 10-26 망령: 같은 소지품은 한 파티에 하나만 — 겹치면 [[소지품, [포켓몬 이름…]]] */
 function dupItems(mons){const by={};for(const m of mons||[]){const it=String((m&&m.item)||'').trim();if(!it)continue;(by[it]=by[it]||[]).push(m.name||m.id)}return Object.entries(by).filter(([k,v])=>v.length>1)}
 function dupItemText(name,d){return `⚠ ${name} — 같은 소지품이 겹친다 (한 파티에 하나만): ${d.map(([it,ns])=>`「${it}」 ${ns.join(' · ')}`).join(' / ')}`}
@@ -643,7 +644,7 @@ function renderLog(scroll){
  const rows=app?LIST.slice(LM.n):LIST.slice(-LOGMAX);
  el._lm={key:KEY,n:LIST.length,last:LIST.length?LIST[LIST.length-1].id:null,first:LIST.length?LIST[0].id:null};
  const HTML=rows.map(r=>{const d=r.data||{};const k=(r.kind==='chat'&&d.bat)?d.bat:r.kind;const t=fmtTime(r.at);
-  if(k==='self')return `<div class="msg sys self"><div class="bub">${esc(d.t)} <span class="selftag">나만 보임</span></div></div>`;
+  if(k==='self')return `<div class="msg sys self"><div class="bub">${esc(d.t)} <span class="selftag">나만 보임</span>${d.gr?(d.gr.pub?' <span class="selftag">공개함</span>':` <button type="button" class="btn xs" data-grpub="${r.id}" title="같은 결과를 모두에게 로그로">공개</button>`):''}</div></div>`;
   if(k==='sys')return `<div class="msg sys"><div class="bub">${esc(d.t)}</div></div>`;
   if(k==='chat'&&d.clear)return `<div class="msg sys"><div class="bub">무대를 비웠다</div></div>`;
   if(k==='chat'&&d.sms)return '';
@@ -657,6 +658,7 @@ function renderLog(scroll){
   const sa=styAttr(d);
   return `<div class="msg ${k} ${mine?'me':''} ${lf.narr?'narr':''}"><div class="av" style="${av?`background-image:url('${cssu(av)}')`:''}"></div><div class="bub" style="${sa.bub}"><span class="who" style="${sa.who}">${who}</span>${d.img?`<a href="${esc(d.img)}" target="_blank" rel="noopener"><img class="cimg" src="${esc(d.img)}" alt=""></a>`:''}${esc(lf.text)}</div><span class="time">${t}</span></div>`}).join('');
  if(app){if(HTML){const nb=el.querySelector('.lognew');if(nb)nb.remove();el.insertAdjacentHTML('beforeend',HTML);let k=el.querySelectorAll(':scope>.msg').length-LOGMAX;while(k-->0){const f=el.querySelector(':scope>.msg');if(!f)break;f.remove()}}}else el.innerHTML=HTML;
+ el.querySelectorAll('[data-grpub]').forEach(bt=>bt.onclick=async()=>{const rows=selfRows();const row=rows.find(x=>String(x.id)===bt.dataset.grpub);if(!row||!row.data.gr||row.data.gr.pub)return;const g=row.data.gr;try{await DBS().addLog(ST.room,ST.secret,'dice',ST.name,{t:`${g.e} → ${g.x} = ${g.n} (GM 비밀 굴림 공개)`,total:g.n,gr:1});g.pub=1;try{localStorage.setItem(SELFK(),JSON.stringify(rows))}catch(e){}LOGV++;renderLog(true)}catch(e){toast('공개하지 못했다: '+e.message)}});   /* 11-03: 비밀 굴림 공개 */
  el.querySelectorAll('[data-lmid]').forEach(bt=>bt.onclick=()=>{if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.action)window.OM_BATTLE_UI.action({act:'pots',mid:bt.dataset.lmid,only:String(bt.dataset.lnm||'').split('|').filter(Boolean)})});
  if(!el.innerHTML&&CHAN.cur==='o')el.innerHTML='<div class="msg sys"><div class="bub">잡담 창 — 여기서 한 말은 세션 로그·무대에 나오지 않는다</div></div>';chanDots();
  const follow=scroll==='force'||(!LOGPIN&&scroll!==false&&(near||Date.now()-LOGMINE<5000));
