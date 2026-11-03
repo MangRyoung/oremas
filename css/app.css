@@ -5113,9 +5113,15 @@ body:has(.modalbg) .tour-ask{display:none}
 /* 11-03 13:46 · 14:01 · 14:08 망령: RP 의 배경 · 씬 · 지도 · 단서 · ⋯ 더보기 · BGM · GM 콘솔을 무대 위 대신 채팅창 머리에 (넓은 화면만, js psSync).
    방 이름 줄에 다 들어가면 거기, 아니면 그 아래 한 줄(.prprow). 「BGM 칸은 좁히고 다른 건 키워서 예쁘게」 — 단추는 30px 높이 · 아이콘 + 글자, BGM 은 ♪ · 곡 이름 · 작은 음량 · BGM 한 덩어리 */
 .phone .ptitle .prpslot{order:1;flex:none;margin-left:auto;width:auto}
-.prpslot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 10px;width:100%;font-family:var(--font);letter-spacing:0}
+.prpslot{display:flex;flex-wrap:nowrap;align-items:center;justify-content:space-between;gap:8px;width:100%;min-width:0;font-family:var(--font);letter-spacing:0}
 .prpslot .prpl,.prpslot .prpr{display:inline-flex;align-items:center;gap:5px;flex-wrap:nowrap}
-.prpslot .prpr{margin-left:auto}
+.prpslot .prpl{flex:none}.prpslot .prpr{margin-left:auto;min-width:0;flex:0 1 auto}
+/* 14:13 망령 「지도 열면 줄이 밀린다」: 한 줄 고정 — 칸이 모자라면 BGM 곡 이름 → 음량 막대 순으로 숨긴다 */
+.phone .prprow{container-type:inline-size}
+@container (max-width:600px){.prpslot .bgmw .bt{display:none}}
+@container (max-width:530px){.prpslot .bgmw input[type=range]{display:none}}
+@container (max-width:560px){.prpslot .prpl .prl{display:none}html:not(#_) .prpslot .prpl .plog{padding:0 9px!important}.prpslot .prpmore .prl{display:inline}}
+@container (max-width:400px){.prpslot .pl2{display:none}.prpslot,.prpslot .prpl,.prpslot .prpr{gap:4px}html:not(#_) .prpslot .plog{padding:0 7px!important}}
 html:not(#_) .prpslot .plog{position:static!important;display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 11px!important;font-size:13px!important;font-weight:700;white-space:nowrap;line-height:1;
  background:#1f2127!important;color:#f1f1f1!important;border:1.5px solid #4a4d57!important;border-radius:6px!important;box-shadow:2px 2px 0 #000!important;transform:none!important;clip-path:none!important}
 html:not(#_) .prpslot .plog:hover{border-color:#fff!important;background:#2a2d35!important}
@@ -5127,7 +5133,7 @@ html:not(#_) .prpslot .plog[data-rp="gm"]{background:#b3142b!important;border-co
 html:not(#_) .prpslot .prpmore .plog{width:100%;justify-content:flex-start}
 /* BGM 한 덩어리 — 좁게 */
 .prpslot .rpbgmw{display:inline-flex}
-html:not(#_) .prpslot .bgmw{height:30px;gap:5px;padding:0 4px 0 2px;max-width:none;background:#0d0e11!important;border:1.5px solid #4a4d57!important;border-radius:6px!important;box-shadow:2px 2px 0 #000!important}
+html:not(#_) .prpslot .bgmw{height:30px;gap:5px;padding:0 4px 0 2px;max-width:none;min-width:0;flex-wrap:nowrap;background:#0d0e11!important;border:1.5px solid #4a4d57!important;border-radius:6px!important;box-shadow:2px 2px 0 #000!important}
 html:not(#_) .prpslot .bgmw .eq{width:24px;height:24px;font-size:13px}
 html:not(#_) .prpslot .bgmw .bt{color:#ddd!important;max-width:64px;font-size:11px}
 .prpslot .bgmw input[type=range]{width:44px}

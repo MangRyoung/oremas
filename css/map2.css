@@ -24,9 +24,10 @@
 .pplist .ppc b{display:block;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .pplist .ppc small{display:block;font-size:10px;color:var(--mute);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .mhead .tpic{width:40px;height:40px;border-radius:50%;background:#3a3c44 center/cover no-repeat;flex:none;margin-right:8px}
-/* 11-03 14:08 망령 「핀 주변 인물들이 겹친다」: 같은 핀의 인물은 이름 폭만큼 띄워 한 줄(js stp), 상태 말풍선은 순서대로 계단처럼 위로, 이름은 칸 폭에서 줄임 */
-.mnpc i{max-width:var(--nw,60px);overflow:hidden;text-overflow:ellipsis}
-.mnpc:hover i{max-width:none;z-index:2}
-.mnpc .mnst{bottom:calc(100% + 8px + var(--bk,0) * 26px);max-width:170px}
-.mnpc .mnst:after{display:var(--tail,block)}
-.mnpc .mnst::before{content:'';position:absolute;left:50%;top:100%;width:2px;height:calc(var(--bk,0) * 26px + 6px);margin-left:-1px;background:#2a2a2a}
+/* 11-03 14:08 · 14:13 망령 「핀 주변 인물들이 겹친다」: 한 핀에 둘 이상이면 핀 오른쪽 세로 목록(js .grp) — 얼굴 · 이름 · 상태를 한 줄에 */
+.mnpc i{line-height:14px}
+.mnpc.grp .mnr{position:absolute;left:calc(100% + 5px);top:50%;transform:translateY(-50%);display:flex;align-items:center;gap:4px;white-space:nowrap;pointer-events:none}
+.mnpc.grp .mnr i{position:static;transform:none;line-height:16px;font-size:11px;padding:1px 6px;background:rgba(0,0,0,.82)}
+.mnpc.grp .mnr .mnst{position:static;transform:none;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mnpc.grp .mnr .mnst:after{display:none}
+.mnpc.grp:hover .mnr .mnst{max-width:none}
