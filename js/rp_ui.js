@@ -1791,7 +1791,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   /* sendChat 은 첫 await 전에 채널을 읽어 두므로, 잡담 탭으로 잠깐 돌려 보내고 바로 원래 탭으로 */
   to.click();ci.value=t;send.click();ci.value=keep;if(prev!=='o'){const b=tabs.querySelector(`[data-ch="${prev}"]`);if(b)b.click()}inp.value='';inp.focus()}
  function oocTick(){const ST=A().ST;if(OOC.room!==ST.room){OOC.room=ST.room;const r=oocRows();OOC.seen=r.length?r[r.length-1].id:0;OOC.key=''}
-  const stage=document.getElementById('rpstage');const show=!!(ST.room&&stage&&stage.isConnected&&A().view==='rp'&&!sideShown());
+  const stage=document.getElementById('rpstage');const show=!!(ST.room&&stage&&stage.isConnected&&A().view==='rp'&&!sideShown()&&!matchMedia('(max-width:760px)').matches);   /* 11-04: 휴대폰은 배틀과 같은 채팅 서랍(app.js bchTick)을 쓴다 — 잡담만 서랍은 그보다 넓은 화면에서만 */
   let tab=document.getElementById('ooctab');if(show&&!tab){tab=document.createElement('button');tab.id='ooctab';tab.className='ooctab';tab.title='잡담 서랍';tab.onclick=()=>oocOpen(!OOC.open)}
   if(show&&tab.parentNode!==stage)stage.appendChild(tab);if(!show){if(tab)tab.remove();if(OOC.open){OOC.open=false;const d=document.getElementById('oocdr');if(d)d.classList.remove('on')}return}
   const rows=oocRows();const last=rows.length?rows[rows.length-1].id:0;if(OOC.open)OOC.seen=Math.max(OOC.seen,last);

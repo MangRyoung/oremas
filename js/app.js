@@ -421,7 +421,7 @@ function mobNote(r){if(!isMobile()||MOB.mode==='chat'||BCH.open)return;const d=(
 /* 10-25 망령: 휴대폰 배틀 화면 「채팅」 세로 탭 — RP 잡담 서랍처럼, 채팅 탭으로 넘어가지 않고 배틀을 보면서 옆 채팅창 전체(탭 · 입력 그대로)를 오른쪽 서랍으로 연다. 안 읽은 수는 아래 바 채팅 배지와 같이 센다 */
 const BCH={open:false};
 function bchOpen(on){BCH.open=!!on;document.body.classList.toggle('bchat',BCH.open);if(BCH.open){MOB.unread=0;mobBadge();const l=$('#log');if(l)requestAnimationFrame(()=>{l.scrollTop=l.scrollHeight})}bchTick()}
-function bchTick(){const show=!!(ST.room&&isMobile()&&VIEW==='battle'&&MOB.mode!=='chat');let t=$('#bchtab');
+function bchTick(){const show=!!(ST.room&&isMobile()&&(VIEW==='battle'||VIEW==='rp')&&MOB.mode!=='chat');   /* 11-04 01:35 망령 「RP 챗 쪽 채팅도 배틀처럼」: RP 무대에서도 잡담 서랍 대신 옆 채팅창 전체(세션 · 잡담 탭 · 도구 · 화자) 서랍 */let t=$('#bchtab');
  if(!show){if(t)t.remove();if(BCH.open){BCH.open=false;document.body.classList.remove('bchat')}return}
  if(!t){t=document.createElement('button');t.id='bchtab';t.className='ooctab bchtab';t.title='채팅 서랍';t.onclick=()=>bchOpen(!BCH.open);document.body.appendChild(t)}
  const n=MOB.unread;const h=`<span>${BCH.open?'닫기':'채팅'}</span>${!BCH.open&&n?`<em>${n>9?'9+':n}</em>`:''}`;if(t._h!==h){t.innerHTML=h;t._h=h}t.classList.toggle('on',BCH.open);t.classList.toggle('new',!BCH.open&&!!n)}
