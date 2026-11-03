@@ -668,8 +668,11 @@ window.OM_BATTLE_UI=(()=>{
   if(mv&&(isPursuit(mv,m)||x.pur)){o.pn=mv.name;o.tg=tgNow(ctx().b,x,m);o.psrc=isPursuit(mv,m)?((m.flags||{}).pursuit?(m.flags.pursuitBy||''):''):(x.pur||'')}
   const pimm=x.pimm||((m.flags||{}).pursuitImmune?(m.flags.pursuitImmuneBy||'추격 무시'):'');if(pimm)o.pimm=pimm;if(mv&&(isUturn(mv,m)||x.ut||x.uman))o.ut=1;return o}
  /* 좌석: 턴 개시 때 내 순서 열쇠를 cmds[내 자리].ok 에 올린다 (진행하는 사람이 남의 비밀 지시를 못 읽어도 순서를 계산하게) */
- async function publishOk(tid0){const c=ctx();const b=c.b;const tid=tid0||c.seat;if(c.role!=='seat'||!tid||!(b.trainers||{})[tid])return;const key=turnKey(b);const cur=((b.cmds||{})[tid]||{}).ok;if((cur&&cur.key===key)||BUSY.ok===key+tid)return;BUSY.ok=key+tid;const t=b.trainers[tid];try{
-  const cm=await myCmd(c,tid,true);const ok={key,m:{}};for(const mm of Object.values(b.mons||{}).filter(x=>x.tid===tid&&x.entry&&x.hp.cur>0)){const xx=((cm||{}).mons||{})[mm.id]||{};ok.m[mm.id]=okeyOf(mm,xx);if(preCounts(t,xx,mm))ok.m[mm.id].pi=1}if(upCounts(t,(cm||{}).upots))ok.pre=1;
+ /* 11-03 21:30 (아니스 시온 「행동 진행을 안 누르는 쪽은 우선도가 반영 안 된다」): 열쇠는 턴 개시 때 한 번만 올라가서, 그 뒤(선행 발동 등)에 생긴 우선도 효과가 남의 화면 계산에 안 들어갔다.
+    열쇠에 우선도에 닿는 상태의 지문(sig)을 붙이고, 지문이 바뀌면 다시 올린다. 계산하는 쪽은 지문이 맞을 때까지 잠깐 기다린다 */
+ function prioSig(b,tid){return Object.values((b&&b.mons)||{}).filter(m=>m&&m.tid===tid&&m.entry&&m.hp&&m.hp.cur>0).sort((x,y)=>String(x.id).localeCompare(String(y.id))).map(m=>m.id+':'+JSON.stringify(((m.fx||{}).prio)||[])+':'+(m.prioDown?1:0)+':'+(m.ability||'')+':'+(m.item||'')).join('|')}
+ async function publishOk(tid0){const c=ctx();const b=c.b;const tid=tid0||c.seat;if(c.role!=='seat'||!tid||!(b.trainers||{})[tid])return;const key=turnKey(b);const cur=((b.cmds||{})[tid]||{}).ok;const sig=prioSig(b,tid);if((cur&&cur.key===key&&cur.sig===sig)||BUSY.ok===key+tid+sig)return;BUSY.ok=key+tid+sig;const t=b.trainers[tid];try{
+  const cm=await myCmd(c,tid,true);const ok={key,sig,m:{}};for(const mm of Object.values(b.mons||{}).filter(x=>x.tid===tid&&x.entry&&x.hp.cur>0)){const xx=((cm||{}).mons||{})[mm.id]||{};ok.m[mm.id]=okeyOf(mm,xx);if(preCounts(t,xx,mm))ok.m[mm.id].pi=1}if(upCounts(t,(cm||{}).upots))ok.pre=1;
   if((ctx().b.cmds||{})[tid])await A().set(['battle','cmds',tid,'ok'],ok);else await A().set(['battle','cmds',tid],{ok})}catch(e){BUSY.ok='';console.warn('publishOk',e)}}
  /* 차례가 온 포켓몬의 지시를 연다: 주인 화면이, GM 몫(NPC · GM 이 불러온 파티)은 GM 화면이. 보통 모드의 GM 은 플레이어가 안 열면 잠시 뒤 대신 연다 */
  const RVT={};
@@ -1222,7 +1225,9 @@ window.OM_BATTLE_UI=(()=>{
   let SEC={};try{const rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd');for(const r of rows||[]){if(!cmdFresh(r))continue;const d=r.data||{};for(const mid in (d.mons||{}))SEC[mid]=d.mons[mid]}}catch(e){}   /* 선행 입력에 묻은 추격·추격 무시 (GM 만 읽힌다) */
   const slots=allEntered(b);if(!slots.length)return A().toast('등장한 포켓몬이 없다');
   /* 순서 열쇠: 읽을 수 있는 비밀 지시(GM 은 전부) → 좌석이 올린 열쇠(cmds[tid].ok) → 이미 공개된 지시 */
-  const tk=turnKey(b);const keyOf=m=>{if(SEC[m.id])return okeyOf(m,SEC[m.id]);const ok=((b.cmds||{})[m.tid]||{}).ok;if(ok&&ok.key===tk&&ok.m&&ok.m[m.id])return ok.m[m.id];const px=(((b.cmds||{})[m.tid]||{}).mons||{})[m.id];return px?okeyOf(m,px):null};
+  {const stale=()=>{const bb=ctx().b;const tk0=turnKey(bb);return [...new Set(allEntered(bb).map(x=>x.mon).filter(m=>!SEC[m.id]).map(m=>m.tid))].filter(tid=>{const ok=((bb.cmds||{})[tid]||{}).ok;return ok&&ok.key===tk0&&ok.sig!=null&&ok.sig!==prioSig(bb,tid)})};
+   for(let k=0;k<8&&stale().length;k++)await new Promise(r=>setTimeout(r,400));const st=stale();if(st.length)A().sysLog(`【행동 순서】 ${st.map(t=>(b.trainers[t]||{}).name||t).join(' · ')} 쪽 우선도 정보가 아직 옛것일 수 있다 — 순서가 이상하면 잠시 뒤 「행동 순서」를 다시 누른다`,'battle')}
+  const tk=turnKey(b);const keyOf=m=>{if(SEC[m.id])return okeyOf(m,SEC[m.id]);const ok=((ctx().b.cmds||{})[m.tid]||{}).ok;if(ok&&ok.key===tk&&ok.m&&ok.m[m.id])return ok.m[m.id];const px=(((b.cmds||{})[m.tid]||{}).mons||{})[m.id];return px?okeyOf(m,px):null};
   const KEYS={},miss=[];for(const s of slots){const k=keyOf(s.mon);if(!k&&s.mon.started)miss.push(`${(b.trainers[s.mon.tid]||{}).name||'?'} · ${s.mon.name}`);KEYS[s.mon.id]=k||{sw:0,pm:{},om:{},pr:0,mv:0}}
   if(miss.length&&!(await askYes(`아직 순서 정보가 없는 포켓몬: ${miss.join(', ')}\n(지시를 저장하지 않았거나 그 플레이어가 접속해 있지 않다)\n행동 없음으로 보고 순서를 계산할까?`)))return;
   const spNotes=[];const entries=slots.map(s=>{const K=KEYS[s.mon.id];let prioMod=+K.pr||0;if(K.mv&&s.mon.prioDown){prioMod-=1;iceUsed.push(s.mon)}
