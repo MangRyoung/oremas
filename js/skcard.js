@@ -21,7 +21,7 @@ window.SKCARD=window.SKCARD||(()=>{
  const clsKey=v=>{v=String(v||'');return /열쇠/.test(v)?'ky':/준비/.test(v)?'pr':/증상|광기|상태/.test(v)?'sy':'etc'};
  const KEY='<svg viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><circle cx="22" cy="22" r="12"/><circle cx="22" cy="22" r="4.5"/><path d="M31 31 54 54M44 44l6-6M49 49l5-5"/></g></svg>';
  function html(c,o){c=c||{};o=o||{};
-  const ic=icList(c.ic),cost=c.c!==''&&c.c!=null,k=kindOf(c.t);
+  const ic=icList(c.ic),cost=false/* 11-04 망령: 코스트 안 씀 — 카드에 그리지 않는다 */,k=kindOf(c.t);
   const t=String(c.t||'').split(/\s*·\s*/).filter(Boolean);
   const len=[...String(c.x||'')].length;const dense=len>72?' dense':len>44?' mid':'';
   return `<div class="skc k-${k}${dense}${o.sel?' sel':''}${c.img?'':' noimg'}${o.cls?' '+o.cls:''}" style="--skc:${esc(c.col||'#6b7286')}" ${o.attr||''}><div class="skc-fr"><div class="skc-in">`
@@ -34,7 +34,7 @@ window.SKCARD=window.SKCARD||(()=>{
    +`</div></div>${o.badge!=null&&o.badge!==''?`<em class="skc-q">${esc(o.badge)}</em>`:''}</div>`}
  const back=n=>`<div class="skc back"><div class="skc-fr"><div class="skc-in"><span class="skc-bk">${KEY}</span>${n!=null&&n!==''?`<em>${esc(n)}</em>`:''}</div></div></div>`;
  /* 휴대폰 덱 앱 같은 좁은 칸: 세로 비율 없이 글을 다 보여 주는 납작한 카드 (같은 옷) */
- function flat(c,o){c=c||{};o=o||{};const ic=icList(c.ic),cost=c.c!==''&&c.c!=null,k=kindOf(c.t);const t=String(c.t||'').split(/\s*·\s*/).filter(Boolean);
+ function flat(c,o){c=c||{};o=o||{};const ic=icList(c.ic),cost=false/* 11-04 망령: 코스트 안 씀 — 카드에 그리지 않는다 */,k=kindOf(c.t);const t=String(c.t||'').split(/\s*·\s*/).filter(Boolean);
   return `<div class="dc skf k-${k}${o.sel?' sel':''}${o.cls?' '+o.cls:''}" style="--skc:${esc(c.col||'#6b7286')}" ${o.attr||''}>${o.badge!=null&&o.badge!==''?`<em class="dcb">${esc(o.badge)}</em>`:''}`
    +`<div class="dch">${cost?`<span class="dcc">${esc(c.c)}</span>`:''}<b>${esc(c.n||'?')}</b>${ic.length?`<span class="dcp">${ic.map(x=>`<i style="--ic:${ICN[x][1]}" title="${esc(x)}">${ICN[x][0]}</i>`).join('')}</span>`:''}</div>`
    +(c.img?`<div class="dci" style="background-image:url('${cssu(c.img)}')"></div>`:'')
