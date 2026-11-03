@@ -5554,3 +5554,4 @@ html[data-vt="mm"] .clc-menu>div,html[data-vt="mm"] .clc-menu>summary{background
 .sk3vi{display:flex;flex-direction:column;gap:2px;min-width:0}.sk3vi .small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .sk3pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px 8px;margin-top:10px;max-height:52vh;overflow:auto;padding:4px}
 .sk3pk{all:unset;box-sizing:border-box;cursor:pointer;padding:3px;border-radius:10px;border:2px solid transparent}.sk3pk .skc{width:100%}.sk3pk.on{border-color:var(--acc,#ffd84a)}.sk3pk.has{opacity:.5}.sk3pk:focus-visible{outline:2px solid var(--acc,#ffd84a)}
+@media(max-width:760px){.sk3p .sh .note{display:none}}
