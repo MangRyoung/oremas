@@ -866,7 +866,7 @@ window.OM_BATTLE_UI=(()=>{
     cur.mons=cur.mons||{};const x=cur.mons[m.id]||(cur.mons[m.id]={move:'',switch:'',targets:[],prio:{},ochg:{},order:'',command:'',pots:[]});x.pots=x.pots||[];const i=x.pots.indexOf(d.pot);if(i>=0)x.pots.splice(i,1);else x.pots.push(d.pot);
     await saveCmd(tid,true);A().toast(i>=0?`『${d.pot}』 선행 입력을 뺐다`:`${m.name} 『${d.pot}』 선행 입력 — 턴 개시 뒤 발동`);rerenderCmd();A().renderScene();return}
    case 'usepot':case 'restorepot':{const m=b.mons[d.mid];if(!m||!canEdit(c,m))return;if(d.act==='usepot'&&d.card&&!(await preGuard(c,m,d.pot)))return;if(d.act==='usepot'){const r=potRest(m,d.pot);if(r&&!d.auto)return A().toast(r.title);await potMark(d.mid,d.pot)}const L=potList(m);const p=L.find(x=>x.name===d.pot);if(!p)return;const u=Object.assign({},m.potUses||{});const cur=u[p.name]==null?p.max:+u[p.name];u[p.name]=d.act==='usepot'?Math.max(0,cur-1):Math.min(p.max,cur+1);if(d.act==='usepot'&&wantCut(m,p.name))cutFire('m:'+m.id,m.image,m.name,`『${p.name}』`,m.side==='left'?'#1f6fd1':'#e3101f');
-    await A().set(['battle','mons',d.mid,'potUses'],u);
+    {const fu=((((ctx().b||{}).mons||{})[d.mid]||{}).potUses)||{};const ops=[];for(const k of new Set([...Object.keys(m.potUses||{}),...Object.keys(u)])){if(jeq((m.potUses||{})[k],u[k]))continue;const was=(m.potUses||{})[k],now=u[k];const d0=(now==null||was==null)?null:(+now-(+was));ops.push([['battle','mons',d.mid,'potUses',k],d0==null?(now==null?null:now):Math.max(0,(fu[k]==null?+was:+fu[k])+d0)])}if(ops.length)await A().setMany(ops)}   /* 11-05: 바뀐 포텐셜 칸만 · 차이만 */
     if(d.act==='usepot'){ /* 횟수를 깎으면서 효과 글을 카드로 띄운다 (자동화가 있으면 그 카드가 대신 뜬다) */
      const fired=FX()?await fireAuto(d.mid,'pot',p.name,{quiet:true}):false;
      if(fired)A().sysLog(`${m.name} 『${p.name}』 남은 ${u[p.name]}/${p.max}`,'battle');
@@ -1220,7 +1220,7 @@ window.OM_BATTLE_UI=(()=>{
    if(!did&&!(await askYes(`⚠ ${sk==='uq'?'고유':'전용'} 『${name}』 은(는) 【선행】 포텐셜인데 이번 턴에 선행 입력하지 않았다.\n원칙은 지시 단계에서 선행 입력 → 턴 개시 뒤 「선행 발동」.\n그래도 강제로 발동할까?`,'강제 발동','그만')))return}
   A().closeModal();const tag=how==='pre'?'【선행】':how==='free'?'【임의】':'【강제】';const LB=sk==='uq'?'고유':'전용';
   if(how!=='force'&&x.max!=null){const T=+b.turn||0;
-   if(x.mmax!=null){const cur=sk==='uq'?(t.uUses||{}):(m.potUses||{});const had=cur[name]==null?x.mmax:+cur[name];const uu=Object.assign({},cur);uu[name]=Math.max(0,had-1);await A().set(sk==='uq'?['battle','trainers',tid,'uUses']:['battle','mons',mid,'potUses'],uu)}
+   if(x.mmax!=null){const cur=sk==='uq'?(t.uUses||{}):(m.potUses||{});const had=cur[name]==null?x.mmax:+cur[name];/* 11-05: 지금 서버 값에서 1 — 칸 하나만 쓴다(옛 사본으로 다른 포텐셜 횟수를 덮지 않게) */const fb=ctx().b||{};const fc=sk==='uq'?(((fb.trainers||{})[tid]||{}).uUses||{}):(((fb.mons||{})[mid]||{}).potUses||{});const fh=fc[name]==null?had:+fc[name];await A().set(sk==='uq'?['battle','trainers',tid,'uUses',name]:['battle','mons',mid,'potUses',name],Math.max(0,fh-1))}
    if(x.per)await A().set(sk==='uq'?['battle','trainers',tid,'uTurn',name]:['battle','mons',mid,'potTurn',name],T)}   /* 【소진】 · 【탈진】: 쓴 턴을 적는다 */
   await A().set(['battle','cmds',tid,'fired',m?mid:'_t','pot',(sk==='uq'?'u:':'e:')+name],1);
   if(sk==='uq'){if(String(((A().ST.state.rp||{}).cutin||{}).ord)!=='0')cutFire('t:'+tid,trainerImg(t),`${t.name}의 고유!`,`『${name}』`,t.side==='left'?'#1f6fd1':'#e3101f')}else if(wantCut(m,name))cutFire('m:'+m.id,m.image,m.name,`『${name}』`,m.side==='left'?'#1f6fd1':'#e3101f');
