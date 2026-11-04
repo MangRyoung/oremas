@@ -5640,3 +5640,10 @@ button.tfsep.cl{opacity:1;border:1px dashed color-mix(in srgb,var(--yel2) 55%,tr
  .mon.big .ty .nmb-ty{display:flex;margin-left:auto;gap:3px;flex:none}
  .mon.big .ty .nmb-ty .dexb{padding:0 5px;font-size:10px;opacity:.8}
 }
+/* 11-05 망령: 폰 지도 — 얼굴만, 이름 · 상태 말풍선은 누른 사람(.peek) · 「이름 보기」(.peekall)일 때만 */
+.maplist .mpeekb{display:none}
+@media (max-width:760px){
+ .maplist .mpeekb{display:inline-flex}
+ .mapwrap:not(.peekall) .mnpc:not(.peek):not(.drag) > i,.mapwrap:not(.peekall) .mnpc:not(.peek):not(.drag) > .mnst,.mapwrap:not(.peekall) .mnpc:not(.peek):not(.drag) > .mnr{display:none}
+ .mapwrap .mnpc.peek{z-index:30 !important}
+}
