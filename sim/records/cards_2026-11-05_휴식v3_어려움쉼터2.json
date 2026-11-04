@@ -1,0 +1,369 @@
+{
+ "at": "2026-11-04T18:41:45.958Z",
+ "decks": [
+  "",
+  "slot24"
+ ],
+ "trios": 20,
+ "vn": 4,
+ "rows": [
+  {
+   "id": "md7_lab",
+   "name": "제2 연구동 지하 격리층",
+   "tier": "hard",
+   "wr": {
+    "없음": 0.063,
+    "slot24": 0.237
+   },
+   "st": {
+    "없음": {
+     "runs": 80,
+     "commit": 0,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 0,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {},
+     "ck": {
+      "n": 282,
+      "ok": 106,
+      "n15": 122,
+      "ok15": 19,
+      "fail": 176
+     }
+    },
+    "slot24": {
+     "runs": 80,
+     "commit": 47,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 0,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {
+      "d_pack": 26,
+      "s_hard": 36,
+      "d_guide": 33,
+      "s_focus": 19,
+      "s_adv": 33,
+      "d_trace": 10,
+      "d_pure": 7,
+      "s_muri": 11,
+      "d_gust": 40,
+      "d_rally": 14,
+      "b_fairy": 23,
+      "d_food": 29,
+      "s_bae": 29,
+      "d_band": 24,
+      "s_base": 12,
+      "s_coop": 20,
+      "s_calm": 12,
+      "b_mist": 6,
+      "b_reroll": 6,
+      "b_close": 5,
+      "b_cloak": 1
+     },
+     "cw": {
+      "s_focus": {
+       "n": 43,
+       "w": 11
+      },
+      "d_pack": {
+       "n": 37,
+       "w": 7
+      },
+      "b_rise": {
+       "n": 40,
+       "w": 9
+      },
+      "s_hard": {
+       "n": 39,
+       "w": 12
+      },
+      "d_pure": {
+       "n": 39,
+       "w": 7
+      },
+      "b_scout": {
+       "n": 41,
+       "w": 9
+      },
+      "s_adv": {
+       "n": 43,
+       "w": 9
+      },
+      "d_trace": {
+       "n": 44,
+       "w": 10
+      },
+      "b_eye": {
+       "n": 44,
+       "w": 10
+      },
+      "s_calm": {
+       "n": 47,
+       "w": 9
+      },
+      "d_guide": {
+       "n": 41,
+       "w": 10
+      },
+      "b_reroll": {
+       "n": 39,
+       "w": 7
+      },
+      "d_band": {
+       "n": 41,
+       "w": 9
+      },
+      "b_close": {
+       "n": 38,
+       "w": 8
+      },
+      "s_base": {
+       "n": 38,
+       "w": 11
+      },
+      "d_rally": {
+       "n": 47,
+       "w": 13
+      },
+      "s_muri": {
+       "n": 29,
+       "w": 7
+      },
+      "b_cloak": {
+       "n": 36,
+       "w": 11
+      },
+      "d_gust": {
+       "n": 40,
+       "w": 10
+      },
+      "b_fairy": {
+       "n": 37,
+       "w": 10
+      },
+      "s_coop": {
+       "n": 43,
+       "w": 11
+      },
+      "b_mist": {
+       "n": 36,
+       "w": 10
+      },
+      "s_bae": {
+       "n": 39,
+       "w": 10
+      },
+      "d_food": {
+       "n": 39,
+       "w": 8
+      }
+     },
+     "ck": {
+      "n": 279,
+      "ok": 179,
+      "n15": 119,
+      "ok15": 52,
+      "fail": 100
+     },
+     "plus": 149,
+     "costSpent": 0,
+     "madIn": 0,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 0,
+     "mill": 98,
+     "overpay": 0,
+     "madOut": 0
+    }
+   }
+  },
+  {
+   "id": "md8_volc",
+   "name": "뒷산 분화구 지열 동굴",
+   "tier": "hard",
+   "wr": {
+    "없음": 0.1,
+    "slot24": 0.163
+   },
+   "st": {
+    "없음": {
+     "runs": 80,
+     "commit": 0,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 0,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {},
+     "ck": {
+      "n": 282,
+      "ok": 149,
+      "n15": 40,
+      "ok15": 9,
+      "fail": 133
+     }
+    },
+    "slot24": {
+     "runs": 80,
+     "commit": 41,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 0,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {
+      "d_pack": 28,
+      "s_hard": 35,
+      "d_guide": 31,
+      "s_adv": 28,
+      "s_base": 28,
+      "d_gust": 40,
+      "d_rally": 16,
+      "b_fairy": 27,
+      "d_food": 27,
+      "s_bae": 31,
+      "s_focus": 12,
+      "s_calm": 13,
+      "b_close": 6,
+      "s_muri": 10,
+      "b_mist": 4,
+      "d_pure": 6,
+      "b_cloak": 8,
+      "s_coop": 13,
+      "d_trace": 7,
+      "b_reroll": 4,
+      "d_band": 6
+     },
+     "cw": {
+      "s_focus": {
+       "n": 43,
+       "w": 4
+      },
+      "d_pack": {
+       "n": 37,
+       "w": 4
+      },
+      "b_rise": {
+       "n": 40,
+       "w": 7
+      },
+      "s_hard": {
+       "n": 39,
+       "w": 11
+      },
+      "d_pure": {
+       "n": 39,
+       "w": 6
+      },
+      "b_scout": {
+       "n": 41,
+       "w": 4
+      },
+      "s_adv": {
+       "n": 43,
+       "w": 6
+      },
+      "d_trace": {
+       "n": 44,
+       "w": 9
+      },
+      "b_eye": {
+       "n": 44,
+       "w": 7
+      },
+      "s_calm": {
+       "n": 47,
+       "w": 7
+      },
+      "d_guide": {
+       "n": 41,
+       "w": 7
+      },
+      "b_reroll": {
+       "n": 39,
+       "w": 4
+      },
+      "d_band": {
+       "n": 41,
+       "w": 7
+      },
+      "b_close": {
+       "n": 38,
+       "w": 7
+      },
+      "s_base": {
+       "n": 38,
+       "w": 7
+      },
+      "d_rally": {
+       "n": 47,
+       "w": 8
+      },
+      "s_muri": {
+       "n": 29,
+       "w": 5
+      },
+      "b_cloak": {
+       "n": 36,
+       "w": 7
+      },
+      "d_gust": {
+       "n": 40,
+       "w": 6
+      },
+      "b_fairy": {
+       "n": 37,
+       "w": 7
+      },
+      "s_coop": {
+       "n": 43,
+       "w": 8
+      },
+      "b_mist": {
+       "n": 36,
+       "w": 7
+      },
+      "s_bae": {
+       "n": 39,
+       "w": 4
+      },
+      "d_food": {
+       "n": 39,
+       "w": 7
+      }
+     },
+     "ck": {
+      "n": 279,
+      "ok": 210,
+      "n15": 44,
+      "ok15": 18,
+      "fail": 69
+     },
+     "plus": 147,
+     "costSpent": 0,
+     "madIn": 0,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 0,
+     "mill": 64,
+     "overpay": 0,
+     "madOut": 0
+    }
+   }
+  }
+ ]
+}

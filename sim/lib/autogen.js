@@ -26,7 +26,7 @@ const RULES={al0:30,alRoom:5,alRest:10,alLowRest:1,alB50:5,restV:2,alBattle:5,al
  restShort:'all',restPO:1,restPC:1,restBreath:'one',restBC:1};   /* 10-28 22시 망령: 짧은 휴식 전원 HP 1/4 · 숨돌리기 = 1체 HP 1/4 + 6령 1 */   /* 10-28 03:25 망령: 짧은 휴식 = 파티 4식 · 6령 1개씩 + 가장 다친 1체 HP 1/4 + 빈사 HP 1 + 상태 회복 (lib/dungeon.js doRest) */
 const PRESET={easy:{battles:[0,1]},   /* 10-28 03:50 Lv +5 · 던전 단위 자원에서: 0 → 92% · 1 → 69% · 0~1 → 82% */
  normal:{battles:[1]},   /* 10-28 01:38 망령: 2 → 1~2. 03:50 Lv +5 · 던전 단위 자원에서 1~2 → 51% · 1 → 58% 라 1 로 (망령 확인 대기) */
- hard:{battles:[0,1],rest2:7}};   /* 11-02 망령 「어려움이 방이 많으면 회복 방 2개」: 본길(보스 포함) 7방 이상이면 가운데 쉼터 하나 더 (gen.js knobs.rest2) */   /* 03:50: 일반 야생을 C 로만 — C·B 면 21% */
+ hard:{battles:[0,1],rest2:7,rest:'mid'}};   /* 11-05 03:30 망령 「어려운 던전은 휴식을 조금 더」: 보스 앞 쉼터 = 중간 휴식 (시험: 시작 카드 24장 어려움 17.5 → 23.2% · 쉼터 하나 더(짧은)는 20.0%) */   /* 11-02 망령 「어려움이 방이 많으면 회복 방 2개」: 본길(보스 포함) 7방 이상이면 가운데 쉼터 하나 더 (gen.js knobs.rest2) */   /* 03:50: 일반 야생을 C 로만 — C·B 면 21% */
 const TIER_KO={easy:'쉬움',normal:'보통',hard:'어려움'};
 /* 테마: 방 이름 · 체크 문구 · 단서 · 보스 방 이름. 문구만 바뀌고 숫자는 같다 */
 const THEMES={
@@ -130,7 +130,7 @@ function generate1(o){o=o||{};const tier=o.tier||'normal';if(!PRESET[tier])throw
  const rs=o._sub?seed+o._sub*104729:seed;   /* 11-02: 갈림길이 모자라면 같은 씨앗 안에서 다시 짠다(generate) — 그때만 rs 가 바뀐다. 이름표(id · 씨앗)는 그대로 */
  const rng=BT.mkRng(rs*7+3);const ri=n=>Math.floor(rng()*n);const pick=a=>a[ri(a.length)];
  const thName=o.theme&&THEMES[o.theme]?o.theme:Object.keys(THEMES)[ri(Object.keys(THEMES).length)];const th=THEMES[thName];
- const pre=PRESET[tier];const knobs=Object.assign({},COMMON,{battles:pick(pre.battles)},pre.rest2?{rest2:pre.rest2}:{},o.knobs||{});if(Array.isArray(knobs.checks))knobs.checks=pick(knobs.checks);
+ const pre=PRESET[tier];const knobs=Object.assign({},COMMON,{battles:pick(pre.battles)},pre.rest2?{rest2:pre.rest2}:{},pre.rest?{rest:pre.rest}:{},o.knobs||{});if(Array.isArray(knobs.checks))knobs.checks=pick(knobs.checks);
  const fewB=knobs.battles<Math.max(...pre.battles),fewC=knobs.checks<=Math.min(...(Array.isArray(COMMON.checks)?COMMON.checks:[4]));   /* 11-02: 체크가 4~6 이 되어 「가장 적을 때(4)」를 어려운 길로 */const tough=o.tough!=null?(o.tough?'full':''):tier==='easy'?'':fewB?'full':fewC?'hard':'';   /* 11-02 망령: 쉬움에서는 빡센 길을 뺀다(사전 배틀 0 인 쉬움이 보통만큼 어려워졌다) */   /* 10-28 테스트: 쉬움에서 「어려운 길」(목표 9 · 11 체크 3개)은 승률이 38~77% 로 흔들려 뺀다 */   /* 10-28 03시: 2단계 — 사전 배틀이 모자라면 어렵게 + 빡세게, 체크만 3개면 어렵게만(체크 수는 승률을 거의 안 움직임) */
  if(tough){for(const [k,v] of Object.entries(tough==='full'?TOUGH:{mixUp:TOUGH.mixUp}))if(!(o.knobs&&k in o.knobs))knobs[k]=v}
  /* 야생 풀을 바꿀 수 있다: o.wild = [[트레이너 id, 순번, 이름]…] · o.boss = 같은 꼴 */

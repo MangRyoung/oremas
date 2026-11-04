@@ -9,7 +9,7 @@
    "foes": 2,
    "lv": 5,
    "bossLv": 5,
-   "rest": "short",
+   "rest": "mid",
    "checks": 3,
    "tgt": "v4mix",
    "pen": "alert",
@@ -178,7 +178,7 @@
    "id": "safe",
    "t": "safe",
    "name": "비상 대피소",
-   "rest": "short",
+   "rest": "mid",
    "check": {
     "label": "무너지는 통로를 함께 지난다",
     "stat": "통솔",
