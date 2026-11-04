@@ -39,7 +39,7 @@ window.OM_SKILL_UI=(()=>{
   mid:{hp:'1/2',hp_one:0,revive:1,revive_hp:'1/4',cure_ab:1,cure_sp:1,pot_pk_n:'1',ord_n:'0',ord_po:2,ord_pc:3,pot_tr_n:'1',inou:1,inj_n:1,swap:1,key_n:'0',card_n:'2'},
   /* 10-28 망령(시뮬 맞춤): 짧은 휴식 = 전원 HP 1/4 · 빈사는 HP 1 · 상태 회복 · 파티 전체 4식 1 · 6령 1 / 11-05 03:11 망령 「짧은 휴식에 상태 이상을 빼자」: 상태 이상(독 · 화상 · 마비 · 잠듦 · 얼음)은 고치지 않는다 — 은열쇠 「정화」 몫. 상태 변화는 그대로 고침 */
   short:{hp:'1/4',hp_one:0,revive:1,revive_hp:'1',cure_ab:0,cure_sp:1,pot_pk_n:'0',ord_n:'0',ord_po:1,ord_pc:1,pot_tr_n:'0',inou:1,inj_n:1,swap:1,key_n:'0',card_n:'1'},
-  /* 10-28 22시 망령: 숨돌리기 = 가장 다친 1체 HP 1/4 + 파티 6령 1 / 11-05 03:16 망령 「숨돌리기에 6령을 주지 말고, 대신 부활 HP 1」: 6령 없음 · 빈사는 HP 1 로 */
+  /* 10-28 22시 망령: 숨돌리기 = 가장 다친 1체 HP 1/4 + 파티 6령 1 / 11-05 03:30 트레이너마다 가장 다친 1체 · 던전 배틀이 끝나면 숨돌리기 (dungeon_ui 돌아가기 창) / 11-05 03:16 망령 「숨돌리기에 6령을 주지 말고, 대신 부활 HP 1」: 6령 없음 · 빈사는 HP 1 로 */
   breath:{hp:'1/4',hp_one:1,revive:1,revive_hp:'1',cure_ab:0,cure_sp:0,pot_pk_n:'0',ord_n:'0',ord_po:0,ord_pc:0,pot_tr_n:'0',inou:0,inj_n:0,swap:0,key_n:'0',card_n:'0'}};   /* 11-01 은열쇠: card_n = 휴식 박자 드로우 (긴 = 손패 · 버린 카드를 섞고 다시 · 중간 2 · 짧은 1 · 숨돌리기 0). key_n(예전 은열쇠 자원)은 끔 */
  /* 체크 제시 예시 (자주 쓰는 모양). 「저장」으로 내 것을 더할 수 있다 */
  const EX=[
@@ -237,12 +237,12 @@ window.OM_SKILL_UI=(()=>{
  async function applyRest(kind,tids,opt){opt=opt||{};const R=restCfg(kind);const T=trs();const ids=(tids&&tids.length?tids:Object.keys(T)).filter(id=>T[id]);const kn=(KINDS.find(k=>k[0]===kind)||[])[1]||kind;const L=[];
   const SD=sdb();const bt=(liveB()||{}).trainers||{};
   /* 10-28: hp_one = 「HP」 회복은 일행 전체에서 가장 다친 1체만 */
-  let oneId='';if(+R.hp_one&&R.hp&&R.hp!=='0'){let best=2;for(const m0 of Object.values(mons()).filter(m=>ids.includes(m.tid))){const b0=bmons()[m0.id];const x0=b0||m0;const c0=HP(x0,!!b0);if(c0<=0||c0>=x0.hp.max)continue;const r0=c0/x0.hp.max;if(r0<best){best=r0;oneId=m0.id}}}
+  /* 11-05 03:30 망령 「가장 다친 보단 트레이너별 포켓몬 1체로」: hp_one = 트레이너마다 가장 다친 1체 */const oneIds=new Set();if(+R.hp_one&&R.hp&&R.hp!=='0'){for(const tid0 of ids){let best=2,pick='';for(const m0 of Object.values(mons()).filter(m=>m.tid===tid0)){const b0=bmons()[m0.id];const x0=b0||m0;const c0=HP(x0,!!b0);if(c0<=0||c0>=x0.hp.max)continue;const r0=c0/x0.hp.max;if(r0<best){best=r0;pick=m0.id}}if(pick)oneIds.add(pick)}}
   for(const tid of ids){const t=T[tid];const k=tsk(tid);const lines=[];
    for(const m of Object.values(mons()).filter(m=>m.tid===tid)){let heal=0,rev=false,cured=[];
     await putMon(m.id,(x,b)=>{const was=HP(x,b);let cur=was;const XS=STS(x,b);
      if(cur<=0||XS.Dead){if(+R.revive){cur=Math.max(1,frac(x.hp.max,R.revive_hp||'1'));delete XS.Dead;if(!b)rev=true}}
-     else if(R.hp&&R.hp!=='0'&&(!+R.hp_one||m.id===oneId)){const h=frac(x.hp.max,R.hp);cur=Math.min(x.hp.max,cur+h);if(!b)heal=cur-was}
+     else if(R.hp&&R.hp!=='0'&&(!+R.hp_one||oneIds.has(m.id))){const h=frac(x.hp.max,R.hp);cur=Math.min(x.hp.max,cur+h);if(!b)heal=cur-was}
      setHP(x,b,cur);
      for(const st0 in XS){if(!XS[st0]||st0==='Dead')continue;const abn=!!(SD[st0]||{}).abn;if((abn&&+R.cure_ab)||(!abn&&+R.cure_sp)){delete XS[st0];if(!b)cured.push(SD[st0]?SD[st0].ko:st0)}}
      tidyST(x,b);
@@ -384,7 +384,7 @@ ${penFields('fail',X)}</div></div>
    const nsel=(k,lab,sub)=>{const v=String(R[k]==null?'all':R[k]);const isN=v!=='all'&&v!=='0';return `<div class="skrow on"><div style="flex:1"><b>${lab}</b>${sub?`<small>${sub}</small>`:''}</div>${seg('rest_'+k,[['0','안 함'],['all','전부'],['n','개수']],isN?'n':v)}<input type="number" class="n xs" data-restn="${k}" value="${isN?esc(v):''}" placeholder="개" style="${isN?'':'visibility:hidden'}"></div>`};
    return `<div class="skcard"><div class="sec">휴식 단계 <span class="note">종류마다 따로 저장 · 선언하면 로스터 트레이너 전원과 소지 포켓몬에 적용 · 휴대폰 캘린더의 「회복」은 자기만</span></div>
     <div class="fr">${seg('restkind',KINDS.map(k=>[k[0],k[1]+' · '+k[2]]),kind)}<span class="sp"></span><button class="btn pri" data-sk="restgo">「${kn[1]}」 선언 (전원)</button></div>
-    <div class="skcols"><div><div class="sec">포켓몬</div>${amt('hp','「HP」 회복',[['0','회복 안 함'],['1/4','1/4'],['1/2','1/2'],['full','전부']])}${tg('hp_one','1체만 회복','일행 전체에서 가장 다친 포켓몬 하나만 (숨돌리기 기본)')}
+    <div class="skcols"><div><div class="sec">포켓몬</div>${amt('hp','「HP」 회복',[['0','회복 안 함'],['1/4','1/4'],['1/2','1/2'],['full','전부']])}${tg('hp_one','트레이너마다 1체만','트레이너마다 가장 다친 포켓몬 하나만 (숨돌리기 기본)')}
       ${tg('revive','빈사 포켓몬 부활','「HP」 0 인 포켓몬을 일으킨다')}${+R.revive?amt('revive_hp','부활 시 「HP」',[['1','1'],['1/4','1/4'],['1/2','1/2'],['full','전부']]):''}
       ${tg('cure_ab','상태 이상 치유','독 · 화상 · 마비 · 잠듦 · 얼음 등')}${tg('cure_sp','상태 변화 치유','혼란 · 랭크 외 일시 효과 등')}
       ${nsel('pot_pk_n','전용 포텐셜 횟수 회복','배틀에 있는 소지 포켓몬 (개수면 트레이너당 합계)')}</div>
