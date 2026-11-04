@@ -1,0 +1,18 @@
+{
+ "memo": "최종 카드 그림은 C 고딕 잉크(silverkey_v3g_NN_4z15y9rv.webp, 11-05 00:45 망령 확정). 고딕 스타일 줄 = style. 프롬프트 = style + Q + base + mood + scene, 금지 칸은 prompts.json(B) 의 neg 와 같음. nai-diffusion-5-full 832x1216 28스텝 scale 5 k_euler_ancestral karras.",
+ "style": "1.4::gothic ink illustration, heavy black ink lines, crosshatching, desaturated parchment tones with a few saturated accents, grim hand-drawn comic style::, ",
+ "cards": [
+  {
+   "no": 14,
+   "name": "되찾은 물건",
+   "was": "예비 꾸러미",
+   "at": "2026-11-05 05:3x 망령 「이름도 이미지도 교체」",
+   "pick": 3,
+   "seed": 777277458,
+   "prompt": "1.4::gothic ink illustration, heavy black ink lines, crosshatching, desaturated parchment tones with a few saturated accents, grim hand-drawn comic style::, ::year 2025, year 2026 ::, -1::artist collaboration ::, -2::multiple views ::, ::masterpiece, best quality, amazing quality, very aesthetic, best illustration, newest ::, ::highres, incredibly absurdres, hyper detail ::, 1.4::anonymous person, seen from behind or only hands visible, face not visible::, 1.1::a small fantasy creature companion::, detailed background filling the whole image, 1.2::relieved heartwarming mood, warm lantern glow in dark ruins::, a small creature companion trotting back through an ancient stone corridor carrying a dropped softly glowing card in its mouth, a person crouching with one hand reaching down to take it back, a few scattered dropped belongings on the floor behind",
+   "crop": "위 34% 잘라 냄 (카드 그림 칸 center 35% 에 장면이 들어오게) → 493×476 webp q.9",
+   "url": "https://jsnvqcvwspxzfnhdethl.supabase.co/storage/v1/object/public/oremas/cards/silverkey_v3g_14r_mw2kklsa.webp",
+   "idb": "claude_card_nai 14_r_gothic_1~3"
+  }
+ ]
+}
