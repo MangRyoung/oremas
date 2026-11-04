@@ -452,7 +452,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   if(k==='fold'){rpFold=!rpFold;try{localStorage.setItem('om_rpfold',rpFold?'1':'')}catch(e){}return A().renderScene()}
   if(k==='map'){mapOpen=!mapOpen;return A().renderScene()}
   if(k==='mfold'){mapUnfold=!mapUnfold;return A().renderScene()}
-  if(k==='deck')return window.OM_DECK_UI.open();
+  if(k==='deck')return window.OM_SK3R?window.OM_SK3R.open():window.OM_DECK_UI.open();   /* 11-04 망령: 덱 = 은열쇠 카드 관리 창 (예전 덱 창은 그 안 「예전 덱 창」) */
   if(k==='phone'){const t=gm()?meTrainer():null;if(!window.OM_PHONE_UI)return A().ensure('phone').then(()=>act('phone')).catch(()=>{});return window.OM_PHONE_UI.open(null,t?{tid:t.id}:null)}
   if(k==='roll'){const K=window.OM_SKILL_UI;if(!K)return;const t=gm()?meTrainer():null;return t?K.openPlayer(t.id):K.open()}   /* 10-29 망령: GM 이 화자로 PC 를 골랐으면 그 트레이너 굴림 창 */
   if(k==='talk'){const ST=A().ST;if(ST.role==='seat'){SPK.key='me'}else{const t=meTrainer();if(t)SPK.key='as:'+t.name}A().renderScene();const inp=$('#rpline');if(inp)inp.focus();return}

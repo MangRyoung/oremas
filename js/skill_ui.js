@@ -215,9 +215,11 @@ window.OM_SKILL_UI=(()=>{
  async function refundOrd(c){if(!c||!c.n)return;const B=A().ST.state.battle||{};const src=c.inB?(B.trainers||{})[c.tid]:trs()[c.tid];if(!src)return;const cnt=Object.assign({},src.orderCount||{});for(const kk of c.keys)cnt[kk]=(+cnt[kk]||0)+1;await A().set(c.inB?['battle','trainers',c.tid,'orderCount']:['roster','trainers',c.tid,'orderCount'],cnt)}
  /* 한 단계 나빠진다 → {prev, now, cut, line} */
  async function stepUp(tid,why,mid){const t=trs()[tid];const k=tsk(tid);const C=cfg();const prev=k.inj;if(prev>=3)return {prev,now:3,cut:null,line:`${t.name} 이미 「빈사」`};const now=prev+1;let cut=null;
-  if(now===1&&+C.injOc>0)cut=await cutOrd(tid,'command_',+C.injOc);if(now===2&&+C.injOo>0)cut=await cutOrd(tid,'order_',+C.injOo);
+  /* 11-04 은열쇠 세 칸 규칙(카드 창에서 켬 · 그 트레이너가 참가 중): 4식 · 6령을 잃지 않고 카드 1장을 버린다 (노트 27) */
+  const S3=window.OM_SK3R;const three=!!(S3&&S3.ruleOn()&&S3.members().includes(tid));
+  if(!three){if(now===1&&+C.injOc>0)cut=await cutOrd(tid,'command_',+C.injOc);if(now===2&&+C.injOo>0)cut=await cutOrd(tid,'order_',+C.injOo)}
   await setT(tid,{inj:now});
-  const pen=await penFor(tid,prev,now);
+  const pen=three?[{line:await S3.onInjury(tid,1)}].filter(x=>x.line):await penFor(tid,prev,now);
   let hh='';if(cut&&cut.n<cut.want)hh=await halfHit(tid,mid,cut.want-cut.n,cut.lab);
   const cl=(cut&&cut.n?` · ${cut.lab} −${cut.n}`:'')+(hh?` · ${hh}`:'');
   return {prev,now,cut,pen,line:`${t.name} 「${STEP[prev]}」 → 「${STEP[now]}」${cl}${now===2?' · 모든 판정 불리':now===1?(tough(t)?' · 강인함':' · 모든 판정 −'+C.injPen):' · 이 장면에서 빠진다'} (${why})${pen.map(x=>'\n'+x.line).join('')}`}}

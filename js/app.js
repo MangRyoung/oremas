@@ -748,6 +748,7 @@ function renderScene(){reconcileNodes();
  catch(err){console.error(err);const n=(VIEWS.find(x=>x[0]===VIEW)||[0,VIEW])[1];el.innerHTML=`<div class="empty vfail"><b>「${esc(n)}」 화면을 그리지 못했다.</b><div class="small dim" style="margin:6px 0 10px;word-break:break-all">${esc(err&&err.message||err)}</div><button class="btn sm" id="vfailRe">다시 그리기</button> <button class="btn sm ghost" id="vfailRp">RP 로</button><div class="small dim" style="margin-top:8px">이 글을 캡처해서 보내 주면 고칠 수 있다.</div></div>`;const r1=$('#vfailRe');if(r1)r1.onclick=()=>renderScene();const r2=$('#vfailRp');if(r2)r2.onclick=()=>{VIEW='rp';renderScene()}}
  if(window.OM_RP_UI)window.OM_RP_UI.onState();
  try{if(window.OM_DG_UI)window.OM_DG_UI.onState()}catch(e){console.warn('dungeon',e)}
+ if(window.OM_SK3R&&ST.role==='gm')window.OM_SK3R.absorb();
  if(window.OM_DECK_UI){if(ST.role==='gm')window.OM_DECK_UI.absorb();else if(window.OM_DECK_UI.onAck)window.OM_DECK_UI.onAck()}
  if(window.OM_PHONE_UI&&window.OM_PHONE_UI.refresh)window.OM_PHONE_UI.refresh();
  if(window.OM_STAGE_UI)window.OM_STAGE_UI.onState();

@@ -27,8 +27,8 @@ window.OM_SK3=(()=>{
   el.querySelectorAll('[data-sk3v]').forEach(b=>b.onclick=e=>{e.stopPropagation();big(b.dataset.sk3v)});
   el.querySelectorAll('[data-sk3give]').forEach(b=>b.onclick=e=>{e.stopPropagation();give(b.dataset.sk3give)});
   el.querySelectorAll('[data-sk3del]').forEach(b=>b.onclick=async e=>{e.stopPropagation();await take(b.dataset.tid,+b.dataset.sk3del)})}
- function big(n){A().openModal(`<div class="mhead"><h2>${esc(n)}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="mbody" style="display:flex;justify-content:center"><div style="width:260px">${card(n,{})}</div></div>`);
-  document.querySelectorAll('.modalbg [data-x]').forEach(b=>b.onclick=()=>A().closeModal())}
+ function big(n,back){A().openModal(`<div class="mhead"><h2>${esc(n)}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="mbody" style="display:flex;justify-content:center"><div style="width:260px">${card(n,{})}</div></div>`);
+  document.querySelectorAll('.modalbg [data-x]').forEach(b=>b.onclick=()=>{A().closeModal();if(back)back()})}
  /* 방 시트와 제작기 문서의 보관소를 같이 고친다. 제작기는 쓰기 직전에 다시 읽는다 */
  async function write(tid,fn,what){const tr=(((A().ST.state.roster||{}).trainers)||{})[tid];if(!tr)return A().toast('시트에 그 트레이너가 없다');
   const nv=fn(vaultOf(tr).map(x=>Object.assign({},x)));if(!nv)return;
@@ -71,4 +71,4 @@ window.OM_SK3=(()=>{
    const at=new Date(Date.now()+9*3600e3).toISOString().slice(0,10);
    await write(tid,L=>L.some(x=>x.n===n)?null:L.concat([{n,src,at}]),`「${n}」 을(를) ${tr.name||'트레이너'}에게 건넸다`)};
   draw();if(!D){const iv=setInterval(()=>{if(!document.getElementById('sk3Give')){clearInterval(iv);return}if(DB){clearInterval(iv);draw()}},300)}}
- return {sec,bind,give,db}})();
+ return {sec,bind,give,db,big,cardHtml:card}})();
