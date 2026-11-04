@@ -108,8 +108,8 @@ window.OM_DB_UI=(()=>{
  let BASE=null,appliedAt=null;
  /* 10-21 망령: 제작기 DB 에 새로 넣은 특성·포텐셜(dbedit)은 「제작기 새로고침」 전이라도 시트를 가져올 때 읽어 둔다 (이 화면에만 · 방에서 고친 것이 이긴다) */
  let MKX=null,mkxP=null;
- function ensureMaker(){if(MKX)return Promise.resolve(MKX);if(mkxP)return mkxP;mkxP=(async()=>{const x={trait:{},pot:{},item:{}};try{const rows=await window.OM_STORE.makerDocs('dbedit');
-   for(const r of rows||[]){const d=r.data||{};const row=d.row||[];if(!d.key||d.deleted)continue;if(d.kind==='abil')x.trait[d.key]={multi:String(row[2]||''),single:String(row[2]||''),cost:row[0]||''};else if(d.kind==='pots')x.pot[d.key]={group:row[0]||'',eff:row[2]||'',note:row[3]||''};else if(d.kind==='items')x.item[d.key]=mkItem(row)}}catch(e){console.warn('제작기 DB 를 읽지 못했다',e)}
+ function ensureMaker(){if(MKX)return Promise.resolve(MKX);if(mkxP)return mkxP;mkxP=(async()=>{const x={trait:{},pot:{},item:{},move:{}};try{const rows=await window.OM_STORE.makerDocs('dbedit');
+   for(const r of rows||[]){const d=r.data||{};const row=d.row||[];if(!d.key||d.deleted)continue;if(d.kind==='abil')x.trait[d.key]={multi:String(row[2]||''),single:String(row[2]||''),cost:row[0]||''};else if(d.kind==='pots')x.pot[d.key]={group:row[0]||'',eff:row[2]||'',note:row[3]||''};else if(d.kind==='items')x.item[d.key]=mkItem(row);else if(d.kind==='moves'){const mv=mkMove(row);if(mv.name)x.move[d.key]=mv}}}catch(e){console.warn('제작기 DB 를 읽지 못했다',e)}
    MKX=x;appliedAt=null;applyOverride(A().ST.state.dbx);return MKX})();return mkxP}
  /* 비어 있는 특성·포텐셜 효과 글을 DB 로 채운다 (예전에 빈 채로 가져온 시트도) */
  function fillEff(m){if(!m)return false;const d=DB();let ch=false;const pr=n=>((d.maker||{}).pots||[]).find(r=>r[1]===n);
@@ -121,7 +121,7 @@ window.OM_DB_UI=(()=>{
  function applyOverride(dbx){const d=DB();if(!BASE)BASE={traits:Object.assign({},d.traits),items:Object.assign({},d.items),moves:Object.assign({},d.moves),pots:((d.maker||{}).pots||[]).slice(),states:d.states?JSON.parse(JSON.stringify(d.states)):null};
   const at=(dbx||{}).at||0;if(at===appliedAt&&appliedAt!==null)return;appliedAt=at;dbx=dbx||{};
   const merge=(base,ov)=>{const out=Object.assign({},base);for(const k in ov||{}){if(ov[k]&&ov[k].del)delete out[k];else out[k]=Object.assign({},base[k]||{},ov[k])}return out};
-  d.traits=merge(MKX?merge(BASE.traits,MKX.trait):BASE.traits,dbx.trait);d.items=merge(MKX?merge(BASE.items,MKX.item):BASE.items,dbx.item);d.moves=merge(BASE.moves,dbx.move);
+  d.traits=merge(MKX?merge(BASE.traits,MKX.trait):BASE.traits,dbx.trait);d.items=merge(MKX?merge(BASE.items,MKX.item):BASE.items,dbx.item);d.moves=merge(MKX?merge(BASE.moves,MKX.move):BASE.moves,dbx.move);
   const POV=Object.assign({},MKX?MKX.pot:{},dbx.pot||{});
   const pots=BASE.pots.filter(p=>!(POV[p[1]]));for(const n in POV){const o=POV[n];if(o.del)continue;const row=[o.group||'99. 기타',n,o.eff||'',o.note||''];row.src=o.src;const i=BASE.pots.findIndex(p=>p[1]===n);if(i>=0)pots.splice(Math.min(i,pots.length),0,row);else pots.push(row)}
   if(d.maker)d.maker.pots=pots;
@@ -136,7 +136,11 @@ window.OM_DB_UI=(()=>{
     full: 전부 읽은 것 (제작기 상태 변화는 새로 받는다) · 아니면 바뀐 문서만 (10-24 자동 반영). 방에서 직접 고친 것(src 'room')은 건드리지 않는다 */
  /* 10-25 망령: 「N개 가져왔다」는 실제로 바뀐 것만 센다 (예전엔 제작기에서 고친 행 전부를 매번 세서 87개가 계속 떴다) */
  const setIf=(m,k,v)=>{if(JSON.stringify(m[k])===JSON.stringify(v))return 0;m[k]=v;return 1};
- function mergeMaker(dbx,rows,full){dbx.trait=dbx.trait||{};dbx.item=dbx.item||{};dbx.pot=dbx.pot||{};dbx.st=dbx.st||{};dbx.rm=dbx.rm||{};let n=0,ns=0,nr=0;
+ /* 11-04 23:41 망령 「기능 확장을 자동화로 넣으면 기술 정보가 안 불러져 있다」: 제작기 DB 에서 고치거나 새로 넣은 기술(dbedit moves)도 방 DB(dbx.move)로 — 기능 확장 · 시트 기술이 이름으로 찾는다.
+    제작기 기술 행 = [소켓, 기술 태그, 기술명, 일명, 영명, 타입, 분류, 위력, 명중, 범위, 접촉, 우선도, 분류(태그), 추가 효과, 공격 스탯, 방어 스탯, 비고, 등장 시기, 최소, 최대] */
+ const mkMove=row=>{const n=v=>{const x=parseFloat(v);return isNaN(x)?0:x};const ty=String(row[5]||'-');const S=window.OM_STATS;const tags=String(row[1]||'').split(/[\s,]+/).filter(Boolean).map(t=>t[0]==='#'?t:'#'+t);
+  return {name:String(row[2]||''),type:ty,typeEn:(S&&S.typeEn?S.typeEn(ty):'')||ty,cat:String(row[6]||''),pow:n(row[7]),acc:n(row[8]),range:String(row[9]||'1체'),contact:String(row[10]||'-'),prio:n(row[11]),tag:String(row[12]||''),eff:String(row[13]||''),atk:String(row[14]||''),def:String(row[15]||''),note:String(row[16]||''),gen:String(row[17]||''),min:n(row[18])||1,max:n(row[19])||1,sock:String(row[0]||''),tags}};
+ function mergeMaker(dbx,rows,full){dbx.move=dbx.move||{};dbx.trait=dbx.trait||{};dbx.item=dbx.item||{};dbx.pot=dbx.pot||{};dbx.st=dbx.st||{};dbx.rm=dbx.rm||{};let n=0,ns=0,nr=0;
   const st0=full?JSON.parse(JSON.stringify(dbx.st)):null;if(full)for(const k in dbx.st)if(dbx.st[k]&&dbx.st[k].src==='maker')delete dbx.st[k];/* 제작기 것은 매번 새로 받는다 (원래대로 되돌린 상태도 따라가게) */
   const num=v=>{const x=+v;return v===''||v==null||isNaN(x)?0:x};const FX=window.OM_FX;const RB=(window.OM_DB||{}).readymade||{};
   /* 11-03 23:35: 제작기 버그로 레디메이드 기본 행 전부에 「지움」이 올라간 적이 있다 — 한 번에 30개 넘는 레디메이드 지움은 따르지 않는다 */
@@ -144,6 +148,7 @@ window.OM_DB_UI=(()=>{
   for(const r of rows||[]){const d=r.data||{};const row=d.row||[];if(!d.key)continue;
    if(d.kind==='abil'){const cur=(dbx.trait[d.key]||{});if(cur.src==='room')continue;if(d.deleted){if(cur.src==='maker'){delete dbx.trait[d.key];n++}continue}const eff=String(row[2]||'');const base=BASE&&BASE.traits[d.key];if(base&&base.multi===eff){if(cur.src==='maker'){delete dbx.trait[d.key];n++}continue}n+=setIf(dbx.trait,d.key,{multi:eff,single:(base&&base.single)||eff,cost:row[0]||'',src:'maker'})}
    else if(d.kind==='st'){if((dbx.st[d.key]||{}).src==='room')continue;if(d.deleted){ns+=setIf(dbx.st,d.key,{del:1,src:'maker'});continue}const r=row;ns+=setIf(dbx.st,d.key,{group:String(r[2]||''),e:{ko:r[1]||d.key,min:num(r[3]),max:num(r[4]),roll:r[5]||'',prog:r[6]||'turn',abn:r[7]==='O'?1:0,neg:r[8]==='O'?1:0,bat:r[9]==='O'?1:0,desc:String(r[10]||'').split(/\r?\n/).map(x=>x.trim()).filter(Boolean),memo:r[11]||'',img:r[12]||((BASE&&BASE.states&&BASE.states.st[d.key])||((DB().states||{}).st||{})[d.key]||{}).img||''},src:'maker'})}
+   else if(d.kind==='moves'){const cur=(dbx.move[d.key]||{});if(cur.src==='room')continue;if(d.deleted){if(cur.src==='maker'){delete dbx.move[d.key];n++}continue}const mv=mkMove(row);if(!mv.name)continue;const base=BASE&&BASE.moves[d.key];if(base&&+base.pow===mv.pow&&+base.acc===mv.acc&&String(base.eff||'')===mv.eff&&String(base.type||'')===mv.type&&String(base.range||'')===mv.range){if(cur.src==='maker'){delete dbx.move[d.key];n++}continue}n+=setIf(dbx.move,d.key,Object.assign(mv,{src:'maker'}))}
    else if(d.kind==='items'){const cur=(dbx.item[d.key]||{});if(cur.src==='room')continue;if(d.deleted){if(cur.src==='maker'){delete dbx.item[d.key];n++}continue}const it=mkItem(row);const base=BASE&&BASE.items[d.key];if(base&&base.eff===it.eff&&String(base.auto||'')===it.auto){if(cur.src==='maker'){delete dbx.item[d.key];n++}continue}n+=setIf(dbx.item,d.key,Object.assign(it,{src:'maker'}))}
    else if(d.kind==='pots'){const cur=(dbx.pot[d.key]||{});if(cur.src==='room')continue;if(d.deleted){if(cur.src==='maker'){delete dbx.pot[d.key];n++}continue}const base=BASE&&BASE.pots.find(p=>p[1]===d.key);if(base&&base[2]===row[2]){if(cur.src==='maker'){delete dbx.pot[d.key];n++}continue}n+=setIf(dbx.pot,d.key,{group:row[0]||'',eff:row[2]||'',note:row[3]||'',src:'maker'})}
    else if(d.kind==='rm'&&FX){const cur=dbx.rm[d.key]||{};if(cur.src==='room')continue;
@@ -162,8 +167,8 @@ window.OM_DB_UI=(()=>{
     바뀐 게 없으면 빈 응답 하나라 사용량은 거의 없다. 처음 한 번(mkSeen 없음)은 전부 읽는다 */
  let AUTO=false,PULL=false,LASTP=0;
  async function pullMaker(){if(PULL||A().ST.role!=='gm'||!A().ST.room||!window.OM_STORE||!window.OM_STORE.makerDocsSince)return;if(document.visibilityState==='hidden')return;if(Date.now()-LASTP<20000)return;PULL=true;LASTP=Date.now();
-  try{const d0=A().ST.state.dbx||{};const since=d0.mkSeen||null;const rows=await window.OM_STORE.makerDocsSince('dbedit',since);if(!rows.length)return;
-   const dbx=JSON.parse(JSON.stringify(A().ST.state.dbx||{}));const c=mergeMaker(dbx,rows,!since);const at=maxAt(rows);if(at)dbx.mkSeen=at;
+  try{const d0=A().ST.state.dbx||{};const since=d0.mvV?(d0.mkSeen||null):null;   /* 11-04: 기술(moves)을 받기 시작한 판 — 한 번은 전부 다시 받는다 */const rows=await window.OM_STORE.makerDocsSince('dbedit',since);if(!rows.length)return;
+   const dbx=JSON.parse(JSON.stringify(A().ST.state.dbx||{}));const c=mergeMaker(dbx,rows,!since);dbx.mvV=1;const at=maxAt(rows);if(at)dbx.mkSeen=at;
    if(!c.n&&!c.ns&&!c.nr&&since){await A().set(['dbx','mkSeen'],dbx.mkSeen);return}
    dbx.at=Date.now();await A().set(['dbx'],dbx);MKX=null;mkxP=null;
    const tot=c.n+c.ns+c.nr;if(tot&&since)A().toast(`제작기 DB 변경 ${tot}개를 반영했다`);if(document.querySelector('.dbmodal'))refresh()}
