@@ -444,7 +444,7 @@ window.OM_DECK_UI=(()=>{
  function bigCard(c,o){return window.SKCARD?window.SKCARD.html(skNorm(c||{}),o):''}
  function battleHand(tid,o){o=o||{};const x=deckFor(tid);const BU=window.OM_BATTLE_UI;if(!x){if(gm()&&confirm('이 방에 덱이 없다. 제작기 트레이너 시트의 덱을 가져올까?'))return importMakerDecks().then(()=>{if(deckFor(tid))battleHand(tid,o)});return A().toast('덱이 없다 — GM 이 휴대폰 「덱」에서 덱을 만들거나 제작기 덱을 가져와야 한다')}const [did,dk]=x;const hand=(dk.hands[tid]||[]).slice();
   document.querySelectorAll('.hand-ov').forEach(e=>e.remove());
-  const ov=document.createElement('div');ov.className='hand-ov';const n=hand.length;const spread=Math.min(64,Math.max(28,520/Math.max(n,1)));const ang=Math.min(8,40/Math.max(n,1));
+  const ov=document.createElement('div');ov.className='hand-ov';const n=hand.length;const spread=Math.min(78,Math.max(30,Math.min(620,(window.innerWidth||800)-140)/Math.max(n,1)));   /* 11-05 망령 「카드 크기를 좀 크게」: 카드가 커진 만큼 펼침도 · 폰은 화면 폭에 맞춰 */const ang=Math.min(8,40/Math.max(n,1));
   const res=dk.opt.cr?`<span class="ho-res">${esc(dk.opt.cr)} <b>${esc(String(((dk.rv[tid]||{})[dk.opt.cr])??0))}</b></span>`:'';
   ov.innerHTML=`<div class="ho-bg"></div><div class="ho-head"><div><small>${esc(dk.name)}</small><h2>${esc(hName(tid))}의 손패</h2></div>${res}<span class="ho-cnt">${n}<small>장</small></span><span class="sp"></span><button class="ho-btn ho-grave" data-ho="grave" title="버린 카드(무덤) — 잘못 쓴 카드는 여기서 손패로 되돌린다">🪦 무덤 <b>${dk.disc.length}</b></button>${gm()?'<button class="ho-btn" data-ho="mk" title="제작기 트레이너 시트의 덱을 다시 맞춘다">📥 제작기</button>':''}<button class="ho-btn" data-ho="phone">덱 앱</button><button class="ho-btn" data-ho="x">✕</button></div>
    <div class="ho-stage"><div class="ho-focus"></div></div>

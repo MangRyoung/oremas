@@ -4431,20 +4431,20 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .ho-btn:hover{border-color:#fff}
 .ho-stage{position:relative;flex:1;display:flex;align-items:center;justify-content:center;min-height:0}
 .ho-focus{display:flex;align-items:center;gap:26px}
-.ho-big .skc{width:min(300px,62vw);height:auto;aspect-ratio:5/7;animation:hobig .35s cubic-bezier(.2,1.4,.4,1)}
+.ho-big .skc{width:min(360px,74vw);height:auto;aspect-ratio:5/7;animation:hobig .35s cubic-bezier(.2,1.4,.4,1)}
 .ho-big.play .skc{animation:hoplay .5s ease forwards}
 @keyframes hobig{from{transform:translateY(80px) scale(.6) rotate(-6deg);opacity:0}to{transform:none;opacity:1}}
 @keyframes hoplay{40%{transform:scale(1.12);filter:brightness(1.6) drop-shadow(0 0 30px var(--skc))}100%{transform:translateY(-120vh) scale(.8) rotate(8deg);opacity:0}}
 .ho-acts{display:flex;flex-direction:column;gap:10px}
 .ho-use{background:var(--yel,#ffd12e);color:#000;border:0;padding:14px 34px;font:400 26px/1 var(--head,'Black Han Sans',sans-serif);cursor:pointer;transform:skewX(-10deg);box-shadow:5px 5px 0 #000,0 0 30px rgba(255,209,46,.4);letter-spacing:.06em}
 .ho-use:hover{transform:skewX(-10deg) translateY(-2px);box-shadow:7px 7px 0 #000,0 0 40px rgba(255,209,46,.6)}
-.ho-fan{position:relative;height:260px;flex:none;display:flex;justify-content:center;pointer-events:none}
-.ho-slot{position:absolute;bottom:-40px;left:50%;width:150px;margin-left:-75px;transform-origin:50% 140%;transform:translateX(var(--x)) translateY(calc(var(--y) + 200px)) rotate(var(--r));transition:transform .28s cubic-bezier(.2,1,.3,1),filter .2s;pointer-events:auto;cursor:pointer}
+.ho-fan{position:relative;height:300px;flex:none;display:flex;justify-content:center;pointer-events:none}
+.ho-slot{position:absolute;bottom:-40px;left:50%;width:180px;margin-left:-90px;transform-origin:50% 140%;transform:translateX(var(--x)) translateY(calc(var(--y) + 200px)) rotate(var(--r));transition:transform .28s cubic-bezier(.2,1,.3,1),filter .2s;pointer-events:auto;cursor:pointer}
 .hand-ov.on .ho-slot{transform:translateX(var(--x)) translateY(var(--y)) rotate(var(--r));transition-delay:var(--d)}
 .hand-ov.on .ho-slot:hover{transform:translateX(var(--x)) translateY(-46px) rotate(0) scale(1.12);z-index:5;transition-delay:0s}
 .hand-ov.on .ho-slot.sel{transform:translateX(var(--x)) translateY(-30px) rotate(0);z-index:4;filter:brightness(.55) grayscale(.4)}
 .hand-ov.playing .ho-fan{opacity:.3;transition:opacity .3s}
-.ho-slot .skc{width:150px;aspect-ratio:5/7}
+.ho-slot .skc{width:180px;aspect-ratio:5/7}
 .ho-empty{color:#aaa;align-self:center}
 .ho-hint{position:relative;text-align:center;color:rgba(255,255,255,.5);font-size:12px;padding:6px 0 max(10px,env(safe-area-inset-bottom))}
 /* 카드 얼굴 */
@@ -4467,9 +4467,9 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .ho-big .hc-x{font-size:14px;padding:12px 16px;overflow:auto}
 .hc-auto{position:absolute;right:6px;bottom:6px;font:700 9px/1 var(--mono,monospace);letter-spacing:.1em;color:#fff;background:#111;padding:3px 6px;border-radius:3px;box-shadow:0 0 0 1px var(--hc)}
 .ho-big .hc-auto{font-size:11px;padding:4px 8px}
-@media(max-width:760px){.ho-head h2{font-size:22px}.ho-fan{height:200px}.ho-slot,.ho-slot .skc{width:110px}.ho-slot{margin-left:-55px}.ho-focus{flex-direction:column;gap:14px}.ho-acts{flex-direction:row}.ho-use{font-size:20px;padding:10px 26px}}
+@media(max-width:760px){.ho-head h2{font-size:22px}.ho-fan{height:230px}.ho-slot,.ho-slot .skc{width:132px}.ho-slot{margin-left:-66px}.ho-focus{flex-direction:column;gap:14px}.ho-acts{flex-direction:row}.ho-use{font-size:20px;padding:10px 26px}}
 .ho-head h2{white-space:nowrap}
-@media(min-width:1000px){.ho-slot,.ho-slot .skc{width:176px}.ho-slot{margin-left:-88px}.ho-fan{height:300px}}
+@media(min-width:1000px){.ho-slot,.ho-slot .skc{width:210px}.ho-slot{margin-left:-105px}.ho-fan{height:340px}}
 @media(max-width:760px){.ho-head{flex-wrap:wrap;gap:8px}.ho-head h2{font-size:20px}.ho-cnt{font-size:24px}}
 
 /* 손패: 무덤 · 버리기 · 카드 버튼 (10-26) */
@@ -4483,7 +4483,7 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 .ho-gh{display:flex;align-items:center;gap:10px;color:#fff;flex-wrap:wrap}.ho-gh b{font:400 22px/1 var(--head,sans-serif)}.ho-gh small{color:rgba(255,255,255,.6);font-size:12px;flex:1;min-width:200px}
 .ho-grow{display:flex;gap:14px;overflow-x:auto;padding:18px 4px;align-items:flex-start;flex:1}
 .ho-gc{all:unset;flex:none;width:160px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px;filter:grayscale(.55) brightness(.85);transition:filter .2s,transform .2s}
-.ho-gc .skc{width:160px;aspect-ratio:5/7}
+.ho-gc .skc{width:190px;aspect-ratio:5/7}
 .ho-gc>span{color:#fff;font-size:12px;opacity:0;transition:opacity .2s}
 .ho-gc:hover{filter:none;transform:translateY(-6px)}.ho-gc:hover>span{opacity:1}
 /* 배틀 카드 버튼 · 이름 줄 작은 버튼 */
@@ -5550,15 +5550,15 @@ html[data-vt="mm"] .clc-menu>div,html[data-vt="mm"] .clc-menu>summary{background
 .gmk-depth{display:flex;align-items:end;gap:12px;flex-wrap:wrap}.gmk-depth label{display:grid;gap:3px;font-size:12px;color:var(--mute)}
 .gmk-tb{width:100%;border-collapse:collapse;margin-top:8px;font-size:13px}.gmk-tb th,.gmk-tb td{border-bottom:1px solid var(--line);padding:4px 6px;text-align:left}.gmk-tb td.n{text-align:right;font-variant-numeric:tabular-nums}.gmk-tb tr.warn td{color:var(--yel,#ffd84a)}
 /* 11-04 은열쇠 네 칸 · 카드 보관소 (sk3_ui) */
-.sk3g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:6px;max-width:760px}
+.sk3g{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:6px;max-width:920px}
 @media(max-width:760px){.sk3g{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .sk3s{--kc:#8a93a6;display:flex;flex-direction:column;gap:5px;padding:7px;border-radius:12px;border:1px solid color-mix(in srgb,var(--kc) 45%,transparent);background:color-mix(in srgb,var(--kc) 9%,transparent);min-width:0}
 .sk3s.k-c{--kc:#4573c4}.sk3s.k-d{--kc:#4f9a5a}.sk3s.k-b{--kc:#c8504a}.sk3s.k-r{--kc:#b8932a}.sk3s>b{font-size:13px;color:var(--kc)}
 .sk3c{all:unset;box-sizing:border-box;display:block;cursor:pointer;width:100%;border-radius:10px}.sk3c .skc{width:100%}.sk3c:hover .skc{transform:translateY(-3px)}.sk3c .skc{transition:transform .15s ease}.sk3c:focus-visible{outline:2px solid var(--acc,#ffd84a)}
 .sk3c.empty{aspect-ratio:5/7;display:flex;align-items:center;justify-content:center;border:2px dashed color-mix(in srgb,var(--kc) 50%,transparent);color:var(--mute);font-size:12px;cursor:default}
-.sk3v{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px 10px;margin-top:6px}
+.sk3v{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:12px 10px;margin-top:6px}
 .sk3vi{display:flex;flex-direction:column;gap:2px;min-width:0}.sk3vi .small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.sk3pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px 8px;margin-top:10px;max-height:52vh;overflow:auto;padding:4px}
+.sk3pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px 8px;margin-top:10px;max-height:60vh;overflow:auto;padding:4px}
 .sk3pk{all:unset;box-sizing:border-box;cursor:pointer;padding:3px;border-radius:10px;border:2px solid transparent}.sk3pk .skc{width:100%}.sk3pk.on{border-color:var(--acc,#ffd84a)}.sk3pk.has{opacity:.5}.sk3pk:focus-visible{outline:2px solid var(--acc,#ffd84a)}
 @media(max-width:760px){.sk3p .sh .note{display:none}}
 /* 11-04 시트 탭 폴더 접기 */
@@ -5574,7 +5574,7 @@ button.tfsep.cl{opacity:1;border:1px dashed color-mix(in srgb,var(--yel2) 55%,tr
 .s3who{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:8px}.s3who b{font-size:15px}
 .s3inj{font-size:11px;padding:1px 8px;border-radius:999px;background:#2b4a33;color:#bfe8c8}.s3inj.i1{background:#5a4a1c;color:#ffe3a0}.s3inj.i2{background:#5c2a22;color:#ffc2b5}.s3inj.i3{background:#3a1020;color:#ff9fb4}
 .s3owe{font-size:12px;font-weight:700;color:#ffb3a6;background:rgba(200,80,74,.18);border:1px solid rgba(200,80,74,.5);padding:1px 8px;border-radius:999px}
-.s3cells{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;max-width:720px}
+.s3cells{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;max-width:880px}
 @media(max-width:760px){.s3cells{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .s3c{--kc:#8a93a6;display:flex;flex-direction:column;gap:5px;min-width:0;padding:6px;border-radius:10px;background:color-mix(in srgb,var(--kc) 8%,transparent);border:1px solid color-mix(in srgb,var(--kc) 35%,transparent)}
 .s3c.k-c{--kc:#4573c4}.s3c.k-d{--kc:#4f9a5a}.s3c.k-b{--kc:#c8504a}.s3c.k-r{--kc:#b8932a}
@@ -5587,7 +5587,7 @@ button.tfsep.cl{opacity:1;border:1px dashed color-mix(in srgb,var(--yel2) 55%,tr
 .s3res{margin-top:12px;padding:8px 10px;border-radius:10px;background:rgba(184,147,42,.1);border:1px solid rgba(184,147,42,.35)}
 .s3log{margin-top:12px;display:grid;gap:2px}
 .s3ask{position:sticky;top:0;z-index:3;padding:10px;border-radius:10px;background:var(--bg2,#161a22);border:1px solid var(--yel,#ffd84a);margin-bottom:8px;box-shadow:0 6px 18px rgba(0,0,0,.4)}
-.s3pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:8px;max-height:40vh;overflow:auto}
+.s3pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:8px;max-height:40vh;overflow:auto}
 .s3pk{all:unset;box-sizing:border-box;cursor:pointer;border-radius:10px;padding:2px}.s3pk .skc{width:100%}.s3pk:hover .skc{transform:translateY(-3px)}.s3pk:focus-visible{outline:2px solid var(--yel,#ffd84a)}
 /* 11-04 화자 정리 폴더 접기 · 끌어서 순서 */
 .sgc.cl .sgl{display:none}.sgc.cl .sgh{border-bottom:0}.sgc.cl{align-self:start}
