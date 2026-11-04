@@ -43,20 +43,20 @@ window.OM_SK3=(()=>{
   const b=document.querySelector(`[data-sk3del="${i}"][data-tid="${CSS.escape(tid)}"]`);if(b&&!b.dataset.arm){b.dataset.arm='1';b.textContent='빼기?';b.classList.add('warn');setTimeout(()=>{if(b.isConnected){delete b.dataset.arm;b.textContent='✕';b.classList.remove('warn')}},2500);return}
   await write(tid,L=>L.filter(x=>x.n!==v.n),`「${v.n}」 을(를) ${tr.name||'트레이너'}의 보관소에서 뺐다`)}
  /* GM 카드 건네주기 창: 검색 · 종류 · 덱 거르기 → 카드를 누르고 얻은 곳을 적어 건넨다 */
- const G={q:'',k:'',deck:'',sel:'',src:''};
+ const G={q:'',k:'',deck:'',sel:'',src:'',all:false};   /* 11-04: 건네주기 = 특수 카드 — 공통 · 광기는 「공통 카드도」를 켰을 때만 */
  function give(tid){if(A().ST.role!=='gm')return A().toast('GM 만 건넬 수 있다');const tr=(((A().ST.state.roster||{}).trainers)||{})[tid];if(!tr)return;
   G.sel='';G.src='';const D=db();
   const draw=()=>{const m=document.getElementById('sk3Give');if(!m)return;const D2=db();const have=new Set(vaultOf((((A().ST.state.roster||{}).trainers)||{})[tid]).map(x=>x.n));
    const rows=D2?[...D2.values()].filter(r=>r&&r[1]):[];const decks=[...new Set(rows.map(r=>String(r[0]||'')).filter(Boolean))];
-   const q=G.q.trim().toLowerCase();const L=rows.filter(r=>(!G.k||kinds(r).includes(G.k))&&(!G.deck||String(r[0]||'')===G.deck)&&(!q||(String(r[1])+' '+String(r[4]||'')).toLowerCase().includes(q)));
+   const q=G.q.trim().toLowerCase();const L=rows.filter(r=>(G.all||(String(r[0]||'')!==COMMON&&!/광기/.test(String(r[0]||''))&&kinds(r).length))&&(!G.k||kinds(r).includes(G.k))&&(!G.deck||String(r[0]||'')===G.deck)&&(!q||(String(r[1])+' '+String(r[4]||'')).toLowerCase().includes(q)));
    m.querySelector('[data-gdecks]').innerHTML=`<option value="">덱 전부</option>${decks.map(d=>`<option ${d===G.deck?'selected':''}>${esc(d)}</option>`).join('')}`;
-   m.querySelector('[data-glist]').innerHTML=!D2?'<p class="small dim">카드 DB 를 읽는 중…</p>':L.length?L.slice(0,120).map(r=>`<button type="button" class="sk3pk${G.sel===r[1]?' on':''}${have.has(r[1])?' has':''}" data-gpk="${esc(r[1])}" title="${esc(r[1])}${have.has(r[1])?' — 이미 보관소에 있다':''}">${card(r[1],{badge:have.has(r[1])?'있음':''})}</button>`).join(''):'<p class="small dim">맞는 카드가 없다</p>';
+   m.querySelector('[data-glist]').innerHTML=!D2?'<p class="small dim">카드 DB 를 읽는 중…</p>':L.length?L.slice(0,120).map(r=>`<button type="button" class="sk3pk${G.sel===r[1]?' on':''}${have.has(r[1])?' has':''}" data-gpk="${esc(r[1])}" title="${esc(r[1])}${have.has(r[1])?' — 이미 보관소에 있다':''}">${card(r[1],{badge:have.has(r[1])?'있음':''})}</button>`).join(''):`<p class="small dim">${G.all?'맞는 카드가 없다':'특수 카드가 없다 — 제작기 카드 DB 에 덱 「은열쇠 · 특수」 카드를 만들거나(트레이너 시트 「＋ 특수 카드」 → 새로 만들기), 「공통 카드도」를 켠다'}</p>`;
    const go=m.querySelector('[data-ggo]');go.disabled=!G.sel||have.has(G.sel);go.textContent=G.sel?(have.has(G.sel)?`「${G.sel}」 이미 있다`:`「${G.sel}」 건네주기`):'카드를 고르세요';
    m.querySelectorAll('[data-gpk]').forEach(b=>b.onclick=()=>{G.sel=b.dataset.gpk;draw()})};
   A().openModal(`<div id="sk3Give"><div class="mhead"><h2>🎁 카드 건네주기 — ${esc(tr.name||'')}</h2><span class="sp"></span><button class="btn ghost" data-gx>닫기</button></div>
    <div class="mbody"><div class="row" style="gap:8px;flex-wrap:wrap;align-items:end"><label class="small">찾기<input type="text" data-gq placeholder="이름 · 효과" value="${esc(G.q)}" style="width:160px"></label>
     <label class="small">종류<select data-gk><option value="">전부</option>${SK3.slice(0,3).map(([k,l])=>`<option value="${k}" ${G.k===k?'selected':''}>${l}</option>`).join('')}</select></label>
-    <label class="small">덱<select data-gdecks></select></label></div>
+    <label class="small">덱<select data-gdecks></select></label><label class="small row" style="gap:4px"><input type="checkbox" data-gall> 공통 카드도</label></div>
     <div class="sk3pg" data-glist></div>
     <label class="small" style="display:block;margin-top:10px">얻은 곳 <input type="text" data-gsrc placeholder="예: 3화 인질 구출 보상 · 레오노라 호감도 3" style="width:100%"></label>
     <p class="small dim" style="margin:6px 0 0">건넨 카드는 이 방 시트와 제작기 트레이너 시트의 「카드 보관소」에 들어간다. 어느 칸에 넣을지는 PL 이 제작기에서 고른다.</p></div>
@@ -67,6 +67,7 @@ window.OM_SK3=(()=>{
   const qi=m.querySelector('[data-gq]');qi.oninput=()=>{G.q=qi.value;draw()};
   const ki=m.querySelector('[data-gk]');ki.onchange=()=>{G.k=ki.value;draw()};
   m.querySelector('[data-gdecks]').onchange=e=>{G.deck=e.target.value;draw()};
+  {const ga=m.querySelector('[data-gall]');ga.checked=G.all;ga.onchange=()=>{G.all=ga.checked;draw()}}
   m.querySelector('[data-ggo]').onclick=async()=>{const n=G.sel;if(!n)return;const src=m.querySelector('[data-gsrc]').value.trim().slice(0,80);A().closeModal();
    const at=new Date(Date.now()+9*3600e3).toISOString().slice(0,10);
    await write(tid,L=>L.some(x=>x.n===n)?null:L.concat([{n,src,at}]),`「${n}」 을(를) ${tr.name||'트레이너'}에게 건넸다`)};
