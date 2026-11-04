@@ -410,7 +410,9 @@ window.OM_BATTLE_UI=(()=>{
  /* 11-03 21:36 망령 「일반 포텐셜도 【탈진】 · 【소진】을 세자 — 칸 길이는 그대로」: 쓴 턴을 potTurn 에 적고(손으로 누른 발동 · 사용만), 못 쓰는 턴엔 발동 자리에 같은 크기의 「탈진」 · 「소진」 칩 */
  /* 11-04 20:34 망령 「웹툴 배틀에서 유대가 자동화 안 되어 있는 것 같대」: 『사랑의 유대』 · 『영혼의 유대』(【탈진】/저확률로 기술 대미지로 「빈사」 상태가 되지 않는다)를
     기합의머리띠처럼 HP 창에서 굴린다 — 쓰러질 피해면 확률(저 30 · 중 50 · 고 60)을 굴려 버티면 HP 1 · 버티면 【탈진】(쓴 턴 기록 — 다음 턴 끝까지 다시 안 굴림) */
- function bondBand(m){const P={저:30,중:50,고:60};for(const p of potSrc(m)){if(!p||!p.name)continue;const mm=String(p.eff||'').match(/(저|중|고)확률로\s*기술\s*대미지로\s*「빈사」\s*상태가\s*되지\s*않는다/);if(!mm)continue;if(potRest(m,p.name))continue;
+ function bondBand(m){const PF=l=>{const F=FX();return F&&F.percentOf?Math.round(F.percentOf(l)):({저확률:20,중확률:50,고확률:60}[l]||100)};const P={저:PF('저확률'),중:PF('중확률'),고:PF('고확률')};   /* 11-04 20:40 망령 「저확률 20% 아니야?」: 방 설정(rp.pct) → 룰 DB(campaign.percent_*) 값 */
+  if(ctx().b.pvp&&m.bondUsed)return null;   /* PVP: 시합 중 한 번만 버틴다 */
+  for(const p of potSrc(m)){if(!p||!p.name)continue;const mm=String(p.eff||'').match(/(저|중|고)확률로\s*기술\s*대미지로\s*「빈사」\s*상태가\s*되지\s*않는다/);if(!mm)continue;if(potRest(m,p.name))continue;
    const lim=String(p.eff||'').match(/【\s*(\d+)\s*\/\s*시\s*】/);if(lim){const left=(m.potUses||{})[p.name];if(left!=null&&+left<=0)continue}return {pct:P[mm[1]],name:p.name,pot:1}}return null}
  function potRest(m,name){const p=potSrc(m).find(q=>q&&q.name===name);if(!p||isExcl(m,p))return null;const e=String(p.eff||'');const per=/【\s*소진\s*】/.test(e)?'turn':/【\s*탈진\s*】/.test(e)?'tal':'';if(!per)return null;
   const T=+((ctx().b||{}).turn)||0;const ut=(m.potTurn||{})[name];if(ut==null)return null;const no=per==='turn'?+ut===T:T-(+ut)<=1;if(!no)return null;
@@ -1238,7 +1240,13 @@ window.OM_BATTLE_UI=(()=>{
     if(pcK)t.pcList=Object.assign({},t.pcList||{},{[mid]:one((t.pcList||{})[mid])});else{const m2=Object.assign({},(ps&&ps.m)||{});m2[mid]=one(m2[mid]);t.preSpent={k:tk,m:m2}}}}
   else if(how==='free'){const lend=pLend(c.b,tid,ck);if((+t.orderCount[ck]||0)<=0&&!lend)return A().toast('남은 횟수가 없어 임의 발동할 수 없다');if(lend)FBOR=ck;else{t.orderCount[ck]=(+t.orderCount[ck]||0)-1;{const sk=kind==='command'?OO().shareKey(t,key):'';const o=sk?'command_'+sk:'';if(o)t.orderCount[o]=Math.max(0,(+t.orderCount[o]||0)-1)}}tag=(FBOR?'【임의 · 일행 몫】':'【임의】')+(RW?' ② 턴 종료':'')}
   else if(how==='force'){if(!c.gm)return;tag='【강제】'}
+  /* 11-04 20:41 망령: 『변환술』(【보급】/『지령(영창)』으로 상승하는 능력치를 임의로 변경할 수 있다) — 능력 지령 · 영창을 받는 포켓몬이 들고 있으면 올릴 능력치를 고른다 (주인 화면에 묻는다) */
+  const CONV=[];{const sm=kind==='command'&&String(name).match(/^(숙달)?(공격|방어|특공|특방|민첩|저격|회피)지령$/),cm=kind==='command'&&String(name).match(/^(검|방패|관|잔|날개|촛불|장막)의 영창$/);
+   if(sm||cm){const base=sm?STATWORD[sm[2]]:{검:'attack',방패:'defense',관:'specialattack',잔:'specialdefense',날개:'speed',촛불:'accuracy',장막:'evasion'}[cm[1]];const tg=sm?[b.mons[mid]]:Object.values(b.mons).filter(x=>sameT(x,t)&&x.entry&&x.hp.cur>0);
+    const KS=['attack','defense','specialattack','specialdefense','speed','accuracy','evasion'];const ord=[base,...KS.filter(k=>k!==base)];
+    for(const x of tg){if(!x||!potSrc(x).some(p=>p&&String(p.name||'').replace(/[『』]/g,'').trim()==='변환술'))continue;const r=await uiCtx(b,x,'변환술').choose(ord.map((k,i)=>STAT_KO[k]+' +1'+(i===0?' (그대로)':'')));const k2=ord[(Array.isArray(r)&&r.length)?+r[0]:0];if(k2&&k2!==base)CONV.push({id:x.id,from:base,to:k2})}}}
   const f=fieldOf(b);const fx=applyOrder(b.mons,f,t,name,mid);
+  for(const cv of CONV){const x=b.mons[cv.id];if(!x)continue;tempRank(x,cv.from,-1);tempRank(x,cv.to,1);fx.push(`${x.name} 『변환술』 — ${STAT_KO[cv.from]} 대신 ${STAT_KO[cv.to]} +1`)}
   if(!fx.length&&FX()){const a=FX().rm(name)||FX().rm(String(name).replace(/\s*[:：]\s*/,' / '));if(a&&a.ops&&a.ops.length&&!a.manual){const r=await FX().run(a.ops,uiCtx(b,m,name,m.entry));fx.push(...r.lines)}}
   if(!fx.length)fx.push(RW&&kind==='order'?`「윤회의 법계」 ② — 아군 하나를 「따라가때리기」 없이 임의 교대 (교대는 손으로)`:`「${name}」 — 손으로 처리`);
   A().closeModal();
@@ -1641,7 +1649,11 @@ window.OM_BATTLE_UI=(()=>{
   md.querySelectorAll('[data-hp]').forEach(bt=>bt.onclick=async()=>{const k=bt.dataset.hp;const v=bt.dataset.v;const g=id=>$('#'+id,md);
    if(k==='apply'){let r=calc();if(!r)return;const mods=[];{const hm=mulOf(g('h_mod').value,1)||1;if(hm!==1)mods.push('보정 ×'+hm)}if(g('h_berry').checked)mods.push(berryN?'「'+berryN+'」 반감':'반감열매');let saved=false;if(g('h_endure').checked){const ec=g('h_endure');ec.checked=false;const r0=calc();ec.checked=true;saved=!!(r0&&r0.after<=0&&r.after>0);if(saved)mods.push(sashX&&sashX.sure?'「'+sashX.name+'」로 버팀':'버티기')}   /* 10-23 망령 제보: 쓰러질 피해가 아니면 「버팀」을 적지 않는다 */
     /* 기합의머리띠: 쓰러질 피해면 굴린다 */
-    if(sashX&&sashX.pct&&!g('h_endure').checked&&r.after<=0&&m.hp.cur>1){r=calc(true);for(const x of (r.per||[]).filter(x=>x.band))mods.push(x.band.ok?`「${sashX.name}」로 버팀 (${x.band.roll}/${x.band.pct})`:`「${sashX.name}」 실패 (${x.band.roll}/${x.band.pct})`);if(sashX.pot&&(r.per||[]).some(x=>x.band&&x.band.ok))await potMark(mid,sashX.name)}
+    /* 11-04 20:40 망령: 유대 — PVP 아니고 방 설정이 「GM 이 정함」이면 쓰러질 때 GM 에게 굴림 · 확정 발동 · 발동 안 함을 묻는다 (GM 이 아닌 화면이면 GM 화면으로) */
+    let bondForce=false;if(sashX&&sashX.pot&&!ctx().b.pvp&&((A().ST.state.rp||{}).bondMode==='gm')&&!g('h_endure').checked&&r.after<=0&&m.hp.cur>1){const L3=['굴린다 ('+sashX.pct+'%)','확정 발동 — 버틴다','발동 안 함'];const pick=async()=>localUi(ctx().b,m,sashX.name).choose(L3);const ans=ctx().gm?await pick():await remoteAsk(m,'choose',{name:sashX.name,labels:L3},pick,'gm');const ix=Array.isArray(ans)&&ans.length?+ans[0]:0;
+     if(ix===2){mods.push(`「${sashX.name}」 — GM 판정: 발동 안 함`);sashX=null}else if(ix===1){bondForce=true;mods.push(`「${sashX.name}」 — GM 판정: 확정 발동`)}}
+    if(bondForce&&sashX){const ec=g('h_endure');ec.checked=true;r=calc();ec.checked=false;mods.push(`「${sashX.name}」로 버팀`);await potMark(mid,sashX.name)}
+    else if(sashX&&sashX.pct&&!g('h_endure').checked&&r.after<=0&&m.hp.cur>1){r=calc(true);for(const x of (r.per||[]).filter(x=>x.band))mods.push(x.band.ok?`「${sashX.name}」로 버팀 (${x.band.roll}/${x.band.pct})`:`「${sashX.name}」 실패 (${x.band.roll}/${x.band.pct})`);if(sashX.pot&&(r.per||[]).some(x=>x.band&&x.band.ok)){await potMark(mid,sashX.name);if(ctx().b.pvp)await A().set(['battle','mons',mid,'bondUsed'],1)}}
     /* 11-04 19:50 망령 「대타출동의 자동화는 되어 있어?」: 「대타출동」 상태면 대역인형(최대 HP 1/4)이 대신 맞는다 — 인형 HP 가 0 이 되면 부서지고 넘친 피해는 본체에 가지 않는다 */
     if((m.states||{}).Substitute&&g('h_sub')&&g('h_sub').checked&&r.final>0){const sub0=+m.subHp||Math.max(1,Math.floor(m.hp.max/4));const hc=curHit();const per=hc.per&&hc.per.length?hc.per:[hc.total];
      const unc=Math.round(per.reduce((a,v)=>a+(+v||0),0)*(+g('h_eff').value||1)*(mulOf(g('h_mod').value,1)||1)*(g('h_berry').checked?0.5:1)*(lh.guard||1));const dmg=r.after<=0?Math.max(r.final,unc):r.final;const left=sub0-dmg;
