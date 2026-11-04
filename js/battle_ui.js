@@ -2591,6 +2591,8 @@ ${PR?`「기술 방어」 ${PR.ok?'성공':'실패'}${PR.k?` (연속 ${PR.k+1}�
    {const a=nb.mons[mid];const e=String(RESULT.mv.eff||'');if(a&&!RESULT.check&&a.hp.cur>0){a.states=a.states||{};
     if(/「반동\s*:\s*행동불능」/.test(e)&&RESULT.targets.some(r=>r.acc.hit)){a.states.Recharge=2;lines.push(`${a.name} 「반동 : 행동불능」 — 다음 턴 움직일 수 없다 (무시하는 효과가 있으면 상태에서 지운다)`)}
     if(RESULT.mv.cat!=='변화'&&!(atk.states||{}).Thrash&&!a.states.Thrash&&potSrc(a).some(p=>String(p.name||'').trim()==='버서커')){a.states.Thrash=2;lines.push(`${a.name} 『버서커』 — 2턴 동안 「난동부리기」`)}}}
+   /* 11-04: 「도우미」(다음 기술 대미지 ×1.5 — 공격 창이 저절로 켠다)는 공격 기술을 내보내면 쓴다 */
+   {const a=nb.mons[mid];if(a&&!RESULT.check&&RESULT.mv.cat!=='변화'&&(a.states||{}).HelpingHand){a.states=Object.assign({},a.states);delete a.states.HelpingHand;lines.push(`${a.name} 「도우미」를 썼다`)}}
    /* 10-26 망령: 「다음 기술」 효과는 기술을 내보내면 (변화기 · 빗나감이어도) 다 쓴다 */
    if((RESULT.nextKeys||[]).length){const a=nb.mons[mid];const F=a.fx||{};const nk=RESULT.nextKeys;const had=(F.mods||[]).some(e=>e.next&&nk.includes(e.key));F.mods=(F.mods||[]).filter(e=>!(e.next&&nk.includes(e.key)));F.prio=(F.prio||[]).filter(e=>!(e.next&&nk.includes(e.key)));if(had)lines.push(`${a.name} 「다음 기술」 효과를 썼다`)}
    nb.mons[mid].lastDealt={total:RESULT.targets.filter(r=>r.acc.hit&&r.dmg).reduce((a,r)=>a+(r.hp?r.hp.final:0),0),targets:RESULT.targets.filter(r=>r.acc.hit&&r.dmg).map(r=>r.def.name).join(', '),at:Date.now()};
