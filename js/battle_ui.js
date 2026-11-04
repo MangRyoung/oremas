@@ -735,8 +735,7 @@ window.OM_BATTLE_UI=(()=>{
       횟수는 이미 턴 개시에서 깎였으니 효과만 건다. 4식은 맞을 때 공격 창이 쓰고(버텨라 · 피해라 …), 선행 포텐셜 · 「턴 개시」 4식은 그대로 「포텐셜 발동」에서 */
    {const AL=[];for(const [mid,x] of Object.entries(I.SEC)){const mm=(b.mons||{})[mid];if(!x||!x.command||!mm||!mm.entry||!(+(mm.hp||{}).cur>0))continue;const tid=mm.tid;if(!(b.trainers||{})[tid])continue;
      const fd=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid])||{};if(fd.command)continue;
-     /* 턴 개시 차감(preCharge) 뒤에 지시를 넣었으면(예: 시합 개시와 턴 개시를 한 번에 누른 1턴) 여기서 1 깎고 건다 — 횟수 없이 공짜로 걸리지 않게 */
-     {const tt=snap((ctx().b.trainers||{})[tid]||{});const pcK=tt.pcTurn===turnKey(ctx().b);const pcHad=!tt.pcList||((tt.pcList[mid]||{}).c===x.command);if(pcK?!pcHad:!(c.fair&&seatOwned(c,tid))){const ck='command_'+x.command;tt.orderCount=tt.orderCount||{};const lend=!(+tt.orderCount[ck]>0)&&pN(ctx().b,tid,ck)>0;if(lend){if(pcK){const t2=snap(tt);t2.pcList=Object.assign({},t2.pcList||{},{[mid]:{o:((t2.pcList||{})[mid]||{}).o||'',c:x.command}});await A().setDiff(['battle','trainers',tid],tt,t2,1)}await pBorrowSave(tid,[ck])}else if(!(+tt.orderCount[ck]>0)){AL.push(`${TN(tid)} · ${mm.name} 『${pName(b,tid,'command',x.command)}』 — 남은 횟수가 없어 걸지 않았다`);continue}if(!lend){const t2=snap(tt);t2.orderCount[ck]=(+t2.orderCount[ck]||0)-1;if(pcK)t2.pcList=Object.assign({},t2.pcList||{},{[mid]:{o:((t2.pcList||{})[mid]||{}).o||'',c:x.command}});const sk=OO().shareKey(t2,x.command);if(sk)t2.orderCount['command_'+sk]=Math.max(0,(+t2.orderCount['command_'+sk]||0)-1);await A().setDiff(['battle','trainers',tid],tt,t2,1)}}}
+     /* 턴 개시 차감 뒤에 넣었거나 차감이 이 지시를 못 읽었으면 fireOrder('pre')가 1 깎고 건다 (11-04 — 예전엔 여기서 따로 깎았다) */
      try{await fireOrder(tid,mid,'command',x.command,'pre');const f2=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid])||{};if(f2.command)AL.push(`${TN(tid)} · ${mm.name} 『${pName(b,tid,'command',x.command)}』`);else AL.push(`${TN(tid)} · ${mm.name} 『${pName(b,tid,'command',x.command)}』 — 걸리지 않았다 (같은 무리 한 턴 하나 · 받을 수 없는 상태 — 「포텐셜 발동」에서 확인)`)}catch(e){console.warn('지령 자동 발동',e)}}
     if(AL.length)A().sysLog(`【지령 자동 발동】 선행 입력한 지령 · 영창\n${AL.join('\n')}`,'battle');
     /* 11-03 21:00 망령 「교대 뒤 선행 포텐셜」 · 「선행 포텐셜도 지령처럼 저절로」 · 「메진 전용을 선행 입력해 둬도 턴 개시에 알려 주지도 발동하지도 않아 깜빡」:
@@ -1054,10 +1053,10 @@ window.OM_BATTLE_UI=(()=>{
  function pLend(b,tid,ck){return pMates(b,tid).length&&!(+(((b.trainers||{})[tid]||{}).orderCount||{})[ck]>0)&&pN(b,tid,ck)>0}
  /* 턴 개시: 선행 입력한 지령·명령의 횟수를 미리 깎는다 (맵툴 set_turn_start). 주인의 호령(tc 7)은 능력·회복이 횟수를 같이 쓴다 */
  function chargeOne(t,data,b,used,T,bor,tid){t.orderCount=t.orderCount||{};const tc=OO().styles(t).tc;t.pcList={};   /* 11-03 20:47 (이토리 시온 「지령 선행 입력이 턴 개시에 자동 발동됐는데 횟수가 안 빠졌다」): 이번 턴에 무엇을 깎았는지 남긴다 — 깎은 뒤에 넣거나 바꾼 지령은 발동 때 깎는다 */
-  for(const mid in (data.mons||{})){const m=b.mons[mid];if(!m)continue;const x=data.mons[mid];   /* 11-03 22:20 이토리 시온 「물러나 · 피해라 · 바꿔라 · 방어지령 · 특방지령 횟수가 안 빠졌다」: 늦게 깎을 때(턴 진행 뒤) 교대로 나갔거나 쓰러진 포켓몬 몫을 건너뛰지 않는다 — 지시는 필드에 있을 때만 넣을 수 있으니 넣은 것은 다 깎는다 */
-   if(x.order){const k='order_'+x.order;pSpend(b,tid,t,k,T,bor);if(used)used.o++}
+  for(const mid in (data.mons||{})){const m=b.mons[mid];if(!m)continue;const x=data.mons[mid];const PS=(t.preSpent&&t.preSpent.k===turnKey(b))?(((t.preSpent.m||{})[mid])||{}):{};   /* 11-04: 선행 발동 때 이미 깎은 것(preSpent)은 건너뛴다 */   /* 11-03 22:20 이토리 시온 「물러나 · 피해라 · 바꿔라 · 방어지령 · 특방지령 횟수가 안 빠졌다」: 늦게 깎을 때(턴 진행 뒤) 교대로 나갔거나 쓰러진 포켓몬 몫을 건너뛰지 않는다 — 지시는 필드에 있을 때만 넣을 수 있으니 넣은 것은 다 깎는다 */
+   if(x.order&&PS.o!==x.order){const k='order_'+x.order;pSpend(b,tid,t,k,T,bor);if(used)used.o++}
    if(x.order||x.command)t.pcList[mid]={o:x.order||'',c:x.command||''};
-   if(x.command){const dec=k=>{t.orderCount[k]=Math.max(0,(+t.orderCount[k]||0)-1)};pSpend(b,tid,t,'command_'+x.command,T,bor);if(used)used.c++;const sk=OO().shareKey(t,x.command);if(sk)dec('command_'+sk)}}}
+   if(x.command&&PS.c!==x.command){const dec=k=>{t.orderCount[k]=Math.max(0,(+t.orderCount[k]||0)-1)};pSpend(b,tid,t,'command_'+x.command,T,bor);if(used)used.c++;const sk=OO().shareKey(t,x.command);if(sk)dec('command_'+sk)}}}
  async function preCharge(){const c=ctx();const b=c.b;const key=turnKey(b);
   if(!c.gm){for(const t of myTrainers(c).filter(t=>lead(c,t)))await selfCharge(t);return}
   let rows;try{rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd')}catch(e){return}
@@ -1120,7 +1119,7 @@ window.OM_BATTLE_UI=(()=>{
     return `${U.length?`<div class="sec">고유 포텐셜 <span class="note">${esc(t.name)} · 대상 ${esc(m.name)} (에리어 ${m.entry.toUpperCase()})</span></div><div class="firelist">${U.map(x=>row('uq',x)).join('')}</div>`:''}${E.length?`<div class="sec">전용 포텐셜 <span class="note">${esc(m.name)}</span></div><div class="firelist">${E.map(x=>row('ex',x)).join('')}</div>`:''}`})()}
    ${[['order','명령 (4식)',pKeys(b,tid,'order'),k=>pName(b,tid,'order',k)],['command','지령 (6령)',pKeys(b,tid,'command'),k=>pName(b,tid,'command',k)]].map(([kind,title,keys,nm])=>`<div class="sec">${title}</div><div class="firelist">${keys.map(k=>{const ck=(kind==='order'?'order_':'command_')+k;const n=pN(b,tid,ck);const done=fired[kind]===k;
     return `<div class="firerow ${done?'done':''}" data-fk="${k}" data-kind="${kind}"><b class="fnm">『${esc(nm(k))}』</b>${OO().ownerOf(t,k)?`<i class="oown">${esc(OO().ownerOf(t,k))} 몫</i>`:''}<span class="fcnt">남은 <b>${n}</b></span><span class="sp"></span>
-     <button class="btn sm pri" data-fire="pre" data-kind="${kind}" data-k="${k}" hidden>선행 발동</button><button class="btn sm" data-fire="free" data-kind="${kind}" data-k="${k}" ${n>0&&(ph>=1||preTag(nm(k)))?'':'disabled'} title="남은 횟수 1을 써서 바로 발동${preTag(nm(k))?' · 【사전】 — 지시 준비 중에도':''}">임의 발동</button>${c.gm?`<button class="btn sm ghost" data-fire="force" data-kind="${kind}" data-k="${k}" title="횟수·입력과 상관없이 발동">강제</button>`:''}</div>`}).join('')||'<div class="small dim">쓰는 항목이 없다</div>'}</div>`).join('')}
+     <button class="btn sm pri" data-fire="pre" data-kind="${kind}" data-k="${k}" hidden>선행 발동</button><button class="btn sm" data-fire="free" data-kind="${kind}" data-k="${k}" ${n>0&&(ph>=1||preTag(nm(k))||(kind==='order'&&rinneOK(b,tid,k)))?'':'disabled'} title="남은 횟수 1을 써서 바로 발동${preTag(nm(k))?' · 【사전】 — 지시 준비 중에도':''}${kind==='order'&&rinneOK(b,tid,k)?' · 윤회의 법계 ② — 지난 턴 종료에 【임의】':''}">${kind==='order'&&rinneOK(b,tid,k)?'임의 발동 ②':'임의 발동'}</button>${c.gm?`<button class="btn sm ghost" data-fire="force" data-kind="${kind}" data-k="${k}" title="횟수·입력과 상관없이 발동">강제</button>`:''}</div>`}).join('')||'<div class="small dim">쓰는 항목이 없다</div>'}</div>`).join('')}
    <div class="small dim" style="margin-top:8px">선행 발동 : 지시 입력에서 선행 입력한 것을 그 순간 발동 (턴 개시 때 횟수를 깎았다) · 임의 발동 : 남은 횟수 1을 써서 지금 발동 · 강제 : GM 이 횟수와 상관없이</div>`);
   md.querySelectorAll('[data-ftab]').forEach(el=>el.onclick=()=>{UIC.fire[tid]=el.dataset.ftab;A().closeModal();openFire(tid)});
   /* 선행 입력 읽기 (주인·GM 만 읽을 수 있다) */
@@ -1176,21 +1175,31 @@ window.OM_BATTLE_UI=(()=>{
   A().sysLog(`【${LB}】 ${who} 『${name}』${left}${tag}${tgt?'\n대상:'+tgt.replace(' →',''):''}`,'battle',{mid:m?m.id:'',img,eff:String(x.p.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,400)})}
  async function fireOrder(tid,mid,kind,key,how){const c=ctx();const b0=snap(c.b),b=snap(b0);const t=b.trainers[tid];const m=b.mons[mid];if(!t||!m)return;
   const name=pName(c.b,tid,kind,key);const ck=(kind==='order'?'order_':'command_')+key;t.orderCount=t.orderCount||{};
+  const RW=how==='free'&&kind==='order'&&rinneOK(c.b,tid,key);   /* 『윤회의 법계』 ② 【임의】 창 */
   /* 10-26 망령 (서서 VS 마리 시험): 4식 · 6령은 한 턴에 종류별로 하나만 · 임의 발동은 원칙이 아니다 (선행 입력 → 선행 발동) */
   {const KN=kind==='order'?'4식(명령)':'6령(지령)';/* 11-03 22:05 망령 「영창도 지령 자동 발동에 뜨게 — COMMAND 는 다 저기」: 한 턴 하나는 같은 무리끼리(6령은 6령 · 영창은 영창 · 4식은 4식) — 영창이 6령에 막혀 안 걸리던 것 */const fam=k=>{const n=kind==='order'?OO().orderName(t,k):OO().commandName(t,k);const r=potRowOf(n)||potRowOf(n+'!');return (r&&r[0])||(/영창$/.test(n)?'영창':kind)};const used=Object.entries((((b.cmds||{})[tid]||{}).fired)||{}).find(([id,x])=>x&&x[kind]&&!(id===mid&&x[kind]===key&&how==='pre')&&fam(x[kind])===fam(key));
    {const why=how==='force'?'':noOrdWhy(m);if(why)return A().toast(`⚠ ${m.name} — ${KN}을 받을 수 없다 (${why}). 꼭 써야 하면 「강제」로`)}   /* 10-26 망령: 행동불능(반동) · 난동 · 반무적 · 올드 타입은 발동 때도 막는다 (지시 창 경고만으로는 선행 발동이 그대로 나갔다) */
-   if(used&&how!=='force'){const um=b.mons[used[0]];return A().toast(`${KN}은 한 턴에 하나만 — 이번 턴에 이미 『${kind==='order'?OO().orderName(t,used[1][kind]):OO().commandName(t,used[1][kind])}』(${um?um.name:'?'})를 썼다`)}
+   if(used&&how!=='force'&&!RW){const um=b.mons[used[0]];return A().toast(`${KN}은 한 턴에 하나만 — 이번 턴에 이미 『${kind==='order'?OO().orderName(t,used[1][kind]):OO().commandName(t,used[1][kind])}』(${um?um.name:'?'})를 썼다`)}
    const MT={공격:'아군의 명중굴림 전',특공:'아군의 명중굴림 전',저격:'아군의 명중굴림 전',방어:'상대의 명중굴림 전',특방:'상대의 명중굴림 전',회피:'상대의 명중굴림 전',민첩:'행동 순서 공개 때',회복:'『지령』을 쓰지 않은 턴의 종료 때'};const mm=kind==='command'&&String(name).match(/^숙달(공격|특공|저격|방어|특방|회피|민첩|회복)지령$/);
-   if(how==='free'&&!(await askYes(mm?`『${name}』 ② — ${MT[mm[1]]}에 【임의】로 쓸 수 있다.\n지금이 그때면 발동한다.`:`${KN}은 지시 단계에서 선행 입력한 것을 「선행 발동」으로 쓰는 게 원칙이다.\n【임의】가 붙는 조건(6령 ② 등)일 때만 임의 발동한다. 그래도 지금 임의 발동할까?`,mm?'발동':'임의 발동','그만')))return}
+   if(RW){if(!(await askYes(`『윤회의 법계』 ② — 지난 턴 종료에 【임의】가 붙었다.\n「방어」 상태가 아니었던 아군 하나를 「따라가때리기」를 받지 않고 교대시킨다 (교대는 그 포켓몬의 「교대」로).\n남은 횟수 1을 써서 발동할까?`,'발동','그만')))return}
+   else if(how==='free'&&!(await askYes(mm?`『${name}』 ② — ${MT[mm[1]]}에 【임의】로 쓸 수 있다.\n지금이 그때면 발동한다.`:`${KN}은 지시 단계에서 선행 입력한 것을 「선행 발동」으로 쓰는 게 원칙이다.\n【임의】가 붙는 조건(6령 ② 등)일 때만 임의 발동한다. 그래도 지금 임의 발동할까?`,mm?'발동':'임의 발동','그만')))return}
   let tag='';let FBOR='';
-  if(how==='pre'){tag='【선행】'}
-  else if(how==='free'){const lend=pLend(c.b,tid,ck);if((+t.orderCount[ck]||0)<=0&&!lend)return A().toast('남은 횟수가 없어 임의 발동할 수 없다');if(lend)FBOR=ck;else{t.orderCount[ck]=(+t.orderCount[ck]||0)-1;{const sk=kind==='command'?OO().shareKey(t,key):'';const o=sk?'command_'+sk:'';if(o)t.orderCount[o]=Math.max(0,(+t.orderCount[o]||0)-1)}}tag=FBOR?'【임의 · 일행 몫】':'【임의】'}
+  if(how==='pre'){tag='【선행】';
+   /* 11-04 19:16 망령 「치유의 법계가 이번에도 사용 횟수가 줄지 않았다 — 자동 처리로 하면 횟수가 안 빠지나?」: 선행 발동은 「턴 개시에 깎았다」고 믿고 횟수를 안 건드렸는데,
+      턴 개시 차감이 이 지시를 못 읽은 채(지시 행이 없음 · 다른 턴 표시 · 새로고침) 「이번 턴 깎음」으로 적히면 공짜로 걸렸다(시노사와 유이 『치유의 법계』 5턴 — 1 그대로).
+      → 이번 턴 차감 목록(pcList)에 이 지시가 없으면 여기서 1 깎고 적는다. 아직 턴 개시 차감 전이면 preSpent 에 적어 두어 나중 차감(chargeOne)이 두 번 깎지 않게 한다 */
+   const tk=turnKey(c.b),ok=kind==='order'?'o':'c';const pcK=t.pcTurn===tk;const had=pcK&&((t.pcList||{})[mid]||{})[ok]===key;const ps=(t.preSpent&&t.preSpent.k===tk)?t.preSpent:null;const spent=!!ps&&(((ps.m||{})[mid]||{})[ok]===key);
+   if(!had&&!spent){const lend=pLend(c.b,tid,ck);if((+t.orderCount[ck]||0)<=0&&!lend)return A().toast(`『${name}』 — 남은 횟수가 없다 (이번 턴 몫이 아직 안 깎였는데 남은 것도 없다 · 꼭 써야 하면 GM 「강제」)`);
+    if(lend)FBOR=ck;else{t.orderCount[ck]=(+t.orderCount[ck]||0)-1;const sk=kind==='command'?OO().shareKey(t,key):'';if(sk)t.orderCount['command_'+sk]=Math.max(0,(+t.orderCount['command_'+sk]||0)-1)}
+    const one=o=>Object.assign({o:'',c:''},o||{},{[ok]:key});
+    if(pcK)t.pcList=Object.assign({},t.pcList||{},{[mid]:one((t.pcList||{})[mid])});else{const m2=Object.assign({},(ps&&ps.m)||{});m2[mid]=one(m2[mid]);t.preSpent={k:tk,m:m2}}}}
+  else if(how==='free'){const lend=pLend(c.b,tid,ck);if((+t.orderCount[ck]||0)<=0&&!lend)return A().toast('남은 횟수가 없어 임의 발동할 수 없다');if(lend)FBOR=ck;else{t.orderCount[ck]=(+t.orderCount[ck]||0)-1;{const sk=kind==='command'?OO().shareKey(t,key):'';const o=sk?'command_'+sk:'';if(o)t.orderCount[o]=Math.max(0,(+t.orderCount[o]||0)-1)}}tag=(FBOR?'【임의 · 일행 몫】':'【임의】')+(RW?' ② 턴 종료':'')}
   else if(how==='force'){if(!c.gm)return;tag='【강제】'}
   const f=fieldOf(b);const fx=applyOrder(b.mons,f,t,name,mid);
   if(!fx.length&&FX()){const a=FX().rm(name)||FX().rm(String(name).replace(/\s*[:：]\s*/,' / '));if(a&&a.ops&&a.ops.length&&!a.manual){const r=await FX().run(a.ops,uiCtx(b,m,name,m.entry));fx.push(...r.lines)}}
-  if(!fx.length)fx.push(`「${name}」 — 손으로 처리`);
+  if(!fx.length)fx.push(RW?`「윤회의 법계」 ② — 아군 하나를 「따라가때리기」 없이 임의 교대 (교대는 손으로)`:`「${name}」 — 손으로 처리`);
   A().closeModal();
-  const okT=await A().setDiff(['battle','trainers',tid],b0.trainers[tid],t,1);if(!okT)return;if(FBOR)await pBorrowSave(tid,[FBOR]);if(String(((A().ST.state.rp||{}).cutin||{}).ord)!=='0')cutFire('t:'+tid,trainerImg(t),`${t.name}의 지시!`,`『${name}』`,t.side==='left'?'#1f6fd1':'#e3101f');b.trainers[tid]=b0.trainers[tid];await saveBattle(b0,b,f,{n:t.name,s:name,img:trainerImg(t)});await A().set(['battle','cmds',tid,'fired',mid,kind],key);
+  const okT=await A().setDiff(['battle','trainers',tid],b0.trainers[tid],t,1);if(!okT)return;if(FBOR)await pBorrowSave(tid,[FBOR]);if(String(((A().ST.state.rp||{}).cutin||{}).ord)!=='0')cutFire('t:'+tid,trainerImg(t),`${t.name}의 지시!`,`『${name}』`,t.side==='left'?'#1f6fd1':'#e3101f');b.trainers[tid]=b0.trainers[tid];await saveBattle(b0,b,f,{n:t.name,s:name,img:trainerImg(t)});if(RW)await A().set(['battle','rinne','t',tid],null);else await A().set(['battle','cmds',tid,'fired',mid,kind],key);   /* ② 는 지난 턴 몫 — 이번 턴 「한 턴 하나」에 세지 않는다 */
   /* 11-03 21:54 망령 「4식이나 지령 발동할 때 효과도 UI 에 넣어서 나와야지」: 레디메이드 글이 비어 있으면 제작기 포텐셜 표(4식 · 6령 · 5계 · 영창 …)의 효과 글 */
   const oeff=(FX()&&FX().rm&&(FX().rm(name)||{}).text)||((potRowOf(name)||potRowOf(String(name).replace(/[!！]$/,''))||[])[2])||((potRowOf(name+'!')||[])[2])||'';
   A().sysLog(`【${kind==='order'?'명령':'지령'}】 ${t.name}의 지시! 『${name}』 → ${m.name} (에리어 ${String(m.entry).toUpperCase()}) 【${Math.max(0,+t.orderCount[ck]||0)}/시】${tag}${fx.length?'\n'+fx.join('\n'):''}`,'battle',{mid:m.id,img:trainerImg(t),eff:String(oeff).replace(/<br\s*\/?>/g,'\n').slice(0,400)})}
@@ -1198,6 +1207,8 @@ window.OM_BATTLE_UI=(()=>{
  function preTag(name){const t=((FX()&&FX().rm&&FX().rm(name))||{}).text||(((DB().maker||{}).pots||[]).find(r=>r[1]===name)||[])[2]||'';return /【\s*사전\s*】/.test(String(t))}
  /* 맵툴 open_command 처럼 에리어(포켓몬) 하나씩 공개한다. 좌석은 자기 것만, GM 은 아무 것이나 */
  function revealed(b,tid,part){const cm=((b.cmds||{})[tid]||{});return part==='orders'?!!cm.revealedOrders:!!((cm.mons||{})[part])}
+ /* 『윤회의 법계』 ② 창: 턴 종료가 연 그 다음 턴 지시 준비(페이즈 0) 동안만 */
+ const rinneOK=(b,tid,k)=>{const R=(b||{}).rinne;return !!R&&R.turn===turnKey(b)&&(+b.phase||0)===0&&((R.t||{})[tid])===k};
  const cmdFresh=(r,b)=>{const d=r&&r.data;return !!d&&(d.turn==null||(+d.turn||1)===(+(b||ctx().b).turn||1))};
  async function myCmd(c,tid,quiet){let rows;try{rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd')}catch(e){if(!quiet)A().toast('지시를 읽지 못했다: '+e.message);return null}const r=(rows||[]).filter(x=>cmdFresh(x,c.b)).find(x=>x.id===tid);if(!r){if(!quiet)A().toast('저장된 지시가 없다 — 먼저 「저장」');return null}return r.data}
  function revealCardText(b,t,m,x){if(x.move==='switch')return `${t.name} · ${m.name} (${slotName(b,m.side+'_'+m.entry).replace(/<[^>]+>/g,'')}): 「교대」 → ${monName(b,x.switch)}`;
@@ -1388,10 +1399,18 @@ window.OM_BATTLE_UI=(()=>{
   if(window.OM_STAGE_UI)fieldL.push(...window.OM_STAGE_UI.turnEnd(b,f));
   for(const k of ROOMS)if(dec(f.rooms,k))fieldL.push(`「${k}」 끝`);for(const k of ETC)if(dec(f.etc,k))fieldL.push(`「${k}」 끝`);
   for(const s of SIDES){f.objects[s]=f.objects[s]||{};for(const k in f.objects[s])if(!/^haz/.test(objCat(k)[0])/* 10-24 제보: 설치기(압정뿌리기 · 독압정의 「겹」 수)는 턴으로 줄지 않는다 */&&dec(f.objects[s],k))fieldL.push(`${SIDE_KO[s]} 「${k}」 끝`)}
-  b.field=f;b.cmds={};b.order=[];b.phase=0;b.turn=(+b.turn||0)+1;delete b.deadline;CMD={};
+  /* 11-04 19:0x 망령 「윤회의 법계 2번 효과로 임의로 발동 못 시켜 지금?」: 『윤회의 법계』 ② 「방어」 상태가 아닌 아군에 대하여 턴 종료 시에 이 포텐셜에 【임의】를 부여한다.
+     턴 종료에 (남은 횟수 · 이번 턴에 5계를 안 썼다 · 「방어」(지키기 계열) 아닌 아군이 필드에 있다) 이면 다음 턴 개시 전까지 「포텐셜 발동 → 임의 발동」을 연다 (b.rinne).
+     같은 턴에 치유의 법계 등 다른 5계를 썼으면 열지 않는다 (망령 11-04 10:03 「같이 못 쓰지」) */
+  const RN={},rnL=[];{const fam5=(t,k)=>{const r=potRowOf(pName(b0,t,'order',k));return !!r&&r[0]==='5계'};
+   for(const tid in b.trainers||{}){const k=pKeys(b0,tid,'order').find(q=>pName(b0,tid,'order',q)==='윤회의 법계');if(!k||!(pN(b0,tid,'order_'+k)>0))continue;
+    const fd=(((b0.cmds||{})[tid]||{}).fired)||{};if(Object.values(fd).some(x=>x&&x.order&&fam5(tid,x.order)))continue;
+    const al=Object.values(b0.mons||{}).filter(m=>m.tid===tid&&m.entry&&+(m.hp||{}).cur>0&&!(m.flags||{}).protect);if(!al.length)continue;
+    RN[tid]=k;rnL.push(`${(b.trainers[tid]||{}).name||tid} — 『윤회의 법계』 ② 【임의】 (남은 ${pN(b0,tid,'order_'+k)}) · 「방어」 아닌 아군: ${al.map(m=>m.name).join(' · ')} — 다음 턴 개시 전까지 「포텐셜 발동 → 임의 발동」`)}}
+  b.field=f;b.cmds={};b.order=[];b.phase=0;b.turn=(+b.turn||0)+1;delete b.deadline;CMD={};if(rnL.length)b.rinne={turn:turnKey(b),t:RN};else delete b.rinne;
   await saveBattle(b0,b,undefined,undefined,[[['ready'],{}]]);   /* 11-03: ready 비우기도 같은 묶음에 */
   cutPhase('턴 종료',`다음 턴 ${b.turn} · 지시 준비`);const sec=(h,L)=>L.length?[`▸ ${h}`,...L.map(x=>'  '+String(x).replace(/\n/g,'\n  '))]:[];const relL=Object.keys(rel).map(n=>`${n} — ${rel[n].join(' · ')}`);
-  const body=[...sec('포켓몬',lines),...sec('풀린 것',relL),...sec('필드',fieldL),...sec('레이드',raidL)];
+  const body=[...sec('포켓몬',lines),...sec('풀린 것',relL),...sec('필드',fieldL),...sec('레이드',raidL),...sec('【임의】',rnL)];
   /* 11-03 감우 (검토 7): HP 가 바뀐 포켓몬을 순서대로 카드에 실어 보낸다 — 받는 화면마다 0.4s 간격으로 연출 (logFx · seqFx) */
   const seq=[];for(const mid in b.mons){const m=b.mons[mid],o=(b0.mons||{})[mid];if(!o||!o.hp||!m.hp||+o.hp.cur===+m.hp.cur)continue;seq.push({mid,name:m.name,prev:+o.hp.cur,cur:+m.hp.cur,max:+m.hp.max||1})}
   A().sysLog(`【턴 ${b.turn-1} 종료】${body.length?'\n'+body.join('\n'):'\n  처리할 것 없음'}\n— 턴 ${b.turn} 지시 준비`,'battle',seq.length?{seq}:undefined)}
@@ -1959,7 +1978,7 @@ window.OM_BATTLE_UI=(()=>{
  const ASKED={};
  function askTo(mon){const c=ctx();if(!mon||canEdit(c,mon))return '';const seats=c.ST.state.seats||{};const tid=mon.tid;
   if(tid&&seats[tid]&&(A().online(tid)||coOf(c,tid).some(s=>A().online(s))))return 'seat:'+tid;if(!c.gm)return 'gm';return ''}
- async function remoteAsk(mon,type,data,local){const to=askTo(mon);if(!to)return local();
+ async function remoteAsk(mon,type,data,local,to0){const to=to0||askTo(mon);if(!to)return local();
   const id='q'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);await A().set(['battle','asks',id],Object.assign({to,type,mid:mon.id,at:Date.now()},data));
   A().toast(`${mon.name} 쪽에 고르기를 맡겼다 — 답을 기다리는 중`);
   const t0=Date.now();while(Date.now()-t0<120000){await new Promise(r=>setTimeout(r,400));const q=((ctx().b.asks||{})[id]);if(q&&q.ans!==undefined){await A().set(['battle','asks',id],null);return q.ans}if(!q)break}
@@ -1980,6 +1999,12 @@ window.OM_BATTLE_UI=(()=>{
  /* 11-03 「임의교대」 구문: 벤치에서 골라 같은 자리로 (그 트레이너 · GM 만) */
  async function freeSwitchUI(mid,nm){const c=ctx();const a=c.b.mons[mid];if(!a||!a.entry||a.hp.cur<=0)return;if(!canEdit(c,a)&&!c.mgr){A().sysLog(`${a.name} 「${nm}」 임의 교대할 수 있다 — 그 트레이너가 「퇴장」에서`,'battle');return}
   const bench=Object.values(c.b.mons).filter(x=>x.tid===a.tid&&!x.entry&&!x.pend&&x.hp.cur>0&&x.id!==mid);if(!bench.length){A().sysLog(`${a.name} 교대할 포켓몬이 벤치에 없다`,'battle');return}
+  /* 11-04 19:15 망령 「(질투닌의 선회 — 카자마 레비 임의 교대할까?) 이게 배틀에 안 나오는 나한테 왜 떠」: 진행자(GM) 화면이 자동화를 돌리면 임의 교대 물음이 GM 에게 떴다.
+     그 트레이너 자리에 누가 접속해 있으면(내가 그 자리가 아니면) 그 자리로 물어본다 — 2분 안에 답이 없으면 교대하지 않는다 */
+  const seats=c.ST.state.seats||{};const ownerOn=!ownT(c,a.tid)&&!!seats[a.tid]&&(A().online(a.tid)||coOf(c,a.tid).some(s=>A().online(s)));
+  if(ownerOn){const to='seat:'+a.tid;const yes=await remoteAsk(a,'confirm',{name:nm,q:`「${nm}」 — ${a.name} 임의 교대할까?`},()=>false,to);if(!yes)return;
+   const r=await remoteAsk(a,'pick',{name:nm,label:'교대해 들어올 포켓몬',ids:bench.map(m=>m.id)},()=>'',to);const pk=typeof r==='string'?bench.find(m=>m.id===r)||null:r;if(!pk)return;
+   const area=a.entry;await exitMon(mid,{noAsk:true,sys:true});await enterMon(pk.id,area,{sys:true,how:'임의 교대'});return}
   if(!await askYes(`「${nm}」 — ${a.name} 임의 교대할까?`,'교대','그대로'))return;const pk=await uiCtx(c.b,a,nm).pick(bench,'교대해 들어올 포켓몬');if(!pk)return;const area=a.entry;await exitMon(mid,{noAsk:true,sys:true});await enterMon(pk.id,area,{sys:true,how:'임의 교대'})}
  function localUi(b,self,name,area){return {b,self,name,area,viewer:ctx().gm?'':ctx().seat,
   pick:(list,label)=>new Promise(res=>{const md=A().openModal(`<div class="mhead"><h2>${esc(name)} — ${esc(label)}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="pg">${list.map(m=>`<div class="pc" data-pk="${m.id}"><div class="pic" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div><div><b>${esc(m.name)}</b><div class="small dim">${SIDE_KO[m.side]} ${String(m.entry).toUpperCase()} · HP ${m.hp.cur}/${m.hp.max}</div></div></div>`).join('')}</div>`);

@@ -5592,12 +5592,22 @@ button.tfsep.cl{opacity:1;border:1px dashed color-mix(in srgb,var(--yel2) 55%,tr
 .sgboard{display:block;columns:250px auto;column-gap:10px}.sgboard>.sgc{break-inside:avoid;margin:0 0 10px;width:100%;box-sizing:border-box;display:inline-flex}
 @media (max-width:760px){.sgboard{columns:1}}
 .sgboard{max-height:none;overflow:visible;column-fill:balance}.sgmodal{max-height:90vh;overflow:auto}
-/* 11-04 19:05 망령 「곡 바 자체도 늘려도 되잖아 — 줄이 안 밀리는 선에서」: 턴 바 오른쪽 위 BGM 칸 230 → 300px (곡 이름 + 음량 바 + 버튼이 한 줄) */
+/* 11-04 19:22 망령 「이렇게 늘리면 어떻게 해 — BGM 이 딱 끝에 붙고 음량 바랑 버튼 냅두고 남은 여유분에 이름을」:
+   턴 바 오른쪽 위 BGM 칸을 고정 폭(230 · 300px)으로 두지 않고 내용만큼(최대 230 · 넓은 화면 300px) — 오른쪽 끝에 붙는다.
+   ♪ · 음량 바(64px) · 버튼은 줄지 않고, 곡 이름이 남은 자리를 쓰다 모자라면 … 로 줄인다.
+   (19:06 판은 칸 자신을 container 로 두어 300px 칸 안쪽 폭 286 ≤ 290 규칙에 걸려 곡 이름이 숨었다 — 크기 기준 container 를 끈다: 내용만큼 폭과 같이 못 쓴다) */
+@media (min-width:761px){
+ .bstat>.bgmw{width:auto!important;max-width:230px!important;container-type:normal!important;overflow:hidden}
+ .bstat>.bgmw>*{flex:none}
+ .bstat>.bgmw .bt{display:block!important;flex:0 1 auto!important;min-width:0!important;max-width:none!important;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .bstat>.bgmw .bt:empty{display:none!important}
+ .bstat>.bgmw input[type=range]{display:block!important;width:64px!important;min-width:64px!important;flex:none!important}
+}
 @media (min-width:1100px){
  .bstat{padding-right:calc(300px + 22px)!important}
- .bstat>.bgmw{width:300px;max-width:300px!important}
+ .bstat>.bgmw{max-width:300px!important}
  .bstat>.gmrow,.bstat>details,.bstat>.revealstat,.bstat>div:not(.turn):not(.phases):not(.bgmw){margin-right:calc(-300px - 10px)!important;flex-basis:calc(100% + 310px)!important}
- .bstat>.bgmw .bt{max-width:none}.bstat>.bgmw input[type=range]{width:70px;flex:0 1 70px}
+}
 }
 /* 11-04 19:10 망령 「망각 테마 자글 돌아왔어」: 던전 RP 무대 오른쪽 위 작은 지도의 안개(.dg-haze)가 will-change:transform + 끝없는 움직임 + mix-blend-mode 였다.
    무대 안에 늘 움직이는 합성 층이 생기면 브라우저가 무대 위 다른 것들도 층으로 쪼개면서, 기울인 말풍선 글자를 「똑바로 찍은 그림을 돌리는」 쪽으로 보내 회색 계단이 진다(10-31 · 11-03 과 같은 계열).
