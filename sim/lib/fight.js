@@ -22,7 +22,7 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
  /* 행동 판정 (창의 「행동 판정」 칸 — 시뮬은 늘 켠다) */
  let chk=null;
  if(F&&['Flinch','Sleep','Paralysis','Freeze','Attract','Confusion'].some(k=>(atk0.states||{})[k])){let am=JSON.parse(JSON.stringify(atk0));let r=F.actionCheck(am);
-  if(!r.ok&&atk0.side==='left'&&['Paralysis','Freeze','Confusion'].some(k=>(atk0.states||{})[k])&&!(atk0.states||{}).Flinch&&cardTake(H,'actReroll',+b.turn||0,atk0.tid)){am=JSON.parse(JSON.stringify(atk0));r=F.actionCheck(am)}   /* 11-02 「다시 일어서」: 마비 · 혼란 · 얼음 행동 판정 한 번 다시 */
+  if(!r.ok&&atk0.side==='left'&&['Paralysis','Freeze','Confusion'].some(k=>(atk0.states||{})[k])&&!(atk0.states||{}).Flinch&&(cardTake(H,'actReroll',+b.turn||0,atk0.tid)||(['Paralysis','Confusion'].some(k=>(atk0.states||{})[k])&&cardTake(H,'actReroll2',+b.turn||0,atk0.tid)))){am=JSON.parse(JSON.stringify(atk0));r=F.actionCheck(am)}   /* 11-02 「다시 일어서」: 마비 · 혼란 · 얼음 행동 판정 한 번 다시 */
   if(!r.ok){let self=0;if(r.selfHit){self=F.confusionHit(am);am.hp.cur=Math.max(0,am.hp.cur-self);r.lines.push(`${am.name} 자작 대미지 −${self}`)}
    const nb0=FN.snap(),nb=FN.snap(nb0);const x=nb.mons[mid];x.states=am.states;if(self){x.hp.latest=x.hp.cur;x.hp.cur=Math.max(0,x.hp.cur-self)}if(x.hp.cur<=0)x.entry='';await FN.saveBattle(nb0,nb);
    out.fail=r.lines.join(' / ');out.lines.push(...r.lines);if(H.logOn)W.OM_APP.sysLog(`【행동 실패】 ${atk0.name} — ${out.fail}`,'battle');return out}
@@ -64,6 +64,7 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
    B.accuracy(atk,def,{acc:mv.acc},{accMult:accMul,sureHit:sure,starry:f.weather.type==='별하늘',fog:f.weather.type==='짙은안개',fogImmune:FN.tysOf(atk).some(t=>t==='Poison'||t==='Fairy'),gravity:(f.etc||{})['중력']>0,wideLens:FN.IT(atk)==='광각렌즈',ignoreAcc:IG.acc,ignoreEva:IG.eva,rng:rnd});
   let acc=accRoll();if(!acc.hit&&!acc.prot&&!acc.note&&mv.cat!=='변화'&&atk.side==='left'&&cardTake(H,'reroll',+b.turn||0,atk.tid))acc=accRoll();   /* 「실타래 되감기」 */
   /* 11-04 「빗나가라!」(세 칸 배틀 · c073): 상대 기술(명중 100 미만 · 필중 아님)이 아군에 맞으면 명중 다시 */if(acc.hit&&!acc.sure&&!sure&&mv.cat!=='변화'&&atk.side!=='left'&&def.side==='left'&&(+mv.acc||100)<100&&cardTake(H,'dodgeReroll',+b.turn||0,def.tid))acc=accRoll();
+  /* 11-05 「요정의 장난」(시작 24장): 상대 기술이 아군에 명중하면 명중 다시 — 맞을 확률이 100% 미만일 때만 쓴다 */else if(acc.hit&&!acc.sure&&!sure&&mv.cat!=='변화'&&atk.side!=='left'&&def.side==='left'&&(+acc.target||0)<10000&&cardTake(H,'fairyReroll',+b.turn||0,def.tid))acc=accRoll();
   const floating=(def.states||{}).MagnetRise||(def.states||{}).Telekinesis||(FX&&FX.floating(def))||FN.IT(def)==='풍선';
   const effPre=mv.cat==='변화'?null:B.effectiveness(moveTypes,def,{multiMode:0,atkTypes,force:null,floating});
   const mods=FX?FX.attackMods(atk,def,Object.assign(FN.moveQuery(atk,def,mv,moveTypes,effPre?effPre.value:1,!multiTarget),{stab:!!(effPre&&effPre.stab)})):{boost:1,guard:1,cg:0,cr:0,cx:'',names:[]};
@@ -73,7 +74,8 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
   if(mods.cx!=='none'&&FN.CRR(def).never)mods.cx='none';
   if(mods.cx!=='none'){const nc=[[def.ability,def.abilityEff],...FN.potSrc(def).map(p=>[p.name,p.eff])].find(([n,e])=>n&&/자신의\s*급소에\s*맞지\s*않는다/.test(String(e||'')));if(nc)mods.cx='none'}
   let hits=[];if(acc.hit){const mx=+mv.max||1,mn=+mv.min||1;const cnt=B.multiHits(mv,{skillLink:skill,rng:rnd});const fixedN=mx>1&&mn===mx&&!skill&&!acc.sure;const stage=B.critStage(atk,def,{input:0,order:OC.v+(mods.cr||0)-(mods.cg||0)+FN.itemCrit(atk,def)+FN.crAdj(atk,def)});
-   for(let i=0;i<cnt;i++){if(i>0&&fixedN){const a2=accRoll();if(!a2.hit)break}let cr=mods.cx==='none'?{crit:false}:B.critical(stage,{type:+FN.CRR(atk).tbl||0,forced:critForce||mods.cx==='sure'||!!FN.CRR(atk).sure,rng:rnd});if(cr.crit&&def.side==='left'&&atk.side!=='left'&&H.cards&&H.cards.shield&&H.cards.shield[def.id]===(+b.turn||0))cr={crit:false};else if(cr.crit&&def.side==='left'&&atk.side!=='left'&&cardTake(H,'noCrit',+b.turn||0,def.tid)){cr={crit:false};H.cards.shield=H.cards.shield||{};H.cards.shield[def.id]=+b.turn||0}   /* 「안개의 환영」 11-02: 이번 턴 그 아군이 받는 급소를 모두 막는다 */else if(cr.crit&&def.side==='left'&&atk.side!=='left'&&cardTake(H,'critReroll',+b.turn||0,def.tid))cr=B.critical(stage,{type:+FN.CRR(atk).tbl||0,forced:critForce||mods.cx==='sure'||!!FN.CRR(atk).sure,rng:rnd});   /* 11-02 「급소 털어내기」: 한 번 다시 굴림 */hits.push({v:cr.crit?2:1,cr})}}
+   for(let i=0;i<cnt;i++){if(i>0&&fixedN){const a2=accRoll();if(!a2.hit)break}let cr=mods.cx==='none'?{crit:false}:B.critical(stage,{type:+FN.CRR(atk).tbl||0,forced:critForce||mods.cx==='sure'||!!FN.CRR(atk).sure,rng:rnd});if(cr.crit&&def.side==='left'&&atk.side!=='left'&&H.cards&&H.cards.shield&&H.cards.shield[def.id]===(+b.turn||0))cr={crit:false};else if(cr.crit&&def.side==='left'&&atk.side!=='left'&&cardTake(H,'noCrit',+b.turn||0,def.tid)){cr={crit:false};H.cards.shield=H.cards.shield||{};H.cards.shield[def.id]=+b.turn||0}   /* 「안개의 환영」 11-02: 이번 턴 그 아군이 받는 급소를 모두 막는다 */else if(cr.crit&&def.side==='left'&&atk.side!=='left'&&stage<=1&&cardTake(H,'noCritC1',+b.turn||0,def.tid))cr={crit:false};   /* 11-05 「안개의 환영」 시작 24장 글: 「C+1」 이하 기술의 급소를 일반 명중으로 */
+   else if(cr.crit&&def.side==='left'&&atk.side!=='left'&&cardTake(H,'critReroll',+b.turn||0,def.tid))cr=B.critical(stage,{type:+FN.CRR(atk).tbl||0,forced:critForce||mods.cx==='sure'||!!FN.CRR(atk).sure,rng:rnd});   /* 11-02 「급소 털어내기」: 한 번 다시 굴림 */hits.push({v:cr.crit?2:1,cr})}}
   const objs=(f.objects||{})[side]||{};const wall={};for(const k in FN.WALLS)if(objs[k]>0&&!(k==='얼음의장벽'&&tyOf(mv)==='Fire'))wall[FN.WALLS[k]]=1;
   if(objs['얼음의장벽']>0&&tyOf(mv)==='Fire'&&mv.cat!=='변화'){const nb0=FN.snap(),nb=FN.snap(nb0);const fo=FN.fieldOf(nb);delete fo.objects[side]['얼음의장벽'];nb.field=fo;await FN.saveBattle(nb0,nb)}
   const spw=SPW?SPW(def):null;const powT=spw&&spw.pow!=null?spw.pow:pow;
@@ -84,7 +86,7 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
   const eff=dmg?B.effectiveness(moveTypes,def,{multiMode:0,atkTypes,force:null,floating}):(effPre||null);
   const stab=eff?eff.stab:false;const DFl=def.flags||{};
   const guard0=(DFl.endure?0.5:1)*(mods.guard||1);const endure0=(!!DFl.endure&&!DFl.endureUsed||!!mods.endure)&&!AF.noEndure;
-  res.push({slot,def,acc,hits,dmg,eff,stab,guard:guard0,endure:endure0,mods,spw,sec:[...(acc.hit?(MAU?MAU.groups.filter(g=>g.who==='target').map(g=>rollG(FN,atk,def,g,SECADJ,rnd)):[]):[])]})}
+  res.push({slot,def,acc,hits,dmg,eff,stab,guard:guard0,endure:endure0,mods,spw,sec:[...(acc.hit?(MAU?MAU.groups.filter(g=>g.who==='target').map(g=>{const x=rollG(FN,atk,def,g,SECADJ,rnd);if(x.ok&&g.sec&&(+g.n||10)<=3&&def.side==='left'&&atk.side!=='left'&&cardTake(H,'secIgnore',+b.turn||0,def.tid))return {g,ok:false};return x}):[]):[])]})}   /* 11-05 「약간 은밀한 망토」 */
  const anyHit=res.some(r=>r.acc.hit);const once=MAU?MAU.groups.filter(g=>g.who!=='target'&&(anyHit||g.when==='use')).map(g=>rollG(FN,atk,null,g,SECADJ,rnd)):[];
  /* ===== 적용 (공격 창 「적용」) ===== */
  const nb0=FN.snap(),nb=FN.snap(nb0);const lines=out.lines;
@@ -154,6 +156,8 @@ async function applyHit(H,W,mid,rnd){const FN=H.fn,B=W.OM_BATTLE,OI=W.OM_ITEMS;c
  const calc=roll=>B.hpDamageHits(m,per,+lh.eff,{fullGuard:fgOn?SH.fullGuard.v:0,disguise:dgOn?SH.disguise.cost:0,stab:false,guard:g0,manual:1,berryHalf:!!berryN,endure:en&&!sashOnly,endureFull:sashOnly,hpFloor:fl,band:roll&&sashX&&sashX.pct&&!en?{pct:sashX.pct,roll:()=>1+Math.floor(rnd()*100)}:null});
  let r=calc(false);let saved=false;if(en){const r0=B.hpDamageHits(m,per,+lh.eff,{fullGuard:fgOn?SH.fullGuard.v:0,disguise:dgOn?SH.disguise.cost:0,stab:false,guard:g0,manual:1,berryHalf:!!berryN,endure:false,hpFloor:fl});saved=!!(r0&&r0.after<=0&&r.after>0)}
  if(sashX&&sashX.pct&&!en&&r.after<=0&&m.hp.cur>1)r=calc(true);
+ /* 11-05 「위기일발!」(시작 24장): 난수 차이로 쓰러졌을 때(가장 낮은 난수 85% 였다면 버텼을 때) 난수를 다시 — 남은 대미지는 지금 값을 평균 난수로 보고 85~100% 로 다시 */
+ if(r.after<=0&&m.hp.cur>0&&m.side==='left'&&H.cards){const reC=f=>B.hpDamageHits(m,per.map(v=>Math.max(1,Math.floor(v*f))),+lh.eff,{fullGuard:fgOn?SH.fullGuard.v:0,disguise:dgOn?SH.disguise.cost:0,stab:false,guard:g0,manual:1,berryHalf:!!berryN,endure:en&&!sashOnly,endureFull:sashOnly,hpFloor:fl});const lo=reC(0.85/0.925);if(lo&&lo.after>0&&cardTake(H,'dmgReroll',+b.turn||0,m.tid))r=reC((0.85+rnd()*0.15)/0.925)}
  const berryUse=!!berryN&&/열매/.test(FN.IT(m));const sashUse=saved&&sashX&&sashX.sure&&sashX.once&&m.hp.cur>1;
  /* apply(-r.final) */
  const m0=FN.snap(b.mons[mid]),x=FN.snap(m0);let v=r.final;if(fl&&x.hp.cur-v<fl)v=Math.max(0,x.hp.cur-fl);x.hp.latest=x.hp.cur;x.hp.cur=Math.max(0,x.hp.cur-v);delete x.lastHit;if((r.per||[]).some(q=>q.held==='disguise'))x.dsgUsed=1;
