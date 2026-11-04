@@ -5592,3 +5592,10 @@ button.tfsep.cl{opacity:1;border:1px dashed color-mix(in srgb,var(--yel2) 55%,tr
 .sgboard{display:block;columns:250px auto;column-gap:10px}.sgboard>.sgc{break-inside:avoid;margin:0 0 10px;width:100%;box-sizing:border-box;display:inline-flex}
 @media (max-width:760px){.sgboard{columns:1}}
 .sgboard{max-height:none;overflow:visible;column-fill:balance}.sgmodal{max-height:90vh;overflow:auto}
+/* 11-04 19:05 망령 「곡 바 자체도 늘려도 되잖아 — 줄이 안 밀리는 선에서」: 턴 바 오른쪽 위 BGM 칸 230 → 300px (곡 이름 + 음량 바 + 버튼이 한 줄) */
+@media (min-width:1100px){
+ .bstat{padding-right:calc(300px + 22px)!important}
+ .bstat>.bgmw{width:300px;max-width:300px!important}
+ .bstat>.gmrow,.bstat>details,.bstat>.revealstat,.bstat>div:not(.turn):not(.phases):not(.bgmw){margin-right:calc(-300px - 10px)!important;flex-basis:calc(100% + 310px)!important}
+ .bstat>.bgmw .bt{max-width:none}.bstat>.bgmw input[type=range]{width:70px;flex:0 1 70px}
+}
