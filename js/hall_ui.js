@@ -14,7 +14,13 @@ window.OM_HALL_UI=(()=>{
  const SIDES=['left','right'],SK={left:'좌측',right:'우측'};
  const img=u=>typeof u==='string'&&/^https?:\/\//.test(u)&&u.length<500?u:'';
  const fmtT=t=>{if(!t)return '';const d=new Date(t);const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}.${p(d.getMonth()+1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`};
- const myName=()=>{const s=ST();if(s.role==='gm')return 'GM'+(s.gmNick?' · '+s.gmNick:'');const t=((s.state.roster||{}).trainers||{})[s.seat];return s.name||(t&&t.name)||'?'};
+ /* 11-04 22:13 요청 「전당 댓글도 PL 닉네임 말고 PC 트레이너명으로 쓸 수 있으면」: 자리에 앉은 PL 은 「PC 트레이너 이름 · PL 닉네임」 중 골라 쓴다 (기본 = 트레이너 이름, 이 브라우저에 방마다 기억) */
+ const asKey=()=>'om_hall_as_'+(ST().room||'');
+ const nameOpts=()=>{const s=ST();if(s.role==='gm')return [['gm','GM'+(s.gmNick?' · '+s.gmNick:'')]];const t=((s.state.roster||{}).trainers||{})[s.seat];const o=[];if(t&&t.name)o.push(['pc',t.name]);if(s.name&&!(t&&t.name===s.name))o.push(['pl',s.name]);return o.length?o:[['pl',s.name||'?']]};
+ const asGet=()=>{const o=nameOpts();let v='';try{v=localStorage.getItem(asKey())||''}catch(e){}return (o.find(x=>x[0]===v)||o[0])[0]};
+ const myName=()=>{const o=nameOpts();return (o.find(x=>x[0]===asGet())||o[0])[1]};
+ const asSel=id=>{const o=nameOpts();if(o.length<2)return '';const v=asGet();return `<label class="small hcmas" title="코멘트에 남길 이름">이름 <select id="${id}">${o.map(([k,n])=>`<option value="${k}" ${k===v?'selected':''}>${esc(n)}${k==='pc'?' (PC)':k==='pl'?' (PL)':''}</option>`).join('')}</select></label>`};
+ const asBind=(md,id)=>{const e=md.querySelector('#'+id);if(e)e.onchange=()=>{try{localStorage.setItem(asKey(),e.value)}catch(x){}}};
  const canWrite=()=>!!ST().role&&ST().role!=='view';
  const mine=w=>ST().role==='gm'||(ST().role==='seat'&&w===ST().seat);
 
@@ -60,10 +66,10 @@ window.OM_HALL_UI=(()=>{
    <div class="small dim" style="margin-bottom:8px">${opt.clear?'배틀을 비우기 전에':'결과를 정리하면서'} 지금 상황(턴 ${h.turn} · 남은 포켓몬 · HP · 상태)과 승패, 간략 로그를 「전당」 탭에 남긴다.</div>
    <label class="hall-fl"><span>제목</span><input type="text" id="hl_t" maxlength="80" value="${esc(def)}"></label>
    <div class="hall-fl"><span>승패</span><div class="hall-res">${[['left',trNames(h.sides.left)+' 승'],['right',trNames(h.sides.right)+' 승'],['draw','무승부'],['','기록 안 함']].map(([k,n])=>`<label class="btn sm ${g===k?'pri':'ghost'}"><input type="radio" name="hl_r" value="${k}" ${g===k?'checked':''} hidden>${esc(n)}</label>`).join('')}</div></div>
-   <label class="hall-fl top"><span>코멘트</span><textarea id="hl_c" rows="3" maxlength="4000" placeholder="(선택) 첫 코멘트 — 여러 줄 가능"></textarea></label>
+   <label class="hall-fl top"><span>코멘트</span><textarea id="hl_c" rows="3" maxlength="4000" placeholder="(선택) 첫 코멘트 — 여러 줄 가능"></textarea></label>${asSel('hl_as')?`<div class="hall-fl"><span></span>${asSel('hl_as')}</div>`:''}
    <div class="hallprev">${sumHtml(Object.assign({},h,{t:'',r:g}),true)}</div>
    <div class="row" style="margin-top:10px;gap:6px;flex-wrap:wrap"><span class="sp"></span>${opt.clear?'<button class="btn" data-hx="skip">등록 안 하고 비우기</button><button class="btn pri" data-hx="save">등록하고 비우기</button>':'<button class="btn" data-hx="skip">건너뛰기</button><button class="btn pri" data-hx="save">전당에 등록</button>'}</div>`);
-  const bg=md.closest('.modalbg');let fin=false;const end=v=>{if(fin)return;fin=true;done(v)};
+  asBind(md,'hl_as');const bg=md.closest('.modalbg');let fin=false;const end=v=>{if(fin)return;fin=true;done(v)};
   new MutationObserver((_,o)=>{if(!bg.isConnected){o.disconnect();end('cancel')}}).observe(document.body,{childList:true});   /* 바깥을 눌러 닫음 = 취소 */
   md.querySelectorAll('input[name=hl_r]').forEach(r=>r.onchange=()=>{md.querySelectorAll('.hall-res label').forEach(l=>{const on=l.querySelector('input').checked;l.classList.toggle('pri',on);l.classList.toggle('ghost',!on)});const p=$('.hallprev',md);if(p)p.innerHTML=sumHtml(Object.assign({},h,{t:'',r:r.value}),true)});
   md.querySelectorAll('[data-hx]').forEach(bt=>bt.onclick=async()=>{const k=bt.dataset.hx;if(k!=='save'){A().closeModal();return end(k)}
@@ -124,9 +130,9 @@ window.OM_HALL_UI=(()=>{
   const md=A().openModal(`<div class="mhead"><h2>🏆 전당</h2><span class="sp"></span>${canEd?'<button class="btn sm" data-ho="edt" title="제목 · 승패 고치기 · 기록 지우기">✎ 편집</button>':''}${(ST().role==='gm'||ST().role==='seat')&&DBS().bbs&&DBS().bbs.dcHall?'<button class="btn sm" data-ho="dc" title="요약 · 코멘트를 그림으로 만들어 디스코드 전당 스레드에 올린다 (GM 이 설정 「디스코드」 탭에서 정한 곳)">디코로</button>':''}<button class="btn sm" data-ho="copy" title="요약 · 코멘트를 그림으로 클립보드에">PNG 복사</button><button class="btn sm" data-ho="save">PNG 저장</button><button class="btn ghost" data-x>닫기</button></div>
    ${canEd?`<div class="hedit" id="hEd" hidden><label class="hall-fl"><span>제목</span><input type="text" id="hEdT" maxlength="80" value="${esc(h.t||'')}"></label><label class="hall-fl"><span>승패</span><select id="hEdR">${[['left',trNames(h.sides.left)+' 승'],['right',trNames(h.sides.right)+' 승'],['draw','무승부'],['','승패 없음']].map(([k,n])=>`<option value="${k}" ${(h.r||'')===k?'selected':''}>${esc(n)}</option>`).join('')}</select></label><div class="row" style="gap:6px"><button class="btn sm ghost danger" data-ho="del">기록 지우기</button><span class="sp"></span><button class="btn sm ghost" data-ho="edt">그만두기</button><button class="btn sm pri" data-ho="ed">저장</button></div></div>`:''}
    <div class="hallshot"><div class="hshot-h"><span>HALL OF FAME</span><span class="sp"></span><span>${esc(fmtT(x.at))}${h.by?' · '+esc(h.by):''}</span></div>${sumHtml(h,false)}<div class="hcms" id="hcms">${(x.cm||[]).map(cmHtml).join('')}</div></div>
-   ${canWrite()?`<div class="hcmin"><textarea id="hcmT" rows="3" maxlength="4000" placeholder="코멘트 — 여러 줄 그대로 남는다 · Ctrl+Enter 로 달기"></textarea><div class="row"><label class="small hlogpng"><input type="checkbox" id="hlogpng"> PNG 에 간략 로그도 넣기</label><span class="sp"></span><span class="small dim" id="hcmN"></span><button class="btn sm pri" data-ho="cm">코멘트 달기</button></div></div>`:'<div class="row"><label class="small hlogpng"><input type="checkbox" id="hlogpng"> PNG 에 간략 로그도 넣기</label><span class="sp"></span><span class="small dim">자리에 앉으면 코멘트를 쓸 수 있다.</span></div>'}
+   ${canWrite()?`<div class="hcmin"><textarea id="hcmT" rows="3" maxlength="4000" placeholder="코멘트 — 여러 줄 그대로 남는다 · Ctrl+Enter 로 달기"></textarea><div class="row"><label class="small hlogpng"><input type="checkbox" id="hlogpng"> PNG 에 간략 로그도 넣기</label><span class="sp"></span><span class="small dim" id="hcmN"></span>${asSel('hcmAs')}<button class="btn sm pri" data-ho="cm">코멘트 달기</button></div></div>`:'<div class="row"><label class="small hlogpng"><input type="checkbox" id="hlogpng"> PNG 에 간략 로그도 넣기</label><span class="sp"></span><span class="small dim">자리에 앉으면 코멘트를 쓸 수 있다.</span></div>'}
    <details class="hlog" id="hlog"><summary>배틀 로그 (간략) <span class="small dim">${x.log?Math.max(1,Math.round(x.log.length/1024))+'KB':'없음'}</span></summary><div class="hlogb" id="hlogb"><div class="small dim">펼치면 불러온다</div></div></details>`);
-  md.classList.add('hallmodal');
+  md.classList.add('hallmodal');asBind(md,'hcmAs');
   const showLog=async()=>{if(lines)return lines;const box=$('#hlogb',md);lines=await unpack(x.log);if(!box)return lines;if(lines==null){box.innerHTML='<div class="small dim">이 브라우저에서 로그를 풀지 못했다</div>';return []}
    if(!lines.length){box.innerHTML='<div class="small dim">남은 로그가 없다</div>';return lines}
    let cur=-1,html='';for(const [t,s] of lines){if(t!==cur){cur=t;html+=`<div class="hlturn">${t?'TURN '+t:'시작 전'}</div>`}const [a,...rest]=String(s).split('\n');html+=`<div class="hlrow"><b>${esc(a)}</b>${rest.length?`<span>${esc(rest.join('\n'))}</span>`:''}</div>`}
