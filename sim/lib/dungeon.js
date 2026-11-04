@@ -10,10 +10,10 @@
 const fs=require('fs'),path=require('path');
 const SK=require('./skill.js'),BT=require('./battle.js'),WD=require('./wild.js');
 const DIR=path.resolve(__dirname,'..','data','dungeons');
-const REST={long:{hp:'full',revive:1,cure:1,tired:1,care:1,inou:1,inj:2},short:{hp:'1/2',revive:0,cure:1,tired:1,care:1,inou:1,inj:1},breath:{hp:'1/4',revive:0,cure:0,tired:1,care:0,inou:0,inj:0}};
+const REST={long:{hp:'full',revive:1,cure:1,tired:1,care:1,inou:1,inj:2},short:{hp:'1/2',revive:0,cure:0,tired:1,care:1,inou:1,inj:1},breath:{hp:'1/4',revive:0,cure:0,tired:1,care:0,inou:0,inj:0}};
 /* 휴식 표 2안 (10-27 망령 「휴식 단계 회복량도 조정해도 돼」): 짧은 휴식이 빈사를 HP 1/4 로 깨운다 — 숨돌리기와 차이를 둔다 */
 /* 중간 휴식(10-27 망령 「던전 안은 짧거나 중간, 긴 휴식은 던전이 끝난 뒤」): HP 3/4 · 빈사를 HP 1/2 로 · 상태 · 부상 1단계 */
-const REST2={long:REST.long,mid:{hp:'1/2',revive:'1/4',cure:1,tired:1,care:1,inou:1,inj:1},   /* 10-28 중간 휴식 = 웹툴 skill_ui REST0.mid (전원 HP 1/2 · 빈사 1/4 · 상태 회복 · 공용 4식 6령 절반) */short:{hp:'1/2',revive:'1/4',cure:1,tired:1,care:1,inou:1,inj:1},breath:{hp:'1/4',revive:0,cure:0,tired:1,care:0,inou:0,inj:0}};
+const REST2={long:REST.long,mid:{hp:'1/2',revive:'1/4',cure:1,tired:1,care:1,inou:1,inj:1},   /* 10-28 중간 휴식 = 웹툴 skill_ui REST0.mid (전원 HP 1/2 · 빈사 1/4 · 상태 회복 · 공용 4식 6령 절반) */short:{hp:'1/2',revive:'1/4',cure:0,tired:1,care:1,inou:1,inj:1}   /* 11-05 03:11 망령: 짧은 휴식은 상태 이상을 고치지 않는다 (shortNoCure 기본 1) */,breath:{hp:'1/4',revive:0,cure:0,tired:1,care:0,inou:0,inj:0}};
 const TYPE_KO={노말:'Normal',불꽃:'Fire',물:'Water',전기:'Electric',풀:'Grass',얼음:'Ice',격투:'Fighting',독:'Poison',땅:'Ground',비행:'Flying',에스퍼:'Psychic',벌레:'Bug',바위:'Rock',고스트:'Ghost',드래곤:'Dragon',악:'Dark',강철:'Steel',페어리:'Fairy'};
 const frac=(v,s)=>{s=String(s==null?'':s).trim();if(s==='full')return v;const m=s.match(/^(\d+)\s*\/\s*(\d+)$/);return m?Math.max(1,Math.floor(v*+m[1]/+m[2])):Math.max(0,Math.floor(+s||0))};
 const clone=o=>JSON.parse(JSON.stringify(o));
@@ -73,7 +73,7 @@ let SLOT_POOL,SLOT_AT=0;function slotPool(){const fs=require('fs'),path=require(
  const C=JSON.parse(fs.readFileSync(path.join(R,fs.existsSync(path.join(R,'silverkey_candidates_v3.json'))?'silverkey_candidates_v3.json':'silverkey_candidates_v2.json'),'utf8')).cards;const by=Object.fromEntries(C.map(c=>[c.id,Object.assign({},c,(P.edits||{})[c.id]||{})]));const NK={};for(const k in CARD)NK[CARD[k].n]=k;const out={c:[],d:[],b:[],names:{}};
  for(const w of ['c','d','b'])for(const id of (P.slots[w]||[])){const c=by[id];if(!c)continue;let k=NK[c.name]||NK[String(c.name).replace(/!$/,'')];if(!k){k='x_'+id;CARD[k]={n:c.name,ic:c.icons||[],v:1,eff:'',c:0}}else CARD[k].ic=(c.icons||CARD[k].ic).slice();out[w].push(k);out.names[k]=c.name}SLOT_POOL=out}catch(e){SLOT_POOL=null}return SLOT_POOL}
 async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt.seed||1);const pol=Object.assign({who:'best',cover:opt.cards&&!(opt.adjust&&+opt.adjust.coverOn)?'never':'fail',partner:'match',inou:'yes'},opt.policy||{});   /* 11-01 23:56 망령: 은열쇠 덱이 있으면 커버 없음 (adj.coverOn 1 이면 켬) */
- const adj=Object.assign({fieldMax:1,coverBall:0,ordScope:'dungeon',ordPer:1,cmdPer:2,target:0,penScale:1,checkEvery:1,stepAll:0,wildLv:0,wildExtra:0,bossN:0,raidX:null,raidMode:'barrier',restV:1,al0:0,al30:5,al70:10,alBattle:0,alLose:10,alScale:1},dg.rules||{},opt.adjust||{});   /* 10-31 망령 「꼭 고쳐」: alLose 는 규칙에 없는 옛 던전도 +10 (autogen RULES 와 같다) */   /* dg.rules = 던전에 박힌 규칙값(자동 생성 던전). 조정값(opt.adjust)이 그 위에 */
+ const adj=Object.assign({shortNoCure:1,fieldMax:1,coverBall:0,ordScope:'dungeon',ordPer:1,cmdPer:2,target:0,penScale:1,checkEvery:1,stepAll:0,wildLv:0,wildExtra:0,bossN:0,raidX:null,raidMode:'barrier',restV:1,al0:0,al30:5,al70:10,alBattle:0,alLose:10,alScale:1},dg.rules||{},opt.adjust||{});   /* 10-31 망령 「꼭 고쳐」: alLose 는 규칙에 없는 옛 던전도 +10 (autogen RULES 와 같다) */   /* dg.rules = 던전에 박힌 규칙값(자동 생성 던전). 조정값(opt.adjust)이 그 위에 */
  const party=makeParty(parties,dg.wn||opt.wn||2);const ev=[];const say=(e)=>ev.push(e);
  /* 11-04 망령: 던전 일행 소지품 — 동행 2체 기준 소켓을 일행이 합치고, 중복 금지도 일행 전체 (lib/autoitem.js pool) */
  if(opt.partyItems!==false){const ip=require('./autoitem.js').pool(W,party);if(ip.log.length||ip.over)say({k:'items',cap:ip.cap,spent:ip.spent,over:ip.over,log:ip.log})}
