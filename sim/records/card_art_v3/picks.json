@@ -1,0 +1,173 @@
+{
+ "memo": "2026-11-04 23:5x B 아컴풍 24장 × 후보 3 중 감우가 고름. 웹툴 카드 DB(dbedit cards row[6])에 넣음. 모델 nai-diffusion-5-full 832x1216 28스텝 scale 5 k_euler_ancestral karras. 원본 PNG 는 감우 내장 브라우저 IndexedDB claude_card_nai (키 NN_s_arkham_N).",
+ "picks": [
+  {
+   "no": 1,
+   "name": "역경",
+   "pick": 2,
+   "seed": 438797743,
+   "url": "https://jsnvqcvwspxzfnhdethl.supabase.co/storage/v1/object/public/oremas/cards/silverkey_v3_01_a5rtplzw.webp"
+  },
+  {
+   "no": 2,
+   "name": "협력",
+   "pick": 2,
+   "seed": 94561527,
+   "url": "https://jsnvqcvwspxzfnhdethl.supabase.co/storage/v1/object/public/oremas/cards/silverkey_v3_02_a5rtplzw.webp"
+  },
+  {
+   "no": 3,
+   "name": "침착한 대처",
+   "pick": 2,
+   "seed": 960559182,
+   "url": "https://jsnvqcvwspxzfnhdethl.supabase.co/storage/v1/object/public/oremas/cards/silverkey_v3_03_a5rtplzw.webp"
+  },
+  {
+   "no": 4,
+   "name": "정신 집중",
+   "pick": 3,
+   "seed": 524476764,
+   "url": "https://jsnvqcvwspxzfnhdethl.supabase.co/storage/v1/object/public/oremas/cards/silverkey_v3_04_a5rtplzw.webp"
+  },
+  {
+   "no": 5,
+   "name": "배수진",
+   "pick": 3,
+   "seed": 682689268,
+   "url": "https://jsnvqcvwspxzfnhdethl.supabase.co/storage/v1/object/public/oremas/cards/silverkey_v3_05_a5rtplzw.webp"
+  },
+  {
+   "no": 6,
+   "name": "숙련된 기초",
+   "pick": 3,
+   "seed": 169749413,
+   "url": "https://jsnvqcvwspxzfnhdethl.supabase.co/storage/v1/object/public/oremas/cards/silverkey_v3_06_a5rtplzw.webp"
+  },
+  {
+   "no": 7,
+   "name": "무리하지 마",
+   "pick": 1,
+   "seed": 227977080,
+   "url": "https://jsnvqcvwspxzfnhdethl.supabase.co/storage/v1/object/public/oremas/cards/silverkey_v3_07_a5rtplzw.webp"
+  },
+  {
+   "no": 8,
+   "name": "난관 계산",
+   "pick": 2,
+   "seed": 614757913,
+   "url": "https://jsnvqcvwspxzfnhdethl.supabase.co/storage/v1/object/public/oremas/cards/silverkey_v3_08_a5rtplzw.webp"
+  },
+  {
+   "no": 9,
+   "name": "기세 올리기",
+   "pick": 3,
+   "seed": 978028698,
+   "url": "https://jsnvqcvwspxzfnhdethl.supabase.co/storage/v1/object/public/oremas/cards/silverkey_v3_09_a5rtplzw.webp"
+  },
+  {
+   "no": 10,
+   "name": "비상식량",
+   "pick": 2,
+   "seed": 710735885,
+   "url": "https://jsnvqcvwspxzfnhdethl.supabase.co/storage/v1/object/public/oremas/cards/silverkey_v3_10_a5rtplzw.webp"
+  },
+  {
+   "no": 11,
+   "name": "붕대와 진통제",
+   "pick": 2,
+   "seed": 375536975,
+   "url": "https://jsnvqcvwspxzfnhdethl.supabase.co/storage/v1/object/public/oremas/cards/silverkey_v3_11_a5rtplzw.webp"
+  },
+  {
+   "no": 12,
+   "name": "정화",
+   "pick": 2,
+   "seed": 456338379,
+   "url": "https://jsnvqcvwspxzfnhdethl.supabase.co/storage/v1/object/public/oremas/cards/silverkey_v3_12_a5rtplzw.webp"
+  },
+  {
+   "no": 13,
+   "name": "길잡이 표식",
+   "pick": 2,
+   "seed": 549116510,
+   "url": "https://jsnvqcvwspxzfnhdethl.supabase.co/storage/v1/object/public/oremas/cards/silverkey_v3_13_a5rtplzw.webp"
+  },
+  {
+   "no": 14,
+   "name": "예비 꾸러미",
+   "pick": 3,
+   "seed": 938795782,
+   "url": "https://jsnvqcvwspxzfnhdethl.supabase.co/storage/v1/object/public/oremas/cards/silverkey_v3_14_a5rtplzw.webp"
+  },
+  {
+   "no": 15,
+   "name": "기운 북돋우기",
+   "pick": 1,
+   "seed": 885854471,
+   "url": "https://jsnvqcvwspxzfnhdethl.supabase.co/storage/v1/object/public/oremas/cards/silverkey_v3_15_a5rtplzw.webp"
+  },
+  {
+   "no": 16,
+   "name": "보스의 흔적",
+   "pick": 3,
+   "seed": 948930697,
+   "url": "https://jsnvqcvwspxzfnhdethl.supabase.co/storage/v1/object/public/oremas/cards/silverkey_v3_16_a5rtplzw.webp"
+  },
+  {
+   "no": 17,
+   "name": "실타래 되감기",
+   "pick": 2,
+   "seed": 513564229,
+   "url": "https://jsnvqcvwspxzfnhdethl.supabase.co/storage/v1/object/public/oremas/cards/silverkey_v3_17_a5rtplzw.webp"
+  },
+  {
+   "no": 18,
+   "name": "요정의 장난",
+   "pick": 2,
+   "seed": 248538118,
+   "url": "https://jsnvqcvwspxzfnhdethl.supabase.co/storage/v1/object/public/oremas/cards/silverkey_v3_18_a5rtplzw.webp"
+  },
+  {
+   "no": 19,
+   "name": "안개의 환영",
+   "pick": 2,
+   "seed": 728228134,
+   "url": "https://jsnvqcvwspxzfnhdethl.supabase.co/storage/v1/object/public/oremas/cards/silverkey_v3_19_a5rtplzw.webp"
+  },
+  {
+   "no": 20,
+   "name": "위기일발!",
+   "pick": 2,
+   "seed": 108051269,
+   "url": "https://jsnvqcvwspxzfnhdethl.supabase.co/storage/v1/object/public/oremas/cards/silverkey_v3_20_a5rtplzw.webp"
+  },
+  {
+   "no": 21,
+   "name": "다시 일어서",
+   "pick": 3,
+   "seed": 403878380,
+   "url": "https://jsnvqcvwspxzfnhdethl.supabase.co/storage/v1/object/public/oremas/cards/silverkey_v3_21_a5rtplzw.webp"
+  },
+  {
+   "no": 22,
+   "name": "약간 은밀한 망토",
+   "pick": 2,
+   "seed": 407362122,
+   "url": "https://jsnvqcvwspxzfnhdethl.supabase.co/storage/v1/object/public/oremas/cards/silverkey_v3_22_a5rtplzw.webp"
+  },
+  {
+   "no": 23,
+   "name": "정찰 비행",
+   "pick": 1,
+   "seed": 578443543,
+   "url": "https://jsnvqcvwspxzfnhdethl.supabase.co/storage/v1/object/public/oremas/cards/silverkey_v3_23_a5rtplzw.webp"
+  },
+  {
+   "no": 24,
+   "name": "관찰안",
+   "pick": 3,
+   "seed": 379800195,
+   "url": "https://jsnvqcvwspxzfnhdethl.supabase.co/storage/v1/object/public/oremas/cards/silverkey_v3_24_a5rtplzw.webp"
+  }
+ ]
+}
