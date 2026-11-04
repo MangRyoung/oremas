@@ -56,9 +56,9 @@ window.OM_NOTES=(()=>{
   if(p.dg){if(A().ST.role!=='gm')A().toast('세션 노트에서 보낸 던전은 GM 만 가져올 수 있다');else{await linked(true);const id=await dgPull(p.dg);if(id){try{A().goView('dungeon')}catch(e){}}}if(!ids.length)return}
   if(A().ST.role!=='gm'){if(ids.length)A().toast('세션 노트에서 보낸 트레이너는 GM 만 가져올 수 있다');return}
   const R=(A().ST.state.roster||{}).trainers||{};const fresh=ids.filter(id=>!Object.values(R).some(t=>t.id===id||t.mkId===id));
-  if(!confirm(`세션 노트에서 트레이너 ${ids.length}명을 보냈다.\n제작기에서 지금 값으로 이 방 명단에 가져올까?${ids.length-fresh.length?`\n(이미 있는 ${ids.length-fresh.length}명은 새 값으로 덮어쓴다 · HP·랭크·메모는 새로 시작)`:''}`))return;
+  if(!confirm(`세션 노트에서 트레이너 ${ids.length}명을 보냈다.\n제작기에서 지금 값으로 이 방 명단에 가져올까?${ids.length-fresh.length?`\n(이미 있는 ${ids.length-fresh.length}명은 제작기 새 값으로 갱신 · 방에서 쓴 HP·상태·포텐셜 횟수·소지품은 지킨다)`:''}`))return;
   const SU=window.OM_SHEET_UI;if(!SU||!SU.importTrainer)return A().toast('시트 화면이 아직 준비되지 않았다 — 새로 고친 뒤 다시');let n=0;
-  for(const id of ids){try{const mk=await (A().loadMakerParty?A().loadMakerParty(id):A().loadMaker(true));const tdoc=mk.trainers.find(t=>t.id===id);if(!tdoc){A().toast('제작기에서 못 찾았다: '+id);continue}await SU.importTrainer(tdoc,mk.pokemon,false,'');n++}catch(e){A().toast('가져오지 못했다: '+(e.message||e))}}
+  for(const id of ids){try{const mk=await (A().loadMakerParty?A().loadMakerParty(id):A().loadMaker(true));const tdoc=mk.trainers.find(t=>t.id===id);if(!tdoc){A().toast('제작기에서 못 찾았다: '+id);continue}const ex=Object.entries(R).find(([k,t])=>t.id===id||t.mkId===id);await SU.importTrainer(tdoc,mk.pokemon,!!ex,ex&&ex[1].mkId?ex[0]:'');n++   /* 11-05 망령 「배틀 결과 정리한 게 원본이 보내면서 덮어씌워질 것 같다」: 이미 방에 있으면 「제작기에서 갱신」과 같이 방 값(HP · 상태 · 횟수 · 소지품)을 지킨다 */}catch(e){A().toast('가져오지 못했다: '+(e.message||e))}}
   if(n){A().sysLog(`세션 노트에서 트레이너 ${n}명을 가져왔다`);A().toast(`트레이너 ${n}명을 가져왔다`);A().renderScene();
    /* 10-30 망령 「덱은 가져오는거 개선할 방법 없어?」: 가져온 트레이너에게 제작기 덱이 있으면 휴대폰 「📥 제작기 덱 가져오기」까지 이어서 한다 (다시 해도 카드 · 장수만 맞춘다) */
    const DU=window.OM_DECK_UI;if(DU&&DU.importMakerDecks){await new Promise(r=>setTimeout(r,800));const R2=(A().ST.state.roster||{}).trainers||{};if(Object.values(R2).some(t=>t&&(ids.includes(t.id)||ids.includes(t.mkId))&&Array.isArray(t.deck)&&t.deck.length)){try{await DU.importMakerDecks()}catch(e){A().toast('덱은 못 가져왔다: '+(e.message||e))}}}}}

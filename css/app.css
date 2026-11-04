@@ -5632,3 +5632,11 @@ button.tfsep.cl{opacity:1;border:1px dashed color-mix(in srgb,var(--yel2) 55%,tr
 #s3m.s3one .s3cells{max-width:none;gap:8px}
 #s3m.s3one .s3c.k-b{outline:2px solid color-mix(in srgb,var(--kc) 70%,transparent);outline-offset:1px}
 #s3m.s3one .s3who .sp{display:none}
+/* 11-05 망령: 폰 배틀 카드 — 도감·타입 단추는 타입 줄 오른쪽에 (이름 밑에 단추만 있는 줄 없애기) */
+.mon.big .ty .nmb-ty{display:none}
+@media (max-width:760px){
+ .mon.big .nm .nmb{display:none}
+ .mon.big .ty{display:flex;flex-wrap:wrap;align-items:center;gap:3px}
+ .mon.big .ty .nmb-ty{display:flex;margin-left:auto;gap:3px;flex:none}
+ .mon.big .ty .nmb-ty .dexb{padding:0 5px;font-size:10px;opacity:.8}
+}
