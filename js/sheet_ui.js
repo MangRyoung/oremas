@@ -39,7 +39,7 @@ window.OM_SHEET_UI=(()=>{
  /* ---------- 시트 폴더 (10-24 망령): 트레이너 탭이 많아지면 폴더로 묶는다. GM 이 정한 sfold → 없으면 제작기에서 가져올 때의 폴더 이름(folderName) ---------- */
  /* 11-04: 폴더를 안 정한 던전 야생 시트는 그 던전 폴더 「야생 · 던전 이름」으로 (09:03 망령 「야생 같은 지역에 있는 놈들은 같은 폴더로」) */
  let WDM=null,WDK='';const wildDg=tid=>{const L=((ctx().ST||{}).state||{}).dg;const lst=(L&&L.list)||{};const k=Object.keys(lst).join(',');if(!WDM||WDK!==k){WDM={};WDK=k;for(const d of Object.values(lst))for(const r of Object.values((d&&d.r)||{}))if(r&&r.e)WDM[r.e]=d.n||'던전'}return WDM[tid]||''};
- const foldOf=t=>{const v=String(t&&t.sfold!=null?t.sfold:((t&&t.folderName)||'')).trim();if(v)return v;if(!(t&&t.wild))return '';const dn=wildDg(t.id);return dn?'야생 · '+dn:'야생'};
+ const foldOf=t=>{const v=String(t&&t.sfold!=null?t.sfold:((t&&t.folderName)||'')).trim();if(v)return v;if(!(t&&t.wild))return '';const LL=(((ctx().ST||{}).state||{}).dg||{}).list||{};const dn=(t.wdg&&LL[t.wdg]&&(LL[t.wdg].n||'던전'))||wildDg(t.id);return dn?'야생 · '+dn:'야생'};
  /* 11-04 망령 「여기서도 폴더별로 접기 기능 · 야생 쪽은 접어두렴」: 「전체」 보기에서 폴더 머리를 누르면 접고 편다 — 이 브라우저에 방마다 저장 · 처음엔 「야생」만 접힘 */
  const CK=()=>'om_sfcl_'+((ctx().ST||{}).room||'');
  function closedF(){if(!UI.fcl){let o=null;try{o=JSON.parse(localStorage.getItem(CK())||'null')}catch(e){}UI.fcl=o&&typeof o==='object'?o:{}}return UI.fcl}

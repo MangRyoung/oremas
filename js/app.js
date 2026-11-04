@@ -708,7 +708,8 @@ async function cleanupTrainer(tid){if(ST.role!=='gm'||!tid)return 0;let n=0;cons
  return n}
 let reconT=null;function reconcileNodes(){if(ST.role!=='gm')return;clearTimeout(reconT);reconT=setTimeout(async()=>{const trs=(ST.state.roster||{}).trainers||{};const g=ST.state.graph;if(!g)return;const nodes=g.nodes||{};const auto=g.auto||{};
  {const pub=ST.state.pub||{};const gone=new Set([...Object.keys(pub).filter(id=>pub[id]&&pub[id].gone&&!trs[id]),...Object.values(((ST.state.rp||{}).spk||{}).folders||{}).map(f=>f&&f.tid).filter(id=>id&&!trs[id])]);for(const id of gone){await cleanupTrainer(id);if((pub[id]||{}).gone)await set(['pub',id,'gone'],null)}}   /* 지워진 시트의 노드 · 폴더 — 좌석이 지운 표시(pub.<id>.gone) 또는 주인 잃은 트레이너 폴더. 예전부터 남겨 둔 관계도 노드는 건드리지 않는다 */
- try{if(window.OM_SHEET_UI&&window.OM_SHEET_UI.fillStands)window.OM_SHEET_UI.fillStands()}catch(e){}   /* 제작기에서 나중에 넣은 스탠딩 채우기 (한 번) */
+ try{if(window.OM_SHEET_UI&&window.OM_SHEET_UI.fillStands)window.OM_SHEET_UI.fillStands()}catch(e){}
+ try{if(window.OM_DG_UI&&window.OM_DG_UI.wildTag)await window.OM_DG_UI.wildTag()}catch(e){}   /* 11-04 「가」: 야생 시트 → 던전 소속 표시 */   /* 제작기에서 나중에 넣은 스탠딩 채우기 (한 번) */
  {/* 10-24 망령: 새 시트(어디서 만들었든 — 제작기 가져오기 · 새 트레이너 · 플레이어의 내 파티 불러오기)는 화자 칸에 트레이너 폴더를 한 번 만든다. rp.spkAuto[tid] 로 한 번만 — 처음 켜질 때 이미 있던 트레이너는 건드리지 않는다 */
   const R=ST.state.rp||{};const done=R.spkAuto;const RP=window.OM_RP_UI;
   if(RP&&RP.autoFolder){if(!done){const all={};for(const id of Object.keys(trs))all[id]=1;await set(['rp','spkAuto'],all)}else{for(const id of Object.keys(trs)){if(done[id])continue;try{await RP.autoFolder(id)}catch(e){console.warn(e)}await set(['rp','spkAuto',id],1)}}}}const have=new Set(Object.values(nodes).map(n=>n.name));let i=Object.keys(nodes).length;

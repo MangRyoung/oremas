@@ -46,9 +46,9 @@ window.OM_BBS_UI=(()=>{
   const monsOf=tid=>Object.values(M).filter(m=>m&&m.tid===tid&&m.name).map(m=>({cid:'pm:'+m.id,n:m.name,img:P(m.name,m.image),sub:'포켓몬 · '+((T[tid]||{}).name||''),grp:role()==='gm'?'포켓몬':'내 캐릭터'}));
   if(role()==='seat'){const t=T[s.seat];if(t)out.push({cid:t.id,n:t.name||'?',img:P(t.name,t.image),sub:'내 트레이너',grp:'내 캐릭터'},...monsOf(t.id));else out.push({cid:s.seat,n:s.name||'?',img:'',sub:'나',grp:'내 캐릭터'});return out}
   if(role()==='gm'){out.push({cid:'gm',n:'GM'+(s.gmNick?' · '+s.gmNick:''),img:'',sub:'운영 · 공지',grp:''});
-   for(const t of Object.values(T))if(t&&t.name)out.push({cid:t.id,n:t.name,img:P(t.name,t.image),sub:t.kind==='npc'?'NPC 트레이너':'PC',grp:t.kind==='npc'?'NPC':'PC'});
+   for(const t of Object.values(T))if(t&&t.name&&!t.wild)out.push({cid:t.id,n:t.name,img:P(t.name,t.image),sub:t.kind==='npc'?'NPC 트레이너':'PC',grp:t.kind==='npc'?'NPC':'PC'});
    const KN={pc:'PC',npc:'NPC',org:'조직'};const N=((st.graph||{}).nodes)||{};const have=new Set(out.map(x=>x.n));for(const [id,n] of Object.entries(N)){if(!n||!n.name||have.has(n.name)||n.kind==='org')continue;have.add(n.name);out.push({cid:'n:'+id,n:n.name,img:P(n.name,n.img),sub:'관계도 '+(KN[n.kind]||'인물'),grp:'NPC'})}
-   for(const t of Object.values(T))if(t&&t.name)out.push(...monsOf(t.id))}
+   for(const t of Object.values(T))if(t&&t.name&&!t.wild)out.push(...monsOf(t.id))}   /* 11-04: 던전 야생 시트는 게시판 이름 목록에서 뺀다 */
   return out}
  function authors(){if(S.who)return [S.who];return (E().authors||(()=>[]))()}
  function curAuthor(){const L=authors();const k=LS.get('om_bbs_who_'+room(),'');return L.find(x=>x.cid===k)||L[0]||null}
