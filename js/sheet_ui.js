@@ -166,8 +166,8 @@ window.OM_SHEET_UI=(()=>{
  function itemSock(t,mons){const D=DB().items||{};let used=0;const L=[];
   for(const m of mons)for(const x of [m,...(m.items2||[])]){const n=String(x.item||'').replace(/『|』/g,'').trim();if(!n)continue;const it=D[n];const own=!it&&x.itemOwn&&x.itemOwn.name===n?x.itemOwn:null;const v=parseFloat(it?it.sock:own?own.sock:'');const ok=isFinite(v);if(ok)used+=v;L.push(`${m.name}: ${n} ${ok?v:'?'}`)}
   used=Math.round(used*10)/10;const rk=String((t.ranks||{})['지시']||'').replace(/[+-]+$/,'');const ov=(t.base||{})['소지품 소켓'];
-  const cap=ov!=null&&ov!==''&&isFinite(+ov)?+ov:(t.solo==3?SOCK_CAP3:t.solo?SOCK_CAP1:SOCK_CAP)[rk]??null;
-  return {used,cap,over:cap!=null&&used>cap,tip:`소지품 소켓 ${used}${cap!=null?' / '+cap+` (지시 ${rk||'-'}${t.solo==3?' · 1인 기준 (3체)':t.solo?' · 1인 기준 (2체)':''})`:' (지시 랭크로 상한을 못 정함)'}\n`+(L.join('\n')||'지닌 소지품 없음')}}
+  const cap00=ov!=null&&ov!==''&&isFinite(+ov)?+ov:(t.solo==3?SOCK_CAP3:t.solo?SOCK_CAP1:SOCK_CAP)[rk]??null;const adj=Math.round((+t.isockAdj||0)*10)/10;const cap=cap00!=null?Math.round((cap00+adj)*10)/10:null;   /* 11-04 망령: 트레이너마다 조정(제작기 · 노트 「소지품 소켓 조정」) */
+  return {used,cap,adj,note:String(t.isockNote||''),over:cap!=null&&used>cap,tip:`소지품 소켓 ${used}${cap!=null?' / '+cap+` (지시 ${rk||'-'}${t.solo==3?' · 1인 기준 (3체)':t.solo?' · 1인 기준 (2체)':''}${adj?` · 조정 ${adj>0?'+':''}${adj}${t.isockNote?' '+t.isockNote:''}`:''})`:' (지시 랭크로 상한을 못 정함)'}\n`+(L.join('\n')||'지닌 소지품 없음')}}
  function trainerView(c,t){
   const mons=(t.pids||[]).map(id=>c.r.mons[id]).filter(Boolean);const ed=canEdit(c,t.id);const E=UI.edit&&ed;QE=ed&&!UI.edit;
   if(!mons.find(m=>m.id===UI.mid))UI.mid=mons[0]?mons[0].id:'';
