@@ -5621,3 +5621,8 @@ button.tfsep.cl{opacity:1;border:1px dashed color-mix(in srgb,var(--yel2) 55%,tr
 .rpstage .dgrp-hud .dg-meter.lv3{box-shadow:5px 5px 0 var(--lc),8px 8px 0 rgba(255,122,47,.35)}
 .rpstage .dgrp-hud .dg-meter.lv4{box-shadow:5px 5px 0 var(--lc),9px 9px 0 rgba(255,42,61,.45)}
 .rpstage .dlg.skin{will-change:transform}
+/* 11-04 19:46 망령 「카드 눌렀을 때 큰 창 필요 없다」: 배틀 칸 「🗝 카드」 — 한 사람 네 칸만 보는 작은 창 · 배틀 칸을 앞세운다 */
+.modal:has(#s3m.s3one){width:min(600px,100%)}
+#s3m.s3one .s3cells{max-width:none;gap:8px}
+#s3m.s3one .s3c.k-b{outline:2px solid color-mix(in srgb,var(--kc) 70%,transparent);outline-offset:1px}
+#s3m.s3one .s3who .sp{display:none}

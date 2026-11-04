@@ -276,7 +276,7 @@ window.OM_BATTLE_UI=(()=>{
   const items=ids.map((tid,ti)=>{const t=trs[tid]||{name:'?',ranks:{}};const o=seats[tid];const mons=Object.values(b.mons||{}).filter(m=>m.tid===tid).sort((x,y)=>(x.slot||0)-(y.slot||0));const cmdDone=!!(b.cmds||{})[tid];const rd=!!ready[tid];
    return `<div class="tblock"><div class="trainer"><div class="tpic" style="${t.image?`background-image:url('${cssu(t.image)}')`:''}"></div><div class="tinfo"><div class="tn">${esc(t.name)}${tid===c.seat?' <span class="tag me">ME</span>':ownT(c,tid)?' <span class="tag me co" title="함께 지시하는 트레이너">함께</span>':''}${rd?' <span class="tag ok">READY</span>':cmdDone?' <span class="tag">공개됨</span>':''}${soloTag(c,tid,ids)}${(()=>{/* 10-26 망령: 필드 전개 · SP 는 자주 안 쓰니 이름 줄 빈 곳으로 작게 올리고, 그 자리(아래 줄)엔 카드 */const own=c.gm||tid===c.seat||ownT(c,tid);if(!own)return '';const fe=window.OM_STAGE_UI&&(c.mgr||ownT(c,tid))?`<button class="btn xs ghost tnmini" data-act="stagemgr" data-side="${side}" data-tid="${tid}" title="필드 · 스타디움 · 이계를 펼친다">필드</button>`:'';const sp=window.OM_SP_UI&&window.OM_SP_UI.canOpen('',tid)?`<button class="btn xs ghost tnmini spbtn" data-act="spmgr" data-side="${side}" data-tid="${tid}" title="SP (서포터) — 밖에서 돕는 조력자의 한 수">SP</button>`:'';return fe||sp?`<span class="tnmore">${fe}${sp}</span>`:''})()}</div>
      <div class="rk4">${['지시','육성','통솔','능력'].map(k=>`<span><small>${k}</small><b>${esc(t.ranks[k]||'-')}</b></span>`).join('')}</div>${o||coOf(c,tid).length?`<div class="tr">${o?`<span class="who">${esc(o.name)}</span>`:''}${coHtml(c,tid)}</div>`:''}</div>
-     </div>${perT(tid)}${(()=>{const U=uniqList(t);const own=c.gm||tid===c.seat||ownT(c,tid);/* 10-25 망령: 상대 트레이너의 고유는 좌석 화면에 안 보인다 (같은 편 · GM 만) */if(!c.gm&&!own){const mineT=myTrainers(c);if(!mineT.some(x=>window.OM_TEAM(c.b,x)===window.OM_TEAM(c.b,tid)))return ''}return U.length?`<div class="tuq">${U.map(x=>`<span class="pot sp uq" title="${esc(x.p.name)} — ${esc(String(x.p.eff||'').replace(/<br\s*\/?>/g,' ').slice(0,300))}"><em>고유</em><span class="potn">${esc(x.p.name)}</span>${x.max!=null?pips(x.left,x.max):''}${own?(x.left!==null&&x.left<=0?'<small class="dim">다 씀</small>':`<button class="btn xs pri" data-act="ufire" data-tid="${tid}" data-pot="${esc(x.p.name)}" title="고유 포텐셜 발동 — 대상 포켓몬을 고른다">발동</button>`):''}</span>`).join('')}</div>`:''})()}<div class="tbtns">${((c.gm||ownT(c,tid))&&mons.some(m=>m.entry))?`<button class="btn xs" data-act="fire" data-tid="${tid}" title="지령·명령 · 고유·전용 포텐셜 발동 창">포텐셜 발동</button>`:''}${(c.gm||ownT(c,tid))?`<button class="btn xs ghost" data-act="dexmgr" data-tid="${tid}" title="도감 · 데이터 해석">해석</button><button class="btn xs ghost ${myosuGlow(c,tid)?'pri':''}" data-act="skillp" data-tid="${tid}" title="「타임」 — 상대가 준비를 마치면 지시의 꼴(교대/기술)을 엿본다">묘수</button>`:''}${(c.gm||ownT(c,tid))?`<button class="btn xs ghost" data-act="orders" data-tid="${tid}" title="지령·명령 · 고유·전용 포텐셜 횟수 설정 · 빼기">설정</button>`:''}</div>
+     </div>${perT(tid)}${(()=>{const U=uniqList(t);const own=c.gm||tid===c.seat||ownT(c,tid);/* 10-25 망령: 상대 트레이너의 고유는 좌석 화면에 안 보인다 (같은 편 · GM 만) */if(!c.gm&&!own){const mineT=myTrainers(c);if(!mineT.some(x=>window.OM_TEAM(c.b,x)===window.OM_TEAM(c.b,tid)))return ''}return U.length?`<div class="tuq">${U.map(x=>`<span class="pot sp uq" title="${esc(x.p.name)} — ${esc(String(x.p.eff||'').replace(/<br\s*\/?>/g,' ').slice(0,300))}"><em>고유</em><span class="potn">${esc(x.p.name)}</span>${x.max!=null?pips(x.left,x.max):''}${own?(x.left!==null&&x.left<=0?'<small class="dim">다 씀</small>':effPre(x.p.eff)&&preTrOK(c,tid)?preUqBtn(c,tid,x.p.name):`<button class="btn xs pri" data-act="ufire" data-tid="${tid}" data-pot="${esc(x.p.name)}" title="고유 포텐셜 발동 — 대상 포켓몬을 고른다">발동</button>`):''}</span>`).join('')}</div>`:''})()}<div class="tbtns">${((c.gm||ownT(c,tid))&&mons.some(m=>m.entry))?`<button class="btn xs" data-act="fire" data-tid="${tid}" title="지령·명령 · 고유·전용 포텐셜 발동 창">포텐셜 발동</button>`:''}${(c.gm||ownT(c,tid))?`<button class="btn xs ghost" data-act="dexmgr" data-tid="${tid}" title="도감 · 데이터 해석">해석</button><button class="btn xs ghost ${myosuGlow(c,tid)?'pri':''}" data-act="skillp" data-tid="${tid}" title="「타임」 — 상대가 준비를 마치면 지시의 꼴(교대/기술)을 엿본다">묘수</button>`:''}${(c.gm||ownT(c,tid))?`<button class="btn xs ghost" data-act="orders" data-tid="${tid}" title="지령·명령 · 고유·전용 포텐셜 횟수 설정 · 빼기">설정</button>`:''}</div>
     <div class="bench">${mons.map(m=>benchCard(c,m)).join('')||'<div class="dim small">포켓몬 없음</div>'}</div></div>`}).join('');
   /* 10-21 망령: 폰에서 벤치 머리를 누르면 접는다 (접으면 트레이너별 남은 포켓몬 수만) */
   /* 10-22 망령: 동시 내밀기 켜기는 벤치 머리(「+ 파티」 옆)로. 내 트레이너만, 여럿이면 이름을 붙인다 */
@@ -292,7 +292,9 @@ window.OM_BATTLE_UI=(()=>{
     const spb=window.OM_SP_UI&&window.OM_SP_UI.canOpen(side,'')?`<button class="btn xs spbtn" data-act="spmgr" data-side="${side}" title="SP (서포터) — 밖에서 돕는 조력자의 한 수">SP</button>`:'';   /* 10-25 망령: SP(서포터) — 필드 전개 옆 */
     const cb=ids.length===1?cardBtn(c,ids[0]):'';const sb=ids.length===1&&stxOk(c,ids[0])&&window.OM_STATUS_UI?`<button class="btn xs ghost" data-act="stx" data-tid="${ids[0]}" title="PT 요약 — 포켓몬 · 소지품 착용 · 소지품 소켓">요약</button>`:'';return sm||cb||sb?`<div class="shead2">${cb}${sb}<span class="sp"></span>${sm}</div>`:''})()}${items||'<div class="aempty small">트레이너 없음'+(canLoad(c)?` — <button class="btn xs pri" data-act="load" data-side="${side}">+ 파티 불러오기</button>`:' — 진행하는 사람이 파티를 불러온다')+'</div>'}${sidePanel(c,side,ready)}</div>`}
  /* 벤치 아래 빈 곳: 그 진영이 입력해 둔 지시 현황. 내 트레이너(GM 은 볼 수 있는 것 전부)는 편집 중인 지시를, 남의 것은 공개된 만큼만 */
- function cardBtn(c,tid){const D=window.OM_DECK_UI;if(!D||!D.handCount)return '';const own=c.gm||tid===c.seat||ownT(c,tid);if(!own)return '';const n=D.handCount(tid);const t=((c.b.trainers||{})[tid])||{};
+ function cardBtn(c,tid){{const R3=window.OM_SK3R;const own=c.gm||tid===c.seat||ownT(c,tid);if(R3&&R3.openOne){if(!own)return '';const n=R3.heldOf?R3.heldOf(tid):null;   /* 11-04 19:46 망령 「카드 눌렀을 때 UI 는 지금 룰적으로 — 큰 창 · 코스트 필요 없다」: 은열쇠 네 칸 작은 창 */
+   return `<button class="btn xs ghost cardtg ${n?'':'empty'}" data-act="sk3one" data-tid="${tid}" title="은열쇠 카드 — 체크 · 던전 · 배틀 · 예비 (배틀 카드는 자기 포켓몬에게만)">🗝 카드 <b>${n==null?'-':n+'/4'}</b></button>`}}
+  const D=window.OM_DECK_UI;if(!D||!D.handCount)return '';const own=c.gm||tid===c.seat||ownT(c,tid);if(!own)return '';const n=D.handCount(tid);const t=((c.b.trainers||{})[tid])||{};
   return `<button class="btn xs ghost cardtg ${n?'':'empty'}" data-act="cards" data-tid="${tid}" title="손패에서 카드를 쓴다 · 무덤(버린 카드)에서 되돌리기도 여기서">🃏 카드 <b>${n}</b></button>`}
  function sidePanel(c,side,ready){const b=c.b;const trs=b.trainers||{};const ids=(((b.sides||{})[side]||{}).trainers||[]).filter(t=>trs[t]);if(!ids.length)return '';
   const mine=myTrainers(c);const ph=+b.phase||0;
@@ -455,6 +457,11 @@ window.OM_BATTLE_UI=(()=>{
  function prePotBtn(c,m,n){const cur=cmdNow(m.tid,c.b);const on=!!cur&&(((cur.mons||{})[m.id]||{}).pots||[]).includes(n);
   return `<button class="btn xs ${on?'pri':'ghost'} prepot" data-act="pretoggle" data-mid="${m.id}" data-pot="${esc(n)}" title="${on?'선행 입력함 — 누르면 뺀다':'【선행】 — 누르면 이번 턴 지시에 선행 입력 (턴 개시 뒤 발동)'}">${on?'✓ 선행':'선행 입력'}</button>`}
  const preWrap=(c,m,n,html)=>preCardOK(c,m)&&potIsPre(m,n)?prePotBtn(c,m,n):html;
+ /* 11-04 19:45 망령 「포켓몬 말고 고유 포텐셜도 선행 입력은 선행 로직 따르게」: 트레이너 칸 고유의 「발동」도 지시 단계엔 「선행 입력」(지시의 upots) */
+ const effPre=t=>/【\s*선행\s*】/.test(String(t||'')),effFree=t=>/【\s*임의\s*】/.test(String(t||''));
+ function preTrOK(c,tid){const b=c.b;if((+b.phase||0)!==0||b.endq)return false;if(!(ownT(c,tid)||(c.gm&&!fairOff(c,tid))))return false;return !((c.ST.state.ready||{})[tid])}
+ function preUqBtn(c,tid,n){const cur=cmdNow(tid,c.b);const on=!!cur&&(cur.upots||[]).includes(n);
+  return `<button class="btn xs ${on?'pri':'ghost'} prepot" data-act="upretoggle" data-tid="${tid}" data-pot="${esc(n)}" title="${on?'선행 입력함 — 누르면 뺀다':'【선행】 — 누르면 이번 턴 지시에 선행 입력 (턴 개시 뒤 「포텐셜 발동 → 선행 발동」)'}">${on?'✓ 선행':'선행 입력'}</button>`}
  function potLine(c,m){const full=canEdit(c,m);if(!full&&!dexSees(c,m,'all'))return '';const L=potList(m).filter(p=>full||!isExcl(m,p));   /* 전용 포텐셜은 주인(과 GM)만 본다 */const u=m.potUses||{};const Lnames=new Set(L.map(p=>p.name));
   /* 횟수 없는 자동화(포텐셜·특성·소지품) 도 「발동」 버튼으로 */
   const extra=[];if(FX()&&full){const src=potSrc(m).filter(p=>!Lnames.has(p.name));
@@ -803,6 +810,7 @@ window.OM_BATTLE_UI=(()=>{
    case 'field':return openField();
    case 'stage':return window.OM_STAGE_UI&&window.OM_STAGE_UI.info();
    case 'spmgr':return window.OM_SP_UI&&window.OM_SP_UI.open(d.side||'',d.tid||'');
+   case 'sk3one':return window.OM_SK3R&&window.OM_SK3R.openOne(d.tid);
    case 'cards':return window.OM_DECK_UI&&window.OM_DECK_UI.battleHand(d.tid,{pickAnchor:tid=>window.OM_SP_UI&&window.OM_SP_UI.pickAnchorFor?window.OM_SP_UI.pickAnchorFor(tid):Promise.resolve('')});
    case 'stagemgr':return window.OM_STAGE_UI&&window.OM_STAGE_UI.open(d.side||'',d.tid||'');
    case 'orders':return openOrders(d.tid);
@@ -860,6 +868,11 @@ window.OM_BATTLE_UI=(()=>{
    case 'timeok':return grantTime(d.seat);
    case 'cmdsave':return saveCmd(d.tid,false);
    case 'ufire':return openUfire(d.tid,d.pot);
+   case 'upretoggle':{const tid=d.tid;if(!(b.trainers||{})[tid]||!preTrOK(c,tid))return;let cur=cmdNow(tid,b);
+    if(!cur){try{const rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd');const r=(rows||[]).filter(x=>cmdFresh(x,b)).find(x=>x.id===tid);if(r)CMD[tid]=Object.assign({mons:{},detail:'',upots:[]},JSON.parse(JSON.stringify(r.data)),{turn:+b.turn||0})}catch(e){}
+     cur=cmdNow(tid,b)||(CMD[tid]={mons:{},detail:'',upots:[],turn:+b.turn||0,fresh:1})}
+    cur.upots=cur.upots||[];const i=cur.upots.indexOf(d.pot);if(i>=0)cur.upots.splice(i,1);else cur.upots.push(d.pot);
+    await saveCmd(tid,true);A().toast(i>=0?`고유 『${d.pot}』 선행 입력을 뺐다`:`고유 『${d.pot}』 선행 입력 — 턴 개시 뒤 「포텐셜 발동 → 선행 발동」`);rerenderCmd();A().renderScene();return}
    case 'ready':return toggleReady(d.tid);
    case 'cmdload':return loadCmd(d.tid);
    case 'reveal':return reveal();
@@ -1180,6 +1193,10 @@ window.OM_BATTLE_UI=(()=>{
  async function fireSpecial(tid,mid,sk,name,how,baseId){const c=ctx();const b=c.b;const t=(b.trainers||{})[tid];const m=(b.mons||{})[mid]||null;if(!t||(!m&&sk!=='uq'))return;if(!c.gm&&!ownT(c,tid))return;if(how==='force'&&!c.gm)return;
   const x=sk==='uq'?uniqList(t).find(q=>q.p.name===name):specialPots(m).find(q=>q.p.name===name);if(!x)return;
   if(how!=='force'&&x.left!==null&&x.left<=0)return A().toast('남은 횟수가 없다');
+  /* 11-04 망령: 【선행】(【임의】 없음)인 고유 · 전용을 선행 입력 없이 「임의 발동」하려면 경고 — 그래도 하면 강제로 (횟수는 쓴다) */
+  if(how==='free'&&b.started&&(+b.phase||0)>=1&&effPre(x.p.eff)&&!effFree(x.p.eff)){let cm=null;try{const rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd');const r=(rows||[]).filter(q=>cmdFresh(q,b)).find(q=>q.id===tid);cm=r&&r.data}catch(e){}
+   const did=sk==='uq'?((cm&&cm.upots)||[]).includes(name):((((cm&&cm.mons)||{})[mid]||{}).pots||[]).includes(name);
+   if(!did&&!(await askYes(`⚠ ${sk==='uq'?'고유':'전용'} 『${name}』 은(는) 【선행】 포텐셜인데 이번 턴에 선행 입력하지 않았다.\n원칙은 지시 단계에서 선행 입력 → 턴 개시 뒤 「선행 발동」.\n그래도 강제로 발동할까?`,'강제 발동','그만')))return}
   A().closeModal();const tag=how==='pre'?'【선행】':how==='free'?'【임의】':'【강제】';const LB=sk==='uq'?'고유':'전용';
   if(how!=='force'&&x.max!=null){const T=+b.turn||0;
    if(x.mmax!=null){const cur=sk==='uq'?(t.uUses||{}):(m.potUses||{});const had=cur[name]==null?x.mmax:+cur[name];const uu=Object.assign({},cur);uu[name]=Math.max(0,had-1);await A().set(sk==='uq'?['battle','trainers',tid,'uUses']:['battle','mons',mid,'potUses'],uu)}

@@ -78,7 +78,10 @@ window.OM_SK3R=(()=>{
    return `<div class="s3c k-${k}${on?'':' off'}"><span class="s3k">${lab}${x&&x.from?` <small>← ${esc(x.from===tid?'내 예비':nm(x.from))}</small>`:''}</span>${x?`<button type="button" class="s3card" data-s3v="${esc(x.n)}">${card(x.n,{})}${on?'':`<em class="s3st">${x.mv?'예비로 보냄':'버림'}</em>`}</button>`:`<div class="s3card empty">${k==='r'?'비어 있음':'빈 칸'}</div>`}${btns}</div>`};
   return `<div class="s3row${tid===ST().seat?' me':''}"><div class="s3who"><b>${esc(nm(tid))}</b><span class="s3inj i${inj}">${STEP[inj]}</span><span class="small dim">${K.filter(([k])=>(h[k]||{}).on).length} / 4장</span>${owe?`<span class="s3owe">⚠ ${owe}장 버려야 함</span>`:''}${gm()?`<span class="sp"></span><button class="btn xs ghost" data-s3="refresh" data-t="${esc(tid)}" title="시트의 네 칸대로 다시">시트대로</button><button class="btn xs ghost" data-s3="remove" data-t="${esc(tid)}" title="이 사람을 카드 창에서 뺀다">빼기</button>`:''}</div>
    <div class="s3cells">${K.map(cell).join('')}</div></div>`}
- function bodyHTML(){const s=S3();const ids=members();const R=reserve(s.h);const T=trs();const G=gm();
+ /* 11-04 19:46 망령 「(배틀 칸) 카드 눌렀을 때 UI 는 지금 룰로 — 큰 창 · 코스트 필요 없다」: 한 사람 칸만 보는 작은 창 (openOne) */
+ function oneHTML(tid){const s=S3();const inn=!!(s.h||{})[tid];
+  return `${inn?rowHTML(tid):`<p class="dim" style="margin:10px 0">${esc(nm(tid))} — 아직 카드 칸이 없다 (GM 이 🗝 카드 창에서 「시트대로 채우기」)</p>`}<div class="small dim" style="margin-top:6px">배틀 카드는 자기 포켓몬에게만 · 쓰면 버림 · 부상 한 단계마다 1장 버림 · 전체 창은 「🗝 전체」</div>`}
+ function bodyHTML(){if(V.only)return oneHTML(V.only);const s=S3();const ids=members();const R=reserve(s.h);const T=trs();const G=gm();
   const others=Object.values(T).filter(t=>t&&!t.wild&&!ids.includes(t.id)).sort((a,b)=>(a.ord||0)-(b.ord||0));
   const cnt=k=>R.filter(x=>x.ks.includes(k)).length;
   const top=G?`<div class="s3top"><label class="s3sw"><input type="checkbox" data-s3on ${s.on?'checked':''}> 세 칸 규칙 <small>부상 단계 ↑ = 카드 1장 버림 (4식 · 6령은 안 잃는다)</small></label><span class="sp"></span>
@@ -116,9 +119,14 @@ window.OM_SK3R=(()=>{
  function pickRefill(tid,k){const m=document.getElementById('s3m');const box=m&&m.querySelector('.s3body');if(!box)return;const R=reserve(S3().h).filter(x=>x.ks.includes(k));
   box.insertAdjacentHTML('afterbegin',`<div class="s3ask"><b>${esc(nm(tid))} · ${KN[k]} 칸 휴식 보충 — 예비 덱에서 한 장</b><div class="s3pg">${R.map(x=>`<button type="button" class="s3pk" data-s3f="${esc(x.tid)}">${card(x.n,{badge:x.tid===tid?'내 예비':nm(x.tid)})}</button>`).join('')}</div><button class="btn sm ghost" data-s3f="" style="margin-top:6px">취소</button></div>`);
   box.scrollTop=0;box.querySelectorAll('[data-s3f]').forEach(b=>b.onclick=()=>{if(!b.dataset.s3f)return draw();run({op:'refill',tid,k,from:b.dataset.s3f})})}
- function open(){if(window.OM_SK3&&window.OM_SK3.db)window.OM_SK3.db();
+ function openOne(tid){if(window.OM_SK3&&window.OM_SK3.db)window.OM_SK3.db();V.only=tid;
+  A().openModal(`<div id="s3m" class="s3one"><div class="mhead"><h2>🗝 ${esc(nm(tid))}의 카드</h2><span class="sp"></span><button class="btn sm ghost" data-s3all title="일행 전체 · 예비 덱 · 규칙">🗝 전체</button><button class="btn ghost" data-x>닫기</button></div><div class="mbody s3body"></div></div>`);
+  V.open=true;const m=document.getElementById('s3m');const ab=m.querySelector('[data-s3all]');if(ab)ab.onclick=()=>{A().closeModal();V.open=false;open()};startDraw()}
+ function startDraw(){draw();clearInterval(V.iv);V.iv=setInterval(()=>{if(!document.getElementById('s3m')){V.open=false;V.only=null;clearInterval(V.iv);return}const h=JSON.stringify([S3(),Object.keys(trs()).length,!!(window.OM_SK3&&window.OM_SK3.db())]);if(h!==V.hash&&!document.querySelector('#s3m .s3ask'))draw()},700)}
+ const heldOf=tid=>{const h=(S3().h||{})[tid];return h?K.filter(([k])=>(h[k]||{}).on).length:null};
+ function open(){if(window.OM_SK3&&window.OM_SK3.db)window.OM_SK3.db();V.only=null;
   A().openModal(`<div id="s3m"><div class="mhead"><h2>🗝 은열쇠 카드</h2><span class="small dim">체크 · 던전 · 배틀 · 예비</span><span class="sp"></span>${window.OM_DECK_UI?'<button class="btn sm ghost" data-s3old title="예전 덱 · 드로우 방식 창 (휴대폰 덱 앱)">예전 덱 창</button>':''}<button class="btn ghost" data-x>닫기</button></div><div class="mbody s3body"></div></div>`);
   {const md=document.querySelector('.modalbg .modal');if(md)md.classList.add('wide')}
   V.open=true;const m=document.getElementById('s3m');const ob=m.querySelector('[data-s3old]');if(ob)ob.onclick=()=>{A().closeModal();V.open=false;window.OM_DECK_UI.open()};
-  draw();clearInterval(V.iv);V.iv=setInterval(()=>{if(!document.getElementById('s3m')){V.open=false;clearInterval(V.iv);return}const h=JSON.stringify([S3(),Object.keys(trs()).length,!!(window.OM_SK3&&window.OM_SK3.db())]);if(h!==V.hash&&!document.querySelector('#s3m .s3ask'))draw()},700)}
- return {open,absorb,onInjury,ruleOn,run,members}})();
+  startDraw()}
+ return {open,openOne,heldOf,absorb,onInjury,ruleOn,run,members}})();
