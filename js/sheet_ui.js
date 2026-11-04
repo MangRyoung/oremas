@@ -70,17 +70,20 @@ window.OM_SHEET_UI=(()=>{
   const c=ctx();const trs=c.r.trainers||{};const ids=Object.keys(trs).filter(id=>canSee(c,id)).sort((a,b)=>(trs[a].ord||0)-(trs[b].ord||0)||String(trs[a].name||'').localeCompare(String(trs[b].name||'')));
   const FO=Array.isArray((c.r||{}).sfo)?c.r.sfo:[];const foi=f=>{const i=FO.indexOf(f);return i<0?1e4+(/^야생/.test(f)?5e3:0):i};   /* 11-04 망령 「폴더끼리 드래그로 좌우 옮길 수 있게」: roster.sfo = 폴더 순서 (GM) · 없는 폴더는 이름순, 야생은 뒤로 */
   const folds=[...new Set(ids.map(id=>foldOf(trs[id])))].filter(Boolean).sort((a,b)=>foi(a)-foi(b)||a.localeCompare(b));const nUn=ids.filter(id=>!foldOf(trs[id])).length;
-  let F=folds.length?curFold():'*';if(F!=='*'&&(F===''?!nUn:!folds.includes(F)))F='*';
+  const isW=f=>/^야생/.test(f||'');const wN=ids.filter(id=>isW(foldOf(trs[id]))).length;
+  let F=folds.length?curFold():'*';if(F!=='*'&&(F==='@야생'?!wN:F===''?!nUn:!folds.includes(F)))F='*';
   const fo=id=>{const f=foldOf(trs[id]);return f?folds.indexOf(f):folds.length};
-  const shown=F==='*'?ids.slice().sort((a,b)=>fo(a)-fo(b)):ids.filter(id=>foldOf(trs[id])===F);
-  const CLs=F==='*'&&folds.length;const CL=new Proxy({},{get:(o,f)=>CLs&&f!=='미분류'?isCl(f):CLs&&isCl('미분류')});const vis=shown.filter(id=>!CL[foldOf(trs[id])||'미분류']);
+  /* 11-04: 위 폴더 줄에서는 「야생 · 던전」 폴더들을 칩 하나 「야생」(@야생)으로 · 「전체」 보기에서도 야생은 접는 묶음 하나 */
+  const shown=F==='*'?ids.slice().sort((a,b)=>fo(a)-fo(b)):F==='@야생'?ids.filter(id=>isW(foldOf(trs[id]))).sort((a,b)=>fo(a)-fo(b)):ids.filter(id=>foldOf(trs[id])===F);
+  const gk=f=>F==='*'&&isW(f)?'야생':(f||'미분류');
+  const CLs=F==='*'&&folds.length;const CL=new Proxy({},{get:(o,f)=>CLs&&f!=='미분류'?isCl(f):CLs&&isCl('미분류')});const vis=shown.filter(id=>!CL[gk(foldOf(trs[id]))]);
   if(!ids.includes(UI.tid)||(shown.length&&!shown.includes(UI.tid)))UI.tid=vis.includes(c.seat)?c.seat:(vis[0]||shown[0]||ids[0]||'');
   const t=trs[UI.tid];
-  const fchip=(v,lab,n)=>`<button type="button" class="tfold ${F===v?'on':''}" data-tfold="${esc(v)}" ${c.gm&&v!=='*'&&v!==''?'draggable="true" title="끌어서 폴더 순서 바꾸기 · 시트 탭을 여기 놓으면 이 폴더로"':''}>${v==='*'||v===''?'':'<i class="fic" aria-hidden="true"></i>'}${esc(lab)} <span class="n">${n}</span></button>`;
+  const fchip=(v,lab,n)=>`<button type="button" class="tfold ${F===v?'on':''}" data-tfold="${esc(v)}" ${c.gm&&v!=='*'&&v!==''&&v!=='@야생'?'draggable="true" title="끌어서 폴더 순서 바꾸기 · 시트 탭을 여기 놓으면 이 폴더로"':''}>${v==='*'||v===''?'':'<i class="fic" aria-hidden="true"></i>'}${esc(lab)} <span class="n">${n}</span></button>`;
   let lastF=null;
   el.innerHTML=`<div class="sheet">
-   ${folds.length?`<div class="tfolds">${fchip('*','전체',ids.length)}${folds.map(f=>fchip(f,f,ids.filter(id=>foldOf(trs[id])===f).length)).join('')}${nUn?fchip('','미분류',nUn):''}</div>`:''}
-   <div class="ttabs">${shown.map(id=>{const f=foldOf(trs[id]);const fk=f||'미분류';const cl=!!CL[fk];const sep=F==='*'&&folds.length&&f!==lastF?`<button type="button" class="tfsep${cl?' cl':''}" data-tfcl="${esc(fk)}" title="${cl?'펼치기':'접기'}">${cl?'▸':'▾'} ${esc(fk)}${cl?` <span class="n">${shown.filter(x=>(foldOf(trs[x])||'미분류')===fk).length}</span>`:''}</button>`:'';lastF=f;if(cl&&id!==UI.tid)return sep;return sep+`<button class="ttab ${id===UI.tid?'on':''}" data-tid="${id}" ${c.gm?'draggable="true"':''}>${trs[id].priv?'<span class="tlock" title="비공개 — 주인과 GM 만 본다">🔒</span>':''}${esc(trs[id].name)}${id===c.seat?' <span class="tag me">ME</span>':''}</button>`}).join('')}
+   ${folds.length?`<div class="tfolds">${fchip('*','전체',ids.length)}${folds.filter(f=>!isW(f)).map(f=>fchip(f,f,ids.filter(id=>foldOf(trs[id])===f).length)).join('')}${wN?fchip('@야생','야생',wN):''}${nUn?fchip('','미분류',nUn):''}</div>`:''}
+   <div class="ttabs">${shown.map(id=>{const f=gk(foldOf(trs[id]));const fk=f;const cl=!!CL[fk];const sep=(F==='*'||F==='@야생')&&folds.length&&f!==lastF?`<button type="button" class="tfsep${cl?' cl':''}" data-tfcl="${esc(fk)}" title="${cl?'펼치기':'접기'}">${cl?'▸':'▾'} ${esc(fk)}${cl?` <span class="n">${shown.filter(x=>gk(foldOf(trs[x]))===fk).length}</span>`:''}</button>`:'';lastF=f;if(cl&&id!==UI.tid)return sep;return sep+`<button class="ttab ${id===UI.tid?'on':''}" data-tid="${id}" ${c.gm?'draggable="true"':''}>${trs[id].priv?'<span class="tlock" title="비공개 — 주인과 GM 만 본다">🔒</span>':''}${esc(trs[id].name)}${id===c.seat?' <span class="tag me">ME</span>':''}</button>`}).join('')}
     <span class="sp"></span>${c.gm?`<button class="btn sm" data-act="import">제작기에서 가져오기</button><button class="btn sm ghost" data-act="newtr">+ 새 트레이너</button><button class="btn sm ghost" data-act="sfolders" title="트레이너 탭을 폴더로 묶는다">폴더 정리</button>`:(c.seat?`<button class="btn sm ${trs[c.seat]?'ghost':'pri'}" data-act="import" title="제작기에 있는 내 트레이너를 내 자리로 가져온다">${trs[c.seat]?'내 파티 다시 불러오기':'내 파티 불러오기'}</button>`:'')}</div>
    ${t?trainerView(c,t):'<div class="empty">아직 트레이너가 없다.'+(c.gm?' 「제작기에서 가져오기」로 시작한다.':(c.seat?' 「내 파티 불러오기」로 제작기의 트레이너를 가져온다. 남의 시트는 휴대폰 연락처에서 같은 방 코드로 들어와야 보인다.':' 자리에 앉은 뒤 「내 파티 불러오기」.'))+'</div>'}
   </div>`;
@@ -91,7 +94,7 @@ window.OM_SHEET_UI=(()=>{
    if(!c.gm||b.dataset.tfold==='*')return;b.ondragover=e=>{if([...e.dataTransfer.types].includes('text/om-tid')){e.preventDefault();b.classList.add('drop')}};b.ondragleave=()=>b.classList.remove('drop');
    b.ondragstart=e=>{e.dataTransfer.setData('text/om-fold',b.dataset.tfold);e.dataTransfer.effectAllowed='move'};
    b.ondragover=e=>{const ty=[...e.dataTransfer.types];if(ty.includes('text/om-tid')||ty.includes('text/om-fold')){e.preventDefault();b.classList.add('drop')}};
-   b.ondrop=async e=>{e.preventDefault();b.classList.remove('drop');const fd=e.dataTransfer.getData('text/om-fold');
+   b.ondrop=async e=>{e.preventDefault();b.classList.remove('drop');if(b.dataset.tfold==='@야생')return;const fd=e.dataTransfer.getData('text/om-fold');
     if(fd){if(fd===b.dataset.tfold||!b.dataset.tfold)return;const cur=[...el.querySelectorAll('.tfolds [data-tfold]')].map(x=>x.dataset.tfold).filter(v=>v!=='*'&&v!=='');const L=cur.filter(v=>v!==fd);const at=L.indexOf(b.dataset.tfold);const r=b.getBoundingClientRect();L.splice(e.clientX>r.left+r.width/2?at+1:at,0,fd);await A().set(['roster','sfo'],L);A().renderScene();return}
     const id=e.dataTransfer.getData('text/om-tid');if(!id||!trs[id])return;await A().set(['roster','trainers',id,'sfold'],b.dataset.tfold);A().toast(`${trs[id].name} → ${b.dataset.tfold||'미분류'}`);A().renderScene()}});
   if(c.gm)el.querySelectorAll('.ttab[draggable]').forEach(b=>b.ondragstart=e=>{e.dataTransfer.setData('text/om-tid',b.dataset.tid);e.dataTransfer.effectAllowed='move'});
