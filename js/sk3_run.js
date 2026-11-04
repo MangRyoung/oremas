@@ -27,6 +27,9 @@ window.OM_SK3R=(()=>{
  /* 기본 참가자: 지금 던전 일행 → 없으면 네 칸이 있는 PL 시트 */
  function defaultParty(){const DG=window.OM_DG_UI;try{const d=DG&&DG.cur&&DG.cur();const p=d&&DG.party?DG.party(d):[];if(p&&p.length)return p.filter(id=>trs()[id])}catch(e){}
   return Object.values(trs()).filter(t=>t&&!t.wild&&t.kind!=='npc'&&t.sk3&&Object.keys(t.sk3).length).map(t=>t.id)}
+ const isRec=n=>{try{const e=window.OM_SK3FX&&window.OM_SK3FX.of(n);return !!(e&&e.code==='버린카드회수')}catch(er){return false}};
+ /* 되찾을 수 있는 버린 카드: 들고 있지 않고 · 예비로 옮겨 가지 않았고 · 「되찾은 물건」류가 아닌 것 */
+ const lost=()=>{const h=S3().h||{};const out=[];for(const id of members())for(const [k] of K){const x=(h[id]||{})[k];if(x&&x.n&&!x.on&&!x.mv&&!isRec(x.n))out.push({tid:id,k,n:x.n})}return out};
  const reserve=h=>{const out=[];for(const id of Object.keys(h||{})){const r=(h[id]||{}).r;if(r&&r.on&&r.n)out.push({tid:id,n:r.n,ks:kindsOf(r.n)})}return out};
 
  /* ---------- 처리 (GM 화면에서만 쓴다) ---------- */
@@ -41,7 +44,9 @@ window.OM_SK3R=(()=>{
    case 'clear':{if(!isGm)return {err:'GM 만'};s.h={};s.owe={};lines.push('카드 칸을 모두 비웠다');break}
    case 'use':case 'commit':case 'drop':{if(!own(p.tid))return {err:'자기 카드만'};const x=slot(p.tid,p.k);if(!x||!x.on)return {err:'든 카드가 없다'};x.on=0;
     if(p.op==='drop'&&s.owe[p.tid]>0){s.owe[p.tid]--;if(!s.owe[p.tid])delete s.owe[p.tid]}
-    lines.push(p.op==='use'?`${nm(p.tid)} — 「${x.n}」 사용 (${KN[p.k]} 칸 · 버림)${p.why?' · '+p.why:''}`:p.op==='commit'?`${nm(p.tid)} — 「${x.n}」 바침${p.who&&p.who!==p.tid?` (${nm(p.who)} 의 체크)`:''} · 문양이 맞으면 +1 (버림)`:`${nm(p.tid)} — 「${x.n}」 버림${p.why?` (${p.why})`:''}`);break}
+    /* 11-05 05:23 망령 「예비 꾸러미를 버려진 카드 1장 회수로 · 이름 · 그림도 교체」 → 「되찾은 물건」(은열쇠 버린카드회수): 고른 버린 카드를 그 주인 칸으로 (쓰는 카드와 한 번에 저장) */
+    let recL='';if(p.op==='use'&&p.rec){const r=p.rec;const y=slot(r.t,r.k);if(!y||y.on||y.mv||!y.n)return {err:'되찾을 카드가 없다'};if(r.t===p.tid&&r.k===p.k)return {err:'이 카드 자신은 되찾지 않는다'};if(isRec(y.n))return {err:`「${y.n}」 은(는) 되찾을 수 없다`};y.on=1;recL=` → ${nm(r.t)} 의 「${y.n}」 되찾음 (${KN[r.k]} 칸)`}
+    lines.push(p.op==='use'?`${nm(p.tid)} — 「${x.n}」 사용 (${KN[p.k]} 칸 · 버림)${p.why?' · '+p.why:''}${recL}`:p.op==='commit'?`${nm(p.tid)} — 「${x.n}」 바침${p.who&&p.who!==p.tid?` (${nm(p.who)} 의 체크)`:''} · 문양이 맞으면 +1 (버림)`:`${nm(p.tid)} — 「${x.n}」 버림${p.why?` (${p.why})`:''}`);break}
    case 'back':{if(!own(p.tid))return {err:'자기 카드만'};const x=slot(p.tid,p.k);if(!x||x.on)return {err:'되살릴 카드가 없다'};if(x.mv)return {err:'예비로 옮겨 간 카드는 되살리지 않는다'};x.on=1;lines.push(`${nm(p.tid)} — 「${x.n}」 되살림`);break}
    case 'refill':{if(!own(p.tid)&&!isGm)return {err:'자기 칸만'};if(!['c','d','b'].includes(p.k))return {err:'체크 · 던전 · 배틀 칸만 채운다'};const cur=slot(p.tid,p.k);if(cur&&cur.on)return {err:'칸이 비어 있지 않다'};
     const src=(s.h[p.from]||{}).r;if(!src||!src.on)return {err:'그 예비 카드는 이미 없다'};if(!kindsOf(src.n).includes(p.k))return {err:`「${src.n}」 은(는) ${KN[p.k]} 카드가 아니다`};
@@ -115,6 +120,7 @@ window.OM_SK3R=(()=>{
    if(k==='refresh')return run({op:'fill',tids:[tid]});
    if(k==='remove'){if(b.dataset.arm!=='1'){b.dataset.arm='1';b.textContent='뺄까?';return}return run({op:'remove',tid})}
    if(k==='refill')return pickRefill(tid,sk);
+   if(k==='use'){const x=((S3().h||{})[tid]||{})[sk];if(x&&isRec(x.n)){if(!lost().length)return A().toast('되찾을 버린 카드가 없다');return pickRecover(tid,sk)}}
    if(k==='commit'){const ids=members();if(ids.length>1){return pickWho(tid,sk)}return run({op:'commit',tid,k:sk})}
    return run({op:k,tid,k:sk})})}
  /* 바치기: 누구의 체크에 */
@@ -125,6 +131,10 @@ window.OM_SK3R=(()=>{
  function pickRefill(tid,k){const m=document.getElementById('s3m');const box=m&&m.querySelector('.s3body');if(!box)return;const R=reserve(S3().h).filter(x=>x.ks.includes(k));
   box.insertAdjacentHTML('afterbegin',`<div class="s3ask"><b>${esc(nm(tid))} · ${KN[k]} 칸 휴식 보충 — 예비 덱에서 한 장</b><div class="s3pg">${R.map(x=>`<button type="button" class="s3pk" data-s3f="${esc(x.tid)}">${card(x.n,{badge:x.tid===tid?'내 예비':nm(x.tid)})}</button>`).join('')}</div><button class="btn sm ghost" data-s3f="" style="margin-top:6px">취소</button></div>`);
   box.scrollTop=0;box.querySelectorAll('[data-s3f]').forEach(b=>b.onclick=()=>{if(!b.dataset.s3f)return draw();run({op:'refill',tid,k,from:b.dataset.s3f})})}
+ /* 「되찾은 물건」: 일행이 버린 카드 1장 고르기 → 쓰면서 되찾는다 */
+ function pickRecover(tid,k){const m=document.getElementById('s3m');const box=m&&m.querySelector('.s3body');if(!box)return;const x=((S3().h||{})[tid]||{})[k];const L=lost();
+  box.insertAdjacentHTML('afterbegin',`<div class="s3ask"><b>「${esc(x&&x.n)}」 — 일행이 버린 카드 1장을 그 주인 칸으로</b><div class="s3pg">${L.map(y=>`<button type="button" class="s3pk" data-s3r="${esc(y.tid)}|${y.k}">${card(y.n,{badge:`${nm(y.tid)} · ${KN[y.k]}`})}</button>`).join('')}</div><button class="btn sm ghost" data-s3r="" style="margin-top:6px">취소</button></div>`);
+  box.scrollTop=0;box.querySelectorAll('[data-s3r]').forEach(b=>b.onclick=()=>{if(!b.dataset.s3r)return draw();const [t,kk]=b.dataset.s3r.split('|');run({op:'use',tid,k,rec:{t,k:kk}})})}
  function openOne(tid){if(window.OM_SK3&&window.OM_SK3.db)window.OM_SK3.db();V.only=tid;
   A().openModal(`<div id="s3m" class="s3one"><div class="mhead"><h2>🗝 ${esc(nm(tid))}의 카드</h2><span class="sp"></span><button class="btn sm ghost" data-s3all title="일행 전체 · 예비 덱 · 규칙">🗝 전체</button><button class="btn ghost" data-x>닫기</button></div><div class="mbody s3body"></div></div>`);
   V.open=true;const m=document.getElementById('s3m');const ab=m.querySelector('[data-s3all]');if(ab)ab.onclick=()=>{A().closeModal();V.open=false;open()};startDraw()}
