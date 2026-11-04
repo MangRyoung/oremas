@@ -115,6 +115,19 @@ window.OM_SKILL_UI=(()=>{
  const isRep=O=>!!O&&O.who==='rep';
  /* 11-01 망령 「은열쇠」: 바친 카드 — skill.trainers.<바친 사람>.bk = {oid 제시 id, to 받는 트레이너 | 'rep'(대표), n, ic, at}. 한 사람 한 장 · 판정 하나에 최대 2장 · 1장당 +1 */
  const BK_MAX=1;   /* 11-01 22:2x 망령: 판정 하나에 바치기 1장 · 바치면 덱 맨 위 1장도 버린다 (deck_ui commit) */
+ /* ===== 11-05 은열쇠 세 칸 카드 (sk3) — 체크 효과 카드 · 바치기 (노트 32 2차) =====
+    효과 카드: 일행의 스킬(c) 칸 카드 중 「은열쇠 …」 구문이 있는 것. 판정 하나에 1장(누가 내든) — skill.trainers[낸 사람].ek = {oid, to, n, code, arg, at}
+    바치기: 🗝 카드 창 「바치기」 → skill.trainers[낸 사람].bk3 = {oid, to, n, ic, at} · 아이콘이 자질과 같으면(★ 는 어느 자질이나) +1 · 판정 하나에 일행 합쳐 1장 · 결과를 보고 붙여도 된다 */
+ const R3=()=>window.OM_SK3R,FX3=()=>window.OM_SK3FX;
+ const s3on=()=>{const R=R3();return !!(R&&R.ruleOn&&R.ruleOn())};
+ const s3h=()=>((A().ST.state.sk3||{}).h)||{};
+ const s3card=(tid,k)=>{const x=(s3h()[tid]||{})[k||'c'];return x&&x.on&&x.n?x:null};
+ const s3of=n=>{try{return FX3()?FX3().of(n):null}catch(e){return null}};
+ const EK_PRE=['체크+1','체크+2','종족값바꾸기','동료포켓몬','자동성공'];
+ function ekFor(tid,O){if(!O)return null;const TT=st().trainers||{};for(const [by,x] of Object.entries(TT)){const e=x&&x.ek;if(e&&e.oid===O.id&&e.to===tid)return Object.assign({by},e)}return null}
+ function bk3For(tid,O){if(!O)return null;const TT=st().trainers||{};for(const [by,x] of Object.entries(TT)){const e=x&&x.bk3;if(e&&e.oid===O.id&&e.to===tid)return Object.assign({by},e)}return null}
+ const icOfCard=n=>{const D=window.OM_SK3&&window.OM_SK3.db&&window.OM_SK3.db();const r=D&&D.get(n);return String((r||[])[10]||'').split(/[,·\s]+/).filter(Boolean)};
+ const bk3Fit=(n,stat)=>{const ic=icOfCard(n);return ic.includes('★')||ic.includes(stat)};
  function bkFor(tid,O){if(!O)return [];const TT=st().trainers||{};const L=[];for(const [by,x] of Object.entries(TT)){const b=x&&x.bk;if(!b||b.oid!==O.id)continue;if(O.free&&Date.now()-(+b.at||0)>3*3600e3)continue;
    if(b.to===tid||(b.to==='rep'&&isRep(O)&&(O.ids||[]).includes(tid)))L.push(Object.assign({by},b))}L.sort((a,b)=>(+a.at||0)-(+b.at||0));return L.slice(0,BK_MAX)}
  /* 대표 1명 제시에서 이미 굴린 사람 (먼저 굴린 한 명) — 없으면 '' */
@@ -150,11 +163,16 @@ window.OM_SKILL_UI=(()=>{
    if(ch.how==='mon'){const m=mons()[ch.mid];if(m){const bv=baseVal(m,O.base);parts.push([`${m.name} ${BASE[O.base]} ${bv}`,baseLv(bv)]);
     const f=O.free?Array.from({length:Math.min(3,+O.fitN||0)},()=>'선언'):fitOf(m,O);if(ch.etc)f.push('기타');const fit=Math.min(3,f.length);if(fit)parts.push([O.free?'적합 (선언)':`적합 ${f.join(' · ')}`,fit])}}else if(ch.how==='alone'&&O.scene==='solo'&&ch.etc)parts.push(['적합 기타',1])}   /* 11-01 망령 「스킬 체크 — 트레이너만 · 대표 1명 / 전원」: 트레이너만은 GM 이 인정한 기타 적합만 */
   if(+O.pm)parts.push([+O.pm>0?'유리':'불리',+O.pm]);
-  if(k.inj===1&&+C.injPen)parts.push([tough(t)?'부상 (강인함으로 무시)':'부상',tough(t)?0:-(+C.injPen)]);
+  const ek=O&&!O.free?ekFor(tid,O):null;const ekIgn=!!(ek&&ek.code==='체크+1'&&ek.by===tid&&k.inj>=1);   /* 11-05 역경: 내가 부상 이상이면 패널티 무시 +2 */
+  if(k.inj===1&&+C.injPen&&!ekIgn)parts.push([tough(t)?'부상 (강인함으로 무시)':'부상',tough(t)?0:-(+C.injPen)]);
+  if(ek){if(ek.code==='체크+1')parts.push([`카드 「${ek.n}」${ekIgn?' · 부상 패널티 무시':''}`,ekIgn?2:1]);
+   else if(ek.code==='체크+2')parts.push([`카드 「${ek.n}」`,/목표12/.test(ek.arg||'')&&!O.npc&&+O.target<12?0:2]);
+   else if(ek.code==='종족값바꾸기'&&ch.how==='mon'){const m=mons()[ch.mid];if(m){let bi=O.base,bv=baseVal(m,O.base);for(const i of [3,4,5]){const v=baseVal(m,i);if(baseLv(v)>baseLv(bv)){bi=i;bv=v}}const ix=parts.findIndex(p=>String(p[0]).startsWith(m.name+' '));if(ix>=0&&bi!==O.base)parts[ix]=[`${m.name} ${BASE[bi]} ${bv} (「${ek.n}」)`,baseLv(bv)]}}}
+  {const b3=O&&!O.free?bk3For(tid,O):null;if(b3)parts.push([`바침 「${b3.n}」${b3.by!==tid?' · '+((trs()[b3.by]||{}).name||''):''}`,bk3Fit(b3.n,O.stat)?1:0])}
   if(+ch.bonus)parts.push(['추가 보정',+ch.bonus]);
   for(const b of bkFor(tid,O))parts.push([`카드 「${b.n}」${b.by!==tid?' · '+((trs()[b.by]||{}).name||''):''}`,1]);   /* 11-01 은열쇠: 바친 카드 +1 (판정 하나에 1장) */
-  let tw=+O.twice||0;if(k.inj===2)tw=Math.max(-1,tw-1);
-  return {parts,mod:parts.reduce((a,p)=>a+p[1],0),tw}}
+  let tw=+O.twice||0;if(k.inj===2&&!ekIgn)tw=Math.max(-1,tw-1);
+  return {parts,mod:parts.reduce((a,p)=>a+p[1],0),tw,ek}}
  /* 정확한 확률 (2d6 열거). 1·1 실패 · 6·6 대성공 → {ok, crit} */
  const PAIRS=[];for(let a=1;a<=6;a++)for(let b=1;b<=6;b++)PAIRS.push([a,b]);
  function judge(k,total,target,crit){if(k[0]===1&&k[1]===1)return 1;if(k[0]===6&&k[1]===6)return 4;return total>=target+crit?4:total>=target?3:1}
@@ -228,7 +246,8 @@ window.OM_SKILL_UI=(()=>{
    if(prev<1&&now>=1){const r=await DK.penalty(tid,'mill','부상',{n:1});if(r)out.push(r)}if(prev<2&&now>=2){const r=await DK.penalty(tid,'mill','중상',{n:2});if(r)out.push(r)}if(prev<3&&now>=3){const r=await DK.penalty(tid,'mad','빈사');if(r)out.push(r)}}catch(e){}return out}
  async function stepUndo(tid,s){if(!s)return;await setT(tid,{inj:s.prev});await refundOrd(s.cut);const DK=window.OM_DECK_UI;if(DK&&DK.penalty)for(const x of (s.pen||[]).slice().reverse())try{if(x&&x.milled&&x.milled.length)await DK.penalty(tid,'unmill','',{ids:x.milled});else if(x&&x.cid)await DK.penalty(tid,'undo','',{cid:x.cid})}catch(e){}}
  /* 실패 확정: 단계 + 패널티 묶음 (자동이면) */
- async function settleFail(tid,r){const O=r.offerId==='free'?null:st().offer;delete r.pend;if(r.offerId==='free'?+r.noStep:(O&&O.id===r.offerId&&O.noStep)){r.text+='\n상태 단계는 오르지 않는 체크';}else{const s=await stepUp(tid,(r.label||'스킬 체크')+' 실패',r.how==='mon'?r.mid:'');r.step=s;r.text+='\n'+s.line;A().sysLog(s.line,'dice')}
+ async function settleFail(tid,r){const O=r.offerId==='free'?null:st().offer;delete r.pend;if(r.offerId==='free'?+r.noStep:(O&&O.id===r.offerId&&O.noStep)){r.text+='\n상태 단계는 오르지 않는 체크';}else{const s=await stepUp(tid,(r.label||'스킬 체크')+' 실패',r.how==='mon'?r.mid:'');r.step=s;r.text+='\n'+s.line;A().sysLog(s.line,'dice');
+   /* 11-05 배수진: 실패하면 상태 단계가 한 단계 더 */if(r.ek&&r.ek.code==='체크+2'&&/실패/.test(r.ek.arg||'')&&s.now<3){const s2=await stepUp(tid,`「${r.ek.n}」 실패 — 한 단계 더`,r.how==='mon'?r.mid:'');r.step2=s2;r.text+='\n'+s2.line;A().sysLog(s2.line,'dice')}}
   if(O&&O.id===r.offerId&&O.pen&&O.pen.auto&&penHas(O.pen.fail)){await applyPenalty(tid,O.pen.fail,(O.label||'스킬 체크')+' · 실패',r.how==='mon'?r.mid:'');r.penDone=1}
   /* 11-04 던전 기믹: 체크 실패 → OM_DG_UI.gimEvent('check') (탐색 중인 던전 · 기믹이 있을 때만) */try{const DG=window.OM_DG_UI;if(DG&&DG.gimEvent)await DG.gimEvent('checkFail',{fail:true,tid})}catch(e){}
   return r}
@@ -330,6 +349,7 @@ ${penFields('fail',X)}</div></div>
  /* 한 트레이너가 이 제시를 굴릴 때 고를 수 있는 것과 확률 (미리보기 · 플레이어 창) */
  function optionsOf(tid,O){const t=trs()[tid];const k=tsk(tid);const out=[];if(!t)return out;
   for(const mid of compOf(tid,O.scene).ids){const c=calcOf(tid,O,{how:'mon',mid});out.push({how:'mon',mid,name:mons()[mid].name,c,o:oddsFor(c,O)})}
+  /* 11-05 은열쇠 「협력」: 이번 체크에 일행의 동행 포켓몬 중 하나 (필드에 없어도) */{const ek=O.free?null:ekFor(tid,O);if(ek&&ek.code==='동료포켓몬'&&O.scene!=='solo'){const R=R3();const ids=new Set([...(O.ids||[]),...((R&&R.members&&R.members())||[])]);const have=new Set(out.map(x=>x.mid));for(const m of Object.values(mons())){if(!ids.has(m.tid)||have.has(m.id)||!alive(m))continue;const c=calcOf(tid,O,{how:'mon',mid:m.id});out.push({how:'mon',mid:m.id,name:`${m.name} (${(trs()[m.tid]||{}).name||''} · 협력)`,c,o:oddsFor(c,O)})}}}
   {const c=calcOf(tid,O,{how:'alone'});out.push({how:'alone',name:O.scene==='solo'?'트레이너만':'혼자',c,o:oddsFor(c,O)})}
   if(O.stat==='능력'&&supMax(t)>0){const c=calcOf(tid,O,{how:'super'});out.push({how:'super',name:'초상 능력',c,o:oddsFor(c,O),left:supMax(t)-k.sup})}
   return out}
@@ -536,10 +556,10 @@ ${penFields('fail',X)}</div></div>
     <div class="skres2"><span class="skstat" style="border-bottom-color:${STEPC[k.inj]}"><small>상태</small><b>${STEP[k.inj]}</b></span><span class="skstat"><small>묘수</small><b>${mm?(mm-k.myosu)+'/'+mm:'—'}</b></span><span class="skstat"><small>초상 능력</small><b>${sm?(sm-k.sup)+'/'+sm:'—'}</b></span>${tough(t)?'<span class="skstat"><small>강인함</small><b>○</b></span>':''}</div></div>
    ${k.inj===1?`<div class="small ${tough(t)?'dim':'warn'}" style="margin:4px 0">부상 — ${tough(t)?'강인함으로 판정 패널티 없음':'모든 판정 −'+C.injPen}</div>`:k.inj===2?'<div class="small warn" style="margin:4px 0">중상 — 모든 판정 불리 (두 번 굴려 낮은 값)</div>':''}
    ${compCard}
-   ${bkHtml(tid,O,free,mine,repR)}
+   ${s3on()?ekHtml(tid,O,free,mine,repR):bkHtml(tid,O,free,mine,repR)}
    ${`
    <div class="skcard ${free?'':'hit'}"><div class="skoffer">${free?freeHead(tid,O,O0,mine):`<div class="skot">${esc(O.label||'스킬 체크')}</div><div class="skos">${offerSummary(O)}</div>${penLine(O.pen)}${isRep(O)&&(O.ids||[]).length>1?`<div class="skwho2 rep"><b>대표 1명</b> ${rr?`— 대표 ${esc(rn)} 가 굴렸다`:'— 대상 중 먼저 굴린 한 명의 결과가 모두의 결과 · 실패 대가도 그 사람에게 한 번'}</div>`:(O.ids||[]).length>1?'<div class="skwho2"><b>전원 각자</b> — 대상 모두가 한 번씩 굴린다</div>':''}`}${O.npc?'':ladder(free&&mine?mine.target:O.target,mine?mine.total:repR&&!repR.pend?repR.total:null)}</div>
-    ${mine?resultHtml(mine,t,k)+(free&&!mine.pend?'<div class="row" style="margin-top:8px"><span class="sp"></span><button class="btn sm pri" data-freenew="1">새로 굴리기</button></div>':''):repR?`<div class="skrepdone">${repR.pend?`<div class="small">대표 <b>${esc(rn)}</b> 가 굴렸다 — 묘수를 고민하는 중</div>`:`<div class="skbig" style="background:${COL[repR.ri]}"><div class="skbigt">${RES[repR.ri]}</div><div class="skbigs">대표 ${esc(rn)} 가 굴렸다 · 합계 ${repR.total} / 목표 ${repR.target}</div></div>`}<div class="small dim" style="margin-top:6px">대표 1명 체크 — 이 결과가 모두의 결과다. 따로 굴리지 않는다.</div></div>`:k.inj>=3?'<div class="small warn" style="margin-top:8px">빈사 — 이 장면에는 참가할 수 없다. 장면이 끝나면 중상으로 돌아온다.</div>':(()=>{const op=optionsOf(tid,O);
+    ${mine?resultHtml(mine,t,k)+(s3on()&&!free?s3PostHtml(tid,O,mine):'')+(free&&!mine.pend?'<div class="row" style="margin-top:8px"><span class="sp"></span><button class="btn sm pri" data-freenew="1">새로 굴리기</button></div>':''):repR?`<div class="skrepdone">${repR.pend?`<div class="small">대표 <b>${esc(rn)}</b> 가 굴렸다 — 묘수를 고민하는 중</div>`:`<div class="skbig" style="background:${COL[repR.ri]}"><div class="skbigt">${RES[repR.ri]}</div><div class="skbigs">대표 ${esc(rn)} 가 굴렸다 · 합계 ${repR.total} / 목표 ${repR.target}</div></div>`}<div class="small dim" style="margin-top:6px">대표 1명 체크 — 이 결과가 모두의 결과다. 따로 굴리지 않는다.</div></div>`:k.inj>=3?'<div class="small warn" style="margin-top:8px">빈사 — 이 장면에는 참가할 수 없다. 장면이 끝나면 중상으로 돌아온다.</div>':(()=>{const op=optionsOf(tid,O);
      return `<div class="sec">누구와 굴릴까 <span class="note">${scene==='solo'?esc(O.stat)+' · 트레이너만':esc(O.stat)+' + '+BASE[O.base]}</span></div>
     <div class="skopts" id="monpick">${op.map(x=>{const off=x.how==='super'&&x.left<=0;const m=x.how==='mon'?mons()[x.mid]:null;
       const sub=x.how==='mon'?`${BASE[O.base]} ${baseVal(m,O.base)} (${RKN[baseLv(baseVal(m,O.base))]})${fitOf(m,O).length?' · 적합 '+fitOf(m,O).length:''}`:x.how==='super'?`혼자 · 자질 ×2 · 『고유』 범위만 · 남은 ${x.left}회`:scene==='solo'?'2d6 + 자질':'포켓몬 없이 · 종족값 · 적합 없음';
@@ -550,7 +570,7 @@ ${penFields('fail',X)}</div></div>
     <div class="row" style="margin-top:10px"><label class="small" title="GM 이 따로 말한 ± 보정">추가 보정 <input type="number" class="n xs" id="sk_bonus" value="0"></label><span class="sp"></span><button class="btn pri big" id="sk_roll">굴리기</button></div>`})()}
    </div>`}
    <div id="sk_hand">${handHtml(tid)}</div>
-   ${free?'':coverHtml(tid,O,K)}</div>`);
+   ${free?'':coverHtml(tid,O,K)}${free||!s3on()?'':muriHtml(tid,O,K)}</div>`);
   md.classList.add('wide');
   const sel=md.querySelector('#monpick');
   const choice=()=>{const on=sel&&sel.querySelector('.skopt.on');if(!on)return null;return {how:on.dataset.how,mid:on.dataset.mid||'',etc:(on.dataset.how==='mon'||(on.dataset.how==='alone'&&scene==='solo'))&&!!($('#sk_etc',md)||{}).checked,bonus:+($('#sk_bonus',md)||{}).value||0}};
@@ -571,6 +591,9 @@ ${penFields('fail',X)}</div></div>
   const bindHand=()=>{const box=$('#sk_hand',md);if(!box)return;box.querySelectorAll('[data-hand]').forEach(b=>b.onclick=()=>{const D=window.OM_DECK_UI;if(!D)return;const v=b.dataset.hand;
    D.battleHand(tid,{where:'rp',grave:v==='grave',focus:v==='grave'?-1:+v,onClose:()=>[400,1500,3500].forEach(ms=>setTimeout(()=>{if(document.body.contains(box)){box.innerHTML=handHtml(tid);bindHand()}},ms))})})};bindHand();
   md.querySelectorAll('[data-cover]').forEach(b=>b.onclick=()=>cover(b.dataset.cover,b.dataset.mid));
+  md.querySelectorAll('[data-ek]').forEach(b=>b.onclick=()=>ekGive(tid,O,b.dataset.ek,($('#sk_ekto',md)||{}).value||tid));
+  md.querySelectorAll('[data-calm]').forEach(b=>b.onclick=()=>calmReroll(tid,b.dataset.calm));
+  md.querySelectorAll('[data-muri]').forEach(b=>b.onclick=()=>muriTake(b.dataset.muri,b.dataset.by));
   md.querySelectorAll('[data-bk]').forEach(b=>b.onclick=()=>bkGive(tid,O,b.dataset.bk,($('#sk_bkto',md)||{}).value||''))}
  /* 커버 칸: 이 제시에서 실패해 단계가 오른 사람 · 그 단계를 막아 줄 수 있는 내 포켓몬 (판정하지 않은 동행 · 필드, 설정이면 볼 안도) */
  /* 11-01 망령 「은열쇠」 카드 바치기 칸: 굴리기 전에 손패에서 체크 자질과 아이콘이 맞는 카드(★ 포함)를 낸다. 동료는 대표(또는 고른 사람)에게 「거들기」 */
@@ -598,6 +621,56 @@ ${penFields('fail',X)}</div></div>
   await setT(tid,{bk:{oid:O.id,to,n:r.n,ic:r.ic,at:Date.now()}});
   A().sysLog(`【카드 바침】 ${T[tid].name} 『${r.n}』 → ${to==='rep'?'대표':to===tid?'자기':((T[to]||{}).name||'')} 판정 +1${O.label?' · '+O.label:''}`,'dice',{});
   A().closeModal();setTimeout(()=>openPlayer(tid),250)}
+ /* ----- 11-05 은열쇠 세 칸 효과 카드 칸 (굴리기 전) ----- */
+ function ekHtml(tid,O,free,mine,repR){if(free||!O)return '';const T=trs();const R=R3();const mem=(R&&R.members&&R.members())||[];
+  const targets=(O.ids||[]).filter(id=>T[id]&&!(((st().res||{})[id]||{}).offerId===O.id));
+  const got=to=>ekFor(to,O);const nm=to=>to===tid?'나':((T[to]||{}).name||'?');
+  const holders=(gm()?mem:[me()].filter(Boolean)).filter(id=>s3card(id,'c'));
+  const ok=(code,arg)=>{if(code==='체크+2'&&/목표12/.test(arg||''))return !O.npc&&+O.target>=12;if((code==='종족값바꾸기'||code==='동료포켓몬')&&O.scene==='solo')return false;return EK_PRE.includes(code)};
+  const cards=holders.map(id=>{const x=s3card(id,'c');const e=s3of(x.n);return e&&ok(e.code,e.arg)?{id,n:x.n,e}:null}).filter(Boolean);
+  const list=targets.map(to=>{const g=got(to);return g?`<span class="skbk">${esc(nm(to))} ← 『${esc(g.n)}』${g.by!==to?' <small>('+esc((T[g.by]||{}).name||'')+')</small>':''}</span>`:''}).join('');
+  const b3=targets.map(to=>{const g=bk3For(to,O);return g?`<span class="skbk">${esc(nm(to))} ← 바침 『${esc(g.n)}』 ${bk3Fit(g.n,O.stat)?'<b>+1</b>':'<small>(아이콘이 안 맞아 +0)</small>'}</span>`:''}).join('');
+  let act='';const done=!!(mine||repR);
+  if(done)act='<span class="small dim">이미 굴렸다 — 결과 아래에서 「침착한 대처」 · 바치기(🗝 카드 창)</span>';
+  else if(!targets.length)act='<span class="small dim">굴릴 사람이 없다</span>';
+  else if(!cards.length)act='<span class="small dim">지금 쓸 수 있는 스킬 칸 효과 카드가 없다</span>';
+  else{const sel=targets.length>1?`<select id="sk_ekto">${targets.map(to=>`<option value="${esc(to)}" ${to===tid?'selected':''} ${got(to)?'disabled':''}>${esc(nm(to))}${got(to)?' (이미 1장)':''}</option>`).join('')}</select>`:`<input type="hidden" id="sk_ekto" value="${esc(targets[0])}"><span class="small">→ ${esc(nm(targets[0]))}</span>`;
+   act=`${sel}<span class="skbkc">${cards.map(c=>`<button type="button" class="skhc" data-ek="${esc(c.id)}" title="${esc(c.e.raw)}"><b>${esc(c.n)}</b>${c.id!==me()?`<em>${esc((T[c.id]||{}).name||'')}</em>`:''}</button>`).join('')}</span>`}
+  return `<div class="skcard skbkbox"><div class="sec" style="margin:0">🗝 효과 카드 <span class="note">스킬 칸 · 굴리기 전에 · 판정 하나에 1장 (누가 내든) · 쓰면 버림 · 바치기(아이콘 +1)는 🗝 카드 창에서 — 결과를 보고 붙여도 된다</span></div>${list||b3?`<div class="skbkl">${list}${b3}</div>`:''}<div class="row" style="gap:8px;flex-wrap:wrap;margin-top:6px">${act}</div></div>`}
+ async function ekGive(viewer,O,by,to){const T=trs();const x=s3card(by,'c');if(!x)return A().toast('그 카드는 이미 없다');const e=s3of(x.n);if(!e||!EK_PRE.includes(e.code))return A().toast('굴리기 전에 쓰는 카드가 아니다');
+  if(ekFor(to,O))return A().toast('그 판정에는 이미 효과 카드가 들어갔다');if(((st().res||{})[to]||{}).offerId===O.id)return A().toast('이미 굴렸다');
+  if(!gm()&&by!==me())return A().toast('자기 카드만');
+  await setT(by,{ek:{oid:O.id,to,n:x.n,code:e.code,arg:e.arg||'',at:Date.now()}});
+  try{await R3().run({op:'use',tid:by,k:'c',quiet:1,why:`${(T[to]||{}).name||''} 의 체크`})}catch(err){}
+  A().sysLog(`【은열쇠】 ${(T[by]||{}).name||''} 『${x.n}』 → ${(T[to]||{}).name||''} 체크${O.label?' · '+O.label:''}`,'dice',{});A().closeModal();setTimeout(()=>openPlayer(viewer),200)}
+ /* 굴린 뒤: 침착한 대처(1 이 나온 주사위 다시) — 실패 · 이 판정에 효과 카드를 안 썼을 때 */
+ function s3PostHtml(tid,O,r){if(!r||r.ri!==1||r.ek||r.calm||!Array.isArray(r.dice)||!r.dice.includes(1))return '';const R=R3();const mem=(R&&R.members&&R.members())||[];const T=trs();
+  const hs=(gm()?mem:[me()].filter(Boolean)).filter(id=>{const x=s3card(id,'c');const e=x&&s3of(x.n);return e&&e.code==='1눈다시'});if(!hs.length)return '';
+  return `<div class="row" style="gap:6px;margin-top:8px;flex-wrap:wrap"><span class="small">🗝 1 이 나왔다 —</span>${hs.map(id=>`<button class="btn sm" data-calm="${esc(id)}">「${esc(s3card(id,'c').n)}」${id!==tid?' ('+esc((T[id]||{}).name||'')+')':''} · 1 이 나온 주사위 다시</button>`).join('')}</div>`}
+ async function calmReroll(tid,by){const r=JSON.parse(JSON.stringify((st().res||{})[tid]||null));const O=st().offer;if(!r||r.ri!==1||r.ek||r.calm)return;const x=s3card(by,'c');if(!x)return A().toast('그 카드는 이미 없다');const T=trs();
+  const d=r.dice.map(v=>v===1?d6():v);const was=r.dice.join('+');r.dice=d;r.total=d[0]+d[1]+r.mod;r.ri=judge(d,r.total,r.target,+cfg().crit);r.calm={by,n:x.n};r.ek={by,n:x.n,code:'1눈다시'};
+  r.text+=`\n「${x.n}」 — ${was} → ${d.join('+')} · 합계 ${r.total} / ${r.target} → ${RES[r.ri]}`;
+  try{await R3().run({op:'use',tid:by,k:'c',quiet:1,why:'1 다시'})}catch(e){}
+  if(r.ri>=3){if(r.step){if(r.step2)await stepUndo(tid,r.step2);await stepUndo(tid,r.step);r.text+=`\n상태 단계는 없던 일로`;delete r.step;delete r.step2}delete r.pend;if(O&&O.id===r.offerId){const gl=await applyGain(O,r.ri);if(gl.length){r.text+='\n'+gl.join(' · ');r.gain=gl}}}
+  await A().set(['skill','res',tid],r);A().closeModal();A().sysLog(`【은열쇠】 ${(T[by]||{}).name||''} 『${x.n}』 — ${(T[tid]||{}).name||''} ${was} → ${d.join('+')} · ${r.total}/${r.target} ${RES[r.ri]}`,'dice');sync();setTimeout(()=>openPlayer(gm()?tid:(me()||tid)),200)}
+ /* 실패 뒤: 무리하지 마(동료의 실패로 오는 상태 단계를 이 카드로 대신) */
+ function muriHtml(tid,O,K){if(!O)return '';const T=trs();const R=K.res||{};const Rm=R3();const mem=(Rm&&Rm.members&&Rm.members())||[];
+  const fails=Object.keys(R).filter(id=>{const r=R[id];return r&&r.offerId===O.id&&r.ri===1&&r.step&&r.step.now>r.step.prev&&!r.cover&&!r.muri&&!r.ek});if(!fails.length)return '';
+  const hs=(gm()?mem:[me()].filter(Boolean)).filter(id=>{const x=s3card(id,'c');const e=x&&s3of(x.n);return e&&e.code==='대신받기'});if(!hs.length)return '';
+  return `<div class="skcard"><div class="sec">🗝 무리하지 마 <span class="note">동료의 체크 실패로 오는 상태 단계를 이 카드를 버려 대신 · 판정 하나에 효과 카드 1장</span></div><div class="sklist">${fails.map(id=>`<div class="skrow wrap"><b>${esc((T[id]||{}).name)}</b><span class="tag">${STEP[R[id].step.prev]} → ${STEP[R[id].step.now]}</span><span class="sp"></span>${hs.filter(h=>h!==id).map(h=>`<button class="btn xs" data-muri="${esc(id)}" data-by="${esc(h)}">「${esc(s3card(h,'c').n)}」${h!==me()||gm()?' ('+esc((T[h]||{}).name||'')+')':''}로 대신</button>`).join('')||'<span class="small dim">동료만 쓸 수 있다</span>'}</div>`).join('')}</div></div>`}
+ async function muriTake(forTid,by){const r=JSON.parse(JSON.stringify((st().res||{})[forTid]||null));const T=trs();if(!r||!r.step||r.muri||r.ek||by===forTid)return;const x=s3card(by,'c');if(!x)return A().toast('그 카드는 이미 없다');
+  if(r.step2){await stepUndo(forTid,r.step2);delete r.step2}await stepUndo(forTid,r.step);r.muri={by,n:x.n};r.ek={by,n:x.n,code:'대신받기'};r.text+=`\n「${x.n}」 — ${(T[by]||{}).name||''} 가 카드를 버려 ${(T[forTid]||{}).name||''} 「${STEP[r.step.prev]}」 그대로`;
+  try{await R3().run({op:'use',tid:by,k:'c',quiet:1,why:'무리하지 마'})}catch(e){}
+  await A().set(['skill','res',forTid],r);A().closeModal();A().sysLog(`【은열쇠】 ${(T[by]||{}).name||''} 『${x.n}』 — ${(T[forTid]||{}).name||''} 의 「${STEP[r.step.now]}」 을(를) 대신 (상태 그대로)`,'dice');sync();setTimeout(()=>openPlayer(gm()?forTid:(me()||forTid)),200)}
+ /* 바치기(🗝 카드 창 「바치기」 — sk3_run 이 부른다): 지금 제시된 체크의 to 판정에 +1. 이미 굴렸으면 결과에 바로 더한다 (결과를 보고 붙이기) */
+ async function bk3Give(by,n,to){const O=st().offer;const T=trs();if(!O)return '지금 제시된 체크가 없다 — 바친 카드는 버림만';to=to||by;if(!(O.ids||[]).includes(to)&&!isRep(O))return `${(T[to]||{}).name||''} 은(는) 이번 체크 대상이 아니다`;
+  const r=JSON.parse(JSON.stringify((st().res||{})[to]||null));const fit=bk3Fit(n,O.stat);
+  if(r&&r.offerId===O.id){if(r.bk3)return '그 판정에는 이미 1장을 바쳤다';r.bk3={by,n};if(!fit){r.text+=`\n바침 「${n}」 — 아이콘이 ${O.stat} 와 안 맞아 +0`;await A().set(['skill','res',to],r);return `바침 「${n}」 — 아이콘이 안 맞아 +0`}
+   const was=r.ri;r.total+=1;r.mod+=1;(r.parts=r.parts||[]).push([`바침 「${n}」`,1]);if(Array.isArray(r.dice)&&typeof r.dice[0]==='number')r.ri=judge(r.dice,r.total,r.target,+cfg().crit);r.text+=`\n바침 「${n}」 +1 → 합계 ${r.total} / ${r.target} · ${RES[r.ri]}`;
+   if(was===1&&r.ri>=3){if(r.step){if(r.step2)await stepUndo(to,r.step2);await stepUndo(to,r.step);delete r.step;delete r.step2;r.text+='\n상태 단계는 없던 일로'}delete r.pend;const gl=await applyGain(O,r.ri);if(gl.length){r.text+='\n'+gl.join(' · ');r.gain=gl}}
+   else if(was===3&&r.ri===4&&O.pen&&O.pen.gainCrit){/* 대성공 보상은 GM 이 */}
+   await A().set(['skill','res',to],r);sync();return `바침 「${n}」 +1 → ${(T[to]||{}).name||''} 합계 ${r.total} / ${r.target} · ${RES[r.ri]}`}
+  if(bk3For(to,O))return '그 판정에는 이미 1장을 바쳤다';await setT(by,{bk3:{oid:O.id,to,n,at:Date.now()}});sync();return `바침 「${n}」 → ${(T[to]||{}).name||''} 의 이번 체크 ${fit?'+1':'+0 (아이콘이 안 맞음)'}`}
  function coverCands(byTid,r,scene){if(scene==='solo')return [];const C=cfg();const pool=+C.coverBall?Object.values(mons()).filter(m=>m.tid===byTid&&alive(m)).map(m=>m.id):compOf(byTid,scene).ids;return pool.filter(id=>id!==r.mid)}
  function coverHtml(tid,O,K){if(!O||O.scene==='solo')return '';   /* 트레이너만: 포켓몬이 없어 커버도 없다 */const T=trs();const R=K.res||{};const C=cfg();const can=(gm()||tid===me());
   if(!+C.coverOn)return '';   /* 11-01 23:56 망령: 커버는 선택 규칙 · 기본 끔 (은열쇠 덱이 있으면 쓰지 않는다) */
@@ -618,17 +691,19 @@ ${penFields('fail',X)}</div></div>
   if(ch.how==='super'&&supMax(t)-k.sup<=0)return A().toast('초상 능력 횟수가 없다');
   const c=calcOf(tid,O,ch);let target=+O.target,npcTxt='';
   if(O.npc){const n1=d6(),n2=d6();const nt=n1+n2+(+O.npcMod||0);target=nt+(O.npcDef==='pc'?0:1);npcTxt=`${O.npc} ${n1}+${n2}${sgn(+O.npcMod||0)} = ${nt}${O.npcDef==='pc'?' (같으면 우리)':' (넘어야 이김)'}`}
-  const R2=roll2(c.tw);const total=R2.k[0]+R2.k[1]+c.mod;const ri=judge(R2.k,total,target,+C.crit);
+  const auto=!!(c.ek&&c.ek.code==='자동성공'&&!O.npc&&target-c.mod<=(+String(c.ek.arg||'7').replace(/[^\d]/g,'')||7));   /* 11-05 숙련된 기초: 굴려야 하는 눈이 7 이하면 굴리지 않고 성공 */
+  const R2=auto?{k:['자동','성공'],all:[['자동','성공']]}:roll2(c.tw);const total=auto?target:R2.k[0]+R2.k[1]+c.mod;const ri=auto?3:judge(R2.k,total,target,+C.crit);
   const m=ch.how==='mon'?mons()[ch.mid]:null;
   if(ch.how==='super')await setT(tid,{sup:k.sup+1});
   const lines=[`${ch.how==='mon'?`포켓몬 「${m.name}」`:ch.how==='super'?'초상 능력 (혼자 · 자질 ×2)':O.scene==='solo'?'트레이너만 (포켓몬 없이)':'혼자'}`,`2d6 → ${R2.k.join('+')}${R2.all.length>1?` (두 번 ${R2.all.map(x=>x.join('+')).join(', ')} 중 ${c.tw>0?'높은':'낮은'} 값)`:''}${R2.k[0]===1&&R2.k[1]===1?' — 1·1':R2.k[0]===6&&R2.k[1]===6?' — 6·6':''}`,'보정 '+c.parts.map(p=>`${p[0]} ${sgn(p[1])}`).join(' · ')];
   const text=`${O.free?'자유 판정':'스킬 체크'} · ${t.name} · ${O.scene==='solo'?O.stat+' (트레이너만)':O.stat+' + '+BASE[O.base]}${O.label||isRep(O)?' · '+(O.label||'')+(isRep(O)?(O.label?' ':'')+'(대표)':''):''}\n${lines.join('\n')}\n합계 ${total} / 목표 ${target}${npcTxt?' ('+npcTxt+')':''}\n→ ${RES[ri]}`;
-  let res={offerId:O.id,tid,label:O.label||'',how:ch.how,mid:ch.mid||'',monName:m?m.name:'',etc:!!ch.etc,bonus:+ch.bonus||0,stat:O.stat,target,npcTxt,parts:c.parts,mod:c.mod,tw:c.tw,dice:R2.k,rolls:R2.all,ri,total,text,at:Date.now()};
+  let res={offerId:O.id,tid,label:O.label||'',how:ch.how,mid:ch.mid||'',monName:m?m.name:'',etc:!!ch.etc,bonus:+ch.bonus||0,stat:O.stat,target,npcTxt,parts:c.parts,mod:c.mod,tw:c.tw,dice:R2.k,rolls:R2.all,ri,total,text:auto?text.replace(/\n2d6 → [^\n]*/,`\n「${c.ek.n}」 — 굴려야 하는 눈 ${target-c.mod} · 굴리지 않고 성공`):text,at:Date.now()};
+  if(c.ek)res.ek={by:c.ek.by,n:c.ek.n,code:c.ek.code,arg:c.ek.arg||''};{const b3=O.free?null:bk3For(tid,O);if(b3)res.bk3={by:b3.by,n:b3.n}}
   if(O.free){res.base=O.base;res.noStep=+O.noStep||0}
   if(ri===1){if(myosuMax(t)>k.myosu)res.pend=1;else res=await settleFail(tid,res)}
   if(ri>=3&&!O.free){const gl=await applyGain(O,ri);if(gl.length){res.text+='\n'+gl.join(' · ');res.gain=gl}}
   /* 11-04 던전 기믹 「체크 성공」 */if(ri>=3&&!O.free)try{const DG=window.OM_DG_UI;if(DG&&DG.gimEvent)await DG.gimEvent('checkOk',{tid})}catch(e){}
-  await A().set(resPath(tid,O.free),res);for(const b of bkFor(tid,O))await setT(b.by,{bk:null});   /* 11-01 은열쇠: 쓴 카드는 판정 한 번으로 끝 */
+  await A().set(resPath(tid,O.free),res);for(const b of bkFor(tid,O))await setT(b.by,{bk:null});if(c.ek)await setT(c.ek.by,{ek:null});if(res.bk3)await setT(res.bk3.by,{bk3:null});   /* 11-01 은열쇠: 쓴 카드는 판정 한 번으로 끝 */
   const hist=(st().hist||[]).slice(-40);hist.push({ri,text:res.text,at:res.at});await A().set(['skill','hist'],hist);
   A().closeModal();A().sysLog(text,'dice',{sk:{tid,mid:ch.how==='mon'?(ch.mid||''):'',ri}});try{if(window.OM_CUTIN)window.OM_CUTIN.phase(RES[ri],`${t.name} · ${O.stat} ${total}/${target}`)}catch(e){}
   sync();setTimeout(()=>openPlayer(tid),300)}
@@ -691,5 +766,5 @@ ${penFields('fail',X)}</div></div>
   const pm=how.match(/^포켓몬 「(.+)」$/);const mon=pm?monOf(tr.id,pm[1],d.sk&&d.sk.mid):null;
   const withH=pm?`${av(mon&&mon.image,pm[1],'')}<span><small>함께</small><b>${esc(pm[1])}</b></span>`:`<span><small>판정</small><b>${esc(how||'혼자')}</b></span>`;
   return `<div class="bcard skr" style="--tc:${COL[ri]||'#2b8fa8'}"><div class="bch"><span class="bctag">${esc(tag)}</span>${av(tr.image,tn,'')}<b>${esc(tn)}</b><span class="skr-sub">${esc(stat)}${label?' · '+esc(label):''}</span><span class="sp"></span>${resBadge(ri)}</div><div class="skr-b"><div class="skr-with">${withH}</div><div class="skr-calc">${dk.length?`<span class="skr-dice">${dk.map(v=>`<i>${esc(v)}</i>`).join('')}</span>`:`<span class="skr-b">${esc(dl)}</span>`}${bon?`<span class="skr-op">+</span>${bon}`:''}<span class="skr-tot"><span class="skr-op">=</span><b>${esc(sx[1]||'?')}</b><small>/ 목표 ${esc(sx[2]||'?')}</small></span></div>${dnote||(sx[3]||'').trim()?`<div class="skr-note">${esc([dnote,(sx[3]||'').trim()].filter(Boolean).join(' · '))}</div>`:''}</div></div>`}
- return {stepUp,applyPenalty,putMon,bestOdds,setComp,logCard,rollCard,compLock,up:upOffer,open,openGm,openPlayer,pending,applyRest,restCfg,KINDS,tsk,cfg,presetList,present,sumOf,autoTarget,oddsOf,BAND,TIER,STEP,stepTxt,sceneEnd,sync};
+ return {bk3Give,stepUp,applyPenalty,putMon,bestOdds,setComp,logCard,rollCard,compLock,up:upOffer,open,openGm,openPlayer,pending,applyRest,restCfg,KINDS,tsk,cfg,presetList,present,sumOf,autoTarget,oddsOf,BAND,TIER,STEP,stepTxt,sceneEnd,sync};
 })();

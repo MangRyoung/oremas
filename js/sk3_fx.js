@@ -30,6 +30,13 @@ window.OM_SK3FX=(()=>{
     if(ops.length)await A().setMany(ops);L.push(`「${n}」 — ${got.length?got.join(' · '):'회복할 포켓몬이 없다'}`);break}
    case '보스Lv-5':{if(!d){L.push(`「${n}」 — 던전 밖이라 쓸 곳이 없다`);break}await dgSet('bossDn',1);L.push(`「${n}」 — 이번 던전에서 경계도로 오르는 보스방 Lv 한 단계 아래 (+10 → +5, +5 → 0)`);break}
    case '길잡이':{if(!d){L.push(`「${n}」 — 던전 밖이라 쓸 곳이 없다`);break}await dgSet('guide',1);L.push(`「${n}」 — GM: 갈림길에서 고른 다음 방의 내용(체크 · 배틀 · 휴식 · 보물)을 알려 준다 · 그 방에 처음 들어갈 때 경계도가 오르지 않는다`);break}
+   case '타입공개':case '해석':{const b=ST().state.battle||{};const DX=window.OM_DEX_UI;const mine=Object.values(b.mons||{}).filter(m=>m&&(m.tid===tid||((b.trainers||{})[m.tid]||{}).srcTid===tid));const side=(mine[0]||{}).side;
+    const foes=Object.values(b.mons||{}).filter(m=>m&&side&&m.side!==side);if(!b.started&&!foes.length){L.push(`「${n}」 — 배틀이 없다 (상대가 정해지면 다시)`);break}if(!DX||!DX.analyze){L.push(`「${n}」 — 도감 기능을 불러오지 못했다 · GM 이 손으로 공개`);break}
+    if(e.code==='타입공개'){let k=0;for(const m of foes){try{await DX.analyze(tid,m.id,{free:1,parts:['type']});k++}catch(er){}}L.push(`「${n}」 — 상대 PT ${k}체의 타입 공개`);break}
+    const go=async m=>{try{await DX.analyze(tid,m.id,{free:1})}catch(er){}A().sysLog(`🗝 「${n}」 — ${nm(tid)} 이(가) ${m.name} 해석 (타입 · 종족치 · 특성 · 기술)`,'sys')};
+    if(foes.length===1){await go(foes[0]);break}
+    if(ST().role==='gm'){const md=A().openModal(`<div class="mhead"><h2>🗝 ${n} — 해석할 상대 1체</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="row" style="gap:6px;flex-wrap:wrap">${foes.map(m=>`<button class="btn" data-a3m="${m.id}">${String(m.name).replace(/[<>&]/g,'')}</button>`).join('')}</div>`);md.querySelectorAll('[data-a3m]').forEach(bt=>bt.onclick=async()=>{const m=foes.find(x=>x.id===bt.dataset.a3m);A().closeModal();if(m)await go(m)})}
+    L.push(`「${n}」 — 해석할 상대를 고른다 (GM 화면)`);break}
    case '예비꺼내기':{L.push(`「${n}」 — 예비 덱에서 한 장을 골라 빈 칸에 (휴식이 아니어도)`);ctx.after='refill';break}
    default:L.push(`「${n}」 — ${hintOf(e)}`)}
   return {lines:L,after:ctx.after}}
