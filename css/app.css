@@ -5588,6 +5588,7 @@ button.tfsep.cl{opacity:1;border:1px dashed color-mix(in srgb,var(--yel2) 55%,tr
 .s3log{margin-top:12px;display:grid;gap:2px}
 .s3ask{position:sticky;top:0;z-index:3;padding:10px;border-radius:10px;background:var(--bg2,#161a22);border:1px solid var(--yel,#ffd84a);margin-bottom:8px;box-shadow:0 6px 18px rgba(0,0,0,.4)}
 .s3pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:8px;max-height:40vh;overflow:auto}
+@media (max-width:600px){.s3pg{grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:6px;max-height:56vh}}   /* 11-05 폰: 카드 고르기(휴식 보충 · 되찾은 물건)가 한 줄에 한 장씩 크게 나오던 것 → 두세 장 */
 .s3pk{all:unset;box-sizing:border-box;cursor:pointer;border-radius:10px;padding:2px}.s3pk .skc{width:100%}.s3pk:hover .skc{transform:translateY(-3px)}.s3pk:focus-visible{outline:2px solid var(--yel,#ffd84a)}
 /* 11-04 화자 정리 폴더 접기 · 끌어서 순서 */
 .sgc.cl .sgl{display:none}.sgc.cl .sgh{border-bottom:0}.sgc.cl{align-self:start}
