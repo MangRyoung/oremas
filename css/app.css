@@ -5599,3 +5599,15 @@ button.tfsep.cl{opacity:1;border:1px dashed color-mix(in srgb,var(--yel2) 55%,tr
  .bstat>.gmrow,.bstat>details,.bstat>.revealstat,.bstat>div:not(.turn):not(.phases):not(.bgmw){margin-right:calc(-300px - 10px)!important;flex-basis:calc(100% + 310px)!important}
  .bstat>.bgmw .bt{max-width:none}.bstat>.bgmw input[type=range]{width:70px;flex:0 1 70px}
 }
+/* 11-04 19:10 망령 「망각 테마 자글 돌아왔어」: 던전 RP 무대 오른쪽 위 작은 지도의 안개(.dg-haze)가 will-change:transform + 끝없는 움직임 + mix-blend-mode 였다.
+   무대 안에 늘 움직이는 합성 층이 생기면 브라우저가 무대 위 다른 것들도 층으로 쪼개면서, 기울인 말풍선 글자를 「똑바로 찍은 그림을 돌리는」 쪽으로 보내 회색 계단이 진다(10-31 · 11-03 과 같은 계열).
+   ① 무대 안 던전 지도 · 경계도는 움직이지 않게(안개 · 맥박 · 일행 통통 · 경계도 번쩍임) — 큰 지도 창(던전 탭)에서는 그대로 움직인다
+   ② 경계도 3 · 4단계 번쩍임의 흐린 빛(0 0 28px) 대신 단단한 그림자 두 겹
+   ③ 말풍선(스킨)은 따로 한 층 — 기울인 글자가 그 층 안에서 기울어진 채로 그려져 계단이 지지 않는다 */
+.rpstage .dgrp :is(.dg-haze,.dg-pulse,.dg-party .bob,.dg-fb-ic){animation:none!important;will-change:auto!important}
+.rpstage .dgrp .dg-haze{mix-blend-mode:normal;opacity:.22}
+.rpstage .dgrp{isolation:isolate}
+.rpstage .dgrp-hud .dg-meter.lv3,.rpstage .dgrp-hud .dg-meter.lv4{animation:none!important}
+.rpstage .dgrp-hud .dg-meter.lv3{box-shadow:5px 5px 0 var(--lc),8px 8px 0 rgba(255,122,47,.35)}
+.rpstage .dgrp-hud .dg-meter.lv4{box-shadow:5px 5px 0 var(--lc),9px 9px 0 rgba(255,42,61,.45)}
+.rpstage .dlg.skin{will-change:transform}
