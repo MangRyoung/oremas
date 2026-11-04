@@ -91,12 +91,14 @@ window.OM_BATTLE_UI=(()=>{
  function canLoad(c){return c.mgr||(c.role==='seat'&&!!c.seat&&c.strict)}
  /* 함께 지시하기 (10-25 망령): 트레이너 시트(roster.trainers.<id>.co)에 적힌 좌석은 그 트레이너를 제 것처럼 다룬다 — 지시 창 · 준비 · 공개 · 포켓몬 조작.
     co 는 시트 주인과 GM 만 쓸 수 있는 칸이고, 서버(om_own)가 같은 칸을 보고 숨긴 지시 읽기 · 저장을 허락한다 */
- function coOf(c,tid){const t=(((c.ST.state.roster||{}).trainers)||{})[tid];const L=t&&Array.isArray(t.co)?t.co.filter(s=>s&&s!==tid):[];const bt=((c.b||(c.ST.state.battle||{})).trainers||{})[tid];for(const x of ((bt&&bt.mates)||[]))if(x&&x.seat&&x.seat!==tid&&!L.includes(x.seat))L.push(x.seat);return L}   /* 10-25: 함께 지시하기로 합쳐진 손님 좌석(mates.seat)도 */
+ /* 11-04 23:17 망령 「PL 이 파티 여러 개 쓰기」: 좌석 X 가 「추가 파티」로 불러온 트레이너는 id 가 X~2 · X~3 … — 그 좌석 것으로 친다 (서버 om_own 도 같은 규칙, supabase/patch_2026-11-04_여러파티.sql) */
+ function baseSeat(c,tid){const i=String(tid||'').indexOf('~');if(i<1)return '';const s=String(tid).slice(0,i);return ((c.ST.state.seats||{})[s])?s:''}
+ function coOf(c,tid){const t=(((c.ST.state.roster||{}).trainers)||{})[tid];const L=t&&Array.isArray(t.co)?t.co.filter(s=>s&&s!==tid):[];const bt=((c.b||(c.ST.state.battle||{})).trainers||{})[tid];for(const x of ((bt&&bt.mates)||[]))if(x&&x.seat&&x.seat!==tid&&!L.includes(x.seat))L.push(x.seat);{const bs=baseSeat(c,tid);if(bs&&!L.includes(bs))L.push(bs)}return L}   /* 10-25: 함께 지시하기로 합쳐진 손님 좌석(mates.seat)도 */
  function ownT(c,tid){return c.role==='seat'&&!!c.seat&&!!tid&&(tid===c.seat||coOf(c,tid).includes(c.seat))}
  /* 차례 자동 처리(선입력 차감 · 준비 꼴 · 공개)를 누가 맡나: 주인 화면, 주인이 없으면 함께 지시하는 좌석 중 접속한 첫 자리 — 같은 일을 두 화면이 하지 않게 */
  const coHtml=(c,tid)=>{const L=coOf(c,tid);if(!L.length)return '';const S=c.ST.state.seats||{};return ` <span class="cow" title="이 트레이너를 함께 지시하는 플레이어">👥 ${esc(L.map(s=>(S[s]||{}).name||s).join(' · '))}</span>`};
  const coBtn=(c,tid)=>(c.gm||c.seat===tid)&&(((c.ST.state.roster||{}).trainers||{})[tid])?`<button class="btn xs ghost" data-act="co" data-tid="${tid}" title="여러 플레이어가 이 트레이너의 지시 창 · 조작권을 함께 쓴다">함께 지시</button>`:'';
- function lead(c,tid){if(!ownT(c,tid))return false;if(tid===c.seat)return true;if(!((c.ST.state.seats||{})[tid])||A().online(tid))return false;return coOf(c,tid).filter(s=>s===c.seat||A().online(s)).sort()[0]===c.seat}
+ function lead(c,tid){if(!ownT(c,tid))return false;if(tid===c.seat||baseSeat(c,tid)===c.seat)return true;if(!((c.ST.state.seats||{})[tid])||A().online(tid))return false;return coOf(c,tid).filter(s=>s===c.seat||A().online(s)).sort()[0]===c.seat}
  /* 10-27 망령: PL 권한(c.fair) 중의 GM 은 자기가 불러온 트레이너만 — byAcct 가 다른 GM 것이면 지시 · 편집 · 수동 공개를 가린다 (자동 진행은 그대로). byAcct 가 없는 예전 트레이너는 어느 GM 이든 */
  function gmMine(c,tid){const t=((c.b||{}).trainers||{})[tid]||{};if(!t.byAcct)return true;const k=A().acctKey?A().acctKey():'';return !k||t.byAcct===k}
  function fairOff(c,tid){return !!(c.gm&&c.fair&&(seatOwned(c,tid)||!gmMine(c,tid)))}
@@ -678,7 +680,7 @@ window.OM_BATTLE_UI=(()=>{
  async function setPhase(p,o){o=o||{};const c=ctx();if(!c.mgr)return;const b=c.b;p=+p;const cur=+b.phase||0;
   if(!o.force&&p<cur){const q=p===0?`「지시 준비」로 돌아가면 이번 턴의 공개된 지시 · 준비 완료 · 행동 순서가 지워진다 (비밀 지시는 남는다).\n지금 단계: ${PH_NAME[cur]||cur}`:`지금 「${PH_NAME[cur]||cur}」인데 앞 단계 「${PH_NAME[p]||p}」로 돌아갈까?\n(그 단계의 처리를 다시 한다)`;if(!(await askYes(q,'돌아간다','그대로')))return}
   if(p===0){await A().setMany([[['battle','cmds'],{}],[['ready'],{}],[['battle','order'],[]],[['battle','phase'],0]]);A().sysLog('페이즈: 지시 준비 — 지시를 입력하고 「준비 완료」','battle');return}
-  if(p===1){const tids=Object.keys(b.trainers||{});const ready=c.ST.state.ready||{};const seats=c.ST.state.seats||{};const notReady=tids.filter(t=>seats[t]&&!ready[t]);
+  if(p===1){const tids=Object.keys(b.trainers||{});const ready=c.ST.state.ready||{};const seats=c.ST.state.seats||{};const notReady=tids.filter(t=>(seats[t]||baseSeat(c,t))&&!ready[t]);
    if(notReady.length&&!o.force&&!(await askYes(`아직 준비 완료가 아닌 트레이너: ${notReady.map(t=>b.trainers[t].name).join(', ')}\n그래도 턴을 개시할까?`)))return;
    if(notReady.length&&o.timeout)A().sysLog(`제한 시간 종료 — 준비 안 된 자리(${notReady.map(t=>(b.trainers[t]||{}).name||t).join(' · ')})는 행동 없음으로 두고 진행`,'battle');
    if(!b.started){await startBattle();if(!ctx().b.started)return;await new Promise(r=>setTimeout(r,2600))}
@@ -1079,7 +1081,7 @@ window.OM_BATTLE_UI=(()=>{
   await putShape(tid,rd);
   await A().set(path,rd?null:true);A().sysLog(`${((c.b.trainers||{})[tid]||{}).name||tid} ${rd?'준비 해제':'준비 완료'}`,'battle');
   /* 10-24 망령: 자리에 앉은 트레이너가 모두 준비를 마치면 한 줄 알림 (마지막으로 누른 사람이 쓴다) */
-  if(!rd){const R=Object.assign({},c.ST.state.ready||{});R[path[1]]=true;const seats=c.ST.state.seats||{};const T=Object.keys(c.b.trainers||{}).filter(t=>seats[t]);
+  if(!rd){const R=Object.assign({},c.ST.state.ready||{});R[path[1]]=true;const seats=c.ST.state.seats||{};const T=Object.keys(c.b.trainers||{}).filter(t=>seats[t]||baseSeat(c,t));
    if(T.length>=2&&T.every(t=>R[t]))A().sysLog(`【준비 완료】 양측 모두 지시 준비를 마쳤다${c.mgr?'':' — GM 의 「턴 개시」를 기다린다'}`,'battle')}}
 /* 11-04 망령 「2체 기준 들고 가는 4식 6령 — 합산 아니니?」 → 「나」: 던전 배틀(b.dg)은 같은 진영 일행의 4식 · 6령을 합쳐 쓴다.
     남이 고른 종류도 빌려 쓴다(각성체 대가로 0 인 종류도 일행 몫이 있으면 쓴다). 내 몫을 먼저 쓰고, 없으면 일행 몫(진영 순서)에서 뺀다. 공동 지휘(@) 몫은 빌리지 않는다 */
@@ -2071,7 +2073,7 @@ window.OM_BATTLE_UI=(()=>{
     그 포켓몬 주인(자리 플레이어 · 없으면 GM)에게 battle.asks[id] 로 물어보고 답(ans)을 기다린다. 2분 안에 답이 없으면 여기서 고른다 */
  const ASKED={};
  function askTo(mon){const c=ctx();if(!mon||canEdit(c,mon))return '';const seats=c.ST.state.seats||{};const tid=mon.tid;
-  if(tid&&seats[tid]&&(A().online(tid)||coOf(c,tid).some(s=>A().online(s))))return 'seat:'+tid;if(!c.gm)return 'gm';return ''}
+  const so=seats[tid]?tid:baseSeat(c,tid);if(tid&&so&&(A().online(so)||coOf(c,tid).some(s=>A().online(s))))return 'seat:'+tid;if(!c.gm)return 'gm';return ''}
  async function remoteAsk(mon,type,data,local,to0){const to=to0||askTo(mon);if(!to)return local();
   const id='q'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);await A().set(['battle','asks',id],Object.assign({to,type,mid:mon.id,at:Date.now()},data));
   A().toast(`${mon.name} 쪽에 고르기를 맡겼다 — 답을 기다리는 중`);
@@ -2095,7 +2097,7 @@ window.OM_BATTLE_UI=(()=>{
   const bench=Object.values(c.b.mons).filter(x=>x.tid===a.tid&&!x.entry&&!x.pend&&x.hp.cur>0&&x.id!==mid);if(!bench.length){A().sysLog(`${a.name} 교대할 포켓몬이 벤치에 없다`,'battle');return}
   /* 11-04 19:15 망령 「(질투닌의 선회 — 카자마 레비 임의 교대할까?) 이게 배틀에 안 나오는 나한테 왜 떠」: 진행자(GM) 화면이 자동화를 돌리면 임의 교대 물음이 GM 에게 떴다.
      그 트레이너 자리에 누가 접속해 있으면(내가 그 자리가 아니면) 그 자리로 물어본다 — 2분 안에 답이 없으면 교대하지 않는다 */
-  const seats=c.ST.state.seats||{};const ownerOn=!ownT(c,a.tid)&&!!seats[a.tid]&&(A().online(a.tid)||coOf(c,a.tid).some(s=>A().online(s)));
+  const seats=c.ST.state.seats||{};const ownerOn=!ownT(c,a.tid)&&!!(seats[a.tid]||baseSeat(c,a.tid))&&(A().online(seats[a.tid]?a.tid:baseSeat(c,a.tid))||coOf(c,a.tid).some(s=>A().online(s)));
   if(ownerOn){const to='seat:'+a.tid;const yes=await remoteAsk(a,'confirm',{name:nm,q:`「${nm}」 — ${a.name} 임의 교대할까?`},()=>false,to);if(!yes)return;
    const r=await remoteAsk(a,'pick',{name:nm,label:'교대해 들어올 포켓몬',ids:bench.map(m=>m.id)},()=>'',to);const pk=typeof r==='string'?bench.find(m=>m.id===r)||null:r;if(!pk)return;
    const area=a.entry;await exitMon(mid,{noAsk:true,sys:true});await enterMon(pk.id,area,{sys:true,how:'임의 교대'});return}

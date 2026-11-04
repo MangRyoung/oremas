@@ -171,7 +171,7 @@ end $$;
 -- co 는 시트 주인(과 GM)만 쓸 수 있는 칸이라, 남의 트레이너에 저를 끼워 넣을 수 없다.
 create or replace function public.om_own(d jsonb, w text, x text)
 returns boolean language sql immutable as $$
-  select x is not null and w is not null and (x = w or coalesce(jsonb_typeof(d #> array['roster','trainers',x,'co']) = 'array' and (d #> array['roster','trainers',x,'co']) ? w, false))
+  select x is not null and w is not null and (x = w or left(x, length(w) + 1) = w || '~' or coalesce(jsonb_typeof(d #> array['roster','trainers',x,'co']) = 'array' and (d #> array['roster','trainers',x,'co']) ? w, false))   -- 11-04 추가 파티 X~2
 $$;
 
 create or replace function public.om_chk(p_mode text, w text, p_path text[], o jsonb, n jsonb, d jsonb, seats text[])

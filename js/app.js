@@ -863,7 +863,16 @@ async function loadFromRoster(tid,side){
     트레이너 id = 내 좌석, 포켓몬 id = 좌석~원래id (rid 에 시트 id). 서버 권한·비밀 지시가 좌석 id 기준이라 그대로 맞는다. 결과 정리는 rid 로 시트에 돌려준다 */
  const borrowAs=nid=>{trainer.srcTid=tid;trainer.id=nid;const map={};for(const mon of mons){mon.rid=mon.id;mon.id=nid+'~'+mon.id;mon.tid=nid;map[mon.rid]=mon.id}trainer.pids=(trainer.pids||[]).map(id=>map[id]||id)};
  if(ST.role!=='gm'&&tid!==ST.seat){const mine=(B().trainers||{})[ST.seat];
-  if(mine&&!confirm(`내 자리로 「${mine.name}」가 이미 배틀에 있다. 「${t.name}」 파티로 바꿀까?`))return;borrowAs(ST.seat)}
+  /* 11-04 23:17 망령 「PL 이 파티 여러 개 쓰기」: 내 자리 트레이너가 이미 있으면 「추가 파티」(id = 내 좌석~2 · ~3 …, 내 것으로 지시 · 조작) 또는 바꾸기 */
+  if(mine){const pick=await new Promise(res=>{const md=openModal(`<div class="mhead"><h2>파티 하나 더?</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+    <p class="small">내 자리로 「${esc(mine.name)}」가 이미 배틀에 있다.</p>
+    <div class="row" style="gap:6px;margin-top:10px;flex-wrap:wrap"><span class="sp"></span><button class="btn" data-pk="swap">「${esc(t.name)}」 로 바꾸기</button><button class="btn pri" data-pk="add">추가 파티로 함께 불러오기</button></div>
+    <p class="small dim" style="margin-top:8px">추가 파티는 내가 같이 지시한다 (지시 창 · 준비 · 포켓몬 조작). 「자기 것만」 방은 서버 패치(여러 파티)가 들어가 있어야 한다.</p>`);
+    let done=false;md.querySelectorAll('[data-pk]').forEach(x=>x.onclick=()=>{done=true;closeModal();res(x.dataset.pk)});
+    const bg=md.closest('.modalbg');new MutationObserver((_,o)=>{if(!bg.isConnected){o.disconnect();if(!done)res(null)}}).observe(document.body,{childList:true})});
+   if(!pick)return;
+   if(pick==='add'){const trs=B().trainers||{};let n=2;while(trs[ST.seat+'~'+n])n++;borrowAs(ST.seat+'~'+n)}else borrowAs(ST.seat)}
+  else borrowAs(ST.seat)}
  /* 불러온 사람 = 지시하는 사람 (by). GM 이 불러온 파티는 PL 권한(GM 불간섭) 중에도 GM 이 지시·진행한다 */
  trainer.by=ST.role==='gm'?'gm':ST.seat;
  /* 10-27 망령: GM 이 여럿(다른 계정 · 다른 닉)이면 PL 권한 중엔 자기가 불러온 트레이너만 다룬다 — 불러온 GM 을 적어 둔다 */
