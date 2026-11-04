@@ -11,13 +11,13 @@ window.OM_SK3R=(()=>{
  const A=()=>window.OM_APP,ST=()=>window.OM_APP.ST;
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const gm=()=>ST().role==='gm';
- const K=[['c','체크'],['d','던전'],['b','배틀'],['r','예비']];const KN={c:'체크',d:'던전',b:'배틀',r:'예비'};
+ const K=[['c','스킬'],['d','던전'],['b','배틀'],['r','예비']];const KN={c:'스킬',d:'던전',b:'배틀',r:'예비'};
  const STEP=['건강','부상','중상','빈사'];
  const S3=()=>ST().state.sk3||{};
  const trs=()=>((ST().state.roster||{}).trainers)||{};
  const clone=o=>JSON.parse(JSON.stringify(o||{}));
  const dbRow=n=>{const D=window.OM_SK3&&window.OM_SK3.db();return D&&D.get(n)};
- const kindsOf=n=>{const t=String((dbRow(n)||[])[2]||'');const o=[];if(/체크/.test(t))o.push('c');if(/던전/.test(t))o.push('d');if(/배틀/.test(t))o.push('b');return o};
+ const kindsOf=n=>{const t=String((dbRow(n)||[])[2]||'');const o=[];if(/체크|스킬/.test(t))o.push('c');if(/던전/.test(t))o.push('d');if(/배틀/.test(t))o.push('b');return o};
  const card=(n,o)=>window.OM_SK3&&window.OM_SK3.cardHtml?window.OM_SK3.cardHtml(n,o):`<b>${esc(n)}</b>`;
  const injOf=tid=>{const x=(((ST().state.skill||{}).trainers)||{})[tid]||{};return Math.max(0,Math.min(3,+x.inj||0))};
  const nm=tid=>(trs()[tid]||{}).name||tid;

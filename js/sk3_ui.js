@@ -5,10 +5,10 @@
 window.OM_SK3=(()=>{
  const A=()=>window.OM_APP,S=()=>window.OM_STORE;
  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const SK3=[['c','체크'],['d','던전'],['b','배틀'],['r','예비']];const N={c:'체크',d:'던전',b:'배틀',r:'예비'};
+ const SK3=[['c','스킬'],['d','던전'],['b','배틀'],['r','예비']];const N={c:'스킬',d:'던전',b:'배틀',r:'예비'};
  const COMMON='은열쇠 · 공통';
  const PAL={red:'#c8504a',orange:'#d9822b',gold:'#b8932a',green:'#4f9a5a',teal:'#2f948f',blue:'#4573c4',purple:'#8a5cc4',pink:'#c45c9a',gray:'#6b7286',black:'#30343f',빨강:'#c8504a',주황:'#d9822b',금색:'#b8932a',초록:'#4f9a5a',청록:'#2f948f',파랑:'#4573c4',보라:'#8a5cc4',분홍:'#c45c9a',회색:'#6b7286',검정:'#30343f'};
- const kinds=r=>{const t=String((r&&r[2])||'');const o=[];if(/체크/.test(t))o.push('c');if(/던전/.test(t))o.push('d');if(/배틀/.test(t))o.push('b');return o};
+ const kinds=r=>{const t=String((r&&r[2])||'');const o=[];if(/체크|스킬/.test(t))o.push('c');if(/던전/.test(t))o.push('d');if(/배틀/.test(t))o.push('b');return o};
  /* 카드 DB — 처음 그릴 때 한 번 읽고 10분 둔다 */
  let DB=null,DBat=0,loading=null;
  function db(){if(DB&&Date.now()-DBat<600000)return DB;if(!loading&&S()&&S().makerDocs)loading=S().makerDocs('dbedit').then(rows=>{const m=new Map();for(const x of rows||[]){const d=x.data||{};if(d.kind!=='cards'||d.deleted)continue;const r=d.row||[];if(r[1])m.set(r[1],r)}DB=m;DBat=Date.now();loading=null;try{A().renderScene()}catch(e){}}).catch(e=>{loading=null;console.warn('sk3 카드 DB',e)});return DB}

@@ -11,7 +11,7 @@ window.SKCARD=window.SKCARD||(()=>{
  const ICN={'지시':['지','#c8463f'],'육성':['육','#3c9455'],'통솔':['통','#3b6cc0'],'능력':['능','#8a52c6'],'★':['★','#c9a227']};
  const icList=v=>[...new Set((Array.isArray(v)?v:String(v||'').replace(/[*＊☆]/g,'★').split(/[\s,·\/|]+/)).map(x=>String(x).trim()).filter(x=>ICN[x]))];
  /* 쓰는 곳 → 갈래 (색 점) */
- const kindOf=t=>{t=String(t||'');return /배틀/.test(t)?(/대응/.test(t)?'re':'bt'):/체크/.test(t)?'ck':/던전/.test(t)?'dg':/상태|증상|광기/.test(t)?'st':/열쇠/.test(t)?'ky':'etc'};
+ const kindOf=t=>{t=String(t||'');return /배틀/.test(t)?(/대응/.test(t)?'re':'bt'):/체크|스킬/.test(t)?'ck':/던전/.test(t)?'dg':/상태|증상|광기/.test(t)?'st':/열쇠/.test(t)?'ky':'etc'};
  /* 효과 글: 『』 「」 용어와 ±숫자를 굵게 (escape 한 뒤라 안전) */
  const fx=x=>esc(String(x??'').replace(/<br\s*\/?>/gi,'\n')).replace(/\r/g,'')
    .replace(/(『[^』\n]{1,24}』|「[^」\n]{1,24}」)/g,'<b class="skk">$1</b>')
