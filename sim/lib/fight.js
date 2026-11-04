@@ -13,8 +13,10 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
  const c=FN.ctx();const b=c.b;const atk0=b.mons[mid];if(!atk0||!atk0.entry||atk0.hp.cur<=0)return {skip:'없음'};const f=FN.fieldOf(b);
  const RM=k=>+((f.rooms||{})[k]||0)>0;
  const TYS0=[['Electrify','Electric'],['Flooding','Water'],['Knave','Dark']].filter(([k])=>+((atk0.states||{})[k]||0)>0);const ATY=TYS0.length?TYS0[TYS0.length-1][1]:'';
- const tyOf=mv=>ATY||(RM('블랙룸')&&mv.cat!=='변화'?'Ghost':((FN.skinOf(atk0,mv)||{}).ty||mv.typeEn));
- const mtys=mv=>ATY?[ATY]:(RM('블랙룸')&&mv.cat!=='변화'?['Ghost']:FN.skinOf(atk0,mv)?[FN.skinOf(atk0,mv).ty]:String(mv.type||'').split(/[()/,]/).map(t=>t.trim()).filter(Boolean).map(S.typeEn));
+ /* 11-04 망령: 「무작위」 타입 기술 — 공격마다 18 타입 중 하나 (웹툴 battle_ui isRndMove · rndType 그대로, 씨앗 난수) */
+ const isRnd=H.get('isRndMove'),rndT=H.get('rndType');const RNDT={};const rndOf=mv=>isRnd&&isRnd(mv)?(RNDT[mv.name]||(RNDT[mv.name]=rndT())):'';
+ const tyOf=mv=>ATY||(RM('블랙룸')&&mv.cat!=='변화'?'Ghost':((FN.skinOf(atk0,mv)||{}).ty||rndOf(mv)||mv.typeEn));
+ const mtys=mv=>ATY?[ATY]:(RM('블랙룸')&&mv.cat!=='변화'?['Ghost']:FN.skinOf(atk0,mv)?[FN.skinOf(atk0,mv).ty]:rndOf(mv)?[rndOf(mv)]:String(mv.type||'').split(/[()/,]/).map(t=>t.trim()).filter(Boolean).map(S.typeEn));
  const mv=FN.MVS(atk0)[idx];if(!mv)return {skip:'기술 없음'};
  const out={mv:mv.name,lines:[],hits:[],fail:''};
  /* 행동 판정 (창의 「행동 판정」 칸 — 시뮬은 늘 켠다) */
@@ -77,7 +79,7 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
   const spw=SPW?SPW(def):null;const powT=spw&&spw.pow!=null?spw.pow:pow;
   const dTy=FN.tysOf(def),dS=mv.cat==='특수'?'specialdefense':'defense';const fieldT=fm*(f.terrain.type==='미스트필드'&&moveTypes.includes('Dragon')&&FN.grd(def)?0.5:1);
   const wt=f.weather.type;const defMul=(wt==='극한'&&dTy.includes('Ice')&&dS==='defense')?2:(['눈','싸라기눈'].includes(wt)&&dTy.includes('Ice')&&dS==='defense')?1.5:(wt==='모래바람'&&dTy.includes('Rock')&&dS==='specialdefense')?1.5:1;
-  let MVP=null,DOPT=null;const dmg=mv.cat==='변화'||!powT||(spw&&spw.fixed)||(MAU&&MAU.delay)||!hits.length?null:B.damage(FN.foulAtk(atk,def,mv),def,MVP=Object.assign({},mv,{pow:powT},ATY?{typeEn:ATY,type:S.typeKo(ATY)}:sk?{typeEn:sk.ty,type:S.typeKo(sk.ty)}:{}),DOPT={critMul:FN.critMulOf(atk),hits:hits.map(h=>h.v),powStep:spw?0:FN.powStepOf(mv),free1:1*(mods.boost||1),free2:1,item1,item2:1,trait:traitMul,weather:wMul,fieldMul:fieldT,defMul,wonder:RM('원더룸'),helping:false,charge,lifeOrb:false,multiTarget,wall,wallSize:FN.mode(b)>=2?2:1,ignoreAtk:igAtk,ignoreDef:igDef,watersport:(f.etc||{})['물놀이']>0,mudsport:(f.etc||{})['흙놀이']>0,scarf:FN.IT(atk)==='구애스카프',choiceDef:false,tailwindDef:((f.objects||{})[side]||{})['순풍']>0,swampDef:((f.objects||{})[side]||{})['습원']>0,rng:rnd});
+  let MVP=null,DOPT=null;const dmg=mv.cat==='변화'||!powT||(spw&&spw.fixed)||(MAU&&MAU.delay)||!hits.length?null:B.damage(FN.foulAtk(atk,def,mv),def,MVP=Object.assign({},mv,{pow:powT},ATY?{typeEn:ATY,type:S.typeKo(ATY)}:sk?{typeEn:sk.ty,type:S.typeKo(sk.ty)}:rndOf(mv)?{typeEn:rndOf(mv),type:S.typeKo(rndOf(mv))}:{}),DOPT={critMul:FN.critMulOf(atk),hits:hits.map(h=>h.v),powStep:spw?0:FN.powStepOf(mv),free1:1*(mods.boost||1),free2:1,item1,item2:1,trait:traitMul,weather:wMul,fieldMul:fieldT,defMul,wonder:RM('원더룸'),helping:false,charge,lifeOrb:false,multiTarget,wall,wallSize:FN.mode(b)>=2?2:1,ignoreAtk:igAtk,ignoreDef:igDef,watersport:(f.etc||{})['물놀이']>0,mudsport:(f.etc||{})['흙놀이']>0,scarf:FN.IT(atk)==='구애스카프',choiceDef:false,tailwindDef:((f.objects||{})[side]||{})['순풍']>0,swampDef:((f.objects||{})[side]||{})['습원']>0,rng:rnd});
   /* 고정 · 변칙 피해(spw.fixed): 웹툴은 HP 창에서 손으로 — 시뮬은 spw.dmg 가 있으면 그 값 */
   const eff=dmg?B.effectiveness(moveTypes,def,{multiMode:0,atkTypes,force:null,floating}):(effPre||null);
   const stab=eff?eff.stab:false;const DFl=def.flags||{};
@@ -96,7 +98,7 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
   if(!r.acc.hit){out.hits.push({to:def.name,miss:true,note:r.acc.prot?'기술 방어':r.acc.note||'빗나감'});continue}
   if(!r.dmg){out.hits.push({to:def.name,status:true});continue}
   const crit=r.hits.some(h=>h.v===2);const A1=am(r);
-  def.lastHit={from:atk.name,fromId:atk.id,move:mv.name,moveType:mv.type||'',eff:r.eff.value,total:Math.floor(r.dmg.total*A1),hits:r.hits.length,crit,per:FN.perOf(r.dmg,A1),guard:r.guard,guardNote:((r.mods&&r.mods.names)||[]).filter(x=>x.who===def.id).map(x=>x.txt).join(' · '),endure:r.endure,turn:+nb.turn||0,mt:moveTypes,cat:mv.cat||'',ct:W.OM_APP.contactOf(mv)==='O',multi:res.length>1};
+  def.lastHit={from:atk.name,fromId:atk.id,move:mv.name,moveType:(rndOf(mv)?S.typeKo(rndOf(mv)):mv.type)||'',eff:r.eff.value,total:Math.floor(r.dmg.total*A1),hits:r.hits.length,crit,per:FN.perOf(r.dmg,A1),guard:r.guard,guardNote:((r.mods&&r.mods.names)||[]).filter(x=>x.who===def.id).map(x=>x.txt).join(' · '),endure:r.endure,turn:+nb.turn||0,mt:moveTypes,cat:mv.cat||'',ct:W.OM_APP.contactOf(mv)==='O',multi:res.length>1};
   if(FX&&r.mods)FX.consume(nb,r.mods.names);if(def.flags&&def.flags.endure)def.flags.endureUsed=1}
  if(MAU&&FX){const a=nb.mons[mid];const cx0=W.__SIM.uiCtx(nb,a,mv.name);
   const runOps=async(ops,def)=>{const map=def?FN.tgtFor(atk,def):(q=>q);const cx=Object.assign({},cx0,def?{pick:list=>Promise.resolve(list.find(x=>x.id===def.id)||null)}:{});const r=await FX.run(ops.map(map),cx);lines.push(...r.lines)};
