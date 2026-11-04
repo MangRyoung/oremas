@@ -613,6 +613,9 @@ window.OM_BATTLE_UI=(()=>{
   if(r==='자신')return my?[my.slot]:[];if(r==='상대 전체'||r==='적진')return enemies.map(s=>s.slot);if(r==='아군 전체'||r==='자진')return slots.filter(s=>sameT(s.mon,m,b)).map(s=>s.slot);
   if(r==='자신 이외')return slots.filter(s=>s.mon.id!==mid).map(s=>s.slot);if(r==='전체'||r==='필드 전체')return slots.map(s=>s.slot);
   if(r==='아군')return allies.map(s=>s.slot).slice(0,1);
+  /* 11-04 21:02 망령 「대상이 정면기 · 대각기 같은 건 전체기처럼 지시 때 기본 타게팅」: 정면 = 맞은편 같은 에리어(좌 A ↔ 우 A) · 대각 = 맞은편 옆 에리어(좌 A ↔ 우 B). 비었으면 남은 상대 하나 */
+  if(r==='정면'&&my){const f=enemies.find(s=>s.side!==my.side&&s.area===my.area);return f?[f.slot]:enemies.slice(0,1).map(s=>s.slot)}
+  if(r==='대각'&&my){const O='abcdef';const i=O.indexOf(String(my.area));const d=enemies.filter(s=>s.side!==my.side&&Math.abs(O.indexOf(String(s.area))-i)===1);return d.length?[d[0].slot]:enemies.filter(s=>s.area!==my.area).concat(enemies).slice(0,1).map(s=>s.slot)}
   if(r==='상대 2체')return enemies.map(s=>s.slot).slice(0,2);
   if(mv.name==='발버둥'&&enemies.length)return [enemies[Math.floor(Math.random()*enemies.length)].slot];   /* 무작위한 상대에게 */
   return enemies.map(s=>s.slot).slice(0,1)}
