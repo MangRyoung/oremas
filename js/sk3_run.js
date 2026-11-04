@@ -53,7 +53,10 @@ window.OM_SK3R=(()=>{
   return {lines}}
  async function apply(p,who){const s0=S3();const s=clone(s0);const R=exec(s,p,who);if(R.err)return R;
   const ok=Object.keys(s0).length?await A().setDiff(['sk3'],s0,s,3):await A().set(['sk3'],s);if(!ok)return {err:'저장하지 못했다'};
-  for(const t of R.lines)A().sysLog('🗝 '+(who==='gm'?'':nm(who)+' · ')+t,'sys');return R}
+  for(const t of R.lines)A().sysLog('🗝 '+(who==='gm'?'':nm(who)+' · ')+t,'sys');
+  /* 11-05 망령 「카드 DB 에 자동화 구문 넣어서 웹툴에서 다 자동화」: 「사용」 이면 그 카드의 「은열쇠 …」 효과를 실행 (js/sk3_fx.js · GM 화면에서만 — 좌석 요청도 GM 화면이 여기로 온다) */
+  if(p.op==='use'&&window.OM_SK3FX){const n=(((s0.h||{})[p.tid]||{})[p.k]||{}).n;if(n)try{const F=await window.OM_SK3FX.onUse(p.tid,n,{who});for(const t of (F.lines||[]))A().sysLog('🗝 '+t,'sys');if(F.after==='refill'&&who==='gm')setTimeout(()=>{try{const empty=['b','c','d'].find(k=>{const x=((S3().h||{})[p.tid]||{})[k];return !(x&&x.on)&&reserve(S3().h).some(y=>y.ks.includes(k))});if(empty)pickRefill(p.tid,empty)}catch(e){}},300)}catch(e){console.warn('은열쇠 효과',e);A().toast('카드 효과를 적용하지 못했다: '+(e.message||e))}}
+  return R}
  async function run(p){if(gm()){const R=await apply(p,'gm');if(R.err)A().toast(R.err);draw();return R}
   const seat=ST().seat;if(!seat)return A().toast('자리에 앉아야 카드를 쓸 수 있다');
   const rid='q'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
