@@ -5119,7 +5119,7 @@ body:has(.modalbg) .tour-ask{display:none}
 /* 14:13 망령 「지도 열면 줄이 밀린다」: 한 줄 고정 — 칸이 모자라면 BGM 곡 이름 → 음량 막대 순으로 숨긴다 */
 .phone .prprow{container-type:inline-size}
 @container (max-width:600px){.prpslot .bgmw .bt{display:none}}
-@container (max-width:530px){.prpslot .bgmw input[type=range]{display:none}}
+@container (max-width:530px){.prpslot .bgmw input[type=range]{width:40px;min-width:36px}}   /* 11-04 망령 「브금 줄이는 바 왜 없앴어」: 음량 바는 늘 남긴다 */
 @container (max-width:560px){.prpslot .prpl .prl{display:none}html:not(#_) .prpslot .prpl .plog{padding:0 9px!important}.prpslot .prpmore .prl{display:inline}}
 @container (max-width:400px){.prpslot .pl2{display:none}.prpslot,.prpslot .prpl,.prpslot .prpr{gap:4px}html:not(#_) .prpslot .plog{padding:0 7px!important}}
 html:not(#_) .prpslot .plog{position:static!important;display:inline-flex;align-items:center;gap:5px;height:30px;padding:0 11px!important;font-size:13px!important;font-weight:700;white-space:nowrap;line-height:1;
@@ -5442,8 +5442,8 @@ html[data-vt="mm"] .clc-menu>div,html[data-vt="mm"] .clc-menu>summary{background
 @media (min-width:761px){.bstat{column-gap:8px}.bstat>.sp{display:none}}
 /* BGM 칸이 좁아지면 음량 막대 → 곡 이름 순서로 숨긴다 (단추는 늘 보이게) */
 @media (min-width:761px){.bstat>.bgmw{container-type:inline-size;overflow:hidden}.bstat>.bgmw>*{flex-shrink:0}.bstat>.bgmw .bt{flex:1 1 auto;min-width:0}}
-@container (max-width:290px){.bstat>.bgmw input[type=range]{display:none}}
-@container (max-width:215px){.bstat>.bgmw .bt{display:none}}
+@container (max-width:290px){.bstat>.bgmw .bt{display:none}.bstat>.bgmw input[type=range]{width:52px;min-width:40px}}   /* 11-04: 좁으면 곡 이름을 숨기고 음량 바는 남긴다 */
+@container (max-width:215px){.bstat>.bgmw [data-bw="rand"],.bstat>.bgmw [data-bw="next"]{display:none}}
 @container (max-width:215px){.bstat>.bgmw .btn{padding:2px 5px!important}.bstat>.bgmw{gap:3px!important}}
 /* 22:02 망령 「입력 중 칸은 오른쪽으로 땡기고」: GM 줄 아랫줄 맨 오른쪽 끝에 붙인다 (타임 요청 칩보다도 뒤) */
 .gmrow>.gmty{order:99;margin-left:auto;margin-right:0;justify-content:flex-end}
