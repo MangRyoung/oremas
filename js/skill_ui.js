@@ -240,11 +240,11 @@ window.OM_SKILL_UI=(()=>{
   const pen=three?[{line:await S3.onInjury(tid,1)}].filter(x=>x.line):await penFor(tid,prev,now);
   let hh='';if(cut&&cut.n<cut.want)hh=await halfHit(tid,mid,cut.want-cut.n,cut.lab);
   const cl=(cut&&cut.n?` · ${cut.lab} −${cut.n}`:'')+(hh?` · ${hh}`:'');
-  return {prev,now,cut,pen,line:`${t.name} 「${STEP[prev]}」 → 「${STEP[now]}」${cl}${now===2?' · 모든 판정 불리':now===1?(tough(t)?' · 강인함':' · 모든 판정 −'+C.injPen):' · 이 장면에서 빠진다'} (${why})${pen.map(x=>'\n'+x.line).join('')}`}}
+  return {prev,now,cut,pen,three:three?1:0,line:`${t.name} 「${STEP[prev]}」 → 「${STEP[now]}」${cl}${now===2?' · 모든 판정 불리':now===1?(tough(t)?' · 강인함':' · 모든 판정 −'+C.injPen):' · 이 장면에서 빠진다'} (${why})${pen.map(x=>'\n'+x.line).join('')}`}}
  /* 11-01 은열쇠 패널티 카드: 중상이 되면 상흔 카드, 빈사가 되면 광기 카드를 그 트레이너 덱에 섞는다 (덱 설정 「패널티 카드」가 켜진 덱만 · GM 화면) */
  async function penFor(tid,prev,now){const DK=window.OM_DECK_UI;const out=[];if(!DK||!DK.penalty||!gm())return out;try{   /* 11-01 21:58 망령: 부상 = 덱 맨 위 1장 · 중상 = 2장 버림 · 빈사 = 증상 카드 1장 */
    if(prev<1&&now>=1){const r=await DK.penalty(tid,'mill','부상',{n:1});if(r)out.push(r)}if(prev<2&&now>=2){const r=await DK.penalty(tid,'mill','중상',{n:2});if(r)out.push(r)}if(prev<3&&now>=3){const r=await DK.penalty(tid,'mad','빈사');if(r)out.push(r)}}catch(e){}return out}
- async function stepUndo(tid,s){if(!s)return;await setT(tid,{inj:s.prev});await refundOrd(s.cut);const DK=window.OM_DECK_UI;if(DK&&DK.penalty)for(const x of (s.pen||[]).slice().reverse())try{if(x&&x.milled&&x.milled.length)await DK.penalty(tid,'unmill','',{ids:x.milled});else if(x&&x.cid)await DK.penalty(tid,'undo','',{cid:x.cid})}catch(e){}}
+ async function stepUndo(tid,s){if(!s)return;await setT(tid,{inj:s.prev});/* 11-05 망령 「단계 회복하면 버려야 할 카드 표시 지우게」: 세 칸 규칙으로 붙은 owe 하나 지움 */if(s.three)try{const R=R3();if(R&&R.run)await R.run({op:'oweDown',tid,n:1})}catch(e){}await refundOrd(s.cut);const DK=window.OM_DECK_UI;if(DK&&DK.penalty)for(const x of (s.pen||[]).slice().reverse())try{if(x&&x.milled&&x.milled.length)await DK.penalty(tid,'unmill','',{ids:x.milled});else if(x&&x.cid)await DK.penalty(tid,'undo','',{cid:x.cid})}catch(e){}}
  /* 실패 확정: 단계 + 패널티 묶음 (자동이면) */
  async function settleFail(tid,r){const O=r.offerId==='free'?null:st().offer;delete r.pend;if(r.offerId==='free'?+r.noStep:(O&&O.id===r.offerId&&O.noStep)){r.text+='\n상태 단계는 오르지 않는 체크';}else{const s=await stepUp(tid,(r.label||'스킬 체크')+' 실패',r.how==='mon'?r.mid:'');r.step=s;r.text+='\n'+s.line;A().sysLog(s.line,'dice');
    /* 11-05 배수진: 실패하면 상태 단계가 한 단계 더 */if(r.ek&&r.ek.code==='체크+2'&&/실패/.test(r.ek.arg||'')&&s.now<3){const s2=await stepUp(tid,`「${r.ek.n}」 실패 — 한 단계 더`,r.how==='mon'?r.mid:'');r.step2=s2;r.text+='\n'+s2.line;A().sysLog(s2.line,'dice')}}

@@ -47,21 +47,23 @@ window.OM_SK3R=(()=>{
     const src=(s.h[p.from]||{}).r;if(!src||!src.on)return {err:'그 예비 카드는 이미 없다'};if(!kindsOf(src.n).includes(p.k))return {err:`「${src.n}」 은(는) ${KN[p.k]} 카드가 아니다`};
     s.h[p.tid]=s.h[p.tid]||{};s.h[p.tid][p.k]={n:src.n,on:1,from:p.from};src.on=0;src.mv=1;
     lines.push(`${nm(p.tid)} — 휴식 보충: ${KN[p.k]} 칸에 「${src.n}」 (${p.from===p.tid?'내':nm(p.from)+' 의'} 예비)`);break}
+   case 'oweDown':{/* 11-05 망령: 상태 단계가 되돌아가면(침착한 대처 · 바치기 · 무리하지 마 · 커버) 그 단계로 붙은 「버려야 할 카드」 표시도 하나 지운다 — 줄이기만 하므로 누구 요청이든 받는다 */const n0=+s.owe[p.tid]||0;if(!n0)return {lines:[]};const n=Math.max(0,n0-(+p.n||1));if(n)s.owe[p.tid]=n;else delete s.owe[p.tid];lines.push(`${nm(p.tid)} — 상태 단계가 되돌아가 버려야 할 카드 ${n0} → ${n}장`);break}
    case 'owe':{if(!isGm)return {err:'GM 만'};const n=Math.max(0,Math.min(4,Math.round(+p.n||0)));if(n)s.owe[p.tid]=n;else delete s.owe[p.tid];lines.push(`${nm(p.tid)} — 버려야 할 카드 ${n}장`);break}
    default:return {err:'모르는 요청'}}
+  if(!lines.length)return {lines,none:1};
   s.log=[...lines.map(t=>({at:Date.now(),t:(isGm?'':by+' · ')+t})),...(s.log||[])].slice(0,40);
   return {lines}}
- async function apply(p,who){const s0=S3();const s=clone(s0);const R=exec(s,p,who);if(R.err)return R;
+ async function apply(p,who){const s0=S3();const s=clone(s0);const R=exec(s,p,who);if(R.err||R.none)return R;
   const ok=Object.keys(s0).length?await A().setDiff(['sk3'],s0,s,3):await A().set(['sk3'],s);if(!ok)return {err:'저장하지 못했다'};
   for(const t of R.lines)A().sysLog('🗝 '+(who==='gm'?'':nm(who)+' · ')+t,'sys');
   /* 11-05 망령 「카드 DB 에 자동화 구문 넣어서 웹툴에서 다 자동화」: 「사용」 이면 그 카드의 「은열쇠 …」 효과를 실행 (js/sk3_fx.js · GM 화면에서만 — 좌석 요청도 GM 화면이 여기로 온다) */
   /* 11-05 바치기 → 지금 제시된 체크에 +1 (skill_ui.bk3Give · 이미 굴렸으면 결과에 바로) */if(p.op==='commit'&&window.OM_SKILL_UI&&window.OM_SKILL_UI.bk3Give){const n=(((s0.h||{})[p.tid]||{})[p.k]||{}).n;if(n)try{const t=await window.OM_SKILL_UI.bk3Give(p.tid,n,p.who||p.tid);if(t)A().sysLog('🗝 '+t,'sys')}catch(e){console.warn('바치기',e)}}
   if(p.op==='use'&&!p.quiet&&window.OM_SK3FX){const n=(((s0.h||{})[p.tid]||{})[p.k]||{}).n;if(n)try{const F=await window.OM_SK3FX.onUse(p.tid,n,{who});for(const t of (F.lines||[]))A().sysLog('🗝 '+t,'sys');if(F.after==='refill'&&who==='gm')setTimeout(()=>{try{const empty=['b','c','d'].find(k=>{const x=((S3().h||{})[p.tid]||{})[k];return !(x&&x.on)&&reserve(S3().h).some(y=>y.ks.includes(k))});if(empty)pickRefill(p.tid,empty)}catch(e){}},300)}catch(e){console.warn('은열쇠 효과',e);A().toast('카드 효과를 적용하지 못했다: '+(e.message||e))}}
   return R}
- async function run(p){if(gm()){const R=await apply(p,'gm');if(R.err)A().toast(R.err);draw();return R}
+ async function run(p){if(gm()){const R=await apply(p,'gm');if(R.err)A().toast(R.err);draw();return R}if(p.op==='oweDown'&&!(((S3().owe)||{})[p.tid]))return {lines:[]};
   const seat=ST().seat;if(!seat)return A().toast('자리에 앉아야 카드를 쓸 수 있다');
   const rid='q'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
-  if(await A().set(['pub',seat,'sk3q',rid],{p,at:Date.now()}))A().toast('GM 화면으로 보냈다');}
+  if(await A().set(['pub',seat,'sk3q',rid],{p,at:Date.now()})&&p.op!=='oweDown'&&!p.quiet)A().toast('GM 화면으로 보냈다');}
  let busy=false;
  async function absorb(){if(!gm()||busy)return;const pub=ST().state.pub||{};const todo=[];for(const sid of Object.keys(pub)){const q=(pub[sid]||{}).sk3q||{};for(const [rid,x] of Object.entries(q))if(x)todo.push({sid,rid,x})}
   if(!todo.length)return;busy=true;todo.sort((a,b)=>(+a.x.at||0)-(+b.x.at||0));
