@@ -1117,7 +1117,7 @@ window.OM_BATTLE_UI=(()=>{
      if(k!==N)return;const a=FX().autoOf(m,kind,name);
      /* 11-04 19:33 망령 「횟수 빠진 선회도」: 『질투닌의 선회』(【1/시】【지연 (2턴)】 턴 종료 이후 임의 교대할 수 있다)를 지연이 풀리는 턴 개시에 저절로 돌려
         횟수를 깎고, 진행 창(GM)에 「임의 교대할까?」를 띄웠다 — 「할 수 있다」 · 임의 교대 같은 고르는 효과는 저절로 쓰지 않고 「이제 쓸 수 있다」만 알린다 (쓸 때 카드 「발동」) */
-     if(li===0&&a&&a.ops&&a.ops.some(o=>o&&o.k==='freeswitch')||/할\s*수\s*있다/.test(ln)){notes.push(`${lab} — 나온 지 ${N}턴째, 이제 쓸 수 있다 (때가 되면 그 포켓몬 카드에서 「발동」 — 저절로 쓰지 않음)`);return}
+     if(limManual(m,kind,name,eff)||(li===0&&a&&a.ops&&a.ops.some(o=>o&&o.k==='freeswitch'))||/할\s*수\s*있다/.test(ln)){notes.push(`${lab} — 나온 지 ${N}턴째, 이제 쓸 수 있다 (때가 되면 그 포켓몬 카드에서 「발동」 — 저절로 쓰지 않음)`);return}
      if(li===0&&a&&a.ops&&a.ops.length&&!a.manual){fireAuto(m.id,kind,name,{quiet:true,head:`【지연】 ${lab} — 나온 지 ${N}턴째, 발동`}).catch(e=>console.warn('delay',e))}
      else notes.push(`${lab} — 나온 지 ${N}턴째, 이번 턴부터 (손으로)`)})}}
   if(notes.length)A().sysLog(`【지연】 ${T}턴\n${notes.join('\n')}`,'battle')}
@@ -1773,7 +1773,7 @@ window.OM_BATTLE_UI=(()=>{
     else if(f)cutFire('m:'+mid,x.image,`${m.name}의 ${f.kind||'폼체인지'}!`,`→ 「${x.name}」`,col)}
    /* 새 특성의 등장·상시 구문은 바로 */
    const ab=ctx().b.mons[mid];if(f&&ab&&ab.ability&&ab.ability!==o.ability&&FX()){const a=FX().autoOf(ab,'trait',ab.ability);if(a&&a.ops&&a.ops.length&&!a.manual){const tm=FX().timing(a.text||'');if(tm.entry||tm.passive)await fireAuto(mid,'trait',ab.ability,{quiet:true,noRoll:!!tm.passive})}}
-   {const cm=ctx().b.mons[mid];if(cm&&FX())for(const n of (cm.formNewPots||[])){const a=FX().autoOf(cm,'pot',n);if(!a||!a.ops||!a.ops.length||a.manual)continue;const tm=FX().timing(a.text||'');if(tm.entry||tm.passive)await fireAuto(mid,'pot',n,{quiet:true,noRoll:!!tm.passive})}}return true}
+   {const cm=ctx().b.mons[mid];if(cm&&FX())for(const n of (cm.formNewPots||[])){const a=FX().autoOf(cm,'pot',n);if(!a||!a.ops||!a.ops.length||a.manual)continue;if(limManual(cm,'pot',n))continue;const tm=FX().timing(a.text||'');if(tm.entry||tm.passive)await fireAuto(mid,'pot',n,{quiet:true,noRoll:!!tm.passive})}}return true}
  /* HP 조건 폼체인지 (10-26 망령): 폼 조건 글이 「HP : 1/2 이하」 꼴이면 HP 가 그만큼 내려갔을 때 자동으로 (한 배틀에 한 번) */
  let hpFormBusy=false;
  async function hpFormWatch(){const c=ctx();const b=c.b;if(!c.mgr||!b.started||hpFormBusy)return;if(!isLeader(c))return;hpFormBusy=true;try{for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0||m.hpFormDone||m.form0)continue;const fs=formsOf(m);
@@ -2064,6 +2064,8 @@ window.OM_BATTLE_UI=(()=>{
   if(!await saveBattle(nb0,nb,f,{n:m.name,s:name,img:opt.img!=null?opt.img:(m.image||'')}))return false;if(raidNew)raidCut(m);
   if(kind==='item'&&oneShot(m0)&&!opt.quiet&&await askYes(`「${name}」을(를) 다 썼나? (소지품 칸에서 뺀다)`,'뺀다','남긴다'))setTimeout(()=>itemConsume(mid),50);
   A().sysLog(opt.head?`${opt.head}${L.length?'\n'+L.join('\n'):''}`:`【${({pot:'포텐셜',trait:'특성',item:'소지품',order:'지령'})[kind]||'효과'}】 ${m.name} 『${name}』${L.length?'\n'+L.join('\n'):''}`,'battle',{mid:m.id,img:opt.img!=null?opt.img:(m.image||''),eff:String(opt.eff||auto.text||(kind==='trait'?m.abilityEff:kind==='item'?m.itemEff:((potSrc(m).find(p=>p&&p.name===name)||{}).eff))||'').replace(/<br\s*\/?>/g,'\n').slice(0,300)});return true}
+ /* 11-04 19:37 망령 「【1/시】는 【자동】이 붙은 게 아닌 이상 맘대로 발동하지 마」: 횟수(【N/시】)가 있는 포텐셜은 【자동】이 없으면 저절로 쓰지 않는다 — 등장 · 상시 · 지연 · 폼 체인지 자동 모두. 쓸 때는 카드 「발동」 · 선행 입력 */
+ function limManual(m,kind,name,tx){if(kind!=='pot')return false;const t=String(tx!=null&&tx!==''?tx:(slotEff(m,kind,name)||''));return /【\s*\d+\s*\/\s*시\s*】/.test(t)&&!/【\s*자동\s*】/.test(t)}
  function slotEff(m,kind,name){const n=String(name||'').replace(/『|』/g,'');if(kind==='trait')return m.abilityEff||(FX()&&FX().effOf?FX().effOf('trait',n):'');if(kind==='item'){const x=n===m.item?m:(m.items2||[]).find(q=>q&&q.item===n);return (x&&x.itemEff)||''}
   const pe=((potSrc(m).find(p=>p&&p.name===n)||{}).eff)||'';if(pe)return pe;/* 11-03: 트레이너 고유 포텐셜의 효과 글도 (autoOnEntry · fireAuto) */const t=m&&m.tid?((ctx().b.trainers||{})[m.tid]):null;const u=t&&(t.unique||[]).find(q=>q&&String(q.name||'').replace(/『|』/g,'')===n);return (u&&u.eff)||''}
  /* 턴 개시 자동 (10-24 망령): 「턴 개시 시」 · 【턴 개시】 가 적힌 특성 · 소지품 · 포텐셜 — 구문이 있으면 (확률을 굴려) 발동, 없으면 확률만 굴려 손으로 할 일을 알린다 */
@@ -2126,7 +2128,7 @@ window.OM_BATTLE_UI=(()=>{
   if(m.ability)list.push(['trait',m.ability]);if(m.item)list.push(['item',m.item]);for(const p of [...(m.pots||[]),...(m.excl?[m.excl]:[]),...(m.exclX||[])])if(p&&p.name&&!p.ph)list.push(['pot',p.name]);
   /* 11-03 감우: 트레이너 고유 포텐셜도 같은 길로 — 【등장】 · 【상시】 이고 구문이 있으면 그 트레이너의 포켓몬이 나올 때 건다 (autoOf 가 m.tid 로 고유 구문을 읽는다). 횟수(【N/시】)가 있는 고유는 손으로(선행 · 임의 발동) */
   {const t=(c.b.trainers||{})[m.tid];for(const u of ((t&&t.unique)||[]))if(u&&u.name&&!/【\s*\d+\s*\/\s*(시|턴)\s*】/.test(String(u.eff||''))&&!list.some(([k,n])=>k==='pot'&&n===u.name))list.push(['pot',u.name])}
-  for(const [kind,name] of list){const a=FX().autoOf(m,kind,name);if(!a||!a.ops||!a.ops.length||a.manual)continue;/* 시트에 직접 쓴 구문은 글이 없으니 그 칸의 효과 글에서 【등장】/【상시】 를 읽는다 */const tm=FX().timing(a.text||slotEff(m,kind,name)||'');
+  const MANL=[];for(const [kind,name] of list){const a=FX().autoOf(m,kind,name);if(!a||!a.ops||!a.ops.length||a.manual)continue;if(limManual(m,kind,name,slotEff(m,kind,name)||a.text)){if(!MANL.includes(name))MANL.push(name);continue}/* 시트에 직접 쓴 구문은 글이 없으니 그 칸의 효과 글에서 【등장】/【상시】 를 읽는다 */const tm=FX().timing(a.text||slotEff(m,kind,name)||'');
    const etx2=a.text||slotEff(m,kind,name)||'';
    /* 10-26 망령: 표시 없는 상시 특성 · 포텐셜 (테크니션 · 적응력 · 철주먹 · 멀티스케일 …) — 지속형 구문뿐이고 계기 말(받았을 때 · 턴 종료 …)이 없으면 등장 때 건다.
       「공격 : B」 이하일 때 같은 자기 등급 조건(천하장사 · 순수한힘 · 퍼코트 …)은 등급을 보고 맞으면 건다 */
@@ -2139,7 +2141,8 @@ window.OM_BATTLE_UI=(()=>{
    /* 【등장 (통상 교대)】 · 【등장 (임의 교대)】 · 【등장 (죽어내밀기)】: 그렇게 나왔을 때만 (바운서 · 닌자 ②) */
    {const hx=String(etx2).split(/[②③④⑤]/)[0].match(/【등장\s*\(([^)]+)\)】/);if(hx&&!tm.entry&&!(a.ops.length===1&&a.ops[0].k==='choice')){if(!o2.passiveOnly&&o2.how&&hx[1].replace(/\s/g,'').includes(String(o2.how).replace(/\s/g,'')))await fireAuto(mid,kind,name,{quiet:true});continue}}
    if(tm.entry){if(!o2.passiveOnly)await fireAuto(mid,kind,name,{quiet:true})}
-   else if(tm.passive||(!tm.turnEnd&&passiveOps(a.ops,etx2))){if(!condNow(ctx().b,ctx().b.mons[mid],a.ops))continue;const cur=ctx().b.mons[mid];if(cur&&(cur.fxDone||{})[name])continue;if(await fireAuto(mid,kind,name,{quiet:true,noRoll:true})){const d=Object.assign({},(ctx().b.mons[mid]||{}).fxDone||{});d[name]=1;await A().set(['battle','mons',mid,'fxDone'],d)}}}}
+   else if(tm.passive||(!tm.turnEnd&&passiveOps(a.ops,etx2))){if(!condNow(ctx().b,ctx().b.mons[mid],a.ops))continue;const cur=ctx().b.mons[mid];if(cur&&(cur.fxDone||{})[name])continue;if(await fireAuto(mid,kind,name,{quiet:true,noRoll:true})){const d=Object.assign({},(ctx().b.mons[mid]||{}).fxDone||{});d[name]=1;await A().set(['battle','mons',mid,'fxDone'],d)}}}
+  if(MANL.length&&!o2.passiveOnly)A().sysLog(`【포텐셜】 ${m.name} — ${MANL.map(n=>'『'+n+'』').join(' ')} 【N/시】 — 저절로 쓰지 않는다 (【자동】이 없다 · 쓸 때 카드 「발동」 · 선행 입력)`,'battle')}
  /* 포켓몬마다 급소 규칙 (10-23 망령 · 제작기 상세 조정): tbl 급소 표 · add 급소 랭크 + · guard 받을 때 방호 · dmg 급소 대미지 배율 · sure 언제나 급소 · never 급소에 맞지 않음 */
  const CRR=m=>(m&&m.critRule)||{};
  /* 10-24 망령: 지시 급소 보정 (고정식, 오레마스 룰) — 상대 · 야생과 상관없이 공격 쪽 트레이너 「지시」 랭크값 − 3 (A +1 · AA +2 · AAA +3 · S +4). 야생 포켓몬(트레이너 없음)은 0.
