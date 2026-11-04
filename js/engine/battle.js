@@ -79,7 +79,7 @@ window.OM_BATTLE=(()=>{
   const defStat=o.defStat||(cat==='special'?'specialdefense':'defense');
   const L=floor(atk.lv*2/5+2);
   const free1=num(o.free1,1),free2=num(o.free2,1),item1=num(o.item1,1),item2=num(o.item2,1),trait=num(o.trait,1),weather=num(o.weather,1);
-  const P0=+o.power||+move.pow||0,PM=(o.helping?1.5:1)*free1*free2*item1*item2*(o.charge?2:1)*trait*(o.watersport?0.5:1)*(o.mudsport?0.5:1)*num(o.powerBoost,1);
+  const P0=+o.power||+move.pow||0,PM=(o.helping?(+o.helping>1?+o.helping:1.5):1)*free1*free2*item1*item2*(o.charge?2:1)*trait*(o.watersport?0.5:1)*(o.mudsport?0.5:1)*num(o.powerBoost,1);
   /* 10-27 망령: 「명중할 때 마다 위력이 N 씩 증가」(트리플악셀 · 트리플킥) — powStep: k 번째로 맞은 타의 위력 = 위력 + N×k (빗나가면 멈추니 맞은 순서 = 타 순서) */
   const step=num(o.powStep,0);let P=P0*PM;
   const burn=(cat==='physical'&&has(atk,'Burn')&&!(has(atk,'Guts')||o.burnGuts))?0.5:1;
