@@ -39,8 +39,8 @@ window.OM_SKILL_UI=(()=>{
   mid:{hp:'1/2',hp_one:0,revive:1,revive_hp:'1/4',cure_ab:1,cure_sp:1,pot_pk_n:'1',ord_n:'0',ord_po:2,ord_pc:3,pot_tr_n:'1',inou:1,inj_n:1,swap:1,key_n:'0',card_n:'2'},
   /* 10-28 망령(시뮬 맞춤): 짧은 휴식 = 전원 HP 1/4 · 빈사는 HP 1 · 상태 회복 · 파티 전체 4식 1 · 6령 1 / 11-05 03:11 망령 「짧은 휴식에 상태 이상을 빼자」: 상태 이상(독 · 화상 · 마비 · 잠듦 · 얼음)은 고치지 않는다 — 은열쇠 「정화」 몫. 상태 변화는 그대로 고침 */
   short:{hp:'1/4',hp_one:0,revive:1,revive_hp:'1',cure_ab:0,cure_sp:1,pot_pk_n:'0',ord_n:'0',ord_po:1,ord_pc:1,pot_tr_n:'0',inou:1,inj_n:1,swap:1,key_n:'0',card_n:'1'},
-  /* 10-28 22시 망령: 숨돌리기 = 가장 다친 1체 HP 1/4 + 파티 6령 1 */
-  breath:{hp:'1/4',hp_one:1,revive:0,revive_hp:'1',cure_ab:0,cure_sp:0,pot_pk_n:'0',ord_n:'0',ord_po:0,ord_pc:1,pot_tr_n:'0',inou:0,inj_n:0,swap:0,key_n:'0',card_n:'0'}};   /* 11-01 은열쇠: card_n = 휴식 박자 드로우 (긴 = 손패 · 버린 카드를 섞고 다시 · 중간 2 · 짧은 1 · 숨돌리기 0). key_n(예전 은열쇠 자원)은 끔 */
+  /* 10-28 22시 망령: 숨돌리기 = 가장 다친 1체 HP 1/4 + 파티 6령 1 / 11-05 03:16 망령 「숨돌리기에 6령을 주지 말고, 대신 부활 HP 1」: 6령 없음 · 빈사는 HP 1 로 */
+  breath:{hp:'1/4',hp_one:1,revive:1,revive_hp:'1',cure_ab:0,cure_sp:0,pot_pk_n:'0',ord_n:'0',ord_po:0,ord_pc:0,pot_tr_n:'0',inou:0,inj_n:0,swap:0,key_n:'0',card_n:'0'}};   /* 11-01 은열쇠: card_n = 휴식 박자 드로우 (긴 = 손패 · 버린 카드를 섞고 다시 · 중간 2 · 짧은 1 · 숨돌리기 0). key_n(예전 은열쇠 자원)은 끔 */
  /* 체크 제시 예시 (자주 쓰는 모양). 「저장」으로 내 것을 더할 수 있다 */
  const EX=[
   {name:'고대 문자 해독 (지시 + 특공 · 어려움 12)',o:{v:4,label:'고대 문자를 해독한다',stat:'지시',base:3,target:12,fit:{types:['에스퍼'],moves:['사이코키네시스'],abil:[]}}},
