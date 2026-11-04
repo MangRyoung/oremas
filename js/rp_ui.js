@@ -326,7 +326,7 @@ window.OM_RP_UI=(()=>{
   const wd=t.wild?(()=>{const L=((ST.state.dg||{}).list)||{};for(const [did,d] of Object.entries(L))if(Object.values((d&&d.r)||{}).some(r=>r&&r.e===t.id))return [did,d.n||'던전'];return ['_','던전']})():null;
   let id=wd?Object.keys(C.folders).find(x=>C.folders[x].wd===wd[0]):Object.keys(C.folders).find(x=>C.folders[x].tid===t.id);
   const loose=keys.filter(k=>!fOf(k)&&!C.hidden[k]);if(!loose.length)return 0;
-  if(!id){id='f'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);C.folders[id]=wd?{name:'야생 · '+wd[1],keys:[],wd:wd[0]}:{name:t.name||'트레이너',keys:[],tid:t.id};
+  if(!id){id='f'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);C.folders[id]=wd?{name:'야생 · '+wd[1],keys:[],wd:wd[0],hid:1}:{name:t.name||'트레이너',keys:[],tid:t.id};
    const at=C.order.indexOf(loose[0]);if(at>=0)C.order.splice(at,0,'f:'+id);else C.order.push('f:'+id)}
   else C.folders[id]=Object.assign({},C.folders[id],{keys:[...(C.folders[id].keys||[])]});
   C.order=C.order.filter(x=>!loose.includes(x));C.folders[id].keys.push(...loose);return loose.length}
