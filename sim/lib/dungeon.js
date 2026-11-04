@@ -238,7 +238,8 @@ async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt
   if(SN){const al=party.flatMap(P=>P.mons.filter(m=>m.hp.cur>0&&m.hp.cur<m.hp.max));al.sort((a,b)=>a.hp.cur/a.hp.max-b.hp.cur/b.hp.max);for(const m of SN==='all'?al:al.slice(0,1))m.hp.cur=Math.min(m.hp.max,m.hp.cur+frac(m.hp.max,adj.restOneHp||'1/4'));
    if(adj.ordScope==='dungeon'){pool.order=Math.min(pool0.order,pool.order+(+adj.restPO||0));pool.command=Math.min(pool0.command,pool.command+(+adj.restPC||0))}}
   if(BN){const al=party.flatMap(P=>P.mons.filter(m=>m.hp.cur>0&&m.hp.cur<m.hp.max));al.sort((a,b)=>a.hp.cur/a.hp.max-b.hp.cur/b.hp.max);if(al[0])al[0].hp.cur=Math.min(al[0].hp.max,al[0].hp.cur+frac(al[0].hp.max,'1/4'));
-   if(adj.ordScope==='dungeon')pool.command=Math.min(pool0.command,pool.command+(adj.restBC==null?1:+adj.restBC||0));for(const P of party)if(R.tired)P.tired.clear();say({k:'rest',room:room.id,kind});return}
+   /* 11-05 03:16 망령: 숨돌리기 = 6령 없음 · 빈사는 HP 1 (adj.breathOld 1 이면 옛 방식 — 6령 restBC) */if(+adj.breathOld){if(adj.ordScope==='dungeon')pool.command=Math.min(pool0.command,pool.command+(adj.restBC==null?1:+adj.restBC||0))}else for(const P of party)for(const m of P.mons)if(m.hp.cur<=0)m.hp.cur=1;
+   for(const P of party)if(R.tired)P.tired.clear();say({k:'rest',room:room.id,kind});return}
   for(const P of party){if(SN==='one'||SN==='all'){/* 03:25 망령: 빈사는 HP 1 로 · 상태 회복 */for(const m of P.mons){if(m.hp.cur<=0)m.hp.cur=1;if(!+adj.shortNoCure||SN!=='all'&&SN!=='one'||kind!=='short')m.states={}}if(R.tired)P.tired.clear();if(R.inou)P.inou=0;if(R.care)P.care=0;P.inj=P.gone?3:Math.max(0,P.inj-R.inj);continue}for(const m of P.mons){if(m.hp.cur<=0){if(typeof R.revive==='string'){m.hp.cur=frac(m.hp.max,R.revive);if(R.cure)m.states={};continue}if(R.revive){m.hp.cur=R.hp==='full'?m.hp.max:1}else continue}else m.hp.cur=R.hp==='full'?m.hp.max:Math.min(m.hp.max,m.hp.cur+frac(m.hp.max,R.hp));if(R.cure)m.states={}}
    if(R.tired)P.tired.clear();if(R.inou)P.inou=0;if(R.care)P.care=0;P.inj=P.gone?3:Math.max(0,P.inj-R.inj)}
   /* 10-28: 휴식이 던전 공용 4식 · 6령을 일부 돌려준다(adj.restO · restC = 1인당, 짧은 휴식 이상) — 웹툴 휴식 설정 「4식 6령 회복」 칸과 같은 뜻 */
@@ -280,7 +281,7 @@ async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt
    if(pend.al>=100){lockdown=true;wipe=true;break}
    while(pend.fights.length){const f=Object.assign({},pend.fights.shift(),{_extra:1});const r=await doBattle(room,f);if(!r||!r.win){wipe=true;break}}if(wipe)break}
   if(room.enc&&CD&&!room.enc.boss){const c=cFind('skip');if(c){cUse(c.P,c.k);cstat.skip++;say({k:'skip',room:rid});if(room.rest)doRest(room,room.rest);continue}}
-  if(room.enc){if(GIM.length)gimRun('battle',room);const r=await doBattle(room,room.enc);if(GIM.length){gimRun(r&&r.win?'win':'lose',room);alWatch(room)}if(!r||!r.win){wipe=true;break}if(room.enc.boss)boss=true}
+  if(room.enc){if(GIM.length)gimRun('battle',room);const r=await doBattle(room,room.enc);if(GIM.length){gimRun(r&&r.win?'win':'lose',room);alWatch(room)}if(!r||!r.win){wipe=true;break}if(room.enc.boss)boss=true;else if(+adj.breathAfter&&!room.rest){doRest(room,'breath');cstat.breathAfter=(cstat.breathAfter||0)+1}}   /* 11-05 시험: 배틀(보스 빼고)을 이길 때마다 숨돌리기 (adj.breathAfter 1) */
   if(pend.al>=100){lockdown=true;wipe=true;break}
   if(room.rest)doRest(room,room.rest);
   {const fl=(room.reward&&room.reward.flag)||((adj.gimReward||{})[rid]);if(fl&&!flags.has(fl)){flags.add(fl);gstat.flags.push(fl);say({k:'flag',room:rid,flag:fl})}}
