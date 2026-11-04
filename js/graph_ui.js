@@ -162,8 +162,9 @@ window.OM_GRAPH_UI=(()=>{
    <div class="row"><label>이름 <input type="text" id="nn" value="${esc(n.name)}"></label><label>종류 <select id="nk">${Object.entries(KIND).map(([k,v])=>`<option value="${k}" ${n.kind===k?'selected':''}>${v}</option>`).join('')}</select></label></div>
    <div class="row" style="margin-top:6px"><label style="flex:1">그림 주소 <input type="text" id="ni" value="${esc(n.img||'')}" style="flex:1" placeholder="비우면 같은 이름의 트레이너·포켓몬 초상을 쓴다"></label></div>
    <div style="margin-top:6px"><textarea id="nt" rows="5" style="width:100%" placeholder="메모 (모두가 본다)">${esc(n.note||'')}</textarea></div>
+   ${G().live==1&&!n.nt?`<label class="row small" style="margin-top:8px;gap:6px"><input type="checkbox" id="npush" ${n.ntPush?'checked':''}> 📓 세션 노트 「항목」으로도 올리기 <span class="dim">(안 고르면 이 방 관계도에만)</span></label>`:''}
    <div class="row" style="margin-top:10px">${id?`<button class="btn sm ghost danger" id="ndel">삭제</button>`:''}<span class="sp"></span><button class="btn pri" id="nok">저장</button></div>`);
-  $('#nok',md).onclick=async()=>{const nn=Object.assign({},n,{name:$('#nn',md).value.trim()||'?',kind:$('#nk',md).value,img:$('#ni',md).value.trim(),note:$('#nt',md).value});A().closeModal();await A().set(['graph','nodes',nn.id],nn)};
+  $('#nok',md).onclick=async()=>{const nn=Object.assign({},n,{name:$('#nn',md).value.trim()||'?',kind:$('#nk',md).value,img:$('#ni',md).value.trim(),note:$('#nt',md).value});{const pu=$('#npush',md);if(pu){if(pu.checked)nn.ntPush=1;else delete nn.ntPush}}A().closeModal();await A().set(['graph','nodes',nn.id],nn)};
   const del=$('#ndel',md);if(del)del.onclick=async()=>{const cnt=Object.values(G().edges||{}).filter(x=>x.a===id||x.b===id).length;if(!confirm(`「${n.name}」를 지울까?${cnt?` 이어진 선 ${cnt}개도 같이 지운다.`:''}`))return;A().closeModal();
    /* 선 → 노드 순서로 하나씩 지운다 (통째로 덮어쓰면 그 사이 다른 변경을 날린다). 트레이너 노드는 지운 표시를 남겨 다시 자동으로 생기지 않게 */
    for(const [k,x] of Object.entries(G().edges||{}))if(x.a===id||x.b===id)await A().set(['graph','edges',k],null);
