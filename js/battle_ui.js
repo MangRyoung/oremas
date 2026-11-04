@@ -1115,6 +1115,9 @@ window.OM_BATTLE_UI=(()=>{
      if(ally){if(k===N)notes.push(`${lab} — 나온 지 ${N}턴째 (아군 조건은 손으로 확인)`);return}
      if(dur){if(k===1)notes.push(`${lab} — 이번 턴부터 ${N}턴 동안 (${T}~${T+N-1}턴)`);else if(k===N+1)notes.push(`${lab} — 끝났다 (손으로 건 효과가 있으면 지운다)`);return}
      if(k!==N)return;const a=FX().autoOf(m,kind,name);
+     /* 11-04 19:33 망령 「횟수 빠진 선회도」: 『질투닌의 선회』(【1/시】【지연 (2턴)】 턴 종료 이후 임의 교대할 수 있다)를 지연이 풀리는 턴 개시에 저절로 돌려
+        횟수를 깎고, 진행 창(GM)에 「임의 교대할까?」를 띄웠다 — 「할 수 있다」 · 임의 교대 같은 고르는 효과는 저절로 쓰지 않고 「이제 쓸 수 있다」만 알린다 (쓸 때 카드 「발동」) */
+     if(li===0&&a&&a.ops&&a.ops.some(o=>o&&o.k==='freeswitch')||/할\s*수\s*있다/.test(ln)){notes.push(`${lab} — 나온 지 ${N}턴째, 이제 쓸 수 있다 (때가 되면 그 포켓몬 카드에서 「발동」 — 저절로 쓰지 않음)`);return}
      if(li===0&&a&&a.ops&&a.ops.length&&!a.manual){fireAuto(m.id,kind,name,{quiet:true,head:`【지연】 ${lab} — 나온 지 ${N}턴째, 발동`}).catch(e=>console.warn('delay',e))}
      else notes.push(`${lab} — 나온 지 ${N}턴째, 이번 턴부터 (손으로)`)})}}
   if(notes.length)A().sysLog(`【지연】 ${T}턴\n${notes.join('\n')}`,'battle')}
