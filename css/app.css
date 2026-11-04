@@ -5588,3 +5588,6 @@ button.tfsep.cl{opacity:1;border:1px dashed color-mix(in srgb,var(--yel2) 55%,tr
 .sgtog{flex:none;width:22px;padding:0 !important}
 .sgh[draggable="true"]{cursor:grab}.sgh[draggable="true"]:active{cursor:grabbing}
 .sgc.dragging{opacity:.45}.sgc.fover{outline:2px dashed var(--yel2);outline-offset:2px}
+/* 접힌 카드가 긴 카드 옆에서 빈칸을 만들지 않게 — 세로로 흘려 채우는 판 */
+.sgboard{display:block;columns:250px auto;column-gap:10px}.sgboard>.sgc{break-inside:avoid;margin:0 0 10px;width:100%;box-sizing:border-box;display:inline-flex}
+@media (max-width:760px){.sgboard{columns:1}}
