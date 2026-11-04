@@ -1090,7 +1090,17 @@ window.OM_BATTLE_UI=(()=>{
  function pBorrow(b,tid,ck,T){if(String(ck).includes('@'))return '';T=T||b.trainers||{};for(const o of pMates(b,tid)){const oc=(T[o]||{}).orderCount||{};if((+oc[ck]||0)>0){T[o].orderCount=Object.assign({},oc,{[ck]:(+oc[ck]||0)-1});return o}}return ''}
  /* 내 몫이 있으면 내 것에서, 없으면 일행에서 하나 — t 는 내 트레이너(고칠 사본), T 는 일행을 고칠 사본(없으면 빌린 키만 돌려준다) */
  function pSpend(b,tid,t,ck,T,bor){t.orderCount=t.orderCount||{};if((+t.orderCount[ck]||0)>0){t.orderCount[ck]=(+t.orderCount[ck]||0)-1;return}if(T){pBorrow(b,tid,ck,T)}else if(bor)bor.push(ck)}
- async function pBorrowSave(tid,list){for(const ck of list||[]){const b=ctx().b;const T0=snap(b.trainers||{}),T=snap(T0);const o=pBorrow(b,tid,ck,T);if(!o)continue;await A().setDiff(['battle','trainers',o],T0[o],T[o],1)}}
+ /* 11-05 00:07 망령 「동시 저장이 겹쳐 횟수가 되돌아가면 무조건 고쳐야」: 트레이너 칸을 setDiff(…,1) 로 쓰면 orderCount · pcList 같은 칸이 「통째로」 옛 사본 값으로 덮였다
+    (선행 발동 창을 띄워 둔 사이 다른 화면이 턴 개시 차감을 하면, 발동 저장이 그 차감을 지웠다 — 쓴 4식이 다시 「남은 1」).
+    → 바뀐 잎만 쓰고, 횟수(orderCount · uUses)는 「이 화면이 바꾼 만큼(차이)」을 지금 서버 값에 더해서 쓴다 */
+ const jeq=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+ function trOps(tid,t0,t1){t0=t0||{};t1=t1||{};const cur=((ctx().b||{}).trainers||{})[tid]||t0;const ops=[];const CNT={orderCount:1,uUses:1};
+  for(const k of new Set([...Object.keys(t0),...Object.keys(t1)])){if(jeq(t0[k],t1[k]))continue;const a=t0[k],z=t1[k];
+   if(CNT[k]&&(a==null||typeof a==='object')&&z&&typeof z==='object'){const A0=a||{},F=cur[k]||{};for(const q of new Set([...Object.keys(A0),...Object.keys(z)])){if(jeq(A0[q],z[q]))continue;if(z[q]==null){ops.push([['battle','trainers',tid,k,q],null]);continue}const d=(+z[q]||0)-(+A0[q]||0);ops.push([['battle','trainers',tid,k,q],Math.max(0,(+F[q]||0)+d)])}}
+   else A().diffOps(['battle','trainers',tid,k],a,z,1,ops)}
+  return ops}
+ function saveTr(tid,t0,t1){const ops=trOps(tid,t0,t1);return ops.length?A().setMany(ops):Promise.resolve(true)}
+ async function pBorrowSave(tid,list){for(const ck of list||[]){const b=ctx().b;const T0=snap(b.trainers||{}),T=snap(T0);const o=pBorrow(b,tid,ck,T);if(!o)continue;await saveTr(o,T0[o],T[o])}}
  function pKeys(b,tid,kind){const t=(b.trainers||{})[tid]||{};const f=kind==='order'?OO().orderKeys:OO().commandKeys;const ks=f(t).slice();for(const o of pMates(b,tid))for(const k of f(b.trainers[o]))if(!k.includes('@')&&!ks.includes(k))ks.push(k);return ks}
  function pName(b,tid,kind,k){const t=(b.trainers||{})[tid]||{};const f=kind==='order'?OO().orderName:OO().commandName;let n=f(t,k);if(n===k)for(const o of pMates(b,tid)){const n2=f(b.trainers[o],k);if(n2!==k){n=n2;break}}return n}
  function pLend(b,tid,ck){return pMates(b,tid).length&&!(+(((b.trainers||{})[tid]||{}).orderCount||{})[ck]>0)&&pN(b,tid,ck)>0}
@@ -1105,19 +1115,19 @@ window.OM_BATTLE_UI=(()=>{
   let rows;try{rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd')}catch(e){return}
   const trs0=snap(ctx().b.trainers||{}),trs=snap(trs0);let any=false;
   const used={o:0,c:0};for(const r of rows||[]){const t=trs[r.id];if(!t||!r.data||!cmdFresh(r,b)||t.pcTurn===key)continue;if(c.fair&&seatOwned(c,r.id))continue;chargeOne(t,r.data,b,used,trs,null,r.id);t.pcTurn=key;any=true}
-  if(any)await A().setDiff(['battle','trainers'],trs0,trs,2)}
+  if(any){const ops=[];for(const tid in trs)ops.push(...trOps(tid,trs0[tid],trs[tid]));if(ops.length)await A().setMany(ops)}}
  /* 좌석: 내 지시의 선입력분은 내 화면이 깎는다 (모의전 · GM 불간섭 · GM 이 없을 때) */
  const BUSY={},SENT={};
  /* 11-03 22:20 (PL 권한 판에서 선행 입력 횟수가 턴마다 들쭉날쭉 빠지던 것): ① 예전엔 페이즈 1(턴 개시 ~ 행동 순서)을 내 화면이 「보는 동안」에만 깎았다 — 진행자가 곧장 행동 단계로 넘기거나 휴대폰이 뒤에 있으면 그 턴을 통째로 건너뛰었다 → 시합 중이고 페이즈 1 이상이면 언제든 이번 턴 몫을 깎는다.
     ② 지시를 못 읽었을 때(통신 오류)도 「깎음」으로 적어 버려 다시 안 깎았다 → 못 읽으면 적지 않고 다음에 다시. ③ 대기 표시(BUSY.pc)가 트레이너 구분 없이 하나라 함께 지시하는 두 번째 트레이너가 막혔다 */
  async function selfCharge(tid0){const c=ctx();const b=c.b;const tid=tid0||c.seat;const t=(b.trainers||{})[tid];if(c.role!=='seat'||!t||!b.started||(+b.phase||0)<1)return;const key=turnKey(b);const bk='pc:'+tid;if(t.pcTurn===key||BUSY[bk]===key)return;BUSY[bk]=key;
   try{let rows;try{rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd')}catch(e){BUSY[bk]=null;return}const r=(rows||[]).filter(x=>cmdFresh(x,ctx().b)).find(x=>x.id===tid);const cm=r&&r.data;
-   if(turnKey(ctx().b)!==key)return;const t0=snap((ctx().b.trainers||{})[tid]||t),t2=snap(t0);if(t2.pcTurn===key)return;const used={o:0,c:0};const bor=[];if(cm)chargeOne(t2,cm,ctx().b,used,null,bor,tid);else t2.pcList={};t2.pcTurn=key;if(!await A().setDiff(['battle','trainers',tid],t0,t2,1))BUSY[bk]=null;else if(bor.length)await pBorrowSave(tid,bor)}catch(e){BUSY[bk]=null;console.warn('선행 차감',e)}}
+   if(turnKey(ctx().b)!==key)return;const t0=snap((ctx().b.trainers||{})[tid]||t),t2=snap(t0);if(t2.pcTurn===key)return;const used={o:0,c:0};const bor=[];if(cm)chargeOne(t2,cm,ctx().b,used,null,bor,tid);else t2.pcList={};t2.pcTurn=key;if(!await saveTr(tid,t0,t2))BUSY[bk]=null;else if(bor.length)await pBorrowSave(tid,bor)}catch(e){BUSY[bk]=null;console.warn('선행 차감',e)}}
  /* GM: PL 권한 중 좌석 트레이너 몫은 좌석 화면이 깎는데, 그 좌석(과 함께 지시하는 좌석)이 아무도 접속해 있지 않으면 GM 화면이 대신 깎는다 */
  async function gmChargeOrphans(){const c=ctx();const b=c.b;if(!c.gm||!c.fair||!b.started||(+b.phase||0)<1)return;const key=turnKey(b);
   const T=Object.keys(b.trainers||{}).filter(tid=>seatOwned(c,tid)&&(b.trainers[tid]||{}).pcTurn!==key&&!A().online(tid)&&!coOf(c,tid).some(s=>A().online(s)));if(!T.length||BUSY.gpc===key+':'+T.join(','))return;BUSY.gpc=key+':'+T.join(',');
   let rows;try{rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd')}catch(e){BUSY.gpc=null;return}
-  for(const tid of T){const r=(rows||[]).filter(x=>cmdFresh(x,ctx().b)).find(x=>x.id===tid);const t0=snap((ctx().b.trainers||{})[tid]||{}),t2=snap(t0);if(t2.pcTurn===key)continue;const bor=[];if(r&&r.data)chargeOne(t2,r.data,ctx().b,{o:0,c:0},null,bor,tid);else t2.pcList={};t2.pcTurn=key;if(await A().setDiff(['battle','trainers',tid],t0,t2,1)&&bor.length)await pBorrowSave(tid,bor)}}
+  for(const tid of T){const r=(rows||[]).filter(x=>cmdFresh(x,ctx().b)).find(x=>x.id===tid);const t0=snap((ctx().b.trainers||{})[tid]||{}),t2=snap(t0);if(t2.pcTurn===key)continue;const bor=[];if(r&&r.data)chargeOne(t2,r.data,ctx().b,{o:0,c:0},null,bor,tid);else t2.pcList={};t2.pcTurn=key;if(await saveTr(tid,t0,t2)&&bor.length)await pBorrowSave(tid,bor)}}
  /* 상태가 바뀔 때마다 (app.js onState): 턴 개시면 내 선입력 차감, 공개 요청이 오면 내 남은 지시를 연다, 진행자는 자동으로 넘긴다 */
  /* 10-26 망령: 배틀 준비(시합 개시 전) 중에 한 파티에 같은 소지품이 겹치면 그 파티를 다루는 사람(GM · 그 좌석)에게만 한 번 알린다. 소지품을 또 바꿔 다르게 겹치면 다시 */
  const DUP_SEEN={};
@@ -1233,14 +1243,14 @@ window.OM_BATTLE_UI=(()=>{
    const MT={공격:'아군의 명중굴림 전',특공:'아군의 명중굴림 전',저격:'아군의 명중굴림 전',방어:'상대의 명중굴림 전',특방:'상대의 명중굴림 전',회피:'상대의 명중굴림 전',민첩:'행동 순서 공개 때',회복:'『지령』을 쓰지 않은 턴의 종료 때'};const mm=kind==='command'&&String(name).match(/^숙달(공격|특공|저격|방어|특방|회피|민첩|회복)지령$/);
    if(RW){if(!(await askYes(kind==='order'?`『윤회의 법계』 ② — 지난 턴 종료에 【임의】가 붙었다.\n「방어」 상태가 아니었던 아군 하나를 「따라가때리기」를 받지 않고 교대시킨다 (교대는 그 포켓몬의 「교대」로).\n남은 횟수 1을 써서 발동할까?`:`『${name}』 ② — 『지령』을 쓰지 않은 지난 턴 종료에 【임의】가 붙었다.\n${m.name} 쪽에 ① 효과를 건다. 남은 횟수 1을 써서 발동할까?`,'발동','그만')))return}
    else if(how==='free'&&!(await askYes(mm?`『${name}』 ② — ${MT[mm[1]]}에 【임의】로 쓸 수 있다.\n지금이 그때면 발동한다.`:`${KN}은 지시 단계에서 선행 입력한 것을 「선행 발동」으로 쓰는 게 원칙이다.\n【임의】가 붙는 조건(6령 ② 등)일 때만 임의 발동한다. 그래도 지금 임의 발동할까?`,mm?'발동':'임의 발동','그만')))return}
-  let tag='';let FBOR='';
+  let tag='';let FBOR='';let PREDED=false;
   if(how==='pre'){tag='【선행】';
    /* 11-04 19:16 망령 「치유의 법계가 이번에도 사용 횟수가 줄지 않았다 — 자동 처리로 하면 횟수가 안 빠지나?」: 선행 발동은 「턴 개시에 깎았다」고 믿고 횟수를 안 건드렸는데,
       턴 개시 차감이 이 지시를 못 읽은 채(지시 행이 없음 · 다른 턴 표시 · 새로고침) 「이번 턴 깎음」으로 적히면 공짜로 걸렸다(시노사와 유이 『치유의 법계』 5턴 — 1 그대로).
       → 이번 턴 차감 목록(pcList)에 이 지시가 없으면 여기서 1 깎고 적는다. 아직 턴 개시 차감 전이면 preSpent 에 적어 두어 나중 차감(chargeOne)이 두 번 깎지 않게 한다 */
    const tk=turnKey(c.b),ok=kind==='order'?'o':'c';const pcK=t.pcTurn===tk;const had=pcK&&((t.pcList||{})[mid]||{})[ok]===key;const ps=(t.preSpent&&t.preSpent.k===tk)?t.preSpent:null;const spent=!!ps&&(((ps.m||{})[mid]||{})[ok]===key);
    if(!had&&!spent){const lend=pLend(c.b,tid,ck);if((+t.orderCount[ck]||0)<=0&&!lend)return A().toast(`『${name}』 — 남은 횟수가 없다 (이번 턴 몫이 아직 안 깎였는데 남은 것도 없다 · 꼭 써야 하면 GM 「강제」)`);
-    if(lend)FBOR=ck;else{t.orderCount[ck]=(+t.orderCount[ck]||0)-1;const sk=kind==='command'?OO().shareKey(t,key):'';if(sk)t.orderCount['command_'+sk]=Math.max(0,(+t.orderCount['command_'+sk]||0)-1)}
+    if(lend)FBOR=ck;else{PREDED=true;t.orderCount[ck]=(+t.orderCount[ck]||0)-1;const sk=kind==='command'?OO().shareKey(t,key):'';if(sk)t.orderCount['command_'+sk]=Math.max(0,(+t.orderCount['command_'+sk]||0)-1)}
     const one=o=>Object.assign({o:'',c:''},o||{},{[ok]:key});
     if(pcK)t.pcList=Object.assign({},t.pcList||{},{[mid]:one((t.pcList||{})[mid])});else{const m2=Object.assign({},(ps&&ps.m)||{});m2[mid]=one(m2[mid]);t.preSpent={k:tk,m:m2}}}}
   else if(how==='free'){const lend=pLend(c.b,tid,ck);if((+t.orderCount[ck]||0)<=0&&!lend)return A().toast('남은 횟수가 없어 임의 발동할 수 없다');if(lend)FBOR=ck;else{t.orderCount[ck]=(+t.orderCount[ck]||0)-1;{const sk=kind==='command'?OO().shareKey(t,key):'';const o=sk?'command_'+sk:'';if(o)t.orderCount[o]=Math.max(0,(+t.orderCount[o]||0)-1)}}tag=(FBOR?'【임의 · 일행 몫】':'【임의】')+(RW?' ② 턴 종료':'')}
@@ -1255,7 +1265,9 @@ window.OM_BATTLE_UI=(()=>{
   if(!fx.length&&FX()){const a=FX().rm(name)||FX().rm(String(name).replace(/\s*[:：]\s*/,' / '));if(a&&a.ops&&a.ops.length&&!a.manual){const r=await FX().run(a.ops,uiCtx(b,m,name,m.entry));fx.push(...r.lines)}}
   if(!fx.length)fx.push(RW&&kind==='order'?`「윤회의 법계」 ② — 아군 하나를 「따라가때리기」 없이 임의 교대 (교대는 손으로)`:`「${name}」 — 손으로 처리`);
   A().closeModal();
-  const okT=await A().setDiff(['battle','trainers',tid],b0.trainers[tid],t,1);if(!okT)return;if(FBOR)await pBorrowSave(tid,[FBOR]);if(String(((A().ST.state.rp||{}).cutin||{}).ord)!=='0')cutFire('t:'+tid,trainerImg(t),`${t.name}의 지시!`,`『${name}』`,t.side==='left'?'#1f6fd1':'#e3101f');b.trainers[tid]=b0.trainers[tid];await saveBattle(b0,b,f,{n:t.name,s:name,img:trainerImg(t)});if(RW)await A().set(['battle','rinne','t',tid],null);else await A().set(['battle','cmds',tid,'fired',mid,kind],key);   /* ② 는 지난 턴 몫 — 이번 턴 「한 턴 하나」에 세지 않는다 */
+  /* 11-05: 창을 띄워 둔 사이 턴 개시 차감이 이 지시를 이미 깎았으면(지금 서버 값의 pcList) 선행 발동 몫은 되돌린다 — 두 번 깎지 않게 */
+  if(PREDED){const tf=((ctx().b||{}).trainers||{})[tid]||{};const tk2=turnKey(ctx().b),ok2=kind==='order'?'o':'c';if(tf.pcTurn===tk2&&(((tf.pcList||{})[mid]||{})[ok2]===key)&&!(b0.trainers[tid].pcTurn===tk2)){t.orderCount[ck]=(+t.orderCount[ck]||0)+1;const sk=kind==='command'?OO().shareKey(t,key):'';if(sk)t.orderCount['command_'+sk]=(+t.orderCount['command_'+sk]||0)+1;const o0=b0.trainers[tid]||{};for(const kk of ['pcList','pcTurn','preSpent']){if(o0[kk]===undefined)delete t[kk];else t[kk]=snap(o0[kk])}}}
+  const okT=await saveTr(tid,b0.trainers[tid],t);if(!okT)return;if(FBOR)await pBorrowSave(tid,[FBOR]);if(String(((A().ST.state.rp||{}).cutin||{}).ord)!=='0')cutFire('t:'+tid,trainerImg(t),`${t.name}의 지시!`,`『${name}』`,t.side==='left'?'#1f6fd1':'#e3101f');b.trainers[tid]=b0.trainers[tid];await saveBattle(b0,b,f,{n:t.name,s:name,img:trainerImg(t)});if(RW)await A().set(['battle','rinne','t',tid],null);else await A().set(['battle','cmds',tid,'fired',mid,kind],key);   /* ② 는 지난 턴 몫 — 이번 턴 「한 턴 하나」에 세지 않는다 */
   /* 11-03 21:54 망령 「4식이나 지령 발동할 때 효과도 UI 에 넣어서 나와야지」: 레디메이드 글이 비어 있으면 제작기 포텐셜 표(4식 · 6령 · 5계 · 영창 …)의 효과 글 */
   const oeff=(FX()&&FX().rm&&(FX().rm(name)||{}).text)||((potRowOf(name)||potRowOf(String(name).replace(/[!！]$/,''))||[])[2])||((potRowOf(name+'!')||[])[2])||'';
   A().sysLog(`【${kind==='order'?'명령':'지령'}】 ${t.name}의 지시! 『${name}』 → ${m.name} (에리어 ${String(m.entry).toUpperCase()}) 【${Math.max(0,+t.orderCount[ck]||0)}/시】${tag}${fx.length?'\n'+fx.join('\n'):''}`,'battle',{mid:m.id,img:trainerImg(t),eff:String(oeff).replace(/<br\s*\/?>/g,'\n').slice(0,400)})}
@@ -2056,7 +2068,7 @@ window.OM_BATTLE_UI=(()=>{
    <div id="opanel">${OO().panel(t,true)}</div><div id="spcnt">${spCntHtml(tid)}</div><div class="small dim" style="margin-top:6px">바꾸면 바로 저장된다 (배틀 쪽 트레이너·포켓몬만 — 시트는 그대로). 고유·전용은 【N/시】가 적힌 것만 횟수가 있다.</div>
    <div class="row" style="margin-top:12px"><button class="btn xs ghost danger" id="ounload" title="이 트레이너와 포켓몬을 배틀에서 뺀다">배틀에서 빼기</button><span class="sp"></span></div>`);
   $('#ounload',md).onclick=()=>{A().closeModal();A().unloadTrainer(tid)};
-  const rebind=()=>OO().bind($('#opanel',md),()=>ctx().b.trainers[tid],async nt=>{await A().setDiff(['battle','trainers',tid],ctx().b.trainers[tid],nt,1);$('#opanel',md).innerHTML=OO().panel(nt,true);rebind()});rebind();
+  const rebind=()=>OO().bind($('#opanel',md),()=>ctx().b.trainers[tid],async nt=>{await A().setDiff(['battle','trainers',tid],ctx().b.trainers[tid],nt,2);$('#opanel',md).innerHTML=OO().panel(nt,true);rebind()});rebind();
   const spBind=()=>$('#spcnt',md).querySelectorAll('[data-spc]').forEach(bt=>bt.onclick=async()=>{const b=ctx().b;const d=+bt.dataset.d,n=bt.dataset.pn;
    const adj=async(x,uses,upath,tpath)=>{if(!x||x.max==null)return;if(x.mmax!=null){const had=uses[n]==null?x.mmax:+uses[n];const uu=Object.assign({},uses);uu[n]=Math.max(0,Math.min(x.mmax,had+d));await A().set(upath,uu)}
      else if(x.per)await A().set([...tpath,n],d<0?(+b.turn||0):null)};   /* 턴 제한만 있으면: − 는 「이번 턴에 썼다」, ＋ 는 그 표시를 지운다 */
