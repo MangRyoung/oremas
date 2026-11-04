@@ -1434,9 +1434,13 @@ window.OM_BATTLE_UI=(()=>{
    for(const mid in b.mons){const m=b.mons[mid];if(m.entry&&m.hp.cur<=0){m.entry='';if(!r1.dead.includes(mid))lines.push(`${m.name}은(는) 쓰러졌다!`)}}}
   else for(const mid in b.mons){const m=b.mons[mid];if(!m.entry||m.hp.cur<=0)continue;
    for(const t of B().turnEnd(m)){if(!t.delta)continue;m.hp.cur=Math.max(0,Math.min(m.hp.max,m.hp.cur+t.delta));lines.push(`${m.name} ${db[t.state]?db[t.state].ko:t.state} ${t.delta>0?'+':''}${t.delta} → ${m.hp.cur}`);if(m.hp.cur<=0){lines.push(`${m.name} 빈사!`);m.entry=''}}}
+  /* 11-04 21:50 망령 「악타입 상대로 미라클아이가 먼저 풀리고 미래예지가 박혀서 0딜 — 미래예지 계는 가장 마지막 타이밍에 포함」:
+     이번 턴 종료에 떨어지는 예고 공격은 다른 상태(미라클아이 · 임시 랭크 …)가 풀리기 전에 먼저 맞힌다 */
+  const futDone=new Map();for(const mid in b.mons){const m=b.mons[mid];const r=m.futRsv;if(!r||!m.entry||m.hp.cur<=0)continue;const v=+((m.states||{})[r.st]);const def=db[r.st]||{};
+   if((def.prog==='turn'||def.prog==='once')&&!movesDown(r.st,def)&&v>0&&v<1000&&v-1<=0){const k0=r.st;lines.push(...futureFire(b,m));futDone.set(mid,k0)}}
   for(const mid in b.mons){const m=b.mons[mid];if(!m.entry||m.hp.cur<=0)continue;
    const st=m.states||{};/* 10-26 망령: 「반동 : 행동불능」으로 쉬는 턴에도 「난동부리기」는 줄어든다 */if(+st.Recharge===1&&st.Thrash){const tv=+st.Thrash;if(tv<=1){delete st.Thrash;relAdd(m,'「난동부리기」')}else if(tv<1000)st.Thrash=tv-1}
-   for(const k in st){const v=+st[k];const def=db[k]||{};if((def.prog==='turn'||def.prog==='once')&&!movesDown(k,def)&&v>0&&v<1000){   /* 10-23 망령: 「다음 기술 한 번」 상태(악인 · 송전 · 자세잡기 …)도 행동 안 했으면 턴 종료에 준다 */st[k]=v-1;if(st[k]<=0){delete st[k];if(m.futRsv&&m.futRsv.st===k)futs.push(m);else relAdd(m,`「${def.ko||k}」`)}}}
+   for(const k in st){const v=+st[k];const def=db[k]||{};if((def.prog==='turn'||def.prog==='once')&&!movesDown(k,def)&&v>0&&v<1000){   /* 10-23 망령: 「다음 기술 한 번」 상태(악인 · 송전 · 자세잡기 …)도 행동 안 했으면 턴 종료에 준다 */st[k]=v-1;if(st[k]<=0){delete st[k];if(m.futRsv&&m.futRsv.st===k)futs.push(m);else if(futDone.get(mid)!==k)relAdd(m,`「${def.ko||k}」`)}}}
    /* 임시 랭크 해제 */
    if(m.tempRank){for(const k in m.tempRank){{const lim=k==='critical'?4:6;m.rank[k]=Math.max(-lim,Math.min(lim,(+m.rank[k]||0)-(+m.tempRank[k]||0)))}}delete m.tempRank;relAdd(m,'임시 랭크')}
    if(m.tempMod){for(const k in m.tempMod){m.mod[k]=Math.round(((+m.mod[k]||1)/(+m.tempMod[k]||1))*1000)/1000;if(Math.abs(m.mod[k]-1)<0.002)delete m.mod[k]}delete m.tempMod}

@@ -3832,6 +3832,8 @@ button.tag.solo:hover{border-color:var(--yel2)}
 .bsay-bub p{margin:0;font-size:15px;line-height:1.6;font-weight:600;word-break:keep-all;overflow-wrap:anywhere}
 .bsay.narr .bsay-bub p{font-style:italic;font-weight:500}
 .bsay.center .bsay-bub{margin:0;box-shadow:5px 5px 0 #000}
+/* 11-04 21:48 망령 「배틀 때 GM이나 나레이션 쪽은 조금 더 위쪽으로 — 지금 필드를 살짝 가린다」: 층을 경기장 위로 최대 48px 늘리고(bsayPlace), 그림 없는 가운데 말풍선은 그 늘린 칸 맨 위에 붙인다. 진영 말풍선(bottom 기준)은 그대로 */
+.bsayL.up .bsay.center:not(.hasimg){top:4px}
 @keyframes bsayIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
 @keyframes bsayInC{from{opacity:0;transform:translate(-50%,-10px)}to{opacity:1;transform:translateX(-50%)}}
 @media (max-width:760px){.bsay{max-width:92%}.bsay-st{width:calc(110px * var(--bs,1));height:calc(170px * var(--bs,1))}.bsay.center.hasimg .bsay-st{width:calc(90px * var(--bs,1));height:calc(140px * var(--bs,1))}.bsay-bub p{font-size:13.5px}}
