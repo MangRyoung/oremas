@@ -51,6 +51,7 @@ const CARD={key:{n:'열쇠 카드',ic:['★'],v:9,eff:'autopass'},sneak:{n:'발�
  v_base8:{n:'숙련된 기초 (눈 8 이하)',ic:['육성'],v:4,eff:'pre',pre:'auto8'},v_calm2:{n:'침착한 대처 (펌블을 성공으로)',ic:['지시'],v:2,eff:'fumbleOk'},v_adv3:{n:'역경 (부상 · 중상 패널티 무시 + 1)',ic:['육성'],v:3,eff:'pre',pre:'adv3'},v_coopT:{n:'협력 (동료와 함께 — 두 번 굴려 높은 쪽)',ic:['통솔'],v:3,eff:'pre',pre:'coopT'},v_coopP:{n:'협력 (동료의 체크에만 +1)',ic:['통솔'],v:3,eff:'pre',pre:'coopP'},
  v_guideAl:{n:'길잡이 표식 (다음 방 경계도 안 오름)',ic:['지시'],v:2,eff:'alSkip'},v_guideSkip:{n:'길잡이 표식 (지름길 — 배틀 방 하나 건너뜀)',ic:['지시'],v:6,eff:'skip'},
  v_calm3:{n:'침착한 대처 (1 이 나온 주사위 다시)',ic:['지시'],v:3,eff:'oneReroll'},
+ v_coop3:{n:'협력 (동료 포켓몬 + 이번 체크 +1)',ic:['통솔'],v:3,eff:'pre',pre:'coop3'},
  dead:{n:'광기 카드',ic:[],v:-1,eff:'dead',pen:'mad'},scar:{n:'상흔 카드',ic:[],v:-1,eff:'dead',pen:'scar'}};
 /* 11-01 망령 「코스트」: 효과로 쓸 때만 코스트 (바치기는 무료). 트레이너마다 5점 · 긴 휴식에 5로 */
 const CARD_COST={"key":2,"sneak":3,"gust":1,"bandage":1,"reroll":2,"nocrit":2,"retry":2,"firstaid":2,"craft":2,"food":1,"breath":1,"salt":1,"reso":1,"cover0":2,"note":1,"map":0,"pair":1,"back":1,"call":0,"keyc":2,"suk":2,"lead":2,"body":2,"inou2":2,"bae":0,"k15":2,"k15x":2,"last":1,"adv":0,"medkit":2,"cheer":1,"muri":1,"sotr":1,"mend":2,"bless":1,"calm":1,"scout":1,"clock":0,"rise":1};for(const k in CARD)CARD[k].c=CARD_COST[k]||0;
@@ -150,6 +151,7 @@ async function run(W,dg,parties,opt){opt=opt||{};const rng=opt.rng||BT.mkRng(opt
     else if(C.pre==='adv3'){q2=Object.assign({},q,{inj:0,bonus:(q.bonus||0)+1})}
     else if(C.pre==='coopT'){if(Q===P)continue;q2=Object.assign({},q,{twice:Math.min(1,(+q.twice||0)+1)})}
     else if(C.pre==='coopP'){if(Q===P)continue;q2=Object.assign({},q,{bonus:(q.bonus||0)+1})}
+    else if(C.pre==='coop3'){if(Q===P)continue;const alt=fieldMons(Q).map(m=>{const f=SK.monFit(m,ck);return Object.assign({},q,{mon:f.mon,fit:pol.partner==='match'?f.fit:0,m,bonus:(q.bonus||0)+1})}).sort((a,b)=>SK.modOf(b)-SK.modOf(a))[0];if(!alt||SK.modOf(alt)-1<SK.modOf(q))continue;q2=alt}
     else if(C.pre==='auto7'){if(q.target-SK.modOf(q)>7)continue;p2=1}
     else if(C.pre==='auto10t'){if(target>10||q.target-SK.modOf(q)>10)continue;p2=1}
     else if(C.pre==='adv2'){q2=Object.assign({},q,{bonus:(q.bonus||0)+(Q.inj>=1?2:1)})}

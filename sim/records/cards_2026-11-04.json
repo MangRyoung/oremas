@@ -1,0 +1,75 @@
+{
+ "at": "2026-11-04T15:58:57.182Z",
+ "decks": [
+  "",
+  "slot"
+ ],
+ "trios": 3,
+ "vn": 1,
+ "rows": [
+  {
+   "id": "md1_forest",
+   "name": "온실 뒤 덩굴숲",
+   "tier": "easy",
+   "wr": {
+    "없음": 0.333,
+    "slot": 0.667
+   },
+   "st": {
+    "없음": {
+     "runs": 3,
+     "commit": 0,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 0,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {},
+     "ck": {
+      "n": 11,
+      "ok": 5,
+      "n15": 0,
+      "ok15": 0,
+      "fail": 6
+     }
+    },
+    "slot": {
+     "runs": 3,
+     "commit": 1,
+     "mad": 0,
+     "dead": 0,
+     "skip": 0,
+     "autopass": 0,
+     "retryOk": 0,
+     "lock": 0,
+     "use": {
+      "food": 2,
+      "body": 1,
+      "nocrit": 1,
+      "craft": 2
+     },
+     "ck": {
+      "n": 12,
+      "ok": 11,
+      "n15": 0,
+      "ok15": 0,
+      "fail": 1
+     },
+     "plus": 1,
+     "costSpent": 10,
+     "madIn": 0,
+     "scarIn": 0,
+     "collapse": 0,
+     "penDrawn": 0,
+     "penClear": 0,
+     "noCost": 0,
+     "draws": 0,
+     "mill": 1,
+     "overpay": 0,
+     "madOut": 0
+    }
+   }
+  }
+ ]
+}
