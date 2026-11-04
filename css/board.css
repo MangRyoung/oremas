@@ -91,3 +91,7 @@
 .cb-dossier .cb-mini{all:unset;cursor:pointer;font-size:12px;color:#6c5a33;padding:0 4px}
 /* 10-26 망령: 터치로 실을 톡 치면 메모가 잠깐 보인다 */
 .cb-board .cb-tag.show,.cb-board.focus .cb-tag.show{opacity:1}
+
+/* 11-04 망령 「관계도에 PC · NPC · 객원 구분이 전혀 안 돼 있다」: 분류(group)가 있는 카드는 아래 테두리 색 띠 + 이름표 (PC 빨강 · 객원 주황 · NPC 파랑 · 조직 노랑) */
+.cb-card[style*="--gc"]{border-bottom:5px solid var(--gc);padding-bottom:7px}
+.cb-card .rl .gtag{display:inline-block;font:700 10px/1.5 var(--font,sans-serif);letter-spacing:.06em;color:#fff;background:var(--gc,#777);padding:0 7px;border-radius:2px;margin-right:4px;vertical-align:1px}

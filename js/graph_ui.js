@@ -8,7 +8,7 @@ window.OM_GRAPH_UI=(()=>{
  const $=(s,r)=>(r||document).querySelector(s);
  const V={x:0,y:0,k:1};let drag=null,pan=null;
  const rnd=n=>{const a=new Uint8Array(n||6);crypto.getRandomValues(a);return Array.from(a,b=>'abcdefghijklmnopqrstuvwxyz0123456789'[b%36]).join('')};
- const KIND={pc:'PC',npc:'NPC',org:'조직'};
+ const KIND={pc:'PC',guest:'객원',npc:'NPC',org:'조직'};   /* 11-04 망령 「PC · NPC · 객원 구분」: 객원(guest) — 세션 노트 시트 분류(cls)와 같은 이름 · 색 */
  function G(){return A().ST.state.graph||{nodes:{},edges:{}}}
  function gm(){return A().ST.role==='gm'}
 
@@ -20,10 +20,10 @@ window.OM_GRAPH_UI=(()=>{
     ${G_?`<button class="btn sm ${G().live==1?'pri':'ghost'}" data-g="ntlive" title="켜 두면 세션 노트 관계도와 서로 따라간다 — 인물 · 조직 · PC 노드, 관계선, 자리 (노트에서 「모두」 공개인 것만)">🔗 노트 연동 ${G().live==1?'켬':'끔'}</button><button class="btn sm ghost" data-g="notes" title="세션 노트의 인물 · 조직 · 관계를 이 방 관계도로">📓 세션 노트에서</button><button class="btn sm" data-g="adde">+ 선</button>`:''}</div><div class="cb" id="omBoard"></div>`;
   bindMode(el);el.querySelectorAll('[data-bv]').forEach(b=>b.onclick=()=>{try{localStorage.setItem('om_gboard',b.dataset.bv)}catch(e){}render(el)});
   el.querySelectorAll('[data-g]').forEach(b=>b.onclick=()=>{const k=b.dataset.g;if(k==='notes')return window.OM_NOTES&&OM_NOTES.importGraph();if(k==='ntlive')return window.OM_NOTES&&OM_NOTES.grSet(G().live!=1);if(k==='adde')return editEdge(null)});
-  const groups={pc:{name:'PC',color:'#d22a2a'},npc:{name:'NPC',color:'#2f6fd0'},org:{name:'조직',color:'#e3b51e'}};
+  const groups={pc:{name:'PC',color:'#d22a2a'},guest:{name:'객원',color:'#d9891c'},npc:{name:'NPC',color:'#2f6fd0'},org:{name:'조직',color:'#e3b51e'}};
   const xs=nodes.map(n=>+n.x||0),ys=nodes.map(n=>+n.y||0);const cx=xs.length?(Math.min(...xs)+Math.max(...xs))/2:0,cy=ys.length?(Math.min(...ys)+Math.max(...ys))/2:0;
   const toB=n=>({x:BW/2+((+n.x||0)-cx),y:BH/2+((+n.y||0)-cy)});const fromB=(x,y)=>({x:Math.round(x-BW/2+cx),y:Math.round(y-BH/2+cy)});
-  const nb=nodes.map(n=>Object.assign({id:n.id,name:n.name||'?',role:(n.kind==='pc'?'PC':n.kind==='org'?'조직':'NPC'),img:A().portraitOf(n.name,n.img)||'',group:n.kind||'npc'},toB(n)));
+  const nb=nodes.map(n=>Object.assign({id:n.id,name:n.name||'?',role:'',img:A().portraitOf(n.name,n.img)||'',group:n.kind||'npc'},toB(n)));
   const eb=edges.filter(e=>g.nodes[e.a]&&g.nodes[e.b]).map(e=>({id:e.id,a:e.a,b:e.b,kind:e.shock?'doubt':((+e.rank||0)>=1?'tie':'secret'),label:`${e.label||''}${(+e.rank||0)?' R'+(+e.rank):''}${e.shock?' ⚡':''}`.trim()}));
   if(BOARD)BOARD.destroy();
   BOARD=NT_BOARD.mount($('#omBoard',el),{nodes:nb,edges:eb,groups,W:BW,H:BH,key:'om-board-'+A().ST.room,canEdit:G_,
@@ -40,11 +40,11 @@ window.OM_GRAPH_UI=(()=>{
   if(MODE.v==='mine')return renderMine(el);
   if(bview()==='board'&&window.NT_BOARD)return renderBoard(el);
   const g=G();const nodes=g.nodes||{},edges=g.edges||{};
-  const nodeSvg=Object.values(nodes).map(n=>{const r=n.kind==='pc'?30:n.kind==='org'?26:22;const nimg=A().portraitOf(n.name,n.img);
+  const nodeSvg=Object.values(nodes).map(n=>{const r=n.kind==='pc'||n.kind==='guest'?30:n.kind==='org'?26:22;const nimg=A().portraitOf(n.name,n.img);
    return `<g class="gn ${n.kind||'npc'}" data-n="${n.id}" transform="translate(${n.x||0},${n.y||0})" style="cursor:${gm()?'grab':'pointer'}">
-    ${n.kind==='org'?`<rect x="${-r}" y="${-r}" width="${r*2}" height="${r*2}" transform="rotate(45)" fill="#111" stroke="${n.color||'#fff'}" stroke-width="3"/>`:`<circle r="${r+4}" fill="${n.kind==='pc'?'var(--red)':'#fff'}"/><circle r="${r}" fill="#222"/>`}
+    ${n.kind==='org'?`<rect x="${-r}" y="${-r}" width="${r*2}" height="${r*2}" transform="rotate(45)" fill="#111" stroke="${n.color||'#fff'}" stroke-width="3"/>`:`<circle r="${r+4}" fill="${n.kind==='pc'?'var(--red)':n.kind==='guest'?'#d9891c':'#fff'}"/><circle r="${r}" fill="#222"/>`}
     ${nimg?`<clipPath id="cp_${n.id}"><circle r="${r-1}"/></clipPath><image href="${esc(nimg)}" x="${-r}" y="${-r}" width="${r*2}" height="${r*2}" clip-path="url(#cp_${n.id})" preserveAspectRatio="xMidYMid slice"/>`:`<text y="6" text-anchor="middle" font-size="16" fill="#fff" font-family="var(--lab)">${esc((n.name||'?').slice(0,2))}</text>`}
-    <g transform="translate(0,${r+16})"><rect x="-60" y="-11" width="120" height="20" fill="#000" stroke="${n.kind==='pc'?'var(--red)':'#fff'}" stroke-width="2" transform="skewX(-8)"/><text y="4" text-anchor="middle" font-size="12" fill="#fff" font-family="var(--lab)">${esc(n.name||'')}</text></g></g>`}).join('');
+    <g transform="translate(0,${r+16})"><rect x="-60" y="-11" width="120" height="20" fill="#000" stroke="${n.kind==='pc'?'var(--red)':n.kind==='guest'?'#d9891c':'#fff'}" stroke-width="2" transform="skewX(-8)"/><text y="4" text-anchor="middle" font-size="12" fill="#fff" font-family="var(--lab)">${esc(n.name||'')}</text></g></g>`}).join('');
   const edgeSvg=Object.values(edges).map(e=>{const a=nodes[e.a],b=nodes[e.b];if(!a||!b)return '';const mx=(a.x+b.x)/2,my=(a.y+b.y)/2;const w=1+Math.min(5,+e.rank||0);
    return `<g class="ge" data-e="${e.id}"><line pointer-events="none" x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${e.shock?'var(--red)':'#fff'}" stroke-width="${w}" ${e.shock?'stroke-dasharray="8 5"':''} opacity=".85"/>
     <g class="gel" transform="translate(${mx},${my})" style="cursor:pointer"><rect x="-16" y="-9" width="32" height="18" fill="${e.shock?'var(--red)':'#fff'}" transform="skewX(-10)"/><text y="4" text-anchor="middle" font-size="11" font-family="var(--lab)" fill="${e.shock?'#fff':'#000'}">${e.shock?'⚡':''}R${+e.rank||0}</text>${e.label?`<text y="22" text-anchor="middle" font-size="10" fill="#ccc">${esc(e.label)}</text>`:''}</g></g>`}).join('');
@@ -53,7 +53,7 @@ window.OM_GRAPH_UI=(()=>{
     ${gm()?`${UNDO?'<button class="btn sm ghost" data-g="undo" title="자동 정리 전 배치로 되돌린다">↶ 되돌리기</button>':''}<button class="btn sm" data-g="auto" title="선으로 이어진 사람끼리 가깝게, 랭크가 높을수록 더 가깝게, PC 는 가운데로 — 겹치지 않게 다시 놓는다">✦ 자동 정리</button><button class="btn sm" data-g="addn">+ 노드</button><button class="btn sm ${G().live==1?'pri':'ghost'}" data-g="ntlive" title="켜 두면 세션 노트 관계도와 서로 따라간다 — 인물 · 조직 · PC 노드, 관계선, 자리 (노트에서 「모두」 공개인 것만)">🔗 노트 연동 ${G().live==1?'켬':'끔'}</button><button class="btn sm ghost" data-g="notes" title="세션 노트의 인물 · 조직 · 관계를 이 방 관계도로">📓 세션 노트에서</button><button class="btn sm" data-g="adde">+ 선</button>`:''}</div>
    <div class="gwrap"><svg id="gsvg" width="100%" height="100%"><defs><pattern id="dots" width="22" height="22" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1.2" fill="#2a2a2a"/></pattern></defs>
     <rect width="100%" height="100%" fill="url(#dots)"/><g id="gview" transform="translate(${V.x},${V.y}) scale(${V.k})">${edgeSvg}${nodeSvg}</g></svg>
-    <div class="glegend"><b>관계도</b><div class="small">빨간 테두리 = PC, 흰 테두리 = NPC, 마름모 = 조직. 선 굵기와 R 숫자가 관계 랭크, 빨간 점선과 ⚡가 쇼크.</div></div></div>`;
+    <div class="glegend"><b>관계도</b><div class="small">빨간 테두리 = PC, 주황 = 객원, 흰 테두리 = NPC, 마름모 = 조직. 선 굵기와 R 숫자가 관계 랭크, 빨간 점선과 ⚡가 쇼크.</div></div></div>`;
   const svg=$('#gsvg',el);
   bindMode(el);el.querySelectorAll('[data-bv]').forEach(b=>b.onclick=()=>{try{localStorage.setItem('om_gboard',b.dataset.bv)}catch(e){}render(el)});
   el.querySelectorAll('[data-z]').forEach(b=>b.onclick=()=>{if(b.dataset.z==='in')V.k=Math.min(3,V.k*1.2);if(b.dataset.z==='out')V.k=Math.max(.3,V.k/1.2);if(b.dataset.z==='fit')fit(svg);render(el)});
@@ -80,11 +80,11 @@ window.OM_GRAPH_UI=(()=>{
  function bindMode(el){el.querySelectorAll('[data-gm]').forEach(b=>b.onclick=()=>{MODE.v=b.dataset.gm;try{localStorage.setItem('om_gmode',MODE.v)}catch(e){}render(el)})}
  const TRS=()=>((A().ST.state.roster||{}).trainers)||{};
  function myNode(){const ns=Object.values(G().nodes||{});
-  if(gm()){const pcs=ns.filter(n=>n.kind==='pc');if(MODE.me&&G().nodes[MODE.me])return G().nodes[MODE.me];return pcs[0]||null}
-  const t=TRS()[A().ST.seat];if(!t)return null;return ns.find(n=>n.kind==='pc'&&n.name===t.name)||ns.find(n=>n.name===t.name)||null}
+  if(gm()){const pcs=ns.filter(n=>(n.kind==='pc'||n.kind==='guest'));if(MODE.me&&G().nodes[MODE.me])return G().nodes[MODE.me];return pcs[0]||null}
+  const t=TRS()[A().ST.seat];if(!t)return null;return ns.find(n=>(n.kind==='pc'||n.kind==='guest')&&n.name===t.name)||ns.find(n=>n.name===t.name)||null}
  const RR=rk=>150+(10-Math.max(0,Math.min(10,rk)))*20;   /* 랭크 10 → 150, 랭크 0 → 350 */
  function renderMine(el){const g=G();const nodes=g.nodes||{};const me=myNode();
-  const pcs=Object.values(nodes).filter(n=>n.kind==='pc');
+  const pcs=Object.values(nodes).filter(n=>(n.kind==='pc'||n.kind==='guest'));
   const pick=gm()&&pcs.length?`<select id="gme" class="gme">${pcs.map(n=>`<option value="${n.id}" ${me&&me.id===n.id?'selected':''}>${esc(n.name)}</option>`).join('')}</select>`:'';
   const top=`<div class="gtop">${modeBar()}${pick}<span class="small dim gmhint">가운데가 나 · 가까울수록 랭크가 높다 · 누르면 자세히</span></div>`;
   if(!me){el.innerHTML=top+`<div class="gmine"><div class="empty">${gm()?'관계도에 PC 노드가 아직 없다':'관계도에 내 트레이너 노드가 아직 없다<br><span class="small dim">GM 이 접속해 있으면 저절로 생긴다</span>'}</div></div>`;bindMode(el);return}

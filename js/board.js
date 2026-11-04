@@ -29,8 +29,8 @@ window.NT_BOARD=(()=>{
   const gs=[...new Set(D.nodes.map(n=>n.group||''))];gs.forEach(g=>{const b=document.createElement('button');b.type='button';b.className='cb-chip';b.setAttribute('aria-pressed',hidden[g]?'false':'true');b.innerHTML=`<i style="background:${gcol(g)}"></i>${esc((D.groups[g]&&D.groups[g].name)||g||'기타')}`;b.onclick=()=>{hidden[g]=!hidden[g];b.setAttribute('aria-pressed',hidden[g]?'false':'true');saveUi();applyHidden()};gbox.appendChild(b)});
   /* 카드 */
   const cards={},pins={},pos={};
-  D.nodes.forEach(n=>{pos[n.id]={x:+n.x||W/2,y:+n.y||H/2};const c=document.createElement('div');c.className='cb-card'+(n.img?'':' memo')+(n.gmOnly?' gmonly':'');c.tabIndex=0;c.dataset.id=n.id;const r=((hash(n.id)%9)-4)*.8;c.style.transform=`rotate(${r}deg)`;
-   c.innerHTML=(n.img?`<div class="ph"><div class="tok" style="background-image:url('${String(n.img).replace(/'/g,'%27')}')"></div></div>`:`<div class="ph">${SIL}</div>`)+`<p class="nm">${esc(n.short||n.name)}</p><p class="rl">${esc(n.role||'')}</p>`;
+  D.nodes.forEach(n=>{pos[n.id]={x:+n.x||W/2,y:+n.y||H/2};const c=document.createElement('div');c.className='cb-card'+(n.img?'':' memo')+(n.gmOnly?' gmonly':'');c.tabIndex=0;c.dataset.id=n.id;const r=((hash(n.id)%9)-4)*.8;c.style.transform=`rotate(${r}deg)`;if(n.group&&D.groups[n.group])c.style.setProperty('--gc',gcol(n.group));   /* 11-04 망령 「관계도에 PC · NPC · 객원 구분이 전혀 안 돼 있다」: 분류 색 띠 · 이름표 */
+   c.innerHTML=(n.img?`<div class="ph"><div class="tok" style="background-image:url('${String(n.img).replace(/'/g,'%27')}')"></div></div>`:`<div class="ph">${SIL}</div>`)+`<p class="nm">${esc(n.short||n.name)}</p><p class="rl">${n.group&&D.groups[n.group]?`<b class="gtag">${esc(D.groups[n.group].name||n.group)}</b>`:''}${esc(n.role&&!(D.groups[n.group]&&D.groups[n.group].name===n.role)?n.role:'')}</p>`;
    board.appendChild(c);cards[n.id]=c;const p=document.createElement('i');p.className='cb-pin';p.style.setProperty('--pc',gcol(n.group));board.appendChild(p);pins[n.id]=p;drag(c,n.id);
    c.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();select(n.id)}})});
   const anchor=id=>({x:pos[id].x,y:pos[id].y-82});

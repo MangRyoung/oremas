@@ -93,7 +93,7 @@ window.OM_NOTES=(()=>{
   const cur=(A().ST.state.rp||{}).map||{};const patch=Object.assign({},cur,{locs,routes,vis,party:{n:0,vis:1},npcs:(cur.npcs||[]).filter(n=>locs.some(l=>l.n===n.n)),preset:m.img?'':cur.preset,src:'nt:'+r.camp+'/'+m.id,ntK:{r:routes.map(x=>x.rid),p:[],l:locs.map(l=>l.nt)},hideR:{},hideL:{}});if(opt.live)patch.live=1;
   if(m.img)patch.img={src:m.img,w:W,h:H};/* 10-29 바뀐 칸만 쓴다 */const ops=A().diffOps(['rp','map'],cur,patch,1);if(!ops.length){A().toast('노트 지도와 같다 — 바뀐 게 없다');return}await A().setMany(ops);A().sysLog(`지도: 세션 노트 「${r.campName}」에서 가져옴 (장소 ${locs.length} · 루트 ${routes.length})`);A().toast(opt.live?'지도를 가져오고 연동을 켰다':'지도를 가져왔다');A().renderScene();if(opt.live){LV.camp='';LV.last=null}}
  /* 관계도: ents(인물 · 조직) → graph.nodes(npc/org, 얼굴 사진), rels → edges */
- async function importGraph(){const r=await pick(['ents','rels'],'관계도');if(!r)return;const ents=byKind(r.docs,'ents').filter(e=>['인물','조직'].includes(e.type));if(!ents.length)return A().toast('가져올 인물 · 조직이 없다');
+ async function importGraph(){const r=await pick(['ents','rels','pc','npc'],'관계도');if(!r)return;const ents=byKind(r.docs,'ents').filter(e=>['인물','조직'].includes(e.type));if(!ents.length)return A().toast('가져올 인물 · 조직이 없다');
   const g=A().ST.state.graph||{nodes:{},edges:{}};const nodes=g.nodes||{},edges=g.edges||{};const byName={};for(const [id,n] of Object.entries(nodes))byName[n.name]=id;
   let add=0,upd=0;const ops=[];const idOf={};
   const xs=ents.map(e=>+e.gx).filter(Number.isFinite),ys=ents.map(e=>+e.gy).filter(Number.isFinite);const cx=xs.length?(Math.min(...xs)+Math.max(...xs))/2:800,cy=ys.length?(Math.min(...ys)+Math.max(...ys))/2:500;
@@ -101,10 +101,12 @@ window.OM_NOTES=(()=>{
    const x=Number.isFinite(+e.gx)?Math.round((+e.gx-cx)*.9):Math.round(Math.cos(i/ents.length*6.283)*320),y=Number.isFinite(+e.gy)?Math.round((+e.gy-cy)*.9):Math.round(Math.sin(i/ents.length*6.283)*320);
    const base=ex?nodes[ex]:{id,x,y};const nn=Object.assign({},base,{name:e.title||'?',kind:base.kind==='pc'?'pc':kind,img:e.face||e.photo||base.img||'',note:[e.sub,e.body].filter(Boolean).join('\n').slice(0,600)||base.note||'',nt:e.id});
    if(e.color)nn.color=e.color;/* 10-29 바뀐 칸만 */if(ex){const d=A().diffOps(['graph','nodes',id],base,nn,1);if(d.length){upd++;ops.push(...d)}}else{add++;ops.push([['graph','nodes',id],nn])}});
+  /* 11-04: 노트 PC · NPC 시트의 분류(PC · 객원 · NPC)를 같은 이름 노드에 */
+  let kc=0;for(const k of ['pc','npc'])for(const d of byKind(r.docs,k)){const nm=d.name||d.title;const id=nm&&byName[nm];if(!id||!nodes[id]||nodes[id].kind==='org')continue;const kk=['pc','guest','npc'].includes(d.cls)?d.cls:k;if(nodes[id].kind!==kk){ops.push([['graph','nodes',id,'kind'],kk]);kc++}}
   const rels=byKind(r.docs,'rels').filter(q=>idOf[q.a]&&idOf[q.b]);const has=new Set(Object.values(edges).map(x=>x.a+'|'+x.b).concat(Object.values(edges).map(x=>x.b+'|'+x.a)));let ae=0;
   for(const q of rels){const a=idOf[q.a],b=idOf[q.b];if(has.has(a+'|'+b))continue;has.add(a+'|'+b);ae++;ops.push([['graph','edges','nt'+Math.random().toString(36).slice(2,9)],{a,b,rank:q.kind==='love'?3:q.kind==='ally'?2:q.kind==='rival'?1:1,label:q.label||'',shock:0,nt:q.id}])}
-  if(!add&&!upd&&!ae){A().toast('노트 관계도와 같다 — 바뀐 게 없다');return}
-  if(!confirm(`「${r.campName}」의 관계도를 가져올까?\n새 인물 · 조직 ${add}명 · 이미 있는 ${upd}명은 바뀐 칸만 덧씌움 · 새 관계선 ${ae}개\n(이 방에 이미 있는 노드와 선은 지우지 않는다)`))return;
+  if(!add&&!upd&&!ae&&!kc){A().toast('노트 관계도와 같다 — 바뀐 게 없다');return}
+  if(!confirm(`「${r.campName}」의 관계도를 가져올까?\n새 인물 · 조직 ${add}명 · 이미 있는 ${upd}명은 바뀐 칸만 덧씌움 · 새 관계선 ${ae}개${kc?` · PC · 객원 · NPC 분류 ${kc}명`:''}\n(이 방에 이미 있는 노드와 선은 지우지 않는다)`))return;
   A().toast('가져오는 중…');await A().setMany(ops);A().sysLog(`관계도: 세션 노트 「${r.campName}」에서 가져옴 (${add+upd}명 · 선 ${ae}개)`);A().toast('관계도를 가져왔다');A().renderScene()}
  /* ---------- 10-29 망령 「웹툴과 노트는 양방향으로 · 보내기 불러오기는 변동 사항만」 ----------
     던전: 노트 문서 kind 'dgs' ↔ 이 방 dg.list. 받은 던전에는 nt(노트 id) · ntC(캠페인) · ntAt(노트의 updated_at) · ntH(받은/보낸 때의 내용 지문)을 적어 둔다.
@@ -242,6 +244,9 @@ window.OM_NOTES=(()=>{
  const grKey=x=>x.kind==='ents'?x.id:x.kind+':'+x.id;
  const grIsNode=x=>x.kind==='pc'||x.kind==='npc'||(x.kind==='ents'&&(['인물','조직'].includes(x.data.type)||!!x.data.face));
  const grName=x=>x.kind==='ents'?(x.data.title||''):(x.data.name||'');
+ /* 11-04 망령 「관계도에 PC · NPC · 객원 구분이 전혀 안 돼 있다」: 노트 시트 분류(cls = pc · guest · npc, 비면 문서 종류)를 노드 종류로 */
+ const grKind=x=>x.kind==='ents'?(x.data.type==='조직'?'org':'npc'):(['pc','guest','npc'].includes(x.data.cls)?x.data.cls:x.kind==='npc'?'npc':'pc');
+ const isPcK=k=>k==='pc'||k==='guest';
  const grImg=x=>x.kind==='ents'?(x.data.face||x.data.photo||''):(x.data.image||x.data.face||'');
  const grDocId=k=>{const i=String(k||'').indexOf(':');return i<0?k:k.slice(i+1)};
  async function grRun(){if(LV.gbusy){LV.gdirty=true;return}if(!grOn())return;const camp=LINK.camp.id;const secret=secOf(camp);if(!secret)return;LV.gbusy=true;try{
@@ -257,12 +262,12 @@ window.OM_NOTES=(()=>{
   const pubN=docs.filter(x=>x.vis==='pub'&&grIsNode(x));const byKey={};pubN.forEach(x=>byKey[grKey(x)]=x);
   const byNt={};Object.values(nodes).forEach(n=>{if(n.nt)byNt[n.nt]=n});
   const fresh=pubN.filter(x=>!byNt[grKey(x)]&&!hide[grKey(x)]);let ring=0;
-  for(const x of fresh){const k=grKey(x);let n=x.kind==='pc'?Object.values(nodes).find(m=>!m.nt&&m.kind==='pc'&&m.name===grName(x)):null;   /* 이 방 PC 노드와 이름으로 짝 */
-   if(!n){const id='nt'+rid8();const a=ring++/Math.max(1,fresh.length)*6.283;n={id,name:grName(x)||'?',kind:x.kind==='pc'?'pc':x.data.type==='조직'?'org':'npc',x:Math.round(Math.cos(a)*320),y:Math.round(Math.sin(a)*320),img:'',note:''};nodes[id]=n}
+  for(const x of fresh){const k=grKey(x);let n=x.kind==='pc'||x.kind==='npc'?Object.values(nodes).find(m=>!m.nt&&m.kind!=='org'&&m.name===grName(x)):null;   /* 이 방 PC 노드와 이름으로 짝 */
+   if(!n){const id='nt'+rid8();const a=ring++/Math.max(1,fresh.length)*6.283;n={id,name:grName(x)||'?',kind:grKind(x),x:Math.round(Math.cos(a)*320),y:Math.round(Math.sin(a)*320),img:'',note:''};nodes[id]=n}
    n.nt=k;byNt[k]=n}
   for(const [k,n] of Object.entries(byNt)){const x=byKey[k];
    if(!x){if(K.n.includes(k)){delete nodes[n.id];for(const [eid,e] of Object.entries(edges))if(e.a===n.id||e.b===n.id)delete edges[eid]}continue}   /* 노트에서 지웠거나 비공개로 */
-   const nm=grName(x);if(nm&&n.name!==nm)n.name=nm;const im=grImg(x);if(im&&n.img!==im)n.img=im;
+   const nm=grName(x);if(nm&&n.name!==nm)n.name=nm;if(x.kind!=='ents'){const kk=grKind(x);if(n.kind!==kk)n.kind=kk}const im=grImg(x);if(im&&n.img!==im)n.img=im;
    if(x.kind==='ents'){const note=[x.data.sub,x.data.body].filter(Boolean).join('\n').slice(0,600);if(note&&n.note!==note)n.note=note;if(x.data.color&&n.color!==x.data.color)n.color=x.data.color}
    if(x.data.gx!=null&&x.data.gy!=null){const nx=gx2x(x.data.gx),ny=gy2y(x.data.gy);if(Math.abs(nx-(+n.x||0))>2||Math.abs(ny-(+n.y||0))>2){n.x=nx;n.y=ny}}}
   const refK=id=>byKey[id]?id:byKey['pc:'+id]?'pc:'+id:byKey['npc:'+id]?'npc:'+id:'';const nid=id=>{const n=byNt[refK(id)];return n&&nodes[n.id]?n.id:''};
@@ -277,7 +282,7 @@ window.OM_NOTES=(()=>{
   const nodes=JSON.parse(JSON.stringify(g.nodes||{})),edges=JSON.parse(JSON.stringify(g.edges||{}));const D={};docs.filter(x=>x.kind!=='rels').forEach(x=>D[grKey(x)]=x);const R={};docs.filter(x=>x.kind==='rels').forEach(x=>R[x.id]=x);
   const rows=[],dels=[];const pend=new Map();const upd=(x,f)=>{const d=pend.get(x)||JSON.parse(JSON.stringify(x.data));f(d);pend.set(x,d)};const liveN=new Set();
   for(const n of Object.values(nodes)){
-   if(!n.nt){if(n.kind==='pc'){const x=docs.find(d=>d.kind==='pc'&&d.vis==='pub'&&(d.data.name||'')===n.name);if(!x)continue;n.nt=grKey(x)}   /* 노트에 없는 PC 는 이 방에만 */
+   if(!n.nt){if(isPcK(n.kind)){const x=docs.find(d=>(d.kind==='pc'||d.kind==='npc')&&d.vis==='pub'&&(d.data.name||'')===n.name);if(!x)continue;n.nt=grKey(x)}   /* 노트에 없는 PC 는 이 방에만 */
     /* 11-04 망령 「앞으로 뭐 추가했다고 항목칸에 냅다 올리지 말고」: 이 방에서 만든 노드는 노드 창 「📓 노트에 올리기」(n.ntPush)를 누른 것만 노트 항목으로 */
     else if(!n.ntPush)continue;
     else{const id='e'+rid8();rows.push({kind:'ents',id,data:{type:n.kind==='org'?'조직':'인물',title:n.name||'?',sub:'',body:n.note||'',rows:[],tags:[],teams:[],face:/^https?:/.test(n.img||'')?n.img:'',photo:'',at:[],gx:x2gx(n.x),gy:y2gy(n.y),created:Date.now(),om:1},vis:'pub'});n.nt=id;liveN.add(id);continue}}
