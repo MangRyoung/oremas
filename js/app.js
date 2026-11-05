@@ -792,7 +792,7 @@ async function openAddMon(side){if(ST.role!=='gm')return toast('GM 만 부를 �
  const under=new Set([sup]);for(let g=1;g;){g=0;for(const f of MKD.folders){const p=fd(f).parent;if(p&&under.has(p)&&!under.has(f.id)){under.add(f.id);g=1}}}
  const fname=(MKD.folders.find(f=>f.id===sup)?fd(MKD.folders.find(f=>f.id===sup)).name:'')||sup;
  const trs=MKD.trainers.filter(t=>under.has(fd(t).folder)).sort((a,b)=>((a.data||{}).ord||0)-((b.data||{}).ord||0));
- const groups=[];for(const t of trs){let P;try{P=I().party(t,MKD.pokemon.filter(p=>fd(p).tid===t.id))}catch(e){console.warn(e);continue}if(P.mons.length)groups.push(P)}
+ const groups=[];for(const t of trs){let P;try{P=I().party(t,MKD.pokemon.filter(p=>((p.data||{}).tid||fd(p).tid)===t.id))}catch(e){console.warn(e);continue}if(P.mons.length)groups.push(P)}
  if(!groups.length)return toast(`지원 폴더 「${fname}」에 포켓몬이 없다`);
  const inB=B().mons||{};const sel=new Set();
  const md=openModal(`<div class="mhead"><h2>${side==='left'?'좌측':'우측'} 진영에 포켓몬 부르기 <small class="dim">🛟 ${esc(fname)}</small></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
