@@ -59,6 +59,7 @@ window.OM_ITEMRULE=(()=>{
    if((y=t.match(/「무작위한 능력치 : \+(\d)」/)))h.random=+y[1];
    if((y=t.match(/「가장 (높은|낮은) 능력치? : ([+-]\d)」/)))h.pick={lo:y[1]==='낮은'?1:0,v:+y[2]};   /* 11-05 망령 「블루레이져」: 가장 높은 · 낮은 능력치 (종족치로 고름) */
    if(h.heal!=null||h.stats||h.random||h.pick)r.hp=h}
+  if((x=e.match(/「자연의은혜」를 사용하면\s*(\d+)\s*위력의\s*([가-힣]+)\s*타입/)))r.ngift={type:x[2],pow:+x[1]};   /* 11-05 자연의은혜 */
   if(/치유한다/.test(e)){const before=e.split('치유한다')[0];const sts=[...before.matchAll(/「([^」]+)」/g)].map(a=>stEn(a[1])).filter(Boolean);if(/모든 상태 이상/.test(e))sts.push(...ABN);if(sts.length)r.cure=[...new Set(sts)]}
   if((x=e.match(/「필드 : ([^」]+)」일 때 「(방어|특방|공격|특공|스피드) : \+(\d)」/)))r.seed={terrain:x[1],stats:{[KO_STAT[x[2]]]:+x[3]}};
   if((x=e.match(/「(트릭룸|원더룸|매직룸)」이 전개되어 있을 때 「(\S+) : ([+-]\d)」/)))r.room={room:x[1],stats:{[KO_STAT[x[2]]]:+x[3]}};
@@ -93,7 +94,7 @@ window.OM_ITEMRULE=(()=>{
  /* 자동으로 하는 일이 있나 (전용 · 소모품만 있으면 없음) */
  const has=r=>!!r&&Object.keys(r).some(k=>k!=='once'&&k!=='only');
  function toText(r){if(!r)return '';const L=[];
-  if(r.only&&r.only.length)L.push('전용 '+r.only.join('/'));if(r.once)L.push('소모품');
+  if(r.only&&r.only.length)L.push('전용 '+r.only.join('/'));if(r.once)L.push('소모품');if(r.ngift)L.push(`자연의은혜 ${r.ngift.type} ${r.ngift.pow}`);
   if(r.atk){const a=r.atk;L.push('공격 강화 '+(a.single?'단일기 '+a.types.map(tKo).join('/')+' ':a.types?'타입 '+a.types.map(tKo).join('/')+' ':a.cat?CAT_KO[a.cat]+' ':'')+'×'+num(a.v))}
   if(r.gle)L.push(`조건 ${STAT_KO[r.gle.st]||r.gle.st} ${r.gle.g} 이하`);
   if(r.guard)L.push('받는 대미지 '+(r.guard.cat?CAT_KO[r.guard.cat]+' ':'')+'×'+num(r.guard.v));
@@ -124,6 +125,7 @@ window.OM_ITEMRULE=(()=>{
    const bad=()=>errs.push(line);
    if((m=line.match(/^전용\s+(.+)$/)))r.only=m[1].split('/').map(s=>s.trim()).filter(Boolean);
    else if(line==='소모품')r.once=1;
+   else if((m=line.match(/^자연의은혜\s+([가-힣]+)\s+(\d+)$/)))r.ngift={type:m[1],pow:+m[2]};
    else if((m=line.match(/^조건\s+(공격|방어|특공|특방|스피드)\s+([A-Z]+)\s*이하$/)))r.gle={st:KO_STAT[m[1]],g:m[2]};   /* 종족치 등급이 그 이하일 때만 공격 강화 · 받는 대미지가 걸린다 */
    else if((m=line.match(/^공격 강화\s*(?:(단일기|타입)\s+(\S+)\s+|(물리기|특수기)\s+)?[×x*]\s*(\d+(?:\.\d+)?)$/))){const a={v:+m[4]};if(m[1]){a.types=typeList(m[2]);if(m[1]==='단일기')a.single=1}else if(m[3])a.cat=KO_CAT[m[3]];r.atk=a}
    else if((m=line.match(/^받는 대미지\s*(?:(물리기|특수기)\s+)?[×x*]\s*(\d+(?:\.\d+)?)$/))){r.guard={v:+m[2]};if(m[1])r.guard={cat:KO_CAT[m[1]],v:+m[2]}}
@@ -159,5 +161,9 @@ window.OM_ITEMRULE=(()=>{
   return {rule:r,errs:[...new Set(errs)]}}
 
  /* 쓰는 쪽: 구문이 있으면 구문, 없으면 효과 글 */
+ /* 11-05 망령 「자연의은혜 — 실기 기준」(나무위키 「자연의은혜」 표 · 6세대 이후 위력): 열매 이름 → [타입, 위력].
+    소지품 구문 「자연의은혜 격투 80」 · 효과 글 「…「자연의은혜」를 사용하면 80 위력의 격투 타입…」이 있으면 그쪽이 이긴다 (망켓몬에서 새로 만든 열매 몫) */
+ const NGIFT={'버치':['불꽃',80],'유루':['물',80],'복슝':['전기',80],'복분':['풀',80],'배리':['얼음',80],'과사':['격투',80],'오랭':['독',80],'시몬':['땅',80],'리샘':['비행',80],'자뭉':['에스퍼',80],'무화':['벌레',80],'위키':['바위',80],'마고':['고스트',80],'아바':['드래곤',80],'파야':['악',80],'라즈':['강철',80],'블리':['불꽃',90],'나나':['물',90],'서배':['전기',90],'파인':['풀',90],'유석':['얼음',90],'시마':['격투',90],'파비':['독',90],'로매':['땅',90],'또뽀':['비행',90],'토망':['에스퍼',90],'수숙':['벌레',90],'고스티':['바위',90],'라부탐':['고스트',90],'노멜':['드래곤',90],'메호키':['악',90],'자야':['강철',90],'슈박':['불꽃',100],'두리':['물',100],'루베':['전기',100],'오카':['불꽃',80],'꼬시개':['물',80],'초나':['전기',80],'린드':['풀',80],'플카':['얼음',80],'로플':['격투',80],'으름':['독',80],'슈캐':['땅',80],'바코':['비행',80],'야파':['에스퍼',80],'리체':['벌레',80],'루미':['바위',80],'수불':['고스트',80],'하반':['드래곤',80],'마코':['악',80],'바리비':['강철',80],'카리':['노말',80],'치리':['풀',100],'용아':['얼음',100],'캄라':['격투',100],'야타비':['독',100],'규살':['땅',100],'랑사':['비행',100],'스타':['에스퍼',100],'미클':['바위',100],'애슈':['고스트',100],'의문':['벌레',100],'자보':['드래곤',100],'애터':['악',100],'로셀':['페어리',80],'악키':['페어리',100],'타라프':['악',100]};
+ function natGift(name,item){const n=String(name||'').trim();if(!n)return null;const r=item?ruleOf(n,item):null;if(r&&r.ngift)return Object.assign({},r.ngift);const v=NGIFT[n.replace(/열매$/,'')];return v?{type:v[0],pow:v[1]}:null}
  function ruleOf(name,item){item=item||{};const a=String(item.auto||'').trim();if(a)return Object.assign(parse(a).rule,{src:'auto'});return Object.assign(fromEff(name,item.eff),{src:'eff'})}
- return {fromEff,toText,parse,ruleOf,has}})();
+ return {fromEff,toText,parse,ruleOf,has,natGift,NGIFT}})();
