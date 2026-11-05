@@ -459,7 +459,7 @@ window.OM_BATTLE_UI=(()=>{
   const keys=M.items.map(x=>x.key);const isRole=/역할/.test(String(pot.kind||''));const onF=x=>!!(x&&x.entry&&x.hp&&x.hp.cur>0);
   const mates=Object.values(b.mons||{}).filter(x=>x&&x.tid===m.tid);const aw=mates.find(x=>x.awaken==='free');
   const hasType=(x,ko)=>{const en=window.OM_STATS&&window.OM_STATS.typeEn?window.OM_STATS.typeEn(ko):ko;if(teraOn(x))return x.teraEn===en;return (x.types||[]).includes(en)||(x.typesKo||[]).includes(ko)};   /* 테라스탈이면 타입 4 만 (11-02) */
-  {const RF=x=>FX()&&FX().roleFam?FX().roleFam(x):nm(x);const fam=RF(M.role);if(keys.includes('B-2')&&isRole&&M.role&&(RF(m.role)===fam||RF(pot.name)===fam||nm(pot.name).includes(nm(M.role))))return `각성체 대가 B-2 — 역할 분류 「${fam}」(${nm(pot.name)})은(는) 발동하지 않는다`}   /* 11-05 망령: 러너를 막으면 닌자 · 하이 러너도 (분류로) */
+  {const RF=x=>FX()&&FX().roleFams?FX().roleFams(x):[nm(x)];const fam0=RF(M.role);const fam=fam0.length>1?[]:fam0;const hit=[...RF(m.role),...RF(pot.name)].find(f=>fam.includes(f));   /* 지정 역할이 두 분류에 걸치면(타이트엔드) 그 역할만 */if(keys.includes('B-2')&&isRole&&M.role&&(hit||nm(pot.name).includes(nm(M.role))))return `각성체 대가 B-2 — 역할 분류 「${hit||fam[0]||nm(M.role)}」(${nm(pot.name)})은(는) 발동하지 않는다`}   /* 11-05 망령: 러너를 막으면 닌자 · 하이 러너도 (분류로) */
   /* 11-01 망령: A-1 은 포텐셜을 막지 않고 「행동 불능」으로 (misagA1) */
   /* 11-05 망령 「A-2 가 약하다 — 본인을 내지 않으면 문제가 없으니 반대로」: 각성 (대가)가 필드에 나와 있지 않으면 아군의 역할이 전부 무효 */
   if(keys.includes('A-2')&&isRole&&aw&&!onF(aw))return `각성체 대가 A-2 — ${aw.name}이(가) 필드에 없으면 아군의 역할은 무효`;
@@ -2306,7 +2306,7 @@ window.OM_BATTLE_UI=(()=>{
  function rolesOf(m){const out=new Set(((m&&m.fx)||{}).roles||[]);const r=String((m&&m.role)||'').replace(/『|』/g,'').trim();
   if(r){out.add(r);const row=(((DB().maker||{}).pots)||[]).find(x=>x&&x[1]===r);const note=String((row&&row[3])||'');if(/상위 역할|동일한\s*『?역할/.test(note))for(const q of note.matchAll(/『([^』]+)』/g))if(q[1]!=='역할'&&q[1]!=='상위 역할')out.add(q[1])}
   /* 11-05 망령 「역할은 분류로」: 분류(러너 · 어태커 · 블로커 · 에이스 · 서포터 · 킬러 계열)도 같이 — 하이 러너 · 닌자 = 러너 */
-  if(FX()&&FX().roleFam)for(const x of [...out]){const f=FX().roleFam(x);if(f&&f!==x)out.add(f)}
+  if(FX()&&(FX().roleFams||FX().roleFam))for(const x of [...out])for(const f of (FX().roleFams?FX().roleFams(x):[FX().roleFam(x)]))if(f&&f!==x)out.add(f)
   return [...out]}
  function roleV(m){if(!m)return m;let rs=rolesOf(m);
   /* 11-05 망령: 각성체 대가 A-2 — 각성 (대가)가 필드에 없으면 이 트레이너 아군의 역할이 전부 무효: 역할(킬러 상대 판정 등)도, 역할 포텐셜이 건 위력 강화 · 완화 · 회피도 계산에서 뺀다 */
