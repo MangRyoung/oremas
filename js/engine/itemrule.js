@@ -57,7 +57,8 @@ window.OM_ITEMRULE=(()=>{
    if((y=t.match(/「(공격|방어|특공|특방|스피드) : \+(\d)」/)))h.stats={[KO_STAT[y[1]]]:+y[2]};
    if((y=t.match(/「(?:예리 : )?C ?:? ?\+(\d)」/)))h.stats={critical:+y[1]};
    if((y=t.match(/「무작위한 능력치 : \+(\d)」/)))h.random=+y[1];
-   if(h.heal!=null||h.stats||h.random)r.hp=h}
+   if((y=t.match(/「가장 (높은|낮은) 능력치? : ([+-]\d)」/)))h.pick={lo:y[1]==='낮은'?1:0,v:+y[2]};   /* 11-05 망령 「블루레이져」: 가장 높은 · 낮은 능력치 (종족치로 고름) */
+   if(h.heal!=null||h.stats||h.random||h.pick)r.hp=h}
   if(/치유한다/.test(e)){const before=e.split('치유한다')[0];const sts=[...before.matchAll(/「([^」]+)」/g)].map(a=>stEn(a[1])).filter(Boolean);if(/모든 상태 이상/.test(e))sts.push(...ABN);if(sts.length)r.cure=[...new Set(sts)]}
   if((x=e.match(/「필드 : ([^」]+)」일 때 「(방어|특방|공격|특공|스피드) : \+(\d)」/)))r.seed={terrain:x[1],stats:{[KO_STAT[x[2]]]:+x[3]}};
   if((x=e.match(/「(트릭룸|원더룸|매직룸)」이 전개되어 있을 때 「(\S+) : ([+-]\d)」/)))r.room={room:x[1],stats:{[KO_STAT[x[2]]]:+x[3]}};
@@ -100,7 +101,7 @@ window.OM_ITEMRULE=(()=>{
   if(r.immune)L.push('무효 타입 '+r.immune.map(tKo).join('/'));
   if(r.resist){const x=r.resist;L.push('반감 '+(x.multi?'전체기':x.cat?CAT_KO[x.cat]:'타입 '+tKo(x.type))+(x.se?' 효과 굉장':'')+(x.full?' HP 가득':''))}
   if(r.sash)L.push('버티기 '+(r.sash==='full'?'HP 가득':r.sash+'%'));
-  if(r.hp){const h=r.hp,A=[];if(h.heal!=null)A.push('회복 '+h.heal);if(h.stats)A.push(stTxt(h.stats));if(h.random)A.push('무작위 +'+h.random);L.push(`HP ${h.frac} 이하: ${A.join(', ')}`)}
+  if(r.hp){const h=r.hp,A=[];if(h.heal!=null)A.push('회복 '+h.heal);if(h.stats)A.push(stTxt(h.stats));if(h.random)A.push('무작위 +'+h.random);if(h.pick)A.push(`가장 ${h.pick.lo?'낮은':'높은'} 능력 ${h.pick.v>0?'+':''}${h.pick.v}`);L.push(`HP ${h.frac} 이하: ${A.join(', ')}`)}
   if(r.cure)L.push('치유 '+r.cure.map(stKo).join('/'));
   if(r.seed)L.push(`필드 ${r.seed.terrain}: ${stTxt(r.seed.stats)}`);
   if(r.room)L.push(`룸 ${r.room.room}: ${stTxt(r.room.stats)}`);
@@ -132,7 +133,7 @@ window.OM_ITEMRULE=(()=>{
    else if((m=line.match(/^반감\s+(?:(전체기)|(물리기|특수기)|타입\s+(\S+))(\s+효과 굉장)?(\s+HP 가득)?$/))){const x={};if(m[1])x.multi=1;else if(m[2])x.cat=KO_CAT[m[2]];else x.type=tEn(m[3]);if(m[4])x.se=1;if(m[5])x.full=1;r.resist=x}
    else if((m=line.match(/^버티기\s+(?:(HP 가득)|(\d+)%)$/)))r.sash=m[1]?'full':+m[2];
    else if((m=line.match(/^HP\s+(\d+\/\d+)\s*이하\s*:\s*(.+)$/))){const h={frac:m[1]};for(const p of m[2].split(/\s*,\s*/)){let y;
-     if((y=p.match(/^회복\s+(\d+\/\d+|\d+)$/)))h.heal=FR.test(y[1])?y[1]:+y[1];else if((y=p.match(/^무작위\s*\+(\d)$/)))h.random=+y[1];else{const s=stats(p,errs,line);if(s)h.stats=Object.assign(h.stats||{},s)}}
+     if((y=p.match(/^회복\s+(\d+\/\d+|\d+)$/)))h.heal=FR.test(y[1])?y[1]:+y[1];else if((y=p.match(/^무작위\s*\+(\d)$/)))h.random=+y[1];else if((y=p.match(/^가장\s*(높은|낮은)\s*능력치?\s*([+-]\d)$/)))h.pick={lo:y[1]==='낮은'?1:0,v:+y[2]};else{const s=stats(p,errs,line);if(s)h.stats=Object.assign(h.stats||{},s)}}
     r.hp=h}
    else if((m=line.match(/^치유\s+(.+)$/))){const sts=m[1].split('/').map(s=>stEn(s.trim())).filter(Boolean);if(sts.length)r.cure=sts;else bad()}
    else if((m=line.match(/^필드\s+(.+?)\s*:\s*(.+)$/))){const s=stats(m[2],errs,line);if(s)r.seed={terrain:m[1],stats:s}}

@@ -93,6 +93,7 @@ window.OM_ITEMS=(()=>{
    if(r.hp){const fr=(/먹보/.test(m.ability||'')&&r.hp.frac==='1/4')?'1/2':r.hp.frac;const lim=Math.floor(m.hp.max*+fr.split('/')[0]/+fr.split('/')[1]);
     if(m.hp.cur<=lim){const h=r.hp;L.push(`「HP」 ${fr} 이하`);if(h.heal!=null){if((m.states||{}).HealBlock){L.length=0}else heal(m,typeof h.heal==='number'?h.heal:frac(m.hp.max,h.heal),L,'회복')}
      if(h.stats)rank(m,h.stats,L);if(h.random){const ks=['attack','defense','specialattack','specialdefense','speed'].filter(k=>(+(m.rank||{})[k]||0)<6);if(ks.length)rank(m,{[ks[Math.floor(Math.random()*ks.length)]]:h.random},L)}
+     if(h.pick){const K=['attack','defense','specialattack','specialdefense','speed'];const bs=Array.isArray(m.base)?m.base.map(v=>+v||0):null;let bi=1;if(bs&&bs.length>=6)for(let i=2;i<=5;i++){if(h.pick.lo?bs[i]<bs[bi]:bs[i]>bs[bi])bi=i}L.push(`가장 ${h.pick.lo?'낮은':'높은'} 능력치 → 「${({attack:'공격',defense:'방어',specialattack:'특공',specialdefense:'특방',speed:'스피드'})[K[bi-1]]}」`);rank(m,{[K[bi-1]]:h.pick.v},L)}   /* 11-05 블루레이져: 종족치로 고름 (fx 「최고」와 같은 셈) */
      if(L.length&&r.once)use(m,L,b)}}
    else if(r.cure){const st=m.states||{};const hit=r.cure.filter(k=>st[k]);if(hit.length){for(const k of hit)delete st[k];L.push(`${hit.map(k=>'「'+((((DB().states||{}).st||{})[k]||{}).ko||k)+'」').join(' · ')} 치유`);if(r.once)use(m,L,b)}}
    else if(r.seed&&f&&(f.terrain||{}).type===r.seed.terrain){L.push(`「${r.seed.terrain}」`);rank(m,r.seed.stats,L);if(r.once)use(m,L,b)}
