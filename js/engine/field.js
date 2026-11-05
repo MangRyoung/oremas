@@ -19,8 +19,10 @@ const FX=()=>window.OM_FX;
  const isAbn=m=>ABN.some(k=>has(m,k));
   const magic=()=>!!(FX()&&FX().magicRoom&&FX().magicRoom());
  const itemOf=m=>magic()?'':(m.item||'');   /* 매직룸 동안 소지품 효과 없음 */
+ /* 11-05 망령: 소지품 2 · 3번 칸까지 (이름을 이어 붙인 글 — 정규식 검사용) */
+ const itemsOf=m=>magic()||!m?'':[m.item,...(m.items2||[]).map(x=>x&&x.item)].filter(Boolean).join(' ');
  const tblock=(m,k)=>FX()&&FX().terrainBlock?FX().terrainBlock(m,k):'';
- const grounded=m=>!(typesOf(m).includes('Flying')||/풍선/.test(itemOf(m))||has(m,'MagnetRise')||has(m,'Telekinesis')||has(m,'Fly')||/부유/.test(m.ability||'')||(FX()&&FX().floating(m)));
+ const grounded=m=>!(typesOf(m).includes('Flying')||/풍선/.test(itemsOf(m))||has(m,'MagnetRise')||has(m,'Telekinesis')||has(m,'Fly')||/부유/.test(m.ability||'')||(FX()&&FX().floating(m)));
  const noind=(m,k)=>!!(FX()&&FX().noind(m,k));
  const rankDown=(m,k,n)=>{m.rank=m.rank||{};m.rank[k]=Math.max(-6,Math.min(6,(+m.rank[k]||0)+n))};
  const setState=(m,k,count)=>{m.states=m.states||{};if(m.states[k])return false;const st=((DB().states||{}).st||{})[k]||{};{const d=st;m.states[k]=count!=null?count:(d.min>=1000||!d.min?1000:(+d.max>+d.min&&+d.max<1000?+d.min+Math.floor(Math.random()*(+d.max-+d.min+1)):+d.min))}return true};
@@ -68,7 +70,7 @@ const FX=()=>window.OM_FX;
   /* 모래바람: 바위·땅·강철 타입이 아니면 1/16 (방진고글·모래 계열 특성·숨은 상태는 제외). 싸라기눈은 턴 끝 대미지 없음 */
   if((f.weather||{}).type==='모래바람'){for(const id in mons){const m=mons[id];if(!m.entry||m.hp.cur<=0)continue;const ty=typesOf(m);
    if(['Rock','Ground','Steel'].some(t=>ty.includes(t)))continue;
-   if(/방진고글/.test(itemOf(m))){lines.push(`${m.name} 「방진고글」로 「모래바람」을 막았다`);continue}
+   if(/방진고글/.test(itemsOf(m))){lines.push(`${m.name} 「방진고글」로 「모래바람」을 막았다`);continue}
    if(/모래숨기|모래헤치기|모래의힘|방진/.test(m.ability||'')){lines.push(`${m.name} 특성 「${m.ability}」 — 「모래바람」 영향 없음`);continue}
    if(['VanishToHole','VanishToWater'].some(k=>has(m,k))){lines.push(`${m.name} 숨어 있어 「모래바람」 영향 없음`);continue}
    dmg(m,frac(m,1,16),lines,'「모래바람」 1/16')}}
@@ -78,7 +80,7 @@ const FX=()=>window.OM_FX;
  /* ----- 설치기 (hazard_eval/apply): 등장할 때. A 급은 땅 위에서만, B 급은 모두. 통굽부츠 면역. 제거 규칙(벌레가 갉아먹음 등) ----- */
  const HAZ=[{k:'압정뿌리기',c:'A',kind:'spike'},{k:'독압정',c:'A',kind:'tspike'},{k:'지뢰원',c:'A',f:4,once:1,d:'「HP」 1/4'},{k:'끈적끈적네트',c:'A',kind:'net'},{k:'기뢰',c:'A',kind:'mine',once:1},{k:'트램펄린',c:'B',kind:'bounce',once:1},{k:'스텔스록',c:'B',ty:'Rock'},{k:'불기둥',c:'B',ty:'Fire'},{k:'장미원',c:'B',kind:'rose',f:8},{k:'가시원',c:'B',ty:'Grass'},{k:'얼음꼬챙이',c:'B',ty:'Ice'},{k:'전기발판',c:'B',ty:'Electric'},{k:'아이스번',c:'B',kind:'iceburn'},{k:'저주의묘',c:'B',st:'Curse'},{k:'악의소굴',c:'B',st:'Knave'},{k:'전파탑',c:'B',st:'Electrify'}];
  const RM={장미원:{t:['Bug'],g:0,v:'갉아먹었다'},가시원:{t:['Bug'],g:0,v:'갉아먹었다'},얼음꼬챙이:{t:['Fire'],g:0,v:'녹여 없앴다'},전기발판:{t:['Ground'],g:0,v:'접지시켰다'},아이스번:{t:['Fire','Ice'],g:0,v:'치웠다'},독압정:{t:['Poison'],g:1,v:'흡수했다'},기뢰:{t:['Ground'],g:1,v:'접지시켰다'},불기둥:{t:['Water'],g:0,v:'꺼트렸다'}};
- function hazardsOnEntry(m,field,slotsOpp){const lines=[];const f=field||{};const objs=(f.objects||{})[m.side]||{};const gd=grounded(m);const boots=/통굽부츠/.test(itemOf(m));const ty=typesOf(m);const removed=[];let forced=false;
+ function hazardsOnEntry(m,field,slotsOpp){const lines=[];const f=field||{};const objs=(f.objects||{})[m.side]||{};const gd=grounded(m);const boots=/통굽부츠/.test(itemsOf(m));const ty=typesOf(m);const removed=[];let forced=false;
   if(noind(m,'hazard')&&Object.keys(objs).some(k=>+objs[k]>0)){lines.push(`${m.name} 설치기를 무시한다`);return {lines,removed,forced}}
   for(const h of HAZ){const n=+objs[h.k]||0;if(n<=0)continue;if(noind(m,'hazdmg')&&(h.ty||h.kind==='spike'||h.f)){lines.push(`${m.name} 「${h.k}」 비례 대미지를 받지 않는다`);continue}
    const rm=RM[h.k];let rmHit='';if(rm){rmHit=rm.t.find(t=>ty.includes(t))||'';if(rmHit&&rm.g&&!gd)rmHit=''}
@@ -96,5 +98,5 @@ const FX=()=>window.OM_FX;
    if(h.st){if(setState(m,h.st))lines.push(`${m.name} 「${h.k}」 → 「${ko(h.st)}」`);continue}
    if(h.f){dmg(m,frac(m,1,h.f),lines,`「${h.k}」 1/${h.f}`);if(h.once){delete objs[h.k];removed.push(h.k)}}}
   return {lines,removed,forced}}
- return {actionCheck,confusionHit,turnEndStates,turnEndField,hazardsOnEntry,grounded,itemOf,HAZ,RM};   /* 11-01 망령: HAZ · RM 은 설치물 전개 카드(battle_ui fcInfo)가 효과 글을 만드는 데 읽는다 */
+ return {actionCheck,confusionHit,turnEndStates,turnEndField,hazardsOnEntry,grounded,itemOf,itemsOf,magic,HAZ,RM};   /* 11-01 망령: HAZ · RM 은 설치물 전개 카드(battle_ui fcInfo)가 효과 글을 만드는 데 읽는다 */
 })();
