@@ -772,7 +772,7 @@ let WILD=null,WDB=null,WF={grade:'',hab:'',type:'',origin:'',folder:'',q:'',grou
 const GCOL={C:'var(--g-c)','C+':'var(--g-c)',B:'var(--g-b)','B+':'var(--g-b)',A:'var(--g-a)'};
 const gdChip=p=>`<span class="gd" style="background:${GCOL[p]||'var(--g-e)'}">${esc(p||'-')}</span>`;
 /* 종족치 랭크 = 제작기 등급 표(oremas data/maker.js MKM grade) 그대로 — 10-28: 전엔 85 부터 B 로 어림잡았다(표로는 85~89 = C+) */
-const GRADE_T=[[1,'E-'],[11,'E'],[31,'E+'],[40,'D-'],[46,'D'],[55,'D+'],[60,'C-'],[70,'C'],[81,'C+'],[90,'B-'],[96,'B'],[105,'B+'],[110,'A-'],[120,'A'],[131,'A+'],[140,'AA-'],[150,'AA'],[161,'AA+'],[170,'AAA-'],[180,'AAA'],[191,'AAA+'],[200,'S-'],[220,'S'],[241,'S+'],[256,'EX']];
+const GRADE_T=[[1,'E-'],[11,'E'],[31,'E+'],[40,'D-'],[46,'D'],[55,'D+'],[60,'C-'],[70,'C'],[81,'C+'],[90,'B-'],[96,'B'],[105,'B+'],[110,'A-'],[120,'A'],[131,'A+'],[140,'AA-'],[150,'AA'],[161,'AA+'],[170,'AAA-'],[180,'AAA'],[191,'AAA+'],[200,'S'],[256,'EX']];
 const SG=v=>{let g='-';for(const [lo,n] of GRADE_T){if(v>=lo)g=n;else break}return g};
 const SRK=v=>{const g=SG(v).replace(/[+-]$/,'');return g==='E'||g==='-'?'D':/^(AAA|S|EX)/.test(g)?'AA':g};const SRC_={AA:'var(--g-aa)',A:'var(--g-a)',B:'var(--g-b)',C:'var(--g-c)',D:'var(--g-d)'};
 const KS6=['HP','공','방','특공','특방','스'];
