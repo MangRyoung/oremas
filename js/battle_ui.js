@@ -2549,7 +2549,8 @@ window.OM_BATTLE_UI=(()=>{
    let abSure=false,abNote='';if(mv.cat!=='변화'&&!ck('asure')){const SRC=[[atk.ability,atk.abilityEff],...((atk.pots||[]).map(p=>[p&&p.name,p&&p.eff]))];for(const [nm,tx] of SRC){const mm=String(tx||'').match(/(\d+)할(?:의 확률)?로\s*자신의\s*기술이\s*필중/);if(!mm)continue;const N=+mm[1];const r0=1+Math.floor(Math.random()*10);abSure=r0<=N;abNote=`『${nm||'특성'}』 ${N}할 필중 — 굴림 ${r0}/${N} ${abSure?'발동! 이번 기술은 필중':'불발'}`;break}}
    for(const slot of targets){if(ACCKEEP&&ACCKEEP[slot]){res.push(ACCKEEP[slot]);continue}/* 11-05 은열쇠 명중 다시: 다른 대상 결과는 그대로 */const [side,area]=slot.split('_');const def=entered(b,side)[area];if(!def)continue;
     const AF=atk.flags||{},DF=def.flags||{};const phys=mv.cat==='물리',spec=mv.cat==='특수';
-    const sure=abSure||ck('asure')||md.dataset.wsure==='1'||AF.surehit||(phys&&AF.hitPhys)||(spec&&AF.hitSpec)||!!(FX()&&FX().nextOf&&FX().nextOf(atk).some(e=>e.sure));const IG=FX()?iuIgnore(atk,def):{};
+    const tySure=(()=>{const m=String(mv.eff||'').match(/「타입\s*:\s*([^」]+)」(?:이|가)\s*(?:내보내면|사용하면)[^.]*「필중기」/);return !!m&&tysOf(atk).includes(S().typeEn(m[1].trim()))})();   /* 11-05 맹독: 「타입 : 독」이 사용하면 「필중기」 */
+    const sure=tySure||abSure||ck('asure')||md.dataset.wsure==='1'||AF.surehit||(phys&&AF.hitPhys)||(spec&&AF.hitSpec)||!!(FX()&&FX().nextOf&&FX().nextOf(atk).some(e=>e.sure));const IG=FX()?iuIgnore(atk,def):{};
     const sureMv=sure||!(+mv.acc);/* 10-26 망령 판정: 「필중기」는 『피해라!』『물러나!』로 피할 수 없다 */const autoMiss=((phys&&DF.dodgePhys)||(spec&&DF.dodgeSpec))&&!sureMv||AF.acc0;
     /* 사이코필드: 땅 위의 포켓몬은 상대의 선공 기술(우선도 +1 이상)을 받지 않는다 */
     const psyBlock=f.terrain.type==='사이코필드'&&!sameT(def,atk)&&grd(def)&&(FX()?FX().prioOf(atk,mv):(+mv.prio||0))>0;
