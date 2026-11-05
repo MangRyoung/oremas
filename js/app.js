@@ -781,6 +781,39 @@ async function openLoadParty(side){
  $('#goSheet',m).onclick=()=>{closeModal();VIEW='sheet';renderScene()};
  m.querySelectorAll('[data-pick]').forEach(btn=>btn.onclick=async()=>{closeModal();await loadFromRoster(btn.dataset.pick,side)});
  m.querySelectorAll('[data-two]').forEach(btn=>btn.onclick=async()=>{const t=roster().trainers[btn.dataset.two];if(!t)return;if(await setTwo(t.id,!t.two)){closeModal();openLoadParty(side)}})}
+/* ---------- 지원 포켓몬 (11-05 23:52 망령 「PT 추가가 아니라 포켓몬만 따로 도중에 부르는」 · 「캠페인마다 지원용 폴더를 따로 만들어서 거기에 연동」) ----------
+   이 방과 이어진 세션 노트 캠페인의 지원 폴더(camp.data.mk.support · 아래 폴더 포함) 트레이너의 포켓몬을 골라 진영에 부른다 (GM).
+   부른 포켓몬은 그 트레이너 몫으로 진영 벤치에 들어온다 (같은 트레이너가 이미 그 진영에 있으면 그 PT 에 더한다 · 개인전 아님 = 같은 팀). 내미는 건 평소처럼 */
+async function openAddMon(side){if(ST.role!=='gm')return toast('GM 만 부를 수 있다');
+ const NL=window.OM_NOTES;const L=NL&&NL.linked?await NL.linked(true):null;const sup=L&&((L.data||{}).mk||{}).support;
+ if(!L)return toast('이 방이 세션 노트 캠페인과 이어져 있지 않다 (위 「📓 노트」에서 잇기)');
+ if(!sup)return toast(`「${L.name}」 캠페인에 지원 폴더가 없다 — 세션 노트 시트 탭의 제작기 막대 「🛟 지원」에서 고른다`);
+ const MKD=await loadMaker(true);const fd=x=>(x.data&&x.data.data)||x.data||{};
+ const under=new Set([sup]);for(let g=1;g;){g=0;for(const f of MKD.folders){const p=fd(f).parent;if(p&&under.has(p)&&!under.has(f.id)){under.add(f.id);g=1}}}
+ const fname=(MKD.folders.find(f=>f.id===sup)?fd(MKD.folders.find(f=>f.id===sup)).name:'')||sup;
+ const trs=MKD.trainers.filter(t=>under.has(fd(t).folder)).sort((a,b)=>((a.data||{}).ord||0)-((b.data||{}).ord||0));
+ const groups=[];for(const t of trs){let P;try{P=I().party(t,MKD.pokemon.filter(p=>fd(p).tid===t.id))}catch(e){console.warn(e);continue}if(P.mons.length)groups.push(P)}
+ if(!groups.length)return toast(`지원 폴더 「${fname}」에 포켓몬이 없다`);
+ const inB=B().mons||{};const sel=new Set();
+ const md=openModal(`<div class="mhead"><h2>${side==='left'?'좌측':'우측'} 진영에 포켓몬 부르기 <small class="dim">🛟 ${esc(fname)}</small></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+  <p class="small dim" style="margin-top:0">고른 포켓몬이 그 트레이너 몫으로 이 진영 벤치에 들어온다 (같은 팀). 내미는 건 평소처럼 등장 · 교대로.</p>
+  ${groups.map(G=>`<div class="sec">${esc(G.trainer.name||G.trainer.id)}</div><div class="addmon">${G.mons.map(m=>{const had=!!inB[m.id];return `<button type="button" class="amc${had?' had':''}" data-am="${esc(m.id)}" ${had?'disabled title="이미 배틀에 있다"':''}><span class="por" style="${m.image?`background-image:url('${esc(m.image)}')`:''}"></span><span><b>${esc(m.name)}</b><small class="dim">Lv ${m.lv||'-'} · ${(m.typesKo||m.types||[]).filter(x=>x&&x!=='-').join('/')}${had?' · 배틀에 있음':''}</small></span></button>`}).join('')}</div>`).join('')}
+  <div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn pri" id="amGo" disabled>고른 <b id="amN">0</b>체 부르기</button></div>`);
+ md.querySelectorAll('[data-am]').forEach(x=>x.onclick=()=>{const id=x.dataset.am;if(sel.has(id))sel.delete(id);else sel.add(id);x.classList.toggle('on',sel.has(id));$('#amN',md).textContent=sel.size;$('#amGo',md).disabled=!sel.size});
+ $('#amGo',md).onclick=async()=>{closeModal();for(const G of groups){const ms=G.mons.filter(m=>sel.has(m.id));if(ms.length)await addMons(side,G.trainer,ms)}}}
+async function addMons(side,t0,mons0){const mons=mons0.map(x=>JSON.parse(JSON.stringify(x)));
+ {const DU=window.OM_DB_UI;if(DU&&DU.fillEff&&mons.some(m=>(m.ability&&!m.abilityEff)||(m.pots||[]).some(p=>!p.eff))){if(DU.ensureMaker)await DU.ensureMaker();for(const m of mons)DU.fillEff(m)}}
+ const b0=JSON.parse(JSON.stringify(B())),nb=JSON.parse(JSON.stringify(b0));nb.sides=nb.sides||{left:{trainers:[]},right:{trainers:[]}};for(const s2 of ['left','right'])nb.sides[s2]=nb.sides[s2]||{trainers:[]};
+ nb.trainers=nb.trainers||{};nb.mons=nb.mons||{};nb.turn=nb.turn||0;nb.phase=nb.phase||0;nb.mode=nb.mode||2;nb.field=nb.field||{};nb.cmds=nb.cmds||{};nb.order=nb.order||[];
+ let tr=nb.trainers[t0.id];
+ if(tr&&tr.side&&tr.side!==side){toast(`${tr.name}은(는) 이미 ${tr.side==='left'?'좌측':'우측'} 진영에 있다`);return false}
+ if(!tr){tr=JSON.parse(JSON.stringify(t0));tr.pids=[];tr.side=side;tr.by='gm';tr.support=1;delete tr.solo;{const k=acctKey();if(k)tr.byAcct=k}nb.trainers[tr.id]=tr;if(!nb.sides[side].trainers.includes(tr.id))nb.sides[side].trainers.push(tr.id)}
+ tr.pids=Array.isArray(tr.pids)?tr.pids:[];const add=[];
+ for(const mon of mons){if(nb.mons[mon.id])continue;mon.tid=tr.id;prepMon(mon,side,Object.values(nb.mons).filter(x=>x.tid===tr.id).length);nb.mons[mon.id]=mon;if(!tr.pids.includes(mon.id))tr.pids.push(mon.id);add.push(mon)}
+ if(!add.length){toast('부를 포켓몬이 없다 (이미 배틀에 있다)');return false}
+ const rk={trainers:0,sides:1,mons:2};const ops=diffOps(['battle'],b0,nb,3);ops.sort((x,y)=>(rk[x[0][1]]??3)-(rk[y[0][1]]??3));
+ if(!await setMany(ops))return false;toast(`${add.map(m=>m.name).join(' · ')} — 불렀다`);
+ sysLog(`【지원】 ${tr.name}의 ${add.map(m=>'「'+m.name+'」').join(' · ')} — ${side==='left'?'좌측':'우측'} 진영 벤치에 합류`,'battle');VIEW='battle';renderScene();return true}
 /* 배틀에 올릴 포켓몬 초기화: 시트의 남은 HP·상태 이상·빈사(결과 정리로 돌려받은 것)로 시작 */
 function prepMon(mon,side,i){mon.side=side;mon.slot=i;mon.entry='';mon.started=false;/* 10-26 던전 시험: 스킬 체크 패널티(「발이 묶임 — 스피드 −1」 등)가 시트 포켓몬의 랭크에 남는데 배틀을 차릴 때 0 으로 지워졌다 — 시트의 랭크를 들고 들어간다 (「결과 정리」가 시트 랭크를 다시 0 으로) */const rk0=mon.rank||{};mon.rank={attack:0,defense:0,specialattack:0,specialdefense:0,speed:0,accuracy:0,evasion:0,critical:0};for(const k in mon.rank)if(+rk0[k])mon.rank[k]=Math.max(-6,Math.min(6,+rk0[k]));mon.mod={};mon.states=Object.assign({},mon.sheetStates||{});mon.teraActive=false;delete mon.teraUsed;delete mon.itemUsed;delete mon.form0;delete mon.formIdx;
  mon.hp={max:mon.stats[0],cur:mon.states.Dead?0:mon.sheetHp==null?mon.stats[0]:Math.min(mon.sheetHp,mon.stats[0])}}
@@ -1244,6 +1277,6 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
 /* 이름으로 기본 초상 찾기: 그림이 따로 없으면 같은 이름의 로스터 트레이너 → 포켓몬 → 관계도 노드의 그림을 쓴다 */
 function portraitOf(name,img){if(img)return img;if(!name)return '';const ro=ST.state.roster||{};const t=Object.values(ro.trainers||{}).find(x=>x.name===name);if(t&&t.image)return t.image;const m=Object.values(ro.mons||{}).find(x=>x.name===name&&x.image);if(m)return m.image;const n=Object.values((ST.state.graph||{}).nodes||{}).find(x=>x.name===name&&x.img);return n?n.img:''}
-window.OM_APP={ensure,loadScript,twoAble,twoPids,twoApply,setTwo,acctKey,presList,dupItems,dupItemText,logFill,bchOpen,selfLog,splitLog,contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,cleanupTrainer,openMon,openLoadParty,loadFromRoster,encounter,loadMaker,loadMakerParty,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,online:s=>!!s&&Object.values(PRES.who).some(v=>v.role==='seat'&&v.seat===s&&Date.now()-v.at<70000),get view(){return VIEW},goView:v=>{VIEW=v||scene();renderScene()},set view(v){VIEW=v}};
+window.OM_APP={openAddMon,ensure,loadScript,twoAble,twoPids,twoApply,setTwo,acctKey,presList,dupItems,dupItemText,logFill,bchOpen,selfLog,splitLog,contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,cleanupTrainer,openMon,openLoadParty,loadFromRoster,encounter,loadMaker,loadMakerParty,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,online:s=>!!s&&Object.values(PRES.who).some(v=>v.role==='seat'&&v.seat===s&&Date.now()-v.at<70000),get view(){return VIEW},goView:v=>{VIEW=v||scene();renderScene()},set view(v){VIEW=v}};
 route();
 })();

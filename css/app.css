@@ -5649,3 +5649,8 @@ button.tfsep.cl{opacity:1;border:1px dashed color-mix(in srgb,var(--yel2) 55%,tr
  .mapwrap:not(.peekall) .mnpc:not(.peek):not(.drag) > i,.mapwrap:not(.peekall) .mnpc:not(.peek):not(.drag) > .mnst,.mapwrap:not(.peekall) .mnpc:not(.peek):not(.drag) > .mnr{display:none}
  .mapwrap .mnpc.peek{z-index:30 !important}
 }
+/* 11-05 지원 포켓몬 부르기 */
+.addmon{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:6px;margin:4px 0 8px}
+.amc{display:flex;gap:8px;align-items:center;text-align:left;padding:6px;border:1px solid var(--line);background:var(--panel2,rgba(255,255,255,.04));color:inherit;font:inherit;cursor:pointer;border-radius:6px}
+.amc .por{width:44px;height:44px;flex:none;border-radius:4px;background:#000 center/cover no-repeat}
+.amc b{display:block}.amc.on{outline:2px solid var(--yel,#e0b04a);outline-offset:-2px}.amc.had{opacity:.45;cursor:default}
