@@ -85,7 +85,7 @@ window.OM_CUTIN=(()=>{
   if(lastFire&&now-lastFire.t<2500&&lastFire.c.tok!==c.tok){list=[lastFire.c,c];lastFire=null}else lastFire={t:now,c};
   fireLocal(list)}
  function preview(){fireLocal([{tok:'pv',src:'',tag:'미리 보기',ment:'『컷인 크기』',line:'이 크기로 나온다',color:'#e4002b'}])}
- function fire(c){c=c||{};const S=c.se&&c.se!=='cut'?c.se:'';if(S)se(S);showFire(c);DBS().broadcast({t:'cutin',k:'fire',c,se:S})}   /* 옛 「cut」 은 급소 소리로만 쓴다 */
+ function fire(c){c=c||{};{const IM=window.OM_BATTLE_UI&&window.OM_BATTLE_UI.illuMask;if(IM){try{c=IM(c)}catch(e){}}}   /* 11-05 일루젼 */const S=c.se&&c.se!=='cut'?c.se:'';if(S)se(S);showFire(c);DBS().broadcast({t:'cutin',k:'fire',c,se:S})}   /* 옛 「cut」 은 급소 소리로만 쓴다 */
 
  /* ----- VS 시합 개시 / 경고 ----- */
  function side(cls,S){S=S||{};const mons=(S.mons||[]).slice(0,6);const balls=(S.balls||[]).slice(0,6).map((b,i)=>{const m=mons[i];return `<i class="ball ${b?'':'dead'}" style="animation-delay:${(1.55+i*.1)}s">${m&&m.img?`<img src="${esc(m.img)}" alt="" title="${esc(m.name||'')}">`:''}</i>`}).join('');

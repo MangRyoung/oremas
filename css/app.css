@@ -839,6 +839,7 @@ html[data-vt="p5"] .incoming .btn{box-shadow:2px 2px 0 #000!important;border-wid
 .ggrid{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:center;font-size:13px}
 .rmrow{border-bottom:1px dashed var(--line);padding:6px 0}
 .rk.fxc{background:#1d2a3a;color:#9fc4ff;border-color:#2f5a8f}
+.rk.illu{background:#2e2140;color:#e2cfff;border-color:#6b4f9a}.rk.illu[data-act]{cursor:pointer}.rk.illu[data-act]:hover{border-color:#b48cff}   /* 11-05 일루젼 */
 .pot.auto{border-color:var(--blue)}
 
 /* ---------- 도감 · 스킬 체크 ---------- */
