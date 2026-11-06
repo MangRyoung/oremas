@@ -656,6 +656,14 @@ function selfLog(t,extra){const rows=selfRows();t=String(t);const id=(ST.lastLog
  rows.push({id:extra?id+Math.random()*1e-3:id,kind:'self',at:new Date().toISOString(),data:Object.assign(m?{t,it:[[m[1],m[2]]]}:{t},extra||{})});while(rows.length>50)rows.shift();try{localStorage.setItem(SELFK(),JSON.stringify(rows))}catch(e){}renderLog(true)}
 /* 10-26 망령: 같은 소지품은 한 파티에 하나만 — 겹치면 [[소지품, [포켓몬 이름…]]] */
 function dupItems(mons){const by={};for(const m of mons||[]){const it=String((m&&m.item)||'').trim();if(!it)continue;(by[it]=by[it]||[]).push(m.name||m.id)}return Object.entries(by).filter(([k,v])=>v.length>1)}
+/* 11-06 망령 「블로커 무화열매 · 마제망토, 에이스 마제망토 — 착용할 때 경고 · 같은 계열도」: 룰북 「소지품 제약」 (제작기 pokeChecks 와 같은 표).
+   역할 = 역할 포텐셜(m.role) + 같은 계열(fx roleFams — 하이 블로커 · 타이트엔드 = 블로커, 서브 에이스 = 에이스, 어시스트 · 옵저버 … = 서포터). 막지는 않고 묻는다 (포텐셜로 풀린 경우) */
+const ITEM_BAN_ALL=['생명의구슬','구애머리띠','구애안경','구애스카프','돌격조끼'];
+const ITEM_BAN_ROLE={에이스:['생명의구슬','구애머리띠','구애안경','진화의휘석','마제망토'],블로커:['무화열매','마제망토','진화의휘석'],서포터:['돌격조끼']};
+function itemBanWhy(m,n){n=String(n||'').trim();if(!n||!m)return '';const out=[];if(ITEM_BAN_ALL.includes(n))out.push('공통 금지 소지품');
+ const r=String(m.role||'').replace(/『|』/g,'').trim();if(r){const FX=window.OM_FX;const fams=new Set([r,...((FX&&FX.roleFams)?FX.roleFams(r):[])]);for(const f of fams)if((ITEM_BAN_ROLE[f]||[]).includes(n)){out.push(`『${f}』 금지 소지품${f!==r?` (『${r}』 = ${f} 계열)`:''}`);break}}
+ return out.length?`⚠ ${m.name||''} 「${n}」 — ${out.join(' · ')} (룰북 「소지품 제약」)`:''}
+function itemOk(m,n){const w=itemBanWhy(m,n);return !w||confirm(w+'\n포텐셜 등으로 풀린 경우가 아니면 낄 수 없다. 그래도 낄까?')}
 function dupItemText(name,d){return `⚠ ${name} — 같은 소지품이 겹친다 (한 파티에 하나만): ${d.map(([it,ns])=>`「${it}」 ${ns.join(' · ')}`).join(' / ')}`}
 /* 이 창의 GM 을 가리는 열쇠: 로그인 계정 id, 없으면 GM 닉네임 (둘 다 없으면 '' — 구분하지 않음) */
 function acctKey(){const a=ACCT.get();if(a&&a.uid)return 'u:'+a.uid;return ST.gmNick?'n:'+ST.gmNick:''}
@@ -1113,7 +1121,7 @@ function monChange(mid,kind){const m=(B().mons||{})[mid];if(!m)return;const D=wi
  {const mx=/^itemx(0?):(\d+)$/.exec(kind);if(mx){const k=+mx[2];const cur=((m.items2||[])[k]||{}).item||'';
   const setX=(x,ni)=>{const FX=window.OM_FX;x.items2=Array.isArray(x.items2)?x.items2:[];const o=x.items2[k]||{};if(FX&&o.item)FX.removeByName(x,o.item);x.items2[k]={item:ni,itemEff:String((((D.items||{})[ni])||{}).eff||'')};return ni?`소지품 ${k+2} → 「${ni}」`:`소지품 ${k+2} 「${o.item}」 뗌`};
   if(mx[1]){if(!cur||!confirm(`「${cur}」을(를) 뗄까?`))return;return save(x=>((x.items2||[])[k]||{}).item?[setX(x,'')]:[])}
-  return window.OM_DB_UI.open({kind:'item',sel:cur,pick:n=>save(x=>n===(((x.items2||[])[k]||{}).item||'')?[]:[setX(x,n)])})}}
+  return window.OM_DB_UI.open({kind:'item',sel:cur,pick:n=>n!==cur&&!itemOk(m,n)?null:save(x=>n===(((x.items2||[])[k]||{}).item||'')?[]:[setX(x,n)])})}}
  if(!P)return openMonEdit(mid,kind);
  switch(kind){
   case 'types':return P.types(m.types,{title:m.name+' — 타입 변경',orig:m.typesOrig,note:'지금 배틀의 이 포켓몬만 바뀐다 (시트는 그대로). 효과 칸에 「변경」으로 남는다.'},nt=>save(x=>nt.join()===x.types.slice(0,3).concat(['-','-','-']).slice(0,3).join()?[]:[setTypes(x,nt)]));
@@ -1121,7 +1129,7 @@ function monChange(mid,kind){const m=(B().mons||{})[mid];if(!m)return;const D=wi
   case 'base':return P.base(m.base,{title:m.name+' — 종족치 변경',orig:m.baseOrig,lv:m.lv,iv:m.iv,ev:m.ev,note:'지금 배틀의 이 포켓몬만 (시트는 그대로). 최대 HP 가 바뀌면 그 차이만큼 지금 HP 도.'},nb=>save(x=>{if(nb.join()===x.base.join())return [];const full=x.hp.cur>=x.hp.max,oldMax=x.hp.max;if(!x.baseOrig)x.baseOrig=x.base.slice();x.base=nb;if(x.baseOrig.join()===nb.join())delete x.baseOrig;x.ranks=nb.map(S().gradeOf);x.stats=S().statsOf(nb,x.iv,x.ev,x.lv);{const raw=x.stats.slice();(x.statCp||[]).forEach((j,i)=>{if(j!=null&&j!==''&&i>0)x.stats[i]=raw[+j]});(x.statAdd||[]).forEach((v,i)=>{if(+v)x.stats[i]=Math.max(1,x.stats[i]+(+v))})}delete x.statsOrig;x.hp.max=x.stats[0];x.hp.cur=x.hp.cur<=0?0:full?x.hp.max:Math.max(1,Math.min(x.hp.max,x.hp.cur+x.hp.max-oldMax));return ['종족치 → '+nb.join('/')]}));
   case 'ability':return window.OM_DB_UI.open({kind:'trait',sel:m.ability||'',pick:n=>save(x=>n===(x.ability||'')?[]:[setAb(x,n)])});
   case 'ability0':return save(x=>{if(x.abilityOrig==null)return [];const o=x.abilityOrig;const L=setAb(x,o);delete x.abilityOrig;delete x.abilityBy;return [`특성 원래대로 「${o||'없음'}」`]});
-  case 'item':return window.OM_DB_UI.open({kind:'item',sel:m.item||'',pick:n=>save(x=>n===(x.item||'')?[]:[setIt(x,n)])});
+  case 'item':return window.OM_DB_UI.open({kind:'item',sel:m.item||'',pick:n=>n!==(m.item||'')&&!itemOk(m,n)?null:save(x=>n===(x.item||'')?[]:[setIt(x,n)])});
   case 'item0':if(!confirm(`「${m.item}」을(를) 뗄까?`))return;return save(x=>x.item?[setIt(x,'')]:[]);
   default:return openMonEdit(mid,kind)}}
 
@@ -1305,6 +1313,6 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
 /* 이름으로 기본 초상 찾기: 그림이 따로 없으면 같은 이름의 로스터 트레이너 → 포켓몬 → 관계도 노드의 그림을 쓴다 */
 function portraitOf(name,img){if(img)return img;if(!name)return '';const ro=ST.state.roster||{};const t=Object.values(ro.trainers||{}).find(x=>x.name===name);if(t&&t.image)return t.image;const m=Object.values(ro.mons||{}).find(x=>x.name===name&&x.image);if(m)return m.image;const n=Object.values((ST.state.graph||{}).nodes||{}).find(x=>x.name===name&&x.img);return n?n.img:''}
-window.OM_APP={flush,setNow,openAddMon,ensure,loadScript,twoAble,twoPids,twoApply,setTwo,acctKey,presList,dupItems,dupItemText,logFill,bchOpen,selfLog,splitLog,contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,cleanupTrainer,openMon,openLoadParty,loadFromRoster,encounter,loadMaker,loadMakerParty,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,online:s=>!!s&&Object.values(PRES.who).some(v=>v.role==='seat'&&v.seat===s&&Date.now()-v.at<70000),get view(){return VIEW},goView:v=>{VIEW=v||scene();renderScene()},set view(v){VIEW=v}};
+window.OM_APP={itemBanWhy,itemOk,flush,setNow,openAddMon,ensure,loadScript,twoAble,twoPids,twoApply,setTwo,acctKey,presList,dupItems,dupItemText,logFill,bchOpen,selfLog,splitLog,contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,cleanupTrainer,openMon,openLoadParty,loadFromRoster,encounter,loadMaker,loadMakerParty,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,online:s=>!!s&&Object.values(PRES.who).some(v=>v.role==='seat'&&v.seat===s&&Date.now()-v.at<70000),get view(){return VIEW},goView:v=>{VIEW=v||scene();renderScene()},set view(v){VIEW=v}};
 route();
 })();

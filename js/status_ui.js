@@ -79,7 +79,7 @@ window.OM_STATUS_UI=(()=>{
   md.classList.add('wide','stxmodal');if(sc)md.scrollTop=sc;
   const cur=(mid,k)=>{const m=(b.mons||{})[mid];if(!m)return '';return k===0?nmI(m.item):nmI(((m.items2||[])[k-1]||{}).item)};
   md.querySelectorAll('[data-sit]').forEach(el=>el.onclick=()=>{const mid=el.dataset.sit,k=+el.dataset.k;if(!window.OM_DB_UI)return;
-   window.OM_DB_UI.open({kind:'item',sel:cur(mid,k),pick:n=>edit(mid,x=>n===cur(mid,k)?'':setX(x,k,n))})});
+   window.OM_DB_UI.open({kind:'item',sel:cur(mid,k),pick:n=>{if(n!==cur(mid,k)&&A().itemOk&&!A().itemOk((A().ST.state.battle||{}).mons[mid],n))return;return edit(mid,x=>n===cur(mid,k)?'':setX(x,k,n))}})});
   md.querySelectorAll('[data-soff]').forEach(el=>el.onclick=()=>{const mid=el.dataset.soff,k=+el.dataset.k;const n=cur(mid,k);if(!n||!confirm(`「${n}」을(를) 뗄까?`))return;edit(mid,x=>setX(x,k,''))});
   md.querySelectorAll('[data-sadd]').forEach(el=>el.onclick=()=>edit(el.dataset.sadd,x=>{x.items2=x.items2||[];if(x.items2.length>=X2)return '';x.items2.push({item:'',itemEff:''});return `소지품 ${x.items2.length+1}번 칸 더함`}));
   md.querySelectorAll('[data-sdel]').forEach(el=>el.onclick=()=>{const k=+el.dataset.k;edit(el.dataset.sdel,x=>{if(!x.items2||!x.items2[k-1]||nmI(x.items2[k-1].item))return '';x.items2.splice(k-1,1);return `소지품 ${k+1}번 칸 없앰`})});
