@@ -1451,9 +1451,19 @@ window.OM_BATTLE_UI=(()=>{
  /* 턴 마무리: 「턴 가장 마지막」 → (턴 종료 처리) → 「턴 종료 이후」. 그 타이밍이 적힌 포텐셜(필드의 포켓몬 · 그 트레이너 고유)이 있으면 단계마다 발동을 묻고, 없으면 그냥 넘어간다 */
  /* 「턴 종료 시까지」「가장 마지막까지」는 해제 타이밍이라 발동 후보가 아니다 */
  const END_T={last:/가장\s*마지막(?!\s*까지)/,end:/턴\s*종료\s*(시|때|시점|에)(?!\s*까지)|턴\s*종료\s*마다/,after:/턴\s*종료\s*(이후|후|뒤)(?!\s*까지)/};
- function endCands(b,step){const out=[];const ok=t=>{t=String(t||'');if(step==='end'&&END_T.after.test(t)&&!END_T.end.test(t.replace(END_T.after,'')))return false;return END_T[step].test(t)};
-  for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0)continue;for(const p of potSrc(m))if(ok(p.eff))out.push({m,kind:'pot',name:p.name,eff:p.eff,tag:isExcl(m,p)?'전용':'포텐셜'})}
-  const seen=new Set();for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0||seen.has(m.tid))continue;seen.add(m.tid);const t=(b.trainers||{})[m.tid];for(const x of uniqList(t))if(ok(x.p.eff))out.push({m,kind:'uq',name:x.p.name,eff:x.p.eff,tag:'고유',t})}
+ /* 11-06 망령 「『명경』(턴 종료 시 중확률로 「도발」「헤롱헤롱」 상태를 치유한다) 이 안 걸려 있을 때도 나온다」: 상태를 치유 · 해제하는 효과는 그 상태가 하나라도 걸려 있을 때만 후보.
+    「「X」「Y」 상태를 치유」 → 적힌 상태 중 하나 · 「상태 이상을 치유」 → 상태 이상 하나. 다른 효과가 같이 적혀 있으면(치유 말고 할 일이 있으면) 그대로 묻는다 */
+ const CURE_RE=/상태(?:\s*이상)?」?(?:\s*\([^)]*\))?(?:을|를)?\s*(?:모두\s*)?(?:치유|해제|회복)/;
+ function cureOnlyIdle(m,eff){const t=String(eff||'').replace(/<br\s*\/?>/g,' ');if(!CURE_RE.test(t))return false;if(/(?:치유|해제|회복)(?:하고|하며|한\s*뒤|한\s*후|하면|해서)/.test(t))return false;
+  const rest=t.replace(/【[^】]*】/g,'').replace(/[^.。]*?(?:상태(?:\s*이상)?」?(?:\s*\([^)]*\))?(?:을|를)?\s*(?:모두\s*)?(?:치유|해제|회복)[^.。]*[.。]?)/g,'').replace(/턴\s*종료[^.。]*?[,，]/g,'').trim();if(rest.replace(/[\s.。]/g,'').length>2)return false;   /* 치유 말고 다른 문장이 있다 */
+  const ST=((DB().states||{}).st)||{};const byKo={};for(const k in ST)if(ST[k]&&ST[k].ko)byKo[ST[k].ko]=k;const has=k=>!!((m.states||{})[k]);
+  const names=[...t.matchAll(/「([^」:]+)」/g)].map(x=>x[1].trim()).filter(n=>byKo[n]);
+  if(names.length)return !names.some(n=>has(byKo[n]));
+  if(/상태\s*이상/.test(t)){const ABN=['Poison','Toxic','Burn','Paralysis','Freeze','Sleep'];return !ABN.some(has)}
+  return false}
+ function endCands(b,step){const out=[];const ok0=t=>{t=String(t||'');if(step==='end'&&END_T.after.test(t)&&!END_T.end.test(t.replace(END_T.after,'')))return false;return END_T[step].test(t)};const ok=(t,m)=>ok0(t)&&!cureOnlyIdle(m,t);
+  for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0)continue;for(const p of potSrc(m))if(ok(p.eff,m))out.push({m,kind:'pot',name:p.name,eff:p.eff,tag:isExcl(m,p)?'전용':'포텐셜'})}
+  const seen=new Set();for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0||seen.has(m.tid))continue;seen.add(m.tid);const t=(b.trainers||{})[m.tid];for(const x of uniqList(t))if(ok(x.p.eff,m))out.push({m,kind:'uq',name:x.p.name,eff:x.p.eff,tag:'고유',t})}
   return out}
  /* 턴 마무리 (10-23): 단계마다 그 타이밍 포텐셜을 가진 트레이너의 주인 화면에만 묻는다 (플레이어 몫은 그 플레이어, NPC·GM 몫은 GM).
     각자 쓸 것을 「발동」하고 「다음 ▶」(턴 종료 단계는 「턴 종료 처리 ▶」)를 누르면, 모두 눌렀을 때 진행하는 화면이 다음 단계로 넘긴다.
