@@ -765,6 +765,14 @@ window.OM_BATTLE_UI=(()=>{
   if(x.order){const n=(m&&m.tid?pName(ctx().b,m.tid,'order',x.order):OO().orderName(t||{},x.order));const row=potRowOf(n);if((row&&row[0]==='5계')||/결계|법계/.test(n))return true;if(row&&TS(row[2]))return true;if(!row&&TS(rmText(n)))return true}
   for(const pn of x.pots||[])if(preWhen(pn,m)==='now')return true;
   return false}
+ /* 11-06 망령 「십계 턴 개시 발동」: 진행 화면이 다른 좌석이라 내 숨긴 지시를 못 읽어 저절로 못 건 턴 개시 선행(지령 · 결계 · 「턴 개시」 4식)은 내 화면이 「선행 발동」 단계에서 건다 (턴마다 한 번) */
+ const SPF={};
+ async function selfPreFire(tid){const c=ctx();const b=c.b;const k=turnKey(b)+'|'+tid;if(SPF[k])return;SPF[k]=1;const cm=await myCmd(c,tid,true);if(!cm)return;const TN=((b.trainers||{})[tid]||{}).name||'?';const L=[];
+  for(const [mid,x] of Object.entries(cm.mons||{})){const mm=(ctx().b.mons||{})[mid];if(!x||!mm||mm.tid!==tid||!mm.entry||!(+(mm.hp||{}).cur>0))continue;
+   for(const kind of ['command','order']){const key=x[kind];if(!key)continue;const fd=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid])||{};if(fd[kind])continue;const on=pName(ctx().b,tid,kind,key);
+    if(kind==='order'){const row=potRowOf(on);if(!((row&&row[0]==='5계')||/결계|법계/.test(on)||TS(row&&row[2])||(!row&&TS(rmText(on)))))continue}
+    try{await fireOrder(tid,mid,kind,key,'pre');const f2=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid])||{};if(f2[kind])L.push(`${mm.name} 『${on}』`)}catch(e){console.warn('선행 자동(주인)',e)}}}
+  if(L.length)A().sysLog(`【선행 자동 발동】 ${TN} — ${L.join(' · ')}`,'battle')}
  function upCounts(t,ups){for(const n of ups||[]){const u=((t&&t.unique)||[]).find(q=>q&&q.name===n);if(TS(u&&u.eff)||(!u&&TS(rmText(n))))return true}return false}
  async function turnInfo(c,b){let rows=[];try{rows=(await DBS().secretGet(c.ST.room,c.ST.secret,'cmd')||[]).filter(r=>cmdFresh(r,b))}catch(e){}
   const SEC={},PRE={},UP={};const live=mid=>{const mm=(b.mons||{})[mid];return mm&&mm.entry&&mm.hp.cur>0};
@@ -806,6 +814,11 @@ window.OM_BATTLE_UI=(()=>{
       if(c.fair&&seatOwned(c,tid)){OMAN.push(`${TN(tid)} · ${mm.name} 명령 『${on}』 — 주인이 「선행 발동」`);MANT.add(tid);continue}
       try{await fireOrder(tid,mid,'order',x.order,'pre');const f2=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid])||{};if(f2.order)OL.push(`${TN(tid)} · ${mm.name} 『${on}』`);else{OMAN.push(`${TN(tid)} · ${mm.name} 명령 『${on}』 — 걸리지 않았다 (남은 횟수 · 한 턴 하나 · 받을 수 없는 상태 — 「포텐셜 발동」에서 확인)`);MANT.add(tid)}}catch(e){console.warn('4식 자동 발동',e);OMAN.push(`${TN(tid)} · ${mm.name} 명령 『${on}』 — 저절로 걸다가 멈췄다 (「포텐셜 발동 → 선행 발동」)`);MANT.add(tid)}}
      if(OL.length)A().sysLog(`【명령 자동 발동】 선행 입력한 결계 · 턴 개시 4식\n${OL.join('\n')}`,'battle')}
+    /* 11-06 망령 「십계 왜 턴 개시 때 발동 타이밍이 없냐」: 진행하는 화면이 좌석이면(턴 종료를 PL 이 누르면 host 가 그 좌석) 남의 숨긴 지시를 못 읽어 I.SEC 에 없다 —
+       그 트레이너가 올린 순서 열쇠(ok.m[mid].pi = 턴 개시에 쓰는 선행 있음)로 알아채고, 저절로 걸지 못했으니 「선행 발동」 단계를 열어 주인에게 맡긴다 */
+    {const tk=turnKey(ctx().b);for(const tid in (ctx().b.trainers||{})){const ok=((ctx().b.cmds||{})[tid]||{}).ok;if(!ok||ok.key!==tk)continue;
+      for(const mid in (ok.m||{})){if(!ok.m[mid].pi||I.SEC[mid])continue;const mm=(ctx().b.mons||{})[mid];if(!mm||!mm.entry||!(+(mm.hp||{}).cur>0))continue;const fd=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid])||{};if(fd.order||fd.command)continue;
+       OMAN.push(`${TN(tid)} · ${mm.name} — 턴 개시에 쓰는 선행(명령 · 지령 · 포텐셜)이 있다 · 주인이 「포텐셜 발동 → 선행 발동」 (이 화면은 숨긴 지시를 못 읽어 저절로 걸지 못했다)`);MANT.add(tid)}}}
     {const PL=[],MAN=OMAN;
      for(const [mid,x] of Object.entries(I.SEC)){const mm=(ctx().b.mons||{})[mid];if(!x||!(x.pots||[]).length||!mm||!mm.entry||!(+(mm.hp||{}).cur>0))continue;const tid=mm.tid;if(!(ctx().b.trainers||{})[tid])continue;
       for(const pn of x.pots){const fpot=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid]||{}).pot||{};const cur=(ctx().b.mons||{})[mid]||mm;
@@ -1216,7 +1229,7 @@ window.OM_BATTLE_UI=(()=>{
      if(li===0&&a&&a.ops&&a.ops.length&&!a.manual){fireAuto(m.id,kind,name,{quiet:true,head:`【지연】 ${lab} — 나온 지 ${N}턴째, 발동`}).catch(e=>console.warn('delay',e))}
      else notes.push(`${lab} — 나온 지 ${N}턴째, 이번 턴부터 (손으로)`)})}}
   if(notes.length)A().sysLog(`【지연】 ${T}턴\n${notes.join('\n')}`,'battle')}
- async function watch(){const c=ctx();const b=c.b;try{dupWatch(c,b)}catch(e){console.warn('dup',e)}if(b&&b.started&&(c.gm||c.role==='seat'))itemKickRemote();delayWatch(c,b).catch(e=>console.warn('delay',e));try{coWatch()}catch(e){}faintWatch().catch(e=>console.warn('faint',e));hpFormWatch().catch(e=>console.warn('hpform',e));answerAsks().catch(e=>console.warn('asks',e));if(b.endq&&b.endq.step)endAdvance();if(b.started&&(+b.phase||0)>=1){if(c.role==='seat')for(const tid of myTrainers(c).filter(t=>lead(c,t)))selfCharge(tid).catch(e=>console.warn('선행 차감',e));gmChargeOrphans().catch(e=>console.warn('선행 차감(GM)',e))}if((+b.phase||0)>=2)return autoRevealTurn();if((+b.phase||0)!==1)return;
+ async function watch(){const c=ctx();const b=c.b;try{dupWatch(c,b)}catch(e){console.warn('dup',e)}if(b&&b.started&&(c.gm||c.role==='seat'))itemKickRemote();delayWatch(c,b).catch(e=>console.warn('delay',e));try{coWatch()}catch(e){}faintWatch().catch(e=>console.warn('faint',e));hpFormWatch().catch(e=>console.warn('hpform',e));answerAsks().catch(e=>console.warn('asks',e));if(b.endq&&b.endq.step)endAdvance();if(b.started&&(+b.phase||0)>=1){if(c.role==='seat')for(const tid of myTrainers(c).filter(t=>lead(c,t)))selfCharge(tid).catch(e=>console.warn('선행 차감',e));if(+b.tstep>=2&&(b.host||'gm')!=='gm'&&(b.host||'gm')!==c.seat)for(const tid of myTrainers(c).filter(t=>lead(c,t)))selfPreFire(tid).catch(e=>console.warn('선행 자동(주인)',e));gmChargeOrphans().catch(e=>console.warn('선행 차감(GM)',e))}if((+b.phase||0)>=2)return autoRevealTurn();if((+b.phase||0)!==1)return;
   if(c.gm)for(const tid of Object.keys(b.trainers||{}).filter(t=>!seatOwned(c,t)))await publishOk(tid);
   if(c.role==='seat')for(const tid of myTrainers(c).filter(t=>lead(c,t))){await publishOk(tid);   /* 함께 지시하는 트레이너도 (주인이 없을 때) */
    const key=turnKey(b);if(String(b.revealReq||'')===key&&!BUSY.rv){const left=Object.values(b.mons||{}).filter(m=>m.tid===tid&&m.entry&&m.hp.cur>0&&!revealed(b,tid,m.id)&&!SENT[key+':'+m.id]);
