@@ -5661,3 +5661,6 @@ button.tfsep.cl{opacity:1;border:1px dashed color-mix(in srgb,var(--yel2) 55%,tr
 .logsec i{font-style:normal;font-weight:400;opacity:.7;white-space:nowrap}
 .logsec.battle{color:#e08a8a}.logsec.close{margin-top:4px;margin-bottom:10px;opacity:.75}
 .lcsec li{flex-wrap:wrap;row-gap:4px}.lcsec li .small{min-width:0}
+/* 11-06 망령 「포텐셜 발동 · 설정 · 해석·묘수 한 줄로」 */
+.tbtns{flex-wrap:nowrap}
+.tbtns .btn{white-space:nowrap;padding-left:7px;padding-right:7px;min-width:0}
