@@ -1479,7 +1479,7 @@ window.OM_BATTLE_UI=(()=>{
  const CURE_RE=/상태(?:\s*이상)?」?(?:\s*\([^)]*\))?(?:을|를)?\s*(?:모두\s*)?(?:치유|해제|회복)/;
  function cureOnlyIdle(m,eff){const t=String(eff||'').replace(/<br\s*\/?>/g,' ');if(!CURE_RE.test(t))return false;if(/(?:치유|해제|회복)(?:하고|하며|한\s*뒤|한\s*후|하면|해서)/.test(t))return false;
   const rest=t.replace(/【[^】]*】/g,'').replace(/[^.。]*?(?:상태(?:\s*이상)?」?(?:\s*\([^)]*\))?(?:을|를)?\s*(?:모두\s*)?(?:치유|해제|회복)[^.。]*[.。]?)/g,'').replace(/턴\s*종료[^.。]*?[,，]/g,'').trim();if(rest.replace(/[\s.。]/g,'').length>2)return false;   /* 치유 말고 다른 문장이 있다 */
-  const ST=((DB().states||{}).st)||{};const byKo={};for(const k in ST)if(ST[k]&&ST[k].ko)byKo[ST[k].ko]=k;const has=k=>!!((m.states||{})[k]);
+  const ST=((DB().states||{}).st)||{};const byKo={};for(const k in ST)if(ST[k]&&ST[k].ko)byKo[ST[k].ko]=k;const has=k=>!!((m.states||{})[k])||(k==='Poison'&&!!(m.states||{}).Toxic);   /* 「독」은 맹독도 */
   const names=[...t.matchAll(/「([^」:]+)」/g)].map(x=>x[1].trim()).filter(n=>byKo[n]);
   if(names.length)return !names.some(n=>has(byKo[n]));
   if(/상태\s*이상/.test(t)){const ABN=['Poison','Toxic','Burn','Paralysis','Freeze','Sleep'];return !ABN.some(has)}
