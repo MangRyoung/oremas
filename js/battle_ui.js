@@ -818,7 +818,9 @@ window.OM_BATTLE_UI=(()=>{
        그 트레이너가 올린 순서 열쇠(ok.m[mid].pi = 턴 개시에 쓰는 선행 있음)로 알아채고, 저절로 걸지 못했으니 「선행 발동」 단계를 열어 주인에게 맡긴다 */
     {const tk=turnKey(ctx().b);for(const tid in (ctx().b.trainers||{})){const ok=((ctx().b.cmds||{})[tid]||{}).ok;if(!ok||ok.key!==tk)continue;
       for(const mid in (ok.m||{})){if(!ok.m[mid].pi||I.SEC[mid])continue;const mm=(ctx().b.mons||{})[mid];if(!mm||!mm.entry||!(+(mm.hp||{}).cur>0))continue;const fd=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid])||{};if(fd.order||fd.command)continue;
-       OMAN.push(`${TN(tid)} · ${mm.name} — 턴 개시에 쓰는 선행(명령 · 지령 · 포텐셜)이 있다 · 주인이 「포텐셜 발동 → 선행 발동」 (이 화면은 숨긴 지시를 못 읽어 저절로 걸지 못했다)`);MANT.add(tid)}}}
+       OMAN.push(`${TN(tid)} · ${mm.name} — 턴 개시에 쓰는 선행(명령 · 지령 · 포텐셜)이 있다 · 주인이 「포텐셜 발동 → 선행 발동」 (이 화면은 숨긴 지시를 못 읽어 저절로 걸지 못했다)`);MANT.add(tid)}
+      /* 11-06 망령 「원래 되던 선행 고유 타이밍이 날아갔다」: 고유 선행(upots)도 숨긴 지시라 못 읽는 화면은 I.UP 이 비어 「발동」 단계에서 그 트레이너를 뺐다 → 순서 열쇠의 ok.pre 로 본다 */
+      if(ok.pre&&!I.UP[tid]){OMAN.push(`${TN(tid)} — 트레이너 고유 선행이 있다 · 주인이 「포텐셜 발동 → 선행 발동」`);MANT.add(tid)}}}
     {const PL=[],MAN=OMAN;
      for(const [mid,x] of Object.entries(I.SEC)){const mm=(ctx().b.mons||{})[mid];if(!x||!(x.pots||[]).length||!mm||!mm.entry||!(+(mm.hp||{}).cur>0))continue;const tid=mm.tid;if(!(ctx().b.trainers||{})[tid])continue;
       for(const pn of x.pots){const fpot=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid]||{}).pot||{};const cur=(ctx().b.mons||{})[mid]||mm;
