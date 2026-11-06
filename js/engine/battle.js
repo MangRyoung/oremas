@@ -183,7 +183,7 @@ window.OM_BATTLE=(()=>{
   return out}
 
  /* ----- 연속기 횟수 (attack_target_once) ----- */
- function multiHits(move,o){o=o||{};const mn=+move.min||1,mx=+move.max||1;if(mx<=1)return 1;if(o.skillLink)return mx;return mn+Math.floor(rng(o)()*(mx-mn+1))}
+ function multiHits(move,o){o=o||{};const mx=+move.max||1,mn=Math.min(mx,Math.max(+move.min||1,mx>(+move.min||1)?(+o.min||0):0));if(mx<=1)return 1;if(o.skillLink)return mx;return mn+Math.floor(rng(o)()*(mx-mn+1))}   /* o.min: 속임수주사위 같은 최소 횟수 (범위 연속기만 · 최대를 넘지 않음) */
 
  return {STATS,RANKED,statValue,turnOrder,accuracy,critical,critStage,damage,effectiveness,hpDamage,hpDamageHits,turnEnd,multiHits,FRAC};
 })();
