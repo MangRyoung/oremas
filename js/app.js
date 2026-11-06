@@ -365,13 +365,14 @@ function onPatch(p){if(!p||!ST.room)return;const v=+p.v||0;PATCH.last=Date.now()
  PATCH.pend.set(v,p);if(drainPatch())stateChanged()}
 function drainPatch(){let n=0;
  while(PATCH.pend.has(ST.v+1)){const p=PATCH.pend.get(ST.v+1);PATCH.pend.delete(ST.v+1);if(!p.same){ST.state=putPath(ST.state,p.path.map(String),p.value);n++}ST.v++}
+ if(n&&WQ.ops.length)wqReapply();   /* 11-06: 아직 안 보낸 내 쓰기가 신호에 덮이지 않게 */
  for(const k of [...PATCH.pend.keys()])if(k<=ST.v)PATCH.pend.delete(k);
  clearTimeout(PATCH.t);if(PATCH.pend.size)PATCH.t=setTimeout(()=>{if(PATCH.pend.size)pullState('빈 버전')},1500);
  return n}
 /* 10-28 이그레스: 방에 들어올 때 — 이 브라우저에 저장해 둔 마지막 상태(방 하나만)가 있으면 그 뒤 신호만 받아 이어 붙인다. 못 하면 전체 */
 const STC={k:id=>'om_st_'+id,at:0,v:0};
 function stCacheGet(id){try{const x=JSON.parse(localStorage.getItem(STC.k(id))||'null');return x&&x.v>0&&x.data&&typeof x.data==='object'?x:null}catch(e){return null}}
-function stCacheSave(){if(!ST.room||!ST.v||ST.v===STC.v)return;try{for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k&&k.startsWith('om_st_')&&k!==STC.k(ST.room))localStorage.removeItem(k)}
+function stCacheSave(){if(!ST.room||!ST.v||ST.v===STC.v||WQ.ops.length||WQ.run)return;try{for(let i=localStorage.length-1;i>=0;i--){const k=localStorage.key(i);if(k&&k.startsWith('om_st_')&&k!==STC.k(ST.room))localStorage.removeItem(k)}
   localStorage.setItem(STC.k(ST.room),JSON.stringify({v:ST.v,data:ST.state}));STC.v=ST.v;STC.at=Date.now()}catch(e){try{localStorage.removeItem(STC.k(ST.room))}catch(e2){}}}
 async function loadState(id){const ca=stCacheGet(id);
  if(ca&&DBS().patchesSince){try{const L=await DBS().patchesSince(id,ca.v);
@@ -387,7 +388,7 @@ async function catchUp(room){if(!DBS().patchesSince)return false;const v0=ST.v;l
 function pullState(why,full){if(PATCH.pull)return PATCH.pull;const room=ST.room;if(!room)return Promise.resolve(false);
  PATCH.pull=(async()=>{try{if(!full&&ST.v&&await catchUp(room))return true;if(ST.room!==room)return false;const st=await DBS().getState(room);if(ST.room!==room||!st)return false;
    if((st.v||0)<=ST.v){if(drainPatch())stateChanged();return false}
-   ST.state=st.data||{};ST.v=st.v||0;drainPatch();stateChanged();console.info('[오레마스] 상태 다시 읽음',why);return true}
+   ST.state=st.data||{};ST.v=st.v||0;drainPatch();wqReapply();stateChanged();console.info('[오레마스] 상태 다시 읽음',why);return true}
   catch(e){console.warn('[오레마스] 상태 다시 읽기 실패',e);return false}finally{PATCH.pull=null}})();return PATCH.pull}
 /* 버전만 가볍게 확인하고, 서버가 앞서 있으면 그때 전체를 읽는다 */
 async function checkState(why){const room=ST.room;if(!room)return false;
@@ -482,7 +483,37 @@ async function setRaw(path,value){
 /* 낙관적 반영: 실시간이 오기 전에 화면부터 */
 function applyLocal(path,value){if(path&&path.length){let o=ST.state;for(let i=0;i<path.length-1;i++){if(typeof o[path[i]]!=='object'||o[path[i]]==null)o[path[i]]={};o=o[path[i]]}
   if(value===null||value===undefined)delete o[path[path.length-1]];else o[path[path.length-1]]=value}else ST.state=value||{}}
-async function set(path,value){try{await setRaw(path,value);renderScene();return true}catch(e){toast('저장 실패: '+e.message);return false}}
+/* 11-06 감우 「배틀 딜레이 ①」: 줄줄이 저장 묶기.
+   예전엔 set 하나가 서버를 한 번 오간 뒤에야 다음 set 이 나갔다 — 등장 · 공개 · 턴 넘김처럼 await set 이 5~7개 이어지는 흐름은 왕복(한 번 0.3~1초)이 그 수만큼 쌓였다.
+   이제 set · setMany 는 화면(ST.state)에 먼저 반영하고 쓰기를 줄에 세운 뒤 바로 돌아온다. 같은 순간(다음 타이머 전)까지 쌓인 쓰기는 om_jset_many 한 번으로 보낸다.
+   · 보내는 건 한 번에 한 묶음씩, 들어온 순서대로 (앞 묶음이 서버에 닿은 뒤 다음 묶음).
+   · 묶음이 막히면(권한 등 일시 오류가 아닌 것) 칸마다 다시 써서 되는 칸은 쓴다 — 예전 칸마다 쓰기와 같은 결과. 하나라도 실패하면 알리고 서버 상태를 다시 읽는다.
+   · 아직 안 보낸 쓰기는 서버 상태를 다시 읽거나 신호가 와도 화면에 다시 얹는다 (곧 서버에도 그렇게 써지므로).
+   · 서버에 닿은 것까지 기다려야 하면 await flush() 또는 setNow */
+const WQ={ops:[],wait:[],t:0,run:null,room:null,sec:null};
+function wqUnder(p,q){if(p.length<q.length)return false;for(let i=0;i<q.length;i++)if(String(p[i])!==String(q[i]))return false;return true}   /* p 가 q 와 같거나 q 아래 */
+/* 뒤에 같은 칸이나 그 위 칸을 통째로 쓰는 쓰기가 있으면 앞의 것은 보낼 필요가 없다 */
+function wqSqueeze(ops){const out=[];for(let i=0;i<ops.length;i++){const p=ops[i][0];let dead=false;for(let j=i+1;j<ops.length;j++)if(wqUnder(p,ops[j][0])){dead=true;break}if(!dead)out.push(ops[i])}return out}
+function wqPush(ops){if(WQ.room!==ST.room){WQ.ops=[];WQ.wait.splice(0).forEach(f=>f(false));WQ.room=ST.room;WQ.sec=ST.secret}WQ.sec=ST.secret;for(const [p,v] of ops){applyLocal(p,v);WQ.ops.push([p.map(String),v===undefined?null:v])}const pr=new Promise(res=>WQ.wait.push(res));wqKick();return pr}
+function wqKick(){if(WQ.t||WQ.run||!WQ.ops.length)return;WQ.t=setTimeout(wqFlush,0)}
+/* 아직 안 보낸 쓰기를 화면 상태에 다시 얹는다 (서버 상태를 통째로 다시 읽었거나 신호가 덮었을 때) */
+function wqReapply(){for(const [p,v] of WQ.ops)applyLocal(p,v)}
+async function wqSend(ops,room,sec){
+ if(ops.length===1){await retryT(()=>DBS().setState(room,sec,ops[0][0],ops[0][1]));return ''}
+ let r=null,err=null;if(DBS().setStateMany){try{r=await retryT(()=>DBS().setStateMany(room,sec,ops.map(([p,v])=>({path:p,value:v}))))}catch(e){err=e}}
+ if(!err&&r!==null)return '';
+ let msg='';for(const [p,v] of ops){try{await retryT(()=>DBS().setState(room,sec,p,v))}catch(e){if(!msg)msg=e.message||String(e)}}   /* 함수가 없는 DB · 묶음이 막혔을 때: 칸마다 */
+ if(msg)throw new Error(msg);return ''}
+async function wqFlush(){WQ.t=0;if(WQ.run||!WQ.ops.length)return;const room=WQ.room,sec=WQ.sec;const ops=wqSqueeze(WQ.ops),wait=WQ.wait;WQ.ops=[];WQ.wait=[];renderScene();
+ let ok=true,msg='';WQ.run=wqSend(ops,room,sec).catch(e=>{ok=false;msg=e.message||String(e)});
+ try{await WQ.run}finally{WQ.run=null}
+ if(!ok&&ST.room===room){toast('저장 실패: '+msg);pullState('저장 실패',true)}
+ wait.forEach(f=>f(ok));wqKick()}
+/* 줄에 선 쓰기가 모두 서버에 닿을 때까지 (실패가 있었으면 false) */
+async function flush(){let ok=true;for(let i=0;i<50&&(WQ.ops.length||WQ.run||WQ.t);i++){if(WQ.ops.length){const pr=new Promise(res=>WQ.wait.push(res));if(!WQ.run){clearTimeout(WQ.t);WQ.t=0;wqFlush()}if(!await pr)ok=false}else if(WQ.run)await WQ.run;else{clearTimeout(WQ.t);WQ.t=0}}return ok}
+function set(path,value){if(!Array.isArray(path)||!path.length){return (async()=>{await flush();try{await setRaw(path,value);renderScene();return true}catch(e){toast('저장 실패: '+e.message);return false}})()}   /* 전체 쓰기(드묾)는 예전처럼 바로 */
+ wqPush([[path,value]]);return Promise.resolve(true)}
+function setNow(path,value){wqPush([[path,value]]);return flush()}
 /* 바뀐 칸만 쓴다 (점검 2-4 · 3-18) — 읽어서 고친 사본을 통째로 쓰면, 그 사이 남이 바꾼 칸이 지워진다.
    before = 사본을 뜰 때의 모습, after = 고친 사본. depth 단계까지 내려가 바뀐 칸만 쓰고, 그 아래(배열 포함)는 통째로 */
 const sameJ=(a,b)=>JSON.stringify(a===undefined?null:a)===JSON.stringify(b===undefined?null:b);
@@ -493,12 +524,8 @@ function diffOps(path,before,after,depth,out){out=out||[];if(sameJ(before,after)
  return out}
 /* 여러 칸을 쓰고 화면은 한 번만.
    11-03 감우: 두 칸 이상이면 서버 om_jset_many 로 한 번에(한 트랜잭션 — 하나라도 막히면 전부 되돌아온다). 그 함수가 없는 DB 면(null) 예전처럼 칸마다 — 하나가 막혀도 나머지는 쓴다 (실패 알림은 첫 번째 것만) */
-async function setMany(ops){ops=(ops||[]).filter(x=>Array.isArray(x)&&Array.isArray(x[0])&&x[0].length);if(!ops.length)return true;let ok=true,msg='';
- if(ops.length>1&&DBS().setStateMany){let r=null;try{r=await retryT(()=>DBS().setStateMany(ST.room,ST.secret,ops.map(([p,v])=>({path:p.map(String),value:v===undefined?null:v}))))}catch(e){ok=false;msg=e.message||String(e)}
-  if(ok&&r!==null){for(const [p,v] of ops)applyLocal(p,v);renderScene();return true}
-  if(!ok){renderScene();toast('저장 실패: '+msg);return false}}
- for(const [p,v] of ops){try{await setRaw(p,v)}catch(e){ok=false;if(!msg)msg=e.message}}
- renderScene();if(msg)toast('저장 실패: '+msg);return ok}
+function setMany(ops){ops=(ops||[]).filter(x=>Array.isArray(x)&&Array.isArray(x[0])&&x[0].length);if(!ops.length)return Promise.resolve(true);
+ wqPush(ops);return Promise.resolve(true)}   /* 11-06: 줄에 세우고 바로 (위 「딜레이 ①」) — 예전엔 om_jset_many 한 번을 기다렸다 */
 function setDiff(path,before,after,depth){return setMany(diffOps(path,before,after,depth==null?1:depth))}
 /* 좌석은 서버가 'battle' 로그를 막을 수 있다(옛 schema) — 그러면 'chat' + bat 표시로 다시 써서 채팅 창에는 배틀 카드로 보이게 한다 */
 /* 10-24 망령: 「은(는) · 이(가) · 을(를) · 과(와) · (으)로」를 앞 글자 받침에 맞춰 하나로 (영문 · 기호 뒤는 그대로) */
@@ -1278,6 +1305,6 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
 /* 이름으로 기본 초상 찾기: 그림이 따로 없으면 같은 이름의 로스터 트레이너 → 포켓몬 → 관계도 노드의 그림을 쓴다 */
 function portraitOf(name,img){if(img)return img;if(!name)return '';const ro=ST.state.roster||{};const t=Object.values(ro.trainers||{}).find(x=>x.name===name);if(t&&t.image)return t.image;const m=Object.values(ro.mons||{}).find(x=>x.name===name&&x.image);if(m)return m.image;const n=Object.values((ST.state.graph||{}).nodes||{}).find(x=>x.name===name&&x.img);return n?n.img:''}
-window.OM_APP={openAddMon,ensure,loadScript,twoAble,twoPids,twoApply,setTwo,acctKey,presList,dupItems,dupItemText,logFill,bchOpen,selfLog,splitLog,contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,cleanupTrainer,openMon,openLoadParty,loadFromRoster,encounter,loadMaker,loadMakerParty,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,online:s=>!!s&&Object.values(PRES.who).some(v=>v.role==='seat'&&v.seat===s&&Date.now()-v.at<70000),get view(){return VIEW},goView:v=>{VIEW=v||scene();renderScene()},set view(v){VIEW=v}};
+window.OM_APP={flush,setNow,openAddMon,ensure,loadScript,twoAble,twoPids,twoApply,setTwo,acctKey,presList,dupItems,dupItemText,logFill,bchOpen,selfLog,splitLog,contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,cleanupTrainer,openMon,openLoadParty,loadFromRoster,encounter,loadMaker,loadMakerParty,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,online:s=>!!s&&Object.values(PRES.who).some(v=>v.role==='seat'&&v.seat===s&&Date.now()-v.at<70000),get view(){return VIEW},goView:v=>{VIEW=v||scene();renderScene()},set view(v){VIEW=v}};
 route();
 })();

@@ -795,12 +795,18 @@ window.OM_BATTLE_UI=(()=>{
     /* 11-03 21:00 망령 「교대 뒤 선행 포텐셜」 · 「선행 포텐셜도 지령처럼 저절로」 · 「메진 전용을 선행 입력해 둬도 턴 개시에 알려 주지도 발동하지도 않아 깜빡」:
        선행 입력한 포텐셜 중 턴 개시에 쓰는 것(preWhen 'now')은 여기서 저절로 — 전용은 fireSpecial(횟수 · 컷인 · 구문), 메가진화 전용은 폼도 바꾼다, 일반은 「사용」(횟수 −1 · 구문). 조건 때 쓰는 것 · 구문 없는 효과는 이름을 적어 알린다 */
     /* 11-03 21:54: 십계 4식(결계 · 법계 — 명령 칸)과 글에 「턴 개시」가 있는 4식도 선행 입력했으면 여기서 저절로 「선행 발동」 (횟수는 턴 개시에 깎였다). 버텨라! · 피해라! 처럼 맞을 때 쓰는 4식은 그대로 공격 창에서 */
+    /* 11-06 망령 「십계는 선행을 안 보여준다」(미사그 캠퍼스 TURN 2 · 시노사와 유이 『특수결계』): 명령 칸 선행은 저절로 걸릴 때만 로그에 나오고,
+       「GM 불간섭」 방의 PL 몫 · 맞을 때 쓰는 4식 · 걸리지 않은 것(남은 횟수 · 한 턴 하나 · 받을 수 없는 상태)은 아무 데도 안 떠서 턴 개시에 선행이 없는 것처럼 보였다.
+       → 포텐셜과 똑같이 【선행 발동】 목록에 이름 · 할 일을 적고, 남은 것이면 『지령』 & 『포텐셜』 발동 단계도 연다 */
+    const MANT=new Set(),OMAN=[];
     {const OL=[];for(const [mid,x] of Object.entries(I.SEC)){const mm=(ctx().b.mons||{})[mid];if(!x||!x.order||!mm||!mm.entry||!(+(mm.hp||{}).cur>0))continue;const tid=mm.tid;const t=(ctx().b.trainers||{})[tid];if(!t)continue;
-      const fd=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid])||{};if(fd.order)continue;if(c.fair&&seatOwned(c,tid))continue;
-      const on=pName(ctx().b,tid,'order',x.order);const row=potRowOf(on);const turnStart=(row&&row[0]==='5계')||/결계|법계/.test(on)||TS(row&&row[2])||(!row&&TS(rmText(on)));if(!turnStart)continue;
-      try{await fireOrder(tid,mid,'order',x.order,'pre');const f2=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid])||{};if(f2.order)OL.push(`${TN(tid)} · ${mm.name} 『${on}』`)}catch(e){console.warn('4식 자동 발동',e)}}
+      const fd=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid])||{};if(fd.order)continue;
+      const on=pName(ctx().b,tid,'order',x.order);const row=potRowOf(on);const turnStart=(row&&row[0]==='5계')||/결계|법계/.test(on)||TS(row&&row[2])||(!row&&TS(rmText(on)));
+      if(!turnStart){OMAN.push(`${TN(tid)} · ${mm.name} 명령 『${on}』 — 그때가 되면 (맞을 때는 공격 창 · 그 밖은 「포텐셜 발동 → 선행 발동」)`);continue}
+      if(c.fair&&seatOwned(c,tid)){OMAN.push(`${TN(tid)} · ${mm.name} 명령 『${on}』 — 주인이 「선행 발동」`);MANT.add(tid);continue}
+      try{await fireOrder(tid,mid,'order',x.order,'pre');const f2=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid])||{};if(f2.order)OL.push(`${TN(tid)} · ${mm.name} 『${on}』`);else{OMAN.push(`${TN(tid)} · ${mm.name} 명령 『${on}』 — 걸리지 않았다 (남은 횟수 · 한 턴 하나 · 받을 수 없는 상태 — 「포텐셜 발동」에서 확인)`);MANT.add(tid)}}catch(e){console.warn('4식 자동 발동',e);OMAN.push(`${TN(tid)} · ${mm.name} 명령 『${on}』 — 저절로 걸다가 멈췄다 (「포텐셜 발동 → 선행 발동」)`);MANT.add(tid)}}
      if(OL.length)A().sysLog(`【명령 자동 발동】 선행 입력한 결계 · 턴 개시 4식\n${OL.join('\n')}`,'battle')}
-    const MANT=new Set();{const PL=[],MAN=[];
+    {const PL=[],MAN=OMAN;
      for(const [mid,x] of Object.entries(I.SEC)){const mm=(ctx().b.mons||{})[mid];if(!x||!(x.pots||[]).length||!mm||!mm.entry||!(+(mm.hp||{}).cur>0))continue;const tid=mm.tid;if(!(ctx().b.trainers||{})[tid])continue;
       for(const pn of x.pots){const fpot=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid]||{}).pot||{};const cur=(ctx().b.mons||{})[mid]||mm;
        if(preWhen(pn,cur)!=='now'){MAN.push(`${TN(tid)} · ${cur.name} 『${pn}』 — 조건이 되면 「포텐셜 발동 → 선행 발동」`);MANT.add(tid);continue}
