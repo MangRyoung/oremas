@@ -812,7 +812,7 @@ window.OM_BATTLE_UI=(()=>{
     {const OL=[];for(const [mid,x] of Object.entries(I.SEC)){const mm=(ctx().b.mons||{})[mid];if(!x||!x.order||!mm||!mm.entry||!(+(mm.hp||{}).cur>0))continue;const tid=mm.tid;const t=(ctx().b.trainers||{})[tid];if(!t)continue;
       const fd=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid])||{};if(fd.order)continue;
       const on=pName(ctx().b,tid,'order',x.order);const row=potRowOf(on);const turnStart=(row&&row[0]==='5계')||/결계|법계/.test(on)||TS(row&&row[2])||(!row&&TS(rmText(on)));
-      if(!turnStart){OMAN.push(`${TN(tid)} · ${mm.name} 명령 『${on}』 — 그때가 되면 (맞을 때는 공격 창 · 그 밖은 「포텐셜 발동 → 선행 발동」)`);continue}
+      if(!turnStart)continue;   /* 11-06 망령 「버텨라가 선행 입력 때 선행 타이밍에 뜬다 — 뜨면 안 된다」: 턴 개시에 쓰지 않는 4식(맞을 때 공격 창이 쓰는 버텨라! · 피해라! …)은 선행 발동 목록에 올리지 않는다 */
       if(c.fair&&seatOwned(c,tid)){OMAN.push(`${TN(tid)} · ${mm.name} 명령 『${on}』 — 주인이 「선행 발동」`);MANT.add(tid);continue}
       try{await fireOrder(tid,mid,'order',x.order,'pre');const f2=((((ctx().b.cmds||{})[tid]||{}).fired||{})[mid])||{};if(f2.order)OL.push(`${TN(tid)} · ${mm.name} 『${on}』`);else{OMAN.push(`${TN(tid)} · ${mm.name} 명령 『${on}』 — 걸리지 않았다 (남은 횟수 · 한 턴 하나 · 받을 수 없는 상태 — 「포텐셜 발동」에서 확인)`);MANT.add(tid)}}catch(e){console.warn('4식 자동 발동',e);OMAN.push(`${TN(tid)} · ${mm.name} 명령 『${on}』 — 저절로 걸다가 멈췄다 (「포텐셜 발동 → 선행 발동」)`);MANT.add(tid)}}
      if(OL.length)A().sysLog(`【명령 자동 발동】 선행 입력한 결계 · 턴 개시 4식\n${OL.join('\n')}`,'battle')}
