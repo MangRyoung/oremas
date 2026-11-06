@@ -1217,7 +1217,8 @@ window.OM_BATTLE_UI=(()=>{
      if(!x.auto){A().sysLog(`【동조】 ${m.name} — 같은 역할 대치 성립 (${pr})\n${K} 『${x.name}』을(를) 쓸 수 있다 (구문 없음 — 손으로)`,'battle',{mid:m.id,img:m.image||'',eff:x.tx.replace(/<br\s*\/?>/g,'\n').slice(0,300)});continue}
      const q=`【동조】 ${m.name} — 같은 『역할』 대치가 성립했다\n${pr}\n\n${K} 『${x.name}』을(를) 발동할까?`;const seats=c.ST.state.seats||{};const so=seats[m.tid]?m.tid:baseSeat(c,m.tid);
      const to=m.tid&&so&&(A().online(so)||coOf(c,m.tid).some(s2=>A().online(s2)))&&!ownT(c,m.tid)?'seat:'+m.tid:'';
-     const yes=await remoteAsk(m,'confirm',{name:x.name,q},()=>askYes(q,'발동한다','안 한다'),to);if(!yes){A().sysLog(`【동조】 ${m.name} 『${x.name}』 — 발동하지 않았다`,'battle');continue}
+     if(!to&&!c.gm&&!ownT(c,m.tid)){A().sysLog(`【동조】 ${m.name} — 같은 역할 대치 성립 (${pr})\n${K} 『${x.name}』 — 주인이 「발동」 단추로 쓸 수 있다`,'battle',{mid:m.id,img:m.image||'',eff:x.tx.replace(/<br\s*\/?>/g,'\n').slice(0,300)});continue}   /* 11-06 망령 「동조 발동 창이 상대한테도 뜬다」: 진행 화면이 PL 이고 주인이 접속 중으로 안 잡히면 그 PL(상대) 화면에 확인 창이 떴다 → 남의 포켓몬은 묻지 않고 알림만 */
+     const yes=await remoteAsk(m,'confirm',{name:x.name,q},()=>(c.gm||ownT(c,m.tid))?askYes(q,'발동한다','안 한다'):Promise.resolve(false),to);   /* 주인이 2분 안에 답하지 않아도 상대 화면에는 띄우지 않는다 */if(!yes){A().sysLog(`【동조】 ${m.name} 『${x.name}』 — 발동하지 않았다`,'battle');continue}
      const m2=(ctx().b.mons||{})[m.id];if(!m2||!m2.entry||!syncP(ctx().b,m2).pairs.length){A().toast('그 사이 대치가 풀렸다');continue}
      if(x.kind==='pot'){await potMark(m.id,x.name);if(wantCut(m2,x.name))cutFire('m:'+m2.id,m2.image,m2.name,`『${x.name}』`,m2.side==='left'?'#1f6fd1':'#e3101f')}await fireAuto(m.id,x.kind,x.name)}}}
   finally{SYNC_BUSY=false}}
