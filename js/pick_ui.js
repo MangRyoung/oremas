@@ -48,7 +48,7 @@ window.OM_PICK=(()=>{
   $('#pk_ok',md).onclick=async()=>{A().closeModal();await done(b.map(v=>Math.max(1,v)))};draw()}
 
  /* 폼체인지 · 메가진화 편집 (제작기 formsHtml 과 같은 칸). m = 시트 포켓몬, f = 고칠 폼(없으면 새로). done(폼) */
- const FORM_KINDS=['폼체인지','메가진화','원시회귀','기타'];
+ const FORM_KINDS=['폼체인지','메가진화','원시회귀','일루젼','기타'];
  /* 창이 하나뿐이라 타입 · 특성 · 종족치 창을 다녀오면 적던 값(st)으로 다시 연다 */
  function form(m,f0,done,st){const isNew=!f0;const o=m.form0||m;const f=f0?JSON.parse(JSON.stringify(f0)):{name:'',kind:'폼체인지',typesKo:null,types:null,ability:'',abilityEff:null,base:(o.base||[]).slice(),image:'',cond:'',revert:true,pots:[]};
   st=st||{n:f.name,k:f.kind,c:f.cond||'',r:!!f.revert,i:f.image||'',ty:f.types?f.types.filter(t=>t&&t!=='-'):null,ab:f.ability||'',bs:(f.base||o.base||[]).map(v=>+v||0),pots:(f.pots||[]).map(x=>Object.assign({},x))};
