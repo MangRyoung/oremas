@@ -1485,14 +1485,18 @@ window.OM_BATTLE_UI=(()=>{
    if(x.kind==='uq'){A().sysLog(`【고유】 ${x.t.name} 『${x.name}』 (${END_STEP[q.step]})`,'battle',{mid:x.m.id,img:x.t.image||'',eff:String(x.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,400)});return A().renderScene()}
    const a=FX()&&FX().autoOf(x.m,'pot',x.name);if(a&&a.ops&&a.ops.length&&!a.manual){await fireAuto(x.m.id,'pot',x.name);return A().renderScene()}
    A().sysLog(`【${x.tag}】 ${x.m.name} 『${x.name}』 (${END_STEP[q.step]})`,'battle',{mid:x.m.id,img:x.m.image||'',eff:String(x.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,400)});return A().renderScene()}}
- /* 예고 공격(미래예지 계열, 맵툴 future_fire): 건 포켓몬의 그때 공격/특공 실수치(랭크 무시)로 계산. 명중 확정 · 급소 없음 · 벽 보정 · 상성 · 타입 일치. 소지품·특성 보정은 손으로 */
+ /* 예고 공격(미래예지 계열, 맵툴 future_fire): 건 포켓몬의 그때 공격/특공 실수치(랭크 무시)로 계산. 명중 확정 · 급소 없음 · 벽 보정 · 상성 · 타입 일치 · 받는 쪽 반감열매(11-06). 그 밖의 소지품·특성 보정은 손으로 */
  function futureFire(b,m){const r=m.futRsv;delete m.futRsv;if(!r)return [];if(!m.entry||m.hp.cur<=0)return [`「${r.by}」의 『${r.mv}』 — ${m.name}이(가) 쓰러져 있어 불발`];
   const f=fieldOf(b);const objs=(f.objects||{})[m.side]||{};const cat=r.akey==='attack'?'physical':'special';const ws=mode(b)>=2?0.667:0.5;   /* 10-25: 더블 이상은 0.67배 (공격 창과 같게) */
   const wall=(cat==='physical'&&objs['리플렉터']>0)||(cat==='special'&&objs['빛의장막']>0)||objs['오로라베일']>0||(objs['얼음의장벽']>0&&r.typeEn!=='Fire')?ws:1;
   const dk=cat==='physical'?'defense':'specialdefense';const D=Math.max(1,B().statValue(m,dk).value);const L=Math.floor((+r.lv||50)*2/5)+2;
   const base=Math.floor(Math.floor(L*(+r.pw||0)*(+r.A||1)/50)/D)*wall+2;const amt=Math.floor(base*(85+Math.floor(Math.random()*16))/100);
-  const eff=r.typeEn?B().effectiveness([r.typeEn],m,{atkTypes:r.atkTypes||[]}):{value:1,stab:false};const hd=B().hpDamage(m,amt,eff.value,{stab:eff.stab});
-  m.hp.cur=Math.max(0,m.hp.cur-hd.final);const out=[`◆ 예고 공격 발동 — 「${r.by}」의 『${r.mv}』가 ${m.name}을(를) 덮쳤다! ${hd.final} 대미지 (기본 ${Math.floor(base*0.85)}~${Math.floor(base)}${eff.value!==1?' · 상성 ×'+eff.value:''}${eff.stab?' · 타입 일치':''}${wall<1?' · 벽 보정':''}) → HP ${m.hp.cur}/${m.hp.max}`];
+  const eff=r.typeEn?B().effectiveness([r.typeEn],m,{atkTypes:r.atkTypes||[]}):{value:1,stab:false};
+  /* 11-06 망령 「미래예지 대미지에 반감열매가 작동을 안 한다」: 받는 쪽 반감열매(야파열매 …)를 HP 창과 같은 규칙(OI().resist)으로 보고, 맞으면 반감하고 먹는다 */
+  const berry=eff.value>0&&OI()?OI().resist(m,{mt:r.typeEn?[r.typeEn]:[],cat:cat==='physical'?'물리':'특수',eff:eff.value,multi:false}):'';
+  const hd=B().hpDamage(m,amt,eff.value,{stab:eff.stab,berryHalf:!!berry});
+  m.hp.cur=Math.max(0,m.hp.cur-hd.final);const out=[`◆ 예고 공격 발동 — 「${r.by}」의 『${r.mv}』가 ${m.name}을(를) 덮쳤다! ${hd.final} 대미지 (기본 ${Math.floor(base*0.85)}~${Math.floor(base)}${eff.value!==1?' · 상성 ×'+eff.value:''}${eff.stab?' · 타입 일치':''}${wall<1?' · 벽 보정':''}${berry?' · 「'+berry+'」 반감':''}) → HP ${m.hp.cur}/${m.hp.max}`];
+  if(berry){const o=OI().all(m).find(x=>x.r.name===berry);const L=[];OI().use(m,L,b,o?o.k:0);out.push(...L.map(t=>`${m.name} ${t}`))}
   if(m.hp.cur<=0){m.entry='';out.push(`${m.name}은(는) 쓰러졌다!`)}return out}
  /* 기술을 내보낼 때 줄어드는 상태: DB 의 prog:'move' + 얼음(설명이 「3번째로 기술을 내보낼 때 해제」라 턴이 아니라 기술 횟수로 센다) */
  const movesDown=(k,d)=>(d&&d.prog==='move')||k==='Freeze';
