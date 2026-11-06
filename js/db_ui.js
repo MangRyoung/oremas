@@ -183,7 +183,21 @@ window.OM_DB_UI=(()=>{
    const tot=c.n+c.ns+c.nr;if(tot&&since)A().toast(`제작기 DB 변경 ${tot}개를 반영했다`);if(document.querySelector('.dbmodal'))refresh()}
   catch(e){console.warn('제작기 DB 자동 반영',e)}finally{PULL=false}}
  /* 11-03 23:35 망령 「레디메이드 DB 다 어디 갔니?」: 그 버그로 방 DB 에 들어온 「제작기가 지움」 표시(src maker · deleted)가 30개 넘으면 전부 버린다 — 방의 레디메이드 자동화가 기본으로 돌아온다 */
- async function healRm(){if(A().ST.role!=='gm')return 0;const ov=((A().ST.state.dbx||{}).rm)||{};const ks=Object.keys(ov).filter(k=>ov[k]&&ov[k].deleted&&ov[k].src==='maker');if(ks.length<30)return 0;const nv=Object.assign({},ov);for(const k of ks)delete nv[k];await A().set(['dbx','rm'],nv);A().toast(`레디메이드 ${ks.length}개에 잘못 붙은 「제작기에서 지움」 표시를 되돌렸다 — 자동화가 기본으로 돌아온다`);return ks.length}
+ async function healRm(){if(A().ST.role!=='gm')return 0;await healStale().catch(e=>console.warn('healStale',e));const ov=((A().ST.state.dbx||{}).rm)||{};const ks=Object.keys(ov).filter(k=>ov[k]&&ov[k].deleted&&ov[k].src==='maker');if(ks.length<30)return 0;const nv=Object.assign({},ov);for(const k of ks)delete nv[k];await A().set(['dbx','rm'],nv);A().toast(`레디메이드 ${ks.length}개에 잘못 붙은 「제작기에서 지움」 표시를 되돌렸다 — 자동화가 기본으로 돌아온다`);return ks.length}
+ /* 11-07 망령 「캠퍼스 2 레디메이드 업데이트가 안 된 듯 — 닌자 자동화가 없어요」: 방을 통째로 복제하면(⧉) 그때의 방 레디메이드(dbx.rm, src 'room' · 옛 것은 src 없음)가 같이 와서
+    그 뒤 기본 레디메이드가 고쳐져도 그 방만 옛 것(「손으로」 · 빈 구문)에 막힌다. GM 화면이 들어올 때 이런 방 사본 중
+    ① 기본엔 구문이 있는데 방 것은 「손으로」이거나 구문이 비었으면 ② 기본과 똑같으면 — 방 것을 빼서 기본(과 제작기 DB 수정)을 따르게 한다.
+    뺀 것은 dbx.rmDropped 에 남기고(되살리기용) 로그에 이름을 적는다. 기본과 다른 구문을 직접 넣은 것은 그대로 둔다 */
+ async function healStale(){const FX=window.OM_FX;const RB=(window.OM_DB||{}).readymade||{};if(!FX||!Object.keys(RB).length)return 0;const ov=((A().ST.state.dbx||{}).rm)||{};
+  const dsl=o=>FX.unparse((o&&o.ops)||[]).join('\n');const drop=[];
+  for(const [k,v] of Object.entries(ov)){if(!v||v.deleted||(v.src&&v.src!=='room'))continue;const b=RB[k];if(!b||b.manual||!(b.ops||[]).length)continue;
+   const empty=!!v.manual||!(v.ops||[]).length;const same=dsl(v)===dsl(b)&&String(v.text||'')===String(b.text||'')&&String(v.p==null?'':v.p)===String(b.p==null?'':b.p);
+   if(empty||same)drop.push([k,empty?'손으로 · 빈 구문':'기본과 같음'])}
+  if(!drop.length)return 0;const nv=Object.assign({},ov),bk=Object.assign({},((A().ST.state.dbx||{}).rmDropped)||{});const at=Date.now();
+  for(const [k] of drop){bk[k]=Object.assign({},ov[k],{droppedAt:at});delete nv[k]}
+  await A().setMany([[['dbx','rm'],nv],[['dbx','rmDropped'],bk],[['dbx','at'],at]]);
+  A().sysLog(`【DB】 이 방에 남아 있던 옛 레디메이드 ${drop.length}개를 빼고 기본 레디메이드를 따르게 했다 — ${drop.map(([k,w])=>`「${k}」(${w})`).join(' · ')}`,'sys');
+  A().toast(`옛 레디메이드 ${drop.length}개를 기본으로 되돌렸다 (${drop.slice(0,4).map(x=>x[0]).join(' · ')}${drop.length>4?' …':''})`);return drop.length}
  function startAuto(){if(AUTO)return;AUTO=true;setTimeout(()=>healRm().catch(e=>console.warn('healRm',e)),2500);setTimeout(pullMaker,5000);setInterval(pullMaker,120000);addEventListener('focus',()=>setTimeout(pullMaker,300));document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(pullMaker,300)})}
  /* 시트·배틀에서 쓰는 한 줄 요약 (특성/소지품 이름 → 효과 문구 HTML) */
  function effectHtml(kind,name){const d=DB();if(kind==='trait'){const v=(d.traits||{})[name];return v?pretty(v.multi||v.single):''}if(kind==='item'){const v=(d.items||{})[name];return v?pretty(v.eff):''}return ''}
@@ -208,5 +222,5 @@ window.OM_DB_UI=(()=>{
     try{await window.OM_STORE.makerPut('dbedit','rm.'+keySeg(r.k),{kind:'rm',key:r.k,row,custom:false,pos:RB[r.k]?-1:99999});ok++}catch(e){fail.push(r.k+' ('+e.message+')')}}
    const ov=JSON.parse(JSON.stringify(((A().ST.state.dbx||{}).rm)||{}));for(const r of pick)if(!fail.some(f=>f.startsWith(r.k+' ('))&&ov[r.k])ov[r.k].src='maker';await A().set(['dbx','rm'],ov);
    A().closeModal();A().toast(`제작기 레디메이드 DB 에 ${ok}개 올렸다${fail.length?` · 실패 ${fail.length}`:''} — 제작기는 새로고침하면 보인다`);if(fail.length)A().sysLog('【레디메이드 옮기기 실패】\n'+fail.join('\n'),'sys')}}
- return {open,pretty,effectHtml,applyOverride,syncMaker,pullMaker,startAuto,ensureMaker,fillEff,pushRm,roomRm,healRm};
+ return {open,pretty,effectHtml,applyOverride,syncMaker,pullMaker,startAuto,ensureMaker,fillEff,pushRm,roomRm,healRm,healStale};
 })();
