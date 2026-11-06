@@ -848,13 +848,19 @@ window.OM_BATTLE_UI=(()=>{
   if(cm&&((((cm.mons||{})[m.id])||{}).pots||[]).includes(n))return true;
   {const ok=((b.cmds||{})[m.tid]||{}).ok;if(!cm&&ok&&ok.key===turnKey(b)&&ok.m&&ok.m[m.id]&&ok.m[m.id].pi)return true}   /* 지시를 못 읽는 화면은 순서 열쇠의 선행 표시로 본다 */
   return await askYes(`⚠ 『${n}』 은(는) 【선행】 포텐셜인데 이번 턴에 선행 입력하지 않았다.\n원칙은 지시 단계에서 선행 입력 → 턴 개시 뒤 발동.\n그래도 강제로 발동할까?`,'강제 발동','그만')}
+ /* 11-06 망령 「배틀 비우기 할 때 해당 로그 지울지도 고르게」: 이 배틀 구역(시합 개시 ~ 지금)을 닫고, 고르면 채팅 창에서 숨긴다 (GM 은 rp.logHide, PL 은 자기 pub 칸 — 기록은 남아 GM 이 로그 비우기 창에서 되돌린다) */
+ async function clearBattleLog(b){try{const ST=A().ST;const S=(A().logSecs?A().logSecs():[]).filter(x=>x.k==='battle');let sec=S.length?S[S.length-1]:null;if(sec&&sec.z)sec=null;
+  let a=sec?sec.a:0;if(!a&&+b.log0>0&&b.started)a=+b.log0+1;if(!a)return;const z=+ST.lastLogId||0;if(z<a)return;const n=(ST.log||[]).filter(r=>r.id>=a&&r.id<=z).length;
+  const hide=await askYes(`이 배틀 로그${n?` ${n}줄`:''}도 채팅 창에서 지울까?\n(기록은 남아서 「💾 로그」로 받을 수 있고, GM 이 「로그 비우기」에서 다시 보이게 할 수 있다)`,'로그도 지운다','로그는 남긴다');
+  await A().sysLog('배틀을 비웠다','sys',{sec:{k:'battle',op:'close'}});
+  if(hide){if(A().ST.role==='gm')await A().set(['rp','logHide',String(a)],z);else if(ST.seat)await A().set(['pub',ST.seat,'logHide',String(a)],z)}}catch(e){console.warn('[배틀 로그 구역]',e)}}
  async function action(d,val){
   const c=ctx();const b=c.b;
   switch(d.act){
    case 'load':return A().openLoadParty(d.side);
    case 'addmon':return A().openAddMon(d.side);
    case 'unload':return A().unloadTrainer(d.tid);
-   case 'clear':{const HL=window.OM_HALL_UI;if(HL&&HL.worth(b)){const r=await HL.offer(b,{clear:true});if(r==='cancel')return}else if(!confirm('배틀 상태를 전부 비울까? (좌석은 남는다)'))return}   /* 10-27 망령: 시합이 있었으면 전당에 남길지 묻는 창이 비우기 확인을 겸한다 */CMD={};for(const k in FAINT_SEEN)delete FAINT_SEEN[k];return A().set(['battle'],{turn:0,phase:0,mode:mode(b),sides:{left:{trainers:[]},right:{trainers:[]}},trainers:{},mons:{},field:{},cmds:{},order:[]});
+   case 'clear':{const HL=window.OM_HALL_UI;if(HL&&HL.worth(b)){const r=await HL.offer(b,{clear:true});if(r==='cancel')return}else if(!confirm('배틀 상태를 전부 비울까? (좌석은 남는다)'))return}   /* 10-27 망령: 시합이 있었으면 전당에 남길지 묻는 창이 비우기 확인을 겸한다 */await clearBattleLog(b);CMD={};for(const k in FAINT_SEEN)delete FAINT_SEEN[k];return A().set(['battle'],{turn:0,phase:0,mode:mode(b),sides:{left:{trainers:[]},right:{trainers:[]}},trainers:{},mons:{},field:{},cmds:{},order:[]});
    case 'iv':return A().openHatch(d.tid);
    /* 11-03 감우: 제한 시간 · 체크포인트 · 저장 */
    case 'deadline':{if(!c.mgr)return;const min=Math.max(0,Math.min(180,+val||0));const dl=min>0?Date.now()+min*60000:null;await A().set(['battle','deadline'],dl);A().sysLog(dl?`지시 입력 제한 시간 ${min}분 — ${new Date(dl).toLocaleTimeString('ko-KR',{hour:'2-digit',minute:'2-digit'})} 까지`:'지시 입력 제한 시간 없음','battle');return}

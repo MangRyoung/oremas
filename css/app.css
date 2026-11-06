@@ -5654,3 +5654,10 @@ button.tfsep.cl{opacity:1;border:1px dashed color-mix(in srgb,var(--yel2) 55%,tr
 .amc{display:flex;gap:8px;align-items:center;text-align:left;padding:6px;border:1px solid var(--line);background:var(--panel2,rgba(255,255,255,.04));color:inherit;font:inherit;cursor:pointer;border-radius:6px}
 .amc .por{width:44px;height:44px;flex:none;border-radius:4px;background:#000 center/cover no-repeat}
 .amc b{display:block}.amc.on{outline:2px solid var(--yel,#e0b04a);outline-offset:-2px}.amc.had{opacity:.45;cursor:default}
+/* 11-06 로그 구역 줄: 씬 · 배틀 시작/끝 */
+.logsec{display:flex;align-items:center;gap:8px;margin:8px 4px 4px;font-size:11px;font-weight:700;letter-spacing:.04em;color:#c9b98a}
+.logsec::before,.logsec::after{content:"";flex:1;height:1px;background:currentColor;opacity:.35}
+.logsec span{white-space:nowrap;max-width:70%;overflow:hidden;text-overflow:ellipsis}
+.logsec i{font-style:normal;font-weight:400;opacity:.7;white-space:nowrap}
+.logsec.battle{color:#e08a8a}.logsec.close{margin-top:4px;margin-bottom:10px;opacity:.75}
+.lcsec li{flex-wrap:wrap;row-gap:4px}.lcsec li .small{min-width:0}

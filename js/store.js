@@ -76,6 +76,7 @@ window.OM_STORE=(()=>{
  /* 10-26 덱 시험: 내가 쓴 로그가 실시간으로 되돌아오지 않아 화면에서 빠지는 일이 잦았다 — 쓰고 나면 2.5초 뒤 서버를 한 번 더 읽어 채운다 (app.logFill) */
  async function addLog(room,secret,kind,who,data){return rpc('om_log_add',{p_room:room,p_secret:secret,p_kind:kind,p_who:who,p_data:data||{}}).then(r=>{try{const A=window.OM_APP;if(A&&A.logFill)A.logFill()}catch(e){}return r})}
  async function logClear(room,secret,keepSms){return rpc('om_log_clear',{p_room:room,p_secret:secret,p_keep_sms:!!keepSms})}
+ async function logClearRange(room,secret,from,to,keepSms){return rpc('om_log_clear_range',{p_room:room,p_secret:secret,p_from:+from||0,p_to:+to||0,p_keep_sms:!!keepSms})}   /* 11-06 구역별 지우기 */
  async function whispers(room,secret,after){return rpc('om_whispers',{p_room:room,p_secret:secret,p_after:after||0})}
 
  /* ----- 비밀 ----- */
@@ -184,5 +185,5 @@ async function shrinkUpload(blob,maxSide){try{if(!/^image\/(png|jpe?g|webp|bmp)$
   dcHall:(room,secret,o)=>rpc('om_dc_hall',{p_room:room,p_secret:secret,p_title:o.title||'',p_sub:o.sub||'',p_img:o.img,p_who:o.who||{}}),
   hallGet:(room,secret)=>rpc('om_dc_hall_get',{p_room:room,p_secret:secret}),
   hallPut:(room,secret,o)=>rpc('om_dc_hall_put',{p_room:room,p_secret:secret,p_url:o.url??null,p_thread:o.thread??''}),noFn};
- return {patchesSince,setStateMany,snap,hall,bbs,shrinkUpload,ntCamps,ntCampUpdate,ntCampPatch,ntDocs,ntSync,NTSYNC,ntGet,ntPut,ntPutMany,ntDel,ntWatch,rtReset,getStateV,roomsPeek,acct,logClear,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,getLogBefore,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty,makerOne,makerPut};
+ return {patchesSince,setStateMany,snap,hall,bbs,shrinkUpload,ntCamps,ntCampUpdate,ntCampPatch,ntDocs,ntSync,NTSYNC,ntGet,ntPut,ntPutMany,ntDel,ntWatch,rtReset,getStateV,roomsPeek,acct,logClear,logClearRange,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,getLogBefore,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty,makerOne,makerPut};
 })();

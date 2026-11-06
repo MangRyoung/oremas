@@ -676,6 +676,24 @@ const LOGMAX=400;let LOGV=0;   /* LOGV 를 올리면 다음 renderLog 는 전부
 var LOGPIN=(()=>{try{return localStorage.getItem('om_logpin')==='1'}catch(e){return false}})();
 /* 같은 GM 이 두 창(또는 두 기기)에서 방을 열고 있으면 자동 공개 같은 배틀 로그가 거의 동시에 두 번 들어온다 (10-26 FFA 시험) — 같은 사람 · 같은 글 · 4초 안이면 한 번만 보인다 */
 function logDup(){const seen=[];return r=>{if(r.kind!=='battle'&&!(r.kind==='chat'&&(r.data||{}).bat))return true;const t=String((r.data||{}).t||'');if(!t)return true;const at=Date.parse(r.at)||0;const hit=seen.find(q=>q.t===t&&q.w===r.who&&Math.abs(at-q.at)<4000);seen.push({t,w:r.who,at});if(seen.length>6)seen.shift();return !hit}}
+/* 11-06 망령 「씬 오픈 / 씬 닫기 · 배틀 시작~끝을 구역으로 남기고 구역별로 비우기」
+   구역은 로그 줄에서 읽는다: 공지 「[씬 오픈…]」「[씬 전환…]」 → 씬 열기(열려 있으면 앞 씬을 닫고), 「[씬 종료]」 → 씬 닫기,
+   「[배틀 개시…]」 · 「시합 개시!」 → 배틀 열기(열려 있으면 그대로), 「[배틀 종료…]」 · 배틀 비우기 줄(data.sec) → 배틀 닫기.
+   숨긴 구역: rp.logHide[a]=z (GM) · pub.<좌석>.logHide[a]=z (PL 이 배틀 비우기 때 고른 것) — a~z 사이 줄을 채팅 창에서 숨긴다 (기록은 남는다) */
+function secMark(r){if(!r||!r.data)return null;const d=r.data;if(d.sec&&typeof d.sec==='object')return {k:d.sec.k==='scene'?'scene':'battle',op:d.sec.op==='close'?'close':'open',n:String(d.sec.n||'')};
+ const t=String(d.t||'');if(r.kind!=='sys'&&r.kind!=='battle'&&!(r.kind==='chat'&&d.bat))return null;let m;
+ if((m=t.match(/^\[(씬 오픈|씬 시작|씬 전환)\]\s*(.*)$/)))return {k:'scene',op:'open',n:m[2].trim(),sw:m[1]==='씬 전환'};
+ if(/^\[씬 종료\]/.test(t))return {k:'scene',op:'close'};
+ if((m=t.match(/^\[배틀 개시\]\s*(.*)$/)))return {k:'battle',op:'open',n:m[1].trim()};
+ if(/^시합 개시!/.test(t))return {k:'battle',op:'open',n:''};
+ if(/^\[배틀 종료\]/.test(t))return {k:'battle',op:'close'};return null}
+function logSecs(rows){const L=(rows||ST.log||[]).slice().sort((a,b)=>a.id-b.id);const out=[],cur={scene:null,battle:null};
+ for(const r of L){const m=secMark(r);if(m){if(m.op==='open'){if(cur[m.k]&&m.k==='battle'){if(m.n&&!cur[m.k].n)cur[m.k].n=m.n;cur[m.k].rows++;continue}if(cur[m.k]){cur[m.k].z=r.id-1;cur[m.k]=null}const s={k:m.k,a:r.id,z:null,n:m.n||'',at:r.at,zat:null,rows:0};out.push(s);cur[m.k]=s}
+   else if(cur[m.k]){cur[m.k].z=r.id;cur[m.k].zat=r.at;cur[m.k].rows++;cur[m.k]=null;continue}}
+  for(const k of ['scene','battle'])if(cur[k])cur[k].rows++}
+ return out}
+function logHides(){const o=[];const add=(h,who)=>{if(h&&typeof h==='object')for(const a in h){const z=+h[a];if(+a>0)o.push({a:+a,z:z>0?z:Infinity,who})}};add((ST.state.rp||{}).logHide,'gm');const pub=ST.state.pub||{};for(const s in pub)add((pub[s]||{}).logHide,s);return o}
+function logHidden(id,H){for(const h of H)if(id>=h.a&&id<=h.z)return true;return false}
 function renderLog(scroll){
  const el=$('#log');if(!el)return;const top0=el.scrollTop,h0=el.scrollHeight;const near=h0-top0-el.clientHeight<48;
  if(!el._nb){el._nb=1;el.addEventListener('scroll',()=>{if(LOGNEW&&el.scrollHeight-el.scrollTop-el.clientHeight<48){LOGNEW=false;const b=el.querySelector('.lognew');if(b)b.remove()}},{passive:true});el.addEventListener('click',e=>{if(e.target.closest('.lognew')){LOGNEW=false;e.target.closest('.lognew').remove();el.scrollTop=el.scrollHeight}})}
@@ -685,12 +703,16 @@ function renderLog(scroll){
  const SR=CHAN.cur==='o'?[]:selfRows().filter(r=>r.id>cut);
  /* 11-02 망령 「채팅 렉」: 새 줄이 올 때마다 로그 전체(배틀 카드 포함 수백 줄)를 다시 만들던 것 → 앞부분이 그대로면 새 줄만 뒤에 붙인다.
     화면에는 최근 LOGMAX 줄만 둔다(더 위는 「로그 저장」 · 정리기로). 채널 · 지우기 · 끼워 넣은 줄이 있으면 예전처럼 전부 다시 */
- const LIST=(SR.length?ST.log.concat(SR).sort((a,b)=>a.id-b.id):ST.log).filter(logDup()).filter(r=>r.kind==='self'||(r.id>cut&&(CHAN.cur==='o'?isOoc(r):!isOoc(r))));
- const KEY=[CHAN.cur,cut,ST.role,ST.seat,ST.gmNick||'',LOGV].join('|');const LM=el._lm;
+ const HID=logHides();const LIST=(SR.length?ST.log.concat(SR).sort((a,b)=>a.id-b.id):ST.log).filter(logDup()).filter(r=>r.kind==='self'||(r.id>cut&&!(HID.length&&logHidden(r.id,HID))&&(CHAN.cur==='o'?isOoc(r):!isOoc(r))));
+ const KEY=[CHAN.cur,cut,ST.role,ST.seat,ST.gmNick||'',LOGV,HID.map(h=>h.a+'-'+h.z).sort().join(',')].join('|');const LM=el._lm;
  const app=LM&&LM.key===KEY&&LIST.length>=LM.n&&LM.n>0&&LIST[LM.n-1].id===LM.last&&LIST[0]&&LIST[0].id===LM.first&&el.querySelector('.msg');
  const rows=app?LIST.slice(LM.n):LIST.slice(-LOGMAX);
  el._lm={key:KEY,n:LIST.length,last:LIST.length?LIST[LIST.length-1].id:null,first:LIST.length?LIST[0].id:null};
- const HTML=rows.map(r=>{const d=r.data||{};const k=(r.kind==='chat'&&d.bat)?d.bat:r.kind;const t=fmtTime(r.at);
+ const SO=new Map(),SC=new Map();if(CHAN.cur!=='o')for(const x of logSecs(ST.log)){SO.set(x.a,x);if(x.z)SC.set(x.z,x)}
+ const HTML=rows.map(r=>{const h=logRowHTML(r);const so=SO.get(r.id),sc=SC.get(r.id);if(!so&&!sc)return h;const lab=x=>(x.k==='scene'?'씬':'배틀')+(x.n?' · '+esc(x.n):'');
+  if((r.data||{}).sec&&sc&&!so)return `<div class="logsec ${sc.k} close"><span>▲ ${lab(sc)} 끝</span><i>${esc(String((r.data||{}).t||''))}</i></div>`;
+  return (so?`<div class="logsec ${so.k} open"><span>▼ ${lab(so)}</span></div>`:'')+h+(sc&&secMark(r)&&secMark(r).op==='close'?`<div class="logsec ${sc.k} close"><span>▲ ${lab(sc)} 끝</span></div>`:'')}).join('');
+ function logRowHTML(r){const d=r.data||{};const k=(r.kind==='chat'&&d.bat)?d.bat:r.kind;const t=fmtTime(r.at);
   if(k==='self')return `<div class="msg sys self"><div class="bub">${esc(d.t)} <span class="selftag">나만 보임</span>${d.gr?(d.gr.pub?' <span class="selftag">공개함</span>':` <button type="button" class="btn xs" data-grpub="${r.id}" title="같은 결과를 모두에게 로그로">공개</button>`):''}</div></div>`;
   if(k==='sys')return `<div class="msg sys"><div class="bub">${esc(d.t)}</div></div>`;
   if(k==='chat'&&d.clear)return `<div class="msg sys"><div class="bub">무대를 비웠다</div></div>`;
@@ -703,8 +725,8 @@ function renderLog(scroll){
   const av=avatarOf(r);
   const lf=k==='chat'&&!isOoc(r)?lineFmt(d):{narr:false,text:String(d.t||'')};
   const sa=styAttr(d);
-  return `<div class="msg ${k} ${mine?'me':''} ${lf.narr?'narr':''}"><div class="av" style="${av?`background-image:url('${cssu(av)}')`:''}"></div><div class="bub" style="${sa.bub}"><span class="who" style="${sa.who}">${who}</span>${d.img?`<a href="${esc(d.img)}" target="_blank" rel="noopener"><img class="cimg" src="${esc(d.img)}" alt=""></a>`:''}${esc(lf.text)}</div><span class="time">${t}</span></div>`}).join('');
- if(app){if(HTML){const nb=el.querySelector('.lognew');if(nb)nb.remove();el.insertAdjacentHTML('beforeend',HTML);let k=el.querySelectorAll(':scope>.msg').length-LOGMAX;while(k-->0){const f=el.querySelector(':scope>.msg');if(!f)break;f.remove()}}}else el.innerHTML=HTML;
+  return `<div class="msg ${k} ${mine?'me':''} ${lf.narr?'narr':''}"><div class="av" style="${av?`background-image:url('${cssu(av)}')`:''}"></div><div class="bub" style="${sa.bub}"><span class="who" style="${sa.who}">${who}</span>${d.img?`<a href="${esc(d.img)}" target="_blank" rel="noopener"><img class="cimg" src="${esc(d.img)}" alt=""></a>`:''}${esc(lf.text)}</div><span class="time">${t}</span></div>`}
+ if(app){if(HTML){const nb=el.querySelector('.lognew');if(nb)nb.remove();el.insertAdjacentHTML('beforeend',HTML);let k=el.querySelectorAll(':scope>.msg').length-LOGMAX;while(k-->0){const f=el.querySelector(':scope>.msg');if(!f)break;let q=f.previousElementSibling;while(q&&q.classList.contains('logsec')){const pq=q.previousElementSibling;q.remove();q=pq}f.remove()}}}else el.innerHTML=HTML;
  el.querySelectorAll('[data-grpub]').forEach(bt=>bt.onclick=async()=>{const rows=selfRows();const row=rows.find(x=>String(x.id)===bt.dataset.grpub);if(!row||!row.data.gr||row.data.gr.pub)return;const g=row.data.gr;try{await DBS().addLog(ST.room,ST.secret,'dice',ST.name,{t:`${g.e} → ${g.x} = ${g.n} (GM 비밀 굴림 공개)`,total:g.n,gr:1});g.pub=1;try{localStorage.setItem(SELFK(),JSON.stringify(rows))}catch(e){}LOGV++;renderLog(true)}catch(e){toast('공개하지 못했다: '+e.message)}});   /* 11-03: 비밀 굴림 공개 */
  el.querySelectorAll('[data-lmid]').forEach(bt=>bt.onclick=()=>{if(window.OM_BATTLE_UI&&window.OM_BATTLE_UI.action)window.OM_BATTLE_UI.action({act:'pots',mid:bt.dataset.lmid,only:String(bt.dataset.lnm||'').split('|').filter(Boolean)})});
  if(!el.innerHTML&&CHAN.cur==='o')el.innerHTML='<div class="msg sys"><div class="bub">잡담 창 — 여기서 한 말은 세션 로그·무대에 나오지 않는다</div></div>';chanDots();
@@ -1221,10 +1243,20 @@ function openSaveLog(){const o=logSaveCfg();const ck=(id,l,on)=>`<label class="s
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=fn;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);closeModal();toast(keep.length?`${keep.length}줄을 저장했다`:'저장할 줄이 없다 (빈 파일)')};
  $('#lg_txt',m).onclick=()=>go('txt');$('#lg_html',m).onclick=()=>go('html')}
 /* 로그 비우기 (GM): 「화면 비우기」는 모두의 채팅 창에서 지금까지를 숨긴다 (기록은 남아 로그 저장으로 받을 수 있다). 「완전히 지우기」는 서버에서 지운다 */
+/* 구역별 비우기: 최근 구역부터. 숨기기는 rp.logHide (되돌릴 수 있음), 지우기는 서버에서 그 구역 줄만 (om_log_clear_range) */
+function secListHTML(){const S=logSecs().reverse().slice(0,40);const H=logHides();const tm=x=>x?fmtTime(x):'';
+ return `<div class="sec" style="margin-top:14px">구역별 <span class="small muted" style="font-weight:400">씬 오픈 ~ 씬 종료 · 배틀 시작 ~ 끝 — 지금 불러온 로그 안에서</span></div>${S.length?`<ul class="pick lcsec">${S.map(x=>{const z=x.z||ST.lastLogId||x.a;const hid=H.some(h=>h.a===x.a);const by=H.filter(h=>h.a===x.a&&h.who!=='gm').map(h=>esc(((ST.state.seats||{})[h.who]||{}).name||h.who));
+   return `<li><span class="badge ${x.k==='scene'?'':'right'}">${x.k==='scene'?'씬':'배틀'}</span><b>${esc(x.n||(x.k==='scene'?'씬':'배틀'))}</b><span class="small muted">${tm(x.at)}${x.z?' ~ '+tm(x.zat):' ~ 진행 중'} · ${x.rows}줄${hid?' · <b>숨김</b>'+(by.length?' ('+by.join(', ')+')':''):''}</span><span class="sp"></span>${hid?`<button class="btn xs ghost" data-lcs="show" data-a="${x.a}">다시 보이기</button>`:`<button class="btn xs" data-lcs="hide" data-a="${x.a}" data-z="${z}">숨기기</button>`}<button class="btn xs danger" data-lcs="del" data-a="${x.a}" data-z="${z}" title="서버에서 이 구역 줄만 지운다 — 되돌릴 수 없다">지우기</button></li>`}).join('')}</ul>`:'<p class="small muted">아직 구역이 없다. 공지 「씬 오픈」 · 「씬 종료」, 배틀 「시합 개시」 · 「배틀 비우기」가 구역을 나눈다.</p>'}`}
+function secListBind(m){m.querySelectorAll('[data-lcs]').forEach(bt=>bt.onclick=async()=>{const a=+bt.dataset.a,z=+bt.dataset.z||0,k=bt.dataset.lcs;
+ if(k==='hide'){await set(['rp','logHide',String(a)],z);toast('그 구역을 채팅 창에서 숨겼다 — 기록은 남아 있다')}
+ else if(k==='show'){const ops=[[['rp','logHide',String(a)],null]];const pub=ST.state.pub||{};for(const sd in pub)if(((pub[sd]||{}).logHide||{})[a]!=null)ops.push([['pub',sd,'logHide',String(a)],null]);await setMany(ops);toast('다시 보인다')}
+ else if(k==='del'){if(!confirm('이 구역의 로그를 서버에서 지울까? 되돌릴 수 없다.'))return;try{const keep=$('#lc_sms',m).checked;const n=await DBS().logClearRange(ST.room,ST.secret,a,z,keep);ST.log=ST.log.filter(r=>r.id<a||r.id>z||(keep&&r.kind==='chat'&&r.data&&r.data.sms));await set(['rp','logHide',String(a)],null);toast(`로그 ${n||0}줄을 지웠다`)}catch(e){toast('지우지 못했다: '+e.message+' — supabase/patch_2026-11-06_로그구역.sql 을 SQL Editor 에서 실행해야 한다');return}}
+ closeModal();renderLog(true);openClearLog()})}
 function openClearLog(){if(ST.role!=='gm')return;const cut=+((ST.state.rp||{}).logClearAt)||0;
  const m=openModal(`<div class="mhead"><h2>로그 비우기</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
   <div class="row" style="align-items:flex-start;gap:12px;flex-wrap:wrap"><div style="flex:1;min-width:240px"><div class="sec">화면 비우기</div><p class="small muted">모두의 채팅 창에서 지금까지의 로그를 숨긴다. 기록은 남아서 「💾 로그」로 받을 수 있고, 되돌릴 수 있다. 휴대폰 문자는 그대로.</p><div class="row"><button class="btn pri" id="lc_view">화면 비우기</button>${cut?'<button class="btn ghost" id="lc_undo">다시 보이기</button>':''}</div></div>
-  <div style="flex:1;min-width:240px"><div class="sec">완전히 지우기</div><p class="small muted">서버에서 로그를 지운다. <b>되돌릴 수 없다.</b> 먼저 로그를 저장해 두길.</p><label class="small"><input type="checkbox" id="lc_sms" checked> 휴대폰 문자는 남기기</label><div class="row" style="margin-top:6px"><button class="btn" id="lc_save">💾 먼저 저장</button><button class="btn danger" id="lc_hard">완전히 지우기</button></div></div></div>`);
+  <div style="flex:1;min-width:240px"><div class="sec">완전히 지우기</div><p class="small muted">서버에서 로그를 지운다. <b>되돌릴 수 없다.</b> 먼저 로그를 저장해 두길.</p><label class="small"><input type="checkbox" id="lc_sms" checked> 휴대폰 문자는 남기기</label><div class="row" style="margin-top:6px"><button class="btn" id="lc_save">💾 먼저 저장</button><button class="btn danger" id="lc_hard">완전히 지우기</button></div></div></div>${secListHTML()}`);
+ secListBind(m);
  $('#lc_view',m).onclick=async()=>{await set(['rp','logClearAt'],ST.lastLogId||0);closeModal();renderLog(true);toast('채팅 창을 비웠다 — 기록은 남아 있다')};
  const un=$('#lc_undo',m);if(un)un.onclick=async()=>{await set(['rp','logClearAt'],0);closeModal();renderLog(true);toast('지난 로그를 다시 보인다')};
  $('#lc_save',m).onclick=()=>{closeModal();openSaveLog()};
@@ -1313,6 +1345,6 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
 
 /* 이름으로 기본 초상 찾기: 그림이 따로 없으면 같은 이름의 로스터 트레이너 → 포켓몬 → 관계도 노드의 그림을 쓴다 */
 function portraitOf(name,img){if(img)return img;if(!name)return '';const ro=ST.state.roster||{};const t=Object.values(ro.trainers||{}).find(x=>x.name===name);if(t&&t.image)return t.image;const m=Object.values(ro.mons||{}).find(x=>x.name===name&&x.image);if(m)return m.image;const n=Object.values((ST.state.graph||{}).nodes||{}).find(x=>x.name===name&&x.img);return n?n.img:''}
-window.OM_APP={itemBanWhy,itemOk,flush,setNow,openAddMon,ensure,loadScript,twoAble,twoPids,twoApply,setTwo,acctKey,presList,dupItems,dupItemText,logFill,bchOpen,selfLog,splitLog,contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,cleanupTrainer,openMon,openLoadParty,loadFromRoster,encounter,loadMaker,loadMakerParty,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,online:s=>!!s&&Object.values(PRES.who).some(v=>v.role==='seat'&&v.seat===s&&Date.now()-v.at<70000),get view(){return VIEW},goView:v=>{VIEW=v||scene();renderScene()},set view(v){VIEW=v}};
+window.OM_APP={logSecs,logHides,renderLog,openClearLog,itemBanWhy,itemOk,flush,setNow,openAddMon,ensure,loadScript,twoAble,twoPids,twoApply,setTwo,acctKey,presList,dupItems,dupItemText,logFill,bchOpen,selfLog,splitLog,contactOf,fontCss,UI,UI_DEF,UI_FONTS,UI_HEADS,applyUi,setAlarm,openRoomSettings,ST,set,setMany,setDiff,diffOps,sysLog,openModal,closeModal,toast,typeChip,renderScene,cleanupTrainer,openMon,openLoadParty,loadFromRoster,encounter,loadMaker,loadMakerParty,unloadTrainer,openHatch,esc,portraitOf,alarm,isMineLog,online:s=>!!s&&Object.values(PRES.who).some(v=>v.role==='seat'&&v.seat===s&&Date.now()-v.at<70000),get view(){return VIEW},goView:v=>{VIEW=v||scene();renderScene()},set view(v){VIEW=v}};
 route();
 })();
