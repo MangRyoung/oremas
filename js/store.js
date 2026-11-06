@@ -39,6 +39,8 @@ window.OM_STORE=(()=>{
   if(SPLIT!==false){const r=await sb().rpc('om_get_state',{p_room:room});if(!r.error){SPLIT=true;return r.data&&r.data.data?r.data:null}if(!noFn(r.error))throw err(r.error);SPLIT=false}
   const r=await sb().from('om_state').select('data,v').eq('room',room).maybeSingle();if(r.error)throw err(r.error);return r.data}
  /* 10-23 이그레스: 버전만 (가볍게 확인하고, 앞서 있을 때만 전체를 읽는다) */
+ /* 11-07 방 따라가기: 다른 방의 DB(dbx) · rp 만 가볍게 (나눈 상태에서도 둘은 om_state 에 있다) */
+ async function roomPick(room){const r=await sb().from('om_state').select('dbx:data->dbx,rp:data->rp').eq('room',room).maybeSingle();if(r.error)throw err(r.error);return r.data}
  async function getStateV(room){const r=await sb().from('om_state').select('v').eq('room',room).maybeSingle();if(r.error)throw err(r.error);return r.data}
  /* 10-28 이그레스 (supabase/patch_2026-10-28_이어받기.sql): after 다음 버전부터 놓친 신호들만. 이어 붙일 수 없으면 null — 그때는 전체를 읽는다.
     함수가 없는 DB 면 한 번 알고 나서는 묻지 않는다 */
@@ -185,5 +187,5 @@ async function shrinkUpload(blob,maxSide){try{if(!/^image\/(png|jpe?g|webp|bmp)$
   dcHall:(room,secret,o)=>rpc('om_dc_hall',{p_room:room,p_secret:secret,p_title:o.title||'',p_sub:o.sub||'',p_img:o.img,p_who:o.who||{}}),
   hallGet:(room,secret)=>rpc('om_dc_hall_get',{p_room:room,p_secret:secret}),
   hallPut:(room,secret,o)=>rpc('om_dc_hall_put',{p_room:room,p_secret:secret,p_url:o.url??null,p_thread:o.thread??''}),noFn};
- return {patchesSince,setStateMany,snap,hall,bbs,shrinkUpload,ntCamps,ntCampUpdate,ntCampPatch,ntDocs,ntSync,NTSYNC,ntGet,ntPut,ntPutMany,ntDel,ntWatch,rtReset,getStateV,roomsPeek,acct,logClear,logClearRange,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,getLogBefore,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty,makerOne,makerPut};
+ return {roomPick,patchesSince,setStateMany,snap,hall,bbs,shrinkUpload,ntCamps,ntCampUpdate,ntCampPatch,ntDocs,ntSync,NTSYNC,ntGet,ntPut,ntPutMany,ntDel,ntWatch,rtReset,getStateV,roomsPeek,acct,logClear,logClearRange,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,getLogBefore,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty,makerOne,makerPut};
 })();

@@ -2551,6 +2551,7 @@ window.OM_BATTLE_UI=(()=>{
  const s3mine=(c,tid)=>!!(c.gm||(c.seat&&tid===c.seat));
  const s3card=(c,tid,code,argRe)=>{const x=s3b(tid);const e=x&&s3e(x.n);return e&&e.code===code&&(!argRe||argRe.test(e.arg||''))&&s3mine(c,tid)?x:null};
  async function s3use(tid,why){const R=window.OM_SK3R;if(R&&R.run)await R.run({op:'use',tid,k:'b',quiet:1,why})}
+ const ACTFX={};   /* 11-07 「행동한 뒤」 자동 — mid|포텐셜 → 건 턴 */
  function openAttack(mid,opt){opt=opt||{};const c=ctx();const b=c.b;const atk=b.mons[mid];if(!atk||!canEdit(c,atk))return;const RNDT={};const rndOf=mv=>isRndMove(mv)?(RNDT[mv.name]||(RNDT[mv.name]=rndType())):'';   /* 11-04 망령: 「무작위」 타입 기술 — 이 공격 창을 열 때 기술마다 한 번 굴린다 (미리보기 · 판정 · 로그가 같은 타입) */const f=fieldOf(b);const atkD=topShadow(atk,opt.baseTop);
   /* 11-03 「기술사용」 · 「추가공격」: opt.mvName(기술 이름 — 목록에 없으면 기술 DB 에서 잠시 붙인다) · opt.targets · opt.extra {pw, sure, left, name} */
   delete XMV[mid];let OPI=-1;if(opt.mvName){OPI=MVS(atk).findIndex(q=>q&&q.name===opt.mvName);if(OPI<0){const nm2=String(opt.mvName).trim();const mv=window.OM_IMPORT&&window.OM_IMPORT.move?window.OM_IMPORT.move(nm2,false):null;if(!mv||!mv.name){A().toast(`기술 「${nm2}」를 기술 DB 에서 못 찾았다`);return}XMV[mid]=Object.assign({},mv,{fromFx:opt.by||''});OPI=MVS(atk).length-1}}
@@ -2832,6 +2833,9 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【[^】]*】\s
    const AU2=RESULT.auto;const xck=t=>{if(!AU2)return false;const ex=[...(AU2.recoil?['recoil']:[]),...(AU2.drain?['drain']:[]),...(AU2.selfFaint?['faint']:[]),...(AU2.forceSwitch?['fsw']:[]),...(AU2.selfSwitch?['ssw']:[])];const el=md.querySelector(`[data-agx="${ex.indexOf(t)}"]`);return !!(el&&el.checked)};
    const doF=AU2&&AU2.forceSwitch&&xck('fsw'),doS=AU2&&AU2.selfSwitch&&xck('ssw');const swS=doS?AU2.selfSwitch:(RESULT.nextU?'free':'');   /* 선행유턴처럼 「다음 기술」에 붙은 유턴도 */
    A().closeModal();if(!await saveBattle(nb0,nb,undefined,{n:atk.name,s:RESULT.mv.name,img:atk.image||''}))return;A().sysLog(`【전달】 ${atk.name} 『${RESULT.mv.name}』 → ${sumL.join(' · ')||'대상 없음'}${dealtAny?' — 받는 쪽이 「HP」에서 적용':''}${lines.length?'\n'+lines.join('\n'):''}`,'battle',{mid:atk.id,img:atk.image||''});
+   /* 11-07 망령 「닌자 자동화가 없어요」: 「자신이 행동한 뒤 …」 포텐셜(닌자 ① 회피 ×1.33 턴 종료까지)은 공격을 적용한 뒤 저절로 건다 — 구문이 있고 횟수(【N/시】) 없는 것만 · 한 턴에 한 번 */
+   {const a2=ctx().b.mons[mid];const T=+ctx().b.turn||0;if(a2&&a2.entry&&a2.hp.cur>0&&FX())for(const p of potSrc(a2)){if(!p||!p.name||p.ph||!/자신이\s*행동한\s*(?:뒤|후)/.test(String(p.eff||'')))continue;const k=mid+'|'+p.name;if(ACTFX[k]===T)continue;
+     const au=FX().autoOf(a2,'pot',p.name);if(!au||!au.ops||!au.ops.length||au.manual||limManual(a2,'pot',p.name,p.eff))continue;ACTFX[k]=T;await fireAuto(mid,'pot',p.name,{quiet:true,noRoll:true,head:`【포텐셜】 ${a2.name} 『${p.name}』 — 행동한 뒤 자동`})}}
    /* 11-03 「추가공격」: 포켓몬 하나에게 내보낸 맞는 기술이 명중했으면 1번 더 (위력 · 필중은 구문대로) — 추가 공격 창을 연다 */
    {const hit1=RESULT.targets.length===1&&RESULT.targets[0].acc.hit&&RESULT.mv.cat!=='변화'?RESULT.targets[0]:null;const left=opt.extra?(+opt.extra.left||0):null;
     if(hit1&&(left===null||left>0)){const a2=ctx().b.mons[mid];const ex=a2&&a2.entry&&a2.hp.cur>0?(opt.extra?{pw:opt.extra.pw,sure:opt.extra.sure,n:left,name:opt.extra.name}:spL(a2,'extra').find(e=>spHit(e,RESULT.mv,RESULT.moveTypes))):null;const d2=ctx().b.mons[hit1.def.id];

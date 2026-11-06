@@ -166,6 +166,28 @@ window.OM_DB_UI=(()=>{
  /* 10-24 망령: 제작기 DB 자동 반영 — GM 화면이 2분마다(그리고 창으로 돌아올 때) 지난번 뒤에 바뀐 제작기 DB 문서만 읽어 방 DB 에 섞는다.
     바뀐 게 없으면 빈 응답 하나라 사용량은 거의 없다. 처음 한 번(mkSeen 없음)은 전부 읽는다 */
  let AUTO=false,PULL=false,LASTP=0;
+ /* 11-07 망령 「캠퍼스 2 는 늘 캠퍼스 1 이랑 같은 상태가 되도록 연동」 → (고른 범위) DB · 설정만.
+    따라가는 방의 GM 화면이 들어올 때 · 2분마다 · 창으로 돌아올 때 주 방의 DB(dbx — 레디메이드 · 특성 · 포텐셜 · 소지품 · 기술 · 상태 수정)와
+    방 규칙(rp 의 plBattle · seatOwn · gmHands · bondMode · pct · standCrop)을 그대로 받는다. 배틀 · 채팅 · 자리 · 시트(로스터) · 무대는 각 방 따로.
+    주 방 = rp.follow (방 id · 빈 글이면 끔) → 없으면 세션 노트 캠페인이 이 방을 여러 방(om.rooms)으로 잇고 주 방(om.room)이 다른 방일 때 그 방.
+    주 방 GM 이 안 들어와 있어도 같아지게, 받은 DB 위에 제작기 DB 변경(dbedit)을 섞는다 — 같은 행을 같은 규칙으로 섞으니 두 방 결과가 같다 */
+ const FOLLOW_RULES=['plBattle','seatOwn','gmHands','bondMode','pct','standCrop'];
+ let FOL={room:'',at:0,par:null},FOLN='';
+ async function followOf(){const ST=A().ST;const f=(ST.state.rp||{}).follow;if(typeof f==='string')return f&&f!==ST.room?f:null;
+  if(FOL.room===ST.room&&Date.now()-FOL.at<600000)return FOL.par;let par=null;
+  try{const N=window.OM_NOTES;const L=N&&N.linked?await N.linked():null;const om=(L&&L.data&&L.data.om)||{};if(om.room&&om.room!==ST.room&&(om.rooms||{})[ST.room])par=om.room}catch(e){}
+  FOL={room:ST.room,at:Date.now(),par};return par}
+ async function syncFrom(par){const S=window.OM_STORE;if(!S||!S.roomPick)return false;let pick=null;try{pick=await S.roomPick(par)}catch(e){console.warn('방 따라가기',e);return false}if(!pick||!pick.dbx)return false;
+  const dbx=JSON.parse(JSON.stringify(pick.dbx));
+  try{const since=dbx.mvV?(dbx.mkSeen||null):null;const rows=await S.makerDocsSince('dbedit',since);if(rows.length){mergeMaker(dbx,rows,!since);dbx.mvV=1;const at=maxAt(rows);if(at)dbx.mkSeen=at}}catch(e){console.warn('방 따라가기 — 제작기',e)}
+  const cur=A().ST.state.dbx||{};const strip=o=>JSON.stringify(Object.assign({},o||{},{at:0}));const ops=[];let dbN=0;
+  if(strip(cur)!==strip(dbx)){for(const k of ['rm','trait','pot','item','move','st']){const a=cur[k]||{},b=dbx[k]||{};for(const x of new Set([...Object.keys(a),...Object.keys(b)]))if(JSON.stringify(a[x])!==JSON.stringify(b[x]))dbN++}dbx.at=Date.now();ops.push([['dbx'],dbx])}
+  const rp0=A().ST.state.rp||{},rp1=pick.rp||{};const chg=[];for(const k of FOLLOW_RULES){if(JSON.stringify(rp0[k]??null)!==JSON.stringify(rp1[k]??null)){ops.push([['rp',k],rp1[k]??null]);chg.push(k)}}
+  if(!ops.length)return true;await A().setMany(ops);MKX=null;mkxP=null;if(document.querySelector('.dbmodal'))refresh();
+  let pn=par;try{const r=await S.getRoom(par);pn=(r&&r.name)||par}catch(e){}FOLN=pn;
+  const RK={plBattle:'플레이어 배틀 진행',seatOwn:'자기 것만',gmHands:'GM 불간섭',bondMode:'유대 발동',pct:'확률',standCrop:'스탠딩 자르기'};
+  A().sysLog(`【방 따라가기】 「${pn}」의 ${[dbN?`DB ${dbN}칸`:ops.some(o=>o[0][0]==='dbx')?'DB':'',chg.length?'방 설정 '+chg.map(k=>RK[k]||k).join(' · '):''].filter(Boolean).join(' · ')}을(를) 맞췄다`,'sys');return true}
+ const followName=()=>FOLN;
  /* 11-06 망령 「제작기 카드에서 회복」: 제작기에서 회복(pcond src 'maker')한 포켓몬을 방 시트(로스터)에도 — GM 화면만, pullMaker 와 같은 때 */
  let PCP=false;
  async function pullCond(){if(PCP||A().ST.role!=='gm'||!A().ST.room||!window.OM_STORE||!window.OM_STORE.makerDocsSince)return;PCP=true;
@@ -176,7 +198,7 @@ window.OM_DB_UI=(()=>{
    if(names.length){A().toast(`제작기에서 회복한 ${names.length}체를 시트에 반영했다`);A().sysLog(`【제작기】 회복 반영 — ${names.join(', ')}`,'sys')}}
   catch(e){console.warn('제작기 HP · 상태 반영',e)}finally{PCP=false}}
  async function pullMaker(){pullCond();if(PULL||A().ST.role!=='gm'||!A().ST.room||!window.OM_STORE||!window.OM_STORE.makerDocsSince)return;if(document.visibilityState==='hidden')return;if(Date.now()-LASTP<20000)return;PULL=true;LASTP=Date.now();
-  try{const d0=A().ST.state.dbx||{};const since=d0.mvV?(d0.mkSeen||null):null;   /* 11-04: 기술(moves)을 받기 시작한 판 — 한 번은 전부 다시 받는다 */const rows=await window.OM_STORE.makerDocsSince('dbedit',since);if(!rows.length)return;
+  try{{const par=await followOf();if(par){await syncFrom(par);return}}   /* 11-07 따라가는 방: 주 방의 DB 를 받는다 (제작기 변경도 그 위에 섞어서) */const d0=A().ST.state.dbx||{};const since=d0.mvV?(d0.mkSeen||null):null;   /* 11-04: 기술(moves)을 받기 시작한 판 — 한 번은 전부 다시 받는다 */const rows=await window.OM_STORE.makerDocsSince('dbedit',since);if(!rows.length)return;
    const dbx=JSON.parse(JSON.stringify(A().ST.state.dbx||{}));const c=mergeMaker(dbx,rows,!since);dbx.mvV=1;const at=maxAt(rows);if(at)dbx.mkSeen=at;
    if(!c.n&&!c.ns&&!c.nr&&since){await A().set(['dbx','mkSeen'],dbx.mkSeen);return}
    dbx.at=Date.now();await A().set(['dbx'],dbx);MKX=null;mkxP=null;
@@ -222,5 +244,5 @@ window.OM_DB_UI=(()=>{
     try{await window.OM_STORE.makerPut('dbedit','rm.'+keySeg(r.k),{kind:'rm',key:r.k,row,custom:false,pos:RB[r.k]?-1:99999});ok++}catch(e){fail.push(r.k+' ('+e.message+')')}}
    const ov=JSON.parse(JSON.stringify(((A().ST.state.dbx||{}).rm)||{}));for(const r of pick)if(!fail.some(f=>f.startsWith(r.k+' ('))&&ov[r.k])ov[r.k].src='maker';await A().set(['dbx','rm'],ov);
    A().closeModal();A().toast(`제작기 레디메이드 DB 에 ${ok}개 올렸다${fail.length?` · 실패 ${fail.length}`:''} — 제작기는 새로고침하면 보인다`);if(fail.length)A().sysLog('【레디메이드 옮기기 실패】\n'+fail.join('\n'),'sys')}}
- return {open,pretty,effectHtml,applyOverride,syncMaker,pullMaker,startAuto,ensureMaker,fillEff,pushRm,roomRm,healRm,healStale};
+ return {open,pretty,effectHtml,applyOverride,syncMaker,pullMaker,startAuto,ensureMaker,fillEff,pushRm,roomRm,healRm,healStale,followOf,syncFrom,followName};
 })();
