@@ -1895,24 +1895,28 @@ window.OM_BATTLE_UI=(()=>{
    <div class="row small" style="gap:12px;margin-bottom:8px"><label><input type="checkbox" data-rk="hp" checked> HP</label><label><input type="checkbox" data-rk="st" checked> 빈사·상태 이상</label><label><input type="checkbox" data-rk="uses" checked> 포텐셜 횟수</label><label><input type="checkbox" data-rk="item" checked> 쓴 소지품</label></div>
    <table class="t"><tr><th>포켓몬</th><th>HP</th><th>상태</th><th>포텐셜 횟수</th><th>소지품</th></tr>${rows.map(x=>x.html).join('')}</table>
    <div class="row" style="margin-top:10px"><label class="small"><input type="checkbox" id="rsclear"> 반영한 뒤 배틀 비우기</label><span class="sp"></span><button class="btn" data-x>취소</button><button class="btn pri" id="rsgo">시트에 반영</button></div>`);
-  $('#rsgo',md).onclick=async()=>{const on=k=>!!(md.querySelector(`[data-rk="${k}"]`)||{}).checked;const ops=[];const L=[];
+  $('#rsgo',md).onclick=async()=>{const on=k=>!!(md.querySelector(`[data-rk="${k}"]`)||{}).checked;const ops=[];const L=[];const PC=[];
    for(const {m,r} of rows){if(!(md.querySelector(`[data-rs="${m.id}"]`)||{}).checked)continue;const P=['roster','mons',RID(m)];const bits=[];
     if(on('hp')){ops.push([[...P,'sheetHp'],r.hp]);bits.push('HP '+r.hp)}
     {const rr=(R[RID(m)]||{}).rank||{};if(Object.values(rr).some(v=>+v)){ops.push([[...P,'rank'],{attack:0,defense:0,specialattack:0,specialdefense:0,speed:0,accuracy:0,evasion:0,critical:0}]);bits.push('배틀 전 랭크 정리')}}   /* 10-26: 스킬 체크 패널티로 시트에 남긴 랭크는 이 배틀에서 썼으니 비운다 */
     if(on('st')){ops.push([[...P,'sheetStates'],Object.keys(r.st).length?r.st:null]);const s2=Object.keys(r.st).map(k=>k==='Dead'?'빈사':stKo(k));if(s2.length)bits.push(s2.join('·'))}
     if(on('uses')){ops.push([[...P,'potUses'],Object.keys(r.uses).length?r.uses:null])}
     if(on('item')&&r.used&&!r.item){ops.push([[...P,'item'],'']);ops.push([[...P,'itemEff'],'']);bits.push(r.used+' 소모')}
+    {const rm=R[RID(m)]||{};if(rm.src==='maker'){const at=Date.now();PC.push([RID(m),{hp:on('hp')?(r.hp>=rm.hp.max?null:r.hp):(rm.sheetHp==null?null:rm.sheetHp),max:rm.hp.max,st:on('st')?(Object.keys(r.st).length?r.st:null):(rm.sheetStates||null),at,src:'room',room:A().ST.room||''}]);ops.push([[...P,'pcAt'],at])}}   /* 11-06 망령 「결과 정리한 HP · 상태가 제작기 카드에도」: 제작기 pcond 문서로 */
     L.push(`${(m.form0||{}).name||m.name}: ${bits.join(' · ')||'반영'}`)}
    if(!ops.length)return A().toast('반영할 것이 없다');A().closeModal();
    /* 11-05 망령 「정리 잘못 눌렀을 수도 있으니 되돌리기도」: 고치기 바로 전 값을 resultUndo 에 남긴다 (배틀을 비워도 남게 방 맨 위) */
    {const S0=A().ST.state;const get=pth=>{let o=S0;for(const k of pth){if(o==null)return null;o=o[k]}return o===undefined?null:JSON.parse(JSON.stringify(o))};
     ops.push([['resultUndo'],{at:Date.now(),names:rows.filter(({m})=>(md.querySelector(`[data-rs="${m.id}"]`)||{}).checked).map(({m})=>(m.form0||{}).name||m.name),ops:ops.map(([pth])=>[pth,get(pth)])}])}
    ops.push([['battle','resultAt'],Date.now()]);   /* 10-31 망령 「결과 정리를 했는데 던전 귀환 창이 『결과 정리 먼저』」: 했다는 표시 */if(!await A().setMany(ops))return;
-   A().sysLog(`【배틀 결과】 시트에 반영\n${L.join('\n')}`,'battle');A().toast('시트에 반영했다');
+   A().sysLog(`【배틀 결과】 시트에 반영\n${L.join('\n')}`,'battle');A().toast('시트에 반영했다');pcPut(PC);
    {const HL=window.OM_HALL_UI;const nb=ctx().b;if(HL&&HL.worth(nb))await HL.offer(nb,{})}   /* 10-27 망령: 결과 정리 때도 전당에 남길지 */
    if($('#rsclear',md).checked){CMD={};await A().set(['battle'],{turn:0,phase:0,mode:mode(b),sides:{left:{trainers:[]},right:{trainers:[]}},trainers:{},mons:{},field:{},cmds:{},order:[]})}};
   {const ub=$('#rsundo',md);if(ub)ub.onclick=async()=>{const U=A().ST.state.resultUndo;if(!U||!U.ops)return;if(!confirm(`지난 결과 정리(${(U.names||[]).join(', ')})를 되돌려 시트를 그 전 값으로 돌릴까?\n(그 뒤에 시트에서 따로 고친 HP · 상태도 그 전 값으로 돌아간다)`))return;
-   A().closeModal();if(!await A().setMany([...U.ops,[['resultUndo'],null],[['battle','resultAt'],null]]))return;A().sysLog(`【배틀 결과】 결과 정리 되돌림 — ${(U.names||[]).join(', ')}`,'battle');A().toast('결과 정리를 되돌렸다')}}}
+   A().closeModal();if(!await A().setMany([...U.ops,[['resultUndo'],null],[['battle','resultAt'],null]]))return;A().sysLog(`【배틀 결과】 결과 정리 되돌림 — ${(U.names||[]).join(', ')}`,'battle');A().toast('결과 정리를 되돌렸다');pcFromRoster([...new Set(U.ops.map(([pth])=>pth[0]==='roster'&&pth[1]==='mons'?pth[2]:null).filter(Boolean))])}}}
+ /* 11-06: 제작기 카드의 「지금 HP · 상태」 (docs kind 'pcond', id = 제작기 포켓몬 id). 제작기에서 회복하면 GM 화면이 방 시트에 받아 온다 (db_ui pullCond) */
+ async function pcPut(L){const SS=window.OM_STORE;if(!SS||!SS.makerPut||!L.length)return;let bad=0;for(const [id,d] of L){try{await SS.makerPut('pcond',id,d)}catch(e){bad++;console.warn('pcond',id,e)}}if(bad)A().toast(`제작기 카드에 HP · 상태를 ${bad}체 못 보냈다`)}
+ function pcFromRoster(ids){const R=(A().ST.state.roster||{}).mons||{};const at=Date.now();pcPut(ids.map(id=>{const rm=R[id];if(!rm||rm.src!=='maker')return null;return [id,{hp:rm.sheetHp==null||rm.sheetHp>=rm.hp.max?null:rm.sheetHp,max:rm.hp.max,st:rm.sheetStates||null,at,src:'room',room:A().ST.room||''}]}).filter(Boolean))}
  /* 폼 목록은 시트(로스터) 쪽을 먼저 — 오레마스 시트에서 고친 폼이 바로 따라온다 (빌려 온 파티는 rid) */
  function formsOf(m){const rm=((A().ST.state.roster||{}).mons||{})[m.rid||m.id];return rm?(rm.forms||[]):(m.forms||[])}
  function openForm(mid){const c=ctx();const b=c.b;const m=b.mons[mid];if(!m||!canEdit(c,m))return;const forms=formsOf(m);if(!forms.some(f=>f&&f.kind!=='일루젼')&&!m.form0&&!hasTera(m))return;

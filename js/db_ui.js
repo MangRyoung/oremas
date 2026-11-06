@@ -166,7 +166,16 @@ window.OM_DB_UI=(()=>{
  /* 10-24 망령: 제작기 DB 자동 반영 — GM 화면이 2분마다(그리고 창으로 돌아올 때) 지난번 뒤에 바뀐 제작기 DB 문서만 읽어 방 DB 에 섞는다.
     바뀐 게 없으면 빈 응답 하나라 사용량은 거의 없다. 처음 한 번(mkSeen 없음)은 전부 읽는다 */
  let AUTO=false,PULL=false,LASTP=0;
- async function pullMaker(){if(PULL||A().ST.role!=='gm'||!A().ST.room||!window.OM_STORE||!window.OM_STORE.makerDocsSince)return;if(document.visibilityState==='hidden')return;if(Date.now()-LASTP<20000)return;PULL=true;LASTP=Date.now();
+ /* 11-06 망령 「제작기 카드에서 회복」: 제작기에서 회복(pcond src 'maker')한 포켓몬을 방 시트(로스터)에도 — GM 화면만, pullMaker 와 같은 때 */
+ let PCP=false;
+ async function pullCond(){if(PCP||A().ST.role!=='gm'||!A().ST.room||!window.OM_STORE||!window.OM_STORE.makerDocsSince)return;PCP=true;
+  try{const since=A().ST.state.pcSeen||null;const rows=await window.OM_STORE.makerDocsSince('pcond',since);if(!rows.length)return;const R=(A().ST.state.roster||{}).mons||{};const ops=[];const names=[];
+   for(const r of rows){const d=r.data||{};const rm=R[r.id];if(!rm||d.src!=='maker'||!(+d.at>(+rm.pcAt||0)))continue;const P=['roster','mons',r.id];
+    ops.push([[...P,'sheetHp'],d.hp==null?null:Math.max(0,Math.min(rm.hp.max,+d.hp||0))],[[...P,'sheetStates'],d.st&&Object.keys(d.st).length?d.st:null],[[...P,'pcAt'],+d.at]);names.push(rm.name||r.id)}
+   const at=maxAt(rows);if(at)ops.push([['pcSeen'],at]);if(ops.length)await A().setMany(ops);
+   if(names.length){A().toast(`제작기에서 회복한 ${names.length}체를 시트에 반영했다`);A().sysLog(`【제작기】 회복 반영 — ${names.join(', ')}`,'sys')}}
+  catch(e){console.warn('제작기 HP · 상태 반영',e)}finally{PCP=false}}
+ async function pullMaker(){pullCond();if(PULL||A().ST.role!=='gm'||!A().ST.room||!window.OM_STORE||!window.OM_STORE.makerDocsSince)return;if(document.visibilityState==='hidden')return;if(Date.now()-LASTP<20000)return;PULL=true;LASTP=Date.now();
   try{const d0=A().ST.state.dbx||{};const since=d0.mvV?(d0.mkSeen||null):null;   /* 11-04: 기술(moves)을 받기 시작한 판 — 한 번은 전부 다시 받는다 */const rows=await window.OM_STORE.makerDocsSince('dbedit',since);if(!rows.length)return;
    const dbx=JSON.parse(JSON.stringify(A().ST.state.dbx||{}));const c=mergeMaker(dbx,rows,!since);dbx.mvV=1;const at=maxAt(rows);if(at)dbx.mkSeen=at;
    if(!c.n&&!c.ns&&!c.nr&&since){await A().set(['dbx','mkSeen'],dbx.mkSeen);return}
