@@ -2395,7 +2395,18 @@ window.OM_BATTLE_UI=(()=>{
  function atkMul(r,md){const ck=id=>{const el=md?$('#'+id,md):document.getElementById(id);return !!(el&&el.checked)};return (r.stab?(ck('aadapt')?2:1.5):1)*(ck('abelt')&&r.eff&&r.eff.value>1?1.2:1)}
  /* 10-26 망령: 이번 턴 공격을 지시받았나 — 공개된 지시(cmds[tid].mons[mid])의 기술이 변화기가 아니면. 교대 · 지시 없음(행동불능 등) · 변화기는 「지시받지 않음」 → 【수세】 · 【공세】 판정에 쓴다 */
  function ordAtk(b,m){if(!b||!m)return false;const x=(((b.cmds||{})[m.tid]||{}).mons||{})[m.id];if(!x||x.move==null||x.move===''||x.move==='switch')return false;const mv=MVS(m)[+x.move];return !!mv&&mv.cat!=='변화'}
- function moveQuery(atk,def,mv,moveTypes,eff,single){const b=ctx().b;return {types:moveTypes,cat:mv.cat,eff:eff,single:single,stab:!!(eff&&eff.stab),tags:String(mv.tag||'').split(/[,/·\s]+/).filter(x=>x&&x!=='-'),pow:+mv.pow||0,atkAtk:atk===def?ordAtk(b,atk):true,defAtk:atk===def?ordAtk(b,def):ordAtk(b,def)}}
+ /* 11-06 망령 「『HP : 1/2 이하』일 때 『우드혼』을 내보낼 때 【수세】가 적용된다」: 공격을 지시받아도 그 기술이면 자신의 【수세】 효과가 켜진 채 (fx atkKeep · defKeep — 상대의 【공세】 판정은 그대로).
+    구문 「수세유지 [기술:우드혼] [타입:풀] [물리|특수] [HP≤1/2]」(sp keepdef) 또는 특성 · 포텐셜 · 소지품 효과 글 (제작기 potlint KEEPDEF_RE 와 같은 꼴) */
+ const KEEPDEF_RE=/(?:「HP\s*:\s*(\d+\s*\/\s*\d+)\s*이하」\s*일\s*때\s*,?\s*)?((?:「[^」]+」\s*(?:[,·]|과|와)?\s*)+)(?:기술)?\s*(?:을|를)?\s*(?:내보낼|사용할|쓸)\s*때(?:에도|도)?\s*,?\s*【수세】\s*(?:가|이|를|도)?\s*(?:적용|발동|유지)/;
+ function keepDefL(m){const L=spL(m,'keepdef').map(e=>({mv:e.mv||[],types:e.types||[],cat:e.cat||'',hp:e.hp||''}));
+  const tx=[m.ability?slotEff(m,'trait',m.ability):'',...potSrc(m).map(p=>p&&p.eff),m.item?slotEff(m,'item',m.item):'',...(m.items2||[]).map(x=>x&&x.itemEff)];
+  for(const t of tx){const r=String(t||'').replace(/<br\s*\/?>/g,'\n').match(KEEPDEF_RE);if(!r)continue;const ks=[...r[2].matchAll(/「([^」]+)」/g)].map(x=>x[1].trim()).filter(k=>k&&!/^HP\s*:/.test(k));
+   const isTy=k=>{const e=S().typeEn(k);return !!e&&e!==k&&/^[A-Z]/.test(e)};const cat=ks.find(k=>/^(물리|특수)기?$/.test(k))||'';L.push({mv:ks.filter(k=>!isTy(k)&&k!==cat),types:ks.filter(isTy).map(k=>S().typeEn(k)),cat:cat.replace(/기$/,''),hp:r[1]?r[1].replace(/\s+/g,''):''})}
+  return L}
+ function keepDef(m,mv,tys){if(!m||!mv||mv.cat==='변화')return false;const L=keepDefL(m);if(!L.length)return false;const T=tys&&tys.length?tys:mvTysRaw(mv);const nm=String(mv.name||'').trim();
+  return L.some(e=>{if(e.mv.length&&!e.mv.includes(nm))return false;if(e.types.length&&!T.some(t=>e.types.includes(t)))return false;if(e.cat&&mv.cat!==e.cat)return false;if(e.hp){const [a,d]=e.hp.split('/').map(Number);if(!(d>0&&m.hp&&m.hp.cur*d<=m.hp.max*a))return false}return true})}
+ function ordMv(b,m){if(!b||!m)return null;const x=(((b.cmds||{})[m.tid]||{}).mons||{})[m.id];if(!x||x.move==null||x.move===''||x.move==='switch')return null;return MVS(m)[+x.move]||null}
+ function moveQuery(atk,def,mv,moveTypes,eff,single){const b=ctx().b;return {types:moveTypes,cat:mv.cat,eff:eff,single:single,stab:!!(eff&&eff.stab),tags:String(mv.tag||'').split(/[,/·\s]+/).filter(x=>x&&x!=='-'),pow:+mv.pow||0,atkAtk:atk===def?ordAtk(b,atk):true,defAtk:atk===def?ordAtk(b,def):ordAtk(b,def),atkKeep:keepDef(atk,atk===def?ordMv(b,atk):mv,moveTypes),defKeep:keepDef(def,ordMv(b,def))}}
  /* 컷인에 쓸 트레이너 그림: 표정(스탠딩) → 시트 그림 */
  function trainerImg(t){if(!t)return '';const st=(t.stands||[]);const a=st[+t.standActive||0]||st[0];return (a&&a.src)||t.image||''}
  const potKey=n=>String(n||'').replace(/『|』/g,'').trim();
