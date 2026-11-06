@@ -853,10 +853,12 @@ window.OM_BATTLE_UI=(()=>{
   {const ok=((b.cmds||{})[m.tid]||{}).ok;if(!cm&&ok&&ok.key===turnKey(b)&&ok.m&&ok.m[m.id]&&ok.m[m.id].pi)return true}   /* 지시를 못 읽는 화면은 순서 열쇠의 선행 표시로 본다 */
   return await askYes(`⚠ 『${n}』 은(는) 【선행】 포텐셜인데 이번 턴에 선행 입력하지 않았다.\n원칙은 지시 단계에서 선행 입력 → 턴 개시 뒤 발동.\n그래도 강제로 발동할까?`,'강제 발동','그만')}
  /* 11-06 망령 「배틀 비우기 할 때 해당 로그 지울지도 고르게」: 이 배틀 구역(시합 개시 ~ 지금)을 닫고, 고르면 채팅 창에서 숨긴다 (GM 은 rp.logHide, PL 은 자기 pub 칸 — 기록은 남아 GM 이 로그 비우기 창에서 되돌린다) */
- async function clearBattleLog(b){try{const ST=A().ST;const S=(A().logSecs?A().logSecs():[]).filter(x=>x.k==='battle');let sec=S.length?S[S.length-1]:null;if(sec&&sec.z)sec=null;
-  let a=sec?sec.a:0;if(!a&&+b.log0>0&&b.started)a=+b.log0+1;if(!a)return;const z=+ST.lastLogId||0;if(z<a)return;const n=(ST.log||[]).filter(r=>r.id>=a&&r.id<=z).length;
+ async function clearBattleLog(b){try{const ST=A().ST;const S=(A().logSecs?A().logSecs():[]).filter(x=>x.k==='battle');let sec=S.length?S[S.length-1]:null;
+  /* 11-06 망령 「전당 비우기로 지울 때 · 휴대폰에서 고르지를 못한다」: 시합이 끝나 「배틀 종료」로 구역이 이미 닫혔으면 묻지 않고 넘어갔다 — 닫힌 마지막 배틀 구역도 (이미 숨긴 것만 빼고) 묻는다 */
+  const H=A().logHides?A().logHides():[];if(sec&&H.some(h=>h.a===sec.a))sec=null;
+  let a=sec?sec.a:0;if(!a&&+b.log0>0)a=+b.log0+1;if(!a)return;const z=sec&&sec.z?sec.z:+ST.lastLogId||0;if(z<a)return;const n=(ST.log||[]).filter(r=>r.id>=a&&r.id<=z).length;
   const hide=await askYes(`이 배틀 로그${n?` ${n}줄`:''}도 채팅 창에서 지울까?\n(기록은 남아서 「💾 로그」로 받을 수 있고, GM 이 「로그 비우기」에서 다시 보이게 할 수 있다)`,'로그도 지운다','로그는 남긴다');
-  await A().sysLog('배틀을 비웠다','sys',{sec:{k:'battle',op:'close'}});
+  if(!(sec&&sec.z))await A().sysLog('배틀을 비웠다','sys',{sec:{k:'battle',op:'close'}});
   if(hide){if(A().ST.role==='gm')await A().set(['rp','logHide',String(a)],z);else if(ST.seat)await A().set(['pub',ST.seat,'logHide',String(a)],z)}}catch(e){console.warn('[배틀 로그 구역]',e)}}
  async function action(d,val){
   const c=ctx();const b=c.b;
