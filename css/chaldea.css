@@ -171,3 +171,9 @@ html[data-vt="cd"] body::before{content:"";position:fixed;right:3%;bottom:4%;wid
   from{opacity:.06;filter:brightness(1.1) drop-shadow(0 0 0 rgba(255,255,255,0))}
   to{opacity:.5;filter:brightness(1.2) drop-shadow(0 0 6px rgba(255,255,255,.7)) drop-shadow(0 0 22px rgba(255,255,255,.4)) drop-shadow(0 0 44px rgba(200,240,255,.22))}}
 @media (prefers-reduced-motion:reduce){html[data-vt="cd"] body::before{animation:none;opacity:.25}}
+
+/* 11-06 망령 「칼데아 테마 기준으로 GM의 채팅이 너무 안 보인다」: 내 말풍선(.msg.me)은 바탕이 시안(--red)인데 글자가 흰색 · 분홍빛이라 안 읽혔다 → 글자를 남흑으로 */
+html[data-vt="cd"] .msg.me .bub{color:#06121f;font-weight:500;box-shadow:2px 2px 0 #fff,0 0 12px rgba(95,210,255,.35)}
+html[data-vt="cd"] .msg.me .bub .who{color:#0b3a66;font-weight:700}
+html[data-vt="cd"] .msg.me.narr .bub{color:#0d2f52}
+html[data-vt="cd"] .msg.me .bub a{color:#06306b}
