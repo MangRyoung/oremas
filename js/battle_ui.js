@@ -470,10 +470,10 @@ window.OM_BATTLE_UI=(()=>{
   const mates=Object.values(b.mons||{}).filter(x=>x&&x.tid===m.tid);const aw=mates.find(x=>x.awaken==='free');if(!aw||(aw.entry&&aw.hp&&aw.hp.cur>0))return null;
   const nm=x=>String(x||'').replace(/『|』/g,'').trim();const names=new Set();for(const x of mates)for(const p of potSrc(x))if(p&&/역할/.test(String(p.kind||'')))names.add(nm(p.name));for(const x of mates)if(x.role)names.add(nm(x.role));
   return {aw,names,srcs:new Set(mates.map(x=>x.name))}}
- /* 11-01 망령 「A-1 도 포텐셜 발동하지 않는다가 아니라 행동불능으로」: 필드 위 다른 아군 중 지정 타입이 한 체도 없으면 각성 (대가) 포켓몬은 행동 불능 — 이유 글을 돌려준다 */
+ /* 11-01 망령 「A-1 도 포텐셜 발동하지 않는다가 아니라 행동불능으로」: 필드 위 다른 아군(같은 진영 · 다른 PC 포켓몬 포함) 중 지정 타입이 한 체도 없으면 각성 (대가) 포켓몬은 행동 불능 — 이유 글을 돌려준다 */
  function misagA1(b,m){const t=((b&&b.trainers)||{})[m&&m.tid];const M=t&&t.misag;if(!M||!M.type||m.awaken!=='free'||!(M.items||[]).some(x=>x.key==='A-1'))return '';
   const onF=x=>!!(x&&x.entry&&x.hp&&x.hp.cur>0);const hasType=(x,ko)=>{const en=window.OM_STATS&&window.OM_STATS.typeEn?window.OM_STATS.typeEn(ko):ko;if(teraOn(x))return x.teraEn===en;return (x.types||[]).includes(en)||(x.typesKo||[]).includes(ko)};   /* 테라스탈이면 타입 4 만 (11-02) */
-  const others=Object.values(b.mons||{}).filter(x=>x&&x.tid===m.tid&&x.id!==m.id&&onF(x));return others.some(x=>hasType(x,M.type))?'':`각성체 대가 A-1 — 필드 위 다른 아군 중 ${M.type} 타입이 없어 행동 불능`}
+  const others=Object.values(b.mons||{}).filter(x=>x&&x.side===m.side&&x.id!==m.id&&onF(x));   /* 11-06 망령 「2+2+2 룰에선 다른 PC 포켓몬도 센다 · 필드에 나와 있다면」: 같은 진영 아군 전부 (예전: 같은 트레이너만) */return others.some(x=>hasType(x,M.type))?'':`각성체 대가 A-1 — 필드 위 다른 아군 중 ${M.type} 타입이 없어 행동 불능`}
  /* 고유 포텐셜 = 트레이너 것. 횟수는 battle.trainers[tid].uUses */
  function uniqList(t){return ((t&&t.unique)||[]).filter(u=>u&&u.name).map(u=>{const L=limOf(u,t.uUses||{},t.uTurn||{});return {p:u,kind:'고유',max:L.max,left:L.left,mmax:L.mmax,per:L.per}})}
  function potList(m){const out=[];const src=potSrc(m);
