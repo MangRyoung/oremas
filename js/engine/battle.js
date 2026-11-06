@@ -123,7 +123,10 @@ window.OM_BATTLE=(()=>{
    if(t==='Shadow'||t==='Wild')return 2;if(t==='God')return 1;
    const sc=SC(t);
    if(t==='Ground'&&(o.floating||has(def,'MagnetRise')||has(def,'Telekinesis'))&&!sc.some(e=>e.float))return 0;
-   if(sc.length){const ign=new Set(sc.flatMap(e=>e.vs||[]));const dt=defTypes.filter(x=>!(ign.has(x)&&S().effect(t,[x])===0));return dt.length?S().effect(t,dt):1}
+   /* 11-06 망령 「미라클아이 맞은 쪽 — 에스퍼가 악에 무효」: 받는 쪽 상태 미라클아이 = 에스퍼 기술이 악에 맞는다 · 꿰뚫어보기 = 노말 · 격투가 고스트에 · 냄새구별 = 고스트가 노말에 (그 무효만 뺀다) */
+   const SEE=[];if(t==='Psychic'&&has(def,'MiracleEye'))SEE.push('Dark');if((t==='Normal'||t==='Fighting')&&has(def,'Foresight'))SEE.push('Ghost');if(t==='Ghost'&&has(def,'OdorSleuth'))SEE.push('Normal');
+   if(SEE.length&&!sc.length){const dt=defTypes.filter(x=>!(SEE.includes(x)&&S().effect(t,[x])===0));return dt.length?S().effect(t,dt):1}
+   if(sc.length){const ign=new Set([...sc.flatMap(e=>e.vs||[]),...SEE]);const dt=defTypes.filter(x=>!(ign.has(x)&&S().effect(t,[x])===0));return dt.length?S().effect(t,dt):1}
    return S().effect(t,defTypes)};
   const vals=moveTypes.filter(t=>t&&t!=='-').map(t=>({type:t,v:one(t),stab:(o.atkTypes||[]).includes(t)}));
   if(!vals.length)return {value:1,type:'-',stab:false,all:vals};
