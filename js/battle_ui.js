@@ -235,9 +235,16 @@ window.OM_BATTLE_UI=(()=>{
  function hasTera(m){return !!(m&&m.teraEn&&m.teraEn!=='-')}
  function teraBlastL(m,a){if(!teraOn(m)||!a.some(x=>x&&/^테라버스트/.test(String(x.name||''))))return a;let ph=false;try{ph=B().statValue(m,'attack').value>B().statValue(m,'specialattack').value}catch(e){}
   return a.map(x=>x&&/^테라버스트/.test(String(x.name||''))?Object.assign({},x,{type:S().typeKo(m.teraEn),typeEn:m.teraEn,cat:ph?'물리':'특수',atk:ph?'공격':'특공',def:ph?'방어':'특방',teraB:1}):x)}
- function extMoves(m){if(!m||!m.tid)return [];const b=(A().ST.state||{}).battle||{};const t=(b.trainers||{})[m.tid];const L=t&&Array.isArray(t.ext)?t.ext:[];if(!L.length)return [];const U=t.extUse||{};const out=[];
+ /* 11-07 지마 「기술머신을 제작기 DB 에 넣었는데 웹툴에서 안 된다」: 소지품 효과 글 「「기능 확장 : 기술」을 내보낼 수 있다」(기술머신 : …) — 들고 있으면 그 기술을 기술 목록 맨 뒤에.
+    적용하면 그 소지품이 소모품이면(제작기 「소모」 O) 칸에서 빼고 itemUsed 에 남긴다 */
+ const EXT_IT_RE=/「\s*기능\s*확장\s*:\s*([^」]+?)\s*」(?:을|를)?\s*내보낼\s*수\s*있다/g;
+ function itemExtMoves(m){if(!m)return [];const out=[];const IT=(DB().items)||{};const slots=[{k:0,item:m.item,eff:m.itemEff}].concat((m.items2||[]).map((x,i)=>({k:i+1,item:x&&x.item,eff:x&&x.itemEff})));
+  for(const sl of slots){const nm=String(sl.item||'').replace(/[『』]/g,'').trim();if(!nm)continue;const db=IT[nm]||{};const eff=String(sl.eff||db.eff||'');if(!/기능\s*확장/.test(eff))continue;const once=/^소모품/.test(String(db.eff||''))||/^소모품/.test(eff);
+   for(const mm of eff.matchAll(EXT_IT_RE)){const mv=mm[1].trim();const base=window.OM_IMPORT?window.OM_IMPORT.move(mv,false):{name:mv,cat:'',pow:0,acc:0,range:'1체',type:'-',typeEn:'-'};out.push(Object.assign({},base,{ext:{item:nm,k:sl.k,once,lim:0,used:0,left:null,kind:'act',src:nm}}))}}
+  return out}
+ function extMoves(m){if(!m||!m.tid)return [];const IX=itemExtMoves(m);const b=(A().ST.state||{}).battle||{};const t=(b.trainers||{})[m.tid];const L=t&&Array.isArray(t.ext)?t.ext:[];if(!L.length)return IX;const U=t.extUse||{};const out=[];
   L.forEach((e,i)=>{if(!e||!e.mv||(e.who&&e.who!==m.id))return;const base=window.OM_IMPORT?window.OM_IMPORT.move(e.mv,false):{name:e.mv,cat:'',pow:0,acc:0,range:'1체',type:'-',typeEn:'-'};const lim=+e.lim||0,used=+U[i]||0;
-   out.push(Object.assign({},base,{ext:{i,lim,used,left:lim?Math.max(0,lim-used):null,kind:e.kind==='extra'?'extra':'act',src:e.src||'',tid:m.tid}}))});return out}
+   out.push(Object.assign({},base,{ext:{i,lim,used,left:lim?Math.max(0,lim-used):null,kind:e.kind==='extra'?'extra':'act',src:e.src||'',tid:m.tid}}))});return out.concat(IX)}
  function extGone(mv){return !!(mv&&mv.ext&&mv.ext.lim&&mv.ext.left<=0)}
  let SECX=1;   /* 11-03 「추가효과 ×N」: 공격 창이 지금 기술에 맞춰 정한다 */
  function rollGroup(atk,def,g){let n=g.n;if(g.sec&&atk.ability==='하늘의은총')n=Math.min(10,n*2);if(g.sec&&SECX!==1)n=Math.min(10,Math.round(n*SECX*10)/10);const what=g.label;
@@ -2781,6 +2788,7 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【[^】]*】\s
    if(RESULT.abNote)lines.push(RESULT.abNote);
    {const a=nb.mons[mid];if(a&&a.charge&&RESULT.mv&&a.charge.mv===RESULT.mv.name&&+a.charge.turn<(+nb.turn||0)){const vk=chargeVanish(RESULT.mv);if(vk&&a.states&&a.states[vk]){delete a.states[vk]}delete a.charge;lines.push(`${a.name} 모은 힘을 내보냈다 — 『${RESULT.mv.name}』${vk?' · 「'+((((DB().states||{}).st||{})[vk]||{}).ko||vk)+'」 해제':''}`)}}
    /* 10-27 망령: 트레이너 「기능 확장」 기술 — 적용하면 횟수 1 */
+   {const X=(RESULT.mv||{}).ext;const am=nb.mons[mid];if(X&&X.item&&am){const sl=X.k?(am.items2||[])[X.k-1]:am;const nI=v=>String(v||'').replace(/[『』]/g,'').trim();if(X.once&&sl&&nI(sl.item)===X.item){am.itemUsed=Object.assign({name:sl.item,eff:sl.itemEff||'',turn:+nb.turn||0},X.k?{k:X.k}:{});if(FX())FX().removeByName(am,sl.item);sl.item='';sl.itemEff='';if(X.k)delete sl.itemOwn;lines.push(`【기능 확장】 ${am.name} 「${X.item}」 → 「${RESULT.mv.name}」 — 소지품을 다 썼다`)}else lines.push(`【기능 확장】 ${am.name} 「${X.item}」 → 「${RESULT.mv.name}」`)}}
    {const X=(RESULT.mv||{}).ext;const tt=X&&(nb.trainers||{})[X.tid];if(tt){const U=Object.assign({},tt.extUse||{});U[X.i]=(+U[X.i]||0)+1;tt.extUse=U;lines.push(`【기능 확장】 ${tt.name}${X.src?' 『'+X.src.replace(/[『』]/g,'')+'』':''} → ${atk.name} 「${RESULT.mv.name}」${X.kind==='extra'?' (추가 행동)':''}${X.lim?` 【${Math.max(0,X.lim-U[X.i])}/${X.lim}】`:''}`)}}
    /* 「기술을 내보낼 때마다」 줄어드는 상태 (prog:'move' — 도발·앙코르·사슬묶기·침묵·소란피기·난동부리기 … + 얼음). 잠듦·혼란·얼음은 행동 판정을 돌렸으면 거기서 이미 줄었다 */
    /* 충전·가열·냉각·장전: 그 타입 기술로 대미지를 줬으면 상태를 쓴다 */
