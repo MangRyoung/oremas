@@ -120,10 +120,11 @@ window.OM_ITEMS=(()=>{
 
  /* ----- 11-06 망령 「소지품 기술 전부」: 남의 소지품을 건드리는 기술 — 기술 이름이 아니라 효과 글로 고른다 (같은 글을 쓰는 커스텀 기술도)
     eat 벌레먹기 · 쪼아대기 / knock 탁쳐서떨구기 / steal 도둑질 · 탐내기 / swap 트릭 · 바꿔치기 / fling 내던지기 ----- */
- const MV_RE=[['eat',/「나무열매」를\s*먹는다/],['knock',/「소지품」을\s*전부\s*파괴/],['burnall',/「소지품」을\s*모두\s*파괴/],['burn',/대상의\s*「소지품」을\s*파괴/],['steal',/「소지품」을\s*강탈/],['swap',/서로의\s*「소지품」을\s*뒤바꾼다/],['fling',/자신의\s*「소지품」을\s*소비하여\s*공격/],['give',/자신의\s*「소지품」을\s*대상에게\s*건네/]];
+ const MV_RE=[['eat',/「나무열매」를\s*먹는다/],['knock',/「소지품」을\s*전부\s*파괴/],['burnall',/「소지품」을\s*모두\s*파괴/],['rob',/「소지품」을\s*파괴\s*\(\s*약탈\s*\)/],['burn',/대상의\s*「소지품」을\s*파괴/],['steal',/「소지품」을\s*강탈/],['swap',/서로의\s*「소지품」을\s*뒤바꾼다/],['fling',/자신의\s*「소지품」을\s*소비하여\s*공격/],['give',/자신의\s*「소지품」을\s*대상에게\s*건네/]];
  /* 11-08 망령 「1~3 가로」: burn 불태우기 · 황금의바람 · 녹슨바람 · 검은우레 · 신의주먹 · 홍련완 · 패왕권 · 고블린의무리 (한 칸) / burnall 부식가스 (모든 칸) / give 기프트패스.
     파괴된 소지품도 빼앗긴 것처럼 itemTaken (how 'burn') — 배틀 한정 · 시트 그대로 (망령 11-08 「가」) */
- const KIND_KO={eat:'먹기',knock:'떨구기',burn:'파괴',burnall:'모두 파괴',steal:'강탈',swap:'맞바꾸기',fling:'내던지기',give:'건네주기',set:'소지품 지정'};
+ const KIND_KO={eat:'먹기',knock:'떨구기',burn:'파괴',burnall:'모두 파괴',steal:'강탈',swap:'맞바꾸기',fling:'내던지기',give:'건네주기',set:'소지품 지정',rob:'파괴(약탈)'};
+ /* 11-08 망령 「파괴(약탈)은 빈손이면 뺏고, 뺏을 수 없으면 파괴 — 파괴+약탈 합친 상위 개념」: rob */
  const hasItemOp=ops=>(ops||[]).some(o=>o&&(o.k==='item'||(o.k==='choice'&&(o.opts||[]).some(x=>hasItemOp(x.ops)))));
  /* 공격 창 미리보기가 대상마다 · 입력마다 부르므로 3초 동안 기억 (rm 은 레디메이드 전체를 합쳐서 한 번에 ~0.4ms) */
  const OWNC=new Map();
@@ -179,6 +180,8 @@ window.OM_ITEMS=(()=>{
   const H2=q.head?`【소지품】 ${q.head} —`:null;const hd=H2||head;   /* 특성 · 구문이 부를 때 머리말 */
   /* 이번 공격에 먼저 반응할 소지품(반감열매 · HP 가득 기합의띠)은 떼지 않는다 — 받는 쪽 HP 창이 쓴다 */
   const keepOf=(d,h)=>{const s=new Set();if(!h.dmg)return s;const ef=(q.eff||{})[d.id];const rs=resist(d,{mt:q.mt||[],cat:q.cat,eff:ef==null?1:ef,multi:!!q.multi});if(rs)s.add(rs);const sh=sash(d);if(sh&&sh.sure&&(+h.final||0)>=d.hp.cur)s.add(sh.name);return s};
+  if(kind==='rob'){for(const h of hits||[]){const d=b.mons[h.id];if(!d||!h.hit||d.id===aid)continue;const can=!nm(a.item)&&a.hp.cur>0&&held(d).some(k=>!locked(d,k));
+    const R=moveFx(b,aid,can?'steal':'burn',[h],q);L.push(...R.lines);if(can&&!nm(a.item)&&!sticky(d)){const R2=moveFx(b,aid,'burn',[h],q);L.push(...R2.lines)}}return {lines:L,st:ST}}   /* 빼앗지 못했으면(점착 말고 · 이번 공격에 먼저 쓰일 것 등) 파괴로 */
   if(kind==='fling'){const n=nm(a.item);if(!n)return {lines:L,st:ST};const fr=slotRule(a,0)||rule(n);use(a,[],b,0);L.push(`${hd} 「${n}」${J(n,'을','를')} 던졌다 (다 써서 없어졌다)`);
    const h=hits.find(x=>x.hit&&x.dmg);const d=h&&b.mons[h.id];if(!d)return {lines:L,st:ST};
    if(sub(d)){L.push(`${d.name} 대역인형이 받아 「${n}」 효과는 없다`);return {lines:L,st:ST}}
@@ -217,16 +220,16 @@ window.OM_ITEMS=(()=>{
 
  /* ----- 11-08 망령 「1~3」: 소지품을 건드리는 특성 — 공격 적용 뒤 (battle_ui 가 moveFx 다음에 부른다)
     공격 쪽: 「매지션」(명중한 포켓몬의 소지품을 약탈) · 「파괴의논리」(명중 시 파괴) / 맞은 쪽: 「나쁜손버릇」(공격한 포켓몬의 소지품을 약탈)
-    매지션 · 나쁜손버릇 효과 글 「파괴(약탈)」은 약탈로 읽는다 (빈손일 때만 · 점착이 막는다). 대미지로 맞은 것만, 쓰러진 쪽은 하지 않는다 ----- */
+    매지션 · 나쁜손버릇 「파괴(약탈)」 = 빈손이면 빼앗고, 빼앗을 수 없으면 파괴 (망령 11-08) · 점착이 막는다. 대미지로 맞은 것만, 쓰러진 쪽은 하지 않는다 ----- */
  function traitFx(b,aid,hits,q){const L=[],ST=[];const a=b&&b.mons[aid];if(!a)return {lines:L,st:ST};q=q||{};const dh=(hits||[]).filter(h=>h&&h.hit&&h.dmg&&h.id!==aid);if(!dh.length)return {lines:L,st:ST};
   const run=(who,kind,hs,tn)=>{const R=moveFx(b,who.id,kind,hs,Object.assign({},q,{head:`${who.name} 「${tn}」`}));L.push(...R.lines)};
   if(a.hp.cur>0&&abil(a,/^파괴의논리$/))run(a,'burn',dh,'파괴의논리');
-  if(a.hp.cur>0&&abil(a,/^매지션$/)&&!nm(a.item)){const h=dh.find(h=>{const d=b.mons[h.id];return d&&held(d).length});if(h)run(a,'steal',[h],'매지션')}
-  for(const h of dh){const d=b.mons[h.id];if(!d||d.hp.cur<=0||d.side===a.side)continue;if(!abil(d,/^나쁜손버릇$/)||nm(d.item)||!held(a).length)continue;const R=moveFx(b,d.id,'steal',[{id:a.id,hit:true,dmg:true,final:0}],Object.assign({},q,{head:`${d.name} 「나쁜손버릇」`,force:true,eff:{},mt:[]}));L.push(...R.lines)}
+  if(a.hp.cur>0&&abil(a,/^매지션$/)){const h=dh.find(h=>{const d=b.mons[h.id];return d&&held(d).length});if(h)run(a,'rob',[h],'매지션')}   /* 파괴(약탈): 빈손이면 빼앗고, 못 빼앗으면 파괴 */
+  for(const h of dh){const d=b.mons[h.id];if(!d||d.hp.cur<=0||d.side===a.side)continue;if(!abil(d,/^나쁜손버릇$/)||!held(a).length)continue;const R=moveFx(b,d.id,'rob',[{id:a.id,hit:true,dmg:true,final:0}],Object.assign({},q,{head:`${d.name} 「나쁜손버릇」`,force:true,eff:{},mt:[]}));L.push(...R.lines)}
   return {lines:L,st:ST}}
  /* ----- 11-08 효과 엔진(fx.js) 「소지품」 구문: op {k:'item', mode, tgt, name} — fx.js 가 대상을 골라 여기로 넘긴다
     mode break(한 칸 파괴) · breakall(모두) · steal(강탈 — 자신이 받음) · give(자신의 것을 건네줌) · swap(맞바꾸기) · set(「소지품 : 이름」으로 만듦) */
- function itemOp(b,self,ts,op,name){const kind={break:'burn',breakall:'burnall',steal:'steal',give:'give',swap:'swap',set:'set'}[op&&op.mode]||'';if(!kind||!self)return [];
+ function itemOp(b,self,ts,op,name){const kind={break:'burn',breakall:'burnall',rob:'rob',steal:'steal',give:'give',swap:'swap',set:'set'}[op&&op.mode]||'';if(!kind||!self)return [];
   const hits=(ts||[]).filter(m=>m&&m.id!==self.id).map(m=>({id:m.id,hit:true,dmg:true,final:0}));if(!hits.length&&kind!=='set')return [`『${name||'효과'}』 소지품 — 대상이 없다`];
   if(kind==='set'&&(ts||[]).some(m=>m&&m.id===self.id))hits.push({id:self.id,hit:true,dmg:true,final:0,self:1});
   const R=moveFx(b,self.id,kind,hits,{force:true,head:`${self.name} 『${name||'효과'}』`,item:op.name||'',turn:+b.turn||0,eff:{}});return R.lines}
