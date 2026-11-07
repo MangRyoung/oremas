@@ -2398,7 +2398,7 @@ window.OM_BATTLE_UI=(()=>{
   if(m.ability)list.push(['trait',m.ability]);if(m.item)list.push(['item',m.item]);for(const p of [...(m.pots||[]),...(m.excl?[m.excl]:[]),...(m.exclX||[])])if(p&&p.name&&!p.ph)list.push(['pot',p.name]);
   /* 11-03 감우: 트레이너 고유 포텐셜도 같은 길로 — 【등장】 · 【상시】 이고 구문이 있으면 그 트레이너의 포켓몬이 나올 때 건다 (autoOf 가 m.tid 로 고유 구문을 읽는다). 횟수(【N/시】)가 있는 고유는 손으로(선행 · 임의 발동) */
   {const t=(c.b.trainers||{})[m.tid];for(const u of ((t&&t.unique)||[]))if(u&&u.name&&!/【\s*\d+\s*\/\s*(시|턴)\s*】/.test(String(u.eff||''))&&!list.some(([k,n])=>k==='pot'&&n===u.name))list.push(['pot',u.name])}
-  /* 11-07 망령 「등장 때 저절로 뜨는 상시류 로그는 GM 만 보이게 + 「출력」 버튼」: 상시 · 지속형으로 걸린 줄(아래 noRoll 길)과 【N/시】 안내는 GM 귓속말(gmPriv)로. 【등장】 계기 효과 · 아군 빈사로 걸린 것(passiveOnly)은 그대로 공개 */const GP=o2.passiveOnly?0:1;
+  /* 11-07 망령 「등장 때 저절로 뜨는 상시류 로그는 본인(포켓몬 주인)만 보이게 + 「출력」 버튼」: 상시 · 지속형으로 걸린 줄(아래 noRoll 길)과 【N/시】 안내는 주인 귓속말(gmPriv — 이름은 예전 그대로, 주인이 없으면 GM)로. 【등장】 계기 효과 · 아군 빈사로 걸린 것(passiveOnly)은 그대로 공개 */const GP=o2.passiveOnly?0:1;
   const MANL=[];for(const [kind,name] of list){const a=FX().autoOf(m,kind,name);if(!a||!a.ops||!a.ops.length||a.manual)continue;if(limManual(m,kind,name,slotEff(m,kind,name)||a.text)){if(!MANL.includes(name))MANL.push(name);continue}/* 시트에 직접 쓴 구문은 글이 없으니 그 칸의 효과 글에서 【등장】/【상시】 를 읽는다 */const tm=FX().timing(a.text||slotEff(m,kind,name)||'');
    const etx2=a.text||slotEff(m,kind,name)||'';
    /* 10-26 망령: 표시 없는 상시 특성 · 포텐셜 (테크니션 · 적응력 · 철주먹 · 멀티스케일 …) — 지속형 구문뿐이고 계기 말(받았을 때 · 턴 종료 …)이 없으면 등장 때 건다.
@@ -2413,7 +2413,7 @@ window.OM_BATTLE_UI=(()=>{
    {const hx=String(etx2).split(/[②③④⑤]/)[0].match(/【등장\s*\(([^)]+)\)】/);if(hx&&!tm.entry&&!(a.ops.length===1&&a.ops[0].k==='choice')){if(!o2.passiveOnly&&o2.how&&hx[1].replace(/\s/g,'').includes(String(o2.how).replace(/\s/g,'')))await fireAuto(mid,kind,name,{quiet:true});continue}}
    if(tm.entry){if(!o2.passiveOnly)await fireAuto(mid,kind,name,{quiet:true})}
    else if(tm.passive||(!tm.turnEnd&&passiveOps(a.ops,etx2))){if(!condNow(ctx().b,ctx().b.mons[mid],a.ops))continue;const cur=ctx().b.mons[mid];if(cur&&(cur.fxDone||{})[name])continue;if(await fireAuto(mid,kind,name,{quiet:true,noRoll:true,gmPriv:GP})){const d=Object.assign({},(ctx().b.mons[mid]||{}).fxDone||{});d[name]=1;await A().set(['battle','mons',mid,'fxDone'],d)}}}
-  if(MANL.length&&!o2.passiveOnly)A().sysLog(`【포텐셜】 ${m.name} — ${MANL.map(n=>'『'+n+'』').join(' ')} 【N/시】 — 저절로 쓰지 않는다 (【자동】이 없다 · 쓸 때 카드 「발동」 · 선행 입력)`,'battle',{gmPriv:1})}
+  if(MANL.length&&!o2.passiveOnly)A().sysLog(`【포텐셜】 ${m.name} — ${MANL.map(n=>'『'+n+'』').join(' ')} 【N/시】 — 저절로 쓰지 않는다 (【자동】이 없다 · 쓸 때 카드 「발동」 · 선행 입력)`,'battle',{gmPriv:1,mid:m.id})}
  /* 포켓몬마다 급소 규칙 (10-23 망령 · 제작기 상세 조정): tbl 급소 표 · add 급소 랭크 + · guard 받을 때 방호 · dmg 급소 대미지 배율 · sure 언제나 급소 · never 급소에 맞지 않음 */
  const CRR=m=>(m&&m.critRule)||{};
  /* 10-24 망령: 지시 급소 보정 (고정식, 오레마스 룰) — 상대 · 야생과 상관없이 공격 쪽 트레이너 「지시」 랭크값 − 3 (A +1 · AA +2 · AAA +3 · S +4). 야생 포켓몬(트레이너 없음)은 0.
@@ -2755,7 +2755,7 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
     const sure=tySure||abSure||ck('asure')||md.dataset.wsure==='1'||AF.surehit||(phys&&AF.hitPhys)||(spec&&AF.hitSpec)||!!(FX()&&FX().nextOf&&FX().nextOf(atk).some(e=>e.sure));const IG=FX()?iuIgnore(atk,def):{};
     const sureMv=sure||!(+mv.acc);/* 10-26 망령 판정: 「필중기」는 『피해라!』『물러나!』로 피할 수 없다 */const autoMiss=((phys&&DF.dodgePhys)||(spec&&DF.dodgeSpec))&&!sureMv||AF.acc0;
     /* 사이코필드: 땅 위의 포켓몬은 상대의 선공 기술(우선도 +1 이상)을 받지 않는다 */
-    const psyBlock=f.terrain.type==='사이코필드'&&!sameT(def,atk)&&grd(def)&&(FX()?FX().prioOf(atk,mv):(+mv.prio||0))>0;
+    const psyBlock=f.terrain.type==='사이코필드'&&!sameT(def,atk)&&grd(def)&&(FX()?FX().prioOf(atk,mv):(+mv.prio||0))>=1;   /* 11-07 망령: 우선도 +0.5 같은 소수는 막지 않는다 — +1 이상만 */
     const itImm=OI()&&mv.cat!=='변화'?OI().immune(def,moveTypes):'';
     /* 와이드가드(「전체기 방어」): 그 진영이 받는 전체기(대상 2체 이상 · 범위가 전체인 기술)를 막는다 — 같은 편 전체기도 */const wideBlock=def!==atk&&+(((f.objects||{})[def.side]||{})['와이드가드']||0)>0&&(multiTarget||/전체|자신\s*이외/.test(String(mv.range||'')));
     const effPre=mv.cat==='변화'?null:B().effectiveness(moveTypes,def,{scrappy:spL(atk,'scrappy'),multiMode:+g('amulti').value,atkTypes,force:g('aforce').value===''?null:+g('aforce').value,floating:(def.states||{}).MagnetRise||(def.states||{}).Telekinesis||(FX()&&FX().floating(def))||HAS(def,'풍선')});
