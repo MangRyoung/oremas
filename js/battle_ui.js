@@ -2420,7 +2420,14 @@ window.OM_BATTLE_UI=(()=>{
      return {pub,atk:ak,grd:gd}}
  function atkMul(r,md){const ck=id=>{const el=md?$('#'+id,md):document.getElementById(id);return !!(el&&el.checked)};return (r.stab?(ck('aadapt')?2:1.5):1)*(ck('abelt')&&r.eff&&r.eff.value>1?1.2:1)}
  /* 10-26 망령: 이번 턴 공격을 지시받았나 — 공개된 지시(cmds[tid].mons[mid])의 기술이 변화기가 아니면. 교대 · 지시 없음(행동불능 등) · 변화기는 「지시받지 않음」 → 【수세】 · 【공세】 판정에 쓴다 */
- function ordAtk(b,m){if(!b||!m)return false;const x=(((b.cmds||{})[m.tid]||{}).mons||{})[m.id];if(!x||x.move==null||x.move===''||x.move==='switch')return false;const mv=MVS(m)[+x.move];return !!mv&&mv.cat!=='변화'}
+ /* 11-07 망령 「지시가 아직 공개 안 됐거나 지시 없이 공격 창을 열면 「지시 안 받음」으로 쳐서 【수세】가 켜진다 — 고쳐야지」:
+    지시를 ① 공개된 지시 → ② 이 화면에 있는 내 지시(CMD) → ③ 이번 턴에 실제로 낸 기술(lastMove) 순으로 찾는다. 어디에도 없으면 「모름」 — 공격한 것으로 친다(【수세】 꺼짐) */
+ let SECMD={key:'',m:{}};
+ async function secCmdRefresh(c,b){if(!c||!c.ST||!c.ST.secret)return;try{const rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd');const M={};for(const r of rows||[]){if(!cmdFresh(r,b))continue;const ms=(r.data||{}).mons||{};for(const id in ms)M[id]=ms[id]}SECMD={key:turnKey(b),m:M}}catch(e){}}
+ function ordX(b,m){const pub=(((b.cmds||{})[m.tid]||{}).mons||{})[m.id];if(pub&&pub.move!=null&&pub.move!=='')return pub;if(SECMD.key===turnKey(b)){const y=SECMD.m[m.id];if(y&&y.move!=null&&y.move!=='')return y}const loc=((CMD||{})[m.tid]||{}).mons;const l=loc&&loc[m.id];if(l&&l.move!=null&&l.move!=='')return l;return null}
+ function ordAtk(b,m){if(!b||!m)return false;const x=ordX(b,m);if(x){if(x.move==='switch')return false;const mv=MVS(m)[+x.move];return !!mv&&mv.cat!=='변화'}
+  const lm=m.lastMove;if(lm&&+lm.turn===(+b.turn||0)){const mv=MVS(m).find(v=>v&&v.name===lm.name);return !(mv&&mv.cat==='변화')}
+  return true}
  /* 11-06 망령 「『HP : 1/2 이하』일 때 『우드혼』을 내보낼 때 【수세】가 적용된다」: 공격을 지시받아도 그 기술이면 자신의 【수세】 효과가 켜진 채 (fx atkKeep · defKeep — 상대의 【공세】 판정은 그대로).
     구문 「수세유지 [기술:우드혼] [타입:풀] [물리|특수] [HP≤1/2]」(sp keepdef) 또는 특성 · 포텐셜 · 소지품 효과 글 (제작기 potlint KEEPDEF_RE 와 같은 꼴) */
  const KEEPDEF_RE=/(?:「HP\s*:\s*(\d+\s*\/\s*\d+)\s*이하」\s*일\s*때\s*,?\s*)?((?:「[^」]+」\s*(?:[,·]|과|와)?\s*)+)(?:기술)?\s*(?:을|를)?\s*(?:내보낼|사용할|쓸)\s*때(?:에도|도)?\s*,?\s*【수세】\s*(?:가|이|를|도)?\s*(?:적용|발동|유지)/;
@@ -2431,7 +2438,7 @@ window.OM_BATTLE_UI=(()=>{
   return L}
  function keepDef(m,mv,tys){if(!m||!mv||mv.cat==='변화')return false;const L=keepDefL(m);if(!L.length)return false;const T=tys&&tys.length?tys:mvTysRaw(mv);const nm=String(mv.name||'').trim();
   return L.some(e=>{if(e.mv.length&&!e.mv.includes(nm))return false;if(e.types.length&&!T.some(t=>e.types.includes(t)))return false;if(e.cat&&mv.cat!==e.cat)return false;if(e.hp){const [a,d]=e.hp.split('/').map(Number);if(!(d>0&&m.hp&&m.hp.cur*d<=m.hp.max*a))return false}return true})}
- function ordMv(b,m){if(!b||!m)return null;const x=(((b.cmds||{})[m.tid]||{}).mons||{})[m.id];if(!x||x.move==null||x.move===''||x.move==='switch')return null;return MVS(m)[+x.move]||null}
+ function ordMv(b,m){if(!b||!m)return null;const x=ordX(b,m);if(x){if(x.move==='switch')return null;return MVS(m)[+x.move]||null}const lm=m.lastMove;if(lm&&+lm.turn===(+b.turn||0))return MVS(m).find(v=>v&&v.name===lm.name)||null;return null}
  function moveQuery(atk,def,mv,moveTypes,eff,single){const b=ctx().b;return {types:moveTypes,cat:mv.cat,eff:eff,single:single,stab:!!(eff&&eff.stab),tags:String(mv.tag||'').split(/[,/·\s]+/).filter(x=>x&&x!=='-'),pow:+mv.pow||0,atkAtk:atk===def?ordAtk(b,atk):true,defAtk:atk===def?ordAtk(b,def):ordAtk(b,def),atkKeep:keepDef(atk,atk===def?ordMv(b,atk):mv,moveTypes),defKeep:keepDef(def,ordMv(b,def))}}
  /* 컷인에 쓸 트레이너 그림: 표정(스탠딩) → 시트 그림 */
  function trainerImg(t){if(!t)return '';const st=(t.stands||[]);const a=st[+t.standActive||0]||st[0];return (a&&a.src)||t.image||''}
@@ -2552,6 +2559,7 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
  function chargeVanish(mv){const e=String((mv||{}).eff||'');const g=((DB().states||{}).groups||[]).find(x=>x.l==='반무적');const db=(DB().states||{}).st||{};const m=e.match(/「반무적\s*:\s*([^」]+)」/);if(!m)return '';const ko=m[1].trim();return ((g&&g.s)||Object.keys(db)).find(k=>db[k]&&db[k].ko===ko)||''}
  async function openAttackPre(mid){const c=ctx();const b=c.b;const atk=(b.mons||{})[mid];if(!atk||!c.gm||!canEdit(c,atk))return openAttack(mid);
   let x0=(((b.cmds||{})[atk.tid]||{}).mons||{})[mid]||{};const T=+b.turn||0;let SECO=null;
+  await secCmdRefresh(c,b);   /* 11-07: 【수세】 · 【공세】 판정용 — 숨은 지시를 이 창 동안 기억 */
   /* 11-04 감우 (봉인 서고: 이요 「문포스」 지시가 「미스트볼」로 열림 ×2): 「다음 행동 ▶」의 지시 공개(b.cmds)가 저장되기 전에 공격 창을 열면 지시가 비어 1번 기술로 열렸다 — GM 은 숨은 지시(secret cmd)를 바로 읽어 그 기술 · 대상으로 연다 */
   if((x0.move==null||x0.move==='')&&!x0.switch&&c.ST&&c.ST.secret){try{const rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd');for(const r of rows||[]){if(!cmdFresh(r,b))continue;const y=((r.data||{}).mons||{})[mid];if(y&&y.move!=null&&y.move!==''&&y.move!=='switch'){x0=Object.assign({},y,{tm:y.tm||tmOf(b,y.targets)});SECO={mvIdx:+y.move,targets:tgNow(b,x0,atk)};break}}}catch(e){console.warn('숨은 지시 읽기',e)}}
   /* ①-2 모은 다음 턴: 그 기술 · 대상으로 */
