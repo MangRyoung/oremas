@@ -242,7 +242,15 @@ window.OM_BATTLE_UI=(()=>{
   for(const sl of slots){const nm=String(sl.item||'').replace(/[『』]/g,'').trim();if(!nm)continue;const db=IT[nm]||{};const eff=String(sl.eff||db.eff||'');if(!/기능\s*확장/.test(eff))continue;const once=/^소모품/.test(String(db.eff||''))||/^소모품/.test(eff);
    for(const mm of eff.matchAll(EXT_IT_RE)){const mv=mm[1].trim();const base=window.OM_IMPORT?window.OM_IMPORT.move(mv,false):{name:mv,cat:'',pow:0,acc:0,range:'1체',type:'-',typeEn:'-'};out.push(Object.assign({},base,{ext:{item:nm,k:sl.k,once,lim:0,used:0,left:null,kind:'act',src:nm}}))}}
   return out}
- function extMoves(m){if(!m||!m.tid)return [];const IX=itemExtMoves(m);const b=(A().ST.state||{}).battle||{};const t=(b.trainers||{})[m.tid];const L=t&&Array.isArray(t.ext)?t.ext:[];if(!L.length)return IX;const U=t.extUse||{};const out=[];
+ /* 11-07 망령 「어시스트 · 커맨더: 【탈진】/「기능확장 : 도우미, 감싸기, 쉬프트업」을 내보낼 수 있다 — 기술 목록에 넣지 말고 기능 확장으로」:
+    포텐셜 · 전용 · 특성 효과 글의 「기능 확장 : A, B, C」(쉼표 · 가운뎃점으로 여럿) · 옛 글 「기술 배치에 「A」「B」를 추가한다」 → 기술 목록 맨 뒤에 (횟수 없음 · 이미 배운 기술은 빼고) */
+ const EXT_LIST_RE=/「\s*기능\s*확장\s*:\s*([^」]+?)\s*」(?:을|를)?\s*내보낼\s*수\s*있다/g,EXT_OLD_RE=/기술\s*배치에\s*((?:「[^」]+」\s*)+)(?:을|를)?\s*추가한다/g;
+ function extNamesOf(eff){const out=[];const t=String(eff||'');for(const mm of t.matchAll(EXT_LIST_RE))out.push(...mm[1].split(/\s*[,，·、]\s*/));for(const mm of t.matchAll(EXT_OLD_RE))out.push(...[...mm[1].matchAll(/「([^」]+)」/g)].map(x=>x[1]));return [...new Set(out.map(x=>x.trim()).filter(Boolean))]}
+ function potExtMoves(m){if(!m)return [];const have=new Set(((m.moves)||[]).map(x=>x&&String(x.name||'').trim()));const out=[];const seen=new Set();
+  const src=[...potSrc(m).map(p=>({n:String(p.name||'').replace(/[『』]/g,'').trim(),e:p.eff||((FX()&&FX().effOf)?FX().effOf('pot',String(p.name||'').replace(/[『』]/g,'')):'')})),...(m.ability?[{n:m.ability,e:m.abilityEff||((FX()&&FX().effOf)?FX().effOf('trait',m.ability):'')}]:[])];
+  for(const s of src){if(!s.n||!/기능\s*확장|기술\s*배치에/.test(String(s.e||'')))continue;for(const mv of extNamesOf(s.e)){if(have.has(mv)||seen.has(mv))continue;seen.add(mv);const base=window.OM_IMPORT?window.OM_IMPORT.move(mv,false):{name:mv,cat:'',pow:0,acc:0,range:'1체',type:'-',typeEn:'-'};out.push(Object.assign({},base,{ext:{pot:s.n,lim:0,used:0,left:null,kind:'act',src:s.n}}))}}
+  return out}
+ function extMoves(m){if(!m||!m.tid)return [];const IX=itemExtMoves(m).concat(potExtMoves(m));const b=(A().ST.state||{}).battle||{};const t=(b.trainers||{})[m.tid];const L=t&&Array.isArray(t.ext)?t.ext:[];if(!L.length)return IX;const U=t.extUse||{};const out=[];
   L.forEach((e,i)=>{if(!e||!e.mv||(e.who&&e.who!==m.id))return;const base=window.OM_IMPORT?window.OM_IMPORT.move(e.mv,false):{name:e.mv,cat:'',pow:0,acc:0,range:'1체',type:'-',typeEn:'-'};const lim=+e.lim||0,used=+U[i]||0;
    out.push(Object.assign({},base,{ext:{i,lim,used,left:lim?Math.max(0,lim-used):null,kind:e.kind==='extra'?'extra':'act',src:e.src||'',tid:m.tid}}))});return out.concat(IX)}
  function extGone(mv){return !!(mv&&mv.ext&&mv.ext.lim&&mv.ext.left<=0)}
@@ -2808,6 +2816,7 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【[^】]*】\s
    {const a=nb.mons[mid];if(a&&a.charge&&RESULT.mv&&a.charge.mv===RESULT.mv.name&&+a.charge.turn<(+nb.turn||0)){const vk=chargeVanish(RESULT.mv);if(vk&&a.states&&a.states[vk]){delete a.states[vk]}delete a.charge;lines.push(`${a.name} 모은 힘을 내보냈다 — 『${RESULT.mv.name}』${vk?' · 「'+((((DB().states||{}).st||{})[vk]||{}).ko||vk)+'」 해제':''}`)}}
    /* 11-07: 「예민해지기」로 친 공격 — 이번 턴 종료에 풀리게 (상태 DB: 발생 후 행동했다면 턴 종료 시 해제) */{const a=nb.mons[mid];if(a&&RESULT.mv&&RESULT.mv.cat!=='변화'&&+((a.states||{}).LaserFocus)>1)a.states.LaserFocus=1}
    /* 10-27 망령: 트레이너 「기능 확장」 기술 — 적용하면 횟수 1 */
+   {const X=(RESULT.mv||{}).ext;const am=nb.mons[mid];if(X&&X.pot&&am)lines.push(`【기능 확장】 ${am.name} 『${X.pot}』 → 「${RESULT.mv.name}」`)}
    {const X=(RESULT.mv||{}).ext;const am=nb.mons[mid];if(X&&X.item&&am){const sl=X.k?(am.items2||[])[X.k-1]:am;const nI=v=>String(v||'').replace(/[『』]/g,'').trim();if(X.once&&sl&&nI(sl.item)===X.item){am.itemUsed=Object.assign({name:sl.item,eff:sl.itemEff||'',turn:+nb.turn||0},X.k?{k:X.k}:{});if(FX())FX().removeByName(am,sl.item);sl.item='';sl.itemEff='';if(X.k)delete sl.itemOwn;lines.push(`【기능 확장】 ${am.name} 「${X.item}」 → 「${RESULT.mv.name}」 — 소지품을 다 썼다`)}else lines.push(`【기능 확장】 ${am.name} 「${X.item}」 → 「${RESULT.mv.name}」`)}}
    {const X=(RESULT.mv||{}).ext;const tt=X&&(nb.trainers||{})[X.tid];if(tt){const U=Object.assign({},tt.extUse||{});U[X.i]=(+U[X.i]||0)+1;tt.extUse=U;lines.push(`【기능 확장】 ${tt.name}${X.src?' 『'+X.src.replace(/[『』]/g,'')+'』':''} → ${atk.name} 「${RESULT.mv.name}」${X.kind==='extra'?' (추가 행동)':''}${X.lim?` 【${Math.max(0,X.lim-U[X.i])}/${X.lim}】`:''}`)}}
    /* 「기술을 내보낼 때마다」 줄어드는 상태 (prog:'move' — 도발·앙코르·사슬묶기·침묵·소란피기·난동부리기 … + 얼음). 잠듦·혼란·얼음은 행동 판정을 돌렸으면 거기서 이미 줄었다 */
