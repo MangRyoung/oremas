@@ -139,7 +139,7 @@ window.OM_BATTLE_UI=(()=>{
  function render(el){fixStDesc();setTimeout(()=>{try{dupWatch(ctx(),ctx().b)}catch(e){}delayWatch(ctx(),ctx().b).catch(()=>{});syncWatch(ctx(),ctx().b).catch(e=>console.warn(e))},0);
   const c=ctx();const b=c.b;const f=fieldOf(b);const ready=c.ST.state.ready||{};
   const phases=[[0,'지시 준비'],[1,'턴 개시'],[2,'행동 순서'],[3,'행동 처리'],[5,'턴 종료']];
-  const chips=[f.weather.type?`날씨 ${f.weather.type}${f.weather.count?' '+f.weather.count+'T':''}`:'',f.terrain.type?`${f.terrain.type}${f.terrain.count?' '+f.terrain.count+'T':''}`:'',...ROOMS.filter(r=>(f.rooms||{})[r]>0).map(r=>`${r} ${f.rooms[r]}T`),...ETC.filter(r=>(f.etc||{})[r]>0).map(r=>`${r} ${f.etc[r]}T`)].filter(Boolean);
+  const chips=[f.weather.type?`날씨 ${f.weather.type}${f.weather.count?' '+f.weather.count+'T':''}${wxNeg(ctx().b)?' (무효)':''}`:'',f.terrain.type?`${f.terrain.type}${f.terrain.count?' '+f.terrain.count+'T':''}`:'',...ROOMS.filter(r=>(f.rooms||{})[r]>0).map(r=>`${r} ${f.rooms[r]}T`),...ETC.filter(r=>(f.etc||{})[r]>0).map(r=>`${r} ${f.etc[r]}T`)].filter(Boolean);
   const mySide=c.mgr?'left':((b.trainers||{})[myTrainers(c)[0]]||{}).side||'left';const top=mySide==='left'?'right':'left';
   /* 11-03 감우: #scene 을 통째로 다시 그리면 치고 있던 입력칸(지시 상세 · 우선도 · 제한 시간)의 포커스가 빠졌다 — rp_ui 처럼 어느 칸이었는지(id 또는 data 열쇠) 와 커서를 기억했다가 그린 뒤 되찾는다.
      지시 입력 영역(#cmdForm)은 HTML 이 지난번과 같으면 옛 요소를 그대로 다시 붙인다 (접힌 칸 · 스크롤 유지) */
@@ -366,7 +366,7 @@ window.OM_BATTLE_UI=(()=>{
   if(cls.length)cls.push('fxbg');return {cls:cls.join(' '),st:st.join(';')}}
  function fieldStrip(c,f){const w=f.weather.type,t=f.terrain.type;
   const ic=(name,label,cnt,kind)=>{const im=fimg(name);return `<div class="fic ${kind}" title="${esc(label)}">${im?`<img src="${esc(im)}" alt="">`:'<span class="fnoimg"></span>'}<span><small>${({w:'날씨',t:'필드',r:'룸',e:'필드의 상태'})[kind]||''}</small><b>${esc(label)}</b>${cnt?`<em>${cnt>=1000?'∞':cnt+'T'}</em>`:''}</span></div>`};
-  const mid=[w?ic(W_IMG[w],w,f.weather.count,'w'):'',t?ic(T_IMG[t],t,f.terrain.count,'t'):'',...ROOMS.filter(r=>(f.rooms||{})[r]>0).map(r=>ic(T_IMG[r],r,f.rooms[r],'r')),...ETC.filter(r=>(f.etc||{})[r]>0).map(r=>ic(T_IMG[r],r,f.etc[r],'e'))].filter(Boolean).join('');
+  const wN=w&&wxNeg(c.b);const mid=[w?ic(W_IMG[w],wN?w+' (무효 · '+wN.name+')':w,f.weather.count,'w'):'',t?ic(T_IMG[t],t,f.terrain.count,'t'):'',...ROOMS.filter(r=>(f.rooms||{})[r]>0).map(r=>ic(T_IMG[r],r,f.rooms[r],'r')),...ETC.filter(r=>(f.etc||{})[r]>0).map(r=>ic(T_IMG[r],r,f.etc[r],'e'))].filter(Boolean).join('');
   const objs=side=>{const o=(f.objects||{})[side]||{};const by={};for(const k in o){if(!(o[k]>0))continue;const cat=objCat(k)[0];(by[cat]=by[cat]||[]).push(`<span class="obj ${cat}" title="${esc(objCat(k)[1])}">${OBJ_IMG[k]?`<img class="oimg" src="${OBJ_IMG[k]}" alt="">`:''}${esc(k)}${o[k]>=1000?'':` <b>${k==='압정뿌리기'||k==='독압정'?o[k]+'겹':o[k]+'T'}</b>`}</span>`)}
    return OBJ_CAT.filter(cc=>by[cc[0]]).map(cc=>`<span class="ocat"><i>${esc(cc[1])}</i>${by[cc[0]].join('')}</span>`).join('')};
   const gmc=c.mgr?' clickable':'';
@@ -2098,9 +2098,9 @@ window.OM_BATTLE_UI=(()=>{
   {const nt=String((mv&&mv.note)||'');const re=/「([^:：」]+)\s*[:：]\s*([^」]+)」/g;let r;while((r=re.exec(nt))){const k=r[1].trim();if(k===W||W.includes(k)||k.includes(W)){const en=S().typeEn(r[2].trim());if(en)return en}}}
   if(WXT[W]!=null)return WXT[W];let ty='';for(const x of Object.values((DB().moves)||{})){if(!x||/^(거?다이)/.test(String(x.name||'')))continue;const r=String(x.eff||'').match(/「날씨\s*:\s*([^」]+)」(?:으로|로)\s*만든다/);if(r&&wxSame(r[1].trim(),W)&&!/일 때|라면/.test(String(x.eff||'').slice(0,r.index))){ty=x.typeEn||S().typeEn(x.type)||'';if(ty)break}}
   return WXT[W]=ty}
- function wxMoveTy(b,mv){const e=String((mv&&mv.eff)||'');if(!/「날씨」(?:가 전개되어 있을 때[^.]*「날씨」 기술과 같은 「타입」|와 같은 타입)/.test(e))return '';return wxTypeOf(String(((fieldOf(b)||{}).weather||{}).type||''),mv)}
+ function wxMoveTy(b,mv){const e=String((mv&&mv.eff)||'');if(!/「날씨」(?:가 전개되어 있을 때[^.]*「날씨」 기술과 같은 「타입」|와 같은 타입)/.test(e))return '';return wxTypeOf(wxNow(b),mv)}
  function terrRange(b,m,mv){const e=String((mv&&mv.eff)||'');const r=e.match(/「필드\s*:\s*([^」]+)」\s*(위에\s*있을\s*때|위에\s*있다면|일\s*때).*?「범위\s*:\s*([^」]+)」(?:가|이)\s*된다/);if(!r)return '';const FT=String(((fieldOf(b)||{}).terrain||{}).type||'');if(r[1].trim()!==FT)return '';if(/위에/.test(r[2])&&!grd(m))return '';return r[3].trim()}
- function wxTerrPow(b,m,mv){const e=String((mv&&mv.eff)||'');const f=fieldOf(b)||{};const W=String((f.weather||{}).type||''),FT=String((f.terrain||{}).type||'');let mul=1;const why=[];
+ function wxTerrPow(b,m,mv){const e=String((mv&&mv.eff)||'');const f=fieldOf(b)||{};const W=wxNow(b),FT=String((f.terrain||{}).type||'');let mul=1;const why=[];
   {const r=e.match(/「날씨\s*:\s*([^」]+)」일 때 위력이 강화\((\d+(?:\.\d+)?)배\)/);if(r&&W&&r[1].split(/[,，]\s*/).some(x=>wxSame(x.trim(),W))){mul*=+r[2];why.push(`「${W}」 — 위력 ×${r[2]}`)}}
   {const r=e.match(/「날씨」가 전개되어 있을 때 위력이\s*(\d+(?:\.\d+)?)배/);if(r&&W){mul*=+r[1];const ty=wxMoveTy(b,mv);why.push(`「${W}」 — 위력 ×${r[1]}${ty?' · '+S().typeKo(ty)+' 타입':''}`)}}
   if(/「날씨」와 같은 타입이 된다/.test(e)){if(!W)why.push('날씨가 없다 — 실패');else{const ty=wxMoveTy(b,mv);if(ty)why.push(`「${W}」 — ${S().typeKo(ty)} 타입`)}}
@@ -2111,6 +2111,10 @@ window.OM_BATTLE_UI=(()=>{
  /* 11-04 19:55 망령 「도우미 겹치는 배율 자동화 · 도우미는 턴 종료 시까지 유지라 두 번 걸린다」: 「도우미」 상태는 턴 종료까지 그대로(공격해도 안 쓴다) · 걸린 횟수 helpN 만큼 1.5 를 곱한다 (2번 = ×2.25) */
  const helpMul=m=>(m&&(m.states||{}).HelpingHand)?Math.round(Math.pow(1.5,Math.max(1,+m.helpN||1))*10000)/10000:1.5;
  const wxSame=(x,W)=>x===W||(x==='눈'&&W==='싸라기눈')||(x==='싸라기눈'&&W==='눈');
+ /* 11-07 망령 「날씨 부정 자동화」: 특성 「에어록」 · 「날씨부정」 — 필드 위에 있는 한 「날씨」의 효과를 제거한다.
+    날씨 자체(종류 · 턴 수)는 그대로 두고 칩에 「무효」만 붙인다. 효과를 읽는 곳(배율 · 방어 · 스피드 · 차지 · 타입 · 턴 끝 모래바람 · 얼음/잠듦 막기)은 wxNow(b) 로 읽는다 */
+ function wxNeg(b){return Object.values((b&&b.mons)||{}).find(m=>m&&m.entry&&m.hp&&m.hp.cur>0&&/에어록|날씨부정/.test(String(m.ability||'')))||null}
+ function wxNow(b){const W=String(((fieldOf(b||{})||{}).weather||{}).type||'');return W&&!wxNeg(b)?W:''}
  const wxIn=(s,W)=>{const re=/「날씨\s*:\s*([^」]+)」/g;let r;while((r=re.exec(s)))if(r[1].split(/[,，/]\s*/).some(x=>wxSame(x.trim(),W)))return true;return false};
  function wxLinks(b,W){if(!W||!b||!b.mons)return [];const G=new Map(),add=(k,v)=>{if(!G.has(k))G.set(k,[]);const a=G.get(k);if(!a.includes(v))a.push(v)};
   for(const m of Object.values(b.mons)){if(!m||!m.name)continue;const who=String(m.name);
@@ -2368,7 +2372,7 @@ window.OM_BATTLE_UI=(()=>{
   const cur=gradeVal((m.ranks||[])[GR_IDX[mm[1]]]),lim=gradeVal(mm[2]);if(cur==null||lim==null)return null;const opt=(ops[0].opts||[])[0];if(!opt||!(opt.ops||[]).length)return null;
   return {ok:mm[3]==='이하'?cur<=lim:cur>=lim,ops:opt.ops}}
  /* 날씨 · 필드 조건 스피드 (엽록소 · 쓱쓱 · 모래헤치기 · 눈치우기 · 야행성 · 음속 활강 …): 특성 · 포텐셜 글을 보고 순서 계산 때 곱한다 */
- function spMulOf(m,f){let v=1;const why=[];const W=String((f.weather||{}).type||''),TR=String((f.terrain||{}).type||'');const wOk=x=>x===W||(x==='눈'&&W==='싸라기눈')||(x==='싸라기눈'&&W==='눈');
+ function spMulOf(m,f){let v=1;const why=[];const W=(()=>{let b0=null;try{b0=ctx().b}catch(e){}return b0&&wxNeg(b0)?'':String((f.weather||{}).type||'')})(),TR=String((f.terrain||{}).type||'');const wOk=x=>x===W||(x==='눈'&&W==='싸라기눈')||(x==='싸라기눈'&&W==='눈');
   const srcs=[[m.ability,m.abilityEff],...potSrc(m).filter(p=>p&&!p.ph).map(p=>[p.name,p.eff])];
   for(const [n,e] of srcs){const t=String(e||'');const re=/「(날씨|필드)\s*:\s*([^」]+)」일 때[^.①②③]*?「스피드」(?:를|가|이)\s*(?:(\d+(?:\.\d+)?)배|강화\((\d+(?:\.\d+)?)배\))/g;let r;
    while((r=re.exec(t))){const x=r[2].trim();const ok=r[1]==='날씨'?x.split(/[,/·]\s*/).some(wOk):TR===x;if(!ok)continue;const k=+(r[3]||r[4]);if(k>0){v*=k;why.push(`${m.name} 「${n}」 스피드 ×${k}`)}}}
@@ -2591,7 +2595,7 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
   /* ①-2 모은 다음 턴: 그 기술 · 대상으로 */
   const CH=atk.charge;if(CH&&+CH.turn<T){const mi=MVS(atk).findIndex(q=>q&&q.name===CH.mv);const slots=allEntered(b);const tg=(CH.targets||[]).filter(sl=>slots.some(z=>z.slot===sl));return openAttack(mid,mi>=0?{mvIdx:mi,targets:tg.length?tg:undefined,chargeFire:1}:{})}
   const mv=x0.move!==''&&x0.move!=null&&x0.move!=='switch'?MVS(atk)[+x0.move]:null;
-  if(mv&&/「차지」/.test(String(mv.eff||''))&&!(CH&&+CH.turn===T)){const W=String((fieldOf(b).weather||{}).type||'');const sk=String(mv.eff).match(/「날씨\s*:\s*([^」]+)」일 때 「차지」를 생략/);const skip=sk&&W&&sk[1].split(/[,，]\s*/).map(q=>q.trim()).includes(W);
+  if(mv&&/「차지」/.test(String(mv.eff||''))&&!(CH&&+CH.turn===T)){const W=wxNow(b);const sk=String(mv.eff).match(/「날씨\s*:\s*([^」]+)」일 때 「차지」를 생략/);const skip=sk&&W&&sk[1].split(/[,，]\s*/).map(q=>q.trim()).includes(W);
    if(!skip){const vk=chargeVanish(mv);const vko=vk?((((DB().states||{}).st||{})[vk]||{}).ko||vk):'';const tg=x0.tm?tgNow(b,x0,atk):(x0.targets||[]);
     if(await askYes(`「${mv.name}」은 「차지」 기술 — 이번 턴은 모으기만 한다.${vko?`\n${atk.name} 은(는) 「${vko}」 상태가 되어 상대의 기술을 받지 않는다.`:''}\n다음 턴에 「공격」을 누르면 이 기술과 지시한 대상으로 창이 열린다.`,'모으기','그냥 공격 창')){
      const st=Object.assign({},atk.states||{});if(vk)st[vk]=2;await A().setMany([[['battle','mons',mid,'states'],st],[['battle','mons',mid,'charge'],{mv:mv.name,turn:T,targets:tg}]]);
@@ -2662,9 +2666,9 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
     if(skip&&W&&skip.includes(W))nt.push('「'+W+'」 — 차지 없이 바로');else if(/「차지」/.test(e))nt.push('「차지」 기술 — 첫 턴은 모으기');if(half&&W&&half.includes(W)){$('#apow',md).value=Math.floor((+mv.pow||0)/2);nt.push('「'+W+'」 — 위력 반감')}
     {const q=wxTerrPow(b,atk,mv);if(q.mul!==1)$('#apow',md).value=Math.floor((+$('#apow',md).value||0)*q.mul);nt.push(...q.why)}   /* 11-04: 날씨 · 필드 위력 · 타입 · 범위 (wxTerrPow) */
     if(nt.length)setTimeout(()=>{const e2=$('#amef',md);if(e2)e2.textContent='【'+nt.join(' · ')+'】 '+e2.textContent},0)}
-   if(FOUL_RE.test(String(mv.eff||'')))setTimeout(()=>{const e2=$('#amef',md);if(e2)e2.textContent='【대상의 「공격」으로 계산 — 자동】 '+e2.textContent},0);{const st=atk.states||{};$('#acharge',md).checked=mv.cat!=='변화'&&Object.keys(CHARGE_ST).some(k=>st[k]&&tyOf(mv)===CHARGE_ST[k])}$('#amef',md).textContent=(SPMAP[String(mv.name||'').trim()]?'【변칙 위력 — 대상마다 자동 계산】 ':'')+String(mv.eff||'').replace(/<br\s*\/?>/gi,'\n');{const col=S().typeColor(tyOf(mv));$('#amhd',md).innerHTML=`<span class="amty" style="background:${col.bg};color:${col.fg}">${esc(S().typeKo(tyOf(mv))||mv.type||'')}</span><b>${esc(mv.name||'')}</b><span class="dim">${esc(mv.cat||'')} · 위력 ${mv.pow||'-'} · 명중 ${mv.acc||'필중'}${mv.prio?' · 우선 '+mv.prio:''} · ${esc(mv.range||'')}${mv.tag&&mv.tag!=='-'?' · '+esc(mv.tag):''}</span>`}const T0=tyOf(mv);const wm=WEATHER_MUL[f.weather.type]||{};$('#aweather',md).value=wm[T0]!=null?wm[T0]:1;
+   if(FOUL_RE.test(String(mv.eff||'')))setTimeout(()=>{const e2=$('#amef',md);if(e2)e2.textContent='【대상의 「공격」으로 계산 — 자동】 '+e2.textContent},0);{const st=atk.states||{};$('#acharge',md).checked=mv.cat!=='변화'&&Object.keys(CHARGE_ST).some(k=>st[k]&&tyOf(mv)===CHARGE_ST[k])}$('#amef',md).textContent=(SPMAP[String(mv.name||'').trim()]?'【변칙 위력 — 대상마다 자동 계산】 ':'')+String(mv.eff||'').replace(/<br\s*\/?>/gi,'\n');{const col=S().typeColor(tyOf(mv));$('#amhd',md).innerHTML=`<span class="amty" style="background:${col.bg};color:${col.fg}">${esc(S().typeKo(tyOf(mv))||mv.type||'')}</span><b>${esc(mv.name||'')}</b><span class="dim">${esc(mv.cat||'')} · 위력 ${mv.pow||'-'} · 명중 ${mv.acc||'필중'}${mv.prio?' · 우선 '+mv.prio:''} · ${esc(mv.range||'')}${mv.tag&&mv.tag!=='-'?' · '+esc(mv.tag):''}</span>`}const T0=tyOf(mv);const wm=WEATHER_MUL[wxNow(b)]||{};$('#aweather',md).value=wm[T0]!=null?wm[T0]:1;
    /* 11-04 19:44 망령 「밤바람 스피드스타 같은 것도」: 「날씨 : X」에 의한 대미지 강화율이 강화(1.33배→1.5배) · 「날씨 : X」의 위력 보정을 받는다(빛의칼 — 그 날씨의 강화 배율) */
-   {const e=String(mv.eff||''),W=String(f.weather.type||'');const hit=x=>!!W&&String(x||'').split(/[,，]\s*/).some(q=>{q=q.trim();return wxSame(q,W)||(q.length>=1&&W.endsWith(q))});const say=t=>setTimeout(()=>{const e2=$('#amef',md);if(e2)e2.textContent='【'+t+'】 '+e2.textContent},0);
+   {const e=String(mv.eff||''),W=wxNow(b);const hit=x=>!!W&&String(x||'').split(/[,，]\s*/).some(q=>{q=q.trim();return wxSame(q,W)||(q.length>=1&&W.endsWith(q))});const say=t=>setTimeout(()=>{const e2=$('#amef',md);if(e2)e2.textContent='【'+t+'】 '+e2.textContent},0);
     const r=e.match(/「날씨\s*:\s*([^」]+)」에 의한 대미지 강화율이\s*강화\(\s*[\d.]+\s*배?\s*→\s*([\d.]+)\s*배\)/);if(r&&hit(r[1])&&+$('#aweather',md).value>1){$('#aweather',md).value=+r[2];say(`「${W}」 강화 ×${r[2]}`)}
     const r2=e.match(/「(?:날씨\s*:\s*)?([^」]+)」의 위력 보정을 받는다/);if(r2&&hit(r2[1])){const mx=Math.max(1,...Object.values(wm).map(Number));if(mx>1&&+$('#aweather',md).value<mx){$('#aweather',md).value=mx;say(`「${W}」 위력 보정 ×${mx}`)}}}{const rt=rndOf(mv);if(rt&&tyOf(mv)===rt)setTimeout(()=>{const e2=$('#amef',md);if(e2&&!/^【무작위/.test(e2.textContent))e2.textContent='【무작위 타입 → '+S().typeKo(rt)+'】 '+e2.textContent},0)}{const sk=!ATY&&skinOf(atk,mv);$('#atrait',md).value=sk?sk.mul:1;if(sk)setTimeout(()=>{const e2=$('#amef',md);if(e2)e2.textContent='【특성 「'+sk.name+'」 '+S().typeKo(sk.ty)+' 기술 · 위력 ×'+sk.mul+'】 '+e2.textContent},0)}
    /* 필드 강화는 땅 위의 공격자만 (미스트필드의 드래곤 반감은 대상마다 따로) */
@@ -2760,7 +2764,7 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
     if(!spw&&powT>0&&mv.cat!=='변화'&&OI()&&OI().moveKind&&OI().moveKind(mv)==='knock'&&OI().knockable(def)){powT=Math.floor(powT*1.5);mods.names=(mods.names||[]).concat([{key:'_ko',who:atk.id,txt:`「${mv.name}」 ${def.name} 소지품 있음 — 위력 ×1.5 (${powT})`}])}   /* 11-06 탁쳐서떨구기: 뺄 수 있는 소지품을 지닌 대상만 (점착이어도) */
     /* 미스트필드: 땅 위 대상이 받는 드래곤 반감 · 눈(싸라기눈) 얼음 타입 방어 1.5 · 모래바람 바위 타입 특방 1.5 · 원더룸 방어↔특방 실수치 */
     const dTy=tysOf(def),dS=g('adef').value||(mv.cat==='특수'?'specialdefense':'defense');const fieldT=n('afield')*(f.terrain.type==='미스트필드'&&moveTypes.includes('Dragon')&&grd(def)?0.5:1);
-    const wt=f.weather.type;const defMul=(wt==='극한'&&dTy.includes('Ice')&&dS==='defense')?2:(['눈','싸라기눈'].includes(wt)&&dTy.includes('Ice')&&dS==='defense')?1.5:(wt==='모래바람'&&dTy.includes('Rock')&&dS==='specialdefense')?1.5:1;
+    const wt=wxNow(b);const defMul=(wt==='극한'&&dTy.includes('Ice')&&dS==='defense')?2:(['눈','싸라기눈'].includes(wt)&&dTy.includes('Ice')&&dS==='defense')?1.5:(wt==='모래바람'&&dTy.includes('Rock')&&dS==='specialdefense')?1.5:1;
     if(defMul!==1&&mods.names)mods.names.push({key:'_w',who:def.id,txt:`${def.name} 「${wt}」 ${dS==='defense'?'방어':'특방'} ×1.5`});if(fieldT!==n('afield')&&mods.names)mods.names.push({key:'_t',who:def.id,txt:`${def.name} 「미스트필드」 드래곤 ×0.5`});
     let MVP=null,DOPT=null;const dmg=mv.cat==='변화'||!powT||(spw&&spw.fixed)||(MAU&&MAU.delay)?null:B().damage(foulAtk(atkD,def,mv),def,MVP=Object.assign({},mv,{pow:powT},ATY?{typeEn:ATY,type:S().typeKo(ATY)}:skinOf(atk,mv)?{typeEn:skinOf(atk,mv).ty,type:S().typeKo(skinOf(atk,mv).ty)}:rndOf(mv)?{typeEn:rndOf(mv),type:S().typeKo(rndOf(mv))}:wxMoveTy(b,mv)?{typeEn:wxMoveTy(b,mv),type:S().typeKo(wxMoveTy(b,mv))}:{}),DOPT={critMul:(+g('acritmul').value||critMulOf(atk)),hits:hits.map(h=>h.v),powStep:spw?0:powStepOf(mv),free1:n('afree1')*(mods.boost||1),free2:n('afree2'),item1:n('aitem1'),item2:n('aitem2'),trait:n('atrait'),weather:n('aweather'),fieldMul:fieldT,defMul,wonder:RM('원더룸'),helping:ck('ahelp')?helpMul(atk):0,charge:ck('acharge'),lifeOrb:ck('alife'),multiTarget,wall,wallSize:mode(b)>=2?2:1,atkStat:g('aatk').value||undefined,defStat:g('adef').value||undefined,ignoreAtk:igAtk,ignoreDef:igDef,watersport:(f.etc||{})['물놀이']>0,mudsport:(f.etc||{})['흙놀이']>0,scarf:HAS(atk,'구애스카프'),choiceDef:false,tailwindDef:((f.objects||{})[side]||{})['순풍']>0,swampDef:((f.objects||{})[side]||{})['습원']>0});
     const eff=dmg?B().effectiveness(moveTypes,def,{scrappy:spL(atk,'scrappy'),multiMode:+g('amulti').value,atkTypes,force:g('aforce').value===''?null:+g('aforce').value,floating:(def.states||{}).MagnetRise||(def.states||{}).Telekinesis||(FX()&&FX().floating(def))||HAS(def,'풍선')}):null;

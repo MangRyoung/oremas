@@ -68,7 +68,10 @@ const FX=()=>window.OM_FX;
  function turnEndField(mons,field){const lines=[];const f=field||{};
   if((f.terrain||{}).type==='그래스필드'){for(const id in mons){const m=mons[id];if(!m.entry||m.hp.cur<=0)continue;if(!grounded(m)){lines.push(`${m.name} 땅 위가 아니라 그래스필드 회복 제외`);continue}if(m.hp.cur<m.hp.max)heal(m,frac(m,1,16),lines,'「그래스필드」')}}
   /* 모래바람: 바위·땅·강철 타입이 아니면 1/16 (방진고글·모래 계열 특성·숨은 상태는 제외). 싸라기눈은 턴 끝 대미지 없음 */
-  if((f.weather||{}).type==='모래바람'){for(const id in mons){const m=mons[id];if(!m.entry||m.hp.cur<=0)continue;const ty=typesOf(m);
+  /* 11-07 에어록 · 날씨부정: 필드 위에 있는 한 「날씨」의 효과 없음 (턴 끝 모래바람도) */
+  const wxNeg=Object.values(mons||{}).find(m=>m&&m.entry&&m.hp&&m.hp.cur>0&&/에어록|날씨부정/.test(String(m.ability||'')));
+  if((f.weather||{}).type==='모래바람'&&wxNeg)lines.push(`${wxNeg.name} 특성 「${wxNeg.ability}」 — 「모래바람」 효과 없음`);
+  if((f.weather||{}).type==='모래바람'&&!wxNeg){for(const id in mons){const m=mons[id];if(!m.entry||m.hp.cur<=0)continue;const ty=typesOf(m);
    if(['Rock','Ground','Steel'].some(t=>ty.includes(t)))continue;
    if(/방진고글/.test(itemsOf(m))){lines.push(`${m.name} 「방진고글」로 「모래바람」을 막았다`);continue}
    if(/모래숨기|모래헤치기|모래의힘|방진/.test(m.ability||'')){lines.push(`${m.name} 특성 「${m.ability}」 — 「모래바람」 영향 없음`);continue}
