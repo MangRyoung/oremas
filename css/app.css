@@ -5672,3 +5672,4 @@ button.tfsep.cl{opacity:1;border:1px dashed color-mix(in srgb,var(--yel2) 55%,tr
 /* 11-07 공격 창 「복합기 +」 칩 */
 .atxl{display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center}.atxl .btn{white-space:nowrap}
 .msg .cimg.wsm{max-height:72px;max-width:72px;object-fit:cover;border-radius:4px}   /* 11-07 귓속말 그림은 작게 */
+.msg.gmpriv{flex-wrap:wrap}.msg.gmpriv>.bcard{flex:1 1 0;min-width:0}.msg.gmpriv .gmpbar{order:3;flex:1 1 100%}   /* 11-07 비공개 카드가 「나만 보임」 줄에 밀려 세로로 찌그러지던 것 */
