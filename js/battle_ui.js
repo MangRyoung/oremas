@@ -1526,7 +1526,9 @@ window.OM_BATTLE_UI=(()=>{
  /* 11-07 망령 「사용한 1/시 포텐셜이 턴 종료시에 계속 발동을 물어봄」: 【N/시】 를 다 썼거나 【소진】 · 【탈진】 으로 이번 턴에 못 쓰면 후보에서 뺀다 */
  const spent=(p,uses,turns)=>{try{const L=limOf(p,uses||{},turns||{});return L.left!=null&&L.left<=0}catch(e){return false}};
  function endCands(b,step){const out=[];const ok0=t=>{t=String(t||'');if(step==='end'&&END_T.after.test(t)&&!END_T.end.test(t.replace(END_T.after,'')))return false;return END_T[step].test(t)};const ok=(t,m)=>ok0(t)&&!cureOnlyIdle(m,t);
-  for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0)continue;for(const p of potSrc(m))if(ok(p.eff,m)&&!spent(p,m.potUses,m.potTurn))out.push({m,kind:'pot',name:p.name,eff:p.eff,tag:isExcl(m,p)?'전용':'포텐셜'})}
+  for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0)continue;for(const p of potSrc(m))if(ok(p.eff,m)&&!spent(p,m.potUses,m.potTurn))out.push({m,kind:'pot',name:p.name,eff:p.eff,tag:isExcl(m,p)?'전용':'포텐셜'});
+   /* 11-07 망령 「가속 특성 턴 종료 시에 왜 확인 문구 안 뜨냐」: 후보를 포텐셜 · 고유에서만 찾아서 특성은 빠져 있었다 — 특성 글(시트 → 특성 DB)에 그 타이밍이 적혀 있으면 같이 묻는다. 소지품 턴 종료(먹다남은음식 등)는 items.js 가 저절로 하므로 넣지 않는다 */
+   if(m.ability){const te=slotEff(m,'trait',m.ability);if(ok(te,m))out.push({m,kind:'trait',name:m.ability,eff:te,tag:'특성'})}}
   const seen=new Set();for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0||seen.has(m.tid))continue;seen.add(m.tid);const t=(b.trainers||{})[m.tid];for(const x of uniqList(t))if(ok(x.p.eff,m)&&!spent(x.p,t&&t.uUses,t&&t.uTurn))out.push({m,kind:'uq',name:x.p.name,eff:x.p.eff,tag:'고유',t})}
   return out}
  /* 턴 마무리 (10-23): 단계마다 그 타이밍 포텐셜을 가진 트레이너의 주인 화면에만 묻는다 (플레이어 몫은 그 플레이어, NPC·GM 몫은 GM).
@@ -1563,7 +1565,7 @@ window.OM_BATTLE_UI=(()=>{
   if(act==='edone'){const tid=d.tid;if(!endMine(c,tid))return;const ed=q.key+':'+q.step;if((b.cmds||{})[tid])await A().set(['battle','cmds',tid,'ed'],ed);else await A().set(['battle','cmds',tid],{ed});A().sysLog(`${(b.trainers[tid]||{}).name} — ${END_STEP[q.step]} 끝냄`,'battle');return endAdvance()}
   if(act==='efire'){const L=endCands(b,q.step);const x=L[+d.i];if(!x||!endMine(c,x.m.tid))return;const fk=q.key+':'+q.step+':'+x.m.id+':'+x.name;if(EFIRED[fk])return;EFIRED[fk]=1;
    if(x.kind==='uq'){A().sysLog(`【고유】 ${x.t.name} 『${x.name}』 (${END_STEP[q.step]})`,'battle',{mid:x.m.id,img:x.t.image||'',eff:String(x.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,400)});return A().renderScene()}
-   const a=FX()&&FX().autoOf(x.m,'pot',x.name);if(a&&a.ops&&a.ops.length&&!a.manual){await fireAuto(x.m.id,'pot',x.name);return A().renderScene()}
+   const fk2=x.kind==='trait'?'trait':'pot';const a=FX()&&FX().autoOf(x.m,fk2,x.name);if(a&&a.ops&&a.ops.length&&!a.manual){await fireAuto(x.m.id,fk2,x.name);return A().renderScene()}
    A().sysLog(`【${x.tag}】 ${x.m.name} 『${x.name}』 (${END_STEP[q.step]})`,'battle',{mid:x.m.id,img:x.m.image||'',eff:String(x.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,400)});return A().renderScene()}}
  /* 예고 공격(미래예지 계열, 맵툴 future_fire): 건 포켓몬의 그때 공격/특공 실수치(랭크 무시)로 계산. 명중 확정 · 급소 없음 · 벽 보정 · 상성 · 타입 일치 · 받는 쪽 반감열매(11-06). 그 밖의 소지품·특성 보정은 손으로 */
  function futureFire(b,m){const r=m.futRsv;delete m.futRsv;if(!r)return [];if(!m.entry||m.hp.cur<=0)return [`「${r.by}」의 『${r.mv}』 — ${m.name}이(가) 쓰러져 있어 불발`];
