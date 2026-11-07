@@ -101,8 +101,9 @@ window.OM_BATTLE=(()=>{
    if(has(atk,'Paralysis')&&atkStat==='speed')A*=(+C().campaign.value_paralysis||0.5);
    /* 원더룸: 방어·특방 실수치만 맞바꾸고 랭크·배율은 원래 능력 것을 쓴다 */
    const wS=o.wonder&&(defStat==='defense'||defStat==='specialdefense')?(defStat==='defense'?'specialdefense':'defense'):defStat;
-   const dv=statValue(def,wS,{ignore:crit?(o.ignoreDef==null||o.ignoreDef===-1?0:o.ignoreDef===3?0:o.ignoreDef===1?7:o.ignoreDef===4?6:o.ignoreDef===5?0:o.ignoreDef):o.ignoreDef,/* 급소: 방어 측 상승은 늘 무시 + 호출자가 준 무시를 합친다 */rank:+((def.rank||{})[defStat]||0),mod:((def.mod||{})[defStat]||1)*(o.choiceDef?1.5:1)*(o.tailwindDef&&defStat==='speed'?2:1)*(o.swampDef&&defStat==='speed'?0.25:1)});
-   let D=dv.value*num(o.defMul,1);if(has(def,'Paralysis')&&defStat==='speed')D*=(+C().campaign.value_paralysis||0.5);
+   const dv=statValue(def,wS,{ignore:crit?(o.ignoreDef==null||o.ignoreDef===-1?0:o.ignoreDef===3?0:o.ignoreDef===1?7:o.ignoreDef===4?6:o.ignoreDef===5?0:o.ignoreDef===8?7:o.ignoreDef):o.ignoreDef,/* 급소: 방어 측 상승은 늘 무시 + 호출자가 준 무시를 합친다 */rank:+((def.rank||{})[defStat]||0),mod:((def.mod||{})[defStat]||1)*(o.choiceDef?1.5:1)*(o.tailwindDef&&defStat==='speed'?2:1)*(o.swampDef&&defStat==='speed'?0.25:1)});
+   /* 11-07 망령 「급소가 방어강화를 못 뚫는다 — 급소는 열매 반감 빼곤 방호를 다 뚫는다」: 받는 쪽 능력 배율(날씨 · 창에 넣은 방어 배율) ×1 초과도 급소면 버린다 */
+   let D=dv.value*(crit?Math.min(1,num(o.defMul,1)):num(o.defMul,1));if(has(def,'Paralysis')&&defStat==='speed')D*=(+C().campaign.value_paralysis||0.5);
    const wallCur=crit?1:wall;
    const base=floor(floor(L*Pc*A/50)/D)*(M*wallCur)+2;
    let m2=1;if(crit)m2*=critValue;if(o.lifeOrb)m2*=1.3;
@@ -144,7 +145,7 @@ window.OM_BATTLE=(()=>{
   o=o||{};
   const stabMul=o.stab?(o.adaptability?2:1.5):1;
   const gd=o.crit?critGuard(o):num(o.guard,1),dm=o.crit?Math.max(1,num(o.defMod,1)):num(o.defMod,1);
-  let v=amount*eff*stabMul*num(o.manual,1)*(o.expertBelt&&eff>1?1.2:1)*(o.berryHalf?0.5:1)*gd*dm;
+  let v=amount*eff*stabMul*(o.crit?Math.max(1,num(o.manual,1)):num(o.manual,1))*(o.expertBelt&&eff>1?1.2:1)*(o.berryHalf?0.5:1)*gd*dm;
   v=floor(v);
   if(o.applyOdd){v+=def.hpOdd?1:0}
   let final=v;
@@ -166,7 +167,7 @@ window.OM_BATTLE=(()=>{
    if(o.disguise&&k===0&&eff>0&&per[k]>0){const f=Math.min(Math.max(1,+o.disguise||1),cur);raw+=f;fin+=f;cur-=f;out.push({raw:f,final:f,after:cur,held:'disguise',band:null});continue}
    const ck=Array.isArray(o.crit)?!!o.crit[k]:!!o.crit;
    const fg=o.fullGuard&&cur>=mx&&!ck?num(o.fullGuard,1):1;
-   let v=floor(per[k]*eff*stabMul*num(o.manual,1)*(o.expertBelt&&eff>1?1.2:1)*(berry?0.5:1)*(ck?critGuard(o):num(o.guard,1))*(ck?Math.max(1,num(o.defMod,1)):num(o.defMod,1))*fg);berry=false;
+   let v=floor(per[k]*eff*stabMul*(ck?Math.max(1,num(o.manual,1)):num(o.manual,1))*(o.expertBelt&&eff>1?1.2:1)*(berry?0.5:1)*(ck?critGuard(o):num(o.guard,1))*(ck?Math.max(1,num(o.defMod,1)):num(o.defMod,1))*fg);berry=false;
    let f=eff>0&&per[k]>0?Math.max(Math.min(v,cur),1):Math.min(v,cur);if(eff===0)f=0;
    if(floorHp>0&&cur-f<floorHp)f=Math.max(0,cur-floorHp);
    let held='',band=null;if(cur-f<1){if(o.endure){f=cur-1;held='endure'}else if(o.endureFull&&cur>=mx&&cur>1){f=cur-1;held='full'}
