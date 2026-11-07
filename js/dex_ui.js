@@ -37,7 +37,7 @@ window.OM_DEX_UI=(()=>{
   const PH='<div class="dexph">■■■ 미해석 ■■■</div>';const PHs='<span class="dexph sm">■■■</span>';
   const typeRow=()=>has('type')?`<span class="row" style="gap:4px;display:inline-flex">${(m.types||[]).filter(t=>t&&t!=='-').map(t=>A().typeChip(t)).join('')}${m.teraActive?`<span class="rk up">테라 ${esc(m.tera)}</span>`:''}</span>`:PHs;
   const weaks=()=>{if(!has('type'))return PH;const rows=TYPES.map(t=>{const e=B().effectiveness([t],m,{});return [t,e&&typeof e==='object'?+e.value:+e]}).filter(x=>x[1]!==1);
-   const G=[[4,'×4','w4'],[2,'×2','w2'],[0.5,'×½','r2'],[0.25,'×¼','r4'],[0,'×0','r0']].map(([v,l,c])=>{const ch=rows.filter(x=>x[1]===v).map(x=>A().typeChip(x[0])).join('');return ch?`<div class="dxw ${c}"><i>${l}</i>${ch}</div>`:''}).join('');
+   const G=[[8,'×8','w8'],[4,'×4','w4'],[2,'×2','w2'],[0.5,'×½','r2'],[0.25,'×¼','r4'],[0.125,'×⅛','r8'],[0,'×0','r0']].map(([v,l,c])=>{const ch=rows.filter(x=>(x[1]>=8?8:x[1]>0&&x[1]<=0.125?0.125:x[1])===v).map(x=>A().typeChip(x[0])).join('');return ch?`<div class="dxw ${c}"><i>${l}</i>${ch}</div>`:''}).join('');
    return `<div class="dxweak">${G||'<span class="dim small">약점·내성 없음</span>'}</div>`};
   const KO=['HP','공격','방어','특공','특방','스피드'];
   const stats=()=>full?`<div class="dxst">${(m.ranks||[]).map((r,i)=>`<div><small>${KO[i]}</small><b>${esc(N(r))}</b></div>`).join('')}</div>`:PH;

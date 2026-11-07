@@ -233,7 +233,7 @@ window.OM_SHEET_UI=(()=>{
    ${E?`<button class="btn sm ghost" data-act="addmon">+ 포켓몬</button>`:''}</div>`;
   if(!m)return strip+'<div class="empty">포켓몬이 없다.</div>';
   const eff=TYPES18.map(ty=>({ty,v:S().effect(ty,m.teraActive&&m.teraEn!=='-'?[m.teraEn]:m.types)}));
-  const lab=v=>v===0?'무':v>=4?'약×4':v>1?'약':v<=0.25?'내¼':v<1?'내':'';
+  const lab=v=>v===0?'무':v>=8?'약×8':v>=4?'약×4':v>1?'약':v<=0.125?'내⅛':v<=0.25?'내¼':v<1?'내':'';
   const sheetHp=m.sheetHp==null?m.hp.max:Math.min(m.sheetHp,m.hp.max);
   const traitNames=Object.keys(DB().traits||{}),itemNames=Object.keys(DB().items||{}),moveNames=Object.keys(DB().moves||{});
   return strip+`<div class="pview">
@@ -559,7 +559,7 @@ if(old){for(const k of ['orderStyle','commandStyle','orderCount','orderBase','or
   const itE=m.item?String((((D.items||{})[m.item])||{}).eff||m.itemEff||''):'';
   const tot=(m.base||[]).reduce((a,v)=>a+(+v||0),0);
   const mul={};for(const ty of TYPES18)mul[ty]=S().effect(ty,tys);
-  const grp=[[4,'×4','x4'],[2,'×2','x2'],[0.5,'×½','h'],[0.25,'×¼','q'],[0,'×0','z']].map(([v,l,c])=>({l,c,list:TYPES18.filter(a=>v===4?mul[a]>=4:v===2?mul[a]===2:v===0.5?mul[a]===0.5:v===0.25?mul[a]>0&&mul[a]<=0.25:mul[a]===0)})).filter(g=>g.list.length);
+  const grp=[[8,'×8','x8'],[4,'×4','x4'],[2,'×2','x2'],[0.5,'×½','h'],[0.25,'×¼','q'],[0.125,'×⅛','e'],[0,'×0','z']].map(([v,l,c])=>({l,c,list:TYPES18.filter(a=>v===8?mul[a]>=8:v===4?mul[a]===4:v===2?mul[a]===2:v===0.5?mul[a]===0.5:v===0.25?mul[a]===0.25:v===0.125?mul[a]>0&&mul[a]<=0.125:mul[a]===0)}))   /* 11-07 망령 「실로넨 얼음 8배」: 3타입 ×8 · ×⅛ 묶음 */.filter(g=>g.list.length);
   const pots=(m.pots||[]).filter(p=>p&&p.name&&!p.ph);const XL=exclList(m).filter(x=>x.name);
   const c1=(()=>{try{return S().typeColor(tys[0]||'Normal').bg}catch(e){return '#e4002b'}})(),c2=(()=>{try{return S().typeColor(tys[1]||tys[0]||'Normal').bg}catch(e){return '#e4002b'}})();
   const sub=[m.role,m.pride?'프라이드 '+m.pride:''].filter(Boolean).join(' · ');

@@ -1045,13 +1045,13 @@ function openHatch(tid){
 /* 상성 칩 묶음 (도감과 같은 꼴) */
 function weakHtml(m){const TYPES=['Normal','Fire','Water','Electric','Grass','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'];const Bt=window.OM_BATTLE;if(!Bt)return '';
  const rows=TYPES.map(t=>{const e=Bt.effectiveness([t],m,{});return [t,e&&typeof e==='object'?+e.value:+e]}).filter(x=>x[1]!==1);
- const G=[[4,'×4','w4'],[2,'×2','w2'],[0.5,'×½','r2'],[0.25,'×¼','r4'],[0,'×0','r0']].map(([v,l,c])=>{const ch=rows.filter(x=>x[1]===v).map(x=>typeChip(x[0])).join('');return ch?`<div class="dxw ${c}"><i>${l}</i>${ch}</div>`:''}).join('');
+ const G=[[8,'×8','w8'],[4,'×4','w4'],[2,'×2','w2'],[0.5,'×½','r2'],[0.25,'×¼','r4'],[0.125,'×⅛','r8'],[0,'×0','r0']].map(([v,l,c])=>{const ch=rows.filter(x=>(x[1]>=8?8:x[1]>0&&x[1]<=0.125?0.125:x[1])===v).map(x=>typeChip(x[0])).join('');return ch?`<div class="dxw ${c}"><i>${l}</i>${ch}</div>`:''}).join('');
  return `<div class="dxweak">${G||'<span class="dim small">약점·내성 없음</span>'}</div>`}
 /* 상세 창용 큰 상성판: 약점 · 내성 두 칸, 배율 띠 + 큰 타입 칩 */
 function affHtml(m){const TYPES=['Normal','Fire','Water','Electric','Grass','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'];const Bt=window.OM_BATTLE;if(!Bt)return '';
  const rows=TYPES.map(t=>{const e=Bt.effectiveness([t],m,{});return [t,e&&typeof e==='object'?+e.value:+e]}).filter(x=>x[1]!==1);
- const grp=list=>list.map(([v,l,c])=>{const ch=rows.filter(x=>x[1]===v).map(x=>typeChip(x[0])).join('');return ch?`<div class="afr ${c}"><i>${l}</i><div class="afc">${ch}</div></div>`:''}).join('');
- const W=grp([[4,'×4','w4'],[2,'×2','w2']]),R=grp([[0.5,'×½','r2'],[0.25,'×¼','r4'],[0,'×0','r0']]);
+ const grp=list=>list.map(([v,l,c])=>{const ch=rows.filter(x=>(x[1]>=8?8:x[1]>0&&x[1]<=0.125?0.125:x[1])===v).map(x=>typeChip(x[0])).join('');return ch?`<div class="afr ${c}"><i>${l}</i><div class="afc">${ch}</div></div>`:''}).join('');
+ const W=grp([[8,'×8','w8'],[4,'×4','w4'],[2,'×2','w2']]),R=grp([[0.5,'×½','r2'],[0.25,'×¼','r4'],[0.125,'×⅛','r8'],[0,'×0','r0']]);   /* 11-07 망령 「실로넨 얼음 8배가 4배로」: 3타입 8배 · 1/8 묶음 */
  return `<div class="aff"><div class="afcol wk"><div class="afh">약점</div>${W||'<div class="afnone">없음</div>'}</div><div class="afcol rs"><div class="afh">내성 · 무효</div>${R||'<div class="afnone">없음</div>'}</div></div>`}
 function openMon(mid){
  const b=B();const m=(b.mons||{})[mid];if(!m)return;const tr=(b.trainers||{})[m.tid]||{name:''};
