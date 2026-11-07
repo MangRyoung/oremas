@@ -2264,6 +2264,14 @@ window.OM_BATTLE_UI=(()=>{
  /* 효과 하나를 돌려서 배틀에 적용한다. kind: pot|trait|item|order. 돌려줌: 적용했으면 true */
  async function fireAuto(mid,kind,name,opt){opt=opt||{};const c=ctx();const b0=c.b;const m0=b0.mons[mid];if(!m0)return false;const auto=opt.auto||FX().autoOf(m0,kind,name);   /* opt.auto: SP(서포터) 처럼 포켓몬 밖에 적힌 구문 */
   if(!auto||!auto.ops||!auto.ops.length||auto.manual){if(!opt.quiet)A().toast(auto&&auto.manual?`「${name}」은(는) 자동화가 없어 손으로 처리한다`:`「${name}」 자동화 없음`);return false}
+  /* 11-07 망령 「이미 발동 중인 포텐셜이나 효과를 누르면 「이미 걸려 있다」 로그 말고 중첩 / 해제를 묻게」: 이 이름으로 건 효과가 필드에 남아 있으면 먼저 묻는다 (자동 발동 · quiet 는 묻지 않는다) */
+  let STK2=0;if(!opt.quiet&&!opt.restack&&FX().chips){const nn=x=>String(x||'').replace(/[『』]/g,'').trim();const on=Object.values(b0.mons||{}).filter(x=>x&&x.entry&&FX().chips(x).some(ch=>nn(ch.name)===nn(name)));
+   if(on.length){const pick=await new Promise(res=>{const md=A().openModal(`<div class="mhead"><h2>『${esc(nn(name))}』 — 이미 걸려 있다</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="small" style="margin-bottom:10px">${on.map(x=>esc(x.name)+': '+FX().chips(x).filter(ch=>nn(ch.name)===nn(name)).map(ch=>esc(ch.t)).join(' · ')).join('<br>')}</div><div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn" data-ch="off">해제</button><button class="btn pri" data-ch="stack">중첩 (한 번 더 건다)</button><span class="sp"></span><button class="btn ghost" data-ch="">취소</button></div>`);
+     md.addEventListener('click',e=>{const bt=e.target.closest('[data-ch],[data-x]');if(!bt)return;const v=bt.dataset.ch||'';A().closeModal();res(v)})});
+    if(!pick)return false;
+    if(pick==='off'){const nb0=snap(b0),nb=snap(nb0);const gone=[];for(const x of on){const t=nb.mons[x.id];if(!t)continue;let n=FX().removeByName(t,name);if(!n&&nn(name)!==name)n=FX().removeByName(t,nn(name));if(!n){const raw=FX().chips(t).find(ch=>nn(ch.name)===nn(name));if(raw)n=FX().removeByName(t,raw.name)}if(n)gone.push(t.name)}
+     if(!await saveBattle(nb0,nb))return false;const KN0=({pot:'포텐셜',trait:'특성',item:'소지품',order:'지령'})[kind]||'효과';A().sysLog(`【${KN0}】 ${m0.name} 『${nn(name)}』 해제 — ${gone.join(', ')||'없음'}`,'battle',{mid:m0.id,img:m0.image||''});return false}
+    STK2=99}}
   if(kind==='pot'&&!opt.uq&&auto.src!=='card'){const bk=misagBlock(b0,m0,name);if(bk){A().sysLog(`【포텐셜】 ${m0.name} 『${name}』\n${bk} — 발동하지 않았다`,'battle',{mid:m0.id,img:m0.image||''});return false}}   /* 10-28 미사그 대학 */
   /* 확률 (10-24 망령): 레디메이드 특성은 글(text)이 비어 있어 확률을 못 읽었다 — 그 칸의 효과 글까지 본다. 「N할로」 · 「N% 확률」 은 여기서 굴리고, 줄마다 고르는 효과(①②)는 고른 줄에서 굴린다 */
   const etx=auto.text||slotEff(m0,kind,name);const tm=FX().timing(etx);const nb0=snap(b0),nb=snap(nb0);const m=nb.mons[mid];const L=[];
@@ -2279,7 +2287,7 @@ window.OM_BATTLE_UI=(()=>{
   /* 10-26 덱 시험: 카드의 「아군 1체」가 기준 포켓몬(자기 편 첫 포켓몬)을 빼고 물었다 — 트레이너가 쓰는 카드는 기준 포켓몬도 고를 수 있게 (ally1s) */
   const ops=opt.uq?JSON.parse(JSON.stringify(auto.ops).replace(/"tgt":"ally1"/g,'"tgt":"self"')):auto.src==='card'?JSON.parse(JSON.stringify(auto.ops).replace(/"tgt":"ally1"/g,'"tgt":"ally1s"')):auto.ops;
   const ux=uiCtx(nb,m,name,opt.area);if(opt.pickId){const up=ux.pick;ux.pick=(list,label)=>{const f=list.find(x=>x.id===opt.pickId);return f?Promise.resolve(f):up(list,label)}}   /* 11-02: 창에서 이미 고른 대상 */
-  const r=await FX().run(ops,Object.assign(ux,opt.noRoll?{noRoll:1}:{},adj,hold));L.push(...r.lines);if(hold.hold&&(m.holds||[]).length)L.push('(필드를 떠나면 풀린다)');
+  const r=await FX().run(ops,Object.assign(ux,opt.noRoll?{noRoll:1}:{},adj,hold,STK2?{stack:STK2}:{}));L.push(...r.lines);if(hold.hold&&(m.holds||[]).length)L.push('(필드를 떠나면 풀린다)');
   const raidNew=await raidFix(m,m0,name,L);if(raidNew===null)return false;
   const f=fieldOf(nb);for(const id in nb.mons){const x=nb.mons[id];if(x.entry&&x.hp.cur<=0){x.entry='';L.push(`${x.name}은(는) 쓰러졌다!`)}}
   if(!await saveBattle(nb0,nb,f,{n:m.name,s:name,img:opt.img!=null?opt.img:(m.image||'')}))return false;if(raidNew)raidCut(m);
