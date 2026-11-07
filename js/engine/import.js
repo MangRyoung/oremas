@@ -44,6 +44,13 @@ window.OM_IMPORT=(()=>{
   return {name,type:m.type,typeEn:m.typeEn||S().typeEn(m.type),cat:m.cat,pow:nz(m.pow),acc:nz(m.acc),range:m.range,contact:m.contact,prio:nz(m.prio),
    tag:m.tag,eff:brN(m.eff),atk:m.atk,def:m.def,note:m.note,min:nz(m.min)||1,max:nz(m.max)||1,sock:m.sock||'',tags:m.tags||[],half:!!half}}
 
+ /* 11-08 망령 「포켓몬마다 기술을 따로 · 웹툴에서도 그대로」: 제작기 p.moves[i].ov = {type,cat,pow,acc,prio,range,contact,eff,auto} — DB 기술 위에 이 포켓몬 몫만 덮는다.
+    DB 가 나중에 바뀌어도 덮은 칸은 그대로 · 안 덮은 칸은 DB 를 따른다. auto = 이 포켓몬만의 기술 구문 (moveauto 가 레디메이드보다 먼저 읽는다) */
+ function withOv(o,ov){if(!ov||typeof ov!=='object')return o;const x=Object.assign({},o);const keys=[];const str=k=>{const v=ov[k];if(v==null||String(v).trim()==='')return;x[k]=k==='eff'?brN(String(v)).slice(0,1500):String(v).trim().slice(0,20);keys.push(k)};const num=k=>{const v=ov[k];if(v==null||String(v).trim()===''||isNaN(+v))return;x[k]=+v;keys.push(k)};
+  str('type');if(keys.includes('type'))x.typeEn=S().typeEn(x.type)||x.type;str('cat');num('pow');num('acc');num('prio');str('range');str('contact');str('eff');
+  if(keys.includes('cat')&&x.cat!==o.cat){if(x.cat==='물리'){x.atk='공격';x.def='방어'}else if(x.cat==='특수'){x.atk='특공';x.def='특방'}else{x.atk='-';x.def='-'}}
+  const au=String(ov.auto||'').trim().slice(0,1500);if(au){x.auto=au;keys.push('auto')}if(keys.length){x.ov=keys;delete x.missing}return x}
+
  /* 제작기 포켓몬 문서 → 배틀 포켓몬. 개체값은 제작기 시트의 알까기 값(ivs), 없으면 0 (10-23 망령) */
  function pokemon(doc,tr,iv){
   const d=(doc.data&&doc.data.data)||doc.data||doc;
@@ -73,7 +80,7 @@ window.OM_IMPORT=(()=>{
    typesKo:tko,types:tko.map(S().typeEn),tera:d.tera&&d.tera!=='-'?d.tera:'-',teraEn:d.tera&&d.tera!=='-'?S().typeEn(d.tera):'-',
    ability:d.ability||'',abilityEff:brN(abil.multi||abil.single||''),item:d.item||'',itemEff:brN(item.eff||''),items2:itemsX(d,ET),
    base,ranks:base.map(S().gradeOf),iv,ev,stats,...(SA?{statAdd:SA}:{}),...(SC?{statCp:SC}:{}),...(mkIv?{mkIvSig:mkIv.join('/')}:{}),...(d.ivRolls&&Array.isArray(d.ivRolls.rolls)&&d.ivRolls.rolls.length?{ivRolls:{rolls:d.ivRolls.rolls.filter(r=>Array.isArray(r)&&r.length===6).map(r=>r.map(v=>Math.max(0,Math.min(31,Math.round(+v)||0)))),x:+d.ivRolls.x||0,r:+d.ivRolls.r||0}}:{}),   /* 10-24: 제작기에서 굴려 둔 알까기 후보 */...(BU?{base0,baseUp:(BU.up||[]).map(u=>({i:+u.i,from:+u.from,to:+u.to,by:(u.by||[]).slice(0,4)}))}:{}),hp:{max:stats[0],cur:stats[0]},
-   moves:(()=>{const mv=(d.moves||[]).filter(m=>m&&m.name).map(m=>{const o=move(m.name,m.half);if(m.hide)o.hide=true;return o});   /* hide: 한 장 요약 · 도감에 안 보이는 기술 (10-22) */return mv.length?mv:[move('발버둥',false)]})(),
+   moves:(()=>{const mv=(d.moves||[]).filter(m=>m&&m.name).map(m=>{const o=withOv(move(m.name,m.half),m.ov);if(m.hide)o.hide=true;return o});   /* hide: 한 장 요약 · 도감에 안 보이는 기술 (10-22) */return mv.length?mv:[move('발버둥',false)]})(),
    pots,excl:d.excl&&d.excl.name&&d.excl.name!=='전용 포텐셜'?{name:d.excl.name,eff:brN(d.excl.eff||'')}:null,
    exclX:(d.exclX||[]).filter(x=>x&&x.name).map(x=>({name:x.name,eff:brN(x.eff||'')})),
    role:roleOf(d),pride:d.pride||'',egg:[d.egg1||'-',d.egg2||'-'],partner:!!d.partner,awaken:tr&&tr.misag&&(d.awaken==='free'||d.awaken==='c')?d.awaken:'',image:d.image||'',stands:standsOf(d.stands),standActive:+d.standActive||0,memo:d.memo||'',

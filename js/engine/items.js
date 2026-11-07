@@ -120,14 +120,26 @@ window.OM_ITEMS=(()=>{
 
  /* ----- 11-06 망령 「소지품 기술 전부」: 남의 소지품을 건드리는 기술 — 기술 이름이 아니라 효과 글로 고른다 (같은 글을 쓰는 커스텀 기술도)
     eat 벌레먹기 · 쪼아대기 / knock 탁쳐서떨구기 / steal 도둑질 · 탐내기 / swap 트릭 · 바꿔치기 / fling 내던지기 ----- */
- const MV_RE=[['eat',/「나무열매」를\s*먹는다/],['knock',/「소지품」을\s*전부\s*파괴/],['steal',/「소지품」을\s*강탈/],['swap',/서로의\s*「소지품」을\s*뒤바꾼다/],['fling',/자신의\s*「소지품」을\s*소비하여\s*공격/]];
- function moveKind(mv){const e=String((mv||{}).eff||'');for(const [k,re] of MV_RE)if(re.test(e))return k;return ''}
+ const MV_RE=[['eat',/「나무열매」를\s*먹는다/],['knock',/「소지품」을\s*전부\s*파괴/],['burnall',/「소지품」을\s*모두\s*파괴/],['burn',/대상의\s*「소지품」을\s*파괴/],['steal',/「소지품」을\s*강탈/],['swap',/서로의\s*「소지품」을\s*뒤바꾼다/],['fling',/자신의\s*「소지품」을\s*소비하여\s*공격/],['give',/자신의\s*「소지품」을\s*대상에게\s*건네/]];
+ /* 11-08 망령 「1~3 가로」: burn 불태우기 · 황금의바람 · 녹슨바람 · 검은우레 · 신의주먹 · 홍련완 · 패왕권 · 고블린의무리 (한 칸) / burnall 부식가스 (모든 칸) / give 기프트패스.
+    파괴된 소지품도 빼앗긴 것처럼 itemTaken (how 'burn') — 배틀 한정 · 시트 그대로 (망령 11-08 「가」) */
+ const KIND_KO={eat:'먹기',knock:'떨구기',burn:'파괴',burnall:'모두 파괴',steal:'강탈',swap:'맞바꾸기',fling:'내던지기',give:'건네주기',set:'소지품 지정'};
+ const hasItemOp=ops=>(ops||[]).some(o=>o&&(o.k==='item'||(o.k==='choice'&&(o.opts||[]).some(x=>hasItemOp(x.ops)))));
+ /* 공격 창 미리보기가 대상마다 · 입력마다 부르므로 3초 동안 기억 (rm 은 레디메이드 전체를 합쳐서 한 번에 ~0.4ms) */
+ const OWNC=new Map();
+ function mvOwnsItem(mv){const key=nm(mv.name)+'\u0001'+String(mv.auto||'');const c=OWNC.get(key),now=Date.now();if(c&&now-c.t<3000)return c.v;let v=false;
+  try{const F2=FX();if(F2){if(mv.auto&&F2.parse&&hasItemOp(F2.parse(String(mv.auto)).ops))v=true;else{const R=F2.rm?F2.rm('기술 : '+nm(mv.name)):null;v=!!(R&&hasItemOp(R.ops))}}}catch(e){v=false}
+  if(OWNC.size>300)OWNC.clear();OWNC.set(key,{v,t:now});return v}
+ function moveKind(mv){if(!mv||mvOwnsItem(mv))return '';const e=String((mv||{}).eff||'');for(const [k,re] of MV_RE)if(re.test(e))return k;return ''}   /* 그 기술 구문(레디메이드 「기술 : 이름」 · 포켓몬별 mv.auto)에 「소지품」 줄이 있으면 구문이 맡는다 (두 번 안 하게) */
  const J=(w,x,y)=>{w=String(w||'');const c=w.charCodeAt(w.length-1);return c>=0xAC00&&c<=0xD7A3&&(c-0xAC00)%28?x:y};   /* 받침 있으면 x */
  const anm=s=>String(s||'').replace(/[『』「」\s]/g,'');
  const reEsc=s=>String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
  /* 특성 · 포텐셜 이름으로 (일루젼 ILLU_RE 와 같은 방식) */
  function abil(m,re){if(!m)return false;const L=[m.ability,...(m.pots||[]).map(p=>p&&p.name),...(m.excl?[m.excl.name]:[]),...(m.exclX||[]).map(p=>p&&p.name)];return L.some(n=>n&&re.test(anm(n)))}
- const sticky=m=>abil(m,/^점착$/);
+ const sticky=m=>abil(m,/^점착$/)||protItem(m);
+ /* 11-08: 구문 「보호 소지품」(fx sp protect what item) 도 점착처럼 — 소지품이 바뀌지 · 빠지지 않는다 */
+ function protItem(m){try{const F2=FX();return !!(F2&&F2.spOf&&F2.spOf(m,'protect').some(e=>(e.what||['trait']).includes('item')))}catch(e){return false}}
+ const stickyWhy=m=>abil(m,/^점착$/)?'「점착」':'「보호 (소지품)」';
  const slotX=(m,k)=>k?(m.items2||[])[k-1]:m;
  function held(m){const L=[];if(!m)return L;if(nm(m.item))L.push(0);(m.items2||[]).forEach((x,i)=>{if(x&&nm(x.item))L.push(i+1)});return L}
  function slotRule(m,k){const x=slotX(m,+k||0);const n=x?nm(x.item):'';return n?ruleAt(m,x,n):null}
@@ -163,35 +175,61 @@ window.OM_ITEMS=(()=>{
  /* 공격 창 「적용」: b 사본 · aid 공격 쪽 · kind · hits [{id, hit, dmg(대미지로 맞음), final(예상 대미지)}] · q {name, mt, cat, eff:{id:상성}, multi, turn}
     → {lines, st:[{id, en, from}]} — 상태 이상(내던지기 화염구슬 등)은 화면이 FX 로 건다 (면역 · 타입 검사를 같은 길로) */
  function moveFx(b,aid,kind,hits,q){const L=[],ST=[];const a=b&&b.mons[aid];if(!a||!kind)return {lines:L,st:ST};q=q||{};const head=`【소지품】 ${a.name} 『${q.name||''}』 —`;const turn=+q.turn||+(b.turn)||0;
-  const sub=d=>d.id!==aid&&!!(d.states||{}).Substitute;
+  const sub=d=>d.id!==aid&&!q.force&&!!(d.states||{}).Substitute;
+  const H2=q.head?`【소지품】 ${q.head} —`:null;const hd=H2||head;   /* 특성 · 구문이 부를 때 머리말 */
   /* 이번 공격에 먼저 반응할 소지품(반감열매 · HP 가득 기합의띠)은 떼지 않는다 — 받는 쪽 HP 창이 쓴다 */
   const keepOf=(d,h)=>{const s=new Set();if(!h.dmg)return s;const ef=(q.eff||{})[d.id];const rs=resist(d,{mt:q.mt||[],cat:q.cat,eff:ef==null?1:ef,multi:!!q.multi});if(rs)s.add(rs);const sh=sash(d);if(sh&&sh.sure&&(+h.final||0)>=d.hp.cur)s.add(sh.name);return s};
-  if(kind==='fling'){const n=nm(a.item);if(!n)return {lines:L,st:ST};const fr=slotRule(a,0)||rule(n);use(a,[],b,0);L.push(`${head} 「${n}」${J(n,'을','를')} 던졌다 (다 써서 없어졌다)`);
+  if(kind==='fling'){const n=nm(a.item);if(!n)return {lines:L,st:ST};const fr=slotRule(a,0)||rule(n);use(a,[],b,0);L.push(`${hd} 「${n}」${J(n,'을','를')} 던졌다 (다 써서 없어졌다)`);
    const h=hits.find(x=>x.hit&&x.dmg);const d=h&&b.mons[h.id];if(!d)return {lines:L,st:ST};
    if(sub(d)){L.push(`${d.name} 대역인형이 받아 「${n}」 효과는 없다`);return {lines:L,st:ST}}
    if((+h.final||0)>=d.hp.cur){L.push(`${d.name} 쓰러질 대미지라 「${n}」 효과는 건너뜀 (버티면 손으로)`);return {lines:L,st:ST}}
    const en=FLING_ST[n];if(en){ST.push({id:d.id,en,from:n});return {lines:L,st:ST}}
    if(isBerry(n,fr)){const E=[];if(eat(d,fr,E))L.push(`${d.name} 「${n}」 효과`,...E);else L.push(`${d.name} 「${n}」 — 효과 없음`)}
    return {lines:L,st:ST}}
-  for(const h of hits||[]){const d=b.mons[h.id];if(!d||!h.hit||d.id===aid)continue;
-   if(kind!=='swap'){if(!h.dmg)continue;if(sub(d)){if(held(d).length)L.push(`${head} ${d.name} 대역인형이 막아 소지품은 그대로`);continue}}
+  for(const h of hits||[]){const d=b.mons[h.id];if(!d||!h.hit||(d.id===aid&&!(h.self&&kind==='set')))continue;
+   const needDmg=kind!=='swap'&&kind!=='give'&&kind!=='set'&&!q.force&&!(/^burn/.test(kind)&&q.cat==='변화');   /* 부식가스(변화기)는 맞기만 하면 */
+   if(needDmg&&!h.dmg)continue;if(kind!=='swap'&&kind!=='give'&&sub(d)){if(held(d).length)L.push(`${hd} ${d.name} 대역인형이 막아 소지품은 그대로`);continue}
+   if(kind==='burn'||kind==='burnall'){const ks=held(d);if(!ks.length)continue;if(sticky(d)){L.push(`${hd} ${d.name} ${stickyWhy(d)} — 소지품이 파괴되지 않았다`);continue}const keep=keepOf(d,h);const gone=[],stay=[];
+    for(const k of ks){const n=nm(slotX(d,k).item);if(locked(d,k)){stay.push(`「${n}」(파괴되지 않음)`);continue}if(keep.has(n)){stay.push(`「${n}」(이번 공격에 먼저 발동)`);continue}takeOut(d,k,'burn',a.name,turn);gone.push(`「${n}」`);if(kind==='burn')break}
+    if(gone.length)L.push(`${hd} ${d.name} 의 ${gone.join(' · ')}${J(gone[gone.length-1].slice(1,-1),'을','를')} 파괴했다 (배틀 한정)`);if(stay.length)L.push(`${d.name} ${stay.join(' · ')} 그대로`);continue}
+   if(kind==='give'){const an=nm(a.item);if(!an){L.push(`${hd} 건네줄 소지품이 없어 실패했다`);break}if(locked(a,0)){L.push(`${hd} 「${an}」${J(an,'은','는')} 건넬 수 없는 소지품이라 실패했다`);break}
+    if(nm(d.item)){L.push(`${hd} ${d.name}${J(d.name,'은','는')} 이미 소지품을 지니고 있어 실패했다`);continue}
+    const o=takeOut(a,0,'give',d.name,turn);putIn(d,o);L.push(`${hd} ${a.name} → ${d.name} 「${o.name}」${J(o.name,'을','를')} 건네주었다`);break}
+   if(kind==='set'){const n2=nm(q.item);if(!n2)break;if(sticky(d)&&nm(d.item)){L.push(`${hd} ${d.name} ${stickyWhy(d)} — 소지품이 바뀌지 않았다`);continue}if(nm(d.item)&&locked(d,0)){L.push(`${hd} ${d.name} 「${nm(d.item)}」${J(nm(d.item),'은','는')} 바뀌지 않는 소지품이다`);continue}
+    const old=nm(d.item);if(old)takeOut(d,0,'set',a.name,turn);putIn(d,{name:n2});L.push(`${hd} ${d.name} ${old?'「'+old+'」 → ':''}「${n2}」${old?'(으)로 바뀌었다':'을(를) 지니게 되었다'} (배틀 한정)`);continue}
    if(kind==='eat'){const keep=keepOf(d,h);const k=held(d).find(k=>{const n=nm(slotX(d,k).item);return isBerry(n,slotRule(d,k))&&!keep.has(n)});if(k==null)continue;const n=nm(slotX(d,k).item);
-    if(sticky(d)){L.push(`${head} ${d.name} 「점착」 — 「${n}」${J(n,'을','를')} 먹지 못했다`);continue}
-    const r=slotRule(d,k)||rule(n);takeOut(d,k,'eat',a.name,turn);L.push(`${head} ${d.name} 의 「${n}」${J(n,'을','를')} 먹었다`);const E=[];if(a.hp.cur>0&&eat(a,r,E))L.push(...E);else L.push(`${a.name} 「${n}」 — 먹었지만 효과 없음`);continue}
-   if(kind==='knock'){const ks=held(d);if(!ks.length)continue;if(sticky(d)){L.push(`${head} ${d.name} 「점착」 — 소지품이 떨어지지 않았다`);continue}const keep=keepOf(d,h);const gone=[],stay=[];
+    if(sticky(d)){L.push(`${hd} ${d.name} ${stickyWhy(d)} — 「${n}」${J(n,'을','를')} 먹지 못했다`);continue}
+    const r=slotRule(d,k)||rule(n);takeOut(d,k,'eat',a.name,turn);L.push(`${hd} ${d.name} 의 「${n}」${J(n,'을','를')} 먹었다`);const E=[];if(a.hp.cur>0&&eat(a,r,E))L.push(...E);else L.push(`${a.name} 「${n}」 — 먹었지만 효과 없음`);continue}
+   if(kind==='knock'){const ks=held(d);if(!ks.length)continue;if(sticky(d)){L.push(`${hd} ${d.name} ${stickyWhy(d)} — 소지품이 떨어지지 않았다`);continue}const keep=keepOf(d,h);const gone=[],stay=[];
     for(const k of ks){const n=nm(slotX(d,k).item);if(locked(d,k)){stay.push(`「${n}」(뺄 수 없음)`);continue}if(keep.has(n)){stay.push(`「${n}」(이번 공격에 먼저 발동)`);continue}takeOut(d,k,'knock',a.name,turn);gone.push(`「${n}」`)}
-    if(gone.length)L.push(`${head} ${d.name} 의 ${gone.join(' · ')}${J(gone[gone.length-1].slice(1,-1),'을','를')} 떨어뜨렸다`);if(stay.length)L.push(`${d.name} ${stay.join(' · ')} 그대로`);continue}
+    if(gone.length)L.push(`${hd} ${d.name} 의 ${gone.join(' · ')}${J(gone[gone.length-1].slice(1,-1),'을','를')} 떨어뜨렸다`);if(stay.length)L.push(`${d.name} ${stay.join(' · ')} 그대로`);continue}
    if(kind==='steal'){const keep=keepOf(d,h);const k=held(d).find(k=>!locked(d,k)&&!keep.has(nm(slotX(d,k).item)));if(k==null)continue;const n=nm(slotX(d,k).item);
-    if(nm(a.item)){L.push(`${head} 이미 소지품을 지니고 있어 「${n}」${J(n,'을','를')} 빼앗지 못했다`);continue}
-    if(sticky(d)){L.push(`${head} ${d.name} 「점착」 — 「${n}」${J(n,'을','를')} 빼앗지 못했다`);continue}
-    const o=takeOut(d,k,'steal',a.name,turn);putIn(a,o);L.push(`${head} ${d.name} 의 「${o.name}」${J(o.name,'을','를')} 빼앗았다`);continue}
-   if(kind==='swap'){if(sub(d)){L.push(`${head} ${d.name} 대역인형이 막아 실패했다`);break}const an=nm(a.item),dn=nm(d.item);
-    if(!an&&!dn){L.push(`${head} 둘 다 소지품이 없어 실패했다`);break}
-    if((an&&locked(a,0))||(dn&&locked(d,0))){L.push(`${head} 「${an&&locked(a,0)?an:dn}」${J(an&&locked(a,0)?an:dn,'은','는')} 바꿀 수 없는 소지품이라 실패했다`);break}
-    if(sticky(d)&&dn){L.push(`${head} ${d.name} 「점착」 — 실패했다`);break}
+    if(nm(a.item)){L.push(`${hd} 이미 소지품을 지니고 있어 「${n}」${J(n,'을','를')} 빼앗지 못했다`);continue}
+    if(sticky(d)){L.push(`${hd} ${d.name} ${stickyWhy(d)} — 「${n}」${J(n,'을','를')} 빼앗지 못했다`);continue}
+    const o=takeOut(d,k,'steal',a.name,turn);putIn(a,o);L.push(`${hd} ${d.name} 의 「${o.name}」${J(o.name,'을','를')} 빼앗았다`);continue}
+   if(kind==='swap'){if(sub(d)){L.push(`${hd} ${d.name} 대역인형이 막아 실패했다`);break}const an=nm(a.item),dn=nm(d.item);
+    if(!an&&!dn){L.push(`${hd} 둘 다 소지품이 없어 실패했다`);break}
+    if((an&&locked(a,0))||(dn&&locked(d,0))){L.push(`${hd} 「${an&&locked(a,0)?an:dn}」${J(an&&locked(a,0)?an:dn,'은','는')} 바꿀 수 없는 소지품이라 실패했다`);break}
+    if(sticky(d)&&dn){L.push(`${hd} ${d.name} ${stickyWhy(d)} — 실패했다`);break}
     const oa=an?takeOut(a,0,'swap',d.name,turn):null,od=dn?takeOut(d,0,'swap',a.name,turn):null;if(od)putIn(a,od);if(oa)putIn(d,oa);
-    L.push(`${head} ${a.name} ${oa?'「'+oa.name+'」':'(빈손)'} ↔ ${d.name} ${od?'「'+od.name+'」':'(빈손)'} 맞바꿨다`);break}}
+    L.push(`${hd} ${a.name} ${oa?'「'+oa.name+'」':'(빈손)'} ↔ ${d.name} ${od?'「'+od.name+'」':'(빈손)'} 맞바꿨다`);break}}
   return {lines:L,st:ST}}
+
+ /* ----- 11-08 망령 「1~3」: 소지품을 건드리는 특성 — 공격 적용 뒤 (battle_ui 가 moveFx 다음에 부른다)
+    공격 쪽: 「매지션」(명중한 포켓몬의 소지품을 약탈) · 「파괴의논리」(명중 시 파괴) / 맞은 쪽: 「나쁜손버릇」(공격한 포켓몬의 소지품을 약탈)
+    매지션 · 나쁜손버릇 효과 글 「파괴(약탈)」은 약탈로 읽는다 (빈손일 때만 · 점착이 막는다). 대미지로 맞은 것만, 쓰러진 쪽은 하지 않는다 ----- */
+ function traitFx(b,aid,hits,q){const L=[],ST=[];const a=b&&b.mons[aid];if(!a)return {lines:L,st:ST};q=q||{};const dh=(hits||[]).filter(h=>h&&h.hit&&h.dmg&&h.id!==aid);if(!dh.length)return {lines:L,st:ST};
+  const run=(who,kind,hs,tn)=>{const R=moveFx(b,who.id,kind,hs,Object.assign({},q,{head:`${who.name} 「${tn}」`}));L.push(...R.lines)};
+  if(a.hp.cur>0&&abil(a,/^파괴의논리$/))run(a,'burn',dh,'파괴의논리');
+  if(a.hp.cur>0&&abil(a,/^매지션$/)&&!nm(a.item)){const h=dh.find(h=>{const d=b.mons[h.id];return d&&held(d).length});if(h)run(a,'steal',[h],'매지션')}
+  for(const h of dh){const d=b.mons[h.id];if(!d||d.hp.cur<=0||d.side===a.side)continue;if(!abil(d,/^나쁜손버릇$/)||nm(d.item)||!held(a).length)continue;const R=moveFx(b,d.id,'steal',[{id:a.id,hit:true,dmg:true,final:0}],Object.assign({},q,{head:`${d.name} 「나쁜손버릇」`,force:true,eff:{},mt:[]}));L.push(...R.lines)}
+  return {lines:L,st:ST}}
+ /* ----- 11-08 효과 엔진(fx.js) 「소지품」 구문: op {k:'item', mode, tgt, name} — fx.js 가 대상을 골라 여기로 넘긴다
+    mode break(한 칸 파괴) · breakall(모두) · steal(강탈 — 자신이 받음) · give(자신의 것을 건네줌) · swap(맞바꾸기) · set(「소지품 : 이름」으로 만듦) */
+ function itemOp(b,self,ts,op,name){const kind={break:'burn',breakall:'burnall',steal:'steal',give:'give',swap:'swap',set:'set'}[op&&op.mode]||'';if(!kind||!self)return [];
+  const hits=(ts||[]).filter(m=>m&&m.id!==self.id).map(m=>({id:m.id,hit:true,dmg:true,final:0}));if(!hits.length&&kind!=='set')return [`『${name||'효과'}』 소지품 — 대상이 없다`];
+  if(kind==='set'&&(ts||[]).some(m=>m&&m.id===self.id))hits.push({id:self.id,hit:true,dmg:true,final:0,self:1});
+  const R=moveFx(b,self.id,kind,hits,{force:true,head:`${self.name} 『${name||'효과'}』`,item:op.name||'',turn:+b.turn||0,eff:{}});return R.lines}
 
  /* ----- 턴 종료 (field.js turnEndStates 에서): 먹다남은음식 · 검은진흙 · 불꽃구슬 · 맹독구슬 · 끈적끈적바늘 ----- */
  function turnEnd(m,lines,H){for(const {r} of all(m)){if(m.hp.cur<=0)return;if(r.te)turnEnd1(m,lines,H,r)}}
@@ -206,4 +244,4 @@ window.OM_ITEMS=(()=>{
 
  /* 소지품 칸 표시용: 이 소지품이 자동으로 하는 일 한 줄 (없으면 '') */
  function summary(name){const r=rule(name);if(!r)return '';const L=[];if(r.atk)L.push('위력');if(r.guard)L.push('완화');if(r.immune)L.push('무효');if(r.resist)L.push('반감');if(r.sash)L.push('버티기');if(r.crit||r.critGuard)L.push('급소');if(r.hp)L.push('HP 열매');if(r.cure)L.push('치유');if(r.seed||r.room)L.push('필드');if(r.hit)L.push('맞을 때');if(r.te)L.push('턴 종료');if(r.onDeal||r.onMiss||r.flinch)L.push('쓴 뒤');if(r.white||r.clearW||r.clearT||r.clearTw)L.push('조건');return L.join(' · ')}
- return {rule,of,all,names,has,atkMul,defGuard,immune,crit,resist,sash,afterAttack,onHit,sweep,turnEnd,teHeals,summary,use,moveKind,moveFx,flingInfo,knockable,locked,sticky,slotRule,eat}})();
+ return {rule,of,all,names,has,atkMul,defGuard,immune,crit,resist,sash,afterAttack,onHit,sweep,turnEnd,teHeals,summary,use,moveKind,moveFx,traitFx,itemOp,KIND_KO,flingInfo,knockable,locked,sticky,slotRule,eat}})();
