@@ -5671,3 +5671,4 @@ button.tfsep.cl{opacity:1;border:1px dashed color-mix(in srgb,var(--yel2) 55%,tr
 .msg.gmpriv{opacity:.62;border-left:3px dashed #9b6bd6;padding-left:4px}.msg.gmpriv:hover{opacity:.9}.msg.gmpriv .gmpbar{display:flex;align-items:center;gap:6px;margin-top:3px;font-size:11px}
 /* 11-07 공격 창 「복합기 +」 칩 */
 .atxl{display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center}.atxl .btn{white-space:nowrap}
+.msg .cimg.wsm{max-height:72px;max-width:72px;object-fit:cover;border-radius:4px}   /* 11-07 귓속말 그림은 작게 */
