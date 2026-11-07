@@ -5669,3 +5669,5 @@ button.tfsep.cl{opacity:1;border:1px dashed color-mix(in srgb,var(--yel2) 55%,tr
 .obj .oimg,.objchip .oimg{width:16px;height:16px;object-fit:contain;vertical-align:-3px;margin-right:3px}
 /* 11-07 GM 전용 상시류 줄 (등장 때 저절로 걸린 것) — 흐리게 + 「출력」 */
 .msg.gmpriv{opacity:.62;border-left:3px dashed #9b6bd6;padding-left:4px}.msg.gmpriv:hover{opacity:.9}.msg.gmpriv .gmpbar{display:flex;align-items:center;gap:6px;margin-top:3px;font-size:11px}
+/* 11-07 공격 창 「복합기 +」 칩 */
+.atxl{display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center}.atxl .btn{white-space:nowrap}
