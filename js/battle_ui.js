@@ -2536,7 +2536,9 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
  /* 이제 창이 알아서 하는 「손으로」 문장 (속임수 · 날씨 차지 생략 · 날씨 위력 반감 · 난동부리기) */
  const autoNote=t=>FOUL_RE.test(String(t))||/「날씨\s*:[^」]*」일 때 「차지」를 생략|「날씨\s*:[^」]*」일 때 「필중기」|「날씨\s*:[^」]*」일 때 「명중\s*:\s*\d+」|「날씨\s*:[^」]*」일 때 위력을 반감|「기술 방어」\s*상태가 된다|^「난동부리기\s*\(혼란\)\s*:\s*\d+~\d+회」$/.test(String(t).trim());
  const protMove=mv=>/「(기술|공격) 방어」\s*상태가 된다/.test(String((mv||{}).eff||''));
- const protBypass=mv=>{const e=String((mv||{}).eff||'');if(!/「방어」(?:「[^」]*」)*\s*상태를\s*무시/.test(e))return '';return /무시\(해제\)|해제한다/.test(e)?'clear':'pass'};
+ /* 11-07 망령 「저주는 방어 관통이야」: 효과 글에 「방어」 무시가 없어도 이름으로 관통하는 기술 */
+ const PROT_PASS=['저주'];
+ const protBypass=mv=>{const e=String((mv||{}).eff||'');if(PROT_PASS.includes(String((mv||{}).name||'').replace(/[『』]/g,'').trim()))return 'pass';if(!/「방어」(?:「[^」]*」)*\s*상태를\s*무시/.test(e))return '';return /무시\(해제\)|해제한다/.test(e)?'clear':'pass'};
  /* 10-26 망령: 숙달 지령 ② 는 정해진 때에 【임의】로 쓸 수 있다 — 명중굴림 전(공격 창)에 쓸 수 있는 것을 알려 준다.
     아군(공격하는 쪽): 숙달 공격 · 특공 · 저격 / 상대(맞는 쪽): 숙달 방어 · 특방 · 회피. 【공유 (『지령』)】 이라 그 턴에 지령을 이미 썼으면 못 쓴다 */
  function masterUsable(b,tid,re){const t=(b.trainers||{})[tid];if(!t)return [];const fired=(((b.cmds||{})[tid]||{}).fired)||{};if(Object.values(fired).some(x=>x&&x.command))return [];
