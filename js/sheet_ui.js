@@ -484,7 +484,9 @@ window.OM_SHEET_UI=(()=>{
   const up=async(obj,path)=>{if(!obj.image||!obj.image.startsWith('data:'))return;try{obj.image=await DBS().uploadImage(path,obj.image)}catch(e){console.warn('이미지 올리기 실패',e);obj.image=obj.image.length<150000?obj.image:'';A().toast('그림을 올리지 못했다 (Storage 설정을 확인): '+e.message)}};
   jobs.push(up(trainer,`rooms/${room}/t_${trainer.id}`));for(const m of mons)jobs.push(up(m,`rooms/${room}/m_${m.id}`));await Promise.all(jobs)}
  /* asId: 좌석이 제 자리로 가져올 때 — 트레이너 id 를 좌석 id 로 바꾸고 제작기 id 는 mkId 에 둔다 (새로고침용). GM 이 같은 제작기 트레이너를 또 가져오면 그 자리를 다시 쓴다 */
- async function importTrainer(tdoc,pokeDocs,keep,asId){if(window.OM_DB_UI&&window.OM_DB_UI.ensureMaker)await window.OM_DB_UI.ensureMaker();const c=ctx();const {trainer,mons}=I().party(tdoc,pokeDocs);
+ async function importTrainer(tdoc,pokeDocs,keep,asId){return commitTrainer(await prepTrainer(tdoc,pokeDocs,keep,asId))}
+ /* 11-08 망령 「눌러도 아무것도 안 뜨니 뭘 알 수가 없네 — 변경 전에 뭐가 바뀌는지 보고하고 수락하게」: 가져오기를 준비(prepTrainer) · 쓰기(commitTrainer)로 나누고, 이미 있는 트레이너를 갱신할 땐 바뀌는 것(syncDiff)을 먼저 보여 준다 */
+ async function prepTrainer(tdoc,pokeDocs,keep,asId){if(window.OM_DB_UI&&window.OM_DB_UI.ensureMaker)await window.OM_DB_UI.ensureMaker();const c=ctx();const {trainer,mons}=I().party(tdoc,pokeDocs);
   if(!asId){const dup=Object.values(c.r.trainers||{}).find(x=>x.mkId===tdoc.id&&x.id!==tdoc.id);if(dup)asId=dup.id}
   if(asId){trainer.mkId=tdoc.id;trainer.id=asId;for(const m of mons)m.tid=asId}
   const r0=JSON.parse(JSON.stringify(c.r));r0.trainers=r0.trainers||{};r0.mons=r0.mons||{};await hostImages(c.ST.room,trainer,mons);const r=JSON.parse(JSON.stringify(r0));const old=r.trainers[trainer.id];
@@ -506,6 +508,8 @@ if(old){for(const k of ['orderStyle','commandStyle','orderCount','orderBase','or
      if(Array.isArray(om.items2))m.items2=om.items2.map((x,k)=>{const f=(m.items2||[])[k];return f&&nI(f)===nI(x)?f:x})}}
    if(Array.isArray(om.moves))for(const mv of m.moves){const o=om.moves.find(x=>x&&x.name===mv.name);if(o&&o.hide)mv.hide=true}m.sheetHp=om.sheetHp==null||(om.hp&&om.sheetHp>=om.hp.max)?null:om.sheetHp;   /* 10-28 망령: 가득이었으면 새 최대 HP 로 가득 (개체값 · 레벨이 바뀌면 옛 최대치에 머물러 HP 가 깎인 듯 보였다) */if(om.sheetStates)m.sheetStates=om.sheetStates;if(om.potUses)m.potUses=om.potUses;/* 10-26 제보: 제작기에서 분배 레벨 · 노력치를 바꿔도 방의 옛 값이 남던 것 — 제작기 값이 지난번 가져온 값과 같을 때만 방에서 고친 값을 지킨다 */if(om.mkDist!=null&&String(om.mkDist)===String(m.mkDist))m.dist=om.dist;m.ev=om.ev;if(om.image&&!m.image)m.image=om.image;if(!(m.stands||[]).length&&(om.stands||[]).length){m.stands=om.stands;m.standActive=om.standActive||0}if(!(m.fields||[]).length&&(om.fields||[]).length)m.fields=om.fields;if(!(m.forms||[]).length&&(om.forms||[]).length)m.forms=om.forms;recalc(m,trainer)}r.mons[m.id]=m}
   r.trainers[trainer.id]=trainer;
+  return {r0,r,trainer,mons,old}}
+ async function commitTrainer(P){const {r0,r,trainer,mons,old}=P;
   /* 바뀐 칸만 쓴다 (점검 2-4) — GM 도 로스터를 통째로 쓰지 않는다. 그림을 올리는 사이 남이 고친 시트가 지워지지 않게 */
   await A().setMany(A().diffOps(['roster'],r0,r,3));
   await ensureNode(trainer);
@@ -514,8 +518,41 @@ if(old){for(const k of ['orderStyle','commandStyle','orderCount','orderBase','or
  /* 관계도 노드: 같은 이름이 없으면 PC/NPC 구분대로 만든다 (휴대폰 협력자 · 연락처가 쓴다). 좌석은 graph 를 못 쓰니 GM 일 때만 */
  async function ensureNode(trainer){const c=ctx();if(!c.gm)return;const g=c.ST.state.graph||{nodes:{},edges:{}};const nodes=g.nodes||{};if(Object.values(nodes).some(n=>n.name===trainer.name))return;const i=Object.keys(nodes).length;
   await A().set(['graph','nodes','t_'+trainer.id],{id:'t_'+trainer.id,name:trainer.name,kind:trainer.kind==='npc'?'npc':'pc',img:'',note:'',x:120+(i%6)*140,y:120+Math.floor(i/6)*140,stands:[],standActive:0})}
+ /* 바뀌는 것: 트레이너(이름 · 자질 · 고유) · 포켓몬(들어옴 · 빠짐 · 레벨 · 타입 · 특성 · 소지품 · 기술 · 포텐셜 · 전용 · 자동화 구문 · 종족치 · 실수치). 그림 주소 · 방에서 쓴 값(HP · 상태 · 횟수)은 보지 않는다 */
+ function syncDiff(P){const {r0,r,trainer,old}=P;const L=[];const nm=x=>String(x||'').replace(/[『』]/g,'').trim();const J=x=>JSON.stringify(x==null?null:x);
+  const setD=(a,b)=>{a=(a||[]).map(nm).filter(Boolean);b=(b||[]).map(nm).filter(Boolean);return {add:b.filter(x=>!a.includes(x)),del:a.filter(x=>!b.includes(x))}};
+  const sd=(lab,a,b)=>{const d=setD(a,b);const o=[];if(d.add.length)o.push(`＋ ${d.add.join(' · ')}`);if(d.del.length)o.push(`－ ${d.del.join(' · ')}`);return o.length?`${lab}: ${o.join('  ')}`:''};
+  const T=[];if(!old){return {isNew:true,lines:[`새로 가져온다 — 포켓몬 ${(trainer.pids||[]).length}체`]}}
+  if(nm(old.name)!==nm(trainer.name))T.push(`이름: ${old.name} → ${trainer.name}`);
+  {const a=old.ranks||{},b=trainer.ranks||{};const ch=[...new Set([...Object.keys(a),...Object.keys(b)])].filter(k=>String(a[k]||'')!==String(b[k]||'')).map(k=>`${k} ${a[k]||'-'}→${b[k]||'-'}`);if(ch.length)T.push('자질: '+ch.join(' · '))}
+  {const x=sd('고유',(old.unique||[]).map(u=>u&&u.name),(trainer.unique||[]).map(u=>u&&u.name));if(x)T.push(x)}
+  if(T.length)L.push({h:trainer.name,rows:T});
+  const oldIds=old.pids||[],newIds=trainer.pids||[];const MO=r0.mons||{},MN=r.mons||{};
+  for(const id of newIds){const a=MO[id],b=MN[id];if(!b)continue;const mn=b.nick||b.name||id;if(!a){L.push({h:mn,rows:['새로 들어온다']});continue}const R=[];
+   if(+a.lv!==+b.lv)R.push(`레벨 ${a.lv} → ${b.lv}`);if(J(a.types)!==J(b.types))R.push(`타입 ${(a.typesKo||a.types||[]).join('/')} → ${(b.typesKo||b.types||[]).join('/')}`);
+   if(nm(a.ability)!==nm(b.ability))R.push(`특성 ${a.ability||'-'} → ${b.ability||'-'}`);else if(String(a.abilityEff||'')!==String(b.abilityEff||''))R.push(`특성 「${b.ability}」 글이 바뀜`);
+   if(nm(a.item)!==nm(b.item))R.push(`소지품 ${a.item||'-'} → ${b.item||'-'}`);
+   {const x=sd('기술',(a.moves||[]).map(v=>v&&v.name),(b.moves||[]).map(v=>v&&v.name));if(x)R.push(x)}
+   {const pn=m=>[...(m.pots||[]).filter(p=>p&&!p.ph).map(p=>p.name)];const x=sd('포텐셜',pn(a),pn(b));if(x)R.push(x);else{const ch=(b.pots||[]).filter(p=>p&&!p.ph&&p.name).filter(p=>{const o=(a.pots||[]).find(q=>q&&nm(q.name)===nm(p.name));return o&&String(o.eff||'')!==String(p.eff||'')}).map(p=>p.name);if(ch.length)R.push('포텐셜 글이 바뀜: '+ch.join(' · '))}}
+   {const en=m=>[...(m.excl?[m.excl]:[]),...(m.exclX||[])].filter(Boolean).map(p=>p.name);const x=sd('전용',en(a),en(b));if(x)R.push(x)}
+   {const A0=a.auto||{},B0=b.auto||{};const ks=[...new Set([...Object.keys(A0),...Object.keys(B0)])].filter(k=>J(A0[k])!==J(B0[k]));if(ks.length)R.push('자동화 구문: '+ks.map(k=>`『${k}』${!A0[k]?' 새로':!B0[k]?' 빠짐':' 바뀜'}`).join(' · '))}
+   if(J(a.base)!==J(b.base))R.push('종족치가 바뀜');else if(J(a.stats)!==J(b.stats))R.push('실수치가 바뀜');
+   if(R.length)L.push({h:mn,rows:R})}
+  for(const id of oldIds)if(!newIds.includes(id)&&MO[id])L.push({h:MO[id].nick||MO[id].name||id,rows:['명단에서 빠진다 (제작기에서 없어짐)']});
+  return {isNew:false,lines:L}}
+ /* 바뀌는 것 보여 주고 묻기 — items: [{P, D}] · 돌려줌 true(적용) / false */
+ function syncAsk(items,title){return new Promise(res=>{const body=items.map(({P,D})=>{const nm=esc(P.trainer.name||'');if(D.isNew)return `<div class="sdg"><div class="sdh">${nm} <span class="tag ok">새로</span></div><div class="small">${esc(D.lines[0])}</div></div>`;
+    if(!D.lines.length)return `<div class="sdg"><div class="sdh">${nm} <span class="small dim">바뀌는 것 없음</span></div></div>`;
+    return `<div class="sdg"><div class="sdh">${nm}</div>${D.lines.map(g=>`<div class="sdm"><b>${esc(g.h)}</b><ul>${g.rows.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')}</div>`}).join('');
+   const any=items.some(({D})=>D.isNew||D.lines.length);
+   const md=A().openModal(`<div class="mhead"><h2>${esc(title||'제작기 동기화')} — 바뀌는 것</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+    <div class="small dim" style="margin-bottom:8px">제작기 지금 값과 이 방 명단을 견줬다. 방에서 쓴 HP · 상태 · 포텐셜 횟수 · 개체값 · (제작기에서 안 바꾼) 소지품은 그대로 지킨다.</div>
+    <div class="sdiff">${body||'<div class="small dim">바뀌는 것이 없다</div>'}</div>
+    <div class="row" style="margin-top:12px"><span class="sp"></span><button class="btn ghost" data-sd="no">취소</button><button class="btn pri" data-sd="ok">${any?'적용':'그래도 다시 읽기'}</button></div>`);
+   let done=false;const fin=v=>{if(done)return;done=true;A().closeModal();res(v)};md.querySelectorAll('[data-sd]').forEach(b=>b.onclick=()=>fin(b.dataset.sd==='ok'));const x=md.querySelector('[data-x]');if(x)x.addEventListener('click',()=>{if(!done){done=true;res(false)}})})}
  async function refreshFromMaker(tid){const c=ctx();const t=c.r.trainers[tid];if(!t)return;if(t.src==='new')return A().toast('제작기에서 온 트레이너가 아니다');
-  let mk;try{mk=await (A().loadMakerParty?A().loadMakerParty(t.mkId||tid):A().loadMaker(true))}catch(e){return A().toast(e.message)}const tdoc=mk.trainers.find(x=>x.id===(t.mkId||tid));if(!tdoc)return A().toast('제작기에 이 트레이너가 없다');await importTrainer(tdoc,mk.pokemon,true,t.mkId?tid:'');A().renderScene()}
+  let mk;try{mk=await (A().loadMakerParty?A().loadMakerParty(t.mkId||tid):A().loadMaker(true))}catch(e){return A().toast(e.message)}const tdoc=mk.trainers.find(x=>x.id===(t.mkId||tid));if(!tdoc)return A().toast('제작기에 이 트레이너가 없다');
+  A().toast('제작기 값 읽는 중…');const P=await prepTrainer(tdoc,mk.pokemon,true,t.mkId?tid:'');const D=syncDiff(P);if(!(await syncAsk([{P,D}],'제작기 동기화')))return A().toast('동기화 취소 — 아무것도 안 바꿨다');await commitTrainer(P);A().renderScene()}
 
  /* 알까기 — 후보마다 능력치 이름과 값, 0–1 / 30–31 표시, 개별 다시 굴림 · 개별 수정(✎) · 추가 굴림. 전부 다시 굴림과 합 130 넘는 후보 다시 굴림은 한 번 더 묻는다 */
  function openHatch(mid){const c=ctx();const m=c.r.mons[mid];const t=c.r.trainers[m.tid]||c.r.trainers[UI.tid];if(!m||!canEdit(c,t.id))return;
@@ -614,5 +651,5 @@ if(old){for(const k of ['orderStyle','commandStyle','orderCount','orderBase','or
    if(td&&!(t.stands||[]).length){const d=(td.data&&td.data.data)||td.data||{};const st=sOf(d);if(st.length){await A().set(['roster','trainers',t.id,'stands'],st);await A().set(['roster','trainers',t.id,'standActive'],+d.standActive||0);n++}}
    for(const m of ms){if((m.stands||[]).length)continue;const pd=(mk.pokemon||[]).find(x=>x.id===(m.rid||m.id));if(!pd)continue;const d=(pd.data&&pd.data.data)||pd.data||{};const st=sOf(d);if(st.length){await A().set(['roster','mons',m.id,'stands'],st);await A().set(['roster','mons',m.id,'standActive'],+d.standActive||0);n++}}}
   if(n)A().toast(`제작기에서 스탠딩 ${n}개를 채웠다`)}
- return {render,UI,itemSock,importTrainer,potFmt,potKind,POT_HUE,openCard,cardHTML,fillStands,openImport};
+ return {render,UI,itemSock,importTrainer,prepTrainer,commitTrainer,syncDiff,syncAsk,potFmt,potKind,POT_HUE,openCard,cardHTML,fillStands,openImport};
 })();
