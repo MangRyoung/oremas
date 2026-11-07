@@ -766,8 +766,11 @@ window.OM_BATTLE_UI=(()=>{
  /* 11-03 21:30 (아니스 시온 「행동 진행을 안 누르는 쪽은 우선도가 반영 안 된다」): 열쇠는 턴 개시 때 한 번만 올라가서, 그 뒤(선행 발동 등)에 생긴 우선도 효과가 남의 화면 계산에 안 들어갔다.
     열쇠에 우선도에 닿는 상태의 지문(sig)을 붙이고, 지문이 바뀌면 다시 올린다. 계산하는 쪽은 지문이 맞을 때까지 잠깐 기다린다 */
  function prioSig(b,tid){return Object.values((b&&b.mons)||{}).filter(m=>m&&m.tid===tid&&m.entry&&m.hp&&m.hp.cur>0).sort((x,y)=>String(x.id).localeCompare(String(y.id))).map(m=>m.id+':'+JSON.stringify(((m.fx||{}).prio)||[])+':'+(m.prioDown?1:0)+':'+(m.ability||'')+':'+(m.item||'')).join('|')}
+ /* 11-07 망령 「버텨라! — PL 이 공격 창을 열어도 나와야지」: 맞을 때 쓰는 4식(버텨라! · 물러나! · 피해라!)을 선행 입력했으면 턴 개시 뒤 순서 열쇠에 그 칸(g4)을 올린다 —
+    숨은 지시를 못 읽는 PL 화면도 공격 창 앞에서 선행 발동할 수 있게. 지시가 잠긴 뒤(phase 1)에만 올라간다 */
+ const HIT4=['버텨라!','물러나!','피해라!'];
  async function publishOk(tid0,force){const c=ctx();const b=c.b;const tid=tid0||c.seat;if(!(c.role==='seat'||(c.gm&&!seatOwned(c,tid)))||!tid||!(b.trainers||{})[tid])return;   /* 11-03 21:51: GM 몫(NPC · GM 이 불러온 파티)도 GM 화면이 올린다 — 좌석이 진행할 때 GM 쪽 우선도 · 교대가 빠지던 것 */const key=turnKey(b);const cur=((b.cmds||{})[tid]||{}).ok;const sig=prioSig(b,tid);if(!force&&((cur&&cur.key===key&&cur.sig===sig)||BUSY.ok===key+tid+sig))return;BUSY.ok=key+tid+sig;const t=b.trainers[tid];try{
-  const cm=await myCmd(c,tid,true);const ok={key,sig,m:{}};for(const mm of Object.values(b.mons||{}).filter(x=>x.tid===tid&&x.entry&&x.hp.cur>0)){const xx=((cm||{}).mons||{})[mm.id]||{};ok.m[mm.id]=okeyOf(mm,xx);if(preCounts(t,xx,mm))ok.m[mm.id].pi=1}if(upCounts(t,(cm||{}).upots))ok.pre=1;
+  const cm=await myCmd(c,tid,true);const ok={key,sig,m:{}};for(const mm of Object.values(b.mons||{}).filter(x=>x.tid===tid&&x.entry&&x.hp.cur>0)){const xx=((cm||{}).mons||{})[mm.id]||{};ok.m[mm.id]=okeyOf(mm,xx);if(preCounts(t,xx,mm))ok.m[mm.id].pi=1;if(xx.order&&HIT4.includes(OO().orderName(t,xx.order)))ok.m[mm.id].g4=xx.order}if(upCounts(t,(cm||{}).upots))ok.pre=1;
   if((ctx().b.cmds||{})[tid])await A().set(['battle','cmds',tid,'ok'],ok);else await A().set(['battle','cmds',tid],{ok})}catch(e){BUSY.ok='';console.warn('publishOk',e)}}
  /* 차례가 온 포켓몬의 지시를 연다: 주인 화면이, GM 몫(NPC · GM 이 불러온 파티)은 GM 화면이. 보통 모드의 GM 은 플레이어가 안 열면 잠시 뒤 대신 연다 */
  const RVT={};
@@ -2603,7 +2606,10 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
     ② 선행 입력한 방어 4식 — 지시 대상 중 『버텨라!』(늘) · 『물러나!』(물리기) · 『피해라!』(특수기)를 선행 입력하고 아직 안 쓴 포켓몬이 있으면 먼저 선행 발동한다
        (예전에는 턴 개시 때 횟수만 빠지고 효과는 GM 이 「포텐셜 발동」에서 따로 눌러야 해서, 버텨라가 빠진 채 대미지가 들어갔다) */
  function chargeVanish(mv){const e=String((mv||{}).eff||'');const g=((DB().states||{}).groups||[]).find(x=>x.l==='반무적');const db=(DB().states||{}).st||{};const m=e.match(/「반무적\s*:\s*([^」]+)」/);if(!m)return '';const ko=m[1].trim();return ((g&&g.s)||Object.keys(db)).find(k=>db[k]&&db[k].ko===ko)||''}
- async function openAttackPre(mid){const c=ctx();const b=c.b;const atk=(b.mons||{})[mid];if(!atk||!c.gm||!canEdit(c,atk))return openAttack(mid);
+ async function openAttackPre(mid){const c=ctx();const b=c.b;const atk=(b.mons||{})[mid];if(!atk||!canEdit(c,atk))return openAttack(mid);
+  if(!c.gm){   /* 11-07: PL 화면 — 차지 처리는 GM 몫 그대로, 방어 4식만 (상대의 숨은 지시 대신 순서 열쇠 g4) */
+   let x1=(((b.cmds||{})[atk.tid]||{}).mons||{})[mid]||{};if(x1.move==null||x1.move===''){try{const cm=await myCmd(c,atk.tid,true);const y=((cm||{}).mons||{})[mid];if(y)x1=Object.assign({},y,{tm:y.tm||tmOf(b,y.targets)})}catch(e){}}
+   const mv1=x1.move!==''&&x1.move!=null&&x1.move!=='switch'?MVS(atk)[+x1.move]:null;if(mv1&&mv1.cat!=='변화'&&!atk.charge)await guard4Pre(c,atk,mv1,x1,{});return openAttack(mid)}
   let x0=(((b.cmds||{})[atk.tid]||{}).mons||{})[mid]||{};const T=+b.turn||0;let SECO=null;
   await secCmdRefresh(c,b);   /* 11-07: 【수세】 · 【공세】 판정용 — 숨은 지시를 이 창 동안 기억 */
   /* 11-04 감우 (봉인 서고: 이요 「문포스」 지시가 「미스트볼」로 열림 ×2): 「다음 행동 ▶」의 지시 공개(b.cmds)가 저장되기 전에 공격 창을 열면 지시가 비어 1번 기술로 열렸다 — GM 은 숨은 지시(secret cmd)를 바로 읽어 그 기술 · 대상으로 연다 */
@@ -2618,13 +2624,16 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
      A().sysLog(`【차지】 ${atk.name} 『${mv.name}』 — 모으기${vko?` · 「${vko}」`:''} (다음 턴에 내보낸다)`,'battle');return}}}
   /* ② 선행 입력한 방어 4식 */
   if(mv&&mv.cat!=='변화'){let SEC={};try{const rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd');for(const r of rows||[]){if(!cmdFresh(r,b))continue;for(const k in ((r.data||{}).mons||{}))SEC[k]=r.data.mons[k]}}catch(e){}
-   const slots=allEntered(b);const tg=(x0.tm?tgNow(b,x0,atk):(x0.targets||[]));const fired=[];
-   for(const sl of tg){const z=slots.find(q=>q.slot===sl);if(!z||sameT(z.mon,atk,b))continue;const dm=z.mon;const sx=SEC[dm.id];if(!sx||!sx.order)continue;const t=(b.trainers||{})[dm.tid];if(!t)continue;
-    const done=((((ctx().b.cmds||{})[dm.tid]||{}).fired||{})[dm.id]||{}).order;if(done)continue;const nm=OO().orderName(t,sx.order);
-    const fit=nm==='버텨라!'||(nm==='물러나!'&&mv.cat==='물리')||(nm==='피해라!'&&mv.cat==='특수');if(!fit)continue;
-    try{await fireOrder(dm.tid,dm.id,'order',sx.order,'pre');fired.push(`${dm.name} 『${nm}』`)}catch(e){console.warn('방어 4식 선행 발동',e)}}
-   if(fired.length)A().toast('선행 발동 — '+fired.join(' · '))}
+   await guard4Pre(c,atk,mv,x0,SEC)}
   return openAttack(mid,SECO||undefined)}
+ /* 맞을 때 쓰는 방어 4식 선행 발동 — SEC: 읽을 수 있는 숨은 지시(GM), 없으면 그 트레이너가 올린 순서 열쇠의 g4 */
+ async function guard4Pre(c,atk,mv,x0,SEC){const b=ctx().b;const slots=allEntered(b);const tg=(x0.tm?tgNow(b,x0,atk):(x0.targets||[]));const fired=[];const tk=turnKey(b);
+  for(const sl of tg){const z=slots.find(q=>q.slot===sl);if(!z||sameT(z.mon,atk,b))continue;const dm=z.mon;const t=(b.trainers||{})[dm.tid];if(!t)continue;
+   const ok=((b.cmds||{})[dm.tid]||{}).ok;const g4=ok&&ok.key===tk&&ok.m&&ok.m[dm.id]&&ok.m[dm.id].g4;const okey=((SEC||{})[dm.id]||{}).order||g4;if(!okey)continue;
+   const done=((((ctx().b.cmds||{})[dm.tid]||{}).fired||{})[dm.id]||{}).order;if(done)continue;const nm=OO().orderName(t,okey);
+   const fit=nm==='버텨라!'||(nm==='물러나!'&&mv.cat==='물리')||(nm==='피해라!'&&mv.cat==='특수');if(!fit)continue;
+   try{await fireOrder(dm.tid,dm.id,'order',okey,'pre');if(((((ctx().b.cmds||{})[dm.tid]||{}).fired||{})[dm.id]||{}).order)fired.push(`${dm.name} 『${nm}』`)}catch(e){console.warn('방어 4식 선행 발동',e)}}
+  if(fired.length)A().toast('선행 발동 — '+fired.join(' · '))}
  /* ===== 11-05 은열쇠 배틀 카드 (세 칸 · 노트 32 3차): 공격 창 결과에서 조건이 맞으면 「🗝 카드」 단추 — 자기 포켓몬에게만 · 쓰면 버림 =====
     명중다시 아군(실타래 되감기) · 명중다시 상대(요정의 장난) · 급소무효 1(안개의 환영) · 난수다시(위기일발!) · 부가무시 30(약간 은밀한 망토) · 행동다시(다시 일어서) */
  const s3tid=(b,m)=>{const t=(b.trainers||{})[m&&m.tid]||{};return t.srcTid||(m&&m.tid)||''};
