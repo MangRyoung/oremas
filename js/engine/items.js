@@ -100,7 +100,7 @@ window.OM_ITEMS=(()=>{
  /* HP 열매의 「무작위한 능력치 +N」 · 「가장 높은/낮은 능력치 ±N」 (sweep · eat 함께) */
  function hpExtra(m,h,L){if(h.random){const ks=['attack','defense','specialattack','specialdefense','speed'].filter(k=>(+(m.rank||{})[k]||0)<6);if(ks.length)rank(m,{[ks[Math.floor(Math.random()*ks.length)]]:h.random},L)}
   if(h.pick){const K=['attack','defense','specialattack','specialdefense','speed'];const bs=Array.isArray(m.base)?m.base.map(v=>+v||0):null;let bi=1;if(bs&&bs.length>=6)for(let i=2;i<=5;i++){if(h.pick.lo?bs[i]<bs[bi]:bs[i]>bs[bi])bi=i}L.push(`가장 ${h.pick.lo?'낮은':'높은'} 능력치 → 「${({attack:'공격',defense:'방어',specialattack:'특공',specialdefense:'특방',speed:'스피드'})[K[bi-1]]}」`);rank(m,{[K[bi-1]]:h.pick.v},L)}}   /* 11-05 블루레이져: 종족치로 고름 (fx 「최고」와 같은 셈) */
- /* ----- 저장 뒤 점검: 조건이 맞으면 바로 터지는 소지품 (HP 열매 · 치유 열매 · 시드 · 룸서비스 · 하양허브 · 웨더클리너 · 필드롤러)
+ /* ----- 저장 뒤 점검: 조건이 맞으면 바로 터지는 소지품 (HP 열매 · 치유 열매 · 시드 · 룸서비스 · 하양허브 · 웨더클리너 · 필드롤러 · 윈드브레이커)
     b 사본 · f 필드 사본 · can(m) 이 화면이 고칠 수 있나 → [{mid, name, lines}] ----- */
  function sweep(b,f,can){const out=[];
   for(const id in b.mons||{}){const m=b.mons[id];if(!m.entry||(can&&!can(m)))continue;for(const {r,k} of all(m)){if(m.hp.cur<=0)break;const L=[];const use=(m,L,b)=>USE(m,L,b,k);
@@ -114,6 +114,7 @@ window.OM_ITEMS=(()=>{
    else if(r.white){const neg=Object.keys(m.rank||{}).filter(k=>k!=='critical'&&+m.rank[k]<0);if(neg.length){for(const k of neg)m.rank[k]=0;L.push(`${neg.map(k=>STAT_KO[k]||k).join(' · ')} 하락을 되돌렸다`);if(r.once||/허브/.test(r.name))use(m,L,b)}}
    else if(r.clearW&&f&&(f.weather||{}).type){L.push(`날씨 「${f.weather.type}」 해제`);f.weather={type:'',count:0};use(m,L,b)}
    else if(r.clearT&&f&&(f.terrain||{}).type){L.push(`「${f.terrain.type}」 철거`);f.terrain={type:'',count:0};use(m,L,b)}
+   else if(r.clearTw&&f){const hit=['left','right'].filter(s=>+((f.objects||{})[s]||{})['순풍']>0);if(hit.length){for(const s of hit)delete f.objects[s]['순풍'];L.push(`${hit.map(s=>s==='left'?'좌측':'우측').join(' · ')} 「순풍」 해제`);use(m,L,b)}}   /* 11-07 망령: 윈드브레이커 — 양쪽 진영 순풍 */
    if(L.length)out.push({mid:id,name:r.name,eff:r.eff,lines:L})}}
   return out}
 
@@ -204,5 +205,5 @@ window.OM_ITEMS=(()=>{
    m.states=st;st[t.st]=1000;lines.push(`${m.name} 「${r.name}」 → 「${(((DB().states||{}).st||{})[t.st]||{}).ko||t.st}」`)}}
 
  /* 소지품 칸 표시용: 이 소지품이 자동으로 하는 일 한 줄 (없으면 '') */
- function summary(name){const r=rule(name);if(!r)return '';const L=[];if(r.atk)L.push('위력');if(r.guard)L.push('완화');if(r.immune)L.push('무효');if(r.resist)L.push('반감');if(r.sash)L.push('버티기');if(r.crit||r.critGuard)L.push('급소');if(r.hp)L.push('HP 열매');if(r.cure)L.push('치유');if(r.seed||r.room)L.push('필드');if(r.hit)L.push('맞을 때');if(r.te)L.push('턴 종료');if(r.onDeal||r.onMiss||r.flinch)L.push('쓴 뒤');if(r.white||r.clearW||r.clearT)L.push('조건');return L.join(' · ')}
+ function summary(name){const r=rule(name);if(!r)return '';const L=[];if(r.atk)L.push('위력');if(r.guard)L.push('완화');if(r.immune)L.push('무효');if(r.resist)L.push('반감');if(r.sash)L.push('버티기');if(r.crit||r.critGuard)L.push('급소');if(r.hp)L.push('HP 열매');if(r.cure)L.push('치유');if(r.seed||r.room)L.push('필드');if(r.hit)L.push('맞을 때');if(r.te)L.push('턴 종료');if(r.onDeal||r.onMiss||r.flinch)L.push('쓴 뒤');if(r.white||r.clearW||r.clearT||r.clearTw)L.push('조건');return L.join(' · ')}
  return {rule,of,all,names,has,atkMul,defGuard,immune,crit,resist,sash,afterAttack,onHit,sweep,turnEnd,teHeals,summary,use,moveKind,moveFx,flingInfo,knockable,locked,sticky,slotRule,eat}})();

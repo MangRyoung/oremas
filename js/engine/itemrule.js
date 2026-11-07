@@ -11,7 +11,7 @@
      무효 타입 땅 · 반감 타입 불꽃 · 반감 타입 불꽃 효과 굉장 · 반감 물리기 HP 가득 · 반감 전체기
      버티기 HP 가득 · 버티기 10%
      HP 1/4 이하: 회복 1/4, 공격 +1, 무작위 +2      (회복 20 처럼 수도)
-     치유 마비/독 · 필드 일렉트릭필드: 방어 +1 · 룸 트릭룸: 스피드 -1 · 날씨 해제 · 필드 철거 · 하락 되돌리기
+     치유 마비/독 · 필드 일렉트릭필드: 방어 +1 · 룸 트릭룸: 스피드 -1 · 날씨 해제 · 필드 철거 · 순풍 해제 · 하락 되돌리기
      맞으면: 공격 +1 · 맞으면 (효과 굉장): 공격 +2, 특공 +2 · 맞으면 (타입 물): 특공 +1 · 맞으면 (물리기): 반사 1/8
        맞으면 (접촉기): 타입 바꾸기 벌레 / 특성 바꾸기 미라 / 옮겨붙는다 · 맞으면: 가장 높은 능력 -1 · 맞으면: 터진다 · 맞으면: 메모 (글)
      턴 종료: 회복 1/16 · 턴 종료: 대미지 1/8 · 턴 종료: 상태 화상 · 턴 종료: 독 타입이면 회복 1/16 아니면 대미지 1/8
@@ -64,6 +64,7 @@ window.OM_ITEMRULE=(()=>{
   if((x=e.match(/「필드 : ([^」]+)」일 때 「(방어|특방|공격|특공|스피드) : \+(\d)」/)))r.seed={terrain:x[1],stats:{[KO_STAT[x[2]]]:+x[3]}};
   if((x=e.match(/「(트릭룸|원더룸|매직룸)」이 전개되어 있을 때 「(\S+) : ([+-]\d)」/)))r.room={room:x[1],stats:{[KO_STAT[x[2]]]:+x[3]}};
   if(/「필드의 상태 : 날씨」일 때 「날씨」를 해제/.test(e))r.clearW=1;if(/「필드의 상태 : 필드」일 때 「필드」를 철거/.test(e))r.clearT=1;
+  if(/불고 있는 「순풍」을 전부 해제/.test(e))r.clearTw=1;   /* 11-07 망령: 윈드브레이커 — 필드 위 순풍 전부 해제 (웨더클리너처럼) */
   if(/능력 : -」가 되었을 때 해당 능력을 초기화/.test(e))r.white=1;
   const hit=[];
   if(/「상성 : 2~8배」인 기술을 받으면 「공격\/특공 : \+2」/.test(e))hit.push({se:1,stats:{attack:2,specialattack:2}});
@@ -106,7 +107,7 @@ window.OM_ITEMRULE=(()=>{
   if(r.cure)L.push('치유 '+r.cure.map(stKo).join('/'));
   if(r.seed)L.push(`필드 ${r.seed.terrain}: ${stTxt(r.seed.stats)}`);
   if(r.room)L.push(`룸 ${r.room.room}: ${stTxt(r.room.stats)}`);
-  if(r.clearW)L.push('날씨 해제');if(r.clearT)L.push('필드 철거');if(r.white)L.push('하락 되돌리기');
+  if(r.clearW)L.push('날씨 해제');if(r.clearT)L.push('필드 철거');if(r.clearTw)L.push('순풍 해제');if(r.white)L.push('하락 되돌리기');
   for(const h of r.hit||[]){const c=h.se?'효과 굉장':h.type?'타입 '+tKo(h.type):h.cat?CAT_KO[h.cat]:h.contact?'접촉기':'';
    const A=[];if(h.stats)A.push(stTxt(h.stats));if(h.back)A.push('반사 '+h.back);if(h.setType)A.push('타입 바꾸기 '+tKo(h.setType));if(h.setTrait)A.push('특성 바꾸기 '+h.setTrait);if(h.yellow)A.push('가장 높은 능력 -'+h.yellow);if(h.pop)A.push('터진다');if(h.move)A.push('옮겨붙는다');if(h.note)A.push('메모 '+h.note);
    L.push(`맞으면${c?` (${c})`:''}: ${A.join(', ')}`)}
@@ -140,7 +141,7 @@ window.OM_ITEMRULE=(()=>{
    else if((m=line.match(/^치유\s+(.+)$/))){const sts=m[1].split('/').map(s=>stEn(s.trim())).filter(Boolean);if(sts.length)r.cure=sts;else bad()}
    else if((m=line.match(/^필드\s+(.+?)\s*:\s*(.+)$/))){const s=stats(m[2],errs,line);if(s)r.seed={terrain:m[1],stats:s}}
    else if((m=line.match(/^룸\s+(.+?)\s*:\s*(.+)$/))){const s=stats(m[2],errs,line);if(s)r.room={room:m[1],stats:s}}
-   else if(line==='날씨 해제')r.clearW=1;else if(line==='필드 철거')r.clearT=1;else if(line==='하락 되돌리기')r.white=1;
+   else if(line==='날씨 해제')r.clearW=1;else if(line==='필드 철거')r.clearT=1;else if(line==='순풍 해제')r.clearTw=1;else if(line==='하락 되돌리기')r.white=1;
    else if((m=line.match(/^맞으면\s*(?:\(([^)]*)\))?\s*:\s*(.+)$/))){const h={};const c=(m[1]||'').trim();let y;
      if(c==='효과 굉장')h.se=1;else if((y=c.match(/^타입\s+(\S+)$/)))h.type=tEn(y[1]);else if(KO_CAT[c])h.cat=KO_CAT[c];else if(c==='접촉기')h.contact=1;else if(c){bad();continue}
      const rest=m[2].trim();
