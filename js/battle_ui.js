@@ -761,7 +761,7 @@ window.OM_BATTLE_UI=(()=>{
  /* 순서 열쇠: 행동 순서 계산에 드는 것만 (교대 여부 · 우선도/순서 바꾸기 · 기술 우선도 · 따라가때리기). 기술 이름·대상은 차례가 올 때 공개 */
  function okeyOf(m,x){x=x||{};const pm={},om={};for(const k in (x.prio||{}))if(x.prio[k]!=='')pm[k]=+x.prio[k];for(const k in (x.ochg||{}))if(x.ochg[k]!=='')om[k]=+x.ochg[k];
   const mv=(x.move!==''&&x.move!=='switch'&&x.move!=null)?MVS(m)[+x.move]:null;
-  const o={sw:x.move==='switch'?1:0,...(x.move==='switch'&&x.switch?{st:String(x.switch)}:{}),pm,om,pr:mv?(FX()?FX().prioOf(m,mv):(+mv.prio||0)):0,mv:mv?1:0};
+  const o={sw:x.move==='switch'?1:0,...(x.move==='switch'&&x.switch?{st:String(x.switch)}:{}),pm,om,pr:mv?(FX()?FX().prioOf(m,mv):(+mv.prio||0)):0,mv:mv?1:0,atk:mv&&mv.cat!=='변화'?1:0};   /* atk: 공격을 지시받았나 (【수세】 · 【공세】 — 숨은 지시를 못 읽는 화면용, 11-07) */
   if(mv&&(isPursuit(mv,m)||x.pur)){o.pn=mv.name;o.tg=tgNow(ctx().b,x,m);o.psrc=isPursuit(mv,m)?((m.flags||{}).pursuit?(m.flags.pursuitBy||''):''):(x.pur||'')}
   const pimm=x.pimm||((m.flags||{}).pursuitImmune?(m.flags.pursuitImmuneBy||'추격 무시'):'');if(pimm)o.pimm=pimm;if(mv&&(isUturn(mv,m)||x.ut||x.uman))o.ut=1;return o}
  /* 좌석: 턴 개시 때 내 순서 열쇠를 cmds[내 자리].ok 에 올린다 (진행하는 사람이 남의 비밀 지시를 못 읽어도 순서를 계산하게) */
@@ -2490,6 +2490,10 @@ window.OM_BATTLE_UI=(()=>{
  function ordX(b,m){const pub=(((b.cmds||{})[m.tid]||{}).mons||{})[m.id];if(pub&&pub.move!=null&&pub.move!=='')return pub;if(SECMD.key===turnKey(b)){const y=SECMD.m[m.id];if(y&&y.move!=null&&y.move!=='')return y}const loc=((CMD||{})[m.tid]||{}).mons;const l=loc&&loc[m.id];if(l&&l.move!=null&&l.move!=='')return l;return null}
  function ordAtk(b,m){if(!b||!m)return false;const x=ordX(b,m);if(x){if(x.move==='switch')return false;const mv=MVS(m)[+x.move];return !!mv&&mv.cat!=='변화'}
   const lm=m.lastMove;if(lm&&+lm.turn===(+b.turn||0)){const mv=MVS(m).find(v=>v&&v.name===lm.name);return !(mv&&mv.cat==='변화')}
+  /* 11-08 00:02 망령 「미사그 캠퍼스 이요 블로커 적용 안 됨」(#37839: 교대로 막 나온 이요를 PL 화면 공격 창이 「지시 모름 = 공격한 것」으로 봐서 【수세】 블로커 ×0.75 가 빠짐):
+     그 트레이너가 턴 개시 뒤 올린 순서 열쇠(ok)를 본다 — 열쇠에 없는 포켓몬(지시가 잠길 때 필드에 없었음 = 교대로 나옴) · 교대 · 기술 없음 · 변화기면 「지시 안 받음」 */
+  {const ok=((b.cmds||{})[m.tid]||{}).ok;if(ok&&ok.key===turnKey(b)){const o=(ok.m||{})[m.id];if(!o)return false;if(o.sw)return false;if(o.atk!=null)return !!o.atk;if(o.mv===0)return false}}
+  if(+m.inSw&&+m.inT===(+b.turn||0))return false;   /* 이번 턴 도중 교대로 나왔다 — 이 턴엔 지시를 받지 않았다 */
   return true}
  /* 11-06 망령 「『HP : 1/2 이하』일 때 『우드혼』을 내보낼 때 【수세】가 적용된다」: 공격을 지시받아도 그 기술이면 자신의 【수세】 효과가 켜진 채 (fx atkKeep · defKeep — 상대의 【공세】 판정은 그대로).
     구문 「수세유지 [기술:우드혼] [타입:풀] [물리|특수] [HP≤1/2]」(sp keepdef) 또는 특성 · 포텐셜 · 소지품 효과 글 (제작기 potlint KEEPDEF_RE 와 같은 꼴) */
