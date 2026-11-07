@@ -146,7 +146,7 @@ window.OM_PHONE_UI=(()=>{
   const LAST={};for(const row of allSmsRows()){const k=row.data.sms;if(!LAST[k]||row.id>LAST[k])LAST[k]=row.id}const lastId=id=>LAST[id]||0;list.sort((a,b)=>lastId(b.id)-lastId(a.id));   /* 10-30 방 정의 줄(단톡방 만들기 · 초대)도 순서에 넣는다 */
   return list}
  function roomOf(id){return rooms().find(x=>x.id===id)}
- function smsLogs(room){return allSmsRows().filter(r=>!r.data.room&&(!room||r.data.sms===room))}
+ function smsLogs(room){const cut=+((A().ST.state.rp||{}).smsClearAt)||0;return allSmsRows().filter(r=>!r.data.room&&(!room||r.data.sms===room)&&!(cut&&r.id<=cut))}   /* 11-07 망령 「비우기에 문자까지」: GM 이 화면 비우기 때 「휴대폰 문자도」를 고르면 그 앞 문자를 숨긴다 (방 정의 줄은 남긴다 · 기록은 남는다) */
  function seen(){try{return JSON.parse(localStorage.getItem(SEEN_KEY)||'{}')}catch(e){return {}}}
  function markSeen(room){const l=smsLogs(room);if(!l.length)return;const s=seen();s[room]=l[l.length-1].id;try{localStorage.setItem(SEEN_KEY,JSON.stringify(s))}catch(e){}}
  function unread(room){const s=seen();const last=+s[room]||0;return smsLogs(room).filter(r=>r.id>last).length}
