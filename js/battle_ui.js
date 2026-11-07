@@ -618,7 +618,7 @@ window.OM_BATTLE_UI=(()=>{
    blk.querySelectorAll('[data-upre]').forEach(el=>el.onclick=()=>{if(el.classList.contains('dis'))return;const n=el.dataset.upre;cur.upots=cur.upots||[];const i=cur.upots.indexOf(n);if(i>=0)cur.upots.splice(i,1);else cur.upots.push(n);rerenderCmd()});
    blk.querySelectorAll('[data-seg]').forEach(el=>el.onclick=()=>{if(el.dataset.seg==='switch'){x.move='switch';x.targets=[]}else{x.move='';x.targets=[]}rerenderCmd()});
    blk.querySelectorAll('[data-sealpick]').forEach(el=>el.onclick=e=>{e.stopPropagation();sealPick('',el.dataset.sealpick)});
-   blk.querySelectorAll('[data-mv]').forEach(el=>el.onclick=()=>{const mm0=(c.b.mons||{})[mid]||{};if(sealed(mm0,MVS(mm0)[+el.dataset.mv]))return A().toast('「봉인」 — 이 기술은 내보낼 수 없다');if(extGone(MVS(mm0)[+el.dataset.mv]))return A().toast('이 기능 확장은 이번 시합에서 다 썼다');x.move=el.dataset.mv;x.targets=defaultTargets(c.b,mid,el.dataset.mv);x.tman=0;rerenderCmd()});
+   blk.querySelectorAll('[data-mv]').forEach(el=>el.onclick=()=>{const mm0=(c.b.mons||{})[mid]||{};if(sealed(mm0,MVS(mm0)[+el.dataset.mv]))return A().toast('「봉인」 — 이 기술은 내보낼 수 없다');if(taunted(mm0,MVS(mm0)[+el.dataset.mv]))return A().toast('「도발」 — 변화기는 내보낼 수 없다');if(extGone(MVS(mm0)[+el.dataset.mv]))return A().toast('이 기능 확장은 이번 시합에서 다 썼다');x.move=el.dataset.mv;x.targets=defaultTargets(c.b,mid,el.dataset.mv);x.tman=0;rerenderCmd()});
    blk.querySelectorAll('[data-sw]').forEach(el=>el.onclick=()=>{x.switch=el.dataset.sw;rerenderCmd()});
    blk.querySelectorAll('[data-tgt]').forEach(el=>el.onclick=()=>{const s=el.dataset.tgt;x.tman=1;const i=x.targets.indexOf(s);if(i>=0)x.targets.splice(i,1);else{/* 단일 대상 기술은 새로 누른 대상으로 바꾼다 — 지난 턴 대상이 남아 둘을 노리던 일 (10-26 FFA 시험) */const mv=MVS((c.b.mons||{})[mid]||{})[+x.move]||{};if(!MULTI_RANGE.test(String(mv.range||'')))x.targets.length=0;x.targets.push(s)}rerenderCmd()});
    blk.querySelectorAll('[data-pq]').forEach(el=>el.onclick=()=>{const n=+el.dataset.pq;x.prio=x.prio||{};x.prio[el.dataset.slot]=n?String(n):'';rerenderCmd()});
@@ -1490,9 +1490,11 @@ window.OM_BATTLE_UI=(()=>{
   if(names.length)return !names.some(n=>has(byKo[n]));
   if(/상태\s*이상/.test(t)){const ABN=['Poison','Toxic','Burn','Paralysis','Freeze','Sleep'];return !ABN.some(has)}
   return false}
+ /* 11-07 망령 「사용한 1/시 포텐셜이 턴 종료시에 계속 발동을 물어봄」: 【N/시】 를 다 썼거나 【소진】 · 【탈진】 으로 이번 턴에 못 쓰면 후보에서 뺀다 */
+ const spent=(p,uses,turns)=>{try{const L=limOf(p,uses||{},turns||{});return L.left!=null&&L.left<=0}catch(e){return false}};
  function endCands(b,step){const out=[];const ok0=t=>{t=String(t||'');if(step==='end'&&END_T.after.test(t)&&!END_T.end.test(t.replace(END_T.after,'')))return false;return END_T[step].test(t)};const ok=(t,m)=>ok0(t)&&!cureOnlyIdle(m,t);
-  for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0)continue;for(const p of potSrc(m))if(ok(p.eff,m))out.push({m,kind:'pot',name:p.name,eff:p.eff,tag:isExcl(m,p)?'전용':'포텐셜'})}
-  const seen=new Set();for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0||seen.has(m.tid))continue;seen.add(m.tid);const t=(b.trainers||{})[m.tid];for(const x of uniqList(t))if(ok(x.p.eff,m))out.push({m,kind:'uq',name:x.p.name,eff:x.p.eff,tag:'고유',t})}
+  for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0)continue;for(const p of potSrc(m))if(ok(p.eff,m)&&!spent(p,m.potUses,m.potTurn))out.push({m,kind:'pot',name:p.name,eff:p.eff,tag:isExcl(m,p)?'전용':'포텐셜'})}
+  const seen=new Set();for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0||seen.has(m.tid))continue;seen.add(m.tid);const t=(b.trainers||{})[m.tid];for(const x of uniqList(t))if(ok(x.p.eff,m)&&!spent(x.p,t&&t.uUses,t&&t.uTurn))out.push({m,kind:'uq',name:x.p.name,eff:x.p.eff,tag:'고유',t})}
   return out}
  /* 턴 마무리 (10-23): 단계마다 그 타이밍 포텐셜을 가진 트레이너의 주인 화면에만 묻는다 (플레이어 몫은 그 플레이어, NPC·GM 몫은 GM).
     각자 쓸 것을 「발동」하고 「다음 ▶」(턴 종료 단계는 「턴 종료 처리 ▶」)를 누르면, 모두 눌렀을 때 진행하는 화면이 다음 단계로 넘긴다.
@@ -1581,7 +1583,7 @@ window.OM_BATTLE_UI=(()=>{
   const RN={},rnL=[];{const fam5=(t,k)=>{const r=potRowOf(pName(b0,t,'order',k));return !!r&&r[0]==='5계'};
    for(const tid in b.trainers||{}){const k=pKeys(b0,tid,'order').find(q=>pName(b0,tid,'order',q)==='윤회의 법계');if(!k||!(pN(b0,tid,'order_'+k)>0))continue;
     const fd=(((b0.cmds||{})[tid]||{}).fired)||{};if(Object.values(fd).some(x=>x&&x.order&&fam5(tid,x.order)))continue;
-    const al=Object.values(b0.mons||{}).filter(m=>m.tid===tid&&m.entry&&+(m.hp||{}).cur>0&&!(m.flags||{}).protect);if(!al.length)continue;
+    const al=Object.values(b0.mons||{}).filter(m=>m.tid===tid&&m.entry&&+(m.hp||{}).cur>0&&!(m.flags||{}).protect&&!(m.states||{}).Protect);if(!al.length)continue;
     RN[tid]=Object.assign({},RN[tid]||{},{o:k});rnL.push(`${(b.trainers[tid]||{}).name||tid} — 『윤회의 법계』 ② 【임의】 (남은 ${pN(b0,tid,'order_'+k)}) · 「방어」 아닌 아군: ${al.map(m=>m.name).join(' · ')} — 다음 턴 개시 전까지 「포텐셜 발동 → 임의 발동」`)}}
   { /* 11-04 19:27 망령 「숙달회복 임의로 턴 종료 시에 쓰는 것도 비슷하게」: 『숙달회복지령』 ② 『지령』을 사용하지 않은 턴 종료 시 【임의】 — 그 턴에 6령(지령)을 하나도 안 썼고 횟수가 남았으면 같은 창을 연다 */
    for(const tid in b.trainers||{}){const k=pKeys(b0,tid,'command').find(q=>pName(b0,tid,'command',q)==='숙달회복지령');if(!k||!(pN(b0,tid,'command_'+k)>0))continue;
@@ -2177,7 +2179,7 @@ window.OM_BATTLE_UI=(()=>{
  /* 진영별 설치기: 분류별 칩, 누르면 기본 지속으로 놓고, 다시 누르면 치운다. 숫자는 겹/턴 */
  function openObjects(side){const c=ctx();if(!c.mgr)return;const f=fieldOf(c.b);const cur=Object.assign({},(f.objects||{})[side]||{});
   const md=A().openModal(`<div class="mhead"><h2>${SIDE_KO[side]} 설치물</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-   ${OBJ_CAT.map(([k,n,dur,desc,list])=>`<div class="sec">${n} <span class="note">${esc(desc)}</span></div><div class="row" style="flex-wrap:wrap;gap:6px">${list.map(o=>`<span class="objchip ${k} ${cur[o]>0?'on':''}" data-oc="${esc(o)}" data-dur="${dur}"><b>${esc(o)}</b><input type="number" class="n xs" data-ov="${esc(o)}" value="${cur[o]>0?cur[o]:''}" placeholder="${dur>=1000?'∞':dur}" title="${o==='압정뿌리기'||o==='독압정'?'겹':'남은 턴 (1000 = 계속)'}"></span>`).join('')}</div>`).join('')}
+   ${OBJ_CAT.map(([k,n,dur,desc,list])=>`<div class="sec">${n} <span class="note">${esc(desc)}</span></div><div class="row" style="flex-wrap:wrap;gap:6px">${list.map(o=>`<span class="objchip ${k} ${cur[o]>0?'on':''}" data-oc="${esc(o)}" data-dur="${dur}"><b>${esc(o==='와이드가드'?'와이드가드 (전체기 방어)':o)}</b><input type="number" class="n xs" data-ov="${esc(o)}" value="${cur[o]>0?cur[o]:''}" placeholder="${dur>=1000?'∞':dur}" title="${o==='압정뿌리기'||o==='독압정'?'겹':'남은 턴 (1000 = 계속)'}"></span>`).join('')}</div>`).join('')}
    <div class="row" style="margin-top:12px"><button class="btn ghost" id="oclear">전부 치우기</button><span class="sp"></span><button class="btn pri" id="osave">적용</button></div>`);
   md.querySelectorAll('[data-oc]').forEach(ch=>ch.addEventListener('click',e=>{if(e.target.tagName==='INPUT')return;const inp=ch.querySelector('input');const o=ch.dataset.oc;if(+inp.value>0){inp.value='';ch.classList.remove('on')}else{inp.value=(o==='압정뿌리기'||o==='독압정')?1:+ch.dataset.dur;ch.classList.add('on')}}));
   md.querySelectorAll('[data-ov]').forEach(i=>i.addEventListener('input',()=>i.closest('.objchip').classList.toggle('on',+i.value>0)));
@@ -2487,8 +2489,10 @@ window.OM_BATTLE_UI=(()=>{
  /* ---------- 「봉인」 (11-05 망령 · 우리 사양): 상대에게 걸어 기술폭을 공개시키고, 그중 고른 1개를 내보낼 수 없다 · 교대해도 풀리지 않는다 ----------
     m.sealMove = {name, by} · 걸린 순간(공격 적용 뒤) 건 쪽이 고른다 · 지시 칸에서도 고를 수 있다 */
  const nmMv=v=>String(v||'').replace(/『|』/g,'').trim();
- function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove&&nmMv(mv.name)===nmMv(m.sealMove.name))}
- const sealMark=(m,list)=>list.map(mv=>sealed(m,mv)?Object.assign({},mv,{sealed:1}):mv);
+ /* 11-07 망령 「도발 상태에서 변화기를 내면 도발이 풀려버림」: 도발 중엔 변화기를 못 고르게 막는다 (GM 은 바로잡기용으로 판정은 되지만 도발 턴은 줄지 않는다) */
+function taunted(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Taunt&&mv.cat==='변화')}
+function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove&&nmMv(mv.name)===nmMv(m.sealMove.name))}
+ const sealMark=(m,list)=>list.map(mv=>sealed(m,mv)||taunted(m,mv)?Object.assign({},mv,{sealed:1}):mv);
  async function sealPick(byMid,mid){const c=ctx();const m=(c.b.mons||{})[mid];if(!m||!(m.states||{}).Seal)return;const by=byMid?(c.b.mons||{})[byMid]:null;
   if(by&&by.tid&&by.tid!==m.tid&&window.OM_DEX_UI&&window.OM_DEX_UI.analyze){try{const sc=window.OM_DEX_UI.scope(mid,by.tid);if(sc!=='all'&&!(Array.isArray(sc)&&sc.includes('move')))await window.OM_DEX_UI.analyze(by.tid,mid,{parts:['move'],forced:true,free:true})}catch(e){console.warn(e)}}
   if(!(c.mgr||(by&&canEdit(c,by)))){A().sysLog(`【봉인】 ${m.name} — ${by?by.name+' 쪽이':'건 쪽이'} 봉인할 기술을 고른다 (지시 칸 「봉인할 기술 고르기」)`,'battle');return}
@@ -2650,7 +2654,7 @@ window.OM_BATTLE_UI=(()=>{
   syncMove();if(opt.extra){const mv=MVS(atk)[+mvSel.value]||{};const pe=$('#apow',md);if(pe)pe.value=Math.max(1,Math.floor((+pe.value||+mv.pow||0)*(+opt.extra.pw||1)));const se=$('#asure',md);if(se&&opt.extra.sure)se.checked=true}if(XMV[mid]){const iv=setInterval(()=>{if(!md.isConnected){delete XMV[mid];clearInterval(iv)}},700)}updChg();prev();
   let RESULT=null;let ACCKEEP=null,ACCNOTE='';
   $('#aroll',md).onclick=()=>{
-   const mv=MVS(atk)[+mvSel.value];if(!mv)return;if(sealed(atk,mv)){if(!ctx().mgr){A().toast('「봉인」 — 이 기술은 내보낼 수 없다');return}A().toast('「봉인」된 기술 — GM 이라 판정은 한다 (바로잡을 때만)')}if(isNG(mv)&&!NG){A().toast(`나무열매를 지니고 있지 않아 「${NGN}」는 실패한다`);A().sysLog(`【공격】 ${atk.name} 『${NGN}』 — ${IT(atk)?'「'+IT(atk)+'」는 자연의은혜에 쓸 수 없는 소지품이라':'나무열매를 지니고 있지 않아'} 실패했다`,'battle',{mid,img:atk.image||''});A().closeModal();return}
+   const mv=MVS(atk)[+mvSel.value];if(!mv)return;if(sealed(atk,mv)){if(!ctx().mgr){A().toast('「봉인」 — 이 기술은 내보낼 수 없다');return}A().toast('「봉인」된 기술 — GM 이라 판정은 한다 (바로잡을 때만)')}if(taunted(atk,mv)){if(!ctx().mgr){A().toast('「도발」 — 변화기는 내보낼 수 없다');return}A().toast('「도발」 중 변화기 — GM 이라 판정은 한다 (도발 턴은 줄지 않는다)')}if(isNG(mv)&&!NG){A().toast(`나무열매를 지니고 있지 않아 「${NGN}」는 실패한다`);A().sysLog(`【공격】 ${atk.name} 『${NGN}』 — ${IT(atk)?'「'+IT(atk)+'」는 자연의은혜에 쓸 수 없는 소지품이라':'나무열매를 지니고 있지 않아'} 실패했다`,'battle',{mid,img:atk.image||''});A().closeModal();return}
    {const FI=OI()&&OI().moveKind&&OI().moveKind(mv)==='fling'?OI().flingInfo(atk):null;if(FI&&!FI.ok){A().toast(`${FI.why} 「${mv.name}」는 실패한다`);A().sysLog(`【공격】 ${atk.name} 『${mv.name}』 — ${FI.why} 실패했다`,'battle',{mid,img:atk.image||''});A().closeModal();return}}   /* 11-06 내던지기: 빈손 · 못 던지는 소지품 · 서투름 · 금제 */
    const keepCK=ACCKEEP&&RESULT&&RESULT.checkOnly?{checkOnly:RESULT.checkOnly,lines:RESULT.lines||[]}:null;RESULT=null;SECADJ={add:+(($('#asecadd',md)||{}).value)||0,sure:!!(($('#asecsure',md)||{}).checked)};
    /* 행동 판정: 상태 변화로 못 움직이면 여기서 끝. 적용하면 상태 변화(잠듦 남은 턴·얼음 해제 등)와 로그만 남는다 */
@@ -2682,7 +2686,7 @@ window.OM_BATTLE_UI=(()=>{
     /* 와이드가드(「전체기 방어」): 그 진영이 받는 전체기(대상 2체 이상 · 범위가 전체인 기술)를 막는다 — 같은 편 전체기도 */const wideBlock=def!==atk&&+(((f.objects||{})[def.side]||{})['와이드가드']||0)>0&&(multiTarget||/전체|자신\s*이외/.test(String(mv.range||'')));
     const effPre=mv.cat==='변화'?null:B().effectiveness(moveTypes,def,{scrappy:spL(atk,'scrappy'),multiMode:+g('amulti').value,atkTypes,force:g('aforce').value===''?null:+g('aforce').value,floating:(def.states||{}).MagnetRise||(def.states||{}).Telekinesis||(FX()&&FX().floating(def))||HAS(def,'풍선')});
     /* 11-05 망령: 조건부 회피 강화(약점회피 「회피 ×1.1 굉장」) — 상성을 명중 판정 전에 본다 */const EVM=FX()&&FX().evaMods&&def!==atk?FX().evaMods(roleV(atk),roleV(def),Object.assign(moveQuery(atk,def,mv,moveTypes,effPre?effPre.value:1,!multiTarget),{stab:!!(effPre&&effPre.stab)})):{v:1,names:[]};
-    const protBlock=def!==atk&&!PBY&&(def.flags||{}).protect===(+b.turn||0)&&def.hp.cur>0;const accRoll0=()=>protBlock?{prot:1,sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:`${def.name} 「기술 방어」 — 기술을 막았다`,prot:1}:wideBlock?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:`${SIDE_KO[def.side]} 「와이드가드」 — 전체기를 막았다`}:itImm?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:`${def.name}의 「${itImm}」 — 효과가 없다`}:psyBlock?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:'사이코필드 — 땅 위라 선공 기술 무효'}:autoMiss?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:'지령으로 회피/명중 0'}:B().accuracy(atk,def,{acc:md.dataset.wacc?+md.dataset.wacc:mv.acc},{accMult:n('aacc'),sureHit:sure,starry:f.weather.type==='별하늘',fog:f.weather.type==='짙은안개',fogImmune:tysOf(atk).some(t=>t==='Poison'||t==='Fairy')/* 11-01 망령: 독 · 페어리 「타입」 포켓몬만 면제 (맵툴 캠페인 calculate_attack) */,gravity:(f.etc||{})['중력']>0,wideLens:HAS(atk,'광각렌즈'),ignoreAcc:IG.acc,ignoreEva:IG.eva,evaMult:EVM.v});
+    const protBlock=def!==atk&&!PBY&&((def.flags||{}).protect===(+b.turn||0)||!!(def.states||{}).Protect)&&def.hp.cur>0;   /* 11-07: 상태 DB 「방어」(Protect)도 같은 막기 */const accRoll0=()=>protBlock?{prot:1,sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:`${def.name} 「기술 방어」 — 기술을 막았다`,prot:1}:wideBlock?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:`${SIDE_KO[def.side]} 「와이드가드」 — 전체기를 막았다`}:itImm?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:`${def.name}의 「${itImm}」 — 효과가 없다`}:psyBlock?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:'사이코필드 — 땅 위라 선공 기술 무효'}:autoMiss?{sure:false,hit:false,target:0,roll:0,acc:0,eva:0,note:'지령으로 회피/명중 0'}:B().accuracy(atk,def,{acc:md.dataset.wacc?+md.dataset.wacc:mv.acc},{accMult:n('aacc'),sureHit:sure,starry:f.weather.type==='별하늘',fog:f.weather.type==='짙은안개',fogImmune:tysOf(atk).some(t=>t==='Poison'||t==='Fairy')/* 11-01 망령: 독 · 페어리 「타입」 포켓몬만 면제 (맵툴 캠페인 calculate_attack) */,gravity:(f.etc||{})['중력']>0,wideLens:HAS(atk,'광각렌즈'),ignoreAcc:IG.acc,ignoreEva:IG.eva,evaMult:EVM.v});
      /* 11-03 「회피 N할」: 맞은 쪽의 회피 효과 — 필중이 아니면 한 번 더 굴린다 */const accRoll=()=>{const r=accRoll0();if(r&&r.hit&&!r.sure&&def!==atk&&!sameT(def,atk,b)){const ev=spL(def,'evade').find(e=>spHit(e,mv,moveTypes));if(ev){const rl=1+Math.floor(Math.random()*100);if(rl<=+ev.pct)return Object.assign({},r,{hit:false,note:`${def.name} 「${ev.name}」 ${ev.pct}% 회피 (${rl})`})}}return r};const acc=accRoll();
     /* 효과 엔진: 상성을 먼저 보고 강화·완화·급소 조건을 맞춘다 */
     const mods=FX()?FX().attackMods(roleV(atk),roleV(def),Object.assign(moveQuery(atk,def,mv,moveTypes,effPre?effPre.value:1,!multiTarget),{stab:!!(effPre&&effPre.stab)})):{boost:1,guard:1,cg:0,cr:0,cx:'',names:[]};
@@ -2779,10 +2783,10 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【[^】]*】\s
    /* 「기술을 내보낼 때마다」 줄어드는 상태 (prog:'move' — 도발·앙코르·사슬묶기·침묵·소란피기·난동부리기 … + 얼음). 잠듦·혼란·얼음은 행동 판정을 돌렸으면 거기서 이미 줄었다 */
    /* 충전·가열·냉각·장전: 그 타입 기술로 대미지를 줬으면 상태를 쓴다 */
    {const a=nb.mons[mid];const ty=tyOf(RESULT.mv||{});if(a&&a.states&&RESULT.targets.some(r=>r.acc.hit&&r.dmg))for(const k in CHARGE_ST)if(a.states[k]&&CHARGE_ST[k]===ty){delete a.states[k];lines.push(`${a.name} 「${(((DB().states||{}).st||{})[k]||{}).ko||k}」 사용 — 대미지 2배`)}}
-   {const a=nb.mons[mid];const sdb=(DB().states||{}).st||{};const st=(a&&a.states)||{};for(const k of Object.keys(st)){const d=sdb[k]||{};const v=+st[k];if(!movesDown(k,d)||!(v>0&&v<1000))continue;if(RESULT.checkOnly&&(k==='Sleep'||k==='Confusion'||k==='Freeze'))continue;
+   {const a=nb.mons[mid];const sdb=(DB().states||{}).st||{};const st=(a&&a.states)||{};for(const k of Object.keys(st)){const d=sdb[k]||{};const v=+st[k];if(!movesDown(k,d)||!(v>0&&v<1000))continue;if(k==='Taunt'&&RESULT.mv&&RESULT.mv.cat==='변화')continue;if(RESULT.checkOnly&&(k==='Sleep'||k==='Confusion'||k==='Freeze'))continue;
     if(v<=1){delete st[k];lines.push(`${a.name} 「${d.ko||k}」 해제`)}else{st[k]=v-1;lines.push(`${a.name} 「${d.ko||k}」 남은 ${v-1}`)}}}
-   if(RESULT.protect){const a=nb.mons[mid];const t0=+nb.turn||0;if(RESULT.protect.ok){a.flags=Object.assign({},a.flags||{},{protect:t0});a.protectLast=t0;a.protectN=RESULT.protect.k+1;lines.push(`${a.name} 「기술 방어」 — 이번 턴 상대의 기술을 막는다`)}else{if(a.flags)delete a.flags.protect;a.protectLast=null;a.protectN=0;lines.push(`${a.name} 「기술 방어」 실패 (연속 사용)`)}}
-   if(RESULT.bypass==='clear')for(const r of RESULT.targets){const d=nb.mons[r.def.id];if(r.acc.hit&&d&&d.flags&&d.flags.protect!=null){delete d.flags.protect;lines.push(`${d.name} 「기술 방어」 해제 — 『${RESULT.mv.name}』`)}}
+   if(RESULT.protect){const a=nb.mons[mid];const t0=+nb.turn||0;if(RESULT.protect.ok){a.flags=Object.assign({},a.flags||{},{protect:t0});a.states=Object.assign({},a.states||{},{Protect:1});a.protectLast=t0;a.protectN=RESULT.protect.k+1;lines.push(`${a.name} 「기술 방어」 — 이번 턴 상대의 기술을 막는다`)}else{if(a.flags)delete a.flags.protect;a.protectLast=null;a.protectN=0;lines.push(`${a.name} 「기술 방어」 실패 (연속 사용)`)}}
+   if(RESULT.bypass==='clear')for(const r of RESULT.targets){const d=nb.mons[r.def.id];if(r.acc.hit&&d&&((d.flags&&d.flags.protect!=null)||(d.states||{}).Protect)){if(d.flags)delete d.flags.protect;if(d.states)delete d.states.Protect;lines.push(`${d.name} 「기술 방어」 해제 — 『${RESULT.mv.name}』`)}}
    /* 맵툴처럼 공격 쪽은 판정만 한다. 피해는 받는 쪽이 「HP」 창에서 완화 배율을 넣고 적용한다 (lastHit 에 기록) */
    let dealtAny=false;const sumL=[];   /* 11-03 감우 (검토 11): 【전달】 카드는 【공격】 카드와 같은 판정을 되풀이하지 않고 「누구 → 누구 ≈ 대미지」 한 줄 요약만 — 나머지 줄(반동 · 드레인 · 상태 · 기능 확장 …)은 새 정보라 남긴다 */
    for(const r of RESULT.targets){const def=nb.mons[r.def.id];if(!def)continue;
