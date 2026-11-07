@@ -1374,7 +1374,7 @@ function openRoomSettings(tab){
  /* 11-07 망령 「캠퍼스 2 는 늘 캠퍼스 1 이랑 같은 상태로」: 방 따라가기 (db_ui followOf · syncFrom) */
  {const D=window.OM_DB_UI,box=$('#folBox',m);const show=async()=>{if(!box||!D||!D.followOf)return;const f=(ST.state.rp||{}).follow;const par=await D.followOf();let nm=par||'';if(par){try{const r=await DBS().getRoom(par);nm=(r&&r.name)||par}catch(e){}}
    box.innerHTML=par?`이 방은 「<b>${esc(nm)}</b>」(${esc(par)})를 따라간다 — ${typeof f==='string'?'직접 정함':'세션 노트 잇기(여러 방)에서 자동'}`:(f===''?'따라가지 않음 (끔)':'따라가지 않음 — 이 방이 주 방이거나 이어진 방이 없다')};show();
-  const put=async v=>{await set(['rp','follow'],v);show();sysLog(v===null?'방 설정: DB · 설정 따라가기 — 세션 노트 잇기대로':v?`방 설정: DB · 설정은 방 ${v} 를 따라간다`:'방 설정: DB · 설정 따라가기를 껐다')};
+  const put=async v=>{await set(['rp','follow'],v);show();if(v===false&&D&&D.bbsShare)D.bbsShare('');sysLog(v===null?'방 설정: DB · 설정 따라가기 — 세션 노트 잇기대로':v?`방 설정: DB · 설정은 방 ${v} 를 따라간다`:'방 설정: DB · 설정 따라가기를 껐다')};
   const fs=$('#folSet',m),fo=$('#folOff',m),fa=$('#folAuto',m),fn=$('#folNow',m),fr=$('#folRoom',m);
   if(fs)fs.onclick=async()=>{const v=fr.value.trim().replace(/^.*[#&]r=/,'').replace(/[&#].*$/,'');if(!/^[a-z0-9]{6,20}$/i.test(v)||v===ST.room)return toast('주 방 id 를 적어 줘 (방 주소 #r= 뒤)');try{const r=await DBS().getRoom(v);if(!r)return toast('그런 방이 없다')}catch(e){return toast('방을 못 읽었다')}await put(v)};
   if(fo)fo.onclick=()=>put('');if(fa)fa.onclick=()=>put(null);

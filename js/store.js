@@ -181,6 +181,7 @@ async function shrinkUpload(blob,maxSide){try{if(!/^image\/(png|jpe?g|webp|bmp)$
   hookTest:(room,secret)=>rpc('om_bbs_hook_test',{p_room:room,p_secret:secret}),
   /* 11-07 따라가는 방: 주 방의 디스코드 연동을 그대로 (supabase/patch_2026-11-07_디코따라가기.sql) */
   hookFollow:(room,secret,from)=>rpc('om_bbs_hook_follow',{p_room:room,p_secret:secret,p_from:from}),
+  shareSet:(room,secret,from)=>rpc('om_bbs_share_set',{p_room:room,p_secret:secret,p_from:from||''}),   /* 11-07: 따라가는 방은 주 방 게시판을 함께 (patch_2026-11-07_게시판_따라가기.sql) */
   hookResult:(room,secret,id)=>rpc('om_bbs_hook_result',{p_room:room,p_secret:secret,p_id:id}),
   /* 11-02 시트 「한 장 요약」 → 디코로 (방에 앉은 사람) */
   dcCard:(room,secret,o)=>rpc('om_dc_card',{p_room:room,p_secret:secret,p_title:o.title||'',p_sub:o.sub||'',p_img:o.img,p_who:o.who||{}}),

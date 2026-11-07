@@ -179,7 +179,11 @@ window.OM_DB_UI=(()=>{
   FOL={room:ST.room,at:Date.now(),par};return par}
  /* 11-07 망령 「캠퍼스 2 디코 연동도 캠퍼스 따라가게」: 따라가기를 맞출 때 GM 이면 주 방의 디스코드 연동도 받아 온다 (10분에 한 번) */
  let HOOKF={k:'',at:0};async function hookFollow(par){const ST=A().ST;if(ST.role!=='gm'||!par)return;const k=ST.room+'>'+par;if(HOOKF.k===k&&Date.now()-HOOKF.at<600000)return;HOOKF={k,at:Date.now()};
-  try{const api=window.OM_STORE&&window.OM_STORE.bbs;if(!api||!api.hookFollow)return;const r=await api.hookFollow(ST.room,ST.secret,par);if(r&&r.ok)console.info('[디코] 주 방 연동을 받아 왔다',par)}catch(e){if(!(window.OM_STORE.bbs.noFn&&window.OM_STORE.bbs.noFn(e)))console.warn('디코 연동 따라가기',e&&e.message)}}
+  try{const api=window.OM_STORE&&window.OM_STORE.bbs;if(!api||!api.hookFollow)return;const r=await api.hookFollow(ST.room,ST.secret,par);if(r&&r.ok)console.info('[디코] 주 방 연동을 받아 왔다',par)}catch(e){if(!(window.OM_STORE.bbs.noFn&&window.OM_STORE.bbs.noFn(e)))console.warn('디코 연동 따라가기',e&&e.message)}
+  bbsShare(par)}
+ /* 11-07 망령 「미사그 2 에서 학교 게시판 연결이 안 돼 있다」: 따라가는 방은 주 방의 학교 게시판을 같이 쓴다 (GM 이 맞출 때 서버에 적는다) */
+ async function bbsShare(par){const ST=A().ST;if(ST.role!=='gm')return;const api=window.OM_STORE&&window.OM_STORE.bbs;if(!api||!api.shareSet)return;
+  try{const r=await api.shareSet(ST.room,ST.secret,par||'');if(r&&r.ok){console.info('[게시판] 이 방 게시판 =',r.main);const B=window.OM_BBS_UI;if(B&&B.refresh)B.refresh().catch(()=>{})}}catch(e){if(!(api.noFn&&api.noFn(e)))console.warn('게시판 따라가기',e&&e.message)}}
  async function syncFrom(par){hookFollow(par);const S=window.OM_STORE;if(!S||!S.roomPick)return false;let pick=null;try{pick=await S.roomPick(par)}catch(e){console.warn('방 따라가기',e);return false}if(!pick||!pick.dbx)return false;
   const dbx=JSON.parse(JSON.stringify(pick.dbx));
   try{const since=dbx.mvV?(dbx.mkSeen||null):null;const rows=await S.makerDocsSince('dbedit',since);if(rows.length){mergeMaker(dbx,rows,!since);dbx.mvV=1;const at=maxAt(rows);if(at)dbx.mkSeen=at}}catch(e){console.warn('방 따라가기 — 제작기',e)}
@@ -247,5 +251,5 @@ window.OM_DB_UI=(()=>{
     try{await window.OM_STORE.makerPut('dbedit','rm.'+keySeg(r.k),{kind:'rm',key:r.k,row,custom:false,pos:RB[r.k]?-1:99999});ok++}catch(e){fail.push(r.k+' ('+e.message+')')}}
    const ov=JSON.parse(JSON.stringify(((A().ST.state.dbx||{}).rm)||{}));for(const r of pick)if(!fail.some(f=>f.startsWith(r.k+' ('))&&ov[r.k])ov[r.k].src='maker';await A().set(['dbx','rm'],ov);
    A().closeModal();A().toast(`제작기 레디메이드 DB 에 ${ok}개 올렸다${fail.length?` · 실패 ${fail.length}`:''} — 제작기는 새로고침하면 보인다`);if(fail.length)A().sysLog('【레디메이드 옮기기 실패】\n'+fail.join('\n'),'sys')}}
- return {open,pretty,effectHtml,applyOverride,syncMaker,pullMaker,startAuto,ensureMaker,fillEff,pushRm,roomRm,healRm,healStale,followOf,syncFrom,followName};
+ return {open,pretty,effectHtml,applyOverride,syncMaker,pullMaker,startAuto,ensureMaker,fillEff,pushRm,roomRm,healRm,healStale,followOf,syncFrom,followName,bbsShare};
 })();

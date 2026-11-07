@@ -17,7 +17,7 @@ window.OM_BBS_UI=(()=>{
  /* 11-02: 세션 노트에는 전역 cssu 가 없다 (그림 있는 글쓴이에서 멈추던 원인) */
  const cssu=s=>String(s??'').replace(/[\s"'()\\<>]/g,c=>'%'+c.charCodeAt(0).toString(16).padStart(2,'0').toUpperCase());
  const LS={get:(k,d)=>{try{const v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
- const S={rows:new Map(),boards:[],ver:0,board:'free',open:false,md:null,open2:new Set(),draft:'',anon:false,imgUrl:'',busy:false,err:'',noSql:false,cdraft:{},room:'',lastPoll:0,unread:0,env:null,who:null,embed:false,ekey:'',more:new Set(),pmore:false,pend:false};
+ const S={rows:new Map(),boards:[],ver:0,board:'free',open:false,md:null,open2:new Set(),draft:'',anon:false,imgUrl:'',busy:false,err:'',noSql:false,cdraft:{},cimg:{},room:'',lastPoll:0,unread:0,env:null,who:null,embed:false,ekey:'',more:new Set(),pmore:false,pend:false};
  const isNoFn=e=>{const m=String((e&&(e.message||e.details||e.code))||'');return /PGRST202|Could not find the function|function .* does not exist/i.test(m)};
  /* om_bbs_* RPC 를 아무 rpc(fn,args) 함수로 */
  function apiFromRpc(rpc){return {noFn:isNoFn,boards:(r,s)=>rpc('om_bbs_boards',{p_room:r,p_secret:s||''}),
@@ -104,8 +104,8 @@ window.OM_BBS_UI=(()=>{
    <footer><button type="button" class="bbs-act ${liked?'on':''}" data-bb="like" data-id="${r.id}" ${canWrite()?'':'disabled'} aria-pressed="${liked}">♥ <b>${lk.length}</b></button><button type="button" class="bbs-act ${open?'on':''}" data-bb="cm" data-id="${r.id}" aria-expanded="${open}">💬 <b>${kids.filter(k=>!k.del).length}</b></button></footer>
    ${open?commentsHtml(r,kids,true):''}</article>`}
  function commentsHtml(r,kids,open){if(!open)return '';const d=S.cdraft[r.id]||'';
-  return `<div class="bbs-cms">${kids.map(c=>{const who=c.who||{};if(c.del)return '<div class="bbs-cm gone">지운 댓글</div>';return `<div class="bbs-cm">${avatar(c.anon&&who.n!=='익명'?{n:'익명'}:who,c.anon)}<div><div class="bbs-nm">${nameOf(c)}<time>${esc(fmtT(c.at))}</time>${mine(c.w)&&c.w?`<button type="button" class="bbs-x" data-bb="del" data-id="${c.id}" title="지우기" aria-label="댓글 지우기">✕</button>`:''}</div><div class="bbs-body">${bodyHtml(c.body)}</div></div></div>`}).join('')}
-   ${canWrite()&&!r.del?`<form class="bbs-cform" data-cf="${r.id}"><input type="text" maxlength="1000" placeholder="댓글 달기" value="${esc(d)}" data-cin="${r.id}" aria-label="댓글"><label class="bbs-anon"><input type="checkbox" data-canon="${r.id}"> 익명</label><button type="submit" class="btn xs">달기</button></form>`:''}</div>`}
+  return `<div class="bbs-cms">${kids.map(c=>{const who=c.who||{};if(c.del)return '<div class="bbs-cm gone">지운 댓글</div>';return `<div class="bbs-cm">${avatar(c.anon&&who.n!=='익명'?{n:'익명'}:who,c.anon)}<div><div class="bbs-nm">${nameOf(c)}<time>${esc(fmtT(c.at))}</time>${mine(c.w)&&c.w?`<button type="button" class="bbs-x" data-bb="del" data-id="${c.id}" title="지우기" aria-label="댓글 지우기">✕</button>`:''}</div>${c.body?`<div class="bbs-body">${bodyHtml(c.body)}</div>`:''}${img(c.img)?`<a class="bbs-img bbs-cimg" href="${esc(c.img)}" target="_blank" rel="noopener"><img src="${esc(c.img)}" alt="" loading="lazy"></a>`:''}</div></div>`}).join('')}
+   ${canWrite()&&!r.del?`${S.cimg[r.id]?`<div class="bbs-pimg bbs-cpimg"><img src="${esc(S.cimg[r.id])}" alt=""><button type="button" class="bbs-x" data-bb="nocimg" data-id="${r.id}" aria-label="댓글 그림 빼기">✕</button></div>`:''}<form class="bbs-cform" data-cf="${r.id}"><input type="text" maxlength="1000" placeholder="댓글 달기 (그림은 🖼 · 붙여 넣기)" value="${esc(d)}" data-cin="${r.id}" aria-label="댓글"><label class="btn xs ghost bbs-file" title="댓글에 그림 넣기">🖼<input type="file" accept="image/*" data-bb-cfile="${r.id}" hidden></label><label class="bbs-anon"><input type="checkbox" data-canon="${r.id}"> 익명</label><button type="submit" class="btn xs" ${S.busy?'disabled':''}>달기</button></form>`:''}</div>`}
  /* ----- 11-02 망령 「게시판 창 양쪽으로 — 왼쪽은 휴대폰처럼(내 입력칸 · 연락처), 오른쪽은 게시물. 6개쯤 보이고 그 뒤는 접어서」 -----
    웹툴 창(embed 아님)만 두 칸. 휴대폰 · 세션 노트 안은 한 줄 그대로(접기만 같이). 휴대폰 앱 · 연락처는 OM_PHONE_UI(bookFor · openFor) */
  const FOLD=6;
@@ -244,6 +244,7 @@ window.OM_BBS_UI=(()=>{
   if(k==='cm'){const s=String(id);if(S.open2.has(s))S.open2.delete(s);else S.open2.add(s);draw();const i=S.md.querySelector(`[data-cin="${s}"]`);if(i)i.focus();return}
   if(k==='del'){if(!confirm('이 글을 지울까요?'))return;act(()=>API().del(room(),sec(),+id),'지웠어요');return}
   if(k==='noimg'){S.imgUrl='';draw();return}
+  if(k==='nocimg'){delete S.cimg[id];draw();return}
   if(k==='newb'||k==='editb'){const cur=boardList().find(x=>x.id===S.board)||{};const isNew=k==='newb';
    const nm=prompt(isNew?'새 게시판 이름 (30자까지)':'게시판 이름',isNew?'':cur.name||'');if(nm==null||!nm.trim())return;const ds=prompt('한 줄 설명 (비워도 돼요)',isNew?'':cur.descr||'');if(ds==null)return;
    const bid=isNew?'b'+Date.now().toString(36)+Math.random().toString(36).slice(2,5):cur.id;
@@ -254,26 +255,28 @@ window.OM_BBS_UI=(()=>{
   if(f.matches('[data-bb-form="post"]')){e.preventDefault();const t=String(S.draft||'').trim();if(!t&&!S.imgUrl)return;const au=curAuthor();if(!au)return;S.busy=true;draw();
    try{await API().post(room(),sec(),S.board,null,{n:au.n,img:img(au.img),cid:au.cid},S.anon,t,S.imgUrl);S.draft='';S.imgUrl='';notify()}catch(er){toast(API().noFn(er)?noSqlMsg:String((er&&er.message)||er))}
    S.busy=false;await pull();markSeen();return}
-  if(f.matches('[data-cf]')){e.preventDefault();const pid=f.dataset.cf;const t=String(S.cdraft[pid]||'').trim();if(!t)return;const au=curAuthor();const an=!!(f.querySelector('[data-canon]')||{}).checked;
-   try{await API().post(room(),sec(),S.board,+pid,{n:au.n,img:img(au.img),cid:au.cid},an,t,'');S.cdraft[pid]='';notify()}catch(er){toast(API().noFn(er)?noSqlMsg:String((er&&er.message)||er))}
+  if(f.matches('[data-cf]')){e.preventDefault();const pid=f.dataset.cf;const t=String(S.cdraft[pid]||'').trim();const ci=S.cimg[pid]||'';if(!t&&!ci)return;const au=curAuthor();const an=!!(f.querySelector('[data-canon]')||{}).checked;
+   try{await API().post(room(),sec(),S.board,+pid,{n:au.n,img:img(au.img),cid:au.cid},an,t,ci);S.cdraft[pid]='';delete S.cimg[pid];notify()}catch(er){toast(API().noFn(er)?noSqlMsg:String((er&&er.message)||er))}
    await pull();markSeen()}}
  function onInput(e){const t=e.target;if(!S.md||!S.md.contains(t))return;
   if(t.matches('[data-bb-text]'))S.draft=t.value;else if(t.matches('[data-cin]'))S.cdraft[t.dataset.cin]=t.value}
  async function onChange(e){const t=e.target;if(!S.md||!S.md.contains(t))return;
   if(t.matches('[data-bb-who]')){LS.set('om_bbs_who_'+room(),t.value);draw();return}
   if(t.matches('[data-bb-anon]')){S.anon=t.checked;draw();return}
-  if(t.matches('[data-bb-file]')){const f=t.files&&t.files[0];t.value='';upImg(f)}}
- async function upImg(f){if(!f||S.busy)return;if(!/^image\//.test(f.type||'')){toast('그림 파일만 올릴 수 있어요');return}if(f.size>15*1024*1024){toast('그림이 너무 커요 (15MB)');return}
-  S.busy=true;draw();try{S.imgUrl=await E().upload(f)}catch(er){toast('그림을 올리지 못했어요: '+((er&&er.message)||er))}S.busy=false;draw()}
+  if(t.matches('[data-bb-file]')){const f=t.files&&t.files[0];t.value='';upImg(f)}
+  if(t.matches('[data-bb-cfile]')){const f=t.files&&t.files[0];const pid=t.dataset.bbCfile;t.value='';upImg(f,pid)}}
+ async function upImg(f,pid){if(!f||S.busy)return;if(!/^image\//.test(f.type||'')){toast('그림 파일만 올릴 수 있어요');return}if(f.size>15*1024*1024){toast('그림이 너무 커요 (15MB)');return}
+  S.busy=true;draw();try{const u=await E().upload(f);if(pid)S.cimg[pid]=u;else S.imgUrl=u}catch(er){toast('그림을 올리지 못했어요: '+((er&&er.message)||er))}S.busy=false;draw()}
  /* 끌어다 놓기 · 붙여 넣기: 게시판 창 어디에 놓아도 글쓰기 칸의 그림이 된다 (파일 · 다른 웹 페이지의 그림 주소) */
  function dropForm(t){if(!S.open||!S.md||!t||!t.closest||!S.md.contains(t)||!canWrite()||S.noSql)return null;return S.md.querySelector('[data-bb-form="post"]')}
  const dtHas=e=>{const T=[...((e.dataTransfer||{}).types||[])];return T.includes('Files')||T.includes('text/uri-list')};
  let dragT=0;function dragOff(){const f=S.md&&S.md.querySelector('.bbs-compose.drag');if(f)f.classList.remove('drag')}
  function onDragOver(e){const f=dropForm(e.target);if(!f||!dtHas(e))return;e.preventDefault();e.dataTransfer.dropEffect='copy';f.classList.add('drag');clearTimeout(dragT);dragT=setTimeout(dragOff,180)}
  function onDrop(e){const f=dropForm(e.target);if(!f||!dtHas(e))return;e.preventDefault();dragOff();const dt=e.dataTransfer;const file=[...(dt.files||[])].find(x=>/^image\//.test(x.type||''));
-  if(file){upImg(file);return}if((dt.files||[]).length){toast('그림 파일만 올릴 수 있어요');return}
-  const u=img(String(dt.getData('text/uri-list')||dt.getData('text/plain')||'').split(/\r?\n/).find(x=>x&&x[0]!=='#')||'');if(u){S.imgUrl=u;draw()}else toast('그림을 알아보지 못했어요 — 파일로 저장해서 놓아 주세요')}
- function onPaste(e){if(!dropForm(e.target))return;const it=[...((e.clipboardData||{}).items||[])].find(x=>x.kind==='file'&&/^image\//.test(x.type));if(!it)return;e.preventDefault();upImg(it.getAsFile())}
+  if(file){upImg(file,cfOf(e.target)||undefined);return}if((dt.files||[]).length){toast('그림 파일만 올릴 수 있어요');return}
+  const u=img(String(dt.getData('text/uri-list')||dt.getData('text/plain')||'').split(/\r?\n/).find(x=>x&&x[0]!=='#')||'');if(u){const pid=cfOf(e.target);if(pid)S.cimg[pid]=u;else S.imgUrl=u;draw()}else toast('그림을 알아보지 못했어요 — 파일로 저장해서 놓아 주세요')}
+ const cfOf=t=>{const f=t&&t.closest&&t.closest('[data-cf]');return f?f.dataset.cf:''};   /* 11-07 망령 「댓글에 이미지 넣기」: 댓글 칸에 붙여 넣거나 놓으면 그 댓글 그림 */
+ function onPaste(e){if(!dropForm(e.target))return;const it=[...((e.clipboardData||{}).items||[])].find(x=>x.kind==='file'&&/^image\//.test(x.type));if(!it)return;e.preventDefault();upImg(it.getAsFile(),cfOf(e.target)||undefined)}
 
  function mount(el,o){o=o||{};S.env=o.env||null;S.who=o.who||null;S.embed=true;S.compact=o.compact!==false;S.split=!!o.split;closeWho();S.md=el;S.open=true;draw();if(Date.now()-S.lastPoll>3000||(S.env&&S.env.key)+'|'+room()!==S.ekey)pull().then(markSeen);else markSeen()}
  function openBoard(){S.split=true;S.env=null;S.who=null;S.embed=false;S.compact=true;closeWho();if(!room())return;S.open=true;S.md=A().openModal('<div class="mhead"><h2>학교 게시판</h2><span class="sp"></span><button type="button" class="btn ghost" data-x>닫기</button></div><p class="small dim">불러오는 중…</p>');S.md.classList.add('bbsmodal');draw();pull(!S.rows.size).then(markSeen)}
@@ -288,4 +291,4 @@ window.OM_BBS_UI=(()=>{
  document.addEventListener('click',onClick);document.addEventListener('submit',onSubmit);document.addEventListener('input',onInput);document.addEventListener('change',onChange);document.addEventListener('dragover',onDragOver);document.addEventListener('drop',onDrop);document.addEventListener('paste',onPaste);
  /* 글 쓰는 중에 새 글이 와도 칸을 다시 그리지 않는다 (쓰던 칸이 풀리던 것) — 칸을 떠나면 그때 */
  document.addEventListener('focusout',e=>{if(!S.pend||!S.md||!S.md.contains(e.target))return;setTimeout(()=>{if(S.pend&&!typing())redraw()},0)});
- return {V:11,dcMount,openBoard,mount,onEvent,pull,apiFromRpc,unread:()=>S.unread}})();   /* V: 세션 노트가 이보다 옛 것을 들고 있으면 다시 불러온다 */
+ return {V:12,dcMount,openBoard,mount,onEvent,pull,refresh:()=>{S.ekey='';return pull(true)},apiFromRpc,unread:()=>S.unread}})();   /* V: 세션 노트가 이보다 옛 것을 들고 있으면 다시 불러온다 */
