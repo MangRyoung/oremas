@@ -194,13 +194,15 @@ window.OM_ITEMS=(()=>{
 
  /* ----- 턴 종료 (field.js turnEndStates 에서): 먹다남은음식 · 검은진흙 · 불꽃구슬 · 맹독구슬 · 끈적끈적바늘 ----- */
  function turnEnd(m,lines,H){for(const {r} of all(m)){if(m.hp.cur<=0)return;if(r.te)turnEnd1(m,lines,H,r)}}
+ /* 11-07 망령 「턴 종료 시 HP 회복은 중첩 안 돼 — 가장 높은 것만」: 회복하는 소지품 몫은 field.js 가 다른 회복과 함께 견주어 가장 큰 것 하나만 준다 (H.noHeal 이면 여기선 회복을 건너뛴다) */
+ function teHeals(m){const out=[];for(const {r} of all(m)){const t=r.te;if(!t)continue;if(t.sludge&&typesOf(m).includes('Poison'))out.push({v:frac(m.hp.max,t.heal),why:`「${r.name}」`});else if(!t.sludge&&t.heal)out.push({v:frac(m.hp.max,t.heal),why:`「${r.name}」`})}return out}
  function turnEnd1(m,lines,H,r){const t=r.te;
-  if(t.sludge){if(typesOf(m).includes('Poison')){if(m.hp.cur<m.hp.max)H.heal(m,frac(m.hp.max,t.heal),lines,`「${r.name}」`)}else H.dmg(m,frac(m.hp.max,t.dmg),lines,`「${r.name}」 ${t.dmg}`);return}
-  if(t.heal){if(m.hp.cur<m.hp.max)H.heal(m,frac(m.hp.max,t.heal),lines,`「${r.name}」`);return}
+  if(t.sludge){if(typesOf(m).includes('Poison')){if(!H.noHeal&&m.hp.cur<m.hp.max)H.heal(m,frac(m.hp.max,t.heal),lines,`「${r.name}」`)}else H.dmg(m,frac(m.hp.max,t.dmg),lines,`「${r.name}」 ${t.dmg}`);return}
+  if(t.heal){if(!H.noHeal&&m.hp.cur<m.hp.max)H.heal(m,frac(m.hp.max,t.heal),lines,`「${r.name}」`);return}
   if(t.dmg){H.dmg(m,frac(m.hp.max,t.dmg),lines,`「${r.name}」 ${t.dmg}`);return}
   if(t.st){const st=m.states||{};if(ABN.some(k=>st[k])||st.Comatose)return;const ty=typesOf(m);if(t.st==='Burn'&&ty.includes('Fire'))return;if((t.st==='Toxic'||t.st==='Poison')&&(ty.includes('Poison')||ty.includes('Steel')))return;
    m.states=st;st[t.st]=1000;lines.push(`${m.name} 「${r.name}」 → 「${(((DB().states||{}).st||{})[t.st]||{}).ko||t.st}」`)}}
 
  /* 소지품 칸 표시용: 이 소지품이 자동으로 하는 일 한 줄 (없으면 '') */
  function summary(name){const r=rule(name);if(!r)return '';const L=[];if(r.atk)L.push('위력');if(r.guard)L.push('완화');if(r.immune)L.push('무효');if(r.resist)L.push('반감');if(r.sash)L.push('버티기');if(r.crit||r.critGuard)L.push('급소');if(r.hp)L.push('HP 열매');if(r.cure)L.push('치유');if(r.seed||r.room)L.push('필드');if(r.hit)L.push('맞을 때');if(r.te)L.push('턴 종료');if(r.onDeal||r.onMiss||r.flinch)L.push('쓴 뒤');if(r.white||r.clearW||r.clearT)L.push('조건');return L.join(' · ')}
- return {rule,of,all,names,has,atkMul,defGuard,immune,crit,resist,sash,afterAttack,onHit,sweep,turnEnd,summary,use,moveKind,moveFx,flingInfo,knockable,locked,sticky,slotRule,eat}})();
+ return {rule,of,all,names,has,atkMul,defGuard,immune,crit,resist,sash,afterAttack,onHit,sweep,turnEnd,teHeals,summary,use,moveKind,moveFx,flingInfo,knockable,locked,sticky,slotRule,eat}})();

@@ -44,11 +44,19 @@ const FX=()=>window.OM_FX;
  function confusionHit(m){const st=B().statValue;const A=st(m,'attack').value,D=st(m,'defense').value;const base=Math.floor(Math.floor(Math.floor(2*m.lv/5+2)*40*A/D)/50)+2;return Math.max(1,Math.floor(base*(85+Math.floor(Math.random()*16))/100))}
 
  /* ----- 턴 종료 상태 처리 (state_turnend). mons: 사본, slots: {slot:mon} (씨뿌리기 회복 상대 찾기) ----- */
- function turnEndStates(mons,slots){const lines=[];const dead=[];
+ /* 11-07 23:37 망령 「턴 종료 시 HP 회복은 중첩 안 돼. 가장 높은 것만」: 희망사항 · 아쿠아링 · 뿌리박기 · 환희의노래 · 회복 소지품 · 그래스필드 중 가장 큰 것 하나만.
+    opt.field 를 주면 그래스필드도 여기서 견준다(turnEndField 는 opt.noGrass). 턴 종료 단계에서 특성 · 포텐셜로 먼저 회복한 몫(m.teHeal {t,v})이 있으면 그보다 큰 만큼만 더 준다 */
+ function turnEndStates(mons,slots,opt){opt=opt||{};const lines=[];const dead=[];const fld=opt.field||null;const T=opt.turn;
   for(const id in mons){const m=mons[id];if(!m.entry||m.hp.cur<=0||has(m,'Dead'))continue;const st=m.states||{};const sleeping=has(m,'Sleep')||has(m,'Comatose');
-   /* 희망사항: 건 턴은 표시만, 다음 턴 종료에 1/2 */
-   if(st.Wish){const [wv,wt]=sf(m,'Wish',1,2);if(!m.wishWait){m.wishWait=1;lines.push(`${m.name} 「희망사항」 다음 턴 종료 시 ${wt} 회복`)}else{m.wishWait=0;heal(m,wv,lines,`「희망사항」 ${wt}`);clearState(m,'Wish')}}
-   for(const [k,n,d,ko] of [['AquaRing',1,8,'아쿠아링'],['Ingrain',1,16,'뿌리박기'],['Chant',1,16,'환희의노래']])if(st[k]){const [v,tx]=sf(m,k,n,d);heal(m,v,lines,`「${ko}」 ${tx}`)}
+   const HC=[];const hc=(m2,v,ln,why)=>{HC.push({v,why});return 0};   /* 희망사항: 건 턴은 표시만, 다음 턴 종료에 1/2 */
+   if(st.Wish){const [wv,wt]=sf(m,'Wish',1,2);if(!m.wishWait){m.wishWait=1;lines.push(`${m.name} 「희망사항」 다음 턴 종료 시 ${wt} 회복`)}else{m.wishWait=0;hc(m,wv,lines,`「희망사항」 ${wt}`);clearState(m,'Wish')}}
+   for(const [k,n,d,ko] of [['AquaRing',1,8,'아쿠아링'],['Ingrain',1,16,'뿌리박기'],['Chant',1,16,'환희의노래']])if(st[k]){const [v,tx]=sf(m,k,n,d);hc(m,v,lines,`「${ko}」 ${tx}`)}
+   if(window.OM_ITEMS&&window.OM_ITEMS.teHeals)HC.push(...window.OM_ITEMS.teHeals(m));
+   if(fld&&(fld.terrain||{}).type==='그래스필드'){if(grounded(m))HC.push({v:frac(m,1,16),why:'「그래스필드」'});else lines.push(`${m.name} 땅 위가 아니라 그래스필드 회복 제외`)}
+   {const pr=m.teHeal&&(T==null||+m.teHeal.t===+T)?(+m.teHeal.v||0):0;if(HC.length){HC.sort((a,b)=>b.v-a.v);const top=HC[0];const add=top.v-pr;
+     if(add>0&&m.hp.cur<m.hp.max)heal(m,add,lines,top.why+(pr>0?` (먼저 ${pr} 회복한 몫을 뺀 나머지)`:''));
+     if(HC.length>1||pr>0)lines.push(`${m.name} 턴 종료 회복은 가장 높은 것만 — ${HC.slice(1).map(x=>x.why+' '+x.v).concat(pr>0&&add<=0?[`${top.why} ${top.v}`]:[]).join(' · ')||'나머지'} 안 겹침`)}}
+   delete m.teHeal;
    if(st.LeechSeed){const from=m.seedFrom||((m.side==='left'?'right':'left')+'_'+m.entry);const to=slots[from];if(!to||to.hp.cur<=0)lines.push(`${m.name} 「씨뿌리기」 씨를 뿌린 ${String(from).split('_')[1].toUpperCase()} 에리어에 포켓몬이 없어 회복 없음`);else{const [v,tx]=sf(m,'LeechSeed',1,8);const d=dmg(m,v,lines,`「씨뿌리기」 드레인 ${tx}`);if(d>0)heal(to,d,lines,`「씨뿌리기」(${m.name})`)}}
    if(st.Toxic){m.toxicN=Math.min(15,(+m.toxicN||0)+1);dmg(m,frac(m,m.toxicN,16),lines,`「맹독」 ${m.toxicN}/16`)}else m.toxicN=0;
    if(st.Poison){const [v,tx]=sf(m,'Poison',1,8);dmg(m,v,lines,`「독」 ${tx}`)}if(st.Burn){const [v,tx]=sf(m,'Burn',1,16);dmg(m,v,lines,`「화상」 ${tx}`)}
@@ -60,13 +68,13 @@ const FX=()=>window.OM_FX;
    if(st.DeathCount){const c=+st.DeathCount||0;if(c<=1){lines.push(`${m.name} 「죽음의카운트」 0 · 「빈사」`);m.hp.cur=0;dead.push(m.id)}else lines.push(`${m.name} 「죽음의카운트」 ${c-1}`)}
    for(const [k,to,kn,tn] of [['Yawn','Sleep','하품','잠듦'],['Hibernation','Freeze','동면','얼음']]){if(!st[k])continue;const c=+st[k]||0;if(c>1)continue;const tb=tblock(m,to);if(tb)lines.push(`${m.name} 「${kn}」 땅 위라서 「${tb}」가 「${tn}」을(를) 막았다`);else if(isAbn(m))lines.push(`${m.name} 「${kn}」 이미 상태 이상이라 「${tn}」 상태가 되지 않음`);else{setState(m,to);lines.push(`${m.name} 「${kn}」 → 「${tn}」`)}}
    /* 소지품 (먹다남은음식 · 검은진흙 · 불꽃구슬 · 맹독구슬 · 끈적끈적바늘) — js/engine/items.js */
-   if(m.hp.cur>0&&window.OM_ITEMS)window.OM_ITEMS.turnEnd(m,lines,{heal,dmg});
+   if(m.hp.cur>0&&window.OM_ITEMS)window.OM_ITEMS.turnEnd(m,lines,{heal,dmg,noHeal:1});
    if(m.hp.cur<=0&&!dead.includes(m.id)){dead.push(m.id);lines.push(`${m.name}은(는) 쓰러졌다!`)}}
   return {lines,dead}}
 
  /* ----- 필드 턴 종료 (field_turnend): 그래스필드 1/16 회복(땅 위), 불바다 1/8(불꽃 제외) ----- */
- function turnEndField(mons,field){const lines=[];const f=field||{};
-  if((f.terrain||{}).type==='그래스필드'){for(const id in mons){const m=mons[id];if(!m.entry||m.hp.cur<=0)continue;if(!grounded(m)){lines.push(`${m.name} 땅 위가 아니라 그래스필드 회복 제외`);continue}if(m.hp.cur<m.hp.max)heal(m,frac(m,1,16),lines,'「그래스필드」')}}
+ function turnEndField(mons,field,opt){const lines=[];const f=field||{};
+  if((f.terrain||{}).type==='그래스필드'&&!(opt&&opt.noGrass)){for(const id in mons){const m=mons[id];if(!m.entry||m.hp.cur<=0)continue;if(!grounded(m)){lines.push(`${m.name} 땅 위가 아니라 그래스필드 회복 제외`);continue}if(m.hp.cur<m.hp.max)heal(m,frac(m,1,16),lines,'「그래스필드」')}}
   /* 모래바람: 바위·땅·강철 타입이 아니면 1/16 (방진고글·모래 계열 특성·숨은 상태는 제외). 싸라기눈은 턴 끝 대미지 없음 */
   /* 11-07 에어록 · 날씨부정: 필드 위에 있는 한 「날씨」의 효과 없음 (턴 끝 모래바람도) */
   const wxNeg=Object.values(mons||{}).find(m=>m&&m.entry&&m.hp&&m.hp.cur>0&&/에어록|날씨부정/.test(String(m.ability||'')));

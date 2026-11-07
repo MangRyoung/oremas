@@ -1029,7 +1029,7 @@ window.OM_BATTLE_UI=(()=>{
   let XL=null;if(occ&&occ.id!==mid){XL=await exitMon(occ.id,{forced:!!opt.forced,noAsk:!!opt.noAsk,sys:!!opt.sys,quiet:true})}
   const swIn=occ&&occ.id!==mid?(b.swOut||[]).includes(occ.id):(+b.tstep||0)>=1&&opt.how!=='죽어내밀기'&&(b.swOut||[]).some(id=>{const o=(b.mons||{})[id];return o&&id!==mid&&o.tid===m.tid&&!o.entry&&o.outA===area});   /* 10-27 망령: 동시 죽어내밀기 — 같은 트레이너가 교대도 했으면, 쓰러진 자리로 나온 포켓몬까지 교대 등장이 됐다. 교대로 빠진 바로 그 자리로 나올 때만 */   /* 10-27 망령: 교대하는 포켓몬을 먼저 「퇴장」시키고 빈 자리로 「등장」하면 occ 가 없어 교대 등장으로 안 잡혀, 행동 순서에 들어가 행동했다 — 교대 단계(tstep 1)에 같은 트레이너의 교대 포켓몬이 빠져 있으면 교대 등장 */
   const started=(+b.phase||0)===1&&!(b.order||[]).length&&!swIn;   /* 10-23 망령: 턴 개시 뒤 · 순서 계산 전에 나온 포켓몬(죽어내밀기 · 동시 내밀기 · 윤회)은 그 턴 순서에 들어간다. 그 밖엔 */ /* 턴 도중(교대 · 빈사 교체)에 들어온 포켓몬은 「교대 등장」 — 그 턴엔 지시가 없다. 턴 개시 때 필드에 있던 포켓몬만 setPhase(1) 이 started 로 바꾼다 */
-  await A().set(['battle','mons',mid,'entry'],area);{const faintRep=opt.how==='죽어내밀기'||!occ||(occ.id!==mid&&occ.hp&&occ.hp.cur<=0);const T0=+b.turn||0;await A().set(['battle','mons',mid,'inT'],b.started&&faintRep&&(+b.phase||0)>=2?T0+1:Math.max(1,T0))}   /* 10-26 망령: 죽어내밀기는 다음 턴이 1턴째 — 턴 도중 · 턴 끝에 빈 자리(쓰러진 자리)로 나오면 다음 턴부터 센다 */await A().set(['battle','mons',mid,'started'],started);   /* inT: 필드에 나온 턴 (【지연】 셈 — 나온 턴이 1턴째) */if(m.lastMove)await A().set(['battle','mons',mid,'lastMove'],null);   /* 11-06 스케치: 새로 나오면 마지막 기술 기록을 비운다 */let DSG=null;if(hasIllu(m)){const fk=illuFk(m);const it=fk>=0?null:illuPick(b,m);DSG=fk>=0?'@f'+fk:it?it.id:null;await A().set(['battle','mons',mid,'disg'],DSG)}else if(m.disg)await A().set(['battle','mons',mid,'disg'],null);   /* 11-05 일루젼 */if(!m.seen&&!DSG)await A().set(['battle','mons',mid,'seen'],true);if(m.pend)await A().set(['battle','mons',mid,'pend'],null);
+  await A().set(['battle','mons',mid,'entry'],area);{const faintRep=opt.how==='죽어내밀기'||!occ||(occ.id!==mid&&occ.hp&&occ.hp.cur<=0);const T0=+b.turn||0;const nextT=b.started&&faintRep&&(+b.phase||0)>=2;await A().set(['battle','mons',mid,'inT'],nextT?T0+1:Math.max(1,T0));await A().set(['battle','mons',mid,'inSw'],b.started&&T0>0&&!nextT?1:null)}   /* 11-07 inSw: 이 턴 도중 교대로 나왔다 (가속 — 나온 턴 종료엔 발동 안 함) */   /* 10-26 망령: 죽어내밀기는 다음 턴이 1턴째 — 턴 도중 · 턴 끝에 빈 자리(쓰러진 자리)로 나오면 다음 턴부터 센다 */await A().set(['battle','mons',mid,'started'],started);   /* inT: 필드에 나온 턴 (【지연】 셈 — 나온 턴이 1턴째) */if(m.lastMove)await A().set(['battle','mons',mid,'lastMove'],null);   /* 11-06 스케치: 새로 나오면 마지막 기술 기록을 비운다 */let DSG=null;if(hasIllu(m)){const fk=illuFk(m);const it=fk>=0?null:illuPick(b,m);DSG=fk>=0?'@f'+fk:it?it.id:null;await A().set(['battle','mons',mid,'disg'],DSG)}else if(m.disg)await A().set(['battle','mons',mid,'disg'],null);   /* 11-05 일루젼 */if(!m.seen&&!DSG)await A().set(['battle','mons',mid,'seen'],true);if(m.pend)await A().set(['battle','mons',mid,'pend'],null);
   const EL=await entryLines(mid);
   {/* 10-27 망령: 교대면 나가는 포켓몬 ⇄ 들어오는 포켓몬을 그림과 함께 한 장으로 (먼저 「퇴장」하고 빈 자리로 나온 교대도) */
    const outM=occ&&occ.id!==mid?occ:swIn?(b.swOut||[]).map(id=>(b.mons||{})[id]).find(o=>o&&o.tid===m.tid&&!o.entry&&o.id!==mid&&((((b.cmds||{})[o.tid]||{}).mons||{})[o.id]||{}).switch===mid)||(b.swOut||[]).map(id=>(b.mons||{})[id]).find(o=>o&&o.tid===m.tid&&!o.entry&&o.id!==mid):null;
@@ -1528,10 +1528,12 @@ window.OM_BATTLE_UI=(()=>{
   return false}
  /* 11-07 망령 「사용한 1/시 포텐셜이 턴 종료시에 계속 발동을 물어봄」: 【N/시】 를 다 썼거나 【소진】 · 【탈진】 으로 이번 턴에 못 쓰면 후보에서 뺀다 */
  const spent=(p,uses,turns)=>{try{const L=limOf(p,uses||{},turns||{});return L.left!=null&&L.left<=0}catch(e){return false}};
+ const NO_SWT=['가속'];   /* 교대로 나온 턴 종료엔 발동 안 하는 특성 */
  function endCands(b,step){const out=[];const ok0=t=>{t=String(t||'');if(step==='end'&&END_T.after.test(t)&&!END_T.end.test(t.replace(END_T.after,'')))return false;return END_T[step].test(t)};const ok=(t,m)=>ok0(t)&&!cureOnlyIdle(m,t);
   for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0)continue;for(const p of potSrc(m))if(ok(p.eff,m)&&!spent(p,m.potUses,m.potTurn))out.push({m,kind:'pot',name:p.name,eff:p.eff,tag:isExcl(m,p)?'전용':'포텐셜'});
    /* 11-07 망령 「가속 특성 턴 종료 시에 왜 확인 문구 안 뜨냐」: 후보를 포텐셜 · 고유에서만 찾아서 특성은 빠져 있었다 — 특성 글(시트 → 특성 DB)에 그 타이밍이 적혀 있으면 같이 묻는다. 소지품 턴 종료(먹다남은음식 등)는 items.js 가 저절로 하므로 넣지 않는다 */
-   if(m.ability){const te=slotEff(m,'trait',m.ability);if(ok(te,m))out.push({m,kind:'trait',name:m.ability,eff:te,tag:'특성'})}}
+   /* 11-07 23:37 망령 「가속은 교대로 나온 턴 종료 시에는 발동 안 해」 */
+   if(m.ability&&!(NO_SWT.includes(String(m.ability).trim())&&+m.inSw&&+m.inT===+b.turn)){const te=slotEff(m,'trait',m.ability);if(ok(te,m))out.push({m,kind:'trait',name:m.ability,eff:te,tag:'특성'})}}
   const seen=new Set();for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0||seen.has(m.tid))continue;seen.add(m.tid);const t=(b.trainers||{})[m.tid];for(const x of uniqList(t))if(ok(x.p.eff,m)&&!spent(x.p,t&&t.uUses,t&&t.uTurn))out.push({m,kind:'uq',name:x.p.name,eff:x.p.eff,tag:'고유',t})}
   return out}
  /* 턴 마무리 (10-23): 단계마다 그 타이밍 포텐셜을 가진 트레이너의 주인 화면에만 묻는다 (플레이어 몫은 그 플레이어, NPC·GM 몫은 GM).
@@ -1568,7 +1570,12 @@ window.OM_BATTLE_UI=(()=>{
   if(act==='edone'){const tid=d.tid;if(!endMine(c,tid))return;const ed=q.key+':'+q.step;if((b.cmds||{})[tid])await A().set(['battle','cmds',tid,'ed'],ed);else await A().set(['battle','cmds',tid],{ed});A().sysLog(`${(b.trainers[tid]||{}).name} — ${END_STEP[q.step]} 끝냄`,'battle');return endAdvance()}
   if(act==='efire'){const L=endCands(b,q.step);const x=L[+d.i];if(!x||!endMine(c,x.m.tid))return;const fk=q.key+':'+q.step+':'+x.m.id+':'+x.name;if(EFIRED[fk])return;EFIRED[fk]=1;
    if(x.kind==='uq'){A().sysLog(`【고유】 ${x.t.name} 『${x.name}』 (${END_STEP[q.step]})`,'battle',{mid:x.m.id,img:x.t.image||'',eff:String(x.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,400)});return A().renderScene()}
-   const fk2=x.kind==='trait'?'trait':'pot';const a=FX()&&FX().autoOf(x.m,fk2,x.name);if(a&&a.ops&&a.ops.length&&!a.manual){await fireAuto(x.m.id,fk2,x.name);return A().renderScene()}
+   const fk2=x.kind==='trait'?'trait':'pot';const a=FX()&&FX().autoOf(x.m,fk2,x.name);if(a&&a.ops&&a.ops.length&&!a.manual){const mid=x.m.id;const h0=+((((ctx().b.mons||{})[mid]||{}).hp)||{}).cur||0;await fireAuto(mid,fk2,x.name);
+    /* 11-07 망령 「턴 종료 시 HP 회복은 중첩 안 돼 — 가장 높은 것만」: 턴 종료 단계에서 회복이 두 번 들어오면 큰 쪽만 남기고, 몫을 m.teHeal 에 적어 소지품 · 상태 회복(turnEnd)과도 견준다 */
+    if(q.step==='end'){const m1=(ctx().b.mons||{})[mid];const h1=+((m1||{}).hp||{}).cur||0;const got=h1-h0;if(got>0){const T=+ctx().b.turn||0;const pr=m1.teHeal&&+m1.teHeal.t===T?(+m1.teHeal.v||0):0;
+     if(pr>0){const keep=h0+Math.max(0,got-pr);await A().set(['battle','mons',mid,'hp','cur'],keep);A().sysLog(`${m1.name} 턴 종료 회복은 가장 높은 것만 — 먼저 ${pr} 회복해서 『${x.name}』은(는) ${Math.max(0,got-pr)}만 (HP ${keep}/${m1.hp.max})`,'battle')}
+     await A().set(['battle','mons',mid,'teHeal'],{t:T,v:Math.max(pr,got)})}}
+    return A().renderScene()}
    A().sysLog(`【${x.tag}】 ${x.m.name} 『${x.name}』 (${END_STEP[q.step]})`,'battle',{mid:x.m.id,img:x.m.image||'',eff:String(x.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,400)});return A().renderScene()}}
  /* 예고 공격(미래예지 계열, 맵툴 future_fire): 건 포켓몬의 그때 공격/특공 실수치(랭크 무시)로 계산. 명중 확정 · 급소 없음 · 벽 보정 · 상성 · 타입 일치 · 받는 쪽 반감열매(11-06). 그 밖의 소지품·특성 보정은 손으로 */
  function futureFire(b,m){const r=m.futRsv;delete m.futRsv;if(!r)return [];if(!m.entry||m.hp.cur<=0)return [`「${r.by}」의 『${r.mv}』 — ${m.name}이(가) 쓰러져 있어 불발`];
@@ -1588,7 +1595,7 @@ window.OM_BATTLE_UI=(()=>{
  async function turnEnd(){const c=ctx();if(!c.mgr)return;const b0=snap(c.b),b=snap(b0);const f=fieldOf(b);const db=(DB().states||{}).st||{};const lines=[];const futs=[];
   /* 10-21 망령: 로그를 갈래별로 (포켓몬 · 풀린 것 · 필드) */ const fieldL=[];const rel={};const relAdd=(m,t)=>{(rel[m.name]=rel[m.name]||[]).push(t)};
   if(F()){const slots={};for(const s of SIDES){const e=entered(b,s);for(const a in e)slots[s+'_'+a]=e[a]}
-   const r1=F().turnEndStates(b.mons,slots);lines.push(...r1.lines);const r2=F().turnEndField(b.mons,f);fieldL.push(...r2.lines);
+   const r1=F().turnEndStates(b.mons,slots,{field:f,turn:+b.turn||0});lines.push(...r1.lines);const r2=F().turnEndField(b.mons,f,{noGrass:1});fieldL.push(...r2.lines);
    for(const mid in b.mons){const m=b.mons[mid];if(m.entry&&m.hp.cur<=0){m.entry='';if(!r1.dead.includes(mid))lines.push(`${m.name}은(는) 쓰러졌다!`)}}}
   else for(const mid in b.mons){const m=b.mons[mid];if(!m.entry||m.hp.cur<=0)continue;
    for(const t of B().turnEnd(m)){if(!t.delta)continue;m.hp.cur=Math.max(0,Math.min(m.hp.max,m.hp.cur+t.delta));lines.push(`${m.name} ${db[t.state]?db[t.state].ko:t.state} ${t.delta>0?'+':''}${t.delta} → ${m.hp.cur}`);if(m.hp.cur<=0){lines.push(`${m.name} 빈사!`);m.entry=''}}}
