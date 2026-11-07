@@ -2475,7 +2475,10 @@ window.OM_BATTLE_UI=(()=>{
      for(const x of ((r.mods&&r.mods.names)||[]))(x.who===def.id?gd:pub).push(x.txt);   /* 받는 쪽 완화(블로커 등)는 기본 대미지가 아니라 HP 창의 「위력 완화」로 곱한다 */
      if(+O.item1&&+O.item1!==1)pub.push((md.dataset.it1?'소지품 '+md.dataset.it1.replace(/\s*×\s*[\d.]+\s*$/,''):'아이템1')+' ×'+O.item1);if(+O.item2&&+O.item2!==1)pub.push('아이템2 ×'+O.item2);if(+O.trait&&+O.trait!==1)pub.push('특성 ×'+O.trait);if(+O.free2&&+O.free2!==1)ak.push('자유2 ×'+O.free2);
      {const f1=(+O.free1||1)/((r.mods&&r.mods.boost)||1);if(Math.abs(f1-1)>0.001)ak.push('자유1 ×'+Math.round(f1*1000)/1000)}if(O.charge)pub.push('충전 ×2');if(O.lifeOrb)pub.push('생명의구슬 ×1.3');if(r.stab)ak.push('자속 ×'+(($('#aadapt',md)||{}).checked?2:1.5));if((($('#abelt',md)||{}).checked)&&r.eff&&r.eff.value>1)pub.push('달인의띠 ×1.2');
+     /* 11-07 23:52 망령 「특성 · 소지품은 발동 표시를 해야 하니 로그에 — 아예 숨겨서 쓰는 구애류 같은 게 아니면」: 숨겨 쓰는 소지품(구애머리띠 · 구애안경 · 구애스카프)은 공개에서 빼고 나만 보는 쪽으로 */
+     for(let i=pub.length-1;i>=0;i--)if(HIDE_IT.test(pub[i])){ak.unshift(pub[i]);pub.splice(i,1)}
      return {pub,atk:ak,grd:gd}}
+ const HIDE_IT=/구애(머리띠|안경|스카프)|구애류/;
  function atkMul(r,md){const ck=id=>{const el=md?$('#'+id,md):document.getElementById(id);return !!(el&&el.checked)};return (r.stab?(ck('aadapt')?2:1.5):1)*(ck('abelt')&&r.eff&&r.eff.value>1?1.2:1)}
  /* 10-26 망령: 이번 턴 공격을 지시받았나 — 공개된 지시(cmds[tid].mons[mid])의 기술이 변화기가 아니면. 교대 · 지시 없음(행동불능 등) · 변화기는 「지시받지 않음」 → 【수세】 · 【공세】 판정에 쓴다 */
  /* 11-07 망령 「지시가 아직 공개 안 됐거나 지시 없이 공격 창을 열면 「지시 안 받음」으로 쳐서 【수세】가 켜진다 — 고쳐야지」:
