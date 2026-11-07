@@ -80,11 +80,13 @@ window.OM_SHEET_UI=(()=>{
   if(!ids.includes(UI.tid)||(shown.length&&!shown.includes(UI.tid)))UI.tid=vis.includes(c.seat)?c.seat:(vis[0]||shown[0]||ids[0]||'');
   const t=trs[UI.tid];
   const fchip=(v,lab,n)=>`<button type="button" class="tfold ${F===v?'on':''}" data-tfold="${esc(v)}" ${c.gm&&v!=='*'&&v!==''&&v!=='@야생'?'draggable="true" title="끌어서 폴더 순서 바꾸기 · 시트 탭을 여기 놓으면 이 폴더로"':''}>${v==='*'||v===''?'':'<i class="fic" aria-hidden="true"></i>'}${esc(lab)} <span class="n">${n}</span></button>`;
+  /* 11-08 망령 「모두 동기화 버튼 만들어」: 지금 고른 폴더 칩(전체면 전부)에 있는 제작기 트레이너 — 야생 · 「+ 새 트레이너」 시트는 뺀다 */
+  const syncIds=shown.filter(id=>{const x=trs[id];return x&&!x.wild&&x.src!=='new'&&(x.src==='maker'||!!x.mkId)});UI.syncIds=syncIds;
   let lastF=null;
   el.innerHTML=`<div class="sheet">
    ${folds.length?`<div class="tfolds">${fchip('*','전체',ids.length)}${folds.filter(f=>!isW(f)).map(f=>fchip(f,f,ids.filter(id=>foldOf(trs[id])===f).length)).join('')}${wN?fchip('@야생','야생',wN):''}${nUn?fchip('','미분류',nUn):''}</div>`:''}
    <div class="ttabs">${shown.map(id=>{const f=gk(foldOf(trs[id]));const fk=f;const cl=!!CL[fk];const sep=(F==='*'||F==='@야생')&&folds.length&&f!==lastF?`<button type="button" class="tfsep${cl?' cl':''}" data-tfcl="${esc(fk)}" title="${cl?'펼치기':'접기'}">${cl?'▸':'▾'} ${esc(fk)}${cl?` <span class="n">${shown.filter(x=>gk(foldOf(trs[x]))===fk).length}</span>`:''}</button>`:'';lastF=f;if(cl&&id!==UI.tid)return sep;return sep+`<button class="ttab ${id===UI.tid?'on':''}" data-tid="${id}" ${c.gm?'draggable="true"':''}>${trs[id].priv?'<span class="tlock" title="비공개 — 주인과 GM 만 본다">🔒</span>':''}${esc(trs[id].name)}${id===c.seat?' <span class="tag me">ME</span>':''}</button>`}).join('')}
-    <span class="sp"></span>${c.gm?`<button class="btn sm" data-act="import">제작기에서 가져오기</button><button class="btn sm ghost" data-act="newtr">+ 새 트레이너</button><button class="btn sm ghost" data-act="sfolders" title="트레이너 탭을 폴더로 묶는다">폴더 정리</button>`:(c.seat?`<button class="btn sm ${trs[c.seat]?'ghost':'pri'}" data-act="import" title="제작기에 있는 내 트레이너를 내 자리로 가져온다">${trs[c.seat]?'내 파티 다시 불러오기':'내 파티 불러오기'}</button>`:'')}</div>
+    <span class="sp"></span>${c.gm?`<button class="btn sm" data-act="import">제작기에서 가져오기</button>${syncIds.length?`<button class="btn sm ghost" data-act="syncall" title="${F==='*'?'이 방의':'이 폴더의'} 제작기 트레이너 ${syncIds.length}명을 한꺼번에 다시 읽는다 (야생 · 방에서 만든 시트는 빼고) — 바뀌는 것을 한 창에 보여 주고 「적용」을 눌러야 쓴다">↻ 모두 동기화 (${syncIds.length})</button>`:''}<button class="btn sm ghost" data-act="newtr">+ 새 트레이너</button><button class="btn sm ghost" data-act="sfolders" title="트레이너 탭을 폴더로 묶는다">폴더 정리</button>`:(c.seat?`<button class="btn sm ${trs[c.seat]?'ghost':'pri'}" data-act="import" title="제작기에 있는 내 트레이너를 내 자리로 가져온다">${trs[c.seat]?'내 파티 다시 불러오기':'내 파티 불러오기'}</button>`:'')}</div>
    ${t?trainerView(c,t):'<div class="empty">아직 트레이너가 없다.'+(c.gm?' 「제작기에서 가져오기」로 시작한다.':(c.seat?' 「내 파티 불러오기」로 제작기의 트레이너를 가져온다. 남의 시트는 휴대폰 연락처에서 같은 방 코드로 들어와야 보인다.':' 자리에 앉은 뒤 「내 파티 불러오기」.'))+'</div>'}
   </div>`;
   el.querySelectorAll('.ttab').forEach(b=>b.onclick=()=>{UI.tid=b.dataset.tid;UI.mid='';A().renderScene()});
@@ -430,6 +432,7 @@ window.OM_SHEET_UI=(()=>{
    case 'mstands':return window.OM_RP_UI.openStands('pm:'+d.mid);
    case 'pcard':return openCard(c.r.mons[d.mid],t&&t.name);
    case 'refresh':return refreshFromMaker(d.tid);
+   case 'syncall':return syncAll(UI.syncIds||[]);
    case 'deltr':if(!c.gm&&t.id!==c.seat)return A().toast('내 시트만 지울 수 있다');if(!confirm(`${t.name} 와 파티를 로스터에서 지울까?`))return;
     /* GM 도 좌석처럼 하나씩 지운다 — 로스터를 통째로 쓰면 그 사이 남이 고친 시트가 지워진다 (점검 2-4) */
     {for(const id of (t.pids||[]))if(c.r.mons[id])await A().set(['roster','mons',id],null);await A().set(['roster','trainers',t.id],null)}
@@ -509,12 +512,12 @@ if(old){for(const k of ['orderStyle','commandStyle','orderCount','orderBase','or
    if(Array.isArray(om.moves))for(const mv of m.moves){const o=om.moves.find(x=>x&&x.name===mv.name);if(o&&o.hide)mv.hide=true}m.sheetHp=om.sheetHp==null||(om.hp&&om.sheetHp>=om.hp.max)?null:om.sheetHp;   /* 10-28 망령: 가득이었으면 새 최대 HP 로 가득 (개체값 · 레벨이 바뀌면 옛 최대치에 머물러 HP 가 깎인 듯 보였다) */if(om.sheetStates)m.sheetStates=om.sheetStates;if(om.potUses)m.potUses=om.potUses;/* 10-26 제보: 제작기에서 분배 레벨 · 노력치를 바꿔도 방의 옛 값이 남던 것 — 제작기 값이 지난번 가져온 값과 같을 때만 방에서 고친 값을 지킨다 */if(om.mkDist!=null&&String(om.mkDist)===String(m.mkDist))m.dist=om.dist;m.ev=om.ev;if(om.image&&!m.image)m.image=om.image;if(!(m.stands||[]).length&&(om.stands||[]).length){m.stands=om.stands;m.standActive=om.standActive||0}if(!(m.fields||[]).length&&(om.fields||[]).length)m.fields=om.fields;if(!(m.forms||[]).length&&(om.forms||[]).length)m.forms=om.forms;recalc(m,trainer)}r.mons[m.id]=m}
   r.trainers[trainer.id]=trainer;
   return {r0,r,trainer,mons,old}}
- async function commitTrainer(P){const {r0,r,trainer,mons,old}=P;
+ async function commitTrainer(P,quiet){const {r0,r,trainer,mons,old}=P;
   /* 바뀐 칸만 쓴다 (점검 2-4) — GM 도 로스터를 통째로 쓰지 않는다. 그림을 올리는 사이 남이 고친 시트가 지워지지 않게 */
   await A().setMany(A().diffOps(['roster'],r0,r,3));
   await ensureNode(trainer);
   try{if(window.OM_RP_UI&&window.OM_RP_UI.autoFolder)await window.OM_RP_UI.autoFolder(trainer.id)}catch(e){console.warn('화자 폴더',e)}   /* 화자 칩: 트레이너 폴더로 묶기 */
-  A().toast(`${trainer.name} 파티 ${mons.length}체를 ${old?'갱신했다':'가져왔다'}`)}
+  if(!quiet)A().toast(`${trainer.name} 파티 ${mons.length}체를 ${old?'갱신했다':'가져왔다'}`)}
  /* 관계도 노드: 같은 이름이 없으면 PC/NPC 구분대로 만든다 (휴대폰 협력자 · 연락처가 쓴다). 좌석은 graph 를 못 쓰니 GM 일 때만 */
  async function ensureNode(trainer){const c=ctx();if(!c.gm)return;const g=c.ST.state.graph||{nodes:{},edges:{}};const nodes=g.nodes||{};if(Object.values(nodes).some(n=>n.name===trainer.name))return;const i=Object.keys(nodes).length;
   await A().set(['graph','nodes','t_'+trainer.id],{id:'t_'+trainer.id,name:trainer.name,kind:trainer.kind==='npc'?'npc':'pc',img:'',note:'',x:120+(i%6)*140,y:120+Math.floor(i/6)*140,stands:[],standActive:0})}
@@ -541,18 +544,35 @@ if(old){for(const k of ['orderStyle','commandStyle','orderCount','orderBase','or
   for(const id of oldIds)if(!newIds.includes(id)&&MO[id])L.push({h:MO[id].nick||MO[id].name||id,rows:['명단에서 빠진다 (제작기에서 없어짐)']});
   return {isNew:false,lines:L}}
  /* 바뀌는 것 보여 주고 묻기 — items: [{P, D}] · 돌려줌 true(적용) / false */
- function syncAsk(items,title){return new Promise(res=>{const body=items.map(({P,D})=>{const nm=esc(P.trainer.name||'');if(D.isNew)return `<div class="sdg"><div class="sdh">${nm} <span class="tag ok">새로</span></div><div class="small">${esc(D.lines[0])}</div></div>`;
+ function syncAsk(items,title,note){return new Promise(res=>{const body=items.map(({P,D})=>{const nm=esc(P.trainer.name||'');if(D.isNew)return `<div class="sdg"><div class="sdh">${nm} <span class="tag ok">새로</span></div><div class="small">${esc(D.lines[0])}</div></div>`;
     if(!D.lines.length)return `<div class="sdg"><div class="sdh">${nm} <span class="small dim">바뀌는 것 없음</span></div></div>`;
     return `<div class="sdg"><div class="sdh">${nm}</div>${D.lines.map(g=>`<div class="sdm"><b>${esc(g.h)}</b><ul>${g.rows.map(x=>`<li>${esc(x)}</li>`).join('')}</ul></div>`).join('')}</div>`}).join('');
    const any=items.some(({D})=>D.isNew||D.lines.length);
    const md=A().openModal(`<div class="mhead"><h2>${esc(title||'제작기 동기화')} — 바뀌는 것</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
     <div class="small dim" style="margin-bottom:8px">제작기 지금 값과 이 방 명단을 견줬다. 방에서 쓴 HP · 상태 · 포텐셜 횟수 · 개체값 · (제작기에서 안 바꾼) 소지품은 그대로 지킨다.</div>
-    <div class="sdiff">${body||'<div class="small dim">바뀌는 것이 없다</div>'}</div>
+    <div class="sdiff">${body||'<div class="small dim">바뀌는 것이 없다</div>'}</div>${note?`<div class="small" style="margin-top:8px;color:var(--yel2,#e0a040)">${esc(note)}</div>`:''}
     <div class="row" style="margin-top:12px"><span class="sp"></span><button class="btn ghost" data-sd="no">취소</button><button class="btn pri" data-sd="ok">${any?'적용':'그래도 다시 읽기'}</button></div>`);
    let done=false;const fin=v=>{if(done)return;done=true;A().closeModal();res(v)};md.querySelectorAll('[data-sd]').forEach(b=>b.onclick=()=>fin(b.dataset.sd==='ok'));const x=md.querySelector('[data-x]');if(x)x.addEventListener('click',()=>{if(!done){done=true;res(false)}})})}
  async function refreshFromMaker(tid){const c=ctx();const t=c.r.trainers[tid];if(!t)return;if(t.src==='new')return A().toast('제작기에서 온 트레이너가 아니다');
   let mk;try{mk=await (A().loadMakerParty?A().loadMakerParty(t.mkId||tid):A().loadMaker(true))}catch(e){return A().toast(e.message)}const tdoc=mk.trainers.find(x=>x.id===(t.mkId||tid));if(!tdoc)return A().toast('제작기에 이 트레이너가 없다');
   A().toast('제작기 값 읽는 중…');const P=await prepTrainer(tdoc,mk.pokemon,true,t.mkId?tid:'');const D=syncDiff(P);if(!(await syncAsk([{P,D}],'제작기 동기화')))return A().toast('동기화 취소 — 아무것도 안 바꿨다');await commitTrainer(P);A().renderScene()}
+
+ /* 11-08 망령 「모두 동기화」: 트레이너마다 제작기를 읽어(makerParty — 그 트레이너 · 포켓몬만) 준비 → 바뀌는 것을 한 창에(바뀐 트레이너 먼저) → 「적용」이면 바뀐 트레이너만 쓴다.
+    바뀐 게 하나도 없을 때 「그래도 다시 읽기」면 전부 다시 쓴다. 제작기에서 못 찾은 트레이너는 창 맨 아래에 적고 건드리지 않는다 */
+ let SYNCING=false;
+ async function syncAll(ids){const c=ctx();if(!c.gm||!ids.length||SYNCING)return;SYNCING=true;
+  try{const PL=[],miss=[];let i=0;
+   for(const tid of ids){const t=c.r.trainers[tid];if(!t)continue;i++;A().toast(`제작기 값 읽는 중… ${i}/${ids.length} ${t.name||''}`);
+    try{const mk=await (A().loadMakerParty?A().loadMakerParty(t.mkId||tid):A().loadMaker(true));const tdoc=(mk.trainers||[]).find(x=>x.id===(t.mkId||tid));if(!tdoc){miss.push(t.name||tid);continue}
+     const P=await prepTrainer(tdoc,mk.pokemon,true,t.mkId?tid:'');PL.push({P,D:syncDiff(P)})}catch(e){miss.push((t.name||tid)+' ('+(e.message||e)+')')}}
+   if(!PL.length)return A().toast('동기화할 트레이너를 제작기에서 찾지 못했다'+(miss.length?': '+miss.join(', '):''));
+   const ch=x=>x.D.isNew||x.D.lines.length;const CH=PL.filter(ch),SAME=PL.filter(x=>!ch(x));
+   const shown=[...CH,...SAME];const note=miss.length?'제작기에서 못 찾아 건드리지 않는다: '+miss.join(', '):'';
+   const title=`모두 동기화 (${PL.length}명 중 ${CH.length}명)`;
+   if(!(await syncAsk(shown,title,note)))return A().toast('동기화 취소 — 아무것도 안 바꿨다');
+   const go=CH.length?CH:PL;let n=0;for(const x of go){try{await commitTrainer(x.P,true);n++}catch(e){A().toast(`${x.P.trainer.name} 쓰지 못했다: `+(e.message||e))}}
+   A().toast(`제작기 동기화 — ${n}명 갱신`+(CH.length&&SAME.length?` · ${SAME.length}명은 바뀐 것 없음`:'')+(miss.length?` · ${miss.length}명 못 찾음`:''));A().renderScene()}
+  finally{SYNCING=false}}
 
  /* 알까기 — 후보마다 능력치 이름과 값, 0–1 / 30–31 표시, 개별 다시 굴림 · 개별 수정(✎) · 추가 굴림. 전부 다시 굴림과 합 130 넘는 후보 다시 굴림은 한 번 더 묻는다 */
  function openHatch(mid){const c=ctx();const m=c.r.mons[mid];const t=c.r.trainers[m.tid]||c.r.trainers[UI.tid];if(!m||!canEdit(c,t.id))return;
