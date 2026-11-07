@@ -992,7 +992,10 @@ async function loadFromRoster(tid,side){
  mons.forEach((mon,i)=>{prepMon(mon,side,i);nb.mons[mon.id]=mon});
  /* 바뀐 칸만 쓴다 (점검 3-18) — 트레이너 → 진영 → 포켓몬 순. 좌석은 자기 트레이너·포켓몬·진영 칸만 (턴·필드 같은 기본값은 GM 만) */
  const rk={trainers:0,sides:1,mons:2};let ops=diffOps(['battle'],b0,nb,3);if(ST.role!=='gm')ops=ops.filter(o=>o[0][1] in rk);
- ops.sort((x,y)=>(rk[x[0][1]]??3)-(rk[y[0][1]]??3));const ok=await setMany(ops);
+ ops.sort((x,y)=>(rk[x[0][1]]??3)-(rk[y[0][1]]??3));
+ /* 11-07 망령 「준비 완료 안 눌렀는데 준비 해제가 뜬다(지시 창이 뿌옇게 잠김)」: 지난 배틀 마지막 턴(턴이 먼저 열린 뒤 누른 준비)이 그대로 남아 새 배틀에서 잠겨 있었다 — 시합 개시 전에 파티를 등록하면 그 트레이너의 준비 표시를 비운다 */
+ {const RD=ST.state.ready||{};if(!(+nb.turn>0)){if(RD[trainer.id])ops.push([['ready',trainer.id],null]);if(swapName&&swapOut&&RD[swapOut])ops.push([['ready',swapOut],null])}}
+ const ok=await setMany(ops);
  if(ok){{const d=dupItems(mons);if(d.length&&B().started){   /* 시합 개시 전이면 배틀 화면의 준비 점검(dupWatch)이 한 번 알린다 */const tx=dupItemText(trainer.name,d);selfLog(tx);setTimeout(()=>toast(tx),400)}}toast(`${trainer.name} 파티 ${mons.length}체를 불러왔다`);sysLog(swapName?`${swapName} → ${trainer.name} 교체 (${side==='left'?'좌측':'우측'}) · ${mons.length}체`:`${trainer.name} (${side==='left'?'좌측':'우측'}${trainer.solo?' · 개인전':''}${t.two?' · 2체 기준':''}) 파티 등록 · ${mons.length}체`,'battle');VIEW='battle';renderScene()}}
 
 /* ---------- 던전 조우 (10-26 망령: 「위치에 야생 포켓몬을 배치해서 곧바로 배틀 진입」) ----------
@@ -1027,7 +1030,7 @@ async function encounter(o){if(ST.role!=='gm')return false;const r=roster();cons
  {const DU=window.OM_DB_UI;if(DU&&DU.fillEff&&all.some(m=>(m.ability&&!m.abilityEff)||(m.pots||[]).some(p=>!p.eff))){try{if(DU.ensureMaker)await DU.ensureMaker();all.forEach(m=>DU.fillEff(m))}catch(e){}}}
  const AR=['a','b','c'];const n=Math.max(1,Math.min(2,rw.length||2));nb.mode=n;
  lw.slice(0,n).forEach((m,i)=>m.pend=AR[i]);rw.slice(0,n).forEach((m,i)=>m.pend=AR[i]);
- if(!await set(['battle'],nb))return false;await set(['scene'],'battle');
+ if(!await setMany([[['battle'],nb],[['ready'],{}]]))return false;await set(['scene'],'battle');   /* 11-07: 지난 배틀의 준비 표시가 남아 지시 창이 잠기던 것 */
  if(ALF>0)sysLog(`⚠ 경계도 · 던전 기믹 — 야생 Lv +${ALF} (조우 때 자동)`,'battle');
  if(MQN)sysLog(`♛ 『미궁 포텐셜』 ${window.OM_DG_GIM.mqFor(o.dg.did).map(p=>'『'+p.name+'』').join(' ')} — 야생 쪽 고유로 붙었다`,'battle');
  {const rd=rw.filter(m=>m.raid&&+m.raid.segments>0);if(rd.length)sysLog(rd.map(m=>`♛ ${m.name} 「레이드 배틀 : ${m.raid.segments}」 — 최대 HP 1/${m.raid.segments} 마다 배리어 (조우 때 자동)`).join('\n'),'battle')}
