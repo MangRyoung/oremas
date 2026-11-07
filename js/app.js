@@ -279,12 +279,14 @@ async function openRoom(id,gm,asPl){
  let row;try{row=await DBS().getRoom(id)}catch(e){app.innerHTML=`<div class="lobby">방을 읽지 못했다: ${esc(e.message)}<br><a href="#">로비로</a></div>`;return}
  if(!row){app.innerHTML='<div class="lobby">그런 방이 없다. <a href="#">로비로</a></div>';return}
  if(ST.room!==id)ST.chatAs='';   /* 10-26: 다른 방의 화자(pm:…)가 따라오지 않게 */
- ST.room=id;ST.roomRow=row;ST._sub=false;ST.canGm=false;ST.asPlGm=null;if(window.OM_BATTLE_UI)window.OM_BATTLE_UI.resetLocal();ST.role=null;ST.secret='';ST.seat='';ST.name='';
+ ST.room=id;ST.roomRow=row;ST._sub=false;ST.canGm=false;ST.asPlGm=null;if(window.OM_BATTLE_UI)window.OM_BATTLE_UI.resetLocal();ST.role=null;ST.secret='';ST.seat='';ST.name='';ST.mySeats=null;
  const seatInfo=LS.get('om_seat_'+id,null);const tok=ACCT.tok();
  /* 계정으로: 방 권한(GM · PL 자리)을 서버가 정한다. 「PL 로」(asPl) 는 예전 방식으로 */
  if(!gm&&tok&&!asPl){let w=null;try{await DBS().acct.join(tok,id)}catch(e){}/* 10-24 망령: 로그인해서 들어오면 기본 PL 권한 (patch_2026-10-24_PL기본.sql) */try{w=await DBS().whoami(id,'u:'+tok)}catch(e){}
   if(w==='gm'){ST.role='gm';ST.secret='u:'+tok;ST.name='GM';ST.gmNick=LS.get('om_gmnick_'+id,'')||(ACCT.get()||{}).name||LS.get('om_nick','')||'';remember(id,row.name,'')}
-  else if(w){ST.role='seat';ST.secret='u:'+tok;ST.seat=w;ST.name=LS.get('om_name_'+id,'')||(ACCT.get()||{}).name||w}}
+  else if(w){ST.role='seat';ST.secret='u:'+tok;ST.seat=w;ST.name=LS.get('om_name_'+id,'')||(ACCT.get()||{}).name||w}
+  /* 11-08 망령 「웹툴에서도 자리 더 앉기」: 이 계정이 앉은 자리 전부 (서버에 patch_2026-11-08_여러자리.sql 이 없으면 null = 예전처럼 한 자리) */
+  if(w!=='gm'){try{const r=await DBS().mySeats(id,'u:'+tok);ST.mySeats=r&&Array.isArray(r.seats)?r.seats.filter(Boolean):null}catch(e){ST.mySeats=null}}}
  /* 10-22 망령: 「PL 로」 로 들어온 계정 GM 도 「GM 으로」 돌아갈 수 있게 — 계정 권한을 따로 물어 둔다 */
  if(asPl&&tok){try{ST.canGm=(await DBS().whoami(id,'u:'+tok))==='gm'}catch(e){}}
  if(gm){const w=await DBS().whoami(id,gm);if(w==='gm'){ST.role='gm';ST.secret=gm;ST.name='GM';ST.gmNick=LS.get('om_gmnick_'+id,'')||LS.get('om_nick','')||'';remember(id,row.name,gm)}else toast('GM 비밀값이 맞지 않는다')}
@@ -1305,29 +1307,33 @@ function openSeatPicker(){
  /* 11-07 망령 「한 플레이어가 파티 여러 개를 쓰기도 하니, 자기가 가진 자리를 쉽게 옮길 수 있어야」: 계정으로 앉은 PL 은 빈 자리로 스스로 옮긴다
     (서버 om_claim_seat 가 계정의 om_members.seat 를 새 자리로 바꾼다 = 예전 자리는 저절로 빈다). 링크 비밀값으로 앉은 자리는 서버가 자리마다 비밀값을 따로 쥐어서 옮기지 못한다 → GM 이 비워 준다 */
  const isPl=ST.role==='seat'&&!ST.asPlGm,canMove=isPl&&String(ST.secret||'').startsWith('u:');
- const myX=id=>!!ST.seat&&id.startsWith(ST.seat+'~');   /* 「추가 파티로 함께 불러오기」 트레이너(X~2 …) = 이미 내 자리 것 */
+ const myX=id=>!!ST.seat&&id.startsWith(ST.seat+'~');
+ /* 11-08 자리 더 앉기: 내 자리 전부(own) — 지금 자리 말고도 앉아 있는 자리는 「이 자리로」 · 「일어나기」, 빈 자리는 「＋ 더 앉기」 */
+ const multi=canMove&&Array.isArray(ST.mySeats);const own=new Set(multi?ST.mySeats:[]);if(isPl&&ST.seat)own.add(ST.seat);const myOwn=id=>isPl&&own.has(id)&&id!==ST.seat;   /* 「추가 파티로 함께 불러오기」 트레이너(X~2 …) = 이미 내 자리 것 */
  /* 11-07 23:23 망령 「자리도 초상 뜨게 · 화자 정리처럼 폴더로」: 칸 = 내 자리 · 앉은 자리 · 빈 자리 · 야생 · 파티 없는 자리. 칸 머리를 누르면 접힘(이 브라우저 · 방마다, 야생은 처음부터 접힘) */
  const stKey='om_seatfold_'+ST.room;const FOLD=LS.get(stKey,{});
  const isWild=t=>!!(t&&(t.wild||/^야생\s*[·・]/.test(String(t.name||''))));
  const monImg=id=>{const L=[...Object.values(((ST.state.roster||{}).mons)||{}),...Object.values(((ST.state.battle||{}).mons)||{})];const x=L.find(q=>q&&q.tid===id&&q.image);return x?x.image:''};   /* 트레이너 그림이 없으면(야생 등) 그 첫 포켓몬 */
  const img=(t,o,id)=>{let v='';try{v=portraitOf((t&&t.name)||(o&&o.name)||'',(t&&(t.image||t.img))||'')||''}catch(e){v=(t&&t.image)||''}return v||monImg(id)};
  const tile=(id,isFree)=>{const t=trs[id]||{};const o=seats[id];const mine=ST.seat===id;const nm=isFree?(o&&o.name)||id:t.name||id;const im=isFree?'':img(t,o,id);
-  const st=isFree?(mine?'내 자리 · 아직 파티 없음':'아직 파티 없음'):o?(mine?'내 자리':'앉은 사람: '+esc(o.name)):isPl&&myX(id)?'내 추가 파티':'빈 자리';
-  const act=isFree?`${mine?'<span class="badge seat">나</span>':''}${ST.role==='gm'?`<button class="btn xs ghost danger" data-free="${id}">비우기</button>`:''}`
-   :`${mine?'<span class="badge seat">나</span>':o?'':isPl?(canMove&&!myX(id)?`<button class="btn xs pri" data-move="${id}">여기로 옮기기</button>`:''):`<button class="btn xs pri" data-seat="${id}">앉기</button>`}${ST.role==='gm'&&o?`<button class="btn xs ghost danger" data-free="${id}">비우기</button>`:''}`;
+  const st=isFree?(mine?'내 자리 · 아직 파티 없음':myOwn(id)?'내 자리 · 아직 파티 없음':'아직 파티 없음'):myOwn(id)?'내 자리 · 쉬는 중':o?(mine?(own.size>1?'내 자리 · 지금':'내 자리'):'앉은 사람: '+esc(o.name)):isPl&&myX(id)?'내 추가 파티':'빈 자리';
+  const ownAct=myOwn(id)?`<button class="btn xs pri" data-use="${id}">이 자리로</button><button class="btn xs ghost" data-leave="${id}">일어나기</button>`:mine&&own.size>1?`<span class="badge seat">나</span><button class="btn xs ghost" data-leave="${id}">일어나기</button>`:'';
+  const act=ownAct?ownAct+(ST.role==='gm'&&o?`<button class="btn xs ghost danger" data-free="${id}">비우기</button>`:''):isFree?`${mine?'<span class="badge seat">나</span>':''}${ST.role==='gm'?`<button class="btn xs ghost danger" data-free="${id}">비우기</button>`:''}`
+   :`${mine?'<span class="badge seat">나</span>':o?'':isPl?(canMove&&!myX(id)?`<button class="btn xs pri" data-move="${id}" title="지금 자리를 비우고 여기로 옮긴다">${multi?'옮기기':'여기로 옮기기'}</button>${multi?`<button class="btn xs" data-more="${id}" title="지금 자리는 그대로 두고 이 자리에도 앉는다">＋ 앉기</button>`:''}`:''):`<button class="btn xs pri" data-seat="${id}">앉기</button>`}${ST.role==='gm'&&o?`<button class="btn xs ghost danger" data-free="${id}">비우기</button>`:''}`;
   return `<div class="sgt seatt${mine?' sel':''}" data-q="${esc(nm+' '+((o&&o.name)||''))}">${ST.role==='gm'&&o?`<input type="checkbox" class="fsel" data-fsel="${id}"${isFree?' data-nop="1"':''} title="여러 자리 한 번에 비우기">`:''}<i style="${im?`background-image:url('${cssu(im)}')`:''}">${im?'':esc(String(nm).replace(/^야생\s*[·・]\s*/,'').slice(0,1))}</i><span class="seatw"><span class="sgn">${esc(nm)}${t.side&&!isFree?` <span class="badge ${t.side}">${t.side==='left'?'좌측':'우측'}</span>`:''}</span><small>${st}</small></span><span class="seatact">${act}</span></div>`};
  const gIds=f=>ids.filter(f);
  const stGroups=[
-  {id:'mine',name:'내 자리',ico:'🪑',L:[...gIds(id=>ST.seat===id||(isPl&&myX(id))).map(id=>[id,0]),...free.filter(id=>ST.seat===id).map(id=>[id,1])]},
-  {id:'on',name:'앉은 자리',ico:'👤',L:gIds(id=>seats[id]&&ST.seat!==id&&!isWild(trs[id])).map(id=>[id,0])},
+  {id:'mine',name:'내 자리',ico:'🪑',L:[...gIds(id=>ST.seat===id||(isPl&&(myX(id)||own.has(id)))).map(id=>[id,0]),...free.filter(id=>ST.seat===id||myOwn(id)).map(id=>[id,1])]},
+  {id:'on',name:'앉은 자리',ico:'👤',L:gIds(id=>seats[id]&&ST.seat!==id&&!myOwn(id)&&!isWild(trs[id])).map(id=>[id,0])},
   {id:'open',name:'빈 자리',ico:'◌',L:gIds(id=>!seats[id]&&ST.seat!==id&&!(isPl&&myX(id))&&!isWild(trs[id])).map(id=>[id,0])},
   {id:'wild',name:'야생',ico:'🌿',L:gIds(id=>isWild(trs[id])&&ST.seat!==id).map(id=>[id,0]),fold:1},
-  {id:'nop',name:'파티 없는 자리',ico:'·',L:free.filter(id=>ST.seat!==id).map(id=>[id,1])}].filter(g=>g.L.length);
+  {id:'nop',name:'파티 없는 자리',ico:'·',L:free.filter(id=>ST.seat!==id&&!myOwn(id)).map(id=>[id,1])}].filter(g=>g.L.length);
  const stCard=g=>{const cl=FOLD[g.id]!=null?!!FOLD[g.id]:!!g.fold;return `<div class="sgc${cl?' cl':''}"><div class="sgh" data-stg="${g.id}" style="cursor:pointer" title="눌러서 접기 / 펼치기"><span class="sgi">${g.ico}</span><b style="flex:1">${g.name}</b><small class="seatn">${g.L.length}</small><small>${cl?'▸':'▾'}</small></div><div class="sgl">${g.L.map(([id,f])=>tile(id,f)).join('')}</div></div>`};
  const m=openModal(`<div class="mhead"><h2>${isPl?'자리 옮기기':'자리 고르기'}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
   <p class="small muted">이름을 적고 앉으면 된다. 앉은 뒤 시트 탭에서 「내 파티 불러오기」로 제작기의 트레이너를 가져온다. GM 이 먼저 불러온 트레이너가 있으면 그 자리에 바로 앉을 수도 있다. 한 번 앉은 자리는 로그인했으면 계정에(어느 기기에서든 같은 자리), 아니면 이 브라우저에 기억되고, 남이 앉을 수 없다 (${canMove?'로그인한 계정은 아래 「여기로 옮기기」로 스스로 옮긴다':'로그인한 계정은 스스로 옮길 수 있고, 아니면 GM 이 비워 준다'}).</p>
+  ${multi?`<p class="small"><b>한 사람이 여러 자리에 앉을 수 있다</b> — 빈 자리의 「＋ 앉기」로 앉아 있던 자리는 그대로 두고 더 앉는다. 말하기 · 지시는 지금 쓰는 자리(「나」)로 하고, 내 다른 자리는 「이 자리로」로 바꾼다.${own.size>1?` 지금 내 자리 ${own.size}개.`:''}</p>`:''}
   ${isPl&&!canMove?'<p class="small" style="color:var(--red2)">이 자리는 로그인 없이(링크 비밀값으로) 앉은 자리라 스스로 옮기지 못한다 — 로그인하고 다시 앉거나 GM 에게 비워 달라고 하자.</p>':''}
-  <div class="row" style="margin-bottom:8px"><label>내 이름</label><input type="text" id="seatName" value="${esc(ST.name&&ST.name!=='GM'?ST.name:'')}" placeholder="플레이어 이름" style="flex:1">${ST.role==='seat'?(canMove?'<button class="btn" data-move="new" title="지금 자리를 비우고 파티 없는 새 자리에 앉는다">새 자리로 옮기기</button>':''):'<button class="btn pri" data-seat="new">새 자리에 앉기</button>'}</div>
+  <div class="row" style="margin-bottom:8px"><label>내 이름</label><input type="text" id="seatName" value="${esc(ST.name&&ST.name!=='GM'?ST.name:'')}" placeholder="플레이어 이름" style="flex:1">${ST.role==='seat'?(canMove?'<button class="btn" data-move="new" title="지금 자리를 비우고 파티 없는 새 자리에 앉는다">새 자리로 옮기기</button>'+(multi?'<button class="btn" data-more="new" title="지금 자리는 그대로 두고 파티 없는 새 자리에도 앉는다">＋ 새 자리 더 앉기</button>':''):''):'<button class="btn pri" data-seat="new">새 자리에 앉기</button>'}</div>
   ${ST.role==='gm'&&Object.keys(seats).length?`<div class="row fbulk"><button class="btn sm ghost" id="fAll">모두 선택</button>${free.length?`<button class="btn sm ghost" id="fNop">파티 없는 자리만 (${free.length})</button>`:''}<button class="btn sm ghost" id="fNone">선택 해제</button><span class="sp"></span><button class="btn sm danger" id="fGo" disabled>선택한 자리 비우기</button></div>`:''}
   <div class="sgtool" style="margin:6px 0"><input type="search" id="stq" placeholder="이름 · 앉은 사람으로 찾기" style="width:220px"></div>
   ${ids.length||free.length?`<div class="sgboard seatbd" id="stb">${stGroups.map(g=>stCard(g)).join('')}</div>`:'<div class="empty">아직 아무도 없다. 이름을 적고 「새 자리에 앉기」.</div>'}`);
@@ -1350,6 +1356,16 @@ function openSeatPicker(){
    if(!ok){try{await DBS().claimSeat(ST.room,old,ST.secret,name)}catch(e){}bt.disabled=false;return toast('누군가 먼저 앉은 자리다')}
    LS.set('om_name_'+ST.room,name);closeModal();toast(`${toName}(으)로 옮겼다`);route()}
   catch(e){try{await DBS().claimSeat(ST.room,old,ST.secret,name)}catch(e2){}bt.disabled=false;toast('옮기지 못했다: '+e.message)}});
+ /* 11-08 자리 더 앉기 · 내 자리 바꾸기 · 한 자리에서 일어나기 (계정 PL) */
+ const seatName=id=>(trs[id]||{}).name||(seats[id]||{}).name||id;
+ m.querySelectorAll('[data-more]').forEach(bt=>bt.onclick=async()=>{const name=$('#seatName',m).value.trim()||ST.name||'';if(!name)return toast('이름을 적어 줘');
+  const to=bt.dataset.more==='new'?('p'+rnd(8).toLowerCase()):bt.dataset.more;bt.disabled=true;
+  try{const ok=await DBS().claimMore(ST.room,to,ST.secret,name);if(!ok){bt.disabled=false;return toast('누군가 먼저 앉은 자리다')}
+   LS.set('om_name_'+ST.room,name);closeModal();toast(`${bt.dataset.more==='new'?'새 자리':`「${seatName(to)}」`}에도 앉았다 — 앉아 있던 자리도 그대로 (자리 단추에서 바꾼다)`);route()}
+  catch(e){bt.disabled=false;toast('앉지 못했다: '+e.message)}});
+ m.querySelectorAll('[data-use]').forEach(bt=>bt.onclick=async()=>{bt.disabled=true;try{await DBS().seatUse(ST.room,ST.secret,bt.dataset.use);closeModal();toast(`「${seatName(bt.dataset.use)}」 자리로 바꿨다`);route()}catch(e){bt.disabled=false;toast('바꾸지 못했다: '+e.message)}});
+ m.querySelectorAll('[data-leave]').forEach(bt=>bt.onclick=async()=>{const id=bt.dataset.leave;if(!confirm(`「${seatName(id)}」 자리에서 일어날까?\n\n그 트레이너 · 파티는 그 자리에 그대로 남고, 빈 자리가 된다.${id===ST.seat?' 지금 쓰는 자리라 남은 내 자리로 바뀐다.':''}`))return;
+  bt.disabled=true;try{await DBS().seatLeave(ST.room,ST.secret,id);closeModal();toast(`「${seatName(id)}」 자리에서 일어났다`);route()}catch(e){bt.disabled=false;toast('일어나지 못했다: '+e.message)}});
  /* 여러 자리 한 번에 비우기 (GM) */
  const fs=()=>[...m.querySelectorAll('[data-fsel]')],fGo=$('#fGo',m);
  const fUpd=()=>{if(!fGo)return;const n=fs().filter(x=>x.checked).length;fGo.disabled=!n;fGo.textContent=n?`선택한 자리 비우기 (${n})`:'선택한 자리 비우기'};

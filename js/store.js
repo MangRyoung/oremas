@@ -27,6 +27,13 @@ window.OM_STORE=(()=>{
   /* 10-22: 관리자 설정 (방 기본값 등) — supabase/patch_2026-10-22_방기본값.sql */
   configGet:(t,k)=>rpc('om_config_get',{p_token:t,p_key:k}),configSet:(t,k,v)=>rpc('om_config_set',{p_token:t,p_key:k,p_v:v??null})};
  async function claimSeat(room,seat,secret,name){return rpc('om_claim_seat',{p_room:room,p_seat:seat,p_secret:secret,p_name:name})}
+ /* 11-08 망령 「웹툴에서도 자리 더 앉기」: 한 계정이 여러 자리에 (supabase/patch_2026-11-08_여러자리.sql). mySeats 는 함수가 없으면 null = 예전처럼 한 자리 */
+ const NOMULTI='서버에 여러 자리 기능이 아직 없다 — GM 이 supabase/patch_2026-11-08_여러자리.sql 을 돌려야 한다';
+ async function seatRpc(fn,args){const r=await sb().rpc(fn,args);if(r.error){const m=String(r.error.message||r.error.details||r.error.code||'');if(r.error.code==='PGRST202'||/PGRST202|Could not find the function|function .* does not exist/i.test(m))throw new Error(NOMULTI);throw err(r.error)}return r.data}
+ async function claimMore(room,seat,secret,name){return seatRpc('om_claim_more',{p_room:room,p_seat:seat,p_secret:secret,p_name:name})}
+ async function seatUse(room,secret,seat){return seatRpc('om_seat_use',{p_room:room,p_secret:secret,p_seat:seat})}
+ async function seatLeave(room,secret,seat){return seatRpc('om_seat_leave',{p_room:room,p_secret:secret,p_seat:seat})}
+ async function mySeats(room,secret){try{return await seatRpc('om_my_seats',{p_room:room,p_secret:secret})}catch(e){if(e.message===NOMULTI)return null;throw e}}
  async function roomUpdate(room,secret,name,settings){return rpc('om_room_update',{p_room:room,p_secret:secret,p_name:name??null,p_settings:settings??null})}
  async function roomDel(room,secret){return rpc('om_room_del',{p_room:room,p_secret:secret})}   /* 10-24: supabase/patch_2026-10-24_방삭제.sql */
 
@@ -190,5 +197,5 @@ async function shrinkUpload(blob,maxSide){try{if(!/^image\/(png|jpe?g|webp|bmp)$
   dcHall:(room,secret,o)=>rpc('om_dc_hall',{p_room:room,p_secret:secret,p_title:o.title||'',p_sub:o.sub||'',p_img:o.img,p_who:o.who||{}}),
   hallGet:(room,secret)=>rpc('om_dc_hall_get',{p_room:room,p_secret:secret}),
   hallPut:(room,secret,o)=>rpc('om_dc_hall_put',{p_room:room,p_secret:secret,p_url:o.url??null,p_thread:o.thread??''}),noFn};
- return {roomPick,patchesSince,setStateMany,snap,hall,bbs,shrinkUpload,ntCamps,ntCampUpdate,ntCampPatch,ntDocs,ntSync,NTSYNC,ntGet,ntPut,ntPutMany,ntDel,ntWatch,rtReset,getStateV,roomsPeek,acct,logClear,logClearRange,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,roomUpdate,roomDel,getState,setState,getLog,getLogTail,getLogBefore,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty,makerOne,makerPut};
+ return {roomPick,patchesSince,setStateMany,snap,hall,bbs,shrinkUpload,ntCamps,ntCampUpdate,ntCampPatch,ntDocs,ntSync,NTSYNC,ntGet,ntPut,ntPutMany,ntDel,ntWatch,rtReset,getStateV,roomsPeek,acct,logClear,logClearRange,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,claimMore,seatUse,seatLeave,mySeats,roomUpdate,roomDel,getState,setState,getLog,getLogTail,getLogBefore,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty,makerOne,makerPut};
 })();
