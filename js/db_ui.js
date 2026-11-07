@@ -177,7 +177,10 @@ window.OM_DB_UI=(()=>{
   if(FOL.room===ST.room&&Date.now()-FOL.at<600000)return FOL.par;let par=null;
   try{const N=window.OM_NOTES;const L=N&&N.linked?await N.linked():null;const om=(L&&L.data&&L.data.om)||{};if(om.room&&om.room!==ST.room&&(om.rooms||{})[ST.room])par=om.room}catch(e){}
   FOL={room:ST.room,at:Date.now(),par};return par}
- async function syncFrom(par){const S=window.OM_STORE;if(!S||!S.roomPick)return false;let pick=null;try{pick=await S.roomPick(par)}catch(e){console.warn('방 따라가기',e);return false}if(!pick||!pick.dbx)return false;
+ /* 11-07 망령 「캠퍼스 2 디코 연동도 캠퍼스 따라가게」: 따라가기를 맞출 때 GM 이면 주 방의 디스코드 연동도 받아 온다 (10분에 한 번) */
+ let HOOKF={k:'',at:0};async function hookFollow(par){const ST=A().ST;if(ST.role!=='gm'||!par)return;const k=ST.room+'>'+par;if(HOOKF.k===k&&Date.now()-HOOKF.at<600000)return;HOOKF={k,at:Date.now()};
+  try{const api=window.OM_STORE&&window.OM_STORE.bbs;if(!api||!api.hookFollow)return;const r=await api.hookFollow(ST.room,ST.secret,par);if(r&&r.ok)console.info('[디코] 주 방 연동을 받아 왔다',par)}catch(e){if(!(window.OM_STORE.bbs.noFn&&window.OM_STORE.bbs.noFn(e)))console.warn('디코 연동 따라가기',e&&e.message)}}
+ async function syncFrom(par){hookFollow(par);const S=window.OM_STORE;if(!S||!S.roomPick)return false;let pick=null;try{pick=await S.roomPick(par)}catch(e){console.warn('방 따라가기',e);return false}if(!pick||!pick.dbx)return false;
   const dbx=JSON.parse(JSON.stringify(pick.dbx));
   try{const since=dbx.mvV?(dbx.mkSeen||null):null;const rows=await S.makerDocsSince('dbedit',since);if(rows.length){mergeMaker(dbx,rows,!since);dbx.mvV=1;const at=maxAt(rows);if(at)dbx.mkSeen=at}}catch(e){console.warn('방 따라가기 — 제작기',e)}
   const cur=A().ST.state.dbx||{};const strip=o=>JSON.stringify(Object.assign({},o||{},{at:0}));const ops=[];let dbN=0;
