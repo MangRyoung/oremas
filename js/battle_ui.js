@@ -2411,7 +2411,7 @@ window.OM_BATTLE_UI=(()=>{
   /* 11-03 감우: 트레이너 고유 포텐셜도 같은 길로 — 【등장】 · 【상시】 이고 구문이 있으면 그 트레이너의 포켓몬이 나올 때 건다 (autoOf 가 m.tid 로 고유 구문을 읽는다). 횟수(【N/시】)가 있는 고유는 손으로(선행 · 임의 발동) */
   {const t=(c.b.trainers||{})[m.tid];for(const u of ((t&&t.unique)||[]))if(u&&u.name&&!/【\s*\d+\s*\/\s*(시|턴)\s*】/.test(String(u.eff||''))&&!list.some(([k,n])=>k==='pot'&&n===u.name))list.push(['pot',u.name])}
   /* 11-07 망령 「등장 때 저절로 뜨는 상시류 로그는 본인(포켓몬 주인)만 보이게 + 「출력」 버튼」: 상시 · 지속형으로 걸린 줄(아래 noRoll 길)과 【N/시】 안내는 주인 귓속말(gmPriv — 이름은 예전 그대로, 주인이 없으면 GM)로. 【등장】 계기 효과 · 아군 빈사로 걸린 것(passiveOnly)은 그대로 공개 */const GP=o2.passiveOnly?0:1;
-  const MANL=[];for(const [kind,name] of list){const a=FX().autoOf(m,kind,name);if(!a||!a.ops||!a.ops.length||a.manual)continue;if(limManual(m,kind,name,slotEff(m,kind,name)||a.text)){if(!MANL.includes(name))MANL.push(name);continue}/* 시트에 직접 쓴 구문은 글이 없으니 그 칸의 효과 글에서 【등장】/【상시】 를 읽는다 */const tm=FX().timing(a.text||slotEff(m,kind,name)||'');
+  const MANL=[],FENT=[];for(const [kind,name] of list){const a=FX().autoOf(m,kind,name);if(!a||!a.ops||!a.ops.length||a.manual)continue;if(limManual(m,kind,name,slotEff(m,kind,name)||a.text)){if(!MANL.includes(name))MANL.push(name);continue}/* 시트에 직접 쓴 구문은 글이 없으니 그 칸의 효과 글에서 【등장】/【상시】 를 읽는다 */const tm=FX().timing(a.text||slotEff(m,kind,name)||'');
    const etx2=a.text||slotEff(m,kind,name)||'';
    /* 10-26 망령: 표시 없는 상시 특성 · 포텐셜 (테크니션 · 적응력 · 철주먹 · 멀티스케일 …) — 지속형 구문뿐이고 계기 말(받았을 때 · 턴 종료 …)이 없으면 등장 때 건다.
       「공격 : B」 이하일 때 같은 자기 등급 조건(천하장사 · 순수한힘 · 퍼코트 …)은 등급을 보고 맞으면 건다 */
@@ -2423,8 +2423,10 @@ window.OM_BATTLE_UI=(()=>{
     if(po.length){const cur=ctx().b.mons[mid];if(cur&&(cur.fxDone||{})[name])continue;if(await fireAuto(mid,kind,name,{quiet:true,noRoll:true,gmPriv:GP,auto:{ops:po.flatMap(o=>o.ops),text:a.text}})){const d=Object.assign({},(ctx().b.mons[mid]||{}).fxDone||{});d[name]=1;await A().set(['battle','mons',mid,'fxDone'],d)}}continue}
    /* 【등장 (통상 교대)】 · 【등장 (임의 교대)】 · 【등장 (죽어내밀기)】: 그렇게 나왔을 때만 (바운서 · 닌자 ②) */
    {const hx=String(etx2).split(/[②③④⑤]/)[0].match(/【등장\s*\(([^)]+)\)】/);if(hx&&!tm.entry&&!(a.ops.length===1&&a.ops[0].k==='choice')){if(!o2.passiveOnly&&o2.how&&hx[1].replace(/\s/g,'').includes(String(o2.how).replace(/\s/g,'')))await fireAuto(mid,kind,name,{quiet:true});continue}}
-   if(tm.entry){if(!o2.passiveOnly)await fireAuto(mid,kind,name,{quiet:true})}
+   /* 11-07 23:44 망령 「강제 교대로 나온 포켓몬엔 【등장】 키워드는 격발하지 않아」: (강제 교대)가 붙은 【등장 (…)】 은 위에서 따로 — 그 밖의 【등장】 은 건너뛰고 이름만 알린다 */
+   if(tm.entry){if(o2.how==='강제 교대'){if(!o2.passiveOnly&&!FENT.includes(name))FENT.push(name)}else if(!o2.passiveOnly)await fireAuto(mid,kind,name,{quiet:true})}
    else if(tm.passive||(!tm.turnEnd&&passiveOps(a.ops,etx2))){if(!condNow(ctx().b,ctx().b.mons[mid],a.ops))continue;const cur=ctx().b.mons[mid];if(cur&&(cur.fxDone||{})[name])continue;if(await fireAuto(mid,kind,name,{quiet:true,noRoll:true,gmPriv:GP})){const d=Object.assign({},(ctx().b.mons[mid]||{}).fxDone||{});d[name]=1;await A().set(['battle','mons',mid,'fxDone'],d)}}}
+  if(FENT.length)A().sysLog(`${m.name} — 강제 교대로 나와 【등장】 효과는 발동하지 않는다 (${FENT.map(n=>'『'+n+'』').join(' ')})`,'battle',{mid:m.id});
   if(MANL.length&&!o2.passiveOnly)A().sysLog(`【포텐셜】 ${m.name} — ${MANL.map(n=>'『'+n+'』').join(' ')} 【N/시】 — 저절로 쓰지 않는다 (【자동】이 없다 · 쓸 때 카드 「발동」 · 선행 입력)`,'battle',{gmPriv:1,mid:m.id})}
  /* 포켓몬마다 급소 규칙 (10-23 망령 · 제작기 상세 조정): tbl 급소 표 · add 급소 랭크 + · guard 받을 때 방호 · dmg 급소 대미지 배율 · sure 언제나 급소 · never 급소에 맞지 않음 */
  const CRR=m=>(m&&m.critRule)||{};
