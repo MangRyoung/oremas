@@ -2299,7 +2299,11 @@ window.OM_BATTLE_UI=(()=>{
    confirm:q=>remoteAsk(mon,'confirm',{name,q},()=>L.confirm(q)).then(v=>!!v),
    choose:(labels,multi)=>remoteAsk(mon,'choose',{name,labels,multi:!!multi},()=>L.choose(labels,multi)).then(v=>Array.isArray(v)?v.map(Number):[]),
    freeSwitch:(m,nm)=>{setTimeout(()=>freeSwitchUI(m.id,nm).catch(e=>console.warn(e)),600);return `${m.name} 「${nm}」 — 임의 교대 창을 연다`},
+   forceSwitch:(m,nm)=>{setTimeout(()=>forceSwitchFx(m.id,nm).catch(e=>console.warn(e)),600);return `${m.name} 「${nm}」 — 강제 교대`},   /* 11-08 「강제교대」 구문 */
    useMove:(m,mv,nm,o)=>{setTimeout(()=>openAttack(m.id,{mvName:mv,by:nm,baseTop:(o||{}).top||[]}),600)}})}
+ /* 11-08 망령 「강제교대」 구문: 고른 대상(맞은 대상)을 강제 교대 — 기술의 강제 교대와 같은 길 (흡반 · 뿌리박기 · 다이맥스 · 교대무시는 switchGuard 가 막는다, 저장 뒤에 돈다) */
+ async function forceSwitchFx(mid,nm){const c=ctx();const d=c.b.mons[mid];if(!d||!d.entry||d.hp.cur<=0)return;const g=await switchGuard(d);if(g){A().sysLog(`${d.name} 강제 교대를 받지 않는다 (${g})`,'battle');return}
+  if(canEdit(c,d)||c.mgr)await forcedSwitch(d.id,{sys:true});else A().sysLog(`${d.name} 「${nm}」 강제 교대 — 상대나 GM 이 「퇴장 → 강제 교대」로 처리`,'battle')}
  /* 11-03 「임의교대」 구문: 벤치에서 골라 같은 자리로 (그 트레이너 · GM 만) */
  async function freeSwitchUI(mid,nm){const c=ctx();const a=c.b.mons[mid];if(!a||!a.entry||a.hp.cur<=0)return;if(!canEdit(c,a)&&!c.mgr){A().sysLog(`${a.name} 「${nm}」 임의 교대할 수 있다 — 그 트레이너가 「퇴장」에서`,'battle');return}
   const bench=Object.values(c.b.mons).filter(x=>x.tid===a.tid&&!x.entry&&!x.pend&&x.hp.cur>0&&x.id!==mid);if(!bench.length){A().sysLog(`${a.name} 교대할 포켓몬이 벤치에 없다`,'battle');return}
@@ -2342,7 +2346,7 @@ window.OM_BATTLE_UI=(()=>{
   /* 10-26 덱 시험: 카드의 「아군 1체」가 기준 포켓몬(자기 편 첫 포켓몬)을 빼고 물었다 — 트레이너가 쓰는 카드는 기준 포켓몬도 고를 수 있게 (ally1s) */
   const ops=opt.uq?JSON.parse(JSON.stringify(auto.ops).replace(/"tgt":"ally1"/g,'"tgt":"self"')):auto.src==='card'?JSON.parse(JSON.stringify(auto.ops).replace(/"tgt":"ally1"/g,'"tgt":"ally1s"')):auto.ops;
   const ux=uiCtx(nb,m,name,opt.area);if(opt.pickId){const up=ux.pick;ux.pick=(list,label)=>{const f=list.find(x=>x.id===opt.pickId);return f?Promise.resolve(f):up(list,label)}}   /* 11-02: 창에서 이미 고른 대상 */
-  const r=await FX().run(ops,Object.assign(ux,opt.noRoll?{noRoll:1}:{},adj,hold,STK2?{stack:STK2}:{}));L.push(...r.lines);if(hold.hold&&(m.holds||[]).length)L.push('(필드를 떠나면 풀린다)');
+  const r=await FX().run(ops,Object.assign(ux,opt.noRoll?{noRoll:1}:{},opt.hit?{hit:opt.hit}:{},adj,hold,STK2?{stack:STK2}:{}));   /* 11-08 opt.hit: 「조건 명중」이 맞은 대상 · 기술을 본다 */L.push(...r.lines);if(hold.hold&&(m.holds||[]).length)L.push('(필드를 떠나면 풀린다)');
   const raidNew=await raidFix(m,m0,name,L);if(raidNew===null)return false;
   const f=fieldOf(nb);for(const id in nb.mons){const x=nb.mons[id];if(x.entry&&x.hp.cur<=0){x.entry='';L.push(`${x.name}은(는) 쓰러졌다!`)}}
   if(!await saveBattle(nb0,nb,f,{n:m.name,s:name,img:opt.img!=null?opt.img:(m.image||'')}))return false;if(raidNew)raidCut(m);
@@ -2364,6 +2368,16 @@ window.OM_BATTLE_UI=(()=>{
  const PASSIVE_K=['boost','guard','mult','immune','nodrop','ignoreup','noind','float','prio','chance','pursuit','cond','sp','role'];   /* 11-03 22:50: 「역할 추가」(타이트엔드 = 어태커 · 블로커 취급)도 늘 켜짐 */
  /* 맨 앞 「조건」(아군빈사 · HP≤ · 상태)을 미리 본다 — 안 맞으면 조용히 넘기고 나중(아군 빈사 등)에 다시 */
  function condNow(b,m,ops){if(!m)return false;for(const o of ops||[]){if(o.k!=='cond')break;if(o.c==='ally_fainted'){if(!Object.values(b.mons||{}).some(x=>x.id!==m.id&&sameT(x,m,b)&&x.hp.cur<=0))return false}else if(o.c==='self_state'){if(!(m.states||{})[o.st])return false}else return false}return true}
+ /* 11-08 망령 「돌던지기가 「타입 : 물」에게 명중 했을 때 대상을 강제 교대」: 구문 첫 줄이 「조건 명중 [기술:…] [상대타입:…] [타입:…]」인 공격한 포켓몬의 포텐셜 · 특성 · 소지품 —
+    공격을 적용한 뒤 맞은 대상마다 조건을 보고 저절로 (대상 = 맞은 포켓몬). 【N/시】 포텐셜은 【자동】 이 있어야 하고 횟수를 깎는다 (없으면 「발동」 하라고 알림) */
+ async function hitAuto(mid,R){if(!FX()||!FX().hitOk||!R||!R.mv)return;const a0=ctx().b.mons[mid];if(!a0)return;const hits=(R.targets||[]).filter(r=>r&&r.acc&&r.acc.hit&&r.def&&r.def.id!==mid);if(!hits.length)return;
+  const list=[];if(a0.ability)list.push(['trait',a0.ability]);if(a0.item)list.push(['item',a0.item]);for(const x of (a0.items2||[]))if(x&&x.item)list.push(['item',x.item]);for(const p of potSrc(a0))if(p&&p.name&&!p.ph)list.push(['pot',p.name]);
+  for(const [kind,name] of list){const a=ctx().b.mons[mid];if(!a)return;const au=FX().autoOf(a,kind,name);if(!au||!au.ops||!au.ops.length||au.manual)continue;const c0=au.ops[0];if(!c0||c0.k!=='cond'||c0.c!=='on_hit')continue;const eff=slotEff(a,kind,name);const K=({pot:'포텐셜',trait:'특성',item:'소지품'})[kind]||'효과';
+   for(const r of hits){const d=ctx().b.mons[r.def.id];if(!d)continue;const h={move:R.mv.name,defTypes:tysOf(d),moveTypes:R.moveTypes||[]};if(!FX().hitOk(c0,h))continue;
+    if(limManual(a,kind,name,eff)){A().sysLog(`【${K}】 ${a.name} 『${name}』 — 「${R.mv.name}」이(가) ${d.name}에게 명중해 조건을 만족했다 (【자동】 이 없어 카드 「발동」으로)`,'battle',{mid:a.id,img:a.image||''});continue}
+    let left=null;if(kind==='pot'){const mm=String(eff||'').match(/【\s*(\d+)\s*\/\s*시\s*】/);if(mm){const u=((ctx().b.mons[mid]||{}).potUses||{})[name];left=u==null?+mm[1]:+u;if(left<=0)continue}}
+    const ok=await fireAuto(mid,kind,name,{quiet:true,pickId:d.id,hit:h,head:`【${K}】 ${a.name} 『${name}』【자동】 — 「${R.mv.name}」이(가) ${d.name}에게 명중`});
+    if(ok&&left!==null){const cur=ctx().b.mons[mid];const uu=Object.assign({},(cur&&cur.potUses)||{});uu[name]=left-1;await A().set(['battle','mons',mid,'potUses'],uu)}}}}
  /* 아군 빈사 (10-26 망령): 새로 쓰러진 포켓몬이 생기면 — 같은 편 필드 포켓몬의 「아군빈사」 조건 상시(에이스 …)를 걸고, 【자동】 「아군이 「빈사」 상태가 되었을 때」 포텐셜을 발동, 그 밖의 그런 고유 · 포텐셜은 알림 */
  const FAINT_SEEN={};let faintBusy=false;
  async function faintWatch(){const c=ctx();const b=c.b;if(!c.mgr||!b.started||faintBusy)return;const bk=String(b.started)+':'+Object.keys(b.mons||{}).sort().join(',');
@@ -3001,6 +3015,8 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【[^】]*】\s
    /* 11-07 망령 「닌자 자동화가 없어요」: 「자신이 행동한 뒤 …」 포텐셜(닌자 ① 회피 ×1.33 턴 종료까지)은 공격을 적용한 뒤 저절로 건다 — 구문이 있고 횟수(【N/시】) 없는 것만 · 한 턴에 한 번 */
    {const a2=ctx().b.mons[mid];const T=+ctx().b.turn||0;if(a2&&a2.entry&&a2.hp.cur>0&&FX())for(const p of potSrc(a2)){if(!p||!p.name||p.ph||!/자신이\s*행동한\s*(?:뒤|후)/.test(String(p.eff||'')))continue;const k=mid+'|'+p.name;if(ACTFX[k]===T)continue;
      const au=FX().autoOf(a2,'pot',p.name);if(!au||!au.ops||!au.ops.length||au.manual||limManual(a2,'pot',p.name,p.eff))continue;ACTFX[k]=T;await fireAuto(mid,'pot',p.name,{quiet:true,noRoll:true,head:`【포텐셜】 ${a2.name} 『${p.name}』 — 행동한 뒤 자동`})}}
+   /* 11-08 「조건 명중」 자동 (돌던지기 → 물 타입 강제 교대 …) */
+   try{await hitAuto(mid,RESULT)}catch(e){console.warn('hitAuto',e)}
    /* 11-03 「추가공격」: 포켓몬 하나에게 내보낸 맞는 기술이 명중했으면 1번 더 (위력 · 필중은 구문대로) — 추가 공격 창을 연다 */
    {const hit1=RESULT.targets.length===1&&RESULT.targets[0].acc.hit&&RESULT.mv.cat!=='변화'?RESULT.targets[0]:null;const left=opt.extra?(+opt.extra.left||0):null;
     if(hit1&&(left===null||left>0)){const a2=ctx().b.mons[mid];const ex=a2&&a2.entry&&a2.hp.cur>0?(opt.extra?{pw:opt.extra.pw,sure:opt.extra.sure,n:left,name:opt.extra.name}:spL(a2,'extra').find(e=>spHit(e,RESULT.mv,RESULT.moveTypes))):null;const d2=ctx().b.mons[hit1.def.id];
