@@ -2711,6 +2711,7 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
   $('#aroll',md).onclick=()=>{
    const mv=MVS(atk)[+mvSel.value];if(!mv)return;if(sealed(atk,mv)){if(!ctx().mgr){A().toast('「봉인」 — 이 기술은 내보낼 수 없다');return}A().toast('「봉인」된 기술 — GM 이라 판정은 한다 (바로잡을 때만)')}if(taunted(atk,mv)){if(!ctx().mgr){A().toast('「도발」 — 변화기는 내보낼 수 없다');return}A().toast('「도발」 중 변화기 — GM 이라 판정은 한다 (도발 턴은 줄지 않는다)')}if(isNG(mv)&&!NG){A().toast(`나무열매를 지니고 있지 않아 「${NGN}」는 실패한다`);A().sysLog(`【공격】 ${atk.name} 『${NGN}』 — ${IT(atk)?'「'+IT(atk)+'」는 자연의은혜에 쓸 수 없는 소지품이라':'나무열매를 지니고 있지 않아'} 실패했다`,'battle',{mid,img:atk.image||''});A().closeModal();return}
    {const FI=OI()&&OI().moveKind&&OI().moveKind(mv)==='fling'?OI().flingInfo(atk):null;if(FI&&!FI.ok){A().toast(`${FI.why} 「${mv.name}」는 실패한다`);A().sysLog(`【공격】 ${atk.name} 『${mv.name}』 — ${FI.why} 실패했다`,'battle',{mid,img:atk.image||''});A().closeModal();return}}   /* 11-06 내던지기: 빈손 · 못 던지는 소지품 · 서투름 · 금제 */
+   if(/「날씨」가 전개되어 있지 않으면 실패/.test(String(mv.eff||''))&&!String((fieldOf(b).weather||{}).type||'')){A().toast(`「날씨」가 없어 「${mv.name}」는 실패한다`);A().sysLog(`【공격】 ${atk.name} 『${mv.name}』 — 「날씨」가 전개되어 있지 않아 실패했다`,'battle',{mid,img:atk.image||''});A().closeModal();return}   /* 11-07 천지를먹기 */
    const keepCK=ACCKEEP&&RESULT&&RESULT.checkOnly?{checkOnly:RESULT.checkOnly,lines:RESULT.lines||[]}:null;RESULT=null;SECADJ={add:+(($('#asecadd',md)||{}).value)||0,sure:!!(($('#asecsure',md)||{}).checked)};
    /* 행동 판정: 상태 변화로 못 움직이면 여기서 끝. 적용하면 상태 변화(잠듦 남은 턴·얼음 해제 등)와 로그만 남는다 */
    if(keepCK)RESULT=keepCK;
