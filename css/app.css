@@ -5664,3 +5664,6 @@ button.tfsep.cl{opacity:1;border:1px dashed color-mix(in srgb,var(--yel2) 55%,tr
 /* 11-06 망령 「포텐셜 발동 · 설정 · 해석·묘수 한 줄로」 */
 .bcol .tbtns{flex-wrap:nowrap;gap:3px}   /* .bcol .tbtns 의 wrap 보다 세게 */
 .bcol .tbtns .btn{white-space:nowrap;padding-left:5px;padding-right:5px;min-width:0;flex:0 1 auto;font-size:11px;letter-spacing:-.02em}
+
+/* 11-07 설치물 아이콘 */
+.obj .oimg,.objchip .oimg{width:16px;height:16px;object-fit:contain;vertical-align:-3px;margin-right:3px}
