@@ -20,12 +20,12 @@ window.OM_TOUR=(()=>{
   {pc:1,s:'#side',t:'채팅',d:'세션 로그와 잡담. 주사위는 /r 1d100, 귓속말은 /w 이름 메시지.'},
   {mo:1,s:'#mbar',t:'아래 바',d:'무대 · 채팅 · 휴대폰 · 맨 위 · 메뉴(☰). 상단 단추는 ☰ 안에 있다.'},
   {s:'#skillBtn',t:'스킬 체크',d:'GM 이 체크를 내면 「스킬 체크 !」로 빨갛게 뜬다. 눌러서 굴린다.',ms:MENU},
-  {s:'#copyLink',t:'플레이어 링크',d:'이 링크를 플레이어에게 준다. GM 링크는 남에게 주지 말 것.',gm:1,ms:MENU},
+  {s:'#seatBtn',t:'자리',d:'GM 은 자리 관리 — 자리 비우기 · 옮기기. 플레이어에게 줄 링크는 ⚙ 설정 → 방 설정 → 방 칸 「플레이어 링크 복사」. GM 링크는 남에게 주지 말 것.',gm:1,ms:MENU},
   {s:'#roomSet',t:'내 설정',d:'소리 · 알림 · 글자 · 대사 연출 · 단축키.',ms:MENU},
   {s:TAB('guide'),t:'튜토리얼',d:'더 자세한 설명은 여기. 장마다 「🔍 화면에서 찾기」로 실제 단추를 짚어 준다.'}];
  const FIND={
   welcome:BASE,layout:BASE,
-  join:[{s:'#seatBtn',t:'자리',d:'누르면 자리 고르기 창. 내 트레이너를 고른다.',ms:MENU},{s:'#presence',t:'접속 중',d:'앉으면 여기 내 이름 옆에 트레이너가 붙는다.'},{s:'#copyLink',t:'플레이어 링크',d:'플레이어에게 줄 링크.',gm:1}],
+  join:[{s:'#seatBtn',t:'자리',d:'누르면 자리 고르기 창. 내 트레이너를 고른다.',ms:MENU},{s:'#presence',t:'접속 중',d:'앉으면 여기 내 이름 옆에 트레이너가 붙는다.'}],
   talk:[{v:'rp',m:'scene',s:'.rpinput',t:'입력줄',d:'화자를 고르고 Enter. 대사는 무대 말풍선으로, 지문은 띠로 뜬다.'},{v:'rp',m:'chat',s:'#chatIn',t:'채팅 입력',d:'명령(/r · /w)과 잡담은 여기.'}],
   phone:[{v:'rp',s:'[data-rp="phone"],#mbar [data-m="phone"]',t:'휴대폰',d:'키보드 P 로도 열린다.'}],
   rpmisc:[{v:'rp',s:'[data-rp="map"],[data-rp="gm"]',t:'지도 · 소리',d:'무대 위 단추에서 연다.'},{v:'rp',s:'[data-rp="deck"]',t:'덱',d:'은열쇠 · 광기 · 행동 카드.'}],
