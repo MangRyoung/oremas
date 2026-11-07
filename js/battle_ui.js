@@ -766,13 +766,13 @@ window.OM_BATTLE_UI=(()=>{
  /* 11-03 21:30 (아니스 시온 「행동 진행을 안 누르는 쪽은 우선도가 반영 안 된다」): 열쇠는 턴 개시 때 한 번만 올라가서, 그 뒤(선행 발동 등)에 생긴 우선도 효과가 남의 화면 계산에 안 들어갔다.
     열쇠에 우선도에 닿는 상태의 지문(sig)을 붙이고, 지문이 바뀌면 다시 올린다. 계산하는 쪽은 지문이 맞을 때까지 잠깐 기다린다 */
  function prioSig(b,tid){return Object.values((b&&b.mons)||{}).filter(m=>m&&m.tid===tid&&m.entry&&m.hp&&m.hp.cur>0).sort((x,y)=>String(x.id).localeCompare(String(y.id))).map(m=>m.id+':'+JSON.stringify(((m.fx||{}).prio)||[])+':'+(m.prioDown?1:0)+':'+(m.ability||'')+':'+(m.item||'')).join('|')}
- async function publishOk(tid0,force){const c=ctx();const b=c.b;const tid=tid0||c.seat;if(!(c.role==='seat'||(c.gm&&!seatOwned(c,tid)))||!tid||!(b.trainers||{})[tid])return;   /* 11-03 21:51: GM 몫(NPC · GM 이 불러온 파티)도 GM 화면이 올린다 — 좌석이 진행할 때 GM 쪽 우선도 · 교대가 빠지던 것 */const key=turnKey(b);const cur=((b.cmds||{})[tid]||{}).ok;const sig=prioSig(b,tid);if(!force&&((cur&&cur.key===key&&cur.sig===sig)||BUSY.ok===key+tid+sig))return;BUSY.ok=key+tid+sig;const t=b.trainers[tid];try{
+ async function publishOk(tid0,force){const c=ctx();const b=c.b;const tid=tid0||c.seat;if(!(c.role==='seat'||(c.gm&&!seatOwned(c,tid)))||!tid||!(b.trainers||{})[tid])return;   /* 11-03 21:51: GM 몫(NPC · GM 이 불러온 파티)도 GM 화면이 올린다 — 좌석이 진행할 때 GM 쪽 우선도 · 교대가 빠지던 것 */const key=turnKey(b);const cur=((b.cmds||{})[tid]||{}).ok;const sig=prioSig(b,tid);if(!force&&((cur&&cur.key===key&&cur.sig===sig)||(BUSY.ok===key+tid+sig&&(cur||Date.now()-(BUSY.okAt||0)<8000))))return;BUSY.ok=key+tid+sig;BUSY.okAt=Date.now();   /* 11-07: 「지시 준비」로 되돌려 cmds 가 비면(같은 턴) 몇 초 뒤 다시 올린다 */const t=b.trainers[tid];try{
   const cm=await myCmd(c,tid,true);const ok={key,sig,m:{}};for(const mm of Object.values(b.mons||{}).filter(x=>x.tid===tid&&x.entry&&x.hp.cur>0)){const xx=((cm||{}).mons||{})[mm.id]||{};ok.m[mm.id]=okeyOf(mm,xx);if(preCounts(t,xx,mm))ok.m[mm.id].pi=1}if(upCounts(t,(cm||{}).upots))ok.pre=1;
   if((ctx().b.cmds||{})[tid])await A().set(['battle','cmds',tid,'ok'],ok);else await A().set(['battle','cmds',tid],{ok})}catch(e){BUSY.ok='';console.warn('publishOk',e)}}
  /* 차례가 온 포켓몬의 지시를 연다: 주인 화면이, GM 몫(NPC · GM 이 불러온 파티)은 GM 화면이. 보통 모드의 GM 은 플레이어가 안 열면 잠시 뒤 대신 연다 */
  const RVT={};
  async function autoRevealTurn(){const c=ctx();const b=c.b;if((+b.phase||0)<2)return;const o=(b.order||[])[+b.orderIdx||0];if(!o)return;const m=(b.mons||{})[o.mid];if(!m||!m.entry||m.hp.cur<=0||revealed(b,m.tid,m.id))return;
-  const key=turnKey(b)+':'+m.id;if(SENT['rv:'+key]||BUSY.rv)return;
+  const key=turnKey(b)+':'+m.id+':'+(o.dice||0);if(SENT['rv:'+key]||BUSY.rv)return;   /* 11-07 망령 「로시 공개 대기」: 같은 턴을 개시 → 「지시 준비」로 되돌림 → 다시 개시하면 턴 번호가 같아 첫 개시 때 찍은 표시로 건너뛰었다 — 다시 개시하면 순서 주사위가 새로 굴려지므로 열쇠에 넣는다 */
   const run=async()=>{const b2=ctx().b;const o2=(b2.order||[])[+b2.orderIdx||0];if(!o2||o2.mid!==m.id||revealed(b2,m.tid,m.id)||SENT['rv:'+key])return;SENT['rv:'+key]=1;BUSY.rv=1;try{await revealOne(m.tid,m.id,true)}finally{BUSY.rv=0}};
   if(c.role==='seat'&&lead(c,m.tid))return run();
   if(!c.gm||(b.host||'gm')!=='gm')return;if(!isLeader(c))return;if(c.fair&&seatOwned(c,m.tid))return;
