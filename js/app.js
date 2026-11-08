@@ -401,8 +401,11 @@ setInterval(()=>{if(ST.room&&document.visibilityState==='visible'&&Date.now()-PA
 
 /* 11-07 23:00 망령 「PL 권한인데도 왜 GM 귓속말이 보이지」: 귓속말을 볼 수 있는가 — GM 화면만 전부. 자리(「PL 로」 앉은 GM 포함)는 나에게 온 것 · 내가 보낸 것(저절로 생긴 비공개 줄은 빼고)만.
    「PL 로」 앉은 GM 은 서버가 GM 몫으로 전부 돌려주므로 여기서 거른다 */
-function wVis(d){d=d||{};if(ST.role==='gm')return true;const me=ST.seat||'';if(me&&d.to===me)return true;if(d.priv||d.gmPriv)return false;if(me&&d.from===me)return true;return !ST.asPlGm}
-async function pollWhispers(){try{const ws=await DBS().whispers(ST.room,ST.secret,ST.lastWhisper);if(!ws||!ws.length)return;const me=ST.role==='gm'?'gm':ST.seat;ws.forEach(w=>{ST.lastWhisper=Math.max(ST.lastWhisper,w.id);if(!wVis(w.data))return;   /* 11-07 숨은 소지품 · 특성 줄: 보낸 쪽(상대)에겐 안 보인다 */if(!ST.log.find(x=>x.id===w.id))ST.log.push(w)});ST.log.sort((a,b)=>a.id-b.id);renderLog(true)}catch(e){}}
+/* 11-08 20:24 망령 「GM 이어도 배틀 탭 PL 권한(GM 불간섭, rp.gmHands=false)일 땐 이거 안 보여야지」: 그동안 GM 화면은 플레이어 자리로 간 비공개 줄(priv · gmPriv — 등장 때 켠 상시류 · 숨은 소지품 · 특성)을 숨긴다. GM 몫(to:'gm')과 사람끼리 귓속말은 그대로.
+   raw = 받아 둘 때(pollWhispers) — 불간섭을 끄면 다시 보이게 로그에는 넣어 둔다 */
+function gmFairHide(d){return ST.role==='gm'&&((ST.state||{}).rp||{}).gmHands===false&&!!(d.priv||d.gmPriv)&&!!d.to&&d.to!=='gm'}
+function wVis(d,raw){d=d||{};if(ST.role==='gm')return raw||!gmFairHide(d);const me=ST.seat||'';if(me&&d.to===me)return true;if(d.priv||d.gmPriv)return false;if(me&&d.from===me)return true;return !ST.asPlGm}
+async function pollWhispers(){try{const ws=await DBS().whispers(ST.room,ST.secret,ST.lastWhisper);if(!ws||!ws.length)return;const me=ST.role==='gm'?'gm':ST.seat;ws.forEach(w=>{ST.lastWhisper=Math.max(ST.lastWhisper,w.id);if(!wVis(w.data,1))return;   /* 11-07 숨은 소지품 · 특성 줄: 보낸 쪽(상대)에겐 안 보인다 */if(!ST.log.find(x=>x.id===w.id))ST.log.push(w)});ST.log.sort((a,b)=>a.id-b.id);renderLog(true)}catch(e){}}
 
 /* ---------- 보기 설정: 글씨 크기·채팅/대사 글씨·폰트 (브라우저마다) ---------- */
 const UI_FONTS=[['plex','IBM Plex Sans KR (기본)'],['noto','Noto Sans KR'],['nanum','나눔고딕'],['gothica1','Gothic A1'],['gowun','고운돋움'],['pretendard','Pretendard'],['myeongjo','나눔명조'],['system','시스템 기본']];
@@ -728,7 +731,7 @@ function renderLog(scroll){
  /* 11-02 망령 「채팅 렉」: 새 줄이 올 때마다 로그 전체(배틀 카드 포함 수백 줄)를 다시 만들던 것 → 앞부분이 그대로면 새 줄만 뒤에 붙인다.
     화면에는 최근 LOGMAX 줄만 둔다(더 위는 「로그 저장」 · 정리기로). 채널 · 지우기 · 끼워 넣은 줄이 있으면 예전처럼 전부 다시 */
  const HID=logHides();const LIST=(SR.length?ST.log.concat(SR).sort((a,b)=>a.id-b.id):ST.log).filter(logDup()).filter(r=>r.kind==='self'||(r.id>cut&&!(HID.length&&logHidden(r.id,HID))&&(CHAN.cur==='o'?isOoc(r):!isOoc(r))));
- const KEY=[CHAN.cur,cut,ST.role,ST.seat,ST.gmNick||'',LOGV,HID.map(h=>h.a+'-'+h.z).sort().join(',')].join('|');const LM=el._lm;
+ const KEY=[CHAN.cur,cut,ST.role,ST.seat,ST.gmNick||'',LOGV,((ST.state.rp||{}).gmHands===false?'fair':''),HID.map(h=>h.a+'-'+h.z).sort().join(',')].join('|');const LM=el._lm;
  const app=LM&&LM.key===KEY&&LIST.length>=LM.n&&LM.n>0&&LIST[LM.n-1].id===LM.last&&LIST[0]&&LIST[0].id===LM.first&&el.querySelector('.msg');
  const rows=app?LIST.slice(LM.n):LIST.slice(-LOGMAX);
  el._lm={key:KEY,n:LIST.length,last:LIST.length?LIST[LIST.length-1].id:null,first:LIST.length?LIST[0].id:null};
