@@ -29,16 +29,16 @@ window.OM_LP_UI=(()=>{
    const mons=pids.map(x=>ms[x]);const lvs=mons.map(monLv).filter(Boolean);
    return {id,t,f:foldOf(t),mons,inc,avg:lvs.length?Math.round(lvs.reduce((a,b)=>a+b,0)/lvs.length):0,n:inc.size}})}
 
- function monChip(m,on){const ty=monTypes(m);const lv=monLv(m);
-  const tip=[m.name+(lv?` Lv ${lv}`:''),ty.map(tko).join('/'),m.ability?'특성 '+m.ability:'',m.item?'소지품 '+m.item:'',m.awaken?'각성체':'',on?'':'(2체 기준 — 이번엔 빠진다)'].filter(Boolean).join(' · ');
-  return `<span class="lpm${on?'':' off'}" title="${esc(tip)}"><i class="lpmp" style="${m.image?`background-image:url('${cssu(m.image)}');`:''}border-color:${esc(tcol(ty[0]).bg)}">${m.image?'':esc(String(m.name||'?').charAt(0))}${m.awaken?'<em class="lpaw">각</em>':''}</i><span class="lpmn">${esc(m.name||'?')}</span><span class="lpml">${lv?'Lv '+lv:''}<span class="lpty">${ty.map(en=>`<b style="background:${esc(tcol(en).bg)}" title="${esc(tko(en))}"></b>`).join('')}</span></span>${m.item?`<span class="lpmi">${esc(m.item)}</span>`:''}</span>`}
+ function monChip(m,on){const ty=monTypes(m);const lv=monLv(m);const its=[m.item,...(m.items2||[]).map(x=>x&&x.item)].filter(Boolean);
+  const tip=[m.name+(lv?` Lv ${lv}`:''),ty.map(tko).join('/'),m.ability?'특성 '+m.ability:'',its.length?'소지품 '+its.join(' · '):'',m.awaken?'각성체':'',on?'':'(2체 기준 — 이번엔 빠진다)'].filter(Boolean).join(' · ');
+  return `<span class="lpm${on?'':' off'}" title="${esc(tip)}"><i class="lpmp" style="${m.image?`background-image:url('${cssu(m.image)}');`:''}border-color:${esc(tcol(ty[0]).bg)}">${m.image?'':esc(String(m.name||'?').charAt(0))}${m.awaken?'<em class="lpaw">각</em>':''}</i><span class="lpmn">${esc(m.name||'?')}</span><span class="lpml">${lv?'Lv '+lv:''}<span class="lpty">${ty.map(en=>`<b style="background:${esc(tcol(en).bg)}" title="${esc(tko(en))}"></b>`).join('')}</span></span>${its.length?`<span class="lpmi">${esc(its.join(' · '))}</span>`:''}</span>`}
 
- function rowHtml(R,inB,H){const t=R.t;const id=R.id;const gm=ST().role==='gm';const seat=ST().seat;
+ function rowHtml(R,inB,H,grp){const t=R.t;const id=R.id;const gm=ST().role==='gm';const seat=ST().seat;
   const inBat=inB[id]||Object.values(inB).some(x=>x&&x.srcTid===id);const tw=A().twoAble(t)&&(gm||id===seat);
   return `<div class="lpr${inBat?' inb':''}" data-lpid="${esc(id)}">
    <div class="lpp" style="${t.image?`background-image:url('${cssu(t.image)}')`:''}">${t.image?'':esc(String(t.name||'?').charAt(0))}</div>
    <div class="lpb">
-    <div class="lph"><b class="lpn">${esc(t.name||'(이름 없음)')}</b>${id===seat?'<span class="tag me">ME</span>':''}${inBat?'<span class="tag">배틀에 있음</span>':''}${(!gm&&id!==seat)?'<span class="tag" title="불러온 사람이 지시한다 (내 몫으로 올림)">빌려 쓰기</span>':''}${R.f?`<span class="lpf">${esc(R.f)}</span>`:''}</div>
+    <div class="lph"><b class="lpn">${esc(t.name||'(이름 없음)')}</b>${id===seat?'<span class="tag me">ME</span>':''}${inBat?'<span class="tag">배틀에 있음</span>':''}${(!gm&&id!==seat)?'<span class="tag" title="불러온 사람이 지시한다 (내 몫으로 올림)">빌려 쓰기</span>':''}${R.f&&!grp?`<span class="lpf">${esc(R.f)}</span>`:''}</div>
     <div class="lprk">${RK.map(k=>{const g=(t.ranks||{})[k]||'-';return `<span class="lpg g-${gradeCls(g)}"><small>${k}</small><b>${esc(g)}</b></span>`}).join('')}<span class="lpcnt">${R.n}체${R.avg?` · 평균 Lv ${R.avg}`:''}</span></div>
     <div class="lpms">${R.mons.map(m=>monChip(m,R.inc.has(m.id))).join('')||'<span class="dim small">포켓몬 없음</span>'}</div>
    </div>
@@ -66,7 +66,7 @@ window.OM_LP_UI=(()=>{
    const chip=(v,lab,n)=>`<button type="button" class="tfold ${F===v?'on':''}" data-lpf="${esc(v)}">${esc(lab)} <small>${n}</small></button>`;
    box.innerHTML=`<div class="lptop"><input type="search" id="lpq" placeholder="트레이너 · 포켓몬 · 폴더 찾기" value="${esc(st.q)}"><select id="lps" title="정렬"><option value="ord" ${st.sort==='ord'?'selected':''}>시트 순서</option><option value="name" ${st.sort==='name'?'selected':''}>이름순</option><option value="lv" ${st.sort==='lv'?'selected':''}>평균 레벨 높은 순</option></select>${ST().role==='gm'&&SH()&&SH().openFolders?'<button class="btn sm ghost" id="lpfo" title="시트 탭과 같은 폴더 — 이름을 적어 묶는다">폴더 정리</button>':''}</div>
     <div class="tfolds lpfolds">${chip('*','전체',vis.length)}${folds.map(f=>chip(f,f,vis.filter(R=>R.f===f).length)).join('')}${uN&&folds.length?chip('','미분류',uN):''}${wN?chip('@야생','야생',wN):''}${hid.length?chip('@숨김','숨김',hid.length):''}</div>
-    <div class="lplist">${L.length?groups.map(([k,rs])=>{if(!k)return rs.map(R=>rowHtml(R,inB,!!H[R.id])).join('');const cl=isCl(k);return `<div class="lpgrp${cl?' cl':''}"><button type="button" class="lpgh" data-lpg="${esc(k)}"><i>${cl?'▸':'▾'}</i> ${esc(k)} <small>${rs.length}</small>${k==='야생'?'<small class="dim"> — 던전 야생 시트</small>':''}</button>${cl?'':rs.map(R=>rowHtml(R,inB,false)).join('')}</div>`}).join(''):`<div class="empty">${all.length?'맞는 트레이너가 없다.':'로스터가 비어 있다.'}</div>`}</div>
+    <div class="lplist">${L.length?groups.map(([k,rs])=>{if(!k)return rs.map(R=>rowHtml(R,inB,!!H[R.id])).join('');const cl=isCl(k);return `<div class="lpgrp${cl?' cl':''}"><button type="button" class="lpgh" data-lpg="${esc(k)}"><i>${cl?'▸':'▾'}</i> ${esc(k)} <small>${rs.length}</small>${k==='야생'?'<small class="dim"> — 던전 야생 시트</small>':''}</button>${cl?'':rs.map(R=>rowHtml(R,inB,false,1)).join('')}</div>`}).join(''):`<div class="empty">${all.length?'맞는 트레이너가 없다.':'로스터가 비어 있다.'}</div>`}</div>
     <div class="row" style="margin-top:10px"><span class="small muted">트레이너는 「시트」 탭에서 제작기에서 가져오거나 새로 만든다. 숨기기는 이 창에서만 (이 브라우저).</span><span class="sp"></span><button class="btn sm" id="lpsheet">시트 탭으로</button></div>`;
    const qi=box.querySelector('#lpq');qi.oninput=()=>{st.q=qi.value;const p=qi.selectionStart;draw();const q2=box.querySelector('#lpq');q2.focus();try{q2.setSelectionRange(p,p)}catch(e){}};
    box.querySelector('#lps').onchange=e=>{st.sort=e.target.value;LS.set('om_lps_',st.sort);draw()};
