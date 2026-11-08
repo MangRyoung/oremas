@@ -286,6 +286,7 @@ window.OM_BATTLE_UI=(()=>{
    else if(k==='grass'){const bh=+((def.base||[])[0])||0;p=20;for(const [t,v] of [[60,40],[90,80],[120,100],[150,120]])if(bh>=t)p=v;why=`대상 HP 종족치 ${bh}`}
    return {pow:p,note:`변칙 위력 ${name}: ${why} → 위력 ${p}`}}}
  /* 동시 내밀기는 트레이너마다 (2026-10-23 망령: 각자 자기가 켠다 — 누가 켜도 상대 것은 안 바뀐다). 예전 배틀의 b.simul 은 안 정한 트레이너의 기본값 */
+ const fxForceOn=(b,tid)=>!!(((b||{}).trainers||{})[tid]||{}).forceFx;   /* 11-09 강제 발동 토글 (트레이너마다) */
  const simOn=(b,tid)=>{const t=(b.trainers||{})[tid]||{};return t.simul!=null?!!t.simul:!!b.simul};
  const simAny=b=>Object.keys(b.trainers||{}).some(t=>simOn(b,t))||Object.values(b.mons||{}).some(m=>m.pend);
  const simSide=(b,side)=>(((b.sides||{})[side]||{}).trainers||[]).some(t=>simOn(b,t));
@@ -305,13 +306,14 @@ window.OM_BATTLE_UI=(()=>{
  function areaRow(c,side){const b=c.b;const ent=entered(b,side);const ids=((b.sides||{})[side]||{}).trainers||[];
   return `<div class="arow ${side}"><div class="alabel ${side}">${SIDE_KO[side]}</div>${AREAS.slice(0,mode(b)).map(a=>{const m=ent[a];const slot=slotOf(side,a);
    return `<div class="area ${m?'':'empty'}" data-slot="${slot}"><div class="alab">${a.toUpperCase()}</div>${m?bigCard(c,m,slot):`<div class="aempty">빈 자리${c.mgr||ids.includes(c.seat)?'<br><span class="small">벤치에서 「등장」</span>':''}</div>`}</div>`}).join('')}</div>`}
+ const ffTg=(c,b,tid,lab)=>`<label class="btn xs ${fxForceOn(b,tid)?'pri ffon':'ghost'} simtg fftg" title="켜 두면 ${esc(((b.trainers||{})[tid]||{}).name||'')}의 포켓몬 · 고유 포텐셜을 손으로 발동할 때 조건 · 확인 · 확률을 건너뛰고 바로 강제 발동한다 (저절로 터지는 효과 · 필드 · SP 는 그대로). 오류 대비용 — 다 쓰면 끈다"><input type="checkbox" data-act="fxforce" data-tid="${tid}" ${fxForceOn(b,tid)?'checked':''}> 강제 발동${lab||''}</label>`;
  function benchRow(c,side,ready){const b=c.b;const ids=((b.sides||{})[side]||{}).trainers||[];const trs=b.trainers||{};const seats=c.ST.state.seats||{};
   const feB=window.OM_STAGE_UI&&(c.mgr?ids.length:ids.some(t=>ownT(c,t)))?`<button class="btn xs" data-act="stagemgr" data-side="${side}" title="${c.mgr?'트레이너 · 포켓몬이 각자 가진':'내 트레이너 · 포켓몬의'} 필드 · 스타디움 · 이계를 펼친다">필드 전개</button>`:'';
   /* 10-25 망령: 한 진영에 트레이너가 둘 이상이면(개인전 · 따로 세우기) 함께 지시 · 필드 전개 · 동시 내밀기를 머리 줄에 이름 붙여 늘어놓지 않고, 각 트레이너 칸 안에 따로 단다 */
   const multi=ids.length>1;
   const perT=tid=>{if(!multi)return '';const t=trs[tid];if(!t)return '';const own=c.gm||ownT(c,tid);
    const fe=window.OM_STAGE_UI&&(c.mgr||ownT(c,tid))?`<button class="btn xs" data-act="stagemgr" data-side="${side}" data-tid="${tid}" title="${esc(t.name||'')}의 트레이너 · 포켓몬이 가진 필드 · 스타디움 · 이계를 펼친다">필드 전개</button>`:'';
-   const sm=own?`<label class="btn xs ${simOn(b,tid)?'pri':'ghost'} simtg" title="켜면 ${esc(t.name||'')}은(는) 「등장」 대신 「내밀기 예약」 — 「시합 개시」·「내밀기 실행」 때 예약한 포켓몬이 양쪽 동시에 나온다"><input type="checkbox" data-act="simul" data-tid="${tid}" ${simOn(b,tid)?'checked':''}> 동시 내밀기</label>`:'';
+   const sm=own?`<label class="btn xs ${simOn(b,tid)?'pri':'ghost'} simtg" title="켜면 ${esc(t.name||'')}은(는) 「등장」 대신 「내밀기 예약」 — 「시합 개시」·「내밀기 실행」 때 예약한 포켓몬이 양쪽 동시에 나온다"><input type="checkbox" data-act="simul" data-tid="${tid}" ${simOn(b,tid)?'checked':''}> 동시 내밀기</label>`+ffTg(c,b,tid,''):'';
    const spb=window.OM_SP_UI&&window.OM_SP_UI.canOpen('',tid)?`<button class="btn xs spbtn" data-act="spmgr" data-side="${side}" data-tid="${tid}" title="SP (서포터) — 밖에서 돕는 조력자의 한 수">SP</button>`:'';
    const sb=stxOk(c,tid)&&window.OM_STATUS_UI?`<button class="btn xs ghost" data-act="stx" data-tid="${tid}" title="PT 요약 — 포켓몬 · 소지품 착용 · 소지품 소켓">요약</button>`:'';   /* 10-27 망령: 「현황」 → 「요약」, 카드 옆으로 */
    const cb=cardBtn(c,tid);return cb||sm||sb?`<div class="tbtns tbtns-own">${cb}${sb}<span class="sp"></span>${sm}</div>`:''};
@@ -323,7 +325,7 @@ window.OM_BATTLE_UI=(()=>{
   /* 10-21 망령: 폰에서 벤치 머리를 누르면 접는다 (접으면 트레이너별 남은 포켓몬 수만) */
   /* 10-22 망령: 동시 내밀기 켜기는 벤치 머리(「+ 파티」 옆)로. 내 트레이너만, 여럿이면 이름을 붙인다 */
   const simIds=ids.filter(tid=>trs[tid]&&(c.gm||ownT(c,tid)));
-  const simTg=simIds.map(tid=>`<label class="btn xs ${simOn(b,tid)?'pri':'ghost'} simtg" title="켜면 ${esc(trs[tid].name||'')}은(는) 「등장」 대신 「내밀기 예약」 — 「시합 개시」·「내밀기 실행」 때 예약한 포켓몬이 양쪽 동시에 나온다. 내 것만 바뀐다"><input type="checkbox" data-act="simul" data-tid="${tid}" ${simOn(b,tid)?'checked':''}> 동시 내밀기${simIds.length>1?' · '+esc(String(trs[tid].name||'').slice(0,6)):''}</label>`).join('');
+  const simTg=simIds.map(tid=>`<label class="btn xs ${simOn(b,tid)?'pri':'ghost'} simtg" title="켜면 ${esc(trs[tid].name||'')}은(는) 「등장」 대신 「내밀기 예약」 — 「시합 개시」·「내밀기 실행」 때 예약한 포켓몬이 양쪽 동시에 나온다. 내 것만 바뀐다"><input type="checkbox" data-act="simul" data-tid="${tid}" ${simOn(b,tid)?'checked':''}> 동시 내밀기${simIds.length>1?' · '+esc(String(trs[tid].name||'').slice(0,6)):''}</label>`+ffTg(c,b,tid,simIds.length>1?' · '+esc(String(trs[tid].name||'').slice(0,6)):'')).join('');
   const bfs=ids.map(tid=>{const ms=Object.values(b.mons||{}).filter(m=>m.tid===tid);return `${esc((trs[tid]||{}).name||'?')} ${ms.filter(m=>m.hp.cur>0).length}/${ms.length}`}).join(' · ');
   return `<div class="bcol ${side} ${(UIC.bfold||{})[side]?'fold':''}"><div class="shead" data-bfold="${side}"><i class="bfc" aria-hidden="true"></i><span class="sname">${SIDE_KO[side]} 벤치</span>${bfs?`<small class="bfs">${bfs}</small>`:''}${simSide(b,side)?(()=>{const P=pendCount(b,side);return `<span class="chip simpc ${P.need>0&&P.n>=P.need?'on':''}" title="동시 내밀기 예약">예약 ${P.n}/${P.need}</span>`})():''}<span class="sp"></span>${(()=>{/* 10-25 망령: 함께 지시는 「+ 파티」 왼쪽으로 — 아래 줄(필드 전개 · 동시 내밀기)이 두 줄로 넘치지 않게. 트레이너가 여럿이면 눌러서 고른다 */const co=ids.filter(tid=>coBtn(c,tid));return co.length===1?coBtn(c,co[0]).replace('>함께 지시</button>','>👥 함께</button>'):co.length>1?`<button class="btn xs ghost" data-act="copick" data-side="${side}" title="여러 플레이어가 한 트레이너의 지시 창 · 조작권을 함께 쓴다 — 트레이너를 고른다">👥 함께</button>`:''})()}${canLoad(c)?(c.gm?`<button class="btn xs" data-act="addpick" data-side="${side}" title="이 진영에 파티를 불러오거나, 지원 폴더에서 포켓몬만 부른다">+ 추가 ▾</button>`:`<button class="btn xs" data-act="load" data-side="${side}" title="${c.mgr?'이 진영에 파티를 불러온다':'내 자리로 파티를 불러온다 (불러온 사람이 지시)'}">+ 파티</button>`):''}</div>${(()=>{
     /* 10-21 망령: 좌측 벤치 아래 줄 — 왼쪽 필드 전개, 오른쪽(+ 파티 밑) 동시 내밀기 · 내밀기 실행 */
@@ -872,7 +874,7 @@ window.OM_BATTLE_UI=(()=>{
          PL.push(`${cur.name} 『${pn}』${fk>=0?' → 메가진화':''}`);if(fk<0&&!auto){MAN.push(`${cur.name} 『${pn}』 — 효과는 손으로`);MANT.add(tid)}}
         else{if(fpot['p:'+pn])continue;const pl=potList(cur).find(q=>q.name===pn);
          if(pl){const left=(cur.potUses||{})[pn]==null?pl.max:+(cur.potUses||{})[pn];if(left<=0){MAN.push(`${cur.name} 『${pn}』 — 남은 횟수가 없다`);MANT.add(tid);continue}await action({act:'usepot',mid,pot:pn})}
-         else if(auto)await fireAuto(mid,'pot',pn,{quiet:true});
+         else if(auto)await fireAuto(mid,'pot',pn,{quiet:true,manual:1});
          else{const src=potSrc(cur).find(q=>q&&q.name===pn)||{};A().sysLog(`【포텐셜】 ${cur.name} 『${pn}』 【선행】`,'battle',{mid,img:cur.image||'',eff:String(src.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,400)})}
          await A().set(['battle','cmds',tid,'fired',mid,'pot','p:'+pn],1);PL.push(`${cur.name} 『${pn}』`);if(!auto){MAN.push(`${cur.name} 『${pn}』 — 효과는 손으로`);MANT.add(tid)}}}
        catch(e){console.warn('선행 포텐셜',e)}}}
@@ -933,6 +935,8 @@ window.OM_BATTLE_UI=(()=>{
    case 'skillck':{if(!(c.mgr||ownT(c,d.tid)))return;return window.OM_SKILL_UI&&window.OM_SKILL_UI.openPlayer(d.tid)}
    case 'enter':return enterMon(d.mid);
    case 'pend':return pendMon(d.mid);
+   case 'fxforce':{const tid=d.tid;if(!tid||!(b.trainers||{})[tid]||!(ownT(c,tid)||(c.gm&&!fairOff(c,tid))))return;const on=!!val;   /* 11-09 강제 발동 토글 — 그 트레이너 주인 · GM 만 */
+    await A().set(['battle','trainers',tid,'forceFx'],on?true:null);A().toast(on?`「${(b.trainers[tid]||{}).name||''}」 강제 발동 켬 — 손으로 누르는 발동은 조건 · 확률을 건너뛴다`:'강제 발동 끔');return}
    case 'simul':{const tid=d.tid;if(!tid||!(c.gm||ownT(c,tid))||!(c.b.trainers||{})[tid])return;
     /* 10-26 망령: GM 이 켜고 끄면 모든 트레이너가 같이 (한쪽만 켜져 상대 선발이 먼저 공개되던 것) */
     if(c.gm){for(const t of Object.keys(c.b.trainers||{}))await A().set(['battle','trainers',t,'simul'],!!val);return}
@@ -972,7 +976,7 @@ window.OM_BATTLE_UI=(()=>{
    case 'usepot':case 'restorepot':{const m=b.mons[d.mid];if(!m||!canEdit(c,m))return;if(d.act==='usepot'&&d.card&&!(await preGuard(c,m,d.pot)))return;if(d.act==='usepot'){const r=potRest(m,d.pot);if(r&&!d.auto)return A().toast(r.title);await potMark(d.mid,d.pot)}const L=potList(m);const p=L.find(x=>x.name===d.pot);if(!p)return;const u=Object.assign({},m.potUses||{});const cur=u[p.name]==null?p.max:+u[p.name];u[p.name]=d.act==='usepot'?Math.max(0,cur-1):Math.min(p.max,cur+1);if(d.act==='usepot'&&wantCut(m,p.name))cutFire('m:'+m.id,m.image,m.name,`『${p.name}』`,m.side==='left'?'#1f6fd1':'#e3101f');
     {const fu=((((ctx().b||{}).mons||{})[d.mid]||{}).potUses)||{};const ops=[];for(const k of new Set([...Object.keys(m.potUses||{}),...Object.keys(u)])){if(jeq((m.potUses||{})[k],u[k]))continue;const was=(m.potUses||{})[k],now=u[k];const d0=(now==null||was==null)?null:(+now-(+was));ops.push([['battle','mons',d.mid,'potUses',k],d0==null?(now==null?null:now):Math.max(0,(fu[k]==null?+was:+fu[k])+d0)])}if(ops.length)await A().setMany(ops)}   /* 11-05: 바뀐 포텐셜 칸만 · 차이만 */
     if(d.act==='usepot'){ /* 횟수를 깎으면서 효과 글을 카드로 띄운다 (자동화가 있으면 그 카드가 대신 뜬다) */
-     const fired=FX()?await fireAuto(d.mid,'pot',p.name,{quiet:true}):false;
+     const fired=FX()?await fireAuto(d.mid,'pot',p.name,{quiet:true,manual:1}):false;
      if(fired)A().sysLog(`${m.name} 『${p.name}』 남은 ${u[p.name]}/${p.max}`,'battle');
      else{const src=potSrc(m).find(x=>x&&x.name===p.name)||{};A().sysLog(`【포텐셜】 ${m.name} 『${p.name}』\n사용 — 남은 ${u[p.name]}/${p.max}`,'battle',{mid:m.id,img:m.image||'',eff:String(src.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,400)})}}
     else A().sysLog(`${m.name} 『${p.name}』 횟수 +1 (남은 ${u[p.name]}/${p.max})`,'battle');return}
@@ -1363,7 +1367,7 @@ window.OM_BATTLE_UI=(()=>{
   const ua=sk==='uq'&&FX()?(FX().autoOf({tid},'pot',name)||(m&&!foe&&FX().autoOf(m,'pot',name))):null;
   const bm=sk==='uq'&&baseId?(b.mons||{})[baseId]:null;const cm=(foe?null:m)||(bm&&bm.tid===tid&&bm.entry?bm:null)||(ua?Object.values(b.mons||{}).find(q=>q&&q.tid===tid&&q.entry)||Object.values(b.mons||{}).find(q=>q&&q.tid===tid):null);const cmid=cm?cm.id:mid;
   const a=sk==='uq'?ua:m&&FX()&&FX().autoOf(m,'pot',name);const pr0=prioNow(cmid);
-  if(cm&&a&&realOps(a)&&!a.manual){setTimeout(()=>reprio(cmid,pr0),0);await fireAuto(cmid,'pot',name,{auto:a,quiet:true,uq:sk==='uq'&&!foe,pickId:foe?m.id:(TP||''),head:`【${LB}】 ${who} 『${name}』${left}${tag}${tgt}`,img,eff:String(x.p.eff||'')});return}
+  if(cm&&a&&realOps(a)&&!a.manual){setTimeout(()=>reprio(cmid,pr0),0);await fireAuto(cmid,'pot',name,{auto:a,quiet:true,manual:1,ownTid:tid,uq:sk==='uq'&&!foe,pickId:foe?m.id:(TP||''),head:`【${LB}】 ${who} 『${name}』${left}${tag}${tgt}`,img,eff:String(x.p.eff||'')});return}
   A().sysLog(`【${LB}】 ${who} 『${name}』${left}${tag}${tgt?'\n대상:'+tgt.replace(' →',''):''}`,'battle',{mid:m?m.id:'',img,eff:String(x.p.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,400)})}
  async function fireOrder(tid,mid,kind,key,how){const c=ctx();const b0=snap(c.b),b=snap(b0);const t=b.trainers[tid];const m=b.mons[mid];if(!t||!m)return;
   const name=pName(c.b,tid,kind,key);const ck=(kind==='order'?'order_':'command_')+key;t.orderCount=t.orderCount||{};
@@ -2312,15 +2316,6 @@ window.OM_BATTLE_UI=(()=>{
  const ASKED={};
  function askTo(mon){const c=ctx();if(!mon||canEdit(c,mon))return '';const seats=c.ST.state.seats||{};const tid=mon.tid;
   const so=seats[tid]?tid:baseSeat(c,tid);if(tid&&so&&(A().online(so)||coOf(c,tid).some(s=>A().online(s))))return 'seat:'+tid;if(!c.gm)return 'gm';return ''}
- /* 11-09 망령 「PL 도 본인이면 강제 발동 · PL 권한일 땐 GM 에게 창 띄우지 마라」: 강제 발동 확인은 그 포켓몬(필드면 필드)의 주인에게 —
-    주인 화면이면 여기서, 좌석(PL) 것이면 그 좌석으로 보낸다 (GM 화면엔 안 띄운다 · 주인이 접속해 있지 않으면 묻지 않고 그만). GM 것만 GM 이 고른다 */
- async function forceAsk(mon,name,why,tid0){if(!mon)return false;const c=ctx();const tid=tid0||mon.tid;const nm=String(name).replace(/[『』]/g,'');
-  const q=`「${nm}」 — ${why}\n\n그래도 강제로 발동할까? (조건 · 확인 · 확률을 건너뛴다)`;const loc=()=>askYes(q,'강제 발동','그만');
-  if(ownT(c,tid))return loc();
-  const pm={id:mon.id,tid,name:mon.name};
-  if(seatOwned(c,tid)){const seats=c.ST.state.seats||{};const so=seats[tid]?tid:baseSeat(c,tid);const on=!!so&&(A().online(so)||coOf(c,tid).some(x=>A().online(x)));if(!on)return false;return !!(await remoteAsk(pm,'force',{name:nm,q},()=>false,'seat:'+tid))}
-  if(c.gm)return loc();
-  return !!(await remoteAsk(pm,'force',{name:nm,q},()=>false,'gm'))}
  async function remoteAsk(mon,type,data,local,to0){const to=to0||askTo(mon);if(!to)return local();
   const id='q'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);await A().set(['battle','asks',id],Object.assign({to,type,mid:mon.id,at:Date.now()},data));
   A().toast(`${mon.name} 쪽에 고르기를 맡겼다 — 답을 기다리는 중`);
@@ -2330,7 +2325,7 @@ window.OM_BATTLE_UI=(()=>{
  async function answerAsks(){const c=ctx();const Q=c.b.asks||{};for(const id in Q){const q=Q[id];if(!q||q.ans!==undefined||ASKED[id])continue;
    const mine=q.to==='gm'?c.gm:(String(q.to).startsWith('seat:')&&lead(c,String(q.to).slice(5)));if(!mine)continue;ASKED[id]=1;
    const m=(c.b.mons||{})[q.mid]||{name:'?'};const U=localUi(c.b,m,q.name||'');let ans;
-   try{if(q.type==='choose')ans=await U.choose(q.labels||[],!!q.multi);else if(q.type==='pick'){const list=(q.ids||[]).map(i=>(ctx().b.mons||{})[i]).filter(Boolean);const r=await U.pick(list,q.label||'대상');ans=r?r.id:''}else if(q.type==='confirm')ans=await U.confirm(q.q||'');else if(q.type==='force')ans=await askYes(q.q||'','강제 발동','그만')}catch(e){ans=q.type==='choose'?[]:q.type==='pick'?'':false}
+   try{if(q.type==='choose')ans=await U.choose(q.labels||[],!!q.multi);else if(q.type==='pick'){const list=(q.ids||[]).map(i=>(ctx().b.mons||{})[i]).filter(Boolean);const r=await U.pick(list,q.label||'대상');ans=r?r.id:''}else if(q.type==='confirm')ans=await U.confirm(q.q||'')}catch(e){ans=q.type==='choose'?[]:q.type==='pick'?'':false}
    if(((ctx().b.asks||{})[id]))await A().set(['battle','asks',id,'ans'],ans==null?(q.type==='choose'?[]:''):ans)}}
  function uiCtx(b,self,name,area){const L=localUi(b,self,name,area);const mon=self;
   return Object.assign({},L,{rolesOf:m=>rolesOf(m),   /* 11-05 동조: fx 의 「동조아군 · 동조상대」가 역할(상위 역할 포함)을 같은 기준으로 */
@@ -2360,7 +2355,10 @@ window.OM_BATTLE_UI=(()=>{
   choose:(labels,multi)=>new Promise(res=>{const md=A().openModal(`<div class="mhead"><h2>${esc(name)} — 발동할 효과</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="firelist">${labels.map((l,i)=>`<label class="firerow"><input type="${multi?'checkbox':'radio'}" name="ch" value="${i}" ${i===0?'checked':''}> <span>${esc(l)}</span></label>`).join('')}</div><div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn pri" id="chok">발동</button></div>`);
    $('#chok',md).onclick=()=>{const v=[...md.querySelectorAll('[name=ch]:checked')].map(i=>+i.value);A().closeModal();res(v)};md.querySelector('[data-x]').addEventListener('click',()=>res([]))})}}
  /* 효과 하나를 돌려서 배틀에 적용한다. kind: pot|trait|item|order. 돌려줌: 적용했으면 true */
- async function fireAuto(mid,kind,name,opt){opt=opt||{};if(opt.force)opt=Object.assign({},opt,{noRoll:true});   /* 11-09 망령 「혹시 모를 에러 · 몇몇 효과를 대비해 강제 발동」: opt.force = 조건 · 확인 · 확률을 건너뛰고 건다 */const c=ctx();const b0=c.b;const m0=b0.mons[mid];if(!m0)return false;const auto=opt.auto||FX().autoOf(m0,kind,name);   /* opt.auto: SP(서포터) 처럼 포켓몬 밖에 적힌 구문 */
+ async function fireAuto(mid,kind,name,opt){opt=opt||{};
+  /* 11-09 망령 「일일이 확인 창을 누르면 처리가 늦어진다 — 동시 내밀기처럼 강제 발동 토글」: 트레이너의 「강제 발동」이 켜져 있으면 손으로 누른 발동(카드 · 포텐셜 발동 창 · 고유)은 처음부터 강제 — 저절로 터지는 효과 · 필드 · SP 는 그대로 */
+  if(!opt.force&&kind!=='field'&&(opt.manual||!opt.quiet)){const m1=((ctx().b.mons||{})[mid])||null;const ft=opt.ownTid||(m1&&m1.tid);if(ft&&fxForceOn(ctx().b,ft))opt=Object.assign({},opt,{force:true,head:(opt.head?opt.head+' ':'')+'(강제 발동)'})}
+  if(opt.force)opt=Object.assign({},opt,{noRoll:true});   /* 11-09 망령 「혹시 모를 에러 · 몇몇 효과를 대비해 강제 발동」: opt.force = 조건 · 확인 · 확률을 건너뛰고 건다 */const c=ctx();const b0=c.b;const m0=b0.mons[mid];if(!m0)return false;const auto=opt.auto||FX().autoOf(m0,kind,name);   /* opt.auto: SP(서포터) 처럼 포켓몬 밖에 적힌 구문 */
   if(!auto||!auto.ops||!auto.ops.length||auto.manual){if(!opt.quiet)A().toast(auto&&auto.manual?`「${name}」은(는) 자동화가 없어 손으로 처리한다`:`「${name}」 자동화 없음`);return false}
   /* 11-07 망령 「이미 발동 중인 포텐셜이나 효과를 누르면 「이미 걸려 있다」 로그 말고 중첩 / 해제를 묻게」: 이 이름으로 건 효과가 필드에 남아 있으면 먼저 묻는다 (자동 발동 · quiet 는 묻지 않는다) */
   let STK2=0;if(!opt.quiet&&!opt.restack&&FX().chips&&!auto.ops.some(o=>o&&o.k==='choice')){   /* 11-07 망령 「하이 블로커 ②」: 줄을 고르는 효과(①②)는 묻지 않는다 — ① 이 등장 때 걸려 있어도 ② 를 고르러 누른 것 */const nn=x=>String(x||'').replace(/[『』]/g,'').trim();const on=Object.values(b0.mons||{}).filter(x=>x&&x.entry&&FX().chips(x).some(ch=>nn(ch.name)===nn(name)));
@@ -2387,7 +2385,7 @@ window.OM_BATTLE_UI=(()=>{
   const ux=uiCtx(nb,m,name,opt.area);if(opt.pickId){const up=ux.pick;ux.pick=(list,label)=>{const f=list.find(x=>x.id===opt.pickId);return f?Promise.resolve(f):up(list,label)}}   /* 11-02: 창에서 이미 고른 대상 */
   const r=await FX().run(ops,Object.assign(ux,opt.ctx||{},opt.force?{force:1}:{},opt.noRoll?{noRoll:1}:{},opt.hit?{hit:opt.hit}:{},adj,hold,STK2?{stack:STK2}:{}));   /* 11-09 opt.ctx: 「소지품 소모」 계기의 used 등 */   /* 11-08 opt.hit: 「조건 명중」이 맞은 대상 · 기술을 본다 */
   /* 11-09: 조건에 막혔으면 진행하는 화면(GM)에 「강제 발동」을 묻는다 — 저절로 도는 것(quiet)은 로그에 안내만 */
-  if(r.blocked&&!opt.force){if(!opt.quiet&&await forceAsk(m0,name,String(r.blocked).replace(/^「[^」]*」\s*/,''),opt.ownTid))return fireAuto(mid,kind,name,Object.assign({},opt,{force:true,head:(opt.head?opt.head+' ':'')+'(강제 발동)'}));if(opt.quiet)r.lines.push(kind==='field'?'(필드 주인 · GM: 《필드》 칩 → 정보 창 「강제 발동」으로 조건을 건너뛸 수 있다)':'(주인 · GM: 카드 「발동」을 누르면 「강제 발동」을 고를 수 있다)')}
+  if(r.blocked&&!opt.force){{const h=kind==='field'?'(필드 주인 · GM: 《필드》 칩 → 정보 창 「강제 발동」으로 조건을 건너뛸 수 있다)':opt.manual||!opt.quiet?'(벤치 「강제 발동」을 켜 두면 조건 · 확인 · 확률을 건너뛰고 발동한다)':'';if(h)r.lines.push(h)}}
   L.push(...r.lines);if(hold.hold&&(m.holds||[]).length)L.push('(필드를 떠나면 풀린다)');
   const raidNew=await raidFix(m,m0,name,L);if(raidNew===null)return false;
   const f=fieldOf(nb);for(const id in nb.mons){const x=nb.mons[id];if(x.entry&&x.hp.cur<=0){x.entry='';L.push(`${x.name}은(는) 쓰러졌다!`)}}
