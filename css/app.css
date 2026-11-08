@@ -5687,3 +5687,4 @@ button.tfsep.cl{opacity:1;border:1px dashed color-mix(in srgb,var(--yel2) 55%,tr
 .sdh{font-weight:800;font-size:14px;margin-bottom:4px;display:flex;gap:6px;align-items:center}.sdm{font-size:13px;margin:4px 0 0 4px}.sdm b{font-size:13px}.sdm ul{margin:2px 0 0 0;padding-left:18px}.sdm li{margin:1px 0;color:var(--fg2)}
 /* 11-09 강제 발동 토글 — 켜져 있으면 눈에 띄게 (끄는 걸 잊지 않게) */
 .simtg.fftg.ffon{background:#e3531f!important;border-color:#e3531f!important;color:#fff!important}
+.trainer .tn .fftg{display:inline-flex;align-items:center;gap:2px;cursor:pointer}.trainer .tn .fftg input{margin:0;width:10px;height:10px;accent-color:#fff}
