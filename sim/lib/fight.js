@@ -24,7 +24,7 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
  if(F&&['Flinch','Sleep','Paralysis','Freeze','Attract','Confusion'].some(k=>(atk0.states||{})[k])){let am=JSON.parse(JSON.stringify(atk0));let r=F.actionCheck(am);
   if(!r.ok&&atk0.side==='left'&&['Paralysis','Freeze','Confusion'].some(k=>(atk0.states||{})[k])&&!(atk0.states||{}).Flinch&&(cardTake(H,'actReroll',+b.turn||0,atk0.tid)||(['Paralysis','Confusion'].some(k=>(atk0.states||{})[k])&&cardTake(H,'actReroll2',+b.turn||0,atk0.tid)))){am=JSON.parse(JSON.stringify(atk0));r=F.actionCheck(am)}   /* 11-02 「다시 일어서」: 마비 · 혼란 · 얼음 행동 판정 한 번 다시 */
   if(!r.ok){let self=0;if(r.selfHit){self=F.confusionHit(am);am.hp.cur=Math.max(0,am.hp.cur-self);r.lines.push(`${am.name} 자작 대미지 −${self}`)}
-   const nb0=FN.snap(),nb=FN.snap(nb0);const x=nb.mons[mid];x.states=am.states;if(self){x.hp.latest=x.hp.cur;x.hp.cur=Math.max(0,x.hp.cur-self)}if(x.hp.cur<=0)x.entry='';await FN.saveBattle(nb0,nb);
+   const nb0=FN.snap(),nb=FN.snap(nb0);const x=nb.mons[mid];x.states=am.states;if(am.wakeT!=null)x.wakeT=am.wakeT;else delete x.wakeT;if(self){x.hp.latest=x.hp.cur;x.hp.cur=Math.max(0,x.hp.cur-self)}if(x.hp.cur<=0)x.entry='';await FN.saveBattle(nb0,nb);
    out.fail=r.lines.join(' / ');out.lines.push(...r.lines);if(H.logOn)W.OM_APP.sysLog(`【행동 실패】 ${atk0.name} — ${out.fail}`,'battle');return out}
   chk={am,lines:r.lines}}
  /* 「반동 : 행동불능」 쉬는 턴 */
