@@ -679,6 +679,8 @@ body.resizing{user-select:none;cursor:col-resize}
 @media (max-width:1180px){.stadium{grid-template-columns:1fr}.bcol .bench{grid-template-columns:repeat(auto-fill,minmax(110px,1fr))}}
 /* 공개 UI (맨 위) */
 .revealstat .rs.my{background:#2e2810;border:1px solid var(--yel2);padding:2px 8px}
+.revealstat .rvmsg{flex:1 1 220px;min-width:0;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}   /* 11-08 글 길이로 칸 높이가 바뀌지 않게 한 줄 (전부는 title) */
+.revealstat.idle{border-color:var(--line2);background:#15161a}.revealstat.idle .olab{opacity:.55}   /* 11-08 턴 개시 전에도 칸 자리를 지킨다 (흐리게) */
 .revealstat .rs .btn.xs{padding:1px 8px}
 /* 준비 완료 잠금 */
 .cmdt.locked .pane.ro{pointer-events:none;opacity:.55}
