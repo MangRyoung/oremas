@@ -2801,12 +2801,12 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
   const atxAuto=mv=>{const keep=ATX.filter(x=>!x.src);const au=[];let fav='';
    if(mv&&mv.cat&&mv.cat!=='변화'){const own=String(mv.type||'').split(/[()/,]/).map(t=>t.trim()).filter(Boolean).map(S().typeEn);
     for(const [n,e] of atxSrcs()){let got=[],r;
-     if((r=e.match(/자신의\s*공격에\s*「복합기\s*:\s*([^」]+)」/)))got=r[1].split(/[,，·\/]\s*/);
-     else if((r=e.match(/자신의\s*공격에\s*「([^」:]+)」\s*타입을\s*(?:부여|추가)/)))got=[r[1]];
-     else if((r=e.match(/자신의\s*「([^」:]+)」\s*기술에\s*「([^」:]+)」\s*타입을\s*(?:부여|추가)/))&&own.includes(S().typeEn(r[1].trim())))got=[r[2]];
+     if((r=e.match(/자신의\s*공격에\s*「복합기\s*[:：]\s*([^」]+)」/)))got=r[1].split(/[,，·\/]\s*/);
+     else if((r=e.match(/자신의\s*공격에\s*「([^」:：]+)」\s*타입을\s*(?:부여|추가)/)))got=[r[1]];
+     else if((r=e.match(/자신의\s*「([^」:：]+)」\s*기술에\s*「([^」:：]+)」\s*타입을\s*(?:부여|추가)/))&&own.includes(S().typeEn(r[1].trim())))got=[r[2]];
      got=got.map(x=>S().typeEn(String(x).trim())).filter(t=>t&&TYS.includes(t));
      for(const t of got){if(ATXOFF.has(n+'|'+t)||keep.some(x=>x.t===t)||au.some(x=>x.t===t))continue;au.push({t,src:n});if(/유리한\s*상성/.test(e))fav=fav||n}}}
-   ATX=keep.concat(au);const am=$('#amulti',md);if(am){if(fav&&(am.value==='0'||am.dataset.auto)){am.value='1';am.dataset.auto=fav;am.title='자동: '+fav+' (유리한 상성으로 판정)'}else if(am.dataset.auto&&!fav){if(am.value==='1')am.value='0';delete am.dataset.auto;am.title=''}}
+   ATX=keep.concat(au);/* 11-09 망령 「복합기는 유리한 상성 — 자동이든 손이든 기본값 유리」: 더한 타입이 하나라도 있으면 「복합 상성」 = 공격자에게 유리. 손으로 고르거나 ✕ 로 되돌리면(dataset.man) 그대로 둔다 */if(!fav&&ATX.length)fav=(au.find(x=>x.src)||{}).src||'복합기 +';const am=$('#amulti',md);if(am&&!am.dataset.man){if(fav&&(am.value==='0'||am.dataset.auto)){am.value='1';am.dataset.auto=fav;am.title='자동: '+fav+' (복합기 — 유리한 상성으로 판정)'}else if(am.dataset.auto&&!fav){if(am.value==='1')am.value='0';delete am.dataset.auto;am.title=''}}
    drawATX()};
   let PLG=null,PLGTY=false;
   let APOWM=false;const SPRND=['mag','present','psywave'];
@@ -2833,7 +2833,7 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
   /* 11-07 복합기 +: 더하기 · 칩 ✕ 로 빼기 (자동은 이 창에서 다시 안 채운다) · 「복합 상성」을 손으로 바꾸면 자동 표시를 뗀다 */
   {const xa=$('#atxadd',md);if(xa)xa.addEventListener('change',()=>{const t=xa.value;xa.value='';if(!t||ATX.some(x=>x.t===t))return;const pw=$('#apow',md).value;ATX.push({t,src:''});syncMove();$('#apow',md).value=pw});
    const xl=$('#atxl',md);if(xl)xl.addEventListener('click',e=>{const bt=e.target.closest('[data-atxi]');if(!bt)return;const x=ATX[+bt.dataset.atxi];if(!x)return;if(x.src)ATXOFF.add(x.src+'|'+x.t);ATX.splice(+bt.dataset.atxi,1);const pw=$('#apow',md).value;syncMove();$('#apow',md).value=pw});
-   const am=$('#amulti',md);if(am)am.addEventListener('change',()=>{delete am.dataset.auto;am.title=''})}
+   const am=$('#amulti',md);if(am)am.addEventListener('change',()=>{am.dataset.man='1';delete am.dataset.auto;am.title=''})}
   {const ts=$('#atype',md);if(ts&&ATY){ts.value=ATY;ts.closest('label').classList.add('chgd');ts.closest('label').title=`「${TYS0.map(([k])=>({Electrify:'송전',Flooding:'침수',Knave:'악인'})[k]).join(' · ')}」 상태 — 이 기술은 ${S().typeKo(ATY)} 타입`}}
   /* 보정: 바꾼 것만 위로 모아 보여 주고 ✕ 로 기본값 */
   const AF=[['acrit','급소 +',0,'crit'],['acritord','급소 지시 추가 ',0,'crit'],['acrittype','급소 표 ','','crit'],['acritmul','급소 대미지 ','','crit'],['acritforce','급소 확정',false,'crit'],['afree1','자유1 ×',1,'mul'],['afree2','자유2 ×',1,'mul'],['aitem1','아이템1 ×',1,'mul'],['aitem2','아이템2 ×',1,'mul'],['atrait','특성 ×',1,'mul'],['aweather','날씨 ×',1,'mul'],['afield','필드 ×',1,'mul'],['aatk','공격 능력 ',''],['adef','방어 능력 ',''],['aigatk','공격 측 무시 ','-1'],['aigdef','방어 측 무시 ','-1'],['amulti','복합 상성 ','0'],['aforce','상성 강제 ',''],['ahits','연속 ',''],['ahelp','도우미',false],['acharge','충전계',false],['alife','생명의구슬',false],['aadapt','적응력',false],['abelt','달인의띠',false],['askill','스킬링크',false],['asure','필중',false],['asecadd','부가효과 확률 +',0,'sec'],['asecsure','부가효과 확정',false,'sec']];
@@ -2841,7 +2841,7 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
   const chgList=()=>AF.filter(([id,,d])=>{const e=$('#'+id,md);if(!e)return false;return typeof d==='boolean'?e.checked!==d:String(e.value)!==String(d)&&!(typeof d==='number'&&+e.value===d&&e.value!=='')}).map(([id,l])=>{const e=$('#'+id,md);const v=e.type==='checkbox'?'':e.tagName==='SELECT'?e.options[e.selectedIndex].text:e.value;return {id,t:l+v,g:grpOf[id]||AF.find(x=>x[0]===id)[3]}});
   const updChg=()=>{const L=chgList();$('#achg',md).innerHTML=L.length?L.map(x=>`<span class="chip chg" data-ax="${x.id}">${esc(x.t)} <b>✕</b></span>`).join(''):'<span class="small dim">기본값 그대로</span>';
    md.querySelectorAll('[data-asum]').forEach(e=>{const gl=L.filter(x=>x.g===e.dataset.asum);e.textContent=gl.length?gl.map(x=>x.t).join(' · '):'기본'});
-   md.querySelectorAll('[data-ax]').forEach(ch=>ch.onclick=()=>{const d=AF.find(x=>x[0]===ch.dataset.ax);const e=$('#'+d[0],md);if(typeof d[2]==='boolean')e.checked=d[2];else e.value=d[2];updChg();prev()})};
+   md.querySelectorAll('[data-ax]').forEach(ch=>ch.onclick=()=>{const d=AF.find(x=>x[0]===ch.dataset.ax);const e=$('#'+d[0],md);if(typeof d[2]==='boolean')e.checked=d[2];else e.value=d[2];if(d[0]==='amulti'){e.dataset.man='1';delete e.dataset.auto;e.title=''}updChg();prev()})};
   /* 굴리기 전 예상 대미지 (난수 85~100%, 급소·연속 횟수 빼고 1회 기준) */
   const prev=()=>{const box=$('#aprev',md);if(!box)return;const mv=MVS(atk)[+mvSel.value];const g=id=>$('#'+id,md);const n=id=>+g(id).value;
    {const oh=g('aordh');if(oh){const tg=[...md.querySelectorAll('[data-t]:checked')].map(cb=>cb.dataset.t);const L=tg.map(sl=>{const [sd,ar]=sl.split('_');const d=entered(b,sd)[ar];return d?[d,orderCrit(atk,d)]:null}).filter(x=>x&&x[1].v);oh.textContent=L.length?'자동 지시 '+L.map(([d,o])=>(tg.length>1?d.name+' ':'')+'+'+o.v).join(' · '):'자동 지시 +0'}}
