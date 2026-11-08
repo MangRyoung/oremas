@@ -1767,9 +1767,10 @@ window.OM_BATTLE_UI=(()=>{
  function parseAmt(v,base){v=String(v||'').trim();if(!v)return 0;const m=v.match(/^(\d+)\s*\/\s*(\d+)$/);if(m)return Math.max(1,Math.floor(base*+m[1]/+m[2]));const n=+v;return isNaN(n)?0:Math.max(0,Math.floor(n))}
  /* HP 창의 감쇄 · 보정 요소 (10-27): 기본 대미지에 이미 들어간 것 + 여기서 곱하는 것. 공격 쪽 보정은 공격 쪽을 다룰 수 있을 때만 */
  function hfxHtml(c,lh){if(!lh)return '';const F=lh.hfx||{pub:[],atk:[]};const am=(c.b.mons||{})[lh.fromId];const seeAtk=true;   /* 10-28 망령: 공격 쪽 보정(소지품 ×1.2 · 타입 강화 …)도 받는 쪽에 그대로 보인다 — 때리는 쪽 · 받는 쪽 · 판정 로그 표기를 맞춘다 */const chip=t=>`<span class="chip" style="cursor:default">${esc(t)}</span>`;
-  const inB=[...(F.pub||[]),...(seeAtk?(F.atk||[]):[])];const hidN=seeAtk?0:(F.atk||[]).length;
+  const isW=t=>/」 피해 ×[\d.]+(?: \(더블\))? · 급소면 무시$/.test(String(t)),wG=(F.grd||[]).filter(isW),gR=(F.grd||[]).filter(t=>!isW(t));   /* 11-09 망령: 벽 이름표(_wall)는 기본 대미지에 이미 들어간 것 — 「위력 완화」 칩 옆에 붙이지 않는다 */
+  const inB=[...(F.pub||[]),...wG,...(seeAtk?(F.atk||[]):[])];const hidN=seeAtk?0:(F.atk||[]).length;
   return `<div class="hfx small" style="margin:6px 0;padding:6px 8px;border:1px dashed var(--line,#888);border-radius:8px"><div><b>기본 대미지에 이미 들어감</b> ${inB.length?inB.map(chip).join(' '):'<span class="dim">없음</span>'}${hidN?` <span class="dim">+ 공격 쪽 보정 ${hidN}개 (공격 쪽만 볼 수 있다)</span>`:''}${lh.crit?' '+chip('급소'):''}</div>
-   <div style="margin-top:4px"><b>여기서 곱함</b> ${chip('상성 ×'+lh.eff)} ${lh.guard&&lh.guard!==1?chip('위력 완화 ×'+lh.guard+((F.grd||[]).length?' — '+F.grd.join(' · '):'')):''} <span class="dim">· 반감열매 · 대미지 보정 · 버티기는 아래 칸</span></div></div>`}
+   <div style="margin-top:4px"><b>여기서 곱함</b> ${chip('상성 ×'+lh.eff)} ${lh.guard&&lh.guard!==1?chip('위력 완화 ×'+lh.guard+(gR.length?' — '+gR.join(' · '):'')):''} <span class="dim">· 반감열매 · 대미지 보정 · 버티기는 아래 칸</span></div></div>`}
  function openHp(mid,tab){const c=ctx();const b=c.b;const m=b.mons[mid];if(!m||!canEdit(c,m))return;tab=tab||(m.lastHit?'dmg':'dmg');const lh=m.lastHit;const pct=(m.hp.cur>0?Math.max(1,Math.round(m.hp.cur/m.hp.max*100)):0);
   const EFFS=[0,0.25,0.5,1,2,4];const fl=raidFloor(m);const berryN=lh&&OI()?OI().resist(m,lh):'';let sashX=lh&&OI()?OI().sash(m):null;if(lh&&lh.cat!=='변화'&&!(sashX&&(sashX.sure||sashX.pct))){const bb=bondBand(m);if(bb)sashX=bb}   /* 11-04 20:34: 『사랑의 유대』 · 『영혼의 유대』 */const SH=lh?hitShield(m,lh):{};const RX=lh&&lh.cat!=='변화'?hitRules(m):[];
   const md=A().openModal(`<div class="mhead"><h2>「HP」 · ${esc(m.name)}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
@@ -2556,7 +2557,7 @@ window.OM_BATTLE_UI=(()=>{
  function perOf(d,am){return d&&d.hits?d.hits.filter(h=>h.hit>0).map(h=>am?Math.floor(h.value*am):h.value):[]}
  /* 11-04 20:03 망령 「때렸을 때 적용된 배율 효과 로그에 보기 좋게 · 맞았을 때도 — 서로 뭐가 적용됐는지」: 대상 하나에 들어간 배율 — pub(전체기 · 날씨 · 필드 · 벽 · 화상 · 도우미 …) · atk(자속 · 소지품 · 특성 · 충전 …) · grd(받는 쪽 완화) */
  function mulParts(r,md){const def=r.def;const crit=(r.hits||[]).some(h=>h.v===2);const O=r._opt||{};const D=r.dmg||{};const H0=(D.hits||[])[0]||{};const pub=[],ak=[],gd=[];const mt=O.multiTarget?0.75:1,wt=+O.weather||1,fd=+O.fieldMul||1;
-     if(O.multiTarget)pub.push('전체기 ×0.75');if((+H0.M||1)/(mt*wt*fd)<0.99)pub.push('화상 ×0.5');if(wt!==1)pub.push('날씨 ×'+wt);if(fd!==1)pub.push('필드 ×'+fd);if((+D.wall||1)<1)pub.push('벽 ×'+D.wall+(crit?' (급소면 무시)':''));
+     if(O.multiTarget)pub.push('전체기 ×0.75');if((+H0.M||1)/(mt*wt*fd)<0.99)pub.push('화상 ×0.5');if(wt!==1)pub.push('날씨 ×'+wt);if(fd!==1)pub.push('필드 ×'+fd);if((+D.wall||1)<1&&!((r.mods&&r.mods.names)||[]).some(x=>x.key==='_wall'))pub.push('벽 ×'+D.wall+(crit?' (급소면 무시)':''));   /* 11-09 00:09 망령 「벽 배율이 공격 쪽 · 받는 쪽에 두 번 뜬다 — 받는 쪽에 냅둡시다」: 계산은 dmg.wall 한 번뿐. 받는 쪽 이름표(_wall: 「오로라베일」 피해 × …)가 있으면 공격 쪽 「벽」 줄은 뺀다 */
      if(O.watersport)pub.push('물놀이 ×0.5');if(O.mudsport)pub.push('흙놀이 ×0.5');if(O.helping)pub.push('도우미 ×'+(+O.helping>1?+O.helping:1.5));if(+O.defMul&&+O.defMul!==1)pub.push('받는 쪽 능력 배율 ×'+O.defMul);
      /* 11-07 23:5x 망령 「두꺼운지방 같은 완화가 로그에 안 뜬다」 → 「자속은 숨기는 게 맞고, 공격 쪽도 소지품이나 특성 같은 건 발동하는 건 공개」: 11-04 결정(공개 배율만)을 바꿈.
         공격 쪽 특성 · 포텐셜 · 소지품 · 충전 · 생명의구슬 · 달인의띠는 pub(모두 보는 로그), 받는 쪽 완화(grd)도 HP 적용 로그에 이름까지. atk 에는 자속 · 자유 칸만 남는다 */
