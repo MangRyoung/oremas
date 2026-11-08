@@ -3557,7 +3557,7 @@ html[data-vt] .phone .ptitle .btn *{color:inherit!important}
 @keyframes v3inB{from{transform:translateY(60vh)}}
 .v3.v3-nar .v3-por{width:58vw;height:50vh}
 .v3.v3-nar .v3-L .v3-por{left:auto;right:0;top:0;bottom:auto;height:52vh}
-.v3.v3-nar .v3-R .v3-por{right:auto;left:0;bottom:0}
+.v3.v3-nar .v3-R .v3-por{right:auto;left:0;bottom:-14vh}   /* 11-08 21:34 망령 「아래쪽은 VS 랑 얼굴이 겹칠 것 같다 — 얼굴을 좀 내려야」: 스탠딩을 화면 아래로 14vh 내림 (예전 bottom:0) */
 .v3.v3-nar .v3-plate{max-width:70vw}
 .v3.v3-nar .v3-L .v3-plate{left:4vw;top:auto;bottom:64vh}   /* 11-08 21:33 망령 「휴대폰 땐 플레이어 쪽이 얼굴을 가릴 것 같다 — 좀 내려야」: 위 칸 아래쪽(VS 바로 위)으로 (예전 top:8vh) */
 .v3.v3-nar .v3-R .v3-plate{right:4vw;bottom:7vh;top:auto}
