@@ -2521,6 +2521,10 @@ window.OM_BATTLE_UI=(()=>{
   const rk=t=>S().strip((t.ranks||{})['지시'])||'-';
   const v=Math.max(0,lv(ta)-3);return {v,txt:`${ta.name} 「지시」 ${rk(ta)} — 급소 +${v}`}}
  function crAdj(atk,def){return (+CRR(atk).add||0)-(+CRR(def).guard||0)}
+ /* 11-08 망령 「냥타 베어가르기 C+4 가 안 된다」: 기술 자체 급소 보정 「기술이 급소에 맞기 쉽다(C+N)」(베어가르기 등)과 「예리1 · 예리2」 상태(C+1 · C+2, 고유 『휘몰아치는 소드 댄스』 등)가 급소 랭크에 안 들어가던 것.
+    기충전 · 드래곤옐은 engine/battle.js critStage 가 따로 더한다. 예리1 · 예리2 가 같이 있으면 큰 쪽 */
+ function moveCritOf(mv){const x=String((mv&&mv.eff)||'').match(/급소에\s*맞기\s*쉽다\s*\(\s*C\s*\+\s*(\d)\s*\)/);return x?+x[1]:0}
+ function keenCritOf(m){const s=(m&&m.states)||{};return s.Keen2?2:s.Keen1?1:0}
  function critMulOf(atk){return +CRR(atk).dmg||0}
  /* 강화 무시 (10-23 망령): 상승 · 감소 · 둘 다(모두) × 방어 · 회피(공격할 때) · 공격 · 명중(받을 때). 돌려줌 {def,eva,atk,acc} = statValue 의 ignore 코드 (0 상승 / 1 감소 / 6 둘 다) */
  /* 10-28 망령 (킬러 자동화): 『역할』은 포켓몬의 역할 포텐셜(m.role)에 있다 — 효과 엔진은 fx.roles 만 보던 탓에 『에이스』 상대 강화(킬러)가 안 걸렸다.
@@ -2913,7 +2917,7 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
     const iu=(atk.fx||{}).ignoreUp,iuD=(def.fx||{}).ignoreUp;let igDef=+g('aigdef').value,igAtk=+g('aigatk').value;const igW=c=>({0:'상승·강화',1:'감소·저하',2:'상승(랭크)',3:'강화(배율)',4:'감소(랭크)',5:'저하(배율)',6:'랭크 변화',7:'변화 모두',8:'배율 변화'})[c]||'상승';if(IG.def!=null&&igDef===-1){igDef=IG.def;mods.names=(mods.names||[]).concat([{key:'_iu',who:atk.id,txt:`${atk.name} 「${iu.name}」 상대의 방어 ${igW(IG.def)} 무시`}])}if(IG.atk!=null&&igAtk===-1){igAtk=IG.atk;mods.names=(mods.names||[]).concat([{key:'_iuD',who:def.id,txt:`${def.name} 「${iuD.name}」 공격 쪽 ${igW(IG.atk)} 무시`}])}
     if(IG.eva!=null&&+mv.acc)mods.names=(mods.names||[]).concat([{key:'_iuE',who:atk.id,txt:`${atk.name} 「${iu.name}」 상대의 회피 ${igW(IG.eva)} 무시`}]);if(IG.acc!=null&&+mv.acc)mods.names=(mods.names||[]).concat([{key:'_iuA',who:def.id,txt:`${def.name} 「${iuD.name}」 공격 쪽 명중 ${igW(IG.acc)} 무시`}]);
     /* 기술 글 「대상의 랭크 변화를 무시한다」(성스러운칼 · 야금야금 …): 방어 쪽 랭크를 위아래 모두 무시 */if(igDef===-1&&/대상의\s*랭크\s*변화를\s*무시/.test(String(mv.eff||''))){igDef=6;mods.names=(mods.names||[]).concat([{key:'_mvig',who:atk.id,txt:`「${mv.name}」 대상의 랭크 변화 무시`}])}
-    const OC=orderCrit(atk,def);if(OC.v)mods.names=(mods.names||[]).concat([{key:'_ord',who:atk.id,txt:OC.txt}]);
+    const OC=orderCrit(atk,def);if(OC.v)mods.names=(mods.names||[]).concat([{key:'_ord',who:atk.id,txt:OC.txt}]);const MVC=moveCritOf(mv),KNC=keenCritOf(atk);if(MVC)mods.names=(mods.names||[]).concat([{key:'_mvc',who:atk.id,txt:`「${mv.name}」 급소 +${MVC}`}]);if(KNC)mods.names=(mods.names||[]).concat([{key:'_knc',who:atk.id,txt:`${atk.name} 「예리${KNC}」 급소 +${KNC}`}]);
     {const NT=[];const A1=t=>NT.push({key:'_51a'+NT.length,who:atk.id,txt:t}),D1=t=>NT.push({key:'_51d'+NT.length,who:def.id,txt:t});
      if(LKO)D1(`${def.name} 「${stKoU(DST.LockOn?'LockOn':'Gaze')}」 — 이 기술은 필중`);if(GRS)D1(`${def.name} 「대검돌격」 — 필중 · 위력 ×2`);if(MINI)D1(`${def.name} 「작아지기」 — 필중 · 위력 ×2`);
      if(SM&&!semiMiss)D1(`${def.name} 「${smKo}」 — ${LKO?'록온 · 마음의눈으로':noGuard(atk)||noGuard(def)?'「노가드」로':'이 기술은'} 맞는다${SMX?' · 위력 ×2':''}`);if(MCL)A1(`${atk.name} 「미클열매」 — 명중 +20 (적용하면 다 쓴다)`);if(FCL)A1(`${atk.name} 「포커스렌즈」 — 먼저 행동한 ${def.name}에게 명중 ×1.2`);
@@ -2924,7 +2928,7 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
     /* 특성 · 포텐셜 글 「기술이 자신의 급소에 맞지 않는다」 (조가비갑옷 · 전투무장 · 가시갑옷 …): 구문 없이도 급소 없음 */if(mods.cx!=='none'){const nc=[[def.ability,def.abilityEff],...potSrc(def).map(p=>[p.name,p.eff])].find(([n,e])=>n&&/자신의\s*급소에\s*맞지\s*않는다/.test(String(e||'')));if(nc){mods.cx='none';mods.names=(mods.names||[]).concat([{key:'_nc',who:def.id,txt:`${def.name} 「${nc[0]}」 급소에 맞지 않는다`}])}}
     /* 11-07 망령 「예민해지기 확급 자동화가 안 되어 있다」: 공격 쪽이 「예민해지기」(LaserFocus) 상태면 반드시 급소 — 급소에 맞지 않는 쪽(조가비갑옷 · 급소 규칙)이 이긴다 */if(mods.cx!=='none'&&(atk.states||{}).LaserFocus){mods.cx='sure';mods.names=(mods.names||[]).concat([{key:'_lf',who:atk.id,txt:`${atk.name} 「예민해지기」 — 반드시 급소`}])}
     /* 연속기 (맵툴 attack_target): 2~5회처럼 횟수가 범위면 첫 명중 뒤로는 확정, 2회·3회처럼 고정이면 매 회 명중 판정 (스킬링크면 첫 명중 뒤 확정) · 빗나가면 거기서 멈춘다 */
-    let hits=[];if(acc.hit){const sl=ck('askill');const mx=+mv.max||1,mn=+mv.min||1;const MH=mx>mn?minHitOf(atk):null;if(MH&&!n('ahits')&&!sl&&mods.names)mods.names=(mods.names||[]).concat([{key:'_mh',who:atk.id,txt:`${atk.name} 「${MH.name}」 최소 ${Math.min(MH.n,mx)}회`}]);const cnt=n('ahits')||B().multiHits(mv,{skillLink:sl,min:MH?MH.n:0});const fixedN=mx>1&&mn===mx&&!sl&&!acc.sure;const stage=B().critStage(atk,def,{input:n('acrit'),order:n('acritord')+OC.v+(mods.cr||0)-(mods.cg||0)+itemCrit(atk,def)+crAdj(atk,def)});
+    let hits=[];if(acc.hit){const sl=ck('askill');const mx=+mv.max||1,mn=+mv.min||1;const MH=mx>mn?minHitOf(atk):null;if(MH&&!n('ahits')&&!sl&&mods.names)mods.names=(mods.names||[]).concat([{key:'_mh',who:atk.id,txt:`${atk.name} 「${MH.name}」 최소 ${Math.min(MH.n,mx)}회`}]);const cnt=n('ahits')||B().multiHits(mv,{skillLink:sl,min:MH?MH.n:0});const fixedN=mx>1&&mn===mx&&!sl&&!acc.sure;const stage=B().critStage(atk,def,{input:n('acrit'),order:n('acritord')+OC.v+MVC+KNC+(mods.cr||0)-(mods.cg||0)+itemCrit(atk,def)+crAdj(atk,def)});
      if(cnt>1)acc.multi={cnt,kind:mx>1&&mn===mx?'fixed':'range',sl,more:[]};
      for(let i=0;i<cnt;i++){if(i>0&&fixedN){const a2=accRoll();acc.multi.more.push(a2);if(!a2.hit){acc.multi.stop=i+1;break}}const cr=mods.cx==='none'?{crit:false,roll:0,chance:0}:B().critical(stage,{type:g('acrittype').value!==''?+g('acrittype').value:(+CRR(atk).tbl||0),forced:ck('acritforce')||mods.cx==='sure'||!!CRR(atk).sure});hits.push({v:cr.crit?2:1,cr,stage})}}
     const objs=(f.objects||{})[side]||{};const wall={};for(const k in WALLS)if(objs[k]>0&&!(k==='얼음의장벽'&&mtys(mv).includes('Fire')))wall[WALLS[k]]=1;
