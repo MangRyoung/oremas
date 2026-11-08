@@ -3559,7 +3559,7 @@ html[data-vt] .phone .ptitle .btn *{color:inherit!important}
 .v3.v3-nar .v3-L .v3-por{left:auto;right:0;top:0;bottom:auto;height:52vh}
 .v3.v3-nar .v3-R .v3-por{right:auto;left:0;bottom:0}
 .v3.v3-nar .v3-plate{max-width:70vw}
-.v3.v3-nar .v3-L .v3-plate{left:4vw;top:8vh;bottom:auto}
+.v3.v3-nar .v3-L .v3-plate{left:4vw;top:auto;bottom:64vh}   /* 11-08 21:33 망령 「휴대폰 땐 플레이어 쪽이 얼굴을 가릴 것 같다 — 좀 내려야」: 위 칸 아래쪽(VS 바로 위)으로 (예전 top:8vh) */
 .v3.v3-nar .v3-R .v3-plate{right:4vw;bottom:7vh;top:auto}
 .v3.v3-nar .v3-nm{font-size:calc(var(--u)*7)}
 .v3.v3-nar .v3-seam{height:140vw;top:calc(49vh - 70vw)}
