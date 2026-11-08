@@ -94,6 +94,13 @@ window.OM_BATTLE_UI=(()=>{
  function faintSweep(nb0,nb){const L=[];if(!FX()||!nb0||!nb)return L;for(const id in nb.mons||{}){const m=nb.mons[id],o=(nb0.mons||{})[id];if(!o||!o.entry||!m||m.entry||m.hp.cur>0)continue;L.push(...auraOff(nb,m).L);if(FX().release)L.push(...FX().release(nb,m))}return L}
  async function faintOff(mid){const nb0=snap(),nb=snap(nb0);const m=nb.mons[mid];if(!m||m.hp.cur>0||!FX())return;const L=[...auraOff(nb,m).L,...(FX().release?FX().release(nb,m):[])];if(!L.length)return;if(await A().setMany(A().diffOps(['battle'],nb0,nb,3)))A().sysLog(L.join('\n'),'battle')}
  /* 11-03 감우: 1단계 비교라 states · rank · mod · fx 같은 묶음이 통째로 쓰여, 같은 포켓몬을 둘이 동시에 고치면 한쪽 잎이 사라졌다 — 2단계까지 내려가 바뀐 잎만 (지운 키는 null) */
+ /* 11-09 망령 「빈사가 된 포켓몬에게 쓰러질지 유대 할지 물을 때 『자신의 행동 이후로 대미지를 미루는』 옵션 · 자동화 구문에도」:
+    m.defer = {v: 미룬 대미지, why, turn, after:'act'(자신의 행동이 끝나면) | 'end'(턴 종료 시)} — 행동이 끝나면(기술 전달 뒤 · 행동 순서 「다음」) 또는 턴 종료 때 한꺼번에 받는다 */
+ function deferWhen(b,mid){const ph=+b.phase||0;if(ph<3)return 'act';const O=b.order||[];const i=+b.orderIdx||0;const k=O.findIndex(o=>o&&o.mid===mid&&!o.change);return k>=i?'act':'end'}
+ async function deferFire(mid,when,only){const m0=snap((ctx().b.mons||{})[mid]);if(!m0||!m0.defer)return false;if(only&&m0.defer.after!==only)return false;const x=snap(m0);const D=x.defer;delete x.defer;const v=Math.max(0,+D.v||0);
+  x.hp.latest=x.hp.cur;x.hp.cur=Math.max(0,x.hp.cur-v);let line=`【미룬 대미지】 ${x.name} −${v}  ·  HP ${x.hp.latest} → ${x.hp.cur}/${x.hp.max} — ${when}\n${D.why||''}`;if(x.hp.cur<=0){x.entry='';line+=`\n${x.name}은(는) 쓰러졌다!`}
+  if(!await saveMon(m0,mid,x))return false;await A().sysLog(line,'battle',{mid,img:x.image||'',hp:{name:x.name,prev:x.hp.latest,cur:x.hp.cur,max:x.hp.max,why:D.why||'',faint:x.hp.cur<=0}});if(x.hp.cur<=0)await faintOff(mid);return true}
+ async function deferAll(when){for(const id of Object.keys(ctx().b.mons||{}))if(((ctx().b.mons||{})[id]||{}).defer)await deferFire(id,when)}
  function saveMon(m0,mid,nm){preSave(nm);return A().setDiff(['battle','mons',mid],m0,nm,2).then(r=>{if(r)itemKick();return r})}
  /* 소지품 저장 뒤 점검 (2026-10-23): 내가 저장한 뒤에만, 내가 고칠 수 있는 포켓몬의 HP 열매 · 치유 열매 · 시드 · 룸서비스 · 하양허브 … 를 터트린다 */
  let ITK=0;function itemKick(){clearTimeout(ITK);ITK=setTimeout(itemSweep,150)}
@@ -417,7 +424,7 @@ window.OM_BATTLE_UI=(()=>{
  function rankChips(m){const r=m.rank||{};const out=[];for(const k of ['attack','defense','specialattack','specialdefense','speed','accuracy','evasion','critical']){const v=+r[k]||0;if(v)out.push(`<span class="rk ${v>0?'up':'dn'}">${STAT_KO[k]}${v>0?'+':''}${v}</span>`)}
   const md=m.mod||{};for(const k in md){const v=+md[k];if(v&&v!==1)out.push(`<span class="rk ${v>1?'up':'dn'}">${STAT_KO[k]||k}×${v}</span>`)}return out.join('')}
  const FLAG_KO={endure:'버텨라!',surehit:'맞춰라!',dodgePhys:'물러나!',dodgeSpec:'피해라!',swap:'바꿔라!',return:'돌아와!',hitPhys:'지킬 수 없다!',hitSpec:'피할 수 없다!',noEndure:'버틸 수 없다!',acc0:'맞출 수 없다!',dodgeOnce:'주인의 칙령',nullify:'파계',rebirth:'윤회의 법계',protect:'기술 방어'};
- function flagChips(m){return Object.keys(m.flags||{}).filter(k=>m.flags[k]&&FLAG_KO[k]&&(k!=='protect'||m.flags[k]===(+ctx().b.turn||0))).map(k=>`<span class="rk flag">${esc(FLAG_KO[k]||k)}</span>`).join('')+(m.prioDown?'<span class="rk flag" title="아이스번 — 다음 기술 우선도 −1">우선도 −1</span>':'')}
+ function flagChips(m){return Object.keys(m.flags||{}).filter(k=>m.flags[k]&&FLAG_KO[k]&&(k!=='protect'||m.flags[k]===(+ctx().b.turn||0))).map(k=>`<span class="rk flag">${esc(FLAG_KO[k]||k)}</span>`).join('')+(m.prioDown?'<span class="rk flag" title="아이스번 — 다음 기술 우선도 −1">우선도 −1</span>':'')+(m.defer&&+m.defer.v>0?`<span class="rk flag" title="${esc((m.defer.why||'')+' — '+(m.defer.after==='end'?'턴 종료 시':'자신의 행동이 끝나면 (못 하면 턴 종료 시)')+' 받는다')}">미룬 대미지 −${+m.defer.v}</span>`:'')}
  function stateChips(m){const st=m.states||{};const db=(DB().states||{}).st||{};return Object.keys(st).filter(k=>st[k]).map(k=>{const im=simg(k);return `<span class="stc ${db[k]&&db[k].abn?'abn':''}" data-stinfo="${esc(k)}" title="${esc((db[k]&&db[k].desc||[]).join(' '))}">${im?`<img src="${esc(im)}" alt="">`:''}${esc(db[k]?db[k].ko:k)}${+st[k]>1&&+st[k]<1000?' '+st[k]:''}</span>`}).join('')}
  function bigCard(c,m,slot){m=V(c,m);const full=canEdit(c,m);const cmd=cmdOf(c.b,m);
   /* 11-03 감우 (검토 8): 행동 순서의 지금 차례(orderIdx)인 카드는 노란 테두리(.now) + 「공격」 pri, 그 상대편 카드는 「피격 대기」 톤(.wait) */
@@ -1001,7 +1008,8 @@ window.OM_BATTLE_UI=(()=>{
    case 'turnstart':{await A().set(['ready'],{});await A().set(['battle','cmds'],{});await A().set(['battle','phase'],1);A().sysLog('턴 개시 — 각자 지시를 공개하세요 (에리어마다 「공개」)','battle');return}
    case 'revealmon':return revealOne(d.tid,d.mid);
    case 'fire':return openFire(d.tid);
-   case 'onext':{const O=c.b.order||[];let n=Math.min(O.length,(+c.b.orderIdx||0)+1);const skipped=[];
+   case 'onext':{{const O0=c.b.order||[];const cur=O0[+c.b.orderIdx||0];if((+c.b.phase||0)===3&&cur&&cur.mid)try{await deferFire(cur.mid,'자신의 행동이 끝나서','act')}catch(e){console.warn('defer',e)}}   /* 11-09 미룬 대미지: 차례가 넘어가면 */
+    const O=c.b.order||[];let n=Math.min(O.length,(+c.b.orderIdx||0)+1);const skipped=[];
     /* 10-26 망령: 쓰러졌거나 필드에 없는 포켓몬의 차례는 건너뛴다 */
     const a1=[];while(n<O.length){const om=(c.b.mons||{})[O[n].mid];if(om&&om.entry&&om.hp.cur>0){const na=!O[n].change&&misagA1(c.b,om);if(!na)break;a1.push(`${O[n].name} — ${na}`);n++;continue}if(!O[n].change)skipped.push(O[n].name);n++}   /* 11-01 망령: 각성체 대가 A-1 행동 불능은 차례를 건너뛴다 (그때 필드로 다시 본다) */
     for(const l of a1)A().sysLog(l+' (차례를 건너뛴다)','battle');
@@ -1602,7 +1610,7 @@ window.OM_BATTLE_UI=(()=>{
   if(m.hp.cur<=0){m.entry='';out.push(`${m.name}은(는) 쓰러졌다!`)}return out}
  /* 기술을 내보낼 때 줄어드는 상태: DB 의 prog:'move' + 얼음(설명이 「3번째로 기술을 내보낼 때 해제」라 턴이 아니라 기술 횟수로 센다) */
  const movesDown=(k,d)=>(d&&d.prog==='move')||k==='Freeze';
- async function turnEnd(){if(!ctx().mgr)return;try{await fieldAuto('end')}catch(e){console.warn('필드 턴 종료 구문',e)}const c=ctx();if(!c.mgr)return;const b0=snap(c.b),b=snap(b0);const f=fieldOf(b);const db=(DB().states||{}).st||{};const lines=[];const futs=[];
+ async function turnEnd(){if(!ctx().mgr)return;try{await deferAll('턴 종료 시 (행동하지 못했거나 이미 행동했다)')}catch(e){console.warn('defer',e)}try{await fieldAuto('end')}catch(e){console.warn('필드 턴 종료 구문',e)}const c=ctx();if(!c.mgr)return;const b0=snap(c.b),b=snap(b0);const f=fieldOf(b);const db=(DB().states||{}).st||{};const lines=[];const futs=[];
   /* 10-21 망령: 로그를 갈래별로 (포켓몬 · 풀린 것 · 필드) */ const fieldL=[];const rel={};const relAdd=(m,t)=>{(rel[m.name]=rel[m.name]||[]).push(t)};
   if(F()){const slots={};for(const s of SIDES){const e=entered(b,s);for(const a in e)slots[s+'_'+a]=e[a]}
    const r1=F().turnEndStates(b.mons,slots,{field:f,turn:+b.turn||0});lines.push(...r1.lines);const r2=F().turnEndField(b.mons,f,{noGrass:1});fieldL.push(...r2.lines);
@@ -1836,9 +1844,17 @@ window.OM_BATTLE_UI=(()=>{
    if(k==='apply'){let r=calc();if(!r)return;const mods=[];{const hm=mulOf(g('h_mod').value,1)||1;if(hm!==1)mods.push('보정 ×'+hm)}if(g('h_berry').checked)mods.push(berryN?'「'+berryN+'」 반감':'반감열매');let saved=false;if(g('h_endure').checked){const ec=g('h_endure');ec.checked=false;const r0=calc();ec.checked=true;saved=!!(r0&&r0.after<=0&&r.after>0);if(saved)mods.push(sashX&&sashX.sure?'「'+sashX.name+'」로 버팀':'버티기')}   /* 10-23 망령 제보: 쓰러질 피해가 아니면 「버팀」을 적지 않는다 */
     /* 기합의머리띠: 쓰러질 피해면 굴린다 */
     /* 11-04 20:40 망령: 유대 — PVP 아니고 방 설정이 「GM 이 정함」이면 쓰러질 때 GM 에게 굴림 · 확정 발동 · 발동 안 함을 묻는다 (GM 이 아닌 화면이면 GM 화면으로) */
-    let bondForce=false;if(sashX&&sashX.pot&&!ctx().b.pvp&&((A().ST.state.rp||{}).bondMode==='gm')&&!g('h_endure').checked&&r.after<=0&&m.hp.cur>1){const L3=['굴린다 ('+sashX.pct+'%)','확정 발동 — 버틴다','발동 안 함'];const pick=async()=>localUi(ctx().b,m,sashX.name).choose(L3);const ans=ctx().gm?await pick():await remoteAsk(m,'choose',{name:sashX.name,labels:L3},pick,'gm');const ix=Array.isArray(ans)&&ans.length?+ans[0]:0;
-     if(ix===2){mods.push(`「${sashX.name}」 — GM 판정: 발동 안 함`);sashX=null}else if(ix===1){bondForce=true;mods.push(`「${sashX.name}」 — GM 판정: 확정 발동`)}}
-    if(bondForce&&sashX){const ec=g('h_endure');ec.checked=true;r=calc();ec.checked=false;mods.push(`「${sashX.name}」로 버팀`);await potMark(mid,sashX.name)}
+    /* 11-09 망령: 방 설정 「모든 빈사에 GM 에게 묻는다」(PVP 아닐 때) · 「GM 이 정함」(유대 포텐셜) — 고르는 것에 「자신의 행동 이후로 대미지를 미룬다」. 구문 「미루기」(lh.defer)면 묻지 않고 미룬다 */
+    let bondForce=false,gmEnd=false,deferIt=false;{const bm=(A().ST.state.rp||{}).bondMode||'';const dying=!g('h_endure').checked&&r.after<=0&&m.hp.cur>0&&!m.defer;const bond=sashX&&sashX.pot&&m.hp.cur>1?sashX:null;
+     if(dying&&lh.defer){deferIt=true;mods.push(`「${lh.defer}」 — 대미지를 자신의 행동 뒤로 미룸`)}
+     else if(dying&&!ctx().b.pvp&&(bm==='all'||(bm==='gm'&&bond))){const DF='자신의 행동 이후로 대미지를 미룬다';const L3=bond?['굴린다 ('+bond.pct+'%)','확정 발동 — 버틴다','발동 안 함 — 쓰러진다',DF]:['쓰러진다','유대 — HP 1 로 버틴다',DF];const nm=bond?bond.name:`${m.name} 빈사`;
+      const pick=async()=>localUi(ctx().b,m,nm).choose(L3);const ans=ctx().gm?await pick():await remoteAsk(m,'choose',{name:nm,labels:L3},pick,'gm');const ix=Array.isArray(ans)&&ans.length?+ans[0]:0;
+      if(bond){if(ix===2){mods.push(`「${bond.name}」 — GM 판정: 발동 안 함`);sashX=null}else if(ix===1){bondForce=true;mods.push(`「${bond.name}」 — GM 판정: 확정 발동`)}else if(ix===3){deferIt=true;sashX=null;mods.push('GM 판정: 대미지를 자신의 행동 뒤로 미룸')}}
+      else{if(ix===1)gmEnd=true;else if(ix===2){deferIt=true;mods.push('GM 판정: 대미지를 자신의 행동 뒤로 미룸')}}}}
+    if(deferIt){const why=`${lh.from}의 「${lh.move}」 · 상성 ×${g('h_eff').value}${mods.length?' · '+mods.join(' · '):''}`;const af=deferWhen(ctx().b,mid);const m0=snap(ctx().b.mons[mid]),x=snap(m0);delete x.lastHit;x.defer={v:r.final,why,turn:+ctx().b.turn||0,after:af};
+     A().closeModal();if(await saveMon(m0,mid,x))await A().sysLog(`【미룸】 ${m.name} — 「빈사」가 될 대미지 −${r.final} 를 ${af==='end'?'턴 종료 시로':'자신의 행동 이후로'} 미뤘다  ·  HP ${m.hp.cur}/${m.hp.max} 그대로\n${why}`,'battle',{mid,img:m.image||''});return}
+    if(gmEnd){const ec=g('h_endure');ec.checked=true;r=calc();ec.checked=false;mods.push('GM 판정: 유대로 버팀 (HP 1)')}
+    else if(bondForce&&sashX){const ec=g('h_endure');ec.checked=true;r=calc();ec.checked=false;mods.push(`「${sashX.name}」로 버팀`);await potMark(mid,sashX.name)}
     else if(sashX&&sashX.pct&&!g('h_endure').checked&&r.after<=0&&m.hp.cur>1){r=calc(true);for(const x of (r.per||[]).filter(x=>x.band))mods.push(x.band.ok?`「${sashX.name}」로 버팀 (${x.band.roll}/${x.band.pct})`:`「${sashX.name}」 실패 (${x.band.roll}/${x.band.pct})`);if(sashX.pot&&(r.per||[]).some(x=>x.band&&x.band.ok)){await potMark(mid,sashX.name);if(ctx().b.pvp)await A().set(['battle','mons',mid,'bondUsed'],1)}}
     /* 11-04 19:50 망령 「대타출동의 자동화는 되어 있어?」: 「대타출동」 상태면 대역인형(최대 HP 1/4)이 대신 맞는다 — 인형 HP 가 0 이 되면 부서지고 넘친 피해는 본체에 가지 않는다 */
     if((m.states||{}).Substitute&&g('h_sub')&&g('h_sub').checked&&r.final>0){const sub0=+m.subHp||Math.max(1,Math.floor(m.hp.max/4));const hc=curHit();const per=hc.per&&hc.per.length?hc.per:[hc.total];
@@ -3087,7 +3103,7 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【[^】]*】\s
     const am=atkMul(r,md);
     /* 10-27 제보: HP 창에 감쇄 요소가 다 안 보였다 — 기본 대미지에 이미 들어간 배율을 적어 둔다. pub = 누구나 봐도 되는 것(전체기 · 화상 · 날씨 · 필드 · 벽 · 받는 쪽 완화 …), atk = 공격 쪽 보정(소지품 · 특성 · 자속 …, 공격 쪽을 다룰 수 있는 사람만) */
     const hfx=mulParts(r,md);
-    def.lastHit={hfx,from:atk.name,fromId:atk.id,move:RESULT.mv.name,moveType:(rndOf(RESULT.mv)?S().typeKo(rndOf(RESULT.mv)):RESULT.mv.type)||'',eff:r.eff.value,effType:r.eff.type||'',total:Math.floor(r.dmg.total*am),min:Math.floor(r.dmg.min*am),max:Math.floor(r.dmg.max*am),hits:r.hits.length,crit,per:perOf(r.dmg,am),perCrit:r.hits.map(h=>h.v===2),...(r.dmgAlt?{alt:{total:Math.floor(r.dmgAlt.total*am),min:Math.floor(r.dmgAlt.min*am),max:Math.floor(r.dmgAlt.max*am),crit:!crit,per:perOf(r.dmgAlt,am)}}:{}),guard:r.guardU??r.guard,guardCrit:r.guardCritU??r.guardCrit,guardNote:[(r.mods&&r.mods.names.filter(x=>x.who===def.id).map(x=>x.txt).join(' · '))||'',r.guardU!=null&&r.guardU!==r.guard?'공격 창에서 ×'+r.guardU:''].filter(Boolean).join(' · '),endure:r.endU??r.endure,manual:r.manU||1,berry:!!r.berryU,expect:r.hp?r.hp.final:0,at:Date.now(),turn:+nb.turn||0,mt:RESULT.moveTypes||[],cat:RESULT.mv.cat||'',ct:!!(A().contactOf&&A().contactOf(RESULT.mv)==='O')&&!HAS(atk,'방호패드'),...(HAS(atk,'방호패드')&&A().contactOf&&A().contactOf(RESULT.mv)==='O'?{pad:1}:{}),multi:RESULT.targets.length>1};
+    def.lastHit={hfx,from:atk.name,fromId:atk.id,move:RESULT.mv.name,moveType:(rndOf(RESULT.mv)?S().typeKo(rndOf(RESULT.mv)):RESULT.mv.type)||'',eff:r.eff.value,effType:r.eff.type||'',total:Math.floor(r.dmg.total*am),min:Math.floor(r.dmg.min*am),max:Math.floor(r.dmg.max*am),hits:r.hits.length,crit,per:perOf(r.dmg,am),perCrit:r.hits.map(h=>h.v===2),...(r.dmgAlt?{alt:{total:Math.floor(r.dmgAlt.total*am),min:Math.floor(r.dmgAlt.min*am),max:Math.floor(r.dmgAlt.max*am),crit:!crit,per:perOf(r.dmgAlt,am)}}:{}),guard:r.guardU??r.guard,guardCrit:r.guardCritU??r.guardCrit,guardNote:[(r.mods&&r.mods.names.filter(x=>x.who===def.id).map(x=>x.txt).join(' · '))||'',r.guardU!=null&&r.guardU!==r.guard?'공격 창에서 ×'+r.guardU:''].filter(Boolean).join(' · '),endure:r.endU??r.endure,defer:(r.mods&&r.mods.defer)||'',manual:r.manU||1,berry:!!r.berryU,expect:r.hp?r.hp.final:0,at:Date.now(),turn:+nb.turn||0,mt:RESULT.moveTypes||[],cat:RESULT.mv.cat||'',ct:!!(A().contactOf&&A().contactOf(RESULT.mv)==='O')&&!HAS(atk,'방호패드'),...(HAS(atk,'방호패드')&&A().contactOf&&A().contactOf(RESULT.mv)==='O'?{pad:1}:{}),multi:RESULT.targets.length>1};
     if(FX()&&r.mods)FX().consume(nb,r.mods.names);if(def.flags&&def.flags.endure)def.flags.endureUsed=1;
     sumL.push(`${def.name} ≈ ${r.hp?r.hp.final:0}${r.eff.value!==1?' ×'+r.eff.value:''}${crit?' 급소':''}${r.acc.multi?' '+r.hits.length+'타':''}`)}
    if($('#alife',md).checked&&dealtAny){const a=nb.mons[mid];const rec=Math.max(1,Math.floor(a.hp.max/10));a.hp.latest=a.hp.cur;a.hp.cur=Math.max(0,a.hp.cur-rec);lines.push(`${atk.name} 생명의구슬 반동 −${rec} → ${a.hp.cur}`);if(a.hp.cur<=0){a.entry='';lines.push(`${a.name}은(는) 쓰러졌다!`)}}
@@ -3161,6 +3177,7 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【[^】]*】\s
      const au=FX().autoOf(a2,'pot',p.name);if(!au||!au.ops||!au.ops.length||au.manual||limManual(a2,'pot',p.name,p.eff))continue;ACTFX[k]=T;await fireAuto(mid,'pot',p.name,{quiet:true,noRoll:true,head:`【포텐셜】 ${a2.name} 『${p.name}』 — 행동한 뒤 자동`})}}
    /* 11-08 「조건 명중」 자동 (돌던지기 → 물 타입 강제 교대 …) */
    try{await hitAuto(mid,RESULT)}catch(e){console.warn('hitAuto',e)}
+   try{await deferFire(mid,'자신의 행동이 끝나서','act')}catch(e){console.warn('defer',e)}   /* 11-09 미룬 대미지 */
    /* 11-03 「추가공격」: 포켓몬 하나에게 내보낸 맞는 기술이 명중했으면 1번 더 (위력 · 필중은 구문대로) — 추가 공격 창을 연다 */
    {const hit1=RESULT.targets.length===1&&RESULT.targets[0].acc.hit&&RESULT.mv.cat!=='변화'?RESULT.targets[0]:null;const left=opt.extra?(+opt.extra.left||0):null;
     if(hit1&&(left===null||left>0)){const a2=ctx().b.mons[mid];const ex=a2&&a2.entry&&a2.hp.cur>0?(opt.extra?{pw:opt.extra.pw,sure:opt.extra.sure,n:left,name:opt.extra.name}:spL(a2,'extra').find(e=>spHit(e,RESULT.mv,RESULT.moveTypes))):null;const d2=ctx().b.mons[hit1.def.id];
