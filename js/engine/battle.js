@@ -120,10 +120,13 @@ window.OM_BATTLE=(()=>{
   o=o||{};const defTypes=def.teraActive&&def.teraEn&&def.teraEn!=='-'?[def.teraEn]:(def.types||[]);
   /* 11-03 「명중확장」(o.scrappy = [{types, vs, float}]): 그 기술 타입이 「타입 : vs」에 무효면 그 타입만 빼고 · float 면 땅 기술이 하늘 위에도 */
   const SC=t=>(o.scrappy||[]).filter(e=>!(e.types&&e.types.length)||e.types.includes(t));
+  /* 11-08 23:01 망령 「검은철구 자동화 돼 있어?」: o.ironBall = 받는 쪽이 검은철구 — 땅으로 떨어진다(뜬 상태 무시) · 「타입 : 비행」이었다면 다른 타입과 관계없이 「땅」 기술 1배 */
+  const IB=!!o.ironBall;
   const one=t=>{
    if(t==='Shadow'||t==='Wild')return 2;if(t==='God')return 1;
+   if(t==='Ground'&&IB&&defTypes.includes('Flying'))return 1;
    const sc=SC(t);
-   if(t==='Ground'&&(o.floating||has(def,'MagnetRise')||has(def,'Telekinesis'))&&!sc.some(e=>e.float))return 0;
+   if(t==='Ground'&&!IB&&(o.floating||has(def,'MagnetRise')||has(def,'Telekinesis'))&&!sc.some(e=>e.float))return 0;
    /* 11-06 망령 「미라클아이 맞은 쪽 — 에스퍼가 악에 무효」: 받는 쪽 상태 미라클아이 = 에스퍼 기술이 악에 맞는다 · 꿰뚫어보기 = 노말 · 격투가 고스트에 · 냄새구별 = 고스트가 노말에 (그 무효만 뺀다) */
    const SEE=[];if(t==='Psychic'&&has(def,'MiracleEye'))SEE.push('Dark');if((t==='Normal'||t==='Fighting')&&has(def,'Foresight'))SEE.push('Ghost');if(t==='Ghost'&&has(def,'OdorSleuth'))SEE.push('Normal');
    if(SEE.length&&!sc.length){const dt=defTypes.filter(x=>!(SEE.includes(x)&&S().effect(t,[x])===0));return dt.length?S().effect(t,dt):1}
