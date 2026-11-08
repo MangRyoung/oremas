@@ -2351,7 +2351,7 @@ window.OM_BATTLE_UI=(()=>{
   choose:(labels,multi)=>new Promise(res=>{const md=A().openModal(`<div class="mhead"><h2>${esc(name)} — 발동할 효과</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="firelist">${labels.map((l,i)=>`<label class="firerow"><input type="${multi?'checkbox':'radio'}" name="ch" value="${i}" ${i===0?'checked':''}> <span>${esc(l)}</span></label>`).join('')}</div><div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn pri" id="chok">발동</button></div>`);
    $('#chok',md).onclick=()=>{const v=[...md.querySelectorAll('[name=ch]:checked')].map(i=>+i.value);A().closeModal();res(v)};md.querySelector('[data-x]').addEventListener('click',()=>res([]))})}}
  /* 효과 하나를 돌려서 배틀에 적용한다. kind: pot|trait|item|order. 돌려줌: 적용했으면 true */
- async function fireAuto(mid,kind,name,opt){opt=opt||{};const c=ctx();const b0=c.b;const m0=b0.mons[mid];if(!m0)return false;const auto=opt.auto||FX().autoOf(m0,kind,name);   /* opt.auto: SP(서포터) 처럼 포켓몬 밖에 적힌 구문 */
+ async function fireAuto(mid,kind,name,opt){opt=opt||{};if(opt.force)opt=Object.assign({},opt,{noRoll:true});   /* 11-09 망령 「혹시 모를 에러 · 몇몇 효과를 대비해 강제 발동」: opt.force = 조건 · 확인 · 확률을 건너뛰고 건다 */const c=ctx();const b0=c.b;const m0=b0.mons[mid];if(!m0)return false;const auto=opt.auto||FX().autoOf(m0,kind,name);   /* opt.auto: SP(서포터) 처럼 포켓몬 밖에 적힌 구문 */
   if(!auto||!auto.ops||!auto.ops.length||auto.manual){if(!opt.quiet)A().toast(auto&&auto.manual?`「${name}」은(는) 자동화가 없어 손으로 처리한다`:`「${name}」 자동화 없음`);return false}
   /* 11-07 망령 「이미 발동 중인 포텐셜이나 효과를 누르면 「이미 걸려 있다」 로그 말고 중첩 / 해제를 묻게」: 이 이름으로 건 효과가 필드에 남아 있으면 먼저 묻는다 (자동 발동 · quiet 는 묻지 않는다) */
   let STK2=0;if(!opt.quiet&&!opt.restack&&FX().chips&&!auto.ops.some(o=>o&&o.k==='choice')){   /* 11-07 망령 「하이 블로커 ②」: 줄을 고르는 효과(①②)는 묻지 않는다 — ① 이 등장 때 걸려 있어도 ② 를 고르러 누른 것 */const nn=x=>String(x||'').replace(/[『』]/g,'').trim();const on=Object.values(b0.mons||{}).filter(x=>x&&x.entry&&FX().chips(x).some(ch=>nn(ch.name)===nn(name)));
@@ -2376,7 +2376,10 @@ window.OM_BATTLE_UI=(()=>{
   /* 10-26 덱 시험: 카드의 「아군 1체」가 기준 포켓몬(자기 편 첫 포켓몬)을 빼고 물었다 — 트레이너가 쓰는 카드는 기준 포켓몬도 고를 수 있게 (ally1s) */
   const ops=opt.uq?JSON.parse(JSON.stringify(auto.ops).replace(/"tgt":"ally1"/g,'"tgt":"self"')):auto.src==='card'?JSON.parse(JSON.stringify(auto.ops).replace(/"tgt":"ally1"/g,'"tgt":"ally1s"')):auto.ops;
   const ux=uiCtx(nb,m,name,opt.area);if(opt.pickId){const up=ux.pick;ux.pick=(list,label)=>{const f=list.find(x=>x.id===opt.pickId);return f?Promise.resolve(f):up(list,label)}}   /* 11-02: 창에서 이미 고른 대상 */
-  const r=await FX().run(ops,Object.assign(ux,opt.ctx||{},opt.noRoll?{noRoll:1}:{},opt.hit?{hit:opt.hit}:{},adj,hold,STK2?{stack:STK2}:{}));   /* 11-09 opt.ctx: 「소지품 소모」 계기의 used 등 */   /* 11-08 opt.hit: 「조건 명중」이 맞은 대상 · 기술을 본다 */L.push(...r.lines);if(hold.hold&&(m.holds||[]).length)L.push('(필드를 떠나면 풀린다)');
+  const r=await FX().run(ops,Object.assign(ux,opt.ctx||{},opt.force?{force:1}:{},opt.noRoll?{noRoll:1}:{},opt.hit?{hit:opt.hit}:{},adj,hold,STK2?{stack:STK2}:{}));   /* 11-09 opt.ctx: 「소지품 소모」 계기의 used 등 */   /* 11-08 opt.hit: 「조건 명중」이 맞은 대상 · 기술을 본다 */
+  /* 11-09: 조건에 막혔으면 진행하는 화면(GM)에 「강제 발동」을 묻는다 — 저절로 도는 것(quiet)은 로그에 안내만 */
+  if(r.blocked&&!opt.force){if(!opt.quiet&&ctx().mgr&&await askYes(`「${String(name).replace(/[『』]/g,'')}」 — ${String(r.blocked).replace(/^「[^」]*」\s*/,'')}\n\n그래도 강제로 발동할까? (조건 · 확인 · 확률을 건너뛴다)`,'강제 발동','그만'))return fireAuto(mid,kind,name,Object.assign({},opt,{force:true,head:(opt.head?opt.head+' ':'')+'(강제 발동)'}));if(opt.quiet)r.lines.push('(GM: 카드 「발동」 → 「강제 발동」으로 조건을 건너뛸 수 있다)')}
+  L.push(...r.lines);if(hold.hold&&(m.holds||[]).length)L.push('(필드를 떠나면 풀린다)');
   const raidNew=await raidFix(m,m0,name,L);if(raidNew===null)return false;
   const f=fieldOf(nb);for(const id in nb.mons){const x=nb.mons[id];if(x.entry&&x.hp.cur<=0){x.entry='';L.push(`${x.name}은(는) 쓰러졌다!`)}}
   if(!await saveBattle(nb0,nb,f,{n:m.name,s:name,img:opt.img!=null?opt.img:(m.image||'')}))return false;if(raidNew)raidCut(m);
@@ -2407,7 +2410,7 @@ window.OM_BATTLE_UI=(()=>{
   const tk=m=>{const t=(b.trainers||{})[m.tid];return t&&t.solo?'solo:'+m.tid:m.side};const live=m=>!!(m&&m.entry&&m.hp&&m.hp.cur>0);
   const om=s.ownerMid?b.mons[s.ownerMid]:null;const anyT=om||Object.values(b.mons||{}).find(m=>m.tid===s.tid);const own=anyT?tk(anyT):'';
   const P=k=>{let r={ops:[],errs:[]};try{r=FX().parse(['deploy','start','end','hold'].includes(k)?faAll(AU[k]):faTo(AU[k],'자신'))}catch(e){r.errs=[e.message]}if(r.errs&&r.errs.length)A().sysLog(`【필드】 ${nm} 「${FA_KO[k]}」 구문에서 못 읽은 줄 — ${r.errs.join(' / ')}`,'battle',{gmPriv:1});return r.ops||[]};
-  const fire=(mid,k,ops,x)=>fireAuto(mid,'field',nm,Object.assign({quiet:true,auto:{ops,text:String(AU[k]||'')},head:`【필드】 ${nm} — ${FA_KO[k]}`,eff:String(s.eff||'')},x||{}));
+  const fire=(mid,k,ops,x)=>fireAuto(mid,'field',nm,Object.assign({quiet:true,auto:{ops,text:String(AU[k]||'')},head:`【필드】 ${nm} — ${FA_KO[k]}${o.force?' (강제 발동)':''}`,eff:String(s.eff||'')},o.force?{force:true}:{},x||{}));
   /* 11-09 소지품 소모 시: o.mid = 다 쓴 포켓몬 · o.used = {name} — 「조건 소모:나무열매」가 읽는다 */
   if(trig==='use'){const m=b.mons[o.mid];if(!m||!m.entry||!String(AU.use||'').trim())return;const ops=P('use');if(ops.length)await fire(m.id,'use',ops,{ctx:{used:o.used||{}}});return}
   const holdFor=async mid=>{const b2=ctx().b;const m=b2.mons[mid];if(!live(m))return;const ops=faHoldOps(b2,(b2.field||{}).stage,m);if(ops.length)await fire(mid,'hold',ops,{noRoll:true})};
@@ -2415,7 +2418,7 @@ window.OM_BATTLE_UI=(()=>{
    if(String(AU.entry||'').trim()&&(who==='all'||who===rel)){const ops=P('entry');if(ops.length)await fire(m.id,'entry',ops)}
    await holdFor(m.id);return}
   if(!['deploy','start','end'].includes(trig))return;
-  if(String(AU[trig]||'').trim()){const L=Object.values(b.mons||{});const holder=live(om)?om:L.find(m=>live(m)&&m.tid===s.tid)||L.find(m=>live(m)&&own&&tk(m)===own);
+  if(String(AU[trig]||'').trim()&&!o.holdOnly){const L=Object.values(b.mons||{});const holder=live(om)?om:L.find(m=>live(m)&&m.tid===s.tid)||L.find(m=>live(m)&&own&&tk(m)===own);
    if(!holder)A().sysLog(`【필드】 ${nm} 「${FA_KO[trig]}」 — 주인 편에 나와 있는 포켓몬이 없어 구문을 건너뛴다`,'battle',{gmPriv:1});else{const ops=P(trig);if(ops.length)await fire(holder.id,trig,ops)}}
   if(trig==='deploy')for(const m of Object.values(ctx().b.mons||{}))if(live(m))await holdFor(m.id)}
  /* 필드가 걷히면 《이름》으로 건 지속 효과를 푼다 (전개 · 걷기 창 — 턴 종료의 걷힘은 stage_ui turnEnd 가 같은 사본에서) */

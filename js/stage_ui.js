@@ -21,6 +21,7 @@ window.OM_STAGE_UI=(()=>{
  const tcol=en=>{try{return S().typeColor(en)}catch(e){return {bg:'#2d3240',fg:'#fff'}}};
  const tko=en=>{try{return S().typeKo(en)}catch(e){return en}};
  const bgSrc=v=>{v=String(v||'').trim();if(!v)return '';if(/^(https?:|data:|img\/|\.\/|\/)/.test(v))return v;for(const g of DB().bg||[])for(const it of g.i||[])if((it.k===v||it.l===v)&&it.src)return it.src;return ''};
+ const FA_NM={deploy:'전개 시',start:'턴 개시 시',end:'턴 종료 시',entry:'등장 시',use:'소지품 소모 시',hold:'필드 동안'};
  const effLines=t=>String(t||'').replace(/<br\s*\/?>/g,'\n').split('\n').map(x=>x.trim()).filter(Boolean);
  /* 11-09 망령 「필드에도 구문」: auto = {deploy · start · end · entry · hold · who} — 실행은 battle_ui fieldAuto */
  const AK=['deploy','start','end','entry','use','hold'];const autoN=a=>{if(!a||typeof a!=='object')return null;const o={};for(const k of AK){const v=String(a[k]==null?'':a[k]).replace(/\r/g,'').trim();if(v)o[k]=v.slice(0,4000)}if(!Object.keys(o).length)return null;if(a.who==='own'||a.who==='foe')o.who=a.who;return o};
@@ -55,7 +56,15 @@ window.OM_STAGE_UI=(()=>{
    <div class="stinfo">${u?`<div class="stimg" style="background-image:url('${cssu(u)}')"></div>`:''}
     <div class="sthd" style="background:${esc(col.bg)};color:${esc(col.fg)}">◆《${esc(keyOf(s))}》의 필드 효과</div>
     <ul class="steff">${effLines(s.eff).map(l=>`<li>${esc(l)}</li>`).join('')||'<li class="dim">효과 글 없음</li>'}</ul>
-    <div class="small"><b>지역</b> ${esc(s.loc||'-')} · <b>남은 턴</b> ${s.count>=1000||!s.count?'무한':s.count+'턴'}${s.owner?` · <b>주인</b> ${esc(s.owner)}`:''}</div></div>`);
+    <div class="small"><b>지역</b> ${esc(s.loc||'-')} · <b>남은 턴</b> ${s.count>=1000||!s.count?'무한':s.count+'턴'}${s.owner?` · <b>주인</b> ${esc(s.owner)}`:''}</div>
+    ${s.auto?`<div class="stauto" style="margin-top:10px;padding-top:8px;border-top:1px dashed #8886"><div class="small"><b>⚙ 자동화 구문</b> ${Object.keys(s.auto).filter(k=>k!=='who').map(k=>FA_NM[k]).join(' · ')}</div>${mgr()?`<div class="row small" style="gap:6px;flex-wrap:wrap;margin-top:6px"><span class="dim">GM — 강제 발동 (조건 · 확률을 건너뛴다):</span>${Object.keys(s.auto).filter(k=>k!=='who').map(k=>`<button class="btn xs" data-stf="${k}">${FA_NM[k]}</button>`).join('')}</div>`:''}</div>`:''}</div>`);
+  /* 11-09 망령 「혹시 모를 에러나 몇몇 효과를 대비해 강제로 발동도」: 칸마다 강제 발동 — 등장 · 소지품 소모는 포켓몬을 고른다 */
+  md.querySelectorAll('[data-stf]').forEach(bt=>bt.onclick=async()=>{const k=bt.dataset.stf;const B=BU();if(!B||!B.fieldAuto)return;
+   if(k==='hold'){A().closeModal();await B.fieldClear('《'+s.name+'》');await B.fieldAuto('deploy',{force:true,holdOnly:true});return}   /* 필드 동안: 풀고 다시 건다 */
+   if(k!=='entry'&&k!=='use'){A().closeModal();await B.fieldAuto(k,{force:true});return}
+   const b=ST().state.battle||{};const ms=Object.values(b.mons||{}).filter(m=>m&&m.entry&&m.hp&&m.hp.cur>0);if(!ms.length)return A().toast('필드에 포켓몬이 없다');
+   const m2=A().openModal(`<div class="mhead"><h2>《${esc(s.name)}》 「${FA_NM[k]}」 강제 발동 — 누구?</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="small dim" style="margin-bottom:8px">${k==='use'?'소지품을 다 쓴 포켓몬':'나온 포켓몬'}으로 칠 포켓몬 — 조건 · 확률은 건너뛴다</div><div class="mmenu">${ms.map(m=>`<button class="btn" data-stm="${esc(m.id)}">${esc(m.name)} <small>에리어 ${esc(String(m.entry).toUpperCase())}</small></button>`).join('')}</div>`);
+   m2.querySelectorAll('[data-stm]').forEach(x=>x.onclick=async()=>{A().closeModal();await B.fieldAuto(k,{force:true,mid:x.dataset.stm,used:{name:'(강제)'}})})});
   const x=$('#stx',md);if(x)x.onclick=async()=>{if(!confirm(`《${keyOf(s)}》을(를) 걷을까?`))return;A().closeModal();await reset()}}
 
  /* ----- 필드 전개 (맵툴 dialog_field_field) — 주인별로 묶어서 ----- */
