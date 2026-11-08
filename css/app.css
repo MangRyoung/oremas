@@ -5723,3 +5723,6 @@ button.tfsep.cl{opacity:1;border:1px dashed color-mix(in srgb,var(--yel2) 55%,tr
 .bcol .shead2>.simtg{flex:0 1 auto!important;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .trainer .tn .fftg input{position:absolute;opacity:0;width:0!important;height:0!important;pointer-events:none}
 .trainer .tn .fftg{position:relative}
+/* 「강제」 토글은 「포텐셜 발동 · 설정 · 해석·묘수」 줄 끝으로 (이름 줄은 좁으면 잘린다) */
+.tbtns .fftg{display:inline-flex;align-items:center;cursor:pointer;position:relative}
+.tbtns .fftg input{position:absolute;opacity:0;width:0!important;height:0!important;pointer-events:none}
