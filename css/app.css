@@ -4013,22 +4013,22 @@ button.tag.solo:hover{border-color:var(--yel2)}
 }
 /* ---------- 스탠딩 감정 연출 (js/emote.js, 10-26 망령) ----------
    움직임은 .stand 의 transform(자리 · on 강조)을 건드리지 않게 따로 노는 translate · rotate · scale 속성으로 */
-.stand.emo-mo{transform-origin:50% 100%}
-.stand.emo-mo[data-emo="jump"]{animation:emoJump .5s cubic-bezier(.3,1.6,.5,1)}
-.stand.emo-mo[data-emo="tilt"]{animation:emoTilt 1.3s ease-in-out}
-.stand.emo-mo[data-emo="shake"]{animation:emoShake .55s linear}
-.stand.emo-mo[data-emo="hop"]{animation:emoHop .8s ease-out}
-.stand.emo-mo[data-emo="bounce"]{animation:emoBounce .9s ease-in-out}
-.stand.emo-mo[data-emo="tremble"]{animation:emoTremble 1s linear}
-.stand.emo-mo[data-emo="sink"]{animation:emoSink 1.6s ease-in-out}
-.stand.emo-mo[data-emo="sway"]{animation:emoSway 1.4s ease-in-out}
-.stand.emo-mo[data-emo="lean"]{animation:emoLean 1.6s ease-in-out}
-.stand.emo-mo[data-emo="pop"]{animation:emoPop .45s cubic-bezier(.3,1.7,.5,1)}
-.stand.emo-mo[data-emo="deflate"]{animation:emoDeflate 1.5s ease-in-out}
-.stand.emo-mo[data-emo="doze"]{animation:emoDoze 2s ease-in-out}
-.stand.emo-mo[data-emo="shiver"]{animation:emoShiver 1.2s linear}
-.stand.emo-mo[data-emo="nod"]{animation:emoNod .8s ease-in-out}
-.stand.emo-mo[data-emo="headshake"]{animation:emoHeadshake .8s ease-in-out}
+.stand.emo-mo,.bsay-st.emo-mo,.bsvn-st.emo-mo{transform-origin:50% 100%}
+.stand.emo-mo[data-emo="jump"],.bsay-st.emo-mo[data-emo="jump"],.bsvn-st.emo-mo[data-emo="jump"]{animation:emoJump .5s cubic-bezier(.3,1.6,.5,1)}
+.stand.emo-mo[data-emo="tilt"],.bsay-st.emo-mo[data-emo="tilt"],.bsvn-st.emo-mo[data-emo="tilt"]{animation:emoTilt 1.3s ease-in-out}
+.stand.emo-mo[data-emo="shake"],.bsay-st.emo-mo[data-emo="shake"],.bsvn-st.emo-mo[data-emo="shake"]{animation:emoShake .55s linear}
+.stand.emo-mo[data-emo="hop"],.bsay-st.emo-mo[data-emo="hop"],.bsvn-st.emo-mo[data-emo="hop"]{animation:emoHop .8s ease-out}
+.stand.emo-mo[data-emo="bounce"],.bsay-st.emo-mo[data-emo="bounce"],.bsvn-st.emo-mo[data-emo="bounce"]{animation:emoBounce .9s ease-in-out}
+.stand.emo-mo[data-emo="tremble"],.bsay-st.emo-mo[data-emo="tremble"],.bsvn-st.emo-mo[data-emo="tremble"]{animation:emoTremble 1s linear}
+.stand.emo-mo[data-emo="sink"],.bsay-st.emo-mo[data-emo="sink"],.bsvn-st.emo-mo[data-emo="sink"]{animation:emoSink 1.6s ease-in-out}
+.stand.emo-mo[data-emo="sway"],.bsay-st.emo-mo[data-emo="sway"],.bsvn-st.emo-mo[data-emo="sway"]{animation:emoSway 1.4s ease-in-out}
+.stand.emo-mo[data-emo="lean"],.bsay-st.emo-mo[data-emo="lean"],.bsvn-st.emo-mo[data-emo="lean"]{animation:emoLean 1.6s ease-in-out}
+.stand.emo-mo[data-emo="pop"],.bsay-st.emo-mo[data-emo="pop"],.bsvn-st.emo-mo[data-emo="pop"]{animation:emoPop .45s cubic-bezier(.3,1.7,.5,1)}
+.stand.emo-mo[data-emo="deflate"],.bsay-st.emo-mo[data-emo="deflate"],.bsvn-st.emo-mo[data-emo="deflate"]{animation:emoDeflate 1.5s ease-in-out}
+.stand.emo-mo[data-emo="doze"],.bsay-st.emo-mo[data-emo="doze"],.bsvn-st.emo-mo[data-emo="doze"]{animation:emoDoze 2s ease-in-out}
+.stand.emo-mo[data-emo="shiver"],.bsay-st.emo-mo[data-emo="shiver"],.bsvn-st.emo-mo[data-emo="shiver"]{animation:emoShiver 1.2s linear}
+.stand.emo-mo[data-emo="nod"],.bsay-st.emo-mo[data-emo="nod"],.bsvn-st.emo-mo[data-emo="nod"]{animation:emoNod .8s ease-in-out}
+.stand.emo-mo[data-emo="headshake"],.bsay-st.emo-mo[data-emo="headshake"],.bsvn-st.emo-mo[data-emo="headshake"]{animation:emoHeadshake .8s ease-in-out}
 @keyframes emoJump{0%{translate:0 0}40%{translate:0 -34px}70%{translate:0 0}85%{translate:0 -8px}100%{translate:0 0}}
 @keyframes emoTilt{0%,100%{rotate:0deg}25%,75%{rotate:-4deg}}
 @keyframes emoShake{0%,100%{translate:0 0}10%,50%,90%{translate:-11px 0}30%,70%{translate:11px 0}}
@@ -4048,6 +4048,8 @@ button.tag.solo:hover{border-color:var(--yel2)}
 .emo-bub{--sz:56px;position:absolute;z-index:5;width:var(--sz);height:var(--sz);margin-left:calc(var(--sz)/-2);margin-top:calc(var(--sz)/-2);pointer-events:none;filter:drop-shadow(0 3px 0 rgba(0,0,0,.35));animation:emoBub 2.2s cubic-bezier(.3,1.5,.5,1) both}
 .emo-bub svg{width:100%;height:100%;overflow:visible;display:block}
 .emo-bub.emo-dlg{--sz:40px;left:auto;right:-14px;top:-10px;margin:0}
+/* 11-08 배틀 말풍선: 휴대폰 큰 대사창은 화면 끝에 붙어 있어 아이콘을 말풍선 안쪽 위로 */
+.bsvn-bub>.emo-bub.emo-dlg{right:8px;top:-34px}
 @keyframes emoBub{0%{opacity:0;scale:.2;translate:0 10px}12%{opacity:1;scale:1.18;translate:0 0}20%{scale:1}82%{opacity:1}100%{opacity:0;translate:0 -10px}}
 .emo-exclaim .emo-i-exclaim{animation:emoIco .5s .1s ease-out 2;transform-origin:32px 56px}
 .emo-question .emo-i-q{animation:emoQ 1.2s ease-in-out;transform-origin:32px 56px}

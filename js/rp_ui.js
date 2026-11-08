@@ -1665,7 +1665,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   if(key&&key.startsWith('pm:'))return 'center';return 'center'}
  function bsayPlace(){const L=BSAY.el;if(!L)return;const f=matchMedia('(max-width:760px)').matches?document.getElementById('scene'):document.querySelector('#scene .stadium');if(!f||A().view!=='battle'){L.style.display='none';return}const r=f.getBoundingClientRect();const mb=document.getElementById('mbar');const mbH=mb&&getComputedStyle(mb).display!=='none'?mb.getBoundingClientRect().height:0;const top=Math.max(r.top,0),bot=Math.min(r.bottom,innerHeight-mbH);L.style.display=bot-top>80?'':'none';Object.assign(L.style,{left:r.left+'px',top:top+'px',width:r.width+'px',height:Math.max(0,bot-top)+'px'})}
  function battleSay(row,force){try{if(A().view!=='battle'||!row||row.kind!=='chat')return;if(!BSP.on&&!force)return;const d=row.data||{};if(!d.t||d.ch==='ooc'||d.sms||d.bat||d.clear)return;
-  const key0=bsayKey(row);const gk=isGmK(key0);const gc=gk?charOf(key0):null;const key=gk?'gm':key0;const c=key&&key!=='gm'?charOf(key):null;const name=c?c.name:(d.as||(d.from==='gm'?(d.gmn||'GM'):row.who||''));
+  const key0=bsayKey(row);const gk=isGmK(key0);const SXo=c0=>c0&&d.sx!=null&&(c0.stands||[])[+d.sx]?Object.assign({},c0,{active:+d.sx}):c0;   /* 11-08 망령 「배틀 때도 스탠딩 표정 · 감정 아이콘」: 보낼 때의 표정(sx)으로 */const gc=gk?SXo(charOf(key0)):null;const key=gk?'gm':key0;const c=key&&key!=='gm'?SXo(charOf(key)):null;const name=c?c.name:(d.as||(d.from==='gm'?(d.gmn||'GM'):row.who||''));
   const narr=window.OM_LINE?!!window.OM_LINE(d).narr:false;const side=key==='gm'||!key?'center':bsaySide(key,name);
   const img=key==='gm'?standSrc(gc):c?(standSrc(c)||c.img):'';
   if(!BSAY.el){BSAY.el=document.createElement('div');BSAY.el.className='bsayL';document.body.appendChild(BSAY.el);addEventListener('resize',bsayPlace);document.addEventListener('scroll',()=>{if(BSAY.el&&BSAY.el.childElementCount)bsayPlace()},true)}
@@ -1685,14 +1685,25 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    const vimg=key==='gm'?standSrc(gc):c?(standSrc(c)||c.img):'';const vs=side==='right'?'right':'left';
    const vn=document.createElement('div');vn.className=`bsvn ${vs}${vimg?' hasimg':''}${narr?' narr':''}`;vn._o={side,narr,top:false,av,name,body:bodyH,end:Date.now()+ms};
    vn.innerHTML=`<div class="bsvn-band"></div>${vimg?`<i class="bsvn-st" style="background-image:url('${cssu(vimg)}')"></i>`:''}<div class="bsvn-bub"><b>${esc(name)}</b><p>${bodyH}</p></div>`;
-   vn.querySelector('.bsvn-bub').onclick=()=>{vn.classList.add('out');setTimeout(()=>vn.remove(),260)};L.appendChild(vn);
+   vn.querySelector('.bsvn-bub').onclick=()=>{vn.classList.add('out');setTimeout(()=>vn.remove(),260)};L.appendChild(vn);bsayEmo(vn,d.em);
    BSAY.t.vn=setTimeout(()=>{vn.classList.add('out');setTimeout(()=>vn.remove(),300)},ms);return}
   BSAY.el.style.setProperty('--bs',BSP.sc/100);bsayPlace();const L=BSAY.el;{const st=L.querySelector('.bsm-stack');if(st)st.remove()}const old=L.querySelector(`.bsay.${side}`);if(old)old.remove();clearTimeout(BSAY.t[side]);
   const txt=String(d.t);const body=esc(txt).replace(/\*(.+?)\*/g,'<i>$1</i>').replace(/\n/g,'<br>');
   const showImg=!!img&&!(key==='gm'&&narr);const el=document.createElement('div');el.className=`bsay ${side}${narr?' narr':''}${showImg?' hasimg':''}`;
   el.innerHTML=`${showImg?`<i class="bsay-st" style="background-image:url('${cssu(img)}')"></i>`:''}<div class="bsay-bub"><b>${esc(name)}</b><p>${body}</p></div>`;
-  el.querySelector('.bsay-bub').onclick=()=>{el.classList.add('out');setTimeout(()=>el.remove(),250)};L.appendChild(el);
+  el.querySelector('.bsay-bub').onclick=()=>{el.classList.add('out');setTimeout(()=>el.remove(),250)};L.appendChild(el);bsayEmo(el,d.em);
   const ms=Math.min(14000,4200+txt.length*90);BSAY.t[side]=setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),300)},ms)}catch(e){console.warn('battleSay',e)}}
+ /* 11-08 망령 「배틀 때도 감정 아이콘」: 말풍선 스탠딩이 움직이고(emote.js 의 움직임) 말풍선 머리에 아이콘 + 소리 */
+ function bsayEmo(box,em){try{const EMO=window.OM_EMO;if(!box||!em||!EMO||!EMO.E[em])return;const e=EMO.E[em];const st=box.querySelector('.bsay-st,.bsvn-st');
+  if(st&&e.mo){st.classList.remove('emo-mo');void st.offsetWidth;st.dataset.emo=e.mo;st.classList.add('emo-mo');setTimeout(()=>{st.classList.remove('emo-mo');st.removeAttribute('data-emo')},2200)}
+  const bub=box.querySelector('.bsay-bub,.bsvn-bub');if(bub)setTimeout(()=>EMO.play(bub,em),120)}catch(e){}}
+ /* 11-08 망령: 배틀 탭(오른쪽 채팅) 입력줄도 세션 무대 입력줄처럼 「@표정 "대사"」 · 「!감정 대사」 — 표정을 바꾸고, 줄에 sx(보낼 때 표정) · em(감정)을 붙인다.
+    돌려줌 null = 보낼 줄 없음(표정만 바꿈 · 감정만 연출 · 없는 표정) / {t, X} */
+ async function linePrep(t,key){const EMO=window.OM_EMO;let EM='';const c=key==='gm'?charOf(myGmKey()):charOf(key);let m;
+  if((m=t.match(/^@(\S+)\s*([\s\S]*)$/))&&c&&(c.stands||[]).length){const ok=await setStandByLabel(c,m[1]);if(!ok)return null;if(EMO)EM=EMO.fromLabel(m[1]);t=m[2].trim();if(!t){A().toast(`표정: ${m[1]}`);if(EM&&c&&c.key)setTimeout(()=>emoKey(c.key,EM),120);return null}}
+  if(EMO){const pe=EMO.parse(t);if(pe.em){EM=pe.em;t=pe.text}if(!t){if(EM&&c&&c.key)emoKey(c.key,EM);return null}}
+  const c2=key==='gm'?charOf(myGmKey()):charOf(key);const X=c2&&(c2.stands||[]).length>=2?{sx:+c2.active||0}:{};if(EM)X.em=EM;return {t,X}}
+ function emoKey(key,k){if(!window.OM_EMO||!k)return;window.OM_EMO.playKey(key,k,{enter:true});try{DBS().broadcast({t:'emo',key,em:k,at:Date.now()})}catch(e){}}
  function bsayClear(){if(BSAY.el&&A().view!=='battle')BSAY.el.innerHTML=''}
  function onChat(row){if(row&&row.id)DQ.arr[row.id]=Date.now();if(row.kind==='chat'&&row.data&&row.data.bat){autoSe(Object.assign({},row,{kind:row.data.bat}));return}if(row.kind==='chat'&&row.data&&row.data.sms){if(window.OM_PHONE_UI)window.OM_PHONE_UI.onSms(row);return}autoSe(row);feedLog([row]);battleSay(row);if(row.kind==='chat'&&row.data){const nm=row.data.as||row.who;for(const k in TYPING.who)if(TYPING.who[k].from===row.data.from&&(!nm||TYPING.who[k].who===nm))delete TYPING.who[k];}if(A().view==='rp'&&row.kind==='chat'&&row.data&&row.data.ch!=='ooc'&&(row.data.t||row.data.clear))A().renderScene();oocTick()}
  function onState(){tickBanner();syncBgm();syncSe();voteNotice()}
@@ -1836,5 +1847,5 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   for(const k of KEYS){if(taken.includes(k.key))continue;try{K.add({id:k.id,label:k.label,key:k.key,grp:'r',run:()=>{if(!keyOk()||document.querySelector('.modalbg'))return false;k.fn();return true}})}catch(e){console.warn('OM_KEYS',e)}}return true}
  setTimeout(regKeys,0);
  document.addEventListener('keydown',e=>{if(regKeys())return;if(!keyFree(e)||!keyOk())return;const key=(e.key||'').toLowerCase();const k=KEYS.find(x=>x.key===key);if(!k)return;e.preventDefault();k.fn()});
- return {psClear,onClueEv,openClueBox,stageEnter,bspkHtml,bspkBind,bsayToggleHtml,openSpkPick,spkBtnFill,spkInfo,pushRecent,curSpk,battleSay,bsayPlace,bsayClear,typingHtml,autoFolder,bgmMuted,seUrlOf:seUrl,render,allSpeakers,onChat,feedLog,onState,onTyping,typingPing,typingStop,drawTyping,mapData:mapS,openConsole,openStands,openPeople,setMyStand,charOf,playSe,setVolume,bgmWidgetHtml,bindBgmWidget,gmKeyOf,imgOfKey:k=>{if(k==='gm')return gmImg();const c=charOf(k);return c?(c.img||standSrc(c)):''},curSpeaker:()=>{const ST=A().ST;const c=speakerChar();if(c)return {key:c.key,name:c.name,img:c.img||standSrc(c)};return gm()?{key:'gm',name:'GM',img:myGmImg()}:{key:'me',name:ST.name||'',img:''}}};
+ return {linePrep,psClear,onClueEv,openClueBox,stageEnter,bspkHtml,bspkBind,bsayToggleHtml,openSpkPick,spkBtnFill,spkInfo,pushRecent,curSpk,battleSay,bsayPlace,bsayClear,typingHtml,autoFolder,bgmMuted,seUrlOf:seUrl,render,allSpeakers,onChat,feedLog,onState,onTyping,typingPing,typingStop,drawTyping,mapData:mapS,openConsole,openStands,openPeople,setMyStand,charOf,playSe,setVolume,bgmWidgetHtml,bindBgmWidget,gmKeyOf,imgOfKey:k=>{if(k==='gm')return gmImg();const c=charOf(k);return c?(c.img||standSrc(c)):''},curSpeaker:()=>{const ST=A().ST;const c=speakerChar();if(c)return {key:c.key,name:c.name,img:c.img||standSrc(c)};return gm()?{key:'gm',name:'GM',img:myGmImg()}:{key:'me',name:ST.name||'',img:''}}};
 })();
