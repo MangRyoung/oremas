@@ -122,8 +122,10 @@ window.OM_BATTLE=(()=>{
   /* 11-03 「명중확장」(o.scrappy = [{types, vs, float}]): 그 기술 타입이 「타입 : vs」에 무효면 그 타입만 빼고 · float 면 땅 기술이 하늘 위에도 */
   const SC=t=>(o.scrappy||[]).filter(e=>!(e.types&&e.types.length)||e.types.includes(t));
   /* 11-08 23:01 망령 「검은철구 자동화 돼 있어?」: o.ironBall = 받는 쪽이 검은철구 — 땅으로 떨어진다(뜬 상태 무시) · 「타입 : 비행」이었다면 다른 타입과 관계없이 「땅」 기술 1배 */
-  const IB=!!o.ironBall;
-  const one=t=>{
+  const IB=!!o.ironBall||has(def,'SmackDown');   /* 11-08 51-2 ㉑ 「떨어뜨리기」도 검은철구처럼 땅으로 */
+  /* 11-08 51-2 ⑥ 겨냥표적(o.ringTarget = 받는 쪽이 지님): 「상성 : 0배」인 기술을 1배처럼 · ⑲ 「타르샷」: 「불꽃」 기술 2배 (최종 2배 이상이면 굉장 — value 로 넘어간다) */
+  const one=t=>{let v=one0(t);if(v===0&&o.ringTarget)v=1;if(t==='Fire'&&v>0&&has(def,'TarShot'))v*=2;return v};
+  const one0=t=>{
    if(t==='Shadow'||t==='Wild')return 2;if(t==='God')return 1;
    if(t==='Ground'&&IB&&defTypes.includes('Flying'))return 1;
    const sc=SC(t);

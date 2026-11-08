@@ -27,7 +27,7 @@ const FX=()=>window.OM_FX;
  /* 꺼진 소지품에서 온 능력 배율(레디메이드 「배율」 — m.mod 에 곱해 둔 것)을 되돌릴 몫: statValue 가 나눈다 */
  const itemOffMult=(m,stat)=>{if(!itemOff(m))return 1;const N=[m.item,...(m.items2||[]).map(x=>x&&x.item)].map(x=>String(x||'').replace(/『|』/g,'').trim()).filter(Boolean);let v=1;for(const e of ((m.fx||{}).mults||[])){const k=String(e.key||e.name||'').split(' ← ')[0].replace(/『|』/g,'').trim();if(N.includes(k)&&e.stats&&+e.stats[stat])v*=+e.stats[stat]}return v};
  const tblock=(m,k)=>FX()&&FX().terrainBlock?FX().terrainBlock(m,k):'';
- const grounded=m=>/검은철구/.test(itemsOf(m))||!(typesOf(m).includes('Flying')||/풍선/.test(itemsOf(m))||has(m,'MagnetRise')||has(m,'Telekinesis')||has(m,'Fly')||/부유/.test(m.ability||'')||(FX()&&FX().floating(m)));
+ const grounded=m=>/검은철구/.test(itemsOf(m))||has(m,'SmackDown')||   /* 11-08 51-2 ㉑ 「떨어뜨리기」 = 땅에 떨어진다 */!(typesOf(m).includes('Flying')||/풍선/.test(itemsOf(m))||has(m,'MagnetRise')||has(m,'Telekinesis')||has(m,'Fly')||/부유/.test(m.ability||'')||(FX()&&FX().floating(m)));
  const noind=(m,k)=>!!(FX()&&FX().noind(m,k));
  const rankDown=(m,k,n)=>{m.rank=m.rank||{};m.rank[k]=Math.max(-6,Math.min(6,(+m.rank[k]||0)+n))};
  const setState=(m,k,count)=>{m.states=m.states||{};if(m.states[k])return false;const st=((DB().states||{}).st||{})[k]||{};{const d=st;m.states[k]=count!=null?count:(d.min>=1000||!d.min?1000:(+d.max>+d.min&&+d.max<1000?+d.min+Math.floor(Math.random()*(+d.max-+d.min+1)):+d.min))}return true};
@@ -74,7 +74,7 @@ const FX=()=>window.OM_FX;
    if(st.LeechSeed){const from=m.seedFrom||((m.side==='left'?'right':'left')+'_'+m.entry);const to=slots[from];if(!to||to.hp.cur<=0)lines.push(`${m.name} 「씨뿌리기」 씨를 뿌린 ${String(from).split('_')[1].toUpperCase()} 에리어에 포켓몬이 없어 회복 없음`);else{const [v,tx]=sf(m,'LeechSeed',1,8);const d=dmg(m,v,lines,`「씨뿌리기」 드레인 ${tx}`);if(d>0)heal(to,d,lines,`「씨뿌리기」(${m.name})`)}}
    if(st.Toxic){m.toxicN=Math.min(15,(+m.toxicN||0)+1);dmg(m,frac(m,m.toxicN,16),lines,`「맹독」 ${m.toxicN}/16`)}else m.toxicN=0;
    if(st.Poison){const [v,tx]=sf(m,'Poison',1,8);dmg(m,v,lines,`「독」 ${tx}`)}if(st.Burn){const [v,tx]=sf(m,'Burn',1,16);dmg(m,v,lines,`「화상」 ${tx}`)}
-   if(st.Nightmare&&sleeping){const [v,tx]=sf(m,'Nightmare',1,4);dmg(m,v,lines,`「악몽」 ${tx}`)}if(st.Curse){const [v,tx]=sf(m,'Curse',1,4);dmg(m,v,lines,`「저주」 ${tx}`)}if(st.Bind){const [v,tx]=sf(m,'Bind',1,8);dmg(m,v,lines,`「바인드」 ${tx}`)}
+   if(st.Nightmare&&sleeping){const [v,tx]=sf(m,'Nightmare',1,4);dmg(m,v,lines,`「악몽」 ${tx}`)}if(st.Curse){const [v,tx]=sf(m,'Curse',1,4);dmg(m,v,lines,`「저주」 ${tx}`)}if(st.Bind){/* 11-08 51-2 ⑪ 조임밴드: 조이기를 건 쪽(m.bindFrom)이 지니면 1/8 → 1/6 */const bf=m.bindFrom&&mons[m.bindFrom];const band=bf&&/조임밴드/.test(itemsOf(bf));const [v,tx]=band?[frac(m,1,6),'1/6 「조임밴드」']:sf(m,'Bind',1,8);dmg(m,v,lines,`「바인드」 ${tx}`)}
    if(st.SaltCure){const ty=typesOf(m);const sw=ty.includes('Steel')||ty.includes('Water');dmg(m,sw?frac(m,1,6):frac(m,1,8),lines,`「소금절이」 ${sw?'1/6':'1/8'}`)}
    if(st.ThunderCage){const mul=B().effectiveness(['Electric'],m,{}).value;if(mul>0)dmg(m,Math.max(1,Math.floor(m.hp.max/8*mul)),lines,`「썬더프리즌」 전기 1/8 ×${mul}`);else lines.push(`${m.name} 「썬더프리즌」 전기 타입 효과가 없음`)}
    if(st.OctoLock){rankDown(m,'defense',-1);rankDown(m,'specialdefense',-1);lines.push(`${m.name} 「문어굳히기」 방어·특방 −1`)}
@@ -96,6 +96,7 @@ const FX=()=>window.OM_FX;
   if((f.weather||{}).type==='모래바람'&&!wxNeg){for(const id in mons){const m=mons[id];if(!m.entry||m.hp.cur<=0)continue;const ty=typesOf(m);
    if(['Rock','Ground','Steel'].some(t=>ty.includes(t)))continue;
    if(/방진고글/.test(itemsOf(m))){lines.push(`${m.name} 「방진고글」로 「모래바람」을 막았다`);continue}
+   if(/만능우산/.test(itemsOf(m))){lines.push(`${m.name} 「만능우산」 — 「모래바람」 영향 없음`);continue}   /* 11-08 51-2 ⑫ */
    if(/모래숨기|모래헤치기|모래의힘|방진/.test(m.ability||'')){lines.push(`${m.name} 특성 「${m.ability}」 — 「모래바람」 영향 없음`);continue}
    if(['VanishToHole','VanishToWater'].some(k=>has(m,k))){lines.push(`${m.name} 숨어 있어 「모래바람」 영향 없음`);continue}
    dmg(m,frac(m,1,16),lines,'「모래바람」 1/16')}}
