@@ -238,7 +238,7 @@ window.OM_BATTLE_UI=(()=>{
  /* 11-07 지마 「기술머신을 제작기 DB 에 넣었는데 웹툴에서 안 된다」: 소지품 효과 글 「「기능 확장 : 기술」을 내보낼 수 있다」(기술머신 : …) — 들고 있으면 그 기술을 기술 목록 맨 뒤에.
     적용하면 그 소지품이 소모품이면(제작기 「소모」 O) 칸에서 빼고 itemUsed 에 남긴다 */
  const EXT_IT_RE=/「\s*기능\s*확장\s*:\s*([^」]+?)\s*」(?:을|를)?\s*내보낼\s*수\s*있다/g;
- function itemExtMoves(m){if(!m)return [];const out=[];const IT=(DB().items)||{};const slots=[{k:0,item:m.item,eff:m.itemEff}].concat((m.items2||[]).map((x,i)=>({k:i+1,item:x&&x.item,eff:x&&x.itemEff})));
+ function itemExtMoves(m){if(!m||IOFF(m))return [];const out=[];const IT=(DB().items)||{};const slots=[{k:0,item:m.item,eff:m.itemEff}].concat((m.items2||[]).map((x,i)=>({k:i+1,item:x&&x.item,eff:x&&x.itemEff})));
   for(const sl of slots){const nm=String(sl.item||'').replace(/[『』]/g,'').trim();if(!nm)continue;const db=IT[nm]||{};const eff=String(sl.eff||db.eff||'');if(!/기능\s*확장/.test(eff))continue;const once=/^소모품/.test(String(db.eff||''))||/^소모품/.test(eff);
    for(const mm of eff.matchAll(EXT_IT_RE)){const mv=mm[1].trim();const base=window.OM_IMPORT?window.OM_IMPORT.move(mv,false):{name:mv,cat:'',pow:0,acc:0,range:'1체',type:'-',typeEn:'-'};out.push(Object.assign({},base,{ext:{item:nm,k:sl.k,once,lim:0,used:0,left:null,kind:'act',src:nm}}))}}
   return out}
@@ -534,7 +534,7 @@ window.OM_BATTLE_UI=(()=>{
   const extra=[];if(FX()&&full){const src=potSrc(m).filter(p=>!Lnames.has(p.name));
    for(const p of src){const a=FX().autoOf(m,'pot',p.name);if(a&&a.ops&&a.ops.length&&!a.manual)extra.push(['pot',p.name])}
    if(m.ability){const a=FX().autoOf(m,'trait',m.ability);if(a&&a.ops&&a.ops.length&&!a.manual&&!FX().timing(a.text).entry&&!FX().timing(a.text).passive)extra.push(['trait',m.ability])}
-   if(m.item){const a=FX().autoOf(m,'item',m.item);if(a&&a.ops&&a.ops.length&&!a.manual&&!FX().timing(a.text).entry)extra.push(['item',m.item])}}
+   for(const it of [m.item,...(m.items2||[]).map(x=>x&&x.item)]){if(!it)continue;const a=FX().autoOf(m,'item',it);if(a&&a.ops&&a.ops.length&&!a.manual&&!FX().timing(a.text).entry&&!extra.some(([k,n])=>k==='item'&&n===it))extra.push(['item',it])}}
   const sp=full?specialPots(m).filter(s=>!Lnames.has(s.p.name)&&!extra.some(([k,n])=>k==='pot'&&n===s.p.name)):[];
   /* 10-21 망령: 폰에서는 칩 · 버튼을 늘어놓지 않고 한 줄 요약 칸 — 누르면 포텐셜 카드 창 (카드가 길어지고 작은 버튼이 상세 보기 터치와 겹쳤다) */
   if(full&&window.matchMedia&&matchMedia('(max-width:760px)').matches){const nP=(m.pots||[]).filter(p=>p&&p.name&&!p.ph).length;const SPs=specialPots(m).filter(s=>s.kind==='전용');const hasI=m.item&&m.item!=='-';
@@ -1250,7 +1250,7 @@ window.OM_BATTLE_UI=(()=>{
  const SYNC_RE=/【동조(?:\s*\(상대\))?】/;
  function syncP(b,m){return FX()&&FX().syncPairs?FX().syncPairs(b,m,rolesOf):{a:new Set(),e:new Set(),pairs:[]}}
  const syncLock=(b,m,eff)=>SYNC_RE.test(String(eff||''))&&!syncP(b,m).pairs.length;
- function syncEffs(m){const out=[];const list=[];if(m.ability)list.push(['trait',m.ability]);if(m.item)list.push(['item',m.item]);for(const x of (m.items2||[]))if(x&&x.item)list.push(['item',x.item]);for(const p of potSrc(m))if(p&&p.name&&!p.ph)list.push(['pot',p.name]);
+ function syncEffs(m){const out=[];const list=[];if(m.ability)list.push(['trait',m.ability]);if(m.item&&!IOFF(m))list.push(['item',m.item]);for(const x of (m.items2||[]))if(x&&x.item&&!IOFF(m))list.push(['item',x.item]);for(const p of potSrc(m))if(p&&p.name&&!p.ph)list.push(['pot',p.name]);
   for(const [kind,name] of list){const tx=String(slotEff(m,kind,name)||'');if(!SYNC_RE.test(tx))continue;if(kind==='pot'){if(potRest(m,name))continue;const lim=tx.match(/【\s*(\d+)\s*\/\s*시\s*】/);const left=(m.potUses||{})[name];if(lim&&left!=null&&+left<=0)continue}const a=FX().autoOf(m,kind,name);out.push({kind,name,auto:!!(a&&a.ops&&a.ops.length&&!a.manual),tx})}return out}
  let SYNC_BUSY=false;
  async function syncWatch(c,b){if(SYNC_BUSY||!c.mgr||!b||!b.started||!FX()||!FX().syncPairs)return;if(!isLeader(c))return;SYNC_BUSY=true;
@@ -2273,10 +2273,12 @@ window.OM_BATTLE_UI=(()=>{
  const F=()=>window.OM_FIELD;const CUT=()=>window.OM_CUTIN;const FX=()=>window.OM_FX;
  /* 매직룸 동안 소지품은 없는 셈 */
  const IT=m=>!m?'':F()&&F().itemOf?F().itemOf(m):(m.item||'');
+ /* 11-08 23:12 망령 「금제 · 서투름은 지닌 효과도 전부 꺼」: 매직룸 · 금제 · 서투름이면 그 포켓몬의 소지품은 없는 셈 (OM_FIELD.itemOff) */
+ const IOFF=m=>!!(m&&F()&&F().itemOff&&F().itemOff(m));
  /* 11-05 망령: 소지품 2 · 3번 칸까지 본다 (매직룸이면 없음) */
  const HAS=(m,n)=>!!m&&(OI()&&OI().has?OI().has(m,n):IT(m)===n);
  /* 11-06 망령 「속임수주사위 자동화」: 소지품 · 특성 · 포텐셜 글 「연속으로 공격하는 기술의 최소 명중 횟수를 「4」로」 → 2~5회 같은 범위 연속기의 최소 횟수 (최대를 넘지 않는다) */
- function minHitOf(m){if(!m)return null;const I=(DB().items)||{};const L=[[m.item,(I[m.item]||{}).eff],...(m.items2||[]).map(x=>x&&[x.item,(I[x.item]||{}).eff]).filter(Boolean),[m.ability,m.abilityEff],...potSrc(m).map(p=>p&&[p.name,p.eff])];let best=null;for(const [n,e] of L){if(!n)continue;const mm=String(e||'').match(/최소\s*명중\s*횟수를?\s*「?\s*(\d+)\s*」?\s*(?:회)?\s*로/);if(mm&&(!best||+mm[1]>best.n))best={n:+mm[1],name:n}}return best}
+ function minHitOf(m){if(!m)return null;const I=(DB().items)||{};const L=[...(IOFF(m)?[]:[[m.item,(I[m.item]||{}).eff],...(m.items2||[]).map(x=>x&&[x.item,(I[x.item]||{}).eff]).filter(Boolean)]),[m.ability,m.abilityEff],...potSrc(m).map(p=>p&&[p.name,p.eff])];let best=null;for(const [n,e] of L){if(!n)continue;const mm=String(e||'').match(/최소\s*명중\s*횟수를?\s*「?\s*(\d+)\s*」?\s*(?:회)?\s*로/);if(mm&&(!best||+mm[1]>best.n))best={n:+mm[1],name:n}}return best}
  const tysOf=m=>(m.teraActive&&m.teraEn&&m.teraEn!=='-')?[m.teraEn]:(m.types||[]).filter(t=>t&&t!=='-');
  const grd=m=>F()&&F().grounded?F().grounded(m):!tysOf(m).includes('Flying');
  /* ---------- 효과 엔진 연결: 포텐셜·특성·소지품의 자동화를 UI(대상 고르기·확인·선택)와 함께 돌린다 ---------- */
@@ -2361,7 +2363,7 @@ window.OM_BATTLE_UI=(()=>{
   const pe=((potSrc(m).find(p=>p&&p.name===n)||{}).eff)||'';if(pe)return pe;/* 11-03: 트레이너 고유 포텐셜의 효과 글도 (autoOnEntry · fireAuto) */const t=m&&m.tid?((ctx().b.trainers||{})[m.tid]):null;const u=t&&(t.unique||[]).find(q=>q&&String(q.name||'').replace(/『|』/g,'')===n);return (u&&u.eff)||''}
  /* 턴 개시 자동 (10-24 망령): 「턴 개시 시」 · 【턴 개시】 가 적힌 특성 · 소지품 · 포텐셜 — 구문이 있으면 (확률을 굴려) 발동, 없으면 확률만 굴려 손으로 할 일을 알린다 */
  async function autoTurnStart(){if(!FX())return;const b=ctx().b;for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0)continue;const list=[];
-  if(m.ability)list.push(['trait',m.ability]);if(m.item)list.push(['item',m.item]);for(const x of (m.items2||[]))if(x&&x.item)list.push(['item',x.item]);for(const p of potSrc(m))if(p&&p.name&&!p.ph)list.push(['pot',p.name]);
+  if(m.ability)list.push(['trait',m.ability]);if(m.item&&!IOFF(m))list.push(['item',m.item]);for(const x of (m.items2||[]))if(x&&x.item&&!IOFF(m))list.push(['item',x.item]);for(const p of potSrc(m))if(p&&p.name&&!p.ph)list.push(['pot',p.name]);
   for(const [kind,name] of list){const tx=slotEff(m,kind,name);if(!/턴\s*개시\s*시|【턴\s*개시】/.test(tx))continue;if(/【\s*(선행|임의)\s*】/.test(tx))continue;if(kind==='pot'&&/【\s*\d+\s*\/\s*(시|턴)\s*】/.test(tx))continue;const a=FX().autoOf(m,kind,name);
    if(a&&a.ops&&a.ops.length&&!a.manual){await fireAuto(m.id,kind,name,{quiet:true});continue}
    const ch=FX().chanceOf(tx);const K=({pot:'포텐셜',trait:'특성',item:'소지품'})[kind];let roll='';if(ch&&ch<100){const rr=FX().rollP?FX().rollP(snap(m),ch,{}):(()=>{const r=Math.floor(Math.random()*100)+1;return {ok:r<=ch,r,p:ch,adj:''}})();roll=rr.ok?`${rr.p}% 판정 성공 (${rr.r}/${rr.p})${rr.adj} — 효과를 손으로 적용`:`${rr.p}% 판정 실패 (${rr.r}/${rr.p})${rr.adj} — 발동하지 않았다`}else roll='턴 개시 효과 — 손으로 적용';
@@ -2420,18 +2422,20 @@ window.OM_BATTLE_UI=(()=>{
   const srcs=[[m.ability,m.abilityEff],...potSrc(m).filter(p=>p&&!p.ph).map(p=>[p.name,p.eff])];
   for(const [n,e] of srcs){const t=String(e||'');const re=/「(날씨|필드)\s*:\s*([^」]+)」일 때[^.①②③]*?「스피드」(?:를|가|이)\s*(?:(\d+(?:\.\d+)?)배|강화\((\d+(?:\.\d+)?)배\))/g;let r;
    while((r=re.exec(t))){const x=r[2].trim();const ok=r[1]==='날씨'?x.split(/[,/·]\s*/).some(wOk):TR===x;if(!ok)continue;const k=+(r[3]||r[4]);if(k>0){v*=k;why.push(`${m.name} 「${n}」 스피드 ×${k}`)}}}
-  if(HAS(m,'검은철구')){v*=0.5;why.push(`${m.name} 「검은철구」 스피드 ×0.5`)}   /* 11-08 23:01 망령 「검은철구 자동화?」: 행동 순서 스피드 0.5배 */
   return {v,why}}
  /* -스킨 특성 (페어리스킨 · 스카이스킨 · 프리즈스킨 · 일렉트릭스킨 · 노말스킨): 기술 타입을 바꾸고 위력을 강화 */
  function skinOf(m,mv){const t=String((m&&m.abilityEff)||'');if(!mv||mv.cat==='변화')return null;let r=t.match(/자신의 「노말」 기술(?:을|이) 「([^」]+)」 (?:기술로 만들고|기술이 되고|타입으로 하고)[^.]*?강화\((\d+(?:\.\d+)?)배\)/);
   if(r&&mv.typeEn==='Normal'){const ty=S().typeEn(r[1]);return ty?{ty,mul:+r[2],name:m.ability}:null}
   r=t.match(/자신의 기술을 「노말」 기술로 (?:만들고|변경하고)[^.]*?강화\((\d+(?:\.\d+)?)배\)/);if(r)return {ty:'Normal',mul:+r[1],name:m.ability};return null}
+ /* 11-08 23:30 감우 (검토): 소지품 규칙(OM_ITEMS — 공격 창 「소지품」 칸 · 반감열매)이 이미 하는 위력 강화 · 받는 대미지 완화를 레디메이드가 등장 때 또 걸어 ×1.44 가 되던 것(플레이트 · 도폿열매 …) — 겹치는 줄은 빼고 나머지(보호 · 지속 연장 …)만 */
+ function itemAutoDedupe(a,name){if(!a||!a.ops||!a.ops.length)return a;const r=OI()&&OI().rule?OI().rule(name):null;if(!r)return a;const drop=new Set();if(r.atk)drop.add('boost');if(r.resist||r.guard||r.def||r.half||r.immune)drop.add('guard');if(!drop.size)return a;const ops=a.ops.filter(o=>!(o&&drop.has(o.k)));if(ops.length===a.ops.length)return a;return ops.length?Object.assign({},a,{ops}):null}
  async function autoOnEntry(mid,o2){o2=o2||{};const c=ctx();const m=c.b.mons[mid];if(!m||!FX())return;const list=[];
-  if(m.ability)list.push(['trait',m.ability]);if(m.item)list.push(['item',m.item]);for(const p of [...(m.pots||[]),...(m.excl?[m.excl]:[]),...(m.exclX||[])])if(p&&p.name&&!p.ph)list.push(['pot',p.name]);
+  if(m.ability)list.push(['trait',m.ability]);if(m.item&&!IOFF(m))list.push(['item',m.item]);for(const x of (m.items2||[]))if(x&&x.item&&!IOFF(m)&&!list.some(([k,n])=>k==='item'&&n===x.item))list.push(['item',x.item]);   /* 11-08 23:12: 소지품 2 · 3번 칸의 상시 · 등장 효과도 */
+  for(const p of [...(m.pots||[]),...(m.excl?[m.excl]:[]),...(m.exclX||[])])if(p&&p.name&&!p.ph)list.push(['pot',p.name]);
   /* 11-03 감우: 트레이너 고유 포텐셜도 같은 길로 — 【등장】 · 【상시】 이고 구문이 있으면 그 트레이너의 포켓몬이 나올 때 건다 (autoOf 가 m.tid 로 고유 구문을 읽는다). 횟수(【N/시】)가 있는 고유는 손으로(선행 · 임의 발동) */
   {const t=(c.b.trainers||{})[m.tid];for(const u of ((t&&t.unique)||[]))if(u&&u.name&&!/【\s*\d+\s*\/\s*(시|턴)\s*】/.test(String(u.eff||''))&&!list.some(([k,n])=>k==='pot'&&n===u.name))list.push(['pot',u.name])}
   /* 11-07 망령 「등장 때 저절로 뜨는 상시류 로그는 본인(포켓몬 주인)만 보이게 + 「출력」 버튼」: 상시 · 지속형으로 걸린 줄(아래 noRoll 길)과 【N/시】 안내는 주인 귓속말(gmPriv — 이름은 예전 그대로, 주인이 없으면 GM)로. 【등장】 계기 효과 · 아군 빈사로 걸린 것(passiveOnly)은 그대로 공개 */const GP=o2.passiveOnly?0:1;
-  const MANL=[],FENT=[];for(const [kind,name] of list){const a=FX().autoOf(m,kind,name);if(!a||!a.ops||!a.ops.length||a.manual)continue;if(limManual(m,kind,name,slotEff(m,kind,name)||a.text)){if(!MANL.includes(name))MANL.push(name);continue}/* 시트에 직접 쓴 구문은 글이 없으니 그 칸의 효과 글에서 【등장】/【상시】 를 읽는다 */const tm=FX().timing(a.text||slotEff(m,kind,name)||'');
+  const MANL=[],FENT=[];for(const [kind,name] of list){const a=kind==='item'?itemAutoDedupe(FX().autoOf(m,kind,name),name):FX().autoOf(m,kind,name);if(!a||!a.ops||!a.ops.length||a.manual)continue;if(limManual(m,kind,name,slotEff(m,kind,name)||a.text)){if(!MANL.includes(name))MANL.push(name);continue}/* 시트에 직접 쓴 구문은 글이 없으니 그 칸의 효과 글에서 【등장】/【상시】 를 읽는다 */const tm=FX().timing(a.text||slotEff(m,kind,name)||'');
    const etx2=a.text||slotEff(m,kind,name)||'';
    /* 10-26 망령: 표시 없는 상시 특성 · 포텐셜 (테크니션 · 적응력 · 철주먹 · 멀티스케일 …) — 지속형 구문뿐이고 계기 말(받았을 때 · 턴 종료 …)이 없으면 등장 때 건다.
       「공격 : B」 이하일 때 같은 자기 등급 조건(천하장사 · 순수한힘 · 퍼코트 …)은 등급을 보고 맞으면 건다 */
@@ -2444,8 +2448,8 @@ window.OM_BATTLE_UI=(()=>{
    /* 【등장 (통상 교대)】 · 【등장 (임의 교대)】 · 【등장 (죽어내밀기)】: 그렇게 나왔을 때만 (바운서 · 닌자 ②) */
    {const hx=String(etx2).split(/[②③④⑤]/)[0].match(/【등장\s*\(([^)]+)\)】/);if(hx&&!tm.entry&&!(a.ops.length===1&&a.ops[0].k==='choice')){if(!o2.passiveOnly&&o2.how&&hx[1].replace(/\s/g,'').includes(String(o2.how).replace(/\s/g,'')))await fireAuto(mid,kind,name,{quiet:true});continue}}
    /* 11-07 23:44 망령 「강제 교대로 나온 포켓몬엔 【등장】 키워드는 격발하지 않아」: (강제 교대)가 붙은 【등장 (…)】 은 위에서 따로 — 그 밖의 【등장】 은 건너뛰고 이름만 알린다 */
-   if(tm.entry){if(o2.how==='강제 교대'){if(!o2.passiveOnly&&!FENT.includes(name))FENT.push(name)}else if(!o2.passiveOnly)await fireAuto(mid,kind,name,{quiet:true})}
-   else if(tm.passive||(!tm.turnEnd&&passiveOps(a.ops,etx2))){if(!condNow(ctx().b,ctx().b.mons[mid],a.ops))continue;const cur=ctx().b.mons[mid];if(cur&&(cur.fxDone||{})[name])continue;if(await fireAuto(mid,kind,name,{quiet:true,noRoll:true,gmPriv:GP})){const d=Object.assign({},(ctx().b.mons[mid]||{}).fxDone||{});d[name]=1;await A().set(['battle','mons',mid,'fxDone'],d)}}}
+   if(tm.entry){if(o2.how==='강제 교대'){if(!o2.passiveOnly&&!FENT.includes(name))FENT.push(name)}else if(!o2.passiveOnly)await fireAuto(mid,kind,name,Object.assign({quiet:true},kind==='item'?{auto:a}:{}))}
+   else if(tm.passive||(!tm.turnEnd&&passiveOps(a.ops,etx2))){if(!condNow(ctx().b,ctx().b.mons[mid],a.ops))continue;const cur=ctx().b.mons[mid];if(cur&&(cur.fxDone||{})[name])continue;if(await fireAuto(mid,kind,name,Object.assign({quiet:true,noRoll:true,gmPriv:GP},kind==='item'?{auto:a}:{}))){const d=Object.assign({},(ctx().b.mons[mid]||{}).fxDone||{});d[name]=1;await A().set(['battle','mons',mid,'fxDone'],d)}}}
   if(FENT.length)A().sysLog(`${m.name} — 강제 교대로 나와 【등장】 효과는 발동하지 않는다 (${FENT.map(n=>'『'+n+'』').join(' ')})`,'battle',{mid:m.id});
   if(MANL.length&&!o2.passiveOnly)A().sysLog(`【포텐셜】 ${m.name} — ${MANL.map(n=>'『'+n+'』').join(' ')} 【N/시】 — 저절로 쓰지 않는다 (【자동】이 없다 · 쓸 때 카드 「발동」 · 선행 입력)`,'battle',{gmPriv:1,mid:m.id})}
  /* 포켓몬마다 급소 규칙 (10-23 망령 · 제작기 상세 조정): tbl 급소 표 · add 급소 랭크 + · guard 받을 때 방호 · dmg 급소 대미지 배율 · sure 언제나 급소 · never 급소에 맞지 않음 */
@@ -2518,7 +2522,7 @@ window.OM_BATTLE_UI=(()=>{
     구문 「수세유지 [기술:우드혼] [타입:풀] [물리|특수] [HP≤1/2]」(sp keepdef) 또는 특성 · 포텐셜 · 소지품 효과 글 (제작기 potlint KEEPDEF_RE 와 같은 꼴) */
  const KEEPDEF_RE=/(?:「HP\s*:\s*(\d+\s*\/\s*\d+)\s*이하」\s*일\s*때\s*,?\s*)?((?:「[^」]+」\s*(?:[,·]|과|와)?\s*)+)(?:기술)?\s*(?:을|를)?\s*(?:내보낼|사용할|쓸)\s*때(?:에도|도)?\s*,?\s*【수세】\s*(?:가|이|를|도)?\s*(?:적용|발동|유지)/;
  function keepDefL(m){const L=spL(m,'keepdef').map(e=>({mv:e.mv||[],types:e.types||[],cat:e.cat||'',hp:e.hp||''}));
-  const tx=[m.ability?slotEff(m,'trait',m.ability):'',...potSrc(m).map(p=>p&&p.eff),m.item?slotEff(m,'item',m.item):'',...(m.items2||[]).map(x=>x&&x.itemEff)];
+  const tx=[m.ability?slotEff(m,'trait',m.ability):'',...potSrc(m).map(p=>p&&p.eff),...(IOFF(m)?[]:[m.item?slotEff(m,'item',m.item):'',...(m.items2||[]).map(x=>x&&x.itemEff)])];
   for(const t of tx){const r=String(t||'').replace(/<br\s*\/?>/g,'\n').match(KEEPDEF_RE);if(!r)continue;const ks=[...r[2].matchAll(/「([^」]+)」/g)].map(x=>x[1].trim()).filter(k=>k&&!/^HP\s*:/.test(k));
    const isTy=k=>{const e=S().typeEn(k);return !!e&&e!==k&&/^[A-Z]/.test(e)};const cat=ks.find(k=>/^(물리|특수)기?$/.test(k))||'';L.push({mv:ks.filter(k=>!isTy(k)&&k!==cat),types:ks.filter(isTy).map(k=>S().typeEn(k)),cat:cat.replace(/기$/,''),hp:r[1]?r[1].replace(/\s+/g,''):''})}
   return L}

@@ -31,7 +31,7 @@ window.OM_ITEMS=(()=>{
  function ruleAt(m,x,n){if(!n)return null;const tu=m.itemTune;const own=ownOf(x,n);const r=tu&&tu.dsl&&nm(tu.item)===n?tuned(n,tu.dsl,own):own?ownRule(n,own):rule(n);if(!r)return null;if(r.only&&!r.only.some(o=>String(m.species||'').includes(o)||String(m.name||'').includes(o)||String(m.form||'').includes(o)))return null;return r}
  function of(m){return m?ruleAt(m,m,itemOf(m)):null}
  /* 11-05 망령 「소지품 2 이상부터 자동화도 안 들어가 있다」: 소지품 칸 전부 (k 0 = item, 1~ = items2[k-1]) · 매직룸이면 없음 */
- function slotsOf(m){if(!m||(F()&&F().magic&&F().magic()))return [];const out=[{x:m,k:0,n:nm(m.item)}];(m.items2||[]).forEach((x,i)=>{if(x)out.push({x,k:i+1,n:nm(x.item)})});return out.filter(o=>o.n)}
+ function slotsOf(m){if(!m||(F()&&(F().itemOff?F().itemOff(m):F().magic&&F().magic())))return [];const out=[{x:m,k:0,n:nm(m.item)}];(m.items2||[]).forEach((x,i)=>{if(x)out.push({x,k:i+1,n:nm(x.item)})});return out.filter(o=>o.n)}
  function all(m){const out=[];for(const o of slotsOf(m)){const r=ruleAt(m,o.x,o.n);if(r)out.push({r,k:o.k})}return out}
  const names=m=>slotsOf(m).map(o=>o.n);
  const has=(m,n)=>names(m).includes(nm(n));

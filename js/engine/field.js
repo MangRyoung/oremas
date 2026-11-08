@@ -18,9 +18,14 @@ const FX=()=>window.OM_FX;
  const ABN=['Poison','Toxic','Burn','Paralysis','Freeze','Sleep','Comatose'];
  const isAbn=m=>ABN.some(k=>has(m,k));
   const magic=()=>!!(FX()&&FX().magicRoom&&FX().magicRoom());
- const itemOf=m=>magic()?'':(m.item||'');   /* 매직룸 동안 소지품 효과 없음 */
+ /* 11-08 23:12 망령 「금제와 서투름은 지닌 효과도 전부 꺼」: 「금제」 상태 · 특성 「서투름」(특성 파괴 중이면 아님)이면 매직룸처럼 그 포켓몬의 소지품 효과가 없다 */
+ const itemOff=m=>!!m&&(magic()||has(m,'Embrago')||has(m,'Embargo')||(/^\s*『?서투름』?\s*$/.test(String(m.ability||''))&&!has(m,'TraitBroken')));
+ const itemOffWhy=m=>!m?'':magic()?'매직룸':(has(m,'Embrago')||has(m,'Embargo'))?'금제':itemOff(m)?'서투름':'';
+ const itemOf=m=>itemOff(m)?'':(m.item||'');   /* 매직룸 · 금제 · 서투름 동안 소지품 효과 없음 */
  /* 11-05 망령: 소지품 2 · 3번 칸까지 (이름을 이어 붙인 글 — 정규식 검사용) */
- const itemsOf=m=>magic()||!m?'':[m.item,...(m.items2||[]).map(x=>x&&x.item)].filter(Boolean).join(' ');
+ const itemsOf=m=>!m||itemOff(m)?'':[m.item,...(m.items2||[]).map(x=>x&&x.item)].filter(Boolean).join(' ');
+ /* 꺼진 소지품에서 온 능력 배율(레디메이드 「배율」 — m.mod 에 곱해 둔 것)을 되돌릴 몫: statValue 가 나눈다 */
+ const itemOffMult=(m,stat)=>{if(!itemOff(m))return 1;const N=[m.item,...(m.items2||[]).map(x=>x&&x.item)].map(x=>String(x||'').replace(/『|』/g,'').trim()).filter(Boolean);let v=1;for(const e of ((m.fx||{}).mults||[])){const k=String(e.key||e.name||'').split(' ← ')[0].replace(/『|』/g,'').trim();if(N.includes(k)&&e.stats&&+e.stats[stat])v*=+e.stats[stat]}return v};
  const tblock=(m,k)=>FX()&&FX().terrainBlock?FX().terrainBlock(m,k):'';
  const grounded=m=>/검은철구/.test(itemsOf(m))||!(typesOf(m).includes('Flying')||/풍선/.test(itemsOf(m))||has(m,'MagnetRise')||has(m,'Telekinesis')||has(m,'Fly')||/부유/.test(m.ability||'')||(FX()&&FX().floating(m)));
  const noind=(m,k)=>!!(FX()&&FX().noind(m,k));
@@ -109,5 +114,5 @@ const FX=()=>window.OM_FX;
    if(h.st){if(setState(m,h.st))lines.push(`${m.name} 「${h.k}」 → 「${ko(h.st)}」`);continue}
    if(h.f){dmg(m,frac(m,1,h.f),lines,`「${h.k}」 1/${h.f}`);if(h.once){delete objs[h.k];removed.push(h.k)}}}
   return {lines,removed,forced}}
- return {actionCheck,confusionHit,turnEndStates,turnEndField,hazardsOnEntry,grounded,itemOf,itemsOf,magic,HAZ,RM};   /* 11-01 망령: HAZ · RM 은 설치물 전개 카드(battle_ui fcInfo)가 효과 글을 만드는 데 읽는다 */
+ return {actionCheck,confusionHit,turnEndStates,turnEndField,hazardsOnEntry,grounded,itemOf,itemsOf,itemOff,itemOffWhy,itemOffMult,magic,HAZ,RM};   /* 11-01 망령: HAZ · RM 은 설치물 전개 카드(battle_ui fcInfo)가 효과 글을 만드는 데 읽는다 */
 })();
