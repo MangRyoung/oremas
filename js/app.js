@@ -863,6 +863,7 @@ async function loadMakerParty(tid){if(!tid||!DBS().makerParty)return loadMaker(t
  const out={trainers:[...base.trainers.filter(x=>x.id!==r.trainer.id),r.trainer],pokemon:[...base.pokemon.filter(x=>!ids.has(x.id)),...r.pokemon],folders:base.folders,at:base.at};if(MK)MK=out;return out}
 function roster(){return ST.state.roster||{trainers:{},mons:{}}}
 async function openLoadParty(side){
+ if(window.OM_LP_UI)return window.OM_LP_UI.open(side);   /* 11-09 망령: 새 불러오기 창 (js/lp_ui.js) — 아래는 못 읽었을 때 */
  const r=roster();const ids=Object.keys(r.trainers).sort((a,b)=>(r.trainers[a].ord||0)-(r.trainers[b].ord||0));
  const inB=B().trainers||{};
  const m=openModal(`<div class="mhead"><h2>${side==='left'?'좌측':'우측'} 진영에 파티 불러오기</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
