@@ -29,7 +29,7 @@ window.OM_SP_UI=(()=>{
   const card=(o,e,k)=>`<div class="spc" style="--spc:${esc(e.color||'#ffd12e')}">${e.img?`<i class="spimg" style="background-image:url('${cssu(e.img)}')"></i>`:'<i class="spimg none">SP</i>'}
     <div class="spb"><div class="sph"><b>『${esc(e.name)}』</b>${hasAuto(e)?`<span class="spau" title="${esc(e.auto.dsl)}">⚙ 자동${e.tg==='party'?' · 소지 '+(e.tn?e.tn+'체':'전원'):''}</span>`:''}<span class="spp ${e.prob>=100?'all':''}">${e.prob>=100?'확정':e.prob+'%'}</span></div>${e.theme?`<div class="spt">${esc(e.theme)}</div>`:''}
      <ul class="spe">${effLines(e.eff).map(l=>`<li>${esc(l)}</li>`).join('')||'<li class="dim">효과 글 없음</li>'}</ul>
-     <div class="row spa"><button class="btn sm pri" data-spf="${k}" data-tid="${esc(o.tid)}" title="${e.prob>=100?'바로 발동 — 컷인이 모두에게 뜬다':'d100 을 굴려 '+e.prob+' 이하면 발동'}">발동</button>${gm()&&e.prob<100?`<button class="btn sm ghost" data-spf="${k}" data-tid="${esc(o.tid)}" data-force="1" title="굴리지 않고 성공으로 (GM)">확정 발동</button>`:''}<span class="sp"></span><button class="btn xs ghost" data-spe="${k}" data-tid="${esc(o.tid)}">✎ 고치기</button><button class="btn xs ghost danger" data-spd="${k}" data-tid="${esc(o.tid)}">삭제</button></div></div></div>`;
+     <div class="row spa"><button class="btn sm pri" data-spf="${k}" data-tid="${esc(o.tid)}" title="${e.prob>=100?'바로 발동 — 컷인이 모두에게 뜬다':'d100 을 굴려 '+e.prob+' 이하면 발동'}">발동</button>${e.prob<100||hasAuto(e)?`<button class="btn sm ghost" data-spf="${k}" data-tid="${esc(o.tid)}" data-force="1" title="굴리지 않고 성공으로 · 구문의 조건 · 확인도 건너뛴다 (주인 · GM)">강제 발동</button>`:''}<span class="sp"></span><button class="btn xs ghost" data-spe="${k}" data-tid="${esc(o.tid)}">✎ 고치기</button><button class="btn xs ghost danger" data-spd="${k}" data-tid="${esc(o.tid)}">삭제</button></div></div></div>`;
   const md=A().openModal(`<div class="mhead"><h2>SP · 서포터</h2><span class="small dim" style="margin-left:8px">밖에서 돕는 조력자의 한 수 — 확률 · 효과를 적어 두고 배틀에서 발동</span><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    ${L.length?L.map(o=>`<div class="spown"><div class="spoh"><b>${esc(o.name)}</b><small>${o.sps.length}개</small><span class="sp"></span><button class="btn sm" data-spn="${esc(o.tid)}">＋ 새 SP</button></div>${o.sps.map((e,k)=>card(o,e,k)).join('')||'<div class="dim small" style="padding:8px 2px">아직 SP 가 없다 — 「＋ 새 SP」</div>'}</div>`).join(''):'<div class="dim">이 진영에 내 트레이너가 없다.</div>'}`);
   md.classList.add('wide','spmodal');
@@ -81,7 +81,7 @@ window.OM_SP_UI=(()=>{
    const xb=md.querySelector('[data-x]');if(xb)xb.addEventListener('click',()=>{if(!done){done=true;res(null)}})})}
  async function fire(o,e,force){let anchor='',party=null;if(hasAuto(e)){if(e.tg==='party'){party=await pickParty(o,e);if(party===null)return false;anchor=party[0]||''}else{anchor=await pickAnchor(o);if(anchor===null)return false}}
   const p=e.prob>=100||force?100:e.prob;let roll=0,ok=true;if(p<100){roll=1+Math.floor(Math.random()*100);ok=roll<=p}
-  const head=`【SP】 ${o.name}의 서포터 『${e.name}』`+(p<100?` — 확률 ${p}% · d100 = ${roll} → ${ok?'성공!':'실패'}`:force&&e.prob<100?' — GM 확정 발동':'');
+  const head=`【SP】 ${o.name}의 서포터 『${e.name}』`+(p<100?` — 확률 ${p}% · d100 = ${roll} → ${ok?'성공!':'실패'}`:force?(gm()?' — GM 강제 발동':' — 강제 발동'):'');
   if(!ok){await A().sysLog(`${head}${e.theme?' · '+e.theme:''}`,'battle');A().toast(`실패 — ${roll} > ${p}`);return false}
   if(window.OM_CUTIN)window.OM_CUTIN.fire(cutOf(o,e));
   const body=`${e.theme?'\n'+e.theme:''}${effLines(e.eff).length?'\n'+effLines(e.eff).map(l=>'· '+l).join('\n'):''}`;

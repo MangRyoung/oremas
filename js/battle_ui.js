@@ -2312,6 +2312,15 @@ window.OM_BATTLE_UI=(()=>{
  const ASKED={};
  function askTo(mon){const c=ctx();if(!mon||canEdit(c,mon))return '';const seats=c.ST.state.seats||{};const tid=mon.tid;
   const so=seats[tid]?tid:baseSeat(c,tid);if(tid&&so&&(A().online(so)||coOf(c,tid).some(s=>A().online(s))))return 'seat:'+tid;if(!c.gm)return 'gm';return ''}
+ /* 11-09 망령 「PL 도 본인이면 강제 발동 · PL 권한일 땐 GM 에게 창 띄우지 마라」: 강제 발동 확인은 그 포켓몬(필드면 필드)의 주인에게 —
+    주인 화면이면 여기서, 좌석(PL) 것이면 그 좌석으로 보낸다 (GM 화면엔 안 띄운다 · 주인이 접속해 있지 않으면 묻지 않고 그만). GM 것만 GM 이 고른다 */
+ async function forceAsk(mon,name,why,tid0){if(!mon)return false;const c=ctx();const tid=tid0||mon.tid;const nm=String(name).replace(/[『』]/g,'');
+  const q=`「${nm}」 — ${why}\n\n그래도 강제로 발동할까? (조건 · 확인 · 확률을 건너뛴다)`;const loc=()=>askYes(q,'강제 발동','그만');
+  if(ownT(c,tid))return loc();
+  const pm={id:mon.id,tid,name:mon.name};
+  if(seatOwned(c,tid)){const seats=c.ST.state.seats||{};const so=seats[tid]?tid:baseSeat(c,tid);const on=!!so&&(A().online(so)||coOf(c,tid).some(x=>A().online(x)));if(!on)return false;return !!(await remoteAsk(pm,'force',{name:nm,q},()=>false,'seat:'+tid))}
+  if(c.gm)return loc();
+  return !!(await remoteAsk(pm,'force',{name:nm,q},()=>false,'gm'))}
  async function remoteAsk(mon,type,data,local,to0){const to=to0||askTo(mon);if(!to)return local();
   const id='q'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);await A().set(['battle','asks',id],Object.assign({to,type,mid:mon.id,at:Date.now()},data));
   A().toast(`${mon.name} 쪽에 고르기를 맡겼다 — 답을 기다리는 중`);
@@ -2321,7 +2330,7 @@ window.OM_BATTLE_UI=(()=>{
  async function answerAsks(){const c=ctx();const Q=c.b.asks||{};for(const id in Q){const q=Q[id];if(!q||q.ans!==undefined||ASKED[id])continue;
    const mine=q.to==='gm'?c.gm:(String(q.to).startsWith('seat:')&&lead(c,String(q.to).slice(5)));if(!mine)continue;ASKED[id]=1;
    const m=(c.b.mons||{})[q.mid]||{name:'?'};const U=localUi(c.b,m,q.name||'');let ans;
-   try{if(q.type==='choose')ans=await U.choose(q.labels||[],!!q.multi);else if(q.type==='pick'){const list=(q.ids||[]).map(i=>(ctx().b.mons||{})[i]).filter(Boolean);const r=await U.pick(list,q.label||'대상');ans=r?r.id:''}else if(q.type==='confirm')ans=await U.confirm(q.q||'')}catch(e){ans=q.type==='choose'?[]:q.type==='pick'?'':false}
+   try{if(q.type==='choose')ans=await U.choose(q.labels||[],!!q.multi);else if(q.type==='pick'){const list=(q.ids||[]).map(i=>(ctx().b.mons||{})[i]).filter(Boolean);const r=await U.pick(list,q.label||'대상');ans=r?r.id:''}else if(q.type==='confirm')ans=await U.confirm(q.q||'');else if(q.type==='force')ans=await askYes(q.q||'','강제 발동','그만')}catch(e){ans=q.type==='choose'?[]:q.type==='pick'?'':false}
    if(((ctx().b.asks||{})[id]))await A().set(['battle','asks',id,'ans'],ans==null?(q.type==='choose'?[]:''):ans)}}
  function uiCtx(b,self,name,area){const L=localUi(b,self,name,area);const mon=self;
   return Object.assign({},L,{rolesOf:m=>rolesOf(m),   /* 11-05 동조: fx 의 「동조아군 · 동조상대」가 역할(상위 역할 포함)을 같은 기준으로 */
@@ -2378,7 +2387,7 @@ window.OM_BATTLE_UI=(()=>{
   const ux=uiCtx(nb,m,name,opt.area);if(opt.pickId){const up=ux.pick;ux.pick=(list,label)=>{const f=list.find(x=>x.id===opt.pickId);return f?Promise.resolve(f):up(list,label)}}   /* 11-02: 창에서 이미 고른 대상 */
   const r=await FX().run(ops,Object.assign(ux,opt.ctx||{},opt.force?{force:1}:{},opt.noRoll?{noRoll:1}:{},opt.hit?{hit:opt.hit}:{},adj,hold,STK2?{stack:STK2}:{}));   /* 11-09 opt.ctx: 「소지품 소모」 계기의 used 등 */   /* 11-08 opt.hit: 「조건 명중」이 맞은 대상 · 기술을 본다 */
   /* 11-09: 조건에 막혔으면 진행하는 화면(GM)에 「강제 발동」을 묻는다 — 저절로 도는 것(quiet)은 로그에 안내만 */
-  if(r.blocked&&!opt.force){if(!opt.quiet&&ctx().mgr&&await askYes(`「${String(name).replace(/[『』]/g,'')}」 — ${String(r.blocked).replace(/^「[^」]*」\s*/,'')}\n\n그래도 강제로 발동할까? (조건 · 확인 · 확률을 건너뛴다)`,'강제 발동','그만'))return fireAuto(mid,kind,name,Object.assign({},opt,{force:true,head:(opt.head?opt.head+' ':'')+'(강제 발동)'}));if(opt.quiet)r.lines.push('(GM: 카드 「발동」 → 「강제 발동」으로 조건을 건너뛸 수 있다)')}
+  if(r.blocked&&!opt.force){if(!opt.quiet&&await forceAsk(m0,name,String(r.blocked).replace(/^「[^」]*」\s*/,''),opt.ownTid))return fireAuto(mid,kind,name,Object.assign({},opt,{force:true,head:(opt.head?opt.head+' ':'')+'(강제 발동)'}));if(opt.quiet)r.lines.push(kind==='field'?'(필드 주인 · GM: 《필드》 칩 → 정보 창 「강제 발동」으로 조건을 건너뛸 수 있다)':'(주인 · GM: 카드 「발동」을 누르면 「강제 발동」을 고를 수 있다)')}
   L.push(...r.lines);if(hold.hold&&(m.holds||[]).length)L.push('(필드를 떠나면 풀린다)');
   const raidNew=await raidFix(m,m0,name,L);if(raidNew===null)return false;
   const f=fieldOf(nb);for(const id in nb.mons){const x=nb.mons[id];if(x.entry&&x.hp.cur<=0){x.entry='';L.push(`${x.name}은(는) 쓰러졌다!`)}}
@@ -2410,7 +2419,7 @@ window.OM_BATTLE_UI=(()=>{
   const tk=m=>{const t=(b.trainers||{})[m.tid];return t&&t.solo?'solo:'+m.tid:m.side};const live=m=>!!(m&&m.entry&&m.hp&&m.hp.cur>0);
   const om=s.ownerMid?b.mons[s.ownerMid]:null;const anyT=om||Object.values(b.mons||{}).find(m=>m.tid===s.tid);const own=anyT?tk(anyT):'';
   const P=k=>{let r={ops:[],errs:[]};try{r=FX().parse(['deploy','start','end','hold'].includes(k)?faAll(AU[k]):faTo(AU[k],'자신'))}catch(e){r.errs=[e.message]}if(r.errs&&r.errs.length)A().sysLog(`【필드】 ${nm} 「${FA_KO[k]}」 구문에서 못 읽은 줄 — ${r.errs.join(' / ')}`,'battle',{gmPriv:1});return r.ops||[]};
-  const fire=(mid,k,ops,x)=>fireAuto(mid,'field',nm,Object.assign({quiet:true,auto:{ops,text:String(AU[k]||'')},head:`【필드】 ${nm} — ${FA_KO[k]}${o.force?' (강제 발동)':''}`,eff:String(s.eff||'')},o.force?{force:true}:{},x||{}));
+  const fire=(mid,k,ops,x)=>fireAuto(mid,'field',nm,Object.assign({quiet:true,auto:{ops,text:String(AU[k]||'')},head:`【필드】 ${nm} — ${FA_KO[k]}${o.force?' (강제 발동)':''}`,eff:String(s.eff||''),ownTid:s.tid||''},o.force?{force:true}:{},x||{}));
   /* 11-09 소지품 소모 시: o.mid = 다 쓴 포켓몬 · o.used = {name} — 「조건 소모:나무열매」가 읽는다 */
   if(trig==='use'){const m=b.mons[o.mid];if(!m||!m.entry||!String(AU.use||'').trim())return;const ops=P('use');if(ops.length)await fire(m.id,'use',ops,{ctx:{used:o.used||{}}});return}
   const holdFor=async mid=>{const b2=ctx().b;const m=b2.mons[mid];if(!live(m))return;const ops=faHoldOps(b2,(b2.field||{}).stage,m);if(ops.length)await fire(mid,'hold',ops,{noRoll:true})};
@@ -3269,5 +3278,5 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【[^】]*】\s
     const ds=stDesc(k);/* 11-01 망령 「상태 변화도 효과 로그」: 상태 카드가 되면 예전 줄은 남기지 않는다 */if(!stLog(m,Object.assign({},m,{states:ns}),fcMan('상세 창')))A().sysLog(`【상태】 ${m.name} 「${stName(k)}」${c<1000?` (${c}턴)`:''}${ds.length?'\n'+ds.join('\n'):''}`,'battle',{mid,img:m.image||''});o.pk=false;o.q='';o.n='';redraw()});
   bind()}
  function nowParts(m){return {rank:rankChips(m),state:stateChips(m),fx:flagChips(m)+(FX()?FX().chips(m).map(ch=>`<span class="rk fxc" title="${esc(ch.title)}">${esc(ch.t)}</span>`).join(''):'')}}
- return {illuMask,askYes,canSeeStx:tid=>stxOk(ctx(),tid),canEditMon:mid=>{const c=ctx();const m=((c.b||{}).mons||{})[mid];return !!m&&canEdit(c,m)},fireAuto,fieldAuto,fieldClear,render,nowParts,nowEditHtml,bindNowEdit,watch,ctx,entered,allEntered,fieldOf,fieldCard,statusCard,futureFire,trapWarn,resetLocal:()=>{CMD={}},startCut:(m)=>battleStartCut(ctx().b,m),openHp,action,hotkey,logFx,hitBadge};
+ return {illuMask,askYes,canSeeStx:tid=>stxOk(ctx(),tid),canForceTid:tid=>{const c=ctx();return !!tid&&(ownT(c,tid)||(c.gm&&!fairOff(c,tid)))},canEditMon:mid=>{const c=ctx();const m=((c.b||{}).mons||{})[mid];return !!m&&canEdit(c,m)},fireAuto,fieldAuto,fieldClear,render,nowParts,nowEditHtml,bindNowEdit,watch,ctx,entered,allEntered,fieldOf,fieldCard,statusCard,futureFire,trapWarn,resetLocal:()=>{CMD={}},startCut:(m)=>battleStartCut(ctx().b,m),openHp,action,hotkey,logFx,hitBadge};
 })();

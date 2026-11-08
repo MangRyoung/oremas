@@ -29,6 +29,15 @@ window.OM_STAGE_UI=(()=>{
  function stage(b){b=b||(ST().state.battle||{});const s=(b.field||{}).stage;return s&&s.name?s:null}
  const mgr=()=>{try{return BU().ctx().mgr}catch(e){return gm()}};
  const R=()=>ST().state.roster||{trainers:{},mons:{}};
+ /* 11-09 망령 「PL 도 본인이면 강제 발동」: 필드 주인(좌석 · 함께 지시) 과 GM — 배틀을 직접 못 쓰는 좌석은 stageq 로 GM 화면에 맡긴다 (GM 화면엔 묻는 창 없이 바로) */
+ function canForce(s){if(!s)return false;try{const B=BU();if(B&&B.canForceTid&&s.tid)return B.canForceTid(s.tid)}catch(e){}return gm()}
+ async function forceDo(k,mid){const B=BU();if(!B||!B.fieldAuto)return;const s=stage();if(!s)return;
+  if(k==='hold'){await B.fieldClear('《'+s.name+'》');await B.fieldAuto('deploy',{force:true,holdOnly:true});return}   /* 필드 동안: 풀고 다시 건다 */
+  if(k==='entry'||k==='use'){if(!mid)return;await B.fieldAuto(k,{force:true,mid,used:{name:'(강제)'}});return}
+  await B.fieldAuto(k,{force:true})}
+ async function forceRun(s,k,mid){if(!canForce(s))return A().toast('필드 주인 · GM 만 강제 발동할 수 있다');
+  if(mgr())return forceDo(k,mid);
+  if(await A().set(['pub',ST().seat,'stageq'],{force:k,mid:mid||'',src:s.src,tid:s.tid||'',at:Date.now()}))A().toast('강제 발동을 요청했다 — GM 화면이 받아 처리한다')}
 
  /* ----- 배틀에 있는 주인들과 그 필드 (로스터 쪽이 있으면 그걸 — 시트에서 고친 게 바로 따라온다) ----- */
  function owners(){const b=ST().state.battle||{};const r=R();const out=[];
@@ -57,14 +66,13 @@ window.OM_STAGE_UI=(()=>{
     <div class="sthd" style="background:${esc(col.bg)};color:${esc(col.fg)}">◆《${esc(keyOf(s))}》의 필드 효과</div>
     <ul class="steff">${effLines(s.eff).map(l=>`<li>${esc(l)}</li>`).join('')||'<li class="dim">효과 글 없음</li>'}</ul>
     <div class="small"><b>지역</b> ${esc(s.loc||'-')} · <b>남은 턴</b> ${s.count>=1000||!s.count?'무한':s.count+'턴'}${s.owner?` · <b>주인</b> ${esc(s.owner)}`:''}</div>
-    ${s.auto?`<div class="stauto" style="margin-top:10px;padding-top:8px;border-top:1px dashed #8886"><div class="small"><b>⚙ 자동화 구문</b> ${Object.keys(s.auto).filter(k=>k!=='who').map(k=>FA_NM[k]).join(' · ')}</div>${mgr()?`<div class="row small" style="gap:6px;flex-wrap:wrap;margin-top:6px"><span class="dim">GM — 강제 발동 (조건 · 확률을 건너뛴다):</span>${Object.keys(s.auto).filter(k=>k!=='who').map(k=>`<button class="btn xs" data-stf="${k}">${FA_NM[k]}</button>`).join('')}</div>`:''}</div>`:''}</div>`);
+    ${s.auto?`<div class="stauto" style="margin-top:10px;padding-top:8px;border-top:1px dashed #8886"><div class="small"><b>⚙ 자동화 구문</b> ${Object.keys(s.auto).filter(k=>k!=='who').map(k=>FA_NM[k]).join(' · ')}</div>${canForce(s)?`<div class="row small" style="gap:6px;flex-wrap:wrap;margin-top:6px"><span class="dim">${gm()?'GM':'주인'} — 강제 발동 (조건 · 확률을 건너뛴다):</span>${Object.keys(s.auto).filter(k=>k!=='who').map(k=>`<button class="btn xs" data-stf="${k}">${FA_NM[k]}</button>`).join('')}</div>`:''}</div>`:''}</div>`);
   /* 11-09 망령 「혹시 모를 에러나 몇몇 효과를 대비해 강제로 발동도」: 칸마다 강제 발동 — 등장 · 소지품 소모는 포켓몬을 고른다 */
   md.querySelectorAll('[data-stf]').forEach(bt=>bt.onclick=async()=>{const k=bt.dataset.stf;const B=BU();if(!B||!B.fieldAuto)return;
-   if(k==='hold'){A().closeModal();await B.fieldClear('《'+s.name+'》');await B.fieldAuto('deploy',{force:true,holdOnly:true});return}   /* 필드 동안: 풀고 다시 건다 */
-   if(k!=='entry'&&k!=='use'){A().closeModal();await B.fieldAuto(k,{force:true});return}
+   if(k!=='entry'&&k!=='use'){A().closeModal();await forceRun(s,k,'');return}
    const b=ST().state.battle||{};const ms=Object.values(b.mons||{}).filter(m=>m&&m.entry&&m.hp&&m.hp.cur>0);if(!ms.length)return A().toast('필드에 포켓몬이 없다');
    const m2=A().openModal(`<div class="mhead"><h2>《${esc(s.name)}》 「${FA_NM[k]}」 강제 발동 — 누구?</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="small dim" style="margin-bottom:8px">${k==='use'?'소지품을 다 쓴 포켓몬':'나온 포켓몬'}으로 칠 포켓몬 — 조건 · 확률은 건너뛴다</div><div class="mmenu">${ms.map(m=>`<button class="btn" data-stm="${esc(m.id)}">${esc(m.name)} <small>에리어 ${esc(String(m.entry).toUpperCase())}</small></button>`).join('')}</div>`);
-   m2.querySelectorAll('[data-stm]').forEach(x=>x.onclick=async()=>{A().closeModal();await B.fieldAuto(k,{force:true,mid:x.dataset.stm,used:{name:'(강제)'}})})});
+   m2.querySelectorAll('[data-stm]').forEach(x=>x.onclick=async()=>{A().closeModal();await forceRun(s,k,x.dataset.stm)})});
   const x=$('#stx',md);if(x)x.onclick=async()=>{if(!confirm(`《${keyOf(s)}》을(를) 걷을까?`))return;A().closeModal();await reset()}}
 
  /* ----- 필드 전개 (맵툴 dialog_field_field) — 주인별로 묶어서 ----- */
@@ -150,6 +158,7 @@ window.OM_STAGE_UI=(()=>{
  async function absorb(){if(!gm()||busy)return;const pub=ST().state.pub||{};const todo=Object.keys(pub).filter(sid=>pub[sid]&&pub[sid].stageq);if(!todo.length)return;busy=true;
   try{for(const sid of todo){const q=pub[sid].stageq;await A().set(['pub',sid,'stageq'],null);if(!q||Date.now()-(+q.at||0)>120000)continue;
     if(q.reset){const s=stage();if(s&&s.tid===sid&&s.src===q.src&&await A().set(['battle','field','stage'],null)){A().sysLog(`《${keyOf(s)}》의 풍경이 옅어져 간다…`,'battle');if(BU()&&BU().fieldClear){try{await BU().fieldClear('《'+s.name+'》')}catch(x){console.warn(x)}}}continue}
+    if(q.force){const s=stage();if(AK.includes(String(q.force))&&s&&s.src===q.src&&s.tid&&(s.tid===q.tid)&&(s.tid===sid||((((R().trainers||{})[s.tid]||{}).co)||[]).includes(sid)))await forceDo(String(q.force),q.mid||'');continue}   /* 11-09: 주인 좌석의 강제 발동 */
     const e=find(q.key);if(!e||e.o.tid!==sid)continue;if(e.o.kind==='m'&&!e.o.on)continue;await put(e,+q.turns||0)}}
   finally{busy=false}}
 
