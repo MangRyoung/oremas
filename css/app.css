@@ -3516,7 +3516,7 @@ html[data-vt] .phone .ptitle .btn *{color:inherit!important}
 /* 이름표 */
 .v3 .v3-plate{position:absolute;max-width:44vw;color:var(--plfg);animation:v3plate .45s cubic-bezier(.2,1.2,.3,1) .7s both}
 .v3 .v3-L .v3-plate{left:3vw;bottom:9vh}
-.v3 .v3-R .v3-plate{right:3vw;top:9vh;text-align:right}
+.v3 .v3-R .v3-plate{right:3vw;bottom:9vh;text-align:right}   /* 11-08 21:27 망령 「오른쪽 트레이너도 이름과 볼 아래로 — 얼굴을 가린다」 (예전 top:9vh) */
 @keyframes v3plate{from{opacity:0;transform:translateY(calc(var(--u)*4))}}
 .v3 .v3-side{display:inline-block;font:700 calc(var(--u)*2.6)/1 'Rajdhani','IBM Plex Sans KR',sans-serif;letter-spacing:calc(var(--u)*.6);padding:calc(var(--u)*.6) calc(var(--u)*1.6);background:var(--plbg);color:var(--sc);transform:skewX(-14deg)}
 .v3 .v3-nm{font-size:calc(var(--u)*8.5);line-height:1.05;margin-top:calc(var(--u)*.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#fff;-webkit-text-stroke:calc(var(--u)*.9) var(--ink);paint-order:stroke fill;text-shadow:calc(var(--u)*.8) calc(var(--u)*.8) 0 var(--ink)}
