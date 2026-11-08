@@ -753,7 +753,7 @@ window.OM_BATTLE_UI=(()=>{
    /* 맵툴 set_turn_start: 턴을 연 순간 필드에 있던 포켓몬은 started (이 턴 도중에 들어온 포켓몬만 「교대 등장」) */
    for(const m of Object.values(ctx().b.mons||{}))if(m.entry&&!m.started)ops.push([['battle','mons',m.id,'started'],true]);
    if(!await A().setMany(ops))return;
-   await preCharge();const TN=+ctx().b.turn||1;cutPhase('턴 개시',`TURN ${TN}`);A().sysLog(`턴 개시 — TURN ${TN}${TN<=1?'\n「턴 진행 ▶」: 교대 알림 → 『지령』 & 『포텐셜』 발동 → 행동 순서 · 지시는 행동 순서가 오면 차례대로 공개':''}`,'battle');try{await autoTurnStart()}catch(e){console.warn('턴 개시 자동',e)}
+   await preCharge();const TN=+ctx().b.turn||1;cutPhase('턴 개시',`TURN ${TN}`);A().sysLog(`턴 개시 — TURN ${TN}${TN<=1?'\n「턴 진행 ▶」: 교대 알림 → 『지령』 & 『포텐셜』 발동 → 행동 순서 · 지시는 행동 순서가 오면 차례대로 공개':''}`,'battle');try{await autoTurnStart()}catch(e){console.warn('턴 개시 자동',e)}try{await fieldAuto('start')}catch(e){console.warn('필드 턴 개시 구문',e)}
    /* 11-03 감우: 턴 개시 처리가 끝난 모습을 체크포인트로 (「↶ 이 턴 처음으로」) — 방 상태 밖 om_snap, 없으면 이 브라우저 */
    try{await snapTurn()}catch(e){console.warn('턴 체크포인트',e)}return}
   if(p===2)return computeOrder();
@@ -1052,9 +1052,9 @@ window.OM_BATTLE_UI=(()=>{
   /* 10-26 (서서 VS 마리 시험): 필드의 다른 포켓몬이 「있는 한」 걸어 둔 효과(재앙의그릇 · 승리의별 …)를 새로 들어온 포켓몬에게도 */
   if(FX()&&FX().reAura&&ctx().b.started&&(ctx().b.mons[mid]||{}).entry){const nb0=snap(),nb=snap(nb0);const L=FX().reAura(nb,nb.mons[mid]);if(L.length&&await saveBattle(nb0,nb))A().sysLog(`【필드 효과】\n${L.join('\n')}`,'battle')}
   /* 10-26 망령: 시합 개시 전에 나온 포켓몬 · 동시 내밀기는 모두 나온 뒤에 등장 효과를 스피드 순으로 (위협이 아무도 못 맞히던 것) */
-  if(FX()&&(ctx().b.mons[mid]||{}).entry&&!opt.noAuto&&ctx().b.started)await autoOnEntry(mid,{how:opt.how||(opt.forced?'강제 교대':occ&&occ.id!==mid?'통상 교대':(+b.phase||0)>=2?'통상 교대':'죽어내밀기')})}
+  if(FX()&&(ctx().b.mons[mid]||{}).entry&&!opt.noAuto&&ctx().b.started){await autoOnEntry(mid,{how:opt.how||(opt.forced?'강제 교대':occ&&occ.id!==mid?'통상 교대':(+b.phase||0)>=2?'통상 교대':'죽어내밀기')});try{await fieldAuto('entry',{mid})}catch(e){console.warn('필드 등장 구문',e)}}}
  async function autoEntryAll(ids,hows){const b=ctx().b;const f=fieldOf(b);const sp=m=>{try{return B().statValue(m,'speed').value*spMulOf(m,f).v}catch(e){return +((m.stats||[])[5]||0)}};
-  const list=ids.map(id=>b.mons[id]).filter(m=>m&&m.entry&&m.hp.cur>0).sort((x,y)=>sp(y)-sp(x));for(const m of list)if(FX())await autoOnEntry(m.id,hows&&hows[m.id]?{how:hows[m.id]}:undefined)}
+  const list=ids.map(id=>b.mons[id]).filter(m=>m&&m.entry&&m.hp.cur>0).sort((x,y)=>sp(y)-sp(x));for(const m of list)if(FX()){await autoOnEntry(m.id,hows&&hows[m.id]?{how:hows[m.id]}:undefined);try{await fieldAuto('entry',{mid:m.id})}catch(e){console.warn('필드 등장 구문',e)}}}
  /* 10-23 망령: 맵툴 print_entry — 등장하면 「통솔」 명중 강화 → 특성 등장 문구 → 소지품 등장 문구 (data/ment.js, 맵툴 entry_ment 그대로) */
  const LEAD_ACC={A:1.05,AA:1.15,AAA:1.25,S:1.33};
  /* 「통솔」 명중 보정: 랭크 · 배율(mod)에 넣지 않고 공격 창 「명중 배율」 기본값으로 곱한다 (10-24 망령) */
@@ -1598,7 +1598,7 @@ window.OM_BATTLE_UI=(()=>{
   if(m.hp.cur<=0){m.entry='';out.push(`${m.name}은(는) 쓰러졌다!`)}return out}
  /* 기술을 내보낼 때 줄어드는 상태: DB 의 prog:'move' + 얼음(설명이 「3번째로 기술을 내보낼 때 해제」라 턴이 아니라 기술 횟수로 센다) */
  const movesDown=(k,d)=>(d&&d.prog==='move')||k==='Freeze';
- async function turnEnd(){const c=ctx();if(!c.mgr)return;const b0=snap(c.b),b=snap(b0);const f=fieldOf(b);const db=(DB().states||{}).st||{};const lines=[];const futs=[];
+ async function turnEnd(){if(!ctx().mgr)return;try{await fieldAuto('end')}catch(e){console.warn('필드 턴 종료 구문',e)}const c=ctx();if(!c.mgr)return;const b0=snap(c.b),b=snap(b0);const f=fieldOf(b);const db=(DB().states||{}).st||{};const lines=[];const futs=[];
   /* 10-21 망령: 로그를 갈래별로 (포켓몬 · 풀린 것 · 필드) */ const fieldL=[];const rel={};const relAdd=(m,t)=>{(rel[m.name]=rel[m.name]||[]).push(t)};
   if(F()){const slots={};for(const s of SIDES){const e=entered(b,s);for(const a in e)slots[s+'_'+a]=e[a]}
    const r1=F().turnEndStates(b.mons,slots,{field:f,turn:+b.turn||0});lines.push(...r1.lines);const r2=F().turnEndField(b.mons,f,{noGrass:1});fieldL.push(...r2.lines);
@@ -2380,6 +2380,30 @@ window.OM_BATTLE_UI=(()=>{
  function limManual(m,kind,name,tx){if(kind!=='pot')return false;const t=String(tx!=null&&tx!==''?tx:(slotEff(m,kind,name)||''));return /【\s*\d+\s*\/\s*시\s*】/.test(t)&&!/【\s*자동\s*】/.test(t)}
  function slotEff(m,kind,name){const n=String(name||'').replace(/『|』/g,'');if(kind==='trait')return m.abilityEff||(FX()&&FX().effOf?FX().effOf('trait',n):'');if(kind==='item'){const x=n===m.item?m:(m.items2||[]).find(q=>q&&q.item===n);return (x&&x.itemEff)||''}
   const pe=((potSrc(m).find(p=>p&&p.name===n)||{}).eff)||'';if(pe)return pe;/* 11-03: 트레이너 고유 포텐셜의 효과 글도 (autoOnEntry · fireAuto) */const t=m&&m.tid?((ctx().b.trainers||{})[m.tid]):null;const u=t&&(t.unique||[]).find(q=>q&&String(q.name||'').replace(/『|』/g,'')===n);return (u&&u.eff)||''}
+ /* ---------- 11-09 망령 「필드 전개에도 구문 — 턴 개시 · 턴 종료 확률 발동 · 등장(임의 교대 · 죽어내밀기 포함) · 복합 효과」 ----------
+    battle.field.stage.auto = {deploy, start, end, entry, hold, who} (제작기 js/fx/fx_ui.js fieldAutoBox). 효과 이름 = 《필드 이름》 — 걷힐 때 그 이름으로 푼다.
+    deploy · start · end: 자신 = 필드 주인 포켓몬(트레이너 필드면 그 트레이너의 나와 있는 첫 포켓몬, 없으면 주인 편 첫 포켓몬).
+    entry: 자신 = 나온 포켓몬 (who: all 누구든 · own 주인 편 · foe 상대 편). 등장 때마다 hold 도 그 포켓몬에게 건다.
+    hold: 줄의 대상에 맞는 포켓몬마다 「자신」으로 바꿔 건다 (자신 = 주인 · 아군 · 상대 · 전체) — 이미 그 이름 효과가 있으면 건너뛴다 */
+ const FA_KO={deploy:'전개 시',start:'턴 개시 시',end:'턴 종료 시',entry:'등장 시',hold:'필드 동안'};
+ const faName=s=>'《'+String(s.name||'')+'》';
+ async function fieldAuto(trig,o){o=o||{};const c=ctx();if(!c.mgr||!FX()||!FX().parse)return;const b=c.b;const s=(b.field||{}).stage;if(!s||!s.name||!s.auto||typeof s.auto!=='object')return;const AU=s.auto;const nm=faName(s);
+  const tk=m=>{const t=(b.trainers||{})[m.tid];return t&&t.solo?'solo:'+m.tid:m.side};const live=m=>!!(m&&m.entry&&m.hp&&m.hp.cur>0);
+  const om=s.ownerMid?b.mons[s.ownerMid]:null;const anyT=om||Object.values(b.mons||{}).find(m=>m.tid===s.tid);const own=anyT?tk(anyT):'';
+  const P=k=>{let r={ops:[],errs:[]};try{r=FX().parse(String(AU[k]||''))}catch(e){r.errs=[e.message]}if(r.errs&&r.errs.length)A().sysLog(`【필드】 ${nm} 「${FA_KO[k]}」 구문에서 못 읽은 줄 — ${r.errs.join(' / ')}`,'battle',{gmPriv:1});return r.ops||[]};
+  const fire=(mid,k,ops,x)=>fireAuto(mid,'field',nm,Object.assign({quiet:true,auto:{ops,text:String(AU[k]||'')},head:`【필드】 ${nm} — ${FA_KO[k]}`,eff:String(s.eff||'')},x||{}));
+  const holdFor=async mid=>{const m=ctx().b.mons[mid];if(!live(m)||!String(AU.hold||'').trim())return;if((FX().chips(m)||[]).some(ch=>ch&&ch.name===nm))return;const rel=tk(m)===own?'ally':'enemy';const isO=!!om&&m.id===om.id;
+   const ok=t=>{t=t||'self';if(t==='self')return isO;if(/^ally/.test(t))return rel==='ally'&&!(t==='allyx'&&isO);if(/enemy/.test(t))return rel==='enemy';if(t==='others'||t==='randother')return !isO;return true};
+   const ops=P('hold').filter(op=>op&&op.k!=='choice'&&ok(op.tgt)).map(op=>Object.assign({},op,{tgt:'self',p:0,pl:''}));if(ops.length)await fire(mid,'hold',ops,{noRoll:true})};
+  if(trig==='entry'){const m=b.mons[o.mid];if(!live(m))return;const who=AU.who||'all';const rel=tk(m)===own?'own':'foe';
+   if(String(AU.entry||'').trim()&&(who==='all'||who===rel)){const ops=P('entry');if(ops.length)await fire(m.id,'entry',ops)}
+   await holdFor(m.id);return}
+  if(!['deploy','start','end'].includes(trig))return;
+  if(String(AU[trig]||'').trim()){const L=Object.values(b.mons||{});const holder=live(om)?om:L.find(m=>live(m)&&m.tid===s.tid)||L.find(m=>live(m)&&own&&tk(m)===own);
+   if(!holder)A().sysLog(`【필드】 ${nm} 「${FA_KO[trig]}」 — 주인 편에 나와 있는 포켓몬이 없어 구문을 건너뛴다`,'battle',{gmPriv:1});else{const ops=P(trig);if(ops.length)await fire(holder.id,trig,ops)}}
+  if(trig==='deploy')for(const m of Object.values(ctx().b.mons||{}))if(live(m))await holdFor(m.id)}
+ /* 필드가 걷히면 《이름》으로 건 지속 효과를 푼다 (전개 · 걷기 창 — 턴 종료의 걷힘은 stage_ui turnEnd 가 같은 사본에서) */
+ async function fieldClear(name){const c=ctx();if(!c.mgr||!FX()||!name)return 0;const nb0=snap(c.b),nb=snap(nb0);let n=0;const who=[];for(const m of Object.values(nb.mons||{})){const k=FX().removeByName(m,name);if(k){n+=k;who.push(m.name)}}if(!n)return 0;if(!await saveBattle(nb0,nb))return 0;A().sysLog(`【필드】 ${name} 걷힘 — ${who.join(' · ')}의 필드 효과가 풀렸다`,'battle');return n}
  /* 턴 개시 자동 (10-24 망령): 「턴 개시 시」 · 【턴 개시】 가 적힌 특성 · 소지품 · 포텐셜 — 구문이 있으면 (확률을 굴려) 발동, 없으면 확률만 굴려 손으로 할 일을 알린다 */
  async function autoTurnStart(){if(!FX())return;const b=ctx().b;for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0)continue;const list=[];
   if(m.ability)list.push(['trait',m.ability]);if(m.item&&!IOFF(m))list.push(['item',m.item]);for(const x of (m.items2||[]))if(x&&x.item&&!IOFF(m))list.push(['item',x.item]);for(const p of potSrc(m))if(p&&p.name&&!p.ph)list.push(['pot',p.name]);
@@ -3226,5 +3250,5 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【[^】]*】\s
     const ds=stDesc(k);/* 11-01 망령 「상태 변화도 효과 로그」: 상태 카드가 되면 예전 줄은 남기지 않는다 */if(!stLog(m,Object.assign({},m,{states:ns}),fcMan('상세 창')))A().sysLog(`【상태】 ${m.name} 「${stName(k)}」${c<1000?` (${c}턴)`:''}${ds.length?'\n'+ds.join('\n'):''}`,'battle',{mid,img:m.image||''});o.pk=false;o.q='';o.n='';redraw()});
   bind()}
  function nowParts(m){return {rank:rankChips(m),state:stateChips(m),fx:flagChips(m)+(FX()?FX().chips(m).map(ch=>`<span class="rk fxc" title="${esc(ch.title)}">${esc(ch.t)}</span>`).join(''):'')}}
- return {illuMask,askYes,canSeeStx:tid=>stxOk(ctx(),tid),canEditMon:mid=>{const c=ctx();const m=((c.b||{}).mons||{})[mid];return !!m&&canEdit(c,m)},fireAuto,render,nowParts,nowEditHtml,bindNowEdit,watch,ctx,entered,allEntered,fieldOf,fieldCard,statusCard,futureFire,trapWarn,resetLocal:()=>{CMD={}},startCut:(m)=>battleStartCut(ctx().b,m),openHp,action,hotkey,logFx,hitBadge};
+ return {illuMask,askYes,canSeeStx:tid=>stxOk(ctx(),tid),canEditMon:mid=>{const c=ctx();const m=((c.b||{}).mons||{})[mid];return !!m&&canEdit(c,m)},fireAuto,fieldAuto,fieldClear,render,nowParts,nowEditHtml,bindNowEdit,watch,ctx,entered,allEntered,fieldOf,fieldCard,statusCard,futureFire,trapWarn,resetLocal:()=>{CMD={}},startCut:(m)=>battleStartCut(ctx().b,m),openHp,action,hotkey,logFx,hitBadge};
 })();

@@ -22,7 +22,9 @@ window.OM_STAGE_UI=(()=>{
  const tko=en=>{try{return S().typeKo(en)}catch(e){return en}};
  const bgSrc=v=>{v=String(v||'').trim();if(!v)return '';if(/^(https?:|data:|img\/|\.\/|\/)/.test(v))return v;for(const g of DB().bg||[])for(const it of g.i||[])if((it.k===v||it.l===v)&&it.src)return it.src;return ''};
  const effLines=t=>String(t||'').replace(/<br\s*\/?>/g,'\n').split('\n').map(x=>x.trim()).filter(Boolean);
- const fix=a=>(Array.isArray(a)?a:[]).filter(x=>x&&typeof x==='object'&&String(x.name||'').trim()).map(x=>({type:kindOf(x),name:String(x.name).trim(),loc:String(x.loc||''),img:String(x.img||''),eff:String(x.eff||''),count:+x.count>0?Math.round(+x.count):-1,color:String(x.color||'')}));
+ /* 11-09 망령 「필드에도 구문」: auto = {deploy · start · end · entry · hold · who} — 실행은 battle_ui fieldAuto */
+ const AK=['deploy','start','end','entry','hold'];const autoN=a=>{if(!a||typeof a!=='object')return null;const o={};for(const k of AK){const v=String(a[k]==null?'':a[k]).replace(/\r/g,'').trim();if(v)o[k]=v.slice(0,4000)}if(!Object.keys(o).length)return null;if(a.who==='own'||a.who==='foe')o.who=a.who;return o};
+ const fix=a=>(Array.isArray(a)?a:[]).filter(x=>x&&typeof x==='object'&&String(x.name||'').trim()).map(x=>Object.assign({type:kindOf(x),name:String(x.name).trim(),loc:String(x.loc||''),img:String(x.img||''),eff:String(x.eff||''),count:+x.count>0?Math.round(+x.count):-1,color:String(x.color||'')},autoN(x.auto)?{auto:autoN(x.auto)}:{}));
  function stage(b){b=b||(ST().state.battle||{});const s=(b.field||{}).stage;return s&&s.name?s:null}
  const mgr=()=>{try{return BU().ctx().mgr}catch(e){return gm()}};
  const R=()=>ST().state.roster||{trainers:{},mons:{}};
@@ -93,19 +95,21 @@ window.OM_STAGE_UI=(()=>{
     <label class="wide">그림<span class="row" style="flex:1;gap:6px"><input type="text" id="sf_i" list="sf_il" value="${esc(e.img||'')}" placeholder="배경 목록 이름 · 주소" style="flex:1"><datalist id="sf_il">${bgs.map(([l,g])=>`<option value="${esc(l)}">${esc(g)}</option>`).join('')}</datalist><label class="btn sm ghost">올리기<input type="file" id="sf_f" accept="image/*" hidden style="display:none"></label></span></label>
     <div class="stprev" id="sf_p"></div>
     <label class="wide">효과<textarea id="sf_e" rows="5" placeholder="한 줄에 하나 — ① ② ③ …">${esc(effLines(e.eff).join('\n'))}</textarea></label>
+    <div class="wide" id="sf_a"></div>
    </div>
    <div class="row" style="margin-top:10px"><span class="small dim">이 캐릭터의 시트에 저장된다 (제작기 동기화를 하면 제작기 쪽 목록으로 다시 맞춰진다)</span><span class="sp"></span><button class="btn pri" id="sf_ok">${isNew?'추가':'저장'}</button></div>`);
   const prev=()=>{const u=bgSrc($('#sf_i',md).value);$('#sf_p',md).innerHTML=u?`<div class="stimg" style="background-image:url('${cssu(u)}')"></div>`:($('#sf_i',md).value.trim()?'<span class="small" style="color:var(--red2)">그 이름의 배경을 못 찾았다 — 배경 목록 이름이나 주소, 또는 「올리기」</span>':'')};
   $('#sf_i',md).oninput=prev;prev();
+  /* 11-09 자동화 구문 칸 (제작기 js/fx/fx_ui.js fieldAutoBox) */const FAB=window.OM_FX_UI&&window.OM_FX_UI.fieldAutoBox?window.OM_FX_UI.fieldAutoBox($('#sf_a',md),e.auto,{toast:t=>A().toast(t)}):null;
   $('#sf_f',md).onchange=async ev=>{const f=ev.target.files[0];if(!f)return;A().toast('올리는 중…');try{$('#sf_i',md).value=await DBS().uploadImage(`rooms/${ST().room}/field_${Date.now().toString(36)}`,f);prev();A().toast('올렸다')}catch(x){A().toast(x.message)}};
   $('#sf_ok',md).onclick=async()=>{const name=$('#sf_n',md).value.trim();if(!name)return A().toast('이름을 적어 줘');
-   const v={type:+$('#sf_t',md).value||0,name,loc:$('#sf_l',md).value.trim(),img:$('#sf_i',md).value.trim(),eff:$('#sf_e',md).value.replace(/\r/g,'').trim(),count:+$('#sf_c',md).value>0?+$('#sf_c',md).value:-1,color:$('#sf_k',md).value};
+   const v={type:+$('#sf_t',md).value||0,name,loc:$('#sf_l',md).value.trim(),img:$('#sf_i',md).value.trim(),eff:$('#sf_e',md).value.replace(/\r/g,'').trim(),count:+$('#sf_c',md).value>0?+$('#sf_c',md).value:-1,color:$('#sf_k',md).value};{const au=FAB?FAB.get():autoN(e.auto);if(au)v.auto=au}
    A().closeModal();await done(v)}}
 
  /* ----- 시트 칸 (오레마스 시트 캐릭터 · 포켓몬 탭) ----- */
  function sheetSec(list,ed,own){list=fix(list);
   return `<div class="spanel"><div class="sh">필드 전개 <span class="note">배틀 뒤에 펼치는 필드 · 스타디움 · 이계 — 배틀의 「필드 전개」에서 주인이 쓴다</span><span class="sp"></span>${ed?`<button class="btn sm" data-sfa="${esc(own)}">＋ 필드</button>`:''}</div>
-   ${list.length?`<div class="sflist">${list.map((f,k)=>{const u=bgSrc(f.img);const col=tcol(f.color);return `<div class="sfrow"><div class="sfpic" ${u?`style="background-image:url('${cssu(u)}')"`:''}></div><div class="sfbody"><div class="row" style="gap:6px;flex-wrap:wrap"><span class="stgb ${KIND_CLS[kindOf(f)]}">${KINDS[kindOf(f)]}</span><b>《${esc(f.name)}》</b>${f.color?`<span class="type" style="background:${esc(col.bg)};color:${esc(col.fg)}">${esc(tko(f.color))}</span>`:''}<span class="small dim">${esc(f.loc||'')}${f.loc?' · ':''}${f.count>0?f.count+'턴':'무한'}</span><span class="sp"></span>${ed?`<button class="btn xs ghost" data-sfe="${esc(own)}" data-k="${k}">수정</button><button class="btn xs ghost danger" data-sfd="${esc(own)}" data-k="${k}">×</button>`:''}</div><div class="pre small dim">${esc(effLines(f.eff).join('\n'))}</div></div></div>`}).join('')}</div>`:'<div class="small dim">없음</div>'}</div>`}
+   ${list.length?`<div class="sflist">${list.map((f,k)=>{const u=bgSrc(f.img);const col=tcol(f.color);return `<div class="sfrow"><div class="sfpic" ${u?`style="background-image:url('${cssu(u)}')"`:''}></div><div class="sfbody"><div class="row" style="gap:6px;flex-wrap:wrap"><span class="stgb ${KIND_CLS[kindOf(f)]}">${KINDS[kindOf(f)]}</span><b>《${esc(f.name)}》</b>${f.color?`<span class="type" style="background:${esc(col.bg)};color:${esc(col.fg)}">${esc(tko(f.color))}</span>`:''}<span class="small dim">${esc(f.loc||'')}${f.loc?' · ':''}${f.count>0?f.count+'턴':'무한'}</span>${f.auto?'<span class="chip" title="자동화 구문 있음">구문 ✓</span>':''}<span class="sp"></span>${ed?`<button class="btn xs ghost" data-sfe="${esc(own)}" data-k="${k}">수정</button><button class="btn xs ghost danger" data-sfd="${esc(own)}" data-k="${k}">×</button>`:''}</div><div class="pre small dim">${esc(effLines(f.eff).join('\n'))}</div></div></div>`}).join('')}</div>`:'<div class="small dim">없음</div>'}</div>`}
  /* own = 'tr:<id>' | 'mon:<id>' (로스터) */
  function bindSheet(el){const path=own=>{const [k,id]=own.split(':');return ['roster',k==='tr'?'trainers':'mons',id,'fields']};const get=own=>{const [k,id]=own.split(':');const o=(R()[k==='tr'?'trainers':'mons']||{})[id];return o?{name:o.name,fields:fix(o.fields)}:null};
   const save=async(own,list)=>A().set(path(own),list);
@@ -120,29 +124,32 @@ window.OM_STAGE_UI=(()=>{
   if(!mgr()){/* 배틀을 직접 못 쓰는 좌석 → GM 화면이 받아서 */if(await A().set(['pub',ST().seat,'stageq'],{key,turns:turns||0,at:Date.now()}))A().toast('전개를 요청했다 — GM 화면이 받아 펼친다');return}
   return put(e,turns)}
  async function put(e,turns){const b=ST().state.battle||{};const old=stage(b);
-  const s={type:kindOf(e),name:e.name,loc:e.loc||'',img:e.img||'',eff:e.eff||'',color:e.color||'',owner:e.o.name,count:turns>0?turns:(+e.count>0?+e.count:1000),src:e.key,tid:e.o.tid,at:Date.now()};
+  const s={type:kindOf(e),name:e.name,loc:e.loc||'',img:e.img||'',eff:e.eff||'',color:e.color||'',owner:e.o.name,count:turns>0?turns:(+e.count>0?+e.count:1000),src:e.key,tid:e.o.tid,at:Date.now()};if(autoN(e.auto))s.auto=autoN(e.auto);
+  if(old&&old.name&&BU()&&BU().fieldClear){try{await BU().fieldClear('《'+old.name+'》')}catch(x){console.warn(x)}}   /* 11-09: 바뀌는 필드의 지속 효과부터 푼다 */
   if(e.o.kind==='m')s.ownerMid=e.o.id;
   if(!await A().set(['battle','field','stage'],s))return false;
   const k=kindOf(s);const lines=[`◆ ${e.o.name}의 《${keyOf(s)}》 전개${s.loc?' — '+s.loc:''}${s.count>=1000?' · 무한':' · '+s.count+'턴'}`,...effLines(s.eff).map(l=>'· '+l)];
   if(old&&old.src!==s.src)lines.unshift(`《${keyOf(old)}》의 풍경이 옅어져 간다…`);
   if(k===0&&F()&&F().grounded){const off=Object.values(b.mons||{}).filter(m=>m.entry&&m.hp&&m.hp.cur>0&&!F().grounded(m)).map(m=>'「'+m.name+'」');if(off.length)lines.push('◆ 땅 위에 있지 않아 이 「필드」의 영향을 받지 않음 : '+off.join(''))}
-  A().sysLog(lines.join('\n'),'battle');return true}
+  if(s.auto)lines.push('⚙ 자동화 구문: '+Object.keys(s.auto).filter(k=>k!=='who').map(k=>({deploy:'전개 시',start:'턴 개시 시',end:'턴 종료 시',entry:'등장 시',hold:'필드 동안'})[k]).join(' · '));
+  A().sysLog(lines.join('\n'),'battle');if(s.auto&&BU()&&BU().fieldAuto){try{await BU().fieldAuto('deploy')}catch(x){console.warn('필드 전개 구문',x)}}return true}
  async function reset(){const s=stage();if(!s)return;
   if(!mgr()){if(s.tid===ST().seat&&await A().set(['pub',ST().seat,'stageq'],{reset:1,src:s.src,at:Date.now()}))A().toast('걷기를 요청했다');return}
-  if(await A().set(['battle','field','stage'],null))A().sysLog(`《${keyOf(s)}》의 풍경이 옅어져 간다…`,'battle')}
+  if(await A().set(['battle','field','stage'],null)){A().sysLog(`《${keyOf(s)}》의 풍경이 옅어져 간다…`,'battle');if(BU()&&BU().fieldClear){try{await BU().fieldClear('《'+s.name+'》')}catch(x){console.warn(x)}}}}
  /* GM 화면: 좌석의 요청을 받아 처리 (그 좌석 것인지 다시 확인) */
  let busy=false;
  async function absorb(){if(!gm()||busy)return;const pub=ST().state.pub||{};const todo=Object.keys(pub).filter(sid=>pub[sid]&&pub[sid].stageq);if(!todo.length)return;busy=true;
   try{for(const sid of todo){const q=pub[sid].stageq;await A().set(['pub',sid,'stageq'],null);if(!q||Date.now()-(+q.at||0)>120000)continue;
-    if(q.reset){const s=stage();if(s&&s.tid===sid&&s.src===q.src&&await A().set(['battle','field','stage'],null))A().sysLog(`《${keyOf(s)}》의 풍경이 옅어져 간다…`,'battle');continue}
+    if(q.reset){const s=stage();if(s&&s.tid===sid&&s.src===q.src&&await A().set(['battle','field','stage'],null)){A().sysLog(`《${keyOf(s)}》의 풍경이 옅어져 간다…`,'battle');if(BU()&&BU().fieldClear){try{await BU().fieldClear('《'+s.name+'》')}catch(x){console.warn(x)}}}continue}
     const e=find(q.key);if(!e||e.o.tid!==sid)continue;if(e.o.kind==='m'&&!e.o.on)continue;await put(e,+q.turns||0)}}
   finally{busy=false}}
 
  /* ----- 턴 종료 (맵툴 progress_field_field): f 는 battle_ui 턴 종료의 필드 사본, 줄을 돌려준다 ----- */
  function turnEnd(b,f){const s=f&&f.stage;if(!s||!s.name)return [];const out=[];
+  /* 11-09: 걷히면 《이름》 지속 효과를 같은 사본에서 푼다 */const clr=()=>{const FX=window.OM_FX;if(!FX||!FX.removeByName)return;const nm='《'+s.name+'》';const who=[];for(const m of Object.values(b.mons||{}))if(FX.removeByName(m,nm))who.push(m.name);if(who.length)out.push(`${who.join(' · ')}의 ${nm} 효과가 풀렸다`)};
   const om=s.ownerMid&&(b.mons||{})[s.ownerMid];
-  if(s.ownerMid&&(!om||!om.entry||!(om.hp&&om.hp.cur>0))){out.push(`주인 「${om?om.name:s.owner}」이(가) 필드에 없어 《${keyOf(s)}》의 풍경이 옅어져 간다…`);delete f.stage;return out}
-  if(s.count>0&&s.count<1000){s.count--;if(s.count<=0){out.push(`《${keyOf(s)}》의 풍경이 옅어져 간다…`);delete f.stage}}
+  if(s.ownerMid&&(!om||!om.entry||!(om.hp&&om.hp.cur>0))){out.push(`주인 「${om?om.name:s.owner}」이(가) 필드에 없어 《${keyOf(s)}》의 풍경이 옅어져 간다…`);clr();delete f.stage;return out}
+  if(s.count>0&&s.count<1000){s.count--;if(s.count<=0){out.push(`《${keyOf(s)}》의 풍경이 옅어져 간다…`);clr();delete f.stage}}
   return out}
 
  /* ----- 전개 연출 (맵툴 field_fx_show): 상태에 새 stage.at 이 오면 모든 화면에서 한 번 ----- */
