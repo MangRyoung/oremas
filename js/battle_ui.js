@@ -1047,7 +1047,7 @@ window.OM_BATTLE_UI=(()=>{
   {const nb0=snap(),nb=snap(nb0);const t=nb.trainers[m.tid];if(t&&t.batton&&t.batton.from!==m.name){const L=applyBatton(nb,nb.mons[mid]);await saveMon(nb0.mons[mid],mid,nb.mons[mid]);await A().set(['battle','trainers',m.tid,'batton'],null);if(L.length)A().sysLog(L.join('\n'),'battle');stLog(nb0.mons[mid],nb.mons[mid],{n:t.batton.from||'',s:'배턴터치'},300)}}   /* 11-01 망령 「상태 변화도 효과 로그」: 넘겨받은 상태도 카드로 */
   /* 설치기 (맵툴 hazard_eval): 등장한 쪽의 설치기를 평가한다 */
   if(F()){const nb0=snap(),nb=snap(nb0);const nm=nb.mons[mid];nm.entry=area;const f=fieldOf(nb);const oppSide=m.side==='left'?'right':'left';const opp=entered(nb,oppSide);
-   const r=F().hazardsOnEntry(nm,f,opp);if(r.lines.length){if(nm.hp.cur<=0){nm.entry='';r.lines.push(`${nm.name}은(는) 쓰러졌다!`)}else if(r.forced){nm.entry='';r.lines.push(`${nm.name}은(는) 튕겨 나갔다 — 다른 포켓몬을 내보내야 한다`)}
+   let HLD=[];try{HLD=await fieldHoldInto(nb,nm)}catch(e){console.warn('필드 동안 (등장 전)',e)}const r=F().hazardsOnEntry(nm,f,opp);if(HLD.length)r.lines.unshift(...HLD);if(r.lines.length){if(nm.hp.cur<=0){nm.entry='';r.lines.push(`${nm.name}은(는) 쓰러졌다!`)}else if(r.forced){nm.entry='';r.lines.push(`${nm.name}은(는) 튕겨 나갔다 — 다른 포켓몬을 내보내야 한다`)}
     await saveBattle(nb0,nb,f);A().sysLog(`설치기 처리\n${r.lines.join('\n')}`,'battle')}}
   /* 10-26 (서서 VS 마리 시험): 필드의 다른 포켓몬이 「있는 한」 걸어 둔 효과(재앙의그릇 · 승리의별 …)를 새로 들어온 포켓몬에게도 */
   if(FX()&&FX().reAura&&ctx().b.started&&(ctx().b.mons[mid]||{}).entry){const nb0=snap(),nb=snap(nb0);const L=FX().reAura(nb,nb.mons[mid]);if(L.length&&await saveBattle(nb0,nb))A().sysLog(`【필드 효과】\n${L.join('\n')}`,'battle')}
@@ -1930,7 +1930,13 @@ window.OM_BATTLE_UI=(()=>{
   if(undo){const u=x.itemUsed;if(!u)return;const k=+u.k||0;const sl=k?(x.items2||[])[k-1]:x;if(!sl||sl.item)return;sl.item=u.name;sl.itemEff=u.eff||'';delete x.itemUsed;await saveMon(m0,mid,x);return A().sysLog(`${x.name} 「${u.name}」 소모 되돌림`,'battle')}
   let k=0;if(want&&nI(x.item)!==nI(want)){const i=(x.items2||[]).findIndex(q=>q&&nI(q.item)===nI(want));if(i>=0)k=i+1}const sl=k?x.items2[k-1]:x;
   if(!sl.item)return;const name=sl.item;x.itemUsed={name,eff:sl.itemEff||'',turn:+ctx().b.turn||0,...(k?{k}:{})};if(FX())FX().removeByName(x,name);sl.item='';sl.itemEff='';if(k)delete sl.itemOwn;
-  await saveMon(m0,mid,x);A().sysLog(`${x.name}의 「${name}」 — 다 써서 없어졌다`,'battle',{mid,img:x.image||''})}
+  await saveMon(m0,mid,x);A().sysLog(`${x.name}의 「${name}」 — 다 써서 없어졌다`,'battle',{mid,img:x.image||''});
+  /* 11-09 망령 「소지품을 소모했을 때」 계기 — 그 포켓몬의 특성 · 포텐셜 · 고유 중 글에 「소모했을 때 · 소모하면」이 있고 구문이 있는 것, 그리고 펼친 필드의 「소지품 소모 시」 */
+  if(ctx().mgr&&FX())try{await autoOnUse(mid,{name})}catch(e){console.warn('소지품 소모 계기',e)}}
+ async function autoOnUse(mid,used){const c=ctx();const m=c.b.mons[mid];if(!m)return;const USE=/소모\s*(?:했을\s*때|하면|한\s*(?:때|뒤|후))|다\s*(?:썼을|쓰면)\s*때?/;const list=[];
+  if(m.ability)list.push(['trait',m.ability]);for(const p of potSrc(m))if(p&&p.name&&!p.ph)list.push(['pot',p.name]);{const t=(c.b.trainers||{})[m.tid];for(const u of ((t&&t.unique)||[]))if(u&&u.name&&!list.some(([k,n])=>k==='pot'&&n===u.name))list.push(['pot',u.name])}
+  for(const [kind,name] of list){const a=FX().autoOf(m,kind,name);if(!a||!a.ops||!a.ops.length||a.manual)continue;const tx=a.text||slotEff(m,kind,name)||'';if(!USE.test(tx)&&!a.ops.some(o=>o&&o.k==='cond'&&o.c==='used_item'))continue;if(limManual(m,kind,name,tx))continue;await fireAuto(mid,kind,name,{quiet:true,ctx:{used}})}
+  await fieldAuto('use',{mid,used})}
  /* 다 쓰면 사라지는 소지품: 열매 · 효과 글에 소모/사라진다/한 번 */
  const oneShot=(m,want)=>{const nI=v=>String(v||'').replace(/『|』/g,'').trim();const sl=want&&nI(m.item)!==nI(want)?((m.items2||[]).find(q=>q&&nI(q.item)===nI(want))||null):m;if(!sl)return false;const n=nI(sl===m?IT(m):sl.item);return !!n&&(/열매|주얼$|씨$/.test(n)||/소모|사라진다|사라짐|1회|한 번/.test(sl.itemEff||''))};
  /* ---------- 배틀 결과 정리 (맵툴 battle_return): HP·빈사·상태 이상·포텐셜 횟수·쓴 소지품을 시트(로스터)로 ---------- */
@@ -2370,7 +2376,7 @@ window.OM_BATTLE_UI=(()=>{
   /* 10-26 덱 시험: 카드의 「아군 1체」가 기준 포켓몬(자기 편 첫 포켓몬)을 빼고 물었다 — 트레이너가 쓰는 카드는 기준 포켓몬도 고를 수 있게 (ally1s) */
   const ops=opt.uq?JSON.parse(JSON.stringify(auto.ops).replace(/"tgt":"ally1"/g,'"tgt":"self"')):auto.src==='card'?JSON.parse(JSON.stringify(auto.ops).replace(/"tgt":"ally1"/g,'"tgt":"ally1s"')):auto.ops;
   const ux=uiCtx(nb,m,name,opt.area);if(opt.pickId){const up=ux.pick;ux.pick=(list,label)=>{const f=list.find(x=>x.id===opt.pickId);return f?Promise.resolve(f):up(list,label)}}   /* 11-02: 창에서 이미 고른 대상 */
-  const r=await FX().run(ops,Object.assign(ux,opt.noRoll?{noRoll:1}:{},opt.hit?{hit:opt.hit}:{},adj,hold,STK2?{stack:STK2}:{}));   /* 11-08 opt.hit: 「조건 명중」이 맞은 대상 · 기술을 본다 */L.push(...r.lines);if(hold.hold&&(m.holds||[]).length)L.push('(필드를 떠나면 풀린다)');
+  const r=await FX().run(ops,Object.assign(ux,opt.ctx||{},opt.noRoll?{noRoll:1}:{},opt.hit?{hit:opt.hit}:{},adj,hold,STK2?{stack:STK2}:{}));   /* 11-09 opt.ctx: 「소지품 소모」 계기의 used 등 */   /* 11-08 opt.hit: 「조건 명중」이 맞은 대상 · 기술을 본다 */L.push(...r.lines);if(hold.hold&&(m.holds||[]).length)L.push('(필드를 떠나면 풀린다)');
   const raidNew=await raidFix(m,m0,name,L);if(raidNew===null)return false;
   const f=fieldOf(nb);for(const id in nb.mons){const x=nb.mons[id];if(x.entry&&x.hp.cur<=0){x.entry='';L.push(`${x.name}은(는) 쓰러졌다!`)}}
   if(!await saveBattle(nb0,nb,f,{n:m.name,s:name,img:opt.img!=null?opt.img:(m.image||'')}))return false;if(raidNew)raidCut(m);
@@ -2385,16 +2391,26 @@ window.OM_BATTLE_UI=(()=>{
     deploy · start · end: 자신 = 필드 주인 포켓몬(트레이너 필드면 그 트레이너의 나와 있는 첫 포켓몬, 없으면 주인 편 첫 포켓몬).
     entry: 자신 = 나온 포켓몬 (who: all 누구든 · own 주인 편 · foe 상대 편). 등장 때마다 hold 도 그 포켓몬에게 건다.
     hold: 줄의 대상에 맞는 포켓몬마다 「자신」으로 바꿔 건다 (자신 = 주인 · 아군 · 상대 · 전체) — 이미 그 이름 효과가 있으면 건너뛴다 */
- const FA_KO={deploy:'전개 시',start:'턴 개시 시',end:'턴 종료 시',entry:'등장 시',hold:'필드 동안'};
+ const FA_KO={deploy:'전개 시',start:'턴 개시 시',end:'턴 종료 시',entry:'등장 시',use:'소지품 소모 시',hold:'필드 동안'};
+ /* 11-09 망령 「필드는 전체에 깔리니 모든 포켓몬 적용이 디폴트」: 전개 · 턴 개시 · 턴 종료 · 필드 동안의 줄에 대상 낱말이 없으면 「전체」를 붙여 읽는다 (등장 · 소지품 소모는 그 포켓몬) */
+ const FA_TW=/(^|\s)(자신|아군전체|아군|상대전체|상대|자신이외|전체|아군1체|아군1|상대1체|상대1|무작위1|자신이외무작위|상대무작위|전원무작위|에리어|지정에리어)(?=\s|$)/;
+ const faTo=(t,w)=>String(t||'').split('\n').map(l=>{const x=l.trim();if(!x||x.startsWith('#')||/^(조건|확인|선택|-|·|•)/.test(x)||/[;；]/.test(x)||FA_TW.test(x))return l;return l.replace(/\s*(있는한)?\s*$/,m=>' '+w+m)}).join('\n');const faAll=t=>faTo(t,'전체');
  const faName=s=>'《'+String(s.name||'')+'》';
+ /* 「필드 동안」 줄을 이 포켓몬 몫으로 (대상 낱말이 없으면 전체 · 자신 = 주인 · 아군/상대 = 주인 기준) — 이미 그 이름 효과가 있으면 [] */
+ function faHoldOps(b,s,m){if(!FX()||!s||!s.auto||!String(s.auto.hold||'').trim()||!m)return [];const nm=faName(s);if((FX().chips(m)||[]).some(ch=>ch&&ch.name===nm))return [];const tk=x=>{const t=(b.trainers||{})[x.tid];return t&&t.solo?'solo:'+x.tid:x.side};
+  const om=s.ownerMid?b.mons[s.ownerMid]:null;const anyT=om||Object.values(b.mons||{}).find(x=>x.tid===s.tid);const own=anyT?tk(anyT):'';const rel=tk(m)===own?'ally':'enemy';const isO=!!om&&m.id===om.id;
+  const ok=t=>{t=t||'self';if(t==='self')return isO;if(/^ally/.test(t))return rel==='ally'&&!(t==='allyx'&&isO);if(/enemy/.test(t))return rel==='enemy';if(t==='others'||t==='randother')return !isO;return true};
+  let r={ops:[]};try{r=FX().parse(faAll(s.auto.hold))}catch(e){}return (r.ops||[]).filter(op=>op&&op.k!=='choice'&&ok(op.tgt)).map(op=>Object.assign({},op,{tgt:'self',p:0,pl:''}))}
+ /* 등장 처리(설치기보다 먼저) — 같은 사본 nb 안에서 새로 나온 포켓몬에게 「필드 동안」을 건다 (벌레 타입 스피드 감소 무시가 끈적끈적네트보다 먼저 걸리게) */
+ async function fieldHoldInto(nb,m){const s=(nb.field||{}).stage;if(!s||!s.name)return [];const ops=faHoldOps(nb,s,m);if(!ops.length)return [];const nm=faName(s);const r=await FX().run(ops,Object.assign(uiCtx(nb,m,nm),{noRoll:1}));return r.lines.length?[`【필드】 ${nm} — 필드 동안`,...r.lines]:[]}
  async function fieldAuto(trig,o){o=o||{};const c=ctx();if(!c.mgr||!FX()||!FX().parse)return;const b=c.b;const s=(b.field||{}).stage;if(!s||!s.name||!s.auto||typeof s.auto!=='object')return;const AU=s.auto;const nm=faName(s);
   const tk=m=>{const t=(b.trainers||{})[m.tid];return t&&t.solo?'solo:'+m.tid:m.side};const live=m=>!!(m&&m.entry&&m.hp&&m.hp.cur>0);
   const om=s.ownerMid?b.mons[s.ownerMid]:null;const anyT=om||Object.values(b.mons||{}).find(m=>m.tid===s.tid);const own=anyT?tk(anyT):'';
-  const P=k=>{let r={ops:[],errs:[]};try{r=FX().parse(String(AU[k]||''))}catch(e){r.errs=[e.message]}if(r.errs&&r.errs.length)A().sysLog(`【필드】 ${nm} 「${FA_KO[k]}」 구문에서 못 읽은 줄 — ${r.errs.join(' / ')}`,'battle',{gmPriv:1});return r.ops||[]};
+  const P=k=>{let r={ops:[],errs:[]};try{r=FX().parse(['deploy','start','end','hold'].includes(k)?faAll(AU[k]):faTo(AU[k],'자신'))}catch(e){r.errs=[e.message]}if(r.errs&&r.errs.length)A().sysLog(`【필드】 ${nm} 「${FA_KO[k]}」 구문에서 못 읽은 줄 — ${r.errs.join(' / ')}`,'battle',{gmPriv:1});return r.ops||[]};
   const fire=(mid,k,ops,x)=>fireAuto(mid,'field',nm,Object.assign({quiet:true,auto:{ops,text:String(AU[k]||'')},head:`【필드】 ${nm} — ${FA_KO[k]}`,eff:String(s.eff||'')},x||{}));
-  const holdFor=async mid=>{const m=ctx().b.mons[mid];if(!live(m)||!String(AU.hold||'').trim())return;if((FX().chips(m)||[]).some(ch=>ch&&ch.name===nm))return;const rel=tk(m)===own?'ally':'enemy';const isO=!!om&&m.id===om.id;
-   const ok=t=>{t=t||'self';if(t==='self')return isO;if(/^ally/.test(t))return rel==='ally'&&!(t==='allyx'&&isO);if(/enemy/.test(t))return rel==='enemy';if(t==='others'||t==='randother')return !isO;return true};
-   const ops=P('hold').filter(op=>op&&op.k!=='choice'&&ok(op.tgt)).map(op=>Object.assign({},op,{tgt:'self',p:0,pl:''}));if(ops.length)await fire(mid,'hold',ops,{noRoll:true})};
+  /* 11-09 소지품 소모 시: o.mid = 다 쓴 포켓몬 · o.used = {name} — 「조건 소모:나무열매」가 읽는다 */
+  if(trig==='use'){const m=b.mons[o.mid];if(!m||!m.entry||!String(AU.use||'').trim())return;const ops=P('use');if(ops.length)await fire(m.id,'use',ops,{ctx:{used:o.used||{}}});return}
+  const holdFor=async mid=>{const b2=ctx().b;const m=b2.mons[mid];if(!live(m))return;const ops=faHoldOps(b2,(b2.field||{}).stage,m);if(ops.length)await fire(mid,'hold',ops,{noRoll:true})};
   if(trig==='entry'){const m=b.mons[o.mid];if(!live(m))return;const who=AU.who||'all';const rel=tk(m)===own?'own':'foe';
    if(String(AU.entry||'').trim()&&(who==='all'||who===rel)){const ops=P('entry');if(ops.length)await fire(m.id,'entry',ops)}
    await holdFor(m.id);return}

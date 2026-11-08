@@ -23,7 +23,7 @@ window.OM_STAGE_UI=(()=>{
  const bgSrc=v=>{v=String(v||'').trim();if(!v)return '';if(/^(https?:|data:|img\/|\.\/|\/)/.test(v))return v;for(const g of DB().bg||[])for(const it of g.i||[])if((it.k===v||it.l===v)&&it.src)return it.src;return ''};
  const effLines=t=>String(t||'').replace(/<br\s*\/?>/g,'\n').split('\n').map(x=>x.trim()).filter(Boolean);
  /* 11-09 망령 「필드에도 구문」: auto = {deploy · start · end · entry · hold · who} — 실행은 battle_ui fieldAuto */
- const AK=['deploy','start','end','entry','hold'];const autoN=a=>{if(!a||typeof a!=='object')return null;const o={};for(const k of AK){const v=String(a[k]==null?'':a[k]).replace(/\r/g,'').trim();if(v)o[k]=v.slice(0,4000)}if(!Object.keys(o).length)return null;if(a.who==='own'||a.who==='foe')o.who=a.who;return o};
+ const AK=['deploy','start','end','entry','use','hold'];const autoN=a=>{if(!a||typeof a!=='object')return null;const o={};for(const k of AK){const v=String(a[k]==null?'':a[k]).replace(/\r/g,'').trim();if(v)o[k]=v.slice(0,4000)}if(!Object.keys(o).length)return null;if(a.who==='own'||a.who==='foe')o.who=a.who;return o};
  const fix=a=>(Array.isArray(a)?a:[]).filter(x=>x&&typeof x==='object'&&String(x.name||'').trim()).map(x=>Object.assign({type:kindOf(x),name:String(x.name).trim(),loc:String(x.loc||''),img:String(x.img||''),eff:String(x.eff||''),count:+x.count>0?Math.round(+x.count):-1,color:String(x.color||'')},autoN(x.auto)?{auto:autoN(x.auto)}:{}));
  function stage(b){b=b||(ST().state.battle||{});const s=(b.field||{}).stage;return s&&s.name?s:null}
  const mgr=()=>{try{return BU().ctx().mgr}catch(e){return gm()}};
@@ -131,7 +131,7 @@ window.OM_STAGE_UI=(()=>{
   const k=kindOf(s);const lines=[`◆ ${e.o.name}의 《${keyOf(s)}》 전개${s.loc?' — '+s.loc:''}${s.count>=1000?' · 무한':' · '+s.count+'턴'}`,...effLines(s.eff).map(l=>'· '+l)];
   if(old&&old.src!==s.src)lines.unshift(`《${keyOf(old)}》의 풍경이 옅어져 간다…`);
   if(k===0&&F()&&F().grounded){const off=Object.values(b.mons||{}).filter(m=>m.entry&&m.hp&&m.hp.cur>0&&!F().grounded(m)).map(m=>'「'+m.name+'」');if(off.length)lines.push('◆ 땅 위에 있지 않아 이 「필드」의 영향을 받지 않음 : '+off.join(''))}
-  if(s.auto)lines.push('⚙ 자동화 구문: '+Object.keys(s.auto).filter(k=>k!=='who').map(k=>({deploy:'전개 시',start:'턴 개시 시',end:'턴 종료 시',entry:'등장 시',hold:'필드 동안'})[k]).join(' · '));
+  if(s.auto)lines.push('⚙ 자동화 구문: '+Object.keys(s.auto).filter(k=>k!=='who').map(k=>({deploy:'전개 시',start:'턴 개시 시',end:'턴 종료 시',entry:'등장 시',use:'소지품 소모 시',hold:'필드 동안'})[k]).join(' · '));
   A().sysLog(lines.join('\n'),'battle');if(s.auto&&BU()&&BU().fieldAuto){try{await BU().fieldAuto('deploy')}catch(x){console.warn('필드 전개 구문',x)}}return true}
  async function reset(){const s=stage();if(!s)return;
   if(!mgr()){if(s.tid===ST().seat&&await A().set(['pub',ST().seat,'stageq'],{reset:1,src:s.src,at:Date.now()}))A().toast('걷기를 요청했다');return}
