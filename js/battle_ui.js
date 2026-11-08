@@ -1719,7 +1719,8 @@ window.OM_BATTLE_UI=(()=>{
   else if(t){for(const u of (t.unique||[]).filter(u=>u&&u.name))add('고유',u.name,FX()&&FX().autoOf({tid:t.id},'pot',u.name),u.eff);
    if(OO())for(const n of [...OO().orderNames(t),...OO().commandNames(t)].filter(Boolean)){const a=FX()&&FX().rm(n);if(a&&a.ops&&a.ops.length&&!a.manual)add('지령 · 명령',n,a)}}
   return {out,man}}
- function openAutoCheck(tid){const c=ctx(),b=c.b;const trs=Object.values(b.trainers||{}).filter(t=>c.mgr||t.id===c.seat);if(!trs.length)return A().toast('배틀에 올린 내 트레이너가 없다');
+ /* 11-08 21:35 망령 「자동화 확인 버튼 설마 상대 것도 보이진 않지?」: 예전엔 진행자(c.mgr — PL 이 진행하는 배틀의 좌석 포함)면 모든 트레이너를 골랐다 → GM 은 모두(불간섭 중이면 자기가 다루는 트레이너만), 좌석은 자기 것 · 함께 지시하는 것만 */
+ function openAutoCheck(tid){const c=ctx(),b=c.b;const trs=Object.values(b.trainers||{}).filter(t=>c.gm?!fairOff(c,t.id):ownT(c,t.id));if(!trs.length)return A().toast('배틀에 올린 내 트레이너가 없다');
   if(tid)AK.tid=tid;if(!trs.some(t=>t.id===AK.tid))AK.tid=trs[0].id;const t=b.trainers[AK.tid];
   const mons=Object.values(b.mons||{}).filter(m=>m.tid===t.id&&m.entry&&m.hp&&m.hp.cur>0);
   const block=(title,img,{out,man})=>`<div class="akblk"><div class="akh">${img?`<img src="${esc(img)}" alt="">`:''}<b>${esc(title)}</b><span class="dim small">자동 ${out.length}${man.length?' · 손으로 '+man.length:''}</span></div>
