@@ -1621,7 +1621,16 @@ window.OM_BATTLE_UI=(()=>{
  async function endFlow(){const c=ctx();if(!c.mgr)return;const q=c.b.endq;if(q&&q.step){const wait=(q.need||[]).filter(t=>!endDone(c.b,t)&&endCands(c.b,q.step).some(x=>x.m.tid===t)).map(t=>(c.b.trainers[t]||{}).name||'?');
    if(await askYes(`${END_STEP[q.step]} 확인 중이다${wait.length?' (기다리는 중: '+wait.join(' · ')+')':''}.\n기다리지 않고 바로 넘길까?`,'넘긴다','기다린다'))return endAdvance(true);return}
   await A().set(['battle','host'],c.gm?'gm':c.seat);raidExtra(c.b);await endStep('last')}
- async function endStep(step){for(;;){const b=ctx().b;const L=endCands(b,step);const need=[...new Set(L.map(x=>x.m.tid))];
+ /* 11-09 감우 55: 그 타이밍(턴 가장 마지막 · 턴 종료 · 턴 종료 이후)의 【자동】 포텐셜 · 고유 중 구문이 있는 것은 묻지 않고 바로 발동 (조건 줄은 구문이 본다) — 발동한 것은 확인 후보에서 뺀다 */
+ const EAUTO={};
+ async function endAuto(step){if(!FX())return;const b=ctx().b;const T=turnKey(b);for(const x of endCands(b,step)){if(x.kind!=='pot'&&x.kind!=='uq')continue;if(!/【\s*자동\s*】/.test(String(x.eff||'')))continue;const k=[T,step,x.kind,x.m.id,x.name].join('|');if(EAUTO[k])continue;
+   const cur=ctx().b.mons[x.m.id]||x.m;const a=FX().autoOf(x.kind==='uq'?{tid:x.m.tid}:cur,'pot',x.name)||FX().autoOf(cur,'pot',x.name);if(!a||!realOps(a)||a.manual)continue;EAUTO[k]=1;
+   let L=null,p=null;if(x.kind==='pot'){p=potSrc(cur).find(q=>q&&q.name===x.name);if(p){L=limOf(p,cur.potUses||{},cur.potTurn||{});if(L.left!==null&&L.left<=0)continue}}
+   let ok=false;try{ok=await fireAuto(x.m.id,'pot',x.name,Object.assign({auto:a,quiet:true,noEv:1,head:`【${END_STEP[step]}】 ${x.kind==='uq'?x.t.name+' 고유':cur.name} 『${x.name}』【자동】`,eff:String(x.eff||'')},x.kind==='uq'?{uq:1}:{}))}catch(e){console.warn('endAuto',e)}
+   if(ok&&L){const c2=ctx().b.mons[x.m.id]||cur;if(L.mmax!=null){const u=(c2.potUses||{})[x.name];const had=u==null?L.mmax:+u;await A().set(['battle','mons',x.m.id,'potUses',x.name],Math.max(0,had-1))}if(L.per)await A().set(['battle','mons',x.m.id,'potTurn',x.name],+ctx().b.turn||0)}
+   if(ok&&x.kind==='uq'){const tt=(ctx().b.trainers||{})[x.t.id]||x.t;const q=uniqList(tt).find(y=>y.p.name===x.name);if(q&&q.mmax!=null){const v=(tt.uUses||{})[x.name];await A().set(['battle','trainers',x.t.id,'uUses',x.name],Math.max(0,(v==null?q.mmax:+v)-1))}if(q&&q.per)await A().set(['battle','trainers',x.t.id,'uTurn',x.name],+ctx().b.turn||0)}}}
+ const endLeft=(b,step)=>{const T=turnKey(b);return endCands(b,step).filter(x=>!EAUTO[[T,step,x.kind,x.m.id,x.name].join('|')])};
+ async function endStep(step){for(;;){try{await endAuto(step)}catch(e){console.warn('endAuto',e)}const b=ctx().b;const L=endLeft(b,step);const need=[...new Set(L.map(x=>x.m.tid))];
    if(need.length){const key=String(Date.now());await A().set(['battle','endq'],{key,step,need});A().sysLog(`【${END_STEP[step]}】 포텐셜 확인 — ${need.map(t=>(b.trainers[t]||{}).name||'?').join(' · ')} (각자 쓸 것을 고르고 「다음」)`,'battle');return}
    if(step==='last'){step='end';continue}
    if(step==='end'){await turnEnd();step='after';continue}
