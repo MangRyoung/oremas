@@ -177,5 +177,7 @@ window.OM_STAGE_UI=(()=>{
   const el=document.createElement('div');el.id='stfx';el.className='stfx '+KIND_CLS[k];el.style.setProperty('--c1',col.bg||'#5fd38d');
   el.innerHTML=`<div class="dim"></div><div class="flash"></div><div class="fstage"><div class="fbar"></div><div class="fld">${u?`<img src="${esc(u)}" alt="">`:''}<div class="fshade"></div><div class="ftx"><div class="fkind">${KIND_EN[k]}</div><div class="fname">《${esc(s.name)}》</div>${s.loc?`<div class="floc">${esc(s.loc)}</div>`:''}${s.owner?`<div class="floc">${esc(s.owner)}</div>`:''}</div></div><div class="fbar b"></div></div>`;
   el.onclick=()=>el.remove();document.body.appendChild(el);setTimeout(()=>el.remove(),4300)}
- return {chip,bgStyle,info,open,deploy,reset,turnEnd,onState,stage,play,hasMine,editor,sheetSec,bindSheet,fix};
+ /* 11-09 감우 54-F: 구문 「이계 이름 [N턴]」 — 그 포켓몬(없으면 그 트레이너)의 필드 전개 칸에서 이름으로 찾아 편다. 돌려줌 = 편 이름 (못 찾으면 '') */
+ async function deployByName(mid,tid,name,turns){const n=x=>String(x||'').replace(/[\s《》]/g,'').replace(/^(이계|필드|스타디움)\//,'');const want=n(name);if(!want)return '';const L=entries();const e=L.find(e=>e.o.kind==='m'&&e.o.id===mid&&n(e.name)===want)||L.find(e=>e.o.tid===tid&&n(e.name)===want)||L.find(e=>(e.o.id===mid||e.o.tid===tid)&&(n(e.name).includes(want)||want.includes(n(e.name))));if(!e)return '';const ok=await put(e,turns||0);return ok===false?'':e.name}
+ return {chip,bgStyle,info,open,deploy,deployByName,reset,turnEnd,onState,stage,play,hasMine,editor,sheetSec,bindSheet,fix};
 })();
