@@ -2507,9 +2507,9 @@ window.OM_BATTLE_UI=(()=>{
   for(const [kind,name] of list){const a=ctx().b.mons[mid];if(!a)return;const au=FX().autoOf(a,kind,name);if(!au||!au.ops||!au.ops.length||au.manual)continue;const c0=au.ops[0];if(!c0||c0.k!=='cond'||c0.c!=='on_hit')continue;const eff=slotEff(a,kind,name);const K=({pot:'포텐셜',trait:'특성',item:'소지품'})[kind]||'효과';
    for(const r of hits){const d=ctx().b.mons[r.def.id];if(!d)continue;const h={move:R.mv.name,defTypes:tysOf(d),moveTypes:R.moveTypes||[]};if(!FX().hitOk(c0,h))continue;
     if(limManual(a,kind,name,eff)){A().sysLog(`【${K}】 ${a.name} 『${name}』 — 「${R.mv.name}」이(가) ${d.name}에게 명중해 조건을 만족했다 (【자동】 이 없어 카드 「발동」으로)`,'battle',{mid:a.id,img:a.image||''});continue}
-    let left=null;if(kind==='pot'){const mm=String(eff||'').match(/【\s*(\d+)\s*\/\s*시\s*】/);if(mm){const u=((ctx().b.mons[mid]||{}).potUses||{})[name];left=u==null?+mm[1]:+u;if(left<=0)continue}}
+    let L=null;if(kind==='pot'){const p=potSrc(ctx().b.mons[mid]||a).find(q=>q&&q.name===name);if(p){const c=ctx().b.mons[mid]||a;L=limOf(p,c.potUses||{},c.potTurn||{});if(L.left!==null&&L.left<=0)continue}}   /* 11-09 망령 「더 자동화할 것」: 【N/시】뿐 아니라 【소진】 · 【탈진】도 본다 */
     const ok=await fireAuto(mid,kind,name,{quiet:true,pickId:d.id,hit:h,head:`【${K}】 ${a.name} 『${name}』【자동】 — 「${R.mv.name}」이(가) ${d.name}에게 명중`});
-    if(ok&&left!==null){const cur=ctx().b.mons[mid];const uu=Object.assign({},(cur&&cur.potUses)||{});uu[name]=left-1;await A().set(['battle','mons',mid,'potUses'],uu)}}}}
+    if(ok&&L){const cur=ctx().b.mons[mid]||a;if(L.mmax!=null){const u=(cur.potUses||{})[name];const had=u==null?L.mmax:+u;await A().set(['battle','mons',mid,'potUses',name],Math.max(0,had-1))}if(L.per)await A().set(['battle','mons',mid,'potTurn',name],+ctx().b.turn||0)}}}}
  /* 아군 빈사 (10-26 망령): 새로 쓰러진 포켓몬이 생기면 — 같은 편 필드 포켓몬의 「아군빈사」 조건 상시(에이스 …)를 걸고, 【자동】 「아군이 「빈사」 상태가 되었을 때」 포텐셜을 발동, 그 밖의 그런 고유 · 포텐셜은 알림 */
  const FAINT_SEEN={};let faintBusy=false;
  async function faintWatch(){const c=ctx();const b=c.b;if(!c.mgr||!b.started||faintBusy)return;const bk=String(b.started)+':'+Object.keys(b.mons||{}).sort().join(',');
