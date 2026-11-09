@@ -2982,10 +2982,25 @@ span.iedit{display:inline-block;min-width:3em}
 @keyframes dqbob{50%{transform:translateY(-2px)}}
 .rpexpbox{display:none}.rpexpbox.on{display:flex}
 .rpexpbox select{width:118px;font-size:14px;padding:6px 8px}
+/* 11-09 표정 버튼 · 고르기 창 (화자 고르기 창 .spkp 꼴) */
+.expbtn{display:inline-flex;align-items:center;gap:6px;max-width:150px;min-width:0;cursor:pointer;font:inherit;font-size:14px;color:#fff;background:#000;border:1px solid var(--line2);border-radius:999px;padding:2px 10px 2px 2px;line-height:1.2}
+.expbtn:hover,.expbtn:focus-visible{border-color:var(--yel,#ffd12e)}
+.expbtn-im{flex:none;width:30px;height:30px;border-radius:50%;background:#222 center 8%/cover no-repeat;border:1px solid var(--line2)}
+.expbtn-n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0;flex:1;text-align:left}
+.expp-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.expp-h b{font-size:14px}.expp-h small{color:var(--mute)}.expp-h .spkp-q{flex:1 1 100%}
+.expp-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px}
+.expp-it{display:flex;flex-direction:column;align-items:stretch;gap:4px;min-width:0;padding:4px;border-radius:10px;border:1px solid var(--line2);background:#17171b;color:inherit;font:inherit;cursor:pointer}
+.expp-it:hover,.expp-it:focus-visible{border-color:#888;background:#1f1f25;outline:none}
+.expp-it.on{border:2px solid var(--yel,#ffd12e);background:rgba(255,209,46,.1);padding:3px}
+.expp-im{display:block;width:100%;aspect-ratio:3/4;border-radius:7px;background:#0b0b0d center 6%/cover no-repeat}
+.expp-im.noimg{background:#222}
+.expp-it span{font-size:12px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.expp-it.on span{color:var(--yel,#ffd12e);font-weight:700}
+.expp-f{padding:6px 10px;border-top:1px solid var(--line2)}.expp-f code{font-size:11px}
 .rpmode{padding:0 12px!important;font-size:13px!important;white-space:nowrap;min-width:74px}
 .rpmode.m-say{background:#2e86de;border-color:#2e86de;color:#fff}
 .rpmode.m-narr{background:#3a3f4b;border-color:#8a90a0;color:#e8e8e8;font-style:italic}
-@media (max-width:760px){.rpexpbox select{width:auto;flex:1 1 40%}.rpmode{min-width:0;padding:0 10px!important}.rpinput input{flex:1 1 120px;min-width:0}.rpinput #rpsend{padding:0 14px}}
+@media (max-width:760px){.rpexpbox select{width:auto;flex:1 1 40%}.expbtn{max-width:120px;font-size:13px}.expbtn-im{width:26px;height:26px}.expp-g{grid-template-columns:repeat(auto-fill,minmax(76px,1fr))}.rpmode{min-width:0;padding:0 10px!important}.rpinput input{flex:1 1 120px;min-width:0}.rpinput #rpsend{padding:0 14px}}
 .pf-twwrap.off{opacity:.4;pointer-events:none}
 /* ---------- GM 투표 (무대 위 카드, 10-24 벨벳 참고) ---------- */
 #voteov{position:absolute;left:50%;top:56px;transform:translateX(-50%);z-index:5;width:min(440px,calc(100% - 24px));pointer-events:none}

@@ -305,9 +305,27 @@ window.OM_RP_UI=(()=>{
  const QUOTED=/^["“「『].*["”」』]$/s;
  function modeText(t){if(SPK.mode==='say'&&!QUOTED.test(t)&&!/^\*.+\*$/s.test(t))return '"'+t+'"';if(SPK.mode==='narr'&&QUOTED.test(t))return '*'+t+'*';return t}
  /* 표정 고르기: 지금 화자의 표정(스탠딩)이 둘 이상이면 입력줄 옆에 뜬다. 고르면 「@표정」 과 같이 무대 그림이 바로 바뀐다 */
- function refreshExp(el){const box=$('#rpexpbox',el);if(!box)return;const c=speakerChar();const st=c?(c.stands||[]):[];
-  const h=st.length>=2?`<select id="rpexp" title="${esc(c.name)} 표정 — 고르면 무대 그림이 바로 바뀐다">${st.map((x,i)=>`<option value="${i}" ${i===(+c.active||0)?'selected':''}>${esc(x.label||('표정 '+(i+1)))}</option>`).join('')}</select>`:'';
-  if(box._h!==h){box.innerHTML=h;box._h=h}box.classList.toggle('on',!!h);const se=$('#rpexp',box);if(se)se.onchange=async()=>{const i=+se.value;if(await setStandIdx(c,i))A().toast(`표정: ${st[i].label||'표정 '+(i+1)}`);const inp=$('#rpline');if(inp)inp.focus()}}
+ /* 11-09 21:38 망령 「이것도 눌렀을 때 UI 보강」: 표정 select → 버튼(지금 표정 그림 + 이름 ▾) · 누르면 스탠딩 그림 격자 고르기 창(화자 고르기 창 .spkp 와 같은 꼴 · 바깥 누르기 · Esc 로 닫힘) */
+ function refreshExp(el){const box=$('#rpexpbox',el);if(!box)return;const c=speakerChar();const st=c?(c.stands||[]):[];const cur=c?Math.min(st.length-1,Math.max(0,+c.active||0)):0;
+  const lb=i=>(st[i]&&st[i].label)||('표정 '+(i+1));
+  const h=st.length>=2?`<button type="button" class="expbtn" id="rpexp" title="${esc(c.name)} 표정 — 눌러서 고르기 (무대 그림이 바로 바뀐다 · 입력줄에 @${esc(lb(cur))} 처럼 써도 된다)"><i class="expbtn-im" style="${st[cur].src?`background-image:url('${cssu(st[cur].src)}')`:''}"></i><span class="expbtn-n">${esc(lb(cur))}</span><span class="spkpcar">▾</span></button>`:'';
+  if(box._h!==h){box.innerHTML=h;box._h=h}box.classList.toggle('on',!!h);const se=$('#rpexp',box);
+  if(se)se.onclick=()=>openExpPick(se,c,async i=>{if(await setStandIdx(c,i))A().toast(`표정: ${lb(i)}`);const inp=$('#rpline');if(inp)inp.focus({preventScroll:true})})}
+ function openExpPick(anchor,c,onPick){if(document.querySelector('.spkp')&&document.querySelector('.spkp')._anchor===anchor)return closeSpkPick();closeSpkPick();
+  const st=c.stands||[];const cur=+c.active||0;const many=st.length>12;const lb=i=>(st[i].label)||('표정 '+(i+1));
+  const pop=document.createElement('div');pop.className='spkp expp';pop._anchor=anchor;
+  pop.innerHTML=`<div class="spkp-h expp-h"><b>${esc(c.name)}</b><small>표정 ${st.length}</small>${many?'<input type="search" class="spkp-q" placeholder="표정 이름으로 찾기" autocomplete="off">':''}</div><div class="spkp-b"><div class="expp-g">${st.map((x,i)=>`<button type="button" class="expp-it ${i===cur?'on':''}" data-i="${i}" data-q="${esc(lb(i).toLowerCase())}" title="${esc(lb(i))}"><i class="expp-im${x.src?'':' noimg'}" style="${x.src?`background-image:url('${cssu(x.src)}')`:''}"></i><span>${esc(lb(i))}</span></button>`).join('')}</div></div><div class="expp-f small dim">입력줄에 <code>@표정 "대사"</code> 로 써도 바뀐다</div>`;
+  document.body.appendChild(pop);
+  const place=()=>{const r=anchor.getBoundingClientRect();const W=Math.min(440,innerWidth-16);pop.style.width=W+'px';const below=innerHeight-r.bottom-10,above=r.top-10;const up=below<320&&above>below;const mh=Math.max(200,Math.min(560,(up?above:below)));pop.style.maxHeight=mh+'px';pop.style.left=Math.max(8,Math.min(innerWidth-W-8,r.left))+'px';if(up){pop.style.top='';pop.style.bottom=(innerHeight-r.top+6)+'px'}else{pop.style.bottom='';pop.style.top=(r.bottom+6)+'px'}};place();
+  const its=[...pop.querySelectorAll('.expp-it')];const pick=i=>{closeSpkPick();onPick&&onPick(i)};
+  its.forEach(b=>b.onclick=()=>pick(+b.dataset.i));
+  const q=pop.querySelector('.spkp-q');if(q){q.oninput=()=>{const v=q.value.trim().toLowerCase();its.forEach(b=>b.style.display=!v||b.dataset.q.includes(v)?'':'none')};if(matchMedia('(pointer:fine)').matches)setTimeout(()=>q.focus(),20)}
+  const vis=()=>its.filter(b=>b.style.display!=='none');const cols=()=>{const g=pop.querySelector('.expp-g');return Math.max(1,getComputedStyle(g).gridTemplateColumns.split(' ').length)};
+  pop.addEventListener('keydown',e=>{if(e.key==='Escape'){e.preventDefault();e.stopPropagation();closeSpkPick();anchor.focus();return}
+   if(e.key==='Enter'&&e.target===q&&!e.isComposing){e.preventDefault();const f=vis()[0];if(f)pick(+f.dataset.i);return}
+   const mv={ArrowRight:1,ArrowLeft:-1,ArrowDown:cols(),ArrowUp:-cols()}[e.key];if(mv&&e.target!==q){e.preventDefault();const L=vis();const k=L.indexOf(document.activeElement);const n=L[Math.max(0,Math.min(L.length-1,(k<0?L.findIndex(b=>b.classList.contains('on')):k)+mv))];if(n)n.focus()}});
+  {const on=pop.querySelector('.expp-it.on');if(on){on.scrollIntoView({block:'nearest'});if(!q&&matchMedia('(pointer:fine)').matches)on.focus({preventScroll:true})}}
+  setTimeout(()=>document.addEventListener('pointerdown',spkPickOut,true),0)}
  /* ----- 화자 목록: 토큰이 있는 모든 개체 (GM · NPC(관계도) · PC(로스터) · 포켓몬(로스터)). 정리는 rp.spk = {order:[키|'f:폴더id'], folders:{id:{name,keys:[],hid?}}, hidden:{키:1}} — 폴더 hid:1 이면 폴더째 화자 칸 · 고르기 창에서 숨긴다 (10-28) ----- */
  function allSpeakers(){const ST=A().ST;const out=[{key:'gm',name:'GM (나레이션)'}];
   const trNames=new Set(Object.values((ST.state.roster||{}).trainers||{}).map(t=>t.name));
