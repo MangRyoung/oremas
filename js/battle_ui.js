@@ -680,6 +680,17 @@ window.OM_BATTLE_UI=(()=>{
  const spL=(m,k)=>FX()&&FX().spOf?FX().spOf(m,k):[];
  const mvTysRaw=mv=>String((mv&&mv.type)||'').split(/[()/,]/).map(t=>t.trim()).filter(Boolean).map(S().typeEn);
  /* 끌어오기: 상대 쪽(공격하는 포켓몬과 다른 편)에 맞는 「끌어오기」가 있으면 그 포켓몬 자리. 단일 대상 기술만 */
+ /* 11-09 망령 「「풀」 기술 같이 해당되는 범위의 기술이 여러 개면 발동할 때 선택」: 「기술사용 X」 · 추가 행동의 X 가 기술 이름이 아니라 범위(타입 · 태그 · 단일기 · 물리기 …)이면 그 포켓몬의 기술 중 맞는 것 */
+ function mvRange(atk,nm){const L=MVS(atk);const k=String(nm||'').replace(/\s/g,'').replace(/^「|」$/g,'');if(!k)return null;if(L.some(q=>q&&String(q.name).replace(/\s/g,'')===k))return null;{const MD=(DB().moves||{});if(MD[k]||MD[nm])return null}   /* 기술 DB 에 있는 이름이면 예전처럼 그 기술 */
+  const base=k.replace(/기술$/,'');const en=S()&&S().typeEn?S().typeEn(base):'';const tagsOf=q=>[...String(q.tag||'').split(/[,/·\s]+/),...(q.tags||[]).map(t=>String(t||'').replace(/^#/,''))].map(x=>x.trim()).filter(Boolean);
+  const ok=q=>{if(!q||q.virt||q.name==='발버둥'||q.sealed)return false;
+   if(base==='단일기'||base==='단일')return String(q.range||'')==='1체'&&q.cat!=='변화';if(base==='전체기')return /전체|자신\s*이외/.test(String(q.range||''))&&q.cat!=='변화';
+   if(base==='물리기'||base==='물리')return q.cat==='물리';if(base==='특수기'||base==='특수')return q.cat==='특수';if(base==='변화기'||base==='변화')return q.cat==='변화';if(base==='공격기')return q.cat!=='변화';
+   if(base==='접촉기')return !!(A().contactOf&&A().contactOf(q)==='O');
+   if(en&&en!==base)return mvTysRaw(q).includes(en)||q.typeEn===en;
+   return tagsOf(q).includes(base)||String(q.name||'').endsWith(base)};
+  const idx=[];L.forEach((q,i)=>{if(ok(q))idx.push(i)});return idx}
+ function mvRangePick(atk,label,names){return new Promise(res=>{const md=A().openModal(`<div class="mhead"><h2>${esc(label)} — 기술 고르기</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="firelist">${names.map((l,i)=>`<label class="firerow"><input type="radio" name="ch" value="${i}" ${i===0?'checked':''}> <span>${esc(l)}</span></label>`).join('')}</div><div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn pri" id="chok">이 기술로</button></div>`);$('#chok',md).onclick=()=>{const v=md.querySelector('[name=ch]:checked');A().closeModal();res(v?+v.value:-1)};md.querySelector('[data-x]').addEventListener('click',()=>res(-1))})}
  function redirectOf(b,atk,mv){if(!mv||String(mv.range||'')!=='1체')return null;if(/^(굳건한신념|스크루지느러미)$/.test(abNm(atk).replace(/『|』|\s/g,'')))return null;   /* 11-09 굳건한신념: 기술의 대상을 바꾸는 효과를 무시 */const slots=allEntered(b);for(const s of slots){const m=s.mon;if(!m||m.id===atk.id||sameT(m,atk,b)||m.hp.cur<=0)continue;const e=spL(m,'redirect').find(x=>spHit(x,mv,mvTysRaw(mv)));if(e)return {slot:s.slot,mon:m,e}}return null}
  function defaultTargets(b,mid,moveIdx){const m=b.mons[mid];if(!m||moveIdx===''||moveIdx==='switch')return [];const mv=MVS(m)[+moveIdx];if(!mv)return [];
   {const rd=redirectOf(b,m,mv);if(rd)return [rd.slot]}
@@ -1511,7 +1522,7 @@ window.OM_BATTLE_UI=(()=>{
   for(const m of iceUsed)await A().set(['battle','mons',m.id,'prioDown'],null);
   /* 11-09 망령 「창파나이트의 추가행동도 대상을 지정해야 돼 · 넣자」: 선행 입력한 포텐셜 글이 「가장 마지막에 「기술」에 의한 추가 행동」이면 순서 맨 끝에 그 기술 차례를 붙인다.
      대상 = 선행 입력 때 대상 판에서 고른 자리(ptg — 구문 「대상지정」). 차례가 오면 공격 창이 그 기술 · 대상으로 열린다 (openAttack 의 xact) */
-  for(const s of slots){const K=SEC[s.mon.id];if(!K||!(K.pots||[]).length)continue;for(const pn of K.pots){const p=potSrc(s.mon).find(q=>q&&q.name===pn);const mm=p&&String(p.eff||'').match(/가장\s*마지막에\s*「([^」]+)」에?\s*의한\s*추가\s*행동/);if(!mm)continue;const tg=(K.ptg||{})[pn];
+  for(const s of slots){const K=SEC[s.mon.id];if(!K||!(K.pots||[]).length)continue;for(const pn of K.pots){const p=potSrc(s.mon).find(q=>q&&q.name===pn);const mm=p&&String(p.eff||'').match(/가장\s*마지막에\s*「([^」]+)」\s*(?:기술)?\s*에?\s*의한\s*추가\s*행동/);if(!mm)continue;const tg=(K.ptg||{})[pn];
    order.push({slot:s.slot,mid:s.mon.id,name:s.mon.name,side:s.mon.side,change:false,started:false,order:-1000,prio:0,speed:0,dice:0,move:mm[1],targets:tg?[tg]:[],pursuit:false,xact:pn});notes.push(`${s.mon.name} 『${pn}』 — 가장 마지막에 「${mm[1]}」 추가 행동`)}}
   {let i0=0;while(i0<order.length&&order[i0].noact){A().sysLog(`${order[i0].name} — ${order[i0].noact} (차례를 건너뛴다)`,'battle');i0++}
    /* 11-03 감우: 순서 · 색인 · 메모 · 페이즈를 한 번에 (om_jset_many) */const ops=[[['battle','order'],order],[['battle','orderIdx'],i0],[['battle','orderNotes'],notes],[['battle','phase'],2]];if(b.tstep)ops.push([['battle','tstep'],null]);if(b.swPur)ops.push([['battle','swPur'],null]);if(!await A().setMany(ops))return}
@@ -2828,6 +2839,8 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
  const ACTFX={};   /* 11-07 「행동한 뒤」 자동 — mid|포텐셜 → 건 턴 */
  function openAttack(mid,opt){opt=opt||{};const c=ctx();const b=c.b;const atk=b.mons[mid];if(!atk||!canEdit(c,atk))return;{const XO=(+b.phase||0)>=2?(b.order||[])[+b.orderIdx||0]:null;if(XO&&XO.xact&&XO.mid===mid&&!opt.mvName)opt=Object.assign({},opt,{mvName:XO.move,targets:(XO.targets||[]).slice(),by:XO.xact,preT:1})}   /* 11-09 선행 추가 행동 차례 */const RNDT={};const rndOf=mv=>isRndMove(mv)?(RNDT[mv.name]||(RNDT[mv.name]=rndType())):'';   /* 11-04 망령: 「무작위」 타입 기술 — 이 공격 창을 열 때 기술마다 한 번 굴린다 (미리보기 · 판정 · 로그가 같은 타입) */const f=fieldOf(b);const atkD=topShadow(atk,opt.baseTop);const UMA=UMB(atk);   /* 51-2 ⑫ 만능우산: 공격 쪽이 지니면 날씨 배율 · 필중 · 명중 · 차지 생략 · 타입 변화 없음 */
   /* 11-03 「기술사용」 · 「추가공격」: opt.mvName(기술 이름 — 목록에 없으면 기술 DB 에서 잠시 붙인다) · opt.targets · opt.extra {pw, sure, left, name} */
+  if(opt.mvName&&!opt.rangeDone){const R=mvRange(atk,opt.mvName);if(R){const lab=`『${String(opt.by||'추가 행동').replace(/[『』]/g,'')}』 「${opt.mvName}」`;if(!R.length){A().toast(`${atk.name} — 「${opt.mvName}」에 맞는 기술이 없다`);return}
+   if(R.length===1){opt=Object.assign({},opt,{mvName:MVS(atk)[R[0]].name,rangeDone:1})}else{mvRangePick(atk,lab,R.map(i=>{const q=MVS(atk)[i];return `${q.name} (${q.type||''} · ${q.cat||''}${q.pow?' · 위력 '+q.pow:''})`})).then(k=>{if(k<0)return;openAttack(mid,Object.assign({},opt,{mvName:MVS(atk)[R[k]].name,rangeDone:1}))});return}}}   /* 11-09 범위 기술 고르기 */
   delete XMV[mid];let OPI=-1;if(opt.mvName){OPI=MVS(atk).findIndex(q=>q&&q.name===opt.mvName);if(OPI<0){const nm2=String(opt.mvName).trim();const mv=window.OM_IMPORT&&window.OM_IMPORT.move?window.OM_IMPORT.move(nm2,false):null;if(!mv||!mv.name){A().toast(`기술 「${nm2}」를 기술 DB 에서 못 찾았다`);return}XMV[mid]=Object.assign({},mv,{fromFx:opt.by||''});OPI=MVS(atk).length-1}}
   const MVT=mv=>{if(!mv)return '';const L=spL(atk,'mvtype');const e=L.find(x=>x.mv&&x.mv===mv.name)||L.find(x=>!x.mv&&x.from&&mvTysRaw(mv).includes(x.from))||L.find(x=>!x.mv&&!x.from);return e?e.to:''};
   /* 11-05 망령 「자연의은혜 — 실기 기준」: 지닌 나무열매로 타입 · 위력 (OM_ITEMRULE.natGift 표 · 소지품 구문 「자연의은혜 타입 위력」), 열매가 없으면 실패, 적용하면 열매를 쓴다 */
