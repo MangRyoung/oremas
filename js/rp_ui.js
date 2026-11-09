@@ -511,6 +511,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    if(EMO){const pe=EMO.parse(t);if(pe.em){EM=pe.em;t=pe.text}const pd=EMO.takePending();if(!EM&&pd)EM=pd;if(!t){if(EM)emoNow(EM);return}}
    t=modeText(t);
    const sxc=speakerChar();const SX=sxc&&(sxc.stands||[]).length>=2?{sx:+sxc.active||0}:{};if(EM)SX.em=EM;
+    {const SY=A().chatSty?A().chatSty():{};if(Object.keys(SY).length)SX.sty=SY}   /* 11-09 망령 「채팅 설정 왜 적용 안 돼?」: RP 무대 입력줄로 보낸 줄에도 내 말 색(글자 · 닉네임 · 말풍선) */
    if(ST.role==='gm'){if(SPK.key==='gm')await DBS().addLog(ST.room,ST.secret,'chat',ST.name,Object.assign({t,nf:1},ST.gmNick?{gmn:ST.gmNick}:{},SX));else{const c=charOf(SPK.key);const name=c?c.name:SPK.key.replace(/^(npc|as|pm):/,'');await DBS().addLog(ST.room,ST.secret,'chat',name,Object.assign({t,as:name,k:SPK.key,nf:1},SX))}}
    else if(SPK.key&&SPK.key.startsWith('pm:')){const c=charOf(SPK.key);await DBS().addLog(ST.room,ST.secret,'chat',c?c.name:ST.name,Object.assign({t,as:c?c.name:'',k:SPK.key,nf:1},SX))}
    else{const c=charOf(ST.seat);const nm=c?c.name:ST.name;await DBS().addLog(ST.room,ST.secret,'chat',nm,Object.assign(c?{t,as:nm,k:ST.seat,nf:1}:{t,nf:1},SX))}}catch(e)   /* 좌석이 자기 캐릭터로 말하면 캐릭터 이름으로 남긴다 (플레이어 닉 X) */{A().toast('보내지 못했다: '+e.message)}}
