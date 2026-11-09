@@ -91,7 +91,7 @@ window.OM_BATTLE_UI=(()=>{
  function sealKick(nb0,nb,by){const nw=Object.values(nb.mons||{}).filter(x=>(x.states||{}).Seal&&!((((nb0.mons||{})[x.id]||{}).states)||{}).Seal);if(!nw.length)return;const caster=by&&by.n?Object.values(nb.mons||{}).find(x=>x.name===by.n&&x.entry&&!nw.includes(x)):null;setTimeout(async()=>{for(const x of nw)await sealPick(caster?caster.id:'',x.id)},400)}
  const stSnap=b=>{const o={};for(const id in (b||{}).mons||{}){const m=b.mons[id];if(m)o[id]={id,name:m.name,image:m.image,side:m.side,entry:m.entry,hp:{cur:(m.hp||{}).cur},states:Object.assign({},m.states||{})}}return {mons:o}};
  /* 10-23 망령: 쓰러진 포켓몬이 다른 포켓몬에게 건 포텐셜 · 특성 효과(옵저버 …)와 「필드 위에 있는 한」 효과도 퇴장처럼 푼다 */
- function faintSweep(nb0,nb){const L=[];if(!FX()||!nb0||!nb)return L;for(const id in nb.mons||{}){const m=nb.mons[id],o=(nb0.mons||{})[id];if(!o||!o.entry||!m||m.entry||m.hp.cur>0)continue;L.push(...auraOff(nb,m).L);if(FX().release)L.push(...FX().release(nb,m))}return L}
+ function faintSweep(nb0,nb){const L=[];if(!FX()||!nb0||!nb)return L;for(const id in nb.mons||{}){const m=nb.mons[id],o=(nb0.mons||{})[id];if(!o||!o.entry||!m||m.entry||m.hp.cur>0)continue;m.koA=o.entry;   /* 11-09 감우 56: 쓰러진 자리 (【퇴장 (빈사)】의 정면 · 다음 등장) */L.push(...auraOff(nb,m).L);if(FX().release)L.push(...FX().release(nb,m))}return L}
  async function faintOff(mid){const nb0=snap(),nb=snap(nb0);const m=nb.mons[mid];if(!m||m.hp.cur>0||!FX())return;const L=[...auraOff(nb,m).L,...(FX().release?FX().release(nb,m):[])];if(!L.length)return;if(await A().setMany(A().diffOps(['battle'],nb0,nb,3)))A().sysLog(L.join('\n'),'battle')}
  /* 11-03 감우: 1단계 비교라 states · rank · mod · fx 같은 묶음이 통째로 쓰여, 같은 포켓몬을 둘이 동시에 고치면 한쪽 잎이 사라졌다 — 2단계까지 내려가 바뀐 잎만 (지운 키는 null) */
  /* 11-09 망령 「빈사가 된 포켓몬에게 쓰러질지 유대 할지 물을 때 『자신의 행동 이후로 대미지를 미루는』 옵션 · 자동화 구문에도」:
@@ -1107,6 +1107,8 @@ window.OM_BATTLE_UI=(()=>{
     A().sysLog(`${m.name} 등장 (${SIDE_KO[m.side]} ${area.toUpperCase()})${EL.length?'\n'+EL.join('\n'):''}`,'battle')}}
   /* 배턴터치 받기 */
   {const nb0=snap(),nb=snap(nb0);const t=nb.trainers[m.tid];if(t&&t.batton&&t.batton.from!==m.name){const L=applyBatton(nb,nb.mons[mid]);await saveMon(nb0.mons[mid],mid,nb.mons[mid]);await A().set(['battle','trainers',m.tid,'batton'],null);if(L.length)A().sysLog(L.join('\n'),'battle');stLog(nb0.mons[mid],nb.mons[mid],{n:t.batton.from||'',s:'배턴터치'},300)}}   /* 11-01 망령 「상태 변화도 효과 로그」: 넘겨받은 상태도 카드로 */
+  /* 11-09 감우 56: 교대로 나간 포켓몬의 【퇴장】 (들어온 아군 · 정면을 고른다) / 빈자리로 나왔으면 그 자리를 떠난 아군이 미뤄 둔 줄 */
+  if(ctx().b.started&&(ctx().b.mons[mid]||{}).entry){try{if(occ&&occ.id!==mid&&occ.hp&&occ.hp.cur>0&&Array.isArray(XL))await exitTrig(occ.id,opt.forced?'강제 교대':opt.how==='임의 교대'?'임의 교대':'통상 교대',{phase:'all',inId:mid,area});else await exitPendIn(mid)}catch(e){console.warn('퇴장 계기',e)}}
   /* 설치기 (맵툴 hazard_eval): 등장한 쪽의 설치기를 평가한다 */
   if(F()){const nb0=snap(),nb=snap(nb0);const nm=nb.mons[mid];nm.entry=area;const f=fieldOf(nb);const oppSide=m.side==='left'?'right':'left';const opp=entered(nb,oppSide);
    let HLD=[];try{HLD=await fieldHoldInto(nb,nm)}catch(e){console.warn('필드 동안 (등장 전)',e)}const r=F().hazardsOnEntry(nm,f,opp);if(HLD.length)r.lines.unshift(...HLD);if(r.lines.length){if(nm.hp.cur<=0){nm.entry='';r.lines.push(`${nm.name}은(는) 쓰러졌다!`)}else if(r.forced){nm.entry='';r.lines.push(`${nm.name}은(는) 튕겨 나갔다 — 다른 포켓몬을 내보내야 한다`)}
@@ -1114,9 +1116,10 @@ window.OM_BATTLE_UI=(()=>{
   /* 10-26 (서서 VS 마리 시험): 필드의 다른 포켓몬이 「있는 한」 걸어 둔 효과(재앙의그릇 · 승리의별 …)를 새로 들어온 포켓몬에게도 */
   if(FX()&&FX().reAura&&ctx().b.started&&(ctx().b.mons[mid]||{}).entry){const nb0=snap(),nb=snap(nb0);const L=FX().reAura(nb,nb.mons[mid]);if(L.length&&await saveBattle(nb0,nb))A().sysLog(`【필드 효과】\n${L.join('\n')}`,'battle')}
   /* 10-26 망령: 시합 개시 전에 나온 포켓몬 · 동시 내밀기는 모두 나온 뒤에 등장 효과를 스피드 순으로 (위협이 아무도 못 맞히던 것) */
-  if(FX()&&(ctx().b.mons[mid]||{}).entry&&!opt.noAuto&&ctx().b.started){await autoOnEntry(mid,{how:opt.how||(opt.forced?'강제 교대':occ&&occ.id!==mid?'통상 교대':(+b.phase||0)>=2?'통상 교대':'죽어내밀기')});try{await fieldAuto('entry',{mid})}catch(e){console.warn('필드 등장 구문',e)}}}
+  if(FX()&&(ctx().b.mons[mid]||{}).entry&&!opt.noAuto&&ctx().b.started){await autoOnEntry(mid,{how:opt.how||(opt.forced?'강제 교대':occ&&occ.id!==mid?'통상 교대':(+b.phase||0)>=2?'통상 교대':'죽어내밀기')});try{await fieldAuto('entry',{mid})}catch(e){console.warn('필드 등장 구문',e)}try{await foeInTrig(mid)}catch(e){console.warn('등장 (상대)',e)}}}
  async function autoEntryAll(ids,hows){const b=ctx().b;const f=fieldOf(b);const sp=m=>{try{return B().statValue(m,'speed').value*spMulOf(m,f).v}catch(e){return +((m.stats||[])[5]||0)}};
-  const list=ids.map(id=>b.mons[id]).filter(m=>m&&m.entry&&m.hp.cur>0).sort((x,y)=>sp(y)-sp(x));for(const m of list)if(FX()){await autoOnEntry(m.id,hows&&hows[m.id]?{how:hows[m.id]}:undefined);try{await fieldAuto('entry',{mid:m.id})}catch(e){console.warn('필드 등장 구문',e)}}}
+  const list=ids.map(id=>b.mons[id]).filter(m=>m&&m.entry&&m.hp.cur>0).sort((x,y)=>sp(y)-sp(x));for(const m of list)if(FX()){await autoOnEntry(m.id,hows&&hows[m.id]?{how:hows[m.id]}:undefined);try{await fieldAuto('entry',{mid:m.id})}catch(e){console.warn('필드 등장 구문',e)}}
+  for(const m of list)if(FX())try{await foeInTrig(m.id)}catch(e){console.warn('등장 (상대)',e)}}   /* 11-09 감우 56: 모두 나온 뒤 【등장 (상대)】 */
  /* 10-23 망령: 맵툴 print_entry — 등장하면 「통솔」 명중 강화 → 특성 등장 문구 → 소지품 등장 문구 (data/ment.js, 맵툴 entry_ment 그대로) */
  const LEAD_ACC={A:1.05,AA:1.15,AAA:1.25,S:1.33};
  /* 「통솔」 명중 보정: 랭크 · 배율(mod)에 넣지 않고 공격 창 「명중 배율」 기본값으로 곱한다 (10-24 망령) */
@@ -1147,6 +1150,7 @@ window.OM_BATTLE_UI=(()=>{
  async function startBattle(){const c=ctx();if(!c.mgr)return;const b=c.b;if(b.started)return;for(const k in FAINT_SEEN)delete FAINT_SEEN[k];
   if(simAny(b)){const n=await applyPending();if(!n&&!Object.values(b.mons||{}).some(m=>m.entry)){if(!(await askYes('예약된 포켓몬이 없다. 그래도 시합을 개시할까?')))return}}
   for(const tid of Object.keys(b.trainers||{}))if((b.trainers[tid]||{}).time)await A().set(['battle','trainers',tid,'time'],null);
+  await A().set(['battle','exitPend'],null);   /* 11-09 감우 56: 지난 배틀의 미뤄 둔 퇴장 줄 */
   await A().set(['battle','started'],true);if(b.done)await A().set(['battle','done'],null);   /* 10-31: 던전으로 돌아온(done) 배틀을 다시 열면 살아 있는 배틀 */
   if(!(+b.turn||0))await A().set(['battle','turn'],1);await A().set(['battle','log0'],+A().ST.lastLogId||0);await A().set(['battle','at0'],Date.now());   /* log0 · at0: 전당의 간략 로그를 여기서부터 (hall_ui.js) */
   {const ids0=Object.values(ctx().b.mons||{}).filter(m=>m.entry).map(m=>m.id);const hw={};for(const i of ids0)hw[i]='선발';await autoEntryAll(ids0,hw)}   /* 선발 전원이 나온 뒤 등장 효과 (스피드 순) · 11-09 감우 54: 【등장 (선발)】 도 이때 */
@@ -1174,6 +1178,55 @@ window.OM_BATTLE_UI=(()=>{
  function applyBatton(nb,m){const t=nb.trainers[m.tid];const bt=t&&t.batton;if(!bt)return [];delete t.batton;m.rank=Object.assign({},bt.rank||{});m.states=Object.assign({},m.states||{},bt.states||{});if(bt.critBuff)m.critBuff=bt.critBuff;
   const st=(DB().states||{}).st||{};const rk=Object.entries(m.rank).filter(([k,v])=>+v).map(([k,v])=>(FX()?FX().STAT_KO[k]:k)+(v>0?'+':'')+v);const ss=Object.keys(bt.states||{}).map(k=>(st[k]||{}).ko||k);
   return [`${m.name} 「배턴터치」 받음 (${bt.from||''}) ${[...rk,...ss].join(' · ')||'없음'}`]}
+ /* 11-09 감우 56 (망령 「퇴장 · 등장 계기 만들기」): 【퇴장】 · 【퇴장 (통상 교대 | 임의 교대 | 강제 교대 | 빈사)】 · 【등장 (상대)】 — 예전엔 퇴장이 정리만 하고 이 태그는 아무것도 터뜨리지 않았다.
+    용어집(제작기): 퇴장 = 필드를 떠날 때, 강제 교대는 (강제 교대) 외의 퇴장을 발동하지 않는다 → 맨 【퇴장】은 통상 교대 · 임의 교대 · 빈사 때.
+    「필드에 등장한 아군」 · 「같은 에리어의 아군」을 고르는 효과는 그 자리로 다음 포켓몬이 나온 뒤에 — 교대면 바로, 빈사 · 따로 누른 퇴장이면 그 자리에 다음 포켓몬이 나올 때(battle.exitPend).
+    「정면」(레디메이드에선 「상대 1체」)은 떠난 자리의 맞은편을 먼저 고른다. 상대 필드에 「경호원」이 있으면 특성의 【등장】【퇴장】은 무효.
+    【N/시】 는 【자동】 이 없으면 묻는다 · 구문이 없거나 괄호 조건을 웹툴이 모르면(『어시스트』 발동 …) GM 귓속말로 알린다 */
+ const XIN_RE=/필드에\s*등장한\s*아군|같은\s*에리어의\s*아군|교대(?:해|하여)?\s*(?:들어온|나온)\s*아군/;
+ const XHOW=['통상교대','임의교대','강제교대','빈사'];
+ function trigSrcs(m,b){const out=[];if(!m)return out;if(m.ability)out.push({kind:'trait',name:m.ability,eff:String(m.abilityEff||slotEff(m,'trait',m.ability)||'')});
+  if(!IOFF(m)){if(m.item)out.push({kind:'item',name:m.item,eff:String(m.itemEff||'')});for(const x of (m.items2||[]))if(x&&x.item&&x.item!==m.item)out.push({kind:'item',name:x.item,eff:String(x.itemEff||'')})}
+  for(const p of potSrc(m))if(p&&p.name&&!potOffWhy(m,p.name))out.push({kind:'pot',name:p.name,eff:String(p.eff||''),p});
+  const t=(b.trainers||{})[m.tid];for(const u of ((t&&t.unique)||[]))if(u&&u.name)out.push({kind:'uq',name:u.name,eff:String(u.eff||''),u,t});return out}
+ /* 태그 뒤에 다른 【…】 를 지나 「/」가 와야 계기 — 「경호원」의 「【등장】【퇴장】 효과를 무효화」 같은 언급은 빼고 */
+ function tagHit(eff,tag){const t=String(eff||'').replace(/<br\s*\/?>/gi,'\n');const cls=t.split(/(?=[①②③④⑤⑥⑦⑧⑨⑩])|\n/).map(x=>x.trim()).filter(Boolean);
+  const re=tag==='exit'?/【퇴장(?:\s*\(([^)]*)\))?】(?:【[^】]*】)*\s*\//:/【등장\s*\(\s*상대\s*\)】(?:【[^】]*】)*\s*\//;
+  for(let i=0;i<cls.length;i++){const r=cls[i].match(re);if(r)return {cl:cls[i],arg:String(r[1]||'').trim(),first:i===0||/^①/.test(cls[i]),no:(cls[i].match(/^[①②③④⑤⑥⑦⑧⑨⑩]/)||[])[0]||''}}return null}
+ function exitArgOk(arg,how){const a=String(arg||'').replace(/\s/g,''),h=String(how||'').replace(/\s/g,'');if(!a)return h==='강제교대'?'no':'yes';if(XHOW.includes(a))return a===h?'yes':'no';return h==='강제교대'?'no':'ask'}
+ function guardOff(b,m){const g=Object.values(b.mons||{}).find(x=>x&&x.entry&&x.hp&&x.hp.cur>0&&!sameT(x,m,b)&&(abNm(x).replace(/[『』\s]/g,'')==='경호원'||/상대의\s*「특성」의\s*【등장】\s*【퇴장】\s*효과를\s*무효/.test(String(x.abilityEff||''))));return g?g.name:''}
+ async function trigFire(mid,x,hit,o){const m=ctx().b.mons[mid];if(!m)return {};const kind=x.kind==='uq'?'pot':x.kind;const K=({pot:'포텐셜',trait:'특성',item:'소지품',uq:'고유'})[x.kind]||'효과';const who=x.kind==='uq'?(x.t.name+' 고유'):m.name;const nm=String(x.name).replace(/[『』]/g,'');
+  let a=FX().autoOf(m,kind,x.name);if(kind==='item')a=itemAutoDedupe(a,x.name);const note={note:`${who} 『${nm}』 — ${o.why}`};
+  if(!a||!realOps(a)||a.manual)return note;
+  if(a.ops.length===1&&a.ops[0].k==='choice'){/* 줄 고르기 구문: 계기가 든 줄(①②…)만 */const os=(a.ops[0].opts||[]).filter(q=>q&&q.label);const pk=hit.no?os.find(q=>String(q.label).trim().startsWith(hit.no)):os.length===1?os[0]:null;if(!pk||!(pk.ops||[]).length)return note;a=Object.assign({},a,{ops:pk.ops})}
+  else if(!hit.first)return note;
+  let L=null,Q=null;if(x.kind==='pot'){L=limOf(x.p,m.potUses||{},m.potTurn||{});if(L.left!==null&&L.left<=0)return {}}
+  if(x.kind==='uq'){const tt=(ctx().b.trainers||{})[m.tid]||x.t;Q=limOf(x.u,tt.uUses||{},tt.uTurn||{});if(Q.left!==null&&Q.left<=0)return {}}
+  if(/【\s*\d+\s*\/\s*(?:시|턴)\s*】/.test(x.eff)&&!/【\s*자동\s*】/.test(x.eff)&&!(await askYes(`【계기】 ${o.why}\n\n${who} 『${nm}』 을(를) 발동할까?\n${String(hit.cl).slice(0,160)}`,'발동','그만')))return {};
+  let ok=false;try{ok=await fireAuto(mid,kind,x.name,Object.assign({auto:a,quiet:true,noEv:1,head:`【${K}】 ${who} 『${nm}』 — ${o.why}`,eff:x.eff,pickIds:o.pickIds||[]},o.area?{area:o.area}:{},x.kind==='uq'?{uq:1}:{}))}catch(e){console.warn('계기',e)}
+  if(ok&&L){const cur=ctx().b.mons[mid]||m;if(L.mmax!=null){const u=(cur.potUses||{})[x.name];const had=u==null?L.mmax:+u;await A().set(['battle','mons',mid,'potUses',x.name],Math.max(0,had-1))}if(L.per)await A().set(['battle','mons',mid,'potTurn',x.name],+ctx().b.turn||0)}
+  if(ok&&Q){const tt=(ctx().b.trainers||{})[m.tid]||x.t;if(Q.mmax!=null){const v=(tt.uUses||{})[x.name];await A().set(['battle','trainers',m.tid,'uUses',x.name],Math.max(0,(v==null?Q.mmax:+v)-1))}if(Q.per)await A().set(['battle','trainers',m.tid,'uTurn',x.name],+ctx().b.turn||0)}
+  return {ok}}
+ /* phase: 'now' = 떠난 순간(들어올 아군이 필요한 줄은 exitPend 로 미룸) · 'in' = 그 자리에 다음 포켓몬이 나온 뒤(미뤄 둔 줄만) · 'all' = 교대(바로 들어왔다) */
+ async function exitTrig(mid,how,o){o=o||{};const c=ctx();const b=c.b;if(!b||!b.started||!FX())return;const m=b.mons[mid];if(!m)return;
+  const area=o.area||m.entry||(how==='빈사'?(m.koA||m.outA):m.outA)||'';const inM=o.inId?b.mons[o.inId]:null;
+  const front=area?Object.values(b.mons||{}).find(x=>x&&x.entry===area&&x.side!==m.side&&x.hp&&x.hp.cur>0&&!sameT(x,m,b)):null;
+  const g=guardOff(b,m);const notes=[];let pend=false;const why=`퇴장 (${how})`;
+  for(const x of trigSrcs(m,b)){const hit=tagHit(x.eff,'exit');if(!hit)continue;const ok=exitArgOk(hit.arg,how);if(ok==='no')continue;const nm=String(x.name).replace(/[『』]/g,'');const who=x.kind==='uq'?(x.t.name+' 고유'):m.name;
+   if(ok==='ask'){if(o.phase!=='in')notes.push(`${who} 『${nm}』 — 【퇴장 (${hit.arg})】 조건을 확인해 손으로`);continue}
+   if(x.kind==='trait'&&g){if(o.phase!=='in')A().sysLog(`【특성】 ${m.name} 『${nm}』의 【퇴장】 — ${g} 「경호원」으로 무효`,'battle',{mid:m.id});continue}
+   const needIn=XIN_RE.test(hit.cl);if(o.phase==='now'&&needIn){pend=true;continue}if(o.phase==='in'&&!needIn)continue;
+   const r=await trigFire(mid,x,hit,{why,pickIds:[...(inM?[inM.id]:[]),...(front?[front.id]:[])],area:inM&&inM.entry?inM.entry:''});if(r&&r.note)notes.push(r.note)}
+  if(pend&&area)await A().set(['battle','exitPend',m.side+'_'+area],{mid,how,tid:m.tid,turn:+b.turn||0});
+  if(notes.length)A().sysLog(`【계기】 ${m.name} ${why} — 발동 조건을 만족한 효과 (구문이 없어 손으로)\n${[...new Set(notes)].join('\n')}`,'battle',{gmPriv:1})}
+ /* 빈자리로 나왔을 때: 그 자리를 떠난 아군의 미뤄 둔 퇴장 줄 (「필드에 등장한 아군」) */
+ async function exitPendIn(mid){const b=ctx().b;const m=b.mons[mid];if(!m||!m.entry)return;const k=m.side+'_'+m.entry;const p=(b.exitPend||{})[k];if(!p)return;await A().set(['battle','exitPend',k],null);if(p.mid===mid||!sameT(b.mons[p.mid]||{},m,b))return;   /* 같은 편이면 다른 트레이너 포켓몬도 「아군」 */await exitTrig(p.mid,p.how,{phase:'in',inId:mid,area:m.entry})}
+ /* 상대가 나왔을 때: 필드의 다른 편 포켓몬의 【등장 (상대)】 (무당거미 · 뜬돌 · 마그마의바다 …) — 그 상대가 대상 */
+ async function foeInTrig(mid){const b=ctx().b;if(!b||!b.started||!FX())return;const m=b.mons[mid];if(!m||!m.entry||m.hp.cur<=0)return;const notes=[];
+  for(const y of Object.values(b.mons||{})){if(!y||!y.entry||y.hp.cur<=0||y.id===mid||sameT(y,m,b))continue;const g=guardOff(ctx().b,y);
+   for(const x of trigSrcs(y,ctx().b)){const hit=tagHit(x.eff,'foeIn');if(!hit)continue;const nm=String(x.name).replace(/[『』]/g,'');if(x.kind==='trait'&&g){A().sysLog(`【특성】 ${y.name} 『${nm}』의 【등장 (상대)】 — ${g} 「경호원」으로 무효`,'battle',{mid:y.id});continue}
+    const cur=ctx().b.mons[mid];if(!cur||!cur.entry||cur.hp.cur<=0)break;const r=await trigFire(y.id,x,hit,{why:`${m.name} 등장 (상대)`,pickIds:[mid]});if(r&&r.note)notes.push(r.note)}}
+  if(notes.length)A().sysLog(`【계기】 ${m.name} 등장 (상대) — 발동 조건을 만족한 효과 (구문이 없어 손으로)\n${[...new Set(notes)].join('\n')}`,'battle',{gmPriv:1})}
  async function exitMon(mid,opt){const c=ctx();const m=c.b.mons[mid];if(!m||!(canEdit(c,m)||(opt&&opt.sys&&c.mgr)))return;
   if(!opt){ /* 카드의 「퇴장」: 작은 창에서 고른다 */
    const bench=Object.values(c.b.mons).filter(x=>x.tid===m.tid&&!x.entry&&!x.pend&&x.hp.cur>0&&x.id!==mid);const ps=passable(m);
@@ -1184,7 +1237,8 @@ window.OM_BATTLE_UI=(()=>{
   let batton=!!opt.batton;/* 10-26 FFA 시험: 랭크가 바뀐 포켓몬은 그냥 교대해도 늘 「배턴터치인가?」를 물어, 서두르다 「예」를 누르면 위협 −2 가 다음 포켓몬에게 넘어갔다 — 「배턴터치」를 쓸 줄 아는 포켓몬만 묻는다 (그 밖은 「(특수)」의 배턴터치 퇴장) */const knowsBP=MVS(m).some(v=>/배턴터치/.test(String((v||{}).name||'')))||potSrc(m).some(p=>p&&/배턴터치/.test(String(p.eff||'')))||/배턴터치/.test(String(m.abilityEff||''));if(!batton&&!opt.forced&&knowsBP&&passable(m)&&!opt.noAsk)batton=await askYes(`${m.name} 퇴장 — 「배턴터치」인가? (랭크·넘길 수 있는 상태를 다음 포켓몬에게)\n취소 = 그냥 퇴장`);
   const nb0=snap(c.b),nb=snap(nb0);const a0=m.entry||'';const L=outReset(nb,nb.mons[mid],{batton});if(a0)nb.mons[mid].outA=a0;   /* outA: 마지막으로 빠진 자리 (교대 등장 판정) */const AU=auraOff(nb,nb.mons[mid]);L.push(...AU.L);if(!await A().setMany(A().diffOps(['battle'],nb0,nb,3)))return;itemKick();if(batton)await A().set(['battle','trainers',m.tid,'batton'],nb.trainers[m.tid].batton);
   if(opt.quiet)return L;   /* 10-27: 교대 등장이 한 장(【교대】)으로 같이 적는다 */
-  A().sysLog(`${m.name} ${opt.forced?'강제 퇴장':'퇴장'}${L.length?'\n'+L.join('\n'):''}`,'battle')}
+  A().sysLog(`${m.name} ${opt.forced?'강제 퇴장':'퇴장'}${L.length?'\n'+L.join('\n'):''}`,'battle');
+  if(m.hp&&m.hp.cur>0)try{await exitTrig(mid,opt.forced?'강제 교대':(opt.how||'통상 교대'),{phase:'now',area:a0})}catch(e){console.warn('퇴장 계기',e)}}   /* 11-09 감우 56: 따로 누른 퇴장 · 임의 교대 · 강제 교대 (교대 한 번에 들어오는 길은 enterMon 이) */
  /* 강제 교대 (맵툴 change_forced): 배턴터치 없이 나가고, 벤치에서 아무 포켓몬이나 같은 에리어로 */
  async function forcedSwitch(mid,opt){opt=opt||{};const c=ctx();const b=c.b;const m=b.mons[mid];if(!m||!(canEdit(c,m)||(opt.sys&&c.mgr))||!m.entry)return false;
   const bench=Object.values(b.mons).filter(x=>x.tid===m.tid&&!x.entry&&!x.pend&&x.hp.cur>0&&x.id!==mid);if(!bench.length){A().toast('교대할 포켓몬이 벤치에 없다');if(opt.sys)A().sysLog(`${m.name} 강제 교대 — 벤치에 나올 포켓몬이 없다`,'battle');return false}
@@ -2449,8 +2503,8 @@ window.OM_BATTLE_UI=(()=>{
   const seats=c.ST.state.seats||{};const ownerOn=!ownT(c,a.tid)&&!!(seats[a.tid]||baseSeat(c,a.tid))&&(A().online(seats[a.tid]?a.tid:baseSeat(c,a.tid))||coOf(c,a.tid).some(s=>A().online(s)));
   if(ownerOn){const to='seat:'+a.tid;const yes=await remoteAsk(a,'confirm',{name:nm,q:`「${nm}」 — ${a.name} 임의 교대할까?`},()=>false,to);if(!yes)return;
    const r=await remoteAsk(a,'pick',{name:nm,label:'교대해 들어올 포켓몬',ids:bench.map(m=>m.id)},()=>'',to);const pk=typeof r==='string'?bench.find(m=>m.id===r)||null:r;if(!pk)return;
-   const area=a.entry;await exitMon(mid,{noAsk:true,sys:true});await enterMon(pk.id,area,{sys:true,how:'임의 교대'});return}
-  if(!await askYes(`「${nm}」 — ${a.name} 임의 교대할까?`,'교대','그대로'))return;const pk=await uiCtx(c.b,a,nm).pick(bench,'교대해 들어올 포켓몬');if(!pk)return;const area=a.entry;await exitMon(mid,{noAsk:true,sys:true});await enterMon(pk.id,area,{sys:true,how:'임의 교대'})}
+   const area=a.entry;await exitMon(mid,{noAsk:true,sys:true,how:'임의 교대'});await enterMon(pk.id,area,{sys:true,how:'임의 교대'});return}
+  if(!await askYes(`「${nm}」 — ${a.name} 임의 교대할까?`,'교대','그대로'))return;const pk=await uiCtx(c.b,a,nm).pick(bench,'교대해 들어올 포켓몬');if(!pk)return;const area=a.entry;await exitMon(mid,{noAsk:true,sys:true,how:'임의 교대'});await enterMon(pk.id,area,{sys:true,how:'임의 교대'})}
  function localUi(b,self,name,area){return {b,self,name,area,viewer:ctx().gm?'':ctx().seat,
   pick:(list,label)=>new Promise(res=>{const md=A().openModal(`<div class="mhead"><h2>${esc(name)} — ${esc(label)}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="pg">${list.map(m=>`<div class="pc" data-pk="${m.id}"><div class="pic" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div><div><b>${esc(m.name)}</b><div class="small dim">${SIDE_KO[m.side]} ${String(m.entry).toUpperCase()} · HP ${m.hp.cur}/${m.hp.max}</div></div></div>`).join('')}</div>`);
    md.querySelectorAll('[data-pk]').forEach(el=>el.onclick=()=>{A().closeModal();res(list.find(m=>m.id===el.dataset.pk))});md.querySelector('[data-x]').addEventListener('click',()=>res(null))}),
@@ -2486,7 +2540,7 @@ window.OM_BATTLE_UI=(()=>{
   /* 10-26 망령: 트레이너 고유는 고른 포켓몬이 곧 대상 — 구문의 「아군 1체」는 「고른 포켓몬」으로 (예전엔 고른 포켓몬을 뺀 다른 아군에게 걸렸다) */
   /* 10-26 덱 시험: 카드의 「아군 1체」가 기준 포켓몬(자기 편 첫 포켓몬)을 빼고 물었다 — 트레이너가 쓰는 카드는 기준 포켓몬도 고를 수 있게 (ally1s) */
   const ops=opt.uq?JSON.parse(JSON.stringify(auto.ops).replace(/"tgt":"ally1"/g,'"tgt":"self"')):auto.src==='card'?JSON.parse(JSON.stringify(auto.ops).replace(/"tgt":"ally1"/g,'"tgt":"ally1s"')):auto.ops;
-  const ux=uiCtx(nb,m,name,opt.area);if(opt.pickId){const up=ux.pick;ux.pick=(list,label)=>{const f=list.find(x=>x.id===opt.pickId);return f?Promise.resolve(f):up(list,label)}}   /* 11-02: 창에서 이미 고른 대상 */
+  const ux=uiCtx(nb,m,name,opt.area);{const PK=[...(opt.pickId?[opt.pickId]:[]),...(opt.pickIds||[])];if(PK.length){const up=ux.pick;ux.pick=(list,label)=>{const f=PK.map(id=>list.find(x=>x.id===id)).find(Boolean);return f?Promise.resolve(f):up(list,label)}}}   /* 11-09 감우 56: pickIds = 고를 후보를 순서대로 (퇴장 계기: 들어온 아군 → 정면) */   /* 11-02: 창에서 이미 고른 대상 */
   if(opt.tsel&&ux.useMove){const um=ux.useMove;ux.useMove=(mm,mv,nm,o)=>{const tm=(nb.mons||{})[opt.tsel];const sl=tm&&tm.entry&&tm.hp&&tm.hp.cur>0?[slotOf(tm.side,tm.entry)]:null;return um(mm,mv,nm,Object.assign({},o||{},sl?{targets:sl}:{}))}}   /* 11-09 망령: 「대상지정」으로 고른 포켓몬을 「기술사용」(추가 행동) 공격 창의 대상으로 */
   const r=await FX().run(ops,Object.assign(ux,opt.ctx||{},opt.force?{force:1}:{},opt.noRoll?{noRoll:1}:{},opt.hit?{hit:opt.hit}:{},adj,hold,STK2?{stack:STK2}:{}));   /* 11-09 opt.ctx: 「소지품 소모」 계기의 used 등 */   /* 11-08 opt.hit: 「조건 명중」이 맞은 대상 · 기술을 본다 */
   /* 11-09: 조건에 막혔으면 진행하는 화면(GM)에 「강제 발동」을 묻는다 — 저절로 도는 것(quiet)은 로그에 안내만 */
@@ -2568,10 +2622,35 @@ window.OM_BATTLE_UI=(()=>{
    if(L.length&&await saveBattle(b0,nb,undefined,{n:'상태',s:'해제',img:''}))A().sysLog(`【상태】\n${L.join('\n')}`,'battle',{})}finally{leaveBusy=false}}
  /* 11-09 감우 55: HP 적용 창이 lastHit 을 지우므로(clearHit) 맞은 기록은 lastTaken.hit.lh 에서도 찾는다 */
  const LHX=dm=>(dm&&(dm.lastHit||(dm.lastTaken&&dm.lastTaken.hit&&dm.lastTaken.hit.lh)))||null;
+ /* 11-09 감우 56 (망령 「빈사 퇴장 류도?」): 쓰러진 포켓몬 자신의 특성 · 소지품 「(「접촉기」 | 「비접촉기」 | 기술 대미지)로 「빈사」 상태가 되었을 때」 — 유폭 · 독체액 · 마지막씨앗 · 내용물분출 (대상 = 쓰러뜨린 포켓몬).
+    가장 최근 HP 변화(lastTaken)가 기술 명중이어야 한다 — 독 · 날씨로 쓰러졌으면 안 터진다. 비례 대미지 · 「X」 상태 · 「남아있던 HP 만큼」은 웹툴이 직접, 그 밖은 구문(레디메이드) · 없으면 알림.
+    포텐셜의 「상대의 기술로 빈사가 되었을 때」는 54-E 가 따로 한다. 리시버 · 화학의힘(아군이 빈사 → 같은 특성)도 여기서 */
+ const KO_RE=/(?:(「접촉기」|「비접촉기」|기술\s*대미지|「[^」]+」\s*기술)(?:로|에\s*의해)\s*)?「빈사」\s*상태가\s*되었을\s*때/;
+ function koHit(d){const lt=d&&d.lastTaken;if(lt)return lt.hit&&lt.hit.lh?lt.hit.lh:null;const lh=d&&d.lastHit;return lh&&+lh.turn===(+ctx().b.turn||0)?lh:null}
+ async function koSelf(did){const b=ctx().b;const d=b.mons[did];if(!d)return;const lh=koHit(d);const notes=[];const srcs=[];if(d.ability)srcs.push(['trait',abNm(d),String(d.abilityEff||'')]);if(d.item&&!IOFF(d))srcs.push(['item',d.item,String(d.itemEff||'')]);
+  for(const [kind,name,eff] of srcs){const cl=eff.replace(/<br\s*\/?>/gi,'\n').split(/(?=[①②③④⑤])|\n/).map(x=>x.trim()).find(c=>KO_RE.test(c)&&!/아군|상대(?:가|의\s*포켓몬)|모든/.test(c.split('「빈사」')[0]));if(!cl)continue;
+   const cz=(cl.match(KO_RE)||[])[1]||'';const K=kind==='trait'?'특성':'소지품';const head=`【${K}】 ${d.name} 『${name}』 — 「빈사」`;
+   if(/1할|\d할로|확률/.test(cl)&&/HP\s*:\s*가득|부활|되살/.test(cl)){notes.push(`${d.name} 『${name}』 — 쓰러졌다 (되살아나는 효과는 손으로 굴린다)`);continue}
+   if(cz){if(!lh||lh.cat==='변화'||!lh.fromId)continue;if(/비접촉기/.test(cz)&&lh.ct)continue;if(/「접촉기」/.test(cz)&&!lh.ct)continue;const tx=cz.match(/「([^」]+)」\s*기술/);if(tx&&!/접촉기/.test(tx[1])){const ts=tx[1].split('/').map(s=>S().typeEn(s.trim())).filter(Boolean);if(ts.length&&!ts.some(t=>(lh.mt||[]).includes(t)))continue}}
+   const atk=lh&&lh.fromId?ctx().b.mons[lh.fromId]:null;const to=/자신|아군/.test(cl.split('되었을 때')[1]||'')?null:atk;
+   const b0=snap(),nb=snap(b0);const tg=to?nb.mons[to.id]:null;const L=[];let x;
+   if(to&&(!tg||tg.hp.cur<=0))continue;
+   if(tg&&(x=cl.match(/남아\s*있던\s*「HP」\s*만큼/))){const v=Math.max(0,(+(nb.mons[did].hp.latest)||0));if(v>0){tg.hp.latest=tg.hp.cur;tg.hp.cur=Math.max(0,tg.hp.cur-v);L.push(`${tg.name} −${v} (남아 있던 HP) → ${tg.hp.cur}/${tg.hp.max}`)}}
+   else{const ops=[];const tgt=tg?(tg.side===d.side?'ally1':'enemy1'):'self';if((x=cl.match(/(\d+\/\d+)\s*(?:만큼)?의?\s*비례\s*대미지/)))ops.push({k:'dmg',tgt,value:x[1],basis:'max'});if((x=cl.match(/「([^」:]+)」\s*상태로\s*만든다/))&&FX().stEn&&FX().stEn(x[1]))ops.push({k:'state',state:x[1],tgt,count:-1,forced:0});
+    if(!ops.length){const a=FX().autoOf(d,kind,name);if(a&&realOps(a)&&!a.manual){await fireAuto(did,kind,name,{auto:a,quiet:true,noEv:1,head,pickIds:atk?[atk.id]:[]});}else notes.push(`${d.name} 『${name}』 — 「빈사」 계기`);continue}
+    const res=await FX().run(ops,{b:nb,self:nb.mons[did],name,pick:list=>list.find(q=>tg&&q.id===tg.id)||null,confirm:async()=>true,choose:async()=>[0]});L.push(...res.lines)}
+   if(!L.length)continue;for(const id in nb.mons){const q=nb.mons[id];if(q.entry&&q.hp.cur<=0){q.entry='';L.push(`${q.name}은(는) 쓰러졌다!`)}}
+   if(await saveBattle(b0,nb,undefined,{n:d.name,s:name,img:d.image||''}))A().sysLog(`${head}${lh&&lh.move?' ('+(lh.from||'')+'의 「'+lh.move+'」)':''}\n${L.join('\n')}`,'battle',{mid:did,img:d.image||''})}
+  /* 리시버 · 화학의힘: 필드의 같은 편 포켓몬이 쓰러진 아군의 특성을 이어받는다 */
+  for(const x of Object.values(ctx().b.mons||{})){if(!x||x.id===did||!x.entry||x.hp.cur<=0||!sameT(x,d,ctx().b))continue;if(!/아군이\s*「빈사」\s*상태가\s*되었을\s*때\s*아군과\s*같은\s*「특성」이\s*된다/.test(String(x.abilityEff||'')))continue;const tn=abNm(d);if(!tn||tn===abNm(x))continue;
+   const b0=snap(),nb=snap(b0);const t=nb.mons[x.id];const by='특성 : '+abNm(x);if(FX().setAb)FX().setAb(t,tn,by);else{if(t.abilityOrig==null)t.abilityOrig=t.ability||'';t.abilityBy=by;t.ability=tn;t.abilityEff=((DB().traits||{})[tn]||{}).multi||''}
+   if(await saveBattle(b0,nb,undefined,{n:x.name,s:abNm(x),img:x.image||''}))A().sysLog(`【특성】 ${x.name} 『${abNm(x)}』 — ${d.name}의 「${tn}」을(를) 이어받았다`,'battle',{mid:x.id,img:x.image||''})}
+  if(notes.length)A().sysLog(`【계기】 ${d.name} 「빈사」 — 손으로 처리할 효과\n${[...new Set(notes)].join('\n')}`,'battle',{gmPriv:1})}
  async function faintWatch(){const c=ctx();const b=c.b;if(!c.mgr||!b.started||faintBusy)return;const bk=String(b.started)+':'+Object.keys(b.mons||{}).sort().join(',');
   if(!FAINT_SEEN[bk]){FAINT_SEEN[bk]=new Set(Object.values(b.mons||{}).filter(m=>m.hp.cur<=0).map(m=>m.id));return}
   const seen=FAINT_SEEN[bk];/* 10-26 점검: 되살아난(HP>0) 포켓몬은 다시 빈사 감시 대상으로 */for(const m of Object.values(b.mons||{}))if(m.hp.cur>0&&seen.has(m.id))seen.delete(m.id);const neu=Object.values(b.mons||{}).filter(m=>m.hp.cur<=0&&!seen.has(m.id));if(!neu.length)return;neu.forEach(m=>seen.add(m.id));if(!isLeader(c))return;   /* 10-27: 아군 빈사 자동 처리도 한 창만 */faintBusy=true;
   try{const RE=/아군이\s*(?:상대의\s*기술에\s*의해\s*)?「빈사」\s*상태가\s*되었을\s*때/;const notes=[];const doneT=new Set();
+    /* 11-09 감우 56: 【퇴장 (빈사)】 · 맨 【퇴장】 (「필드에 등장한 아군」 줄은 그 자리에 다음 포켓몬이 나올 때) */for(const dm of neu){try{await koSelf(dm.id)}catch(e){console.warn('빈사 특성',e)}try{await exitTrig(dm.id,'빈사',{phase:'now'})}catch(e){console.warn('퇴장 (빈사)',e)}}
     /* 11-09 감우 55: 「이 기술로 대상을 쓰러뜨렸을 때 자신의 HP 를 N 회복」(안개로삼키기류) */for(const dm of neu){const lh=LHX(dm);const k=lh&&ctx().b.mons[lh.fromId];if(!k||k.hp.cur<=0||+lh.turn!==(+ctx().b.turn||0))continue;const mvo=MVS(k).find(v=>v&&v.name===lh.move);const au=mvo&&moveAuto(mvo);if(!au||!au.koHeal)continue;if((k.states||{}).HealBlock){A().sysLog(`【기술】 ${k.name} 「${lh.move}」 — 「회복봉인」이라 회복하지 못함`,'battle',{mid:k.id});continue}const [p,q]=au.koHeal.split('/').map(Number);const b0=snap(),nb=snap(b0);const kk=nb.mons[k.id];const v=Math.min(kk.hp.max-kk.hp.cur,Math.max(1,Math.floor(kk.hp.max*p/q)));kk.hp.latest=kk.hp.cur;kk.hp.cur+=v;if(await saveBattle(b0,nb,undefined,{n:k.name,s:lh.move,img:k.image||''}))A().sysLog(`【기술】 ${k.name} 「${lh.move}」 — ${dm.name}을(를) 쓰러뜨려 HP +${v} → ${kk.hp.cur}/${kk.hp.max}`,'battle',{mid:k.id,img:k.image||''})}
     /* 11-09 감우 55: 「길동무」 — 상대의 기술로 쓰러지면 그 상대도 「빈사」 */for(const dm of neu){if(!(dm.states||{}).DestinyBond)continue;const lh=LHX(dm);const k=ctx().b.mons[lh&&lh.fromId];if(!k||k.hp.cur<=0||sameT(k,dm,ctx().b))continue;const b0=snap(),nb=snap(b0);const kk=nb.mons[k.id];kk.hp.latest=kk.hp.cur;kk.hp.cur=0;kk.entry='';delete nb.mons[dm.id].states.DestinyBond;if(await saveBattle(b0,nb,undefined,{n:dm.name,s:'길동무',img:dm.image||''}))A().sysLog(`【상태】 ${dm.name} 「길동무」 — ${k.name}도 「빈사」!`,'battle',{mid:dm.id,img:dm.image||''})}
     /* 11-09 감우 54-E: 「상대의 기술로 빈사가 되었을 때」(자신) — 쓰러진 포켓몬 자신의 포텐셜 (잇칸자카 『문을 여는 문지기』) */
@@ -2768,6 +2847,7 @@ window.OM_BATTLE_UI=(()=>{
    /* 줄마다 고르는 효과(선택:)에서 늘 켜져 있어야 할 줄만 (하이 블로커 ① 방호수세 …): 계기 말이 없는 지속형 줄을 등장 때 건다 */
    if(!tm.entry&&a.ops.length===1&&a.ops[0].k==='choice'){const po=(a.ops[0].opts||[]).filter(o=>o&&o.label&&/^[\s-]*[①②③④⑤]/.test(o.label)&&!/조건|등장|턴 종료|함성|보급|선행|사전|교대|빈사|받았을|했을|되었을|됐을|\d할/.test(o.label)&&passiveOps(o.ops,''));
     if(po.length){const cur=ctx().b.mons[mid];if(cur&&(cur.fxDone||{})[name])continue;if(await fireAuto(mid,kind,name,{quiet:true,noRoll:true,gmPriv:GP,auto:{ops:po.flatMap(o=>o.ops),text:a.text}})){const d=Object.assign({},(ctx().b.mons[mid]||{}).fxDone||{});d[name]=1;await A().set(['battle','mons',mid,'fxDone'],d)}}continue}
+   if(kind==='trait'&&!o2.passiveOnly&&(tm.entry||/【등장\s*\((?!\s*상대)/.test(String(etx2).split(/[②③④⑤]/)[0]))){const gd=guardOff(ctx().b,ctx().b.mons[mid]||m);if(gd){A().sysLog(`【특성】 ${m.name} 『${String(name).replace(/[『』]/g,'')}』의 【등장】 — ${gd} 「경호원」으로 무효`,'battle',{mid:m.id});continue}}   /* 11-09 감우 56: 상대 「경호원」 */
    /* 【등장 (통상 교대)】 · 【등장 (임의 교대)】 · 【등장 (죽어내밀기)】: 그렇게 나왔을 때만 (바운서 · 닌자 ②) */
    {const hx=String(etx2).split(/[②③④⑤]/)[0].match(/【등장\s*\(([^)]+)\)】/);if(hx&&!tm.entry&&!(a.ops.length===1&&a.ops[0].k==='choice')){const abX=hx[1].match(/「특성\s*:\s*([^」]+)」/);/* 11-09 감우 55: 【등장 (「특성 : X」)】 = 그 특성일 때 나오면 (엔터프라이즈 『고스트 레기온』) */if(!o2.passiveOnly&&((o2.how&&hx[1].replace(/\s/g,'').includes(String(o2.how).replace(/\s/g,'')))||(abX&&abNm(m).replace(/\s/g,'')===abX[1].replace(/\s/g,''))))await fireAuto(mid,kind,name,{quiet:true});continue}}
    /* 11-07 23:44 망령 「강제 교대로 나온 포켓몬엔 【등장】 키워드는 격발하지 않아」: (강제 교대)가 붙은 【등장 (…)】 은 위에서 따로 — 그 밖의 【등장】 은 건너뛰고 이름만 알린다 */
@@ -3408,7 +3488,7 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【[^】]*】\s
     if(g){A().sysLog(`${d.name} 강제 교대를 받지 않는다 (${g})`,'battle');continue}
     const c2=ctx();if(canEdit(c2,d)||c2.mgr)await forcedSwitch(d.id,{sys:true});else A().sysLog(`${d.name} 강제 교대 — 상대나 GM 이 「퇴장 → 강제 교대」로 처리`,'battle')}
    if(swS&&RESULT.targets.some(r=>r.acc.hit)){const a=ctx().b.mons[mid];if(a&&a.entry&&a.hp.cur>0){const bench=Object.values(ctx().b.mons).filter(x=>x.tid===a.tid&&!x.entry&&!x.pend&&x.hp.cur>0&&x.id!==mid);
-    if(!bench.length)A().sysLog(`${a.name} 교대할 포켓몬이 벤치에 없다`,'battle');else{const pk=await uiCtx(ctx().b,a,RESULT.mv.name).pick(bench,'교대해 들어올 포켓몬');if(pk){const area=a.entry;await exitMon(mid,{noAsk:true,batton:swS==='batton',sys:true});await enterMon(pk.id,area,{sys:true,how:'임의 교대'})}}}}}}
+    if(!bench.length)A().sysLog(`${a.name} 교대할 포켓몬이 벤치에 없다`,'battle');else{const pk=await uiCtx(ctx().b,a,RESULT.mv.name).pick(bench,'교대해 들어올 포켓몬');if(pk){const area=a.entry;await exitMon(mid,{noAsk:true,batton:swS==='batton',sys:true,how:'임의 교대'});await enterMon(pk.id,area,{sys:true,how:'임의 교대'})}}}}}}
 
  /* 상세 창용: 지금 걸린 것 (읽기 전용) */
  /* ---------- 단축키 (prefs_ui 「배틀」 묶음에서 부른다). 처리했으면 true ----------
