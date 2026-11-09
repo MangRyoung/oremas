@@ -1073,11 +1073,11 @@ window.OM_BATTLE_UI=(()=>{
    case 'revealmon':return revealOne(d.tid,d.mid);
    case 'fire':return openFire(d.tid);
    case 'onext':{{const O0=c.b.order||[];const cur=O0[+c.b.orderIdx||0];if((+c.b.phase||0)===3&&cur&&cur.mid)try{await deferFire(cur.mid,'자신의 행동이 끝나서','act')}catch(e){console.warn('defer',e)}}   /* 11-09 미룬 대미지: 차례가 넘어가면 */
-    const O=c.b.order||[];let n=Math.min(O.length,(+c.b.orderIdx||0)+1);const skipped=[];
+    const O=c.b.order||[];let n=Math.min(O.length,(+c.b.orderIdx||0)+1);const skipped=[],outSk=[];   /* 11-10 「교대로 물러난 포켓몬도 『쓰러져 있어』로 뜬다」: 살아 있는데 필드에 없으면 따로 */
     /* 10-26 망령: 쓰러졌거나 필드에 없는 포켓몬의 차례는 건너뛴다 */
-    const a1=[];while(n<O.length){const om=(c.b.mons||{})[O[n].mid];if(om&&om.entry&&om.hp.cur>0){const na=!O[n].change&&misagA1(c.b,om);if(!na)break;a1.push(`${O[n].name} — ${na}`);n++;continue}if(!O[n].change)skipped.push(O[n].name);n++}   /* 11-01 망령: 각성체 대가 A-1 행동 불능은 차례를 건너뛴다 (그때 필드로 다시 본다) */
+    const a1=[];while(n<O.length){const om=(c.b.mons||{})[O[n].mid];if(om&&om.entry&&om.hp.cur>0){const na=!O[n].change&&misagA1(c.b,om);if(!na)break;a1.push(`${O[n].name} — ${na}`);n++;continue}if(!O[n].change)(om&&om.hp.cur>0?outSk:skipped).push(O[n].name);n++}   /* 11-01 망령: 각성체 대가 A-1 행동 불능은 차례를 건너뛴다 (그때 필드로 다시 본다) */
     for(const l of a1)A().sysLog(l+' (차례를 건너뛴다)','battle');
-    if(skipped.length)A().sysLog(`${skipped.join(' · ')} — 쓰러져 있어 차례를 건너뛴다`,'battle');await A().set(['battle','orderIdx'],n);if((+c.b.phase||0)===2)await A().set(['battle','phase'],3);if(n<(c.b.order||[]).length)A().sysLog(`▶ ${c.b.order[n].name}의 행동`,'battle');else{if((+c.b.orderIdx||0)<n)A().sysLog('행동 순서 끝 — 턴 종료 처리','battle');if(c.b.endq&&c.b.endq.step)return endFlow();if(await askYes('행동이 모두 끝났다. 턴 마무리(턴 가장 마지막 → 턴 종료 → 턴 종료 이후)로 갈까?'))await endFlow()}return}
+    if(skipped.length)A().sysLog(`${skipped.join(' · ')} — 쓰러져 있어 차례를 건너뛴다`,'battle');if(outSk.length)A().sysLog(`${outSk.join(' · ')} — 필드에 없어(교대로 물러남) 차례를 건너뛴다`,'battle');await A().set(['battle','orderIdx'],n);if((+c.b.phase||0)===2)await A().set(['battle','phase'],3);if(n<(c.b.order||[]).length)A().sysLog(`▶ ${c.b.order[n].name}의 행동`,'battle');else{if((+c.b.orderIdx||0)<n)A().sysLog('행동 순서 끝 — 턴 종료 처리','battle');if(c.b.endq&&c.b.endq.step)return endFlow();if(await askYes('행동이 모두 끝났다. 턴 마무리(턴 가장 마지막 → 턴 종료 → 턴 종료 이후)로 갈까?'))await endFlow()}return}
    case 'oprev':{await A().set(['battle','orderIdx'],Math.max(0,(+c.b.orderIdx||0)-1));return}
    case 'ojump':{if(!c.mgr)return;await A().set(['battle','orderIdx'],+d.i);return}
    case 'oresort':return resortOrder();
