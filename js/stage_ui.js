@@ -17,7 +17,7 @@ window.OM_STAGE_UI=(()=>{
  const TYPES=['Normal','Fire','Water','Electric','Grass','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'];
  const ST=()=>A().ST;const gm=()=>ST().role==='gm';
  const kindOf=e=>{const t=+((e||{}).type)||0;return t>=0&&t<=2?t:0};
- const keyOf=e=>KINDS[kindOf(e)]+'/'+(e.name||'');
+ const keyOf=e=>KINDS[kindOf(e)]+'/'+String(e.name||'').replace(new RegExp('^('+Object.values(KINDS).join('|')+')/'),'');   /* 11-09 감우 55: 이름에 이미 「이계/」가 붙은 칸은 두 번 붙이지 않는다 */
  const tcol=en=>{try{return S().typeColor(en)}catch(e){return {bg:'#2d3240',fg:'#fff'}}};
  const tko=en=>{try{return S().typeKo(en)}catch(e){return en}};
  const bgSrc=v=>{v=String(v||'').trim();if(!v)return '';if(/^(https?:|data:|img\/|\.\/|\/)/.test(v))return v;for(const g of DB().bg||[])for(const it of g.i||[])if((it.k===v||it.l===v)&&it.src)return it.src;return ''};
