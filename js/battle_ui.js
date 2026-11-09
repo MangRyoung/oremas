@@ -1744,13 +1744,15 @@ window.OM_BATTLE_UI=(()=>{
   const eff=r.typeEn?B().effectiveness([r.typeEn],m,{atkTypes:r.atkTypes||[]}):{value:1,stab:false};
   /* 11-06 망령 「미래예지 대미지에 반감열매가 작동을 안 한다」: 받는 쪽 반감열매(야파열매 …)를 HP 창과 같은 규칙(OI().resist)으로 보고, 맞으면 반감하고 먹는다 */
   const berry=eff.value>0&&OI()?OI().resist(m,{mt:r.typeEn?[r.typeEn]:[],cat:cat==='physical'?'물리':'특수',eff:eff.value,multi:false}):'';
-  const hd=B().hpDamage(m,amt,eff.value,{stab:eff.stab,berryHalf:!!berry});
-  m.hp.cur=Math.max(0,m.hp.cur-hd.final);const out=[`◆ 예고 공격 발동 — 「${r.by}」의 『${r.mv}』가 ${m.name}을(를) 덮쳤다! ${hd.final} 대미지 (기본 ${Math.floor(base*0.85)}~${Math.floor(base)}${eff.value!==1?' · 상성 ×'+eff.value:''}${eff.stab?' · 타입 일치':''}${wall<1?' · 벽 보정':''}${berry?' · 「'+berry+'」 반감':''}) → HP ${m.hp.cur}/${m.hp.max}`];
+  /* 11-10 망령 「벌레침략 공격에 버텨라 반감 적용된다고 했는데 자동화엔 안 된다」: 받는 쪽이 『버텨라!』(flags.endure — 턴 종료 처리에서 플래그가 지워지기 전에 m._fe 로 옮겨 둔다)면 ×0.5 */
+  const endu=!!((m.flags||{}).endure||m._fe);delete m._fe;
+  const hd=B().hpDamage(m,amt,eff.value,{stab:eff.stab,berryHalf:!!berry,guard:endu?0.5:1});
+  m.hp.cur=Math.max(0,m.hp.cur-hd.final);const out=[`◆ 예고 공격 발동 — 「${r.by}」의 『${r.mv}』가 ${m.name}을(를) 덮쳤다! ${hd.final} 대미지 (기본 ${Math.floor(base*0.85)}~${Math.floor(base)}${eff.value!==1?' · 상성 ×'+eff.value:''}${eff.stab?' · 타입 일치':''}${wall<1?' · 벽 보정':''}${berry?' · 「'+berry+'」 반감':''}${endu?' · 『버텨라!』 ×0.5':''}) → HP ${m.hp.cur}/${m.hp.max}`];
   if(berry){const o=OI().all(m).find(x=>x.r.name===berry);const L=[];OI().use(m,L,b,o?o.k:0);out.push(...L.map(t=>`${m.name} ${t}`))}
   if(m.hp.cur<=0){m.entry='';out.push(`${m.name}은(는) 쓰러졌다!`)}return out}
  /* 기술을 내보낼 때 줄어드는 상태: DB 의 prog:'move' + 얼음(설명이 「3번째로 기술을 내보낼 때 해제」라 턴이 아니라 기술 횟수로 센다) */
  const movesDown=(k,d)=>(d&&d.prog==='move')||k==='Freeze';
- async function turnEnd(){if(!ctx().mgr)return;try{await deferAll('턴 종료 시 (행동하지 못했거나 이미 행동했다)')}catch(e){console.warn('defer',e)}try{await fieldAuto('end')}catch(e){console.warn('필드 턴 종료 구문',e)}const c=ctx();if(!c.mgr)return;const b0=snap(c.b),b=snap(b0);const f=fieldOf(b);const db=(DB().states||{}).st||{};const lines=[];const futs=[];
+ async function turnEnd(){if(!ctx().mgr)return;try{await deferAll('턴 종료 시 (행동하지 못했거나 이미 행동했다)')}catch(e){console.warn('defer',e)}try{await fieldAuto('end')}catch(e){console.warn('필드 턴 종료 구문',e)}try{await guard4Future()}catch(e){console.warn('예고 공격 버텨라',e)}const c=ctx();if(!c.mgr)return;const b0=snap(c.b),b=snap(b0);const f=fieldOf(b);const db=(DB().states||{}).st||{};const lines=[];const futs=[];
   /* 10-21 망령: 로그를 갈래별로 (포켓몬 · 풀린 것 · 필드) */ const fieldL=[];const rel={};const relAdd=(m,t)=>{(rel[m.name]=rel[m.name]||[]).push(t)};
   if(F()){const slots={};for(const s of SIDES){const e=entered(b,s);for(const a in e)slots[s+'_'+a]=e[a]}
    const r1=F().turnEndStates(b.mons,slots,{field:f,turn:+b.turn||0});lines.push(...r1.lines);const r2=F().turnEndField(b.mons,f,{noGrass:1});fieldL.push(...r2.lines);
@@ -1768,7 +1770,7 @@ window.OM_BATTLE_UI=(()=>{
    if(m.tempRank){for(const k in m.tempRank){{const lim=k==='critical'?4:6;m.rank[k]=Math.max(-lim,Math.min(lim,(+m.rank[k]||0)-(+m.tempRank[k]||0)))}}delete m.tempRank;relAdd(m,'임시 랭크')}
    if(m.tempMod){for(const k in m.tempMod){m.mod[k]=Math.round(((+m.mod[k]||1)/(+m.tempMod[k]||1))*1000)/1000;if(Math.abs(m.mod[k]-1)<0.002)delete m.mod[k]}delete m.tempMod}
    if(m.fx&&m.fx.mults&&m.fx.mults.some(e=>e.temp))m.fx.mults=m.fx.mults.filter(e=>!e.temp);
-   if(m.flags)delete m.flags;
+   if(m.flags){if(m.flags.endure&&m.futRsv)m._fe=1;delete m.flags}
    m.started=false}
   for(const m of futs)lines.push(...futureFire(b,m));
   if(FX())lines.push(...FX().turnEnd(b));
@@ -3107,6 +3109,16 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
    const fit=nm==='버텨라!'||(nm==='물러나!'&&mv.cat==='물리')||(nm==='피해라!'&&mv.cat==='특수');if(!fit)continue;
    try{await fireOrder(dm.tid,dm.id,'order',okey,'pre');if(((((ctx().b.cmds||{})[dm.tid]||{}).fired||{})[dm.id]||{}).order)fired.push(`${dm.name} 『${nm}』`)}catch(e){console.warn('방어 4식 선행 발동',e)}}
   if(fired.length)A().toast('선행 발동 — '+fired.join(' · '))}
+ /* 11-10 망령 「벌레침략(미래예지 계열) 공격에 버텨라 반감」: 예고 공격은 공격 창을 거치지 않아 선행 입력한 『버텨라!』가 안 걸렸다 —
+    턴 종료 처리 전에, 이번 턴 끝에 예고 공격을 맞을 포켓몬이 『버텨라!』를 선행 입력하고 아직 안 썼으면 먼저 선행 발동한다 (물러나! · 피해라! 는 명중 판정이 없는 공격이라 안 건다) */
+ async function guard4Future(){const c=ctx();const b=c.b;const db=(DB().states||{}).st||{};const tk=turnKey(b);let SEC=null;const fired=[];
+  for(const mid in b.mons||{}){const m=b.mons[mid];const r=m&&m.futRsv;if(!r||!m.entry||!(m.hp&&m.hp.cur>0))continue;const v=+((m.states||{})[r.st]);const def=db[r.st]||{};
+   if(!((def.prog==='turn'||def.prog==='once')&&!movesDown(r.st,def)&&v>0&&v<1000&&v-1<=0))continue;if((m.flags||{}).endure)continue;const t=(b.trainers||{})[m.tid];if(!t)continue;
+   if(SEC==null){SEC={};if(c.ST&&c.ST.secret){try{const rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd');for(const x of rows||[]){if(!cmdFresh(x,b))continue;for(const k in ((x.data||{}).mons||{}))SEC[k]=x.data.mons[k]}}catch(e){}}}
+   const ok=((b.cmds||{})[m.tid]||{}).ok;const g4=ok&&ok.key===tk&&ok.m&&ok.m[mid]&&ok.m[mid].g4;const okey=(SEC[mid]||{}).order||g4;if(!okey)continue;
+   if(((((ctx().b.cmds||{})[m.tid]||{}).fired||{})[mid]||{}).order)continue;if(OO().orderName(t,okey)!=='버텨라!')continue;
+   try{await fireOrder(m.tid,mid,'order',okey,'pre');if(((((ctx().b.cmds||{})[m.tid]||{}).fired||{})[mid]||{}).order)fired.push(`${m.name} 『버텨라!』`)}catch(e){console.warn('예고 공격 버텨라 선행 발동',e)}}
+  if(fired.length)A().toast('선행 발동 (예고 공격) — '+fired.join(' · '))}
  /* ===== 11-05 은열쇠 배틀 카드 (세 칸 · 노트 32 3차): 공격 창 결과에서 조건이 맞으면 「🗝 카드」 단추 — 자기 포켓몬에게만 · 쓰면 버림 =====
     명중다시 아군(실타래 되감기) · 명중다시 상대(요정의 장난) · 급소무효 1(안개의 환영) · 난수다시(위기일발!) · 부가무시 30(약간 은밀한 망토) · 행동다시(다시 일어서) */
  const s3tid=(b,m)=>{const t=(b.trainers||{})[m&&m.tid]||{};return t.srcTid||(m&&m.tid)||''};
