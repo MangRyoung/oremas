@@ -2654,8 +2654,8 @@ window.OM_BATTLE_UI=(()=>{
  /* 무효(준비 조건 불충족)인가 */
  function potOffWhy(m,name){const nm=String(name||'').replace(/[『』]/g,'').trim();if(!m)return '';const a=(m.potOff||{})[nm];if(a)return a;const t=((ctx().b||{}).trainers||{})[m.tid];return ((t&&t.potOff)||{})[nm]||''}
  /* 11-09 감우 54-F: 다른 포켓몬 · 트레이너 고유가 주는 「PT 전원이 「기능 확장 : X」를 내보낼 수 있다」 */
- function partyExtSrc(m){const b=(A().ST.state||{}).battle||{};const out=[];if(!m||!m.tid)return out;for(const x of Object.values(b.mons||{})){if(!x||x.id===m.id||x.tid!==m.tid)continue;for(const p of potSrc(x)){const e=String(p.eff||'');if(/PT\s*전원/.test(e)&&/기능\s*확장/.test(e)&&!potOffWhy(x,p.name))out.push({n:String(p.name||'').replace(/[『』]/g,'').trim(),e})}}
-  const t=(b.trainers||{})[m.tid];for(const u of ((t&&t.unique)||[])){const e=String((u&&u.eff)||'');if(u&&u.name&&/기능\s*확장/.test(e)&&/PT\s*전원|아군\s*전체/.test(e)&&!((t.potOff||{})[String(u.name).replace(/[『』]/g,'').trim()]))out.push({n:String(u.name).replace(/[『』]/g,'').trim(),e})}return out}
+ function partyExtSrc(m){const b=(A().ST.state||{}).battle||{};const out=[];if(!m||!m.tid)return out;for(const x of Object.values(b.mons||{})){if(!x||x.id===m.id||x.tid!==m.tid)continue;for(const p of potSrc(x)){const e=String(p.eff||'');if(/PT\s*전원|아군\s*전원|아군\s*전체|아군이\s*「?기능/.test(e)&&/기능\s*확장/.test(e)&&!potOffWhy(x,p.name))out.push({n:String(p.name||'').replace(/[『』]/g,'').trim(),e})}}
+  const t=(b.trainers||{})[m.tid];for(const u of ((t&&t.unique)||[])){const e=String((u&&u.eff)||'');if(u&&u.name&&/기능\s*확장/.test(e)&&/PT\s*전원|아군\s*전원|아군\s*전체|아군이\s*「?기능/.test(e)&&!((t.potOff||{})[String(u.name).replace(/[『』]/g,'').trim()]))out.push({n:String(u.name).replace(/[『』]/g,'').trim(),e})}return out}
  /* ===== 11-09 감우 54-E 「자동 계기 넓히기」 =====
     evReact(종류, 정보): 필드 위 포켓몬의 특성 · 소지품 · 포텐셜 · 전용과 트레이너 고유 중 효과 글이 그 계기에 맞는 것을 찾아 — 구문이 있으면 【자동】은 바로, 아니면 「발동할까?」 (rcvReact 와 같은 방식, 턴마다 한 번) · 구문이 없으면 알림만.
     종류: made (상대를 「X」 상태로 만들었을 때) · trait (「특성 : X」이 발동했을 때) · pot (『X』가 발동했을 때 · 아군이 【보급】 포텐셜을 발동했을 때 → 횟수 회복) · drain (상대가 드레인으로 회복했을 때) ·
