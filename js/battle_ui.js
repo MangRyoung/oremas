@@ -1119,7 +1119,7 @@ window.OM_BATTLE_UI=(()=>{
   if(FX()&&(ctx().b.mons[mid]||{}).entry&&!opt.noAuto&&ctx().b.started){await autoOnEntry(mid,{how:opt.how||(opt.forced?'강제 교대':occ&&occ.id!==mid?'통상 교대':(+b.phase||0)>=2?'통상 교대':'죽어내밀기')});try{await fieldAuto('entry',{mid})}catch(e){console.warn('필드 등장 구문',e)}try{await foeInTrig(mid)}catch(e){console.warn('등장 (상대)',e)}}}
  async function autoEntryAll(ids,hows){const b=ctx().b;const f=fieldOf(b);const sp=m=>{try{return B().statValue(m,'speed').value*spMulOf(m,f).v}catch(e){return +((m.stats||[])[5]||0)}};
   const list=ids.map(id=>b.mons[id]).filter(m=>m&&m.entry&&m.hp.cur>0).sort((x,y)=>sp(y)-sp(x));for(const m of list)if(FX()){await autoOnEntry(m.id,hows&&hows[m.id]?{how:hows[m.id]}:undefined);try{await fieldAuto('entry',{mid:m.id})}catch(e){console.warn('필드 등장 구문',e)}}
-  for(const m of list)if(FX())try{await foeInTrig(m.id)}catch(e){console.warn('등장 (상대)',e)}}   /* 11-09 감우 56: 모두 나온 뒤 【등장 (상대)】 */
+  {const tog=list.map(m=>m.id);for(const m of list)if(FX())try{await foeInTrig(m.id,tog)}catch(e){console.warn('등장 (상대)',e)}}}   /* 11-09 감우 56: 모두 나온 뒤 【등장 (상대)】 — 같이 나온 것끼리는 불발 (망령 13:51) */
  /* 10-23 망령: 맵툴 print_entry — 등장하면 「통솔」 명중 강화 → 특성 등장 문구 → 소지품 등장 문구 (data/ment.js, 맵툴 entry_ment 그대로) */
  const LEAD_ACC={A:1.05,AA:1.15,AAA:1.25,S:1.33};
  /* 「통솔」 명중 보정: 랭크 · 배율(mod)에 넣지 않고 공격 창 「명중 배율」 기본값으로 곱한다 (10-24 망령) */
@@ -1221,9 +1221,10 @@ window.OM_BATTLE_UI=(()=>{
   if(notes.length)A().sysLog(`【계기】 ${m.name} ${why} — 발동 조건을 만족한 효과 (구문이 없어 손으로)\n${[...new Set(notes)].join('\n')}`,'battle',{gmPriv:1})}
  /* 빈자리로 나왔을 때: 그 자리를 떠난 아군의 미뤄 둔 퇴장 줄 (「필드에 등장한 아군」) */
  async function exitPendIn(mid){const b=ctx().b;const m=b.mons[mid];if(!m||!m.entry)return;const k=m.side+'_'+m.entry;const p=(b.exitPend||{})[k];if(!p)return;await A().set(['battle','exitPend',k],null);if(p.mid===mid||!sameT(b.mons[p.mid]||{},m,b))return;   /* 같은 편이면 다른 트레이너 포켓몬도 「아군」 */await exitTrig(p.mid,p.how,{phase:'in',inId:mid,area:m.entry})}
- /* 상대가 나왔을 때: 필드의 다른 편 포켓몬의 【등장 (상대)】 (무당거미 · 뜬돌 · 마그마의바다 …) — 그 상대가 대상 */
- async function foeInTrig(mid){const b=ctx().b;if(!b||!b.started||!FX())return;const m=b.mons[mid];if(!m||!m.entry||m.hp.cur<=0)return;const notes=[];
-  for(const y of Object.values(b.mons||{})){if(!y||!y.entry||y.hp.cur<=0||y.id===mid||sameT(y,m,b))continue;const g=guardOff(ctx().b,y);
+ /* 상대가 나왔을 때: 필드의 다른 편 포켓몬의 【등장 (상대)】 (무당거미 · 뜬돌 · 마그마의바다 …) — 그 상대가 대상.
+    11-09 13:51 망령 「동시에 나온 케이스엔 불발」: 같이 나온 포켓몬(선발 · 동시 내밀기 묶음 = together)끼리는 안 터진다 — 이미 필드에 있던 쪽만 */
+ async function foeInTrig(mid,together){const b=ctx().b;if(!b||!b.started||!FX())return;const m=b.mons[mid];if(!m||!m.entry||m.hp.cur<=0)return;const notes=[];
+  for(const y of Object.values(b.mons||{})){if(!y||!y.entry||y.hp.cur<=0||y.id===mid||sameT(y,m,b)||(together&&together.includes(y.id)))continue;const g=guardOff(ctx().b,y);
    for(const x of trigSrcs(y,ctx().b)){const hit=tagHit(x.eff,'foeIn');if(!hit)continue;const nm=String(x.name).replace(/[『』]/g,'');if(x.kind==='trait'&&g){A().sysLog(`【특성】 ${y.name} 『${nm}』의 【등장 (상대)】 — ${g} 「경호원」으로 무효`,'battle',{mid:y.id});continue}
     const cur=ctx().b.mons[mid];if(!cur||!cur.entry||cur.hp.cur<=0)break;const r=await trigFire(y.id,x,hit,{why:`${m.name} 등장 (상대)`,pickIds:[mid]});if(r&&r.note)notes.push(r.note)}}
   if(notes.length)A().sysLog(`【계기】 ${m.name} 등장 (상대) — 발동 조건을 만족한 효과 (구문이 없어 손으로)\n${[...new Set(notes)].join('\n')}`,'battle',{gmPriv:1})}
