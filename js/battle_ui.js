@@ -220,7 +220,8 @@ window.OM_BATTLE_UI=(()=>{
  function secRoll(n){const A0=SECADJ||{};if(A0.sure)return {ok:true,txt:' — 확정 (손으로)'};if(!A0.add){if(n>=10)return {ok:true,txt:' — 확정'};const r=1+Math.floor(Math.random()*10);const ok=r<=n;return {ok,txt:` — 굴림 ${r}/${n} ${ok?'발동!':'불발'}`}}
   const p=Math.max(0,Math.min(100,n*10+(+A0.add||0)));if(p>=100)return {ok:true,txt:` → ${p}% (보정 ${A0.add>0?'+':''}${A0.add}%p) — 확정`};const r=1+Math.floor(Math.random()*100);const ok=r<=p;return {ok,txt:` → ${p}% (보정 ${A0.add>0?'+':''}${A0.add}%p) — 굴림 ${r}/${p} ${ok?'발동!':'불발'}`}}
  function secRolls(atk,def,mv){const t=String(mv.eff||'');const out=[];const re=/(\d+)할\s*(?:의\s*확률로\s*|로\s*)?([^.。\n]*)/g;let m;
-  while((m=re.exec(t))){let n=+m[1];const what=m[2].trim()||'추가 효과';if(atk.ability==='하늘의은총'||rainbowOn(atk))n=Math.min(10,n*2);
+  const SI=def?(SECXM[def.id]||null):null;while((m=re.exec(t))){let n=+m[1];const what=m[2].trim()||'추가 효과';if(SI&&SI.set)n=SI.set;if(atk.ability==='하늘의은총'||rainbowOn(atk))n=Math.min(10,n*2);if(SI){if(SI.mul!==1)n=Math.min(10,Math.round(n*SI.mul*10)/10);if(SI.sure)n=10}
+   if(SI&&SI.imm&&def&&def.id!==atk.id){out.push({ok:false,line:`부가효과 ${m[1]}할 ${what} — ${def.name} 「${SI.imm}」로 받지 않음`});continue}
    if(covOf(def)){out.push({ok:false,line:`부가효과 ${m[1]}할 ${what} — ${covOf(def)}로 받지 않음`});continue}
    const R=secRoll(n);out.push({ok:R.ok,line:`부가효과 ${n}할 ${what}${R.txt}`})}
   return out}
@@ -263,7 +264,20 @@ window.OM_BATTLE_UI=(()=>{
    out.push(Object.assign({},base,{ext:{i,lim,used,left:lim?Math.max(0,lim-used):null,kind:e.kind==='extra'?'extra':'act',src:e.src||'',tid:m.tid}}))});return out.concat(IX)}
  function extGone(mv){return !!(mv&&mv.ext&&mv.ext.lim&&mv.ext.left<=0)}
  let SECX=1;   /* 11-03 「추가효과 ×N」: 공격 창이 지금 기술에 맞춰 정한다 */
- function rollGroup(atk,def,g){let n=g.n;if(g.sec&&(atk.ability==='하늘의은총'||rainbowOn(atk)))n=Math.min(10,n*2);if(g.sec&&SECX!==1)n=Math.min(10,Math.round(n*SECX*10)/10);const what=g.label;
+ /* 11-09 감우 54-D: 대상마다 추가 효과 규칙 — SECXM[대상 id] = {mul, set(N할로), sure, add[부여], rep(바꾸기), imm(받는 쪽 면역 이름)} · '_' = 첫 대상 (한 번 거는 줄) */
+ let SECXM={};
+ function secInfo(atk,def,mv,tys,q){const o={mul:1,set:0,sure:'',add:[],rep:null,imm:'',nm:[]};const ok=(e,own,oth,fd)=>!(FX()&&FX().condAll)||FX().condAll(e,own,oth,q,fd);
+  for(const e of spL(atk,'secx')){if(!spHit(e,mv,tys))continue;if(!ok(e,atk,def,true))continue;if(e.mode==='sure'){o.sure=e.name;o.nm.push(`「${e.name}」 추가 효과 반드시`)}else if(e.mode==='set'){o.set=Math.max(o.set,+e.n||0);o.nm.push(`「${e.name}」 추가 효과 ${e.n}할`)}else if(e.mode==='add'){o.add.push(e);o.nm.push(`「${e.name}」 추가 효과 부여`)}else if(e.mode==='rep'){o.rep=e;o.nm.push(`「${e.name}」 추가 효과 변경`)}else{o.mul*=(+e.v||1);if(+e.v!==1)o.nm.push(`「${e.name}」 추가 효과 ×${e.v}`)}}
+  if(def&&def.id!==atk.id)for(const e of spL(def,'secimm')){if(!spHit(e,mv,tys)&&(e.types&&e.types.length||e.tg&&e.tg.length))continue;if(!ok(e,def,atk,false))continue;o.imm=e.name;break}
+  return o}
+ function secGroups(atk,def,groups,mv){const SI=def?SECXM[def.id]:null;if(!SI||(!SI.rep&&!SI.add.length))return groups?groups.map(g=>rollGroup(atk,def,g)):secRolls(atk,def,mv);
+  const mk=e=>({n:+e.n||10,sec:true,label:`「${e.name}」 ${(+e.n||10)<10?(+e.n)+'할 ':''}「${FX().stKo?FX().stKo(e.state):e.state}」`,who:'target',ops:[{k:'state',tgt:'target',state:e.state}],when:'hit'});
+  let out;if(SI.rep){const rest=(groups||[]).filter(g=>!g.sec);out=rest.map(g=>rollGroup(atk,def,g)).concat([rollGroup(atk,def,mk(SI.rep))])}else out=groups?groups.map(g=>rollGroup(atk,def,g)):secRolls(atk,def,mv);
+  for(const e of SI.add)out.push(rollGroup(atk,def,mk(e)));return out}
+ function rollGroup(atk,def,g){let n=g.n;const SI=g.sec?((def&&SECXM[def.id])||SECXM._||null):null;
+  if(SI&&SI.imm&&def&&def.id!==atk.id)return {g,ok:false,line:`${g.label} — ${def.name} 「${SI.imm}」로 받지 않음`};
+  if(SI&&SI.set&&!SI.rep)n=SI.set;
+  if(g.sec&&(atk.ability==='하늘의은총'||rainbowOn(atk)))n=Math.min(10,n*2);if(SI){if(SI.mul!==1)n=Math.min(10,Math.round(n*SI.mul*10)/10)}else if(g.sec&&SECX!==1)n=Math.min(10,Math.round(n*SECX*10)/10);if(SI&&SI.sure)n=10;const what=g.label;
   if(g.sec&&def&&def.id!==atk.id&&covOf(def))return {g,ok:false,line:`${what} — ${covOf(def)}로 받지 않음`};
   const pick=g.oneOf?g.oneOf[Math.floor(Math.random()*g.oneOf.length)]:null;const pk=pick?' → '+FX().unparse(pick).join(' ').replace(/^상태 /,'').replace(/ target.*$/,''):'';
   if(!((SECADJ||{}).add||(SECADJ||{}).sure)||n>=10){if(n>=10)return {g,ok:true,ops:pick||g.ops,line:`${what}${pk}${g.sec?' — 확정':''}`};
@@ -1130,7 +1144,7 @@ window.OM_BATTLE_UI=(()=>{
   for(const tid of Object.keys(b.trainers||{}))if((b.trainers[tid]||{}).time)await A().set(['battle','trainers',tid,'time'],null);
   await A().set(['battle','started'],true);if(b.done)await A().set(['battle','done'],null);   /* 10-31: 던전으로 돌아온(done) 배틀을 다시 열면 살아 있는 배틀 */
   if(!(+b.turn||0))await A().set(['battle','turn'],1);await A().set(['battle','log0'],+A().ST.lastLogId||0);await A().set(['battle','at0'],Date.now());   /* log0 · at0: 전당의 간략 로그를 여기서부터 (hall_ui.js) */
-  await autoEntryAll(Object.values(ctx().b.mons||{}).filter(m=>m.entry).map(m=>m.id));   /* 선발 전원이 나온 뒤 등장 효과 (스피드 순) */
+  {const ids0=Object.values(ctx().b.mons||{}).filter(m=>m.entry).map(m=>m.id);const hw={};for(const i of ids0)hw[i]='선발';await autoEntryAll(ids0,hw)}   /* 선발 전원이 나온 뒤 등장 효과 (스피드 순) · 11-09 감우 54: 【등장 (선발)】 도 이때 */
   try{const DK=window.OM_DECK_UI;if(DK&&DK.beat)await DK.beat('battle',Object.keys(ctx().b.trainers||{}))}catch(e){console.warn(e)}   /* 11-01 은열쇠: 배틀 시작에 덱 설정 「배틀 시작에 n장」 */
   A().sysLog('시합 개시! — TURN 1','battle');battleStartCut(ctx().b)}
  /* 퇴장 정리 (맵툴 out_area): 랭크·배율·임시 효과·발동 중인 포텐셜 효과·타입/특성 변경·하늘 위·급소 방호 를 되돌리고, 상태 이상(abn) 과 원념·빈사 빼고는 상태도 푼다.
@@ -2705,7 +2719,7 @@ window.OM_BATTLE_UI=(()=>{
  function keepDef(m,mv,tys){if(!m||!mv||mv.cat==='변화')return false;const L=keepDefL(m);if(!L.length)return false;const T=tys&&tys.length?tys:mvTysRaw(mv);const nm=String(mv.name||'').trim();
   return L.some(e=>{if(e.mv.length&&!e.mv.includes(nm))return false;if(e.types.length&&!T.some(t=>e.types.includes(t)))return false;if(e.cat&&mv.cat!==e.cat)return false;if(e.hp){const [a,d]=e.hp.split('/').map(Number);if(!(d>0&&m.hp&&m.hp.cur*d<=m.hp.max*a))return false}return true})}
  function ordMv(b,m){if(!b||!m)return null;const x=ordX(b,m);if(x){if(x.move==='switch')return null;return MVS(m)[+x.move]||null}const lm=m.lastMove;if(lm&&+lm.turn===(+b.turn||0))return MVS(m).find(v=>v&&v.name===lm.name)||null;return null}
- function moveQuery(atk,def,mv,moveTypes,eff,single){const b=ctx().b;return {types:moveTypes,cat:mv.cat,eff:eff,single:single,stab:!!(eff&&eff.stab),tags:[...String(mv.tag||'').split(/[,/·\s]+/),...(mv.tags||[]).map(t=>String(t||'').replace(/^#/,'')).flatMap(t=>t.split(/\s*,\s*/))].map(x=>String(x).trim()).filter(x=>x&&x!=='-'),move:mv.name||'',defTypes:def?tysOf(def):[],atkTypes:atk?tysOf(atk):[],defMon:def||null,sureMv:!(+mv.acc),   /* 11-09 감우 54: 필중기 · 맞는 쪽(비례무시 조건) */   /* 11-08 망령 「특정 기술일 때는 웹툴 손봐서」: 기술 이름(기술:) · 「#…」 태그 · 상대 타입(상대타입:) 조건 */pow:+mv.pow||0,recoil:(()=>{try{const a=moveAuto(mv);if(a&&a.recoil)return true}catch(e){}const t=String(mv.eff||'');return /반동/.test(t)&&!/행동\s*불능/.test(t)})(),   /* 11-09 이판사판 「반동기」 */atkAtk:atk===def?ordAtk(b,atk):true,defAtk:atk===def?ordAtk(b,def):ordAtk(b,def),atkKeep:keepDef(atk,atk===def?ordMv(b,atk):mv,moveTypes),defKeep:keepDef(def,ordMv(b,def))}}
+ function moveQuery(atk,def,mv,moveTypes,eff,single){const b=ctx().b;return {types:moveTypes,cat:mv.cat,eff:eff,single:single,stab:!!(eff&&eff.stab),tags:[...String(mv.tag||'').split(/[,/·\s]+/),...(mv.tags||[]).map(t=>String(t||'').replace(/^#/,'')).flatMap(t=>t.split(/\s*,\s*/))].map(x=>String(x).trim()).filter(x=>x&&x!=='-'),move:mv.name||'',defTypes:def?tysOf(def):[],atkTypes:atk?tysOf(atk):[],defMon:def||null,sureMv:!(+mv.acc),tmv:!!(mv.ext&&mv.ext.item&&/기술머신/.test(String(mv.ext.item))),   /* 11-09 감우 54: 필중기 · 맞는 쪽(비례무시 조건) */   /* 11-08 망령 「특정 기술일 때는 웹툴 손봐서」: 기술 이름(기술:) · 「#…」 태그 · 상대 타입(상대타입:) 조건 */pow:+mv.pow||0,recoil:(()=>{try{const a=moveAuto(mv);if(a&&a.recoil)return true}catch(e){}const t=String(mv.eff||'');return /반동/.test(t)&&!/행동\s*불능/.test(t)})(),   /* 11-09 이판사판 「반동기」 */atkAtk:atk===def?ordAtk(b,atk):true,defAtk:atk===def?ordAtk(b,def):ordAtk(b,def),atkKeep:keepDef(atk,atk===def?ordMv(b,atk):mv,moveTypes),defKeep:keepDef(def,ordMv(b,def))}}
  /* 컷인에 쓸 트레이너 그림: 표정(스탠딩) → 시트 그림 */
  function trainerImg(t){if(!t)return '';const st=(t.stands||[]);const a=st[+t.standActive||0]||st[0];return (a&&a.src)||t.image||''}
  const potKey=n=>String(n||'').replace(/『|』/g,'').trim();
@@ -2999,7 +3013,7 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
    const PROT=protMove(mv);let PR=null;if(PROT){const t0=+b.turn||0;const k=atk.protectLast===t0-1?(+atk.protectN||0):0;const ch=Math.pow(1/3,k);const rl=Math.random();PR={ok:rl<ch,chance:Math.round(ch*1000)/10,k}}
    const PBY=protBypass(mv);const NX=(FX()&&FX().nextOf)?FX().nextOf(atk):[];
    const g=id=>$('#'+id,md);const n=id=>+g(id).value;const ck=id=>g(id).checked;
-   const moveTypes=mtys(mv);SECX=spL(atk,'secx').filter(e=>spHit(e,mv,moveTypes)).reduce((a,e)=>a*(+e.v||1),1);
+   const moveTypes=mtys(mv);SECX=spL(atk,'secx').filter(e=>spHit(e,mv,moveTypes)&&!e.mode&&!(FX()&&FX().hasCond&&FX().hasCond(Object.assign({},e,{types:[],tg:[]})))).reduce((a,e)=>a*(+e.v||1),1);SECXM={};
    const atkTypes=atk.teraActive&&atk.teraEn!=='-'?[...atk.types,atk.teraEn]:atk.types;
    const res=[];const multiTarget=targets.length>1;const SPW=specialPowFor(mv.name,atk);const MAU0=moveAuto(mv),MAU=MA()&&MA().auto(MAU0)?MAU0:null;   /* 변칙 위력 기술: 대상마다 위력 자동 (매그니튜드 같은 무작위는 한 번만 굴림) */
    /* 11-04 망령 (관사 · 도모에 『활솜씨』): 「N할로 자신의 기술이 필중한다」 특성 · 포텐셜은 굴릴 때 한 번 굴려 필중으로 */
@@ -3029,6 +3043,7 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
     /* 효과 엔진: 상성을 먼저 보고 강화·완화·급소 조건을 맞춘다 */
     const mods=FX()?FX().attackMods(roleV(atk),roleV(def),PQ(Object.assign(moveQuery(atk,def,mv,moveTypes,effPre?effPre.value:1,!multiTarget),{stab:!!(effPre&&effPre.stab)}))):{boost:1,guard:1,cg:0,cr:0,cx:'',names:[]};
     {const ig=OI()&&OI().defGuard(def,mv.cat);if(ig){mods.guard=(mods.guard||1)*ig.v;mods.names=(mods.names||[]).concat([{key:'_i',who:def.id,txt:ig.txt}])}}
+     /* 11-09 감우 54-D: 이 대상에 대한 추가 효과 규칙 (기술 · 상대 상태 · 소지품 · 해석 … 조건) */try{const SI=secInfo(atk,def,mv,moveTypes,PQ(Object.assign(moveQuery(atk,def,mv,moveTypes,effPre?effPre.value:1,!multiTarget),{stab:!!(effPre&&effPre.stab)})));SECXM[def.id]=SI;if(!SECXM._)SECXM._=SI;if(SI.nm.length)mods.names=(mods.names||[]).concat(SI.nm.map((t,i)=>({key:'_sx'+i,who:atk.id,txt:`${atk.name} ${t}`})));if(SI.imm)mods.names=(mods.names||[]).concat([{key:'_sxi',who:def.id,txt:`${def.name} 「${SI.imm}」 추가 효과를 받지 않는다`}])}catch(e){}
     if(EVM.names.length&&+mv.acc&&!sure)mods.names=(mods.names||[]).concat(EVM.names);if(ACM.names.length&&+mv.acc&&!sure)mods.names=(mods.names||[]).concat(ACM.names);
     const iu=(atk.fx||{}).ignoreUp,iuD=(def.fx||{}).ignoreUp;let igDef=+g('aigdef').value,igAtk=+g('aigatk').value;const igW=c=>({0:'상승·강화',1:'감소·저하',2:'상승(랭크)',3:'강화(배율)',4:'감소(랭크)',5:'저하(배율)',6:'랭크 변화',7:'변화 모두',8:'배율 변화'})[c]||'상승';const IGN=k=>(IG.nm&&IG.nm[k])||((k==='def'||k==='eva')?(iu&&iu.name):(iuD&&iuD.name))||'';if(IG.def!=null&&igDef===-1){igDef=IG.def;mods.names=(mods.names||[]).concat([{key:'_iu',who:atk.id,txt:`${atk.name} 「${IGN('def')}」 상대의 방어 ${igW(IG.def)} 무시`}])}if(IG.atk!=null&&igAtk===-1){igAtk=IG.atk;mods.names=(mods.names||[]).concat([{key:'_iuD',who:def.id,txt:`${def.name} 「${IGN('atk')}」 공격 쪽 ${igW(IG.atk)} 무시`}])}
     if(IG.eva!=null&&+mv.acc)mods.names=(mods.names||[]).concat([{key:'_iuE',who:atk.id,txt:`${atk.name} 「${IGN('eva')}」 상대의 회피 ${igW(IG.eva)} 무시`}]);if(IG.acc!=null&&+mv.acc)mods.names=(mods.names||[]).concat([{key:'_iuA',who:def.id,txt:`${def.name} 「${IGN('acc')}」 공격 쪽 명중 ${igW(IG.acc)} 무시`}]);
@@ -3063,7 +3078,7 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
     const hp=dmg?B().hpDamageHits(def,perOf(dmg),eff.value,{...hsOpt(def,mv.cat,mods),stab,adaptability:ck('aadapt'),expertBelt:ck('abelt'),guard:guard0,guardCrit:guardC0,crit:hits.map(h=>h.v===2),endure:endure0,hpFloor:raidFloor(def)}):null;
     /* 급소를 뒤집은 대미지 (10-24 망령): HP 창에서 피해 적용 전에 급소 여부를 바꿀 수 있게 — 맞은 타마다 전부 급소 / 전부 급소 아님 */
     const dmgAlt=dmg&&DOPT.hits.some(v=>v>0)?(()=>{const anyC=DOPT.hits.includes(2);try{return B().damage(foulAtk(atkD,def,mv),def,MVP,Object.assign({},DOPT,{hits:DOPT.hits.map(v=>v===0?0:(anyC?1:2))}))}catch(e){return null}})():null;
-    res.push({_mv:MVP,_opt:DOPT,slot,def,acc,hits,dmg,dmgAlt,eff,stab,hp,guard:guard0,guardCrit:guardC0,endure:endure0,manual:1,mods,spw,sec:[...(spw&&acc.hit?[{ok:true,line:spw.note}]:[]),...(acc.hit&&!(mv.cat!=='변화'&&eff&&+eff.value===0)?(MAU?MAU.groups.filter(g=>g.who==='target').map(g=>rollGroup(atk,def,g)):secRolls(atk,def,mv)):[])]})}   /* 11-04 망령 (관사): 상성 ×0 으로 안 맞은 대상(비행에게 땅고르기)에게는 부가효과도 없다 */
+    res.push({_mv:MVP,_opt:DOPT,slot,def,acc,hits,dmg,dmgAlt,eff,stab,hp,guard:guard0,guardCrit:guardC0,endure:endure0,manual:1,mods,spw,sec:[...(spw&&acc.hit?[{ok:true,line:spw.note}]:[]),...(acc.hit&&!(mv.cat!=='변화'&&eff&&+eff.value===0)?secGroups(atk,def,MAU?MAU.groups.filter(g=>g.who==='target'):null,mv):[])]})}   /* 11-04 망령 (관사): 상성 ×0 으로 안 맞은 대상(비행에게 땅고르기)에게는 부가효과도 없다 */
    const anyHit=res.some(r=>r.acc.hit);const once=MAU?MAU.groups.filter(g=>g.who!=='target'&&(anyHit||g.when==='use')).map(g=>rollGroup(atk,null,g)):[];
    /* 10-22 망령: 행동 판정을 통과했으면(혼란 · 마비 …) 그 결과(남은 턴)를 「적용」 때까지 들고 간다 — 예전엔 여기서 덮어써서 혼란 턴이 안 줄었다 */
    const CK=RESULT&&RESULT.checkOnly?RESULT:null;
