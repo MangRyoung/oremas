@@ -1209,7 +1209,7 @@ window.OM_BATTLE_UI=(()=>{
   return {ok}}
  /* phase: 'now' = 떠난 순간(들어올 아군이 필요한 줄은 exitPend 로 미룸) · 'in' = 그 자리에 다음 포켓몬이 나온 뒤(미뤄 둔 줄만) · 'all' = 교대(바로 들어왔다) */
  async function exitTrig(mid,how,o){o=o||{};const c=ctx();const b=c.b;if(!b||!b.started||!FX())return;const m=b.mons[mid];if(!m)return;
-  const area=o.area||m.entry||(how==='빈사'?(m.koA||m.outA):m.outA)||'';const inM=o.inId?b.mons[o.inId]:null;
+  const area=o.area||m.entry||(how==='빈사'?(m.koA||LAST_AREA[mid]||m.outA):m.outA)||'';const inM=o.inId?b.mons[o.inId]:null;
   const front=area?Object.values(b.mons||{}).find(x=>x&&x.entry===area&&x.side!==m.side&&x.hp&&x.hp.cur>0&&!sameT(x,m,b)):null;
   const g=guardOff(b,m);const notes=[];let pend=false;const why=`퇴장 (${how})`;
   for(const x of trigSrcs(m,b)){const hit=tagHit(x.eff,'exit');if(!hit)continue;const ok=exitArgOk(hit.arg,how);if(ok==='no')continue;const nm=String(x.name).replace(/[『』]/g,'');const who=x.kind==='uq'?(x.t.name+' 고유'):m.name;
@@ -2647,7 +2647,8 @@ window.OM_BATTLE_UI=(()=>{
    const b0=snap(),nb=snap(b0);const t=nb.mons[x.id];const by='특성 : '+abNm(x);if(FX().setAb)FX().setAb(t,tn,by);else{if(t.abilityOrig==null)t.abilityOrig=t.ability||'';t.abilityBy=by;t.ability=tn;t.abilityEff=((DB().traits||{})[tn]||{}).multi||''}
    if(await saveBattle(b0,nb,undefined,{n:x.name,s:abNm(x),img:x.image||''}))A().sysLog(`【특성】 ${x.name} 『${abNm(x)}』 — ${d.name}의 「${tn}」을(를) 이어받았다`,'battle',{mid:x.id,img:x.image||''})}
   if(notes.length)A().sysLog(`【계기】 ${d.name} 「빈사」 — 손으로 처리할 효과\n${[...new Set(notes)].join('\n')}`,'battle',{gmPriv:1})}
- async function faintWatch(){const c=ctx();const b=c.b;if(!c.mgr||!b.started||faintBusy)return;const bk=String(b.started)+':'+Object.keys(b.mons||{}).sort().join(',');
+ const LAST_AREA={};   /* 11-09 감우 56: 포켓몬마다 마지막으로 서 있던 에리어 — 저장 길에 따라 쓰러진 자리(koA)가 안 남을 때 【퇴장 (빈사)】의 정면 · 다음 등장 자리 */
+ async function faintWatch(){const c=ctx();const b=c.b;if(!c.mgr||!b.started||faintBusy)return;for(const x of Object.values(b.mons||{}))if(x&&x.entry&&x.hp&&x.hp.cur>0)LAST_AREA[x.id]=x.entry;const bk=String(b.started)+':'+Object.keys(b.mons||{}).sort().join(',');
   if(!FAINT_SEEN[bk]){FAINT_SEEN[bk]=new Set(Object.values(b.mons||{}).filter(m=>m.hp.cur<=0).map(m=>m.id));return}
   const seen=FAINT_SEEN[bk];/* 10-26 점검: 되살아난(HP>0) 포켓몬은 다시 빈사 감시 대상으로 */for(const m of Object.values(b.mons||{}))if(m.hp.cur>0&&seen.has(m.id))seen.delete(m.id);const neu=Object.values(b.mons||{}).filter(m=>m.hp.cur<=0&&!seen.has(m.id));if(!neu.length)return;neu.forEach(m=>seen.add(m.id));if(!isLeader(c))return;   /* 10-27: 아군 빈사 자동 처리도 한 창만 */faintBusy=true;
   try{const RE=/아군이\s*(?:상대의\s*기술에\s*의해\s*)?「빈사」\s*상태가\s*되었을\s*때/;const notes=[];const doneT=new Set();
