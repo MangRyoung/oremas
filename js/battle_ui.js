@@ -1274,7 +1274,7 @@ window.OM_BATTLE_UI=(()=>{
 
  /* ----- 지시 저장 · 준비 · 공개 ----- */
  /* 저장한 지시엔 턴 번호를 붙인다 (10-24 망령): 지난 턴 지시(선행 포텐셜 · 지령)를 다음 턴에 또 읽어 「선행」이 풀리지 않던 것 */
- function cleanCmd(cur){const out={mons:{},detail:cur.detail||'',upots:cur.upots||[],utg:cur.utg||{},turn:+ctx().b.turn||1};   /* 시합 개시 전(턴 0)에 넣은 지시는 TURN 1 것 */for(const k in cur.mons){const x=cur.mons[k];out.mons[k]={move:x.move,switch:x.switch,targets:x.targets||[],tm:tmOf(ctx().b,x.targets),prio:x.prio||{},ochg:x.ochg||{},order:x.order||'',command:x.command||'',pots:x.pots||[],pman:x.pman?1:0,pur:x.pur||'',pimm:x.pimm||'',uman:x.uman?1:0,ut:x.ut||'',tman:x.tman?1:0,ptg:x.ptg||{}}}return out}
+ function cleanCmd(cur){const out={mons:{},detail:cur.detail||'',upots:cur.upots||[],utg:cur.utg||{},utm:cur.utm||{},turn:+ctx().b.turn||1};   /* 11-09 감우 57: utm · ptm = 기술 지정 (실제 턴 시험에서 저장이 빠진 것을 찾음) */   /* 시합 개시 전(턴 0)에 넣은 지시는 TURN 1 것 */for(const k in cur.mons){const x=cur.mons[k];out.mons[k]={move:x.move,switch:x.switch,targets:x.targets||[],tm:tmOf(ctx().b,x.targets),prio:x.prio||{},ochg:x.ochg||{},order:x.order||'',command:x.command||'',pots:x.pots||[],pman:x.pman?1:0,pur:x.pur||'',pimm:x.pimm||'',uman:x.uman?1:0,ut:x.ut||'',tman:x.tman?1:0,ptg:x.ptg||{},ptm:x.ptm||{}}}return out}
  /* 공개용: 선행 입력(지령·명령)은 뺀다 — 발동할 때 드러난다 */
  function pubMon(x){x=x||{};return {move:x.move,switch:x.switch,targets:x.targets||[],tm:x.tm||{},prio:x.prio||{},ochg:x.ochg||{},tman:x.tman?1:0}}
  async function saveCmd(tid,quiet){const c=ctx();const cur=CMD[tid];if(!cur)return;{const t=(c.b.trainers||{})[tid]||{};for(const mid in cur.mons){const m=c.b.mons[mid];if(!m)continue;const pp=prePursuit(t,m,cur.mons[mid],cur.upots);cur.mons[mid].pur=pp.pur;cur.mons[mid].pimm=pp.pimm;cur.mons[mid].ut=pp.ut}}
