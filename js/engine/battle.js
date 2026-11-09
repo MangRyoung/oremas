@@ -124,7 +124,8 @@ window.OM_BATTLE=(()=>{
   /* 11-08 23:01 망령 「검은철구 자동화 돼 있어?」: o.ironBall = 받는 쪽이 검은철구 — 땅으로 떨어진다(뜬 상태 무시) · 「타입 : 비행」이었다면 다른 타입과 관계없이 「땅」 기술 1배 */
   const IB=!!o.ironBall||has(def,'SmackDown');   /* 11-08 51-2 ㉑ 「떨어뜨리기」도 검은철구처럼 땅으로 */
   /* 11-08 51-2 ⑥ 겨냥표적(o.ringTarget = 받는 쪽이 지님): 「상성 : 0배」인 기술을 1배처럼 · ⑲ 「타르샷」: 「불꽃」 기술 2배 (최종 2배 이상이면 굉장 — value 로 넘어간다) */
-  const one=t=>{let v=one0(t);if(v===0&&o.ringTarget)v=1;if(t==='Fire'&&v>0&&has(def,'TarShot'))v*=2;return v};
+  /* 11-09 감우 55: o.vsOver = {ty, v} — 기술 효과 「「타입 : X」에게 「상성 : 2배」가 된다」(프리즈드라이 · 벌레잡기 …): 받는 쪽이 그 타입이면 그 타입 몫만 v 로 */
+  const one=t=>{let v=one0(t);if(o.vsOver&&o.vsOver.ty&&defTypes.includes(o.vsOver.ty)&&t!=='Shadow'&&t!=='Wild'&&t!=='God'){const rest=defTypes.filter(x=>x!==o.vsOver.ty);v=(rest.length?S().effect(t,rest):1)*(+o.vsOver.v||1)}if(v===0&&o.ringTarget)v=1;if(t==='Fire'&&v>0&&has(def,'TarShot'))v*=2;return v};
   const one0=t=>{
    if(t==='Shadow'||t==='Wild')return 2;if(t==='God')return 1;
    if(t==='Ground'&&IB&&defTypes.includes('Flying'))return 1;
