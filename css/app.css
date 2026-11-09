@@ -5173,6 +5173,12 @@ html:not(#_) .prpslot .bgmw .bt{color:#ddd!important;max-width:64px;font-size:11
 .prpslot .bgmw input[type=range]{width:44px}
 html:not(#_) .prpslot .bgmw .btn{height:22px;min-height:0;padding:0 7px!important;font-size:11px!important}
 .phone .prprow{display:flex;padding:6px 8px;background:#121317;border-bottom:2px solid #000}
+/* 11-09 22:53 망령 「브금 바를 줄이 안 밀리는 선에서 좀 더 늘려 줘」: 아래 줄(.prprow)에 있을 때 BGM 덩어리가 빈 곳까지 늘어난다 — 곡 이름 · 음량 막대가 길어지고, 칸이 모자라면 줄어든다(줄바꿈 없음). 방 이름 줄에 들어간 경우는 그대로 */
+.phone .prprow .prpslot .prpr{flex:1 1 auto;justify-content:flex-end}
+.phone .prprow .prpslot .rpbgmw{flex:1 1 auto;min-width:0;justify-content:flex-end}
+html:not(#_) .phone .prprow .prpslot .bgmw{flex:0 1 380px;min-width:0}
+html:not(#_) .phone .prprow .prpslot .bgmw .bt{max-width:none;flex:0 4 auto;min-width:0}   /* 모자라면 곡 이름이 먼저 줄고 음량 막대는 늦게 */
+.phone .prprow .prpslot .bgmw input[type=range]{flex:0 1 120px;width:120px;min-width:44px}
 .rpbtns.pslot{pointer-events:none}.rpbtns.pslot>*{pointer-events:auto}
 
 /* ---------- 11-03 14:01 망령 「연출이랑 단서카드 보관소 UI 개선」 — GM 콘솔 「연출」 탭 카드 · 단서 보관함 카드 격자 ----------
