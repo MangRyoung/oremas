@@ -262,7 +262,7 @@ window.OM_BATTLE_UI=(()=>{
   return out}
  function extMoves(m){if(!m||!m.tid)return [];const IX=itemExtMoves(m).concat(potExtMoves(m));const b=(A().ST.state||{}).battle||{};const t=(b.trainers||{})[m.tid];const L=t&&Array.isArray(t.ext)?t.ext:[];if(!L.length)return IX;const U=t.extUse||{};const out=[];
   L.forEach((e,i)=>{if(!e||!e.mv||(e.who&&e.who!==m.id))return;const base=window.OM_IMPORT?window.OM_IMPORT.move(e.mv,false):{name:e.mv,cat:'',pow:0,acc:0,range:'1체',type:'-',typeEn:'-'};const lim=+e.lim||0,used=+U[i]||0;
-   out.push(Object.assign({},base,{ext:{i,lim,used,left:lim?Math.max(0,lim-used):null,kind:e.kind==='extra'?'extra':'act',src:e.src||'',tid:m.tid}}))});return out.concat(IX)}
+   out.push(Object.assign({},base,{ext:{i,lim,used,left:lim?Math.max(0,lim-used):null,kind:e.kind==='extra'?'extra':'act',src:e.src||'',tid:m.tid}}))});{const nm=x=>String((x&&x.name)||'').replace(/\s/g,'');const has=new Set(out.map(nm));return out.concat(IX.filter(x=>!has.has(nm(x))))}}   /* 11-09 망령 「드래곤옐은 하나만」: 트레이너 기능 확장(t.ext — 횟수 셈)과 같은 기술은 포텐셜 · 고유 쪽 줄을 뺀다 */
  function extGone(mv){return !!(mv&&mv.ext&&mv.ext.lim&&mv.ext.left<=0)}
  let SECX=1;   /* 11-03 「추가효과 ×N」: 공격 창이 지금 기술에 맞춰 정한다 */
  /* 11-09 감우 54-D: 대상마다 추가 효과 규칙 — SECXM[대상 id] = {mul, set(N할로), sure, add[부여], rep(바꾸기), imm(받는 쪽 면역 이름)} · '_' = 첫 대상 (한 번 거는 줄) */
