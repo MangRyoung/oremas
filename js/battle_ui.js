@@ -530,7 +530,10 @@ window.OM_BATTLE_UI=(()=>{
  /* 11-01 망령 「A-1 도 포텐셜 발동하지 않는다가 아니라 행동불능으로」: 필드 위 다른 아군(같은 진영 · 다른 PC 포켓몬 포함) 중 지정 타입이 한 체도 없으면 각성 (대가) 포켓몬은 행동 불능 — 이유 글을 돌려준다 */
  function misagA1(b,m){const t=((b&&b.trainers)||{})[m&&m.tid];const M=t&&t.misag;if(!M||!M.type||m.awaken!=='free'||!(M.items||[]).some(x=>x.key==='A-1'))return '';
   const onF=x=>!!(x&&x.entry&&x.hp&&x.hp.cur>0);const hasType=(x,ko)=>{const en=window.OM_STATS&&window.OM_STATS.typeEn?window.OM_STATS.typeEn(ko):ko;if(teraOn(x))return x.teraEn===en;return (x.types||[]).includes(en)||(x.typesKo||[]).includes(ko)};   /* 테라스탈이면 타입 4 만 (11-02) */
-  const others=Object.values(b.mons||{}).filter(x=>x&&x.side===m.side&&x.id!==m.id&&onF(x));   /* 11-06 망령 「2+2+2 룰에선 다른 PC 포켓몬도 센다 · 필드에 나와 있다면」: 같은 진영 아군 전부 (예전: 같은 트레이너만) */return others.some(x=>hasType(x,M.type))?'':`각성체 대가 A-1 — 필드 위 다른 아군 중 ${M.type} 타입이 없어 행동 불능`}
+  const own=Object.values(b.mons||{}).filter(x=>x&&x.tid===m.tid);
+  /* 11-09 망령 「1번 짝 기준 채용」: 2체 기준(트레이너 two · 던전 동행 등 그 트레이너가 이 배틀에 2체 이하)은 필드 대신 짝 — 자기 포켓몬 중 살아 있는 지정 타입 (필드 밖이어도 됨 · 다른 PC 포켓몬은 세지 않음). 다른 PC 포켓몬은 타입을 맞춰 짜지 않아 11-06 「같은 진영 필드 아군」을 2체에서 뺌 */
+  if(t.two||own.length<=2){const alive=x=>!!x&&((x.hp||{}).cur??1)>0;return own.some(x=>x.id!==m.id&&alive(x)&&hasType(x,M.type))?'':`각성체 대가 A-1 — 짝(자기 포켓몬) 중 살아 있는 ${M.type} 타입이 없어 행동 불능`}
+  const others=Object.values(b.mons||{}).filter(x=>x&&x.side===m.side&&x.id!==m.id&&onF(x));   /* 6체: 필드 위 다른 아군 (같은 진영) */return others.some(x=>hasType(x,M.type))?'':`각성체 대가 A-1 — 필드 위 다른 아군 중 ${M.type} 타입이 없어 행동 불능`}
  /* 고유 포텐셜 = 트레이너 것. 횟수는 battle.trainers[tid].uUses */
  /* 11-09 망령 「4식을 소모해서 · 지령을 소모해서 — 발동했을 때 남은 것 중 무엇을 소모할지 창」: 구문 「소모 4식 | 소모 지령 | 소모 4식지령 [N]」 — 그 트레이너의 남은 4식 · 지령(횟수 1 이상)을 띄워 고른 것을 1 깎는다 */
  async function spendPick(mm,name,what,n,choose){const tid=mm&&mm.tid;const out=[];if(!tid)return null;
