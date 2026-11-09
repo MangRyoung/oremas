@@ -1375,7 +1375,7 @@ window.OM_BATTLE_UI=(()=>{
   const ua=sk==='uq'&&FX()?(FX().autoOf({tid},'pot',name)||(m&&!foe&&FX().autoOf(m,'pot',name))):null;
   const bm=sk==='uq'&&baseId?(b.mons||{})[baseId]:null;const cm=(foe?null:m)||(bm&&bm.tid===tid&&bm.entry?bm:null)||(ua?Object.values(b.mons||{}).find(q=>q&&q.tid===tid&&q.entry)||Object.values(b.mons||{}).find(q=>q&&q.tid===tid):null);const cmid=cm?cm.id:mid;
   const a=sk==='uq'?ua:m&&FX()&&FX().autoOf(m,'pot',name);const pr0=prioNow(cmid);
-  if(cm&&a&&realOps(a)&&!a.manual){setTimeout(()=>reprio(cmid,pr0),0);await fireAuto(cmid,'pot',name,{auto:a,quiet:true,manual:1,ownTid:tid,uq:sk==='uq'&&!foe,pickId:foe?m.id:(TP||''),head:`【${LB}】 ${who} 『${name}』${left}${tag}${tgt}`,img,eff:String(x.p.eff||'')});return}
+  if(cm&&a&&realOps(a)&&!a.manual){setTimeout(()=>reprio(cmid,pr0),0);await fireAuto(cmid,'pot',name,{auto:a,quiet:true,manual:1,ownTid:tid,uq:sk==='uq'&&!foe,pickId:foe?m.id:(TP||''),tsel:foe?'':(TP||''),head:`【${LB}】 ${who} 『${name}』${left}${tag}${tgt}`,img,eff:String(x.p.eff||'')});return}
   A().sysLog(`【${LB}】 ${who} 『${name}』${left}${tag}${tgt?'\n대상:'+tgt.replace(' →',''):''}`,'battle',{mid:m?m.id:'',img,eff:String(x.p.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,400)})}
  async function fireOrder(tid,mid,kind,key,how){const c=ctx();const b0=snap(c.b),b=snap(b0);const t=b.trainers[tid];const m=b.mons[mid];if(!t||!m)return;
   const name=pName(c.b,tid,kind,key);const ck=(kind==='order'?'order_':'command_')+key;t.orderCount=t.orderCount||{};
@@ -2353,7 +2353,7 @@ window.OM_BATTLE_UI=(()=>{
    choose:(labels,multi)=>remoteAsk(mon,'choose',{name,labels,multi:!!multi},()=>L.choose(labels,multi)).then(v=>Array.isArray(v)?v.map(Number):[]),
    freeSwitch:(m,nm)=>{setTimeout(()=>freeSwitchUI(m.id,nm).catch(e=>console.warn(e)),600);return `${m.name} 「${nm}」 — 임의 교대 창을 연다`},
    forceSwitch:(m,nm)=>{setTimeout(()=>forceSwitchFx(m.id,nm).catch(e=>console.warn(e)),600);return `${m.name} 「${nm}」 — 강제 교대`},   /* 11-08 「강제교대」 구문 */
-   useMove:(m,mv,nm,o)=>{setTimeout(()=>openAttack(m.id,{mvName:mv,by:nm,baseTop:(o||{}).top||[]}),600)}})}
+   useMove:(m,mv,nm,o)=>{setTimeout(()=>openAttack(m.id,Object.assign({mvName:mv,by:nm,baseTop:(o||{}).top||[]},(o||{}).targets&&o.targets.length?{targets:o.targets,preT:1}:{})),600)}})}   /* 11-09 망령 「창파나이트 추가 행동도 대상 지정」: 지시 창에서 고른 대상(o.targets)으로 공격 창을 연다 */
  /* 11-08 망령 「강제교대」 구문: 고른 대상(맞은 대상)을 강제 교대 — 기술의 강제 교대와 같은 길 (흡반 · 뿌리박기 · 다이맥스 · 교대무시는 switchGuard 가 막는다, 저장 뒤에 돈다) */
  async function forceSwitchFx(mid,nm){const c=ctx();const d=c.b.mons[mid];if(!d||!d.entry||d.hp.cur<=0)return;const g=await switchGuard(d);if(g){A().sysLog(`${d.name} 강제 교대를 받지 않는다 (${g})`,'battle');return}
   if(canEdit(c,d)||c.mgr)await forcedSwitch(d.id,{sys:true});else A().sysLog(`${d.name} 「${nm}」 강제 교대 — 상대나 GM 이 「퇴장 → 강제 교대」로 처리`,'battle')}
@@ -2402,6 +2402,7 @@ window.OM_BATTLE_UI=(()=>{
   /* 10-26 덱 시험: 카드의 「아군 1체」가 기준 포켓몬(자기 편 첫 포켓몬)을 빼고 물었다 — 트레이너가 쓰는 카드는 기준 포켓몬도 고를 수 있게 (ally1s) */
   const ops=opt.uq?JSON.parse(JSON.stringify(auto.ops).replace(/"tgt":"ally1"/g,'"tgt":"self"')):auto.src==='card'?JSON.parse(JSON.stringify(auto.ops).replace(/"tgt":"ally1"/g,'"tgt":"ally1s"')):auto.ops;
   const ux=uiCtx(nb,m,name,opt.area);if(opt.pickId){const up=ux.pick;ux.pick=(list,label)=>{const f=list.find(x=>x.id===opt.pickId);return f?Promise.resolve(f):up(list,label)}}   /* 11-02: 창에서 이미 고른 대상 */
+  if(opt.tsel&&ux.useMove){const um=ux.useMove;ux.useMove=(mm,mv,nm,o)=>{const tm=(nb.mons||{})[opt.tsel];const sl=tm&&tm.entry&&tm.hp&&tm.hp.cur>0?[slotOf(tm.side,tm.entry)]:null;return um(mm,mv,nm,Object.assign({},o||{},sl?{targets:sl}:{}))}}   /* 11-09 망령: 「대상지정」으로 고른 포켓몬을 「기술사용」(추가 행동) 공격 창의 대상으로 */
   const r=await FX().run(ops,Object.assign(ux,opt.ctx||{},opt.force?{force:1}:{},opt.noRoll?{noRoll:1}:{},opt.hit?{hit:opt.hit}:{},adj,hold,STK2?{stack:STK2}:{}));   /* 11-09 opt.ctx: 「소지품 소모」 계기의 used 등 */   /* 11-08 opt.hit: 「조건 명중」이 맞은 대상 · 기술을 본다 */
   /* 11-09: 조건에 막혔으면 진행하는 화면(GM)에 「강제 발동」을 묻는다 — 저절로 도는 것(quiet)은 로그에 안내만 */
   if(r.blocked&&!opt.force){{const h=kind==='field'?'(필드 주인 · GM: 《필드》 칩 → 정보 창 「강제 발동」으로 조건을 건너뛸 수 있다)':opt.manual||!opt.quiet?'(벤치 「강제 발동」을 켜 두면 조건 · 확인 · 확률을 건너뛰고 발동한다)':'';if(h)r.lines.push(h)}}
@@ -2846,7 +2847,7 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
    if(mv0&&mv0.cat!=='변화'&&!multi&&foes.length){const tk=mid+':'+(+b.turn||0);let pick=foes.find(z=>z.slot===THR_PICK[tk]);if(!pick){pick=foes[Math.floor(Math.random()*foes.length)];THR_PICK[tk]=pick.slot}T0=[pick.slot];lostNote='';
     thrNote=`<div class="small" style="color:var(--yel2);margin:2px 0 4px">「난동부리기」 — 적진에서 랜덤으로 ${esc(pick.mon.name)}(을)를 골랐다 · 눌러서 바꿀 수 있다</div>`}}
   if(opt.targets&&opt.targets.length)T0=opt.targets.filter(sl=>slots.some(z=>z.slot===sl));
-  {const rd=redirectOf(b,atk,MVS(atk)[defMoveIdx]);if(rd&&!opt.targets&&!(T0.length===1&&T0[0]===rd.slot)){T0=[rd.slot];lostNote+=`<div class="small" style="color:var(--yel2);margin:2px 0 4px">${esc(rd.mon.name)} 「${esc(rd.e.name)}」 — 대상을 끌어왔다</div>`}}
+  {const rd=redirectOf(b,atk,MVS(atk)[defMoveIdx]);if(rd&&(!opt.targets||opt.preT)&&!(T0.length===1&&T0[0]===rd.slot)){T0=[rd.slot];lostNote+=`<div class="small" style="color:var(--yel2);margin:2px 0 4px">${esc(rd.mon.name)} 「${esc(rd.e.name)}」 — 대상을 끌어왔다</div>`}}
   const md=A().openModal(`<div class="mhead"><h2>${opt.extra?'추가 공격':opt.mvName?'기술 사용':'공격'} — ${esc(atk.name)}${opt.extra?` <small class="dim">「${esc(opt.extra.name||'')}」 위력 ×${esc(String(opt.extra.pw))}${opt.extra.sure?' · 필중':''}</small>`:opt.by?` <small class="dim">「${esc(opt.by)}」${atkD.topNote?' · 이 기술만 '+esc(atkD.topNote):''}</small>`:''}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    <select id="amove" hidden>${MVS(atk).map((mv,i)=>`<option value="${i}" ${i===defMoveIdx?'selected':''}>${esc(mv.name)}</option>`).join('')}</select>
    <div class="sec">기술</div><div class="mvg" id="amvg">${sealMark(atk,MVS(atk)).map((mv,i)=>moveCard(mv,i,i===defMoveIdx,`data-amv="${i}"`)).join('')}</div>
