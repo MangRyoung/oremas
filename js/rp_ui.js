@@ -261,7 +261,7 @@ window.OM_RP_UI=(()=>{
   if(window.OM_EMO)window.OM_EMO.bind($('#rpemo',el),emoNow);
   el.querySelectorAll('.spk[data-fold]').forEach(b=>b.onclick=()=>{const id=b.dataset.fold,i=SPK.fo.indexOf(id);if(i>=0)SPK.fo.splice(i,1);else{SPK.fo.push(id);if(SPK.fo.length>3)SPK.fo.shift()}A().renderScene()});el.querySelectorAll('[data-fclose]').forEach(fc=>fc.onclick=()=>{SPK.fo=SPK.fo.filter(x=>x!==fc.dataset.fclose);A().renderScene()});
   bindSpkDrag(el);
-  const inp=$('#rpline',el);if(inp&&inNew){inp.value=SPK.draft||'';inp.oninput=()=>{SPK.draft=inp.value;typingPing()};inp.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)sendLine()};$('#rpsend',el).onclick=sendLine}if(inp&&SPK.focus){inp.focus();SPK.focus=false}
+  const inp=$('#rpline',el);if(inp&&inNew){inp.value=SPK.draft||'';inp.oninput=()=>{SPK.draft=inp.value;typingPing()};inp.onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)sendLine()};$('#rpsend',el).onclick=sendLine;acBind(inp,()=>speakerChar())}if(inp&&SPK.focus){inp.focus();SPK.focus=false}
   bindMap(el);tickBanner();syncBgm();scheduleExpire();drawTyping()}
  /* 스탠딩 DOM 을 키로 맞춘다: 새로 선 것만 등장 애니메이션, 자리 바뀜·표정 바뀜은 제자리에서 */
  /* 스탠딩 크기 (인물마다 standScale %, 10-23 망령) — 발밑 기준으로 키우고 줄인다 */
@@ -311,6 +311,40 @@ window.OM_RP_UI=(()=>{
   const h=st.length>=2?`<button type="button" class="expbtn" id="rpexp" title="${esc(c.name)} 표정 — 눌러서 고르기 (무대 그림이 바로 바뀐다 · 입력줄에 @${esc(lb(cur))} 처럼 써도 된다)"><i class="expbtn-im" style="${st[cur].src?`background-image:url('${cssu(st[cur].src)}')`:''}"></i><span class="expbtn-n">${esc(lb(cur))}</span><span class="spkpcar">▾</span></button>`:'';
   if(box._h!==h){box.innerHTML=h;box._h=h}box.classList.toggle('on',!!h);const se=$('#rpexp',box);
   if(se)se.onclick=()=>openExpPick(se,c,async i=>{if(await setStandIdx(c,i))A().toast(`표정: ${lb(i)}`);const inp=$('#rpline');if(inp)inp.focus({preventScroll:true})})}
+ /* 11-09 21:52 망령 「@표정 칠 때 후보를 볼 수 없어 불편 — @ 치면 후보 · 자동완성 · ! 도 마찬가지」
+    입력줄(RP #rpline · 옆 채팅 #chatIn)에서 맨 앞 「@…」 = 지금 화자의 표정(스탠딩) 후보, 낱말 첫머리 「!…」 = 감정 연출 후보.
+    ↑↓ 고르기 · Tab / Enter 넣기 · Esc 닫기 · 누르기. getChar() 가 false 면 끔(잡담 탭 등), null 이면 표정만 없음 */
+ function acCharOf(key){return key==='gm'?charOf(myGmKey()):charOf(key)}
+ function acBind(inp,getChar){if(!inp||inp._ac)return;inp._ac=1;let pop=null,items=[],sel=0,tok=null;
+  const close=()=>{if(pop){pop.remove();pop=null}items=[];tok=null};
+  const curTok=()=>{const v=inp.value,p=inp.selectionStart==null?v.length:inp.selectionStart;if(inp.selectionEnd!=null&&inp.selectionEnd!==p)return null;
+   let s=p;while(s>0&&!/\s/.test(v[s-1]))s--;let e=p;while(e<v.length&&!/\s/.test(v[e]))e++;const w=v.slice(s,p);if(!w)return null;
+   if(w[0]==='@'&&s===0)return {kind:'@',s,e,q:w.slice(1)};
+   if((w[0]==='!'||w[0]==='！')&&(s===0||/\s/.test(v[s-1])))return {kind:'!',s,e,q:w.slice(1)};return null};
+  const rank=(q,names)=>{q=q.toLowerCase();if(!q)return 1;let best=0;for(const n of names){const x=String(n||'').toLowerCase();if(x===q)return 4;if(x.startsWith(q))best=Math.max(best,3);else if(x.includes(q))best=Math.max(best,2)}return best};
+  const build=t=>{const out=[];
+   if(t.kind==='@'){const c=getChar();if(!c)return out;const st=c.stands||[];const EMO=window.OM_EMO;
+    st.forEach((x,i)=>{const lb=String(x.label||'').trim();if(!lb||/\s/.test(lb))return;const r=rank(t.q,[lb]);if(!r)return;const em=EMO&&EMO.fromLabel(lb);
+     out.push({r,o:i,ins:'@'+lb,lb,img:x.src||'',sub:[i===(+c.active||0)?'지금':'',em&&EMO.E[em]?'감정 '+EMO.E[em].ko+' 같이':''].filter(Boolean).join(' · ')})})}
+   else{const EMO=window.OM_EMO;if(!EMO)return out;Object.values(EMO.E).forEach((e,i)=>{const r=rank(t.q,[e.ko,e.k,...e.al]);if(!r)return;
+     out.push({r,o:i,ins:'!'+e.ko,lb:e.ko,ic:e.ic,sub:e.al.filter(a=>a!==e.ko&&/[가-힣]/.test(a)).slice(0,3).join(' · ')})})}
+   return out.sort((a,b)=>b.r-a.r||a.o-b.o).slice(0,40)};
+  const paint=()=>{if(!pop){pop=document.createElement('div');pop.className='acpop';document.body.appendChild(pop);
+    pop.addEventListener('mousedown',e=>e.preventDefault());pop.addEventListener('click',e=>{const b=e.target.closest('.ac-it');if(b){sel=+b.dataset.i;accept()}})}
+   const EMO=window.OM_EMO;
+   pop.innerHTML=`<div class="ac-h">${tok.kind==='@'?'표정':'감정 연출'} <small>↑↓ · Tab / Enter 로 넣기 · Esc</small></div>`+items.map((x,i)=>`<button type="button" tabindex="-1" class="ac-it ${i===sel?'on':''}" data-i="${i}">${x.ic!=null?`<span class="ac-ic">${(EMO&&x.ic&&EMO.svg(x.ic,'ac-svg'))||'·'}</span>`:`<i class="ac-im${x.img?'':' noimg'}" style="${x.img?`background-image:url('${cssu(x.img)}')`:''}"></i>`}<span class="ac-tx"><b>${esc(x.ins)}</b>${x.sub?`<small>${esc(x.sub)}</small>`:''}</span></button>`).join('');
+   const r=inp.getBoundingClientRect();const W=Math.min(300,Math.max(220,r.width),innerWidth-16);pop.style.width=W+'px';pop.style.left=Math.max(8,Math.min(innerWidth-W-8,r.left))+'px';
+   const above=r.top-8,below=innerHeight-r.bottom-8;if(above>=180||above>below){pop.style.top='';pop.style.bottom=(innerHeight-r.top+4)+'px';pop.style.maxHeight=Math.max(120,Math.min(320,above))+'px'}else{pop.style.bottom='';pop.style.top=(r.bottom+4)+'px';pop.style.maxHeight=Math.max(120,Math.min(320,below))+'px'}
+   const on=pop.querySelector('.ac-it.on');if(on)on.scrollIntoView({block:'nearest'})};
+  const update=()=>{if(getChar()===false)return close();const t=curTok();if(!t)return close();const L=build(t);if(!L.length)return close();
+   const same=tok&&tok.kind===t.kind&&tok.q===t.q;tok=t;if(!same)sel=0;items=L;if(sel>=L.length)sel=0;paint()};
+  const accept=()=>{const x=items[sel];if(!x||!tok)return close();const v=inp.value;const tail=v.slice(tok.e).replace(/^\s+/,'');const head=v.slice(0,tok.s)+x.ins+' ';inp.value=head+tail;const p=head.length;try{inp.setSelectionRange(p,p)}catch(e){}close();inp.dispatchEvent(new Event('input',{bubbles:true}));inp.focus({preventScroll:true})};
+  inp.addEventListener('keydown',e=>{if(!pop||!items.length||e.isComposing)return;
+   if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();e.stopImmediatePropagation();sel=(sel+(e.key==='ArrowDown'?1:-1)+items.length)%items.length;paint();return}
+   if(e.key==='Tab'||e.key==='Enter'){e.preventDefault();e.stopImmediatePropagation();accept();return}
+   if(e.key==='Escape'){e.preventDefault();e.stopImmediatePropagation();close()}},true);
+  inp.addEventListener('input',update);inp.addEventListener('click',update);inp.addEventListener('keyup',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'||e.key==='Home'||e.key==='End')update()});
+  inp.addEventListener('compositionend',()=>setTimeout(update,0));inp.addEventListener('blur',()=>setTimeout(close,120));addEventListener('resize',()=>{if(pop)paint()})}
  function openExpPick(anchor,c,onPick){if(document.querySelector('.spkp')&&document.querySelector('.spkp')._anchor===anchor)return closeSpkPick();closeSpkPick();
   const st=c.stands||[];const cur=+c.active||0;const many=st.length>12;const lb=i=>(st[i].label)||('표정 '+(i+1));
   const pop=document.createElement('div');pop.className='spkp expp';pop._anchor=anchor;
@@ -1865,5 +1899,5 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   for(const k of KEYS){if(taken.includes(k.key))continue;try{K.add({id:k.id,label:k.label,key:k.key,grp:'r',run:()=>{if(!keyOk()||document.querySelector('.modalbg'))return false;k.fn();return true}})}catch(e){console.warn('OM_KEYS',e)}}return true}
  setTimeout(regKeys,0);
  document.addEventListener('keydown',e=>{if(regKeys())return;if(!keyFree(e)||!keyOk())return;const key=(e.key||'').toLowerCase();const k=KEYS.find(x=>x.key===key);if(!k)return;e.preventDefault();k.fn()});
- return {linePrep,psClear,onClueEv,openClueBox,stageEnter,bspkHtml,bspkBind,bsayToggleHtml,openSpkPick,spkBtnFill,spkInfo,pushRecent,curSpk,battleSay,bsayPlace,bsayClear,typingHtml,autoFolder,bgmMuted,seUrlOf:seUrl,render,allSpeakers,onChat,feedLog,onState,onTyping,typingPing,typingStop,drawTyping,mapData:mapS,openConsole,openStands,openPeople,setMyStand,charOf,playSe,setVolume,bgmWidgetHtml,bindBgmWidget,gmKeyOf,imgOfKey:k=>{if(k==='gm')return gmImg();const c=charOf(k);return c?(c.img||standSrc(c)):''},curSpeaker:()=>{const ST=A().ST;const c=speakerChar();if(c)return {key:c.key,name:c.name,img:c.img||standSrc(c)};return gm()?{key:'gm',name:'GM',img:myGmImg()}:{key:'me',name:ST.name||'',img:''}}};
+ return {acBind,acCharOf,linePrep,psClear,onClueEv,openClueBox,stageEnter,bspkHtml,bspkBind,bsayToggleHtml,openSpkPick,spkBtnFill,spkInfo,pushRecent,curSpk,battleSay,bsayPlace,bsayClear,typingHtml,autoFolder,bgmMuted,seUrlOf:seUrl,render,allSpeakers,onChat,feedLog,onState,onTyping,typingPing,typingStop,drawTyping,mapData:mapS,openConsole,openStands,openPeople,setMyStand,charOf,playSe,setVolume,bgmWidgetHtml,bindBgmWidget,gmKeyOf,imgOfKey:k=>{if(k==='gm')return gmImg();const c=charOf(k);return c?(c.img||standSrc(c)):''},curSpeaker:()=>{const ST=A().ST;const c=speakerChar();if(c)return {key:c.key,name:c.name,img:c.img||standSrc(c)};return gm()?{key:'gm',name:'GM',img:myGmImg()}:{key:'me',name:ST.name||'',img:''}}};
 })();

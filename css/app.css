@@ -2997,6 +2997,14 @@ span.iedit{display:inline-block;min-width:3em}
 .expp-it span{font-size:12px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .expp-it.on span{color:var(--yel,#ffd12e);font-weight:700}
 .expp-f{padding:6px 10px;border-top:1px solid var(--line2)}.expp-f code{font-size:11px}
+/* 11-09 @표정 · !감정 자동완성 */
+.acpop{position:fixed;z-index:9100;display:flex;flex-direction:column;gap:2px;overflow:auto;padding:4px;background:#111;color:var(--fg);border:2px solid var(--yel,#ffd12e);border-radius:10px;box-shadow:4px 4px 0 var(--red),0 8px 30px rgba(0,0,0,.6)}
+.ac-h{font-size:12px;font-weight:700;color:var(--yel,#ffd12e);padding:2px 6px 4px;border-bottom:1px solid var(--line2);margin-bottom:2px;white-space:nowrap}.ac-h small{color:var(--mute);font-weight:400;margin-left:4px}
+.ac-it{display:flex;align-items:center;gap:8px;min-width:0;padding:3px 6px;border-radius:7px;border:1px solid transparent;background:transparent;color:inherit;font:inherit;cursor:pointer;text-align:left;flex:none}
+.ac-it:hover{background:#1d1d22}.ac-it.on{border-color:var(--yel,#ffd12e);background:rgba(255,209,46,.1)}
+.ac-im{flex:none;width:26px;height:34px;border-radius:5px;background:#222 center 8%/cover no-repeat;border:1px solid var(--line2)}
+.ac-ic{flex:none;width:28px;height:28px;display:grid;place-items:center}.ac-svg{width:26px;height:26px}
+.ac-tx{display:flex;flex-direction:column;min-width:0}.ac-tx b{font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ac-tx small{font-size:11px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .rpmode{padding:0 12px!important;font-size:13px!important;white-space:nowrap;min-width:74px}
 .rpmode.m-say{background:#2e86de;border-color:#2e86de;color:#fff}
 .rpmode.m-narr{background:#3a3f4b;border-color:#8a90a0;color:#e8e8e8;font-style:italic}

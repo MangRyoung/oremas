@@ -467,7 +467,7 @@ function renderRoom(){
  if(ST.role==='gm'){if($('#copyGm'))$('#copyGm').onclick=()=>copy(gmLink(ST.room,ST.secret),'GM 링크를 복사했다 (아무에게도 주지 말 것)');$('#roomSet').onclick=()=>openRoomSettings()}
  else {$('#roomSet').onclick=()=>openRoomSettings()}
  if($('#asPlBtn'))$('#asPlBtn').onclick=asPlPick;if(ST.asPlGm&&$('#asGmBtn'))$('#asGmBtn').onclick=asGmBack;
- $('#chatSend').onclick=sendChat;bindChatAs();$('#ctabs').querySelectorAll('[data-ch]').forEach(b=>b.onclick=()=>setChan(b.dataset.ch));setChan(CHAN.cur,true);$('#chatIn').onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)sendChat()};$('#chatIn').oninput=()=>{if(window.OM_RP_UI&&window.OM_RP_UI.typingPing)window.OM_RP_UI.typingPing(CHAN.cur==='o')};
+ $('#chatSend').onclick=sendChat;bindChatAs();$('#ctabs').querySelectorAll('[data-ch]').forEach(b=>b.onclick=()=>setChan(b.dataset.ch));setChan(CHAN.cur,true);$('#chatIn').onkeydown=e=>{if(e.key==='Enter'&&!e.isComposing)sendChat()};if(window.OM_RP_UI&&window.OM_RP_UI.acBind)window.OM_RP_UI.acBind($('#chatIn'),()=>{if(CHAN.cur==='o'||!ST.role)return false;const kk=ST.role==='gm'?(ST.chatAs||'gm'):(ST.chatAs&&ST.chatAs.startsWith('pm:')?ST.chatAs:ST.seat);return window.OM_RP_UI.acCharOf(kk)||null});   /* 11-09 @표정 · !감정 자동완성 (세션 탭만) */$('#chatIn').oninput=()=>{if(window.OM_RP_UI&&window.OM_RP_UI.typingPing)window.OM_RP_UI.typingPing(CHAN.cur==='o')};
  /* 채팅 창 너비: 끌어서 조절, 브라우저에 기억 */
  try{const w=+localStorage.getItem('om_sidew');if(w>=260)$('#side').style.width=w+'px'}catch(e){}
  $('#resizer').onpointerdown=e=>{const side=$('#side');const sx=e.clientX,sw=side.getBoundingClientRect().width;e.preventDefault();document.body.classList.add('resizing');
