@@ -2627,7 +2627,7 @@ window.OM_BATTLE_UI=(()=>{
  async function hitAuto(mid,R){if(!FX()||!FX().hitOk||!R||!R.mv)return;const a0=ctx().b.mons[mid];if(!a0)return;const hits=(R.targets||[]).filter(r=>r&&r.acc&&r.acc.hit&&r.def&&r.def.id!==mid);if(!hits.length)return;
   const list=[];if(a0.ability)list.push(['trait',a0.ability]);if(a0.item)list.push(['item',a0.item]);for(const x of (a0.items2||[]))if(x&&x.item)list.push(['item',x.item]);for(const p of potSrc(a0))if(p&&p.name&&!p.ph)list.push(['pot',p.name]);
   for(const [kind,name] of list){const a=ctx().b.mons[mid];if(!a)return;const au=FX().autoOf(a,kind,name);if(!au||!au.ops||!au.ops.length||au.manual)continue;const c0=au.ops[0];if(!c0||c0.k!=='cond'||c0.c!=='on_hit')continue;const eff=slotEff(a,kind,name);const K=({pot:'포텐셜',trait:'특성',item:'소지품'})[kind]||'효과';
-   for(const r of hits){const d=ctx().b.mons[r.def.id];if(!d)continue;const h={move:R.mv.name,defTypes:tysOf(d),moveTypes:R.moveTypes||[]};if(!FX().hitOk(c0,h))continue;
+   for(const r of hits){const d=ctx().b.mons[r.def.id];if(!d)continue;const h={move:R.mv.name,defTypes:tysOf(d),moveTypes:R.moveTypes||[],cat:R.mv.cat||''};if(!FX().hitOk(c0,h))continue;
     if(limManual(a,kind,name,eff)){A().sysLog(`【${K}】 ${a.name} 『${name}』 — 「${R.mv.name}」이(가) ${d.name}에게 명중해 조건을 만족했다 (【자동】 이 없어 카드 「발동」으로)`,'battle',{mid:a.id,img:a.image||''});continue}
     let L=null;if(kind==='pot'){const p=potSrc(ctx().b.mons[mid]||a).find(q=>q&&q.name===name);if(p){const c=ctx().b.mons[mid]||a;L=limOf(p,c.potUses||{},c.potTurn||{});if(L.left!==null&&L.left<=0)continue}}   /* 11-09 망령 「더 자동화할 것」: 【N/시】뿐 아니라 【소진】 · 【탈진】도 본다 */
     const ok=await fireAuto(mid,kind,name,{quiet:true,pickId:d.id,hit:h,head:`【${K}】 ${a.name} 『${name}』【자동】 — 「${R.mv.name}」이(가) ${d.name}에게 명중`});
