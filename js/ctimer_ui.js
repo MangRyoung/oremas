@@ -30,19 +30,19 @@ window.OM_CTIMER=(()=>{
  /* ---------- 좌석: 내 씬 종료 요청 ---------- */
  async function plEnd(){const ST=A().ST,T=T0();if(ST.role!=='seat'||!T||T.run!==ST.seat)return;if(await A().set(['pub',ST.seat,'ctEnd'],{run:T.runAt||0,at:Date.now()}))A().toast('씬 종료를 알렸다 — 내 시계가 멈춘다')}
  /* ---------- 그리기 ---------- */
- const CSS=`.ctim{order:2;flex:1 1 auto;min-width:0;display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:3px 6px;border-radius:8px;background:rgba(255,255,255,.04);border:1px dashed var(--line2,#444);font:12px/1.2 var(--font,'IBM Plex Sans KR'),sans-serif;color:var(--fg,#eee)}
-.ctim .ctc{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;border:1px solid var(--line2,rgba(255,255,255,.2));background:rgba(255,255,255,.04);white-space:nowrap}
+ const CSS=`.ctim{order:2;flex:1 1 auto;min-width:0;display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:3px 6px;border-radius:8px;background:rgba(12,12,14,.88);border:1px solid rgba(255,255,255,.12);font:12px/1.2 var(--font,'IBM Plex Sans KR'),sans-serif;color:#eee}
+.ctim .ctc{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.05);white-space:nowrap;color:#eee}
 .ctim .ctc b{font-weight:600;max-width:7em;overflow:hidden;text-overflow:ellipsis}
 .ctim .ctc i{font-style:normal;font-variant-numeric:tabular-nums;font-size:13px}
-.ctim .ctc.run{border-color:var(--yel,#ffd12e);background:rgba(255,209,46,.14)}
-.ctim .ctc.run i{color:var(--yel,#ffd12e)}
+.ctim .ctc.run{border-color:#ffd12e;background:rgba(255,209,46,.16)}
+.ctim .ctc.run i{color:#ffd12e}
 .ctim .ctc.pz i{color:#9ad}
 .ctim .ctc.low i{color:#ffa94d}
-.ctim .ctc.over i{color:var(--red2,#ff4d6a)}
-.ctim .ctc.over{border-color:var(--red2,#ff4d6a)}
+.ctim .ctc.over i{color:#ff5a74}
+.ctim .ctc.over{border-color:#ff5a74}
 .ctim .ctc.gmk{cursor:pointer}.ctim .ctc.gmk:hover{border-color:rgba(255,255,255,.4)}
-.ctim .ctb{padding:2px 7px;border-radius:7px;border:1px solid var(--line2,rgba(255,255,255,.22));background:rgba(255,255,255,.06);color:inherit;font:inherit;cursor:pointer}
-.ctim .ctb:hover{background:rgba(255,255,255,.18)}.ctim .ctb.endb{border-color:var(--red2,#ff4d6a)}
+.ctim .ctb{padding:2px 7px;border-radius:7px;border:1px solid rgba(255,255,255,.25);background:rgba(255,255,255,.08);color:#eee;font:inherit;cursor:pointer}
+.ctim .ctb:hover{background:rgba(255,255,255,.18)}.ctim .ctb.endb{border-color:#ff5a74}
 .ctim .ctl{opacity:.7;font-size:11px;margin-right:2px}
 .ctmrow{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--line,#333)}.ctmrow b{flex:1}.ctmrow i{font-style:normal;font-variant-numeric:tabular-nums;min-width:4.5em;text-align:right}
 @media (max-width:760px){.ctim{flex-basis:100%;font-size:11px;gap:3px;padding:3px 4px}.ctim .ctl{display:none}.ctim .ctc{padding:2px 6px;gap:3px}.ctim .ctc b{max-width:4.2em}.ctim .ctc i{font-size:12px}.ctim .ctb{padding:2px 5px}}`;
