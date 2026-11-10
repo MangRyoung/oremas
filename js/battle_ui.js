@@ -490,8 +490,21 @@ window.OM_BATTLE_UI=(()=>{
  function limOf(p,uses,turns){const e=String(p.eff||'');const mm=e.match(/【(\d+)\/시】/);const mmax=mm?+mm[1]:null;const ml=mmax==null?null:(uses[p.name]==null?mmax:+uses[p.name]);
   const per=/【\s*소진\s*】/.test(e)?'turn':/【\s*탈진\s*】/.test(e)?'tal':'';const T=+((ctx().b||{}).turn)||0;const ut=turns[p.name];
   const tl=!per?null:(ut==null?1:per==='turn'?(+ut===T?0:1):(T-(+ut)<=1?0:1));
-  const max=mmax!=null?mmax:per?1:null;const left=ml==null&&tl==null?null:Math.min(ml==null?Infinity:ml,tl==null?Infinity:tl);return {max,left,mmax,per}}
- function specialPots(m){const u=m.potUses||{};return potSrc(m).filter(p=>isExcl(m,p)).map(p=>{const L=limOf(p,u,m.potTurn||{});const max=L.max,left=L.left;const a=FX()&&FX().autoOf(m,'pot',p.name);return {p,kind:p.unique?'고유':'전용',max,left,mmax:L.mmax,per:L.per,auto:!!(a&&a.ops&&a.ops.length&&!a.manual)}})}
+  const max=mmax!=null?mmax:per?1:null;const left=ml==null&&tl==null?null:Math.min(ml==null?Infinity:ml,tl==null?Infinity:tl);
+  const sw=shareWhy(p,turns);if(sw)return {max:max==null?1:max,left:0,mmax,per,sw};return {max,left,mmax,per}}
+ /* 11-10 망령 「【공유】 자동화 — 포켓몬 기준 · 괄호 안 이름은 그 이름이 들어간 효과끼리만 (【공유 (『악전위』)】 = 악전위가 들어간 효과랑 같은 턴에 못 쓴다)」:
+    포켓몬이 이번 턴에 발동한 포텐셜을 potTurn._share = {t:턴, u:[{n:이름, p:괄호 없는 【공유】, g:[괄호 안 이름], x:전용}], ex:[이 포켓몬의 전용 이름]} 에 적고,
+    ① 괄호 없는 【공유】끼리 ② 내 괄호 이름이 들어간 효과를 이미 썼으면 ③ 이미 쓴 효과의 괄호 이름이 내 이름에 들어 있으면 — 이번 턴에 못 쓴다 (limOf left 0 · potRest 「공유」 칩).
+    『전용』 = 이름에 「전용」이 들어 있거나 전용 포텐셜. 한 글자 이름(『포』)은 그 글자로 끝나는 이름만. 『지령)』처럼 괄호가 꼬인 글도 읽는다. 다음 턴이면 저절로 풀린다 */
+ function shareTag(e){const m=String(e||'').match(/【\s*공유([^】]*)】/);if(!m)return null;const g=[...m[1].matchAll(/『([^』)]+)/g)].map(x=>x[1].trim()).filter(Boolean);return {p:!g.length,g}}
+ function shareWhy(p,turns){try{const S=turns&&turns._share;const T=+((ctx().b||{}).turn)||0;if(!p||!S||+S.t!==T||!Array.isArray(S.u))return '';const N=p.name;const me=shareTag(p.eff);const ex=(S.ex||[]).includes(N);
+   const has=(n,x,g)=>{n=String(n);if(g==='전용')return !!x||n.includes('전용');if(g.length===1)return new RegExp(g.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?=$|\\s|[』,·)])').test(n);return n.includes(g)};   /* 한 글자(『포』)는 끝말만 — 관통포 · 곡사포 O, 포텐셜 · 포효 X */
+   for(const u of S.u){if(!u||u.n===N)continue;if(me&&me.p&&u.p)return `이번 턴에 『${u.n}』(【공유】)를 썼다 — 다른 【공유】 효과는 턴 끝까지 못 쓴다`;
+    const g1=me?me.g.find(g=>has(u.n,u.x,g)):null;if(g1)return `이번 턴에 『${u.n}』을(를) 썼다 — 【공유 (『${g1}』)】 라 같이 못 쓴다`;
+    const g2=(u.g||[]).find(g=>has(N,ex,g));if(g2)return `이번 턴에 『${u.n}』(【공유 (『${g2}』)】)를 썼다 — 『${g2}』이(가) 들어간 효과는 턴 끝까지 못 쓴다`}return ''}catch(e){return ''}}
+ async function shareMark(mid,name){try{const m=((ctx().b||{}).mons||{})[mid];if(!m)return;const nn=String(name||'').replace(/[『』]/g,'').trim();const p=potSrc(m).find(q=>q&&(q.name===name||q.name===nn));if(!p)return;const T=+ctx().b.turn||0;const S0=(m.potTurn||{})._share;const u=(S0&&+S0.t===T&&Array.isArray(S0.u))?S0.u.slice():[];if(u.some(x=>x&&x.n===p.name))return;
+   const tg=shareTag(p.eff);u.push({n:p.name,p:tg&&tg.p?1:0,g:tg?tg.g:[],x:isExcl(m,p)?1:0});await A().set(['battle','mons',mid,'potTurn','_share'],{t:T,u,ex:potSrc(m).filter(q=>isExcl(m,q)).map(q=>q.name)})}catch(e){console.warn('shareMark',e)}}
+ function specialPots(m){const u=m.potUses||{};return potSrc(m).filter(p=>isExcl(m,p)).map(p=>{const L=limOf(p,u,m.potTurn||{});const max=L.max,left=L.left,sw=L.sw||'';const a=FX()&&FX().autoOf(m,'pot',p.name);return {p,kind:p.unique?'고유':'전용',max,left,sw,mmax:L.mmax,per:L.per,auto:!!(a&&a.ops&&a.ops.length&&!a.manual)}})}
  /* 11-03 21:36 망령 「일반 포텐셜도 【탈진】 · 【소진】을 세자 — 칸 길이는 그대로」: 쓴 턴을 potTurn 에 적고(손으로 누른 발동 · 사용만), 못 쓰는 턴엔 발동 자리에 같은 크기의 「탈진」 · 「소진」 칩 */
  /* 11-04 20:34 망령 「웹툴 배틀에서 유대가 자동화 안 되어 있는 것 같대」: 『사랑의 유대』 · 『영혼의 유대』(【탈진】/저확률로 기술 대미지로 「빈사」 상태가 되지 않는다)를
     기합의머리띠처럼 HP 창에서 굴린다 — 쓰러질 피해면 확률(저 30 · 중 50 · 고 60)을 굴려 버티면 HP 1 · 버티면 【탈진】(쓴 턴 기록 — 다음 턴 끝까지 다시 안 굴림) */
@@ -499,12 +512,12 @@ window.OM_BATTLE_UI=(()=>{
   if(ctx().b.pvp&&m.bondUsed)return null;   /* PVP: 시합 중 한 번만 버틴다 */
   for(const p of potSrc(m)){if(!p||!p.name)continue;const mm=String(p.eff||'').match(/(저|중|고)확률로\s*기술\s*대미지로\s*「빈사」\s*상태가\s*되지\s*않는다/);if(!mm)continue;if(potRest(m,p.name))continue;
    const lim=String(p.eff||'').match(/【\s*(\d+)\s*\/\s*시\s*】/);if(lim){const left=(m.potUses||{})[p.name];if(left!=null&&+left<=0)continue}return {pct:P[mm[1]],name:p.name,pot:1}}return null}
- function potRest(m,name){const p=potSrc(m).find(q=>q&&q.name===name);if(!p||isExcl(m,p))return null;const e=String(p.eff||'');const per=/【\s*소진\s*】/.test(e)?'turn':/【\s*탈진\s*】/.test(e)?'tal':'';if(!per)return null;
+ function potRest(m,name){const p=potSrc(m).find(q=>q&&q.name===name);if(!p||isExcl(m,p))return null;{const sw=shareWhy(p,m.potTurn||{});if(sw)return {lab:'공유',title:sw}}const e=String(p.eff||'');const per=/【\s*소진\s*】/.test(e)?'turn':/【\s*탈진\s*】/.test(e)?'tal':'';if(!per)return null;
   const T=+((ctx().b||{}).turn)||0;const ut=(m.potTurn||{})[name];if(ut==null)return null;const no=per==='turn'?+ut===T:T-(+ut)<=1;if(!no)return null;
   return {lab:per==='turn'?'소진':'탈진',title:per==='turn'?`${ut}턴에 썼다 — 이번 턴엔 다시 못 쓴다 (【소진】)`:`${ut}턴에 썼다 — 다음 턴 끝까지 못 쓴다 (【탈진】)`}}
  const restChip=r=>`<span class="btn xs potrest" title="${esc(r.title)}">${r.lab}</span>`;
- async function potMark(mid,name){const m=(ctx().b.mons||{})[mid];if(!m)return;const p=potSrc(m).find(q=>q&&q.name===name);if(!p||isExcl(m,p))return;if(!/【\s*(소진|탈진)\s*】/.test(String(p.eff||'')))return;await A().set(['battle','mons',mid,'potTurn',name],+ctx().b.turn||0)}
- function spBtn(m,s){const n=esc(s.p.name);if(s.left!==null&&s.left<=0)return '<span class="small dim">다 씀</span>';
+ async function potMark(mid,name){const m=(ctx().b.mons||{})[mid];if(!m)return;await shareMark(mid,name);const p=potSrc(m).find(q=>q&&q.name===name);if(!p||isExcl(m,p))return;if(!/【\s*(소진|탈진)\s*】/.test(String(p.eff||'')))return;await A().set(['battle','mons',mid,'potTurn',name],+ctx().b.turn||0)}
+ function spBtn(m,s){const n=esc(s.p.name);if(s.sw)return `<span class="btn xs potrest" title="${esc(s.sw)}">공유</span>`;if(s.left!==null&&s.left<=0)return '<span class="small dim">다 씀</span>';
   if(s.auto&&syncLock(ctx().b,m,s.p.eff))return `<button class="btn xs pri" disabled title="【동조】 — 필드에 같은 『역할』 대치가 없다">발동</button>`;
   if(s.auto)return `<button class="btn xs pri" data-act="fireauto" data-card="1" data-mid="${m.id}" data-kind="pot" data-pot="${n}" title="자동화 효과를 건다${s.max!=null?' (횟수 1 사용)':''}">발동</button>`;
   if(s.max!=null)return `<button class="btn xs pri" data-act="usepot" data-card="1" data-mid="${m.id}" data-pot="${n}" title="횟수 1을 쓰고 로그에 출력">사용</button>`;
@@ -1489,7 +1502,7 @@ window.OM_BATTLE_UI=(()=>{
   if(how!=='force'&&x.max!=null){const T=+b.turn||0;
    if(x.mmax!=null){const cur=sk==='uq'?(t.uUses||{}):(m.potUses||{});const had=cur[name]==null?x.mmax:+cur[name];/* 11-05: 지금 서버 값에서 1 — 칸 하나만 쓴다(옛 사본으로 다른 포텐셜 횟수를 덮지 않게) */const fb=ctx().b||{};const fc=sk==='uq'?(((fb.trainers||{})[tid]||{}).uUses||{}):(((fb.mons||{})[mid]||{}).potUses||{});const fh=fc[name]==null?had:+fc[name];await A().set(sk==='uq'?['battle','trainers',tid,'uUses',name]:['battle','mons',mid,'potUses',name],Math.max(0,fh-1))}
    if(x.per)await A().set(sk==='uq'?['battle','trainers',tid,'uTurn',name]:['battle','mons',mid,'potTurn',name],T)}   /* 【소진】 · 【탈진】: 쓴 턴을 적는다 */
-  await A().set(['battle','cmds',tid,'fired',m?mid:'_t','pot',(sk==='uq'?'u:':'e:')+name],1);
+  await A().set(['battle','cmds',tid,'fired',m?mid:'_t','pot',(sk==='uq'?'u:':'e:')+name],1);if(m&&sk!=='uq')await shareMark(mid,name);   /* 11-10 【공유】 */
   if(sk==='uq'){if(String(((A().ST.state.rp||{}).cutin||{}).ord)!=='0')cutFire('t:'+tid,trainerImg(t),`${t.name}의 고유!`,`『${name}』`,t.side==='left'?'#1f6fd1':'#e3101f')}else if(wantCut(m,name))cutFire('m:'+m.id,m.image,m.name,`『${name}』`,m.side==='left'?'#1f6fd1':'#e3101f');
   if(sk!=='uq'&&m&&((m.excl&&m.excl.name===name)||(m.exclX||[]).some(q=>q&&q.name===name)))setTimeout(()=>rcvReact(tid,mid,'excl',name).catch(e=>console.warn('rcvReact',e)),1200);   /* 11-09 「전용 포텐셜이 발동했을 때」 계기 */
   const left=x.max!=null?` 【${how==='force'?x.left:Math.max(0,x.left-1)}/${x.max}】`:'';
@@ -2571,7 +2584,7 @@ window.OM_BATTLE_UI=(()=>{
   if(!await saveBattle(nb0,nb,f,{n:m.name,s:name,img:opt.img!=null?opt.img:(m.image||'')}))return false;if(raidNew)raidCut(m);
   if(kind==='item'&&oneShot(m0,name)&&!opt.quiet&&await askYes(`「${name}」을(를) 다 썼나? (소지품 칸에서 뺀다)`,'뺀다','남긴다'))setTimeout(()=>itemConsume(mid,false,name),50);
   A().sysLog(opt.head?`${opt.head}${L.length?'\n'+L.join('\n'):''}`:`【${({pot:'포텐셜',trait:'특성',item:'소지품',order:'지령'})[kind]||'효과'}】 ${m.name} 『${name}』${L.length?'\n'+L.join('\n'):''}`,'battle',{mid:m.id,...(opt.gmPriv?{gmPriv:1}:{}),...(opt.quiet&&['은밀망토','클리어참'].includes(String(name||'').replace(/[『』「」]/g,'').trim())?{privAll:1}:{}),img:opt.img!=null?opt.img:(m.image||''),eff:String(opt.eff||auto.text||(kind==='trait'?m.abilityEff:kind==='item'?m.itemEff:((potSrc(m).find(p=>p&&p.name===name)||{}).eff))||'').replace(/<br\s*\/?>/g,'\n').slice(0,300)});
-   /* 11-09 감우 54-E: 특성 · 포텐셜이 「발동」한 것(등장 때 조용히 거는 상시는 빼고)을 계기로 */if((kind==='trait'||kind==='pot')&&!opt.noEv&&!(opt.quiet&&opt.noRoll)&&!r.blocked){const nm0=String(name||'').replace(/[『』]/g,'').trim();setTimeout(()=>evReact(kind,{mid,name:nm0,eff:etx,key:nm0+'@'+Date.now()}).catch(e=>console.warn('evReact',e)),500)}return true}
+   /* 11-09 감우 54-E: 특성 · 포텐셜이 「발동」한 것(등장 때 조용히 거는 상시는 빼고)을 계기로 */if(kind==='pot'&&!(opt.quiet&&opt.noRoll)&&!r.blocked)await shareMark(mid,name);   /* 11-10 【공유】: 발동한 포텐셜을 이번 턴 기록에 */if((kind==='trait'||kind==='pot')&&!opt.noEv&&!(opt.quiet&&opt.noRoll)&&!r.blocked){const nm0=String(name||'').replace(/[『』]/g,'').trim();setTimeout(()=>evReact(kind,{mid,name:nm0,eff:etx,key:nm0+'@'+Date.now()}).catch(e=>console.warn('evReact',e)),500)}return true}
  /* 11-04 19:37 망령 「【1/시】는 【자동】이 붙은 게 아닌 이상 맘대로 발동하지 마」: 횟수(【N/시】)가 있는 포텐셜은 【자동】이 없으면 저절로 쓰지 않는다 — 등장 · 상시 · 지연 · 폼 체인지 자동 모두. 쓸 때는 카드 「발동」 · 선행 입력 */
  function limManual(m,kind,name,tx){if(kind!=='pot')return false;const t=String(tx!=null&&tx!==''?tx:(slotEff(m,kind,name)||''));return /【\s*\d+\s*\/\s*시\s*】/.test(t)&&!/【\s*자동\s*】/.test(t)}
  function slotEff(m,kind,name){const n=String(name||'').replace(/『|』/g,'');if(kind==='trait')return m.abilityEff||(FX()&&FX().effOf?FX().effOf('trait',n):'');if(kind==='item'){const x=n===m.item?m:(m.items2||[]).find(q=>q&&q.item===n);return (x&&x.itemEff)||''}
@@ -2782,7 +2795,7 @@ window.OM_BATTLE_UI=(()=>{
    while((r=re.exec(t))){const cl0=clauseAt(t,r.index);const st=Math.max(0,r.index-70);let pre=t.slice(st,r.index);const cut=Math.max(pre.lastIndexOf('/'),pre.lastIndexOf('】'),pre.lastIndexOf('\n'),pre.lastIndexOf('①'),pre.lastIndexOf('②'),pre.lastIndexOf('③'),pre.lastIndexOf('.'));if(cut>=0)pre=pre.slice(cut+1);
     if(/급소/.test(pre)&&!o.crit)continue;if(/회피|명중했을/.test(pre))continue;const ally=/아군(?:이|의)/.test(pre);if(ally?(mm.id===def.id||!sameT(mm,def,b)):mm.id!==def.id)continue;if(/상대(?:의|가|로부터)/.test(pre)&&sameT(atk,def,b))continue;
     const kw=r[1];if(kw==='공격'&&o.cat==='변화')continue;if(kw==='접촉기'&&!o.ct)continue;if(kw==='비접촉기'&&(o.ct||o.cat==='변화'))continue;if(kw==='물리기'&&o.cat!=='물리')continue;if(kw==='특수기'&&o.cat!=='특수')continue;
-    let ok=true;for(const q of pre.matchAll(/「([^」]+)」\s*(상태(?:인|에서|일\s*때)?)?/g)){const w=q[1].trim();const sx=pre.slice(q.index+q[0].length,q.index+q[0].length+8);
+    let ok=true;for(const q of pre.matchAll(/「([^」]+)」\s*(상태(?:인|에서|일\s*때)?)?/g)){const w=q[1].trim();const sx=pre.slice(q.index+q[0].length,q.index+q[0].length+8);if(/^(?:HP|공격|방어|특공|특방|스피드|명중|회피)$/.test(w)&&/^\s*(?:종족치|랭크|이|가|보다)/.test(sx))continue;   /* 11-10: 「방어」 종족치보다 「공격」이 낮은 상대 — 능력치 이름은 기술 「방어」로 읽지 않는다 (조건은 구문의 상대종족치 토큰이 본다) */
      if(/^상성\s*:/.test(w)){const v=+o.eff||1;const nums=(w.match(/\d+(?:\/\d+)?/g)||[]).map(x=>x.includes('/')?(+x.split('/')[0])/(+x.split('/')[1]):+x);if(/이하/.test(w)&&nums.length){if(!(v<=nums[0]+1e-9))ok=false}else if(/이상/.test(w)&&nums.length){if(!(v>=nums[0]-1e-9))ok=false}else if(/~/.test(w)&&nums.length>=2){const lo=Math.min(...nums),hi=Math.max(...nums);if(!(v>=lo-1e-9&&v<=hi+1e-9))ok=false}else if(nums.length&&Math.abs(v-nums[0])>1e-9)ok=false;continue}
      if(q[2]){const ks=stEnL(w);if(!ks.length)continue;const who=/^\s*상대|인\s*상대/.test(q[0].slice(q[0].indexOf('」')+1)+sx)?atk:mm;if(!ks.some(k=>(who.states||{})[k]))ok=false;continue}
      const ws=w.split(/[\/,·]/).map(x=>x.trim()).filter(Boolean);const tyE=ws.map(x=>S().typeEn(x.replace(/^타입\s*:\s*/,''))).filter(Boolean);if(tyE.length===ws.length){if(!tyE.some(x=>(o.mt||[]).includes(x)))ok=false;continue}
@@ -2810,7 +2823,7 @@ window.OM_BATTLE_UI=(()=>{
    if(!a||!realOps(a)||a.manual){notes.push(`${who} 『${x.name}』 — ${x.r.why}`);continue}
    if(x.kind==='pot'&&limManual(x.own,'pot',x.name,x.eff)&&!(await askYes(`${why}\n\n${who} 『${x.name}』 (【N/시】) 을(를) 발동할까?\n${String(x.r.cl||'').slice(0,160)}`,'발동','그만')))continue;
    else if(!(x.kind==='pot'&&limManual(x.own,'pot',x.name,x.eff))&&!/【\s*자동\s*】/.test(x.eff)&&!(await askYes(`${why}\n\n${who} 『${x.name}』 을(를) 발동할까?\n${String(x.r.cl||'').slice(0,160)}`,'발동','그만')))continue;
-   let ok=false;try{ok=await fireAuto(x.own.id,x.kind==='uq'?'pot':x.kind,x.name,Object.assign({auto:a,quiet:true,noEv:1,head:`【${K}】 ${who} 『${x.name}』 — ${x.r.why}`,eff:x.eff},x.r.pick?{pickId:x.r.pick}:{},x.kind==='uq'?{uq:1}:{}))}catch(e){console.warn('evReact',e)}
+   let ok=false;try{ok=await fireAuto(x.own.id,x.kind==='uq'?'pot':x.kind,x.name,Object.assign({auto:a,quiet:true,noEv:1,head:`【${K}】 ${who} 『${x.name}』 — ${x.r.why}`,eff:x.eff},x.r.pick?{pickId:x.r.pick}:{},ev==='hit'?{ctx:{oppId:o.mid,taken:+o.dmg||0}}:{},x.kind==='uq'?{uq:1}:{}))}catch(e){console.warn('evReact',e)}
    if(ok&&L){const cur=ctx().b.mons[x.own.id]||x.own;if(L.mmax!=null){const u=(cur.potUses||{})[x.name];const had=u==null?L.mmax:+u;await A().set(['battle','mons',x.own.id,'potUses',x.name],Math.max(0,had-1))}if(L.per)await A().set(['battle','mons',x.own.id,'potTurn',x.name],+ctx().b.turn||0)}
    if(ok&&x.kind==='uq'){const tt=(ctx().b.trainers||{})[x.t.id]||x.t;if(x.q.mmax!=null){const v=(tt.uUses||{})[x.name];await A().set(['battle','trainers',x.t.id,'uUses',x.name],Math.max(0,(v==null?x.q.mmax:+v)-1))}if(x.q.per)await A().set(['battle','trainers',x.t.id,'uTurn',x.name],+ctx().b.turn||0)}}
   if(notes.length)A().sysLog(`【계기】 발동 조건을 만족한 효과 (구문이 없어 손으로)\n${[...new Set(notes)].join('\n')}`,'battle',{gmPriv:1})}
@@ -3510,7 +3523,7 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【[^】]*】\s
      const au=FX().autoOf(a2,'pot',p.name);if(!au||!au.ops||!au.ops.length||au.manual||limManual(a2,'pot',p.name,p.eff))continue;ACTFX[k]=T;await fireAuto(mid,'pot',p.name,{quiet:true,noRoll:true,head:`【포텐셜】 ${a2.name} 『${p.name}』 — 행동한 뒤 자동`})}}
    /* 11-08 「조건 명중」 자동 (돌던지기 → 물 타입 강제 교대 …) */
    try{await hitAuto(mid,RESULT)}catch(e){console.warn('hitAuto',e)}
-   /* 11-09 감우 55: 맞은 쪽의 「공격을 받았을 때」 포텐셜 · 고유 */try{if(!RESULT.check)for(const r of (RESULT.targets||[])){if(!r||!r.acc||!r.acc.hit||!r.def||r.def.id===mid)continue;await evReact('hit',{mid,tgt:r.def.id,mv:RESULT.mv.name,mt:RESULT.moveTypes||[],cat:RESULT.mv.cat||'',ct:!!(A().contactOf&&A().contactOf(RESULT.mv)==='O')&&!farOf(ctx().b.mons[mid]||{}),eff:r.eff?+r.eff.value:1,crit:!!(r.hits||[]).some(h=>h&&h.v===2),key:RESULT.mv.name+'@'+r.def.id+'@'+Date.now()})}}catch(e){console.warn('evReact hit',e)}
+   /* 11-09 감우 55: 맞은 쪽의 「공격을 받았을 때」 포텐셜 · 고유 */try{if(!RESULT.check)for(const r of (RESULT.targets||[])){if(!r||!r.acc||!r.acc.hit||!r.def||r.def.id===mid)continue;await evReact('hit',{mid,tgt:r.def.id,dmg:(()=>{try{const lh=(ctx().b.mons[r.def.id]||{}).lastHit;return lh&&lh.fromId===mid?+lh.total||0:Math.floor(+((r.dmg||{}).total)||0)}catch(e){return 0}})(),mv:RESULT.mv.name,mt:RESULT.moveTypes||[],cat:RESULT.mv.cat||'',ct:!!(A().contactOf&&A().contactOf(RESULT.mv)==='O')&&!farOf(ctx().b.mons[mid]||{}),eff:r.eff?+r.eff.value:1,crit:!!(r.hits||[]).some(h=>h&&h.v===2),key:RESULT.mv.name+'@'+r.def.id+'@'+Date.now()})}}catch(e){console.warn('evReact hit',e)}
    /* 11-09 감우 54-E: 적용 중 쌓인 계기(드레인 …) · 【함성(기술)】 */try{await evFlush();if(RESULT&&RESULT.mv&&!RESULT.check)await evReact('shout',{mid,mv:RESULT.mv.name,key:RESULT.mv.name+'@'+Date.now()})}catch(e){console.warn('evReact',e)}
    try{await deferFire(mid,'자신의 행동이 끝나서','act')}catch(e){console.warn('defer',e)}   /* 11-09 미룬 대미지 */
    /* 11-03 「추가공격」: 포켓몬 하나에게 내보낸 맞는 기술이 명중했으면 1번 더 (위력 · 필중은 구문대로) — 추가 공격 창을 연다 */
