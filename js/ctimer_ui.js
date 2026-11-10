@@ -47,7 +47,7 @@ window.OM_CTIMER=(()=>{
 .ctz .ctb:hover{background:rgba(255,255,255,.18)}.ctz .ctb.endb{border-color:#ff5a74}
 .ctz .ctl{font-size:11px;flex:none}
 .ctmrow{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--line,#333)}.ctmrow b{flex:1}.ctmrow i{font-style:normal;font-variant-numeric:tabular-nums;min-width:4.5em;text-align:right}
-@media (max-width:760px){.ctz{font-size:11px;gap:3px}.ctz .ctc{padding:2px 6px;gap:3px}.ctz .ctc b{max-width:4.5em}.ctz .ctb{padding:1px 5px}}`;
+@media (max-width:760px){#rpu_me .mebar{position:relative}#rpu_me .mebar>.ctim{position:absolute;top:8px;right:8px;z-index:2}.ctz{font-size:11px;gap:3px}.ctz .ctc{padding:2px 6px;gap:3px}.ctz .ctc b{max-width:4.5em}.ctz .ctb{padding:1px 5px}}`;
  function css(){if(document.getElementById('ctimcss'))return;const s=document.createElement('style');s.id='ctimcss';s.textContent=CSS;document.head.appendChild(s)}
  function chip(T,s,now,G){const r=rem(T,s,now);const run=T.run===s;const cls=['ctc',run&&T.since?'run':'',run&&!T.since?'pz':'',r<0?'over':(r<60000?'low':''),G?'gmk':''].filter(Boolean).join(' ');
   return `<span class="${cls}" ${G?`data-ct="start" data-s="${esc(s)}" title="${run?(T.since?'지금 씬 주인 — 누르면 일시 정지':'일시 정지 중 — 누르면 이어서'):'눌러서 이 사람 씬 시작'}"`:''}>${run?(T.since?'▶':'⏸'):''}<b>${esc(nameOf(s))}</b><i>${fmt(r)}</i></span>`}
