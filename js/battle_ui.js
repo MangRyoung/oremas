@@ -3218,7 +3218,7 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
      else if((r=e.match(/자신의\s*「([^」:：]+)」\s*기술에\s*「([^」:：]+)」\s*타입을\s*(?:부여|추가)/))&&own.includes(S().typeEn(r[1].trim())))got=[r[2]];
      got=got.map(x=>S().typeEn(String(x).trim())).filter(t=>t&&TYS.includes(t));
      for(const t of got){if(ATXOFF.has(n+'|'+t)||keep.some(x=>x.t===t)||au.some(x=>x.t===t))continue;au.push({t,src:n});if(/유리한\s*상성/.test(e))fav=fav||n}}}
-   ATX=keep.concat(au);/* 11-09 망령 「복합기는 유리한 상성 — 자동이든 손이든 기본값 유리」: 더한 타입이 하나라도 있으면 「복합 상성」 = 공격자에게 유리. 손으로 고르거나 ✕ 로 되돌리면(dataset.man) 그대로 둔다 */if(!fav&&ATX.length)fav=(au.find(x=>x.src)||{}).src||'복합기 +';const am=$('#amulti',md);if(am&&!am.dataset.man){if(fav&&(am.value==='0'||am.dataset.auto)){am.value='1';am.dataset.auto=fav;am.title='자동: '+fav+' (복합기 — 유리한 상성으로 판정)'}else if(am.dataset.auto&&!fav){if(am.value==='1')am.value='0';delete am.dataset.auto;am.title=''}}
+   ATX=keep.concat(au);/* 11-09 망령 「복합기는 유리한 상성 — 자동이든 손이든 기본값 유리」: 더한 타입이 하나라도 있으면 「복합 상성」 = 공격자에게 유리. 손으로 고르거나 ✕ 로 되돌리면(dataset.man) 그대로 둔다 *//* 11-10 망령 「복합기는 상성이 양쪽 같으면 자속 보정을 받는 쪽?」: DB 기술 자체가 복합기(타입 칸 「격투(비행)」 · 플라잉프레스 · 하드론포 …)인데 더한 타입이 없으면 「첫 타입」으로 남던 것 → 이것도 유리한 상성(같으면 자속 쪽) */const nat=!!(mv&&mv.cat&&mv.cat!=='변화'&&mtys0(mv).length>1);if(!fav&&(ATX.length||nat))fav=(au.find(x=>x.src)||{}).src||(ATX.length?'복합기 +':'기술 「복합기」');const am=$('#amulti',md);if(am&&!am.dataset.man){if(fav&&(am.value==='0'||am.dataset.auto)){am.value='1';am.dataset.auto=fav;am.title='자동: '+fav+' (복합기 — 유리한 상성으로 판정)'}else if(am.dataset.auto&&!fav){if(am.value==='1')am.value='0';delete am.dataset.auto;am.title=''}}
    drawATX()};
   let PLG=null,PLGTY=false;
   let APOWM=false;const SPRND=['mag','present','psywave'];
