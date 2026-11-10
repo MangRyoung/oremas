@@ -96,7 +96,11 @@ window.OM_NOTES=(()=>{
   /* 11-10 망령 「대학 지도 ↔ 도시 지도 단추 — 웹툴에도」: 노트 지도의 큰 지도(up) · 안쪽 지도(up 이 이 지도)를 rp.map.ntRel 로 — 무대 지도 줄에 오가는 단추 */
   const ntRel=[...(m.up&&maps.find(x=>x.id===m.up)?[{id:m.up,name:maps.find(x=>x.id===m.up).name||'지도',up:1}]:[]),...maps.filter(x=>x.up===m.id).map(x=>({id:x.id,name:x.name||'지도',up:0}))];
   if(!opt.quiet&&!confirm(`「${r.campName}」의 지도 「${m.name}」를 가져올까?\n장소 ${locs.length}곳 · 루트 ${routes.length}개${m.img?' · 지도 그림':''}${locs.some(l=>l.bg)?` · 장소 배경 ${locs.filter(l=>l.bg).length}곳`:''}\n(이 방의 지도 핀·루트는 바뀐다. 인물(npcs)과 파티 위치는 남긴다)${opt.live?'\n\n가져온 뒤 「지도 연동」을 켠다 — 장소 핀 · 루트 · 인물 배치 · PC 위치가 노트와 서로 따라간다 (GM 이 이 방을 열어 둔 동안)':''}`))return;
-  const cur=(A().ST.state.rp||{}).map||{};const patch=Object.assign({},cur,{locs,routes,vis,party:{n:0,vis:1},npcs:(cur.npcs||[]).filter(n=>locs.some(l=>l.n===n.n)),preset:m.img?'':cur.preset,src:'nt:'+r.camp+'/'+m.id,ntK:{r:routes.map(x=>x.rid),p:[],l:locs.map(l=>l.nt)},hideR:{},hideL:{},ntRel});if(opt.live)patch.live=1;
+  const cur=(A().ST.state.rp||{}).map||{};
+  /* 11-10 큰 지도 ↔ 안쪽 지도로 바꿀 때: 지도가 바뀌면 그 지도의 인물을 다른 지도의 같은 번호 핀에 옮겨 붙이지 않는다 — 노트 인물(nt:)은 연동이 새 지도 자리로 다시 받아 오고, 방에서만 놓은 인물은 지도마다 따로 맡겨 둔다(npcStash) */
+  const nsrc='nt:'+r.camp+'/'+m.id;const same=cur.src===nsrc;let NPC,stash=Object.assign({},cur.npcStash||{});
+  if(same)NPC=(cur.npcs||[]).filter(n=>locs.some(l=>l.n===n.n));else{if(cur.src)stash[cur.src]=(cur.npcs||[]).filter(n=>!String(n.id||'').startsWith('nt:'));NPC=(stash[nsrc]||[]).filter(n=>locs.some(l=>l.n===n.n));delete stash[nsrc]}
+  const patch=Object.assign({},cur,{locs,routes,vis,party:{n:0,vis:1},npcs:NPC,npcStash:stash,preset:m.img?'':cur.preset,src:'nt:'+r.camp+'/'+m.id,ntK:{r:routes.map(x=>x.rid),p:[],l:locs.map(l=>l.nt)},hideR:{},hideL:{},ntRel});if(opt.live)patch.live=1;
   if(m.img)patch.img={src:m.img,w:W,h:H};/* 10-29 바뀐 칸만 쓴다 */const ops=A().diffOps(['rp','map'],cur,patch,1);if(!ops.length){A().toast('노트 지도와 같다 — 바뀐 게 없다');return}await A().setMany(ops);A().sysLog(`지도: 세션 노트 「${r.campName}」에서 가져옴 (장소 ${locs.length} · 루트 ${routes.length})`);A().toast(opt.live?'지도를 가져오고 연동을 켰다':'지도를 가져왔다');A().renderScene();if(opt.live){LV.camp='';LV.last=null}}
  /* 관계도: ents(인물 · 조직) → graph.nodes(npc/org, 얼굴 사진), rels → edges */
  async function importGraph(){const r=await pick(['ents','rels','pc','npc'],'관계도');if(!r)return;const ents=byKind(r.docs,'ents').filter(e=>['인물','조직'].includes(e.type));if(!ents.length)return A().toast('가져올 인물 · 조직이 없다');
