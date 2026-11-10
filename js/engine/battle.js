@@ -15,7 +15,8 @@ window.OM_BATTLE=(()=>{
  function statValue(mon,stat,opt){
   opt=opt||{};const base=stat==='accuracy'||stat==='evasion'?1:(mon.stats[STATS.indexOf(stat)]||0);
   let r=+((mon.rank||{})[stat]||0),m=+((mon.mod||{})[stat]||1);
-  {const F=window.OM_FIELD;const off=F&&F.itemOffMult?F.itemOffMult(mon,stat):1;if(off&&off!==1)m=Math.round(m/off*1000)/1000}   /* 11-08 23:12: 매직룸 · 금제 · 서투름이면 소지품 배율(검은철구 · 반짝가루 …)을 뺀다 */
+  {const F=window.OM_FIELD;const off=F&&F.itemOffMult?F.itemOffMult(mon,stat):1;if(off&&off!==1)m=Math.round(m/off*1000)/1000}
+  {const X=window.OM_FX;const cm=X&&X.cmod?X.cmod(mon,stat):1;if(cm&&cm!==1)m=Math.round(m*cm*1000)/1000}   /* 11-10 망령 「상태 · 날씨 토큰으로 자동」: 조건부 배율(근성 · 이상한비늘 · 플라워기프트 …)은 지금 조건이 맞을 때만 곱한다 */   /* 11-08 23:12: 매직룸 · 금제 · 서투름이면 소지품 배율(검은철구 · 반짝가루 …)을 뺀다 */
   if(opt.rank!=null)r=+opt.rank;if(opt.mod!=null)m=+opt.mod;
   const ig=opt.ignore==null?-1:+opt.ignore;
   if(r>0&&(ig===0||ig===2||ig===6||ig===7))r=0;if(r<0&&(ig===1||ig===4||ig===6||ig===7))r=0;   /* 6 = 랭크 변화 모두 (천진 · 성스러운칼) · 7 = 랭크+배율 모두 */
