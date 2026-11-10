@@ -35,7 +35,7 @@ window.OM_CTIMER=(()=>{
  const CSS=`.ctz,.ctz *{color:#eee!important}.ctz .ctl{color:#aaa!important}.ctz .ctc.run i{color:#ffd12e!important}.ctz .ctc.pz i{color:#9ad!important}.ctz .ctc.low i{color:#ffa94d!important}.ctz .ctc.over i{color:#ff5a74!important}
 .ctz{display:flex;align-items:center;gap:4px;font:12px/1.2 var(--font,'IBM Plex Sans KR'),sans-serif}
 .ctim{order:1;flex:none;display:inline-flex;flex-wrap:nowrap;padding:2px 5px;border-radius:8px;background:rgba(12,12,14,.88);border:1px solid rgba(255,255,255,.12)}
-.ctside{flex:none;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;white-space:nowrap;padding:3px 8px;background:rgba(10,10,12,.82);border-bottom:1px solid rgba(255,255,255,.1);font-size:11px;scrollbar-width:thin}
+.ctside{flex:none;flex-wrap:wrap;gap:3px;padding:3px 6px;background:rgba(10,10,12,.82);border-bottom:1px solid rgba(255,255,255,.1);font-size:11px}.ctside .ctc{padding:1px 6px}.ctside .ctc i{font-size:11px}
 .ctz .ctc{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.05);white-space:nowrap;flex:none}
 .ctz .ctc b{font-weight:600;max-width:6.5em;overflow:hidden;text-overflow:ellipsis}
 .ctside .ctc b{max-width:5em}
@@ -68,7 +68,7 @@ window.OM_CTIMER=(()=>{
   if(!stage||!T||!T.on){if(box)box.remove();if(sbox)sbox.remove();return}
   css();const now=Date.now();
   if(bar){const h=barHtml(T,now);if(!h){if(box)box.remove()}else{if(!box){box=document.createElement('div');box.className='ctz ctim';const id=bar.querySelector('.meid');if(id&&id.nextSibling)bar.insertBefore(box,id.nextSibling);else bar.appendChild(box)}if(box._h!==h){box.innerHTML=h;box._h=h}}}
-  if(phone){const h=sideHtml(T,now);if(!h){if(sbox)sbox.remove()}else{if(!sbox){sbox=document.createElement('div');sbox.className='ctz ctside';const pb=phone.querySelector(':scope>.pbar');if(pb&&pb.nextSibling)phone.insertBefore(sbox,pb.nextSibling);else phone.prepend(sbox)}if(sbox._h!==h){const sl=sbox.scrollLeft;sbox.innerHTML=h;sbox._h=h;sbox.scrollLeft=sl}}}
+  if(phone){const h=sideHtml(T,now);if(!h){if(sbox)sbox.remove()}else{if(!sbox){sbox=document.createElement('div');sbox.className='ctz ctside';const pb=phone.querySelector(':scope>.pbar');if(pb&&pb.nextSibling)phone.insertBefore(sbox,pb.nextSibling);else phone.prepend(sbox)}if(sbox._h!==h){sbox.innerHTML=h;sbox._h=h}}}
   /* 알림: 1분 남음 · 시간 종료 — 각자 화면에서 한 번씩 (씬마다) */
   if(T.run&&T.since){const r=rem(T,T.run,now);const k=T.run+':'+(T.runAt||0);const me=gm()||app.ST.seat===T.run;
    if(r<=60000&&r>0&&!WARN[k+'w']){WARN[k+'w']=1;if(me){app.toast(`⏱ ${nameOf(T.run)} — 1분 남음`);beep(660)}}
