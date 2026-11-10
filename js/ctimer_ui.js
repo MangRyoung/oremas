@@ -45,7 +45,7 @@ window.OM_CTIMER=(()=>{
 .ctim .ctb:hover{background:rgba(255,255,255,.18)}.ctim .ctb.endb{border-color:var(--red2,#ff4d6a)}
 .ctim .ctl{opacity:.7;font-size:11px;margin-right:2px}
 .ctmrow{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--line,#333)}.ctmrow b{flex:1}.ctmrow i{font-style:normal;font-variant-numeric:tabular-nums;min-width:4.5em;text-align:right}
-@media (max-width:760px){.ctim{top:40px;font-size:11px}.ctim .ctc{padding:2px 6px}.ctim .ctc i{font-size:12px}}`;
+@media (max-width:760px){.ctim{top:40px;font-size:11px;gap:3px;padding:3px 4px}.ctim .ctl{display:none}.ctim .ctc{padding:2px 6px;gap:3px}.ctim .ctc b{max-width:4.2em}.ctim .ctc i{font-size:12px}.ctim .ctb{padding:2px 5px}}`;
  function css(){if(document.getElementById('ctimcss'))return;const s=document.createElement('style');s.id='ctimcss';s.textContent=CSS;document.head.appendChild(s)}
  function stripHtml(T,now){const ST=A().ST;const L=seats();if(!L.length)return '';const G=gm();
   const chips=L.map(s=>{const r=rem(T,s,now);const run=T.run===s;const cls=['ctc',run&&T.since?'run':'',run&&!T.since?'pz':'',r<0?'over':(r<60000?'low':''),G?'gmk':''].filter(Boolean).join(' ');
