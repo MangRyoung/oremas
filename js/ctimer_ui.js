@@ -30,8 +30,8 @@ window.OM_CTIMER=(()=>{
  /* ---------- 좌석: 내 씬 종료 요청 ---------- */
  async function plEnd(){const ST=A().ST,T=T0();if(ST.role!=='seat'||!T||T.run!==ST.seat)return;if(await A().set(['pub',ST.seat,'ctEnd'],{run:T.runAt||0,at:Date.now()}))A().toast('씬 종료를 알렸다 — 내 시계가 멈춘다')}
  /* ---------- 그리기 ---------- */
- const CSS=`.ctim{position:absolute;left:50%;top:44px;transform:translateX(-50%);z-index:30;display:flex;flex-wrap:wrap;gap:4px;align-items:center;justify-content:center;max-width:calc(100% - 16px);padding:4px 6px;border-radius:10px;background:rgba(10,10,12,.72);border:1px solid rgba(255,255,255,.14);font:12px/1.2 'IBM Plex Sans KR',sans-serif;color:#eee;backdrop-filter:blur(2px)}
-.ctim .ctc{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:rgba(255,255,255,.05);white-space:nowrap}
+ const CSS=`.ctim{display:flex;flex-wrap:wrap;gap:4px;align-items:center;margin:4px 0 2px;padding:4px 6px;border-radius:8px;background:var(--panel2,#1d1d22);border:1px solid var(--line,#333);font:12px/1.2 var(--font,'IBM Plex Sans KR'),sans-serif;color:var(--fg,#eee)}
+.ctim .ctc{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;border:1px solid var(--line2,rgba(255,255,255,.2));background:rgba(255,255,255,.04);white-space:nowrap}
 .ctim .ctc b{font-weight:600;max-width:7em;overflow:hidden;text-overflow:ellipsis}
 .ctim .ctc i{font-style:normal;font-variant-numeric:tabular-nums;font-size:13px}
 .ctim .ctc.run{border-color:var(--yel,#ffd12e);background:rgba(255,209,46,.14)}
@@ -41,11 +41,11 @@ window.OM_CTIMER=(()=>{
 .ctim .ctc.over i{color:var(--red2,#ff4d6a)}
 .ctim .ctc.over{border-color:var(--red2,#ff4d6a)}
 .ctim .ctc.gmk{cursor:pointer}.ctim .ctc.gmk:hover{border-color:rgba(255,255,255,.4)}
-.ctim .ctb{padding:2px 7px;border-radius:7px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.08);color:#eee;font:inherit;cursor:pointer}
+.ctim .ctb{padding:2px 7px;border-radius:7px;border:1px solid var(--line2,rgba(255,255,255,.22));background:rgba(255,255,255,.06);color:inherit;font:inherit;cursor:pointer}
 .ctim .ctb:hover{background:rgba(255,255,255,.18)}.ctim .ctb.endb{border-color:var(--red2,#ff4d6a)}
 .ctim .ctl{opacity:.7;font-size:11px;margin-right:2px}
 .ctmrow{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--line,#333)}.ctmrow b{flex:1}.ctmrow i{font-style:normal;font-variant-numeric:tabular-nums;min-width:4.5em;text-align:right}
-@media (max-width:760px){.ctim{top:40px;font-size:11px;gap:3px;padding:3px 4px}.ctim .ctl{display:none}.ctim .ctc{padding:2px 6px;gap:3px}.ctim .ctc b{max-width:4.2em}.ctim .ctc i{font-size:12px}.ctim .ctb{padding:2px 5px}}`;
+@media (max-width:760px){.ctim{font-size:11px;gap:3px;padding:3px 4px;margin:3px 0}.ctim .ctl{display:none}.ctim .ctc{padding:2px 6px;gap:3px}.ctim .ctc b{max-width:4.2em}.ctim .ctc i{font-size:12px}.ctim .ctb{padding:2px 5px}}`;
  function css(){if(document.getElementById('ctimcss'))return;const s=document.createElement('style');s.id='ctimcss';s.textContent=CSS;document.head.appendChild(s)}
  function stripHtml(T,now){const ST=A().ST;const L=seats();if(!L.length)return '';const G=gm();
   const chips=L.map(s=>{const r=rem(T,s,now);const run=T.run===s;const cls=['ctc',run&&T.since?'run':'',run&&!T.since?'pz':'',r<0?'over':(r<60000?'low':''),G?'gmk':''].filter(Boolean).join(' ');
@@ -57,9 +57,11 @@ window.OM_CTIMER=(()=>{
  let LAST='',WARN={};
  function beep(f){try{const C=window.AudioContext||window.webkitAudioContext;const c=new C();const o=c.createOscillator(),g=c.createGain();o.type='triangle';o.frequency.value=f||880;g.gain.setValueAtTime(.0001,c.currentTime);g.gain.exponentialRampToValueAtTime(.15,c.currentTime+.02);g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+.5);o.connect(g).connect(c.destination);o.start();o.stop(c.currentTime+.55);setTimeout(()=>c.close(),900)}catch(e){}}
  function tick(){try{const app=A();if(!app||!app.ST||!app.ST.room)return;const stage=document.getElementById('rpstage');const T=T0();
-  let box=stage&&stage.querySelector(':scope>#ctim');
-  if(!stage||!T||!T.on){if(box)box.remove();LAST='';return}
-  css();if(!box){box=document.createElement('div');box.id='ctim';box.className='ctim';stage.appendChild(box);box.addEventListener('click',onClick);LAST=''}
+  /* 11-11 07:29 망령 「무대 위에 넣으면 스탠딩을 겹친다 — 아래쪽 띠로」: 무대 아래(#rpunder) 맨 위 한 줄 */
+  const under=stage&&document.getElementById('rpunder');{const old=stage&&stage.querySelector(':scope>#ctim');if(old)old.remove()}
+  let box=under&&under.querySelector(':scope>#ctim');
+  if(!under||!T||!T.on){if(box)box.remove();LAST='';return}
+  css();if(!box){box=document.createElement('div');box.id='ctim';box.className='ctim';box.addEventListener('click',onClick);LAST=''}if(under.firstChild!==box)under.insertBefore(box,under.firstChild)
   const now=Date.now();const h=stripHtml(T,now);if(h!==LAST){box.innerHTML=h;LAST=h}
   /* 알림: 1분 남음 · 시간 종료 — 각자 화면에서 한 번씩 (씬마다) */
   if(T.run&&T.since){const r=rem(T,T.run,now);const k=T.run+':'+(T.runAt||0);const me=gm()||app.ST.seat===T.run;
