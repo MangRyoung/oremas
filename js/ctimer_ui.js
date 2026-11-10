@@ -9,7 +9,8 @@ window.OM_CTIMER=(()=>{
  const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
  const gm=()=>A()&&A().ST.role==='gm';
  const T0=()=>((A().ST.state.rp||{}).ctimer)||null;
- const seats=()=>Object.keys(A().ST.state.seats||{});
+ /* 자리에 앉은 좌석 — 아무도 안 앉았으면(GM 혼자 미리 볼 때) 로스터 트레이너 · 시간 통이 이미 있는 사람도 */
+ const seats=()=>{const st=A().ST.state;const L=Object.keys(st.seats||{});const base=L.length?L:Object.keys((st.roster||{}).trainers||{});const bk=Object.keys(((st.rp||{}).ctimer||{}).bank||{});return [...new Set([...base,...bk.filter(k=>base.includes(k)||L.length===0)])]};
  const nameOf=s=>{const ST=A().ST;return (((ST.state.roster||{}).trainers||{})[s]||{}).name||((ST.state.seats||{})[s]||{}).name||s};
  const baseMs=T=>Math.max(1,+(T&&T.base)||30)*60000;
  function rem(T,s,now){const b=T.bank&&T.bank[s]!=null?+T.bank[s]:baseMs(T);return b-(T.run===s&&T.since?(now||Date.now())-T.since:0)}
