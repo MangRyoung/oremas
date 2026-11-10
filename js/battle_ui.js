@@ -1416,7 +1416,7 @@ window.OM_BATTLE_UI=(()=>{
      if(li===0&&a&&a.ops&&a.ops.length&&!a.manual){fireAuto(m.id,kind,name,{quiet:true,head:`【지연】 ${lab} — 나온 지 ${N}턴째, 발동`}).catch(e=>console.warn('delay',e))}
      else notes.push(`${lab} — 나온 지 ${N}턴째, 이번 턴부터 (손으로)`)})}}
   if(notes.length)A().sysLog(`【지연】 ${T}턴\n${notes.join('\n')}`,'battle')}
- async function watch(){const c=ctx();const b=c.b;try{dupWatch(c,b)}catch(e){console.warn('dup',e)}if(b&&b.started&&(c.gm||c.role==='seat'))itemKickRemote();delayWatch(c,b).catch(e=>console.warn('delay',e));try{coWatch()}catch(e){}faintWatch().catch(e=>console.warn('faint',e));stateWatch().catch(e=>console.warn('state',e));leaveWatch().catch(e=>console.warn('leave',e));weatherWatch().catch(e=>console.warn('weather',e));hpFormWatch().catch(e=>console.warn('hpform',e));answerAsks().catch(e=>console.warn('asks',e));if(b.endq&&b.endq.step)endAdvance();if(b.started&&(+b.phase||0)>=1){if(c.role==='seat')for(const tid of myTrainers(c).filter(t=>lead(c,t)))selfCharge(tid).catch(e=>console.warn('선행 차감',e));if(+b.tstep>=2&&(b.host||'gm')!==c.seat&&((b.host||'gm')!=='gm'||c.fair))for(const tid of myTrainers(c).filter(t=>lead(c,t)))selfPreFire(tid,(b.host||'gm')==='gm').catch(e=>console.warn('선행 자동(주인)',e));gmChargeOrphans().catch(e=>console.warn('선행 차감(GM)',e))}if((+b.phase||0)>=2)return autoRevealTurn();if((+b.phase||0)!==1)return;
+ async function watch(){const c=ctx();const b=c.b;try{dupWatch(c,b)}catch(e){console.warn('dup',e)}if(b&&b.started&&(c.gm||c.role==='seat'))itemKickRemote();delayWatch(c,b).catch(e=>console.warn('delay',e));try{coWatch()}catch(e){}faintWatch().catch(e=>console.warn('faint',e));stateWatch().catch(e=>console.warn('state',e));leaveWatch().catch(e=>console.warn('leave',e));weatherWatch().catch(e=>console.warn('weather',e));whileWatch().catch(e=>console.warn('while',e));hpFormWatch().catch(e=>console.warn('hpform',e));answerAsks().catch(e=>console.warn('asks',e));if(b.endq&&b.endq.step)endAdvance();if(b.started&&(+b.phase||0)>=1){if(c.role==='seat')for(const tid of myTrainers(c).filter(t=>lead(c,t)))selfCharge(tid).catch(e=>console.warn('선행 차감',e));if(+b.tstep>=2&&(b.host||'gm')!==c.seat&&((b.host||'gm')!=='gm'||c.fair))for(const tid of myTrainers(c).filter(t=>lead(c,t)))selfPreFire(tid,(b.host||'gm')==='gm').catch(e=>console.warn('선행 자동(주인)',e));gmChargeOrphans().catch(e=>console.warn('선행 차감(GM)',e))}if((+b.phase||0)>=2)return autoRevealTurn();if((+b.phase||0)!==1)return;
   if(c.gm)for(const tid of Object.keys(b.trainers||{}).filter(t=>!seatOwned(c,t)))await publishOk(tid);
   if(c.role==='seat')for(const tid of myTrainers(c).filter(t=>lead(c,t))){await publishOk(tid);   /* 함께 지시하는 트레이너도 (주인이 없을 때) */
    const key=turnKey(b);if(String(b.revealReq||'')===key&&!BUSY.rv){const left=Object.values(b.mons||{}).filter(m=>m.tid===tid&&m.entry&&m.hp.cur>0&&!revealed(b,tid,m.id)&&!SENT[key+':'+m.id]);
@@ -2816,17 +2816,20 @@ window.OM_BATTLE_UI=(()=>{
   if(notes.length)A().sysLog(`【계기】 발동 조건을 만족한 효과 (구문이 없어 손으로)\n${[...new Set(notes)].join('\n')}`,'battle',{gmPriv:1})}
  async function evFlush(){const q=EVQ;EVQ=[];for(const [ev,o] of q){try{await evReact(ev,o)}catch(e){console.warn('evFlush',e)}}}
  /* 날씨가 바뀌는 순간 (기술 · 특성 · 효과 엔진 · 손으로 어느 길이든) */
+ /* 11-10 망령 「「소지품 : 왕의징표석」인 포켓몬이 PT에 없거나 빈사일 때 이 포텐셜을 무효화하고 「특성 : 무기력」」: 「동안」 효과(fx whiles)를 상태가 바뀔 때마다 다시 본다 — 빈사 · 교대 · 부활 · 소지품 변화 */
+ let whileBusy=false;async function whileWatch(){const c=ctx();const b=c.b;if(!c.mgr||!b||!b.started||whileBusy||!FX()||!FX().whileSync)return;if(!isLeader(c))return;if(!Object.values(b.mons||{}).some(m=>m&&m.entry&&m.fx&&Array.isArray(m.fx.whiles)&&m.fx.whiles.length))return;
+  whileBusy=true;try{const nb0=snap(),nb=snap(nb0);const L=FX().whileSync(nb);if(L.length&&await saveBattle(nb0,nb))A().sysLog(`【조건 효과】\n${L.join('\n')}`,'battle')}finally{whileBusy=false}}
  const WX_SEEN={};async function weatherWatch(){const c=ctx();const b=c.b;if(!c.mgr||!b||!b.started)return;const bk=String(b.started);const w=String(((b.field||{}).weather||{}).type||'');if(!(bk in WX_SEEN)){WX_SEEN[bk]=w;return}if(WX_SEEN[bk]===w)return;WX_SEEN[bk]=w;if(w)await evReact('weather',{w,key:w+'@'+(Date.now()>>10)})}
  const EVENT_RE=/받았을 때|받을 때 \d할|맞았을 때|했을 때|내보낼 때|내보냈을 때|쓰러뜨렸을|빈사(?:가| 상태가)? 되었을|상태가\s*(?:되었을|됐을)\s*때|교대(?:했을|할) 때|등장했을 때|턴 개시|【(?:등장|턴 종료|선행|사전|퇴장|함성|보급|탈진|지연|자동)/;
  function passiveOps(ops,text){ops=(ops||[]).filter(o=>o&&!['baseup','statadd','none'].includes(o.k));if(!ops.length)return false;   /* 11-03 22:40: 시트 몫(종족치 · 실수치) · 「없음」은 빼고 본다 — 차원의 특권(종족치 + 면역 이상) 같은 것의 면역이 등장 때 걸리게 */
-  /* 11-03: 특수 효과(sp — 추가공격 · 보호 · 회피 …)는 그 자체가 조건부 규칙이라 글에 「~했을 때」가 있어도 나올 때 걸어 둔다 */if(ops.every(o=>o&&o.k==='sp'))return true;
+  /* 11-03: 특수 효과(sp — 추가공격 · 보호 · 회피 …)는 그 자체가 조건부 규칙이라 글에 「~했을 때」가 있어도 나올 때 걸어 둔다 */if(ops.every(o=>o&&o.k==='sp'))return true;if(ops.every(o=>o&&o.whl))return true;   /* 11-10 「동안」 줄(특성 · 종족치변경 · 포텐셜무효 + 조건 + 동안)은 조건 자체가 규칙 — 나올 때 걸어 두고 whileWatch 가 맞을 때만 켠다 */
   /* 줄이 여럿(①②…)이면 첫 줄만 본다 — 구문은 대개 ① 몫이고, 뒤 줄의 계기(【등장 (죽어내밀기)】 · 【지연】 …)는 따로 (디스럽터 ① …) */
   const t=String(text||'');let first=/[①②③④⑤]/.test(t)?(t.split(/[②③④⑤]/)[0]):t;
    /* 11-09 감우 54-B: 판정마다 굴리는 확률 지속 줄(위력 · 완화 · 회피 · 강화무시 · 우선도 · 비례무시)과, 「기술:X」 같은 조건이 붙은 지속 줄은 「~를 내보낼 때」 · 「N할로」가 글에 있어도 등장 때 걸어 둔다 (판정은 그때그때) */
    const PCK=o=>['boost','guard','eva','ignoreup','prio','noind'].includes(o.k)&&!o.turn&&o.dur!=='turn';const condL=ops.every(o=>PCK(o)&&(o.p||o.pl||(FX()&&FX().hasCond&&FX().hasCond(o))));if(condL)first=first.replace(/(?:를|을)?\s*(?:내보낼|내보냈을|사용할|사용했을)\s*때/g,' ');
   if(EVENT_RE.test(first)||(!condL&&/\d할(?:로|의)|\d+%\s*(?:확률|로)/.test(first)))return false;
   /* 고르는 대상(아군 1체 · 상대 1체 · 에리어)이 든 구문은 등장 때 묻게 되니 손으로 */
-  return ops.every(o=>o&&PASSIVE_K.includes(o.k)&&(!(o.p||o.pl)||PCK(o))&&!['ally1','enemy1','area'].includes(o.tgt))}
+  return ops.every(o=>o&&(PASSIVE_K.includes(o.k)||o.whl)&&(!(o.p||o.pl)||PCK(o))&&!['ally1','enemy1','area'].includes(o.tgt))}
  /* 11-03 20:44 망령 「커맨더 · 옵저버 · 프렌드가드」: 【방호】(또는 「필드 위에 있는 한」) 줄이 아군 · 상대에게 거는 지속 효과인데, 다른 줄의 계기(【탈진】 …)나 「아군 1체」 대상 때문에 등장 때 안 걸리던 것.
     그 줄에 계기 말이 없으면 등장 때 건다 — 「아군 1체」 → 자신 제외 아군 전체, 「상대 1체」 → 상대 전체. 필드에 있는 동안 새로 나온 포켓몬에게도(reAura), 떠나면 풀린다(release) */
  function auraOf(a,etx){const ops=a&&a.ops;if(!ops||!ops.length||ops.some(o=>!o||o.k==='choice'||!PASSIVE_K.includes(o.k)||o.p||o.pl))return null;
