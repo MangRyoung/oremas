@@ -78,12 +78,12 @@ window.OM_CTIMER=(()=>{
   <div class="small dim" style="margin:4px 0 10px">체스 시계처럼 자리마다 시간 통이 하나 — 지금 씬 주인 시계만 흐르고, 씬이 끝나면 남은 시간이 멈춰 다음 씬에 이어 쓴다. 0 이 지나면 알림 + 넘친 시간(+m:ss)을 센다. 무대 위 이름을 누르면 그 사람 씬 시작 · 다시 누르면 일시 정지.</div>
   <div class="row" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><label>한 사람당</label><input type="number" id="ctBase" min="1" max="600" value="${+T.base||30}" style="width:5em"><span>분</span><button class="btn sm pri" data-m="fill">모두 이 시간으로 채우기</button><span class="sp" style="flex:1"></span><button class="btn sm ${T.on?'':'pri'}" data-m="onoff">${T.on?'무대에서 숨기기':'무대에 띄우기'}</button></div>
   <div id="ctRows" style="margin-top:10px"></div>`);
-  const rows=()=>{const T=T0()||{base:30,bank:{}};const now=Date.now();const L=seats();const el=md.querySelector('#ctRows');if(!el)return;
+  const rows=()=>{const T=T0()||{base:30,bank:{}};const now=Date.now();const L=seats();const el=md.querySelector('#ctRows');if(!el)return;const ob=md.querySelector('[data-m="onoff"]');if(ob){ob.textContent=T.on?'무대에서 숨기기':'무대에 띄우기';ob.classList.toggle('pri',!T.on)}
    el.innerHTML=L.length?L.map(s=>`<div class="ctmrow"><b>${T.run===s?(T.since?'▶ ':'⏸ '):''}${esc(nameOf(s))}</b><i>${fmt(rem(T,s,now))}</i><button class="btn xs" data-m="adj" data-s="${esc(s)}" data-d="-60000">−1분</button><button class="btn xs" data-m="adj" data-s="${esc(s)}" data-d="60000">+1분</button><button class="btn xs ${T.run===s?'':'pri'}" data-m="start" data-s="${esc(s)}">${T.run===s?(T.since?'⏸ 멈춤':'▶ 이어서'):'▶ 씬 시작'}</button>${T.run===s?`<button class="btn xs" data-m="end">■ 씬 종료</button>`:''}</div>`).join(''):'<div class="small dim">아직 자리에 앉은 플레이어가 없다</div>'};
   rows();const iv=setInterval(()=>{if(!md.isConnected)return clearInterval(iv);rows()},1000);
   md.addEventListener('click',async e=>{if(e.target.closest('[data-x]'))return A().closeModal();const b=e.target.closest('[data-m]');if(!b)return;const k=b.dataset.m;
    if(k==='fill'){const cur=T0();if(cur&&cur.run&&!confirm('지금 흐르는 씬이 있다. 모두 새로 채우고 멈출까?'))return;await fill(md.querySelector('#ctBase').value)}
-   else if(k==='onoff'){await setOn(!(T0()||{}).on);const t=T0()||{};b.textContent=t.on?'무대에서 숨기기':'무대에 띄우기';b.classList.toggle('pri',!t.on)}
+   else if(k==='onoff')await setOn(!(T0()||{}).on);
    else if(k==='adj')await adj(b.dataset.s,+b.dataset.d);
    else if(k==='start'){const t=T0()||{};if(t.run===b.dataset.s)await(t.since?pause():resume());else await start(b.dataset.s)}
    else if(k==='end')await end();
