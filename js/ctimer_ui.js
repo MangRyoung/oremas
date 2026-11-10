@@ -30,7 +30,8 @@ window.OM_CTIMER=(()=>{
  /* ---------- 좌석: 내 씬 종료 요청 ---------- */
  async function plEnd(){const ST=A().ST,T=T0();if(ST.role!=='seat'||!T||T.run!==ST.seat)return;if(await A().set(['pub',ST.seat,'ctEnd'],{run:T.runAt||0,at:Date.now()}))A().toast('씬 종료를 알렸다 — 내 시계가 멈춘다')}
  /* ---------- 그리기 ---------- */
- const CSS=`.ctim{order:2;flex:1 1 auto;min-width:0;display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:3px 6px;border-radius:8px;background:rgba(12,12,14,.88);border:1px solid rgba(255,255,255,.12);font:12px/1.2 var(--font,'IBM Plex Sans KR'),sans-serif;color:#eee}
+ const CSS=`.ctim,.ctim *{color:#eee!important}.ctim .ctl{color:#aaa!important}.ctim .ctc.run i{color:#ffd12e!important}.ctim .ctc.pz i{color:#9ad!important}.ctim .ctc.low i{color:#ffa94d!important}.ctim .ctc.over i{color:#ff5a74!important}
+.ctim{order:2;flex:1 1 auto;min-width:0;display:flex;flex-wrap:wrap;gap:4px;align-items:center;padding:3px 6px;border-radius:8px;background:rgba(12,12,14,.88);border:1px solid rgba(255,255,255,.12);font:12px/1.2 var(--font,'IBM Plex Sans KR'),sans-serif;color:#eee}
 .ctim .ctc{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.05);white-space:nowrap;color:#eee}
 .ctim .ctc b{font-weight:600;max-width:7em;overflow:hidden;text-overflow:ellipsis}
 .ctim .ctc i{font-style:normal;font-variant-numeric:tabular-nums;font-size:13px}
