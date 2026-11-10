@@ -89,4 +89,4 @@ window.OM_CTIMER=(()=>{
    else if(k==='end')await end();
    rows()})}
  setInterval(tick,500);
- return {open,start,pause,resume,end,rem,fmt,tick}})();
+ return {open,start,pause,resume,end,adj,fill,setOn,plEnd,rem,fmt,tick}})();
