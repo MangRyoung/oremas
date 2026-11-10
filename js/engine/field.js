@@ -30,7 +30,7 @@ const FX=()=>window.OM_FX;
  const grounded=m=>/검은철구/.test(itemsOf(m))||has(m,'SmackDown')||   /* 11-08 51-2 ㉑ 「떨어뜨리기」 = 땅에 떨어진다 */!(typesOf(m).includes('Flying')||/풍선/.test(itemsOf(m))||has(m,'MagnetRise')||has(m,'Telekinesis')||has(m,'Fly')||/부유/.test(m.ability||'')||(FX()&&FX().floating(m)));
  const noind=(m,k)=>!!(FX()&&FX().noind(m,k));
  /* 11-09: 「감소무시」(fx nodrop) 가 있으면 내리지 않는다 — 끈적끈적네트 · 문어굳히기 · 물엿범벅. 내렸으면 true */
- const rankDown=(m,k,n)=>{if(n<0){const FX=window.OM_FX;const nd=FX&&FX.nodropHit?FX.nodropHit(m,k):'';if(nd){m._nd=nd;return false}}m.rank=m.rank||{};m.rank[k]=Math.max(-6,Math.min(6,(+m.rank[k]||0)+n));return true};
+ const rankDown=(m,k,n)=>{{const F=window.OM_FX;if(F&&F.rkRedir&&n)k=F.rkRedir(m,k,n)}   /* 11-10 랭크전환 */if(n<0){const FX=window.OM_FX;const nd=FX&&FX.nodropHit?FX.nodropHit(m,k):'';if(nd){m._nd=nd;return false}}m.rank=m.rank||{};m.rank[k]=Math.max(-6,Math.min(6,(+m.rank[k]||0)+n));return true};
  const setState=(m,k,count)=>{m.states=m.states||{};if(m.states[k])return false;const st=((DB().states||{}).st||{})[k]||{};{const d=st;m.states[k]=count!=null?count:(d.min>=1000||!d.min?1000:(+d.max>+d.min&&+d.max<1000?+d.min+Math.floor(Math.random()*(+d.max-+d.min+1)):+d.min))}return true};
  const clearState=(m,k)=>{if(m.states)delete m.states[k]};
  const curTurn=()=>{try{const t=(((window.OM_APP||{}).ST||{}).state||{}).battle;return t&&t.turn!=null?+t.turn:null}catch(e){return null}};   /* 11-08: 잠듦 깨는 턴 (m.wakeT) */
