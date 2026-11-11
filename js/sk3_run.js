@@ -5,7 +5,7 @@
      h: {tid: {c,d,b,r: {n 카드 이름, on 1 들고 있음 · 0 버림, mv 예비로 다른 사람 칸에 옮겨 감, from 'tid' 받은 예비 주인}}},
      owe: {tid: 버려야 할 장수}, log: [{at, t}] (최근 40) }
    규칙: 효과로 쓰면 버림 · 체크에 바치면(문양 맞으면 +1, 결과 뒤에도, 체크 하나에 일행 합쳐 1장) 버림 · 부상 한 단계마다 1장 버림(본인이 고름)
-         휴식 때 빈 체크 · 던전 · 배틀 칸을 일행의 예비 칸 카드(같은 종류)로 채운다 · 배틀 카드는 자기 포켓몬에게만.
+         중간 휴식 이상 때 빈 체크 · 던전 · 배틀 칸을 일행의 예비 칸 카드(같은 종류)로 채운다 (11-12 망령 — 짧은 휴식 · 숨돌리기는 보충 없음) · 배틀 카드는 자기 포켓몬에게만.
    GM 은 바로 쓰고, 좌석은 자기 줄만 pub[seat].sk3q 로 요청 → GM 화면이 처리 (덱 창과 같은 길). */
 window.OM_SK3R=(()=>{
  const A=()=>window.OM_APP,ST=()=>window.OM_APP.ST;
@@ -85,7 +85,7 @@ window.OM_SK3R=(()=>{
   const cell=([k,lab])=>{const x=h[k];const on=x&&x.on;
    const btns=!mine?'':on?`<div class="s3b"><button class="btn xs" data-s3="use" data-t="${esc(tid)}" data-k="${k}" title="효과로 쓰고 버린다">사용</button>${k!=='b'?`<button class="btn xs" data-s3="commit" data-t="${esc(tid)}" data-k="${k}" title="체크에 바친다 — 문양이 자질과 맞으면 +1 (★ 는 어느 자질이나) · 결과를 보고 붙여도 된다 · 체크 하나에 일행 합쳐 1장">바치기</button>`:''}<button class="btn xs ${owe?'warn':'ghost'}" data-s3="drop" data-t="${esc(tid)}" data-k="${k}" title="그냥 버린다 (부상으로 버릴 때)">버리기</button></div>`
     :x&&!x.mv?`<div class="s3b"><button class="btn xs ghost" data-s3="back" data-t="${esc(tid)}" data-k="${k}">되살리기</button>${k!=='r'&&R.some(y=>y.ks.includes(k))?`<button class="btn xs" data-s3="refill" data-t="${esc(tid)}" data-k="${k}">휴식 보충</button>`:''}</div>`
-    :k!=='r'&&R.some(y=>y.ks.includes(k))?`<div class="s3b"><button class="btn xs" data-s3="refill" data-t="${esc(tid)}" data-k="${k}" title="휴식 때 — 일행 예비 칸의 같은 종류 카드로">휴식 보충</button></div>`:'';
+    :k!=='r'&&R.some(y=>y.ks.includes(k))?`<div class="s3b"><button class="btn xs" data-s3="refill" data-t="${esc(tid)}" data-k="${k}" title="중간 휴식 이상 때 — 일행 예비 칸의 같은 종류 카드로">휴식 보충</button></div>`:'';
    return `<div class="s3c k-${k}${on?'':' off'}"><span class="s3k">${lab}${x&&x.from?` <small>← ${esc(x.from===tid?'내 예비':nm(x.from))}</small>`:''}</span>${x?`<button type="button" class="s3card" data-s3v="${esc(x.n)}">${card(x.n,{})}${on?'':`<em class="s3st">${x.mv?'예비로 보냄':'버림'}</em>`}</button>`:`<div class="s3card empty">${k==='r'?'비어 있음':'빈 칸'}</div>`}${btns}</div>`};
   return `<div class="s3row${tid===ST().seat?' me':''}"><div class="s3who"><b>${esc(nm(tid))}</b><span class="s3inj i${inj}">${STEP[inj]}</span><span class="small dim">${K.filter(([k])=>(h[k]||{}).on).length} / 4장</span>${owe?`<span class="s3owe">⚠ ${owe}장 버려야 함</span>`:''}${gm()?`<span class="sp"></span><button class="btn xs ghost" data-s3="refresh" data-t="${esc(tid)}" title="시트의 네 칸대로 다시">시트대로</button><button class="btn xs ghost" data-s3="remove" data-t="${esc(tid)}" title="이 사람을 카드 창에서 뺀다">빼기</button>`:''}</div>
    <div class="s3cells">${K.map(cell).join('')}</div></div>`}
@@ -105,7 +105,7 @@ window.OM_SK3R=(()=>{
     <li><b>사용</b>: 효과로 쓰면 버린다. <b>배틀 카드는 자기 포켓몬에게만.</b></li>
     <li><b>바치기</b>: 문양(아이콘)이 체크 자질과 같으면 <b>+1</b> (★ 는 어느 자질이나) · 결과를 보고 붙여도 된다 · <b>체크 하나에 일행 합쳐 1장</b>.</li>
     <li><b>부상</b>: 상태 단계가 한 단계 나빠질 때마다 카드 1장 버림(본인이 고름). 판정 −1 · 불리는 그대로.</li>
-    <li><b>휴식</b>: 빈 체크 · 던전 · 배틀 칸을 예비 덱의 같은 종류 카드로 채운다.</li></ul></details>`;
+    <li><b>휴식</b>: <b>중간 휴식 이상</b>일 때 빈 체크 · 던전 · 배틀 칸을 예비 덱의 같은 종류 카드로 채운다 (짧은 휴식 · 숨돌리기는 보충 없음).</li></ul></details>`;
   const log=(s.log||[]).slice(0,8);
   return `${top}${rule}${ids.length?ids.map(rowHTML).join(''):`<p class="dim" style="margin:14px 0">${G?'아직 참가자가 없다 — 「시트대로 채우기」를 누르면 던전 일행(없으면 네 칸이 있는 PL 시트)을 시트의 네 칸대로 채운다.':'GM 이 아직 카드를 나눠 주지 않았다.'}</p>`}
    ${ids.length?res:''}${log.length?`<div class="s3log"><b class="small">기록</b>${log.map(x=>`<div class="small"><span class="dim">${new Date(x.at).toTimeString().slice(0,5)}</span> ${esc(x.t)}</div>`).join('')}</div>`:''}`}

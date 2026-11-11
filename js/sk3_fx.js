@@ -21,7 +21,7 @@ window.OM_SK3FX=(()=>{
  async function onUse(tid,n,ctx){ctx=ctx||{};const e=of(n);if(!e)return {lines:[]};const L=[];const d=curDg();const who=nm(tid);
   switch(e.code){
    case '경계도-10':case '경계도':{const v=+(e.code.match(/-?\d+/)||[0])[0]||-(+e.arg.replace(/[^\d]/g,'')||10);const D=DGU();if(!d||!D||!D.alAdd){L.push(`「${n}」 — 던전 밖이라 경계도는 그대로`);break}const r=await D.alAdd(v<0?v:-Math.abs(v),`은열쇠 「${n}」`);L.push(r||`「${n}」 — 경계도 변화 없음`);break}
-   case '휴식+1':{if(!d){L.push(`「${n}」 — 던전 밖: 다음 휴식에 GM 이 한 단계 위로`);break}await dgSet('restUp',1);L.push(`「${n}」 — 다음 휴식이 한 단계 위 (숨돌리기 → 짧은 → 중간)`);break}
+   case '휴식+1':{if(!d){L.push(`「${n}」 — 던전 밖: 다음 숨돌리기를 GM 이 짧은 휴식으로`);break}await dgSet('restUp',1);L.push(`「${n}」 — 다음 숨돌리기가 짧은 휴식으로 (11-12 · 숨돌리기에만)`);break}
    case '부상회복':{const SK=SKU();const T=((ST().state.skill||{}).trainers)||{};const cand=party().filter(id=>(+((T[id]||{}).inj)||0)===1);const pick=cand.includes(tid)?tid:cand[0];if(!pick||!SK||!SK.tsk){L.push(`「${n}」 — 「부상」인 트레이너가 없다`);break}
     await A().set(['skill','trainers',pick,'inj'],0);L.push(`「${n}」 — ${nm(pick)} 「부상」 → 「건강」${cand.length>1?` (부상 ${cand.length}명 중 — 다른 사람이면 GM 이 체크 창에서 고친다)`:''}`);break}
    case '일행상태회복':{const ab=abnKeys();const ids=party();const ops=[];const got=[];for(const m of Object.values(mons())){if(!ids.includes(m.tid))continue;const ss=Object.assign({},m.sheetStates||{});let ch=false;for(const k of Object.keys(ss))if(k!=='Dead'&&ab(k)){delete ss[k];ch=true}if(ch){ops.push([['roster','mons',m.id,'sheetStates'],Object.keys(ss).length?ss:null]);got.push(m.name)}}
