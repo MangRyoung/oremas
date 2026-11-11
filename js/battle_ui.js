@@ -482,7 +482,10 @@ window.OM_BATTLE_UI=(()=>{
  /* 11-07 망령 「전용 입력에 대상 지정이 없다 — 추가 반동류처럼 상대를 지정해야 하는 전용 · 고유는 자동화에 대상 지정을 체크해 두면 입력할 때 지시 기술처럼 대상을 찍게」:
     구문에 「대상지정 [상대1체|아군1체|자신포함아군1체|아무나1체]」 줄(제작기 생성기 「◎ 대상 지정」)이 있으면, 선행 입력한 그 포텐셜 아래에 대상 판을 띄운다.
     고른 자리는 지시에 x.ptg[이름](전용 · 일반) · cur.utg[이름](고유) = 'side_area' 로 저장 → 발동(fireSpecial)할 때 그 자리의 포켓몬을 구문의 「1체」로 쓴다 */
- function tselOf(m,name,tid){const F=FX();if(!F||!F.autoOf)return null;let a=null;try{a=(tid&&F.autoOf({tid},'pot',name))||(m&&m.id?F.autoOf(m,'pot',name):null)}catch(e){}if(!a||a.manual)return null;return (a.ops||[]).find(o=>o&&o.k==='tsel')||null}
+ function tselOf(m,name,tid){const F=FX();let a=null;if(F&&F.autoOf)try{a=(tid&&F.autoOf({tid},'pot',name))||(m&&m.id?F.autoOf(m,'pot',name):null)}catch(e){}const ts=a&&!a.manual?(a.ops||[]).find(o=>o&&o.k==='tsel'):null;return ts||xactTsel(m,name)}
+ /* 11-11 망령 「창의 용사 『멈추지 않을 용사의 용맹』 【1/시】【선행】/가장 마지막에 「스타어설트」에 의한 추가 행동 — 대상 지정이 왜 안 뜨지」:
+    「가장 마지막에 「기술」에 의한 추가 행동」 포텐셜은 구문 「대상지정」이 없어도 그 기술이 1체기면 선행 입력 아래에 대상 판을 띄운다 (고른 자리 = 추가 행동 차례의 대상) */
+ function xactTsel(m,name){try{const p=m&&m.id?potSrc(m).find(q=>q&&q.name===name):null;const mm=p&&String(p.eff||'').match(/가장\s*마지막에\s*「([^」]+)」\s*(?:기술)?\s*에?\s*의한\s*추가\s*행동/);if(!mm)return null;const d=((window.OM_DB||{}).moves||{})[mm[1].trim()];if(d&&!/1체/.test(String(d.range||'')))return null;return {k:'tsel',tgt:d&&d.cat==='변화'?'any1':'enemy1',xact:mm[1].trim()}}catch(e){return null}}
  const TSEL_KO={enemy1:'상대 1체',ally1:'아군 1체',ally1s:'아군 1체 (자신 포함)',any1:'아무나 1체'};
  const realOps=a=>!!(a&&(a.ops||[]).some(o=>o&&o.k!=='tsel'&&o.k!=='msel'));
  function tselMon(b,slot){if(!slot)return null;const [sd,ar]=String(slot).split('_');return (entered(b,sd)||{})[ar]||null}
