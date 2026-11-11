@@ -1306,7 +1306,21 @@ window.OM_BATTLE_UI=(()=>{
   const nb0=snap(c.b),nb=snap(nb0);const a0=m.entry||'';const L=outReset(nb,nb.mons[mid],{batton});if(a0)nb.mons[mid].outA=a0;   /* outA: 마지막으로 빠진 자리 (교대 등장 판정) */const AU=auraOff(nb,nb.mons[mid]);L.push(...AU.L);if(!await A().setMany(A().diffOps(['battle'],nb0,nb,3)))return;itemKick();if(batton)await A().set(['battle','trainers',m.tid,'batton'],nb.trainers[m.tid].batton);
   if(opt.quiet)return L;   /* 10-27: 교대 등장이 한 장(【교대】)으로 같이 적는다 */
   A().sysLog(`${m.name} ${opt.forced?'강제 퇴장':'퇴장'}${L.length?'\n'+L.join('\n'):''}`,'battle');
-  if(m.hp&&m.hp.cur>0)try{await exitTrig(mid,opt.forced?'강제 교대':(opt.how||'통상 교대'),{phase:'now',area:a0})}catch(e){console.warn('퇴장 계기',e)}}   /* 11-09 감우 56: 따로 누른 퇴장 · 임의 교대 · 강제 교대 (교대 한 번에 들어오는 길은 enterMon 이) */
+  try{await exitOrdSpend(mid,opt.forced?'강제 교대':(opt.how||'퇴장'))}catch(e){console.warn('나간 포켓몬 선행 4식',e)}
+  if(m.hp&&m.hp.cur>0)try{await exitTrig(mid,opt.forced?'강제 교대':(opt.how||'통상 교대'),{phase:'now',area:a0})}catch(e){console.warn('퇴장 계기',e)}}
+ /* 11-11 망령 「4식을 선행으로 입력한 아군이 턴 도중 레드카드로 강제 교대당하면 4식이 소모되지 않는다」:
+    선행 입력한 4식 · 6령은 쓰지 못하고 나가도 소모된다 — 턴 개시 차감(pcList · preSpent)에 이 지시가 없으면 여기서 1 깎고 적는다 (나중 차감이 두 번 깎지 않게).
+    깎였든 안 깎였든 「쓰지 못하고 소모」를 로그에 남긴다. 숨긴 지시를 읽을 수 있는 화면(주인 · GM)만. 자기 지시로 교대해 나간 포켓몬은 뺀다 */
+ async function exitOrdSpend(mid,why){const c=ctx();const b=c.b;if(!b||!b.started||(+b.phase||0)<1)return;const m=(b.mons||{})[mid];if(!m)return;const tid=m.tid;if(!(b.trainers||{})[tid])return;if(!(c.gm||ownT(c,tid)))return;
+  const cm=await myCmd(c,tid,true);const x=((cm||{}).mons||{})[mid];if(!x||x.move==='switch')return;
+  const B=ctx().b;const fired=((((B.cmds||{})[tid]||{}).fired||{})[mid])||{};const tk=turnKey(B);const t0=snap((B.trainers||{})[tid]),t1=snap(t0);t1.orderCount=t1.orderCount||{};const L=[],bor=[];let ch=false;
+  for(const [kind,ok] of [['order','o'],['command','c']]){const key=x[kind];if(!key||fired[kind]===key)continue;
+   const pcK=t1.pcTurn===tk;const had=pcK&&((t1.pcList||{})[mid]||{})[ok]===key;const ps=(t1.preSpent&&t1.preSpent.k===tk)?t1.preSpent:null;const spent=!!ps&&(((ps.m||{})[mid]||{})[ok]===key);
+   if(!had&&!spent){const ck=(kind==='order'?'order_':'command_')+key;pSpend(B,tid,t1,ck,null,bor);if(kind==='command'){const sk=OO().shareKey(t1,key);if(sk)t1.orderCount['command_'+sk]=Math.max(0,(+t1.orderCount['command_'+sk]||0)-1)}
+    const one=o=>Object.assign({o:'',c:''},o||{},{[ok]:key});if(pcK)t1.pcList=Object.assign({},t1.pcList||{},{[mid]:one((t1.pcList||{})[mid])});else{const m2=Object.assign({},(ps&&ps.m)||{});m2[mid]=one(m2[mid]);t1.preSpent={k:tk,m:m2}}ch=true}
+   L.push(`${kind==='order'?'명령':'지령'} 『${pName(B,tid,kind,key)}』`)}
+  if(ch){if(await saveTr(tid,t0,t1)&&bor.length)await pBorrowSave(tid,bor)}
+  if(L.length)A().sysLog(`${m.name} — 선행 입력한 ${L.join(' · ')}을(를) 쓰지 못하고 나가 소모했다 (${why})${ch?'':' · 횟수는 턴 개시에 깎였다'}`,'battle',{mid})}   /* 11-09 감우 56: 따로 누른 퇴장 · 임의 교대 · 강제 교대 (교대 한 번에 들어오는 길은 enterMon 이) */
  /* 강제 교대 (맵툴 change_forced): 배턴터치 없이 나가고, 벤치에서 아무 포켓몬이나 같은 에리어로 */
  async function forcedSwitch(mid,opt){opt=opt||{};const c=ctx();const b=c.b;const m=b.mons[mid];if(!m||!(canEdit(c,m)||(opt.sys&&c.mgr))||!m.entry)return false;
   const bench=Object.values(b.mons).filter(x=>x.tid===m.tid&&!x.entry&&!x.pend&&x.hp.cur>0&&x.id!==mid);if(!bench.length){A().toast('교대할 포켓몬이 벤치에 없다');if(opt.sys)A().sysLog(`${m.name} 강제 교대 — 벤치에 나올 포켓몬이 없다`,'battle');return false}
