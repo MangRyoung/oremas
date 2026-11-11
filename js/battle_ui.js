@@ -492,8 +492,9 @@ window.OM_BATTLE_UI=(()=>{
  function limOf(p,uses,turns){const e=String(p.eff||'');const mm=e.match(/【(\d+)\/시】/);const mmax=mm?+mm[1]:null;const ml=mmax==null?null:(uses[p.name]==null?mmax:+uses[p.name]);
   const per=/【\s*소진\s*】/.test(e)?'turn':/【\s*탈진\s*】/.test(e)?'tal':'';const T=+((ctx().b||{}).turn)||0;const ut=turns[p.name];
   const tl=!per?null:(ut==null?1:per==='turn'?(+ut===T?0:1):(T-(+ut)<=1?0:1));
-  const max=mmax!=null?mmax:per?1:null;const left=ml==null&&tl==null?null:Math.min(ml==null?Infinity:ml,tl==null?Infinity:tl);
-  const sw=shareWhy(p,turns);if(sw)return {max:max==null?1:max,left:0,mmax,per,sw};return {max,left,mmax,per}}
+  /* 11-11 망령: 【보급】 = 필드에 나와 1번까지 — 다시 쓰려면 소지에 들어갔다 나와야 한다. 쓴 것은 potTurn._sup[이름] 에 적고 교대(필드를 떠남)하면 지운다 */const sup=/【\s*보급\s*】/.test(e);const sl=sup?(((turns||{})._sup||{})[p.name]?0:1):null;
+  const max=mmax!=null?mmax:(per||sup)?1:null;const left=ml==null&&tl==null&&sl==null?null:Math.min(ml==null?Infinity:ml,tl==null?Infinity:tl,sl==null?Infinity:sl);
+  const sw=shareWhy(p,turns);if(sw)return {max:max==null?1:max,left:0,mmax,per,sup,sw};return {max,left,mmax,per,sup}}
  /* 11-10 망령 「【공유】 자동화 — 포켓몬 기준 · 괄호 안 이름은 그 이름이 들어간 효과끼리만 (【공유 (『악전위』)】 = 악전위가 들어간 효과랑 같은 턴에 못 쓴다)」:
     포켓몬이 이번 턴에 발동한 포텐셜을 potTurn._share = {t:턴, u:[{n:이름, p:괄호 없는 【공유】, g:[괄호 안 이름], x:전용}], ex:[이 포켓몬의 전용 이름]} 에 적고,
     ① 괄호 없는 【공유】끼리 ② 내 괄호 이름이 들어간 효과를 이미 썼으면 ③ 이미 쓴 효과의 괄호 이름이 내 이름에 들어 있으면 — 이번 턴에 못 쓴다 (limOf left 0 · potRest 「공유」 칩).
@@ -514,11 +515,11 @@ window.OM_BATTLE_UI=(()=>{
   if(ctx().b.pvp&&m.bondUsed)return null;   /* PVP: 시합 중 한 번만 버틴다 */
   for(const p of potSrc(m)){if(!p||!p.name)continue;const mm=String(p.eff||'').match(/(저|중|고)확률로\s*기술\s*대미지로\s*「빈사」\s*상태가\s*되지\s*않는다/);if(!mm)continue;if(potRest(m,p.name))continue;
    const lim=String(p.eff||'').match(/【\s*(\d+)\s*\/\s*시\s*】/);if(lim){const left=(m.potUses||{})[p.name];if(left!=null&&+left<=0)continue}return {pct:P[mm[1]],name:p.name,pot:1}}return null}
- function potRest(m,name){const p=potSrc(m).find(q=>q&&q.name===name);if(!p||isExcl(m,p))return null;{const sw=shareWhy(p,m.potTurn||{});if(sw)return {lab:'공유',title:sw}}const e=String(p.eff||'');const per=/【\s*소진\s*】/.test(e)?'turn':/【\s*탈진\s*】/.test(e)?'tal':'';if(!per)return null;
+ function potRest(m,name){const p=potSrc(m).find(q=>q&&q.name===name);if(!p||isExcl(m,p))return null;{const sw=shareWhy(p,m.potTurn||{});if(sw)return {lab:'공유',title:sw}}const e=String(p.eff||'');if(/【\s*보급\s*】/.test(e)&&((m.potTurn||{})._sup||{})[name])return {lab:'보급',title:'이번 등장에 이미 썼다 — 소지에 들어갔다 나오면 다시 쓸 수 있다 (【보급】)'};const per=/【\s*소진\s*】/.test(e)?'turn':/【\s*탈진\s*】/.test(e)?'tal':'';if(!per)return null;
   const T=+((ctx().b||{}).turn)||0;const ut=(m.potTurn||{})[name];if(ut==null)return null;const no=per==='turn'?+ut===T:T-(+ut)<=1;if(!no)return null;
   return {lab:per==='turn'?'소진':'탈진',title:per==='turn'?`${ut}턴에 썼다 — 이번 턴엔 다시 못 쓴다 (【소진】)`:`${ut}턴에 썼다 — 다음 턴 끝까지 못 쓴다 (【탈진】)`}}
  const restChip=r=>`<span class="btn xs potrest" title="${esc(r.title)}">${r.lab}</span>`;
- async function potMark(mid,name){const m=(ctx().b.mons||{})[mid];if(!m)return;await shareMark(mid,name);const p=potSrc(m).find(q=>q&&q.name===name);if(!p||isExcl(m,p))return;if(!/【\s*(소진|탈진)\s*】/.test(String(p.eff||'')))return;await A().set(['battle','mons',mid,'potTurn',name],+ctx().b.turn||0)}
+ async function potMark(mid,name){const m=(ctx().b.mons||{})[mid];if(!m)return;await shareMark(mid,name);const p=potSrc(m).find(q=>q&&q.name===name);if(!p||isExcl(m,p))return;if(/【\s*보급\s*】/.test(String(p.eff||'')))await A().set(['battle','mons',mid,'potTurn','_sup',name],1);if(!/【\s*(소진|탈진)\s*】/.test(String(p.eff||'')))return;await A().set(['battle','mons',mid,'potTurn',name],+ctx().b.turn||0)}
  function spBtn(m,s){const n=esc(s.p.name);if(s.sw)return `<span class="btn xs potrest" title="${esc(s.sw)}">공유</span>`;if(s.left!==null&&s.left<=0)return '<span class="small dim">다 씀</span>';
   if(s.auto&&syncLock(ctx().b,m,s.p.eff))return `<button class="btn xs pri" disabled title="【동조】 — 필드에 같은 『역할』 대치가 없다">발동</button>`;
   if(s.auto)return `<button class="btn xs pri" data-act="fireauto" data-card="1" data-mid="${m.id}" data-kind="pot" data-pot="${n}" title="자동화 효과를 건다${s.max!=null?' (횟수 1 사용)':''}">발동</button>`;
@@ -1199,6 +1200,7 @@ window.OM_BATTLE_UI=(()=>{
   const gone=[];for(const k in (m.states||{})){if(!m.states[k])continue;const d=st[k]||{};if(d.abn||k==='Grudge'||k==='Dead'||k==='Seal')continue;delete m.states[k];gone.push(d.ko||k)}   /* 11-05 망령: 「봉인」은 교대해도 풀리지 않는다 */
   if(FX()&&FX().abSync){const t=FX().abSync(m);if(t)L.push(t)}   /* 51-2 ㉓ 특성 파괴가 풀리면 특성을 되돌린다 */
   if(m.form0&&((m.forms||[])[m.formIdx]||{}).revert)L.push(...formSet(m,-1));
+  if(m.potTurn&&m.potTurn._sup)delete m.potTurn._sup;   /* 11-11 【보급】: 필드를 떠나면 다시 쓸 수 있다 */
   delete m.flags;delete m.prioDown;delete m.fxDone;delete m.futRsv;if(m.statsOrig){m.stats=m.statsOrig;delete m.statsOrig}   /* 11-02: 배틀 실수치 변경(실수치변경 구문)은 교대하면 원래대로 *//* 11-02 망령: 「테라스탈」은 교대해도 풀리지 않는다 (상태 DB 설명) — 배틀을 차릴 때(prepMon)만 끈다 */m.entry='';
   if(gone.length)L.push(`${m.name} 상태 해제: ${gone.join('·')}`);return L}
  /* 10-22 망령: 나가는 포켓몬이 다른 포켓몬에게 걸어 둔 포텐셜·특성 효과(옵저버 같은 아군 배율)도 같이 꺼진다. 기술로 건 효과는 남긴다 */
@@ -1234,7 +1236,7 @@ window.OM_BATTLE_UI=(()=>{
   if(x.kind==='uq'){const tt=(ctx().b.trainers||{})[m.tid]||x.t;Q=limOf(x.u,tt.uUses||{},tt.uTurn||{});if(Q.left!==null&&Q.left<=0)return {}}
   if(/【\s*\d+\s*\/\s*(?:시|턴)\s*】/.test(x.eff)&&!/【\s*자동\s*】/.test(x.eff)&&!(await askYes(`【계기】 ${o.why}\n\n${who} 『${nm}』 을(를) 발동할까?\n${String(hit.cl).slice(0,160)}`,'발동','그만')))return {};
   let ok=false;try{ok=await fireAuto(mid,kind,x.name,Object.assign({auto:a,quiet:true,noEv:1,head:`【${K}】 ${who} 『${nm}』 — ${o.why}`,eff:x.eff,pickIds:o.pickIds||[]},o.area?{area:o.area}:{},x.kind==='uq'?{uq:1}:{}))}catch(e){console.warn('계기',e)}
-  if(ok&&L){const cur=ctx().b.mons[mid]||m;if(L.mmax!=null){const u=(cur.potUses||{})[x.name];const had=u==null?L.mmax:+u;await A().set(['battle','mons',mid,'potUses',x.name],Math.max(0,had-1))}if(L.per)await A().set(['battle','mons',mid,'potTurn',x.name],+ctx().b.turn||0)}
+  if(ok&&L){const cur=ctx().b.mons[mid]||m;if(L.mmax!=null){const u=(cur.potUses||{})[x.name];const had=u==null?L.mmax:+u;await A().set(['battle','mons',mid,'potUses',x.name],Math.max(0,had-1))}if(L.per)await A().set(['battle','mons',mid,'potTurn',x.name],+ctx().b.turn||0);if(L.sup)await A().set(['battle','mons',mid,'potTurn','_sup',x.name],1)}
   if(ok&&Q){const tt=(ctx().b.trainers||{})[m.tid]||x.t;if(Q.mmax!=null){const v=(tt.uUses||{})[x.name];await A().set(['battle','trainers',m.tid,'uUses',x.name],Math.max(0,(v==null?Q.mmax:+v)-1))}if(Q.per)await A().set(['battle','trainers',m.tid,'uTurn',x.name],+ctx().b.turn||0)}
   return {ok}}
  /* phase: 'now' = 떠난 순간(들어올 아군이 필요한 줄은 exitPend 로 미룸) · 'in' = 그 자리에 다음 포켓몬이 나온 뒤(미뤄 둔 줄만) · 'all' = 교대(바로 들어왔다) */
@@ -1542,7 +1544,7 @@ window.OM_BATTLE_UI=(()=>{
   const CONV=[];{const sm=kind==='command'&&String(name).match(/^(숙달)?(공격|방어|특공|특방|민첩|저격|회피)지령$/),cm=kind==='command'&&String(name).match(/^(검|방패|관|잔|날개|촛불|장막)의 영창$/);
    if(sm||cm){const base=sm?STATWORD[sm[2]]:{검:'attack',방패:'defense',관:'specialattack',잔:'specialdefense',날개:'speed',촛불:'accuracy',장막:'evasion'}[cm[1]];const tg=sm?[b.mons[mid]]:Object.values(b.mons).filter(x=>sameT(x,t)&&x.entry&&x.hp.cur>0);
     const KS=['attack','defense','specialattack','specialdefense','speed','accuracy','evasion'];const ord=[base,...KS.filter(k=>k!==base)];
-    for(const x of tg){if(!x||!potSrc(x).some(p=>p&&String(p.name||'').replace(/[『』]/g,'').trim()==='변환술'))continue;const r=await uiCtx(b,x,'변환술').choose(ord.map((k,i)=>STAT_KO[k]+' +1'+(i===0?' (그대로)':'')));const k2=ord[(Array.isArray(r)&&r.length)?+r[0]:0];if(k2&&k2!==base)CONV.push({id:x.id,from:base,to:k2})}}}
+    for(const x of tg){if(!x||!potSrc(x).some(p=>p&&String(p.name||'').replace(/[『』]/g,'').trim()==='변환술'))continue;{const cp=potSrc(x).find(p=>p&&String(p.name||'').replace(/[『』]/g,'').trim()==='변환술');if(((x.potTurn||{})._sup||{})[cp.name])continue}   /* 11-11 【보급】: 이번 등장에 이미 바꿨으면 묻지 않는다 */const r=await uiCtx(b,x,'변환술').choose(ord.map((k,i)=>STAT_KO[k]+' +1'+(i===0?' (그대로)':'')));const k2=ord[(Array.isArray(r)&&r.length)?+r[0]:0];if(k2&&k2!==base){CONV.push({id:x.id,from:base,to:k2});const cp=potSrc(x).find(p=>p&&String(p.name||'').replace(/[『』]/g,'').trim()==='변환술');await A().set(['battle','mons',x.id,'potTurn','_sup',cp.name],1)}}}}
   const f=fieldOf(b);const fx=applyOrder(b.mons,f,t,name,mid);
   for(const cv of CONV){const x=b.mons[cv.id];if(!x)continue;tempRank(x,cv.from,-1);tempRank(x,cv.to,1);fx.push(`${x.name} 『변환술』 — ${STAT_KO[cv.from]} 대신 ${STAT_KO[cv.to]} +1`)}
   if(!fx.length&&FX()){const a=FX().rm(name)||FX().rm(String(name).replace(/\s*[:：]\s*/,' / '));if(a&&a.ops&&a.ops.length&&!a.manual){const r=await FX().run(a.ops,uiCtx(b,m,name,m.entry));fx.push(...r.lines)}}
@@ -1717,7 +1719,7 @@ window.OM_BATTLE_UI=(()=>{
    const cur=ctx().b.mons[x.m.id]||x.m;const a=FX().autoOf(x.kind==='uq'?{tid:x.m.tid}:cur,'pot',x.name)||FX().autoOf(cur,'pot',x.name);if(!a||!realOps(a)||a.manual)continue;EAUTO[k]=1;
    let L=null,p=null;if(x.kind==='pot'){p=potSrc(cur).find(q=>q&&q.name===x.name);if(p){L=limOf(p,cur.potUses||{},cur.potTurn||{});if(L.left!==null&&L.left<=0)continue}}
    let ok=false;try{ok=await fireAuto(x.m.id,'pot',x.name,Object.assign({auto:a,quiet:true,noEv:1,head:`【${END_STEP[step]}】 ${x.kind==='uq'?x.t.name+' 고유':cur.name} 『${x.name}』【자동】`,eff:String(x.eff||'')},x.kind==='uq'?{uq:1}:{}))}catch(e){console.warn('endAuto',e)}
-   if(ok&&L){const c2=ctx().b.mons[x.m.id]||cur;if(L.mmax!=null){const u=(c2.potUses||{})[x.name];const had=u==null?L.mmax:+u;await A().set(['battle','mons',x.m.id,'potUses',x.name],Math.max(0,had-1))}if(L.per)await A().set(['battle','mons',x.m.id,'potTurn',x.name],+ctx().b.turn||0)}
+   if(ok&&L){const c2=ctx().b.mons[x.m.id]||cur;if(L.mmax!=null){const u=(c2.potUses||{})[x.name];const had=u==null?L.mmax:+u;await A().set(['battle','mons',x.m.id,'potUses',x.name],Math.max(0,had-1))}if(L.per)await A().set(['battle','mons',x.m.id,'potTurn',x.name],+ctx().b.turn||0);if(L.sup)await A().set(['battle','mons',x.m.id,'potTurn','_sup',x.name],1)}
    if(ok&&x.kind==='uq'){const tt=(ctx().b.trainers||{})[x.t.id]||x.t;const q=uniqList(tt).find(y=>y.p.name===x.name);if(q&&q.mmax!=null){const v=(tt.uUses||{})[x.name];await A().set(['battle','trainers',x.t.id,'uUses',x.name],Math.max(0,(v==null?q.mmax:+v)-1))}if(q&&q.per)await A().set(['battle','trainers',x.t.id,'uTurn',x.name],+ctx().b.turn||0)}}}
  const endLeft=(b,step)=>{const T=turnKey(b);return endCands(b,step).filter(x=>!EAUTO[[T,step,x.kind,x.m.id,x.name].join('|')])};
  async function endStep(step){for(;;){try{await endAuto(step)}catch(e){console.warn('endAuto',e)}const b=ctx().b;const L=endLeft(b,step);const need=[...new Set(L.map(x=>x.m.tid))];
@@ -2646,7 +2648,7 @@ window.OM_BATTLE_UI=(()=>{
     if(limManual(a,kind,name,eff)){A().sysLog(`【${K}】 ${a.name} 『${name}』 — 「${R.mv.name}」이(가) ${d.name}에게 명중해 조건을 만족했다 (【자동】 이 없어 카드 「발동」으로)`,'battle',{mid:a.id,img:a.image||''});continue}
     let L=null;if(kind==='pot'){const p=potSrc(ctx().b.mons[mid]||a).find(q=>q&&q.name===name);if(p){const c=ctx().b.mons[mid]||a;L=limOf(p,c.potUses||{},c.potTurn||{});if(L.left!==null&&L.left<=0)continue}}   /* 11-09 망령 「더 자동화할 것」: 【N/시】뿐 아니라 【소진】 · 【탈진】도 본다 */
     const ok=await fireAuto(mid,kind,name,{quiet:true,pickId:d.id,hit:h,head:`【${K}】 ${a.name} 『${name}』【자동】 — 「${R.mv.name}」이(가) ${d.name}에게 명중`});
-    if(ok&&L){const cur=ctx().b.mons[mid]||a;if(L.mmax!=null){const u=(cur.potUses||{})[name];const had=u==null?L.mmax:+u;await A().set(['battle','mons',mid,'potUses',name],Math.max(0,had-1))}if(L.per)await A().set(['battle','mons',mid,'potTurn',name],+ctx().b.turn||0)}}}}
+    if(ok&&L){const cur=ctx().b.mons[mid]||a;if(L.mmax!=null){const u=(cur.potUses||{})[name];const had=u==null?L.mmax:+u;await A().set(['battle','mons',mid,'potUses',name],Math.max(0,had-1))}if(L.per)await A().set(['battle','mons',mid,'potTurn',name],+ctx().b.turn||0);if(L.sup)await A().set(['battle','mons',mid,'potTurn','_sup',name],1)}}}}
  /* 아군 빈사 (10-26 망령): 새로 쓰러진 포켓몬이 생기면 — 같은 편 필드 포켓몬의 「아군빈사」 조건 상시(에이스 …)를 걸고, 【자동】 「아군이 「빈사」 상태가 되었을 때」 포텐셜을 발동, 그 밖의 그런 고유 · 포텐셜은 알림 */
  const FAINT_SEEN={};let faintBusy=false;
  /* 11-09 감우 55 (망령 「건 포켓몬이 떠나면 해제 — 포텐셜로 턴제로 걸었으면 떠나도 유지」): 「헤롱헤롱」 · 「검은눈빛」 · 「블록」 — 건 포켓몬(stFrom)이 필드를 떠나면(교대 · 빈사) 풀린다. 「N턴 동안」 고정으로 건 것(stKeep)은 그대로 */
@@ -2729,7 +2731,7 @@ window.OM_BATTLE_UI=(()=>{
       if(hit.man||!au||limManual(x,kind,name,eff)){notes.push(`${x.name} 『${name}』${hit.man?` (${hit.man})`:!au?'':' (【N/시】 — 【자동】 없음)'}`);continue}
       let ops=au.ops;if(!hit.first){if(ops.length===1&&ops[0].k==='choice'){const o=(ops[0].opts||[]).find(q=>q&&q.label&&String(q.label).trim().startsWith(hit.no));if(!o||!(o.ops||[]).length){notes.push(`${x.name} 『${name}』 ${hit.no}`);continue}ops=o.ops}else{notes.push(`${x.name} 『${name}』 ${hit.no}`);continue}}
       const ok=await fireAuto(x.id,kind,name,Object.assign({quiet:true,head,auto:Object.assign({},au,{ops,text:hit.clause})},rel!=='self'?{pickId:dm.id}:{}));
-      if(ok&&L){const cur=ctx().b.mons[x.id]||x;if(L.mmax!=null){const u=(cur.potUses||{})[name];const had=u==null?L.mmax:+u;await A().set(['battle','mons',x.id,'potUses',name],Math.max(0,had-1))}if(L.per)await A().set(['battle','mons',x.id,'potTurn',name],+ctx().b.turn||0)}}}
+      if(ok&&L){const cur=ctx().b.mons[x.id]||x;if(L.mmax!=null){const u=(cur.potUses||{})[name];const had=u==null?L.mmax:+u;await A().set(['battle','mons',x.id,'potUses',name],Math.max(0,had-1))}if(L.per)await A().set(['battle','mons',x.id,'potTurn',name],+ctx().b.turn||0);if(L.sup)await A().set(['battle','mons',x.id,'potTurn','_sup',name],1)}}}
     /* 고유 (트레이너): 그 트레이너의 필드 포켓몬 하나를 쓰는 이로 — 자신 · 아군 계기는 상태가 된 포켓몬이 그 트레이너 것이면 그 포켓몬 */
     const doneT=new Set();for(const x of Object.values(ctx().b.mons||{})){if(!x||!x.entry||x.hp.cur<=0)continue;const t=(ctx().b.trainers||{})[x.tid];if(!t||doneT.has(x.tid))continue;doneT.add(x.tid);const rel=sameT(x,dm,ctx().b)?(dm.tid===x.tid?'self':'ally'):'foe';
      for(const u of uniqList(t)){const eff=String(u.p.eff||'');const hit=stTrigs(eff).find(g=>(g.who===rel||(g.who==='ally'&&rel==='self'))&&g.sts.some(s=>ev.add.includes(s)));if(!hit)continue;if(u.left!==null&&u.left<=0)continue;
@@ -2824,13 +2826,13 @@ window.OM_BATTLE_UI=(()=>{
     if(!/【\s*자동\s*】/.test(x.eff)&&!(await askYes(`${why}\n\n${who} 『${x.name}』 — 『${tp.name}』의 횟수를 회복할까?`,'회복','그만')))continue;
     if(L2.mmax!=null){const u=(tg.potUses||{})[tp.name];const had=u==null?L2.mmax:+u;await A().set(['battle','mons',tg.id,'potUses',tp.name],Math.min(L2.mmax,had+1))}if(L2.per)await A().set(['battle','mons',tg.id,'potTurn',tp.name],null);
     A().sysLog(`${why}\n${who} 『${x.name}』 — ${tg.name} 『${tp.name}』 횟수 회복`,'battle',{mid:x.own.id});
-    if(L){const cur=ctx().b.mons[x.own.id]||x.own;if(L.mmax!=null){const u=(cur.potUses||{})[x.name];const had=u==null?L.mmax:+u;await A().set(['battle','mons',x.own.id,'potUses',x.name],Math.max(0,had-1))}if(L.per)await A().set(['battle','mons',x.own.id,'potTurn',x.name],+ctx().b.turn||0)}continue}
+    if(L){const cur=ctx().b.mons[x.own.id]||x.own;if(L.mmax!=null){const u=(cur.potUses||{})[x.name];const had=u==null?L.mmax:+u;await A().set(['battle','mons',x.own.id,'potUses',x.name],Math.max(0,had-1))}if(L.per)await A().set(['battle','mons',x.own.id,'potTurn',x.name],+ctx().b.turn||0);if(L.sup)await A().set(['battle','mons',x.own.id,'potTurn','_sup',x.name],1)}continue}
    const a=FX().autoOf(ctx().b.mons[x.own.id]||x.own,x.kind==='uq'?'pot':x.kind,x.name);
    if(!a||!realOps(a)||a.manual){notes.push(`${who} 『${x.name}』 — ${x.r.why}`);continue}
    if(x.kind==='pot'&&limManual(x.own,'pot',x.name,x.eff)&&!(await askYes(`${why}\n\n${who} 『${x.name}』 (【N/시】) 을(를) 발동할까?\n${String(x.r.cl||'').slice(0,160)}`,'발동','그만')))continue;
    else if(!(x.kind==='pot'&&limManual(x.own,'pot',x.name,x.eff))&&!/【\s*자동\s*】/.test(x.eff)&&!(await askYes(`${why}\n\n${who} 『${x.name}』 을(를) 발동할까?\n${String(x.r.cl||'').slice(0,160)}`,'발동','그만')))continue;
    let ok=false;try{ok=await fireAuto(x.own.id,x.kind==='uq'?'pot':x.kind,x.name,Object.assign({auto:a,quiet:true,noEv:1,head:`【${K}】 ${who} 『${x.name}』 — ${x.r.why}`,eff:x.eff},x.r.pick?{pickId:x.r.pick}:{},ev==='hit'?{ctx:{oppId:o.mid,taken:+o.dmg||0}}:ev==='guard'?{ctx:{oppId:o.mid,taken:0}}:{},x.kind==='uq'?{uq:1}:{}))}catch(e){console.warn('evReact',e)}
-   if(ok&&L){const cur=ctx().b.mons[x.own.id]||x.own;if(L.mmax!=null){const u=(cur.potUses||{})[x.name];const had=u==null?L.mmax:+u;await A().set(['battle','mons',x.own.id,'potUses',x.name],Math.max(0,had-1))}if(L.per)await A().set(['battle','mons',x.own.id,'potTurn',x.name],+ctx().b.turn||0)}
+   if(ok&&L){const cur=ctx().b.mons[x.own.id]||x.own;if(L.mmax!=null){const u=(cur.potUses||{})[x.name];const had=u==null?L.mmax:+u;await A().set(['battle','mons',x.own.id,'potUses',x.name],Math.max(0,had-1))}if(L.per)await A().set(['battle','mons',x.own.id,'potTurn',x.name],+ctx().b.turn||0);if(L.sup)await A().set(['battle','mons',x.own.id,'potTurn','_sup',x.name],1)}
    if(ok&&x.kind==='uq'){const tt=(ctx().b.trainers||{})[x.t.id]||x.t;if(x.q.mmax!=null){const v=(tt.uUses||{})[x.name];await A().set(['battle','trainers',x.t.id,'uUses',x.name],Math.max(0,(v==null?x.q.mmax:+v)-1))}if(x.q.per)await A().set(['battle','trainers',x.t.id,'uTurn',x.name],+ctx().b.turn||0)}}
   if(notes.length)A().sysLog(`【계기】 발동 조건을 만족한 효과 (구문이 없어 손으로)\n${[...new Set(notes)].join('\n')}`,'battle',{gmPriv:1})}
  async function evFlush(){const q=EVQ;EVQ=[];for(const [ev,o] of q){try{await evReact(ev,o)}catch(e){console.warn('evFlush',e)}}}
