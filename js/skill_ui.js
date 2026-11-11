@@ -8,7 +8,7 @@
          포켓몬과 굴렸으면 그 포켓몬이 GM 의 패널티 묶음도 받는다.
    커버: 판정하지 않은 동행 · 필드 포켓몬(cfg.coverBall 이면 볼 안도)이 최대 HP cfg.coverHp 대미지를 받고 그 한 단계를 없던 일로. 패널티 묶음은 못 막는다.
    특화(자질 A 이상): 지시 묘수(실패 뒤 다시 굴리기, 세션 A 1 · AA 2) · 육성 강인함(부상 −1 무시) · 통솔 동행 2체 · 능력 초상 능력(혼자 2d6 + 자질×2, 휴식 사이 A 1 · AA 2).
-   휴식: 상태 단계 회복 긴 2 · 중간 · 짧은 1 · 숨돌리기 0. 덱 연동: 설정의 「상태 카드」를 그 트레이너 손패에 붙인다 (GM 화면이 sync).
+   휴식: 상태 단계 회복 긴 2 · 중간 1 · 짧은 · 숨돌리기 0 (11-12). 덱 연동: 설정의 「상태 카드」를 그 트레이너 손패에 붙인다 (GM 화면이 sync).
    장면(offer.scene): rp = 동행 포켓몬 · field = 필드 포켓몬 · solo = 트레이너만 (11-01) — 포켓몬 없이 2d6 + 자질(± 상황 · GM 이 인정한 「기타」 적합 +1). 종족값 · 타입 · 기술 · 특성 적합 없음, 커버 없음. 초상 능력은 그대로.
    누가 굴리나(offer.who, 11-01): all = 전원 각자 (기본 · 예전 제시) · rep = 대표 1명 — 대상 중 누구든 한 명(또는 GM 이 그 사람 대신)이 먼저 굴리면 그 결과가 모두의 결과.
          다른 사람은 굴리지 못하고 「대표 ○○ 가 굴렸다」를 본다. 실패 단계 · 패널티 · 경계도는 굴린 대표에게만 한 번. 던전 방 체크(대표 고르기 · 일행 전원에게 대표 1명)는 rep.
@@ -33,14 +33,14 @@ window.OM_SKILL_UI=(()=>{
  const RK=[['attack','공격'],['defense','방어'],['specialattack','특공'],['specialdefense','특방'],['speed','스피드'],['accuracy','명중'],['evasion','회피'],['critical','급소']];
  const CFG0={crit:4,injPen:1,injOc:1,injOo:1,coverOn:0,coverHp:'1/4',coverN:1,coverBall:0,fieldMax:1,myosuA:1,myosuAA:2,supA:1,supAA:2,penAuto:1,cards:{deck:'',c1:'',c2:'',c3:''}};
  const KINDS=[['long','긴 휴식','대대적'],['mid','중간 휴식','반쯤'],['short','짧은 휴식','상담함'],['breath','숨돌리기','가벼움']];   /* 10-28 망령: 중간 휴식 추가 */
- /* inou = 초상 능력 횟수 회복 · inj_n = 상태 단계 회복 (10-29 망령: 긴 2 · 중간 · 짧은 1 · 숨돌리기 0) */
+ /* inou = 초상 능력 횟수 회복 · inj_n = 상태 단계 회복 (10-29 망령: 긴 2 · 중간 · 짧은 1 · 숨돌리기 0 → 11-12 03:28 짧은 0) · 숨돌리기는 11-12 부터 빈사를 일으키지 않는다 (revive 0) */
  const REST0={long:{hp:'full',revive:1,revive_hp:'full',cure_ab:1,cure_sp:1,pot_pk_n:'all',ord_n:'all',pot_tr_n:'all',inou:1,inj_n:2,swap:1,key_n:'0',card_n:'reset'},
   /* 10-28 망령 「짧은 휴식이 저 정도고 긴 휴식이 전부면 중간 휴식은 적절하게」 — 전원 HP 1/2 · 빈사는 HP 1/4 · 상태 회복 · 파티 4식 2 · 6령 3 · 포텐셜 1씩 */
   mid:{hp:'1/2',hp_one:0,revive:1,revive_hp:'1/4',cure_ab:1,cure_sp:1,pot_pk_n:'1',ord_n:'0',ord_po:2,ord_pc:3,pot_tr_n:'1',inou:1,inj_n:1,swap:1,key_n:'0',card_n:'2'},
   /* 10-28 망령(시뮬 맞춤): 짧은 휴식 = 전원 HP 1/4 · 빈사는 HP 1 · 상태 회복 · 파티 전체 4식 1 · 6령 1 / 11-05 03:11 망령 「짧은 휴식에 상태 이상을 빼자」: 상태 이상(독 · 화상 · 마비 · 잠듦 · 얼음)은 고치지 않는다 — 은열쇠 「정화」 몫. 상태 변화는 그대로 고침 */
-  short:{hp:'1/4',hp_one:0,revive:1,revive_hp:'1',cure_ab:0,cure_sp:1,pot_pk_n:'0',ord_n:'0',ord_po:1,ord_pc:1,pot_tr_n:'0',inou:1,inj_n:1,swap:1,key_n:'0',card_n:'0'},
+  short:{hp:'1/4',hp_one:1,revive:1,revive_hp:'1',cure_ab:0,cure_sp:1,pot_pk_n:'0',ord_n:'0',ord_po:1,ord_pc:1,pot_tr_n:'0',inou:1,inj_n:0,swap:1,key_n:'0',card_n:'0'},   /* 11-12 03:28 망령: 짧은 휴식 = 트레이너마다 가장 다친 1체 HP 1/4 · 상태 단계 회복 없음 (「붕대와 진통제」 · 「기운 북돋우기」 몫을 뺏지 않게) */
   /* 10-28 22시 망령: 숨돌리기 = 가장 다친 1체 HP 1/4 + 파티 6령 1 / 11-05 03:30 트레이너마다 가장 다친 1체 · 던전 배틀이 끝나면 숨돌리기 (dungeon_ui 돌아가기 창) / 11-05 03:16 망령 「숨돌리기에 6령을 주지 말고, 대신 부활 HP 1」: 6령 없음 · 빈사는 HP 1 로 */
-  breath:{hp:'1/4',hp_one:1,revive:1,revive_hp:'1',cure_ab:0,cure_sp:0,pot_pk_n:'0',ord_n:'0',ord_po:0,ord_pc:0,pot_tr_n:'0',inou:0,inj_n:0,swap:0,key_n:'0',card_n:'0'}};   /* 11-01 은열쇠: card_n = 휴식 박자 드로우 (긴 = 손패 · 버린 카드를 섞고 다시 · 중간 2 · 짧은 1 · 숨돌리기 0). key_n(예전 은열쇠 자원)은 끔 */
+  breath:{hp:'1/4',hp_one:1,revive:0,revive_hp:'1',cure_ab:0,cure_sp:0,pot_pk_n:'0',ord_n:'0',ord_po:0,ord_pc:0,pot_tr_n:'0',inou:0,inj_n:0,swap:0,key_n:'0',card_n:'0'}};   /* 11-01 은열쇠: card_n = 휴식 박자 드로우 (긴 = 손패 · 버린 카드를 섞고 다시 · 중간 2 · 짧은 1 · 숨돌리기 0). key_n(예전 은열쇠 자원)은 끔 */
  /* 체크 제시 예시 (자주 쓰는 모양). 「저장」으로 내 것을 더할 수 있다 */
  const EX=[
   {name:'고대 문자 해독 (지시 + 특공 · 어려움 12)',o:{v:4,label:'고대 문자를 해독한다',stat:'지시',base:3,target:12,fit:{types:['에스퍼'],moves:['사이코키네시스'],abil:[]}}},
