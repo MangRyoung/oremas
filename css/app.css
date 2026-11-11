@@ -5771,3 +5771,8 @@ button.tfsep.cl{opacity:1;border:1px dashed color-mix(in srgb,var(--yel2) 55%,tr
 .bcard.bcuq .bctag{background:linear-gradient(135deg,#a974ff,#6b3fd0);color:#fff8de}
 .bcard.bcex{--tc:#1e8fd6;--bcpn:#bfefff}
 .bcard.bcex .bctag{background:linear-gradient(135deg,#3fb6ff,#1666b8);color:#f2fbff}
+
+/* 11-11 설치물 아이콘: 로그 카드 왼쪽 칸은 아이콘을 가운데 작게 · 무대 띠 칩 아이콘은 조금 크게 */
+.fcth.ico{background-size:62%;background-color:color-mix(in srgb,var(--tc) 22%,#0c0c0e)}
+.obj .oimg{width:18px;height:18px;vertical-align:-4px}
+.objchip .oimg{width:20px;height:20px;vertical-align:-5px}
