@@ -861,7 +861,7 @@ html[data-vt="p5"] .incoming .btn{box-shadow:2px 2px 0 #000!important;border-wid
 .objchip{display:inline-flex;align-items:center;gap:4px;background:#141518;border:2px solid var(--line);padding:3px 6px 3px 10px;cursor:pointer;user-select:none}.objchip b{font-family:var(--lab);font-size:13px;color:#ddd}.objchip.on{background:#2e2810;border-color:var(--yel2)}.objchip.on b{color:#fff}
 .objchip input{width:52px}
 .objchip.wall.on{border-color:#3b8bd6}.objchip.aid.on{border-color:#4caf50}.objchip.hazA.on{border-color:#d66b3b}.objchip.hazB.on{border-color:#d63b5e}
-.fstrip{grid-template-columns:minmax(230px,1fr) auto minmax(230px,1fr)}
+.fstrip{grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)}.fobjs{min-width:0}.fobjs .ocat{max-width:100%}   /* 11-11 망령 「우측 설치물이 왜 튀어나와」: 양쪽 칸 최소 230px 이 좁은 화면에서 줄 밖으로 밀어냈다 → 줄 안에서 줄바꿈 */
 .obj{white-space:nowrap}.ocat{flex-wrap:wrap}.ocat i{white-space:nowrap}
 .fobjs{align-content:flex-start;gap:4px 6px}
 .fic b,.fic small,.fic em{white-space:nowrap}.fmid{flex-direction:row;min-width:200px}
@@ -5756,3 +5756,18 @@ button.tfsep.cl{opacity:1;border:1px dashed color-mix(in srgb,var(--yel2) 55%,tr
 /* 「강제」 토글은 「포텐셜 발동 · 설정 · 해석·묘수」 줄 끝으로 (이름 줄은 좁으면 잘린다) */
 .tbtns .fftg{display:inline-flex;align-items:center;cursor:pointer;position:relative}
 .tbtns .fftg input{position:absolute;opacity:0;width:0!important;height:0!important;pointer-events:none}
+
+/* 11-11 망령 「고유랑 전용은 좀 더 UI 꾸미고 특화해서 강조」: 배틀 로그 카드 — 고유(보라 · 금 테 · 왕관) · 전용(청록 · 은 테 · 마름모) */
+.bcard.bcsp{border:1px solid color-mix(in srgb,var(--tc) 70%,#fff 10%);border-left:5px solid var(--tc);background:radial-gradient(120% 140% at 0% 0%,color-mix(in srgb,var(--tc) 26%,transparent),transparent 55%),#14131a;box-shadow:0 0 0 1px color-mix(in srgb,var(--tc) 30%,transparent),0 0 16px -2px color-mix(in srgb,var(--tc) 55%,transparent)}
+.bcard.bcsp .bch{background:linear-gradient(90deg,color-mix(in srgb,var(--tc) 55%,#0b0b0e),color-mix(in srgb,var(--tc) 18%,#14131a) 70%,#14131a);border-bottom:1px solid color-mix(in srgb,var(--tc) 45%,transparent);padding:7px 10px}
+.bcard.bcsp .bctag{font-size:12px;padding:3px 10px;box-shadow:0 0 0 1px rgba(255,255,255,.4) inset,0 0 10px color-mix(in srgb,var(--tc) 60%,transparent)}
+.bcard.bcsp::before{content:'';display:block;height:2px;background:linear-gradient(90deg,var(--bcpn,#ffe08a),transparent 70%)}
+.bcard.bcsp .bcsym{font-style:normal;margin-right:4px}
+.bcard.bcsp .bch>b{font-size:14px;letter-spacing:.01em}
+.bcard.bcsp .bcpn{color:var(--bcpn,#ffe08a);text-shadow:0 0 8px color-mix(in srgb,var(--bcpn,#ffe08a) 45%,transparent)}
+.bcard.bcsp .bcav{width:32px;height:32px;border-color:var(--bcpn,#ffe08a);box-shadow:0 0 0 1px rgba(0,0,0,.6)}
+.bcard.bcsp .bceff{color:#f1eefb;border-left:2px solid color-mix(in srgb,var(--tc) 60%,transparent);margin:6px 10px 0;padding:2px 0 2px 8px}
+.bcard.bcuq{--tc:#8a55e8;--bcpn:#ffd76a}
+.bcard.bcuq .bctag{background:linear-gradient(135deg,#a974ff,#6b3fd0);color:#fff8de}
+.bcard.bcex{--tc:#1e8fd6;--bcpn:#bfefff}
+.bcard.bcex .bctag{background:linear-gradient(135deg,#3fb6ff,#1666b8);color:#f2fbff}
