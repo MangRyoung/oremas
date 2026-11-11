@@ -1500,13 +1500,15 @@ window.OM_BATTLE_UI=(()=>{
   let TP='';{const ts=tselOf(sk==='uq'?null:m,name,sk==='uq'?tid:'');if(ts){let cm0=null;try{const rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd');const r=(rows||[]).filter(q=>cmdFresh(q,b)).find(q=>q.id===tid);cm0=r&&r.data}catch(e){}
    const slot=sk==='uq'?((cm0&&cm0.utg)||{})[name]:(((((cm0&&cm0.mons)||{})[mid])||{}).ptg||{})[name];const tm=tselMon(b,slot);if(tm)TP=tm.id}
    if(sk==='uq'&&TP){mid=TP;m=(b.mons||{})[TP]||m}}
+  /* 11-11 망령 「고유로 보급 적혀 있으면 발동된 애가 보급 적용 — 걔는 못 걸고 그 옆은 되는 거지」: 고유 【보급】은 받은 포켓몬마다 등장당 1번 (potTurn._sup['u:이름'], 교대하면 지워짐) */
+  const USUP=sk==='uq'&&/【\s*보급\s*】/.test(String((x.p||{}).eff||''));if(USUP&&m&&how!=='force'&&((m.potTurn||{})._sup||{})['u:'+name]&&!(await askYes(`${m.name}은(는) 이번 등장에 이미 고유 『${name}』을(를) 받았다 (【보급】 — 소지에 들어갔다 나와야 다시 받는다).\n다른 포켓몬을 대상으로 고르거나, 그래도 강제로 걸까?`,'강제로 건다','그만')))return;
   /* 11-09 감우 57: 기술 지정 — 지시에서 고른 기술(cur.utm · x.ptm)을 구문의 「지정기술」로 */
   let MS='';if(mselOf(sk==='uq'?null:m,name,sk==='uq'?tid:'')){let cm1=null;try{const rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd');const r=(rows||[]).filter(q=>cmdFresh(q,b)).find(q=>q.id===tid);cm1=r&&r.data}catch(e){}MS=String((sk==='uq'?((cm1&&cm1.utm)||{})[name]:(((((cm1&&cm1.mons)||{})[mid])||{}).ptm||{})[name])||'')}
   A().closeModal();const tag=how==='pre'?'【선행】':how==='free'?'【임의】':'【강제】';const LB=sk==='uq'?'고유':'전용';
   if(how!=='force'&&x.max!=null){const T=+b.turn||0;
    if(x.mmax!=null){const cur=sk==='uq'?(t.uUses||{}):(m.potUses||{});const had=cur[name]==null?x.mmax:+cur[name];/* 11-05: 지금 서버 값에서 1 — 칸 하나만 쓴다(옛 사본으로 다른 포텐셜 횟수를 덮지 않게) */const fb=ctx().b||{};const fc=sk==='uq'?(((fb.trainers||{})[tid]||{}).uUses||{}):(((fb.mons||{})[mid]||{}).potUses||{});const fh=fc[name]==null?had:+fc[name];await A().set(sk==='uq'?['battle','trainers',tid,'uUses',name]:['battle','mons',mid,'potUses',name],Math.max(0,fh-1))}
    if(x.per)await A().set(sk==='uq'?['battle','trainers',tid,'uTurn',name]:['battle','mons',mid,'potTurn',name],T)}   /* 【소진】 · 【탈진】: 쓴 턴을 적는다 */
-  await A().set(['battle','cmds',tid,'fired',m?mid:'_t','pot',(sk==='uq'?'u:':'e:')+name],1);if(m&&sk!=='uq')await shareMark(mid,name);   /* 11-10 【공유】 */
+  await A().set(['battle','cmds',tid,'fired',m?mid:'_t','pot',(sk==='uq'?'u:':'e:')+name],1);if(USUP&&m)await A().set(['battle','mons',mid,'potTurn','_sup','u:'+name],1);if(m&&sk!=='uq')await shareMark(mid,name);   /* 11-10 【공유】 */
   if(sk==='uq'){if(String(((A().ST.state.rp||{}).cutin||{}).ord)!=='0')cutFire('t:'+tid,trainerImg(t),`${t.name}의 고유!`,`『${name}』`,t.side==='left'?'#1f6fd1':'#e3101f')}else if(wantCut(m,name))cutFire('m:'+m.id,m.image,m.name,`『${name}』`,m.side==='left'?'#1f6fd1':'#e3101f');
   if(sk!=='uq'&&m&&((m.excl&&m.excl.name===name)||(m.exclX||[]).some(q=>q&&q.name===name)))setTimeout(()=>rcvReact(tid,mid,'excl',name).catch(e=>console.warn('rcvReact',e)),1200);   /* 11-09 「전용 포텐셜이 발동했을 때」 계기 */
   const left=x.max!=null?` 【${how==='force'?x.left:Math.max(0,x.left-1)}/${x.max}】`:'';
