@@ -156,6 +156,13 @@ function generate1(o){o=o||{};const tier=o.tier||'normal';if(!PRESET[tier])throw
  /* 11-03 망령 「타입이 너무 겹친다 · 중복도 그렇고 몬스터 로직 다시」: 몹 배역을 던전 단위로 다시 채운다(lib/cast.js) — 던전 안 중복 없음 · 다른 던전 몹 피하기 · 타입 고루 · 떠돌이 3할까지. o.cast=false 면 예전처럼 */
  if(source==='db'&&o.cast!==false){const CA=require('./cast.js');let avoid=o.avoidMons;if(!avoid){avoid=new Set();try{const D=require('./dungeon.js').dungeons();for(const [id,x] of Object.entries(D)){if(id===o.id)continue;for(const s0 of CA.slotsOf(x))avoid.add(s0.m.db)}}catch(e){}}
   dg.gen=Object.assign({},dg.gen,{cast:CA.cast(dg,{theme:thName,grades:gr.wild,all:WB.fullV2(),avoid:avoid instanceof Set?avoid:new Set(avoid),rng})})}
+ /* 11-11 망령 「던전 통솔점 합 8 · 9 · 10」: knobs.preP = 사전 몹 프라이드(예 'C'), knobs.escP = 보스방 졸개 프라이드 목록('C+/C+/C', 앞에서부터). 같은 서식지 · 던전 안 중복 없이 그 프라이드의 야생으로 바꾼다 */
+ if(source==='db'&&(knobs.preP||knobs.escP)){const all=WB.fullV2();const used=new Set();const CA=require('./cast.js');const S=CA.slotsOf(dg);S.forEach(s=>used.add(s.m.db));
+  const want=String(knobs.escP||'').split('/').filter(Boolean);let ei=0;
+  const pickP=(pr,s)=>{const inHab=e=>(e.hab||[]).includes(thName);let L=all.filter(e=>e.pride===pr&&inHab(e)&&!used.has(e.id));if(!L.length)L=all.filter(e=>e.pride===pr&&!used.has(e.id));if(!L.length)return;const e=L[Math.floor(rng()*L.length)];used.delete(s.m.db);s.m.db=e.id;delete s.m.name;used.add(e.id)};
+  for(const s of S){if(s.boss)continue;const room=dg.rooms.find(r=>r.id===s.room);const inBoss=room&&room.t==='boss';if(inBoss){if(want[ei])pickP(want[ei],s);ei++}else if(knobs.preP)pickP(String(knobs.preP),s)}
+  const P={C:1,'C+':1.5,B:2,'B+':2.5,A:3};const byId=Object.fromEntries(all.map(e=>[e.id,e]));const mainIds=new Set(dg.rooms.filter(r=>!r.side&&!r.alt).map(r=>r.id));
+  dg.gen=Object.assign({},dg.gen,{pts:S.filter(s=>!s.boss&&mainIds.has(s.room)).reduce((a,s)=>a+(P[(byId[s.m.db]||{}).pride]||0),0)})}
  /* 테마 문구 입히기 */
  const used=new Set(),usedLab=new Set();const nm=list=>{const L=list.filter(x=>!used.has(x));const v=L.length?pick(L):pick(list)+' '+(used.size+1);used.add(v);return v};
  for(const r of dg.rooms){if(r.t==='entry')r.name=nm(th.entry);else if(r.t==='battle')r.name=nm(th.battle);else if(r.t==='safe')r.name=nm(th.safe);else if(r.t==='boss')r.name=nm(th.boss);else if(r.filler)r.name=nm(th.side||th.check);else r.name=nm(th.check);
