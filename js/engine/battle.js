@@ -126,7 +126,8 @@ window.OM_BATTLE=(()=>{
   const IB=!!o.ironBall||has(def,'SmackDown');   /* 11-08 51-2 ㉑ 「떨어뜨리기」도 검은철구처럼 땅으로 */
   /* 11-08 51-2 ⑥ 겨냥표적(o.ringTarget = 받는 쪽이 지님): 「상성 : 0배」인 기술을 1배처럼 · ⑲ 「타르샷」: 「불꽃」 기술 2배 (최종 2배 이상이면 굉장 — value 로 넘어간다) */
   /* 11-09 감우 55: o.vsOver = {ty, v} — 기술 효과 「「타입 : X」에게 「상성 : 2배」가 된다」(프리즈드라이 · 벌레잡기 …): 받는 쪽이 그 타입이면 그 타입 몫만 v 로 */
-  const one=t=>{let v=one0(t);if(o.vsOver&&o.vsOver.ty&&defTypes.includes(o.vsOver.ty)&&t!=='Shadow'&&t!=='Wild'&&t!=='God'){const rest=defTypes.filter(x=>x!==o.vsOver.ty);v=(rest.length?S().effect(t,rest):1)*(+o.vsOver.v||1)}if(v===0&&o.ringTarget)v=1;if(t==='Fire'&&v>0&&has(def,'TarShot'))v*=2;return v};
+  const VO=(Array.isArray(o.vsOver)?o.vsOver:o.vsOver?[o.vsOver]:[]).filter(x=>x&&x.ty);   /* 11-11 여럿 (기술 글 「타입 : 악, 고스트」 · 특성 참철 같은 상성 변경 줄) — 받는 쪽 타입마다 그 몫만 v 로 */
+  const one=t=>{let v=one0(t);if(VO.length&&defTypes.some(d=>VO.some(x=>x.ty===d))&&t!=='Shadow'&&t!=='Wild'&&t!=='God'){const ov={};for(const x of VO)if(defTypes.includes(x.ty))ov[x.ty]=+x.v||1;v=defTypes.reduce((a,d)=>a*(ov[d]!=null?ov[d]:S().effect(t,[d])),1)}if(v===0&&o.ringTarget)v=1;if(t==='Fire'&&v>0&&has(def,'TarShot'))v*=2;return v};
   const one0=t=>{
    if(t==='Shadow'||t==='Wild')return 2;if(t==='God')return 1;
    if(t==='Ground'&&IB&&defTypes.includes('Flying'))return 1;
