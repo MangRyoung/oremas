@@ -494,7 +494,9 @@ window.OM_BATTLE_UI=(()=>{
  /* 11-09 감우 57 (망령 「기술 지정은 추가로」 — 카렌 『죽음을 각오한 저항』): 구문에 「기술지정 [상대|아군]」 줄이 있으면 선행 입력한 그 포텐셜 아래에 기술 고르기 판.
     위: 상대(아군) 필드 포켓몬 중 이 트레이너가 기술을 해석한 포켓몬의 기술 + 이번 배틀에서 내보낸 기술 · 아래 「기술 DB 검색」(숨은 기술은 새지 않는다 — 11-09 망령 「해석된 기술 + 전체 검색」).
     고른 기술은 지시에 cur.utm[이름](고유) · x.ptm[이름](전용 · 일반) → 발동할 때 ctx.msel 로 넘겨 「지정기술」 조건(fx)이 쓴다. 발동 로그에 공개(망령 「선행 발동 때 공개」) */
- function mselOf(m,name,tid){const F=FX();if(!F||!F.autoOf)return null;let a=null;try{a=(tid&&F.autoOf({tid},'pot',name))||(m&&m.id?F.autoOf(m,'pot',name):null)}catch(e){}if(!a||a.manual)return null;return (a.ops||[]).find(o=>o&&o.k==='msel')||null}
+ function mselOf(m,name,tid){const F=FX();let a=null;if(F&&F.autoOf)try{a=(tid&&F.autoOf({tid},'pot',name))||(m&&m.id?F.autoOf(m,'pot',name):null)}catch(e){}const ms=a&&!a.manual?(a.ops||[]).find(o=>o&&o.k==='msel'):null;if(ms)return ms;
+  /* 11-11 망령 (①【사전】【탈진】 … ②【선행】/①의 효과를 발동했을 때 기술을 지정한다): 구문 「기술지정」이 없어도 효과 글에 「기술을 지정한다」가 있으면 선행 입력 아래 기술 고르기 (상대 기술) */
+  try{let tx='';if(tid){const t=((ctx().b||{}).trainers||{})[tid];const u=((t&&t.unique)||[]).find(x=>x&&x.name===name);tx=u?String(u.eff||''):''}if(!tx&&m&&m.id){const p=potSrc(m).find(q=>q&&q.name===name);tx=p?String(p.eff||''):''}if(/기술을\s*(?:하나\s*)?(?:지정|선언)한다/.test(tx))return {k:'msel',who:/아군의\s*기술을\s*(?:지정|선언)/.test(tx)?'ally':'enemy'}}catch(e){}return null}
  function mselCands(b,side,tid,who){const out=[];const DX=window.OM_DEX_UI;const add=(n,from)=>{n=String(n||'').trim();if(!n||n==='발버둥')return;const o=out.find(q=>q.n===n);if(o){if(!o.from.includes(from))o.from.push(from)}else out.push({n,from:[from]})};
   for(const x of Object.values(b.mons||{})){if(!x||!x.entry||!(x.hp&&x.hp.cur>0))continue;const foe=x.side!==side;if(who==='ally'?foe:!foe)continue;let sc=[];try{sc=DX&&DX.scope?DX.scope(x.id,tid,true):'all'}catch(e){}const all=sc==='all'||(Array.isArray(sc)&&sc.includes('move'));
    if(all)for(const mv of MVS(x))if(mv&&mv.name)add(mv.name,x.name);if(x.lastMove&&x.lastMove.name)add(x.lastMove.name,x.name)}return out}
