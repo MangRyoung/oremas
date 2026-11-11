@@ -55,6 +55,18 @@ const THEMES={
  설원:{types:['얼음','강철','페어리','물'],a:'눈보라 · 설원',name:['얼음 동굴','백야의 협곡','눈보라 고원','얼어붙은 호수','빙하 틈'],entry:['눈 덮인 산길','얼음 계곡 입구'],battle:['얼음 들판','눈 무덤','서리 숲','빙벽 아래','얼음 기둥 숲','서리 언덕','언 강가'],check:['얇은 얼음판','눈사태 비탈','빙하 틈새','화이트아웃','고드름 동굴','미끄러운 빙판길','눈 덮인 크레바스','얼음 다리'],safe:['산장','바람 막힌 바위굴'],boss:['빙하 심부','얼음 신전'],treasure:['얼음 속 유물'],
   side:['눈 굴', '얼음 동굴', '버려진 썰매', '서리 덮인 오두막','눈 덮인 텐트','얼음 틈','버려진 썰매견 집'],
   chk:{지시:['눈보라 속 표식을 찾는다','얼음판의 두께를 읽는다'],육성:['얼어 가는 포켓몬을 데운다','눈 아래 먹이를 찾는다'],통솔:['눈사태 비탈을 함께 지난다','화이트아웃 속 대열을 지킨다'],능력:['빙벽을 오른다','얼어붙은 문을 깬다']}}};
+/* 11-11 미사그 캠페인 · 론디니움 던전 5 (노트 64 · 65: ① 기록보관소 지하 서고 · ② 예배당 종탑 · ③ 지하 수로 · ④ 아랫동네 · 구빈원 지하 · ⑤ 폐 요양원). camp = 무작위 테마에서 뺌, hab = 야생 DB 서식지를 빌림(몹은 어차피 새로 짬) */
+Object.assign(THEMES,{
+ 서고:{camp:1,hab:'유적',types:['에스퍼','고스트','노말','벌레','강철'],hint:['에스퍼','고스트','벌레','노말'],a:'먼지 · 서고',name:['기록보관소 지하 서고'],entry:['열람실 뒤 철제 계단','봉인된 서고 문'],battle:['금서 서가 통로','먼지 쌓인 열람대','무너진 책 더미','지하 제본실','두루마리 보관고','촛농 굳은 낭독실','쥐가 갉은 목록실'],check:['색인 카드 서랍장','잠긴 금서 철장','거꾸로 꽂힌 책장','지도 보관함','삐걱이는 사다리 서가','봉인 밀랍의 방','필사실'],safe:['사서 대기실','난로 꺼진 휴게실'],boss:['가장 깊은 금서고','봉인 열람실'],treasure:['기증 문고 상자'],side:['파본 창고','먼지 낀 우편함','버려진 필사대','습기 찬 구석 서가','초 보관함'],
+  chk:{지시:['흩어진 색인 카드의 순서를 맞춘다','암호로 적힌 서가 번호를 푼다'],육성:['책벌레 떼에서 상한 장서를 가려낸다','겁먹은 야생을 서가 밖으로 달랜다'],통솔:['무너지는 책장 사이로 대열을 지킨다','촛불 하나로 함께 길을 찾는다'],능력:['봉인 밀랍을 녹여 연다','속삭이는 책의 정체를 쫓는다']}},
+ 종탑:{camp:1,hab:'폐가',types:['강철','비행','고스트','노말','바위'],hint:['비행','강철','고스트','바위'],a:'바람 · 종탑',name:['예배당 종탑'],entry:['예배당 뒷문','녹슨 나선 계단 입구'],battle:['나선 계단 중턱','종지기의 방','비둘기 둥지 층','부서진 장미창 앞','밧줄이 늘어진 통로','시계 장치 층','성가대 다락'],check:['끊어진 계단참','톱니바퀴 틈','종 줄이 엉킨 곳','바람 부는 난간','기울어진 들보','잠긴 성물함'],safe:['종지기 오두막','성가대 대기실'],boss:['큰 종이 걸린 꼭대기','종탑 지붕 위'],treasure:['봉헌 상자'],side:['깨진 스테인드글라스 방','먼지 쌓인 악보 창고','비둘기 집','촛대 보관실','고장 난 오르간 뒤'],
+  chk:{지시:['멈춘 시계 장치를 다시 맞춘다','종소리의 순서를 읽는다'],육성:['비둘기 떼를 놀라게 하지 않고 지난다','다친 야생을 난간에서 구한다'],통솔:['흔들리는 계단을 함께 오른다','강풍 속에서 대열을 지킨다'],능력:['떨어지는 종 추를 막는다','장미창의 빛 장치를 연다']}},
+ 수로:{camp:1,hab:'동굴',types:['물','독','땅','악','노말'],hint:['물','독','땅','악'],a:'물소리 · 지하 수로',name:['론디니움 지하 수로'],entry:['운하 아래 배수구','녹슨 맨홀 사다리'],battle:['물이 불어난 통로','쥐 떼의 둑','옛 벽돌 아치','갈림 수문 앞','버려진 배 정박지','악취 나는 저수조','무너진 하수관'],check:['막힌 수문','미끄러운 징검돌','깊은 물웅덩이','녹슨 밸브실','지도 없는 갈림길','가스 고인 통로'],safe:['수로 관리인 초소','마른 펌프실'],boss:['옛 로마 저수조','수로가 모이는 대공동'],treasure:['떠내려온 궤짝'],side:['버려진 관리 장비실','막힌 지류','표류물 더미','낡은 쪽배','벽돌 틈 은신처'],
+  chk:{지시:['수문 개폐 순서를 맞춘다','물길 소리로 출구를 찾는다'],육성:['오염된 물에서 마실 물을 가려낸다','물에 빠진 야생을 건진다'],통솔:['불어난 물살을 함께 건넌다','어둠 속 대열을 지킨다'],능력:['녹슨 밸브를 돌린다','무너지는 아치를 버틴다']}},
+ 구빈원:{camp:1,hab:'폐가',types:['악','독','노말','고스트','격투'],hint:['악','격투','노말','독'],a:'굶주림 · 구빈원 지하',name:['아랫동네 구빈원 지하'],entry:['뒷골목 지하 계단','구빈원 석탄 창고'],battle:['좁은 지하 복도','빈 침상 방','배급소 창고','무너진 세탁실','작업장','쥐가 들끓는 식료품실','낡은 예배당 지하'],check:['잠긴 장부실','삐걱이는 바닥','숨겨진 문','어두운 굴뚝 통로','막힌 배식구','교도관 열쇠 걸이'],safe:['간병인 방','난로 있는 골방'],boss:['지하 예배당 납골실','막혀 있던 옛 작업장'],treasure:['숨긴 배급 꾸러미'],side:['아이들 다락','버려진 석탄 더미','비밀 통로 입구','젖은 넝마 창고','낡은 우물'],
+  chk:{지시:['장부의 위조를 가려낸다','숨겨진 문의 장치를 읽는다'],육성:['굶주린 야생에게 먹이를 나눈다','상한 배급 식량을 가려낸다'],통솔:['겁먹은 사람들 사이로 대열을 지킨다','무너지는 지하를 함께 빠져나간다'],능력:['막힌 굴뚝을 뚫는다','잠긴 철문을 비튼다']}},
+ 요양원:{camp:1,hab:'연구소',types:['고스트','에스퍼','독','노말','악'],hint:['고스트','에스퍼','독','페어리'],a:'정적 · 폐 요양원',name:['폐 요양원'],entry:['담쟁이 덮인 정문','무너진 마차 차고'],battle:['긴 병동 복도','휠체어가 쌓인 홀','수치료실','약제실','원장실 앞','비 새는 일광욕실','지하 보일러실'],check:['잠긴 진료 기록실','깨진 약장','삐걱이는 승강기 통로','격리 병실 문','멈춘 시계의 로비','어긋난 침상 배치'],safe:['간호사 대기실','작은 예배실'],boss:['지하 격리 병동','옥상 온실'],treasure:['원장의 금고'],side:['버려진 세탁실','장난감이 남은 소아 병실','석탄 창고','정원사 헛간','시체 안치실'],
+  chk:{지시:['진료 기록의 순서를 맞춘다','멈춘 시계 장치를 맞춘다'],육성:['남은 약 가운데 쓸 것을 가려낸다','겁먹은 야생을 진정시킨다'],통솔:['정전 속에서 대열을 지킨다','무너지는 계단을 함께 건넌다'],능력:['격리 병실 문을 연다','흐느끼는 소리의 정체를 쫓는다']}}});
 /* 곁방 내용 (10-28 03시) — 시뮬은 곁방을 걷지 않는다(dg.path 밖) → 난이도 맞춤은 그대로. 웹툴에서 GM 이 고르게 하는 선택지 */
 const SIDE_KIND=[{k:'item',t:'room',n:'숨은 물건',memo:'살피면 소지품 · 열매 하나(GM 이 정한다). 찾는 데 체크는 없다'},
  {k:'breath',t:'room',n:'숨 고르기',memo:'한 번만 「숨돌리기」(가장 다친 1체 HP 1/4 · 6령 1). 경계도 30 이상이면 쉴 수 없다'},
@@ -129,7 +141,7 @@ function layout(rng,dg,o,nm,th){o=o||{};const pick=a=>a[Math.floor(rng()*a.lengt
 function generate1(o){o=o||{};const tier=o.tier||'normal';if(!PRESET[tier])throw new Error('난이도: easy | normal | hard');const seed=+o.seed||Math.floor(Math.random()*1e6);
  const rs=o._sub?seed+o._sub*104729:seed;   /* 11-02: 갈림길이 모자라면 같은 씨앗 안에서 다시 짠다(generate) — 그때만 rs 가 바뀐다. 이름표(id · 씨앗)는 그대로 */
  const rng=BT.mkRng(rs*7+3);const ri=n=>Math.floor(rng()*n);const pick=a=>a[ri(a.length)];
- const thName=o.theme&&THEMES[o.theme]?o.theme:Object.keys(THEMES)[ri(Object.keys(THEMES).length)];const th=THEMES[thName];
+ const RND_TH=Object.keys(THEMES).filter(k=>!THEMES[k].camp);const thName=o.theme&&THEMES[o.theme]?o.theme:RND_TH[ri(RND_TH.length)];const th=THEMES[thName];const habName=th.hab||thName;   /* 11-11: 캠페인 테마(camp)는 무작위로 안 고르고, 야생 서식지는 th.hab 를 빌린다 */
  const pre=PRESET[tier];const knobs=Object.assign({},COMMON,{battles:pick(pre.battles)},pre.rest2?{rest2:pre.rest2}:{},pre.rest?{rest:pre.rest}:{},o.knobs||{});if(Array.isArray(knobs.checks))knobs.checks=pick(knobs.checks);
  const fewB=knobs.battles<Math.max(...pre.battles),fewC=knobs.checks<=Math.min(...(Array.isArray(COMMON.checks)?COMMON.checks:[4]));   /* 11-02: 체크가 4~6 이 되어 「가장 적을 때(4)」를 어려운 길로 */const tough=o.tough!=null?(o.tough?'full':''):tier==='easy'?'':fewB?'full':fewC?'hard':'';   /* 11-02 망령: 쉬움에서는 빡센 길을 뺀다(사전 배틀 0 인 쉬움이 보통만큼 어려워졌다) */   /* 10-28 테스트: 쉬움에서 「어려운 길」(목표 9 · 11 체크 3개)은 승률이 38~77% 로 흔들려 뺀다 */   /* 10-28 03시: 2단계 — 사전 배틀이 모자라면 어렵게 + 빡세게, 체크만 3개면 어렵게만(체크 수는 승률을 거의 안 움직임) */
  if(tough){for(const [k,v] of Object.entries(tough==='full'?TOUGH:{mixUp:TOUGH.mixUp}))if(!(o.knobs&&k in o.knobs))knobs[k]=v}
@@ -138,7 +150,7 @@ function generate1(o){o=o||{};const tier=o.tier||'normal';if(!PRESET[tier])throw
  /* 'db'(야생 DB 가 있으면 기본): 테마 = 서식지. 일반 야생 = C 묶음(일반), 보스 = B · A 묶음. o.grades = {wild:['C'], boss:['B','A']} 로 바꿀 수 있다(등급 구성 실험용) */
  const GT={easy:{wild:['C'],boss:['B','A']},normal:{wild:['C'],boss:['A']},hard:{wild:['C'],boss:['A']}};/* 10-27 20:30 야생 DB 300체 기준 맞춤(gradecal_db300): 쉬움 88 · 보통 63 · 어려움 37% */const gr=Object.assign({},GT[tier]||GT.normal,o.grades||{});
  const WB=require('./wilddb.js');const hasDb=fs.existsSync(WB.FILE)&&(WB.read().v||1)>=2;const source=o.source||(hasDb?'db':'dex');let wild=o.wild,bossP=o.boss;
- if(source==='db'&&!wild){const all=WB.fullV2();const gr=Object.assign({},GT[tier]||GT.normal,o.grades||{});const inHab=e=>(e.hab||[]).includes(thName);
+ if(source==='db'&&!wild){const all=WB.fullV2();const gr=Object.assign({},GT[tier]||GT.normal,o.grades||{});const inHab=e=>(e.hab||[]).includes(habName);
   /* 10-28 실험: knobs.bossBan = '초인|수맥' — 그 특성 가진 몬은 보스 후보에서 뺀다(「자기 타입 2배」 보스가 너무 셈) */const ban=(o.knobs||{}).bossBan?new RegExp('^('+String((o.knobs||{}).bossBan)+')$'):null;const okB=e=>!ban||!ban.test(e.ability||'');
   const W0=all.filter(e=>inHab(e)&&gr.wild.includes(e.grade)),B0=all.filter(e=>inHab(e)&&gr.boss.includes(e.grade)&&okB(e));
   wild=(W0.length>=8?W0:all.filter(e=>gr.wild.includes(e.grade))).map(e=>['db',e.id,e.name]);bossP=(B0.length>=3?B0:all.filter(e=>gr.boss.includes(e.grade)&&okB(e))).map(e=>['db',e.id,e.name])}
@@ -155,11 +167,11 @@ function generate1(o){o=o||{};const tier=o.tier||'normal';if(!PRESET[tier])throw
   for(const g of dg.branches){const segN=n15(g.main);let room=cap-(mainN-segN);for(const id of g.alt){const r=dg.rooms.find(x=>x.id===id);if(r&&r.check&&+r.check.target===15){if(room>0)room--;else r.check.target=12}}}}}   /* 11-02 망령 「갈림길이 거의 없는 1자형만」: 갈림길 1 → 2~3 */
  /* 11-03 망령 「타입이 너무 겹친다 · 중복도 그렇고 몬스터 로직 다시」: 몹 배역을 던전 단위로 다시 채운다(lib/cast.js) — 던전 안 중복 없음 · 다른 던전 몹 피하기 · 타입 고루 · 떠돌이 3할까지. o.cast=false 면 예전처럼 */
  if(source==='db'&&o.cast!==false){const CA=require('./cast.js');let avoid=o.avoidMons;if(!avoid){avoid=new Set();try{const D=require('./dungeon.js').dungeons();for(const [id,x] of Object.entries(D)){if(id===o.id)continue;for(const s0 of CA.slotsOf(x))avoid.add(s0.m.db)}}catch(e){}}
-  dg.gen=Object.assign({},dg.gen,{cast:CA.cast(dg,{theme:thName,grades:gr.wild,all:WB.fullV2(),avoid:avoid instanceof Set?avoid:new Set(avoid),rng})})}
+  dg.gen=Object.assign({},dg.gen,{cast:CA.cast(dg,{theme:habName,grades:gr.wild,all:WB.fullV2(),avoid:avoid instanceof Set?avoid:new Set(avoid),rng})})}
  /* 11-11 망령 「던전 통솔점 합 8 · 9 · 10」: knobs.preP = 사전 몹 프라이드(예 'C'), knobs.escP = 보스방 졸개 프라이드 목록('C+/C+/C', 앞에서부터). 같은 서식지 · 던전 안 중복 없이 그 프라이드의 야생으로 바꾼다 */
  if(source==='db'&&(knobs.preP||knobs.escP)){const all=WB.fullV2();const used=new Set();const CA=require('./cast.js');const S=CA.slotsOf(dg);S.forEach(s=>used.add(s.m.db));
   const want=String(knobs.escP||'').split('/').filter(Boolean);let ei=0;
-  const pickP=(pr,s)=>{const inHab=e=>(e.hab||[]).includes(thName);let L=all.filter(e=>e.pride===pr&&inHab(e)&&!used.has(e.id));if(!L.length)L=all.filter(e=>e.pride===pr&&!used.has(e.id));if(!L.length)return;const e=L[Math.floor(rng()*L.length)];used.delete(s.m.db);s.m.db=e.id;delete s.m.name;used.add(e.id)};
+  const pickP=(pr,s)=>{const inHab=e=>(e.hab||[]).includes(habName);let L=all.filter(e=>e.pride===pr&&inHab(e)&&!used.has(e.id));if(!L.length)L=all.filter(e=>e.pride===pr&&!used.has(e.id));if(!L.length)return;const e=L[Math.floor(rng()*L.length)];used.delete(s.m.db);s.m.db=e.id;delete s.m.name;used.add(e.id)};
   for(const s of S){if(s.boss)continue;const room=dg.rooms.find(r=>r.id===s.room);const inBoss=room&&room.t==='boss';if(inBoss){if(want[ei])pickP(want[ei],s);ei++}else if(knobs.preP)pickP(String(knobs.preP),s)}
   const P={C:1,'C+':1.5,B:2,'B+':2.5,A:3};const byId=Object.fromEntries(all.map(e=>[e.id,e]));const mainIds=new Set(dg.rooms.filter(r=>!r.side&&!r.alt).map(r=>r.id));
   dg.gen=Object.assign({},dg.gen,{pts:S.filter(s=>!s.boss&&mainIds.has(s.room)).reduce((a,s)=>a+(P[(byId[s.m.db]||{}).pride]||0),0)})}
@@ -167,7 +179,7 @@ function generate1(o){o=o||{};const tier=o.tier||'normal';if(!PRESET[tier])throw
  const used=new Set(),usedLab=new Set();const nm=list=>{const L=list.filter(x=>!used.has(x));const v=L.length?pick(L):pick(list)+' '+(used.size+1);used.add(v);return v};
  for(const r of dg.rooms){if(r.t==='entry')r.name=nm(th.entry);else if(r.t==='battle')r.name=nm(th.battle);else if(r.t==='safe')r.name=nm(th.safe);else if(r.t==='boss')r.name=nm(th.boss);else if(r.filler)r.name=nm(th.side||th.check);else r.name=nm(th.check);
   if(r.check){const L=th.chk[r.check.stat];if(L){const F=L.filter(x=>!usedLab.has(x)),F2=(G.LABEL[r.check.stat]||[]).filter(x=>!usedLab.has(x));r.check.label=pick(F.length?F:F2.length?F2:L);usedLab.add(r.check.label)}   /* 10-28: 체크 5개면 같은 문구가 두 번 나오던 것 막음. 11-01: 테마 문구(자질마다 2개)가 떨어지면 일반 문구(gen.js LABEL) — 갈림길까지 같은 자질 체크가 셋이면 겹쳤다(180개 중 12개) */
-   if(String(r.check.hint||'').startsWith('type:')&&HINT_T[thName]){r.check.hint='type:'+pick(HINT_T[thName]);if(r.check.fit)r.check.fit.types=[r.check.hint.slice(5)]}}}   /* 11-02: 적합 타입(fit)도 테마 타입으로 — 전엔 hint 만 바뀌고 fit 은 gen.js 의 무작위 타입이 남아(화산 던전에 「적합 전기」), 시뮬 판정 · 웹툴 내보내기가 fit 을 썼다 */   /* 10-28: 「이 타입 동료」를 테마에 맞는 타입에서 (전엔 고정 10타입 무작위 — 화산에 풀 같은 줄) */
+   if(String(r.check.hint||'').startsWith('type:')&&(th.hint||HINT_T[habName])){r.check.hint='type:'+pick(th.hint||HINT_T[habName]);if(r.check.fit)r.check.fit.types=[r.check.hint.slice(5)]}}}   /* 11-02: 적합 타입(fit)도 테마 타입으로 — 전엔 hint 만 바뀌고 fit 은 gen.js 의 무작위 타입이 남아(화산 던전에 「적합 전기」), 시뮬 판정 · 웹툴 내보내기가 fit 을 썼다 */   /* 10-28: 「이 타입 동료」를 테마에 맞는 타입에서 (전엔 고정 10타입 무작위 — 화산에 풀 같은 줄) */
  /* 보물 방 하나(체크 · 조우 없음) — 지도 꾸밈 · 웹툴에서 단서 자리 */
  if(o.treasure!==false)dg.rooms.push({id:'tr',t:'treasure',side:1,name:nm(th.treasure),clue:bossClue(dg,rng)||{t:'단서',d:'(GM 이 채운다 — 보스의 약점 · 다음 장면의 실마리 등)'}});
  /* 곁방 0~2 — 막다른 통로(웹툴 「통로」). 시뮬은 안 걷는다(dg.path 밖). GM 이 숨은 것 · 단서 · 기습을 채울 자리 */

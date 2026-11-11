@@ -1,0 +1,454 @@
+{
+ "id": "ld3_sewer",
+ "name": "지하 수로 (사건 2)",
+ "wn": 2,
+ "private": true,
+ "gen": {
+  "tier": "normal",
+  "knobs": {
+   "battles": 1,
+   "foes": 4,
+   "lv": -5,
+   "bossLv": 5,
+   "rest": "short",
+   "checks": 3,
+   "tgt": "v4mix",
+   "pen": "alert",
+   "hintTyped": 1,
+   "alCost": 10,
+   "alFail": 10,
+   "critAl": 10,
+   "bossN": 4,
+   "escLv": 0,
+   "preP": "C",
+   "escP": "B/C+/C+",
+   "mixUp": 1
+  },
+  "seed": 1311,
+  "boss": "리자칼네스",
+  "brWant": 2,
+  "cast": {
+   "changed": 11,
+   "types": {
+    "바위": 3,
+    "강철": 2,
+    "전기": 1,
+    "격투": 2,
+    "물": 2,
+    "고스트": 2,
+    "땅": 2,
+    "드래곤": 1,
+    "벌레": 1,
+    "독": 2
+   },
+   "guests": 3
+  },
+  "pts": 9,
+  "v": 1,
+  "auto": true,
+  "tough": "hard",
+  "shape": "꺾인길",
+  "theme": "수로",
+  "rules": {
+   "al0": 30,
+   "alRoom": 5,
+   "alRest": 10,
+   "alLowRest": 1,
+   "alB50": 5,
+   "restV": 2,
+   "alBattle": 5,
+   "alLose": 10,
+   "al30": 0,
+   "al70": 5,
+   "restShort": "all",
+   "restPO": 1,
+   "restPC": 1,
+   "restBreath": "one",
+   "restBC": 1
+  },
+  "source": "db",
+  "grades": {
+   "wild": [
+    "C"
+   ],
+   "boss": [
+    "A"
+   ]
+  }
+ },
+ "rooms": [
+  {
+   "id": "entry",
+   "t": "entry",
+   "name": "운하 아래 배수구",
+   "check": {
+    "label": "무너지는 아치를 버틴다",
+    "stat": "능력",
+    "target": 10,
+    "hint": "type:물",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "dmg": "1/4",
+      "st": "Paralysis",
+      "memo": "반동에 몸이 굳었다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [
+      "물"
+     ],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "b1",
+   "t": "battle",
+   "name": "옛 벽돌 아치",
+   "enc": {
+    "mix": [
+     {
+      "db": "w074"
+     },
+     {
+      "db": "w255"
+     },
+     {
+      "db": "w082"
+     },
+     {
+      "db": "w227"
+     }
+    ],
+    "lvAdd": -5
+   }
+  },
+  {
+   "id": "c1",
+   "t": "room",
+   "name": "가스 고인 통로",
+   "check": {
+    "label": "불어난 물살을 함께 건넌다",
+    "stat": "통솔",
+    "target": 15,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "oc": 2,
+      "memo": "모두 지쳤다"
+     }
+    },
+    "pm": 0,
+    "base": 4,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "safe",
+   "t": "safe",
+   "name": "수로 관리인 초소",
+   "rest": "short",
+   "check": {
+    "label": "물에 빠진 야생을 건진다",
+    "stat": "육성",
+    "target": 12,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "st": "Poison",
+      "memo": "독이 있는 것에 닿았다"
+     }
+    },
+    "pm": 0,
+    "base": 1,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "boss",
+   "t": "boss",
+   "name": "수로가 모이는 대공동",
+   "enc": {
+    "mix": [
+     {
+      "db": "w215"
+     },
+     {
+      "db": "w287",
+      "lvD": -5
+     },
+     {
+      "db": "w135",
+      "lvD": -5
+     },
+     {
+      "db": "w097",
+      "lvD": -5
+     }
+    ],
+    "boss": true,
+    "bossAt": 0,
+    "raid": 3,
+    "n": 4,
+    "lvAdd": 5
+   }
+  },
+  {
+   "id": "g1a1",
+   "t": "puzzle",
+   "name": "깊은 물웅덩이",
+   "check": {
+    "label": "수문 개폐 순서를 맞춘다",
+    "stat": "지시",
+    "target": 12,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "oc": 2,
+      "memo": "우왕좌왕했다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "alt": "g1"
+  },
+  {
+   "id": "g2a1",
+   "t": "battle",
+   "name": "무너진 하수관",
+   "enc": {
+    "mix": [
+     {
+      "db": "w018"
+     },
+     {
+      "db": "w093"
+     },
+     {
+      "db": "w061"
+     },
+     {
+      "db": "w077"
+     }
+    ],
+    "lvAdd": -5
+   },
+   "alt": "g2"
+  },
+  {
+   "id": "g2a2",
+   "t": "room",
+   "alt": "g2",
+   "filler": 1,
+   "memo": "돌아가는 길 · 숨은 물건 — 살피면 소지품 · 열매 하나(GM 이 정한다). 체크 없음",
+   "name": "벽돌 틈 은신처"
+  },
+  {
+   "id": "g2a3",
+   "t": "puzzle",
+   "name": "지도 없는 갈림길",
+   "check": {
+    "label": "어둠 속 대열을 지킨다",
+    "stat": "통솔",
+    "target": 12,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "st": "Confusion",
+      "cnt": 3,
+      "memo": "대열이 무너졌다"
+     }
+    },
+    "pm": 0,
+    "base": 4,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "alt": "g2"
+  },
+  {
+   "id": "tr",
+   "t": "treasure",
+   "side": 1,
+   "name": "떠내려온 궤짝",
+   "clue": {
+    "t": "주인의 흔적",
+    "d": "깊은 곳의 주인 — 「바위」 기운이 서려 있다.\n「물」 · 「풀」 · 「격투」 쪽을 꺼리는 흔적이 남아 있다.\n「파워젬」의 자국이 벽에 새겨져 있다.",
+    "auto": 1
+   },
+   "from": "g2a2"
+  }
+ ],
+ "branches": [
+  {
+   "id": "g1",
+   "from": "entry",
+   "to": "c1",
+   "main": [
+    "b1"
+   ],
+   "alt": [
+    "g1a1"
+   ]
+  },
+  {
+   "id": "g2",
+   "from": "b1",
+   "to": "safe",
+   "main": [
+    "c1"
+   ],
+   "alt": [
+    "g2a1",
+    "g2a2",
+    "g2a3"
+   ],
+   "detour": 1
+  }
+ ],
+ "map": {
+  "grid": {
+   "cols": 7,
+   "rows": 5,
+   "x0": 80,
+   "dx": 140,
+   "y0": 65,
+   "dy": 130
+  },
+  "shape": "꺾인길",
+  "turns": 1,
+  "cells": {
+   "entry": [
+    2,
+    0
+   ],
+   "b1": [
+    2,
+    1
+   ],
+   "c1": [
+    3,
+    1
+   ],
+   "safe": [
+    4,
+    1
+   ],
+   "boss": [
+    5,
+    1
+   ],
+   "g1a1": [
+    3,
+    0
+   ],
+   "g2a1": [
+    2,
+    2
+   ],
+   "g2a2": [
+    3,
+    2
+   ],
+   "g2a3": [
+    4,
+    2
+   ],
+   "tr": [
+    3,
+    3
+   ]
+  },
+  "links": {
+   "b1~entry": 1,
+   "b1~c1": 1,
+   "c1~safe": 1,
+   "boss~safe": 1,
+   "entry~g1a1": 1,
+   "c1~g1a1": 1,
+   "b1~g2a1": 1,
+   "g2a1~g2a2": 1,
+   "g2a2~g2a3": 1,
+   "g2a3~safe": 1,
+   "g2a2~tr": 1
+  }
+ },
+ "path": [
+  "entry",
+  "b1",
+  "c1",
+  "safe",
+  "boss"
+ ],
+ "theme": "수로",
+ "owner": "리자칼네스",
+ "rules": {
+  "al0": 30,
+  "alRoom": 5,
+  "alRest": 10,
+  "alLowRest": 1,
+  "alB50": 5,
+  "restV": 2,
+  "alBattle": 5,
+  "alLose": 10,
+  "al30": 0,
+  "al70": 5,
+  "restShort": "all",
+  "restPO": 1,
+  "restPC": 1,
+  "restBreath": "one",
+  "restBC": 1
+ },
+ "note": "미사그 사건 2 던전 · 지하 수로 · 11-11 확정 스펙(노트 65) · 몹은 시험용 — 망령이 고침. 자동 생성 · 보통 · 씨앗 1311 · 테마 수로. 사전 배틀 1 · 체크 3 · 보스방 4체 · 레이드 배틀 : 3 · 지도 갈림길 2 · 꺾인길 + 곁방 1 · 야생 Lv -5 · 어려운 길(체크 목표 12).",
+ "campaign": "미사그"
+}

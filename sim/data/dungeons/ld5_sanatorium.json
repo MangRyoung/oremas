@@ -1,0 +1,400 @@
+{
+ "id": "ld5_sanatorium",
+ "name": "폐 요양원 (사건 3)",
+ "wn": 2,
+ "private": true,
+ "gen": {
+  "tier": "hard",
+  "knobs": {
+   "battles": 1,
+   "foes": 2,
+   "lv": -5,
+   "bossLv": 10,
+   "rest": "mid",
+   "checks": 3,
+   "tgt": "v4mix",
+   "pen": "alert",
+   "hintTyped": 1,
+   "alCost": 10,
+   "alFail": 10,
+   "critAl": 10,
+   "rest2": 7,
+   "bossN": 6,
+   "escLv": 0,
+   "preP": "C",
+   "escP": "B/B/C+/C+/C",
+   "mixUp": 1
+  },
+  "seed": 1511,
+  "boss": "아이언벨",
+  "brWant": 2,
+  "cast": {
+   "changed": 9,
+   "types": {
+    "강철": 2,
+    "전기": 2,
+    "물": 2,
+    "에스퍼": 1,
+    "노말": 1,
+    "독": 1,
+    "벌레": 1,
+    "격투": 1
+   },
+   "guests": 3
+  },
+  "pts": 10,
+  "sub": 1,
+  "v": 1,
+  "auto": true,
+  "tough": "hard",
+  "shape": "꺾인길",
+  "theme": "요양원",
+  "rules": {
+   "al0": 30,
+   "alRoom": 5,
+   "alRest": 10,
+   "alLowRest": 1,
+   "alB50": 5,
+   "restV": 2,
+   "alBattle": 5,
+   "alLose": 10,
+   "al30": 0,
+   "al70": 5,
+   "restShort": "all",
+   "restPO": 1,
+   "restPC": 1,
+   "restBreath": "one",
+   "restBC": 1
+  },
+  "source": "db",
+  "grades": {
+   "wild": [
+    "C"
+   ],
+   "boss": [
+    "A"
+   ]
+  }
+ },
+ "rooms": [
+  {
+   "id": "entry",
+   "t": "entry",
+   "name": "무너진 마차 차고",
+   "check": {
+    "label": "진료 기록의 순서를 맞춘다",
+    "stat": "지시",
+    "target": 15,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "oc": 3,
+      "memo": "우왕좌왕했다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "b1",
+   "t": "battle",
+   "name": "휠체어가 쌓인 홀",
+   "enc": {
+    "mix": [
+     {
+      "db": "w241"
+     },
+     {
+      "db": "w065"
+     }
+    ],
+    "lvAdd": -5
+   }
+  },
+  {
+   "id": "c1",
+   "t": "room",
+   "name": "잠긴 진료 기록실",
+   "check": {
+    "label": "남은 약 가운데 쓸 것을 가려낸다",
+    "stat": "육성",
+    "target": 12,
+    "hint": "type:독",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "dmg": "1/3",
+      "memo": "야생에게 물렸다",
+      "oc": 1
+     }
+    },
+    "pm": 0,
+    "base": 1,
+    "fit": {
+     "types": [
+      "독"
+     ],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "safe",
+   "t": "safe",
+   "name": "간호사 대기실",
+   "rest": "mid",
+   "check": {
+    "label": "정전 속에서 대열을 지킨다",
+    "stat": "통솔",
+    "target": 12,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "st": "Confusion",
+      "cnt": 3,
+      "memo": "대열이 무너졌다",
+      "oc": 1
+     }
+    },
+    "pm": 0,
+    "base": 4,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "boss",
+   "t": "boss",
+   "name": "지하 격리 병동",
+   "enc": {
+    "mix": [
+     {
+      "db": "w216"
+     },
+     {
+      "db": "w172",
+      "lvD": -10
+     },
+     {
+      "db": "w166",
+      "lvD": -10
+     },
+     {
+      "db": "w156",
+      "lvD": -10
+     },
+     {
+      "db": "w098",
+      "lvD": -10
+     },
+     {
+      "db": "w004",
+      "lvD": -10
+     }
+    ],
+    "boss": true,
+    "bossAt": 0,
+    "raid": 3,
+    "n": 6,
+    "lvAdd": 10
+   }
+  },
+  {
+   "id": "g1a1",
+   "t": "trap",
+   "name": "삐걱이는 승강기 통로",
+   "check": {
+    "label": "흐느끼는 소리의 정체를 쫓는다",
+    "stat": "능력",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "dmg": "1/3",
+      "memo": "크게 휘말렸다",
+      "oc": 1
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "alt": "g1"
+  },
+  {
+   "id": "g2a1",
+   "t": "battle",
+   "name": "수치료실",
+   "enc": {
+    "mix": [
+     {
+      "db": "w229"
+     },
+     {
+      "db": "w067"
+     }
+    ],
+    "lvAdd": -5
+   },
+   "alt": "g2"
+  },
+  {
+   "id": "tr",
+   "t": "treasure",
+   "side": 1,
+   "name": "원장의 금고",
+   "clue": {
+    "t": "주인의 흔적",
+    "d": "깊은 곳의 주인 — 「강철」 기운이 서려 있다.\n「불꽃」 · 「격투」 · 「땅」 쪽을 꺼리는 흔적이 남아 있다.\n「요가포즈」의 자국이 벽에 새겨져 있다.",
+    "auto": 1
+   },
+   "from": "b1"
+  }
+ ],
+ "branches": [
+  {
+   "id": "g1",
+   "from": "entry",
+   "to": "c1",
+   "main": [
+    "b1"
+   ],
+   "alt": [
+    "g1a1"
+   ]
+  },
+  {
+   "id": "g2",
+   "from": "b1",
+   "to": "safe",
+   "main": [
+    "c1"
+   ],
+   "alt": [
+    "g2a1"
+   ]
+  }
+ ],
+ "map": {
+  "grid": {
+   "cols": 7,
+   "rows": 5,
+   "x0": 80,
+   "dx": 140,
+   "y0": 65,
+   "dy": 130
+  },
+  "shape": "꺾인길",
+  "turns": 2,
+  "cells": {
+   "entry": [
+    5,
+    4
+   ],
+   "b1": [
+    5,
+    3
+   ],
+   "c1": [
+    6,
+    3
+   ],
+   "safe": [
+    6,
+    2
+   ],
+   "boss": [
+    6,
+    1
+   ],
+   "g1a1": [
+    6,
+    4
+   ],
+   "g2a1": [
+    5,
+    2
+   ],
+   "tr": [
+    4,
+    3
+   ]
+  },
+  "links": {
+   "b1~entry": 1,
+   "b1~c1": 1,
+   "c1~safe": 1,
+   "boss~safe": 1,
+   "entry~g1a1": 1,
+   "c1~g1a1": 1,
+   "b1~g2a1": 1,
+   "g2a1~safe": 1,
+   "b1~tr": 1
+  }
+ },
+ "path": [
+  "entry",
+  "b1",
+  "c1",
+  "safe",
+  "boss"
+ ],
+ "theme": "요양원",
+ "owner": "아이언벨",
+ "rules": {
+  "al0": 30,
+  "alRoom": 5,
+  "alRest": 10,
+  "alLowRest": 1,
+  "alB50": 5,
+  "restV": 2,
+  "alBattle": 5,
+  "alLose": 10,
+  "al30": 0,
+  "al70": 5,
+  "restShort": "all",
+  "restPO": 1,
+  "restPC": 1,
+  "restBreath": "one",
+  "restBC": 1
+ },
+ "note": "미사그 사건 3 던전 · 폐 요양원 · 11-11 확정 스펙(노트 65) · 몹은 시험용 — 망령이 고침. 자동 생성 · 어려움 · 씨앗 1511 · 테마 요양원. 사전 배틀 1 · 체크 3 · 보스방 6체 · 레이드 배틀 : 3 · 지도 갈림길 2 · 꺾인길 + 곁방 1 · 야생 Lv -5 · 어려운 길(체크 목표 15).",
+ "campaign": "미사그"
+}

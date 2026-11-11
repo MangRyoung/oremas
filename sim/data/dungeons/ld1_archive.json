@@ -1,0 +1,421 @@
+{
+ "id": "ld1_archive",
+ "name": "기록보관소 지하 서고 (사건 1)",
+ "wn": 2,
+ "private": true,
+ "gen": {
+  "tier": "easy",
+  "knobs": {
+   "battles": 2,
+   "foes": 2,
+   "lv": -5,
+   "bossLv": 5,
+   "rest": "short",
+   "checks": 3,
+   "tgt": "v4mix",
+   "pen": "alert",
+   "hintTyped": 1,
+   "alCost": 10,
+   "alFail": 10,
+   "critAl": 10,
+   "bossN": 4,
+   "escMob": 1,
+   "preP": "C",
+   "escP": "C+/C+/C"
+  },
+  "seed": 1111,
+  "boss": "환묘마왕",
+  "brWant": 2,
+  "cast": {
+   "changed": 7,
+   "types": {
+    "에스퍼": 2,
+    "바위": 2,
+    "땅": 1,
+    "비행": 1,
+    "격투": 1,
+    "강철": 1,
+    "벌레": 1,
+    "고스트": 2
+   },
+   "guests": 2
+  },
+  "pts": 8,
+  "v": 1,
+  "auto": true,
+  "tough": "",
+  "shape": "구불길",
+  "theme": "서고",
+  "rules": {
+   "al0": 30,
+   "alRoom": 5,
+   "alRest": 10,
+   "alLowRest": 1,
+   "alB50": 5,
+   "restV": 2,
+   "alBattle": 5,
+   "alLose": 10,
+   "al30": 0,
+   "al70": 5,
+   "restShort": "all",
+   "restPO": 1,
+   "restPC": 1,
+   "restBreath": "one",
+   "restBC": 1
+  },
+  "source": "db",
+  "grades": {
+   "wild": [
+    "C"
+   ],
+   "boss": [
+    "A"
+   ]
+  }
+ },
+ "rooms": [
+  {
+   "id": "entry",
+   "t": "entry",
+   "name": "열람실 뒤 철제 계단",
+   "check": {
+    "label": "암호로 적힌 서가 번호를 푼다",
+    "stat": "지시",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "oc": 2,
+      "memo": "우왕좌왕했다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "b1",
+   "t": "battle",
+   "name": "무너진 책 더미",
+   "enc": {
+    "mix": [
+     {
+      "db": "w249"
+     },
+     {
+      "db": "w234"
+     }
+    ],
+    "lvAdd": -5
+   }
+  },
+  {
+   "id": "b2",
+   "t": "battle",
+   "name": "두루마리 보관고",
+   "enc": {
+    "mix": [
+     {
+      "db": "w251"
+     },
+     {
+      "db": "w240"
+     }
+    ],
+    "lvAdd": -5
+   }
+  },
+  {
+   "id": "c1",
+   "t": "trap",
+   "name": "지도 보관함",
+   "check": {
+    "label": "속삭이는 책의 정체를 쫓는다",
+    "stat": "능력",
+    "target": 12,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "dmg": "1/4",
+      "memo": "크게 휘말렸다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "safe",
+   "t": "safe",
+   "name": "사서 대기실",
+   "rest": "short",
+   "check": {
+    "label": "책벌레 떼에서 상한 장서를 가려낸다",
+    "stat": "육성",
+    "target": 10,
+    "hint": "type:노말",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "st": "Poison",
+      "memo": "독이 있는 것에 닿았다"
+     }
+    },
+    "pm": 0,
+    "base": 1,
+    "fit": {
+     "types": [
+      "노말"
+     ],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "boss",
+   "t": "boss",
+   "name": "봉인 열람실",
+   "enc": {
+    "mix": [
+     {
+      "db": "w213"
+     },
+     {
+      "db": "w151",
+      "lvD": -10
+     },
+     {
+      "db": "w117",
+      "lvD": -10
+     },
+     {
+      "db": "w015",
+      "lvD": -10
+     }
+    ],
+    "boss": true,
+    "bossAt": 0,
+    "raid": 2,
+    "n": 4,
+    "lvAdd": 5
+   }
+  },
+  {
+   "id": "g1a1",
+   "t": "room",
+   "name": "색인 카드 서랍장",
+   "check": {
+    "label": "겁먹은 야생을 서가 밖으로 달랜다",
+    "stat": "육성",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "dmg": "1/8",
+      "memo": "야생에게 물렸다"
+     }
+    },
+    "pm": 0,
+    "base": 1,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "alt": "g1"
+  },
+  {
+   "id": "g2a1",
+   "t": "room",
+   "name": "필사실",
+   "check": {
+    "label": "촛불 하나로 함께 길을 찾는다",
+    "stat": "통솔",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "oc": 2,
+      "memo": "모두 지쳤다"
+     }
+    },
+    "pm": 0,
+    "base": 4,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "alt": "g2"
+  },
+  {
+   "id": "tr",
+   "t": "treasure",
+   "side": 1,
+   "name": "기증 문고 상자",
+   "clue": {
+    "t": "주인의 흔적",
+    "d": "깊은 곳의 주인 — 「에스퍼」 기운이 서려 있다.\n「벌레」 · 「고스트」 · 「악」 쪽을 꺼리는 흔적이 남아 있다.\n「땅고르기」의 자국이 벽에 새겨져 있다.",
+    "auto": 1
+   },
+   "from": "c1"
+  }
+ ],
+ "branches": [
+  {
+   "id": "g1",
+   "from": "entry",
+   "to": "b2",
+   "main": [
+    "b1"
+   ],
+   "alt": [
+    "g1a1"
+   ]
+  },
+  {
+   "id": "g2",
+   "from": "b1",
+   "to": "c1",
+   "main": [
+    "b2"
+   ],
+   "alt": [
+    "g2a1"
+   ]
+  }
+ ],
+ "map": {
+  "grid": {
+   "cols": 7,
+   "rows": 5,
+   "x0": 80,
+   "dx": 140,
+   "y0": 65,
+   "dy": 130
+  },
+  "shape": "구불길",
+  "turns": 4,
+  "cells": {
+   "entry": [
+    6,
+    4
+   ],
+   "b1": [
+    5,
+    4
+   ],
+   "b2": [
+    5,
+    3
+   ],
+   "c1": [
+    4,
+    3
+   ],
+   "safe": [
+    4,
+    2
+   ],
+   "boss": [
+    5,
+    2
+   ],
+   "g1a1": [
+    6,
+    3
+   ],
+   "g2a1": [
+    4,
+    4
+   ],
+   "tr": [
+    3,
+    3
+   ]
+  },
+  "links": {
+   "b1~entry": 1,
+   "b1~b2": 1,
+   "b2~c1": 1,
+   "c1~safe": 1,
+   "boss~safe": 1,
+   "entry~g1a1": 1,
+   "b2~g1a1": 1,
+   "b1~g2a1": 1,
+   "c1~g2a1": 1,
+   "c1~tr": 1
+  }
+ },
+ "path": [
+  "entry",
+  "b1",
+  "b2",
+  "c1",
+  "safe",
+  "boss"
+ ],
+ "theme": "서고",
+ "owner": "환묘마왕",
+ "rules": {
+  "al0": 30,
+  "alRoom": 5,
+  "alRest": 10,
+  "alLowRest": 1,
+  "alB50": 5,
+  "restV": 2,
+  "alBattle": 5,
+  "alLose": 10,
+  "al30": 0,
+  "al70": 5,
+  "restShort": "all",
+  "restPO": 1,
+  "restPC": 1,
+  "restBreath": "one",
+  "restBC": 1
+ },
+ "note": "미사그 사건 1 던전 · 기록보관소 지하 서고 · 11-11 확정 스펙(노트 65) · 몹은 시험용 — 망령이 고침. 자동 생성 · 쉬움 · 씨앗 1111 · 테마 서고. 사전 배틀 2 · 체크 3 · 보스방 4체 · 레이드 배틀 : 2 · 지도 갈림길 2 · 구불길 + 곁방 1 · 야생 Lv -5.",
+ "campaign": "미사그"
+}
