@@ -567,7 +567,10 @@ window.OM_BATTLE_UI=(()=>{
   const nm=x=>String(x||'').replace(/『|』/g,'').trim();const names=new Set();for(const x of mates)for(const p of potSrc(x))if(p&&/역할/.test(String(p.kind||'')))names.add(nm(p.name));for(const x of mates)if(x.role)names.add(nm(x.role));
   return {aw,names,srcs:new Set(mates.map(x=>x.name))}}
  /* 11-01 망령 「A-1 도 포텐셜 발동하지 않는다가 아니라 행동불능으로」: 필드 위 다른 아군(같은 진영 · 다른 PC 포켓몬 포함) 중 지정 타입이 한 체도 없으면 각성 (대가) 포켓몬은 행동 불능 — 이유 글을 돌려준다 */
- function misagA1(b,m){const t=((b&&b.trainers)||{})[m&&m.tid];const M=t&&t.misag;if(!M||m.awaken!=='free'||!(M.items||[]).some(x=>x.key==='A-1'))return '';
+ /* 11-11 망령 「통솔 대가 행동 불능은 과하다 — 특성 : 게으름 마냥 조건을 충족하면 다음 턴 행동불능(교대는 가능)」 · 확인은 턴 종료 때 · 포텐셜 불발도 그 턴만:
+    misagA1Cond = 조건(지금 맞나 — 예전 판정 그대로), misagA1 = 지난 턴 종료 때 걸린 잠금(m.a1Lock = {t: 행동 불능 턴, why})이 이번 턴이면 그 이유 */
+ function misagA1(b,m){const L=m&&m.a1Lock;if(!L||+L.t!==(+((b||{}).turn)||0))return '';return `각성체 대가 A-1 — 지난 턴 종료 때 ${String(L.why||'').replace(/^각성체 대가 A-1 — /,'').replace(/\s*행동 불능$/,'')} → 이번 턴 행동 불능 (교대는 된다)`}
+ function misagA1Cond(b,m){const t=((b&&b.trainers)||{})[m&&m.tid];const M=t&&t.misag;if(!M||m.awaken!=='free'||!(M.items||[]).some(x=>x.key==='A-1'))return '';
   const onF=x=>!!(x&&x.entry&&x.hp&&x.hp.cur>0);const hasType=(x,ko)=>{const en=window.OM_STATS&&window.OM_STATS.typeEn?window.OM_STATS.typeEn(ko):ko;if(teraOn(x))return x.teraEn===en;return (x.types||[]).includes(en)||(x.typesKo||[]).includes(ko)};   /* 테라스탈이면 타입 4 만 (11-02) */
   const own=Object.values(b.mons||{}).filter(x=>x&&x.tid===m.tid);
   /* 11-10 망령 「2체 기준을 바꾸자 — 짝으로 판정 말고 필드 위에 아군이 없을 때 혹은 자신의 타입이 변경되어 있을 때」: 2체 기준(트레이너 two · 그 트레이너가 이 배틀에 2체 이하)은 지정 타입을 세지 않는다 — 자신의 타입이 바뀌어 있으면(타입 변경 typesOrig · 테라스탈) 또는 필드 위에 자신 이외의 아군(같은 진영 · 다른 PC 포켓몬도 됨)이 한 체도 없으면 행동 불능. (11-09 「짝 기준」 대체) */
@@ -1836,6 +1839,8 @@ window.OM_BATTLE_UI=(()=>{
     const fd=(((b0.cmds||{})[tid]||{}).fired)||{};if(Object.values(fd).some(x=>x&&x.command))continue;   /* 영창도 『지령』과 같은 처리 분류 — 쓴 턴엔 안 열린다 (망령 11-04 19:29) */
     const al=Object.values(b0.mons||{}).filter(m=>m.tid===tid&&m.entry&&+(m.hp||{}).cur>0);if(!al.length)continue;
     RN[tid]=Object.assign({},RN[tid]||{},{c:k});rnL.push(`${(b.trainers[tid]||{}).name||tid} — 『숙달회복지령』 ② 【임의】 (남은 ${pN(b0,tid,'command_'+k)}) — 『지령』을 안 쓴 턴 · 다음 턴 개시 전까지 「포텐셜 발동 → 지령 → 임의 발동 ②」`)}}
+  /* 11-11 통솔 대가 A-1 (게으름 꼴): 턴 종료 때 필드 위 각성 (대가)의 조건을 보고, 맞으면 다음 턴 1턴 행동 불능 · 포텐셜 불발 */
+  {const T=+b.turn||0;for(const mid in b.mons){const m=b.mons[mid];if(!m)continue;const on=m.entry&&m.hp&&m.hp.cur>0;const w=on?misagA1Cond(b,m):'';if(w){m.a1Lock={t:T+1,why:w};lines.push(`${m.name} 『A-1』 — ${w.replace(/^각성체 대가 A-1 — /,'').replace(/\s*행동 불능$/,'')} → 다음 턴 행동 불능 (교대는 된다)`)}else if(m.a1Lock&&+m.a1Lock.t<=T+1&&!(+m.a1Lock.t===T+1))delete m.a1Lock}}
   b.field=f;b.cmds={};b.order=[];b.phase=0;b.turn=(+b.turn||0)+1;delete b.deadline;CMD={};if(rnL.length)b.rinne={turn:turnKey(b),t:RN};else delete b.rinne;
   await saveBattle(b0,b,undefined,undefined,[[['ready'],{}]]);   /* 11-03: ready 비우기도 같은 묶음에 */
   cutPhase('턴 종료',`다음 턴 ${b.turn} · 지시 준비`);const sec=(h,L)=>L.length?[`▸ ${h}`,...L.map(x=>'  '+String(x).replace(/\n/g,'\n  '))]:[];const relL=Object.keys(rel).map(n=>`${n} — ${rel[n].join(' · ')}`);
