@@ -1102,11 +1102,12 @@ window.OM_BATTLE_UI=(()=>{
    case 'revealmon':return revealOne(d.tid,d.mid);
    case 'fire':return openFire(d.tid);
    case 'onext':{{const O0=c.b.order||[];const cur=O0[+c.b.orderIdx||0];if((+c.b.phase||0)===3&&cur&&cur.mid)try{await deferFire(cur.mid,'자신의 행동이 끝나서','act')}catch(e){console.warn('defer',e)}}   /* 11-09 미룬 대미지: 차례가 넘어가면 */
+    {const O1=c.b.order||[];const X1=O1[+c.b.orderIdx||0];const xm=X1&&(c.b.mons||{})[X1.mid];if((+c.b.phase||0)===3&&X1&&X1.xact&&!X1.doneX&&xm&&xm.entry&&xm.hp.cur>0&&!(await askYes(`${X1.name}의 추가 행동 — 『${X1.xact}』 「${X1.move||'?'}」을(를) 아직 안 했다.\n(${X1.name} 카드의 「공격」을 누르면 그 기술로 열린다)\n\n그래도 넘길까?`,'넘긴다','기다린다')))return}   /* 11-11 망령 「드래곤옐 추가 행동 — 표시창엔 넣어 놓고 차례가 되니 넘겨버린다」: 추가 행동 차례를 공격 없이 넘기려 하면 묻는다 */
     const O=c.b.order||[];let n=Math.min(O.length,(+c.b.orderIdx||0)+1);const skipped=[],outSk=[];   /* 11-10 「교대로 물러난 포켓몬도 『쓰러져 있어』로 뜬다」: 살아 있는데 필드에 없으면 따로 */
     /* 10-26 망령: 쓰러졌거나 필드에 없는 포켓몬의 차례는 건너뛴다 */
     const a1=[];while(n<O.length){const om=(c.b.mons||{})[O[n].mid];if(om&&om.entry&&om.hp.cur>0){const na=!O[n].change&&misagA1(c.b,om);if(!na)break;a1.push(`${O[n].name} — ${na}`);n++;continue}if(!O[n].change)(om&&om.hp.cur>0?outSk:skipped).push(O[n].name);n++}   /* 11-01 망령: 각성체 대가 A-1 행동 불능은 차례를 건너뛴다 (그때 필드로 다시 본다) */
     for(const l of a1)A().sysLog(l+' (차례를 건너뛴다)','battle');
-    if(skipped.length)A().sysLog(`${skipped.join(' · ')} — 쓰러져 있어 차례를 건너뛴다`,'battle');if(outSk.length)A().sysLog(`${outSk.join(' · ')} — 필드에 없어(교대로 물러남) 차례를 건너뛴다`,'battle');await A().set(['battle','orderIdx'],n);if((+c.b.phase||0)===2)await A().set(['battle','phase'],3);if(n<(c.b.order||[]).length)A().sysLog(`▶ ${c.b.order[n].name}의 행동`,'battle');else{if((+c.b.orderIdx||0)<n)A().sysLog('행동 순서 끝 — 턴 종료 처리','battle');if(c.b.endq&&c.b.endq.step)return endFlow();if(await askYes('행동이 모두 끝났다. 턴 마무리(턴 가장 마지막 → 턴 종료 → 턴 종료 이후)로 갈까?'))await endFlow()}return}
+    if(skipped.length)A().sysLog(`${skipped.join(' · ')} — 쓰러져 있어 차례를 건너뛴다`,'battle');if(outSk.length)A().sysLog(`${outSk.join(' · ')} — 필드에 없어(교대로 물러남) 차례를 건너뛴다`,'battle');await A().set(['battle','orderIdx'],n);if((+c.b.phase||0)===2)await A().set(['battle','phase'],3);if(n<(c.b.order||[]).length){const On=c.b.order[n];A().sysLog(On.xact?`▶ ${On.name}의 추가 행동 — 『${On.xact}』 「${On.move||'?'}」 (카드의 「공격」을 누르면 그 기술로 열린다)`:`▶ ${On.name}의 행동`,'battle')}else{if((+c.b.orderIdx||0)<n)A().sysLog('행동 순서 끝 — 턴 종료 처리','battle');if(c.b.endq&&c.b.endq.step)return endFlow();if(await askYes('행동이 모두 끝났다. 턴 마무리(턴 가장 마지막 → 턴 종료 → 턴 종료 이후)로 갈까?'))await endFlow()}return}
    case 'oprev':{await A().set(['battle','orderIdx'],Math.max(0,(+c.b.orderIdx||0)-1));return}
    case 'ojump':{if(!c.mgr)return;await A().set(['battle','orderIdx'],+d.i);return}
    case 'oresort':return resortOrder();
@@ -3155,7 +3156,7 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
     ② 선행 입력한 방어 4식 — 지시 대상 중 『버텨라!』(늘) · 『물러나!』(물리기) · 『피해라!』(특수기)를 선행 입력하고 아직 안 쓴 포켓몬이 있으면 먼저 선행 발동한다
        (예전에는 턴 개시 때 횟수만 빠지고 효과는 GM 이 「포텐셜 발동」에서 따로 눌러야 해서, 버텨라가 빠진 채 대미지가 들어갔다) */
  function chargeVanish(mv){const e=String((mv||{}).eff||'');const g=((DB().states||{}).groups||[]).find(x=>x.l==='반무적');const db=(DB().states||{}).st||{};const m=e.match(/「반무적\s*:\s*([^」]+)」/);if(!m)return '';const ko=m[1].trim();return ((g&&g.s)||Object.keys(db)).find(k=>db[k]&&db[k].ko===ko)||''}
- async function openAttackPre(mid){const c=ctx();const b=c.b;const atk=(b.mons||{})[mid];if(!atk||!canEdit(c,atk))return openAttack(mid);
+ async function openAttackPre(mid){const c=ctx();const b=c.b;const atk=(b.mons||{})[mid];if(!atk||!canEdit(c,atk))return openAttack(mid);{const XO=(+b.phase||0)>=2?(b.order||[])[+b.orderIdx||0]:null;if(XO&&XO.xact&&XO.mid===mid)return openAttack(mid)}   /* 11-11 추가 행동 차례: 원래 지시(기술 · 차지 · 방어 4식)를 거치지 않고 그 기술로 바로 */
   if(!c.gm){   /* 11-07: PL 화면 — 차지 처리는 GM 몫 그대로, 방어 4식만 (상대의 숨은 지시 대신 순서 열쇠 g4) */
    let x1=(((b.cmds||{})[atk.tid]||{}).mons||{})[mid]||{};if(x1.move==null||x1.move===''){try{const cm=await myCmd(c,atk.tid,true);const y=((cm||{}).mons||{})[mid];if(y)x1=Object.assign({},y,{tm:y.tm||tmOf(b,y.targets)})}catch(e){}}
    const mv1=x1.move!==''&&x1.move!=null&&x1.move!=='switch'?MVS(atk)[+x1.move]:null;if(mv1&&mv1.cat!=='변화'&&!atk.charge)await guard4Pre(c,atk,mv1,x1,{});return openAttack(mid)}
@@ -3479,6 +3480,7 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【[^】]*】\s
     if(a&&RESULT.micle&&!RESULT.check&&FX()&&FX().useItem){const t=FX().useItem(a,'미클열매');if(t)lines.push(t)}}
    /* 11-07: 「예민해지기」로 친 공격 — 이번 턴 종료에 풀리게 (상태 DB: 발생 후 행동했다면 턴 종료 시 해제) */{const a=nb.mons[mid];if(a&&RESULT.mv&&RESULT.mv.cat!=='변화'&&+((a.states||{}).LaserFocus)>1)a.states.LaserFocus=1}
    /* 10-27 망령: 트레이너 「기능 확장」 기술 — 적용하면 횟수 1 */
+   {const XO=(nb.order||[])[+nb.orderIdx||0];if((+nb.phase||0)>=2&&XO&&XO.xact&&XO.mid===mid)XO.doneX=1}   /* 11-11 추가 행동을 했다 (넘길 때 묻지 않게) */
    {const X=(RESULT.mv||{}).ext;const am=nb.mons[mid];if(X&&X.pot&&am)lines.push(`【기능 확장】 ${am.name} 『${X.pot}』 → 「${RESULT.mv.name}」`)}
    {const X=(RESULT.mv||{}).ext;const am=nb.mons[mid];if(X&&X.item&&am){const sl=X.k?(am.items2||[])[X.k-1]:am;const nI=v=>String(v||'').replace(/[『』]/g,'').trim();if(X.once&&sl&&nI(sl.item)===X.item){am.itemUsed=Object.assign({name:sl.item,eff:sl.itemEff||'',turn:+nb.turn||0},X.k?{k:X.k}:{});if(FX())FX().removeByName(am,sl.item);sl.item='';sl.itemEff='';if(X.k)delete sl.itemOwn;lines.push(`【기능 확장】 ${am.name} 「${X.item}」 → 「${RESULT.mv.name}」 — 소지품을 다 썼다`)}else lines.push(`【기능 확장】 ${am.name} 「${X.item}」 → 「${RESULT.mv.name}」`)}}
    /* 11-07 망령 「애슈열매는 발동하고 나서 안 사라진다」: 턴 개시 자동 발동(autoTurnStart → fireAuto quiet)은 소모를 묻지 않았다. 비고가 「소모하는 것은 기술을 내보낼 때」인 소모품은 그 이름으로 건 이번 턴 우선도가 걸린 채 기술을 내보내면(이 적용) 그때 소모 */
