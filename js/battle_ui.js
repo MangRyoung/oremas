@@ -15,9 +15,12 @@ window.OM_BATTLE_UI=(()=>{
  /* 11-03 감우 (검토 15-②): 배틀 탭의 화자 칩 줄(rp_ui bspkHtml)은 기본 접힘 — 토글은 브라우저마다 기억 */
  const BSPKF={open:(()=>{try{return localStorage.getItem('om_bspkfold')==='1'}catch(e){return false}})()};
  /* 11-03 감우 (검토 15-①): 조작판(.bstat)이 스크롤로 화면 밖에 나가면 얇은 sticky 바(#bsticky)를 보인다 */
- let STKIO=null;
- function stickyWatch(el){const bs=el.querySelector('.bstat'),st=el.querySelector('#bsticky');if(STKIO){STKIO.disconnect();STKIO=null}if(!bs||!st)return;
-  STKIO=new IntersectionObserver(es=>{for(const e of es)st.classList.toggle('on',!e.isIntersecting&&e.boundingClientRect.top<(e.rootBounds?e.rootBounds.top:0))},{root:el.closest('.scene')||null,threshold:0});STKIO.observe(bs)}
+ let STKIO=null,STKON=false;
+ /* 11-12 01:23 제보 「스크롤을 내린 채 sticky 바의 「턴 진행」 · 행동 순서의 「다음 행동」을 누를 때마다 스크롤이 아래로 내려간다」:
+    다시 그릴 때마다 sticky 바가 꺼진 채(display:none) 새로 생겼다가 관찰자가 다시 켜서, 바 높이만큼 내용이 밀리고 브라우저 스크롤 고정(scroll anchoring)이 그만큼 아래로 따라갔다
+    → 켜져 있던 상태(STKON)를 기억해 새 바도 처음부터 켠 채로 그린다 */
+ function stickyWatch(el){const bs=el.querySelector('.bstat'),st=el.querySelector('#bsticky');if(STKIO){STKIO.disconnect();STKIO=null}if(!bs||!st)return;if(STKON)st.classList.add('on');
+  STKIO=new IntersectionObserver(es=>{for(const e of es){const on=!e.isIntersecting&&e.boundingClientRect.top<(e.rootBounds?e.rootBounds.top:0);STKON=on;st.classList.toggle('on',on)}},{root:el.closest('.scene')||null,threshold:0});STKIO.observe(bs)}
  const OI=()=>window.OM_ITEMS;   /* 소지품 자동화 (js/engine/items.js) */
  const A=()=>window.OM_APP, S=()=>window.OM_STATS, B=()=>window.OM_BATTLE, DB=()=>window.OM_DB||{}, DBS=()=>window.OM_STORE;
  const APLOG=()=>{try{return localStorage.getItem('om_aplog')!=='0'}catch(e){return true}};   /* 【보정】 나만 보는 로그 켜기 (이 브라우저) */
