@@ -1,0 +1,478 @@
+{
+ "id": "ld2_cemetery",
+ "name": "공동묘지 (사건 1)",
+ "wn": 2,
+ "private": true,
+ "gen": {
+  "tier": "easy",
+  "knobs": {
+   "battles": 2,
+   "foes": 2,
+   "lv": -5,
+   "bossLv": 5,
+   "rest": "short",
+   "checks": 3,
+   "tgt": "v4mix",
+   "pen": "alert",
+   "hintTyped": 1,
+   "alCost": 10,
+   "alFail": 10,
+   "critAl": 10,
+   "bossN": 4,
+   "escMob": 1,
+   "preP": "C",
+   "escP": "C+/C+/C"
+  },
+  "seed": 2212,
+  "boss": "마기라스",
+  "brWant": 2,
+  "cast": {
+   "changed": 9,
+   "types": {
+    "바위": 1,
+    "악": 1,
+    "고스트": 3,
+    "풀": 1,
+    "에스퍼": 2,
+    "노말": 2,
+    "비행": 1,
+    "독": 2,
+    "벌레": 1
+   },
+   "guests": 2
+  },
+  "pts": 8,
+  "v": 1,
+  "auto": true,
+  "tough": "",
+  "shape": "꺾인길",
+  "theme": "묘지",
+  "rules": {
+   "al0": 30,
+   "alRoom": 5,
+   "alRest": 10,
+   "alLowRest": 1,
+   "alB50": 5,
+   "restV": 2,
+   "alBattle": 5,
+   "alLose": 10,
+   "al30": 0,
+   "al70": 5,
+   "restShort": "all",
+   "restPO": 1,
+   "restPC": 1,
+   "restBreath": "one",
+   "restBC": 1
+  },
+  "source": "db",
+  "grades": {
+   "wild": [
+    "C"
+   ],
+   "boss": [
+    "A"
+   ]
+  }
+ },
+ "rooms": [
+  {
+   "id": "entry",
+   "t": "entry",
+   "name": "무너진 담장 틈",
+   "check": {
+    "label": "무너지는 묘실을 함께 빠져나간다",
+    "stat": "통솔",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "oc": 2,
+      "memo": "모두 지쳤다"
+     }
+    },
+    "pm": 0,
+    "base": 4,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "b1",
+   "t": "battle",
+   "name": "무너진 가족 묘실",
+   "enc": {
+    "mix": [
+     {
+      "db": "w238"
+     },
+     {
+      "db": "w050"
+     }
+    ],
+    "lvAdd": -5
+   }
+  },
+  {
+   "id": "b2",
+   "t": "battle",
+   "name": "납골당 계단",
+   "enc": {
+    "mix": [
+     {
+      "db": "w084"
+     },
+     {
+      "db": "w057"
+     }
+    ],
+    "lvAdd": -5
+   }
+  },
+  {
+   "id": "c1",
+   "t": "trap",
+   "name": "엉킨 덩굴 철책",
+   "check": {
+    "label": "묘실 문 장치의 순서를 맞춘다",
+    "stat": "지시",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "oc": 2,
+      "memo": "우왕좌왕했다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "safe",
+   "t": "safe",
+   "name": "묘지기 오두막",
+   "rest": "short",
+   "check": {
+    "label": "봉인된 석관 뚜껑을 민다",
+    "stat": "능력",
+    "target": 12,
+    "hint": "type:노말",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "dmg": "1/8",
+      "st": "Paralysis",
+      "memo": "반동에 몸이 굳었다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [
+      "노말"
+     ],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   }
+  },
+  {
+   "id": "boss",
+   "t": "boss",
+   "name": "언덕 위 영묘",
+   "enc": {
+    "mix": [
+     {
+      "db": "w296"
+     },
+     {
+      "db": "w101",
+      "lvD": -10
+     },
+     {
+      "db": "w137",
+      "lvD": -10
+     },
+     {
+      "db": "w049",
+      "lvD": -10
+     }
+    ],
+    "boss": true,
+    "bossAt": 0,
+    "raid": 2,
+    "n": 4,
+    "lvAdd": 5
+   }
+  },
+  {
+   "id": "g1a1",
+   "t": "battle",
+   "name": "까마귀 앉은 고목",
+   "enc": {
+    "mix": [
+     {
+      "db": "w076"
+     },
+     {
+      "db": "w089"
+     }
+    ],
+    "lvAdd": -5
+   },
+   "alt": "g1"
+  },
+  {
+   "id": "g2a1",
+   "t": "puzzle",
+   "name": "봉인된 묘실 문",
+   "check": {
+    "label": "흐느끼는 소리의 정체를 쫓는다",
+    "stat": "능력",
+    "target": 10,
+    "hint": "type:악",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "dmg": "1/8",
+      "st": "Paralysis",
+      "memo": "반동에 몸이 굳었다"
+     }
+    },
+    "pm": 0,
+    "base": 3,
+    "fit": {
+     "types": [
+      "악"
+     ],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "alt": "g2"
+  },
+  {
+   "id": "g2a2",
+   "t": "room",
+   "alt": "g2",
+   "filler": 1,
+   "memo": "돌아가는 길 · 숨은 물건 — 살피면 소지품 · 열매 하나(GM 이 정한다). 체크 없음",
+   "name": "버려진 꽃 수레"
+  },
+  {
+   "id": "g2a3",
+   "t": "trap",
+   "name": "이름 지워진 비석",
+   "check": {
+    "label": "짙은 안개 속에서 대열을 지킨다",
+    "stat": "통솔",
+    "target": 10,
+    "hint": "any",
+    "pen": {
+     "fail": {
+      "al": 10,
+      "st": "Confusion",
+      "cnt": 3,
+      "memo": "대열이 무너졌다"
+     }
+    },
+    "pm": 0,
+    "base": 4,
+    "fit": {
+     "types": [],
+     "moves": [],
+     "abil": []
+    },
+    "v": 4,
+    "gainCrit": {
+     "al": -10,
+     "memo": "대성공 — 기척을 지웠다"
+    }
+   },
+   "alt": "g2"
+  },
+  {
+   "id": "tr",
+   "t": "treasure",
+   "side": 1,
+   "name": "부장품 상자",
+   "clue": {
+    "t": "주인의 흔적",
+    "d": "깊은 곳의 주인 — 「바위 · 악」 기운이 서려 있다.\n「격투」 · 「물」 · 「풀」 쪽을 꺼리는 흔적이 남아 있다.\n「블레이즈킥」의 자국이 벽에 새겨져 있다.",
+    "auto": 1
+   },
+   "from": "g2a2"
+  },
+  {
+   "id": "s1",
+   "t": "room",
+   "side": 1,
+   "name": "비석 석공 작업장",
+   "memo": "곁방 · 흔적 — 보스나 다음 방에 대한 단서 하나(GM 이 채운다)",
+   "from": "g2a1"
+  }
+ ],
+ "branches": [
+  {
+   "id": "g1",
+   "from": "b2",
+   "to": "safe",
+   "main": [
+    "c1"
+   ],
+   "alt": [
+    "g1a1"
+   ]
+  },
+  {
+   "id": "g2",
+   "from": "entry",
+   "to": "b2",
+   "main": [
+    "b1"
+   ],
+   "alt": [
+    "g2a1",
+    "g2a2",
+    "g2a3"
+   ],
+   "detour": 1
+  }
+ ],
+ "map": {
+  "grid": {
+   "cols": 7,
+   "rows": 5,
+   "x0": 80,
+   "dx": 140,
+   "y0": 65,
+   "dy": 130
+  },
+  "shape": "꺾인길",
+  "turns": 1,
+  "cells": {
+   "entry": [
+    3,
+    2
+   ],
+   "b1": [
+    4,
+    2
+   ],
+   "b2": [
+    5,
+    2
+   ],
+   "c1": [
+    6,
+    2
+   ],
+   "safe": [
+    6,
+    3
+   ],
+   "boss": [
+    6,
+    4
+   ],
+   "g1a1": [
+    5,
+    3
+   ],
+   "g2a1": [
+    3,
+    1
+   ],
+   "g2a2": [
+    4,
+    1
+   ],
+   "g2a3": [
+    5,
+    1
+   ],
+   "tr": [
+    4,
+    0
+   ],
+   "s1": [
+    2,
+    1
+   ]
+  },
+  "links": {
+   "b1~entry": 1,
+   "b1~b2": 1,
+   "b2~c1": 1,
+   "c1~safe": 1,
+   "boss~safe": 1,
+   "b2~g1a1": 1,
+   "g1a1~safe": 1,
+   "entry~g2a1": 1,
+   "g2a1~g2a2": 1,
+   "g2a2~g2a3": 1,
+   "b2~g2a3": 1,
+   "g2a2~tr": 1,
+   "g2a1~s1": 1
+  }
+ },
+ "path": [
+  "entry",
+  "b1",
+  "b2",
+  "c1",
+  "safe",
+  "boss"
+ ],
+ "theme": "묘지",
+ "owner": "마기라스",
+ "rules": {
+  "al0": 30,
+  "alRoom": 5,
+  "alRest": 10,
+  "alLowRest": 1,
+  "alB50": 5,
+  "restV": 2,
+  "alBattle": 5,
+  "alLose": 10,
+  "al30": 0,
+  "al70": 5,
+  "restShort": "all",
+  "restPO": 1,
+  "restPC": 1,
+  "restBreath": "one",
+  "restBC": 1
+ },
+ "note": "미사그 사건 1 던전 · 공동묘지 · 11-11 확정 스펙(노트 65) · 몹은 시험용 — 망령이 고침. 자동 생성 · 쉬움 · 씨앗 2212 · 테마 묘지. 사전 배틀 2 · 체크 3 · 보스방 4체 · 레이드 배틀 : 2 · 지도 갈림길 2 · 꺾인길 + 곁방 2 · 야생 Lv -5.",
+ "campaign": "미사그"
+}
