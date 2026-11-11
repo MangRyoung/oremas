@@ -43,3 +43,23 @@ window.SKCARD=window.SKCARD||(()=>{
    +(c.auto||c.lim||c.cls?`<div class="dcf">${c.cls?`<i class="skc-cls c-${clsKey(c.cls)}">${esc(c.cls)}</i>`:''}${c.lim?`<u>${esc(c.lim)}</u>`:''}${c.auto?'<u class="a" title="자동화 구문이 돈다">AUTO</u>':''}</div>`:'')+`</div>`}
  const flatBack=n=>`<div class="dc skf back"><span class="skc-bk">${KEY}</span>${n!=null&&n!==''?`<em>${esc(n)}</em>`:''}</div>`;
  return {html,back,flat,flatBack,fx,icList,ICN,kindOf,clsKey}})();
+/* 11-12 01:59 망령 「은열쇠 카드 커서 올리면 확대되게」: 마우스(호버 되는 기기)에서 작게 그려진 카드(.skc, 앞면)에 커서를 올리면
+   잠깐 뒤 옆에 크게(너비 320) 띄운다 — 화면에 고정 · 클릭은 원래 카드로 그대로(띄운 카드는 마우스를 안 받음). 이미 큰 카드(너비 260 이상) · 크게 보기 창 · 뒷면은 안 띄운다. 스크롤 · 클릭 · 창 크기 바뀜이면 닫는다 */
+(()=>{if(window.__skcZoom)return;window.__skcZoom=1;
+ const fine=()=>{try{return matchMedia('(hover:hover) and (pointer:fine)').matches}catch(e){return false}};
+ const st=document.createElement('style');st.textContent='.skczoom{position:fixed;z-index:2147483000;pointer-events:none;width:320px;filter:drop-shadow(0 10px 28px rgba(0,0,0,.65));animation:skczIn .12s ease-out}.skczoom .skc{width:100%!important;height:auto!important;aspect-ratio:5/7;transform:none!important;animation:none!important;margin:0!important}@keyframes skczIn{from{opacity:0;transform:scale(.94)}to{opacity:1;transform:none}}';
+ const on=()=>{if(!st.isConnected)document.head.appendChild(st)};
+ let cur=null,box=null,tm=0;
+ const hide=()=>{clearTimeout(tm);tm=0;cur=null;if(box){box.remove();box=null}};
+ const show=card=>{if(!card.isConnected)return;const r=card.getBoundingClientRect();if(!r.width||r.width>=260)return;on();
+  const W=Math.min(320,Math.max(200,innerWidth-24)),H=W*7/5;box=document.createElement('div');box.className='skczoom';box.style.width=W+'px';
+  const cl=card.cloneNode(true);cl.classList.remove('sel');cl.removeAttribute('id');cl.querySelectorAll('[id]').forEach(x=>x.removeAttribute('id'));box.appendChild(cl);
+  let x=r.right+14;if(x+W>innerWidth-8)x=r.left-14-W;if(x<8)x=Math.max(8,Math.min(innerWidth-W-8,r.left+r.width/2-W/2));
+  let y=r.top+r.height/2-H/2;y=Math.max(8,Math.min(innerHeight-H-8,y));box.style.left=Math.round(x)+'px';box.style.top=Math.round(y)+'px';document.body.appendChild(box)};
+ document.addEventListener('mouseover',e=>{if(!fine())return;const t=e.target;const card=t&&t.closest?t.closest('.skc'):null;if(card===cur)return;hide();
+  if(!card||card.classList.contains('back')||card.closest('.skczoom,.ho-big'))return;cur=card;tm=setTimeout(()=>{tm=0;if(cur===card)show(card)},220)},true);
+ document.addEventListener('mouseout',e=>{if(!cur)return;const to=e.relatedTarget;if(to&&cur.contains(to))return;if(e.target&&cur.contains(e.target))hide()},true);
+ for(const ev of ['wheel','mousedown','resize','keydown'])window.addEventListener(ev,hide,{capture:true,passive:true});
+ /* 스크롤은 그 카드가 든 칸이 움직일 때만 (채팅 로그가 저절로 내려가는 건 무시) */
+ window.addEventListener('scroll',e=>{if(!cur)return;const t=e.target;if(t===document||t===window||(t&&t.contains&&t.contains(cur)))hide()},{capture:true,passive:true})})();
+
