@@ -32,7 +32,7 @@ window.OM_DG_UI=(()=>{
  const TORDER=Object.keys(TY);
  /* 11-04 망령 경계도 개편 (노트 27): 30~70 사이를 오가게 — 들어설 때 30 · 처음 들어가는 방마다 +5 · 휴식 −10. 단계: 30 미만 = 휴식 한 단계 위 · 50 이상 = 보스방 Lv +5 · 70 이상 = 야생 Lv +5(보스 합 +10) · 100 = 퇴출 */
  const AL0=30,AL_ROOM=5,AL_REST=-10;
- const LV=[[0,'고요','QUIET','기척이 없다. 휴식이 한 단계 위가 된다.'],[30,'경계','ALERT','무언가 낌새를 챘다.'],[50,'주목','WATCHED','깊은 곳의 주인이 눈치챘다. 보스방 Lv +5.'],[70,'위험','DANGER','던전 전체가 경계 태세다. 야생 Lv +5 (보스방은 +10).'],[100,'퇴출','LOCKDOWN','더 버틸 수 없다! 일행은 던전 밖으로 밀려난다.']];
+ const LV=[[0,'고요','QUIET','기척이 없다. 숨돌리기의 HP 회복이 일행 전원이 된다.'],[30,'경계','ALERT','무언가 낌새를 챘다.'],[50,'주목','WATCHED','깊은 곳의 주인이 눈치챘다. 보스방 Lv +5.'],[70,'위험','DANGER','던전 전체가 경계 태세다. 야생 Lv +5 (보스방은 +10).'],[100,'퇴출','LOCKDOWN','더 버틸 수 없다! 일행은 던전 밖으로 밀려난다.']];
  const lvOf=a=>LV.reduce((r,l,i)=>a>=l[0]?i:r,0);
  const LVC=['#3ee0a1','#ffd84a','#ffb02e','#ff7a2f','#ff2a3d'];
  const DG={prev:null,sel:'',frame:'',ed:'',edSel:'',edMode:'move',edFrom:'',drag:null,mapSig:'',tiltRaf:0,edOpen:false};
@@ -121,10 +121,10 @@ window.OM_DG_UI=(()=>{
  /* 10-26 망령 「야생이 아닐 땐 스킬 체크나 단서(그림 · 설명)를 넣고, 휴식처는 우리 휴식 룰과」:
     r.sk = 스킬 체크(예시 모양 {label,stat,mode,target,npc,step,twice,pm,pen,name}) → OM_SKILL_UI.present(일행)
     r.cl = 단서 {t 제목, d 설명, img 그림} · r.cs = 공개함 · dg.clue = {did,rid,at} 지금 모두에게 띄운 단서
-    세이프룸: r.rk = 휴식 단계(long · mid · short · breath, 기본 short) · r.rmany = 여러 번 · r.ru = 이미 쉼 → OM_SKILL_UI.applyRest(단계, 일행) */
+    세이프룸: r.rk = 휴식 단계(long · mid · breath, 기본 mid · 옛 short = mid) · r.rmany = 여러 번 · r.ru = 이미 쉼 → OM_SKILL_UI.applyRest(단계, 일행) */
  const SKU=()=>window.OM_SKILL_UI;
- const RKO=[['long','긴 휴식','대대적'],['mid','중간 휴식','반쯤'],['short','짧은 휴식','상담함'],['breath','숨돌리기','가벼움']];   /* 10-28 중간 휴식 */
- const rkOf=r=>RKO.find(x=>x[0]===(r&&r.rk))||RKO[1];
+ const RKO=[['long','긴 휴식','대대적'],['mid','중간 휴식','반쯤'],['breath','숨돌리기','가벼움']];   /* 10-28 중간 휴식 · 11-12 03:31 망령 「짧은 휴식 없앰」 (옛 short 방은 중간 휴식) */
+ const rkOf=r=>RKO.find(x=>x[0]===((r&&r.rk)==='short'?'mid':(r&&r.rk)))||RKO[1];
  const skSum=sk=>{try{return SKU()&&SKU().sumOf?SKU().sumOf(sk).replace(/<[^>]+>/g,''):(sk.stat+' · 목표 '+sk.target)}catch(e){return ''}};
  const isSafe=r=>!!r&&r.t==='safe';
 
@@ -284,10 +284,19 @@ window.OM_DG_UI=(()=>{
    <div style="display:flex;flex-direction:column;gap:6px">${rows.map((x,i)=>`<button class="btn ${i?'':'pri'}" data-rep="${H(x.t)}" style="display:flex;gap:10px;align-items:center;text-align:left"><b style="flex:1">${H(T[x.t].name||x.t)}${i?'':' <small>(추천)</small>'}</b><span class="small">${x.b?H(x.b.name)+' · ':''}성공 <b>${pc(x.b&&x.b.ok)}</b></span></button>`).join('')}<button class="btn ghost" data-repall="1" title="일행 모두에게 내밀고, 먼저 굴린 한 명의 결과를 모두의 결과로">일행 전원에게 제시 — 먼저 굴린 한 명이 대표</button></div>`);
   {const ba=m.querySelector('[data-repall]');if(ba)ba.onclick=()=>{A().closeModal();goAll()}}
   m.querySelectorAll('[data-rep]').forEach(b=>b.onclick=()=>{A().closeModal();go(b.dataset.rep)})}
+ /* 11-12 03:31 망령 휴식 개편 — 휴식 방 · 배틀 뒤 숨돌리기가 같이 쓴다:
+    · 고요(경계도 30 미만): 숨돌리기의 HP 회복이 트레이너마다 1체 → 전원 1/4 (예전 「한 단계 위」 대신)
+    · 「붕대와 진통제」(d.revHalf = {tid, f}): 숨돌리기에서 일어나는 빈사 포켓몬 1체를 HP f 로 — 빈사가 없으면 다음 숨돌리기까지 남김
+    · 옛 「비상식량」 restUp 표시는 지운다 (비상식량은 이제 트레이너 부상 → 건강) */
+ async function restGo(d,rk,ids,by){const K=SKU();if(!K||!K.applyRest)return;if(rk==='short')rk='mid';const dd=cur()||d;const opt={by,did:d.id};
+  const a0=clamp(+(dd.al)||0,0,100);if(rk==='breath'&&alOn(d)&&a0<30){opt.over={hp_one:0};opt.note=`경계도 ${a0}% — 고요: 숨돌리기 HP 회복이 일행 전원 1/4`}
+  const RH=dd.revHalf;if(RH&&rk==='breath')opt.revOne={tid:RH.tid||'',f:RH.f||'3/4'};
+  if(dd.restUp)await upd({[P0(d.id)+'restUp']:null});
+  await K.applyRest(rk,ids,opt);if(opt.revOne&&opt.revOne.used)await upd({[P0(d.id)+'revHalf']:null})}
  async function restHere(d,rid){const r=R(d)[rid];if(!r||!gm())return;const K=SKU();if(!K||!K.applyRest)return A().toast('휴식 기능을 불러오지 못했다');if(r.ru&&!r.rmany)return A().toast('이 휴식처에서는 이미 쉬었다');
   const k=rkOf(r),L=party(d);if(!L.length)return A().toast('쉴 일행이 없다');
   const m=A().openModal(`<div class="mhead"><h2>☗ 휴식 — ${H(r.n||'세이프룸')}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small" style="margin:0 0 8px">일행 ${L.length}명(${H(L.map(t=>((RO().trainers||{})[t]||{}).name).join(', '))})이 쉰다. 단계마다 회복하는 것은 스킬 체크 창 「휴식」 탭의 설정을 따른다.</p><div class="row" style="gap:6px;flex-wrap:wrap">${RKO.map(x=>`<button class="btn ${x[0]===k[0]?'pri':''}" data-rk="${x[0]}">${x[1]} <small>(${x[2]})</small></button>`).join('')}</div>${r.rmany?'':'<p class="small dim" style="margin:8px 0 0">이 휴식처는 한 번만 쓸 수 있다.</p>'}`);
-  m.querySelectorAll('[data-rk]').forEach(b=>b.onclick=async()=>{A().closeModal();let rk=b.dataset.rk;/* 11-04 망령 「30 이하일 때 보너스는 회복 단계를 올려 주자」 · 휴식 경계도 −10 */{const gx=await gimEvent('rest',{rid});if(gx.restDown){const OR=['breath','short','mid','long'];const i=OR.indexOf(rk);if(i>=0)rk=OR[clamp(i-gx.restDown,0,OR.length-1)]}}const a0=clamp(+(((cur()||d).al))||0,0,100);if(alOn(d)&&a0<30){const UP={breath:'short',short:'mid'};if(UP[rk]){notice(`[${d.n||'던전'}] 경계도 ${a0}% — 고요: 휴식이 한 단계 위로`);rk=UP[rk]}}{const dd=cur()||d;if(dd.restUp&&rk==='breath'){notice(`[${d.n||'던전'}] 🗝 비상식량 — 숨돌리기가 짧은 휴식으로`);rk='short';await upd({[P0(d.id)+'restUp']:null})}else if(dd.restUp)notice(`[${d.n||'던전'}] 🗝 비상식량 — 숨돌리기에만 쓴다 (이번 휴식은 그대로 · 다음 숨돌리기까지 남겨 둔다)`)}   /* 11-12 03:03 망령 「비상식량은 숨돌리기 → 짧은 휴식만」 */await K.applyRest(rk,L,{by:`${d.n||'던전'} · ${r.n||'세이프룸'}`,did:d.id});if(alOn(d)&&rk!=='long')await alAdd(AL_REST,'휴식');if(!r.rmany)await upd({[P0(d.id)+'r/'+rid+'/ru']:1})})}
+  m.querySelectorAll('[data-rk]').forEach(b=>b.onclick=async()=>{A().closeModal();let rk=b.dataset.rk;/* 11-04 망령 「30 이하일 때 보너스는 회복 단계를 올려 주자」 · 휴식 경계도 −10 */{const gx=await gimEvent('rest',{rid});if(gx.restDown){const OR=['breath','mid','long'];const i=OR.indexOf(rk==='short'?'mid':rk);if(i>=0)rk=OR[clamp(i-gx.restDown,0,OR.length-1)]}}await restGo(d,rk,L,`${d.n||'던전'} · ${r.n||'세이프룸'}`);if(alOn(d)&&rk!=='long')await alAdd(AL_REST,'휴식');if(!r.rmany)await upd({[P0(d.id)+'r/'+rid+'/ru']:1})})}
  function side(d,isGm,al,lv){
   const rs=R(d),id=DG.sel,r=rs[id],t=ty(r&&r.t),here=id===d.at;
   const meta=`<div class="dg-card"><h4>${H(d.n||'이름 없는 던전')} <small>DUNGEON</small></h4>${d.o?`<span class="dg-chip">주인 · ${H(d.o)}</span>`:''}${d.a?`<span class="dg-chip">${H(d.a)}</span>`:''}${d.d?`<span class="dg-chip on">기한 · ${H(d.d)}</span>`:''}${mapLoc(d.id)}
@@ -468,7 +477,7 @@ window.OM_DG_UI=(()=>{
    let sk=Object.assign({},R(d)[DG.edSel].sk||{});if(SKU()&&SKU().up)sk=SKU().up(sk);if(f==='base')sk.base=Math.max(0,Math.min(5,+i.value||0));else if(f==='target')sk.target=Math.max(2,Math.min(20,+i.value||10));else if(f==='auto'){if(i.value)sk.auto=i.value;else delete sk.auto}else sk[f]=i.value.trim().slice(0,60);await upd({[p]:sk});edDraw()});
   box.querySelectorAll('[data-dgc]').forEach(i=>i.onchange=async()=>{const d=edD();if(!d||!R(d)[DG.edSel])return;const cl=Object.assign({},R(d)[DG.edSel].cl||{});const f=i.dataset.dgc;cl[f]=i.value.trim().slice(0,f==='d'?1200:f==='img'?600:60);Object.keys(cl).forEach(k=>{if(!cl[k])delete cl[k]});await upd({[P0(d.id)+'r/'+DG.edSel+'/cl']:Object.keys(cl).length?cl:null});edDraw()});
   box.querySelectorAll('[data-dgw]').forEach(i=>i.onchange=async()=>{const d=edD();if(!d||!R(d)[DG.edSel])return;const r=R(d)[DG.edSel];const w=Object.assign({},r.rw||{});const v=i.value.trim();if(v)w[i.dataset.dgw]=v.slice(0,i.dataset.dgw==='flag'?20:200);else delete w[i.dataset.dgw];await upd({[P0(d.id)+'r/'+DG.edSel+'/rw']:Object.keys(w).length?w:null});edDraw()});
-  box.querySelectorAll('[data-dgs]').forEach(i=>i.onchange=async()=>{const d=edD();if(!d||!R(d)[DG.edSel])return;const f=i.dataset.dgs,p=P0(d.id)+'r/'+DG.edSel+'/';if(f==='rk')await upd({[p+'rk']:i.value==='short'?null:i.value});else await upd({[p+'rmany']:i.checked?1:null});edDraw()});
+  box.querySelectorAll('[data-dgs]').forEach(i=>i.onchange=async()=>{const d=edD();if(!d||!R(d)[DG.edSel])return;const f=i.dataset.dgs,p=P0(d.id)+'r/'+DG.edSel+'/';if(f==='rk')await upd({[p+'rk']:i.value==='mid'?null:i.value});else await upd({[p+'rmany']:i.checked?1:null});edDraw()});
   box.querySelectorAll('[data-dga]').forEach(i=>i.onchange=async()=>{const d=edD();if(!d||!R(d)[DG.edSel])return;const v=i.value.trim();await upd({[P0(d.id)+'r/'+DG.edSel+'/'+i.dataset.dga]:v===''||!Number.isFinite(+v)?null:clamp(Math.round(+v),-100,100)});edDraw()});
   box.querySelectorAll('[data-dge]').forEach(i=>i.onchange=async()=>{const d=edD();if(!d||!R(d)[DG.edSel])return;const f=i.dataset.dge,p=P0(d.id)+'r/'+DG.edSel+'/';if(f==='e'){const o={[p+'e']:i.value||null};if(!i.value)o[p+'eh']=null;await upd(o);const t=i.value&&(RO().trainers||{})[i.value];if(t&&t.wild&&t.wdg!==d.id)await A().set(['roster','trainers',t.id,'wdg'],d.id)}else await upd({[p+'eh']:i.checked?1:null});edDraw()});
   box.querySelectorAll('[data-dgr]').forEach(i=>i.onchange=()=>{const d=edD();if(d&&R(d)[DG.edSel]){const f=i.dataset.dgr;upd({[P0(d.id)+'r/'+DG.edSel+'/'+f]:i.value.trim().slice(0,f==='m'?400:f==='b'?600:40)||null})}});
@@ -588,7 +597,7 @@ window.OM_DG_UI=(()=>{
   const win=foes.length>0&&foes.every(dead),lose=!win&&mine.length>0&&mine.every(dead);const res=!!b.resultAt;const al=alOn(d);
   const aw=awOf(d,r),alo=aloOf(d,r);const pick=win?'w':lose?'l':'n';
   const m=A().openModal(`<div class="mhead"><h2>⛩ 던전으로 돌아가기</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small" style="margin:0 0 8px">${win?'야생 포켓몬을 모두 쓰러뜨렸다.':lose?'일행의 포켓몬이 모두 쓰러졌다.':'아직 서 있는 포켓몬이 있다 (도망 · 포획 · 중단).'} ${res?'<b>결과 정리를 마쳤다</b> — 일행의 HP · 상태가 시트에 남았다.':'일행의 HP · 상태를 시트에 남기려면 먼저 <b>결과 정리</b>를 한다.'}</p><label class="row" style="gap:6px"><input type="checkbox" id="dgRetClr" ${win?'checked':''}> 「${H(r.n||ty(r.t).k)}」 클리어 표시 (야생 기척 없애기)</label>
-   <label class="row" style="gap:6px;margin-top:6px" title="11-05 망령: 배틀이 끝나면 숨돌리기 하나 — 트레이너마다 가장 다친 1체 HP 1/4 · 빈사는 그대로(11-12) (경계도 30 미만이면 한 단계 위)"><input type="checkbox" id="dgRetBr" ${(win||lose)&&r.t!=='boss'?'checked':''} ${res?'':'disabled'}> 🌬 숨돌리기 (배틀이 끝난 뒤)${res?'':' <span class="small dim">— 결과 정리를 한 뒤에</span>'}</label>
+   <label class="row" style="gap:6px;margin-top:6px" title="11-05 망령: 배틀이 끝나면 숨돌리기 하나 — 트레이너마다 가장 다친 1체 HP 1/4 · 빈사는 HP 1 (경계도 30 미만이면 HP 회복이 일행 전원 · 「붕대와 진통제」를 썼으면 빈사 1체를 HP 3/4)"><input type="checkbox" id="dgRetBr" ${(win||lose)&&r.t!=='boss'?'checked':''} ${res?'':'disabled'}> 🌬 숨돌리기 (배틀이 끝난 뒤)${res?'':' <span class="small dim">— 결과 정리를 한 뒤에</span>'}</label>
    ${al?`<div class="row" style="gap:6px;margin-top:8px;align-items:center"><span class="small">경계도</span><select id="dgRetAl"><option value="w" ${pick==='w'?'selected':''}>이겼다 (+${aw})</option><option value="l" ${pick==='l'?'selected':''}>졌다 (+${alo})</option><option value="n" ${pick==='n'?'selected':''}>올리지 않음</option></select><span class="small">+</span><input type="number" id="dgRetAlN" value="${pick==='w'?aw:pick==='l'?alo:0}" style="width:64px"><span class="small dim">지금 ${clamp(+d.al||0,0,100)}%</span></div>`:''}
    <div class="row" style="margin-top:12px"><button class="btn ${res?'ghost':''}" id="dgRetRes">${res?'📋 결과 정리 다시':'📋 결과 정리 먼저'}</button><span class="sp"></span><button class="btn pri" id="dgRetGo">⛩ 던전으로</button></div>`);
   const sel=m.querySelector('#dgRetAl'),num=m.querySelector('#dgRetAlN');if(sel)sel.onchange=()=>{num.value=sel.value==='w'?aw:sel.value==='l'?alo:0};
@@ -598,7 +607,7 @@ window.OM_DG_UI=(()=>{
     ops.push([['battle','done'],1]);await A().setMany(ops)}
    if(clr&&R(d)[rid0])await upd({[P0(d.id)+'r/'+rid0+'/c']:1});
    /* 11-05 망령 「배틀이 끝나면 숨돌리기 하나 줘」: 결과 정리 뒤(시트 HP 기준) · 휴식 경계도 −10 은 없음 · 경계도 30 미만이면 한 단계 위(세이프룸과 같음) */
-   {const br=m.querySelector('#dgRetBr');if(br&&br.checked&&res){const K=SKU();if(K&&K.applyRest){let rk='breath';const a0=clamp(+(((cur()||d).al))||0,0,100);if(alOn(d)&&a0<30){rk='short';notice(`[${d.n||'던전'}] 경계도 ${a0}% — 고요: 숨돌리기가 짧은 휴식으로`)}{const dd=cur()||d;if(dd.restUp&&rk==='breath'){rk='short';await upd({[P0(d.id)+'restUp']:null});notice(`[${d.n||'던전'}] 🗝 비상식량 — 숨돌리기가 짧은 휴식으로`)}}   /* 11-12 03:03 망령 「비상식량은 숨돌리기 → 짧은 휴식만」: 이미 짧은 휴식(고요)이면 쓰지 않고 남겨 둔다 */try{await K.applyRest(rk,party(d),{by:`${d.n||'던전'} · 배틀 뒤`,did:d.id})}catch(e){console.warn('배틀 뒤 숨돌리기',e)}}}}
+   {const br=m.querySelector('#dgRetBr');if(br&&br.checked&&res){const K=SKU();if(K&&K.applyRest){try{await restGo(d,'breath',party(d),`${d.n||'던전'} · 배틀 뒤`)}catch(e){console.warn('배틀 뒤 숨돌리기',e)}}}}
    let alTxt='';if(al&&ak!=='n'&&an)alTxt=await alAdd(an,ak==='w'?'배틀 승리':'배틀 패배');if(ak==='w'||ak==='l')try{await gimEvent(ak==='w'?'win':'lose',{})}catch(e){}
    await A().set(['battle','dg'],null);await A().set(['scene'],'rp');notice(`⛩ ${ro(d.n||'던전')} 돌아왔다${clr?` — 「${r.n||ty(r.t).k}」 클리어`:''}`);try{A().goView('rp')}catch(e){}}}
 

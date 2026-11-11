@@ -11,7 +11,10 @@ window.OM_SK3FX=(()=>{
  const nm=tid=>(trs()[tid]||{}).name||tid;
  const row=n=>{const D=window.OM_SK3&&window.OM_SK3.db&&window.OM_SK3.db();return D&&D.get(n)};
  /* 카드 이름 → {code, arg, raw} (없으면 null) */
- function of(n){const r=row(n);const t=String((r||[])[9]||'').trim();const m=t.match(/^은열쇠\s+(\S+)\s*(.*)$/m);if(!m)return null;return {code:m[1],arg:m[2].trim(),raw:t}}
+ /* 11-12 03:31 망령 휴식 개편: 「비상식량」 = 트레이너 하나 부상 → 건강 (옛 붕대 몫) · 「붕대와 진통제」 = 숨돌리기 때 빈사 1체를 HP 3/4 로 (값은 REV_F 한 곳).
+    카드 DB 구문이 아직 옛 것이어도 이름으로 먼저 고른다 (카드 DB 를 고치면 그대로 맞음) */
+ const REV_F='3/4';const OVR={'비상식량':{code:'부상회복',arg:''},'붕대와 진통제':{code:'부활반',arg:REV_F}};
+ function of(n){const k=String(n||'').replace(/[「」]/g,'').trim();if(OVR[k])return Object.assign({raw:'은열쇠 '+OVR[k].code+' '+OVR[k].arg},OVR[k]);const r=row(n);const t=String((r||[])[9]||'').trim();const m=t.match(/^은열쇠\s+(\S+)\s*(.*)$/m);if(!m)return null;return {code:m[1],arg:m[2].trim(),raw:t}}
  const curDg=()=>{try{const D=DGU();return D&&D.cur?D.cur():null}catch(e){return null}};
  const party=()=>{try{const D=DGU();const d=curDg();const p=d&&D.party?D.party(d):[];if(p&&p.length)return p}catch(e){}const S=(ST().state.sk3||{}).h||{};return Object.keys(S).filter(id=>trs()[id])};
  const frac=(max,f)=>{const [a,b]=String(f||'1/4').split('/').map(Number);return Math.max(1,Math.floor((+max||0)*(a||1)/(b||4)))};
@@ -21,7 +24,8 @@ window.OM_SK3FX=(()=>{
  async function onUse(tid,n,ctx){ctx=ctx||{};const e=of(n);if(!e)return {lines:[]};const L=[];const d=curDg();const who=nm(tid);
   switch(e.code){
    case '경계도-10':case '경계도':{const v=+(e.code.match(/-?\d+/)||[0])[0]||-(+e.arg.replace(/[^\d]/g,'')||10);const D=DGU();if(!d||!D||!D.alAdd){L.push(`「${n}」 — 던전 밖이라 경계도는 그대로`);break}const r=await D.alAdd(v<0?v:-Math.abs(v),`은열쇠 「${n}」`);L.push(r||`「${n}」 — 경계도 변화 없음`);break}
-   case '휴식+1':{if(!d){L.push(`「${n}」 — 던전 밖: 다음 숨돌리기를 GM 이 짧은 휴식으로`);break}await dgSet('restUp',1);L.push(`「${n}」 — 다음 숨돌리기가 짧은 휴식으로 (11-12 · 숨돌리기에만)`);break}
+   case '휴식+1':{L.push(`「${n}」 — 짧은 휴식이 없어져(11-12) 쓸 곳이 없다 · 카드 DB 구문을 고칠 것`);break}
+   case '부활반':{const f=e.arg||REV_F;if(!d){L.push(`「${n}」 — 던전 밖: 다음 숨돌리기에서 GM 이 빈사 1체를 HP ${f} 로`);break}await dgSet('revHalf',{tid,f});L.push(`「${n}」 — 다음 숨돌리기에서 일어나는 빈사 포켓몬 1체(${who} 몫 먼저)를 HP 1 대신 HP ${f} 로`);break}
    case '부상회복':{const SK=SKU();const T=((ST().state.skill||{}).trainers)||{};const cand=party().filter(id=>(+((T[id]||{}).inj)||0)===1);const pick=cand.includes(tid)?tid:cand[0];if(!pick||!SK||!SK.tsk){L.push(`「${n}」 — 「부상」인 트레이너가 없다`);break}
     await A().set(['skill','trainers',pick,'inj'],0);L.push(`「${n}」 — ${nm(pick)} 「부상」 → 「건강」${cand.length>1?` (부상 ${cand.length}명 중 — 다른 사람이면 GM 이 체크 창에서 고친다)`:''}`);break}
    case '일행상태회복':{const ab=abnKeys();const ids=party();const ops=[];const got=[];for(const m of Object.values(mons())){if(!ids.includes(m.tid))continue;const ss=Object.assign({},m.sheetStates||{});let ch=false;for(const k of Object.keys(ss))if(k!=='Dead'&&ab(k)){delete ss[k];ch=true}if(ch){ops.push([['roster','mons',m.id,'sheetStates'],Object.keys(ss).length?ss:null]);got.push(m.name)}}
