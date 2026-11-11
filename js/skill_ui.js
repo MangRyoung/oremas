@@ -234,12 +234,12 @@ window.OM_SKILL_UI=(()=>{
   out.n=out.keys.length;if(out.n)await A().set(inB?['battle','trainers',tid,'orderCount']:['roster','trainers',tid,'orderCount'],cnt);return out}
  async function refundOrd(c){if(!c||!c.n)return;const B=A().ST.state.battle||{};const src=c.inB?(B.trainers||{})[c.tid]:trs()[c.tid];if(!src)return;const cnt=Object.assign({},src.orderCount||{});for(const kk of c.keys)cnt[kk]=(+cnt[kk]||0)+1;await A().set(c.inB?['battle','trainers',c.tid,'orderCount']:['roster','trainers',c.tid,'orderCount'],cnt)}
  /* 한 단계 나빠진다 → {prev, now, cut, line} */
- async function stepUp(tid,why,mid){const t=trs()[tid];const k=tsk(tid);const C=cfg();const prev=k.inj;if(prev>=3)return {prev,now:3,cut:null,line:`${t.name} 이미 「빈사」`};const now=prev+1;let cut=null;
+ async function stepUp(tid,why,mid,opt){opt=opt||{};const t=trs()[tid];const k=tsk(tid);const C=cfg();const prev=k.inj;if(prev>=3)return {prev,now:3,cut:null,line:`${t.name} 이미 「빈사」`};const now=prev+1;let cut=null;
   /* 11-04 은열쇠 세 칸 규칙(카드 창에서 켬 · 그 트레이너가 참가 중): 4식 · 6령을 잃지 않고 카드 1장을 버린다 (노트 27) */
   const S3=window.OM_SK3R;const three=!!(S3&&S3.ruleOn()&&S3.members().includes(tid));
   if(!three){if(now===1&&+C.injOc>0)cut=await cutOrd(tid,'command_',+C.injOc);if(now===2&&+C.injOo>0)cut=await cutOrd(tid,'order_',+C.injOo)}
   await setT(tid,{inj:now});
-  const pen=three?[{line:await S3.onInjury(tid,1)}].filter(x=>x.line):await penFor(tid,prev,now);
+  const pen=three?(opt.noOwe?[{line:`${t.name} — 이 단계 몫 카드는 「${opt.noOwe}」로 이미 버렸다`}]:[{line:await S3.onInjury(tid,1)}].filter(x=>x.line)):await penFor(tid,prev,now);   /* 11-12 망령 「무리하지 마」: 대신 받은 단계 몫으로 카드를 또 버리지 않는다 (그 카드가 그 몫) */
   let hh='';if(cut&&cut.n<cut.want)hh=await halfHit(tid,mid,cut.want-cut.n,cut.lab);
   const cl=(cut&&cut.n?` · ${cut.lab} −${cut.n}`:'')+(hh?` · ${hh}`:'');
   return {prev,now,cut,pen,three:three?1:0,line:`${t.name} 「${STEP[prev]}」 → 「${STEP[now]}」${cl}${now===2?' · 모든 판정 불리':now===1?(tough(t)?' · 강인함':' · 모든 판정 −'+C.injPen):' · 이 장면에서 빠진다'} (${why})${pen.map(x=>'\n'+x.line).join('')}`}}
@@ -659,11 +659,14 @@ ${penFields('fail',X)}</div></div>
  function muriHtml(tid,O,K){if(!O)return '';const T=trs();const R=K.res||{};const Rm=R3();const mem=(Rm&&Rm.members&&Rm.members())||[];
   const fails=Object.keys(R).filter(id=>{const r=R[id];return r&&r.offerId===O.id&&r.ri===1&&r.step&&r.step.now>r.step.prev&&!r.cover&&!r.muri&&!r.ek});if(!fails.length)return '';
   const hs=(gm()?mem:[me()].filter(Boolean)).filter(id=>{const x=s3card(id,'c');const e=x&&s3of(x.n);return e&&e.code==='대신받기'});if(!hs.length)return '';
-  return `<div class="skcard"><div class="sec">🗝 무리하지 마 <span class="note">동료의 체크 실패로 오는 상태 단계를 이 카드를 버려 대신 · 판정 하나에 효과 카드 1장</span></div><div class="sklist">${fails.map(id=>`<div class="skrow wrap"><b>${esc((T[id]||{}).name)}</b><span class="tag">${STEP[R[id].step.prev]} → ${STEP[R[id].step.now]}</span><span class="sp"></span>${hs.filter(h=>h!==id).map(h=>`<button class="btn xs" data-muri="${esc(id)}" data-by="${esc(h)}">「${esc(s3card(h,'c').n)}」${h!==me()||gm()?' ('+esc((T[h]||{}).name||'')+')':''}로 대신</button>`).join('')||'<span class="small dim">동료만 쓸 수 있다</span>'}</div>`).join('')}</div></div>`}
+  return `<div class="skcard"><div class="sec">🗝 무리하지 마 <span class="note">동료의 체크 실패로 오는 상태 단계를 내가 대신 받는다 · 그 단계로 버릴 카드는 이 카드 · 판정 하나에 효과 카드 1장</span></div><div class="sklist">${fails.map(id=>`<div class="skrow wrap"><b>${esc((T[id]||{}).name)}</b><span class="tag">${STEP[R[id].step.prev]} → ${STEP[R[id].step.now]}</span><span class="sp"></span>${hs.filter(h=>h!==id).map(h=>`<button class="btn xs" data-muri="${esc(id)}" data-by="${esc(h)}">「${esc(s3card(h,'c').n)}」${h!==me()||gm()?' ('+esc((T[h]||{}).name||'')+')':''}로 대신</button>`).join('')||'<span class="small dim">동료만 쓸 수 있다</span>'}</div>`).join('')}</div></div>`}
  async function muriTake(forTid,by){const r=JSON.parse(JSON.stringify((st().res||{})[forTid]||null));const T=trs();if(!r||!r.step||r.muri||r.ek||by===forTid)return;const x=s3card(by,'c');if(!x)return A().toast('그 카드는 이미 없다');
-  if(r.step2){await stepUndo(forTid,r.step2);delete r.step2}await stepUndo(forTid,r.step);r.muri={by,n:x.n};r.ek={by,n:x.n,code:'대신받기'};r.text+=`\n「${x.n}」 — ${(T[by]||{}).name||''} 가 카드를 버려 ${(T[forTid]||{}).name||''} 「${STEP[r.step.prev]}」 그대로`;
+  /* 11-12 02:27 망령 「동료는 카드를 버리지 않고, 자신도 피해 입으면서 버리는 카드를 무리하지 마로 대체」: 동료의 단계(와 버려야 할 카드 표시)는 되돌리고, 쓴 사람이 그 단계를 대신 받는다 — 그 단계로 버릴 카드는 이 카드 */
+  if(r.step2){await stepUndo(forTid,r.step2);delete r.step2}await stepUndo(forTid,r.step);
   try{await R3().run({op:'use',tid:by,k:'c',quiet:1,why:'무리하지 마'})}catch(e){}
-  await A().set(['skill','res',forTid],r);A().closeModal();A().sysLog(`【은열쇠】 ${(T[by]||{}).name||''} 『${x.n}』 — ${(T[forTid]||{}).name||''} 의 「${STEP[r.step.now]}」 을(를) 대신 (상태 그대로)`,'dice');sync();setTimeout(()=>openPlayer(gm()?forTid:(me()||forTid)),200)}
+  const hs=await stepUp(by,`「${x.n}」 — ${(T[forTid]||{}).name||''} 대신`,null,{noOwe:x.n});
+  r.muri={by,n:x.n,step:hs};r.ek={by,n:x.n,code:'대신받기'};r.text+=`\n「${x.n}」 — ${(T[by]||{}).name||''} 가 대신 받는다: ${(T[forTid]||{}).name||''} 「${STEP[r.step.prev]}」 그대로 · ${hs.line.split('\n')[0]} (버릴 카드는 이 카드로 대신)`;const pv0=r.step.prev;r.stepWas=r.step;delete r.step;
+  await A().set(['skill','res',forTid],r);A().closeModal();A().sysLog(`【은열쇠】 ${(T[by]||{}).name||''} 『${x.n}』 — ${(T[forTid]||{}).name||''} 의 상태 단계를 대신 받는다 (${(T[forTid]||{}).name||''} 「${STEP[pv0]}」 그대로 · ${hs.line.split('\n')[0]} · 이 단계로 버릴 카드는 이 카드로 대신)`,'dice');sync();setTimeout(()=>openPlayer(gm()?forTid:(me()||forTid)),200)}
  /* 바치기(🗝 카드 창 「바치기」 — sk3_run 이 부른다): 지금 제시된 체크의 to 판정에 +1. 이미 굴렸으면 결과에 바로 더한다 (결과를 보고 붙이기) */
  async function bk3Give(by,n,to){const O=st().offer;const T=trs();if(!O)return '지금 제시된 체크가 없다 — 바친 카드는 버림만';to=to||by;if(!(O.ids||[]).includes(to)&&!isRep(O))return `${(T[to]||{}).name||''} 은(는) 이번 체크 대상이 아니다`;
   const r=JSON.parse(JSON.stringify((st().res||{})[to]||null));const fit=bk3Fit(n,O.stat);
