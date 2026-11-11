@@ -117,6 +117,15 @@ window.OM_BATTLE_UI=(()=>{
  const turnKey=b=>String(+b.turn||0);
  function mode(b){return Math.max(1,Math.min(3,+b.mode||2))}  /* 기본 더블(2:2) */
  function entered(b,side){const out={};for(const a of AREAS.slice(0,mode(b))){const m=Object.values(b.mons||{}).find(x=>x.side===side&&x.entry===a&&x.hp.cur>0);out[a]=m||null}return out}
+ /* 11-11 망령 「(3+3) 트레이너마다 필드 1칸 · 교대는 자기 3체 안에서만」 + 「한 쪽이 전멸하면 빈 공간에는 남은 포켓몬을 낼 수 있게」:
+    한 진영의 트레이너 수 = 에리어 수(2 이상)일 때만. 남의 포켓몬이 서 있는 칸 ✗ · 내 포켓몬이 서 있는 칸 = 교대 ·
+    빈 칸 = 내가 필드에 아무도 없으면 ○, 이미 하나 내놓았으면 같은 진영에서 기다리는(필드에 없는) 트레이너가 전부 전멸했을 때만 ○.
+    내밀기 예약(pend)도 「필드에 있음」으로 센다. null = 제한 없음 */
+ function slotRule(b,side){const ids=((((b.sides||{})[side]||{}).trainers)||[]).filter(x=>x&&x!=='__swap__'&&(b.trainers||{})[x]);return ids.length>=2&&ids.length===mode(b)?ids:null}
+ function okAreas(b,m){const areas=AREAS.slice(0,mode(b));const ids=m&&slotRule(b,m.side);if(!ids)return areas;const M=Object.values(b.mons||{}).filter(x=>x&&x.side===m.side);const live=x=>x.hp&&x.hp.cur>0;
+  const onF=tid=>M.some(x=>x.tid===tid&&x.id!==m.id&&live(x)&&(x.entry||x.pend));const wiped=tid=>!M.some(x=>x.tid===tid&&live(x));
+  const waitOK=ids.filter(t=>t!==m.tid&&!onF(t)).every(wiped);
+  return areas.filter(a=>{const occ=M.find(x=>x.entry===a&&live(x));if(occ)return occ.tid===m.tid;return !onF(m.tid)||waitOK})}
  function allEntered(b){const out=[];for(const s of SIDES){const e=entered(b,s);for(const a in e)if(e[a])out.push({slot:slotOf(s,a),side:s,area:a,mon:e[a]})}return out}
  /* 내 지시 칸 · 내 포켓몬 편집은 GM 과 그 자리의 주인만 — 모의전 권한(mgr)과는 별개 */
  /* 파티 불러오기: 진행하는 사람(mgr) + 「자기 것만」 방의 플레이어(자기 자리로) */
@@ -1114,15 +1123,18 @@ window.OM_BATTLE_UI=(()=>{
   const ent=entered(b,m.side);const areas=AREAS.slice(0,mode(b));
   if(!area&&(+b.tstep||0)>=1){/* 10-27 망령: 교대 단계면 이 포켓몬과 바꾸기로 한 (교대 지시) 포켓몬의 자리로 — 빈 자리가 있어도 그쪽으로 새지 않게 */const outs=(b.swOut||[]).map(id=>(b.mons||{})[id]).filter(o=>o&&o.tid===m.tid&&o.side===m.side&&o.entry&&o.id!==mid);
    const want=outs.find(o=>((((b.cmds||{})[o.tid]||{}).mons||{})[o.id]||{}).switch===mid)||(outs.length===1?outs[0]:null);if(want)area=want.entry}
-  if(!area){const tids=((b.sides||{})[m.side]||{}).trainers||[];const pref=areas[Math.min(tids.indexOf(m.tid),areas.length-1)]||areas[0];
-   const free=areas.filter(a=>!ent[a]);
+  const OKA=okAreas(b,m);
+  if(!area){const tids=(((b.sides||{})[m.side]||{}).trainers||[]).filter(x=>x!=='__swap__');const pref=areas[Math.min(Math.max(0,tids.indexOf(m.tid)),areas.length-1)]||areas[0];
+   const free=OKA.filter(a=>!ent[a]);
+   if(!OKA.length)return A().toast('낼 수 있는 자리가 없다 — 트레이너마다 필드 1칸 (짝 트레이너가 전멸하면 그 빈 칸에 낼 수 있다)');
    if(areas.length===1)area=areas[0];
-   else if(!ent[pref])area=pref;
+   else if(!ent[pref]&&OKA.includes(pref))area=pref;
    else if(free.length)area=free[0];
    else{const md=A().openModal(`<div class="mhead"><h2>${esc(m.name)} 등장 — 에리어</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-     <div class="row">${areas.map(a=>`<button class="btn ${ent[a]?'ghost':'pri'}" data-area="${a}">${a.toUpperCase()}${ent[a]?' · '+esc(ent[a].name)+' 과 교대':' · 빈 자리'}</button>`).join('')}</div>`);
+     ${OKA.length<areas.length?'<div class="small dim" style="margin-bottom:8px">트레이너마다 필드 1칸 — 자기 포켓몬과만 교대 (짝 트레이너가 전멸하면 그 빈 칸에도 낼 수 있다)</div>':''}<div class="row">${OKA.map(a=>`<button class="btn ${ent[a]?'ghost':'pri'}" data-area="${a}">${a.toUpperCase()}${ent[a]?' · '+esc(ent[a].name)+' 과 교대':' · 빈 자리'}</button>`).join('')}</div>`);
     md.querySelectorAll('[data-area]').forEach(bt=>bt.onclick=()=>{A().closeModal();enterMon(mid,bt.dataset.area,opt)});return}}
   if(!areas.includes(area))return A().toast('그런 에리어가 없다');
+  if(!opt.sys&&!opt.forced&&!OKA.includes(area))return A().toast(`${area.toUpperCase()} 에는 못 나온다 — 트레이너마다 필드 1칸 (짝 트레이너가 전멸하면 그 빈 칸에 낼 수 있다)`);
   const occ=ent[area];
   let XL=null;if(occ&&occ.id!==mid){XL=await exitMon(occ.id,{forced:!!opt.forced,noAsk:!!opt.noAsk,sys:!!opt.sys,quiet:true})}
   const swIn=occ&&occ.id!==mid?(b.swOut||[]).includes(occ.id):(+b.tstep||0)>=1&&opt.how!=='죽어내밀기'&&(b.swOut||[]).some(id=>{const o=(b.mons||{})[id];return o&&id!==mid&&o.tid===m.tid&&!o.entry&&o.outA===area});   /* 10-27 망령: 동시 죽어내밀기 — 같은 트레이너가 교대도 했으면, 쓰러진 자리로 나온 포켓몬까지 교대 등장이 됐다. 교대로 빠진 바로 그 자리로 나올 때만 */   /* 10-27 망령: 교대하는 포켓몬을 먼저 「퇴장」시키고 빈 자리로 「등장」하면 occ 가 없어 교대 등장으로 안 잡혀, 행동 순서에 들어가 행동했다 — 교대 단계(tstep 1)에 같은 트레이너의 교대 포켓몬이 빠져 있으면 교대 등장 */
@@ -1170,8 +1182,10 @@ window.OM_BATTLE_UI=(()=>{
  async function pendMon(mid,area){const c=ctx();const b=c.b;const m=b.mons[mid];if(!m||!canEdit(c,m))return;
   const tnm=((b.trainers||{})[m.tid]||{}).name||SIDE_KO[m.side];const cnt=()=>{const nb=ctx().b;const L=pendCount(nb,'left'),R=pendCount(nb,'right');return `좌 ${L.n}/${L.need} · 우 ${R.n}/${R.need}`};
   if(m.pend){const was=m.pend;await A().set(['battle','mons',mid,'pend'],null);A().sysLog(`${tnm} — 에리어 ${String(was).toUpperCase()} 내밀기 예약 취소 (${cnt()})`,'battle');return}
-  const areas=AREAS.slice(0,mode(b));const taken=Object.values(b.mons).filter(x=>x.side===m.side&&x.id!==m.id&&x.pend).map(x=>x.pend);const ent=entered(b,m.side);
-  if(!area){const free=areas.filter(a=>!taken.includes(a));if(areas.length===1)area=areas[0];else if(free.length===1&&areas.every(a=>taken.includes(a)||a===free[0]))area=free[0];
+  const areas0=AREAS.slice(0,mode(b));const areas=okAreas(b,m);const taken=Object.values(b.mons).filter(x=>x.side===m.side&&x.id!==m.id&&x.pend).map(x=>x.pend);const ent=entered(b,m.side);
+  if(!areas.length)return A().toast('예약할 자리가 없다 — 트레이너마다 필드 1칸 (짝 트레이너가 전멸하면 그 빈 칸에 낼 수 있다)');
+  if(area&&!areas.includes(area))return A().toast(`${String(area).toUpperCase()} 에는 예약 못 한다 — 트레이너마다 필드 1칸`);
+  if(!area){const free=areas.filter(a=>!taken.includes(a));if(areas0.length===1)area=areas0[0];else if(free.length===1&&areas.every(a=>taken.includes(a)||a===free[0]))area=free[0];
    else{const md=A().openModal(`<div class="mhead"><h2>${esc(m.name)} 내밀기 예약 — 에리어</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="row">${areas.map(a=>`<button class="btn ${taken.includes(a)?'ghost':'pri'}" data-area="${a}">${a.toUpperCase()}${taken.includes(a)?' · 이미 예약':ent[a]?' · '+esc(ent[a].name)+' 과 교대':' · 빈 자리'}</button>`).join('')}</div>`);
     md.querySelectorAll('[data-area]').forEach(bt=>bt.onclick=()=>{A().closeModal();pendMon(mid,bt.dataset.area)});return}}
   await A().set(['battle','mons',mid,'pend'],area);A().sysLog(`${tnm} — 에리어 ${area.toUpperCase()} 내밀기 예약 ✓ (누가 나올지는 실행 때까지 비밀 · ${cnt()})`,'battle');A().toast(`${m.name} 내밀기 예약 (${area.toUpperCase()}) — ${c.mgr?'「시합 개시」나 「내밀기 실행」을 누르면':'GM 이 실행하면'} 나온다`);
