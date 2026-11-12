@@ -131,11 +131,12 @@ html[data-vt="cd"] ::-webkit-scrollbar-track{background:rgba(4,10,22,.6)}
 html[data-vt="cd"] ::-webkit-scrollbar-thumb{background:rgba(95,210,255,.45);border:1px solid rgba(235,244,255,.35)}
 /* 화면 주사선 — 아주 옅게, 누를 수 없게 */
 html[data-vt="cd"] body::after{content:"";position:fixed;inset:0;pointer-events:none;z-index:2147483000;background:repeating-linear-gradient(180deg,rgba(255,255,255,.018) 0 1px,transparent 1px 3px);mix-blend-mode:screen}
-/* 위 띠 — 흐르는 빛줄 */
-html[data-vt="cd"] .top{position:relative}
-html[data-vt="cd"] .top::after{content:"";position:absolute;left:0;right:0;bottom:-2px;height:2px;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(95,210,255,.95) 45%,#fff 50%,rgba(95,210,255,.95) 55%,transparent) 0 0/40% 100% no-repeat;animation:cdscan 6s linear infinite}
+/* 위 띠 — 흐르는 빛줄. 11-12 망령 「인물 창이 늘어나니 빛나는 라인이 캐릭터 창을 가로지른다」: 발언자 칸(.spkbar.top)도 .top 이라 같이 걸려,
+   두 줄로 넘쳐 스크롤이 생기면 bottom:-2px 이 스크롤 영역 한가운데 떴다 → 위 띠에만 */
+html[data-vt="cd"] .top:not(.spkbar){position:relative}
+html[data-vt="cd"] .top:not(.spkbar)::after{content:"";position:absolute;left:0;right:0;bottom:-2px;height:2px;pointer-events:none;background:linear-gradient(90deg,transparent,rgba(95,210,255,.95) 45%,#fff 50%,rgba(95,210,255,.95) 55%,transparent) 0 0/40% 100% no-repeat;animation:cdscan 6s linear infinite}
 @keyframes cdscan{from{background-position:-40% 0}to{background-position:140% 0}}
-@media (prefers-reduced-motion:reduce){html[data-vt="cd"] .top::after{animation:none;background-position:50% 0}}
+@media (prefers-reduced-motion:reduce){html[data-vt="cd"] .top:not(.spkbar)::after{animation:none;background-position:50% 0}}
 html[data-vt="cd"] .top .name{font-family:var(--cdf)!important;font-weight:600!important;letter-spacing:.16em!important;text-transform:uppercase}
 html[data-vt="cd"] .top .name::after{content:"_";margin-left:.15em;color:#5fd2ff;animation:cdblink 1.1s steps(1) infinite}
 @keyframes cdblink{50%{opacity:0}}
