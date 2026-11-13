@@ -1392,6 +1392,12 @@ function openRoomSettings(tab){
  const sw=(id,on,label,sub)=>`<label class="pf-sw"><input type="checkbox" id="${id}" ${on?'checked':''}><i></i><span><b>${label}</b>${sub?`<small>${sub}</small>`:''}</span></label>`;
  const room=isGm?`<div class="pf">
   ${card('🏠','방',`<div class="pf-sel"><span class="pf-lb">방 이름</span><input type="text" id="rn" value="${esc(r.name)}"><button class="btn xs pri" id="rnSave">저장</button></div><div class="pf-note">방 id <span class="mono">${esc(r.id)}</span></div><div class="row" style="margin-top:6px;gap:6px;flex-wrap:wrap"><button class="btn xs" id="copyLink2" title="플레이어에게 줄 방 링크">플레이어 링크 복사</button>${String(ST.secret).startsWith('u:')?'':'<button class="btn xs" id="copyGm2" title="이 링크를 가진 사람은 누구나 GM — 남에게 주지 말 것">GM 링크 복사</button>'}</div>${String(ST.secret).startsWith('u:')?'<div class="pf-note">계정으로 들어온 GM 은 GM 링크가 없다 — 다른 기기에서도 로그인하면 GM.</div>':''}`)}
+  ${(()=>{const ct=rp.ctimer||{};return card('⏱','커뮤 씬',`<div class="pf-note" style="margin:0 0 6px">커뮤 장면 타이머(체스 시계) — 씬 하나에 몇 분을 줄지 · 플레이어가 자기 씬을 열고 닫을 수 있게. 흐르는 시계 · ±1분 · 씬 시작은 무대 위 「⏱ 타이머」 창에서.</div>
+   <div class="pf-sel"><span class="pf-lb">기본 씬 시간</span><input type="number" class="n" id="ctBaseR" min="1" max="600" step="1" value="${+ct.base||30}" style="width:70px"><em>분</em><button class="btn xs pri" id="ctBaseSave">저장</button><button class="btn xs" id="ctFillR" title="모든 자리의 남은 시간을 이 시간으로 새로 채운다">모두 채우기</button></div>
+   ${sw('ctOn',!!ct.on,'장면 타이머 화면에 띄우기','채팅창 위에 모두의 남은 시간 · 아래 내 줄에 내 시간이 뜬다')}
+   ${sw('ctFresh',!!ct.fresh,'씬마다 기본 시간으로 새로','켜면 씬을 열 때마다 그 사람 시간을 기본 시간으로 다시 채운다. 끄면 체스 시계처럼 남은 시간을 다음 씬에 이어 쓴다')}
+   ${sw('ctPl',ct.pl!==false,'플레이어도 씬 오픈 · 씬 종료','플레이어 내 줄에 「▶ 씬 오픈」 · 「■ 씬 종료」 — 공지([씬 오픈] · [씬 종료])와 자기 시계가 같이 움직인다. 처리는 GM 화면이 열려 있어야 된다')}
+   <div class="row" style="margin-top:6px"><button class="btn xs" id="ctOpenR">⏱ 타이머 창 열기</button></div>`)})()}
   ${(()=>{const own=rp.seatOwn===true,run=!own&&rp.plBattle!==false;return card('⚔','배틀',`<div class="pf-note" style="margin:0 0 6px">플레이어가 배틀에서 어디까지 누를 수 있나 — 위 두 칸은 둘 중 하나만 켠다 (둘 다 끄면 배틀 올리기·진행은 GM 만, 플레이어는 자기 지시만 입력)</div>
    ${sw('plBattle',run,'① 플레이어도 배틀 진행 (모의전)','플레이어도 파티 불러오기 · 시합 개시 · 턴 진행 · 필드를 누른다. GM 없이 플레이어끼리 붙을 때. 엿보기 · 강제 · 모두 공개는 GM 만')}
    ${sw('seatOwn',own,'② 플레이어는 자기 것만 (세션)','플레이어는 자기 트레이너를 배틀에 올리고 자기 포켓몬 · 지시 · 스킬만 만진다. 턴 진행 · 필드 · 남의 HP 는 GM 이')}
@@ -1426,6 +1432,14 @@ function openRoomSettings(tab){
  const gh=$('#gmHands',m);if(gh)gh.onchange=async()=>{await set(['rp','gmHands'],gh.checked?false:null);sysLog(gh.checked?'방 설정: GM 도 플레이어의 지시·상태를 건드리지 않는다':'방 설정: 「GM 불간섭」을 껐다');toast(gh.checked?'GM 불간섭 켬':'GM 불간섭 끔')};
  const ao=$('#acctOnly',m);if(ao)ao.onchange=async()=>{if(ao.checked&&!String(ST.secret).startsWith('u:')&&!confirm('지금 GM 링크(예전 방식)로 들어와 있다. 켜면 이 링크로는 GM 이 안 된다 — 관리자 계정이나 이 방 GM 권한이 있는 계정으로 다시 들어와야 한다. 켤까?')){ao.checked=false;return}
   const s=Object.assign({},r.settings||{},{accountOnly:ao.checked});try{await DBS().roomUpdate(ST.room,ST.secret,null,s);r.settings=s;sysLog(ao.checked?'방 설정: 계정 전용 방 (로그인한 계정만)':'방 설정: 「계정 전용」을 껐다');toast(ao.checked?'계정 전용 방':'예전 링크도 다시 된다')}catch(e){ao.checked=!ao.checked;toast(e.message)}};
+ /* 11-13 21:39 망령 「씬 오픈 · 씬 종료는 PL 도 · 방 설정 아래에 씬마다 기본 씬 몇 분 줄지」 (js/ctimer_ui.js) */
+ {const CT=window.OM_CTIMER;const ctSet=async(k,v,msg)=>{const T=Object.assign({base:30,bank:{}},(ST.state.rp||{}).ctimer||{});T[k]=v;T.at=Date.now();if(await set(['rp','ctimer'],T)){sysLog('방 설정: '+msg);toast(msg)}};
+  const bs=$('#ctBaseSave',m);if(bs)bs.onclick=()=>{const v=Math.max(1,Math.min(600,Math.round(+$('#ctBaseR',m).value||30)));ctSet('base',v,`기본 씬 시간 ${v}분`)};
+  const fl=$('#ctFillR',m);if(fl)fl.onclick=async()=>{const v=Math.max(1,Math.min(600,Math.round(+$('#ctBaseR',m).value||30)));const cur=(ST.state.rp||{}).ctimer||{};if(cur.run&&!confirm('지금 흐르는 씬이 있다. 모두 새로 채우고 멈출까?'))return;if(CT&&CT.fill){await CT.fill(v);toast(`모두 ${v}분으로 채웠다`)}};
+  const on=$('#ctOn',m);if(on)on.onchange=async()=>{if(CT&&CT.setOn)await CT.setOn(on.checked)};
+  const fr=$('#ctFresh',m);if(fr)fr.onchange=()=>ctSet('fresh',fr.checked||null,fr.checked?'씬마다 기본 시간으로 새로':'남은 시간을 다음 씬에 이어 쓴다');
+  const pl=$('#ctPl',m);if(pl)pl.onchange=()=>ctSet('pl',pl.checked?null:false,pl.checked?'플레이어도 씬 오픈 · 씬 종료':'씬 오픈 · 종료는 GM 만');
+  const op=$('#ctOpenR',m);if(op)op.onclick=()=>{closeModal();if(CT&&CT.open)CT.open()}}
  const rs=$('#rnSave',m);if(rs)rs.onclick=async()=>{try{await DBS().roomUpdate(ST.room,ST.secret,$('#rn',m).value.trim(),null);ST.roomRow.name=$('#rn',m).value.trim();remember(ST.room,ST.roomRow.name,ST.secret);closeModal();renderRoom()}catch(e){toast(e.message)}};
  {const cs=$('#stCropSave',m),cm=$('#stCrop',m);const save=async()=>{const mode=cm.value,w=Math.max(30,Math.min(80,Math.round(+$('#stWaist',m).value||52)));if(!await set(['rp','standCrop'],mode||w!==52?{mode,waist:w}:null))return;sysLog(`방 설정: 무대 스탠딩 — ${mode==='bust'?'상반신 (허리 '+w+'%)':'전신'}`);toast(mode==='bust'?'스탠딩을 상반신으로':'스탠딩을 전신으로')};if(cs)cs.onclick=save;if(cm)cm.onchange=save}
  /* 11-07 망령 「캠퍼스 2 는 늘 캠퍼스 1 이랑 같은 상태로」: 방 따라가기 (db_ui followOf · syncFrom) */
