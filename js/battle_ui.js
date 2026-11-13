@@ -1842,7 +1842,7 @@ window.OM_BATTLE_UI=(()=>{
   const futDone=new Map();for(const mid in b.mons){const m=b.mons[mid];const r=m.futRsv;if(!r||!m.entry||m.hp.cur<=0)continue;const v=+((m.states||{})[r.st]);const def=db[r.st]||{};
    if((def.prog==='turn'||def.prog==='once')&&!movesDown(r.st,def)&&v>0&&v<1000&&v-1<=0){const k0=r.st;lines.push(...futureFire(b,m));futDone.set(mid,k0)}}
   if(F()){const slots={};for(const s of SIDES){const e=entered(b,s);for(const a in e)slots[s+'_'+a]=e[a]}
-   const r1=F().turnEndStates(b.mons,slots,{field:f,turn:+b.turn||0});lines.push(...r1.lines);const r2=F().turnEndField(b.mons,f,{noGrass:1});fieldL.push(...r2.lines);
+   /* 11-13 22:16 망령: 룰북 순서 — 날씨 · 불바다(슬립 대미지)를 회복보다 먼저 */const r2=F().turnEndField(b.mons,f,{noGrass:1});fieldL.push(...r2.lines);const r1=F().turnEndStates(b.mons,slots,{field:f,turn:+b.turn||0});lines.push(...r1.lines);
    for(const mid in b.mons){const m=b.mons[mid];if(m.entry&&m.hp.cur<=0){m.entry='';if(!r1.dead.includes(mid))lines.push(`${m.name}은(는) 쓰러졌다!`)}}}
   else for(const mid in b.mons){const m=b.mons[mid];if(!m.entry||m.hp.cur<=0)continue;
    for(const t of B().turnEnd(m)){if(!t.delta)continue;m.hp.cur=Math.max(0,Math.min(m.hp.max,m.hp.cur+t.delta));lines.push(`${m.name} ${db[t.state]?db[t.state].ko:t.state} ${t.delta>0?'+':''}${t.delta} → ${m.hp.cur}`);if(m.hp.cur<=0){lines.push(`${m.name} 빈사!`);m.entry=''}}}

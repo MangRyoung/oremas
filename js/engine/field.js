@@ -62,7 +62,24 @@ const FX=()=>window.OM_FX;
  function turnEndStates(mons,slots,opt){opt=opt||{};const lines=[];const dead=[];const fld=opt.field||null;const T=opt.turn;
   /* 11-08 감우: 마지막으로 잠든 행동을 한 턴(m.wakeT)이 끝나면 깬다 — 다음 행동부터 움직인다. 잠듦이 이미 풀렸으면 표만 지운다 */
   for(const id in mons){const m=mons[id];if(!m||m.wakeT==null)continue;if(T!=null&&+m.wakeT>+T)continue;const was=has(m,'Sleep');delete m.wakeT;if(was){clearState(m,'Sleep');if(m.hp&&m.hp.cur>0)lines.push(`${m.name}은(는) 눈을 떴다!`)}}
-  for(const id in mons){const m=mons[id];if(!m.entry||m.hp.cur<=0||has(m,'Dead'))continue;const st=m.states||{};const sleeping=has(m,'Sleep')||has(m,'Comatose');
+  /* 11-13 22:16 망령 제보 「먹밥 힐이 상태이상 딜보다 먼저 들어간다」 — 룰북 턴 종료 순서대로 모두를 한 단계씩:
+     ① 가장 마지막에(미래예지 — battle_ui) ② 돌아와 ③ 슬립 대미지(독 · 화상 … · 날씨는 battle_ui 가 이 앞에 turnEndField) ④ 드레인(씨뿌리기) ⑤ 회복(먹다남은음식 · 아쿠아링 · 그래스필드 …) ⑥ 카운트 · 맹독구슬 등 ⑦ 턴 종료 */
+  const LIVE=[];for(const id in mons){const m=mons[id];if(!m.entry||m.hp.cur<=0||has(m,'Dead'))continue;LIVE.push(m)}
+  const each=fn=>{for(const m of LIVE){if(m.hp.cur<=0)continue;const st=m.states||{};const sleeping=has(m,'Sleep')||has(m,'Comatose');fn(m,st,sleeping)}};
+  /* ③ 슬립 대미지 */
+  each((m,st,sleeping)=>{
+   if(st.Toxic){m.toxicN=Math.min(15,(+m.toxicN||0)+1);dmg(m,frac(m,m.toxicN,16),lines,`「맹독」 ${m.toxicN}/16`)}else m.toxicN=0;
+   if(st.Poison){const [v,tx]=sf(m,'Poison',1,8);dmg(m,v,lines,`「독」 ${tx}`)}if(st.Burn){const [v,tx]=sf(m,'Burn',1,16);dmg(m,v,lines,`「화상」 ${tx}`)}
+   if(st.Nightmare&&sleeping){const [v,tx]=sf(m,'Nightmare',1,4);dmg(m,v,lines,`「악몽」 ${tx}`)}if(st.Curse){const [v,tx]=sf(m,'Curse',1,4);dmg(m,v,lines,`「저주」 ${tx}`)}if(st.Bind){/* 11-08 51-2 ⑪ 조임밴드: 조이기를 건 쪽(m.bindFrom)이 지니면 1/8 → 1/6 */const bf=m.bindFrom&&mons[m.bindFrom];const band=bf&&/조임밴드/.test(itemsOf(bf));const [v,tx]=band?[frac(m,1,6),'1/6 「조임밴드」']:sf(m,'Bind',1,8);dmg(m,v,lines,`「바인드」 ${tx}`)}
+   if(st.SaltCure){const ty=typesOf(m);const sw=ty.includes('Steel')||ty.includes('Water');dmg(m,sw?frac(m,1,6):frac(m,1,8),lines,`「소금절이」 ${sw?'1/6':'1/8'}`)}
+   if(st.ThunderCage){const mul=B().effectiveness(['Electric'],m,{}).value;if(mul>0)dmg(m,Math.max(1,Math.floor(m.hp.max/8*mul)),lines,`「썬더프리즌」 전기 1/8 ×${mul}`);else lines.push(`${m.name} 「썬더프리즌」 전기 타입 효과가 없음`)}
+  });
+  /* ④ 드레인 */
+  each((m,st,sleeping)=>{
+   if(st.LeechSeed){const from=m.seedFrom||((m.side==='left'?'right':'left')+'_'+m.entry);const to=slots[from];if(!to||to.hp.cur<=0)lines.push(`${m.name} 「씨뿌리기」 씨를 뿌린 ${String(from).split('_')[1].toUpperCase()} 에리어에 포켓몬이 없어 회복 없음`);else{const [v,tx]=sf(m,'LeechSeed',1,8);const d=dmg(m,v,lines,`「씨뿌리기」 드레인 ${tx}`);if(d>0)heal(to,d,lines,`「씨뿌리기」(${m.name})`)}}
+  });
+  /* ⑤ 회복 — 가장 높은 것 하나만 */
+  each((m,st,sleeping)=>{
    const HC=[];const hc=(m2,v,ln,why)=>{HC.push({v,why});return 0};   /* 희망사항: 건 턴은 표시만, 다음 턴 종료에 1/2 */
    if(st.Wish){const [wv,wt]=sf(m,'Wish',1,2);if(!m.wishWait){m.wishWait=1;lines.push(`${m.name} 「희망사항」 다음 턴 종료 시 ${wt} 회복`)}else{m.wishWait=0;hc(m,wv,lines,`「희망사항」 ${wt}`);clearState(m,'Wish')}}
    for(const [k,n,d,ko] of [['AquaRing',1,8,'아쿠아링'],['Ingrain',1,16,'뿌리박기'],['Chant',1,16,'환희의노래']])if(st[k]){const [v,tx]=sf(m,k,n,d);hc(m,v,lines,`「${ko}」 ${tx}`)}
@@ -72,19 +89,17 @@ const FX=()=>window.OM_FX;
      if(add>0&&m.hp.cur<m.hp.max)heal(m,add,lines,top.why+(pr>0?` (먼저 ${pr} 회복한 몫을 뺀 나머지)`:''));
      if(HC.length>1||pr>0)lines.push(`${m.name} 턴 종료 회복은 가장 높은 것만 — ${HC.slice(1).map(x=>x.why+' '+x.v).concat(pr>0&&add<=0?[`${top.why} ${top.v}`]:[]).join(' · ')||'나머지'} 안 겹침`)}}
    delete m.teHeal;
-   if(st.LeechSeed){const from=m.seedFrom||((m.side==='left'?'right':'left')+'_'+m.entry);const to=slots[from];if(!to||to.hp.cur<=0)lines.push(`${m.name} 「씨뿌리기」 씨를 뿌린 ${String(from).split('_')[1].toUpperCase()} 에리어에 포켓몬이 없어 회복 없음`);else{const [v,tx]=sf(m,'LeechSeed',1,8);const d=dmg(m,v,lines,`「씨뿌리기」 드레인 ${tx}`);if(d>0)heal(to,d,lines,`「씨뿌리기」(${m.name})`)}}
-   if(st.Toxic){m.toxicN=Math.min(15,(+m.toxicN||0)+1);dmg(m,frac(m,m.toxicN,16),lines,`「맹독」 ${m.toxicN}/16`)}else m.toxicN=0;
-   if(st.Poison){const [v,tx]=sf(m,'Poison',1,8);dmg(m,v,lines,`「독」 ${tx}`)}if(st.Burn){const [v,tx]=sf(m,'Burn',1,16);dmg(m,v,lines,`「화상」 ${tx}`)}
-   if(st.Nightmare&&sleeping){const [v,tx]=sf(m,'Nightmare',1,4);dmg(m,v,lines,`「악몽」 ${tx}`)}if(st.Curse){const [v,tx]=sf(m,'Curse',1,4);dmg(m,v,lines,`「저주」 ${tx}`)}if(st.Bind){/* 11-08 51-2 ⑪ 조임밴드: 조이기를 건 쪽(m.bindFrom)이 지니면 1/8 → 1/6 */const bf=m.bindFrom&&mons[m.bindFrom];const band=bf&&/조임밴드/.test(itemsOf(bf));const [v,tx]=band?[frac(m,1,6),'1/6 「조임밴드」']:sf(m,'Bind',1,8);dmg(m,v,lines,`「바인드」 ${tx}`)}
-   if(st.SaltCure){const ty=typesOf(m);const sw=ty.includes('Steel')||ty.includes('Water');dmg(m,sw?frac(m,1,6):frac(m,1,8),lines,`「소금절이」 ${sw?'1/6':'1/8'}`)}
-   if(st.ThunderCage){const mul=B().effectiveness(['Electric'],m,{}).value;if(mul>0)dmg(m,Math.max(1,Math.floor(m.hp.max/8*mul)),lines,`「썬더프리즌」 전기 1/8 ×${mul}`);else lines.push(`${m.name} 「썬더프리즌」 전기 타입 효과가 없음`)}
+  });
+  /* ⑥ 그 밖 카운트 · 소지품(맹독구슬 · 불꽃구슬 · 끈적끈적바늘 …) */
+  each((m,st,sleeping)=>{
    if(st.OctoLock){rankDown(m,'defense',-1);rankDown(m,'specialdefense',-1);lines.push(`${m.name} 「문어굳히기」 방어·특방 −1`)}
    if(st.SyrupBomb){m.syrupN=(+m.syrupN||0)+1;rankDown(m,'speed',-1);lines.push(`${m.name} 「물엿범벅」 스피드 −1 (${m.syrupN}/3)`);if(m.syrupN>=3){clearState(m,'SyrupBomb');m.syrupN=0}}
    if(st.DeathCount){const c=+st.DeathCount||0;if(c<=1){lines.push(`${m.name} 「죽음의카운트」 0 · 「빈사」`);m.hp.cur=0;dead.push(m.id)}else lines.push(`${m.name} 「죽음의카운트」 ${c-1}`)}
    for(const [k,to,kn,tn] of [['Yawn','Sleep','하품','잠듦'],['Hibernation','Freeze','동면','얼음']]){if(!st[k])continue;const c=+st[k]||0;if(c>1)continue;const tb=tblock(m,to);if(tb)lines.push(`${m.name} 「${kn}」 땅 위라서 「${tb}」가 「${tn}」을(를) 막았다`);else if(isAbn(m))lines.push(`${m.name} 「${kn}」 이미 상태 이상이라 「${tn}」 상태가 되지 않음`);else{setState(m,to);lines.push(`${m.name} 「${kn}」 → 「${tn}」`)}}
    /* 소지품 (먹다남은음식 · 검은진흙 · 불꽃구슬 · 맹독구슬 · 끈적끈적바늘) — js/engine/items.js */
    if(m.hp.cur>0&&window.OM_ITEMS)window.OM_ITEMS.turnEnd(m,lines,{heal,dmg,noHeal:1});
-   if(m.hp.cur<=0&&!dead.includes(m.id)){dead.push(m.id);lines.push(`${m.name}은(는) 쓰러졌다!`)}}
+  });
+  for(const m of LIVE){if(m.hp.cur<=0&&!dead.includes(m.id)){dead.push(m.id);lines.push(`${m.name}은(는) 쓰러졌다!`)}}
   return {lines,dead}}
 
  /* ----- 필드 턴 종료 (field_turnend): 그래스필드 1/16 회복(땅 위), 불바다 1/8(불꽃 제외) ----- */
