@@ -50,7 +50,9 @@ window.OM_CTIMER=(()=>{
     → 두 칸: ① 채팅창 머리(.side .phone .pbar 바로 아래) .ctside = 모두의 칩 한 줄(넘치면 옆으로 밀기) ② 내 줄(.mebar) .ctim = GM: 지금 씬 주인 칩 + ⏸/▶ · ■ · ⚙ / PL: 내 칩 (+ 내 씬이면 ■) */
  const CSS=`.ctz,.ctz *{color:#eee!important}.ctz .ctl{color:#aaa!important}.ctz .ctc.run i{color:#ffd12e!important}.ctz .ctc.pz i{color:#9ad!important}.ctz .ctc.low i{color:#ffa94d!important}.ctz .ctc.over i{color:#ff5a74!important}
 .ctz{display:flex;align-items:center;gap:4px;font:12px/1.2 var(--font,'IBM Plex Sans KR'),sans-serif}
-.ctim{order:1;flex:none;display:inline-flex;flex-wrap:nowrap;padding:2px 5px;border-radius:8px;background:rgba(12,12,14,.88);border:1px solid rgba(255,255,255,.12)}
+.ctim{order:1;flex:none;display:inline-flex;flex-direction:column;align-items:stretch;gap:3px;padding:3px 5px;border-radius:8px;background:rgba(12,12,14,.88);border:1px solid rgba(255,255,255,.12);max-width:12em}
+.ctim .ctr1{display:flex;min-width:0}.ctim .ctr1 .ctc{flex:1;justify-content:space-between;min-width:0}.ctim .ctr1 .ctc b{max-width:none;flex:1;min-width:0}.ctim .ctr1 .ctl{margin:0 auto}
+.ctim .ctr2{display:flex;gap:3px;justify-content:center;flex-wrap:nowrap}.ctim .ctr2 .ctb{flex:1;text-align:center}
 .ctside{flex:none;flex-wrap:wrap;gap:3px;padding:3px 6px;background:rgba(10,10,12,.82);border-bottom:1px solid rgba(255,255,255,.1);font-size:11px}.ctside .ctc{padding:1px 6px}.ctside .ctc i{font-size:11px}
 .ctz .ctc{display:inline-flex;align-items:center;gap:4px;padding:2px 7px;border-radius:999px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.05);white-space:nowrap;flex:none}
 .ctz .ctc b{font-weight:600;max-width:6.5em;overflow:hidden;text-overflow:ellipsis}
@@ -71,10 +73,10 @@ window.OM_CTIMER=(()=>{
  function sideHtml(T,now){const L=seats();if(!L.length)return '';const G=gm();return `<span class="ctl">⏱</span>${L.map(s=>chip(T,s,now,G)).join('')}`}
  /* ② 내 줄: GM = 지금 씬 주인 + 조작 / PL = 내 시간 (+ 내 씬이면 종료) */
  function barHtml(T,now){const ST=A().ST;const G=gm();
-  if(G){if(!T.run)return `<span class="ctl">⏱ 대기</span><button class="ctb" data-ct="open" title="장면 타이머 설정 · 씬 시작">⚙</button>`;
-   return chip(T,T.run,now,true)+(T.since?`<button class="ctb" data-ct="pause" title="일시 정지">⏸</button>`:`<button class="ctb" data-ct="resume" title="이어서">▶</button>`)+`<button class="ctb endb" data-ct="end" title="이 씬 종료 — 남은 시간이 멈춘다">■</button><button class="ctb" data-ct="open" title="장면 타이머 설정">⚙</button>`}
+  if(G){if(!T.run)return `<div class="ctr1"><span class="ctl">⏱ 대기</span></div><div class="ctr2"><button class="ctb" data-ct="open" title="장면 타이머 설정 · 씬 시작">⚙</button></div>`;
+   return `<div class="ctr1">${chip(T,T.run,now,true)}</div><div class="ctr2">`+(T.since?`<button class="ctb" data-ct="pause" title="일시 정지">⏸</button>`:`<button class="ctb" data-ct="resume" title="이어서">▶</button>`)+`<button class="ctb endb" data-ct="end" title="이 씬 종료 — 남은 시간이 멈춘다">■</button><button class="ctb" data-ct="open" title="장면 타이머 설정">⚙</button></div>`}
   if(ST.role==='seat'&&ST.seat&&seats().includes(ST.seat)){const mine=T.run===ST.seat;const pend=((ST.state.pub||{})[ST.seat]||{}).ctOpen;const waiting=!T.run&&pend&&+pend.at>+(T.runAt||0)&&Date.now()-pend.at<60000;
-   return chip(T,ST.seat,now,false)+(mine?`<button class="ctb endb" data-ct="plend" title="내 씬을 끝내고 시계를 멈춘다${T.pl!==false?' · [씬 종료] 공지':''}">■ 씬 종료</button>`:plOk(T)&&!T.run?`<button class="ctb" data-ct="plopen" ${waiting?'disabled':''} title="내 씬을 연다 — [씬 오픈] 공지 + 내 시계가 흐른다 (GM 화면이 처리)">${waiting?'… 여는 중':'▶ 씬 오픈'}</button>`:'')}
+   const bt=(mine?`<button class="ctb endb" data-ct="plend" title="내 씬을 끝내고 시계를 멈춘다${T.pl!==false?' · [씬 종료] 공지':''}">■ 씬 종료</button>`:plOk(T)&&!T.run?`<button class="ctb" data-ct="plopen" ${waiting?'disabled':''} title="내 씬을 연다 — [씬 오픈] 공지 + 내 시계가 흐른다 (GM 화면이 처리)">${waiting?'… 여는 중':'▶ 씬 오픈'}</button>`:'');return `<div class="ctr1">${chip(T,ST.seat,now,false)}</div>${bt?`<div class="ctr2">${bt}</div>`:''}`}
   return ''}
  let LAST='',WARN={},OPENING=0;
  function beep(f){try{const C=window.AudioContext||window.webkitAudioContext;const c=new C();const o=c.createOscillator(),g=c.createGain();o.type='triangle';o.frequency.value=f||880;g.gain.setValueAtTime(.0001,c.currentTime);g.gain.exponentialRampToValueAtTime(.15,c.currentTime+.02);g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+.5);o.connect(g).connect(c.destination);o.start();o.stop(c.currentTime+.55);setTimeout(()=>c.close(),900)}catch(e){}}
