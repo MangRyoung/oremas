@@ -17,13 +17,13 @@ window.OM_CTIMER=(()=>{
  function fmt(ms){const neg=ms<0;let s=Math.ceil(Math.abs(ms)/1000);if(neg)s=Math.floor(Math.abs(ms)/1000);const m=Math.floor(s/60);return (neg?'+':'')+m+':'+String(s%60).padStart(2,'0')}
  const clone=T=>JSON.parse(JSON.stringify(T||{}));
  function commit(T,now){if(T.run&&T.since){T.bank=T.bank||{};T.bank[T.run]=rem(T,T.run,now);T.since=0}return T}
- async function save(T,log){T.at=Date.now();const ok=await A().set(['rp','ctimer'],T);if(ok!==false&&log)A().sysLog('⏱ '+log);return ok}
+ async function save(T,log,sec){T.at=Date.now();const ok=await A().set(['rp','ctimer'],T);if(ok!==false&&log)A().sysLog('⏱ '+log,'sys',sec?{sec}:undefined);return ok}   /* 11-13 sec: 로그 구역(씬) 표시 — 로그 저장 「씬 · 배틀 구역」 */
  /* ---------- 동작 (GM) ---------- */
- async function start(s){const now=Date.now();const T=commit(clone(T0()||{on:true,base:30,bank:{}}),now);const prev=T.run&&T.run!==s?T.run:'';T.on=true;if(T.fresh&&T.run!==s){T.bank=T.bank||{};T.bank[s]=baseMs(T)}T.run=s;T.since=now;T.runAt=now;   /* 11-13 fresh: 씬마다 기본 시간으로 새로 */
-  return save(T,`${prev?`${nameOf(prev)} 씬 멈춤(남은 ${fmt(rem(T,prev,now))}) → `:''}${nameOf(s)} 씬 시작 — 남은 ${fmt(rem(T,s,now))}`)}
+ async function start(s,o){o=o||{};const now=Date.now();const T=commit(clone(T0()||{on:true,base:30,bank:{}}),now);const prev=T.run&&T.run!==s?T.run:'';T.on=true;if(T.fresh&&T.run!==s){T.bank=T.bank||{};T.bank[s]=baseMs(T)}T.run=s;T.since=now;T.runAt=now;   /* 11-13 fresh: 씬마다 기본 시간으로 새로 */
+  return save(T,`${prev?`${nameOf(prev)} 씬 멈춤(남은 ${fmt(rem(T,prev,now))}) → `:''}${nameOf(s)} 씬 시작 — 남은 ${fmt(rem(T,s,now))}`,o.noSec?null:{k:'scene',op:'open',n:nameOf(s)})}
  async function pause(){const T=clone(T0());if(!T.run||!T.since)return;commit(T,Date.now());return save(T,`일시 정지 — ${nameOf(T.run)} 남은 ${fmt(rem(T,T.run))}`)}
  async function resume(){const T=clone(T0());if(!T.run||T.since)return;T.since=Date.now();return save(T,`다시 흐름 — ${nameOf(T.run)}`)}
- async function end(byPl){const T=clone(T0());if(!T.run)return;const s=T.run;commit(T,Date.now());T.run='';T.since=0;return save(T,`${nameOf(s)} 씬 종료${byPl?' (본인)':''} — 남은 ${fmt(rem(T,s))}`)}
+ async function end(byPl){const T=clone(T0());if(!T.run)return;const s=T.run;commit(T,Date.now());T.run='';T.since=0;return save(T,`${nameOf(s)} 씬 종료${byPl?' (본인)':''} — 남은 ${fmt(rem(T,s))}`,byPl&&T.pl!==false?null:{k:'scene',op:'close'})}
  async function adj(s,d){const now=Date.now();const T=commit(clone(T0()||{on:true,base:30,bank:{}}),now);T.bank=T.bank||{};T.bank[s]=rem(T,s,now)+d;if(T.run===s&&T0()&&T0().since)T.since=now;return save(T,`${nameOf(s)} ${d>0?'+':'−'}${Math.abs(d/60000)}분 → ${fmt(T.bank[s])}`)}
  async function fill(min){min=Math.max(1,Math.min(600,+min||30));const T=clone(T0()||{});T.on=true;T.base=min;T.bank={};for(const s of seats())T.bank[s]=min*60000;T.run='';T.since=0;return save(T,`장면 타이머 — 모두 ${min}분으로 채움`)}
  async function setOn(on){const T=clone(T0()||{base:30,bank:{}});if(!on)commit(T,Date.now());T.on=!!on;if(!on){T.run='';T.since=0}return save(T,on?'장면 타이머 켬':'장면 타이머 끔')}
@@ -87,7 +87,7 @@ window.OM_CTIMER=(()=>{
   if(gm()&&T.run){const p=((app.ST.state.pub||{})[T.run]||{}).ctEnd;if(p&&+p.run===+(T.runAt||0)&&!WARN['e'+T.runAt]){WARN['e'+T.runAt]=1;const who=T.run;end(true).then(()=>{if(T.pl!==false)notice('n_end','씬 종료',`${nameOf(who)}`)})}}
   if(gm()&&plOk(T)&&T.run)rpApply(T);
   /* 11-13: 좌석의 「씬 오픈」 요청 — 아무 씬도 안 흐를 때만, 요청마다 한 번 */
-  if(gm()&&plOk(T)&&!T.run&&!OPENING){const P=app.ST.state.pub||{};for(const s of seats()){const q=(P[s]||{}).ctOpen;if(!q||!q.at||+q.at<=+(T.runAt||0)||+q.at<=+(T.at||0)-1000||WARN['o'+q.at])continue;WARN['o'+q.at]=1;OPENING=1;(async()=>{try{await notice('n_open','씬 오픈',`${nameOf(s)}`);await start(s)}finally{OPENING=0}})();break}}
+  if(gm()&&plOk(T)&&!T.run&&!OPENING){const P=app.ST.state.pub||{};for(const s of seats()){const q=(P[s]||{}).ctOpen;if(!q||!q.at||+q.at<=+(T.runAt||0)||+q.at<=+(T.at||0)-1000||WARN['o'+q.at])continue;WARN['o'+q.at]=1;OPENING=1;(async()=>{try{await notice('n_open','씬 오픈',`${nameOf(s)}`);await start(s,{noSec:1})}finally{OPENING=0}})();break}}
   }
 
   {const old=stage&&stage.querySelector(':scope>#ctim');if(old)old.remove();const old2=document.querySelector('#rpunder>#ctim');if(old2)old2.remove()}
