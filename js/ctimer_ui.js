@@ -35,6 +35,16 @@ window.OM_CTIMER=(()=>{
  const NT=(id,nm)=>{const L=((A().ST.state.rp||{}).notices||[]);return L.find(n=>n&&n.id===id)||L.find(n=>n&&(n.name===nm||n.title===nm))||{id,name:nm,title:nm,ment:'',color:id==='n_open'?'#5fd38d':'#ff6b6b'}};
  async function notice(id,nm,sub){const R=window.OM_RP_UI;if(R&&R.fireNotice)return R.fireNotice(NT(id,nm),sub);await A().sysLog(`[${nm}] ${sub||''}`.trim())}
  async function plEnd(){const ST=A().ST,T=T0();if(ST.role!=='seat'||!T||T.run!==ST.seat)return;if(await A().set(['pub',ST.seat,'ctEnd'],{run:T.runAt||0,at:Date.now()}))A().toast('씬 종료를 알렸다 — 내 시계가 멈춘다')}
+ /* ---------- 11-13 21:47 망령 「씬의 주인인 PL 은 배경 · BGM · RP 맵도 바꿀 수 있게」 ----------
+    좌석은 rp 를 못 쓴다 → 씬 주인 좌석이 rp.bg · bgm · map(· recentBg/Bgm)에 쓰려 하면 OM_APP.set 을 가로채 pub.<좌석>.rpReq 줄에 적고,
+    GM 화면이 지금 씬 주인의 요청만(이 화면을 연 뒤 것만) 차례로 대신 쓴다. 씬이 끝나면 더는 안 받는다. */
+ const RPK=['bg','bgm','map','recentBg','recentBgm'];const LOADAT=Date.now();const RDONE=new Set();let RBUSY=0;
+ function hookSet(){const app=A();if(!app||!app.set||app.set._ctw)return;const orig=app.set;
+  const w=function(path,value){try{const ST=app.ST,T=T0();if(ST&&ST.role==='seat'&&ST.seat&&Array.isArray(path)&&path[0]==='rp'&&RPK.includes(path[1])&&plOk(T)&&T.run===ST.seat){
+     const cur=((((ST.state.pub||{})[ST.seat])||{}).rpReq)||[];const now=Date.now();const L=[...cur.filter(x=>x&&now-(+x.at||0)<120000),{id:now.toString(36)+Math.random().toString(36).slice(2,6),p:path,v:value===undefined?null:value,at:now}].slice(-12);
+     return orig.call(this,['pub',ST.seat,'rpReq'],L)}}catch(e){console.warn('ctimer hook',e)}return orig.apply(this,arguments)};w._ctw=1;w._orig=orig;app.set=w}
+ async function rpApply(T){if(RBUSY||!T.run)return;const app=A();const q=((((app.ST.state.pub||{})[T.run])||{}).rpReq)||[];const todo=q.filter(x=>x&&x.id&&!RDONE.has(x.id)&&+x.at>=LOADAT-3000&&+x.at>=+(T.runAt||0)&&Array.isArray(x.p)&&x.p[0]==='rp'&&RPK.includes(x.p[1]));if(!todo.length)return;
+  RBUSY=1;try{for(const x of todo){RDONE.add(x.id);await app.set(x.p,x.v)}}catch(e){console.warn('ctimer rpApply',e)}finally{RBUSY=0}}
  /* ---------- 그리기 ---------- */
  /* 11-11 07:52 망령 「내 줄에 다 넣으면 한 줄 늘어난다 — 모두의 남은 시간은 오른쪽 채팅창 위(게시판 아래) 여백에, 내 줄엔 지금 씬 주인 · GM 에게 본인 시간과 조작만」
     → 두 칸: ① 채팅창 머리(.side .phone .pbar 바로 아래) .ctside = 모두의 칩 한 줄(넘치면 옆으로 밀기) ② 내 줄(.mebar) .ctim = GM: 지금 씬 주인 칩 + ⏸/▶ · ■ · ⚙ / PL: 내 칩 (+ 내 씬이면 ■) */
@@ -68,7 +78,16 @@ window.OM_CTIMER=(()=>{
   return ''}
  let LAST='',WARN={},OPENING=0;
  function beep(f){try{const C=window.AudioContext||window.webkitAudioContext;const c=new C();const o=c.createOscillator(),g=c.createGain();o.type='triangle';o.frequency.value=f||880;g.gain.setValueAtTime(.0001,c.currentTime);g.gain.exponentialRampToValueAtTime(.15,c.currentTime+.02);g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+.5);o.connect(g).connect(c.destination);o.start();o.stop(c.currentTime+.55);setTimeout(()=>c.close(),900)}catch(e){}}
- function tick(){try{const app=A();if(!app||!app.ST||!app.ST.room)return;const stage=document.getElementById('rpstage');const T=T0();
+ function tick(){try{const app=A();if(!app||!app.ST||!app.ST.room)return;hookSet();const stage=document.getElementById('rpstage');const T=T0();
+  /* GM 처리(좌석 요청)는 GM 이 배틀 화면에 있어도 돈다 */
+  if(T&&T.on){
+  /* GM: 좌석의 「내 씬 종료」 요청을 대신 처리 */
+  if(gm()&&T.run){const p=((app.ST.state.pub||{})[T.run]||{}).ctEnd;if(p&&+p.run===+(T.runAt||0)&&!WARN['e'+T.runAt]){WARN['e'+T.runAt]=1;const who=T.run;end(true).then(()=>{if(T.pl!==false)notice('n_end','씬 종료',`${nameOf(who)}`)})}}
+  if(gm()&&plOk(T)&&T.run)rpApply(T);
+  /* 11-13: 좌석의 「씬 오픈」 요청 — 아무 씬도 안 흐를 때만, 요청마다 한 번 */
+  if(gm()&&plOk(T)&&!T.run&&!OPENING){const P=app.ST.state.pub||{};for(const s of seats()){const q=(P[s]||{}).ctOpen;if(!q||!q.at||+q.at<=+(T.runAt||0)||+q.at<=+(T.at||0)-1000||WARN['o'+q.at])continue;WARN['o'+q.at]=1;OPENING=1;(async()=>{try{await notice('n_open','씬 오픈',`${nameOf(s)}`);await start(s)}finally{OPENING=0}})();break}}
+  }
+
   {const old=stage&&stage.querySelector(':scope>#ctim');if(old)old.remove();const old2=document.querySelector('#rpunder>#ctim');if(old2)old2.remove()}
   const bar=stage&&document.querySelector('#rpu_me .mebar');let box=bar&&bar.querySelector('.ctim');
   const phone=document.querySelector('.side .phone');let sbox=phone&&phone.querySelector(':scope>.ctside');
@@ -80,10 +99,6 @@ window.OM_CTIMER=(()=>{
   if(T.run&&T.since){const r=rem(T,T.run,now);const k=T.run+':'+(T.runAt||0);const me=gm()||app.ST.seat===T.run;
    if(r<=60000&&r>0&&!WARN[k+'w']){WARN[k+'w']=1;if(me){app.toast(`⏱ ${nameOf(T.run)} — 1분 남음`);beep(660)}}
    if(r<=0&&!WARN[k+'o']){WARN[k+'o']=1;if(me){app.toast(`⏱ ${nameOf(T.run)} — 시간 종료 (넘친 시간을 센다)`);beep(880);setTimeout(()=>beep(880),350)}}}
-  /* GM: 좌석의 「내 씬 종료」 요청을 대신 처리 */
-  if(gm()&&T.run){const p=((app.ST.state.pub||{})[T.run]||{}).ctEnd;if(p&&+p.run===+(T.runAt||0)&&!WARN['e'+T.runAt]){WARN['e'+T.runAt]=1;const who=T.run;end(true).then(()=>{if(T.pl!==false)notice('n_end','씬 종료',`${nameOf(who)}`)})}}
-  /* 11-13: 좌석의 「씬 오픈」 요청 — 아무 씬도 안 흐를 때만, 요청마다 한 번 */
-  if(gm()&&plOk(T)&&!T.run&&!OPENING){const P=app.ST.state.pub||{};for(const s of seats()){const q=(P[s]||{}).ctOpen;if(!q||!q.at||+q.at<=+(T.runAt||0)||+q.at<=+(T.at||0)-1000||WARN['o'+q.at])continue;WARN['o'+q.at]=1;OPENING=1;(async()=>{try{await notice('n_open','씬 오픈',`${nameOf(s)}`);await start(s)}finally{OPENING=0}})();break}}
  }catch(e){console.warn('ctimer',e)}}
  function onClick(e){const b=e.target.closest('[data-ct]');if(!b)return;e.stopPropagation();const k=b.dataset.ct;
   if(k==='plend')return plEnd();if(k==='plopen')return plOpen();if(!gm())return;
