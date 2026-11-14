@@ -305,7 +305,7 @@ window.OM_BATTLE_UI=(()=>{
  function powStepOf(mv){const m=String((mv||{}).eff||'').match(/명중할\s*때\s*마다\s*위력이\s*「?\s*(\d+)\s*」?\s*씩\s*증가/);return m?+m[1]:0}
  function specialPowFor(name,atk){const k=SPMAP[String(name||'').trim()];if(!k)return null;
   const sv=(m,k)=>+B().statValue(m,k).value||0;   /* statValue 는 {value,rank,…} 를 돌려준다 — 숫자만 */
-  const spd=m=>{let v=sv(m,'speed');if((m.states||{}).Paralysis)v=v/2;return v};const ladder=(x,steps,start)=>{let p=start;for(const [t,v] of steps)if(x>t)p=v;return p};
+  const spd=m=>{let v=sv(m,'speed');if((m.states||{}).Paralysis&&!(B().calcSt&&B().calcSt(m,'ParaSpeed')))v=v/2;return v};const ladder=(x,steps,start)=>{let p=start;for(const [t,v] of steps)if(x>t)p=v;return p};
   const hpR=m=>m.hp.max>0?m.hp.cur/m.hp.max:0;
   if(k==='mag'){const r=1+Math.floor(Math.random()*256);let p=10;for(const [t,v] of [[25,30],[76,50],[153,70],[204,90],[229,110],[242,150]])if(r>=t)p=v;return ()=>({pow:p,note:`변칙 위력 ${name}: 판정 ${r}/256 → 위력 ${p}`})}
   if(k==='present'){const r=1+Math.floor(Math.random()*100);const p=r>90?120:r>60?80:r>20?40:null;return ()=>p?{pow:p,note:`변칙 위력 ${name}: 판정 ${r} → 위력 ${p}`}:{pow:0,fixed:1,note:`변칙 위력 ${name}: 판정 ${r} → 대상 HP 1/2 회복 (손으로)`}}

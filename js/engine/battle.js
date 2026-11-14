@@ -25,6 +25,15 @@ window.OM_BATTLE=(()=>{
   return {value:base*rv*m,rank:r,rankMult:rv,mod:m}}
 
  const has=(mon,st)=>!!((mon.states||{})[st]);
+ /* 11-14 망령 「근성 · 초근성류처럼 반감 무시 적용하는 것들은 알아서 해당 상태 되게 · 마비 스피드 감소 무시 · 혼란 자해 무시도」:
+    계산용 상태 — 토큰(손으로 붙인 것)이 있거나, 특성이 그 효과를 주면(특성 파괴면 꺼짐) 붙은 것으로 본다.
+    Guts 화상 반감 무시(근성 · 열폭주 · 초근성) · ParaSpeed 마비 스피드 반감 무시(속보 · 초근성) · NoSelfHit 혼란 자해 무시(초근성) */
+ const CALC_AB={Guts:/^(?:근성|열폭주|초근성)$/,ParaSpeed:/^(?:속보|초근성)$/,NoSelfHit:/^(?:초근성)$/};
+ const ALL_ABN=/상태\s*이상의\s*효과를\s*받지\s*않는다/;
+ const CALC_TX={Guts:/「화상」[^.②③④]{0,30}(?:반감|디메리트)[^.②③④]{0,20}무시/,ParaSpeed:/「마비」[^.②③④]{0,30}(?:속도|스피드)[^.②③④]{0,20}(?:반감|감소)[^.②③④]{0,15}무시/,NoSelfHit:/「혼란」[^.②③④]{0,30}자해[^.②③④]{0,15}(?:무시|받지\s*않)/};
+ function calcSt(mon,k){if(!mon||!CALC_AB[k])return '';if(has(mon,k))return '상태';if(has(mon,'TraitBroken'))return '';
+  const n=String(mon.ability||'').replace(/[『』「」\s]/g,'');if(CALC_AB[k].test(n))return n;
+  const t=String(mon.abilityEff||'');if(CALC_TX[k].test(t)||ALL_ABN.test(t))return n||'특성';return ''}
 
  /* ----- 행동 순서 (get_turn_order) -----
     mons: 등장한 포켓몬 배열 [{mon, cmd}], cmd = {change, priorityMap:{slot:n}, orderMap:{slot:n}}  (다른 포켓몬의 지시가 내 칸에 넣은 값도 합산)
@@ -39,7 +48,7 @@ window.OM_BATTLE=(()=>{
     const pc=cmd.priorityMap&&cmd.priorityMap[slot];if(pc!=null&&pc!=='')prio+=+pc}
    prio+=+(e.prioMod||0);
    let spd=statValue(mon,'speed',{mod:((mon.mod||{}).speed||1)*(e.scarf?1.5:1)*(e.tailwind?2:1)*(e.swamp?0.25:1)*(+e.spMul||1)}).value;   /* spMul: 날씨 · 필드 조건 스피드 특성 (10-26) */
-   if(has(mon,'Paralysis'))spd*=(+C().campaign.value_paralysis||0.5);
+   if(has(mon,'Paralysis')&&!calcSt(mon,'ParaSpeed'))spd*=(+C().campaign.value_paralysis||0.5);
    if(field.trick)spd*=-1;
    return {slot,mon,started:e.started?1:0,change:(e.cmd&&e.cmd.change)?1:0,order,prio,speed:spd,dice:d(opts,10000)}});
   /* 맵툴 json.sort "d" = 내림차순: started 1(턴 개시 때 필드에 있던 포켓몬)이 먼저, 턴 도중 등장(0, 「교대 등장」)은 뒤 */
@@ -84,7 +93,7 @@ window.OM_BATTLE=(()=>{
   const P0=+o.power||+move.pow||0,PM=(o.helping?(+o.helping>1?+o.helping:1.5):1)*free1*free2*item1*item2*(o.charge?2:1)*trait*(o.watersport?0.5:1)*(o.mudsport?0.5:1)*num(o.powerBoost,1);
   /* 10-27 망령: 「명중할 때 마다 위력이 N 씩 증가」(트리플악셀 · 트리플킥) — powStep: k 번째로 맞은 타의 위력 = 위력 + N×k (빗나가면 멈추니 맞은 순서 = 타 순서) */
   const step=num(o.powStep,0);let P=P0*PM;
-  const burn=(cat==='physical'&&has(atk,'Burn')&&!(has(atk,'Guts')||o.burnGuts))?0.5:1;
+  const burn=(cat==='physical'&&has(atk,'Burn')&&!(calcSt(atk,'Guts')||o.burnGuts))?0.5:1;
   const M=burn*(o.multiTarget?0.75:1)*weather*num(o.fieldMul,1);
   let wall=1;const ws=o.wallSize>=2?0.667:0.5;const w=o.wall||{};
   if((cat==='physical'&&w.reflector)||(cat==='special'&&w.lightscreen)||w.aurora||w.icewall)wall=ws;   /* 10-25 망령: 얼음의장벽은 「기술로 받을 대미지」 — 물리 · 특수 둘 다 */
@@ -100,12 +109,12 @@ window.OM_BATTLE=(()=>{
    const Pc=crit?Pk*rev:Pk;
    const av=statValue(atk,atkStat,{ignore:crit&&(o.ignoreAtk===1||o.ignoreAtk===4||o.ignoreAtk===5)?-1:o.ignoreAtk,/* 10-26 점검: 급소는 공격 측 하락만 이미 지우므로 하락 코드만 버린다 (전엔 상승 코드를 버려 천진류가 급소에 무력했다) */rank:crit&&+((atk.rank||{})[atkStat]||0)<0?0:undefined,mod:crit&&+((atk.mod||{})[atkStat]||1)<1?1:undefined});
    let A=av.value*(o.scarf&&atkStat==='speed'?1.5:1);
-   if(has(atk,'Paralysis')&&atkStat==='speed')A*=(+C().campaign.value_paralysis||0.5);
+   if(has(atk,'Paralysis')&&atkStat==='speed'&&!calcSt(atk,'ParaSpeed'))A*=(+C().campaign.value_paralysis||0.5);
    /* 원더룸: 방어·특방 실수치만 맞바꾸고 랭크·배율은 원래 능력 것을 쓴다 */
    const wS=o.wonder&&(defStat==='defense'||defStat==='specialdefense')?(defStat==='defense'?'specialdefense':'defense'):defStat;
    const dv=statValue(def,wS,{ignore:crit?(o.ignoreDef==null||o.ignoreDef===-1?0:o.ignoreDef===3?0:o.ignoreDef===1?7:o.ignoreDef===4?6:o.ignoreDef===5?0:o.ignoreDef===8?7:o.ignoreDef):o.ignoreDef,/* 급소: 방어 측 상승은 늘 무시 + 호출자가 준 무시를 합친다 */rank:+((def.rank||{})[defStat]||0),mod:((def.mod||{})[defStat]||1)*(o.choiceDef?1.5:1)*(o.tailwindDef&&defStat==='speed'?2:1)*(o.swampDef&&defStat==='speed'?0.25:1)});
    /* 11-07 망령 「급소가 방어강화를 못 뚫는다 — 급소는 열매 반감 빼곤 방호를 다 뚫는다」: 받는 쪽 능력 배율(날씨 · 창에 넣은 방어 배율) ×1 초과도 급소면 버린다 */
-   let D=dv.value*(crit?Math.min(1,num(o.defMul,1)):num(o.defMul,1));if(has(def,'Paralysis')&&defStat==='speed')D*=(+C().campaign.value_paralysis||0.5);
+   let D=dv.value*(crit?Math.min(1,num(o.defMul,1)):num(o.defMul,1));if(has(def,'Paralysis')&&defStat==='speed'&&!calcSt(def,'ParaSpeed'))D*=(+C().campaign.value_paralysis||0.5);
    const wallCur=crit?1:wall;
    const base=floor(floor(L*Pc*A/50)/D)*(M*wallCur)+2;
    let m2=1;if(crit)m2*=critValue;if(o.lifeOrb)m2*=1.3;
@@ -195,5 +204,5 @@ window.OM_BATTLE=(()=>{
  /* ----- 연속기 횟수 (attack_target_once) ----- */
  function multiHits(move,o){o=o||{};const mx=+move.max||1,mn=Math.min(mx,Math.max(+move.min||1,mx>(+move.min||1)?(+o.min||0):0));if(mx<=1)return 1;if(o.skillLink)return mx;return mn+Math.floor(rng(o)()*(mx-mn+1))}   /* o.min: 속임수주사위 같은 최소 횟수 (범위 연속기만 · 최대를 넘지 않음) */
 
- return {STATS,RANKED,statValue,turnOrder,accuracy,critical,critStage,damage,effectiveness,hpDamage,hpDamageHits,turnEnd,multiHits,FRAC};
+ return {STATS,RANKED,calcSt,statValue,turnOrder,accuracy,critical,critStage,damage,effectiveness,hpDamage,hpDamageHits,turnEnd,multiHits,FRAC};
 })();
