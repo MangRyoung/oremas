@@ -209,9 +209,11 @@ async function runBattle(W,opt){
   if(H.cards){const MJ=['Sleep','Paralysis','Freeze','Burn','Toxic','Poison'];const m=active('left').find(x=>MJ.some(k=>(x.states||{})[k]));if(m&&FG.cardTake(H,'cure',turn,m.tid)){const nb0=FN.snap(),nb=FN.snap(nb0);const x=nb.mons[m.id];if(x){x.states=Object.assign({},x.states);for(const k of MJ)delete x.states[k];await FN.saveBattle(nb0,nb)}}}
   /* 1. 지시 */
   const acts=[];const plans={left:new Map(),right:new Map()};const cmds={};
-  for(const sd of ['left','right']){const J=AI(sd)&&!['D','wild'].includes(polOf(active(sd)[0]||{tid:''}))?chooseJoint(sd):null;
+  /* 11-14 망령 「D 도 완전 저능아는 아니야 — C 랑 비슷한데 종종 실수」: 새 로직에서 D 는 C 처럼 두되, 트레이너마다 턴마다 DERR(기본 1/4) 확률로 「실수 턴」 — 그 턴은 필드의 한 마리가 옛 D 로직(눈앞 상대에게 세 보이는 공격)으로 고름. DSLIPALL=1 이면 트레이너 전체가 옛 D 로직(4식 포함) */
+  const DERR=process.env.DERR!=null?+process.env.DERR:0.25;const SLIP={};const SLIPM={};for(const tid of Object.keys(C().trainers))if(POLS[tid]==='D'&&rng()<DERR){SLIP[tid]=1;if(process.env.DSLIPALL)continue;const mm=Object.values(C().mons).filter(x=>x.tid===tid&&x.hp.cur>0&&x.entry!=null&&active(T(tid).side).includes(x));if(mm.length)SLIPM[mm[Math.floor(rng()*mm.length)].id]=1}
+  for(const sd of ['left','right']){const p0=active(sd)[0]||{tid:''};const J=AI(sd)&&polOf(p0)!=='wild'&&!(polOf(p0)==='D'&&SLIP[p0.tid]&&process.env.DSLIPALL)?chooseJoint(sd):null;
    for(const m of active(sd)){const sw=wantSwitch(sd,m);if(sw){acts.push({sd,m,sw});continue}let a=null;
-    if(J&&J.has(m.id)){const j=J.get(m.id);a=j;if(!j.prot&&!(m.states||{}).Taunt&&!process.env.NOSTAT){const sp=statusPlan(sd,m,polOf(m),foes(sd),j);if(sp&&sp.score>(j.v/Math.max(1,j.tg.hp.cur)))a={mv:sp.mv,tg:sp.tg,v:0,status:sp.why}}}else a=choose(sd,m,plans[sd]);
+    if(J&&J.has(m.id)&&!SLIPM[m.id]){const j=J.get(m.id);a=j;if(!j.prot&&!(m.states||{}).Taunt&&!process.env.NOSTAT){const sp=statusPlan(sd,m,polOf(m),foes(sd),j);if(sp&&sp.score>(j.v/Math.max(1,j.tg.hp.cur)))a={mv:sp.mv,tg:sp.tg,v:0,status:sp.why}}}else a=choose(sd,m,plans[sd]);
     if(a)acts.push(Object.assign({sd,m},a))}}
   for(const a of acts){const tid=a.m.tid;cmds[tid]=cmds[tid]||{mons:{}};if(a.sw)cmds[tid].mons[a.m.id]={move:'switch',switch:a.sw.id,targets:[]};else{const tg=a.tg?[a.tg.side+'_'+a.tg.entry]:[];const r=String(a.mv.range||'');const dt=FN.defaultTargets(C(),a.m.id,String(a.mv._i));
    const targets=r==='1체'||r===''?tg:dt.length?dt:tg;cmds[tid].mons[a.m.id]={move:a.mv._i,targets};a.targets=targets}}
@@ -225,7 +227,7 @@ async function runBattle(W,opt){
    else if(pol==='C'){const th=mine.map(m=>Object.assign(topThreat('C',m),{m})).filter(x=>x.mv&&x.v>=x.m.hp.cur*0.6).sort((a,c)=>c.v/c.m.hp.cur-a.v/a.m.hp.cur)[0];const tired=mine.filter(m=>m.hp.cur<m.hp.max*0.4)[0];
     let done=false;if(th)done=await fire(tid,th.m.id,'command',th.mv.cat==='특수'?'specialdefense':'defense');if(!done&&tired)done=await fire(tid,tired.id,'command','heal');if(!done&&myActs.length){const a=myActs.sort((x,y)=>y.v-x.v)[0];await fire(tid,a.m.id,'command',a.mv.cat==='특수'?'specialattack':'attack')}}
    /* 4식: 위험한 아이 하나 (D 35% · C 45% · B 본 위협 ≥ HP · A 그리고 60%) — 위협이 필중기면 버텨라 */
-   if(AI(t.side)){await ordersNew(tid,pol,mine,acts);continue}
+   if(AI(t.side)){await ordersNew(tid,pol==='D'&&!(SLIP[tid]&&process.env.DSLIPALL)?'C':pol,mine,acts);continue}
    for(const m of mine){if(acts.some(a=>a.m===m&&a.sw))continue;const threat=topThreat(pol==='D'?'C':pol,m);const ratio=m.hp.cur/m.hp.max;
     const need=pol==='D'?ratio<0.35:pol==='C'?ratio<0.45:pol==='B'?(threat.mv&&threat.v>=m.hp.cur):(threat.mv&&threat.v>=m.hp.cur&&ratio<0.6);if(!need)continue;
     const ks=ordKeys(T(tid));const cat=threat.mv?threat.mv.cat:'';const sure=isSure(threat.mv);const k=!sure&&cat==='물리'&&ks.includes('retreat')?'retreat':!sure&&cat==='특수'&&ks.includes('dodge')?'dodge':ks.includes('endure')?'endure':null;if(!k)continue;
