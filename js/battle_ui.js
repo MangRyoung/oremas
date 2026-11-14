@@ -962,11 +962,17 @@ window.OM_BATTLE_UI=(()=>{
    if(sw2.length){const to=mo=>{const k=I.keyOf(mo)||{};const id=k.st||(I.SEC[mo.id]||{}).switch||((((b.cmds||{})[mo.tid]||{}).mons||{})[mo.id]||{}).switch;return (b.mons||{})[id]||null};
     await A().set(['battle','swOut'],SO.concat(sw2.map(s=>s.mon.id)));cutPhase('교대',sw2.map(s=>s.mon.name).join(' · '));
     A().sysLog(`【교대 알림 · 추가】\n${sw2.map(s=>{const w=to(s.mon);return `${TN(s.mon.tid)} — ${String(s.mon.entry).toUpperCase()} ${s.mon.name} ⇄ ${w?w.name:'?'}`}).join('\n')}\n교대를 마치면 「턴 진행 ▶」`,'battle',{rv:sw2.map(s=>{const w=to(s.mon);return {tr:TN(s.mon.tid),mid:s.mon.id,name:s.mon.name,img:s.mon.image||'',side:s.mon.side,area:String(s.mon.entry||'').toUpperCase(),sw:{name:w?w.name:'(교대 대상 미정)',img:w?w.image||'':''}}}),rvx:['교대를 마치면 「턴 진행 ▶」']});return}
-   const still=SO.map(id=>(b.mons||{})[id]).filter(m=>m&&m.entry&&m.hp&&m.hp.cur>0&&!(b.swPur||[]).length);
-   if(still.length&&!(await askYes(`${still.map(m=>m.name).join(' · ')} — 교대 알림에 들었는데 아직 교대하지 않았다.\n교대를 마친 뒤 진행하는 게 원칙이다 (행동 순서는 교대가 끝난 필드로 정한다).`,'그대로 진행','기다린다')))return}
+   }
   /* 11-14: 교대 때 따라가때리기 차례(swPur)를 아직 처리하지 않았으면 묻는다 — 그대로 가면 교대가 끝난 뒤 평소 차례로 행동한다 */
   if(st===1&&(b.swPur||[]).length){const left=(b.swPur||[]).filter(mid=>{const m=(b.mons||{})[mid];const lm=m&&m.lastMove;return m&&m.entry&&m.hp&&m.hp.cur>0&&!(lm&&+lm.turn===(+b.turn||0))});
    if(left.length&&!(await askYes(`${left.map(mid=>(b.mons[mid]||{}).name||'?').join(' · ')} — 교대하려는 상대를 노린 따라가때리기를 아직 하지 않았다.\n행동 순서 「다음 행동 ▶」(또는 초상)으로 공격 창을 열어 먼저 처리한다.\n그대로 진행하면 교대가 끝난 뒤 평소 차례로 행동한다 (따라가때리기 없이).`,'그대로 진행','기다린다')))return}
+  /* 11-14 망령 「동시에 통상 교대를 할 경우 동시 교대 처리 — 서로 나갔다 들어온 다음 퇴장과 등장을 순서대로」: 교대 알림에 든 포켓몬 중 아직 안 바꾼 것은 여기서 한꺼번에 —
+     모두 나가고 모두 들어온 뒤 → 퇴장 계기(나간 쪽 스피드 순) → 등장 효과(들어온 쪽 스피드 순, autoEntryAll). 교대 대상을 모르는 것만 묻는다 */
+  if(st===1){const SO=(b.swOut||[]).map(id=>(b.mons||{})[id]).filter(m=>m&&m.entry&&m.hp&&m.hp.cur>0);
+   if(SO.length){const tgt=mo=>{const k=I.keyOf(mo)||{};const id=k.st||(I.SEC[mo.id]||{}).switch||((((b.cmds||{})[mo.tid]||{}).mons||{})[mo.id]||{}).switch;const w=(b.mons||{})[id];return w&&!w.entry&&w.hp&&w.hp.cur>0&&w.tid===mo.tid?w:null};
+    const P=SO.map(m=>({out:m,in:tgt(m)}));const miss=P.filter(x=>!x.in);
+    if(miss.length&&!(await askYes(`${miss.map(x=>x.out.name).join(' · ')} — 교대 알림에 들었는데 바꿀 포켓몬을 모른다 (지시에 교대 대상이 없다).\n손으로 교대한 뒤 「턴 진행 ▶」을 누르거나, 그대로 진행하면 이 포켓몬은 교대하지 않는다.`,'그대로 진행','기다린다')))return;
+    const go=P.filter(x=>x.in);if(go.length){await simulSwitch(go.map(x=>({out:x.out.id,in:x.in.id,area:x.out.entry})));return}}}
   if(st<2){let tids=Object.keys(I.PRE).filter(t=>(b.trainers||{})[t]);
    /* 10-31 망령 「4식 · 6령 쓰는 방식이 시뮬과 다르다 — 꼭 고쳐」: 선행 입력한 지령(6령)은 턴 개시 때 저절로 「선행 발동」 (시뮬과 같다 — 시뮬은 지시 때 정한 지령을 그 자리에서 건다).
       횟수는 이미 턴 개시에서 깎였으니 효과만 건다. 4식은 맞을 때 공격 창이 쓰고(버텨라 · 피해라 …), 선행 포텐셜 · 「턴 개시」 4식은 그대로 「포텐셜 발동」에서 */
@@ -1216,7 +1222,7 @@ window.OM_BATTLE_UI=(()=>{
   /* 배턴터치 받기 */
   {const nb0=snap(),nb=snap(nb0);const t=nb.trainers[m.tid];if(t&&t.batton&&t.batton.from!==m.name){const L=applyBatton(nb,nb.mons[mid]);await saveMon(nb0.mons[mid],mid,nb.mons[mid]);await A().set(['battle','trainers',m.tid,'batton'],null);if(L.length)A().sysLog(L.join('\n'),'battle');stLog(nb0.mons[mid],nb.mons[mid],{n:t.batton.from||'',s:'배턴터치'},300)}}   /* 11-01 망령 「상태 변화도 효과 로그」: 넘겨받은 상태도 카드로 */
   /* 11-09 감우 56: 교대로 나간 포켓몬의 【퇴장】 (들어온 아군 · 정면을 고른다) / 빈자리로 나왔으면 그 자리를 떠난 아군이 미뤄 둔 줄 */
-  if(ctx().b.started&&(ctx().b.mons[mid]||{}).entry){try{if(occ&&occ.id!==mid&&occ.hp&&occ.hp.cur>0&&Array.isArray(XL))await exitTrig(occ.id,opt.forced?'강제 교대':opt.how==='임의 교대'?'임의 교대':'통상 교대',{phase:'all',inId:mid,area});else await exitPendIn(mid)}catch(e){console.warn('퇴장 계기',e)}}
+  if(ctx().b.started&&(ctx().b.mons[mid]||{}).entry&&!opt.noExit){try{if(occ&&occ.id!==mid&&occ.hp&&occ.hp.cur>0&&Array.isArray(XL))await exitTrig(occ.id,opt.forced?'강제 교대':opt.how==='임의 교대'?'임의 교대':'통상 교대',{phase:'all',inId:mid,area});else await exitPendIn(mid)}catch(e){console.warn('퇴장 계기',e)}}
   /* 설치기 (맵툴 hazard_eval): 등장한 쪽의 설치기를 평가한다 */
   if(F()){const nb0=snap(),nb=snap(nb0);const nm=nb.mons[mid];nm.entry=area;const f=fieldOf(nb);const oppSide=m.side==='left'?'right':'left';const opp=entered(nb,oppSide);
    let HLD=[];try{HLD=await fieldHoldInto(nb,nm)}catch(e){console.warn('필드 동안 (등장 전)',e)}const r=F().hazardsOnEntry(nm,f,opp);if(HLD.length)r.lines.unshift(...HLD);if(r.lines.length){if(nm.hp.cur<=0){nm.entry='';r.lines.push(`${nm.name}은(는) 쓰러졌다!`)}else if(r.forced){nm.entry='';r.lines.push(`${nm.name}은(는) 튕겨 나갔다 — 다른 포켓몬을 내보내야 한다`)}
@@ -1225,6 +1231,13 @@ window.OM_BATTLE_UI=(()=>{
   if(FX()&&FX().reAura&&ctx().b.started&&(ctx().b.mons[mid]||{}).entry){const nb0=snap(),nb=snap(nb0);const L=FX().reAura(nb,nb.mons[mid]);if(L.length&&await saveBattle(nb0,nb))A().sysLog(`【필드 효과】\n${L.join('\n')}`,'battle')}
   /* 10-26 망령: 시합 개시 전에 나온 포켓몬 · 동시 내밀기는 모두 나온 뒤에 등장 효과를 스피드 순으로 (위협이 아무도 못 맞히던 것) */
   if(FX()&&(ctx().b.mons[mid]||{}).entry&&!opt.noAuto&&ctx().b.started){await autoOnEntry(mid,{how:opt.how||(opt.forced?'강제 교대':occ&&occ.id!==mid?'통상 교대':(+b.phase||0)>=2?'통상 교대':'죽어내밀기')});try{await fieldAuto('entry',{mid})}catch(e){console.warn('필드 등장 구문',e)}try{await foeInTrig(mid)}catch(e){console.warn('등장 (상대)',e)}}}
+ /* 11-14 동시 교대: 모두 나가고 모두 들어온 뒤 퇴장 계기 → 등장 효과 (각각 스피드 순) */
+ async function simulSwitch(L){const b0=ctx().b;const f=fieldOf(b0);const sp=m=>{try{return B().statValue(m,'speed').value*spMulOf(m,f).v}catch(e){return +((m.stats||[])[5]||0)}};
+  const outs=L.map(x=>({x,m:b0.mons[x.out]})).filter(o=>o.m).sort((p,q)=>sp(q.m)-sp(p.m));
+  A().sysLog(`【동시 교대】 ${L.map(x=>`${(b0.mons[x.out]||{}).name||'?'} ⇄ ${(b0.mons[x.in]||{}).name||'?'}`).join(' · ')}\n모두 나가고 들어온 뒤 퇴장 → 등장 순서로 처리한다`,'battle');
+  for(const x of L){await enterMon(x.in,x.area,{sys:true,noAuto:true,noExit:true,noAsk:true,how:'통상 교대'})}
+  for(const o of outs){const inM=ctx().b.mons[o.x.in];if(!inM||!inM.entry)continue;const om=ctx().b.mons[o.x.out];if(!om||!om.hp||om.hp.cur<=0)continue;try{await exitTrig(o.x.out,'통상 교대',{phase:'all',inId:o.x.in,area:inM.entry})}catch(e){console.warn('동시 교대 퇴장',e)}}
+  const hw={};for(const x of L)hw[x.in]='통상 교대';await autoEntryAll(L.map(x=>x.in),hw)}
  async function autoEntryAll(ids,hows){const b=ctx().b;const f=fieldOf(b);const sp=m=>{try{return B().statValue(m,'speed').value*spMulOf(m,f).v}catch(e){return +((m.stats||[])[5]||0)}};
   const list=ids.map(id=>b.mons[id]).filter(m=>m&&m.entry&&m.hp.cur>0).sort((x,y)=>sp(y)-sp(x));for(const m of list)if(FX()){await autoOnEntry(m.id,hows&&hows[m.id]?{how:hows[m.id]}:undefined);try{await fieldAuto('entry',{mid:m.id})}catch(e){console.warn('필드 등장 구문',e)}}
   {const tog=list.map(m=>m.id);for(const m of list)if(FX())try{await foeInTrig(m.id,tog)}catch(e){console.warn('등장 (상대)',e)}}}   /* 11-09 감우 56: 모두 나온 뒤 【등장 (상대)】 — 같이 나온 것끼리는 불발 (망령 13:51) */
