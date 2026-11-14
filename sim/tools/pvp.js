@@ -9,9 +9,9 @@ const snap=P.readSnap(opt.snap?path.resolve(opt.snap):path.join(SIM,'data','snap
 const dOf=t=>(t.data&&t.data.data)||t.data||{};
 function students(){const F=Object.fromEntries((snap.folders||[]).map(f=>[f.id,f.data||{}]));const root=id=>{let x=id,g=0,last=id;while(x&&F[x]&&g++<8){last=x;x=F[x].parent}return last};
  const out=[];for(const t of snap.trainers||[]){const d=dOf(t);if(root(d.folder)!=='misag-campus'||['misag-npc','vwnq43tc'].includes(d.folder)||/\(보스\)/.test(d.name||''))continue;
-  let r;try{r=P.build(W,snap,t.id)}catch(e){continue}if(!r.trainer.two||r.mons.length<2)continue;if(r.mons.some(m=>!(m.moves||[]).some(mv=>+mv.pow>0)))continue;out.push({id:t.id,name:d.name})}
+  let r;try{r=P.build(W,snap,t.id,{two:opt.two?true:false})}catch(e){continue}if(r.mons.length<(opt.two?2:6))continue;if(r.mons.some(m=>!(m.moves||[]).some(mv=>+mv.pow>0)))continue;out.push({id:t.id,name:d.name})}
  return out}
-const mk=id=>{const r=P.build(W,snap,id);P.orders(W,r.trainer,{mons:r.mons});return {trainer:r.trainer,mons:r.mons}};
+const mk=id=>{const r=P.build(W,snap,id,{two:opt.two?true:false});P.orders(W,r.trainer,{mons:r.mons});return {trainer:r.trainer,mons:r.mons}};
 (async()=>{let S=students();if(opt.only){const L=opt.only.split(',');S=S.filter(s=>L.some(n=>s.name.includes(n)))}
  const N=+opt.n||2,seed0=+opt.seed||1;const res={};for(const s of S)res[s.name]={w:0,l:0,d:0,g:0};const pairs=[];const asked={};let turns=0,games=0;const t0=Date.now();
  const sideAI={left:opt.polL||opt.ai||'',right:opt.polR||opt.ai||''};const sideW={left:0,right:0,draw:0};const used={order:0,command:0,pot:0};

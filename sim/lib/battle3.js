@@ -46,7 +46,10 @@ async function runBattle(W,opt){
  const extUsed=async(m,mv)=>{const X=mv&&mv.ext;if(!X)return;if(X.tid!=null&&X.i!=null){const t=C().trainers[X.tid];const U=Object.assign({},(t&&t.extUse)||{});U[X.i]=(+U[X.i]||0)+1;await W.OM_APP.set(['battle','trainers',X.tid,'extUse'],U);return}const k=m.tid+'|'+(X.src||X.pot);const u=PX[k]||{n:0,t:-9};PX[k]={n:u.n+1,t:+C().turn||0}};
  const dmgMoves=m=>FN.MVS(m).map((mv,i)=>Object.assign({},mv,{_i:i})).filter(mv=>mv&&mv.cat!=='변화'&&+mv.pow>0&&!mv.virt&&(!mv.ext||(AI(m.side)&&extOk(m,mv))));
  const allMoves=m=>FN.MVS(m).map((mv,i)=>Object.assign({},mv,{_i:i})).filter(mv=>mv&&!mv.virt&&!mv.ext);
- const expect=(atk,mv,def,multi)=>{try{return FG.estimate(H,W,atk,def,mv,{multi})}catch(e){return 0}};
+ /* 11-14 「차지」 기술: 모으는 턴이 있어 한 턴 값은 반 (날씨로 생략 · 파워풀허브 · 이미 모았으면 그대로) */
+ const CHG_RE=/「차지」/;const chargeSkip=(m,mv)=>{const e=String(mv.eff||'');const W0=FN.wxNow?FN.wxNow(C()):'';const sk=e.match(/「날씨\s*:\s*([^」]+)」일 때 「차지」를 생략/);return !!(sk&&W0&&sk[1].split(/[,，]\s*/).map(q=>q.trim()).includes(W0))||(FN.HAS&&FN.HAS(m,'파워풀허브'))};
+ const charged=(m,mv)=>!!(m.charge&&m.charge.mv===mv.name&&+m.charge.turn<(+C().turn||0));
+ const expect=(atk,mv,def,multi)=>{let v=0;try{v=FG.estimate(H,W,atk,def,mv,{multi})}catch(e){return 0}if(CHG_RE.test(String(mv.eff||''))&&!charged(atk,mv)&&!chargeSkip(atk,mv))v*=0.5;return v};
  const bestVs=(atk,def)=>{let best=null,bv=0;for(const mv of dmgMoves(atk)){const v=expect(atk,mv,def);if(v>bv){bv=v;best=mv}}return {mv:best,v:bv}};
  /* 2-1 정보 차단: 상대 기술은 이 배틀에서 본 것 · C 는 본 것(없으면 자속기 짐작) · B 이상은 본 것 + 자속기 짐작 */
  const knownMoves=(pol,f)=>{const all=dmgMoves(f);const s=seen.get(f.id);const sn=s?all.filter(x=>s.has(x.name)):[];const stab=all.filter(x=>(FN.tysOf(f)||[]).includes(x.typeEn));if(pol==='C')return sn.length?sn:stab;return Array.from(new Set(sn.concat(stab)))};
@@ -66,6 +69,8 @@ async function runBattle(W,opt){
  /* ---- 행동 고르기 (2-9 · 2-11) ---- */
  const statusPlan=(sd,m,pol,fs,best)=>FG.statusPick(H,W,{m,pol,fs,best,allies:active(sd).filter(x=>x!==m),threatVs,topThreat,dangerOf,turn:C().turn,expect,spd,isOld});
  const choose=(sd,m,plan)=>{const pol=polOf(m);const fs=foes(sd);if(!fs.length)return null;const dm=dmgMoves(m);const st=m.states||{};
+  /* 11-14 모은 다음 턴: 그 기술 · 대상으로 */
+  if(m.charge&&+m.charge.turn<(+C().turn||0)){const mv=allMoves(m).find(x=>x.name===m.charge.mv);if(mv){const tg=(m.charge.tg&&C().mons[m.charge.tg]&&alive(C().mons[m.charge.tg])&&C().mons[m.charge.tg].entry)?C().mons[m.charge.tg]:fs[0];return {mv,tg,v:0}}}
   /* 앙코르 · 난동: 그 기술만 */
   if(st.Thrash||st.Encore){const last=m.lastMove!=null?allMoves(m).find(x=>x.name===m.lastMove):null;if(last)return {mv:last,tg:fs[Math.floor(rng()*fs.length)],v:0}}
   const taunt=!!st.Taunt;
@@ -88,7 +93,7 @@ async function runBattle(W,opt){
  /* 새 로직 ④: 두 마리 공격을 함께 고른다 (11-14) — 상대마다 「얼마나 위협적인가」 × 깎는 비율(쓰러뜨리면 덤), 같은 편을 맞히는 전체기는 뺀다.
     한 마리를 확실히 쓰러뜨리는 쪽(상대 공격 수가 줄어든다)이 두 마리를 반씩 깎는 것보다 낫게 */
  const SPREAD=/전체|자신 이외|상대 2체/;
- function chooseJoint(sd){const me=active(sd).filter(m=>{const st=m.states||{};return !(st.Thrash||st.Encore)});const fs=foes(sd);if(me.length<2||!fs.length)return null;
+ function chooseJoint(sd){const me=active(sd).filter(m=>{const st=m.states||{};return !(st.Thrash||st.Encore)&&!(m.charge&&+m.charge.turn<(+C().turn||0))});const fs=foes(sd);if(me.length<2||!fs.length)return null;
   const pol0=polOf(me[0]);const tw={};for(const f of fs){let w=0;for(const m of active(sd)){const th=threatVs(pol0==='D'?'C':pol0,f,m);w=Math.max(w,th.v/Math.max(1,m.hp.cur))}tw[f.id]=0.6+Math.min(1.6,w)}
   const cands=m=>{const L=[];for(const mv of dmgMoves(m)){if((m.states||{}).Taunt&&mv.cat==='변화')continue;if(SPREAD.test(mv.range||'')){const d={};for(const f of fs)d[f.id]=expect(m,mv,f,true);let pen=0;if(mv.range==='자신 이외')for(const x of active(sd))if(x!==m)pen+=expect(m,mv,x,true)/Math.max(1,x.hp.cur);L.push({mv,tg:fs.slice().sort((a,c)=>d[c.id]-d[a.id])[0],d,pen})}else for(const f of fs)L.push({mv,tg:f,d:{[f.id]:expect(m,mv,f,false)},pen:0})}
    return L.sort((a,c)=>Object.values(c.d).reduce((x,y)=>x+y,0)-Object.values(a.d).reduce((x,y)=>x+y,0)).slice(0,8)};
@@ -102,7 +107,7 @@ async function runBattle(W,opt){
    for(const f of fs)if(hp[f.id]<=0)v+=0.6*tw[f.id];for(const m of me)if(hp[m.id]<=0)v-=0.5;v-=1.2*(a.pen+c.pen);if(v>bv){bv=v;best=[a,c]}}
   if(!best)return null;const out=new Map();me.forEach((m,i)=>{const x=best[i];out.set(m.id,{mv:x.mv,tg:x.tg,v:x.d[x.tg.id]||0})});return out}
  /* 교대 (2-10 · 2-11) */
- const wantSwitch=(sd,m)=>{const pol=polOf(m);if(pol==='D'||pol==='wild'||isWildT(m.tid))return null;if((m.states||{}).Bind||(m.states||{}).MeanLook||(m.states||{}).Block)return null;const fs=foes(sd);if(!fs.length)return null;
+ const wantSwitch=(sd,m)=>{if(m.charge)return null;const pol=polOf(m);if(pol==='D'||pol==='wild'||isWildT(m.tid))return null;if((m.states||{}).Bind||(m.states||{}).MeanLook||(m.states||{}).Block)return null;const fs=foes(sd);if(!fs.length)return null;
   const L=bench(sd).filter(x=>x.tid===m.tid).map(x=>({x,s:fs.reduce((a,f)=>a+matchup(x,f),0)})).sort((a,c)=>c.s-a.s);if(!L.length)return null;const cur=fs.reduce((a,f)=>a+matchup(m,f),0);
   if(pol==='C'){const crit=fs.some(f=>{const t=threatVs('C',f,m);return t.mv&&B.effectiveness([t.mv.typeEn],m,{atkTypes:f.types}).value>=4&&t.v>=m.hp.cur});return crit&&L[0].s>cur?L[0].x:null}
   const bad=fs.every(f=>threatVs(pol,f,m).v>=m.hp.cur*0.6);if(!bad)return null;return L[0].s>cur+0.5?L[0].x:null};
@@ -232,8 +237,14 @@ async function runBattle(W,opt){
    if(a.mv.cat!=='변화'){const tg0=targets.map(s=>{const [sd,ar]=s.split('_');return FN.entered(C(),sd)[ar]}).filter(Boolean).find(d=>d.side!==m.side);
     if(tg0){const tidA=m.tid;if(!isWildT(tidA)&&mastery(tidA)&&!cmdUsed(tidA)&&!isOld(m)){const v=expect(C().mons[m.id],a.mv,tg0);if(v<tg0.hp.cur&&v*1.5>=tg0.hp.cur)await fire(tidA,m.id,'command',a.mv.cat==='특수'?'specialattack':'attack');else if(POLS[tidA]==='A'&&v>=tg0.hp.cur&&+a.mv.acc&&+a.mv.acc<100&&cmdLeft(T(tidA),'accuracy'))await fire(tidA,m.id,'command','accuracy')}
      const tidD=tg0.tid;if(!isWildT(tidD)&&mastery(tidD)&&!cmdUsed(tidD)&&!isOld(tg0)){const DF=tg0.flags||{};const dodged=((DF.dodgePhys&&a.mv.cat==='물리')||(DF.dodgeSpec&&a.mv.cat==='특수'))&&!isSure(a.mv);if(!dodged){const v=expect(C().mons[m.id],a.mv,C().mons[tg0.id]);if(v>=tg0.hp.cur&&v/1.5<tg0.hp.cur)await fire(tidD,tg0.id,'command',a.mv.cat==='특수'?'specialdefense':'defense');else if(POLS[tidD]==='A'&&v>=tg0.hp.cur&&!isSure(a.mv)&&cmdLeft(T(tidD),'evasion'))await fire(tidD,tg0.id,'command','evasion')}}}}
+   /* 11-14 「차지」: 아직 안 모았으면 이번 턴은 모으기 — 반무적 상태 · 「차지할 때」 랭크 (웹툴 openAttackPre ① 과 같다) */
+   {const mm=C().mons[m.id];if(CHG_RE.test(String(a.mv.eff||''))&&!charged(mm,a.mv)){if(chargeSkip(mm,a.mv)){if(FN.HAS&&FN.HAS(mm,'파워풀허브')&&!(FN.wxNow&&String(a.mv.eff).includes(FN.wxNow(C())||'@@')))await FN.itemConsume(mm.id,false,'파워풀허브')}
+     else{const vk=FN.chargeVanish?FN.chargeVanish(a.mv):'';const x=clone(mm);x.states=Object.assign({},x.states||{});if(vk)x.states[vk]=2;const tg0=targets.map(s=>{const [sd,ar]=s.split('_');return FN.entered(C(),sd)[ar]}).find(d=>d&&d.side!==mm.side);x.charge={mv:a.mv.name,turn:+C().turn||0,tg:tg0?tg0.id:''};
+      const cr=String(a.mv.eff).match(/「차지」할 때 「([^」]+?)\s*:\s*\+(\d)」/);if(cr){const K={공격:'attack',방어:'defense',특공:'specialattack',특방:'specialdefense',스피드:'speed'};for(const nm of cr[1].split('/')){const k=K[nm.trim()];if(k)x.rank[k]=Math.min(6,(+x.rank[k]||0)+(+cr[2]))}}
+      await W.OM_APP.setDiff(['battle','mons',mm.id],mm,x,1);W.OM_APP.sysLog(`【차지】 ${mm.name} 『${a.mv.name}』 — 모으기${vk?' · 「'+(FN.stKoU?FN.stKoU(vk):vk)+'」':''}`,'battle');markSeen(m,a.mv.name);continue}}}
    const before=hpMap();
-   const r=await FG.attack(H,W,m.id,a.mv._i,targets,{});await flush();await gmChores();
+   const r=await FG.attack(H,W,m.id,a.mv._i,targets,{});
+   /* 모은 기술을 냈으면 차지 · 반무적을 푼다 */{const mm=C().mons[m.id];if(mm&&mm.charge&&mm.charge.mv===a.mv.name){const x=clone(mm);const vk=FN.chargeVanish?FN.chargeVanish(a.mv):'';if(vk&&x.states)delete x.states[vk];delete x.charge;await W.OM_APP.setDiff(['battle','mons',mm.id],mm,x,1)}}await flush();await gmChores();
    markSeen(m,a.mv.name);{const x=C().mons[m.id];if(x)x.lastMove=a.mv.name}if(a.mv.ext)await extUsed(m,a.mv);
    for(const id in before)if(before[id]>0&&C().mons[id]&&!alive(C().mons[id]))C().mons[id]._by=m.name;
    /* 자기 교대(유턴 등) — 벤치에서 고른다 */

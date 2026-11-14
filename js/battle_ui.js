@@ -1283,7 +1283,7 @@ window.OM_BATTLE_UI=(()=>{
  /* 퇴장 정리 (맵툴 out_area): 랭크·배율·임시 효과·발동 중인 포텐셜 효과·타입/특성 변경·하늘 위·급소 방호 를 되돌리고, 상태 이상(abn) 과 원념·빈사 빼고는 상태도 푼다.
     배턴터치면 랭크와 넘길 수 있는 상태(bat) 를 트레이너에게 맡겨 두었다가 다음 등장 포켓몬이 받는다. 강제 교대는 배턴터치 없이 정리만 */
  function passable(m){const st=(DB().states||{}).st||{};const rk=Object.values(m.rank||{}).some(v=>+v);const bs=Object.keys(m.states||{}).filter(k=>m.states[k]&&(st[k]||{}).bat);return rk||bs.length>0||!!(+m.critBuff)}
- function outReset(nb,m,opt){opt=opt||{};const st=(DB().states||{}).st||{};const L=[];const t=nb.trainers[m.tid];if(m.fxDone)delete m.fxDone;if(m.thrashOn)delete m.thrashOn;   /* 10-26: 다시 나오면 상시 효과를 다시 건다 · 난동 표시도 정리 */
+ function outReset(nb,m,opt){opt=opt||{};const st=(DB().states||{}).st||{};const L=[];const t=nb.trainers[m.tid];if(m.fxDone)delete m.fxDone;if(m.charge)delete m.charge;   /* 11-14: 「차지」 중에 필드를 떠나면 모은 것도 풀린다 (다시 나와서 그 기술로 열리지 않게) */if(m.thrashOn)delete m.thrashOn;   /* 10-26: 다시 나오면 상시 효과를 다시 건다 · 난동 표시도 정리 */
   if(opt.batton&&t){const states={};for(const k in (m.states||{}))if(m.states[k]&&(st[k]||{}).bat)states[k]=m.states[k];t.batton={rank:Object.assign({},m.rank||{}),states,critBuff:+m.critBuff||0,from:m.name};L.push(`${m.name} 「배턴터치」 — 랭크·상태를 다음 포켓몬에게 넘긴다`)}
   /* 효과(배율 출처 포함)를 먼저 풀고 나서 랭크·배율을 비운다 — 순서가 바뀌면 배율이 역으로 나뉘어 0.75 같은 값이 남는다 */
   if(FX()&&FX().release)L.push(...FX().release(nb,m));
