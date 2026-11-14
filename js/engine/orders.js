@@ -44,6 +44,8 @@ window.OM_ORDERS=(()=>{
  function shareKey(t,k){const [b,n]=sp(k);const st=n?styles(coOf(t,n)||{}):styles(t);if(st.tc!==7)return '';const o=b==='attack'?'defense':b==='defense'?'attack':'';return o?o+(n?'@'+n:''):''}
  function orderNames(t){return orderKeys(t).map(k=>orderName(t,k))}
  function commandNames(t){return commandKeys(t).map(k=>commandName(t,k))}
+ /* 11-14 「커맨드 미션」(임의의 『지령』으로): 모든 계열의 지령 이름 */
+ function allCommandNames(){const out=[];for(const fam of Object.keys(CK))for(const k of CK[fam]){const n=nameOf('command',fam,k);if(n&&!out.includes(n))out.push(n)}return out}
  function commandStyles(){return csv(lists().list_command)}
  function orderStyles(){return csv(lists().list_order)}
  /* 0 이 되는 항목 (맵툴 zeros) */
@@ -121,5 +123,5 @@ window.OM_ORDERS=(()=>{
    if(nt)await save(nt)};
   if(el.tagName==='BUTTON')el.onclick=h;else el.onchange=h})}
  function base(root,t){const i=root.querySelector('[data-oo="base"]');return i?(+i.value||0):(t.orderBase||1)}
- return {merge,chips,sp,coKeys,ownerOf,shareKey,LO,LC,OK,CK,KO,PRESETS,tordOf,styles,rankLv,ordRank,presetTc,presetName,itemType,nameOf,orderKeys,commandKeys,orderNames,commandNames,orderName,commandName,commandStyles,orderStyles,zeros,fill,make,auto,resync,setItemType,panel,bind};
+ return {merge,chips,sp,coKeys,ownerOf,shareKey,LO,LC,OK,CK,KO,PRESETS,tordOf,styles,rankLv,ordRank,presetTc,presetName,itemType,nameOf,orderKeys,commandKeys,orderNames,commandNames,allCommandNames,orderName,commandName,commandStyles,orderStyles,zeros,fill,make,auto,resync,setItemType,panel,bind};
 })();

@@ -286,7 +286,7 @@ window.OM_BATTLE_UI=(()=>{
  /* 11-09 감우 54-D: 대상마다 추가 효과 규칙 — SECXM[대상 id] = {mul, set(N할로), sure, add[부여], rep(바꾸기), imm(받는 쪽 면역 이름)} · '_' = 첫 대상 (한 번 거는 줄) */
  let SECXM={};
  function secInfo(atk,def,mv,tys,q){const o={mul:1,set:0,sure:'',add:[],rep:null,imm:'',nm:[]};const ok=(e,own,oth,fd)=>!(FX()&&FX().condAll)||FX().condAll(e,own,oth,q,fd);
-  for(const e of spL(atk,'secx')){if(!spHit(e,mv,tys))continue;if(!ok(e,atk,def,true))continue;if(e.mode==='sure'){o.sure=e.name;o.nm.push(`「${e.name}」 추가 효과 반드시`)}else if(e.mode==='set'){o.set=Math.max(o.set,+e.n||0);o.nm.push(`「${e.name}」 추가 효과 ${e.n}할`)}else if(e.mode==='add'){o.add.push(e);o.nm.push(`「${e.name}」 추가 효과 부여`)}else if(e.mode==='rep'){o.rep=e;o.nm.push(`「${e.name}」 추가 효과 변경`)}else{o.mul*=(+e.v||1);if(+e.v!==1)o.nm.push(`「${e.name}」 추가 효과 ×${e.v}`)}}
+  for(const e of spL(atk,'secx')){if(!spHit(e,mv,tys))continue;if(e.rng==='single'&&q&&q.single===false)continue;if(e.rng==='multi'&&!(q&&q.single===false))continue;   /* 11-14 단일기 · 전체기 */if(!ok(e,atk,def,true))continue;if(e.mode==='sure'){o.sure=e.name;o.nm.push(`「${e.name}」 추가 효과 반드시`)}else if(e.mode==='set'){o.set=Math.max(o.set,+e.n||0);o.nm.push(`「${e.name}」 추가 효과 ${e.n}할`)}else if(e.mode==='add'){o.add.push(e);o.nm.push(`「${e.name}」 추가 효과 부여`)}else if(e.mode==='rep'){o.rep=e;o.nm.push(`「${e.name}」 추가 효과 변경`)}else{o.mul*=(+e.v||1);if(+e.v!==1)o.nm.push(`「${e.name}」 추가 효과 ×${e.v}`)}}
   if(def&&def.id!==atk.id)for(const e of spL(def,'secimm')){if(!spHit(e,mv,tys)&&(e.types&&e.types.length||e.tg&&e.tg.length))continue;if(!ok(e,def,atk,false))continue;o.imm=e.name;break}
   return o}
  function secGroups(atk,def,groups,mv){const SI=def?SECXM[def.id]:null;if(!SI||(!SI.rep&&!SI.add.length))return groups?groups.map(g=>rollGroup(atk,def,g)):secRolls(atk,def,mv);
@@ -1602,6 +1602,9 @@ window.OM_BATTLE_UI=(()=>{
   if(sk!=='uq'&&m&&((m.excl&&m.excl.name===name)||(m.exclX||[]).some(q=>q&&q.name===name)))setTimeout(()=>rcvReact(tid,mid,'excl',name).catch(e=>console.warn('rcvReact',e)),1200);   /* 11-09 「전용 포텐셜이 발동했을 때」 계기 */
   const left=x.max!=null?` 【${how==='force'?x.left:Math.max(0,x.left-1)}/${x.max}】`:'';
   const who=sk==='uq'?t.name:m.name;const bm0=sk==='uq'&&baseId&&(!m||m.side!==t.side)?(b.mons||{})[baseId]:null;const tgt=sk==='uq'?((m?` → ${m.name} (에리어 ${String(m.entry).toUpperCase()})`:'')+(bm0?` · 기준 ${bm0.name}`:'')):(TP&&(b.mons||{})[TP]?` → ${(b.mons||{})[TP].name} (에리어 ${String((b.mons||{})[TP].entry).toUpperCase()})`:'');const img=sk==='uq'?trainerImg(t):(m.image||'');
+  /* 11-14 망령 「커맨드 미션류」: 「이번 턴 … 『지령』의 효과를 【…】로 변경한다」 — 지금 효과를 걸지 않고 이번 턴 표만 세운다 (지령을 쓸 때 cmdChange 가 바꿔 건다) */
+  {const e0=String(x.p.eff||'');const cm0=e0.match(CHG_RE);if(cm0&&/이번\s*턴/.test(e0)&&!ST2){const T=+b.turn||0;const keep={};for(const [k,v] of Object.entries(b.cmdChg||{}))if(v&&+v.turn===T)keep[k]=v;keep[(sk==='uq'?'u:':'e:')+tid+':'+String(name).replace(/[.\/#$\[\]]/g,'_')]={turn:T,tid,side:t.side,sk,name,mid:sk==='uq'?'':mid};await A().set(['battle','cmdChg'],keep);
+   A().sysLog(`【${LB}】 ${who} 『${name}』${left}${tag}\n→ 이번 턴 ${/타입/.test(e0.slice(0,cm0.index))?(e0.slice(0,cm0.index).match(/「[^」]*타입[^」]*」[^『]*/)||[''])[0].trim()+' ':''}『지령』의 효과가 【${cm0[1]}】로 바뀐다 (지령을 쓸 때 자동)`,'battle',{mid:m?m.id:'',img,eff:e0.replace(/<br\s*\/?>/g,'\n').slice(0,400)});return}}
   /* 10-28 망령 (빛의장막 고유): 고유 구문은 트레이너에서 바로 찾는다 — 대상을 안 골랐거나 상대 포켓몬을 골라도 돌게. 대상이 없으면 그 트레이너의 나와 있는 포켓몬을 기준으로 건다 */
   const foe=sk==='uq'&&m&&m.side!==t.side;   /* 고른 대상이 상대 포켓몬 — 구문의 「상대 1체」로 그 포켓몬을 쓰고, 기준(자신)은 이 트레이너의 포켓몬 */
   const ua=sk==='uq'&&FX()?(FX().autoOf({tid},'pot',name)||(m&&!foe&&FX().autoOf(m,'pot',name))):null;
@@ -1611,7 +1614,7 @@ window.OM_BATTLE_UI=(()=>{
   if(cm&&a&&realOps(a)&&!a.manual){setTimeout(()=>reprio(cmid,pr0),0);await fireAuto(cmid,'pot',name,{auto:a,quiet:true,manual:1,ownTid:tid,uq:sk==='uq'&&!foe,pickId:foe?m.id:(TP||''),tsel:foe?'':(TP||''),ctx:MS?{msel:MS}:undefined,head:`【${LB}】 ${who} 『${name}』${ST2?(ST2===1?' ①':' ②'):''}${ST2===2&&PD?'':left}${tag}${tgt}`,img,eff:String(x.p.eff||'')});return}
   A().sysLog(`【${LB}】 ${who} 『${name}』${left}${tag}${tgt?'\n대상:'+tgt.replace(' →',''):''}`,'battle',{mid:m?m.id:'',img,eff:String(x.p.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,400)})}
  async function fireOrder(tid,mid,kind,key,how){const c=ctx();const b0=snap(c.b),b=snap(b0);const t=b.trainers[tid];const m=b.mons[mid];if(!t||!m)return;
-  const name=pName(c.b,tid,kind,key);const ck=(kind==='order'?'order_':'command_')+key;t.orderCount=t.orderCount||{};
+  let name=pName(c.b,tid,kind,key);const ck=(kind==='order'?'order_':'command_')+key;t.orderCount=t.orderCount||{};
   const RW=how==='free'&&rinneOK(c.b,tid,key,kind);   /* 턴 종료 ② 【임의】 창 — 『윤회의 법계』 · 『숙달회복지령』 */
   /* 10-26 망령 (서서 VS 마리 시험): 4식 · 6령은 한 턴에 종류별로 하나만 · 임의 발동은 원칙이 아니다 (선행 입력 → 선행 발동) */
   {const KN=kind==='order'?'4식(명령)':'6령(지령)';/* 11-03 22:05 망령 「영창도 지령 자동 발동에 뜨게 — COMMAND 는 다 저기」: 한 턴 하나는 같은 무리끼리(6령은 6령 · 영창은 영창 · 4식은 4식) — 영창이 6령에 막혀 안 걸리던 것 */const fam=k=>{const n=kind==='order'?OO().orderName(t,k):OO().commandName(t,k);const r=potRowOf(n)||potRowOf(n+'!');return (r&&r[0])||(/영창$/.test(n)?'영창':kind)};const used=Object.entries((((b.cmds||{})[tid]||{}).fired)||{}).find(([id,x])=>x&&x[kind]&&!(id===mid&&x[kind]===key&&how==='pre')&&fam(x[kind])===fam(key));
@@ -1632,15 +1635,18 @@ window.OM_BATTLE_UI=(()=>{
     if(pcK)t.pcList=Object.assign({},t.pcList||{},{[mid]:one((t.pcList||{})[mid])});else{const m2=Object.assign({},(ps&&ps.m)||{});m2[mid]=one(m2[mid]);t.preSpent={k:tk,m:m2}}}}
   else if(how==='free'){const lend=pLend(c.b,tid,ck);if((+t.orderCount[ck]||0)<=0&&!lend)return A().toast('남은 횟수가 없어 임의 발동할 수 없다');if(lend)FBOR=ck;else{t.orderCount[ck]=(+t.orderCount[ck]||0)-1;{const sk=kind==='command'?OO().shareKey(t,key):'';const o=sk?'command_'+sk:'';if(o)t.orderCount[o]=Math.max(0,(+t.orderCount[o]||0)-1)}}tag=(FBOR?'【임의 · 일행 몫】':'【임의】')+(RW?' ② 턴 종료':'')}
   else if(how==='force'){if(!c.gm)return;tag='【강제】'}
+  /* 11-14 망령 「커맨드 미션류 자동화」: 『지령』을 다른 『지령』으로 · 『지령』의 효과를 【…】로 바꾼다 (cmdChange) — 횟수는 원래 지령 몫으로 이미 깎였다 */
+  const CH=kind==='command'?await cmdChange(b,t,mid,name):null;const SKIP=new Set(CH?CH.chg:[]);if(CH&&CH.to)name=CH.to;
   /* 11-04 20:41 망령: 『변환술』(【보급】/『지령(영창)』으로 상승하는 능력치를 임의로 변경할 수 있다) — 능력 지령 · 영창을 받는 포켓몬이 들고 있으면 올릴 능력치를 고른다 (주인 화면에 묻는다) */
   const CONV=[];{const sm=kind==='command'&&String(name).match(/^(숙달)?(공격|방어|특공|특방|민첩|저격|회피)지령$/),cm=kind==='command'&&String(name).match(/^(검|방패|관|잔|날개|촛불|장막)의 영창$/);
    if(sm||cm){const base=sm?STATWORD[sm[2]]:{검:'attack',방패:'defense',관:'specialattack',잔:'specialdefense',날개:'speed',촛불:'accuracy',장막:'evasion'}[cm[1]];const tg=sm?[b.mons[mid]]:Object.values(b.mons).filter(x=>sameT(x,t)&&x.entry&&x.hp.cur>0);
     const KS=['attack','defense','specialattack','specialdefense','speed','accuracy','evasion'];const ord=[base,...KS.filter(k=>k!==base)];
-    for(const x of tg){if(!x||!potSrc(x).some(p=>p&&String(p.name||'').replace(/[『』]/g,'').trim()==='변환술'))continue;{const cp=potSrc(x).find(p=>p&&String(p.name||'').replace(/[『』]/g,'').trim()==='변환술');if(((x.potTurn||{})._sup||{})[cp.name])continue}   /* 11-11 【보급】: 이번 등장에 이미 바꿨으면 묻지 않는다 */const r=await uiCtx(b,x,'변환술').choose(ord.map((k,i)=>STAT_KO[k]+' +1'+(i===0?' (그대로)':'')));const k2=ord[(Array.isArray(r)&&r.length)?+r[0]:0];if(k2&&k2!==base){CONV.push({id:x.id,from:base,to:k2});const cp=potSrc(x).find(p=>p&&String(p.name||'').replace(/[『』]/g,'').trim()==='변환술');await A().set(['battle','mons',x.id,'potTurn','_sup',cp.name],1)}}}}
-  const f=fieldOf(b);const fx=applyOrder(b.mons,f,t,name,mid);
+    for(const x of tg){if(!x||SKIP.has(x.id)||!potSrc(x).some(p=>p&&String(p.name||'').replace(/[『』]/g,'').trim()==='변환술'))continue;{const cp=potSrc(x).find(p=>p&&String(p.name||'').replace(/[『』]/g,'').trim()==='변환술');if(((x.potTurn||{})._sup||{})[cp.name])continue}   /* 11-11 【보급】: 이번 등장에 이미 바꿨으면 묻지 않는다 */const r=await uiCtx(b,x,'변환술').choose(ord.map((k,i)=>STAT_KO[k]+' +1'+(i===0?' (그대로)':'')));const k2=ord[(Array.isArray(r)&&r.length)?+r[0]:0];if(k2&&k2!==base){CONV.push({id:x.id,from:base,to:k2});const cp=potSrc(x).find(p=>p&&String(p.name||'').replace(/[『』]/g,'').trim()==='변환술');await A().set(['battle','mons',x.id,'potTurn','_sup',cp.name],1)}}}}
+  const f=fieldOf(b);const fx=CH&&CH.all?[]:applyOrder(SKIP.size?Object.fromEntries(Object.entries(b.mons).filter(([k])=>!SKIP.has(k))):b.mons,f,t,name,mid);   /* 바뀐 포켓몬은 원래 효과에서 뺀다 */
   for(const cv of CONV){const x=b.mons[cv.id];if(!x)continue;tempRank(x,cv.from,-1);tempRank(x,cv.to,1);fx.push(`${x.name} 『변환술』 — ${STAT_KO[cv.from]} 대신 ${STAT_KO[cv.to]} +1`)}
-  if(!fx.length&&FX()){const a=FX().rm(name)||FX().rm(String(name).replace(/\s*[:：]\s*/,' / '));if(a&&a.ops&&a.ops.length&&!a.manual){const r=await FX().run(a.ops,uiCtx(b,m,name,m.entry));fx.push(...r.lines)}}
-  if(!fx.length)fx.push(RW&&kind==='order'?`「윤회의 법계」 ② — 아군 하나를 「따라가때리기」 없이 임의 교대 (교대는 손으로)`:`「${name}」 — 손으로 처리`);
+  if(!fx.length&&!(CH&&CH.all)&&FX()){const a=FX().rm(name)||FX().rm(String(name).replace(/\s*[:：]\s*/,' / '));if(a&&a.ops&&a.ops.length&&!a.manual){const r=await FX().run(a.ops,uiCtx(b,m,name,m.entry));fx.push(...r.lines)}}
+  if(!fx.length&&!(CH&&CH.all))fx.push(RW&&kind==='order'?`「윤회의 법계」 ② — 아군 하나를 「따라가때리기」 없이 임의 교대 (교대는 손으로)`:`「${name}」 — 손으로 처리`);
+  if(CH&&CH.lines.length)fx.unshift(...CH.lines);
   A().closeModal();
   /* 11-05: 창을 띄워 둔 사이 턴 개시 차감이 이 지시를 이미 깎았으면(지금 서버 값의 pcList) 선행 발동 몫은 되돌린다 — 두 번 깎지 않게 */
   if(PREDED){const tf=((ctx().b||{}).trainers||{})[tid]||{};const tk2=turnKey(ctx().b),ok2=kind==='order'?'o':'c';if(tf.pcTurn===tk2&&(((tf.pcList||{})[mid]||{})[ok2]===key)&&!(b0.trainers[tid].pcTurn===tk2)){t.orderCount[ck]=(+t.orderCount[ck]||0)+1;const sk=kind==='command'?OO().shareKey(t,key):'';if(sk)t.orderCount['command_'+sk]=(+t.orderCount['command_'+sk]||0)+1;const o0=b0.trainers[tid]||{};for(const kk of ['pcList','pcTurn','preSpent']){if(o0[kk]===undefined)delete t[kk];else t[kk]=snap(o0[kk])}}}
@@ -1691,6 +1697,46 @@ window.OM_BATTLE_UI=(()=>{
 
  /* 지령·명령 효과 (Lib:readymade 의 지령 레디메이드와 같은 내용). 랭크는 임시(턴 종료 해제). 플래그는 flags 에 두고 공격 창이 읽는다 */
  const STATWORD={공격:'attack',방어:'defense',특공:'specialattack',특방:'specialdefense',민첩:'speed',저격:'accuracy',회피:'evasion',스피드:'speed',명중:'accuracy'};
+ /* 11-14 망령 「『지령』을 임의로 변경하는 효과랑 『지령』의 효과 자체를 변경하는 계통 — 커맨드 미션류 자동화」
+    ① 「(자신에 대한) 『지령』을 임의의 『지령』으로 · 『방어 지령』을 『방패의 영창』으로 변경할 수 있다」(『커맨드 미션』 · 카렌 전용): 받는 포켓몬 주인에게 묻고, 고른 지령을 대신 건다
+    ② 「이번 턴 (「타입 : X」인 아군이 받는) 『지령』의 효과를 【…】로 변경한다」(나하루 · 킴블리 고유): 발동하면 이번 턴 표(battle.cmdChg) — 그 턴 받는 포켓몬이 맞으면 원래 효과 대신 【…】 (묻지 않음)
+    ③ 「자신이 받은 『지령』의 효과를 【…】로 변경할 수 있다」(『회복술』): 받을 때 묻는다 (【보급】 · 【N/시】 셈)
+    【…】 = 그 포텐셜의 시트 구문 → 레디메이드 → 글 풀이(「추가 효과를 부여」 · 「HP 를 N 만큼 회복」) → 그래도 없으면 「손으로」 */
+ const CHG_RE=/『지령』(?:\s*『성언』)?의\s*효과를\s*【\s*([\s\S]+?)\s*】\s*로\s*변경/;
+ const TOC_RE=/(자신에\s*대한\s*『지령』|『([^』]+)』)\s*을\s*(?:(임의의\s*『지령』)|『([^』]+)』)\s*(?:으로|로)\s*변경할\s*수\s*있다/;
+ function chgXlate(X){X=String(X||'');let m;const L=[];
+  if((m=X.match(/「\s*(단일기|전체기)?\s*[:：]?\s*([^」]*)」에\s*「\s*(\d+)\s*할\s*[:：]\s*([^」]+?)\s*」의\s*추가\s*효과를\s*부여/))){const ty=m[2].trim();L.push(`추가효과 부여 ${m[3]}할 ${m[4].replace(/\s/g,'')}${ty&&!/^기술$/.test(ty)?' 타입:'+ty:''}${m[1]?' '+m[1]:''} 이번턴`)}
+  if((m=X.match(/「\s*정면\s*」을\s*「([^」]+)」\s*상태로\s*만든다/)))L.push(`상태 ${m[1].trim()} 「정면」상대1체`);
+  if((m=X.match(/「\s*HP\s*」를\s*(\d+\/\d+)\s*만큼\s*회복/)))L.push(`회복 자신 ${m[1]}`);
+  return L.join('\n')}
+ function chgOps(h){let a=null;if(FX()){if(h.sk==='uq')a=FX().autoOf({tid:h.tid},'pot',h.p.name);else if(h.own)a=FX().autoOf(h.own,'pot',h.p.name)}
+  if(a&&realOps(a)&&!a.manual)return a.ops;const s=chgXlate(h.X);if(s&&FX()&&FX().parse){const r=FX().parse(s);if(r.ops&&r.ops.length&&!(r.errs||[]).length&&!r.ops.some(o=>o&&o.k==='?'))return r.ops}return null}
+ function chgWho(e,m,x,own){const pre=e.slice(0,m.index);const w=pre.slice(pre.lastIndexOf('/')+1);const ty=w.match(/「\s*타입\s*[:：]\s*([^」]+)」/);
+  if(ty){const ko=(x.types||[]).filter(q=>q&&q!=='-').map(q=>S().typeKo?S().typeKo(q):q);if(!ty[1].split(/[·,/]/).some(s=>ko.includes(s.trim())))return false}
+  if(/자신이\s*받/.test(w)&&own&&own.id!==x.id)return false;return true}
+ function allCmdNames(t){const own=(OO()&&OO().commandNames?OO().commandNames(t):[]).filter(Boolean);const all=(OO()&&OO().allCommandNames?OO().allCommandNames():[]).filter(Boolean);return [...own,...all.filter(n=>!own.includes(n))]}
+ async function cmdChange(b,t,mid,name){const out={to:'',chg:[],lines:[],all:false};const nm=s=>String(s||'').replace(/[『』\s]/g,'');const pn=p=>String(p.name||'').replace(/[『』]/g,'').trim();
+  const recv=n=>/의\s*영창$/.test(n)?Object.values(b.mons||{}).filter(x=>x&&sameT(x,t)&&x.entry&&x.hp&&x.hp.cur>0):(/^방해|결계$/.test(n)?[]:[(b.mons||{})[mid]].filter(Boolean));
+  const limOk=(x,p)=>{const L=limOf(p,x.potUses||{},x.potTurn||{});return L.left==null||L.left>0};
+  const spend=async(x,p)=>{const L=limOf(p,x.potUses||{},x.potTurn||{});if(L.mmax!=null){const u=(x.potUses||{})[p.name];const had=u==null?L.mmax:+u;await A().set(['battle','mons',x.id,'potUses',p.name],Math.max(0,had-1));x.potUses=Object.assign({},x.potUses||{},{[p.name]:Math.max(0,had-1)})}await potMark(x.id,p.name);if(/【\s*보급\s*】/.test(String(p.eff||''))){x.potTurn=x.potTurn||{};x.potTurn._sup=Object.assign({},x.potTurn._sup||{},{[p.name]:1})}};
+  const ask=async(x,p,labels)=>{const r=await uiCtx(b,x,pn(p)).choose(labels);return (Array.isArray(r)&&r.length)?+r[0]:0};
+  /* ① 지령 → 다른 지령 (한 포켓몬에게 거는 지령만 — 영창 · 방해 · 결계는 「자신에 대한」이 아니다) */
+  {const R0=recv(name);const x=R0.length===1&&R0[0].id===mid&&!/의\s*영창$/.test(name)?R0[0]:null;
+   if(x)for(const p of potSrc(x)){const e=String(p.eff||'');const m=e.match(TOC_RE);if(!m)continue;const from=m[2]&&nm(m[2])!=='지령'?nm(m[2]):'';if(from&&from!==nm(name))continue;if(!limOk(x,p))continue;
+    const opts=m[4]?[m[4].trim()]:allCmdNames(t).filter(n=>nm(n)!==nm(name));if(!opts.length)continue;
+    const i=await ask(x,p,[`그대로 『${name}』`,...opts.map(n=>`→ 『${n}』`)]);if(!i)continue;const to=opts[i-1];await spend(x,p);
+    out.lines.push(`${x.name} 『${pn(p)}』 — 『${name}』 → 『${to}』`);out.to=to;name=to;break}}
+  /* ② · ③ 지령의 효과 → 【…】 */
+  const T=+b.turn||0;const act=Object.values(b.cmdChg||{}).filter(r=>r&&+r.turn===T&&r.side===t.side);const R=recv(name);
+  for(const x of R){let hit=null;
+   for(const r of act){const tr=(b.trainers||{})[r.tid];let p=null,own=null;if(r.sk==='uq')p=((tr&&tr.unique)||[]).find(u=>u&&u.name===r.name);else{own=(b.mons||{})[r.mid];p=own&&potSrc(own).find(q=>q&&q.name===r.name)}
+    if(!p)continue;const e=String(p.eff||'');const m=e.match(CHG_RE);if(!m||!chgWho(e,m,x,own))continue;hit={p,own,tid:r.tid,sk:r.sk,X:m[1]};break}
+   if(!hit)for(const p of potSrc(x)){const e=String(p.eff||'');const m=e.match(CHG_RE);if(!m||/이번\s*턴/.test(e)||!/로\s*변경할\s*수\s*있다/.test(e)||!chgWho(e,m,x,x))continue;if(!limOk(x,p))continue;
+    const i=await ask(x,p,[`그대로 『${name}』`,`대신 【${m[1]}】`]);if(!i)continue;await spend(x,p);hit={p,own:x,tid:x.tid,sk:'pot',X:m[1]};break}
+   if(!hit)continue;out.chg.push(x.id);
+   const ops=chgOps(hit);const head=`${x.name} — 『${name}』의 효과 대신 【${hit.X}】 (『${pn(hit.p)}』)`;
+   if(ops&&FX()){let rr=null;try{rr=await FX().run(ops,uiCtx(b,x,pn(hit.p),x.entry))}catch(e){console.warn('cmdChange',e)}out.lines.push(head,...((rr&&rr.lines)||[]).map(l=>'  '+l))}else out.lines.push(head+' — 효과는 손으로')}
+  out.all=R.length>0&&out.chg.length===R.length;return out}
  function tempRank(m,k,d,rx){if(rx&&FX()&&FX().rkRedir)k=FX().rkRedir(m,k,d);   /* 11-10 랭크전환: 지령 · 영창 (변환술 되돌리기는 rx 없이) */m.rank=m.rank||{};m.tempRank=m.tempRank||{};const lim=k==='critical'?4:6;const b0=+m.rank[k]||0;const a=Math.max(-lim,Math.min(lim,b0+d));m.rank[k]=a;m.tempRank[k]=(+m.tempRank[k]||0)+(a-b0)}   /* 한계(±6)에 막힌 만큼은 기록하지 않는다 — 턴 종료 해제 때 랭크가 깎이지 않게 */
  function applyOrder(mons,f,t,name,targetId){const out=[];const tgt=mons[targetId];const allies=Object.values(mons).filter(m=>sameT(m,t)&&m.entry&&m.hp.cur>0);const enemies=Object.values(mons).filter(m=>!sameT(m,t)&&m.entry&&m.hp.cur>0);
   const n=String(name||'');let m;
