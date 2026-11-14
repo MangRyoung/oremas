@@ -1039,7 +1039,7 @@ window.OM_BATTLE_UI=(()=>{
    case 'bresume':return openResume();
    case 'mode':if(c.b.started){A().toast('시합 중에는 에리어를 바꿀 수 없다');return A().renderScene()}return A().set(['battle','mode'],+val);
    case 'gmtake':{if(!c.gm)return;const t=(c.b.trainers||{})[d.tid];if(!t)return;const on=!t.gmTake;await A().set(['battle','trainers',d.tid,'gmTake'],on?true:null);A().sysLog(`${t.name} — ${on?'GM 이 맡는다 (빌려쓰기)':'플레이어에게 돌려줌'}`,'battle');return}
-   case 'gmhands':{if(!c.gm)return;const rp=c.ST.state.rp||{};if(rp.gmHands===false){A().toast('방 설정 「GM 불간섭」이 켜져 있어 모든 GM 이 PL 권한이다 — 끄려면 방 설정에서');return}const k=gmKeyMe();const on=!gmFairMine(rp);await A().set(['rp','gmFair',k],on?1:null);const nk=c.ST.gmNick?' ('+c.ST.gmNick+')':'';A().sysLog(on?`GM${nk} 이 PL 권한으로 전환 — 플레이어의 지시·상태를 건드리지 않는다 (이 GM 만)`:`GM${nk} GM 권한으로 복귀`,'battle');return}   /* 11-14: GM 마다 따로 (방 설정 「GM 불간섭」은 방 전체) */
+   case 'gmhands':{if(!c.gm)return;const rp=c.ST.state.rp||{};if(rp.gmHands===false){if(!(await askYes('방 전체 「GM 불간섭」이 켜져 있어 지금은 모든 GM 이 PL 권한이다.\n이걸 끄고 GM 마다 따로 쓸까? (나는 GM 권한으로 돌아가고, 다른 GM 도 각자 단추로 고른다)','GM 마다 따로','그대로')))return;await A().set(['rp','gmHands'],null);A().sysLog('방 설정 「GM 불간섭」 해제 — 이제 PL 권한은 GM 마다 따로','battle');return}const k=gmKeyMe();const on=!gmFairMine(rp);await A().set(['rp','gmFair',k],on?1:null);const nk=c.ST.gmNick?' ('+c.ST.gmNick+')':'';A().sysLog(on?`GM${nk} 이 PL 권한으로 전환 — 플레이어의 지시·상태를 건드리지 않는다 (이 GM 만)`:`GM${nk} GM 권한으로 복귀`,'battle');return}   /* 11-14: GM 마다 따로 (방 설정 「GM 불간섭」은 방 전체) */
    case 'areaswap':return areaSwap(d.mid);
    case 'field':return openField();
    case 'stage':return window.OM_STAGE_UI&&window.OM_STAGE_UI.info();
