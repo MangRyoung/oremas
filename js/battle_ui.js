@@ -3117,7 +3117,7 @@ window.OM_BATTLE_UI=(()=>{
  /* 11-04 20:03 망령 「때렸을 때 적용된 배율 효과 로그에 보기 좋게 · 맞았을 때도 — 서로 뭐가 적용됐는지」: 대상 하나에 들어간 배율 — pub(전체기 · 날씨 · 필드 · 벽 · 화상 · 도우미 …) · atk(자속 · 소지품 · 특성 · 충전 …) · grd(받는 쪽 완화) */
  function mulParts(r,md){const def=r.def;const crit=(r.hits||[]).some(h=>h.v===2);const O=r._opt||{};const D=r.dmg||{};const H0=(D.hits||[])[0]||{};const pub=[],ak=[],gd=[];const mt=O.multiTarget?0.75:1,wt=+O.weather||1,fd=+O.fieldMul||1;
      if(O.multiTarget)pub.push('전체기 ×0.75');if((+H0.M||1)/(mt*wt*fd)<0.99)pub.push('화상 ×0.5');if(wt!==1)pub.push('날씨 ×'+wt);if(fd!==1)pub.push('필드 ×'+fd);if((+D.wall||1)<1&&!((r.mods&&r.mods.names)||[]).some(x=>x.key==='_wall'))pub.push('벽 ×'+D.wall+(crit?' (급소면 무시)':''));   /* 11-09 00:09 망령 「벽 배율이 공격 쪽 · 받는 쪽에 두 번 뜬다 — 받는 쪽에 냅둡시다」: 계산은 dmg.wall 한 번뿐. 받는 쪽 이름표(_wall: 「오로라베일」 피해 × …)가 있으면 공격 쪽 「벽」 줄은 뺀다 */
-     if(O.watersport)pub.push('물놀이 ×0.5');if(O.mudsport)pub.push('흙놀이 ×0.5');if(O.helping)pub.push('도우미 ×'+(+O.helping>1?+O.helping:1.5));if(+O.defMul&&+O.defMul!==1)pub.push('받는 쪽 능력 배율 ×'+O.defMul);
+     if(D.ws)pub.push('물놀이 ×0.5');if(D.ms)pub.push('흙놀이 ×0.5');if(O.helping)pub.push('도우미 ×'+(+O.helping>1?+O.helping:1.5));if(+O.defMul&&+O.defMul!==1)pub.push('받는 쪽 능력 배율 ×'+O.defMul);
      /* 11-07 23:5x 망령 「두꺼운지방 같은 완화가 로그에 안 뜬다」 → 「자속은 숨기는 게 맞고, 공격 쪽도 소지품이나 특성 같은 건 발동하는 건 공개」: 11-04 결정(공개 배율만)을 바꿈.
         공격 쪽 특성 · 포텐셜 · 소지품 · 충전 · 생명의구슬 · 달인의띠는 pub(모두 보는 로그), 받는 쪽 완화(grd)도 HP 적용 로그에 이름까지. atk 에는 자속 · 자유 칸만 남는다 */
      for(const x of ((r.mods&&r.mods.names)||[]))(x.who===def.id?gd:pub).push(x.txt);

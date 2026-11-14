@@ -90,7 +90,9 @@ window.OM_BATTLE=(()=>{
   const defStat=o.defStat||(cat==='special'?'specialdefense':'defense');
   const L=floor(atk.lv*2/5+2);
   const free1=num(o.free1,1),free2=num(o.free2,1),item1=num(o.item1,1),item2=num(o.item2,1),trait=num(o.trait,1),weather=num(o.weather,1);
-  const P0=+o.power||+move.pow||0,PM=(o.helping?(+o.helping>1?+o.helping:1.5):1)*free1*free2*item1*item2*(o.charge?2:1)*trait*(o.watersport?0.5:1)*(o.mudsport?0.5:1)*num(o.powerBoost,1);
+  /* 11-14 제보 「물놀이가 불꽃이 아니라 모든 기술을 반감」: 물놀이 = 「불꽃」 기술 · 흙놀이 = 「전기」 기술만 ×0.5 (기술 타입은 스킨 · 테라 · 날씨 바뀐 뒤의 move.typeEn) */
+  const MTY=String(move.typeEn||'');const WS=!!o.watersport&&MTY==='Fire',MS=!!o.mudsport&&MTY==='Electric';
+  const P0=+o.power||+move.pow||0,PM=(o.helping?(+o.helping>1?+o.helping:1.5):1)*free1*free2*item1*item2*(o.charge?2:1)*trait*(WS?0.5:1)*(MS?0.5:1)*num(o.powerBoost,1);
   /* 10-27 망령: 「명중할 때 마다 위력이 N 씩 증가」(트리플악셀 · 트리플킥) — powStep: k 번째로 맞은 타의 위력 = 위력 + N×k (빗나가면 멈추니 맞은 순서 = 타 순서) */
   const step=num(o.powStep,0);let P=P0*PM;
   const burn=(cat==='physical'&&has(atk,'Burn')&&!(calcSt(atk,'Guts')||o.burnGuts))?0.5:1;
@@ -122,7 +124,7 @@ window.OM_BATTLE=(()=>{
    const rnd=(d(o,16)+84)/100;const val=h>0?floor(res*rnd):0;
    out.push({hit:h,crit,base:res,min:mn,max:mx,rnd,value:val,A,D,L,P:Pc,M,wall:wallCur});
    if(h>0){total+=val;minSum+=mn;maxSum+=mx}}
-  return {hits:out,total,min:minSum,max:maxSum,cat,atkStat,defStat,L,P,M,wall,critValue}}
+  return {hits:out,total,min:minSum,max:maxSum,cat,atkStat,defStat,L,P,M,wall,critValue,ws:WS,ms:MS}}
  function num(v,dflt){return v==null||v===''||isNaN(+v)?dflt:+v}
 
  /* ----- 상성 (get_type_value / get_type_value_multiple) -----
