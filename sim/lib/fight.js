@@ -126,6 +126,7 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
  {const a=nb.mons[mid];const e=String(mv.eff||'');if(a&&a.hp.cur>0){a.states=a.states||{};if(/「반동\s*:\s*행동불능」/.test(e)&&anyHit)a.states.Recharge=2;if(mv.cat!=='변화'&&!(atk.states||{}).Thrash&&!a.states.Thrash&&FN.potSrc(a).some(p=>String(p.name||'').trim()==='버서커'))a.states.Thrash=2}}
  if(NX.length){const a=nb.mons[mid];const Fx=a.fx||{};const nk=NX.map(e=>e.key);Fx.mods=(Fx.mods||[]).filter(e=>!(e.next&&nk.includes(e.key)));Fx.prio=(Fx.prio||[]).filter(e=>!(e.next&&nk.includes(e.key)))}
  await FN.saveBattle(nb0,nb);
+ /* 11-15 방어 기술 덤 (웹툴 protRiderFire 그대로) */if(FN.protRiderFire)for(const r of res){if(r.acc&&r.acc.prot&&r.def&&r.def.id!==mid)try{await FN.protRiderFire(mid,r.def.id,String(mv.contact||'')==='O',mv.name)}catch(e){}}
  /* ===== 받는 쪽 「HP」 창 「적용」 (대상마다) ===== */
  let dealtAll=0;
  for(const r of res){if(!r.acc.hit||!r.dmg)continue;const hv=await applyHit(H,W,r.def.id,rnd);if(hv){out.hits.push({to:r.def.name,dmg:hv.final,eff:r.eff.value,crit:r.hits.some(h=>h.v===2),ko:hv.ko,n:r.hits.length});dealtAll+=hv.final}}

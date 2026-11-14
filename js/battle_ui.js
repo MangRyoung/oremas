@@ -3296,6 +3296,21 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
  function foulAtk(atk,def,mv){if(!def||!FOUL_RE.test(String((mv||{}).eff||'')))return atk;const x=Object.assign({},atk);x.stats=(atk.stats||[]).slice();x.stats[1]=(def.stats||[])[1]||x.stats[1];x.rank=Object.assign({},atk.rank||{},{attack:+((def.rank||{}).attack||0)});x.mod=Object.assign({},atk.mod||{},{attack:+((def.mod||{}).attack||1)});return x}
  /* 이제 창이 알아서 하는 「손으로」 문장 (속임수 · 날씨 차지 생략 · 날씨 위력 반감 · 난동부리기) */
  const autoNote=t=>FOUL_RE.test(String(t))||/「날씨\s*:[^」]*」일 때 「차지」를 생략|「날씨\s*:[^」]*」일 때 「필중기」|「날씨\s*:[^」]*」일 때 「명중\s*:\s*\d+」|「날씨\s*:[^」]*」일 때 위력을 반감|「기술 방어」\s*상태가 된다|^「난동부리기\s*\(혼란\)\s*:\s*\d+~\d+회」$/.test(String(t).trim());
+ /* 11-15 망령 「방어 기술의 추가 효과 왜 자동화 안 돼 있는데」: 기술 방어 기술의 덤 — 「(비)접촉기」를 무효화/방어했을 때 · 기술을 무효화했을 때 + 그 뒤 글.
+    대상 · 상대(의 · 에게 · 을) → 때린 쪽, 없으면 → 막은 쪽 자신. 1/8 비례 대미지 · 1/8 드레인 · 임의 교대 · 강제 교대는 따로. (토치카 · 니들가드 · 킹실드 · 블로킹 · 버블가드 · 정신으로방어 · 드래곤가드 · 체인가드 …) */
+ function protRider(mv){const e=String((mv||{}).eff||'');const m=e.match(/(「비접촉기」를|「접촉기」를|기술을)\s*(?:무효화|방어)했을\s*때,?\s*([^.]+)/);if(!m)return null;const R={when:m[1].includes('비접촉')?'nc':m[1].includes('접촉')?'c':'any',ops:[],extra:'',text:m[0].trim()};let body=m[2].trim();
+  if(/1\/8의\s*비례\s*대미지/.test(body)){R.extra='pct8';return R}if(/「HP」를\s*1\/8만큼\s*드레인/.test(body)){R.extra='drain8';return R}if(/임의\s*교대/.test(body)){R.extra='selfsw';return R}if(/강제\s*교대/.test(body)){R.extra='force';return R}
+  const TP=/^(?:상대|대상)(?:의|에게|을|를)\s*/;const toT=TP.test(body);body=body.replace(TP,'');let P=null;try{P=window.OM_MOVEAUTO.parse({name:'방어 덤',cat:'변화',range:toT?'1체':'자신',eff:body+'.'})}catch(x){}
+  R.ops=((P&&P.groups)||[]).flatMap(g=>g.ops||[]).map(op=>Object.assign({},op,{tgt:toT?'target':'self'}));return R.ops.length?R:null}
+ async function protRiderFire(atkId,defId,contact,mvName){if(!FX())return;const c=ctx();const b=c.b;const def=b.mons[defId],atk=b.mons[atkId];if(!def||!atk)return;const lm=def.lastMove;const nm=typeof lm==='string'?lm:lm&&lm.name;if(!nm||(lm&&typeof lm==='object'&&+lm.turn!==(+b.turn||0)))return;
+  const pm=MVS(def).find(x=>x&&x.name===nm)||Object.assign({name:nm},(DB().moves||{})[nm]||{});if(!protMove(pm))return;const R=protRider(pm);if(!R)return;if(R.when==='c'&&!contact)return;if(R.when==='nc'&&contact)return;
+  const head=`【방어 덤】 ${def.name} 『${nm}』 — 「${mvName||'기술'}」을(를) 막아서`;
+  if(R.extra==='selfsw'){A().sysLog(`${head}\n${def.name} 임의 교대할 수 있다 — 교대 창에서`,'battle');return}
+  if(R.extra==='force'){if(atk.entry&&atk.hp.cur>0&&!(await switchGuard(atk))){A().sysLog(`${head}\n${atk.name} 강제 교대`,'battle');await forcedSwitch(atk.id,{sys:true})}return}
+  const nb0=snap(b),nb=snap(nb0);const d=nb.mons[defId],a=nb.mons[atkId];const lines=[];
+  if(R.extra==='pct8'||R.extra==='drain8'){if(a.hp.cur<=0)return;const v=Math.min(a.hp.cur,Math.max(1,Math.floor(a.hp.max/8)));a.hp.cur-=v;lines.push(`${a.name} −${v} (1/8) → ${a.hp.cur}/${a.hp.max}`);if(R.extra==='drain8'&&d.hp.cur>0){const h=Math.min(v,d.hp.max-d.hp.cur);d.hp.cur+=h;lines.push(`${d.name} +${h} 회복`)}if(a.hp.cur<=0)lines.push(`${a.name}은(는) 쓰러졌다!`)}
+  else{const r=await FX().run(R.ops.map(tgtFor(d,a)),Object.assign({},uiCtx(nb,d,nm),{pick:list=>list.find(q=>q.id===a.id)||null}));lines.push(...r.lines)}
+  if(!lines.length)return;if(await saveBattle(nb0,nb))A().sysLog([head,...lines].join('\n'),'battle',{mid:defId});if(nb.mons[atkId]&&nb.mons[atkId].hp.cur<=0)try{await faintOff(atkId)}catch(e){}}
  const protMove=mv=>/「(기술|공격) 방어」\s*상태가 된다|자신에 대한 공격을 방어한다/.test(String((mv||{}).eff||''))   /* 11-15: 정신으로방어 「자신에 대한 공격을 방어한다」도 */;
  /* 11-07 망령 「저주는 방어 관통이야」: 효과 글에 「방어」 무시가 없어도 이름으로 관통하는 기술 */
  const PROT_PASS=['저주'];
@@ -3760,7 +3775,7 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【[^】]*】\s
    /* 11-08 「조건 명중」 자동 (돌던지기 → 물 타입 강제 교대 …) */
    try{await hitAuto(mid,RESULT)}catch(e){console.warn('hitAuto',e)}
    /* 11-09 감우 55: 맞은 쪽의 「공격을 받았을 때」 포텐셜 · 고유 */try{if(!RESULT.check)for(const r of (RESULT.targets||[])){if(!r||!r.acc||!r.acc.hit||!r.def||r.def.id===mid)continue;await evReact('hit',{mid,tgt:r.def.id,dmg:(()=>{try{const lh=(ctx().b.mons[r.def.id]||{}).lastHit;return lh&&lh.fromId===mid?+lh.total||0:Math.floor(+((r.dmg||{}).total)||0)}catch(e){return 0}})(),mv:RESULT.mv.name,mt:RESULT.moveTypes||[],cat:RESULT.mv.cat||'',ct:!!(A().contactOf&&A().contactOf(RESULT.mv)==='O')&&!farOf(ctx().b.mons[mid]||{}),eff:r.eff?+r.eff.value:1,crit:!!(r.hits||[]).some(h=>h&&h.v===2),key:RESULT.mv.name+'@'+r.def.id+'@'+Date.now()})}}catch(e){console.warn('evReact hit',e)}
-   /* 11-10: 「기술 방어」로 막은 쪽의 「「방어」 상태로 무시했을 때」 */try{if(!RESULT.check)for(const r of (RESULT.targets||[])){if(!r||!r.acc||!r.acc.prot||!r.def||r.def.id===mid)continue;await evReact('guard',{mid,tgt:r.def.id,mv:RESULT.mv.name,mt:RESULT.moveTypes||[],cat:RESULT.mv.cat||'',ct:!!(A().contactOf&&A().contactOf(RESULT.mv)==='O')&&!farOf(ctx().b.mons[mid]||{}),key:RESULT.mv.name+'@g'+r.def.id+'@'+Date.now()})}}catch(e){console.warn('evReact guard',e)}
+   /* 11-10: 「기술 방어」로 막은 쪽의 「「방어」 상태로 무시했을 때」 */try{if(!RESULT.check)for(const r of (RESULT.targets||[])){if(!r||!r.acc||!r.acc.prot||!r.def||r.def.id===mid)continue;try{await protRiderFire(mid,r.def.id,!!(A().contactOf&&A().contactOf(RESULT.mv)==='O')&&!farOf(ctx().b.mons[mid]||{}),RESULT.mv.name)}catch(e){console.warn('protRider',e)}await evReact('guard',{mid,tgt:r.def.id,mv:RESULT.mv.name,mt:RESULT.moveTypes||[],cat:RESULT.mv.cat||'',ct:!!(A().contactOf&&A().contactOf(RESULT.mv)==='O')&&!farOf(ctx().b.mons[mid]||{}),key:RESULT.mv.name+'@g'+r.def.id+'@'+Date.now()})}}catch(e){console.warn('evReact guard',e)}
    /* 11-09 감우 54-E: 적용 중 쌓인 계기(드레인 …) · 【함성(기술)】 */try{await evFlush();if(RESULT&&RESULT.mv&&!RESULT.check)await evReact('shout',{mid,mv:RESULT.mv.name,key:RESULT.mv.name+'@'+Date.now()})}catch(e){console.warn('evReact',e)}
    try{await deferFire(mid,'자신의 행동이 끝나서','act')}catch(e){console.warn('defer',e)}   /* 11-09 미룬 대미지 */
    /* 11-03 「추가공격」: 포켓몬 하나에게 내보낸 맞는 기술이 명중했으면 1번 더 (위력 · 필중은 구문대로) — 추가 공격 창을 연다 */
