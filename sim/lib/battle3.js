@@ -63,11 +63,16 @@ async function runBattle(W,opt){
  const mastery=tid=>{const p=POLS[tid];return p==='B'||p==='A'};
  const spd=m=>{try{return B.statValue(m,'speed').value*(FN.spMulOf(m,FN.fieldOf(C())).v||1)}catch(e){return +m.stats[5]||0}};
  /* ---- 선발 · 교대 고르기 ---- */
+ /* 11-15 망령 「카렌 전위 A-1 — 바위 아군이 없으면 다음 턴 행동 불능인데 짝을 고를 때 안 본다」: 각성 (대가) A-1 의 지정 타입(트레이너 misag.type) 을 선발 · 내밀기 점수에 — 그 타입 짝이 있으면 +1.5 · 없으면 −1.5, 짝 잃은 A-1 아이 옆에 그 타입이면 +1.5 */
+ const a1Type=m=>{const t=C().trainers[m.tid];const M=t&&t.misag;if(!M||m.awaken!=='free'||!M.type||t.two||!(M.items||[]).some(x=>x.key==='A-1'))return '';return String(M.type)};
+ const hasTyKo=(x,ko)=>{const en=W.OM_STATS&&W.OM_STATS.typeEn?W.OM_STATS.typeEn(ko):ko;return (x.types||[]).includes(en)||(x.typesKo||[]).includes(ko)};
+ const a1Score=(m,mates,later)=>{let v=0;const ta=a1Type(m);if(ta){if(mates.some(p=>hasTyKo(p,ta)))v+=1.5;else if(later&&later.some(p=>hasTyKo(p,ta)))v+=0.5;else v-=1.5}
+  for(const p of mates){const tp=a1Type(p);if(tp&&!mates.some(q=>q!==p&&hasTyKo(q,tp))&&hasTyKo(m,tp))v+=1.5}return v};
  const pickIn=(sd,n,tidPref)=>{const L=bench(sd);const fs=foes(sd);const byT={};for(const m of L)(byT[m.tid]=byT[m.tid]||[]).push(m);const out=[];const tids=Object.keys(byT);if(tidPref&&byT[tidPref])tids.sort((x,y)=>(y===tidPref)-(x===tidPref));let k=0;
   while(out.length<n&&tids.some(t=>byT[t].length)){const t=tids[k%tids.length];k++;const arr=byT[t];if(!arr.length)continue;const pol=POLS[t];let pick;
-   if((pol==='D'||pol==='C'||pol==='wild'||!fs.length)&&!(AI(sd)&&fs.length&&pol!=='wild'&&!process.env.NOPICK))pick=arr[0];else pick=arr.map(m=>({m,s:fs.reduce((a,f)=>a+matchup(m,f),0)})).sort((a,c)=>c.s-a.s)[0].m;arr.splice(arr.indexOf(pick),1);out.push(pick)}return out};
+   const aiP=AI(sd)&&pol!=='wild'&&!process.env.NOPICK;if(!aiP&&(pol==='D'||pol==='C'||pol==='wild'||!fs.length))pick=arr[0];else{const mates=[...active(sd),...out];const more=n-out.length>=2&&!mates.length;pick=arr.map((m,i)=>({m,i,s:(fs.length?fs.reduce((a,f)=>a+matchup(m,f),0):0)+(aiP?a1Score(m,mates,more?arr.filter(x=>x!==m):null):0)})).sort((a,c)=>c.s-a.s||a.i-c.i)[0].m}arr.splice(arr.indexOf(pick),1);out.push(pick)}return out};
  /* ---- 행동 고르기 (2-9 · 2-11) ---- */
- const statusPlan=(sd,m,pol,fs,best)=>FG.statusPick(H,W,{m,pol,fs,best,allies:active(sd).filter(x=>x!==m),threatVs,topThreat,dangerOf,turn:C().turn,expect,spd,isOld});
+ const statusPlan=(sd,m,pol,fs,best)=>FG.statusPick(H,W,{ai:AI(sd),bench:bench(sd),matchup,m,pol,fs,best,allies:active(sd).filter(x=>x!==m),threatVs,topThreat,dangerOf,turn:C().turn,expect,spd,isOld});
  const choose=(sd,m,plan)=>{const pol=polOf(m);const fs=foes(sd);if(!fs.length)return null;const dm=dmgMoves(m);const st=m.states||{};
   /* 11-14 모은 다음 턴: 그 기술 · 대상으로 */
   if(m.charge&&+m.charge.turn<(+C().turn||0)){const mv=allMoves(m).find(x=>x.name===m.charge.mv);if(mv){const tg=(m.charge.tg&&C().mons[m.charge.tg]&&alive(C().mons[m.charge.tg])&&C().mons[m.charge.tg].entry)?C().mons[m.charge.tg]:fs[0];return {mv,tg,v:0}}}

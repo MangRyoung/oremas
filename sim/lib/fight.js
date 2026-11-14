@@ -15,7 +15,7 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
  const TYS0=[['Electrify','Electric'],['Flooding','Water'],['Knave','Dark']].filter(([k])=>+((atk0.states||{})[k]||0)>0);const ATY=TYS0.length?TYS0[TYS0.length-1][1]:'';
  /* 11-04 망령: 「무작위」 타입 기술 — 공격마다 18 타입 중 하나 (웹툴 battle_ui isRndMove · rndType 그대로, 씨앗 난수) */
  const isRnd=H.get('isRndMove'),rndT=H.get('rndType');const RNDT={};const rndOf=mv=>isRnd&&isRnd(mv)?(RNDT[mv.name]||(RNDT[mv.name]=rndT())):'';
- const tyOf=mv=>ATY||(RM('블랙룸')&&mv.cat!=='변화'?'Ghost':((FN.skinOf(atk0,mv)||{}).ty||rndOf(mv)||mv.typeEn));
+ const IAI=mv=>atk0.iai&&mv&&/(^|[,\s])거합($|[,\s])/.test(String(mv.tag||''))?atk0.iai:'';/* 11-15 자세 → 다음 거합 타입 (웹툴 IAI) */const tyOf=mv=>ATY||IAI(mv)||(RM('블랙룸')&&mv.cat!=='변화'?'Ghost':((FN.skinOf(atk0,mv)||{}).ty||rndOf(mv)||mv.typeEn));
  const mtys=mv=>ATY?[ATY]:(RM('블랙룸')&&mv.cat!=='변화'?['Ghost']:FN.skinOf(atk0,mv)?[FN.skinOf(atk0,mv).ty]:rndOf(mv)?[rndOf(mv)]:String(mv.type||'').split(/[()/,]/).map(t=>t.trim()).filter(Boolean).map(S.typeEn));
  const mv=FN.MVS(atk0)[idx];if(!mv)return {skip:'기술 없음'};
  const out={mv:mv.name,lines:[],hits:[],fail:''};
@@ -60,10 +60,11 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
   const itImm=OI&&mv.cat!=='변화'?OI.immune(def,moveTypes):'';
   const wideBlock=def!==atk&&+(((f.objects||{})[def.side]||{})['와이드가드']||0)>0&&(multiTarget||/전체|자신\s*이외/.test(String(mv.range||'')));
   const protBlock=def!==atk&&!PBY&&(def.flags||{}).protect===(+b.turn||0)&&def.hp.cur>0;
+  /* 11-15 트릭가드 · 에임가드 (웹툴 craftyBlock · aimBlock) */const objOn=k=>+(((f.objects||{})[def.side]||{})[k]||0)>0;const craftyBlock=def!==atk&&def.side!==atk.side&&mv.cat==='변화'&&objOn('트릭가드');const aimBlock=def!==atk&&def.side!==atk.side&&objOn('에임가드')&&(/「필중기」/.test(String(mv.eff||''))||(mv.cat!=='변화'&&!(+mv.acc)));
   /* 11-14 반무적(하늘 위 · 구멍 안 …) = 자동 빗나감 — 웹툴 openAttack semiMiss 와 같다 (록온 · 마음의눈 · 노가드 · 그 반무적을 맞히는 기술은 예외) */
   const SM=def!==atk&&FN.semiOf?FN.semiOf(def):'';const smKo=SM&&FN.stKoU?FN.stKoU(SM):'';const DST=def.states||{};const ngd=x=>/노가드/.test(String((x&&x.ability)||''));
   const semiMiss=!!SM&&!((DST.LockOn||DST.Gaze)&&(!def.lockFrom||def.lockFrom===atk.id))&&!ngd(atk)&&!ngd(def)&&!(smKo&&String(mv.eff||'').includes(smKo))&&!(SM==='Fly'&&/하늘에\s*(?:떠\s*)?있는\s*대상/.test(String(mv.eff||'')));
-  const accRoll=()=>protBlock?{prot:1,sure:false,hit:false}:semiMiss?{sure:false,hit:false,note:smKo||'반무적'}:wideBlock?{sure:false,hit:false,note:'와이드가드'}:itImm?{sure:false,hit:false,note:itImm}:psyBlock?{sure:false,hit:false,note:'사이코필드'}:autoMiss?{sure:false,hit:false,note:'회피'}:
+  const accRoll=()=>protBlock?{prot:1,sure:false,hit:false}:semiMiss?{sure:false,hit:false,note:smKo||'반무적'}:wideBlock?{sure:false,hit:false,note:'와이드가드'}:craftyBlock?{sure:false,hit:false,note:'트릭가드'}:aimBlock?{sure:false,hit:false,note:'에임가드'}:itImm?{sure:false,hit:false,note:itImm}:psyBlock?{sure:false,hit:false,note:'사이코필드'}:autoMiss?{sure:false,hit:false,note:'회피'}:
    B.accuracy(atk,def,{acc:mv.acc},{accMult:accMul,sureHit:sure,starry:f.weather.type==='별하늘',fog:f.weather.type==='짙은안개',fogImmune:FN.tysOf(atk).some(t=>t==='Poison'||t==='Fairy'),gravity:(f.etc||{})['중력']>0,wideLens:FN.IT(atk)==='광각렌즈',ignoreAcc:IG.acc,ignoreEva:IG.eva,rng:rnd});
   let acc=accRoll();if(!acc.hit&&!acc.prot&&!acc.note&&mv.cat!=='변화'&&atk.side==='left'&&cardTake(H,'reroll',+b.turn||0,atk.tid))acc=accRoll();   /* 「실타래 되감기」 */
   /* 11-04 「빗나가라!」(세 칸 배틀 · c073): 상대 기술(명중 100 미만 · 필중 아님)이 아군에 맞으면 명중 다시 */if(acc.hit&&!acc.sure&&!sure&&mv.cat!=='변화'&&atk.side!=='left'&&def.side==='left'&&(+mv.acc||100)<100&&cardTake(H,'dodgeReroll',+b.turn||0,def.tid))acc=accRoll();
@@ -97,6 +98,8 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
  {const a=nb.mons[mid];const ty=tyOf(mv);if(a&&a.states&&res.some(r=>r.acc.hit&&r.dmg))for(const k in FN.CHARGE_ST)if(a.states[k]&&FN.CHARGE_ST[k]===ty)delete a.states[k]}
  {const a=nb.mons[mid];const sdb=(DB.states||{}).st||{};const st=(a&&a.states)||{};for(const k of Object.keys(st)){const d=sdb[k]||{};const v=+st[k];if(!FN.movesDown(k,d)||!(v>0&&v<1000))continue;if(chk&&(k==='Sleep'||k==='Confusion'||k==='Freeze'))continue;if(v<=1)delete st[k];else st[k]=v-1}}
  if(PR){const a=nb.mons[mid];const t0=+nb.turn||0;if(PR.ok){a.flags=Object.assign({},a.flags||{},{protect:t0});a.protectLast=t0;a.protectN=PR.k+1;lines.push(`${a.name} 「기술 방어」`)}else{if(a.flags)delete a.flags.protect;a.protectLast=null;a.protectN=0;lines.push(`${a.name} 「기술 방어」 실패`)}}
+ /* 11-15 대타출동 (웹툴 3733 그대로): HP 1/4 → 대역인형 · 이미 있거나 HP 모자라면 실패 */{const a=nb.mons[mid];if(a&&/「대역인형」을\s*소환/.test(String(mv.eff||''))){const q=Math.max(1,Math.floor(a.hp.max/4));a.states=a.states||{};if(a.states.Substitute)lines.push(`${a.name} 이미 대역인형이 있다 — 실패`);else if(a.hp.cur<=q)lines.push(`${a.name} HP 가 모자라 대역인형 실패`);else{a.hp.cur-=q;a.states.Substitute=1000;a.subHp=q;delete a.states.Bind;lines.push(`${a.name} 「HP」 −${q} — 대역인형 (인형 ${q})`)}}}
+ /* 11-15 자세 → 다음 거합 타입 (웹툴 그대로) */{const a=nb.mons[mid];if(a){const au=MAU0||{};if(au.iai){a.iai=au.iai;lines.push(`${a.name} 다음 「거합」 기술 → ${au.iai}`)}else if(au.stance||(mv.cat==='변화'&&/의자세$/.test(mv.name||'')))delete a.iai;else if(a.iai&&/(^|[,\s])거합($|[,\s])/.test(String(mv.tag||'')))delete a.iai;if(mv.cat==='변화'&&/의자세$/.test(mv.name||''))a.stanceT=+nb.turn||0}}
  if(PBY==='clear')for(const r of res){const d=nb.mons[r.def.id];if(r.acc.hit&&d&&d.flags&&d.flags.protect!=null)delete d.flags.protect}
  const am=r=>(r.stab?1.5:1)*(belt&&r.eff&&r.eff.value>1?1.2:1);   /* 창의 atkMul: 자속 × 달인의띠 (적응력은 효과 엔진) */
  for(const r of res){const def=nb.mons[r.def.id];if(!def)continue;
@@ -118,6 +121,7 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
   for(const id in nb.mons){const x=nb.mons[id];if(x.entry&&x.hp.cur<=0){x.entry='';lines.push(`${x.name}은(는) 쓰러졌다!`)}}}
  if(OI){const a=nb.mons[mid];const tags=String(mv.tag||'').split(/[,/·\s]+/).filter(Boolean);const dealtIds=res.filter(r=>r.acc.hit&&r.dmg).map(r=>r.def.id);try{lines.push(...OI.afterAttack(nb,a,{jewel:!!(im&&im.jewel&&item1>1),dealt:dealtIds,missAll:res.length>0&&!anyHit,tags}))}catch(e){}}
  fieldStrip(FN,nb,atk,mv,res,lines);
+ /* 11-15 소지품 기술 (트릭 · 바꿔치기 · 탁쳐서떨구기 … — 웹툴 OI().moveFx 그대로) */{const IK=OI&&OI.moveKind?OI.moveKind(mv):'';if(IK&&nb.mons[mid]){const hits=res.map(r=>({id:r.def.id,hit:!!r.acc.hit,dmg:!!(r.acc.hit&&r.dmg&&!(r.eff&&+r.eff.value===0)),final:0}));try{const R2=OI.moveFx(nb,mid,IK,hits,{name:mv.name,mt:[tyOf(mv)],cat:mv.cat,eff:Object.fromEntries(res.map(r=>[r.def.id,r.eff?+r.eff.value:1])),multi:res.length>1,turn:+nb.turn||0});lines.push(...(R2.lines||[]))}catch(e){}}}
  {const tm2=String(mv.eff||'').match(/「난동부리기\s*\(혼란\)\s*:\s*(\d+)~(\d+)회」/);const a=nb.mons[mid];if(tm2&&a){a.states=a.states||{};if(!a.states.Thrash&&!a.thrashOn){const n=+tm2[1]+Math.floor(rnd()*(+tm2[2]-+tm2[1]+1));if(n>1){a.states.Thrash=n-1;a.thrashOn=1}}else if(!a.states.Thrash&&a.thrashOn){delete a.thrashOn;const cf=((DB.states||{}).st||{}).Confusion||{};const lo=+cf.min||1,hi=+cf.max||lo;a.states.Confusion=lo+Math.floor(rnd()*(hi-lo+1))}}}
  {const a=nb.mons[mid];const e=String(mv.eff||'');if(a&&a.hp.cur>0){a.states=a.states||{};if(/「반동\s*:\s*행동불능」/.test(e)&&anyHit)a.states.Recharge=2;if(mv.cat!=='변화'&&!(atk.states||{}).Thrash&&!a.states.Thrash&&FN.potSrc(a).some(p=>String(p.name||'').trim()==='버서커'))a.states.Thrash=2}}
  if(NX.length){const a=nb.mons[mid];const Fx=a.fx||{};const nk=NX.map(e=>e.key);Fx.mods=(Fx.mods||[]).filter(e=>!(e.next&&nk.includes(e.key)));Fx.prio=(Fx.prio||[]).filter(e=>!(e.next&&nk.includes(e.key)))}
@@ -149,6 +153,7 @@ function fieldStrip(FN,nb,atk,mv,res,lines){const e=String(mv.eff||'');const hit
  else{if(/자진의\s*「설치물」[^.]*철거/.test(e))strip(atk.side,HZ);if(/자진의\s*「장벽」[^.]*철거/.test(e))strip(atk.side,WL);else if(/「장벽」[^.]*철거/.test(e)){const sd=[...new Set(res.filter(r=>r.acc.hit&&r.def.side!==atk.side).map(r=>r.def.side))];(sd.length?sd:[foe]).forEach(s=>strip(s,WL))}}
  if(/「필드」[^.]*철거/.test(e)&&f2.terrain&&f2.terrain.type)f2.terrain={type:'',count:0};
  if(/「전체기 방어」\s*상태로/.test(e)){const o=f2.objects[atk.side]=Object.assign({},f2.objects[atk.side]||{});o['와이드가드']=1}
+ for(const [re,k] of [[/「변화기 방어」\s*상태로/,'트릭가드'],[/「필중기 방어」\s*상태로/,'에임가드']])if(re.test(e)){const o=f2.objects[atk.side]=Object.assign({},f2.objects[atk.side]||{});o[k]=1}
  if(/서로의 필드의 상태를 뒤바꾼다/.test(e)){const L0=f2.objects.left||{},R0=f2.objects.right||{};f2.objects={left:R0,right:L0}}}
 
 /* 받는 쪽 「HP」 창 「적용」: 창 기본 체크(반감열매 · 버티기 · 멀티스케일류 · 탈 · 피격 특성 자동) 그대로 */
@@ -162,6 +167,8 @@ async function applyHit(H,W,mid,rnd){const FN=H.fn,B=W.OM_BATTLE,OI=W.OM_ITEMS;c
  /* 11-05 「위기일발!」(시작 24장): 난수 차이로 쓰러졌을 때(가장 낮은 난수 85% 였다면 버텼을 때) 난수를 다시 — 남은 대미지는 지금 값을 평균 난수로 보고 85~100% 로 다시 */
  if(r.after<=0&&m.hp.cur>0&&m.side==='left'&&H.cards){const reC=f=>B.hpDamageHits(m,per.map(v=>Math.max(1,Math.floor(v*f))),+lh.eff,{fullGuard:fgOn?SH.fullGuard.v:0,disguise:dgOn?SH.disguise.cost:0,stab:false,guard:g0,manual:1,berryHalf:!!berryN,endure:en&&!sashOnly,endureFull:sashOnly,hpFloor:fl});const lo=reC(0.85/0.925);if(lo&&lo.after>0&&cardTake(H,'dmgReroll',+b.turn||0,m.tid))r=reC((0.85+rnd()*0.15)/0.925)}
  const berryUse=!!berryN&&/열매/.test(FN.IT(m));const sashUse=saved&&sashX&&sashX.sure&&sashX.once&&m.hp.cur>1;
+ /* 11-15 대타출동: 대역인형이 대신 맞는다 — 인형이 부서져도 넘친 피해는 본체에 안 간다 (웹툴 h_sub) */
+ if((m.states||{}).Substitute&&r.final>0&&lh.fromId!==mid){const m0=FN.snap(b.mons[mid]),x=FN.snap(m0);const sub0=+x.subHp||Math.max(1,Math.floor(x.hp.max/4));const left=sub0-r.final;delete x.lastHit;x.states=Object.assign({},x.states);if(left>0)x.subHp=left;else{delete x.states.Substitute;delete x.subHp}await W.OM_APP.setDiff(['battle','mons',mid],m0,x,1);if(H.logOn)W.OM_APP.sysLog(`【대타출동】 ${m.name}의 대역인형이 −${Math.min(sub0,r.final)} 을 대신 맞았다${left>0?` (인형 ${left})`:' — 인형이 부서졌다'}`,'battle');return {final:0,ko:false,sub:1}}
  /* apply(-r.final) */
  const m0=FN.snap(b.mons[mid]),x=FN.snap(m0);let v=r.final;if(fl&&x.hp.cur-v<fl)v=Math.max(0,x.hp.cur-fl);x.hp.latest=x.hp.cur;x.hp.cur=Math.max(0,x.hp.cur-v);delete x.lastHit;if((r.per||[]).some(q=>q.held==='disguise'))x.dsgUsed=1;
  if(v>0)x.lastTaken={v,turn:+b.turn||0};if(x.hp.cur<=0)x.entry='';
@@ -203,7 +210,27 @@ function statusPick(H,W,c){const FN=H.fn,MA=W.OM_MOVEAUTO,B=W.OM_BATTLE;const {m
  const out=[];const T=FN.ctx().b.trainers[m.tid]||{};
  const immune=(tg,st)=>{const ty=FN.tysOf(tg);if(st==='Paralysis'&&ty.includes('Electric'))return true;if(st==='Burn'&&ty.includes('Fire'))return true;if((st==='Poison'||st==='Toxic')&&(ty.includes('Poison')||ty.includes('Steel')))return true;if(st==='Freeze'&&ty.includes('Ice'))return true;if(st==='LeechSeed'&&ty.includes('Grass'))return true;return false};
  const accP=(mv,tg)=>{if(!+mv.acc)return 1;try{return Math.min(1,(+mv.acc/100)*FN.leadAcc(m)/B.statValue(tg,'evasion').rankMult)}catch(e){return +mv.acc/100}};
- for(const mv of L){let P=null;try{P=MA.parse(mv)}catch(e){}const prot=FN.protMove(mv);if(!prot&&!(P&&MA.auto(P)))continue;
+ /* 11-15 망령 「지원 기술 다 개선」(새 로직): 대타출동 · 와이드가드 · 트릭가드 · 에임가드 · 트릭/바꿔치기 · 가드스왑 · 자세 · 지연전이 — 'skip' = 이번엔 안 씀 */
+ const lastSame=mv=>!!m.lastMove&&m.lastMove.name===mv.name&&+m.lastMove.turn===turn-1;
+ const thr=fs.map(f=>{let bt=null;for(const x of [m,...c.allies]){const t=c.threatVs(pol,f,x);if(t&&t.mv){const fr=t.v/Math.max(1,x.hp.cur);if(!bt||fr>bt.fr)bt={f,x,mv:t.mv,fr}}}return bt}).filter(Boolean);
+ const isSure=q=>/「필중기」/.test(String(q.eff||''))||(q.cat!=='변화'&&!(+q.acc));const foeStatus=f=>FN.MVS(f).some(q=>q&&q.cat==='변화'&&!/^(자신|자진|필드|아군)/.test(String(q.range||'')));
+ const support=(mv,P)=>{const e=String(mv.eff||'');
+  if(/「대역인형」을\s*소환/.test(e)){if((m.states||{}).Substitute||hpR<=0.5||danger>=m.hp.cur*0.7)return 'skip';return {mv,tg:m,score:0.28+(fs.some(foeStatus)?0.12:0),why:'대타출동'}}
+  if(/「전체기 방어」\s*상태로/.test(e)){if(lastSame(mv))return 'skip';const sv=thr.filter(t=>/전체|자신\s*이외/.test(String(t.mv.range||''))).reduce((a,t)=>a+Math.min(1,t.fr),0);return sv<0.35?'skip':{mv,tg:m,score:0.25+0.4*Math.min(1.5,sv),why:'와이드가드'}}
+  if(/「변화기 방어」\s*상태로/.test(e)){if(lastSame(mv))return 'skip';const n=fs.filter(foeStatus).length;return n?{mv,tg:m,score:0.1*n,why:'트릭가드'}:'skip'}
+  if(/「필중기 방어」\s*상태로/.test(e)){if(lastSame(mv))return 'skip';const sv=thr.filter(t=>isSure(t.mv)).reduce((a,t)=>a+Math.min(1,t.fr),0);return sv<0.4?'skip':{mv,tg:m,score:0.25+0.4*Math.min(1.5,sv),why:'에임가드'}}
+  const OIk=W.OM_ITEMS&&W.OM_ITEMS.moveKind?W.OM_ITEMS.moveKind(mv):'';
+  if(OIk==='swap'){const mine=String(FN.IT(m)||'');const HARM=/검은철구|불꽃구슬|독구슬|구애|끈적끈적바늘|겨냥표적|늘어진/;const guts=/근성|독폭주|열폭주|이상한비늘/.test(String(m.ability||''));
+   if(mine&&HARM.test(mine)&&!(/구슬/.test(mine)&&guts)){const tg=fs.slice().sort((a,x)=>Math.max(x.stats[1],x.stats[3])-Math.max(a.stats[1],a.stats[3]))[0];return {mv,tg,score:0.35*accP(mv,tg),why:'소지품 떠넘기기'}}
+   const GOOD=/먹다남은음식|기합의띠|생명의구슬|달인의띠|돌격조끼|진화의휘석|검은오물/;const tg=fs.find(f=>GOOD.test(String(FN.IT(f)||'')));if(!mine&&tg)return {mv,tg,score:0.12*accP(mv,tg),why:'소지품 빼앗기'};return 'skip'}
+  const ops=P?(P.groups||[]).flatMap(g=>g.ops||[]):[];const rk=ops.find(o=>o.k==='rkswap');
+  if(rk){const r=x=>+(((x.rank)||{})[rk.a]||0)+(rk.b?+(((x.rank)||{})[rk.b]||0):0);const tg=fs.slice().sort((a,x)=>r(x)-r(a))[0];const d=tg?r(tg)-r(m):0;return d>=2?{mv,tg,score:0.12*d,why:'랭크 맞바꾸기'}:'skip'}
+  if(P&&P.iai){if(m.stanceT===turn-1||m.iai===P.iai)return 'skip';const IM=FN.MVS(m).filter(q=>q&&q.cat!=='변화'&&/(^|[,\s])거합($|[,\s])/.test(String(q.tag||'')));if(!IM.length)return 'skip';
+   let gain=0;for(const f of fs){let cur=0,nw=0;for(const q of IM){cur=Math.max(cur,c.expect(m,q,f,false));nw=Math.max(nw,c.expect(m,Object.assign({},q,{typeEn:P.iai}),f,false))}gain=Math.max(gain,(nw-cur)/Math.max(1,f.hp.cur))}
+   return gain<0.2?'skip':{mv,tg:m,score:Math.min(0.6,gain*0.8),why:'자세 → '+P.iai}}
+  if(P&&P.selfSwitch&&mv.cat==='변화'&&c.bench&&c.matchup){const B2=c.bench.filter(x=>x.tid===m.tid);if(!B2.length)return 'skip';const cur=fs.reduce((a,f)=>a+c.matchup(m,f),0);const best=Math.max(...B2.map(x=>fs.reduce((a,f)=>a+c.matchup(x,f),0)));return best-cur>=0.8&&danger>=m.hp.cur*0.5?{mv,tg:m,score:0.3,why:'지연전이로 교대'}:'skip'}
+  return null};
+ for(const mv of L){let P=null;try{P=MA.parse(mv)}catch(e){}const prot=FN.protMove(mv);if(c.ai&&!prot){const sp=support(mv,P);if(sp){if(sp!=='skip')out.push(sp);continue}}if(!prot&&!(P&&MA.auto(P)))continue;
   if(prot){if(pol==='C')continue;if(m.protectLast===turn-1)continue;if(danger>=m.hp.cur&&c.allies.length)out.push({mv,tg:m,score:0.6,why:'기술 방어'});continue}
   const ops=(P.groups||[]).flatMap(g=>(g.ops||[]).map(op=>Object.assign({who:g.who,n:g.n},op)));
   for(const op of ops){
