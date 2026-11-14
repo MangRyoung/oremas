@@ -103,7 +103,7 @@ window.OM_IMPORT=(()=>{
   return Object.assign({item:n,itemEff:eff},!r&&(own||et.it)?{itemOwn:{name:n,eff,auto:String(own?own.auto||'':et.itAuto||''),cons:!!(own?own.cons:et.itCons),sock:own?String(own.sock||''):''}}:{})})}
  /* 폼체인지·메가진화 (제작기 시트 forms): 비운 칸은 원래 값 */
  /* 11-03 감우: 제작기 effSnap 이 폼마다 {ab, pots[], kinds[]} 를 effTxt.forms[k] 에 남긴다(d.forms 와 같은 차례 · pots/kinds 는 f.pots 와 같은 차례) — 제작기에서 새로 만든 특성 · 포텐셜도 글이 비지 않게 DB 보다 먼저 거기서 쓴다 */
- function formsOf(d,base0,L){const EF=((d.effTxt||{}).forms)||[];const out=(d.forms||[]).map((f,k)=>[f,EF[k]||null]).filter(([f])=>f&&(f.name||f.ability||(f.base||[]).some(v=>v!=='')||(f.pots||[]).some(x=>x&&x.name)||(f.mvs||[]).some(x=>x&&x.to))).map(([f,ef])=>{
+ function formsOf(d,base0,L){const EF=((d.effTxt||{}).forms)||[];const out=(d.forms||[]).map((f,k)=>[f,EF[k]||null]).filter(([f])=>f&&(f.name||f.ability||(f.base||[]).some(v=>v!=='')||(f.pots||[]).some(x=>x&&x.name)||(f.mvs||[]).some(x=>x&&x.to)||(f.exs||[]).some(x=>x&&x.name)||f.exRep)).map(([f,ef])=>{
    const base=Array.from({length:6},(_,i)=>{const v=(f.base||[])[i];return v===''||v==null?base0[i]:nz(v)});
    const tko=[f.t1,f.t2].map(x=>x&&x!=='-'?x:'-');const keepT=tko.every(x=>x==='-');
    const ab=f.ability||'';const abil0=ab?((DB().traits||{})[ab]||{}):null;const abil=ab?(ef&&ef.ab?{multi:ef.ab}:abil0):null;
@@ -111,7 +111,9 @@ window.OM_IMPORT=(()=>{
     ability:ab,abilityEff:abil?brN(abil.multi||abil.single||''):null,base,image:f.image||'',cond:f.cond||'',revert:!!f.revert,
     pots:(f.pots||[]).map((x,i)=>[x,i]).filter(([x])=>x&&x.name).map(([x,i])=>{const row=((DB().maker||{}).pots||[]).find(r=>r[1]===x.name);const ep=ef?(ef.pots||[])[i]:'',ek=ef?(ef.kinds||[])[i]:'';return {slot:+x.slot||0,name:String(x.name).replace(/『|』/g,''),kind:ek||(row?row[0]:''),eff:brN(x.eff||ep||(row?row[2]:''))}}),
     /* 11-14 망령 「폼체인지 때 기술이 바뀌는 케이스 — 변동이 있으면 그쪽 기술이 되게」: 제작기 f.mvs [{from,to}] → 배틀용 기술로 */
-    moves:(f.mvs||[]).filter(x=>x&&x.to).map(x=>({from:String(x.from||''),mv:move(String(x.to),false)}))}});
+    moves:(f.mvs||[]).filter(x=>x&&x.to).map(x=>({from:String(x.from||''),mv:move(String(x.to),false)})),
+    /* 11-14 망령 「공용 폼체인지에 전용 넣을 칸」: 이 폼일 때만 생기는 전용 · exRep = 원래 전용은 쓰지 않음 */
+    exs:(f.exs||[]).filter(x=>x&&x.name).slice(0,6).map(x=>({name:String(x.name).replace(/『|』/g,''),eff:brN(x.eff||'')})),exRep:!!f.exRep}});
   return out.length?out:null}
 
  /* 역할 포텐셜(00.x. 역할)에서 역할 이름 */
