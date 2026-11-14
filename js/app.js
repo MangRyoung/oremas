@@ -403,7 +403,13 @@ setInterval(()=>{if(ST.room&&document.visibilityState==='visible'&&Date.now()-PA
    「PL 로」 앉은 GM 은 서버가 GM 몫으로 전부 돌려주므로 여기서 거른다 */
 /* 11-08 20:24 망령 「GM 이어도 배틀 탭 PL 권한(GM 불간섭, rp.gmHands=false)일 땐 이거 안 보여야지」: 그동안 GM 화면은 플레이어 자리로 간 비공개 줄(priv · gmPriv — 등장 때 켠 상시류 · 숨은 소지품 · 특성)을 숨긴다. GM 몫(to:'gm')과 사람끼리 귓속말은 그대로.
    raw = 받아 둘 때(pollWhispers) — 불간섭을 끄면 다시 보이게 로그에는 넣어 둔다 */
-function gmFairHide(d){return ST.role==='gm'&&((ST.state||{}).rp||{}).gmHands===false&&!!(d.priv||d.gmPriv)&&!!d.to&&d.to!=='gm'}
+/* 11-14 망령 「GM 이어도 닉이 다르면 다른 사람」: PL 권한은 GM 마다(rp.gmFair[계정 키]) · GM 몫 비공개 줄도 불러온 GM(gmAcct = 트레이너 byAcct)이 따로 있으면 그 GM 의 것 —
+   PL 권한인 GM 은 다른 GM 이 불러온 파티의 비공개 줄도 안 본다. 예전 줄(gmAcct 없음)은 지금 배틀의 그 포켓몬 트레이너 byAcct 로 판단 */
+function gmKey(){return acctKey()||'gm'}
+function gmFairOn(){const rp=(ST.state||{}).rp||{};return ST.role==='gm'&&(rp.gmHands===false||!!((rp.gmFair||{})[gmKey()]))}
+function lineAcct(d){if(d.gmAcct!=null)return d.gmAcct;try{const B0=(ST.state||{}).battle||{};const m=d.mid&&(B0.mons||{})[d.mid];const t=m&&(B0.trainers||{})[m.tid];return (t&&t.by==='gm'&&t.byAcct)||''}catch(e){return ''}}
+function otherGm(d){if(d.to!=='gm')return false;const a=lineAcct(d);return !!a&&a!==gmKey()}
+function gmFairHide(d){return gmFairOn()&&!!(d.priv||d.gmPriv)&&!!d.to&&(d.to!=='gm'||otherGm(d))}
 function wVis(d,raw){d=d||{};if(ST.role==='gm')return raw||!gmFairHide(d);const me=ST.seat||'';if(me&&d.to===me)return true;if(d.priv||d.gmPriv)return false;if(me&&d.from===me)return true;return !ST.asPlGm}
 async function pollWhispers(){try{const ws=await DBS().whispers(ST.room,ST.secret,ST.lastWhisper);if(!ws||!ws.length)return;const me=ST.role==='gm'?'gm':ST.seat;ws.forEach(w=>{ST.lastWhisper=Math.max(ST.lastWhisper,w.id);if(!wVis(w.data,1))return;   /* 11-07 숨은 소지품 · 특성 줄: 보낸 쪽(상대)에겐 안 보인다 */if(!ST.log.find(x=>x.id===w.id))ST.log.push(w)});ST.log.sort((a,b)=>a.id-b.id);renderLog(true)}catch(e){}}
 
@@ -549,17 +555,17 @@ function josa(s){return String(s==null?'':s).replace(/([가-힣0-9])([」』]?)(
 const PRIV_NM=['은밀망토','클리어참'];
 const PRIV_ACT=/받지\s*않|무시|막았|막는다|되지\s*않|않았다|없음/;
 function privTo(n,x){const mons=Object.values((ST.state.battle||{}).mons||{});const holds=(m,n)=>[m.ability,m.item,...((m.items2||[]).map(q=>q&&q.item))].some(v=>String(v||'').replace(/[『』「」]/g,'')===n);
- const hs=mons.filter(m=>holds(m,n));const h=hs.find(m=>m.name&&String(x).includes(m.name))||hs[0];const tid=h&&h.tid;const to=tid&&(ST.state.seats||{})[tid]?tid:'gm';return {to,toName:to==='gm'?'GM':(((ST.state.battle||{}).trainers||{})[tid]||{}).name||tid}}
+ const hs=mons.filter(m=>holds(m,n));const h=hs.find(m=>m.name&&String(x).includes(m.name))||hs[0];const tid=h&&h.tid;const to=tid&&(ST.state.seats||{})[tid]?tid:'gm';const tr=(((ST.state.battle||{}).trainers||{})[tid]||{});return Object.assign({to,toName:to==='gm'?'GM':tr.name||tid},to==='gm'&&tr.by==='gm'&&tr.byAcct?{gmAcct:tr.byAcct}:{})}
 function privSplit(t,extra){const s=String(t||'');const n0=PRIV_NM.find(q=>s.includes(q));if(!n0)return null;
  if(extra&&extra.privAll)return {pub:'',priv:[Object.assign({x:s.replace(/\n/g,' · ')},privTo(n0,s))]};
  const L=s.split('\n');if(/^【(?:소지품|특성|포텐셜|전용|고유)】/.test(L[0]))return null;
  const pub=[],priv=[];L.forEach((x,i)=>{const n=PRIV_NM.find(q=>x.includes(q));if(!n||(i===0&&L.length>1)||PRIV_ACT.test(x)){pub.push(x);return}priv.push(Object.assign({x},privTo(n,x)))});
  if(!priv.length)return null;return {pub:pub.join('\n'),priv}}
 const GMPUB=new Set();function gmPubDone(id){id=+id;return GMPUB.has(id)||ST.log.some(x=>x&&x.data&&+x.data.fromPriv===id)}   /* 11-07: 본인 전용 줄을 이미 「출력」 했나 */
-function privOwner(mid){const m=mid&&((ST.state.battle||{}).mons||{})[mid];const tid=m&&m.tid;const to=tid&&(ST.state.seats||{})[tid]?tid:'gm';return {to,toName:to==='gm'?'GM':((((ST.state.battle||{}).trainers||{})[tid]||{}).name||tid)}}   /* 11-07: 포켓몬 주인 자리 (없으면 GM) */
-async function sysLog(t,kind,extra){const k=kind||'sys';if((k==='battle'||k==='sys')&&!(extra&&extra.privDone)){const sp=privSplit(t,extra);if(sp){for(const p of sp.priv){try{await DBS().addLog(ST.room,ST.secret,'whisper',ST.name,{t:'【나만 보기】 '+p.x,to:p.to,toName:p.toName,priv:1});}catch(e){selfLog('【나만 보기】 '+p.x)}}try{pollWhispers()}catch(e){}if(!sp.pub.trim())return;t=sp.pub}}
+function privOwner(mid){const m=mid&&((ST.state.battle||{}).mons||{})[mid];const tid=m&&m.tid;const to=tid&&(ST.state.seats||{})[tid]?tid:'gm';const tr=(((ST.state.battle||{}).trainers||{})[tid]||{});return Object.assign({to,toName:to==='gm'?'GM':(tr.name||tid)},to==='gm'&&tr.by==='gm'&&tr.byAcct?{gmAcct:tr.byAcct}:{})}   /* 11-14: GM 몫이면 불러온 GM 계정(gmAcct)도 */   /* 11-07: 포켓몬 주인 자리 (없으면 GM) */
+async function sysLog(t,kind,extra){const k=kind||'sys';if((k==='battle'||k==='sys')&&!(extra&&extra.privDone)){const sp=privSplit(t,extra);if(sp){for(const p of sp.priv){try{await DBS().addLog(ST.room,ST.secret,'whisper',ST.name,Object.assign({t:'【나만 보기】 '+p.x,to:p.to,toName:p.toName,priv:1},p.gmAcct?{gmAcct:p.gmAcct}:{}));}catch(e){selfLog('【나만 보기】 '+p.x)}}try{pollWhispers()}catch(e){}if(!sp.pub.trim())return;t=sp.pub}}
  /* 11-07 망령 「등장 때 저절로 뜨는 상시류는 본인만 · 「출력」 버튼으로 공개」 → 「GM 이 아니라 본인이 봐야지」: extra.gmPriv 줄은 그 포켓몬 주인에게 귓속말(whisper) — 트레이너 자리(seats)에 사람이 있으면 그 자리, NPC · 야생 · 못 찾으면 GM. 서버 om_whispers 는 GM · 받는 사람 · 보낸 사람에게만 돌려준다 */
- if((k==='battle'||k==='sys')&&extra&&extra.gmPriv&&!extra.privDone){t=josa(t);const ow=privOwner(extra.mid);const d0=Object.assign({},extra,{t,to:ow.to,toName:ow.toName,priv:1,gmPriv:1,bat:k});try{await DBS().addLog(ST.room,ST.secret,'whisper',ST.name,d0)}catch(e){console.warn('GM 전용 로그를 남기지 못했다',e)}try{pollWhispers()}catch(e){}return}
+ if((k==='battle'||k==='sys')&&extra&&extra.gmPriv&&!extra.privDone){t=josa(t);const ow=privOwner(extra.mid);const d0=Object.assign({},extra,{t,to:ow.to,toName:ow.toName,priv:1,gmPriv:1,bat:k},ow.gmAcct?{gmAcct:ow.gmAcct}:{});try{await DBS().addLog(ST.room,ST.secret,'whisper',ST.name,d0)}catch(e){console.warn('GM 전용 로그를 남기지 못했다',e)}try{pollWhispers()}catch(e){}return}
  {const IM=window.OM_BATTLE_UI&&window.OM_BATTLE_UI.illuMask;if(IM&&k!=='chat'&&!/【일루젼】/.test(String(t||''))){try{const o=IM({t:String(t||''),e:extra||null});t=o.t;extra=o.e||extra}catch(e){}}}   /* 11-05 일루젼: 변장 중인 포켓몬의 진짜 이름 · 그림을 공개 로그에서 가짜로 */t=josa(t);/* 10-26 망령: 같은 배틀 로그가 여러 길로 겹쳐 두 번 찍히던 것 — 6초 안에 똑같은 글이면 한 번만 */if(k==='battle'){const now=Date.now();if(LASTLOG.t===t&&now-LASTLOG.at<6000)return;LASTLOG.t=t;LASTLOG.at=now}const data=Object.assign({t},extra||{});try{await DBS().addLog(ST.room,ST.secret,k,ST.name,data)}catch(e){if(ST.role==='seat'&&k!=='chat'){try{await DBS().addLog(ST.room,ST.secret,'chat',ST.name,Object.assign({},data,{bat:k}));return}catch(e2){}}console.warn('로그를 남기지 못했다',e);toast('로그를 남기지 못했다: '+e.message)}}
 /* 배틀 로그 카드: 「【포텐셜】 이름 『효과』」 꼴의 글은 머리띠 + 본문 카드로 */
 const TAGCOL={'고유':'#7b4fd6','전용':'#1f6fd1','포텐셜':'#7b4fd6','특성':'#2f8f5b','소지품':'#c7651a','지령':'#e3101f','명령':'#1f6fd1','공개':'#d6a23b','스킬 체크':'#2b8fa8','모두 공개':'#d6a23b','공격':'#c8362b','전달':'#8a4b2a','효과':'#555','따라가때리기':'#b3261e','피해':'#d23a3a','회복':'#2f9a5b','HP':'#777','무효':'#777','교대 알림':'#d6a23b','『지령』 & 『포텐셜』 발동':'#7b4fd6','함께 지시하기':'#d6a23b','날씨':'#3b8fe0','필드':'#3fae5a','룸':'#c75fd0','필드의 상태':'#7a6fd0','설치물':'#8d877c','상태 이상':'#c8362b','상태 변화':'#6f8fa8','상태 회복':'#6f8fa8'};
@@ -733,7 +739,7 @@ function renderLog(scroll){
  /* 11-02 망령 「채팅 렉」: 새 줄이 올 때마다 로그 전체(배틀 카드 포함 수백 줄)를 다시 만들던 것 → 앞부분이 그대로면 새 줄만 뒤에 붙인다.
     화면에는 최근 LOGMAX 줄만 둔다(더 위는 「로그 저장」 · 정리기로). 채널 · 지우기 · 끼워 넣은 줄이 있으면 예전처럼 전부 다시 */
  const HID=logHides();const LIST=(SR.length?ST.log.concat(SR).sort((a,b)=>a.id-b.id):ST.log).filter(logDup()).filter(r=>r.kind==='self'||(r.id>cut&&!(HID.length&&logHidden(r.id,HID))&&(CHAN.cur==='o'?isOoc(r):!isOoc(r))));
- const KEY=[CHAN.cur,cut,ST.role,ST.seat,ST.gmNick||'',LOGV,((ST.state.rp||{}).gmHands===false?'fair':''),HID.map(h=>h.a+'-'+h.z).sort().join(',')].join('|');const LM=el._lm;
+ const KEY=[CHAN.cur,cut,ST.role,ST.seat,ST.gmNick||'',LOGV,(gmFairOn()?'fair':''),HID.map(h=>h.a+'-'+h.z).sort().join(',')].join('|');const LM=el._lm;
  const app=LM&&LM.key===KEY&&LIST.length>=LM.n&&LM.n>0&&LIST[LM.n-1].id===LM.last&&LIST[0]&&LIST[0].id===LM.first&&el.querySelector('.msg');
  const rows=app?LIST.slice(LM.n):LIST.slice(-LOGMAX);
  el._lm={key:KEY,n:LIST.length,last:LIST.length?LIST[LIST.length-1].id:null,first:LIST.length?LIST[0].id:null};
@@ -745,7 +751,7 @@ function renderLog(scroll){
   if(k==='self')return `<div class="msg sys self"><div class="bub">${esc(d.t)} <span class="selftag">나만 보임</span>${d.gr?(d.gr.pub?' <span class="selftag">공개함</span>':` <button type="button" class="btn xs" data-grpub="${r.id}" title="같은 결과를 모두에게 로그로">공개</button>`):''}</div></div>`;
   /* 11-07 망령: 등장 때 저절로 걸린 상시류 줄 (sysLog extra.gmPriv → GM 귓속말) — GM 에게만 흐리게 「GM 전용」 + 「출력」(같은 내용을 공개 배틀 로그로 · 낸 줄은 data.fromPriv 로 이어 「출력함」) */
   if(k==='whisper'&&!wVis(d))return '';
-  if(k==='whisper'&&(d.gmPriv||(d.priv&&(d.img||/^【/.test(String(d.t||'')))))){const me=ST.role==='gm'?'gm':ST.seat;if(ST.role!=='gm'&&d.to!==me)return '';   /* 받는 사람(주인) · GM 만 그린다 — 보낸 쪽이 다른 PL 브라우저여도 */const card=battleCard(d)||sysCard(d)||`<div class="bub">${esc(d.t)}</div>`;const done=gmPubDone(r.id);return `<div class="msg battle card gmpriv">${card}<div class="gmpbar"><span class="selftag">${d.to===me?'나만 보임':esc(d.toName||d.to)+'만 보임'}</span>${done?'<span class="selftag">출력함</span>':`<button type="button" class="btn xs" data-gmpub="${r.id}" title="같은 내용을 모두에게 배틀 로그로">출력</button>`}</div><span class="time">${t}</span></div>`}
+  if(k==='whisper'&&(d.gmPriv||(d.priv&&(d.img||/^【/.test(String(d.t||'')))))){const me=ST.role==='gm'?'gm':ST.seat;if(ST.role!=='gm'&&d.to!==me)return '';   /* 받는 사람(주인) · GM 만 그린다 — 보낸 쪽이 다른 PL 브라우저여도 */const card=battleCard(d)||sysCard(d)||`<div class="bub">${esc(d.t)}</div>`;const done=gmPubDone(r.id);return `<div class="msg battle card gmpriv">${card}<div class="gmpbar"><span class="selftag">${d.to===me?(ST.role==='gm'&&otherGm(d)?'불러온 GM 만 보임 (다른 GM)':'나만 보임'):esc(d.toName||d.to)+'만 보임'}</span>${done?'<span class="selftag">출력함</span>':`<button type="button" class="btn xs" data-gmpub="${r.id}" title="같은 내용을 모두에게 배틀 로그로">출력</button>`}</div><span class="time">${t}</span></div>`}
   if(k==='sys')return `<div class="msg sys"><div class="bub">${esc(d.t)}</div></div>`;
   if(k==='chat'&&d.clear)return `<div class="msg sys"><div class="bub">무대를 비웠다</div></div>`;
   if(k==='chat'&&d.sms)return '';
