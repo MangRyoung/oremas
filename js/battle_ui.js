@@ -1317,6 +1317,10 @@ window.OM_BATTLE_UI=(()=>{
  function tagHit(eff,tag){const t=String(eff||'').replace(/<br\s*\/?>/gi,'\n');const cls=t.split(/(?=[①②③④⑤⑥⑦⑧⑨⑩])|\n/).map(x=>x.trim()).filter(Boolean);
   const re=tag==='exit'?/【퇴장(?:\s*\(([^)]*)\))?】(?:【[^】]*】)*\s*\//:/【등장\s*\(\s*상대\s*\)】(?:【[^】]*】)*\s*\//;
   for(let i=0;i<cls.length;i++){const r=cls[i].match(re);if(r)return {cl:cls[i],arg:String(r[1]||'').trim(),first:i===0||/^①/.test(cls[i]),no:(cls[i].match(/^[①②③④⑤⑥⑦⑧⑨⑩]/)||[])[0]||''}}return null}
+ /* 11-15 망령 「나탈리아 눈 메리트」 → 『끝없이 눈 내리는 설원의 기억』 【퇴장 (빈사, 「타입 : 얼음」)】 이 「손으로」로만 떴음: 괄호를 쉼표로 나눠 방식(빈사 · 임의 교대 …)과 「타입 : X」(나가는 포켓몬의 타입)를 둘 다 판정 — 모르는 조각이 있을 때만 묻는다 */
+ function exitArgOk2(arg,how,m){const parts=String(arg||'').split(/[,，]/).map(x=>x.trim()).filter(Boolean);if(parts.length<2)return exitArgOk(arg,how);let ask=false;
+  for(const p of parts){const a=p.replace(/\s/g,'');if(XHOW.includes(a)){if(a!==String(how||'').replace(/\s/g,''))return 'no';continue}const t=p.match(/^「\s*타입\s*:\s*([^」]+?)\s*」$/);if(t&&m){const ko=t[1].trim();const en=S().typeEn?S().typeEn(ko):ko;const ty=[...tysOf(m),...((m.typesKo)||[])];if(!(ty.includes(en)||ty.includes(ko)))return 'no';continue}ask=true}
+  if(String(how||'').replace(/\s/g,'')==='강제교대'&&!parts.some(p=>p.replace(/\s/g,'')==='강제교대'))return 'no';return ask?'ask':'yes'}
  function exitArgOk(arg,how){const a=String(arg||'').replace(/\s/g,''),h=String(how||'').replace(/\s/g,'');if(!a)return h==='강제교대'?'no':'yes';if(XHOW.includes(a))return a===h?'yes':'no';return h==='강제교대'?'no':'ask'}
  function guardOff(b,m){const g=Object.values(b.mons||{}).find(x=>x&&x.entry&&x.hp&&x.hp.cur>0&&!sameT(x,m,b)&&(abNm(x).replace(/[『』\s]/g,'')==='경호원'||/상대의\s*「특성」의\s*【등장】\s*【퇴장】\s*효과를\s*무효/.test(String(x.abilityEff||''))));return g?g.name:''}
  async function trigFire(mid,x,hit,o){const m=ctx().b.mons[mid];if(!m)return {};const kind=x.kind==='uq'?'pot':x.kind;const K=({pot:'포텐셜',trait:'특성',item:'소지품',uq:'고유'})[x.kind]||'효과';const who=x.kind==='uq'?(x.t.name+' 고유'):m.name;const nm=String(x.name).replace(/[『』]/g,'');
@@ -1336,7 +1340,7 @@ window.OM_BATTLE_UI=(()=>{
   const area=o.area||m.entry||(how==='빈사'?(m.koA||LAST_AREA[mid]||m.outA):m.outA)||'';const inM=o.inId?b.mons[o.inId]:null;
   const front=area?Object.values(b.mons||{}).find(x=>x&&x.entry===area&&x.side!==m.side&&x.hp&&x.hp.cur>0&&!sameT(x,m,b)):null;
   const g=guardOff(b,m);const notes=[];let pend=false;const why=`퇴장 (${how})`;
-  for(const x of trigSrcs(m,b)){const hit=tagHit(x.eff,'exit');if(!hit)continue;const ok=exitArgOk(hit.arg,how);if(ok==='no')continue;const nm=String(x.name).replace(/[『』]/g,'');const who=x.kind==='uq'?(x.t.name+' 고유'):m.name;
+  for(const x of trigSrcs(m,b)){const hit=tagHit(x.eff,'exit');if(!hit)continue;const ok=exitArgOk2(hit.arg,how,m);if(ok==='no')continue;const nm=String(x.name).replace(/[『』]/g,'');const who=x.kind==='uq'?(x.t.name+' 고유'):m.name;
    if(ok==='ask'){if(o.phase!=='in')notes.push(`${who} 『${nm}』 — 【퇴장 (${hit.arg})】 조건을 확인해 손으로`);continue}
    if(x.kind==='trait'&&g){if(o.phase!=='in')A().sysLog(`【특성】 ${m.name} 『${nm}』의 【퇴장】 — ${g} 「경호원」으로 무효`,'battle',{mid:m.id});continue}
    const needIn=XIN_RE.test(hit.cl);if(o.phase==='now'&&needIn){pend=true;continue}if(o.phase==='in'&&!needIn)continue;

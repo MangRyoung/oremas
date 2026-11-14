@@ -22,7 +22,7 @@ async function runBattle(W,opt){
  const b={turn:0,phase:0,mode:fmt,sides:{left:{trainers:[]},right:{trainers:[]}},trainers:{},mons:{},field:{},cmds:{},order:[],ordPool:opt.pool?1:0};   /* 11-04: 던전 공용 풀이면 웹툴 battle_ui 의 일행 몫 이름(pName)이 다른 지시 체계 종류도 빌려 준 사람 이름으로 건다 */
  const POLS={};let wildN=0;
  const addParty=(side,pt,k)=>{const t=clone(pt.trainer||{name:side+k,ranks:{}});const wild=!!t.wild;const tid=wild?'wild_'+side+'_'+(wildN++):(t.id||side+k);t.id=tid;t.side=side;delete t.solo;if(!t.orderCount)t.orderCount={};
-  b.sides[side].trainers.push(tid);b.trainers[tid]=t;POLS[tid]=pt.policy||(wild?'wild':POL((t.ranks||{})['지시']));
+  b.sides[side].trainers.push(tid);b.trainers[tid]=t;POLS[tid]=pt.policy||(wild?'wild':process.env.FORCEPOL||POL((t.ranks||{})['지시']));/* 11-15 FORCEPOL=B : 모두 같은 지시 랭크로 — 덱 힘만 견주기 */
   (pt.mons||[]).forEach((m0,i)=>{const m=clone(m0);m.tid=tid;m.side=side;m.slot=Object.keys(b.mons).length;if(wild||b.mons[m.id]){m._oid=m.id;m.id=(side==='left'?'L':'R')+m.slot+'_'+(m.id||'')}
    const rk0=m.rank||{};m.rank={attack:0,defense:0,specialattack:0,specialdefense:0,speed:0,accuracy:0,evasion:0,critical:0};for(const q in m.rank)if(+rk0[q])m.rank[q]=Math.max(-6,Math.min(6,+rk0[q]));
    m.mod=Object.assign({},m.mod||{});m.states=Object.assign({},m.states||{});m.entry='';m.started=false;m.hp=m.hp||{};m.hp.max=+m.hp.max||+m.stats[0];if(m.hp.cur==null)m.hp.cur=m.hp.max;
