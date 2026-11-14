@@ -66,7 +66,10 @@ function load(W){if(W.__H)return W.__H;
   ask:(q)=>{note('확인',q);return !/배턴터치/.test(String(q||''))},
   /* 효과 엔진 「조건을 만족하는가?」: HP 조건만 읽고 나머지는 「아니요」(모르는 조건으로 효과가 나가지 않게) — 물은 글은 H.asked 로 모아 고친다 */
   confirm:(q,self,b)=>{note('조건',q);const t=String(q||'');let m=t.match(/HP\s*[:：]?\s*(\d+)\s*\/\s*(\d+)\s*이하/);if(m&&self)return self.hp.cur<=self.hp.max*(+m[1])/(+m[2]);m=t.match(/HP\s*[:：]?\s*(\d+)\s*\/\s*(\d+)\s*이상/);if(m&&self)return self.hp.cur>=self.hp.max*(+m[1])/(+m[2]);if(/HP\s*[:：]?\s*가득/.test(t)&&self)return self.hp.cur>=self.hp.max;return false},
-  choose:(labels,multi)=>{note('선택',labels.join(' / '));return [0]},
+  /* 11-15 날씨 지정(「날씨 : X」 줄): 우리 편(필드 · 벤치) 기술이 얼마나 세지나 − 상대 필드 쪽 (웨더볼은 타입 · 위력 2배, 눈 · 모래는 얼음 · 바위 내구) — 덕이 없으면 「무작위로 둔다」 */
+  choose:(labels,multi,self,b)=>{note('선택',labels.join(' / '));if(self&&b&&labels.some(l=>/^날씨 : /.test(l))){const WM=H.get('WEATHER_MUL')||{};const WB={맑음:'Fire',비:'Water',모래바람:'Rock',눈:'Ice'};const mons=Object.values(b.mons||{}).filter(x=>x&&x.hp&&x.hp.cur>0&&(x.side===self.side||x.entry));
+    const sc=w=>{const wm=WM[w]||{};let v=0;for(const x of mons){const sg=x.side===self.side?1:-0.7;const ty0=x.types||[];let base=0,best=0;for(const mv of (x.moves||[])){if(!mv||mv.cat==='변화'||!(+mv.pow))continue;const st=t=>ty0.includes(t)?1.5:1;const b0=+mv.pow*st(mv.typeEn);let ty=mv.typeEn,pw=+mv.pow;if(/웨더볼/.test(mv.name||'')&&WB[w]){ty=WB[w];pw*=2}base=Math.max(base,b0);best=Math.max(best,pw*st(ty)*(+wm[ty]||1))}if(base)v+=sg*(best/base-1);if((w==='눈'&&ty0.includes('Ice'))||(w==='모래바람'&&ty0.includes('Rock')))v+=sg*0.3}return v};
+    let bi=labels.length-1,bv=0.05;labels.forEach((l,i)=>{const m=l.match(/^날씨 : (.+)$/);if(!m)return;const v=sc(m[1]);if(v>bv){bv=v;bi=i}});return [bi]}return [0]},
   /* 대상 고르기: 상대 쪽이면 가장 위협적인(공격 · 특공 높은) 상대, 같은 편이면 HP 비율이 가장 낮은 아군 */
   pick:(list,label,self,b)=>{note('대상',label);if(!list.length)return null;const foe=self&&list.every(x=>x.side!==self.side);if(foe)return list.slice().sort((a,c)=>Math.max(c.stats[1],c.stats[3])-Math.max(a.stats[1],a.stats[3]))[0];return list.slice().sort((a,c)=>a.hp.cur/a.hp.max-c.hp.cur/c.hp.max)[0]}};
  W.__SIM={ask:(q,y,n)=>H.answer.ask(q,y,n),uiCtx:(b,self,name,area)=>({b,self,name,area,viewer:'',

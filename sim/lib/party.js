@@ -44,12 +44,13 @@ function autoPick(t,mons){const s3=t.solo==3||t.solo==='3';const A=/^(AA|A|S)/.t
  let ph=0,sp=0;for(const m of mons||[])for(const mv of m.moves||[]){if(mv.cat==='물리')ph++;else if(mv.cat==='특수')sp++}
  const o=s3?['endure','retreat']:['endure'];const c=[ph>=sp?'attack':'specialattack','heal'];if(A)c.push('evasion');else if(s3)c.push('defense');if(A&&s3&&c.length<3)c.push('defense');
  return {o,c}}
-function orders(win,t,opt){opt=opt||{};const OD=win.OM_ORDERS;if(t.two)return ordersTwo(win,t,opt);let mo=t.solo&&t.mkOrders;
+function orders(win,t,opt){opt=opt||{};const OD=win.OM_ORDERS;if(t.two)return ordersTwo(win,t,opt);let mo=t.mkOrders||null;/* 11-15 망령 「지시 대가 패널티 제대로 들어가 있어?」: 6체도 제작기 지시 체계(mkOrders) 그대로 — 전엔 1인 기준만 읽고 6체는 협회식 기본값이라 지시 대가(off)가 빠지지 않았음 (웹툴 sheet_ui 와 같게) */
  if(t.solo&&!(mo&&mo.pick)&&opt.autoPick!==false){mo=Object.assign({preset:'assoc',tc:0,base:1},mo||{},{pick:autoPick(t,opt.mons)});t.autoPick=mo.pick}
  if(!mo){Object.assign(t,OD.auto(t,'assoc',1));return t}
  if(mo.preset==='manual'){Object.assign(t,OD.make(t,mo.tc,mo.base,{reset:true}));t.orderPreset=''}else Object.assign(t,OD.auto(Object.assign({},t,{orderPreset:mo.preset}),mo.preset,mo.base));
  if(mo.type){let nt=t;for(const k in mo.type)nt=OD.setItemType(nt,k[0]==='o'?'order':'command',k.slice(2),mo.type[k]);Object.assign(t,{orderType:nt.orderType,orderCount:nt.orderCount})}
  if(mo.pick){const oc=Object.assign({},t.orderCount||{});for(const k of Object.keys(oc)){const m=k.match(/^(order|command)_([a-z]+)$/);if(!m)continue;const L=m[1]==='order'?mo.pick.o:mo.pick.c;if(!L.includes(m[2]))oc[k]=0}t.orderCount=oc}
+ {const off=mo.off||((t.misag||{}).ordOff)||null;if(off){const oc=Object.assign({},t.orderCount||{});for(const k of Object.keys(oc)){const m=k.match(/^(order|command)_([a-z]+)$/);if(!m)continue;if(((m[1]==='order'?off.o:off.c)||[]).includes(m[2]))oc[k]=0}t.orderCount=oc}}
  return t}
 /* 10-30 미사그 2체 기준: 제작기 지시 체계(협회식 등)로 횟수를 낸 뒤 → 각성체 지시 대가(mkOrders.off) 0 → 「2체 기준」에서 고른 것(mkOrders.two)만 남김.
    제작기에서 아직 안 골랐으면 1인 2체 규칙(autoPick)으로 시뮬이 대신 고른다. 분배 레벨은 6체 그대로 */
