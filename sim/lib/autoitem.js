@@ -20,7 +20,12 @@ function choices(m,role,DBI){const L=[];const T=mainType(m);const bo=T&&BOOST[T]
  else{L.push('자뭉열매');if(bo)L.push(bo);L.push('하양허브')}
  return L.filter(n=>DBI[n]&&DBI[n].auto&&!BAN.has(n))}
 /* r = P.build 결과 {trainer, mons}. 빈 칸만 채운다. 돌려주는 값 = [{mon, item, why}] */
-function equip(win,r){const DBI=((win.OM_DB||{}).items)||{};const t=r.trainer;const cap=SOCK2[rankKey((t.ranks||{})['지시'])]||3;
+/* 11-15 망령 「여태 소지품을 시트 기준으로만? 안 껴 놓은 것도 있겠네」: 6체는 2체 소켓(3 안팎)이 아니라 6체 소켓(캠페인 상수 limit_item_socket — 지시 D 8 · C 9 · B 10 · A 11 · AA 12)으로 채운다.
+   【준비】 「소지품 소켓 : +N」(『황금신부의 혼수품』 — 「타입 : X」가 K체 이상일 경우)도 더한다 */
+function sockCap(win,r){const t=r.trainer;const rk=rankKey((t.ranks||{})['지시']);if(t.two||r.mons.length<=2)return SOCK2[rk]||3;const L=(((win.OM_DB||{}).const||{}).campaign||{}).limit_item_socket||{};let cap=+L[rk]||({D:8,C:9,B:10,A:11,AA:12})[rk]||9;
+ const TY=win.OM_STATS&&win.OM_STATS.typeEn?win.OM_STATS.typeEn:(x=>x);for(const m of r.mons)for(const p of [...(m.pots||[]),...(m.excl?[m.excl]:[]),...(m.exclX||[])]){const e=String(p&&p.eff||'').replace(/<br\s*\/?>/g,'\n');const x=e.match(/【\s*준비\s*】[^\n]*?「소지품\s*소켓\s*:\s*\+\s*([\d.]+)\s*」/);if(!x)continue;const c=e.match(/「타입\s*:\s*([^」]+)」\s*(?:이|가)\s*(\d+)\s*체\s*이상/);if(c){const en=TY(c[1].trim());if(r.mons.filter(q=>(q.types||[]).includes(en)).length<+c[2])continue}cap+=+x[1]}
+ return cap}
+function equip(win,r){const DBI=((win.OM_DB||{}).items)||{};const t=r.trainer;const cap=sockCap(win,r);
  const used=new Set(r.mons.map(m=>m.item).filter(Boolean));let spent=r.mons.reduce((a,m)=>a+(m.item&&DBI[m.item]?+DBI[m.item].sock||0:0),0);const out=[];
  const order=r.mons.filter(m=>!m.item).map(m=>({m,role:roleOf(m)})).sort((a,b)=>(a.role==='atk'?0:1)-(b.role==='atk'?0:1));
  order.forEach(({m,role},i)=>{const left=order.length-i-1;const keep=left*1;   /* 뒤에 남은 포켓몬 몫으로 1소켓씩은 남겨 둔다 */
