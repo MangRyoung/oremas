@@ -23,6 +23,8 @@ window.OM_IMPORT=(()=>{
    unique:(d.unique||[]).filter(u=>u&&u.name).map(u=>{const o={name:u.name,eff:brN(u.eff||'')};for(const k of ['color','icon','sub'])if(u[k])o[k]=String(u[k]).slice(0,40);if(u.line)o.line=String(u.line).slice(0,80);const dsl=String(u.auto||'').trim();if(dsl){const r=window.OM_FX?window.OM_FX.parse(dsl):{ops:[]};o.auto={dsl,ops:r.ops}}return o}),
    pids:d.pids||[],solo:(d.solo==3||d.solo==='3')?3:!!d.solo,isockAdj:isFinite(+d.isockAdj)&&+d.isockAdj?+d.isockAdj:0,isockNote:String(d.isockNote||''),folder:d.folder||'',fields:fieldsOf(d.fields),
    /* 10-27 망령: 트레이너가 주는 「기능 확장 : 기술」 [{mv, lim(【N/시】, 0 = 제한 없음), kind:'act'(행동 대신)|'extra'(추가 행동), who(포켓몬 id, 비면 PT 전원), src(출처 포텐셜)}] */
+   /* 11-14 망령 「고유로 기능 확장처럼 아군 전원에게 공유시키는 폼체인지」: 제작기 t.sforms(폼 원본 그대로) — 배틀에서 포켓몬마다 그 종족치에 맞춰 풀어 폼 목록 뒤에 붙인다 (battle_ui formsOf) */
+   sforms:(Array.isArray(d.sforms)?d.sforms:[]).filter(f=>f&&typeof f==='object').slice(0,6).map(f=>JSON.parse(JSON.stringify(f))),
    ext:(Array.isArray(d.ext)?d.ext:[]).filter(x=>x&&String(x.mv||'').trim()).slice(0,12).map(x=>({mv:String(x.mv).trim().slice(0,60),lim:Math.max(0,Math.min(9,Math.round(+x.lim)||0)),kind:x.kind==='extra'?'extra':'act',who:String(x.who||'').slice(0,40),src:String(x.src||'').slice(0,60)})),
    /* 10-27 망령: 해석 차단 기본값 (포켓몬마다 따로 정하지 않았으면 이 값) */
    dexFw:dexFwOf(d.dexFw),dexFwParts:dexPartsOf(d.dexFwParts),
@@ -128,5 +130,5 @@ window.OM_IMPORT=(()=>{
   const pu=((trDoc.data&&trDoc.data.data)||trDoc.data||trDoc||{}).ptUse;if(pu&&pu.mons)for(const m of mons){const u=pu.mons[m.id];if(!m.pride&&u&&u.pride)m.pride=String(u.pride).slice(0,4)}
   return {trainer:tr,mons}}
 
- return {trainer,pokemon,move,party,roleOf};
+ return {trainer,pokemon,move,party,roleOf,formsOf};
 })();
