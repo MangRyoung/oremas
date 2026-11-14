@@ -65,7 +65,7 @@ async function runBattle(W,opt){
  /* ---- 선발 · 교대 고르기 ---- */
  const pickIn=(sd,n,tidPref)=>{const L=bench(sd);const fs=foes(sd);const byT={};for(const m of L)(byT[m.tid]=byT[m.tid]||[]).push(m);const out=[];const tids=Object.keys(byT);if(tidPref&&byT[tidPref])tids.sort((x,y)=>(y===tidPref)-(x===tidPref));let k=0;
   while(out.length<n&&tids.some(t=>byT[t].length)){const t=tids[k%tids.length];k++;const arr=byT[t];if(!arr.length)continue;const pol=POLS[t];let pick;
-   if(pol==='D'||pol==='C'||pol==='wild'||!fs.length)pick=arr[0];else pick=arr.map(m=>({m,s:fs.reduce((a,f)=>a+matchup(m,f),0)})).sort((a,c)=>c.s-a.s)[0].m;arr.splice(arr.indexOf(pick),1);out.push(pick)}return out};
+   if((pol==='D'||pol==='C'||pol==='wild'||!fs.length)&&!(AI(sd)&&fs.length&&pol!=='wild'&&!process.env.NOPICK))pick=arr[0];else pick=arr.map(m=>({m,s:fs.reduce((a,f)=>a+matchup(m,f),0)})).sort((a,c)=>c.s-a.s)[0].m;arr.splice(arr.indexOf(pick),1);out.push(pick)}return out};
  /* ---- 행동 고르기 (2-9 · 2-11) ---- */
  const statusPlan=(sd,m,pol,fs,best)=>FG.statusPick(H,W,{m,pol,fs,best,allies:active(sd).filter(x=>x!==m),threatVs,topThreat,dangerOf,turn:C().turn,expect,spd,isOld});
  const choose=(sd,m,plan)=>{const pol=polOf(m);const fs=foes(sd);if(!fs.length)return null;const dm=dmgMoves(m);const st=m.states||{};
@@ -96,18 +96,26 @@ async function runBattle(W,opt){
  function chooseJoint(sd){const me=active(sd).filter(m=>{const st=m.states||{};return !(st.Thrash||st.Encore)&&!(m.charge&&+m.charge.turn<(+C().turn||0))});const fs=foes(sd);if(me.length<2||!fs.length)return null;
   const pol0=polOf(me[0]);const tw={};for(const f of fs){let w=0;for(const m of active(sd)){const th=threatVs(pol0==='D'?'C':pol0,f,m);w=Math.max(w,th.v/Math.max(1,m.hp.cur))}tw[f.id]=0.6+Math.min(1.6,w)}
   const cands=m=>{const L=[];for(const mv of dmgMoves(m)){if((m.states||{}).Taunt&&mv.cat==='변화')continue;if(SPREAD.test(mv.range||'')){const d={};for(const f of fs)d[f.id]=expect(m,mv,f,true);let pen=0;if(mv.range==='자신 이외')for(const x of active(sd))if(x!==m)pen+=expect(m,mv,x,true)/Math.max(1,x.hp.cur);L.push({mv,tg:fs.slice().sort((a,c)=>d[c.id]-d[a.id])[0],d,pen})}else for(const f of fs)L.push({mv,tg:f,d:{[f.id]:expect(m,mv,f,false)},pen:0})}
-   return L.sort((a,c)=>Object.values(c.d).reduce((x,y)=>x+y,0)-Object.values(a.d).reduce((x,y)=>x+y,0)).slice(0,8)};
+   const L2=L.sort((a,c)=>Object.values(c.d).reduce((x,y)=>x+y,0)-Object.values(a.d).reduce((x,y)=>x+y,0)).slice(0,8);
+   /* 11-14 기술 방어도 후보 — 연속이면 1/3 확률이라 지난 턴에 썼으면 뺀다 */
+   if(!process.env.NOPROT&&!(m.states||{}).Taunt&&m.protectLast!==(+C().turn||0)-1){const pm=FN.MVS(m).map((mv,i)=>Object.assign({},mv,{_i:i})).find(mv=>mv&&FN.protMove(mv)&&!mv.virt);if(pm)L2.push({mv:pm,tg:m,d:{},pen:0,prot:1})}
+   return L2};
   const C1=cands(me[0]),C2=cands(me[1]);if(!C1.length||!C2.length)return null;let best=null,bv=-1e9;
   /* 행동 순서까지: 스피드 순으로 한 턴을 짧게 돌려 본다 — 빠른 상대가 먼저 우리 한 마리를 쓰러뜨리면 그 아이의 공격은 없다 · 우리가 먼저 쓰러뜨린 상대는 못 때린다 */
   const P0=pol0==='D'?'C':pol0;const FA={};for(const f of fs){let bt=null,br=-1;for(const m of active(sd)){const th=threatVs(P0,f,m);const r=th.v/Math.max(1,m.hp.cur);if(r>br){br=r;bt={m,v:th.v}}}FA[f.id]=bt}
   const SP={};for(const x of [...me,...fs])SP[x.id]=spd(x);const actors=[...me,...fs].sort((x,y)=>SP[y.id]-SP[x.id]);
-  for(const a of C1)for(const c of C2){const plan={[me[0].id]:a,[me[1].id]:c};const hp={};for(const x of [...active(sd),...fs])hp[x.id]=x.hp.cur;let v=0;
+  for(const a of C1)for(const c of C2){if(a.prot&&c.prot)continue;const plan={[me[0].id]:a,[me[1].id]:c};const PROT={};if(a.prot)PROT[me[0].id]=1;if(c.prot)PROT[me[1].id]=1;const hp={};for(const x of [...active(sd),...fs])hp[x.id]=x.hp.cur;let v=0;
    for(const x of actors){if(hp[x.id]<=0)continue;if(plan[x.id]){for(const f of fs){const d=plan[x.id].d[f.id]||0;if(d<=0||hp[f.id]<=0)continue;const before=hp[f.id];hp[f.id]=Math.max(0,before-d);v+=tw[f.id]*((before-hp[f.id])/Math.max(1,f.hp.cur))}}
-    else{const t=FA[x.id];if(t&&t.m&&hp[t.m.id]>0){const before=hp[t.m.id];hp[t.m.id]=Math.max(0,before-t.v);v-=0.8*((before-hp[t.m.id])/Math.max(1,t.m.hp.cur))}}}
+    else{const t=FA[x.id];if(t&&t.m&&hp[t.m.id]>0){if(PROT[t.m.id]){v+=+(process.env.PROTB||0.25);continue}const before=hp[t.m.id];hp[t.m.id]=Math.max(0,before-t.v);v-=0.8*((before-hp[t.m.id])/Math.max(1,t.m.hp.cur))}}}
    for(const f of fs)if(hp[f.id]<=0)v+=0.6*tw[f.id];for(const m of me)if(hp[m.id]<=0)v-=0.5;v-=1.2*(a.pen+c.pen);if(v>bv){bv=v;best=[a,c]}}
-  if(!best)return null;const out=new Map();me.forEach((m,i)=>{const x=best[i];out.set(m.id,{mv:x.mv,tg:x.tg,v:x.d[x.tg.id]||0})});return out}
+  if(!best)return null;const out=new Map();me.forEach((m,i)=>{const x=best[i];out.set(m.id,{mv:x.mv,tg:x.tg,v:x.d[x.tg.id]||0,prot:x.prot})});return out}
  /* 교대 (2-10 · 2-11) */
- const wantSwitch=(sd,m)=>{if(m.charge)return null;const pol=polOf(m);if(pol==='D'||pol==='wild'||isWildT(m.tid))return null;if((m.states||{}).Bind||(m.states||{}).MeanLook||(m.states||{}).Block)return null;const fs=foes(sd);if(!fs.length)return null;
+ /* 11-14 새 로직 교대: 지시 랭크와 상관없이 — 지금 상대들에게 크게 밀리고(받을 위협 ≥ 남은 HP 의 70%) 벤치에 확실히 나은 아이(맞대결 점수 +0.6)가 있을 때. 교대해 들어오는 아이가 이번 턴 받을 피해도 셈 */
+ const wantSwitchNew=(sd,m)=>{if(m.charge)return null;const st=m.states||{};if(st.Bind||st.MeanLook||st.Block)return null;const fs=foes(sd);if(!fs.length)return null;const pol=polOf(m);const P2=pol==='D'?'C':pol;
+  const thr=fs.reduce((a,f)=>Math.max(a,threatVs(P2,f,m).v),0);if(thr<m.hp.cur*(+process.env.SWT||0.7))return null;
+  const cur=fs.reduce((a,f)=>a+matchup(m,f),0);const L=bench(sd).filter(x=>x.tid===m.tid).map(x=>{const inThr=fs.reduce((a,f)=>Math.max(a,threatVs(P2,f,x).v),0);return {x,s:fs.reduce((a,f)=>a+matchup(x,f),0)-inThr/Math.max(1,x.hp.cur)*0.5}}).sort((a,c)=>c.s-a.s);
+  return L.length&&L[0].s>cur+(+process.env.SWM||0.6)?L[0].x:null};
+ const wantSwitch=(sd,m)=>{if(m.charge)return null;if(AI(sd)&&process.env.NEWSW)return wantSwitchNew(sd,m);const pol=polOf(m);if(pol==='D'||pol==='wild'||isWildT(m.tid))return null;if((m.states||{}).Bind||(m.states||{}).MeanLook||(m.states||{}).Block)return null;const fs=foes(sd);if(!fs.length)return null;
   const L=bench(sd).filter(x=>x.tid===m.tid).map(x=>({x,s:fs.reduce((a,f)=>a+matchup(x,f),0)})).sort((a,c)=>c.s-a.s);if(!L.length)return null;const cur=fs.reduce((a,f)=>a+matchup(m,f),0);
   if(pol==='C'){const crit=fs.some(f=>{const t=threatVs('C',f,m);return t.mv&&B.effectiveness([t.mv.typeEn],m,{atkTypes:f.types}).value>=4&&t.v>=m.hp.cur});return crit&&L[0].s>cur?L[0].x:null}
   const bad=fs.every(f=>threatVs(pol,f,m).v>=m.hp.cur*0.6);if(!bad)return null;return L[0].s>cur+0.5?L[0].x:null};
@@ -203,7 +211,7 @@ async function runBattle(W,opt){
   const acts=[];const plans={left:new Map(),right:new Map()};const cmds={};
   for(const sd of ['left','right']){const J=AI(sd)&&!['D','wild'].includes(polOf(active(sd)[0]||{tid:''}))?chooseJoint(sd):null;
    for(const m of active(sd)){const sw=wantSwitch(sd,m);if(sw){acts.push({sd,m,sw});continue}let a=null;
-    if(J&&J.has(m.id)){const j=J.get(m.id);a=j;if(!(m.states||{}).Taunt&&!process.env.NOSTAT){const sp=statusPlan(sd,m,polOf(m),foes(sd),j);if(sp&&sp.score>(j.v/Math.max(1,j.tg.hp.cur)))a={mv:sp.mv,tg:sp.tg,v:0,status:sp.why}}}else a=choose(sd,m,plans[sd]);
+    if(J&&J.has(m.id)){const j=J.get(m.id);a=j;if(!j.prot&&!(m.states||{}).Taunt&&!process.env.NOSTAT){const sp=statusPlan(sd,m,polOf(m),foes(sd),j);if(sp&&sp.score>(j.v/Math.max(1,j.tg.hp.cur)))a={mv:sp.mv,tg:sp.tg,v:0,status:sp.why}}}else a=choose(sd,m,plans[sd]);
     if(a)acts.push(Object.assign({sd,m},a))}}
   for(const a of acts){const tid=a.m.tid;cmds[tid]=cmds[tid]||{mons:{}};if(a.sw)cmds[tid].mons[a.m.id]={move:'switch',switch:a.sw.id,targets:[]};else{const tg=a.tg?[a.tg.side+'_'+a.tg.entry]:[];const r=String(a.mv.range||'');const dt=FN.defaultTargets(C(),a.m.id,String(a.mv._i));
    const targets=r==='1체'||r===''?tg:dt.length?dt:tg;cmds[tid].mons[a.m.id]={move:a.mv._i,targets};a.targets=targets}}

@@ -22,11 +22,11 @@ const mk=id=>{const r=P.build(W,snap,id,{two:opt.two?true:false});P.orders(W,r.t
    games++;turns+=r.turns;sideW[r.winner]++;if(r.winner==='left'){w++;res[S[i].name].w++;res[S[j].name].l++}else if(r.winner==='right'){l++;res[S[j].name].w++;res[S[i].name].l++}else{d++;res[S[i].name].d++;res[S[j].name].d++}res[S[i].name].g++;res[S[j].name].g++;
    for(const sd of ['left','right'])for(const t of Object.values(r.trainers[sd])){used.order+=t.used.order;used.command+=t.used.command}
    for(const q in r.asked||{})asked[q]=(asked[q]||0)+r.asked[q];
-   if(opt.stats)for(const ln of r.log){const m=ln.match(/^【(포텐셜|고유|전용|계기|준비)】/);if(m)used.pot++}
+   if(opt.stats)for(const ln of r.log){const m=ln.match(/^【(포텐셜|고유|전용|계기|준비)】/);if(m)used.pot++;if(/기술 방어 성공/.test(ln))used.prot=(used.prot||0)+1;if(/기술 방어 실패/.test(ln))used.protF=(used.protF||0)+1;if(/✗ 기술 방어/.test(ln))used.blk=(used.blk||0)+1}
    if(wantLog)fs.writeFileSync(path.join(SIM,'records','pvp_log_'+S[i].name+'_'+S[j].name+'.txt'),r.log.join('\n'))}
   pairs.push([S[i].name,S[j].name,w,l,d])}
  const rows=Object.entries(res).map(([n,r])=>({n,rate:r.g?r.w/r.g:0,...r})).sort((a,b)=>b.rate-a.rate);
- console.log(`학생 ${S.length}명 · ${games}판 · 평균 ${(turns/Math.max(1,games)).toFixed(1)}턴 · ${((Date.now()-t0)/1000).toFixed(0)}초 · 왼 ${sideW.left} 오 ${sideW.right} 무 ${sideW.draw} · 4식 ${used.order} 6령 ${used.command}${opt.stats?' 포텐셜 줄 '+used.pot:''}`);
+ console.log(`학생 ${S.length}명 · ${games}판 · 평균 ${(turns/Math.max(1,games)).toFixed(1)}턴 · ${((Date.now()-t0)/1000).toFixed(0)}초 · 왼 ${sideW.left} 오 ${sideW.right} 무 ${sideW.draw} · 4식 ${used.order} 6령 ${used.command}${opt.stats?' 포텐셜 줄 '+used.pot+' 방어 성공 '+(used.prot||0)+' 실패 '+(used.protF||0)+' 막은 공격 '+(used.blk||0):''}`);
  if(!opt.quiet)for(const r of rows)console.log(`${(r.rate*100).toFixed(0).padStart(3)}%  ${r.w}-${r.l}-${r.d}  ${r.n}`);
  if(opt.out)fs.writeFileSync(path.resolve(opt.out),JSON.stringify({at:new Date().toISOString(),n:N,games,sideW,rows,pairs,asked},null,1));
  if(opt.asked){const L=Object.entries(asked).sort((a,b)=>b[1]-a[1]).slice(0,+opt.asked||30);for(const [q,c] of L)console.log(c,q)}
