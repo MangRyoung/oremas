@@ -2776,8 +2776,10 @@ window.OM_BATTLE_UI=(()=>{
  const FA_TW=/(^|\s)(자신|아군전체|아군|상대전체|상대|자신이외|전체|아군1체|아군1|상대1체|상대1|무작위1|자신이외무작위|상대무작위|전원무작위|에리어|지정에리어)(?=\s|$)/;
  const faTo=(t,w)=>String(t||'').split('\n').map(l=>{const x=l.trim();if(!x||x.startsWith('#')||/^(조건|확인|선택|-|·|•)/.test(x)||/[;；]/.test(x)||FA_TW.test(x))return l;return l.replace(/\s*(있는한)?\s*$/,m=>' '+w+m)}).join('\n');const faAll=t=>faTo(t,'전체');
  const faName=s=>'《'+String(s.name||'')+'》';
+ /* 11-15 망령 「필드 전개에 H」: stage.h 1 = H 파티(hTid)는 필드 효과를 받지 않음 · 2 = H 의 상대(다른 편)가 받는 효과는 무효 → 이 포켓몬이 필드 효과를 받나 */
+ function fieldHOk(b,s,m){if(!s||!m||!+s.h||!s.hTid)return true;const tk=x=>{const t=(b.trainers||{})[x];return t&&t.solo?'solo:'+x:(t||{}).side};if(+s.h===1)return m.tid!==s.hTid;return tk(m.tid)===tk(s.hTid)}
  /* 「필드 동안」 줄을 이 포켓몬 몫으로 (대상 낱말이 없으면 전체 · 자신 = 주인 · 아군/상대 = 주인 기준) — 이미 그 이름 효과가 있으면 [] */
- function faHoldOps(b,s,m){if(!FX()||!s||!s.auto||!String(s.auto.hold||'').trim()||!m)return [];const nm=faName(s);if((FX().chips(m)||[]).some(ch=>ch&&ch.name===nm))return [];const tk=x=>{const t=(b.trainers||{})[x.tid];return t&&t.solo?'solo:'+x.tid:x.side};
+ function faHoldOps(b,s,m){if(!FX()||!s||!s.auto||!String(s.auto.hold||'').trim()||!m)return [];if(!fieldHOk(b,s,m))return [];const nm=faName(s);if((FX().chips(m)||[]).some(ch=>ch&&ch.name===nm))return [];const tk=x=>{const t=(b.trainers||{})[x.tid];return t&&t.solo?'solo:'+x.tid:x.side};
   const om=s.ownerMid?b.mons[s.ownerMid]:null;const anyT=om||Object.values(b.mons||{}).find(x=>x.tid===s.tid);const own=anyT?tk(anyT):'';const rel=tk(m)===own?'ally':'enemy';const isO=!!om&&m.id===om.id;
   const ok=t=>{t=t||'self';if(t==='self')return isO;if(/^ally/.test(t))return rel==='ally'&&!(t==='allyx'&&isO);if(/enemy/.test(t))return rel==='enemy';if(t==='others'||t==='randother')return !isO;return true};
   let r={ops:[]};try{r=FX().parse(faAll(s.auto.hold))}catch(e){}return (r.ops||[]).filter(op=>op&&op.k!=='choice'&&ok(op.tgt)).map(op=>Object.assign({},op,{tgt:'self',p:0,pl:''}))}
@@ -2787,12 +2789,12 @@ window.OM_BATTLE_UI=(()=>{
   const tk=m=>{const t=(b.trainers||{})[m.tid];return t&&t.solo?'solo:'+m.tid:m.side};const live=m=>!!(m&&m.entry&&m.hp&&m.hp.cur>0);
   const om=s.ownerMid?b.mons[s.ownerMid]:null;const anyT=om||Object.values(b.mons||{}).find(m=>m.tid===s.tid);const own=anyT?tk(anyT):'';
   const P=k=>{let r={ops:[],errs:[]};try{r=FX().parse(['deploy','start','end','hold'].includes(k)?faAll(AU[k]):faTo(AU[k],'자신'))}catch(e){r.errs=[e.message]}if(r.errs&&r.errs.length)A().sysLog(`【필드】 ${nm} 「${FA_KO[k]}」 구문에서 못 읽은 줄 — ${r.errs.join(' / ')}`,'battle',{gmPriv:1});return r.ops||[]};
-  const fire=(mid,k,ops,x)=>fireAuto(mid,'field',nm,Object.assign({quiet:true,auto:{ops,text:String(AU[k]||'')},head:`【필드】 ${nm} — ${FA_KO[k]}${o.force?' (강제 발동)':''}`,eff:String(s.eff||''),ownTid:s.tid||''},o.force?{force:true}:{},x||{}));
+  const fire=(mid,k,ops,x)=>fireAuto(mid,'field',nm,Object.assign({quiet:true,auto:{ops,text:String(AU[k]||'')},head:`【필드】 ${nm} — ${FA_KO[k]}${o.force?' (강제 발동)':''}`,eff:String(s.eff||''),ownTid:s.tid||''},o.force?{force:true}:{},x||{},{ctx:Object.assign({},(x&&x.ctx)||{},+s.h&&s.hTid?{tgtOk:mm=>fieldHOk(ctx().b,s,mm)}:{})}));
   /* 11-09 소지품 소모 시: o.mid = 다 쓴 포켓몬 · o.used = {name} — 「조건 소모:나무열매」가 읽는다 */
-  if(trig==='use'){const m=b.mons[o.mid];if(!m||!m.entry||!String(AU.use||'').trim())return;const ops=P('use');if(ops.length)await fire(m.id,'use',ops,{ctx:{used:o.used||{}}});return}
+  if(trig==='use'){const m=b.mons[o.mid];if(!m||!m.entry||!String(AU.use||'').trim()||!fieldHOk(b,s,m))return;const ops=P('use');if(ops.length)await fire(m.id,'use',ops,{ctx:{used:o.used||{}}});return}
   const holdFor=async mid=>{const b2=ctx().b;const m=b2.mons[mid];if(!live(m))return;const ops=faHoldOps(b2,(b2.field||{}).stage,m);if(ops.length)await fire(mid,'hold',ops,{noRoll:true})};
   if(trig==='entry'){const m=b.mons[o.mid];if(!live(m))return;const who=AU.who||'all';const rel=tk(m)===own?'own':'foe';
-   if(String(AU.entry||'').trim()&&(who==='all'||who===rel)){const ops=P('entry');if(ops.length)await fire(m.id,'entry',ops)}
+   if(String(AU.entry||'').trim()&&(who==='all'||who===rel)&&fieldHOk(b,s,m)){const ops=P('entry');if(ops.length)await fire(m.id,'entry',ops)}
    await holdFor(m.id);return}
   if(!['deploy','start','end'].includes(trig))return;
   if(String(AU[trig]||'').trim()&&!o.holdOnly){const L=Object.values(b.mons||{});const holder=live(om)?om:L.find(m=>live(m)&&m.tid===s.tid)||L.find(m=>live(m)&&own&&tk(m)===own);

@@ -22,10 +22,14 @@ window.OM_STAGE_UI=(()=>{
  const tko=en=>{try{return S().typeKo(en)}catch(e){return en}};
  const bgSrc=v=>{v=String(v||'').trim();if(!v)return '';if(/^(https?:|data:|img\/|\.\/|\/)/.test(v))return v;for(const g of DB().bg||[])for(const it of g.i||[])if((it.k===v||it.l===v)&&it.src)return it.src;return ''};
  const FA_NM={deploy:'전개 시',start:'턴 개시 시',end:'턴 종료 시',entry:'등장 시',use:'소지품 소모 시',hold:'필드 동안'};
+ /* 11-15 망령 「필드 전개에 H 기능 — H 인 파티를 정할 수 있고, H 는 ① 필드 효과를 받지 않는다 ② 상대가 받는 효과를 무효화 하는 2종류. 고유로 통솔형이 전개할 땐 대체로 본인을 H 로」
+    필드 칸 h: 0 없음 · 1 「H 는 필드 효과를 받지 않음」 · 2 「H 의 상대가 받는 효과를 무효」(= H 편만 받음). 전개 때 H 파티(트레이너) 를 고른다 — 기본 = 전개한 주인. stage.h · stage.hTid. 실제 거르기는 battle_ui fieldHOk */
+ const H_KO=['없음','H 는 필드 효과를 받지 않음','H 의 상대가 받는 효과는 무효'],H_SH=['','받지 않음','상대 무효'];
+ const hLine=(s,b)=>{if(!s||!+s.h||!s.hTid)return '';b=b||(ST().state.battle||{});const t=(b.trainers||{})[s.hTid];return `H ${t?t.name||s.hTid:s.hTid} · ${H_SH[+s.h]}`};
  const effLines=t=>String(t||'').replace(/<br\s*\/?>/g,'\n').split('\n').map(x=>x.trim()).filter(Boolean);
  /* 11-09 망령 「필드에도 구문」: auto = {deploy · start · end · entry · hold · who} — 실행은 battle_ui fieldAuto */
  const AK=['deploy','start','end','entry','use','hold'];const autoN=a=>{if(!a||typeof a!=='object')return null;const o={};for(const k of AK){const v=String(a[k]==null?'':a[k]).replace(/\r/g,'').trim();if(v)o[k]=v.slice(0,4000)}if(!Object.keys(o).length)return null;if(a.who==='own'||a.who==='foe')o.who=a.who;return o};
- const fix=a=>(Array.isArray(a)?a:[]).filter(x=>x&&typeof x==='object'&&String(x.name||'').trim()).map(x=>Object.assign({type:kindOf(x),name:String(x.name).trim(),loc:String(x.loc||''),img:String(x.img||''),eff:String(x.eff||''),count:+x.count>0?Math.round(+x.count):-1,color:String(x.color||'')},autoN(x.auto)?{auto:autoN(x.auto)}:{}));
+ const fix=a=>(Array.isArray(a)?a:[]).filter(x=>x&&typeof x==='object'&&String(x.name||'').trim()).map(x=>Object.assign({type:kindOf(x),name:String(x.name).trim(),loc:String(x.loc||''),img:String(x.img||''),eff:String(x.eff||''),count:+x.count>0?Math.round(+x.count):-1,color:String(x.color||'')},autoN(x.auto)?{auto:autoN(x.auto)}:{},[1,2].includes(+x.h)?{h:+x.h}:{}));
  function stage(b){b=b||(ST().state.battle||{});const s=(b.field||{}).stage;return s&&s.name?s:null}
  const mgr=()=>{try{return BU().ctx().mgr}catch(e){return gm()}};
  const R=()=>ST().state.roster||{trainers:{},mons:{}};
@@ -55,7 +59,7 @@ window.OM_STAGE_UI=(()=>{
 
  /* ----- 필드 띠의 칩 · 무대 배경 ----- */
  function chip(c,f){const s=f&&f.stage;if(!s||!s.name)return '';const k=kindOf(s);const col=tcol(s.color);
-  return `<div class="stbar ${KIND_CLS[k]}" data-act="stage" title="눌러서 필드 효과 보기" style="--sc:${esc(col.bg||'#5fd38d')}"><span class="stgb ${KIND_CLS[k]}">${KINDS[k]}</span><b>《${esc(keyOf(s))}》</b>${s.loc?`<small>${esc(s.loc)}</small>`:''}<span class="sp"></span>${s.owner?`<small>주인 ${esc(s.owner)}</small>`:''}<em>${s.count>=1000||!s.count?'∞':s.count+'T'}</em></div>`}
+  return `<div class="stbar ${KIND_CLS[k]}" data-act="stage" title="눌러서 필드 효과 보기" style="--sc:${esc(col.bg||'#5fd38d')}"><span class="stgb ${KIND_CLS[k]}">${KINDS[k]}</span><b>《${esc(keyOf(s))}》</b>${s.h?`<small class="sth" title="${esc(H_KO[+s.h])}">${esc(hLine(s,c&&c.b))}</small>`:''}${s.loc?`<small>${esc(s.loc)}</small>`:''}<span class="sp"></span>${s.owner?`<small>주인 ${esc(s.owner)}</small>`:''}<em>${s.count>=1000||!s.count?'∞':s.count+'T'}</em></div>`}
  function bgStyle(f){const s=f&&f.stage;if(!s||!s.name)return '';const u=bgSrc(s.img);if(!u)return '';let abs=u;try{abs=new URL(u,location.href).href}catch(e){}return ` style="--stage:url('${cssu(abs)}')"`}   /* 변수 안의 url() 은 css 파일 기준으로 풀리니 절대 주소로 */
  const canReset=s=>mgr()||(!!s&&!!ST().seat&&s.tid===ST().seat);
 
@@ -65,7 +69,7 @@ window.OM_STAGE_UI=(()=>{
    <div class="stinfo">${u?`<div class="stimg" style="background-image:url('${cssu(u)}')"></div>`:''}
     <div class="sthd" style="background:${esc(col.bg)};color:${esc(col.fg)}">◆《${esc(keyOf(s))}》의 필드 효과</div>
     <ul class="steff">${effLines(s.eff).map(l=>`<li>${esc(l)}</li>`).join('')||'<li class="dim">효과 글 없음</li>'}</ul>
-    <div class="small"><b>지역</b> ${esc(s.loc||'-')} · <b>남은 턴</b> ${s.count>=1000||!s.count?'무한':s.count+'턴'}${s.owner?` · <b>주인</b> ${esc(s.owner)}`:''}</div>
+    <div class="small"><b>지역</b> ${esc(s.loc||'-')} · <b>남은 턴</b> ${s.count>=1000||!s.count?'무한':s.count+'턴'}${s.owner?` · <b>주인</b> ${esc(s.owner)}`:''}${s.h?` · <b>H</b> ${esc(hLine(s).replace(/^H /,''))}`:''}</div>
     ${s.auto?`<div class="stauto" style="margin-top:10px;padding-top:8px;border-top:1px dashed #8886"><div class="small"><b>⚙ 자동화 구문</b> ${Object.keys(s.auto).filter(k=>k!=='who').map(k=>FA_NM[k]).join(' · ')}</div>${canForce(s)?`<div class="row small" style="gap:6px;flex-wrap:wrap;margin-top:6px"><span class="dim">${gm()?'GM':'주인'} — 강제 발동 (조건 · 확률을 건너뛴다):</span>${Object.keys(s.auto).filter(k=>k!=='who').map(k=>`<button class="btn xs" data-stf="${k}">${FA_NM[k]}</button>`).join('')}</div>`:''}</div>`:''}</div>`);
   /* 11-09 망령 「혹시 모를 에러나 몇몇 효과를 대비해 강제로 발동도」: 칸마다 강제 발동 — 등장 · 소지품 소모는 포켓몬을 고른다 */
   md.querySelectorAll('[data-stf]').forEach(bt=>bt.onclick=async()=>{const k=bt.dataset.stf;const B=BU();if(!B||!B.fieldAuto)return;
@@ -82,7 +86,7 @@ window.OM_STAGE_UI=(()=>{
     <div class="stbody"><div class="sthead"><b>${esc(f.name)}</b><span class="stgb ${KIND_CLS[kindOf(f)]}">${KINDS[kindOf(f)]}</span>${f.color?`<span class="type" style="background:${esc(col.bg)};color:${esc(col.fg)}">${esc(tko(f.color))}</span>`:''}</div>
      <div class="strows"><span><b>지역</b>${esc(f.loc||'-')}</span><span><b>지속</b>${+f.count>0?f.count+'턴':'무한'}</span></div>
      <div class="steff1">${esc(effLines(f.eff).join('\n'))||'<span class="dim">효과 글 없음</span>'}</div>
-     <div class="stac">${on?(canReset(s)?`<button class="btn sm stnow stoff" data-sgoff title="다시 누르면 걷는다">전개 중 · 누르면 걷기</button>`:'<span class="stnow">전개 중</span>'):can?`<button class="btn sm pri stgo" data-sg="${esc(key)}">필드 전개!</button><label class="small dim">지속 <input type="number" class="n xs" data-sgc="${esc(key)}" value="${+f.count>0?f.count:''}" placeholder="무한"> 턴</label>`:'<span class="small dim">이 포켓몬이 배틀 필드에 나와 있어야 전개할 수 있다</span>'}<span class="sp"></span><button class="btn sm ghost" data-se="${esc(key)}">수정</button><button class="btn sm ghost danger" data-sd="${esc(key)}">삭제</button></div></div></div>`};
+     <div class="stac">${on?(canReset(s)?`<button class="btn sm stnow stoff" data-sgoff title="다시 누르면 걷는다">전개 중 · 누르면 걷기</button>`:'<span class="stnow">전개 중</span>'):can?`<button class="btn sm pri stgo" data-sg="${esc(key)}">필드 전개!</button><label class="small dim">지속 <input type="number" class="n xs" data-sgc="${esc(key)}" value="${+f.count>0?f.count:''}" placeholder="무한"> 턴</label><label class="small dim" title="H 파티 — ① 필드 효과를 받지 않음 · ② 그 상대가 받는 효과는 무효(H 편만 받음)">H <select class="xs" data-sgh="${esc(key)}">${H_KO.map((n,i)=>`<option value="${i}" ${(+f.h||0)===i?'selected':''}>${i?H_SH[i]:'없음'}</option>`).join('')}</select> <select class="xs" data-sght="${esc(key)}">${Object.entries(bt).map(([id,t])=>`<option value="${esc(id)}" ${id===o.tid?'selected':''}>${esc(t.name||id)}</option>`).join('')}</select></label>`:'<span class="small dim">이 포켓몬이 배틀 필드에 나와 있어야 전개할 수 있다</span>'}<span class="sp"></span><button class="btn sm ghost" data-se="${esc(key)}">수정</button><button class="btn sm ghost danger" data-sd="${esc(key)}">삭제</button></div></div></div>`};
   const group=o=>`<div class="sfo"><div class="sfoh"><span class="sfok">${o.kind==='t'?'트레이너':'포켓몬'}</span><b>${esc(o.name)}</b>${o.kind==='m'&&!o.on?'<span class="small dim">대기 중</span>':''}<span class="sp"></span><button class="btn xs" data-sa="${esc(o.kind+':'+o.id)}">＋ 필드</button></div>${o.fields.map((f,k)=>card(o,f,k)).join('')}</div>`;
   const tids=[...new Set(L.map(o=>o.tid))];
   const md=A().openModal(`<div class="mhead"><h2>필드 전개</h2><span class="small dim">${cur?'지금 《'+esc(cur)+'》'+(s.owner?' · '+esc(s.owner):''):'전개된 필드 없음'}</span><span class="sp"></span>${s&&canReset(s)?'<button class="btn sm ghost danger" id="strs">필드 걷기</button>':''}<button class="btn ghost" data-x>닫기</button></div>
@@ -90,7 +94,7 @@ window.OM_STAGE_UI=(()=>{
    <div class="stlist">${tids.map(tid=>L.filter(o=>o.tid===tid&&(o.kind==='t'||o.fields.length)).map(group).join('')+(L.filter(o=>o.tid===tid&&o.kind==='m'&&!o.fields.length).length?`<div class="small dim sfmore">필드가 없는 포켓몬: ${L.filter(o=>o.tid===tid&&o.kind==='m'&&!o.fields.length).map(o=>`<button class="btn xs ghost" data-sa="${esc(o.kind+':'+o.id)}">＋ ${esc(o.name)}</button>`).join(' ')}</div>`:'')).join('')||'<div class="empty">배틀에 내 트레이너가 없다.</div>'}</div>`);
   md.classList.add('stmodal');
   const ownerOf=k=>all.find(o=>o.kind+':'+o.id===k);
-  md.querySelectorAll('[data-sg]').forEach(b=>b.onclick=async()=>{const v=($(`[data-sgc="${CSS.escape(b.dataset.sg)}"]`,md)||{}).value||'';A().closeModal();await deploy(b.dataset.sg,+v>0?+v:0)});
+  md.querySelectorAll('[data-sg]').forEach(b=>b.onclick=async()=>{const q=CSS.escape(b.dataset.sg);const v=($(`[data-sgc="${q}"]`,md)||{}).value||'';const h=+(($(`[data-sgh="${q}"]`,md)||{}).value||0);const hTid=($(`[data-sght="${q}"]`,md)||{}).value||'';A().closeModal();await deploy(b.dataset.sg,+v>0?+v:0,h?{h,hTid}:{h:0})});
   md.querySelectorAll('[data-se]').forEach(b=>b.onclick=()=>{const e=find(b.dataset.se);if(e)editIn(e.o,e.k,re)});
   md.querySelectorAll('[data-sa]').forEach(b=>b.onclick=()=>{const o=ownerOf(b.dataset.sa);if(o)editIn(o,null,re)});
   md.querySelectorAll('[data-sd]').forEach(b=>b.onclick=async()=>{const e=find(b.dataset.sd);if(!e||!confirm(`「${e.name}」을(를) ${e.o.name}의 필드에서 지울까?`))return;const list=e.o.fields.slice();list.splice(e.k,1);if(await A().set(e.o.path,list))A().toast('지웠다');re()});
@@ -108,6 +112,7 @@ window.OM_STAGE_UI=(()=>{
     <label>이름<input type="text" id="sf_n" value="${esc(e.name)}" placeholder="예) 세가지 재앙"></label>
     <label>지역<input type="text" id="sf_l" value="${esc(e.loc||'')}" placeholder="예) 재앙, 종말"></label>
     <label>지속 턴<input type="number" class="n" id="sf_c" value="${+e.count>0?e.count:''}" placeholder="비우면 무한"></label>
+    <label title="전개할 때 H 파티의 기본값 (전개 창에서 바꿀 수 있다)">H<select id="sf_h">${H_KO.map((n,i)=>`<option value="${i}" ${(+e.h||0)===i?'selected':''}>${n}</option>`).join('')}</select></label>
     <label>색상 타입<select id="sf_k"><option value="">-</option>${TYPES.map(t=>`<option value="${t}" ${e.color===t?'selected':''}>${esc(tko(t))}</option>`).join('')}</select></label>
     <label class="wide">그림<span class="row" style="flex:1;gap:6px"><input type="text" id="sf_i" list="sf_il" value="${esc(e.img||'')}" placeholder="배경 목록 이름 · 주소" style="flex:1"><datalist id="sf_il">${bgs.map(([l,g])=>`<option value="${esc(l)}">${esc(g)}</option>`).join('')}</datalist><label class="btn sm ghost">올리기<input type="file" id="sf_f" accept="image/*" hidden style="display:none"></label></span></label>
     <div class="stprev" id="sf_p"></div>
@@ -120,7 +125,7 @@ window.OM_STAGE_UI=(()=>{
   /* 11-09 자동화 구문 칸 (제작기 js/fx/fx_ui.js fieldAutoBox) */const FAB=window.OM_FX_UI&&window.OM_FX_UI.fieldAutoBox?window.OM_FX_UI.fieldAutoBox($('#sf_a',md),e.auto,{toast:t=>A().toast(t)}):null;
   $('#sf_f',md).onchange=async ev=>{const f=ev.target.files[0];if(!f)return;A().toast('올리는 중…');try{$('#sf_i',md).value=await DBS().uploadImage(`rooms/${ST().room}/field_${Date.now().toString(36)}`,f);prev();A().toast('올렸다')}catch(x){A().toast(x.message)}};
   $('#sf_ok',md).onclick=async()=>{const name=$('#sf_n',md).value.trim();if(!name)return A().toast('이름을 적어 줘');
-   const v={type:+$('#sf_t',md).value||0,name,loc:$('#sf_l',md).value.trim(),img:$('#sf_i',md).value.trim(),eff:$('#sf_e',md).value.replace(/\r/g,'').trim(),count:+$('#sf_c',md).value>0?+$('#sf_c',md).value:-1,color:$('#sf_k',md).value};{const au=FAB?FAB.get():autoN(e.auto);if(au)v.auto=au}
+   const v={type:+$('#sf_t',md).value||0,name,loc:$('#sf_l',md).value.trim(),img:$('#sf_i',md).value.trim(),eff:$('#sf_e',md).value.replace(/\r/g,'').trim(),count:+$('#sf_c',md).value>0?+$('#sf_c',md).value:-1,color:$('#sf_k',md).value};if(+$('#sf_h',md).value)v.h=+$('#sf_h',md).value;{const au=FAB?FAB.get():autoN(e.auto);if(au)v.auto=au}
    A().closeModal();await done(v)}}
 
  /* ----- 시트 칸 (오레마스 시트 캐릭터 · 포켓몬 탭) ----- */
@@ -135,18 +140,20 @@ window.OM_STAGE_UI=(()=>{
   el.querySelectorAll('[data-sfd]').forEach(b=>b.onclick=async e=>{e.stopPropagation();const o=get(b.dataset.sfd);const k=+b.dataset.k;if(!o||!o.fields[k]||!confirm(`「${o.fields[k].name}」을(를) 지울까?`))return;const L=o.fields.slice();L.splice(k,1);await save(b.dataset.sfd,L)})}
 
  /* ----- 전개 · 걷기 (맵툴 active_field_field / reset_field_field) ----- */
- async function deploy(key,turns){const e=find(key);if(!e)return A().toast('그 필드를 찾지 못했다');
+ async function deploy(key,turns,ho){const e=find(key);if(!e)return A().toast('그 필드를 찾지 못했다');
   if(!mine(e.o))return A().toast('내 트레이너 · 포켓몬의 필드만 전개할 수 있다');
   if(e.o.kind==='m'&&!e.o.on&&!gm())return A().toast(`「${e.o.name}」이(가) 배틀 필드에 나와 있어야 한다`);
-  if(!mgr()){/* 배틀을 직접 못 쓰는 좌석 → GM 화면이 받아서 */if(await A().set(['pub',ST().seat,'stageq'],{key,turns:turns||0,at:Date.now()}))A().toast('전개를 요청했다 — GM 화면이 받아 펼친다');return}
-  return put(e,turns)}
- async function put(e,turns){const b=ST().state.battle||{};const old=stage(b);
+  if(!mgr()){/* 배틀을 직접 못 쓰는 좌석 → GM 화면이 받아서 */if(await A().set(['pub',ST().seat,'stageq'],Object.assign({key,turns:turns||0,at:Date.now()},ho&&ho.h?{h:ho.h,hTid:ho.hTid||''}:ho?{h:0}:{})))A().toast('전개를 요청했다 — GM 화면이 받아 펼친다');return}
+  return put(e,turns,ho)}
+ async function put(e,turns,ho){const b=ST().state.battle||{};const old=stage(b);
   const s={type:kindOf(e),name:e.name,loc:e.loc||'',img:e.img||'',eff:e.eff||'',color:e.color||'',owner:e.o.name,count:turns>0?turns:(+e.count>0?+e.count:1000),src:e.key,tid:e.o.tid,at:Date.now()};if(autoN(e.auto))s.auto=autoN(e.auto);
   if(old&&old.name&&BU()&&BU().fieldClear){try{await BU().fieldClear('《'+old.name+'》')}catch(x){console.warn(x)}}   /* 11-09: 바뀌는 필드의 지속 효과부터 푼다 */
   if(e.o.kind==='m')s.ownerMid=e.o.id;
+  {/* H — 고른 값이 없으면 필드 칸의 h 와 주인 트레이너 */const h=ho&&ho.h!=null?+ho.h:(+e.h||0);const hTid=(ho&&ho.hTid)||e.o.tid;if(h&&(b.trainers||{})[hTid]){s.h=h;s.hTid=hTid}}
   if(!await A().set(['battle','field','stage'],s))return false;
   const k=kindOf(s);const lines=[`◆ ${e.o.name}의 《${keyOf(s)}》 전개${s.loc?' — '+s.loc:''}${s.count>=1000?' · 무한':' · '+s.count+'턴'}`,...effLines(s.eff).map(l=>'· '+l)];
   if(old&&old.src!==s.src)lines.unshift(`《${keyOf(old)}》의 풍경이 옅어져 간다…`);
+  if(s.h)lines.push(`◆ H — ${hLine(s,b)}${+s.h===1?' (그 파티는 이 필드의 효과를 받지 않는다)':' (그 상대가 받는 효과는 무효 — H 편만 받는다)'}`);
   if(k===0&&F()&&F().grounded){const off=Object.values(b.mons||{}).filter(m=>m.entry&&m.hp&&m.hp.cur>0&&!F().grounded(m)).map(m=>'「'+m.name+'」');if(off.length)lines.push('◆ 땅 위에 있지 않아 이 「필드」의 영향을 받지 않음 : '+off.join(''))}
   if(s.auto)lines.push('⚙ 자동화 구문: '+Object.keys(s.auto).filter(k=>k!=='who').map(k=>({deploy:'전개 시',start:'턴 개시 시',end:'턴 종료 시',entry:'등장 시',use:'소지품 소모 시',hold:'필드 동안'})[k]).join(' · '));
   A().sysLog(lines.join('\n'),'battle');if(s.auto&&BU()&&BU().fieldAuto){try{await BU().fieldAuto('deploy')}catch(x){console.warn('필드 전개 구문',x)}}return true}
@@ -159,7 +166,7 @@ window.OM_STAGE_UI=(()=>{
   try{for(const sid of todo){const q=pub[sid].stageq;await A().set(['pub',sid,'stageq'],null);if(!q||Date.now()-(+q.at||0)>120000)continue;
     if(q.reset){const s=stage();if(s&&s.tid===sid&&s.src===q.src&&await A().set(['battle','field','stage'],null)){A().sysLog(`《${keyOf(s)}》의 풍경이 옅어져 간다…`,'battle');if(BU()&&BU().fieldClear){try{await BU().fieldClear('《'+s.name+'》')}catch(x){console.warn(x)}}}continue}
     if(q.force){const s=stage();if(AK.includes(String(q.force))&&s&&s.src===q.src&&s.tid&&(s.tid===q.tid)&&(s.tid===sid||((((R().trainers||{})[s.tid]||{}).co)||[]).includes(sid)))await forceDo(String(q.force),q.mid||'');continue}   /* 11-09: 주인 좌석의 강제 발동 */
-    const e=find(q.key);if(!e||e.o.tid!==sid)continue;if(e.o.kind==='m'&&!e.o.on)continue;await put(e,+q.turns||0)}}
+    const e=find(q.key);if(!e||e.o.tid!==sid)continue;if(e.o.kind==='m'&&!e.o.on)continue;await put(e,+q.turns||0,q.h!=null?{h:+q.h||0,hTid:String(q.hTid||'')}:null)}}
   finally{busy=false}}
 
  /* ----- 턴 종료 (맵툴 progress_field_field): f 는 battle_ui 턴 종료의 필드 사본, 줄을 돌려준다 ----- */
