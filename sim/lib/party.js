@@ -44,7 +44,15 @@ function autoPick(t,mons){const s3=t.solo==3||t.solo==='3';const A=/^(AA|A|S)/.t
  let ph=0,sp=0;for(const m of mons||[])for(const mv of m.moves||[]){if(mv.cat==='물리')ph++;else if(mv.cat==='특수')sp++}
  const o=s3?['endure','retreat']:['endure'];const c=[ph>=sp?'attack':'specialattack','heal'];if(A)c.push('evasion');else if(s3)c.push('defense');if(A&&s3&&c.length<3)c.push('defense');
  return {o,c}}
-function orders(win,t,opt){opt=opt||{};const OD=win.OM_ORDERS;if(t.two)return ordersTwo(win,t,opt);let mo=t.mkOrders||null;/* 11-15 망령 「지시 대가 패널티 제대로 들어가 있어?」: 6체도 제작기 지시 체계(mkOrders) 그대로 — 전엔 1인 기준만 읽고 6체는 협회식 기본값이라 지시 대가(off)가 빠지지 않았음 (웹툴 sheet_ui 와 같게) */
+/* 11-15 망령 「오토나시는 결계 제대로 쓰고 있어?」: 【준비】/『X』를 『Y』로 교체(변경)할 수 있다 (카테리나 『신앙심』 피해라! → 특수결계 · 텔레실라 방어 지령 → 방패의 영창) — 시합 준비 때 고르는 것, 시뮬은 늘 바꾼다(결계 · 영창이 진영 전체에 걸려 더블에서 낫다). 횟수는 그대로 */
+function prepSwap(win,t,mons){const OD=win.OM_ORDERS;if(!OD||!OD.nameOf||!t.orderCount)return t;const N=x=>String(x||'').replace(/[\s!！『』]/g,'');const texts=[...(t.unique||[]).map(u=>u&&u.eff),...(mons||[]).flatMap(m=>[...(m.pots||[]),...(m.excl?[m.excl]:[]),...(m.exclX||[])].map(p=>p&&p.eff))].map(x=>String(x||'').replace(/<br\s*\/?>/gi,'\n'));
+ const K=['retreat','dodge','endure','return','snipe','special','attack','defense','specialattack','specialdefense','speed','heal','accuracy','evasion'];t.prepSwaps=[];
+ for(const tx of texts)for(const ln of tx.split('\n')){if(!/【\s*준비\s*】/.test(ln))continue;const m=ln.match(/『([^』]+)』(?:을|를)\s*『([^』]+)』(?:으로|로)\s*(?:교체|변경)할\s*수\s*있다/);if(!m)continue;const X=N(m[1]),Y=N(m[2]);
+  for(const kind of ['order','command'])for(const k of K){const key=(kind==='order'?'order_':'command_')+k;if(!(+t.orderCount[key]>0))continue;const cur=(t.orderType||{})[(kind==='order'?'o_':'c_')+k];const st=OD.styles(t);const fam0=cur!=null?+cur:(kind==='order'?st.tord:st.tc);if(N(OD.nameOf(kind,fam0,k))!==X)continue;
+   for(let f=0;f<16;f++){if(N(OD.nameOf(kind,f,k))!==Y)continue;const n0=+t.orderCount[key];const nt=OD.setItemType(t,kind,k,f);nt.orderCount[key]=n0;Object.assign(t,{orderType:nt.orderType,orderCount:nt.orderCount});t.prepSwaps.push(m[1]+'→'+m[2]);break}}}
+ return t}
+function orders(win,t,opt){opt=opt||{};const OD=win.OM_ORDERS;if(t.two)return prepSwap(win,ordersTwo(win,t,opt),opt.mons);return prepSwap(win,orders6(win,t,opt),opt.mons)}
+function orders6(win,t,opt){opt=opt||{};const OD=win.OM_ORDERS;let mo=t.mkOrders||null;/* 11-15 망령 「지시 대가 패널티 제대로 들어가 있어?」: 6체도 제작기 지시 체계(mkOrders) 그대로 — 전엔 1인 기준만 읽고 6체는 협회식 기본값이라 지시 대가(off)가 빠지지 않았음 (웹툴 sheet_ui 와 같게) */
  if(t.solo&&!(mo&&mo.pick)&&opt.autoPick!==false){mo=Object.assign({preset:'assoc',tc:0,base:1},mo||{},{pick:autoPick(t,opt.mons)});t.autoPick=mo.pick}
  if(!mo){Object.assign(t,OD.auto(t,'assoc',1));return t}
  if(mo.preset==='manual'){Object.assign(t,OD.make(t,mo.tc,mo.base,{reset:true}));t.orderPreset=''}else Object.assign(t,OD.auto(Object.assign({},t,{orderPreset:mo.preset}),mo.preset,mo.base));
