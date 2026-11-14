@@ -39,7 +39,7 @@ async function runBattle(W,opt){
  /* ---- 지시용 계산: 기대 대미지 (공격 창과 같은 보정 · 주사위 중간값 · 명중 곱) ---- */
  const seen=new Map();const markSeen=(m,mvName)=>{let s=seen.get(m.id);if(!s){s=new Set();seen.set(m.id,s)}s.add(mvName)};
  /* 11-14 망령 「학생들끼리 포텐셜 잘 활용하면서 배틀 · 로그 분석 · 지시 로직 다듬기」: opt.ai = {left:'new'|'', right:…} — 'new' 쪽만 새 지시 로직 (옛 로직과 견주려고) */
- const AI=sd=>!!(opt.ai&&opt.ai[sd]==='new');const sideOfTid=tid=>(C().trainers[tid]||{}).side||'left';
+ const AI=sd=>{const v=opt.ai&&opt.ai[sd];return v?v==='new':!process.env.OLDAI};/* 11-14 밤 망령 「지침도 바꿔」: 새 로직이 기본 — 옛 로직은 ai 'old' 또는 OLDAI=1 */const sideOfTid=tid=>(C().trainers[tid]||{}).side||'left';
  /* 새 로직 ①: 「기능 확장」 기술도 공격 후보 (행동으로 쓰는 것만 · 횟수 남은 것). 트레이너 기능 확장은 웹툴 extUse, 포텐셜 쪽은 그 포텐셜의 【N/시】 · 【탈진】 · 【소진】을 시뮬이 센다 */
  const PX={};const extSrcEff=(tid,src)=>{const t=C().trainers[tid]||{};const nm=x=>String(x||'').replace(/[『』\s]/g,'');for(const u of t.unique||[])if(u&&nm(u.name)===nm(src))return String(u.eff||'');for(const m of Object.values(C().mons))if(m.tid===tid)for(const q of FN.potSrc(m))if(nm(q.name)===nm(src))return String(q.eff||'');return ''};
  const extOk=(m,mv)=>{const X=mv.ext;if(!X||X.kind==='extra')return false;if(X.tid!=null&&X.i!=null)return !(X.lim&&X.left<=0);const e=extSrcEff(m.tid,X.src||X.pot);const k=m.tid+'|'+(X.src||X.pot);const u=PX[k]||{n:0,t:-9};const T=+C().turn||0;const mm=e.match(/【\s*(\d+)\s*\/\s*시\s*】/);if(mm&&u.n>=+mm[1])return false;if(/【\s*탈진\s*】/.test(e)&&T-u.t<=1)return false;if(/【\s*소진\s*】/.test(e)&&u.t===T)return false;return true};

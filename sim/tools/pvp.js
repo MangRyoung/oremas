@@ -14,7 +14,7 @@ function students(){const F=Object.fromEntries((snap.folders||[]).map(f=>[f.id,f
 const mk=id=>{const r=P.build(W,snap,id,{two:opt.two?true:false});P.orders(W,r.trainer,{mons:r.mons});return {trainer:r.trainer,mons:r.mons}};
 (async()=>{let S=students();if(opt.only){const L=opt.only.split(',');S=S.filter(s=>L.some(n=>s.name.includes(n)))}
  const N=+opt.n||2,seed0=+opt.seed||1;const res={};for(const s of S)res[s.name]={w:0,l:0,d:0,g:0};const pairs=[];const asked={};let turns=0,games=0;const t0=Date.now();
- const sideAI={left:opt.polL||opt.ai||'',right:opt.polR||opt.ai||''};const sideW={left:0,right:0,draw:0};const used={order:0,command:0,pot:0};
+ const sideAI={left:opt.polL||opt.ai||'old',right:opt.polR||opt.ai||'old'};const sideW={left:0,right:0,draw:0};const used={order:0,command:0,pot:0};
  for(let i=0;i<S.length;i++)for(let j=0;j<S.length;j++){if(i===j)continue;if(!opt.both&&j<i&&!(opt.polL||opt.polR))continue;let w=0,l=0,d=0;
   for(let k=0;k<N;k++){const a=mk(S[i].id),b=mk(S[j].id);b.trainer.id=b.trainer.id===a.trainer.id?b.trainer.id+'_r':b.trainer.id;
    const wantLog=opt.log&&k===0&&opt.log.split(':').every((n,x)=>(x?S[j]:S[i]).name.includes(n));
