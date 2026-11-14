@@ -51,7 +51,11 @@ function prepSwap(win,t,mons){const OD=win.OM_ORDERS;if(!OD||!OD.nameOf||!t.orde
   for(const kind of ['order','command'])for(const k of K){const key=(kind==='order'?'order_':'command_')+k;if(!(+t.orderCount[key]>0))continue;const cur=(t.orderType||{})[(kind==='order'?'o_':'c_')+k];const st=OD.styles(t);const fam0=cur!=null?+cur:(kind==='order'?st.tord:st.tc);if(N(OD.nameOf(kind,fam0,k))!==X)continue;
    for(let f=0;f<16;f++){if(N(OD.nameOf(kind,f,k))!==Y)continue;const n0=+t.orderCount[key];const nt=OD.setItemType(t,kind,k,f);nt.orderCount[key]=n0;Object.assign(t,{orderType:nt.orderType,orderCount:nt.orderCount});t.prepSwaps.push(m[1]+'→'+m[2]);break}}}
  return t}
-function orders(win,t,opt){opt=opt||{};const OD=win.OM_ORDERS;if(t.two)return prepSwap(win,ordersTwo(win,t,opt),opt.mons);return prepSwap(win,orders6(win,t,opt),opt.mons)}
+/* 11-15 망령 「메이링 승률이 실제보다 높다」: 고유 『청파삼형』 「【준비】/「A」「B」「C」중 하나를 고른다 → 그 기술을 「기능 확장」으로」인데 시트 기능 확장 칸에 셋 다 들어 있음 → 시뮬은 시합 준비 때 하나만 남긴다(우리 파티 공격 타입에 가장 적은 타입 = 범위를 넓히는 쪽) */
+function prepExtPick(win,t,mons){const ext=t.ext||[];if(ext.length<2)return;for(const u of t.unique||[]){const e=String(u&&u.eff||'').replace(/<br\s*\/?>/g,'\n');const m=e.match(/【\s*준비\s*】[^\n]*?((?:「[^」]+」)+)\s*중\s*하나를\s*고른다/);if(!m||!/기능\s*확장/.test(e))continue;const C=[...m[1].matchAll(/「([^」]+)」/g)].map(x=>x[1].trim());const inExt=ext.filter(x=>C.includes(String(x.mv||'').trim()));if(inExt.length<2)continue;
+  const DBM=(win.OM_DB||{}).moves||{};const have={};for(const mm of mons||[])for(const mv of mm.moves||[])if(mv&&+mv.pow>0&&mv.cat!=='변화')have[mv.typeEn||mv.type]=(have[mv.typeEn||mv.type]||0)+1;
+  const pick=inExt.slice().sort((a,b)=>(have[(DBM[a.mv]||{}).typeEn]||0)-(have[(DBM[b.mv]||{}).typeEn]||0))[0];t.ext=ext.filter(x=>!inExt.includes(x)||x===pick);t.prepExt=(t.prepExt||[]).concat([u.name+' → '+pick.mv])}}
+function orders(win,t,opt){prepExtPick(win,t,(opt||{}).mons);opt=opt||{};const OD=win.OM_ORDERS;if(t.two)return prepSwap(win,ordersTwo(win,t,opt),opt.mons);return prepSwap(win,orders6(win,t,opt),opt.mons)}
 function orders6(win,t,opt){opt=opt||{};const OD=win.OM_ORDERS;let mo=t.mkOrders||null;/* 11-15 망령 「지시 대가 패널티 제대로 들어가 있어?」: 6체도 제작기 지시 체계(mkOrders) 그대로 — 전엔 1인 기준만 읽고 6체는 협회식 기본값이라 지시 대가(off)가 빠지지 않았음 (웹툴 sheet_ui 와 같게) */
  if(t.solo&&!(mo&&mo.pick)&&opt.autoPick!==false){mo=Object.assign({preset:'assoc',tc:0,base:1},mo||{},{pick:autoPick(t,opt.mons)});t.autoPick=mo.pick}
  if(!mo){Object.assign(t,OD.auto(t,'assoc',1));return t}

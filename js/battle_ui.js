@@ -3318,6 +3318,7 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
   if(R.extra==='pct8'||R.extra==='drain8'){if(a.hp.cur<=0)return;const v=Math.min(a.hp.cur,Math.max(1,Math.floor(a.hp.max/8)));a.hp.cur-=v;lines.push(`${a.name} −${v} (1/8) → ${a.hp.cur}/${a.hp.max}`);if(R.extra==='drain8'&&d.hp.cur>0){const h=Math.min(v,d.hp.max-d.hp.cur);d.hp.cur+=h;lines.push(`${d.name} +${h} 회복`)}if(a.hp.cur<=0)lines.push(`${a.name}은(는) 쓰러졌다!`)}
   else{const r=await FX().run(R.ops.map(tgtFor(d,a)),Object.assign({},uiCtx(nb,d,nm),{pick:list=>list.find(q=>q.id===a.id)||null}));lines.push(...r.lines)}
   if(!lines.length)return;if(await saveBattle(nb0,nb))A().sysLog([head,...lines].join('\n'),'battle',{mid:defId});if(nb.mons[atkId]&&nb.mons[atkId].hp.cur<=0)try{await faintOff(atkId)}catch(e){}}
+ function consecFail(atk,mv,T){const cm=String((mv&&mv.eff)||'').match(/「연속\s*제한\s*:\s*(실패\s*확률\s*증가|확정\s*실패)」/);if(!cm||protMove(mv))return '';const lm=atk&&atk.lastMove;if(!lm||lm.name!==mv.name||+lm.turn!==T-1)return '';if(/확정/.test(cm[1]))return '연속으로 내보내';const k=Math.max(1,+((atk.consec&&atk.consec.name===mv.name)?atk.consec.n:1));const ch=Math.pow(1/3,k);return Math.random()<ch?'':`연속으로 내보내 (성공 ${Math.round(ch*1000)/10}% 판정 실패)`}
  const protMove=mv=>/「(기술|공격) 방어」\s*상태가 된다|자신에 대한 공격을 방어한다/.test(String((mv||{}).eff||''))   /* 11-15: 정신으로방어 「자신에 대한 공격을 방어한다」도 */;
  /* 11-07 망령 「저주는 방어 관통이야」: 효과 글에 「방어」 무시가 없어도 이름으로 관통하는 기술 */
  const PROT_PASS=['저주'];
@@ -3531,6 +3532,7 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
     else if(au.failNoAtk&&d0&&d0!==atk&&!ordAtk(b,d0))why=`${d0.name}이(가) 공격하지 않아`;
     else if(au.failLate&&d0&&d0!==atk&&actedB4(b,d0))why=`${d0.name}이(가) 먼저 행동해서`;
     else if(au.onlyVs&&d0&&!tysOf(d0).includes(au.onlyVs))why=`${d0.name}이(가) 「${S().typeKo(au.onlyVs)}」 타입이 아니라`;
+    else{/* 11-15 망령 「메이링 승률이 실제보다 높다」 → 썬더랜스 「연속 제한 : 실패 확률 증가」가 방어 기술에만 걸려 있었음: 바로 전 턴에 같은 기술을 냈으면 1/3 · 1/9 … , 「확정 실패」면 실패 */const why2=consecFail(atk,mv,T);if(why2)why=why2}
     if(why&&!(ctx().mgr&&confirm(`${why} 「${mv.name}」는 실패한다.\n\n확인: 그래도 굴린다 (GM 판정)\n취소: 실패로 끝낸다`))){A().toast(`${why} 「${mv.name}」는 실패한다`);A().sysLog(`【공격】 ${atk.name} 『${mv.name}』 — ${why} 실패했다`,'battle',{mid,img:atk.image||''});A().closeModal();return}}
    /* 10-26 망령: 「기술 방어」(방어 · 판별 · 니들가드 …) — 성공하면 턴 종료까지 상대 기술을 막는다. 「연속 제한 (방어)」: 바로 전 턴에 성공했으면 1/3, 1/9 … */
    const PROT=protMove(mv);let PR=null;if(PROT){const t0=+b.turn||0;const k=atk.protectLast===t0-1?(+atk.protectN||0):0;const ch=Math.pow(1/3,k);const rl=Math.random();PR={ok:rl<ch,chance:Math.round(ch*1000)/10,k}}
@@ -3736,7 +3738,7 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【[^】]*】\s
      else lines.push(`${am.name} 『${mvN}』 — ${!d?'맞은 대상이 없다':!lm?d.name+'이(가) 아직 기술을 쓰지 않았다':NOSK.includes(lm)?'「'+lm+'」는 베낄 수 없다':k<0?'기술 칸을 찾지 못했다':'이미 「'+lm+'」를 지니고 있다'} — 기술 검색 창에서 고른다`);
      /* 11-06 망령 「기본은 마지막 기술, 검색해서 다른 걸로도」: 저장 뒤 DB 기술 검색 창 (고른 기술로 그 칸을 다시 바꾼다 · 닫으면 그대로) */
      if(k>=0)setTimeout(()=>sketchPick(mid,k,ok?lm:'',mvN),700)}
-    else if(am&&!RESULT.check&&mvN&&mvN!=='발버둥'&&!RESULT.mv.ext)am.lastMove={name:mvN,turn:+nb.turn||0,tg:(RESULT.targets||[]).map(r=>r&&r.def&&r.def.id).filter(Boolean)};   /* 11-09 감우 57: tg = 이 기술의 대상 (「지정기술」 — 나에게 내보냈나) */if(am&&!RESULT.check&&(am.states||{}).DestinyBond&&String(mvN||'').replace(/\s/g,'')!=='길동무'){delete am.states.DestinyBond;lines.push(`${am.name} 「길동무」 해제 (다음 행동)`)}
+    else if(am&&!RESULT.check&&mvN&&mvN!=='발버둥'&&!RESULT.mv.ext&&((am.consec={name:mvN,n:(am.lastMove&&am.lastMove.name===mvN&&+am.lastMove.turn===(+nb.turn||0)-1)?((am.consec&&am.consec.name===mvN?+am.consec.n:1)+1):1}),true))am.lastMove={name:mvN,turn:+nb.turn||0,tg:(RESULT.targets||[]).map(r=>r&&r.def&&r.def.id).filter(Boolean)};   /* 11-09 감우 57: tg = 이 기술의 대상 (「지정기술」 — 나에게 내보냈나) */if(am&&!RESULT.check&&(am.states||{}).DestinyBond&&String(mvN||'').replace(/\s/g,'')!=='길동무'){delete am.states.DestinyBond;lines.push(`${am.name} 「길동무」 해제 (다음 행동)`)}
     /* 11-09 감우 54: 「자세」 기술(날개의자세 · 불길의자세 …)을 쓰면 지금 자세로 남긴다 — 구문 조건 「자세:날개의자세」 (교대하면 풀림은 손으로 · 다른 자세를 쓰면 바뀐다) */if(am&&!RESULT.check&&RESULT.mv&&RESULT.mv.cat==='변화'&&/(^|[,\s])자세($|[,\s])/.test(String(RESULT.mv.tag||''))&&/의자세$/.test(mvN||''))am.stance=mvN;if(am&&!RESULT.check&&RESULT.mv){const au=RESULT.auto||{};if(au.iai){am.iai=au.iai;lines.push(`${am.name} 다음 「거합」 기술 → 「${S().typeKo(au.iai)}」`)}else if(au.stance||(RESULT.mv.cat==='변화'&&/의자세$/.test(mvN||'')))delete am.iai;else if(am.iai&&/(^|[,\s])거합($|[,\s])/.test(String(RESULT.mv.tag||'')))delete am.iai}
      /* 11-08 51-2 ⑬ 메트로놈: 같은 기술을 연속해서 쓴 수 (다른 기술 · 교대면 처음부터) */if(am&&!RESULT.check&&mvN&&!RESULT.mv.ext)am.metro={name:mvN,n:am.metro&&nmMv(am.metro.name)===mvN?(+am.metro.n||0)+1:1}}
    if(RESULT.targets.some(r=>r.acc&&r.acc.hit&&r.def&&r.def.id!==mid)&&HAS(atk,'방호패드')&&A().contactOf&&A().contactOf(RESULT.mv)==='O')lines.push(`${atk.name} 「방호패드」 — 대상의 「접촉기」 계기를 무시한다`);

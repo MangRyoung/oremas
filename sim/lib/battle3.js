@@ -49,7 +49,7 @@ async function runBattle(W,opt){
  /* 11-14 「차지」 기술: 모으는 턴이 있어 한 턴 값은 반 (날씨로 생략 · 파워풀허브 · 이미 모았으면 그대로) */
  const CHG_RE=/「차지」/;const chargeSkip=(m,mv)=>{const e=String(mv.eff||'');const W0=FN.wxNow?FN.wxNow(C()):'';const sk=e.match(/「날씨\s*:\s*([^」]+)」일 때 「차지」를 생략/);return !!(sk&&W0&&sk[1].split(/[,，]\s*/).map(q=>q.trim()).includes(W0))||(FN.HAS&&FN.HAS(m,'파워풀허브'))};
  const charged=(m,mv)=>!!(m.charge&&m.charge.mv===mv.name&&+m.charge.turn<(+C().turn||0));
- const expect=(atk,mv,def,multi)=>{let v=0;try{v=FG.estimate(H,W,atk,def,mv,{multi})}catch(e){return 0}if(CHG_RE.test(String(mv.eff||''))&&!charged(atk,mv)&&!chargeSkip(atk,mv))v*=0.5;return v};
+ const expect=(atk,mv,def,multi)=>{let v=0;try{v=FG.estimate(H,W,atk,def,mv,{multi})}catch(e){return 0}{/* 11-15 연속 제한 — 바로 전 턴에 같은 기술이면 성공 확률만큼 */const cm=String(mv.eff||'').match(/「연속\s*제한\s*:\s*(실패\s*확률\s*증가|확정\s*실패)」/);if(cm&&atk.lastMove===mv.name&&+atk.lastMoveT===(+C().turn||0)-1){const k=Math.max(1,+((atk.consec&&atk.consec.name===mv.name)?atk.consec.n:1));v*=/확정/.test(cm[1])?0:Math.pow(1/3,k)}}if(CHG_RE.test(String(mv.eff||''))&&!charged(atk,mv)&&!chargeSkip(atk,mv))v*=0.5;return v};
  const bestVs=(atk,def)=>{let best=null,bv=0;for(const mv of dmgMoves(atk)){const v=expect(atk,mv,def);if(v>bv){bv=v;best=mv}}return {mv:best,v:bv}};
  /* 2-1 정보 차단: 상대 기술은 이 배틀에서 본 것 · C 는 본 것(없으면 자속기 짐작) · B 이상은 본 것 + 자속기 짐작 */
  const knownMoves=(pol,f)=>{const all=dmgMoves(f);const s=seen.get(f.id);const sn=s?all.filter(x=>s.has(x.name)):[];const stab=all.filter(x=>(FN.tysOf(f)||[]).includes(x.typeEn));if(pol==='C')return sn.length?sn:stab;return Array.from(new Set(sn.concat(stab)))};
@@ -310,7 +310,7 @@ async function runBattle(W,opt){
    const before=hpMap();
    const r=await FG.attack(H,W,m.id,a.mv._i,targets,{});
    /* 모은 기술을 냈으면 차지 · 반무적을 푼다 */{const mm=C().mons[m.id];if(mm&&mm.charge&&mm.charge.mv===a.mv.name){const x=clone(mm);const vk=FN.chargeVanish?FN.chargeVanish(a.mv):'';if(vk&&x.states)delete x.states[vk];delete x.charge;await W.OM_APP.setDiff(['battle','mons',mm.id],mm,x,1)}}await flush();await gmChores();
-   markSeen(m,a.mv.name);{const x=C().mons[m.id];if(x)x.lastMove=a.mv.name}if(a.mv.ext)await extUsed(m,a.mv);
+   markSeen(m,a.mv.name);{const x=C().mons[m.id];const T1=+C().turn||0;if(x&&!(r&&r.fail)){x.consec={name:a.mv.name,n:x.lastMove===a.mv.name&&+x.lastMoveT===T1-1?((x.consec&&x.consec.name===a.mv.name?+x.consec.n:1)+1):1};x.lastMove=a.mv.name;x.lastMoveT=T1}}if(a.mv.ext)await extUsed(m,a.mv);
    for(const id in before)if(before[id]>0&&C().mons[id]&&!alive(C().mons[id]))C().mons[id]._by=m.name;
    /* 자기 교대(유턴 등) — 벤치에서 고른다 */
    const me=C().mons[m.id];if(r&&r.selfSwitch&&me&&me.entry&&alive(me)){const nx=pickIn(m.side,1,m.tid).filter(x=>x.tid===m.tid)[0]||pickIn(m.side,1)[0];if(nx){const area=me.entry;await FN.exitMon(me.id,{sys:true,noAsk:true});await FN.enterMon(nx.id,area,{sys:true,how:'임의 교대'});await flush()}}
