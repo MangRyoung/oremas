@@ -956,6 +956,14 @@ window.OM_BATTLE_UI=(()=>{
     {const ops=[[['battle','tstep'],1],[['battle','swPur'],pur.map(o=>o.mid)],[['battle','swOut'],sw.map(s=>s.mon.id)]];if(pur.length)ops.push([['battle','order'],pur],[['battle','orderIdx'],0]);await A().setMany(ops)}
     cutPhase('교대',sw.map(s=>s.mon.name).join(' · '));
     A().sysLog(`【교대 알림】\n${L.join('\n')}${pl.length?'\n'+pl.join('\n'):''}\n교대를 마치면 「턴 진행 ▶」`,'battle',{rv:RV,rvx:[...pl,'교대를 마치면 「턴 진행 ▶」']});return}}
+  /* 11-14 제보 「서로 통상 교대를 할 때 한쪽만 먼저 떠서 행동 순서가 나오고 다른 쪽 교대가 뒤에 뜬다」: 교대 알림 뒤에 들어온(늦게 공개 · 확정된) 교대도 행동 순서 전에 한 번 더 알리고,
+     알림에 든 포켓몬이 아직 필드에 그대로면(교대를 안 했으면) 묻는다 — 행동 순서는 모든 교대가 끝난 뒤에 */
+  if(st===1){const SO=b.swOut||[];const sw2=slots.filter(s=>{const k=I.keyOf(s.mon);return k&&k.sw&&!SO.includes(s.mon.id)});
+   if(sw2.length){const to=mo=>{const k=I.keyOf(mo)||{};const id=k.st||(I.SEC[mo.id]||{}).switch||((((b.cmds||{})[mo.tid]||{}).mons||{})[mo.id]||{}).switch;return (b.mons||{})[id]||null};
+    await A().set(['battle','swOut'],SO.concat(sw2.map(s=>s.mon.id)));cutPhase('교대',sw2.map(s=>s.mon.name).join(' · '));
+    A().sysLog(`【교대 알림 · 추가】\n${sw2.map(s=>{const w=to(s.mon);return `${TN(s.mon.tid)} — ${String(s.mon.entry).toUpperCase()} ${s.mon.name} ⇄ ${w?w.name:'?'}`}).join('\n')}\n교대를 마치면 「턴 진행 ▶」`,'battle',{rv:sw2.map(s=>{const w=to(s.mon);return {tr:TN(s.mon.tid),mid:s.mon.id,name:s.mon.name,img:s.mon.image||'',side:s.mon.side,area:String(s.mon.entry||'').toUpperCase(),sw:{name:w?w.name:'(교대 대상 미정)',img:w?w.image||'':''}}}),rvx:['교대를 마치면 「턴 진행 ▶」']});return}
+   const still=SO.map(id=>(b.mons||{})[id]).filter(m=>m&&m.entry&&m.hp&&m.hp.cur>0&&!(b.swPur||[]).length);
+   if(still.length&&!(await askYes(`${still.map(m=>m.name).join(' · ')} — 교대 알림에 들었는데 아직 교대하지 않았다.\n교대를 마친 뒤 진행하는 게 원칙이다 (행동 순서는 교대가 끝난 필드로 정한다).`,'그대로 진행','기다린다')))return}
   /* 11-14: 교대 때 따라가때리기 차례(swPur)를 아직 처리하지 않았으면 묻는다 — 그대로 가면 교대가 끝난 뒤 평소 차례로 행동한다 */
   if(st===1&&(b.swPur||[]).length){const left=(b.swPur||[]).filter(mid=>{const m=(b.mons||{})[mid];const lm=m&&m.lastMove;return m&&m.entry&&m.hp&&m.hp.cur>0&&!(lm&&+lm.turn===(+b.turn||0))});
    if(left.length&&!(await askYes(`${left.map(mid=>(b.mons[mid]||{}).name||'?').join(' · ')} — 교대하려는 상대를 노린 따라가때리기를 아직 하지 않았다.\n행동 순서 「다음 행동 ▶」(또는 초상)으로 공격 창을 열어 먼저 처리한다.\n그대로 진행하면 교대가 끝난 뒤 평소 차례로 행동한다 (따라가때리기 없이).`,'그대로 진행','기다린다')))return}
