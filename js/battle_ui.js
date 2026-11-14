@@ -2186,7 +2186,7 @@ window.OM_BATTLE_UI=(()=>{
    if(k==='undo'){const m0=snap(ctx().b.mons[mid]),x=snap(m0);const l=x.hp.latest;if(l==null)return;x.hp.latest=x.hp.cur;x.hp.cur=l;if(x.hp.cur>0&&!x.entry&&m.hp.cur<=0){}A().closeModal();await saveMon(m0,mid,x);return A().sysLog(`${x.name} HP 되돌리기 → ${x.hp.cur}/${x.hp.max}`,'battle')}})}
  /* ---------- 폼체인지 · 메가진화 (제작기 시트의 forms). form0 에 원래 모습을 두고 돌아올 때 그대로 되돌린다 ---------- */
  function formSet(m,k){const L=[];const f=k>=0?(m.forms||[])[k]:null;if(k>=0&&!f)return L;
-  if(!m.form0)m.form0={name:m.name,types:m.types,typesKo:m.typesKo,ability:m.ability,abilityEff:m.abilityEff,base:m.base,ranks:m.ranks,stats:m.stats,image:m.image,pots:JSON.parse(JSON.stringify(m.pots||[]))};
+  if(!m.form0)m.form0={name:m.name,types:m.types,typesKo:m.typesKo,ability:m.ability,abilityEff:m.abilityEff,base:m.base,ranks:m.ranks,stats:m.stats,image:m.image,pots:JSON.parse(JSON.stringify(m.pots||[])),moves:JSON.parse(JSON.stringify(m.moves||[]))};
   const o=m.form0;const fromName=m.name,oldAb=m.ability,oldMax=m.hp.max;
   if(oldAb&&FX())FX().removeByName(m,oldAb);delete m.typesOrig;delete m.abilityOrig;
   /* 폼마다 바뀌는 포텐셜 칸 (종족·속별 등): 원래 목록에서 같은 칸(slot)을 갈아 끼운다. 빠지는 포텐셜의 발동 효과는 푼다 */
@@ -2197,11 +2197,14 @@ window.OM_BATTLE_UI=(()=>{
   if(f){m.name=f.name||o.name;m.types=f.types||o.types;m.typesKo=f.typesKo||o.typesKo;if(f.ability){m.ability=f.ability;m.abilityEff=f.abilityEff!=null?f.abilityEff:''}else{m.ability=o.ability;m.abilityEff=o.abilityEff}
    m.base=f.base;m.ranks=f.base.map(S().gradeOf);m.stats=S().statsOf(f.base,m.iv,m.ev,m.lv);m.image=f.image||o.image;m.formIdx=k}
   else{for(const x of ['name','types','typesKo','ability','abilityEff','base','ranks','stats','image'])m[x]=o[x];delete m.form0;delete m.formIdx}
+  /* 11-14 폼 기술: 원래 기술 목록(form0.moves)에서 같은 이름을 갈아 끼우거나 덧붙인다. 원래대로 = 원래 목록. 예전 배틀(form0 에 moves 없음)은 건드리지 않는다 */
+  const mvSw=[];if(o.moves){const mv=JSON.parse(JSON.stringify(o.moves));for(const x of (f&&f.moves)||[]){if(!x||!x.mv)continue;const i=x.from?mv.findIndex(q=>q&&q.name===x.from):-1;if(i>=0){mvSw.push([mv[i].name,x.mv.name]);mv[i]=Object.assign({},x.mv,{half:!!mv[i].half})}else{mvSw.push(['',x.mv.name]);mv.push(Object.assign({},x.mv))}}m.moves=mv}
+  const mvLine=mvSw.map(([a,b2])=>a?`「${a}」→「${b2}」`:`+「${b2}」`).join(' · ');
   const potLine=f?swapped.map(([a,b2])=>a?`「${a}」→「${b2}」`:`+「${b2}」`).join(' · '):(m.formNewPots.length?'포텐셜 '+m.formNewPots.map(n=>'「'+n+'」').join('')+' 복귀':'');
   /* 최대 HP 가 바뀌면 그 차이만큼 지금 HP 도 (지가르데 퍼펙트폼처럼). 쓰러지지는 않는다 */
   m.hp.max=m.stats[0];if(m.hp.max!==oldMax)m.hp.cur=Math.max(m.hp.cur>0?1:0,Math.min(m.hp.max,m.hp.cur+(m.hp.max-oldMax)));
   const tk=t=>(t||[]).filter(x=>x&&x!=='-').map(x=>S().typeKo?S().typeKo(x):x).join('/');
-  L.push(f?`${fromName} → 「${m.name}」 ${f.kind||'폼체인지'}! (${tk(m.types)} · 특성 ${m.ability||'-'}${m.hp.max!==oldMax?' · 최대 HP '+oldMax+'→'+m.hp.max:''})${potLine?'\n포텐셜 '+potLine:''}`:`${fromName} → 원래 모습 「${m.name}」으로 돌아왔다${potLine?'\n'+potLine:''}`);
+  L.push(f?`${fromName} → 「${m.name}」 ${f.kind||'폼체인지'}! (${tk(m.types)} · 특성 ${m.ability||'-'}${m.hp.max!==oldMax?' · 최대 HP '+oldMax+'→'+m.hp.max:''})${potLine?'\n포텐셜 '+potLine:''}${mvLine?'\n기술 '+mvLine:''}`:`${fromName} → 원래 모습 「${m.name}」으로 돌아왔다${potLine?'\n'+potLine:''}`);
   return L}
  /* ---------- 소지품 소모 (맵툴 item_consume): 칸에서 빼고 itemUsed 에 남긴다. 결과 정리 때 시트에서도 뺀다 ---------- */
  /* 10-27 망령: 받는 쪽 특성 — 첫 타 완화(멀티스케일 · 스펙터가드) · 탈 · 맞을 때마다 반응(정전기 · 까칠한피부 · 지구력 · 깨어진갑옷 …). 특성 글(abilityEff, 없으면 특성 DB)을 읽는다 */
@@ -2328,7 +2331,7 @@ window.OM_BATTLE_UI=(()=>{
   const cur=m.form0?m.formIdx:-1;const o=m.form0||m;const usedMega=Object.values(b.mons).some(x=>x.tid===m.tid&&x.megaUsed&&x.id!==mid);
   const row=(k,f)=>{const ty=f?(f.types||o.types):o.types;const base=f?f.base:o.base;const img=f?(f.image||o.image):o.image;
    return `<label class="firerow ${k===cur?'dis':''}" data-fm="${k}"><div class="row" style="gap:8px;flex-wrap:nowrap"><div class="ti sm" style="${img?`background-image:url('${cssu(img)}')`:''}"></div><div><b>${esc(f?f.name||o.name:o.name)}</b> <span class="small dim">${f?esc(f.kind||'폼체인지'):'원래 모습'}${k===cur?' · 지금':''}</span>
-    <div class="small">${(ty||[]).filter(x=>x&&x!=='-').map(x=>esc(S().typeKo(x))).join('/')} · 특성 ${esc((f&&f.ability)||o.ability||'-')} · ${['H','A','B','C','D','S'].map((x,i)=>x+(base||[])[i]).join(' ')}</div>${f&&(f.pots||[]).length?`<div class="small">포텐셜 ${f.pots.map(x=>{const op=(o.pots||m.pots||[]).find(p=>p.slot===x.slot);return (op?esc(op.name)+'→':'+')+'「'+esc(x.name)+'」'}).join(' · ')}</div>`:''}${f&&f.cond?`<div class="small" style="color:var(--yel2)">${esc(f.cond)}</div>`:''}${f&&f.kind==='메가진화'&&usedMega?'<div class="small" style="color:var(--red)">이 트레이너는 이번 배틀에서 이미 메가진화를 썼다</div>':''}</div></div></label>`};
+    <div class="small">${(ty||[]).filter(x=>x&&x!=='-').map(x=>esc(S().typeKo(x))).join('/')} · 특성 ${esc((f&&f.ability)||o.ability||'-')} · ${['H','A','B','C','D','S'].map((x,i)=>x+(base||[])[i]).join(' ')}</div>${f&&(f.pots||[]).length?`<div class="small">포텐셜 ${f.pots.map(x=>{const op=(o.pots||m.pots||[]).find(p=>p.slot===x.slot);return (op?esc(op.name)+'→':'+')+'「'+esc(x.name)+'」'}).join(' · ')}</div>`:''}${f&&(f.moves||[]).length?`<div class="small">기술 ${f.moves.map(x=>(x.from?esc(x.from)+'→':'+')+'「'+esc((x.mv||{}).name||'')+'」').join(' · ')}</div>`:''}${f&&f.cond?`<div class="small" style="color:var(--yel2)">${esc(f.cond)}</div>`:''}${f&&f.kind==='메가진화'&&usedMega?'<div class="small" style="color:var(--red)">이 트레이너는 이번 배틀에서 이미 메가진화를 썼다</div>':''}</div></div></label>`};
   const md=A().openModal(`<div class="mhead"><h2>${esc(m.name)} — ${forms.length||m.form0?'폼체인지':'테라스탈'}${(forms.length||m.form0)&&hasTera(m)?' · 테라스탈':''}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    <div class="firelist">${hasTera(m)?`<label class="firerow" data-tera="1"><div class="row" style="gap:8px;flex-wrap:nowrap"><div class="ti sm" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div><div><b>${teraOn(m)?'테라스탈 끄기':'테라스탈'}</b> <span class="small dim">테라 타입 「${esc(m.tera)}」${teraOn(m)?' · 지금':''}</span>
     <div class="small">${teraOn(m)?'교대해도 풀리지 않는다 — 잘못 켰을 때 바로잡기만':`받는 상성은 「${esc(m.tera)}」 하나로 · 원래 타입과 테라 타입 모두 자속${teraSameIf(m)?' · 같은 타입이라 자속 2배(적응력)':''}`}</div>${!teraOn(m)&&usedTera?'<div class="small" style="color:var(--red)">이 트레이너는 이번 배틀에서 이미 테라스탈을 썼다</div>':''}</div></div></label>`:''}${m.form0?row(-1,null):''}${forms.map((f,k)=>f&&f.kind==='일루젼'?'':row(k,f)).join('')}</div>
