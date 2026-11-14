@@ -108,10 +108,11 @@ async function runBattle(W,opt){
   const C1=cands(me[0]),C2=cands(me[1]);if(!C1.length||!C2.length)return null;let best=null,bv=-1e9;
   /* 행동 순서까지: 스피드 순으로 한 턴을 짧게 돌려 본다 — 빠른 상대가 먼저 우리 한 마리를 쓰러뜨리면 그 아이의 공격은 없다 · 우리가 먼저 쓰러뜨린 상대는 못 때린다 */
   const P0=pol0==='D'?'C':pol0;const FA={};for(const f of fs){let bt=null,br=-1;for(const m of active(sd)){const th=threatVs(P0,f,m);const r=th.v/Math.max(1,m.hp.cur);if(r>br){br=r;bt={m,v:th.v}}}FA[f.id]=bt}
+  /* 11-15 망령 「방어나 4식으로 턴을 흘린다」: 상대 순풍 · 상대에게 유리한 트릭룸이 남아 있으면 막는 값이 커진다 (그 턴을 흘려 보냄) */const F0=FN.fieldOf(C());const fsd=fs[0].side;const twF=+(((F0.objects||{})[fsd]||{})['순풍']||0);const trR=+((F0.rooms||{})['트릭룸']||0);const avg=L=>L.reduce((a,x)=>a+(+x.stats[5]||0),0)/Math.max(1,L.length);const trF=trR>0&&avg(fs)<avg(me);const PB=+(process.env.PROTB||0.25)+(twF>0||trF?0.3:0);
   const SP={};for(const x of [...me,...fs])SP[x.id]=spd(x);const actors=[...me,...fs].sort((x,y)=>SP[y.id]-SP[x.id]);
   for(const a of C1)for(const c of C2){if(a.prot&&c.prot)continue;const plan={[me[0].id]:a,[me[1].id]:c};const PROT={};if(a.prot)PROT[me[0].id]=1;if(c.prot)PROT[me[1].id]=1;const hp={};for(const x of [...active(sd),...fs])hp[x.id]=x.hp.cur;let v=0;
    for(const x of actors){if(hp[x.id]<=0)continue;if(plan[x.id]){for(const f of fs){const d=plan[x.id].d[f.id]||0;if(d<=0||hp[f.id]<=0)continue;const before=hp[f.id];hp[f.id]=Math.max(0,before-d);v+=tw[f.id]*((before-hp[f.id])/Math.max(1,f.hp.cur))}}
-    else{const t=FA[x.id];if(t&&t.m&&hp[t.m.id]>0){if(PROT[t.m.id]){v+=+(process.env.PROTB||0.25);continue}const before=hp[t.m.id];hp[t.m.id]=Math.max(0,before-t.v);v-=0.8*((before-hp[t.m.id])/Math.max(1,t.m.hp.cur))}}}
+    else{const t=FA[x.id];if(t&&t.m&&hp[t.m.id]>0){if(PROT[t.m.id]){v+=PB;continue}const before=hp[t.m.id];hp[t.m.id]=Math.max(0,before-t.v);v-=0.8*((before-hp[t.m.id])/Math.max(1,t.m.hp.cur))}}}
    for(const f of fs)if(hp[f.id]<=0)v+=0.6*tw[f.id];for(const m of me)if(hp[m.id]<=0)v-=0.5;v-=1.2*(a.pen+c.pen);if(v>bv){bv=v;best=[a,c]}}
   if(!best)return null;const out=new Map();me.forEach((m,i)=>{const x=best[i];out.set(m.id,{mv:x.mv,tg:x.tg,v:x.d[x.tg.id]||0,prot:x.prot})});return out}
  /* 교대 (2-10 · 2-11) */
@@ -162,7 +163,7 @@ async function runBattle(W,opt){
   {const pu=has(/정화의 법계/);if(pu){const bad=active(sd).filter(m=>NEG.some(k=>(m.states||{})[k]));if(bad.length&&await fire(tid,bad[0].id,'order',pu.k))return}
    const he=has(/치유의 법계/);if(he){const al=active(sd);const miss=al.reduce((a,m)=>a+(m.hp.max-m.hp.cur)/m.hp.max,0);if((miss>=0.7||al.some(m=>m.hp.cur<m.hp.max*0.35))&&await fire(tid,al[0].id,'order',he.k))return}}
   /* 지키는 4식: 이번 턴 쓰러질 아이 (위협 ≥ 남은 HP) — 필중이면 버텨라 · 물리면 물러나 · 특수면 피해라 */
-  for(const m of mine.slice().sort((a,c)=>a.hp.cur/a.hp.max-c.hp.cur/c.hp.max)){if(acts.some(a=>a.m===m&&a.sw))continue;const th=topThreat(P2,m);const need=pol==='D'?m.hp.cur<m.hp.max*0.35:(th.mv&&th.v>=m.hp.cur*(pol==='C'?0.85:1));if(!need)continue;
+  for(const m of mine.slice().sort((a,c)=>a.hp.cur/a.hp.max-c.hp.cur/c.hp.max)){if(acts.some(a=>a.m===m&&a.sw))continue;const th=topThreat(P2,m);const stall=(()=>{const F0=FN.fieldOf(C());const fs0=foes(sd);if(!fs0.length)return 0;const tw=+(((F0.objects||{})[fs0[0].side]||{})['순풍']||0);const tr=+((F0.rooms||{})['트릭룸']||0);const av=L=>L.reduce((a,x)=>a+(+x.stats[5]||0),0)/Math.max(1,L.length);return tw>0||(tr>0&&av(fs0)<av(mine))?1:0})();/* 11-15 상대 순풍 · 유리한 트릭룸 중이면 4식으로 턴을 흘린다 */const need=pol==='D'?m.hp.cur<m.hp.max*0.35:(th.mv&&th.v>=m.hp.cur*((pol==='C'?0.85:1)*(stall?0.65:1)));if(!need)continue;
    const sure=isSure(th.mv);const cat=th.mv?th.mv.cat:'';const pick=(!sure&&cat==='물리'&&has(/^물러나/))||(!sure&&cat==='특수'&&has(/^피해라/))||has(/^버텨라/)||has(/주인의 칙령/);if(pick&&await fire(tid,m.id,'order',pick.k))return}
   /* 맞춰라: 결정타가 빗나갈 수 있을 때 */
   {const mt=has(/^맞춰라/);if(mt)for(const a of acts.filter(x=>x.m.tid===tid&&x.mv&&x.mv.cat!=='변화'&&x.tg)){const acc=+a.mv.acc||0;if(acc&&acc<100&&a.v>=a.tg.hp.cur&&await fire(tid,a.m.id,'order',mt.k))return}}}

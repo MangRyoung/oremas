@@ -18,6 +18,7 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
  const IAI=mv=>atk0.iai&&mv&&/(^|[,\s])거합($|[,\s])/.test(String(mv.tag||''))?atk0.iai:'';/* 11-15 자세 → 다음 거합 타입 (웹툴 IAI) */const tyOf=mv=>ATY||IAI(mv)||(RM('블랙룸')&&mv.cat!=='변화'?'Ghost':((FN.skinOf(atk0,mv)||{}).ty||rndOf(mv)||mv.typeEn));
  const mtys=mv=>ATY?[ATY]:(RM('블랙룸')&&mv.cat!=='변화'?['Ghost']:FN.skinOf(atk0,mv)?[FN.skinOf(atk0,mv).ty]:rndOf(mv)?[rndOf(mv)]:String(mv.type||'').split(/[()/,]/).map(t=>t.trim()).filter(Boolean).map(S.typeEn));
  const mv=FN.MVS(atk0)[idx];if(!mv)return {skip:'기술 없음'};
+ /* 11-15 날따름 · 끌어오기는 행동할 때 다시 본다 (웹툴 openAttack 3414 와 같음 — 지시 때 고른 대상보다 먼저) */if(FN.redirectOf&&targets&&targets.length<=1){try{const rd=FN.redirectOf(b,atk0,mv);if(rd&&rd.slot&&targets[0]!==rd.slot){targets=[rd.slot];if(H.logOn)W.OM_APP.sysLog(`${atk0.name}의 「${mv.name}」 대상이 ${rd.mon.name}(으)로 바뀌었다 — ${rd.e&&rd.e.name||'끌어오기'}`,'battle')}}catch(e){}}
  const out={mv:mv.name,lines:[],hits:[],fail:''};
  /* 행동 판정 (창의 「행동 판정」 칸 — 시뮬은 늘 켠다) */
  let chk=null;
@@ -235,6 +236,7 @@ function statusPick(H,W,c){const FN=H.fn,MA=W.OM_MOVEAUTO,B=W.OM_BATTLE;const {m
   if(prot){if(pol==='C')continue;if(m.protectLast===turn-1)continue;if(danger>=m.hp.cur&&c.allies.length)out.push({mv,tg:m,score:0.6,why:'기술 방어'});continue}
   const ops=(P.groups||[]).flatMap(g=>(g.ops||[]).map(op=>Object.assign({who:g.who,n:g.n},op)));
   for(const op of ops){
+   if(op.k==='state'&&op.tgt==='self'&&op.state==='FollowMe'){/* 11-15 망령 「날따름으로 공격을 유도」: 짝이 위험하고 내가 받아낼 수 있으면 */const pt=c.allies[0];if(!pt||!c.ai&&pol==='C')continue;const pa=c.dangerOf(pt)/Math.max(1,pt.hp.cur);const me=danger/Math.max(1,m.hp.cur);/* 상대 둘이 다 나를 때리는 최악 = danger 그대로 */if(pa<0.5||me>=pa||me>=1.6)continue;/* 내가 짝보다 덜 위험할 때 — 짝 대신 맞는다 */out.push({mv,tg:m,score:Math.min(0.75,0.3+0.3*(pa-me))*(me<1?1:0.75),why:'날따름'});continue}
    if(op.k==='state'&&op.tgt==='target'){const st=op.state;const cand=fs.filter(tg=>!immune(tg,st)&&!(MAJOR.includes(st)&&MAJOR.some(k=>(tg.states||{})[k]))&&!(tg.states||{})[st]);if(!cand.length)continue;
     const tg=cand.map(t=>Object.assign(c.threatVs(pol,t,m),{t})).sort((a,x)=>x.v-a.v)[0].t;const th=Math.min(1,c.threatVs(pol,tg,m).v/Math.max(1,m.hp.cur));let s=0;
     if(st==='Sleep')s=0.7;else if(st==='Paralysis')s=0.35+(c.spd(tg)>c.spd(m)?0.2:0);else if(st==='Burn')s=tg.stats[1]>tg.stats[3]?0.5:0.15;else if(st==='Toxic')s=0.35;else if(st==='Poison')s=0.25;else if(st==='Confusion'){if(pol==='C')continue;s=0.25}else if(st==='LeechSeed'){if(pol==='C')continue;s=0.25}else if(st==='Taunt'||st==='Encore'){if(pol==='C')continue;s=0.1}else continue;
@@ -250,7 +252,7 @@ function statusPick(H,W,c){const FN=H.fn,MA=W.OM_MOVEAUTO,B=W.OM_BATTLE;const {m
    else if(op.k==='terrain'&&!op.room){if(f.terrain.type===op.t)continue;const TY={그래스필드:'Grass',일렉트릭필드:'Electric',사이코필드:'Psychic'}[op.t];if(TY&&mtypes.includes(TY)&&FN.MVS(m).some(q=>q&&q.cat!=='변화'&&q.typeEn===TY))out.push({mv,tg:m,score:0.25,why:'필드 '+op.t})}
    else if(op.k==='object'&&op.side==='self'){if(gateC)continue;const objs=(f.objects||{})[m.side]||{};if(+objs[op.o]>0)continue;const th=c.topThreat(pol,m);
     if((op.o==='리플렉터'&&th.mv&&th.mv.cat==='물리')||(op.o==='빛의장막'&&th.mv&&th.mv.cat==='특수')||(op.o==='오로라베일'&&/싸라기눈|눈/.test(String((f.weather||{}).type||''))))out.push({mv,tg:m,score:0.35,why:op.o});
-    else if(op.o==='순풍'&&fs.some(tg=>c.spd(tg)>c.spd(m)))out.push({mv,tg:m,score:0.35,why:'순풍'})}
+    else if(op.o==='순풍'){/* 11-15 망령 「순풍으로 선공권」: 순풍(×2)으로 앞지르게 되는 우리 편 (필드 · 벤치) 수만큼 */const fast=Math.max(...fs.map(tg=>c.spd(tg)));const mine=[m,...c.allies];const flip=mine.filter(x=>c.spd(x)<fast&&c.spd(x)*2>fast).length;const bflip=(c.bench||[]).filter(x=>x.tid===m.tid&&+x.stats[5]<fast&&+x.stats[5]*2>fast).length;if(flip||bflip)out.push({mv,tg:m,score:Math.min(0.8,0.3+0.18*flip+0.06*bflip),why:'순풍'})}}
    else if(op.k==='object'&&op.side==='enemy'){if(gateC)continue;const objs=(f.objects||{})[fs[0].side]||{};if(+objs[op.o]>0)continue;const benchN=Object.values(b.mons).filter(x=>x.side===fs[0].side&&!x.entry&&x.hp.cur>0).length;if(benchN)out.push({mv,tg:fs[0],score:0.08+0.07*benchN,why:op.o})}}}
  if(!out.length)return null;out.sort((a,x)=>x.score-a.score);return out[0]}
 module.exports={attack,applyHit,estimate,statusPick,cardTake};
