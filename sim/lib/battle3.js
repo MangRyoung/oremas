@@ -38,7 +38,13 @@ async function runBattle(W,opt){
  const AREAS=['a','b','c'].slice(0,fmt);
  /* ---- 지시용 계산: 기대 대미지 (공격 창과 같은 보정 · 주사위 중간값 · 명중 곱) ---- */
  const seen=new Map();const markSeen=(m,mvName)=>{let s=seen.get(m.id);if(!s){s=new Set();seen.set(m.id,s)}s.add(mvName)};
- const dmgMoves=m=>FN.MVS(m).map((mv,i)=>Object.assign({},mv,{_i:i})).filter(mv=>mv&&mv.cat!=='변화'&&+mv.pow>0&&!mv.virt&&!mv.ext);
+ /* 11-14 망령 「학생들끼리 포텐셜 잘 활용하면서 배틀 · 로그 분석 · 지시 로직 다듬기」: opt.ai = {left:'new'|'', right:…} — 'new' 쪽만 새 지시 로직 (옛 로직과 견주려고) */
+ const AI=sd=>!!(opt.ai&&opt.ai[sd]==='new');const sideOfTid=tid=>(C().trainers[tid]||{}).side||'left';
+ /* 새 로직 ①: 「기능 확장」 기술도 공격 후보 (행동으로 쓰는 것만 · 횟수 남은 것). 트레이너 기능 확장은 웹툴 extUse, 포텐셜 쪽은 그 포텐셜의 【N/시】 · 【탈진】 · 【소진】을 시뮬이 센다 */
+ const PX={};const extSrcEff=(tid,src)=>{const t=C().trainers[tid]||{};const nm=x=>String(x||'').replace(/[『』\s]/g,'');for(const u of t.unique||[])if(u&&nm(u.name)===nm(src))return String(u.eff||'');for(const m of Object.values(C().mons))if(m.tid===tid)for(const q of FN.potSrc(m))if(nm(q.name)===nm(src))return String(q.eff||'');return ''};
+ const extOk=(m,mv)=>{const X=mv.ext;if(!X||X.kind==='extra')return false;if(X.tid!=null&&X.i!=null)return !(X.lim&&X.left<=0);const e=extSrcEff(m.tid,X.src||X.pot);const k=m.tid+'|'+(X.src||X.pot);const u=PX[k]||{n:0,t:-9};const T=+C().turn||0;const mm=e.match(/【\s*(\d+)\s*\/\s*시\s*】/);if(mm&&u.n>=+mm[1])return false;if(/【\s*탈진\s*】/.test(e)&&T-u.t<=1)return false;if(/【\s*소진\s*】/.test(e)&&u.t===T)return false;return true};
+ const extUsed=async(m,mv)=>{const X=mv&&mv.ext;if(!X)return;if(X.tid!=null&&X.i!=null){const t=C().trainers[X.tid];const U=Object.assign({},(t&&t.extUse)||{});U[X.i]=(+U[X.i]||0)+1;await W.OM_APP.set(['battle','trainers',X.tid,'extUse'],U);return}const k=m.tid+'|'+(X.src||X.pot);const u=PX[k]||{n:0,t:-9};PX[k]={n:u.n+1,t:+C().turn||0}};
+ const dmgMoves=m=>FN.MVS(m).map((mv,i)=>Object.assign({},mv,{_i:i})).filter(mv=>mv&&mv.cat!=='변화'&&+mv.pow>0&&!mv.virt&&(!mv.ext||(AI(m.side)&&extOk(m,mv))));
  const allMoves=m=>FN.MVS(m).map((mv,i)=>Object.assign({},mv,{_i:i})).filter(mv=>mv&&!mv.virt&&!mv.ext);
  const expect=(atk,mv,def,multi)=>{try{return FG.estimate(H,W,atk,def,mv,{multi})}catch(e){return 0}};
  const bestVs=(atk,def)=>{let best=null,bv=0;for(const mv of dmgMoves(atk)){const v=expect(atk,mv,def);if(v>bv){bv=v;best=mv}}return {mv:best,v:bv}};
@@ -79,6 +85,22 @@ async function runBattle(W,opt){
   if(!taunt){const sp=statusPlan(sd,m,pol,fs,pick);if(sp&&(!pick||sp.score>(pick.v/Math.max(1,left(pick.tg)))))return {mv:sp.mv,tg:sp.tg,v:0,status:sp.why}}
   if(!pick){const any=allMoves(m).find(x=>!taunt||x.cat!=='변화');return any?{mv:any,tg:fs[0],v:0}:null}
   return keep(pick)};
+ /* 새 로직 ④: 두 마리 공격을 함께 고른다 (11-14) — 상대마다 「얼마나 위협적인가」 × 깎는 비율(쓰러뜨리면 덤), 같은 편을 맞히는 전체기는 뺀다.
+    한 마리를 확실히 쓰러뜨리는 쪽(상대 공격 수가 줄어든다)이 두 마리를 반씩 깎는 것보다 낫게 */
+ const SPREAD=/전체|자신 이외|상대 2체/;
+ function chooseJoint(sd){const me=active(sd).filter(m=>{const st=m.states||{};return !(st.Thrash||st.Encore)});const fs=foes(sd);if(me.length<2||!fs.length)return null;
+  const pol0=polOf(me[0]);const tw={};for(const f of fs){let w=0;for(const m of active(sd)){const th=threatVs(pol0==='D'?'C':pol0,f,m);w=Math.max(w,th.v/Math.max(1,m.hp.cur))}tw[f.id]=0.6+Math.min(1.6,w)}
+  const cands=m=>{const L=[];for(const mv of dmgMoves(m)){if((m.states||{}).Taunt&&mv.cat==='변화')continue;if(SPREAD.test(mv.range||'')){const d={};for(const f of fs)d[f.id]=expect(m,mv,f,true);let pen=0;if(mv.range==='자신 이외')for(const x of active(sd))if(x!==m)pen+=expect(m,mv,x,true)/Math.max(1,x.hp.cur);L.push({mv,tg:fs.slice().sort((a,c)=>d[c.id]-d[a.id])[0],d,pen})}else for(const f of fs)L.push({mv,tg:f,d:{[f.id]:expect(m,mv,f,false)},pen:0})}
+   return L.sort((a,c)=>Object.values(c.d).reduce((x,y)=>x+y,0)-Object.values(a.d).reduce((x,y)=>x+y,0)).slice(0,8)};
+  const C1=cands(me[0]),C2=cands(me[1]);if(!C1.length||!C2.length)return null;let best=null,bv=-1e9;
+  /* 행동 순서까지: 스피드 순으로 한 턴을 짧게 돌려 본다 — 빠른 상대가 먼저 우리 한 마리를 쓰러뜨리면 그 아이의 공격은 없다 · 우리가 먼저 쓰러뜨린 상대는 못 때린다 */
+  const P0=pol0==='D'?'C':pol0;const FA={};for(const f of fs){let bt=null,br=-1;for(const m of active(sd)){const th=threatVs(P0,f,m);const r=th.v/Math.max(1,m.hp.cur);if(r>br){br=r;bt={m,v:th.v}}}FA[f.id]=bt}
+  const SP={};for(const x of [...me,...fs])SP[x.id]=spd(x);const actors=[...me,...fs].sort((x,y)=>SP[y.id]-SP[x.id]);
+  for(const a of C1)for(const c of C2){const plan={[me[0].id]:a,[me[1].id]:c};const hp={};for(const x of [...active(sd),...fs])hp[x.id]=x.hp.cur;let v=0;
+   for(const x of actors){if(hp[x.id]<=0)continue;if(plan[x.id]){for(const f of fs){const d=plan[x.id].d[f.id]||0;if(d<=0||hp[f.id]<=0)continue;const before=hp[f.id];hp[f.id]=Math.max(0,before-d);v+=tw[f.id]*((before-hp[f.id])/Math.max(1,f.hp.cur))}}
+    else{const t=FA[x.id];if(t&&t.m&&hp[t.m.id]>0){const before=hp[t.m.id];hp[t.m.id]=Math.max(0,before-t.v);v-=0.8*((before-hp[t.m.id])/Math.max(1,t.m.hp.cur))}}}
+   for(const f of fs)if(hp[f.id]<=0)v+=0.6*tw[f.id];for(const m of me)if(hp[m.id]<=0)v-=0.5;v-=1.2*(a.pen+c.pen);if(v>bv){bv=v;best=[a,c]}}
+  if(!best)return null;const out=new Map();me.forEach((m,i)=>{const x=best[i];out.set(m.id,{mv:x.mv,tg:x.tg,v:x.d[x.tg.id]||0})});return out}
  /* 교대 (2-10 · 2-11) */
  const wantSwitch=(sd,m)=>{const pol=polOf(m);if(pol==='D'||pol==='wild'||isWildT(m.tid))return null;if((m.states||{}).Bind||(m.states||{}).MeanLook||(m.states||{}).Block)return null;const fs=foes(sd);if(!fs.length)return null;
   const L=bench(sd).filter(x=>x.tid===m.tid).map(x=>({x,s:fs.reduce((a,f)=>a+matchup(x,f),0)})).sort((a,c)=>c.s-a.s);if(!L.length)return null;const cur=fs.reduce((a,f)=>a+matchup(m,f),0);
@@ -109,6 +131,56 @@ async function runBattle(W,opt){
  const gmEndHeal=async()=>{for(const m0 of Object.values(C().mons)){if(!m0.entry||!alive(m0))continue;for(const [kind,name,eff] of srcOf(m0)){const mm=String(eff).match(/「([^」]+)」\s*상태일 때 턴 종료 시 「HP」를 (\d+)\s*\/\s*(\d+)만큼 회복/);if(!mm)continue;const en=FX.stEn?FX.stEn(mm[1]):'';const m=C().mons[m0.id];if(!en||!(m.states||{})[en]||(m.states||{}).HealBlock||m.hp.cur>=m.hp.max)continue;
    const v=Math.max(1,Math.floor(m.hp.max*(+mm[2])/(+mm[3])));const x=clone(m);x.hp.cur=Math.min(x.hp.max,x.hp.cur+v);await W.OM_APP.setDiff(['battle','mons',m.id],m,x,1);W.OM_APP.sysLog(`【GM】 ${m.name} 「${name}」 — 「${mm[1]}」 상태라 턴 종료 시 HP +${x.hp.cur-m.hp.cur}`,'battle')}}};
  const gmChores=async()=>{await gmHp();if(FN.faintWatch)await FN.faintWatch();await flush(1)};
+ /* 새 로직 ②: 4식을 이름으로 (지시 체계마다 같은 칸에 다른 4식이 들어간다 — 십계면 「버텨라」 칸이 『정화의 법계』). 11-14 */
+ const NEG=['Burn','Poison','Toxic','Paralysis','Sleep','Freeze','Confusion'];
+ const ordNames=tid=>{const t=T(tid);return ordKeys(t).map(k=>({k,n:String(FN.pName(C(),tid,'order',k)||'').trim()}))};
+ const foeCat=(sd,tid)=>{let ph=0,sp=0;for(const f of foes(sd))for(const m of active(sd).filter(x=>x.tid===tid)){const th=threatVs(POLS[tid]==='D'?'C':POLS[tid],f,m);if(th.mv){if(th.mv.cat==='물리')ph+=th.v;else if(th.mv.cat==='특수')sp+=th.v}}return {ph,sp}};
+ const wallOn=(sd,nm)=>{const o=((FN.fieldOf(C()).objects||{})[sd])||{};return +o[nm]>0};
+ async function ordersNew(tid,pol,mine,acts){const t=T(tid);const sd=t.side;const L=ordNames(tid);if(!L.length)return;const has=re=>L.find(x=>re.test(x.n));const P2=pol==='D'?'C':pol;
+  /* 결계: 상대 위협이 물리 · 특수 한쪽으로 기울면 첫 기회에 (이미 깔렸으면 안 함) */
+  {const fc=foeCat(sd,tid);const tot=fc.ph+fc.sp;const ph=has(/^물리결계/),sp=has(/^특수결계/);
+   if(tot>0){if(ph&&fc.ph>=tot*0.55&&!wallOn(sd,'리플렉터')&&await fire(tid,mine[0].id,'order',ph.k))return;if(sp&&fc.sp>=tot*0.55&&!wallOn(sd,'빛의장막')&&await fire(tid,mine[0].id,'order',sp.k))return}}
+  /* 법계: 정화 = 아군 상태 이상 · 치유 = 아군이 많이 다쳤을 때 */
+  {const pu=has(/정화의 법계/);if(pu){const bad=active(sd).filter(m=>NEG.some(k=>(m.states||{})[k]));if(bad.length&&await fire(tid,bad[0].id,'order',pu.k))return}
+   const he=has(/치유의 법계/);if(he){const al=active(sd);const miss=al.reduce((a,m)=>a+(m.hp.max-m.hp.cur)/m.hp.max,0);if((miss>=0.7||al.some(m=>m.hp.cur<m.hp.max*0.35))&&await fire(tid,al[0].id,'order',he.k))return}}
+  /* 지키는 4식: 이번 턴 쓰러질 아이 (위협 ≥ 남은 HP) — 필중이면 버텨라 · 물리면 물러나 · 특수면 피해라 */
+  for(const m of mine.slice().sort((a,c)=>a.hp.cur/a.hp.max-c.hp.cur/c.hp.max)){if(acts.some(a=>a.m===m&&a.sw))continue;const th=topThreat(P2,m);const need=pol==='D'?m.hp.cur<m.hp.max*0.35:(th.mv&&th.v>=m.hp.cur*(pol==='C'?0.85:1));if(!need)continue;
+   const sure=isSure(th.mv);const cat=th.mv?th.mv.cat:'';const pick=(!sure&&cat==='물리'&&has(/^물러나/))||(!sure&&cat==='특수'&&has(/^피해라/))||has(/^버텨라/)||has(/주인의 칙령/);if(pick&&await fire(tid,m.id,'order',pick.k))return}
+  /* 맞춰라: 결정타가 빗나갈 수 있을 때 */
+  {const mt=has(/^맞춰라/);if(mt)for(const a of acts.filter(x=>x.m.tid===tid&&x.mv&&x.mv.cat!=='변화'&&x.tg)){const acc=+a.mv.acc||0;if(acc&&acc<100&&a.v>=a.tg.hp.cur&&await fire(tid,a.m.id,'order',mt.k))return}}}
+ /* 새 로직 ③: 손으로 쓰는 포텐셜(고유 · 전용 · 포켓몬 포텐셜의 【사전】 · 【선행】 · 【N/시】) — 자동 구문이 있는 것만, 구문 종류로 때를 고른다. 11-14
+    판 깔기(이계 · 필드 · 날씨 · 설치) · 상대에게 상태 → 첫 기회 / 자기 · 아군 강화 → 이번 턴 공격하는 아이가 있을 때 / 완화 · 회피 · 방어 → 위협이 셀 때 / 회복 → HP 반 아래 */
+ const TRIG=/했을\s*때|받았을\s*때|받을\s*때|【\s*(자동|등장|퇴장|준비|함성|지원|동조|방호|공세|수세|보급)|턴\s*종료|가장\s*마지막|쓰러/;
+ const splitTag=e=>{const t=String(e||'');const m=t.match(/^\s*[①-⑳]?\s*((?:【[^】]*】\s*)*)\/?/);const head=m?m[1]:'';return {head,body:t.slice(m?m[0].length:0)}};
+ const manualTag=e=>{const {head,body}=splitTag(e);if(!/【\s*(사전|선행)\s*】|【\s*\d+\s*\/\s*시\s*】/.test(head))return false;if(/【\s*(자동|등장|퇴장|준비|함성|지원|동조|보급|방호|공세|수세)/.test(head))return false;return !/했을\s*때|받았을\s*때|받을\s*때|턴\s*종료|가장\s*마지막/.test(body.slice(0,60))};
+ /* 손해가 섞인 구문(우선도를 내리거나 · 급소를 맞기 쉽게 · 대상 · 기술을 고르는 두 단계)은 시뮬이 판단하지 못해 쓰지 않는다 — 카렌 『죽음을 각오한 저항』 ① 처럼 ② 와 짝인 것 */
+ const opsRisky=ops=>(ops||[]).some(o=>o&&((o.k==='prio'&&+o.v<0)||o.k==='tsel'||o.k==='msel'||o.k==='cond'||/급소방호\s*-|급소방호-/.test(JSON.stringify(o))||(o.k==='guard'&&+o.cr<0)));
+ const opsClass=ops=>{if(opsRisky(ops))return '';const K=new Set((ops||[]).map(o=>o&&o.k));const tg=(ops||[]).map(o=>String((o&&o.tgt)||''));if(['stage','terrain','weather','object'].some(k=>K.has(k)))return 'open';if(K.has('state')&&tg.some(x=>/enemy|상대|front|정면|all/.test(x)))return 'foe';if(K.has('heal'))return 'heal';if(['guard','eva','protect','nodrop'].some(k=>K.has(k)))return 'def';if(['rank','mult','boost','prio','sp','state'].some(k=>K.has(k)))return 'buff';if(K.has('dmg'))return 'foe';return ''};
+ const PU={};
+ async function potsNew(tid,acts){const t=T(tid);if(!t||isWildT(tid))return;const sd=t.side;const P2=POLS[tid]==='D'?'C':POLS[tid];const mine=active(sd).filter(m=>m.tid===tid);if(!mine.length)return;const T0=+C().turn||0;
+  const attacking=m=>acts.some(a=>a.m.id===m.id&&a.mv&&a.mv.cat!=='변화');const danger=m=>{const th=topThreat(P2,m);return th.mv&&th.v>=m.hp.cur*0.6};
+  const want=(cls,m)=>cls==='open'||cls==='foe'?true:cls==='buff'?attacking(m):cls==='def'?danger(m):cls==='heal'?m.hp.cur<m.hp.max*0.5:false;
+  /* 고유 */
+  for(const q of (H.fn.uniqList||H.get('uniqList'))(t)){const e=String(q.p.eff||'');if(!manualTag(e)||(q.left!==null&&q.left<=0))continue;const k='u|'+tid+'|'+q.p.name;if(PU[k]===T0)continue;const a=FX.autoOf({tid},'pot',q.p.name);if(!a||!a.ops||!a.ops.length||a.manual)continue;const cls=opsClass(a.ops);if(!cls)continue;
+   const m=cls==='heal'?mine.slice().sort((x,y)=>x.hp.cur/x.hp.max-y.hp.cur/y.hp.max)[0]:mine.find(x=>attacking(x))||mine[0];if(!want(cls,m))continue;PU[k]=T0;try{await (H.fn.fireSpecial||H.get('fireSpecial'))(tid,m.id,'uq',q.p.name,'free');await flush(1)}catch(err){}}
+  /* 전용 · 포켓몬 포텐셜 */
+  for(const m0 of mine){const m=C().mons[m0.id];if(!m||!m.entry||!alive(m))continue;
+   for(const p of FN.potSrc(m)){const e=String(p.eff||'');if(!manualTag(e))continue;const k='p|'+m.id+'|'+p.name;if(PU[k]===T0)continue;const L=FN.limOf(p,m.potUses||{},m.potTurn||{});if(L.left!==null&&L.left<=0)continue;if((H.fn.potOffWhy||H.get('potOffWhy'))(m,p.name))continue;
+    const a=FX.autoOf(m,'pot',p.name);if(!a||!a.ops||!a.ops.length||a.manual)continue;const cls=opsClass(a.ops);if(!cls||!want(cls,m))continue;PU[k]=T0;
+    try{if(FN.isExcl(m,p))await (H.fn.fireSpecial||H.get('fireSpecial'))(tid,m.id,'ex',p.name,'free');else{await (H.fn.potMark||H.get('potMark'))(m.id,p.name);if(L.mmax!=null){const u=Object.assign({},(C().mons[m.id]||{}).potUses||{});u[p.name]=Math.max(0,(u[p.name]==null?L.mmax:+u[p.name])-1);await W.OM_APP.set(['battle','mons',m.id,'potUses'],u)}await FN.fireAuto(m.id,'pot',p.name,{manual:1,quiet:true})}await flush(1)}catch(err){}}}}
+ /* 11-14: 턴 종료 · 이후 포텐셜 — 【N/시】 · 【탈진】 · 【소진】 횟수를 지킨다 (예전엔 『탈착술』 【1/시】이 매 턴 돌았다). 랭크 초기화(reset)는 내 랭크 합이 마이너스일 때만 */
+ async function endPot(x){const m=C().mons[x.m.id];if(!m||!m.entry||!alive(m))return;const au=FX.autoOf(m,'pot',x.name);if(!au||!au.ops||!au.ops.length||au.manual)return;const p=FN.potSrc(m).find(q=>q&&q.name===x.name);
+  if(p){const L=FN.limOf(p,m.potUses||{},m.potTurn||{});if(L.left!==null&&L.left<=0)return;
+   if(au.ops.some(o=>o&&o.k==='reset')){const rs=Object.values(m.rank||{}).reduce((a,v)=>a+(+v||0),0);if(rs>=0)return}
+   if(L.max!=null){await (H.fn.potMark||H.get('potMark'))(m.id,p.name);if(L.mmax!=null){const u=Object.assign({},(C().mons[m.id]||{}).potUses||{});u[p.name]=Math.max(0,(u[p.name]==null?L.mmax:+u[p.name])-1);await W.OM_APP.set(['battle','mons',m.id,'potUses'],u)}}}
+  await FN.fireAuto(m.id,'pot',x.name,{quiet:true})}
+ /* 새 로직 ⑤: 단순 6령(C) — 이번 턴 효과가 확실한 쪽부터: 공격 +1 로 쓰러뜨림이 되는 아이 > 방어 +1 로 버티게 되는 아이 > HP 40% 아래 회복 > 가장 센 공격수 (11-14) */
+ async function cmdNewC(tid,mine,myActs){const t=T(tid);const ck=k=>cmdLeft(t,k);
+  for(const a of myActs.slice().sort((x,y)=>y.v-x.v)){if(!a.tg||!alive(a.tg))continue;const k=a.mv.cat==='특수'?'specialattack':'attack';if(ck(k)&&a.v<a.tg.hp.cur&&a.v*1.5>=a.tg.hp.cur&&await fire(tid,a.m.id,'command',k))return}
+  for(const m of mine){const th=topThreat('C',m);if(!th.mv)continue;const k=th.mv.cat==='특수'?'specialdefense':'defense';if(ck(k)&&th.v>=m.hp.cur&&th.v/1.5<m.hp.cur&&await fire(tid,m.id,'command',k))return}
+  {const w=mine.filter(m=>m.hp.cur<m.hp.max*0.4).sort((a,c)=>a.hp.cur/a.hp.max-c.hp.cur/c.hp.max)[0];if(w&&ck('heal')&&await fire(tid,w.id,'command','heal'))return}
+  if(process.env.HOLDCMD)return;
+  {const a=myActs.slice().sort((x,y)=>y.v-x.v)[0];if(a){const k=a.mv.cat==='특수'?'specialattack':'attack';if(ck(k))await fire(tid,a.m.id,'command',k)}}}
  /* ---- 결과 기록 ---- */
  const kos=[];const turnsLog=[];const used={};const markKo=(before)=>{for(const m of Object.values(C().mons)){const was=before[m.id];if(was>0&&!alive(m))kos.push({name:m.name,side:m.side,turn:C().turn,by:m._by||''})}};
  const hpMap=()=>{const o={};for(const m of Object.values(C().mons))o[m.id]=m.hp.cur;return o};
@@ -124,16 +196,23 @@ async function runBattle(W,opt){
   if(H.cards){const MJ=['Sleep','Paralysis','Freeze','Burn','Toxic','Poison'];const m=active('left').find(x=>MJ.some(k=>(x.states||{})[k]));if(m&&FG.cardTake(H,'cure',turn,m.tid)){const nb0=FN.snap(),nb=FN.snap(nb0);const x=nb.mons[m.id];if(x){x.states=Object.assign({},x.states);for(const k of MJ)delete x.states[k];await FN.saveBattle(nb0,nb)}}}
   /* 1. 지시 */
   const acts=[];const plans={left:new Map(),right:new Map()};const cmds={};
-  for(const sd of ['left','right'])for(const m of active(sd)){const sw=wantSwitch(sd,m);if(sw){acts.push({sd,m,sw});continue}const a=choose(sd,m,plans[sd]);if(a)acts.push(Object.assign({sd,m},a))}
+  for(const sd of ['left','right']){const J=AI(sd)&&!['D','wild'].includes(polOf(active(sd)[0]||{tid:''}))?chooseJoint(sd):null;
+   for(const m of active(sd)){const sw=wantSwitch(sd,m);if(sw){acts.push({sd,m,sw});continue}let a=null;
+    if(J&&J.has(m.id)){const j=J.get(m.id);a=j;if(!(m.states||{}).Taunt&&!process.env.NOSTAT){const sp=statusPlan(sd,m,polOf(m),foes(sd),j);if(sp&&sp.score>(j.v/Math.max(1,j.tg.hp.cur)))a={mv:sp.mv,tg:sp.tg,v:0,status:sp.why}}}else a=choose(sd,m,plans[sd]);
+    if(a)acts.push(Object.assign({sd,m},a))}}
   for(const a of acts){const tid=a.m.tid;cmds[tid]=cmds[tid]||{mons:{}};if(a.sw)cmds[tid].mons[a.m.id]={move:'switch',switch:a.sw.id,targets:[]};else{const tg=a.tg?[a.tg.side+'_'+a.tg.entry]:[];const r=String(a.mv.range||'');const dt=FN.defaultTargets(C(),a.m.id,String(a.mv._i));
    const targets=r==='1체'||r===''?tg:dt.length?dt:tg;cmds[tid].mons[a.m.id]={move:a.mv._i,targets};a.targets=targets}}
   {const nb=C();nb.cmds=cmds}
+  /* 새 로직: 손으로 쓰는 포텐셜 (【사전】 · 【선행】 — 지시 단계 · 턴 개시) */
+  for(const tid of Object.keys(C().trainers))if(AI(sideOfTid(tid)))await potsNew(tid,acts);
   /* 6령 · 4식 선행 (트레이너마다) */
   for(const tid of Object.keys(C().trainers)){if(isWildT(tid))continue;const pol=POLS[tid];const t=T(tid);const mine=active(t.side).filter(m=>m.tid===tid&&!isOld(m));if(!mine.length)continue;
    const myActs=acts.filter(a=>a.m.tid===tid&&a.mv&&a.mv.cat!=='변화'&&!isOld(a.m));
-   if(pol==='C'){const th=mine.map(m=>Object.assign(topThreat('C',m),{m})).filter(x=>x.mv&&x.v>=x.m.hp.cur*0.6).sort((a,c)=>c.v/c.m.hp.cur-a.v/a.m.hp.cur)[0];const tired=mine.filter(m=>m.hp.cur<m.hp.max*0.4)[0];
+   if(AI(t.side)&&(pol==='C'||!mastery(tid))&&!cmdUsed(tid)){await cmdNewC(tid,mine,myActs);}
+   else if(pol==='C'){const th=mine.map(m=>Object.assign(topThreat('C',m),{m})).filter(x=>x.mv&&x.v>=x.m.hp.cur*0.6).sort((a,c)=>c.v/c.m.hp.cur-a.v/a.m.hp.cur)[0];const tired=mine.filter(m=>m.hp.cur<m.hp.max*0.4)[0];
     let done=false;if(th)done=await fire(tid,th.m.id,'command',th.mv.cat==='특수'?'specialdefense':'defense');if(!done&&tired)done=await fire(tid,tired.id,'command','heal');if(!done&&myActs.length){const a=myActs.sort((x,y)=>y.v-x.v)[0];await fire(tid,a.m.id,'command',a.mv.cat==='특수'?'specialattack':'attack')}}
    /* 4식: 위험한 아이 하나 (D 35% · C 45% · B 본 위협 ≥ HP · A 그리고 60%) — 위협이 필중기면 버텨라 */
+   if(AI(t.side)){await ordersNew(tid,pol,mine,acts);continue}
    for(const m of mine){if(acts.some(a=>a.m===m&&a.sw))continue;const threat=topThreat(pol==='D'?'C':pol,m);const ratio=m.hp.cur/m.hp.max;
     const need=pol==='D'?ratio<0.35:pol==='C'?ratio<0.45:pol==='B'?(threat.mv&&threat.v>=m.hp.cur):(threat.mv&&threat.v>=m.hp.cur&&ratio<0.6);if(!need)continue;
     const ks=ordKeys(T(tid));const cat=threat.mv?threat.mv.cat:'';const sure=isSure(threat.mv);const k=!sure&&cat==='물리'&&ks.includes('retreat')?'retreat':!sure&&cat==='특수'&&ks.includes('dodge')?'dodge':ks.includes('endure')?'endure':null;if(!k)continue;
@@ -155,17 +234,17 @@ async function runBattle(W,opt){
      const tidD=tg0.tid;if(!isWildT(tidD)&&mastery(tidD)&&!cmdUsed(tidD)&&!isOld(tg0)){const DF=tg0.flags||{};const dodged=((DF.dodgePhys&&a.mv.cat==='물리')||(DF.dodgeSpec&&a.mv.cat==='특수'))&&!isSure(a.mv);if(!dodged){const v=expect(C().mons[m.id],a.mv,C().mons[tg0.id]);if(v>=tg0.hp.cur&&v/1.5<tg0.hp.cur)await fire(tidD,tg0.id,'command',a.mv.cat==='특수'?'specialdefense':'defense');else if(POLS[tidD]==='A'&&v>=tg0.hp.cur&&!isSure(a.mv)&&cmdLeft(T(tidD),'evasion'))await fire(tidD,tg0.id,'command','evasion')}}}}
    const before=hpMap();
    const r=await FG.attack(H,W,m.id,a.mv._i,targets,{});await flush();await gmChores();
-   markSeen(m,a.mv.name);{const x=C().mons[m.id];if(x)x.lastMove=a.mv.name}
+   markSeen(m,a.mv.name);{const x=C().mons[m.id];if(x)x.lastMove=a.mv.name}if(a.mv.ext)await extUsed(m,a.mv);
    for(const id in before)if(before[id]>0&&C().mons[id]&&!alive(C().mons[id]))C().mons[id]._by=m.name;
    /* 자기 교대(유턴 등) — 벤치에서 고른다 */
    const me=C().mons[m.id];if(r&&r.selfSwitch&&me&&me.entry&&alive(me)){const nx=pickIn(m.side,1,m.tid).filter(x=>x.tid===m.tid)[0]||pickIn(m.side,1)[0];if(nx){const area=me.entry;await FN.exitMon(me.id,{sys:true,noAsk:true});await FN.enterMon(nx.id,area,{sys:true,how:'임의 교대'});await flush()}}
    if(!active('left').length||!active('right').length)break}
   /* 4. 턴 종료: 「가장 마지막」 · 「턴 종료 시」 포텐셜 → 웹툴 turnEnd → 「턴 종료 이후」 · 숙달회복 ② */
-  for(const step of ['last','end']){for(const x of FN.endCands(C(),step))if(x.kind==='pot'){const au=FX.autoOf(x.m,'pot',x.name);if(au&&au.ops&&au.ops.length&&!au.manual)await FN.fireAuto(x.m.id,'pot',x.name,{quiet:true})}}
+  for(const step of ['last','end']){for(const x of FN.endCands(C(),step))if(x.kind==='pot')await endPot(x)}
   for(const tid of Object.keys(C().trainers)){if(isWildT(tid)||!mastery(tid)||cmdUsed(tid)||!cmdLeft(T(tid),'heal'))continue;const w=active(T(tid).side).filter(m=>m.tid===tid&&!isOld(m)&&m.hp.cur<=m.hp.max*0.5).sort((a,c)=>a.hp.cur/a.hp.max-c.hp.cur/c.hp.max)[0];if(w)await fire(tid,w.id,'command','heal')}
   {const ub=C();for(const tid in (ub.cmds||{})){const x=(ub.cmds[tid]||{}).fired||{};for(const mid in x){const f=x[mid]||{};used[tid]=used[tid]||{order:0,command:0};if(f.order)used[tid].order++;if(f.command)used[tid].command++}}}
   await gmEndHeal();await FN.turnEnd();await flush();await gmChores();
-  for(const x of FN.endCands(C(),'after'))if(x.kind==='pot'){const au=FX.autoOf(x.m,'pot',x.name);if(au&&au.ops&&au.ops.length&&!au.manual)await FN.fireAuto(x.m.id,'pot',x.name,{quiet:true})}
+  for(const x of FN.endCands(C(),'after'))if(x.kind==='pot')await endPot(x)
   markKo(hp0);
   /* 5. 빈자리 채우기 (죽어내밀기) */
   for(const sd of ['left','right']){const ent=FN.entered(C(),sd);for(const ar of AREAS){if(ent[ar])continue;const nx=pickIn(sd,1)[0];if(!nx)continue;await FN.enterMon(nx.id,ar,{sys:true,how:'죽어내밀기'});await flush()}}
