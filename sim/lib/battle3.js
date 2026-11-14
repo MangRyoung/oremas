@@ -98,30 +98,77 @@ async function runBattle(W,opt){
  /* 새 로직 ④: 두 마리 공격을 함께 고른다 (11-14) — 상대마다 「얼마나 위협적인가」 × 깎는 비율(쓰러뜨리면 덤), 같은 편을 맞히는 전체기는 뺀다.
     한 마리를 확실히 쓰러뜨리는 쪽(상대 공격 수가 줄어든다)이 두 마리를 반씩 깎는 것보다 낫게 */
  const SPREAD=/전체|자신 이외|상대 2체/;
+ /* 11-15 망령 「포켓몬 할 줄 몰라? 상성으로 교대해서 받거나 · 방어로 막거나 · 4식 6령으로 흘리고, 거기서부터 상대의 대응을 읽는 수읽기」:
+    두 수 읽기(chooseJoint2) — ① 상대 쪽 후보(공격 · 방어 · 안전한 교대)를 「우리가 평범하게 칠 때」 기준으로 저울질해 상대가 둘 만한 수 몇 개를 뽑고(상대가 아는 것 = 우리가 공개한 기술만)
+    ② 우리 후보(공격 · 방어 · 안전한 교대) 마다 그 상대 수들에 대해 한 턴을 돌려 가중 평균이 가장 큰 것을 고른다. C 는 상대 수 1개(지금 그대로 · 읽기 없음) · B 3개 · A · AA 4개. 교대는 그 자리로 오는 공격을 들어온 아이가 받는다 · 상대가 교대하면 우리 공격은 들어온 아이에게. */
+ function chooseJoint2(sd){const me=active(sd).filter(m=>{const st=m.states||{};return !(st.Thrash||st.Encore)&&!(m.charge&&+m.charge.turn<(+C().turn||0))});const fs=foes(sd).filter(f=>{const st=f.states||{};return !(f.charge&&+f.charge.turn<(+C().turn||0))});if(me.length<2||!fs.length)return null;
+  const T0=+C().turn||0;const pol0=polOf(me[0]);const P0=pol0==='D'?'C':pol0;const EX=new Map();const ex=(a,mv,d,multi)=>{const k=a.id+'|'+(mv._i!=null?mv._i:mv.name)+'|'+d.id+'|'+(multi?1:0);if(!EX.has(k))EX.set(k,expect(a,mv,d,multi));return EX.get(k)};
+  const ms=(x,opp)=>opp.reduce((a,f)=>a+(bestVs(x,f).v/Math.max(1,f.hp.cur)-threatVs(P0,f,x).v/Math.max(1,x.hp.cur)),0);
+  const moves=(m,mine)=>mine?dmgMoves(m):knownMoves(P0,m);
+  /* 후보: 공격(상위 6) · 방어 · 안전한 교대(상위 2) */
+  const cands=(m,mine,opp,side)=>{const L=[];const st=m.states||{};for(const mv of moves(m,mine)){if(st.Taunt&&mv.cat==='변화')continue;if(SPREAD.test(mv.range||'')){const d={};for(const f of opp)d[f.id]=ex(m,mv,f,true);let pen=0;if(mv.range==='자신 이외')for(const x of active(side))if(x!==m)pen+=ex(m,mv,x,true)/Math.max(1,x.hp.cur);L.push({mv,d,pen})}else for(const f of opp)L.push({mv,tg:f,d:{[f.id]:ex(m,mv,f,false)},pen:0})}
+   const L2=L.sort((a,c)=>Object.values(c.d).reduce((x,y)=>x+y,0)-Object.values(a.d).reduce((x,y)=>x+y,0)).slice(0,6);
+   if(!process.env.NOPROT&&!st.Taunt&&m.protectLast!==T0-1){const pm=FN.MVS(m).map((mv,i)=>Object.assign({},mv,{_i:i})).find(mv=>mv&&FN.protMove(mv)&&!mv.virt);if(pm&&(mine||(seen.get(m.id)||new Set()).has(pm.name)||P0!=='C'))L2.push({mv:pm,tg:m,d:{},pen:0,prot:1})}
+   if(!ENVS('NOJSW',side)&&!(st.Bind||st.MeanLook||st.Block||m.charge)&&!(T0>1&&+m.inT>=T0-1)){const m0=ms(m,opp);const mates=active(side).filter(y=>y!==m);
+    bench(side).filter(x=>x.tid===m.tid).map(x=>({x,s:ms(x,opp)})).sort((a,c)=>c.s-a.s).slice(0,3).forEach(o=>{const worst=opp.reduce((acc,f)=>{const t=threatVs(P0,f,m);return acc+(t.mv?ex(f,t.mv,o.x,false):0)},0);if(o.s>m0&&worst<o.x.hp.cur*(+process.env.SWSAFE||0.7))L2.push({sw:o.x,tg:m,d:{},pen:0,lt:(+process.env.SWLT||0.4)*(o.s-m0)+0.15*a1Score(o.x,mates,null)})})}
+   return L2};
+  const twOf=(att,def)=>{const t={};for(const f of def){let w=0;for(const m of att){const th=threatVs(P0,f,m);w=Math.max(w,th.v/Math.max(1,m.hp.cur))}t[f.id]=0.6+Math.min(1.6,w)}return t};
+  const PB0=(()=>{const F0=FN.fieldOf(C());const twF=+(((F0.objects||{})[fs[0].side]||{})['순풍']||0);const trR=+((F0.rooms||{})['트릭룸']||0);const avg=L=>L.reduce((a,x)=>a+(+x.stats[5]||0),0)/Math.max(1,L.length);return +(process.env.PROTB||0.25)+(twF>0||(trR>0&&avg(fs)<avg(me))?0.3:0)})();
+  /* 한 턴 돌리기 — A 쪽에서 본 값 (pa · pb = 포켓몬 id → 후보) */
+  const evalP=(A,B,pa,pb,twB)=>{const hp={};const all=[...A,...B];for(const x of all)hp[x.id]=x.hp.cur;const swOf=id=>{const p=pa[id]||pb[id];return p&&p.sw?p.sw:null};for(const x of all){const y=swOf(x.id);if(y)hp[y.id]=y.hp.cur}
+   const isA=new Set(A.map(x=>x.id));const sp=x=>spd(x);const actors=all.slice().sort((x,y)=>sp(y)-sp(x));let v=0;
+   for(const x of actors){if(hp[x.id]<=0)continue;const p=isA.has(x.id)?pa[x.id]:pb[x.id];if(!p||p.sw||p.prot)continue;
+    for(const tid of Object.keys(p.d)){const T=all.find(z=>z.id===tid);if(!T)continue;const tp=isA.has(tid)?pa[tid]:pb[tid];let R=T,dv=p.d[tid];if(tp&&tp.sw){R=tp.sw;dv=ex(x,p.mv,R,Object.keys(p.d).length>1)}
+     if(hp[R.id]<=0||dv<=0)continue;if(tp&&tp.prot&&R===T){if(!isA.has(x.id))v+=PB0;continue}const b0=hp[R.id];hp[R.id]=Math.max(0,b0-dv);const fr=(b0-hp[R.id])/Math.max(1,R.hp.cur);if(isA.has(x.id))v+=(twB[R.id]||twB[tid]||1)*fr;else v-=0.8*fr}}
+   for(const f of B){const y=pb[f.id]&&pb[f.id].sw;const R=y||f;if(hp[R.id]<=0)v+=0.6*(twB[f.id]||1)}
+   for(const m of A){const p=pa[m.id];if(p&&p.sw){if(hp[p.sw.id]<=0)v-=0.5;v+=p.lt||0}else if(hp[m.id]<=0)v-=0.5;if(p)v-=1.2*(p.pen||0)}return v};
+  const plansOf=(L1,L2,mons)=>{const out=[];for(const a of L1)for(const c of L2){if(a.prot&&c.prot)continue;if(a.sw&&c.sw&&a.sw===c.sw)continue;out.push({[mons[0].id]:a,[mons[1].id]:c})}return out};
+  const CA=me.map(m=>cands(m,true,fs,sd));if(CA.some(L=>!L.length))return null;const twF=twOf(me,fs);
+  /* 상대 수 */const fsd=fs[0].side;const CB=fs.map(f=>cands(f,false,me,fsd));let foeP=[];
+  const defB={};for(let i=0;i<fs.length;i++){const f=fs[i];let bt=null,br=-1;for(const m of me){const t=threatVs(P0,f,m);const r=t.v/Math.max(1,m.hp.cur);if(r>br){br=r;bt={m,t}}}const c0=CB[i].filter(c=>!c.prot&&!c.sw&&(c.tg===bt.m||(c.d&&c.d[bt.m.id]>0))).sort((a,c)=>(c.d[bt.m.id]||0)-(a.d[bt.m.id]||0))[0]||CB[i][0];if(c0)defB[f.id]=c0}
+  const K=P0==='C'||ENVS('NOREAD',sd)?1:P0==='B'?3:4;
+  if(K===1||fs.length<2)foeP=[{p:defB,w:1}];else{const defA={};me.forEach((m,i)=>{defA[m.id]=CA[i].filter(c=>!c.prot&&!c.sw).sort((a,c)=>Math.max(0,...Object.entries(c.d).map(([k,v])=>v/Math.max(1,(fs.find(f=>f.id===k)||{hp:{cur:1}}).hp.cur)))-Math.max(0,...Object.entries(a.d).map(([k,v])=>v/Math.max(1,(fs.find(f=>f.id===k)||{hp:{cur:1}}).hp.cur))))[0]||CA[i][0]});
+   const twM=twOf(fs,me);const sc=plansOf(CB[0],CB[1],fs).map(p=>({p,v:evalP(fs,me,p,defA,twM)})).sort((a,c)=>c.v-a.v).slice(0,K);const tau=P0==='B'?0.3:0.2;const mx=sc[0]?sc[0].v:0;let sw=0;for(const o of sc){o.w=Math.exp((o.v-mx)/tau);sw+=o.w}foeP=sc.map(o=>({p:o.p,w:o.w/sw}))}
+  let best=null,bv=-1e9;for(const pa of plansOf(CA[0],CA[1],me)){let v=0;for(const o of foeP)v+=o.w*evalP(me,fs,pa,o.p,twF);if(v>bv){bv=v;best=pa}}
+  if(!best)return null;const out=new Map();for(const m of me){const x=best[m.id];out.set(m.id,x.sw?{sw:x.sw}:{mv:x.mv,tg:x.tg||Object.keys(x.d).map(k=>fs.find(f=>f.id===k)).filter(Boolean).sort((a,c)=>(x.d[c.id]||0)-(x.d[a.id]||0))[0]||fs[0],v:x.tg?(x.d[x.tg.id]||0):0,prot:x.prot})}return out}
  function chooseJoint(sd){const me=active(sd).filter(m=>{const st=m.states||{};return !(st.Thrash||st.Encore)&&!(m.charge&&+m.charge.turn<(+C().turn||0))});const fs=foes(sd);if(me.length<2||!fs.length)return null;
   const pol0=polOf(me[0]);const tw={};for(const f of fs){let w=0;for(const m of active(sd)){const th=threatVs(pol0==='D'?'C':pol0,f,m);w=Math.max(w,th.v/Math.max(1,m.hp.cur))}tw[f.id]=0.6+Math.min(1.6,w)}
   const cands=m=>{const L=[];for(const mv of dmgMoves(m)){if((m.states||{}).Taunt&&mv.cat==='변화')continue;if(SPREAD.test(mv.range||'')){const d={};for(const f of fs)d[f.id]=expect(m,mv,f,true);let pen=0;if(mv.range==='자신 이외')for(const x of active(sd))if(x!==m)pen+=expect(m,mv,x,true)/Math.max(1,x.hp.cur);L.push({mv,tg:fs.slice().sort((a,c)=>d[c.id]-d[a.id])[0],d,pen})}else for(const f of fs)L.push({mv,tg:f,d:{[f.id]:expect(m,mv,f,false)},pen:0})}
    const L2=L.sort((a,c)=>Object.values(c.d).reduce((x,y)=>x+y,0)-Object.values(a.d).reduce((x,y)=>x+y,0)).slice(0,8);
    /* 11-14 기술 방어도 후보 — 연속이면 1/3 확률이라 지난 턴에 썼으면 뺀다 */
    if(!process.env.NOPROT&&!(m.states||{}).Taunt&&m.protectLast!==(+C().turn||0)-1){const pm=FN.MVS(m).map((mv,i)=>Object.assign({},mv,{_i:i})).find(mv=>mv&&FN.protMove(mv)&&!mv.virt);if(pm)L2.push({mv:pm,tg:m,d:{},pen:0,prot:1})}
+   /* 11-15 망령 「타입 상성으로 교대해서 받거나 · 방어로 막거나 · 4식 6령으로 흘리고 거기서 수읽기」: 교대도 같은 저울에 — 들어오는 아이가 그 자리로 오는 공격을 대신 받고, 앞으로의 맞대결 차이를 덤으로 (막 나온 아이는 빼고) */
+   {const T0=+C().turn||0;const st=m.states||{};if(AI(sd)&&!ENVS('NOJSW',sd)&&!(st.Bind||st.MeanLook||st.Block||m.charge)&&!(T0>1&&+m.inT>=T0-1)){const P9=polOf(m)==='D'?'C':polOf(m);const inc=fs.reduce((acc,f)=>{let bt=null,br=-1;for(const x of me){const t=threatVs(P9,f,x);const r=t.v/Math.max(1,x.hp.cur);if(r>br){br=r;bt=x}}return bt===m?acc+threatVs(P9,f,m).v:acc},0);const need=inc>=m.hp.cur*(+process.env.SWNEED||0);const ms=msum(m);if(need)bench(sd).filter(x=>x.tid===m.tid).map(x=>({x,s:msum(x)})).sort((a,c)=>c.s-a.s).slice(0,3).forEach(o=>{/* 안전한 교대만: 두 상대가 다 그 자리(이 아이를 노린 기술)로 쳐도 70% 넘게 남는 아이 */const worst=fs.reduce((acc,f)=>{const t=threatVs(P9,f,m);return acc+(t.mv?expect(f,t.mv,o.x):0)},0);if(o.s>ms&&worst<o.x.hp.cur*(+process.env.SWSAFE||0.7))L2.push({sw:o.x,tg:m,d:{},pen:0,lt:(+process.env.SWLT||0.4)*(o.s-ms)+0.15*a1Score(o.x,me.filter(y=>y!==m),null)})})}}
    return L2};
+  const msum=x=>fs.reduce((a,f)=>a+matchup(x,f),0);
   const C1=cands(me[0]),C2=cands(me[1]);if(!C1.length||!C2.length)return null;let best=null,bv=-1e9;
   /* 행동 순서까지: 스피드 순으로 한 턴을 짧게 돌려 본다 — 빠른 상대가 먼저 우리 한 마리를 쓰러뜨리면 그 아이의 공격은 없다 · 우리가 먼저 쓰러뜨린 상대는 못 때린다 */
-  const P0=pol0==='D'?'C':pol0;const FA={};for(const f of fs){let bt=null,br=-1;for(const m of active(sd)){const th=threatVs(P0,f,m);const r=th.v/Math.max(1,m.hp.cur);if(r>br){br=r;bt={m,v:th.v}}}FA[f.id]=bt}
+  const P0=pol0==='D'?'C':pol0;const FA={};for(const f of fs){let bt=null,br=-1;for(const m of active(sd)){const th=threatVs(P0,f,m);const r=th.v/Math.max(1,m.hp.cur);if(r>br){br=r;bt={m,v:th.v}}}FA[f.id]=bt&&Object.assign(bt,{mv:(threatVs(P0,f,bt.m)||{}).mv})}
   /* 11-15 망령 「방어나 4식으로 턴을 흘린다」: 상대 순풍 · 상대에게 유리한 트릭룸이 남아 있으면 막는 값이 커진다 (그 턴을 흘려 보냄) */const F0=FN.fieldOf(C());const fsd=fs[0].side;const twF=+(((F0.objects||{})[fsd]||{})['순풍']||0);const trR=+((F0.rooms||{})['트릭룸']||0);const avg=L=>L.reduce((a,x)=>a+(+x.stats[5]||0),0)/Math.max(1,L.length);const trF=trR>0&&avg(fs)<avg(me);const PB=+(process.env.PROTB||0.25)+(twF>0||trF?0.3:0);
+  /* 수읽기(B 이상): 우리가 쓰러뜨릴 수 있는 상대는 방어로 막을 수 있다 — 그 확률만큼 우리 공격 · 그 상대의 공격을 깎아 본다 */const pP={};if(['B','A','AA'].includes(P0)&&!ENVS('NOREAD',sd)){const T1=+C().turn||0;for(const f of fs){const can=me.reduce((a,m)=>a+bestVs(m,f).v,0)>=f.hp.cur;const hasP=f.protectLast!==T1-1&&FN.MVS(f).some(q=>q&&FN.protMove(q)&&!q.virt)&&!(f.states||{}).Taunt;pP[f.id]=can&&hasP?(P0==='B'?0.35:0.45):0}}
   const SP={};for(const x of [...me,...fs])SP[x.id]=spd(x);const actors=[...me,...fs].sort((x,y)=>SP[y.id]-SP[x.id]);
-  for(const a of C1)for(const c of C2){if(a.prot&&c.prot)continue;const plan={[me[0].id]:a,[me[1].id]:c};const PROT={};if(a.prot)PROT[me[0].id]=1;if(c.prot)PROT[me[1].id]=1;const hp={};for(const x of [...active(sd),...fs])hp[x.id]=x.hp.cur;let v=0;
-   for(const x of actors){if(hp[x.id]<=0)continue;if(plan[x.id]){for(const f of fs){const d=plan[x.id].d[f.id]||0;if(d<=0||hp[f.id]<=0)continue;const before=hp[f.id];hp[f.id]=Math.max(0,before-d);v+=tw[f.id]*((before-hp[f.id])/Math.max(1,f.hp.cur))}}
-    else{const t=FA[x.id];if(t&&t.m&&hp[t.m.id]>0){if(PROT[t.m.id]){v+=PB;continue}const before=hp[t.m.id];hp[t.m.id]=Math.max(0,before-t.v);v-=0.8*((before-hp[t.m.id])/Math.max(1,t.m.hp.cur))}}}
-   for(const f of fs)if(hp[f.id]<=0)v+=0.6*tw[f.id];for(const m of me)if(hp[m.id]<=0)v-=0.5;v-=1.2*(a.pen+c.pen);if(v>bv){bv=v;best=[a,c]}}
-  if(!best)return null;const out=new Map();me.forEach((m,i)=>{const x=best[i];out.set(m.id,{mv:x.mv,tg:x.tg,v:x.d[x.tg.id]||0,prot:x.prot})});return out}
+  for(const a of C1)for(const c of C2){if(a.prot&&c.prot)continue;if(a.sw&&c.sw&&a.sw===c.sw)continue;const plan={[me[0].id]:a,[me[1].id]:c};const PROT={};if(a.prot)PROT[me[0].id]=1;if(c.prot)PROT[me[1].id]=1;const hp={};for(const x of [...active(sd),...fs])hp[x.id]=x.hp.cur;for(const q of [a,c])if(q.sw)hp[q.sw.id]=q.sw.hp.cur;let v=0;
+   for(const x of actors){if(hp[x.id]<=0)continue;if(plan[x.id]){if(plan[x.id].sw)continue;for(const f of fs){const d=(plan[x.id].d[f.id]||0)*(1-(pP[f.id]||0));if(d<=0||hp[f.id]<=0)continue;const before=hp[f.id];hp[f.id]=Math.max(0,before-d);v+=tw[f.id]*((before-hp[f.id])/Math.max(1,f.hp.cur))}}
+    else{const t=FA[x.id];if(t&&t.m&&hp[t.m.id]>0){if(PROT[t.m.id]){v+=PB;continue}const k=1-(pP[x.id]||0);const swp=plan[t.m.id]&&plan[t.m.id].sw;if(swp){/* 교대해 들어온 아이가 대신 맞는다 */const y=swp;const dv=t.mv?expect(x,t.mv,y)*k:0;const b0=hp[y.id];hp[y.id]=Math.max(0,b0-dv);v-=0.8*((b0-hp[y.id])/Math.max(1,y.hp.cur));if(hp[y.id]<=0)v-=0.5;continue}const before=hp[t.m.id];hp[t.m.id]=Math.max(0,before-t.v*k);v-=0.8*((before-hp[t.m.id])/Math.max(1,t.m.hp.cur))}}}
+   for(const f of fs)if(hp[f.id]<=0)v+=0.6*tw[f.id];for(const m of me)if(hp[m.id]<=0&&!plan[m.id].sw)v-=0.5;v-=1.2*(a.pen+c.pen);v+=(a.lt||0)+(c.lt||0);if(v>bv){bv=v;best=[a,c]}}
+  if(!best)return null;const out=new Map();me.forEach((m,i)=>{const x=best[i];out.set(m.id,x.sw?{sw:x.sw}:{mv:x.mv,tg:x.tg,v:x.d[x.tg.id]||0,prot:x.prot})});return out}
  /* 교대 (2-10 · 2-11) */
  /* 11-14 새 로직 교대: 지시 랭크와 상관없이 — 지금 상대들에게 크게 밀리고(받을 위협 ≥ 남은 HP 의 70%) 벤치에 확실히 나은 아이(맞대결 점수 +0.6)가 있을 때. 교대해 들어오는 아이가 이번 턴 받을 피해도 셈 */
  const wantSwitchNew=(sd,m)=>{if(m.charge)return null;const st=m.states||{};if(st.Bind||st.MeanLook||st.Block)return null;const fs=foes(sd);if(!fs.length)return null;const pol=polOf(m);const P2=pol==='D'?'C':pol;
   const thr=fs.reduce((a,f)=>Math.max(a,threatVs(P2,f,m).v),0);if(thr<m.hp.cur*(+process.env.SWT||0.7))return null;
   const cur=fs.reduce((a,f)=>a+matchup(m,f),0);const L=bench(sd).filter(x=>x.tid===m.tid).map(x=>{const inThr=fs.reduce((a,f)=>Math.max(a,threatVs(P2,f,x).v),0);return {x,s:fs.reduce((a,f)=>a+matchup(x,f),0)-inThr/Math.max(1,x.hp.cur)*0.5}}).sort((a,c)=>c.s-a.s);
   return L.length&&L[0].s>cur+(+process.env.SWM||0.6)?L[0].x:null};
- const wantSwitch=(sd,m)=>{if(m.charge)return null;if(AI(sd)&&process.env.NEWSW)return wantSwitchNew(sd,m);const pol=polOf(m);if(pol==='D'||pol==='wild'||isWildT(m.tid))return null;if((m.states||{}).Bind||(m.states||{}).MeanLook||(m.states||{}).Block)return null;const fs=foes(sd);if(!fs.length)return null;
+ /* 11-15 망령 「느려서 공격 받고 당할 것 같으면 교대로 받거나 해야지」: 나보다 먼저 움직이는 상대들의 공격으로 행동 전에 쓰러질 판이면, 그 공격을 반 넘게 남기고 받아낼 벤치로 바꾼다.
+    방어를 쓸 수 있으면(지난 턴에 안 썼으면) 그쪽은 두 마리 함께 고르기에 맡긴다 (SWP=1 이면 방어가 있어도 바꿈). 막 나온 아이(지난 턴 · 이번 턴)는 안 바꾼다 — 핑퐁 방지. SWKO=left|right|both|off 로 견주기 */
+ const swTaken=new Set();const SWKO=sd=>{const v=process.env.SWKO;if(v==='left'||v==='right')return v===sd;return v==='both'};/* 기본 끔 — 교대는 두 마리 함께 고르기의 저울로 (11-15 시험: 따로 교대 47.8%) */const ENVS=(k,sd)=>{const v=process.env[k];return v==='1'||v==='both'||v===sd};
+ const wantSwitchKO=(sd,m)=>{const st=m.states||{};if(m.charge||st.Bind||st.MeanLook||st.Block||st.Substitute)return null;const fs=foes(sd);if(!fs.length)return null;const pol=polOf(m);const P2=pol==='D'?'C':pol;const T0=+C().turn||0;if(T0>1&&+m.inT>=T0-1)return null;
+  const my=active(sd);const atks=fs.map(f=>{let bt=null,br=-1;for(const x of my){const t=threatVs(P2,f,x);const r=t.v/Math.max(1,x.hp.cur);if(r>br){br=r;bt={x,t}}}return {f,bt}}).filter(o=>o.bt&&o.bt.x===m&&o.bt.t.mv);if(!atks.length)return null;
+  const sm=spd(m);const first=atks.filter(o=>spd(o.f)>sm||(+o.bt.t.mv.prio||0)>0);if(first.reduce((a,o)=>a+o.bt.t.v,0)<m.hp.cur)return null;
+  const prot=!st.Taunt&&m.protectLast!==T0-1&&FN.MVS(m).some(mv=>mv&&FN.protMove(mv)&&!mv.virt);if(prot&&!process.env.SWP)return null;
+  const mates=my.filter(x=>x!==m);const inc=x=>atks.reduce((a,o)=>a+expect(o.f,o.bt.t.mv,x),0);
+  const L=bench(sd).filter(x=>x.tid===m.tid&&!swTaken.has(x.id)).map(x=>{const fr=inc(x)/Math.max(1,x.hp.cur);return {x,fr,s:fs.reduce((a,f)=>a+matchup(x,f),0)-fr+a1Score(x,mates,null)}}).filter(o=>o.fr<(+process.env.SWF||0.55)).sort((a,c)=>c.s-a.s);
+  if(L.length)swTaken.add(L[0].x.id);return L.length?L[0].x:null};
+ const wantSwitch=(sd,m)=>{if(m.charge)return null;if(AI(sd)&&process.env.NEWSW)return wantSwitchNew(sd,m);if(AI(sd)&&SWKO(sd)&&polOf(m)!=='wild'&&!isWildT(m.tid)){const k=wantSwitchKO(sd,m);if(k)return k}const pol=polOf(m);if(pol==='D'||pol==='wild'||isWildT(m.tid))return null;if((m.states||{}).Bind||(m.states||{}).MeanLook||(m.states||{}).Block)return null;const fs=foes(sd);if(!fs.length)return null;
   const L=bench(sd).filter(x=>x.tid===m.tid).map(x=>({x,s:fs.reduce((a,f)=>a+matchup(x,f),0)})).sort((a,c)=>c.s-a.s);if(!L.length)return null;const cur=fs.reduce((a,f)=>a+matchup(m,f),0);
   if(pol==='C'){const crit=fs.some(f=>{const t=threatVs('C',f,m);return t.mv&&B.effectiveness([t.mv.typeEn],m,{atkTypes:f.types}).value>=4&&t.v>=m.hp.cur});return crit&&L[0].s>cur?L[0].x:null}
   const bad=fs.every(f=>threatVs(pol,f,m).v>=m.hp.cur*0.6);if(!bad)return null;return L[0].s>cur+0.5?L[0].x:null};
@@ -214,11 +261,11 @@ async function runBattle(W,opt){
   /* 11-02 「상비약」: 턴 개시 때 아군 1체의 상태 이상 하나를 치유 (주된 상태 이상이 있는 가장 앞 포켓몬) */
   if(H.cards){const MJ=['Sleep','Paralysis','Freeze','Burn','Toxic','Poison'];const m=active('left').find(x=>MJ.some(k=>(x.states||{})[k]));if(m&&FG.cardTake(H,'cure',turn,m.tid)){const nb0=FN.snap(),nb=FN.snap(nb0);const x=nb.mons[m.id];if(x){x.states=Object.assign({},x.states);for(const k of MJ)delete x.states[k];await FN.saveBattle(nb0,nb)}}}
   /* 1. 지시 */
-  const acts=[];const plans={left:new Map(),right:new Map()};const cmds={};
+  const acts=[];const plans={left:new Map(),right:new Map()};const cmds={};swTaken.clear();
   /* 11-14 망령 「D 도 완전 저능아는 아니야 — C 랑 비슷한데 종종 실수」: 새 로직에서 D 는 C 처럼 두되, 트레이너마다 턴마다 DERR(기본 1/4) 확률로 「실수 턴」 — 그 턴은 필드의 한 마리가 옛 D 로직(눈앞 상대에게 세 보이는 공격)으로 고름. DSLIPALL=1 이면 트레이너 전체가 옛 D 로직(4식 포함) */
   const DERR=process.env.DERR!=null?+process.env.DERR:0.25;const SLIP={};const SLIPM={};for(const tid of Object.keys(C().trainers))if(POLS[tid]==='D'&&rng()<DERR){SLIP[tid]=1;if(process.env.DSLIPALL)continue;const mm=Object.values(C().mons).filter(x=>x.tid===tid&&x.hp.cur>0&&x.entry!=null&&active(T(tid).side).includes(x));if(mm.length)SLIPM[mm[Math.floor(rng()*mm.length)].id]=1}
-  for(const sd of ['left','right']){const p0=active(sd)[0]||{tid:''};const J=AI(sd)&&polOf(p0)!=='wild'&&!(polOf(p0)==='D'&&SLIP[p0.tid]&&process.env.DSLIPALL)?chooseJoint(sd):null;
-   for(const m of active(sd)){const sw=wantSwitch(sd,m);if(sw){acts.push({sd,m,sw});continue}let a=null;
+  for(const sd of ['left','right']){const p0=active(sd)[0]||{tid:''};const J=AI(sd)&&polOf(p0)!=='wild'&&!(polOf(p0)==='D'&&SLIP[p0.tid]&&process.env.DSLIPALL)?(ENVS('JOLD',sd)?chooseJoint(sd):chooseJoint2(sd)):null;
+   for(const m of active(sd)){if(J&&J.has(m.id)&&J.get(m.id).sw){acts.push({sd,m,sw:J.get(m.id).sw});continue}const sw=J&&J.has(m.id)&&!process.env.NEWSW&&process.env.SWKO!=='both'?null:wantSwitch(sd,m);if(sw){acts.push({sd,m,sw});continue}let a=null;
     if(J&&J.has(m.id)&&!SLIPM[m.id]){const j=J.get(m.id);a=j;if(!j.prot&&!(m.states||{}).Taunt&&!process.env.NOSTAT){const sp=statusPlan(sd,m,polOf(m),foes(sd),j);if(sp&&sp.score>(j.v/Math.max(1,j.tg.hp.cur)))a={mv:sp.mv,tg:sp.tg,v:0,status:sp.why}}}else a=choose(sd,m,plans[sd]);
     if(a)acts.push(Object.assign({sd,m},a))}}
   for(const a of acts){const tid=a.m.tid;cmds[tid]=cmds[tid]||{mons:{}};if(a.sw)cmds[tid].mons[a.m.id]={move:'switch',switch:a.sw.id,targets:[]};else{const tg=a.tg?[a.tg.side+'_'+a.tg.entry]:[];const r=String(a.mv.range||'');const dt=FN.defaultTargets(C(),a.m.id,String(a.mv._i));
