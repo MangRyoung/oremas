@@ -126,9 +126,9 @@ async function runBattle(W,opt){
   const CA=me.map(m=>cands(m,true,fs,sd));if(CA.some(L=>!L.length))return null;const twF=twOf(me,fs);
   /* 상대 수 */const fsd=fs[0].side;const CB=fs.map(f=>cands(f,false,me,fsd));let foeP=[];
   const defB={};for(let i=0;i<fs.length;i++){const f=fs[i];let bt=null,br=-1;for(const m of me){const t=threatVs(P0,f,m);const r=t.v/Math.max(1,m.hp.cur);if(r>br){br=r;bt={m,t}}}const c0=CB[i].filter(c=>!c.prot&&!c.sw&&(c.tg===bt.m||(c.d&&c.d[bt.m.id]>0))).sort((a,c)=>(c.d[bt.m.id]||0)-(a.d[bt.m.id]||0))[0]||CB[i][0];if(c0)defB[f.id]=c0}
-  const K=P0==='C'||ENVS('NOREAD',sd)?1:P0==='B'?3:4;
+  const K=ENVS('NOREAD',sd)?1:P0==='C'?2:P0==='B'?3:4;/* 11-15 02:43 망령 「C 도 한 수쯤은 읽게 — 너무 멍청한 건 아니니까」: C 2수 */
   if(K===1||fs.length<2)foeP=[{p:defB,w:1}];else{const defA={};me.forEach((m,i)=>{defA[m.id]=CA[i].filter(c=>!c.prot&&!c.sw).sort((a,c)=>Math.max(0,...Object.entries(c.d).map(([k,v])=>v/Math.max(1,(fs.find(f=>f.id===k)||{hp:{cur:1}}).hp.cur)))-Math.max(0,...Object.entries(a.d).map(([k,v])=>v/Math.max(1,(fs.find(f=>f.id===k)||{hp:{cur:1}}).hp.cur))))[0]||CA[i][0]});
-   const twM=twOf(fs,me);const sc=plansOf(CB[0],CB[1],fs).map(p=>({p,v:evalP(fs,me,p,defA,twM)})).sort((a,c)=>c.v-a.v).slice(0,K);const tau=P0==='B'?0.3:0.2;const mx=sc[0]?sc[0].v:0;let sw=0;for(const o of sc){o.w=Math.exp((o.v-mx)/tau);sw+=o.w}foeP=sc.map(o=>({p:o.p,w:o.w/sw}))}
+   const twM=twOf(fs,me);const sc=plansOf(CB[0],CB[1],fs).map(p=>({p,v:evalP(fs,me,p,defA,twM)})).sort((a,c)=>c.v-a.v).slice(0,K);const tau=P0==='C'?0.4:P0==='B'?0.3:0.2;const mx=sc[0]?sc[0].v:0;let sw=0;for(const o of sc){o.w=Math.exp((o.v-mx)/tau);sw+=o.w}foeP=sc.map(o=>({p:o.p,w:o.w/sw}))}
   let best=null,bv=-1e9;for(const pa of plansOf(CA[0],CA[1],me)){let v=0;for(const o of foeP)v+=o.w*evalP(me,fs,pa,o.p,twF);if(v>bv){bv=v;best=pa}}
   if(!best)return null;const out=new Map();for(const m of me){const x=best[m.id];out.set(m.id,x.sw?{sw:x.sw}:{mv:x.mv,tg:x.tg||Object.keys(x.d).map(k=>fs.find(f=>f.id===k)).filter(Boolean).sort((a,c)=>(x.d[c.id]||0)-(x.d[a.id]||0))[0]||fs[0],v:x.tg?(x.d[x.tg.id]||0):0,prot:x.prot})}return out}
  function chooseJoint(sd){const me=active(sd).filter(m=>{const st=m.states||{};return !(st.Thrash||st.Encore)&&!(m.charge&&+m.charge.turn<(+C().turn||0))});const fs=foes(sd);if(me.length<2||!fs.length)return null;
