@@ -196,7 +196,7 @@ function estimate(H,W,atk,def,mv,o){o=o||{};const FN=H.fn,B=W.OM_BATTLE,FX=W.OM_
    점수 = 「상대 HP 몇 할을 깎는 공격과 맞먹나」(공격 후보의 기대 대미지 ÷ 남은 HP 와 견준다). 효과 글을 웹툴이 자동으로 처리하는 기술(OM_MOVEAUTO.auto)과 「기술 방어」만 고른다 — 손으로 처리할 기술은 시뮬에서 효과가 없어서.
    C(단순): 상태 이상 걸기 · 지친 아이 회복 · 1턴 자기 강화 · 자기 타입을 살리는 날씨/필드. B 이상: + 기술 방어 · 벽 · 순풍 · 상대 약화 · 혼란 · 설치기 */
 const MAJOR=['Poison','Toxic','Burn','Paralysis','Freeze','Sleep'];
-function statusPick(H,W,c){const FN=H.fn,MA=W.OM_MOVEAUTO,B=W.OM_BATTLE;const {m,pol,fs}=c;if(pol==='D'||pol==='wild')return null;const b=FN.ctx().b;const f=FN.fieldOf(b);const turn=+b.turn||1;
+function statusPick(H,W,c){const FN=H.fn,MA=W.OM_MOVEAUTO,B=W.OM_BATTLE;const {m,fs}=c;let pol=c.pol;if(c.ai&&pol==='D')pol='C';/* 11-15 새 로직: D = C (실수 턴은 battle3 이 옛 고르기로) */if(pol==='D'||pol==='wild')return null;const gateC=pol==='C'&&!c.ai;/* 새 로직의 C 는 판 깔기(벽 · 순풍 · 오로라베일 · 트릭룸 · 설치기)를 쓴다 — 지침 2-12 ② */const b=FN.ctx().b;const f=FN.fieldOf(b);const turn=+b.turn||1;
  const L=FN.MVS(m).map((mv,i)=>Object.assign({},mv,{_i:i})).filter(mv=>mv&&mv.cat==='변화'&&!mv.virt&&!mv.ext);if(!L.length)return null;
  const hpR=m.hp.cur/m.hp.max;const danger=c.dangerOf(m);const safe=danger<m.hp.cur*0.4;const main=(m.stats[1]>=m.stats[3])?'attack':'specialattack';const mtypes=FN.tysOf(m);
  const best=c.best;const bestFrac=best?Math.min(1,best.v/Math.max(1,best.tg.hp.cur)):0;
@@ -217,11 +217,13 @@ function statusPick(H,W,c){const FN=H.fn,MA=W.OM_MOVEAUTO,B=W.OM_BATTLE;const {m
    else if(op.k==='rank'&&op.tgt==='target'){if(pol==='C')continue;const dn=Object.entries(op.stats||{}).filter(([k,v])=>+v<0);if(!dn.length)continue;const tg=fs.slice().sort((a,x)=>Math.max(x.stats[1],x.stats[3])-Math.max(a.stats[1],a.stats[3]))[0];const tm=tg.stats[1]>=tg.stats[3]?'attack':'specialattack';let s=0;for(const [k,v] of dn){if(k===tm)s+=0.12*Math.min(2,-v);else if(k==='speed'&&c.spd(tg)>c.spd(m))s+=0.08*Math.min(2,-v)}if(s)out.push({mv,tg,score:s*accP(mv,tg),why:'약화'})}
    else if(op.k==='heal'&&op.tgt==='self'){if(hpR>0.5)continue;const fr=String(op.value||'1/2').split('/');const h=(+fr[0]||1)/(+fr[1]||2);const s=Math.min(h,1-hpR)*(danger<m.hp.cur+m.hp.max*h?1.1:0.4);out.push({mv,tg:m,score:s,why:'회복'})}
    else if(op.k==='weather'){if(f.weather.type===op.w)continue;const WM=FN.WEATHER_MUL[op.w]||{};const mine=c.allies.concat([m]).some(x=>FN.MVS(x).some(q=>q&&q.cat!=='변화'&&WM[q.typeEn]>1&&FN.tysOf(x).includes(q.typeEn)));const theirs=fs.some(x=>FN.MVS(x).some(q=>q&&q.cat!=='변화'&&WM[q.typeEn]>1));if(mine&&!theirs)out.push({mv,tg:m,score:0.3,why:'날씨 '+op.w})}
+   else if(op.k==='terrain'&&op.room&&op.t==='트릭룸'){if(gateC)continue;if(+((f.rooms||{})['트릭룸']||0)>0)continue;const mine=c.allies.concat([m]);const sl=x=>c.spd(x);const mySp=mine.reduce((a,x)=>a+sl(x),0)/mine.length,thSp=fs.reduce((a,x)=>a+sl(x),0)/fs.length;
+    /* 우리 편이 느리고 · 우리 벤치에도 느린 아이가 있으면 */const slowB=Object.values(b.mons).filter(x=>x.side===m.side&&!x.entry&&x.hp.cur>0&&sl(x)<thSp).length;if(mySp<thSp*0.85)out.push({mv,tg:m,score:0.45+0.05*Math.min(3,slowB),why:'트릭룸'})}
    else if(op.k==='terrain'&&!op.room){if(f.terrain.type===op.t)continue;const TY={그래스필드:'Grass',일렉트릭필드:'Electric',사이코필드:'Psychic'}[op.t];if(TY&&mtypes.includes(TY)&&FN.MVS(m).some(q=>q&&q.cat!=='변화'&&q.typeEn===TY))out.push({mv,tg:m,score:0.25,why:'필드 '+op.t})}
-   else if(op.k==='object'&&op.side==='self'){if(pol==='C')continue;const objs=(f.objects||{})[m.side]||{};if(+objs[op.o]>0)continue;const th=c.topThreat(pol,m);
-    if((op.o==='리플렉터'&&th.mv&&th.mv.cat==='물리')||(op.o==='빛의장막'&&th.mv&&th.mv.cat==='특수')||op.o==='오로라베일')out.push({mv,tg:m,score:0.35,why:op.o});
+   else if(op.k==='object'&&op.side==='self'){if(gateC)continue;const objs=(f.objects||{})[m.side]||{};if(+objs[op.o]>0)continue;const th=c.topThreat(pol,m);
+    if((op.o==='리플렉터'&&th.mv&&th.mv.cat==='물리')||(op.o==='빛의장막'&&th.mv&&th.mv.cat==='특수')||(op.o==='오로라베일'&&/싸라기눈|눈/.test(String((f.weather||{}).type||''))))out.push({mv,tg:m,score:0.35,why:op.o});
     else if(op.o==='순풍'&&fs.some(tg=>c.spd(tg)>c.spd(m)))out.push({mv,tg:m,score:0.35,why:'순풍'})}
-   else if(op.k==='object'&&op.side==='enemy'){if(pol==='C')continue;const objs=(f.objects||{})[fs[0].side]||{};if(+objs[op.o]>0)continue;const benchN=Object.values(b.mons).filter(x=>x.side===fs[0].side&&!x.entry&&x.hp.cur>0).length;if(benchN)out.push({mv,tg:fs[0],score:0.08+0.07*benchN,why:op.o})}}}
+   else if(op.k==='object'&&op.side==='enemy'){if(gateC)continue;const objs=(f.objects||{})[fs[0].side]||{};if(+objs[op.o]>0)continue;const benchN=Object.values(b.mons).filter(x=>x.side===fs[0].side&&!x.entry&&x.hp.cur>0).length;if(benchN)out.push({mv,tg:fs[0],score:0.08+0.07*benchN,why:op.o})}}}
  if(!out.length)return null;out.sort((a,x)=>x.score-a.score);return out[0]}
 module.exports={attack,applyHit,estimate,statusPick,cardTake};
 

@@ -12,7 +12,7 @@ function students(){const F=Object.fromEntries((snap.folders||[]).map(f=>[f.id,f
   let r;try{r=P.build(W,snap,t.id,{two:opt.two?true:false})}catch(e){continue}if(r.mons.length<(opt.two?2:6))continue;if(r.mons.some(m=>!(m.moves||[]).some(mv=>+mv.pow>0)))continue;out.push({id:t.id,name:d.name})}
  return out}
 const mk=id=>{const r=P.build(W,snap,id,{two:opt.two?true:false});P.orders(W,r.trainer,{mons:r.mons});return {trainer:r.trainer,mons:r.mons}};
-(async()=>{let S=students();if(opt.only){const L=opt.only.split(',');S=S.filter(s=>L.some(n=>s.name.includes(n)))}
+(async()=>{let S=students();if(opt.only){const L=opt.only.split(',');S=S.filter(s=>L.some(n=>s.name.includes(n)))}if(opt.skip){const L=opt.skip.split(',');S=S.filter(s=>!L.some(n=>s.name.includes(n)))}   /* 11-15 망령: 미완성 학생 빼기 --skip 아르프,제페토 */
  const N=+opt.n||2,seed0=+opt.seed||1;const res={};for(const s of S)res[s.name]={w:0,l:0,d:0,g:0};const pairs=[];const asked={};let turns=0,games=0;const t0=Date.now();
  const sideAI={left:opt.polL||opt.ai||'old',right:opt.polR||opt.ai||'old'};const sideW={left:0,right:0,draw:0};const used={order:0,command:0,pot:0};
  for(let i=0;i<S.length;i++)for(let j=0;j<S.length;j++){if(i===j)continue;if(!opt.both&&j<i&&!(opt.polL||opt.polR))continue;let w=0,l=0,d=0;
