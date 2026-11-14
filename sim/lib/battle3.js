@@ -115,11 +115,13 @@ async function runBattle(W,opt){
   const twOf=(att,def)=>{const t={};for(const f of def){let w=0;for(const m of att){const th=threatVs(P0,f,m);w=Math.max(w,th.v/Math.max(1,m.hp.cur))}t[f.id]=0.6+Math.min(1.6,w)}return t};
   const PB0=(()=>{const F0=FN.fieldOf(C());const twF=+(((F0.objects||{})[fs[0].side]||{})['순풍']||0);const trR=+((F0.rooms||{})['트릭룸']||0);const avg=L=>L.reduce((a,x)=>a+(+x.stats[5]||0),0)/Math.max(1,L.length);return +(process.env.PROTB||0.25)+(twF>0||(trR>0&&avg(fs)<avg(me))?0.3:0)})();
   /* 한 턴 돌리기 — A 쪽에서 본 값 (pa · pb = 포켓몬 id → 후보) */
+  /* 11-15 망령 「아니스는 킬링 에이스로 쓰러뜨려서 회복하거나 살아나가는 움직임」: 【함성】 회복 포텐셜이 있는 아이가 쓰러뜨리면 그만큼 덤 (『폭식의 대죄』 1/4 → 1/2) */
+  const SH=new Map();const shoutHeal=x=>{if(SH.has(x.id))return SH.get(x.id);let h=0;const ps=[...(x.pots||[]),...(x.excl?[x.excl]:[]),...(x.exclX||[])];for(const p of ps){const m=String(p&&p.eff||'').replace(/<br\s*\/?>/g,'\n').match(/【함성[^】]*】[^\n]*?「HP」를\s*(\d+)\/(\d+)만큼\s*회복/);if(m)h=Math.max(h,+m[1]/+m[2])}if(h&&ps.some(p=>/회복량을\s*강화\s*\(\s*1\/4\s*→\s*1\/2\s*\)/.test(String(p&&p.eff||''))))h=0.5;SH.set(x.id,h);return h};
   const evalP=(A,B,pa,pb,twB)=>{const hp={};const all=[...A,...B];for(const x of all)hp[x.id]=x.hp.cur;const swOf=id=>{const p=pa[id]||pb[id];return p&&p.sw?p.sw:null};for(const x of all){const y=swOf(x.id);if(y)hp[y.id]=y.hp.cur}
    const isA=new Set(A.map(x=>x.id));const sp=x=>spd(x);const actors=all.slice().sort((x,y)=>sp(y)-sp(x));let v=0;
    for(const x of actors){if(hp[x.id]<=0)continue;const p=isA.has(x.id)?pa[x.id]:pb[x.id];if(!p||p.sw||p.prot)continue;
     for(const tid of Object.keys(p.d)){const T=all.find(z=>z.id===tid);if(!T)continue;const tp=isA.has(tid)?pa[tid]:pb[tid];let R=T,dv=p.d[tid];if(tp&&tp.sw){R=tp.sw;dv=ex(x,p.mv,R,Object.keys(p.d).length>1)}
-     if(hp[R.id]<=0||dv<=0)continue;if(tp&&tp.prot&&R===T){if(!isA.has(x.id))v+=PB0;continue}const b0=hp[R.id];hp[R.id]=Math.max(0,b0-dv);const fr=(b0-hp[R.id])/Math.max(1,R.hp.cur);if(isA.has(x.id))v+=(twB[R.id]||twB[tid]||1)*fr;else v-=0.8*fr}}
+     if(hp[R.id]<=0||dv<=0)continue;if(tp&&tp.prot&&R===T){if(!isA.has(x.id))v+=PB0;continue}const b0=hp[R.id];hp[R.id]=Math.max(0,b0-dv);const fr=(b0-hp[R.id])/Math.max(1,R.hp.cur);if(isA.has(x.id)){v+=(twB[R.id]||twB[tid]||1)*fr;if(b0>0&&hp[R.id]<=0){const h=shoutHeal(x);if(h){const gain=Math.min(h*x.hp.max,x.hp.max-hp[x.id]);hp[x.id]+=gain;v+=0.8*gain/Math.max(1,x.hp.max)}}}else v-=0.8*fr}}
    for(const f of B){const y=pb[f.id]&&pb[f.id].sw;const R=y||f;if(hp[R.id]<=0)v+=0.6*(twB[f.id]||1)}
    for(const m of A){const p=pa[m.id];if(p&&p.sw){if(hp[p.sw.id]<=0)v-=0.5;v+=p.lt||0}else if(hp[m.id]<=0)v-=0.5;if(p)v-=1.2*(p.pen||0)}return v};
   const plansOf=(L1,L2,mons)=>{const out=[];for(const a of L1)for(const c of L2){if(a.prot&&c.prot)continue;if(a.sw&&c.sw&&a.sw===c.sw)continue;out.push({[mons[0].id]:a,[mons[1].id]:c})}return out};

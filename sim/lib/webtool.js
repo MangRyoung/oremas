@@ -73,6 +73,7 @@ function load(W){if(W.__H)return W.__H;
   /* 대상 고르기: 상대 쪽이면 가장 위협적인(공격 · 특공 높은) 상대, 같은 편이면 HP 비율이 가장 낮은 아군 */
   pick:(list,label,self,b)=>{note('대상',label);if(!list.length)return null;const foe=self&&list.every(x=>x.side!==self.side);if(foe)return list.slice().sort((a,c)=>Math.max(c.stats[1],c.stats[3])-Math.max(a.stats[1],a.stats[3]))[0];return list.slice().sort((a,c)=>a.hp.cur/a.hp.max-c.hp.cur/c.hp.max)[0]}};
  W.__SIM={ask:(q,y,n)=>H.answer.ask(q,y,n),uiCtx:(b,self,name,area)=>({b,self,name,area,viewer:'',
+  /* 11-15 이계 전개 (웹툴 stageOpen 의 필드 전개 창 없는 갈래와 같게): 《이계/이름》을 이름만으로 편다 */stageOpen:async(me,sname,turns,nm)=>{b.field=b.field||{};b.field.stage={type:2,name:String(sname).replace(/^(이계|필드|스타디움)\//,''),count:turns>0?turns:1000,owner:me.name,tid:me.tid,ownerMid:me.id,src:'fx:'+me.id,at:0};return `${me.name} 「${nm}」 — 《이계/${b.field.stage.name}》 전개${turns?' '+turns+'턴':''}`},
   pick:(list,label)=>Promise.resolve(H.answer.pick(list,label,self,b)),confirm:q=>Promise.resolve(!!H.answer.confirm(q,self,b)),choose:(labels,multi)=>Promise.resolve(H.answer.choose(labels,multi,self,b))})};
  W.__H=H;return H}
 module.exports={load,PATCH,diffOps,dummy};
