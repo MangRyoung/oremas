@@ -74,7 +74,7 @@ async function runBattle(W,opt){
   while(out.length<n&&tids.some(t=>byT[t].length)){const t=tids[k%tids.length];k++;const arr=byT[t];if(!arr.length)continue;const pol=POLS[t];let pick;
    const aiP=AI(sd)&&pol!=='wild'&&!process.env.NOPICK;if(!aiP&&(pol==='D'||pol==='C'||pol==='wild'||!fs.length))pick=arr[0];else{const mates=[...active(sd),...out];const more=n-out.length>=2&&!mates.length;pick=arr.map((m,i)=>({m,i,s:(fs.length?fs.reduce((a,f)=>a+matchup(m,f),0):0)+(aiP?a1Score(m,mates,more?arr.filter(x=>x!==m):null):0)})).sort((a,c)=>c.s-a.s||a.i-c.i)[0].m}arr.splice(arr.indexOf(pick),1);out.push(pick)}return out};
  /* ---- 행동 고르기 (2-9 · 2-11) ---- */
- const statusPlan=(sd,m,pol,fs,best)=>FG.statusPick(H,W,{ai:AI(sd),bench:bench(sd),matchup,m,pol,fs,best,allies:active(sd).filter(x=>x!==m),threatVs,topThreat,dangerOf,turn:C().turn,expect,spd,isOld});
+ const statusPlan=(sd,m,pol,fs,best,J)=>FG.statusPick(H,W,{J,ai:AI(sd),bench:bench(sd),matchup,m,pol,fs,best,allies:active(sd).filter(x=>x!==m),threatVs,topThreat,dangerOf,turn:C().turn,expect,spd,isOld});
  const choose=(sd,m,plan)=>{const pol=polOf(m);const fs=foes(sd);if(!fs.length)return null;const dm=dmgMoves(m);const st=m.states||{};
   /* 11-14 모은 다음 턴: 그 기술 · 대상으로 */
   if(m.charge&&+m.charge.turn<(+C().turn||0)){const mv=allMoves(m).find(x=>x.name===m.charge.mv);if(mv){const tg=(m.charge.tg&&C().mons[m.charge.tg]&&alive(C().mons[m.charge.tg])&&C().mons[m.charge.tg].entry)?C().mons[m.charge.tg]:fs[0];return {mv,tg,v:0}}}
@@ -130,7 +130,7 @@ async function runBattle(W,opt){
   const CA=me.map(m=>cands(m,true,fs,sd));if(CA.some(L=>!L.length))return null;const twF=twOf(me,fs);
   /* 상대 수 */const fsd=fs[0].side;const CB=fs.map(f=>cands(f,false,me,fsd));let foeP=[];
   const defB={};for(let i=0;i<fs.length;i++){const f=fs[i];let bt=null,br=-1;for(const m of me){const t=threatVs(P0,f,m);const r=t.v/Math.max(1,m.hp.cur);if(r>br){br=r;bt={m,t}}}const c0=CB[i].filter(c=>!c.prot&&!c.sw&&(c.tg===bt.m||(c.d&&c.d[bt.m.id]>0))).sort((a,c)=>(c.d[bt.m.id]||0)-(a.d[bt.m.id]||0))[0]||CB[i][0];if(c0)defB[f.id]=c0}
-  const K=ENVS('NOREAD',sd)?1:P0==='C'?2:P0==='B'?3:4;/* 11-15 02:43 망령 「C 도 한 수쯤은 읽게 — 너무 멍청한 건 아니니까」: C 2수 */
+  const K=ENVS('NOREAD',sd)?1:P0==='C'?(+process.env.CREAD||1):P0==='B'?3:4;/* 11-15 02:43 C 2수 → 04:50 망령 「지시 C 를 조금 더 단순하게」 · 수읽기 줄이기: C 는 상대가 가장 셀 법한 한 수만 가정(저울질 없음 · 교대 · 짝은 그대로). CREAD=2 면 옛 C */
   if(K===1||fs.length<2)foeP=[{p:defB,w:1}];else{const defA={};me.forEach((m,i)=>{defA[m.id]=CA[i].filter(c=>!c.prot&&!c.sw).sort((a,c)=>Math.max(0,...Object.entries(c.d).map(([k,v])=>v/Math.max(1,(fs.find(f=>f.id===k)||{hp:{cur:1}}).hp.cur)))-Math.max(0,...Object.entries(a.d).map(([k,v])=>v/Math.max(1,(fs.find(f=>f.id===k)||{hp:{cur:1}}).hp.cur))))[0]||CA[i][0]});
    const twM=twOf(fs,me);const sc=plansOf(CB[0],CB[1],fs).map(p=>({p,v:evalP(fs,me,p,defA,twM)})).sort((a,c)=>c.v-a.v).slice(0,K);const tau=P0==='C'?0.4:P0==='B'?0.3:0.2;const mx=sc[0]?sc[0].v:0;let sw=0;for(const o of sc){o.w=Math.exp((o.v-mx)/tau);sw+=o.w}foeP=sc.map(o=>({p:o.p,w:o.w/sw}))}
   let best=null,bv=-1e9;for(const pa of plansOf(CA[0],CA[1],me)){let v=0;for(const o of foeP)v+=o.w*evalP(me,fs,pa,o.p,twF);if(v>bv){bv=v;best=pa}}
@@ -255,8 +255,13 @@ async function runBattle(W,opt){
  const kos=[];const turnsLog=[];const used={};const markKo=(before)=>{for(const m of Object.values(C().mons)){const was=before[m.id];if(was>0&&!alive(m))kos.push({name:m.name,side:m.side,turn:C().turn,by:m._by||''})}};
  const hpMap=()=>{const o={};for(const m of Object.values(C().mons))o[m.id]=m.hp.cur;return o};
  /* ---- 선발 → 시합 개시 ---- */
- for(const sd of ['left','right']){const L=pickIn(sd,fmt);for(let i=0;i<L.length;i++)await FN.enterMon(L[i].id,AREAS[i],{sys:true,noAuto:true})}
- await FN.startBattle();await flush();if(FN.faintWatch)await FN.faintWatch();
+ /* 11-15 05시: 선발은 양쪽이 동시에 · 서로 모르고 고른다 — 예전엔 오른쪽이 왼쪽 선발을 보고 맞춤 선발을 골라 같은 팀끼리도 오른쪽이 65% 이겼다 */
+ const LS={left:pickIn('left',fmt),right:pickIn('right',fmt)};
+ for(const sd of ['left','right']){const L=LS[sd];
+  /* 11-15 05시: 「【준비】/「에리어 : A」에 등장 예약 한다」(흐림게르드 『선봉 거인』) — 그 에리어에 선발로 */
+  for(const m of bench(sd).concat(L)){const p=FN.potSrc(m).find(q=>q&&/【\s*준비\s*】[^「]*「에리어\s*:\s*([AB])」에\s*등장\s*예약/.test(String(q.eff||'')));if(!p)continue;const ix=String(p.eff).match(/「에리어\s*:\s*([AB])」에\s*등장\s*예약/)[1]==='A'?0:1;if(ix>=L.length)continue;const j=L.indexOf(m);if(j===ix)continue;if(j>=0){L[j]=L[ix];L[ix]=m}else L[ix]=m}
+  for(let i=0;i<L.length;i++)await FN.enterMon(L[i].id,AREAS[i],{sys:true,noAuto:true})}
+ await FN.startBattle();await flush();if(!process.env.NOPVP&&!Object.keys(C().trainers||{}).some(isWildT))await W.OM_APP.set(['battle','pvp'],true);   /* 11-15 05시: 학생끼리 = PVP (유대 버티기 시합 중 한 번 — 웹툴 bondBand) */if(FN.faintWatch)await FN.faintWatch();
  let turn=0;
  while(turn<maxT){
   if(!active('left').length||!active('right').length)break;
@@ -270,15 +275,17 @@ async function runBattle(W,opt){
   const DERR=process.env.DERR!=null?+process.env.DERR:0.1;/* 11-15 03:37 망령 「D 실수는 매 턴 10% 정도로」 */const SLIP={};const SLIPM={};for(const tid of Object.keys(C().trainers))if(POLS[tid]==='D'&&rng()<DERR){SLIP[tid]=1;if(process.env.DSLIPALL)continue;const mm=Object.values(C().mons).filter(x=>x.tid===tid&&x.hp.cur>0&&x.entry!=null&&active(T(tid).side).includes(x));if(mm.length)SLIPM[mm[Math.floor(rng()*mm.length)].id]=1}
   for(const sd of ['left','right']){const p0=active(sd)[0]||{tid:''};const J=AI(sd)&&polOf(p0)!=='wild'&&!(polOf(p0)==='D'&&SLIP[p0.tid]&&process.env.DSLIPALL)?(ENVS('JOLD',sd)?chooseJoint(sd):chooseJoint2(sd)):null;
    for(const m of active(sd)){if(J&&J.has(m.id)&&J.get(m.id).sw){acts.push({sd,m,sw:J.get(m.id).sw});continue}const sw=J&&J.has(m.id)&&!process.env.NEWSW&&process.env.SWKO!=='both'?null:wantSwitch(sd,m);if(sw){acts.push({sd,m,sw});continue}let a=null;
-    if(J&&J.has(m.id)&&!SLIPM[m.id]){const j=J.get(m.id);a=j;if(!j.prot&&!(m.states||{}).Taunt&&!process.env.NOSTAT){const sp=statusPlan(sd,m,polOf(m),foes(sd),j);if(sp&&sp.score>(j.v/Math.max(1,j.tg.hp.cur)))a={mv:sp.mv,tg:sp.tg,v:0,status:sp.why}}}else a=choose(sd,m,plans[sd]);
+    if(J&&J.has(m.id)&&!SLIPM[m.id]){const j=J.get(m.id);a=j;if(!j.prot&&!(m.states||{}).Taunt&&!process.env.NOSTAT){const sp=statusPlan(sd,m,polOf(m),foes(sd),j,J);if(sp&&sp.score>(j.v/Math.max(1,j.tg.hp.cur)))a={mv:sp.mv,tg:sp.tg,v:0,status:sp.why}}}else a=choose(sd,m,plans[sd]);
     if(a)acts.push(Object.assign({sd,m},a))}}
   for(const a of acts){const tid=a.m.tid;cmds[tid]=cmds[tid]||{mons:{}};if(a.sw)cmds[tid].mons[a.m.id]={move:'switch',switch:a.sw.id,targets:[]};else{const tg=a.tg?[a.tg.side+'_'+a.tg.entry]:[];const r=String(a.mv.range||'');const dt=FN.defaultTargets(C(),a.m.id,String(a.mv._i));
    const targets=r==='1체'||r===''?tg:dt.length?dt:tg;cmds[tid].mons[a.m.id]={move:a.mv._i,targets};a.targets=targets}}
   {const nb=C();nb.cmds=cmds}
   /* 새 로직: 손으로 쓰는 포텐셜 (【사전】 · 【선행】 — 지시 단계 · 턴 개시) */
-  for(const tid of Object.keys(C().trainers))if(AI(sideOfTid(tid)))await potsNew(tid,acts);
+  /* 11-15 05시: 지령 · 포텐셜 · 4식 6령을 늘 왼쪽 먼저 처리하면 오른쪽이 왼쪽 것을 보고 고르게 되어 거울전에서 오른쪽이 65% — 턴마다 순서를 굴린다 */
+  const TORD=Object.keys(C().trainers);if(!process.env.NOFLIP&&rng()<0.5)TORD.reverse();
+  for(const tid of TORD)if(AI(sideOfTid(tid)))await potsNew(tid,acts);
   /* 6령 · 4식 선행 (트레이너마다) */
-  for(const tid of Object.keys(C().trainers)){if(isWildT(tid))continue;const pol=POLS[tid];const t=T(tid);const mine=active(t.side).filter(m=>m.tid===tid&&!isOld(m));if(!mine.length)continue;
+  for(const tid of TORD){if(isWildT(tid))continue;const pol=POLS[tid];const t=T(tid);const mine=active(t.side).filter(m=>m.tid===tid&&!isOld(m));if(!mine.length)continue;
    const myActs=acts.filter(a=>a.m.tid===tid&&a.mv&&a.mv.cat!=='변화'&&!isOld(a.m));
    if(AI(t.side)&&(pol==='C'||!mastery(tid))&&!cmdUsed(tid)){await cmdNewC(tid,mine,myActs);}
    else if(pol==='C'){const th=mine.map(m=>Object.assign(topThreat('C',m),{m})).filter(x=>x.mv&&x.v>=x.m.hp.cur*0.6).sort((a,c)=>c.v/c.m.hp.cur-a.v/a.m.hp.cur)[0];const tired=mine.filter(m=>m.hp.cur<m.hp.max*0.4)[0];
@@ -291,7 +298,7 @@ async function runBattle(W,opt){
     if(await fire(tid,m.id,'order',k))break}}
   /* 2. 순서 (웹툴 computeOrder) + 숙달민첩 ② */
   await FN.computeOrder();await flush(1);
-  {let flip=false;for(const tid of Object.keys(C().trainers)){if(flip||isWildT(tid)||!mastery(tid)||cmdUsed(tid)||!cmdLeft(T(tid),'speed'))continue;const ord=C().order||[];
+  {let flip=false;for(const tid of TORD){if(flip||isWildT(tid)||!mastery(tid)||cmdUsed(tid)||!cmdLeft(T(tid),'speed'))continue;const ord=C().order||[];
     for(const a of acts.filter(x=>x.m.tid===tid&&x.mv&&x.mv.cat!=='변화'&&x.tg&&!isOld(x.m))){const me=ord.findIndex(o=>o.mid===a.m.id),it=ord.findIndex(o=>o.mid===a.tg.id);if(it<0||me<0||it>me)continue;if(ord[it].prio!==ord[me].prio||ord[it].change||ord[me].change)continue;
      if(a.v>=a.tg.hp.cur&&ord[me].speed*1.5>ord[it].speed&&threatVs(POLS[tid],a.tg,a.m).v>=a.m.hp.cur*0.5){if(await fire(tid,a.m.id,'command','speed')){flip=true;break}}}}
    if(flip){await FN.computeOrder();await flush(1)}}
@@ -319,7 +326,7 @@ async function runBattle(W,opt){
    if(!active('left').length||!active('right').length)break}
   /* 4. 턴 종료: 「가장 마지막」 · 「턴 종료 시」 포텐셜 → 웹툴 turnEnd → 「턴 종료 이후」 · 숙달회복 ② */
   for(const step of ['last','end']){for(const x of FN.endCands(C(),step))if(x.kind==='pot')await endPot(x)}
-  for(const tid of Object.keys(C().trainers)){if(isWildT(tid)||!mastery(tid)||cmdUsed(tid)||!cmdLeft(T(tid),'heal'))continue;const w=active(T(tid).side).filter(m=>m.tid===tid&&!isOld(m)&&m.hp.cur<=m.hp.max*0.5).sort((a,c)=>a.hp.cur/a.hp.max-c.hp.cur/c.hp.max)[0];if(w)await fire(tid,w.id,'command','heal')}
+  for(const tid of TORD){if(isWildT(tid)||!mastery(tid)||cmdUsed(tid)||!cmdLeft(T(tid),'heal'))continue;const w=active(T(tid).side).filter(m=>m.tid===tid&&!isOld(m)&&m.hp.cur<=m.hp.max*0.5).sort((a,c)=>a.hp.cur/a.hp.max-c.hp.cur/c.hp.max)[0];if(w)await fire(tid,w.id,'command','heal')}
   {const ub=C();for(const tid in (ub.cmds||{})){const x=(ub.cmds[tid]||{}).fired||{};for(const mid in x){const f=x[mid]||{};used[tid]=used[tid]||{order:0,command:0};if(f.order)used[tid].order++;if(f.command)used[tid].command++}}}
   await gmEndHeal();await FN.turnEnd();await flush();await gmChores();
   for(const x of FN.endCands(C(),'after'))if(x.kind==='pot')await endPot(x)

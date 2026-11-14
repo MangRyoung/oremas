@@ -87,7 +87,7 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
   const spw=SPW?SPW(def):null;const powT=spw&&spw.pow!=null?spw.pow:pow;
   const dTy=FN.tysOf(def),dS=mv.cat==='특수'?'specialdefense':'defense';const fieldT=fm*(f.terrain.type==='미스트필드'&&moveTypes.includes('Dragon')&&FN.grd(def)?0.5:1);
   const wt=f.weather.type;const defMul=(wt==='극한'&&dTy.includes('Ice')&&dS==='defense')?2:(['눈','싸라기눈'].includes(wt)&&dTy.includes('Ice')&&dS==='defense')?1.5:(wt==='모래바람'&&dTy.includes('Rock')&&dS==='specialdefense')?1.5:1;
-  let MVP=null,DOPT=null;const dmg=mv.cat==='변화'||!powT||(spw&&spw.fixed)||(MAU&&MAU.delay)||!hits.length?null:B.damage(FN.foulAtk(atk,def,mv),def,MVP=Object.assign({},mv,{pow:powT},ATY?{typeEn:ATY,type:S.typeKo(ATY)}:sk?{typeEn:sk.ty,type:S.typeKo(sk.ty)}:rndOf(mv)?{typeEn:rndOf(mv),type:S.typeKo(rndOf(mv))}:{}),DOPT={critMul:FN.critMulOf(atk),hits:hits.map(h=>h.v),powStep:spw?0:FN.powStepOf(mv),free1:1*(mods.boost||1),free2:1,item1,item2:1,trait:traitMul,weather:wMul,fieldMul:fieldT,defMul,wonder:RM('원더룸'),helping:false,charge,lifeOrb:false,multiTarget,wall,wallSize:FN.mode(b)>=2?2:1,ignoreAtk:igAtk,ignoreDef:igDef,watersport:(f.etc||{})['물놀이']>0,mudsport:(f.etc||{})['흙놀이']>0,scarf:FN.IT(atk)==='구애스카프',choiceDef:false,tailwindDef:((f.objects||{})[side]||{})['순풍']>0,swampDef:((f.objects||{})[side]||{})['습원']>0,rng:rnd});
+  let MVP=null,DOPT=null;const dmg=mv.cat==='변화'||!powT||(spw&&spw.fixed)||(MAU&&MAU.delay)||!hits.length?null:B.damage(FN.foulAtk(atk,def,mv),def,MVP=Object.assign({},mv,{pow:powT},ATY?{typeEn:ATY,type:S.typeKo(ATY)}:sk?{typeEn:sk.ty,type:S.typeKo(sk.ty)}:rndOf(mv)?{typeEn:rndOf(mv),type:S.typeKo(rndOf(mv))}:{}),DOPT={critMul:FN.critMulOf(atk),hits:hits.map(h=>h.v),powStep:spw?0:FN.powStepOf(mv),free1:1*(mods.boost||1),free2:1,item1,item2:1,trait:traitMul,weather:wMul,fieldMul:fieldT,defMul,wonder:RM('원더룸'),helping:(atk.states||{}).HelpingHand?Math.round(Math.pow(1.5,Math.max(1,+atk.helpN||1))*10000)/10000:0,charge,lifeOrb:false,multiTarget,wall,wallSize:FN.mode(b)>=2?2:1,ignoreAtk:igAtk,ignoreDef:igDef,watersport:(f.etc||{})['물놀이']>0,mudsport:(f.etc||{})['흙놀이']>0,scarf:FN.IT(atk)==='구애스카프',choiceDef:false,tailwindDef:((f.objects||{})[side]||{})['순풍']>0,swampDef:((f.objects||{})[side]||{})['습원']>0,rng:rnd});
   /* 고정 · 변칙 피해(spw.fixed): 웹툴은 HP 창에서 손으로 — 시뮬은 spw.dmg 가 있으면 그 값 */
   const eff=dmg?B.effectiveness(moveTypes,def,{multiMode:0,atkTypes,force:null,floating}):(effPre||null);
   const stab=eff?eff.stab:false;const DFl=def.flags||{};
@@ -133,6 +133,15 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
  let dealtAll=0;
  for(const r of res){if(!r.acc.hit||!r.dmg)continue;const hv=await applyHit(H,W,r.def.id,rnd);if(hv){out.hits.push({to:r.def.name,dmg:hv.final,eff:r.eff.value,crit:r.hits.some(h=>h.v===2),ko:hv.ko,n:r.hits.length});dealtAll+=hv.final}}
  {const b2=FN.ctx().b;const a=b2.mons[mid];if(a)a.lastDealt={total:dealtAll}}
+ /* 11-15 05시 망령 「시뮬에서 구현 안 되는 게 있으면 만들면서」: 웹툴 공격 창 「적용」 뒤 계기를 그대로 — ① 「자신이 행동한 뒤」 포텐셜(닌자 …) ② 조건 명중(hitAuto) ③ 맞은 쪽 「공격을 받았을 때」 ④ 「방어」로 막았을 때 ⑤ 쌓인 계기 · 함성 ⑥ 미룬 대미지 */
+ {const RS={mv,targets:res,moveTypes};const ctOf=()=>!!(W.OM_APP.contactOf&&W.OM_APP.contactOf(mv)==='O');
+  try{const a2=FN.ctx().b.mons[mid];const T=+FN.ctx().b.turn||0;if(a2&&a2.entry&&a2.hp.cur>0&&FX&&FN.ACTFX)for(const p of FN.potSrc(a2)){if(!p||!p.name||p.ph||!/자신이\s*행동한\s*(?:뒤|후)/.test(String(p.eff||'')))continue;const k=mid+'|'+p.name;if(FN.ACTFX[k]===T)continue;
+    const au=FX.autoOf(a2,'pot',p.name);if(!au||!au.ops||!au.ops.length||au.manual||FN.limManual(a2,'pot',p.name,p.eff))continue;FN.ACTFX[k]=T;await FN.fireAuto(mid,'pot',p.name,{quiet:true,noRoll:true,head:`【포텐셜】 ${a2.name} 『${p.name}』 — 행동한 뒤 자동`})}}catch(e){}
+  try{if(FN.hitAuto)await FN.hitAuto(mid,RS)}catch(e){}
+  try{if(FN.evReact)for(const r of res){if(!r||!r.acc||!r.acc.hit||!r.def||r.def.id===mid)continue;const lh=(FN.ctx().b.mons[r.def.id]||{}).lastHit;await FN.evReact('hit',{mid,tgt:r.def.id,dmg:lh&&lh.fromId===mid?+lh.total||0:0,mv:mv.name,mt:moveTypes||[],cat:mv.cat||'',ct:ctOf(),eff:r.eff?+r.eff.value:1,crit:!!(r.hits||[]).some(h=>h&&h.v===2),key:mv.name+'@'+r.def.id+'@'+(+FN.ctx().b.turn||0)+'@'+rnd()})}}catch(e){}
+  try{if(FN.evReact)for(const r of res){if(!r||!r.acc||!r.acc.prot||!r.def||r.def.id===mid)continue;await FN.evReact('guard',{mid,tgt:r.def.id,mv:mv.name,mt:moveTypes||[],cat:mv.cat||'',ct:ctOf(),key:mv.name+'@g'+r.def.id+'@'+rnd()})}}catch(e){}
+  try{if(FN.evFlush)await FN.evFlush();if(FN.evReact)await FN.evReact('shout',{mid,mv:mv.name,key:mv.name+'@'+rnd()})}catch(e){}
+  try{if(FN.deferFire)await FN.deferFire(mid,'자신의 행동이 끝나서','act')}catch(e){}}
  /* 강제 교대 · 자기 교대 (적용 뒤) */
  out.forceSwitch=!!(MAU&&MAU.forceSwitch);out.selfSwitch=MAU&&MAU.selfSwitch?MAU.selfSwitch:(NX.some(e=>e.uturn)?'free':'');
  if(out.forceSwitch)for(const r of res){if(!r.acc.hit||r.def.id===mid)continue;const d=FN.ctx().b.mons[r.def.id];if(!d||!d.entry||d.hp.cur<=0)continue;const g=await FN.switchGuard(d);if(g)continue;await FN.forcedSwitch(d.id,{sys:true})}
@@ -161,12 +170,12 @@ function fieldStrip(FN,nb,atk,mv,res,lines){const e=String(mv.eff||'');const hit
 
 /* 받는 쪽 「HP」 창 「적용」: 창 기본 체크(반감열매 · 버티기 · 멀티스케일류 · 탈 · 피격 특성 자동) 그대로 */
 async function applyHit(H,W,mid,rnd){const FN=H.fn,B=W.OM_BATTLE,OI=W.OM_ITEMS;const b=FN.ctx().b;const m=b.mons[mid];if(!m||!m.lastHit)return null;const lh=m.lastHit;
- const fl=FN.raidFloor(m);const berryN=OI?OI.resist(m,lh):'';const sashX=OI?OI.sash(m):null;const SH=FN.hitShield(m,lh);const RX=lh.cat!=='변화'?FN.hitRules(m):[];
+ const fl=FN.raidFloor(m);const berryN=OI?OI.resist(m,lh):'';let sashX=OI?OI.sash(m):null;if(lh.cat!=='변화'&&!(sashX&&(sashX.sure||sashX.pct))&&FN.bondBand){const bb=FN.bondBand(m);if(bb)sashX=bb}   /* 11-15 05시: 『사랑의 유대』 · 『영혼의 유대』 (웹툴 2112 그대로) */const SH=FN.hitShield(m,lh);const RX=lh.cat!=='변화'?FN.hitRules(m):[];
  const per=lh.per&&lh.per.length>1?lh.per:[lh.total];const en=!!(lh.endure||(sashX&&sashX.sure)),sashOnly=en&&!lh.endure&&!!(sashX&&sashX.sure);
  const fgOn=!!SH.fullGuard,dgOn=!!SH.disguise;const g0=(lh.guard||1)/(fgOn&&String(lh.guardNote||'').includes(SH.fullGuard.name)?SH.fullGuard.v:1);
  const calc=roll=>B.hpDamageHits(m,per,+lh.eff,{fullGuard:fgOn?SH.fullGuard.v:0,disguise:dgOn?SH.disguise.cost:0,stab:false,guard:g0,manual:1,berryHalf:!!berryN,endure:en&&!sashOnly,endureFull:sashOnly,hpFloor:fl,band:roll&&sashX&&sashX.pct&&!en?{pct:sashX.pct,roll:()=>1+Math.floor(rnd()*100)}:null});
  let r=calc(false);let saved=false;if(en){const r0=B.hpDamageHits(m,per,+lh.eff,{fullGuard:fgOn?SH.fullGuard.v:0,disguise:dgOn?SH.disguise.cost:0,stab:false,guard:g0,manual:1,berryHalf:!!berryN,endure:false,hpFloor:fl});saved=!!(r0&&r0.after<=0&&r.after>0)}
- if(sashX&&sashX.pct&&!en&&r.after<=0&&m.hp.cur>1)r=calc(true);
+ if(sashX&&sashX.pct&&!en&&r.after<=0&&m.hp.cur>1){r=calc(true);if(sashX.pot&&(r.per||[]).some(q=>q.band&&q.band.ok)){try{await FN.potMark(mid,sashX.name)}catch(e){}if(FN.ctx().b.pvp)await W.OM_APP.set(['battle','mons',mid,'bondUsed'],1);if(H.logOn)W.OM_APP.sysLog(`【포텐셜】 ${m.name} 『${sashX.name}』 — 쓰러질 대미지를 버텼다`,'battle')}}
  /* 11-05 「위기일발!」(시작 24장): 난수 차이로 쓰러졌을 때(가장 낮은 난수 85% 였다면 버텼을 때) 난수를 다시 — 남은 대미지는 지금 값을 평균 난수로 보고 85~100% 로 다시 */
  if(r.after<=0&&m.hp.cur>0&&m.side==='left'&&H.cards){const reC=f=>B.hpDamageHits(m,per.map(v=>Math.max(1,Math.floor(v*f))),+lh.eff,{fullGuard:fgOn?SH.fullGuard.v:0,disguise:dgOn?SH.disguise.cost:0,stab:false,guard:g0,manual:1,berryHalf:!!berryN,endure:en&&!sashOnly,endureFull:sashOnly,hpFloor:fl});const lo=reC(0.85/0.925);if(lo&&lo.after>0&&cardTake(H,'dmgReroll',+b.turn||0,m.tid))r=reC((0.85+rnd()*0.15)/0.925)}
  const berryUse=!!berryN&&/열매/.test(FN.IT(m));const sashUse=saved&&sashX&&sashX.sure&&sashX.once&&m.hp.cur>1;
@@ -174,7 +183,7 @@ async function applyHit(H,W,mid,rnd){const FN=H.fn,B=W.OM_BATTLE,OI=W.OM_ITEMS;c
  if((m.states||{}).Substitute&&r.final>0&&lh.fromId!==mid){const m0=FN.snap(b.mons[mid]),x=FN.snap(m0);const sub0=+x.subHp||Math.max(1,Math.floor(x.hp.max/4));const left=sub0-r.final;delete x.lastHit;x.states=Object.assign({},x.states);if(left>0)x.subHp=left;else{delete x.states.Substitute;delete x.subHp}await W.OM_APP.setDiff(['battle','mons',mid],m0,x,1);if(H.logOn)W.OM_APP.sysLog(`【대타출동】 ${m.name}의 대역인형이 −${Math.min(sub0,r.final)} 을 대신 맞았다${left>0?` (인형 ${left})`:' — 인형이 부서졌다'}`,'battle');return {final:0,ko:false,sub:1}}
  /* apply(-r.final) */
  const m0=FN.snap(b.mons[mid]),x=FN.snap(m0);let v=r.final;if(fl&&x.hp.cur-v<fl)v=Math.max(0,x.hp.cur-fl);x.hp.latest=x.hp.cur;x.hp.cur=Math.max(0,x.hp.cur-v);delete x.lastHit;if((r.per||[]).some(q=>q.held==='disguise'))x.dsgUsed=1;
- if(v>0)x.lastTaken={v,turn:+b.turn||0};if(x.hp.cur<=0)x.entry='';
+ if(v>0)x.lastTaken={v,turn:+b.turn||0,hit:{lh}};   /* 11-15: 웹툴 LHX — 쓰러뜨린 쪽 · 기술 (【함성】 · 쓰러뜨렸을 때) */if(x.hp.cur<=0)x.entry='';
  if(x.raid&&x.raid.segments>0&&fl&&x.hp.cur<=fl&&v>0&&x.hp.cur>0){x.raid.broken=(x.raid.broken||0)+1;x.raid.brk=1}
  await W.OM_APP.setDiff(['battle','mons',mid],m0,x,1);if(x.hp.cur<=0&&m0.hp.cur>0)await FN.faintOff(mid);
  if(berryUse||sashUse)await FN.itemConsume(mid);
@@ -207,7 +216,7 @@ function estimate(H,W,atk,def,mv,o){o=o||{};const FN=H.fn,B=W.OM_BATTLE,FX=W.OM_
    C(단순): 상태 이상 걸기 · 지친 아이 회복 · 1턴 자기 강화 · 자기 타입을 살리는 날씨/필드. B 이상: + 기술 방어 · 벽 · 순풍 · 상대 약화 · 혼란 · 설치기 */
 const MAJOR=['Poison','Toxic','Burn','Paralysis','Freeze','Sleep'];
 function statusPick(H,W,c){const FN=H.fn,MA=W.OM_MOVEAUTO,B=W.OM_BATTLE;const {m,fs}=c;let pol=c.pol;if(c.ai&&pol==='D')pol='C';/* 11-15 새 로직: D = C (실수 턴은 battle3 이 옛 고르기로) */if(pol==='D'||pol==='wild')return null;const gateC=pol==='C'&&!c.ai;/* 새 로직의 C 는 판 깔기(벽 · 순풍 · 오로라베일 · 트릭룸 · 설치기)를 쓴다 — 지침 2-12 ② */const b=FN.ctx().b;const f=FN.fieldOf(b);const turn=+b.turn||1;
- const L=FN.MVS(m).map((mv,i)=>Object.assign({},mv,{_i:i})).filter(mv=>mv&&mv.cat==='변화'&&!mv.virt&&!mv.ext);if(!L.length)return null;
+ const L=FN.MVS(m).map((mv,i)=>Object.assign({},mv,{_i:i})).filter(mv=>mv&&mv.cat==='변화'&&!mv.virt&&(!mv.ext||/^(도우미|쉬프트업)$/.test(String(mv.name||'').trim())));if(!L.length)return null;   /* 11-15 05시: 『어시스트』 기능 확장 도우미 · 쉬프트업도 */
  const hpR=m.hp.cur/m.hp.max;const danger=c.dangerOf(m);const safe=danger<m.hp.cur*0.4;const main=(m.stats[1]>=m.stats[3])?'attack':'specialattack';const mtypes=FN.tysOf(m);
  const best=c.best;const bestFrac=best?Math.min(1,best.v/Math.max(1,best.tg.hp.cur)):0;
  const out=[];const T=FN.ctx().b.trainers[m.tid]||{};
@@ -218,6 +227,10 @@ function statusPick(H,W,c){const FN=H.fn,MA=W.OM_MOVEAUTO,B=W.OM_BATTLE;const {m
  const thr=fs.map(f=>{let bt=null;for(const x of [m,...c.allies]){const t=c.threatVs(pol,f,x);if(t&&t.mv){const fr=t.v/Math.max(1,x.hp.cur);if(!bt||fr>bt.fr)bt={f,x,mv:t.mv,fr}}}return bt}).filter(Boolean);
  const isSure=q=>/「필중기」/.test(String(q.eff||''))||(q.cat!=='변화'&&!(+q.acc));const foeStatus=f=>FN.MVS(f).some(q=>q&&q.cat==='변화'&&!/^(자신|자진|필드|아군)/.test(String(q.range||'')));
  const support=(mv,P)=>{const e=String(mv.eff||'');
+  /* 11-15 05시 도우미: 아군의 가장 센 공격이 ×1.5 로 늘어나는 몫(쓰러뜨리기까지) — 내 공격보다 크면 */
+  if(/「도우미」\s*상태로/.test(e)){let bt=null;for(const al of c.allies){if(!al||!al.entry||al.hp.cur<=0)continue;const ja=c.J&&c.J.get?c.J.get(al.id):null;if(ja&&(ja.prot||ja.sw||!ja.mv||ja.mv.cat==='변화'))continue;/* 짝이 이번 턴 공격할 때만 · 짝이 고른 기술 · 대상으로 */for(const q of (ja?[ja.mv]:FN.MVS(al))){if(!q||q.cat==='변화'||!(+q.pow>0))continue;for(const f of (ja&&ja.tg&&fs.includes(ja.tg)?[ja.tg]:fs)){const v=c.expect(al,q,f);const fr=v/Math.max(1,f.hp.cur);const g=Math.min(1,1.5*fr)-Math.min(1,fr);if(!bt||g>bt.g)bt={al,g}}}}return bt&&bt.g>0.15?{mv,tg:bt.al,score:bt.g,why:'도우미'}:'skip'}
+  /* 쉬프트업: 아군이 이 턴 스피드 ×1.5 면 자기를 크게 노리는 상대보다 먼저 움직일 때 */
+  if(/아군의\s*「스피드」를\s*강화\(1\.5배\)/.test(e)){if(lastSame(mv))return 'skip';let bt=null;for(const t of thr){if(t.x===m||t.fr<0.6)continue;const sx=+c.spd(t.x),sf=+c.spd(t.f);if(sx<sf&&sx*1.5>sf){const sc=0.2+0.3*Math.min(1,t.fr);if(!bt||sc>bt.sc)bt={x:t.x,sc}}}return bt?{mv,tg:bt.x,score:bt.sc,why:'쉬프트업'}:'skip'}
   if(/「대역인형」을\s*소환/.test(e)){if((m.states||{}).Substitute||hpR<=0.5||danger>=m.hp.cur*0.7)return 'skip';return {mv,tg:m,score:0.28+(fs.some(foeStatus)?0.12:0),why:'대타출동'}}
   if(/「전체기 방어」\s*상태로/.test(e)){if(lastSame(mv))return 'skip';const sv=thr.filter(t=>/전체|자신\s*이외/.test(String(t.mv.range||''))).reduce((a,t)=>a+Math.min(1,t.fr),0);return sv<0.35?'skip':{mv,tg:m,score:0.25+0.4*Math.min(1.5,sv),why:'와이드가드'}}
   if(/「변화기 방어」\s*상태로/.test(e)){if(lastSame(mv))return 'skip';const n=fs.filter(foeStatus).length;return n?{mv,tg:m,score:0.1*n,why:'트릭가드'}:'skip'}

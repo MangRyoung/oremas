@@ -6,7 +6,14 @@ const fs=require('fs'),path=require('path'),vm=require('vm');
 const ROOT=path.resolve(__dirname,'..','..');            // oremas
 function makerRoot(){return process.env.MK_ROOT||path.resolve(ROOT,'..','mangketmon-maker')}
 /* 시뮬 속도용 바꿔 끼우기 (10-27 밤): 효과 엔진의 레디메이드 표를 부를 때마다 새로 합치던 것(rmAll)을 한 번만 — 시뮬엔 방 덮어쓰기(dbx.rm)가 없다 */
-const SRC_PATCH={'fx.js':[[/function rmAll\(\)\{/,'let __RMC=null;function rmAll(){if(__RMC)return __RMC;return (__RMC=rmAll0())}function rmAll0(){']]};
+const SRC_PATCH={'fx.js':[[/function rmAll\(\)\{/,'let __RMC=null;function rmAll(){if(__RMC)return __RMC;return (__RMC=rmAll0())}function rmAll0(){'],
+ /* 11-15 05시 망령 「시뮬에서 구현이 안 되는 게 있다면 만들면서」: 시트 구문 · 레디메이드가 없는 포텐셜은 제작기 구문 추천기(potlint)가 낸 구문으로 — 시뮬에서만 (웹툴은 GM 이 손으로 · 추천기는 시트 작성용) · NOLINT=1 이면 끔 */
+ [/const r=rm\(key\)\|\|\(kind!=='pot'\?rm\(name\):null\);if\(!r\)return null;/,"const r=rm(key)||(kind!=='pot'?rm(name):null);if(!r){if(kind==='pot'&&window.__SIM_LINT){const z=window.__SIM_LINT(m,name);if(z)return z}return null}"]]};
+/* 추천기 구문 만들기 (포텐셜 이름 + 효과 글마다 한 번) */
+function simLint(win){const C=new Map();return (m,name)=>{if(process.env.NOLINT)return null;const PL=win.MKM_POTLINT,FX=win.OM_FX;if(!PL||!PL.suggest||!FX||!FX.parse||!m)return null;
+ const nm=String(name||'').replace(/[『』]/g,'').trim();let eff='';for(const p of [].concat(m.pots||[],m.excl||[],m.exclX||[]))if(p&&String(p.name||'').replace(/[『』]/g,'').trim()===nm){eff=String(p.eff||'');break}
+ if(!eff){try{const bt=win.OM_APP&&win.OM_APP.ST&&win.OM_APP.ST.state.battle;const tr=bt&&bt.trainers&&bt.trainers[m.tid];const u=tr&&(tr.unique||[]).find(x=>x&&String(x.name||'').replace(/[『』]/g,'').trim()===nm);if(u)eff=String(u.eff||'')}catch(e){}}
+ if(!eff)return null;const k=nm+'|'+eff;if(C.has(k))return C.get(k);let out=null;try{const sg=PL.suggest(eff);const ls=((sg&&sg.lines)||[]).filter(Boolean);if(ls.length){const r=FX.parse(ls.join('\n'));if(r&&r.ops&&r.ops.length&&!(r.err&&r.err.length))out={name:nm,src:'lint',text:eff,ops:r.ops,lint:ls}}}catch(e){}C.set(k,out);return out}}
 function load(opts){opts=opts||{};
  const win={console,setTimeout,clearTimeout,Math,Date,JSON,Object,Array,String,Number,Boolean,RegExp,Map,Set,Promise,Error,parseInt,parseFloat,isFinite,isNaN,encodeURIComponent,decodeURIComponent,structuredClone,
   localStorage:{getItem(){return null},setItem(){},removeItem(){}},sessionStorage:{getItem(){return null},setItem(){},removeItem(){}},
@@ -24,6 +31,7 @@ function load(opts){opts=opts||{};
  for(const [f,abs] of files){const p=abs?f:path.join(ROOT,f);
   if(!fs.existsSync(p)){failed.push({f:p,err:'없음'});continue}
   try{let src=fs.readFileSync(p,'utf8');for(const [re,to] of (SRC_PATCH[path.basename(p)]||[]))src=src.replace(re,to);vm.runInContext(src,ctx,{filename:p});loaded.push(p)}catch(e){failed.push({f:p,err:e.message});if(opts.strict)throw e}}
+ win.__SIM_LINT=simLint(win);
  if(!win.OM_BATTLE||!win.OM_STATS||!win.OM_IMPORT)throw new Error('엔진을 못 읽었다: '+JSON.stringify(failed));
  return {win,loaded,failed,ROOT,MK};}
 module.exports={load,ROOT,makerRoot};
