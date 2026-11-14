@@ -19,7 +19,7 @@ function load(opts){opts=opts||{};
   ['data/const.js'],['data/types.js'],['data/moves.js'],['data/traits.js'],['data/items.js'],
   [path.join(MK,'js/fx/states.js'),'abs'],['data/maker.js'],[path.join(MK,'js/fx/readymade.js'),'abs'],
   ['js/engine/stats.js'],['js/engine/orders.js'],['js/engine/itemrule.js'],['js/engine/items.js'],['js/engine/field.js'],
-  [path.join(MK,'js/fx/fx.js'),'abs'],[path.join(MK,'js/fx/moveauto.js'),'abs'],['js/engine/import.js'],['js/engine/battle.js']];
+  [path.join(MK,'js/fx/fx.js'),'abs'],[path.join(MK,'js/fx/moveauto.js'),'abs'],[path.join(MK,'js/potlint.js'),'abs'],['js/engine/import.js'],['js/engine/battle.js']];
  const loaded=[],failed=[];
  for(const [f,abs] of files){const p=abs?f:path.join(ROOT,f);
   if(!fs.existsSync(p)){failed.push({f:p,err:'없음'});continue}

@@ -1701,16 +1701,14 @@ window.OM_BATTLE_UI=(()=>{
     ① 「(자신에 대한) 『지령』을 임의의 『지령』으로 · 『방어 지령』을 『방패의 영창』으로 변경할 수 있다」(『커맨드 미션』 · 카렌 전용): 받는 포켓몬 주인에게 묻고, 고른 지령을 대신 건다
     ② 「이번 턴 (「타입 : X」인 아군이 받는) 『지령』의 효과를 【…】로 변경한다」(나하루 · 킴블리 고유): 발동하면 이번 턴 표(battle.cmdChg) — 그 턴 받는 포켓몬이 맞으면 원래 효과 대신 【…】 (묻지 않음)
     ③ 「자신이 받은 『지령』의 효과를 【…】로 변경할 수 있다」(『회복술』): 받을 때 묻는다 (【보급】 · 【N/시】 셈)
-    【…】 = 그 포텐셜의 시트 구문 → 레디메이드 → 글 풀이(「추가 효과를 부여」 · 「HP 를 N 만큼 회복」) → 그래도 없으면 「손으로」 */
+    【…】 = 그 포텐셜의 시트 구문 → 레디메이드 → 제작기 구문 추천기(MKM_POTLINT)로 【…】 글 풀이 → 그래도 없으면 「손으로」.
+    【준비】 줄(카렌 전용 「『방어 지령』을 『방패의 영창』으로」)은 시합 준비 때 세팅을 바꾸는 것 — 여기서 묻지 않는다 (망령 11-14) */
  const CHG_RE=/『지령』(?:\s*『성언』)?의\s*효과를\s*【\s*([\s\S]+?)\s*】\s*로\s*변경/;
  const TOC_RE=/(자신에\s*대한\s*『지령』|『([^』]+)』)\s*을\s*(?:(임의의\s*『지령』)|『([^』]+)』)\s*(?:으로|로)\s*변경할\s*수\s*있다/;
- function chgXlate(X){X=String(X||'');let m;const L=[];
-  if((m=X.match(/「\s*(단일기|전체기)?\s*[:：]?\s*([^」]*)」에\s*「\s*(\d+)\s*할\s*[:：]\s*([^」]+?)\s*」의\s*추가\s*효과를\s*부여/))){const ty=m[2].trim();L.push(`추가효과 부여 ${m[3]}할 ${m[4].replace(/\s/g,'')}${ty&&!/^기술$/.test(ty)?' 타입:'+ty:''}${m[1]?' '+m[1]:''} 이번턴`)}
-  if((m=X.match(/「\s*정면\s*」을\s*「([^」]+)」\s*상태로\s*만든다/)))L.push(`상태 ${m[1].trim()} 「정면」상대1체`);
-  if((m=X.match(/「\s*HP\s*」를\s*(\d+\/\d+)\s*만큼\s*회복/)))L.push(`회복 자신 ${m[1]}`);
-  return L.join('\n')}
  function chgOps(h){let a=null;if(FX()){if(h.sk==='uq')a=FX().autoOf({tid:h.tid},'pot',h.p.name);else if(h.own)a=FX().autoOf(h.own,'pot',h.p.name)}
-  if(a&&realOps(a)&&!a.manual)return a.ops;const s=chgXlate(h.X);if(s&&FX()&&FX().parse){const r=FX().parse(s);if(r.ops&&r.ops.length&&!(r.errs||[]).length&&!r.ops.some(o=>o&&o.k==='?'))return r.ops}return null}
+  if(a&&realOps(a)&&!a.manual)return a.ops;
+  /* 11-14 망령 「구문 추천기로 연동」: 시트 구문 · 레디메이드가 없으면 【…】 안의 글을 제작기 구문 추천기(MKM_POTLINT.suggest)로 풀어 건다 */
+  const PL=window.MKM_POTLINT;if(PL&&PL.suggest&&FX()&&FX().parse){try{const sg=PL.suggest(String(h.p.eff||''));const ls=((sg&&sg.chg&&sg.lines)||[]).filter(Boolean);if(ls.length){const r=FX().parse(ls.join('\n'));if(r.ops&&r.ops.length&&!(r.errs||[]).length&&!r.ops.some(o=>o&&o.k==='?'))return r.ops}}catch(e){console.warn('chgOps',e)}}return null}
  function chgWho(e,m,x,own){const pre=e.slice(0,m.index);const w=pre.slice(pre.lastIndexOf('/')+1);const ty=w.match(/「\s*타입\s*[:：]\s*([^」]+)」/);
   if(ty){const ko=(x.types||[]).filter(q=>q&&q!=='-').map(q=>S().typeKo?S().typeKo(q):q);if(!ty[1].split(/[·,/]/).some(s=>ko.includes(s.trim())))return false}
   if(/자신이\s*받/.test(w)&&own&&own.id!==x.id)return false;return true}
@@ -1722,7 +1720,7 @@ window.OM_BATTLE_UI=(()=>{
   const ask=async(x,p,labels)=>{const r=await uiCtx(b,x,pn(p)).choose(labels);return (Array.isArray(r)&&r.length)?+r[0]:0};
   /* ① 지령 → 다른 지령 (한 포켓몬에게 거는 지령만 — 영창 · 방해 · 결계는 「자신에 대한」이 아니다) */
   {const R0=recv(name);const x=R0.length===1&&R0[0].id===mid&&!/의\s*영창$/.test(name)?R0[0]:null;
-   if(x)for(const p of potSrc(x)){const e=String(p.eff||'');const m=e.match(TOC_RE);if(!m)continue;const from=m[2]&&nm(m[2])!=='지령'?nm(m[2]):'';if(from&&from!==nm(name))continue;if(!limOk(x,p))continue;
+   if(x)for(const p of potSrc(x)){const e=String(p.eff||'');const m=e.match(TOC_RE);if(!m||/【\s*준비\s*】/.test(e))continue;const from=m[2]&&nm(m[2])!=='지령'?nm(m[2]):'';if(from&&from!==nm(name))continue;if(!limOk(x,p))continue;
     const opts=m[4]?[m[4].trim()]:allCmdNames(t).filter(n=>nm(n)!==nm(name));if(!opts.length)continue;
     const i=await ask(x,p,[`그대로 『${name}』`,...opts.map(n=>`→ 『${n}』`)]);if(!i)continue;const to=opts[i-1];await spend(x,p);
     out.lines.push(`${x.name} 『${pn(p)}』 — 『${name}』 → 『${to}』`);out.to=to;name=to;break}}
