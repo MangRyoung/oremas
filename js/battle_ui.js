@@ -1143,9 +1143,9 @@ window.OM_BATTLE_UI=(()=>{
   const from=m.entry;const occ=ent[to];const other=occ||Object.values(b.mons||{}).find(x=>x.side===m.side&&x.entry===to&&x.id!==mid);
   await A().set(['battle','mons',mid,'entry'],to);if(other)await A().set(['battle','mons',other.id,'entry'],from);
   A().sysLog(`${m.name} 에리어 교대 ${from.toUpperCase()} → ${to.toUpperCase()}${other?` · ${other.name} → ${from.toUpperCase()}`:''}`,'battle');
-  if(b.started){await A().set(['battle','mons',mid,'areaT'],+b.turn||0);try{await areaMovedAuto(mid)}catch(e){console.warn('areaMovedAuto',e)}}}
+  if(b.started){const T=+b.turn||0;await A().set(['battle','mons',mid,'areaT'],T);if(other)await A().set(['battle','mons',other.id,'areaT'],T);try{await areaMovedAuto(mid);if(other)await areaMovedAuto(other.id)}catch(e){console.warn('areaMovedAuto',e)}}}
  /* 11-14 망령 「에리어 이동했을 때는 자동화 만들어야지 · 보법술도 · 위력 강화 무시도」:
-    에리어 교대(기술 「에리어 이동」 · 카드 단추)로 자리를 옮긴 포켓몬에 m.areaT = 그 턴. 교대로 들어온 것은 에리어 이동이 아니다(표시 없음). 자리를 내준 쪽도 표시하지 않는다(옮긴 쪽만).
+    에리어 교대(기술 「에리어 이동」 · 카드 단추)로 자리를 옮긴 포켓몬에 m.areaT = 그 턴. 교대로 들어온 것은 에리어 이동이 아니다(표시 없음). 자리를 바꿔 준 쪽도 이동한 것(11-14 17:41 망령 「둘 다 이동한 거긴 해」).
     ① 옮긴 포켓몬의 「에리어를 이동한 턴 …」 포텐셜(보법술: 턴 종료까지 회피 ×1.33)은 저절로 건다 — 구문이 있고 【N/시】 없는 것 · 【탈진】 은 지난 턴에 썼으면 안 건다
     ② 「에리어를 이동한 턴 아군이 상대의 「전체기」의 위력 강화를 무시한다」: 그 포텐셜을 가진 포켓몬의 아군(자신 제외 — 자신 포함은 「아군 전체」로 적힌다)이 이번 턴에 에리어를 옮겼으면,
        상대의 전체기에 맞을 때 공격 쪽의 도구 · 특성 · 포텐셜 위력 강화(×1 초과)를 끈다 — 줄인 배율(×1 미만)은 그대로 */
@@ -3213,7 +3213,7 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
  /* 11-07 망령 「저주는 방어 관통이야」: 효과 글에 「방어」 무시가 없어도 이름으로 관통하는 기술 */
  const PROT_PASS=['저주'];
  function noPierce(m){if(!m)return false;try{if(FX()&&FX().liveMods&&FX().liveMods(m).some(e=>e&&e.np))return true}catch(e){}const T=[m.abilityEff||'',...potSrc(m).map(p=>p.eff||'')].join('\n');return /「?방어」?[^.\n]{0,30}관통(?:\s*\(?\s*해제\s*\)?)?\s*(?:당하지|되지)\s*않는다/.test(T)}   /* 11-11 「관통(해제) 당하지 않는다」 */
- const protBypass=mv=>{const e=String((mv||{}).eff||'');if(PROT_PASS.includes(String((mv||{}).name||'').replace(/[『』]/g,'').trim()))return 'pass';if(!/「방어」(?:「[^」]*」)*\s*상태를\s*무시/.test(e))return '';return /무시\(해제\)|해제한다/.test(e)?'clear':'pass'};
+ const protBypass=mv=>{const e=String((mv||{}).eff||'');if(PROT_PASS.includes(String((mv||{}).name||'').replace(/[『』]/g,'').trim()))return 'pass';if(!/「방어」(?:「[^」]*」)*\s*상태를\s*무시/.test(e))return '';return /무시\(해제\)|「방어」[^.\n]{0,30}해제/.test(e)?'clear':'pass'};   /* 11-14 망령 「방어 상태 무시는 그 기술만 무시 — 해제한다고 적힌 것만 해제」: 글의 다른 「해제한다」(랭크 · 장벽 …)로는 해제가 되지 않게 「방어」 가까이의 해제만 본다 */
  /* 10-26 망령: 숙달 지령 ② 는 정해진 때에 【임의】로 쓸 수 있다 — 명중굴림 전(공격 창)에 쓸 수 있는 것을 알려 준다.
     아군(공격하는 쪽): 숙달 공격 · 특공 · 저격 / 상대(맞는 쪽): 숙달 방어 · 특방 · 회피. 【공유 (『지령』)】 이라 그 턴에 지령을 이미 썼으면 못 쓴다 */
  function masterUsable(b,tid,re){const t=(b.trainers||{})[tid];if(!t)return [];const fired=(((b.cmds||{})[tid]||{}).fired)||{};if(Object.values(fired).some(x=>x&&x.command))return [];
