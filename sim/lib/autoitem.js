@@ -26,10 +26,11 @@ function sockCap(win,r){const t=r.trainer;const rk=rankKey((t.ranks||{})['지시
  const TY=win.OM_STATS&&win.OM_STATS.typeEn?win.OM_STATS.typeEn:(x=>x);for(const m of r.mons)for(const p of [...(m.pots||[]),...(m.excl?[m.excl]:[]),...(m.exclX||[])]){const e=String(p&&p.eff||'').replace(/<br\s*\/?>/g,'\n');const x=e.match(/【\s*준비\s*】[^\n]*?「소지품\s*소켓\s*:\s*\+\s*([\d.]+)\s*」/);if(!x)continue;const c=e.match(/「타입\s*:\s*([^」]+)」\s*(?:이|가)\s*(\d+)\s*체\s*이상/);if(c){const en=TY(c[1].trim());if(r.mons.filter(q=>(q.types||[]).includes(en)).length<+c[2])continue}cap+=+x[1]}
  return cap}
 function equip(win,r){const DBI=((win.OM_DB||{}).items)||{};const t=r.trainer;const cap=sockCap(win,r);
+ /* 11-15 망령 「같은 TO 소지품은 1개만」: 룰북 「PT 내에 같은 TO 소지품은 중복시킬 수 없다」 — 비고의 【TO (그룹, 그룹)】 */const TOs=n=>{const m=String((DBI[n]||{}).note||'').match(/【\s*TO\s*\(([^)]*)\)\s*】/);return m?m[1].split(/[,，]/).map(x=>x.trim()).filter(Boolean):[]};const usedTO=new Set();for(const m of r.mons)for(const n of [m.item,...((m.items2||[]).map(x=>x&&x.item))])if(n)TOs(n).forEach(g=>usedTO.add(g));
  const used=new Set(r.mons.map(m=>m.item).filter(Boolean));let spent=r.mons.reduce((a,m)=>a+(m.item&&DBI[m.item]?+DBI[m.item].sock||0:0),0);const out=[];
  const order=r.mons.filter(m=>!m.item).map(m=>({m,role:roleOf(m)})).sort((a,b)=>(a.role==='atk'?0:1)-(b.role==='atk'?0:1));
  order.forEach(({m,role},i)=>{const left=order.length-i-1;const keep=left*1;   /* 뒤에 남은 포켓몬 몫으로 1소켓씩은 남겨 둔다 */
-  const c=choices(m,role,DBI).find(n=>!used.has(n)&&spent+(+DBI[n].sock||0)<=cap-keep+1e-9);if(!c)return;
+  const c=choices(m,role,DBI).find(n=>!used.has(n)&&!TOs(n).some(g=>usedTO.has(g))&&spent+(+DBI[n].sock||0)<=cap-keep+1e-9);if(!c)return;TOs(c).forEach(g=>usedTO.add(g));
   m.item=c;m.itemEff=String(DBI[c].eff||'').replace(/<br\s*\/?>/g,'\n');m.itemAuto=1;used.add(c);spent+=+DBI[c].sock||0;out.push({mon:m.name,item:c,why:role})});
  t.autoItems=out;t.itemSock={cap,spent};return out}
 /* 11-04 망령 「2체일 땐 2체 소지품 TO 중에서 장착하고 다 같이 합쳐야지」: 던전 일행 = 한 파티.

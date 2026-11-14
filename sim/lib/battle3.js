@@ -50,14 +50,16 @@ async function runBattle(W,opt){
  const CHG_RE=/「차지」/;const chargeSkip=(m,mv)=>{const e=String(mv.eff||'');const W0=FN.wxNow?FN.wxNow(C()):'';const sk=e.match(/「날씨\s*:\s*([^」]+)」일 때 「차지」를 생략/);return !!(sk&&W0&&sk[1].split(/[,，]\s*/).map(q=>q.trim()).includes(W0))||(FN.HAS&&FN.HAS(m,'파워풀허브'))};
  const charged=(m,mv)=>!!(m.charge&&m.charge.mv===mv.name&&+m.charge.turn<(+C().turn||0));
  const expect=(atk,mv,def,multi)=>{let v=0;try{v=FG.estimate(H,W,atk,def,mv,{multi})}catch(e){return 0}{/* 11-15 연속 제한 — 바로 전 턴에 같은 기술이면 성공 확률만큼 */const cm=String(mv.eff||'').match(/「연속\s*제한\s*:\s*(실패\s*확률\s*증가|확정\s*실패)」/);if(cm&&atk.lastMove===mv.name&&+atk.lastMoveT===(+C().turn||0)-1){const k=Math.max(1,+((atk.consec&&atk.consec.name===mv.name)?atk.consec.n:1));v*=/확정/.test(cm[1])?0:Math.pow(1/3,k)}}if(CHG_RE.test(String(mv.eff||''))&&!charged(atk,mv)&&!chargeSkip(atk,mv))v*=0.5;return v};
- const bestVs=(atk,def)=>{let best=null,bv=0;for(const mv of dmgMoves(atk)){const v=expect(atk,mv,def);if(v>bv){bv=v;best=mv}}return {mv:best,v:bv}};
+ const reach=(atk,mv,def)=>{const fx=fixTg(atk,mv,[def]);return !fx||fx.includes(def)};const bestVs=(atk,def)=>{let best=null,bv=0;for(const mv of dmgMoves(atk)){if(!reach(atk,mv,def))continue;const v=expect(atk,mv,def);if(v>bv){bv=v;best=mv}}return {mv:best,v:bv}};
  /* 2-1 정보 차단: 상대 기술은 이 배틀에서 본 것 · C 는 본 것(없으면 자속기 짐작) · B 이상은 본 것 + 자속기 짐작 */
  const knownMoves=(pol,f)=>{const all=dmgMoves(f);const s=seen.get(f.id);const sn=s?all.filter(x=>s.has(x.name)):[];const stab=all.filter(x=>(FN.tysOf(f)||[]).includes(x.typeEn));if(pol==='C')return sn.length?sn:stab;return Array.from(new Set(sn.concat(stab)))};
- const threatVs=(pol,f,m)=>{let best=null,bv=0;for(const mv of knownMoves(pol,f)){const v=expect(f,mv,m);if(v>bv){bv=v;best=mv}}return {mv:best,v:bv,f}};
+ const threatVs=(pol,f,m)=>{let best=null,bv=0;for(const mv of knownMoves(pol,f)){if(!reach(f,mv,m))continue;const v=expect(f,mv,m);if(v>bv){bv=v;best=mv}}return {mv:best,v:bv,f}};
  const topThreat=(pol,m)=>foes(m.side).map(f=>threatVs(pol,f,m)).sort((a,c)=>c.v-a.v)[0]||{mv:null,v:0};
  const matchup=(m,f)=>bestVs(m,f).v/Math.max(1,f.hp.cur)-threatVs(polOf(m),f,m).v/Math.max(1,m.hp.cur);
  const dangerOf=m=>foes(m.side).reduce((s,f)=>s+threatVs(polOf(m),f,m).v,0);
  const front=(m,fs)=>fs.find(f=>f.entry===m.entry)||fs[0];
+ /* 11-15 망령 「정면기 제약은 계산되고 있어?」: 범위 「정면」 · 「대각」 기술은 웹툴 defaultTargets 가 정한 그 자리 상대만 (전엔 아무 상대나 골랐음) */
+ const FIXR=/^(정면|대각)$/;const fixTg=(m,mv,opp)=>{if(!FIXR.test(String(mv.range||'')))return null;let sl=[];try{sl=FN.defaultTargets(C(),m.id,String(mv._i))||[]}catch(e){}const L=sl.map(x=>{const [sd,ar]=String(x).split('_');return opp.find(f=>f.side===sd&&f.entry===ar)}).filter(Boolean);return L};
  const isOld=m=>/올드\s*타입/.test(JSON.stringify(m.pots||[]));
  const isSure=mv=>!!mv&&(!+mv.acc||/필중/.test(String(mv.eff||'')));
  const mastery=tid=>{const p=POLS[tid];return p==='B'||p==='A'};
@@ -106,7 +108,7 @@ async function runBattle(W,opt){
   const ms=(x,opp)=>opp.reduce((a,f)=>a+(bestVs(x,f).v/Math.max(1,f.hp.cur)-threatVs(P0,f,x).v/Math.max(1,x.hp.cur)),0);
   const moves=(m,mine)=>mine?dmgMoves(m):knownMoves(P0,m);
   /* 후보: 공격(상위 6) · 방어 · 안전한 교대(상위 2) */
-  const cands=(m,mine,opp,side)=>{const L=[];const st=m.states||{};for(const mv of moves(m,mine)){if(st.Taunt&&mv.cat==='변화')continue;if(SPREAD.test(mv.range||'')){const d={};for(const f of opp)d[f.id]=ex(m,mv,f,true);let pen=0;if(mv.range==='자신 이외')for(const x of active(side))if(x!==m)pen+=ex(m,mv,x,true)/Math.max(1,x.hp.cur);L.push({mv,d,pen})}else for(const f of opp)L.push({mv,tg:f,d:{[f.id]:ex(m,mv,f,false)},pen:0})}
+  const cands=(m,mine,opp,side)=>{const L=[];const st=m.states||{};for(const mv of moves(m,mine)){if(st.Taunt&&mv.cat==='변화')continue;{const fx=fixTg(m,mv,opp);if(fx){for(const f of fx)L.push({mv,tg:f,d:{[f.id]:ex(m,mv,f,false)},pen:0});continue}}if(SPREAD.test(mv.range||'')){const d={};for(const f of opp)d[f.id]=ex(m,mv,f,true);let pen=0;if(mv.range==='자신 이외')for(const x of active(side))if(x!==m)pen+=ex(m,mv,x,true)/Math.max(1,x.hp.cur);L.push({mv,d,pen})}else for(const f of opp)L.push({mv,tg:f,d:{[f.id]:ex(m,mv,f,false)},pen:0})}
    const L2=L.sort((a,c)=>Object.values(c.d).reduce((x,y)=>x+y,0)-Object.values(a.d).reduce((x,y)=>x+y,0)).slice(0,6);
    if(!process.env.NOPROT&&!st.Taunt&&m.protectLast!==T0-1){const pm=FN.MVS(m).map((mv,i)=>Object.assign({},mv,{_i:i})).find(mv=>mv&&FN.protMove(mv)&&!mv.virt);if(pm&&(mine||(seen.get(m.id)||new Set()).has(pm.name)||P0!=='C'))L2.push({mv:pm,tg:m,d:{},pen:0,prot:1})}
    if(!ENVS('NOJSW',side)&&!(st.Bind||st.MeanLook||st.Block||m.charge)&&!(T0>1&&+m.inT>=T0-1)){const m0=ms(m,opp);const mates=active(side).filter(y=>y!==m);
@@ -135,7 +137,7 @@ async function runBattle(W,opt){
   if(!best)return null;const out=new Map();for(const m of me){const x=best[m.id];out.set(m.id,x.sw?{sw:x.sw}:{mv:x.mv,tg:x.tg||Object.keys(x.d).map(k=>fs.find(f=>f.id===k)).filter(Boolean).sort((a,c)=>(x.d[c.id]||0)-(x.d[a.id]||0))[0]||fs[0],v:x.tg?(x.d[x.tg.id]||0):0,prot:x.prot})}return out}
  function chooseJoint(sd){const me=active(sd).filter(m=>{const st=m.states||{};return !(st.Thrash||st.Encore)&&!(m.charge&&+m.charge.turn<(+C().turn||0))});const fs=foes(sd);if(me.length<2||!fs.length)return null;
   const pol0=polOf(me[0]);const tw={};for(const f of fs){let w=0;for(const m of active(sd)){const th=threatVs(pol0==='D'?'C':pol0,f,m);w=Math.max(w,th.v/Math.max(1,m.hp.cur))}tw[f.id]=0.6+Math.min(1.6,w)}
-  const cands=m=>{const L=[];for(const mv of dmgMoves(m)){if((m.states||{}).Taunt&&mv.cat==='변화')continue;if(SPREAD.test(mv.range||'')){const d={};for(const f of fs)d[f.id]=expect(m,mv,f,true);let pen=0;if(mv.range==='자신 이외')for(const x of active(sd))if(x!==m)pen+=expect(m,mv,x,true)/Math.max(1,x.hp.cur);L.push({mv,tg:fs.slice().sort((a,c)=>d[c.id]-d[a.id])[0],d,pen})}else for(const f of fs)L.push({mv,tg:f,d:{[f.id]:expect(m,mv,f,false)},pen:0})}
+  const cands=m=>{const L=[];for(const mv of dmgMoves(m)){if((m.states||{}).Taunt&&mv.cat==='변화')continue;{const fx=fixTg(m,mv,fs);if(fx){for(const f of fx)L.push({mv,tg:f,d:{[f.id]:expect(m,mv,f,false)},pen:0});continue}}if(SPREAD.test(mv.range||'')){const d={};for(const f of fs)d[f.id]=expect(m,mv,f,true);let pen=0;if(mv.range==='자신 이외')for(const x of active(sd))if(x!==m)pen+=expect(m,mv,x,true)/Math.max(1,x.hp.cur);L.push({mv,tg:fs.slice().sort((a,c)=>d[c.id]-d[a.id])[0],d,pen})}else for(const f of fs)L.push({mv,tg:f,d:{[f.id]:expect(m,mv,f,false)},pen:0})}
    const L2=L.sort((a,c)=>Object.values(c.d).reduce((x,y)=>x+y,0)-Object.values(a.d).reduce((x,y)=>x+y,0)).slice(0,8);
    /* 11-14 기술 방어도 후보 — 연속이면 1/3 확률이라 지난 턴에 썼으면 뺀다 */
    if(!process.env.NOPROT&&!(m.states||{}).Taunt&&m.protectLast!==(+C().turn||0)-1){const pm=FN.MVS(m).map((mv,i)=>Object.assign({},mv,{_i:i})).find(mv=>mv&&FN.protMove(mv)&&!mv.virt);if(pm)L2.push({mv:pm,tg:m,d:{},pen:0,prot:1})}
