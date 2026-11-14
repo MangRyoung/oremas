@@ -148,7 +148,7 @@ window.OM_BATTLE_UI=(()=>{
  const coBtn=(c,tid)=>(c.gm||c.seat===tid)&&(((c.ST.state.roster||{}).trainers||{})[tid])?`<button class="btn xs ghost" data-act="co" data-tid="${tid}" title="여러 플레이어가 이 트레이너의 지시 창 · 조작권을 함께 쓴다">함께 지시</button>`:'';
  function lead(c,tid){if(!ownT(c,tid))return false;if(tid===c.seat||baseSeat(c,tid)===c.seat)return true;if(!((c.ST.state.seats||{})[tid])||A().online(tid))return false;return coOf(c,tid).filter(s=>s===c.seat||A().online(s)).sort()[0]===c.seat}
  /* 10-27 망령: PL 권한(c.fair) 중의 GM 은 자기가 불러온 트레이너만 — byAcct 가 다른 GM 것이면 지시 · 편집 · 수동 공개를 가린다 (자동 진행은 그대로). byAcct 가 없는 예전 트레이너는 어느 GM 이든 */
- function gmMine(c,tid){const t=((c.b||{}).trainers||{})[tid]||{};if(!t.byAcct)return true;const k=A().acctKey?A().acctKey():'';return !k||t.byAcct===k}
+ function gmMine(c,tid){const t=((c.b||{}).trainers||{})[tid]||{};if(!t.byAcct||t.byAcct==='gm')return true;const k=A().acctKey?A().acctKey():'';return !k||t.byAcct===k}
  function fairOff(c,tid){return !!(c.gm&&c.fair&&(seatOwned(c,tid)||!gmMine(c,tid)))}
  function myTrainers(c){const trs=c.b.trainers||{};if(c.gm)return Object.keys(trs).filter(t=>!fairOff(c,t));return Object.keys(trs).filter(t=>ownT(c,t)).sort((x,y)=>(y===c.seat)-(x===c.seat))}
  /* 10-27 망령: 요약 창은 그 트레이너를 다루는 사람만 — 좌석 주인 · 함께 지시, GM 은 PL 권한 중이면 자기가 불러온 트레이너만 (관전 · 상대는 못 본다) */
@@ -956,6 +956,9 @@ window.OM_BATTLE_UI=(()=>{
     {const ops=[[['battle','tstep'],1],[['battle','swPur'],pur.map(o=>o.mid)],[['battle','swOut'],sw.map(s=>s.mon.id)]];if(pur.length)ops.push([['battle','order'],pur],[['battle','orderIdx'],0]);await A().setMany(ops)}
     cutPhase('교대',sw.map(s=>s.mon.name).join(' · '));
     A().sysLog(`【교대 알림】\n${L.join('\n')}${pl.length?'\n'+pl.join('\n'):''}\n교대를 마치면 「턴 진행 ▶」`,'battle',{rv:RV,rvx:[...pl,'교대를 마치면 「턴 진행 ▶」']});return}}
+  /* 11-14: 교대 때 따라가때리기 차례(swPur)를 아직 처리하지 않았으면 묻는다 — 그대로 가면 교대가 끝난 뒤 평소 차례로 행동한다 */
+  if(st===1&&(b.swPur||[]).length){const left=(b.swPur||[]).filter(mid=>{const m=(b.mons||{})[mid];const lm=m&&m.lastMove;return m&&m.entry&&m.hp&&m.hp.cur>0&&!(lm&&+lm.turn===(+b.turn||0))});
+   if(left.length&&!(await askYes(`${left.map(mid=>(b.mons[mid]||{}).name||'?').join(' · ')} — 교대하려는 상대를 노린 따라가때리기를 아직 하지 않았다.\n행동 순서 「다음 행동 ▶」(또는 초상)으로 공격 창을 열어 먼저 처리한다.\n그대로 진행하면 교대가 끝난 뒤 평소 차례로 행동한다 (따라가때리기 없이).`,'그대로 진행','기다린다')))return}
   if(st<2){let tids=Object.keys(I.PRE).filter(t=>(b.trainers||{})[t]);
    /* 10-31 망령 「4식 · 6령 쓰는 방식이 시뮬과 다르다 — 꼭 고쳐」: 선행 입력한 지령(6령)은 턴 개시 때 저절로 「선행 발동」 (시뮬과 같다 — 시뮬은 지시 때 정한 지령을 그 자리에서 건다).
       횟수는 이미 턴 개시에서 깎였으니 효과만 건다. 4식은 맞을 때 공격 창이 쓰고(버텨라 · 피해라 …), 선행 포텐셜 · 「턴 개시」 4식은 그대로 「포텐셜 발동」에서 */
@@ -1726,11 +1729,12 @@ window.OM_BATTLE_UI=(()=>{
    const SPM=spMulOf(s.mon,f);if(SPM.why.length)spNotes.push(...SPM.why);
    return {slot:s.slot,mon:s.mon,cmd:{change:!!K.sw,priorityMap:K.pm||{},orderMap:K.om||{}},prioMod,started:!!s.mon.started,scarf:HAS(s.mon,'구애스카프'),tailwind:(objs['순풍']||0)>0,swamp:(objs['습원']||0)>0,spMul:SPM.v}});
   const rows=B().turnOrder(entries,{trick:((f.rooms||{})['트릭룸']||0)>0});
-  const swPur=(b.tstep&&b.swPur)||[];
+  /* 11-14 망령 「이건 또 뭔 지랄이야」(미사그 캠퍼스 TURN 5 · 오색동이): 교대 때 따라가때리기 차례를 처리하지 않고 넘어가도 「이미 행동」으로 순서에서 빠졌다 → 이번 턴에 실제로 기술을 낸 것(lastMove.turn)만 뺀다 */
+  const swPur0=(b.tstep&&b.swPur)||[];const purDone=mid=>{const lm=((b.mons||{})[mid]||{}).lastMove;return !!(lm&&+lm.turn===(+b.turn||0))};const swPur=swPur0.filter(purDone),swSkip=swPur0.filter(mid=>!purDone(mid));
   const order=rows.filter(r=>!swPur.includes(r.mon.id)).map(r=>{const K=KEYS[r.mon.id]||{};
    return {...(!r.change&&misagA1(b,r.mon)?{noact:misagA1(b,r.mon)}:{}),slot:r.slot,mid:r.mon.id,name:r.mon.name,side:r.mon.side,change:r.change,started:r.started,order:r.order,prio:r.prio,speed:r.speed,dice:r.dice,move:K.pn||'',targets:K.tg||[],pursuit:!!K.pn,pursuitSrc:K.psrc||'',pimm:K.pimm||'',ut:K.ut?1:0}});
   /* 추격: 교대하는 대상을 노리면 교대보다 먼저 때린다 */
-  const notes=[];if(((f.rooms||{})['트릭룸']||0)>0)notes.push('「트릭룸」이 시공간을 뒤틀었다! (스피드 역순)');for(const mid of swPur)notes.push(`${(b.mons[mid]||{}).name||'?'} — 교대 때 따라가때리기로 이미 행동`);
+  const notes=[];if(((f.rooms||{})['트릭룸']||0)>0)notes.push('「트릭룸」이 시공간을 뒤틀었다! (스피드 역순)');for(const mid of swPur)notes.push(`${(b.mons[mid]||{}).name||'?'} — 교대 때 따라가때리기로 이미 행동`);for(const mid of swSkip)notes.push(`${(b.mons[mid]||{}).name||'?'} — 교대 때 따라가때리기를 하지 않아 평소 차례로 행동`);
   for(const m of iceUsed)notes.push(`${m.name} 「아이스번」 — 이번 기술 우선도 −1`);notes.push(...spNotes);
   /* 따라가때리기: 교대하려는 대상을 노리면 그 교대 바로 앞으로 끌어당기고, 그 공격은 위력 2배 (공격 창이 pursuitHit 를 본다) */
   const purs=[];for(const o of order.filter(z=>z.pursuit))for(const t of o.targets){const v=order.find(z=>z.slot===t&&(z.change||(z.ut&&order.indexOf(z)<order.indexOf(o))));if(!v)continue;   /* 10-24 제보: 「유턴」으로 빠지려는 대상도 — 먼저 움직인 유턴 포켓몬이 빠지기 직전에 때린다 */

@@ -409,7 +409,8 @@ function gmKey(){return acctKey()||'gm'}
 function gmFairOn(){const rp=(ST.state||{}).rp||{};return ST.role==='gm'&&(rp.gmHands===false||!!((rp.gmFair||{})[gmKey()]))}
 function lineAcct(d){if(d.gmAcct!=null)return d.gmAcct;try{const B0=(ST.state||{}).battle||{};const m=d.mid&&(B0.mons||{})[d.mid];const t=m&&(B0.trainers||{})[m.tid];return (t&&t.by==='gm'&&t.byAcct)||''}catch(e){return ''}}
 function otherGm(d){if(d.to!=='gm')return false;const a=lineAcct(d);return !!a&&a!==gmKey()}
-function gmFairHide(d){return gmFairOn()&&!!(d.priv||d.gmPriv)&&!!d.to&&(d.to!=='gm'||otherGm(d))}
+/* 11-14 18:04 망령 「배틀 중 PL 권한은 GM 으로 접속해도 PL 처럼 PVP 하려고 있는 버튼」 · B 「PL 권한은 GM 눈을 가린다」: PL 권한인 GM 은 자기가 불러온 파티(gmAcct = 내 키)의 비공개 줄만 본다 — 플레이어 자리 몫 · 다른 GM 몫 · 주인을 모르는 GM 몫은 숨긴다 */
+function gmFairHide(d){if(!gmFairOn()||!(d.priv||d.gmPriv)||!d.to)return false;if(d.to!=='gm')return true;return lineAcct(d)!==gmKey()}
 function wVis(d,raw){d=d||{};if(ST.role==='gm')return raw||!gmFairHide(d);const me=ST.seat||'';if(me&&d.to===me)return true;if(d.priv||d.gmPriv)return false;if(me&&d.from===me)return true;return !ST.asPlGm}
 async function pollWhispers(){try{const ws=await DBS().whispers(ST.room,ST.secret,ST.lastWhisper);if(!ws||!ws.length)return;const me=ST.role==='gm'?'gm':ST.seat;ws.forEach(w=>{ST.lastWhisper=Math.max(ST.lastWhisper,w.id);if(!wVis(w.data,1))return;   /* 11-07 숨은 소지품 · 특성 줄: 보낸 쪽(상대)에겐 안 보인다 */if(!ST.log.find(x=>x.id===w.id))ST.log.push(w)});ST.log.sort((a,b)=>a.id-b.id);renderLog(true)}catch(e){}}
 
@@ -1007,7 +1008,7 @@ async function loadFromRoster(tid,side){
  /* 불러온 사람 = 지시하는 사람 (by). GM 이 불러온 파티는 PL 권한(GM 불간섭) 중에도 GM 이 지시·진행한다 */
  trainer.by=ST.role==='gm'?'gm':ST.seat;
  /* 10-27 망령: GM 이 여럿(다른 계정 · 다른 닉)이면 PL 권한 중엔 자기가 불러온 트레이너만 다룬다 — 불러온 GM 을 적어 둔다 */
- if(ST.role==='gm'){const k=acctKey();if(k)trainer.byAcct=k;else delete trainer.byAcct}else delete trainer.byAcct;
+ if(ST.role==='gm'){trainer.byAcct=acctKey()||'gm'}else delete trainer.byAcct;   /* 11-14: 키가 없는 GM 도 'gm' 으로 적는다 (PL 권한 비공개 줄 주인 판단) */
  const b0=JSON.parse(JSON.stringify(B())),nb=JSON.parse(JSON.stringify(b0));nb.sides=nb.sides||{left:{trainers:[]},right:{trainers:[]}};nb.sides.left=nb.sides.left||{trainers:[]};nb.sides.right=nb.sides.right||{trainers:[]};
  nb.trainers=nb.trainers||{};nb.mons=nb.mons||{};nb.turn=nb.turn||0;nb.phase=nb.phase||0;nb.mode=nb.mode||2;nb.field=nb.field||{};nb.cmds=nb.cmds||{};nb.order=nb.order||[];
  for(const s of ['left','right'])nb.sides[s].trainers=nb.sides[s].trainers.filter(x=>x!==trainer.id);
