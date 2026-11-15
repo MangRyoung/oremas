@@ -428,21 +428,27 @@ window.OM_DG_UI=(()=>{
   /* 통로로 안 이어진 방 알림 */const seen=new Set([st]),q=[st];const adj={};Object.keys(l).forEach(k=>{const [a,b]=k.split('~');(adj[a]=adj[a]||[]).push(b);(adj[b]=adj[b]||[]).push(a)});while(q.length){const c=q.shift();for(const n of adj[c]||[])if(!seen.has(n)){seen.add(n);q.push(n)}}
   const lone=Object.keys(r).filter(id=>!seen.has(id));if(lone.length)warn.push(`시작 방에서 못 가는 방 ${lone.length}개: ${lone.map(id=>r[id].n).join(', ')}`);
   return d}
- /* 11-16 망령 「필드 효과 칸 따로 — 필드 효과는 필드 효과지」: d.fe = {w 날씨, t 필드, rooms[룸], etc[필드의 상태], name, eff}
-    미궁 포텐셜과 따로(템플릿 개수에 안 셈). 이 던전의 조우마다 배틀 시작 때 필드에 깔린다(계속 = 1000턴) · 이름 · 효과 글은 로그로 (GM 이 손으로) */
- const FE_W=['맑음','비','모래바람','싸라기눈','눈','짙은안개','밤','별하늘','큰가뭄','폭우','난기류','극한','깊은밤'],FE_T=['그래스필드','일렉트릭필드','미스트필드','사이코필드'],FE_R=['트릭룸','매직룸','원더룸','블랙룸'],FE_E=['중력','물놀이','흙놀이'];
- function feNorm(x){if(!x||typeof x!=='object')return null;const o={};if(FE_W.includes(x.w))o.w=x.w;if(FE_T.includes(x.t))o.t=x.t;
-  const R1=(Array.isArray(x.rooms)?x.rooms:[]).filter(v=>FE_R.includes(v));if(R1.length)o.rooms=[...new Set(R1)];const E1=(Array.isArray(x.etc)?x.etc:[]).filter(v=>FE_E.includes(v));if(E1.length)o.etc=[...new Set(E1)];
-  const nm=sTxt(x.name||'',30).replace(/[『』]/g,''),ef=String(x.eff||'').slice(0,1200).trim();if(nm)o.name=nm;if(ef)o.eff=ef;return Object.keys(o).length?o:null}
- const feText=fe=>fe?[fe.name&&'『'+fe.name+'』',fe.w&&'날씨 '+fe.w,fe.t,...(fe.rooms||[]),...(fe.etc||[])].filter(Boolean).join(' · '):'';
- /* 조우 배틀의 처음 필드 (app.js encounter) */
- function feField(did){const d=all()[did];const fe=d&&feNorm(d.fe);if(!fe)return null;const K=1000;const f={weather:{type:fe.w||'',count:fe.w?K:0},terrain:{type:fe.t||'',count:fe.t?K:0},rooms:{},etc:{},objects:{left:{},right:{}}};
-  (fe.rooms||[]).forEach(r=>f.rooms[r]=K);(fe.etc||[]).forEach(r=>f.etc[r]=K);return {field:f,fe,text:feText(fe)}}
- function feEdHTML(d){const fe=feNorm(d.fe)||{};const ch=(g,L)=>L.map(v=>`<label class="dg-chk"><input type="checkbox" data-dgfe="${g}" value="${H(v)}" ${(fe[g]||[]).includes(v)?'checked':''}> ${H(v)}</label>`).join('');
-  return `<div class="dg-febox"><b>⛰ 필드 효과 <small class="dim">이 던전의 조우마다 배틀 시작 때 깔린다 · 미궁 포텐셜과 따로</small></b>
-   <div class="dg-fer"><label>날씨<select data-dgfe="w"><option value="">없음</option>${FE_W.map(v=>`<option ${fe.w===v?'selected':''}>${H(v)}</option>`).join('')}</select></label><label>필드<select data-dgfe="t"><option value="">없음</option>${FE_T.map(v=>`<option ${fe.t===v?'selected':''}>${H(v)}</option>`).join('')}</select></label>
-   <span class="dg-fec">${ch('rooms',FE_R)}${ch('etc',FE_E)}</span></div>
-   <div class="dg-fer"><label>이름<input data-dgfe="name" value="${H(fe.name||'')}" placeholder="예: 젖은 지하"></label><label style="flex:2">효과 (글 · GM 이 처리)<input data-dgfe="eff" value="${H(fe.eff||'')}" placeholder="예: 땅 타입 기술 위력 ×0.8"></label></div></div>`}
+ /* 11-16 망령 「필드 효과 칸 따로 — 필드 효과는 필드 효과지」 → 08:51 「트레이너가 전개하는 필드랑 비슷한 것」: d.fe = 필드 전개 칸 하나
+    {type 0 필드|1 스타디움|2 이계, name, loc, img, eff(한 줄에 하나), count(지속 턴 · 0/−1 = 무한), color(타입 en), h 0|1|2, auto(필드 구문 — 있으면 그대로)}
+    미궁 포텐셜과 따로(템플릿 개수에 안 셈). 이 던전의 조우마다 배틀 시작 때 야생 쪽이 전개한 것처럼 state.battle.field.stage 로 깔린다(stage_ui put 과 같은 꼴) */
+ const FE_K=['필드','스타디움','이계'],FE_TY=[['','—'],['Normal','노말'],['Fire','불꽃'],['Water','물'],['Electric','전기'],['Grass','풀'],['Ice','얼음'],['Fighting','격투'],['Poison','독'],['Ground','땅'],['Flying','비행'],['Psychic','에스퍼'],['Bug','벌레'],['Rock','바위'],['Ghost','고스트'],['Dragon','드래곤'],['Dark','악'],['Steel','강철'],['Fairy','페어리']];
+ function feNorm(x){if(!x||typeof x!=='object')return null;const nm=sTxt(x.name||'',30).replace(/[《》『』]/g,'').replace(/^(이계|필드|스타디움)\//,'');if(!nm)return null;
+  const o={type:[0,1,2].includes(+x.type)?+x.type:0,name:nm};const loc=sTxt(x.loc||'',40),img=sTxt(x.img||'',600),eff=String(x.eff||'').slice(0,1500).trim();if(loc)o.loc=loc;if(img)o.img=img;if(eff)o.eff=eff;
+  const c=Math.round(+x.count);if(c>0)o.count=Math.min(c,99);if(FE_TY.some(t=>t[0]&&t[0]===x.color))o.color=x.color;if([1,2].includes(+x.h))o.h=+x.h;
+  if(x.auto&&typeof x.auto==='object'&&JSON.stringify(x.auto).length<6000)o.auto=JSON.parse(JSON.stringify(x.auto));return o}
+ const feKey=fe=>FE_K[fe.type||0]+'/'+fe.name;
+ const feText=fe=>fe?`《${feKey(fe)}》${fe.count?' · '+fe.count+'턴':' · 무한'}`:'';
+ /* 조우 배틀의 처음 필드 전개 (app.js encounter) — tid = 야생 트레이너 */
+ function feField(did,tid,tname){const d=all()[did];const fe=d&&feNorm(d.fe);if(!fe)return null;const owner=tname||d.o||d.n||'던전';
+  const s={type:fe.type,name:fe.name,loc:fe.loc||'',img:fe.img||'',eff:fe.eff||'',color:fe.color||'',owner,count:fe.count>0?fe.count:1000,src:'d:'+did,tid:tid||'',at:Date.now()};if(fe.auto)s.auto=fe.auto;if(fe.h&&tid){s.h=fe.h;s.hTid=tid}
+  const lines=[`◆ ${owner}의 《${feKey(fe)}》 전개 (던전 필드 효과)${fe.loc?' — '+fe.loc:''}${s.count>=1000?' · 무한':' · '+s.count+'턴'}`,...String(fe.eff||'').split('\n').map(x=>x.trim()).filter(Boolean).map(l=>'· '+l)];
+  if(s.h)lines.push(`◆ H — ${owner} · ${s.h===1?'받지 않음 (그 파티는 이 필드의 효과를 받지 않는다)':'상대 무효 (그 상대가 받는 효과는 무효 — H 편만 받는다)'}`);
+  return {stage:s,fe,lines}}
+ function feEdHTML(d){const fe=feNorm(d.fe)||{type:0};const opt=(L,v)=>L.map(([k,n])=>`<option value="${H(k)}" ${String(v??'')===String(k)?'selected':''}>${H(n)}</option>`).join('');
+  return `<div class="dg-febox"><b>⛰ 필드 효과 <small class="dim">트레이너의 필드 전개와 같은 꼴 · 이 던전의 조우마다 배틀 시작 때 야생 쪽이 전개 · 미궁 포텐셜과 따로 · 이름을 비우면 없음</small></b>
+   <div class="dg-fer"><label>종류<select data-dgfe="type">${opt(FE_K.map((k,i)=>[i,k]),fe.type||0)}</select></label><label style="flex:2">이름<input data-dgfe="name" value="${H(fe.name||'')}" placeholder="예: 젖은 지하 수로"></label><label>지역<input data-dgfe="loc" value="${H(fe.loc||'')}" placeholder="예: 론디니움"></label></div>
+   <div class="dg-fer"><label>지속 턴<input type="number" min="0" max="99" data-dgfe="count" value="${H(fe.count||'')}" placeholder="비우면 무한"></label><label>타입 색<select data-dgfe="color">${opt(FE_TY,fe.color||'')}</select></label><label>H<select data-dgfe="h">${opt([[0,'없음'],[1,'야생은 효과를 받지 않음'],[2,'야생의 상대가 받는 효과는 무효']],fe.h||0)}</select></label><label style="flex:2">배경 (주소 · 배경 이름)<input data-dgfe="img" value="${H(fe.img||'')}"></label></div>
+   <label>효과 (한 줄에 하나)<textarea data-dgfe="eff" rows="3">${H(fe.eff||'')}</textarea></label>${fe.auto?'<small class="dim">⚙ 필드 구문 있음 (JSON 으로 들어온 것 — 그대로 씀)</small>':''}</div>`}
  function dgOut(d){const r={};for(const [id,x] of Object.entries(R(d))){const o=Object.assign({},x);delete o.c;delete o.cs;delete o.ru;if(o.e&&!o.w){try{const w=wOut(o.e);if(w)o.w=w}catch(e){}}r[id]=o}const o={n:d.n||'',st:d.st,r,l:Object.assign({},d.l||{})};for(const f of ['o','a','d','wn','noal','src','aw','alo','gim','mq','depth','fe'])if(d[f]!=null&&d[f]!=='')o[f]=d[f];return o}   /* 10-31: 야생 시트도 w 로 같이 내보낸다 */
  async function dgImport(txt){let j;try{j=JSON.parse(String(txt||'').trim())}catch(e){throw new Error('JSON 을 읽지 못했다 — '+e.message)}
   const list=Array.isArray(j)?j:(j&&Array.isArray(j.dungeons)?j.dungeons:[j]);if(!list.length)throw new Error('비어 있다');if(list.length>20)throw new Error('한 번에 20개까지');
@@ -493,8 +499,8 @@ window.OM_DG_UI=(()=>{
   box.querySelectorAll('[data-e]').forEach(b=>{if(b.type==='file'){b.onchange=()=>edAct(b.dataset.e,b);return}b.onclick=()=>edAct(b.dataset.e,b)});
   box.querySelectorAll('[data-dgsel]').forEach(s=>s.onchange=()=>{DG.ed=s.value;DG.edSel='';DG.edFrom='';edDraw()});
   box.querySelectorAll('[data-dgm]').forEach(i=>i.onchange=()=>{const d=edD();if(d)upd({[P0(d.id)+i.dataset.dgm]:i.value.trim().slice(0,60)||null})});
-  {const fb=box.querySelector('.dg-febox');if(fb)fb.querySelectorAll('[data-dgfe]').forEach(i=>i.onchange=()=>{const d=edD();if(!d)return;const q=k=>fb.querySelector(`[data-dgfe="${k}"]`);const L=g=>[...fb.querySelectorAll(`input[data-dgfe="${g}"]:checked`)].map(x=>x.value);
-   const fe=feNorm({w:q('w').value,t:q('t').value,rooms:L('rooms'),etc:L('etc'),name:q('name').value,eff:q('eff').value});upd({[P0(d.id)+'fe']:fe})})}   /* 11-16 필드 효과 */
+  {const fb=box.querySelector('.dg-febox');if(fb)fb.querySelectorAll('[data-dgfe]').forEach(i=>i.onchange=()=>{const d=edD();if(!d)return;const q=k=>fb.querySelector(`[data-dgfe="${k}"]`).value;const old=feNorm(d.fe)||{};
+   const fe=feNorm({type:q('type'),name:q('name'),loc:q('loc'),count:q('count'),color:q('color'),h:q('h'),img:q('img'),eff:q('eff'),auto:old.auto});upd({[P0(d.id)+'fe']:fe})})}   /* 11-16 필드 효과 */
   {const gb=box.querySelector('[data-dggo]');if(gb)gb.onclick=()=>{const d=edD();const G=window.OM_DG_GIM;if(d&&G)G.open(d.id);else A().toast('기믹 편집기를 못 불러왔다')}}
   box.querySelectorAll('[data-dgx]').forEach(i=>i.onchange=()=>{const d=edD();if(!d)return;const f=i.dataset.dgx;if(f==='wn')upd({[P0(d.id)+'wn']:+i.value===2?null:+i.value});if(f==='al')upd({[P0(d.id)+'noal']:i.checked?null:1})});
   box.querySelectorAll('[data-dgk]').forEach(i=>i.onchange=async()=>{const d=edD();if(!d||!R(d)[DG.edSel])return;const p=P0(d.id)+'r/'+DG.edSel+'/sk';const f=i.dataset.dgk;
