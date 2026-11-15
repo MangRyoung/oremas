@@ -372,7 +372,7 @@ window.OM_DG_UI=(()=>{
   const mons=w.mons.slice(0,6).filter(m=>m&&m.name).map(m=>{const b=(Array.isArray(m.base)?m.base:[]).slice(0,6).map(v=>clamp(Math.round(+v||0),1,255));while(b.length<6)b.push(60);
    const o={name:sTxt(m.name,30),t1:sTxt(m.t1||'-',8),t2:sTxt(m.t2||'-',8),base:b,ability:sTxt(m.ability||'',30),abilityEff:sTxt(m.abilityEff||'',600),item:sTxt(m.item||'',30),moves:(Array.isArray(m.moves)?m.moves:[]).slice(0,8).map(x=>sTxt(typeof x==='string'?x:x&&x.name,30)).filter(Boolean),pride:sTxt(m.pride||'C',4),dist:clamp(Math.round(+m.dist||0),-30,60),boss:!!m.boss,pots:(Array.isArray(m.pots)?m.pots:[]).slice(0,6).map(x=>sTxt(typeof x==='string'?x:x&&x.name,30).replace(/『|』/g,'')).filter(Boolean)};
    if(m.auto&&typeof m.auto==='object'&&JSON.stringify(m.auto).length<4000)o.auto=JSON.parse(JSON.stringify(m.auto));if(m.image&&/^https?:\/\//.test(String(m.image)))o.image=sTxt(m.image,600);
-   /* 11-04 『야생 포텐셜』 = 야생 포켓몬의 전용 (excl · exclX) — 던전 JSON 가져오기 · 내보내기에 싣는다 */{const ex=[m.excl,...(Array.isArray(m.exclX)?m.exclX:[])].filter(x=>x&&x.name).slice(0,6).map(x=>{const q={name:sTxt(x.name,30).replace(/『|』/g,''),eff:String(x.eff||'').slice(0,1200)};return q});if(ex.length){o.excl=ex[0];if(ex.length>1)o.exclX=ex.slice(1)}}
+   /* 11-04 『야생 포텐셜』 = 야생 포켓몬의 전용 (excl · exclX) — 던전 JSON 가져오기 · 내보내기에 싣는다 */{const ex=[m.excl,...(Array.isArray(m.exclX)?m.exclX:[]),m.wp,...(Array.isArray(m.gye)?m.gye:[])].filter(x=>x&&x.name).slice(0,8).map(x=>{const q={name:sTxt(x.name,30).replace(/『|』/g,''),eff:String(x.eff||'').slice(0,1200)};return q});if(ex.length){o.excl=ex[0];if(ex.length>1)o.exclX=ex.slice(1)}}
    if(!o.pots.some(x=>/^와일드( 보스)?$/.test(x)))o.pots.unshift(o.boss?'와일드 보스':'와일드');return o});
   return mons.length?{name:sTxt(w.name,40)||'야생',rank:['D','C','B','A'].includes(w.rank)?w.rank:'C',mons}:null}
  function wBuild(w,tid){const I=window.OM_IMPORT;if(!I||!I.trainer||!I.pokemon)throw new Error('가져오기 엔진(OM_IMPORT)이 없다');
@@ -437,6 +437,13 @@ window.OM_DG_UI=(()=>{
    if(ops.length){if(!await A().setMany(ops))throw new Error('야생 시트를 시트에 쓰지 못했다');warn.push(`야생 시트 ${nw}개를 시트 탭에 만들어 방에 배치했다`)}}
   if(!await upd(o))return null;return {n:list.length,last,warn}}
 
+ /* 11-15 망령 「제작기에서 PL 들도 던전 생성」: 제작기 「던전」 탭에서 만든 던전(공유 DB kind 'dungeon', data.d = 이 가져오기 형식)을 목록으로 불러온다 */
+ function mkListHTML(){const L=DG.mk;if(!L)return '<div class="dg-ed-ev" style="margin:0"><b>제작기에서 만든 던전</b> <span class="small dim">불러오는 중…</span></div>';
+  if(L.err)return `<div class="dg-ed-ev" style="margin:0"><b>제작기에서 만든 던전</b> <span class="small dim">못 읽었다 — ${H(L.err)}</span> <button class="btn xs ghost" data-e="mkre">다시</button></div>`;
+  const TN={s1:'사건 1',s2:'사건 2',s3:'사건 3'};
+  return `<div class="dg-ed-ev" style="margin:0"><b>제작기에서 만든 던전</b> <span class="small dim">${L.rows.length}개 · 제작기 「던전」 탭에서 만들고 고친다</span> <button class="btn xs ghost" data-e="mkre">새로 읽기</button>
+   ${L.rows.length?`<div style="display:flex;flex-direction:column;gap:4px;margin-top:6px">${L.rows.map(x=>{const d=x.data.d||{};const nr=Object.keys(d.r||{}).length;return `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b>${H(d.n||'이름 없는 던전')}</b><span class="small dim">${H(TN[x.data.tier]||'')} · 방 ${nr} · ${H(x.data.ownerName||'이름 없음')}</span><span class="sp"></span><button class="btn xs pri" data-e="mkimp" data-id="${H(x.id)}">가져오기</button></div>`}).join('')}</div>`:'<p class="small dim" style="margin:4px 0 0">아직 없다.</p>'}</div>`}
+ async function mkLoad(){DG.mk=null;edDraw();try{const rows=await window.OM_STORE.makerDocs('dungeon');DG.mk={rows:rows.filter(x=>x&&x.data&&x.data.d&&!x.data.del).sort((a,b)=>(b.data.at||0)-(a.data.at||0))}}catch(e){DG.mk={err:(e&&e.message)||String(e),rows:[]}}edDraw()}
  function edHTML(){const ds=all(),ids=Object.keys(ds);if(!ds[DG.ed])DG.ed=ids[0]||'';const d=edD();if(d&&!R(d)[DG.edSel])DG.edSel='';
   const r=d&&R(d)[DG.edSel],t=ty(r&&r.t);
   const head=`<div class="mhead"><h2>던전 관리</h2><span class="sp"></span><button class="btn ghost" data-e="close">닫기</button></div>`;
@@ -445,6 +452,7 @@ window.OM_DG_UI=(()=>{
   if(DG.imp)return head+top+`<div class="dg-ed-ev" style="margin-top:8px"><b>JSON 가져오기</b><p class="dg-help" style="margin:0">던전 시뮬 「자동 생성 → 웹툴로」 파일이나 「JSON 내보내기」로 받은 글을 붙여 넣는다. 여러 개면 배열 <code>[…]</code> 로. 새 던전으로 들어가고, 있던 던전은 그대로다.</p>
    <textarea id="dgImpTxt" rows="12" spellcheck="false" placeholder='{"n":"던전 이름","st":"entry","r":{"entry":{"n":"입구","t":"entry","x":95,"y":595}, …},"l":{"entry~b1":1, …}}' style="width:100%;font-family:ui-monospace,monospace;font-size:12px"></textarea>
    <div class="dg-acts"><label class="btn sm">파일 고르기 (.json)<input type="file" accept=".json,application/json,text/plain" data-e="impfile" hidden></label><span class="sp"></span><button class="btn sm ghost" data-e="impx">취소</button><button class="btn sm pri" data-e="impgo">가져오기</button></div>
+   ${mkListHTML()}
    <p class="dg-help" style="margin:0">받는 칸: 이름 n · 주인 o · 테마 a · 기한 d · 동행 수 wn · 경계도 끄기 noal · 시작 방 st · 방 r(이름 n · 종류 t · 좌표 x · y · GM 메모 m · 배경 b · 스킬 체크 sk · 휴식 rk · 단서 cl · 야생 e · 기습 eh · 공개 s) · 통로 l. 모르는 칸은 버리고, 좌표는 편집 판(1000×640) 안으로 맞춘다. 야생 무리(e)는 이 방 시트에 그 트레이너가 있을 때만 남긴다.</p></div>`;
   if(!d)return head+top+'<p class="small dim">새 던전을 만들거나 샘플 던전으로 시작해 봐.</p>';
   if(DG.exp)return head+top+`<div class="dg-ed-ev" style="margin-top:8px"><b>JSON 내보내기 · ${H(d.n||'')}</b><p class="dg-help" style="margin:0">다른 방의 「JSON 가져오기」에 붙여 넣으면 같은 던전이 생긴다. 플레이 기록(일행 위치 · 클리어 · 공개 · 경계도)은 빼고 내보낸다.</p>
@@ -504,7 +512,9 @@ window.OM_DG_UI=(()=>{
   if(k==='close'){A().closeModal();DG.edOpen=false;return A().renderScene()}
   if(k==='mode'){DG.edMode=b.dataset.v;DG.edFrom='';return edDraw()}
   if(k==='wmake'){const r=d&&R(d)[DG.edSel];if(!r||!r.w)return;const ops=[];let tid;try{tid=wMake(r.w,DG.edSel,ops)}catch(e){return A().toast('야생 시트를 못 만들었다 — '+e.message)}if(!await A().setMany(ops))return;await upd({[P0(d.id)+'r/'+DG.edSel+'/e']:tid,[P0(d.id)+'r/'+DG.edSel+'/w']:null});A().toast(`야생 시트를 만들었다 — ${r.w.name}`);return edDraw()}
-  if(k==='imp'){DG.imp=!DG.imp;DG.exp=false;return edDraw()}
+  if(k==='imp'){DG.imp=!DG.imp;DG.exp=false;if(DG.imp&&!DG.mk)mkLoad();return edDraw()}
+  if(k==='mkre')return mkLoad();
+  if(k==='mkimp'){const x=((DG.mk||{}).rows||[]).find(q=>q.id===b.dataset.id);if(!x)return;try{const res=await dgImport(JSON.stringify(x.data.d));if(!res)return;DG.imp=false;DG.ed=res.last;DG.edSel='';edDraw();A().toast(`「${x.data.d.n||'던전'}」 을 가져왔다${res.warn.length?' · 알림 '+res.warn.length+'개':''}`);if(res.warn.length)notice('[던전 가져오기] '+res.warn.join(' / '))}catch(e){A().toast(e.message||String(e))}return}
   if(k==='impx'){DG.imp=false;return edDraw()}
   if(k==='impfile'){const f=b.files&&b.files[0];if(!f)return;if(f.size>2e6)return A().toast('파일이 너무 크다 (2MB 까지)');try{const t=await f.text();const ta=$('#dgImpTxt');if(ta)ta.value=t}catch(e){A().toast('파일을 읽지 못했다')}return}
   if(k==='impgo'){const ta=$('#dgImpTxt');try{const res=await dgImport(ta?ta.value:'');if(!res)return;DG.imp=false;DG.ed=res.last;DG.edSel='';edDraw();
