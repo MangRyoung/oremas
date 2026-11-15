@@ -19,6 +19,14 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
  const mtys=mv=>ATY?[ATY]:(RM('블랙룸')&&mv.cat!=='변화'?['Ghost']:FN.skinOf(atk0,mv)?[FN.skinOf(atk0,mv).ty]:rndOf(mv)?[rndOf(mv)]:String(mv.type||'').split(/[()/,]/).map(t=>t.trim()).filter(Boolean).map(S.typeEn));
  const mv=o.mvObj||FN.MVS(atk0)[idx];if(!mv)return {skip:'기술 없음'};   /* 11-15 o.mvObj: 추가 행동처럼 기술 목록에 없는 기술 */
  /* 11-15 「연속 제한」(방어 기술 말고) — 웹툴 consecFail 과 같음 */{const cm=String(mv.eff||'').match(/「연속\s*제한\s*:\s*(실패\s*확률\s*증가|확정\s*실패)」/);const T1=+b.turn||0;if(cm&&!FN.protMove(mv)&&atk0.lastMove===mv.name&&+atk0.lastMoveT===T1-1){const k=Math.max(1,+((atk0.consec&&atk0.consec.name===mv.name)?atk0.consec.n:1));const ok=!/확정/.test(cm[1])&&rnd()<Math.pow(1/3,k);if(!ok){const why=`${atk0.name} 「${mv.name}」 — 연속으로 내보내 실패`;if(H.logOn)W.OM_APP.sysLog(`【공격】 ${why}`,'battle');return {mv:mv.name,lines:[why],hits:[],fail:why}}}}
+ /* 11-15 망령 「진서현 분석」: 기술 효과 글의 실패 조건이 시뮬 공격 길에 없었다 — 웹툴 openAttack(감우 55)과 같게: 나온 뒤 첫 기술 · 이번 턴 맞음 · 대상이 공격 안 함(기습) · 대상보다 늦음 · 「타입 : X」 이외(파동공진파) */
+ {const au=(FN.moveAuto&&FN.moveAuto(mv))||{};const T1=+b.turn||0;const d0=(()=>{const [sd,ar]=String((targets||[])[0]||'').split('_');return (FN.entered(b,sd)||{})[ar]||null})();let why='';
+  if(au.firstOnly&&atk0.lastMove)why='필드에 나와 처음 내보낸 기술이 아니라';
+  else if(au.failHit&&(+atk0.hitT===T1||(atk0.lastTaken&&atk0.lastTaken.hit&&+atk0.lastTaken.turn===T1)))why='이번 턴 공격을 받아';
+  else if(au.failNoAtk&&d0&&d0!==atk0&&FN.ordAtk&&!FN.ordAtk(b,d0))why=`${d0.name}이(가) 공격하지 않아`;
+  else if(au.failLate&&d0&&d0!==atk0&&FN.actedB4&&FN.actedB4(b,d0))why=`${d0.name}이(가) 먼저 행동해서`;
+  else if(au.onlyVs&&d0&&!(au.onlyVsL||[au.onlyVs]).some(t=>(FN.tysOf(d0)||[]).includes(t)))why=`${d0.name}이(가) 「${(au.onlyVsL||[au.onlyVs]).map(t=>S.typeKo(t)).join(' · ')}」 타입이 아니라`;
+  if(why){const w=`${atk0.name} 「${mv.name}」 — ${why} 실패`;if(H.logOn)W.OM_APP.sysLog(`【공격】 ${w}`,'battle');return {mv:mv.name,lines:[w],hits:[],fail:w}}}
  /* 11-15 날따름 · 끌어오기는 행동할 때 다시 본다 (웹툴 openAttack 3414 와 같음 — 지시 때 고른 대상보다 먼저) */if(FN.redirectOf&&targets&&targets.length<=1){try{const rd=FN.redirectOf(b,atk0,mv);if(rd&&rd.slot&&targets[0]!==rd.slot){targets=[rd.slot];if(H.logOn)W.OM_APP.sysLog(`${atk0.name}의 「${mv.name}」 대상이 ${rd.mon.name}(으)로 바뀌었다 — ${rd.e&&rd.e.name||'끌어오기'}`,'battle')}}catch(e){}}
  const out={mv:mv.name,lines:[],hits:[],fail:''};
  /* 행동 판정 (창의 「행동 판정」 칸 — 시뮬은 늘 켠다) */
@@ -197,7 +205,7 @@ async function applyHit(H,W,mid,rnd){const FN=H.fn,B=W.OM_BATTLE,OI=W.OM_ITEMS;c
  const after=FN.ctx().b.mons[mid];return {final:v,ko:!!after&&after.hp.cur<=0}}
 
 /* ===== 지시용 기대 대미지 (굴리지 않고 공격 창과 같은 보정으로, 주사위 중간값 · 급소 없음 · 명중 확률 곱) ===== */
-function estimate(H,W,atk,def,mv,o){o=o||{};const FN=H.fn,B=W.OM_BATTLE,FX=W.OM_FX,OI=W.OM_ITEMS,S=W.OM_STATS;if(!mv||mv.cat==='변화'||(!(+mv.pow>0)&&!H.fn.specialPowFor(mv.name,atk)))return 0;   /* 11-15: 위력이 정해지지 않는 기술(헤비봄버 · 자이로볼 …)은 specialPowFor 로 — 전엔 0 으로 보고 한 번도 안 골랐다 */
+function estimate(H,W,atk,def,mv,o){o=o||{};const FN=H.fn,B=W.OM_BATTLE,FX=W.OM_FX,OI=W.OM_ITEMS,S=W.OM_STATS;if(!mv||mv.cat==='변화'||(!(+mv.pow>0)&&!H.fn.specialPowFor(mv.name,atk)))return 0;{const au=(H.fn.moveAuto&&H.fn.moveAuto(mv))||{};if(au.onlyVs&&def&&!(au.onlyVsL||[au.onlyVs]).some(t=>(H.fn.tysOf(def)||[]).includes(t)))return 0}   /* 11-15 「타입 : X」 이외면 실패 — 예측도 0 */   /* 11-15: 위력이 정해지지 않는 기술(헤비봄버 · 자이로볼 …)은 specialPowFor 로 — 전엔 0 으로 보고 한 번도 안 골랐다 */
  const b=FN.ctx().b;const f=FN.fieldOf(b);const RM=k=>+((f.rooms||{})[k]||0)>0;
  const sk=FN.skinOf(atk,mv);const T0=RM('블랙룸')?'Ghost':((sk||{}).ty||mv.typeEn);const moveTypes=RM('블랙룸')?['Ghost']:sk?[sk.ty]:String(mv.type||'').split(/[()/,]/).map(t=>t.trim()).filter(Boolean).map(S.typeEn);
  if(OI&&OI.immune(def,moveTypes))return 0;

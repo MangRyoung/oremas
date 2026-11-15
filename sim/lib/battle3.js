@@ -266,7 +266,7 @@ async function runBattle(W,opt){
   /* 11-15: 그때그때 타입 — 고유 「턴 종료 시까지 아군을 대상의 「타입 1」로」(찰나의 모작): 크게 위협받는 아이가 그 상대의 타입1 이 되면 그 공격이 덜 들어갈 때 */
   const effV=(mt,tys)=>{try{return +W.OM_BATTLE.effectiveness([mt],{types:tys}).value}catch(e){return 1}};
   for(const q of (H.fn.uniqList||H.get('uniqList'))(t)){const e=String(q.p.eff||'');if(!/아군을\s*대상의\s*「\s*타입\s*1\s*」\s*로\s*만든다/.test(e)||(q.left!==null&&q.left<=0))continue;const k='u|'+tid+'|'+q.p.name;if(PU[k]===T0||PU[k]===T0-1&&/【\s*탈진\s*】/.test(e))continue;
-   let bt=null;for(const x of mine){const th=topThreat(P2,x);if(!th.mv||!th.f||th.v<x.hp.cur*0.5)continue;const mt=th.mv.typeEn||th.mv.type;const t1=(th.f.types||[])[0];if(!t1||t1==='-')continue;const now=effV(mt,(x.types||[]).filter(z=>z&&z!=='-')),nw=effV(mt,[t1]);if(nw<now){const g=(now-nw)*th.v/Math.max(1,x.hp.cur);if(!bt||g>bt.g)bt={x,f:th.f,g}}}
+   let bt=null;for(const x of mine){if(FN.syncLock&&FN.syncLock(C(),x,e))continue;   /* 11-15 【동조】 — 같은 역할 대치가 있는 아이만 */const th=topThreat(P2,x);if(!th.mv||!th.f||th.v<x.hp.cur*0.5)continue;const mt=th.mv.typeEn||th.mv.type;const t1=(th.f.types||[])[0];if(!t1||t1==='-')continue;const now=effV(mt,(x.types||[]).filter(z=>z&&z!=='-')),nw=effV(mt,[t1]);if(nw<now){const g=(now-nw)*th.v/Math.max(1,x.hp.cur);if(!bt||g>bt.g)bt={x,f:th.f,g}}}
    if(!bt)continue;PU[k]=T0;H.pickHint=bt.f.id;try{await (H.fn.fireSpecial||H.get('fireSpecial'))(tid,bt.x.id,'uq',q.p.name,'free');await flush(1)}catch(err){}H.pickHint=null}
   /* 고유 */
   /* 11-15 10:50 로르 『무시할 수 없는 독창성』 「【자동】【탈진】/아군이 내보내는 타입 비일치 「혼돈의물감」의 대미지가 2배」: 계기 말 없이 기술 · 비자속으로만 묶인 강화는 웹툴에 「낼 때」 걸이가 없다 — 이번 턴 그 기술을 내는 아군이 있을 때 고른다 (탈진은 연달아 안 씀) */
