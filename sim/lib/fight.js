@@ -137,6 +137,7 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
  {const RS={mv,targets:res,moveTypes};const ctOf=()=>!!(W.OM_APP.contactOf&&W.OM_APP.contactOf(mv)==='O');
   try{const a2=FN.ctx().b.mons[mid];const T=+FN.ctx().b.turn||0;if(a2&&a2.entry&&a2.hp.cur>0&&FX&&FN.ACTFX)for(const p of FN.potSrc(a2)){if(!p||!p.name||p.ph||!/자신이\s*행동한\s*(?:뒤|후)/.test(String(p.eff||'')))continue;const k=mid+'|'+p.name;if(FN.ACTFX[k]===T)continue;
     const au=FX.autoOf(a2,'pot',p.name);if(!au||!au.ops||!au.ops.length||au.manual||FN.limManual(a2,'pot',p.name,p.eff))continue;FN.ACTFX[k]=T;await FN.fireAuto(mid,'pot',p.name,{quiet:true,noRoll:true,head:`【포텐셜】 ${a2.name} 『${p.name}』 — 행동한 뒤 자동`})}}catch(e){}
+  try{if(FN.coverFire)await FN.coverFire(mid,RS)}catch(e){}
   try{if(FN.hitAuto)await FN.hitAuto(mid,RS)}catch(e){}
   try{if(FN.evReact)for(const r of res){if(!r||!r.acc||!r.acc.hit||!r.def||r.def.id===mid)continue;const lh=(FN.ctx().b.mons[r.def.id]||{}).lastHit;await FN.evReact('hit',{mid,tgt:r.def.id,dmg:lh&&lh.fromId===mid?+lh.total||0:0,mv:mv.name,mt:moveTypes||[],cat:mv.cat||'',ct:ctOf(),eff:r.eff?+r.eff.value:1,crit:!!(r.hits||[]).some(h=>h&&h.v===2),key:mv.name+'@'+r.def.id+'@'+(+FN.ctx().b.turn||0)+'@'+rnd()})}}catch(e){}
   try{if(FN.evReact)for(const r of res){if(!r||!r.acc||!r.acc.prot||!r.def||r.def.id===mid)continue;await FN.evReact('guard',{mid,tgt:r.def.id,mv:mv.name,mt:moveTypes||[],cat:mv.cat||'',ct:ctOf(),key:mv.name+'@g'+r.def.id+'@'+rnd()})}}catch(e){}
@@ -216,7 +217,7 @@ function estimate(H,W,atk,def,mv,o){o=o||{};const FN=H.fn,B=W.OM_BATTLE,FX=W.OM_
    C(단순): 상태 이상 걸기 · 지친 아이 회복 · 1턴 자기 강화 · 자기 타입을 살리는 날씨/필드. B 이상: + 기술 방어 · 벽 · 순풍 · 상대 약화 · 혼란 · 설치기 */
 const MAJOR=['Poison','Toxic','Burn','Paralysis','Freeze','Sleep'];
 function statusPick(H,W,c){const FN=H.fn,MA=W.OM_MOVEAUTO,B=W.OM_BATTLE;const {m,fs}=c;let pol=c.pol;if(c.ai&&pol==='D')pol='C';/* 11-15 새 로직: D = C (실수 턴은 battle3 이 옛 고르기로) */if(pol==='D'||pol==='wild')return null;const gateC=pol==='C'&&!c.ai;/* 새 로직의 C 는 판 깔기(벽 · 순풍 · 오로라베일 · 트릭룸 · 설치기)를 쓴다 — 지침 2-12 ② */const b=FN.ctx().b;const f=FN.fieldOf(b);const turn=+b.turn||1;
- const L=FN.MVS(m).map((mv,i)=>Object.assign({},mv,{_i:i})).filter(mv=>mv&&mv.cat==='변화'&&!mv.virt&&(!mv.ext||/^(도우미|쉬프트업)$/.test(String(mv.name||'').trim())));if(!L.length)return null;   /* 11-15 05시: 『어시스트』 기능 확장 도우미 · 쉬프트업도 */
+ const L=FN.MVS(m).map((mv,i)=>Object.assign({},mv,{_i:i})).filter(mv=>mv&&mv.cat==='변화'&&!mv.virt&&(!mv.ext||/^(도우미|쉬프트업|감싸기)$/.test(String(mv.name||'').trim())));if(!L.length)return null;   /* 11-15 05시: 『어시스트』 기능 확장 도우미 · 쉬프트업도 */
  const hpR=m.hp.cur/m.hp.max;const danger=c.dangerOf(m);const safe=danger<m.hp.cur*0.4;const main=(m.stats[1]>=m.stats[3])?'attack':'specialattack';const mtypes=FN.tysOf(m);
  const best=c.best;const bestFrac=best?Math.min(1,best.v/Math.max(1,best.tg.hp.cur)):0;
  const out=[];const T=FN.ctx().b.trainers[m.tid]||{};
@@ -229,6 +230,8 @@ function statusPick(H,W,c){const FN=H.fn,MA=W.OM_MOVEAUTO,B=W.OM_BATTLE;const {m
  const support=(mv,P)=>{const e=String(mv.eff||'');
   /* 11-15 05시 도우미: 아군의 가장 센 공격이 ×1.5 로 늘어나는 몫(쓰러뜨리기까지) — 내 공격보다 크면 */
   if(/「도우미」\s*상태로/.test(e)){let bt=null;for(const al of c.allies){if(!al||!al.entry||al.hp.cur<=0)continue;const ja=c.J&&c.J.get?c.J.get(al.id):null;if(ja&&(ja.prot||ja.sw||!ja.mv||ja.mv.cat==='변화'))continue;/* 짝이 이번 턴 공격할 때만 · 짝이 고른 기술 · 대상으로 */for(const q of (ja?[ja.mv]:FN.MVS(al))){if(!q||q.cat==='변화'||!(+q.pow>0))continue;for(const f of (ja&&ja.tg&&fs.includes(ja.tg)?[ja.tg]:fs)){const v=c.expect(al,q,f);const fr=v/Math.max(1,f.hp.cur);const g=Math.min(1,1.5*fr)-Math.min(1,fr);if(!bt||g>bt.g)bt={al,g}}}}return bt&&bt.g>0.15?{mv,tg:bt.al,score:bt.g,why:'도우미'}:'skip'}
+  /* 11-15 감싸기(「유사 방어」 · 우선도 +3 · 연속 제한): 짝이 이번 턴 쓰러질 것 같은데 반감이면 버틸 때 — 짝이 방어를 고른 턴은 빼고 */
+  if(/「\s*유사\s*방어\s*」\s*상태로/.test(e)){if(lastSame(mv))return 'skip';let bt=null;for(const t of thr){if(t.x===m)continue;const ja=c.J&&c.J.get?c.J.get(t.x.id):null;if(ja&&(ja.prot||ja.sw))continue;if(t.fr>=1&&t.fr*0.5<1){const sc=0.45+0.2*Math.min(1,t.x.hp.cur/t.x.hp.max);if(!bt||sc>bt.sc)bt={x:t.x,sc}}}return bt?{mv,tg:bt.x,score:bt.sc,why:'감싸기'}:'skip'}
   /* 쉬프트업: 아군이 이 턴 스피드 ×1.5 면 자기를 크게 노리는 상대보다 먼저 움직일 때 */
   if(/아군의\s*「스피드」를\s*강화\(1\.5배\)/.test(e)){if(lastSame(mv))return 'skip';let bt=null;for(const t of thr){if(t.x===m||t.fr<0.6)continue;const sx=+c.spd(t.x),sf=+c.spd(t.f);if(sx<sf&&sx*1.5>sf){const sc=0.2+0.3*Math.min(1,t.fr);if(!bt||sc>bt.sc)bt={x:t.x,sc}}}return bt?{mv,tg:bt.x,score:bt.sc,why:'쉬프트업'}:'skip'}
   if(/「대역인형」을\s*소환/.test(e)){if((m.states||{}).Substitute||hpR<=0.5||danger>=m.hp.cur*0.7)return 'skip';return {mv,tg:m,score:0.28+(fs.some(foeStatus)?0.12:0),why:'대타출동'}}

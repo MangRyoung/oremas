@@ -85,6 +85,8 @@ window.OM_BATTLE=(()=>{
         critGen(1.5|2), critDamage(0 기본/1 ×1.5/2 ×2/3 고정 2.5), lifeOrb, burnGuts, hits:[1|2|0 ...] (hit_log), powStep(타마다 위력 증가) } */
  function damage(atk,def,move,o){
   o=o||{};
+  /* 11-15 망령 「이윽고 당신이 되는 이야기는 코유키 핵심」: move.bestCat = 「물리기」와 「특수기」 중 더 높은 대미지를 주는 쪽이 된다 — 둘 다 계산해 큰 쪽(결과 cat 이 바뀐 분류) */
+  if(move&&move.bestCat&&(move.cat==='물리'||move.cat==='특수')&&!o._bc&&!o.atkStat&&!o.defStat){const o2=Object.assign({},o,{_bc:1});const a=damage(atk,def,Object.assign({},move,{cat:'물리'}),o2),b=damage(atk,def,Object.assign({},move,{cat:'특수'}),o2);const pick=(+b.total||0)>(+a.total||0)?b:a;pick.bestCat=1;return pick}
   const cat=move.cat==='특수'?'special':'physical';
   const atkStat=o.atkStat||(cat==='special'?'specialattack':'attack');
   const defStat=o.defStat||(cat==='special'?'specialdefense':'defense');

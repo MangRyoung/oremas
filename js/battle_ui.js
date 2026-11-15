@@ -249,7 +249,10 @@ window.OM_BATTLE_UI=(()=>{
  function moveAuto(mv){if(!MA()||!FX())return null;try{return MA().parse(mv)}catch(e){return null}}
  /* 10-22 망령: 발버둥 — 기술 목록 끝에 늘 붙는 칸 (「망각」 · 쓸 기술이 없을 때). 번호 = 원래 기술 수 다음 */
  let STRUG=null;const XMV={};   /* 11-03 「기술사용」 구문: 공격 창을 연 동안만 그 기술을 기술 목록 끝에 붙인다 */
- function MVS(m){const a=teraBlastL(m,(m&&m.moves)||[]);const X=extMoves(m).concat(m&&XMV[m.id]?[XMV[m.id]]:[]);if(a.some(x=>x&&x.name==='발버둥'))return X.length?[...a,...X]:a;if(!STRUG)STRUG=Object.assign(window.OM_IMPORT?window.OM_IMPORT.move('발버둥',false):{name:'발버둥',cat:'물리',pow:50,acc:0,range:'1체',type:'-',typeEn:'-'},{virt:1});return [...a,STRUG,...X]}
+ /* 11-15: 「아군이 「기능 확장」을 내보낼 때 「물리기」와 「특수기」 중 내보냈을 때 더 높은 대미지를 주는 쪽이 된다」(오토나시 고유 『이윽고 당신이 되는 이야기』) — 같은 편 트레이너 고유 · 그 포켓몬 포텐셜에서 찾는다 */
+ const BESTCAT_RE=/「\s*기능\s*확장\s*」\s*을\s*내보낼\s*때\s*「\s*물리기\s*」\s*와\s*「\s*특수기\s*」\s*중[^.]*더\s*높은\s*대미지/;
+ function bestCatOn(m){try{if(!m||!m.tid)return null;const b=(A().ST.state||{}).battle||{};const T=b.trainers||{};const sd=(T[m.tid]||{}).side;for(const t of Object.values(T)){if(!t||(sd&&t.side!==sd&&t.id!==m.tid))continue;const u=(t.unique||[]).find(x=>x&&BESTCAT_RE.test(String(x.eff||'')));if(u)return u.name}const p=potSrc(m).find(q=>q&&!q.ph&&BESTCAT_RE.test(String(q.eff||'')));return p?p.name:null}catch(e){return null}}
+ function MVS(m){const a=teraBlastL(m,(m&&m.moves)||[]);const bc=bestCatOn(m);const X=extMoves(m).concat(m&&XMV[m.id]?[XMV[m.id]]:[]).map(x=>bc&&x&&(x.cat==='물리'||x.cat==='특수')?Object.assign({},x,{bestCat:bc}):x);if(a.some(x=>x&&x.name==='발버둥'))return X.length?[...a,...X]:a;if(!STRUG)STRUG=Object.assign(window.OM_IMPORT?window.OM_IMPORT.move('발버둥',false):{name:'발버둥',cat:'물리',pow:50,acc:0,range:'1체',type:'-',typeEn:'-'},{virt:1});return [...a,STRUG,...X]}
  /* 10-27 망령: 트레이너가 주는 「기능 확장 : 기술」 — 제작기 트레이너 시트 「기능 확장」(t.ext). 기술 목록 맨 뒤(발버둥 다음)에 붙어 지시 · 공격 창에서 고른다.
     횟수는 배틀 트레이너 extUse[번호] (공격 창 「적용」 때 1 씩). who 가 있으면 그 포켓몬만, 없으면 PT 전원 */
  /* 11-02 망령: 테라스탈 · 테라버스트 — 「테라스탈」 상태면 테라 타입이 되고 「공격」「특공」(랭크 · 배율 포함) 중 높은 쪽 분류. 원본 기술은 건드리지 않고 사본만 */
@@ -1636,7 +1639,8 @@ window.OM_BATTLE_UI=(()=>{
   const bm=sk==='uq'&&baseId?(b.mons||{})[baseId]:null;const cm=(foe?null:m)||(bm&&bm.tid===tid&&bm.entry?bm:null)||(ua?Object.values(b.mons||{}).find(q=>q&&q.tid===tid&&q.entry)||Object.values(b.mons||{}).find(q=>q&&q.tid===tid):null);const cmid=cm?cm.id:mid;
   const a0=sk==='uq'?ua:m&&FX()&&FX().autoOf(m,'pot',name);const a=ST2?stageOps(a0,ST2):a0;const pr0=prioNow(cmid);
   if(ST2===1)await A().set(['battle','trainers',tid,'preDone',String(name).replace(/[『』]/g,'').trim()],{t:+b.turn||0,tgt:TP||cmid||''});
-  if(cm&&a&&realOps(a)&&!a.manual){setTimeout(()=>reprio(cmid,pr0),0);await fireAuto(cmid,'pot',name,{auto:a,quiet:true,manual:1,ownTid:tid,uq:sk==='uq'&&!foe,pickId:foe?m.id:(TP||''),tsel:foe?'':(TP||''),ctx:MS?{msel:MS}:undefined,head:`【${LB}】 ${who} 『${name}』${ST2?(ST2===1?' ①':' ②'):''}${ST2===2&&PD?'':left}${tag}${tgt}`,img,eff:String(x.p.eff||'')});return}
+  const DYN=!(a&&realOps(a)&&!a.manual)&&DYN_TYPE_RE.test(String(x.p.eff||''));   /* 11-15: 구문 없이 그때그때 타입을 정하는 것(찰나의 모작) — fireAuto 가 정한다 */
+  if(cm&&((a&&realOps(a)&&!a.manual)||DYN)){setTimeout(()=>reprio(cmid,pr0),0);await fireAuto(cmid,'pot',name,{auto:DYN?undefined:a,quiet:true,manual:1,ownTid:tid,uq:sk==='uq'&&!foe,pickId:foe?m.id:(TP||''),tsel:foe?'':(TP||''),ctx:MS?{msel:MS}:undefined,head:`【${LB}】 ${who} 『${name}』${ST2?(ST2===1?' ①':' ②'):''}${ST2===2&&PD?'':left}${tag}${tgt}`,img,eff:String(x.p.eff||'')});return}
   A().sysLog(`【${LB}】 ${who} 『${name}』${left}${tag}${tgt?'\n대상:'+tgt.replace(' →',''):''}`,'battle',{mid:m?m.id:'',img,eff:String(x.p.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,400)})}
  async function fireOrder(tid,mid,kind,key,how){const c=ctx();const b0=snap(c.b),b=snap(b0);const t=b.trainers[tid];const m=b.mons[mid];if(!t||!m)return;
   let name=pName(c.b,tid,kind,key);const ck=(kind==='order'?'order_':'command_')+key;t.orderCount=t.orderCount||{};
@@ -2735,7 +2739,16 @@ window.OM_BATTLE_UI=(()=>{
  async function fireAuto(mid,kind,name,opt){opt=opt||{};
   /* 11-09 망령 「일일이 확인 창을 누르면 처리가 늦어진다 — 동시 내밀기처럼 강제 발동 토글」: 트레이너의 「강제 발동」이 켜져 있으면 손으로 누른 발동(카드 · 포텐셜 발동 창 · 고유)은 처음부터 강제 — 저절로 터지는 효과 · 필드 · SP 는 그대로 */
   if(!opt.force&&kind!=='field'&&(opt.manual||!opt.quiet)){const m1=((ctx().b.mons||{})[mid])||null;const ft=opt.ownTid||(m1&&m1.tid);if(ft&&fxForceOn(ctx().b,ft))opt=Object.assign({},opt,{force:true,head:(opt.head?opt.head+' ':'')+'(강제 발동)'})}
-  if(opt.force)opt=Object.assign({},opt,{noRoll:true});   /* 11-09 망령 「혹시 모를 에러 · 몇몇 효과를 대비해 강제 발동」: opt.force = 조건 · 확인 · 확률을 건너뛰고 건다 */const c=ctx();const b0=c.b;const m0=b0.mons[mid];if(!m0)return false;const auto=opt.auto||FX().autoOf(m0,kind,name);   /* opt.auto: SP(서포터) 처럼 포켓몬 밖에 적힌 구문 */
+  if(opt.force)opt=Object.assign({},opt,{noRoll:true});   /* 11-09 망령 「혹시 모를 에러 · 몇몇 효과를 대비해 강제 발동」: opt.force = 조건 · 확인 · 확률을 건너뛰고 건다 */const c=ctx();const b0=c.b;const m0=b0.mons[mid];if(!m0)return false;let auto=opt.auto||FX().autoOf(m0,kind,name);   /* opt.auto: SP(서포터) 처럼 포켓몬 밖에 적힌 구문 */
+   /* 11-15 망령 확정: 【탈진】 · 【소진】만 붙고 때가 없는 손 발동 강화(『불굴귀의 투창』)는 **그 턴만** — 기간이 안 적힌(turn 0) 배율 · 완화 · 회피 · 명중 줄을 이번 턴으로 */
+   /* 11-15 망령 「만들 후보 만들고」 — 그때그때 정해지는 타입:
+      ① 「이번 턴 「X」가 아군의 「타입2」와 같은 타입이 된다 · 없다면 실패」(아니스 4번 짱 『당신도 모르는 당신』) → 필드의 다른 아군 타입2 로 기술타입 (이번 턴)
+      ② 「턴 종료 시까지 아군을 대상의 「타입 1」로 만든다」(아니스 고유 『찰나의 모작』) → 이 포켓몬(고른 아군)을 고른 상대의 타입1 로 (턴 종료까지) */
+   if(kind==='pot'&&!opt.auto&&(!auto||!auto.ops||!auto.ops.length||auto.manual)){const tr=(b0.trainers||{})[m0.tid]||{};const src=potSrc(m0).concat((tr.unique||[]).map(u=>({name:u.name,eff:u.eff})));const pp=src.find(q=>q&&q.name===name);const e=String((pp&&pp.eff)||'');
+    const ma=e.match(/이번\s*턴\s*「([^」]+)」\s*(?:이|가)\s*아군의\s*「\s*타입\s*2\s*」\s*와\s*같은\s*타입이\s*된다/);
+    if(ma){const al=Object.values(b0.mons||{}).find(x=>x&&x.id!==m0.id&&x.entry&&x.hp&&x.hp.cur>0&&sameT(x,m0,b0)&&(tysOf(x)[1]||'-')!=='-');if(!al){A().sysLog(`【포텐셜】 ${m0.name} 『${name}』 — 필드에 「타입2」가 있는 아군이 없어 실패`,'battle',{mid:m0.id});return false}auto={name,src:'dyn',ops:[{k:'sp',sp:'mvtype',mv:ma[1].trim(),from:'',to:tysOf(al)[1],thisTurn:1}]}}
+    else if(/아군을\s*대상의\s*「\s*타입\s*1\s*」\s*로\s*만든다/.test(e)){const fs=Object.values(b0.mons||{}).filter(x=>x&&x.entry&&x.hp&&x.hp.cur>0&&!sameT(x,m0,b0));if(!fs.length)return false;let f=null;try{f=await uiCtx(b0,m0,name).pick(fs,`『${name}』 — ${m0.name} 을(를) 누구의 「타입 1」로?`)}catch(err){}if(!f)return false;const t1=tysOf(f)[0];if(!t1||t1==='-')return false;auto={name,src:'dyn',ops:[{k:'type',tgt:'self',mode:'set',types:[t1],turns:1}]}}}
+   if(kind==='pot'&&opt.manual&&!opt.auto&&auto&&auto.ops){const pp=potSrc(m0).find(q=>q&&q.name===name);const e=String((pp&&pp.eff)||'');const hd=(e.match(/^((?:\s*【[^】]*】)+)\s*\/?/)||[''])[0];if(/【\s*(탈진|소진)\s*】/.test(hd)&&!/【\s*(사전|선행|자동|등장|퇴장|준비|함성|지원|동조|보급|방호|공세|수세|턴\s*종료)/.test(hd)&&!/턴\s*종료\s*시?까지|해제(될|할)?\s*때까지|\d+\s*턴\s*동안/.test(e))auto=Object.assign({},auto,{ops:auto.ops.map(o=>o&&['boost','guard','mult','eva','acc'].includes(o.k)&&!+o.turn?Object.assign({},o,{turn:1}):o)})}
   if(!auto||!auto.ops||!auto.ops.length||auto.manual){if(!opt.quiet)A().toast(auto&&auto.manual?`「${name}」은(는) 자동화가 없어 손으로 처리한다`:`「${name}」 자동화 없음`);return false}
   /* 11-07 망령 「이미 발동 중인 포텐셜이나 효과를 누르면 「이미 걸려 있다」 로그 말고 중첩 / 해제를 묻게」: 이 이름으로 건 효과가 필드에 남아 있으면 먼저 묻는다 (자동 발동 · quiet 는 묻지 않는다) */
   let STK2=0;if(!opt.quiet&&!opt.restack&&FX().chips&&!auto.ops.some(o=>o&&o.k==='choice')){   /* 11-07 망령 「하이 블로커 ②」: 줄을 고르는 효과(①②)는 묻지 않는다 — ① 이 등장 때 걸려 있어도 ② 를 고르러 누른 것 */const nn=x=>String(x||'').replace(/[『』]/g,'').trim();const on=Object.values(b0.mons||{}).filter(x=>x&&x.entry&&FX().chips(x).some(ch=>nn(ch.name)===nn(name)));
@@ -3404,6 +3417,9 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
  const s3mine=(c,tid)=>!!(c.gm||(c.seat&&tid===c.seat));
  const s3card=(c,tid,code,argRe)=>{const x=s3b(tid);const e=x&&s3e(x.n);return e&&e.code===code&&(!argRe||argRe.test(e.arg||''))&&s3mine(c,tid)?x:null};
  async function s3use(tid,why){const R=window.OM_SK3R;if(R&&R.run)await R.run({op:'use',tid,k:'b',quiet:1,why})}
+ /* 11-15 망령 「만들 후보 만들고」: 「턴 종료 시까지 아군을 「유사 방어」 상태로 만들어 받는 대미지를 반감」(감싸기) — 상태 DB 에 「유사 방어」가 없어, 맞은 아군에게 이번 턴 받는 대미지 ×0.5(완화 · 이번턴)를 건다. 연속 제한은 방어 태그로 웹툴이 이미 본다 */
+ const DYN_TYPE_RE=/아군의\s*「\s*타입\s*2\s*」\s*와\s*같은\s*타입이\s*된다|아군을\s*대상의\s*「\s*타입\s*1\s*」\s*로\s*만든다/;
+ async function coverFire(mid,R){try{if(!R||R.check||!R.mv||!/「\s*유사\s*방어\s*」\s*상태로/.test(String(R.mv.eff||'')))return;const b=ctx().b;for(const r of R.targets||[]){const id=r&&r.def&&r.def.id;const t=id&&b.mons[id];if(!t||!t.entry||t.hp.cur<=0)continue;if(r.acc&&r.acc.hit===false)continue;await fireAuto(id,'pot',R.mv.name,{auto:{name:R.mv.name,src:'move',ops:[{k:'guard',tgt:'self',v:0.5,types:[],cat:'all',eff:'all',rng:'all',uses:-1,turn:1,tl:0,ro:[],st:'',tg:[],sb:''}]},quiet:true,noRoll:true,force:true,head:`【기술】 ${(b.mons[mid]||{}).name||''} 『${R.mv.name}』 → ${t.name} 「유사 방어」 — 이번 턴 받는 대미지 ×0.5`})}}catch(e){}}
  const ACTFX={};   /* 11-07 「행동한 뒤」 자동 — mid|포텐셜 → 건 턴 */
  function openAttack(mid,opt){opt=opt||{};const c=ctx();const b=c.b;const atk=b.mons[mid];if(!atk||!canEdit(c,atk))return;{const XO=(+b.phase||0)>=2?(b.order||[])[+b.orderIdx||0]:null;if(XO&&XO.xact&&XO.mid===mid&&!opt.mvName)opt=Object.assign({},opt,{mvName:XO.move,targets:(XO.targets||[]).slice(),by:XO.xact,preT:1})}   /* 11-09 선행 추가 행동 차례 */const RNDT={};const rndOf=mv=>isRndMove(mv)?(RNDT[mv.name]||(RNDT[mv.name]=rndType())):'';   /* 11-04 망령: 「무작위」 타입 기술 — 이 공격 창을 열 때 기술마다 한 번 굴린다 (미리보기 · 판정 · 로그가 같은 타입) */const f=fieldOf(b);const atkD=topShadow(atk,opt.baseTop);const UMA=UMB(atk);   /* 51-2 ⑫ 만능우산: 공격 쪽이 지니면 날씨 배율 · 필중 · 명중 · 차지 생략 · 타입 변화 없음 */
   /* 11-03 「기술사용」 · 「추가공격」: opt.mvName(기술 이름 — 목록에 없으면 기술 DB 에서 잠시 붙인다) · opt.targets · opt.extra {pw, sure, left, name} */
@@ -3791,6 +3807,7 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【[^】]*】\s
    const doF=AU2&&AU2.forceSwitch&&xck('fsw'),doS=AU2&&AU2.selfSwitch&&xck('ssw');const swS=doS?AU2.selfSwitch:(RESULT.nextU?'free':'');   /* 선행유턴처럼 「다음 기술」에 붙은 유턴도 */
    {const P2=plSecond(b,atk,RESULT.mv);if(P2){const side=P2.who==='self'?atk.side:(atk.side==='left'?'right':'left');nb.field=nb.field||{};nb.field.objects=nb.field.objects||{left:{},right:{}};const o=nb.field.objects[side]=nb.field.objects[side]||{};o[P2.o]=4;lines.push(`합체 「${P2.mv}」+「${plNm(RESULT.mv)}」 — ${side==='left'?'좌측':'우측'}에 「${P2.o}」 4턴`);delete nb.pledgeW}}   /* 11-07 맹세 합체: 장판 */
    A().closeModal();if(!await saveBattle(nb0,nb,undefined,{n:atk.name,s:RESULT.mv.name,img:atk.image||''}))return;A().sysLog(`【전달】 ${atk.name} 『${RESULT.mv.name}』 → ${sumL.join(' · ')||'대상 없음'}${dealtAny?' — 받는 쪽이 「HP」에서 적용':''}${lines.length?'\n'+lines.join('\n'):''}`,'battle',{mid:atk.id,img:atk.image||''});
+   await coverFire(mid,RESULT);
    /* 11-07 망령 「닌자 자동화가 없어요」: 「자신이 행동한 뒤 …」 포텐셜(닌자 ① 회피 ×1.33 턴 종료까지)은 공격을 적용한 뒤 저절로 건다 — 구문이 있고 횟수(【N/시】) 없는 것만 · 한 턴에 한 번 */
    {const a2=ctx().b.mons[mid];const T=+ctx().b.turn||0;if(a2&&a2.entry&&a2.hp.cur>0&&FX())for(const p of potSrc(a2)){if(!p||!p.name||p.ph||!/자신이\s*행동한\s*(?:뒤|후)/.test(String(p.eff||'')))continue;const k=mid+'|'+p.name;if(ACTFX[k]===T)continue;
      const au=FX().autoOf(a2,'pot',p.name);if(!au||!au.ops||!au.ops.length||au.manual||limManual(a2,'pot',p.name,p.eff))continue;ACTFX[k]=T;await fireAuto(mid,'pot',p.name,{quiet:true,noRoll:true,head:`【포텐셜】 ${a2.name} 『${p.name}』 — 행동한 뒤 자동`})}}
