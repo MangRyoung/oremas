@@ -60,7 +60,7 @@ async function runBattle(W,opt){
  const front=(m,fs)=>fs.find(f=>f.entry===m.entry)||fs[0];
  /* 11-15 망령 「정면기 제약은 계산되고 있어?」: 범위 「정면」 · 「대각」 기술은 웹툴 defaultTargets 가 정한 그 자리 상대만 (전엔 아무 상대나 골랐음) */
  const FIXR=/^(정면|대각)$/;const fixTg=(m,mv,opp)=>{if(!FIXR.test(String(mv.range||'')))return null;let sl=[];try{sl=FN.defaultTargets(C(),m.id,String(mv._i))||[]}catch(e){}const L=sl.map(x=>{const [sd,ar]=String(x).split('_');return opp.find(f=>f.side===sd&&f.entry===ar)}).filter(Boolean);return L};
- const isOld=m=>/올드\s*타입/.test(JSON.stringify(m.pots||[]));
+ const isOld=m=>{/* 11-15 망령 「올드 타입에게 4식 6령 못 넣는 건 적용 중이지?」: 웹툴 noOrdWhy 그대로 — 분류 칸 『올드 타입』(시트 체크 noOrd 가 먼저 · 메가 폼이면 풀림) · 난동 · 반무적 · 반동. 전엔 포텐셜 글에 「올드 타입」 글자만 있어도(리전 폼 · 프렌들리 몬스터 …) 막았다 */try{return !!FN.noOrdWhy((C().mons||{})[m.id]||m)}catch(e){return /올드\s*타입/.test(JSON.stringify(m.pots||[]))}};
  const isSure=mv=>!!mv&&(!+mv.acc||/필중/.test(String(mv.eff||'')));
  const mastery=tid=>{const p=POLS[tid];return p==='B'||p==='A'};
  const spd=m=>{try{return B.statValue(m,'speed').value*(FN.spMulOf(m,FN.fieldOf(C())).v||1)}catch(e){return +m.stats[5]||0}};

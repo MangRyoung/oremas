@@ -16,8 +16,8 @@ function roleOf(m){const r=String(m.role||'');const b=(m.base||[]).map(Number);c
  if(atk>=100||atk>=bulk/3+10)return 'atk';if(bulk>=290)return 'wall';return 'atk'}
 function choices(m,role,DBI,win){const L=[];const T=mainType(m);const bo=T&&BOOST[T];const tk=(m.typesKo||[]);const noSt=!(m.moves||[]).some(x=>x&&x.cat==='변화');const punch=(m.moves||[]).some(x=>x&&/펀치/.test(String(x.tag||'')+(x.tags||[]).join(',')));
  if(process.env.OLDITEM){if(role==='atk'){if(bo)L.push(bo);L.push('자뭉열매','하양허브')}else if(role==='wall'){L.push('자뭉열매','먹다남은음식','울퉁불퉁멧','하양허브');if(bo)L.push(bo)}else{L.push('자뭉열매');if(bo)L.push(bo);L.push('하양허브')}return L.filter(n=>DBI[n]&&DBI[n].auto&&!BAN.has(n))}   /* 비교용: 11-15 이전 후보 */
- if(role==='atk'){if(bo)L.push(bo);if(punch)L.push('펀치글러브');L.push('자뭉열매','초점렌즈','하양허브','기합의띠','약점보험','멘탈허브')}
- else if(role==='wall'){if(tk.includes('독'))L.push('검은진흙');L.push('자뭉열매','먹다남은음식','울퉁불퉁멧');if(noSt)L.push('돌격조끼');L.push('하양허브','방진고글','멘탈허브');if(bo)L.push(bo)}
+ if(role==='atk'){if(bo)L.push(bo);if(punch)L.push('펀치글러브');L.push('자뭉열매','약점보험','기합의띠','하양허브','초점렌즈','멘탈허브')}
+ else if(role==='wall'){if(tk.includes('독'))L.push('검은진흙');L.push('먹다남은음식','울퉁불퉁멧','자뭉열매');if(noSt)L.push('돌격조끼');L.push('방진고글','하양허브','멘탈허브');if(bo)L.push(bo)}
  else{L.push('자뭉열매');if(bo)L.push(bo);L.push('기합의띠','초점렌즈','하양허브','멘탈허브')}
  /* 11-15: 「구문」 칸이 비어도(제작기 DB 수정이 비운 하양허브 등) 소지품 규칙(itemrule)이 효과 글에서 풀면 쓴다 */
  const ok=n=>{const d=DBI[n];if(!d||BAN.has(n))return false;if(d.auto)return true;try{const r=win&&win.OM_ITEMS&&win.OM_ITEMS.rule?win.OM_ITEMS.rule(n):null;return !!r&&Object.keys(r).some(k=>!['name','eff','src','once','own'].includes(k))}catch(e){return false}};
@@ -31,7 +31,7 @@ function sockCap(win,r){const t=r.trainer;const rk=rankKey((t.ranks||{})['지시
 function equip(win,r){const DBI=((win.OM_DB||{}).items)||{};const t=r.trainer;const cap=sockCap(win,r);
  /* 11-15 망령 「같은 TO 소지품은 1개만」: 룰북 「PT 내에 같은 TO 소지품은 중복시킬 수 없다」 — 비고의 【TO (그룹, 그룹)】 */const TOs=n=>{const m=String((DBI[n]||{}).note||'').match(/【\s*TO\s*\(([^)]*)\)\s*】/);return m?m[1].split(/[,，]/).map(x=>x.trim()).filter(Boolean):[]};const usedTO=new Set();for(const m of r.mons)for(const n of [m.item,...((m.items2||[]).map(x=>x&&x.item))])if(n)TOs(n).forEach(g=>usedTO.add(g));
  const used=new Set(r.mons.map(m=>m.item).filter(Boolean));let spent=r.mons.reduce((a,m)=>a+(m.item&&DBI[m.item]?+DBI[m.item].sock||0:0),0);const out=[];
- const order=r.mons.filter(m=>!m.item).map(m=>({m,role:roleOf(m)})).sort((a,b)=>(a.role==='atk'?0:1)-(b.role==='atk'?0:1));
+ const RK=process.env.OLDITEM?{atk:0,wall:1,runner:1}:{wall:0,atk:1,runner:2};const order=r.mons.filter(m=>!m.item).map(m=>({m,role:roleOf(m)})).sort((a,b)=>(RK[a.role]??1)-(RK[b.role]??1));   /* 11-15 13시 망령 「메이링이 훌쩍 내려온 이유」: 공격수부터 비싼 것(기합의띠 · 초점렌즈)을 쥐어 벽이 먹다남은음식 · 울퉁불퉁멧을 못 받았다 → 벽 먼저 */
  order.forEach(({m,role},i)=>{const left=order.length-i-1;const keep=left*1;   /* 뒤에 남은 포켓몬 몫으로 1소켓씩은 남겨 둔다 */
   const c=choices(m,role,DBI,win).find(n=>!used.has(n)&&!TOs(n).some(g=>usedTO.has(g))&&spent+(+DBI[n].sock||0)<=cap-keep+1e-9);if(!c)return;TOs(c).forEach(g=>usedTO.add(g));
   m.item=c;m.itemEff=String(DBI[c].eff||'').replace(/<br\s*\/?>/g,'\n');m.itemAuto=1;used.add(c);spent+=+DBI[c].sock||0;out.push({mon:m.name,item:c,why:role})});
