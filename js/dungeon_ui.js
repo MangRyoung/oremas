@@ -650,5 +650,5 @@ window.OM_DG_UI=(()=>{
  function alFoe(did,rid){const d=all()[did];if(!d)return 0;const a=clamp(+d.al||0,0,100);const boss=((R(d)[rid]||{}).t==='boss');const gx=d.gx||{};return (alOn(d)?Math.max(0,(a>=70?5:0)+(boss&&a>=50?5:0)-(boss&&d.bossDn&&a>=50?5:0)):0)+(+gx.foe||0)+(boss?(+gx.boss||0):0)}
  /* 예전에 가져온 야생 시트에 던전 표시(wdg)를 단다 — GM 화면에서 한 번씩 */
  async function wildTag(){if(!gm())return 0;const T=RO().trainers||{};const ops=[];for(const [did,d] of Object.entries(all()))for(const r of Object.values(R(d))){const t=r&&r.e&&T[r.e];if(t&&t.wild&&!t.wdg&&!ops.some(o=>o[0][2]===t.id))ops.push([['roster','trainers',t.id,'wdg'],did])}if(ops.length)await A().setMany(ops);return ops.length}
- return {wildTag,wildOf,wildOrphans,wildDrop,alFoe,gimEvent,gimNorm,render,rpSync,onState,on,cur,TY,LV,lvOf,list,enter,nameOf,party,walkOf,startEnc,alAdd,dgNorm,dgOut,dgAll:all,dgUpd:upd,edOpen:id=>{DG.ed=id}};   /* 10-29 dgNorm · dgOut · dgAll · dgUpd: 세션 노트와 던전 주고받기(notes_link.js) */
+ return {wildTag,wildOf,wildOrphans,wildDrop,alFoe,gimEvent,gimNorm,render,rpSync,onState,on,cur,TY,LV,lvOf,list,enter,nameOf,party,walkOf,startEnc,alAdd,dgNorm,dgOut,wMake,dgAll:all,dgUpd:upd,edOpen:id=>{DG.ed=id}};   /* 10-29 dgNorm · dgOut · dgAll · dgUpd: 세션 노트와 던전 주고받기(notes_link.js) */
 })();

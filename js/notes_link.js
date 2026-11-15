@@ -127,14 +127,14 @@ window.OM_NOTES=(()=>{
     로그: 오늘 이 방 로그를 노트 「기록」 문서 하나(lg_om_<방>_<날짜>)에 쌓는다. 다음에는 지난번 마지막 줄 뒤만 덧붙인다 (귓속말 · 잡담 빼고). */
  const stable=v=>Array.isArray(v)?'['+v.map(stable).join(',')+']':v&&typeof v==='object'?'{'+Object.keys(v).sort().filter(k=>v[k]!==undefined&&v[k]!==null).map(k=>JSON.stringify(k)+':'+stable(v[k])).join(',')+'}':JSON.stringify(v);
  const hsh=s=>{let h=2166136261;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(36)+'.'+s.length.toString(36)};
- const DGTOP=['n','st','o','a','wn','noal'],DGR=['n','t','x','y','m','b','sk','rk','rmany','cl','e','eh'],DGMETA=['r','l','nt','ntC','ntAt','ntH'];
+ const DGTOP=['n','st','o','a','wn','noal'],DGR=['n','t','x','y','m','b','sk','rk','rmany','cl','e','eh','w'],/* 11-16 w = 야생 시트 설계 (노트가 제작기 「던전」 탭에서 받은 것) */DGMETA=['r','l','nt','ntC','ntAt','ntH'];
  function dgCore(d){const o={};for(const k of DGTOP)if(d[k]!=null&&d[k]!=='')o[k]=d[k];o.r={};for(const [id,x] of Object.entries(d.r||{})){const q={};for(const k of DGR)if(x[k]!=null&&x[k]!=='')q[k]=x[k];o.r[id]=q}o.l={};for(const k of Object.keys(d.l||{}))o.l[k.split('~').sort().join('~')]=1;return o}
  const dgH=d=>hsh(stable(dgCore(d)));
  const DGU=()=>window.OM_DG_UI;
  async function ctx(needSecret){const L=await linked();if(!L){A().toast('먼저 📓 노트 메뉴에서 세션 노트 캠페인과 이어 줘');return null}const secret=secOf(L.id);
   if(needSecret&&!secret){A().toast('이 브라우저에 세션 노트 GM 비밀구가 없다 — 세션 노트를 GM 으로 한 번 열어 줘');return null}return {camp:L.id,secret,name:L.name}}
  function dgFromNotes(nd){const d=nd.data||{};const r={};for(const [id,x] of Object.entries(d.r||{})){const o={};for(const k of DGR)if(x[k]!=null&&x[k]!=='')o[k]=x[k];r[id]=o}
-  const o={n:d.n||'',st:d.st,r,l:Object.assign({},d.l||{})};for(const k of ['o','a','wn','noal'])if(d[k]!=null&&d[k]!=='')o[k]=d[k];if(d.src&&d.src.tier)o.gen={tier:d.src.tier,seed:d.src.seed,theme:d.src.theme};return o}
+  const o={n:d.n||'',st:d.st,r,l:Object.assign({},d.l||{})};for(const k of ['o','a','wn','noal','mq'])if(d[k]!=null&&d[k]!=='')o[k]=d[k];if(d.src&&d.src.tier)o.gen={tier:d.src.tier,seed:d.src.seed,theme:d.src.theme};return o}
  /* 노트 → 웹툴 (던전 하나) */
  async function dgPull(ntId,o){o=o||{};if(A().ST.role!=='gm'){A().toast('던전은 GM 만 가져올 수 있다');return}const c=await ctx(false);if(!c)return;const U=DGU();if(!U||!U.dgNorm){A().toast('던전 탭이 아직 준비되지 않았다 — 새로 고친 뒤 다시');return}
   let nd=o.nd||null;if(!nd){try{nd=await S().ntGet(c.camp,c.secret||null,'dgs',ntId)}catch(e){A().toast('노트 던전을 못 읽었다: '+e.message);return}}
@@ -146,8 +146,11 @@ window.OM_NOTES=(()=>{
   const id=exId||Math.random().toString(36).slice(2,8);
   if(ex){/* 플레이 기록(경계도 · 위치 · 탐색 · 클리어 등)은 남긴다 */if(ex.al!=null)d.al=ex.al;for(const k of Object.keys(ex))if(!(k in d)&&!DGTOP.includes(k)&&!DGMETA.includes(k))d[k]=ex[k];
    for(const [rid,x] of Object.entries(d.r)){const old=(ex.r||{})[rid];if(old)for(const k of Object.keys(old))if(!DGR.includes(k))x[k]=old[k]}if(d.at&&!d.r[d.at])delete d.at}
+  /* 11-16 망령 「던전 제작기랑 연결」: 노트 던전(제작기에서 받은 것)의 방에 야생 시트 설계 w 가 있으면 여기서 시트를 만든다 → e. 같은 설계로 이미 만든 방(wh 같음)은 그 시트를 그대로 쓴다 */
+  const wops=[];if(U.wMake){const TR=((A().ST.state.roster||{}).trainers)||{};for(const [rid,x] of Object.entries(d.r)){if(!x.w||x.e)continue;const h=hsh(stable(x.w));const old=ex&&(ex.r||{})[rid];
+    if(old&&old.e&&old.wh===h&&TR[old.e])x.e=old.e;else{try{x.e=U.wMake(x.w,rid,wops,id)}catch(e){warn.push(`「${x.n}」 야생 시트를 못 만들었다 — ${e.message}`);continue}}x.wh=h;delete x.w}}
   d.nt=ntId;d.ntC=c.camp;d.ntAt=nd.updated_at;d.ntH=dgH(d);
-  const ops=ex?A().diffOps(['dg','list',id],ex,d,3):[[['dg','list',id],d]];if(ops.length){const ok=await A().setMany(ops);if(ok===false)return}
+  const ops=wops.concat(ex?A().diffOps(['dg','list',id],ex,d,3):[[['dg','list',id],d]]);if(ops.length){const ok=await A().setMany(ops);if(ok===false)return}
   A().sysLog(`던전: 세션 노트에서 「${d.n}」 ${ex?'바뀐 것만 다시 받음':'가져옴'}`);if(!o.quiet)A().toast(ex?`「${d.n}」 의 바뀐 곳 ${ops.length}군데를 받았다`:`「${d.n}」 를 던전 탭에 넣었다`);if(warn.length)console.warn('dg import',warn);
   try{U.edOpen(id)}catch(e){}A().renderScene();return id}
  /* 웹툴 → 노트 (던전 하나) */
@@ -155,7 +158,8 @@ window.OM_NOTES=(()=>{
   const h=dgH(d);const mine=d.nt&&d.ntC===c.camp;if(mine&&d.ntH===h){if(!o.quiet)A().toast(`「${d.n}」 는 노트와 같다 — 보낼 게 없다`);return}
   let nd=null;if(mine){try{nd=await S().ntGet(c.camp,c.secret,'dgs',d.nt)}catch(e){}}
   if(nd&&d.ntAt&&nd.updated_at>d.ntAt&&!confirm(`노트에서도 「${d.n}」 를 고쳤다.\n웹툴 판으로 덮어쓸까? (노트에서 고친 방 이름 · 그림 · 메모는 웹툴 판으로 바뀐다)`))return;
-  const core=dgCore(d);const data=Object.assign(nd?Object.assign({},nd.data):{spot:'',src:{from:'om',room:A().ST.room}},core);for(const k of DGTOP)if(core[k]==null)delete data[k];if(Array.isArray(data.hide))data.hide=data.hide.filter(x=>core.r[x]);
+  const core=dgCore(d);if(nd&&nd.data&&nd.data.r)for(const [rid,x] of Object.entries(core.r)){const o=nd.data.r[rid];if(o&&o.w&&!x.w)x.w=o.w}   /* 11-16 노트의 야생 시트 설계(제작기 것)는 남긴다 */
+  const data=Object.assign(nd?Object.assign({},nd.data):{spot:'',src:{from:'om',room:A().ST.room}},core);for(const k of DGTOP)if(core[k]==null)delete data[k];if(Array.isArray(data.hide))data.hide=data.hide.filter(x=>core.r[x]);
   const nid=nd?d.nt:'d'+Math.random().toString(36).slice(2,10);let at;
   try{at=await S().ntPut(c.camp,c.secret,'dgs',nid,data,nd?nd.vis:'gm')}catch(e){A().toast('노트에 쓰지 못했다: '+e.message);return}
   if(typeof at!=='string'){try{const x=await S().ntGet(c.camp,c.secret,'dgs',nid);at=x&&x.updated_at}catch(e){}}
