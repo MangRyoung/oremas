@@ -9,7 +9,7 @@ const snap=P.readSnap(opt.snap?path.resolve(opt.snap):path.join(SIM,'data','snap
 const dOf=t=>(t.data&&t.data.data)||t.data||{};
 function students(){const F=Object.fromEntries((snap.folders||[]).map(f=>[f.id,f.data||{}]));const root=id=>{let x=id,g=0,last=id;while(x&&F[x]&&g++<8){last=x;x=F[x].parent}return last};
  const out=[];for(const t of snap.trainers||[]){const d=dOf(t);if(root(d.folder)!=='misag-campus'||['misag-npc','vwnq43tc'].includes(d.folder)||/\(보스\)/.test(d.name||''))continue;
-  let r;try{r=P.build(W,snap,t.id,{two:opt.two?true:false})}catch(e){continue}if(r.mons.length<(opt.two?2:6))continue;if(r.mons.some(m=>!(m.moves||[]).some(mv=>+mv.pow>0)))continue;out.push({id:t.id,name:d.name})}
+  let r;try{r=P.build(W,snap,t.id,{two:opt.two?true:false})}catch(e){continue}if(r.mons.length<(opt.two?2:6))continue;if(r.mons.some(m=>!(m.moves||[]).some(mv=>+mv.pow>0||(mv.cat==='물리'||mv.cat==='특수'))))continue;   /* 11-15 망령 「로로는 왜 없어?」: 위력이 정해지지 않는 공격기(헤비봄버 · 무게 · HP 비례 …)도 공격기로 — 로르 샤흐트 설구가 헤비봄버(위력 0)뿐이라 빠졌다 */out.push({id:t.id,name:d.name})}
  return out}
 const mk=id=>{const r=P.build(W,snap,id,{two:opt.two?true:false});P.orders(W,r.trainer,{mons:r.mons});return {trainer:r.trainer,mons:r.mons}};
 (async()=>{let S=students();if(opt.only){const L=opt.only.split(',');S=S.filter(s=>L.some(n=>s.name.includes(n)))}if(opt.skip){const L=opt.skip.split(',');S=S.filter(s=>!L.some(n=>s.name.includes(n)))}   /* 11-15 망령: 미완성 학생 빼기 --skip 아르프,제페토 */
