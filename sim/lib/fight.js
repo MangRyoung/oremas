@@ -17,7 +17,7 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
  const isRnd=H.get('isRndMove'),rndT=H.get('rndType');const RNDT={};const rndOf=mv=>isRnd&&isRnd(mv)?(RNDT[mv.name]||(RNDT[mv.name]=rndT())):'';
  const IAI=mv=>atk0.iai&&mv&&/(^|[,\s])거합($|[,\s])/.test(String(mv.tag||''))?atk0.iai:'';/* 11-15 자세 → 다음 거합 타입 (웹툴 IAI) */const tyOf=mv=>ATY||IAI(mv)||(RM('블랙룸')&&mv.cat!=='변화'?'Ghost':((FN.skinOf(atk0,mv)||{}).ty||rndOf(mv)||mv.typeEn));
  const mtys=mv=>ATY?[ATY]:(RM('블랙룸')&&mv.cat!=='변화'?['Ghost']:FN.skinOf(atk0,mv)?[FN.skinOf(atk0,mv).ty]:rndOf(mv)?[rndOf(mv)]:String(mv.type||'').split(/[()/,]/).map(t=>t.trim()).filter(Boolean).map(S.typeEn));
- const mv=FN.MVS(atk0)[idx];if(!mv)return {skip:'기술 없음'};
+ const mv=o.mvObj||FN.MVS(atk0)[idx];if(!mv)return {skip:'기술 없음'};   /* 11-15 o.mvObj: 추가 행동처럼 기술 목록에 없는 기술 */
  /* 11-15 「연속 제한」(방어 기술 말고) — 웹툴 consecFail 과 같음 */{const cm=String(mv.eff||'').match(/「연속\s*제한\s*:\s*(실패\s*확률\s*증가|확정\s*실패)」/);const T1=+b.turn||0;if(cm&&!FN.protMove(mv)&&atk0.lastMove===mv.name&&+atk0.lastMoveT===T1-1){const k=Math.max(1,+((atk0.consec&&atk0.consec.name===mv.name)?atk0.consec.n:1));const ok=!/확정/.test(cm[1])&&rnd()<Math.pow(1/3,k);if(!ok){const why=`${atk0.name} 「${mv.name}」 — 연속으로 내보내 실패`;if(H.logOn)W.OM_APP.sysLog(`【공격】 ${why}`,'battle');return {mv:mv.name,lines:[why],hits:[],fail:why}}}}
  /* 11-15 날따름 · 끌어오기는 행동할 때 다시 본다 (웹툴 openAttack 3414 와 같음 — 지시 때 고른 대상보다 먼저) */if(FN.redirectOf&&targets&&targets.length<=1){try{const rd=FN.redirectOf(b,atk0,mv);if(rd&&rd.slot&&targets[0]!==rd.slot){targets=[rd.slot];if(H.logOn)W.OM_APP.sysLog(`${atk0.name}의 「${mv.name}」 대상이 ${rd.mon.name}(으)로 바뀌었다 — ${rd.e&&rd.e.name||'끌어오기'}`,'battle')}}catch(e){}}
  const out={mv:mv.name,lines:[],hits:[],fail:''};
@@ -139,6 +139,7 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
     const au=FX.autoOf(a2,'pot',p.name);if(!au||!au.ops||!au.ops.length||au.manual||FN.limManual(a2,'pot',p.name,p.eff))continue;FN.ACTFX[k]=T;await FN.fireAuto(mid,'pot',p.name,{quiet:true,noRoll:true,head:`【포텐셜】 ${a2.name} 『${p.name}』 — 행동한 뒤 자동`})}}catch(e){}
   try{if(FN.coverFire)await FN.coverFire(mid,RS)}catch(e){}
   try{if(FN.chainAfterAct)await FN.chainAfterAct(mid)}catch(e){}
+  try{if(FN.mvModAfter)await FN.mvModAfter(mid,RS)}catch(e){}
   try{if(FN.hitAuto)await FN.hitAuto(mid,RS)}catch(e){}
   try{if(FN.evReact)for(const r of res){if(!r||!r.acc||!r.acc.hit||!r.def||r.def.id===mid)continue;const lh=(FN.ctx().b.mons[r.def.id]||{}).lastHit;await FN.evReact('hit',{mid,tgt:r.def.id,dmg:lh&&lh.fromId===mid?+lh.total||0:0,mv:mv.name,mt:moveTypes||[],cat:mv.cat||'',ct:ctOf(),eff:r.eff?+r.eff.value:1,crit:!!(r.hits||[]).some(h=>h&&h.v===2),key:mv.name+'@'+r.def.id+'@'+(+FN.ctx().b.turn||0)+'@'+rnd()})}}catch(e){}
   try{if(FN.evReact)for(const r of res){if(!r||!r.acc||!r.acc.prot||!r.def||r.def.id===mid)continue;await FN.evReact('guard',{mid,tgt:r.def.id,mv:mv.name,mt:moveTypes||[],cat:mv.cat||'',ct:ctOf(),key:mv.name+'@g'+r.def.id+'@'+rnd()})}}catch(e){}

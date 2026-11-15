@@ -253,7 +253,10 @@ async function runBattle(W,opt){
    let bt=null;for(const x of mine){const th=topThreat(P2,x);if(!th.mv||!th.f||th.v<x.hp.cur*0.5)continue;const mt=th.mv.typeEn||th.mv.type;const t1=(th.f.types||[])[0];if(!t1||t1==='-')continue;const now=effV(mt,(x.types||[]).filter(z=>z&&z!=='-')),nw=effV(mt,[t1]);if(nw<now){const g=(now-nw)*th.v/Math.max(1,x.hp.cur);if(!bt||g>bt.g)bt={x,f:th.f,g}}}
    if(!bt)continue;PU[k]=T0;H.pickHint=bt.f.id;try{await (H.fn.fireSpecial||H.get('fireSpecial'))(tid,bt.x.id,'uq',q.p.name,'free');await flush(1)}catch(err){}H.pickHint=null}
   /* 고유 */
-  for(const q of (H.fn.uniqList||H.get('uniqList'))(t)){const e=String(q.p.eff||'');if(!manualTag(e)||(q.left!==null&&q.left<=0))continue;const k='u|'+tid+'|'+q.p.name;if(PU[k]===T0)continue;const a=FX.autoOf({tid},'pot',q.p.name);if(!a||!a.ops||!a.ops.length||a.manual)continue;const cls=opsClass(a.ops);if(!cls)continue;
+  /* 11-15 10:50 로르 『무시할 수 없는 독창성』 「【자동】【탈진】/아군이 내보내는 타입 비일치 「혼돈의물감」의 대미지가 2배」: 계기 말 없이 기술 · 비자속으로만 묶인 강화는 웹툴에 「낼 때」 걸이가 없다 — 이번 턴 그 기술을 내는 아군이 있을 때 고른다 (탈진은 연달아 안 씀) */
+  const atkTied=(e,a)=>/【\s*자동\s*】/.test(splitTag(e).head)&&/【\s*(탈진|소진)\s*】/.test(splitTag(e).head)&&!TRIG.test(splitTag(e).body.slice(0,60).replace(/【[^】]*】/g,''))&&a&&(a.ops||[]).length&&(a.ops||[]).every(o=>o&&['boost','mult'].includes(o.k)&&((Array.isArray(o.mv)&&o.mv.length)||o.sb||(Array.isArray(o.tg)&&o.tg.length)));
+  for(const q of (H.fn.uniqList||H.get('uniqList'))(t)){const e=String(q.p.eff||'');const a0=FX.autoOf({tid},'pot',q.p.name);const AT=atkTied(e,a0);if(!(manualTag(e)||AT)||(q.left!==null&&q.left<=0))continue;const k='u|'+tid+'|'+q.p.name;if(PU[k]===T0||(PU[k]===T0-1&&/【\s*탈진\s*】/.test(e)))continue;const a=a0;if(!a||!a.ops||!a.ops.length||a.manual)continue;const cls=opsClass(a.ops);if(!cls)continue;
+   if(AT){const ms=mine.filter(x=>attacking(x)&&mvOk(a.ops,x));if(!ms.length)continue;PU[k]=T0;try{await (H.fn.fireSpecial||H.get('fireSpecial'))(tid,ms[0].id,'uq',q.p.name,'free');await flush(1)}catch(err){}continue}
    const m=cls==='heal'?mine.slice().sort((x,y)=>x.hp.cur/x.hp.max-y.hp.cur/y.hp.max)[0]:mine.find(x=>attacking(x))||mine[0];if(!want(cls,m))continue;PU[k]=T0;try{await (H.fn.fireSpecial||H.get('fireSpecial'))(tid,m.id,'uq',q.p.name,'free');await flush(1)}catch(err){}}
   /* 전용 · 포켓몬 포텐셜 */
   for(const m0 of mine){const m=C().mons[m0.id];if(!m||!m.entry||!alive(m))continue;
@@ -328,7 +331,12 @@ async function runBattle(W,opt){
      if(a.v>=a.tg.hp.cur&&ord[me].speed*1.5>ord[it].speed&&threatVs(POLS[tid],a.tg,a.m).v>=a.m.hp.cur*0.5){if(await fire(tid,a.m.id,'command','speed')){flip=true;break}}}}
    if(flip){await FN.computeOrder();await flush(1)}}
   /* 3. 행동 (순서대로) */
-  for(const o of (C().order||[]).slice()){const m=C().mons[o.mid];if(!m||!m.entry||!alive(m))continue;const a=acts.find(x=>x.m.id===o.mid);if(!a)continue;
+  for(const o of (C().order||[]).slice()){const m=C().mons[o.mid];if(!m||!m.entry||!alive(m))continue;
+   /* 11-15 11시 「추가 행동」(행동 순서 xact — 『네 마리의 용』 4배수 턴 가장 마지막 「드래곤옐」 · 「가장 마지막에 「X」에 의한 추가 행동」): 지금까지 그 자리의 원래 지시(공격)를 한 번 더 했다 → 적힌 기술로 (웹툴 openAttack xact 와 같다) */
+   if(o.xact){const L=FN.MVS(m);let i=L.findIndex(x=>x&&FN.mvNameEq?FN.mvNameEq(x.name,o.move):x&&x.name===o.move);const mvO=i<0&&W.OM_IMPORT?W.OM_IMPORT.move(o.move,false):null;if(i<0&&!(mvO&&mvO.cat))continue;const mv=i>=0?L[i]:mvO;
+    let tg=(o.targets||[]).filter(s=>{const [sd,ar]=s.split('_');return !!FN.entered(C(),sd)[ar]});if(!tg.length){const r=String(mv.range||'');const dt=i>=0?FN.defaultTargets(C(),m.id,String(i)):[];if(dt.length&&!(r==='1체'||r===''))tg=dt;else if(mv.cat!=='변화'||/^1체$|^$/.test(r)){const fs=foes(m.side);const f=mv.cat==='변화'?null:fs.sort((x,y)=>expect(m,mv,y)/Math.max(1,y.hp.cur)-expect(m,mv,x)/Math.max(1,x.hp.cur))[0];if(f)tg=[f.side+'_'+f.entry]}}
+    W.OM_APP.sysLog(`【추가 행동】 ${m.name} 『${mv.name}』 — ${o.xact}`,'battle');await FG.attack(H,W,m.id,i,tg,i<0?{mvObj:Object.assign({},mv,{virt:1})}:{});await flush();await gmChores();markSeen(m,mv.name);if(!active('left').length||!active('right').length)break;continue}
+   const a=acts.find(x=>x.m.id===o.mid);if(!a)continue;
    if(a.sw){if(!alive(a.sw)||a.sw.entry)continue;const area=m.entry;await FN.exitMon(m.id,{sys:true,noAsk:true});await FN.enterMon(a.sw.id,area,{sys:true,how:'통상 교대'});await flush();continue}
    /* 대상이 쓰러졌으면 남은 상대 (3-3) */
    let targets=(a.targets||[]).filter(s=>{const [sd,ar]=s.split('_');const d=FN.entered(C(),sd)[ar];return !!d});if(!targets.length&&a.mv.cat!=='변화'){const fs=foes(m.side);if(fs.length)targets=[fs[0].side+'_'+fs[0].entry]}
