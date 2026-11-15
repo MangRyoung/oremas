@@ -1418,7 +1418,7 @@ function openRoomSettings(tab){
    <div class="pf-sel"><span class="pf-lb">기본 씬 시간</span><input type="number" class="n" id="ctBaseR" min="1" max="600" step="1" value="${+ct.base||30}" style="width:70px"><em>분</em><button class="btn xs pri" id="ctBaseSave">저장</button><button class="btn xs" id="ctFillR" title="모든 자리의 남은 시간을 이 시간으로 새로 채운다">모두 채우기</button></div>
    ${sw('ctOn',!!ct.on,'장면 타이머 화면에 띄우기','채팅창 위에 모두의 남은 시간 · 아래 내 줄에 내 시간이 뜬다')}
    ${sw('ctFresh',!!ct.fresh,'씬마다 기본 시간으로 새로','켜면 씬을 열 때마다 그 사람 시간을 기본 시간으로 다시 채운다. 끄면 체스 시계처럼 남은 시간을 다음 씬에 이어 쓴다')}
-   ${sw('ctPl',ct.pl!==false,'플레이어도 씬 오픈 · 씬 종료','플레이어 내 줄에 「▶ 씬 오픈」 · 「■ 씬 종료」 — 공지([씬 오픈] · [씬 종료])와 자기 시계가 같이 움직인다. 처리는 GM 화면이 열려 있어야 된다')}
+   ${sw('ctPl',ct.pl!==false,'플레이어도 씬 오픈 · 씬 종료','플레이어 내 줄에 「▶ 씬 오픈」 · 「■ 씬 종료」 — 타이머가 켜져 있으면 공지([씬 오픈] · [씬 종료])와 자기 시계가 같이 움직인다(GM 화면이 열려 있어야 된다). 타이머가 꺼져 있으면 GM 없이 바로 여닫는다 — 개인플용')}
    <div class="row" style="margin-top:6px"><button class="btn xs" id="ctOpenR">⏱ 타이머 창 열기</button></div>`)})()}
   ${(()=>{const own=rp.seatOwn===true,run=!own&&rp.plBattle!==false;return card('⚔','배틀',`<div class="pf-note" style="margin:0 0 6px">플레이어가 배틀에서 어디까지 누를 수 있나 — 위 두 칸은 둘 중 하나만 켠다 (둘 다 끄면 배틀 올리기·진행은 GM 만, 플레이어는 자기 지시만 입력)</div>
    ${sw('plBattle',run,'① 플레이어도 배틀 진행 (모의전)','플레이어도 파티 불러오기 · 시합 개시 · 턴 진행 · 필드를 누른다. GM 없이 플레이어끼리 붙을 때. 엿보기 · 강제 · 모두 공개는 GM 만')}

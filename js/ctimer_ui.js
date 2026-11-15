@@ -32,6 +32,22 @@ window.OM_CTIMER=(()=>{
  const plOk=T=>!!(T&&T.on&&T.pl!==false);
  async function plOpen(){const ST=A().ST,T=T0();if(ST.role!=='seat'||!plOk(T))return;if(T.run&&T.run!==ST.seat)return A().toast(`지금은 ${nameOf(T.run)} 씬 — 끝난 뒤에 열 수 있다`);if(T.run===ST.seat)return;
   if(await A().set(['pub',ST.seat,'ctOpen'],{at:Date.now()}))A().toast('씬 오픈을 알렸다 — GM 화면에서 열린다')}
+ /* ---------- 11-15 망령 「웹툴 RP 에서 PL 들도 씬을 열고 닫게 — 자기들끼리 개인플 할 때도 있으니까」 ----------
+    장면 타이머가 꺼져 있을 때(켜져 있으면 위의 시계 버튼 그대로) 좌석 줄에 「▶ 씬 오픈」 · 「■ 씬 종료」. GM 화면이 없어도 된다:
+    공지 배너 = pub.<좌석>.banner (rp_ui tickBanner 가 rp.banner 와 함께 보고 가장 새것) · 로그 = 채팅 줄(bat:'sys') + data.sec → 로그 구역(씬).
+    방 설정 「플레이어도 씬 오픈 · 씬 종료」(rp.ctimer.pl)를 끄면 안 보인다. 남이 연 씬도 닫을 수 있다(신뢰 기반 · 개인플용) */
+ const plFree=()=>{const ST=A().ST;const T=T0();return ST.role==='seat'&&!!ST.seat&&!(T&&T.on)&&!(T&&T.pl===false)};
+ function curScene(){const S=(A().logSecs?A().logSecs():[]).filter(x=>x.k==='scene');const s=S[S.length-1];return s&&!s.z?s:null}
+ let PLBUSY=0;
+ async function plScene(op){const ST=A().ST;if(!plFree()||PLBUSY)return;let n='';
+  if(op==='open'){const cur=curScene();const v=prompt(cur?`지금 「${cur.n||'씬'}」이 열려 있다 — 닫고 새 씬을 연다.\n씬 이름 (비우면 내 이름)`:'씬 이름 (비우면 내 이름)','');if(v===null)return;n=v.trim().replace(/\s+/g,' ').slice(0,40)||nameOf(ST.seat)}
+  else{const cur=curScene();if(!cur)return A().toast('열린 씬이 없다');n=cur.n||''}
+  PLBUSY=1;try{const R=window.OM_RP_UI;const N=op==='open'?NT('n_open','씬 오픈'):NT('n_end','씬 종료');const se=R&&R.noticeSe?R.noticeSe(N):'Ping2';
+   await A().set(['pub',ST.seat,'banner'],{title:N.title||N.name,text:n,color:N.color||(op==='open'?'#5fd38d':'#ff6b6b'),se,at:Date.now()});
+   await A().sysLog(`[${op==='open'?'씬 오픈':'씬 종료'}]${n?' '+n:''}`,'chat',{bat:'sys',sec:{k:'scene',op,n}});
+   A().toast(op==='open'?`씬 오픈 — ${n}`:'씬을 닫았다')}finally{PLBUSY=0;LASTPL=''}}
+ let LASTPL='';
+ function plFreeHtml(){const cur=curScene();return `<div class="ctr1"><span class="ctl">${cur?'▶ '+esc(cur.n||'씬'):'씬 없음'}</span></div><div class="ctr2"><button class="ctb" data-ct="psopen" title="씬을 연다 — [씬 오픈] 공지 · 로그 구역 (GM 이 없어도 된다)">▶ 씬 오픈</button>${cur?`<button class="ctb endb" data-ct="psend" title="지금 씬을 닫는다 — [씬 종료] 공지 · 로그 구역 끝">■ 씬 종료</button>`:''}</div>`}
  const NT=(id,nm)=>{const L=((A().ST.state.rp||{}).notices||[]);return L.find(n=>n&&n.id===id)||L.find(n=>n&&(n.name===nm||n.title===nm))||{id,name:nm,title:nm,ment:'',color:id==='n_open'?'#5fd38d':'#ff6b6b'}};
  async function notice(id,nm,sub){const R=window.OM_RP_UI;if(R&&R.fireNotice)return R.fireNotice(NT(id,nm),sub);await A().sysLog(`[${nm}] ${sub||''}`.trim())}
  async function plEnd(){const ST=A().ST,T=T0();if(ST.role!=='seat'||!T||T.run!==ST.seat)return;if(await A().set(['pub',ST.seat,'ctEnd'],{run:T.runAt||0,at:Date.now()}))A().toast('씬 종료를 알렸다 — 내 시계가 멈춘다')}
@@ -93,6 +109,7 @@ window.OM_CTIMER=(()=>{
   {const old=stage&&stage.querySelector(':scope>#ctim');if(old)old.remove();const old2=document.querySelector('#rpunder>#ctim');if(old2)old2.remove()}
   const bar=stage&&document.querySelector('#rpu_me .mebar');let box=bar&&bar.querySelector('.ctim');
   const phone=document.querySelector('.side .phone');let sbox=phone&&phone.querySelector(':scope>.ctside');
+  if(stage&&bar&&plFree()){if(sbox)sbox.remove();css();const h=plFreeHtml();if(!box){box=document.createElement('div');box.className='ctz ctim';const id=bar.querySelector('.meid');if(id&&id.nextSibling)bar.insertBefore(box,id.nextSibling);else bar.appendChild(box)}if(box._h!==h){box.innerHTML=h;box._h=h}return}   /* 11-15 개인플: 타이머가 꺼져 있으면 좌석이 바로 여닫는다 */
   if(!stage||!T||!T.on){if(box)box.remove();if(sbox)sbox.remove();return}
   css();const now=Date.now();
   if(bar){const h=barHtml(T,now);if(!h){if(box)box.remove()}else{if(!box){box=document.createElement('div');box.className='ctz ctim';const id=bar.querySelector('.meid');if(id&&id.nextSibling)bar.insertBefore(box,id.nextSibling);else bar.appendChild(box)}if(box._h!==h){box.innerHTML=h;box._h=h}}}
@@ -103,7 +120,7 @@ window.OM_CTIMER=(()=>{
    if(r<=0&&!WARN[k+'o']){WARN[k+'o']=1;if(me){app.toast(`⏱ ${nameOf(T.run)} — 시간 종료 (넘친 시간을 센다)`);beep(880);setTimeout(()=>beep(880),350)}}}
  }catch(e){console.warn('ctimer',e)}}
  function onClick(e){const b=e.target.closest('[data-ct]');if(!b)return;e.stopPropagation();const k=b.dataset.ct;
-  if(k==='plend')return plEnd();if(k==='plopen')return plOpen();if(!gm())return;
+  if(k==='plend')return plEnd();if(k==='plopen')return plOpen();if(k==='psopen')return plScene('open');if(k==='psend')return plScene('close');if(!gm())return;
   if(k==='start'){const T=T0()||{};if(T.run===b.dataset.s)return T.since?pause():resume();return start(b.dataset.s)}
   if(k==='pause')return pause();if(k==='resume')return resume();if(k==='end')return end();if(k==='open')return open()}
  /* ---------- 설정 창 (GM) ---------- */
