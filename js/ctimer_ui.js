@@ -51,7 +51,8 @@ window.OM_CTIMER=(()=>{
  function setIn(o,p,v){if(!p.length)return v;const r=(o&&typeof o==='object')?(Array.isArray(o)?o.slice():Object.assign({},o)):{};r[p[0]]=setIn(r[p[0]],p.slice(1),v);if(v===null&&p.length===1)delete r[p[0]];return r}
  async function ovWrite(orig,path,value){const ST=A().ST;const sc=curScene()||lastScene();if(!sc)return false;const cur=ovCur();const eff=ovRp(ST.state.rp||{});const k=path[1];
   const nv=path.length===2?(value===undefined?null:value):setIn(eff[k],path.slice(2),value===undefined?null:value);
-  const v=Object.assign({},cur&&+cur.a===+sc.a?cur.v:{},{[k]:nv});return orig.call(A(),['pub',ST.seat,'rpOv'],{a:sc.a,at:Date.now(),v})}
+  const v=Object.assign({},cur&&+cur.a===+sc.a?cur.v:{},{[k]:nv});return orig.call(A(),['pub',ST.seat,'rpOv'],{a:sc.a,at:ovNow(),v})}
+ const ovNow=()=>{const st=A().ST.state;let t=Math.max(Date.now(),+((st.rp||{}).ovAt||0)+1);const c=ovCur();if(c)t=Math.max(t,+c.at+1);return t};   /* 기기마다 시계가 어긋나도 차례가 맞게 */
  let PLBUSY=0;
  async function plScene(op){const ST=A().ST;if(!plFree()||PLBUSY)return;let n='';
   if(op==='open'){const cur=curScene();const v=prompt(cur?`지금 「${cur.n||'씬'}」이 열려 있다 — 닫고 새 씬을 연다.\n씬 이름 (비우면 내 이름)`:'씬 이름 (비우면 내 이름)','');if(v===null)return;n=v.trim().replace(/\s+/g,' ').slice(0,40)||nameOf(ST.seat)}
@@ -60,7 +61,7 @@ window.OM_CTIMER=(()=>{
    await A().set(['pub',ST.seat,'banner'],{title:N.title||N.name,text:n,color:N.color||(op==='open'?'#5fd38d':'#ff6b6b'),se,at:Date.now()});
    const sc0=curScene();
    await A().sysLog(`[${op==='open'?'씬 오픈':'씬 종료'}]${n?' '+n:''}`,'chat',{bat:'sys',sec:{k:'scene',op,n}});
-   if(op==='close'&&sc0){const app=A();const orig=app.set&&app.set._orig||app.set;const cur=ovCur();await orig.call(app,['pub',ST.seat,'rpOv'],{a:sc0.a,at:Date.now(),v:Object.assign({},cur&&+cur.a===+sc0.a?cur.v:{bg:(ST.state.rp||{}).bg||null},{bgm:null})});const rp=ST.state.rp||{};if(rp.bgm&&rp.plBattle!==false&&rp.seatOwn!==true)await orig.call(app,['rp','bgm'],null)}   /* 씬 종료 = BGM 끔 (GM 공지 「씬 종료」와 같게) — 좌석이 rp.bgm 을 쓸 수 있는 방이면 방 BGM 도 끈다(다음 씬에서 옛 곡이 되살아나지 않게) */
+   if(op==='close'&&sc0){const app=A();const orig=app.set&&app.set._orig||app.set;const cur=ovCur();await orig.call(app,['pub',ST.seat,'rpOv'],{a:sc0.a,at:ovNow(),v:Object.assign({},cur&&+cur.a===+sc0.a?cur.v:{bg:(ST.state.rp||{}).bg||null},{bgm:null})});const rp=ST.state.rp||{};if(rp.bgm&&rp.plBattle!==false&&rp.seatOwn!==true)await orig.call(app,['rp','bgm'],null)}   /* 씬 종료 = BGM 끔 (GM 공지 「씬 종료」와 같게) — 좌석이 rp.bgm 을 쓸 수 있는 방이면 방 BGM 도 끈다(다음 씬에서 옛 곡이 되살아나지 않게) */
    A().toast(op==='open'?`씬 오픈 — ${n}`:'씬을 닫았다')}finally{PLBUSY=0;LASTPL=''}}
  let LASTPL='';
  function plFreeHtml(){const cur=curScene();return `<div class="ctr1"><span class="ctl">${cur?'▶ '+esc(cur.n||'씬'):'씬 없음'}</span></div><div class="ctr2"><button class="ctb" data-ct="psopen" title="씬을 연다 — [씬 오픈] 공지 · 로그 구역 (GM 이 없어도 된다)">▶ 씬 오픈</button>${cur?`<button class="ctb endb" data-ct="psend" title="지금 씬을 닫는다 — [씬 종료] 공지 · 로그 구역 끝">■ 씬 종료</button>`:''}</div>`}
@@ -76,7 +77,7 @@ window.OM_CTIMER=(()=>{
      const cur=((((ST.state.pub||{})[ST.seat])||{}).rpReq)||[];const now=Date.now();const L=[...cur.filter(x=>x&&now-(+x.at||0)<120000),{id:now.toString(36)+Math.random().toString(36).slice(2,6),p:path,v:value===undefined?null:value,at:now}].slice(-12);
      return orig.call(this,['pub',ST.seat,'rpReq'],L)}
     if(ST&&ST.role==='seat'&&ST.seat&&Array.isArray(path)&&path[0]==='rp'&&OVK.includes(path[1])&&plOwn())return ovWrite(orig,path,value);   /* 11-15 개인플 씬: 덮개로 */
-    if(ST&&ST.role==='gm'&&Array.isArray(path)&&path[0]==='rp'&&['bg','bgm','map'].includes(path[1])&&ovCur()){const r=orig.apply(this,arguments);Promise.resolve(r).then(ok=>{if(ok!==false)orig.call(app,['rp','ovAt'],Date.now())});return r}   /* GM 이 고르면 PL 덮개는 물러난다 */
+    if(ST&&ST.role==='gm'&&Array.isArray(path)&&path[0]==='rp'&&['bg','bgm','map'].includes(path[1])&&ovCur()){const r=orig.apply(this,arguments);const c=ovCur();Promise.resolve(r).then(ok=>{if(ok!==false)orig.call(app,['rp','ovAt'],Math.max(Date.now(),c?+c.at+1:0))});return r}   /* GM 이 고르면 PL 덮개는 물러난다 */
    }catch(e){console.warn('ctimer hook',e)}return orig.apply(this,arguments)};w._ctw=1;w._orig=orig;app.set=w}
  async function rpApply(T){if(RBUSY||!T.run)return;const app=A();const q=((((app.ST.state.pub||{})[T.run])||{}).rpReq)||[];const todo=q.filter(x=>x&&x.id&&!RDONE.has(x.id)&&+x.at>=LOADAT-3000&&+x.at>=+(T.runAt||0)&&Array.isArray(x.p)&&x.p[0]==='rp'&&RPK.includes(x.p[1]));if(!todo.length)return;
   RBUSY=1;try{for(const x of todo){RDONE.add(x.id);await app.set(x.p,x.v)}}catch(e){console.warn('ctimer rpApply',e)}finally{RBUSY=0}}
