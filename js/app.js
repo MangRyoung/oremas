@@ -1039,7 +1039,8 @@ async function encounter(o){if(ST.role!=='gm')return false;const r=roster();cons
  if(!R.length){toast('야생 무리 트레이너가 시트에 없다');return false}
  const b0=B();if(Object.keys(b0.trainers||{}).length&&!(await askOk('지금 배틀 칸을 비우고 조우 배틀을 차릴까? (좌석은 남는다)','차린다','그만둔다')))return false;
  const WN=Math.max(1,Math.min(3,+o.wn||2));const gk=acctKey();const ALF=(o.dg&&window.OM_DG_UI&&window.OM_DG_UI.alFoe)?(+window.OM_DG_UI.alFoe(o.dg.did,o.dg.rid)||0):0;let MQN=0;
- const nb={turn:0,phase:0,mode:2,sides:{left:{trainers:[]},right:{trainers:[]}},trainers:{},mons:{},field:{},cmds:{},order:[],dg:o.dg||null};
+ let FE=null;try{if(o.dg&&window.OM_DG_UI&&window.OM_DG_UI.feField)FE=window.OM_DG_UI.feField(o.dg.did)}catch(e){console.warn('필드 효과',e)}   /* 11-16 던전 필드 효과 */
+ const nb={turn:0,phase:0,mode:2,sides:{left:{trainers:[]},right:{trainers:[]}},trainers:{},mons:{},field:FE?FE.field:{},cmds:{},order:[],dg:o.dg||null};
  const seats=ST.state.seats||{};const all=[];
  const put=(tid,side)=>{const t=JSON.parse(JSON.stringify(r.trainers[tid]));if(t.two)t.pids=twoPids(t);
   if(side==='left'){const w=((o.walk||{})[tid]||[]).filter(id=>(t.pids||[]).includes(id)&&r.mons[id]);t.pids=w.length?w:(t.pids||[]).filter(id=>r.mons[id]&&((r.mons[id].hp||{}).cur??1)>0).slice(0,WN)}
@@ -1060,7 +1061,8 @@ async function encounter(o){if(ST.role!=='gm')return false;const r=roster();cons
  lw.slice(0,n).forEach((m,i)=>m.pend=AR[i]);rw.slice(0,n).forEach((m,i)=>m.pend=AR[i]);
  if(!await setMany([[['battle'],nb],[['ready'],{}]]))return false;await set(['scene'],'battle');   /* 11-07: 지난 배틀의 준비 표시가 남아 지시 창이 잠기던 것 */
  if(ALF>0)sysLog(`⚠ 경계도 · 던전 기믹 — 야생 Lv +${ALF} (조우 때 자동)`,'battle');
- if(MQN)sysLog(`♛ 『미궁 포텐셜』 ${window.OM_DG_GIM.mqFor(o.dg.did).map(p=>'『'+p.name+'』').join(' ')} — 야생 쪽 고유로 붙었다`,'battle');
+ if(FE)sysLog(`⛰ 필드 효과 — ${FE.text}${FE.fe.eff?'\n'+FE.fe.eff:''}`,'battle');
+if(MQN)sysLog(`♛ 『미궁 포텐셜』 ${window.OM_DG_GIM.mqFor(o.dg.did).map(p=>'『'+p.name+'』').join(' ')} — 야생 쪽 고유로 붙었다`,'battle');
  {const rd=rw.filter(m=>m.raid&&+m.raid.segments>0);if(rd.length)sysLog(rd.map(m=>`♛ ${m.name} 「레이드 배틀 : ${m.raid.segments}」 — 최대 HP 1/${m.raid.segments} 마다 배리어 (조우 때 자동)`).join('\n'),'battle')}
  sysLog(`⚔ 야생 조우${o.title?' — '+o.title:''}\n${L.map(t=>r.trainers[t].name).join(' · ')||'일행'} VS ${rw.map(m=>'야생의 '+m.name).join(' · ')||R.map(t=>r.trainers[t].name).join(' · ')}${lw.length?`\n먼저 나갈 포켓몬(예약): ${lw.slice(0,n).map(m=>m.name).join(' · ')}`:''}${lw.length>n?` — 에리어가 ${n}칸이라 ${lw.slice(n).map(m=>m.name).join(' · ')} 은(는) 벤치에`:''}\n「시합 개시」를 누르면 시작`,'battle');
  VIEW='battle';renderScene();return true}
