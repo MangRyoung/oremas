@@ -37,14 +37,30 @@ window.OM_CTIMER=(()=>{
     공지 배너 = pub.<좌석>.banner (rp_ui tickBanner 가 rp.banner 와 함께 보고 가장 새것) · 로그 = 채팅 줄(bat:'sys') + data.sec → 로그 구역(씬).
     방 설정 「플레이어도 씬 오픈 · 씬 종료」(rp.ctimer.pl)를 끄면 안 보인다. 남이 연 씬도 닫을 수 있다(신뢰 기반 · 개인플용) */
  const plFree=()=>{const ST=A().ST;const T=T0();return ST.role==='seat'&&!!ST.seat&&!(T&&T.on)&&!(T&&T.pl===false)};
- function curScene(){const S=(A().logSecs?A().logSecs():[]).filter(x=>x.k==='scene');const s=S[S.length-1];return s&&!s.z?s:null}
+ const SM={k:'',v:null};
+ function lastScene(){const L=A().ST.log||[];const k=L.length+':'+(L.length?L[L.length-1].id:0);if(SM.k!==k){SM.k=k;const S=(A().logSecs?A().logSecs():[]).filter(x=>x.k==='scene');SM.v=S[S.length-1]||null}return SM.v}
+ function curScene(){const s=lastScene();return s&&!s.z?s:null}
+ /* 11-15 14:12 망령 「타이머 없어도 배경 / BGM 바꿀 수 있게 · 씬 종료 누르면 꺼지게」: 좌석은 rp 를 못 쓰니 pub.<좌석>.rpOv = {a: 씬 구역 첫 줄 id, at, v:{bg · bgm · map · recentBg · recentBgm}}.
+    모두의 화면이 rp 위에 덮어 본다(rp_ui R()) — 가장 새 덮개 하나, 그 씬(마지막 씬 구역)이 그대로이고 GM 이 그 뒤로 rp.bg · bgm · map 을 안 바꿨을 때만(rp.ovAt).
+    PL 이 씬 종료를 누르면 그 씬 덮개의 bgm 을 끈다(배경은 남김). 새 씬이 열리거나 GM 이 배경 · BGM 을 고르면 덮개는 저절로 물러난다. */
+ const OVK=['bg','bgm','map','recentBg','recentBgm'];
+ function ovCur(){const st=A().ST.state;const rp=st.rp||{},pub=st.pub||{};const sc=lastScene();if(!sc)return null;   /* 상태는 제자리에서 바뀌므로(applyLocal) 기억해 두지 않고 매번 본다 — 좌석 수만큼만 돈다 */
+  let best=null;for(const k in pub){const o=pub[k]&&pub[k].rpOv;if(o&&o.v&&+o.a===+sc.a&&+o.at>+(rp.ovAt||0)&&(!best||+o.at>+best.at))best=o}return best}
+ function ovRp(rp){try{const o=ovCur();if(!o)return rp;const r=Object.assign({},rp);for(const k of OVK)if(Object.prototype.hasOwnProperty.call(o.v,k))r[k]=o.v[k];return r}catch(e){return rp}}
+ const plOwn=()=>plFree()&&!!curScene();
+ function setIn(o,p,v){if(!p.length)return v;const r=(o&&typeof o==='object')?(Array.isArray(o)?o.slice():Object.assign({},o)):{};r[p[0]]=setIn(r[p[0]],p.slice(1),v);if(v===null&&p.length===1)delete r[p[0]];return r}
+ async function ovWrite(orig,path,value){const ST=A().ST;const sc=curScene()||lastScene();if(!sc)return false;const cur=ovCur();const eff=ovRp(ST.state.rp||{});const k=path[1];
+  const nv=path.length===2?(value===undefined?null:value):setIn(eff[k],path.slice(2),value===undefined?null:value);
+  const v=Object.assign({},cur&&+cur.a===+sc.a?cur.v:{},{[k]:nv});return orig.call(A(),['pub',ST.seat,'rpOv'],{a:sc.a,at:Date.now(),v})}
  let PLBUSY=0;
  async function plScene(op){const ST=A().ST;if(!plFree()||PLBUSY)return;let n='';
   if(op==='open'){const cur=curScene();const v=prompt(cur?`지금 「${cur.n||'씬'}」이 열려 있다 — 닫고 새 씬을 연다.\n씬 이름 (비우면 내 이름)`:'씬 이름 (비우면 내 이름)','');if(v===null)return;n=v.trim().replace(/\s+/g,' ').slice(0,40)||nameOf(ST.seat)}
   else{const cur=curScene();if(!cur)return A().toast('열린 씬이 없다');n=cur.n||''}
   PLBUSY=1;try{const R=window.OM_RP_UI;const N=op==='open'?NT('n_open','씬 오픈'):NT('n_end','씬 종료');const se=R&&R.noticeSe?R.noticeSe(N):'Ping2';
    await A().set(['pub',ST.seat,'banner'],{title:N.title||N.name,text:n,color:N.color||(op==='open'?'#5fd38d':'#ff6b6b'),se,at:Date.now()});
+   const sc0=curScene();
    await A().sysLog(`[${op==='open'?'씬 오픈':'씬 종료'}]${n?' '+n:''}`,'chat',{bat:'sys',sec:{k:'scene',op,n}});
+   if(op==='close'&&sc0){const app=A();const orig=app.set&&app.set._orig||app.set;const cur=ovCur();await orig.call(app,['pub',ST.seat,'rpOv'],{a:sc0.a,at:Date.now(),v:Object.assign({},cur&&+cur.a===+sc0.a?cur.v:{bg:(ST.state.rp||{}).bg||null},{bgm:null})});const rp=ST.state.rp||{};if(rp.bgm&&rp.plBattle!==false&&rp.seatOwn!==true)await orig.call(app,['rp','bgm'],null)}   /* 씬 종료 = BGM 끔 (GM 공지 「씬 종료」와 같게) — 좌석이 rp.bgm 을 쓸 수 있는 방이면 방 BGM 도 끈다(다음 씬에서 옛 곡이 되살아나지 않게) */
    A().toast(op==='open'?`씬 오픈 — ${n}`:'씬을 닫았다')}finally{PLBUSY=0;LASTPL=''}}
  let LASTPL='';
  function plFreeHtml(){const cur=curScene();return `<div class="ctr1"><span class="ctl">${cur?'▶ '+esc(cur.n||'씬'):'씬 없음'}</span></div><div class="ctr2"><button class="ctb" data-ct="psopen" title="씬을 연다 — [씬 오픈] 공지 · 로그 구역 (GM 이 없어도 된다)">▶ 씬 오픈</button>${cur?`<button class="ctb endb" data-ct="psend" title="지금 씬을 닫는다 — [씬 종료] 공지 · 로그 구역 끝">■ 씬 종료</button>`:''}</div>`}
@@ -58,7 +74,10 @@ window.OM_CTIMER=(()=>{
  function hookSet(){const app=A();if(!app||!app.set||app.set._ctw)return;const orig=app.set;
   const w=function(path,value){try{const ST=app.ST,T=T0();if(ST&&ST.role==='seat'&&ST.seat&&Array.isArray(path)&&path[0]==='rp'&&RPK.includes(path[1])&&plOk(T)&&T.run===ST.seat){
      const cur=((((ST.state.pub||{})[ST.seat])||{}).rpReq)||[];const now=Date.now();const L=[...cur.filter(x=>x&&now-(+x.at||0)<120000),{id:now.toString(36)+Math.random().toString(36).slice(2,6),p:path,v:value===undefined?null:value,at:now}].slice(-12);
-     return orig.call(this,['pub',ST.seat,'rpReq'],L)}}catch(e){console.warn('ctimer hook',e)}return orig.apply(this,arguments)};w._ctw=1;w._orig=orig;app.set=w}
+     return orig.call(this,['pub',ST.seat,'rpReq'],L)}
+    if(ST&&ST.role==='seat'&&ST.seat&&Array.isArray(path)&&path[0]==='rp'&&OVK.includes(path[1])&&plOwn())return ovWrite(orig,path,value);   /* 11-15 개인플 씬: 덮개로 */
+    if(ST&&ST.role==='gm'&&Array.isArray(path)&&path[0]==='rp'&&['bg','bgm','map'].includes(path[1])&&ovCur()){const r=orig.apply(this,arguments);Promise.resolve(r).then(ok=>{if(ok!==false)orig.call(app,['rp','ovAt'],Date.now())});return r}   /* GM 이 고르면 PL 덮개는 물러난다 */
+   }catch(e){console.warn('ctimer hook',e)}return orig.apply(this,arguments)};w._ctw=1;w._orig=orig;app.set=w}
  async function rpApply(T){if(RBUSY||!T.run)return;const app=A();const q=((((app.ST.state.pub||{})[T.run])||{}).rpReq)||[];const todo=q.filter(x=>x&&x.id&&!RDONE.has(x.id)&&+x.at>=LOADAT-3000&&+x.at>=+(T.runAt||0)&&Array.isArray(x.p)&&x.p[0]==='rp'&&RPK.includes(x.p[1]));if(!todo.length)return;
   RBUSY=1;try{for(const x of todo){RDONE.add(x.id);await app.set(x.p,x.v)}}catch(e){console.warn('ctimer rpApply',e)}finally{RBUSY=0}}
  /* ---------- 그리기 ---------- */
@@ -143,4 +162,4 @@ window.OM_CTIMER=(()=>{
  /* rp_ui meBarHtml 이 부르는 칸 — 다시 그려져도 숫자가 바로 보이게 */
  function slotHtml(){try{const T=T0();if(!T||!T.on||!document.getElementById('rpstage'))return '';css();const h=barHtml(T,Date.now());return h?`<div class="ctz ctim">${h}</div>`:''}catch(e){return ''}}
  setInterval(tick,500);
- return {open,start,pause,resume,end,adj,fill,setOn,plEnd,plOpen,rem,fmt,tick,slotHtml}})();
+ return {open,start,pause,resume,end,adj,fill,setOn,plEnd,plOpen,rem,fmt,tick,slotHtml,ovRp,plOwn,hookSet}})();

@@ -32,9 +32,9 @@ window.OM_RP_UI=(()=>{
  let rpFold=false,mapUnfold=false;/* 11-03 망령 「2번으로」: 휴대폰에서 지도가 열려 있으면 무대 버튼을 ⋯ 하나(와 지도 닫기)로 접는다. ⋯ 를 누르면 펼침, 지도를 닫으면 다시 접힘 상태로 */try{rpFold=!!localStorage.getItem('om_rpfold')}catch(e){}   // 무대 우상단 탭(배경·BGM·기록·지도·덱·휴대폰·표정) 접기 — 내 브라우저에만
  /* 무대 위 화자 자리: 로그를 차례로 먹여서 모두 같은 결과가 나온다 */
  const STAGE={slots:{left:null,center:null,right:null},last:{},active:null,seen:0};
- function R(){return A().ST.state.rp||{}}
+ function R(){const r=A().ST.state.rp||{};const C=window.OM_CTIMER;return C&&C.ovRp?C.ovRp(r):r}   /* 11-15: PL 개인플 씬의 배경 · BGM 덮개(pub.<좌석>.rpOv)를 덮어 본다 — ctimer_ui */
  function gm(){return A().ST.role==='gm'}
- function bgmOk(){if(gm())return true;const ST=A().ST;const rp=ST.state.rp||{};return ST.role==='seat'&&rp.plBattle!==false&&rp.seatOwn!==true}
+ function bgmOk(){if(gm())return true;const ST=A().ST;const rp=ST.state.rp||{};if(ST.role==='seat'&&window.OM_CTIMER&&OM_CTIMER.plOwn&&OM_CTIMER.plOwn())return true;return ST.role==='seat'&&rp.plBattle!==false&&rp.seatOwn!==true}
  /* GM(나레이션) 칩 · 로그 아바타 그림: rp.gmImg */
  const gmImg=()=>((A().ST.state.rp||{}).gmImg)||'';
  /* 10-26 망령: GM 닉네임마다 따로 쓰는 프로필 rp.gmProf[닉] = {img,stands,standActive,standScale}. 키 'gm' = 공용(rp.gmImg · rp.gmSt), 'gm@닉' = 그 닉 전용. 전용이 없는 닉은 공용을 쓴다 */
@@ -84,7 +84,7 @@ window.OM_RP_UI=(()=>{
  const npFind=key=>{const L=mapS().npcs;return L.find((x,i)=>npKey(x,i)===key)};
  const stBub=st=>st?`<b class="mnst">${st.e?`<span>${emoOf(st.e)}</span>`:''}${st.m?esc(st.m):''}</b>`:'';
  /* 11-13 21:47 망령 「씬의 주인인 PL 은 배경 · BGM · RP 맵도 바꿀 수 있게」: 장면 타이머가 켜져 있고 지금 씬 주인인 좌석. 쓰기는 ctimer_ui 가 pub 요청으로 돌려 GM 화면이 대신 쓴다 */
- const sceneOwn=()=>{try{const ST=A().ST,T=R().ctimer;return ST.role==='seat'&&!!ST.seat&&!!T&&!!T.on&&T.pl!==false&&T.run===ST.seat}catch(e){return false}};
+ const sceneOwn=()=>{try{const ST=A().ST,T=R().ctimer;if(window.OM_CTIMER&&OM_CTIMER.plOwn&&OM_CTIMER.plOwn())return true;   /* 11-15 타이머 없는 개인플 씬: 씬이 열려 있으면 앉은 PL 누구나 */return ST.role==='seat'&&!!ST.seat&&!!T&&!!T.on&&T.pl!==false&&T.run===ST.seat}catch(e){return false}};
  const ownBtns=sm=>!gm()&&sceneOwn()?`<button class="btn ${sm?'sm rpt':'xs ghost plog'}" data-rp="qbg" title="내 씬 — 배경 바꾸기">🖼${sm?' 배경':'<span class="prl"> 배경</span>'}</button><button class="btn ${sm?'sm rpt':'xs ghost plog'}" data-rp="qbgm" title="내 씬 — BGM">♪${sm?' BGM':'<span class="prl"> BGM</span>'}</button>`:'';
  function notices(){return (R().notices&&R().notices.length)?R().notices:DEFAULT_NOTICES}
  function bgGroups(){return R().bgList||DB().bg||[]}
@@ -1442,7 +1442,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   else{const g=BG.g;const S=Object.keys(G[g]||{}).sort();const m=bgmMeta(g);
    head=`<div class="sec gh"><a class="back" data-bq="home">◂ 그룹 목록</a><div style="flex:1;min-width:0"><b>${esc(gshort(g))} <span class="small dim">${S.length}곡</span></b><div class="small dim">${esc(m.d||'')}</div></div><button class="btn sm pri" data-bq="rand" data-g="${esc(g)}">▶ 랜덤 재생</button>${gm()?`<button class="btn sm" data-bq="sadd" data-g="${esc(g)}">＋ 곡 추가</button><button class="btn sm ghost" data-bq="check" data-g="${esc(g)}" title="그룹의 곡을 차례로 불러 보며 죽은 링크를 찾는다 (재생은 안 한다)">${BGCK.g===g&&BGCK.busy?'■ 점검 중단':'🔗 링크 점검'}</button>`:''}</div>${BGCK.g===g&&(BGCK.busy||BGCK.msg)?`<div class="small bgck">${esc(BGCK.msg)}</div>`:''}<div class="row" style="margin-bottom:6px"><input type="text" id="bgq" placeholder="이 그룹에서 곡 검색" value="${esc(BG.q)}" style="flex:1"></div>`;
    const rows=S.filter(sn=>!q||sn.toLowerCase().includes(q)).map(sn=>row(g,sn,false)).join('');list=`<div class="songlist" style="max-height:56vh">${rows||'<div class="empty small">'+(S.length?'찾는 곡이 없다':'이 그룹엔 아직 곡이 없다')+'</div>'}</div>`}
-  if(!gm())return `<div class="bgmro">${bar+head+list}</div><div class="small dim" style="margin-top:6px">방 설정 「플레이어도 배틀 진행」이라 플레이어도 BGM 을 고를 수 있다 (모두에게). 목록 고치기는 GM 만.</div>`;
+  if(!gm())return `<div class="bgmro">${bar+head+list}</div><div class="small dim" style="margin-top:6px">${window.OM_CTIMER&&OM_CTIMER.plOwn&&OM_CTIMER.plOwn()?'지금 열린 씬의 BGM — 모두에게 들린다. 씬 종료를 누르면 꺼진다.':'방 설정 「플레이어도 배틀 진행」이라 플레이어도 BGM 을 고를 수 있다 (모두에게).'} 목록 고치기는 GM 만.</div>`;
   return bar+head+list+`<div class="small dim" style="margin-top:6px">플레이어 화면에서는 「소리 켜기」를 한 번 눌러야 들린다. 음량은 각자. 기본 목록은 파일에 있고 여기서 더하거나 지운 것만 방에 저장된다.</div>`}
  function bindBgmPanel(md,re){const G=bgmGroups();
   const vr=$('#gvol',md);if(vr)vr.oninput=()=>{vol=+vr.value;try{localStorage.setItem('om_vol',vol)}catch(e){}if(audio)audio.volume=vol;if(PV.audio)PV.audio.volume=vol};
