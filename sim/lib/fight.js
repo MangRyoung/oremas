@@ -138,6 +138,7 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
   try{const a2=FN.ctx().b.mons[mid];const T=+FN.ctx().b.turn||0;if(a2&&a2.entry&&a2.hp.cur>0&&FX&&FN.ACTFX)for(const p of FN.potSrc(a2)){if(!p||!p.name||p.ph||!/자신이\s*행동한\s*(?:뒤|후)/.test(String(p.eff||'')))continue;const k=mid+'|'+p.name;if(FN.ACTFX[k]===T)continue;
     const au=FX.autoOf(a2,'pot',p.name);if(!au||!au.ops||!au.ops.length||au.manual||FN.limManual(a2,'pot',p.name,p.eff))continue;FN.ACTFX[k]=T;await FN.fireAuto(mid,'pot',p.name,{quiet:true,noRoll:true,head:`【포텐셜】 ${a2.name} 『${p.name}』 — 행동한 뒤 자동`})}}catch(e){}
   try{if(FN.coverFire)await FN.coverFire(mid,RS)}catch(e){}
+  try{if(FN.chainAfterAct)await FN.chainAfterAct(mid)}catch(e){}
   try{if(FN.hitAuto)await FN.hitAuto(mid,RS)}catch(e){}
   try{if(FN.evReact)for(const r of res){if(!r||!r.acc||!r.acc.hit||!r.def||r.def.id===mid)continue;const lh=(FN.ctx().b.mons[r.def.id]||{}).lastHit;await FN.evReact('hit',{mid,tgt:r.def.id,dmg:lh&&lh.fromId===mid?+lh.total||0:0,mv:mv.name,mt:moveTypes||[],cat:mv.cat||'',ct:ctOf(),eff:r.eff?+r.eff.value:1,crit:!!(r.hits||[]).some(h=>h&&h.v===2),key:mv.name+'@'+r.def.id+'@'+(+FN.ctx().b.turn||0)+'@'+rnd()})}}catch(e){}
   try{if(FN.evReact)for(const r of res){if(!r||!r.acc||!r.acc.prot||!r.def||r.def.id===mid)continue;await FN.evReact('guard',{mid,tgt:r.def.id,mv:mv.name,mt:moveTypes||[],cat:mv.cat||'',ct:ctOf(),key:mv.name+'@g'+r.def.id+'@'+rnd()})}}catch(e){}
