@@ -12,7 +12,7 @@ function students(){const F=Object.fromEntries((snap.folders||[]).map(f=>[f.id,f
   let r;try{r=P.build(W,snap,t.id,{two:opt.two?true:false})}catch(e){continue}if(r.mons.length<(opt.two?2:6))continue;if(r.mons.some(m=>!(m.moves||[]).some(mv=>+mv.pow>0||(mv.cat==='물리'||mv.cat==='특수'))))continue;   /* 11-15 망령 「로로는 왜 없어?」: 위력이 정해지지 않는 공격기(헤비봄버 · 무게 · HP 비례 …)도 공격기로 — 로르 샤흐트 설구가 헤비봄버(위력 0)뿐이라 빠졌다 */out.push({id:t.id,name:d.name})}
  return out}
 const mk=id=>{const r=P.build(W,snap,id,{two:opt.two?true:false});P.orders(W,r.trainer,{mons:r.mons});return {trainer:r.trainer,mons:r.mons}};
-(async()=>{let S=students();if(opt.only){const L=opt.only.split(',');S=S.filter(s=>L.some(n=>s.name.includes(n)))}if(opt.skip){const L=opt.skip.split(',');S=S.filter(s=>!L.some(n=>s.name.includes(n)))}   /* 11-15 망령: 미완성 학생 빼기 --skip 아르프,제페토 */
+(async()=>{let S=students();if(opt.only){const L=opt.only.split(',');S=S.filter(s=>L.some(n=>s.name.includes(n)))}{/* 11-15 망령: 미완성 덱은 기본으로 뺀다 — 아르프 · 제페토 · 렌야(카라스바) · 아마노(13:16). --skip 으로 더 빼고, --all 이면 기본 목록 없이 */const DEF=opt.all?[]:['아르프','제페토','렌야','아마노'];const L=DEF.concat(opt.skip?opt.skip.split(','):[]).filter(Boolean);if(L.length)S=S.filter(s=>!L.some(n=>s.name.includes(n)))}   /* 11-15 망령: 미완성 학생 빼기 --skip 아르프,제페토 */
  const N=+opt.n||2,seed0=+opt.seed||1;const res={};for(const s of S)res[s.name]={w:0,l:0,d:0,g:0};const pairs=[];const asked={};let turns=0,games=0;const t0=Date.now();
  const sideAI={left:opt.polL||opt.ai||'old',right:opt.polR||opt.ai||'old'};const sideW={left:0,right:0,draw:0};const used={order:0,command:0,pot:0};
  for(let i=0;i<S.length;i++)for(let j=0;j<S.length;j++){if(i===j)continue;if(!opt.both&&j<i&&!(opt.polL||opt.polR))continue;let w=0,l=0,d=0;
