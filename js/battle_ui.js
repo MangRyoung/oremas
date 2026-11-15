@@ -575,7 +575,7 @@ window.OM_BATTLE_UI=(()=>{
   return `<button class="btn xs" data-act="announce" data-card="1" data-mid="${m.id}" data-kind="pot" data-pot="${n}" title="효과를 로그에 출력">📢 발동</button>`}
  function pips(left,max){if(max==null)return '';left=Math.max(0,+left||0);max=+max||0;if(max>8||max<1)return `남은 ${left}/${max}`;return `<span class="pips" title="남은 ${left}/${max}">${'●'.repeat(Math.min(left,max))}${'○'.repeat(Math.max(0,max-left))}</span>`}
  /* 10-23 망령: 4식 6령 불가 — 시트 체크(올드 타입은 기본), 「난동부리기」·반무적(공중·땅속·물속 …) 상태 */
- function noOrdWhy(m){if(!m)return '';const why=[];const old=(m.pots||[]).some(p=>p&&/분류/.test(p.kind||'')&&String(p.name||'').trim()==='올드 타입');if(m.noOrd!=null?m.noOrd:old)why.push(m.noOrd==null?'올드 타입':'시트 체크');
+ function noOrdWhy(m){if(!m)return '';const why=[];const old=(m.pots||[]).some(p=>p&&/분류/.test(p.kind||'')&&/^(올드 타입|리전 폼)$/.test(String(p.name||'').trim()));   /* 11-15 14:16 망령 「리전 폼도 막아」 — 『리전 폼』 = 별도의 형태를 띈 『올드 타입』 */if(m.noOrd!=null?m.noOrd:old)why.push(m.noOrd==null?'올드 타입':'시트 체크');
   const st=m.states||{};const db=(DB().states||{}).st||{};const semi=(((DB().states||{}).groups||[]).find(g=>g.l==='반무적')||{}).s||['VanishToDark','VanishToHole','Fly','VanishToWater','VanishToFire','VanishToMeteor','VanishToSun'];
   for(const k of ['Thrash','Recharge',...semi])if(st[k])why.push((db[k]||{}).ko||k);return why.join(' · ')}
  const NOORD_W={},THR_PICK={};
@@ -787,9 +787,11 @@ window.OM_BATTLE_UI=(()=>{
    blk.querySelectorAll('[data-pq]').forEach(el=>el.onclick=()=>{const n=+el.dataset.pq;x.prio=x.prio||{};x.prio[el.dataset.slot]=n?String(n):'';rerenderCmd()});
    blk.querySelectorAll('[data-pman]').forEach(el=>el.onclick=()=>{x.pman=x.pman?0:1;rerenderCmd()});blk.querySelectorAll('[data-uman]').forEach(el=>el.onclick=()=>{x.uman=x.uman?0:1;rerenderCmd()});
    const noOrdGate=()=>{const mm=c.b.mons[mid];const why=noOrdWhy(mm);const wk=mid+':'+(+c.b.turn||0);if(!why||NOORD_W[wk])return false;NOORD_W[wk]=1;A().toast(`⚠ ${mm.name} — 4식 6령을 받을 수 없다 (${why}). 그래도 넣으려면 한 번 더 누른다`);return true};
+   /* 11-15 14:16 망령 「교대하는 대상에게 4식 6령은 기본적으로 입력이나 발동할 수 없다 (숙달 지령은 임의 타이밍이 있다)」: 교대를 지시한 포켓몬에 넣으려 하면 경고 — 한 번 더 누르면 넣는다(바로잡기용) */
+   const swGate=()=>{const xx=cur.mons[mid]||{};if(xx.move!=='switch')return false;const wk='sw:'+mid+':'+(+c.b.turn||0);if(NOORD_W[wk])return false;NOORD_W[wk]=1;A().toast(`⚠ 교대하는 포켓몬에게는 4식 · 6령을 넣을 수 없다 (숙달 지령 ② 의 【임의】는 그때 필드의 포켓몬에게). 그래도 넣으려면 한 번 더 누른다`);return true};
    const oneOf=(k,nm)=>{const o=Object.entries(cur.mons).find(([id,v])=>id!==mid&&v&&v[k]&&(c.b.mons[id]||{}).entry);if(!o)return false;A().toast(`${nm}은 한 턴에 하나만 — ${(c.b.mons[o[0]]||{}).name||'다른 포켓몬'}에 넣은 것을 먼저 뺀다`);return true};   /* 10-26 망령: 4식 · 6령은 트레이너당 한 턴에 종류별 하나 */
-   blk.querySelectorAll('[data-ord]').forEach(el=>el.onclick=()=>{if(el.classList.contains('dis'))return;if(x.order!==el.dataset.ord&&oneOf('order','4식(명령)'))return;if(x.order!==el.dataset.ord&&noOrdGate())return;x.order=x.order===el.dataset.ord?'':el.dataset.ord;rerenderCmd()});
-   blk.querySelectorAll('[data-cmd]').forEach(el=>el.onclick=()=>{if(el.classList.contains('dis'))return;if(x.command!==el.dataset.cmd&&oneOf('command','6령(지령)'))return;if(x.command!==el.dataset.cmd&&noOrdGate())return;x.command=x.command===el.dataset.cmd?'':el.dataset.cmd;rerenderCmd()});
+   blk.querySelectorAll('[data-ord]').forEach(el=>el.onclick=()=>{if(el.classList.contains('dis'))return;if(x.order!==el.dataset.ord&&oneOf('order','4식(명령)'))return;if(x.order!==el.dataset.ord&&(noOrdGate()||swGate()))return;x.order=x.order===el.dataset.ord?'':el.dataset.ord;rerenderCmd()});
+   blk.querySelectorAll('[data-cmd]').forEach(el=>el.onclick=()=>{if(el.classList.contains('dis'))return;if(x.command!==el.dataset.cmd&&oneOf('command','6령(지령)'))return;if(x.command!==el.dataset.cmd&&(noOrdGate()||swGate()))return;x.command=x.command===el.dataset.cmd?'':el.dataset.cmd;rerenderCmd()});
    blk.querySelectorAll('[data-ptg]').forEach(el=>el.onclick=()=>{const n=el.dataset.tpn,s=el.dataset.ptg;x.ptg=x.ptg||{};if(x.ptg[n]===s)delete x.ptg[n];else x.ptg[n]=s;rerenderCmd()});
    blk.querySelectorAll('[data-utg]').forEach(el=>el.onclick=()=>{const n=el.dataset.tpn,s=el.dataset.utg;cur.utg=cur.utg||{};if(cur.utg[n]===s)delete cur.utg[n];else cur.utg[n]=s;rerenderCmd()});
    /* 11-09 감우 57: 기술 지정 (고유 utm · 포텐셜 ptm) — 칩은 누르면 고르고 다시 누르면 뺀다, 「기술 DB 검색」은 DB 창에서 */
@@ -1690,7 +1692,8 @@ window.OM_BATTLE_UI=(()=>{
   const RW=how==='free'&&rinneOK(c.b,tid,key,kind);   /* 턴 종료 ② 【임의】 창 — 『윤회의 법계』 · 『숙달회복지령』 */
   /* 10-26 망령 (서서 VS 마리 시험): 4식 · 6령은 한 턴에 종류별로 하나만 · 임의 발동은 원칙이 아니다 (선행 입력 → 선행 발동) */
   {const KN=kind==='order'?'4식(명령)':'6령(지령)';/* 11-03 22:05 망령 「영창도 지령 자동 발동에 뜨게 — COMMAND 는 다 저기」: 한 턴 하나는 같은 무리끼리(6령은 6령 · 영창은 영창 · 4식은 4식) — 영창이 6령에 막혀 안 걸리던 것 */const fam=k=>{const n=kind==='order'?OO().orderName(t,k):OO().commandName(t,k);const r=potRowOf(n)||potRowOf(n+'!');return (r&&r[0])||(/영창$/.test(n)?'영창':kind)};const used=Object.entries((((b.cmds||{})[tid]||{}).fired)||{}).find(([id,x])=>x&&x[kind]&&!(id===mid&&x[kind]===key&&how==='pre')&&fam(x[kind])===fam(key));
-   {const why=how==='force'?'':noOrdWhy(m);if(why)return A().toast(`⚠ ${m.name} — ${KN}을 받을 수 없다 (${why}). 꼭 써야 하면 「강제」로`)}   /* 10-26 망령: 행동불능(반동) · 난동 · 반무적 · 올드 타입은 발동 때도 막는다 (지시 창 경고만으로는 선행 발동이 그대로 나갔다) */
+   {const why=how==='force'?'':noOrdWhy(m);if(why)return A().toast(`⚠ ${m.name} — ${KN}을 받을 수 없다 (${why}). 꼭 써야 하면 「강제」로`)}
+   {const xs=(((b.cmds||{})[tid]||{}).mons||{})[mid];if(how!=='force'&&how!=='free'&&xs&&xs.move==='switch')return A().toast(`⚠ ${m.name} — 교대하는 포켓몬이라 ${KN}을 선행 발동할 수 없다 (숙달 지령 ② 의 【임의】는 그때 필드의 포켓몬에게 · 꼭 써야 하면 「강제」로)`)}   /* 11-15 14:16 망령 */   /* 10-26 망령: 행동불능(반동) · 난동 · 반무적 · 올드 타입은 발동 때도 막는다 (지시 창 경고만으로는 선행 발동이 그대로 나갔다) */
    if(used&&how!=='force'&&!RW){const um=b.mons[used[0]];return A().toast(`${KN}은 한 턴에 하나만 — 이번 턴에 이미 『${kind==='order'?OO().orderName(t,used[1][kind]):OO().commandName(t,used[1][kind])}』(${um?um.name:'?'})를 썼다`)}
    const MT={공격:'아군의 명중굴림 전',특공:'아군의 명중굴림 전',저격:'아군의 명중굴림 전',방어:'상대의 명중굴림 전',특방:'상대의 명중굴림 전',회피:'상대의 명중굴림 전',민첩:'행동 순서 공개 때',회복:'『지령』을 쓰지 않은 턴의 종료 때'};const mm=kind==='command'&&String(name).match(/^숙달(공격|특공|저격|방어|특방|회피|민첩|회복)지령$/);
    if(RW){if(!(await askYes(kind==='order'?`『윤회의 법계』 ② — 지난 턴 종료에 【임의】가 붙었다.\n「방어」 상태가 아니었던 아군 하나를 「따라가때리기」를 받지 않고 교대시킨다 (교대는 그 포켓몬의 「교대」로).\n남은 횟수 1을 써서 발동할까?`:`『${name}』 ② — 『지령』을 쓰지 않은 지난 턴 종료에 【임의】가 붙었다.\n${m.name} 쪽에 ① 효과를 건다. 남은 횟수 1을 써서 발동할까?`,'발동','그만')))return}
