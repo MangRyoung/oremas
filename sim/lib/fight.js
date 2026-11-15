@@ -227,6 +227,24 @@ function statusPick(H,W,c){const FN=H.fn,MA=W.OM_MOVEAUTO,B=W.OM_BATTLE;const {m
  const lastSame=mv=>!!m.lastMove&&m.lastMove.name===mv.name&&+m.lastMove.turn===turn-1;
  const thr=fs.map(f=>{let bt=null;for(const x of [m,...c.allies]){const t=c.threatVs(pol,f,x);if(t&&t.mv){const fr=t.v/Math.max(1,x.hp.cur);if(!bt||fr>bt.fr)bt={f,x,mv:t.mv,fr}}}return bt}).filter(Boolean);
  const isSure=q=>/「필중기」/.test(String(q.eff||''))||(q.cat!=='변화'&&!(+q.acc));const foeStatus=f=>FN.MVS(f).some(q=>q&&q.cat==='변화'&&!/^(자신|자진|필드|아군)/.test(String(q.range||'')));
+ /* 11-15 09시 망령 「순풍 · 벽 · 날씨 · 트릭룸과 약점 찌르기는 기초 택틱 — 그걸 안개제거 · 웨더클리너 · 윈드브레이커로 막는다」: 판의 값을 「남은 턴 × 이번 판에서 바뀌는 몫」으로 센다
+    점수 단위는 다른 후보와 같다(상대 HP 몇 할을 깎는 것과 같은가). 남은 턴은 길어야 3턴까지만 친다(교대 · 쓰러짐으로 줄어드니까) */
+ const LEFT=n=>Math.max(0,Math.min(3,(+n||0)-1));const WMUL=FN.WEATHER_MUL||{};const curW=String((f.weather||{}).type||'');
+ const myAct=[m,...c.allies].filter(x=>x&&x.hp.cur>0);const sideOf=x=>x.side;const foeSide=fs[0]?fs[0].side:(m.side==='left'?'right':'left');
+ const atkFr=(x,vs,mul)=>{let bv=0;for(const q of FN.MVS(x)){if(!q||q.cat==='변화'||!(+q.pow>0))continue;const k=mul?mul(q):1;if(!k)continue;for(const tg of vs){const v=c.expect(x,q,tg)*k/Math.max(1,tg.hp.cur);if(v>bv)bv=v}}return Math.min(1,bv)};
+ /* 날씨 w 가 지금 날씨 대신이면 한쪽(자기 편 attackers → 상대 vs)의 가장 센 공격이 얼마나 바뀌나 */
+ const wxGain=(atks,vs,w)=>atks.reduce((a,x)=>{const now=atkFr(x,vs);const nw=atkFr(x,vs,q=>{const t=q.typeEn;const cur=(WMUL[curW]||{})[t]||1,to=(WMUL[w]||{})[t]||1;return to/cur});return a+(Math.min(1,nw)-now)},0);
+ /* 벽: 상대가 우리에게 그 분류로 칠 위협 합 × 깎는 몫(1−0.67) */
+ const wallGain=(cat)=>thr.reduce((a,t)=>a+(t.mv&&(cat==='all'||t.mv.cat===cat)?Math.min(1,t.fr)*0.33:0),0);
+ /* 지금 판이 상대에게 주는 것 (안개제거 · 날씨 걷어내기의 값) */
+ const foeEdge=()=>{let v=0;const fo=(f.objects||{})[foeSide]||{},mo=(f.objects||{})[m.side]||{};
+  for(const o of ['리플렉터','빛의장막','오로라베일']){const n=+fo[o]||0;if(!n)continue;const cat=o==='리플렉터'?'물리':o==='빛의장막'?'특수':'';const g=myAct.reduce((a,x)=>a+atkFr(x,fs,q=>cat&&q.cat!==cat?0:1)*(1/0.67-1),0);v+=g*LEFT(n)}
+  if(+fo['순풍']>0){const flip=myAct.filter(x=>fs.some(tg=>c.spd(tg)>c.spd(x)&&c.spd(tg)/2<c.spd(x))).length;v+=0.15*flip*LEFT(+fo['순풍'])}
+  for(const o of ['리플렉터','빛의장막','오로라베일']){const n=+mo[o]||0;if(n)v-=wallGain(o==='리플렉터'?'물리':o==='빛의장막'?'특수':'all')*LEFT(n)}   /* 안개제거는 우리 벽도 걷는다 */
+  if(+mo['순풍']>0)v-=0.15*myAct.length*LEFT(+mo['순풍']);
+  if(curW){const n=+(f.weather||{}).count||5;/* 날씨를 걷으면: 우리 공격 변화 − 상대 공격 변화 (지금 날씨가 상대 편이면 +) */v+=(wxGain(myAct,fs,'')-wxGain(fs,myAct,''))*LEFT(n)}
+  if(+((f.rooms||{})['트릭룸']||0)>0){const n=+(f.rooms||{})['트릭룸'];const myFast=myAct.filter(x=>fs.some(tg=>c.spd(x)>c.spd(tg))).length;v+=(0.12*myFast-0.12*(myAct.length-myFast))*LEFT(n)}
+  return v};
  const support=(mv,P)=>{const e=String(mv.eff||'');
   /* 11-15 05시 도우미: 아군의 가장 센 공격이 ×1.5 로 늘어나는 몫(쓰러뜨리기까지) — 내 공격보다 크면 */
   if(/「도우미」\s*상태로/.test(e)){let bt=null;for(const al of c.allies){if(!al||!al.entry||al.hp.cur<=0)continue;const ja=c.J&&c.J.get?c.J.get(al.id):null;if(ja&&(ja.prot||ja.sw||!ja.mv||ja.mv.cat==='변화'))continue;/* 짝이 이번 턴 공격할 때만 · 짝이 고른 기술 · 대상으로 */for(const q of (ja?[ja.mv]:FN.MVS(al))){if(!q||q.cat==='변화'||!(+q.pow>0))continue;for(const f of (ja&&ja.tg&&fs.includes(ja.tg)?[ja.tg]:fs)){const v=c.expect(al,q,f);const fr=v/Math.max(1,f.hp.cur);const g=Math.min(1,1.5*fr)-Math.min(1,fr);if(!bt||g>bt.g)bt={al,g}}}}return bt&&bt.g>0.15?{mv,tg:bt.al,score:bt.g,why:'도우미'}:'skip'}
@@ -252,6 +270,8 @@ function statusPick(H,W,c){const FN=H.fn,MA=W.OM_MOVEAUTO,B=W.OM_BATTLE;const {m
  for(const mv of L){let P=null;try{P=MA.parse(mv)}catch(e){}const prot=FN.protMove(mv);if(c.ai&&!prot){const sp=support(mv,P);if(sp){if(sp!=='skip')out.push(sp);continue}}if(!prot&&!(P&&MA.auto(P)))continue;
   if(prot){if(pol==='C')continue;if(m.protectLast===turn-1)continue;if(danger>=m.hp.cur&&c.allies.length)out.push({mv,tg:m,score:0.6,why:'기술 방어'});continue}
   const ops=(P.groups||[]).flatMap(g=>(g.ops||[]).map(op=>Object.assign({who:g.who,n:g.n},op)));
+  /* 11-15: 판 걷어내기(안개제거 = 날씨 · 필드 · 룸 · 벽 · 설치기 전부) — 지금 판이 상대 편이면 */
+  if(ops.some(o=>o.k==='clearobj')||(ops.some(o=>o.k==='weather'&&!o.w)&&mv.cat==='변화')){if(gateC)continue;const v=foeEdge();if(v>0.2)out.push({mv,tg:m,score:Math.min(0.9,v*0.6),why:'판 걷어내기'});continue}
   for(const op of ops){
    if(op.k==='state'&&op.tgt==='self'&&op.state==='FollowMe'){/* 11-15 망령 「날따름으로 공격을 유도」: 짝이 위험하고 내가 받아낼 수 있으면 */const pt=c.allies[0];if(!pt||!c.ai&&pol==='C')continue;const pa=c.dangerOf(pt)/Math.max(1,pt.hp.cur);const me=danger/Math.max(1,m.hp.cur);/* 상대 둘이 다 나를 때리는 최악 = danger 그대로 */if(pa<0.5||me>=pa||me>=1.6)continue;/* 내가 짝보다 덜 위험할 때 — 짝 대신 맞는다 */out.push({mv,tg:m,score:Math.min(0.75,0.3+0.3*(pa-me))*(me<1?1:0.75),why:'날따름'});continue}
    if(op.k==='state'&&op.tgt==='target'){const st=op.state;const cand=fs.filter(tg=>!immune(tg,st)&&!(MAJOR.includes(st)&&MAJOR.some(k=>(tg.states||{})[k]))&&!(tg.states||{})[st]);if(!cand.length)continue;
@@ -263,12 +283,12 @@ function statusPick(H,W,c){const FN=H.fn,MA=W.OM_MOVEAUTO,B=W.OM_BATTLE;const {m
     if(!s)continue;if(pol==='C'&&turn>1)continue;if(!safe||hpR<0.6)s*=0.3;out.push({mv,tg:m,score:s,why:'강화'})}
    else if(op.k==='rank'&&op.tgt==='target'){if(pol==='C')continue;const dn=Object.entries(op.stats||{}).filter(([k,v])=>+v<0);if(!dn.length)continue;const tg=fs.slice().sort((a,x)=>Math.max(x.stats[1],x.stats[3])-Math.max(a.stats[1],a.stats[3]))[0];const tm=tg.stats[1]>=tg.stats[3]?'attack':'specialattack';let s=0;for(const [k,v] of dn){if(k===tm)s+=0.12*Math.min(2,-v);else if(k==='speed'&&c.spd(tg)>c.spd(m))s+=0.08*Math.min(2,-v)}if(s)out.push({mv,tg,score:s*accP(mv,tg),why:'약화'})}
    else if(op.k==='heal'&&op.tgt==='self'){if(hpR>0.5)continue;const fr=String(op.value||'1/2').split('/');const h=(+fr[0]||1)/(+fr[1]||2);const s=Math.min(h,1-hpR)*(danger<m.hp.cur+m.hp.max*h?1.1:0.4);out.push({mv,tg:m,score:s,why:'회복'})}
-   else if(op.k==='weather'){if(f.weather.type===op.w)continue;const WM=FN.WEATHER_MUL[op.w]||{};const mine=c.allies.concat([m]).some(x=>FN.MVS(x).some(q=>q&&q.cat!=='변화'&&WM[q.typeEn]>1&&FN.tysOf(x).includes(q.typeEn)));const theirs=fs.some(x=>FN.MVS(x).some(q=>q&&q.cat!=='변화'&&WM[q.typeEn]>1));if(mine&&!theirs)out.push({mv,tg:m,score:0.3,why:'날씨 '+op.w})}
+   else if(op.k==='weather'&&op.w){if(f.weather.type===op.w)continue;/* 11-15: 날씨 = (우리 공격이 늘어나는 몫 − 상대 공격이 늘어나는 몫) × 남은 턴 · 벤치 아이도 반쯤 */const benchMine=(c.bench||[]).filter(x=>x.tid===m.tid);const g=wxGain(myAct,fs,op.w)+0.5*wxGain(benchMine,fs,op.w)-wxGain(fs,myAct,op.w);const ice=op.w==='눈'||op.w==='싸라기눈'?0.15*myAct.filter(x=>FN.tysOf(x).includes('Ice')).length:0;const sand=op.w==='모래바람'?0.12*myAct.filter(x=>FN.tysOf(x).includes('Rock')).length:0;const v=(g+ice+sand)*LEFT(+op.count||5)*0.6;if(v>0.15)out.push({mv,tg:m,score:Math.min(0.9,v),why:'날씨 '+op.w})}
    else if(op.k==='terrain'&&op.room&&op.t==='트릭룸'){if(gateC)continue;if(+((f.rooms||{})['트릭룸']||0)>0)continue;const mine=c.allies.concat([m]);const sl=x=>c.spd(x);const mySp=mine.reduce((a,x)=>a+sl(x),0)/mine.length,thSp=fs.reduce((a,x)=>a+sl(x),0)/fs.length;
     /* 11-15 망령 「오토나시 트릭룸」: 트릭룸 동안 덕을 볼 우리 편(필드 · 벤치, 상대 평균보다 느린 아이) 수만큼 — 5턴 판을 바꾸는 수 */const slowAll=Object.values(b.mons).filter(x=>x.side===m.side&&x.hp.cur>0&&sl(x)<thSp).length;if(mySp<thSp*0.9&&slowAll>=3)out.push({mv,tg:m,score:Math.min(0.9,0.3+0.12*slowAll),why:'트릭룸'})}
    else if(op.k==='terrain'&&!op.room){if(f.terrain.type===op.t)continue;const TY={그래스필드:'Grass',일렉트릭필드:'Electric',사이코필드:'Psychic'}[op.t];if(TY&&mtypes.includes(TY)&&FN.MVS(m).some(q=>q&&q.cat!=='변화'&&q.typeEn===TY))out.push({mv,tg:m,score:0.25,why:'필드 '+op.t})}
    else if(op.k==='object'&&op.side==='self'){if(gateC)continue;const objs=(f.objects||{})[m.side]||{};if(+objs[op.o]>0)continue;const th=c.topThreat(pol,m);
-    if((op.o==='리플렉터'&&th.mv&&th.mv.cat==='물리')||(op.o==='빛의장막'&&th.mv&&th.mv.cat==='특수')||(op.o==='오로라베일'&&/싸라기눈|눈/.test(String((f.weather||{}).type||''))))out.push({mv,tg:m,score:0.35,why:op.o});
+    if(op.o==='리플렉터'||op.o==='빛의장막'||op.o==='오로라베일'){if(op.o==='오로라베일'&&!/싸라기눈|눈/.test(curW))continue;/* 11-15: 벽 = 상대 위협(그 분류) × 0.33 × 남은 턴 */const v=wallGain(op.o==='리플렉터'?'물리':op.o==='빛의장막'?'특수':'all')*LEFT(+op.n||5)*0.6;if(v>0.15)out.push({mv,tg:m,score:Math.min(0.9,v),why:op.o})}
     else if(op.o==='순풍'){/* 11-15 망령 「순풍으로 선공권」: 순풍(×2)으로 앞지르게 되는 우리 편 (필드 · 벤치) 수만큼 */const fast=Math.max(...fs.map(tg=>c.spd(tg)));const mine=[m,...c.allies];const flip=mine.filter(x=>c.spd(x)<fast&&c.spd(x)*2>fast).length;const bflip=(c.bench||[]).filter(x=>x.tid===m.tid&&+x.stats[5]<fast&&+x.stats[5]*2>fast).length;if(flip||bflip)out.push({mv,tg:m,score:Math.min(0.8,0.3+0.18*flip+0.06*bflip),why:'순풍'})}}
    else if(op.k==='object'&&op.side==='enemy'){if(gateC)continue;const objs=(f.objects||{})[fs[0].side]||{};if(+objs[op.o]>0)continue;const benchN=Object.values(b.mons).filter(x=>x.side===fs[0].side&&!x.entry&&x.hp.cur>0).length;if(benchN)out.push({mv,tg:fs[0],score:0.08+0.07*benchN,why:op.o})}}}
  if(!out.length)return null;out.sort((a,x)=>x.score-a.score);return out[0]}
