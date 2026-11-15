@@ -241,6 +241,22 @@ async function runBattle(W,opt){
   const attacking=m=>acts.some(a=>a.m.id===m.id&&a.mv&&a.mv.cat!=='변화');const danger=m=>{const th=topThreat(P2,m);return th.mv&&th.v>=m.hp.cur*0.6};
   /* 11-15: 기술 · 태그 · 비자속 한정 강화는 이번 턴 그 기술을 낼 때만 (불굴귀의 투창 = 타입 비일치 「가시창」) */
   const mvOk=(ops,m)=>{const a=acts.find(x=>x.m.id===m.id&&x.mv&&x.mv.cat!=='변화');if(!a)return false;for(const o of ops||[]){if(!o||!['boost','mult'].includes(o.k))continue;if(Array.isArray(o.mv)&&o.mv.length&&!o.mv.includes(a.mv.name))return false;if(Array.isArray(o.tg)&&o.tg.length&&!o.tg.some(t=>String(a.mv.name).includes(t)||[].concat(a.mv.tags||[]).some(x=>String(x).includes(t))))return false;if(o.sb==='nonstab'&&(m.types||[]).some(t=>t===a.mv.typeEn||t===a.mv.type))return false;if(o.sb==='stab'&&!(m.types||[]).some(t=>t===a.mv.typeEn||t===a.mv.type))return false}return true};
+  /* 11-15 망령 「에리어 이동 해야지!!!」: 자리 바꾸기의 값 — 상대 지시는 자리(left_a …)로 잠기므로, 우리 둘이 자리를 바꾸면 상대 단일기가 옆 아이에게 간다.
+     상대마다 우리 중 가장 아프게 칠 수 있는 아이를 노린다고 보고(threatVs), 바꾼 뒤 그 자리에 올 아이가 받을 몫과 견준다 (쓰러짐 덤 0.6 · 전체기는 그대로) */
+  const vfr=r=>Math.min(r,1)+(r>=1?0.6:0);
+  const swapGain=()=>{const my=active(sd);if(my.length<2)return 0;const [x,y]=my;let g=0;for(const f of foes(sd)){let best=null;for(const m of [x,y]){const th=threatVs(P2,f,m);if(!th.mv||SPREAD.test(th.mv.range||''))continue;const r=th.v/Math.max(1,m.hp.cur);if(!best||r>best.r)best={m,mv:th.mv,r}}if(!best)continue;const o=best.m===x?y:x;const r2=reach(f,best.mv,o)?expect(f,best.mv,o)/Math.max(1,o.hp.cur):0;g+=vfr(best.r)-vfr(r2)}return g};
+  /* 「에리어를 이동했을 때 아군 전체의 『X』를 발동」(질투의 아카이브)이 남아 있으면 덤 */
+  const archiveBonus=()=>{let v=0;for(const m of active(sd)){if(m.tid!==tid)continue;for(const p of FN.potSrc(m)){const mm=String(p.eff||'').match(/에리어를\s*이동했을\s*때\s*아군\s*전체의\s*『\s*([^』]+?)\s*』/);if(!mm)continue;const L=FN.limOf(p,m.potUses||{},m.potTurn||{});if(L.left!==null&&L.left<=0)continue;v+=0.15*active(sd).filter(x=>FN.potSrc(x).some(q=>q&&q.name===mm[1].trim())).length}}return v};
+  if(!process.env.NOAREA){const G=swapGain(),AB=archiveBonus();
+   /* ① 고유 「턴 개시 시 『X』인 아군이 에리어를 이동한다 (② 방/특방 저하)」 — 이득이 저하 몫보다 크면 */
+   for(const q of (H.fn.uniqList||H.get('uniqList'))(t)){const e=String(q.p.eff||'');const rm=e.match(/턴\s*개시\s*시\s*『\s*([^』]+?)\s*』\s*인\s*아군이\s*에리어를\s*이동한다/);if(!rm||(q.left!==null&&q.left<=0))continue;const k='u|'+tid+'|'+q.p.name;if(PU[k]===T0||(PU[k]===T0-1&&/【\s*탈진\s*】/.test(e)))continue;
+    const al=mine.filter(x=>(FN.rolesOf?FN.rolesOf(x).includes(rm[1]):false)||FN.potSrc(x).some(z=>z&&z.name===rm[1]));if(!al.length||active(sd).length<2)continue;
+    const dm=e.match(/「\s*방\s*\/\s*특방\s*」\s*을\s*저하\s*\(\s*([\d.]+)\s*배\s*\)/);const cost=dm?al.reduce((a,x)=>a+Math.min(1,topThreat(P2,x).v/Math.max(1,x.hp.cur))*(1/(+dm[1])-1)*0.6,0):0;
+    if(G+AB-cost<0.15)continue;PU[k]=T0;try{await (H.fn.fireSpecial||H.get('fireSpecial'))(tid,al[0].id,'uq',q.p.name,'free');await flush(2)}catch(err){}}
+   /* ② 우선도 있는 자리 바꾸기 변화기(사이드체인지): 이득이 크고, 그 아이의 이번 공격이 크게 아깝지 않으면 바꿔 낸다 */
+   if(G>=0.45)for(const m of mine){const a=acts.find(x=>x.m.id===m.id);if(!a||a.sw||!a.mv)continue;const L=FN.MVS(C().mons[m.id]||m);const i=L.findIndex(x=>x&&x.cat==='변화'&&/^「우선도」\+\d+\.\s*에리어를 이동한다/.test(String(x.eff||''))&&!(FN.mvBan&&FN.mvBan(m,x)));if(i<0)continue;const sc=L[i];if(m.lastMove===sc.name&&+m.lastMoveT===T0-1)continue;
+    const own=a.mv.cat==='변화'?0:Math.max(0,...foes(sd).map(f=>vfr(expect(m,a.mv,f)/Math.max(1,f.hp.cur))));if(own>=G)continue;const mv=Object.assign({},sc,{_i:i});a.mv=mv;a.tg=null;a.targets=[];a.prot=0;const ct=C().cmds||{};if(ct[tid]&&ct[tid].mons)ct[tid].mons[m.id]={move:i,targets:[]};
+    if(H.logOn)W.OM_APP.sysLog(`(지시) ${m.name} 『${sc.name}』 — 자리를 바꿔 상대 공격을 옆 아이에게 (이득 ${G.toFixed(2)})`,'battle');break}}
   const dexLeft=()=>{const L=((W.OM_APP.ST.state.dex||{})[tid]||{}).list||[];return foes(sd).some(f=>!L.includes(f.id))};
   const want=(cls,m,ops)=>cls==='dex'?dexLeft():cls==='open'||cls==='foe'?true:cls==='buff'?attacking(m)&&(!ops||mvOk(ops,m)):cls==='def'?danger(m):cls==='heal'?m.hp.cur<m.hp.max*0.5:false;
   /* 11-15 「데이터 해석」: 우리 편 포텐셜 · 고유가 해석을 조건으로 쓰면(「해석된 상대」 · 「해석했을 때」) 『포켓몬 도감』(지시 랭크 횟수 · 【사전】)으로 필드의 아직 안 본 상대 중 가장 위협적인 아이를 본다 · 해석하는 포텐셜(구문 「해석」)도 그때 */

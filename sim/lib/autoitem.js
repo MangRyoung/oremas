@@ -14,11 +14,13 @@ function mainType(m){const b=(m.base||[]).map(Number);const tk=(m.typesKo||[]).f
 function roleOf(m){const r=String(m.role||'');const b=(m.base||[]).map(Number);const atk=Math.max(b[1]||0,b[3]||0),bulk=(b[0]||0)+(b[2]||0)+(b[4]||0);
  if(/블로커|어시스트|서포터/.test(r))return 'wall';if(/러너/.test(r))return 'runner';if(/에이스|어태커|킬러/.test(r))return 'atk';
  if(atk>=100||atk>=bulk/3+10)return 'atk';if(bulk>=290)return 'wall';return 'atk'}
-function choices(m,role,DBI){const L=[];const T=mainType(m);const bo=T&&BOOST[T];
- if(role==='atk'){if(bo)L.push(bo);L.push('자뭉열매','하양허브')}
- else if(role==='wall'){L.push('자뭉열매','먹다남은음식','울퉁불퉁멧','하양허브');if(bo)L.push(bo)}
- else{L.push('자뭉열매');if(bo)L.push(bo);L.push('하양허브')}
- return L.filter(n=>DBI[n]&&DBI[n].auto&&!BAN.has(n))}
+function choices(m,role,DBI,win){const L=[];const T=mainType(m);const bo=T&&BOOST[T];const tk=(m.typesKo||[]);const noSt=!(m.moves||[]).some(x=>x&&x.cat==='변화');const punch=(m.moves||[]).some(x=>x&&/펀치/.test(String(x.tag||'')+(x.tags||[]).join(',')));
+ if(role==='atk'){if(bo)L.push(bo);if(punch)L.push('펀치글러브');L.push('자뭉열매','초점렌즈','하양허브','기합의띠','약점보험','멘탈허브')}
+ else if(role==='wall'){if(tk.includes('독'))L.push('검은진흙');L.push('자뭉열매','먹다남은음식','울퉁불퉁멧');if(noSt)L.push('돌격조끼');L.push('하양허브','방진고글','멘탈허브');if(bo)L.push(bo)}
+ else{L.push('자뭉열매');if(bo)L.push(bo);L.push('기합의띠','초점렌즈','하양허브','멘탈허브')}
+ /* 11-15: 「구문」 칸이 비어도(제작기 DB 수정이 비운 하양허브 등) 소지품 규칙(itemrule)이 효과 글에서 풀면 쓴다 */
+ const ok=n=>{const d=DBI[n];if(!d||BAN.has(n))return false;if(d.auto)return true;try{const r=win&&win.OM_ITEMS&&win.OM_ITEMS.rule?win.OM_ITEMS.rule(n):null;return !!r&&Object.keys(r).some(k=>!['name','eff','src','once','own'].includes(k))}catch(e){return false}};
+ return L.filter(ok)}
 /* r = P.build 결과 {trainer, mons}. 빈 칸만 채운다. 돌려주는 값 = [{mon, item, why}] */
 /* 11-15 망령 「여태 소지품을 시트 기준으로만? 안 껴 놓은 것도 있겠네」: 6체는 2체 소켓(3 안팎)이 아니라 6체 소켓(캠페인 상수 limit_item_socket — 지시 D 8 · C 9 · B 10 · A 11 · AA 12)으로 채운다.
    【준비】 「소지품 소켓 : +N」(『황금신부의 혼수품』 — 「타입 : X」가 K체 이상일 경우)도 더한다 */
@@ -30,7 +32,7 @@ function equip(win,r){const DBI=((win.OM_DB||{}).items)||{};const t=r.trainer;co
  const used=new Set(r.mons.map(m=>m.item).filter(Boolean));let spent=r.mons.reduce((a,m)=>a+(m.item&&DBI[m.item]?+DBI[m.item].sock||0:0),0);const out=[];
  const order=r.mons.filter(m=>!m.item).map(m=>({m,role:roleOf(m)})).sort((a,b)=>(a.role==='atk'?0:1)-(b.role==='atk'?0:1));
  order.forEach(({m,role},i)=>{const left=order.length-i-1;const keep=left*1;   /* 뒤에 남은 포켓몬 몫으로 1소켓씩은 남겨 둔다 */
-  const c=choices(m,role,DBI).find(n=>!used.has(n)&&!TOs(n).some(g=>usedTO.has(g))&&spent+(+DBI[n].sock||0)<=cap-keep+1e-9);if(!c)return;TOs(c).forEach(g=>usedTO.add(g));
+  const c=choices(m,role,DBI,win).find(n=>!used.has(n)&&!TOs(n).some(g=>usedTO.has(g))&&spent+(+DBI[n].sock||0)<=cap-keep+1e-9);if(!c)return;TOs(c).forEach(g=>usedTO.add(g));
   m.item=c;m.itemEff=String(DBI[c].eff||'').replace(/<br\s*\/?>/g,'\n');m.itemAuto=1;used.add(c);spent+=+DBI[c].sock||0;out.push({mon:m.name,item:c,why:role})});
  t.autoItems=out;t.itemSock={cap,spent};return out}
 /* 11-04 망령 「2체일 땐 2체 소지품 TO 중에서 장착하고 다 같이 합쳐야지」: 던전 일행 = 한 파티.
@@ -41,7 +43,7 @@ function pool(win,parties){const DBI=((win.OM_DB||{}).items)||{};const sk=n=>(n&
  const cap=parties.reduce((a,p)=>a+(SOCK2[rankKey(((p.trainer||{}).ranks||{})['지시'])]||3),0);const used=new Set();const log=[];let spent=0;
  const all=[];parties.forEach(p=>p.mons.forEach(m=>all.push({p,m})));
  for(const {p,m} of all){const it=m.item;if(!it)continue;
-  if(used.has(it)){const alt=choices(m,roleOf(m),DBI).find(n=>!used.has(n));const was=it;if(alt){m.item=alt;m.itemEff=String(DBI[alt].eff||'').replace(/<br\s*\/?>/g,'\n');m.itemAuto=1;log.push(`${m.name}: ${was} 겹침 → ${alt}`)}else{m.item='';m.itemEff='';log.push(`${m.name}: ${was} 겹침 → 뗌`)}}
+  if(used.has(it)){const alt=choices(m,roleOf(m),DBI,win).find(n=>!used.has(n));const was=it;if(alt){m.item=alt;m.itemEff=String(DBI[alt].eff||'').replace(/<br\s*\/?>/g,'\n');m.itemAuto=1;log.push(`${m.name}: ${was} 겹침 → ${alt}`)}else{m.item='';m.itemEff='';log.push(`${m.name}: ${was} 겹침 → 뗌`)}}
   if(m.item){used.add(m.item);spent+=sk(m.item)}}
  /* 넘치면 자동으로 채운 것 중 소켓이 큰 것부터 뗀다 */
  const auto=all.filter(x=>x.m.item&&x.m.itemAuto).sort((a,b)=>sk(b.m.item)-sk(a.m.item));

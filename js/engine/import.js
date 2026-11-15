@@ -73,6 +73,9 @@ window.OM_IMPORT=(()=>{
   const ET=d.effTxt||{};
   (d.pots||[]).forEach((n,i)=>{if(!n||n==='-')return;const row=((DB().maker||{}).pots||[]).find(r=>r[1]===n);
    pots.push({slot:i,name:String(n).replace(/『|』/g,''),kind:(d.potKind||[])[i]||(ET.kinds||[])[i]||(row?row[0]:''),eff:brN((d.potEff||[])[i]||(ET.pots||[])[i]||(row?row[2]:'')),ph:isPh(n)})});
+  /* 11-15 망령 「역할 칸의 닌자 외엔 고유로 임명하려고 임시로 넣어 둔 것」: 역할 칸이 『바닐라』인데 다른 칸에 역할 포텐셜(제작기 표 분류 「역할」)이 있으면 임명 자리표(apt) — 꺼 두고(ph), 임명(fx appoint → m.apt)된 동안만 켠다 (battle_ui potSrc) */
+  {const isRoleN=n=>{const r=((DB().maker||{}).pots||[]).find(x=>x[1]===n);return !!r&&/역할/.test(String(r[0]||''))};const rp=pots.find(p=>p.slot===0)||pots.find(p=>/역할/.test(String(p.kind||'')));
+   if(rp&&rp.name==='바닐라')for(const p of pots)if(p!==rp&&p.name!=='바닐라'&&isRoleN(p.name)){p.ph=true;p.apt=1}}   /* 역할 칸 = 첫 칸(#1) — 다른 칸의 역할 포텐셜(분류 표시가 「역할」이어도)이 자리표 */
   const abil0=(DB().traits||{})[d.ability]||{};const abil=ET.ab?{multi:ET.ab}:abil0;
   /* 소지품: 오레마스 DB → 없으면 제작기 시트의 오리지널 소지품(itemOwn, DB 에 안 넣은 것) · 시트 사본(effTxt.it) (10-24 망령) */
   const item0=(DB().items||{})[d.item];const own=d.itemOwn&&d.itemOwn.name&&d.itemOwn.name===d.item?d.itemOwn:null;
