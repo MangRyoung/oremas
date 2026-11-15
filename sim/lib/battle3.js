@@ -16,7 +16,7 @@ const STATK={attack:'공격',defense:'방어',specialattack:'특공',specialdefe
 
 async function runBattle(W,opt){
  const H=WT.load(W);const FN=H.fn,B=W.OM_BATTLE,FX=W.OM_FX,MA=W.OM_MOVEAUTO,OO=W.OM_ORDERS,OI=W.OM_ITEMS;
- const rng=opt.rng||mkRng(opt.seed||1);H.setRng(rng);H.logOn=!!opt.log;H.cards=opt.cards||null;   /* 11-01 은열쇠: 보험형 배틀 카드 (fight.js cardTake) */
+ const rng=opt.rng||mkRng(opt.seed||1);H.setRng(rng);H.logOn=!!opt.log;if(opt.onH)opt.onH(H);   /* 11-15 시험용: 하네스 받기 */H.cards=opt.cards||null;   /* 11-01 은열쇠: 보험형 배틀 카드 (fight.js cardTake) */
  const fmt=Math.max(1,Math.min(3,opt.format||2)),maxT=opt.maxTurns||30;
  /* ---- 배틀 차리기 (웹툴 encounter · prepMon 과 같은 꼴) ---- */
  const b={turn:0,phase:0,mode:fmt,sides:{left:{trainers:[]},right:{trainers:[]}},trainers:{},mons:{},field:{},cmds:{},order:[],ordPool:opt.pool?1:0};   /* 11-04: 던전 공용 풀이면 웹툴 battle_ui 의 일행 몫 이름(pName)이 다른 지시 체계 종류도 빌려 준 사람 이름으로 건다 */

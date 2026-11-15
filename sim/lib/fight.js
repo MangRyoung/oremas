@@ -75,6 +75,7 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
   const effPre=mv.cat==='변화'?null:B.effectiveness(moveTypes,def,{multiMode:0,atkTypes,force:null,floating});
   const mods=FX?FX.attackMods(atk,def,Object.assign(FN.moveQuery(atk,def,mv,moveTypes,effPre?effPre.value:1,!multiTarget),{stab:!!(effPre&&effPre.stab)})):{boost:1,guard:1,cg:0,cr:0,cx:'',names:[]};
   {const ig=OI&&OI.defGuard(def,mv.cat);if(ig){mods.guard=(mods.guard||1)*ig.v;mods.names=(mods.names||[]).concat([{key:'_i',who:def.id,txt:ig.txt}])}}
+  if(H.logOn)for(const n of (mods.names||[]))if(String(n.key||'').startsWith('_hoi'))W.OM_APP.sysLog('  '+n.txt,'battle');   /* 11-15 【방호】 무시를 로그에 */
   let igDef=-1,igAtk=-1;if(IG.def!=null)igDef=IG.def;if(IG.atk!=null)igAtk=IG.atk;if(igDef===-1&&/대상의\s*랭크\s*변화를\s*무시/.test(String(mv.eff||'')))igDef=6;
   const OC=FN.orderCrit(atk,def);
   if(mods.cx!=='none'&&FN.CRR(def).never)mods.cx='none';
@@ -146,7 +147,7 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};
   try{if(FN.evFlush)await FN.evFlush();if(FN.evReact)await FN.evReact('shout',{mid,mv:mv.name,key:mv.name+'@'+rnd()})}catch(e){}
   try{if(FN.deferFire)await FN.deferFire(mid,'자신의 행동이 끝나서','act')}catch(e){}}
  /* 강제 교대 · 자기 교대 (적용 뒤) */
- out.forceSwitch=!!(MAU&&MAU.forceSwitch);out.selfSwitch=MAU&&MAU.selfSwitch?MAU.selfSwitch:(NX.some(e=>e.uturn)?'free':'');
+ {const HIT2=mv.cat==='변화'||res.some(r=>r&&r.acc&&r.acc.hit&&r.def&&r.def.id!==mid);/* 11-15: 공격기의 교대 · 날려보내기는 맞았을 때만 (웹툴 HIT2) */out.forceSwitch=HIT2&&!!(MAU&&MAU.forceSwitch);out.selfSwitch=!HIT2?'':MAU&&MAU.selfSwitch?MAU.selfSwitch:(NX.some(e=>e.uturn)?'free':'')}
  if(out.forceSwitch)for(const r of res){if(!r.acc.hit||r.def.id===mid)continue;const d=FN.ctx().b.mons[r.def.id];if(!d||!d.entry||d.hp.cur<=0)continue;const g=await FN.switchGuard(d);if(g)continue;await FN.forcedSwitch(d.id,{sys:true})}
  out.anyHit=anyHit;out.dealt=dealtAll;
  if(H.logOn)W.OM_APP.sysLog(`【공격】 ${atk.name} 『${mv.name}』${PR?(PR.ok?' (기술 방어 성공)':' (기술 방어 실패)'):''} ${out.hits.map(h=>'→ '+h.to+' '+(h.miss?'✗ '+h.note:h.status?'(변화)':'−'+h.dmg+(h.eff!==1?' ×'+h.eff:'')+(h.crit?' 급소':'')+(h.n>1?' '+h.n+'타':'')+(h.ko?' 쓰러짐':''))).join(' ')}${lines.length?'\n  '+lines.join('\n  '):''}`,'battle');
@@ -195,7 +196,7 @@ async function applyHit(H,W,mid,rnd){const FN=H.fn,B=W.OM_BATTLE,OI=W.OM_ITEMS;c
  const after=FN.ctx().b.mons[mid];return {final:v,ko:!!after&&after.hp.cur<=0}}
 
 /* ===== 지시용 기대 대미지 (굴리지 않고 공격 창과 같은 보정으로, 주사위 중간값 · 급소 없음 · 명중 확률 곱) ===== */
-function estimate(H,W,atk,def,mv,o){o=o||{};const FN=H.fn,B=W.OM_BATTLE,FX=W.OM_FX,OI=W.OM_ITEMS,S=W.OM_STATS;if(!mv||mv.cat==='변화'||!(+mv.pow>0))return 0;
+function estimate(H,W,atk,def,mv,o){o=o||{};const FN=H.fn,B=W.OM_BATTLE,FX=W.OM_FX,OI=W.OM_ITEMS,S=W.OM_STATS;if(!mv||mv.cat==='변화'||(!(+mv.pow>0)&&!H.fn.specialPowFor(mv.name,atk)))return 0;   /* 11-15: 위력이 정해지지 않는 기술(헤비봄버 · 자이로볼 …)은 specialPowFor 로 — 전엔 0 으로 보고 한 번도 안 골랐다 */
  const b=FN.ctx().b;const f=FN.fieldOf(b);const RM=k=>+((f.rooms||{})[k]||0)>0;
  const sk=FN.skinOf(atk,mv);const T0=RM('블랙룸')?'Ghost':((sk||{}).ty||mv.typeEn);const moveTypes=RM('블랙룸')?['Ghost']:sk?[sk.ty]:String(mv.type||'').split(/[()/,]/).map(t=>t.trim()).filter(Boolean).map(S.typeEn);
  if(OI&&OI.immune(def,moveTypes))return 0;
