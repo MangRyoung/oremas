@@ -1,5 +1,5 @@
 /* 11-14 망령 「학생들끼리 포텐셜 잘 활용하면서 배틀을 돌리고 로그 분석 후 승률이 높아지게 지시 로직을 다듬어」
-   학생(미사그 캠퍼스, 각성체 2체) 총당 PvP. node tools/pvp.js [--n 4] [--seed 1] [--only 이름,이름] [--log 이름:이름] [--polL 정책] [--polR 정책] [--out 파일]
+   학생(미사그 캠퍼스, 각성체 2체) 총당 PvP. node tools/pvp.js [--n 4] [--seed 1] [--only 이름,이름] [--skip 이름,이름] [--all (기본 제외 목록 없이)] [--log 이름:이름] [--polL 정책] [--polR 정책] [--out 파일]
    polL/polR: 한쪽만 새 지시 로직(opt.ai)으로 돌려 견주기 — ai=old|new */
 "use strict";
 const fs=require('fs'),path=require('path');const SIM=path.resolve(__dirname,'..');
