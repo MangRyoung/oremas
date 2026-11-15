@@ -2716,7 +2716,7 @@ window.OM_BATTLE_UI=(()=>{
  const mvTys=mv=>[mv&&mv.typeEn,...String((mv&&mv.type)||'').split(/[()/,]/).map(x=>x.trim()).filter(Boolean).map(x=>S().typeEn(x))].filter(Boolean);
  function mvBan(m,mv){if(!m||!mv||mv.virt||mv.ext)return '';const st=m.states||{};const nm=nmMv(mv.name);const lm=m.lastMove&&nmMv(m.lastMove.name);
   if(st.Encore&&lm&&nm!==lm)return `「앙코르」 — 『${lm}』만 내보낼 수 있다`;if(st.Disable&&lm&&nm===lm)return `「사슬묶기」 — 『${lm}』는 내보낼 수 없다`;if(st.Torrment&&lm&&nm===lm)return `「트집」 — 『${lm}』를 연속으로 내보낼 수 없다`;
-  if(st.Silence&&/소리/.test(String(mv.tag||'')))return '「침묵」 — 「소리」 기술은 내보낼 수 없다';if(st.HealBlock){const au=moveAuto(mv);if(au&&au.drain)return '「회복봉인」 — 「드레인」 기술은 내보낼 수 없다'}const gm=m.grudgeMove&&nmMv(m.grudgeMove);if(st.Grudge&&gm&&nm===gm)return `「원념」 — 『${gm}』는 내보낼 수 없다`;return ''}
+  if(st.Silence&&/소리/.test(String(mv.tag||'')))return '「침묵」 — 「소리」 기술은 내보낼 수 없다';if(st.HealBlock){const au=moveAuto(mv);if(au&&au.drain)return '「회복봉인」 — 「드레인」 기술은 내보낼 수 없다'}const gm=m.grudgeMove&&nmMv(m.grudgeMove);if(st.Grudge&&gm&&nm===gm)return `「원념」 — 『${gm}』는 내보낼 수 없다`;if(m.lastMove){const au=moveAuto(mv);if(au&&au.firstOnly)return '나온 뒤 첫 기술이 아니라 실패한다'}   /* 11-15 망령 「오토나시 승률이 왜 다시 30%」: 어린애속이기 · 만나자마자 류를 첫 턴 뒤에도 고르던 것 */return ''}
  function mvSoft(m,mv){if(!m||!mv||mv.virt)return '';const st=m.states||{};if(st.Powder&&mvTys(mv).includes('Fire'))return '「분진」 — 「불꽃」 기술은 실패하고 1/4 비례 대미지를 입는다 (손으로)';return ''}
  /* 11-05 망령: 소지품 2 · 3번 칸까지 본다 (매직룸이면 없음) */
  const HAS=(m,n)=>!!m&&(OI()&&OI().has?OI().has(m,n):IT(m)===n);
@@ -3216,7 +3216,10 @@ window.OM_BATTLE_UI=(()=>{
  function iuIgnore(atk,def,q){const sc=(iu,k)=>!iu.scope||iu.scope==='both'||String(iu.scope).split(',').includes(k);const code=iu=>{const lv=iu.lv||'';if(iu.all)return lv==='rank'?6:lv==='mod'?8:7;if(iu.dn)return lv==='rank'?4:lv==='mod'?5:1;return lv==='rank'?2:lv==='mod'?3:0};const iu=(atk.fx||{}).ignoreUp,iuD=(def.fx||{}).ignoreUp;const o={};
   const roOk=(x,who)=>!x.ro||!x.ro.length||rolesOf(who).some(r=>x.ro.includes(r));   /* 킬러: 『에이스』 상대일 때만 */
   const A1=iu&&(iu.dir==='atk'||iu.dir==='both')&&roOk(iu,def),R1=iuD&&(iuD.dir==='recv'||iuD.dir==='both')&&roOk(iuD,atk);o.nm={};if(A1&&sc(iu,'def')){o.def=code(iu);o.nm.def=iu.name}if(A1&&sc(iu,'eva')){o.eva=code(iu);o.nm.eva=iu.name}if(R1&&sc(iuD,'atk')){o.atk=code(iuD);o.nm.atk=iuD.name}if(R1&&sc(iuD,'acc')){o.acc=code(iuD);o.nm.acc=iuD.name}
-   /* 11-09 감우 54-C: 조건부 강화 무시 목록(fx iuL) — 기술 · 상대 타입 · 필중기 · 급소 랭크 · 확률 */try{if(FX()&&FX().iuList&&q){const X=FX().iuList(atk,def,q);for(const k of ['def','eva','atk','acc'])if(o[k]==null&&X[k]){o[k]=X[k].code;o.nm[k]=X[k].name}}}catch(e){}return o}
+   /* 11-09 감우 54-C: 조건부 강화 무시 목록(fx iuL) — 기술 · 상대 타입 · 필중기 · 급소 랭크 · 확률 */try{if(FX()&&FX().iuList&&q){const X=FX().iuList(atk,def,q);for(const k of ['def','eva','atk','acc'])if(o[k]==null&&X[k]){o[k]=X[k].code;o.nm[k]=X[k].name}}}catch(e){}
+   /* 11-15 망령 「거짓된 성녀 — 일루젼이 작동할 때만」: 「「X」의 모습일 때 【방호】/상대의 모든 능력의 상승(강화)를 무시」 — 변장 중(disg)인 맞는 쪽이면 때리는 쪽 공격 · 명중의 상승(랭크 · 배율)을 무시 */
+   if(def&&def.disg&&atk&&atk.id!==def.id){const p=potSrc(def).find(z=>z&&/모습일\s*때\s*【\s*방호\s*】\s*\/?\s*상대의\s*모든\s*능력의\s*상승\s*\(\s*강화\s*\)\s*(?:를|을)\s*무시/.test(String(z.eff||'')));if(p){const n=String(p.name).replace(/[『』]/g,'');if(o.atk==null){o.atk=0;o.nm.atk=n}if(o.acc==null){o.acc=0;o.nm.acc=n}}}
+   return o}
  /* 발동 확률 (10-23 망령): 손으로 누른 발동이고 확률이 걸린 효과면 굴리기 전에 그대로 · 반드시 · 바꿔서 를 고른다. 돌려줌 {pSet?,pAdd?,pSure?} 또는 null(닫기) */
  function chanceIn(ops){return (ops||[]).some(o=>o&&(((o.p||o.pl)&&!(['boost','guard','eva','ignoreup','prio','noind'].includes(o.k)&&!o.turn&&o.dur!=='turn'))||o.k==='statefx'||(o.k==='cure'&&o.chance&&+o.chance<100)||(o.k==='choice'&&(o.opts||[]).some(x=>FX().chanceOf(x.label)||FX().timing(x.label).percent||chanceIn(x.ops)))))}
  function askChance(name,base){return new Promise(res=>{const md=A().openModal(`<div class="mhead"><h2>${esc(name)} — 발동 확률</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>

@@ -196,6 +196,7 @@ async function applyHit(H,W,mid,rnd){const FN=H.fn,B=W.OM_BATTLE,OI=W.OM_ITEMS;c
  if((m.states||{}).Substitute&&r.final>0&&lh.fromId!==mid){const m0=FN.snap(b.mons[mid]),x=FN.snap(m0);const sub0=+x.subHp||Math.max(1,Math.floor(x.hp.max/4));const left=sub0-r.final;delete x.lastHit;x.states=Object.assign({},x.states);if(left>0)x.subHp=left;else{delete x.states.Substitute;delete x.subHp}await W.OM_APP.setDiff(['battle','mons',mid],m0,x,1);if(H.logOn)W.OM_APP.sysLog(`【대타출동】 ${m.name}의 대역인형이 −${Math.min(sub0,r.final)} 을 대신 맞았다${left>0?` (인형 ${left})`:' — 인형이 부서졌다'}`,'battle');return {final:0,ko:false,sub:1}}
  /* apply(-r.final) */
  const m0=FN.snap(b.mons[mid]),x=FN.snap(m0);let v=r.final;if(fl&&x.hp.cur-v<fl)v=Math.max(0,x.hp.cur-fl);x.hp.latest=x.hp.cur;x.hp.cur=Math.max(0,x.hp.cur-v);delete x.lastHit;if((r.per||[]).some(q=>q.held==='disguise'))x.dsgUsed=1;
+ if(v>0&&x.disg){delete x.disg;x.seen=true;if(H.logOn)W.OM_APP.sysLog(`【일루젼】 ${x.name} — 기술의 대미지를 받아 원래 모습으로`,'battle')}   /* 11-15 웹툴 openHp 와 같게: 일루젼은 기술의 대미지를 받으면 풀린다 (거짓된 성녀 ②③ 이 그동안만) */
  if(v>0)x.lastTaken={v,turn:+b.turn||0,hit:{lh}};   /* 11-15: 웹툴 LHX — 쓰러뜨린 쪽 · 기술 (【함성】 · 쓰러뜨렸을 때) */if(x.hp.cur<=0)x.entry='';
  if(x.raid&&x.raid.segments>0&&fl&&x.hp.cur<=fl&&v>0&&x.hp.cur>0){x.raid.broken=(x.raid.broken||0)+1;x.raid.brk=1}
  await W.OM_APP.setDiff(['battle','mons',mid],m0,x,1);if(x.hp.cur<=0&&m0.hp.cur>0)await FN.faintOff(mid);

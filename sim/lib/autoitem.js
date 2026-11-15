@@ -15,6 +15,7 @@ function roleOf(m){const r=String(m.role||'');const b=(m.base||[]).map(Number);c
  if(/블로커|어시스트|서포터/.test(r))return 'wall';if(/러너/.test(r))return 'runner';if(/에이스|어태커|킬러/.test(r))return 'atk';
  if(atk>=100||atk>=bulk/3+10)return 'atk';if(bulk>=290)return 'wall';return 'atk'}
 function choices(m,role,DBI,win){const L=[];const T=mainType(m);const bo=T&&BOOST[T];const tk=(m.typesKo||[]);const noSt=!(m.moves||[]).some(x=>x&&x.cat==='변화');const punch=(m.moves||[]).some(x=>x&&/펀치/.test(String(x.tag||'')+(x.tags||[]).join(',')));
+ if(process.env.OLDITEM){if(role==='atk'){if(bo)L.push(bo);L.push('자뭉열매','하양허브')}else if(role==='wall'){L.push('자뭉열매','먹다남은음식','울퉁불퉁멧','하양허브');if(bo)L.push(bo)}else{L.push('자뭉열매');if(bo)L.push(bo);L.push('하양허브')}return L.filter(n=>DBI[n]&&DBI[n].auto&&!BAN.has(n))}   /* 비교용: 11-15 이전 후보 */
  if(role==='atk'){if(bo)L.push(bo);if(punch)L.push('펀치글러브');L.push('자뭉열매','초점렌즈','하양허브','기합의띠','약점보험','멘탈허브')}
  else if(role==='wall'){if(tk.includes('독'))L.push('검은진흙');L.push('자뭉열매','먹다남은음식','울퉁불퉁멧');if(noSt)L.push('돌격조끼');L.push('하양허브','방진고글','멘탈허브');if(bo)L.push(bo)}
  else{L.push('자뭉열매');if(bo)L.push(bo);L.push('기합의띠','초점렌즈','하양허브','멘탈허브')}
