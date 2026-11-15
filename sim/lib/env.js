@@ -34,6 +34,10 @@ function load(opts){opts=opts||{};
   if(!fs.existsSync(p)){failed.push({f:p,err:'없음'});continue}
   try{let src=fs.readFileSync(p,'utf8');for(const [re,to] of (SRC_PATCH[path.basename(p)]||[]))src=src.replace(re,to);vm.runInContext(src,ctx,{filename:p});loaded.push(p)}catch(e){failed.push({f:p,err:e.message});if(opts.strict)throw e}}
  win.__SIM_LINT=simLint(win);
+ /* 11-15 망령 「헬레나 보구가 해석 조건 제대로 따르나」: 시뮬엔 도감(dex_ui.js)이 없어 「데이터 해석」이 하나도 기록되지 않았다 — 해석 기록만 하는 작은 판(웹툴 dex_ui analyze 와 같은 꼴: state.dex[트레이너] = {used, list, part, fwSeen} · 해석 차단 · 「해석차단」 구문) */
+ win.OM_DEX_UI=win.OM_DEX_UI||{scope:()=>'all',analyze:async(viewer,mid,o)=>{o=o||{};const A=win.OM_APP;const st=A.ST.state;const m=((st.battle||{}).mons||{})[mid];if(!m||!viewer)return false;const d=Object.assign({used:0,list:[],part:{},fwSeen:[]},JSON.parse(JSON.stringify((st.dex||{})[viewer]||{})));if(d.list.includes(mid))return false;
+  const fw=+m.dexFw||0;let open=true,why='';if(!o.forced){if(fw===1){open=false;why='해석 차단 (1회)';await A.set(['battle','mons',mid,'dexFw'],0)}else if(fw===2){open=false;why='완전 차단'}else{const nd=win.OM_FX&&win.OM_FX.spOf?win.OM_FX.spOf(m,'nodex')[0]:null;if(nd){open=false;why='해석 차단 — 「'+nd.name+'」'}}}
+  if(!o.free)d.used=(+d.used||0)+1;if(open)d.list.push(mid);else if(!d.fwSeen.includes(mid))d.fwSeen.push(mid);await A.set(['dex',viewer],d);const vt=((st.battle||{}).trainers||{})[viewer]||{};A.sysLog(`【해석】 ${vt.name||viewer} → ${m.name}${open?' — 데이터 해석':' — '+why}${o.free?' (효과)':' (도감 '+d.used+'회째)'}`,'battle');return open}};
  if(!win.OM_BATTLE||!win.OM_STATS||!win.OM_IMPORT)throw new Error('엔진을 못 읽었다: '+JSON.stringify(failed));
  return {win,loaded,failed,ROOT,MK};}
 module.exports={load,ROOT,makerRoot};

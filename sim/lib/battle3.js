@@ -75,7 +75,9 @@ async function runBattle(W,opt){
   if(mv('트릭룸')&&!(+((f.rooms||{})['트릭룸']||0)>0)){const slow=mine.filter(x=>sp(x)<fAvg).length;if(mAvg<fAvg*0.9&&slow>=3)v+=0.4+0.15*slow}
   if(mv('순풍')&&!(+((f.objects||{})[sd]||{})['순풍']>0)){const flip=mine.filter(x=>sp(x)<fMax&&sp(x)*2>fMax).length;v+=0.15*flip}
   if((mv('리플렉터')||mv('빛의장막')||mv('오로라베일'))&&mine.length>=3)v+=0.3;
-  const WX={쾌청:'맑음',비바라기:'비',모래바람:'모래바람',설경:'눈',싸라기눈:'싸라기눈'};const WM=FN.WEATHER_MUL||{};const cw=String((f.weather||{}).type||'');
+  const WX={쾌청:'맑음',비바라기:'비',모래바람:'모래바람',설경:'눈',싸라기눈:'싸라기눈'};
+  /* 등장하면 날씨를 까는 특성(눈퍼뜨리기 · 가뭄 · 잔비 · 모래날림) — 덕을 볼 우리 편(그 날씨에 세지는 자속 기술 · 눈의 얼음 · 모래의 바위)만큼 */
+  {const AW={눈퍼뜨리기:'눈',가뭄:'맑음',잔비:'비',모래날림:'모래바람'}[String(m.ability||'').trim()];const cw0=String((f.weather||{}).type||'');if(AW&&cw0!==AW){const n=mine.filter(x=>x!==m&&(FN.MVS(x).some(q=>q&&q.cat!=='변화'&&((FN.WEATHER_MUL||{})[AW]||{})[q.typeEn]>1&&FN.tysOf(x).includes(q.typeEn))||(AW==='눈'&&FN.tysOf(x).includes('Ice'))||(AW==='모래바람'&&FN.tysOf(x).includes('Rock')))).length;v+=0.1*n;if(AW==='눈'&&FN.MVS(m).some(q=>q&&q.name==='오로라베일'))v+=0.3}}const WM=FN.WEATHER_MUL||{};const cw=String((f.weather||{}).type||'');
   for(const [k,w] of Object.entries(WX))if(mv(k)&&cw!==w){const n=mine.filter(x=>FN.MVS(x).some(q=>q&&q.cat!=='변화'&&(WM[w]||{})[q.typeEn]>1&&FN.tysOf(x).includes(q.typeEn))).length;v+=0.12*n}
   return Math.min(1.5,v)};
  const pickIn=(sd,n,tidPref)=>{const L=bench(sd);const fs=foes(sd);const byT={};for(const m of L)(byT[m.tid]=byT[m.tid]||[]).push(m);const out=[];const tids=Object.keys(byT);if(tidPref&&byT[tidPref])tids.sort((x,y)=>(y===tidPref)-(x===tidPref));let k=0;
@@ -233,13 +235,18 @@ async function runBattle(W,opt){
  const manualTag=e=>{const {head,body}=splitTag(e);if(!/【\s*(사전|선행)\s*】|【\s*\d+\s*\/\s*시\s*】|【\s*(탈진|소진)\s*】/.test(head))return false;   /* 11-15: 【탈진】 · 【소진】만 붙은 손 발동(그 턴만 — 망령)도 */if(/【\s*(자동|등장|퇴장|준비|함성|지원|동조|보급|방호|공세|수세)/.test(head))return false;return !/했을\s*때|받았을\s*때|받을\s*때|턴\s*종료|가장\s*마지막/.test(body.slice(0,60))};
  /* 손해가 섞인 구문(우선도를 내리거나 · 급소를 맞기 쉽게 · 대상 · 기술을 고르는 두 단계)은 시뮬이 판단하지 못해 쓰지 않는다 — 카렌 『죽음을 각오한 저항』 ① 처럼 ② 와 짝인 것 */
  const opsRisky=ops=>(ops||[]).some(o=>o&&((o.k==='prio'&&+o.v<0)||o.k==='tsel'||o.k==='msel'||o.k==='cond'||/급소방호\s*-|급소방호-/.test(JSON.stringify(o))||(o.k==='guard'&&+o.cr<0)));
- const opsClass=ops=>{if(opsRisky(ops))return '';const K=new Set((ops||[]).map(o=>o&&o.k));const tg=(ops||[]).map(o=>String((o&&o.tgt)||''));if(['stage','terrain','weather','object'].some(k=>K.has(k)))return 'open';if(K.has('state')&&tg.some(x=>/enemy|상대|front|정면|all/.test(x)))return 'foe';if(K.has('heal'))return 'heal';if(['guard','eva','protect','nodrop'].some(k=>K.has(k)))return 'def';if(['rank','mult','boost','prio','sp','state'].some(k=>K.has(k)))return 'buff';if(K.has('dmg'))return 'foe';return ''};
+ const opsClass=ops=>{if(opsRisky(ops))return '';const K=new Set((ops||[]).map(o=>o&&o.k));const tg=(ops||[]).map(o=>String((o&&o.tgt)||''));if(K.has('dex'))return 'dex';if(['stage','terrain','weather','object'].some(k=>K.has(k)))return 'open';if(K.has('state')&&tg.some(x=>/enemy|상대|front|정면|all/.test(x)))return 'foe';if(K.has('heal'))return 'heal';if(['guard','eva','protect','nodrop'].some(k=>K.has(k)))return 'def';if(['rank','mult','boost','prio','sp','state'].some(k=>K.has(k)))return 'buff';if(K.has('dmg'))return 'foe';return ''};
  const PU={};
  async function potsNew(tid,acts){const t=T(tid);if(!t||isWildT(tid))return;const sd=t.side;const P2=POLS[tid]==='D'?'C':POLS[tid];const mine=active(sd).filter(m=>m.tid===tid);if(!mine.length)return;const T0=+C().turn||0;
   const attacking=m=>acts.some(a=>a.m.id===m.id&&a.mv&&a.mv.cat!=='변화');const danger=m=>{const th=topThreat(P2,m);return th.mv&&th.v>=m.hp.cur*0.6};
   /* 11-15: 기술 · 태그 · 비자속 한정 강화는 이번 턴 그 기술을 낼 때만 (불굴귀의 투창 = 타입 비일치 「가시창」) */
   const mvOk=(ops,m)=>{const a=acts.find(x=>x.m.id===m.id&&x.mv&&x.mv.cat!=='변화');if(!a)return false;for(const o of ops||[]){if(!o||!['boost','mult'].includes(o.k))continue;if(Array.isArray(o.mv)&&o.mv.length&&!o.mv.includes(a.mv.name))return false;if(Array.isArray(o.tg)&&o.tg.length&&!o.tg.some(t=>String(a.mv.name).includes(t)||[].concat(a.mv.tags||[]).some(x=>String(x).includes(t))))return false;if(o.sb==='nonstab'&&(m.types||[]).some(t=>t===a.mv.typeEn||t===a.mv.type))return false;if(o.sb==='stab'&&!(m.types||[]).some(t=>t===a.mv.typeEn||t===a.mv.type))return false}return true};
-  const want=(cls,m,ops)=>cls==='open'||cls==='foe'?true:cls==='buff'?attacking(m)&&(!ops||mvOk(ops,m)):cls==='def'?danger(m):cls==='heal'?m.hp.cur<m.hp.max*0.5:false;
+  const dexLeft=()=>{const L=((W.OM_APP.ST.state.dex||{})[tid]||{}).list||[];return foes(sd).some(f=>!L.includes(f.id))};
+  const want=(cls,m,ops)=>cls==='dex'?dexLeft():cls==='open'||cls==='foe'?true:cls==='buff'?attacking(m)&&(!ops||mvOk(ops,m)):cls==='def'?danger(m):cls==='heal'?m.hp.cur<m.hp.max*0.5:false;
+  /* 11-15 「데이터 해석」: 우리 편 포텐셜 · 고유가 해석을 조건으로 쓰면(「해석된 상대」 · 「해석했을 때」) 『포켓몬 도감』(지시 랭크 횟수 · 【사전】)으로 필드의 아직 안 본 상대 중 가장 위협적인 아이를 본다 · 해석하는 포텐셜(구문 「해석」)도 그때 */
+  {const DX=W.OM_DEX_UI;const st=W.OM_APP.ST.state;const D=(st.dex||{})[tid]||{used:0,list:[]};const teamTxt=[...Object.values(C().mons).filter(x=>x.tid===tid).flatMap(x=>FN.potSrc(x).map(q=>String((q&&q.eff)||''))),...((t.unique||[]).map(u=>String(u.eff||'')))].join('\n');
+   const needDex=/해석된\s*상대|데이터\s*해석했을\s*때|해석했을\s*때에만/.test(teamTxt);const L0=((W.OM_DB.const||{}).lists||{}).list_pokedex_count||{E:0,D:0,C:0,B:1,A:2,AA:2,AAA:2,S:2};const dmax=+(L0[String((t.ranks||{})['지시']||'').replace(/[+\-]/g,'').trim()]||0);
+   if(DX&&needDex&&(+D.used||0)<dmax){const fo=foes(sd).filter(f=>!(D.list||[]).includes(f.id)).sort((a,c)=>Math.max(c.stats[1],c.stats[3])-Math.max(a.stats[1],a.stats[3]))[0];if(fo)try{await DX.analyze(tid,fo.id,{});await flush(1)}catch(err){}}}
   /* 11-15: 그때그때 타입 — 고유 「턴 종료 시까지 아군을 대상의 「타입 1」로」(찰나의 모작): 크게 위협받는 아이가 그 상대의 타입1 이 되면 그 공격이 덜 들어갈 때 */
   const effV=(mt,tys)=>{try{return +W.OM_BATTLE.effectiveness([mt],{types:tys}).value}catch(e){return 1}};
   for(const q of (H.fn.uniqList||H.get('uniqList'))(t)){const e=String(q.p.eff||'');if(!/아군을\s*대상의\s*「\s*타입\s*1\s*」\s*로\s*만든다/.test(e)||(q.left!==null&&q.left<=0))continue;const k='u|'+tid+'|'+q.p.name;if(PU[k]===T0||PU[k]===T0-1&&/【\s*탈진\s*】/.test(e))continue;
@@ -277,7 +284,7 @@ async function runBattle(W,opt){
  const LS={left:pickIn('left',fmt),right:pickIn('right',fmt)};
  for(const sd of ['left','right']){const L=LS[sd];
   /* 11-15 05시: 「【준비】/「에리어 : A」에 등장 예약 한다」(흐림게르드 『선봉 거인』) — 그 에리어에 선발로 */
-  for(const m of bench(sd).concat(L)){const p=FN.potSrc(m).find(q=>q&&/【\s*준비\s*】[^「]*「에리어\s*:\s*([AB])」에\s*등장\s*예약/.test(String(q.eff||'')));if(!p)continue;const ix=String(p.eff).match(/「에리어\s*:\s*([AB])」에\s*등장\s*예약/)[1]==='A'?0:1;if(ix>=L.length)continue;const j=L.indexOf(m);if(j===ix)continue;if(j>=0){L[j]=L[ix];L[ix]=m}else L[ix]=m}
+  for(const m of bench(sd).concat(L)){const p=FN.potSrc(m).find(q=>q&&/【\s*준비\s*】[^「]*「에리어\s*:\s*([AB])」에\s*등장\s*예약/.test(String(q.eff||'')));if(!p)continue;const ix=String(p.eff).match(/「에리어\s*:\s*([AB])」에\s*등장\s*예약/)[1]==='A'?0:1;if(ix>=L.length)continue;const j=L.indexOf(m);if(j===ix)continue;if(j>=0){L[j]=L[ix];L[ix]=m}else{/* 11-15: 그 자리에 있던 아이는 밀어내지 않고 다른 자리로 — 가장 덜 원하던(뒤) 아이가 빠진다 (흐림게르드가 A 로 오면서 나인테일이 빠지던 것) */L.splice(ix,0,m);L.length=Math.min(L.length,fmt)}}
   for(let i=0;i<L.length;i++)await FN.enterMon(L[i].id,AREAS[i],{sys:true,noAuto:true})}
  await FN.startBattle();await flush();if(!process.env.NOPVP&&!Object.keys(C().trainers||{}).some(isWildT))await W.OM_APP.set(['battle','pvp'],true);   /* 11-15 05시: 학생끼리 = PVP (유대 버티기 시합 중 한 번 — 웹툴 bondBand) */if(FN.faintWatch)await FN.faintWatch();
  let turn=0;
