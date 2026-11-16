@@ -340,11 +340,11 @@ setInterval(()=>{if(!ST.room||document.visibilityState!=='visible')return;if(RT.
 window.addEventListener('online',()=>{if(ST.room)resync('온라인')});
 /* 10-25 망령: 모바일이 옛 index.html 을 붙들고 있으면(깃허브 페이지 캐시 10분 · 탭 복원) 새 버전을 못 받는다 — 올라온 index 의 ?v= 가 지금 읽은 것과 다르면 알린다.
    cache:'reload' 로 받아 두니 띠를 눌러 새로고침하면 바로 새 index 를 읽는다 */
-const VER_HAVE=()=>[...document.scripts,...document.querySelectorAll('link[rel=stylesheet]')].map(s=>s.src||s.href||'').filter(u=>/[?&]v=\d+/.test(u)).map(u=>u.replace(/^.*\/(?=[^/]+\?)/,'').replace(/\?.*?v=(\d+).*$/,'@$1'));
+const VER_HAVE=()=>[...document.scripts,...document.querySelectorAll('link[rel=stylesheet]')].map(s=>s.src||s.href||'').filter(u=>/[?&]v=[\w.-]+/.test(u)).map(u=>u.replace(/^.*\/(?=[^/]+\?)/,'').replace(/\?.*?v=([\w.-]+).*$/,'@$1'));
 let verT=0,verShown=false;
 async function verCheck(force){if(verShown||(!force&&Date.now()-verT<60000))return;verT=Date.now();
  try{const r=await fetch('index.html',{cache:'reload'});if(!r.ok)return;const t=await r.text();const have=new Set(VER_HAVE());if(!have.size)return;
-  const want=[...t.matchAll(/(?:src|href)="([^"]+\?v=\d+)"/g)].map(m=>m[1].replace(/^.*\/(?=[^/]+\?)/,'').replace(/\?.*?v=(\d+).*$/,'@$1'));
+  const want=[...t.matchAll(/(?:src|href)="([^"]+\?v=[\w.-]+)"/g)].map(m=>m[1].replace(/^.*\/(?=[^/]+\?)/,'').replace(/\?.*?v=([\w.-]+).*$/,'@$1'));
   if(want.some(w=>!have.has(w)))verBar()}catch(e){}}
 function verBar(){if(verShown)return;verShown=true;const d=document.createElement('button');d.id='verbar';d.type='button';d.textContent='새 버전이 올라왔어요 · 눌러서 새로고침';d.onclick=()=>location.reload();document.body.appendChild(d)}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')verCheck()});
