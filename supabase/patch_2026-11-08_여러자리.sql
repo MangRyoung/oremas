@@ -127,7 +127,7 @@ end $$;
 
 -- 이 방에서 내 자리
 create or replace function public.om_my_seats(p_room text, p_secret text)
-returns jsonb language plpgsql stable security definer set search_path = public as $$
+returns jsonb language plpgsql volatile security definer set search_path = public as $$
 declare u text; mem record;
 begin
   if left(coalesce(p_secret,''), 2) <> 'u:' then return null; end if;

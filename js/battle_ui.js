@@ -230,6 +230,9 @@ window.OM_BATTLE_UI=(()=>{
   try{const U=window.OM_RP_UI;if(U&&U.seUrlOf&&U.seUrlOf('Ping'))U.playSe('Ping',true);else if(CUT()&&CUT().synth)CUT().synth('ready')}catch(e){}}
 
  /* 턴 개시 뒤 맨 위: 지시 공개 UI (맵툴 open_command). 자기 것(GM 은 모두)은 버튼, 남의 것은 현황. 지령·명령은 공개하지 않고 「4식 6령」 창에서 발동한다 */
+ /* 11-17 시노비 「HP 탭 반동: 전체기면 반동을 부여한 상대가 1체여도 2체에게 가한 대미지로」: 직전 공격이 여럿을 맞혔으면 반동 · 드레인의 기준을 「전체 / 대상 하나」로 고른다 */
+ function ldSel(m){const L=m.lastDealt&&m.lastDealt.per;if(!L||L.length<2)return '';return `<div class="spx"><b>↯ 기준</b><span class="small dim">반동 · 드레인을 셀 대미지</span><span class="qs"><select id="h_ldt" class="mini"><option value="">전체 ${m.lastDealt.total}</option>${L.map((x,i)=>`<option value="${i}">${esc(x.n)} 몫 ${x.v}</option>`).join('')}</select></span></div>`}
+ function ldPick(m,md){const L=m.lastDealt||{total:0};const el=md&&md.querySelector('#h_ldt');const i=el&&el.value!==''?+el.value:-1;const x=i>=0&&L.per?L.per[i]:null;return x?{v:+x.v||0,n:x.n}:{v:+L.total||0,n:''}}
  /* 급소 소지품: 초점렌즈·예리한손톱 C+1, 럭키펀치(럭키) C+2, 받는 쪽 방검조끼 C-2 — 맵툴처럼 자동 */
  function itemCrit(atk,def){if(OI())return OI().crit(atk,def);let v=0;const ai=IT(atk),di=IT(def);if(ai==='초점렌즈'||ai==='예리한손톱')v+=1;if(ai==='럭키펀치'&&/럭키/.test(atk.species||atk.name||''))v+=2;if(di==='방검조끼')v-=2;return v}
  /* 기술 부가효과 굴림: 효과 글의 「N할 …」마다 1d10 ≤ N 이면 발동. 10할은 굴리지 않고 확정. 하늘의은총 ×2, 받는 쪽 은밀망토면 없음. 적용은 손으로 */
@@ -2185,14 +2188,14 @@ window.OM_BATTLE_UI=(()=>{
     <div class="spx"><b>↻ 최근 피해 다시</b><span class="small dim">${m.lastTaken?`직전에 받은 피해 ${m.lastTaken.v} · ${esc(m.lastTaken.why)}`:'(기록 없음)'}</span><span class="qs"><button class="btn xs" data-hp="again" ${m.lastTaken?'':'disabled'} title="같은 피해를 한 번 더 받는다 (연속기 추가타 · 같은 효과가 다시 터질 때)">한 번 더</button><button class="btn xs ghost" data-hp="againh" ${m.lastTaken?'':'disabled'} title="그 피해의 절반">½</button>${m.lastTaken&&m.lastTaken.hit?'<button class="btn xs pri" data-hp="rehit" title="그때의 판정과 넣은 배율을 다시 불러와 고쳐서 받는다">배율 고쳐 다시 받기</button>':''}</span></div>
     <div class="spx"><b>🌀 혼란 자해</b><span class="small dim">위력 40 노말 물리 · 상성 · 랭크 무시 (자기 공격/방어)</span><span class="qs"><button class="btn xs" data-hp="confuse">자해</button></span></div>
     <div class="spx"><b>✊ 발버둥 반동</b><span class="small dim">최대 「HP」의 1/4 · 무시할 수 없다 (−${Math.max(1,Math.floor(m.hp.max/4))})</span><span class="qs"><button class="btn xs" data-hp="strug">반동</button></span></div>
-    <div class="spx"><b>↯ 반동</b><span class="small dim">직전에 입힌 대미지의 비율 ${m.lastDealt?`(${m.lastDealt.total} · ${esc(m.lastDealt.targets)})`:'(기록 없음)'}</span><span class="qs">${['1/4','1/3','1/2'].map(x=>`<button class="btn xs" data-hp="recoil" data-v="${x}" ${m.lastDealt?'':'disabled'}>${x}</button>`).join('')}</span></div>
+    ${ldSel(m)}<div class="spx"><b>↯ 반동</b><span class="small dim">직전에 입힌 대미지의 비율 ${m.lastDealt?`(<span class="ldv">${m.lastDealt.total}</span> · ${esc(m.lastDealt.targets)})`:'(기록 없음)'}</span><span class="qs">${['1/4','1/3','1/2'].map(x=>`<button class="btn xs" data-hp="recoil" data-v="${x}" ${m.lastDealt?'':'disabled'}>${x}</button>`).join('')}</span></div>
     <div class="spx"><b>% 현재 HP 비례</b><span class="small dim">현재 「HP」(${m.hp.cur})의 비율</span><span class="qs">${['1/2','1/4','1/8'].map(x=>`<button class="btn xs" data-hp="cur" data-v="${x}">${x}</button>`).join('')}</span></div>
     <div class="spx"><b>◈ 타입 비례</b><span class="small dim">최대 「HP」 × 비율 × 상성 (스텔스록처럼)</span><span class="qs"><select id="h_tt" class="mini">${(S().allTypes?S().allTypes():['Normal','Fire','Water','Electric','Grass','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy']).map(t=>`<option value="${t}">${esc(S().typeKo(t))}</option>`).join('')}</select><input type="text" class="n xs" id="h_tv" value="1/8"><button class="btn xs" data-hp="typed">피해</button></span></div></div>
    ${lh?`<div class="row afoot hpfoot"><span class="small dim" id="h_prev"></span><span class="sp"></span><button class="btn ghost xs" data-hp="discard" title="이 판정을 지운다 (피해 없음)">판정 버리기</button><button class="btn pri" data-hp="apply">피해 적용</button></div>`:''}`
    :`<div class="card"><div class="sec">회복 <span class="note">최대 「HP」 기준</span></div><div class="qs">${FRACS.map(([l,n])=>`<button class="btn sm" data-hp="heal" data-v="${l}">${l} <small>+${Math.max(1,Math.floor(m.hp.max/n))}</small></button>`).join('')}<button class="btn sm" data-hp="full">전부</button></div>
     <div class="row" style="margin-top:6px"><input type="text" class="n" id="h_cv" placeholder="숫자 또는 분수" style="width:170px"><button class="btn sm" data-hp="healc">회복</button></div></div>
    <div class="card"><div class="sec">특수한 회복</div>
-    <div class="spx"><b>◆ 드레인</b><span class="small dim">직전에 입힌 대미지의 비율 ${m.lastDealt?`(${m.lastDealt.total})`:'(기록 없음)'}</span><span class="qs">${['1/2','3/4','1/1'].map(x=>`<button class="btn xs" data-hp="drain" data-v="${x}" ${m.lastDealt?'':'disabled'}>${x}</button>`).join('')}</span></div>
+    <div class="spx"><b>◆ 드레인</b><span class="small dim">직전에 입힌 대미지의 비율 ${m.lastDealt?`(<span class="ldv">${m.lastDealt.total}</span>)`:'(기록 없음)'}</span><span class="qs">${['1/2','3/4','1/1'].map(x=>`<button class="btn xs" data-hp="drain" data-v="${x}" ${m.lastDealt?'':'disabled'}>${x}</button>`).join('')}</span></div>
     <div class="spx"><b>★ 희망사항</b><span class="small dim">최대 「HP」 1/2</span><span class="qs"><button class="btn xs" data-hp="heal" data-v="1/2">회복</button></span></div></div>`}`);
   md.querySelectorAll('[data-hpt]').forEach(bt=>bt.onclick=()=>{A().closeModal();openHp(mid,bt.dataset.hpt)});
   if(lh&&lh.re){const o=lh.re,g=id=>$('#'+id,md);const sv=(id,v)=>{const e=g(id);if(e&&v!=null)e.value=v};const sc=(id,v)=>{const e=g(id);if(e&&v!=null)e.checked=!!v};sv('h_eff',o.eff);sv('h_mod',o.mod);sv('h_forced',o.forced);sc('h_berry',o.berry);sc('h_endure',o.endure);sc('h_crit',o.crit)}   /* 다시 받기: 그때 넣은 배율 */
@@ -2250,7 +2253,7 @@ window.OM_BATTLE_UI=(()=>{
    if(k==='discard'){A().closeModal();await A().set(['battle','mons',mid,'lastHit'],null);return A().sysLog(`${m.name} 받은 피해 판정을 버렸다`,'battle')}
    if(k==='frac')return apply(-parseAmt(v,m.hp.max),`비율 피해 ${v}`,{floor:fl});
    if(k==='custom'){const a=parseAmt(g('h_cv').value,m.hp.max);if(!a)return A().toast('숫자나 분수를 넣어 줘');return apply(-a,`고정 피해 ${g('h_cv').value}`,{floor:fl})}
-   if(k==='recoil'){if(FX()&&FX().noind(m,'recoil'))return A().toast('반동 비례 대미지를 받지 않는다');const a=parseAmt(v,m.lastDealt.total);return apply(-a,`반동 ${v} (입힌 ${m.lastDealt.total})`)}
+   if(k==='recoil'){if(FX()&&FX().noind(m,'recoil'))return A().toast('반동 비례 대미지를 받지 않는다');const LD=ldPick(m,md);const a=parseAmt(v,LD.v);return apply(-a,`반동 ${v} (입힌 ${LD.v}${LD.n?' · '+LD.n:''})`)}
    if(k==='confuse'){if(!F())return;const v=F().confusionHit(m);return apply(-v,'혼란 자해 (위력 40 노말 물리)')}
    if(k==='strug')return apply(-Math.max(1,Math.floor(m.hp.max/4)),'발버둥 반동 (최대 HP 1/4 · 무시 불가)');
    if(k==='cur')return apply(-Math.max(1,parseAmt(v,m.hp.cur)),`현재 HP 비례 ${v}`);
@@ -2258,7 +2261,7 @@ window.OM_BATTLE_UI=(()=>{
    if(k==='heal')return apply(parseAmt(v,m.hp.max),`회복 ${v}`);
    if(k==='healc'){const a=parseAmt(g('h_cv').value,m.hp.max);if(!a)return;return apply(a,`회복 ${g('h_cv').value}`)}
    if(k==='full')return apply(m.hp.max-m.hp.cur,'전부 회복');
-   if(k==='drain')return apply(parseAmt(v,m.lastDealt.total),`드레인 ${v} (입힌 ${m.lastDealt.total})`);
+   if(k==='drain'){const LD=ldPick(m,md);return apply(parseAmt(v,LD.v),`드레인 ${v} (입힌 ${LD.v}${LD.n?' · '+LD.n:''})`)}
    if(k==='one')return apply(-(m.hp.cur-1),'HP 1');
    if(k==='faint')return apply(-m.hp.cur,'빈사 처리');
    if(k==='undo'){const m0=snap(ctx().b.mons[mid]),x=snap(m0);const l=x.hp.latest;if(l==null)return;x.hp.latest=x.hp.cur;x.hp.cur=l;if(x.hp.cur>0&&!x.entry&&m.hp.cur<=0){}A().closeModal();await saveMon(m0,mid,x);return A().sysLog(`${x.name} HP 되돌리기 → ${x.hp.cur}/${x.hp.max}`,'battle')}})}
@@ -3716,10 +3719,11 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
     const stab=eff?eff.stab:false;
     if(WIG){mods.names=mods.names||[];mods.names.push({key:'_wig',who:atk.id,txt:`${atk.name} 『익스펜션 : 격투』 — 「장벽」 무시`})}if(dmg&&dmg.wall<1){mods.names=mods.names||[];mods.names.push({key:'_wall',who:def.id,txt:`${def.name} 「${wallNames(objs,catEn(mv.cat),tyOf(mv)).join('·')||'벽'}」 피해 ×${dmg.wall}${mode(b)>=2?' (더블)':''} · 급소면 무시`})}
     const guard0=(DF.endure?0.5:1)*(mods.guard||1),guardC0=(DF.endure?0.5:1)*Math.max(1,mods.guard||1);const endure0=(!!DF.endure&&!DF.endureUsed||!!mods.endure)&&!AF.noEndure;
-    const hp=dmg?B().hpDamageHits(def,perOf(dmg),eff.value,{...hsOpt(def,mv.cat,mods),stab,adaptability:ck('aadapt'),expertBelt:ck('abelt'),guard:guard0,guardCrit:guardC0,crit:hits.map(h=>h.v===2),endure:endure0,hpFloor:raidFloor(def)}):null;
+    /* 11-17 시노비 「강철의도끼 반동이 보코열매 적용 전 대미지 기준」: 반감열매 칸은 처음부터 켜져 보이는데 첫 계산(이 줄)에는 안 들어가 예상 대미지 · 반동 · 드레인이 열매 전 값이었다 — 처음부터 같이 건다 */const berry0=!!(dmg&&OI()&&OI().resist(def,{mt:moveTypes,cat:mv.cat,eff:eff.value,multi:multiTarget}));
+    const hp=dmg?B().hpDamageHits(def,perOf(dmg),eff.value,{...hsOpt(def,mv.cat,mods),stab,adaptability:ck('aadapt'),expertBelt:ck('abelt'),guard:guard0,guardCrit:guardC0,crit:hits.map(h=>h.v===2),berryHalf:berry0,endure:endure0,hpFloor:raidFloor(def)}):null;
     /* 급소를 뒤집은 대미지 (10-24 망령): HP 창에서 피해 적용 전에 급소 여부를 바꿀 수 있게 — 맞은 타마다 전부 급소 / 전부 급소 아님 */
     const dmgAlt=dmg&&DOPT.hits.some(v=>v>0)?(()=>{const anyC=DOPT.hits.includes(2);try{return B().damage(foulAtk(atkD,def,mv),aceDef(atk,def),MVP,Object.assign({},DOPT,{hits:DOPT.hits.map(v=>v===0?0:(anyC?1:2))}))}catch(e){return null}})():null;
-    res.push({pclear:BYP==='clear'&&!!(def.states||{}).Protect,pnote:(NPX&&(PBY||PPM.pp||PPM.pb))?`${def.name} — 「방어」 관통(해제)을 받지 않는다`:(BYP&&(def.states||{}).Protect&&def!==atk)?`「방어」 ${BYP==='clear'?'해제':'관통'}${PPM.pb||PPM.pp?' — 「'+(PPM.pb||PPM.pp)+'」':''}`:'',_mv:MVP,_opt:DOPT,slot,def,acc,hits,dmg,dmgAlt,eff,stab,hp,guard:guard0,guardCrit:guardC0,endure:endure0,manual:1,mods,spw,sec:[...(spw&&acc.hit?[{ok:true,line:spw.note}]:[]),...(acc.hit&&!(mv.cat!=='변화'&&eff&&+eff.value===0)?secGroups(atk,def,MAU?MAU.groups.filter(g=>g.who==='target'):null,mv):[])]})}   /* 11-04 망령 (관사): 상성 ×0 으로 안 맞은 대상(비행에게 땅고르기)에게는 부가효과도 없다 */
+    res.push({pclear:BYP==='clear'&&!!(def.states||{}).Protect,pnote:(NPX&&(PBY||PPM.pp||PPM.pb))?`${def.name} — 「방어」 관통(해제)을 받지 않는다`:(BYP&&(def.states||{}).Protect&&def!==atk)?`「방어」 ${BYP==='clear'?'해제':'관통'}${PPM.pb||PPM.pp?' — 「'+(PPM.pb||PPM.pp)+'」':''}`:'',_mv:MVP,_opt:DOPT,slot,def,acc,hits,dmg,dmgAlt,eff,stab,hp,guard:guard0,guardCrit:guardC0,endure:endure0,berryU:berry0,manual:1,mods,spw,sec:[...(spw&&acc.hit?[{ok:true,line:spw.note}]:[]),...(acc.hit&&!(mv.cat!=='변화'&&eff&&+eff.value===0)?secGroups(atk,def,MAU?MAU.groups.filter(g=>g.who==='target'):null,mv):[])]})}   /* 11-04 망령 (관사): 상성 ×0 으로 안 맞은 대상(비행에게 땅고르기)에게는 부가효과도 없다 */
    const anyHit=res.some(r=>r.acc.hit);const once=MAU?MAU.groups.filter(g=>g.who!=='target'&&(anyHit||g.when==='use')).map(g=>rollGroup(atk,null,g)):[];
    /* 10-22 망령: 행동 판정을 통과했으면(혼란 · 마비 …) 그 결과(남은 턴)를 「적용」 때까지 들고 간다 — 예전엔 여기서 덮어써서 혼란 턴이 안 줄었다 */
    const CK=RESULT&&RESULT.checkOnly?RESULT:null;
@@ -3881,7 +3885,7 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【[^】]*】\s
     if(RESULT.mv.cat!=='변화'&&!(atk.states||{}).Thrash&&!a.states.Thrash&&potSrc(a).some(p=>String(p.name||'').trim()==='버서커')){a.states.Thrash=2;lines.push(`${a.name} 『버서커』 — 2턴 동안 「난동부리기」`)}}}
    /* 10-26 망령: 「다음 기술」 효과는 기술을 내보내면 (변화기 · 빗나감이어도) 다 쓴다 */
    if((RESULT.nextKeys||[]).length){const a=nb.mons[mid];const F=a.fx||{};const nk=RESULT.nextKeys;const had=(F.mods||[]).some(e=>e.next&&nk.includes(e.key));F.mods=(F.mods||[]).filter(e=>!(e.next&&nk.includes(e.key)));F.prio=(F.prio||[]).filter(e=>!(e.next&&nk.includes(e.key)));if(had)lines.push(`${a.name} 「다음 기술」 효과를 썼다`)}
-   nb.mons[mid].lastDealt={total:RESULT.targets.filter(r=>r.acc.hit&&r.dmg).reduce((a,r)=>a+(r.hp?r.hp.final:0),0),targets:RESULT.targets.filter(r=>r.acc.hit&&r.dmg).map(r=>r.def.name).join(', '),at:Date.now()};
+   nb.mons[mid].lastDealt={total:RESULT.targets.filter(r=>r.acc.hit&&r.dmg).reduce((a,r)=>a+(r.hp?r.hp.final:0),0),targets:RESULT.targets.filter(r=>r.acc.hit&&r.dmg).map(r=>r.def.name).join(', '),per:RESULT.targets.filter(r=>r.acc.hit&&r.dmg).map(r=>({id:r.def.id,n:r.def.name,v:r.hp?r.hp.final:0})),at:Date.now()};   /* 11-17 시노비: 전체기에서 반동 · 드레인을 한 대상 몫으로 고를 수 있게 대상별 값도 */
    const AU2=RESULT.auto;const xck=t=>{if(!AU2)return false;const ex=[...(AU2.recoil?['recoil']:[]),...(AU2.drain?['drain']:[]),...(AU2.selfFaint?['faint']:[]),...(AU2.forceSwitch?['fsw']:[]),...(AU2.selfSwitch?['ssw']:[])];const el=md.querySelector(`[data-agx="${ex.indexOf(t)}"]`);return !!(el&&el.checked)};
    const HIT2=RESULT.mv.cat==='변화'||(RESULT.targets||[]).some(r=>r&&r.acc&&r.acc.hit&&r.def&&r.def.id!==mid);   /* 11-15 감우 (나탈리아 분석 — 「잠수」 명중 후 임의 교대가 「판별」에 막혔는데도 교대): 공격기의 교대 · 날려보내기는 하나라도 맞았을 때만 */
    const doF=AU2&&AU2.forceSwitch&&HIT2&&xck('fsw'),doS=AU2&&AU2.selfSwitch&&HIT2&&xck('ssw');const swS=doS?AU2.selfSwitch:(RESULT.nextU?'free':'');   /* 선행유턴처럼 「다음 기술」에 붙은 유턴도 */
@@ -3961,7 +3965,7 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【[^】]*】\s
      단추는 지금 배율에 곱한다(새 줄). 전체를 한 값으로 맞추는 건 아래 「총 배율 직접 맞추기」 */
   const bar=()=>{const k=o.sel;const v=+r[k]||0,x=+md[k]||1;const lim=k==='critical'?4:6;
    const ms=((m.fx&&m.fx.mults)||[]).filter(e=>e&&e.stats&&e.stats[k]!=null);const prod=ms.reduce((a,e)=>a*(+e.stats[k]||1),1);const rest=Math.round(x/prod*1000)/1000;const tr=+(m.tempRank||{})[k]||0;
-   const src=e=>{const n=String(e.name||e.key||'');const by=String(e.key||'').split(' ← ')[1]||'';return esc(n.replace(/ · [a-z0-9]+$/,''))+(by&&!e.hand?`<span class="dim"> ← ${esc(by)}</span>`:'')};
+   const src=e=>{const n=String(e.name||e.key||'');const by=(String(e.key||'').split(' ← ')[1]||'').replace(/ \(줄\d+\)$/,'');return esc(n.replace(/ · [a-z0-9]+$/,''))+(by&&!e.hand?`<span class="dim"> ← ${esc(by)}</span>`:'')};
    const rows=ms.map(e=>`<span class="dxmf ${e.temp?'tmp':''} ${e.hand?'hand':''}"><b>${src(e)}</b><span class="mono">×${+e.stats[k]}</span>${e.temp?'<i>턴 종료까지</i>':''}<button type="button" class="dxsx" data-nmx="${esc(e.key)}" title="이 배율만 뗀다">✕</button></span>`).join('')+(Math.abs(rest-1)>0.002?`<span class="dxmf"><b>출처 없음</b><span class="mono">×${rest}</span><button type="button" class="dxsx" data-nmx0 title="출처 없는 배율을 뗀다 (×1)">✕</button></span>`:'');
    return `<div class="dxrkb"><div class="dxrkh"><b class="dxrkt">${STAT_KO[k]}</b><label class="dxtg ${o.temp?'on':''}" title="켜 두면 여기서 올리고 곱한 것은 턴 종료 때 저절로 풀린다"><input type="checkbox" data-ntemp ${o.temp?'checked':''}> 임시 (턴 종료까지)</label></div>
     <div class="dxrkl"><span class="small dim">랭크</span><span class="dxrkr"><button type="button" class="btn sm" data-nrd="-1" ${v<=-lim?'disabled':''}>−1</button><b class="mono">${fmtR(v)}</b><button type="button" class="btn sm" data-nrd="1" ${v>=lim?'disabled':''}>+1</button></span>${tr?`<span class="dxmf tmp"><b>임시</b><span class="mono">${fmtR(tr)}</span><i>턴 종료 때 되돌림</i></span>`:''}</div>
