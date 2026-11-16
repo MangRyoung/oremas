@@ -383,6 +383,13 @@ window.OM_DG_UI=(()=>{
   return {tr:JSON.parse(JSON.stringify(tr)),mons}}
  function wOut(tid){const T=RO().trainers||{},M=RO().mons||{};const t=T[tid];if(!t)return null;const ms=(t.pids||[]).map(id=>M[id]).filter(Boolean);if(!ms.length)return null;
   return {name:t.name||'야생',rank:(t.ranks||{}).육성||'C',mons:ms.slice(0,6).map(m=>{const tk=m.typesKo||[];const o={name:m.species||m.name,t1:tk[0]||'-',t2:tk[1]||'-',base:(m.base0||m.base||[]).slice(0,6),ability:m.ability||'',abilityEff:m.abilityEff||'',item:m.item||'',moves:(m.moves||[]).map(v=>v&&v.name).filter(n=>n&&n!=='발버둥'),pride:m.pride||'C',dist:+(m.mkDist??m.dist)||0,boss:!!m.boss,pots:(m.pots||[]).map(p=>p&&p.name).filter(Boolean)};if(m.auto&&Object.keys(m.auto).length)o.auto=m.auto;if(m.image)o.image=m.image;if(m.excl&&m.excl.name)o.excl={name:m.excl.name,eff:m.excl.eff||''};const xx=(m.exclX||[]).filter(e=>e&&e.name);if(xx.length)o.exclX=xx.map(e=>({name:e.name,eff:e.eff||''}));return o})}}
+ /* 11-16 제작기 「던전 생성」의 야생 시트 = 제작기 트레이너 → 방 시트의 야생 트레이너 (제작기 포켓몬 시트를 그대로 — 전용 · 포텐셜 효과 · 소켓까지). 보스 = 포텐셜 「와일드 보스」 */
+ async function wFromMaker(mk,rid,ops,did){const I=window.OM_IMPORT,DB=window.OM_STORE;if(!I||!I.party)throw new Error('가져오기 엔진(OM_IMPORT)이 없다');if(!DB||!DB.makerParty)throw new Error('제작기 읽기(makerParty)가 없다');
+  const P=await DB.makerParty(mk);if(!P||!P.trainer)return '';const {trainer:t0,mons}=I.party(P.trainer,P.pokemon||[]);if(!mons.length)return '';
+  const T=RO().trainers||{};let tid;do tid='wd'+String(rid||'').replace(/[^\w]/g,'').slice(0,5)+Math.random().toString(36).slice(2,5);while(T[tid]||ops.some(o=>o[0][2]===tid));
+  const tr=JSON.parse(JSON.stringify(t0));tr.id=tid;tr.kind='npc';tr.wild=true;tr.src='maker';tr.mkId=mk;tr.orderCount={};tr.pids=[];if(did)tr.wdg=did;
+  mons.slice(0,6).forEach((x0,i)=>{const x=JSON.parse(JSON.stringify(x0));const id=tid+'m'+i;x.id=id;x.tid=tid;const pn=(x.pots||[]).map(p=>p&&p.name).filter(Boolean);x.boss=pn.includes('와일드 보스');x.role=pn.find(n=>/^와일드( 보스)?$/.test(n))||x.role||'';if(x.hp)x.hp.cur=x.hp.max;ops.push([['roster','mons',id],x]);tr.pids.push(id)});
+  ops.push([['roster','trainers',tid],tr]);return tid}
  /* 방 시트에 야생을 만든다 → 만든 트레이너 id (ops 에 쓰기 목록을 더한다) */
  /* 11-04 망령 「가」: 야생 시트는 「던전 소속」 — tr.wdg = 던전 id. 던전을 지우면 같이 지운다 · 관계도 · 화자 줄 · 휴대폰 · 노트는 t.wild 로 거른다 */
  function wMake(w,rid,ops,did){const T=RO().trainers||{};let tid;do tid='wd'+String(rid||'').replace(/[^\w]/g,'').slice(0,5)+Math.random().toString(36).slice(2,5);while(T[tid]||ops.some(o=>o[0][2]===tid));
@@ -415,6 +422,7 @@ window.OM_DG_UI=(()=>{
    if(x.rk&&rk.has(x.rk))o.rk=x.rk;if(+x.rmany)o.rmany=1;
    if(x.cl&&typeof x.cl==='object'){const c={t:sTxt(x.cl.t,60),d:sTxt(x.cl.d,1200)};if(x.cl.img&&/^https?:\/\//.test(String(x.cl.img)))c.img=sTxt(x.cl.img,600);if(c.t||c.d)o.cl=c}
    if(x.e){if(tr[x.e]){o.e=String(x.e);if(+x.eh)o.eh=1}else if(!x.w)warn.push(`「${o.n}」 야생 무리 ${x.e} 는 이 방 시트에 없어서 뺐다 (GM 메모를 보고 배치)`)}
+   if(!o.e&&typeof x.mk==='string'&&/^[\w-]{3,40}$/.test(x.mk)){o.mk=x.mk;if(+x.eh)o.eh=1}   /* 11-16 제작기 던전 생성: 야생 시트 = 제작기 트레이너 (가져오기가 읽어 만든다) */
    if(!o.e&&x.w){const w=wNorm(x.w);if(w){o.w=w;if(+x.eh)o.eh=1}}   /* 10-31: 야생 시트 설계 — 가져오기(dgImport)가 시트를 만들고 e 로 바꾼다 */
    for(const f of ['aw','alo'])if(x[f]!=null&&x[f]!==''&&Number.isFinite(+x[f]))o[f]=clamp(Math.round(+x[f]),-100,100);   /* 10-31 망령 「배틀 승/패 경계도를 전투마다」 */
    {const w=x.rw||x.reward;if(w&&typeof w==='object'){const q={};if(w.flag)q.flag=sKey(String(w.flag))||sTxt(w.flag,20);if(w.memo||w.scenario)q.memo=sTxt(w.memo||w.scenario,200);if(q.flag||q.memo)o.rw=q}}   /* 11-04 곁방 보상 표식 (던전 기믹을 끈다) */
@@ -454,7 +462,8 @@ window.OM_DG_UI=(()=>{
   const list=Array.isArray(j)?j:(j&&Array.isArray(j.dungeons)?j.dungeons:[j]);if(!list.length)throw new Error('비어 있다');if(list.length>20)throw new Error('한 번에 20개까지');
   const warn=[],o={};let last='';list.forEach((x,i)=>{const w=[];const d=dgNorm(x,w);const id=Math.random().toString(36).slice(2,8);o['list/'+id]=d;last=id;w.forEach(t=>warn.push((list.length>1?`[${i+1}] `:'')+t))});
   /* 10-31 망령 「1. 야생 시트도 같이」: w 가 있는 방은 방 시트에 야생 트레이너를 만들어 잇는다 */
-  {const ops=[];let nw=0;for(const [lk,d] of Object.entries(o))for(const [rid,r] of Object.entries(d.r||{})){if(!r.w||r.e)continue;try{r.e=wMake(r.w,rid,ops,lk.slice(5));delete r.w;nw++}catch(e){warn.push(`「${r.n}」 야생 시트를 못 만들었다 — ${e.message}`)}}
+  {const ops=[];let nw=0;for(const [lk,d] of Object.entries(o))for(const [rid,r] of Object.entries(d.r||{})){if(!r.mk||r.e)continue;try{const tid=await wFromMaker(r.mk,rid,ops,lk.slice(5));if(tid){r.e=tid;delete r.mk;delete r.w;nw++}else{warn.push(`「${r.n}」 제작기 야생 시트(${r.mk})를 찾지 못했다`);delete r.mk}}catch(e){warn.push(`「${r.n}」 제작기 야생 시트를 못 읽었다 — ${e.message}`);delete r.mk}}
+   for(const [lk,d] of Object.entries(o))for(const [rid,r] of Object.entries(d.r||{})){if(!r.w||r.e)continue;try{r.e=wMake(r.w,rid,ops,lk.slice(5));delete r.w;nw++}catch(e){warn.push(`「${r.n}」 야생 시트를 못 만들었다 — ${e.message}`)}}
    if(ops.length){if(!await A().setMany(ops))throw new Error('야생 시트를 시트에 쓰지 못했다');warn.push(`야생 시트 ${nw}개를 시트 탭에 만들어 방에 배치했다`)}}
   if(!await upd(o))return null;return {n:list.length,last,warn}}
 
