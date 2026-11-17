@@ -1231,7 +1231,7 @@ window.OM_BATTLE_UI=(()=>{
   /* 11-15 망령 「에리어 이동 해야지」: 「【1/시】/에리어를 이동했을 때 아군 전체의 『닌자』를 발동시킬 수 있다」(카자마 레비 『질투의 아카이브』) — 필드의 같은 편 중 그 포텐셜(임명 포함)이 켜진 포켓몬마다 바로 발동 · 횟수 −1 · 「행동한 뒤」 계기는 이번 턴 다시 안 건다 */
   for(const p of potSrc((ctx().b.mons||{})[mid]||m)){const e=String((p&&p.eff)||'');const mm=e.match(/에리어를\s*이동했을\s*때\s*아군\s*전체의\s*『\s*([^』]+?)\s*』\s*(?:을|를)\s*발동/);if(!mm)continue;const cur=(ctx().b.mons||{})[mid]||m;const L=limOf(p,cur.potUses||{},cur.potTurn||{});if(L.left!==null&&L.left<=0)continue;
    const b1=ctx().b;const T=+b1.turn||0;const tg=Object.values(b1.mons||{}).filter(x=>x&&x.entry&&x.hp&&x.hp.cur>0&&sameT(x,cur,b1)&&potSrc(x).some(q=>q&&q.name===mm[1].trim()));if(!tg.length)continue;
-   if(/할\s*수\s*있다/.test(e)&&!(await askYes(`${cur.name} 『${p.name}』 — 에리어를 이동했다. 아군 ${tg.map(x=>x.name).join(' · ')}의 『${mm[1]}』을(를) 발동할까?`,'발동','그만둔다')))continue;
+   if(/할\s*수\s*있다/.test(e)){const q=`${cur.name} 『${p.name}』 — 에리어를 이동했다. 아군 ${tg.map(x=>x.name).join(' · ')}의 『${mm[1]}』을(를) 발동할까?`;if(!(await remoteAsk(cur,'confirm',{name:p.name,q},()=>askYes(q,'발동','그만둔다'))))continue}
    if(L.mmax!=null){const u=(cur.potUses||{})[p.name];await A().set(['battle','mons',mid,'potUses',p.name],Math.max(0,(u==null?L.mmax:+u)-1))}if(L.per)await A().set(['battle','mons',mid,'potTurn',p.name],T);
    A().sysLog(`【포텐셜】 ${cur.name} 『${p.name}』 — 에리어를 이동해 아군 전체의 『${mm[1]}』 발동`,'battle',{mid,img:cur.image||''});
    for(const x of tg){ACTFX[x.id+'|'+mm[1].trim()]=T;await fireAuto(x.id,'pot',mm[1].trim(),{quiet:true,noRoll:true,noEv:1,head:`【포텐셜】 ${x.name} 『${mm[1].trim()}』 — 『${p.name}』`})}}}
@@ -1449,7 +1449,7 @@ window.OM_BATTLE_UI=(()=>{
   if(FX()&&FX().noind(m,'freesw'))return {hit,free:FX().noindName(m,'freesw')||'반드시 교대'};const p=potSrc(m).find(p=>FREESW.test(String(p.eff||'')));return {hit,free:'',pot:p?p.name:''}}
  async function switchGuard(m){if(FX()&&FX().noind(m,'switch'))return FX().noindName(m,'switch')||'교대 무시';const st=m.states||{};if(st.Ingrain)return '뿌리박기';if(st.Dynamax)return '다이맥스';
   const re=/강제 교대[^.\n]*?(받지 않|무효)/;if(m.ability&&re.test(String(m.abilityEff||'')))return '특성 : '+m.ability;
-  for(const p of potSrc(m))if(re.test(String(p.eff||''))&&await askYes(`${m.name}의 「${p.name}」로 강제 교대를 막을까?\n${String(p.eff||'').replace(/<br\s*\/?>/g,' ').slice(0,120)}`))return p.name;return ''}
+  for(const p of potSrc(m)){if(!re.test(String(p.eff||'')))continue;const q=`${m.name}의 「${p.name}」로 강제 교대를 막을까?\n${String(p.eff||'').replace(/<br\s*\/?>/g,' ').slice(0,120)}`;if(await remoteAsk(m,'confirm',{name:p.name,q},()=>askYes(q)))return p.name}return ''}   /* 11-17: 주인에게 묻기 */
 
  /* ----- 지시 저장 · 준비 · 공개 ----- */
  /* 저장한 지시엔 턴 번호를 붙인다 (10-24 망령): 지난 턴 지시(선행 포텐셜 · 지령)를 다음 턴에 또 읽어 「선행」이 풀리지 않던 것 */
@@ -3096,14 +3096,13 @@ window.OM_BATTLE_UI=(()=>{
    const PM=x.kind==='pot'?potModsOf(ctx().b.mons[x.own.id]||x.own,x.name):{};if(PM.nosup&&x.p)x.p=Object.assign({},x.p,{eff:String(x.p.eff||'').replace(/【\s*보급\s*】/g,'')});
    let L=null;if(x.kind==='pot'&&x.p){const cur=ctx().b.mons[x.own.id]||x.own;L=limOf(x.p,cur.potUses||{},cur.potTurn||{});if(L.left!==null&&L.left<=0)continue}
    if(x.r.restore){/* 【보급】 포텐셜 횟수 회복 (칼레발라 『황금신부의 보급』) — 구문 없이 웹툴이 직접 */const tg=ctx().b.mons[x.r.restore.mid];const tp=tg&&potSrc(tg).find(q=>q&&q.name===x.r.restore.name);if(!tg||!tp)continue;const L2=limOf(tp,tg.potUses||{},tg.potTurn||{});
-    if(!/【\s*자동\s*】/.test(x.eff)&&!(await askYes(`${why}\n\n${who} 『${x.name}』 — 『${tp.name}』의 횟수를 회복할까?`,'회복','그만')))continue;
+    if(!/【\s*자동\s*】/.test(x.eff)){const q=`${why}\n\n${who} 『${x.name}』 — 『${tp.name}』의 횟수를 회복할까?`;if(!(await remoteAsk(x.own,'confirm',{name:x.name,q},()=>askYes(q,'회복','그만'))))continue}
     if(L2.mmax!=null){const u=(tg.potUses||{})[tp.name];const had=u==null?L2.mmax:+u;await A().set(['battle','mons',tg.id,'potUses',tp.name],Math.min(L2.mmax,had+1))}if(L2.per)await A().set(['battle','mons',tg.id,'potTurn',tp.name],null);
     A().sysLog(`${why}\n${who} 『${x.name}』 — ${tg.name} 『${tp.name}』 횟수 회복`,'battle',{mid:x.own.id});
     if(L){const cur=ctx().b.mons[x.own.id]||x.own;if(L.mmax!=null){const u=(cur.potUses||{})[x.name];const had=u==null?L.mmax:+u;await A().set(['battle','mons',x.own.id,'potUses',x.name],Math.max(0,had-1))}if(L.per)await A().set(['battle','mons',x.own.id,'potTurn',x.name],+ctx().b.turn||0);if(L.sup)await A().set(['battle','mons',x.own.id,'potTurn','_sup',x.name],1)}continue}
    const a=potModApply(clausePick(FX().autoOf(ctx().b.mons[x.own.id]||x.own,x.kind==='uq'?'pot':x.kind,x.name),x.r.cl),PM);
    if(!a||!realOps(a)||a.manual){notes.push(`${who} 『${x.name}』 — ${x.r.why}`);continue}
-   if(x.kind==='pot'&&limManual(x.own,'pot',x.name,x.eff)&&!(await askYes(`${why}\n\n${who} 『${x.name}』 (【N/시】) 을(를) 발동할까?\n${String(x.r.cl||'').slice(0,160)}`,'발동','그만')))continue;
-   else if(!(x.kind==='pot'&&limManual(x.own,'pot',x.name,x.eff))&&!/【\s*자동\s*】/.test(x.eff)&&!(await askYes(`${why}\n\n${who} 『${x.name}』 을(를) 발동할까?\n${String(x.r.cl||'').slice(0,160)}`,'발동','그만')))continue;
+   {const lm=x.kind==='pot'&&limManual(x.own,'pot',x.name,x.eff);if(lm||!/【\s*자동\s*】/.test(x.eff)){const q=`${why}\n\n${who} 『${x.name}』${lm?' (【N/시】)':''} 을(를) 발동할까?\n${String(x.r.cl||'').slice(0,160)}`;if(!(await remoteAsk(x.own,'confirm',{name:x.name,q},()=>askYes(q,'발동','그만'))))continue}}   /* 11-17 망령 「이게 나한테 왜 보이냐고」(【함성】 『활력 충전』 — evReact 쪽은 아직 GM 창에서 물었다): 주인 자리에 묻는다 */
    let ok=false;try{ok=await fireAuto(x.own.id,x.kind==='uq'?'pot':x.kind,x.name,Object.assign({auto:a,quiet:true,noEv:x.kind==='trait'?0:1,/* 11-15: 계기로 터진 특성도 「「특성 : X」가 발동했을 때」를 잇는다 (유대변화 → 『무관, 무능의 멍에를 벗고』 나굴닌자) */head:`【${K}】 ${who} 『${x.name}』 — ${x.r.why}`,eff:x.eff},x.r.pick?{pickId:x.r.pick}:{},ev==='hit'?{ctx:{oppId:o.mid,taken:+o.dmg||0}}:ev==='guard'?{ctx:{oppId:o.mid,taken:0}}:{},x.kind==='uq'?{uq:1}:{}))}catch(e){console.warn('evReact',e)}
    if(ok&&ev==='ko')await A().set(['battle','mons',x.own.id,'shoutT'],+ctx().b.turn||0);   /* 11-15: 【함성】 발동한 턴 (『폭식의 대죄』 ③) */
    if(ok&&(PM.heal||PM.cure||PM.nosup))A().sysLog(`【전용】 ${x.own.name} 『${PM.heal?PM.heal[2]:PM.cure||PM.nosup}』 — 『${x.name}』${PM.heal?' 회복 '+PM.heal[0]+'→'+PM.heal[1]:''}${PM.cure?' · 상태 이상 치유':''}${PM.nosup?' · 【보급】 없음':''}`,'battle',{mid:x.own.id});
