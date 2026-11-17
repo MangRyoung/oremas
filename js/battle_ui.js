@@ -634,7 +634,7 @@ window.OM_BATTLE_UI=(()=>{
   for(const x of C){const k=[tk,x.kind,x.own?x.own.id:x.tid,x.p.name,ev,mid].join('|');if(RCV_DONE[k])continue;RCV_DONE[k]=1;if(!c.gm&&!ownT(c,x.tid))continue;
    const why=`${KN} — ${rc.name}${ev==='excl'?'의 『'+String(src||'').replace(/[『』]/g,'')+'』 발동':'이(가) 『'+String(src||'').replace(/[『』]/g,'')+'』을(를) 받았다'}`;
    if(!x.a||!realOps(x.a)||x.a.manual){A().sysLog(`【계기】 ${why}\n→ ${x.who} 『${x.p.name}』 — 효과는 손으로`,'battle',{mid:x.own?x.own.id:'',eff:String(x.p.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,300)});continue}
-   if(!/【\s*자동\s*】/.test(String(x.p.eff||''))&&!(await askYes(`${why}\n\n${x.who} 『${x.p.name}』 을(를) 발동할까?\n${String(x.cl).slice(0,160)}`,'발동','그만')))continue;
+   if(!/【\s*자동\s*】/.test(String(x.p.eff||''))){const q=`${why}\n\n${x.who} 『${x.p.name}』 을(를) 발동할까?\n${String(x.cl).slice(0,160)}`;if(!(await remoteAsk(x.own||rc,'confirm',{name:x.p.name,q},()=>askYes(q,'발동','그만'))))continue}   /* 11-17: 주인에게 묻기 (위 trigFire 와 같이) */
    try{if(x.kind==='uq')await fireSpecial(x.tid,rc.id,'uq',x.p.name,'free');else if(x.kind==='ex')await fireSpecial(x.tid,x.own.id,'ex',x.p.name,'free');else await fireAuto(x.own.id,'pot',x.p.name,{auto:x.a,manual:1,pickId:rc.id,head:`【포텐셜】 ${x.own.name} 『${x.p.name}』 — ${why}`,eff:String(x.p.eff||'')})}catch(e){console.warn('rcvReact',e)}}}
  function uniqList(t){return ((t&&t.unique)||[]).filter(u=>u&&u.name).map(u=>{const L=limOf(u,t.uUses||{},t.uTurn||{});return {p:u,kind:'고유',max:L.max,left:L.left,mmax:L.mmax,per:L.per}})}
  function potList(m){const out=[];const src=potSrc(m);
@@ -1379,7 +1379,8 @@ window.OM_BATTLE_UI=(()=>{
   else if(!hit.first)return note;
   let L=null,Q=null;if(x.kind==='pot'){L=limOf(x.p,m.potUses||{},m.potTurn||{});if(L.left!==null&&L.left<=0)return {}}
   if(x.kind==='uq'){const tt=(ctx().b.trainers||{})[m.tid]||x.t;Q=limOf(x.u,tt.uUses||{},tt.uTurn||{});if(Q.left!==null&&Q.left<=0)return {}}
-  if(/【\s*\d+\s*\/\s*(?:시|턴)\s*】/.test(x.eff)&&!/【\s*자동\s*】/.test(x.eff)&&!(await askYes(`【계기】 ${o.why}\n\n${who} 『${nm}』 을(를) 발동할까?\n${String(hit.cl).slice(0,160)}`,'발동','그만')))return {};
+  if(/【\s*\d+\s*\/\s*(?:시|턴)\s*】/.test(x.eff)&&!/【\s*자동\s*】/.test(x.eff)){const q=`【계기】 ${o.why}\n\n${who} 『${nm}』 을(를) 발동할까?\n${String(hit.cl).slice(0,160)}`;   /* 11-17 망령 「PL 권한 켜뒀는데 (PL 포켓몬 【함성】 발동 확인 창이 GM 에게) 왜 보이죠」: 주인(자리 플레이어)에게 묻는다 — 동조 · 고르기와 같은 remoteAsk */
+   if(!(await remoteAsk(m,'confirm',{name:nm,q},()=>askYes(q,'발동','그만'))))return {}}
   let ok=false;try{ok=await fireAuto(mid,kind,x.name,Object.assign({auto:a,quiet:true,noEv:1,head:`【${K}】 ${who} 『${nm}』 — ${o.why}`,eff:x.eff,pickIds:o.pickIds||[]},o.area?{area:o.area}:{},x.kind==='uq'?{uq:1}:{}))}catch(e){console.warn('계기',e)}
   if(ok&&L){const cur=ctx().b.mons[mid]||m;if(L.mmax!=null){const u=(cur.potUses||{})[x.name];const had=u==null?L.mmax:+u;await A().set(['battle','mons',mid,'potUses',x.name],Math.max(0,had-1))}if(L.per)await A().set(['battle','mons',mid,'potTurn',x.name],+ctx().b.turn||0);if(L.sup)await A().set(['battle','mons',mid,'potTurn','_sup',x.name],1)}
   if(ok&&Q){const tt=(ctx().b.trainers||{})[m.tid]||x.t;if(Q.mmax!=null){const v=(tt.uUses||{})[x.name];await A().set(['battle','trainers',m.tid,'uUses',x.name],Math.max(0,(v==null?Q.mmax:+v)-1))}if(Q.per)await A().set(['battle','trainers',m.tid,'uTurn',x.name],+ctx().b.turn||0)}
@@ -3437,16 +3438,23 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
     ② 선행 입력한 방어 4식 — 지시 대상 중 『버텨라!』(늘) · 『물러나!』(물리기) · 『피해라!』(특수기)를 선행 입력하고 아직 안 쓴 포켓몬이 있으면 먼저 선행 발동한다
        (예전에는 턴 개시 때 횟수만 빠지고 효과는 GM 이 「포텐셜 발동」에서 따로 눌러야 해서, 버텨라가 빠진 채 대미지가 들어갔다) */
  function chargeVanish(mv){const e=String((mv||{}).eff||'');const g=((DB().states||{}).groups||[]).find(x=>x.l==='반무적');const db=(DB().states||{}).st||{};const m=e.match(/「반무적\s*:\s*([^」]+)」/);if(!m)return '';const ko=m[1].trim();return ((g&&g.s)||Object.keys(db)).find(k=>db[k]&&db[k].ko===ko)||''}
+ /* 11-17 망령 「공중날기 · 다이브류가 충전하는 턴에 기술 공개할 때 물러나! 같은 게 발동해 버린다」: 모으는 턴은 공격이 아니니 방어 4식(버텨라! · 물러나! · 피해라!)을 걸지 않는다.
+    차지 기술인데 아직 안 모았고 · 날씨로 생략되지 않고 · 파워풀허브도 없으면 = 모으는 턴. 모은 다음 턴(내보내는 턴)에는 그 기술 · 대상으로 방어 4식을 건다 (예전엔 GM 화면이 이 턴에 4식을 거치지 않았다) */
+ function chargeTurnNow(b,atk,mv){if(!mv||!/「차지」/.test(String(mv.eff||'')))return false;const CH=atk.charge;if(CH&&+CH.turn<(+b.turn||0))return false;const W=wxNow(b);const sk=String(mv.eff).match(/「날씨\s*:\s*([^」]+)」일 때 「차지」를 생략/);if(sk&&W&&sk[1].split(/[,，]\s*/).map(q=>q.trim()).includes(W))return false;if(HAS(atk,'파워풀허브'))return false;return true}
  async function openAttackPre(mid){const c=ctx();const b=c.b;const atk=(b.mons||{})[mid];if(!atk||!canEdit(c,atk))return openAttack(mid);{const XO=(+b.phase||0)>=2?(b.order||[])[+b.orderIdx||0]:null;if(XO&&XO.xact&&XO.mid===mid)return openAttack(mid)}   /* 11-11 추가 행동 차례: 원래 지시(기술 · 차지 · 방어 4식)를 거치지 않고 그 기술로 바로 */
   if(!c.gm){   /* 11-07: PL 화면 — 차지 처리는 GM 몫 그대로, 방어 4식만 (상대의 숨은 지시 대신 순서 열쇠 g4) */
    let x1=(((b.cmds||{})[atk.tid]||{}).mons||{})[mid]||{};if(x1.move==null||x1.move===''){try{const cm=await myCmd(c,atk.tid,true);const y=((cm||{}).mons||{})[mid];if(y)x1=Object.assign({},y,{tm:y.tm||tmOf(b,y.targets)})}catch(e){}}
-   const mv1=x1.move!==''&&x1.move!=null&&x1.move!=='switch'?MVS(atk)[+x1.move]:null;if(mv1&&mv1.cat!=='변화'&&!atk.charge)await guard4Pre(c,atk,mv1,x1,{});return openAttack(mid)}
+   const mv1=x1.move!==''&&x1.move!=null&&x1.move!=='switch'?MVS(atk)[+x1.move]:null;const CH1=atk.charge;
+   if(CH1&&+CH1.turn<(+b.turn||0)){const mvF=MVS(atk).find(q=>q&&q.name===CH1.mv);if(mvF&&mvF.cat!=='변화')await guard4Pre(c,atk,mvF,{targets:CH1.targets||[]},{})}
+   else if(mv1&&mv1.cat!=='변화'&&!atk.charge&&!chargeTurnNow(b,atk,mv1))await guard4Pre(c,atk,mv1,x1,{});return openAttack(mid)}
   let x0=(((b.cmds||{})[atk.tid]||{}).mons||{})[mid]||{};const T=+b.turn||0;let SECO=null;
   await secCmdRefresh(c,b);   /* 11-07: 【수세】 · 【공세】 판정용 — 숨은 지시를 이 창 동안 기억 */
   /* 11-04 감우 (봉인 서고: 이요 「문포스」 지시가 「미스트볼」로 열림 ×2): 「다음 행동 ▶」의 지시 공개(b.cmds)가 저장되기 전에 공격 창을 열면 지시가 비어 1번 기술로 열렸다 — GM 은 숨은 지시(secret cmd)를 바로 읽어 그 기술 · 대상으로 연다 */
   if((x0.move==null||x0.move==='')&&!x0.switch&&c.ST&&c.ST.secret){try{const rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd');for(const r of rows||[]){if(!cmdFresh(r,b))continue;const y=((r.data||{}).mons||{})[mid];if(y&&y.move!=null&&y.move!==''&&y.move!=='switch'){x0=Object.assign({},y,{tm:y.tm||tmOf(b,y.targets)});SECO={mvIdx:+y.move,targets:tgNow(b,x0,atk)};break}}}catch(e){console.warn('숨은 지시 읽기',e)}}
   /* ①-2 모은 다음 턴: 그 기술 · 대상으로 */
-  const CH=atk.charge;if(CH&&+CH.turn<T){const mi=MVS(atk).findIndex(q=>q&&q.name===CH.mv);const slots=allEntered(b);const tg=(CH.targets||[]).filter(sl=>slots.some(z=>z.slot===sl));return openAttack(mid,mi>=0?{mvIdx:mi,targets:tg.length?tg:undefined,chargeFire:1}:{})}
+  const CH=atk.charge;if(CH&&+CH.turn<T){const mi=MVS(atk).findIndex(q=>q&&q.name===CH.mv);const slots=allEntered(b);const tg=(CH.targets||[]).filter(sl=>slots.some(z=>z.slot===sl));
+   const mvF=mi>=0?MVS(atk)[mi]:null;if(mvF&&mvF.cat!=='변화'){let SEC={};try{const rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd');for(const r of rows||[]){if(!cmdFresh(r,b))continue;for(const k in ((r.data||{}).mons||{}))SEC[k]=r.data.mons[k]}}catch(e){}await guard4Pre(c,atk,mvF,{targets:tg},SEC)}   /* 11-17 내보내는 턴에 방어 4식 */
+   return openAttack(mid,mi>=0?{mvIdx:mi,targets:tg.length?tg:undefined,chargeFire:1}:{})}
   const mv=x0.move!==''&&x0.move!=null&&x0.move!=='switch'?MVS(atk)[+x0.move]:null;
   if(mv&&/「차지」/.test(String(mv.eff||''))&&!(CH&&+CH.turn===T)){const W=wxNow(b);const sk=String(mv.eff).match(/「날씨\s*:\s*([^」]+)」일 때 「차지」를 생략/);const skip=sk&&W&&sk[1].split(/[,，]\s*/).map(q=>q.trim()).includes(W);
    const herb=!skip&&HAS(atk,'파워풀허브');if(herb){await itemConsume(mid,false,'파워풀허브');A().sysLog(`【소지품】 ${atk.name} 「파워풀허브」 — 『${mv.name}』의 「차지」를 생략한다 (차지 때의 효과는 손으로)`,'battle',{mid,img:atk.image||''})}   /* 11-08 51-2 ⑨ */
