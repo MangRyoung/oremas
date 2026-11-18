@@ -1759,13 +1759,13 @@ window.OM_BATTLE_UI=(()=>{
  function revealCardText(b,t,m,x){if(x.move==='switch')return `${t.name} · ${m.name} (${slotName(b,m.side+'_'+m.entry).replace(/<[^>]+>/g,'')}): 「교대」 → ${monName(b,x.switch)}`;
   if(x.move===''||x.move==null)return `${t.name} · ${m.name}: (행동 없음)`;const mv=MVS(m)[+x.move]||{};
   const thr=(m.states||{}).Thrash&&!x.tman&&mv.cat!=='변화'&&!/전체|적진|자진|자신/.test(String(mv.range||''));   /* 10-26: 난동부리기면 대상은 공격할 때 랜덤 */
-  return `${t.name} · ${m.name} (${SIDE_KO[m.side]} ${String(m.entry).toUpperCase()}): 「${mv.name||'?'}」 ${mv.type||''}·${mv.cat||''} · 위력 ${mv.pow||'-'} · 명중 ${mv.acc||'-'}${mv.prio?' · 우선도 '+mv.prio:''}${thr?' → 적진에서 랜덤 (「난동부리기」)':x.targets&&x.targets.length?' → '+tgNow(b,x,m).map(sl=>slotName(b,sl).replace(/<[^>]+>/g,'')).join(', '):''}${mv.eff&&mv.eff!=='-'?'\n   '+mv.eff:''}`}
+  return `${t.name} · ${m.name} (${SIDE_KO[m.side]} ${String(m.entry).toUpperCase()}): 「${mv.name||'?'}」 ${mv.type||''}·${mv.cat||''} · 위력 ${mv.pow||'-'} · 명중 ${mv.acc||'-'}${mv.range&&mv.range!=='-'?' · 범위 '+mv.range:''}${A().contactOf(mv)==='O'?' · 접촉':''}${mv.prio?' · 우선도 '+mv.prio:''}${thr?' → 적진에서 랜덤 (「난동부리기」)':x.targets&&x.targets.length?' → '+tgNow(b,x,m).map(sl=>slotName(b,sl).replace(/<[^>]+>/g,'')).join(', '):''}${mv.eff&&mv.eff!=='-'?'\n   '+mv.eff:''}`}
  /* 공개 카드 그림용 (10-24 망령): 누가 · 무엇을 · 누구에게 — 로그가 그림 칩으로 그린다 */
  function revealData(b,t,m,x){const at=sl=>{const [s,a]=String(sl).split('_');const q=Object.values(b.mons||{}).find(q=>q.side===s&&q.entry===a&&q.hp&&q.hp.cur>0);return {slot:sl,side:s,area:String(a||'').toUpperCase(),name:q?q.name:'',img:q?q.image||'':'',mid:q?q.id:''}};
   const o={tr:t.name||'',mid:m.id,name:m.name,img:m.image||'',side:m.side,area:String(m.entry||'').toUpperCase()};
   if(x.move==='switch'){const w=(b.mons||{})[x.switch]||{};return Object.assign(o,{sw:{name:w.name||monName(b,x.switch)||'',img:w.image||''}})}
   if(x.move===''||x.move==null)return Object.assign(o,{none:1});const mv=MVS(m)[+x.move]||{};
-  return Object.assign(o,{mv:{name:mv.name||'?',type:mv.typeEn||'',typeKo:mv.type||'',cat:mv.cat||'',pow:mv.pow||'-',acc:mv.acc||'-',prio:+mv.prio||0},tg:tgNow(b,x,m).map(at)})}
+  return Object.assign(o,{mv:{name:mv.name||'?',type:mv.typeEn||'',typeKo:mv.type||'',cat:mv.cat||'',pow:mv.pow||'-',acc:mv.acc||'-',prio:+mv.prio||0,range:mv.range||'',ct:A().contactOf(mv)==='O'?1:0},tg:tgNow(b,x,m).map(at)})}   /* 11-18 PL 제보 「범위가 접촉 여부보다 중요한데 안 나온다」: 공개 카드에 범위 · 접촉 */
  let autoT=null;
  function autoAdvance(){const c=ctx();const b=c.b;if(!c.mgr)return;const me=c.gm?'gm':c.seat;if((b.host||'gm')!==me)return;if(me==='gm'&&!isLeader(c))return;   /* 10-27: GM 창 여럿이면 리더 하나만 */if((+b.phase||0)!==1||b.tstep)return;if(unrevealed(b).length)return;clearTimeout(autoT);autoT=setTimeout(async()=>{const c2=ctx();if((+c2.b.phase||0)!==1||c2.b.tstep||unrevealed(c2.b).length)return;A().sysLog('지시가 모두 공개됐다','battle');await stepTurn()},800)}
  /* 같은 포켓몬 공개가 여러 길(자동 공개 · 내 차례 공개 · 버튼)로 겹쳐 들어오면 로그가 두 번 찍혔다 (10-24 망령) — 진행 중이면 무시하고, 기다린 뒤 다시 확인 */
