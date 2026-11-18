@@ -1932,7 +1932,7 @@ window.OM_BATTLE_UI=(()=>{
   for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0)continue;for(const p of potSrc(m))if(ok(p.eff,m)&&!spent(p,m.potUses,m.potTurn))out.push({m,kind:'pot',name:p.name,eff:p.eff,tag:isExcl(m,p)?'전용':'포텐셜'});
    /* 11-07 망령 「가속 특성 턴 종료 시에 왜 확인 문구 안 뜨냐」: 후보를 포텐셜 · 고유에서만 찾아서 특성은 빠져 있었다 — 특성 글(시트 → 특성 DB)에 그 타이밍이 적혀 있으면 같이 묻는다. 소지품 턴 종료(먹다남은음식 등)는 items.js 가 저절로 하므로 넣지 않는다 */
    /* 11-07 23:37 망령 「가속은 교대로 나온 턴 종료 시에는 발동 안 해」 */
-   if(m.ability&&!(NO_SWT.includes(String(m.ability).trim())&&+m.inSw&&+m.inT===+b.turn)){const te=slotEff(m,'trait',m.ability);if(ok(te,m))out.push({m,kind:'trait',name:m.ability,eff:te,tag:'특성'})}}
+   if(m.ability&&!(NO_SWT.includes(String(m.ability).trim())&&+m.inSw&&+m.inT===+b.turn)&&!(step==='end'&&F()&&F().poisonHeal&&F().poisonHeal(m))){   /* 11-19 포이즌힐 꼴은 슬립 대미지 단계에서 대미지 대신 회복 (field.js) — 묻지 않는다 */const te=slotEff(m,'trait',m.ability);if(ok(te,m))out.push({m,kind:'trait',name:m.ability,eff:te,tag:'특성'})}}
   const seen=new Set();for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0||seen.has(m.tid))continue;seen.add(m.tid);const t=(b.trainers||{})[m.tid];for(const x of uniqList(t))if(ok(x.p.eff,m)&&!spent(x.p,t&&t.uUses,t&&t.uTurn))out.push({m,kind:'uq',name:x.p.name,eff:x.p.eff,tag:'고유',t})}
   return out}
  /* 턴 마무리 (10-23): 단계마다 그 타이밍 포텐셜을 가진 트레이너의 주인 화면에만 묻는다 (플레이어 몫은 그 플레이어, NPC·GM 몫은 GM).

@@ -17,6 +17,12 @@ window.OM_FIELD=(()=>{
 const FX=()=>window.OM_FX;
  const ABN=['Poison','Toxic','Burn','Paralysis','Freeze','Sleep','Comatose'];
  const isAbn=m=>ABN.some(k=>has(m,k));
+ /* 11-19 06:58 망령 「포이즌힐류 독 대미지 안 받음 — 원작처럼」: 특성 글이 「「독」 상태일 때 (매) 턴 종료 시 「HP」를 n/d 회복」인 특성(포이즌힐 꼴)은
+    슬립 대미지 단계에서 「독」 · 「맹독」 대미지를 받지 않고 그 자리에서 n/d 회복한다 (맹독 카운트는 그대로 오른다). 특성 파괴(TraitBroken) 동안은 원래대로.
+    턴 종료 회복은 가장 높은 것만 — 이 회복도 m.teHeal 에 적어 ⑤ 와 견준다. battle_ui 턴 종료 확인 후보(endCands)에서는 뺀다 (두 번 회복하지 않게) */
+ const PH_RE=/「독」\s*상태일\s*때[^.。]*?턴\s*종료\s*시[^.。]*?「?HP」?(?:을|를)?\s*(\d+)\s*\/\s*(\d+)\s*만큼\s*회복/;
+ const poisonHeal=m=>{if(!m||!m.ability||has(m,'TraitBroken'))return null;const nm=String(m.ability).replace(/『|』/g,'').trim();let t=String(m.abilityEff||'');if(!t&&FX()&&FX().effOf)try{t=String(FX().effOf('trait',nm)||'')}catch(e){}
+  t=t.replace(/<br\s*\/?>/g,' ');const r=t.match(PH_RE);if(r)return {n:+r[1],d:+r[2],name:nm};if(nm==='포이즌힐')return {n:1,d:8,name:nm};return null};
   const magic=()=>!!(FX()&&FX().magicRoom&&FX().magicRoom());
  /* 11-08 23:12 망령 「금제와 서투름은 지닌 효과도 전부 꺼」: 「금제」 상태 · 특성 「서투름」(특성 파괴 중이면 아님)이면 매직룸처럼 그 포켓몬의 소지품 효과가 없다 */
  const itemOff=m=>!!m&&(magic()||has(m,'Embrago')||has(m,'Embargo')||(/^\s*『?서투름』?\s*$/.test(String(m.ability||''))&&!has(m,'TraitBroken')));
@@ -68,8 +74,12 @@ const FX=()=>window.OM_FX;
   const each=fn=>{for(const m of LIVE){if(m.hp.cur<=0)continue;const st=m.states||{};const sleeping=has(m,'Sleep')||has(m,'Comatose');fn(m,st,sleeping)}};
   /* ③ 슬립 대미지 */
   each((m,st,sleeping)=>{
+   const ph=(st.Toxic||st.Poison)?poisonHeal(m):null;
+   if(ph){if(st.Toxic)m.toxicN=Math.min(15,(+m.toxicN||0)+1);else m.toxicN=0;const v=frac(m,ph.n,ph.d);const why=`특성 「${ph.name}」 「${st.Toxic?'맹독':'독'}」 대미지 대신 ${ph.n}/${ph.d} 회복`;
+    if(m.hp.cur>=m.hp.max)lines.push(`${m.name} ${why} — HP 가득`);else{const h0=m.hp.cur;heal(m,v,lines,why);const got=m.hp.cur-h0;if(got>0){const pr=m.teHeal&&(T==null||+m.teHeal.t===+T)?(+m.teHeal.v||0):0;m.teHeal={t:T,v:Math.max(pr,got)}}}}
+   else{
    if(st.Toxic){m.toxicN=Math.min(15,(+m.toxicN||0)+1);dmg(m,frac(m,m.toxicN,16),lines,`「맹독」 ${m.toxicN}/16`)}else m.toxicN=0;
-   if(st.Poison){const [v,tx]=sf(m,'Poison',1,8);dmg(m,v,lines,`「독」 ${tx}`)}if(st.Burn){const [v,tx]=sf(m,'Burn',1,16);dmg(m,v,lines,`「화상」 ${tx}`)}
+   if(st.Poison){const [v,tx]=sf(m,'Poison',1,8);dmg(m,v,lines,`「독」 ${tx}`)}}if(st.Burn){const [v,tx]=sf(m,'Burn',1,16);dmg(m,v,lines,`「화상」 ${tx}`)}
    if(st.Nightmare&&sleeping){const [v,tx]=sf(m,'Nightmare',1,4);dmg(m,v,lines,`「악몽」 ${tx}`)}if(st.Curse){const [v,tx]=sf(m,'Curse',1,4);dmg(m,v,lines,`「저주」 ${tx}`)}if(st.Bind){/* 11-08 51-2 ⑪ 조임밴드: 조이기를 건 쪽(m.bindFrom)이 지니면 1/8 → 1/6 */const bf=m.bindFrom&&mons[m.bindFrom];const band=bf&&/조임밴드/.test(itemsOf(bf));const [v,tx]=band?[frac(m,1,6),'1/6 「조임밴드」']:sf(m,'Bind',1,8);dmg(m,v,lines,`「바인드」 ${tx}`)}
    if(st.SaltCure){const ty=typesOf(m);const sw=ty.includes('Steel')||ty.includes('Water');dmg(m,sw?frac(m,1,6):frac(m,1,8),lines,`「소금절이」 ${sw?'1/6':'1/8'}`)}
    if(st.ThunderCage){const mul=B().effectiveness(['Electric'],m,{}).value;if(mul>0)dmg(m,Math.max(1,Math.floor(m.hp.max/8*mul)),lines,`「썬더프리즌」 전기 1/8 ×${mul}`);else lines.push(`${m.name} 「썬더프리즌」 전기 타입 효과가 없음`)}
@@ -140,5 +150,5 @@ const FX=()=>window.OM_FX;
    if(h.st){if(setState(m,h.st))lines.push(`${m.name} 「${h.k}」 → 「${ko(h.st)}」`);continue}
    if(h.f){dmg(m,frac(m,1,h.f),lines,`「${h.k}」 1/${h.f}`);if(h.once){delete objs[h.k];removed.push(h.k)}}}
   return {lines,removed,forced}}
- return {actionCheck,confusionHit,turnEndStates,turnEndField,hazardsOnEntry,grounded,itemOf,itemsOf,itemOff,itemOffWhy,itemOffMult,magic,HAZ,RM};   /* 11-01 망령: HAZ · RM 은 설치물 전개 카드(battle_ui fcInfo)가 효과 글을 만드는 데 읽는다 */
+ return {poisonHeal,actionCheck,confusionHit,turnEndStates,turnEndField,hazardsOnEntry,grounded,itemOf,itemsOf,itemOff,itemOffWhy,itemOffMult,magic,HAZ,RM};   /* 11-01 망령: HAZ · RM 은 설치물 전개 카드(battle_ui fcInfo)가 효과 글을 만드는 데 읽는다 */
 })();
