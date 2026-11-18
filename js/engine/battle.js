@@ -111,7 +111,7 @@ window.OM_BATTLE=(()=>{
    const crit=h===2;
    const Pk=step?(P0+step*k)*PM:P;k++;
    const Pc=crit?Pk*rev:Pk;
-   const av=statValue(atk,atkStat,{ignore:crit&&(o.ignoreAtk===1||o.ignoreAtk===4||o.ignoreAtk===5)?-1:o.ignoreAtk,/* 10-26 점검: 급소는 공격 측 하락만 이미 지우므로 하락 코드만 버린다 (전엔 상승 코드를 버려 천진류가 급소에 무력했다) */rank:crit&&+((atk.rank||{})[atkStat]||0)<0?0:undefined,mod:crit&&+((atk.mod||{})[atkStat]||1)<1?1:undefined});
+   const av=statValue(atk,atkStat,{ignore:crit&&o.ignoreAtkC!==undefined?o.ignoreAtkC:crit&&(o.ignoreAtk===1||o.ignoreAtk===4||o.ignoreAtk===5)?-1:o.ignoreAtk,/* 11-18 망령 제보: 받는 쪽 【방호】 포텐셜의 공격 쪽 무시는 급소면 꺼짐 (ignoreAtkC) *//* 10-26 점검: 급소는 공격 측 하락만 이미 지우므로 하락 코드만 버린다 (전엔 상승 코드를 버려 천진류가 급소에 무력했다) */rank:crit&&+((atk.rank||{})[atkStat]||0)<0?0:undefined,mod:crit&&+((atk.mod||{})[atkStat]||1)<1?1:undefined});
    let A=av.value*(o.scarf&&atkStat==='speed'?1.5:1);
    if(has(atk,'Paralysis')&&atkStat==='speed'&&!calcSt(atk,'ParaSpeed'))A*=(+C().campaign.value_paralysis||0.5);
    /* 원더룸: 방어·특방 실수치만 맞바꾸고 랭크·배율은 원래 능력 것을 쓴다 */
