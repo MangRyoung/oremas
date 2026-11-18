@@ -335,7 +335,7 @@ window.OM_BATTLE_UI=(()=>{
   const R=secRoll(n);return {g,ok:R.ok,ops:pick||g.ops,line:`${what}${R.txt}${R.ok?pk:''}`}}
  const tgtFor=(atk,def)=>op=>op.tgt!=='target'?op:Object.assign({},op,{tgt:def.id===atk.id?'self':!sameT(def,atk)?'enemy1':'ally1'});
  /* 변칙 위력 기술 (맵툴 get_special_move_power 를 옮김): 이름 → (def)=>{pow, note, fixed} */
- const SPMAP={테라클러스터:'tclu',헤비봄버:'heavy',머슬봄버:'heavy',때려부수기:'heavy',메테오퍼니셔:'heavy',아쿠아스탬프:'heavy',록스탬프:'heavy',히트스탬프:'heavy',질주:'ball',마하비행:'ball',앞지르기:'ball',일렉트릭볼:'ball',드래곤에너지:'spout',해수스파우팅:'spout',분화:'spout',기사회생:'flail',바둥바둥:'flail',플레임블래스트:'flail',스완송:'flail',하드프레스:'press',묵사발:'crush',쥐어짜기:'crush',안다리걸기:'grass',풀묶기:'grass',자이로볼:'gyro',매그니튜드:'mag',엘렉키슬롯:'mag',프레젠트:'present',사이코웨이브:'psywave'};
+ const SPMAP={테라클러스터:'tclu',헤비봄버:'heavy',머슬봄버:'heavy',때려부수기:'heavy',메테오퍼니셔:'heavy',아쿠아스탬프:'heavy',록스탬프:'heavy',히트스탬프:'heavy',질주:'ball',마하비행:'ball',앞지르기:'ball',일렉트릭볼:'ball',드래곤에너지:'spout',해수스파우팅:'spout',분화:'spout',기사회생:'flail',바둥바둥:'flail',플레임블래스트:'flail',스완송:'flail',하드프레스:'press',묵사발:'crush',쥐어짜기:'crush',안다리걸기:'grass',풀묶기:'grass',자이로볼:'gyro',매그니튜드:'mag',엘렉키슬롯:'mag',프레젠트:'present',사이코웨이브:'psywave',토해내기:'spit'};
  /* 10-27 망령: 「명중할 때 마다 위력이 「N」씩 증가」(트리플악셀 20 · 트리플킥 10) — 타마다 위력 +N. 0 = 해당 없음 */
  function powStepOf(mv){const m=String((mv||{}).eff||'').match(/명중할\s*때\s*마다\s*위력이\s*「?\s*(\d+)\s*」?\s*씩\s*증가/);return m?+m[1]:0}
  function specialPowFor(name,atk){const k=SPMAP[String(name||'').trim()];if(!k)return null;
@@ -344,6 +344,7 @@ window.OM_BATTLE_UI=(()=>{
   const hpR=m=>m.hp.max>0?m.hp.cur/m.hp.max:0;
   if(k==='mag'){const r=1+Math.floor(Math.random()*256);let p=10;for(const [t,v] of [[25,30],[76,50],[153,70],[204,90],[229,110],[242,150]])if(r>=t)p=v;return ()=>({pow:p,note:`변칙 위력 ${name}: 판정 ${r}/256 → 위력 ${p}`})}
   if(k==='present'){const r=1+Math.floor(Math.random()*100);const p=r>90?120:r>60?80:r>20?40:null;return ()=>p?{pow:p,note:`변칙 위력 ${name}: 판정 ${r} → 위력 ${p}`}:{pow:0,fixed:1,note:`변칙 위력 ${name}: 판정 ${r} → 대상 HP 1/2 회복 (손으로)`}}
+  if(k==='spit'){const n=Math.max(0,Math.min(3,+atk.stock||0));return ()=>n?{pow:100*n,note:`변칙 위력 ${name}: 비축 카운터 ${n} → 위력 ${100*n}`}:{pow:0,fixed:1,note:`${name}: 비축 카운터 0 — 실패`}}   /* 11-18 비축 카운터 */
   if(k==='psywave'){const r=Math.floor(Math.random()*11)+5;const v=Math.max(1,Math.floor((+atk.lv||1)*r/10));return ()=>({pow:0,fixed:1,note:`${name}: 고정 대미지 ${v} (Lv ${atk.lv} × ${r/10}) — HP 조작으로 적용`})}
   return def=>{let p,why='';
    if(k==='heavy'){const a=sv(atk,'defense'),d=sv(def,'defense');const x=d>0?a/d:0;p=ladder(x,[[1,60],[1.5,80],[2,100],[2.5,120]],40);why=`방어 ${Math.floor(a)}/${Math.floor(d)}`}
@@ -489,7 +490,7 @@ window.OM_BATTLE_UI=(()=>{
   const md=m.mod||{};for(const k in md){const v=+md[k];if(v&&v!==1)out.push(`<span class="rk ${v>1?'up':'dn'}">${STAT_KO[k]||k}×${v}</span>`)}return out.join('')}
  const FLAG_KO={endure:'버텨라!',surehit:'맞춰라!',dodgePhys:'물러나!',dodgeSpec:'피해라!',swap:'바꿔라!',return:'돌아와!',hitPhys:'지킬 수 없다!',hitSpec:'피할 수 없다!',noEndure:'버틸 수 없다!',acc0:'맞출 수 없다!',dodgeOnce:'주인의 칙령',nullify:'파계',rebirth:'윤회의 법계',protect:'기술 방어'};
  function flagChips(m){return Object.keys(m.flags||{}).filter(k=>m.flags[k]&&FLAG_KO[k]&&(k!=='protect'||m.flags[k]===(+ctx().b.turn||0))).map(k=>`<span class="rk flag">${esc(FLAG_KO[k]||k)}</span>`).join('')+(m.prioDown?'<span class="rk flag" title="아이스번 — 다음 기술 우선도 −1">우선도 −1</span>':'')+(m.defer&&+m.defer.v>0?`<span class="rk flag" title="${esc((m.defer.why||'')+' — '+(m.defer.after==='end'?'턴 종료 시':'자신의 행동이 끝나면 (못 하면 턴 종료 시)')+' 받는다')}">미룬 대미지 −${+m.defer.v}</span>`:'')}
- function stateChips(m){const st=m.states||{};const db=(DB().states||{}).st||{};return Object.keys(st).filter(k=>st[k]).map(k=>{const im=simg(k);return `<span class="stc ${db[k]&&db[k].abn?'abn':''}" data-stinfo="${esc(k)}" title="${esc((db[k]&&db[k].desc||[]).join(' '))}">${im?`<img src="${esc(im)}" alt="">`:''}${esc(db[k]?db[k].ko:k)}${+st[k]>1&&+st[k]<1000?' '+st[k]:''}</span>`}).join('')}
+ function stateChips(m){const st=m.states||{};const db=(DB().states||{}).st||{};return (+m.stock>0?`<span class="stc" data-stinfo="Stockpile" title="비축 카운터 — 그만큼 방어/특방이 올라 있다">비축 ${+m.stock}</span>`:'')+Object.keys(st).filter(k=>st[k]).map(k=>{const im=simg(k);return `<span class="stc ${db[k]&&db[k].abn?'abn':''}" data-stinfo="${esc(k)}" title="${esc((db[k]&&db[k].desc||[]).join(' '))}">${im?`<img src="${esc(im)}" alt="">`:''}${esc(db[k]?db[k].ko:k)}${+st[k]>1&&+st[k]<1000?' '+st[k]:''}</span>`}).join('')}
  function bigCard(c,m,slot){m=V(c,m);const full=canEdit(c,m);const cmd=cmdOf(c.b,m);
   /* 11-03 감우 (검토 8): 행동 순서의 지금 차례(orderIdx)인 카드는 노란 테두리(.now) + 「공격」 pri, 그 상대편 카드는 「피격 대기」 톤(.wait) */
   const ph=+c.b.phase||0;const o=(c.b.order||[])[+c.b.orderIdx||0];const nowM=ph>=2&&ph<5&&o?(c.b.mons||{})[o.mid]:null;const isNow=!!(nowM&&nowM.id===m.id&&m.hp.cur>0);const isWait=!!(nowM&&!isNow&&ph===3&&m.hp.cur>0&&!sameT(nowM,m,c.b));
@@ -1338,7 +1339,7 @@ window.OM_BATTLE_UI=(()=>{
   /* 효과(배율 출처 포함)를 먼저 풀고 나서 랭크·배율을 비운다 — 순서가 바뀌면 배율이 역으로 나뉘어 0.75 같은 값이 남는다 */
   if(FX()&&FX().release)L.push(...FX().release(nb,m));
   if(FX()){const n=FX().chips(m).length;FX().removeAll(m);if(n)L.push(`${m.name} 발동 중인 효과 ${n}개 해제`)}
-  m.rank={};delete m.tempRank;m.mod={};delete m.tempMod;delete m.critBuff;if(m.fx)m.fx.mults=[];delete m.metro;delete m.bindFrom;   /* 51-2 ⑬ 메트로놈 · ⑪ 조이기 건 쪽 */
+  m.rank={};delete m.tempRank;m.mod={};delete m.tempMod;delete m.critBuff;delete m.stock;/* 11-18 비축 카운터는 교대하면 0 */if(m.fx)m.fx.mults=[];delete m.metro;delete m.bindFrom;   /* 51-2 ⑬ 메트로놈 · ⑪ 조이기 건 쪽 */
   const gone=[];for(const k in (m.states||{})){if(!m.states[k])continue;const d=st[k]||{};if(d.abn||k==='Grudge'||k==='Dead'||k==='Seal')continue;delete m.states[k];gone.push(d.ko||k)}   /* 11-05 망령: 「봉인」은 교대해도 풀리지 않는다 */
   if(FX()&&FX().abSync){const t=FX().abSync(m);if(t)L.push(t)}   /* 51-2 ㉓ 특성 파괴가 풀리면 특성을 되돌린다 */
   if(m.form0&&((m.forms||[])[m.formIdx]||{}).revert)L.push(...formSet(m,-1));
@@ -3651,7 +3652,7 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
     else if(au.failNoAtk&&d0&&d0!==atk&&!ordAtk(b,d0))why=`${d0.name}이(가) 공격하지 않아`;
     else if(au.failLate&&d0&&d0!==atk&&actedB4(b,d0))why=`${d0.name}이(가) 먼저 행동해서`;
     else if(au.onlyVs&&d0&&!(au.onlyVsL||[au.onlyVs]).some(t=>tysOf(d0).includes(t)))why=`${d0.name}이(가) 「${(au.onlyVsL||[au.onlyVs]).map(t=>S().typeKo(t)).join(' · ')}」 타입이 아니라`;
-    else{/* 11-15 망령 「메이링 승률이 실제보다 높다」 → 썬더랜스 「연속 제한 : 실패 확률 증가」가 방어 기술에만 걸려 있었음: 바로 전 턴에 같은 기술을 냈으면 1/3 · 1/9 … , 「확정 실패」면 실패 */const why2=consecFail(atk,mv,T);if(why2)why=why2}
+    else{/* 11-15 망령 「메이링 승률이 실제보다 높다」 → 썬더랜스 「연속 제한 : 실패 확률 증가」가 방어 기술에만 걸려 있었음: 바로 전 턴에 같은 기술을 냈으면 1/3 · 1/9 … , 「확정 실패」면 실패 */const nc=(atk.fx||{}).noConsec;const ncOk=nc&&+nc.t===T&&(!(nc.mv||[]).length||nc.mv.includes(mv.name))&&(!nc.ally||!d0||d0===atk||sameT(d0,atk));/* 11-18 쌀공주의 경단: 연속무시 */const why2=ncOk?'':consecFail(atk,mv,T);if(why2)why=why2}
     if(why&&!(ctx().mgr&&confirm(`${why} 「${mv.name}」는 실패한다.\n\n확인: 그래도 굴린다 (GM 판정)\n취소: 실패로 끝낸다`))){A().toast(`${why} 「${mv.name}」는 실패한다`);A().sysLog(`【공격】 ${atk.name} 『${mv.name}』 — ${why} 실패했다`,'battle',{mid,img:atk.image||''});A().closeModal();return}}
    /* 10-26 망령: 「기술 방어」(방어 · 판별 · 니들가드 …) — 성공하면 턴 종료까지 상대 기술을 막는다. 「연속 제한 (방어)」: 바로 전 턴에 성공했으면 1/3, 1/9 … */
    const PROT=protMove(mv);let PR=null;if(PROT){const t0=+b.turn||0;const k=atk.protectLast===t0-1?(+atk.protectN||0):0;const ch=Math.pow(1/3,k);const rl=Math.random();PR={ok:rl<ch,chance:Math.round(ch*1000)/10,k}}
