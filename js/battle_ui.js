@@ -1945,8 +1945,10 @@ window.OM_BATTLE_UI=(()=>{
   await A().set(['battle','host'],c.gm?'gm':c.seat);raidExtra(c.b);await endStep('last')}
  /* 11-09 감우 55: 그 타이밍(턴 가장 마지막 · 턴 종료 · 턴 종료 이후)의 【자동】 포텐셜 · 고유 중 구문이 있는 것은 묻지 않고 바로 발동 (조건 줄은 구문이 본다) — 발동한 것은 확인 후보에서 뺀다 */
  const EAUTO={};
+ /* 11-18 망령 「턴 종료 시엔 ②만 처리되게 하고 ①은 상시형 패시브로」(오호게츠히메 「공주님」 ①【방호】 아군 공격 무효 · ② 매 턴 종료 시 1/8 회복): 줄 고르기(선택:) 구문이면 라벨에 이 단계 말(턴 종료 시 …)이 든 줄만 — 없으면 그대로(고르는 창) */
+ function endPick(a,step){if(!a||!a.ops||a.ops.length!==1||a.ops[0].k!=='choice')return a;const re=END_T[step];if(!re)return a;const os=(a.ops[0].opts||[]).filter(o=>o&&re.test(String(o.label||'')));if(!os.length)return a;return Object.assign({},a,{ops:os.flatMap(o=>o.ops||[])})}
  async function endAuto(step){if(!FX())return;const b=ctx().b;const T=turnKey(b);for(const x of endCands(b,step)){if(x.kind!=='pot'&&x.kind!=='uq')continue;if(!/【\s*자동\s*】/.test(String(x.eff||'')))continue;const k=[T,step,x.kind,x.m.id,x.name].join('|');if(EAUTO[k])continue;
-   const cur=ctx().b.mons[x.m.id]||x.m;const a=FX().autoOf(x.kind==='uq'?{tid:x.m.tid}:cur,'pot',x.name)||FX().autoOf(cur,'pot',x.name);if(!a||!realOps(a)||a.manual)continue;EAUTO[k]=1;
+   const cur=ctx().b.mons[x.m.id]||x.m;const a=endPick(FX().autoOf(x.kind==='uq'?{tid:x.m.tid}:cur,'pot',x.name)||FX().autoOf(cur,'pot',x.name),step);if(!a||!realOps(a)||a.manual)continue;EAUTO[k]=1;
    let L=null,p=null;if(x.kind==='pot'){p=potSrc(cur).find(q=>q&&q.name===x.name);if(p){L=limOf(p,cur.potUses||{},cur.potTurn||{});if(L.left!==null&&L.left<=0)continue}}
    let ok=false;try{ok=await fireAuto(x.m.id,'pot',x.name,Object.assign({auto:a,quiet:true,noEv:1,head:`【${END_STEP[step]}】 ${x.kind==='uq'?x.t.name+' 고유':cur.name} 『${x.name}』【자동】`,eff:String(x.eff||'')},x.kind==='uq'?{uq:1}:{}))}catch(e){console.warn('endAuto',e)}
    if(ok&&L){const c2=ctx().b.mons[x.m.id]||cur;if(L.mmax!=null){const u=(c2.potUses||{})[x.name];const had=u==null?L.mmax:+u;await A().set(['battle','mons',x.m.id,'potUses',x.name],Math.max(0,had-1))}if(L.per)await A().set(['battle','mons',x.m.id,'potTurn',x.name],+ctx().b.turn||0);if(L.sup)await A().set(['battle','mons',x.m.id,'potTurn','_sup',x.name],1)}
@@ -1976,7 +1978,7 @@ window.OM_BATTLE_UI=(()=>{
   if(act==='edone'){const tid=d.tid;if(!endMine(c,tid))return;const ed=q.key+':'+q.step;if((b.cmds||{})[tid])await A().set(['battle','cmds',tid,'ed'],ed);else await A().set(['battle','cmds',tid],{ed});A().sysLog(`${(b.trainers[tid]||{}).name} — ${END_STEP[q.step]} 끝냄`,'battle');return endAdvance()}
   if(act==='efire'){const L=endCands(b,q.step);const x=L[+d.i];if(!x||!endMine(c,x.m.tid))return;const fk=q.key+':'+q.step+':'+x.m.id+':'+x.name;if(EFIRED[fk])return;EFIRED[fk]=1;
    if(x.kind==='uq'){A().sysLog(`【고유】 ${x.t.name} 『${x.name}』 (${END_STEP[q.step]})`,'battle',{mid:x.m.id,img:x.t.image||'',eff:String(x.eff||'').replace(/<br\s*\/?>/g,'\n').slice(0,400)});return A().renderScene()}
-   const fk2=x.kind==='trait'?'trait':'pot';const a=FX()&&FX().autoOf(x.m,fk2,x.name);if(a&&a.ops&&a.ops.length&&!a.manual){const mid=x.m.id;const h0=+((((ctx().b.mons||{})[mid]||{}).hp)||{}).cur||0;await fireAuto(mid,fk2,x.name);
+   const fk2=x.kind==='trait'?'trait':'pot';const a0=FX()&&FX().autoOf(x.m,fk2,x.name);const a=endPick(a0,q.step);if(a&&a.ops&&a.ops.length&&!a.manual){const mid=x.m.id;const h0=+((((ctx().b.mons||{})[mid]||{}).hp)||{}).cur||0;await fireAuto(mid,fk2,x.name,a!==a0?{auto:a}:undefined);
     /* 11-07 망령 「턴 종료 시 HP 회복은 중첩 안 돼 — 가장 높은 것만」: 턴 종료 단계에서 회복이 두 번 들어오면 큰 쪽만 남기고, 몫을 m.teHeal 에 적어 소지품 · 상태 회복(turnEnd)과도 견준다 */
     if(q.step==='end'){const m1=(ctx().b.mons||{})[mid];const h1=+((m1||{}).hp||{}).cur||0;const got=h1-h0;if(got>0){const T=+ctx().b.turn||0;const pr=m1.teHeal&&+m1.teHeal.t===T?(+m1.teHeal.v||0):0;
      if(pr>0){const keep=h0+Math.max(0,got-pr);await A().set(['battle','mons',mid,'hp','cur'],keep);A().sysLog(`${m1.name} 턴 종료 회복은 가장 높은 것만 — 먼저 ${pr} 회복해서 『${x.name}』은(는) ${Math.max(0,got-pr)}만 (HP ${keep}/${m1.hp.max})`,'battle')}
