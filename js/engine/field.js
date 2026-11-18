@@ -83,7 +83,7 @@ const FX=()=>window.OM_FX;
    const HC=[];const hc=(m2,v,ln,why)=>{HC.push({v,why});return 0};   /* 희망사항: 건 턴은 표시만, 다음 턴 종료에 1/2 */
    if(st.Wish){const [wv,wt]=sf(m,'Wish',1,2);if(!m.wishWait){m.wishWait=1;lines.push(`${m.name} 「희망사항」 다음 턴 종료 시 ${wt} 회복`)}else{m.wishWait=0;hc(m,wv,lines,`「희망사항」 ${wt}`);clearState(m,'Wish')}}
    for(const [k,n,d,ko] of [['AquaRing',1,8,'아쿠아링'],['Ingrain',1,16,'뿌리박기'],['Chant',1,16,'환희의노래']])if(st[k]){const [v,tx]=sf(m,k,n,d);hc(m,v,lines,`「${ko}」 ${tx}`)}
-   if(window.OM_ITEMS&&window.OM_ITEMS.teHeals)HC.push(...window.OM_ITEMS.teHeals(m));
+   if(window.OM_ITEMS&&window.OM_ITEMS.teHeals)HC.push(...window.OM_ITEMS.teHeals(m,mons));
    if(fld&&(fld.terrain||{}).type==='그래스필드'){if(grounded(m))HC.push({v:frac(m,1,16),why:'「그래스필드」'});else lines.push(`${m.name} 땅 위가 아니라 그래스필드 회복 제외`)}
    {const pr=m.teHeal&&(T==null||+m.teHeal.t===+T)?(+m.teHeal.v||0):0;if(HC.length){HC.sort((a,b)=>b.v-a.v);const top=HC[0];const add=top.v-pr;
      if(add>0&&m.hp.cur<m.hp.max)heal(m,add,lines,top.why+(pr>0?` (먼저 ${pr} 회복한 몫을 뺀 나머지)`:''));

@@ -242,7 +242,10 @@ window.OM_ITEMS=(()=>{
  /* ----- 턴 종료 (field.js turnEndStates 에서): 먹다남은음식 · 검은진흙 · 불꽃구슬 · 맹독구슬 · 끈적끈적바늘 ----- */
  function turnEnd(m,lines,H){for(const {r} of all(m)){if(m.hp.cur<=0)return;if(r.te)turnEnd1(m,lines,H,r)}}
  /* 11-07 망령 「턴 종료 시 HP 회복은 중첩 안 돼 — 가장 높은 것만」: 회복하는 소지품 몫은 field.js 가 다른 회복과 함께 견주어 가장 큰 것 하나만 준다 (H.noHeal 이면 여기선 회복을 건너뛴다) */
- function teHeals(m){const out=[];for(const {r} of all(m)){const t=r.te;if(!t)continue;if(t.sludge&&typesOf(m).includes('Poison'))out.push({v:frac(m.hp.max,t.heal),why:`「${r.name}」`});else if(!t.sludge&&t.heal)out.push({v:frac(m.hp.max,t.heal),why:`「${r.name}」`})}return out}
+ /* 11-18 망령 「오호게츠히메 전용 ①【지원】/아군의 「소지품 : 먹다남은음식」의 효과가 2배 — 자기가 볼 안에 있을 때만」: 같은 편 벤치(필드에 없고 HP 남음) 포켓몬의 포텐셜 · 전용 글에
+    【지원】 + 「소지품 : X」 + 2배 가 있으면 그 소지품의 턴 종료 회복을 2배 (여럿이어도 2배 한 번) */
+ function supMul(m,name,mons){if(!mons)return null;const nk=x=>String(x||'').replace(/[『』\s]/g,'');for(const x of Object.values(mons)){if(!x||x===m||x.side!==m.side||x.entry||!(x.hp&&x.hp.cur>0))continue;for(const p of [...(x.pots||[]),...(x.excl?[x.excl]:[]),...(x.exclX||[])]){if(!p)continue;for(const cl of String(p.eff||'').split(/(?=[①-⑳])|\n/)){if(!/【\s*지원\s*】/.test(cl)||!/2\s*배/.test(cl))continue;const q=cl.match(/「소지품\s*:\s*([^」]+)」/);if(q&&nk(q[1])===nk(name))return {v:2,by:`${x.name} 『${String(p.name||'').replace(/[『』]/g,'')}』`}}}}return null}
+ function teHeals(m,mons){const out=[];for(const {r} of all(m)){const t=r.te;if(!t)continue;if(t.sludge&&typesOf(m).includes('Poison'))out.push({v:frac(m.hp.max,t.heal),why:`「${r.name}」`});else if(!t.sludge&&t.heal){const sm=supMul(m,r.name,mons);out.push({v:frac(m.hp.max,t.heal)*(sm?sm.v:1),why:`「${r.name}」${sm?` ×2 (【지원】 ${sm.by})`:''}`})}}return out}
  function turnEnd1(m,lines,H,r){const t=r.te;
   if(t.sludge){if(typesOf(m).includes('Poison')){if(!H.noHeal&&m.hp.cur<m.hp.max)H.heal(m,frac(m.hp.max,t.heal),lines,`「${r.name}」`)}else H.dmg(m,frac(m.hp.max,t.dmg),lines,`「${r.name}」 ${t.dmg}`);return}
   if(t.heal){if(!H.noHeal&&m.hp.cur<m.hp.max)H.heal(m,frac(m.hp.max,t.heal),lines,`「${r.name}」`);return}
