@@ -1208,6 +1208,8 @@ window.OM_BATTLE_UI=(()=>{
     <div class="row">${areas.map(a=>`<button class="btn pri" data-area="${a}">${a.toUpperCase()}${ent[a]?' · '+esc(ent[a].name)+' 와 자리 바꿈':' · 빈 자리'}</button>`).join('')}</div>`);
     md.querySelectorAll('[data-area]').forEach(bt=>bt.onclick=()=>{A().closeModal();areaSwap(mid,bt.dataset.area)});return}}
   const from=m.entry;const occ=ent[to];const other=occ||Object.values(b.mons||{}).find(x=>x.side===m.side&&x.entry===to&&x.id!==mid);
+  /* 11-19 망령 「에리어를 이동할 수 없게 되는 "고정" 상태변화」: 고정(AreaLock)이면 에리어를 이동할 수 없다 — 고정인 포켓몬과 자리를 바꾸는 것도. GM 은 확인하고 옮길 수 있다 */
+  {const lk=[m,other].filter(x=>x&&(x.states||{}).AreaLock);if(lk.length){const why=lk.map(x=>`${x.name} 「고정」`).join(' · ');if(!(c.gm&&await askYes(`${why} — 에리어를 이동할 수 없다.\nGM 판단으로 그래도 옮길까?`,'옮긴다','그만'))){A().sysLog(`${m.name} 에리어 이동 실패 — ${why}`,'battle',{mid});return}}}
   await A().set(['battle','mons',mid,'entry'],to);if(other)await A().set(['battle','mons',other.id,'entry'],from);
   A().sysLog(`${m.name} 에리어 교대 ${from.toUpperCase()} → ${to.toUpperCase()}${other?` · ${other.name} → ${from.toUpperCase()}`:''}`,'battle');
   if(b.started){const T=+b.turn||0;await A().set(['battle','mons',mid,'areaT'],T);if(other)await A().set(['battle','mons',other.id,'areaT'],T);try{await areaMovedAuto(mid);if(other)await areaMovedAuto(other.id)}catch(e){console.warn('areaMovedAuto',e)}}}
