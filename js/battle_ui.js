@@ -1276,6 +1276,7 @@ window.OM_BATTLE_UI=(()=>{
   if(b.started&&(+b.phase||0)<=1&&!(b.order||[]).length&&!swIn){const b2=ctx().b;const T=+b2.turn||0;for(const id in (b2.mons||{})){const x=b2.mons[id];if(!x||id===mid||x.side!==m.side||!x.a1Lock||+x.a1Lock.t!==T||!x.entry||!(x.hp&&x.hp.cur>0))continue;if(/타입이 바뀌어/.test(String(x.a1Lock.why||'')))continue;
     if(!misagA1Cond(b2,x)){await A().set(['battle','mons',id,'a1Lock'],null);A().sysLog(`${x.name} 『A-1』 — 지시 전에 ${m.name}${josa(m.name,'이가')} 나와 조건이 풀렸다 → 이번 턴 행동 불능 해제`,'battle',{mid:id})}}}
   const EL=await entryLines(mid);
+  try{await shootIn(mid)}catch(e){console.warn('shootIn',e)}
   {/* 10-27 망령: 교대면 나가는 포켓몬 ⇄ 들어오는 포켓몬을 그림과 함께 한 장으로 (먼저 「퇴장」하고 빈 자리로 나온 교대도) */
    const outM=occ&&occ.id!==mid?occ:swIn?(b.swOut||[]).map(id=>(b.mons||{})[id]).find(o=>o&&o.tid===m.tid&&!o.entry&&o.id!==mid&&((((b.cmds||{})[o.tid]||{}).mons||{})[o.id]||{}).switch===mid)||(b.swOut||[]).map(id=>(b.mons||{})[id]).find(o=>o&&o.tid===m.tid&&!o.entry&&o.id!==mid):null;
    const XLL=Array.isArray(XL)?XL:[];
@@ -1314,6 +1315,18 @@ window.OM_BATTLE_UI=(()=>{
   const P={은는:['은','는'],이가:['이','가'],을를:['을','를'],와과:['과','와'],으로로:['으로','로']}[p];return p==='으로로'?(has&&!ri?P[0]:P[1]):(has?P[0]:P[1])}
  function mentText(t,nm,tg){let s=String(t||'').replace(/\{이름\}/g,nm).replace(/\{대상\}/g,tg||'');for(const p of ['은는','이가','을를','으로로','와과'])s=s.split('{'+p+'}').join(josa(nm,p));const i=s.indexOf('@');return i<0?s:s.slice(0,i)+(s.slice(i+1).trim()?' ('+s.slice(i+1).trim()+')':'')}
  const mentKey=n=>String(n||'').replace(/『|』|\s/g,'');
+ /* 11-19 망령 「특성 : 사출 같은 거 자동화 돼 있던가?」 (사출 ①「필드 위에 있는 한 아군이 【등장】/다음 기술을 내보낼 때 「스피드」를 강화(1.33배)한다」):
+    필드에 있는 같은 편(자신 제외)의 특성 · 포텐셜 글에 이 꼴이 있으면, 나온 포켓몬에게 그 배율을 걸고 m.mvMod 에 적어 둔다 → 그 포켓몬이 기술을 내면(공격 창 저장) 푼다 · 교대로 빠지면 outReset 이 배율째 지운다 */
+ const SHOOT_RE=/아군이\s*【등장】\s*\/?\s*다음\s*기술을\s*내보낼\s*때\s*「([^」]+)」\s*(?:을|를)\s*강화\s*\(\s*(\d+(?:\.\d+)?)\s*배\s*\)/;
+ const STK={'공격':'attack','방어':'defense','특공':'specialattack','특방':'specialdefense','스피드':'speed','명중':'accuracy','회피':'evasion'};
+ async function shootIn(mid){const b=ctx().b;const me=(b.mons||{})[mid];if(!me||!me.entry)return;const add={},src=[];
+  for(const x of Object.values(b.mons||{})){if(!x||x.id===mid||!x.entry||!(x.hp&&x.hp.cur>0)||x.side!==me.side)continue;
+   const T=[];if(x.ability&&!(x.states||{}).TraitBroken)T.push([String(x.ability).replace(/『|』/g,''),slotEff(x,'trait',x.ability)]);try{for(const p of potSrc(x))if(p&&p.eff)T.push([p.name,p.eff])}catch(e){}
+   for(const [nm,t] of T){const r=String(t||'').replace(/<br\s*\/?>/g,' ').match(SHOOT_RE);if(!r)continue;const k=STK[r[1].trim()];const v=+r[2];if(!k||!(v>0))continue;add[k]=(add[k]||1)*v;src.push(`${x.name} 「${nm}」 ${r[1].trim()} ×${v}`)}}
+  if(!src.length)return;const mod=Object.assign({},me.mod||{}),mv=Object.assign({},(me.mvMod||{}).st||{});for(const k in add){mod[k]=Math.round((+mod[k]||1)*add[k]*1000)/1000;mv[k]=Math.round((+mv[k]||1)*add[k]*1000)/1000}
+  await A().set(['battle','mons',mid,'mod'],mod);await A().set(['battle','mons',mid,'mvMod'],{st:mv,src:src.join(' · ')});
+  A().sysLog(`${me.name} — ${src.join(' · ')} (다음 기술을 낼 때까지)`,'battle',{mid})}
+ function shootOff(m,lines){if(!m||!m.mvMod)return;const st=m.mvMod.st||{};m.mod=m.mod||{};for(const k in st){m.mod[k]=Math.round(((+m.mod[k]||1)/(+st[k]||1))*1000)/1000;if(Math.abs(m.mod[k]-1)<0.002)delete m.mod[k]}if(lines)lines.push(`${m.name} 기술을 냈다 — ${m.mvMod.src} 끝`);delete m.mvMod}
  async function entryLines(mid){const b=ctx().b;const m=b.mons[mid];const L=[];if(!m)return L;const t=(b.trainers||{})[m.tid];const MT=DB().ment||{};
   const la=leadAcc(m);
   /* 10-24 망령: 「통솔」 명중 강화 문구는 로그에 쓰지 않는다 (공격 창 명중 배율 칸에 자동) */
@@ -1352,7 +1365,7 @@ window.OM_BATTLE_UI=(()=>{
   /* 효과(배율 출처 포함)를 먼저 풀고 나서 랭크·배율을 비운다 — 순서가 바뀌면 배율이 역으로 나뉘어 0.75 같은 값이 남는다 */
   if(FX()&&FX().release)L.push(...FX().release(nb,m));
   if(FX()){const n=FX().chips(m).length;FX().removeAll(m);if(n)L.push(`${m.name} 발동 중인 효과 ${n}개 해제`)}
-  m.rank={};delete m.tempRank;m.mod={};delete m.tempMod;delete m.critBuff;delete m.stock;/* 11-18 비축 카운터는 교대하면 0 */if(m.fx)m.fx.mults=[];delete m.metro;delete m.bindFrom;   /* 51-2 ⑬ 메트로놈 · ⑪ 조이기 건 쪽 */
+  m.rank={};delete m.tempRank;m.mod={};delete m.tempMod;delete m.critBuff;delete m.stock;/* 11-18 비축 카운터는 교대하면 0 */delete m.mvMod;/* 11-19 사출 */if(m.fx)m.fx.mults=[];delete m.metro;delete m.bindFrom;   /* 51-2 ⑬ 메트로놈 · ⑪ 조이기 건 쪽 */
   const gone=[];for(const k in (m.states||{})){if(!m.states[k])continue;const d=st[k]||{};if(d.abn||k==='Grudge'||k==='Dead'||k==='Seal')continue;delete m.states[k];gone.push(d.ko||k)}   /* 11-05 망령: 「봉인」은 교대해도 풀리지 않는다 */
   if(FX()&&FX().abSync){const t=FX().abSync(m);if(t)L.push(t)}   /* 51-2 ㉓ 특성 파괴가 풀리면 특성을 되돌린다 */
   if(m.form0&&((m.forms||[])[m.formIdx]||{}).revert)L.push(...formSet(m,-1));
@@ -3890,7 +3903,7 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【[^】]*】\s
      if(k>=0)setTimeout(()=>sketchPick(mid,k,ok?lm:'',mvN),700)}
     else if(am&&!RESULT.check&&mvN&&mvN!=='발버둥'&&!RESULT.mv.ext&&((am.consec={name:mvN,n:(am.lastMove&&am.lastMove.name===mvN&&+am.lastMove.turn===(+nb.turn||0)-1)?((am.consec&&am.consec.name===mvN?+am.consec.n:1)+1):1}),true))am.lastMove={name:mvN,turn:+nb.turn||0,tg:(RESULT.targets||[]).map(r=>r&&r.def&&r.def.id).filter(Boolean)};   /* 11-09 감우 57: tg = 이 기술의 대상 (「지정기술」 — 나에게 내보냈나) */if(am&&!RESULT.check&&(am.states||{}).DestinyBond&&String(mvN||'').replace(/\s/g,'')!=='길동무'){delete am.states.DestinyBond;lines.push(`${am.name} 「길동무」 해제 (다음 행동)`)}
     /* 11-09 감우 54: 「자세」 기술(날개의자세 · 불길의자세 …)을 쓰면 지금 자세로 남긴다 — 구문 조건 「자세:날개의자세」 (교대하면 풀림은 손으로 · 다른 자세를 쓰면 바뀐다) */if(am&&!RESULT.check&&RESULT.mv&&RESULT.mv.cat==='변화'&&/(^|[,\s])자세($|[,\s])/.test(String(RESULT.mv.tag||''))&&/의자세$/.test(mvN||''))am.stance=mvN;if(am&&!RESULT.check&&RESULT.mv){const au=RESULT.auto||{};if(au.iai){am.iai=au.iai;lines.push(`${am.name} 다음 「거합」 기술 → 「${S().typeKo(au.iai)}」`)}else if(au.stance||(RESULT.mv.cat==='변화'&&/의자세$/.test(mvN||'')))delete am.iai;else if(am.iai&&/(^|[,\s])거합($|[,\s])/.test(String(RESULT.mv.tag||'')))delete am.iai}
-     /* 11-08 51-2 ⑬ 메트로놈: 같은 기술을 연속해서 쓴 수 (다른 기술 · 교대면 처음부터) */if(am&&!RESULT.check&&mvN&&!RESULT.mv.ext)am.metro={name:mvN,n:am.metro&&nmMv(am.metro.name)===mvN?(+am.metro.n||0)+1:1}}
+     /* 11-08 51-2 ⑬ 메트로놈: 같은 기술을 연속해서 쓴 수 (다른 기술 · 교대면 처음부터) */if(am&&!RESULT.check&&mvN&&!RESULT.mv.ext)am.metro={name:mvN,n:am.metro&&nmMv(am.metro.name)===mvN?(+am.metro.n||0)+1:1};if(am&&!RESULT.check&&RESULT.mv&&am.mvMod)shootOff(am,lines)}
    if(RESULT.targets.some(r=>r.acc&&r.acc.hit&&r.def&&r.def.id!==mid)&&HAS(atk,'방호패드')&&A().contactOf&&A().contactOf(RESULT.mv)==='O')lines.push(`${atk.name} 「방호패드」 — 대상의 「접촉기」 계기를 무시한다`);
    /* 11-06 소지품 기술 (벌레먹기 · 쪼아대기 · 탁쳐서떨구기 · 도둑질 · 탐내기 · 트릭 · 바꿔치기 · 내던지기 — 효과 글로): 맞은 대상마다 소지품을 옮기고 줄을 남긴다. 상태 이상(내던지기 화염구슬 …)은 FX 로 */
    {const IK=OI()&&OI().moveKind?OI().moveKind(RESULT.mv):'';if(IK&&nb.mons[mid]){const hits=RESULT.targets.map(r=>({id:r.def.id,hit:!!r.acc.hit,dmg:!!(r.acc.hit&&r.dmg&&!(r.eff&&+r.eff.value===0)),final:r.hp?r.hp.final:0}));
