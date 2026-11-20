@@ -3502,7 +3502,10 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
    await guard4Pre(c,atk,mv,x0,SEC)}
   return openAttack(mid,SECO||undefined)}
  /* 맞을 때 쓰는 방어 4식 선행 발동 — SEC: 읽을 수 있는 숨은 지시(GM), 없으면 그 트레이너가 올린 순서 열쇠의 g4 */
- async function guard4Pre(c,atk,mv,x0,SEC){const b=ctx().b;const slots=allEntered(b);const tg=(x0.tm?tgNow(b,x0,atk):(x0.targets||[]));const fired=[];const tk=turnKey(b);
+ async function guard4Pre(c,atk,mv,x0,SEC){const b=ctx().b;
+  /* 11-20 제보 「풀죽음 상태인 상대의 지시에 대응해서 선행 입력한 피해라가 자동 발동된다」: 공격하는 쪽이 이번 턴 움직이지 못하면(풀죽음 · 각성체 대가 A-1 행동 불능) 공격이 나오지 않으니 방어 4식을 걸지 않는다 — 횟수도 안 쓴다 */
+  if((atk.states||{}).Flinch||misagA1(b,atk))return;
+const slots=allEntered(b);const tg=(x0.tm?tgNow(b,x0,atk):(x0.targets||[]));const fired=[];const tk=turnKey(b);
   for(const sl of tg){const z=slots.find(q=>q.slot===sl);if(!z||sameT(z.mon,atk,b))continue;const dm=z.mon;const t=(b.trainers||{})[dm.tid];if(!t)continue;
    const ok=((b.cmds||{})[dm.tid]||{}).ok;const g4=ok&&ok.key===tk&&ok.m&&ok.m[dm.id]&&ok.m[dm.id].g4;const okey=((SEC||{})[dm.id]||{}).order||g4;if(!okey)continue;
    const done=((((ctx().b.cmds||{})[dm.tid]||{}).fired||{})[dm.id]||{}).order;if(done)continue;const nm=OO().orderName(t,okey);
