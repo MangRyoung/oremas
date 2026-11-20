@@ -10,9 +10,9 @@ window.OM_DB_UI=(()=>{
  const KINDS=[['trait','특성'],['item','소지품'],['move','기술'],['pot','포텐셜'],['state','상태 변화']];
  function pretty(t,opt){opt=opt||{};if(!t)return '<span class="dim small">효과 없음</span>';
   return String(t).split(/<br\s*\/?>|\n/i).filter(l=>l.trim()!=='').map(ln=>{const c=ln.charAt(0);const num=CIRC.includes(c)?c:'';let body=num?ln.slice(1):ln;
-   body=esc(body).replace(/【([^】]+)】/g,'<span class="dbtag">$1</span>').replace(/「([^」]+)」/g,'<b class="dbq">「$1」</b>').replace(/(\d+할)/g,'<b class="dbn">$1</b>');
+   body=esc(body).replace(/【((?:[^【】]|【[^【】]*】)+)】/g,'<span class="dbtag">$1</span>').replace(/「([^」]+)」/g,'<b class="dbq">「$1」</b>').replace(/(\d+할)/g,'<b class="dbn">$1</b>');
    return `<div class="dbl">${num?`<i>${num}</i>`:(opt.dot===false?'':'<i class="nn">·</i>')}<span>${body}</span></div>`}).join('')}
- function tagsOf(t){const o=[];let m;const re=/【([^】]+)】/g;while((m=re.exec(t||'')))if(!o.includes(m[1]))o.push(m[1]);return o}
+ function tagsOf(t){const o=[];let m;const re=/【((?:[^【】]|【[^【】]*】)+)】/g;while((m=re.exec(t||'')))if(!o.includes(m[1]))o.push(m[1]);return o}
  /* 종류별 레코드 → {name, summary(목록용 한 줄), tags, html(상세), search(검색 대상 문자열)} */
  function rows(kind){const d=DB();const S=window.OM_STATS;
   if(kind==='trait')return Object.entries(d.traits||{}).map(([n,v])=>({name:n,summary:String(v.multi||v.single||'').replace(/<br\s*\/?>/gi,' ').replace(/^[①-⑩]/,''),tags:tagsOf((v.multi||'')+(v.single||'')),search:n+' '+(v.multi||'')+' '+(v.single||''),

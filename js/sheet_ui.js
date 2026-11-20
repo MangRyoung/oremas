@@ -282,7 +282,7 @@ window.OM_SHEET_UI=(()=>{
  const typeCol=en=>{try{return S().typeColor(en).bg}catch(e){return '#666'}};
  const isOldMon=m=>(m.pots||[]).some(p=>p&&/분류/.test(p.kind||'')&&String(p.name||'').trim()==='올드 타입');const noOrdOn=m=>m.noOrd!=null?!!m.noOrd:isOldMon(m);
  function potKind(k){const m=String(k||'').trim().match(/^([\d.]+?)\.?\s+(.+)$/);return m?{no:m[1],lab:m[2]}:{no:'',lab:String(k||'').trim()}}
- function potFmt(t){let h=esc(t||'');h=h.replace(/【([^】]*)】/g,'<b class="ptbk">【$1】</b>').replace(/「([^」]*)」/g,'<b class="ptqt">「$1」</b>').replace(/『([^』]*)』/g,'<b class="ptqt">『$1』</b>');
+ function potFmt(t){let h=esc(t||'');h=h.replace(/【((?:[^【】]|【[^【】]*】)*)】/g,'<b class="ptbk">【$1】</b>').replace(/「([^」]*)」/g,'<b class="ptqt">「$1」</b>').replace(/『([^』]*)』/g,'<b class="ptqt">『$1』</b>');
   const lines=h.split('\n').map(x=>x.trim()).filter(Boolean);if(lines.length<2&&!/^[①-⑳]/.test(lines[0]||''))return h;
   return lines.map(l=>{const m=l.match(/^([①-⑳]|\d+[.)])\s*(.*)$/);return m?`<div class="pkl"><i>${m[1]}</i><span>${m[2]}</span></div>`:`<div class="pkl"><span>${l}</span></div>`}).join('')}
  function potCard(m,name,kind,eff,o){o=o||{};const k=potKind(kind);const hue=POT_HUE[k.lab]||'#3fc7c0';
