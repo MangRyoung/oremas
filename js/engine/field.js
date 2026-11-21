@@ -42,22 +42,24 @@ const FX=()=>window.OM_FX;
  const curTurn=()=>{try{const t=(((window.OM_APP||{}).ST||{}).state||{}).battle;return t&&t.turn!=null?+t.turn:null}catch(e){return null}};   /* 11-08: 잠듦 깨는 턴 (m.wakeT) */
 
  /* ----- 행동 판정 (check_attack): 풀죽음 → 잠듦 → 마비 → 얼음 → 헤롱헤롱 → 혼란. 돌려줌 {ok, selfHit, lines} ----- */
- function actionCheck(m){const lines=[];const st=m.states||{};let failed=0;
+ function actionCheck(m,o){o=o||{};const lines=[];const SK=o.skip||[],KP=o.keep||[];const st0=m.states||{};const st=SK.length?Object.fromEntries(Object.entries(st0).filter(([k])=>!SK.includes(k))):st0;let failed=0;   /* 11-22 망령: o.skip = 이번 행동에선 안 보는 상태(「잠듦」 상태일 때 뒤이어 내는 기술) · o.keep = 「턴 경과로 해제되지 않는」 상태(판정은 하되 줄이지 않는다) */
+  const dec=(k,n0)=>(KP.includes(k)||n0>=1000)?n0:n0-1;
   const roll=(k,p,failMsg,okMsg,invert)=>{if(failed||!st[k])return;const d=d10000();const lim=Math.round(p*10000);const hit=d<=lim;if(hit){failed=k==='Confusion'?2:1;lines.push(`${m.name}${failMsg} (판정 ${invert?10000-d:d})`);if(k==='Flinch')clearState(m,'Flinch')}else lines.push(`${m.name}${okMsg} (판정 ${invert?10000-d:d})`)};
   roll('Flinch',pct('flinch',1),'은(는) 풀이 죽어 움직일 수 없다...','');
   /* 10-26 망령: 깨어나는 턴엔 바로 행동한다 (전엔 그 턴도 실패로 끝났다)
      11-08 감우 (망령 「혼란 · 잠듦 · 얼음 같이 고쳐」): 「N턴」 = 그 상태로 막히는 행동 N번. 예전엔 판정 전에 1 을 빼서 N-1 번뿐이었다(1턴이면 바로 깸).
      잠듦은 마지막으로 잠든 행동 뒤에도 그 턴 끝까지는 잠든 채(악몽 · 꿈먹기 …) — m.wakeT = 그 턴, 턴 종료(turnEndStates)에 깬다. 같은 턴에 또 행동하면 그대로 잠듦. 1000 이상(영구)은 줄이지 않는다 */
-  if(!failed&&st.Sleep){const d=d10000();const lim=Math.round(pct('sleep',1)*10000);const n0=+st.Sleep||1;const T=curTurn();
+  if(!failed&&st.Sleep&&KP.includes('Sleep')){const d=d10000();const lim=Math.round(pct('sleep',1)*10000);if(d<=lim){failed=1;delete m.wakeT;lines.push(`${m.name}은(는) 쿨쿨 잠자고 있다... (턴이 지나도 풀리지 않는다)`)}}
+  else if(!failed&&st.Sleep){const d=d10000();const lim=Math.round(pct('sleep',1)*10000);const n0=+st.Sleep||1;const T=curTurn();
    if(m.wakeT!=null&&T!=null&&+m.wakeT===T){failed=1;lines.push(`${m.name}은(는) 쿨쿨 잠자고 있다... (이번 턴 끝에 깬다)`)}
    else if(m.wakeT!=null&&T!=null&&+m.wakeT<T){delete m.wakeT;clearState(m,'Sleep');lines.push(`${m.name}은(는) 눈을 떴다!`)}
    else if(d<=lim){failed=1;const left=n0>=1000?n0:n0-1;if(left<=0){if(T!=null){m.wakeT=T;lines.push(`${m.name}은(는) 쿨쿨 잠자고 있다... (이번 턴 끝에 깬다)`)}else{clearState(m,'Sleep');lines.push(`${m.name}은(는) 쿨쿨 잠자고 있다... (다음 행동부터 깬다)`)}}else{m.states.Sleep=left;lines.push(`${m.name}은(는) 쿨쿨 잠자고 있다...${left<1000?` (남은 ${left}턴)`:''}`)}}}
   roll('Paralysis',pct('paralysis',1/8),'은(는) 몸이 저려서 움직일 수 없다...','은(는) 몸이 저려도 지시를 따른다!');
   /* 얼음: 「N턴」 = 얼어서 막힐 수 있는 행동 N번(DB 2 → 3번째 기술에서 풀림). 그 사이엔 3/4 로 못 움직이고 1/4 로 깨고 나온다. 11-08 감우: 예전엔 판정 전에 1 을 빼서 N-1 번뿐이었다 */
-  if(!failed&&st.Freeze){const d=d10000();const lim=Math.round(pct('freeze',3/4)*10000);const n0=+st.Freeze||1;const left=n0>=1000?n0:n0-1;if(d<=lim){failed=1;if(left<=0){clearState(m,'Freeze');lines.push(`${m.name}은(는) 얼어붙어 움직일 수 없다... (판정 ${10000-d}) — 얼음이 녹기 시작했다! (다음 행동부터 움직인다)`)}else{m.states.Freeze=left;lines.push(`${m.name}은(는) 얼어붙어 움직일 수 없다... (${left<1000?`남은 ${left} · `:''}판정 ${10000-d})`)}}else{clearState(m,'Freeze');lines.push(`${m.name}은(는) 얼음을 깨부수고 나왔다! (판정 ${10000-d})`)}}
+  if(!failed&&st.Freeze){const d=d10000();const lim=Math.round(pct('freeze',3/4)*10000);const n0=+st.Freeze||1;const left=dec('Freeze',n0);if(d<=lim){failed=1;if(left<=0){clearState(m,'Freeze');lines.push(`${m.name}은(는) 얼어붙어 움직일 수 없다... (판정 ${10000-d}) — 얼음이 녹기 시작했다! (다음 행동부터 움직인다)`)}else{m.states.Freeze=left;lines.push(`${m.name}은(는) 얼어붙어 움직일 수 없다... (${left<1000?`남은 ${left} · `:''}판정 ${10000-d})`)}}else{clearState(m,'Freeze');lines.push(`${m.name}은(는) 얼음을 깨부수고 나왔다! (판정 ${10000-d})`)}}
   roll('Attract',pct('attract',1/2),'은(는) 이상형에게 홀딱 반해있다...','은(는) 정신을 차리고 지시를 따른다!');
   /* 11-08 감우 (망령 「혼란 1턴만 걸린다」): 혼란 N턴 = 혼란 상태로 행동하는 횟수 N (DB 1~4). 판정을 먼저 하고, 마지막 판정 뒤에 푼다. 1000 이상(영구 · 파괴의유전자)은 줄이지 않는다 */
-  if(!failed&&st.Confusion){const d=d10000();const lim=Math.round(pct('confusion',1/3)*10000);const n0=+st.Confusion||1;const left=n0>=1000?n0:n0-1;const nsh=B()&&B().calcSt?B().calcSt(m,'NoSelfHit'):'';if(d<=lim&&nsh){lines.push(`${m.name}은(는) 혼란스럽지만 「${nsh}」 덕분에 스스로를 공격하지 않는다 (판정 ${d})`)}else if(d<=lim){failed=2;lines.push(`${m.name}은(는) 영문도 모르고 스스로를 공격했다...! (판정 ${d})`)}else lines.push(`${m.name}은(는) 혼란스러워 하면서도 지시를 따른다! (판정 ${d})`);if(left<=0){clearState(m,'Confusion');lines.push(`${m.name}의 혼란이 풀렸다!`)}else{m.states.Confusion=left;if(left<1000)lines.push(`${m.name} 「혼란」 남은 ${left}턴`)}}
+  if(!failed&&st.Confusion){const d=d10000();const lim=Math.round(pct('confusion',1/3)*10000);const n0=+st.Confusion||1;const left=dec('Confusion',n0);const nsh=B()&&B().calcSt?B().calcSt(m,'NoSelfHit'):'';if(d<=lim&&nsh){lines.push(`${m.name}은(는) 혼란스럽지만 「${nsh}」 덕분에 스스로를 공격하지 않는다 (판정 ${d})`)}else if(d<=lim){failed=2;lines.push(`${m.name}은(는) 영문도 모르고 스스로를 공격했다...! (판정 ${d})`)}else lines.push(`${m.name}은(는) 혼란스러워 하면서도 지시를 따른다! (판정 ${d})`);if(left<=0){clearState(m,'Confusion');lines.push(`${m.name}의 혼란이 풀렸다!`)}else{m.states.Confusion=left;if(left<1000)lines.push(`${m.name} 「혼란」 남은 ${left}턴`)}}
   return {ok:failed===0,selfHit:failed===2,lines}}
  /* 혼란 자작 대미지: 위력 40 노말 물리, 상성·랭크 무시 (공격/방어 실수치만) */
  function confusionHit(m){const st=B().statValue;const A=st(m,'attack').value,D=st(m,'defense').value;const base=Math.floor(Math.floor(Math.floor(2*m.lv/5+2)*40*A/D)/50)+2;return Math.max(1,Math.floor(base*(85+Math.floor(Math.random()*16))/100))}

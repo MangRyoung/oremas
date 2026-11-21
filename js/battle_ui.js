@@ -1251,6 +1251,28 @@ window.OM_BATTLE_UI=(()=>{
    let best=null,bv=-1;for(const o of cands){const ty=(moveAuto(o.mv)||{}).iai;let v=0.5;if(ty&&iaiMv&&foes.length)v=Math.max(...foes.map(f=>{try{return +B().effectiveness([ty],{types:tysOf(f)}).value||1}catch(_){return 1}}));if(v>bv){bv=v;best=o}}if(!best)continue;
    if(L.mmax!=null){const u=(m.potUses||{})[p.name];await A().set(['battle','mons',mid,'potUses',p.name],Math.max(0,(u==null?L.mmax:+u)-1))}if(L.per)await A().set(['battle','mons',mid,'potTurn',p.name],T);if(L.sup)await A().set(['battle','mons',mid,'potTurn','_sup',p.name],1);
    return {i:best.i,mv:best.mv,p:p.name}}}catch(e){console.warn('stanceXact',e)}return null}
+ /* 11-22 망령: ① 「「잠듦」 상태일 때 아군의 「소리」 기술에 뒤이어 「소리」 기술을 내보낸다」 — 같은 편이 그 기술을 낸 직후, 행동 순서 바로 다음 칸에 추가 행동(콤비네이션).
+    조건 상태(잠듦 …)는 그 추가 행동에선 판정하지 않고 줄이지도 않는다(잠든 채로 낸다). 뒤이은 기술에는 다시 뒤잇지 않는다 · 한 턴에 한 번 · 【N/시】 · 【보급】은 stanceXact 처럼 쓴다.
+    ② 「자신의 「X」 상태가 턴 경과로 인해 해제되지 않는다」 — 그 상태의 턴 카운트를 아예 줄이지 않는다(행동 판정 · 행동 뒤 · 턴 종료 모두) */
+ const COMBO_RE=/(?:「([^」]+)」\s*상태일\s*때\s*,?\s*)?아군(?:의|이\s*내보낸)\s*「([^」]+)」\s*기술에\s*뒤이어\s*,?\s*(?:자신(?:의|도)\s*)?「([^」]+)」\s*기술을\s*내보낸다/;
+ const KEEPST_RE=/「([^」]+)」\s*상태(?:가|는)?\s*턴\s*(?:경과|진행)\s*(?:로|에)?\s*(?:인해|의해|따라)?\s*(?:해제되지|풀리지|감소하지|줄어들지)\s*않/g;
+ function stKeyOf(ko){const sdb=(DB().states||{}).st||{};ko=String(ko||'').trim();if(sdb[ko])return ko;for(const k in sdb)if(sdb[k]&&sdb[k].ko===ko)return k;return null}
+ function mvTagHit(mv,t){if(!mv)return false;t=String(t||'').trim();const re=new RegExp('(^|[,\\s])'+t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'($|[,\\s])');return re.test(String(mv.tag||''))||mv.name===t}
+ function potLive(m,p){try{return !(potOffWhy(m,p.name)||misagBlock(ctx().b,m,p.name))}catch(e){return true}}
+ function keepSt(m){const out=[];if(!m)return out;try{const L=[...potSrc(m).filter(p=>potLive(m,p)).map(p=>p.eff),m.abilityEff];for(const e of L)for(const x of String(e||'').replace(/<br\s*\/?>/g,'\n').matchAll(KEEPST_RE)){const k=stKeyOf(x[1]);if(k&&!out.includes(k))out.push(k)}}catch(e){console.warn('keepSt',e)}return out}
+ async function comboXact(mid,R){try{if(!R||R.check||!R.mv)return;const b=ctx().b;const a=(b.mons||{})[mid];if(!a)return;const ON=(+b.phase||0)>=2&&(b.order||[]).length;const XO=ON?(b.order||[])[+b.orderIdx||0]:null;if(XO&&XO.combo)return;const T=+b.turn||0;const hits=[];
+  for(const m of Object.values(b.mons||{})){if(!m||m.id===mid||m.side!==a.side||!m.entry||!(m.hp&&m.hp.cur>0))continue;
+   for(const p of potSrc(m)){const x=String((p&&p.eff)||'').replace(/<br\s*\/?>/g,'\n').match(COMBO_RE);if(!x||!potLive(m,p))continue;const sk=x[1]?stKeyOf(x[1]):'';if(x[1]&&(!sk||!(m.states||{})[sk]))continue;if(!mvTagHit(R.mv,x[2]))continue;
+    const L=limOf(p,m.potUses||{},m.potTurn||{});if(L.left!==null&&L.left<=0)continue;const k2=m.id+'|combo|'+p.name;if(ACTFX[k2]===T)continue;
+    const cands=MVS(m).filter(mv=>mvTagHit(mv,x[3])&&!sealed(m,mv));if(!cands.length)continue;const pn=String(p.name).replace(/[『』]/g,'');
+    let mv=cands[0];if(cands.length>1){const r=await uiCtx(b,m,pn).choose(cands.map(v=>v.name));mv=cands[(r&&r.length)?+r[0]:0]||mv}
+    ACTFX[k2]=T;if(L.mmax!=null){const u=(m.potUses||{})[p.name];await A().set(['battle','mons',m.id,'potUses',p.name],Math.max(0,(u==null?L.mmax:+u)-1))}if(L.per)await A().set(['battle','mons',m.id,'potTurn',p.name],T);if(L.sup)await A().set(['battle','mons',m.id,'potTurn','_sup',p.name],1);
+    hits.push({m,p,pn,mv,sk,trig:x[2]});break}}
+  if(!hits.length)return;const b2=ctx().b;const ord=(b2.order||[]).slice();let idx=+b2.orderIdx||0;
+  for(const h of hits){const stN=h.sk?`「${(((DB().states||{}).st||{})[h.sk]||{}).ko||h.sk}」 상태로 `:'';
+   if(ON){ord.splice(++idx,0,{slot:slotOf(h.m.side,h.m.entry),mid:h.m.id,name:h.m.name,side:h.m.side,change:false,started:false,order:-1000,prio:0,speed:0,dice:0,move:h.mv.name,targets:[],pursuit:false,xact:h.p.name,combo:1,skipSt:h.sk||''});A().sysLog(`【포텐셜】 ${h.m.name} 『${h.pn}』 — ${a.name}의 「${R.mv.name}」에 뒤이어 ${stN}「${h.mv.name}」 (다음 차례 · 추가 행동)`,'battle',{mid:h.m.id,img:h.m.image||''})}
+   else A().sysLog(`【포텐셜】 ${h.m.name} 『${h.pn}』 — ${a.name}의 「${R.mv.name}」에 뒤이어 ${stN}「${h.mv.name}」를 내보낸다 (행동 순서 밖이라 직접 공격 창에서)`,'battle',{mid:h.m.id,img:h.m.image||''})}
+  if(ON)await A().set(['battle','order'],ord)}catch(e){console.warn('comboXact',e)}}
  const RX_AMV=/에리어를\s*이동한\s*턴/;
  const RX_AIGN=/에리어를\s*이동한\s*턴[^\n/]*?아군이\s*(?:상대의\s*)?「?\s*전체기\s*」?의\s*위력\s*강화를\s*무시/;
  function movedNow(b,m){return !!(b&&b.started&&m&&m.areaT!=null&&+m.areaT===(+b.turn||0))}
@@ -2055,7 +2077,7 @@ window.OM_BATTLE_UI=(()=>{
    for(const t of B().turnEnd(m)){if(!t.delta)continue;m.hp.cur=Math.max(0,Math.min(m.hp.max,m.hp.cur+t.delta));lines.push(`${m.name} ${db[t.state]?db[t.state].ko:t.state} ${t.delta>0?'+':''}${t.delta} → ${m.hp.cur}`);if(m.hp.cur<=0){lines.push(`${m.name} 빈사!`);m.entry=''}}}
   for(const mid in b.mons){const m=b.mons[mid];if(!m.entry||m.hp.cur<=0)continue;
    const st=m.states||{};/* 10-26 망령: 「반동 : 행동불능」으로 쉬는 턴에도 「난동부리기」는 줄어든다 */if(+st.Recharge===1&&st.Thrash){const tv=+st.Thrash;if(tv<=1){delete st.Thrash;relAdd(m,'「난동부리기」')}else if(tv<1000)st.Thrash=tv-1}
-   for(const k in st){const v=+st[k];const def=db[k]||{};if((def.prog==='turn'||def.prog==='once')&&!movesDown(k,def)&&v>0&&v<1000){   /* 10-23 망령: 「다음 기술 한 번」 상태(악인 · 송전 · 자세잡기 …)도 행동 안 했으면 턴 종료에 준다 */st[k]=v-1;if(st[k]<=0){delete st[k];if(k==='Disable')chainFree(m,lines);if(m.futRsv&&m.futRsv.st===k)futs.push(m);else if(futDone.get(mid)!==k)relAdd(m,`「${def.ko||k}」`)}}}
+   const KS=keepSt(m);for(const k in st){const v=+st[k];const def=db[k]||{};if(KS.includes(k))continue;if((def.prog==='turn'||def.prog==='once')&&!movesDown(k,def)&&v>0&&v<1000){   /* 10-23 망령: 「다음 기술 한 번」 상태(악인 · 송전 · 자세잡기 …)도 행동 안 했으면 턴 종료에 준다 */st[k]=v-1;if(st[k]<=0){delete st[k];if(k==='Disable')chainFree(m,lines);if(m.futRsv&&m.futRsv.st===k)futs.push(m);else if(futDone.get(mid)!==k)relAdd(m,`「${def.ko||k}」`)}}}
    /* 임시 랭크 해제 */
    if(m.tempRank){for(const k in m.tempRank){{const lim=k==='critical'?4:6;m.rank[k]=Math.max(-lim,Math.min(lim,(+m.rank[k]||0)-(+m.tempRank[k]||0)))}}delete m.tempRank;relAdd(m,'임시 랭크')}
    if(m.tempMod){for(const k in m.tempMod){m.mod[k]=Math.round(((+m.mod[k]||1)/(+m.tempMod[k]||1))*1000)/1000;if(Math.abs(m.mod[k]-1)<0.002)delete m.mod[k]}delete m.tempMod}
@@ -3607,7 +3629,7 @@ const slots=allEntered(b);const tg=(x0.tm?tgNow(b,x0,atk):(x0.targets||[]));cons
  const DYN_TYPE_RE=/아군의\s*「\s*타입\s*2\s*」\s*와\s*같은\s*타입이\s*된다|아군을\s*대상의\s*「\s*타입\s*1\s*」\s*로\s*만든다|턴\s*개시\s*시\s*『\s*[^』]+\s*』\s*인\s*아군이\s*에리어를\s*이동한다/;   /* 11-15: 이대도강 (에리어 이동 고유)도 */
  async function coverFire(mid,R){try{if(!R||R.check||!R.mv||!/「\s*유사\s*방어\s*」\s*상태로/.test(String(R.mv.eff||'')))return;const b=ctx().b;for(const r of R.targets||[]){const id=r&&r.def&&r.def.id;const t=id&&b.mons[id];if(!t||!t.entry||t.hp.cur<=0)continue;if(r.acc&&r.acc.hit===false)continue;await fireAuto(id,'pot',R.mv.name,{auto:{name:R.mv.name,src:'move',ops:[{k:'guard',tgt:'self',v:0.5,types:[],cat:'all',eff:'all',rng:'all',uses:-1,turn:1,tl:0,ro:[],st:'',tg:[],sb:''}]},quiet:true,noRoll:true,force:true,head:`【기술】 ${(b.mons[mid]||{}).name||''} 『${R.mv.name}』 → ${t.name} 「유사 방어」 — 이번 턴 받는 대미지 ×0.5`})}}catch(e){}}
  const ACTFX={};   /* 11-07 「행동한 뒤」 자동 — mid|포텐셜 → 건 턴 */
- function openAttack(mid,opt){opt=opt||{};const c=ctx();const b=c.b;const atk=b.mons[mid];if(!atk||!canEdit(c,atk))return;{const XO=(+b.phase||0)>=2?(b.order||[])[+b.orderIdx||0]:null;if(XO&&XO.xact&&XO.mid===mid&&!opt.mvName)opt=Object.assign({},opt,{mvName:XO.move,targets:(XO.targets||[]).slice(),by:XO.xact,preT:1})}   /* 11-09 선행 추가 행동 차례 */const RNDT={};const rndOf=mv=>isRndMove(mv)?(RNDT[mv.name]||(RNDT[mv.name]=rndType())):'';   /* 11-04 망령: 「무작위」 타입 기술 — 이 공격 창을 열 때 기술마다 한 번 굴린다 (미리보기 · 판정 · 로그가 같은 타입) */const f=fieldOf(b);const atkD=topShadow(atk,opt.baseTop);const UMA=UMB(atk);   /* 51-2 ⑫ 만능우산: 공격 쪽이 지니면 날씨 배율 · 필중 · 명중 · 차지 생략 · 타입 변화 없음 */
+ function openAttack(mid,opt){opt=opt||{};const c=ctx();const b=c.b;const atk=b.mons[mid];if(!atk||!canEdit(c,atk))return;{const XO=(+b.phase||0)>=2?(b.order||[])[+b.orderIdx||0]:null;if(XO&&XO.xact&&XO.mid===mid&&!opt.mvName)opt=Object.assign({},opt,{mvName:XO.move,targets:(XO.targets||[]).slice(),by:XO.xact,preT:1,skipSt:XO.skipSt||''})}   /* 11-09 선행 추가 행동 차례 */const RNDT={};const rndOf=mv=>isRndMove(mv)?(RNDT[mv.name]||(RNDT[mv.name]=rndType())):'';   /* 11-04 망령: 「무작위」 타입 기술 — 이 공격 창을 열 때 기술마다 한 번 굴린다 (미리보기 · 판정 · 로그가 같은 타입) */const f=fieldOf(b);const atkD=topShadow(atk,opt.baseTop);const UMA=UMB(atk);   /* 51-2 ⑫ 만능우산: 공격 쪽이 지니면 날씨 배율 · 필중 · 명중 · 차지 생략 · 타입 변화 없음 */
   /* 11-03 「기술사용」 · 「추가공격」: opt.mvName(기술 이름 — 목록에 없으면 기술 DB 에서 잠시 붙인다) · opt.targets · opt.extra {pw, sure, left, name} */
   if(opt.mvName&&!opt.rangeDone){const R=mvRange(atk,opt.mvName);if(R){const lab=`『${String(opt.by||'추가 행동').replace(/[『』]/g,'')}』 「${opt.mvName}」`;if(!R.length){A().toast(`${atk.name} — 「${opt.mvName}」에 맞는 기술이 없다`);return}
    if(R.length===1){opt=Object.assign({},opt,{mvName:MVS(atk)[R[0]].name,rangeDone:1})}else{mvRangePick(atk,lab,R.map(i=>{const q=MVS(atk)[i];return `${q.name} (${q.type||''} · ${q.cat||''}${q.pow?' · 위력 '+q.pow:''})`})).then(k=>{if(k<0)return;openAttack(mid,Object.assign({},opt,{mvName:MVS(atk)[R[k]].name,rangeDone:1}))});return}}}   /* 11-09 범위 기술 고르기 */
@@ -3732,7 +3754,7 @@ const slots=allEntered(b);const tg=(x0.tm?tgNow(b,x0,atk):(x0.targets||[]));cons
    const keepCK=ACCKEEP&&RESULT&&RESULT.checkOnly?{checkOnly:RESULT.checkOnly,lines:RESULT.lines||[]}:null;RESULT=null;SECADJ={add:+(($('#asecadd',md)||{}).value)||0,sure:!!(($('#asecsure',md)||{}).checked)};
    /* 행동 판정: 상태 변화로 못 움직이면 여기서 끝. 적용하면 상태 변화(잠듦 남은 턴·얼음 해제 등)와 로그만 남는다 */
    if(keepCK)RESULT=keepCK;
-   if(!ACCKEEP&&$('#achk',md).checked&&F()&&['Flinch', 'Sleep', 'Paralysis', 'Freeze', 'Attract', 'Confusion'].some(k=>(atk.states||{})[k])){const am=JSON.parse(JSON.stringify(atk));const r=F().actionCheck(am);
+   if(!ACCKEEP&&$('#achk',md).checked&&F()&&['Flinch', 'Sleep', 'Paralysis', 'Freeze', 'Attract', 'Confusion'].some(k=>(atk.states||{})[k]&&k!==opt.skipSt)){const am=JSON.parse(JSON.stringify(atk));const r=F().actionCheck(am,{skip:opt.skipSt?[opt.skipSt]:[],keep:keepSt(atk)});
     if(!r.ok){let self=0;if(r.selfHit){self=F().confusionHit(am);am.hp.cur=Math.max(0,am.hp.cur-self);r.lines.push(`${am.name} 자작 대미지 −${self} → HP ${am.hp.cur}/${am.hp.max}${am.hp.cur<=0?' 빈사!':''}`)}
      RESULT={check:am,lines:r.lines,mv};const rT=s3tid(b,atk);const rc=['Paralysis','Confusion'].some(k=>(atk.states||{})[k])&&!(atk.states||{}).Flinch?s3card(c,rT,'행동다시'):null;
      $('#ares',md).innerHTML=`<div class="card" style="border-color:var(--red)"><b>행동 실패</b><div class="small" style="white-space:pre-wrap;margin-top:4px">${esc(r.lines.join('\n'))}</div>${rc?`<div class="row" style="margin-top:6px"><button class="btn sm pri" id="a3rise">🗝 「${esc(rc.n)}」 — 마비 · 혼란 판정 다시</button></div>`:''}</div>`;$('#aapply',md).disabled=false;
@@ -3906,7 +3928,7 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【(?:[^【】]
    /* 「기술을 내보낼 때마다」 줄어드는 상태 (prog:'move' — 도발·앙코르·사슬묶기·침묵·소란피기·난동부리기 … + 얼음). 잠듦·혼란·얼음은 행동 판정을 돌렸으면 거기서 이미 줄었다 */
    /* 충전·가열·냉각·장전: 그 타입 기술로 대미지를 줬으면 상태를 쓴다 */
    {const a=nb.mons[mid];const ty=tyOf(RESULT.mv||{});if(a&&a.states&&RESULT.targets.some(r=>r.acc.hit&&r.dmg))for(const k in CHARGE_ST)if(a.states[k]&&CHARGE_ST[k]===ty){delete a.states[k];lines.push(`${a.name} 「${(((DB().states||{}).st||{})[k]||{}).ko||k}」 사용 — 대미지 2배`)}}
-   {const a=nb.mons[mid];const sdb=(DB().states||{}).st||{};const st=(a&&a.states)||{};for(const k of Object.keys(st)){const d=sdb[k]||{};const v=+st[k];if(!movesDown(k,d)||!(v>0&&v<1000))continue;if(k==='Taunt'&&RESULT.mv&&RESULT.mv.cat==='변화')continue;if(RESULT.checkOnly&&(k==='Sleep'||k==='Confusion'||k==='Freeze'))continue;
+   {const a=nb.mons[mid];const sdb=(DB().states||{}).st||{};const st=(a&&a.states)||{};const KS=keepSt(a);for(const k of Object.keys(st)){const d=sdb[k]||{};const v=+st[k];if(!movesDown(k,d)||!(v>0&&v<1000))continue;if(KS.includes(k)||k===opt.skipSt)continue;   /* 11-22 ② 턴 경과로 해제되지 않음 · ① 잠든 채 뒤이은 기술 */if(k==='Taunt'&&RESULT.mv&&RESULT.mv.cat==='변화')continue;if(RESULT.checkOnly&&(k==='Sleep'||k==='Confusion'||k==='Freeze'))continue;
     if(v<=1){delete st[k];lines.push(`${a.name} 「${d.ko||k}」 해제`)}else{st[k]=v-1;lines.push(`${a.name} 「${d.ko||k}」 남은 ${v-1}`)}}}
    if(RESULT.protect){const a=nb.mons[mid];const t0=+nb.turn||0;if(RESULT.protect.ok){a.flags=Object.assign({},a.flags||{},{protect:t0});a.states=Object.assign({},a.states||{},{Protect:1});a.protectLast=t0;a.protectN=RESULT.protect.k+1;lines.push(`${a.name} 「기술 방어」 — 이번 턴 상대의 기술을 막는다`)}else{if(a.flags)delete a.flags.protect;a.protectLast=null;a.protectN=0;lines.push(`${a.name} 「기술 방어」 실패 (연속 사용)`)}}
    for(const r of RESULT.targets){if(!(r.pclear||(RESULT.bypass==='clear'&&!noPierce(r.def))))continue;const d=nb.mons[r.def.id];if(r.acc.hit&&d&&((d.flags&&d.flags.protect!=null)||(d.states||{}).Protect)){if(d.flags)delete d.flags.protect;if(d.states)delete d.states.Protect;lines.push(`${d.name} 「기술 방어」 해제 — 『${RESULT.mv.name}』`)}}
@@ -4008,6 +4030,7 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【(?:[^【】]
    await coverFire(mid,RESULT);
    await chainAfterAct(mid);
    await mvModAfter(mid,RESULT);
+   await comboXact(mid,RESULT);   /* 11-22 「아군의 「소리」 기술에 뒤이어」 */
    /* 11-07 망령 「닌자 자동화가 없어요」: 「자신이 행동한 뒤 …」 포텐셜(닌자 ① 회피 ×1.33 턴 종료까지)은 공격을 적용한 뒤 저절로 건다 — 구문이 있고 횟수(【N/시】) 없는 것만 · 한 턴에 한 번 */
    {const a2=ctx().b.mons[mid];const T=+ctx().b.turn||0;if(a2&&a2.entry&&a2.hp.cur>0&&FX())for(const p of potSrc(a2)){if(!p||!p.name||(p.ph&&!p.apt)||!/자신이\s*행동한\s*(?:뒤|후)/.test(String(p.eff||'')))continue;const k=mid+'|'+p.name;if(ACTFX[k]===T)continue;
      const au=FX().autoOf(a2,'pot',p.name);if(!au||!au.ops||!au.ops.length||au.manual||limManual(a2,'pot',p.name,p.eff))continue;ACTFX[k]=T;const okN=await fireAuto(mid,'pot',p.name,{quiet:true,noRoll:true,head:`【포텐셜】 ${a2.name} 『${p.name}』 — 행동한 뒤 자동`});
