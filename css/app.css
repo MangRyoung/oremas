@@ -541,6 +541,8 @@ body.resizing{user-select:none;cursor:col-resize}
 /* ---------- 무대: 참고 그림 느낌 (넓은 무대 · 화자 테두리 · 검은 대사 상자 · 아래 입력줄) ---------- */
 .rpwrap{display:flex;flex-direction:column;gap:8px;height:100%}
 .rpstage{height:auto;min-height:0;aspect-ratio:2.15/1;max-height:calc(100vh - 150px);border:3px solid var(--red);box-shadow:0 0 0 1px #000}
+/* 11-21 망령 「칸이 다 안 차 있을 땐 아래가 비는 거 신경 쓰여」: 데스크톱에선 무대가 2.15:1 을 기준으로 남는 높이까지 늘고(모자라면 줄고) 아래 줄이 화면 끝에 붙는다 */
+@media (min-width:901px){.rpwrap>.rpstage{flex:1 1 auto}}
 .rpstage::after{background:linear-gradient(to top,rgba(0,0,0,.35),transparent 35%)}
 .stand{bottom:0;height:96%;z-index:1}
 .stand img{max-width:36vw;filter:brightness(.55) drop-shadow(0 0 0 transparent)}
