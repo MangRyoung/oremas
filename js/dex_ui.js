@@ -2,7 +2,8 @@
    『포켓몬 도감』【N/시】【사전】: 지시 랭크로 횟수(B 1 · A 이상 2). 상대 포켓몬 1체를 해석하면 타입·종족치·기술·특성·포텐셜이 보인다.
    부분 해석: 기술 / 타입 / 특성 중 고른 것만 (세 부분이 모이면 전체). 「데이터 해석」(포텐셜 효과)은 횟수 없이·차단 돌파.
    차단(mon.dexFw, GM 이 랭크·상태 창에서): 0 없음 · 1 다음 해석 1회 차단 뒤 자동 해제 · 2 완전 차단(강제 해석만 통함) · 3 일부 차단(허용 부분만) · 4 노이즈(해석은 되지만 글자가 ■ 로 으깨짐).
-   상태: state.dex[tid] = {used, list:[mid], part:{mid:[move|type|trait]}, fwSeen:[mid]} */
+   상태: state.dex[tid] = {used, list:[mid], part:{mid:[move|type|trait]}, fwSeen:[mid], items:[mid]}
+   11-21 망령 「소지품 해석 만들자 — 데이터 해석(전체)으로는 소지품이 안 보인다, 따로 해석해야만」: items = 소지품을 해석한 포켓몬. 데이터 해석 · PVP 로는 열리지 않는다. */
 "use strict";
 window.OM_DEX_UI=(()=>{
  const A=()=>window.OM_APP, S=()=>window.OM_STATS, B=()=>window.OM_BATTLE, DB=()=>window.OM_DB||{};
@@ -14,7 +15,7 @@ window.OM_DEX_UI=(()=>{
  const gm=()=>A().ST.role==='gm';const me=()=>A().ST.seat;
  /* 11-03 망령 「PVP 설정」: battle.pvp 가 켜져 있으면 배틀의 모든 포켓몬이 모두에게 전체 해석 상태 — 표시 단계에서만 덮어쓰고 해석 기록(dex)은 건드리지 않는다. 차단 · 노이즈도 무시 */
  const pvp=mid=>{const b=A().ST.state.battle||{};return !!(b.pvp&&(mid==null||(b.mons||{})[mid]))};
- const dx=tid=>Object.assign({used:0,list:[],part:{},fwSeen:[]},((A().ST.state.dex||{})[tid])||{});
+ const dx=tid=>Object.assign({used:0,list:[],part:{},fwSeen:[],items:[]},((A().ST.state.dex||{})[tid])||{});
  const maxOf=t=>{const L=((DB().const||{}).lists||{}).list_pokedex_count||{E:0,D:0,C:0,B:1,A:2,AA:2,AAA:2,S:2};return +(L[S().strip(((t||{}).ranks||{})['지시']||'')]||0)};
  const monOf=mid=>((A().ST.state.battle||{}).mons||{})[mid]||((A().ST.state.roster||{}).mons||{})[mid];
  const trOf=tid=>((A().ST.state.battle||{}).trainers||{})[tid]||((A().ST.state.roster||{}).trainers||{})[tid]||{};
@@ -29,10 +30,14 @@ window.OM_DEX_UI=(()=>{
  function scope(mid,viewer,asPl){const m=monOf(mid);if(!m)return [];if(pvp(mid)||(gm()&&!asPl)||m.tid===viewer)return 'all';const T=team(viewer);if(T.has(m.tid)||(m.otid&&T.has(m.otid)))return 'all';
   for(const id of T){const mt=trOf(id);if(mt.side&&m.side&&mt.side===m.side&&window.OM_TEAM&&window.OM_TEAM(A().ST.state.battle,id)===window.OM_TEAM(A().ST.state.battle,m))return 'all'}   /* 같은 편(개인전이면 저 혼자)만 다 보인다 */
   const part=new Set();for(const sv of seats(viewer)){const d=dx(sv);if(d.list.includes(mid))return 'all';for(const p of (d.part[mid]||[]))part.add(p)}return [...part]}
+ /* 11-21 소지품이 보이나: 주인 · 같은 편 · GM, 아니면 이 좌석(함께 보는 좌석 포함)이 「소지품 해석」한 포켓몬 */
+ function itemSeen(mid,viewer,asPl){const m=monOf(mid);if(!m)return false;if((gm()&&!asPl)||m.tid===viewer)return true;const T=team(viewer);if(T.has(m.tid)||(m.otid&&T.has(m.otid)))return true;
+  for(const id of T){const mt=trOf(id);if(mt.side&&m.side&&mt.side===m.side&&window.OM_TEAM&&window.OM_TEAM(A().ST.state.battle,id)===window.OM_TEAM(A().ST.state.battle,m))return true}
+  for(const sv of seats(viewer))if((dx(sv).items||[]).includes(mid))return true;return false}
  /* 노이즈: 같은 글에 늘 같은 자리 (이름을 씨앗으로) */
  function noise(text,key){let seed=7;for(const ch of String(key))seed=(seed*31+ch.charCodeAt(0))%2147483647;const rnd=()=>{seed=(seed*48271)%2147483647;return seed/2147483647};const NZ=['■','■','▓','▒','█'];return String(text).split('').map(ch=>/\s/.test(ch)?ch:(rnd()<.35?NZ[Math.floor(rnd()*NZ.length)]:ch)).join('')}
  /* asPl: PL 권한(공평 모드)의 GM 이 자기 트레이너(viewer) 눈으로 본다 — GM 이라고 다 보이지 않는다 */
- function open(mid,viewer,asPl){viewer=viewer||me();const m=monOf(mid);if(!m)return;const G=gm()&&!asPl;const sc=scope(mid,viewer,asPl);const full=sc==='all';const has=p=>full||sc.includes(p);const PV=pvp(mid);/* 11-03 20:15 망령 「PVP 때 상대 소지품이 보인다 — 소지품은 안 보여야 · 도감 쪽도 소지품 안 뜨게」: 소지품 줄은 주인 · 같은 편 · GM 만 (해석 · PVP 로 열리지 않음) */const ownI=G||m.tid===viewer||(()=>{const T=team(viewer);return T.has(m.tid)||(m.otid&&T.has(m.otid))})();const nz=!PV&&m.dexFw===4&&!(G||m.tid===viewer);const N=s=>nz?noise(s,m.name):s;
+ function open(mid,viewer,asPl){viewer=viewer||me();const m=monOf(mid);if(!m)return;const G=gm()&&!asPl;const sc=scope(mid,viewer,asPl);const full=sc==='all';const has=p=>full||sc.includes(p);const PV=pvp(mid);/* 11-03 20:15 망령 「PVP 때 상대 소지품이 보인다 — 소지품은 안 보여야 · 도감 쪽도 소지품 안 뜨게」: 소지품 줄은 주인 · 같은 편 · GM 만 (해석 · PVP 로 열리지 않음) */const ownI=itemSeen(mid,viewer,asPl);   /* 11-21: 「소지품 해석」한 상대도 */const nz=!PV&&m.dexFw===4&&!(G||m.tid===viewer);const N=s=>nz?noise(s,m.name):s;
   const vt=trOf(viewer);const d=dx(viewer);const left=Math.max(0,maxOf(vt)-d.used);const isEnemy=!G&&m.tid!==viewer&&(!vt.side||!m.side||vt.side!==m.side||(window.OM_TEAM&&window.OM_TEAM(A().ST.state.battle,viewer)!==window.OM_TEAM(A().ST.state.battle,m)));
   const PH='<div class="dexph">■■■ 미해석 ■■■</div>';const PHs='<span class="dexph sm">■■■</span>';
   const typeRow=()=>has('type')?`<span class="row" style="gap:4px;display:inline-flex">${(m.types||[]).filter(t=>t&&t!=='-').map(t=>A().typeChip(t)).join('')}${m.teraActive?`<span class="rk up">테라 ${esc(m.tera)}</span>`:''}</span>`:PHs;
@@ -51,7 +56,7 @@ window.OM_DEX_UI=(()=>{
   const md=A().openModal(`<div class="mhead"><h2>${esc(full?m.name:(has('type')||has('move')||has('trait')||m.seen||m.entry?m.name:'???'))} <span class="small dim">도감 정보</span></h2><span class="sp"></span>${PV&&isEnemy?'<span class="tag on" title="GM 의 PVP 설정 — 해석 없이 양쪽 도감이 전부 보인다">◆ PVP 공개 중</span>':''}${nz?'<span class="tag" style="background:#5a2330">◆ 노이즈 차단 — 데이터 일부가 손상됨</span>':''}${!full&&sc.length?`<span class="tag" style="background:#2b3140;color:#f1c75b">◇ 부분 해석 — ${sc.map(p=>(PARTS.find(x=>x[0]===p)||[])[1]).join('·')}</span>`:''}<button class="btn ghost" data-x>닫기</button></div>
    <div class="dxhead"><div class="dxpic" style="${m.image&&nameOk?`background-image:url('${cssu(m.image)}')`:''}"></div>
     <div class="dxinfo"><div class="dxname">${nameOk?esc(N(m.name)):'<span class="dim">비공개</span>'}<span class="lv">Lv.${esc(m.lv)}</span>${typeRow()}</div>
-     <div class="dxrow"><span class="k">특성</span><span>${trait()}</span></div>${full&&ownI?`<div class="dxrow"><span class="k">소지품</span><span>${esc(m.item||'-')}${m.itemEff?` <span class="small dim">${esc(m.itemEff)}</span>`:''}</span></div>`:''}
+     <div class="dxrow"><span class="k">특성</span><span>${trait()}</span></div>${ownI?`<div class="dxrow"><span class="k">소지품</span><span>${[{item:m.item,itemEff:m.itemEff},...(m.items2||[])].filter(x=>x&&x.item&&x.item!=='-').map(x=>`${esc(x.item)}${x.itemEff?` <span class="small dim">${esc(x.itemEff)}</span>`:''}`).join('<br>')||'-'}</span></div>`:(isEnemy?`<div class="dxrow"><span class="k">소지품</span><span class="dexph sm" title="「소지품 해석」으로만 보인다 (데이터 해석으로는 안 보임)">■■■</span></div>`:'')}
      ${full?`<div class="dxrow"><span class="k">종족치</span>${stats()}</div>`:`<div class="dxrow"><span class="k">종족치</span>${PHs}</div>`}
      </div><div class="dxside"><div class="k">상성</div>${weaks()}</div></div>
    <div class="sec">기술 <span class="note">${has('move')?(m.moves||[]).filter(mv=>!mv.hide||G||m.tid===viewer).length+'개':''}</span></div>${moves()}
@@ -59,14 +64,16 @@ window.OM_DEX_UI=(()=>{
    ${isEnemy&&PV?`<div class="card"><div class="sec">해석 <span class="note">PVP 로 공개 중 — 해석하지 않아도 전부 보인다 · 『포켓몬 도감』 남은 ${left}/${maxOf(vt)} 은 그대로 (PVP 를 끄면 해석한 만큼만)</span></div></div>`:''}
    ${isEnemy&&!full?`<div class="card hit"><div class="sec">해석 <span class="note">『포켓몬 도감』 남은 ${left}/${maxOf(vt)} (지시 ${esc((vt.ranks||{})['지시']||'-')})</span></div>
     <div class="row" style="flex-wrap:wrap;gap:8px"><span class="small">부분만:</span>${PARTS.map(([k,n])=>`<label class="small"><input type="checkbox" data-part="${k}"> ${n}</label>`).join('')}<span class="small dim">(아무것도 안 고르면 전체)</span><span class="sp"></span><button class="btn pri" data-dex="run" ${left>0?'':'disabled'}>『포켓몬 도감』 해석</button><button class="btn" data-dex="fx" title="포텐셜·효과로 하는 해석 — 횟수 없이, 차단을 돌파한다 (정직하게)">데이터 해석 (효과)</button></div></div>`:''}
+   ${isEnemy&&!ownI?`<div class="card"><div class="row" style="gap:8px"><span class="small dim">소지품은 「소지품 해석」으로만 보인다</span><span class="sp"></span><button class="btn" data-dex="item" title="포텐셜 · 특성 · 기술로 하는 소지품 해석 (정직하게)">소지품 해석 (효과)</button></div></div>`:''}
    ${gm()?`<div class="card"><div class="sec">GM · 해석 차단 <span class="note">${FWN[+m.dexFw||0]}</span></div><div class="row" style="flex-wrap:wrap;gap:8px"><select id="dexfw">${Object.keys(FWN).map(k=>`<option value="${k}" ${(+m.dexFw||0)===+k?'selected':''}>${k} · ${FWN[k]}</option>`).join('')}</select><span class="small">일부 차단 허용:</span>${PARTS.map(([k,n])=>`<label class="small"><input type="checkbox" data-fwp="${k}" ${((m.dexFwParts||{})[k])?'checked':''}> ${n}</label>`).join('')}<button class="btn sm" data-dex="fwsave">저장</button><span class="sp"></span><span class="small dim">해석한 트레이너: ${Object.entries(A().ST.state.dex||{}).filter(([t,v])=>(v.list||[]).includes(mid)).map(([t])=>esc(trOf(t).name)).join(', ')||'없음'}</span></div></div>`:''}`);
   md.classList.add('wide');
   md.querySelectorAll('[data-dex]').forEach(b=>b.onclick=async()=>{const k=b.dataset.dex;
    if(k==='fwsave'){const parts={};md.querySelectorAll('[data-fwp]').forEach(c=>{if(c.checked)parts[c.dataset.fwp]=1});await A().set(['battle','mons',mid,'dexFw'],+$('#dexfw',md).value);await A().set(['battle','mons',mid,'dexFwParts'],parts);A().toast('저장했다');return}
+   if(k==='item'){A().closeModal();await analyzeItem(viewer,mid,{});return}
    const parts=[...md.querySelectorAll('[data-part]:checked')].map(c=>c.dataset.part);A().closeModal();await analyze(viewer,mid,{parts,forced:k==='fx',free:k==='fx'})})}
  /* 해석 실행 (dex_run) */
  async function analyze(viewer,mid,o){o=o||{};const m=monOf(mid);const vt=trOf(viewer);if(!m)return;const d=dx(viewer);const left=maxOf(vt)-d.used;
-  if(!o.free&&left<=0)return A().toast('『포켓몬 도감』 남은 횟수가 없다');if(d.list.includes(mid))return A().toast('이미 해석한 포켓몬이다');
+  if(!o.free&&left<=0)return A().toast('『포켓몬 도감』 남은 횟수가 없다');if(d.list.includes(mid)){if(!o.via)A().toast('이미 해석한 포켓몬이다');return}   /* 11-21: 기술 · 효과로 또 해석하면 조용히 */
   let parts=(o.parts||[]).filter(p=>['move','type','trait'].includes(p));const prev=d.part[mid]||[];const want=parts.length?[...new Set([...prev,...parts])]:['move','type','trait'];
   if(parts.length&&want.length===prev.length)return A().toast('그 부분은 이미 해석했다');
   const fw=+m.dexFw||0;let isOpen=true,why='';
@@ -80,7 +87,15 @@ window.OM_DEX_UI=(()=>{
   const tag=`${o.free?'【강제】':`【${Math.max(0,maxOf(vt)-d.used)}/시】【사전】`}${parts.length?'【'+parts.map(p=>(PARTS.find(x=>x[0]===p)||[])[1]).join('·')+'】':''}`;
   A().sysLog(`${o.free?'「데이터 해석」':'『포켓몬 도감』'} ${tag} ${vt.name} → ${isOpen&&(got.length===3)?m.name:'???'}: ${isOpen?'해석 성공!'+(why?' ('+why+')':''):'차단됨 ('+why+')'}`,'battle');
   try{if(window.OM_RP_UI)window.OM_RP_UI.playSe(isOpen?'Ping':'evasion',true)}catch(e){}
-  if(isOpen)setTimeout(()=>open(mid,viewer),200)}
+  /* 11-21 망령 「해석 트리거 — 해석했을 때」: 해석에 성공하면 배틀 쪽이 계기를 본다 (via: 누가 · 무엇으로) */
+  if(isOpen)try{window.dispatchEvent(new CustomEvent('om:dexdone',{detail:{viewer,mid,parts:got,full:got.length===3,via:o.via||'',by:o.by||''}}))}catch(e){}
+  if(isOpen&&!o.quiet)setTimeout(()=>open(mid,viewer),200)}
+ /* 11-21 소지품 해석: 데이터 해석과 따로. 해석 차단(데이터)은 소지품 해석을 막지 않는다 */
+ async function analyzeItem(viewer,mid,o){o=o||{};const m=monOf(mid);const vt=trOf(viewer);if(!m||!viewer)return false;const d=dx(viewer);d.items=d.items||[];
+  const L=[{item:m.item},...(m.items2||[])].filter(x=>x&&x.item&&x.item!=='-').map(x=>x.item);
+  if(!d.items.includes(mid)){d.items.push(mid);await A().set(['dex',viewer],d)}
+  if(!o.silent)A().sysLog(`「소지품 해석」${o.by?' ('+o.by+')':''} ${vt.name||''} → ${m.name}: 소지품 ${L.length?'「'+L.join('」「')+'」':'없음'}`,'battle');
+  try{if(!o.silent&&window.OM_RP_UI)window.OM_RP_UI.playSe('Ping',true)}catch(e){}return true}
  /* 해석 관리 (내 도감) */
  function openMgr(viewer){viewer=viewer||me();if(gm()&&!viewer)return A().toast('GM 은 포켓몬 카드의 「도감」에서 본다');const vt=trOf(viewer);const d=dx(viewer);const b=A().ST.state.battle||{};const enemies=Object.values(b.mons||{}).filter(m=>m.tid!==viewer&&m.side&&(m.side!==(vt.side||'')||(window.OM_TEAM&&window.OM_TEAM(b,viewer)!==window.OM_TEAM(b,m)))&&(m.seen||m.entry||pvp(m.id)));
   const PV=pvp();
@@ -88,7 +103,7 @@ window.OM_DEX_UI=(()=>{
    ${PV?'<div class="card" style="margin-bottom:8px"><b>PVP 공개 중</b> <span class="small dim">— GM 의 PVP 설정으로 양쪽 도감이 전부 보인다. 해석 횟수 · 이력은 그대로, PVP 를 끄면 해석한 만큼만 보인다</span></div>':''}
    <div class="row small"><span>『포켓몬 도감』 남은 <b>${Math.max(0,maxOf(vt)-d.used)}</b>/${maxOf(vt)} (지시 ${esc((vt.ranks||{})['지시']||'-')})</span>${gm()?`<span class="sp"></span><button class="btn xs" data-dm="minus">−1</button><button class="btn xs" data-dm="plus">+1</button>`:''}</div>
    <div class="sec">해석 이력 <span class="note">${d.list.length}마리 · 누르면 도감</span></div><div class="row" style="flex-wrap:wrap;gap:4px">${d.list.map(mid=>`<button class="btn xs" data-dm="open" data-mid="${mid}">${esc((monOf(mid)||{}).name||mid)}</button>`).join('')}${Object.keys(d.part).map(mid=>`<button class="btn xs ghost" data-dm="open" data-mid="${mid}">${esc((monOf(mid)||{}).name||'???')} (부분)</button>`).join('')}${!d.list.length&&!Object.keys(d.part).length?'<span class="dim small">아직 없다</span>':''}</div>
-   <div class="sec">해석 대상 <span class="note">상대 필드·본 포켓몬</span></div><div class="firelist">${enemies.map(m=>{const sc=scope(m.id,viewer);const full=sc==='all';return `<div class="firerow"><b>${esc(full||sc.length||m.seen?m.name:'비공개')}</b>${full?(PV&&!d.list.includes(m.id)?'<span class="tag on">PVP 공개</span>':'<span class="tag on">해석 완료</span>'):sc.length?`<span class="tag">부분 ${sc.map(p=>(PARTS.find(x=>x[0]===p)||[])[1]).join('·')}</span>`:''}${d.fwSeen.includes(m.id)?'<span class="tag" style="background:#5a2330">차단됨</span>':''}<span class="sp"></span><button class="btn xs" data-dm="open" data-mid="${m.id}">${full?'도감 열기':'도감 · 해석'}</button></div>`}).join('')||'<div class="small dim">배틀에 상대가 없다</div>'}</div>`);
+   <div class="sec">해석 대상 <span class="note">상대 필드·본 포켓몬</span></div><div class="firelist">${enemies.map(m=>{const sc=scope(m.id,viewer);const full=sc==='all';return `<div class="firerow"><b>${esc(full||sc.length||m.seen?m.name:'비공개')}</b>${full?(PV&&!d.list.includes(m.id)?'<span class="tag on">PVP 공개</span>':'<span class="tag on">해석 완료</span>'):sc.length?`<span class="tag">부분 ${sc.map(p=>(PARTS.find(x=>x[0]===p)||[])[1]).join('·')}</span>`:''}${d.fwSeen.includes(m.id)?'<span class="tag" style="background:#5a2330">차단됨</span>':''}${(d.items||[]).includes(m.id)?'<span class="tag" title="소지품 해석함">소지품</span>':''}<span class="sp"></span><button class="btn xs" data-dm="open" data-mid="${m.id}">${full?'도감 열기':'도감 · 해석'}</button></div>`}).join('')||'<div class="small dim">배틀에 상대가 없다</div>'}</div>`);
   md.querySelectorAll('[data-dm]').forEach(b=>b.onclick=async()=>{const k=b.dataset.dm;if(k==='open'){A().closeModal();return open(b.dataset.mid,viewer)}if(k==='minus'||k==='plus'){d.used=Math.max(0,(+d.used||0)+(k==='minus'?1:-1));await A().set(['dex',viewer],d);A().closeModal();openMgr(viewer)}})}
- return {open,openMgr,analyze,scope};
+  return {open,openMgr,analyze,analyzeItem,itemSeen,scope};
 })();
