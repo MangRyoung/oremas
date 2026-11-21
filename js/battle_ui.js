@@ -3347,7 +3347,7 @@ window.OM_BATTLE_UI=(()=>{
   return true}
  /* 11-06 망령 「『HP : 1/2 이하』일 때 『우드혼』을 내보낼 때 【수세】가 적용된다」: 공격을 지시받아도 그 기술이면 자신의 【수세】 효과가 켜진 채 (fx atkKeep · defKeep — 상대의 【공세】 판정은 그대로).
     구문 「수세유지 [기술:우드혼] [타입:풀] [물리|특수] [HP≤1/2]」(sp keepdef) 또는 특성 · 포텐셜 · 소지품 효과 글 (제작기 potlint KEEPDEF_RE 와 같은 꼴) */
- const KEEPDEF_RE=/(?:「HP\s*:\s*(\d+\s*\/\s*\d+)\s*이하」\s*일\s*때\s*,?\s*)?((?:「[^」]+」\s*(?:[,·]|과|와)?\s*)+)(?:기술)?\s*(?:을|를)?\s*(?:내보낼|사용할|쓸)\s*때(?:에도|도)?\s*,?\s*【수세】\s*(?:가|이|를|도)?\s*(?:적용|발동|유지)/;
+ const KEEPDEF_RE=/(?:「HP\s*:\s*(\d+\s*\/\s*\d+)\s*이하」\s*일\s*때\s*,?\s*)?((?:「[^」]+」\s*(?:[,·]|과|와)?\s*)+)(?:기술)?\s*(?:을|를)?\s*(?:내보낼|사용할|쓸)\s*때(?:에도|도)?\s*,?\s*【수세】\s*(?:가|이|를|도)?\s*(?:적용|발동|유지|된|되)/;
  function keepDefL(m){const L=spL(m,'keepdef').map(e=>({mv:e.mv||[],types:e.types||[],cat:e.cat||'',hp:e.hp||''}));
   const tx=[m.ability?slotEff(m,'trait',m.ability):'',...potSrc(m).map(p=>p&&p.eff),...(IOFF(m)?[]:[m.item?slotEff(m,'item',m.item):'',...(m.items2||[]).map(x=>x&&x.itemEff)])];
   for(const t of tx){const r=String(t||'').replace(/<br\s*\/?>/g,'\n').match(KEEPDEF_RE);if(!r)continue;const ks=[...r[2].matchAll(/「([^」]+)」/g)].map(x=>x[1].trim()).filter(k=>k&&!/^HP\s*:/.test(k));
