@@ -3514,6 +3514,22 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
        기술 · 대상을 m.charge 에 적는다. 다음 턴에 「공격」을 누르면 그 기술 · 대상으로 창이 열리고, 적용하면 상태 · charge 를 지운다. 날씨로 생략되면 그냥 공격.
     ② 선행 입력한 방어 4식 — 지시 대상 중 『버텨라!』(늘) · 『물러나!』(물리기) · 『피해라!』(특수기)를 선행 입력하고 아직 안 쓴 포켓몬이 있으면 먼저 선행 발동한다
        (예전에는 턴 개시 때 횟수만 빠지고 효과는 GM 이 「포텐셜 발동」에서 따로 눌러야 해서, 버텨라가 빠진 채 대미지가 들어갔다) */
+ /* 11-22 망령 「【자동】【보급】/「로켓펀치」로 상승하는 능력을 임의로 변경할 수 있다 — 이런 건?」: 모으는 턴에 기술 글의 「「차지」할 때 「방어 : +1」」을 건다 (예전엔 손으로).
+    이 포켓몬 포텐셜에 「「기술」로 상승하는 능력을 임의로 변경」이 있으면 올릴 능력을 주인 화면에 묻는다 — 【보급】이면 바꾼 뒤 이번 등장엔 다시 묻지 않는다 (『변환술』과 같은 길) */
+ const CRISE_RE=/((?:「[^」]+」\s*(?:[,·]|과|와)?\s*)+)\s*(?:으로|로)\s*상승하는\s*능력(?:치)?\s*(?:을|를)?\s*임의로\s*변경/;
+ async function chargeRise(mid,mv){try{const b=ctx().b;const m=(b.mons||{})[mid];if(!m||!mv||!FX())return;
+  const s=String(mv.eff||'').match(/「차지」\s*(?:할|하는)\s*때\s*,?\s*((?:「[^」]+?\s*[:：]\s*[+-]\d+」\s*(?:[,·]|과|와)?\s*)+)/);if(!s)return;
+  const KO=['공격','방어','특공','특방','스피드','명중','회피'];
+  const ups=[...s[1].matchAll(/「([^」:：]+?)\s*[:：]\s*([+-]\d+)」/g)].flatMap(x=>x[1].split('/').map(k=>[k.trim(),+x[2]])).filter(([k])=>KO.includes(k));if(!ups.length)return;
+  const nm=String(mv.name||'').trim();
+  const conv=potSrc(m).find(p=>{const r=String((p&&p.eff)||'').replace(/<br\s*\/?>/g,'\n').match(CRISE_RE);return !!r&&[...r[1].matchAll(/「([^」]+)」/g)].some(x=>x[1].trim()===nm)});
+  const parts=[],notes=[];let changed=false;
+  for(const [k,v] of ups){let k2=k;
+   if(conv&&v>0){const ord=[k,...KO.filter(x=>x!==k)];const r=await uiCtx(b,m,String(conv.name).replace(/[『』]/g,'')).choose(ord.map((x,i)=>`${x} +${v}`+(i===0?' (그대로)':'')));k2=ord[(Array.isArray(r)&&r.length)?+r[0]:0]||k;if(k2!==k){changed=true;notes.push(`『${String(conv.name).replace(/[『』]/g,'')}』 — ${k} 대신 ${k2}`)}}
+   parts.push(`${k2}${v>0?'+':''}${v}`)}
+  if(changed&&/【\s*보급\s*】/.test(String(conv.eff||'')))await A().set(['battle','mons',mid,'potTurn','_sup',conv.name],1);
+  const ops=FX().parse('랭크 '+parts.join(' ')).ops||[];if(!ops.length)return;
+  await fireAuto(mid,'move',nm,{auto:{name:nm,src:'dyn',ops,text:''},quiet:true,noRoll:true,force:true,noEv:1,head:`【차지】 ${m.name} 『${nm}』 — 모으면서 ${parts.map(x=>'「'+x.replace(/([+-]\d+)$/,' : $1')+'」').join(' ')}${notes.length?'\n'+notes.join('\n'):''}`})}catch(e){console.warn('chargeRise',e)}}
  function chargeVanish(mv){const e=String((mv||{}).eff||'');const g=((DB().states||{}).groups||[]).find(x=>x.l==='반무적');const db=(DB().states||{}).st||{};const m=e.match(/「반무적\s*:\s*([^」]+)」/);if(!m)return '';const ko=m[1].trim();return ((g&&g.s)||Object.keys(db)).find(k=>db[k]&&db[k].ko===ko)||''}
  /* 11-17 망령 「공중날기 · 다이브류가 충전하는 턴에 기술 공개할 때 물러나! 같은 게 발동해 버린다」: 모으는 턴은 공격이 아니니 방어 4식(버텨라! · 물러나! · 피해라!)을 걸지 않는다.
     차지 기술인데 아직 안 모았고 · 날씨로 생략되지 않고 · 파워풀허브도 없으면 = 모으는 턴. 모은 다음 턴(내보내는 턴)에는 그 기술 · 대상으로 방어 4식을 건다 (예전엔 GM 화면이 이 턴에 4식을 거치지 않았다) */
@@ -3538,7 +3554,7 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
    if(!skip&&!herb){const vk=chargeVanish(mv);const vko=vk?((((DB().states||{}).st||{})[vk]||{}).ko||vk):'';const tg=x0.tm?tgNow(b,x0,atk):(x0.targets||[]);
     if(await askYes(`「${mv.name}」은 「차지」 기술 — 이번 턴은 모으기만 한다.${vko?`\n${atk.name} 은(는) 「${vko}」 상태가 되어 상대의 기술을 받지 않는다.`:''}\n다음 턴에 「공격」을 누르면 이 기술과 지시한 대상으로 창이 열린다.`,'모으기','그냥 공격 창')){
      const st=Object.assign({},atk.states||{});if(vk)st[vk]=2;await A().setMany([[['battle','mons',mid,'states'],st],[['battle','mons',mid,'charge'],{mv:mv.name,turn:T,targets:tg}]]);
-     A().sysLog(`【차지】 ${atk.name} 『${mv.name}』 — 모으기${vko?` · 「${vko}」`:''} (다음 턴에 내보낸다)`,'battle');return}}}
+     A().sysLog(`【차지】 ${atk.name} 『${mv.name}』 — 모으기${vko?` · 「${vko}」`:''} (다음 턴에 내보낸다)`,'battle');await chargeRise(mid,mv);return}}}
   /* ② 선행 입력한 방어 4식 */
   if(mv&&mv.cat!=='변화'){let SEC={};try{const rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd');for(const r of rows||[]){if(!cmdFresh(r,b))continue;for(const k in ((r.data||{}).mons||{}))SEC[k]=r.data.mons[k]}}catch(e){}
    await guard4Pre(c,atk,mv,x0,SEC)}
