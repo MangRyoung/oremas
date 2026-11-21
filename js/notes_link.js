@@ -420,7 +420,13 @@ window.OM_NOTES=(()=>{
  LV.iv=setInterval(()=>{try{liveTick()}catch(e){}},2000);
  document.addEventListener('click',e=>{if(e.target.closest('[data-ntdg]')){e.preventDefault();dgPanel()}});
  /* 10-30 망령 「웹툴에도 인물 추가 기능」: 지도 「👤 인물 놓기」 목록 — 이 방 지도가 온 캠페인(없으면 이어진 캠페인)의 인물 (ents 인물 · pc · npc) */
+ /* 11-21 망령 「세션 노트에 트레이너가 아니더라도 NPC 를 만들어서 웹툴 인물 정리 쪽에 올릴 수 있게」: 인물 관리 「📓 노트에서」 목록 — 이 방과 이어진 캠페인의 PC · NPC 시트 · 인물 항목(GM 전용 포함, 비밀구가 있을 때).
+    stands = 노트 시트 자기 칸(노트 전용 시트) — 없으면 고를 때 같은 id 의 제작기 트레이너 stands(mkStands) */
+ async function peopleFull(){const L=await linked();if(!L)return null;const docs=await S().ntDocs(L.id,secOf(L.id),['ents','pc','npc']);
+  const okSt=a=>(Array.isArray(a)?a:[]).filter(x=>x&&/^https?:\/\//.test(String(x.src||'')));
+  return {camp:L,list:docs.filter(x=>isPerson(x.kind,x.data)&&(x.data.title||x.data.name)).map(x=>({key:x.kind+':'+x.id,id:x.id,kind:x.kind,cls:x.data.cls||'',name:String(x.data.title||x.data.name).trim(),img:x.data.face||x.data.image||x.data.photo||'',stands:okSt(x.data.stands),standActive:+x.data.standActive||0,vis:x.vis||'',note:x.kind==='ents'?[x.data.sub,x.data.body].filter(Boolean).join('\n').slice(0,600):(x.data.sub||'')}))}}
+ async function mkStands(id){try{const r=await S().makerOne('trainers',id);const d=r&&((r.data&&r.data.data)||r.data);if(!d)return null;const st=(Array.isArray(d.stands)?d.stands:[]).filter(x=>x&&/^https?:\/\//.test(String(x.src||'')));return {stands:st,standActive:+d.standActive||0,img:d.image||''}}catch(e){return null}}
  async function people(){const s=srcOf(curMapS());let camp=s&&s.camp;if(!camp){try{const L=await linked();camp=L&&L.id}catch(e){}}if(!camp)return [];
   const docs=await S().ntDocs(camp,secOf(camp),['ents','pc','npc']);return docs.filter(x=>isPerson(x.kind,x.data)&&(x.data.title||x.data.name)).map(x=>({id:'nt:'+x.kind+':'+x.id,name:x.data.title||x.data.name,img:x.data.face||x.data.image||'',kind:x.kind,vis:x.vis}))}
-return {grSet,grRun,people,importMap,importGraph,pick,NOTES_URL,linked,menu,afterOpen,topBtn,notesLink,dgPull,dgPush,dgPanel,mapPush,logPush,dgH,liveSet,liveRun,calRun,LV};
+return {grSet,grRun,people,peopleFull,mkStands,importMap,importGraph,pick,NOTES_URL,linked,menu,afterOpen,topBtn,notesLink,dgPull,dgPush,dgPanel,mapPush,logPush,dgH,liveSet,liveRun,calRun,LV};
 })();

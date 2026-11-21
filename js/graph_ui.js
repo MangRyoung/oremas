@@ -9,7 +9,9 @@ window.OM_GRAPH_UI=(()=>{
  const V={x:0,y:0,k:1};let drag=null,pan=null;
  const rnd=n=>{const a=new Uint8Array(n||6);crypto.getRandomValues(a);return Array.from(a,b=>'abcdefghijklmnopqrstuvwxyz0123456789'[b%36]).join('')};
  const KIND={pc:'PC',guest:'객원',npc:'NPC',org:'조직'};   /* 11-04 망령 「PC · NPC · 객원 구분」: 객원(guest) — 세션 노트 시트 분류(cls)와 같은 이름 · 색 */
- function G(){return A().ST.state.graph||{nodes:{},edges:{}}}
+ /* 11-21: 「📓 노트에서」로 가져온 GM 전용(노트 비공개) 인물 = n.sec — GM 이 아니면 관계도에서 그 노드와 그 선을 뺀다 */
+ function G(){const g=A().ST.state.graph||{nodes:{},edges:{}};if(gm())return g;const ns=g.nodes||{};if(!Object.values(ns).some(n=>n&&n.sec))return g;
+  const nodes={};for(const [k,n] of Object.entries(ns))if(!(n&&n.sec))nodes[k]=n;const edges={};for(const [k,e] of Object.entries(g.edges||{}))if(nodes[e.a]&&nodes[e.b])edges[k]=e;return Object.assign({},g,{nodes,edges})}
  function gm(){return A().ST.role==='gm'}
 
  let pendingEl=null;
