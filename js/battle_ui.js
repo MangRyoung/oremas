@@ -596,7 +596,12 @@ window.OM_BATTLE_UI=(()=>{
  function aptOn(m,n){const T=+((ctx().b||{}).turn)||0;const u=(m&&m.apt||{})[String(n||'').replace(/『|』/g,'').trim()];return u!=null&&+u>=T}   /* 11-15 임명된 동안 (fx appoint) */
  /* 11-18 망령 「맥 콘 글린의 환상」: 필드 위 누군가의 「「필드 : X」일 때 필드 위의 모든 포켓몬의 「회복」「드레인」 효과가 발동하지 않는다」 — 제작기 fx.noHeal */
  const NOHEAL=(m,kind)=>(FX()&&FX().noHeal)?FX().noHeal(m,kind,ctx().b):'';
- function potSrc(m){return [...(m.pots||[]).filter(p=>p&&p.name&&(!p.ph||(p.apt&&aptOn(m,p.name)))),...(m.excl?[m.excl]:[]),...(m.exclX||[])]}
+ /* 11-21 망령 「【지원】은 볼에서만 발동 — 필드 위에선 발동하지 않는다. 필드에서도 발동하는 계열은 【지원 (상위)】」:
+    글 머리 태그로 가른다 — 'sup' = 【지원】(볼 안 · 빈사면 안 됨) · 'ko' = 【지원 (빈사)】(볼 안 · 빈사여도) · 'up' = 【지원 (상위)】(필드 · 볼 둘 다) */
+ function supKind(eff){const hd=(String(eff||'').replace(/^[\s①②③④⑤]+/,'').match(/^((?:\s*【(?:[^【】]|【[^【】]*】)*】)+)/)||[''])[0];if(!/【\s*지원/.test(hd))return '';if(/【\s*지원\s*\(\s*상위\s*\)\s*】/.test(hd))return 'up';if(/【\s*지원\s*\(\s*빈사\s*\)\s*】/.test(hd))return 'ko';return /【\s*지원\s*】/.test(hd)?'sup':''}
+ /* 지금 이 자리에서 효과가 살아 있나: 필드 위면 【지원】 · 【지원 (빈사)】는 꺼짐, 빈사면 【지원】 · 【지원 (상위)】는 꺼짐 */
+ function supLive(m,p){const k=supKind(p&&p.eff);if(!k)return true;const dead=!(m&&m.hp&&m.hp.cur>0);if(m&&m.entry&&!dead)return k==='up';if(dead)return k==='ko';return true}
+ function potSrc(m,all){const L=[...(m.pots||[]).filter(p=>p&&p.name&&(!p.ph||(p.apt&&aptOn(m,p.name)))),...(m.excl?[m.excl]:[]),...(m.exclX||[])];return all?L:L.filter(p=>supLive(m,p))}
  /* 10-28 망령: 미사그 대학 (4+2) 각성체 대가 — 제작기 「각성체 대가」의 통솔 항목으로 포텐셜 발동을 막는다. 항목 이름 B-2 · A-1 · A-2 로 판정
     B-2 지정 역할의 역할 포텐셜 · A-1 필드 위 다른 아군 중 지정 타입이 없으면 각성 (대가) 포켓몬의 포텐셜 · A-2 각성 (대가)가 필드에 있으면 다른 아군의 역할 포텐셜. 막은 이유를 돌려준다 */
  function misagBlock(b,m,name){const t=((b&&b.trainers)||{})[m&&m.tid];const M=t&&t.misag;if(!M||!Array.isArray(M.items)||!M.items.length)return '';
@@ -677,7 +682,7 @@ window.OM_BATTLE_UI=(()=>{
  /* 11-04 19:29 망령 「선행 포텐셜은 입력하기 전에 곧바로 『사용』으로 돼 있어서 무심코 쓰는 경우가 많다 — 지시 때엔 카드에서 선행 입력하게 · 쓸 때 선행 입력 안 됐으면 경고창으로 강제 발동할지 묻게」
     · 지시 단계(페이즈 0)에 내가 지시할 수 있는 포켓몬의 【선행】 포텐셜(일반 · 전용)은 카드 버튼이 「선행 입력」(누르면 지시의 선행 입력 칸에 넣고 빼기 · 바로 저장)
     · 행동 단계에 카드(폰 포텐셜 창 포함)에서 【선행】 포텐셜을 사용 · 발동하려는데 이번 턴 선행 입력이 아니면 「강제로 발동할까?」 */
- const potIsPre=(m,n)=>{const p=potSrc(m).find(q=>q&&q.name===n);return /【\s*선행\s*】/.test(String((p&&p.eff)||''))};
+ const potIsPre=(m,n)=>{const p=potSrc(m,1).find(q=>q&&q.name===n);return /【\s*선행\s*】/.test(String((p&&p.eff)||''))};
  function preCardOK(c,m){if(!m||!m.entry||!(+(m.hp||{}).cur>0))return false;if((+c.b.phase||0)!==0||c.b.endq)return false;if(!(ownT(c,m.tid)||(c.gm&&!fairOff(c,m.tid))))return false;return !((c.ST.state.ready||{})[m.tid])}
  function prePotBtn(c,m,n){const cur=cmdNow(m.tid,c.b);const on=!!cur&&(((cur.mons||{})[m.id]||{}).pots||[]).includes(n);
   return `<button class="btn xs ${on?'pri':'ghost'} prepot" data-act="pretoggle" data-mid="${m.id}" data-pot="${esc(n)}" title="${on?'선행 입력함 — 누르면 뺀다':'【선행】 — 누르면 이번 턴 지시에 선행 입력 (턴 개시 뒤 발동)'}">${on?'✓ 선행':'선행 입력'}</button>`}
@@ -1091,7 +1096,7 @@ window.OM_BATTLE_UI=(()=>{
     A().sysLog(`【『지령』 & 『포텐셜』 발동】\n${tids.map(TN).join(' · ')}\n남은 선행(고유 · 명령 · 조건 때 쓰는 포텐셜)은 「포텐셜 발동」 → 「선행 발동」 (지령 · 턴 개시에 쓰는 선행 포텐셜은 저절로 걸었다 · 놓쳤으면 행동 순서 · 행동 처리 중에도 발동할 수 있다)\n끝나면 「턴 진행 ▶」`,'battle');return}}
   return computeOrder()}
  /* 【선행】 포텐셜을 카드에서 쓰려는데 이번 턴 선행 입력이 아니면 묻는다 (11-04 망령). 지시 단계(페이즈 0)엔 카드가 「선행 입력」 버튼이라 여기 오지 않는다 — 시합 전 · 【사전】은 묻지 않는다 */
- async function preGuard(c,m,n){if(!potIsPre(m,n))return true;const b=c.b;if(!b.started||(+b.phase||0)<1)return true;const p=potSrc(m).find(q=>q&&q.name===n)||{};if(/【\s*사전\s*】/.test(String(p.eff||'')))return true;
+ async function preGuard(c,m,n){if(!potIsPre(m,n))return true;const b=c.b;if(!b.started||(+b.phase||0)<1)return true;const p=potSrc(m,1).find(q=>q&&q.name===n)||{};if(/【\s*사전\s*】/.test(String(p.eff||'')))return true;
   let cm=null;try{const rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd');const r=(rows||[]).filter(x=>cmdFresh(x,b)).find(x=>x.id===m.tid);cm=r&&r.data}catch(e){}
   if(cm&&((((cm.mons||{})[m.id])||{}).pots||[]).includes(n))return true;
   {const ok=((b.cmds||{})[m.tid]||{}).ok;if(!cm&&ok&&ok.key===turnKey(b)&&ok.m&&ok.m[m.id]&&ok.m[m.id].pi)return true}   /* 지시를 못 읽는 화면은 순서 열쇠의 선행 표시로 본다 */
@@ -3010,7 +3015,13 @@ window.OM_BATTLE_UI=(()=>{
       if(/상대의\s*기술에\s*의해/.test(eff)&&!(LHX(dm)&&LHX(dm).fromId&&!sameT(ctx().b.mons[LHX(dm).fromId]||{},dm,ctx().b)))continue;   /* 11-09 감우: 「상대의 기술에 의해」 빈사만 */
        if(/【자동】/.test(eff)&&FX()&&FX().autoOf(cur,'pot',p.name)&&!FX().autoOf(cur,'pot',p.name).manual){if(await fireAuto(x.id,'pot',p.name,Object.assign({quiet:true,head:`【포텐셜】 ${cur.name} 『${p.name}』【자동】 — ${dm.name} 빈사`},LHX(dm)&&LHX(dm).fromId&&/대상/.test(eff)?{pickId:LHX(dm).fromId}:{}))&&left!==null){const uu=Object.assign({},cur.potUses||{});uu[p.name]=left-1;await A().set(['battle','mons',x.id,'potUses'],uu)}}
       else notes.push(`${cur.name} 『${p.name}』`)}
-     const t=(ctx().b.trainers||{})[x.tid];if(t&&!doneT.has(t.id||x.tid)){doneT.add(t.id||x.tid);for(const u of uniqList(t)){if(RE.test(String(u.p.eff||''))&&(u.left===null||u.left>0))notes.push(`${t.name} 고유 『${u.p.name}』`)}}}}
+     const t=(ctx().b.trainers||{})[x.tid];if(t&&!doneT.has(t.id||x.tid)){doneT.add(t.id||x.tid);for(const u of uniqList(t)){if(RE.test(String(u.p.eff||''))&&(u.left===null||u.left>0))notes.push(`${t.name} 고유 『${u.p.name}』`)}}}
+    /* 11-21 【지원】 · 【지원 (빈사)】 · 【지원 (상위)】: 볼 안(벤치)의 같은 편 포켓몬 — 지원 태그가 붙은 포텐셜만 (그 밖의 포텐셜은 볼 안에선 안 돈다) */
+    for(const x of Object.values(ctx().b.mons||{})){if(!x||x.id===dm.id||x.entry||!sameT(x,dm,ctx().b))continue;
+     for(const p0 of potSrc(ctx().b.mons[x.id]||x)){if(!p0||!p0.name||p0.unique||p0.ph||!supKind(p0.eff))continue;const eff=String(p0.eff||'');if(!RE.test(eff))continue;const mm=eff.match(/【(\d+)\/시】/);const cur=ctx().b.mons[x.id];const u=(cur.potUses||{})[p0.name];const left=mm?(u==null?+mm[1]:+u):null;if(left!==null&&left<=0)continue;
+      if(/상대의\s*기술에\s*의해/.test(eff)&&!(LHX(dm)&&LHX(dm).fromId&&!sameT(ctx().b.mons[LHX(dm).fromId]||{},dm,ctx().b)))continue;
+      if(/【자동】/.test(eff)&&FX()&&FX().autoOf(cur,'pot',p0.name)&&!FX().autoOf(cur,'pot',p0.name).manual){if(await fireAuto(x.id,'pot',p0.name,Object.assign({quiet:true,head:`【포텐셜】 ${cur.name}(볼 안) 『${p0.name}』【지원】 — ${dm.name} 빈사`},LHX(dm)&&LHX(dm).fromId&&/대상/.test(eff)?{pickId:LHX(dm).fromId}:{}))&&left!==null){const uu=Object.assign({},cur.potUses||{});uu[p0.name]=left-1;await A().set(['battle','mons',x.id,'potUses'],uu)}}
+      else notes.push(`${cur.name}(볼 안) 『${p0.name}』`)}}}
    if(notes.length)A().sysLog(`【아군 빈사】 ${neu.map(m=>m.name).join(' · ')} — 발동 조건을 만족한 효과\n${[...new Set(notes)].join('\n')}\n(「발동」 버튼으로)`,'battle')}finally{faintBusy=false}}
  /* 11-08 망령 「「하늘 위」 상태가 되었을 때 중확률로 「회피 : +1」 한다 — 지금 상시형으로 판정된다. ~ 상태가 되었을 때도 자동화」 (감우):
     필드 위 포켓몬에게 새 상태가 붙는 순간을 본다 — 어느 길로 걸렸든(기술 · 차지(하늘 위 · 땅 속) · 효과 엔진 · 상태 칸을 손으로 고친 것). 그 상태를 계기로 쓰는 특성 · 소지품(2 · 3번 칸 포함) · 포텐셜 · 전용 · 고유를 찾는다.
@@ -3085,7 +3096,8 @@ window.OM_BATTLE_UI=(()=>{
   A().sysLog(`【준비】 시합 개시 — PT 조건 검사\n${[...W,...okL].join('\n')}${AL.length?'\n· 제작기 규칙(적용됨 확인): '+AL.length+'건\n'+AL.map(x=>'  '+x).join('\n'):''}`,'battle',W.length?{}:{gmPriv:1});
   if(W.length)A().openModal(`<div class="mhead"><h2>【준비】 조건 불충족</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="small" style="white-space:pre-wrap">${esc(W.join('\n'))}</div><div class="small dim" style="margin-top:8px">이 포텐셜은 이번 배틀 동안 발동하지 않는다 (카드 「발동」은 막히고, 강제 발동은 된다).</div>`)}
  /* 무효(준비 조건 불충족)인가 */
- function potOffWhy(m,name){const nm=String(name||'').replace(/[『』]/g,'').trim();if(!m)return '';const a=(m.potOff||{})[nm];if(a)return a;const t=((ctx().b||{}).trainers||{})[m.tid];return ((t&&t.potOff)||{})[nm]||''}
+ function potOffWhy(m,name){const nm=String(name||'').replace(/[『』]/g,'').trim();if(!m)return '';const a=(m.potOff||{})[nm];if(a)return a;const t=((ctx().b||{}).trainers||{})[m.tid];const o=((t&&t.potOff)||{})[nm];if(o)return o;
+  /* 11-21 【지원】: 필드 위(볼 밖)에선 꺼짐 · 【지원 (상위)】만 필드에서도 */const p=potSrc(m,1).find(q=>q&&String(q.name||'').replace(/[『』]/g,'').trim()===nm);if(p&&!supLive(m,p)){const k=supKind(p.eff);return k==='up'?'빈사라 【지원 (상위)】가 작동하지 않는다':(m.entry&&m.hp&&m.hp.cur>0)?'【지원】은 볼 안에서만 — 필드 위에선 작동하지 않는다':'빈사라 【지원】이 작동하지 않는다'}return ''}
  /* 11-09 감우 54-F: 다른 포켓몬 · 트레이너 고유가 주는 「PT 전원이 「기능 확장 : X」를 내보낼 수 있다」 */
  function partyExtSrc(m){const b=(A().ST.state||{}).battle||{};const out=[];if(!m||!m.tid)return out;for(const x of Object.values(b.mons||{})){if(!x||x.id===m.id||x.tid!==m.tid)continue;for(const p of potSrc(x)){const e=String(p.eff||'');if(/PT\s*전원|아군\s*전원|아군\s*전체|아군이\s*「?기능/.test(e)&&/기능\s*확장/.test(e)&&!potOffWhy(x,p.name))out.push({n:String(p.name||'').replace(/[『』]/g,'').trim(),e})}}
   const t=(b.trainers||{})[m.tid];for(const u of ((t&&t.unique)||[])){const e=String((u&&u.eff)||'');if(u&&u.name&&/기능\s*확장/.test(e)&&/PT\s*전원|아군\s*전원|아군\s*전체|아군이\s*「?기능/.test(e)&&!((t.potOff||{})[String(u.name).replace(/[『』]/g,'').trim()]))out.push({n:String(u.name).replace(/[『』]/g,'').trim(),e})}return out}
