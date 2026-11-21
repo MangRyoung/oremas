@@ -2434,7 +2434,7 @@ window.OM_BATTLE_UI=(()=>{
  async function autoOnUse(mid,used){const c=ctx();const m=c.b.mons[mid];if(!m)return;const USE=/소모\s*(?:했을\s*때|하면|한\s*(?:때|뒤|후))|다\s*(?:썼을|쓰면)\s*때?/;const list=[];
   if(m.ability)list.push(['trait',m.ability]);for(const p of potSrc(m))if(p&&p.name&&!p.ph)list.push(['pot',p.name]);{const t=(c.b.trainers||{})[m.tid];for(const u of ((t&&t.unique)||[]))if(u&&u.name&&!list.some(([k,n])=>k==='pot'&&n===u.name))list.push(['pot',u.name])}
   for(const [kind,name] of list){const a=FX().autoOf(m,kind,name);if(!a||!a.ops||!a.ops.length||a.manual)continue;const tx=a.text||slotEff(m,kind,name)||'';if(!USE.test(tx)&&!a.ops.some(o=>o&&o.k==='cond'&&o.c==='used_item'))continue;if(limManual(m,kind,name,tx))continue;await fireAuto(mid,kind,name,{quiet:true,ctx:{used}})}
-  await fieldAuto('use',{mid,used})}
+  await fieldAuto('use',{mid,used});await fieldTxtType(mid,'use',{used})}
  /* 다 쓰면 사라지는 소지품: 열매 · 효과 글에 소모/사라진다/한 번 */
  const oneShot=(m,want)=>{const nI=v=>String(v||'').replace(/『|』/g,'').trim();const sl=want&&nI(m.item)!==nI(want)?((m.items2||[]).find(q=>q&&nI(q.item)===nI(want))||null):m;if(!sl)return false;const n=nI(sl===m?IT(m):sl.item);return !!n&&(/열매|주얼$|씨$/.test(n)||/소모|사라진다|사라짐|1회|한 번/.test(sl.itemEff||''))};
  /* ---------- 배틀 결과 정리 (맵툴 battle_return): HP·빈사·상태 이상·포텐셜 횟수·쓴 소지품을 시트(로스터)로 ---------- */
@@ -2945,6 +2945,17 @@ window.OM_BATTLE_UI=(()=>{
   let r={ops:[]};try{r=FX().parse(faAll(s.auto.hold))}catch(e){}return (r.ops||[]).filter(op=>op&&op.k!=='choice'&&ok(op.tgt)).map(op=>Object.assign({},op,{tgt:'self',p:0,pl:''}))}
  /* 등장 처리(설치기보다 먼저) — 같은 사본 nb 안에서 새로 나온 포켓몬에게 「필드 동안」을 건다 (벌레 타입 스피드 감소 무시가 끈적끈적네트보다 먼저 걸리게) */
  async function fieldHoldInto(nb,m){const s=(nb.field||{}).stage;if(!s||!s.name)return [];const ops=faHoldOps(nb,s,m);if(!ops.length)return [];const nm=faName(s);const r=await FX().run(ops,Object.assign(uiCtx(nb,m,nm),{noRoll:1}));return r.lines.length?[`【필드】 ${nm} — 필드 동안`,...r.lines]:[]}
+ /* 11-22 망령 (에마 《절계/마녀사냥의 재판소》 「필드 위의 모든 포켓몬은 자신의 공격으로 포켓몬을 「빈사」 상태로 만들었을 때 「타입 : 악」이 된다」):
+    펼친 필드의 효과 글을 그대로 읽어 그 포켓몬의 타입을 바꾼다 (구문 없이). 같은 꼴의 페르세포네 《명계》 「「소지품 : 나무열매」를 소모했을 때 「타입 : 고스트」가 된다」도.
+    필드에 그 계기 구문(auto.use …)이 따로 있으면 구문이 먼저 · H 설정(fieldHOk)을 따름 · 이미 그 타입이면 넘김 */
+ const FTT_RE={ko:/자신의\s*공격으로\s*(?:상대(?:의)?\s*)?(?:포켓몬)?\s*(?:을|를)\s*「?\s*빈사\s*」?\s*(?:상태)?\s*(?:로|으로)\s*만들었을\s*때\s*,?\s*「\s*타입\s*[:：]\s*([^」]+)」\s*(?:이|가)?\s*된다/,
+  use:/「\s*소지품\s*[:：]\s*나무열매\s*」\s*(?:을|를)\s*소모했을\s*때\s*,?\s*「\s*타입\s*[:：]\s*([^」]+)」\s*(?:이|가)?\s*된다/};
+ async function fieldTxtType(mid,trig,o){try{o=o||{};const b=ctx().b;const s=(b.field||{}).stage;if(!s||!s.name||!FX()||!FTT_RE[trig])return;const m=(b.mons||{})[mid];if(!m||!m.entry||!(m.hp&&m.hp.cur>0)||!fieldHOk(b,s,m))return;
+  if(String(((s.auto||{})[trig])||'').trim())return;if(trig==='use'&&!/열매$/.test(String((o.used||{}).name||'').trim()))return;
+  const x=String(s.eff||'').replace(/<br\s*\/?>/gi,'\n').match(FTT_RE[trig]);if(!x)return;const ts=x[1].split(/[\/·,]/).map(t=>t.trim()).filter(Boolean);if(!ts.length)return;
+  const cur=(tysOf(m)||[]).filter(t=>t&&t!=='-').map(t=>S().typeKo(t)||t);if(cur.length===ts.length&&ts.every(t=>cur.includes(t)))return;
+  const ops=(FX().parse('타입 변경 '+ts.join(','))||{}).ops||[];if(!ops.length)return;const nm=faName(s);
+  await fireAuto(mid,'field',nm,{auto:{name:nm,src:'dyn',ops,text:x[0]},quiet:true,noRoll:true,force:true,noEv:1,ownTid:s.tid||'',head:`【필드】 ${nm} — ${m.name} ${trig==='ko'?`${o.who?o.who+'을(를) ':''}쓰러뜨려`:`「${(o.used||{}).name||'나무열매'}」를 소모해`} 「타입 : ${ts.join('/')}」`})}catch(e){console.warn('fieldTxtType',e)}}
  async function fieldAuto(trig,o){o=o||{};const c=ctx();if(!c.mgr||!FX()||!FX().parse)return;const b=c.b;const s=(b.field||{}).stage;if(!s||!s.name||!s.auto||typeof s.auto!=='object')return;const AU=s.auto;const nm=faName(s);
   const tk=m=>{const t=(b.trainers||{})[m.tid];return t&&t.solo?'solo:'+m.tid:m.side};const live=m=>!!(m&&m.entry&&m.hp&&m.hp.cur>0);
   const om=s.ownerMid?b.mons[s.ownerMid]:null;const anyT=om||Object.values(b.mons||{}).find(m=>m.tid===s.tid);const own=anyT?tk(anyT):'';
@@ -3027,6 +3038,7 @@ window.OM_BATTLE_UI=(()=>{
   try{const RE=/아군이\s*(?:상대의\s*기술에\s*의해\s*)?「빈사」\s*상태가\s*되었을\s*때/;const notes=[];const doneT=new Set();
     /* 11-09 감우 56: 【퇴장 (빈사)】 · 맨 【퇴장】 (「필드에 등장한 아군」 줄은 그 자리에 다음 포켓몬이 나올 때) */for(const dm of neu){try{await koSelf(dm.id)}catch(e){console.warn('빈사 특성',e)}try{await exitTrig(dm.id,'빈사',{phase:'now'})}catch(e){console.warn('퇴장 (빈사)',e)}}
     /* 11-11 【함성】 · 【함성 (「기술」)】 · 【함성 (「타입 : X」)】 — 이번 턴 상대 기술로 쓰러졌으면 쓰러뜨린 쪽에 */for(const dm of neu){try{const lh=LHX(dm);const k=lh&&ctx().b.mons[lh.fromId];if(!k||k.hp.cur<=0||!k.entry||+lh.turn!==(+ctx().b.turn||0)||sameT(k,dm,ctx().b))continue;await evReact('ko',{mid:k.id,tgt:dm.id,mv:lh.move||'',key:dm.id})}catch(e){console.warn('함성',e)}}
+    /* 11-22 필드 글 「자신의 공격으로 포켓몬을 「빈사」 상태로 만들었을 때 「타입 : X」가 된다」 — 쓰러뜨린 쪽 (같은 편이어도) */for(const dm of neu){try{const lh=LHX(dm);const k=lh&&ctx().b.mons[lh.fromId];if(!k||k.id===dm.id||k.hp.cur<=0||!k.entry||+lh.turn!==(+ctx().b.turn||0))continue;await fieldTxtType(k.id,'ko',{who:dm.name})}catch(e){console.warn('필드 빈사 타입',e)}}
     /* 11-09 감우 55: 「이 기술로 대상을 쓰러뜨렸을 때 자신의 HP 를 N 회복」(안개로삼키기류) */for(const dm of neu){const lh=LHX(dm);const k=lh&&ctx().b.mons[lh.fromId];if(!k||k.hp.cur<=0||+lh.turn!==(+ctx().b.turn||0))continue;const mvo=MVS(k).find(v=>v&&v.name===lh.move);const au=mvo&&moveAuto(mvo);if(!au||!au.koHeal)continue;if((k.states||{}).HealBlock){A().sysLog(`【기술】 ${k.name} 「${lh.move}」 — 「회복봉인」이라 회복하지 못함`,'battle',{mid:k.id});continue}{const nh=NOHEAL(k,'heal');if(nh){A().sysLog(`【기술】 ${k.name} 「${lh.move}」 — ${nh}: 회복이 발동하지 않는다`,'battle',{mid:k.id});continue}}const [p,q]=au.koHeal.split('/').map(Number);const b0=snap(),nb=snap(b0);const kk=nb.mons[k.id];const v=Math.min(kk.hp.max-kk.hp.cur,Math.max(1,Math.floor(kk.hp.max*p/q)));kk.hp.latest=kk.hp.cur;kk.hp.cur+=v;if(await saveBattle(b0,nb,undefined,{n:k.name,s:lh.move,img:k.image||''}))A().sysLog(`【기술】 ${k.name} 「${lh.move}」 — ${dm.name}을(를) 쓰러뜨려 HP +${v} → ${kk.hp.cur}/${kk.hp.max}`,'battle',{mid:k.id,img:k.image||''})}
     /* 11-09 감우 55: 「길동무」 — 상대의 기술로 쓰러지면 그 상대도 「빈사」 */for(const dm of neu){if(!(dm.states||{}).DestinyBond)continue;const lh=LHX(dm);const k=ctx().b.mons[lh&&lh.fromId];if(!k||k.hp.cur<=0||sameT(k,dm,ctx().b))continue;const b0=snap(),nb=snap(b0);const kk=nb.mons[k.id];kk.hp.latest=kk.hp.cur;kk.hp.cur=0;kk.entry='';delete nb.mons[dm.id].states.DestinyBond;if(await saveBattle(b0,nb,undefined,{n:dm.name,s:'길동무',img:dm.image||''}))A().sysLog(`【상태】 ${dm.name} 「길동무」 — ${k.name}도 「빈사」!`,'battle',{mid:dm.id,img:dm.image||''})}
     /* 11-09 감우 54-E: 「상대의 기술로 빈사가 되었을 때」(자신) — 쓰러진 포켓몬 자신의 포텐셜 (잇칸자카 『문을 여는 문지기』) */
