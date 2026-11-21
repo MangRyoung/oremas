@@ -601,20 +601,23 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
    <p class="small dim" style="margin:0 0 8px">이름 · 초상 · 스탠딩 · 표정을 이 방 인물(관계도 NPC)로 넣는다. 표정은 노트 시트 「학생증 고치기 → 스탠딩 · 표정」에 넣은 것, 없으면 제작기 트레이너 것. 🔒 GM 전용은 플레이어 관계도에 안 보인다.</p>
    <div class="row" style="gap:6px;margin-bottom:6px"><input id="ntq" type="search" placeholder="이름 찾기" style="flex:1"><button class="btn xs ghost" id="ntall">보이는 것 모두</button><button class="btn xs ghost" id="ntnone">모두 풀기</button></div>
    <div id="ntl" style="max-height:52vh;overflow:auto">${L.length?L.map(row).join(''):'<div class="empty small">노트에 인물이 없다</div>'}</div>
-   <div class="row" style="margin-top:10px;gap:6px"><span class="small dim">폴더</span>${ppFolderSel('ntf','')}<span class="sp"></span><span class="small dim" id="ntn">0명</span><button class="btn pri" id="ntok">가져오기</button></div>`,'ntpm');
+   <div class="row" style="margin-top:10px;gap:6px"><span class="small dim">폴더</span>${ppFolderSel('ntf','').replace('<option value="">폴더 없음</option>','<option value="__auto" selected>자동 — NPC · 트레이너 / NPC · 민간인</option><option value="">폴더 없음</option>')}<span class="sp"></span><span class="small dim" id="ntn">0명</span><button class="btn pri" id="ntok">가져오기</button></div>`,'ntpm');
   const cnt=()=>{$('#ntn',md).textContent=md.querySelectorAll('[data-ni]:checked').length+'명'};md.addEventListener('change',e=>{if(e.target.dataset&&e.target.dataset.ni!=null)cnt()});
   $('#ntq',md).oninput=()=>{const q=$('#ntq',md).value.trim().toLowerCase();md.querySelectorAll('.ntpr').forEach(r=>r.style.display=!q||r.dataset.q.includes(q)?'flex':'none')};
   $('#ntall',md).onclick=()=>{md.querySelectorAll('.ntpr').forEach(r=>{if(r.style.display!=='none')r.querySelector('input').checked=true});cnt()};$('#ntnone',md).onclick=()=>{md.querySelectorAll('[data-ni]').forEach(c=>c.checked=false);cnt()};
   {const fs=$('#ntf',md);if(fs)fs.onchange=async()=>{if(fs.value==='__new'){const id=await ppNewFolder();fs.outerHTML=ppFolderSel('ntf',id||'')}}}
   $('#ntok',md).onclick=async()=>{const pick=[...md.querySelectorAll('[data-ni]:checked')].map(c=>L[+c.dataset.ni]);if(!pick.length)return A().toast('가져올 인물을 골라 줘');const b=$('#ntok',md);b.disabled=true;b.textContent='가져오는 중…';
-   const fid=(($('#ntf',md)||{}).value||'').replace('__new','');const nodes=(ST.state.graph||{}).nodes||{};let i=Object.keys(nodes).length,add=0,upd=0;const ops=[],keys=[];
-   for(const x of pick){let st=x.stands,sa=x.standActive,img=x.img;if(!st.length&&x.kind!=='ents'){const m=await OM_NOTES.mkStands(x.id);if(m){st=m.stands;sa=m.standActive;img=img||m.img}}
+   const fv=(($('#ntf',md)||{}).value||'').replace('__new','');const auto=fv==='__auto';const fid=auto?'':fv;const nodes=(ST.state.graph||{}).nodes||{};let i=Object.keys(nodes).length,add=0,upd=0;const ops=[],keys=[],kTr=[],kCv=[];
+   for(const x of pick){let st=x.stands,sa=x.standActive,img=x.img;let isTr=false;if(x.kind!=='ents'){const m=await OM_NOTES.mkStands(x.id);if(m){isTr=true;if(!st.length){st=m.stands;sa=m.standActive}img=img||m.img}}
+    /* 11-21 망령 「NPC도 트레이너/민간인 폴더로 구분」: 자동 = 제작기 트레이너가 있으면 「NPC · 트레이너」, 없으면 「NPC · 민간인」 (PC 시트는 폴더 그대로) */
+    if(auto&&x.kind!=='pc')(isTr?kTr:kCv).push('npc:'+x.name);
     st=st.map(s=>Object.assign({label:String(s.label||'기본').slice(0,40)||'기본',src:s.src,point:+s.point||0},s.kind?{kind:s.kind}:{}));sa=Math.max(0,Math.min(st.length-1,sa||0));const ntP=R0.camp.id+'/'+x.key;const ex=nodeOf(x.name);
     if(ex){const nn=Object.assign({},ex,{ntP});if(img)nn.img=img;if(st.length){nn.stands=st;nn.standActive=sa}if(x.vis!=='pub'&&!ex.nt)nn.sec=1;const d=A().diffOps(['graph','nodes',ex.id],ex,nn,1);if(d.length){ops.push(...d);upd++}}
     else{const id='n'+Date.now().toString(36)+(add).toString(36);const kind=['pc','guest','npc'].includes(x.cls)?x.cls:x.kind==='pc'?'pc':'npc';
      ops.push([['graph','nodes',id],Object.assign({id,name:x.name,kind,img:img||'',note:x.note||'',x:120+(i%6)*140,y:120+Math.floor(i/6)*140,stands:st,standActive:sa,ntP},x.vis!=='pub'?{sec:1}:{})]);i++;add++}
     keys.push('npc:'+x.name)}
-   if(ops.length)await A().setMany(ops);if(fid)await ppMoveMany(keys,fid);A().closeModal();A().toast(`노트에서 ${add}명 새로 · ${upd}명 덮어씀${pick.length-add-upd>0?` · ${pick.length-add-upd}명은 바뀐 것 없음`:''}`);if(add+upd)A().sysLog(`인물: 세션 노트 「${R0.camp.name||''}」에서 ${add+upd}명 가져옴`);openPeople()}}
+   if(ops.length)await A().setMany(ops);if(fid)await ppMoveMany(keys,fid);
+   if(auto&&(kTr.length||kCv.length)){const C=spkConf();const fOf=nm=>{let id=Object.keys(C.folders).find(k=>(C.folders[k]||{}).name===nm);if(!id){id='f'+Date.now().toString(36)+Math.random().toString(36).slice(2,4);C.folders[id]={name:nm,keys:[]};C.order.push('f:'+id)}return id};const fT=kTr.length?fOf('NPC · 트레이너'):'',fC=kCv.length?fOf('NPC · 민간인'):'';await saveSpk(C);if(fT)await ppMoveMany(kTr,fT);if(fC)await ppMoveMany(kCv,fC)}A().closeModal();A().toast(`노트에서 ${add}명 새로 · ${upd}명 덮어씀${pick.length-add-upd>0?` · ${pick.length-add-upd}명은 바뀐 것 없음`:''}`);if(add+upd)A().sysLog(`인물: 세션 노트 「${R0.camp.name||''}」에서 ${add+upd}명 가져옴`);openPeople()}}
  /* 여러 장 골랐을 때 아래 띠 — 폴더로 옮기기 · 고르기 풀기 */
  function ppMultiBar(md){let bar=$('.ppmulti',md);const n=PP.multi.size;if(!n){if(bar)bar.remove();return}
   if(!bar){bar=document.createElement('div');bar.className='ppmulti';$('.ppwrap',md).before(bar)}
