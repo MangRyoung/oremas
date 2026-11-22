@@ -579,7 +579,10 @@ window.OM_BATTLE_UI=(()=>{
   const T=+((ctx().b||{}).turn)||0;const ut=(m.potTurn||{})[name];if(ut==null)return null;const no=per==='turn'?+ut===T:T-(+ut)<=1;if(!no)return null;
   return {lab:per==='turn'?'소진':'탈진',title:per==='turn'?`${ut}턴에 썼다 — 이번 턴엔 다시 못 쓴다 (【소진】)`:`${ut}턴에 썼다 — 다음 턴 끝까지 못 쓴다 (【탈진】)`}}
  const restChip=r=>`<span class="btn xs potrest" title="${esc(r.title)}">${r.lab}</span>`;
- async function potMark(mid,name){const m=(ctx().b.mons||{})[mid];if(!m)return;await shareMark(mid,name);const p=potSrc(m).find(q=>q&&q.name===name);if(!p||isExcl(m,p))return;if(/【\s*보급\s*】/.test(String(p.eff||'')))await A().set(['battle','mons',mid,'potTurn','_sup',name],1);if(!/【\s*(소진|탈진)\s*】/.test(String(p.eff||'')))return;await A().set(['battle','mons',mid,'potTurn',name],+ctx().b.turn||0)}
+ /* 11-23 「「프라이드」를 1단계 올리고 【프라이드 : A】 태그가 발동한다」(티아마트 전용): 쓰면 배틀 동안 priUp(+단계) · priTag(켜진 등급)을 남긴다 — 【프라이드 : X】 판정이 이것도 본다 */
+ async function priGrant(mid,name){try{const m=(ctx().b.mons||{})[mid];if(!m)return;const p=potSrc(m,1).find(q=>q&&q.name===name);const e=String((p&&p.eff)||'');if(!e)return;const up=e.match(/「?\s*프라이드\s*」?\s*(?:을|를)\s*(\d+|한)?\s*단계\s*(?:올|상승)/);const tg=[...e.matchAll(/【\s*프라이드\s*[:：]\s*([^】]+?)\s*】\s*태그(?:가|를)?\s*(?:발동|켜|활성)/g)].map(x=>x[1].trim());
+  if(up){const n=up[1]&&up[1]!=='한'?+up[1]:1;await A().set(['battle','mons',mid,'priUp'],(+m.priUp||0)+n)}if(tg.length){const cur=(m.priTag||[]).slice();for(const g of tg)if(!cur.includes(g))cur.push(g);await A().set(['battle','mons',mid,'priTag'],cur)}if(up||tg.length)A().sysLog(`【프라이드】 ${m.name} 『${name}』 — ${up?'프라이드 '+(up[1]&&up[1]!=='한'?up[1]:1)+'단계 상승':''}${up&&tg.length?' · ':''}${tg.length?tg.map(g=>'【프라이드 : '+g+'】').join(' ')+' 태그 발동':''}`,'battle',{mid})}catch(e){console.warn('priGrant',e)}}
+ async function potMark(mid,name){const m=(ctx().b.mons||{})[mid];if(!m)return;await shareMark(mid,name);await priGrant(mid,name);const p=potSrc(m).find(q=>q&&q.name===name);if(!p||isExcl(m,p))return;if(/【\s*보급\s*】/.test(String(p.eff||'')))await A().set(['battle','mons',mid,'potTurn','_sup',name],1);if(!/【\s*(소진|탈진)\s*】/.test(String(p.eff||'')))return;await A().set(['battle','mons',mid,'potTurn',name],+ctx().b.turn||0)}
  function spBtn(m,s){const n=esc(s.p.name);if(s.sw)return `<span class="btn xs potrest" title="${esc(s.sw)}">공유</span>`;if(s.left!==null&&s.left<=0)return '<span class="small dim">다 씀</span>';
   if(s.auto&&syncLock(ctx().b,m,s.p.eff))return `<button class="btn xs pri" disabled title="【동조】 — 필드에 같은 『역할』 대치가 없다">발동</button>`;
   if(s.auto)return `<button class="btn xs pri" data-act="fireauto" data-card="1" data-mid="${m.id}" data-kind="pot" data-pot="${n}" title="자동화 효과를 건다${s.max!=null?' (횟수 1 사용)':''}">발동</button>`;
@@ -601,7 +604,16 @@ window.OM_BATTLE_UI=(()=>{
  function supKind(eff){const hd=(String(eff||'').replace(/^[\s①②③④⑤]+/,'').match(/^((?:\s*【(?:[^【】]|【[^【】]*】)*】)+)/)||[''])[0];if(!/【\s*지원/.test(hd))return '';if(/【\s*지원\s*\(\s*상위\s*\)\s*】/.test(hd))return 'up';if(/【\s*지원\s*\(\s*빈사\s*\)\s*】/.test(hd))return 'ko';return /【\s*지원\s*】/.test(hd)?'sup':''}
  /* 지금 이 자리에서 효과가 살아 있나: 필드 위면 【지원】 · 【지원 (빈사)】는 꺼짐, 빈사면 【지원】 · 【지원 (상위)】는 꺼짐 */
  function supLive(m,p){const k=supKind(p&&p.eff);if(!k)return true;const dead=!(m&&m.hp&&m.hp.cur>0);if(m&&m.entry&&!dead)return k==='up';if(dead)return k==='ko';return true}
- function potSrc(m,all){const L=[...(m.pots||[]).filter(p=>p&&p.name&&(!p.ph||(p.apt&&aptOn(m,p.name)))),...(m.excl?[m.excl]:[]),...(m.exclX||[])];return all?L:L.filter(p=>supLive(m,p))}
+ function potSrc(m,all){const L=[...(m.pots||[]).filter(p=>p&&p.name&&(!p.ph||(p.apt&&aptOn(m,p.name)))),...(m.excl?[m.excl]:[]),...(m.exclX||[])];return all?L:L.filter(p=>supLive(m,p)&&!priGated(m,p))}
+ /* 11-23 망령 「【프라이드 : X】 = 자신이 프라이드 X일 때」: 효과(또는 ① · ② 줄) 머리 태그에 【프라이드 : X】가 있으면 그 포켓몬의 프라이드(시트 · 자동 계산값 + 배틀 중 올린 단계 priUp)로 판정.
+    「【프라이드 : A】 태그가 발동한다」(티아마트 전용)처럼 태그를 켜 주는 효과를 쓰면 m.priTag 에 등급을 적어 그 등급으로도 통과. 【함성 (【프라이드 : A】)】 안쪽은 머리 태그가 아니라 상대 조건이라 여기서 안 본다.
+    줄이 모두 막히면 포텐셜 전체를 숨기고(potSrc), 일부 줄만 막히면 그 줄의 계기만 거른다(evReact) */
+ function priTopTags(h){const out=[];let d=0,st=-1;for(let i=0;i<h.length;i++){const c=h[i];if(c==='【'){if(d===0)st=i;d++}else if(c==='】'){d--;if(d===0&&st>=0){out.push(h.slice(st+1,i));st=-1}}}return out}
+ function priHeadSpec(cl){const m=String(cl||'').match(/^\s*[①-⑳]?\s*((?:【(?:[^【】]|【[^【】]*】)*】\s*)+)/);if(!m)return null;for(const t of priTopTags(m[1])){const q=t.match(/^\s*프라이드\s*[:：]\s*(.+)$/);if(q)return q[1].trim()}return null}
+ function priSelfOk(m,spec){const F=FX();if(!F||!F.priOk)return true;if(F.priOk(m,spec))return true;for(const g of (m&&m.priTag)||[])if(F.priOk({pride:g},spec))return true;return false}
+ function priGated(m,p){try{const s=String((p&&p.eff)||'').replace(/<br\s*\/?>/gi,'\n');const cls=s.split(/(?=[①-⑳])/).filter(x=>x.trim());let any=0;for(const c of (cls.length?cls:[s])){const sp=priHeadSpec(c);if(!sp)return false;any=1;if(priSelfOk(m,sp))return false}return !!any}catch(e){return false}}
+ /* 11-23: 계기 글의 「「프라이드 : C」 이하인 상대」 · 「「프라이드 : A」인 상대」 — 그 계기의 상대(맞힌 쪽 · 고른 대상 중 상대 편)가 맞을 때만 */
+ function priFoeOk(cl,own,o,r,b){const q=String(cl||'').match(/「\s*프라이드\s*[:：]\s*([^」]+)」\s*((?:이하|이상|미만|초과)?)\s*인\s*상대/);if(!q)return true;const F=FX();if(!F||!F.priOk)return true;const cand=[r&&r.pick,o&&o.mid,o&&o.tgt].map(id=>id&&(b.mons||{})[id]).filter(z=>z&&!sameT(z,own,b));if(!cand.length)return true;return F.priOk(cand[0],q[1]+q[2])}
  /* 10-28 망령: 미사그 대학 (4+2) 각성체 대가 — 제작기 「각성체 대가」의 통솔 항목으로 포텐셜 발동을 막는다. 항목 이름 B-2 · A-1 · A-2 로 판정
     B-2 지정 역할의 역할 포텐셜 · A-1 필드 위 다른 아군 중 지정 타입이 없으면 각성 (대가) 포켓몬의 포텐셜 · A-2 각성 (대가)가 필드에 있으면 다른 아군의 역할 포텐셜. 막은 이유를 돌려준다 */
  function misagBlock(b,m,name){const t=((b&&b.trainers)||{})[m&&m.tid];const M=t&&t.misag;if(!M||!Array.isArray(M.items)||!M.items.length)return '';
@@ -3250,7 +3262,7 @@ window.OM_BATTLE_UI=(()=>{
  async function evReact(ev,o){const c=ctx();const b=c.b;if(!c.mgr||!FX()||!b||!b.started||!EVM[ev])return;if(!isLeader(c))return;o=o||{};
   const mons=Object.values(b.mons||{}).filter(m=>m&&m.entry&&m.hp&&m.hp.cur>0);const C=[];
   for(const mm of mons){const src=[];if(mm.ability)src.push(['trait',mm.ability,slotEff(mm,'trait',mm.ability)]);if(!IOFF(mm)){if(mm.item)src.push(['item',mm.item,slotEff(mm,'item',mm.item)]);for(const q of (mm.items2||[]))if(q&&q.item&&q.item!==mm.item)src.push(['item',q.item,q.itemEff||''])}for(const p of potSrc(mm))if(p&&p.name&&!p.ph)src.push(['pot',p.name,String(p.eff||''),p]);
-   for(const [kind,name,eff,p] of src){if(ev==='hit'&&kind!=='pot')continue;/* 특성 = hitRules · 소지품 = OI().onHit 이 이미 */const t=String(eff||'').replace(/<br\s*\/?>/gi,'\n');const r=EVM[ev](t,mm,o,b,name);if(r)C.push({own:mm,kind,name,eff:t,p,r})}}
+   for(const [kind,name,eff,p] of src){if(ev==='hit'&&kind!=='pot')continue;/* 특성 = hitRules · 소지품 = OI().onHit 이 이미 */const t=String(eff||'').replace(/<br\s*\/?>/gi,'\n');const r=EVM[ev](t,mm,o,b,name);if(r){if(kind==='pot'){const sp=priHeadSpec(r.cl);if(sp&&!priSelfOk(mm,sp))continue}if(!priFoeOk(r.cl,mm,o,r,b))continue;C.push({own:mm,kind,name,eff:t,p,r})}}}
   for(const t of Object.values(b.trainers||{})){const om=o.mid&&mons.find(m=>m.id===o.mid&&m.tid===t.id);const rep=om||mons.find(m=>m.tid===t.id);if(!rep)continue;for(const q of uniqList(t)){const tx=String(q.p.eff||'').replace(/<br\s*\/?>/gi,'\n');const r=EVM[ev](tx,rep,o,b,q.p.name);if(!r||(q.left!==null&&q.left<=0&&!r.follow))continue;C.push({own:rep,kind:'uq',name:q.p.name,eff:tx,p:q.p,r,t,q})}}
   const notes=[];
   for(const x of C){const key=[turnKey(b),ev,x.kind,x.own.id,x.name,o.key||''].join('|');if(EV_DONE[key])continue;EV_DONE[key]=1;if(!c.gm&&!ownT(c,x.own.tid))continue;
