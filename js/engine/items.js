@@ -146,7 +146,7 @@ window.OM_ITEMS=(()=>{
  function unnerved(m,b){b=b||BT();return Object.values(b.mons||{}).some(x=>live(x)&&x.id!==m.id&&!sameSide(x,m,b)&&abOf(x)==='긴장감')}
  const gourmet=(m,r)=>abOf(m)==='미식가'&&isBerry(r&&r.name,r)?2:1;
  const scaleSt=(st,g)=>{if(!st||g===1)return st;const o={};for(const k in st)o[k]=(+st[k]||0)*g;return o};
- function thiefOf(m,b){b=b||BT();if(!m||!m.entry)return null;return Object.values(b.mons||{}).find(x=>live(x)&&x.id!==m.id&&!sameSide(x,m,b)&&x.entry===m.entry&&abOf(x)==='훔쳐먹기')||null}
+ function thiefOf(m,b){b=b||BT();if(!m||!m.entry)return null;const L=Object.values(b.mons||{}).filter(x=>live(x)&&x.id!==m.id&&abOf(x)==='훔쳐먹기');/* 11-23 「「특성 : 훔쳐먹기」의 대상이 「범위 : 자신 이외」가 된다」(글러트니 전용 — 발동한 턴): 정면이 아니어도 · 자기 편 것도 */const TM=x=>{try{return window.OM_FX&&window.OM_FX.traitMods?window.OM_FX.traitMods(x,'훔쳐먹기'):null}catch(e){return null}};return L.find(x=>!sameSide(x,m,b)&&x.entry===m.entry)||L.find(x=>{const t=TM(x);return !!(t&&t.wide)})||null}
  function abil(m,re){if(!m)return false;const L=[m.ability,...(m.pots||[]).map(p=>p&&p.name),...(m.excl?[m.excl.name]:[]),...(m.exclX||[]).map(p=>p&&p.name)];return L.some(n=>n&&re.test(anm(n)))}
  const sticky=m=>abil(m,/^점착$/)||protItem(m);
  /* 11-08: 구문 「보호 소지품」(fx sp protect what item) 도 점착처럼 — 소지품이 바뀌지 · 빠지지 않는다 */
