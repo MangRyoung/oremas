@@ -1023,7 +1023,7 @@ window.OM_BATTLE_UI=(()=>{
     /* 따라가때리기: 교대하려는 포켓몬을 노린 추격은 교대 전에 먼저 (맵툴 get_turn_pursuit) — 그 포켓몬은 이번 턴 행동을 쓴 것으로 본다 */
     const pl=[],pur=[];for(const s of slots){const k=I.keyOf(s.mon);if(!k||!k.pn)continue;for(const tg of (k.tg||[])){const v=sw.find(z=>z.slot===tg);if(!v)continue;if(k.pcond==='dex'&&!dexTeam(b,v.mon,s.mon))continue;const kv=I.keyOf(v.mon)||{};
       if(kv.pimm){pl.push(`${v.mon.name}의 『${kv.pimm}』 — ${s.mon.name}의 따라가때리기를 무시했다`);continue}
-      pl.push(`${s.mon.name}의 「${k.pn}」 — 교대하려는 ${v.mon.name}을(를) 교대 전에 먼저 때린다! (공격 창에서 처리한 뒤 교대)`);pur.push({slot:s.slot,mid:s.mon.id,name:s.mon.name,side:s.mon.side,change:false,started:true,order:20,prio:0,speed:0,dice:0,move:k.pn,targets:[tg],pursuit:true,pursuitHit:v.mon.id,pursuitSrc:k.psrc||''});break}}
+      pl.push(`${s.mon.name}의 「${k.pn}」 — 교대하려는 ${v.mon.name}을(를) 교대 전에 먼저 때린다! (공격 창에서 처리한 뒤 교대)${k.pcond==='dex'?illuPursSpend(s.mon.id,k.psrc):''}`);pur.push({slot:s.slot,mid:s.mon.id,name:s.mon.name,side:s.mon.side,change:false,started:true,order:20,prio:0,speed:0,dice:0,move:k.pn,targets:[tg],pursuit:true,pursuitHit:v.mon.id,pursuitSrc:k.psrc||''});break}}
     {const ops=[[['battle','tstep'],1],[['battle','swPur'],pur.map(o=>o.mid)],[['battle','swOut'],sw.map(s=>s.mon.id)]];if(pur.length)ops.push([['battle','order'],pur],[['battle','orderIdx'],0]);await A().setMany(ops)}
     cutPhase('교대',sw.map(s=>s.mon.name).join(' · '));
     A().sysLog(`【교대 알림】\n${L.join('\n')}${pl.length?'\n'+pl.join('\n'):''}\n교대를 마치면 「턴 진행 ▶」`,'battle',{rv:RV,rvx:[...pl,'교대를 마치면 「턴 진행 ▶」']});return}}
@@ -1481,7 +1481,10 @@ window.OM_BATTLE_UI=(()=>{
  const ILLU_FREE_RE=/일루[젼전]\s*[」』]?\s*(?:으로|로)\s*보일\s*대상을\s*임의로\s*(?:변경|바꿀|고를)/;
  const ILLU_PURS_RE=/일루[젼전]\s*[」』]?\s*(?:이|가)\s*발동\s*중(?:일|인)?\s*때[^①②③④⑤]*?데이터가\s*해석된\s*상대에게\s*내보내는\s*기술에\s*「\s*따라가때리기\s*」\s*효과를\s*부여/;
  function illuTextBy(m,re){if(!m)return '';try{for(const x of trigSrcs(m,ctx().b)){const t=String(x.eff||'').replace(/<br\s*\/?>/gi,'\n');if(t.split(/(?=[①②③④⑤⑥⑦⑧⑨⑩])|\n/).some(q=>re.test(q)))return String(x.name||'').replace(/[『』]/g,'')}}catch(e){}return ''}
- const illuPursBy=m=>m&&m.disg?illuTextBy(m,ILLU_PURS_RE):'';
+ const ILLU_SUPK=n=>n+'·추격';   /* 11-22 망령 (비독 ② 【보급】): 등장당 1번 — 따라가때리기가 실제로 걸리면 potTurn._sup 에 적고, 교대해 필드를 떠나면 지워진다 */
+ function illuPursSup(m,n){try{for(const x of trigSrcs(m,ctx().b)){if(String(x.name||'').replace(/[『』]/g,'')!==n)continue;const t=String(x.eff||'').replace(/<br\s*\/?>/gi,'\n');return t.split(/(?=[①②③④⑤⑥⑦⑧⑨⑩])|\n/).some(q=>ILLU_PURS_RE.test(q)&&/【\s*보급\s*】/.test(q))}}catch(e){}return false}
+ const illuPursBy=m=>{if(!m||!m.disg)return '';const n=illuTextBy(m,ILLU_PURS_RE);if(!n)return '';if(illuPursSup(m,n)&&((m.potTurn||{})._sup||{})[ILLU_SUPK(n)])return '';return n};
+ function illuPursSpend(mid,src){const m=((ctx().b||{}).mons||{})[mid];if(!m||!src||!illuPursSup(m,src))return '';A().set(['battle','mons',mid,'potTurn','_sup',ILLU_SUPK(src)],1).catch(()=>{});return ` (『${src}』 【보급】 사용 — 다시 나올 때까지 끝)`}
  function dexTeam(b,tg,atk){if(!tg||!atk)return false;const D=((A().ST||{}).state||{}).dex||{};for(const tid in D){if(!((D[tid]||{}).list||[]).includes(tg.id))continue;const tr=(b.trainers||{})[tid];if(tr&&sameT({tid,side:tr.side},atk,b))return true}return false}
  async function illuChoose(m,L,nm){const c=ctx();const lab='「일루젼」으로 보일 대상';try{const seats=c.ST.state.seats||{};const ownerOn=!ownT(c,m.tid)&&!!(seats[m.tid]||baseSeat(c,m.tid))&&(A().online(seats[m.tid]?m.tid:baseSeat(c,m.tid))||coOf(c,m.tid).some(s=>A().online(s)));
    if(ownerOn){const r=await remoteAsk(m,'pick',{name:nm,label:lab,ids:L.map(x=>x.id)},()=>'','seat:'+m.tid);return typeof r==='string'?L.find(x=>x.id===r)||null:r}
@@ -1959,8 +1962,8 @@ window.OM_BATTLE_UI=(()=>{
   const purs=[];for(const o of order.filter(z=>z.pursuit))for(const t of o.targets){const v=order.find(z=>z.slot===t&&(z.change||(z.ut&&order.indexOf(z)<order.indexOf(o))));if(!v)continue;if(o.pcond==='dex'&&!dexTeam(b,b.mons[v.mid],b.mons[o.mid]))continue;   /* 11-22 해석된 상대에게만 */   /* 10-24 제보: 「유턴」으로 빠지려는 대상도 — 먼저 움직인 유턴 포켓몬이 빠지기 직전에 때린다 */
    if(v.pimm){notes.push(`${v.name}의 『${v.pimm}』 — ${o.name}의 따라가때리기를 무시했다!`);A().sysLog(`【따라가때리기】 ${v.name} 『${v.pimm}』\n${o.name}의 따라가때리기를 무시했다! (교대는 그대로)`,'battle',{mid:v.mid,img:(b.mons[v.mid]||{}).image||''});continue}
    const i=order.indexOf(o),j=order.indexOf(v);
-   if(!v.change&&v.ut){order.splice(i,1);order.splice(order.indexOf(v)+1,0,o);o.pursuitHit=v.mid;v.utHit=1;notes.push(`${o.name}의 「${o.move}」 — 「유턴」으로 빠지려는 ${v.name}을(를) 교대 전에 때린다! (${v.name}은 공격 뒤 바로 교대하지 말고 기다린다)`);purs.push([o,v]);break}
-   if(i>j){order.splice(i,1);order.splice(j,0,o)}o.pursuitHit=v.mid;notes.push(`${o.name}의 「${o.move}」 — 교대하려는 ${v.name}을(를) 먼저 때린다!`);purs.push([o,v]);break}
+   if(!v.change&&v.ut){order.splice(i,1);order.splice(order.indexOf(v)+1,0,o);o.pursuitHit=v.mid;v.utHit=1;notes.push(`${o.name}의 「${o.move}」 — 「유턴」으로 빠지려는 ${v.name}을(를) 교대 전에 때린다! (${v.name}은 공격 뒤 바로 교대하지 말고 기다린다)${o.pcond==='dex'?illuPursSpend(o.mid,o.pursuitSrc):''}`);purs.push([o,v]);break}
+   if(i>j){order.splice(i,1);order.splice(j,0,o)}o.pursuitHit=v.mid;notes.push(`${o.name}의 「${o.move}」 — 교대하려는 ${v.name}을(를) 먼저 때린다!${o.pcond==='dex'?illuPursSpend(o.mid,o.pursuitSrc):''}`);purs.push([o,v]);break}
   for(const o of order){if(!o.pursuitHit){delete o.pursuitSrc;o.pursuit=false;o.move='';o.targets=[]}delete o.pimm;delete o.ut;delete o.pcond}   /* 기술 이름·대상은 차례가 와서 공개될 때까지 순서표에 남기지 않는다 (걸린 따라가때리기만 예외) */   /* 걸리지 않은 선행 추격·추격 무시는 공개 순서표에 남기지 않는다 */
   for(const m of iceUsed)await A().set(['battle','mons',m.id,'prioDown'],null);
   /* 11-09 망령 「창파나이트의 추가행동도 대상을 지정해야 돼 · 넣자」: 선행 입력한 포텐셜 글이 「가장 마지막에 「기술」에 의한 추가 행동」이면 순서 맨 끝에 그 기술 차례를 붙인다.
