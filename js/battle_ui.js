@@ -1929,7 +1929,10 @@ window.OM_BATTLE_UI=(()=>{
 
  /* 따라가때리기 기술: 기술 태그·효과 글, 또는 효과 엔진이 붙인 「추격」 */
  const pursuitX2=mv=>/교대할 때 2배의 위력/.test(String((mv||{}).eff||''));
- function isPursuit(mv,m){if(!mv)return false;if((m&&m.flags||{}).pursuit)return true;if((mv.tags||[]).some(t=>/따라가때리기/.test(t))||/따라가때리기/.test(String(mv.tag||'')))return true;return /교대할 때 2배의 위력|교대하는 대상에게 명중/.test(String(mv.eff||''))}
+ /* 11-22 망령 「미사그 자동화 전체 검토」 — 마리안네 『에코로케이션』 「①자신의 「소리」 기술에 「따라가때리기」 효과를 부여한다」: 특성 · 포텐셜 · 소지품 · 고유 글에 「자신의 「X」 기술에 「따라가때리기」 효과를 부여」가 있으면 X(태그 · 타입) 기술은 따라가때리기 */
+ const PURS_GRANT_RE=/자신의\s*「\s*([^」]+?)\s*」\s*기술에\s*「\s*따라가때리기\s*」\s*효과를\s*부여/;
+ function pursGrant(mv,m){if(!m||!mv)return '';try{const tags=[...(mv.tags||[]),...String(mv.tag||'').split(/[,\s]+/)].map(x=>String(x).replace(/^#/,'').trim()).filter(Boolean);const tko=(S().typeKo?S().typeKo(mv.typeEn):'')||mv.type||'';for(const x of trigSrcs(m,ctx().b)){const mm=String(x.eff||'').match(PURS_GRANT_RE);if(!mm)continue;const k=mm[1].replace(/\s/g,'');if(tags.includes(k)||tko===k||String(mv.name||'')===k)return String(x.name||'').replace(/[『』]/g,'')}}catch(e){}return ''}
+ function isPursuit(mv,m){if(!mv)return false;if((m&&m.flags||{}).pursuit)return true;if(pursGrant(mv,m))return true;if((mv.tags||[]).some(t=>/따라가때리기/.test(t))||/따라가때리기/.test(String(mv.tag||'')))return true;return /교대할 때 2배의 위력|교대하는 대상에게 명중/.test(String(mv.eff||''))}
  /* ----- 행동 순서 ----- */
  async function computeOrder(){const c=ctx();if(!c.mgr)return;const b=c.b;const f=fieldOf(b);const iceUsed=[];
   let SEC={};try{const rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd');for(const r of rows||[]){if(!cmdFresh(r))continue;const d=r.data||{};for(const mid in (d.mons||{}))SEC[mid]=d.mons[mid]}}catch(e){}   /* 선행 입력에 묻은 추격·추격 무시 (GM 만 읽힌다) */
