@@ -1338,7 +1338,7 @@ window.OM_BATTLE_UI=(()=>{
   /* 10-26 (서서 VS 마리 시험): 필드의 다른 포켓몬이 「있는 한」 걸어 둔 효과(재앙의그릇 · 승리의별 …)를 새로 들어온 포켓몬에게도 */
   if(FX()&&FX().reAura&&ctx().b.started&&(ctx().b.mons[mid]||{}).entry){const nb0=snap(),nb=snap(nb0);const L=FX().reAura(nb,nb.mons[mid]);if(L.length&&await saveBattle(nb0,nb))A().sysLog(`【필드 효과】\n${L.join('\n')}`,'battle')}
   /* 10-26 망령: 시합 개시 전에 나온 포켓몬 · 동시 내밀기는 모두 나온 뒤에 등장 효과를 스피드 순으로 (위협이 아무도 못 맞히던 것) */
-  if(FX()&&(ctx().b.mons[mid]||{}).entry&&!opt.noAuto&&ctx().b.started){await autoOnEntry(mid,{how:opt.how||(opt.forced?'강제 교대':occ&&occ.id!==mid?'통상 교대':(+b.phase||0)>=2?'통상 교대':'죽어내밀기')});try{await fieldAuto('entry',{mid})}catch(e){console.warn('필드 등장 구문',e)}try{await foeInTrig(mid)}catch(e){console.warn('등장 (상대)',e)}}}
+  if(FX()&&(ctx().b.mons[mid]||{}).entry&&!opt.noAuto&&ctx().b.started){await autoOnEntry(mid,{how:opt.how||(opt.forced?'강제 교대':occ&&occ.id!==mid?'통상 교대':(+b.phase||0)>=2?'통상 교대':'죽어내밀기')});try{await fieldAuto('entry',{mid})}catch(e){console.warn('필드 등장 구문',e)}try{await foeInTrig(mid,null,opt.how||(opt.forced?'강제 교대':occ&&occ.id!==mid?'통상 교대':(+b.phase||0)>=2?'통상 교대':'죽어내밀기'))}catch(e){console.warn('등장 (상대)',e)}}}
  /* 11-14 동시 교대: 모두 나가고 모두 들어온 뒤 퇴장 계기 → 등장 효과 (각각 스피드 순) */
  async function simulSwitch(L){const b0=ctx().b;const f=fieldOf(b0);const sp=m=>{try{return B().statValue(m,'speed').value*spMulOf(m,f).v}catch(e){return +((m.stats||[])[5]||0)}};
   const outs=L.map(x=>({x,m:b0.mons[x.out]})).filter(o=>o.m).sort((p,q)=>sp(q.m)-sp(p.m));
@@ -1435,7 +1435,7 @@ window.OM_BATTLE_UI=(()=>{
   const t=(b.trainers||{})[m.tid];for(const u of ((t&&t.unique)||[]))if(u&&u.name)out.push({kind:'uq',name:u.name,eff:String(u.eff||''),u,t});return out}
  /* 태그 뒤에 다른 【…】 를 지나 「/」가 와야 계기 — 「경호원」의 「【등장】【퇴장】 효과를 무효화」 같은 언급은 빼고 */
  function tagHit(eff,tag){const t=String(eff||'').replace(/<br\s*\/?>/gi,'\n');const cls=t.split(/(?=[①②③④⑤⑥⑦⑧⑨⑩])|\n/).map(x=>x.trim()).filter(Boolean);
-  const re=tag==='exit'?/【퇴장(?:\s*\(([^)]*)\))?】(?:【(?:[^【】]|【[^【】]*】)*】)*\s*\//:/【등장\s*\(\s*상대\s*\)】(?:【(?:[^【】]|【[^【】]*】)*】)*\s*\//;
+  const re=tag==='exit'?/【퇴장(?:\s*\(([^)]*)\))?】(?:【(?:[^【】]|【[^【】]*】)*】)*\s*\//:/【등장\s*\(\s*상대\s*(?:[,，]\s*([^)]*?))?\s*\)】(?:【(?:[^【】]|【[^【】]*】)*】)*\s*\//;   /* 11-22 망령 「【등장 (상대, 강제 교대)】」: 쉼표 뒤 조각(등장 방식 · 「타입 : X」)을 arg 로 — foeArgOk 가 본다 */
   for(let i=0;i<cls.length;i++){const r=cls[i].match(re);if(r)return {cl:cls[i],arg:String(r[1]||'').trim(),first:i===0||/^①/.test(cls[i]),no:(cls[i].match(/^[①②③④⑤⑥⑦⑧⑨⑩]/)||[])[0]||''}}return null}
  /* 11-15 망령 「나탈리아 눈 메리트」 → 『끝없이 눈 내리는 설원의 기억』 【퇴장 (빈사, 「타입 : 얼음」)】 이 「손으로」로만 떴음: 괄호를 쉼표로 나눠 방식(빈사 · 임의 교대 …)과 「타입 : X」(나가는 포켓몬의 타입)를 둘 다 판정 — 모르는 조각이 있을 때만 묻는다 */
  function exitArgOk2(arg,how,m){const parts=String(arg||'').split(/[,，]/).map(x=>x.trim()).filter(Boolean);if(parts.length<2)return exitArgOk(arg,how);let ask=false;
@@ -1472,9 +1472,11 @@ window.OM_BATTLE_UI=(()=>{
  async function exitPendIn(mid){const b=ctx().b;const m=b.mons[mid];if(!m||!m.entry)return;const k=m.side+'_'+m.entry;const p=(b.exitPend||{})[k];if(!p)return;await A().set(['battle','exitPend',k],null);if(p.mid===mid||!sameT(b.mons[p.mid]||{},m,b))return;   /* 같은 편이면 다른 트레이너 포켓몬도 「아군」 */await exitTrig(p.mid,p.how,{phase:'in',inId:mid,area:m.entry})}
  /* 상대가 나왔을 때: 필드의 다른 편 포켓몬의 【등장 (상대)】 (무당거미 · 뜬돌 · 마그마의바다 …) — 그 상대가 대상.
     11-09 13:51 망령 「동시에 나온 케이스엔 불발」: 같이 나온 포켓몬(선발 · 동시 내밀기 묶음 = together)끼리는 안 터진다 — 이미 필드에 있던 쪽만 */
- async function foeInTrig(mid,together){const b=ctx().b;if(!b||!b.started||!FX())return;const m=b.mons[mid];if(!m||!m.entry||m.hp.cur<=0)return;const notes=[];
+ const EHOW=['통상교대','임의교대','강제교대','죽어내밀기','선발'];
+ function foeArgOk(arg,how,m){const parts=String(arg||'').split(/[,，]/).map(x=>x.trim()).filter(Boolean);if(!parts.length)return true;const h=String(how||'').replace(/\s/g,'');const hows=parts.map(p=>p.replace(/\s/g,'')).filter(p=>EHOW.includes(p));if(hows.length&&!hows.includes(h))return false;for(const p of parts){const t=p.match(/^「\s*타입\s*:\s*([^」]+?)\s*」$/);if(t&&m){const ko=t[1].trim();const en=S().typeEn?S().typeEn(ko):ko;const ty=[...tysOf(m),...((m.typesKo)||[])];if(!(ty.includes(en)||ty.includes(ko)))return false}}return true}
+ async function foeInTrig(mid,together,how){const b=ctx().b;if(!b||!b.started||!FX())return;const m=b.mons[mid];if(!m||!m.entry||m.hp.cur<=0)return;const notes=[];
   for(const y of Object.values(b.mons||{})){if(!y||!y.entry||y.hp.cur<=0||y.id===mid||sameT(y,m,b)||(together&&together.includes(y.id)))continue;const g=guardOff(ctx().b,y);
-   for(const x of trigSrcs(y,ctx().b)){const hit=tagHit(x.eff,'foeIn');if(!hit)continue;const nm=String(x.name).replace(/[『』]/g,'');if(x.kind==='trait'&&g){A().sysLog(`【특성】 ${y.name} 『${nm}』의 【등장 (상대)】 — ${g} 「경호원」으로 무효`,'battle',{mid:y.id});continue}
+   for(const x of trigSrcs(y,ctx().b)){const hit=tagHit(x.eff,'foeIn');if(!hit)continue;if(hit.arg&&!foeArgOk(hit.arg,how,m))continue;const nm=String(x.name).replace(/[『』]/g,'');if(x.kind==='trait'&&g){A().sysLog(`【특성】 ${y.name} 『${nm}』의 【등장 (상대)】 — ${g} 「경호원」으로 무효`,'battle',{mid:y.id});continue}
     const cur=ctx().b.mons[mid];if(!cur||!cur.entry||cur.hp.cur<=0)break;const r=await trigFire(y.id,x,hit,{why:`${m.name} 등장 (상대)`,pickIds:[mid]});if(r&&r.note)notes.push(r.note)}}
   if(notes.length)A().sysLog(`【계기】 ${m.name} 등장 (상대) — 발동 조건을 만족한 효과 (구문이 없어 손으로)\n${[...new Set(notes)].join('\n')}`,'battle',{gmPriv:1})}
  async function exitMon(mid,opt){const c=ctx();const m=c.b.mons[mid];if(!m||!(canEdit(c,m)||(opt&&opt.sys&&c.mgr)))return;
@@ -1989,6 +1991,8 @@ window.OM_BATTLE_UI=(()=>{
    /* 11-07 망령 「가속 특성 턴 종료 시에 왜 확인 문구 안 뜨냐」: 후보를 포텐셜 · 고유에서만 찾아서 특성은 빠져 있었다 — 특성 글(시트 → 특성 DB)에 그 타이밍이 적혀 있으면 같이 묻는다. 소지품 턴 종료(먹다남은음식 등)는 items.js 가 저절로 하므로 넣지 않는다 */
    /* 11-07 23:37 망령 「가속은 교대로 나온 턴 종료 시에는 발동 안 해」 */
    if(m.ability&&!(NO_SWT.includes(String(m.ability).trim())&&+m.inSw&&+m.inT===+b.turn)&&!(step==='end'&&F()&&F().poisonHeal&&F().poisonHeal(m))){   /* 11-19 포이즌힐 꼴은 슬립 대미지 단계에서 대미지 대신 회복 (field.js) — 묻지 않는다 */const te=slotEff(m,'trait',m.ability);if(ok(te,m))out.push({m,kind:'trait',name:m.ability,eff:te,tag:'특성'})}}
+  /* 11-22 망령 슬렌더 맨 『납치 괴이』 「【자동】【지원】/턴 종료 이후 …」: 볼 안(벤치)의 【지원】 포텐셜도 후보 — 【지원】 · 【지원 (상위)】는 살아 있을 때, 【지원 (빈사)】는 빈사여도 (supLive) */
+  for(const m of Object.values(b.mons||{})){if(m.entry||m.pend)continue;for(const p of potSrc(m))if(supKind(p.eff)&&ok(p.eff,m)&&!spent(p,m.potUses,m.potTurn))out.push({m,kind:'pot',name:p.name,eff:p.eff,tag:isExcl(m,p)?'전용':'포텐셜'})}
   const seen=new Set();for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0||seen.has(m.tid))continue;seen.add(m.tid);const t=(b.trainers||{})[m.tid];for(const x of uniqList(t))if(ok(x.p.eff,m)&&!spent(x.p,t&&t.uUses,t&&t.uTurn))out.push({m,kind:'uq',name:x.p.name,eff:x.p.eff,tag:'고유',t})}
   return out}
  /* 턴 마무리 (10-23): 단계마다 그 타이밍 포텐셜을 가진 트레이너의 주인 화면에만 묻는다 (플레이어 몫은 그 플레이어, NPC·GM 몫은 GM).
