@@ -85,7 +85,9 @@ window.OM_DEX_UI=(()=>{
   else if(!d.fwSeen.includes(mid))d.fwSeen.push(mid);
   await A().set(['dex',viewer],d);
   const tag=`${o.free?'【강제】':`【${Math.max(0,maxOf(vt)-d.used)}/시】【사전】`}${parts.length?'【'+parts.map(p=>(PARTS.find(x=>x[0]===p)||[])[1]).join('·')+'】':''}`;
-  A().sysLog(`${o.free?'「데이터 해석」':'『포켓몬 도감』'} ${tag} ${vt.name} → ${isOpen&&(got.length===3)?m.name:'???'}: ${isOpen?'해석 성공!'+(why?' ('+why+')':''):'차단됨 ('+why+')'}`,'battle');
+  /* 11-22 【은폐】: 해석을 건 효과(o.by · o.byMid)가 【은폐】면 이 줄도 주인에게만 (상대는 해석당한 줄 모른다 · 「출력」으로 공개 가능) */
+  const CN=window.OM_BATTLE_UI&&window.OM_BATTLE_UI.concealName;const PRV=!!(o.byMid&&o.by&&CN&&CN(o.byMid,o.by));
+  A().sysLog(`${o.free?'「데이터 해석」':'『포켓몬 도감』'} ${tag} ${vt.name} → ${isOpen&&(got.length===3)?m.name:'???'}: ${isOpen?'해석 성공!'+(why?' ('+why+')':''):'차단됨 ('+why+')'}`,'battle',PRV?{gmPriv:1,conceal:1,mid:o.byMid}:undefined);
   try{if(window.OM_RP_UI)window.OM_RP_UI.playSe(isOpen?'Ping':'evasion',true)}catch(e){}
   /* 11-21 망령 「해석 트리거 — 해석했을 때」: 해석에 성공하면 배틀 쪽이 계기를 본다 (via: 누가 · 무엇으로) */
   if(isOpen)try{window.dispatchEvent(new CustomEvent('om:dexdone',{detail:{viewer,mid,parts:got,full:got.length===3,via:o.via||'',by:o.by||''}}))}catch(e){}

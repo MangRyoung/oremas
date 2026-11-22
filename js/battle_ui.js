@@ -1338,7 +1338,7 @@ window.OM_BATTLE_UI=(()=>{
   /* 10-26 (서서 VS 마리 시험): 필드의 다른 포켓몬이 「있는 한」 걸어 둔 효과(재앙의그릇 · 승리의별 …)를 새로 들어온 포켓몬에게도 */
   if(FX()&&FX().reAura&&ctx().b.started&&(ctx().b.mons[mid]||{}).entry){const nb0=snap(),nb=snap(nb0);const L=FX().reAura(nb,nb.mons[mid]);if(L.length&&await saveBattle(nb0,nb))A().sysLog(`【필드 효과】\n${L.join('\n')}`,'battle')}
   /* 10-26 망령: 시합 개시 전에 나온 포켓몬 · 동시 내밀기는 모두 나온 뒤에 등장 효과를 스피드 순으로 (위협이 아무도 못 맞히던 것) */
-  if(FX()&&(ctx().b.mons[mid]||{}).entry&&!opt.noAuto&&ctx().b.started){await autoOnEntry(mid,{how:opt.how||(opt.forced?'강제 교대':occ&&occ.id!==mid?'통상 교대':(+b.phase||0)>=2?'통상 교대':'죽어내밀기')});try{await fieldAuto('entry',{mid})}catch(e){console.warn('필드 등장 구문',e)}try{await foeInTrig(mid,null,opt.how||(opt.forced?'강제 교대':occ&&occ.id!==mid?'통상 교대':(+b.phase||0)>=2?'통상 교대':'죽어내밀기'))}catch(e){console.warn('등장 (상대)',e)}}}
+  if(FX()&&(ctx().b.mons[mid]||{}).entry&&!opt.noAuto&&ctx().b.started){await autoOnEntry(mid,{how:opt.how||(opt.forced?'강제 교대':occ&&occ.id!==mid?'통상 교대':(+b.phase||0)>=2?'통상 교대':'죽어내밀기')});try{await fieldAuto('entry',{mid})}catch(e){console.warn('필드 등장 구문',e)}try{await illuTrig(mid)}catch(e){console.warn('일루젼 발동 계기',e)}try{await foeInTrig(mid,null,opt.how||(opt.forced?'강제 교대':occ&&occ.id!==mid?'통상 교대':(+b.phase||0)>=2?'통상 교대':'죽어내밀기'))}catch(e){console.warn('등장 (상대)',e)}}}
  /* 11-14 동시 교대: 모두 나가고 모두 들어온 뒤 퇴장 계기 → 등장 효과 (각각 스피드 순) */
  async function simulSwitch(L){const b0=ctx().b;const f=fieldOf(b0);const sp=m=>{try{return B().statValue(m,'speed').value*spMulOf(m,f).v}catch(e){return +((m.stats||[])[5]||0)}};
   const outs=L.map(x=>({x,m:b0.mons[x.out]})).filter(o=>o.m).sort((p,q)=>sp(q.m)-sp(p.m));
@@ -1348,6 +1348,7 @@ window.OM_BATTLE_UI=(()=>{
   const hw={};for(const x of L)hw[x.in]='통상 교대';await autoEntryAll(L.map(x=>x.in),hw)}
  async function autoEntryAll(ids,hows){const b=ctx().b;const f=fieldOf(b);const sp=m=>{try{return B().statValue(m,'speed').value*spMulOf(m,f).v}catch(e){return +((m.stats||[])[5]||0)}};
   const list=ids.map(id=>b.mons[id]).filter(m=>m&&m.entry&&m.hp.cur>0).sort((x,y)=>sp(y)-sp(x));for(const m of list)if(FX()){await autoOnEntry(m.id,hows&&hows[m.id]?{how:hows[m.id]}:undefined);try{await fieldAuto('entry',{mid:m.id})}catch(e){console.warn('필드 등장 구문',e)}}
+  for(const m of list)if(FX())try{await illuTrig(m.id)}catch(e){console.warn('일루젼 발동 계기',e)}   /* 11-22 선발로 변장한 채 나온 것도 */
   {const tog=list.map(m=>m.id);for(const m of list)if(FX())try{await foeInTrig(m.id,tog)}catch(e){console.warn('등장 (상대)',e)}}}   /* 11-09 감우 56: 모두 나온 뒤 【등장 (상대)】 — 같이 나온 것끼리는 불발 (망령 13:51) */
  /* 10-23 망령: 맵툴 print_entry — 등장하면 「통솔」 명중 강화 → 특성 등장 문구 → 소지품 등장 문구 (data/ment.js, 맵툴 entry_ment 그대로) */
  const LEAD_ACC={A:1.05,AA:1.15,AAA:1.25,S:1.33};
@@ -1472,6 +1473,12 @@ window.OM_BATTLE_UI=(()=>{
  async function exitPendIn(mid){const b=ctx().b;const m=b.mons[mid];if(!m||!m.entry)return;const k=m.side+'_'+m.entry;const p=(b.exitPend||{})[k];if(!p)return;await A().set(['battle','exitPend',k],null);if(p.mid===mid||!sameT(b.mons[p.mid]||{},m,b))return;   /* 같은 편이면 다른 트레이너 포켓몬도 「아군」 */await exitTrig(p.mid,p.how,{phase:'in',inId:mid,area:m.entry})}
  /* 상대가 나왔을 때: 필드의 다른 편 포켓몬의 【등장 (상대)】 (무당거미 · 뜬돌 · 마그마의바다 …) — 그 상대가 대상.
     11-09 13:51 망령 「동시에 나온 케이스엔 불발」: 같이 나온 포켓몬(선발 · 동시 내밀기 묶음 = together)끼리는 안 터진다 — 이미 필드에 있던 쪽만 */
+ /* 11-22 망령 「【은폐】/「특성 : 일루젼」이 발동했을 때 「정면」의 데이터를 해석한다 — 이런 류는?」: 일루젼으로 변장한 채 나왔을 때(등장 때 disg 가 걸림)를 「일루젼 발동」으로 보고, 그 포켓몬의 특성 · 포텐셜 · 소지품 · 트레이너 고유 중 이 계기가 적힌 것을 trigFire (구문이 없으면 주인에게 알림만) */
+ const ILLU_TRIG_RE=/(?:「\s*특성\s*:\s*일루[젼전]\s*」|『\s*일루[젼전]\s*』|「\s*일루[젼전]\s*」)\s*(?:이|가)\s*발동(?:했을|하였을|한)\s*때/;
+ async function illuTrig(mid){const b=ctx().b;const m=(b.mons||{})[mid];if(!m||!m.entry||!m.disg||!b.started||!FX())return;const notes=[];
+  for(const x of trigSrcs(m,b)){const t=String(x.eff||'').replace(/<br\s*\/?>/gi,'\n');const cls=t.split(/(?=[①②③④⑤⑥⑦⑧⑨⑩])|\n/).map(q=>q.trim()).filter(Boolean);let hit=null;for(let i=0;i<cls.length;i++)if(ILLU_TRIG_RE.test(cls[i])){hit={cl:cls[i],arg:'',first:i===0||/^①/.test(cls[i]),no:(cls[i].match(/^[①②③④⑤⑥⑦⑧⑨⑩]/)||[])[0]||''};break}if(!hit)continue;
+   const cur=ctx().b.mons[mid];if(!cur||!cur.entry||cur.hp.cur<=0)break;const r=await trigFire(mid,x,hit,{why:`${m.name} 「일루젼」 발동`});if(r&&r.note)notes.push(r.note)}
+  if(notes.length)A().sysLog(`【계기】 ${m.name} 「일루젼」 발동 — 발동 조건을 만족한 효과 (구문이 없어 손으로)\n${[...new Set(notes)].join('\n')}`,'battle',{gmPriv:1,mid})}
  const EHOW=['통상교대','임의교대','강제교대','죽어내밀기','선발'];
  function foeArgOk(arg,how,m){const parts=String(arg||'').split(/[,，]/).map(x=>x.trim()).filter(Boolean);if(!parts.length)return true;const h=String(how||'').replace(/\s/g,'');const hows=parts.map(p=>p.replace(/\s/g,'')).filter(p=>EHOW.includes(p));if(hows.length&&!hows.includes(h))return false;for(const p of parts){const t=p.match(/^「\s*타입\s*:\s*([^」]+?)\s*」$/);if(t&&m){const ko=t[1].trim();const en=S().typeEn?S().typeEn(ko):ko;const ty=[...tysOf(m),...((m.typesKo)||[])];if(!(ty.includes(en)||ty.includes(ko)))return false}}return true}
  async function foeInTrig(mid,together,how){const b=ctx().b;if(!b||!b.started||!FX())return;const m=b.mons[mid];if(!m||!m.entry||m.hp.cur<=0)return;const notes=[];
@@ -4191,5 +4198,5 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【(?:[^【】]
     const ds=stDesc(k);/* 11-01 망령 「상태 변화도 효과 로그」: 상태 카드가 되면 예전 줄은 남기지 않는다 */if(!stLog(m,Object.assign({},m,{states:ns}),fcMan('상세 창')))A().sysLog(`【상태】 ${m.name} 「${stName(k)}」${c<1000?` (${c}턴)`:''}${ds.length?'\n'+ds.join('\n'):''}`,'battle',{mid,img:m.image||''});o.pk=false;o.q='';o.n='';redraw()});
   bind()}
  function nowParts(m){return {rank:rankChips(m),state:stateChips(m),fx:flagChips(m)+(FX()?FX().chips(m).map(ch=>`<span class="rk fxc" title="${esc(ch.title)}">${esc(ch.t)}</span>`).join(''):'')}}
- return {illuMask,concealLog,askYes,canSeeStx:tid=>stxOk(ctx(),tid),canForceTid:tid=>{const c=ctx();return !!tid&&(ownT(c,tid)||(c.gm&&!fairOff(c,tid)))},canEditMon:mid=>{const c=ctx();const m=((c.b||{}).mons||{})[mid];return !!m&&canEdit(c,m)},fireAuto,fieldAuto,fieldClear,render,nowParts,nowEditHtml,bindNowEdit,watch,ctx,entered,allEntered,fieldOf,fieldCard,statusCard,futureFire,trapWarn,resetLocal:()=>{CMD={}},startCut:(m)=>battleStartCut(ctx().b,m),openHp,action,hotkey,logFx,hitBadge};
+ return {illuMask,concealLog,concealName:(mid,nm)=>{try{const b=ctx().b;return concealNames(b,(b.mons||{})[mid]).has(cnm(nm))}catch(e){return false}},askYes,canSeeStx:tid=>stxOk(ctx(),tid),canForceTid:tid=>{const c=ctx();return !!tid&&(ownT(c,tid)||(c.gm&&!fairOff(c,tid)))},canEditMon:mid=>{const c=ctx();const m=((c.b||{}).mons||{})[mid];return !!m&&canEdit(c,m)},fireAuto,fieldAuto,fieldClear,render,nowParts,nowEditHtml,bindNowEdit,watch,ctx,entered,allEntered,fieldOf,fieldCard,statusCard,futureFire,trapWarn,resetLocal:()=>{CMD={}},startCut:(m)=>battleStartCut(ctx().b,m),openHp,action,hotkey,logFx,hitBadge};
 })();
