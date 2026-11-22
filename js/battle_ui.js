@@ -962,7 +962,18 @@ window.OM_BATTLE_UI=(()=>{
   const o={sw:x.move==='switch'?1:0,...(x.move==='switch'&&x.switch?{st:String(x.switch)}:{}),pm,om,pr:mv?(FX()?FX().prioOf(m,mv):(+mv.prio||0)):0,mv:mv?1:0,atk:mv&&mv.cat!=='변화'?1:0};   /* atk: 공격을 지시받았나 (【수세】 · 【공세】 — 숨은 지시를 못 읽는 화면용, 11-07) */
   if(mv&&(isPursuit(mv,m)||x.pur)){o.pn=mv.name;o.tg=tgNow(ctx().b,x,m);o.psrc=isPursuit(mv,m)?((m.flags||{}).pursuit?(m.flags.pursuitBy||''):''):(x.pur||'')}
   else if(mv&&mv.cat!=='변화'&&illuPursBy(m)){o.pn=mv.name;o.tg=tgNow(ctx().b,x,m);o.psrc=illuPursBy(m);o.pcond='dex'}   /* 11-22 변장 중 · 해석된 상대에게만 */
+  {const ab=abNm(m);if(mv&&PRIO_AB[ab]){o.ab=ab;o.one=String(mv.range||'')==='1체'?1:0;try{o.atg=tgNow(ctx().b,x,m)||[]}catch(e){o.atg=[]}}}   /* 11-22 추월 · 앞지르기: 대상 쪽 지시를 보고 순서 계산 때 우선도 +0.5 */
   const pimm=x.pimm||((m.flags||{}).pursuitImmune?(m.flags.pursuitImmuneBy||'추격 무시'):'');if(pimm)o.pimm=pimm;if(mv&&(isUturn(mv,m)||x.ut||x.uman))o.ut=1;return o}
+ /* 11-22 망령 「추월이나 앞지르기 같은 건 조건이 충족되면 자동 발동해야」:
+    추월 = 【공세】/「단일기」에 「우선도 : +0.5」 — 1체 기술이고 그 대상이 공격을 지시받지 않았을 때(변화기 · 교대 · 행동 없음).
+    앞지르기 = 서로 「변화기」를 내보냈을 때 자신의 기술에 「우선도 : +0.5」 — 자신이 변화기이고, 노린 상대(없으면 맞은편 상대 중 누구든)도 변화기.
+    상대의 지시를 알아야 해서 순서 계산(computeOrder)이 모든 열쇠를 모은 뒤 더한다. 예전 레디메이드(우선도 +0.5 · 늘 / 이번턴)는 조건이 없어 「손으로」로 돌림 */
+ const PRIO_AB={'추월':1,'앞지르기':1};
+ function abPrioMod(b,s,K,KEYS,slots){if(!K||!K.ab||!K.mv||K.sw)return null;const foeK=sl=>{const z=slots.find(q=>q.slot===sl);if(!z||sameT(z.mon,s.mon,b))return null;return {mon:z.mon,k:KEYS[z.mon.id]||{}}};
+  const tg=(K.atg||[]).map(foeK).filter(Boolean);
+  if(K.ab==='추월'){if(!K.one||!tg.length)return null;const t=tg[0];if(t.k.atk)return null;return {v:0.5,note:`${s.mon.name} 「추월」 — ${t.mon.name}이(가) 공격을 지시받지 않아 단일기 우선도 +0.5`}}
+  if(K.ab==='앞지르기'){if(K.atk)return null;const pool=tg.length?tg:slots.filter(z=>!sameT(z.mon,s.mon,b)).map(z=>({mon:z.mon,k:KEYS[z.mon.id]||{}}));const t=pool.find(q=>q.k.mv&&!q.k.atk&&!q.k.sw);if(!t)return null;return {v:0.5,note:`${s.mon.name} 「앞지르기」 — 서로 변화기 (${t.mon.name}) · 우선도 +0.5`}}
+  return null}
  /* 좌석: 턴 개시 때 내 순서 열쇠를 cmds[내 자리].ok 에 올린다 (진행하는 사람이 남의 비밀 지시를 못 읽어도 순서를 계산하게) */
  /* 11-03 21:30 (아니스 시온 「행동 진행을 안 누르는 쪽은 우선도가 반영 안 된다」): 열쇠는 턴 개시 때 한 번만 올라가서, 그 뒤(선행 발동 등)에 생긴 우선도 효과가 남의 화면 계산에 안 들어갔다.
     열쇠에 우선도에 닿는 상태의 지문(sig)을 붙이고, 지문이 바뀌면 다시 올린다. 계산하는 쪽은 지문이 맞을 때까지 잠깐 기다린다 */
@@ -1949,7 +1960,7 @@ window.OM_BATTLE_UI=(()=>{
   const tk=turnKey(b);const keyOf=m=>{if(SEC[m.id])return okeyOf(m,SEC[m.id]);const ok=((ctx().b.cmds||{})[m.tid]||{}).ok;if(ok&&ok.key===tk&&ok.m&&ok.m[m.id])return ok.m[m.id];const px=(((b.cmds||{})[m.tid]||{}).mons||{})[m.id];return px?okeyOf(m,px):null};
   const KEYS={},miss=[];for(const s of slots){const k=keyOf(s.mon);if(!k&&s.mon.started)miss.push(`${(b.trainers[s.mon.tid]||{}).name||'?'} · ${s.mon.name}`);KEYS[s.mon.id]=k||{sw:0,pm:{},om:{},pr:0,mv:0}}
   if(miss.length&&!(await askYes(`아직 순서 정보가 없는 포켓몬: ${miss.join(', ')}\n(지시를 저장하지 않았거나 그 플레이어가 접속해 있지 않다)\n행동 없음으로 보고 순서를 계산할까?`)))return;
-  const spNotes=[];const entries=slots.map(s=>{const K=KEYS[s.mon.id];let prioMod=+K.pr||0;if(K.mv&&s.mon.prioDown){prioMod-=1;iceUsed.push(s.mon)}
+  const spNotes=[];const entries=slots.map(s=>{const K=KEYS[s.mon.id];let prioMod=+K.pr||0;if(K.mv&&s.mon.prioDown){prioMod-=1;iceUsed.push(s.mon)}{const ap=abPrioMod(b,s,K,KEYS,slots);if(ap){prioMod+=ap.v;spNotes.push(ap.note)}}
    const objs=(f.objects||{})[s.side]||{};
    const SPM=spMulOf(s.mon,f);if(SPM.why.length)spNotes.push(...SPM.why);
    return {slot:s.slot,mon:s.mon,cmd:{change:!!K.sw,priorityMap:K.pm||{},orderMap:K.om||{}},prioMod,started:!!s.mon.started,scarf:HAS(s.mon,'구애스카프'),tailwind:(objs['순풍']||0)>0,swamp:(objs['습원']||0)>0,spMul:SPM.v}});
