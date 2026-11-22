@@ -3416,7 +3416,21 @@ window.OM_BATTLE_UI=(()=>{
  function potLineOf(m,name){return String(((m&&m.cutLine)||{})[potKey(name)]||'')}
  function uqLineOf(t,name){const u=((t&&t.unique)||[]).find(x=>x&&potKey(x.name)===potKey(name));return String((u&&u.line)||'')}
  function potTagOf(m,name){const k=potKey(name);if((m.excl&&potKey(m.excl.name)===k)||(m.exclX||[]).some(p=>p&&potKey(p.name)===k))return `${m.name}의 전용 포텐셜!`;const p=(m.pots||[]).find(x=>x&&potKey(x.name)===k);return p&&/고유/.test(p.kind||'')?`${m.name}의 고유 포텐셜!`:`${m.name}의 포텐셜!`}
+ /* 11-22 망령 「태그에 【은폐】 추가 — 사용자가 따로 공개하지 않는 이상 시스템 로그에 공개하지 않을 수 있는 키워드」:
+    효과 글에 【은폐】가 있는 포텐셜 · 전용 · 고유 · 특성 · 소지품이 발동한 로그는 sysLog 가 주인 귓속말(gmPriv — 「나만 보임」 + 「출력」)로 돌린다. 컷인도 띄우지 않는다.
+    판정: 로그에 붙은 효과 글(extra.eff)에 【은폐】가 있거나, 첫 줄이 【포텐셜 · 전용 · 고유 · 특성 · 소지품 · 계기】로 시작하고 그 포켓몬(mid) · 트레이너의 【은폐】 효과 이름이 『』「」로 나오면 */
+ const CONCEAL_RE=/【\s*은폐\s*】/;const cnm=x=>String(x||'').replace(/[『』「」]/g,'').trim();
+ function concealNames(b,m){const out=new Set();if(!m)return out;const add=(n,e)=>{if(n&&CONCEAL_RE.test(String(e||'')))out.add(cnm(n))};
+  try{for(const p of potSrc(m,true))if(p)add(p.name,p.eff)}catch(e){}
+  add(m.ability,m.abilityEff);add(m.item,m.itemEff);
+  try{const IT=(DB()||{}).items||{};for(const q of (m.items2||[])){const n=q&&q.item;if(n)add(n,(IT[cnm(n)]||{}).eff)}if(m.item&&!m.itemEff)add(m.item,(IT[cnm(m.item)]||{}).eff)}catch(e){}
+  const t=((b&&b.trainers)||{})[m.tid];for(const u of ((t&&t.unique)||[]))if(u)add(u.name,u.eff);return out}
+ function concealLog(t,extra){try{const x=extra||{};if(CONCEAL_RE.test(String(x.eff||'')))return true;const s=String(t||'');const head=s.split('\n')[0];
+   if(!/^【(?:포텐셜|전용|고유|특성|소지품|계기)/.test(head))return false;if(CONCEAL_RE.test(s))return true;
+   const b=ctx().b||{};const m=x.mid&&(b.mons||{})[x.mid];if(!m)return false;for(const n of concealNames(b,m))if(n&&(head.includes('『'+n+'』')||head.includes('「'+n+'」')))return true;return false}catch(e){return false}}
+ function concealPot(b,tok,nm){try{if(/^m:/.test(tok)){const m=(b.mons||{})[tok.slice(2)];return concealNames(b,m).has(cnm(nm))}if(/^t:/.test(tok)){const t=(b.trainers||{})[tok.slice(2)];const u=((t&&t.unique)||[]).find(x=>x&&cnm(x.name)===cnm(nm));return !!(u&&CONCEAL_RE.test(String(u.eff||'')))}}catch(e){}return false}
  function cutFire(tok,src,tag,ment,color,line){try{if(!CUT())return;const b=ctx().b||{};const nm=String(ment||'').replace(/^『|』$/g,'');
+  if(concealPot(b,tok,nm))return;   /* 11-22 【은폐】: 컷인 없이 */
   if(line==null){if(/^m:/.test(tok)){const m=(b.mons||{})[tok.slice(2)];if(m){line=potLineOf(m,nm);if(tag===m.name)tag=potTagOf(m,nm)}}else if(/^t:/.test(tok)&&/의 고유!$/.test(String(tag||'')))line=uqLineOf((b.trainers||{})[tok.slice(2)],nm)}
   let side='';{const m=/^m:/.test(tok)?(b.mons||{})[tok.slice(2)]:null;const t=/^t:/.test(tok)?(b.trainers||{})[tok.slice(2)]:null;side=(m&&m.side)||(t&&t.side)||''}   /* 11-03 (검토 10): 동시 컷인의 좌/우 자리 · PLAYER/RIVAL 글자 */
   CUT().fire({tok,src,tag,ment,color,line:line||'',side})}catch(e){}}
@@ -4172,5 +4186,5 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【(?:[^【】]
     const ds=stDesc(k);/* 11-01 망령 「상태 변화도 효과 로그」: 상태 카드가 되면 예전 줄은 남기지 않는다 */if(!stLog(m,Object.assign({},m,{states:ns}),fcMan('상세 창')))A().sysLog(`【상태】 ${m.name} 「${stName(k)}」${c<1000?` (${c}턴)`:''}${ds.length?'\n'+ds.join('\n'):''}`,'battle',{mid,img:m.image||''});o.pk=false;o.q='';o.n='';redraw()});
   bind()}
  function nowParts(m){return {rank:rankChips(m),state:stateChips(m),fx:flagChips(m)+(FX()?FX().chips(m).map(ch=>`<span class="rk fxc" title="${esc(ch.title)}">${esc(ch.t)}</span>`).join(''):'')}}
- return {illuMask,askYes,canSeeStx:tid=>stxOk(ctx(),tid),canForceTid:tid=>{const c=ctx();return !!tid&&(ownT(c,tid)||(c.gm&&!fairOff(c,tid)))},canEditMon:mid=>{const c=ctx();const m=((c.b||{}).mons||{})[mid];return !!m&&canEdit(c,m)},fireAuto,fieldAuto,fieldClear,render,nowParts,nowEditHtml,bindNowEdit,watch,ctx,entered,allEntered,fieldOf,fieldCard,statusCard,futureFire,trapWarn,resetLocal:()=>{CMD={}},startCut:(m)=>battleStartCut(ctx().b,m),openHp,action,hotkey,logFx,hitBadge};
+ return {illuMask,concealLog,askYes,canSeeStx:tid=>stxOk(ctx(),tid),canForceTid:tid=>{const c=ctx();return !!tid&&(ownT(c,tid)||(c.gm&&!fairOff(c,tid)))},canEditMon:mid=>{const c=ctx();const m=((c.b||{}).mons||{})[mid];return !!m&&canEdit(c,m)},fireAuto,fieldAuto,fieldClear,render,nowParts,nowEditHtml,bindNowEdit,watch,ctx,entered,allEntered,fieldOf,fieldCard,statusCard,futureFire,trapWarn,resetLocal:()=>{CMD={}},startCut:(m)=>battleStartCut(ctx().b,m),openHp,action,hotkey,logFx,hitBadge};
 })();
