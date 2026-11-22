@@ -1038,6 +1038,8 @@ window.OM_BATTLE_UI=(()=>{
   const tk=turnKey(b);for(const tid in b.trainers||{}){const ok=((b.cmds||{})[tid]||{}).ok;if(!ok||ok.key!==tk)continue;if(ok.pre)PRE[tid]=1;for(const mid in (ok.m||{}))if(ok.m[mid].pi&&live(mid))PRE[tid]=1}   /* 교대로 나간 포켓몬의 선행은 세지 않는다 */
   const keyOf=m=>{if(SEC[m.id])return okeyOf(m,SEC[m.id]);const ok=((b.cmds||{})[m.tid]||{}).ok;if(ok&&ok.key===tk&&ok.m&&ok.m[m.id])return ok.m[m.id];const px=(((b.cmds||{})[m.tid]||{}).mons||{})[m.id];return px?okeyOf(m,px):null};
   return {SEC,PRE,UP,keyOf}}
+ /* 11-23 망령 (이시카와 고에몬 『천하대도』 ②「「프라이드 : B」이하인 상대가 내보내는 기술의 「따라가때리기」 효과를 무효화한다」): 교대하려는 쪽(def)의 포텐셜 · 전용 글을 보고, 때리는 쪽(atk)이 상대 편이며 프라이드 조건(없으면 누구든)이 맞으면 추격을 막는다 */
+ function pursPriImm(def,atk,b){if(!def||!atk||sameT(def,atk,b))return '';for(const p of potSrc(def)){const e=String((p&&p.eff)||'');const q=e.match(/(?:「\s*프라이드\s*[:：]\s*([^」]+)」\s*((?:이하|이상|미만|초과)?)\s*인\s*)?상대(?:가|의)\s*(?:내보내는\s*)?기술의\s*「?따라가때리기」?\s*효과(?:를|을)?\s*무효/);if(!q)continue;if(q[1]&&!(FX()&&FX().priOk&&FX().priOk(atk,q[1]+(q[2]||''))))continue;return p.name}return ''}
  async function stepTurn(){const c=ctx();if(!c.mgr)return;const b=c.b;if((+b.phase||0)!==1)return;const st=+b.tstep||0;const I=await turnInfo(c,b);const slots=allEntered(b);const TN=tid=>((b.trainers||{})[tid]||{}).name||'?';
   if(st<1){const sw=slots.filter(s=>{const k=I.keyOf(s.mon);return k&&k.sw});
    if(sw.length){const swTo=mo=>{const k=I.keyOf(mo)||{};const id=k.st||(I.SEC[mo.id]||{}).switch||((((b.cmds||{})[mo.tid]||{}).mons||{})[mo.id]||{}).switch;return (b.mons||{})[id]||null};   /* 10-28 망령: 「교대 대상 미정」 — 비밀 지시(SEC) · 확정 지시(ok.m)에 든 교대 대상을 먼저 본다 (공개 지시 칸은 비어 있을 때가 있다) */   /* 10-27 망령: 교대 알림에 누구와 바꾸는지 · 그림 */
@@ -1046,6 +1048,7 @@ window.OM_BATTLE_UI=(()=>{
     /* 따라가때리기: 교대하려는 포켓몬을 노린 추격은 교대 전에 먼저 (맵툴 get_turn_pursuit) — 그 포켓몬은 이번 턴 행동을 쓴 것으로 본다 */
     const pl=[],pur=[];for(const s of slots){const k=I.keyOf(s.mon);if(!k||!k.pn)continue;for(const tg of (k.tg||[])){const v=sw.find(z=>z.slot===tg);if(!v)continue;if(k.pcond==='dex'&&!dexTeam(b,v.mon,s.mon))continue;const kv=I.keyOf(v.mon)||{};
       if(kv.pimm){pl.push(`${v.mon.name}의 『${kv.pimm}』 — ${s.mon.name}의 따라가때리기를 무시했다`);continue}
+      {const pi=pursPriImm(v.mon,s.mon,b);if(pi){pl.push(`${v.mon.name}의 『${pi}』 — ${s.mon.name}의 따라가때리기 효과를 무효화했다`);continue}}
       pl.push(`${s.mon.name}의 「${k.pn}」 — 교대하려는 ${v.mon.name}을(를) 교대 전에 먼저 때린다! (공격 창에서 처리한 뒤 교대)${k.pcond==='dex'?illuPursSpend(s.mon.id,k.psrc):''}`);pur.push({slot:s.slot,mid:s.mon.id,name:s.mon.name,side:s.mon.side,change:false,started:true,order:20,prio:0,speed:0,dice:0,move:k.pn,targets:[tg],pursuit:true,pursuitHit:v.mon.id,pursuitSrc:k.psrc||''});break}}
     {const ops=[[['battle','tstep'],1],[['battle','swPur'],pur.map(o=>o.mid)],[['battle','swOut'],sw.map(s=>s.mon.id)]];if(pur.length)ops.push([['battle','order'],pur],[['battle','orderIdx'],0]);await A().setMany(ops)}
     cutPhase('교대',sw.map(s=>s.mon.name).join(' · '));
@@ -3175,19 +3178,21 @@ window.OM_BATTLE_UI=(()=>{
       → 안 맞으면 경고(로그 + 창) 하고 그 포텐셜을 이번 배틀 동안 무효(m.potOff / 트레이너 potOff) — 발동 · 등장 자동 · 기능 확장에서 빠진다. 맞으면 구문이 있으면 발동, 없으면 「충족」 안내.
     · 허용 줄 (소지품 중복 · 추가 착용 · 소켓 · 교체 · 변환 · 기술 고르기) → 제작기(팀 짜기) 규칙 — 「적용됨」 확인만. 「「A」「B」「C」 중 하나를 고른다 … 기능 확장」은 여기서 고르게 한다 (청파삼형) */
  function prepClauses(eff){const t=String(eff||'').replace(/<br\s*\/?>/gi,'\n');if(!/【\s*준비\s*】/.test(t))return [];return t.split(/(?=[①②③④⑤⑥])|\n/).map(x=>x.trim()).filter(x=>/【\s*준비\s*】/.test(x))}
- function prepEval(cl,party){const tyOf2=m=>tysOf(m);const T=s=>s.split(/[,·\/]/).map(x=>S().typeEn(x.trim())).filter(Boolean);const hasIt=(m,n)=>[m.item,...((m.items2||[]).map(x=>x&&x.item))].some(x=>String(x||'').replace(/[『』\s]/g,'')===String(n).replace(/[『』\s]/g,''));let r;
+/* 11-23 망령 「상대 PT에 【프라이드 : EX】가 있을 때」: foes = 상대 편 파티 (prepCheck 가 넘긴다) */
+ function prepEval(cl,party,foes){const tyOf2=m=>tysOf(m);const T=s=>s.split(/[,·\/]/).map(x=>S().typeEn(x.trim())).filter(Boolean);const hasIt=(m,n)=>[m.item,...((m.items2||[]).map(x=>x&&x.item))].some(x=>String(x||'').replace(/[『』\s]/g,'')===String(n).replace(/[『』\s]/g,''));let r;
   if((r=cl.match(/PT에\s*「타입\s*:\s*([^」]+)」\s*이외가\s*있다면/))){const w=T(r[1]);const bad=party.filter(m=>!tyOf2(m).some(t=>w.includes(t)));return {cond:1,ok:!bad.length,why:bad.length?`PT에 「타입 : ${r[1]}」 이외가 있다 (${bad.map(m=>m.name).join(' · ')})`:`PT 전원이 「타입 : ${r[1]}」`}}
   if((r=cl.match(/PT에\s*「소지품\s*:\s*([^」]+)」\s*(?:을|를)?\s*(\d+)\s*체\s*참여시키지\s*않았을\s*때/))){const n=party.filter(m=>hasIt(m,r[1])).length;return {cond:1,ok:n>=+r[2],why:`「소지품 : ${r[1]}」 ${n}/${r[2]}체`}}
   if((r=cl.match(/PT에\s*「타입\s*:\s*([^」]+)」\s*(?:이|가|을|를)?\s*(\d+)\s*체\s*(?:이상\s*)?참여(?:했을|하였을|시켰을)\s*때/))){const w=T(r[1]);const n=party.filter(m=>tyOf2(m).some(t=>w.includes(t))).length;return {cond:1,ok:n>=+r[2],why:`「타입 : ${r[1]}」 ${n}/${r[2]}체`}}
   if((r=cl.match(/PT에\s*「타입\s*:\s*([^」]+)」\s*(?:을|를)?\s*참여시킬\s*수\s*없다/))){const w=T(r[1]);const bad=party.filter(m=>tyOf2(m).some(t=>w.includes(t)));return {cond:1,ok:!bad.length,why:bad.length?`PT에 「타입 : ${r[1]}」이(가) 있다 (${bad.map(m=>m.name).join(' · ')})`:`PT에 「타입 : ${r[1]}」 없음`}}
   if((r=cl.match(/「타입\s*:\s*([^」]+)」\s*(?:이|가)\s*(\d+)\s*체\s*이상\s*있을\s*경우/))){const w=T(r[1]);const n=party.filter(m=>tyOf2(m).some(t=>w.includes(t))).length;return {cond:1,ok:n>=+r[2],soft:1,why:`「타입 : ${r[1]}」 ${n}/${r[2]}체`}}
+  if((r=cl.match(/(상대\s*)?(?:PT|파티)에\s*【\s*프라이드\s*[:：]\s*([^】]+?)\s*】\s*(?:이|가)\s*(?:있을|있다면|있는|있으면)/))&&FX()&&FX().priOk){const L=(r[1]?(foes||[]):party);const hit=L.filter(m=>FX().priOk(m,r[2]));return {cond:1,ok:hit.length>0,why:hit.length?`${r[1]?'상대 ':''}PT에 【프라이드 : ${r[2]}】 — ${hit.map(m=>m.name).join(' · ')}`:`${r[1]?'상대 ':''}PT에 【프라이드 : ${r[2]}】 없음`}}
   if((r=cl.match(/「([^」]+)」\s*「([^」]+)」\s*「([^」]+)」\s*중\s*하나를\s*고른다/)))return {pick:[r[1],r[2],r[3]]};
   return {allow:1}}
  async function prepCheck(){const c=ctx();if(!c.mgr||!FX())return;const b=c.b;const W=[],OK=[],AL=[],PK=[];
   for(const tid of Object.keys(b.trainers||{})){const t=b.trainers[tid];if(!t)continue;const party=Object.values(b.mons||{}).filter(m=>m&&m.tid===tid);if(!party.length)continue;
    const items=[];for(const m of party)for(const p of potSrc(m))items.push({own:m,p,uq:false});for(const u of (t.unique||[]))if(u&&u.name)items.push({own:party.find(m=>m.entry)||party[0],p:u,uq:true});
    for(const it of items){const cls=prepClauses(it.p.eff);if(!cls.length)continue;const who=it.uq?`${t.name} 고유`:it.own.name;const nm=String(it.p.name||'').replace(/[『』]/g,'').trim();
-    for(const cl of cls){const r=prepEval(cl,party);
+    for(const cl of cls){const r=prepEval(cl,party,Object.values(b.mons||{}).filter(m=>m&&m.tid!==tid&&!sameT(m,party[0],b)));
      if(r.pick){PK.push({tid,t,nm,opts:r.pick,cl});continue}
      if(r.allow){AL.push(`${who} 『${nm}』 — ${cl.replace(/^[①-⑥]?\s*【\s*준비\s*】\s*\/?\s*/,'').slice(0,80)}`);continue}
      if(!r.ok&&!r.soft){W.push(`⚠ ${who} 『${nm}』 — 조건 불충족: ${r.why}`);if(it.uq)await A().set(['battle','trainers',tid,'potOff',nm],r.why);else await A().set(['battle','mons',it.own.id,'potOff',nm],r.why)}
