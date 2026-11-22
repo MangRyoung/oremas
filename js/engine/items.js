@@ -60,7 +60,7 @@ window.OM_ITEMS=(()=>{
  function crit(atk,def){let v=0;for(const o of all(atk))if(o.r.crit)v+=o.r.crit;for(const o of all(def))if(o.r.critGuard)v-=o.r.critGuard;return v}
  /* 받는 쪽 반감열매가 이 공격에 맞나. lh: lastHit {mt, cat, eff, multi} → 열매 이름 | '' */
  function resist(def,lh){if(!lh)return '';for(const o of all(def)){const n=resist1(def,o.r,lh);if(n)return n}return ''}
- function resist1(def,r,lh){if(!r||!r.resist)return '';const x=r.resist;
+ function resist1(def,r,lh){if(!r||!r.resist)return '';if(isBerry(r.name,r)&&unnerved(def))return '';const x=r.resist;
   if(x.type&&!(lh.mt||[]).includes(x.type))return '';if(x.se&&!(+lh.eff>=2))return '';if(x.cat&&x.cat!==lh.cat)return '';if(x.full&&def.hp.cur<def.hp.max)return '';if(x.multi&&!lh.multi)return '';if(!x.type&&!x.cat&&!x.multi)return '';return r.name}
  /* 기합의띠(HP 가득) · 기합의머리띠(1할) → {name, sure} | null */
  function sash(def){for(const o of all(def)){const s=sash1(def,o.r);if(s)return s}return null}
@@ -104,13 +104,15 @@ window.OM_ITEMS=(()=>{
     b 사본 · f 필드 사본 · can(m) 이 화면이 고칠 수 있나 → [{mid, name, lines}] ----- */
  function sweep(b,f,can){const out=[];
   for(const id in b.mons||{}){const m=b.mons[id];if(!m.entry||(can&&!can(m)))continue;for(const {r,k} of all(m)){if(m.hp.cur<=0)break;const L=[];const use=(m,L,b)=>USE(m,L,b,k);
+   if(isBerry(r.name,r)&&unnerved(m,b))continue;   /* 긴장감 */
+   const TH=r.once?thiefOf(m,b):null;const E=TH||m;const g=gourmet(E,r);const thN=()=>{if(TH)L.push(`${TH.name} 「훔쳐먹기」 — ${m.name}의 「${r.name}」 효과를 자신이 받는다`)};const gN=()=>{if(g!==1)L.push(`${E.name} 「미식가」 — 효과 2배`)};
    if(r.hp){const fr=(/먹보/.test(m.ability||'')&&r.hp.frac==='1/4')?'1/2':r.hp.frac;const lim=Math.floor(m.hp.max*+fr.split('/')[0]/+fr.split('/')[1]);
-    if(m.hp.cur<=lim){const h=r.hp;L.push(`「HP」 ${fr} 이하`);if(h.heal!=null){if((m.states||{}).HealBlock){L.length=0}else heal(m,typeof h.heal==='number'?h.heal:frac(m.hp.max,h.heal),L,'회복')}
-     if(h.stats)rank(m,h.stats,L);hpExtra(m,h,L)
+    if(m.hp.cur<=lim){const h=r.hp;L.push(`「HP」 ${fr} 이하`);thN();gN();if(h.heal!=null){if((E.states||{}).HealBlock){L.length=0}else heal(E,(typeof h.heal==='number'?h.heal:frac(E.hp.max,h.heal))*g,L,'회복')}
+     if(h.stats)rank(E,scaleSt(h.stats,g),L);hpExtra(E,g===1?h:Object.assign({},h,{random:h.random?h.random*g:h.random,pick:h.pick?Object.assign({},h.pick,{v:h.pick.v*g}):h.pick}),L)
      if(L.length&&r.once)use(m,L,b)}}
-   else if(r.cure){const st=m.states||{};const hit=(r.cure.includes('Poison')&&!r.cure.includes('Toxic')?r.cure.concat(['Toxic']):r.cure).filter(k=>st[k]);   /* 11-06 「독」 치유는 맹독도 */if(hit.length){for(const k of hit)delete st[k];L.push(`${hit.map(k=>'「'+((((DB().states||{}).st||{})[k]||{}).ko||k)+'」').join(' · ')} 치유`);if(r.once)use(m,L,b)}}
-   else if(r.seed&&f&&(f.terrain||{}).type===r.seed.terrain){L.push(`「${r.seed.terrain}」`);rank(m,r.seed.stats,L);if(r.once)use(m,L,b)}
-   else if(r.room&&f&&+((f.rooms||{})[r.room.room]||0)>0){L.push(`「${r.room.room}」`);rank(m,r.room.stats,L);if(r.once)use(m,L,b)}
+   else if(r.cure){const st=m.states||{};const hit=(r.cure.includes('Poison')&&!r.cure.includes('Toxic')?r.cure.concat(['Toxic']):r.cure).filter(k=>st[k]);   /* 11-06 「독」 치유는 맹독도 */if(hit.length){if(TH){thN();const st2=TH.states||{};const h2=(r.cure.includes('Poison')&&!r.cure.includes('Toxic')?r.cure.concat(['Toxic']):r.cure).filter(k=>st2[k]);for(const k of h2)delete st2[k];if(h2.length)L.push(`${TH.name} ${h2.map(k=>'「'+((((DB().states||{}).st||{})[k]||{}).ko||k)+'」').join(' · ')} 치유`)}else{for(const k of hit)delete st[k];L.push(`${hit.map(k=>'「'+((((DB().states||{}).st||{})[k]||{}).ko||k)+'」').join(' · ')} 치유`)}if(r.once)use(m,L,b)}}
+   else if(r.seed&&f&&(f.terrain||{}).type===r.seed.terrain){L.push(`「${r.seed.terrain}」`);thN();gN();rank(E,scaleSt(r.seed.stats,g),L);if(r.once)use(m,L,b)}
+   else if(r.room&&f&&+((f.rooms||{})[r.room.room]||0)>0){L.push(`「${r.room.room}」`);thN();gN();rank(E,scaleSt(r.room.stats,g),L);if(r.once)use(m,L,b)}
    else if(r.white){const neg=Object.keys(m.rank||{}).filter(k=>k!=='critical'&&+m.rank[k]<0);if(neg.length){for(const k of neg)m.rank[k]=0;L.push(`${neg.map(k=>STAT_KO[k]||k).join(' · ')} 하락을 되돌렸다`);if(r.once||/허브/.test(r.name))use(m,L,b)}}
    else if(r.clearW&&f&&(f.weather||{}).type){L.push(`날씨 「${f.weather.type}」 해제`);f.weather={type:'',count:0};use(m,L,b)}
    else if(r.clearT&&f&&(f.terrain||{}).type){L.push(`「${f.terrain.type}」 철거`);f.terrain={type:'',count:0};use(m,L,b)}
@@ -136,6 +138,15 @@ window.OM_ITEMS=(()=>{
  const anm=s=>String(s||'').replace(/[『』「」\s]/g,'');
  const reEsc=s=>String(s).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
  /* 특성 · 포텐셜 이름으로 (일루젼 ILLU_RE 와 같은 방식) */
+ /* 11-22 망령 「특성 엔진 처리」: 미식가 = 「나무열매」 효과 2배 · 긴장감 = 상대 전체는 기술 효과 이외로 「나무열매」를 소모할 수 없다 · 훔쳐먹기 = 「정면」이 소모한 소지품의 효과 대상을 자신으로 */
+ const abOf=m=>String((m&&m.ability)||'').replace(/^특성\s*:\s*/,'').replace(/[『』]/g,'').trim();
+ const BT=()=>((((window.OM_APP||{}).ST||{}).state||{}).battle)||{};
+ const live=x=>x&&x.entry&&x.hp&&x.hp.cur>0;
+ const sameSide=(x,y,b)=>{try{const T=window.OM_TEAM;if(T){const p=T(b,x);return !!p&&p===T(b,y)}}catch(e){}return x.side===y.side};
+ function unnerved(m,b){b=b||BT();return Object.values(b.mons||{}).some(x=>live(x)&&x.id!==m.id&&!sameSide(x,m,b)&&abOf(x)==='긴장감')}
+ const gourmet=(m,r)=>abOf(m)==='미식가'&&isBerry(r&&r.name,r)?2:1;
+ const scaleSt=(st,g)=>{if(!st||g===1)return st;const o={};for(const k in st)o[k]=(+st[k]||0)*g;return o};
+ function thiefOf(m,b){b=b||BT();if(!m||!m.entry)return null;return Object.values(b.mons||{}).find(x=>live(x)&&x.id!==m.id&&!sameSide(x,m,b)&&x.entry===m.entry&&abOf(x)==='훔쳐먹기')||null}
  function abil(m,re){if(!m)return false;const L=[m.ability,...(m.pots||[]).map(p=>p&&p.name),...(m.excl?[m.excl.name]:[]),...(m.exclX||[]).map(p=>p&&p.name)];return L.some(n=>n&&re.test(anm(n)))}
  const sticky=m=>abil(m,/^점착$/)||protItem(m);
  /* 11-08: 구문 「보호 소지품」(fx sp protect what item) 도 점착처럼 — 소지품이 바뀌지 · 빠지지 않는다 */
@@ -162,7 +173,8 @@ window.OM_ITEMS=(()=>{
  const isBerry=(n,r)=>/열매$/.test(nm(n))||!!(r&&r.ngift);
  /* 나무열매를 조건(HP 1/2 이하 등) 없이 먹는다 — r 그 열매 규칙. 효과가 있었으면 true (반감열매처럼 맞을 때만 쓰는 것은 false) */
  function eat(m,r,lines){if(!m||!r)return false;const L0=lines.length;
-  if(r.hp){const h=r.hp;if(h.heal!=null)heal(m,typeof h.heal==='number'?h.heal:frac(m.hp.max,h.heal),lines,'회복');if(h.stats)rank(m,h.stats,lines);hpExtra(m,h,lines)}
+  const g=gourmet(m,r);if(g!==1&&(r.hp))lines.push(`${m.name} 「미식가」 — 효과 2배`);
+  if(r.hp){const h=r.hp;if(h.heal!=null)heal(m,(typeof h.heal==='number'?h.heal:frac(m.hp.max,h.heal))*g,lines,'회복');if(h.stats)rank(m,scaleSt(h.stats,g),lines);hpExtra(m,g===1?h:Object.assign({},h,{random:h.random?h.random*g:h.random,pick:h.pick?Object.assign({},h.pick,{v:h.pick.v*g}):h.pick}),lines)}
   if(r.cure){const st=m.states||{};const hit=(r.cure.includes('Poison')&&!r.cure.includes('Toxic')?r.cure.concat(['Toxic']):r.cure).filter(k=>st[k]);if(hit.length){for(const k of hit)delete st[k];lines.push(`${m.name} ${hit.map(k=>'「'+((((DB().states||{}).st||{})[k]||{}).ko||k)+'」').join(' · ')} 치유`)}}
   return lines.length>L0}
  /* 내던지기: 위력 (소지품 DB 「fling」 칸 → 없으면 작은 표) · 못 던지는 경우 */

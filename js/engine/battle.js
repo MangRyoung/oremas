@@ -75,8 +75,9 @@ window.OM_BATTLE=(()=>{
   const s=Math.max(0,Math.min(tbl.length-1,floor(stage)));
   const p=tbl[s];const roll=o.forced?0:d(o,10000);
   return {stage:s,chance:p,roll,crit:!!o.forced||roll<=p}}
+ function abName(m){return String((m&&m.ability)||'').replace(/^특성\s*:\s*/,'').replace(/[『』]/g,'').trim()}
  function critStage(atk,def,o){
-  o=o||{};let s=+((atk.rank||{}).critical||0)+(+o.buff||0)+(+o.input||0)+(+o.order||0)+(o.scopeLens?1:0)+Math.max(has(atk,'FocusEnergy')?2:0,has(atk,'DragonCheer')?(((atk.teraActive&&atk.teraEn&&atk.teraEn!=='-')?[atk.teraEn]:(atk.types||[])).includes('Dragon')?2:1):0);   /* 10-27 망령: 드래곤옐 (기충전과 겹치면 큰 쪽) */
+  o=o||{};if(def&&def!==atk&&!o.mold&&abName(def)==='간이무장')return -(+((def.guard||{}).critical||0));   /* 11-22 간이무장: 【방호】/자신을 공격하는 포켓몬을 「C : ±0」으로 취급 */let s=+((atk.rank||{}).critical||0)+(+o.buff||0)+(+o.input||0)+(+o.order||0)+(o.scopeLens?1:0)+Math.max(has(atk,'FocusEnergy')?2:0,has(atk,'DragonCheer')?(((atk.teraActive&&atk.teraEn&&atk.teraEn!=='-')?[atk.teraEn]:(atk.types||[])).includes('Dragon')?2:1):0);   /* 10-27 망령: 드래곤옐 (기충전과 겹치면 큰 쪽) */
   s-= +((def.guard||{}).critical||0);s+=(+o.cond||0);return s}
 
  /* ----- 대미지 (calculate_damage + damage_target) : 상성·자속은 제외 -----
@@ -157,6 +158,8 @@ window.OM_BATTLE=(()=>{
   if(mode===1){pick=vals.reduce((a,b)=>b.v>a.v||(b.v===a.v&&b.stab&&!a.stab)?b:a)}
   else if(mode===2){pick=vals.reduce((a,b)=>b.v<a.v||(b.v===a.v&&!b.stab&&a.stab)?b:a)}
   let value=pick.v;if(o.force!=null&&o.force!=='')value=+o.force;
+  /* 11-22 망령 「특성 엔진 처리」 — 역설: 받는 「상성 : 2배~8배」와 「1/2~1/8배」의 최종 상성이 반대 (2↔1/2 · 4↔1/4 · 8↔1/8, 1배 · 0배는 그대로). o.mold(특성 무시)면 안 뒤집는다 */
+  else if(!o.mold&&abName(def)==='역설'&&value>0&&value!==1)value=1/value;
   return {value,type:pick.type,stab:pick.stab,all:vals}}
 
  /* ----- 피격 (hp_damage) : amount(공격 측 합계) × 상성 × 자속 × 수동mod × 달인의띠 × 반감열매 × 버텨라 등 ----- */
