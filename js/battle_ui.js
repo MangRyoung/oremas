@@ -961,6 +961,7 @@ window.OM_BATTLE_UI=(()=>{
   const mv=(x.move!==''&&x.move!=='switch'&&x.move!=null)?MVS(m)[+x.move]:null;
   const o={sw:x.move==='switch'?1:0,...(x.move==='switch'&&x.switch?{st:String(x.switch)}:{}),pm,om,pr:mv?(FX()?FX().prioOf(m,mv):(+mv.prio||0)):0,mv:mv?1:0,atk:mv&&mv.cat!=='변화'?1:0};   /* atk: 공격을 지시받았나 (【수세】 · 【공세】 — 숨은 지시를 못 읽는 화면용, 11-07) */
   if(mv&&(isPursuit(mv,m)||x.pur)){o.pn=mv.name;o.tg=tgNow(ctx().b,x,m);o.psrc=isPursuit(mv,m)?((m.flags||{}).pursuit?(m.flags.pursuitBy||''):''):(x.pur||'')}
+  else if(mv&&mv.cat!=='변화'&&illuPursBy(m)){o.pn=mv.name;o.tg=tgNow(ctx().b,x,m);o.psrc=illuPursBy(m);o.pcond='dex'}   /* 11-22 변장 중 · 해석된 상대에게만 */
   const pimm=x.pimm||((m.flags||{}).pursuitImmune?(m.flags.pursuitImmuneBy||'추격 무시'):'');if(pimm)o.pimm=pimm;if(mv&&(isUturn(mv,m)||x.ut||x.uman))o.ut=1;return o}
  /* 좌석: 턴 개시 때 내 순서 열쇠를 cmds[내 자리].ok 에 올린다 (진행하는 사람이 남의 비밀 지시를 못 읽어도 순서를 계산하게) */
  /* 11-03 21:30 (아니스 시온 「행동 진행을 안 누르는 쪽은 우선도가 반영 안 된다」): 열쇠는 턴 개시 때 한 번만 올라가서, 그 뒤(선행 발동 등)에 생긴 우선도 효과가 남의 화면 계산에 안 들어갔다.
@@ -1020,7 +1021,7 @@ window.OM_BATTLE_UI=(()=>{
     const L=sw.map(s=>{const w=swTo(s.mon);return `${TN(s.mon.tid)} — ${String(s.mon.entry).toUpperCase()} ${s.mon.name} ⇄ ${w?w.name:'?'}`});
     const RV=sw.map(s=>{const w=swTo(s.mon);return {tr:TN(s.mon.tid),mid:s.mon.id,name:s.mon.name,img:s.mon.image||'',side:s.mon.side,area:String(s.mon.entry||'').toUpperCase(),sw:{name:w?w.name:'(교대 대상 미정)',img:w?w.image||'':''}}});
     /* 따라가때리기: 교대하려는 포켓몬을 노린 추격은 교대 전에 먼저 (맵툴 get_turn_pursuit) — 그 포켓몬은 이번 턴 행동을 쓴 것으로 본다 */
-    const pl=[],pur=[];for(const s of slots){const k=I.keyOf(s.mon);if(!k||!k.pn)continue;for(const tg of (k.tg||[])){const v=sw.find(z=>z.slot===tg);if(!v)continue;const kv=I.keyOf(v.mon)||{};
+    const pl=[],pur=[];for(const s of slots){const k=I.keyOf(s.mon);if(!k||!k.pn)continue;for(const tg of (k.tg||[])){const v=sw.find(z=>z.slot===tg);if(!v)continue;if(k.pcond==='dex'&&!dexTeam(b,v.mon,s.mon))continue;const kv=I.keyOf(v.mon)||{};
       if(kv.pimm){pl.push(`${v.mon.name}의 『${kv.pimm}』 — ${s.mon.name}의 따라가때리기를 무시했다`);continue}
       pl.push(`${s.mon.name}의 「${k.pn}」 — 교대하려는 ${v.mon.name}을(를) 교대 전에 먼저 때린다! (공격 창에서 처리한 뒤 교대)`);pur.push({slot:s.slot,mid:s.mon.id,name:s.mon.name,side:s.mon.side,change:false,started:true,order:20,prio:0,speed:0,dice:0,move:k.pn,targets:[tg],pursuit:true,pursuitHit:v.mon.id,pursuitSrc:k.psrc||''});break}}
     {const ops=[[['battle','tstep'],1],[['battle','swPur'],pur.map(o=>o.mid)],[['battle','swOut'],sw.map(s=>s.mon.id)]];if(pur.length)ops.push([['battle','order'],pur],[['battle','orderIdx'],0]);await A().setMany(ops)}
@@ -1315,7 +1316,7 @@ window.OM_BATTLE_UI=(()=>{
   let XL=null;if(occ&&occ.id!==mid){XL=await exitMon(occ.id,{forced:!!opt.forced,noAsk:!!opt.noAsk,sys:!!opt.sys,quiet:true})}
   const swIn=occ&&occ.id!==mid?(b.swOut||[]).includes(occ.id):(+b.tstep||0)>=1&&opt.how!=='죽어내밀기'&&(b.swOut||[]).some(id=>{const o=(b.mons||{})[id];return o&&id!==mid&&o.tid===m.tid&&!o.entry&&o.outA===area});   /* 10-27 망령: 동시 죽어내밀기 — 같은 트레이너가 교대도 했으면, 쓰러진 자리로 나온 포켓몬까지 교대 등장이 됐다. 교대로 빠진 바로 그 자리로 나올 때만 */   /* 10-27 망령: 교대하는 포켓몬을 먼저 「퇴장」시키고 빈 자리로 「등장」하면 occ 가 없어 교대 등장으로 안 잡혀, 행동 순서에 들어가 행동했다 — 교대 단계(tstep 1)에 같은 트레이너의 교대 포켓몬이 빠져 있으면 교대 등장 */
   const started=(+b.phase||0)===1&&!(b.order||[]).length&&!swIn;   /* 10-23 망령: 턴 개시 뒤 · 순서 계산 전에 나온 포켓몬(죽어내밀기 · 동시 내밀기 · 윤회)은 그 턴 순서에 들어간다. 그 밖엔 */ /* 턴 도중(교대 · 빈사 교체)에 들어온 포켓몬은 「교대 등장」 — 그 턴엔 지시가 없다. 턴 개시 때 필드에 있던 포켓몬만 setPhase(1) 이 started 로 바꾼다 */
-  await A().set(['battle','mons',mid,'entry'],area);{const faintRep=opt.how==='죽어내밀기'||!occ||(occ.id!==mid&&occ.hp&&occ.hp.cur<=0);const T0=+b.turn||0;const nextT=b.started&&faintRep&&(+b.phase||0)>=2;await A().set(['battle','mons',mid,'inT'],nextT?T0+1:Math.max(1,T0));await A().set(['battle','mons',mid,'inSw'],b.started&&T0>0&&!nextT?1:null)}   /* 11-07 inSw: 이 턴 도중 교대로 나왔다 (가속 — 나온 턴 종료엔 발동 안 함) */   /* 10-26 망령: 죽어내밀기는 다음 턴이 1턴째 — 턴 도중 · 턴 끝에 빈 자리(쓰러진 자리)로 나오면 다음 턴부터 센다 */await A().set(['battle','mons',mid,'started'],started);   /* inT: 필드에 나온 턴 (【지연】 셈 — 나온 턴이 1턴째) */if(m.lastMove)await A().set(['battle','mons',mid,'lastMove'],null);if(m.metro)await A().set(['battle','mons',mid,'metro'],null);   /* 11-06 스케치: 새로 나오면 마지막 기술 기록을 비운다 */let DSG=null;if(hasIllu(m)){const fk=illuFk(m);const it=fk>=0?null:illuPick(b,m);DSG=fk>=0?'@f'+fk:it?it.id:null;await A().set(['battle','mons',mid,'disg'],DSG)}else if(m.disg)await A().set(['battle','mons',mid,'disg'],null);   /* 11-05 일루젼 */if(!m.seen&&!DSG)await A().set(['battle','mons',mid,'seen'],true);if(m.pend)await A().set(['battle','mons',mid,'pend'],null);
+  await A().set(['battle','mons',mid,'entry'],area);{const faintRep=opt.how==='죽어내밀기'||!occ||(occ.id!==mid&&occ.hp&&occ.hp.cur<=0);const T0=+b.turn||0;const nextT=b.started&&faintRep&&(+b.phase||0)>=2;await A().set(['battle','mons',mid,'inT'],nextT?T0+1:Math.max(1,T0));await A().set(['battle','mons',mid,'inSw'],b.started&&T0>0&&!nextT?1:null)}   /* 11-07 inSw: 이 턴 도중 교대로 나왔다 (가속 — 나온 턴 종료엔 발동 안 함) */   /* 10-26 망령: 죽어내밀기는 다음 턴이 1턴째 — 턴 도중 · 턴 끝에 빈 자리(쓰러진 자리)로 나오면 다음 턴부터 센다 */await A().set(['battle','mons',mid,'started'],started);   /* inT: 필드에 나온 턴 (【지연】 셈 — 나온 턴이 1턴째) */if(m.lastMove)await A().set(['battle','mons',mid,'lastMove'],null);if(m.metro)await A().set(['battle','mons',mid,'metro'],null);   /* 11-06 스케치: 새로 나오면 마지막 기술 기록을 비운다 */let DSG=null;if(hasIllu(m)){const fk=illuFk(m);let it=fk>=0?null:illuPick(b,m);if(fk<0&&it){const fn=illuTextBy(m,ILLU_FREE_RE);if(fn){const L=Object.values(b.mons||{}).filter(x=>x&&x.tid===m.tid&&x.id!==m.id&&x.hp&&x.hp.cur>0&&!x.entry&&x.id!==mid).sort((x,y)=>(x.slot||0)-(y.slot||0));if(L.length>1){const ch=await illuChoose(m,L,fn);if(ch)it=ch}}}DSG=fk>=0?'@f'+fk:it?it.id:null;await A().set(['battle','mons',mid,'disg'],DSG)}else if(m.disg)await A().set(['battle','mons',mid,'disg'],null);   /* 11-05 일루젼 */if(!m.seen&&!DSG)await A().set(['battle','mons',mid,'seen'],true);if(m.pend)await A().set(['battle','mons',mid,'pend'],null);
   /* 11-20 23:04 망령 「지시 전에 죽어내밀기로 짝이 서면 패널티가 아니잖아 — 한 번 행동 불능 상태가 걸리면 교대하던가 움직일 수 없어야지」:
      11-13 에 넣었던 「지시 전에 아군이 서면 A-1 잠금 해제」를 뺐다. 턴 종료 때 걸린 A-1 은 그 다음 턴 내내 간다 (교대는 된다) */
   const EL=await entryLines(mid);
@@ -1474,6 +1475,17 @@ window.OM_BATTLE_UI=(()=>{
  /* 상대가 나왔을 때: 필드의 다른 편 포켓몬의 【등장 (상대)】 (무당거미 · 뜬돌 · 마그마의바다 …) — 그 상대가 대상.
     11-09 13:51 망령 「동시에 나온 케이스엔 불발」: 같이 나온 포켓몬(선발 · 동시 내밀기 묶음 = together)끼리는 안 터진다 — 이미 필드에 있던 쪽만 */
  /* 11-22 망령 「【은폐】/「특성 : 일루젼」이 발동했을 때 「정면」의 데이터를 해석한다 — 이런 류는?」: 일루젼으로 변장한 채 나왔을 때(등장 때 disg 가 걸림)를 「일루젼 발동」으로 보고, 그 포켓몬의 특성 · 포텐셜 · 소지품 · 트레이너 고유 중 이 계기가 적힌 것을 trigFire (구문이 없으면 주인에게 알림만) */
+ /* 11-22 망령 (비독) 「①【준비】【은폐】/「특성 : 일루젼」으로 보일 대상을 임의로 변경할 수 있다. ②「특성 : 일루젼」이 발동중일 때 데이터가 해석된 상대에게 내보내는 기술에 「따라가때리기」 효과를 부여한다」:
+    ① 그 글이 있으면 변장한 채 나올 때 주인에게 보일 대상을 묻는다(자동 = 벤치 맨 뒤, 벤치가 둘 이상일 때만) — 상대에겐 아무것도 안 찍힌다
+    ② 변장 중(disg)이면 그 포켓몬의 기술에 따라가때리기 — 단 노린 상대가 우리 편이 해석한 상대일 때만 걸린다(순서 열쇠 pcond:'dex') */
+ const ILLU_FREE_RE=/일루[젼전]\s*[」』]?\s*(?:으로|로)\s*보일\s*대상을\s*임의로\s*(?:변경|바꿀|고를)/;
+ const ILLU_PURS_RE=/일루[젼전]\s*[」』]?\s*(?:이|가)\s*발동\s*중(?:일|인)?\s*때[^①②③④⑤]*?데이터가\s*해석된\s*상대에게\s*내보내는\s*기술에\s*「\s*따라가때리기\s*」\s*효과를\s*부여/;
+ function illuTextBy(m,re){if(!m)return '';try{for(const x of trigSrcs(m,ctx().b)){const t=String(x.eff||'').replace(/<br\s*\/?>/gi,'\n');if(t.split(/(?=[①②③④⑤⑥⑦⑧⑨⑩])|\n/).some(q=>re.test(q)))return String(x.name||'').replace(/[『』]/g,'')}}catch(e){}return ''}
+ const illuPursBy=m=>m&&m.disg?illuTextBy(m,ILLU_PURS_RE):'';
+ function dexTeam(b,tg,atk){if(!tg||!atk)return false;const D=((A().ST||{}).state||{}).dex||{};for(const tid in D){if(!((D[tid]||{}).list||[]).includes(tg.id))continue;const tr=(b.trainers||{})[tid];if(tr&&sameT({tid,side:tr.side},atk,b))return true}return false}
+ async function illuChoose(m,L,nm){const c=ctx();const lab='「일루젼」으로 보일 대상';try{const seats=c.ST.state.seats||{};const ownerOn=!ownT(c,m.tid)&&!!(seats[m.tid]||baseSeat(c,m.tid))&&(A().online(seats[m.tid]?m.tid:baseSeat(c,m.tid))||coOf(c,m.tid).some(s=>A().online(s)));
+   if(ownerOn){const r=await remoteAsk(m,'pick',{name:nm,label:lab,ids:L.map(x=>x.id)},()=>'','seat:'+m.tid);return typeof r==='string'?L.find(x=>x.id===r)||null:r}
+   if(canEdit(c,m))return await uiCtx(c.b,m,nm).pick(L,lab)}catch(e){console.warn('일루젼 대상 고르기',e)}return null}
  const ILLU_TRIG_RE=/(?:「\s*특성\s*:\s*일루[젼전]\s*」|『\s*일루[젼전]\s*』|「\s*일루[젼전]\s*」)\s*(?:이|가)\s*발동(?:했을|하였을|한)\s*때/;
  async function illuTrig(mid){const b=ctx().b;const m=(b.mons||{})[mid];if(!m||!m.entry||!m.disg||!b.started||!FX())return;const notes=[];
   for(const x of trigSrcs(m,b)){const t=String(x.eff||'').replace(/<br\s*\/?>/gi,'\n');const cls=t.split(/(?=[①②③④⑤⑥⑦⑧⑨⑩])|\n/).map(q=>q.trim()).filter(Boolean);let hit=null;for(let i=0;i<cls.length;i++)if(ILLU_TRIG_RE.test(cls[i])){hit={cl:cls[i],arg:'',first:i===0||/^①/.test(cls[i]),no:(cls[i].match(/^[①②③④⑤⑥⑦⑧⑨⑩]/)||[])[0]||''};break}if(!hit)continue;
@@ -1936,17 +1948,17 @@ window.OM_BATTLE_UI=(()=>{
   /* 11-14 망령 「이건 또 뭔 지랄이야」(미사그 캠퍼스 TURN 5 · 오색동이): 교대 때 따라가때리기 차례를 처리하지 않고 넘어가도 「이미 행동」으로 순서에서 빠졌다 → 이번 턴에 실제로 기술을 낸 것(lastMove.turn)만 뺀다 */
   const swPur0=(b.tstep&&b.swPur)||[];const purDone=mid=>{const lm=((b.mons||{})[mid]||{}).lastMove;return !!(lm&&+lm.turn===(+b.turn||0))};const swPur=swPur0.filter(purDone),swSkip=swPur0.filter(mid=>!purDone(mid));
   const order=rows.filter(r=>!swPur.includes(r.mon.id)).map(r=>{const K=KEYS[r.mon.id]||{};
-   return {...(!r.change&&misagA1(b,r.mon)?{noact:misagA1(b,r.mon)}:{}),slot:r.slot,mid:r.mon.id,name:r.mon.name,side:r.mon.side,change:r.change,started:r.started,order:r.order,prio:r.prio,speed:r.speed,dice:r.dice,move:K.pn||'',targets:K.tg||[],pursuit:!!K.pn,pursuitSrc:K.psrc||'',pimm:K.pimm||'',ut:K.ut?1:0}});
+   return {...(!r.change&&misagA1(b,r.mon)?{noact:misagA1(b,r.mon)}:{}),slot:r.slot,mid:r.mon.id,name:r.mon.name,side:r.mon.side,change:r.change,started:r.started,order:r.order,prio:r.prio,speed:r.speed,dice:r.dice,move:K.pn||'',targets:K.tg||[],pursuit:!!K.pn,pursuitSrc:K.psrc||'',pcond:K.pcond||'',pimm:K.pimm||'',ut:K.ut?1:0}});
   /* 추격: 교대하는 대상을 노리면 교대보다 먼저 때린다 */
   const notes=[];if(((f.rooms||{})['트릭룸']||0)>0)notes.push('「트릭룸」이 시공간을 뒤틀었다! (스피드 역순)');for(const mid of swPur)notes.push(`${(b.mons[mid]||{}).name||'?'} — 교대 때 따라가때리기로 이미 행동`);for(const mid of swSkip)notes.push(`${(b.mons[mid]||{}).name||'?'} — 교대 때 따라가때리기를 하지 않아 평소 차례로 행동`);
   for(const m of iceUsed)notes.push(`${m.name} 「아이스번」 — 이번 기술 우선도 −1`);notes.push(...spNotes);
   /* 따라가때리기: 교대하려는 대상을 노리면 그 교대 바로 앞으로 끌어당기고, 그 공격은 위력 2배 (공격 창이 pursuitHit 를 본다) */
-  const purs=[];for(const o of order.filter(z=>z.pursuit))for(const t of o.targets){const v=order.find(z=>z.slot===t&&(z.change||(z.ut&&order.indexOf(z)<order.indexOf(o))));if(!v)continue;   /* 10-24 제보: 「유턴」으로 빠지려는 대상도 — 먼저 움직인 유턴 포켓몬이 빠지기 직전에 때린다 */
+  const purs=[];for(const o of order.filter(z=>z.pursuit))for(const t of o.targets){const v=order.find(z=>z.slot===t&&(z.change||(z.ut&&order.indexOf(z)<order.indexOf(o))));if(!v)continue;if(o.pcond==='dex'&&!dexTeam(b,b.mons[v.mid],b.mons[o.mid]))continue;   /* 11-22 해석된 상대에게만 */   /* 10-24 제보: 「유턴」으로 빠지려는 대상도 — 먼저 움직인 유턴 포켓몬이 빠지기 직전에 때린다 */
    if(v.pimm){notes.push(`${v.name}의 『${v.pimm}』 — ${o.name}의 따라가때리기를 무시했다!`);A().sysLog(`【따라가때리기】 ${v.name} 『${v.pimm}』\n${o.name}의 따라가때리기를 무시했다! (교대는 그대로)`,'battle',{mid:v.mid,img:(b.mons[v.mid]||{}).image||''});continue}
    const i=order.indexOf(o),j=order.indexOf(v);
    if(!v.change&&v.ut){order.splice(i,1);order.splice(order.indexOf(v)+1,0,o);o.pursuitHit=v.mid;v.utHit=1;notes.push(`${o.name}의 「${o.move}」 — 「유턴」으로 빠지려는 ${v.name}을(를) 교대 전에 때린다! (${v.name}은 공격 뒤 바로 교대하지 말고 기다린다)`);purs.push([o,v]);break}
    if(i>j){order.splice(i,1);order.splice(j,0,o)}o.pursuitHit=v.mid;notes.push(`${o.name}의 「${o.move}」 — 교대하려는 ${v.name}을(를) 먼저 때린다!`);purs.push([o,v]);break}
-  for(const o of order){if(!o.pursuitHit){delete o.pursuitSrc;o.pursuit=false;o.move='';o.targets=[]}delete o.pimm;delete o.ut}   /* 기술 이름·대상은 차례가 와서 공개될 때까지 순서표에 남기지 않는다 (걸린 따라가때리기만 예외) */   /* 걸리지 않은 선행 추격·추격 무시는 공개 순서표에 남기지 않는다 */
+  for(const o of order){if(!o.pursuitHit){delete o.pursuitSrc;o.pursuit=false;o.move='';o.targets=[]}delete o.pimm;delete o.ut;delete o.pcond}   /* 기술 이름·대상은 차례가 와서 공개될 때까지 순서표에 남기지 않는다 (걸린 따라가때리기만 예외) */   /* 걸리지 않은 선행 추격·추격 무시는 공개 순서표에 남기지 않는다 */
   for(const m of iceUsed)await A().set(['battle','mons',m.id,'prioDown'],null);
   /* 11-09 망령 「창파나이트의 추가행동도 대상을 지정해야 돼 · 넣자」: 선행 입력한 포텐셜 글이 「가장 마지막에 「기술」에 의한 추가 행동」이면 순서 맨 끝에 그 기술 차례를 붙인다.
      대상 = 선행 입력 때 대상 판에서 고른 자리(ptg — 구문 「대상지정」). 차례가 오면 공격 창이 그 기술 · 대상으로 열린다 (openAttack 의 xact) */
