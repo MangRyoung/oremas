@@ -24,7 +24,7 @@ window.OM_STAGE_UI=(()=>{
  const FA_NM={deploy:'전개 시',start:'턴 개시 시',end:'턴 종료 시',entry:'등장 시',use:'소지품 소모 시',hold:'필드 동안'};
  /* 11-15 망령 「필드 전개에 H 기능 — H 인 파티를 정할 수 있고, H 는 ① 필드 효과를 받지 않는다 ② 상대가 받는 효과를 무효화 하는 2종류. 고유로 통솔형이 전개할 땐 대체로 본인을 H 로」
     필드 칸 h: 0 없음 · 1 「H 는 필드 효과를 받지 않음」 · 2 「H 의 상대가 받는 효과를 무효」(= H 편만 받음). 전개 때 H 파티(트레이너) 를 고른다 — 기본 = 전개한 주인. stage.h · stage.hTid. 실제 거르기는 battle_ui fieldHOk */
- const H_KO=['없음','H 는 필드 효과를 받지 않음','H 의 상대가 받는 효과는 무효'],H_SH=['','받지 않음','상대 무효'];
+ const H_KO=['없음','H 는 필드 효과를 받지 않음','H 의 상대가 받는 효과는 무효','H 지정 (필드 글의 【H】 PT)'],H_SH=['','받지 않음','상대 무효','지정'];   /* 11-23 저녁 257: 3 = H 파티만 정한다 — 효과는 필드 글이 【H】 PT / 이외로 가른다 */
  const hLine=(s,b)=>{if(!s||!+s.h||!s.hTid)return '';b=b||(ST().state.battle||{});const t=(b.trainers||{})[s.hTid];return `H ${t?t.name||s.hTid:s.hTid} · ${H_SH[+s.h]}`};
  const effLines=t=>String(t||'').replace(/<br\s*\/?>/g,'\n').split('\n').map(x=>x.trim()).filter(Boolean);
  /* 11-09 망령 「필드에도 구문」: auto = {deploy · start · end · entry · hold · who} — 실행은 battle_ui fieldAuto */
@@ -153,7 +153,7 @@ window.OM_STAGE_UI=(()=>{
   if(!await A().set(['battle','field','stage'],s))return false;
   const k=kindOf(s);const lines=[`◆ ${e.o.name}의 《${keyOf(s)}》 전개${s.loc?' — '+s.loc:''}${s.count>=1000?' · 무한':' · '+s.count+'턴'}`,...effLines(s.eff).map(l=>'· '+l)];
   if(old&&old.src!==s.src)lines.unshift(`《${keyOf(old)}》의 풍경이 옅어져 간다…`);
-  if(s.h)lines.push(`◆ H — ${hLine(s,b)}${+s.h===1?' (그 파티는 이 필드의 효과를 받지 않는다)':' (그 상대가 받는 효과는 무효 — H 편만 받는다)'}`);
+  if(s.h)lines.push(`◆ H — ${hLine(s,b)}${+s.h===1?' (그 파티는 이 필드의 효과를 받지 않는다)':+s.h===3?' (필드 글의 【H】 PT)':' (그 상대가 받는 효과는 무효 — H 편만 받는다)'}`);
   if(k===0&&F()&&F().grounded){const off=Object.values(b.mons||{}).filter(m=>m.entry&&m.hp&&m.hp.cur>0&&!F().grounded(m)).map(m=>'「'+m.name+'」');if(off.length)lines.push('◆ 땅 위에 있지 않아 이 「필드」의 영향을 받지 않음 : '+off.join(''))}
   if(s.auto)lines.push('⚙ 자동화 구문: '+Object.keys(s.auto).filter(k=>k!=='who').map(k=>({deploy:'전개 시',start:'턴 개시 시',end:'턴 종료 시',entry:'등장 시',use:'소지품 소모 시',hold:'필드 동안'})[k]).join(' · '));
   A().sysLog(lines.join('\n'),'battle');if(s.auto&&BU()&&BU().fieldAuto){try{await BU().fieldAuto('deploy')}catch(x){console.warn('필드 전개 구문',x)}}return true}
@@ -185,6 +185,6 @@ window.OM_STAGE_UI=(()=>{
   el.innerHTML=`<div class="dim"></div><div class="flash"></div><div class="fstage"><div class="fbar"></div><div class="fld">${u?`<img src="${esc(u)}" alt="">`:''}<div class="fshade"></div><div class="ftx"><div class="fkind">${KIND_EN[k]}</div><div class="fname">《${esc(s.name)}》</div>${s.loc?`<div class="floc">${esc(s.loc)}</div>`:''}${s.owner?`<div class="floc">${esc(s.owner)}</div>`:''}</div></div><div class="fbar b"></div></div>`;
   el.onclick=()=>el.remove();document.body.appendChild(el);setTimeout(()=>el.remove(),4300)}
  /* 11-09 감우 54-F: 구문 「이계 이름 [N턴]」 — 그 포켓몬(없으면 그 트레이너)의 필드 전개 칸에서 이름으로 찾아 편다. 돌려줌 = 편 이름 (못 찾으면 '') */
- async function deployByName(mid,tid,name,turns){const n=x=>String(x||'').replace(/[\s《》]/g,'').replace(/^(이계|필드|스타디움)\//,'');const want=n(name);if(!want)return '';const L=entries();const e=L.find(e=>e.o.kind==='m'&&e.o.id===mid&&n(e.name)===want)||L.find(e=>e.o.tid===tid&&n(e.name)===want)||L.find(e=>(e.o.id===mid||e.o.tid===tid)&&(n(e.name).includes(want)||want.includes(n(e.name))));if(!e)return '';const ok=await put(e,turns||0);return ok===false?'':e.name}
+ async function deployByName(mid,tid,name,turns,ho){const n=x=>String(x||'').replace(/[\s《》]/g,'').replace(/^(이계|필드|스타디움)\//,'');const want=n(name);if(!want)return '';const L=entries();const e=L.find(e=>e.o.kind==='m'&&e.o.id===mid&&n(e.name)===want)||L.find(e=>e.o.tid===tid&&n(e.name)===want)||L.find(e=>(e.o.id===mid||e.o.tid===tid)&&(n(e.name).includes(want)||want.includes(n(e.name))));if(!e)return '';const ok=await put(e,turns||0,ho&&ho.hTid?{h:+e.h||3,hTid:ho.hTid}:undefined);return ok===false?'':e.name}
  return {chip,bgStyle,info,open,deploy,deployByName,reset,turnEnd,onState,stage,play,hasMine,editor,sheetSec,bindSheet,fix};
 })();
