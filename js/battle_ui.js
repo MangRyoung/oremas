@@ -1980,7 +1980,9 @@ window.OM_BATTLE_UI=(()=>{
    const ops=chgOps(hit);const head=`${x.name} — 『${name}』의 효과 대신 【${hit.X}】 (『${pn(hit.p)}』)`;
    if(ops&&FX()){let rr=null;try{rr=await FX().run(ops,uiCtx(b,x,pn(hit.p),x.entry))}catch(e){console.warn('cmdChange',e)}out.lines.push(head,...((rr&&rr.lines)||[]).map(l=>'  '+l))}else out.lines.push(head+' — 효과는 손으로')}
   out.all=R.length>0&&out.chg.length===R.length;return out}
- function tempRank(m,k,d,rx){if(rx&&FX()&&FX().rkRedir)k=FX().rkRedir(m,k,d);   /* 11-10 랭크전환: 지령 · 영창 (변환술 되돌리기는 rx 없이) */m.rank=m.rank||{};m.tempRank=m.tempRank||{};const lim=k==='critical'?4:6;const b0=+m.rank[k]||0;const a=Math.max(-lim,Math.min(lim,b0+d));m.rank[k]=a;m.tempRank[k]=(+m.tempRank[k]||0)+(a-b0)}   /* 한계(±6)에 막힌 만큼은 기록하지 않는다 — 턴 종료 해제 때 랭크가 깎이지 않게 */
+ /* 11-23 21:32 망령 「(손으로 고친 랭크 · 지령 · 영창에도 변린이) 걸려야 돼」: 포텐셜 글 「「능력」이 상승하는 대신 「특성 : X」이 된다」(fx rkToAb) — 오를 차례면 올리지 않고 특성을 바꾼 뒤 알림 글을 돌려준다 */
+ function rkAbSwap(m,k){try{const F=FX();if(!F||!F.rkToAb||!F.setAb||!m)return '';const sw=F.rkToAb(m,k);if(!sw)return '';F.setAb(m,sw.ab,sw.nm);return `${m.name} 『${sw.nm}』 — 「${STAT_KO[k]||k}」이(가) 오르는 대신 「특성 : ${sw.ab}」이(가) 되었다`}catch(e){return ''}}
+ function tempRank(m,k,d,rx){if(rx&&FX()&&FX().rkRedir)k=FX().rkRedir(m,k,d);if(d>0){const sw=rkAbSwap(m,k);if(sw)return sw}   /* 11-10 랭크전환: 지령 · 영창 (변환술 되돌리기는 rx 없이) */m.rank=m.rank||{};m.tempRank=m.tempRank||{};const lim=k==='critical'?4:6;const b0=+m.rank[k]||0;const a=Math.max(-lim,Math.min(lim,b0+d));m.rank[k]=a;m.tempRank[k]=(+m.tempRank[k]||0)+(a-b0)}   /* 한계(±6)에 막힌 만큼은 기록하지 않는다 — 턴 종료 해제 때 랭크가 깎이지 않게 */
  function applyOrder(mons,f,t,name,targetId){const out=[];const tgt=mons[targetId];const allies=Object.values(mons).filter(m=>sameT(m,t)&&m.entry&&m.hp.cur>0);const enemies=Object.values(mons).filter(m=>!sameT(m,t)&&m.entry&&m.hp.cur>0);
   const n=String(name||'');let m;
   if((m=n.match(/^(숙달|전개|방해)?(공격|방어|특공|특방|민첩|회복|저격|회피)지령$/))){const pre=m[1]||'',st=m[2];
@@ -1989,8 +1991,8 @@ window.OM_BATTLE_UI=(()=>{
    if(pre==='방해'){for(const e of enemies){e.rank=e.rank||{};const k1=FX()&&FX().rkRedir?FX().rkRedir(e,k,-1):k;e.rank[k1]=Math.max(-6,(+e.rank[k1]||0)-1)}out.push(`상대 전체 ${st} −1`);return out}
    if(!tgt)return out;
    if(pre==='전개'){tgt.mod=tgt.mod||{};tgt.mod[k]=(+tgt.mod[k]||1)*2;tgt.tempMod=tgt.tempMod||{};tgt.tempMod[k]=(+tgt.tempMod[k]||1)*2;out.push(`${tgt.name} ${st} ×2`);return out}
-   {const k1=FX()&&FX().rkRedir?FX().rkRedir(tgt,k,1):k;tempRank(tgt,k1,1);out.push(`${tgt.name} ${k1!==k?st+'→'+(STAT_KO[k1]||k1):st} +1`)}return out}
-  if((m=n.match(/^(검|방패|관|잔|날개|촛불|장막)의 영창$/))){const k={검:'attack',방패:'defense',관:'specialattack',잔:'specialdefense',날개:'speed',촛불:'accuracy',장막:'evasion'}[m[1]];for(const a of allies)tempRank(a,k,1,1);out.push(`아군 전체 ${STAT_KO[k]} +1`);return out}
+   {const k1=FX()&&FX().rkRedir?FX().rkRedir(tgt,k,1):k;const sw=tempRank(tgt,k1,1);out.push(sw||`${tgt.name} ${k1!==k?st+'→'+(STAT_KO[k1]||k1):st} +1`)}return out}
+  if((m=n.match(/^(검|방패|관|잔|날개|촛불|장막)의 영창$/))){const k={검:'attack',방패:'defense',관:'specialattack',잔:'specialdefense',날개:'speed',촛불:'accuracy',장막:'evasion'}[m[1]];const SW=[];for(const a of allies){const sw=tempRank(a,k,1,1);if(sw)SW.push(sw)}out.push(`아군 전체 ${STAT_KO[k]} +1`,...SW);return out}
   if(n==='물리결계'||n==='특수결계'){f.objects[t.side]=f.objects[t.side]||{};f.objects[t.side][n==='물리결계'?'리플렉터':'빛의장막']=3;out.push(`${SIDE_KO[t.side]} ${n==='물리결계'?'리플렉터':'빛의장막'} 3T`);return out}
   if(n==='치유의 법계'){for(const a of allies){const v=Math.max(1,Math.floor(a.hp.max/4));a.hp.cur=Math.min(a.hp.max,a.hp.cur+v)}out.push('아군 전체 HP 1/4 회복');return out}
   if(n==='정화의 법계'){const db=(DB().states||{}).st||{};let c=0;for(const a of allies){for(const k in (a.states||{})){if(db[k]&&db[k].neg){delete a.states[k];c++}}}out.push(`아군 상태 이상 ${c}개 해제`);return out}
@@ -2683,7 +2685,7 @@ window.OM_BATTLE_UI=(()=>{
   $('#eitemdb',md).onclick=()=>{window.OM_DB_UI.open({kind:'item',sel:$('#eitem',md).value,pick:async name=>{const it=(DB().items||{})[name]||{};await A().set(['battle','mons',mid,'item'],name);await A().set(['battle','mons',mid,'itemEff'],String(it.eff||''));openEdit(mid)}})};
   /* 10-23 망령: 저장 중에 화면이 m(살아 있는 상태 객체)을 새 값으로 먼저 바꿔 놓아서(낙관적 반영) 「바뀐 것」 로그가 비던 것 — 누를 때의 사본과 비교한다 */
   const snapM=()=>JSON.parse(JSON.stringify((ctx().b.mons||{})[mid]||m));
-  $('#esave',md).onclick=async()=>{const m=snapM();const nm=JSON.parse(JSON.stringify(m));nm.hp.cur=Math.max(0,Math.min(m.hp.max,+$('#ehp',md).value||0));nm.rank=rank;nm.teraActive=$('#etera',md).checked;if(nm.teraActive&&!m.teraActive)nm.teraUsed=true;nm.item=$('#eitem',md).value.trim();
+  $('#esave',md).onclick=async()=>{const m=snapM();const nm=JSON.parse(JSON.stringify(m));nm.hp.cur=Math.max(0,Math.min(m.hp.max,+$('#ehp',md).value||0));nm.rank=rank;const RKAB=[];for(const k in delta){if(delta[k]>0&&(+rank[k]||0)>(+(m.rank||{})[k]||0)){const sw=rkAbSwap(nm,k);if(sw){rank[k]=+(m.rank||{})[k]||0;delete delta[k];RKAB.push(sw)}}}nm.teraActive=$('#etera',md).checked;if(nm.teraActive&&!m.teraActive)nm.teraUsed=true;nm.item=$('#eitem',md).value.trim();
    nm.mod={};md.querySelectorAll('[data-mod]').forEach(i=>{const v=i.value===''?1:mulOf(i.value,(m.mod||{})[i.dataset.mod]||1);if(v>0&&v!==1)nm.mod[i.dataset.mod]=v});
    /* 손으로 바꾼 배율은 출처 기록에서 떼어 낸다 (나중에 ✕ 로 역으로 나뉘지 않게) */
    if(nm.fx&&nm.fx.mults){nm.fx.mults=nm.fx.mults.map(e=>{const st={};for(const k in e.stats)if((+nm.mod[k]||1)===(+(m.mod||{})[k]||1))st[k]=e.stats[k];return Object.assign({},e,{stats:st})}).filter(e=>Object.keys(e.stats).length)}
@@ -2691,7 +2693,7 @@ window.OM_BATTLE_UI=(()=>{
    if($('#etemp',md).checked){nm.tempRank=nm.tempRank||{};for(const k in delta)nm.tempRank[k]=(+nm.tempRank[k]||0)+delta[k]}
    nm.states={};md.querySelectorAll('[data-st]').forEach(cb=>{if(!cb.checked)return;const k=cb.dataset.st;const ci=md.querySelector(`[data-stc="${k}"]`);const d=sdb.st[k]||{};nm.states[k]=ci&&ci.value!==''?+ci.value:(+(m.states||{})[k]||(d.min>=1000||!d.min?1000:(+d.max>+d.min&&+d.max<1000?+d.min+Math.floor(Math.random()*(+d.max-+d.min+1)):+d.min)))});if(nm.states.LeechSeed&&!(m.states||{}).LeechSeed){const sf=seedSrc(b,m);if(sf)nm.seedFrom=sf;else delete nm.seedFrom}
    if(nm.hp.cur<=0)nm.entry='';
-   A().closeModal();if(await saveMon(m,mid,nm)){const SC=stLog(m,nm,fcMan('랭크·상태 창'));const ch=[];   /* 11-01 망령 「상태 변화도 효과 로그」: 걸리고 풀린 상태는 카드로 — 이 줄에서는 뺀다 */for(const k in STAT_KO){const a=+m.rank[k]||0,b2=+rank[k]||0;if(a!==b2)ch.push(`${STAT_KO[k]} ${a}→${b2>0?'+':''}${b2}`)}
+   A().closeModal();if(await saveMon(m,mid,nm)){const SC=stLog(m,nm,fcMan('랭크·상태 창'));const ch=[];   /* 11-01 망령 「상태 변화도 효과 로그」: 걸리고 풀린 상태는 카드로 — 이 줄에서는 뺀다 */for(const k in STAT_KO){const a=+m.rank[k]||0,b2=+rank[k]||0;if(a!==b2)ch.push(`${STAT_KO[k]} ${a}→${b2>0?'+':''}${b2}`)}ch.push(...RKAB);
     const sa=Object.keys(m.states||{}).filter(k=>m.states[k]),sb=Object.keys(nm.states);const on=sb.filter(k=>!sa.includes(k)).map(k=>(sdb.st[k]||{}).ko||k),off=sa.filter(k=>!sb.includes(k)).map(k=>(sdb.st[k]||{}).ko||k);
     if(on.length&&!SC)ch.push('+'+on.join(','));if(off.length&&!SC)ch.push('−'+off.join(','));if(nm.hp.cur!==m.hp.cur)ch.push(`HP ${m.hp.cur}→${nm.hp.cur}`);if(!!nm.teraActive!==!!m.teraActive)ch.push(nm.teraActive?`테라스탈 → 「${m.tera}」 타입`:'테라스탈 해제');const itCh=(nm.item||'')!==(m.item||'')?`소지품 ${nm.item||'없음'}`:'';
     const dsc=SC?[]:sb.filter(k=>!sa.includes(k)).map(k=>{const ds=stDesc(k);return ds.length?`「${stName(k)}」 ${ds.join(' ')}`:''}).filter(Boolean);if(ch.length)A().sysLog(`${m.name}: ${ch.join(' · ')}${dsc.length?'\n'+dsc.join('\n'):''}`,'battle',{mid,img:m.image||''});if(itCh&&A().selfLog)A().selfLog(`${m.name}: ${itCh}`)}}}
