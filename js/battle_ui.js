@@ -3242,11 +3242,11 @@ window.OM_BATTLE_UI=(()=>{
   if((r=cl.match(/(상대\s*)?(?:PT|파티)에\s*【\s*프라이드\s*[:：]\s*([^】]+?)\s*】\s*(?:이|가)\s*(?:있을|있다면|있는|있으면)/))&&FX()&&FX().priOk){const L=(r[1]?(foes||[]):party);const hit=L.filter(m=>FX().priOk(m,r[2]));return {cond:1,ok:hit.length>0,why:hit.length?`${r[1]?'상대 ':''}PT에 【프라이드 : ${r[2]}】 — ${hit.map(m=>m.name).join(' · ')}`:`${r[1]?'상대 ':''}PT에 【프라이드 : ${r[2]}】 없음`}}
   if((r=cl.match(/「([^」]+)」\s*「([^」]+)」\s*「([^」]+)」\s*중\s*하나를\s*고른다/)))return {pick:[r[1],r[2],r[3]]};
   return {allow:1}}
- async function prepCheck(){const c=ctx();if(!c.mgr||!FX())return;const b=c.b;const W=[],OK=[],AL=[],PK=[];
+ async function prepCheck(){const c=ctx();if(!c.mgr||!FX())return;const b=c.b;const W=[],OK=[],AL=[],PK=[],FP=[];
   for(const tid of Object.keys(b.trainers||{})){const t=b.trainers[tid];if(!t)continue;const party=Object.values(b.mons||{}).filter(m=>m&&m.tid===tid);if(!party.length)continue;
    const items=[];for(const m of party)for(const p of potSrc(m))items.push({own:m,p,uq:false});for(const u of (t.unique||[]))if(u&&u.name)items.push({own:party.find(m=>m.entry)||party[0],p:u,uq:true});
    for(const it of items){const cls=prepClauses(it.p.eff);if(!cls.length)continue;const who=it.uq?`${t.name} 고유`:it.own.name;const nm=String(it.p.name||'').replace(/[『』]/g,'').trim();
-    for(const cl of cls){const r=prepEval(cl,party,Object.values(b.mons||{}).filter(m=>m&&m.tid!==tid&&!sameT(m,party[0],b)));
+    for(const cl of cls){if(!it.uq&&FORM_PICK_RE.test(cl)){FP.push({own:it.own,nm});continue}const r=prepEval(cl,party,Object.values(b.mons||{}).filter(m=>m&&m.tid!==tid&&!sameT(m,party[0],b)));
      if(r.pick){PK.push({tid,t,nm,opts:r.pick,cl});continue}
      if(r.allow){AL.push(`${who} 『${nm}』 — ${cl.replace(/^[①-⑥]?\s*【\s*준비\s*】\s*\/?\s*/,'').slice(0,80)}`);continue}
      if(!r.ok&&!r.soft){W.push(`⚠ ${who} 『${nm}』 — 조건 불충족: ${r.why}`);if(it.uq)await A().set(['battle','trainers',tid,'potOff',nm],r.why);else await A().set(['battle','mons',it.own.id,'potOff',nm],r.why)}
@@ -3257,6 +3257,7 @@ window.OM_BATTLE_UI=(()=>{
   /* 「셋 중 하나를 고른다」 → 기능 확장 (트레이너 · 시합 중) */
   for(const x of PK){const already=(x.t.ext||[]).some(e=>e&&x.opts.includes(e.mv));if(already)continue;const idx=await new Promise(res=>{const md=A().openModal(`<div class="mhead"><h2>【준비】 ${esc(x.t.name)} 『${esc(x.nm)}』</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="small dim" style="margin-bottom:8px">${esc(x.cl.slice(0,160))}</div><div class="row" style="gap:6px;flex-wrap:wrap">${x.opts.map((o,i)=>`<button class="btn pri" data-pk="${i}">${esc(o)}</button>`).join('')}</div>`);md.addEventListener('click',e=>{const bt=e.target.closest('[data-pk],[data-x]');if(!bt)return;const v=bt.dataset.pk;A().closeModal();res(v==null?-1:+v)})});
    if(idx<0)continue;const ext=((ctx().b.trainers||{})[x.tid]||{}).ext||[];await A().set(['battle','trainers',x.tid,'ext'],ext.concat([{mv:x.opts[idx],src:x.nm,kind:'act',lim:0}]));okL.push(`✔ ${x.t.name} 『${x.nm}』 — 「${x.opts[idx]}」를 기능 확장으로 (시합 중)`)}
+  for(const x of FP){const m=ctx().b.mons[x.own.id];if(!m)continue;if(m.tatsu){okL.push(`✔ ${m.name} 『${x.nm}』 — 싸리용 ${m.tatsu} 폼 (이미 정함)`);continue}const z=await tatsuPick(m,`【준비】 ${m.name} 『${x.nm}』 — 입 안의 싸리용 폼`);okL.push(z?`✔ ${m.name} 『${x.nm}』 — 싸리용 ${z.f} 폼 (${z.st})`:`✔ ${m.name} 『${x.nm}』 — 폼을 고르지 않음 (기술을 맞힐 때 다시 묻는다)`)}
   if(!W.length&&!okL.length&&!AL.length)return;
   A().sysLog(`【준비】 시합 개시 — PT 조건 검사\n${[...W,...okL].join('\n')}${AL.length?'\n· 제작기 규칙(적용됨 확인): '+AL.length+'건\n'+AL.map(x=>'  '+x).join('\n'):''}`,'battle',W.length?{}:{gmPriv:1});
   if(W.length)A().openModal(`<div class="mhead"><h2>【준비】 조건 불충족</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="small" style="white-space:pre-wrap">${esc(W.join('\n'))}</div><div class="small dim" style="margin-top:8px">이 포텐셜은 이번 배틀 동안 발동하지 않는다 (카드 「발동」은 막히고, 강제 발동은 된다).</div>`)}
@@ -3288,6 +3289,17 @@ window.OM_BATTLE_UI=(()=>{
      const pn=String(p.name).replace(/[『』]/g,'');for(const id of common){const d=b1.mons[id];await A().set(['battle','mons',id,'treatX'],[...(d.treatX||[]),{tag:give,by:m.name,src:pn}])}
      if(L.mmax!=null){const u=(m.potUses||{})[p.name];await A().set(['battle','mons',m.id,'potUses',p.name],Math.max(0,(u==null?L.mmax:+u)-1))}if(L.per)await A().set(['battle','mons',m.id,'potTurn',p.name],T);if(L.sup)await A().set(['battle','mons',m.id,'potTurn','_sup',p.name],1);
      const nmS=common.map(id=>b1.mons[id].name).join(' · ');A().sysLog(`【포텐셜】 ${m.name} 『${pn}』 — 아군 전체가 「${w}」 기술로 ${nmS}을(를) 공격했다 · ${nmS}이(가) 내보내는 기술은 「${give}」 기술이 된다 (필드에 있는 동안)`,'battle',{mid:m.id,img:m.image||''});break}}}catch(e){console.warn('thirdTone',e)}}
+ /* 11-23 21:41 망령 「【준비】/입안에 든 「싸리용」의 「폼」을 정할 수 있다 — 이거는?」:
+    ① 그 글의 포텐셜(FORM_PICK_RE) — 시합 개시 PT 검사(prepCheck) 때 폼을 고르게 해 m.tatsu 에 적는다(배틀 내내).
+    ② 기술 글 「입 안에 든 「싸리용」의 「폼」에 따라 정해진 능력치+N. (노랑 : 스피드, 빨강 : 방어, 주황 : 공격)」(한판내기) — 맞히면 m.tatsu 폼의 능력치 +N. 폼이 안 정해져 있으면 그때 묻고 적어 둔다 */
+ const FORM_PICK_RE=/입\s*안에\s*든\s*「\s*싸리용\s*」\s*의\s*「\s*폼\s*」\s*(?:을|를)\s*정할\s*수\s*있다/;
+ const ORDERUP_RE=/입\s*안에\s*든\s*「\s*싸리용\s*」\s*의\s*「\s*폼\s*」\s*에\s*따라\s*정해진\s*능력치\s*\+\s*(\d)[^(（]*[(（]([^)）]+)[)）]/;
+ function tatsuForms(m){let n=1,L=[];try{for(const mv of (m.moves||[])){const x=String((mv&&mv.eff)||'').match(ORDERUP_RE);if(!x)continue;n=+x[1]||1;L=x[2].split(/[,，]/).map(z=>{const q=z.split(/[:：]/);return {f:(q[0]||'').trim(),st:(q[1]||'').trim()}}).filter(z=>z.f&&z.st);break}}catch(e){}if(!L.length)L=[{f:'노랑',st:'스피드'},{f:'빨강',st:'방어'},{f:'주황',st:'공격'}];return {n,L}}
+ async function tatsuPick(m,title){const b=ctx().b;const F=tatsuForms(m);let r=null;try{r=await uiCtx(b,m,title||'싸리용의 폼').choose(F.L.map(z=>`${z.f} (${z.st})`))}catch(e){}if(!Array.isArray(r)||!r.length)return null;const z=F.L[+r[0]];if(!z)return null;await A().set(['battle','mons',m.id,'tatsu'],z.f);return z}
+ async function orderUpAfter(mid,R){try{if(!R||R.check||!R.mv)return;const x=String(R.mv.eff||'').match(ORDERUP_RE);if(!x)return;if(!(R.targets||[]).some(r=>r&&r.acc&&r.acc.hit))return;const b=ctx().b;const m=(b.mons||{})[mid];if(!m||!m.entry||!(m.hp&&m.hp.cur>0))return;
+   const F=tatsuForms(m);let z=F.L.find(q=>q.f===m.tatsu);if(!z)z=await tatsuPick(m,R.mv.name+' — 입 안의 싸리용 폼');if(!z){A().sysLog(`【기술】 ${m.name} 『${R.mv.name}』 — 싸리용의 폼을 고르지 않아 능력치는 손으로`,'battle',{mid});return}
+   const ops=(FX().parse(`랭크 자신 ${z.st}+${F.n}`)||{}).ops||[];if(!ops.length)return;
+   await fireAuto(mid,'move',R.mv.name,{auto:{name:R.mv.name,src:'dyn',ops,text:''},quiet:true,noRoll:true,force:true,noEv:1,head:`【기술】 ${m.name} 『${R.mv.name}』 — 입 안의 「싸리용」 ${z.f} 폼 · 「${z.st} : +${F.n}」`})}catch(e){console.warn('orderUp',e)}}
  async function sleepTalkAfter(mid,R){try{if(!R||R.check||!R.mv||String(R.mv.name||'').replace(/\s/g,'')!=='잠꼬대')return;const b=ctx().b;const m=b.mons[mid];if(!m||!m.entry||!(m.hp&&m.hp.cur>0))return;const sk=stKeyOf('잠듦')||(FX()&&FX().stEn?FX().stEn('잠듦'):'');
    if(!sk||!(m.states||{})[sk]){A().sysLog(`【잠꼬대】 ${m.name} — 「잠듦」 상태가 아니라 실패`,'battle',{mid});return}
    let only='',src='';for(const p of potSrc(m)){const r=String((p&&p.eff)||'').match(STALK_ONLY_RE);if(r&&!potOffWhy(m,p.name)){only=r[1].trim();src=String(p.name).replace(/[『』]/g,'');break}}
@@ -4317,7 +4329,7 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【(?:[^【】]
    await coverFire(mid,RESULT);
    if(!RF){await chainAfterAct(mid);
    await mvModAfter(mid,RESULT);
-   await comboXact(mid,RESULT);await sleepTalkAfter(mid,RESULT);await thirdToneAfter(mid,RESULT)}   /* 11-22 「아군의 「소리」 기술에 뒤이어」 */
+   await comboXact(mid,RESULT);await sleepTalkAfter(mid,RESULT);await thirdToneAfter(mid,RESULT);await orderUpAfter(mid,RESULT)}   /* 11-22 「아군의 「소리」 기술에 뒤이어」 */
    /* 11-07 망령 「닌자 자동화가 없어요」: 「자신이 행동한 뒤 …」 포텐셜(닌자 ① 회피 ×1.33 턴 종료까지)은 공격을 적용한 뒤 저절로 건다 — 구문이 있고 횟수(【N/시】) 없는 것만 · 한 턴에 한 번 */
    {const a2=RF?null:ctx().b.mons[mid];const T=+ctx().b.turn||0;if(a2&&a2.entry&&a2.hp.cur>0&&FX())for(const p of potSrc(a2)){if(!p||!p.name||(p.ph&&!p.apt)||!/자신이\s*행동한\s*(?:뒤|후)/.test(String(p.eff||'')))continue;const k=mid+'|'+p.name;if(ACTFX[k]===T)continue;
      const au=FX().autoOf(a2,'pot',p.name);if(!au||!au.ops||!au.ops.length||au.manual||limManual(a2,'pot',p.name,p.eff))continue;ACTFX[k]=T;const okN=await fireAuto(mid,'pot',p.name,{quiet:true,noRoll:true,head:`【포텐셜】 ${a2.name} 『${p.name}』 — 행동한 뒤 자동`});
