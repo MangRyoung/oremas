@@ -3011,7 +3011,7 @@ window.OM_BATTLE_UI=(()=>{
     if(pick==='off'){const nb0=snap(b0),nb=snap(nb0);const gone=[];for(const x of on){const t=nb.mons[x.id];if(!t)continue;let n=FX().removeByName(t,name);if(!n&&nn(name)!==name)n=FX().removeByName(t,nn(name));if(!n){const raw=FX().chips(t).find(ch=>nn(ch.name)===nn(name));if(raw)n=FX().removeByName(t,raw.name)}if(n)gone.push(t.name)}
      if(!await saveBattle(nb0,nb))return false;const KN0=({pot:'포텐셜',trait:'특성',item:'소지품',order:'지령'})[kind]||'효과';A().sysLog(`【${KN0}】 ${m0.name} 『${nn(name)}』 해제 — ${gone.join(', ')||'없음'}`,'battle',{mid:m0.id,img:m0.image||''});return false}
     STK2=99}}
-  if(kind==='pot'&&!opt.force){const off=potOffWhy(m0,name);if(off){A().sysLog(`【포텐셜】 ${m0.name} 『${String(name).replace(/[『』]/g,'')}』 — 【준비】 조건 불충족(${off})이라 이번 배틀에서는 발동하지 않는다`,'battle',{mid:m0.id,img:m0.image||''});return false}}   /* 11-09 감우 54-G */
+  if(kind==='pot'&&!opt.force){const off=potOffWhy(m0,name);if(off){A().sysLog(/『특권』이 발동하지 않는다$/.test(off)?`【포텐셜】 ${m0.name} 『${String(name).replace(/[『』]/g,'')}』 — 발동하지 않는다 (${off})`:`【포텐셜】 ${m0.name} 『${String(name).replace(/[『』]/g,'')}』 — 【준비】 조건 불충족(${off})이라 이번 배틀에서는 발동하지 않는다`,'battle',{mid:m0.id,img:m0.image||''});return false}}   /* 11-09 감우 54-G */
    if(kind==='pot'&&!opt.uq&&auto.src!=='card'){const bk=misagBlock(b0,m0,name);if(bk){A().sysLog(`【포텐셜】 ${m0.name} 『${name}』\n${bk} — 발동하지 않았다`,'battle',{mid:m0.id,img:m0.image||''});return false}}   /* 10-28 미사그 대학 */
   /* 확률 (10-24 망령): 레디메이드 특성은 글(text)이 비어 있어 확률을 못 읽었다 — 그 칸의 효과 글까지 본다. 「N할로」 · 「N% 확률」 은 여기서 굴리고, 줄마다 고르는 효과(①②)는 고른 줄에서 굴린다 */
   const etx=auto.text||slotEff(m0,kind,name);const tm=FX().timing(etx);const nb0=snap(b0),nb=snap(nb0);const m=nb.mons[mid];const L=[];
