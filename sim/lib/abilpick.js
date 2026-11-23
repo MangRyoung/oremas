@@ -22,7 +22,7 @@ function pickAll(entries,W,rng,o){o=o||{};const A=M.abil();const use=o.use||{};c
    const K={'물리 스위퍼':/공격|물리기|접촉기|스피드|급소/,'특수 스위퍼':/특공|특수기|스피드|급소/,'물리 탱커':/방어|HP|회복|반감|접촉기를 받|물리기를 받/,'특수 벽':/특방|HP|회복|반감|특수기를 받|상태가 되지 않/,'밸런스':/./,'쌍두':/공격|특공|기술의 대미지/}[e.kind]||/./;if(K.test(d))v+=2;
    if(/탱커|벽/.test(e.kind)&&/「(방어|특방|HP) : -/.test(d))v-=3;if(/스위퍼|쌍두/.test(e.kind)&&/「(공격|특공|스피드) : -/.test(d))v-=3;
    if(/날씨|필드/.test(d)&&!e.types.some(t=>d.includes(t)))v-=1;
-   const reads=RD.reads(W,a.name,d);if(needRead&&!reads)continue;if(!reads){if(/표시|날씨|오라|에리어|타입\s*:\s*임의|같은 「?타입|특성」을|맞바꾼|지속 턴|분노|바인드/.test(d))continue;v-=1}   /* 시뮬이 못 읽는 것은 GM 판정 — 배틀에서 뜻이 있는 것만 */   /* 시뮬 · 웹툴이 읽는 것만 — 승률에 잡히게 */if(use[a.name])v-=1.5;
+   const reads=RD.reads(W,a.name,d);if(needRead&&!reads)continue;if(!reads){if(/표시|날씨|오라|에리어|타입\s*:\s*임의|같은 「?타입|특성」을|맞바꾼|지속 턴|분노|바인드|조이기/.test(d))continue;v-=1}   /* 시뮬이 못 읽는 것은 GM 판정 — 배틀에서 뜻이 있는 것만 */   /* 시뮬 · 웹툴이 읽는 것만 — 승률에 잡히게 */if(use[a.name])v-=1.5;
    sc.push({a,v:v+rng()*1.2,reads})}if(sc.length)break}
   sc.sort((x,y)=>y.v-x.v);const p=sc[Math.floor(rng()*Math.min(3,sc.length))];if(!p){out[e.id]=null;continue}use[p.a.name]=(use[p.a.name]||0)+1;out[e.id]={name:p.a.name,desc:p.a.desc,to:p.a.to,reads:p.reads};
   for(const g of myDg){(inDg[g]=inDg[g]||new Set());if(inDg[g].has(p.a.name))dupDg.push(g+':'+p.a.name);inDg[g].add(p.a.name)}}

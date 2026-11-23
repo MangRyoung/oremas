@@ -82,7 +82,7 @@ const FX=()=>window.OM_FX;
    else{
    if(st.Toxic){m.toxicN=Math.min(15,(+m.toxicN||0)+1);dmg(m,frac(m,m.toxicN,16),lines,`「맹독」 ${m.toxicN}/16`)}else m.toxicN=0;
    if(st.Poison){const [v,tx]=sf(m,'Poison',1,8);dmg(m,v,lines,`「독」 ${tx}`)}}if(st.Burn){const [v,tx]=sf(m,'Burn',1,16);dmg(m,v,lines,`「화상」 ${tx}`)}
-   if(st.Nightmare&&sleeping){const [v,tx]=sf(m,'Nightmare',1,4);dmg(m,v,lines,`「악몽」 ${tx}`)}if(st.Curse){const [v,tx]=sf(m,'Curse',1,4);dmg(m,v,lines,`「저주」 ${tx}`)}if(st.Bind){/* 11-08 51-2 ⑪ 조임밴드: 조이기를 건 쪽(m.bindFrom)이 지니면 1/8 → 1/6 */const bf=m.bindFrom&&mons[m.bindFrom];const band=bf&&/조임밴드/.test(itemsOf(bf));const [v,tx]=band?[frac(m,1,6),'1/6 「조임밴드」']:sf(m,'Bind',1,8);dmg(m,v,lines,`「바인드」 ${tx}`)}
+   if(st.Nightmare&&sleeping){const [v,tx]=sf(m,'Nightmare',1,4);dmg(m,v,lines,`「악몽」 ${tx}`)}if(st.Curse){const [v,tx]=sf(m,'Curse',1,4);dmg(m,v,lines,`「저주」 ${tx}`)}if(st.Bind){/* 11-08 51-2 ⑪ 조임밴드: 조이기를 건 쪽(m.bindFrom)이 지니면 1/8 → 1/6 */const bf=m.bindFrom&&mons[m.bindFrom];const band=bf&&/조임밴드/.test(itemsOf(bf));const [v,tx]=band?[frac(m,1,6),'1/6 「조임밴드」']:sf(m,'Bind',1,8);dmg(m,v,lines,`「조이기」 ${tx}`)}
    if(st.SaltCure){const ty=typesOf(m);const sw=ty.includes('Steel')||ty.includes('Water');dmg(m,sw?frac(m,1,6):frac(m,1,8),lines,`「소금절이」 ${sw?'1/6':'1/8'}`)}
    if(st.ThunderCage){const mul=B().effectiveness(['Electric'],m,{}).value;if(mul>0)dmg(m,Math.max(1,Math.floor(m.hp.max/8*mul)),lines,`「썬더프리즌」 전기 1/8 ×${mul}`);else lines.push(`${m.name} 「썬더프리즌」 전기 타입 효과가 없음`)}
   });
