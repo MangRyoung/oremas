@@ -88,6 +88,8 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};/* 11-23 「기술의 반�
   const effPre=mv.cat==='변화'?null:B.effectiveness(moveTypes,def,{multiMode:0,atkTypes,force:null,floating});
   const mods=FX?FX.attackMods(atk,def,Object.assign(FN.moveQuery(atk,def,mv,moveTypes,effPre?effPre.value:1,!multiTarget),{stab:!!(effPre&&effPre.stab)})):{boost:1,guard:1,cg:0,cr:0,cx:'',names:[]};
   {const ig=OI&&OI.defGuard(def,mv.cat);if(ig){mods.guard=(mods.guard||1)*ig.v;mods.names=(mods.names||[]).concat([{key:'_i',who:def.id,txt:ig.txt}])}}
+  /* 11-23 웹툴과 같게: 특성 둘이함께 ③ 「전체기」로 받을 대미지 2배 (특성 무시 · 손으로 건 완화 줄이 있으면 겹치지 않는다) */
+  if(def!==atk&&mv.cat!=='변화'&&abD==='둘이함께'&&(multiTarget||/전체|자신\s*이외/.test(String(mv.range||'')))&&!moldA&&!(((def.fx||{}).mods)||[]).some(e=>e&&e.kind==='guard'&&+e.v===2&&/둘이함께/.test(String(e.name||'')))){mods.guard=(mods.guard||1)*2;mods.names=(mods.names||[]).concat([{key:'_two',who:def.id,txt:`${def.name} 「둘이함께」 전체기 ×2`}])}
   if(H.logOn)for(const n of (mods.names||[]))if(String(n.key||'').startsWith('_hoi'))W.OM_APP.sysLog('  '+n.txt,'battle');   /* 11-15 【방호】 무시를 로그에 */
   let igDef=-1,igAtk=-1;if(IG.def!=null)igDef=IG.def;if(IG.atk!=null)igAtk=IG.atk;if(igDef===-1&&/대상의\s*랭크\s*변화를\s*무시/.test(String(mv.eff||'')))igDef=6;
   const OC=FN.orderCrit(atk,def);
@@ -219,7 +221,7 @@ function estimate(H,W,atk,def,mv,o){o=o||{};const FN=H.fn,B=W.OM_BATTLE,FX=W.OM_
  if(OI&&OI.immune(def,moveTypes))return 0;
  const atkTypes=atk.teraActive&&atk.teraEn!=='-'?[...atk.types,atk.teraEn]:atk.types;const floating=(def.states||{}).MagnetRise||(def.states||{}).Telekinesis||(FX&&FX.floating(def))||FN.IT(def)==='풍선';
  const eff=B.effectiveness(moveTypes,def,{multiMode:0,atkTypes,floating});if(!eff.value)return 0;
- const mods=FX?FX.attackMods(atk,def,Object.assign(FN.moveQuery(atk,def,mv,moveTypes,eff.value,!o.multi),{stab:!!eff.stab})):{boost:1,guard:1};const ig=OI&&OI.defGuard(def,mv.cat);if(ig)mods.guard=(mods.guard||1)*ig.v;
+ const mods=FX?FX.attackMods(atk,def,Object.assign(FN.moveQuery(atk,def,mv,moveTypes,eff.value,!o.multi),{stab:!!eff.stab})):{boost:1,guard:1};const ig=OI&&OI.defGuard(def,mv.cat);if(ig)mods.guard=(mods.guard||1)*ig.v;if(def!==atk&&mv.cat!=='변화'&&String((def&&def.ability)||'').replace(/^특성\s*:\s*/,'').trim()==='둘이함께'&&(o.multi||/전체|자신\s*이외/.test(String(mv.range||''))))mods.guard=(mods.guard||1)*2;   /* 11-23 기대 대미지에도 둘이함께 ×2 */
  const wm=FN.WEATHER_MUL[f.weather.type]||{};const wMul=wm[T0]!=null?wm[T0]:1;let fm=1;const ft=f.terrain.type;if(FN.grd(atk)){if(ft==='그래스필드'&&T0==='Grass')fm=1.3;if(ft==='일렉트릭필드'&&T0==='Electric')fm=1.3;if(ft==='사이코필드'&&T0==='Psychic')fm=1.3}if(ft==='미스트필드'&&moveTypes.includes('Dragon')&&FN.grd(def))fm*=0.5;
  const im=OI?OI.atkMul(atk,{types:moveTypes,cat:mv.cat,single:String(mv.range||'')==='1체'}):null;
  const dTy=FN.tysOf(def),dS=mv.cat==='특수'?'specialdefense':'defense';const wt=f.weather.type;const defMul=(wt==='극한'&&dTy.includes('Ice')&&dS==='defense')?2:(['눈','싸라기눈'].includes(wt)&&dTy.includes('Ice')&&dS==='defense')?1.5:(wt==='모래바람'&&dTy.includes('Rock')&&dS==='specialdefense')?1.5:1;
