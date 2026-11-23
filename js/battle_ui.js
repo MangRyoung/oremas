@@ -1443,6 +1443,7 @@ window.OM_BATTLE_UI=(()=>{
   if(FX()&&FX().abSync){const t=FX().abSync(m);if(t)L.push(t)}   /* 51-2 ㉓ 특성 파괴가 풀리면 특성을 되돌린다 */
   if(m.form0&&((m.forms||[])[m.formIdx]||{}).revert)L.push(...formSet(m,-1));
   if(m.potTurn&&m.potTurn._sup)delete m.potTurn._sup;   /* 11-11 【보급】: 필드를 떠나면 다시 쓸 수 있다 */
+  if(m.stance)delete m.stance;   /* 11-23 10:36 망령 「교대 때 지우게 해」: 필드를 떠나면 자세가 풀린다 */
   delete m.flags;delete m.prioDown;delete m.fxDone;delete m.futRsv;if(m.statsOrig){m.stats=m.statsOrig;delete m.statsOrig}   /* 11-02: 배틀 실수치 변경(실수치변경 구문)은 교대하면 원래대로 *//* 11-02 망령: 「테라스탈」은 교대해도 풀리지 않는다 (상태 DB 설명) — 배틀을 차릴 때(prepMon)만 끈다 */m.entry='';
   if(gone.length)L.push(`${m.name} 상태 해제: ${gone.join('·')}`);return L}
  /* 10-22 망령: 나가는 포켓몬이 다른 포켓몬에게 걸어 둔 포텐셜·특성 효과(옵저버 같은 아군 배율)도 같이 꺼진다. 기술로 건 효과는 남긴다 */
@@ -4138,7 +4139,7 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【(?:[^【】]
      /* 11-06 망령 「기본은 마지막 기술, 검색해서 다른 걸로도」: 저장 뒤 DB 기술 검색 창 (고른 기술로 그 칸을 다시 바꾼다 · 닫으면 그대로) */
      if(k>=0)setTimeout(()=>sketchPick(mid,k,ok?lm:'',mvN),700)}
     else if(am&&!RESULT.check&&mvN&&mvN!=='발버둥'&&!RESULT.mv.ext&&((am.consec={name:mvN,n:(am.lastMove&&am.lastMove.name===mvN&&+am.lastMove.turn===(+nb.turn||0)-1)?((am.consec&&am.consec.name===mvN?+am.consec.n:1)+1):1}),true))am.lastMove={name:mvN,turn:+nb.turn||0,tg:(RESULT.targets||[]).map(r=>r&&r.def&&r.def.id).filter(Boolean)};   /* 11-09 감우 57: tg = 이 기술의 대상 (「지정기술」 — 나에게 내보냈나) */if(am&&!RESULT.check&&(am.states||{}).DestinyBond&&String(mvN||'').replace(/\s/g,'')!=='길동무'){delete am.states.DestinyBond;lines.push(`${am.name} 「길동무」 해제 (다음 행동)`)}
-    /* 11-09 감우 54: 「자세」 기술(날개의자세 · 불길의자세 …)을 쓰면 지금 자세로 남긴다 — 구문 조건 「자세:날개의자세」 (교대하면 풀림은 손으로 · 다른 자세를 쓰면 바뀐다) */if(am&&!RESULT.check&&RESULT.mv&&RESULT.mv.cat==='변화'&&/(^|[,\s])자세($|[,\s])/.test(String(RESULT.mv.tag||''))&&/의자세$/.test(mvN||''))am.stance=mvN;if(am&&!RESULT.check&&RESULT.mv){const au=RESULT.auto||{};if(au.iai){am.iai=au.iai;lines.push(`${am.name} 다음 「거합」 기술 → 「${S().typeKo(au.iai)}」`)}else if(au.stance||(RESULT.mv.cat==='변화'&&/의자세$/.test(mvN||'')))delete am.iai;else if(am.iai&&/(^|[,\s])거합($|[,\s])/.test(String(RESULT.mv.tag||'')))delete am.iai}
+    /* 11-09 감우 54: 「자세」 기술(날개의자세 · 불길의자세 …)을 쓰면 지금 자세로 남긴다 — 구문 조건 「자세:날개의자세」 (교대하면 풀린다(11-23) · 다른 자세를 쓰면 바뀐다) */if(am&&!RESULT.check&&RESULT.mv&&RESULT.mv.cat==='변화'&&/(^|[,\s])자세($|[,\s])/.test(String(RESULT.mv.tag||''))&&/의자세$/.test(mvN||''))am.stance=mvN;if(am&&!RESULT.check&&RESULT.mv){const au=RESULT.auto||{};if(au.iai){am.iai=au.iai;lines.push(`${am.name} 다음 「거합」 기술 → 「${S().typeKo(au.iai)}」`)}else if(au.stance||(RESULT.mv.cat==='변화'&&/의자세$/.test(mvN||'')))delete am.iai;else if(am.iai&&/(^|[,\s])거합($|[,\s])/.test(String(RESULT.mv.tag||'')))delete am.iai}
      /* 11-08 51-2 ⑬ 메트로놈: 같은 기술을 연속해서 쓴 수 (다른 기술 · 교대면 처음부터) */if(am&&!RESULT.check&&mvN&&!RESULT.mv.ext)am.metro={name:mvN,n:am.metro&&nmMv(am.metro.name)===mvN?(+am.metro.n||0)+1:1};if(am&&!RESULT.check&&RESULT.mv&&am.mvMod)shootOff(am,lines)}
    if(RESULT.targets.some(r=>r.acc&&r.acc.hit&&r.def&&r.def.id!==mid)&&HAS(atk,'방호패드')&&A().contactOf&&A().contactOf(RESULT.mv)==='O')lines.push(`${atk.name} 「방호패드」 — 대상의 「접촉기」 계기를 무시한다`);
    /* 11-06 소지품 기술 (벌레먹기 · 쪼아대기 · 탁쳐서떨구기 · 도둑질 · 탐내기 · 트릭 · 바꿔치기 · 내던지기 — 효과 글로): 맞은 대상마다 소지품을 옮기고 줄을 남긴다. 상태 이상(내던지기 화염구슬 …)은 FX 로 */
