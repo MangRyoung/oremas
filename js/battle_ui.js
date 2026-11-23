@@ -652,7 +652,11 @@ window.OM_BATTLE_UI=(()=>{
  /* 11-01 망령 「A-1 도 포텐셜 발동하지 않는다가 아니라 행동불능으로」: 필드 위 다른 아군(같은 진영 · 다른 PC 포켓몬 포함) 중 지정 타입이 한 체도 없으면 각성 (대가) 포켓몬은 행동 불능 — 이유 글을 돌려준다 */
  /* 11-11 망령 「통솔 대가 행동 불능은 과하다 — 특성 : 게으름 마냥 조건을 충족하면 다음 턴 행동불능(교대는 가능)」 · 확인은 턴 종료 때 · 포텐셜 불발도 그 턴만:
     misagA1Cond = 조건(지금 맞나 — 예전 판정 그대로), misagA1 = 지난 턴 종료 때 걸린 잠금(m.a1Lock = {t: 행동 불능 턴, why})이 이번 턴이면 그 이유 */
- function misagA1(b,m){const L=m&&m.a1Lock;if(!L||+L.t!==(+((b||{}).turn)||0))return '';return `각성체 대가 A-1 — 지난 턴 종료 때 ${String(L.why||'').replace(/^각성체 대가 A-1 — /,'').replace(/\s*행동 불능$/,'')} → 이번 턴 행동 불능 (교대는 된다)`}
+ /* 11-23 저녁 망령 「1/2/3 다 해줘」(254번 검수 — 크로노스 『그리고, 시간은 정지한다.』 【1/시】【자동】/「타임」이 발동한 턴 자신 이외를 행동불능으로 만든다):
+    자기 트레이너가 「타임」을 쓰면(openMyosu) 그 글을 가진 필드 위 포켓몬에게 tstop={t:턴} 을 적고(시합에 한 번), 그 턴 동안 그 포켓몬 말고는 전부 행동 불능 — A-1 행동 불능과 같은 길(차례 건너뜀 · 기술 칸 숨김 · 교대는 됨) */
+ const TSTOP_RE=/「타임」\s*(?:이|을|를)?\s*(?:발동|사용)(?:한|된|하는)\s*턴\s*자신\s*이외(?:를|가|의\s*포켓몬(?:을|이))?\s*행동\s*불능/;
+ function tstopBy(b,m){const T=+((b||{}).turn)||0;if(!T||!m)return null;for(const x of Object.values((b&&b.mons)||{})){if(!x||x.id===m.id||!x.entry||!x.hp||!(x.hp.cur>0))continue;if(x.tstop&&+x.tstop.t===T)return x}return null}
+ function misagA1(b,m){{const ts=tstopBy(b,m);if(ts)return `「타임」이 발동한 턴 — ${ts.name} 이외는 이번 턴 행동 불능 (교대는 된다)`}const L=m&&m.a1Lock;if(!L||+L.t!==(+((b||{}).turn)||0))return '';return `각성체 대가 A-1 — 지난 턴 종료 때 ${String(L.why||'').replace(/^각성체 대가 A-1 — /,'').replace(/\s*행동 불능$/,'')} → 이번 턴 행동 불능 (교대는 된다)`}
  function misagA1Cond(b,m){const t=((b&&b.trainers)||{})[m&&m.tid];const M=t&&t.misag;if(!M||m.awaken!=='free'||!(M.items||[]).some(x=>x.key==='A-1'))return '';
   const onF=x=>!!(x&&x.entry&&x.hp&&x.hp.cur>0);const hasType=(x,ko)=>{const en=window.OM_STATS&&window.OM_STATS.typeEn?window.OM_STATS.typeEn(ko):ko;if(teraOn(x))return x.teraEn===en;return (x.types||[]).includes(en)||(x.typesKo||[]).includes(ko)};   /* 테라스탈이면 타입 4 만 (11-02) */
   const own=Object.values(b.mons||{}).filter(x=>x&&x.tid===m.tid);
@@ -1442,7 +1446,7 @@ window.OM_BATTLE_UI=(()=>{
   A().sysLog('동시 내밀기!','battle');const ids=list.map(m=>m.id);const hows={};for(const m of list)hows[m.id]=Object.values(b.mons||{}).some(q=>q.id!==m.id&&q.side===m.side&&q.entry===m.pend&&q.hp&&q.hp.cur>0)?'통상 교대':'죽어내밀기';for(const {id,pend} of list.map(m=>({id:m.id,pend:m.pend}))){await enterMon(id,pend,{sys:true,noAuto:true})}if(ctx().b.started)await autoEntryAll(ids,hows);return list.length}   /* pend 는 enterMon 이 지운다 — 먼저 지우면 set 의 낙관적 반영으로 m.pend 가 사라져 예약 에리어를 잃는다 */
  async function startBattle(){const c=ctx();if(!c.mgr)return;const b=c.b;if(b.started)return;for(const k in FAINT_SEEN)delete FAINT_SEEN[k];
   if(simAny(b)){const n=await applyPending();if(!n&&!Object.values(b.mons||{}).some(m=>m.entry)){if(!(await askYes('예약된 포켓몬이 없다. 그래도 시합을 개시할까?')))return}}
-  for(const tid of Object.keys(b.trainers||{}))if((b.trainers[tid]||{}).time)await A().set(['battle','trainers',tid,'time'],null);
+  for(const tid of Object.keys(b.trainers||{}))if((b.trainers[tid]||{}).time)await A().set(['battle','trainers',tid,'time'],null);for(const x of Object.values(b.mons||{}))if(x&&x.tstop)await A().set(['battle','mons',x.id,'tstop'],null);
   await A().set(['battle','exitPend'],null);   /* 11-09 감우 56: 지난 배틀의 미뤄 둔 퇴장 줄 */
   await A().set(['battle','started'],true);if(b.done)await A().set(['battle','done'],null);   /* 10-31: 던전으로 돌아온(done) 배틀을 다시 열면 살아 있는 배틀 */
   if(!(+b.turn||0))await A().set(['battle','turn'],1);await A().set(['battle','log0'],+A().ST.lastLogId||0);await A().set(['battle','at0'],Date.now());   /* log0 · at0: 전당의 간략 로그를 여기서부터 (hall_ui.js) */
@@ -2242,6 +2246,7 @@ window.OM_BATTLE_UI=(()=>{
    if(!again){const nt={used:my.used+(force&&my.used>=lim?0:1),forced:my.forced+(force&&my.used>=lim?1:0),turn,sw:1,target:m.id};
     const enemyUsed=enemyTids(c,tid).some(e=>timeOf(ctx().b.trainers[e],turn).sw>=1);if(enemyUsed)nt.sw=2;
     const ok=await A().set(['battle','trainers',tid,'time'],nt);if(!ok)return;
+    try{for(const x of Object.values(ctx().b.mons||{})){if(!x||x.tid!==tid||!x.entry||!x.hp||!(x.hp.cur>0)||x.tstop)continue;const pp=potSrc(x).find(p=>p&&TSTOP_RE.test(String(p.eff||'')));if(!pp)continue;await A().set(['battle','mons',x.id,'tstop'],{t:turn});A().sysLog(`${x.name} 「${String(pp.name||'').replace(/[『』]/g,'')}」 — 「타임」이 발동한 턴, ${x.name} 이외는 이번 턴 행동 불능`,'battle',{mid:x.id});break}}catch(_){}
     A().sysLog(`【묘수】 ${t.name} 「타임」 → ${secret(c,m)?'상대 포켓몬':m.name}\n이 배틀 ${nt.used}/${lim}${nt.forced?' · 강제 '+nt.forced:''}`,'battle',{mid:m.id,img:''});
     if(enemyUsed)A().sysLog('양 트레이너는 서로가 서로의 수를 읽고 있다는 것을 눈치챘다!','battle');
     my.sw=nt.sw;my.target=m.id;my.used=nt.used}
@@ -3657,6 +3662,9 @@ function sealed(m,mv){return !!(m&&mv&&!mv.virt&&(m.states||{}).Seal&&m.sealMove
  /* 속임수 (10-26): 「대상의 「공격」으로 대미지 계산」 — 공격 쪽 능력치 · 랭크 · 배율을 대상 것으로 */
  const FOUL_RE=/대상의\s*「공격」으로\s*대미지\s*계산/;
  /* 11-03 망령: 「기술 X 를 내보낸다. 이때, 자신의 「공격」을 가장 높은 종족치와 같은 랭크로」 — 그 기술 한 번만. 공격 창의 대미지 계산에만 쓰는 그림자 (저장되는 포켓몬은 그대로) */
+ /* 11-23 저녁 (254번 검수): 「「환희의노래」 상태일 때 「소리」 기술이 「물 안」「하늘 위」인 상대에게도 명중한다」(IA) · 「「지진」이 「물 안」「어둠 안」인 상대에게도 명중한다」(켄라) — 포텐셜 · 특성 글. 앞 낫표 = 기술 이름 · 기술 태그 · 타입, 뒤 낫표들 = 그 상태(반무적)인 상대. 【보급】 횟수는 세지 않는다 */
+ const SEMIPASS_RE=/(?:「([^」:]+)」\s*상태일\s*때\s*,?\s*)?「([^」:]+)」\s*(?:기술)?(?:이|가|은|는)\s*((?:「[^」:]+」\s*(?:[,·]|과|와)?\s*)+)(?:\s*상태)?인\s*(?:상대|대상|포켓몬)에게도\s*명중/g;
+ function semiPass(atk,mv,smKo){try{if(!atk||!mv||!smKo)return false;const nq=x=>String(x||'').replace(/\s/g,'');const tags=String(mv.tag||'').split(/[,\s#]+/).map(nq);const tx=[atk.ability?slotEff(atk,'trait',atk.ability):'',...potSrc(atk).map(p=>p&&p.eff)];for(const t of tx)for(const r of String(t||'').matchAll(SEMIPASS_RE)){if(r[1]){const k=FX().stEn?FX().stEn(r[1]):'';if(!k||!(atk.states||{})[k])continue}const w=nq(r[2]);if(!(w===nq(mv.name)||tags.includes(w)||w===nq(mv.type)||w===nq(S().typeKo(mv.typeEn))))continue;if([...r[3].matchAll(/「([^」]+)」/g)].some(x=>nq(x[1])===nq(smKo)))return true}return false}catch(_){return false}}
  function topMvOf(atk,def,mv){const out=[];if(!atk||!mv||mv.cat==='변화')return out;const nq=x=>String(x||'').replace(/\s/g,'');for(const e of spL(atk,'topmv')){if((e.mv||[]).length&&!e.mv.some(n=>nq(n)===nq(mv.name)))continue;let ok=true;try{ok=!FX().dynOk||FX().dynOk(Object.assign({},e,{mv:[]}),atk,def||null,{})}catch(_){ok=false}if(!ok)continue;for(const k of e.stats||[])if(!out.includes(k))out.push(k)}return out}
  function topShadow(m,top){if(!m||!top||!top.length||!Array.isArray(m.base))return m;const St=S();const G=((DB().maker||{}).grade)||[];const IDX=['hp','attack','defense','specialattack','specialdefense','speed'],KO=['HP','공격','방어','특공','특방','스피드'];const base=m.base.map(v=>+v||0);const nb=base.slice();const notes=[];
   for(const k of top){const i=IDX.indexOf(k);if(i<1)continue;let mx=-1;base.forEach((v,j)=>{if(j!==i&&v>mx)mx=v});const g=St.gradeOf(mx);if(mx<=base[i]||g===St.gradeOf(base[i]))continue;const row=G.find(r=>r[1]===g);if(!row)continue;nb[i]=+row[0];notes.push(`${KO[i]} 종족치 ${base[i]}→${nb[i]} (${g})`)}
@@ -3967,7 +3975,7 @@ const slots=allEntered(b);const tg=(x0.tm?tgNow(b,x0,atk):(x0.targets||[]));cons
     const tySure=(()=>{const m=String(mv.eff||'').match(/「타입\s*:\s*([^」]+)」(?:이|가)\s*(?:내보내면|사용하면)[^.]*「필중기」/);return !!m&&tysOf(atk).includes(S().typeEn(m[1].trim()))})();   /* 11-05 맹독: 「타입 : 독」이 사용하면 「필중기」 */
     /* 11-08 51-2 ⑯~⑳ · ④ · ⑤ · ⑬: 받는 쪽 상태(록온 · 마음의눈 = 필중 · 반무적 무시, 대검돌격 · 작아지기 = 필중 · 위력 2배, 반무적 = 자동 빗나감) · 미클열매 · 포커스렌즈 · 메트로놈 */
     const DST=def.states||{};const LKO=def!==atk&&!!(DST.LockOn||DST.Gaze)&&(!def.lockFrom||def.lockFrom===atk.id);   /* 건 포켓몬의 기술만 */const GRS=def!==atk&&!!DST.GlaiveRush;const MINI=def!==atk&&!!DST.Minimize&&(/다이브/.test(String(mv.tag||''))||/「작아지기」/.test(String(mv.eff||'')));   /* 상태 DB: 상대의 「다이브」 기술이 2배 위력으로 필중 */
-    const SM=def!==atk?semiOf(def):'';const smKo=SM?stKoU(SM):'';const semiMiss=!!SM&&!LKO&&!noGuard(atk)&&!noGuard(def)&&!String(mv.eff||'').includes(smKo)&&!(SM==='Fly'&&/하늘에\s*(?:떠\s*)?있는\s*대상/.test(String(mv.eff||'')));
+    const SM=def!==atk?semiOf(def):'';const smKo=SM?stKoU(SM):'';const semiMiss=!!SM&&!LKO&&!noGuard(atk)&&!noGuard(def)&&!String(mv.eff||'').includes(smKo)&&!(SM==='Fly'&&/하늘에\s*(?:떠\s*)?있는\s*대상/.test(String(mv.eff||'')))&&!semiPass(atk,mv,smKo);
     const MCL=def!==atk&&+mv.acc>0&&HAS(atk,'미클열매')&&atk.hp.cur<=Math.floor(atk.hp.max/4)&&!/일격기/.test(String(mv.eff||'')+String(mv.tag||''));if(MCL)MCLU=true;
     const FCL=def!==atk&&+mv.acc>0&&HAS(atk,'포커스렌즈')&&actedB4(b,def);
     const MTR=mv.cat!=='변화'&&HAS(atk,'메트로놈')&&atk.metro&&nmMv(atk.metro.name)===nmMv(mv.name)?Math.min(2,Math.round((1+0.1*(+atk.metro.n||0))*100)/100):1;const SMX=!!SM&&!semiMiss&&new RegExp('「'+smKo+'」[^.]{0,24}2배의 위력').test(String(mv.eff||''));const XP=(GRS?2:1)*(MINI?2:1)*(SMX?2:1)*MTR;   /* 지진 → 구멍 안 · 파도타기 → 물 안 · 회오리 → 하늘 위 = 2배 */
