@@ -112,10 +112,27 @@ window.OM_BATTLE_UI=(()=>{
  async function deferAll(when){for(const id of Object.keys(ctx().b.mons||{}))if(((ctx().b.mons||{})[id]||{}).defer)await deferFire(id,when)}
  function saveMon(m0,mid,nm){preSave(nm);return A().setDiff(['battle','mons',mid],m0,nm,2).then(r=>{if(r)itemKick();return r})}
  /* 소지품 저장 뒤 점검 (2026-10-23): 내가 저장한 뒤에만, 내가 고칠 수 있는 포켓몬의 HP 열매 · 치유 열매 · 시드 · 룸서비스 · 하양허브 … 를 터트린다 */
- let ITK=0;function itemKick(){clearTimeout(ITK);ITK=setTimeout(itemSweep,150)}
+ let ITK=0;function itemKick(){clearTimeout(ITK);ITK=setTimeout(itemSweep,150);hpTrigKick(null,260)}
  /* 11-03 20:54 (PL 「저번 판엔 자동이던 시드가 이번엔 자동이 아니다」): 저장 뒤 점검은 「내가 저장한 뒤」에만 돌아서, 상대 화면이 필드를 바꾸면(일렉트릭메이커 …) 내 포켓몬의 시드가 안 터졌다.
     남이 바꾼 상태가 들어와도 점검한다 — 둘이 같은 포켓몬을 두 번 터트리지 않게 이때는 주인 몫만: GM 은 GM 이 올린 파티 · NPC, 좌석은 자기 트레이너 */
- let ITR=0;function itemKickRemote(){clearTimeout(ITR);ITR=setTimeout(()=>itemSweep(m=>{const c=ctx();return c.gm?!seatOwned(c,m.tid)&&canEdit(c,m):ownT(c,m.tid)&&canEdit(c,m)}),400)}
+ let ITR=0;function itemKickRemote(){clearTimeout(ITR);ITR=setTimeout(()=>itemSweep(m=>{const c=ctx();return c.gm?!seatOwned(c,m.tid)&&canEdit(c,m):ownT(c,m.tid)&&canEdit(c,m)}),400);hpTrigKick(m=>{const c=ctx();return c.gm?!seatOwned(c,m.tid)&&canEdit(c,m):ownT(c,m.tid)&&canEdit(c,m)},1100)}
+ /* 11-23 14:21 망령 「①【유일】/「HP : 1/2」 이하가 되었을 때 「특성 : 오기」가 발동한다. ②【등장】/「HP : 1/2」 이하일 때 ①효과가 발동한다 — 자동으로」:
+    포텐셜 · 특성 글에 「HP : a/b 이하가 되었을 때」가 있고 구문이 있으면, HP 가 저장된 뒤(열매 점검과 같은 때) 그 비율 이하로 **내려간 순간** 한 번 발동한다.
+    · 등장한 뒤 한 번이라도 그 비율보다 많았어야 한다 (hpHi) — 이미 이하인 채로 나오면 발동하지 않는다. 단 글에 「【등장】/「HP : a/b」 이하일 때 … 효과가 발동」 줄이 있으면 나올 때도 발동
+    · 【유일】 = 배틀에 한 번 (hpTrig 'u' — 교대해도 남는다), 그 밖(【보급】 …) = 나와 있는 동안 한 번 (교대하면 outReset 이 지운다)
+    · 구문 맨 앞 「조건 HP≤a/b」는 fireAuto 가 다시 따진다. 등장 자동(autoOnEntry)은 이 꼴을 건너뛴다 — 여기서만 */
+ const HPT_RE=/「\s*HP\s*[:：]\s*(\d+)\s*\/\s*(\d+)\s*(?:이하\s*)?」\s*(?:이하)?\s*(?:가|이)\s*(?:되었을|됐을)\s*때/;
+ const HPT_ENT=/【\s*등장[^】]*】[^\n]*「\s*HP\s*[:：]\s*\d+\s*\/\s*\d+\s*(?:이하\s*)?」\s*(?:이하)?\s*일\s*때[^\n]*효과가\s*발동/;
+ let HPK=0,HPBUSY=0;function hpTrigKick(own,ms){clearTimeout(HPK);HPK=setTimeout(()=>hpTrigSweep(own).catch(e=>console.warn('hpTrig',e)),ms||260)}
+ async function hpTrigSweep(own){if(HPBUSY||!FX())return;HPBUSY=1;try{const c=ctx();if(!c||!c.b||!c.b.started||!c.b.mons)return;const ok=typeof own==='function'?own:m=>canEdit(c,m);
+  for(const m0 of Object.values(c.b.mons)){if(!m0||!m0.entry||!m0.hp||!(m0.hp.cur>0)||!ok(m0))continue;const list=[];if(m0.ability)list.push(['trait',m0.ability]);for(const p of potSrc(m0))if(p&&p.name&&!p.ph)list.push(['pot',p.name]);
+   for(const [kind,name] of list){const tx=String(slotEff(m0,kind,name)||'').replace(/<br\s*\/?>/gi,'\n');const mm=tx.match(HPT_RE);if(!mm)continue;const cur=(ctx().b.mons||{})[m0.id];if(!cur||!cur.entry||!(cur.hp.cur>0))break;
+    const thr=Math.max(1,Math.floor(cur.hp.max*(+mm[1])/(+mm[2]||1)));
+    if(cur.hp.cur>thr){if(!(cur.hpHi||{})[name]){const h=Object.assign({},cur.hpHi||{});h[name]=1;await A().set(['battle','mons',cur.id,'hpHi'],h)}continue}
+    if((cur.hpTrig||{})[name])continue;if(!(cur.hpHi||{})[name]&&!HPT_ENT.test(tx))continue;
+    const a=FX().autoOf(cur,kind,name);if(!a||!a.ops||!a.ops.length||a.manual)continue;
+    const d=Object.assign({},cur.hpTrig||{});d[name]=/【\s*유일\s*】/.test(tx)?'u':1;await A().set(['battle','mons',cur.id,'hpTrig'],d);
+    await fireAuto(cur.id,kind,name,{quiet:true,head:`【${kind==='trait'?'특성':'포텐셜'}】 ${cur.name} 『${String(name).replace(/[『』]/g,'')}』 — 「HP : ${mm[1]}/${mm[2]}」 이하`})}}}finally{HPBUSY=0}}
  async function itemSweep(own){if(!OI())return;const c=ctx();if(!c||!c.b||!c.b.mons)return;const b0=snap(c.b),b=snap(b0);const f=fieldOf(b);let out=[];try{out=OI().sweep(b,f,typeof own==='function'?own:m=>canEdit(c,m))}catch(e){console.warn(e);return}if(!out.length)return;
   if(!await saveBattle(b0,b,f))return;for(const x of out){const m=b.mons[x.mid]||{};A().sysLog(`【소지품】 ${m.name} 『${x.name}』\n${x.lines.join('\n')}`,'battle',{mid:x.mid,img:m.image||'',eff:String(x.eff||'').slice(0,300)})}}
  /* 플레이어 몫인 트레이너 = 플레이어가 배틀에 올린 것 (trainers[tid].by = 좌석 id). GM 이 불러온 파티(by:'gm')는 PL 권한 중에도 GM 이 그대로 지시·진행한다.
@@ -1436,7 +1453,7 @@ window.OM_BATTLE_UI=(()=>{
  /* 퇴장 정리 (맵툴 out_area): 랭크·배율·임시 효과·발동 중인 포텐셜 효과·타입/특성 변경·하늘 위·급소 방호 를 되돌리고, 상태 이상(abn) 과 원념·빈사 빼고는 상태도 푼다.
     배턴터치면 랭크와 넘길 수 있는 상태(bat) 를 트레이너에게 맡겨 두었다가 다음 등장 포켓몬이 받는다. 강제 교대는 배턴터치 없이 정리만 */
  function passable(m){const st=(DB().states||{}).st||{};const rk=Object.values(m.rank||{}).some(v=>+v);const bs=Object.keys(m.states||{}).filter(k=>m.states[k]&&(st[k]||{}).bat);return rk||bs.length>0||!!(+m.critBuff)}
- function outReset(nb,m,opt){opt=opt||{};const st=(DB().states||{}).st||{};const L=[];const t=nb.trainers[m.tid];if(m.fxDone)delete m.fxDone;if(m.charge)delete m.charge;   /* 11-14: 「차지」 중에 필드를 떠나면 모은 것도 풀린다 (다시 나와서 그 기술로 열리지 않게) */if(m.thrashOn)delete m.thrashOn;   /* 10-26: 다시 나오면 상시 효과를 다시 건다 · 난동 표시도 정리 */
+ function outReset(nb,m,opt){opt=opt||{};const st=(DB().states||{}).st||{};const L=[];const t=nb.trainers[m.tid];if(m.fxDone)delete m.fxDone;if(m.hpHi)delete m.hpHi;if(m.hpTrig){const k={};for(const n in m.hpTrig)if(m.hpTrig[n]==='u')k[n]='u';if(Object.keys(k).length)m.hpTrig=k;else delete m.hpTrig}   /* 11-23 「HP 이하가 되었을 때」 계기: 교대하면 다시 (【유일】만 남긴다) */if(m.charge)delete m.charge;   /* 11-14: 「차지」 중에 필드를 떠나면 모은 것도 풀린다 (다시 나와서 그 기술로 열리지 않게) */if(m.thrashOn)delete m.thrashOn;   /* 10-26: 다시 나오면 상시 효과를 다시 건다 · 난동 표시도 정리 */
   if(opt.batton&&t){const states={};for(const k in (m.states||{}))if(m.states[k]&&(st[k]||{}).bat)states[k]=m.states[k];t.batton={rank:Object.assign({},m.rank||{}),states,critBuff:+m.critBuff||0,from:m.name};L.push(`${m.name} 「배턴터치」 — 랭크·상태를 다음 포켓몬에게 넘긴다`)}
   /* 효과(배율 출처 포함)를 먼저 풀고 나서 랭크·배율을 비운다 — 순서가 바뀌면 배율이 역으로 나뉘어 0.75 같은 값이 남는다 */
   if(FX()&&FX().release)L.push(...FX().release(nb,m));
@@ -3404,7 +3421,7 @@ window.OM_BATTLE_UI=(()=>{
   /* 11-03 감우: 트레이너 고유 포텐셜도 같은 길로 — 【등장】 · 【상시】 이고 구문이 있으면 그 트레이너의 포켓몬이 나올 때 건다 (autoOf 가 m.tid 로 고유 구문을 읽는다). 횟수(【N/시】)가 있는 고유는 손으로(선행 · 임의 발동) */
   {const t=(c.b.trainers||{})[m.tid];for(const u of ((t&&t.unique)||[]))if(u&&u.name&&!/【\s*\d+\s*\/\s*(시|턴)\s*】/.test(String(u.eff||''))&&!list.some(([k,n])=>k==='pot'&&n===u.name))list.push(['pot',u.name])}
   /* 11-07 망령 「등장 때 저절로 뜨는 상시류 로그는 본인(포켓몬 주인)만 보이게 + 「출력」 버튼」: 상시 · 지속형으로 걸린 줄(아래 noRoll 길)과 【N/시】 안내는 주인 귓속말(gmPriv — 이름은 예전 그대로, 주인이 없으면 GM)로. 【등장】 계기 효과 · 아군 빈사로 걸린 것(passiveOnly)은 그대로 공개 */const GP=o2.passiveOnly?0:1;
-  const MANL=[],FENT=[];for(const [kind,name] of list){const a=kind==='item'?itemAutoDedupe(FX().autoOf(m,kind,name),name):FX().autoOf(m,kind,name);if(!a||!a.ops||!a.ops.length||a.manual)continue;if(limManual(m,kind,name,slotEff(m,kind,name)||a.text)){if(!MANL.includes(name))MANL.push(name);continue}/* 시트에 직접 쓴 구문은 글이 없으니 그 칸의 효과 글에서 【등장】/【상시】 를 읽는다 */const tm=FX().timing(a.text||slotEff(m,kind,name)||'');
+  const MANL=[],FENT=[];for(const [kind,name] of list){const a=kind==='item'?itemAutoDedupe(FX().autoOf(m,kind,name),name):FX().autoOf(m,kind,name);if(!a||!a.ops||!a.ops.length||a.manual)continue;if(kind!=='item'&&HPT_RE.test(String(slotEff(m,kind,name)||'')))continue;   /* 11-23 「HP 이하가 되었을 때」 꼴은 hpTrigSweep 이 (등장 때 줄도) */if(limManual(m,kind,name,slotEff(m,kind,name)||a.text)){if(!MANL.includes(name))MANL.push(name);continue}/* 시트에 직접 쓴 구문은 글이 없으니 그 칸의 효과 글에서 【등장】/【상시】 를 읽는다 */const tm=FX().timing(a.text||slotEff(m,kind,name)||'');
    const etx2=a.text||slotEff(m,kind,name)||'';
    /* 10-26 망령: 표시 없는 상시 특성 · 포텐셜 (테크니션 · 적응력 · 철주먹 · 멀티스케일 …) — 지속형 구문뿐이고 계기 말(받았을 때 · 턴 종료 …)이 없으면 등장 때 건다.
       「공격 : B」 이하일 때 같은 자기 등급 조건(천하장사 · 순수한힘 · 퍼코트 …)은 등급을 보고 맞으면 건다 */
