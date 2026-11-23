@@ -54,6 +54,8 @@ const FX=()=>window.OM_FX;
    if(m.wakeT!=null&&T!=null&&+m.wakeT===T){failed=1;lines.push(`${m.name}은(는) 쿨쿨 잠자고 있다... (이번 턴 끝에 깬다)`)}
    else if(m.wakeT!=null&&T!=null&&+m.wakeT<T){delete m.wakeT;clearState(m,'Sleep');lines.push(`${m.name}은(는) 눈을 떴다!`)}
    else if(d<=lim){failed=1;const left=n0>=1000?n0:n0-1;if(left<=0){if(T!=null){m.wakeT=T;lines.push(`${m.name}은(는) 쿨쿨 잠자고 있다... (이번 턴 끝에 깬다)`)}else{clearState(m,'Sleep');lines.push(`${m.name}은(는) 쿨쿨 잠자고 있다... (다음 행동부터 깬다)`)}}else{m.states.Sleep=left;lines.push(`${m.name}은(는) 쿨쿨 잠자고 있다...${left<1000?` (남은 ${left}턴)`:''}`)}}}
+  /* 11-23 저녁 감우 257b 망령 「잠꼬대 타르티니 자동화」: o.sleepOk = 잠든 채로 내보내는 기술(잠꼬대 · 코골기 — 효과 글이 「잠듦」 상태일 때 로 시작) — 잠듦 턴은 평소처럼 줄이되 행동은 실패로 치지 않는다 */
+  if(o.sleepOk&&failed===1&&st.Sleep&&/쿨쿨 잠자고/.test(lines[lines.length-1]||'')){failed=0;lines.push(`${m.name}은(는) 잠든 채로 기술을 내보낸다`)}
   roll('Paralysis',pct('paralysis',1/8),'은(는) 몸이 저려서 움직일 수 없다...','은(는) 몸이 저려도 지시를 따른다!');
   /* 얼음: 「N턴」 = 얼어서 막힐 수 있는 행동 N번(DB 2 → 3번째 기술에서 풀림). 그 사이엔 3/4 로 못 움직이고 1/4 로 깨고 나온다. 11-08 감우: 예전엔 판정 전에 1 을 빼서 N-1 번뿐이었다 */
   if(!failed&&st.Freeze){const d=d10000();const lim=Math.round(pct('freeze',3/4)*10000);const n0=+st.Freeze||1;const left=dec('Freeze',n0);if(d<=lim){failed=1;if(left<=0){clearState(m,'Freeze');lines.push(`${m.name}은(는) 얼어붙어 움직일 수 없다... (판정 ${10000-d}) — 얼음이 녹기 시작했다! (다음 행동부터 움직인다)`)}else{m.states.Freeze=left;lines.push(`${m.name}은(는) 얼어붙어 움직일 수 없다... (${left<1000?`남은 ${left} · `:''}판정 ${10000-d})`)}}else{clearState(m,'Freeze');lines.push(`${m.name}은(는) 얼음을 깨부수고 나왔다! (판정 ${10000-d})`)}}

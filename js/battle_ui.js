@@ -3274,7 +3274,7 @@ window.OM_BATTLE_UI=(()=>{
    let pool=MVS(m).filter(x=>x&&x.name&&!x.virt&&x.name!=='발버둥'&&String(x.name).replace(/\s/g,'')!=='잠꼬대'&&!sealed(m,x));if(only)pool=pool.filter(x=>mvTagHit(x,only));
    if(!pool.length){A().sysLog(`【잠꼬대】 ${m.name} — 고를 수 있는 기술이 없어 실패${only?` (『${src}』 — 「${only}」 기술만)`:''}`,'battle',{mid});return}
    const pick=pool[Math.floor(Math.random()*pool.length)];A().sysLog(`【잠꼬대】 ${m.name} — 「${pick.name}」 (${pool.map(x=>x.name).join(' · ')} 중 무작위${only?` · 『${src}』 — 「${only}」 기술만`:''})`,'battle',{mid,img:m.image||''});
-   setTimeout(()=>{try{openAttack(mid,{mvName:pick.name,by:'잠꼬대',rangeDone:1})}catch(e){console.warn('잠꼬대',e)}},700)}catch(e){console.warn('잠꼬대',e)}}
+   setTimeout(()=>{try{openAttack(mid,{mvName:pick.name,by:'잠꼬대',rangeDone:1,skipSt:'Sleep'})}catch(e){console.warn('잠꼬대',e)}},700)}catch(e){console.warn('잠꼬대',e)}}
  /* 11-23 저녁 감우 257b 망령 「크로노스 자동화」(『C.R.O.N.O.S』 「【1/시】/『계약의 특권』이 부여되어 있을 때 트레이너가 「타임」을 사용할 수 있다」): 그 글을 가진 포켓몬이 필드에 살아 있고 『X』(이름에 X 가 든 포텐셜)를 지니고 있으면 그 트레이너의 「타임」 횟수 +1 (포켓몬마다 한 번) */
  const TIME_GRANT_RE=/(?:『\s*([^』]+?)\s*』\s*(?:이|가)\s*부여되어\s*있을\s*때\s*)?트레이너가\s*「타임」\s*(?:을|를)\s*사용할\s*수\s*있다/;
  function timeGrant(m){try{for(const p of potSrc(m)){if(!p||p.ph)continue;const r=String(p.eff||'').match(TIME_GRANT_RE);if(!r||potOffWhy(m,p.name))continue;if(r[1]){const w=r[1].replace(/\s/g,'');if(!potSrc(m,1).some(q=>q&&!q.ph&&q!==p&&String(q.name||'').replace(/[『』\s]/g,'').includes(w)&&!potOffWhy(m,q.name)))continue}return true}}catch(e){}return false}
@@ -3989,7 +3989,7 @@ const slots=allEntered(b);const tg=(x0.tm?tgNow(b,x0,atk):(x0.targets||[]));cons
    const keepCK=ACCKEEP&&RESULT&&RESULT.checkOnly?{checkOnly:RESULT.checkOnly,lines:RESULT.lines||[]}:null;RESULT=null;SECADJ={add:+(($('#asecadd',md)||{}).value)||0,sure:!!(($('#asecsure',md)||{}).checked)};
    /* 행동 판정: 상태 변화로 못 움직이면 여기서 끝. 적용하면 상태 변화(잠듦 남은 턴·얼음 해제 등)와 로그만 남는다 */
    if(keepCK)RESULT=keepCK;
-   if(!RF&&!ACCKEEP&&$('#achk',md).checked&&F()&&['Flinch', 'Sleep', 'Paralysis', 'Freeze', 'Attract', 'Confusion'].some(k=>(atk.states||{})[k]&&k!==opt.skipSt)){const am=JSON.parse(JSON.stringify(atk));const r=F().actionCheck(am,{skip:opt.skipSt?[opt.skipSt]:[],keep:keepSt(atk)});
+   if(!RF&&!ACCKEEP&&$('#achk',md).checked&&F()&&['Flinch', 'Sleep', 'Paralysis', 'Freeze', 'Attract', 'Confusion'].some(k=>(atk.states||{})[k]&&k!==opt.skipSt)){const am=JSON.parse(JSON.stringify(atk));const r=F().actionCheck(am,{skip:opt.skipSt?[opt.skipSt]:[],keep:keepSt(atk),sleepOk:/^\s*「\s*잠듦\s*」\s*상태일\s*때/.test(String((mv&&mv.eff)||''))});
     if(!r.ok){let self=0;if(r.selfHit){self=F().confusionHit(am);am.hp.cur=Math.max(0,am.hp.cur-self);r.lines.push(`${am.name} 자작 대미지 −${self} → HP ${am.hp.cur}/${am.hp.max}${am.hp.cur<=0?' 빈사!':''}`)}
      RESULT={check:am,lines:r.lines,mv};const rT=s3tid(b,atk);const rc=['Paralysis','Confusion'].some(k=>(atk.states||{})[k])&&!(atk.states||{}).Flinch?s3card(c,rT,'행동다시'):null;
      $('#ares',md).innerHTML=`<div class="card" style="border-color:var(--red)"><b>행동 실패</b><div class="small" style="white-space:pre-wrap;margin-top:4px">${esc(r.lines.join('\n'))}</div>${rc?`<div class="row" style="margin-top:6px"><button class="btn sm pri" id="a3rise">🗝 「${esc(rc.n)}」 — 마비 · 혼란 판정 다시</button></div>`:''}</div>`;$('#aapply',md).disabled=false;
