@@ -128,8 +128,8 @@ async function attack(H,W,mid,idx,targets,o){o=o||{};/* 11-23 「기술의 반�
   if(FX&&r.mods)FX.consume(nb,r.mods.names);if(def.flags&&def.flags.endure)def.flags.endureUsed=1}
  if(MAU&&FX){const a=RF&&nb.mons[RF.from]?nb.mons[RF.from]:nb.mons[mid];const cx0=W.__SIM.uiCtx(nb,a,mv.name);
   const runOps=async(ops,def)=>{if(RF){const r=await FX.run(ops.map(q=>q&&(q.tgt==null||['target','enemy','enemy1','self'].includes(q.tgt))?Object.assign({},q,{tgt:'self'}):q),cx0);lines.push(...r.lines);return}const map=def?FN.tgtFor(atk,def):(q=>q);const cx=Object.assign({},cx0,def?{pick:list=>Promise.resolve(list.find(x=>x.id===def.id)||null)}:{});const r=await FX.run(ops.map(map),cx);lines.push(...r.lines)};
-  for(const x of once)if(x.ok&&x.ops)await runOps(x.ops,null);
-  for(const r of res)for(const x of (r.sec||[]))if(x.g&&x.ok&&x.ops){const d=nb.mons[r.def.id];if(d)await runOps(x.ops,d)}
+  for(const x of once)if(x.ok&&x.ops){let ops1=x.ops;try{const U=nb.mons[mid];const fu=FX.fracUp?FX.fracUp([{name:'특성 : '+(U.ability||''),eff:U.abilityEff},...FN.potSrc(U)],mv.name,[],ops1):null;if(fu&&!fu.types){ops1=fu.ops;lines.push(`${U.name} 「${fu.name}」 — 「${mv.name}」 강화 (${fu.from} → ${fu.to})`)}}catch(e){}await runOps(ops1,null)}
+  for(const r of res)for(const x of (r.sec||[]))if(x.g&&x.ok&&x.ops){const d=nb.mons[r.def.id];if(d){/* 11-23 위력이 강화(1/3→1/2) — 웹툴과 같다 */let ops1=x.ops;try{const U=nb.mons[mid];const fu=FX.fracUp?FX.fracUp([{name:'특성 : '+(U.ability||''),eff:U.abilityEff},...FN.potSrc(U)],mv.name,FN.tysOf(d),ops1):null;if(fu){ops1=fu.ops;lines.push(`${U.name} 「${fu.name}」 — 「${mv.name}」의 위력 강화 (${fu.from} → ${fu.to})`)}}catch(e){}await runOps(ops1,d)}}
   /* 드레인 · 반동은 예상 대미지(받는 쪽 HP 창 계산 전 값) 기준 — 웹툴과 같다 */
   const est=r=>{if(!r.dmg)return 0;const d=nb.mons[r.def.id];const hp=B.hpDamageHits(d||r.def,FN.perOf(r.dmg,am(r)),r.eff.value,Object.assign({},FN.hsOpt(d||r.def,mv.cat,r.mods),{stab:false,guard:r.guard,endure:r.endure,hpFloor:FN.raidFloor(d||r.def)}));return hp.final};
   const dealt=res.filter(r=>r.acc.hit&&r.dmg).reduce((s2,r)=>s2+est(r),0);
