@@ -2524,7 +2524,7 @@ window.OM_BATTLE_UI=(()=>{
   await saveMon(m0,mid,x);A().sysLog(`${x.name}의 「${name}」 — 다 써서 없어졌다`,'battle',{mid,img:x.image||''});
   /* 11-09 망령 「소지품을 소모했을 때」 계기 — 그 포켓몬의 특성 · 포텐셜 · 고유 중 글에 「소모했을 때 · 소모하면」이 있고 구문이 있는 것, 그리고 펼친 필드의 「소지품 소모 시」 */
   if(ctx().mgr&&FX())try{await autoOnUse(mid,{name})}catch(e){console.warn('소지품 소모 계기',e)}if(ctx().mgr&&FX())try{await evReact('use',{mid,name,key:name+'@'+Date.now()})}catch(e){console.warn('evReact use',e)}}
- async function autoOnUse(mid,used){const c=ctx();const m=c.b.mons[mid];if(!m)return;const USE=/소모\s*(?:했을\s*때|하면|한\s*(?:때|뒤|후))|다\s*(?:썼을|쓰면)\s*때?/;const list=[];
+ async function autoOnUse(mid,used){const c=ctx();const m=c.b.mons[mid];if(!m)return;try{if(/열매$/.test(String((used||{}).name||'').trim())&&!m.ateBerry)await A().set(['battle','mons',mid,'ateBerry'],+c.b.turn||1)}catch(e){}   /* 11-23 「나무열매를 소모한 상태」(트림) */const USE=/소모\s*(?:했을\s*때|하면|한\s*(?:때|뒤|후))|다\s*(?:썼을|쓰면)\s*때?/;const list=[];
   if(m.ability)list.push(['trait',m.ability]);for(const p of potSrc(m))if(p&&p.name&&!p.ph)list.push(['pot',p.name]);{const t=(c.b.trainers||{})[m.tid];for(const u of ((t&&t.unique)||[]))if(u&&u.name&&!list.some(([k,n])=>k==='pot'&&n===u.name))list.push(['pot',u.name])}
   for(const [kind,name] of list){const a=FX().autoOf(m,kind,name);if(!a||!a.ops||!a.ops.length||a.manual)continue;const tx=a.text||slotEff(m,kind,name)||'';if(!USE.test(tx)&&!a.ops.some(o=>o&&o.k==='cond'&&o.c==='used_item'))continue;if(limManual(m,kind,name,tx))continue;await fireAuto(mid,kind,name,{quiet:true,ctx:{used}})}
   await fieldAuto('use',{mid,used});await fieldTxtType(mid,'use',{used})}
@@ -3925,6 +3925,8 @@ const slots=allEntered(b);const tg=(x0.tm?tgNow(b,x0,atk):(x0.targets||[]));cons
     else if(au.failHit&&(+atk.hitT===T||(atk.lastTaken&&atk.lastTaken.hit&&+atk.lastTaken.turn===T)))why='이번 턴 공격을 받아';
     else if(au.failNoAtk&&d0&&d0!==atk&&!ordAtk(b,d0))why=`${d0.name}이(가) 공격하지 않아`;
     else if(au.failLate&&d0&&d0!==atk&&actedB4(b,d0))why=`${d0.name}이(가) 먼저 행동해서`;
+    /* 11-23 망령 「응」: 「트림」(나무열매를 소모한 상태가 아니면) · 「추월」(대상이 「미래예지」 상태가 아니면)의 실패를 판정 — 구문 「실패무시 기술:X」가 걸려 있으면 넘긴다 */
+    else if((au.failNoBerry||au.failNoSt)&&(()=>{const nm=x=>String(x||'').replace(/\s/g,'');const nf=spL(atk,'nofail').find(e=>!e.mv||!e.mv.length||e.mv.some(x=>nm(x)===nm(mv.name)));if(nf)return false;if(au.failNoBerry&&!(atk.ateBerry||(atk.itemUsed&&/열매$/.test(String(atk.itemUsed.name||'').trim())))){why='「나무열매」를 소모한 상태가 아니라';return true}if(au.failNoSt&&d0&&d0!==atk&&!(d0.states||{})[au.failNoSt]){why=`${d0.name}이(가) 「${au.failNoStKo||au.failNoSt}」 상태가 아니라`;return true}return false})()){}
     else if(au.onlyVs&&d0&&!(au.onlyVsL||[au.onlyVs]).some(t=>tysOf(d0).includes(t)))why=`${d0.name}이(가) 「${(au.onlyVsL||[au.onlyVs]).map(t=>S().typeKo(t)).join(' · ')}」 타입이 아니라`;
     else{/* 11-15 망령 「메이링 승률이 실제보다 높다」 → 썬더랜스 「연속 제한 : 실패 확률 증가」가 방어 기술에만 걸려 있었음: 바로 전 턴에 같은 기술을 냈으면 1/3 · 1/9 … , 「확정 실패」면 실패 */const nc=(atk.fx||{}).noConsec;const ncOk=nc&&+nc.t===T&&(!(nc.mv||[]).length||nc.mv.includes(mv.name))&&(!nc.ally||!d0||d0===atk||sameT(d0,atk));/* 11-18 쌀공주의 경단: 연속무시 */const why2=ncOk?'':consecFail(atk,mv,T);if(why2)why=why2}
     if(why&&!(ctx().mgr&&confirm(`${why} 「${mv.name}」는 실패한다.\n\n확인: 그래도 굴린다 (GM 판정)\n취소: 실패로 끝낸다`))){A().toast(`${why} 「${mv.name}」는 실패한다`);A().sysLog(`【공격】 ${atk.name} 『${mv.name}』 — ${why} 실패했다`,'battle',{mid,img:atk.image||''});A().closeModal();return}}
