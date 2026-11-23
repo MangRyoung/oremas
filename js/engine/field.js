@@ -12,7 +12,12 @@ window.OM_FIELD=(()=>{
  const frac=(m,n,d)=>Math.max(1,Math.floor(m.hp.max*n/d));
  /* 10-22 망령: 시트에 적어 둔 상태 변화 사양 (『수선녀의 요술』 「아쿠아링」 1/8 → 1/6 등) — OM_FX.stMod. sf(m,'AquaRing',1,8) = [양, 표시] */
  const sf=(m,en,n,d)=>{const o=FX()&&FX().stMod?FX().stMod(m,en):null;if(o&&o.d>0)return [frac(m,o.n,o.d),`${o.n}/${o.d} 『${o.name}』`];return [frac(m,n,d),`${n}/${d}`]};
- const dmg=(m,v,lines,why)=>{v=+v;if(!isFinite(v))return 0;if(noind(m,'')){lines.push(`${m.name} ${why} — 비례 대미지를 받지 않는다`);return 0}const floor=noind(m,'noko')?1:0;const d=Math.max(0,Math.min(m.hp.cur-floor,v));if(d<=0){if(floor)lines.push(`${m.name} ${why} — 비례 대미지로는 빈사가 되지 않는다`);return 0}m.hp.cur-=d;lines.push(`${m.name} ${why} −${d} (HP ${m.hp.cur}/${m.hp.max})`);return d};
+ /* 11-23 밤 감우 258 망령 「(「HP : C」 이하인 상대에게 「씨뿌리기」의 드레인을 강화(1/8→1/6)한다) 자동화는 되어 있니?」: 씨를 뿌린 쪽(지금 그 에리어에 있는 포켓몬)의 포텐셜 · 전용 · 특성 글을 읽는다. 앞의 「HP : 등급」 이하(이상)인 상대에게 는 드레인당하는 쪽의 지금 종족치 등급으로 본다 (B+ 는 「B 이하」가 아니다). 조건이 없으면 늘. 예전 sf() 는 드레인당하는 쪽 시트만 봤다 */
+  const SEED_UP_RE=/(?:「\s*(HP|공격|방어|특공|특방|스피드)\s*[:：]\s*([A-Z]{1,3}[+\-]?)\s*」\s*(이하|이상)\s*인\s*(?:상대|대상|포켓몬)에게\s*)?「\s*씨뿌리기\s*」\s*(?:의|에\s*의한)\s*드레인(?:량)?\s*(?:을|를)\s*강화\s*[(（]\s*\d+\s*\/\s*\d+\s*(?:→|->|⇒|=>)\s*(\d+)\s*\/\s*(\d+)\s*[)）]/g;
+  const SEED_RANKL=['E-','E','E+','D-','D','D+','C-','C','C+','B-','B','B+','A-','A','A+','AA-','AA','AA+','AAA-','AAA','AAA+','S','EX'];
+  function seedUp(to,m){try{if(!to||!m)return null;const src=[...(to.pots||[]).filter(p=>p&&p.name&&!p.ph).map(p=>[p.name,p.eff]),...(to.excl?[[to.excl.name,to.excl.eff]]:[]),...(to.exclX||[]).map(x=>[x.name,x.eff]),[to.ability,to.abilityEff]];const SI={HP:0,'공격':1,'방어':2,'특공':3,'특방':4,'스피드':5};let best=null;
+    for(const [name,eff] of src){if(!name||!eff)continue;if((to.potOff||{})[String(name).replace(/[『』]/g,'').trim()])continue;for(const r of String(eff).matchAll(SEED_UP_RE)){if(!(+r[5]>0))continue;if(r[1]){const g=window.OM_STATS&&window.OM_STATS.gradeOf&&Array.isArray(m.base)?String(window.OM_STATS.gradeOf(+m.base[SI[r[1]]]||0)).toUpperCase().replace(/^S[+\-]$/,'S'):'';const gi=SEED_RANKL.indexOf(g),wi=SEED_RANKL.indexOf(/^S[+\-]$/.test(r[2])?'S':r[2]);if(gi<0||wi<0)continue;if(r[3]==='이하'?gi>wi:gi<wi)continue}const o={n:+r[4],d:+r[5],name:String(name).replace(/『|』/g,'')};if(!best||o.n/o.d>best.n/best.d)best=o}}return best}catch(e){return null}}
+  const dmg=(m,v,lines,why)=>{v=+v;if(!isFinite(v))return 0;if(noind(m,'')){lines.push(`${m.name} ${why} — 비례 대미지를 받지 않는다`);return 0}const floor=noind(m,'noko')?1:0;const d=Math.max(0,Math.min(m.hp.cur-floor,v));if(d<=0){if(floor)lines.push(`${m.name} ${why} — 비례 대미지로는 빈사가 되지 않는다`);return 0}m.hp.cur-=d;lines.push(`${m.name} ${why} −${d} (HP ${m.hp.cur}/${m.hp.max})`);return d};
  const heal=(m,v,lines,why)=>{if(has(m,'HealBlock')){lines.push(`${m.name} ${why} — 「회복봉인」이라 회복하지 못함`);return 0}{const FX=window.OM_FX;const nh=FX&&FX.noHeal?FX.noHeal(m,'heal'):'';if(nh){lines.push(`${m.name} ${why} — ${nh}: 회복이 발동하지 않는다`);return 0}}   /* 11-18 맥 콘 글린의 환상 */const h=Math.min(v,m.hp.max-m.hp.cur);if(h<=0)return 0;m.hp.cur+=h;lines.push(`${m.name} ${why} +${h} (HP ${m.hp.cur}/${m.hp.max})`);return h};
 const FX=()=>window.OM_FX;
  const ABN=['Poison','Toxic','Burn','Paralysis','Freeze','Sleep','Comatose'];
@@ -90,7 +95,7 @@ const FX=()=>window.OM_FX;
   });
   /* ④ 드레인 */
   each((m,st,sleeping)=>{
-   if(st.LeechSeed){const from=m.seedFrom||((m.side==='left'?'right':'left')+'_'+m.entry);const to=slots[from];if(!to||to.hp.cur<=0)lines.push(`${m.name} 「씨뿌리기」 씨를 뿌린 ${String(from).split('_')[1].toUpperCase()} 에리어에 포켓몬이 없어 회복 없음`);else{const [v,tx]=sf(m,'LeechSeed',1,8);const d=dmg(m,v,lines,`「씨뿌리기」 드레인 ${tx}`);if(d>0)heal(to,d,lines,`「씨뿌리기」(${m.name})`)}}
+   if(st.LeechSeed){const from=m.seedFrom||((m.side==='left'?'right':'left')+'_'+m.entry);const to=slots[from];if(!to||to.hp.cur<=0)lines.push(`${m.name} 「씨뿌리기」 씨를 뿌린 ${String(from).split('_')[1].toUpperCase()} 에리어에 포켓몬이 없어 회복 없음`);else{let [v,tx]=sf(m,'LeechSeed',1,8);{const su=seedUp(to,m);if(su&&frac(m,su.n,su.d)>v){v=frac(m,su.n,su.d);tx=`${su.n}/${su.d} ${to.name} 『${su.name}』`}}const d=dmg(m,v,lines,`「씨뿌리기」 드레인 ${tx}`);if(d>0)heal(to,d,lines,`「씨뿌리기」(${m.name})`)}}
   });
   /* ⑤ 회복 — 가장 높은 것 하나만 */
   each((m,st,sleeping)=>{
