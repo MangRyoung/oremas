@@ -3815,7 +3815,7 @@ const slots=allEntered(b);const tg=(x0.tm?tgNow(b,x0,atk):(x0.targets||[]));cons
    <div id="ares"></div>
    <div class="row afoot"><label class="small tgc" title="풀죽음 → 잠듦 → 마비 → 얼음 → 헤롱헤롱 → 혼란 순서로 판정 (맵툴 check_attack)"><input type="checkbox" id="achk" checked> 행동 판정 먼저</label><span class="sp"></span><button class="btn" id="aroll">굴리기</button><button class="btn pri" id="aapply" disabled>적용</button></div>`);
   md.querySelectorAll('[data-amfire]').forEach(bt=>bt.onclick=()=>{A().closeModal();openFire(bt.dataset.amfire)});
-  const mvSel=$('#amove',md);
+  const mvSel=$('#amove',md);let T0KEEP=!!(opt.targets&&opt.targets.length&&T0.length);
   const syncBoard=()=>{md.querySelectorAll('[data-at]').forEach(t=>{const cb=md.querySelector(`[data-t="${t.dataset.at}"]`);t.classList.toggle('on',!!(cb&&cb.checked));const tk=t.querySelector('.tk');if(tk)tk.textContent=cb&&cb.checked?'✓':''})};
   md.querySelectorAll('[data-at]').forEach(t=>t.onclick=()=>{const cb=md.querySelector(`[data-t="${t.dataset.at}"]`);if(cb){cb.checked=!cb.checked;syncBoard()}});
   md.querySelectorAll('[data-amv]').forEach(cd=>cd.onclick=()=>{if(extGone(MVS(atk)[+cd.dataset.amv]))A().toast('이 기능 확장은 이번 시합에서 다 썼다 — 판정을 바로잡을 때만 쓴다');mvSel.value=cd.dataset.amv;md.querySelectorAll('[data-amv]').forEach(q=>q.classList.toggle('on',q===cd));syncMove()});
@@ -3851,7 +3851,7 @@ const slots=allEntered(b);const tg=(x0.tm?tgNow(b,x0,atk):(x0.targets||[]));cons
    /* 소지품 위력 (검은띠 · 쥬얼 · 구애머리띠 …): 기술을 고를 때 「아이템 1」 칸에 넣는다 */
    {const tys=mtys(mv);const im=OI()?OI().atkMul(atk,{types:tys,cat:mv.cat,single:String(mv.range||'')==='1체'}):null;$('#aitem1',md).value=im?im.v:1;md.dataset.it1=im&&im.txt?String(im.txt):'';md.dataset.jewel=im&&im.jewel?String(im.name||'1'):'';if(im)setTimeout(()=>{const e2=$('#amef',md);if(e2)e2.textContent='【소지품 '+im.txt+'】 '+e2.textContent},0)}
    {const rn=[...(RM('블랙룸')&&mv.cat!=='변화'?['블랙룸: 고스트 기술로']:[]),...(RM('원더룸')?['원더룸: 방어↔특방']:[]),...(RM('매직룸')?['매직룸: 소지품 무효']:[]),...(ft&&['그래스필드','일렉트릭필드','사이코필드'].includes(ft)&&!grd(atk)?['떠 있어 '+ft+' 강화 없음']:[])];if(rn.length)setTimeout(()=>{const e2=$('#amef',md);if(e2)e2.textContent='【'+rn.join(' · ')+'】 '+e2.textContent},0)}
-   const dflt=(OE&&+mvSel.value===oeIdx&&(OE.targets||[]).length)?OE.targets:defaultTargets(b,mid,String(mvSel.value));if(x.move==null||x.move===''||+x.move!==+mvSel.value){md.querySelectorAll('[data-t]').forEach(cb=>cb.checked=dflt.includes(cb.dataset.t))}syncBoard()};
+   const dflt=(OE&&+mvSel.value===oeIdx&&(OE.targets||[]).length)?OE.targets:defaultTargets(b,mid,String(mvSel.value));/* 11-23 방 시험: 추가 공격 · 기술사용 · 반사 공격처럼 대상을 정해서 연 창(opt.targets)은 처음 한 번은 그 대상 그대로 — 예전엔 지시가 없으면 기본 대상으로 덮여, 둘이함께 「헤드샷」의 반대 에리어 대상이 원래 대상으로 돌아갔다. 기술을 손으로 바꾸면 그때부터는 기본 대상 */if(T0KEEP){T0KEEP=false}else if(x.move==null||x.move===''||+x.move!==+mvSel.value){md.querySelectorAll('[data-t]').forEach(cb=>cb.checked=dflt.includes(cb.dataset.t))}syncBoard()};
   mvSel.onchange=()=>{APOWM=false;syncMove()};{const pe=$('#apow',md);if(pe)pe.addEventListener('input',()=>{APOWM=true})}   /* 11-07 망령 「변칙기가 현재 위력을 임의로 조절하는 게 안 된다」: 위력 칸을 손으로 고치면(APOWM) 변칙 위력 자동 대신 그 값 */
   {const ts=$('#atype',md);if(ts)ts.addEventListener('change',()=>{const pw=$('#apow',md).value;ATY=ts.value;syncMove();$('#apow',md).value=pw;ts.closest('label').classList.toggle('chgd',!!ATY)})}
   /* 11-07 복합기 +: 더하기 · 칩 ✕ 로 빼기 (자동은 이 창에서 다시 안 채운다) · 「복합 상성」을 손으로 바꾸면 자동 표시를 뗀다 */
