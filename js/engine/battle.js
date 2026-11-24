@@ -49,7 +49,7 @@ window.OM_BATTLE=(()=>{
    prio+=+(e.prioMod||0);
    let spd=statValue(mon,'speed',{mod:((mon.mod||{}).speed||1)*(e.scarf?1.5:1)*(e.tailwind?2:1)*(e.swamp?0.25:1)*(+e.spMul||1)}).value;   /* spMul: 날씨 · 필드 조건 스피드 특성 (10-26) */
    if(has(mon,'Paralysis')&&!calcSt(mon,'ParaSpeed'))spd*=(+C().campaign.value_paralysis||0.5);
-   if(field.trick)spd*=-1;
+   if(field.trick&&!(window.OM_FIELD&&window.OM_FIELD.roomImm&&window.OM_FIELD.roomImm(mon)))spd*=-1;   /* 11-24 「룸」의 효과를 받지 않는 포켓몬은 뒤집지 않는다 */
    return {slot,mon,started:e.started?1:0,change:(e.cmd&&e.cmd.change)?1:0,order,prio,speed:spd,dice:d(opts,10000)}});
   /* 맵툴 json.sort "d" = 내림차순: started 1(턴 개시 때 필드에 있던 포켓몬)이 먼저, 턴 도중 등장(0, 「교대 등장」)은 뒤 */
   rows.sort((a,b)=>(b.started-a.started)||(b.change-a.change)||(b.order-a.order)||(b.prio-a.prio)||(b.speed-a.speed)||(b.dice-a.dice));

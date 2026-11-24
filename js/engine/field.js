@@ -29,9 +29,12 @@ const FX=()=>window.OM_FX;
  const poisonHeal=m=>{if(!m||!m.ability||has(m,'TraitBroken'))return null;const nm=String(m.ability).replace(/『|』/g,'').trim();let t=String(m.abilityEff||'');if(!t&&FX()&&FX().effOf)try{t=String(FX().effOf('trait',nm)||'')}catch(e){}
   t=t.replace(/<br\s*\/?>/g,' ');const r=t.match(PH_RE);if(r)return {n:+r[1],d:+r[2],name:nm};if(nm==='포이즌힐')return {n:1,d:8,name:nm};return null};
   const magic=()=>!!(FX()&&FX().magicRoom&&FX().magicRoom());
+ /* 11-24 망령 (인텔스 『호버링 엣지 소서』 「「특성 : 으름장」일 때 「룸」의 효과를 받지 않는다」): 그 글을 가진 포켓몬은 트릭룸(스피드 역순) · 매직룸(소지품 효과 없음) · 원더룸(방어 ↔ 특방)의 영향을 받지 않는다. 앞에 「특성 : X」일 때가 붙으면 지금 특성이 X 일 때만(특성 파괴 중이면 아님) */
+ const ROOM_IMM_RE=/(?:「\s*특성\s*[:：]\s*([^」]+?)\s*」\s*일\s*때\s*)?「\s*룸\s*」\s*의\s*효과를\s*받지\s*않는다/;
+ const roomImm=m=>{if(!m)return false;try{const src=[m.abilityEff,...((m.pots||[]).map(p=>p&&p.eff)),m.excl&&m.excl.eff,...((m.exclX||[]).map(p=>p&&p.eff))];for(const x of src){const r=String(x||'').match(ROOM_IMM_RE);if(!r)continue;if(r[1]&&(has(m,'TraitBroken')||String(m.ability||'').replace(/[『』\s]/g,'')!==r[1].replace(/\s/g,'')))continue;return true}}catch(e){}return false};
  /* 11-08 23:12 망령 「금제와 서투름은 지닌 효과도 전부 꺼」: 「금제」 상태 · 특성 「서투름」(특성 파괴 중이면 아님)이면 매직룸처럼 그 포켓몬의 소지품 효과가 없다 */
- const itemOff=m=>!!m&&(magic()||has(m,'Embrago')||has(m,'Embargo')||(/^\s*『?서투름』?\s*$/.test(String(m.ability||''))&&!has(m,'TraitBroken')));
- const itemOffWhy=m=>!m?'':magic()?'매직룸':(has(m,'Embrago')||has(m,'Embargo'))?'금제':itemOff(m)?'서투름':'';
+ const itemOff=m=>!!m&&((magic()&&!roomImm(m))||has(m,'Embrago')||has(m,'Embargo')||(/^\s*『?서투름』?\s*$/.test(String(m.ability||''))&&!has(m,'TraitBroken')));
+ const itemOffWhy=m=>!m?'':(magic()&&!roomImm(m))?'매직룸':(has(m,'Embrago')||has(m,'Embargo'))?'금제':itemOff(m)?'서투름':'';
  const itemOf=m=>itemOff(m)?'':(m.item||'');   /* 매직룸 · 금제 · 서투름 동안 소지품 효과 없음 */
  /* 11-05 망령: 소지품 2 · 3번 칸까지 (이름을 이어 붙인 글 — 정규식 검사용) */
  const itemsOf=m=>!m||itemOff(m)?'':[m.item,...(m.items2||[]).map(x=>x&&x.item)].filter(Boolean).join(' ');
@@ -159,5 +162,5 @@ const FX=()=>window.OM_FX;
    if(h.st){if(setState(m,h.st))lines.push(`${m.name} 「${h.k}」 → 「${ko(h.st)}」`);continue}
    if(h.f){dmg(m,frac(m,1,h.f),lines,`「${h.k}」 1/${h.f}`);if(h.once){delete objs[h.k];removed.push(h.k)}}}
   return {lines,removed,forced}}
- return {poisonHeal,actionCheck,confusionHit,turnEndStates,turnEndField,hazardsOnEntry,grounded,itemOf,itemsOf,itemOff,itemOffWhy,itemOffMult,magic,HAZ,RM};   /* 11-01 망령: HAZ · RM 은 설치물 전개 카드(battle_ui fcInfo)가 효과 글을 만드는 데 읽는다 */
+ return {poisonHeal,actionCheck,confusionHit,turnEndStates,turnEndField,hazardsOnEntry,grounded,itemOf,itemsOf,itemOff,itemOffWhy,itemOffMult,magic,roomImm,HAZ,RM};   /* 11-01 망령: HAZ · RM 은 설치물 전개 카드(battle_ui fcInfo)가 효과 글을 만드는 데 읽는다 */
 })();
