@@ -1630,7 +1630,9 @@ window.OM_BATTLE_UI=(()=>{
   try{await DBS().secretPut(c.ST.room,c.ST.secret,'cmd',tid,cleanCmd(cur));/* 11-03 21:51 망령 「우선도 문제 안 고쳐졌다」: 턴 개시 뒤에 지시를 저장하거나 바꾸면(준비 안 된 채 턴이 열린 경우 등) 순서 열쇠가 기술 없는 옛것으로 남아 우선도가 0 — 저장할 때마다 열쇠를 다시 올린다 */if(c.role==='seat'&&(+c.b.phase||0)>=1&&(+c.b.phase||0)<2)publishOk(tid,true).catch(()=>{});if(coOf(c,tid).length&&!(c.gm&&c.fair))try{await A().set(['pub',tid,'csav'],{at:Date.now(),by:c.gm?'gm':c.seat,name:c.gm?'GM':(c.ST.name||c.seat)})}catch(e){}   /* 함께 지시하는 화면들이 이걸 보고 불러온다 */if(!quiet)A().toast('지시를 저장했다 (공개 전까지 GM만 본다)');if((c.ST.state.ready||{})[tid])await putShape(tid);return true}catch(e){A().toast('저장 실패: '+e.message);return false}}
  /* 지시의 「꼴」만 공개 칸에 둔다 — 「타임」이 보는 건 교대인지 기술인지뿐 (맵툴 active_command_expert 와 같다) */
  async function putShape(tid,clear){const c=ctx();const b=c.b;const cur=CMD[tid];const mons={};if(!clear&&cur){for(const mid in cur.mons){const m=b.mons[mid];if(!m||!m.entry)continue;const x=cur.mons[mid];mons[mid]=x.move==='switch'?'switch':(x.move===''||x.move==null)?'none':'move'}}
-  try{await A().set(['pub',tid,'shape'],clear?null:{turn:+b.turn||0,mons})}catch(e){}}
+  try{await A().set(['pub',tid,'shape'],clear?null:{turn:+b.turn||0,mons})}catch(e){}
+  try{let pre=null;if(!clear&&cur&&enemyTids(c,tid).some(e=>seeHas(b,e,PRESEE_RE))){const M={};for(const mid in cur.mons){const m=b.mons[mid];if(!m||!m.entry)continue;const x=cur.mons[mid]||{};const L=[];if(x.order)L.push('명령 『'+pName(b,tid,'order',x.order)+'』');if(x.command)L.push('지령 『'+pName(b,tid,'command',x.command)+'』');for(const n of (x.pots||[]))L.push('『'+String(n).replace(/[『』]/g,'')+'』');if(L.length)M[mid]=L}pre={turn:+b.turn||0,mons:M,u:(cur.upots||[]).map(n=>String(n).replace(/[『』]/g,''))}}
+   if(pre||((c.ST.state.pub||{})[tid]||{}).pre)await A().set(['pub',tid,'pre'],pre)}catch(e){}}
  async function loadCmd(tid){const c=ctx();try{const rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd');const r=(rows||[]).find(x=>x.id===tid);if(!r)return A().toast('저장된 지시가 없다');CMD[tid]=Object.assign({mons:{},detail:''},JSON.parse(JSON.stringify(r.data)),{turn:+c.b.turn||0});delete CMD[tid].order;delete CMD[tid].command;if(!cmdFresh(r)){CMD[tid].upots=[];for(const k in CMD[tid].mons||{}){const x=CMD[tid].mons[k];x.pots=[];x.order='';x.command=''}}A().renderScene();A().toast('불러왔다')}catch(e){A().toast(e.message)}}
  /* 함께 지시하기: 저장된 지시를 지시 창으로 — 처음 열 때(아직 손대지 않았으면), 그리고 같이 보는 사람이 저장했을 때 */
  const PULL={};
@@ -2248,6 +2250,18 @@ window.OM_BATTLE_UI=(()=>{
  function uqTime(t){try{return uniqList(t).find(x=>uqOps(t,x,'timeuq')||UQTIME_RE.test(String(x.p.eff||'')))||null}catch(e){return null}}
  function uqDecl(t){try{for(const x of uniqList(t)){const o=uqOps(t,x,'timedecl');const e=String(x.p.eff||'');if(o)return Object.assign({},x,{dmv:!!o.mv,dsw:!!o.sw});if(TDECL_RE.test(e)&&/기술을\s*선언/.test(e))return Object.assign({},x,{dmv:true,dsw:/교대할\s*포켓몬을\s*선언/.test(e)})}}catch(e){}return null}
  function tdeclOf(b,m){const T=+((b||{}).turn)||0;if(!T||!m)return null;for(const t of Object.values((b&&b.trainers)||{})){const d=t&&t.time&&t.time.decl;if(d&&+d.t===T&&d.mid===m.id)return d}return null}
+ /* 11-24 망령 결정 「「타임」 사용을 기본으로 숨길까요? 응.」: 「타임」을 썼다는 로그(【묘수】 · 고유 타임 · 옛 요청/허가)는 쓴 쪽 주인 + GM 에게만(gmPriv 귓속말).
+     「상대의 「타임」 발동 여부를 확인할 수 있다」 글을 가진 상대 쪽(포켓몬 포텐셜 · 전용 — 태그 없으면 필드 위 · 【지원】 볼 안 · 【지원 (상위)】 둘 다 / 트레이너 고유)에게는 그 주인에게만 알림.
+     선언(고유 ②) · 시간 정지처럼 효과가 눈에 보이는 것은 그대로 공개. 양쪽이 같은 턴에 써서 막히는 안내도 그대로(룰상 드러남). */
+ const TIMESEE_RE=/상대의\s*「타임」\s*(?:의\s*)?발동\s*여부를\s*확인/;
+ function timePriv(b,tid){const o=Object.values((b&&b.mons)||{}).find(x=>x&&x.tid===tid&&x.entry)||Object.values((b&&b.mons)||{}).find(x=>x&&x.tid===tid);return o?{mid:o.id,img:'',gmPriv:1}:{img:'',gmPriv:1}}
+ /* 11-24 망령 「상대의 선행 입력한 포텐셜을 확인할 수 있다 — 고유 4식 지령류들 다」: 이 글을 가진 쪽이 상대에 있을 때만, 준비 완료 때 지시 꼴(shape)과 같이 선행 입력(명령 = 4식 · 지령 = 6령 · 포켓몬 포텐셜/전용 · 트레이너 고유)의 이름을 pub[tid].pre 에 올린다. 보는 곳 = 그 글을 가진 트레이너의 묘수 창(+ GM). 화면에서만 가리는 칸(shape 와 같은 수준). */
+ const PRESEE_RE=/상대(?:의|가)\s*선행\s*입력한\s*(?:포텐셜|것)(?:을|를)\s*확인/;
+ /* 트레이너 e 쪽에 그 글(RE)이 살아 있나: 포켓몬 포텐셜 · 전용(태그 없으면 필드 위 · 【지원】 볼 안 · 【지원 (빈사)】 빈사여도 · 【지원 (상위)】 둘 다) → 없으면 트레이너 고유 */
+ function seeHas(b,e,RE){for(const m of Object.values((b&&b.mons)||{})){if(!m||m.tid!==e)continue;const p=potSrc(m,true).find(q=>q&&RE.test(String(q.eff||'')));if(!p)continue;const alive=!!(m.hp&&m.hp.cur>0);if(supKind(p.eff)?supLive(m,p):(!!m.entry&&alive))return {m,name:p.name,who:m.name}}
+  const t=((b&&b.trainers)||{})[e];const u=((t&&t.unique)||[]).find(q=>q&&RE.test(String(q.eff||'')));const any=u&&(Object.values(b.mons||{}).find(x=>x&&x.tid===e&&x.entry)||Object.values(b.mons||{}).find(x=>x&&x.tid===e));return u&&any?{m:any,name:u.name,who:t.name}:null}
+ function timeSeers(c,tid){return enemyTids(c,tid).map(e=>seeHas(c.b,e,TIMESEE_RE)).filter(Boolean)}
+ function timeTell(c,tid){try{const t=(c.b.trainers||{})[tid]||{};for(const s of timeSeers(c,tid))A().sysLog(`【포텐셜】 ${s.who} 『${String(s.name||'').replace(/[『』]/g,'')}』 — 상대 ${t.name||'트레이너'}이(가) 이번 턴 「타임」을 사용했다`,'battle',{mid:s.m.id,img:'',gmPriv:1})}catch(e){}}
  function timeOf(t,turn){const x=(t&&t.time)||{};const same=(+x.turn||0)===turn;return {used:+x.used||0,forced:+x.forced||0,sw:same?(+x.sw||0):0,target:same?(x.target||''):'',uq:Object.assign({},x.uq||{})}}
  function timeLimit(c,tid){const b=c.b;const t=(b.trainers||{})[tid];if(!t)return 0;let mod=0;for(const m of Object.values(b.mons||{})){if(!m.entry)continue;if(m.tid===tid&&m.hp&&m.hp.cur>0&&timeGrant(m))mod+=1;if(sameT(m,tid,b))mod+=+(m.timeAlly||0);else mod+=+(m.timeEnemy||0)}return Math.max(0,timeCount(t)+mod)}
  function enemyTids(c,tid){const b=c.b;const t=(b.trainers||{})[tid]||{};return Object.keys(b.trainers||{}).filter(k=>k!==tid&&(b.trainers[k]||{}).side&&!sameT(k,tid,b))}
@@ -2263,6 +2277,7 @@ window.OM_BATTLE_UI=(()=>{
   const md=A().openModal(`<div class="mhead"><h2>묘수 · 「타임」 <span class="small dim">${esc(t.name)}</span></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    <div class="row small" style="gap:10px;flex-wrap:wrap"><span>지시 <b>${esc(t.ranks['지시']||'-')}</b></span><span>이 배틀 남은 횟수 <b style="color:var(--yel2)">${left}</b> / ${lim}${my.forced?` <span class="dim">(강제 ${my.forced})</span>`:''}</span><span class="dim">이번 턴 ${my.sw===0?'아직 안 씀':my.sw===1?'사용 — 「'+esc(monName(b,my.target)||'?')+'」':'사용 불가'}</span></div>
    ${UQ?`<div class="row small" style="gap:8px;flex-wrap:wrap;margin-top:6px"><span class="tag uqt">고유</span><b>『${esc(UQ.p.name)}』</b><span class="dim">지시 횟수와 별도 · 조건이 맞으면 횟수 제한 없음 — ${uqFree?'지금 쓸 수 있다':'【탈진】 — 이번 턴은 못 쓴다'}${Object.keys(my.uq).length?` · 이미 받은 상대 ${Object.keys(my.uq).map(id=>esc(monName(b,id)||'?')).join(', ')}`:''}</span><label title="켜 두면 아직 이 고유를 받지 않은 상대에게는 지시 횟수 대신 고유로 「타임」을 쓴다 (【탈진】)"><input type="checkbox" id="tmUq" ${uqFree?'checked':'disabled'}> 고유로 쓴다</label></div>`:''}
+   ${(()=>{const PS=seeHas(b,tid,PRESEE_RE);if(!PS)return '';const rows=enemyTids(c,tid).map(e=>{const et=b.trainers[e]||{};const pr=((c.ST.state.pub||{})[e]||{}).pre;if(!rd[e])return `<div class="small"><b>${esc(et.name||e)}</b> <span class="dim">— 아직 준비 전</span></div>`;const ok=pr&&(+pr.turn||0)===turn;const L=ok?[...(pr.u||[]).map(n=>`고유 『${esc(n)}』`),...Object.entries(pr.mons||{}).map(([mid,a])=>{const mm=b.mons[mid];return `${mm?(secret(c,mm)?'상대 포켓몬':esc(mm.name)):'?'}: ${(a||[]).map(esc).join(' · ')}`})]:[];return `<div class="small"><b>${esc(et.name||e)}</b> — ${L.length?L.join(' / '):'<span class="dim">선행 입력 없음</span>'}</div>`}).join('');return `<div class="card" style="margin-top:8px"><div><span class="tag uqt">포텐셜</span> <b>『${esc(String(PS.name||'').replace(/[『』]/g,''))}』</b> <span class="small dim">— 상대의 선행 입력 (준비 완료한 상대)</span></div>${rows||'<div class="small dim">상대가 없다</div>'}</div>`})()}
    ${blocked?'<div class="card" style="border-color:var(--red);margin-top:8px">양 트레이너가 서로의 수를 읽고 있다는 것을 눈치챘다 — 이번 턴은 「타임」을 더 쓸 수 없다.</div>':''}
    <div class="sec" style="margin-top:10px">상대 포켓몬 <span class="note">상대 트레이너가 「준비 완료」를 누른 뒤에만 볼 수 있다 · 보이는 건 교대인지 기술인지뿐</span></div>
    <div class="pg">${enemies.map(m0=>{const m=V(c,m0);const w=why(m0);const seen=my.sw>=1&&my.target===m.id;return `<div class="pc ${w?'dis':''} ${seen?'on':''}" data-tm="${m.id}" title="${esc(w||'엿본다')}"><div class="pic" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></div><div><b>${secret(c,m)?'비공개':esc(m.name)}</b><div class="small dim">${SIDE_KO[m.side]} ${String(m.entry).toUpperCase()} · ${esc((b.trainers[m.tid]||{}).name||'')} ${rd[m.tid]?'<span class="tag ok">READY</span>':'<span class="dim">준비 전</span>'}</div>${w?`<div class="small" style="color:var(--red)">${esc(w)}</div>`:seen?'<div class="small" style="color:var(--yel2)">다시 보기</div>':''}</div></div>`}).join('')||'<div class="dim small">상대 포켓몬이 없다</div>'}</div>
@@ -2280,9 +2295,9 @@ window.OM_BATTLE_UI=(()=>{
    if(!again){const nt={used:my.used+(useUq||(force&&my.used>=lim)?0:1),forced:my.forced+(!useUq&&force&&my.used>=lim?1:0),turn,sw:1,target:m.id,uq:Object.assign({},my.uq,useUq?{[m.id]:1}:{})};
     const enemyUsed=enemyTids(c,tid).some(e=>timeOf(ctx().b.trainers[e],turn).sw>=1);if(enemyUsed)nt.sw=2;
     const ok=await A().set(['battle','trainers',tid,'time'],nt);if(!ok)return;
-    if(useUq){if(UQ.per)await A().set(['battle','trainers',tid,'uTurn',UQ.p.name],turn);my.uq[m.id]=1;A().sysLog(`【고유】 ${t.name} 『${UQ.p.name}』 — 「타임」을 사용한다 (지시 횟수를 쓰지 않는다)`,'battle')}
+    if(useUq){if(UQ.per)await A().set(['battle','trainers',tid,'uTurn',UQ.p.name],turn);my.uq[m.id]=1;A().sysLog(`【고유】 ${t.name} 『${UQ.p.name}』 — 「타임」을 사용한다 (지시 횟수를 쓰지 않는다)`,'battle',timePriv(ctx().b,tid))}
     try{for(const x of Object.values(ctx().b.mons||{})){if(!x||x.tid!==tid||!x.entry||!x.hp||!(x.hp.cur>0)||x.tstop)continue;const pp=potSrc(x).find(p=>p&&TSTOP_RE.test(String(p.eff||'')));if(!pp)continue;await A().set(['battle','mons',x.id,'tstop'],{t:turn});A().sysLog(`${x.name} 「${String(pp.name||'').replace(/[『』]/g,'')}」 — 「타임」이 발동한 턴, ${x.name} 이외는 이번 턴 행동 불능`,'battle',{mid:x.id});break}}catch(_){}
-    A().sysLog(`【묘수】 ${t.name} 「타임」 → ${secret(c,m)?'상대 포켓몬':m.name}\n이 배틀 ${nt.used}/${lim}${nt.forced?' · 강제 '+nt.forced:''}${useUq?' · 고유':''}`,'battle',{mid:m.id,img:''});
+    A().sysLog(`【묘수】 ${t.name} 「타임」 → ${secret(c,m)?'상대 포켓몬':m.name}\n이 배틀 ${nt.used}/${lim}${nt.forced?' · 강제 '+nt.forced:''}${useUq?' · 고유':''}`,'battle',timePriv(ctx().b,tid));timeTell(ctx(),tid);
     if(enemyUsed)A().sysLog('양 트레이너는 서로가 서로의 수를 읽고 있다는 것을 눈치챘다!','battle');
     my.sw=nt.sw;my.target=m.id;my.used=nt.used}
    const mv_=V(c,m);const txt=sh?`「${mv_.name}」${sh==='none'?'은(는) ':'은(는) '}${SHAPE_KO[sh]}`:'(GM) 저장된 지시 꼴이 없다';
@@ -2307,7 +2322,7 @@ window.OM_BATTLE_UI=(()=>{
  function timeCount(t){const lt=((DB().const||{}).lists||{}).list_time_count||{E:0,D:0,C:0,B:0,A:1,AA:2,AAA:2,S:2};const r=S().strip((t.ranks||{})['지시']);return +(lt[r]||0)}
  async function requestTime(mid){const c=ctx();const b=c.b;const m=b.mons[mid];if(!m)return;const my=c.mgr?null:c.seat;const t=b.trainers[my];
   if(!c.mgr){if(!t)return;const used=+(t.timeUsed||0);if(used>=timeCount(t))return A().toast('타임 횟수가 없다');if(!(await askYes(`${m.name} 의 지시를 엿볼까? (타임 ${used+1}/${timeCount(t)})`,'엿본다')))return;
-   await A().set(['pub',my,'time'],{mid,at:Date.now()});A().sysLog(`${t.name} 「타임」 요청 → ${m.name}`,'chat');return}
+   await A().set(['pub',my,'time'],{mid,at:Date.now()});A().sysLog(`${t.name} 「타임」 요청 → ${m.name}`,'battle',timePriv(b,my));return}
   /* GM 은 바로 본다 */
   const rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd');const r=(rows||[]).filter(x=>cmdFresh(x)).find(x=>x.id===m.tid);const x=r&&r.data&&r.data.mons&&r.data.mons[mid];
   A().openModal(`<div class="mhead"><h2>타임 — ${esc(m.name)}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="pre">${esc(x?describeCmd(b,m,x):'아직 저장된 지시가 없다')}</div>`)}
@@ -2316,7 +2331,7 @@ window.OM_BATTLE_UI=(()=>{
   const rows=await DBS().secretGet(c.ST.room,c.ST.secret,'cmd');const r=(rows||[]).filter(x=>cmdFresh(x)).find(x=>x.id===(m||{}).tid);const x=r&&r.data&&r.data.mons&&r.data.mons[req.mid];
   await DBS().secretPut(c.ST.room,c.ST.secret,'peek',seat,illuMask({mid:req.mid,name:m?m.name:'?',text:m?describeCmd(b,m,x):'?',turn:b.turn||0,at:Date.now()},b));   /* 11-05 일루젼 */
   await A().set(['pub',seat,'time'],null);if(t){await A().set(['battle','trainers',seat,'timeUsed'],(+t.timeUsed||0)+1)}
-  A().sysLog(`GM: ${t?t.name:seat} 의 「타임」 허가 (${m?m.name:'?'})`,'battle')}
+  A().sysLog(`GM: ${t?t.name:seat} 의 「타임」 허가 (${m?m.name:'?'})`,'battle',timePriv(b,seat));if(t)timeTell(c,seat)}
  async function loadPeek(){const c=ctx();if(c.mgr||!c.seat)return null;try{const rows=await DBS().secretGet(c.ST.room,c.ST.secret,'peek');const r=(rows||[]).find(x=>x.id===c.seat);return r?r.data:null}catch(e){return null}}
 
  /* ---------- 랭크·상태 편집 ---------- */
