@@ -171,7 +171,7 @@ window.OM_DB_UI=(()=>{
     방 규칙(rp 의 plBattle · seatOwn · gmHands · bondMode · pct · standCrop)을 그대로 받는다. 배틀 · 채팅 · 자리 · 시트(로스터) · 무대는 각 방 따로.
     주 방 = rp.follow (방 id · 빈 글이면 끔) → 없으면 세션 노트 캠페인이 이 방을 여러 방(om.rooms)으로 잇고 주 방(om.room)이 다른 방일 때 그 방.
     주 방 GM 이 안 들어와 있어도 같아지게, 받은 DB 위에 제작기 DB 변경(dbedit)을 섞는다 — 같은 행을 같은 규칙으로 섞으니 두 방 결과가 같다 */
- const FOLLOW_RULES=['plBattle','seatOwn','gmHands','bondMode','pct','standCrop'];
+ const FOLLOW_RULES=['plBattle','seatOwn','gmHands','slotFree','bondMode','pct','standCrop'];
  let FOL={room:'',at:0,par:null},FOLN='';
  async function followOf(){const ST=A().ST;const f=(ST.state.rp||{}).follow;if(typeof f==='string')return f&&f!==ST.room?f:null;
   if(FOL.room===ST.room&&Date.now()-FOL.at<600000)return FOL.par;let par=null;
@@ -192,7 +192,7 @@ window.OM_DB_UI=(()=>{
   const rp0=A().ST.state.rp||{},rp1=pick.rp||{};const chg=[];for(const k of FOLLOW_RULES){if(JSON.stringify(rp0[k]??null)!==JSON.stringify(rp1[k]??null)){ops.push([['rp',k],rp1[k]??null]);chg.push(k)}}
   if(!ops.length)return true;await A().setMany(ops);MKX=null;mkxP=null;if(document.querySelector('.dbmodal'))refresh();
   let pn=par;try{const r=await S.getRoom(par);pn=(r&&r.name)||par}catch(e){}FOLN=pn;
-  const RK={plBattle:'플레이어 배틀 진행',seatOwn:'자기 것만',gmHands:'GM 불간섭',bondMode:'유대 발동',pct:'확률',standCrop:'스탠딩 자르기'};
+  const RK={plBattle:'플레이어 배틀 진행',seatOwn:'자기 것만',gmHands:'GM 불간섭',slotFree:'필드 1칸 규칙 끔',bondMode:'유대 발동',pct:'확률',standCrop:'스탠딩 자르기'};
   A().sysLog(`【방 따라가기】 「${pn}」의 ${[dbN?`DB ${dbN}칸`:ops.some(o=>o[0][0]==='dbx')?'DB':'',chg.length?'방 설정 '+chg.map(k=>RK[k]||k).join(' · '):''].filter(Boolean).join(' · ')}을(를) 맞췄다`,'sys');return true}
  const followName=()=>FOLN;
  /* 11-06 망령 「제작기 카드에서 회복」: 제작기에서 회복(pcond src 'maker')한 포켓몬을 방 시트(로스터)에도 — GM 화면만, pullMaker 와 같은 때 */

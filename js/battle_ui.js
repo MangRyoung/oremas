@@ -146,7 +146,7 @@ window.OM_BATTLE_UI=(()=>{
     한 진영의 트레이너 수 = 에리어 수(2 이상)일 때만. 남의 포켓몬이 서 있는 칸 ✗ · 내 포켓몬이 서 있는 칸 = 교대 ·
     빈 칸 = 내가 필드에 아무도 없으면 ○, 이미 하나 내놓았으면 같은 진영에서 기다리는(필드에 없는) 트레이너가 전부 전멸했을 때만 ○.
     내밀기 예약(pend)도 「필드에 있음」으로 센다. null = 제한 없음 */
- function slotRule(b,side){const ids=((((b.sides||{})[side]||{}).trainers)||[]).filter(x=>x&&x!=='__swap__'&&(b.trainers||{})[x]);return ids.length>=2&&ids.length===mode(b)?ids:null}
+ /* 11-24 14:45 망령 「태그 2체 에리어 룰 방 설정에서 바꿀 수 있게 — NPC 가 3+3 할 땐 끄고 싶을 수도」: 방 설정 rp.slotFree === true 면 이 규칙을 끈다(제한 없음) */  function slotRule(b,side){try{if(((A().ST.state||{}).rp||{}).slotFree===true)return null}catch(e){}const ids=((((b.sides||{})[side]||{}).trainers)||[]).filter(x=>x&&x!=='__swap__'&&(b.trainers||{})[x]);return ids.length>=2&&ids.length===mode(b)?ids:null}
  function okAreas(b,m){const areas=AREAS.slice(0,mode(b));const ids=m&&slotRule(b,m.side);if(!ids)return areas;const M=Object.values(b.mons||{}).filter(x=>x&&x.side===m.side);const live=x=>x.hp&&x.hp.cur>0;
   const onF=tid=>M.some(x=>x.tid===tid&&x.id!==m.id&&live(x)&&(x.entry||x.pend));const wiped=tid=>!M.some(x=>x.tid===tid&&live(x));
   const waitOK=ids.filter(t=>t!==m.tid&&!onF(t)).every(wiped);
