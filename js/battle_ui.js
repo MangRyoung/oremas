@@ -2252,7 +2252,7 @@ window.OM_BATTLE_UI=(()=>{
  function tdeclOf(b,m){const T=+((b||{}).turn)||0;if(!T||!m)return null;for(const t of Object.values((b&&b.trainers)||{})){const d=t&&t.time&&t.time.decl;if(d&&+d.t===T&&d.mid===m.id)return d}return null}
  /* 11-24 망령 결정 「「타임」 사용을 기본으로 숨길까요? 응.」: 「타임」을 썼다는 로그(【묘수】 · 고유 타임 · 옛 요청/허가)는 쓴 쪽 주인 + GM 에게만(gmPriv 귓속말).
      「상대의 「타임」 발동 여부를 확인할 수 있다」 글을 가진 상대 쪽(포켓몬 포텐셜 · 전용 — 태그 없으면 필드 위 · 【지원】 볼 안 · 【지원 (상위)】 둘 다 / 트레이너 고유)에게는 그 주인에게만 알림.
-     선언(고유 ②) · 시간 정지처럼 효과가 눈에 보이는 것은 그대로 공개. 양쪽이 같은 턴에 써서 막히는 안내도 그대로(룰상 드러남). */
+     선언(고유 ②)도 숨김(12:31 결정) — 실패 · 검은눈빛이 걸리는 순간의 로그만 공개. 시간 정지처럼 효과가 눈에 보이는 것은 그대로 공개. 양쪽이 같은 턴에 써서 막히는 안내도 그대로(룰상 드러남). */
  const TIMESEE_RE=/상대의\s*「타임」\s*(?:의\s*)?발동\s*여부를\s*확인/;
  function timePriv(b,tid){const o=Object.values((b&&b.mons)||{}).find(x=>x&&x.tid===tid&&x.entry)||Object.values((b&&b.mons)||{}).find(x=>x&&x.tid===tid);return o?{mid:o.id,img:'',gmPriv:1}:{img:'',gmPriv:1}}
  /* 11-24 망령 「상대의 선행 입력한 포텐셜을 확인할 수 있다 — 고유 4식 지령류들 다」: 이 글을 가진 쪽이 상대에 있을 때만, 준비 완료 때 지시 꼴(shape)과 같이 선행 입력(명령 = 4식 · 지령 = 6령 · 포켓몬 포텐셜/전용 · 트레이너 고유)의 이름을 pub[tid].pre 에 올린다. 보는 곳 = 그 글을 가진 트레이너의 묘수 창(+ GM). 화면에서만 가리는 칸(shape 와 같은 수준). */
@@ -2314,7 +2314,7 @@ window.OM_BATTLE_UI=(()=>{
      box.querySelectorAll('[data-td]').forEach(bt=>bt.onclick=async()=>{const k=bt.dataset.td;const tn=secret(c,tm)?'상대 포켓몬':tm.name;let d=null,line='';
       if(k==='mv'){const v=String(($('#tdMv',box)||{}).value||'').trim();if(!v)return A().toast('선언할 기술을 고른다');d={t:turn,by:tid,mid:tm.id,src:DQ.p.name,mv:v};line=`기술 「${v}」 선언 — 이번 턴 ${tn}이(가) 그 기술을 내보내면 실패한다`}
       else{const id=String(($('#tdSw',box)||{}).value||'');const w=(ctx().b.mons||{})[id];if(!w)return A().toast('선언할 포켓몬을 고른다');const wn=secret(c,w)?'비공개 포켓몬':w.name;d={t:turn,by:tid,mid:tm.id,src:DQ.p.name,sw:id,swn:wn};line=`교대 「${wn}」 선언 — 이번 턴 ${tn}이(가) 그 포켓몬과 교대하려 하면 「검은눈빛」 상태가 된다`}
-      if(!(await A().set(['battle','trainers',tid,'time','decl'],d)))return;A().sysLog(`【고유】 ${t.name} 『${DQ.p.name}』 → ${tn}\n${line}`,'battle',{mid:tm.id,img:''});
+      if(!(await A().set(['battle','trainers',tid,'time','decl'],d)))return;A().sysLog(`【고유】 ${t.name} 『${DQ.p.name}』 → ${tn}\n${line}`,'battle',timePriv(ctx().b,tid));   /* 11-24 망령 「알게 되면 의미가 없지 — 2(숨김)로」: 선언도 선언한 쪽 + GM 에게만. 상대는 기술이 실패하거나 교대가 막히는 순간에 안다 */
       box.innerHTML=`<div class="card" style="margin-top:8px"><span class="tag uqt">고유</span> <b>『${esc(DQ.p.name)}』</b> — ${esc(line)}</div>`})};
     paint()}})}
 
