@@ -145,6 +145,11 @@ const FX=()=>window.OM_FX;
  /* ----- 설치기 (hazard_eval/apply): 등장할 때. A 급은 땅 위에서만, B 급은 모두. 통굽부츠 면역. 제거 규칙(벌레가 갉아먹음 등) ----- */
  const HAZ=[{k:'압정뿌리기',c:'A',kind:'spike'},{k:'독압정',c:'A',kind:'tspike'},{k:'지뢰원',c:'A',f:4,once:1,d:'「HP」 1/4'},{k:'끈적끈적네트',c:'A',kind:'net'},{k:'기뢰',c:'A',kind:'mine',once:1},{k:'트램펄린',c:'B',kind:'bounce',once:1},{k:'스텔스록',c:'B',ty:'Rock'},{k:'불기둥',c:'B',ty:'Fire'},{k:'장미원',c:'B',kind:'rose',f:8},{k:'가시원',c:'B',ty:'Grass'},{k:'얼음꼬챙이',c:'B',ty:'Ice'},{k:'전기발판',c:'B',ty:'Electric'},{k:'아이스번',c:'B',kind:'iceburn'},{k:'저주의묘',c:'B',st:'Curse'},{k:'악의소굴',c:'B',st:'Knave'},{k:'전파탑',c:'B',st:'Electrify'}];
  const RM={장미원:{t:['Bug'],g:0,v:'갉아먹었다'},가시원:{t:['Bug'],g:0,v:'갉아먹었다'},얼음꼬챙이:{t:['Fire'],g:0,v:'녹여 없앴다'},전기발판:{t:['Ground'],g:0,v:'접지시켰다'},아이스번:{t:['Fire','Ice'],g:0,v:'치웠다'},독압정:{t:['Poison'],g:1,v:'흡수했다'},기뢰:{t:['Ground'],g:1,v:'접지시켰다'},불기둥:{t:['Water'],g:0,v:'꺼트렸다'}};
+ /* 11-26 372 망령 「필드 위에 있는 한 「폭탄」「지뢰원」의 비례 대미지를 강화(1/4→1/3)한다 — 이런 류도」: 맞는 쪽의 상대편 필드에 그 글을 가진 포켓몬이 있으면
+    이름이 들어 있는 비례 대미지의 분수를 바꾼다 (글로 읽는다 · 구문 없음). 원래 분수(a/b)가 글의 앞 분수와 같을 때만. 돌려주는 값 [분자, 분모, 누구 것] */
+ const FRUP_RE=/((?:「[^」]+」\s*[,·]?\s*)+)의\s*비례\s*대미지를\s*강화\s*\(\s*(\d+)\s*\/\s*(\d+)\s*(?:→|->|⇒)\s*(\d+)\s*\/\s*(\d+)\s*\)/g;
+ function fracUp(name,victim,others,n,d){let best=[n,d,''];try{for(const o of others||[]){if(!o||!victim||o.id===victim.id||o.side===victim.side||!o.entry||!(o.hp&&o.hp.cur>0))continue;
+   for(const p of [].concat(o.pots||[],o.excl?[o.excl]:[],o.exclX||[])){if(!p||p.ph)continue;for(const x of String(p.eff||'').replace(/<br\s*\/?>/g,'\n').matchAll(FRUP_RE)){const names=[...x[1].matchAll(/「([^」]+)」/g)].map(y=>y[1].replace(/\s/g,''));if(!names.includes(String(name).replace(/\s/g,''))||+x[2]!==n||+x[3]!==d)continue;if(+x[4]/+x[5]>best[0]/best[1])best=[+x[4],+x[5],`${o.name} 『${String(p.name||'').replace(/[『』]/g,'')}』`]}}}}catch(e){}return best}
  function hazardsOnEntry(m,field,slotsOpp){const lines=[];const f=field||{};const objs=(f.objects||{})[m.side]||{};const gd=grounded(m);const boots=/통굽부츠/.test(itemsOf(m));const ty=typesOf(m);const removed=[];let forced=false;
   if(noind(m,'hazard')&&Object.keys(objs).some(k=>+objs[k]>0)){lines.push(`${m.name} 설치기를 무시한다`);return {lines,removed,forced}}
   for(const h of HAZ){const n=+objs[h.k]||0;if(n<=0)continue;if(noind(m,'hazdmg')&&(h.ty||h.kind==='spike'||h.f)){lines.push(`${m.name} 「${h.k}」 비례 대미지를 받지 않는다`);continue}
@@ -161,7 +166,7 @@ const FX=()=>window.OM_FX;
    if(h.kind==='rose'){const d=frac(m,1,8);const got=dmg(m,d,lines,'「장미원」 1/8 드레인');const opp=slotsOpp&&slotsOpp[m.entry];if(got>0&&opp&&opp.hp.cur>0)heal(opp,got,lines,'「장미원」');continue}
    if(h.kind==='iceburn'){m.prioDown=1;   /* flags 는 턴 종료에 지워지니 따로 둔다 — 행동 순서(computeOrder)가 다음 기술에 −1 하고 지운다 */lines.push(`${m.name} 「아이스번」 다음 기술에 「우선도 : -1」`);continue}
    if(h.st){if(setState(m,h.st))lines.push(`${m.name} 「${h.k}」 → 「${ko(h.st)}」`);continue}
-   if(h.f){dmg(m,frac(m,1,h.f),lines,`「${h.k}」 1/${h.f}`);if(h.once){delete objs[h.k];removed.push(h.k)}}}
+   if(h.f){const fu=fracUp(h.k,m,Object.values(slotsOpp||{}),1,h.f);dmg(m,frac(m,fu[0],fu[1]),lines,`「${h.k}」 ${fu[0]}/${fu[1]}${fu[2]?' — '+fu[2]+' 강화':''}`);if(h.once){delete objs[h.k];removed.push(h.k)}}}
   return {lines,removed,forced}}
- return {poisonHeal,actionCheck,confusionHit,turnEndStates,turnEndField,hazardsOnEntry,grounded,itemOf,itemsOf,itemOff,itemOffWhy,itemOffMult,magic,roomImm,HAZ,RM};   /* 11-01 망령: HAZ · RM 은 설치물 전개 카드(battle_ui fcInfo)가 효과 글을 만드는 데 읽는다 */
+ return {poisonHeal,actionCheck,confusionHit,turnEndStates,turnEndField,hazardsOnEntry,fracUp,grounded,itemOf,itemsOf,itemOff,itemOffWhy,itemOffMult,magic,roomImm,HAZ,RM};   /* 11-01 망령: HAZ · RM 은 설치물 전개 카드(battle_ui fcInfo)가 효과 글을 만드는 데 읽는다 */
 })();
