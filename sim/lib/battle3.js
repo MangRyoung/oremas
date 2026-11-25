@@ -347,7 +347,13 @@ async function runBattle(W,opt){
      if(a.v>=a.tg.hp.cur&&ord[me].speed*1.5>ord[it].speed&&threatVs(POLS[tid],a.tg,a.m).v>=a.m.hp.cur*0.5){if(await fire(tid,a.m.id,'command','speed')){flip=true;break}}}}
    if(flip){await FN.computeOrder();await flush(1)}}
   /* 3. 행동 (순서대로) */
-  for(const o of (C().order||[]).slice()){const m=C().mons[o.mid];if(!m||!m.entry||!alive(m))continue;
+  /* 11-26 망령 「턴 중 스피드/우선도가 변동되면 즉시 행동 순서 갱신」(웹툴 orderWatch · resortOrder): 차례마다 스피드 · 우선도 지문(orderSig)을 다시 보고,
+     바뀌었으면 아직 안 한 차례만 웹툴 resortOrder 로 다시 줄 세운다. 턴 도중 순서 길이가 바뀐 때(붙은 추가 행동)는 예전처럼 처음 순서 그대로 */
+  let ORD=(C().order||[]).slice();const ordSig=()=>{try{return FN.orderSig?FN.orderSig(C()):''}catch(e){return ''}};let OSIG=ordSig();
+  const ordResort=async oi=>{if(!FN.resortOrder||!FN.orderSig)return;const s2=ordSig();if(s2===OSIG)return;OSIG=s2;const b=C();const live=b.order||[];if(live.length!==ORD.length||live.some((x,i)=>x.mid!==ORD[i].mid))return;
+   const p0=b.phase,i0=b.orderIdx;b.phase=3;b.orderIdx=oi-1;try{await FN.resortOrder({auto:true});await flush(1)}catch(e){}finally{const b2=C();b2.phase=p0;b2.orderIdx=i0}
+   const nl=C().order||[];if(nl.length===ORD.length)ORD=nl.slice()};
+  for(let oi=0;oi<ORD.length;oi++){if(oi>0)await ordResort(oi);const o=ORD[oi];const m=C().mons[o.mid];if(!m||!m.entry||!alive(m))continue;
    /* 11-15 11시 「추가 행동」(행동 순서 xact — 『네 마리의 용』 4배수 턴 가장 마지막 「드래곤옐」 · 「가장 마지막에 「X」에 의한 추가 행동」): 지금까지 그 자리의 원래 지시(공격)를 한 번 더 했다 → 적힌 기술로 (웹툴 openAttack xact 와 같다) */
    if(o.xact){const L=FN.MVS(m);let i=L.findIndex(x=>x&&FN.mvNameEq?FN.mvNameEq(x.name,o.move):x&&x.name===o.move);const mvO=i<0&&W.OM_IMPORT?W.OM_IMPORT.move(o.move,false):null;if(i<0&&!(mvO&&mvO.cat))continue;const mv=i>=0?L[i]:mvO;
     let tg=(o.targets||[]).filter(s=>{const [sd,ar]=s.split('_');return !!FN.entered(C(),sd)[ar]});if(!tg.length){const r=String(mv.range||'');const dt=i>=0?FN.defaultTargets(C(),m.id,String(i)):[];if(dt.length&&!(r==='1체'||r===''))tg=dt;else if(mv.cat!=='변화'||/^1체$|^$/.test(r)){const fs=foes(m.side);const f=mv.cat==='변화'?null:fs.sort((x,y)=>expect(m,mv,y)/Math.max(1,y.hp.cur)-expect(m,mv,x)/Math.max(1,x.hp.cur))[0];if(f)tg=[f.side+'_'+f.entry]}}
