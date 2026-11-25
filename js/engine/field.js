@@ -134,6 +134,7 @@ const FX=()=>window.OM_FX;
   if((f.weather||{}).type==='모래바람'&&!wxNeg){for(const id in mons){const m=mons[id];if(!m.entry||m.hp.cur<=0)continue;const ty=typesOf(m);
    if(['Rock','Ground','Steel'].some(t=>ty.includes(t)))continue;
    if(/방진고글/.test(itemsOf(m))){lines.push(`${m.name} 「방진고글」로 「모래바람」을 막았다`);continue}
+   if(FX()&&FX().spOf&&FX().spOf(m,'wxdemerit').length){lines.push(`${m.name} 「날씨」의 디메리트를 받지 않는다 — 「모래바람」 대미지 없음`);continue}   /* 11-25 익스펜션 : 비행 ② */
    if(/만능우산/.test(itemsOf(m))){lines.push(`${m.name} 「만능우산」 — 「모래바람」 영향 없음`);continue}   /* 11-08 51-2 ⑫ */
    if(/모래숨기|모래헤치기|모래의힘|방진/.test(m.ability||'')){lines.push(`${m.name} 특성 「${m.ability}」 — 「모래바람」 영향 없음`);continue}
    if(['VanishToHole','VanishToWater'].some(k=>has(m,k))){lines.push(`${m.name} 숨어 있어 「모래바람」 영향 없음`);continue}
