@@ -131,14 +131,16 @@ window.OM_CUTIN=(()=>{
  function evoLocal(D){D=D||{};if(String(cfg().on)==='0')return;const r=root('cut');r.className='cutov evo '+(D.kind==='mega'?'ev-mega':'ev-form');fit(r);
   const im=(x,c)=>x&&x.img?`<img class="${c}" src="${esc(x.img)}" alt="">`:`<i class="${c} ev-ball"></i>`;const fr=D.from||{},to=D.to||{};const col=D.color||'#e3101f';
   const title=D.kind==='mega'?'메가진화':D.kind==='back'?'원래 모습으로':(D.label||'폼체인지');
+  /* 11-26 05:08 망령 「연출 도중 포트가 토지신에서 토지신으로 변한다」: 폼 그림이 따로 없으면(앞뒤 그림이 같으면) 뒤집히는 연출 없이 그 그림 하나만 */
+  const same=!!(fr.img&&to.img&&fr.img===to.img)||(!fr.img&&!to.img);const MON=same?im(to.img?to:fr,'ev-same'):im(fr,'ev-a')+im(to,'ev-b');
   if(D.kind==='mega'){r.innerHTML=`<div class="full ev-dim"></div><div class="stage">
     <div class="ev-rays"></div><div class="ev-orb"><i></i><i></i><i></i></div>
-    <div class="ev-mon">${im(fr,'ev-a')}${im(to,'ev-b')}</div>
+    <div class="ev-mon">${MON}</div>
     <div class="ev-ring"></div><div class="ev-ring r2"></div>
     <div class="ev-txt"><div class="ev-t1">${esc(fr.name||'')}의</div><div class="ev-t2">${esc(title)}!</div><div class="ev-t3">「${esc(to.name||'')}」</div></div></div><div class="full ev-flash"></div>`;
    setTimeout(()=>r.remove(),5200)}
   else{r.style.setProperty('--ec',col);r.innerHTML=`<div class="full ev-dim"></div><div class="ev-band"></div><div class="stage">
-    <div class="ev-mon">${im(fr,'ev-a')}${im(to,'ev-b')}</div><div class="ev-spark"></div>
+    <div class="ev-mon">${MON}</div><div class="ev-spark"></div>
     <div class="ev-txt"><div class="ev-t2">${esc(title)}</div><div class="ev-t3">${to.name&&to.name!==fr.name?`${esc(fr.name||'')} → 「${esc(to.name)}」`:`「${esc(fr.name||to.name||'')}」`}</div></div></div><div class="full ev-flash"></div>`;
    setTimeout(()=>r.remove(),3400)}}
  /* 11-04 20:40 망령 「메가진화 효과음 어디 갔어?」: 메가진화는 「Mega」 효과음(효과음 DB 00. 기본), 없으면 cut */

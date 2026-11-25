@@ -2282,6 +2282,8 @@ span.iedit{display:inline-block;min-width:3em}
 .ev-form .ev-mon{top:44%}
 .ev-form .ev-a{animation:evSil .3s .3s both,evFlipOut .3s .9s ease-in both}
 .ev-form .ev-b{transform:scaleX(0);filter:brightness(0) invert(1) drop-shadow(0 0 22px #fff);animation:evFlipIn .3s 1.2s ease-out both,evReveal2 .5s 1.55s both}
+.evo .ev-same{animation:evSameIn .45s .25s both}   /* 11-26 폼 그림이 따로 없을 때: 뒤집지 않고 그 그림만 */
+@keyframes evSameIn{from{opacity:0;transform:scale(.9)}to{opacity:1;transform:scale(1)}}
 @keyframes evFlipOut{to{transform:scaleX(0)}}
 @keyframes evFlipIn{from{transform:scaleX(0)}to{transform:scaleX(1)}}
 @keyframes evReveal2{from{filter:brightness(0) invert(1) drop-shadow(0 0 22px #fff)}to{filter:drop-shadow(0 0 14px rgba(255,255,255,.5))}}
