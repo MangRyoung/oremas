@@ -2507,10 +2507,10 @@ for(const q of (b.xq||[])){if(!q||+q.t!==(+b.turn||0))continue;const s=slots.fin
   async function hpPayNull(mid,lh){try{const b=ctx().b;const m=(b.mons||{})[mid];if(!m||!lh||!m.hp||+m.hp.cur<+m.hp.max)return false;
     const p=potSrc(m).find(q=>q&&q.name&&!q.ph&&potLive(m,q)&&HPPAY_RE.test(String(q.eff||'')));if(!p)return false;const L=limOf(p,m.potUses||{},m.potTurn||{});if(L.left!==null&&L.left<=0)return false;
     const a=(b.mons||{})[lh.fromId];const mv=(a&&MVS(a).find(v=>v&&v.name===lh.move))||((DB().moves||{})[lh.move])||null;if(!mv||mv.cat==='변화'||String(mv.range||'').trim()!=='1체')return false;
-    const x0=String(p.eff||'').match(HPPAY_RE);const cost=Math.max(1,Math.floor(+m.hp.max*(+x0[1])/(+x0[2])));const m0=snap(m),x=snap(m0);delete x.lastHit;x.hp.cur=Math.max(1,+m.hp.cur-cost);
+    const x0=String(p.eff||'').match(HPPAY_RE);const cost=Math.max(1,Math.floor(+m.hp.max*(+x0[1])/(+x0[2])));const hp0=+m.hp.cur;const m0=snap(m),x=snap(m0);delete x.lastHit;x.hp.cur=Math.max(1,hp0-cost);
     if(L.mmax!=null){x.potUses=Object.assign({},x.potUses||{});const u=x.potUses[p.name];x.potUses[p.name]=Math.max(0,(u==null?L.mmax:+u)-1)}
     if(!(await saveMon(m0,mid,x)))return false;
-    A().sysLog(`【포텐셜】 ${m.name} 『${String(p.name).replace(/[『』]/g,'')}』 — 「HP」를 ${x0[1]}/${x0[2]}(−${cost}) 소비하여 ${lh.from}의 「${lh.move}」를 무효화\nHP ${m.hp.cur} → ${x.hp.cur}/${m.hp.max}`,'battle',{mid,img:m.image||''});return true}catch(e){console.warn('hpPayNull',e);return false}}
+    A().sysLog(`【포텐셜】 ${m.name} 『${String(p.name).replace(/[『』]/g,'')}』 — 「HP」를 ${x0[1]}/${x0[2]}(−${cost}) 소비하여 ${lh.from}의 「${lh.move}」를 무효화\nHP ${hp0} → ${x.hp.cur}/${m.hp.max}`,'battle',{mid,img:m.image||''});return true}catch(e){console.warn('hpPayNull',e);return false}}
   function openHp(mid,tab){const c=ctx();const b=c.b;const m=b.mons[mid];if(!m||!canEdit(c,m))return;tab=tab||(m.lastHit?'dmg':'dmg');const lh=m.lastHit;const pct=(m.hp.cur>0?Math.max(1,Math.round(m.hp.cur/m.hp.max*100)):0);
   const EFFS=[0,0.25,0.5,1,2,4];const fl=raidFloor(m);const berryN=lh&&OI()?OI().resist(m,lh):'';let sashX=lh&&OI()?OI().sash(m):null;if(lh&&lh.cat!=='변화'&&!(sashX&&(sashX.sure||sashX.pct))){const bb=bondBand(m);if(bb)sashX=bb}   /* 11-04 20:34: 『사랑의 유대』 · 『영혼의 유대』 */const SH=lh?hitShield(m,lh):{};const RX=lh&&lh.cat!=='변화'?hitRules(m):[];
   const md=A().openModal(`<div class="mhead"><h2>「HP」 · ${esc(m.name)}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
