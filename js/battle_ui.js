@@ -3100,7 +3100,7 @@ window.OM_BATTLE_UI=(()=>{
   if(ok&&SHP){try{await shareMark(mid,SHP.name)}catch(e){}}
   if(ok)for(const x of XA){try{await addXact(mid,x,name)}catch(e){console.warn('addXact',e)}}return ok}
  /* 11-26 363 구문 「추가행동」: 이번 턴 행동 순서 맨 끝에 그 포켓몬의 추가 행동 — 순서가 이미 있으면 바로 붙이고, 아직이면(턴 개시 · 선행) battle.xq 에 적어 두었다가 행동 순서를 짤 때 붙인다 */
- function xactMove(m,x){if(x.mv)return x.mv;const ty=S().typeEn(x.ty);const L=MVS(m).filter(mv=>mv&&mvTysRaw(mv).map(t=>S().typeEn(t)||t).includes(ty)&&(!x.cat||String(mv.cat||'').replace(/기$/,'')===x.cat));return L.length?L[0].name:''}
+ function xactMove(m,x){if(x.mv)return x.mv;const ty=S().typeEn(x.ty);const L=MVS(m).filter(mv=>mv&&mvTysRaw(mv).includes(ty)&&(!x.cat||String(mv.cat||'').replace(/기$/,'')===x.cat));return L.length?L[0].name:''}
  async function addXact(mid,x,by){const b=ctx().b;const m=(b.mons||{})[mid];if(!m||!m.entry||!(m.hp&&m.hp.cur>0))return;const T=+b.turn||0;const mv=xactMove(m,x);const nm=String(by||'').replace(/[『』]/g,'');
   const sl=allEntered(b).find(s=>s.mon&&s.mon.id===mid);const ent={slot:sl?sl.slot:'',mid,name:m.name,side:m.side,change:false,started:false,order:-1000,prio:0,speed:0,dice:0,move:mv,targets:[],pursuit:false,xact:nm};
   if((+b.phase||0)>=2&&(b.order||[]).length){if((b.order||[]).some(o=>o&&o.xact===nm&&o.mid===mid))return;await A().set(['battle','order'],(b.order||[]).concat([ent]))}
