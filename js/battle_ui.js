@@ -3716,9 +3716,9 @@ window.OM_BATTLE_UI=(()=>{
  function cutFire(tok,src,tag,ment,color,line){try{if(!CUT())return;const b=ctx().b||{};const nm=String(ment||'').replace(/^『|』$/g,'');
   if(concealPot(b,tok,nm))return;   /* 11-22 【은폐】: 컷인 없이 */
   if(line==null){if(/^m:/.test(tok)){const m=(b.mons||{})[tok.slice(2)];if(m){line=potLineOf(m,nm);if(tag===m.name)tag=potTagOf(m,nm)}}else if(/^t:/.test(tok)&&/의 고유!$/.test(String(tag||'')))line=uqLineOf((b.trainers||{})[tok.slice(2)],nm)}
-  let side='';{const m=/^m:/.test(tok)?(b.mons||{})[tok.slice(2)]:null;const t=/^t:/.test(tok)?(b.trainers||{})[tok.slice(2)]:null;side=(m&&m.side)||(t&&t.side)||'';
-   /* 11-25: 고유 컷인 = 고유 색, 전용 컷인 = 전용 타입 색 (없으면 원래 편 색) */{const cc=t&&/의 고유!$/.test(String(tag||''))?uqColOf(t,nm):m?(exColOf(m,nm)||(()=>{const tt=(b.trainers||{})[m.tid];return potSrc(m).some(q=>q&&q.unique&&q.name===nm)?uqColOf(tt,nm):''})()):'';if(cc)color=cc}}   /* 11-03 (검토 10): 동시 컷인의 좌/우 자리 · PLAYER/RIVAL 글자 */
-  CUT().fire({tok,src,tag,ment,color,line:line||'',side})}catch(e){}}
+  let side='',CC=0;{const m=/^m:/.test(tok)?(b.mons||{})[tok.slice(2)]:null;const t=/^t:/.test(tok)?(b.trainers||{})[tok.slice(2)]:null;side=(m&&m.side)||(t&&t.side)||'';
+   /* 11-25: 고유 컷인 = 고유 색, 전용 컷인 = 전용 타입 색 (없으면 원래 편 색) */{const cc=t&&/의 고유!$/.test(String(tag||''))?uqColOf(t,nm):m?(exColOf(m,nm)||(()=>{const tt=(b.trainers||{})[m.tid];return potSrc(m).some(q=>q&&q.unique&&q.name===nm)?uqColOf(tt,nm):''})()):'';if(cc){color=cc;CC=1}}}   /* 11-03 (검토 10): 동시 컷인의 좌/우 자리 · PLAYER/RIVAL 글자 */
+  CUT().fire(Object.assign({tok,src,tag,ment,color,line:line||'',side},CC?{cc:1}:{}))}catch(e){}}
  /* 컷인을 띄울 포텐셜: rp.cutin.pot = excl(전용·고유만, 기본) | all | none */
  function wantCut(m,name){const cfg=((A().ST.state.rp||{}).cutin)||{};const mode=cfg.pot||'excl';if(mode==='none')return false;if(mode==='all')return true;if(m.excl&&m.excl.name===name)return true;if((m.exclX||[]).some(p=>p.name===name))return true;const p=(m.pots||[]).find(x=>x.name===name);return !!(p&&/전용|고유/.test(p.kind||''))}
  /* 11-03 감우 (검토 9): 턴 개시 · 턴 종료만 큰 띠(2.3s), 교대 · 행동 순서 · 행동 처리는 0.9s 작은 띠 (sub 없이) */

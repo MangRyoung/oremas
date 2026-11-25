@@ -39,7 +39,7 @@ window.OM_CUTIN=(()=>{
    const y=dual?'':`--y:${POS==='top'?30:POS==='bot'?70:50}vh;`;const gh=c.gh||(/지시|지령/.test(String(c.tag||''))?'ORDER':'POTENTIAL');const pic=!!c.src;
    /* 11-03 감우 (검토 10): 동시 컷인은 좌/우 진영을 색 보더(--pc: 좌 파랑 · 우 빨강, 부르는 쪽이 준다)와 작은 PLAYER / RIVAL 글자로 가른다 (VS 컷인 v3-side 와 같은 말) */
    const who=dual?`<span class="c2-who">${c.side?(c.side==='left'?'PLAYER':'RIVAL'):(L?'PLAYER':'RIVAL')}</span>`:'';
-   h+=`<div class="c2-side ${L?'c2-L':'c2-R'}" style="${y}--pc:${esc(c.color||(dual&&L?'#1f6fd1':'#e3101f'))};--rot:${dual?-9:-7}deg;--org:${L?'0%':'100%'};--d0:0s;--fs:calc(var(--u)*${fs});--px:${L?-60:60}vw;--tx:${L?40:-40}vw">
+   h+=`<div class="c2-side ${L?'c2-L':'c2-R'}" style="${y}--pc:${esc(c.color||(dual&&L?'#1f6fd1':'#e3101f'))};${c.cc&&c.color?`--pcc:${esc(c.color)};`:''}--rot:${dual?-9:-7}deg;--org:${L?'0%':'100%'};--d0:0s;--fs:calc(var(--u)*${fs});--px:${L?-60:60}vw;--tx:${L?40:-40}vw">
     <div class="c2-band"><div class="c2-w"></div><div class="c2-c"></div><div class="c2-k"></div><div class="c2-g">${gh} ${gh} ${gh}</div></div>
     ${pic?`<div class="c2-por" style="${L?'left:7vw':'right:7vw'}"><div class="c2-sh"></div><div class="c2-fr"></div><div class="c2-im" style="background-image:url('${esc(c.src)}')"></div></div>`:''}
     <div class="c2-txt" style="${nar||!pic?(L?'left:6vw':'right:6vw;text-align:right'):(L?'left:calc(7vw + var(--u)*42*var(--k))':'right:calc(7vw + var(--u)*42*var(--k));text-align:right')}">${who}${c.tag?`<span class="c2-tag">${esc(c.tag)}</span>`:''}<span class="c2-name">${letters(nm)}</span>${c.line?`<span class="c2-line">${/^[\x20-\x7e]+$/.test(String(c.line))?esc(c.line):'「'+esc(String(c.line).replace(/^「|」$/g,''))+'」'}</span>`:''}</div></div>`});
