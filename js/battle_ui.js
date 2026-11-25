@@ -2099,6 +2099,16 @@ window.OM_BATTLE_UI=(()=>{
  /* 턴 마무리: 「턴 가장 마지막」 → (턴 종료 처리) → 「턴 종료 이후」. 그 타이밍이 적힌 포텐셜(필드의 포켓몬 · 그 트레이너 고유)이 있으면 단계마다 발동을 묻고, 없으면 그냥 넘어간다 */
  /* 「턴 종료 시까지」「가장 마지막까지」는 해제 타이밍이라 발동 후보가 아니다 */
  const END_T={last:/가장\s*마지막(?!\s*까지)/,end:/턴\s*종료\s*(시|때|시점|에)(?!\s*까지)|턴\s*종료\s*마다/,after:/턴\s*종료\s*(이후|후|뒤)(?!\s*까지)/};
+ /* 11-26 망령 「N배수 턴 자체는 따로 계기화 해둬 — 3배수 턴에 모든 능력치 강화 같은 것도」: 글 마디(①②…)에 「N」배수 턴(N의 배수 턴)이 있으면 그 마디는 N 의 배수 턴에만.
+    턴 마무리 후보(가장 마지막 · 턴 종료 · 이후) · 턴 개시 자동 둘 다 이 마디 단위로 본다. 「「N」배수 턴 가장 마지막에 「X」에 의한 추가 행동」은 행동 순서가 따로 넣으니(54-F) 후보에서 뺀다.
+    지속형(배율 · 위력 줄)은 구문 조건 토큰 턴:N배수 가 판정마다 본다 (제작기 fx.js · 추천기가 「N」배수 턴 → 턴:N배수) */
+ const TMUL_RE=/「?\s*(\d+)\s*」?\s*(?:의\s*)?배수\s*(?:의\s*)?턴/g;
+ const XACTN_RE=/「?\s*(\d+)\s*」?\s*배수\s*턴\s*(?:에\s*)?가장\s*마지막에\s*「([^」]+)」\s*(?:기술)?\s*에?\s*의한\s*추가\s*행동/;
+ const tmulNs=t=>[...String(t||'').matchAll(TMUL_RE)].map(x=>+x[1]).filter(n=>n>1);
+ function tmulOk(t,T){const ns=tmulNs(t);return !ns.length||(+T>0&&ns.every(n=>+T%n===0))}
+ const segsOf=t=>{const L=String(t||'').replace(/<br\s*\/?>/g,'\n').split(/(?=[①②③④⑤⑥⑦⑧⑨])/).filter(x=>x.trim());return L.length?L:[String(t||'')]};
+ /* 턴 타이밍 말 없이 「N」배수 턴만 있는 마디 (= 그 턴 개시 때 발동) — 이번 턴이 그 배수일 때 */
+ function tmulStart(t,T){return segsOf(t).some(x=>tmulNs(x).length&&tmulOk(x,T)&&!XACTN_RE.test(x)&&!END_T.last.test(x)&&!END_T.end.test(x)&&!END_T.after.test(x)&&!EVENT_RE.test(x.replace(/【\s*자동\s*】/g,'')))}
  /* 11-06 망령 「『명경』(턴 종료 시 중확률로 「도발」「헤롱헤롱」 상태를 치유한다) 이 안 걸려 있을 때도 나온다」: 상태를 치유 · 해제하는 효과는 그 상태가 하나라도 걸려 있을 때만 후보.
     「「X」「Y」 상태를 치유」 → 적힌 상태 중 하나 · 「상태 이상을 치유」 → 상태 이상 하나. 다른 효과가 같이 적혀 있으면(치유 말고 할 일이 있으면) 그대로 묻는다 */
  const CURE_RE=/상태(?:\s*이상)?」?(?:\s*\([^)]*\))?(?:을|를)?\s*(?:모두\s*)?(?:치유|해제|회복)/;
@@ -2112,7 +2122,7 @@ window.OM_BATTLE_UI=(()=>{
  /* 11-07 망령 「사용한 1/시 포텐셜이 턴 종료시에 계속 발동을 물어봄」: 【N/시】 를 다 썼거나 【소진】 · 【탈진】 으로 이번 턴에 못 쓰면 후보에서 뺀다 */
  const spent=(p,uses,turns)=>{try{const L=limOf(p,uses||{},turns||{});return L.left!=null&&L.left<=0}catch(e){return false}};
  const NO_SWT=['가속'];   /* 교대로 나온 턴 종료엔 발동 안 하는 특성 */
- function endCands(b,step){const out=[];const ok0=t=>{t=String(t||'');if(step==='end'&&END_T.after.test(t)&&!END_T.end.test(t.replace(END_T.after,'')))return false;return END_T[step].test(t)};const ok=(t,m)=>ok0(t)&&!cureOnlyIdle(m,t);
+ function endCands(b,step){const out=[];const ok0=t=>{t=String(t||'');if(step==='end'&&END_T.after.test(t)&&!END_T.end.test(t.replace(END_T.after,'')))return false;return END_T[step].test(t)};const TN=+b.turn||0;const tmOk=t=>{const sg=segsOf(t).filter(x=>END_T[step].test(x));return sg.length?sg.some(x=>!XACTN_RE.test(x)&&tmulOk(x,TN)):tmulOk(t,TN)&&!XACTN_RE.test(String(t||''))};   /* 11-26 N배수 턴 계기 */const ok=(t,m)=>ok0(t)&&tmOk(t)&&!cureOnlyIdle(m,t);
   for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0)continue;for(const p of potSrc(m))if(ok(p.eff,m)&&!spent(p,m.potUses,m.potTurn))out.push({m,kind:'pot',name:p.name,eff:p.eff,tag:isExcl(m,p)?'전용':'포텐셜'});
    /* 11-07 망령 「가속 특성 턴 종료 시에 왜 확인 문구 안 뜨냐」: 후보를 포텐셜 · 고유에서만 찾아서 특성은 빠져 있었다 — 특성 글(시트 → 특성 DB)에 그 타이밍이 적혀 있으면 같이 묻는다. 소지품 턴 종료(먹다남은음식 등)는 items.js 가 저절로 하므로 넣지 않는다 */
    /* 11-07 23:37 망령 「가속은 교대로 나온 턴 종료 시에는 발동 안 해」 */
@@ -3194,11 +3204,11 @@ window.OM_BATTLE_UI=(()=>{
  /* 턴 개시 자동 (10-24 망령): 「턴 개시 시」 · 【턴 개시】 가 적힌 특성 · 소지품 · 포텐셜 — 구문이 있으면 (확률을 굴려) 발동, 없으면 확률만 굴려 손으로 할 일을 알린다 */
  async function autoTurnStart(){if(!FX())return;const b=ctx().b;for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0)continue;const list=[];
   if(m.ability)list.push(['trait',m.ability]);if(m.item&&!IOFF(m))list.push(['item',m.item]);for(const x of (m.items2||[]))if(x&&x.item&&!IOFF(m))list.push(['item',x.item]);for(const p of potSrc(m))if(p&&p.name&&!p.ph)list.push(['pot',p.name]);
-  for(const [kind,name] of list){const tx0=slotEff(m,kind,name);const TSR=/턴\s*개시\s*시|【턴\s*개시】/;const tx=TSR.test(tx0)||kind!=='item'?tx0:(((FX().autoOf(m,kind,name)||{}).text)||tx0);if(!TSR.test(tx))continue;   /* 11-08 51-2 ③ 선제공격손톱: 소지품 효과 글에 없으면 레디메이드 글(「턴 개시 시 2할로 …」)도 본다 */if(/【\s*(선행|임의)\s*】/.test(tx))continue;if(kind==='pot'&&/【\s*\d+\s*\/\s*(시|턴)\s*】/.test(tx))continue;const a=FX().autoOf(m,kind,name);
+  for(const [kind,name] of list){const tx0=slotEff(m,kind,name);const TSR=/턴\s*개시\s*시|【턴\s*개시】/;const tx=TSR.test(tx0)||kind!=='item'?tx0:(((FX().autoOf(m,kind,name)||{}).text)||tx0);const TT=+b.turn||0;const tmS=!TSR.test(tx)&&tmulStart(tx,TT);if(!TSR.test(tx)&&!tmS)continue;if(TSR.test(tx)&&!segsOf(tx).some(x=>TSR.test(x)&&tmulOk(x,TT)))continue;   /* 11-26 망령 「N배수 턴 계기」: 「「3」배수 턴 개시 시」는 3의 배수 턴에만 · 타이밍 말 없이 「「N」배수 턴에 …」만 있는 마디도 그 턴 개시에 (지속형 구문이면 판정 때 턴:N배수 가 보니 건너뜀) */   /* 11-08 51-2 ③ 선제공격손톱: 소지품 효과 글에 없으면 레디메이드 글(「턴 개시 시 2할로 …」)도 본다 */if(/【\s*(선행|임의)\s*】/.test(tx))continue;if(kind==='pot'&&/【\s*\d+\s*\/\s*(시|턴)\s*】/.test(tx))continue;const a=FX().autoOf(m,kind,name);if(tmS&&a&&a.ops&&passiveOps(a.ops,''))continue;
    /* 11-18 망령 제보 「애슈열매 — 턴 개시마다 조건(HP 1/4 이하) 불충족 줄이 뜬다」: 맨 앞 「조건 HP≤」가 안 맞으면 조용히 넘긴다 */
    if(a&&a.ops&&a.ops[0]&&a.ops[0].k==='cond'&&a.ops[0].c==='hp_le'){const fr=String(a.ops[0].frac||'1/1').split('/').map(Number);if(+m.hp.cur>Math.floor(+m.hp.max*fr[0]/(fr[1]||1)))continue}
    if(a&&a.ops&&a.ops.length&&!a.manual){await fireAuto(m.id,kind,name,{quiet:true});continue}
-   const ch=FX().chanceOf(tx);const K=({pot:'포텐셜',trait:'특성',item:'소지품'})[kind];let roll='';if(ch&&ch<100){const rr=FX().rollP?FX().rollP(snap(m),ch,{}):(()=>{const r=Math.floor(Math.random()*100)+1;return {ok:r<=ch,r,p:ch,adj:''}})();roll=rr.ok?`${rr.p}% 판정 성공 (${rr.r}/${rr.p})${rr.adj} — 효과를 손으로 적용`:`${rr.p}% 판정 실패 (${rr.r}/${rr.p})${rr.adj} — 발동하지 않았다`}else roll='턴 개시 효과 — 손으로 적용';
+   const ch=FX().chanceOf(tx);const K=({pot:'포텐셜',trait:'특성',item:'소지품'})[kind];let roll='';if(ch&&ch<100){const rr=FX().rollP?FX().rollP(snap(m),ch,{}):(()=>{const r=Math.floor(Math.random()*100)+1;return {ok:r<=ch,r,p:ch,adj:''}})();roll=rr.ok?`${rr.p}% 판정 성공 (${rr.r}/${rr.p})${rr.adj} — 효과를 손으로 적용`:`${rr.p}% 판정 실패 (${rr.r}/${rr.p})${rr.adj} — 발동하지 않았다`}else roll=tmS?`${tmulNs(tx).join(' · ')}배수 턴 효과 — 손으로 적용`:'턴 개시 효과 — 손으로 적용';
    A().sysLog(`【${K}】 ${m.name} 『${name}』\n${roll}`,'battle',{mid:m.id,img:m.image||'',eff:String(tx).replace(/<br\s*\/?>/g,'\n').slice(0,300)})}}}
  /* 등장·상시 자동 발동: 글에 【등장】/【상시】 표식이 있는 특성·소지품·포텐셜 */
  /* 지속형 구문: 걸어 두면 공격 창 · 순서 · HP 창이 알아서 읽는 것들 */
