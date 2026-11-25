@@ -2934,7 +2934,10 @@ for(const q of (b.xq||[])){if(!q||+q.t!==(+b.turn||0))continue;const s=slots.fin
   {const rg=terrRange(b,m,mv);if(rg)why.push(`「${FT}」 — 범위 ${rg}`)}
   return {mul,why}}
  /* 11-04 19:55 망령 「도우미 겹치는 배율 자동화 · 도우미는 턴 종료 시까지 유지라 두 번 걸린다」: 「도우미」 상태는 턴 종료까지 그대로(공격해도 안 쓴다) · 걸린 횟수 helpN 만큼 1.5 를 곱한다 (2번 = ×2.25) */
- const helpMul=m=>(m&&(m.states||{}).HelpingHand)?Math.round(Math.pow(1.5,Math.max(1,+m.helpN||1))*10000)/10000:1.5;
+ /* 11-26 368 셰익스피어 『인챈트』 「아군의 「도우미」 상태에 의한 배율을 강화(1.5배→2배)」: 같은 편 필드에 그 글을 가진 다른 포켓몬이 있으면 도우미 한 번의 배율을 그 값으로 (helpBase) */
+ const HELP_UP_RE=/아군의\s*「\s*도우미\s*」\s*상태에\s*의한\s*배율을\s*강화\s*\(\s*(?:[\d.]+\s*배?\s*(?:→|->|⇒)\s*)?([\d.]+)\s*배\s*\)/;
+ function helpBase(m){let v=1.5;try{if(!m)return v;for(const o of Object.values((ctx().b||{}).mons||{})){if(!o||o.id===m.id||o.side!==m.side||!o.entry||!(o.hp&&o.hp.cur>0))continue;for(const p of potSrc(o)){const x=String((p&&p.eff)||'').match(HELP_UP_RE);if(x&&potLive(o,p)&&+x[1]>v)v=+x[1]}}}catch(e){}return v}
+ const helpMul=m=>{const hb=helpBase(m);return (m&&(m.states||{}).HelpingHand)?Math.round(Math.pow(hb,Math.max(1,+m.helpN||1))*10000)/10000:hb};
  const wxSame=(x,W)=>x===W||(x==='눈'&&W==='싸라기눈')||(x==='싸라기눈'&&W==='눈');
  /* 11-07 망령 「날씨 부정 자동화」: 특성 「에어록」 · 「날씨부정」 — 필드 위에 있는 한 「날씨」의 효과를 제거한다.
     날씨 자체(종류 · 턴 수)는 그대로 두고 칩에 「무효」만 붙인다. 효과를 읽는 곳(배율 · 방어 · 스피드 · 차지 · 타입 · 턴 끝 모래바람 · 얼음/잠듦 막기)은 wxNow(b) 로 읽는다 */
