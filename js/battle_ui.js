@@ -2114,7 +2114,7 @@ window.OM_BATTLE_UI=(()=>{
  /* 감시: 스피드 · 우선도에 닿는 것의 지문이 바뀌면 다시 줄 세운다 (리더 화면만 · 2~3단계 · 순서가 있을 때). 턴마다 처음 본 지문은 기준만 */
  const OW={k:'',sig:'',busy:false,t:0};
  function orderSig(b){const f=fieldOf(b);const trick=((f.rooms||{})['트릭룸']||0)>0;return (trick?'T':'')+'|'+allEntered(b).map(s=>{const m=s.mon;const objs=(f.objects||{})[s.side]||{};let v=0;try{v=Math.round(B().statValue(m,'speed',{mod:((m.mod||{}).speed||1)}).value)}catch(e){}
-   return [m.id,v,(m.states||{}).Paralysis?1:0,HAS(m,'구애스카프')?1:0,(objs['순풍']||0)>0?1:0,(objs['습원']||0)>0?1:0,spMulOf(m,f).v,JSON.stringify(((m.fx||{}).prio)||[]),m.prioDown?1:0,m.ability||''].join(':')}).join('|')}
+   return [m.id,v,(m.states||{}).Paralysis?1:0,HAS(m,'구애스카프')?1:0,(objs['순풍']||0)>0?1:0,(objs['습원']||0)>0?1:0,spMulOf(m,f).v,JSON.stringify(((m.fx||{}).prio)||[]),m.prioDown?1:0,m.ability||''].join(':')}).join('|')+'|'+Object.keys(b.cmds||{}).sort().map(t=>{const ok=(b.cmds[t]||{}).ok;return ok&&ok.key===turnKey(b)?t+'='+Object.keys(ok.m||{}).sort().map(k=>k+':'+(+(ok.m[k]||{}).pr||0)).join(','):''}).join(';')}   /* 좌석이 올린 순서 열쇠(우선도)가 뒤늦게 다시 올라오면 한 번 더 */
  function orderWatch(){const c=ctx();const b=c.b;if(!c.mgr||!b||!b.started)return;const ph=+b.phase||0;if((ph!==2&&ph!==3)||!(b.order||[]).length){OW.k='';return}
   let sig='';try{sig=orderSig(b)}catch(e){return}const k=String(b.started)+':'+turnKey(b);if(OW.k!==k){OW.k=k;OW.sig=sig;return}if(sig===OW.sig||OW.busy)return;if(!isLeader(c))return;
   clearTimeout(OW.t);OW.t=setTimeout(async()=>{if(OW.busy)return;OW.busy=true;try{const b2=ctx().b;const s2=orderSig(b2);if(s2===OW.sig)return;await resortOrder({auto:true});OW.sig=s2}catch(e){console.warn('orderWatch',e)}finally{OW.busy=false}},350)}
