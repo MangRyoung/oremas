@@ -1342,7 +1342,18 @@ window.OM_BATTLE_UI=(()=>{
  function mvTagHit(mv,t){if(!mv)return false;t=String(t||'').trim();const re=new RegExp('(^|[,\\s])'+t.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'($|[,\\s])');return re.test(String(mv.tag||''))||mv.name===t}
  function potLive(m,p){try{return !(potOffWhy(m,p.name)||misagBlock(ctx().b,m,p.name))}catch(e){return true}}
  function keepSt(m){const out=[];if(!m)return out;try{const L=[...potSrc(m).filter(p=>potLive(m,p)).map(p=>p.eff),m.abilityEff];for(const e of L)for(const x of String(e||'').replace(/<br\s*\/?>/g,'\n').matchAll(KEEPST_RE)){const k=stKeyOf(x[1]);if(k&&!out.includes(k))out.push(k)}}catch(e){console.warn('keepSt',e)}return out}
- async function comboXact(mid,R){try{if(!R||R.check||!R.mv)return;const b=ctx().b;const a=(b.mons||{})[mid];if(!a)return;const ON=(+b.phase||0)>=2&&(b.order||[]).length;const XO=ON?(b.order||[])[+b.orderIdx||0]:null;if(XO&&XO.combo)return;const T=+b.turn||0;const hits=[];
+ /* 11-26 07:59 망령 「(추가 공격은) 자신이 공격한 직후」: 포텐셜 글 「(저|중|고)확률로 (기술) 「X」에 의한 추가 공격을 행한다」(루포 『벨로네 패밀리』) —
+     자신의 공격 기술을 적용한 직후 한 번 굴리고, 성공하면 그 자리에서 「X」 공격 창을 연다. 새 장치를 만들지 않고 있던 구문 「기술사용 X」를 그 계기에 태운다 (시트에 구문이 있으면 그 구문).
+     · 한 행동(턴 · 순서 칸)에 포텐셜마다 한 번 — 추가 공격으로 한 공격에는 다시 붙지 않는다
+     · 다른 계기나 주어가 붙은 마디(「~했을 때 추가 공격」 · 「아군이 … 추가 공격」)는 여기서 보지 않는다 (앤 보니&메리 리드 · 은 『암부닌의 지원』) */
+  const XATK_RE=/(?:(저|중|고)\s*확률로\s*)?(?:기술\s*)?「\s*([^」]+?)\s*」\s*에\s*의한\s*추가\s*공격을\s*(?:행한다|한다|내보낸다|얻는다)/;const XATK_DONE={};
+  async function extraAtkAfter(mid,R){try{if(!R||R.check||!R.mv||R.mv.cat==='변화'||!FX())return;const b=ctx().b;const a=(b.mons||{})[mid];if(!a||!a.entry||!(a.hp&&a.hp.cur>0))return;
+    for(const p of potSrc(a)){if(!p||!p.name||!potLive(a,p))continue;const cl=String(p.eff||'').replace(/<br\s*\/?>/g,'\n').split(/(?=[①②③④⑤⑥⑦⑧⑨])|\n/).find(x=>XATK_RE.test(x));if(!cl)continue;const x=cl.match(XATK_RE);if(/때|아군(?:이|가)/.test(cl.slice(0,x.index)))continue;
+     const k=[String(b.started),+b.turn||0,+b.orderIdx||0,mid,p.name].join('|');if(XATK_DONE[k])continue;XATK_DONE[k]=1;
+     const L=limOf(p,a.potUses||{},a.potTurn||{});if(L.left!==null&&L.left<=0)continue;
+     const own=FX().autoOf(a,'pot',p.name);const au=own&&own.ops&&own.ops.length&&!own.manual?own:(()=>{const P=FX().parse(`${x[1]?x[1]+'확률: ':''}기술사용 ${x[2]}`);return P&&P.ops&&P.ops.length?{name:p.name,ops:P.ops,text:cl}:null})();if(!au)continue;
+     const ok=await fireAuto(mid,'pot',p.name,{auto:au,quiet:true,head:`【포텐셜】 ${a.name} 『${p.name}』 — 공격한 직후 · 추가 공격`});if(ok)await potMark(mid,p.name)}}catch(e){console.warn('extraAtk',e)}}
+  async function comboXact(mid,R){try{if(!R||R.check||!R.mv)return;const b=ctx().b;const a=(b.mons||{})[mid];if(!a)return;const ON=(+b.phase||0)>=2&&(b.order||[]).length;const XO=ON?(b.order||[])[+b.orderIdx||0]:null;if(XO&&XO.combo)return;const T=+b.turn||0;const hits=[];
   for(const m of Object.values(b.mons||{})){if(!m||m.id===mid||m.side!==a.side||!m.entry||!(m.hp&&m.hp.cur>0))continue;
    for(const p of potSrc(m)){const x=String((p&&p.eff)||'').replace(/<br\s*\/?>/g,'\n').match(COMBO_RE);if(!x||!potLive(m,p))continue;const sk=x[1]?stKeyOf(x[1]):'';if(x[1]&&(!sk||!(m.states||{})[sk]))continue;if(!mvTagHit(R.mv,x[2]))continue;
     const L=limOf(p,m.potUses||{},m.potTurn||{});if(L.left!==null&&L.left<=0)continue;const k2=m.id+'|combo|'+p.name;if(ACTFX[k2]===T)continue;
@@ -4542,7 +4553,7 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【(?:[^【】]
    await coverFire(mid,RESULT);
    if(!RF){await chainAfterAct(mid);
    await mvModAfter(mid,RESULT);
-   await comboXact(mid,RESULT);await sleepTalkAfter(mid,RESULT);await thirdToneAfter(mid,RESULT);await orderUpAfter(mid,RESULT)}   /* 11-22 「아군의 「소리」 기술에 뒤이어」 */
+   await comboXact(mid,RESULT);await sleepTalkAfter(mid,RESULT);await thirdToneAfter(mid,RESULT);await orderUpAfter(mid,RESULT);await extraAtkAfter(mid,RESULT)}   /* 11-22 「아군의 「소리」 기술에 뒤이어」 */
    /* 11-07 망령 「닌자 자동화가 없어요」: 「자신이 행동한 뒤 …」 포텐셜(닌자 ① 회피 ×1.33 턴 종료까지)은 공격을 적용한 뒤 저절로 건다 — 구문이 있고 횟수(【N/시】) 없는 것만 · 한 턴에 한 번 */
    {const a2=RF?null:ctx().b.mons[mid];const T=+ctx().b.turn||0;if(a2&&a2.entry&&a2.hp.cur>0&&FX())for(const p of potSrc(a2)){if(!p||!p.name||(p.ph&&!p.apt)||!/자신이\s*행동한\s*(?:뒤|후)/.test(String(p.eff||'')))continue;const k=mid+'|'+p.name;if(ACTFX[k]===T)continue;
      const au=FX().autoOf(a2,'pot',p.name);if(!au||!au.ops||!au.ops.length||au.manual||limManual(a2,'pot',p.name,p.eff))continue;ACTFX[k]=T;const okN=await fireAuto(mid,'pot',p.name,{quiet:true,noRoll:true,head:`【포텐셜】 ${a2.name} 『${p.name}』 — 행동한 뒤 자동`});
