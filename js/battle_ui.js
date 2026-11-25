@@ -3090,12 +3090,14 @@ window.OM_BATTLE_UI=(()=>{
   choose:(labels,multi)=>new Promise(res=>{const md=A().openModal(`<div class="mhead"><h2>${esc(name)} — 발동할 효과</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="firelist">${labels.map((l,i)=>`<label class="firerow"><input type="${multi?'checkbox':'radio'}" name="ch" value="${i}" ${i===0?'checked':''}> <span>${esc(l)}</span></label>`).join('')}</div><div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn pri" id="chok">발동</button></div>`);
    $('#chok',md).onclick=()=>{const v=[...md.querySelectorAll('[name=ch]:checked')].map(i=>+i.value);A().closeModal();res(v)};md.querySelector('[data-x]').addEventListener('click',()=>res([]))})}}
  /* 효과 하나를 돌려서 배틀에 적용한다. kind: pot|trait|item|order. 돌려줌: 적용했으면 true */
- /* 11-26 망령 「공유는 같은 턴에서 둘 중 하나만 발동한다는 거야」: 【공유】 포텐셜은 한 포켓몬이 한 턴에 하나만 — 하나가 실제로 발동하면(확률 성공 · 적용) potTurn._share = 그 턴, 같은 턴 다른 【공유】는 막는다. 강제 발동은 그대로 */
- const isShare=(m,name)=>{const p=m&&potSrc(m).find(q=>q&&q.name===name);return !!p&&/【\s*공유\s*】/.test(String(p.eff||''))};
- async function fireAuto(mid,kind,name,opt){opt=opt||{};const T0=+ctx().b.turn||0;const m00=(ctx().b.mons||{})[mid];const SH=kind==='pot'&&!opt.force&&!opt._amv&&isShare(m00,name);
-  if(SH&&T0&&+(((m00.potTurn)||{})._share)===T0){A().sysLog(`【포텐셜】 ${m00.name} 『${String(name).replace(/[『』]/g,'')}』 — 【공유】: 이번 턴 이미 다른 【공유】 포텐셜이 발동해 발동하지 않는다`,'battle',{mid:m00.id,img:m00.image||''});return false}
+ /* 11-26: 【공유】는 11-10 에 만든 shareWhy · shareMark (potTurn._share = {t,u,ex})가 이미 맡는다 — 06:55 에 감우가 여기 겹쳐 넣은 막기(potTurn._share = 턴 숫자)는 그 칸을 덮어써 원래 것을 망가뜨려서 뺐다 */
+ async function fireAuto(mid,kind,name,opt){opt=opt||{};const m00=(ctx().b.mons||{})[mid];
+  /* 저절로 터지는 길(상태 계기 등)도 원래 【공유】 장부를 보게: 쏘기 전에 shareWhy, 성공하면 shareMark (이미 적혀 있으면 그대로) */
+  const SHP=kind==='pot'&&!opt.force&&!opt._amv&&m00?potSrc(m00).find(q=>q&&q.name===String(name||'').replace(/[『』]/g,'').trim()&&/【\s*공유/.test(String(q.eff||''))):null;
+  if(SHP){const sw=shareWhy(SHP,m00.potTurn||{});if(sw){A().sysLog(`【포텐셜】 ${m00.name} 『${SHP.name}』 — ${sw}`,'battle',{mid:m00.id,img:m00.image||''});return false}}
   let XA=[];try{const au=opt.auto||(FX()&&m00?FX().autoOf(m00,kind,name):null);XA=((au&&au.ops)||[]).filter(o=>o&&o.k==='xact')}catch(e){}
-  const ok=await fireAuto0(mid,kind,name,opt);if(ok&&SH&&T0)await A().set(['battle','mons',mid,'potTurn','_share'],T0);
+  const ok=await fireAuto0(mid,kind,name,opt);
+  if(ok&&SHP){try{await shareMark(mid,SHP.name)}catch(e){}}
   if(ok)for(const x of XA){try{await addXact(mid,x,name)}catch(e){console.warn('addXact',e)}}return ok}
  /* 11-26 363 구문 「추가행동」: 이번 턴 행동 순서 맨 끝에 그 포켓몬의 추가 행동 — 순서가 이미 있으면 바로 붙이고, 아직이면(턴 개시 · 선행) battle.xq 에 적어 두었다가 행동 순서를 짤 때 붙인다 */
  function xactMove(m,x){if(x.mv)return x.mv;const ty=S().typeEn(x.ty);const L=MVS(m).filter(mv=>mv&&mvTysRaw(mv).map(t=>S().typeEn(t)||t).includes(ty)&&(!x.cat||String(mv.cat||'').replace(/기$/,'')===x.cat));return L.length?L[0].name:''}
@@ -3557,6 +3559,7 @@ window.OM_BATTLE_UI=(()=>{
  /* 11-26 망령 「위압은 왜 손으로 발동이지?」(코랄리 『홍마룡왕의 위압』 「「타입 : 불꽃」이 된 상대가 다음에 내보내는 기술에 「우선도 : -1」」): 필드 포켓몬의 타입이 새로 X 를 얻으면 계기 「「타입 : X」이 된 상대」 — evReact typed (대상 = 그 포켓몬) */
  function becameEv(kind,t,mm,o,b,ok){const d=b.mons[o.tgt];if(!d)return null;const re=new RegExp('(?:(자신|아군|상대|대상|적)(?:\\s*포켓몬)?(?:이|가|의)?\\s*)?「\\s*'+kind+'\\s*:\\s*([^」]+)」\\s*(?:(?:이|가|으로|로)?\\s*(?:되었을|됐을|바뀌었을|변했을|변경\\s*되었을)\\s*때|(?:이|가)\\s*된\\s*(상대|대상|아군|적))','g');let r;
   while((r=re.exec(t))){const w=r[1]||r[3]||'자신';const rel=d.id===mm.id?'self':sameT(mm,d,b)?'ally':'foe';if((w==='자신'?'self':w==='아군'?'ally':'foe')!==rel)continue;if(!ok(r[2].trim(),d))continue;return {why:`${d.name} 「${kind} : ${r[2].trim()}」(이)가 되었다`,pick:o.tgt,cl:clauseAt(t,r.index)}}return null}
+ window.OM_ORDATK=m=>{try{return ordAtk(ctx().b,m)}catch(e){return false}};   /* 11-26 364 구문 「대상수세 · 대상공세」가 묻는다 */
  const TY_SEEN={};const nPV=x=>String(x||'').replace(/[『』「」\s]/g,'');
  /* 11-26 07:04 망령 「상대가 특정 타입 · 소지품 · 특성이 되었을 때는 트리거로 많이 쓰니까 추가」: 필드 포켓몬의 타입 · 소지품 · 특성이 바뀌면 계기 typed · itemed · abiled (처음 본 포켓몬 = 막 나온 것은 기준만 잡는다) */
  async function typeWatch(){const c=ctx();const b=c.b;if(!c.mgr||!b||!b.started||!FX())return;const bk=String(b.started);const seen=TY_SEEN[bk]||(TY_SEEN[bk]={});const Q=[];
@@ -4474,6 +4477,9 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【(?:[^【】]
      /* 11-15 「『닌자』가 발동했을 때 「자세」 기술에 의한 추가 행동」(울트라드래곤 『궁극의 사두룡』 【보급】) — 행동 순서 바로 다음 칸에 추가 행동 */if(okN){const X=await stanceXact(mid,p.name);if(X){const b2=ctx().b;const ord=(b2.order||[]).slice();const idx=+b2.orderIdx||0;ord.splice(idx+1,0,{slot:slotOf(a2.side,a2.entry),mid,name:a2.name,side:a2.side,change:false,started:false,order:-1000,prio:0,speed:0,dice:0,move:X.mv.name,targets:[],pursuit:false,xact:X.p});await A().set(['battle','order'],ord);A().sysLog(`【포텐셜】 ${a2.name} 『${X.p}』 — 『${p.name}』 발동 · 「${X.mv.name}」로 추가 행동 (다음 차례)`,'battle',{mid,img:a2.image||''})}}}}
    /* 11-08 「조건 명중」 자동 (돌던지기 → 물 타입 강제 교대 …) */
    try{await hitAuto(mid,RESULT)}catch(e){console.warn('hitAuto',e)}
+   /* 11-26 364 「자신의 공격으로 상대가 「HP : 1」이 되었을 때 상대를 「빈사」 상태로 만든다」(제레 발레리 『생사접의 권능』): 맞은 상대의 HP 가 딱 1 로 남으면 0 으로 */
+   try{if(!RESULT.check){const a1=ctx().b.mons[mid];const hp1=a1&&potSrc(a1).find(q=>q&&!q.ph&&!potOffWhy(a1,q.name)&&/자신의\s*공격으로\s*상대가\s*「\s*HP\s*:\s*1\s*」\s*(?:이|가)\s*되었을\s*때[^.]*「\s*빈사\s*」\s*상태로/.test(String(q.eff||'')));
+     if(hp1)for(const r of (RESULT.targets||[])){if(!r||!r.def||r.def.id===mid||!r.acc||!r.acc.hit)continue;const d1=ctx().b.mons[r.def.id];if(!d1||!d1.hp||+d1.hp.cur!==1||sameT(a1,d1,ctx().b))continue;await A().set(['battle','mons',d1.id,'hp','cur'],0);A().sysLog(`【포텐셜】 ${a1.name} 『${hp1.name}』 — ${d1.name} 「HP : 1」 → 「빈사」`,'battle',{mid:a1.id,img:a1.image||''})}}}catch(e){console.warn('hp1',e)}
    /* 11-26 07:05 망령 「「아군에게 이 기술을 내보냈을 때」 계기도 만들자」(루파 고무 · 수호 · 선봉): 기술이 같은 편 다른 포켓몬에게 들어갔으면 쓴 쪽의 포텐셜 · 고유가 본다 (대상 = 그 아군) */
    try{if(!RESULT.check)for(const r of (RESULT.targets||[])){if(!r||!r.def||r.def.id===mid||(r.acc&&r.acc.hit===false))continue;const B1=ctx().b;const a1=B1.mons[mid],d1=B1.mons[r.def.id];if(!a1||!d1||!sameT(a1,d1,B1))continue;await evReact('used',{mid,tgt:d1.id,mv:RESULT.mv.name,key:'u'+mid+':'+d1.id+':'+RESULT.mv.name+':'+(+B1.orderIdx||0)})}}catch(e){console.warn('evReact used',e)}
    /* 11-09 감우 55: 맞은 쪽의 「공격을 받았을 때」 포텐셜 · 고유 */try{if(!RESULT.check)for(const r of (RESULT.targets||[])){if(!r||!r.acc||!r.acc.hit||!r.def||r.def.id===mid)continue;await evReact('hit',{mid,tgt:r.def.id,dmg:(()=>{try{const lh=(ctx().b.mons[r.def.id]||{}).lastHit;return lh&&lh.fromId===mid?+lh.total||0:Math.floor(+((r.dmg||{}).total)||0)}catch(e){return 0}})(),mv:RESULT.mv.name,mt:RESULT.moveTypes||[],cat:RESULT.mv.cat||'',ct:!!(A().contactOf&&A().contactOf(RESULT.mv)==='O')&&!farOf(ctx().b.mons[mid]||{}),eff:r.eff?+r.eff.value:1,crit:!!(r.hits||[]).some(h=>h&&h.v===2),key:RESULT.mv.name+'@'+r.def.id+'@'+Date.now()})}}catch(e){console.warn('evReact hit',e)}
