@@ -2077,7 +2077,7 @@ window.OM_BATTLE_UI=(()=>{
      /* 11-26 366: ① 「「물」기술에 의한 추가 행동」처럼 타입으로 적힌 추가 행동은 그 타입의 첫 기술로 (홍옥 『비네아』)
       ② 「(저|중|고)확률로 가장 마지막에 「X」에 의한 추가 행동」(제레 『염야성연의 성흔』) — 행동 순서를 짤 때 턴마다 굴린다. 「「A」가 PT에 참가하고 있을 때」가 있으면 그 트레이너 PT 에 A 가 있을 때만
       ③ 고유 「「N」배수 턴 가장 마지막에 아군이 「X」 기술에 의한 추가 행동」(오렐리오 『세 번째 종소리』) — 그 턴이면 누가 할지 묻는다 (X 타입 기술을 가진 필드의 아군) */
-   {const tyMv=(m,nm)=>{try{const ty=S().typeEn(nm);if(ty&&!MVS(m).some(v=>v&&v.name===nm))return xactMove(m,{ty})||nm}catch(e){}return nm};
+   {const tyMv=(m,nm)=>{try{const ty=S().typeEn(nm);if(ty&&!MVS(m).some(v=>v&&v.name===nm))return xactMove(m,{ty:nm})||nm}catch(e){}return nm};
     for(const o of order)if(o&&o.xact&&o.move&&o.order===-1000){const m=b.mons[o.mid];if(m)o.move=tyMv(m,o.move)}
     const CX=/(저|중|고)\s*확률로\s*(?:턴\s*)?가장\s*마지막에\s*「([^」]+)」\s*(?:기술)?\s*에?\s*의한\s*추가\s*행동/;
     for(const s of slots){for(const p of potSrc(s.mon)){if(!p||!p.name||p.ph||potOffWhy(s.mon,p.name))continue;const tx=String(p.eff||'');const mm=tx.match(CX);if(!mm||/배수\s*턴/.test(tx)||order.some(o=>o.xact===p.name&&o.mid===s.mon.id))continue;
@@ -2151,7 +2151,7 @@ for(const q of (b.xq||[])){if(!q||+q.t!==(+b.turn||0))continue;const s=slots.fin
     지속형(배율 · 위력 줄)은 구문 조건 토큰 턴:N배수 가 판정마다 본다 (제작기 fx.js · 추천기가 「N」배수 턴 → 턴:N배수) */
  const TMUL_RE=/「?\s*(\d+)\s*」?\s*(?:의\s*)?배수\s*(?:의\s*)?턴/g;
  const XACTN_RE=/「?\s*(\d+)\s*」?\s*배수\s*턴\s*(?:에\s*)?가장\s*마지막에\s*「([^」]+)」\s*(?:기술)?\s*에?\s*의한\s*추가\s*행동/;
- /* 11-26 366 방 시험에서 잡음: 「상대가 「화상」 상태가 되었을 때 가장 마지막에 「X」에 의한 추가 행동」처럼 다른 계기(~때)가 앞에 있는 마디의 「가장 마지막에」는 행동 자리이지 턴 마무리 타이밍이 아니다 — 턴 가장 마지막 후보에서 뺀다 (안 빼면 턴 끝에 계기 없이 한 번 더 발동) */const XACT_POS_RE=/가장\s*마지막에\s*「[^」]+」\s*(?:기술)?\s*에?\s*의한\s*추가\s*행동/;const xactEv=x=>{x=String(x||'');const r=x.match(XACT_POS_RE);return !!r&&(/때/.test(x.slice(0,r.index))||/【\s*등장[^】]*】/.test(x.slice(0,r.index)))&&!END_T.last.test(x.replace(/(?:턴\s*)?가장\s*마지막에\s*「[^」]+」\s*(?:기술)?\s*에?\s*의한\s*추가\s*행동/,''))};   /* 366: 【등장 (…)】/턴 가장 마지막에 「X」 추가 행동(방칠낭 『비상하는 학의 자세』 ①)도 등장 때의 것 */  const tmulNs=t=>[...String(t||'').matchAll(TMUL_RE)].map(x=>+x[1]).filter(n=>n>1);
+ /* 11-26 366 방 시험에서 잡음: 「상대가 「화상」 상태가 되었을 때 가장 마지막에 「X」에 의한 추가 행동」처럼 다른 계기(~때)가 앞에 있는 마디의 「가장 마지막에」는 행동 자리이지 턴 마무리 타이밍이 아니다 — 턴 가장 마지막 후보에서 뺀다 (안 빼면 턴 끝에 계기 없이 한 번 더 발동) */const XACT_POS_RE=/가장\s*마지막에\s*「[^」]+」\s*(?:기술)?\s*에?\s*의한\s*추가\s*행동/;/* 366: 행동 순서를 짤 때 이미 처리하는 꼴(확률 추가 행동 · 고유 「N배수 턴 … 아군이 X 기술 추가 행동」)도 턴 마무리 후보에서 뺀다 */const XACT_ORD_RE=/(?:(?:저|중|고)\s*확률로\s*(?:턴\s*)?가장\s*마지막에\s*「[^」]+」\s*(?:기술)?\s*에?\s*의한\s*추가\s*행동)|(?:배수\s*턴\s*(?:에\s*)?가장\s*마지막에\s*아군(?:이|가)\s*「[^」]+」\s*기술에\s*의한\s*추가\s*행동)/;const xactEv=x=>{x=String(x||'');const r=x.match(XACT_POS_RE);return !!r&&(/때/.test(x.slice(0,r.index))||/【\s*등장[^】]*】/.test(x.slice(0,r.index)))&&!END_T.last.test(x.replace(/(?:턴\s*)?가장\s*마지막에\s*「[^」]+」\s*(?:기술)?\s*에?\s*의한\s*추가\s*행동/,''))};   /* 366: 【등장 (…)】/턴 가장 마지막에 「X」 추가 행동(방칠낭 『비상하는 학의 자세』 ①)도 등장 때의 것 */  const tmulNs=t=>[...String(t||'').matchAll(TMUL_RE)].map(x=>+x[1]).filter(n=>n>1);
  function tmulOk(t,T){const ns=tmulNs(t);return !ns.length||(+T>0&&ns.every(n=>+T%n===0))}
  const segsOf=t=>{const L=String(t||'').replace(/<br\s*\/?>/g,'\n').split(/(?=[①②③④⑤⑥⑦⑧⑨])/).filter(x=>x.trim());return L.length?L:[String(t||'')]};
  /* 턴 타이밍 말 없이 「N」배수 턴만 있는 마디 (= 그 턴 개시 때 발동) — 이번 턴이 그 배수일 때 */
@@ -2169,7 +2169,7 @@ for(const q of (b.xq||[])){if(!q||+q.t!==(+b.turn||0))continue;const s=slots.fin
  /* 11-07 망령 「사용한 1/시 포텐셜이 턴 종료시에 계속 발동을 물어봄」: 【N/시】 를 다 썼거나 【소진】 · 【탈진】 으로 이번 턴에 못 쓰면 후보에서 뺀다 */
  const spent=(p,uses,turns)=>{try{const L=limOf(p,uses||{},turns||{});return L.left!=null&&L.left<=0}catch(e){return false}};
  const NO_SWT=['가속'];   /* 교대로 나온 턴 종료엔 발동 안 하는 특성 */
- function endCands(b,step){const out=[];const ok0=t=>{t=String(t||'');if(step==='end'&&END_T.after.test(t)&&!END_T.end.test(t.replace(END_T.after,'')))return false;return END_T[step].test(t)};const TN=+b.turn||0;const tmOk=t=>{const sg=segsOf(t).filter(x=>END_T[step].test(x));return sg.length?sg.some(x=>!XACTN_RE.test(x)&&!xactEv(x)&&tmulOk(x,TN)):tmulOk(t,TN)&&!XACTN_RE.test(String(t||''))&&!xactEv(String(t||''))};   /* 11-26 N배수 턴 계기 */const ok=(t,m)=>ok0(t)&&tmOk(t)&&!cureOnlyIdle(m,t);
+ function endCands(b,step){const out=[];const ok0=t=>{t=String(t||'');if(step==='end'&&END_T.after.test(t)&&!END_T.end.test(t.replace(END_T.after,'')))return false;return END_T[step].test(t)};const TN=+b.turn||0;const tmOk=t=>{const sg=segsOf(t).filter(x=>END_T[step].test(x));return sg.length?sg.some(x=>!XACTN_RE.test(x)&&!xactEv(x)&&!XACT_ORD_RE.test(x)&&tmulOk(x,TN)):tmulOk(t,TN)&&!XACTN_RE.test(String(t||''))&&!xactEv(String(t||''))&&!XACT_ORD_RE.test(String(t||''))};   /* 11-26 N배수 턴 계기 */const ok=(t,m)=>ok0(t)&&tmOk(t)&&!cureOnlyIdle(m,t);
   for(const m of Object.values(b.mons||{})){if(!m.entry||m.hp.cur<=0)continue;for(const p of potSrc(m))if(ok(p.eff,m)&&!spent(p,m.potUses,m.potTurn))out.push({m,kind:'pot',name:p.name,eff:p.eff,tag:isExcl(m,p)?'전용':'포텐셜'});
    /* 11-07 망령 「가속 특성 턴 종료 시에 왜 확인 문구 안 뜨냐」: 후보를 포텐셜 · 고유에서만 찾아서 특성은 빠져 있었다 — 특성 글(시트 → 특성 DB)에 그 타이밍이 적혀 있으면 같이 묻는다. 소지품 턴 종료(먹다남은음식 등)는 items.js 가 저절로 하므로 넣지 않는다 */
    /* 11-07 23:37 망령 「가속은 교대로 나온 턴 종료 시에는 발동 안 해」 */
