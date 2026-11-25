@@ -5795,3 +5795,22 @@ button.tfsep.cl{opacity:1;border:1px dashed color-mix(in srgb,var(--yel2) 55%,tr
 .bgmed input[type=text]{flex:1 1 180px;min-width:0}.bgmed #bgedu{flex:2 1 260px}.bgmed .bgmedn{flex-basis:100%}
 .bgmro .bgmed{display:none!important}
 @media (max-width:760px){.bgmed input[type=text],.bgmed #bgedu{flex:1 1 100%}}
+
+/* 11-26 369 휴대폰 공격 창: 굴린 뒤 결과 표(#ares 바로 아래 table.t — 7칸)가 683px 라 창이 가로로 밀렸다.
+   700px 이하에서는 대상마다 한 묶음으로 쌓는다 (대상 · 최종은 한 줄 전체, 나머지는 두 칸 · 칸 이름은 ::before). 「적용된 보정」 칩은 칩 안에서 줄바꿈 */
+@media (max-width:700px){
+#ares>table.t{display:block;width:100%}
+#ares>table.t>tbody{display:block}
+#ares>table.t>tbody>tr:first-child{display:none}
+#ares>table.t>tbody>tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 10px;padding:10px 0;border-bottom:1px solid var(--line,rgba(255,255,255,.14))}
+#ares>table.t>tbody>tr>td{display:block;padding:0;border:0;white-space:normal;min-width:0;overflow-wrap:anywhere}
+#ares>table.t>tbody>tr>td:first-child,#ares>table.t>tbody>tr>td:last-child,#ares>table.t>tbody>tr>td[colspan]{grid-column:1/-1}
+#ares>table.t>tbody>tr>td:nth-child(n+2)::before{display:block;font-size:11px;opacity:.6;margin-bottom:1px}
+#ares>table.t>tbody>tr>td:nth-child(2)::before{content:"명중"}
+#ares>table.t>tbody>tr>td:nth-child(3)::before{content:"급소"}
+#ares>table.t>tbody>tr>td:nth-child(4)::before{content:"대미지(상성 전)"}
+#ares>table.t>tbody>tr>td:nth-child(5)::before{content:"상성"}
+#ares>table.t>tbody>tr>td:nth-child(6)::before{content:"보정"}
+#ares>table.t>tbody>tr>td:nth-child(7)::before{content:"최종"}
+#ares .aapl .chip{display:inline-block;white-space:normal;max-width:100%;overflow-wrap:anywhere;margin:1px 0}
+}
