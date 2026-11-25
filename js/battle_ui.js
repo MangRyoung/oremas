@@ -2547,7 +2547,9 @@ window.OM_BATTLE_UI=(()=>{
   m.hp.max=m.stats[0];if(m.hp.max!==oldMax)m.hp.cur=Math.max(m.hp.cur>0?1:0,Math.min(m.hp.max,m.hp.cur+(m.hp.max-oldMax)));
   const tk=t=>(t||[]).filter(x=>x&&x!=='-').map(x=>S().typeKo?S().typeKo(x):x).join('/');
   const sameNm=fromName===m.name;   /* 11-26 망령 「지박신을 지박신으로 폼체인지」: 이름 없는 폼(공유 폼 등)은 「A → A」 대신 「A 의 폼체인지」 */
-  L.push(f?`${sameNm?m.name+'의':fromName+' → 「'+m.name+'」'} ${f.kind||'폼체인지'}! (${tk(m.types)} · 특성 ${m.ability||'-'}${m.hp.max!==oldMax?' · 최대 HP '+oldMax+'→'+m.hp.max:''})${potLine?'\n포텐셜 '+potLine:''}${mvLine?'\n기술 '+mvLine:''}${exLine?'\n전용 '+exLine:''}`:`${sameNm?m.name+' — 원래 모습으로':fromName+' → 원래 모습 「'+m.name+'」으로'} 돌아왔다${potLine?'\n'+potLine:''}${exLine?'\n전용 '+exLine:''}`);
+  L.push(f?`${sameNm?m.name+'의':fromName+' → 「'+m.name+'」'} ${f.kind||'폼체인지'}! (${tk(m.types)} · 특성 ${m.ability||'-'}${m.hp.max!==oldMax?' · 최대 HP '+oldMax+'→'+m.hp.max:''})`:`${sameNm?m.name+' — 원래 모습으로':fromName+' → 원래 모습 「'+m.name+'」으로'} 돌아왔다`);
+  /* 11-26 망령 「폼체인지하면 계제랑 기술이 어떻게 바뀌는지도 다 출력 — 그러면 안 되지」: 포텐셜 · 기술 · 전용 바뀐 것은 공개 로그에 싣지 않고 주인(NPC · 야생이면 GM) 귓속말로 */
+  {const det=[potLine?(f?'포텐셜 ':'')+potLine:'',mvLine?'기술 '+mvLine:'',exLine?'전용 '+exLine:''].filter(Boolean);const mid0=m.id,nm0=m.name,kd0=f?f.kind||'폼체인지':'폼 복귀';if(det.length)setTimeout(()=>{try{A().sysLog(`【${kd0} — 바뀐 것】 ${nm0}\n${det.join('\n')}`,'battle',{gmPriv:1,mid:mid0})}catch(e){}},700)}
   return L}
  /* ---------- 소지품 소모 (맵툴 item_consume): 칸에서 빼고 itemUsed 에 남긴다. 결과 정리 때 시트에서도 뺀다 ---------- */
  /* 10-27 망령: 받는 쪽 특성 — 첫 타 완화(멀티스케일 · 스펙터가드) · 탈 · 맞을 때마다 반응(정전기 · 까칠한피부 · 지구력 · 깨어진갑옷 …). 특성 글(abilityEff, 없으면 특성 DB)을 읽는다 */
