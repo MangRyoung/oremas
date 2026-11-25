@@ -2530,8 +2530,10 @@ window.OM_BATTLE_UI=(()=>{
    if(k==='undo'){const m0=snap(ctx().b.mons[mid]),x=snap(m0);const l=x.hp.latest;if(l==null)return;x.hp.latest=x.hp.cur;x.hp.cur=l;if(x.hp.cur>0&&!x.entry&&m.hp.cur<=0){}A().closeModal();await saveMon(m0,mid,x);return A().sysLog(`${x.name} HP 되돌리기 → ${x.hp.cur}/${x.hp.max}`,'battle')}})}
  /* ---------- 폼체인지 · 메가진화 (제작기 시트의 forms). form0 에 원래 모습을 두고 돌아올 때 그대로 되돌린다 ---------- */
  function formSet(m,k){const L=[];const f=k>=0?(m.forms||[])[k]:null;if(k>=0&&!f)return L;
-  if(!m.form0)m.form0={name:m.name,types:m.types,typesKo:m.typesKo,ability:m.ability,abilityEff:m.abilityEff,base:m.base,ranks:m.ranks,stats:m.stats,image:m.image,pots:JSON.parse(JSON.stringify(m.pots||[])),moves:JSON.parse(JSON.stringify(m.moves||[])),excl:m.excl?JSON.parse(JSON.stringify(m.excl)):null,exclX:JSON.parse(JSON.stringify(m.exclX||[]))};
+  if(!m.form0)m.form0={name:m.name,types:m.types,typesKo:m.typesKo,ability:m.ability,abilityEff:m.abilityEff,base:m.base,ranks:m.ranks,stats:m.stats,image:m.image,pots:JSON.parse(JSON.stringify(m.pots||[])),moves:JSON.parse(JSON.stringify(m.moves||[])),excl:m.excl?JSON.parse(JSON.stringify(m.excl)):null,exclX:JSON.parse(JSON.stringify(m.exclX||[])),auto:JSON.parse(JSON.stringify(m.auto||{}))};
   const o=m.form0;const fromName=m.name,oldAb=m.ability,oldMax=m.hp.max;
+  /* 11-26 05:38 망령 「폼체인지 포텐셜에 추천기나 구문 제작」: 폼 포텐셜 · 폼 전용 칸의 구문(제작기 공유 폼 f.pots[i].auto · f.exs[i].auto)을 그 폼일 때만 m.auto 에 얹는다 · 원래 모습이면 form0.auto 로 */
+  if(o.auto){const au=JSON.parse(JSON.stringify(o.auto));if(f&&FX()&&FX().parse)for(const x of [...(f.pots||[]),...(f.exs||[])]){const d=String((x&&x.auto)||'').trim();if(!d||!x.name)continue;try{au[String(x.name).replace(/『|』/g,'')]={dsl:d,ops:FX().parse(d).ops}}catch(e){}}m.auto=au}
   if(oldAb&&FX())FX().removeByName(m,oldAb);delete m.typesOrig;delete m.abilityOrig;
   /* 폼마다 바뀌는 포텐셜 칸 (종족·속별 등): 원래 목록에서 같은 칸(slot)을 갈아 끼운다. 빠지는 포텐셜의 발동 효과는 푼다 */
   const potsBefore=(m.pots||[]).map(p=>p.name);const fp=(f&&f.pots)||[];const pots=JSON.parse(JSON.stringify(o.pots||[]));const swapped=[];

@@ -112,11 +112,11 @@ window.OM_IMPORT=(()=>{
    const ab=f.ability||'';const abil0=ab?((DB().traits||{})[ab]||{}):null;const abil=ab?(ef&&ef.ab?{multi:ef.ab}:abil0):null;
    return {name:f.name||'',kind:f.kind||'폼체인지',typesKo:keepT?null:[...tko,'-'],types:keepT?null:[...tko,'-'].map(S().typeEn),
     ability:ab,abilityEff:abil?brN(abil.multi||abil.single||''):null,base,image:f.image||'',cond:f.cond||'',revert:!!f.revert,
-    pots:(f.pots||[]).map((x,i)=>[x,i]).filter(([x])=>x&&x.name).map(([x,i])=>{const row=((DB().maker||{}).pots||[]).find(r=>r[1]===x.name);const ep=ef?(ef.pots||[])[i]:'',ek=ef?(ef.kinds||[])[i]:'';return {slot:+x.slot||0,name:String(x.name).replace(/『|』/g,''),kind:ek||(row?row[0]:''),eff:brN(x.eff||ep||(row?row[2]:''))}}),
+    pots:(f.pots||[]).map((x,i)=>[x,i]).filter(([x])=>x&&x.name).map(([x,i])=>{const row=((DB().maker||{}).pots||[]).find(r=>r[1]===x.name);const ep=ef?(ef.pots||[])[i]:'',ek=ef?(ef.kinds||[])[i]:'';return Object.assign({slot:+x.slot||0,name:String(x.name).replace(/『|』/g,''),kind:ek||(row?row[0]:''),eff:brN(x.eff||ep||(row?row[2]:''))},x.auto?{auto:String(x.auto).slice(0,1500)}:{})}),   /* 11-26 폼 포텐셜 구문 */
     /* 11-14 망령 「폼체인지 때 기술이 바뀌는 케이스 — 변동이 있으면 그쪽 기술이 되게」: 제작기 f.mvs [{from,to}] → 배틀용 기술로 */
     moves:(f.mvs||[]).filter(x=>x&&x.to).map(x=>({from:String(x.from||''),mv:move(String(x.to),false)})),mvRep:!!f.mvRep,   /* 11-26 망령 「아예 교체」: 원래 기술은 다 빼고 이 폼 기술만 */
     /* 11-14 망령 「공용 폼체인지에 전용 넣을 칸」: 이 폼일 때만 생기는 전용 · exRep = 원래 전용은 쓰지 않음 */
-    exs:(f.exs||[]).filter(x=>x&&x.name).slice(0,6).map(x=>({name:String(x.name).replace(/『|』/g,''),eff:brN(x.eff||'')})),exRep:!!f.exRep}});
+    exs:(f.exs||[]).filter(x=>x&&x.name).slice(0,6).map(x=>Object.assign({name:String(x.name).replace(/『|』/g,''),eff:brN(x.eff||'')},x.auto?{auto:String(x.auto).slice(0,1500)}:{})),exRep:!!f.exRep}});
   return out.length?out:null}
 
  /* 역할 포텐셜(00.x. 역할)에서 역할 이름 */
