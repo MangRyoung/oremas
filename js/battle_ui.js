@@ -2722,11 +2722,11 @@ window.OM_BATTLE_UI=(()=>{
  /* 폼 바꾸기 본체 (창 · 자동 HP 조건 폼체인지 공용) */
  async function doForm(mid,k,why){const b=ctx().b;const m=b.mons[mid];if(!m)return false;
    /* 11-26 05:24 망령 「연출 도중 포트가 토지신에서 토지신으로 · 원래에서 원래로」: 같은 폼체인지가 두 번 불리면(고유 효과 + 자동 등) 두 번째는 이미 그 모습 → 「A → A」 컷인 · 로그. 이미 그 폼이면 / 이미 원래 모습이면 아무것도 안 한다 */
-   if(k>=0&&m.form0&&+m.formIdx===+k)return true;if(!(k>=0)&&!m.form0)return true;const forms=formsOf(m);const o=m.form0||m;const f=forms[k];const nb0=snap(),nb=snap(nb0);const x=nb.mons[mid];if(!x)return false;x.forms=JSON.parse(JSON.stringify(forms));const L=formSet(x,k);if(f&&f.kind==='메가진화')x.megaUsed=true;if(why)x.hpFormDone=1;
+   if(k>=0&&m.form0&&+m.formIdx===+k)return true;if(!(k>=0)&&!m.form0)return true;const forms=formsOf(m);const o=m.form0||m;const f=forms[k];const FR={name:m.name,img:m.image||''};   /* 11-26 05:30 망령 「폼 그림 → 폼 그림 그대로」: saveBattle 뒤엔 m 이 새 상태로 바뀌어 있어(같은 객체) 컷인 앞 그림 · 이름이 폼 것이 됐다 — 저장 전에 적어 둔다 */const nb0=snap(),nb=snap(nb0);const x=nb.mons[mid];if(!x)return false;x.forms=JSON.parse(JSON.stringify(forms));const L=formSet(x,k);if(f&&f.kind==='메가진화')x.megaUsed=true;if(why)x.hpFormDone=1;
    if(!await saveBattle(nb0,nb))return false;A().sysLog(`【${f?f.kind||'폼체인지':'폼 복귀'}】 ${L.join('\n')}${why?'\n('+why+')':''}`,'battle',{mid,img:x.image||''});
    {const col=x.side==='left'?'#1f6fd1':'#e3101f';const kd=!f?'back':f.kind==='메가진화'?'mega':'form';
-    if(CUT()&&CUT().evo){try{CUT().evo({kind:kd,label:f?f.kind||'폼체인지':'',from:{name:m.name,img:m.image||''},to:{name:x.name,img:x.image||''},color:col})}catch(e){}}
-    else if(f)cutFire('m:'+mid,x.image,`${m.name}의 ${f.kind||'폼체인지'}!`,x.name!==m.name?`→ 「${x.name}」`:'',col)}
+    if(CUT()&&CUT().evo){try{CUT().evo({kind:kd,label:f?f.kind||'폼체인지':'',from:FR,to:{name:x.name,img:x.image||''},color:col})}catch(e){}}
+    else if(f)cutFire('m:'+mid,x.image,`${FR.name}의 ${f.kind||'폼체인지'}!`,x.name!==FR.name?`→ 「${x.name}」`:'',col)}
    /* 새 특성의 등장·상시 구문은 바로 */
    const ab=ctx().b.mons[mid];if(f&&ab&&ab.ability&&ab.ability!==o.ability&&FX()){const a=FX().autoOf(ab,'trait',ab.ability);if(a&&a.ops&&a.ops.length&&!a.manual){const tm=FX().timing(a.text||'');if(tm.entry||tm.passive)await fireAuto(mid,'trait',ab.ability,{quiet:true,noRoll:!!tm.passive})}}
    {const cm=ctx().b.mons[mid];if(cm&&FX())for(const n of (cm.formNewPots||[])){const a=FX().autoOf(cm,'pot',n);if(!a||!a.ops||!a.ops.length||a.manual)continue;if(limManual(cm,'pot',n))continue;const tm=FX().timing(a.text||'');if(tm.entry||tm.passive)await fireAuto(mid,'pot',n,{quiet:true,noRoll:!!tm.passive})}}return true}
