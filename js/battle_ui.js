@@ -2069,30 +2069,29 @@ window.OM_BATTLE_UI=(()=>{
   for(const m of iceUsed)await A().set(['battle','mons',m.id,'prioDown'],null);
   /* 11-09 망령 「창파나이트의 추가행동도 대상을 지정해야 돼 · 넣자」: 선행 입력한 포텐셜 글이 「가장 마지막에 「기술」에 의한 추가 행동」이면 순서 맨 끝에 그 기술 차례를 붙인다.
      대상 = 선행 입력 때 대상 판에서 고른 자리(ptg — 구문 「대상지정」). 차례가 오면 공격 창이 그 기술 · 대상으로 열린다 (openAttack 의 xact) */
-  for(const s of slots){const K=SEC[s.mon.id];if(!K||!(K.pots||[]).length)continue;for(const pn of K.pots){const p=potSrc(s.mon).find(q=>q&&q.name===pn);const mm=p&&String(p.eff||'').match(/가장\s*마지막에\s*「([^」]+)」\s*(?:기술)?\s*에?\s*의한\s*추가\s*행동/);if(!mm)continue;const tg=(K.ptg||{})[pn];
-   order.push({slot:s.slot,mid:s.mon.id,name:s.mon.name,side:s.mon.side,change:false,started:false,order:-1000,prio:0,speed:0,dice:0,move:mm[1],targets:tg?[tg]:[],pursuit:false,xact:pn});notes.push(`${s.mon.name} 『${pn}』 — 가장 마지막에 「${mm[1]}」 추가 행동`)}}
+  for(const s of slots){const K=SEC[s.mon.id];if(!K||!(K.pots||[]).length)continue;for(const pn of K.pots){const p=potSrc(s.mon).find(q=>q&&q.name===pn);const mm=p&&String(p.eff||'').match(XACT_POS_RE);if(!mm)continue;const tg=(K.ptg||{})[pn];
+   order.push(xactEnt(s,mm[1],pn,{targets:tg?[tg]:[]}));notes.push(`${s.mon.name} 『${pn}』 — 가장 마지막에 「${mm[1]}」 추가 행동`)}}
   /* 11-09 감우 54-F: 「「4」배수 턴 가장 마지막에 「드래곤옐」에 의한 추가 행동」 — 선행 입력 없이 그 턴이면 저절로 (【준비】 불충족이면 빼고) */
-  for(const s of slots){const T=+b.turn||0;if(!T)continue;const K=SEC[s.mon.id];for(const p of potSrc(s.mon)){if(!p||!p.name||p.ph||potOffWhy(s.mon,p.name)||(K&&(K.pots||[]).includes(p.name)))continue;const mm=String(p.eff||'').match(/「?\s*(\d+)\s*」?\s*배수\s*턴\s*(?:에\s*)?가장\s*마지막에\s*「([^」]+)」\s*(?:기술)?\s*에?\s*의한\s*추가\s*행동/);if(!mm||T%(+mm[1]))continue;
-   order.push({slot:s.slot,mid:s.mon.id,name:s.mon.name,side:s.mon.side,change:false,started:false,order:-1000,prio:0,speed:0,dice:0,move:mm[2],targets:[],pursuit:false,xact:p.name});notes.push(`${s.mon.name} 『${p.name}』 — ${mm[1]}배수 턴 · 가장 마지막에 「${mm[2]}」 추가 행동`)}}
+  for(const s of slots){const T=+b.turn||0;if(!T)continue;const K=SEC[s.mon.id];for(const p of potSrc(s.mon)){if(!p||!p.name||p.ph||potOffWhy(s.mon,p.name)||(K&&(K.pots||[]).includes(p.name)))continue;const mm=String(p.eff||'').match(XACTN_RE);if(!mm||T%(+mm[1]))continue;
+   order.push(xactEnt(s,mm[2],p.name));notes.push(`${s.mon.name} 『${p.name}』 — ${mm[1]}배수 턴 · 가장 마지막에 「${mm[2]}」 추가 행동`)}}
      /* 11-26 366: ① 「「물」기술에 의한 추가 행동」처럼 타입으로 적힌 추가 행동은 그 타입의 첫 기술로 (홍옥 『비네아』)
       ② 「(저|중|고)확률로 가장 마지막에 「X」에 의한 추가 행동」(제레 『염야성연의 성흔』) — 행동 순서를 짤 때 턴마다 굴린다. 「「A」가 PT에 참가하고 있을 때」가 있으면 그 트레이너 PT 에 A 가 있을 때만
       ③ 고유 「「N」배수 턴 가장 마지막에 아군이 「X」 기술에 의한 추가 행동」(오렐리오 『세 번째 종소리』) — 그 턴이면 누가 할지 묻는다 (X 타입 기술을 가진 필드의 아군) */
    {const tyMv=(m,nm)=>{try{const ty=S().typeEn(nm);if(ty&&!MVS(m).some(v=>v&&v.name===nm))return xactMove(m,{ty:nm})||nm}catch(e){}return nm};
     for(const o of order)if(o&&o.xact&&o.move&&o.order===-1000){const m=b.mons[o.mid];if(m)o.move=tyMv(m,o.move)}
-    const CX=/(저|중|고)\s*확률로\s*(?:턴\s*)?가장\s*마지막에\s*「([^」]+)」\s*(?:기술)?\s*에?\s*의한\s*추가\s*행동/;
-    for(const s of slots){for(const p of potSrc(s.mon)){if(!p||!p.name||p.ph||potOffWhy(s.mon,p.name))continue;const tx=String(p.eff||'');const mm=tx.match(CX);if(!mm||/배수\s*턴/.test(tx)||order.some(o=>o.xact===p.name&&o.mid===s.mon.id))continue;
+    for(const s of slots){for(const p of potSrc(s.mon)){if(!p||!p.name||p.ph||potOffWhy(s.mon,p.name))continue;const tx=String(p.eff||'');const mm=tx.match(XACT_CH_RE);if(!mm||/배수\s*턴/.test(tx)||order.some(o=>o.xact===p.name&&o.mid===s.mon.id))continue;
       const pt=tx.match(/「([^」]+)」\s*(?:이|가)\s*PT에\s*참가하고\s*있을\s*때/);if(pt&&!Object.values(b.mons||{}).some(x=>x&&x.tid===s.mon.tid&&x.id!==s.mon.id&&String(x.name||'').replace(/\s/g,'')===pt[1].replace(/\s/g,'')))continue;
       let base=0;try{base=+FX().percentOf(mm[1]+'확률')||0}catch(e){}if(!base)base=({저:10,중:30,고:50})[mm[1]];const R=FX().rollP(s.mon,base,{});
-      if(R.ok){order.push({slot:s.slot,mid:s.mon.id,name:s.mon.name,side:s.mon.side,change:false,started:false,order:-1000,prio:0,speed:0,dice:0,move:tyMv(s.mon,mm[2]),targets:[],pursuit:false,xact:p.name});notes.push(`${s.mon.name} 『${p.name}』 — ${mm[1]}확률 성공 (${R.r}/${R.p}) · 가장 마지막에 「${mm[2]}」 추가 행동`)}
+      if(R.ok){order.push(xactEnt(s,tyMv(s.mon,mm[2]),p.name));notes.push(`${s.mon.name} 『${p.name}』 — ${mm[1]}확률 성공 (${R.r}/${R.p}) · 가장 마지막에 「${mm[2]}」 추가 행동`)}
       else notes.push(`${s.mon.name} 『${p.name}』 — ${mm[1]}확률 실패 (${R.r}/${R.p})`)}}
-    const UX=/「?\s*(\d+)\s*」?\s*배수\s*턴\s*(?:에\s*)?가장\s*마지막에\s*아군(?:이|가)\s*「([^」]+)」\s*기술에\s*의한\s*추가\s*행동/;const T3=+b.turn||0;
-    if(T3)for(const t of Object.values(b.trainers||{})){for(const q of uniqList(t)){const mm=String(q.p.eff||'').match(UX);if(!mm||T3%(+mm[1])||(q.left!==null&&q.left<=0))continue;const nm=String(q.p.name||'').replace(/[『』]/g,'');if(order.some(o=>o.xact===nm))continue;
+    const T3=+b.turn||0;
+    if(T3)for(const t of Object.values(b.trainers||{})){for(const q of uniqList(t)){const mm=String(q.p.eff||'').match(XACT_UQ_RE);if(!mm||T3%(+mm[1])||(q.left!==null&&q.left<=0))continue;const nm=String(q.p.name||'').replace(/[『』]/g,'');if(order.some(o=>o.xact===nm))continue;
       const ty=(()=>{try{return S().typeEn(mm[2])}catch(e){return ''}})();const cand=slots.filter(s=>s.mon.tid===t.id&&s.mon.hp.cur>0&&MVS(s.mon).some(v=>v&&(ty?mvTysRaw(v).includes(ty):v.name===mm[2])));
       if(!cand.length){notes.push(`${t.name} 고유 『${nm}』 — ${mm[1]}배수 턴 · 「${mm[2]}」 기술을 가진 아군이 필드에 없다`);continue}
-      let ix=0;if(cand.length>1||true){try{const L=[...cand.map(s=>s.mon.name),'쓰지 않는다'];const ans=await localUi(ctx().b,cand[0].mon,`${t.name} 고유 『${nm}』 — 추가 행동을 할 아군`).choose(L);ix=Array.isArray(ans)&&ans.length?+ans[0]:L.length-1}catch(e){ix=0}}
+      let ix=0;{try{const L=[...cand.map(s=>s.mon.name),'쓰지 않는다'];const ans=await localUi(ctx().b,cand[0].mon,`${t.name} 고유 『${nm}』 — 추가 행동을 할 아군`).choose(L);ix=Array.isArray(ans)&&ans.length?+ans[0]:L.length-1}catch(e){ix=0}}
       const s=cand[ix];if(!s){notes.push(`${t.name} 고유 『${nm}』 — 쓰지 않음`);continue}
-      order.push({slot:s.slot,mid:s.mon.id,name:s.mon.name,side:s.mon.side,change:false,started:false,order:-1000,prio:0,speed:0,dice:0,move:tyMv(s.mon,mm[2]),targets:[],pursuit:false,xact:nm});notes.push(`${t.name} 고유 『${nm}』 — ${mm[1]}배수 턴 · ${s.mon.name}이(가) 가장 마지막에 「${mm[2]}」 기술로 추가 행동`)}}}
-for(const q of (b.xq||[])){if(!q||+q.t!==(+b.turn||0))continue;const s=slots.find(z=>z.mon&&z.mon.id===q.mid);if(!s||order.some(o=>o.xact===q.by&&o.mid===q.mid))continue;order.push({slot:s.slot,mid:s.mon.id,name:s.mon.name,side:s.mon.side,change:false,started:false,order:-1000,prio:0,speed:0,dice:0,move:q.mv,targets:[],pursuit:false,xact:q.by});notes.push(`${s.mon.name} 『${q.by}』 — 가장 마지막에 「${q.mv||'기술'}」 추가 행동`)}   /* 11-26 구문 「추가행동」 (선행 · 턴 개시 때 적어 둔 것) */
+      order.push(xactEnt(s,tyMv(s.mon,mm[2]),nm));notes.push(`${t.name} 고유 『${nm}』 — ${mm[1]}배수 턴 · ${s.mon.name}이(가) 가장 마지막에 「${mm[2]}」 기술로 추가 행동`)}}}
+for(const q of (b.xq||[])){if(!q||+q.t!==(+b.turn||0))continue;const s=slots.find(z=>z.mon&&z.mon.id===q.mid);if(!s||order.some(o=>o.xact===q.by&&o.mid===q.mid))continue;order.push(xactEnt(s,q.mv,q.by));notes.push(`${s.mon.name} 『${q.by}』 — 가장 마지막에 「${q.mv||'기술'}」 추가 행동`)}   /* 11-26 구문 「추가행동」 (선행 · 턴 개시 때 적어 둔 것) */
   {let i0=0;while(i0<order.length&&order[i0].noact){A().sysLog(`${order[i0].name} — ${order[i0].noact} (차례를 건너뛴다)`,'battle');i0++}
    /* 11-03 감우: 순서 · 색인 · 메모 · 페이즈를 한 번에 (om_jset_many) */const ops=[[['battle','order'],order],[['battle','orderIdx'],i0],[['battle','orderNotes'],notes],[['battle','phase'],2]];if(b.tstep)ops.push([['battle','tstep'],null]);if(b.swPur)ops.push([['battle','swPur'],null]);if(!await A().setMany(ops))return}
   cutPhase('행동 순서','');for(const [o,v] of purs){const pm=b.mons[o.mid]||{};A().sysLog(`【따라가때리기】 ${o.name} 『${o.move}』 발동!${o.pursuitSrc?'\n선행 『'+o.pursuitSrc+'』에 묻어 있던 추격':''}\n${v.utHit?'「유턴」으로 빠지려는':'교대하려는'} ${v.name}을(를) 교대 전에 먼저 때린다${pursuitX2(((b.mons[o.mid]||{}).moves||[]).find(q=>q.name===o.move))?' → 위력 2배':''}`,'battle',{mid:o.mid,img:pm.image||''});setTimeout(()=>cutFire('m:'+o.mid,pm.image,`${o.name}의 따라가때리기!`,`『${o.move}』 → ${v.name}`,pm.side==='left'?'#1f6fd1':'#e3101f'),1600)}A().sysLog('행동 순서\n'+order.map((o,i)=>`${i+1}. ${o.name} (${o.change?'교대 · ':''}${o.order!==20?'순서 '+o.order+' · ':''}${o.prio?'우선 '+o.prio+' · ':''}스피드 ${Math.round(o.speed)}${order.some(q=>q!==o&&Math.round(q.speed)===Math.round(o.speed)&&(+q.prio||0)===(+o.prio||0)&&q.order===o.order)?' · 동속 주사위 '+o.dice:''})`).join('\n')+(spNotes.length?'\n'+spNotes.map(x=>'· '+x).join('\n'):''),'battle',{ord:order.map(o=>({n:o.name,img:(b.mons[o.mid]||{}).image||'',side:o.side,s:Math.round(o.speed),cap:!o.started?'교대 등장':o.change?'통상 교대':o.order!==20?orderValueName(o.order):'우선도 '+(o.prio>0?'+':'')+o.prio+(o.pursuitHit?' · 따라가때리기':'')}))})}
@@ -2151,7 +2150,12 @@ for(const q of (b.xq||[])){if(!q||+q.t!==(+b.turn||0))continue;const s=slots.fin
     지속형(배율 · 위력 줄)은 구문 조건 토큰 턴:N배수 가 판정마다 본다 (제작기 fx.js · 추천기가 「N」배수 턴 → 턴:N배수) */
  const TMUL_RE=/「?\s*(\d+)\s*」?\s*(?:의\s*)?배수\s*(?:의\s*)?턴/g;
  const XACTN_RE=/「?\s*(\d+)\s*」?\s*배수\s*턴\s*(?:에\s*)?가장\s*마지막에\s*「([^」]+)」\s*(?:기술)?\s*에?\s*의한\s*추가\s*행동/;
- /* 11-26 366 방 시험에서 잡음: 「상대가 「화상」 상태가 되었을 때 가장 마지막에 「X」에 의한 추가 행동」처럼 다른 계기(~때)가 앞에 있는 마디의 「가장 마지막에」는 행동 자리이지 턴 마무리 타이밍이 아니다 — 턴 가장 마지막 후보에서 뺀다 (안 빼면 턴 끝에 계기 없이 한 번 더 발동) */const XACT_POS_RE=/가장\s*마지막에\s*「[^」]+」\s*(?:기술)?\s*에?\s*의한\s*추가\s*행동/;/* 366: 행동 순서를 짤 때 이미 처리하는 꼴(확률 추가 행동 · 고유 「N배수 턴 … 아군이 X 기술 추가 행동」)도 턴 마무리 후보에서 뺀다 */const XACT_ORD_RE=/(?:(?:저|중|고)\s*확률로\s*(?:턴\s*)?가장\s*마지막에\s*「[^」]+」\s*(?:기술)?\s*에?\s*의한\s*추가\s*행동)|(?:배수\s*턴\s*(?:에\s*)?가장\s*마지막에\s*아군(?:이|가)\s*「[^」]+」\s*기술에\s*의한\s*추가\s*행동)/;const xactEv=x=>{x=String(x||'');const r=x.match(XACT_POS_RE);return !!r&&(/때/.test(x.slice(0,r.index))||/【\s*등장[^】]*】/.test(x.slice(0,r.index)))&&!END_T.last.test(x.replace(/(?:턴\s*)?가장\s*마지막에\s*「[^」]+」\s*(?:기술)?\s*에?\s*의한\s*추가\s*행동/,''))};   /* 366: 【등장 (…)】/턴 가장 마지막에 「X」 추가 행동(방칠낭 『비상하는 학의 자세』 ①)도 등장 때의 것 */  const tmulNs=t=>[...String(t||'').matchAll(TMUL_RE)].map(x=>+x[1]).filter(n=>n>1);
+  /* 추가 행동 글 꼴 — 여기 한곳 (지도는 xactEnt 위) */
+  const XACT_CH_RE=/(저|중|고)\s*확률로\s*(?:턴\s*)?가장\s*마지막에\s*「([^」]+)」\s*(?:기술)?\s*에?\s*의한\s*추가\s*행동/;   /* ③ 확률 */
+  const XACT_UQ_RE=/「?\s*(\d+)\s*」?\s*배수\s*턴\s*(?:에\s*)?가장\s*마지막에\s*아군(?:이|가)\s*「([^」]+)」\s*기술에\s*의한\s*추가\s*행동/;   /* ④ 고유 · 아군 */
+  const XACT_ORD_RE=new RegExp('(?:'+XACT_CH_RE.source+')|(?:'+XACT_UQ_RE.source+')');   /* 순서를 짤 때 이미 처리 — 턴 마무리 후보에서 뺀다 */
+  
+ /* 11-26 366 방 시험에서 잡음: 「상대가 「화상」 상태가 되었을 때 가장 마지막에 「X」에 의한 추가 행동」처럼 다른 계기(~때)가 앞에 있는 마디의 「가장 마지막에」는 행동 자리이지 턴 마무리 타이밍이 아니다 — 턴 가장 마지막 후보에서 뺀다 (안 빼면 턴 끝에 계기 없이 한 번 더 발동) */const XACT_POS_RE=/가장\s*마지막에\s*「([^」]+)」\s*(?:기술)?\s*에?\s*의한\s*추가\s*행동/;   /* ① 자리 말 (기술 이름 = [1]) */const xactEv=x=>{x=String(x||'');const r=x.match(XACT_POS_RE);return !!r&&(/때/.test(x.slice(0,r.index))||/【\s*등장[^】]*】/.test(x.slice(0,r.index)))&&!END_T.last.test(x.replace(/(?:턴\s*)?가장\s*마지막에\s*「[^」]+」\s*(?:기술)?\s*에?\s*의한\s*추가\s*행동/,''))};   /* 366: 【등장 (…)】/턴 가장 마지막에 「X」 추가 행동(방칠낭 『비상하는 학의 자세』 ①)도 등장 때의 것 */  const tmulNs=t=>[...String(t||'').matchAll(TMUL_RE)].map(x=>+x[1]).filter(n=>n>1);
  function tmulOk(t,T){const ns=tmulNs(t);return !ns.length||(+T>0&&ns.every(n=>+T%n===0))}
  const segsOf=t=>{const L=String(t||'').replace(/<br\s*\/?>/g,'\n').split(/(?=[①②③④⑤⑥⑦⑧⑨])/).filter(x=>x.trim());return L.length?L:[String(t||'')]};
  /* 턴 타이밍 말 없이 「N」배수 턴만 있는 마디 (= 그 턴 개시 때 발동) — 이번 턴이 그 배수일 때 */
@@ -3151,9 +3155,19 @@ for(const q of (b.xq||[])){if(!q||+q.t!==(+b.turn||0))continue;const s=slots.fin
   if(ok&&SHP){try{await shareMark(mid,SHP.name)}catch(e){}}
   if(ok)for(const x of XA){try{await addXact(mid,x,name)}catch(e){console.warn('addXact',e)}}return ok}
  /* 11-26 363 구문 「추가행동」: 이번 턴 행동 순서 맨 끝에 그 포켓몬의 추가 행동 — 순서가 이미 있으면 바로 붙이고, 아직이면(턴 개시 · 선행) battle.xq 에 적어 두었다가 행동 순서를 짤 때 붙인다 */
- function xactMove(m,x){if(x.mv)return x.mv;const ty=S().typeEn(x.ty);const L=MVS(m).filter(mv=>mv&&mvTysRaw(mv).includes(ty)&&(!x.cat||String(mv.cat||'').replace(/기$/,'')===x.cat));return L.length?L[0].name:''}
+ /* ===== 추가 행동 (순서 맨 끝 · 순서값 -1000) — 한곳에 모은 지도 (11-26 366 정돈) =====
+    차례 한 칸은 xactEnt() 하나로 만든다. 글 꼴(정규식)은 아래 XACT_* 묶음(「턴 종료」 절 앞)에만 둔다.
+    붙는 길:  ① 선행 입력한 포텐셜 「가장 마지막에 「X」 추가 행동」      — computeOrder (XACT_POS_RE)
+              ② 「N」배수 턴                                         — computeOrder (XACTN_RE)
+              ③ (저|중|고)확률로 …                                   — computeOrder (XACT_CH_RE · 턴마다 굴림)
+              ④ 고유 「N배수 턴 … 아군이 X 기술」                      — computeOrder (XACT_UQ_RE · 누가 할지 물음)
+              ⑤ 구문 「추가행동」(계기 · 등장 · 손 발동)                — addXact (순서 전이면 battle.xq 에 적어 두었다가 computeOrder 가 붙임)
+              ⑥ 턴 가장 마지막 단계에서 생긴 것(「~한 턴 가장 마지막에」) — addXact 가 late 표시 → xactPause 가 그 차례에 멈춤
+    턴 마무리 후보에서 빼는 것: ②③④ 와 계기 · 【등장】이 앞에 있는 마디 (xactEv · XACT_ORD_RE) */
+  function xactEnt(s,move,by,ex){return Object.assign({slot:s.slot,mid:s.mon.id,name:s.mon.name,side:s.mon.side,change:false,started:false,order:-1000,prio:0,speed:0,dice:0,move:move||'',targets:[],pursuit:false,xact:by},ex||{})}
+  function xactMove(m,x){if(x.mv)return x.mv;const ty=S().typeEn(x.ty);const L=MVS(m).filter(mv=>mv&&mvTysRaw(mv).includes(ty)&&(!x.cat||String(mv.cat||'').replace(/기$/,'')===x.cat));return L.length?L[0].name:''}
  async function addXact(mid,x,by){const b=ctx().b;const m=(b.mons||{})[mid];if(!m||!m.entry||!(m.hp&&m.hp.cur>0))return;const T=+b.turn||0;const mv=xactMove(m,x);const nm=String(by||'').replace(/[『』]/g,'');
-  const sl=allEntered(b).find(s=>s.mon&&s.mon.id===mid);const ent={slot:sl?sl.slot:'',mid,name:m.name,side:m.side,change:false,started:false,order:-1000,prio:0,speed:0,dice:0,move:mv,targets:[],pursuit:false,xact:nm};if(IN_LAST||((b.endq||{}).step==='last'))ent.late=1;   /* 턴 가장 마지막 단계에서 생긴 추가 행동 — 턴 종료로 넘어가기 전에 그 차례를 준다 (xactPause) */
+  const sl=allEntered(b).find(s=>s.mon&&s.mon.id===mid);const ent=xactEnt({slot:sl?sl.slot:'',mon:m},mv,nm);if(IN_LAST||((b.endq||{}).step==='last'))ent.late=1;   /* 턴 가장 마지막 단계에서 생긴 추가 행동 — 턴 종료로 넘어가기 전에 그 차례를 준다 (xactPause) */
   if((+b.phase||0)>=2&&(b.order||[]).length){if((b.order||[]).some(o=>o&&o.xact===nm&&o.mid===mid))return;await A().set(['battle','order'],(b.order||[]).concat([ent]))}
   else{const q=(b.xq||[]).filter(e=>e&&+e.t===T&&!(e.mid===mid&&e.by===nm));q.push({t:T,mid,mv,by:nm});await A().set(['battle','xq'],q)}
   A().sysLog(`【추가 행동】 ${m.name} 『${nm}』 — 가장 마지막에 「${mv||'기술'}」`,'battle',{mid,img:m.image||''})}
