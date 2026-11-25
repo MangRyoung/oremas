@@ -1535,6 +1535,7 @@ label.tgc:has(input:focus-visible){outline:2px solid var(--yel)}
 .stt .n.xs{width:42px;margin-top:2px}
 .stt.on{border-color:var(--yel);background:#2a2200}.stt.abn.on{border-color:var(--red);background:#3a1418}
 .pips{letter-spacing:1px;color:var(--yel2,var(--yel));font-size:11px;white-space:nowrap}
+.pips.pblk{opacity:.45}   /* 11-26 【소진】 등으로 이번 턴만 못 씀 — 남은 횟수는 그대로 보이고 흐리게 */
 .cfold{border:1px solid var(--line);margin-top:6px;background:#17181c}
 .cfold>summary{display:flex;align-items:center;gap:6px;padding:6px 10px;cursor:pointer;font-family:var(--lab);font-size:13px;background:#202126;list-style:none}
 .cfold>summary::-webkit-details-marker{display:none}

@@ -139,7 +139,7 @@ window.OM_CUTIN=(()=>{
    setTimeout(()=>r.remove(),5200)}
   else{r.style.setProperty('--ec',col);r.innerHTML=`<div class="full ev-dim"></div><div class="ev-band"></div><div class="stage">
     <div class="ev-mon">${im(fr,'ev-a')}${im(to,'ev-b')}</div><div class="ev-spark"></div>
-    <div class="ev-txt"><div class="ev-t2">${esc(title)}</div><div class="ev-t3">${esc(fr.name||'')} → 「${esc(to.name||'')}」</div></div></div><div class="full ev-flash"></div>`;
+    <div class="ev-txt"><div class="ev-t2">${esc(title)}</div><div class="ev-t3">${to.name&&to.name!==fr.name?`${esc(fr.name||'')} → 「${esc(to.name)}」`:`「${esc(fr.name||to.name||'')}」`}</div></div></div><div class="full ev-flash"></div>`;
    setTimeout(()=>r.remove(),3400)}}
  /* 11-04 20:40 망령 「메가진화 효과음 어디 갔어?」: 메가진화는 「Mega」 효과음(효과음 DB 00. 기본), 없으면 cut */
  const evoSe=D=>{const U=window.OM_RP_UI;if(D&&(D.kind==='mega'||D.kind==='form')&&U&&U.seUrlOf&&U.seUrlOf('Mega'))se('Mega');else se('cut')};   /* 20:46 망령 「폼체인지 할 때도 Mega 효과음」 — 원래 모습으로(back)는 cut */
