@@ -50,12 +50,52 @@ window.OM_STATS = (() => {
     const r = strip(trainer && trainer.ranks ? trainer.ranks['육성'] : '');
     return +(rl[r] || 5);
   }
-  function rollIv() {
-    return [0, 1, 2, 3, 4, 5].map(() => Math.floor(Math.random() * 32));
+  /* 11-26 망령 「알까기에서 천부의 재능은 모든 개체치 31로 고정 / 금관은 HP 개체치 62 스피드 개체치 0 으로 고정」
+     분류 포텐셜로 정해지는 개체값 표 — 칸(HP · 공격 · 방어 · 특공 · 특방 · 스피드)마다 숫자 = 고정, null = 굴린다.
+     굴리기 · 후보 읽기 · 손으로 고치기 · 제작기에서 불러오기가 전부 ivNorm 하나를 거친다. 제작기 js/maker/02_calc.js 의 IV_FIX 와 같은 표 — 고치면 둘 다 */
+  const IV_FIX = {
+    '천부의 재능': [31, 31, 31, 31, 31, 31],
+    '금관 사이즈': [62, null, null, null, null, 0]
+  };
+  /* 포켓몬(배틀 · 시트 · 제작기 문서 — pots 가 이름 글자열이든 {name} 이든)의 고정 표. 없으면 null */
+  function ivFixOf(mon) {
+    for (const p of (mon && mon.pots) || []) {
+      const name = String((p && typeof p === 'object' ? p.name : p) || '').replace(/[『』\s]/g, '');
+      const hit = Object.keys(IV_FIX).find(k => k.replace(/\s/g, '') === name);
+      if (hit) return IV_FIX[hit];
+    }
+    return null;
   }
-  function hatch(count) {
+  /* 개체값 6칸을 바르게: 고정 칸은 표의 값, 나머지는 0–31 정수 */
+  function ivNorm(iv, mon) {
+    const fix = ivFixOf(mon);
+    return [0, 1, 2, 3, 4, 5].map(k => (fix && fix[k] != null ? fix[k] : Math.max(0, Math.min(31, Math.round(+(iv || [])[k]) || 0))));
+  }
+  /* 알까기 창에 띄우는 한 줄 (고정이 없으면 빈 글) */
+  function ivFixNote(mon) {
+    const fix = ivFixOf(mon);
+    if (!fix) return '';
+    const kind = Object.keys(IV_FIX).find(k => IV_FIX[k] === fix);
+    const names = ['HP', '공격', '방어', '특공', '특방', '스피드'];
+    const all = fix.every(v => v != null && v === fix[0]);
+    return `『${kind}』 — ${
+      all
+        ? `모든 개체값 ${fix[0]}`
+        : fix
+            .map((v, k) => (v == null ? '' : `${names[k]} ${v}`))
+            .filter(Boolean)
+            .join(' · ')
+    } 고정`;
+  }
+  function rollIv(mon) {
+    return ivNorm(
+      [0, 1, 2, 3, 4, 5].map(() => Math.floor(Math.random() * 32)),
+      mon
+    );
+  }
+  function hatch(count, mon) {
     const out = [];
-    for (let i = 0; i < count; i++) out.push(rollIv());
+    for (let i = 0; i < count; i++) out.push(rollIv(mon));
     return out;
   }
   const ivSum = iv => iv.reduce((a, b) => a + (+b || 0), 0);
@@ -111,6 +151,9 @@ window.OM_STATS = (() => {
     hatchCount,
     rollIv,
     hatch,
+    ivFixOf,
+    ivNorm,
+    ivFixNote,
     ivSum,
     rankMult,
     accMult,

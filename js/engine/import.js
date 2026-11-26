@@ -300,7 +300,7 @@ window.OM_IMPORT = (() => {
     const BU = d.baseUp && Array.isArray(d.baseUp.base) && d.baseUp.base.length === 6 ? d.baseUp : null;
     const base = BU ? BU.base.map((v, i) => (v === '' || v == null ? base0[i] : nz(v))) : base0;
     const ev = [0, 0, 0, 0, 0, 0]; /* 개체값·노력치는 쓰지 않는다 */
-    const mkIv = Array.isArray(d.ivs) && d.ivs.length === 6 ? d.ivs.map(v => Math.max(0, Math.min(31, Math.round(+v) || 0))) : null;
+    const mkIv = Array.isArray(d.ivs) && d.ivs.length === 6 ? S().ivNorm(d.ivs, d) : null; /* 11-26 분류 고정(천부 · 금관)도 여기서 */
     iv = mkIv || [0, 0, 0, 0, 0, 0];
     const stats = S().statsOf(base, iv, ev, L);
     /* 11-02 망령: 제작기 시트 실수치 보정(구문 「실수치 스피드 +20」 · 「실수치 공격 =특공」) — 제작기가 저장해 둔 statAdd · statCp */
@@ -387,9 +387,7 @@ window.OM_IMPORT = (() => {
       ...(d.ivRolls && Array.isArray(d.ivRolls.rolls) && d.ivRolls.rolls.length
         ? {
             ivRolls: {
-              rolls: d.ivRolls.rolls
-                .filter(r => Array.isArray(r) && r.length === 6)
-                .map(r => r.map(v => Math.max(0, Math.min(31, Math.round(+v) || 0)))),
+              rolls: d.ivRolls.rolls.filter(r => Array.isArray(r) && r.length === 6).map(r => S().ivNorm(r, d)),
               x: +d.ivRolls.x || 0,
               r: +d.ivRolls.r || 0
             }

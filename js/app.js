@@ -4837,8 +4837,10 @@
     .map(mon => {
       const cur = mon.iv && S().ivSum(mon.iv) ? mon.iv : null;
       const rm = ivRm(mon);
-      const sv = (((rm || mon).ivRolls || {}).rolls || []).filter(r => Array.isArray(r) && r.length === 6);
-      const rolls = sv.length ? sv.map(r => r.slice()) : cur ? [] : S().hatch(count);
+      const sv = (((rm || mon).ivRolls || {}).rolls || [])
+        .filter(r => Array.isArray(r) && r.length === 6)
+        .map(r => S().ivNorm(r, mon)); /* 11-26 분류 고정(천부 · 금관) */
+      const rolls = sv.length ? sv.map(r => r.slice()) : cur ? [] : S().hatch(count, mon);
       mon._rolls = rolls;
       if (!sv.length && rolls.length)
         ivKeep(
@@ -4862,7 +4864,7 @@
       );
       $('[data-re]', c).onclick = () => {
         const mon = list.find(x => x.id === c.dataset.mid);
-        mon._rolls = S().hatch(count);
+        mon._rolls = S().hatch(count, mon);
         ivKeep(mon, mon._rolls);
         delete chosen[mon.id];
         const box = $('.ivs', c);

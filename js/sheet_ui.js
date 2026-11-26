@@ -2572,11 +2572,10 @@ window.OM_SHEET_UI = (() => {
     const lg = m.ivLog;
     const when = lg && lg.at ? new Date(lg.at) : null;
     const R0 = m.ivRolls || {};
-    const saved = Array.isArray(R0.rolls)
-      ? R0.rolls.filter(r => Array.isArray(r) && r.length === 6).map(r => r.map(v => Math.max(0, Math.min(31, Math.round(+v) || 0))))
-      : [];
+    const saved = Array.isArray(R0.rolls) ? R0.rolls.filter(r => Array.isArray(r) && r.length === 6).map(r => S().ivNorm(r, m)) : [];
     const count = S().hatchCount(t);
-    let rolls = saved.length ? saved : had ? [] : S().hatch(count);
+    let rolls = saved.length ? saved : had ? [] : S().hatch(count, m);
+    const ivFix = S().ivFixOf(m); /* 11-26 분류로 고정된 칸(천부의 재능 · 금관 사이즈) — 고칠 수 없다 */
     const same = (a, b) => a && b && a.length === b.length && a.every((v, k) => +v === +b[k]);
     let chosen = had ? rolls.findIndex(r => same(r, m.iv)) : -1,
       editing = -1;
@@ -2594,11 +2593,11 @@ window.OM_SHEET_UI = (() => {
     const cell = v => `<b class="${v <= 1 ? 'lo' : v >= 30 ? 'hi' : ''}">${v}</b>`;
     const ivTable = iv => `<div class="ivt">${STATS_KO.map(k => `<span>${k}</span>`).join('')}${iv.map(cell).join('')}</div>`;
     const ivEdit = (iv, i) =>
-      `<div class="ivt ed">${STATS_KO.map(k => `<span>${k}</span>`).join('')}${iv.map((v, k) => `<input type="number" min="0" max="31" value="${v}" data-ivi="${i}" data-ivk="${k}">`).join('')}</div>`;
+      `<div class="ivt ed">${STATS_KO.map(k => `<span>${k}</span>`).join('')}${iv.map((v, k) => `<input type="number" min="0" max="31" value="${v}" data-ivi="${i}" data-ivk="${k}"${ivFix && ivFix[k] != null ? ' disabled title="분류로 고정된 값"' : ''}>`).join('')}</div>`;
     const md = A()
       .openModal(`<div class="mhead"><h2>알까기 — ${esc(m.name)}</h2><span class="small dim" id="ivcnt"></span><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    <div class="ivnow"><span class="small dim">지금</span>${(m.iv || []).length ? ivTable(m.iv) + `<span class="small">합 <b>${S().ivSum(m.iv)}</b></span>` : '<span class="small dim">없음</span>'}</div>
-   <div class="small dim" style="margin:6px 0">제작기 시트에서도 깔 수 있다 (시트에서 바꾸면 다시 불러올 때 그 값이 들어온다) · 하나를 눌러 고른다 · <b class="ivlg lo">0–1</b> 낮음 · <b class="ivlg hi">30–31</b> 높음 · 🎲 = 그 후보만 다시 굴림 · ✎ = 값 고치기 (0–31) · <b class="ivlg big">★ 합 ${BIG} 초과</b> = 다시 굴리기 전에 한 번 더 묻는다</div>
+   ${S().ivFixNote(m) ? `<div class="small" style="margin:6px 0"><b>${esc(S().ivFixNote(m))}</b></div>` : ''}<div class="small dim" style="margin:6px 0">제작기 시트에서도 깔 수 있다 (시트에서 바꾸면 다시 불러올 때 그 값이 들어온다) · 하나를 눌러 고른다 · <b class="ivlg lo">0–1</b> 낮음 · <b class="ivlg hi">30–31</b> 높음 · 🎲 = 그 후보만 다시 굴림 · ✎ = 값 고치기 (0–31) · <b class="ivlg big">★ 합 ${BIG} 초과</b> = 다시 굴리기 전에 한 번 더 묻는다</div>
    <div class="ivhad" id="ivhad"><div><b>남아 있는 후보가 없다</b><div class="small dim">${when ? `${when.getMonth() + 1}/${when.getDate()} 에 ${lg.by ? esc(lg.by) + ' 이(가) ' : ''}깐 값이다 · ` : ''}${m.src === 'maker' && m.mkIvSig ? '제작기 시트에서 깐 값 · ' : ''}후보를 남기기 전에 깐 포켓몬이라 지금 값만 있다. 새 후보가 필요하면 「🎲 굴리기」 — 적용을 누르기 전까지 지금 값은 그대로</div></div><button class="btn pri" id="ivroll">🎲 굴리기 (${count}회)</button></div>
    <div class="ivgrid" id="ivbox"></div>
    <div class="row" id="ivbtns" style="margin-top:12px"><button class="btn ghost" id="ivre">전부 다시 굴림</button><button class="btn ghost" id="ivadd">+ 추가 굴림</button><span class="sp"></span><button class="btn pri" id="ivok">적용</button></div>`);
@@ -2628,7 +2627,7 @@ window.OM_SHEET_UI = (() => {
             const i = +b.dataset.ivr;
             const sum = S().ivSum(rolls[i]);
             if (sum > BIG && !confirm(`#${i + 1} 은 합 ${sum} — ${BIG} 넘는 후보다. 정말 다시 굴릴까?`)) return;
-            rolls[i] = S().rollIv();
+            rolls[i] = S().rollIv(m);
             used.one++;
             edited.delete(i);
             if (editing === i) editing = -1;
@@ -2657,7 +2656,9 @@ window.OM_SHEET_UI = (() => {
             k = +f.dataset.ivk;
           let v = Math.round(+f.value);
           if (!isFinite(v)) v = 0;
-          v = Math.max(0, Math.min(31, v));
+          const fixed = rolls[i].slice();
+          fixed[k] = v;
+          v = S().ivNorm(fixed, m)[k];
           if (rolls[i][k] !== v) {
             rolls[i] = rolls[i].slice();
             rolls[i][k] = v;
@@ -2684,7 +2685,7 @@ window.OM_SHEET_UI = (() => {
       const big = rolls.filter(r => S().ivSum(r) > BIG).length;
       if (!confirm(`후보 ${rolls.length}개가 전부 새로 바뀐다.${big ? `\n합 ${BIG} 넘는 후보 ${big}개도 같이 사라진다.` : ''}\n정말 다시 굴릴까?`))
         return;
-      rolls = S().hatch(count + used.extra);
+      rolls = S().hatch(count + used.extra, m);
       used.all++;
       chosen = -1;
       editing = -1;
@@ -2696,7 +2697,7 @@ window.OM_SHEET_UI = (() => {
       const rb = $('#ivroll', md);
       if (rb)
         rb.onclick = () => {
-          rolls = S().hatch(count);
+          rolls = S().hatch(count, m);
           used.all++;
           chosen = -1;
           editing = -1;
@@ -2706,7 +2707,7 @@ window.OM_SHEET_UI = (() => {
         };
     }
     $('#ivadd', md).onclick = () => {
-      rolls.push(S().rollIv());
+      rolls.push(S().rollIv(m));
       used.extra++;
       keep();
       draw();
