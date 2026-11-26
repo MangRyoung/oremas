@@ -42,16 +42,7 @@ window.OM_BATTLE_UI=(()=>{
  const objCat=name=>OBJ_CAT.find(c=>c[4].includes(name))||OBJ_CAT[4];
  const WALLS={리플렉터:'reflector',빛의장막:'lightscreen',얼음의장벽:'icewall',오로라베일:'aurora'};
  /* 11-11 망령 「익스펜션 : 격투」: 자신의 「단일기 : 격투」가 적진의 「장벽」(리플렉터 · 빛의장막 · 얼음의장벽 · 오로라베일)을 무시한다 */
- /* 11-26 372 망령 「【등장】/다음에 내보내는 「화염볼」에 「깨트리기」 효과를 부여한다 — 이것도」: 글로 읽는다(구문 없음).
-    깨트리기 효과 = 「장벽」의 효과를 무시 + 명중했을 때 그 진영의 「장벽」을 철거. 【등장】 꼴만 — 나와서 그 기술을 처음 낼 때 한 번(brkDone 에 적고, 필드를 떠나면 outReset 이 지운다).
-    brkGive = 지금 이 기술에 붙는 포텐셜 이름('' 이면 없음) · brkAfter = 적용 뒤 철거와 표시. 【등장】이 없는 꼴(손으로 발동)은 아직 손으로 */
- const BRK_RE=/다음에\s*내보내는\s*「\s*([^」]+?)\s*」\s*에\s*「\s*깨트리기\s*」\s*(?:의\s*)?효과를\s*부여/;
- function brkGive(atk,mv){try{if(!atk||!mv||mv.cat==='변화')return '';const nq=x=>String(x||'').replace(/[「」\s]/g,'');for(const p of potSrc(atk)){if(!p||!p.name||(atk.brkDone||{})[p.name])continue;for(const cl of String(p.eff||'').replace(/<br\s*\/?>/g,'\n').split(/(?=[①②③④⑤⑥⑦⑧⑨])|\n/)){const x=cl.match(BRK_RE);if(!x||!/【\s*등장[^】]*】/.test(cl.slice(0,x.index))||nq(x[1])!==nq(mv.name))continue;if(!potLive(atk,p))continue;return p.name}}}catch(e){}return ''}
- async function brkAfter(mid,R){try{if(!R||R.check||!R.mv||R.mv.cat==='변화')return;const b=ctx().b;const a=(b.mons||{})[mid];if(!a)return;const pn=brkGive(a,R.mv);if(!pn)return;
-   await A().set(['battle','mons',mid,'brkDone',pn],1);const sides=[...new Set((R.targets||[]).filter(r=>r&&r.def&&r.acc&&r.acc.hit&&r.def.side!==a.side).map(r=>r.def.side))];const L=[];
-   for(const sd of sides){const objs=((fieldOf(ctx().b).objects||{})[sd])||{};const gone=Object.keys(WALLS).filter(k=>+objs[k]>0);for(const k of gone)await A().set(['battle','field','objects',sd,k],null);if(gone.length)L.push(`${SIDE_KO[sd]||sd} 「${gone.join('」「')}」 철거`)}
-   A().sysLog(`【포텐셜】 ${a.name} 『${String(pn).replace(/[『』]/g,'')}』 — 「${R.mv.name}」에 「깨트리기」 효과 (「장벽」 무시)${L.length?'\n'+L.join('\n'):''}`,'battle',{mid,img:a.image||''})}catch(e){console.warn('brkAfter',e)}}
- const wallIgn=(atk,mv,tys)=>!!atk&&(mv||{}).cat!=='변화'&&((String((mv||{}).range||'')==='1체'&&(tys||[]).includes('Fighting')&&potSrc(atk).some(p=>p&&String(p.name||'').replace(/[『』\s]/g,'')==='익스펜션:격투'))||!!brkGive(atk,mv));
+ const wallIgn=(atk,mv,tys)=>!!atk&&String((mv||{}).range||'')==='1체'&&(mv||{}).cat!=='변화'&&(tys||[]).includes('Fighting')&&potSrc(atk).some(p=>p&&String(p.name||'').replace(/[『』\s]/g,'')==='익스펜션:격투');
  /* 10-25 망령: 지금 걸리는 벽 이름 (물리 · 특수 · 불꽃이면 얼음의장벽 빠짐) */
  const wallNames=(objs,cat,ty)=>Object.keys(WALLS).filter(k=>(objs||{})[k]>0&&(k==='리플렉터'?cat==='physical':k==='빛의장막'?cat==='special':k==='얼음의장벽'?ty!=='Fire':true));
  const catEn=c=>/물리|physical/.test(String(c||''))?'physical':/특수|special/.test(String(c||''))?'special':'';
@@ -1515,7 +1506,7 @@ window.OM_BATTLE_UI=(()=>{
  /* 퇴장 정리 (맵툴 out_area): 랭크·배율·임시 효과·발동 중인 포텐셜 효과·타입/특성 변경·하늘 위·급소 방호 를 되돌리고, 상태 이상(abn) 과 원념·빈사 빼고는 상태도 푼다.
     배턴터치면 랭크와 넘길 수 있는 상태(bat) 를 트레이너에게 맡겨 두었다가 다음 등장 포켓몬이 받는다. 강제 교대는 배턴터치 없이 정리만 */
  function passable(m){const st=(DB().states||{}).st||{};const rk=Object.values(m.rank||{}).some(v=>+v);const bs=Object.keys(m.states||{}).filter(k=>m.states[k]&&(st[k]||{}).bat);return rk||bs.length>0||!!(+m.critBuff)}
- function outReset(nb,m,opt){opt=opt||{};const st=(DB().states||{}).st||{};const L=[];const t=nb.trainers[m.tid];if(m.fxDone)delete m.fxDone;if(m.brkDone)delete m.brkDone;if(m.rnull)delete m.rnull;if(m.rnOff)delete m.rnOff;if(m.treatX)delete m.treatX;if(m.tagHit)delete m.tagHit;if(m.noCharge)delete m.noCharge;   /* 11-23 257b 퀄러: 필드를 떠나면 무효화도 끝 · 무효 표시도 지운다 */if(m.hpHi)delete m.hpHi;if(m.hpTrig){const k={};for(const n in m.hpTrig)if(m.hpTrig[n]==='u')k[n]='u';if(Object.keys(k).length)m.hpTrig=k;else delete m.hpTrig}   /* 11-23 「HP 이하가 되었을 때」 계기: 교대하면 다시 (【유일】만 남긴다) */if(m.charge)delete m.charge;   /* 11-14: 「차지」 중에 필드를 떠나면 모은 것도 풀린다 (다시 나와서 그 기술로 열리지 않게) */if(m.thrashOn)delete m.thrashOn;   /* 10-26: 다시 나오면 상시 효과를 다시 건다 · 난동 표시도 정리 */
+ function outReset(nb,m,opt){opt=opt||{};const st=(DB().states||{}).st||{};const L=[];const t=nb.trainers[m.tid];if(m.fxDone)delete m.fxDone;if(m.rnull)delete m.rnull;if(m.rnOff)delete m.rnOff;if(m.treatX)delete m.treatX;if(m.tagHit)delete m.tagHit;if(m.noCharge)delete m.noCharge;   /* 11-23 257b 퀄러: 필드를 떠나면 무효화도 끝 · 무효 표시도 지운다 */if(m.hpHi)delete m.hpHi;if(m.hpTrig){const k={};for(const n in m.hpTrig)if(m.hpTrig[n]==='u')k[n]='u';if(Object.keys(k).length)m.hpTrig=k;else delete m.hpTrig}   /* 11-23 「HP 이하가 되었을 때」 계기: 교대하면 다시 (【유일】만 남긴다) */if(m.charge)delete m.charge;   /* 11-14: 「차지」 중에 필드를 떠나면 모은 것도 풀린다 (다시 나와서 그 기술로 열리지 않게) */if(m.thrashOn)delete m.thrashOn;   /* 10-26: 다시 나오면 상시 효과를 다시 건다 · 난동 표시도 정리 */
   if(opt.batton&&t){const states={};for(const k in (m.states||{}))if(m.states[k]&&(st[k]||{}).bat)states[k]=m.states[k];t.batton={rank:Object.assign({},m.rank||{}),states,critBuff:+m.critBuff||0,from:m.name};L.push(`${m.name} 「배턴터치」 — 랭크·상태를 다음 포켓몬에게 넘긴다`)}
   /* 효과(배율 출처 포함)를 먼저 풀고 나서 랭크·배율을 비운다 — 순서가 바뀌면 배율이 역으로 나뉘어 0.75 같은 값이 남는다 */
   if(FX()&&FX().release)L.push(...FX().release(nb,m));
@@ -4576,7 +4567,7 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【(?:[^【】]
    await coverFire(mid,RESULT);
    if(!RF){await chainAfterAct(mid);
    await mvModAfter(mid,RESULT);
-   await comboXact(mid,RESULT);await sleepTalkAfter(mid,RESULT);await thirdToneAfter(mid,RESULT);await orderUpAfter(mid,RESULT);await brkAfter(mid,RESULT);await extraAtkAfter(mid,RESULT)}   /* 11-22 「아군의 「소리」 기술에 뒤이어」 */
+   await comboXact(mid,RESULT);await sleepTalkAfter(mid,RESULT);await thirdToneAfter(mid,RESULT);await orderUpAfter(mid,RESULT);await extraAtkAfter(mid,RESULT)}   /* 11-22 「아군의 「소리」 기술에 뒤이어」 */
    /* 11-07 망령 「닌자 자동화가 없어요」: 「자신이 행동한 뒤 …」 포텐셜(닌자 ① 회피 ×1.33 턴 종료까지)은 공격을 적용한 뒤 저절로 건다 — 구문이 있고 횟수(【N/시】) 없는 것만 · 한 턴에 한 번 */
    {const a2=RF?null:ctx().b.mons[mid];const T=+ctx().b.turn||0;if(a2&&a2.entry&&a2.hp.cur>0&&FX())for(const p of potSrc(a2)){if(!p||!p.name||(p.ph&&!p.apt)||!/자신이\s*행동한\s*(?:뒤|후)/.test(String(p.eff||'')))continue;const k=mid+'|'+p.name;if(ACTFX[k]===T)continue;
      const au=FX().autoOf(a2,'pot',p.name);if(!au||!au.ops||!au.ops.length||au.manual||limManual(a2,'pot',p.name,p.eff))continue;ACTFX[k]=T;const okN=await fireAuto(mid,'pot',p.name,{quiet:true,noRoll:true,head:`【포텐셜】 ${a2.name} 『${p.name}』 — 행동한 뒤 자동`});
