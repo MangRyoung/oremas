@@ -445,7 +445,6 @@ window.OM_DG_UI=(()=>{
   const c=Math.round(+x.count);if(c>0)o.count=Math.min(c,99);if(FE_TY.some(t=>t[0]&&t[0]===x.color))o.color=x.color;if([1,2].includes(+x.h))o.h=+x.h;
   if(x.auto&&typeof x.auto==='object'&&JSON.stringify(x.auto).length<6000)o.auto=JSON.parse(JSON.stringify(x.auto));return o}
  const feKey=fe=>FE_K[fe.type||0]+'/'+fe.name;
- const feText=fe=>fe?`《${feKey(fe)}》${fe.count?' · '+fe.count+'턴':' · 무한'}`:'';
  /* 조우 배틀의 처음 필드 전개 (app.js encounter) — tid = 야생 트레이너 */
  function feField(did,tid,tname){const d=all()[did];const fe=d&&feNorm(d.fe);if(!fe)return null;const owner=tname||d.o||d.n||'던전';
   const s={type:fe.type,name:fe.name,loc:fe.loc||'',img:fe.img||'',eff:fe.eff||'',color:fe.color||'',owner,count:fe.count>0?fe.count:1000,src:'d:'+did,tid:tid||'',at:Date.now()};if(fe.auto)s.auto=fe.auto;if(fe.h&&tid){s.h=fe.h;s.hTid=tid}
@@ -670,7 +669,6 @@ window.OM_DG_UI=(()=>{
  const GIM_ON=['room','rest','check','battle'],GIM_TO=['all','healthiest','lead','random'];
  function gimNorm(L){return (L||[]).slice(0,12).map((g,i)=>{if(!g||typeof g!=='object')return null;const o={id:sKey(String(g.id||'g'+(i+1)))||('g'+(i+1)),n:sTxt(g.n||g.name||g.id||'기믹',30),on:GIM_ON.includes(g.on)?g.on:'room'};if(+g.every>1)o.every=clamp(Math.round(+g.every),2,9);if(Array.isArray(g.where)&&g.where.length)o.where=g.where.slice(0,12).map(x=>sTxt(x,20));if(GIM_TO.includes(g.to))o.to=g.to;
   const d=g.do||{},q={};for(const f of ['step','al','foeLv','bossLv','rest'])if(+d[f])q[f]=clamp(Math.round(+d[f]),-50,50);if(d.hp&&/^\d+\/\d+$/.test(String(d.hp)))q.hp=String(d.hp);o.do=q;const u=g.unless||{},uu={};if(u.type)uu.type=sTxt(u.type,10);if(u.flag)uu.flag=sTxt(u.flag,20);if(Object.keys(uu).length)o.unless=uu;if(g.cond&&g.cond.fail)o.cond={fail:1};if(g.memo)o.memo=sTxt(g.memo,120);return o}).filter(Boolean)}
- const tyKo=x=>{const S=window.OM_STATS;try{return S&&S.typeKo?S.typeKo(x):x}catch(e){return x}};
  async function gimEvent(on,ctx){ctx=ctx||{};const G=window.OM_DG_GIM;const d=cur();if(!G||!d||!gm())return ctx;return G.run(on,ctx,{d,R,party,walkOf,alAdd,upd,P0,notice})}
  /* 방을 떠날 때 그 방의 곁방 보상 표식을 얻는다 */
  async function gimLeave(d,rid){const r=R(d)[rid];if(!r||!r.rw||!r.rw.flag||(d.fl||{})[r.rw.flag])return;if(await upd({[P0(d.id)+'fl/'+r.rw.flag]:1}))notice(`[${d.n||'던전'}] ✦ 표식 「${r.rw.flag}」 을 얻었다${r.rw.memo?' — '+r.rw.memo:''}`)}

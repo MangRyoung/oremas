@@ -1092,10 +1092,6 @@ function openHatch(tid){
 
 /* ---------- 포켓몬 상세 ---------- */
 /* 상성 칩 묶음 (도감과 같은 꼴) */
-function weakHtml(m){const TYPES=['Normal','Fire','Water','Electric','Grass','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'];const Bt=window.OM_BATTLE;if(!Bt)return '';
- const rows=TYPES.map(t=>{const e=Bt.effectiveness([t],m,{});return [t,e&&typeof e==='object'?+e.value:+e]}).filter(x=>x[1]!==1);
- const G=[[8,'×8','w8'],[4,'×4','w4'],[2,'×2','w2'],[0.5,'×½','r2'],[0.25,'×¼','r4'],[0.125,'×⅛','r8'],[0,'×0','r0']].map(([v,l,c])=>{const ch=rows.filter(x=>(x[1]>=8?8:x[1]>0&&x[1]<=0.125?0.125:x[1])===v).map(x=>typeChip(x[0])).join('');return ch?`<div class="dxw ${c}"><i>${l}</i>${ch}</div>`:''}).join('');
- return `<div class="dxweak">${G||'<span class="dim small">약점·내성 없음</span>'}</div>`}
 /* 상세 창용 큰 상성판: 약점 · 내성 두 칸, 배율 띠 + 큰 타입 칩 */
 function affHtml(m){const TYPES=['Normal','Fire','Water','Electric','Grass','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'];const Bt=window.OM_BATTLE;if(!Bt)return '';
  const rows=TYPES.map(t=>{const e=Bt.effectiveness([t],m,{});return [t,e&&typeof e==='object'?+e.value:+e]}).filter(x=>x[1]!==1);

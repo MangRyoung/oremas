@@ -1,0 +1,116 @@
+{
+ "id": "md7_lab_base",
+ "name": "기본 · 제2 연구동 지하 격리층",
+ "dungeon": "md7_lab",
+ "party": [
+  "카이",
+  "미오",
+  "레온"
+ ],
+ "n": 40,
+ "seed": 1,
+ "adjust": {},
+ "policy": {
+  "cover": "fail",
+  "who": "best",
+  "partner": "match"
+ },
+ "at": "2026-11-26T02:34:00.676Z",
+ "snapshot": "sample_snapshot.json",
+ "agg": {
+  "n": 40,
+  "wipe": 0.925,
+  "boss": 0.075,
+  "endHp": 0.01675,
+  "fainted": 5.875,
+  "monsTotal": 6,
+  "checks": 3.45,
+  "ok": 0.3188405797101449,
+  "crit": 0.13768115942028986,
+  "cost": 0,
+  "fail": 0.6811594202898551,
+  "fumble": 0,
+  "alone": 0,
+  "covers": 1.175,
+  "inou": 0.4,
+  "injuries": 1.175,
+  "injAny": 0.15,
+  "injSevere": 0.15,
+  "penDmg": 112.525,
+  "perCheck": {
+   "폭주한 실험체를 진정시킨다 (15)": {
+    "n": 40,
+    "ok": 5,
+    "cost": 0,
+    "fail": 35,
+    "alone": 0,
+    "inou": 0,
+    "cover": 35,
+    "who": {
+     "카이": 40
+    }
+   },
+   "정전 속에서 대열을 지킨다 (15)": {
+    "n": 18,
+    "ok": 0,
+    "cost": 0,
+    "fail": 18,
+    "alone": 0,
+    "inou": 0,
+    "cover": 3,
+    "who": {
+     "카이": 18
+    }
+   },
+   "감전 복도를 돌파한다 (10)": {
+    "n": 16,
+    "ok": 16,
+    "cost": 0,
+    "fail": 0,
+    "alone": 0,
+    "inou": 16,
+    "cover": 0,
+    "who": {
+     "레온": 16
+    }
+   },
+   "무너지는 통로를 함께 지난다 (12)": {
+    "n": 40,
+    "ok": 12,
+    "cost": 0,
+    "fail": 28,
+    "alone": 0,
+    "inou": 0,
+    "cover": 8,
+    "who": {
+     "미오": 15,
+     "카이": 25
+    }
+   },
+   "보안 장치를 해제한다 (12)": {
+    "n": 24,
+    "ok": 11,
+    "cost": 0,
+    "fail": 13,
+    "alone": 0,
+    "inou": 0,
+    "cover": 1,
+    "who": {
+     "카이": 24
+    }
+   }
+  },
+  "bossReach": 1,
+  "bossWin": 0.075,
+  "bossTurns": 9,
+  "bossKos": 5.875,
+  "bossPhases": 2.7,
+  "bossFoes": 6,
+  "bossRaid": 3,
+  "battles": 1.95,
+  "bturns": 6.410256410256411,
+  "bkos": 6.725,
+  "orders": 3.65,
+  "commands": 5.05
+ }
+}

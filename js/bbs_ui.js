@@ -12,7 +12,6 @@
 window.OM_BBS_UI=(()=>{
  const A=()=>window.OM_APP,DBS=()=>window.OM_STORE,ST=()=>(window.OM_APP&&window.OM_APP.ST)||{};
  const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
- const $=(s,r)=>(r||document).querySelector(s);
  const img=u=>typeof u==='string'&&/^https?:\/\//.test(u)&&u.length<1000?u:'';
  /* 11-02: 세션 노트에는 전역 cssu 가 없다 (그림 있는 글쓴이에서 멈추던 원인) */
  const cssu=s=>String(s??'').replace(/[\s"'()\\<>]/g,c=>'%'+c.charCodeAt(0).toString(16).padStart(2,'0').toUpperCase());

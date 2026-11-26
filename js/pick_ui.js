@@ -53,7 +53,6 @@ window.OM_PICK=(()=>{
  function form(m,f0,done,st){const isNew=!f0;const o=m.form0||m;const f=f0?JSON.parse(JSON.stringify(f0)):{name:'',kind:'폼체인지',typesKo:null,types:null,ability:'',abilityEff:null,base:(o.base||[]).slice(),image:'',cond:'',revert:true,pots:[]};
   st=st||{n:f.name,k:f.kind,c:f.cond||'',r:!!f.revert,i:f.image||'',ty:f.types?f.types.filter(t=>t&&t!=='-'):null,ab:f.ability||'',bs:(f.base||o.base||[]).map(v=>+v||0),pots:(f.pots||[]).map(x=>Object.assign({},x))};
   let {ty,ab,bs,pots}=st;
-  const slotName=s=>{const p=(o.pots||[]).find(x=>x.slot===s);return p?p.name:''};
   const md=A().openModal(`<div class="mhead"><h2>${isNew?'폼 추가':'폼 수정'}</h2><span class="small dim">${esc(o.name||'')}</span><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
    <div class="stform">
     <label>폼 이름<input type="text" id="fm_n" value="${esc(st.n)}" placeholder="예) 메가 리자몽 X"></label>

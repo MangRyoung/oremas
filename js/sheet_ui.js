@@ -20,7 +20,6 @@ window.OM_SHEET_UI=(()=>{
  const $=(s,r)=>(r||document).querySelector(s);
  const STATS_KO=['HP','공격','방어','특공','특방','스피드'];
  const TYPES18=['Normal','Fire','Water','Electric','Grass','Ice','Fighting','Poison','Ground','Flying','Psychic','Bug','Rock','Ghost','Dragon','Dark','Steel','Fairy'];
- const RANKS=['E','D','C','B','A','AA','AAA','S'];
  const UI={tid:'',mid:'',tab:'poke',edit:false};
  const rnd=n=>{const a=new Uint8Array(n||6);crypto.getRandomValues(a);return Array.from(a,b=>'abcdefghijklmnopqrstuvwxyz0123456789'[b%36]).join('')};
 

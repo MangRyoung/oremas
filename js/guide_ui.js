@@ -326,7 +326,7 @@ window.OM_GUIDE_UI=(()=>{
  function render(el,soft){   /* soft: 방 상태가 바뀌어 다시 그릴 때 — 찾기 칸에 입력 중이면 건드리지 않는다 */
   if(soft){const ae=document.activeElement;if(ae&&ae.id==='gd_q'&&el.contains(ae))return}
   clampPos();const c=CH[G.c],pg=c.pages[G.p];G.seen[c.id+'.'+G.p]=1;keep();
-  const q=G.q.trim().toLowerCase();const hit=i=>!q||IDX[i].includes(q);const done=c2=>c2.pages.every((_,i)=>G.seen[c2.id+'.'+i]);
+  const q=G.q.trim().toLowerCase();const done=c2=>c2.pages.every((_,i)=>G.seen[c2.id+'.'+i]);
   const no=i=>String(i+1).padStart(2,'0');const gd=guide();const tag=pg.tag||c.tag;
   const nav=navHtml();
   const gi=PAGES.findIndex(x=>x.ci===G.c&&x.pi===G.p);

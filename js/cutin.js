@@ -14,10 +14,6 @@ window.OM_CUTIN=(()=>{
  function se(name){try{if(window.OM_RP_UI)window.OM_RP_UI.playSe(name,true)}catch(e){}}
  function sfx(name){try{const U=window.OM_RP_UI;if(!U||!U.seUrlOf(name))return false;U.playSe(name,true);return true}catch(e){return false}}
  function root(id){let r=document.getElementById(id);if(r)r.remove();r=document.createElement('div');r.id=id;document.body.appendChild(r);return r}
- const rnd=(a,b)=>a+Math.random()*(b-a);
- function jag(fill,stroke,sw,amp){const top=[],bot=[];let x=0;while(x<1000){top.push([x,rnd(0,amp)]);x+=rnd(14,40)}top.push([1000,rnd(0,amp)]);x=1000;while(x>0){bot.push([x,100-rnd(0,amp)]);x-=rnd(14,40)}bot.push([0,100-rnd(0,amp)]);
-  const pts=top.concat(bot).map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');return `<svg viewBox="0 0 1000 100" preserveAspectRatio="none"><polygon points="${pts}" fill="${fill}" stroke="${stroke}" stroke-width="${sw}" vector-effect="non-scaling-stroke"/></svg>`}
- function zig(){let p='',x=0,up=true;while(x<=1000){p+=x+','+(up?20:80)+' ';x+=45;up=!up}return `<svg viewBox="0 0 1000 100" preserveAspectRatio="none"><polyline points="${p}" fill="none" stroke="#111" stroke-width="22" vector-effect="non-scaling-stroke"/><polyline points="${p}" fill="none" stroke="#ffe14a" stroke-width="14" vector-effect="non-scaling-stroke"/><polyline points="${p}" fill="none" stroke="#fff" stroke-width="4" vector-effect="non-scaling-stroke"/></svg>`}
 
  /* ----- 발동 컷인 (10-23 망령 새 디자인): 보는 사람의 화면 테마(P5 · P3 · P4)를 따른다. 둘이면 양쪽 끝에서 날아와 가운데서 쾅 → VS.
     c = {src 그림, tag 위 작은 글, ment 큰 글(『이름』), line 컷인 대사, color, gh 띠 뒤 글자} ----- */
@@ -88,8 +84,6 @@ window.OM_CUTIN=(()=>{
  function fire(c){c=c||{};{const IM=window.OM_BATTLE_UI&&window.OM_BATTLE_UI.illuMask;if(IM){try{c=IM(c)}catch(e){}}}   /* 11-05 일루젼 */const S=c.se&&c.se!=='cut'?c.se:'';if(S)se(S);showFire(c);DBS().broadcast({t:'cutin',k:'fire',c,se:S})}   /* 옛 「cut」 은 급소 소리로만 쓴다 */
 
  /* ----- VS 시합 개시 / 경고 ----- */
- function side(cls,S){S=S||{};const mons=(S.mons||[]).slice(0,6);const balls=(S.balls||[]).slice(0,6).map((b,i)=>{const m=mons[i];return `<i class="ball ${b?'':'dead'}" style="animation-delay:${(1.55+i*.1)}s">${m&&m.img?`<img src="${esc(m.img)}" alt="" title="${esc(m.name||'')}">`:''}</i>`}).join('');
-  return `<div class="vs-side ${cls}"><div class="por">${S.img?`<img src="${esc(S.img)}" alt="">`:''}</div><div class="txt"><div class="vs-nm">${esc(S.p?'《'+S.p+'》':(S.t||''))}</div><div class="vs-tn">${esc(S.sub||'')}</div><div class="vs-balls">${balls}</div></div></div>`}
  /* 10-24 망령 새 디자인: 양쪽 판이 대각선으로 날아와 가운데서 부딪히고 VS 가 박힌다 (테마 P5 · P3 · P4, 휴대폰 세로는 위아래로) */
  const vU=()=>Math.min(innerHeight/100,innerWidth/100*1.5),vNar=()=>innerWidth/Math.max(1,innerHeight)<1;
  function vsPane(S,L){S=S||{};const mons=S.mons||[],bl=S.balls||[];

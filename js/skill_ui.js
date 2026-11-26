@@ -92,7 +92,6 @@ window.OM_SKILL_UI=(()=>{
  const sgn=n=>(n>=0?'+':'−')+Math.abs(n);
  const av=(img,txt,cls)=>`<i class="skav ${cls||''}" style="${img?`background-image:url('${cssu(img)}')`:''}">${img?'':esc([...String(txt||'?')][0]||'?')}</i>`;
  const tyCol=ko=>{try{return S().typeColor(S().typeEn(ko))}catch(e){return {bg:'#2d3244',fg:'#e8e4da'}}};
- const tyChip=ko=>{const c=tyCol(ko);return `<span class="type" style="background:${c.bg};color:${c.fg}">${esc(ko)}</span>`};
  const stepTxt=n=>STEP[Math.max(0,Math.min(3,+n||0))];
  const frac=(v,s)=>{s=String(s==null?'':s).trim();if(s==='full')return v;const m=s.match(/^(\d+)\s*\/\s*(\d+)$/);return m?Math.max(1,Math.floor(v*+m[1]/+m[2])):Math.max(0,Math.floor(+s||0))};
  const sdb=()=>((DB().states||{}).st)||{};

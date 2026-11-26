@@ -14,7 +14,6 @@ window.OM_PHONE_UI=(()=>{
  const RESTS=[['breath','가벼움','숨돌리기'],['mid','반쯤','중간 휴식'],['long','대대적','긴 휴식']];   /* 11-12 짧은 휴식 없앰 */   /* 10-28 중간 휴식 */
  const gm=()=>A().ST.role==='gm';
  const trs=()=>(A().ST.state.roster||{}).trainers||{};
- const mons=()=>(A().ST.state.roster||{}).mons||{};
  const G=()=>A().ST.state.graph||{nodes:{},edges:{}};
  const cal=()=>A().ST.state.calendar||{};
  const PH={screen:'home',tid:'',tab:'',draft:{},cq:''};

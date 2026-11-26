@@ -8,11 +8,8 @@ window.OM_ITEMS=(()=>{
  const nm=s=>String(s||'').replace(/『|』/g,'').trim();
  const itemOf=m=>!m?'':nm(F()&&F().itemOf?F().itemOf(m):(m.item||''));
  const typesOf=m=>(m.teraActive&&m.teraEn&&m.teraEn!=='-')?[m.teraEn]:(m.types||[]).filter(t=>t&&t!=='-');
- const tEn=k=>{k=String(k||'').trim();return (S()&&S().typeEn&&S().typeEn(k))||k};
- const KO_STAT={'공격':'attack','방어':'defense','특공':'specialattack','특방':'specialdefense','스피드':'speed','명중':'accuracy','회피':'evasion','C':'critical','급소':'critical'};
  const STAT_KO={attack:'공격',defense:'방어',specialattack:'특공',specialdefense:'특방',speed:'스피드',accuracy:'명중',evasion:'회피',critical:'급소'};
  const ABN=['Poison','Toxic','Burn','Paralysis','Freeze','Sleep'];
- const stEn=k=>(FX()&&FX().stEn?FX().stEn(k):'')||'';
  const frac=(max,f)=>{const m=String(f).match(/^(\d+)\/(\d+)$/);return m?Math.max(1,Math.floor(max*+m[1]/+m[2])):Math.max(1,+f||0)};
 
  /* ----- 규칙: 소지품 DB 의 「구문」(auto)이 있으면 구문, 없으면 효과 글을 읽는다 (js/engine/itemrule.js, 10-24 망령: 제작기 소지품 DB 에 구문을 넣는 방식) ----- */

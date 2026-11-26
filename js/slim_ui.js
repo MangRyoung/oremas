@@ -7,7 +7,6 @@
 "use strict";
 window.OM_SLIM=(()=>{
  const A=()=>window.OM_APP,S=()=>window.OM_STORE;
- const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
  const $=(s,r)=>(r||document).querySelector(s);
  const tok=()=>{try{const a=JSON.parse(localStorage.getItem('om_acct')||sessionStorage.getItem('om_acct')||'null');return (a&&a.token)||''}catch(e){return ''}};
  const MIN=200*1024;

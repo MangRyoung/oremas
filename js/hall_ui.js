@@ -11,7 +11,7 @@ window.OM_HALL_UI=(()=>{
  const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
  const $=(s,r)=>(r||document).querySelector(s);
  const rnd=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
- const SIDES=['left','right'],SK={left:'좌측',right:'우측'};
+ const SIDES=['left','right'];
  const img=u=>typeof u==='string'&&/^https?:\/\//.test(u)&&u.length<500?u:'';
  const fmtT=t=>{if(!t)return '';const d=new Date(t);const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}.${p(d.getMonth()+1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`};
  /* 11-04 22:13 요청 「전당 댓글도 PL 닉네임 말고 PC 트레이너명으로 쓸 수 있으면」: 자리에 앉은 PL 은 「PC 트레이너 이름 · PL 닉네임」 중 골라 쓴다 (기본 = 트레이너 이름, 이 브라우저에 방마다 기억) */
@@ -101,7 +101,6 @@ window.OM_HALL_UI=(()=>{
   catch(e){if(!more)LIST=[];END=true;ERRM=DBS().hall.noFn(e.raw||e)?'nofn':e.message}
   LOADING=false;if(A().view==='hall')A().renderScene()}
  const cnt=sd=>`${alive(sd||{})}/${((sd||{}).mons||[]).length}`;
- const resShort=h=>h.r==='left'||h.r==='right'?'승':h.r==='draw'?'무':'—';
  const dShort=t=>{if(!t)return '';const d=new Date(t);const p=n=>String(n).padStart(2,'0');const y=d.getFullYear()===new Date().getFullYear()?'':String(d.getFullYear()).slice(2)+'.';return `${y}${p(d.getMonth()+1)}.${p(d.getDate())}`};
  function rowHtml(x){const h=x.head||{};const S=h.sides||{};const side=s=>{const sd=S[s]||{};const w=h.r===s,l=h.r&&h.r!=='draw'&&h.r!==s;return `<span class="hrs ${s} ${w?'win':''} ${l?'lose':''}"><b>${esc(trNames(sd))}</b><i>${cnt(sd)}</i>${w?'<em>WIN</em>':'<em class="no"></em>'}</span>`};
   return `<div class="hrow ${h.r||'none'}" data-id="${esc(x.id)}" role="button" tabindex="0" title="${esc(fmtT(x.at))}${h.by?' · '+esc(h.by):''}"><span class="hrd">${dShort(x.at)}</span><b class="hrt">${esc(h.t||'(제목 없음)')}</b><span class="hrvs">${side('left')}<span class="hrx">vs</span>${side('right')}</span><span class="hrm">${h.r==='draw'?'<span class="hdraw">무승부</span>':''}${h.turn?'T'+h.turn:''}${x.ncm?` · 💬${x.ncm}`:''}</span></div>`}

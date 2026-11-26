@@ -420,7 +420,7 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
   el.querySelectorAll('.spk[draggable="true"]').forEach(ch=>{ch.ondragstart=e=>{dragKey=ch.dataset.spk||'';dragFold=ch.dataset.fold||'';e.dataTransfer.effectAllowed='move';try{e.dataTransfer.setData('text/plain',dragKey||('f:'+dragFold))}catch(x){}ch.classList.add('dragging')};ch.ondragend=()=>ch.classList.remove('dragging')});
   const zones=el.querySelectorAll('.spk[data-spk],.spk[data-fold],[data-fnew],[data-fout],.spkbar');
   zones.forEach(z=>{z.ondragover=e=>{if(!dragKey&&!dragFold)return;e.preventDefault();z.classList.add('over')};z.ondragleave=()=>z.classList.remove('over');
-   z.ondrop=async e=>{e.preventDefault();e.stopPropagation();z.classList.remove('over');const C=spkConf();const item=dragKey||('f:'+dragFold);if(!dragKey&&!dragFold)return;
+   z.ondrop=async e=>{e.preventDefault();e.stopPropagation();z.classList.remove('over');const C=spkConf();if(!dragKey&&!dragFold)return;
     const removeEverywhere=k=>{C.order=C.order.filter(x=>x!==k);for(const f of Object.values(C.folders))f.keys=(f.keys||[]).filter(x=>x!==k)};
     const zoneF=z.closest('[data-fzone]')?z.closest('[data-fzone]').dataset.fzone:'';
     if(z.hasAttribute('data-fnew')){if(!dragKey)return;const id='f'+Date.now().toString(36);const name=prompt('새 폴더 이름','새 폴더');if(name==null)return;removeEverywhere(dragKey);C.folders[id]={name:name.trim()||'폴더',keys:[dragKey]};C.order.push('f:'+id);await saveSpk(C);return}
@@ -718,19 +718,6 @@ function spkChip(key,name,av,on,extra){return `<button class="spk ${on?'on':''}"
     if(n!==x.name){const ok='npc:'+x.name,nk='npc:'+n;const C=spkConf();C.order=C.order.map(y=>y===ok?nk:y);for(const f of Object.values(C.folders))f.keys=(f.keys||[]).map(y=>y===ok?nk:y);if(C.hidden[ok]){delete C.hidden[ok];C.hidden[nk]=1}await saveSpk(C);if(SPK.key===ok)SPK.key=nk;PP.sel=nk}
     A().toast('저장했다');return re()}})}
  /* (예전) 인물 빠른 추가 — 이제 「인물 관리」의 새 인물 칸을 쓴다 */
- function addNpcQuick(){return openPeople('new')}
- function addNpcQuickOld(){const ST=A().ST;
-  const md=A().openModal(`<div class="mhead"><h2>인물 추가</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-   <div class="row" style="margin-bottom:6px"><b style="width:80px">이름</b><input type="text" id="na_n" style="flex:1" placeholder="예: 유현"></div>
-   <div class="row" style="margin-bottom:6px"><b style="width:80px">초상</b><input type="text" id="na_i" style="flex:1" placeholder="그림 주소 (채팅 아바타·지도 칩)"><div class="updz mini" id="na_idz"><b>끌어 놓기</b><span>클릭 · Ctrl+V</span><input type="file" accept="image/*" hidden></div></div>
-   <div class="row" style="margin-bottom:6px"><b style="width:80px">스탠딩</b><input type="text" id="na_s" style="flex:1" placeholder="전신 그림 주소 (비우면 초상으로 선다)"><div class="updz mini" id="na_sdz"><b>끌어 놓기</b><span>클릭 · Ctrl+V</span><input type="file" accept="image/*" hidden></div></div>
-   <div class="small dim">관계도 탭에 NPC 로 들어가고, 여기 화자 줄에 바로 뜬다. 표정을 더 넣으려면 「✎ 표정」.</div>
-   <div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn pri" id="na_ok">추가</button></div>`);
-  bindDz(md,'#na_idz',async fs=>{$('#na_i',md).value=await upImg(fs[0],'npc');A().toast('올렸다')});bindDz(md,'#na_sdz',async fs=>{$('#na_s',md).value=await upImg(fs[0],'st_npc');A().toast('올렸다')});
-  $('#na_ok',md).onclick=async()=>{const n=$('#na_n',md).value.trim();if(!n)return A().toast('이름이 필요해');const nodes=(ST.state.graph||{}).nodes||{};if(Object.values(nodes).some(x=>x.name===n))return A().toast('같은 이름의 인물이 이미 있다');
-   const id='n'+Date.now().toString(36);const i=Object.keys(nodes).length;const st=$('#na_s',md).value.trim();
-   await A().set(['graph','nodes',id],{id,name:n,kind:'npc',img:$('#na_i',md).value.trim(),x:120+(i%6)*140,y:120+Math.floor(i/6)*140,stands:st?[{label:'기본',src:st,point:0}]:[],standActive:0});
-   SPK.key='npc:'+n;A().closeModal();A().renderScene();A().toast(`${n} 추가 — 관계도에도 들어갔다`)}}
  /* ----- 빠른 배경 / BGM 고르기 (무대 위 버튼) ----- */
  const QB={g:''};
  /* 배경 창 하나에서 고르기 + (GM) 목록 고치기: 그룹 추가·이름·순서·삭제, 썸네일 위 ✎ ◀ ▶ ×, 끌어 놓은 그림은 지금 그룹에 들어간다 */

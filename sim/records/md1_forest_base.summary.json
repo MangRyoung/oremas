@@ -1,0 +1,116 @@
+{
+ "id": "md1_forest_base",
+ "name": "기본 · 온실 뒤 덩굴숲",
+ "dungeon": "md1_forest",
+ "party": [
+  "카이",
+  "미오",
+  "레온"
+ ],
+ "n": 40,
+ "seed": 1,
+ "adjust": {},
+ "policy": {
+  "cover": "fail",
+  "who": "best",
+  "partner": "match"
+ },
+ "at": "2026-11-26T02:32:41.120Z",
+ "snapshot": "sample_snapshot.json",
+ "agg": {
+  "n": 40,
+  "wipe": 0.5,
+  "boss": 0.5,
+  "endHp": 0.19455000000000003,
+  "fainted": 4.575,
+  "monsTotal": 6,
+  "checks": 3.95,
+  "ok": 0.7721518987341772,
+  "crit": 0.23417721518987342,
+  "cost": 0,
+  "fail": 0.22784810126582278,
+  "fumble": 0,
+  "alone": 0,
+  "covers": 0.625,
+  "inou": 1,
+  "injuries": 0.275,
+  "injAny": 0.075,
+  "injSevere": 0,
+  "penDmg": 3.7,
+  "perCheck": {
+   "쓰러진 나무를 치운다 (10)": {
+    "n": 40,
+    "ok": 40,
+    "cost": 0,
+    "fail": 0,
+    "alone": 0,
+    "inou": 40,
+    "cover": 0,
+    "who": {
+     "레온": 40
+    }
+   },
+   "안개 속에서 대열을 지킨다 (12)": {
+    "n": 16,
+    "ok": 9,
+    "cost": 0,
+    "fail": 7,
+    "alone": 0,
+    "inou": 0,
+    "cover": 7,
+    "who": {
+     "카이": 16
+    }
+   },
+   "독초와 약초를 가려낸다 (10)": {
+    "n": 40,
+    "ok": 36,
+    "cost": 0,
+    "fail": 4,
+    "alone": 0,
+    "inou": 0,
+    "cover": 1,
+    "who": {
+     "카이": 40
+    }
+   },
+   "덩굴의 매듭을 푼다 (12)": {
+    "n": 40,
+    "ok": 19,
+    "cost": 0,
+    "fail": 21,
+    "alone": 0,
+    "inou": 0,
+    "cover": 14,
+    "who": {
+     "카이": 40
+    }
+   },
+   "늪을 함께 건넌다 (10)": {
+    "n": 22,
+    "ok": 18,
+    "cost": 0,
+    "fail": 4,
+    "alone": 0,
+    "inou": 0,
+    "cover": 3,
+    "who": {
+     "카이": 19,
+     "미오": 3
+    }
+   }
+  },
+  "bossReach": 1,
+  "bossWin": 0.5,
+  "bossTurns": 8.725,
+  "bossKos": 4.55,
+  "bossPhases": 1.875,
+  "bossFoes": 5,
+  "bossRaid": 2,
+  "battles": 2.05,
+  "bturns": 6.036585365853658,
+  "bkos": 4.975,
+  "orders": 3.55,
+  "commands": 5.675
+ }
+}
