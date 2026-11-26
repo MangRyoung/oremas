@@ -1430,7 +1430,7 @@ function openRoomSettings(tab){
    ${sw('seatOwn',own,'② 플레이어는 자기 것만 (세션)','플레이어는 자기 트레이너를 배틀에 올리고 자기 포켓몬 · 지시 · 스킬만 만진다. 턴 진행 · 필드 · 남의 HP 는 GM 이')}
    ${sw('gmHands',rp.gmHands===false,'GM 불간섭 (GM 도 플레이어처럼)','플레이어가 배틀에 올린 트레이너의 지시 · 준비 · HP · 랭크 · 상태는 그 플레이어만. GM 이 직접 불러온 파티와 NPC 는 GM 이 그대로 지시하고 턴도 진행한다 (자동 처리는 그대로)')}
    ${sw('slotRule',rp.slotFree!==true,'트레이너마다 필드 1칸 (태그 · 3+3)','한 진영의 트레이너 수와 에리어 수가 같을 때(2명 더블 · 3명 트리플) 트레이너마다 자기 칸 하나만 쓴다 — 남의 칸에는 못 내고, 같은 편이 전멸해야 빈 칸에 낼 수 있다. 끄면 누구든 빈 칸에 낼 수 있다 (NPC 가 3+3 으로 나올 때 등)')}
-   ${sw('noLead',rp.noLead===true,'통솔점 · 기술 소켓 없는 방','이 방의 캠페인은 통솔점 · 기술 소켓 개념을 쓰지 않는다(몽환 세계 등) — 시트 탭의 통솔점 칸을 감추고, 이 방에서는 통솔점 · 기술점을 따지지 않는다')}`)})()}
+   ${sw('noLead',rp.noLead===true,'통솔점 · 기술 소켓 없는 방','이 방의 캠페인은 통솔점 · 기술 소켓 개념을 쓰지 않는다(몽환 세계 등) — 시트 탭의 통솔점 · 할인점 칸을 감추고, 이 방에서는 통솔점 · 기술점을 따지지 않는다')}`)})()}
   ${(()=>{const sc=rp.standCrop||{};const bust=sc.mode==='bust';return card('🧍','무대 스탠딩',`<div class="pf-sel"><span class="pf-lb">보이는 모양</span><select id="stCrop"><option value="">전신 (기본)</option><option value="bust" ${bust?'selected':''}>상반신 — 허리 위로 크게</option></select></div>
    <div class="pf-sel"><span class="pf-lb">허리 높이</span><input type="number" class="n" id="stWaist" min="30" max="80" step="1" value="${+sc.waist||52}" style="width:70px"><em>%</em><button class="btn xs pri" id="stCropSave">저장</button></div>
    <div class="pf-note">상반신이면 스탠딩 그림 맨 위에서 이 % 까지(허리)를 무대 높이에 맞춰 키우고, 그 아래는 무대 밑으로 잘린다. 그림마다 허리 자리가 다르면 「표정 · 스탠딩 편집」의 허리 % 칸에서 그 그림만 따로 맞춘다. 초상 그림은 그대로.</div>`)})()}
