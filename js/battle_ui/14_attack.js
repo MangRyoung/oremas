@@ -4124,12 +4124,14 @@ ${(() => {
             lines.push(`「${RESULT.mv.name}」 — ${tgs.map(id => nb.mons[id].name).join(' · ')}의 데이터를 해석한다`);
             const vw = am.tid,
               mvN = RESULT.mv.name;
+            /* 11-26 망령 「기술 쪽도 막아」: 기술 해석도 해석 차단에 막힌다 — 기술 글에 「차단을 무시」가 있을 때만 뚫는다 */
+            const dexForce = !!(FX() && FX().dexPierce && FX().dexPierce(ex));
             setTimeout(
               () =>
                 tgs.forEach((id, i) =>
                   setTimeout(() => {
                     Promise.resolve(
-                      window.OM_DEX_UI.analyze(vw, id, { forced: true, free: true, quiet: tgs.length > 1, via: 'move', by: mvN, byMid: mid })
+                      window.OM_DEX_UI.analyze(vw, id, { forced: dexForce, free: true, quiet: tgs.length > 1, via: 'move', by: mvN, byMid: mid })
                     ).catch(e => console.warn('기술 해석', e));
                   }, i * 250)
                 ),

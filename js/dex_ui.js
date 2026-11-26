@@ -1,6 +1,6 @@
 /* ---------- 포켓몬 도감 · 데이터 해석 (맵툴 dex_run / print_pokedex / 해석 차단을 옮김) ----------
    『포켓몬 도감』【N/시】【사전】: 지시 랭크로 횟수(B 1 · A 이상 2). 상대 포켓몬 1체를 해석하면 타입·종족치·기술·특성·포텐셜이 보인다.
-   부분 해석: 기술 / 타입 / 특성 중 고른 것만 (세 부분이 모이면 전체). 「데이터 해석」(포텐셜 효과)은 횟수 없이·차단 돌파.
+   부분 해석: 기술 / 타입 / 특성 중 고른 것만 (세 부분이 모이면 전체). 「데이터 해석」(포텐셜 · 효과 · 기술)은 횟수 없이 — 11-26 망령: 해석 차단에는 막힌다. 「차단을 무시」라고 적힌 효과(구문 「해석 강제」 · 단추 「강제 해석」)만 돌파.
    차단(mon.dexFw, GM 이 랭크·상태 창에서): 0 없음 · 1 다음 해석 1회 차단 뒤 자동 해제 · 2 완전 차단(강제 해석만 통함) · 3 일부 차단(허용 부분만) · 4 노이즈(해석은 되지만 글자가 ■ 로 으깨짐).
    상태: state.dex[tid] = {used, list:[mid], part:{mid:[move|type|trait]}, fwSeen:[mid], items:[mid]}
    11-21 망령 「소지품 해석 만들자 — 데이터 해석(전체)으로는 소지품이 안 보인다, 따로 해석해야만」: items = 소지품을 해석한 포켓몬. 데이터 해석 · PVP 로는 열리지 않는다. */
@@ -255,7 +255,7 @@ window.OM_DEX_UI = (() => {
    ${
      isEnemy && !full
        ? `<div class="card hit"><div class="sec">해석 <span class="note">『포켓몬 도감』 남은 ${left}/${maxOf(vt)} (지시 ${esc((vt.ranks || {})['지시'] || '-')})</span></div>
-    <div class="row" style="flex-wrap:wrap;gap:8px"><span class="small">부분만:</span>${PARTS.map(([k, n]) => `<label class="small"><input type="checkbox" data-part="${k}"> ${n}</label>`).join('')}<span class="small dim">(아무것도 안 고르면 전체)</span><span class="sp"></span><button class="btn pri" data-dex="run" ${left > 0 ? '' : 'disabled'}>『포켓몬 도감』 해석</button><button class="btn" data-dex="fx" title="포텐셜·효과로 하는 해석 — 횟수 없이, 차단을 돌파한다 (정직하게)">데이터 해석 (효과)</button></div></div>`
+    <div class="row" style="flex-wrap:wrap;gap:8px"><span class="small">부분만:</span>${PARTS.map(([k, n]) => `<label class="small"><input type="checkbox" data-part="${k}"> ${n}</label>`).join('')}<span class="small dim">(아무것도 안 고르면 전체)</span><span class="sp"></span><button class="btn pri" data-dex="run" ${left > 0 ? '' : 'disabled'}>『포켓몬 도감』 해석</button><button class="btn" data-dex="fx" title="포텐셜 · 효과 · 기술로 하는 해석 — 횟수 없이. 해석 차단에는 막힌다 (정직하게)">데이터 해석 (효과)</button><button class="btn" data-dex="force" title="「해석 차단을 무시」라고 적힌 효과로 하는 해석 — 횟수 없이, 차단을 돌파한다 (정직하게)">강제 해석</button></div></div>`
        : ''
    }
    ${isEnemy && !ownI ? `<div class="card"><div class="row" style="gap:8px"><span class="small dim">소지품은 「소지품 해석」으로만 보인다</span><span class="sp"></span><button class="btn" data-dex="item" title="포텐셜 · 특성 · 기술로 하는 소지품 해석 (정직하게)">소지품 해석 (효과)</button></div></div>` : ''}
@@ -297,7 +297,7 @@ window.OM_DEX_UI = (() => {
           }
           const parts = [...md.querySelectorAll('[data-part]:checked')].map(c => c.dataset.part);
           A().closeModal();
-          await analyze(viewer, mid, { parts, forced: k === 'fx', free: k === 'fx' });
+          await analyze(viewer, mid, { parts, forced: k === 'force', free: k === 'fx' || k === 'force' });
         })
     );
   }
@@ -358,7 +358,7 @@ window.OM_DEX_UI = (() => {
       } else d.part[mid] = got;
     } else if (!d.fwSeen.includes(mid)) d.fwSeen.push(mid);
     await A().set(['dex', viewer], d);
-    const tag = `${o.free ? '【강제】' : `【${Math.max(0, maxOf(vt) - d.used)}/시】【사전】`}${parts.length ? '【' + parts.map(p => (PARTS.find(x => x[0] === p) || [])[1]).join('·') + '】' : ''}`;
+    const tag = `${o.forced ? '【강제】' : o.free ? '【효과】' : `【${Math.max(0, maxOf(vt) - d.used)}/시】【사전】`}${parts.length ? '【' + parts.map(p => (PARTS.find(x => x[0] === p) || [])[1]).join('·') + '】' : ''}`;
     /* 11-22 【은폐】: 해석을 건 효과(o.by · o.byMid)가 【은폐】면 이 줄도 주인에게만 (상대는 해석당한 줄 모른다 · 「출력」으로 공개 가능) */
     const CN = window.OM_BATTLE_UI && window.OM_BATTLE_UI.concealName;
     const PRV = !!(o.byMid && o.by && CN && CN(o.byMid, o.by));
