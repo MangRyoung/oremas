@@ -352,7 +352,7 @@ window.OM_BATTLE_UI = (() => {
     const m = ((c.b && c.b.mons) || {})[mid];
     const it = illuOf(c.b, m);
     if (!it || illuTrue(c, m)) return { mid };
-    return it.fake ? { mid: '', name: it.name } : { mid: it.id };
+    return it.fake ? { mid: '', name: it.name } : { mid: it.id, asField: true };
   }
   function illuChip(c, m, full) {
     if (!m || !illuTrue(c, m)) return '';

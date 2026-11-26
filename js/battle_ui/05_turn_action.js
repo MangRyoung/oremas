@@ -1265,14 +1265,14 @@
         {
           const v = illuDexOf(c, d.mid);
           if (!v.mid) return A().toast(`「${v.name}」 — 공개된 도감 없음`);
-          if (v.mid !== d.mid) d = Object.assign({}, d, { mid: v.mid });
+          if (v.mid !== d.mid) d = Object.assign({}, d, { mid: v.mid, asField: !!v.asField });
         }
         /* 11-05 일루젼: 변장 중이면 변장한 아군의 도감 */ const dm = (c.b.mons || {})[d.mid];
         if (plView(c) && dm && !canEdit(c, dm)) {
           const v = gmEyes(c, dm);
-          return window.OM_DEX_UI.open(d.mid, v || '_view', true);
+          return window.OM_DEX_UI.open(d.mid, v || '_view', true, { asField: !!d.asField });
         }
-        return window.OM_DEX_UI.open(d.mid, c.gm ? '' : c.seat || '_view');
+        return window.OM_DEX_UI.open(d.mid, c.gm ? '' : c.seat || '_view', false, { asField: !!d.asField });
       }
       case 'attack':
         return openAttackPre(d.mid);

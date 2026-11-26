@@ -142,10 +142,12 @@ window.OM_DEX_UI = (() => {
       .join('');
   }
   /* asPl: PL 권한(공평 모드)의 GM 이 자기 트레이너(viewer) 눈으로 본다 — GM 이라고 다 보이지 않는다 */
-  function open(mid, viewer, asPl) {
+  /* opt.asField: 일루젼으로 이 포켓몬의 모습을 한 다른 포켓몬이 필드에 나와 있다 — 벤치에 있어도 「나와 있는 포켓몬」처럼 이름 · 그림을 보인다 (11-26) */
+  function open(mid, viewer, asPl, opt) {
     viewer = viewer || me();
-    const m = monOf(mid);
-    if (!m) return;
+    const m0 = monOf(mid);
+    if (!m0) return;
+    const m = opt && opt.asField && !m0.entry && !m0.seen ? Object.assign({}, m0, { seen: true }) : m0;
     const G = gm() && !asPl;
     const sc = scope(mid, viewer, asPl);
     const full = sc === 'all';

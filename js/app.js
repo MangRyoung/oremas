@@ -4973,7 +4973,7 @@
       /* 11-26 PL 제보 「클릭하면 일루젼이 아닌 모습으로 나온다」: 변장 중이면 변장한 모습의 도감 (battle_ui illuDexOf) */
       const v = window.OM_BATTLE_UI && window.OM_BATTLE_UI.illuDex ? window.OM_BATTLE_UI.illuDex(mid) : { mid };
       if (!v.mid) return toast(`「${v.name}」 — 공개된 도감 없음`);
-      return window.OM_DEX_UI.open(v.mid, ST.seat || '_view');
+      return window.OM_DEX_UI.open(v.mid, ST.seat || '_view', false, { asField: !!v.asField });
     }
     const K = S().STATS_KO;
     const pct = m.hp.cur > 0 ? Math.max(1, Math.round((m.hp.cur / m.hp.max) * 100)) : 0;
