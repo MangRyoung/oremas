@@ -4,316 +4,1761 @@
      HP 창: 반감열매 · 버티기(버텨라 · 기합의띠 확정) · 멀티스케일류 · 탈 · 피격 특성 반응 = 켜짐(창의 기본 체크와 같다)
    사람이 켜던 칸(GM 판단): 달인의띠 = 소지품이 달인의띠면 켠다 · 스킬링크 = 특성이 스킬링크면 켠다 · 적응력 · 생명의구슬 · 도우미는 끈다(적응력은 효과 엔진이 이미 ×1.33, 생명의구슬은 밴).
    웹툴과 다른 점: 「행동 판정」(혼란 · 마비 …)을 늘 켠다 · 창을 다시 여는 일 · 손으로 바꾸는 칸 · 「손으로」 문장(notes)은 없다. */
-"use strict";
+'use strict';
 /* 11-01 은열쇠(시뮬): 보험형 배틀 카드 — H.cards = {list:[{tid,eff:'reroll'|'noCrit',used}], turn:{tid:턴}} · 트레이너마다 한 턴 1장 */
 /* 11-04 망령 「아군에겐 못써야 의미있지」: 세 칸 방식(H.cards.own)이면 그 포켓몬의 트레이너 카드만 (ownTid) */
-function cardTake(H,eff,turn,ownTid){const C=H&&H.cards;if(!C)return null;C.turn=C.turn||{};const c=(C.list||[]).find(x=>!x.used&&x.eff===eff&&C.turn[x.tid]!==turn&&(!C.own||!ownTid||x.tid===ownTid)&&(!x.pay||x.pay()));   /* 11-01 코스트: 낼 수 있을 때만 */if(!c)return null;c.used=true;C.turn[c.tid]=turn;return c}
-async function attack(H,W,mid,idx,targets,o){o=o||{};/* 11-23 「기술의 반사」(웹툴 openAttack RF 와 같다): o.refl={from,by} = 반사 공격 — 대미지는 반사한 쪽(mid) 능력치, 반동 · 추가 효과는 원래 쓴 포켓몬(from), 드레인은 반사한 쪽 */const RF=o.refl||null;
- const FN=H.fn,B=W.OM_BATTLE,FX=W.OM_FX,OI=W.OM_ITEMS,F=W.OM_FIELD,MA=W.OM_MOVEAUTO,S=W.OM_STATS,DB=W.OM_DB||{};const R=Math.random.bind(W.Math);const rnd=()=>W.Math.random();
- const c=FN.ctx();const b=c.b;const atk0=b.mons[mid];if(!atk0||!atk0.entry||atk0.hp.cur<=0)return {skip:'없음'};const f=FN.fieldOf(b);
- const RM=k=>+((f.rooms||{})[k]||0)>0;
- const TYS0=[['Electrify','Electric'],['Flooding','Water'],['Knave','Dark']].filter(([k])=>+((atk0.states||{})[k]||0)>0);const ATY=TYS0.length?TYS0[TYS0.length-1][1]:'';
- /* 11-04 망령: 「무작위」 타입 기술 — 공격마다 18 타입 중 하나 (웹툴 battle_ui isRndMove · rndType 그대로, 씨앗 난수) */
- const isRnd=H.get('isRndMove'),rndT=H.get('rndType');const RNDT={};const rndOf=mv=>isRnd&&isRnd(mv)?(RNDT[mv.name]||(RNDT[mv.name]=rndT())):'';
- const IAI=mv=>atk0.iai&&mv&&/(^|[,\s])거합($|[,\s])/.test(String(mv.tag||''))?atk0.iai:'';/* 11-15 자세 → 다음 거합 타입 (웹툴 IAI) */const tyOf=mv=>ATY||IAI(mv)||(RM('블랙룸')&&mv.cat!=='변화'?'Ghost':((FN.skinOf(atk0,mv)||{}).ty||rndOf(mv)||mv.typeEn));
- const mtys=mv=>ATY?[ATY]:(RM('블랙룸')&&mv.cat!=='변화'?['Ghost']:FN.skinOf(atk0,mv)?[FN.skinOf(atk0,mv).ty]:rndOf(mv)?[rndOf(mv)]:String(mv.type||'').split(/[()/,]/).map(t=>t.trim()).filter(Boolean).map(S.typeEn));
- const mv=o.mvObj||FN.MVS(atk0)[idx];if(!mv)return {skip:'기술 없음'};   /* 11-15 o.mvObj: 추가 행동처럼 기술 목록에 없는 기술 */
- /* 11-15 「연속 제한」(방어 기술 말고) — 웹툴 consecFail 과 같음 */if(!RF){const cm=String(mv.eff||'').match(/「연속\s*제한\s*:\s*(실패\s*확률\s*증가|확정\s*실패)」/);const T1=+b.turn||0;if(cm&&!FN.protMove(mv)&&atk0.lastMove===mv.name&&+atk0.lastMoveT===T1-1){const k=Math.max(1,+((atk0.consec&&atk0.consec.name===mv.name)?atk0.consec.n:1));const ok=!/확정/.test(cm[1])&&rnd()<Math.pow(1/3,k);if(!ok){const why=`${atk0.name} 「${mv.name}」 — 연속으로 내보내 실패`;if(H.logOn)W.OM_APP.sysLog(`【공격】 ${why}`,'battle');return {mv:mv.name,lines:[why],hits:[],fail:why}}}}
- /* 11-15 망령 「진서현 분석」: 기술 효과 글의 실패 조건이 시뮬 공격 길에 없었다 — 웹툴 openAttack(감우 55)과 같게: 나온 뒤 첫 기술 · 이번 턴 맞음 · 대상이 공격 안 함(기습) · 대상보다 늦음 · 「타입 : X」 이외(파동공진파) */
- if(!RF){const au=(FN.moveAuto&&FN.moveAuto(mv))||{};const T1=+b.turn||0;const d0=(()=>{const [sd,ar]=String((targets||[])[0]||'').split('_');return (FN.entered(b,sd)||{})[ar]||null})();let why='';
-  if(au.firstOnly&&atk0.lastMove)why='필드에 나와 처음 내보낸 기술이 아니라';
-  else if(au.failHit&&(+atk0.hitT===T1||(atk0.lastTaken&&atk0.lastTaken.hit&&+atk0.lastTaken.turn===T1)))why='이번 턴 공격을 받아';
-  else if(au.failNoAtk&&d0&&d0!==atk0&&FN.ordAtk&&!FN.ordAtk(b,d0))why=`${d0.name}이(가) 공격하지 않아`;
-  else if(au.failLate&&d0&&d0!==atk0&&FN.actedB4&&FN.actedB4(b,d0))why=`${d0.name}이(가) 먼저 행동해서`;
-  else if((au.failNoBerry||au.failNoSt)&&(()=>{const nm=x=>String(x||'').replace(/\s/g,'');const nf=(((atk0.fx||{}).sp)||[]).find(e=>e&&e.sp==='nofail'&&(!e.mv||!e.mv.length||e.mv.some(x=>nm(x)===nm(mv.name))));if(nf)return false;if(au.failNoBerry&&!(atk0.ateBerry||(atk0.itemUsed&&/열매$/.test(String(atk0.itemUsed.name||'').trim())))){why='「나무열매」를 소모한 상태가 아니라';return true}if(au.failNoSt&&d0&&d0!==atk0&&!(d0.states||{})[au.failNoSt]){why=`${d0.name}이(가) 「${au.failNoStKo||au.failNoSt}」 상태가 아니라`;return true}return false})()){}   /* 11-23 트림 · 추월 — 웹툴과 같다 */
-  else if(au.onlyVs&&d0&&!(au.onlyVsL||[au.onlyVs]).some(t=>(FN.tysOf(d0)||[]).includes(t)))why=`${d0.name}이(가) 「${(au.onlyVsL||[au.onlyVs]).map(t=>S.typeKo(t)).join(' · ')}」 타입이 아니라`;
-  if(why){const w=`${atk0.name} 「${mv.name}」 — ${why} 실패`;if(H.logOn)W.OM_APP.sysLog(`【공격】 ${w}`,'battle');return {mv:mv.name,lines:[w],hits:[],fail:w}}}
- /* 11-15 날따름 · 끌어오기는 행동할 때 다시 본다 (웹툴 openAttack 3414 와 같음 — 지시 때 고른 대상보다 먼저) */if(FN.redirectOf&&targets&&targets.length<=1){try{const rd=FN.redirectOf(b,atk0,mv);if(rd&&rd.slot&&targets[0]!==rd.slot){targets=[rd.slot];if(H.logOn)W.OM_APP.sysLog(`${atk0.name}의 「${mv.name}」 대상이 ${rd.mon.name}(으)로 바뀌었다 — ${rd.e&&rd.e.name||'끌어오기'}`,'battle')}}catch(e){}}
- const out={mv:mv.name,lines:[],hits:[],fail:''};
- /* 행동 판정 (창의 「행동 판정」 칸 — 시뮬은 늘 켠다) */
- let chk=null;
- if(F&&['Flinch','Sleep','Paralysis','Freeze','Attract','Confusion'].some(k=>(atk0.states||{})[k])){let am=JSON.parse(JSON.stringify(atk0));let r=F.actionCheck(am);
-  if(!r.ok&&atk0.side==='left'&&['Paralysis','Freeze','Confusion'].some(k=>(atk0.states||{})[k])&&!(atk0.states||{}).Flinch&&(cardTake(H,'actReroll',+b.turn||0,atk0.tid)||(['Paralysis','Confusion'].some(k=>(atk0.states||{})[k])&&cardTake(H,'actReroll2',+b.turn||0,atk0.tid)))){am=JSON.parse(JSON.stringify(atk0));r=F.actionCheck(am)}   /* 11-02 「다시 일어서」: 마비 · 혼란 · 얼음 행동 판정 한 번 다시 */
-  if(!r.ok){let self=0;if(r.selfHit){self=F.confusionHit(am);am.hp.cur=Math.max(0,am.hp.cur-self);r.lines.push(`${am.name} 자작 대미지 −${self}`)}
-   const nb0=FN.snap(),nb=FN.snap(nb0);const x=nb.mons[mid];x.states=am.states;if(am.wakeT!=null)x.wakeT=am.wakeT;else delete x.wakeT;if(self){x.hp.latest=x.hp.cur;x.hp.cur=Math.max(0,x.hp.cur-self)}if(x.hp.cur<=0)x.entry='';await FN.saveBattle(nb0,nb);
-   out.fail=r.lines.join(' / ');out.lines.push(...r.lines);if(H.logOn)W.OM_APP.sysLog(`【행동 실패】 ${atk0.name} — ${out.fail}`,'battle');return out}
-  chk={am,lines:r.lines}}
- /* 「반동 : 행동불능」 쉬는 턴 */
- if(!RF&&+((atk0.states||{}).Recharge||0)===1){out.fail='반동 : 행동불능';return out}
- const atk=atk0;
- /* 대상 */
- const slots=FN.allEntered(b);targets=(targets||[]).filter(s=>slots.some(z=>z.slot===s));
- if(!targets.length&&mv.cat!=='변화'){const foes=slots.filter(z=>!FN.sameT(z.mon,atk,b));if(foes.length)targets=[foes[0].slot]}
- if(!targets.length)targets=FN.defaultTargets?FN.defaultTargets(b,mid,String(idx)):[];
- if(!targets.length){out.fail='대상 없음';return out}
- /* 기술 방어 */
- const PROT=FN.protMove(mv);let PR=null;if(PROT){const t0=+b.turn||0;const k=atk.protectLast===t0-1?(+atk.protectN||0):0;const ch=Math.pow(1/3,k);const rl=rnd();PR={ok:rl<ch,chance:Math.round(ch*1000)/10,k}}
- const PBY=FN.protBypass(mv);const NX=(FX&&FX.nextOf)?FX.nextOf(atk):[];
- const moveTypes=mtys(mv);const atkTypes=atk.teraActive&&atk.teraEn!=='-'?[...atk.types,atk.teraEn]:atk.types;
- /* 창 칸 기본값 */
- const T0=tyOf(mv);const wm=FN.WEATHER_MUL[f.weather.type]||{};const wMul=wm[T0]!=null?wm[T0]:1;const sk=!ATY&&FN.skinOf(atk,mv);const traitMul=sk?sk.mul:1;
- let fm=1;const ft=f.terrain.type;if(FN.grd(atk)){if(ft==='그래스필드'&&T0==='Grass')fm=1.3;if(ft==='일렉트릭필드'&&T0==='Electric')fm=1.3;if(ft==='사이코필드'&&T0==='Psychic')fm=1.3}
- const im=OI?OI.atkMul(atk,{types:mtys(mv),cat:mv.cat,single:String(mv.range||'')==='1체'}):null;const item1=im?im.v:1;
- let pow=+mv.pow||FN.powStepOf(mv)||0;{const oe=(b.order||[]).find(z=>z.mid===mid&&z.pursuitHit);const pv=oe&&b.mons[oe.pursuitHit];if(oe&&pv&&pv.entry&&String(mv.name)===String(oe.move)&&FN.pursuitX2&&FN.pursuitX2(mv))pow=(+mv.pow||0)*2}
- {const e=String(mv.eff||''),Wt=String(f.weather.type||'');const half=e.match(/「날씨\s*:\s*([^」]+)」일 때 위력을 반감/);if(half&&Wt&&half[1].split(/[,，]\s*/).map(x=>x.trim()).includes(Wt))pow=Math.floor((+mv.pow||0)/2)}
- const MAU0=FN.moveAuto(mv),MAU=MA&&MA.auto(MAU0)?MAU0:null;
- const critForce=!!(MAU0&&MAU0.critSure);const charge=mv.cat!=='변화'&&Object.keys(FN.CHARGE_ST).some(k=>(atk.states||{})[k]&&tyOf(mv)===FN.CHARGE_ST[k]);
- const belt=FN.IT(atk)==='달인의띠',skill=String(atk.ability||'').replace(/^특성\s*:\s*/,'')==='스킬링크';
- const accMul=FN.leadAcc(atk);const sure0=false;
- const res=[];const multiTarget=targets.length>1;const SPW=FN.specialPowFor(mv.name,atk);
- /* 부가효과 확률 보정은 효과 엔진(chance) 기본값 — 창 칸 asecadd/asecsure */
- const SECADJ={add:FN.secAdd0?FN.secAdd0(atk):0,sure:FN.secSure0?FN.secSure0(atk):false};
- for(const slot of targets){const [side,area]=slot.split('_');const def=FN.entered(b,side)[area];if(!def)continue;
-  const AF=atk.flags||{},DF=def.flags||{};const phys=mv.cat==='물리',spec=mv.cat==='특수';
-  const sure=sure0||(!RF&&(AF.surehit||(phys&&AF.hitPhys)||(spec&&AF.hitSpec)||!!(FX&&FX.nextOf&&FX.nextOf(atk).some(e=>e.sure))));const IG=FX?FN.iuIgnore(atk,def):{};
-  const sureMv=sure||!(+mv.acc);const autoMiss=!RF&&((phys&&DF.dodgePhys)||(spec&&DF.dodgeSpec))&&!sureMv||AF.acc0;
-  const psyBlock=f.terrain.type==='사이코필드'&&!FN.sameT(def,atk)&&FN.grd(def)&&(FX?FX.prioOf(atk,mv):(+mv.prio||0))>0;
-  const itImm=OI&&mv.cat!=='변화'?OI.immune(def,moveTypes):'';
-  const wideBlock=def!==atk&&+(((f.objects||{})[def.side]||{})['와이드가드']||0)>0&&(multiTarget||/전체|자신\s*이외/.test(String(mv.range||'')));
-  const protBlock=def!==atk&&!PBY&&(def.flags||{}).protect===(+b.turn||0)&&def.hp.cur>0;
-  /* 11-15 트릭가드 · 에임가드 (웹툴 craftyBlock · aimBlock) */const objOn=k=>+(((f.objects||{})[def.side]||{})[k]||0)>0;const craftyBlock=def!==atk&&def.side!==atk.side&&mv.cat==='변화'&&objOn('트릭가드');const aimBlock=def!==atk&&def.side!==atk.side&&objOn('에임가드')&&(/「필중기」/.test(String(mv.eff||''))||(mv.cat!=='변화'&&!(+mv.acc)));
-  /* 11-14 반무적(하늘 위 · 구멍 안 …) = 자동 빗나감 — 웹툴 openAttack semiMiss 와 같다 (록온 · 마음의눈 · 노가드 · 그 반무적을 맞히는 기술은 예외) */
-  const SM=def!==atk&&FN.semiOf?FN.semiOf(def):'';const smKo=SM&&FN.stKoU?FN.stKoU(SM):'';const DST=def.states||{};const ngd=x=>/노가드/.test(String((x&&x.ability)||''));
-  const semiMiss=!!SM&&!((DST.LockOn||DST.Gaze)&&(!def.lockFrom||def.lockFrom===atk.id))&&!ngd(atk)&&!ngd(def)&&!(smKo&&String(mv.eff||'').includes(smKo))&&!(SM==='Fly'&&/하늘에\s*(?:떠\s*)?있는\s*대상/.test(String(mv.eff||'')));
-  /* 11-23 웹툴과 같게: 특성 룬(타입1과 같은 기술 무효) · 만트라(같은 타입 공격 회피) · 공격 기술의 반사(bncOf — 이미 반사된 기술 · 반무적은 반사하지 않는다) */
-  const abD=String((def&&def.ability)||'').replace(/^특성\s*:\s*/,'').trim();const moldA=(()=>{try{const f0=H.get('moldOn');return !!(f0&&f0(atk,mv))}catch(e){return false}})();
-  const runeH=def!==atk&&abD==='룬'&&def.hp.cur>0&&!FN.sameT(def,atk)&&!moldA&&(()=>{const t1=(FN.tysOf(def)||[])[0];return !!t1&&t1!=='-'&&(moveTypes||[]).includes(t1)})();
-  const mantraH=def!==atk&&mv.cat!=='변화'&&abD==='만트라'&&def.hp.cur>0&&!moldA&&(moveTypes||[]).some(t=>t&&t!=='-'&&FN.tysOf(def).includes(t));
-  const reflH=(()=>{try{const f0=H.get('bncOf');return def!==atk&&!RF&&mv.cat!=='변화'&&!FN.sameT(def,atk)&&def.hp.cur>0&&!SM&&f0?f0(def,mv,moveTypes):null}catch(e){return null}})();
-  const accRoll=()=>protBlock?{prot:1,sure:false,hit:false}:reflH?{sure:false,hit:false,refl:String(reflH.name||'반사'),note:'반사 ('+String(reflH.name||'')+')'}:runeH?{sure:false,hit:false,note:'룬'}:mantraH?{sure:false,hit:false,note:'만트라'}:semiMiss?{sure:false,hit:false,note:smKo||'반무적'}:wideBlock?{sure:false,hit:false,note:'와이드가드'}:craftyBlock?{sure:false,hit:false,note:'트릭가드'}:aimBlock?{sure:false,hit:false,note:'에임가드'}:itImm?{sure:false,hit:false,note:itImm}:psyBlock?{sure:false,hit:false,note:'사이코필드'}:autoMiss?{sure:false,hit:false,note:'회피'}:
-   B.accuracy(atk,def,{acc:mv.acc},{accMult:accMul,sureHit:sure,starry:f.weather.type==='별하늘',fog:f.weather.type==='짙은안개',fogImmune:FN.tysOf(atk).some(t=>t==='Poison'||t==='Fairy'),gravity:(f.etc||{})['중력']>0,wideLens:FN.IT(atk)==='광각렌즈',ignoreAcc:IG.acc,ignoreEva:IG.eva,rng:rnd});
-  let acc=accRoll();if(!acc.hit&&!acc.prot&&!acc.note&&mv.cat!=='변화'&&atk.side==='left'&&cardTake(H,'reroll',+b.turn||0,atk.tid))acc=accRoll();   /* 「실타래 되감기」 */
-  /* 11-04 「빗나가라!」(세 칸 배틀 · c073): 상대 기술(명중 100 미만 · 필중 아님)이 아군에 맞으면 명중 다시 */if(acc.hit&&!acc.sure&&!sure&&mv.cat!=='변화'&&atk.side!=='left'&&def.side==='left'&&(+mv.acc||100)<100&&cardTake(H,'dodgeReroll',+b.turn||0,def.tid))acc=accRoll();
-  /* 11-05 「요정의 장난」(시작 24장): 상대 기술이 아군에 명중하면 명중 다시 — 맞을 확률이 100% 미만일 때만 쓴다 */else if(acc.hit&&!acc.sure&&!sure&&mv.cat!=='변화'&&atk.side!=='left'&&def.side==='left'&&(+acc.target||0)<10000&&cardTake(H,'fairyReroll',+b.turn||0,def.tid))acc=accRoll();
-  const floating=(def.states||{}).MagnetRise||(def.states||{}).Telekinesis||(FX&&FX.floating(def))||FN.IT(def)==='풍선';
-  const effPre=mv.cat==='변화'?null:B.effectiveness(moveTypes,def,{multiMode:0,atkTypes,force:null,floating});
-  const mods=FX?FX.attackMods(atk,def,Object.assign(FN.moveQuery(atk,def,mv,moveTypes,effPre?effPre.value:1,!multiTarget),{stab:!!(effPre&&effPre.stab)})):{boost:1,guard:1,cg:0,cr:0,cx:'',names:[]};
-  {const ig=OI&&OI.defGuard(def,mv.cat);if(ig){mods.guard=(mods.guard||1)*ig.v;mods.names=(mods.names||[]).concat([{key:'_i',who:def.id,txt:ig.txt}])}}
-  /* 11-23 웹툴과 같게: 특성 둘이함께 ③ 「전체기」로 받을 대미지 2배 (특성 무시 · 손으로 건 완화 줄이 있으면 겹치지 않는다) */
-  if(def!==atk&&mv.cat!=='변화'&&abD==='둘이함께'&&(multiTarget||/전체|자신\s*이외/.test(String(mv.range||'')))&&!moldA&&!(((def.fx||{}).mods)||[]).some(e=>e&&e.kind==='guard'&&+e.v===2&&/둘이함께/.test(String(e.name||'')))){mods.guard=(mods.guard||1)*2;mods.names=(mods.names||[]).concat([{key:'_two',who:def.id,txt:`${def.name} 「둘이함께」 전체기 ×2`}])}
-  if(H.logOn)for(const n of (mods.names||[]))if(String(n.key||'').startsWith('_hoi'))W.OM_APP.sysLog('  '+n.txt,'battle');   /* 11-15 【방호】 무시를 로그에 */
-  let igDef=-1,igAtk=-1;if(IG.def!=null)igDef=IG.def;if(IG.atk!=null)igAtk=IG.atk;if(igDef===-1&&/대상의\s*랭크\s*변화를\s*무시/.test(String(mv.eff||'')))igDef=6;
-  const OC=FN.orderCrit(atk,def);
-  if(mods.cx!=='none'&&FN.CRR(def).never)mods.cx='none';
-  if(mods.cx!=='none'){const nc=[[def.ability,def.abilityEff],...FN.potSrc(def).map(p=>[p.name,p.eff])].find(([n,e])=>n&&/자신의\s*급소에\s*맞지\s*않는다/.test(String(e||'')));if(nc)mods.cx='none'}
-  let hits=[];if(acc.hit){const mx=+mv.max||1,mn=+mv.min||1;const cnt=B.multiHits(mv,{skillLink:skill,rng:rnd});const fixedN=mx>1&&mn===mx&&!skill&&!acc.sure;const stage=B.critStage(atk,def,{input:0,order:OC.v+(mods.cr||0)-(mods.cg||0)+FN.itemCrit(atk,def)+FN.crAdj(atk,def)});
-   for(let i=0;i<cnt;i++){if(i>0&&fixedN){const a2=accRoll();if(!a2.hit)break}let cr=mods.cx==='none'?{crit:false}:B.critical(stage,{type:+FN.CRR(atk).tbl||0,forced:critForce||mods.cx==='sure'||!!FN.CRR(atk).sure,rng:rnd});if(cr.crit&&def.side==='left'&&atk.side!=='left'&&H.cards&&H.cards.shield&&H.cards.shield[def.id]===(+b.turn||0))cr={crit:false};else if(cr.crit&&def.side==='left'&&atk.side!=='left'&&cardTake(H,'noCrit',+b.turn||0,def.tid)){cr={crit:false};H.cards.shield=H.cards.shield||{};H.cards.shield[def.id]=+b.turn||0}   /* 「안개의 환영」 11-02: 이번 턴 그 아군이 받는 급소를 모두 막는다 */else if(cr.crit&&def.side==='left'&&atk.side!=='left'&&stage<=1&&cardTake(H,'noCritC1',+b.turn||0,def.tid))cr={crit:false};   /* 11-05 「안개의 환영」 시작 24장 글: 「C+1」 이하 기술의 급소를 일반 명중으로 */
-   else if(cr.crit&&def.side==='left'&&atk.side!=='left'&&cardTake(H,'critReroll',+b.turn||0,def.tid))cr=B.critical(stage,{type:+FN.CRR(atk).tbl||0,forced:critForce||mods.cx==='sure'||!!FN.CRR(atk).sure,rng:rnd});   /* 11-02 「급소 털어내기」: 한 번 다시 굴림 */hits.push({v:cr.crit?2:1,cr})}}
-  const objs=(f.objects||{})[side]||{};const wall={};for(const k in FN.WALLS)if(objs[k]>0&&!(k==='얼음의장벽'&&tyOf(mv)==='Fire'))wall[FN.WALLS[k]]=1;
-  if(objs['얼음의장벽']>0&&tyOf(mv)==='Fire'&&mv.cat!=='변화'){const nb0=FN.snap(),nb=FN.snap(nb0);const fo=FN.fieldOf(nb);delete fo.objects[side]['얼음의장벽'];nb.field=fo;await FN.saveBattle(nb0,nb)}
-  const spw=SPW?SPW(def):null;const powT=spw&&spw.pow!=null?spw.pow:pow;
-  const dTy=FN.tysOf(def),dS=mv.cat==='특수'?'specialdefense':'defense';const fieldT=fm*(f.terrain.type==='미스트필드'&&moveTypes.includes('Dragon')&&FN.grd(def)?0.5:1);
-  const wt=f.weather.type;const defMul=(wt==='극한'&&dTy.includes('Ice')&&dS==='defense')?2:(['눈','싸라기눈'].includes(wt)&&dTy.includes('Ice')&&dS==='defense')?1.5:(wt==='모래바람'&&dTy.includes('Rock')&&dS==='specialdefense')?1.5:1;
-  let MVP=null,DOPT=null;const dmg=mv.cat==='변화'||!powT||(spw&&spw.fixed)||(MAU&&MAU.delay)||!hits.length?null:B.damage(FN.foulAtk(atk,def,mv),FN.aceDef&&!process.env.NOACE?FN.aceDef(atk,def):def,MVP=Object.assign({},mv,{pow:powT},ATY?{typeEn:ATY,type:S.typeKo(ATY)}:sk?{typeEn:sk.ty,type:S.typeKo(sk.ty)}:rndOf(mv)?{typeEn:rndOf(mv),type:S.typeKo(rndOf(mv))}:{}),DOPT={critMul:FN.critMulOf(atk),hits:hits.map(h=>h.v),powStep:spw?0:FN.powStepOf(mv),free1:1*(mods.boost||1),free2:1,item1,item2:1,trait:traitMul,weather:wMul,fieldMul:fieldT,defMul,wonder:RM('원더룸'),helping:(atk.states||{}).HelpingHand?Math.round(Math.pow(1.5,Math.max(1,+atk.helpN||1))*10000)/10000:0,charge,lifeOrb:false,multiTarget,wall,wallSize:FN.mode(b)>=2?2:1,ignoreAtk:igAtk,ignoreDef:igDef,watersport:(f.etc||{})['물놀이']>0,mudsport:(f.etc||{})['흙놀이']>0,scarf:FN.IT(atk)==='구애스카프',choiceDef:false,tailwindDef:((f.objects||{})[side]||{})['순풍']>0,swampDef:((f.objects||{})[side]||{})['습원']>0,rng:rnd});
-  /* 고정 · 변칙 피해(spw.fixed): 웹툴은 HP 창에서 손으로 — 시뮬은 spw.dmg 가 있으면 그 값 */
-  const eff=dmg?B.effectiveness(moveTypes,def,{multiMode:0,atkTypes,force:null,floating}):(effPre||null);
-  const stab=eff?eff.stab:false;const DFl=def.flags||{};
-  const guard0=(DFl.endure?0.5:1)*(mods.guard||1);const endure0=(!!DFl.endure&&!DFl.endureUsed||!!mods.endure)&&!AF.noEndure;
-  res.push({slot,def,acc,hits,dmg,eff,stab,guard:guard0,endure:endure0,mods,spw,sec:[...(acc.hit?(MAU?MAU.groups.filter(g=>g.who==='target').map(g=>{const x=rollG(FN,atk,def,g,SECADJ,rnd);if(x.ok&&g.sec&&(+g.n||10)<=3&&def.side==='left'&&atk.side!=='left'&&cardTake(H,'secIgnore',+b.turn||0,def.tid))return {g,ok:false};return x}):[]):[])]})}   /* 11-05 「약간 은밀한 망토」 */
- const anyHit=res.some(r=>r.acc.hit);const once=MAU?MAU.groups.filter(g=>g.who!=='target'&&(anyHit||g.when==='use')).map(g=>rollG(FN,atk,null,g,SECADJ,rnd)):[];
- /* ===== 적용 (공격 창 「적용」) ===== */
- const nb0=FN.snap(),nb=FN.snap(nb0);const lines=out.lines;
- if(chk){nb.mons[mid].states=chk.am.states;lines.push(...chk.lines)}
- {const a=nb.mons[mid];const ty=tyOf(mv);if(a&&a.states&&res.some(r=>r.acc.hit&&r.dmg))for(const k in FN.CHARGE_ST)if(a.states[k]&&FN.CHARGE_ST[k]===ty)delete a.states[k]}
- {const a=nb.mons[mid];const sdb=(DB.states||{}).st||{};const st=(a&&a.states)||{};for(const k of Object.keys(st)){const d=sdb[k]||{};const v=+st[k];if(!FN.movesDown(k,d)||!(v>0&&v<1000))continue;if(chk&&(k==='Sleep'||k==='Confusion'||k==='Freeze'))continue;if(v<=1)delete st[k];else st[k]=v-1}}
- if(PR){const a=nb.mons[mid];const t0=+nb.turn||0;if(PR.ok){a.flags=Object.assign({},a.flags||{},{protect:t0});a.protectLast=t0;a.protectN=PR.k+1;lines.push(`${a.name} 「기술 방어」`)}else{if(a.flags)delete a.flags.protect;a.protectLast=null;a.protectN=0;lines.push(`${a.name} 「기술 방어」 실패`)}}
- /* 11-15 대타출동 (웹툴 3733 그대로): HP 1/4 → 대역인형 · 이미 있거나 HP 모자라면 실패 */{const a=nb.mons[mid];if(a&&/「대역인형」을\s*소환/.test(String(mv.eff||''))){const q=Math.max(1,Math.floor(a.hp.max/4));a.states=a.states||{};if(a.states.Substitute)lines.push(`${a.name} 이미 대역인형이 있다 — 실패`);else if(a.hp.cur<=q)lines.push(`${a.name} HP 가 모자라 대역인형 실패`);else{a.hp.cur-=q;a.states.Substitute=1000;a.subHp=q;delete a.states.Bind;lines.push(`${a.name} 「HP」 −${q} — 대역인형 (인형 ${q})`)}}}
- /* 11-15 자세 → 다음 거합 타입 (웹툴 그대로) */{const a=nb.mons[mid];if(a){const au=MAU0||{};if(au.iai){a.iai=au.iai;lines.push(`${a.name} 다음 「거합」 기술 → ${au.iai}`)}else if(au.stance||(mv.cat==='변화'&&/의자세$/.test(mv.name||'')))delete a.iai;else if(a.iai&&/(^|[,\s])거합($|[,\s])/.test(String(mv.tag||'')))delete a.iai;if(mv.cat==='변화'&&/의자세$/.test(mv.name||''))a.stanceT=+nb.turn||0}}
- if(PBY==='clear')for(const r of res){const d=nb.mons[r.def.id];if(r.acc.hit&&d&&d.flags&&d.flags.protect!=null)delete d.flags.protect}
- const am=r=>(r.stab?1.5:1)*(belt&&r.eff&&r.eff.value>1?1.2:1);   /* 창의 atkMul: 자속 × 달인의띠 (적응력은 효과 엔진) */
- for(const r of res){const def=nb.mons[r.def.id];if(!def)continue;
-  if(!r.acc.hit){out.hits.push({to:def.name,miss:true,note:r.acc.prot?'기술 방어':r.acc.note||'빗나감'});continue}
-  if(!r.dmg){out.hits.push({to:def.name,status:true});continue}
-  const crit=r.hits.some(h=>h.v===2);const A1=am(r);
-  def.lastHit={from:atk.name,fromId:atk.id,move:mv.name,moveType:(rndOf(mv)?S.typeKo(rndOf(mv)):mv.type)||'',eff:r.eff.value,total:Math.floor(r.dmg.total*A1),hits:r.hits.length,crit,per:FN.perOf(r.dmg,A1),guard:r.guard,guardNote:((r.mods&&r.mods.names)||[]).filter(x=>x.who===def.id).map(x=>x.txt).join(' · '),endure:r.endure,turn:+nb.turn||0,mt:moveTypes,cat:mv.cat||'',ct:W.OM_APP.contactOf(mv)==='O',multi:res.length>1};
-  if(FX&&r.mods)FX.consume(nb,r.mods.names);if(def.flags&&def.flags.endure)def.flags.endureUsed=1}
- if(MAU&&FX){const a=RF&&nb.mons[RF.from]?nb.mons[RF.from]:nb.mons[mid];const cx0=W.__SIM.uiCtx(nb,a,mv.name);
-  const runOps=async(ops,def)=>{if(RF){const r=await FX.run(ops.map(q=>q&&(q.tgt==null||['target','enemy','enemy1','self'].includes(q.tgt))?Object.assign({},q,{tgt:'self'}):q),cx0);lines.push(...r.lines);return}const map=def?FN.tgtFor(atk,def):(q=>q);const cx=Object.assign({},cx0,def?{pick:list=>Promise.resolve(list.find(x=>x.id===def.id)||null)}:{});const r=await FX.run(ops.map(map),cx);lines.push(...r.lines)};
-  for(const x of once)if(x.ok&&x.ops){let ops1=x.ops;try{const U=nb.mons[mid];const fu=FX.fracUp?FX.fracUp([{name:'특성 : '+(U.ability||''),eff:U.abilityEff},...FN.potSrc(U)],mv.name,[],ops1):null;if(fu&&!fu.types){ops1=fu.ops;lines.push(`${U.name} 「${fu.name}」 — 「${mv.name}」 강화 (${fu.from} → ${fu.to})`)}}catch(e){}await runOps(ops1,null)}
-  for(const r of res)for(const x of (r.sec||[]))if(x.g&&x.ok&&x.ops){const d=nb.mons[r.def.id];if(d){/* 11-23 위력이 강화(1/3→1/2) — 웹툴과 같다 */let ops1=x.ops;try{const U=nb.mons[mid];const fu=FX.fracUp?FX.fracUp([{name:'특성 : '+(U.ability||''),eff:U.abilityEff},...FN.potSrc(U)],mv.name,FN.tysOf(d),ops1):null;if(fu){ops1=fu.ops;lines.push(`${U.name} 「${fu.name}」 — 「${mv.name}」의 위력 강화 (${fu.from} → ${fu.to})`)}}catch(e){}await runOps(ops1,d)}}
-  /* 드레인 · 반동은 예상 대미지(받는 쪽 HP 창 계산 전 값) 기준 — 웹툴과 같다 */
-  const est=r=>{if(!r.dmg)return 0;const d=nb.mons[r.def.id];const hp=B.hpDamageHits(d||r.def,FN.perOf(r.dmg,am(r)),r.eff.value,Object.assign({},FN.hsOpt(d||r.def,mv.cat,r.mods),{stab:false,guard:r.guard,endure:r.endure,hpFloor:FN.raidFloor(d||r.def)}));return hp.final};
-  const dealt=res.filter(r=>r.acc.hit&&r.dmg).reduce((s2,r)=>s2+est(r),0);
-  if(MAU.recoil&&a.hp.cur>0){const R2=MAU.recoil;const base=R2.basis==='max'?a.hp.max:dealt;const ok=R2.when==='miss'?(!anyHit&&!res.some(r=>r.acc&&r.acc.refl)):anyHit&&(R2.basis==='max'||dealt>0);if(ok&&!(!R2.hard&&(FX.noind(a,'recoil')||FX.noind(a,'')))){const [p,q]=R2.frac.split('/').map(Number);const v=Math.max(1,Math.floor(base*p/q));a.hp.cur=Math.max(0,a.hp.cur-v);lines.push(`${a.name} 반동 −${v}`)}}
-  {const dA=RF?nb.mons[mid]:a;/* 반사 공격의 드레인은 반사한 쪽 (망령 11-23) */if(MAU.drain&&dealt>0&&dA&&dA.hp.cur>0&&!(dA.states||{}).HealBlock){const [p,q]=MAU.drain.split('/').map(Number);let v=Math.max(1,Math.floor(dealt*p/q));if(FN.IT(dA)==='큰뿌리')v=Math.floor(v*1.3);const h=Math.min(v,dA.hp.max-dA.hp.cur);dA.hp.cur+=h;lines.push(`${dA.name} 드레인 +${h}`)}}
-  if(MAU.selfFaint&&a.hp.cur>0){a.hp.cur=0;lines.push(`${a.name} 사용 후 빈사`)}
-  for(const id in nb.mons){const x=nb.mons[id];if(x.entry&&x.hp.cur<=0){x.entry='';lines.push(`${x.name}은(는) 쓰러졌다!`)}}}
- if(OI&&!RF){const a=nb.mons[mid];const tags=String(mv.tag||'').split(/[,/·\s]+/).filter(Boolean);const dealtIds=res.filter(r=>r.acc.hit&&r.dmg).map(r=>r.def.id);try{lines.push(...OI.afterAttack(nb,a,{jewel:!!(im&&im.jewel&&item1>1),dealt:dealtIds,missAll:res.length>0&&!anyHit,tags}))}catch(e){}}
- fieldStrip(FN,nb,atk,mv,res,lines);
- /* 11-15 소지품 기술 (트릭 · 바꿔치기 · 탁쳐서떨구기 … — 웹툴 OI().moveFx 그대로) */{const IK=OI&&OI.moveKind?OI.moveKind(mv):'';if(IK&&nb.mons[mid]){const hits=res.map(r=>({id:r.def.id,hit:!!r.acc.hit,dmg:!!(r.acc.hit&&r.dmg&&!(r.eff&&+r.eff.value===0)),final:0}));try{const R2=OI.moveFx(nb,mid,IK,hits,{name:mv.name,mt:[tyOf(mv)],cat:mv.cat,eff:Object.fromEntries(res.map(r=>[r.def.id,r.eff?+r.eff.value:1])),multi:res.length>1,turn:+nb.turn||0});lines.push(...(R2.lines||[]))}catch(e){}}}
- {const tm2=String(mv.eff||'').match(/「난동부리기\s*\(혼란\)\s*:\s*(\d+)~(\d+)회」/);const a=nb.mons[mid];if(tm2&&a){a.states=a.states||{};if(!a.states.Thrash&&!a.thrashOn){const n=+tm2[1]+Math.floor(rnd()*(+tm2[2]-+tm2[1]+1));if(n>1){a.states.Thrash=n-1;a.thrashOn=1}}else if(!a.states.Thrash&&a.thrashOn){delete a.thrashOn;const cf=((DB.states||{}).st||{}).Confusion||{};const lo=+cf.min||1,hi=+cf.max||lo;a.states.Confusion=lo+Math.floor(rnd()*(hi-lo+1))}}}
- {const a=RF&&nb.mons[RF.from]?nb.mons[RF.from]:nb.mons[mid];const e=String(mv.eff||'');if(a&&a.hp.cur>0){a.states=a.states||{};if(/「반동\s*:\s*행동불능」/.test(e)&&anyHit)a.states.Recharge=2;if(!RF&&mv.cat!=='변화'&&!(atk.states||{}).Thrash&&!a.states.Thrash&&FN.potSrc(a).some(p=>String(p.name||'').trim()==='버서커'))a.states.Thrash=2}}
- if(NX.length){const a=nb.mons[mid];const Fx=a.fx||{};const nk=NX.map(e=>e.key);Fx.mods=(Fx.mods||[]).filter(e=>!(e.next&&nk.includes(e.key)));Fx.prio=(Fx.prio||[]).filter(e=>!(e.next&&nk.includes(e.key)))}
- await FN.saveBattle(nb0,nb);
- /* 11-15 방어 기술 덤 (웹툴 protRiderFire 그대로) */if(FN.protRiderFire)for(const r of res){if(r.acc&&r.acc.prot&&r.def&&r.def.id!==mid)try{await FN.protRiderFire(mid,r.def.id,String(mv.contact||'')==='O',mv.name)}catch(e){}}
- /* ===== 받는 쪽 「HP」 창 「적용」 (대상마다) ===== */
- let dealtAll=0;
- for(const r of res){if(!r.acc.hit||!r.dmg)continue;const hv=await applyHit(H,W,r.def.id,rnd);if(hv){out.hits.push({to:r.def.name,dmg:hv.final,eff:r.eff.value,crit:r.hits.some(h=>h.v===2),ko:hv.ko,n:r.hits.length});dealtAll+=hv.final}}
- {const b2=FN.ctx().b;const a=b2.mons[mid];if(a)a.lastDealt={total:dealtAll}}
- /* 11-15 05시 망령 「시뮬에서 구현 안 되는 게 있으면 만들면서」: 웹툴 공격 창 「적용」 뒤 계기를 그대로 — ① 「자신이 행동한 뒤」 포텐셜(닌자 …) ② 조건 명중(hitAuto) ③ 맞은 쪽 「공격을 받았을 때」 ④ 「방어」로 막았을 때 ⑤ 쌓인 계기 · 함성 ⑥ 미룬 대미지 */
- {const RS={mv,targets:res,moveTypes};const ctOf=()=>!!(W.OM_APP.contactOf&&W.OM_APP.contactOf(mv)==='O');
-  try{const a2=RF?null:FN.ctx().b.mons[mid];const T=+FN.ctx().b.turn||0;if(a2&&a2.entry&&a2.hp.cur>0&&FX&&FN.ACTFX)for(const p of FN.potSrc(a2)){if(!p||!p.name||(p.ph&&!p.apt)||!/자신이\s*행동한\s*(?:뒤|후)/.test(String(p.eff||'')))continue;const k=mid+'|'+p.name;if(FN.ACTFX[k]===T)continue;
-    const au=FX.autoOf(a2,'pot',p.name);if(!au||!au.ops||!au.ops.length||au.manual||FN.limManual(a2,'pot',p.name,p.eff))continue;FN.ACTFX[k]=T;const okN=await FN.fireAuto(mid,'pot',p.name,{quiet:true,noRoll:true,head:`【포텐셜】 ${a2.name} 『${p.name}』 — 행동한 뒤 자동`});
-    /* 11-15 「『닌자』가 발동했을 때 「자세」 기술에 의한 추가 행동」(궁극의 사두룡) — 웹툴은 행동 순서 다음 칸, 시뮬은 바로 */if(okN&&FN.stanceXact){const X=await FN.stanceXact(mid,p.name);if(X){if(H.logOn)W.OM_APP.sysLog(`【추가 행동】 ${a2.name} 『${X.mv.name}』 — ${X.p}`,'battle');try{await attack(H,W,mid,X.i,[],{})}catch(e){}}}}}catch(e){}
-  try{if(FN.coverFire)await FN.coverFire(mid,RS)}catch(e){}
-  try{if(!RF&&FN.chainAfterAct)await FN.chainAfterAct(mid)}catch(e){}
-  try{if(!RF&&FN.mvModAfter)await FN.mvModAfter(mid,RS)}catch(e){}
-  try{if(FN.hitAuto)await FN.hitAuto(mid,RS)}catch(e){}
-  try{if(FN.evReact)for(const r of res){if(!r||!r.acc||!r.acc.hit||!r.def||r.def.id===mid)continue;const lh=(FN.ctx().b.mons[r.def.id]||{}).lastHit;await FN.evReact('hit',{mid,tgt:r.def.id,dmg:lh&&lh.fromId===mid?+lh.total||0:0,mv:mv.name,mt:moveTypes||[],cat:mv.cat||'',ct:ctOf(),eff:r.eff?+r.eff.value:1,crit:!!(r.hits||[]).some(h=>h&&h.v===2),key:mv.name+'@'+r.def.id+'@'+(+FN.ctx().b.turn||0)+'@'+rnd()})}}catch(e){}
-  try{if(FN.evReact)for(const r of res){if(!r||!r.acc||!r.acc.prot||!r.def||r.def.id===mid)continue;await FN.evReact('guard',{mid,tgt:r.def.id,mv:mv.name,mt:moveTypes||[],cat:mv.cat||'',ct:ctOf(),key:mv.name+'@g'+r.def.id+'@'+rnd()})}}catch(e){}
-  try{if(FN.evFlush)await FN.evFlush();if(FN.evReact&&!RF)await FN.evReact('shout',{mid,mv:mv.name,key:mv.name+'@'+rnd()})}catch(e){}
-  try{if(FN.deferFire)await FN.deferFire(mid,'자신의 행동이 끝나서','act')}catch(e){}}
- /* 강제 교대 · 자기 교대 (적용 뒤) */
- {const HIT2=mv.cat==='변화'||res.some(r=>r&&r.acc&&r.acc.hit&&r.def&&r.def.id!==mid);/* 11-15: 공격기의 교대 · 날려보내기는 맞았을 때만 (웹툴 HIT2) */out.forceSwitch=HIT2&&!!(MAU&&MAU.forceSwitch);out.selfSwitch=!HIT2||RF?'':MAU&&MAU.selfSwitch?MAU.selfSwitch:(NX.some(e=>e.uturn)?'free':'')}
- if(out.forceSwitch)for(const r of res){if(!r.acc.hit||r.def.id===mid)continue;const d=FN.ctx().b.mons[r.def.id];if(!d||!d.entry||d.hp.cur<=0)continue;const g=await FN.switchGuard(d);if(g)continue;await FN.forcedSwitch(d.id,{sys:true})}
- out.anyHit=anyHit;out.dealt=dealtAll;if(RF)out.refl=RF;
- if(H.logOn)W.OM_APP.sysLog(`【공격】 ${atk.name} 『${mv.name}』${PR?(PR.ok?' (기술 방어 성공)':' (기술 방어 실패)'):''} ${out.hits.map(h=>'→ '+h.to+' '+(h.miss?'✗ '+h.note:h.status?'(변화)':'−'+h.dmg+(h.eff!==1?' ×'+h.eff:'')+(h.crit?' 급소':'')+(h.n>1?' '+h.n+'타':'')+(h.ko?' 쓰러짐':''))).join(' ')}${lines.length?'\n  '+lines.join('\n  '):''}`,'battle');
- /* 11-23 반사한 포켓몬마다 바로 「반사 공격」 — 웹툴은 행동 순서 다음 칸, 시뮬은 바로 잇는다 */
- if(!RF)for(const r of res){if(!r||!r.acc||!r.acc.refl||!r.def)continue;const b2=FN.ctx().b;const d=b2.mons[r.def.id],a2=b2.mons[mid];if(!d||!d.entry||d.hp.cur<=0||!a2||!a2.entry||a2.hp.cur<=0)continue;if(H.logOn)W.OM_APP.sysLog(`【반사】 ${d.name} 「${r.acc.refl}」 — 「${mv.name}」을(를) ${a2.name}에게 되돌린다`,'battle');try{const rr=await attack(H,W,d.id,-1,[a2.side+'_'+a2.entry],{mvObj:Object.assign({},mv,{virt:1}),refl:{from:mid,by:r.acc.refl}});(out.reflected=out.reflected||[]).push(rr)}catch(e){if(H.logOn)W.OM_APP.sysLog('반사 공격 오류: '+(e&&e.message),'battle')}}
- return out}
+function cardTake(H, eff, turn, ownTid) {
+  const C = H && H.cards;
+  if (!C) return null;
+  C.turn = C.turn || {};
+  const c = (C.list || []).find(
+    x => !x.used && x.eff === eff && C.turn[x.tid] !== turn && (!C.own || !ownTid || x.tid === ownTid) && (!x.pay || x.pay())
+  );
+  /* 11-01 코스트: 낼 수 있을 때만 */ if (!c) return null;
+  c.used = true;
+  C.turn[c.tid] = turn;
+  return c;
+}
+async function attack(H, W, mid, idx, targets, o) {
+  o = o || {};
+  /* 11-23 「기술의 반사」(웹툴 openAttack RF 와 같다): o.refl={from,by} = 반사 공격 — 대미지는 반사한 쪽(mid) 능력치, 반동 · 추가 효과는 원래 쓴 포켓몬(from), 드레인은 반사한 쪽 */ const RF =
+    o.refl || null;
+  const FN = H.fn,
+    B = W.OM_BATTLE,
+    FX = W.OM_FX,
+    OI = W.OM_ITEMS,
+    F = W.OM_FIELD,
+    MA = W.OM_MOVEAUTO,
+    S = W.OM_STATS,
+    DB = W.OM_DB || {};
+  const R = Math.random.bind(W.Math);
+  const rnd = () => W.Math.random();
+  const c = FN.ctx();
+  const b = c.b;
+  const atk0 = b.mons[mid];
+  if (!atk0 || !atk0.entry || atk0.hp.cur <= 0) return { skip: '없음' };
+  const f = FN.fieldOf(b);
+  const RM = k => +((f.rooms || {})[k] || 0) > 0;
+  const TYS0 = [
+    ['Electrify', 'Electric'],
+    ['Flooding', 'Water'],
+    ['Knave', 'Dark']
+  ].filter(([k]) => +((atk0.states || {})[k] || 0) > 0);
+  const ATY = TYS0.length ? TYS0[TYS0.length - 1][1] : '';
+  /* 11-04 망령: 「무작위」 타입 기술 — 공격마다 18 타입 중 하나 (웹툴 battle_ui isRndMove · rndType 그대로, 씨앗 난수) */
+  const isRnd = H.get('isRndMove'),
+    rndT = H.get('rndType');
+  const RNDT = {};
+  const rndOf = mv => (isRnd && isRnd(mv) ? RNDT[mv.name] || (RNDT[mv.name] = rndT()) : '');
+  const IAI = mv => (atk0.iai && mv && /(^|[,\s])거합($|[,\s])/.test(String(mv.tag || '')) ? atk0.iai : '');
+  /* 11-15 자세 → 다음 거합 타입 (웹툴 IAI) */ const tyOf = mv =>
+    ATY || IAI(mv) || (RM('블랙룸') && mv.cat !== '변화' ? 'Ghost' : (FN.skinOf(atk0, mv) || {}).ty || rndOf(mv) || mv.typeEn);
+  const mtys = mv =>
+    ATY
+      ? [ATY]
+      : RM('블랙룸') && mv.cat !== '변화'
+        ? ['Ghost']
+        : FN.skinOf(atk0, mv)
+          ? [FN.skinOf(atk0, mv).ty]
+          : rndOf(mv)
+            ? [rndOf(mv)]
+            : String(mv.type || '')
+                .split(/[()/,]/)
+                .map(t => t.trim())
+                .filter(Boolean)
+                .map(S.typeEn);
+  const mv = o.mvObj || FN.MVS(atk0)[idx];
+  if (!mv) return { skip: '기술 없음' }; /* 11-15 o.mvObj: 추가 행동처럼 기술 목록에 없는 기술 */
+  /* 11-15 「연속 제한」(방어 기술 말고) — 웹툴 consecFail 과 같음 */ if (!RF) {
+    const cm = String(mv.eff || '').match(/「연속\s*제한\s*:\s*(실패\s*확률\s*증가|확정\s*실패)」/);
+    const T1 = +b.turn || 0;
+    if (cm && !FN.protMove(mv) && atk0.lastMove === mv.name && +atk0.lastMoveT === T1 - 1) {
+      const k = Math.max(1, +(atk0.consec && atk0.consec.name === mv.name ? atk0.consec.n : 1));
+      const ok = !/확정/.test(cm[1]) && rnd() < Math.pow(1 / 3, k);
+      if (!ok) {
+        const why = `${atk0.name} 「${mv.name}」 — 연속으로 내보내 실패`;
+        if (H.logOn) W.OM_APP.sysLog(`【공격】 ${why}`, 'battle');
+        return { mv: mv.name, lines: [why], hits: [], fail: why };
+      }
+    }
+  }
+  /* 11-15 망령 「진서현 분석」: 기술 효과 글의 실패 조건이 시뮬 공격 길에 없었다 — 웹툴 openAttack(감우 55)과 같게: 나온 뒤 첫 기술 · 이번 턴 맞음 · 대상이 공격 안 함(기습) · 대상보다 늦음 · 「타입 : X」 이외(파동공진파) */
+  if (!RF) {
+    const au = (FN.moveAuto && FN.moveAuto(mv)) || {};
+    const T1 = +b.turn || 0;
+    const d0 = (() => {
+      const [sd, ar] = String((targets || [])[0] || '').split('_');
+      return (FN.entered(b, sd) || {})[ar] || null;
+    })();
+    let why = '';
+    if (au.firstOnly && atk0.lastMove) why = '필드에 나와 처음 내보낸 기술이 아니라';
+    else if (au.failHit && (+atk0.hitT === T1 || (atk0.lastTaken && atk0.lastTaken.hit && +atk0.lastTaken.turn === T1))) why = '이번 턴 공격을 받아';
+    else if (au.failNoAtk && d0 && d0 !== atk0 && FN.ordAtk && !FN.ordAtk(b, d0)) why = `${d0.name}이(가) 공격하지 않아`;
+    else if (au.failLate && d0 && d0 !== atk0 && FN.actedB4 && FN.actedB4(b, d0)) why = `${d0.name}이(가) 먼저 행동해서`;
+    else if (
+      (au.failNoBerry || au.failNoSt) &&
+      (() => {
+        const nm = x => String(x || '').replace(/\s/g, '');
+        const nf = ((atk0.fx || {}).sp || []).find(e => e && e.sp === 'nofail' && (!e.mv || !e.mv.length || e.mv.some(x => nm(x) === nm(mv.name))));
+        if (nf) return false;
+        if (au.failNoBerry && !(atk0.ateBerry || (atk0.itemUsed && /열매$/.test(String(atk0.itemUsed.name || '').trim())))) {
+          why = '「나무열매」를 소모한 상태가 아니라';
+          return true;
+        }
+        if (au.failNoSt && d0 && d0 !== atk0 && !(d0.states || {})[au.failNoSt]) {
+          why = `${d0.name}이(가) 「${au.failNoStKo || au.failNoSt}」 상태가 아니라`;
+          return true;
+        }
+        return false;
+      })()
+    ) {
+    } /* 11-23 트림 · 추월 — 웹툴과 같다 */
+    else if (au.onlyVs && d0 && !(au.onlyVsL || [au.onlyVs]).some(t => (FN.tysOf(d0) || []).includes(t)))
+      why = `${d0.name}이(가) 「${(au.onlyVsL || [au.onlyVs]).map(t => S.typeKo(t)).join(' · ')}」 타입이 아니라`;
+    if (why) {
+      const w = `${atk0.name} 「${mv.name}」 — ${why} 실패`;
+      if (H.logOn) W.OM_APP.sysLog(`【공격】 ${w}`, 'battle');
+      return { mv: mv.name, lines: [w], hits: [], fail: w };
+    }
+  }
+  /* 11-15 날따름 · 끌어오기는 행동할 때 다시 본다 (웹툴 openAttack 3414 와 같음 — 지시 때 고른 대상보다 먼저) */ if (
+    FN.redirectOf &&
+    targets &&
+    targets.length <= 1
+  ) {
+    try {
+      const rd = FN.redirectOf(b, atk0, mv);
+      if (rd && rd.slot && targets[0] !== rd.slot) {
+        targets = [rd.slot];
+        if (H.logOn)
+          W.OM_APP.sysLog(`${atk0.name}의 「${mv.name}」 대상이 ${rd.mon.name}(으)로 바뀌었다 — ${(rd.e && rd.e.name) || '끌어오기'}`, 'battle');
+      }
+    } catch (e) {}
+  }
+  const out = { mv: mv.name, lines: [], hits: [], fail: '' };
+  /* 행동 판정 (창의 「행동 판정」 칸 — 시뮬은 늘 켠다) */
+  let chk = null;
+  if (F && ['Flinch', 'Sleep', 'Paralysis', 'Freeze', 'Attract', 'Confusion'].some(k => (atk0.states || {})[k])) {
+    let am = JSON.parse(JSON.stringify(atk0));
+    let r = F.actionCheck(am);
+    if (
+      !r.ok &&
+      atk0.side === 'left' &&
+      ['Paralysis', 'Freeze', 'Confusion'].some(k => (atk0.states || {})[k]) &&
+      !(atk0.states || {}).Flinch &&
+      (cardTake(H, 'actReroll', +b.turn || 0, atk0.tid) ||
+        (['Paralysis', 'Confusion'].some(k => (atk0.states || {})[k]) && cardTake(H, 'actReroll2', +b.turn || 0, atk0.tid)))
+    ) {
+      am = JSON.parse(JSON.stringify(atk0));
+      r = F.actionCheck(am);
+    } /* 11-02 「다시 일어서」: 마비 · 혼란 · 얼음 행동 판정 한 번 다시 */
+    if (!r.ok) {
+      let self = 0;
+      if (r.selfHit) {
+        self = F.confusionHit(am);
+        am.hp.cur = Math.max(0, am.hp.cur - self);
+        r.lines.push(`${am.name} 자작 대미지 −${self}`);
+      }
+      const nb0 = FN.snap(),
+        nb = FN.snap(nb0);
+      const x = nb.mons[mid];
+      x.states = am.states;
+      if (am.wakeT != null) x.wakeT = am.wakeT;
+      else delete x.wakeT;
+      if (self) {
+        x.hp.latest = x.hp.cur;
+        x.hp.cur = Math.max(0, x.hp.cur - self);
+      }
+      if (x.hp.cur <= 0) x.entry = '';
+      await FN.saveBattle(nb0, nb);
+      out.fail = r.lines.join(' / ');
+      out.lines.push(...r.lines);
+      if (H.logOn) W.OM_APP.sysLog(`【행동 실패】 ${atk0.name} — ${out.fail}`, 'battle');
+      return out;
+    }
+    chk = { am, lines: r.lines };
+  }
+  /* 「반동 : 행동불능」 쉬는 턴 */
+  if (!RF && +((atk0.states || {}).Recharge || 0) === 1) {
+    out.fail = '반동 : 행동불능';
+    return out;
+  }
+  const atk = atk0;
+  /* 대상 */
+  const slots = FN.allEntered(b);
+  targets = (targets || []).filter(s => slots.some(z => z.slot === s));
+  if (!targets.length && mv.cat !== '변화') {
+    const foes = slots.filter(z => !FN.sameT(z.mon, atk, b));
+    if (foes.length) targets = [foes[0].slot];
+  }
+  if (!targets.length) targets = FN.defaultTargets ? FN.defaultTargets(b, mid, String(idx)) : [];
+  if (!targets.length) {
+    out.fail = '대상 없음';
+    return out;
+  }
+  /* 기술 방어 */
+  const PROT = FN.protMove(mv);
+  let PR = null;
+  if (PROT) {
+    const t0 = +b.turn || 0;
+    const k = atk.protectLast === t0 - 1 ? +atk.protectN || 0 : 0;
+    const ch = Math.pow(1 / 3, k);
+    const rl = rnd();
+    PR = { ok: rl < ch, chance: Math.round(ch * 1000) / 10, k };
+  }
+  const PBY = FN.protBypass(mv);
+  const NX = FX && FX.nextOf ? FX.nextOf(atk) : [];
+  const moveTypes = mtys(mv);
+  const atkTypes = atk.teraActive && atk.teraEn !== '-' ? [...atk.types, atk.teraEn] : atk.types;
+  /* 창 칸 기본값 */
+  const T0 = tyOf(mv);
+  const wm = FN.WEATHER_MUL[f.weather.type] || {};
+  const wMul = wm[T0] != null ? wm[T0] : 1;
+  const sk = !ATY && FN.skinOf(atk, mv);
+  const traitMul = sk ? sk.mul : 1;
+  let fm = 1;
+  const ft = f.terrain.type;
+  if (FN.grd(atk)) {
+    if (ft === '그래스필드' && T0 === 'Grass') fm = 1.3;
+    if (ft === '일렉트릭필드' && T0 === 'Electric') fm = 1.3;
+    if (ft === '사이코필드' && T0 === 'Psychic') fm = 1.3;
+  }
+  const im = OI ? OI.atkMul(atk, { types: mtys(mv), cat: mv.cat, single: String(mv.range || '') === '1체' }) : null;
+  const item1 = im ? im.v : 1;
+  let pow = +mv.pow || FN.powStepOf(mv) || 0;
+  {
+    const oe = (b.order || []).find(z => z.mid === mid && z.pursuitHit);
+    const pv = oe && b.mons[oe.pursuitHit];
+    if (oe && pv && pv.entry && String(mv.name) === String(oe.move) && FN.pursuitX2 && FN.pursuitX2(mv)) pow = (+mv.pow || 0) * 2;
+  }
+  {
+    const e = String(mv.eff || ''),
+      Wt = String(f.weather.type || '');
+    const half = e.match(/「날씨\s*:\s*([^」]+)」일 때 위력을 반감/);
+    if (
+      half &&
+      Wt &&
+      half[1]
+        .split(/[,，]\s*/)
+        .map(x => x.trim())
+        .includes(Wt)
+    )
+      pow = Math.floor((+mv.pow || 0) / 2);
+  }
+  const MAU0 = FN.moveAuto(mv),
+    MAU = MA && MA.auto(MAU0) ? MAU0 : null;
+  const critForce = !!(MAU0 && MAU0.critSure);
+  const charge = mv.cat !== '변화' && Object.keys(FN.CHARGE_ST).some(k => (atk.states || {})[k] && tyOf(mv) === FN.CHARGE_ST[k]);
+  const belt = FN.IT(atk) === '달인의띠',
+    skill = String(atk.ability || '').replace(/^특성\s*:\s*/, '') === '스킬링크';
+  const accMul = FN.leadAcc(atk);
+  const sure0 = false;
+  const res = [];
+  const multiTarget = targets.length > 1;
+  const SPW = FN.specialPowFor(mv.name, atk);
+  /* 부가효과 확률 보정은 효과 엔진(chance) 기본값 — 창 칸 asecadd/asecsure */
+  const SECADJ = { add: FN.secAdd0 ? FN.secAdd0(atk) : 0, sure: FN.secSure0 ? FN.secSure0(atk) : false };
+  for (const slot of targets) {
+    const [side, area] = slot.split('_');
+    const def = FN.entered(b, side)[area];
+    if (!def) continue;
+    const AF = atk.flags || {},
+      DF = def.flags || {};
+    const phys = mv.cat === '물리',
+      spec = mv.cat === '특수';
+    const sure =
+      sure0 || (!RF && (AF.surehit || (phys && AF.hitPhys) || (spec && AF.hitSpec) || !!(FX && FX.nextOf && FX.nextOf(atk).some(e => e.sure))));
+    const IG = FX ? FN.iuIgnore(atk, def) : {};
+    const sureMv = sure || !+mv.acc;
+    const autoMiss = (!RF && ((phys && DF.dodgePhys) || (spec && DF.dodgeSpec)) && !sureMv) || AF.acc0;
+    const psyBlock = f.terrain.type === '사이코필드' && !FN.sameT(def, atk) && FN.grd(def) && (FX ? FX.prioOf(atk, mv) : +mv.prio || 0) > 0;
+    const itImm = OI && mv.cat !== '변화' ? OI.immune(def, moveTypes) : '';
+    const wideBlock =
+      def !== atk &&
+      +(((f.objects || {})[def.side] || {})['와이드가드'] || 0) > 0 &&
+      (multiTarget || /전체|자신\s*이외/.test(String(mv.range || '')));
+    const protBlock = def !== atk && !PBY && (def.flags || {}).protect === (+b.turn || 0) && def.hp.cur > 0;
+    /* 11-15 트릭가드 · 에임가드 (웹툴 craftyBlock · aimBlock) */ const objOn = k => +(((f.objects || {})[def.side] || {})[k] || 0) > 0;
+    const craftyBlock = def !== atk && def.side !== atk.side && mv.cat === '변화' && objOn('트릭가드');
+    const aimBlock =
+      def !== atk && def.side !== atk.side && objOn('에임가드') && (/「필중기」/.test(String(mv.eff || '')) || (mv.cat !== '변화' && !+mv.acc));
+    /* 11-14 반무적(하늘 위 · 구멍 안 …) = 자동 빗나감 — 웹툴 openAttack semiMiss 와 같다 (록온 · 마음의눈 · 노가드 · 그 반무적을 맞히는 기술은 예외) */
+    const SM = def !== atk && FN.semiOf ? FN.semiOf(def) : '';
+    const smKo = SM && FN.stKoU ? FN.stKoU(SM) : '';
+    const DST = def.states || {};
+    const ngd = x => /노가드/.test(String((x && x.ability) || ''));
+    const semiMiss =
+      !!SM &&
+      !((DST.LockOn || DST.Gaze) && (!def.lockFrom || def.lockFrom === atk.id)) &&
+      !ngd(atk) &&
+      !ngd(def) &&
+      !(smKo && String(mv.eff || '').includes(smKo)) &&
+      !(SM === 'Fly' && /하늘에\s*(?:떠\s*)?있는\s*대상/.test(String(mv.eff || '')));
+    /* 11-23 웹툴과 같게: 특성 룬(타입1과 같은 기술 무효) · 만트라(같은 타입 공격 회피) · 공격 기술의 반사(bncOf — 이미 반사된 기술 · 반무적은 반사하지 않는다) */
+    const abD = String((def && def.ability) || '')
+      .replace(/^특성\s*:\s*/, '')
+      .trim();
+    const moldA = (() => {
+      try {
+        const f0 = H.get('moldOn');
+        return !!(f0 && f0(atk, mv));
+      } catch (e) {
+        return false;
+      }
+    })();
+    const runeH =
+      def !== atk &&
+      abD === '룬' &&
+      def.hp.cur > 0 &&
+      !FN.sameT(def, atk) &&
+      !moldA &&
+      (() => {
+        const t1 = (FN.tysOf(def) || [])[0];
+        return !!t1 && t1 !== '-' && (moveTypes || []).includes(t1);
+      })();
+    const mantraH =
+      def !== atk &&
+      mv.cat !== '변화' &&
+      abD === '만트라' &&
+      def.hp.cur > 0 &&
+      !moldA &&
+      (moveTypes || []).some(t => t && t !== '-' && FN.tysOf(def).includes(t));
+    const reflH = (() => {
+      try {
+        const f0 = H.get('bncOf');
+        return def !== atk && !RF && mv.cat !== '변화' && !FN.sameT(def, atk) && def.hp.cur > 0 && !SM && f0 ? f0(def, mv, moveTypes) : null;
+      } catch (e) {
+        return null;
+      }
+    })();
+    const accRoll = () =>
+      protBlock
+        ? { prot: 1, sure: false, hit: false }
+        : reflH
+          ? { sure: false, hit: false, refl: String(reflH.name || '반사'), note: '반사 (' + String(reflH.name || '') + ')' }
+          : runeH
+            ? { sure: false, hit: false, note: '룬' }
+            : mantraH
+              ? { sure: false, hit: false, note: '만트라' }
+              : semiMiss
+                ? { sure: false, hit: false, note: smKo || '반무적' }
+                : wideBlock
+                  ? { sure: false, hit: false, note: '와이드가드' }
+                  : craftyBlock
+                    ? { sure: false, hit: false, note: '트릭가드' }
+                    : aimBlock
+                      ? { sure: false, hit: false, note: '에임가드' }
+                      : itImm
+                        ? { sure: false, hit: false, note: itImm }
+                        : psyBlock
+                          ? { sure: false, hit: false, note: '사이코필드' }
+                          : autoMiss
+                            ? { sure: false, hit: false, note: '회피' }
+                            : B.accuracy(
+                                atk,
+                                def,
+                                { acc: mv.acc },
+                                {
+                                  accMult: accMul,
+                                  sureHit: sure,
+                                  starry: f.weather.type === '별하늘',
+                                  fog: f.weather.type === '짙은안개',
+                                  fogImmune: FN.tysOf(atk).some(t => t === 'Poison' || t === 'Fairy'),
+                                  gravity: (f.etc || {})['중력'] > 0,
+                                  wideLens: FN.IT(atk) === '광각렌즈',
+                                  ignoreAcc: IG.acc,
+                                  ignoreEva: IG.eva,
+                                  rng: rnd
+                                }
+                              );
+    let acc = accRoll();
+    if (!acc.hit && !acc.prot && !acc.note && mv.cat !== '변화' && atk.side === 'left' && cardTake(H, 'reroll', +b.turn || 0, atk.tid))
+      acc = accRoll(); /* 「실타래 되감기」 */
+    /* 11-04 「빗나가라!」(세 칸 배틀 · c073): 상대 기술(명중 100 미만 · 필중 아님)이 아군에 맞으면 명중 다시 */ if (
+      acc.hit &&
+      !acc.sure &&
+      !sure &&
+      mv.cat !== '변화' &&
+      atk.side !== 'left' &&
+      def.side === 'left' &&
+      (+mv.acc || 100) < 100 &&
+      cardTake(H, 'dodgeReroll', +b.turn || 0, def.tid)
+    )
+      acc = accRoll();
+    /* 11-05 「요정의 장난」(시작 24장): 상대 기술이 아군에 명중하면 명중 다시 — 맞을 확률이 100% 미만일 때만 쓴다 */ else if (
+      acc.hit &&
+      !acc.sure &&
+      !sure &&
+      mv.cat !== '변화' &&
+      atk.side !== 'left' &&
+      def.side === 'left' &&
+      (+acc.target || 0) < 10000 &&
+      cardTake(H, 'fairyReroll', +b.turn || 0, def.tid)
+    )
+      acc = accRoll();
+    const floating = (def.states || {}).MagnetRise || (def.states || {}).Telekinesis || (FX && FX.floating(def)) || FN.IT(def) === '풍선';
+    const effPre = mv.cat === '변화' ? null : B.effectiveness(moveTypes, def, { multiMode: 0, atkTypes, force: null, floating });
+    const mods = FX
+      ? FX.attackMods(
+          atk,
+          def,
+          Object.assign(FN.moveQuery(atk, def, mv, moveTypes, effPre ? effPre.value : 1, !multiTarget), { stab: !!(effPre && effPre.stab) })
+        )
+      : { boost: 1, guard: 1, cg: 0, cr: 0, cx: '', names: [] };
+    {
+      const ig = OI && OI.defGuard(def, mv.cat);
+      if (ig) {
+        mods.guard = (mods.guard || 1) * ig.v;
+        mods.names = (mods.names || []).concat([{ key: '_i', who: def.id, txt: ig.txt }]);
+      }
+    }
+    /* 11-23 웹툴과 같게: 특성 둘이함께 ③ 「전체기」로 받을 대미지 2배 (특성 무시 · 손으로 건 완화 줄이 있으면 겹치지 않는다) */
+    if (
+      def !== atk &&
+      mv.cat !== '변화' &&
+      abD === '둘이함께' &&
+      (multiTarget || /전체|자신\s*이외/.test(String(mv.range || ''))) &&
+      !moldA &&
+      !((def.fx || {}).mods || []).some(e => e && e.kind === 'guard' && +e.v === 2 && /둘이함께/.test(String(e.name || '')))
+    ) {
+      mods.guard = (mods.guard || 1) * 2;
+      mods.names = (mods.names || []).concat([{ key: '_two', who: def.id, txt: `${def.name} 「둘이함께」 전체기 ×2` }]);
+    }
+    if (H.logOn)
+      for (const n of mods.names || [])
+        if (String(n.key || '').startsWith('_hoi')) W.OM_APP.sysLog('  ' + n.txt, 'battle'); /* 11-15 【방호】 무시를 로그에 */
+    let igDef = -1,
+      igAtk = -1;
+    if (IG.def != null) igDef = IG.def;
+    if (IG.atk != null) igAtk = IG.atk;
+    if (igDef === -1 && /대상의\s*랭크\s*변화를\s*무시/.test(String(mv.eff || ''))) igDef = 6;
+    const OC = FN.orderCrit(atk, def);
+    if (mods.cx !== 'none' && FN.CRR(def).never) mods.cx = 'none';
+    if (mods.cx !== 'none') {
+      const nc = [[def.ability, def.abilityEff], ...FN.potSrc(def).map(p => [p.name, p.eff])].find(
+        ([n, e]) => n && /자신의\s*급소에\s*맞지\s*않는다/.test(String(e || ''))
+      );
+      if (nc) mods.cx = 'none';
+    }
+    let hits = [];
+    if (acc.hit) {
+      const mx = +mv.max || 1,
+        mn = +mv.min || 1;
+      const cnt = B.multiHits(mv, { skillLink: skill, rng: rnd });
+      const fixedN = mx > 1 && mn === mx && !skill && !acc.sure;
+      const stage = B.critStage(atk, def, { input: 0, order: OC.v + (mods.cr || 0) - (mods.cg || 0) + FN.itemCrit(atk, def) + FN.crAdj(atk, def) });
+      for (let i = 0; i < cnt; i++) {
+        if (i > 0 && fixedN) {
+          const a2 = accRoll();
+          if (!a2.hit) break;
+        }
+        let cr =
+          mods.cx === 'none'
+            ? { crit: false }
+            : B.critical(stage, { type: +FN.CRR(atk).tbl || 0, forced: critForce || mods.cx === 'sure' || !!FN.CRR(atk).sure, rng: rnd });
+        if (cr.crit && def.side === 'left' && atk.side !== 'left' && H.cards && H.cards.shield && H.cards.shield[def.id] === (+b.turn || 0))
+          cr = { crit: false };
+        else if (cr.crit && def.side === 'left' && atk.side !== 'left' && cardTake(H, 'noCrit', +b.turn || 0, def.tid)) {
+          cr = { crit: false };
+          H.cards.shield = H.cards.shield || {};
+          H.cards.shield[def.id] = +b.turn || 0;
+        } /* 「안개의 환영」 11-02: 이번 턴 그 아군이 받는 급소를 모두 막는다 */ else if (
+          cr.crit &&
+          def.side === 'left' &&
+          atk.side !== 'left' &&
+          stage <= 1 &&
+          cardTake(H, 'noCritC1', +b.turn || 0, def.tid)
+        )
+          cr = { crit: false }; /* 11-05 「안개의 환영」 시작 24장 글: 「C+1」 이하 기술의 급소를 일반 명중으로 */
+        else if (cr.crit && def.side === 'left' && atk.side !== 'left' && cardTake(H, 'critReroll', +b.turn || 0, def.tid))
+          cr = B.critical(stage, { type: +FN.CRR(atk).tbl || 0, forced: critForce || mods.cx === 'sure' || !!FN.CRR(atk).sure, rng: rnd });
+        /* 11-02 「급소 털어내기」: 한 번 다시 굴림 */ hits.push({ v: cr.crit ? 2 : 1, cr });
+      }
+    }
+    const objs = (f.objects || {})[side] || {};
+    const wall = {};
+    for (const k in FN.WALLS) if (objs[k] > 0 && !(k === '얼음의장벽' && tyOf(mv) === 'Fire')) wall[FN.WALLS[k]] = 1;
+    if (objs['얼음의장벽'] > 0 && tyOf(mv) === 'Fire' && mv.cat !== '변화') {
+      const nb0 = FN.snap(),
+        nb = FN.snap(nb0);
+      const fo = FN.fieldOf(nb);
+      delete fo.objects[side]['얼음의장벽'];
+      nb.field = fo;
+      await FN.saveBattle(nb0, nb);
+    }
+    const spw = SPW ? SPW(def) : null;
+    const powT = spw && spw.pow != null ? spw.pow : pow;
+    const dTy = FN.tysOf(def),
+      dS = mv.cat === '특수' ? 'specialdefense' : 'defense';
+    const fieldT = fm * (f.terrain.type === '미스트필드' && moveTypes.includes('Dragon') && FN.grd(def) ? 0.5 : 1);
+    const wt = f.weather.type;
+    const defMul =
+      wt === '극한' && dTy.includes('Ice') && dS === 'defense'
+        ? 2
+        : ['눈', '싸라기눈'].includes(wt) && dTy.includes('Ice') && dS === 'defense'
+          ? 1.5
+          : wt === '모래바람' && dTy.includes('Rock') && dS === 'specialdefense'
+            ? 1.5
+            : 1;
+    let MVP = null,
+      DOPT = null;
+    const dmg =
+      mv.cat === '변화' || !powT || (spw && spw.fixed) || (MAU && MAU.delay) || !hits.length
+        ? null
+        : B.damage(
+            FN.foulAtk(atk, def, mv),
+            FN.aceDef && !process.env.NOACE ? FN.aceDef(atk, def) : def,
+            (MVP = Object.assign(
+              {},
+              mv,
+              { pow: powT },
+              ATY
+                ? { typeEn: ATY, type: S.typeKo(ATY) }
+                : sk
+                  ? { typeEn: sk.ty, type: S.typeKo(sk.ty) }
+                  : rndOf(mv)
+                    ? { typeEn: rndOf(mv), type: S.typeKo(rndOf(mv)) }
+                    : {}
+            )),
+            (DOPT = {
+              critMul: FN.critMulOf(atk),
+              hits: hits.map(h => h.v),
+              powStep: spw ? 0 : FN.powStepOf(mv),
+              free1: 1 * (mods.boost || 1),
+              free2: 1,
+              item1,
+              item2: 1,
+              trait: traitMul,
+              weather: wMul,
+              fieldMul: fieldT,
+              defMul,
+              wonder: RM('원더룸'),
+              helping: (atk.states || {}).HelpingHand ? Math.round(Math.pow(1.5, Math.max(1, +atk.helpN || 1)) * 10000) / 10000 : 0,
+              charge,
+              lifeOrb: false,
+              multiTarget,
+              wall,
+              wallSize: FN.mode(b) >= 2 ? 2 : 1,
+              ignoreAtk: igAtk,
+              ignoreDef: igDef,
+              watersport: (f.etc || {})['물놀이'] > 0,
+              mudsport: (f.etc || {})['흙놀이'] > 0,
+              scarf: FN.IT(atk) === '구애스카프',
+              choiceDef: false,
+              tailwindDef: ((f.objects || {})[side] || {})['순풍'] > 0,
+              swampDef: ((f.objects || {})[side] || {})['습원'] > 0,
+              rng: rnd
+            })
+          );
+    /* 고정 · 변칙 피해(spw.fixed): 웹툴은 HP 창에서 손으로 — 시뮬은 spw.dmg 가 있으면 그 값 */
+    const eff = dmg ? B.effectiveness(moveTypes, def, { multiMode: 0, atkTypes, force: null, floating }) : effPre || null;
+    const stab = eff ? eff.stab : false;
+    const DFl = def.flags || {};
+    const guard0 = (DFl.endure ? 0.5 : 1) * (mods.guard || 1);
+    const endure0 = ((!!DFl.endure && !DFl.endureUsed) || !!mods.endure) && !AF.noEndure;
+    res.push({
+      slot,
+      def,
+      acc,
+      hits,
+      dmg,
+      eff,
+      stab,
+      guard: guard0,
+      endure: endure0,
+      mods,
+      spw,
+      sec: [
+        ...(acc.hit
+          ? MAU
+            ? MAU.groups
+                .filter(g => g.who === 'target')
+                .map(g => {
+                  const x = rollG(FN, atk, def, g, SECADJ, rnd);
+                  if (
+                    x.ok &&
+                    g.sec &&
+                    (+g.n || 10) <= 3 &&
+                    def.side === 'left' &&
+                    atk.side !== 'left' &&
+                    cardTake(H, 'secIgnore', +b.turn || 0, def.tid)
+                  )
+                    return { g, ok: false };
+                  return x;
+                })
+            : []
+          : [])
+      ]
+    });
+  } /* 11-05 「약간 은밀한 망토」 */
+  const anyHit = res.some(r => r.acc.hit);
+  const once = MAU ? MAU.groups.filter(g => g.who !== 'target' && (anyHit || g.when === 'use')).map(g => rollG(FN, atk, null, g, SECADJ, rnd)) : [];
+  /* ===== 적용 (공격 창 「적용」) ===== */
+  const nb0 = FN.snap(),
+    nb = FN.snap(nb0);
+  const lines = out.lines;
+  if (chk) {
+    nb.mons[mid].states = chk.am.states;
+    lines.push(...chk.lines);
+  }
+  {
+    const a = nb.mons[mid];
+    const ty = tyOf(mv);
+    if (a && a.states && res.some(r => r.acc.hit && r.dmg))
+      for (const k in FN.CHARGE_ST) if (a.states[k] && FN.CHARGE_ST[k] === ty) delete a.states[k];
+  }
+  {
+    const a = nb.mons[mid];
+    const sdb = (DB.states || {}).st || {};
+    const st = (a && a.states) || {};
+    for (const k of Object.keys(st)) {
+      const d = sdb[k] || {};
+      const v = +st[k];
+      if (!FN.movesDown(k, d) || !(v > 0 && v < 1000)) continue;
+      if (chk && (k === 'Sleep' || k === 'Confusion' || k === 'Freeze')) continue;
+      if (v <= 1) delete st[k];
+      else st[k] = v - 1;
+    }
+  }
+  if (PR) {
+    const a = nb.mons[mid];
+    const t0 = +nb.turn || 0;
+    if (PR.ok) {
+      a.flags = Object.assign({}, a.flags || {}, { protect: t0 });
+      a.protectLast = t0;
+      a.protectN = PR.k + 1;
+      lines.push(`${a.name} 「기술 방어」`);
+    } else {
+      if (a.flags) delete a.flags.protect;
+      a.protectLast = null;
+      a.protectN = 0;
+      lines.push(`${a.name} 「기술 방어」 실패`);
+    }
+  }
+  /* 11-15 대타출동 (웹툴 3733 그대로): HP 1/4 → 대역인형 · 이미 있거나 HP 모자라면 실패 */ {
+    const a = nb.mons[mid];
+    if (a && /「대역인형」을\s*소환/.test(String(mv.eff || ''))) {
+      const q = Math.max(1, Math.floor(a.hp.max / 4));
+      a.states = a.states || {};
+      if (a.states.Substitute) lines.push(`${a.name} 이미 대역인형이 있다 — 실패`);
+      else if (a.hp.cur <= q) lines.push(`${a.name} HP 가 모자라 대역인형 실패`);
+      else {
+        a.hp.cur -= q;
+        a.states.Substitute = 1000;
+        a.subHp = q;
+        delete a.states.Bind;
+        lines.push(`${a.name} 「HP」 −${q} — 대역인형 (인형 ${q})`);
+      }
+    }
+  }
+  /* 11-15 자세 → 다음 거합 타입 (웹툴 그대로) */ {
+    const a = nb.mons[mid];
+    if (a) {
+      const au = MAU0 || {};
+      if (au.iai) {
+        a.iai = au.iai;
+        lines.push(`${a.name} 다음 「거합」 기술 → ${au.iai}`);
+      } else if (au.stance || (mv.cat === '변화' && /의자세$/.test(mv.name || ''))) delete a.iai;
+      else if (a.iai && /(^|[,\s])거합($|[,\s])/.test(String(mv.tag || ''))) delete a.iai;
+      if (mv.cat === '변화' && /의자세$/.test(mv.name || '')) a.stanceT = +nb.turn || 0;
+    }
+  }
+  if (PBY === 'clear')
+    for (const r of res) {
+      const d = nb.mons[r.def.id];
+      if (r.acc.hit && d && d.flags && d.flags.protect != null) delete d.flags.protect;
+    }
+  const am = r => (r.stab ? 1.5 : 1) * (belt && r.eff && r.eff.value > 1 ? 1.2 : 1); /* 창의 atkMul: 자속 × 달인의띠 (적응력은 효과 엔진) */
+  for (const r of res) {
+    const def = nb.mons[r.def.id];
+    if (!def) continue;
+    if (!r.acc.hit) {
+      out.hits.push({ to: def.name, miss: true, note: r.acc.prot ? '기술 방어' : r.acc.note || '빗나감' });
+      continue;
+    }
+    if (!r.dmg) {
+      out.hits.push({ to: def.name, status: true });
+      continue;
+    }
+    const crit = r.hits.some(h => h.v === 2);
+    const A1 = am(r);
+    def.lastHit = {
+      from: atk.name,
+      fromId: atk.id,
+      move: mv.name,
+      moveType: (rndOf(mv) ? S.typeKo(rndOf(mv)) : mv.type) || '',
+      eff: r.eff.value,
+      total: Math.floor(r.dmg.total * A1),
+      hits: r.hits.length,
+      crit,
+      per: FN.perOf(r.dmg, A1),
+      guard: r.guard,
+      guardNote: ((r.mods && r.mods.names) || [])
+        .filter(x => x.who === def.id)
+        .map(x => x.txt)
+        .join(' · '),
+      endure: r.endure,
+      turn: +nb.turn || 0,
+      mt: moveTypes,
+      cat: mv.cat || '',
+      ct: W.OM_APP.contactOf(mv) === 'O',
+      multi: res.length > 1
+    };
+    if (FX && r.mods) FX.consume(nb, r.mods.names);
+    if (def.flags && def.flags.endure) def.flags.endureUsed = 1;
+  }
+  if (MAU && FX) {
+    const a = RF && nb.mons[RF.from] ? nb.mons[RF.from] : nb.mons[mid];
+    const cx0 = W.__SIM.uiCtx(nb, a, mv.name);
+    const runOps = async (ops, def) => {
+      if (RF) {
+        const r = await FX.run(
+          ops.map(q => (q && (q.tgt == null || ['target', 'enemy', 'enemy1', 'self'].includes(q.tgt)) ? Object.assign({}, q, { tgt: 'self' }) : q)),
+          cx0
+        );
+        lines.push(...r.lines);
+        return;
+      }
+      const map = def ? FN.tgtFor(atk, def) : q => q;
+      const cx = Object.assign({}, cx0, def ? { pick: list => Promise.resolve(list.find(x => x.id === def.id) || null) } : {});
+      const r = await FX.run(ops.map(map), cx);
+      lines.push(...r.lines);
+    };
+    for (const x of once)
+      if (x.ok && x.ops) {
+        let ops1 = x.ops;
+        try {
+          const U = nb.mons[mid];
+          const fu = FX.fracUp ? FX.fracUp([{ name: '특성 : ' + (U.ability || ''), eff: U.abilityEff }, ...FN.potSrc(U)], mv.name, [], ops1) : null;
+          if (fu && !fu.types) {
+            ops1 = fu.ops;
+            lines.push(`${U.name} 「${fu.name}」 — 「${mv.name}」 강화 (${fu.from} → ${fu.to})`);
+          }
+        } catch (e) {}
+        await runOps(ops1, null);
+      }
+    for (const r of res)
+      for (const x of r.sec || [])
+        if (x.g && x.ok && x.ops) {
+          const d = nb.mons[r.def.id];
+          if (d) {
+            /* 11-23 위력이 강화(1/3→1/2) — 웹툴과 같다 */ let ops1 = x.ops;
+            try {
+              const U = nb.mons[mid];
+              const fu = FX.fracUp
+                ? FX.fracUp([{ name: '특성 : ' + (U.ability || ''), eff: U.abilityEff }, ...FN.potSrc(U)], mv.name, FN.tysOf(d), ops1)
+                : null;
+              if (fu) {
+                ops1 = fu.ops;
+                lines.push(`${U.name} 「${fu.name}」 — 「${mv.name}」의 위력 강화 (${fu.from} → ${fu.to})`);
+              }
+            } catch (e) {}
+            await runOps(ops1, d);
+          }
+        }
+    /* 드레인 · 반동은 예상 대미지(받는 쪽 HP 창 계산 전 값) 기준 — 웹툴과 같다 */
+    const est = r => {
+      if (!r.dmg) return 0;
+      const d = nb.mons[r.def.id];
+      const hp = B.hpDamageHits(
+        d || r.def,
+        FN.perOf(r.dmg, am(r)),
+        r.eff.value,
+        Object.assign({}, FN.hsOpt(d || r.def, mv.cat, r.mods), { stab: false, guard: r.guard, endure: r.endure, hpFloor: FN.raidFloor(d || r.def) })
+      );
+      return hp.final;
+    };
+    const dealt = res.filter(r => r.acc.hit && r.dmg).reduce((s2, r) => s2 + est(r), 0);
+    if (MAU.recoil && a.hp.cur > 0) {
+      const R2 = MAU.recoil;
+      const base = R2.basis === 'max' ? a.hp.max : dealt;
+      const ok = R2.when === 'miss' ? !anyHit && !res.some(r => r.acc && r.acc.refl) : anyHit && (R2.basis === 'max' || dealt > 0);
+      if (ok && !(!R2.hard && (FX.noind(a, 'recoil') || FX.noind(a, '')))) {
+        const [p, q] = R2.frac.split('/').map(Number);
+        const v = Math.max(1, Math.floor((base * p) / q));
+        a.hp.cur = Math.max(0, a.hp.cur - v);
+        lines.push(`${a.name} 반동 −${v}`);
+      }
+    }
+    {
+      const dA = RF ? nb.mons[mid] : a;
+      /* 반사 공격의 드레인은 반사한 쪽 (망령 11-23) */ if (MAU.drain && dealt > 0 && dA && dA.hp.cur > 0 && !(dA.states || {}).HealBlock) {
+        const [p, q] = MAU.drain.split('/').map(Number);
+        let v = Math.max(1, Math.floor((dealt * p) / q));
+        if (FN.IT(dA) === '큰뿌리') v = Math.floor(v * 1.3);
+        const h = Math.min(v, dA.hp.max - dA.hp.cur);
+        dA.hp.cur += h;
+        lines.push(`${dA.name} 드레인 +${h}`);
+      }
+    }
+    if (MAU.selfFaint && a.hp.cur > 0) {
+      a.hp.cur = 0;
+      lines.push(`${a.name} 사용 후 빈사`);
+    }
+    for (const id in nb.mons) {
+      const x = nb.mons[id];
+      if (x.entry && x.hp.cur <= 0) {
+        x.entry = '';
+        lines.push(`${x.name}은(는) 쓰러졌다!`);
+      }
+    }
+  }
+  if (OI && !RF) {
+    const a = nb.mons[mid];
+    const tags = String(mv.tag || '')
+      .split(/[,/·\s]+/)
+      .filter(Boolean);
+    const dealtIds = res.filter(r => r.acc.hit && r.dmg).map(r => r.def.id);
+    try {
+      lines.push(...OI.afterAttack(nb, a, { jewel: !!(im && im.jewel && item1 > 1), dealt: dealtIds, missAll: res.length > 0 && !anyHit, tags }));
+    } catch (e) {}
+  }
+  fieldStrip(FN, nb, atk, mv, res, lines);
+  /* 11-15 소지품 기술 (트릭 · 바꿔치기 · 탁쳐서떨구기 … — 웹툴 OI().moveFx 그대로) */ {
+    const IK = OI && OI.moveKind ? OI.moveKind(mv) : '';
+    if (IK && nb.mons[mid]) {
+      const hits = res.map(r => ({ id: r.def.id, hit: !!r.acc.hit, dmg: !!(r.acc.hit && r.dmg && !(r.eff && +r.eff.value === 0)), final: 0 }));
+      try {
+        const R2 = OI.moveFx(nb, mid, IK, hits, {
+          name: mv.name,
+          mt: [tyOf(mv)],
+          cat: mv.cat,
+          eff: Object.fromEntries(res.map(r => [r.def.id, r.eff ? +r.eff.value : 1])),
+          multi: res.length > 1,
+          turn: +nb.turn || 0
+        });
+        lines.push(...(R2.lines || []));
+      } catch (e) {}
+    }
+  }
+  {
+    const tm2 = String(mv.eff || '').match(/「난동부리기\s*\(혼란\)\s*:\s*(\d+)~(\d+)회」/);
+    const a = nb.mons[mid];
+    if (tm2 && a) {
+      a.states = a.states || {};
+      if (!a.states.Thrash && !a.thrashOn) {
+        const n = +tm2[1] + Math.floor(rnd() * (+tm2[2] - +tm2[1] + 1));
+        if (n > 1) {
+          a.states.Thrash = n - 1;
+          a.thrashOn = 1;
+        }
+      } else if (!a.states.Thrash && a.thrashOn) {
+        delete a.thrashOn;
+        const cf = ((DB.states || {}).st || {}).Confusion || {};
+        const lo = +cf.min || 1,
+          hi = +cf.max || lo;
+        a.states.Confusion = lo + Math.floor(rnd() * (hi - lo + 1));
+      }
+    }
+  }
+  {
+    const a = RF && nb.mons[RF.from] ? nb.mons[RF.from] : nb.mons[mid];
+    const e = String(mv.eff || '');
+    if (a && a.hp.cur > 0) {
+      a.states = a.states || {};
+      if (/「반동\s*:\s*행동불능」/.test(e) && anyHit) a.states.Recharge = 2;
+      if (
+        !RF &&
+        mv.cat !== '변화' &&
+        !(atk.states || {}).Thrash &&
+        !a.states.Thrash &&
+        FN.potSrc(a).some(p => String(p.name || '').trim() === '버서커')
+      )
+        a.states.Thrash = 2;
+    }
+  }
+  if (NX.length) {
+    const a = nb.mons[mid];
+    const Fx = a.fx || {};
+    const nk = NX.map(e => e.key);
+    Fx.mods = (Fx.mods || []).filter(e => !(e.next && nk.includes(e.key)));
+    Fx.prio = (Fx.prio || []).filter(e => !(e.next && nk.includes(e.key)));
+  }
+  await FN.saveBattle(nb0, nb);
+  /* 11-15 방어 기술 덤 (웹툴 protRiderFire 그대로) */ if (FN.protRiderFire)
+    for (const r of res) {
+      if (r.acc && r.acc.prot && r.def && r.def.id !== mid)
+        try {
+          await FN.protRiderFire(mid, r.def.id, String(mv.contact || '') === 'O', mv.name);
+        } catch (e) {}
+    }
+  /* ===== 받는 쪽 「HP」 창 「적용」 (대상마다) ===== */
+  let dealtAll = 0;
+  for (const r of res) {
+    if (!r.acc.hit || !r.dmg) continue;
+    const hv = await applyHit(H, W, r.def.id, rnd);
+    if (hv) {
+      out.hits.push({ to: r.def.name, dmg: hv.final, eff: r.eff.value, crit: r.hits.some(h => h.v === 2), ko: hv.ko, n: r.hits.length });
+      dealtAll += hv.final;
+    }
+  }
+  {
+    const b2 = FN.ctx().b;
+    const a = b2.mons[mid];
+    if (a) a.lastDealt = { total: dealtAll };
+  }
+  /* 11-15 05시 망령 「시뮬에서 구현 안 되는 게 있으면 만들면서」: 웹툴 공격 창 「적용」 뒤 계기를 그대로 — ① 「자신이 행동한 뒤」 포텐셜(닌자 …) ② 조건 명중(hitAuto) ③ 맞은 쪽 「공격을 받았을 때」 ④ 「방어」로 막았을 때 ⑤ 쌓인 계기 · 함성 ⑥ 미룬 대미지 */
+  {
+    const RS = { mv, targets: res, moveTypes };
+    const ctOf = () => !!(W.OM_APP.contactOf && W.OM_APP.contactOf(mv) === 'O');
+    try {
+      const a2 = RF ? null : FN.ctx().b.mons[mid];
+      const T = +FN.ctx().b.turn || 0;
+      if (a2 && a2.entry && a2.hp.cur > 0 && FX && FN.ACTFX)
+        for (const p of FN.potSrc(a2)) {
+          if (!p || !p.name || (p.ph && !p.apt) || !/자신이\s*행동한\s*(?:뒤|후)/.test(String(p.eff || ''))) continue;
+          const k = mid + '|' + p.name;
+          if (FN.ACTFX[k] === T) continue;
+          const au = FX.autoOf(a2, 'pot', p.name);
+          if (!au || !au.ops || !au.ops.length || au.manual || FN.limManual(a2, 'pot', p.name, p.eff)) continue;
+          FN.ACTFX[k] = T;
+          const okN = await FN.fireAuto(mid, 'pot', p.name, {
+            quiet: true,
+            noRoll: true,
+            head: `【포텐셜】 ${a2.name} 『${p.name}』 — 행동한 뒤 자동`
+          });
+          /* 11-15 「『닌자』가 발동했을 때 「자세」 기술에 의한 추가 행동」(궁극의 사두룡) — 웹툴은 행동 순서 다음 칸, 시뮬은 바로 */ if (
+            okN &&
+            FN.stanceXact
+          ) {
+            const X = await FN.stanceXact(mid, p.name);
+            if (X) {
+              if (H.logOn) W.OM_APP.sysLog(`【추가 행동】 ${a2.name} 『${X.mv.name}』 — ${X.p}`, 'battle');
+              try {
+                await attack(H, W, mid, X.i, [], {});
+              } catch (e) {}
+            }
+          }
+        }
+    } catch (e) {}
+    try {
+      if (FN.coverFire) await FN.coverFire(mid, RS);
+    } catch (e) {}
+    try {
+      if (!RF && FN.chainAfterAct) await FN.chainAfterAct(mid);
+    } catch (e) {}
+    try {
+      if (!RF && FN.mvModAfter) await FN.mvModAfter(mid, RS);
+    } catch (e) {}
+    try {
+      if (FN.hitAuto) await FN.hitAuto(mid, RS);
+    } catch (e) {}
+    try {
+      if (FN.evReact)
+        for (const r of res) {
+          if (!r || !r.acc || !r.acc.hit || !r.def || r.def.id === mid) continue;
+          const lh = (FN.ctx().b.mons[r.def.id] || {}).lastHit;
+          await FN.evReact('hit', {
+            mid,
+            tgt: r.def.id,
+            dmg: lh && lh.fromId === mid ? +lh.total || 0 : 0,
+            mv: mv.name,
+            mt: moveTypes || [],
+            cat: mv.cat || '',
+            ct: ctOf(),
+            eff: r.eff ? +r.eff.value : 1,
+            crit: !!(r.hits || []).some(h => h && h.v === 2),
+            key: mv.name + '@' + r.def.id + '@' + (+FN.ctx().b.turn || 0) + '@' + rnd()
+          });
+        }
+    } catch (e) {}
+    try {
+      if (FN.evReact)
+        for (const r of res) {
+          if (!r || !r.acc || !r.acc.prot || !r.def || r.def.id === mid) continue;
+          await FN.evReact('guard', {
+            mid,
+            tgt: r.def.id,
+            mv: mv.name,
+            mt: moveTypes || [],
+            cat: mv.cat || '',
+            ct: ctOf(),
+            key: mv.name + '@g' + r.def.id + '@' + rnd()
+          });
+        }
+    } catch (e) {}
+    try {
+      if (FN.evFlush) await FN.evFlush();
+      if (FN.evReact && !RF) await FN.evReact('shout', { mid, mv: mv.name, key: mv.name + '@' + rnd() });
+    } catch (e) {}
+    try {
+      if (FN.deferFire) await FN.deferFire(mid, '자신의 행동이 끝나서', 'act');
+    } catch (e) {}
+  }
+  /* 강제 교대 · 자기 교대 (적용 뒤) */
+  {
+    const HIT2 = mv.cat === '변화' || res.some(r => r && r.acc && r.acc.hit && r.def && r.def.id !== mid);
+    /* 11-15: 공격기의 교대 · 날려보내기는 맞았을 때만 (웹툴 HIT2) */ out.forceSwitch = HIT2 && !!(MAU && MAU.forceSwitch);
+    out.selfSwitch = !HIT2 || RF ? '' : MAU && MAU.selfSwitch ? MAU.selfSwitch : NX.some(e => e.uturn) ? 'free' : '';
+  }
+  if (out.forceSwitch)
+    for (const r of res) {
+      if (!r.acc.hit || r.def.id === mid) continue;
+      const d = FN.ctx().b.mons[r.def.id];
+      if (!d || !d.entry || d.hp.cur <= 0) continue;
+      const g = await FN.switchGuard(d);
+      if (g) continue;
+      await FN.forcedSwitch(d.id, { sys: true });
+    }
+  out.anyHit = anyHit;
+  out.dealt = dealtAll;
+  if (RF) out.refl = RF;
+  if (H.logOn)
+    W.OM_APP.sysLog(
+      `【공격】 ${atk.name} 『${mv.name}』${PR ? (PR.ok ? ' (기술 방어 성공)' : ' (기술 방어 실패)') : ''} ${out.hits.map(h => '→ ' + h.to + ' ' + (h.miss ? '✗ ' + h.note : h.status ? '(변화)' : '−' + h.dmg + (h.eff !== 1 ? ' ×' + h.eff : '') + (h.crit ? ' 급소' : '') + (h.n > 1 ? ' ' + h.n + '타' : '') + (h.ko ? ' 쓰러짐' : ''))).join(' ')}${lines.length ? '\n  ' + lines.join('\n  ') : ''}`,
+      'battle'
+    );
+  /* 11-23 반사한 포켓몬마다 바로 「반사 공격」 — 웹툴은 행동 순서 다음 칸, 시뮬은 바로 잇는다 */
+  if (!RF)
+    for (const r of res) {
+      if (!r || !r.acc || !r.acc.refl || !r.def) continue;
+      const b2 = FN.ctx().b;
+      const d = b2.mons[r.def.id],
+        a2 = b2.mons[mid];
+      if (!d || !d.entry || d.hp.cur <= 0 || !a2 || !a2.entry || a2.hp.cur <= 0) continue;
+      if (H.logOn) W.OM_APP.sysLog(`【반사】 ${d.name} 「${r.acc.refl}」 — 「${mv.name}」을(를) ${a2.name}에게 되돌린다`, 'battle');
+      try {
+        const rr = await attack(H, W, d.id, -1, [a2.side + '_' + a2.entry], {
+          mvObj: Object.assign({}, mv, { virt: 1 }),
+          refl: { from: mid, by: r.acc.refl }
+        });
+        (out.reflected = out.reflected || []).push(rr);
+      } catch (e) {
+        if (H.logOn) W.OM_APP.sysLog('반사 공격 오류: ' + (e && e.message), 'battle');
+      }
+    }
+  return out;
+}
 
 /* 부가효과 굴림 = 웹툴 rollGroup (확률 보정 SECADJ 는 창 칸 기본값) */
-function rollG(FN,atk,def,g,SA,rnd){let n=g.n;if(g.sec&&atk.ability==='하늘의은총')n=Math.min(10,n*2);
- if(g.sec&&def&&def.id!==atk.id&&FN.IT(def)==='은밀망토')return {g,ok:false};
- const pick=g.oneOf?g.oneOf[Math.floor(rnd()*g.oneOf.length)]:null;
- if(SA.sure)return {g,ok:true,ops:pick||g.ops};
- if(!SA.add||n>=10){if(n>=10)return {g,ok:true,ops:pick||g.ops};const r=1+Math.floor(rnd()*10);return {g,ok:r<=n,ops:pick||g.ops}}
- const p=Math.max(0,Math.min(100,n*10+(+SA.add||0)));if(p>=100)return {g,ok:true,ops:pick||g.ops};const r=1+Math.floor(rnd()*100);return {g,ok:r<=p,ops:pick||g.ops}}
+function rollG(FN, atk, def, g, SA, rnd) {
+  let n = g.n;
+  if (g.sec && atk.ability === '하늘의은총') n = Math.min(10, n * 2);
+  if (g.sec && def && def.id !== atk.id && FN.IT(def) === '은밀망토') return { g, ok: false };
+  const pick = g.oneOf ? g.oneOf[Math.floor(rnd() * g.oneOf.length)] : null;
+  if (SA.sure) return { g, ok: true, ops: pick || g.ops };
+  if (!SA.add || n >= 10) {
+    if (n >= 10) return { g, ok: true, ops: pick || g.ops };
+    const r = 1 + Math.floor(rnd() * 10);
+    return { g, ok: r <= n, ops: pick || g.ops };
+  }
+  const p = Math.max(0, Math.min(100, n * 10 + (+SA.add || 0)));
+  if (p >= 100) return { g, ok: true, ops: pick || g.ops };
+  const r = 1 + Math.floor(rnd() * 100);
+  return { g, ok: r <= p, ops: pick || g.ops };
+}
 
 /* 장벽 · 설치물 · 필드 철거, 와이드가드, 설치물 맞바꾸기 — 공격 창 적용과 같은 글 읽기 */
-function fieldStrip(FN,nb,atk,mv,res,lines){const e=String(mv.eff||'');const hitAny=res.some(r=>r.acc.hit);const ok=!/명중(\s*후|했을\s*때)/.test(e)||hitAny;const f2=nb.field=FN.fieldOf(nb);f2.objects=f2.objects||{};const foe=atk.side==='left'?'right':'left';
- const HZ=[...FN.OBJ_CAT[2][4],...FN.OBJ_CAT[3][4]],WL=['리플렉터','빛의장막','오로라베일'];
- const strip=(side,list)=>{const o=f2.objects[side]=Object.assign({},f2.objects[side]||{});list.filter(k=>+o[k]>0).forEach(k=>delete o[k])};
- if(!ok)return;if(/적진의\s*「장벽」「신비의부적」「흰안개」/.test(e)){strip(foe,[...WL,'신비의부적','흰안개']);if(/필드 전체의\s*「+설치물」+/.test(e)){strip('left',HZ);strip('right',HZ)}}
- else{if(/자진의\s*「설치물」[^.]*철거/.test(e))strip(atk.side,HZ);if(/자진의\s*「장벽」[^.]*철거/.test(e))strip(atk.side,WL);else if(/「장벽」[^.]*철거/.test(e)){const sd=[...new Set(res.filter(r=>r.acc.hit&&r.def.side!==atk.side).map(r=>r.def.side))];(sd.length?sd:[foe]).forEach(s=>strip(s,WL))}}
- if(/「필드」[^.]*철거/.test(e)&&f2.terrain&&f2.terrain.type)f2.terrain={type:'',count:0};
- if(/「전체기 방어」\s*상태로/.test(e)){const o=f2.objects[atk.side]=Object.assign({},f2.objects[atk.side]||{});o['와이드가드']=1}
- for(const [re,k] of [[/「변화기 방어」\s*상태로/,'트릭가드'],[/「필중기 방어」\s*상태로/,'에임가드']])if(re.test(e)){const o=f2.objects[atk.side]=Object.assign({},f2.objects[atk.side]||{});o[k]=1}
- if(/서로의 필드의 상태를 뒤바꾼다/.test(e)){const L0=f2.objects.left||{},R0=f2.objects.right||{};f2.objects={left:R0,right:L0}}}
+function fieldStrip(FN, nb, atk, mv, res, lines) {
+  const e = String(mv.eff || '');
+  const hitAny = res.some(r => r.acc.hit);
+  const ok = !/명중(\s*후|했을\s*때)/.test(e) || hitAny;
+  const f2 = (nb.field = FN.fieldOf(nb));
+  f2.objects = f2.objects || {};
+  const foe = atk.side === 'left' ? 'right' : 'left';
+  const HZ = [...FN.OBJ_CAT[2][4], ...FN.OBJ_CAT[3][4]],
+    WL = ['리플렉터', '빛의장막', '오로라베일'];
+  const strip = (side, list) => {
+    const o = (f2.objects[side] = Object.assign({}, f2.objects[side] || {}));
+    list.filter(k => +o[k] > 0).forEach(k => delete o[k]);
+  };
+  if (!ok) return;
+  if (/적진의\s*「장벽」「신비의부적」「흰안개」/.test(e)) {
+    strip(foe, [...WL, '신비의부적', '흰안개']);
+    if (/필드 전체의\s*「+설치물」+/.test(e)) {
+      strip('left', HZ);
+      strip('right', HZ);
+    }
+  } else {
+    if (/자진의\s*「설치물」[^.]*철거/.test(e)) strip(atk.side, HZ);
+    if (/자진의\s*「장벽」[^.]*철거/.test(e)) strip(atk.side, WL);
+    else if (/「장벽」[^.]*철거/.test(e)) {
+      const sd = [...new Set(res.filter(r => r.acc.hit && r.def.side !== atk.side).map(r => r.def.side))];
+      (sd.length ? sd : [foe]).forEach(s => strip(s, WL));
+    }
+  }
+  if (/「필드」[^.]*철거/.test(e) && f2.terrain && f2.terrain.type) f2.terrain = { type: '', count: 0 };
+  if (/「전체기 방어」\s*상태로/.test(e)) {
+    const o = (f2.objects[atk.side] = Object.assign({}, f2.objects[atk.side] || {}));
+    o['와이드가드'] = 1;
+  }
+  for (const [re, k] of [
+    [/「변화기 방어」\s*상태로/, '트릭가드'],
+    [/「필중기 방어」\s*상태로/, '에임가드']
+  ])
+    if (re.test(e)) {
+      const o = (f2.objects[atk.side] = Object.assign({}, f2.objects[atk.side] || {}));
+      o[k] = 1;
+    }
+  if (/서로의 필드의 상태를 뒤바꾼다/.test(e)) {
+    const L0 = f2.objects.left || {},
+      R0 = f2.objects.right || {};
+    f2.objects = { left: R0, right: L0 };
+  }
+}
 
 /* 받는 쪽 「HP」 창 「적용」: 창 기본 체크(반감열매 · 버티기 · 멀티스케일류 · 탈 · 피격 특성 자동) 그대로 */
-async function applyHit(H,W,mid,rnd){const FN=H.fn,B=W.OM_BATTLE,OI=W.OM_ITEMS;const b=FN.ctx().b;const m=b.mons[mid];if(!m||!m.lastHit)return null;const lh=m.lastHit;
- const fl=FN.raidFloor(m);const berryN=OI?OI.resist(m,lh):'';let sashX=OI?OI.sash(m):null;if(lh.cat!=='변화'&&!(sashX&&(sashX.sure||sashX.pct))&&FN.bondBand){const bb=FN.bondBand(m);if(bb)sashX=bb}   /* 11-15 05시: 『사랑의 유대』 · 『영혼의 유대』 (웹툴 2112 그대로) */const SH=FN.hitShield(m,lh);const RX=lh.cat!=='변화'?FN.hitRules(m):[];
- const per=lh.per&&lh.per.length>1?lh.per:[lh.total];const en=!!(lh.endure||(sashX&&sashX.sure)),sashOnly=en&&!lh.endure&&!!(sashX&&sashX.sure);
- const fgOn=!!SH.fullGuard,dgOn=!!SH.disguise;const g0=(lh.guard||1)/(fgOn&&String(lh.guardNote||'').includes(SH.fullGuard.name)?SH.fullGuard.v:1);
- const calc=roll=>B.hpDamageHits(m,per,+lh.eff,{fullGuard:fgOn?SH.fullGuard.v:0,disguise:dgOn?SH.disguise.cost:0,stab:false,guard:g0,manual:1,berryHalf:!!berryN,endure:en&&!sashOnly,endureFull:sashOnly,hpFloor:fl,band:roll&&sashX&&sashX.pct&&!en?{pct:sashX.pct,roll:()=>1+Math.floor(rnd()*100)}:null});
- let r=calc(false);let saved=false;if(en){const r0=B.hpDamageHits(m,per,+lh.eff,{fullGuard:fgOn?SH.fullGuard.v:0,disguise:dgOn?SH.disguise.cost:0,stab:false,guard:g0,manual:1,berryHalf:!!berryN,endure:false,hpFloor:fl});saved=!!(r0&&r0.after<=0&&r.after>0)}
- if(sashX&&sashX.pct&&!en&&r.after<=0&&m.hp.cur>1){r=calc(true);if(sashX.pot&&(r.per||[]).some(q=>q.band&&q.band.ok)){try{await FN.potMark(mid,sashX.name)}catch(e){}if(FN.ctx().b.pvp)await W.OM_APP.set(['battle','mons',mid,'bondUsed'],1);if(H.logOn)W.OM_APP.sysLog(`【포텐셜】 ${m.name} 『${sashX.name}』 — 쓰러질 대미지를 버텼다`,'battle')}}
- /* 11-05 「위기일발!」(시작 24장): 난수 차이로 쓰러졌을 때(가장 낮은 난수 85% 였다면 버텼을 때) 난수를 다시 — 남은 대미지는 지금 값을 평균 난수로 보고 85~100% 로 다시 */
- if(r.after<=0&&m.hp.cur>0&&m.side==='left'&&H.cards){const reC=f=>B.hpDamageHits(m,per.map(v=>Math.max(1,Math.floor(v*f))),+lh.eff,{fullGuard:fgOn?SH.fullGuard.v:0,disguise:dgOn?SH.disguise.cost:0,stab:false,guard:g0,manual:1,berryHalf:!!berryN,endure:en&&!sashOnly,endureFull:sashOnly,hpFloor:fl});const lo=reC(0.85/0.925);if(lo&&lo.after>0&&cardTake(H,'dmgReroll',+b.turn||0,m.tid))r=reC((0.85+rnd()*0.15)/0.925)}
- const berryUse=!!berryN&&/열매/.test(FN.IT(m));const sashUse=saved&&sashX&&sashX.sure&&sashX.once&&m.hp.cur>1;
- /* 11-15 대타출동: 대역인형이 대신 맞는다 — 인형이 부서져도 넘친 피해는 본체에 안 간다 (웹툴 h_sub) */
- if((m.states||{}).Substitute&&r.final>0&&lh.fromId!==mid){const m0=FN.snap(b.mons[mid]),x=FN.snap(m0);const sub0=+x.subHp||Math.max(1,Math.floor(x.hp.max/4));const left=sub0-r.final;delete x.lastHit;x.states=Object.assign({},x.states);if(left>0)x.subHp=left;else{delete x.states.Substitute;delete x.subHp}await W.OM_APP.setDiff(['battle','mons',mid],m0,x,1);if(H.logOn)W.OM_APP.sysLog(`【대타출동】 ${m.name}의 대역인형이 −${Math.min(sub0,r.final)} 을 대신 맞았다${left>0?` (인형 ${left})`:' — 인형이 부서졌다'}`,'battle');return {final:0,ko:false,sub:1}}
- /* apply(-r.final) */
- const m0=FN.snap(b.mons[mid]),x=FN.snap(m0);let v=r.final;if(fl&&x.hp.cur-v<fl)v=Math.max(0,x.hp.cur-fl);x.hp.latest=x.hp.cur;x.hp.cur=Math.max(0,x.hp.cur-v);delete x.lastHit;if((r.per||[]).some(q=>q.held==='disguise'))x.dsgUsed=1;
- if(v>0&&x.disg){delete x.disg;x.seen=true;if(H.logOn)W.OM_APP.sysLog(`【일루젼】 ${x.name} — 기술의 대미지를 받아 원래 모습으로`,'battle')}   /* 11-15 웹툴 openHp 와 같게: 일루젼은 기술의 대미지를 받으면 풀린다 (거짓된 성녀 ②③ 이 그동안만) */
- if(v>0)x.lastTaken={v,turn:+b.turn||0,hit:{lh}};   /* 11-15: 웹툴 LHX — 쓰러뜨린 쪽 · 기술 (【함성】 · 쓰러뜨렸을 때) */if(x.hp.cur<=0)x.entry='';
- if(x.raid&&x.raid.segments>0&&fl&&x.hp.cur<=fl&&v>0&&x.hp.cur>0){x.raid.broken=(x.raid.broken||0)+1;x.raid.brk=1}
- await W.OM_APP.setDiff(['battle','mons',mid],m0,x,1);if(x.hp.cur<=0&&m0.hp.cur>0)await FN.faintOff(mid);
- if(berryUse||sashUse)await FN.itemConsume(mid);
- const nHit=r.per&&r.per.length?r.landed:1;if(OI&&r.final>0)await FN.itemHitReact(mid,lh,r.final,nHit);
- if(RX.length&&r.final>0)await FN.abilityHitReact(mid,lh,r);
- const after=FN.ctx().b.mons[mid];return {final:v,ko:!!after&&after.hp.cur<=0}}
+async function applyHit(H, W, mid, rnd) {
+  const FN = H.fn,
+    B = W.OM_BATTLE,
+    OI = W.OM_ITEMS;
+  const b = FN.ctx().b;
+  const m = b.mons[mid];
+  if (!m || !m.lastHit) return null;
+  const lh = m.lastHit;
+  const fl = FN.raidFloor(m);
+  const berryN = OI ? OI.resist(m, lh) : '';
+  let sashX = OI ? OI.sash(m) : null;
+  if (lh.cat !== '변화' && !(sashX && (sashX.sure || sashX.pct)) && FN.bondBand) {
+    const bb = FN.bondBand(m);
+    if (bb) sashX = bb;
+  }
+  /* 11-15 05시: 『사랑의 유대』 · 『영혼의 유대』 (웹툴 2112 그대로) */ const SH = FN.hitShield(m, lh);
+  const RX = lh.cat !== '변화' ? FN.hitRules(m) : [];
+  const per = lh.per && lh.per.length > 1 ? lh.per : [lh.total];
+  const en = !!(lh.endure || (sashX && sashX.sure)),
+    sashOnly = en && !lh.endure && !!(sashX && sashX.sure);
+  const fgOn = !!SH.fullGuard,
+    dgOn = !!SH.disguise;
+  const g0 = (lh.guard || 1) / (fgOn && String(lh.guardNote || '').includes(SH.fullGuard.name) ? SH.fullGuard.v : 1);
+  const calc = roll =>
+    B.hpDamageHits(m, per, +lh.eff, {
+      fullGuard: fgOn ? SH.fullGuard.v : 0,
+      disguise: dgOn ? SH.disguise.cost : 0,
+      stab: false,
+      guard: g0,
+      manual: 1,
+      berryHalf: !!berryN,
+      endure: en && !sashOnly,
+      endureFull: sashOnly,
+      hpFloor: fl,
+      band: roll && sashX && sashX.pct && !en ? { pct: sashX.pct, roll: () => 1 + Math.floor(rnd() * 100) } : null
+    });
+  let r = calc(false);
+  let saved = false;
+  if (en) {
+    const r0 = B.hpDamageHits(m, per, +lh.eff, {
+      fullGuard: fgOn ? SH.fullGuard.v : 0,
+      disguise: dgOn ? SH.disguise.cost : 0,
+      stab: false,
+      guard: g0,
+      manual: 1,
+      berryHalf: !!berryN,
+      endure: false,
+      hpFloor: fl
+    });
+    saved = !!(r0 && r0.after <= 0 && r.after > 0);
+  }
+  if (sashX && sashX.pct && !en && r.after <= 0 && m.hp.cur > 1) {
+    r = calc(true);
+    if (sashX.pot && (r.per || []).some(q => q.band && q.band.ok)) {
+      try {
+        await FN.potMark(mid, sashX.name);
+      } catch (e) {}
+      if (FN.ctx().b.pvp) await W.OM_APP.set(['battle', 'mons', mid, 'bondUsed'], 1);
+      if (H.logOn) W.OM_APP.sysLog(`【포텐셜】 ${m.name} 『${sashX.name}』 — 쓰러질 대미지를 버텼다`, 'battle');
+    }
+  }
+  /* 11-05 「위기일발!」(시작 24장): 난수 차이로 쓰러졌을 때(가장 낮은 난수 85% 였다면 버텼을 때) 난수를 다시 — 남은 대미지는 지금 값을 평균 난수로 보고 85~100% 로 다시 */
+  if (r.after <= 0 && m.hp.cur > 0 && m.side === 'left' && H.cards) {
+    const reC = f =>
+      B.hpDamageHits(
+        m,
+        per.map(v => Math.max(1, Math.floor(v * f))),
+        +lh.eff,
+        {
+          fullGuard: fgOn ? SH.fullGuard.v : 0,
+          disguise: dgOn ? SH.disguise.cost : 0,
+          stab: false,
+          guard: g0,
+          manual: 1,
+          berryHalf: !!berryN,
+          endure: en && !sashOnly,
+          endureFull: sashOnly,
+          hpFloor: fl
+        }
+      );
+    const lo = reC(0.85 / 0.925);
+    if (lo && lo.after > 0 && cardTake(H, 'dmgReroll', +b.turn || 0, m.tid)) r = reC((0.85 + rnd() * 0.15) / 0.925);
+  }
+  const berryUse = !!berryN && /열매/.test(FN.IT(m));
+  const sashUse = saved && sashX && sashX.sure && sashX.once && m.hp.cur > 1;
+  /* 11-15 대타출동: 대역인형이 대신 맞는다 — 인형이 부서져도 넘친 피해는 본체에 안 간다 (웹툴 h_sub) */
+  if ((m.states || {}).Substitute && r.final > 0 && lh.fromId !== mid) {
+    const m0 = FN.snap(b.mons[mid]),
+      x = FN.snap(m0);
+    const sub0 = +x.subHp || Math.max(1, Math.floor(x.hp.max / 4));
+    const left = sub0 - r.final;
+    delete x.lastHit;
+    x.states = Object.assign({}, x.states);
+    if (left > 0) x.subHp = left;
+    else {
+      delete x.states.Substitute;
+      delete x.subHp;
+    }
+    await W.OM_APP.setDiff(['battle', 'mons', mid], m0, x, 1);
+    if (H.logOn)
+      W.OM_APP.sysLog(
+        `【대타출동】 ${m.name}의 대역인형이 −${Math.min(sub0, r.final)} 을 대신 맞았다${left > 0 ? ` (인형 ${left})` : ' — 인형이 부서졌다'}`,
+        'battle'
+      );
+    return { final: 0, ko: false, sub: 1 };
+  }
+  /* apply(-r.final) */
+  const m0 = FN.snap(b.mons[mid]),
+    x = FN.snap(m0);
+  let v = r.final;
+  if (fl && x.hp.cur - v < fl) v = Math.max(0, x.hp.cur - fl);
+  x.hp.latest = x.hp.cur;
+  x.hp.cur = Math.max(0, x.hp.cur - v);
+  delete x.lastHit;
+  if ((r.per || []).some(q => q.held === 'disguise')) x.dsgUsed = 1;
+  if (v > 0 && x.disg) {
+    delete x.disg;
+    x.seen = true;
+    if (H.logOn) W.OM_APP.sysLog(`【일루젼】 ${x.name} — 기술의 대미지를 받아 원래 모습으로`, 'battle');
+  } /* 11-15 웹툴 openHp 와 같게: 일루젼은 기술의 대미지를 받으면 풀린다 (거짓된 성녀 ②③ 이 그동안만) */
+  if (v > 0) x.lastTaken = { v, turn: +b.turn || 0, hit: { lh } };
+  /* 11-15: 웹툴 LHX — 쓰러뜨린 쪽 · 기술 (【함성】 · 쓰러뜨렸을 때) */ if (x.hp.cur <= 0) x.entry = '';
+  if (x.raid && x.raid.segments > 0 && fl && x.hp.cur <= fl && v > 0 && x.hp.cur > 0) {
+    x.raid.broken = (x.raid.broken || 0) + 1;
+    x.raid.brk = 1;
+  }
+  await W.OM_APP.setDiff(['battle', 'mons', mid], m0, x, 1);
+  if (x.hp.cur <= 0 && m0.hp.cur > 0) await FN.faintOff(mid);
+  if (berryUse || sashUse) await FN.itemConsume(mid);
+  const nHit = r.per && r.per.length ? r.landed : 1;
+  if (OI && r.final > 0) await FN.itemHitReact(mid, lh, r.final, nHit);
+  if (RX.length && r.final > 0) await FN.abilityHitReact(mid, lh, r);
+  const after = FN.ctx().b.mons[mid];
+  return { final: v, ko: !!after && after.hp.cur <= 0 };
+}
 
 /* ===== 지시용 기대 대미지 (굴리지 않고 공격 창과 같은 보정으로, 주사위 중간값 · 급소 없음 · 명중 확률 곱) ===== */
-function estimate(H,W,atk,def,mv,o){o=o||{};const FN=H.fn,B=W.OM_BATTLE,FX=W.OM_FX,OI=W.OM_ITEMS,S=W.OM_STATS;if(!mv||mv.cat==='변화'||(!(+mv.pow>0)&&!H.fn.specialPowFor(mv.name,atk)))return 0;{const au=(H.fn.moveAuto&&H.fn.moveAuto(mv))||{};if(au.onlyVs&&def&&!(au.onlyVsL||[au.onlyVs]).some(t=>(H.fn.tysOf(def)||[]).includes(t)))return 0}   /* 11-15 「타입 : X」 이외면 실패 — 예측도 0 */   /* 11-15: 위력이 정해지지 않는 기술(헤비봄버 · 자이로볼 …)은 specialPowFor 로 — 전엔 0 으로 보고 한 번도 안 골랐다 */
- const b=FN.ctx().b;const f=FN.fieldOf(b);const RM=k=>+((f.rooms||{})[k]||0)>0;
- const sk=FN.skinOf(atk,mv);const T0=RM('블랙룸')?'Ghost':((sk||{}).ty||mv.typeEn);const moveTypes=RM('블랙룸')?['Ghost']:sk?[sk.ty]:String(mv.type||'').split(/[()/,]/).map(t=>t.trim()).filter(Boolean).map(S.typeEn);
- if(OI&&OI.immune(def,moveTypes))return 0;
- const atkTypes=atk.teraActive&&atk.teraEn!=='-'?[...atk.types,atk.teraEn]:atk.types;const floating=(def.states||{}).MagnetRise||(def.states||{}).Telekinesis||(FX&&FX.floating(def))||FN.IT(def)==='풍선';
- const eff=B.effectiveness(moveTypes,def,{multiMode:0,atkTypes,floating});if(!eff.value)return 0;
- const mods=FX?FX.attackMods(atk,def,Object.assign(FN.moveQuery(atk,def,mv,moveTypes,eff.value,!o.multi),{stab:!!eff.stab})):{boost:1,guard:1};const ig=OI&&OI.defGuard(def,mv.cat);if(ig)mods.guard=(mods.guard||1)*ig.v;if(def!==atk&&mv.cat!=='변화'&&String((def&&def.ability)||'').replace(/^특성\s*:\s*/,'').trim()==='둘이함께'&&(o.multi||/전체|자신\s*이외/.test(String(mv.range||''))))mods.guard=(mods.guard||1)*2;   /* 11-23 기대 대미지에도 둘이함께 ×2 */
- const wm=FN.WEATHER_MUL[f.weather.type]||{};const wMul=wm[T0]!=null?wm[T0]:1;let fm=1;const ft=f.terrain.type;if(FN.grd(atk)){if(ft==='그래스필드'&&T0==='Grass')fm=1.3;if(ft==='일렉트릭필드'&&T0==='Electric')fm=1.3;if(ft==='사이코필드'&&T0==='Psychic')fm=1.3}if(ft==='미스트필드'&&moveTypes.includes('Dragon')&&FN.grd(def))fm*=0.5;
- const im=OI?OI.atkMul(atk,{types:moveTypes,cat:mv.cat,single:String(mv.range||'')==='1체'}):null;
- const dTy=FN.tysOf(def),dS=mv.cat==='특수'?'specialdefense':'defense';const wt=f.weather.type;const defMul=(wt==='극한'&&dTy.includes('Ice')&&dS==='defense')?2:(['눈','싸라기눈'].includes(wt)&&dTy.includes('Ice')&&dS==='defense')?1.5:(wt==='모래바람'&&dTy.includes('Rock')&&dS==='specialdefense')?1.5:1;
- const objs=(f.objects||{})[def.side]||{};const wall={};for(const k in FN.WALLS)if(objs[k]>0&&!(k==='얼음의장벽'&&T0==='Fire'))wall[FN.WALLS[k]]=1;
- const spw=FN.specialPowFor(mv.name,atk);const sp=spw?spw(def):null;const pow=sp&&sp.pow!=null?sp.pow:+mv.pow;if(!pow)return 0;
- const n=Math.max(1,(+mv.min||1)+(+mv.max||1))/2;
- let d;try{d=B.damage(FN.foulAtk(atk,def,mv),FN.aceDef&&!process.env.NOACE?FN.aceDef(atk,def):def,Object.assign({},mv,{pow},sk?{typeEn:sk.ty}:{}),{critMul:FN.critMulOf(atk),hits:[1],free1:mods.boost||1,free2:1,item1:im?im.v:1,item2:1,trait:sk?sk.mul:1,weather:wMul,fieldMul:fm,defMul,wonder:RM('원더룸'),multiTarget:!!o.multi,wall,wallSize:FN.mode(b)>=2?2:1,ignoreAtk:-1,ignoreDef:-1,rng:()=>0.5})}catch(e){return 0}
- const am=(eff.stab?1.5:1)*(FN.IT(atk)==='달인의띠'&&eff.value>1?1.2:1);
- const hp=B.hpDamage(def,Math.floor(d.total*am*n),eff.value,{stab:false,guard:(mods.guard||1)*((def.flags||{}).endure?0.5:1)});
- let acc=1;if(+mv.acc){try{acc=Math.min(1,(+mv.acc/100)*FN.leadAcc(atk)*B.statValue(atk,'accuracy').rankMult/B.statValue(def,'evasion').rankMult)}catch(e){}}
- return Math.max(0,hp.raw)*acc}
+function estimate(H, W, atk, def, mv, o) {
+  o = o || {};
+  const FN = H.fn,
+    B = W.OM_BATTLE,
+    FX = W.OM_FX,
+    OI = W.OM_ITEMS,
+    S = W.OM_STATS;
+  if (!mv || mv.cat === '변화' || (!(+mv.pow > 0) && !H.fn.specialPowFor(mv.name, atk))) return 0;
+  {
+    const au = (H.fn.moveAuto && H.fn.moveAuto(mv)) || {};
+    if (au.onlyVs && def && !(au.onlyVsL || [au.onlyVs]).some(t => (H.fn.tysOf(def) || []).includes(t))) return 0;
+  } /* 11-15 「타입 : X」 이외면 실패 — 예측도 0 */ /* 11-15: 위력이 정해지지 않는 기술(헤비봄버 · 자이로볼 …)은 specialPowFor 로 — 전엔 0 으로 보고 한 번도 안 골랐다 */
+  const b = FN.ctx().b;
+  const f = FN.fieldOf(b);
+  const RM = k => +((f.rooms || {})[k] || 0) > 0;
+  const sk = FN.skinOf(atk, mv);
+  const T0 = RM('블랙룸') ? 'Ghost' : (sk || {}).ty || mv.typeEn;
+  const moveTypes = RM('블랙룸')
+    ? ['Ghost']
+    : sk
+      ? [sk.ty]
+      : String(mv.type || '')
+          .split(/[()/,]/)
+          .map(t => t.trim())
+          .filter(Boolean)
+          .map(S.typeEn);
+  if (OI && OI.immune(def, moveTypes)) return 0;
+  const atkTypes = atk.teraActive && atk.teraEn !== '-' ? [...atk.types, atk.teraEn] : atk.types;
+  const floating = (def.states || {}).MagnetRise || (def.states || {}).Telekinesis || (FX && FX.floating(def)) || FN.IT(def) === '풍선';
+  const eff = B.effectiveness(moveTypes, def, { multiMode: 0, atkTypes, floating });
+  if (!eff.value) return 0;
+  const mods = FX
+    ? FX.attackMods(atk, def, Object.assign(FN.moveQuery(atk, def, mv, moveTypes, eff.value, !o.multi), { stab: !!eff.stab }))
+    : { boost: 1, guard: 1 };
+  const ig = OI && OI.defGuard(def, mv.cat);
+  if (ig) mods.guard = (mods.guard || 1) * ig.v;
+  if (
+    def !== atk &&
+    mv.cat !== '변화' &&
+    String((def && def.ability) || '')
+      .replace(/^특성\s*:\s*/, '')
+      .trim() === '둘이함께' &&
+    (o.multi || /전체|자신\s*이외/.test(String(mv.range || '')))
+  )
+    mods.guard = (mods.guard || 1) * 2; /* 11-23 기대 대미지에도 둘이함께 ×2 */
+  const wm = FN.WEATHER_MUL[f.weather.type] || {};
+  const wMul = wm[T0] != null ? wm[T0] : 1;
+  let fm = 1;
+  const ft = f.terrain.type;
+  if (FN.grd(atk)) {
+    if (ft === '그래스필드' && T0 === 'Grass') fm = 1.3;
+    if (ft === '일렉트릭필드' && T0 === 'Electric') fm = 1.3;
+    if (ft === '사이코필드' && T0 === 'Psychic') fm = 1.3;
+  }
+  if (ft === '미스트필드' && moveTypes.includes('Dragon') && FN.grd(def)) fm *= 0.5;
+  const im = OI ? OI.atkMul(atk, { types: moveTypes, cat: mv.cat, single: String(mv.range || '') === '1체' }) : null;
+  const dTy = FN.tysOf(def),
+    dS = mv.cat === '특수' ? 'specialdefense' : 'defense';
+  const wt = f.weather.type;
+  const defMul =
+    wt === '극한' && dTy.includes('Ice') && dS === 'defense'
+      ? 2
+      : ['눈', '싸라기눈'].includes(wt) && dTy.includes('Ice') && dS === 'defense'
+        ? 1.5
+        : wt === '모래바람' && dTy.includes('Rock') && dS === 'specialdefense'
+          ? 1.5
+          : 1;
+  const objs = (f.objects || {})[def.side] || {};
+  const wall = {};
+  for (const k in FN.WALLS) if (objs[k] > 0 && !(k === '얼음의장벽' && T0 === 'Fire')) wall[FN.WALLS[k]] = 1;
+  const spw = FN.specialPowFor(mv.name, atk);
+  const sp = spw ? spw(def) : null;
+  const pow = sp && sp.pow != null ? sp.pow : +mv.pow;
+  if (!pow) return 0;
+  const n = Math.max(1, (+mv.min || 1) + (+mv.max || 1)) / 2;
+  let d;
+  try {
+    d = B.damage(
+      FN.foulAtk(atk, def, mv),
+      FN.aceDef && !process.env.NOACE ? FN.aceDef(atk, def) : def,
+      Object.assign({}, mv, { pow }, sk ? { typeEn: sk.ty } : {}),
+      {
+        critMul: FN.critMulOf(atk),
+        hits: [1],
+        free1: mods.boost || 1,
+        free2: 1,
+        item1: im ? im.v : 1,
+        item2: 1,
+        trait: sk ? sk.mul : 1,
+        weather: wMul,
+        fieldMul: fm,
+        defMul,
+        wonder: RM('원더룸'),
+        multiTarget: !!o.multi,
+        wall,
+        wallSize: FN.mode(b) >= 2 ? 2 : 1,
+        ignoreAtk: -1,
+        ignoreDef: -1,
+        rng: () => 0.5
+      }
+    );
+  } catch (e) {
+    return 0;
+  }
+  const am = (eff.stab ? 1.5 : 1) * (FN.IT(atk) === '달인의띠' && eff.value > 1 ? 1.2 : 1);
+  const hp = B.hpDamage(def, Math.floor(d.total * am * n), eff.value, {
+    stab: false,
+    guard: (mods.guard || 1) * ((def.flags || {}).endure ? 0.5 : 1)
+  });
+  let acc = 1;
+  if (+mv.acc) {
+    try {
+      acc = Math.min(1, ((+mv.acc / 100) * FN.leadAcc(atk) * B.statValue(atk, 'accuracy').rankMult) / B.statValue(def, 'evasion').rankMult);
+    } catch (e) {}
+  }
+  return Math.max(0, hp.raw) * acc;
+}
 
 /* ===== 변화기 고르기 (지침 2-9 ③ 「지원 · 방어」 후보 · 2-11 랭크별) =====
    점수 = 「상대 HP 몇 할을 깎는 공격과 맞먹나」(공격 후보의 기대 대미지 ÷ 남은 HP 와 견준다). 효과 글을 웹툴이 자동으로 처리하는 기술(OM_MOVEAUTO.auto)과 「기술 방어」만 고른다 — 손으로 처리할 기술은 시뮬에서 효과가 없어서.
    C(단순): 상태 이상 걸기 · 지친 아이 회복 · 1턴 자기 강화 · 자기 타입을 살리는 날씨/필드. B 이상: + 기술 방어 · 벽 · 순풍 · 상대 약화 · 혼란 · 설치기 */
-const MAJOR=['Poison','Toxic','Burn','Paralysis','Freeze','Sleep'];
-function statusPick(H,W,c){const FN=H.fn,MA=W.OM_MOVEAUTO,B=W.OM_BATTLE;const {m,fs}=c;let pol=c.pol;if(c.ai&&pol==='D')pol='C';/* 11-15 새 로직: D = C (실수 턴은 battle3 이 옛 고르기로) */if(pol==='D'||pol==='wild')return null;const gateC=pol==='C'&&!c.ai;/* 새 로직의 C 는 판 깔기(벽 · 순풍 · 오로라베일 · 트릭룸 · 설치기)를 쓴다 — 지침 2-12 ② */const b=FN.ctx().b;const f=FN.fieldOf(b);const turn=+b.turn||1;
- const L=FN.MVS(m).map((mv,i)=>Object.assign({},mv,{_i:i})).filter(mv=>mv&&mv.cat==='변화'&&!mv.virt&&(!mv.ext||/^(도우미|쉬프트업|감싸기)$/.test(String(mv.name||'').trim())));if(!L.length)return null;   /* 11-15 05시: 『어시스트』 기능 확장 도우미 · 쉬프트업도 */
- const hpR=m.hp.cur/m.hp.max;const danger=c.dangerOf(m);const safe=danger<m.hp.cur*0.4;const main=(m.stats[1]>=m.stats[3])?'attack':'specialattack';const mtypes=FN.tysOf(m);
- const best=c.best;const bestFrac=best?Math.min(1,best.v/Math.max(1,best.tg.hp.cur)):0;
- const out=[];const T=FN.ctx().b.trainers[m.tid]||{};
- const immune=(tg,st)=>{const ty=FN.tysOf(tg);if(st==='Paralysis'&&ty.includes('Electric'))return true;if(st==='Burn'&&ty.includes('Fire'))return true;if((st==='Poison'||st==='Toxic')&&(ty.includes('Poison')||ty.includes('Steel')))return true;if(st==='Freeze'&&ty.includes('Ice'))return true;if(st==='LeechSeed'&&ty.includes('Grass'))return true;return false};
- const accP=(mv,tg)=>{if(!+mv.acc)return 1;try{return Math.min(1,(+mv.acc/100)*FN.leadAcc(m)/B.statValue(tg,'evasion').rankMult)}catch(e){return +mv.acc/100}};
- /* 11-15 망령 「지원 기술 다 개선」(새 로직): 대타출동 · 와이드가드 · 트릭가드 · 에임가드 · 트릭/바꿔치기 · 가드스왑 · 자세 · 지연전이 — 'skip' = 이번엔 안 씀 */
- const lastSame=mv=>!!m.lastMove&&m.lastMove.name===mv.name&&+m.lastMove.turn===turn-1;
- const thr=fs.map(f=>{let bt=null;for(const x of [m,...c.allies]){const t=c.threatVs(pol,f,x);if(t&&t.mv){const fr=t.v/Math.max(1,x.hp.cur);if(!bt||fr>bt.fr)bt={f,x,mv:t.mv,fr}}}return bt}).filter(Boolean);
- const isSure=q=>/「필중기」/.test(String(q.eff||''))||(q.cat!=='변화'&&!(+q.acc));const foeStatus=f=>FN.MVS(f).some(q=>q&&q.cat==='변화'&&!/^(자신|자진|필드|아군)/.test(String(q.range||'')));
- /* 11-15 09시 망령 「순풍 · 벽 · 날씨 · 트릭룸과 약점 찌르기는 기초 택틱 — 그걸 안개제거 · 웨더클리너 · 윈드브레이커로 막는다」: 판의 값을 「남은 턴 × 이번 판에서 바뀌는 몫」으로 센다
+const MAJOR = ['Poison', 'Toxic', 'Burn', 'Paralysis', 'Freeze', 'Sleep'];
+function statusPick(H, W, c) {
+  const FN = H.fn,
+    MA = W.OM_MOVEAUTO,
+    B = W.OM_BATTLE;
+  const { m, fs } = c;
+  let pol = c.pol;
+  if (c.ai && pol === 'D') pol = 'C';
+  /* 11-15 새 로직: D = C (실수 턴은 battle3 이 옛 고르기로) */ if (pol === 'D' || pol === 'wild') return null;
+  const gateC = pol === 'C' && !c.ai;
+  /* 새 로직의 C 는 판 깔기(벽 · 순풍 · 오로라베일 · 트릭룸 · 설치기)를 쓴다 — 지침 2-12 ② */ const b = FN.ctx().b;
+  const f = FN.fieldOf(b);
+  const turn = +b.turn || 1;
+  const L = FN.MVS(m)
+    .map((mv, i) => Object.assign({}, mv, { _i: i }))
+    .filter(mv => mv && mv.cat === '변화' && !mv.virt && (!mv.ext || /^(도우미|쉬프트업|감싸기)$/.test(String(mv.name || '').trim())));
+  if (!L.length) return null; /* 11-15 05시: 『어시스트』 기능 확장 도우미 · 쉬프트업도 */
+  const hpR = m.hp.cur / m.hp.max;
+  const danger = c.dangerOf(m);
+  const safe = danger < m.hp.cur * 0.4;
+  const main = m.stats[1] >= m.stats[3] ? 'attack' : 'specialattack';
+  const mtypes = FN.tysOf(m);
+  const best = c.best;
+  const bestFrac = best ? Math.min(1, best.v / Math.max(1, best.tg.hp.cur)) : 0;
+  const out = [];
+  const T = FN.ctx().b.trainers[m.tid] || {};
+  const immune = (tg, st) => {
+    const ty = FN.tysOf(tg);
+    if (st === 'Paralysis' && ty.includes('Electric')) return true;
+    if (st === 'Burn' && ty.includes('Fire')) return true;
+    if ((st === 'Poison' || st === 'Toxic') && (ty.includes('Poison') || ty.includes('Steel'))) return true;
+    if (st === 'Freeze' && ty.includes('Ice')) return true;
+    if (st === 'LeechSeed' && ty.includes('Grass')) return true;
+    return false;
+  };
+  const accP = (mv, tg) => {
+    if (!+mv.acc) return 1;
+    try {
+      return Math.min(1, ((+mv.acc / 100) * FN.leadAcc(m)) / B.statValue(tg, 'evasion').rankMult);
+    } catch (e) {
+      return +mv.acc / 100;
+    }
+  };
+  /* 11-15 망령 「지원 기술 다 개선」(새 로직): 대타출동 · 와이드가드 · 트릭가드 · 에임가드 · 트릭/바꿔치기 · 가드스왑 · 자세 · 지연전이 — 'skip' = 이번엔 안 씀 */
+  const lastSame = mv => !!m.lastMove && m.lastMove.name === mv.name && +m.lastMove.turn === turn - 1;
+  const thr = fs
+    .map(f => {
+      let bt = null;
+      for (const x of [m, ...c.allies]) {
+        const t = c.threatVs(pol, f, x);
+        if (t && t.mv) {
+          const fr = t.v / Math.max(1, x.hp.cur);
+          if (!bt || fr > bt.fr) bt = { f, x, mv: t.mv, fr };
+        }
+      }
+      return bt;
+    })
+    .filter(Boolean);
+  const isSure = q => /「필중기」/.test(String(q.eff || '')) || (q.cat !== '변화' && !+q.acc);
+  const foeStatus = f => FN.MVS(f).some(q => q && q.cat === '변화' && !/^(자신|자진|필드|아군)/.test(String(q.range || '')));
+  /* 11-15 09시 망령 「순풍 · 벽 · 날씨 · 트릭룸과 약점 찌르기는 기초 택틱 — 그걸 안개제거 · 웨더클리너 · 윈드브레이커로 막는다」: 판의 값을 「남은 턴 × 이번 판에서 바뀌는 몫」으로 센다
     점수 단위는 다른 후보와 같다(상대 HP 몇 할을 깎는 것과 같은가). 남은 턴은 길어야 3턴까지만 친다(교대 · 쓰러짐으로 줄어드니까) */
- const LEFT=n=>Math.max(0,Math.min(3,(+n||0)-1));const WMUL=FN.WEATHER_MUL||{};const curW=String((f.weather||{}).type||'');
- const myAct=[m,...c.allies].filter(x=>x&&x.hp.cur>0);const foeSide=fs[0]?fs[0].side:(m.side==='left'?'right':'left');
- const atkFr=(x,vs,mul)=>{let bv=0;for(const q of FN.MVS(x)){if(!q||q.cat==='변화'||!(+q.pow>0))continue;const k=mul?mul(q):1;if(!k)continue;for(const tg of vs){const v=c.expect(x,q,tg)*k/Math.max(1,tg.hp.cur);if(v>bv)bv=v}}return Math.min(1,bv)};
- /* 날씨 w 가 지금 날씨 대신이면 한쪽(자기 편 attackers → 상대 vs)의 가장 센 공격이 얼마나 바뀌나 */
- const wxGain=(atks,vs,w)=>atks.reduce((a,x)=>{const now=atkFr(x,vs);const nw=atkFr(x,vs,q=>{const t=q.typeEn;const cur=(WMUL[curW]||{})[t]||1,to=(WMUL[w]||{})[t]||1;return to/cur});return a+(Math.min(1,nw)-now)},0);
- /* 벽: 상대가 우리에게 그 분류로 칠 위협 합 × 깎는 몫(1−0.67) */
- const wallGain=(cat)=>thr.reduce((a,t)=>a+(t.mv&&(cat==='all'||t.mv.cat===cat)?Math.min(1,t.fr)*0.33:0),0);
- /* 지금 판이 상대에게 주는 것 (안개제거 · 날씨 걷어내기의 값) */
- const foeEdge=()=>{let v=0;const fo=(f.objects||{})[foeSide]||{},mo=(f.objects||{})[m.side]||{};
-  for(const o of ['리플렉터','빛의장막','오로라베일']){const n=+fo[o]||0;if(!n)continue;const cat=o==='리플렉터'?'물리':o==='빛의장막'?'특수':'';const g=myAct.reduce((a,x)=>a+atkFr(x,fs,q=>cat&&q.cat!==cat?0:1)*(1/0.67-1),0);v+=g*LEFT(n)}
-  if(+fo['순풍']>0){const flip=myAct.filter(x=>fs.some(tg=>c.spd(tg)>c.spd(x)&&c.spd(tg)/2<c.spd(x))).length;v+=0.15*flip*LEFT(+fo['순풍'])}
-  for(const o of ['리플렉터','빛의장막','오로라베일']){const n=+mo[o]||0;if(n)v-=wallGain(o==='리플렉터'?'물리':o==='빛의장막'?'특수':'all')*LEFT(n)}   /* 안개제거는 우리 벽도 걷는다 */
-  if(+mo['순풍']>0)v-=0.15*myAct.length*LEFT(+mo['순풍']);
-  if(curW){const n=+(f.weather||{}).count||5;/* 날씨를 걷으면: 우리 공격 변화 − 상대 공격 변화 (지금 날씨가 상대 편이면 +) */v+=(wxGain(myAct,fs,'')-wxGain(fs,myAct,''))*LEFT(n)}
-  if(+((f.rooms||{})['트릭룸']||0)>0){const n=+(f.rooms||{})['트릭룸'];const myFast=myAct.filter(x=>fs.some(tg=>c.spd(x)>c.spd(tg))).length;v+=(0.12*myFast-0.12*(myAct.length-myFast))*LEFT(n)}
-  return v};
- const support=(mv,P)=>{const e=String(mv.eff||'');
-  /* 11-15 05시 도우미: 아군의 가장 센 공격이 ×1.5 로 늘어나는 몫(쓰러뜨리기까지) — 내 공격보다 크면 */
-  if(/「도우미」\s*상태로/.test(e)){let bt=null;for(const al of c.allies){if(!al||!al.entry||al.hp.cur<=0)continue;const ja=c.J&&c.J.get?c.J.get(al.id):null;if(ja&&(ja.prot||ja.sw||!ja.mv||ja.mv.cat==='변화'))continue;/* 짝이 이번 턴 공격할 때만 · 짝이 고른 기술 · 대상으로 */for(const q of (ja?[ja.mv]:FN.MVS(al))){if(!q||q.cat==='변화'||!(+q.pow>0))continue;for(const f of (ja&&ja.tg&&fs.includes(ja.tg)?[ja.tg]:fs)){const v=c.expect(al,q,f);const fr=v/Math.max(1,f.hp.cur);const g=Math.min(1,1.5*fr)-Math.min(1,fr);if(!bt||g>bt.g)bt={al,g}}}}return bt&&bt.g>0.15?{mv,tg:bt.al,score:bt.g,why:'도우미'}:'skip'}
-  /* 11-15 감싸기(「유사 방어」 · 우선도 +3 · 연속 제한): 짝이 이번 턴 쓰러질 것 같은데 반감이면 버틸 때 — 짝이 방어를 고른 턴은 빼고 */
-  if(/「\s*유사\s*방어\s*」\s*상태로/.test(e)){if(lastSame(mv))return 'skip';let bt=null;for(const t of thr){if(t.x===m)continue;const ja=c.J&&c.J.get?c.J.get(t.x.id):null;if(ja&&(ja.prot||ja.sw))continue;if(t.fr>=1&&t.fr*0.5<1){const sc=0.45+0.2*Math.min(1,t.x.hp.cur/t.x.hp.max);if(!bt||sc>bt.sc)bt={x:t.x,sc}}}return bt?{mv,tg:bt.x,score:bt.sc,why:'감싸기'}:'skip'}
-  /* 쉬프트업: 아군이 이 턴 스피드 ×1.5 면 자기를 크게 노리는 상대보다 먼저 움직일 때 */
-  if(/아군의\s*「스피드」를\s*강화\(1\.5배\)/.test(e)){if(lastSame(mv))return 'skip';let bt=null;for(const t of thr){if(t.x===m||t.fr<0.6)continue;const sx=+c.spd(t.x),sf=+c.spd(t.f);if(sx<sf&&sx*1.5>sf){const sc=0.2+0.3*Math.min(1,t.fr);if(!bt||sc>bt.sc)bt={x:t.x,sc}}}return bt?{mv,tg:bt.x,score:bt.sc,why:'쉬프트업'}:'skip'}
-  if(/「대역인형」을\s*소환/.test(e)){if((m.states||{}).Substitute||hpR<=0.5||danger>=m.hp.cur*0.7)return 'skip';return {mv,tg:m,score:0.28+(fs.some(foeStatus)?0.12:0),why:'대타출동'}}
-  if(/「전체기 방어」\s*상태로/.test(e)){if(lastSame(mv))return 'skip';const sv=thr.filter(t=>/전체|자신\s*이외/.test(String(t.mv.range||''))).reduce((a,t)=>a+Math.min(1,t.fr),0);return sv<0.35?'skip':{mv,tg:m,score:0.25+0.4*Math.min(1.5,sv),why:'와이드가드'}}
-  if(/「변화기 방어」\s*상태로/.test(e)){if(lastSame(mv))return 'skip';const n=fs.filter(foeStatus).length;return n?{mv,tg:m,score:0.1*n,why:'트릭가드'}:'skip'}
-  if(/「필중기 방어」\s*상태로/.test(e)){if(lastSame(mv))return 'skip';const sv=thr.filter(t=>isSure(t.mv)).reduce((a,t)=>a+Math.min(1,t.fr),0);return sv<0.4?'skip':{mv,tg:m,score:0.25+0.4*Math.min(1.5,sv),why:'에임가드'}}
-  const OIk=W.OM_ITEMS&&W.OM_ITEMS.moveKind?W.OM_ITEMS.moveKind(mv):'';
-  if(OIk==='swap'){const mine=String(FN.IT(m)||'');const HARM=/검은철구|불꽃구슬|독구슬|구애|끈적끈적바늘|겨냥표적|늘어진/;const guts=/근성|독폭주|열폭주|이상한비늘/.test(String(m.ability||''));
-   if(mine&&HARM.test(mine)&&!(/구슬/.test(mine)&&guts)){const tg=fs.slice().sort((a,x)=>Math.max(x.stats[1],x.stats[3])-Math.max(a.stats[1],a.stats[3]))[0];return {mv,tg,score:0.35*accP(mv,tg),why:'소지품 떠넘기기'}}
-   const GOOD=/먹다남은음식|기합의띠|생명의구슬|달인의띠|돌격조끼|진화의휘석|검은오물/;const tg=fs.find(f=>GOOD.test(String(FN.IT(f)||'')));if(!mine&&tg)return {mv,tg,score:0.12*accP(mv,tg),why:'소지품 빼앗기'};return 'skip'}
-  const ops=P?(P.groups||[]).flatMap(g=>g.ops||[]):[];const rk=ops.find(o=>o.k==='rkswap');
-  if(rk){const r=x=>+(((x.rank)||{})[rk.a]||0)+(rk.b?+(((x.rank)||{})[rk.b]||0):0);const tg=fs.slice().sort((a,x)=>r(x)-r(a))[0];const d=tg?r(tg)-r(m):0;return d>=2?{mv,tg,score:0.12*d,why:'랭크 맞바꾸기'}:'skip'}
-  if(P&&P.iai){if(m.stanceT===turn-1||m.iai===P.iai)return 'skip';const IM=FN.MVS(m).filter(q=>q&&q.cat!=='변화'&&/(^|[,\s])거합($|[,\s])/.test(String(q.tag||'')));if(!IM.length)return 'skip';
-   let gain=0;for(const f of fs){let cur=0,nw=0;for(const q of IM){cur=Math.max(cur,c.expect(m,q,f,false));nw=Math.max(nw,c.expect(m,Object.assign({},q,{typeEn:P.iai}),f,false))}gain=Math.max(gain,(nw-cur)/Math.max(1,f.hp.cur))}
-   return gain<0.2?'skip':{mv,tg:m,score:Math.min(0.6,gain*0.8),why:'자세 → '+P.iai}}
-  if(P&&P.selfSwitch&&mv.cat==='변화'&&c.bench&&c.matchup){const B2=c.bench.filter(x=>x.tid===m.tid);if(!B2.length)return 'skip';const cur=fs.reduce((a,f)=>a+c.matchup(m,f),0);const best=Math.max(...B2.map(x=>fs.reduce((a,f)=>a+c.matchup(x,f),0)));return best-cur>=0.8&&danger>=m.hp.cur*0.5?{mv,tg:m,score:0.3,why:'지연전이로 교대'}:'skip'}
-  return null};
- for(const mv of L){let P=null;try{P=MA.parse(mv)}catch(e){}const prot=FN.protMove(mv);if(c.ai&&!prot){const sp=support(mv,P);if(sp){if(sp!=='skip')out.push(sp);continue}}if(!prot&&!(P&&MA.auto(P)))continue;
-  if(prot){if(pol==='C')continue;if(m.protectLast===turn-1)continue;if(danger>=m.hp.cur&&c.allies.length)out.push({mv,tg:m,score:0.6,why:'기술 방어'});continue}
-  const ops=(P.groups||[]).flatMap(g=>(g.ops||[]).map(op=>Object.assign({who:g.who,n:g.n},op)));
-  /* 11-15: 판 걷어내기(안개제거 = 날씨 · 필드 · 룸 · 벽 · 설치기 전부) — 지금 판이 상대 편이면 */
-  if(ops.some(o=>o.k==='clearobj')||(ops.some(o=>o.k==='weather'&&!o.w)&&mv.cat==='변화')){if(gateC)continue;const v=foeEdge();if(v>0.2)out.push({mv,tg:m,score:Math.min(0.9,v*0.6),why:'판 걷어내기'});continue}
-  for(const op of ops){
-   if(op.k==='state'&&op.tgt==='self'&&op.state==='FollowMe'){/* 11-15 망령 「날따름으로 공격을 유도」: 짝이 위험하고 내가 받아낼 수 있으면 */const pt=c.allies[0];if(!pt||!c.ai&&pol==='C')continue;const pa=c.dangerOf(pt)/Math.max(1,pt.hp.cur);const me=danger/Math.max(1,m.hp.cur);/* 상대 둘이 다 나를 때리는 최악 = danger 그대로 */if(pa<0.5||me>=pa||me>=1.6)continue;/* 내가 짝보다 덜 위험할 때 — 짝 대신 맞는다 */out.push({mv,tg:m,score:Math.min(0.75,0.3+0.3*(pa-me))*(me<1?1:0.75),why:'날따름'});continue}
-   if(op.k==='state'&&op.tgt==='target'){const st=op.state;const cand=fs.filter(tg=>!immune(tg,st)&&!(MAJOR.includes(st)&&MAJOR.some(k=>(tg.states||{})[k]))&&!(tg.states||{})[st]);if(!cand.length)continue;
-    const tg=cand.map(t=>Object.assign(c.threatVs(pol,t,m),{t})).sort((a,x)=>x.v-a.v)[0].t;const th=Math.min(1,c.threatVs(pol,tg,m).v/Math.max(1,m.hp.cur));let s=0;
-    if(st==='Sleep')s=0.7;else if(st==='Paralysis')s=0.35+(c.spd(tg)>c.spd(m)?0.2:0);else if(st==='Burn')s=tg.stats[1]>tg.stats[3]?0.5:0.15;else if(st==='Toxic')s=0.35;else if(st==='Poison')s=0.25;else if(st==='Confusion'){if(pol==='C')continue;s=0.25}else if(st==='LeechSeed'){if(pol==='C')continue;s=0.25}else if(st==='Taunt'||st==='Encore'){if(pol==='C')continue;s=0.1}else continue;
-    s*=accP(mv,tg)*(0.6+0.4*th);if(bestFrac>=0.5)s*=0.6;out.push({mv,tg,score:s,why:'상태 '+st})}
-   else if(op.k==='rank'&&(op.tgt==='self')){const up=Object.entries(op.stats||{}).filter(([k,v])=>+v>0);if(!up.length)continue;let s=0;
-    for(const [k,v] of up){const cur=+((m.rank||{})[k]||0);if(cur>=2)continue;if(k===main)s+=0.3*Math.min(2,+v);else if(k==='speed'){if(fs.some(tg=>c.spd(tg)>c.spd(m)))s+=0.2*Math.min(2,+v)}else if(k==='defense'||k==='specialdefense'){const th=c.topThreat(pol,m);if(th.mv&&((k==='defense'&&th.mv.cat==='물리')||(k==='specialdefense'&&th.mv.cat==='특수')))s+=0.15*Math.min(2,+v)}}
-    if(!s)continue;if(pol==='C'&&turn>1)continue;if(!safe||hpR<0.6)s*=0.3;out.push({mv,tg:m,score:s,why:'강화'})}
-   else if(op.k==='rank'&&op.tgt==='target'){if(pol==='C')continue;const dn=Object.entries(op.stats||{}).filter(([k,v])=>+v<0);if(!dn.length)continue;const tg=fs.slice().sort((a,x)=>Math.max(x.stats[1],x.stats[3])-Math.max(a.stats[1],a.stats[3]))[0];const tm=tg.stats[1]>=tg.stats[3]?'attack':'specialattack';let s=0;for(const [k,v] of dn){if(k===tm)s+=0.12*Math.min(2,-v);else if(k==='speed'&&c.spd(tg)>c.spd(m))s+=0.08*Math.min(2,-v)}if(s)out.push({mv,tg,score:s*accP(mv,tg),why:'약화'})}
-   else if(op.k==='heal'&&op.tgt==='self'){if(hpR>0.5)continue;const fr=String(op.value||'1/2').split('/');const h=(+fr[0]||1)/(+fr[1]||2);const s=Math.min(h,1-hpR)*(danger<m.hp.cur+m.hp.max*h?1.1:0.4);out.push({mv,tg:m,score:s,why:'회복'})}
-   else if(op.k==='weather'&&op.w){if(f.weather.type===op.w)continue;/* 11-15: 날씨 = (우리 공격이 늘어나는 몫 − 상대 공격이 늘어나는 몫) × 남은 턴 · 벤치 아이도 반쯤 */const benchMine=(c.bench||[]).filter(x=>x.tid===m.tid);const g=wxGain(myAct,fs,op.w)+0.5*wxGain(benchMine,fs,op.w)-wxGain(fs,myAct,op.w);const ice=op.w==='눈'||op.w==='싸라기눈'?0.15*myAct.filter(x=>FN.tysOf(x).includes('Ice')).length:0;const sand=op.w==='모래바람'?0.12*myAct.filter(x=>FN.tysOf(x).includes('Rock')).length:0;const v=(g+ice+sand)*LEFT(+op.count||5)*0.6;if(v>0.15)out.push({mv,tg:m,score:Math.min(0.9,v),why:'날씨 '+op.w})}
-   else if(op.k==='terrain'&&op.room&&op.t==='트릭룸'){if(gateC)continue;if(+((f.rooms||{})['트릭룸']||0)>0)continue;const mine=c.allies.concat([m]);const sl=x=>c.spd(x);const mySp=mine.reduce((a,x)=>a+sl(x),0)/mine.length,thSp=fs.reduce((a,x)=>a+sl(x),0)/fs.length;
-    /* 11-15 망령 「오토나시 트릭룸」: 트릭룸 동안 덕을 볼 우리 편(필드 · 벤치, 상대 평균보다 느린 아이) 수만큼 — 5턴 판을 바꾸는 수 */const slowAll=Object.values(b.mons).filter(x=>x.side===m.side&&x.hp.cur>0&&sl(x)<thSp).length;if(mySp<thSp*0.9&&slowAll>=3)out.push({mv,tg:m,score:Math.min(0.9,0.3+0.12*slowAll),why:'트릭룸'})}
-   else if(op.k==='terrain'&&!op.room){if(f.terrain.type===op.t)continue;const TY={그래스필드:'Grass',일렉트릭필드:'Electric',사이코필드:'Psychic'}[op.t];if(TY&&mtypes.includes(TY)&&FN.MVS(m).some(q=>q&&q.cat!=='변화'&&q.typeEn===TY))out.push({mv,tg:m,score:0.25,why:'필드 '+op.t})}
-   else if(op.k==='object'&&op.side==='self'){if(gateC)continue;const objs=(f.objects||{})[m.side]||{};if(+objs[op.o]>0)continue;const th=c.topThreat(pol,m);
-    if(op.o==='리플렉터'||op.o==='빛의장막'||op.o==='오로라베일'){if(op.o==='오로라베일'&&!/싸라기눈|눈/.test(curW))continue;/* 11-15: 벽 = 상대 위협(그 분류) × 0.33 × 남은 턴 */const v=wallGain(op.o==='리플렉터'?'물리':op.o==='빛의장막'?'특수':'all')*LEFT(+op.n||5)*0.6;if(v>0.15)out.push({mv,tg:m,score:Math.min(0.9,v),why:op.o})}
-    else if(op.o==='순풍'){/* 11-15 망령 「순풍으로 선공권」: 순풍(×2)으로 앞지르게 되는 우리 편 (필드 · 벤치) 수만큼 */const fast=Math.max(...fs.map(tg=>c.spd(tg)));const mine=[m,...c.allies];const flip=mine.filter(x=>c.spd(x)<fast&&c.spd(x)*2>fast).length;const bflip=(c.bench||[]).filter(x=>x.tid===m.tid&&+x.stats[5]<fast&&+x.stats[5]*2>fast).length;if(flip||bflip)out.push({mv,tg:m,score:Math.min(0.8,0.3+0.18*flip+0.06*bflip),why:'순풍'})}}
-   else if(op.k==='object'&&op.side==='enemy'){if(gateC)continue;const objs=(f.objects||{})[fs[0].side]||{};if(+objs[op.o]>0)continue;const benchN=Object.values(b.mons).filter(x=>x.side===fs[0].side&&!x.entry&&x.hp.cur>0).length;if(benchN)out.push({mv,tg:fs[0],score:0.08+0.07*benchN,why:op.o})}}}
- if(!out.length)return null;out.sort((a,x)=>x.score-a.score);return out[0]}
-module.exports={attack,applyHit,estimate,statusPick,cardTake};
-
+  const LEFT = n => Math.max(0, Math.min(3, (+n || 0) - 1));
+  const WMUL = FN.WEATHER_MUL || {};
+  const curW = String((f.weather || {}).type || '');
+  const myAct = [m, ...c.allies].filter(x => x && x.hp.cur > 0);
+  const foeSide = fs[0] ? fs[0].side : m.side === 'left' ? 'right' : 'left';
+  const atkFr = (x, vs, mul) => {
+    let bv = 0;
+    for (const q of FN.MVS(x)) {
+      if (!q || q.cat === '변화' || !(+q.pow > 0)) continue;
+      const k = mul ? mul(q) : 1;
+      if (!k) continue;
+      for (const tg of vs) {
+        const v = (c.expect(x, q, tg) * k) / Math.max(1, tg.hp.cur);
+        if (v > bv) bv = v;
+      }
+    }
+    return Math.min(1, bv);
+  };
+  /* 날씨 w 가 지금 날씨 대신이면 한쪽(자기 편 attackers → 상대 vs)의 가장 센 공격이 얼마나 바뀌나 */
+  const wxGain = (atks, vs, w) =>
+    atks.reduce((a, x) => {
+      const now = atkFr(x, vs);
+      const nw = atkFr(x, vs, q => {
+        const t = q.typeEn;
+        const cur = (WMUL[curW] || {})[t] || 1,
+          to = (WMUL[w] || {})[t] || 1;
+        return to / cur;
+      });
+      return a + (Math.min(1, nw) - now);
+    }, 0);
+  /* 벽: 상대가 우리에게 그 분류로 칠 위협 합 × 깎는 몫(1−0.67) */
+  const wallGain = cat => thr.reduce((a, t) => a + (t.mv && (cat === 'all' || t.mv.cat === cat) ? Math.min(1, t.fr) * 0.33 : 0), 0);
+  /* 지금 판이 상대에게 주는 것 (안개제거 · 날씨 걷어내기의 값) */
+  const foeEdge = () => {
+    let v = 0;
+    const fo = (f.objects || {})[foeSide] || {},
+      mo = (f.objects || {})[m.side] || {};
+    for (const o of ['리플렉터', '빛의장막', '오로라베일']) {
+      const n = +fo[o] || 0;
+      if (!n) continue;
+      const cat = o === '리플렉터' ? '물리' : o === '빛의장막' ? '특수' : '';
+      const g = myAct.reduce((a, x) => a + atkFr(x, fs, q => (cat && q.cat !== cat ? 0 : 1)) * (1 / 0.67 - 1), 0);
+      v += g * LEFT(n);
+    }
+    if (+fo['순풍'] > 0) {
+      const flip = myAct.filter(x => fs.some(tg => c.spd(tg) > c.spd(x) && c.spd(tg) / 2 < c.spd(x))).length;
+      v += 0.15 * flip * LEFT(+fo['순풍']);
+    }
+    for (const o of ['리플렉터', '빛의장막', '오로라베일']) {
+      const n = +mo[o] || 0;
+      if (n) v -= wallGain(o === '리플렉터' ? '물리' : o === '빛의장막' ? '특수' : 'all') * LEFT(n);
+    } /* 안개제거는 우리 벽도 걷는다 */
+    if (+mo['순풍'] > 0) v -= 0.15 * myAct.length * LEFT(+mo['순풍']);
+    if (curW) {
+      const n = +(f.weather || {}).count || 5;
+      /* 날씨를 걷으면: 우리 공격 변화 − 상대 공격 변화 (지금 날씨가 상대 편이면 +) */ v += (wxGain(myAct, fs, '') - wxGain(fs, myAct, '')) * LEFT(n);
+    }
+    if (+((f.rooms || {})['트릭룸'] || 0) > 0) {
+      const n = +(f.rooms || {})['트릭룸'];
+      const myFast = myAct.filter(x => fs.some(tg => c.spd(x) > c.spd(tg))).length;
+      v += (0.12 * myFast - 0.12 * (myAct.length - myFast)) * LEFT(n);
+    }
+    return v;
+  };
+  const support = (mv, P) => {
+    const e = String(mv.eff || '');
+    /* 11-15 05시 도우미: 아군의 가장 센 공격이 ×1.5 로 늘어나는 몫(쓰러뜨리기까지) — 내 공격보다 크면 */
+    if (/「도우미」\s*상태로/.test(e)) {
+      let bt = null;
+      for (const al of c.allies) {
+        if (!al || !al.entry || al.hp.cur <= 0) continue;
+        const ja = c.J && c.J.get ? c.J.get(al.id) : null;
+        if (ja && (ja.prot || ja.sw || !ja.mv || ja.mv.cat === '변화')) continue;
+        /* 짝이 이번 턴 공격할 때만 · 짝이 고른 기술 · 대상으로 */ for (const q of ja ? [ja.mv] : FN.MVS(al)) {
+          if (!q || q.cat === '변화' || !(+q.pow > 0)) continue;
+          for (const f of ja && ja.tg && fs.includes(ja.tg) ? [ja.tg] : fs) {
+            const v = c.expect(al, q, f);
+            const fr = v / Math.max(1, f.hp.cur);
+            const g = Math.min(1, 1.5 * fr) - Math.min(1, fr);
+            if (!bt || g > bt.g) bt = { al, g };
+          }
+        }
+      }
+      return bt && bt.g > 0.15 ? { mv, tg: bt.al, score: bt.g, why: '도우미' } : 'skip';
+    }
+    /* 11-15 감싸기(「유사 방어」 · 우선도 +3 · 연속 제한): 짝이 이번 턴 쓰러질 것 같은데 반감이면 버틸 때 — 짝이 방어를 고른 턴은 빼고 */
+    if (/「\s*유사\s*방어\s*」\s*상태로/.test(e)) {
+      if (lastSame(mv)) return 'skip';
+      let bt = null;
+      for (const t of thr) {
+        if (t.x === m) continue;
+        const ja = c.J && c.J.get ? c.J.get(t.x.id) : null;
+        if (ja && (ja.prot || ja.sw)) continue;
+        if (t.fr >= 1 && t.fr * 0.5 < 1) {
+          const sc = 0.45 + 0.2 * Math.min(1, t.x.hp.cur / t.x.hp.max);
+          if (!bt || sc > bt.sc) bt = { x: t.x, sc };
+        }
+      }
+      return bt ? { mv, tg: bt.x, score: bt.sc, why: '감싸기' } : 'skip';
+    }
+    /* 쉬프트업: 아군이 이 턴 스피드 ×1.5 면 자기를 크게 노리는 상대보다 먼저 움직일 때 */
+    if (/아군의\s*「스피드」를\s*강화\(1\.5배\)/.test(e)) {
+      if (lastSame(mv)) return 'skip';
+      let bt = null;
+      for (const t of thr) {
+        if (t.x === m || t.fr < 0.6) continue;
+        const sx = +c.spd(t.x),
+          sf = +c.spd(t.f);
+        if (sx < sf && sx * 1.5 > sf) {
+          const sc = 0.2 + 0.3 * Math.min(1, t.fr);
+          if (!bt || sc > bt.sc) bt = { x: t.x, sc };
+        }
+      }
+      return bt ? { mv, tg: bt.x, score: bt.sc, why: '쉬프트업' } : 'skip';
+    }
+    if (/「대역인형」을\s*소환/.test(e)) {
+      if ((m.states || {}).Substitute || hpR <= 0.5 || danger >= m.hp.cur * 0.7) return 'skip';
+      return { mv, tg: m, score: 0.28 + (fs.some(foeStatus) ? 0.12 : 0), why: '대타출동' };
+    }
+    if (/「전체기 방어」\s*상태로/.test(e)) {
+      if (lastSame(mv)) return 'skip';
+      const sv = thr.filter(t => /전체|자신\s*이외/.test(String(t.mv.range || ''))).reduce((a, t) => a + Math.min(1, t.fr), 0);
+      return sv < 0.35 ? 'skip' : { mv, tg: m, score: 0.25 + 0.4 * Math.min(1.5, sv), why: '와이드가드' };
+    }
+    if (/「변화기 방어」\s*상태로/.test(e)) {
+      if (lastSame(mv)) return 'skip';
+      const n = fs.filter(foeStatus).length;
+      return n ? { mv, tg: m, score: 0.1 * n, why: '트릭가드' } : 'skip';
+    }
+    if (/「필중기 방어」\s*상태로/.test(e)) {
+      if (lastSame(mv)) return 'skip';
+      const sv = thr.filter(t => isSure(t.mv)).reduce((a, t) => a + Math.min(1, t.fr), 0);
+      return sv < 0.4 ? 'skip' : { mv, tg: m, score: 0.25 + 0.4 * Math.min(1.5, sv), why: '에임가드' };
+    }
+    const OIk = W.OM_ITEMS && W.OM_ITEMS.moveKind ? W.OM_ITEMS.moveKind(mv) : '';
+    if (OIk === 'swap') {
+      const mine = String(FN.IT(m) || '');
+      const HARM = /검은철구|불꽃구슬|독구슬|구애|끈적끈적바늘|겨냥표적|늘어진/;
+      const guts = /근성|독폭주|열폭주|이상한비늘/.test(String(m.ability || ''));
+      if (mine && HARM.test(mine) && !(/구슬/.test(mine) && guts)) {
+        const tg = fs.slice().sort((a, x) => Math.max(x.stats[1], x.stats[3]) - Math.max(a.stats[1], a.stats[3]))[0];
+        return { mv, tg, score: 0.35 * accP(mv, tg), why: '소지품 떠넘기기' };
+      }
+      const GOOD = /먹다남은음식|기합의띠|생명의구슬|달인의띠|돌격조끼|진화의휘석|검은오물/;
+      const tg = fs.find(f => GOOD.test(String(FN.IT(f) || '')));
+      if (!mine && tg) return { mv, tg, score: 0.12 * accP(mv, tg), why: '소지품 빼앗기' };
+      return 'skip';
+    }
+    const ops = P ? (P.groups || []).flatMap(g => g.ops || []) : [];
+    const rk = ops.find(o => o.k === 'rkswap');
+    if (rk) {
+      const r = x => +((x.rank || {})[rk.a] || 0) + (rk.b ? +((x.rank || {})[rk.b] || 0) : 0);
+      const tg = fs.slice().sort((a, x) => r(x) - r(a))[0];
+      const d = tg ? r(tg) - r(m) : 0;
+      return d >= 2 ? { mv, tg, score: 0.12 * d, why: '랭크 맞바꾸기' } : 'skip';
+    }
+    if (P && P.iai) {
+      if (m.stanceT === turn - 1 || m.iai === P.iai) return 'skip';
+      const IM = FN.MVS(m).filter(q => q && q.cat !== '변화' && /(^|[,\s])거합($|[,\s])/.test(String(q.tag || '')));
+      if (!IM.length) return 'skip';
+      let gain = 0;
+      for (const f of fs) {
+        let cur = 0,
+          nw = 0;
+        for (const q of IM) {
+          cur = Math.max(cur, c.expect(m, q, f, false));
+          nw = Math.max(nw, c.expect(m, Object.assign({}, q, { typeEn: P.iai }), f, false));
+        }
+        gain = Math.max(gain, (nw - cur) / Math.max(1, f.hp.cur));
+      }
+      return gain < 0.2 ? 'skip' : { mv, tg: m, score: Math.min(0.6, gain * 0.8), why: '자세 → ' + P.iai };
+    }
+    if (P && P.selfSwitch && mv.cat === '변화' && c.bench && c.matchup) {
+      const B2 = c.bench.filter(x => x.tid === m.tid);
+      if (!B2.length) return 'skip';
+      const cur = fs.reduce((a, f) => a + c.matchup(m, f), 0);
+      const best = Math.max(...B2.map(x => fs.reduce((a, f) => a + c.matchup(x, f), 0)));
+      return best - cur >= 0.8 && danger >= m.hp.cur * 0.5 ? { mv, tg: m, score: 0.3, why: '지연전이로 교대' } : 'skip';
+    }
+    return null;
+  };
+  for (const mv of L) {
+    let P = null;
+    try {
+      P = MA.parse(mv);
+    } catch (e) {}
+    const prot = FN.protMove(mv);
+    if (c.ai && !prot) {
+      const sp = support(mv, P);
+      if (sp) {
+        if (sp !== 'skip') out.push(sp);
+        continue;
+      }
+    }
+    if (!prot && !(P && MA.auto(P))) continue;
+    if (prot) {
+      if (pol === 'C') continue;
+      if (m.protectLast === turn - 1) continue;
+      if (danger >= m.hp.cur && c.allies.length) out.push({ mv, tg: m, score: 0.6, why: '기술 방어' });
+      continue;
+    }
+    const ops = (P.groups || []).flatMap(g => (g.ops || []).map(op => Object.assign({ who: g.who, n: g.n }, op)));
+    /* 11-15: 판 걷어내기(안개제거 = 날씨 · 필드 · 룸 · 벽 · 설치기 전부) — 지금 판이 상대 편이면 */
+    if (ops.some(o => o.k === 'clearobj') || (ops.some(o => o.k === 'weather' && !o.w) && mv.cat === '변화')) {
+      if (gateC) continue;
+      const v = foeEdge();
+      if (v > 0.2) out.push({ mv, tg: m, score: Math.min(0.9, v * 0.6), why: '판 걷어내기' });
+      continue;
+    }
+    for (const op of ops) {
+      if (op.k === 'state' && op.tgt === 'self' && op.state === 'FollowMe') {
+        /* 11-15 망령 「날따름으로 공격을 유도」: 짝이 위험하고 내가 받아낼 수 있으면 */ const pt = c.allies[0];
+        if (!pt || (!c.ai && pol === 'C')) continue;
+        const pa = c.dangerOf(pt) / Math.max(1, pt.hp.cur);
+        const me = danger / Math.max(1, m.hp.cur);
+        /* 상대 둘이 다 나를 때리는 최악 = danger 그대로 */ if (pa < 0.5 || me >= pa || me >= 1.6) continue;
+        /* 내가 짝보다 덜 위험할 때 — 짝 대신 맞는다 */ out.push({
+          mv,
+          tg: m,
+          score: Math.min(0.75, 0.3 + 0.3 * (pa - me)) * (me < 1 ? 1 : 0.75),
+          why: '날따름'
+        });
+        continue;
+      }
+      if (op.k === 'state' && op.tgt === 'target') {
+        const st = op.state;
+        const cand = fs.filter(tg => !immune(tg, st) && !(MAJOR.includes(st) && MAJOR.some(k => (tg.states || {})[k])) && !(tg.states || {})[st]);
+        if (!cand.length) continue;
+        const tg = cand.map(t => Object.assign(c.threatVs(pol, t, m), { t })).sort((a, x) => x.v - a.v)[0].t;
+        const th = Math.min(1, c.threatVs(pol, tg, m).v / Math.max(1, m.hp.cur));
+        let s = 0;
+        if (st === 'Sleep') s = 0.7;
+        else if (st === 'Paralysis') s = 0.35 + (c.spd(tg) > c.spd(m) ? 0.2 : 0);
+        else if (st === 'Burn') s = tg.stats[1] > tg.stats[3] ? 0.5 : 0.15;
+        else if (st === 'Toxic') s = 0.35;
+        else if (st === 'Poison') s = 0.25;
+        else if (st === 'Confusion') {
+          if (pol === 'C') continue;
+          s = 0.25;
+        } else if (st === 'LeechSeed') {
+          if (pol === 'C') continue;
+          s = 0.25;
+        } else if (st === 'Taunt' || st === 'Encore') {
+          if (pol === 'C') continue;
+          s = 0.1;
+        } else continue;
+        s *= accP(mv, tg) * (0.6 + 0.4 * th);
+        if (bestFrac >= 0.5) s *= 0.6;
+        out.push({ mv, tg, score: s, why: '상태 ' + st });
+      } else if (op.k === 'rank' && op.tgt === 'self') {
+        const up = Object.entries(op.stats || {}).filter(([k, v]) => +v > 0);
+        if (!up.length) continue;
+        let s = 0;
+        for (const [k, v] of up) {
+          const cur = +((m.rank || {})[k] || 0);
+          if (cur >= 2) continue;
+          if (k === main) s += 0.3 * Math.min(2, +v);
+          else if (k === 'speed') {
+            if (fs.some(tg => c.spd(tg) > c.spd(m))) s += 0.2 * Math.min(2, +v);
+          } else if (k === 'defense' || k === 'specialdefense') {
+            const th = c.topThreat(pol, m);
+            if (th.mv && ((k === 'defense' && th.mv.cat === '물리') || (k === 'specialdefense' && th.mv.cat === '특수'))) s += 0.15 * Math.min(2, +v);
+          }
+        }
+        if (!s) continue;
+        if (pol === 'C' && turn > 1) continue;
+        if (!safe || hpR < 0.6) s *= 0.3;
+        out.push({ mv, tg: m, score: s, why: '강화' });
+      } else if (op.k === 'rank' && op.tgt === 'target') {
+        if (pol === 'C') continue;
+        const dn = Object.entries(op.stats || {}).filter(([k, v]) => +v < 0);
+        if (!dn.length) continue;
+        const tg = fs.slice().sort((a, x) => Math.max(x.stats[1], x.stats[3]) - Math.max(a.stats[1], a.stats[3]))[0];
+        const tm = tg.stats[1] >= tg.stats[3] ? 'attack' : 'specialattack';
+        let s = 0;
+        for (const [k, v] of dn) {
+          if (k === tm) s += 0.12 * Math.min(2, -v);
+          else if (k === 'speed' && c.spd(tg) > c.spd(m)) s += 0.08 * Math.min(2, -v);
+        }
+        if (s) out.push({ mv, tg, score: s * accP(mv, tg), why: '약화' });
+      } else if (op.k === 'heal' && op.tgt === 'self') {
+        if (hpR > 0.5) continue;
+        const fr = String(op.value || '1/2').split('/');
+        const h = (+fr[0] || 1) / (+fr[1] || 2);
+        const s = Math.min(h, 1 - hpR) * (danger < m.hp.cur + m.hp.max * h ? 1.1 : 0.4);
+        out.push({ mv, tg: m, score: s, why: '회복' });
+      } else if (op.k === 'weather' && op.w) {
+        if (f.weather.type === op.w) continue;
+        /* 11-15: 날씨 = (우리 공격이 늘어나는 몫 − 상대 공격이 늘어나는 몫) × 남은 턴 · 벤치 아이도 반쯤 */ const benchMine = (c.bench || []).filter(
+          x => x.tid === m.tid
+        );
+        const g = wxGain(myAct, fs, op.w) + 0.5 * wxGain(benchMine, fs, op.w) - wxGain(fs, myAct, op.w);
+        const ice = op.w === '눈' || op.w === '싸라기눈' ? 0.15 * myAct.filter(x => FN.tysOf(x).includes('Ice')).length : 0;
+        const sand = op.w === '모래바람' ? 0.12 * myAct.filter(x => FN.tysOf(x).includes('Rock')).length : 0;
+        const v = (g + ice + sand) * LEFT(+op.count || 5) * 0.6;
+        if (v > 0.15) out.push({ mv, tg: m, score: Math.min(0.9, v), why: '날씨 ' + op.w });
+      } else if (op.k === 'terrain' && op.room && op.t === '트릭룸') {
+        if (gateC) continue;
+        if (+((f.rooms || {})['트릭룸'] || 0) > 0) continue;
+        const mine = c.allies.concat([m]);
+        const sl = x => c.spd(x);
+        const mySp = mine.reduce((a, x) => a + sl(x), 0) / mine.length,
+          thSp = fs.reduce((a, x) => a + sl(x), 0) / fs.length;
+        /* 11-15 망령 「오토나시 트릭룸」: 트릭룸 동안 덕을 볼 우리 편(필드 · 벤치, 상대 평균보다 느린 아이) 수만큼 — 5턴 판을 바꾸는 수 */ const slowAll =
+          Object.values(b.mons).filter(x => x.side === m.side && x.hp.cur > 0 && sl(x) < thSp).length;
+        if (mySp < thSp * 0.9 && slowAll >= 3) out.push({ mv, tg: m, score: Math.min(0.9, 0.3 + 0.12 * slowAll), why: '트릭룸' });
+      } else if (op.k === 'terrain' && !op.room) {
+        if (f.terrain.type === op.t) continue;
+        const TY = { 그래스필드: 'Grass', 일렉트릭필드: 'Electric', 사이코필드: 'Psychic' }[op.t];
+        if (TY && mtypes.includes(TY) && FN.MVS(m).some(q => q && q.cat !== '변화' && q.typeEn === TY))
+          out.push({ mv, tg: m, score: 0.25, why: '필드 ' + op.t });
+      } else if (op.k === 'object' && op.side === 'self') {
+        if (gateC) continue;
+        const objs = (f.objects || {})[m.side] || {};
+        if (+objs[op.o] > 0) continue;
+        const th = c.topThreat(pol, m);
+        if (op.o === '리플렉터' || op.o === '빛의장막' || op.o === '오로라베일') {
+          if (op.o === '오로라베일' && !/싸라기눈|눈/.test(curW)) continue;
+          /* 11-15: 벽 = 상대 위협(그 분류) × 0.33 × 남은 턴 */ const v =
+            wallGain(op.o === '리플렉터' ? '물리' : op.o === '빛의장막' ? '특수' : 'all') * LEFT(+op.n || 5) * 0.6;
+          if (v > 0.15) out.push({ mv, tg: m, score: Math.min(0.9, v), why: op.o });
+        } else if (op.o === '순풍') {
+          /* 11-15 망령 「순풍으로 선공권」: 순풍(×2)으로 앞지르게 되는 우리 편 (필드 · 벤치) 수만큼 */ const fast = Math.max(
+            ...fs.map(tg => c.spd(tg))
+          );
+          const mine = [m, ...c.allies];
+          const flip = mine.filter(x => c.spd(x) < fast && c.spd(x) * 2 > fast).length;
+          const bflip = (c.bench || []).filter(x => x.tid === m.tid && +x.stats[5] < fast && +x.stats[5] * 2 > fast).length;
+          if (flip || bflip) out.push({ mv, tg: m, score: Math.min(0.8, 0.3 + 0.18 * flip + 0.06 * bflip), why: '순풍' });
+        }
+      } else if (op.k === 'object' && op.side === 'enemy') {
+        if (gateC) continue;
+        const objs = (f.objects || {})[fs[0].side] || {};
+        if (+objs[op.o] > 0) continue;
+        const benchN = Object.values(b.mons).filter(x => x.side === fs[0].side && !x.entry && x.hp.cur > 0).length;
+        if (benchN) out.push({ mv, tg: fs[0], score: 0.08 + 0.07 * benchN, why: op.o });
+      }
+    }
+  }
+  if (!out.length) return null;
+  out.sort((a, x) => x.score - a.score);
+  return out[0];
+}
+module.exports = { attack, applyHit, estimate, statusPick, cardTake };

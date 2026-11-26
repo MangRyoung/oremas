@@ -12,673 +12,3336 @@
      · 야생 배치: 방 r.e = 야생 무리(시트에서 GM 이 만든 트레이너), r.eh = 플레이어에게 표시 안 함(기습).
        「⚔ 야생 조우」 → OM_APP.encounter: 일행(좌) VS 야생(우)로 배틀 칸을 차리고 동행을 먼저 내밀기 예약. 끝나면 「⛩ 던전으로 돌아가기」(클리어 표시).
      · 경계도는 던전마다 끌 수 있다 (d.noal). */
-"use strict";
-window.OM_DG_UI=(()=>{
- const A=()=>window.OM_APP, DBS=()=>window.OM_STORE;
- const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
- const H=esc;const $=(s,r)=>(r||document).querySelector(s);
- const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
- /* 10-31 망령 「던전 로그의 (으)로」: 이름 끝 글자 받침에 맞춰 「으로 / 로」 (한글 · 숫자가 아니면 그대로) */
- const ro=w=>{w=String(w==null?'':w);const c=w.replace(/[\s」』)\]]+$/,'').slice(-1);if(/\d/.test(c))return w+('0136'.includes(c)?'으로':'로');const k=c.charCodeAt(0)-0xAC00;if(!(k>=0&&k<11172))return w+'(으)로';const j=k%28;return w+(j===0||j===8?'로':'으로')};
- const TY={
-  entry:{k:'입구',en:'ENTRANCE',ic:'⛩',c:'#59b6ff',h:16,r:'던전으로 들어오고 나가는 곳. 여기서 돌아가면 이번 탐색이 끝난다.'},
-  room:{k:'통로',en:'PASSAGE',ic:'◇',c:'#8fa3bf',h:10,r:'특별한 것은 보이지 않는다. 스킬 체크로 살피면 숨은 것을 찾을 수도 있다.'},
-  battle:{k:'조우 구역',en:'ENCOUNTER',ic:'☠',c:'#ff4d5e',h:18,r:'적이 배회한다. 몰래 지나가거나 맞서 싸운다. 들키면 경계도가 오른다.'},
-  trap:{k:'함정·기믹',en:'GIMMICK',ic:'⚙',c:'#ffa53a',h:14,r:'장치가 길을 막는다. 스킬 체크나 포켓몬의 기술로 돌파한다. 실패하면 피해나 경계도 상승.'},
-  puzzle:{k:'수수께끼',en:'PUZZLE',ic:'✦',c:'#c58bff',h:14,r:'머리를 쓰는 시험. 단서를 모아 풀어 낸다.'},
-  treasure:{k:'보물',en:'TREASURE',ic:'◆',c:'#ffd84a',h:12,r:'보물이나 단서가 있다. 무엇이 들었는지는 GM 이 알려 준다.'},
-  safe:{k:'세이프룸',en:'SAFE ROOM',ic:'☗',c:'#3ee0a1',h:16,r:'경계도가 오르지 않는 안전한 곳. 숨을 고를 수 있고, 다음 진입 때 여기서 시작할 수 있다.'},
-  boss:{k:'심층부',en:'DEPTHS',ic:'♛',c:'#ff2a6d',h:30,r:'던전의 주인이 기다리는 곳. 결전이 벌어진다.'}};
- const TORDER=Object.keys(TY);
- /* 11-04 망령 경계도 개편 (노트 27): 30~70 사이를 오가게 — 들어설 때 30 · 처음 들어가는 방마다 +5 · 휴식 −10. 단계: 30 미만 = 휴식 한 단계 위 · 50 이상 = 보스방 Lv +5 · 70 이상 = 야생 Lv +5(보스 합 +10) · 100 = 퇴출 */
- const AL0=30,AL_ROOM=5,AL_REST=-10;
- const LV=[[0,'고요','QUIET','기척이 없다. 숨돌리기의 HP 회복이 일행 전원이 된다.'],[30,'경계','ALERT','무언가 낌새를 챘다.'],[50,'주목','WATCHED','깊은 곳의 주인이 눈치챘다. 보스방 Lv +5.'],[70,'위험','DANGER','던전 전체가 경계 태세다. 야생 Lv +5 (보스방은 +10).'],[100,'퇴출','LOCKDOWN','더 버틸 수 없다! 일행은 던전 밖으로 밀려난다.']];
- const lvOf=a=>LV.reduce((r,l,i)=>a>=l[0]?i:r,0);
- const LVC=['#3ee0a1','#ffd84a','#ffb02e','#ff7a2f','#ff2a3d'];
- const DG={prev:null,sel:'',frame:'',ed:'',edSel:'',edMode:'move',edFrom:'',drag:null,mapSig:'',tiltRaf:0,edOpen:false};
- const ST=()=>A().ST;const gm=()=>ST().role==='gm';
- const ty=t=>TY[t]||TY.room;
- const D0=()=>ST().state.dg||{};
- const field=()=>D0().field||{};
- const all=()=>D0().list||{};
- const cur=()=>{const f=field(),d=f.mode==='dungeon'&&all()[f.did];return d?Object.assign({},d,{id:f.did}):null};
- const on=()=>!!cur();
- const R=d=>(d&&d.r)||{};
- const lk=(a,b)=>a<b?a+'~'+b:b+'~'+a;
- const links=d=>Object.keys((d&&d.l)||{}).map(k=>k.split('~')).filter(([a,b])=>R(d)[a]&&R(d)[b]);
- const nbrs=(d,id)=>links(d).flatMap(([a,b])=>a===id?[b]:b===id?[a]:[]);
- const rid=d=>{let k;do k=Math.random().toString(36).slice(2,7);while(R(d)[k]);return k};
- const shade=(hex,f)=>{const n=parseInt(String(hex).slice(1),16),m=x=>Math.round(f<0?x*(1+f):x+(255-x)*f);return`rgb(${m(n>>16)},${m(n>>8&255)},${m(n&255)})`};
- const rng=s=>{let h=2166136261;for(const ch of String(s))h=Math.imul(h^ch.charCodeAt(0),16777619);return()=>{h=Math.imul(h^h>>>15,2246822507);h=Math.imul(h^h>>>13,3266489909);return((h^=h>>>16)>>>0)/4294967296}};
- const mapLoc=id=>{const L=((((ST().state.rp||{}).map)||{}).locs)||[];const l=L.find(x=>x&&x.dg===id);return l?`<span class="dg-chip" title="지도의 이 장소에서 진입한다">📍 지도 ${H(l.n)}. ${H(l.name||'')}</span>`:''};
- const setH=(el,h)=>{if(el&&el._h!==h){el.innerHTML=h;el._h=h}};
- const cssu=s=>String(s??'').replace(/[\s"'()\\<>]/g,c=>'%'+c.charCodeAt(0).toString(16).padStart(2,'0').toUpperCase());
- /* ---------- 일행 · 동행 포켓몬 · 야생 (10-26 오후) ---------- */
- const RO=()=>ST().state.roster||{trainers:{},mons:{}};
- const SEATS=()=>ST().state.seats||{};
- const WN=d=>Math.max(1,Math.min(3,+((d||{}).wn)||2));
- const alOn=d=>!(d&&d.noal);
- /* 10-28 망령: 파티 현황 (js/ppool.js) — 휴대폰 방 코드가 같은 파티원들의 4식 · 6령을 합친 목록 + 포켓몬 현황.
+'use strict';
+window.OM_DG_UI = (() => {
+  const A = () => window.OM_APP,
+    DBS = () => window.OM_STORE;
+  const esc = s =>
+    String(s ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  const H = esc;
+  const $ = (s, r) => (r || document).querySelector(s);
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  /* 10-31 망령 「던전 로그의 (으)로」: 이름 끝 글자 받침에 맞춰 「으로 / 로」 (한글 · 숫자가 아니면 그대로) */
+  const ro = w => {
+    w = String(w == null ? '' : w);
+    const c = w.replace(/[\s」』)\]]+$/, '').slice(-1);
+    if (/\d/.test(c)) return w + ('0136'.includes(c) ? '으로' : '로');
+    const k = c.charCodeAt(0) - 0xac00;
+    if (!(k >= 0 && k < 11172)) return w + '(으)로';
+    const j = k % 28;
+    return w + (j === 0 || j === 8 ? '로' : '으로');
+  };
+  const TY = {
+    entry: { k: '입구', en: 'ENTRANCE', ic: '⛩', c: '#59b6ff', h: 16, r: '던전으로 들어오고 나가는 곳. 여기서 돌아가면 이번 탐색이 끝난다.' },
+    room: { k: '통로', en: 'PASSAGE', ic: '◇', c: '#8fa3bf', h: 10, r: '특별한 것은 보이지 않는다. 스킬 체크로 살피면 숨은 것을 찾을 수도 있다.' },
+    battle: {
+      k: '조우 구역',
+      en: 'ENCOUNTER',
+      ic: '☠',
+      c: '#ff4d5e',
+      h: 18,
+      r: '적이 배회한다. 몰래 지나가거나 맞서 싸운다. 들키면 경계도가 오른다.'
+    },
+    trap: {
+      k: '함정·기믹',
+      en: 'GIMMICK',
+      ic: '⚙',
+      c: '#ffa53a',
+      h: 14,
+      r: '장치가 길을 막는다. 스킬 체크나 포켓몬의 기술로 돌파한다. 실패하면 피해나 경계도 상승.'
+    },
+    puzzle: { k: '수수께끼', en: 'PUZZLE', ic: '✦', c: '#c58bff', h: 14, r: '머리를 쓰는 시험. 단서를 모아 풀어 낸다.' },
+    treasure: { k: '보물', en: 'TREASURE', ic: '◆', c: '#ffd84a', h: 12, r: '보물이나 단서가 있다. 무엇이 들었는지는 GM 이 알려 준다.' },
+    safe: {
+      k: '세이프룸',
+      en: 'SAFE ROOM',
+      ic: '☗',
+      c: '#3ee0a1',
+      h: 16,
+      r: '경계도가 오르지 않는 안전한 곳. 숨을 고를 수 있고, 다음 진입 때 여기서 시작할 수 있다.'
+    },
+    boss: { k: '심층부', en: 'DEPTHS', ic: '♛', c: '#ff2a6d', h: 30, r: '던전의 주인이 기다리는 곳. 결전이 벌어진다.' }
+  };
+  const TORDER = Object.keys(TY);
+  /* 11-04 망령 경계도 개편 (노트 27): 30~70 사이를 오가게 — 들어설 때 30 · 처음 들어가는 방마다 +5 · 휴식 −10. 단계: 30 미만 = 휴식 한 단계 위 · 50 이상 = 보스방 Lv +5 · 70 이상 = 야생 Lv +5(보스 합 +10) · 100 = 퇴출 */
+  const AL0 = 30,
+    AL_ROOM = 5,
+    AL_REST = -10;
+  const LV = [
+    [0, '고요', 'QUIET', '기척이 없다. 숨돌리기의 HP 회복이 일행 전원이 된다.'],
+    [30, '경계', 'ALERT', '무언가 낌새를 챘다.'],
+    [50, '주목', 'WATCHED', '깊은 곳의 주인이 눈치챘다. 보스방 Lv +5.'],
+    [70, '위험', 'DANGER', '던전 전체가 경계 태세다. 야생 Lv +5 (보스방은 +10).'],
+    [100, '퇴출', 'LOCKDOWN', '더 버틸 수 없다! 일행은 던전 밖으로 밀려난다.']
+  ];
+  const lvOf = a => LV.reduce((r, l, i) => (a >= l[0] ? i : r), 0);
+  const LVC = ['#3ee0a1', '#ffd84a', '#ffb02e', '#ff7a2f', '#ff2a3d'];
+  const DG = { prev: null, sel: '', frame: '', ed: '', edSel: '', edMode: 'move', edFrom: '', drag: null, mapSig: '', tiltRaf: 0, edOpen: false };
+  const ST = () => A().ST;
+  const gm = () => ST().role === 'gm';
+  const ty = t => TY[t] || TY.room;
+  const D0 = () => ST().state.dg || {};
+  const field = () => D0().field || {};
+  const all = () => D0().list || {};
+  const cur = () => {
+    const f = field(),
+      d = f.mode === 'dungeon' && all()[f.did];
+    return d ? Object.assign({}, d, { id: f.did }) : null;
+  };
+  const on = () => !!cur();
+  const R = d => (d && d.r) || {};
+  const lk = (a, b) => (a < b ? a + '~' + b : b + '~' + a);
+  const links = d =>
+    Object.keys((d && d.l) || {})
+      .map(k => k.split('~'))
+      .filter(([a, b]) => R(d)[a] && R(d)[b]);
+  const nbrs = (d, id) => links(d).flatMap(([a, b]) => (a === id ? [b] : b === id ? [a] : []));
+  const rid = d => {
+    let k;
+    do k = Math.random().toString(36).slice(2, 7);
+    while (R(d)[k]);
+    return k;
+  };
+  const shade = (hex, f) => {
+    const n = parseInt(String(hex).slice(1), 16),
+      m = x => Math.round(f < 0 ? x * (1 + f) : x + (255 - x) * f);
+    return `rgb(${m(n >> 16)},${m((n >> 8) & 255)},${m(n & 255)})`;
+  };
+  const rng = s => {
+    let h = 2166136261;
+    for (const ch of String(s)) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+    return () => {
+      h = Math.imul(h ^ (h >>> 15), 2246822507);
+      h = Math.imul(h ^ (h >>> 13), 3266489909);
+      return ((h ^= h >>> 16) >>> 0) / 4294967296;
+    };
+  };
+  const mapLoc = id => {
+    const L = ((ST().state.rp || {}).map || {}).locs || [];
+    const l = L.find(x => x && x.dg === id);
+    return l ? `<span class="dg-chip" title="지도의 이 장소에서 진입한다">📍 지도 ${H(l.n)}. ${H(l.name || '')}</span>` : '';
+  };
+  const setH = (el, h) => {
+    if (el && el._h !== h) {
+      el.innerHTML = h;
+      el._h = h;
+    }
+  };
+  const cssu = s => String(s ?? '').replace(/[\s"'()\\<>]/g, c => '%' + c.charCodeAt(0).toString(16).padStart(2, '0').toUpperCase());
+  /* ---------- 일행 · 동행 포켓몬 · 야생 (10-26 오후) ---------- */
+  const RO = () => ST().state.roster || { trainers: {}, mons: {} };
+  const SEATS = () => ST().state.seats || {};
+  const WN = d => Math.max(1, Math.min(3, +(d || {}).wn || 2));
+  const alOn = d => !(d && d.noal);
+  /* 10-28 망령: 파티 현황 (js/ppool.js) — 휴대폰 방 코드가 같은 파티원들의 4식 · 6령을 합친 목록 + 포켓몬 현황.
     PT 패널 맨 위에 파티마다 요약 한 줄, 누르면 전체 목록 창. 횟수는 각 주인의 것 그대로 (배틀 · 휴식이 고친다) */
- const PP=()=>window.OM_PPOOL;
- function poolHTML(d){if(!PP())return '';const cs=PP().codesOf(party(d));
-  return cs.map(code=>`<button type="button" class="dgpt-pp" data-dgpool="${H(code)}" title="파티 「${H(code)}」 — 4식 · 6령 합친 목록과 포켓몬 현황 보기"><i>👥 ${H(code)}</i>${PP().chip(code)}<em>›</em></button>`).join('')}
- function poolMgr(code){if(!PP()||!code)return;const md=A().openModal('<div id="dgPl"></div>');
-  const draw=()=>{const el=md.querySelector('#dgPl');if(!el)return;el.innerHTML=`<div class="mhead"><h2>파티 현황 <small class="dim">${H(code)}</small></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>${PP().html(code)}`};
-  DG.ppDraw=draw;draw();
-  md.addEventListener('click',e=>{if(e.target.closest('[data-x]'))A().closeModal()})}
- const stKo=k=>((((window.OM_DB||{}).states||{}).st||{})[k]||{}).ko||k;
- function party(d){const tr=RO().trainers||{};const ids=d&&d.pt?Object.keys(d.pt):Object.keys(SEATS()).filter(id=>tr[id]);return ids.filter(id=>tr[id]).sort((a,b)=>(tr[a].ord||0)-(tr[b].ord||0))}
- function monHp(m){const mx=Math.max(1,(m.hp&&m.hp.max)||(m.stats||[])[0]||1);const dead=!!((m.sheetStates||{}).Dead);const c=dead?0:m.sheetHp==null?mx:Math.max(0,Math.min(mx,+m.sheetHp||0));return {c,mx,dead:dead||c<=0}}
- const canWalk=tid=>gm()||(!!ST().seat&&ST().seat===tid);
- const tPids=t=>A().twoPids?A().twoPids(t):((t&&t.pids)||[]);   /* 10-30: 2체 기준이면 각성체 2체만 */
- function walkOf(tid){const t=(RO().trainers||{})[tid]||{},ms=RO().mons||{};const P=tPids(t);return (Array.isArray(t.walk)?t.walk:[]).filter(id=>ms[id]&&P.includes(id))}
- function ptHTML(d){const ids=party(d),tr=RO().trainers||{},ms=RO().mons||{},n=WN(d);
-  if(!ids.length)return gm()?'<div class="dgpt-empty">일행이 없다 — 좌석에 트레이너가 앉거나 던전 탭 「일행 편성」</div>':'';
-  return poolHTML(d)+ids.map(tid=>{const t=tr[tid],pids=tPids(t).filter(id=>ms[id]),w=walkOf(tid),me=canWalk(tid);const two=A().twoAble&&A().twoAble(t)?`<button type="button" class="dgpt-two${t.two?' on':''}" ${me?`data-dgtwo="${H(tid)}"`:'disabled'} title="미사그 대학: ${t.two?'2체 기준 (각성체 2체 · 제작기 「2체 기준」 4식 · 6령) — 눌러서 6체로':'6체 기준 — 눌러서 2체 기준(각성체만)으로'}">${t.two?'2체':'6체'}</button>`:'';
-   const balls=pids.map(id=>{const h=monHp(ms[id]);return `<i class="${h.dead?'ko':h.c<h.mx?'hurt':''}${w.includes(id)?' w':''}" title="${H(ms[id].name)} ${h.c}/${h.mx}"></i>`}).join('');
-   const chips=w.map(id=>{const m=ms[id],h=monHp(m),p=h.c/h.mx,st=Object.keys(m.sheetStates||{}).filter(k=>k!=='Dead'&&m.sheetStates[k]);
-    const rkt=rkTxt(m);return `<div class="dgpt-mon${h.dead?' ko':''}" data-pm="${H(id)}" title="눌러서 HP · 상태 · 랭크 고치기"><span class="dgpt-img" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></span><span class="dgpt-mi"><b>${H(m.name)}</b><span class="dgpt-hp ${p<=.25?'low':p<=.5?'mid':''}"><i style="width:${Math.round(p*100)}%"></i></span><small>${h.dead?'빈사':h.c+'/'+h.mx}${st.length?' · '+H(st.map(stKo).join(' ')):''}${rkt?' · '+H(rkt):''}</small></span></div>`}).join('');
-   const add=me&&w.length<n?`<button type="button" class="dgpt-add" data-walk="${H(tid)}">＋ 동행</button>`:'';
-   return `<div class="dgpt-row${me?' mine':''}" ${me?`data-walk="${H(tid)}" title="눌러서 동행 포켓몬 고르기 (최대 ${n}체)"`:''}><div class="dgpt-h"><b>${H(t.name||'')}</b>${two}${cardChip(tid,me)}<span class="dgpt-balls">${balls}</span></div>${ordHTML(tid)}${chips||add?`<div class="dgpt-walk">${chips}${add}</div>`:''}</div>`}).join('')}
- /* 10-26 망령: 던전에서도 손패 카드 · 4식 6령 남은 횟수.
+  const PP = () => window.OM_PPOOL;
+  function poolHTML(d) {
+    if (!PP()) return '';
+    const cs = PP().codesOf(party(d));
+    return cs
+      .map(
+        code =>
+          `<button type="button" class="dgpt-pp" data-dgpool="${H(code)}" title="파티 「${H(code)}」 — 4식 · 6령 합친 목록과 포켓몬 현황 보기"><i>👥 ${H(code)}</i>${PP().chip(code)}<em>›</em></button>`
+      )
+      .join('');
+  }
+  function poolMgr(code) {
+    if (!PP() || !code) return;
+    const md = A().openModal('<div id="dgPl"></div>');
+    const draw = () => {
+      const el = md.querySelector('#dgPl');
+      if (!el) return;
+      el.innerHTML = `<div class="mhead"><h2>파티 현황 <small class="dim">${H(code)}</small></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>${PP().html(code)}`;
+    };
+    DG.ppDraw = draw;
+    draw();
+    md.addEventListener('click', e => {
+      if (e.target.closest('[data-x]')) A().closeModal();
+    });
+  }
+  const stKo = k => ((((window.OM_DB || {}).states || {}).st || {})[k] || {}).ko || k;
+  function party(d) {
+    const tr = RO().trainers || {};
+    const ids = d && d.pt ? Object.keys(d.pt) : Object.keys(SEATS()).filter(id => tr[id]);
+    return ids.filter(id => tr[id]).sort((a, b) => (tr[a].ord || 0) - (tr[b].ord || 0));
+  }
+  function monHp(m) {
+    const mx = Math.max(1, (m.hp && m.hp.max) || (m.stats || [])[0] || 1);
+    const dead = !!(m.sheetStates || {}).Dead;
+    const c = dead ? 0 : m.sheetHp == null ? mx : Math.max(0, Math.min(mx, +m.sheetHp || 0));
+    return { c, mx, dead: dead || c <= 0 };
+  }
+  const canWalk = tid => gm() || (!!ST().seat && ST().seat === tid);
+  const tPids = t => (A().twoPids ? A().twoPids(t) : (t && t.pids) || []); /* 10-30: 2체 기준이면 각성체 2체만 */
+  function walkOf(tid) {
+    const t = (RO().trainers || {})[tid] || {},
+      ms = RO().mons || {};
+    const P = tPids(t);
+    return (Array.isArray(t.walk) ? t.walk : []).filter(id => ms[id] && P.includes(id));
+  }
+  function ptHTML(d) {
+    const ids = party(d),
+      tr = RO().trainers || {},
+      ms = RO().mons || {},
+      n = WN(d);
+    if (!ids.length) return gm() ? '<div class="dgpt-empty">일행이 없다 — 좌석에 트레이너가 앉거나 던전 탭 「일행 편성」</div>' : '';
+    return (
+      poolHTML(d) +
+      ids
+        .map(tid => {
+          const t = tr[tid],
+            pids = tPids(t).filter(id => ms[id]),
+            w = walkOf(tid),
+            me = canWalk(tid);
+          const two =
+            A().twoAble && A().twoAble(t)
+              ? `<button type="button" class="dgpt-two${t.two ? ' on' : ''}" ${me ? `data-dgtwo="${H(tid)}"` : 'disabled'} title="미사그 대학: ${t.two ? '2체 기준 (각성체 2체 · 제작기 「2체 기준」 4식 · 6령) — 눌러서 6체로' : '6체 기준 — 눌러서 2체 기준(각성체만)으로'}">${t.two ? '2체' : '6체'}</button>`
+              : '';
+          const balls = pids
+            .map(id => {
+              const h = monHp(ms[id]);
+              return `<i class="${h.dead ? 'ko' : h.c < h.mx ? 'hurt' : ''}${w.includes(id) ? ' w' : ''}" title="${H(ms[id].name)} ${h.c}/${h.mx}"></i>`;
+            })
+            .join('');
+          const chips = w
+            .map(id => {
+              const m = ms[id],
+                h = monHp(m),
+                p = h.c / h.mx,
+                st = Object.keys(m.sheetStates || {}).filter(k => k !== 'Dead' && m.sheetStates[k]);
+              const rkt = rkTxt(m);
+              return `<div class="dgpt-mon${h.dead ? ' ko' : ''}" data-pm="${H(id)}" title="눌러서 HP · 상태 · 랭크 고치기"><span class="dgpt-img" style="${m.image ? `background-image:url('${cssu(m.image)}')` : ''}"></span><span class="dgpt-mi"><b>${H(m.name)}</b><span class="dgpt-hp ${p <= 0.25 ? 'low' : p <= 0.5 ? 'mid' : ''}"><i style="width:${Math.round(p * 100)}%"></i></span><small>${h.dead ? '빈사' : h.c + '/' + h.mx}${st.length ? ' · ' + H(st.map(stKo).join(' ')) : ''}${rkt ? ' · ' + H(rkt) : ''}</small></span></div>`;
+            })
+            .join('');
+          const add = me && w.length < n ? `<button type="button" class="dgpt-add" data-walk="${H(tid)}">＋ 동행</button>` : '';
+          return `<div class="dgpt-row${me ? ' mine' : ''}" ${me ? `data-walk="${H(tid)}" title="눌러서 동행 포켓몬 고르기 (최대 ${n}체)"` : ''}><div class="dgpt-h"><b>${H(t.name || '')}</b>${two}${cardChip(tid, me)}<span class="dgpt-balls">${balls}</span></div>${ordHTML(tid)}${chips || add ? `<div class="dgpt-walk">${chips}${add}</div>` : ''}</div>`;
+        })
+        .join('')
+    );
+  }
+  /* 10-26 망령: 던전에서도 손패 카드 · 4식 6령 남은 횟수.
     횟수는 배틀에 올라가 있으면 배틀 쪽(쓴 만큼 줄어든 것), 아니면 시트 쪽. 0 인 칸은 흐리게. */
- function ordSrc(tid){const B=ST().state.battle||{};const bt=(B.trainers||{})[tid];return bt&&bt.orderCount&&B.started&&!B.done?bt:(RO().trainers||{})[tid]||{}}   /* 10-31: 던전으로 돌아온(done) 배틀은 시트 값 */
- /* 10-31 망령 「2체 3파티가 디폴트」: 2체 기준이면 제작기에서 고른 4식 · 6령(twoPick)만 보여 준다 */
- const twoKeys=(tid,kind,ks)=>{const t=(RO().trainers||{})[tid]||{};if(!t.two||!t.twoPick)return ks;const L=(kind==='order'?t.twoPick.o:t.twoPick.c)||[];return ks.filter(k=>L.includes(String(k)))};
- const fullOf=(tid,t)=>{const PP=window.OM_PPOOL;if(PP&&PP.maxOf)return PP.maxOf(tid,t);try{return window.OM_ORDERS.fill(t,t.orderBase||1)}catch(e){return {}}};
- function ordHTML(tid){const OD=window.OM_ORDERS;if(!OD)return '';const t=ordSrc(tid);const cnt=t.orderCount||{};
-  /* 10-26 망령: 합계 한 줄 + 남은 목록은 작은 칩으로. 칩을 누르면 발동(−1) · 회복(+1) 창 */
-  const one=kind=>{let ks=[];try{ks=(kind==='order'?OD.orderKeys:OD.commandKeys)(t)}catch(e){}ks=twoKeys(tid,kind,ks);let n=0;const h=ks.map(k=>{const nm=kind==='order'?OD.orderName(t,k):OD.commandName(t,k);if(!nm)return '';const v=+cnt[(kind==='order'?'order_':'command_')+k]||0;n+=v;return `<span class="${v?'':'z'}" title="${H(nm)} 남은 ${v}">${H((OD.KO||{})[String(k).split('@')[0]]||String(nm).slice(0,3))}${String(k).includes('@')?'<sup>+</sup>':''}<b>${v}</b></span>`}).join('');return {h,n}};
-  const o=one('order'),c=one('command');if(!o.h&&!c.h)return '';
-  return `<div class="dgpt-ord mini" data-ordm="${H(tid)}" title="눌러서 4식 · 6령 관리 (발동 · 회복)">${o.h?`<div><i>4식 <b>${o.n}</b></i>${o.h}</div>`:''}${c.h?`<div><i class="c">6령 <b>${c.n}</b></i>${c.h}</div>`:''}</div>`}
- /* 4식 · 6령 관리창 (10-26 망령): PT 의 4식/6령 줄을 누르면 그 트레이너의 전체 목록 — 줄마다 발동(−1) · 회복(+1), 위에 전부 가득.
+  function ordSrc(tid) {
+    const B = ST().state.battle || {};
+    const bt = (B.trainers || {})[tid];
+    return bt && bt.orderCount && B.started && !B.done ? bt : (RO().trainers || {})[tid] || {};
+  } /* 10-31: 던전으로 돌아온(done) 배틀은 시트 값 */
+  /* 10-31 망령 「2체 3파티가 디폴트」: 2체 기준이면 제작기에서 고른 4식 · 6령(twoPick)만 보여 준다 */
+  const twoKeys = (tid, kind, ks) => {
+    const t = (RO().trainers || {})[tid] || {};
+    if (!t.two || !t.twoPick) return ks;
+    const L = (kind === 'order' ? t.twoPick.o : t.twoPick.c) || [];
+    return ks.filter(k => L.includes(String(k)));
+  };
+  const fullOf = (tid, t) => {
+    const PP = window.OM_PPOOL;
+    if (PP && PP.maxOf) return PP.maxOf(tid, t);
+    try {
+      return window.OM_ORDERS.fill(t, t.orderBase || 1);
+    } catch (e) {
+      return {};
+    }
+  };
+  function ordHTML(tid) {
+    const OD = window.OM_ORDERS;
+    if (!OD) return '';
+    const t = ordSrc(tid);
+    const cnt = t.orderCount || {};
+    /* 10-26 망령: 합계 한 줄 + 남은 목록은 작은 칩으로. 칩을 누르면 발동(−1) · 회복(+1) 창 */
+    const one = kind => {
+      let ks = [];
+      try {
+        ks = (kind === 'order' ? OD.orderKeys : OD.commandKeys)(t);
+      } catch (e) {}
+      ks = twoKeys(tid, kind, ks);
+      let n = 0;
+      const h = ks
+        .map(k => {
+          const nm = kind === 'order' ? OD.orderName(t, k) : OD.commandName(t, k);
+          if (!nm) return '';
+          const v = +cnt[(kind === 'order' ? 'order_' : 'command_') + k] || 0;
+          n += v;
+          return `<span class="${v ? '' : 'z'}" title="${H(nm)} 남은 ${v}">${H((OD.KO || {})[String(k).split('@')[0]] || String(nm).slice(0, 3))}${String(k).includes('@') ? '<sup>+</sup>' : ''}<b>${v}</b></span>`;
+        })
+        .join('');
+      return { h, n };
+    };
+    const o = one('order'),
+      c = one('command');
+    if (!o.h && !c.h) return '';
+    return `<div class="dgpt-ord mini" data-ordm="${H(tid)}" title="눌러서 4식 · 6령 관리 (발동 · 회복)">${o.h ? `<div><i>4식 <b>${o.n}</b></i>${o.h}</div>` : ''}${c.h ? `<div><i class="c">6령 <b>${c.n}</b></i>${c.h}</div>` : ''}</div>`;
+  }
+  /* 4식 · 6령 관리창 (10-26 망령): PT 의 4식/6령 줄을 누르면 그 트레이너의 전체 목록 — 줄마다 발동(−1) · 회복(+1), 위에 전부 가득.
     배틀에 올라가 있으면 배틀 쪽 횟수, 아니면 시트 쪽. 발동은 횟수만 줄이고 로그 — 효과는 손으로 */
- function ordMgr(tid){const OD=window.OM_ORDERS;if(!OD||!(gm()||canWalk(tid)))return;
-  const md=A().openModal('<div id="dgOe"></div>');
-  const src=()=>{const B=ST().state.battle||{};const bt=(B.trainers||{})[tid];return bt&&bt.orderCount&&B.started&&!B.done?{t:bt,P:['battle','trainers',tid,'orderCount']}:{t:(RO().trainers||{})[tid]||{},P:['roster','trainers',tid,'orderCount']}};
-  const full=t=>fullOf(tid,t);
-  const rows=(t,kind)=>{let ks=[];try{ks=(kind==='order'?OD.orderKeys:OD.commandKeys)(t)}catch(e){}ks=twoKeys(tid,kind,ks);const F=full(t),cnt=t.orderCount||{};return ks.map(k=>{const nm=kind==='order'?OD.orderName(t,k):OD.commandName(t,k);if(!nm)return null;const key=(kind==='order'?'order_':'command_')+k;return {key,nm,v:+cnt[key]||0,mx:+F[key]||0}}).filter(Boolean)};
-  const draw=()=>{const {t,P}=src();const sec=(kind,lab)=>{const L=rows(t,kind);if(!L.length)return '';const sv=L.reduce((a,x)=>a+x.v,0),sm=L.reduce((a,x)=>a+x.mx,0);
-    return `<div class="dgoe-sec"><div class="dgoe-h"><b>${lab}</b><span class="mono">${sv} / ${sm}</span><span class="sp"></span><button class="btn xs ghost" data-oe="all" data-k="${kind}">${lab} 전부 가득</button></div>
-     ${L.map(x=>`<div class="dgoe-row ${x.v?'':'z'}"><span class="nm">『${H(x.nm)}』</span><span class="mono">${x.v}<small> / ${x.mx}</small></span><button class="btn xs pri" data-oe="use" data-key="${H(x.key)}" ${x.v>0?'':'disabled'}>발동 −1</button><button class="btn xs" data-oe="add" data-key="${H(x.key)}" ${x.v>=x.mx?'disabled':''}>회복 +1</button></div>`).join('')}</div>`};
-   md.querySelector('#dgOe').innerHTML=`<div class="mhead"><h2>4식 · 6령 <small class="dim">${H(t.name||'')}${P[0]==='roster'?' · 탐사 중 (시트)':' · 배틀'}</small></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-   <div class="dgoe">${sec('order','4식')}${sec('command','6령')}<p class="small dim" style="margin:0">발동은 횟수만 줄이고 로그를 남긴다 — 효과는 손으로.</p></div>`};
-  draw();
-  md.addEventListener('click',async e=>{if(e.target.closest('[data-x]'))return A().closeModal();const b=e.target.closest('[data-oe]');if(!b||b.disabled)return;const {t,P}=src();const cnt=Object.assign({},t.orderCount||{});const F=full(t);let line='',tag=b.dataset.k==='order'?'4식':'6령';
-   if(b.dataset.oe==='all'){const pre=b.dataset.k==='order'?'order_':'command_';for(const x in F)if(x.startsWith(pre))cnt[x]=F[x];line='전부 가득'}
-   else{const key=b.dataset.key,v=+cnt[key]||0,mx=+F[key]||0;const kind=key.startsWith('order_')?'order':'command',k=key.replace(/^(order|command)_/,'');const nm=(kind==='order'?OD.orderName(t,k):OD.commandName(t,k))||k;
-    if(b.dataset.oe==='use'){cnt[key]=Math.max(0,v-1);line=`『${nm}』 발동 · 남은 ${cnt[key]}`}else{/* 최대치가 0 인 칸(아직 못 쓰는 명령)은 회복해도 0 */cnt[key]=Math.min(mx,v+1);line=`『${nm}』 회복 +1 · 남은 ${cnt[key]}`}
-    tag=kind==='order'?'4식':'6령'}
-   await A().set(P,cnt);A().sysLog(`【${tag}】 ${t.name||''} ${line}${P[0]==='roster'?' (탐사 중)':''}`,'battle');draw()})}
- function cardChip(tid,me){const D=window.OM_DECK_UI;if(!D||!D.handCount)return '';const n=D.handCount(tid);
-  return me?`<button type="button" class="dgpt-card-b${n?'':' empty'}" data-dgcard="${H(tid)}" title="손패에서 카드를 쓴다 (던전 · 배틀 밖)">🃏<b>${n}</b></button>`:(n?`<span class="dgpt-card-b ro" title="손패 ${n}장">🃏<b>${n}</b></span>`:'')}
- /* 카드 쓰기: 구문이 있는 카드는 동행 포켓몬 중 하나를 기준으로 (배틀 밖이라 구문은 효과 글로만 남는다) */
- function useCard(tid){const D=window.OM_DECK_UI;if(!D)return;D.battleHand(tid,{where:'dungeon'})}
- /* 방에 둔 야생: r.e = 시트 트레이너 id */
- const encOf=r=>{if(!r||!r.e)return null;const t=(RO().trainers||{})[r.e];if(!t)return {t:null,ms:[]};const ms=RO().mons||{};return {t,ms:(t.pids||[]).map(id=>ms[id]).filter(Boolean)}};
- const encLive=(r,isGm)=>!!(r&&r.e&&!r.c&&(isGm||(r.s&&!r.eh)));
- /* 10-26 망령 「야생이 아닐 땐 스킬 체크나 단서(그림 · 설명)를 넣고, 휴식처는 우리 휴식 룰과」:
+  function ordMgr(tid) {
+    const OD = window.OM_ORDERS;
+    if (!OD || !(gm() || canWalk(tid))) return;
+    const md = A().openModal('<div id="dgOe"></div>');
+    const src = () => {
+      const B = ST().state.battle || {};
+      const bt = (B.trainers || {})[tid];
+      return bt && bt.orderCount && B.started && !B.done
+        ? { t: bt, P: ['battle', 'trainers', tid, 'orderCount'] }
+        : { t: (RO().trainers || {})[tid] || {}, P: ['roster', 'trainers', tid, 'orderCount'] };
+    };
+    const full = t => fullOf(tid, t);
+    const rows = (t, kind) => {
+      let ks = [];
+      try {
+        ks = (kind === 'order' ? OD.orderKeys : OD.commandKeys)(t);
+      } catch (e) {}
+      ks = twoKeys(tid, kind, ks);
+      const F = full(t),
+        cnt = t.orderCount || {};
+      return ks
+        .map(k => {
+          const nm = kind === 'order' ? OD.orderName(t, k) : OD.commandName(t, k);
+          if (!nm) return null;
+          const key = (kind === 'order' ? 'order_' : 'command_') + k;
+          return { key, nm, v: +cnt[key] || 0, mx: +F[key] || 0 };
+        })
+        .filter(Boolean);
+    };
+    const draw = () => {
+      const { t, P } = src();
+      const sec = (kind, lab) => {
+        const L = rows(t, kind);
+        if (!L.length) return '';
+        const sv = L.reduce((a, x) => a + x.v, 0),
+          sm = L.reduce((a, x) => a + x.mx, 0);
+        return `<div class="dgoe-sec"><div class="dgoe-h"><b>${lab}</b><span class="mono">${sv} / ${sm}</span><span class="sp"></span><button class="btn xs ghost" data-oe="all" data-k="${kind}">${lab} 전부 가득</button></div>
+     ${L.map(x => `<div class="dgoe-row ${x.v ? '' : 'z'}"><span class="nm">『${H(x.nm)}』</span><span class="mono">${x.v}<small> / ${x.mx}</small></span><button class="btn xs pri" data-oe="use" data-key="${H(x.key)}" ${x.v > 0 ? '' : 'disabled'}>발동 −1</button><button class="btn xs" data-oe="add" data-key="${H(x.key)}" ${x.v >= x.mx ? 'disabled' : ''}>회복 +1</button></div>`).join('')}</div>`;
+      };
+      md.querySelector('#dgOe').innerHTML =
+        `<div class="mhead"><h2>4식 · 6령 <small class="dim">${H(t.name || '')}${P[0] === 'roster' ? ' · 탐사 중 (시트)' : ' · 배틀'}</small></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+   <div class="dgoe">${sec('order', '4식')}${sec('command', '6령')}<p class="small dim" style="margin:0">발동은 횟수만 줄이고 로그를 남긴다 — 효과는 손으로.</p></div>`;
+    };
+    draw();
+    md.addEventListener('click', async e => {
+      if (e.target.closest('[data-x]')) return A().closeModal();
+      const b = e.target.closest('[data-oe]');
+      if (!b || b.disabled) return;
+      const { t, P } = src();
+      const cnt = Object.assign({}, t.orderCount || {});
+      const F = full(t);
+      let line = '',
+        tag = b.dataset.k === 'order' ? '4식' : '6령';
+      if (b.dataset.oe === 'all') {
+        const pre = b.dataset.k === 'order' ? 'order_' : 'command_';
+        for (const x in F) if (x.startsWith(pre)) cnt[x] = F[x];
+        line = '전부 가득';
+      } else {
+        const key = b.dataset.key,
+          v = +cnt[key] || 0,
+          mx = +F[key] || 0;
+        const kind = key.startsWith('order_') ? 'order' : 'command',
+          k = key.replace(/^(order|command)_/, '');
+        const nm = (kind === 'order' ? OD.orderName(t, k) : OD.commandName(t, k)) || k;
+        if (b.dataset.oe === 'use') {
+          cnt[key] = Math.max(0, v - 1);
+          line = `『${nm}』 발동 · 남은 ${cnt[key]}`;
+        } else {
+          /* 최대치가 0 인 칸(아직 못 쓰는 명령)은 회복해도 0 */ cnt[key] = Math.min(mx, v + 1);
+          line = `『${nm}』 회복 +1 · 남은 ${cnt[key]}`;
+        }
+        tag = kind === 'order' ? '4식' : '6령';
+      }
+      await A().set(P, cnt);
+      A().sysLog(`【${tag}】 ${t.name || ''} ${line}${P[0] === 'roster' ? ' (탐사 중)' : ''}`, 'battle');
+      draw();
+    });
+  }
+  function cardChip(tid, me) {
+    const D = window.OM_DECK_UI;
+    if (!D || !D.handCount) return '';
+    const n = D.handCount(tid);
+    return me
+      ? `<button type="button" class="dgpt-card-b${n ? '' : ' empty'}" data-dgcard="${H(tid)}" title="손패에서 카드를 쓴다 (던전 · 배틀 밖)">🃏<b>${n}</b></button>`
+      : n
+        ? `<span class="dgpt-card-b ro" title="손패 ${n}장">🃏<b>${n}</b></span>`
+        : '';
+  }
+  /* 카드 쓰기: 구문이 있는 카드는 동행 포켓몬 중 하나를 기준으로 (배틀 밖이라 구문은 효과 글로만 남는다) */
+  function useCard(tid) {
+    const D = window.OM_DECK_UI;
+    if (!D) return;
+    D.battleHand(tid, { where: 'dungeon' });
+  }
+  /* 방에 둔 야생: r.e = 시트 트레이너 id */
+  const encOf = r => {
+    if (!r || !r.e) return null;
+    const t = (RO().trainers || {})[r.e];
+    if (!t) return { t: null, ms: [] };
+    const ms = RO().mons || {};
+    return { t, ms: (t.pids || []).map(id => ms[id]).filter(Boolean) };
+  };
+  const encLive = (r, isGm) => !!(r && r.e && !r.c && (isGm || (r.s && !r.eh)));
+  /* 10-26 망령 「야생이 아닐 땐 스킬 체크나 단서(그림 · 설명)를 넣고, 휴식처는 우리 휴식 룰과」:
     r.sk = 스킬 체크(예시 모양 {label,stat,mode,target,npc,step,twice,pm,pen,name}) → OM_SKILL_UI.present(일행)
     r.cl = 단서 {t 제목, d 설명, img 그림} · r.cs = 공개함 · dg.clue = {did,rid,at} 지금 모두에게 띄운 단서
     세이프룸: r.rk = 휴식 단계(long · mid · breath, 기본 mid · 옛 short = mid) · r.rmany = 여러 번 · r.ru = 이미 쉼 → OM_SKILL_UI.applyRest(단계, 일행) */
- const SKU=()=>window.OM_SKILL_UI;
- const RKO=[['long','긴 휴식','대대적'],['mid','중간 휴식','반쯤'],['breath','숨돌리기','가벼움']];   /* 10-28 중간 휴식 · 11-12 03:31 망령 「짧은 휴식 없앰」 (옛 short 방은 중간 휴식) */
- const rkOf=r=>RKO.find(x=>x[0]===((r&&r.rk)==='short'?'mid':(r&&r.rk)))||RKO[1];
- const skSum=sk=>{try{return SKU()&&SKU().sumOf?SKU().sumOf(sk).replace(/<[^>]+>/g,''):(sk.stat+' · 목표 '+sk.target)}catch(e){return ''}};
- const isSafe=r=>!!r&&r.t==='safe';
+  const SKU = () => window.OM_SKILL_UI;
+  const RKO = [
+    ['long', '긴 휴식', '대대적'],
+    ['mid', '중간 휴식', '반쯤'],
+    ['breath', '숨돌리기', '가벼움']
+  ]; /* 10-28 중간 휴식 · 11-12 03:31 망령 「짧은 휴식 없앰」 (옛 short 방은 중간 휴식) */
+  const rkOf = r => RKO.find(x => x[0] === ((r && r.rk) === 'short' ? 'mid' : r && r.rk)) || RKO[1];
+  const skSum = sk => {
+    try {
+      return SKU() && SKU().sumOf
+        ? SKU()
+            .sumOf(sk)
+            .replace(/<[^>]+>/g, '')
+        : sk.stat + ' · 목표 ' + sk.target;
+    } catch (e) {
+      return '';
+    }
+  };
+  const isSafe = r => !!r && r.t === 'safe';
 
- /* ---------- 쓰기 (GM 만) — {'list/<id>/at': v} 꼴을 경로 배열로 바꿔 한꺼번에 ---------- */
- async function upd(o){if(!gm()){A().toast('던전은 GM 만 바꿀 수 있어');return false}
-  const ops=Object.entries(o).map(([k,v])=>[['dg',...k.split('/')],v===undefined?null:v]);
-  try{const ok=await A().setMany(ops);return ok!==false}catch(e){A().toast('던전 저장 실패: '+e.message);return false}}
- const P0=id=>'list/'+id+'/';
- const notice=t=>{try{A().sysLog(t)}catch(e){}};
- const whoosh=()=>{try{if(window.OM_CUTIN&&window.OM_CUTIN.synth)window.OM_CUTIN.synth('slam')}catch(e){}};
+  /* ---------- 쓰기 (GM 만) — {'list/<id>/at': v} 꼴을 경로 배열로 바꿔 한꺼번에 ---------- */
+  async function upd(o) {
+    if (!gm()) {
+      A().toast('던전은 GM 만 바꿀 수 있어');
+      return false;
+    }
+    const ops = Object.entries(o).map(([k, v]) => [['dg', ...k.split('/')], v === undefined ? null : v]);
+    try {
+      const ok = await A().setMany(ops);
+      return ok !== false;
+    } catch (e) {
+      A().toast('던전 저장 실패: ' + e.message);
+      return false;
+    }
+  }
+  const P0 = id => 'list/' + id + '/';
+  const notice = t => {
+    try {
+      A().sysLog(t);
+    } catch (e) {}
+  };
+  const whoosh = () => {
+    try {
+      if (window.OM_CUTIN && window.OM_CUTIN.synth) window.OM_CUTIN.synth('slam');
+    } catch (e) {}
+  };
 
- /* ---------- 아이소메트릭 지도 (VELVET 그대로) ---------- */
- const K=.866,RW=54;
- const P=(u,v,z=0)=>[(u-v)*K,(u+v)*.5-z];
- const pts=a=>a.map(p=>p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ');
- const hOf=r=>ty(r.t).h*1.5;
- function prism(u,v,h){const q=[[u-RW,v-RW],[u+RW,v-RW],[u+RW,v+RW],[u-RW,v+RW]],f=(p,z)=>P(p[0],p[1],z);
-  return{top:q.map(p=>f(p,h)),inset:[[u-RW+9,v-RW+9],[u+RW-9,v-RW+9],[u+RW-9,v+RW-9],[u-RW+9,v+RW-9]].map(p=>f(p,h)),left:[f(q[3],0),f(q[2],0),f(q[2],h),f(q[3],h)],right:[f(q[2],0),f(q[1],0),f(q[1],h),f(q[2],h)],base:q.map(p=>f(p,0)),c:f([u,v],h),f0:f([u,v],0)}}
- function strip(a,b,w,z){const du=b[0]-a[0],dv=b[1]-a[1],L=Math.hypot(du,dv)||1,nu=-dv/L*w,nv=du/L*w;return[P(a[0]+nu,a[1]+nv,z),P(b[0]+nu,b[1]+nv,z),P(b[0]-nu,b[1]-nv,z),P(a[0]-nu,a[1]-nv,z)]}
- function mapBuild(d,isGm){
-  const rs=R(d),at=d.at,vis=id=>isGm||(rs[id]&&rs[id].s)||id===at,ids=Object.keys(rs).filter(vis),xs=[],ys=[],add=p=>{xs.push(p[0]);ys.push(p[1])};
-  const uv=id=>[+rs[id].x||0,+rs[id].y||0];
-  let defs='',floor='',cor='',body='',lab='',party='';const used=new Set,holes=[],asks=[];
-  links(d).forEach(([a,b],i)=>{const va=vis(a),vb=vis(b);if(!va&&!vb)return;let A1=uv(a),B1=uv(b),stub=false;
-   if(!va||!vb){if(!va)[A1,B1]=[B1,A1];B1=[A1[0]+(B1[0]-A1[0])*.8,A1[1]+(B1[1]-A1[1])*.8];stub=true;asks.push(P(B1[0],B1[1],10))}
-   const sh=strip([A1[0]+6,A1[1]+6],[B1[0]+6,B1[1]+6],15,0),tp=strip(A1,B1,14,4);sh.concat(tp).forEach(add);
-   let fill='#26304a';if(stub){const p1=P(A1[0],A1[1]),p2=P(B1[0],B1[1]);defs+=`<linearGradient id="dgS${i}" gradientUnits="userSpaceOnUse" x1="${p1[0].toFixed(1)}" y1="${p1[1].toFixed(1)}" x2="${p2[0].toFixed(1)}" y2="${p2[1].toFixed(1)}"><stop offset="0" stop-color="#2c3756"/><stop offset=".55" stop-color="#2c3756"/><stop offset="1" stop-color="#2c3756" stop-opacity="0"/></linearGradient>`;fill=`url(#dgS${i})`}
-   cor+=`<polygon points="${pts(sh)}" fill="#000" opacity=".45"/><polygon points="${pts(tp)}" fill="${fill}" stroke="${stub?'none':'rgba(140,170,230,.35)'}" stroke-width="1.5"/>`});
-  ids.sort((a,b)=>(uv(a)[0]+uv(a)[1])-(uv(b)[0]+uv(b)[1])).forEach(id=>{const r=rs[id],t=ty(r.t),[u,v]=uv(id),h=hOf(r),pr=prism(u,v,h),here=id===at,fog=isGm&&!r.s&&!here;const tk=r.t in TY?r.t:'room';
-   used.add(tk);[...pr.base,...pr.top].forEach(add);holes.push([pr.f0[0],pr.f0[1]-h/2,here?150:120]);
-   const sh=prism(u+10,v+8,0).base;
-   lab+=`<text class="nm${fog?' fogged':''}" x="${pr.c[0].toFixed(1)}" y="${(pr.f0[1]+RW*.9).toFixed(1)}">${H(fog?'(안개) '+(r.n||t.k):r.n||t.k)}</text>`;
-   body+=`${here?`<ellipse class="dg-pulse" cx="${pr.f0[0].toFixed(1)}" cy="${pr.f0[1].toFixed(1)}" rx="${RW*1.9}" ry="${RW*1.1}"/>`:''}<g class="dg-node${id===DG.sel?' sel':''}${fog?' fogged':''}" data-a="pick" data-v="${H(id)}"><polygon points="${pts(sh)}" fill="#000" opacity=".4"/><polygon points="${pts(pr.left)}" fill="${shade(t.c,-.48)}"/><polygon points="${pts(pr.right)}" fill="${shade(t.c,-.68)}"/><polygon class="tp" points="${pts(pr.top)}" fill="url(#dgT_${tk})"/><polygon points="${pts(pr.inset)}" fill="none" stroke="rgba(255,255,255,.38)" stroke-width="1.2"/>${r.c?`<polygon points="${pts(pr.top)}" fill="#000" opacity=".38"/>`:''}<text class="ic" x="${pr.c[0].toFixed(1)}" y="${pr.c[1].toFixed(1)}">${r.c?'✓':t.ic}</text></g>`;
-   if(encLive(r,isGm))body+=`<text class="dg-enc${r.eh?' hid':''}" x="${pr.c[0].toFixed(1)}" y="${(pr.c[1]-RW*.62).toFixed(1)}">!</text>`;
-   if(here)party=`<g class="dg-party" transform="translate(${pr.c[0].toFixed(1)} ${(pr.c[1]-34).toFixed(1)})"><g class="bob"><ellipse cx="0" cy="30" rx="12" ry="5" fill="#000" opacity=".35"/><polygon points="0,-24 12,-2 0,20 -12,-2" fill="var(--dg-acc)" stroke="#fff" stroke-width="2"/><polygon points="0,-24 12,-2 0,0" fill="#fff" opacity=".45"/></g></g>`});
-  used.forEach(k=>{const c=TY[k].c;defs+=`<linearGradient id="dgT_${k}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${shade(c,.35)}"/><stop offset="1" stop-color="${c}"/></linearGradient>`});
-  if(!xs.length){xs.push(-300,300);ys.push(-150,250)}
-  let x0=Math.min(...xs)-70,x1=Math.max(...xs)+70,y0=Math.min(...ys)-80,y1=Math.max(...ys)+60;
-  const cx=(x0+x1)/2,cy=(y0+y1)/2,w=Math.max(x1-x0,620,(y1-y0)*1.6),hh=Math.max(y1-y0,w/1.6);x0=cx-w/2;y0=cy-hh/2;
-  const grid=[];for(let k=-2000;k<=3000;k+=100){grid.push(`M${pts([P(k,-2000)])}L${pts([P(k,3000)])}M${pts([P(-2000,k)])}L${pts([P(3000,k)])}`)}
-  floor=`<path d="${grid.join('')}" stroke="rgba(120,150,220,.09)" stroke-width="1.5" fill="none"/>`;
-  return{vb:`${x0.toFixed(0)} ${y0.toFixed(0)} ${w.toFixed(0)} ${hh.toFixed(0)}`,box:[x0,y0,w,hh],svg:`<defs>${defs}</defs>${floor}${cor}${body}${party}`,lab,holes,asks:isGm?[]:asks}}
- function fogBuild(box,holes,seed,isGm,asks,lab){asks=asks||[];
-  const[x,y,w,h]=box,r=rng(seed),cl=[];for(let i=0;i<26;i++){const cr=w*(.08+r()*.14);cl.push(`<circle cx="${(x+r()*w).toFixed(0)}" cy="${(y+r()*h).toFixed(0)}" r="${cr.toFixed(0)}" fill="url(#dgCl)" opacity="${(.25+r()*.4).toFixed(2)}"/>`)}
-  return`<defs><radialGradient id="dgHo"><stop offset="0" stop-color="#000"/><stop offset=".5" stop-color="#000"/><stop offset="1" stop-color="#fff"/></radialGradient><radialGradient id="dgCl"><stop offset="0" stop-color="#9aa8c8"/><stop offset="1" stop-color="#9aa8c8" stop-opacity="0"/></radialGradient><mask id="dgFm" maskUnits="userSpaceOnUse" x="${x-50}" y="${y-50}" width="${w+100}" height="${h+100}"><rect x="${x-50}" y="${y-50}" width="${w+100}" height="${h+100}" fill="#fff"/>${holes.map(([hx,hy,hr])=>`<circle cx="${hx.toFixed(0)}" cy="${hy.toFixed(0)}" r="${hr}" fill="url(#dgHo)"/>`).join('')}</mask></defs><g mask="url(#dgFm)" opacity="${isGm?.32:1}"><rect x="${x-50}" y="${y-50}" width="${w+100}" height="${h+100}" fill="#06080f" opacity=".9"/>${cl.join('')}</g>${asks.map(([ax,ay])=>`<text class="dg-ask" x="${ax.toFixed(0)}" y="${ay.toFixed(0)}">?</text>`).join('')}<g class="dg-labels">${lab}</g>`}
+  /* ---------- 아이소메트릭 지도 (VELVET 그대로) ---------- */
+  const K = 0.866,
+    RW = 54;
+  const P = (u, v, z = 0) => [(u - v) * K, (u + v) * 0.5 - z];
+  const pts = a => a.map(p => p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+  const hOf = r => ty(r.t).h * 1.5;
+  function prism(u, v, h) {
+    const q = [
+        [u - RW, v - RW],
+        [u + RW, v - RW],
+        [u + RW, v + RW],
+        [u - RW, v + RW]
+      ],
+      f = (p, z) => P(p[0], p[1], z);
+    return {
+      top: q.map(p => f(p, h)),
+      inset: [
+        [u - RW + 9, v - RW + 9],
+        [u + RW - 9, v - RW + 9],
+        [u + RW - 9, v + RW - 9],
+        [u - RW + 9, v + RW - 9]
+      ].map(p => f(p, h)),
+      left: [f(q[3], 0), f(q[2], 0), f(q[2], h), f(q[3], h)],
+      right: [f(q[2], 0), f(q[1], 0), f(q[1], h), f(q[2], h)],
+      base: q.map(p => f(p, 0)),
+      c: f([u, v], h),
+      f0: f([u, v], 0)
+    };
+  }
+  function strip(a, b, w, z) {
+    const du = b[0] - a[0],
+      dv = b[1] - a[1],
+      L = Math.hypot(du, dv) || 1,
+      nu = (-dv / L) * w,
+      nv = (du / L) * w;
+    return [P(a[0] + nu, a[1] + nv, z), P(b[0] + nu, b[1] + nv, z), P(b[0] - nu, b[1] - nv, z), P(a[0] - nu, a[1] - nv, z)];
+  }
+  function mapBuild(d, isGm) {
+    const rs = R(d),
+      at = d.at,
+      vis = id => isGm || (rs[id] && rs[id].s) || id === at,
+      ids = Object.keys(rs).filter(vis),
+      xs = [],
+      ys = [],
+      add = p => {
+        xs.push(p[0]);
+        ys.push(p[1]);
+      };
+    const uv = id => [+rs[id].x || 0, +rs[id].y || 0];
+    let defs = '',
+      floor = '',
+      cor = '',
+      body = '',
+      lab = '',
+      party = '';
+    const used = new Set(),
+      holes = [],
+      asks = [];
+    links(d).forEach(([a, b], i) => {
+      const va = vis(a),
+        vb = vis(b);
+      if (!va && !vb) return;
+      let A1 = uv(a),
+        B1 = uv(b),
+        stub = false;
+      if (!va || !vb) {
+        if (!va) [A1, B1] = [B1, A1];
+        B1 = [A1[0] + (B1[0] - A1[0]) * 0.8, A1[1] + (B1[1] - A1[1]) * 0.8];
+        stub = true;
+        asks.push(P(B1[0], B1[1], 10));
+      }
+      const sh = strip([A1[0] + 6, A1[1] + 6], [B1[0] + 6, B1[1] + 6], 15, 0),
+        tp = strip(A1, B1, 14, 4);
+      sh.concat(tp).forEach(add);
+      let fill = '#26304a';
+      if (stub) {
+        const p1 = P(A1[0], A1[1]),
+          p2 = P(B1[0], B1[1]);
+        defs += `<linearGradient id="dgS${i}" gradientUnits="userSpaceOnUse" x1="${p1[0].toFixed(1)}" y1="${p1[1].toFixed(1)}" x2="${p2[0].toFixed(1)}" y2="${p2[1].toFixed(1)}"><stop offset="0" stop-color="#2c3756"/><stop offset=".55" stop-color="#2c3756"/><stop offset="1" stop-color="#2c3756" stop-opacity="0"/></linearGradient>`;
+        fill = `url(#dgS${i})`;
+      }
+      cor += `<polygon points="${pts(sh)}" fill="#000" opacity=".45"/><polygon points="${pts(tp)}" fill="${fill}" stroke="${stub ? 'none' : 'rgba(140,170,230,.35)'}" stroke-width="1.5"/>`;
+    });
+    ids
+      .sort((a, b) => uv(a)[0] + uv(a)[1] - (uv(b)[0] + uv(b)[1]))
+      .forEach(id => {
+        const r = rs[id],
+          t = ty(r.t),
+          [u, v] = uv(id),
+          h = hOf(r),
+          pr = prism(u, v, h),
+          here = id === at,
+          fog = isGm && !r.s && !here;
+        const tk = r.t in TY ? r.t : 'room';
+        used.add(tk);
+        [...pr.base, ...pr.top].forEach(add);
+        holes.push([pr.f0[0], pr.f0[1] - h / 2, here ? 150 : 120]);
+        const sh = prism(u + 10, v + 8, 0).base;
+        lab += `<text class="nm${fog ? ' fogged' : ''}" x="${pr.c[0].toFixed(1)}" y="${(pr.f0[1] + RW * 0.9).toFixed(1)}">${H(fog ? '(안개) ' + (r.n || t.k) : r.n || t.k)}</text>`;
+        body += `${here ? `<ellipse class="dg-pulse" cx="${pr.f0[0].toFixed(1)}" cy="${pr.f0[1].toFixed(1)}" rx="${RW * 1.9}" ry="${RW * 1.1}"/>` : ''}<g class="dg-node${id === DG.sel ? ' sel' : ''}${fog ? ' fogged' : ''}" data-a="pick" data-v="${H(id)}"><polygon points="${pts(sh)}" fill="#000" opacity=".4"/><polygon points="${pts(pr.left)}" fill="${shade(t.c, -0.48)}"/><polygon points="${pts(pr.right)}" fill="${shade(t.c, -0.68)}"/><polygon class="tp" points="${pts(pr.top)}" fill="url(#dgT_${tk})"/><polygon points="${pts(pr.inset)}" fill="none" stroke="rgba(255,255,255,.38)" stroke-width="1.2"/>${r.c ? `<polygon points="${pts(pr.top)}" fill="#000" opacity=".38"/>` : ''}<text class="ic" x="${pr.c[0].toFixed(1)}" y="${pr.c[1].toFixed(1)}">${r.c ? '✓' : t.ic}</text></g>`;
+        if (encLive(r, isGm))
+          body += `<text class="dg-enc${r.eh ? ' hid' : ''}" x="${pr.c[0].toFixed(1)}" y="${(pr.c[1] - RW * 0.62).toFixed(1)}">!</text>`;
+        if (here)
+          party = `<g class="dg-party" transform="translate(${pr.c[0].toFixed(1)} ${(pr.c[1] - 34).toFixed(1)})"><g class="bob"><ellipse cx="0" cy="30" rx="12" ry="5" fill="#000" opacity=".35"/><polygon points="0,-24 12,-2 0,20 -12,-2" fill="var(--dg-acc)" stroke="#fff" stroke-width="2"/><polygon points="0,-24 12,-2 0,0" fill="#fff" opacity=".45"/></g></g>`;
+      });
+    used.forEach(k => {
+      const c = TY[k].c;
+      defs += `<linearGradient id="dgT_${k}" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${shade(c, 0.35)}"/><stop offset="1" stop-color="${c}"/></linearGradient>`;
+    });
+    if (!xs.length) {
+      xs.push(-300, 300);
+      ys.push(-150, 250);
+    }
+    let x0 = Math.min(...xs) - 70,
+      x1 = Math.max(...xs) + 70,
+      y0 = Math.min(...ys) - 80,
+      y1 = Math.max(...ys) + 60;
+    const cx = (x0 + x1) / 2,
+      cy = (y0 + y1) / 2,
+      w = Math.max(x1 - x0, 620, (y1 - y0) * 1.6),
+      hh = Math.max(y1 - y0, w / 1.6);
+    x0 = cx - w / 2;
+    y0 = cy - hh / 2;
+    const grid = [];
+    for (let k = -2000; k <= 3000; k += 100) {
+      grid.push(`M${pts([P(k, -2000)])}L${pts([P(k, 3000)])}M${pts([P(-2000, k)])}L${pts([P(3000, k)])}`);
+    }
+    floor = `<path d="${grid.join('')}" stroke="rgba(120,150,220,.09)" stroke-width="1.5" fill="none"/>`;
+    return {
+      vb: `${x0.toFixed(0)} ${y0.toFixed(0)} ${w.toFixed(0)} ${hh.toFixed(0)}`,
+      box: [x0, y0, w, hh],
+      svg: `<defs>${defs}</defs>${floor}${cor}${body}${party}`,
+      lab,
+      holes,
+      asks: isGm ? [] : asks
+    };
+  }
+  function fogBuild(box, holes, seed, isGm, asks, lab) {
+    asks = asks || [];
+    const [x, y, w, h] = box,
+      r = rng(seed),
+      cl = [];
+    for (let i = 0; i < 26; i++) {
+      const cr = w * (0.08 + r() * 0.14);
+      cl.push(
+        `<circle cx="${(x + r() * w).toFixed(0)}" cy="${(y + r() * h).toFixed(0)}" r="${cr.toFixed(0)}" fill="url(#dgCl)" opacity="${(0.25 + r() * 0.4).toFixed(2)}"/>`
+      );
+    }
+    return `<defs><radialGradient id="dgHo"><stop offset="0" stop-color="#000"/><stop offset=".5" stop-color="#000"/><stop offset="1" stop-color="#fff"/></radialGradient><radialGradient id="dgCl"><stop offset="0" stop-color="#9aa8c8"/><stop offset="1" stop-color="#9aa8c8" stop-opacity="0"/></radialGradient><mask id="dgFm" maskUnits="userSpaceOnUse" x="${x - 50}" y="${y - 50}" width="${w + 100}" height="${h + 100}"><rect x="${x - 50}" y="${y - 50}" width="${w + 100}" height="${h + 100}" fill="#fff"/>${holes.map(([hx, hy, hr]) => `<circle cx="${hx.toFixed(0)}" cy="${hy.toFixed(0)}" r="${hr}" fill="url(#dgHo)"/>`).join('')}</mask></defs><g mask="url(#dgFm)" opacity="${isGm ? 0.32 : 1}"><rect x="${x - 50}" y="${y - 50}" width="${w + 100}" height="${h + 100}" fill="#06080f" opacity=".9"/>${cl.join('')}</g>${asks.map(([ax, ay]) => `<text class="dg-ask" x="${ax.toFixed(0)}" y="${ay.toFixed(0)}">?</text>`).join('')}<g class="dg-labels">${lab}</g>`;
+  }
 
- /* ---------- 화면 ----------
+  /* ---------- 화면 ----------
    10-26 망령: 던전 칸이 아래 여백만 남기고 미니맵이 배경을 가렸다 + 던전 안에서도 화자 바꾸기 · 스탠딩 대사가 돼야 한다
    → 탐색 중에는 RP 무대가 곧 던전이다: 방 화면을 무대 배경으로 깔고(스탠딩 · 대사 · 입력은 RP 그대로), 왼쪽 위에 장소 · 경계도, 오른쪽에 작은 지도(접기 가능).
    → 「던전」 탭은 큰 지도 + 방 미리보기 + GM 조작 칸 (지도가 화면 높이를 꽉 채운다). */
- const mapMode=()=>{try{return localStorage.getItem('om_dg_rpmap')||''}catch(e){return''}};
- const isNarrow=()=>{try{return matchMedia('(max-width:760px)').matches}catch(e){return false}};
- function shell(){return`<div class="dg" id="dgRoot"><div class="dg-layout">
+  const mapMode = () => {
+    try {
+      return localStorage.getItem('om_dg_rpmap') || '';
+    } catch (e) {
+      return '';
+    }
+  };
+  const isNarrow = () => {
+    try {
+      return matchMedia('(max-width:760px)').matches;
+    } catch (e) {
+      return false;
+    }
+  };
+  function shell() {
+    return `<div class="dg" id="dgRoot"><div class="dg-layout">
   <div class="dg-main"><div class="dg-map3d dg-bigmap" id="dgMap"><div class="dg-tilt"><svg id="dgIso" preserveAspectRatio="xMidYMid meet"></svg><svg class="dg-fog" id="dgFog" preserveAspectRatio="xMidYMid meet"></svg></div><div class="dg-haze"></div><div class="dg-hud" id="dgHud"></div><div class="dg-map-cap" id="dgCap"></div></div><div class="dg-legend" id="dgLegend"></div></div>
-  <div class="dg-sidewrap"><div class="dg-roomprev" id="dgStage"><div class="dg-planes"></div><div class="dg-rpcap" id="dgRpCap"></div><button type="button" class="btn sm pri dg-torp" data-a="torp" title="방 화면을 배경으로 스탠딩 · 대사">🎭 RP 무대로</button></div><div class="dg-side" id="dgSide"></div></div></div></div>`}
- function frameHTML(d){const r=R(d)[d.at],t=ty(r&&r.t),src=r&&r.b?String(r.b):'';
-  if(src)return[`img:${d.at}|${src}`,`<img src="${H(src)}" alt="${H((r&&r.n)||t.k)}" decoding="async">`];
-  return[`fb:${d.at}|${r&&r.t}`,`<div class="dg-fb-room"><i class="dg-fb-ceil"></i><i class="dg-fb-wall l"></i><i class="dg-fb-wall r"></i><i class="dg-fb-back"></i><i class="dg-fb-floor"></i></div><b class="dg-fb-ic">${t.ic}</b><span class="dg-fb-en">${t.en}</span>`]}
- /* 던전이 꺼져 있을 때 (GM 만 보는 화면): 준비한 던전 목록 · 진입 · 관리 */
- function idleHTML(){const ds=Object.entries(all());
-  return `<div class="dg dg-idle"><div class="dg-idle-head"><div><small>DUNGEON</small><h2>던전</h2><p>방을 이어 붙인 지도 위를 일행이 한 칸씩 나아간다. 안개 속 방은 GM 이 공개하거나 일행이 들어가야 보인다. 진입하면 모두의 RP 무대가 던전 방 화면으로 바뀌고(스탠딩 · 대사는 그대로), 이 탭에서 큰 지도와 GM 조작을 한다. 지도 핀에 던전을 걸어 두면 핀에서 바로 진입할 수 있다.</p></div><div class="dg-acts"><button class="btn sm pri" data-a="manage">🛠 던전 관리</button></div></div>
-   ${ds.length?`<div class="dg-idle-list">${ds.map(([id,d])=>{const o=startOptions(d);const n=Object.keys(R(d)).length;return `<div class="dg-card"><h4>${H(d.n||'이름 없는 던전')} <small>방 ${n}개</small></h4>${d.o?`<span class="dg-chip">주인 · ${H(d.o)}</span>`:''}${d.a?`<span class="dg-chip">${H(d.a)}</span>`:''}${d.d?`<span class="dg-chip on">기한 · ${H(d.d)}</span>`:''}${mapLoc(id)}<div class="dg-acts">${o.map(([r,l])=>`<button class="btn sm pri" data-a="enter" data-v="${H(id)}" data-s="${H(r)}">⚔ ${H(l)}</button>`).join('')||'<span class="small dim">방이 없다 — 던전 관리에서 만든다</span>'}</div></div>`}).join('')}</div>`:`<div class="dg-card"><p>아직 던전이 없다. <b>던전 관리</b>에서 새로 만들거나 <b>샘플 던전</b>으로 시작해 봐.</p></div>`}</div>`}
- function render(el){if(!el)return;
-  const d=cur();
-  if(!d){DG.frame='';DG.mapSig='';if(!gm()){el.innerHTML='<div class="empty">지금은 던전에 들어가 있지 않다.</div>';return}const h=idleHTML();if(el._dgIdle!==h||!$('.dg-idle',el)){el.innerHTML=h;el._dgIdle=h}el._dgRoot=null;bindRoot(el);return}
-  el._dgIdle=null;
-  if(!$('#dgRoot',el)){el.innerHTML=shell();DG.frame='';DG.mapSig=''}
-  bindRoot(el);paint(el,d)}
- /* 방 화면 바꾸기 (던전 탭 미리보기 · RP 무대 배경 공용). hold = {frame:키} */
- function paintFrame(planes,d,hold){const room=R(d)[d.at],t=ty(room&&room.t);const [key,inner]=room?frameHTML(d):['none','<div class="dg-empty"><strong>DUNGEON</strong><small>GM 이 던전 관리에서 방을 만들면 여기에 보인다.</small></div>'];
-  if(!planes||hold.frame===key)return;const old=planes.lastElementChild,next=document.createElement('div');next.className='dg-frame'+(key.startsWith('fb:')?' dg-fb':'');next.style.setProperty('--c',t.c);next.innerHTML=inner;
-  const anim=!!old&&!matchMedia('(prefers-reduced-motion:reduce)').matches;planes.replaceChildren();if(anim){old.className=old.className.replace(/\b(in|out)\b/g,'')+' out';planes.append(old);setTimeout(()=>old.remove(),620)}
-  if(anim)next.classList.add('in');planes.append(next);hold.frame=key}
- function hudHTML(d,lockBig){const room=R(d)[d.at],t=ty(room&&room.t),al=clamp(+d.al||0,0,100),lv=lvOf(al);
-  return `${room?`<div class="dg-loc"><span>${H(t.en)}</span><b>${H(room.n||t.k)}</b></div><div class="dg-type" style="--c:${t.c}">${t.ic} ${H(t.k)} · ${H(d.n||'이름 없는 던전')}</div>`:''}${alOn(d)?`<div class="dg-meter lv${lv}" style="--p:${al/100}"><small>SECURITY</small><b>${al}<em>%</em></b><i></i><span>${LV[lv][1]} · ${LV[lv][2]}</span></div>${lv===3&&lockBig?'<div class="dg-lock"><strong>LOCKDOWN</strong><span>강제 퇴출</span></div>':''}`:''}`}
- /* RP 무대 왼쪽 위: 장소 · 경계도 + 야생 기척 + PT 현황 (접기) */
- const ptMin=()=>{try{const v=localStorage.getItem('om_dg_pt');return v?v==='min':isNarrow()}catch(e){return false}};
- function rpHudHTML(d){const r=R(d)[d.at],isGm=gm();const e=encLive(r,isGm)?encOf(r):null;
-  const enc=e?`<div class="dgrp-enc${r.eh?' hid':''}"><b>⚠ 야생 포켓몬의 기척</b>${isGm?`<small>${e.t?H(e.ms.map(m=>m.name).join(' · ')||e.t.name):'(시트에 없는 무리)'}${r.eh?' · 플레이어에게 숨김':''}</small><button type="button" data-rpdg="enc">⚔ 배틀</button>`:''}</div>`:'';
-  const ev=[];
-  if(r&&r.cl&&(r.cs||isGm))ev.push(`<button type="button" data-rpdg="clue" class="${r.cs?'':'gmo'}">🔍 ${r.cs?'단서 보기':'단서 공개'}${r.cl.t?' · '+H(r.cl.t):''}</button>`);
-  if(r&&r.sk&&isGm)ev.push(`<button type="button" data-rpdg="sk" class="gmo" title="${H(skSum(r.sk))}">🎲 체크 · ${H(r.sk.label||r.sk.name||r.sk.stat)}</button>`);
-  if(isSafe(r)){const k=rkOf(r);ev.push(isGm?`<button type="button" data-rpdg="rest" ${r.ru&&!r.rmany?'disabled':''}>☗ ${k[1]}${r.ru&&!r.rmany?' (쉼)':''}</button>`:`<span class="dgev-t">☗ 휴식처 · ${k[1]}${r.ru&&!r.rmany?' (이미 쉼)':''}</span>`)}
-  const evH=ev.length?`<div class="dgrp-ev">${ev.join('')}</div>`:'';
-  const pt=ptHTML(d);const mn=ptMin();
-  return hudHTML(d,false)+enc+evH}
- /* 10-26 망령: PT 칸이 왼쪽 위에서 왼쪽 스탠딩 · 대사창과 겹쳤다 — 오른쪽 지도 아래로 옮긴다 (지도를 접으면 위로 올라간다) */
- function rpPtHTML(d){const pt=ptHTML(d);const mn=ptMin();return pt?`<div class="dgrp-pt${mn?' min':''}"><button type="button" class="dgpt-tog" data-rpdg="pt">PT ${mn?'▸':'▾'}</button><div class="dgpt-body">${pt}</div></div>`:''}
- function paintMap(root,d,isGm,hold,mini){const rs=R(d);const sig=JSON.stringify([d.id,isGm,d.at,DG.sel,rs,d.l,!!mini]);if(hold.mapSig===sig)return;hold.mapSig=sig;
-  const m=mapBuild(d,isGm),iso=root.querySelector('.dg-iso'),fog=root.querySelector('.dg-fog');if(iso&&fog){const w=m.box[2],tl=iso.parentElement;const k=mini?1.5:1;tl.style.setProperty('--nm',(Math.max(15,w*.026)*k).toFixed(0)+'px');tl.style.setProperty('--ic',(Math.max(24,w*.034)*k).toFixed(0)+'px');iso.setAttribute('viewBox',m.vb);fog.setAttribute('viewBox',m.vb);iso.innerHTML=m.svg;fog.innerHTML=fogBuild(m.box,m.holes,d.id,isGm,m.asks,m.lab)}
-  const seen=Object.values(rs).filter(r=>r.s).length;const cap=root.querySelector('.dg-map-cap');if(cap)setH(cap,`<b>MAP</b>${isGm?`방 ${Object.keys(rs).length}개 · 공개 ${seen}개`:`탐색한 방 ${seen}개`}`);return true}
- function paint(el,d){
-  const isGm=gm(),rs=R(d);
-  if(!rs[d.at]){const s=d.st&&rs[d.st]?d.st:Object.keys(rs)[0];d.at=s||''}
-  const al=clamp(+d.al||0,0,100),lv=lvOf(al);
-  if(!DG.sel||!rs[DG.sel]||!isGm&&!rs[DG.sel].s&&DG.sel!==d.at)DG.sel=d.at;
-  paintFrame($('#dgStage .dg-planes',el),d,DG);
-  {const room=rs[d.at],t=ty(room&&room.t);setH($('#dgRpCap',el),room?`<span>${H(t.en)}</span><b>${H(room.n||t.k)}</b>`:'')}
-  setH($('#dgHud',el),hudHTML(d,true));
-  const mp=$('#dgMap',el);if(mp){$('#dgIso',el).classList.add('dg-iso');if(paintMap(mp,d,isGm,DG,false)){const types=[...new Set(Object.entries(rs).filter(([id,r])=>isGm||r.s||id===d.at).map(([,r])=>r.t in TY?r.t:'room'))];
-   setH($('#dgLegend',el),types.map(k=>`<span style="--c:${TY[k].c}"><i>${TY[k].ic}</i> ${TY[k].k}</span>`).join('')+'<span>◆ 일행 위치</span>')}}
-  tiltBind(el);
-  setH($('#dgSide',el),side(d,isGm,al,lv))}
- /* ---------- RP 무대 위 던전 (rp_ui render 가 부른다) ---------- */
- const RPH={frame:'',mapSig:''};
- function rpSync(stage){if(!stage)return;const d=cur();
-  if(!d){if(stage.classList.contains('dgmode')){stage.classList.remove('dgmode');stage.querySelectorAll(':scope>.dgrp').forEach(x=>x.remove());RPH.frame='';RPH.mapSig=''}return}
-  const rs=R(d);if(!rs[d.at]){const s=d.st&&rs[d.st]?d.st:Object.keys(rs)[0];d.at=s||''}
-  stage.classList.add('dgmode');
-  let bg=stage.querySelector(':scope>.dgrp-bg');if(!bg){bg=document.createElement('div');bg.className='dgrp dgrp-bg';bg.innerHTML='<div class="dg-planes"></div>';stage.prepend(bg);RPH.frame=''}
-  const hudClick=e=>{const cb=e.target.closest('[data-dgcard]');if(cb){e.stopPropagation();return useCard(cb.dataset.dgcard)}const pm=e.target.closest('[data-pm]');if(pm){e.stopPropagation();return monEdit(pm.dataset.pm)}const pl=e.target.closest('[data-dgpool]');if(pl){e.stopPropagation();return poolMgr(pl.dataset.dgpool)}const od=e.target.closest('[data-ordm]');if(od){e.stopPropagation();return ordMgr(od.dataset.ordm)}const w=e.target.closest('[data-walk]');if(w){e.stopPropagation();return walkPick(w.dataset.walk)}const b=e.target.closest('[data-rpdg]');if(!b)return;e.stopPropagation();
-    if(b.dataset.rpdg==='pt'){const mn=!ptMin();try{localStorage.setItem('om_dg_pt',mn?'min':'open')}catch(err){}const pw=stage.querySelector('.dgrp-ptw');if(pw)pw._h='';rpSync(stage);return}
-    if(b.dataset.rpdg==='enc'){const dd=cur();if(dd)startEnc(dd)}
-    if(b.dataset.rpdg==='clue'){const dd=cur();if(!dd)return;const rr=R(dd)[dd.at];if(rr&&rr.cs){DG.clueLocal=dd.at;DG.clueHide=0;RPH.clueSig='';rpSync(stage)}else if(gm())showClue(dd,dd.at)}
-    if(b.dataset.rpdg==='sk'){const dd=cur();if(dd)skOffer(dd,dd.at)}
-    if(b.dataset.rpdg==='rest'){const dd=cur();if(dd)restHere(dd,dd.at)}};
-  let hud=stage.querySelector(':scope>.dgrp-hud');if(!hud){hud=document.createElement('div');hud.className='dgrp dgrp-hud';stage.append(hud);hud.addEventListener('click',hudClick)}
-  let dock=stage.querySelector(':scope>.dgrp-dock');
-  if(!dock){dock=document.createElement('div');const mm=mapMode()||(isNarrow()?'min':'');dock.className='dgrp dgrp-dock '+mm;
-   dock.innerHTML=`<div class="dg-dock-tools"><button type="button" data-rpdg="min" title="지도 접기 / 펴기">▾</button><button type="button" data-rpdg="big" title="지도 크게 / 작게">⤢</button>${gm()?'<button type="button" data-rpdg="tab" title="던전 탭 (GM 조작)">🛠</button>':''}</div><button type="button" class="dgrp-mapbtn" data-rpdg="min" title="지도 펴기">MAP</button><div class="dg-map3d dgrp-map"><div class="dg-tilt"><svg class="dg-iso" preserveAspectRatio="xMidYMid meet"></svg><svg class="dg-fog" preserveAspectRatio="xMidYMid meet"></svg></div><div class="dg-map-cap"></div></div>`;
-   stage.append(dock);RPH.mapSig='';
-   /* ▾ 접기 · ⤢ 무대 위에서 크게 (플레이어는 던전 탭이 없으니 여기서 본다) · 🛠 던전 탭 (GM) · 방을 누르면 그 방 정보 */
-   dock.addEventListener('click',e=>{const nd=e.target.closest('.dg-node');if(nd){e.stopPropagation();const dd=cur();const r=dd&&R(dd)[nd.dataset.v];if(r){const t=ty(r.t);A().toast(`${t.ic} ${r.n||t.k} · ${t.k}${nd.dataset.v===dd.at?' · ◆ 일행 위치':''} — ${t.r}`)}return}
-    const b=e.target.closest('[data-rpdg]');if(!b){if(!dock.classList.contains('big')&&e.target.closest('.dgrp-map')){dock.classList.add('big');RPH.mapSig=''}return}e.stopPropagation();const k=b.dataset.rpdg;
-    if(k==='min'){const m=dock.classList.contains('min')?'open':'min';dock.classList.toggle('min',m==='min');dock.classList.remove('big');try{localStorage.setItem('om_dg_rpmap',m)}catch(err){}if(m==='open'){RPH.mapSig='';rpSync(stage)}return}
-    if(k==='big'){dock.classList.toggle('big');RPH.mapSig='';return}
-    try{A().goView('dungeon')}catch(err){}})}
-  paintFrame(bg.querySelector('.dg-planes'),d,RPH);
-  setH(hud,rpHudHTML(d));
-  /* 10-26 망령: 폰에선 PT 칸을 지도 밑이 아니라 무대 왼쪽 위로 (지도는 오른쪽 위, 위치 · 안정도 · 체크는 왼쪽 아래) */
-  {const host=isNarrow()?stage:dock;let pw=stage.querySelector('.dgrp-ptw');if(!pw){pw=document.createElement('div');pw.className='dgrp-ptw';pw.addEventListener('click',hudClick)}if(pw.parentNode!==host)host.append(pw);setH(pw,rpPtHTML(d))}
-  if(isNarrow()){let T=1e9,B=-1e9;for(const x of [hud,...hud.children]){if(!x.offsetHeight)continue;const q=x.getBoundingClientRect();T=Math.min(T,q.top);B=Math.max(B,q.bottom)}const v=B>T?Math.round(B-T)+'px':'0px';if(stage.style.getPropertyValue('--hudh')!==v)stage.style.setProperty('--hudh',v)}
-  {const dl=stage.querySelector('#dlg');let h=18;if(dl&&dl.style.display!=='none'&&dl.offsetHeight){const sr=stage.getBoundingClientRect(),dr=dl.getBoundingClientRect();h=Math.max(18,Math.round(sr.bottom-dr.top))}stage.style.setProperty('--dlgh',h+'px')}
-  if(!dock.classList.contains('min'))paintMap(dock,d,gm(),RPH,true);
-  clueSync(stage,d)}
- /* 단서 카드: GM 이 공개하면 모두에게(dg.clue), 플레이어는 「단서 보기」로 다시 연다(내 화면만). GM 의 ✕ 는 모두의 화면에서 내린다 */
- function clueSync(stage,d){const cf=D0().clue;let rid='',mine=false;
-  if(cf&&cf.did===d.id&&R(d)[cf.rid]&&R(d)[cf.rid].cl&&DG.clueHide!==cf.at)rid=cf.rid;
-  if(!rid&&DG.clueLocal&&R(d)[DG.clueLocal]&&R(d)[DG.clueLocal].cl){rid=DG.clueLocal;mine=true}
-  let box=stage.querySelector(':scope>.dgrp-clue');const r=rid?R(d)[rid]:null;const sig=r?JSON.stringify([rid,r.cl,mine]):'';
-  if(!r){if(box)box.remove();RPH.clueSig='';return}
-  if(box&&RPH.clueSig===sig)return;RPH.clueSig=sig;
-  if(!box){box=document.createElement('div');box.className='dgrp dgrp-clue';stage.append(box);box.addEventListener('click',e=>{const b=e.target.closest('[data-clx]');if(!b)return;e.stopPropagation();const dd=cur();const c=D0().clue;
-   if(b.dataset.clx==='all'&&gm()){upd({clue:null});DG.clueLocal='';return}
-   if(c&&DG.clueLocal!==c.rid)DG.clueHide=c.at;DG.clueLocal='';RPH.clueSig='';if(dd)clueSync(stage,dd)})}
-  const c=r.cl;box.innerHTML=`<div class="dgcl-card"><div class="dgcl-h"><small>CLUE · ${H(r.n||ty(r.t).k)}</small><b>🔍 ${H(c.t||'단서')}</b><span class="sp"></span>${gm()&&!mine?'<button type="button" data-clx="all" title="모두의 화면에서 내리기">모두 닫기</button>':''}<button type="button" data-clx="me" title="닫기">✕</button></div>${c.img?`<img src="${H(c.img)}" alt="${H(c.t||'단서')}">`:''}${c.d?`<p>${H(c.d).replace(/\n/g,'<br>')}</p>`:''}</div>`}
- async function showClue(d,rid){const r=R(d)[rid];if(!r||!r.cl||!gm())return;const at=Date.now();if(await upd({clue:{did:d.id,rid,at},[P0(d.id)+'r/'+rid+'/cs']:1})){DG.clueHide=0;notice(`🔍 단서 — ${r.cl.t||'단서'}${r.cl.d?'\n'+r.cl.d:''}`);try{window.OM_RP_UI&&window.OM_RP_UI.playSe('Draw',true)}catch(e){}}}
- /* 10-31 망령 「5. 대표 한 명만 체크해서 한 번만 오르는 거야」: 던전 방 체크는 일행 중 대표 한 명이 한 번 굴린다 (실패해도 단계 · 경계도 · 패널티는 한 번).
+  <div class="dg-sidewrap"><div class="dg-roomprev" id="dgStage"><div class="dg-planes"></div><div class="dg-rpcap" id="dgRpCap"></div><button type="button" class="btn sm pri dg-torp" data-a="torp" title="방 화면을 배경으로 스탠딩 · 대사">🎭 RP 무대로</button></div><div class="dg-side" id="dgSide"></div></div></div></div>`;
+  }
+  function frameHTML(d) {
+    const r = R(d)[d.at],
+      t = ty(r && r.t),
+      src = r && r.b ? String(r.b) : '';
+    if (src) return [`img:${d.at}|${src}`, `<img src="${H(src)}" alt="${H((r && r.n) || t.k)}" decoding="async">`];
+    return [
+      `fb:${d.at}|${r && r.t}`,
+      `<div class="dg-fb-room"><i class="dg-fb-ceil"></i><i class="dg-fb-wall l"></i><i class="dg-fb-wall r"></i><i class="dg-fb-back"></i><i class="dg-fb-floor"></i></div><b class="dg-fb-ic">${t.ic}</b><span class="dg-fb-en">${t.en}</span>`
+    ];
+  }
+  /* 던전이 꺼져 있을 때 (GM 만 보는 화면): 준비한 던전 목록 · 진입 · 관리 */
+  function idleHTML() {
+    const ds = Object.entries(all());
+    return `<div class="dg dg-idle"><div class="dg-idle-head"><div><small>DUNGEON</small><h2>던전</h2><p>방을 이어 붙인 지도 위를 일행이 한 칸씩 나아간다. 안개 속 방은 GM 이 공개하거나 일행이 들어가야 보인다. 진입하면 모두의 RP 무대가 던전 방 화면으로 바뀌고(스탠딩 · 대사는 그대로), 이 탭에서 큰 지도와 GM 조작을 한다. 지도 핀에 던전을 걸어 두면 핀에서 바로 진입할 수 있다.</p></div><div class="dg-acts"><button class="btn sm pri" data-a="manage">🛠 던전 관리</button></div></div>
+   ${
+     ds.length
+       ? `<div class="dg-idle-list">${ds
+           .map(([id, d]) => {
+             const o = startOptions(d);
+             const n = Object.keys(R(d)).length;
+             return `<div class="dg-card"><h4>${H(d.n || '이름 없는 던전')} <small>방 ${n}개</small></h4>${d.o ? `<span class="dg-chip">주인 · ${H(d.o)}</span>` : ''}${d.a ? `<span class="dg-chip">${H(d.a)}</span>` : ''}${d.d ? `<span class="dg-chip on">기한 · ${H(d.d)}</span>` : ''}${mapLoc(id)}<div class="dg-acts">${o.map(([r, l]) => `<button class="btn sm pri" data-a="enter" data-v="${H(id)}" data-s="${H(r)}">⚔ ${H(l)}</button>`).join('') || '<span class="small dim">방이 없다 — 던전 관리에서 만든다</span>'}</div></div>`;
+           })
+           .join('')}</div>`
+       : `<div class="dg-card"><p>아직 던전이 없다. <b>던전 관리</b>에서 새로 만들거나 <b>샘플 던전</b>으로 시작해 봐.</p></div>`
+   }</div>`;
+  }
+  function render(el) {
+    if (!el) return;
+    const d = cur();
+    if (!d) {
+      DG.frame = '';
+      DG.mapSig = '';
+      if (!gm()) {
+        el.innerHTML = '<div class="empty">지금은 던전에 들어가 있지 않다.</div>';
+        return;
+      }
+      const h = idleHTML();
+      if (el._dgIdle !== h || !$('.dg-idle', el)) {
+        el.innerHTML = h;
+        el._dgIdle = h;
+      }
+      el._dgRoot = null;
+      bindRoot(el);
+      return;
+    }
+    el._dgIdle = null;
+    if (!$('#dgRoot', el)) {
+      el.innerHTML = shell();
+      DG.frame = '';
+      DG.mapSig = '';
+    }
+    bindRoot(el);
+    paint(el, d);
+  }
+  /* 방 화면 바꾸기 (던전 탭 미리보기 · RP 무대 배경 공용). hold = {frame:키} */
+  function paintFrame(planes, d, hold) {
+    const room = R(d)[d.at],
+      t = ty(room && room.t);
+    const [key, inner] = room
+      ? frameHTML(d)
+      : ['none', '<div class="dg-empty"><strong>DUNGEON</strong><small>GM 이 던전 관리에서 방을 만들면 여기에 보인다.</small></div>'];
+    if (!planes || hold.frame === key) return;
+    const old = planes.lastElementChild,
+      next = document.createElement('div');
+    next.className = 'dg-frame' + (key.startsWith('fb:') ? ' dg-fb' : '');
+    next.style.setProperty('--c', t.c);
+    next.innerHTML = inner;
+    const anim = !!old && !matchMedia('(prefers-reduced-motion:reduce)').matches;
+    planes.replaceChildren();
+    if (anim) {
+      old.className = old.className.replace(/\b(in|out)\b/g, '') + ' out';
+      planes.append(old);
+      setTimeout(() => old.remove(), 620);
+    }
+    if (anim) next.classList.add('in');
+    planes.append(next);
+    hold.frame = key;
+  }
+  function hudHTML(d, lockBig) {
+    const room = R(d)[d.at],
+      t = ty(room && room.t),
+      al = clamp(+d.al || 0, 0, 100),
+      lv = lvOf(al);
+    return `${room ? `<div class="dg-loc"><span>${H(t.en)}</span><b>${H(room.n || t.k)}</b></div><div class="dg-type" style="--c:${t.c}">${t.ic} ${H(t.k)} · ${H(d.n || '이름 없는 던전')}</div>` : ''}${alOn(d) ? `<div class="dg-meter lv${lv}" style="--p:${al / 100}"><small>SECURITY</small><b>${al}<em>%</em></b><i></i><span>${LV[lv][1]} · ${LV[lv][2]}</span></div>${lv === 3 && lockBig ? '<div class="dg-lock"><strong>LOCKDOWN</strong><span>강제 퇴출</span></div>' : ''}` : ''}`;
+  }
+  /* RP 무대 왼쪽 위: 장소 · 경계도 + 야생 기척 + PT 현황 (접기) */
+  const ptMin = () => {
+    try {
+      const v = localStorage.getItem('om_dg_pt');
+      return v ? v === 'min' : isNarrow();
+    } catch (e) {
+      return false;
+    }
+  };
+  function rpHudHTML(d) {
+    const r = R(d)[d.at],
+      isGm = gm();
+    const e = encLive(r, isGm) ? encOf(r) : null;
+    const enc = e
+      ? `<div class="dgrp-enc${r.eh ? ' hid' : ''}"><b>⚠ 야생 포켓몬의 기척</b>${isGm ? `<small>${e.t ? H(e.ms.map(m => m.name).join(' · ') || e.t.name) : '(시트에 없는 무리)'}${r.eh ? ' · 플레이어에게 숨김' : ''}</small><button type="button" data-rpdg="enc">⚔ 배틀</button>` : ''}</div>`
+      : '';
+    const ev = [];
+    if (r && r.cl && (r.cs || isGm))
+      ev.push(
+        `<button type="button" data-rpdg="clue" class="${r.cs ? '' : 'gmo'}">🔍 ${r.cs ? '단서 보기' : '단서 공개'}${r.cl.t ? ' · ' + H(r.cl.t) : ''}</button>`
+      );
+    if (r && r.sk && isGm)
+      ev.push(
+        `<button type="button" data-rpdg="sk" class="gmo" title="${H(skSum(r.sk))}">🎲 체크 · ${H(r.sk.label || r.sk.name || r.sk.stat)}</button>`
+      );
+    if (isSafe(r)) {
+      const k = rkOf(r);
+      ev.push(
+        isGm
+          ? `<button type="button" data-rpdg="rest" ${r.ru && !r.rmany ? 'disabled' : ''}>☗ ${k[1]}${r.ru && !r.rmany ? ' (쉼)' : ''}</button>`
+          : `<span class="dgev-t">☗ 휴식처 · ${k[1]}${r.ru && !r.rmany ? ' (이미 쉼)' : ''}</span>`
+      );
+    }
+    const evH = ev.length ? `<div class="dgrp-ev">${ev.join('')}</div>` : '';
+    const pt = ptHTML(d);
+    const mn = ptMin();
+    return hudHTML(d, false) + enc + evH;
+  }
+  /* 10-26 망령: PT 칸이 왼쪽 위에서 왼쪽 스탠딩 · 대사창과 겹쳤다 — 오른쪽 지도 아래로 옮긴다 (지도를 접으면 위로 올라간다) */
+  function rpPtHTML(d) {
+    const pt = ptHTML(d);
+    const mn = ptMin();
+    return pt
+      ? `<div class="dgrp-pt${mn ? ' min' : ''}"><button type="button" class="dgpt-tog" data-rpdg="pt">PT ${mn ? '▸' : '▾'}</button><div class="dgpt-body">${pt}</div></div>`
+      : '';
+  }
+  function paintMap(root, d, isGm, hold, mini) {
+    const rs = R(d);
+    const sig = JSON.stringify([d.id, isGm, d.at, DG.sel, rs, d.l, !!mini]);
+    if (hold.mapSig === sig) return;
+    hold.mapSig = sig;
+    const m = mapBuild(d, isGm),
+      iso = root.querySelector('.dg-iso'),
+      fog = root.querySelector('.dg-fog');
+    if (iso && fog) {
+      const w = m.box[2],
+        tl = iso.parentElement;
+      const k = mini ? 1.5 : 1;
+      tl.style.setProperty('--nm', (Math.max(15, w * 0.026) * k).toFixed(0) + 'px');
+      tl.style.setProperty('--ic', (Math.max(24, w * 0.034) * k).toFixed(0) + 'px');
+      iso.setAttribute('viewBox', m.vb);
+      fog.setAttribute('viewBox', m.vb);
+      iso.innerHTML = m.svg;
+      fog.innerHTML = fogBuild(m.box, m.holes, d.id, isGm, m.asks, m.lab);
+    }
+    const seen = Object.values(rs).filter(r => r.s).length;
+    const cap = root.querySelector('.dg-map-cap');
+    if (cap) setH(cap, `<b>MAP</b>${isGm ? `방 ${Object.keys(rs).length}개 · 공개 ${seen}개` : `탐색한 방 ${seen}개`}`);
+    return true;
+  }
+  function paint(el, d) {
+    const isGm = gm(),
+      rs = R(d);
+    if (!rs[d.at]) {
+      const s = d.st && rs[d.st] ? d.st : Object.keys(rs)[0];
+      d.at = s || '';
+    }
+    const al = clamp(+d.al || 0, 0, 100),
+      lv = lvOf(al);
+    if (!DG.sel || !rs[DG.sel] || (!isGm && !rs[DG.sel].s && DG.sel !== d.at)) DG.sel = d.at;
+    paintFrame($('#dgStage .dg-planes', el), d, DG);
+    {
+      const room = rs[d.at],
+        t = ty(room && room.t);
+      setH($('#dgRpCap', el), room ? `<span>${H(t.en)}</span><b>${H(room.n || t.k)}</b>` : '');
+    }
+    setH($('#dgHud', el), hudHTML(d, true));
+    const mp = $('#dgMap', el);
+    if (mp) {
+      $('#dgIso', el).classList.add('dg-iso');
+      if (paintMap(mp, d, isGm, DG, false)) {
+        const types = [
+          ...new Set(
+            Object.entries(rs)
+              .filter(([id, r]) => isGm || r.s || id === d.at)
+              .map(([, r]) => (r.t in TY ? r.t : 'room'))
+          )
+        ];
+        setH(
+          $('#dgLegend', el),
+          types.map(k => `<span style="--c:${TY[k].c}"><i>${TY[k].ic}</i> ${TY[k].k}</span>`).join('') + '<span>◆ 일행 위치</span>'
+        );
+      }
+    }
+    tiltBind(el);
+    setH($('#dgSide', el), side(d, isGm, al, lv));
+  }
+  /* ---------- RP 무대 위 던전 (rp_ui render 가 부른다) ---------- */
+  const RPH = { frame: '', mapSig: '' };
+  function rpSync(stage) {
+    if (!stage) return;
+    const d = cur();
+    if (!d) {
+      if (stage.classList.contains('dgmode')) {
+        stage.classList.remove('dgmode');
+        stage.querySelectorAll(':scope>.dgrp').forEach(x => x.remove());
+        RPH.frame = '';
+        RPH.mapSig = '';
+      }
+      return;
+    }
+    const rs = R(d);
+    if (!rs[d.at]) {
+      const s = d.st && rs[d.st] ? d.st : Object.keys(rs)[0];
+      d.at = s || '';
+    }
+    stage.classList.add('dgmode');
+    let bg = stage.querySelector(':scope>.dgrp-bg');
+    if (!bg) {
+      bg = document.createElement('div');
+      bg.className = 'dgrp dgrp-bg';
+      bg.innerHTML = '<div class="dg-planes"></div>';
+      stage.prepend(bg);
+      RPH.frame = '';
+    }
+    const hudClick = e => {
+      const cb = e.target.closest('[data-dgcard]');
+      if (cb) {
+        e.stopPropagation();
+        return useCard(cb.dataset.dgcard);
+      }
+      const pm = e.target.closest('[data-pm]');
+      if (pm) {
+        e.stopPropagation();
+        return monEdit(pm.dataset.pm);
+      }
+      const pl = e.target.closest('[data-dgpool]');
+      if (pl) {
+        e.stopPropagation();
+        return poolMgr(pl.dataset.dgpool);
+      }
+      const od = e.target.closest('[data-ordm]');
+      if (od) {
+        e.stopPropagation();
+        return ordMgr(od.dataset.ordm);
+      }
+      const w = e.target.closest('[data-walk]');
+      if (w) {
+        e.stopPropagation();
+        return walkPick(w.dataset.walk);
+      }
+      const b = e.target.closest('[data-rpdg]');
+      if (!b) return;
+      e.stopPropagation();
+      if (b.dataset.rpdg === 'pt') {
+        const mn = !ptMin();
+        try {
+          localStorage.setItem('om_dg_pt', mn ? 'min' : 'open');
+        } catch (err) {}
+        const pw = stage.querySelector('.dgrp-ptw');
+        if (pw) pw._h = '';
+        rpSync(stage);
+        return;
+      }
+      if (b.dataset.rpdg === 'enc') {
+        const dd = cur();
+        if (dd) startEnc(dd);
+      }
+      if (b.dataset.rpdg === 'clue') {
+        const dd = cur();
+        if (!dd) return;
+        const rr = R(dd)[dd.at];
+        if (rr && rr.cs) {
+          DG.clueLocal = dd.at;
+          DG.clueHide = 0;
+          RPH.clueSig = '';
+          rpSync(stage);
+        } else if (gm()) showClue(dd, dd.at);
+      }
+      if (b.dataset.rpdg === 'sk') {
+        const dd = cur();
+        if (dd) skOffer(dd, dd.at);
+      }
+      if (b.dataset.rpdg === 'rest') {
+        const dd = cur();
+        if (dd) restHere(dd, dd.at);
+      }
+    };
+    let hud = stage.querySelector(':scope>.dgrp-hud');
+    if (!hud) {
+      hud = document.createElement('div');
+      hud.className = 'dgrp dgrp-hud';
+      stage.append(hud);
+      hud.addEventListener('click', hudClick);
+    }
+    let dock = stage.querySelector(':scope>.dgrp-dock');
+    if (!dock) {
+      dock = document.createElement('div');
+      const mm = mapMode() || (isNarrow() ? 'min' : '');
+      dock.className = 'dgrp dgrp-dock ' + mm;
+      dock.innerHTML = `<div class="dg-dock-tools"><button type="button" data-rpdg="min" title="지도 접기 / 펴기">▾</button><button type="button" data-rpdg="big" title="지도 크게 / 작게">⤢</button>${gm() ? '<button type="button" data-rpdg="tab" title="던전 탭 (GM 조작)">🛠</button>' : ''}</div><button type="button" class="dgrp-mapbtn" data-rpdg="min" title="지도 펴기">MAP</button><div class="dg-map3d dgrp-map"><div class="dg-tilt"><svg class="dg-iso" preserveAspectRatio="xMidYMid meet"></svg><svg class="dg-fog" preserveAspectRatio="xMidYMid meet"></svg></div><div class="dg-map-cap"></div></div>`;
+      stage.append(dock);
+      RPH.mapSig = '';
+      /* ▾ 접기 · ⤢ 무대 위에서 크게 (플레이어는 던전 탭이 없으니 여기서 본다) · 🛠 던전 탭 (GM) · 방을 누르면 그 방 정보 */
+      dock.addEventListener('click', e => {
+        const nd = e.target.closest('.dg-node');
+        if (nd) {
+          e.stopPropagation();
+          const dd = cur();
+          const r = dd && R(dd)[nd.dataset.v];
+          if (r) {
+            const t = ty(r.t);
+            A().toast(`${t.ic} ${r.n || t.k} · ${t.k}${nd.dataset.v === dd.at ? ' · ◆ 일행 위치' : ''} — ${t.r}`);
+          }
+          return;
+        }
+        const b = e.target.closest('[data-rpdg]');
+        if (!b) {
+          if (!dock.classList.contains('big') && e.target.closest('.dgrp-map')) {
+            dock.classList.add('big');
+            RPH.mapSig = '';
+          }
+          return;
+        }
+        e.stopPropagation();
+        const k = b.dataset.rpdg;
+        if (k === 'min') {
+          const m = dock.classList.contains('min') ? 'open' : 'min';
+          dock.classList.toggle('min', m === 'min');
+          dock.classList.remove('big');
+          try {
+            localStorage.setItem('om_dg_rpmap', m);
+          } catch (err) {}
+          if (m === 'open') {
+            RPH.mapSig = '';
+            rpSync(stage);
+          }
+          return;
+        }
+        if (k === 'big') {
+          dock.classList.toggle('big');
+          RPH.mapSig = '';
+          return;
+        }
+        try {
+          A().goView('dungeon');
+        } catch (err) {}
+      });
+    }
+    paintFrame(bg.querySelector('.dg-planes'), d, RPH);
+    setH(hud, rpHudHTML(d));
+    /* 10-26 망령: 폰에선 PT 칸을 지도 밑이 아니라 무대 왼쪽 위로 (지도는 오른쪽 위, 위치 · 안정도 · 체크는 왼쪽 아래) */
+    {
+      const host = isNarrow() ? stage : dock;
+      let pw = stage.querySelector('.dgrp-ptw');
+      if (!pw) {
+        pw = document.createElement('div');
+        pw.className = 'dgrp-ptw';
+        pw.addEventListener('click', hudClick);
+      }
+      if (pw.parentNode !== host) host.append(pw);
+      setH(pw, rpPtHTML(d));
+    }
+    if (isNarrow()) {
+      let T = 1e9,
+        B = -1e9;
+      for (const x of [hud, ...hud.children]) {
+        if (!x.offsetHeight) continue;
+        const q = x.getBoundingClientRect();
+        T = Math.min(T, q.top);
+        B = Math.max(B, q.bottom);
+      }
+      const v = B > T ? Math.round(B - T) + 'px' : '0px';
+      if (stage.style.getPropertyValue('--hudh') !== v) stage.style.setProperty('--hudh', v);
+    }
+    {
+      const dl = stage.querySelector('#dlg');
+      let h = 18;
+      if (dl && dl.style.display !== 'none' && dl.offsetHeight) {
+        const sr = stage.getBoundingClientRect(),
+          dr = dl.getBoundingClientRect();
+        h = Math.max(18, Math.round(sr.bottom - dr.top));
+      }
+      stage.style.setProperty('--dlgh', h + 'px');
+    }
+    if (!dock.classList.contains('min')) paintMap(dock, d, gm(), RPH, true);
+    clueSync(stage, d);
+  }
+  /* 단서 카드: GM 이 공개하면 모두에게(dg.clue), 플레이어는 「단서 보기」로 다시 연다(내 화면만). GM 의 ✕ 는 모두의 화면에서 내린다 */
+  function clueSync(stage, d) {
+    const cf = D0().clue;
+    let rid = '',
+      mine = false;
+    if (cf && cf.did === d.id && R(d)[cf.rid] && R(d)[cf.rid].cl && DG.clueHide !== cf.at) rid = cf.rid;
+    if (!rid && DG.clueLocal && R(d)[DG.clueLocal] && R(d)[DG.clueLocal].cl) {
+      rid = DG.clueLocal;
+      mine = true;
+    }
+    let box = stage.querySelector(':scope>.dgrp-clue');
+    const r = rid ? R(d)[rid] : null;
+    const sig = r ? JSON.stringify([rid, r.cl, mine]) : '';
+    if (!r) {
+      if (box) box.remove();
+      RPH.clueSig = '';
+      return;
+    }
+    if (box && RPH.clueSig === sig) return;
+    RPH.clueSig = sig;
+    if (!box) {
+      box = document.createElement('div');
+      box.className = 'dgrp dgrp-clue';
+      stage.append(box);
+      box.addEventListener('click', e => {
+        const b = e.target.closest('[data-clx]');
+        if (!b) return;
+        e.stopPropagation();
+        const dd = cur();
+        const c = D0().clue;
+        if (b.dataset.clx === 'all' && gm()) {
+          upd({ clue: null });
+          DG.clueLocal = '';
+          return;
+        }
+        if (c && DG.clueLocal !== c.rid) DG.clueHide = c.at;
+        DG.clueLocal = '';
+        RPH.clueSig = '';
+        if (dd) clueSync(stage, dd);
+      });
+    }
+    const c = r.cl;
+    box.innerHTML = `<div class="dgcl-card"><div class="dgcl-h"><small>CLUE · ${H(r.n || ty(r.t).k)}</small><b>🔍 ${H(c.t || '단서')}</b><span class="sp"></span>${gm() && !mine ? '<button type="button" data-clx="all" title="모두의 화면에서 내리기">모두 닫기</button>' : ''}<button type="button" data-clx="me" title="닫기">✕</button></div>${c.img ? `<img src="${H(c.img)}" alt="${H(c.t || '단서')}">` : ''}${c.d ? `<p>${H(c.d).replace(/\n/g, '<br>')}</p>` : ''}</div>`;
+  }
+  async function showClue(d, rid) {
+    const r = R(d)[rid];
+    if (!r || !r.cl || !gm()) return;
+    const at = Date.now();
+    if (await upd({ clue: { did: d.id, rid, at }, [P0(d.id) + 'r/' + rid + '/cs']: 1 })) {
+      DG.clueHide = 0;
+      notice(`🔍 단서 — ${r.cl.t || '단서'}${r.cl.d ? '\n' + r.cl.d : ''}`);
+      try {
+        window.OM_RP_UI && window.OM_RP_UI.playSe('Draw', true);
+      } catch (e) {}
+    }
+  }
+  /* 10-31 망령 「5. 대표 한 명만 체크해서 한 번만 오르는 거야」: 던전 방 체크는 일행 중 대표 한 명이 한 번 굴린다 (실패해도 단계 · 경계도 · 패널티는 한 번).
     GM 이 대표를 고른다 — 각자 가장 좋은 성공률 순으로 보여 주고, 맨 위(가장 높은 사람)가 기본 */
- async function skOffer(d,rid){const r=R(d)[rid];if(!r||!r.sk||!gm())return;const K=SKU();if(!K||!K.present)return A().toast('스킬 체크 기능을 불러오지 못했다');const T=RO().trainers||{};const L=party(d).filter(t=>T[t]);if(!L.length)return A().toast('체크를 받을 일행이 없다');
-  const by=`${d.n||'던전'} · ${r.n||ty(r.t).k}`;const go=async id=>{if(await K.present(Object.assign({},r.sk,{who:'rep'}),[id],`${by} · 대표 ${(T[id]||{}).name||''}`))A().toast(`스킬 체크를 제시했다 — 대표 ${(T[id]||{}).name||''}`)};
-  /* 11-01 망령 「스킬 체크 — 트레이너만 · 대표 1명 / 전원」: 대표 고르기는 대표 1명(who:rep) 제시 · 「일행 전원에게」는 일행 모두에게 내밀고 먼저 굴린 한 명이 대표 */
-  const goAll=async()=>{if(await K.present(Object.assign({},r.sk,{who:'rep'}),L,`${by} · 대표 1명`))A().toast('스킬 체크를 제시했다 — 일행 중 먼저 굴린 한 명이 대표')};
-  if(L.length===1)return go(L[0]);
-  const rows=L.map(t=>({t,b:K.bestOdds?K.bestOdds(t,r.sk):null})).sort((a,b)=>((b.b||{}).ok??-1)-((a.b||{}).ok??-1));const pc=v=>v==null?'—':Math.round(v*100)+'%';
-  const m=A().openModal(`<div class="mhead"><h2>🎲 대표 고르기 <span class="small dim">${H(r.sk.label||r.sk.name||'스킬 체크')}</span></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small dim" style="margin:0 0 8px">던전 체크는 일행 중 <b>한 명</b>이 대표로 한 번 굴린다. 실패하면 대표의 상태 단계 · 경계도 · 패널티가 한 번만 붙는다.</p>
-   <div style="display:flex;flex-direction:column;gap:6px">${rows.map((x,i)=>`<button class="btn ${i?'':'pri'}" data-rep="${H(x.t)}" style="display:flex;gap:10px;align-items:center;text-align:left"><b style="flex:1">${H(T[x.t].name||x.t)}${i?'':' <small>(추천)</small>'}</b><span class="small">${x.b?H(x.b.name)+' · ':''}성공 <b>${pc(x.b&&x.b.ok)}</b></span></button>`).join('')}<button class="btn ghost" data-repall="1" title="일행 모두에게 내밀고, 먼저 굴린 한 명의 결과를 모두의 결과로">일행 전원에게 제시 — 먼저 굴린 한 명이 대표</button></div>`);
-  {const ba=m.querySelector('[data-repall]');if(ba)ba.onclick=()=>{A().closeModal();goAll()}}
-  m.querySelectorAll('[data-rep]').forEach(b=>b.onclick=()=>{A().closeModal();go(b.dataset.rep)})}
- /* 11-12 03:31 망령 휴식 개편 — 휴식 방 · 배틀 뒤 숨돌리기가 같이 쓴다:
+  async function skOffer(d, rid) {
+    const r = R(d)[rid];
+    if (!r || !r.sk || !gm()) return;
+    const K = SKU();
+    if (!K || !K.present) return A().toast('스킬 체크 기능을 불러오지 못했다');
+    const T = RO().trainers || {};
+    const L = party(d).filter(t => T[t]);
+    if (!L.length) return A().toast('체크를 받을 일행이 없다');
+    const by = `${d.n || '던전'} · ${r.n || ty(r.t).k}`;
+    const go = async id => {
+      if (await K.present(Object.assign({}, r.sk, { who: 'rep' }), [id], `${by} · 대표 ${(T[id] || {}).name || ''}`))
+        A().toast(`스킬 체크를 제시했다 — 대표 ${(T[id] || {}).name || ''}`);
+    };
+    /* 11-01 망령 「스킬 체크 — 트레이너만 · 대표 1명 / 전원」: 대표 고르기는 대표 1명(who:rep) 제시 · 「일행 전원에게」는 일행 모두에게 내밀고 먼저 굴린 한 명이 대표 */
+    const goAll = async () => {
+      if (await K.present(Object.assign({}, r.sk, { who: 'rep' }), L, `${by} · 대표 1명`))
+        A().toast('스킬 체크를 제시했다 — 일행 중 먼저 굴린 한 명이 대표');
+    };
+    if (L.length === 1) return go(L[0]);
+    const rows = L.map(t => ({ t, b: K.bestOdds ? K.bestOdds(t, r.sk) : null })).sort((a, b) => ((b.b || {}).ok ?? -1) - ((a.b || {}).ok ?? -1));
+    const pc = v => (v == null ? '—' : Math.round(v * 100) + '%');
+    const m = A()
+      .openModal(`<div class="mhead"><h2>🎲 대표 고르기 <span class="small dim">${H(r.sk.label || r.sk.name || '스킬 체크')}</span></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small dim" style="margin:0 0 8px">던전 체크는 일행 중 <b>한 명</b>이 대표로 한 번 굴린다. 실패하면 대표의 상태 단계 · 경계도 · 패널티가 한 번만 붙는다.</p>
+   <div style="display:flex;flex-direction:column;gap:6px">${rows.map((x, i) => `<button class="btn ${i ? '' : 'pri'}" data-rep="${H(x.t)}" style="display:flex;gap:10px;align-items:center;text-align:left"><b style="flex:1">${H(T[x.t].name || x.t)}${i ? '' : ' <small>(추천)</small>'}</b><span class="small">${x.b ? H(x.b.name) + ' · ' : ''}성공 <b>${pc(x.b && x.b.ok)}</b></span></button>`).join('')}<button class="btn ghost" data-repall="1" title="일행 모두에게 내밀고, 먼저 굴린 한 명의 결과를 모두의 결과로">일행 전원에게 제시 — 먼저 굴린 한 명이 대표</button></div>`);
+    {
+      const ba = m.querySelector('[data-repall]');
+      if (ba)
+        ba.onclick = () => {
+          A().closeModal();
+          goAll();
+        };
+    }
+    m.querySelectorAll('[data-rep]').forEach(
+      b =>
+        (b.onclick = () => {
+          A().closeModal();
+          go(b.dataset.rep);
+        })
+    );
+  }
+  /* 11-12 03:31 망령 휴식 개편 — 휴식 방 · 배틀 뒤 숨돌리기가 같이 쓴다:
     · 고요(경계도 30 미만): 숨돌리기의 HP 회복이 트레이너마다 1체 → 전원 1/4 (예전 「한 단계 위」 대신)
     · 「붕대와 진통제」(d.revHalf = {tid, f}): 숨돌리기에서 일어나는 빈사 포켓몬 1체를 HP f 로 — 빈사가 없으면 다음 숨돌리기까지 남김
     · 옛 「비상식량」 restUp 표시는 지운다 (비상식량은 이제 트레이너 부상 → 건강) */
- async function restGo(d,rk,ids,by){const K=SKU();if(!K||!K.applyRest)return;if(rk==='short')rk='mid';const dd=cur()||d;const opt={by,did:d.id};
-  const a0=clamp(+(dd.al)||0,0,100);if(rk==='breath'&&alOn(d)&&a0<30){opt.over={hp_one:0};opt.note=`경계도 ${a0}% — 고요: 숨돌리기 HP 회복이 일행 전원 1/4`}
-  const RH=dd.revHalf;if(RH&&rk==='breath')opt.revOne={tid:RH.tid||'',f:RH.f||'3/4'};
-  if(dd.restUp)await upd({[P0(d.id)+'restUp']:null});
-  await K.applyRest(rk,ids,opt);if(opt.revOne&&opt.revOne.used)await upd({[P0(d.id)+'revHalf']:null})}
- async function restHere(d,rid){const r=R(d)[rid];if(!r||!gm())return;const K=SKU();if(!K||!K.applyRest)return A().toast('휴식 기능을 불러오지 못했다');if(r.ru&&!r.rmany)return A().toast('이 휴식처에서는 이미 쉬었다');
-  const k=rkOf(r),L=party(d);if(!L.length)return A().toast('쉴 일행이 없다');
-  const m=A().openModal(`<div class="mhead"><h2>☗ 휴식 — ${H(r.n||'세이프룸')}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small" style="margin:0 0 8px">일행 ${L.length}명(${H(L.map(t=>((RO().trainers||{})[t]||{}).name).join(', '))})이 쉰다. 단계마다 회복하는 것은 스킬 체크 창 「휴식」 탭의 설정을 따른다.</p><div class="row" style="gap:6px;flex-wrap:wrap">${RKO.map(x=>`<button class="btn ${x[0]===k[0]?'pri':''}" data-rk="${x[0]}">${x[1]} <small>(${x[2]})</small></button>`).join('')}</div>${r.rmany?'':'<p class="small dim" style="margin:8px 0 0">이 휴식처는 한 번만 쓸 수 있다.</p>'}`);
-  m.querySelectorAll('[data-rk]').forEach(b=>b.onclick=async()=>{A().closeModal();let rk=b.dataset.rk;/* 11-04 망령 「30 이하일 때 보너스는 회복 단계를 올려 주자」 · 휴식 경계도 −10 */{const gx=await gimEvent('rest',{rid});if(gx.restDown){const OR=['breath','mid','long'];const i=OR.indexOf(rk==='short'?'mid':rk);if(i>=0)rk=OR[clamp(i-gx.restDown,0,OR.length-1)]}}await restGo(d,rk,L,`${d.n||'던전'} · ${r.n||'세이프룸'}`);if(alOn(d)&&rk!=='long')await alAdd(AL_REST,'휴식');if(!r.rmany)await upd({[P0(d.id)+'r/'+rid+'/ru']:1})})}
- function side(d,isGm,al,lv){
-  const rs=R(d),id=DG.sel,r=rs[id],t=ty(r&&r.t),here=id===d.at;
-  const meta=`<div class="dg-card"><h4>${H(d.n||'이름 없는 던전')} <small>DUNGEON</small></h4>${d.o?`<span class="dg-chip">주인 · ${H(d.o)}</span>`:''}${d.a?`<span class="dg-chip">${H(d.a)}</span>`:''}${d.d?`<span class="dg-chip on">기한 · ${H(d.d)}</span>`:''}${mapLoc(d.id)}
-   ${alOn(d)?`<div class="dg-mini-meter" style="--p:${al/100};--lc:${LVC[lv]}"></div><p><b style="color:${LVC[lv]}">경계도 ${al}% · ${LV[lv][1]}</b> — ${LV[lv][3]}</p>
-   ${isGm?`<div class="dg-acts"><button class="btn sm" data-a="al" data-v="20" data-w="발각">발각 +20</button><button class="btn sm" data-a="al" data-v="10" data-w="소란·도주">소란 +10</button><button class="btn sm" data-a="al" data-v="-10" data-w="몰래 통과">몰래 통과 −10</button><button class="btn sm ghost" data-a="al" data-v="5" data-w="">+5</button><button class="btn sm ghost" data-a="al" data-v="-5" data-w="">−5</button></div>${lv===3?'<div class="dg-acts"><button class="btn sm danger" data-a="kick">강제 퇴출 처리 (던전에서 나가기)</button></div>':''}`:''}`:''}</div>`;
-  const ptc=`<div class="dg-card dgpt-card"><h4>일행 <small>PARTY · 동행 ${WN(d)}체</small></h4><div class="dgpt-list">${ptHTML(d)||'<p class="small dim">일행이 없다</p>'}</div>${isGm?'<div class="dg-acts"><button class="btn sm" data-a="ptset">일행 편성</button></div>':''}<p class="dg-help">트레이너 줄을 누르면 동행 포켓몬을 고른다 (본인 · GM). HP · 상태는 시트 값.</p></div>`;
-  const e=r&&isGm?encOf(r):null;
-  const encH=e?`<div class="dg-enc-box"><b>☠ 야생 배치 · ${e.t?H(e.t.name):'(시트에 없는 무리)'}</b>${r.eh?' <span class="dg-chip">플레이어에게 숨김</span>':''}${r.c?' <span class="dg-chip">✓ 처리함</span>':''}<div class="dg-enc-ms">${e.ms.map(m=>`<span>${m.image?`<i style="background-image:url('${cssu(m.image)}')"></i>`:''}${H(m.name)}</span>`).join('')||'<span class="small dim">포켓몬이 없다 — 시트 탭에서 넣는다</span>'}</div></div>`:'';
-  const evB=r?[r.sk?`<div class="dg-ev-box"><b>🎲 스킬 체크 · ${H(r.sk.label||r.sk.name||'')}</b><small>${H(skSum(r.sk))}</small></div>`:'',r.cl&&(isGm||r.cs)?`<div class="dg-ev-box"><b>🔍 단서 · ${H(r.cl.t||'')}</b>${r.cs?' <span class="dg-chip">공개함</span>':''}${r.cl.img?`<img src="${H(r.cl.img)}" alt="">`:''}${r.cl.d?`<small>${H(r.cl.d)}</small>`:''}</div>`:'',isSafe(r)?`<div class="dg-ev-box"><b>☗ 휴식처 · ${rkOf(r)[1]}</b><small>${r.rmany?'여러 번 쉴 수 있다':r.ru?'이미 쉬었다':'한 번 쉴 수 있다'}</small></div>`:''].join(''):'';
-  const evA=r&&isGm&&here?[r.sk?'<button class="btn sm pri" data-a="ev" data-v="sk">🎲 스킬 체크 제시</button>':'',r.cl?`<button class="btn sm ${r.cs?'':'pri'}" data-a="ev" data-v="clue">🔍 단서 ${r.cs?'다시 띄우기':'공개'}</button>`:'',isSafe(r)?`<button class="btn sm pri" data-a="ev" data-v="rest" ${r.ru&&!r.rmany?'disabled':''}>☗ 휴식</button>${r.ru?'<button class="btn sm ghost" data-a="ev" data-v="restreset">휴식 다시 쓰게</button>':''}`:''].join(''):'';
-  const card=r?`<div class="dg-card" style="--c:${t.c}"><h4><span class="dg-ico">${t.ic}</span>${H(r.n||t.k)} <small>${t.en}</small></h4><span class="dg-chip on">${H(t.k)}</span>${here?'<span class="dg-chip on">◆ 일행 위치</span>':''}${r.c?'<span class="dg-chip">✓ 클리어</span>':''}${isGm&&!r.s&&!here?'<span class="dg-chip">안개 속 (플레이어에게 안 보임)</span>':''}<p>${t.r}</p>${isGm&&r.m?`<p class="dg-memo">GM 메모 · ${H(r.m)}</p>`:''}${encH}${evB}${evA?`<div class="dg-acts">${evA}</div>`:''}
-   ${isGm?`<div class="dg-acts">${here?'':`<button class="btn sm pri" data-a="move" data-v="${H(id)}">▶ 일행 이동</button>`}<button class="btn sm" data-a="seen" data-v="${H(id)}">${r.s?'안개로 숨기기':'👁 공개'}</button><button class="btn sm" data-a="clear" data-v="${H(id)}">${r.c?'클리어 취소':'✓ 클리어'}</button>${here?'<button class="btn sm" data-a="nav">📡 주변 방 밝히기</button>':''}</div>
-   ${here&&window.OM_DG_GIM&&OM_DG_GIM.logOf(d.id).length?`<div class="dg-acts" style="margin-bottom:4px"><button class="btn sm ghost" data-a="gundo" title="가장 최근 던전 기믹이 바꾼 것을 전 값으로">↶ 기믹 되돌리기 <small class="dim">${H((OM_DG_GIM.logOf(d.id).slice(-1)[0].names||[]).join(', '))}</small></button></div>`:''}${here?`<div class="dg-acts">${e&&e.t?'<button class="btn sm pri" data-a="enc" data-v="wild">⚔ 야생 조우 — 배틀 시작</button>':''}<button class="btn sm ${e&&e.t?'':'pri'}" data-a="enc" data-v="battle">${e&&e.t?'배틀 무대로만':'⚔ 조우 — 배틀 무대로'}</button>${alOn(d)?'<button class="btn sm danger" data-a="enc" data-v="spot">⚠ 들켰다 (경계도 +10)</button>':''}</div>`:''}`:''}</div>`:'';
-  const foot=isGm?`<div class="dg-acts"><button class="btn sm" data-a="exit">🏠 던전에서 나가기</button><button class="btn sm" data-a="manage">🛠 던전 관리</button></div><p class="dg-help">지도에서 방을 눌러 고르고 이동 · 공개 · 조우를 처리한다. 플레이어에게는 공개한 방과 지나온 방만 보인다.</p>`:'<p class="dg-help">지도에서 방을 누르면 정보를 볼 수 있다. 안개 너머는 아직 아무도 모른다.</p>';
-  return meta+card+ptc+foot}
- function tiltBind(el){const m=$('#dgMap',el);if(!m||m._tilt)return;m._tilt=1;const tilt=m.querySelector('.dg-tilt');
-  m.addEventListener('pointermove',e=>{if(e.pointerType==='touch')return;const b=m.getBoundingClientRect(),dx=(e.clientX-b.left)/b.width-.5,dy=(e.clientY-b.top)/b.height-.5;cancelAnimationFrame(DG.tiltRaf);DG.tiltRaf=requestAnimationFrame(()=>{tilt.style.setProperty('--rx',(9-dy*8).toFixed(2)+'deg');tilt.style.setProperty('--ry',(dx*10).toFixed(2)+'deg')})});
-  m.addEventListener('pointerleave',()=>{cancelAnimationFrame(DG.tiltRaf);tilt.style.removeProperty('--rx');tilt.style.removeProperty('--ry')})}
- function cut(en,ko,sub,cls){const el=document.createElement('div');el.className='dg-cut '+(cls||'');el.setAttribute('role','status');el.innerHTML=`<div class="dg-cut-band"><small>${H(en)}</small><strong>${H(ko)}</strong>${sub?`<span>${H(sub)}</span>`:''}</div>`;document.body.append(el);whoosh();setTimeout(()=>el.remove(),2400)}
+  async function restGo(d, rk, ids, by) {
+    const K = SKU();
+    if (!K || !K.applyRest) return;
+    if (rk === 'short') rk = 'mid';
+    const dd = cur() || d;
+    const opt = { by, did: d.id };
+    const a0 = clamp(+dd.al || 0, 0, 100);
+    if (rk === 'breath' && alOn(d) && a0 < 30) {
+      opt.over = { hp_one: 0 };
+      opt.note = `경계도 ${a0}% — 고요: 숨돌리기 HP 회복이 일행 전원 1/4`;
+    }
+    const RH = dd.revHalf;
+    if (RH && rk === 'breath') opt.revOne = { tid: RH.tid || '', f: RH.f || '3/4' };
+    if (dd.restUp) await upd({ [P0(d.id) + 'restUp']: null });
+    await K.applyRest(rk, ids, opt);
+    if (opt.revOne && opt.revOne.used) await upd({ [P0(d.id) + 'revHalf']: null });
+  }
+  async function restHere(d, rid) {
+    const r = R(d)[rid];
+    if (!r || !gm()) return;
+    const K = SKU();
+    if (!K || !K.applyRest) return A().toast('휴식 기능을 불러오지 못했다');
+    if (r.ru && !r.rmany) return A().toast('이 휴식처에서는 이미 쉬었다');
+    const k = rkOf(r),
+      L = party(d);
+    if (!L.length) return A().toast('쉴 일행이 없다');
+    const m = A().openModal(
+      `<div class="mhead"><h2>☗ 휴식 — ${H(r.n || '세이프룸')}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small" style="margin:0 0 8px">일행 ${L.length}명(${H(L.map(t => ((RO().trainers || {})[t] || {}).name).join(', '))})이 쉰다. 단계마다 회복하는 것은 스킬 체크 창 「휴식」 탭의 설정을 따른다.</p><div class="row" style="gap:6px;flex-wrap:wrap">${RKO.map(x => `<button class="btn ${x[0] === k[0] ? 'pri' : ''}" data-rk="${x[0]}">${x[1]} <small>(${x[2]})</small></button>`).join('')}</div>${r.rmany ? '' : '<p class="small dim" style="margin:8px 0 0">이 휴식처는 한 번만 쓸 수 있다.</p>'}`
+    );
+    m.querySelectorAll('[data-rk]').forEach(
+      b =>
+        (b.onclick = async () => {
+          A().closeModal();
+          let rk = b.dataset.rk;
+          /* 11-04 망령 「30 이하일 때 보너스는 회복 단계를 올려 주자」 · 휴식 경계도 −10 */ {
+            const gx = await gimEvent('rest', { rid });
+            if (gx.restDown) {
+              const OR = ['breath', 'mid', 'long'];
+              const i = OR.indexOf(rk === 'short' ? 'mid' : rk);
+              if (i >= 0) rk = OR[clamp(i - gx.restDown, 0, OR.length - 1)];
+            }
+          }
+          await restGo(d, rk, L, `${d.n || '던전'} · ${r.n || '세이프룸'}`);
+          if (alOn(d) && rk !== 'long') await alAdd(AL_REST, '휴식');
+          if (!r.rmany) await upd({ [P0(d.id) + 'r/' + rid + '/ru']: 1 });
+        })
+    );
+  }
+  function side(d, isGm, al, lv) {
+    const rs = R(d),
+      id = DG.sel,
+      r = rs[id],
+      t = ty(r && r.t),
+      here = id === d.at;
+    const meta = `<div class="dg-card"><h4>${H(d.n || '이름 없는 던전')} <small>DUNGEON</small></h4>${d.o ? `<span class="dg-chip">주인 · ${H(d.o)}</span>` : ''}${d.a ? `<span class="dg-chip">${H(d.a)}</span>` : ''}${d.d ? `<span class="dg-chip on">기한 · ${H(d.d)}</span>` : ''}${mapLoc(d.id)}
+   ${
+     alOn(d)
+       ? `<div class="dg-mini-meter" style="--p:${al / 100};--lc:${LVC[lv]}"></div><p><b style="color:${LVC[lv]}">경계도 ${al}% · ${LV[lv][1]}</b> — ${LV[lv][3]}</p>
+   ${isGm ? `<div class="dg-acts"><button class="btn sm" data-a="al" data-v="20" data-w="발각">발각 +20</button><button class="btn sm" data-a="al" data-v="10" data-w="소란·도주">소란 +10</button><button class="btn sm" data-a="al" data-v="-10" data-w="몰래 통과">몰래 통과 −10</button><button class="btn sm ghost" data-a="al" data-v="5" data-w="">+5</button><button class="btn sm ghost" data-a="al" data-v="-5" data-w="">−5</button></div>${lv === 3 ? '<div class="dg-acts"><button class="btn sm danger" data-a="kick">강제 퇴출 처리 (던전에서 나가기)</button></div>' : ''}` : ''}`
+       : ''
+   }</div>`;
+    const ptc = `<div class="dg-card dgpt-card"><h4>일행 <small>PARTY · 동행 ${WN(d)}체</small></h4><div class="dgpt-list">${ptHTML(d) || '<p class="small dim">일행이 없다</p>'}</div>${isGm ? '<div class="dg-acts"><button class="btn sm" data-a="ptset">일행 편성</button></div>' : ''}<p class="dg-help">트레이너 줄을 누르면 동행 포켓몬을 고른다 (본인 · GM). HP · 상태는 시트 값.</p></div>`;
+    const e = r && isGm ? encOf(r) : null;
+    const encH = e
+      ? `<div class="dg-enc-box"><b>☠ 야생 배치 · ${e.t ? H(e.t.name) : '(시트에 없는 무리)'}</b>${r.eh ? ' <span class="dg-chip">플레이어에게 숨김</span>' : ''}${r.c ? ' <span class="dg-chip">✓ 처리함</span>' : ''}<div class="dg-enc-ms">${e.ms.map(m => `<span>${m.image ? `<i style="background-image:url('${cssu(m.image)}')"></i>` : ''}${H(m.name)}</span>`).join('') || '<span class="small dim">포켓몬이 없다 — 시트 탭에서 넣는다</span>'}</div></div>`
+      : '';
+    const evB = r
+      ? [
+          r.sk ? `<div class="dg-ev-box"><b>🎲 스킬 체크 · ${H(r.sk.label || r.sk.name || '')}</b><small>${H(skSum(r.sk))}</small></div>` : '',
+          r.cl && (isGm || r.cs)
+            ? `<div class="dg-ev-box"><b>🔍 단서 · ${H(r.cl.t || '')}</b>${r.cs ? ' <span class="dg-chip">공개함</span>' : ''}${r.cl.img ? `<img src="${H(r.cl.img)}" alt="">` : ''}${r.cl.d ? `<small>${H(r.cl.d)}</small>` : ''}</div>`
+            : '',
+          isSafe(r)
+            ? `<div class="dg-ev-box"><b>☗ 휴식처 · ${rkOf(r)[1]}</b><small>${r.rmany ? '여러 번 쉴 수 있다' : r.ru ? '이미 쉬었다' : '한 번 쉴 수 있다'}</small></div>`
+            : ''
+        ].join('')
+      : '';
+    const evA =
+      r && isGm && here
+        ? [
+            r.sk ? '<button class="btn sm pri" data-a="ev" data-v="sk">🎲 스킬 체크 제시</button>' : '',
+            r.cl ? `<button class="btn sm ${r.cs ? '' : 'pri'}" data-a="ev" data-v="clue">🔍 단서 ${r.cs ? '다시 띄우기' : '공개'}</button>` : '',
+            isSafe(r)
+              ? `<button class="btn sm pri" data-a="ev" data-v="rest" ${r.ru && !r.rmany ? 'disabled' : ''}>☗ 휴식</button>${r.ru ? '<button class="btn sm ghost" data-a="ev" data-v="restreset">휴식 다시 쓰게</button>' : ''}`
+              : ''
+          ].join('')
+        : '';
+    const card = r
+      ? `<div class="dg-card" style="--c:${t.c}"><h4><span class="dg-ico">${t.ic}</span>${H(r.n || t.k)} <small>${t.en}</small></h4><span class="dg-chip on">${H(t.k)}</span>${here ? '<span class="dg-chip on">◆ 일행 위치</span>' : ''}${r.c ? '<span class="dg-chip">✓ 클리어</span>' : ''}${isGm && !r.s && !here ? '<span class="dg-chip">안개 속 (플레이어에게 안 보임)</span>' : ''}<p>${t.r}</p>${isGm && r.m ? `<p class="dg-memo">GM 메모 · ${H(r.m)}</p>` : ''}${encH}${evB}${evA ? `<div class="dg-acts">${evA}</div>` : ''}
+   ${
+     isGm
+       ? `<div class="dg-acts">${here ? '' : `<button class="btn sm pri" data-a="move" data-v="${H(id)}">▶ 일행 이동</button>`}<button class="btn sm" data-a="seen" data-v="${H(id)}">${r.s ? '안개로 숨기기' : '👁 공개'}</button><button class="btn sm" data-a="clear" data-v="${H(id)}">${r.c ? '클리어 취소' : '✓ 클리어'}</button>${here ? '<button class="btn sm" data-a="nav">📡 주변 방 밝히기</button>' : ''}</div>
+   ${here && window.OM_DG_GIM && OM_DG_GIM.logOf(d.id).length ? `<div class="dg-acts" style="margin-bottom:4px"><button class="btn sm ghost" data-a="gundo" title="가장 최근 던전 기믹이 바꾼 것을 전 값으로">↶ 기믹 되돌리기 <small class="dim">${H((OM_DG_GIM.logOf(d.id).slice(-1)[0].names || []).join(', '))}</small></button></div>` : ''}${here ? `<div class="dg-acts">${e && e.t ? '<button class="btn sm pri" data-a="enc" data-v="wild">⚔ 야생 조우 — 배틀 시작</button>' : ''}<button class="btn sm ${e && e.t ? '' : 'pri'}" data-a="enc" data-v="battle">${e && e.t ? '배틀 무대로만' : '⚔ 조우 — 배틀 무대로'}</button>${alOn(d) ? '<button class="btn sm danger" data-a="enc" data-v="spot">⚠ 들켰다 (경계도 +10)</button>' : ''}</div>` : ''}`
+       : ''
+   }</div>`
+      : '';
+    const foot = isGm
+      ? `<div class="dg-acts"><button class="btn sm" data-a="exit">🏠 던전에서 나가기</button><button class="btn sm" data-a="manage">🛠 던전 관리</button></div><p class="dg-help">지도에서 방을 눌러 고르고 이동 · 공개 · 조우를 처리한다. 플레이어에게는 공개한 방과 지나온 방만 보인다.</p>`
+      : '<p class="dg-help">지도에서 방을 누르면 정보를 볼 수 있다. 안개 너머는 아직 아무도 모른다.</p>';
+    return meta + card + ptc + foot;
+  }
+  function tiltBind(el) {
+    const m = $('#dgMap', el);
+    if (!m || m._tilt) return;
+    m._tilt = 1;
+    const tilt = m.querySelector('.dg-tilt');
+    m.addEventListener('pointermove', e => {
+      if (e.pointerType === 'touch') return;
+      const b = m.getBoundingClientRect(),
+        dx = (e.clientX - b.left) / b.width - 0.5,
+        dy = (e.clientY - b.top) / b.height - 0.5;
+      cancelAnimationFrame(DG.tiltRaf);
+      DG.tiltRaf = requestAnimationFrame(() => {
+        tilt.style.setProperty('--rx', (9 - dy * 8).toFixed(2) + 'deg');
+        tilt.style.setProperty('--ry', (dx * 10).toFixed(2) + 'deg');
+      });
+    });
+    m.addEventListener('pointerleave', () => {
+      cancelAnimationFrame(DG.tiltRaf);
+      tilt.style.removeProperty('--rx');
+      tilt.style.removeProperty('--ry');
+    });
+  }
+  function cut(en, ko, sub, cls) {
+    const el = document.createElement('div');
+    el.className = 'dg-cut ' + (cls || '');
+    el.setAttribute('role', 'status');
+    el.innerHTML = `<div class="dg-cut-band"><small>${H(en)}</small><strong>${H(ko)}</strong>${sub ? `<span>${H(sub)}</span>` : ''}</div>`;
+    document.body.append(el);
+    whoosh();
+    setTimeout(() => el.remove(), 2400);
+  }
 
- /* ---------- 상태가 바뀔 때 (모든 탭에서 불린다): 진입 · 귀환 · 경계 단계 컷인, 화면 넘기기 ---------- */
- function onState(){try{retSync()}catch(e){}try{if(DG.ppDraw&&document.querySelector('#dgPl'))DG.ppDraw();else DG.ppDraw=null}catch(e){}const d=cur(),s={room:ST().room,mode:d?'dungeon':'',did:d?d.id:'',al:d?clamp(+d.al||0,0,100):0},p=DG.prev;DG.prev=s;
-  {const sg=JSON.stringify(D0());if(DG.edOpen&&sg!==DG.edSig&&!DG.drag&&!typingInModal())edDraw();DG.edSig=sg}
-  if(!p||p.room!==s.room)return;   /* 방에 막 들어온 첫 상태: 컷인 없음 */
-  if(p.mode!==s.mode||p.did!==s.did){DG.sel='';
-   if(s.mode==='dungeon'){cut('INFILTRATION','던전 진입',d.n||'','');try{A().goView('rp')}catch(e){}}   /* 탐색은 RP 무대에서 (방 화면이 배경) — 큰 지도는 던전 탭 */
-   else{cut('ESCAPE','던전 귀환','무대로 돌아왔다','out');try{if(A().view==='dungeon'&&!gm())A().goView('')}catch(e){}}
-   return}
-  if(s.mode==='dungeon'&&alOn(d)){const a=lvOf(p.al),b=lvOf(s.al);if(b>a)cut('SECURITY',b===4?'강제 퇴출':'경계도 '+LV[b][1],`${s.al}% · ${LV[b][3]}`,b===4?'lock':'warn')}}
- const typingInModal=()=>{const a=document.activeElement;return !!(a&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)&&a.closest('.dg-ed'))};
+  /* ---------- 상태가 바뀔 때 (모든 탭에서 불린다): 진입 · 귀환 · 경계 단계 컷인, 화면 넘기기 ---------- */
+  function onState() {
+    try {
+      retSync();
+    } catch (e) {}
+    try {
+      if (DG.ppDraw && document.querySelector('#dgPl')) DG.ppDraw();
+      else DG.ppDraw = null;
+    } catch (e) {}
+    const d = cur(),
+      s = { room: ST().room, mode: d ? 'dungeon' : '', did: d ? d.id : '', al: d ? clamp(+d.al || 0, 0, 100) : 0 },
+      p = DG.prev;
+    DG.prev = s;
+    {
+      const sg = JSON.stringify(D0());
+      if (DG.edOpen && sg !== DG.edSig && !DG.drag && !typingInModal()) edDraw();
+      DG.edSig = sg;
+    }
+    if (!p || p.room !== s.room) return; /* 방에 막 들어온 첫 상태: 컷인 없음 */
+    if (p.mode !== s.mode || p.did !== s.did) {
+      DG.sel = '';
+      if (s.mode === 'dungeon') {
+        cut('INFILTRATION', '던전 진입', d.n || '', '');
+        try {
+          A().goView('rp');
+        } catch (e) {}
+      } /* 탐색은 RP 무대에서 (방 화면이 배경) — 큰 지도는 던전 탭 */
+      else {
+        cut('ESCAPE', '던전 귀환', '무대로 돌아왔다', 'out');
+        try {
+          if (A().view === 'dungeon' && !gm()) A().goView('');
+        } catch (e) {}
+      }
+      return;
+    }
+    if (s.mode === 'dungeon' && alOn(d)) {
+      const a = lvOf(p.al),
+        b = lvOf(s.al);
+      if (b > a) cut('SECURITY', b === 4 ? '강제 퇴출' : '경계도 ' + LV[b][1], `${s.al}% · ${LV[b][3]}`, b === 4 ? 'lock' : 'warn');
+    }
+  }
+  const typingInModal = () => {
+    const a = document.activeElement;
+    return !!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName) && a.closest('.dg-ed'));
+  };
 
- /* ---------- 클릭 (탭 화면) ---------- */
- function startOptions(d){const rs=R(d),o=[];if(d.st&&rs[d.st])o.push([d.st,'입구에서 시작']);Object.entries(rs).forEach(([id,r])=>{if(r.t==='safe'&&r.s&&id!==d.st)o.push([id,'세이프룸 · '+(r.n||'')])});if(d.at&&rs[d.at]&&!o.some(x=>x[0]===d.at))o.push([d.at,'지난 위치에서 이어서']);if(!o.length){const f=Object.keys(rs)[0];if(f)o.push([f,'첫 방에서 시작'])}return o}
- function bindRoot(el){if(el._dgBound)return;el._dgBound=1;el.addEventListener('click',e=>{const cb=e.target.closest('[data-dgcard]');if(cb&&el.contains(cb)){e.stopPropagation();return useCard(cb.dataset.dgcard)}const pm=e.target.closest('[data-pm]');if(pm&&el.contains(pm)&&pm.closest('#dgRoot')){e.stopPropagation();return monEdit(pm.dataset.pm)}const pl=e.target.closest('[data-dgpool]');if(pl&&el.contains(pl)&&pl.closest('#dgRoot')){e.stopPropagation();return poolMgr(pl.dataset.dgpool)}const od=e.target.closest('[data-ordm]');if(od&&el.contains(od)&&od.closest('#dgRoot')){e.stopPropagation();return ordMgr(od.dataset.ordm)}const w=e.target.closest('[data-walk]');if(w&&el.contains(w)&&w.closest('#dgRoot')){return walkPick(w.dataset.walk)}const b=e.target.closest('[data-a]');if(!b||!el.contains(b)||!b.closest('#dgRoot,.dg-idle'))return;act(b.dataset.a,b)})}
- async function act(k,b){const d=cur();const v=b.dataset.v;
-  if(k==='pick'){DG.sel=v;return A().renderScene()}
-  if(k==='torp'){try{A().goView('rp')}catch(e){}return}
-  if(k==='walk')return walkPick(v);
-  if(!gm())return;
-  if(k==='ptset'&&d)return ptSet(d);
-  if(k==='manage'){if(d)DG.ed=d.id;return openEd()}
-  if(k==='enter'){const id=v,s=b.dataset.s,dd=all()[id];if(!dd||!R(dd)[s])return;const p=P0(id);if(await upd({field:{mode:'dungeon',did:id,t:Date.now()},[p+'at']:s,[p+'r/'+s+'/s']:1,[p+'al']:alOn(dd)?AL0:0})){notice(`⚔ 던전 진입 — ${dd.n||'던전'}${alOn(dd)?` · 경계도 ${AL0}%`:''}`);skStart(dd)}return}
-  if(!d)return;
-  if(k==='exit'){if(confirm('던전에서 나와 모두를 무대로 돌려보낼까?')&&await upd({'field/mode':'','field/t':Date.now()}))notice(`🏠 던전에서 나왔다 — ${d.n||'던전'}`);return}
-  if(k==='gundo'){const G=window.OM_DG_GIM;if(G&&confirm('가장 최근 던전 기믹이 바꾼 것(상태 단계 · 4식 6령 · 동행 HP · 경계도 · 표식)을 전 값으로 되돌릴까?'))await G.undoLast(d.id);return}
-  if(k==='kick'){if(await upd({'field/mode':'','field/t':Date.now()}))notice(`[${d.n||'던전'}] 경계도 100% — 강제 퇴출. 이번 탐색은 여기까지.`);return}
-  if(k==='move'){if(!R(d)[v])return;const p=P0(d.id);const first=!R(d)[v].s&&R(d)[v].t!=='entry';const from=d.at;if(from&&from!==v)await gimLeave(d,from);if(await upd({[p+'at']:v,[p+'r/'+v+'/s']:1})){DG.sel=v;notice(`[${d.n||'던전'}] ▶ ${ro(R(d)[v].n||ty(R(d)[v].t).k)} 이동`);/* 11-04: 처음 들어가는 방마다 경계도 +5 · 11-05 은열쇠 「길잡이 표식」(d.guide) 이면 이번 한 번은 안 오름 */if(first&&alOn(d)){if(d.guide){await upd({[p+'guide']:null});notice(`[${d.n||'던전'}] 🗝 길잡이 표식 — 경계도가 오르지 않았다`)}else await alAdd(AL_ROOM,'새 방')}if(first)await gimEvent('room',{rid:v});await gimEvent('move',{rid:v})}return}
-  if(k==='seen'){const r=R(d)[v];if(r)upd({[P0(d.id)+'r/'+v+'/s']:r.s?null:1});return}
-  if(k==='clear'){const r=R(d)[v];if(r)upd({[P0(d.id)+'r/'+v+'/c']:r.c?null:1});return}
-  if(k==='nav'){const n=nbrs(d,d.at).filter(id=>!R(d)[id].s);if(!n.length)return A().toast('주변에 새로 밝힐 방이 없다');const o={};n.forEach(id=>o[P0(d.id)+'r/'+id+'/s']=1);if(await upd(o))notice(`[${d.n||'던전'}] 📡 주변 방 ${n.length}곳이 지도에 드러났다`);return}
-  if(k==='al'){const delta=+v||0,why=b.dataset.w||'';const before=clamp(+d.al||0,0,100),after=clamp(before+delta,0,100);if(after===before)return;if(await upd({[P0(d.id)+'al']:after}))notice(`[${d.n||'던전'}] 경계도 ${after>before?'+':''}${after-before}${why?' ('+why+')':''} → ${after}%`);return}
-  if(k==='ev'){const id=DG.sel||d.at;if(v==='sk')return skOffer(d,id);if(v==='clue')return showClue(d,id);if(v==='rest')return restHere(d,id);if(v==='restreset')return upd({[P0(d.id)+'r/'+id+'/ru']:null});return}
-  if(k==='enc'){const r=R(d)[d.at]||{},head=`[${d.n||'던전'} · ${r.n||ty(r.t).k}] `;
-   if(v==='spot'){const after=clamp((+d.al||0)+10,0,100);if(await upd({[P0(d.id)+'al']:after}))notice(head+`⚠ 들켰다! 경계도 +10 → ${after}%`);return}
-   if(v==='wild')return startEnc(d);
-   if(v==='battle'){notice(head+'⚔ 조우! 배틀을 시작한다.');await A().set(['scene'],'battle');try{A().goView('battle')}catch(e){}return}}}
+  /* ---------- 클릭 (탭 화면) ---------- */
+  function startOptions(d) {
+    const rs = R(d),
+      o = [];
+    if (d.st && rs[d.st]) o.push([d.st, '입구에서 시작']);
+    Object.entries(rs).forEach(([id, r]) => {
+      if (r.t === 'safe' && r.s && id !== d.st) o.push([id, '세이프룸 · ' + (r.n || '')]);
+    });
+    if (d.at && rs[d.at] && !o.some(x => x[0] === d.at)) o.push([d.at, '지난 위치에서 이어서']);
+    if (!o.length) {
+      const f = Object.keys(rs)[0];
+      if (f) o.push([f, '첫 방에서 시작']);
+    }
+    return o;
+  }
+  function bindRoot(el) {
+    if (el._dgBound) return;
+    el._dgBound = 1;
+    el.addEventListener('click', e => {
+      const cb = e.target.closest('[data-dgcard]');
+      if (cb && el.contains(cb)) {
+        e.stopPropagation();
+        return useCard(cb.dataset.dgcard);
+      }
+      const pm = e.target.closest('[data-pm]');
+      if (pm && el.contains(pm) && pm.closest('#dgRoot')) {
+        e.stopPropagation();
+        return monEdit(pm.dataset.pm);
+      }
+      const pl = e.target.closest('[data-dgpool]');
+      if (pl && el.contains(pl) && pl.closest('#dgRoot')) {
+        e.stopPropagation();
+        return poolMgr(pl.dataset.dgpool);
+      }
+      const od = e.target.closest('[data-ordm]');
+      if (od && el.contains(od) && od.closest('#dgRoot')) {
+        e.stopPropagation();
+        return ordMgr(od.dataset.ordm);
+      }
+      const w = e.target.closest('[data-walk]');
+      if (w && el.contains(w) && w.closest('#dgRoot')) {
+        return walkPick(w.dataset.walk);
+      }
+      const b = e.target.closest('[data-a]');
+      if (!b || !el.contains(b) || !b.closest('#dgRoot,.dg-idle')) return;
+      act(b.dataset.a, b);
+    });
+  }
+  async function act(k, b) {
+    const d = cur();
+    const v = b.dataset.v;
+    if (k === 'pick') {
+      DG.sel = v;
+      return A().renderScene();
+    }
+    if (k === 'torp') {
+      try {
+        A().goView('rp');
+      } catch (e) {}
+      return;
+    }
+    if (k === 'walk') return walkPick(v);
+    if (!gm()) return;
+    if (k === 'ptset' && d) return ptSet(d);
+    if (k === 'manage') {
+      if (d) DG.ed = d.id;
+      return openEd();
+    }
+    if (k === 'enter') {
+      const id = v,
+        s = b.dataset.s,
+        dd = all()[id];
+      if (!dd || !R(dd)[s]) return;
+      const p = P0(id);
+      if (
+        await upd({ field: { mode: 'dungeon', did: id, t: Date.now() }, [p + 'at']: s, [p + 'r/' + s + '/s']: 1, [p + 'al']: alOn(dd) ? AL0 : 0 })
+      ) {
+        notice(`⚔ 던전 진입 — ${dd.n || '던전'}${alOn(dd) ? ` · 경계도 ${AL0}%` : ''}`);
+        skStart(dd);
+      }
+      return;
+    }
+    if (!d) return;
+    if (k === 'exit') {
+      if (confirm('던전에서 나와 모두를 무대로 돌려보낼까?') && (await upd({ 'field/mode': '', 'field/t': Date.now() })))
+        notice(`🏠 던전에서 나왔다 — ${d.n || '던전'}`);
+      return;
+    }
+    if (k === 'gundo') {
+      const G = window.OM_DG_GIM;
+      if (G && confirm('가장 최근 던전 기믹이 바꾼 것(상태 단계 · 4식 6령 · 동행 HP · 경계도 · 표식)을 전 값으로 되돌릴까?')) await G.undoLast(d.id);
+      return;
+    }
+    if (k === 'kick') {
+      if (await upd({ 'field/mode': '', 'field/t': Date.now() })) notice(`[${d.n || '던전'}] 경계도 100% — 강제 퇴출. 이번 탐색은 여기까지.`);
+      return;
+    }
+    if (k === 'move') {
+      if (!R(d)[v]) return;
+      const p = P0(d.id);
+      const first = !R(d)[v].s && R(d)[v].t !== 'entry';
+      const from = d.at;
+      if (from && from !== v) await gimLeave(d, from);
+      if (await upd({ [p + 'at']: v, [p + 'r/' + v + '/s']: 1 })) {
+        DG.sel = v;
+        notice(`[${d.n || '던전'}] ▶ ${ro(R(d)[v].n || ty(R(d)[v].t).k)} 이동`);
+        /* 11-04: 처음 들어가는 방마다 경계도 +5 · 11-05 은열쇠 「길잡이 표식」(d.guide) 이면 이번 한 번은 안 오름 */ if (first && alOn(d)) {
+          if (d.guide) {
+            await upd({ [p + 'guide']: null });
+            notice(`[${d.n || '던전'}] 🗝 길잡이 표식 — 경계도가 오르지 않았다`);
+          } else await alAdd(AL_ROOM, '새 방');
+        }
+        if (first) await gimEvent('room', { rid: v });
+        await gimEvent('move', { rid: v });
+      }
+      return;
+    }
+    if (k === 'seen') {
+      const r = R(d)[v];
+      if (r) upd({ [P0(d.id) + 'r/' + v + '/s']: r.s ? null : 1 });
+      return;
+    }
+    if (k === 'clear') {
+      const r = R(d)[v];
+      if (r) upd({ [P0(d.id) + 'r/' + v + '/c']: r.c ? null : 1 });
+      return;
+    }
+    if (k === 'nav') {
+      const n = nbrs(d, d.at).filter(id => !R(d)[id].s);
+      if (!n.length) return A().toast('주변에 새로 밝힐 방이 없다');
+      const o = {};
+      n.forEach(id => (o[P0(d.id) + 'r/' + id + '/s'] = 1));
+      if (await upd(o)) notice(`[${d.n || '던전'}] 📡 주변 방 ${n.length}곳이 지도에 드러났다`);
+      return;
+    }
+    if (k === 'al') {
+      const delta = +v || 0,
+        why = b.dataset.w || '';
+      const before = clamp(+d.al || 0, 0, 100),
+        after = clamp(before + delta, 0, 100);
+      if (after === before) return;
+      if (await upd({ [P0(d.id) + 'al']: after }))
+        notice(`[${d.n || '던전'}] 경계도 ${after > before ? '+' : ''}${after - before}${why ? ' (' + why + ')' : ''} → ${after}%`);
+      return;
+    }
+    if (k === 'ev') {
+      const id = DG.sel || d.at;
+      if (v === 'sk') return skOffer(d, id);
+      if (v === 'clue') return showClue(d, id);
+      if (v === 'rest') return restHere(d, id);
+      if (v === 'restreset') return upd({ [P0(d.id) + 'r/' + id + '/ru']: null });
+      return;
+    }
+    if (k === 'enc') {
+      const r = R(d)[d.at] || {},
+        head = `[${d.n || '던전'} · ${r.n || ty(r.t).k}] `;
+      if (v === 'spot') {
+        const after = clamp((+d.al || 0) + 10, 0, 100);
+        if (await upd({ [P0(d.id) + 'al']: after })) notice(head + `⚠ 들켰다! 경계도 +10 → ${after}%`);
+        return;
+      }
+      if (v === 'wild') return startEnc(d);
+      if (v === 'battle') {
+        notice(head + '⚔ 조우! 배틀을 시작한다.');
+        await A().set(['scene'], 'battle');
+        try {
+          A().goView('battle');
+        } catch (e) {}
+        return;
+      }
+    }
+  }
 
- /* ---------- 편집기 (위에서 본 배치 · 플레이 화면에서는 입체로) ---------- */
- const edD=()=>{const d=all()[DG.ed];return d?Object.assign({},d,{id:DG.ed}):null};
- function edSVG(d){const rs=R(d);
-  const ln=links(d).map(([a,b])=>`<line class="dg-ed-ln" data-a1="${H(a)}" data-b1="${H(b)}" x1="${+rs[a].x||0}" y1="${+rs[a].y||0}" x2="${+rs[b].x||0}" y2="${+rs[b].y||0}"/>`).join('');
-  const nd=Object.entries(rs).map(([id,r])=>{const t=ty(r.t);return`<g class="dg-ed-node${id===DG.edSel?' on':''}${id===DG.edFrom?' lf':''}${r.s?'':' hid'}" data-r="${H(id)}" transform="translate(${+r.x||0} ${+r.y||0})"><circle r="28" fill="${t.c}"/><text>${t.ic}</text><text class="nm" y="46">${H(r.n||t.k)}</text>${id===d.st?'<text class="st" y="-40">START</text>':''}</g>`}).join('');
-  let grid='';for(let x=50;x<1000;x+=50)grid+=`M${x} 0V640`;for(let y=50;y<640;y+=50)grid+=`M0 ${y}H1000`;
-  return`<svg class="dg-ed-svg${DG.edMode==='link'?' link':''}" id="dgEdSvg" viewBox="0 0 1000 640"><path d="${grid}" stroke="rgba(120,150,220,.08)"/>${ln}${nd}</svg>`}
- /* ---------- JSON 가져오기 · 내보내기 (10-28) ---------- */
- const DG_ROOM_MAX=60,DG_LINK_MAX=240;
- const sKey=k=>String(k==null?'':k).replace(/[^A-Za-z0-9_]/g,'').slice(0,12);
- const sTxt=(v,n)=>v==null?'':String(v).slice(0,n);
- /* ---------- 10-31 망령 「1. 야생 시트도 같이」: 시뮬 toWebtool 의 방 w (야생 시트 설계: 종 · 타입 · 종족값 · 특성 · 기술 · 포텐셜) ----------
+  /* ---------- 편집기 (위에서 본 배치 · 플레이 화면에서는 입체로) ---------- */
+  const edD = () => {
+    const d = all()[DG.ed];
+    return d ? Object.assign({}, d, { id: DG.ed }) : null;
+  };
+  function edSVG(d) {
+    const rs = R(d);
+    const ln = links(d)
+      .map(
+        ([a, b]) =>
+          `<line class="dg-ed-ln" data-a1="${H(a)}" data-b1="${H(b)}" x1="${+rs[a].x || 0}" y1="${+rs[a].y || 0}" x2="${+rs[b].x || 0}" y2="${+rs[b].y || 0}"/>`
+      )
+      .join('');
+    const nd = Object.entries(rs)
+      .map(([id, r]) => {
+        const t = ty(r.t);
+        return `<g class="dg-ed-node${id === DG.edSel ? ' on' : ''}${id === DG.edFrom ? ' lf' : ''}${r.s ? '' : ' hid'}" data-r="${H(id)}" transform="translate(${+r.x || 0} ${+r.y || 0})"><circle r="28" fill="${t.c}"/><text>${t.ic}</text><text class="nm" y="46">${H(r.n || t.k)}</text>${id === d.st ? '<text class="st" y="-40">START</text>' : ''}</g>`;
+      })
+      .join('');
+    let grid = '';
+    for (let x = 50; x < 1000; x += 50) grid += `M${x} 0V640`;
+    for (let y = 50; y < 640; y += 50) grid += `M0 ${y}H1000`;
+    return `<svg class="dg-ed-svg${DG.edMode === 'link' ? ' link' : ''}" id="dgEdSvg" viewBox="0 0 1000 640"><path d="${grid}" stroke="rgba(120,150,220,.08)"/>${ln}${nd}</svg>`;
+  }
+  /* ---------- JSON 가져오기 · 내보내기 (10-28) ---------- */
+  const DG_ROOM_MAX = 60,
+    DG_LINK_MAX = 240;
+  const sKey = k =>
+    String(k == null ? '' : k)
+      .replace(/[^A-Za-z0-9_]/g, '')
+      .slice(0, 12);
+  const sTxt = (v, n) => (v == null ? '' : String(v).slice(0, n));
+  /* ---------- 10-31 망령 「1. 야생 시트도 같이」: 시뮬 toWebtool 의 방 w (야생 시트 설계: 종 · 타입 · 종족값 · 특성 · 기술 · 포텐셜) ----------
     가져올 때 방 시트에 야생 트레이너 · 포켓몬을 만들어 r.e 로 잇는다. 내보낼 때는 r.e 의 시트를 w 로 다시 적어 다른 방에서도 그대로 만든다.
     『와일드』(×1.25) · 『와일드 보스』(×1.5) · 「레이드 배틀 : N」 은 포텐셜로 실려 배틀이 그대로 건다 */
- function wNorm(w){if(!w||typeof w!=='object'||!Array.isArray(w.mons))return null;
-  const mons=w.mons.slice(0,6).filter(m=>m&&m.name).map(m=>{const b=(Array.isArray(m.base)?m.base:[]).slice(0,6).map(v=>clamp(Math.round(+v||0),1,255));while(b.length<6)b.push(60);
-   const o={name:sTxt(m.name,30),t1:sTxt(m.t1||'-',8),t2:sTxt(m.t2||'-',8),base:b,ability:sTxt(m.ability||'',30),abilityEff:sTxt(m.abilityEff||'',600),item:sTxt(m.item||'',30),moves:(Array.isArray(m.moves)?m.moves:[]).slice(0,8).map(x=>sTxt(typeof x==='string'?x:x&&x.name,30)).filter(Boolean),pride:sTxt(m.pride||'C',4),dist:clamp(Math.round(+m.dist||0),-30,60),boss:!!m.boss,pots:(Array.isArray(m.pots)?m.pots:[]).slice(0,6).map(x=>sTxt(typeof x==='string'?x:x&&x.name,30).replace(/『|』/g,'')).filter(Boolean)};
-   if(m.auto&&typeof m.auto==='object'&&JSON.stringify(m.auto).length<4000)o.auto=JSON.parse(JSON.stringify(m.auto));if(m.image&&/^https?:\/\//.test(String(m.image)))o.image=sTxt(m.image,600);
-   /* 11-04 『야생 포텐셜』 = 야생 포켓몬의 전용 (excl · exclX) — 던전 JSON 가져오기 · 내보내기에 싣는다 */{const ex=[m.excl,...(Array.isArray(m.exclX)?m.exclX:[]),m.wp,...(Array.isArray(m.gye)?m.gye:[])].filter(x=>x&&x.name).slice(0,8).map(x=>{const q={name:sTxt(x.name,30).replace(/『|』/g,''),eff:String(x.eff||'').slice(0,1200)};return q});if(ex.length){o.excl=ex[0];if(ex.length>1)o.exclX=ex.slice(1)}}
-   if(!o.pots.some(x=>/^와일드( 보스)?$/.test(x)))o.pots.unshift(o.boss?'와일드 보스':'와일드');return o});
-  return mons.length?{name:sTxt(w.name,40)||'야생',rank:['D','C','B','A'].includes(w.rank)?w.rank:'C',mons}:null}
- function wBuild(w,tid){const I=window.OM_IMPORT;if(!I||!I.trainer||!I.pokemon)throw new Error('가져오기 엔진(OM_IMPORT)이 없다');
-  const tr=I.trainer({id:tid,data:{name:w.name,kind:'npc',ranks:{육성:w.rank||'C',지시:'D',통솔:'D',능력:'D'},pids:[]}});tr.id=tid;tr.name=w.name;tr.kind='npc';tr.wild=true;tr.src='sim';tr.orderCount={};tr.pids=[];const mons={};
-  w.mons.forEach((s0,i)=>{const id=tid+'m'+i;const x=I.pokemon({id,data:{name:s0.name,t1:s0.t1,t2:s0.t2,base:s0.base.slice(),ability:s0.ability,item:s0.item,moves:s0.moves.map(n=>({name:n})),pride:s0.pride,dist:s0.dist,pots:s0.pots.slice()}},tr);
-   x.id=id;x.tid=tid;if(s0.abilityEff)x.abilityEff=s0.abilityEff;if(s0.excl)x.excl=Object.assign({},s0.excl);if(s0.exclX)x.exclX=s0.exclX.map(e=>Object.assign({},e));if(s0.auto)x.auto=Object.assign({},x.auto||{},s0.auto);if(s0.image)x.image=s0.image;x.boss=!!s0.boss;x.role=s0.pots.find(p=>/^와일드( 보스)?$/.test(p))||x.role||'';if(x.hp)x.hp.cur=x.hp.max;
-   mons[id]=JSON.parse(JSON.stringify(x));tr.pids.push(id)});
-  return {tr:JSON.parse(JSON.stringify(tr)),mons}}
- function wOut(tid){const T=RO().trainers||{},M=RO().mons||{};const t=T[tid];if(!t)return null;const ms=(t.pids||[]).map(id=>M[id]).filter(Boolean);if(!ms.length)return null;
-  return {name:t.name||'야생',rank:(t.ranks||{}).육성||'C',mons:ms.slice(0,6).map(m=>{const tk=m.typesKo||[];const o={name:m.species||m.name,t1:tk[0]||'-',t2:tk[1]||'-',base:(m.base0||m.base||[]).slice(0,6),ability:m.ability||'',abilityEff:m.abilityEff||'',item:m.item||'',moves:(m.moves||[]).map(v=>v&&v.name).filter(n=>n&&n!=='발버둥'),pride:m.pride||'C',dist:+(m.mkDist??m.dist)||0,boss:!!m.boss,pots:(m.pots||[]).map(p=>p&&p.name).filter(Boolean)};if(m.auto&&Object.keys(m.auto).length)o.auto=m.auto;if(m.image)o.image=m.image;if(m.excl&&m.excl.name)o.excl={name:m.excl.name,eff:m.excl.eff||''};const xx=(m.exclX||[]).filter(e=>e&&e.name);if(xx.length)o.exclX=xx.map(e=>({name:e.name,eff:e.eff||''}));return o})}}
- /* 11-16 제작기 「던전 생성」의 야생 시트 = 제작기 트레이너 → 방 시트의 야생 트레이너 (제작기 포켓몬 시트를 그대로 — 전용 · 포텐셜 효과 · 소켓까지). 보스 = 포텐셜 「와일드 보스」 */
- async function wFromMaker(mk,rid,ops,did){const I=window.OM_IMPORT,DB=window.OM_STORE;if(!I||!I.party)throw new Error('가져오기 엔진(OM_IMPORT)이 없다');if(!DB||!DB.makerParty)throw new Error('제작기 읽기(makerParty)가 없다');
-  const P=await DB.makerParty(mk);if(!P||!P.trainer)return '';const {trainer:t0,mons}=I.party(P.trainer,P.pokemon||[]);if(!mons.length)return '';
-  const T=RO().trainers||{};let tid;do tid='wd'+String(rid||'').replace(/[^\w]/g,'').slice(0,5)+Math.random().toString(36).slice(2,5);while(T[tid]||ops.some(o=>o[0][2]===tid));
-  const tr=JSON.parse(JSON.stringify(t0));tr.id=tid;tr.kind='npc';tr.wild=true;tr.src='maker';tr.mkId=mk;tr.orderCount={};tr.pids=[];if(did)tr.wdg=did;
-  mons.slice(0,6).forEach((x0,i)=>{const x=JSON.parse(JSON.stringify(x0));const id=tid+'m'+i;x.id=id;x.tid=tid;const pn=(x.pots||[]).map(p=>p&&p.name).filter(Boolean);x.boss=pn.includes('와일드 보스');x.role=pn.find(n=>/^와일드( 보스)?$/.test(n))||x.role||'';if(x.hp)x.hp.cur=x.hp.max;ops.push([['roster','mons',id],x]);tr.pids.push(id)});
-  ops.push([['roster','trainers',tid],tr]);return tid}
- /* 방 시트에 야생을 만든다 → 만든 트레이너 id (ops 에 쓰기 목록을 더한다) */
- /* 11-04 망령 「가」: 야생 시트는 「던전 소속」 — tr.wdg = 던전 id. 던전을 지우면 같이 지운다 · 관계도 · 화자 줄 · 휴대폰 · 노트는 t.wild 로 거른다 */
- function wMake(w,rid,ops,did){const T=RO().trainers||{};let tid;do tid='wd'+String(rid||'').replace(/[^\w]/g,'').slice(0,5)+Math.random().toString(36).slice(2,5);while(T[tid]||ops.some(o=>o[0][2]===tid));
-  const b=wBuild(w,tid);if(did)b.tr.wdg=did;ops.push([['roster','trainers',tid],b.tr]);for(const [id,m] of Object.entries(b.mons))ops.push([['roster','mons',id],m]);return tid}
- /* 던전의 야생 시트: 그 던전 방이 가리키는 t.wild 시트 + wdg 가 그 던전인 것 (다른 던전이 쓰는 것은 뺀다) */
- function wildOf(did){const T=RO().trainers||{};const L=all();const used=new Set();for(const [id,d] of Object.entries(L))if(id!==did)for(const r of Object.values(R(d)))if(r&&r.e)used.add(r.e);
-  const mine=new Set();const d=L[did];if(d)for(const r of Object.values(R(d)))if(r&&r.e&&T[r.e]&&T[r.e].wild)mine.add(r.e);for(const t of Object.values(T))if(t&&t.wild&&t.wdg===did)mine.add(t.id);
-  return [...mine].filter(id=>!used.has(id))}
- /* 어느 던전도 가리키지 않는 야생 시트 */
- function wildOrphans(){const T=RO().trainers||{};const used=new Set();for(const d of Object.values(all()))for(const r of Object.values(R(d)))if(r&&r.e)used.add(r.e);return Object.values(T).filter(t=>t&&t.wild&&!used.has(t.id)).map(t=>t.id)}
- /* 야생 시트 지우기 — 시트 · 그 포켓몬 · 화자 칩/폴더 · 관계도 노드 · 은열쇠 칸. 배틀에 나가 있는 것은 남긴다. 돌려줌: 지운 수 */
- async function wildDrop(ids){const S=A().ST.state;const T=RO().trainers||{},M=RO().mons||{};const inB=new Set(Object.keys(((S.battle||{}).trainers)||{}));const go=ids.filter(id=>T[id]&&!inB.has(id));if(!go.length)return 0;
-  const ops=[];const names=new Set();const pms=new Set();
-  for(const id of go){names.add('as:'+T[id].name);ops.push([['roster','trainers',id],null]);for(const [mid,m] of Object.entries(M))if(m&&m.tid===id){ops.push([['roster','mons',mid],null]);pms.add('pm:'+mid)}
-   if(((S.graph||{}).nodes||{})['t_'+id])ops.push([['graph','nodes','t_'+id],null]);if(((S.sk3||{}).h||{})[id])ops.push([['sk3','h',id],null])}
-  const sp=(S.rp||{}).spk;if(sp&&sp.folders){const gone=k=>names.has(k)||pms.has(k);const C={order:(sp.order||[]).filter(k=>!gone(k)),folders:{},hidden:Object.assign({},sp.hidden||{})};
-   for(const [fid,f] of Object.entries(sp.folders)){if(!f)continue;const keys=(f.keys||[]).filter(k=>!gone(k));if((f.wd||go.includes(f.tid))&&!keys.length){C.order=C.order.filter(x=>x!=='f:'+fid);continue}C.folders[fid]=Object.assign({},f,{keys})}
-   for(const k of Object.keys(C.hidden))if(gone(k))delete C.hidden[k];ops.push([['rp','spk'],C])}
-  if(!await A().setMany(ops))return 0;return go.length}
- function dgNorm(src,warn){if(!src||typeof src!=='object'||Array.isArray(src))throw new Error('던전 하나는 { } 객체여야 한다');
-  const r0=src.r&&typeof src.r==='object'?src.r:null;if(!r0||!Object.keys(r0).length)throw new Error('방(r)이 없다');
-  const ks=Object.keys(r0);if(ks.length>DG_ROOM_MAX)throw new Error(`방이 너무 많다 (${ks.length} > ${DG_ROOM_MAX})`);
-  const map={},used=new Set(),r={};const rk=new Set(RKO.map(x=>x[0]));const tr=RO().trainers||{};
-  ks.forEach((k,i)=>{let id=sKey(k);if(!id||used.has(id)){do id='r'+Math.random().toString(36).slice(2,6);while(used.has(id))}used.add(id);map[k]=id;
-   const x=r0[k]||{};const o={n:sTxt(x.n,40)||('방 '+(i+1)),t:TY[x.t]?x.t:'room'};if(!TY[x.t]&&x.t)warn.push(`「${o.n}」 종류 ${x.t} → 통로`);
-   const cx=+x.x,cy=+x.y;o.x=Number.isFinite(cx)?clamp(Math.round(cx),30,970):clamp(110+(i%6)*160,30,970);o.y=Number.isFinite(cy)?clamp(Math.round(cy),30,600):clamp(80+Math.floor(i/6)*170,30,600);
-   if(x.m)o.m=sTxt(x.m,1200);if(x.b&&/^https?:\/\//.test(String(x.b)))o.b=sTxt(x.b,600);if(+x.s)o.s=1;
-   if(x.sk&&typeof x.sk==='object'){const k2=x.sk;const sk={label:sTxt(k2.label||k2.name,60),stat:['지시','육성','통솔','능력'].includes(k2.stat)?k2.stat:'지시',mode:k2.mode==='inou'?'inou':'skill',target:clamp(Math.round(+k2.target||7),2,20)};
-    if(k2.name)sk.name=sTxt(k2.name,60);for(const f of ['step','twice','pm'])if(+k2[f])sk[f]=+k2[f];if(['easy','normal','hard','vhard'].includes(k2.auto))sk.auto=k2.auto;if(+k2.v>=4){sk.v=4;sk.base=clamp(Math.round(+k2.base||0),0,5);if(+k2.noStep)sk.noStep=1;if(k2.scene==='rp'||k2.scene==='solo')sk.scene=k2.scene;if(k2.who==='rep'||k2.who==='all')sk.who=k2.who;if(k2.fit&&typeof k2.fit==='object')sk.fit={types:(k2.fit.types||[]).slice(0,8).map(x=>sTxt(x,10)),moves:(k2.fit.moves||[]).slice(0,8).map(x=>sTxt(x,30)),abil:(k2.fit.abil||[]).slice(0,8).map(x=>sTxt(x,30)),etc:sTxt(k2.fit.etc||'',60)};if(+k2.npcMod)sk.npcMod=Math.round(+k2.npcMod);if(k2.npcDef==='pc')sk.npcDef='pc'}if(k2.npc)sk.npc=sTxt(k2.npc,40);if(k2.pen&&typeof k2.pen==='object')sk.pen=JSON.parse(JSON.stringify(k2.pen));/* 11-04: 성공 보상 · 대성공 이득도 싣는다 (옛 방은 메모의 「대성공: 경계도 −N」에서) */for(const g of ['gain','gainCrit'])if(k2[g]&&typeof k2[g]==='object')sk[g]={al:Math.round(+k2[g].al||0),memo:sTxt(k2[g].memo||'',60)};if(!sk.gainCrit){const mm=String(x.m||'').match(/대성공\s*:?\s*경계도\s*[−-]\s*(\d+)/);if(mm)sk.gainCrit={al:-(+mm[1]),memo:'대성공 — 기척을 지웠다'}}o.sk=sk}
-   if(x.rk&&rk.has(x.rk))o.rk=x.rk;if(+x.rmany)o.rmany=1;
-   if(x.cl&&typeof x.cl==='object'){const c={t:sTxt(x.cl.t,60),d:sTxt(x.cl.d,1200)};if(x.cl.img&&/^https?:\/\//.test(String(x.cl.img)))c.img=sTxt(x.cl.img,600);if(c.t||c.d)o.cl=c}
-   if(x.e){if(tr[x.e]){o.e=String(x.e);if(+x.eh)o.eh=1}else if(!x.w)warn.push(`「${o.n}」 야생 무리 ${x.e} 는 이 방 시트에 없어서 뺐다 (GM 메모를 보고 배치)`)}
-   if(!o.e&&typeof x.mk==='string'&&/^[\w-]{3,40}$/.test(x.mk)){o.mk=x.mk;if(+x.eh)o.eh=1}   /* 11-16 제작기 던전 생성: 야생 시트 = 제작기 트레이너 (가져오기가 읽어 만든다) */
-   if(!o.e&&x.w){const w=wNorm(x.w);if(w){o.w=w;if(+x.eh)o.eh=1}}   /* 10-31: 야생 시트 설계 — 가져오기(dgImport)가 시트를 만들고 e 로 바꾼다 */
-   for(const f of ['aw','alo'])if(x[f]!=null&&x[f]!==''&&Number.isFinite(+x[f]))o[f]=clamp(Math.round(+x[f]),-100,100);   /* 10-31 망령 「배틀 승/패 경계도를 전투마다」 */
-   {const w=x.rw||x.reward;if(w&&typeof w==='object'){const q={};if(w.flag)q.flag=sKey(String(w.flag))||sTxt(w.flag,20);if(w.memo||w.scenario)q.memo=sTxt(w.memo||w.scenario,200);if(q.flag||q.memo)o.rw=q}}   /* 11-04 곁방 보상 표식 (던전 기믹을 끈다) */
-   r[id]=o});
-  const l={};let nl=0;for(const k of Object.keys(src.l||{})){const [a,b]=String(k).split('~');const A1=map[a],B1=map[b];if(!A1||!B1||A1===B1)continue;l[lk(A1,B1)]=1;if(++nl>DG_LINK_MAX)throw new Error('통로가 너무 많다')}
-  let st=map[src.st];if(!st){st=(Object.keys(r).find(id=>r[id].t==='entry'))||Object.keys(r)[0];if(src.st)warn.push('시작 방(st)이 없어서 '+r[st].n+' 으로')}
-  const d={n:sTxt(src.n,60)||'가져온 던전',al:0,st,r,l};if(src.o)d.o=sTxt(src.o,60);if(src.a)d.a=sTxt(src.a,60);if(src.d)d.d=sTxt(src.d,60);
-  /* 11-04 던전 기믹 d.gim (노트 27 · 시뮬 dungeon.js gimRun 과 같은 틀) */{const GG=window.OM_DG_GIM;if(Array.isArray(src.gim)){const G=GG?GG.norm(src.gim):gimNorm(src.gim);if(G.length)d.gim=G}if(GG&&Array.isArray(src.mq)){const M=GG.mqNorm(src.mq);if(M.length)d.mq=M}if(+src.depth===3||+src.depth===4)d.depth=+src.depth}{const fe=feNorm(src.fe);if(fe)d.fe=fe}
-  const wn=Math.round(+src.wn);if(wn>=1&&wn<=3&&wn!==2)d.wn=wn;if(+src.noal)d.noal=1;for(const f of ['aw','alo'])if(src[f]!=null&&src[f]!==''&&Number.isFinite(+src[f]))d[f]=clamp(Math.round(+src[f]),-100,100);{const RU=(src.gen&&src.gen.rules)||{};if(d.aw==null&&Number.isFinite(+RU.alBattle)&&RU.alBattle!=null)d.aw=clamp(Math.round(+RU.alBattle),-100,100);if(d.alo==null&&Number.isFinite(+RU.alLose)&&RU.alLose!=null)d.alo=clamp(Math.round(+RU.alLose),-100,100)}   /* 10-31: 시뮬 규칙의 승패 경계도를 던전 기본값으로 */
-  if(src.gen&&typeof src.gen==='object')d.src=JSON.parse(JSON.stringify({tier:src.gen.tier||'',seed:src.gen.seed||'',theme:src.gen.theme||''}));
-  /* 통로로 안 이어진 방 알림 */const seen=new Set([st]),q=[st];const adj={};Object.keys(l).forEach(k=>{const [a,b]=k.split('~');(adj[a]=adj[a]||[]).push(b);(adj[b]=adj[b]||[]).push(a)});while(q.length){const c=q.shift();for(const n of adj[c]||[])if(!seen.has(n)){seen.add(n);q.push(n)}}
-  const lone=Object.keys(r).filter(id=>!seen.has(id));if(lone.length)warn.push(`시작 방에서 못 가는 방 ${lone.length}개: ${lone.map(id=>r[id].n).join(', ')}`);
-  return d}
- /* 11-16 망령 「필드 효과 칸 따로 — 필드 효과는 필드 효과지」 → 08:51 「트레이너가 전개하는 필드랑 비슷한 것」: d.fe = 필드 전개 칸 하나
+  function wNorm(w) {
+    if (!w || typeof w !== 'object' || !Array.isArray(w.mons)) return null;
+    const mons = w.mons
+      .slice(0, 6)
+      .filter(m => m && m.name)
+      .map(m => {
+        const b = (Array.isArray(m.base) ? m.base : []).slice(0, 6).map(v => clamp(Math.round(+v || 0), 1, 255));
+        while (b.length < 6) b.push(60);
+        const o = {
+          name: sTxt(m.name, 30),
+          t1: sTxt(m.t1 || '-', 8),
+          t2: sTxt(m.t2 || '-', 8),
+          base: b,
+          ability: sTxt(m.ability || '', 30),
+          abilityEff: sTxt(m.abilityEff || '', 600),
+          item: sTxt(m.item || '', 30),
+          moves: (Array.isArray(m.moves) ? m.moves : [])
+            .slice(0, 8)
+            .map(x => sTxt(typeof x === 'string' ? x : x && x.name, 30))
+            .filter(Boolean),
+          pride: sTxt(m.pride || 'C', 4),
+          dist: clamp(Math.round(+m.dist || 0), -30, 60),
+          boss: !!m.boss,
+          pots: (Array.isArray(m.pots) ? m.pots : [])
+            .slice(0, 6)
+            .map(x => sTxt(typeof x === 'string' ? x : x && x.name, 30).replace(/『|』/g, ''))
+            .filter(Boolean)
+        };
+        if (m.auto && typeof m.auto === 'object' && JSON.stringify(m.auto).length < 4000) o.auto = JSON.parse(JSON.stringify(m.auto));
+        if (m.image && /^https?:\/\//.test(String(m.image))) o.image = sTxt(m.image, 600);
+        /* 11-04 『야생 포텐셜』 = 야생 포켓몬의 전용 (excl · exclX) — 던전 JSON 가져오기 · 내보내기에 싣는다 */ {
+          const ex = [m.excl, ...(Array.isArray(m.exclX) ? m.exclX : []), m.wp, ...(Array.isArray(m.gye) ? m.gye : [])]
+            .filter(x => x && x.name)
+            .slice(0, 8)
+            .map(x => {
+              const q = { name: sTxt(x.name, 30).replace(/『|』/g, ''), eff: String(x.eff || '').slice(0, 1200) };
+              return q;
+            });
+          if (ex.length) {
+            o.excl = ex[0];
+            if (ex.length > 1) o.exclX = ex.slice(1);
+          }
+        }
+        if (!o.pots.some(x => /^와일드( 보스)?$/.test(x))) o.pots.unshift(o.boss ? '와일드 보스' : '와일드');
+        return o;
+      });
+    return mons.length ? { name: sTxt(w.name, 40) || '야생', rank: ['D', 'C', 'B', 'A'].includes(w.rank) ? w.rank : 'C', mons } : null;
+  }
+  function wBuild(w, tid) {
+    const I = window.OM_IMPORT;
+    if (!I || !I.trainer || !I.pokemon) throw new Error('가져오기 엔진(OM_IMPORT)이 없다');
+    const tr = I.trainer({ id: tid, data: { name: w.name, kind: 'npc', ranks: { 육성: w.rank || 'C', 지시: 'D', 통솔: 'D', 능력: 'D' }, pids: [] } });
+    tr.id = tid;
+    tr.name = w.name;
+    tr.kind = 'npc';
+    tr.wild = true;
+    tr.src = 'sim';
+    tr.orderCount = {};
+    tr.pids = [];
+    const mons = {};
+    w.mons.forEach((s0, i) => {
+      const id = tid + 'm' + i;
+      const x = I.pokemon(
+        {
+          id,
+          data: {
+            name: s0.name,
+            t1: s0.t1,
+            t2: s0.t2,
+            base: s0.base.slice(),
+            ability: s0.ability,
+            item: s0.item,
+            moves: s0.moves.map(n => ({ name: n })),
+            pride: s0.pride,
+            dist: s0.dist,
+            pots: s0.pots.slice()
+          }
+        },
+        tr
+      );
+      x.id = id;
+      x.tid = tid;
+      if (s0.abilityEff) x.abilityEff = s0.abilityEff;
+      if (s0.excl) x.excl = Object.assign({}, s0.excl);
+      if (s0.exclX) x.exclX = s0.exclX.map(e => Object.assign({}, e));
+      if (s0.auto) x.auto = Object.assign({}, x.auto || {}, s0.auto);
+      if (s0.image) x.image = s0.image;
+      x.boss = !!s0.boss;
+      x.role = s0.pots.find(p => /^와일드( 보스)?$/.test(p)) || x.role || '';
+      if (x.hp) x.hp.cur = x.hp.max;
+      mons[id] = JSON.parse(JSON.stringify(x));
+      tr.pids.push(id);
+    });
+    return { tr: JSON.parse(JSON.stringify(tr)), mons };
+  }
+  function wOut(tid) {
+    const T = RO().trainers || {},
+      M = RO().mons || {};
+    const t = T[tid];
+    if (!t) return null;
+    const ms = (t.pids || []).map(id => M[id]).filter(Boolean);
+    if (!ms.length) return null;
+    return {
+      name: t.name || '야생',
+      rank: (t.ranks || {}).육성 || 'C',
+      mons: ms.slice(0, 6).map(m => {
+        const tk = m.typesKo || [];
+        const o = {
+          name: m.species || m.name,
+          t1: tk[0] || '-',
+          t2: tk[1] || '-',
+          base: (m.base0 || m.base || []).slice(0, 6),
+          ability: m.ability || '',
+          abilityEff: m.abilityEff || '',
+          item: m.item || '',
+          moves: (m.moves || []).map(v => v && v.name).filter(n => n && n !== '발버둥'),
+          pride: m.pride || 'C',
+          dist: +(m.mkDist ?? m.dist) || 0,
+          boss: !!m.boss,
+          pots: (m.pots || []).map(p => p && p.name).filter(Boolean)
+        };
+        if (m.auto && Object.keys(m.auto).length) o.auto = m.auto;
+        if (m.image) o.image = m.image;
+        if (m.excl && m.excl.name) o.excl = { name: m.excl.name, eff: m.excl.eff || '' };
+        const xx = (m.exclX || []).filter(e => e && e.name);
+        if (xx.length) o.exclX = xx.map(e => ({ name: e.name, eff: e.eff || '' }));
+        return o;
+      })
+    };
+  }
+  /* 11-16 제작기 「던전 생성」의 야생 시트 = 제작기 트레이너 → 방 시트의 야생 트레이너 (제작기 포켓몬 시트를 그대로 — 전용 · 포텐셜 효과 · 소켓까지). 보스 = 포텐셜 「와일드 보스」 */
+  async function wFromMaker(mk, rid, ops, did) {
+    const I = window.OM_IMPORT,
+      DB = window.OM_STORE;
+    if (!I || !I.party) throw new Error('가져오기 엔진(OM_IMPORT)이 없다');
+    if (!DB || !DB.makerParty) throw new Error('제작기 읽기(makerParty)가 없다');
+    const P = await DB.makerParty(mk);
+    if (!P || !P.trainer) return '';
+    const { trainer: t0, mons } = I.party(P.trainer, P.pokemon || []);
+    if (!mons.length) return '';
+    const T = RO().trainers || {};
+    let tid;
+    do
+      tid =
+        'wd' +
+        String(rid || '')
+          .replace(/[^\w]/g, '')
+          .slice(0, 5) +
+        Math.random().toString(36).slice(2, 5);
+    while (T[tid] || ops.some(o => o[0][2] === tid));
+    const tr = JSON.parse(JSON.stringify(t0));
+    tr.id = tid;
+    tr.kind = 'npc';
+    tr.wild = true;
+    tr.src = 'maker';
+    tr.mkId = mk;
+    tr.orderCount = {};
+    tr.pids = [];
+    if (did) tr.wdg = did;
+    mons.slice(0, 6).forEach((x0, i) => {
+      const x = JSON.parse(JSON.stringify(x0));
+      const id = tid + 'm' + i;
+      x.id = id;
+      x.tid = tid;
+      const pn = (x.pots || []).map(p => p && p.name).filter(Boolean);
+      x.boss = pn.includes('와일드 보스');
+      x.role = pn.find(n => /^와일드( 보스)?$/.test(n)) || x.role || '';
+      if (x.hp) x.hp.cur = x.hp.max;
+      ops.push([['roster', 'mons', id], x]);
+      tr.pids.push(id);
+    });
+    ops.push([['roster', 'trainers', tid], tr]);
+    return tid;
+  }
+  /* 방 시트에 야생을 만든다 → 만든 트레이너 id (ops 에 쓰기 목록을 더한다) */
+  /* 11-04 망령 「가」: 야생 시트는 「던전 소속」 — tr.wdg = 던전 id. 던전을 지우면 같이 지운다 · 관계도 · 화자 줄 · 휴대폰 · 노트는 t.wild 로 거른다 */
+  function wMake(w, rid, ops, did) {
+    const T = RO().trainers || {};
+    let tid;
+    do
+      tid =
+        'wd' +
+        String(rid || '')
+          .replace(/[^\w]/g, '')
+          .slice(0, 5) +
+        Math.random().toString(36).slice(2, 5);
+    while (T[tid] || ops.some(o => o[0][2] === tid));
+    const b = wBuild(w, tid);
+    if (did) b.tr.wdg = did;
+    ops.push([['roster', 'trainers', tid], b.tr]);
+    for (const [id, m] of Object.entries(b.mons)) ops.push([['roster', 'mons', id], m]);
+    return tid;
+  }
+  /* 던전의 야생 시트: 그 던전 방이 가리키는 t.wild 시트 + wdg 가 그 던전인 것 (다른 던전이 쓰는 것은 뺀다) */
+  function wildOf(did) {
+    const T = RO().trainers || {};
+    const L = all();
+    const used = new Set();
+    for (const [id, d] of Object.entries(L)) if (id !== did) for (const r of Object.values(R(d))) if (r && r.e) used.add(r.e);
+    const mine = new Set();
+    const d = L[did];
+    if (d) for (const r of Object.values(R(d))) if (r && r.e && T[r.e] && T[r.e].wild) mine.add(r.e);
+    for (const t of Object.values(T)) if (t && t.wild && t.wdg === did) mine.add(t.id);
+    return [...mine].filter(id => !used.has(id));
+  }
+  /* 어느 던전도 가리키지 않는 야생 시트 */
+  function wildOrphans() {
+    const T = RO().trainers || {};
+    const used = new Set();
+    for (const d of Object.values(all())) for (const r of Object.values(R(d))) if (r && r.e) used.add(r.e);
+    return Object.values(T)
+      .filter(t => t && t.wild && !used.has(t.id))
+      .map(t => t.id);
+  }
+  /* 야생 시트 지우기 — 시트 · 그 포켓몬 · 화자 칩/폴더 · 관계도 노드 · 은열쇠 칸. 배틀에 나가 있는 것은 남긴다. 돌려줌: 지운 수 */
+  async function wildDrop(ids) {
+    const S = A().ST.state;
+    const T = RO().trainers || {},
+      M = RO().mons || {};
+    const inB = new Set(Object.keys((S.battle || {}).trainers || {}));
+    const go = ids.filter(id => T[id] && !inB.has(id));
+    if (!go.length) return 0;
+    const ops = [];
+    const names = new Set();
+    const pms = new Set();
+    for (const id of go) {
+      names.add('as:' + T[id].name);
+      ops.push([['roster', 'trainers', id], null]);
+      for (const [mid, m] of Object.entries(M))
+        if (m && m.tid === id) {
+          ops.push([['roster', 'mons', mid], null]);
+          pms.add('pm:' + mid);
+        }
+      if (((S.graph || {}).nodes || {})['t_' + id]) ops.push([['graph', 'nodes', 't_' + id], null]);
+      if (((S.sk3 || {}).h || {})[id]) ops.push([['sk3', 'h', id], null]);
+    }
+    const sp = (S.rp || {}).spk;
+    if (sp && sp.folders) {
+      const gone = k => names.has(k) || pms.has(k);
+      const C = { order: (sp.order || []).filter(k => !gone(k)), folders: {}, hidden: Object.assign({}, sp.hidden || {}) };
+      for (const [fid, f] of Object.entries(sp.folders)) {
+        if (!f) continue;
+        const keys = (f.keys || []).filter(k => !gone(k));
+        if ((f.wd || go.includes(f.tid)) && !keys.length) {
+          C.order = C.order.filter(x => x !== 'f:' + fid);
+          continue;
+        }
+        C.folders[fid] = Object.assign({}, f, { keys });
+      }
+      for (const k of Object.keys(C.hidden)) if (gone(k)) delete C.hidden[k];
+      ops.push([['rp', 'spk'], C]);
+    }
+    if (!(await A().setMany(ops))) return 0;
+    return go.length;
+  }
+  function dgNorm(src, warn) {
+    if (!src || typeof src !== 'object' || Array.isArray(src)) throw new Error('던전 하나는 { } 객체여야 한다');
+    const r0 = src.r && typeof src.r === 'object' ? src.r : null;
+    if (!r0 || !Object.keys(r0).length) throw new Error('방(r)이 없다');
+    const ks = Object.keys(r0);
+    if (ks.length > DG_ROOM_MAX) throw new Error(`방이 너무 많다 (${ks.length} > ${DG_ROOM_MAX})`);
+    const map = {},
+      used = new Set(),
+      r = {};
+    const rk = new Set(RKO.map(x => x[0]));
+    const tr = RO().trainers || {};
+    ks.forEach((k, i) => {
+      let id = sKey(k);
+      if (!id || used.has(id)) {
+        do id = 'r' + Math.random().toString(36).slice(2, 6);
+        while (used.has(id));
+      }
+      used.add(id);
+      map[k] = id;
+      const x = r0[k] || {};
+      const o = { n: sTxt(x.n, 40) || '방 ' + (i + 1), t: TY[x.t] ? x.t : 'room' };
+      if (!TY[x.t] && x.t) warn.push(`「${o.n}」 종류 ${x.t} → 통로`);
+      const cx = +x.x,
+        cy = +x.y;
+      o.x = Number.isFinite(cx) ? clamp(Math.round(cx), 30, 970) : clamp(110 + (i % 6) * 160, 30, 970);
+      o.y = Number.isFinite(cy) ? clamp(Math.round(cy), 30, 600) : clamp(80 + Math.floor(i / 6) * 170, 30, 600);
+      if (x.m) o.m = sTxt(x.m, 1200);
+      if (x.b && /^https?:\/\//.test(String(x.b))) o.b = sTxt(x.b, 600);
+      if (+x.s) o.s = 1;
+      if (x.sk && typeof x.sk === 'object') {
+        const k2 = x.sk;
+        const sk = {
+          label: sTxt(k2.label || k2.name, 60),
+          stat: ['지시', '육성', '통솔', '능력'].includes(k2.stat) ? k2.stat : '지시',
+          mode: k2.mode === 'inou' ? 'inou' : 'skill',
+          target: clamp(Math.round(+k2.target || 7), 2, 20)
+        };
+        if (k2.name) sk.name = sTxt(k2.name, 60);
+        for (const f of ['step', 'twice', 'pm']) if (+k2[f]) sk[f] = +k2[f];
+        if (['easy', 'normal', 'hard', 'vhard'].includes(k2.auto)) sk.auto = k2.auto;
+        if (+k2.v >= 4) {
+          sk.v = 4;
+          sk.base = clamp(Math.round(+k2.base || 0), 0, 5);
+          if (+k2.noStep) sk.noStep = 1;
+          if (k2.scene === 'rp' || k2.scene === 'solo') sk.scene = k2.scene;
+          if (k2.who === 'rep' || k2.who === 'all') sk.who = k2.who;
+          if (k2.fit && typeof k2.fit === 'object')
+            sk.fit = {
+              types: (k2.fit.types || []).slice(0, 8).map(x => sTxt(x, 10)),
+              moves: (k2.fit.moves || []).slice(0, 8).map(x => sTxt(x, 30)),
+              abil: (k2.fit.abil || []).slice(0, 8).map(x => sTxt(x, 30)),
+              etc: sTxt(k2.fit.etc || '', 60)
+            };
+          if (+k2.npcMod) sk.npcMod = Math.round(+k2.npcMod);
+          if (k2.npcDef === 'pc') sk.npcDef = 'pc';
+        }
+        if (k2.npc) sk.npc = sTxt(k2.npc, 40);
+        if (k2.pen && typeof k2.pen === 'object') sk.pen = JSON.parse(JSON.stringify(k2.pen));
+        /* 11-04: 성공 보상 · 대성공 이득도 싣는다 (옛 방은 메모의 「대성공: 경계도 −N」에서) */ for (const g of ['gain', 'gainCrit'])
+          if (k2[g] && typeof k2[g] === 'object') sk[g] = { al: Math.round(+k2[g].al || 0), memo: sTxt(k2[g].memo || '', 60) };
+        if (!sk.gainCrit) {
+          const mm = String(x.m || '').match(/대성공\s*:?\s*경계도\s*[−-]\s*(\d+)/);
+          if (mm) sk.gainCrit = { al: -+mm[1], memo: '대성공 — 기척을 지웠다' };
+        }
+        o.sk = sk;
+      }
+      if (x.rk && rk.has(x.rk)) o.rk = x.rk;
+      if (+x.rmany) o.rmany = 1;
+      if (x.cl && typeof x.cl === 'object') {
+        const c = { t: sTxt(x.cl.t, 60), d: sTxt(x.cl.d, 1200) };
+        if (x.cl.img && /^https?:\/\//.test(String(x.cl.img))) c.img = sTxt(x.cl.img, 600);
+        if (c.t || c.d) o.cl = c;
+      }
+      if (x.e) {
+        if (tr[x.e]) {
+          o.e = String(x.e);
+          if (+x.eh) o.eh = 1;
+        } else if (!x.w) warn.push(`「${o.n}」 야생 무리 ${x.e} 는 이 방 시트에 없어서 뺐다 (GM 메모를 보고 배치)`);
+      }
+      if (!o.e && typeof x.mk === 'string' && /^[\w-]{3,40}$/.test(x.mk)) {
+        o.mk = x.mk;
+        if (+x.eh) o.eh = 1;
+      } /* 11-16 제작기 던전 생성: 야생 시트 = 제작기 트레이너 (가져오기가 읽어 만든다) */
+      if (!o.e && x.w) {
+        const w = wNorm(x.w);
+        if (w) {
+          o.w = w;
+          if (+x.eh) o.eh = 1;
+        }
+      } /* 10-31: 야생 시트 설계 — 가져오기(dgImport)가 시트를 만들고 e 로 바꾼다 */
+      for (const f of ['aw', 'alo'])
+        if (x[f] != null && x[f] !== '' && Number.isFinite(+x[f]))
+          o[f] = clamp(Math.round(+x[f]), -100, 100); /* 10-31 망령 「배틀 승/패 경계도를 전투마다」 */
+      {
+        const w = x.rw || x.reward;
+        if (w && typeof w === 'object') {
+          const q = {};
+          if (w.flag) q.flag = sKey(String(w.flag)) || sTxt(w.flag, 20);
+          if (w.memo || w.scenario) q.memo = sTxt(w.memo || w.scenario, 200);
+          if (q.flag || q.memo) o.rw = q;
+        }
+      } /* 11-04 곁방 보상 표식 (던전 기믹을 끈다) */
+      r[id] = o;
+    });
+    const l = {};
+    let nl = 0;
+    for (const k of Object.keys(src.l || {})) {
+      const [a, b] = String(k).split('~');
+      const A1 = map[a],
+        B1 = map[b];
+      if (!A1 || !B1 || A1 === B1) continue;
+      l[lk(A1, B1)] = 1;
+      if (++nl > DG_LINK_MAX) throw new Error('통로가 너무 많다');
+    }
+    let st = map[src.st];
+    if (!st) {
+      st = Object.keys(r).find(id => r[id].t === 'entry') || Object.keys(r)[0];
+      if (src.st) warn.push('시작 방(st)이 없어서 ' + r[st].n + ' 으로');
+    }
+    const d = { n: sTxt(src.n, 60) || '가져온 던전', al: 0, st, r, l };
+    if (src.o) d.o = sTxt(src.o, 60);
+    if (src.a) d.a = sTxt(src.a, 60);
+    if (src.d) d.d = sTxt(src.d, 60);
+    /* 11-04 던전 기믹 d.gim (노트 27 · 시뮬 dungeon.js gimRun 과 같은 틀) */ {
+      const GG = window.OM_DG_GIM;
+      if (Array.isArray(src.gim)) {
+        const G = GG ? GG.norm(src.gim) : gimNorm(src.gim);
+        if (G.length) d.gim = G;
+      }
+      if (GG && Array.isArray(src.mq)) {
+        const M = GG.mqNorm(src.mq);
+        if (M.length) d.mq = M;
+      }
+      if (+src.depth === 3 || +src.depth === 4) d.depth = +src.depth;
+    }
+    {
+      const fe = feNorm(src.fe);
+      if (fe) d.fe = fe;
+    }
+    const wn = Math.round(+src.wn);
+    if (wn >= 1 && wn <= 3 && wn !== 2) d.wn = wn;
+    if (+src.noal) d.noal = 1;
+    for (const f of ['aw', 'alo']) if (src[f] != null && src[f] !== '' && Number.isFinite(+src[f])) d[f] = clamp(Math.round(+src[f]), -100, 100);
+    {
+      const RU = (src.gen && src.gen.rules) || {};
+      if (d.aw == null && Number.isFinite(+RU.alBattle) && RU.alBattle != null) d.aw = clamp(Math.round(+RU.alBattle), -100, 100);
+      if (d.alo == null && Number.isFinite(+RU.alLose) && RU.alLose != null) d.alo = clamp(Math.round(+RU.alLose), -100, 100);
+    } /* 10-31: 시뮬 규칙의 승패 경계도를 던전 기본값으로 */
+    if (src.gen && typeof src.gen === 'object')
+      d.src = JSON.parse(JSON.stringify({ tier: src.gen.tier || '', seed: src.gen.seed || '', theme: src.gen.theme || '' }));
+    /* 통로로 안 이어진 방 알림 */ const seen = new Set([st]),
+      q = [st];
+    const adj = {};
+    Object.keys(l).forEach(k => {
+      const [a, b] = k.split('~');
+      (adj[a] = adj[a] || []).push(b);
+      (adj[b] = adj[b] || []).push(a);
+    });
+    while (q.length) {
+      const c = q.shift();
+      for (const n of adj[c] || [])
+        if (!seen.has(n)) {
+          seen.add(n);
+          q.push(n);
+        }
+    }
+    const lone = Object.keys(r).filter(id => !seen.has(id));
+    if (lone.length) warn.push(`시작 방에서 못 가는 방 ${lone.length}개: ${lone.map(id => r[id].n).join(', ')}`);
+    return d;
+  }
+  /* 11-16 망령 「필드 효과 칸 따로 — 필드 효과는 필드 효과지」 → 08:51 「트레이너가 전개하는 필드랑 비슷한 것」: d.fe = 필드 전개 칸 하나
     {type 0 필드|1 스타디움|2 이계, name, loc, img, eff(한 줄에 하나), count(지속 턴 · 0/−1 = 무한), color(타입 en), h 0|1|2, auto(필드 구문 — 있으면 그대로)}
     미궁 포텐셜과 따로(템플릿 개수에 안 셈). 이 던전의 조우마다 배틀 시작 때 야생 쪽이 전개한 것처럼 state.battle.field.stage 로 깔린다(stage_ui put 과 같은 꼴) */
- const FE_K=['필드','스타디움','이계'],FE_TY=[['','—'],['Normal','노말'],['Fire','불꽃'],['Water','물'],['Electric','전기'],['Grass','풀'],['Ice','얼음'],['Fighting','격투'],['Poison','독'],['Ground','땅'],['Flying','비행'],['Psychic','에스퍼'],['Bug','벌레'],['Rock','바위'],['Ghost','고스트'],['Dragon','드래곤'],['Dark','악'],['Steel','강철'],['Fairy','페어리']];
- function feNorm(x){if(!x||typeof x!=='object')return null;const nm=sTxt(x.name||'',30).replace(/[《》『』]/g,'').replace(/^(이계|필드|스타디움)\//,'');if(!nm)return null;
-  const o={type:[0,1,2].includes(+x.type)?+x.type:0,name:nm};const loc=sTxt(x.loc||'',40),img=sTxt(x.img||'',600),eff=String(x.eff||'').slice(0,1500).trim();if(loc)o.loc=loc;if(img)o.img=img;if(eff)o.eff=eff;
-  const c=Math.round(+x.count);if(c>0)o.count=Math.min(c,99);if(FE_TY.some(t=>t[0]&&t[0]===x.color))o.color=x.color;if([1,2].includes(+x.h))o.h=+x.h;
-  if(x.auto&&typeof x.auto==='object'&&JSON.stringify(x.auto).length<6000)o.auto=JSON.parse(JSON.stringify(x.auto));return o}
- const feKey=fe=>FE_K[fe.type||0]+'/'+fe.name;
- /* 조우 배틀의 처음 필드 전개 (app.js encounter) — tid = 야생 트레이너 */
- function feField(did,tid,tname){const d=all()[did];const fe=d&&feNorm(d.fe);if(!fe)return null;const owner=tname||d.o||d.n||'던전';
-  const s={type:fe.type,name:fe.name,loc:fe.loc||'',img:fe.img||'',eff:fe.eff||'',color:fe.color||'',owner,count:fe.count>0?fe.count:1000,src:'d:'+did,tid:tid||'',at:Date.now()};if(fe.auto)s.auto=fe.auto;if(fe.h&&tid){s.h=fe.h;s.hTid=tid}
-  const lines=[`◆ ${owner}의 《${feKey(fe)}》 전개 (던전 필드 효과)${fe.loc?' — '+fe.loc:''}${s.count>=1000?' · 무한':' · '+s.count+'턴'}`,...String(fe.eff||'').split('\n').map(x=>x.trim()).filter(Boolean).map(l=>'· '+l)];
-  if(s.h)lines.push(`◆ H — ${owner} · ${s.h===1?'받지 않음 (그 파티는 이 필드의 효과를 받지 않는다)':'상대 무효 (그 상대가 받는 효과는 무효 — H 편만 받는다)'}`);
-  return {stage:s,fe,lines}}
- function feEdHTML(d){const fe=feNorm(d.fe)||{type:0};const opt=(L,v)=>L.map(([k,n])=>`<option value="${H(k)}" ${String(v??'')===String(k)?'selected':''}>${H(n)}</option>`).join('');
-  return `<div class="dg-febox"><b>⛰ 필드 효과 <small class="dim">트레이너의 필드 전개와 같은 꼴 · 이 던전의 조우마다 배틀 시작 때 야생 쪽이 전개 · 미궁 포텐셜과 따로 · 이름을 비우면 없음</small></b>
-   <div class="dg-fer"><label>종류<select data-dgfe="type">${opt(FE_K.map((k,i)=>[i,k]),fe.type||0)}</select></label><label style="flex:2">이름<input data-dgfe="name" value="${H(fe.name||'')}" placeholder="예: 젖은 지하 수로"></label><label>지역<input data-dgfe="loc" value="${H(fe.loc||'')}" placeholder="예: 론디니움"></label></div>
-   <div class="dg-fer"><label>지속 턴<input type="number" min="0" max="99" data-dgfe="count" value="${H(fe.count||'')}" placeholder="비우면 무한"></label><label>타입 색<select data-dgfe="color">${opt(FE_TY,fe.color||'')}</select></label><label>H<select data-dgfe="h">${opt([[0,'없음'],[1,'야생은 효과를 받지 않음'],[2,'야생의 상대가 받는 효과는 무효']],fe.h||0)}</select></label><label style="flex:2">배경 (주소 · 배경 이름)<input data-dgfe="img" value="${H(fe.img||'')}"></label></div>
-   <label>효과 (한 줄에 하나)<textarea data-dgfe="eff" rows="3">${H(fe.eff||'')}</textarea></label>${fe.auto?'<small class="dim">⚙ 필드 구문 있음 (JSON 으로 들어온 것 — 그대로 씀)</small>':''}</div>`}
- function dgOut(d){const r={};for(const [id,x] of Object.entries(R(d))){const o=Object.assign({},x);delete o.c;delete o.cs;delete o.ru;if(o.e&&!o.w){try{const w=wOut(o.e);if(w)o.w=w}catch(e){}}r[id]=o}const o={n:d.n||'',st:d.st,r,l:Object.assign({},d.l||{})};for(const f of ['o','a','d','wn','noal','src','aw','alo','gim','mq','depth','fe'])if(d[f]!=null&&d[f]!=='')o[f]=d[f];return o}   /* 10-31: 야생 시트도 w 로 같이 내보낸다 */
- async function dgImport(txt){let j;try{j=JSON.parse(String(txt||'').trim())}catch(e){throw new Error('JSON 을 읽지 못했다 — '+e.message)}
-  const list=Array.isArray(j)?j:(j&&Array.isArray(j.dungeons)?j.dungeons:[j]);if(!list.length)throw new Error('비어 있다');if(list.length>20)throw new Error('한 번에 20개까지');
-  const warn=[],o={};let last='';list.forEach((x,i)=>{const w=[];const d=dgNorm(x,w);const id=Math.random().toString(36).slice(2,8);o['list/'+id]=d;last=id;w.forEach(t=>warn.push((list.length>1?`[${i+1}] `:'')+t))});
-  /* 10-31 망령 「1. 야생 시트도 같이」: w 가 있는 방은 방 시트에 야생 트레이너를 만들어 잇는다 */
-  {const ops=[];let nw=0;for(const [lk,d] of Object.entries(o))for(const [rid,r] of Object.entries(d.r||{})){if(!r.mk||r.e)continue;try{const tid=await wFromMaker(r.mk,rid,ops,lk.slice(5));if(tid){r.e=tid;delete r.mk;delete r.w;nw++}else{warn.push(`「${r.n}」 제작기 야생 시트(${r.mk})를 찾지 못했다`);delete r.mk}}catch(e){warn.push(`「${r.n}」 제작기 야생 시트를 못 읽었다 — ${e.message}`);delete r.mk}}
-   for(const [lk,d] of Object.entries(o))for(const [rid,r] of Object.entries(d.r||{})){if(!r.w||r.e)continue;try{r.e=wMake(r.w,rid,ops,lk.slice(5));delete r.w;nw++}catch(e){warn.push(`「${r.n}」 야생 시트를 못 만들었다 — ${e.message}`)}}
-   if(ops.length){if(!await A().setMany(ops))throw new Error('야생 시트를 시트에 쓰지 못했다');warn.push(`야생 시트 ${nw}개를 시트 탭에 만들어 방에 배치했다`)}}
-  if(!await upd(o))return null;return {n:list.length,last,warn}}
+  const FE_K = ['필드', '스타디움', '이계'],
+    FE_TY = [
+      ['', '—'],
+      ['Normal', '노말'],
+      ['Fire', '불꽃'],
+      ['Water', '물'],
+      ['Electric', '전기'],
+      ['Grass', '풀'],
+      ['Ice', '얼음'],
+      ['Fighting', '격투'],
+      ['Poison', '독'],
+      ['Ground', '땅'],
+      ['Flying', '비행'],
+      ['Psychic', '에스퍼'],
+      ['Bug', '벌레'],
+      ['Rock', '바위'],
+      ['Ghost', '고스트'],
+      ['Dragon', '드래곤'],
+      ['Dark', '악'],
+      ['Steel', '강철'],
+      ['Fairy', '페어리']
+    ];
+  function feNorm(x) {
+    if (!x || typeof x !== 'object') return null;
+    const nm = sTxt(x.name || '', 30)
+      .replace(/[《》『』]/g, '')
+      .replace(/^(이계|필드|스타디움)\//, '');
+    if (!nm) return null;
+    const o = { type: [0, 1, 2].includes(+x.type) ? +x.type : 0, name: nm };
+    const loc = sTxt(x.loc || '', 40),
+      img = sTxt(x.img || '', 600),
+      eff = String(x.eff || '')
+        .slice(0, 1500)
+        .trim();
+    if (loc) o.loc = loc;
+    if (img) o.img = img;
+    if (eff) o.eff = eff;
+    const c = Math.round(+x.count);
+    if (c > 0) o.count = Math.min(c, 99);
+    if (FE_TY.some(t => t[0] && t[0] === x.color)) o.color = x.color;
+    if ([1, 2].includes(+x.h)) o.h = +x.h;
+    if (x.auto && typeof x.auto === 'object' && JSON.stringify(x.auto).length < 6000) o.auto = JSON.parse(JSON.stringify(x.auto));
+    return o;
+  }
+  const feKey = fe => FE_K[fe.type || 0] + '/' + fe.name;
+  /* 조우 배틀의 처음 필드 전개 (app.js encounter) — tid = 야생 트레이너 */
+  function feField(did, tid, tname) {
+    const d = all()[did];
+    const fe = d && feNorm(d.fe);
+    if (!fe) return null;
+    const owner = tname || d.o || d.n || '던전';
+    const s = {
+      type: fe.type,
+      name: fe.name,
+      loc: fe.loc || '',
+      img: fe.img || '',
+      eff: fe.eff || '',
+      color: fe.color || '',
+      owner,
+      count: fe.count > 0 ? fe.count : 1000,
+      src: 'd:' + did,
+      tid: tid || '',
+      at: Date.now()
+    };
+    if (fe.auto) s.auto = fe.auto;
+    if (fe.h && tid) {
+      s.h = fe.h;
+      s.hTid = tid;
+    }
+    const lines = [
+      `◆ ${owner}의 《${feKey(fe)}》 전개 (던전 필드 효과)${fe.loc ? ' — ' + fe.loc : ''}${s.count >= 1000 ? ' · 무한' : ' · ' + s.count + '턴'}`,
+      ...String(fe.eff || '')
+        .split('\n')
+        .map(x => x.trim())
+        .filter(Boolean)
+        .map(l => '· ' + l)
+    ];
+    if (s.h)
+      lines.push(
+        `◆ H — ${owner} · ${s.h === 1 ? '받지 않음 (그 파티는 이 필드의 효과를 받지 않는다)' : '상대 무효 (그 상대가 받는 효과는 무효 — H 편만 받는다)'}`
+      );
+    return { stage: s, fe, lines };
+  }
+  function feEdHTML(d) {
+    const fe = feNorm(d.fe) || { type: 0 };
+    const opt = (L, v) => L.map(([k, n]) => `<option value="${H(k)}" ${String(v ?? '') === String(k) ? 'selected' : ''}>${H(n)}</option>`).join('');
+    return `<div class="dg-febox"><b>⛰ 필드 효과 <small class="dim">트레이너의 필드 전개와 같은 꼴 · 이 던전의 조우마다 배틀 시작 때 야생 쪽이 전개 · 미궁 포텐셜과 따로 · 이름을 비우면 없음</small></b>
+   <div class="dg-fer"><label>종류<select data-dgfe="type">${opt(
+     FE_K.map((k, i) => [i, k]),
+     fe.type || 0
+   )}</select></label><label style="flex:2">이름<input data-dgfe="name" value="${H(fe.name || '')}" placeholder="예: 젖은 지하 수로"></label><label>지역<input data-dgfe="loc" value="${H(fe.loc || '')}" placeholder="예: 론디니움"></label></div>
+   <div class="dg-fer"><label>지속 턴<input type="number" min="0" max="99" data-dgfe="count" value="${H(fe.count || '')}" placeholder="비우면 무한"></label><label>타입 색<select data-dgfe="color">${opt(FE_TY, fe.color || '')}</select></label><label>H<select data-dgfe="h">${opt(
+     [
+       [0, '없음'],
+       [1, '야생은 효과를 받지 않음'],
+       [2, '야생의 상대가 받는 효과는 무효']
+     ],
+     fe.h || 0
+   )}</select></label><label style="flex:2">배경 (주소 · 배경 이름)<input data-dgfe="img" value="${H(fe.img || '')}"></label></div>
+   <label>효과 (한 줄에 하나)<textarea data-dgfe="eff" rows="3">${H(fe.eff || '')}</textarea></label>${fe.auto ? '<small class="dim">⚙ 필드 구문 있음 (JSON 으로 들어온 것 — 그대로 씀)</small>' : ''}</div>`;
+  }
+  function dgOut(d) {
+    const r = {};
+    for (const [id, x] of Object.entries(R(d))) {
+      const o = Object.assign({}, x);
+      delete o.c;
+      delete o.cs;
+      delete o.ru;
+      if (o.e && !o.w) {
+        try {
+          const w = wOut(o.e);
+          if (w) o.w = w;
+        } catch (e) {}
+      }
+      r[id] = o;
+    }
+    const o = { n: d.n || '', st: d.st, r, l: Object.assign({}, d.l || {}) };
+    for (const f of ['o', 'a', 'd', 'wn', 'noal', 'src', 'aw', 'alo', 'gim', 'mq', 'depth', 'fe']) if (d[f] != null && d[f] !== '') o[f] = d[f];
+    return o;
+  } /* 10-31: 야생 시트도 w 로 같이 내보낸다 */
+  async function dgImport(txt) {
+    let j;
+    try {
+      j = JSON.parse(String(txt || '').trim());
+    } catch (e) {
+      throw new Error('JSON 을 읽지 못했다 — ' + e.message);
+    }
+    const list = Array.isArray(j) ? j : j && Array.isArray(j.dungeons) ? j.dungeons : [j];
+    if (!list.length) throw new Error('비어 있다');
+    if (list.length > 20) throw new Error('한 번에 20개까지');
+    const warn = [],
+      o = {};
+    let last = '';
+    list.forEach((x, i) => {
+      const w = [];
+      const d = dgNorm(x, w);
+      const id = Math.random().toString(36).slice(2, 8);
+      o['list/' + id] = d;
+      last = id;
+      w.forEach(t => warn.push((list.length > 1 ? `[${i + 1}] ` : '') + t));
+    });
+    /* 10-31 망령 「1. 야생 시트도 같이」: w 가 있는 방은 방 시트에 야생 트레이너를 만들어 잇는다 */
+    {
+      const ops = [];
+      let nw = 0;
+      for (const [lk, d] of Object.entries(o))
+        for (const [rid, r] of Object.entries(d.r || {})) {
+          if (!r.mk || r.e) continue;
+          try {
+            const tid = await wFromMaker(r.mk, rid, ops, lk.slice(5));
+            if (tid) {
+              r.e = tid;
+              delete r.mk;
+              delete r.w;
+              nw++;
+            } else {
+              warn.push(`「${r.n}」 제작기 야생 시트(${r.mk})를 찾지 못했다`);
+              delete r.mk;
+            }
+          } catch (e) {
+            warn.push(`「${r.n}」 제작기 야생 시트를 못 읽었다 — ${e.message}`);
+            delete r.mk;
+          }
+        }
+      for (const [lk, d] of Object.entries(o))
+        for (const [rid, r] of Object.entries(d.r || {})) {
+          if (!r.w || r.e) continue;
+          try {
+            r.e = wMake(r.w, rid, ops, lk.slice(5));
+            delete r.w;
+            nw++;
+          } catch (e) {
+            warn.push(`「${r.n}」 야생 시트를 못 만들었다 — ${e.message}`);
+          }
+        }
+      if (ops.length) {
+        if (!(await A().setMany(ops))) throw new Error('야생 시트를 시트에 쓰지 못했다');
+        warn.push(`야생 시트 ${nw}개를 시트 탭에 만들어 방에 배치했다`);
+      }
+    }
+    if (!(await upd(o))) return null;
+    return { n: list.length, last, warn };
+  }
 
- /* 11-15 망령 「제작기에서 PL 들도 던전 생성」: 제작기 「던전」 탭에서 만든 던전(공유 DB kind 'dungeon', data.d = 이 가져오기 형식)을 목록으로 불러온다 */
- function mkListHTML(){const L=DG.mk;if(!L)return '<div class="dg-ed-ev" style="margin:0"><b>제작기에서 만든 던전</b> <span class="small dim">불러오는 중…</span></div>';
-  if(L.err)return `<div class="dg-ed-ev" style="margin:0"><b>제작기에서 만든 던전</b> <span class="small dim">못 읽었다 — ${H(L.err)}</span> <button class="btn xs ghost" data-e="mkre">다시</button></div>`;
-  const TN={s1:'사건 1',s2:'사건 2',s3:'사건 3'};
-  return `<div class="dg-ed-ev" style="margin:0"><b>제작기에서 만든 던전</b> <span class="small dim">${L.rows.length}개 · 제작기 「던전」 탭에서 만들고 고친다</span> <button class="btn xs ghost" data-e="mkre">새로 읽기</button>
-   ${L.rows.length?`<div style="display:flex;flex-direction:column;gap:4px;margin-top:6px">${L.rows.map(x=>{const d=x.data.d||{};const nr=Object.keys(d.r||{}).length;return `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b>${H(d.n||'이름 없는 던전')}</b><span class="small dim">${H(TN[x.data.tier]||'')} · 방 ${nr} · ${H(x.data.ownerName||'이름 없음')}</span><span class="sp"></span><button class="btn xs pri" data-e="mkimp" data-id="${H(x.id)}">가져오기</button></div>`}).join('')}</div>`:'<p class="small dim" style="margin:4px 0 0">아직 없다.</p>'}</div>`}
- async function mkLoad(){DG.mk=null;edDraw();try{const rows=await window.OM_STORE.makerDocs('dungeon');DG.mk={rows:rows.filter(x=>x&&x.data&&x.data.d&&!x.data.del).sort((a,b)=>(b.data.at||0)-(a.data.at||0))}}catch(e){DG.mk={err:(e&&e.message)||String(e),rows:[]}}edDraw()}
- function edHTML(){const ds=all(),ids=Object.keys(ds);if(!ds[DG.ed])DG.ed=ids[0]||'';const d=edD();if(d&&!R(d)[DG.edSel])DG.edSel='';
-  const r=d&&R(d)[DG.edSel],t=ty(r&&r.t);
-  const head=`<div class="mhead"><h2>던전 관리</h2><span class="sp"></span><button class="btn ghost" data-e="close">닫기</button></div>`;
-  const top=`<div class="dg-ed-top"><select data-dgsel>${ids.map(id=>`<option value="${H(id)}" ${id===DG.ed?'selected':''}>${H(ds[id].n||'이름 없는 던전')}</option>`).join('')||'<option>던전 없음</option>'}</select><button class="btn sm pri" data-e="new">＋ 새 던전</button><button class="btn sm" data-e="sample">샘플 던전</button><button class="btn sm ${DG.imp?'pri':''}" data-e="imp">JSON 가져오기</button>${d?`<button class="btn sm ${DG.exp?'pri':''}" data-e="exp">JSON 내보내기</button><button class="btn sm danger" data-e="del">던전 삭제</button>`:''}${(()=>{const n=wildOrphans().length;return n?`<button class="btn sm warn" data-e="wclean" title="어느 던전 방에도 놓이지 않은 야생 시트 — 시트 · 포켓몬 · 화자 칩을 지운다">🧹 남은 야생 시트 ${n}</button>`:''})()}${window.OM_NOTES?'<button class="btn sm" data-ntdg title="세션 노트의 던전(지도 장소에 붙은 것)과 주고받는다 — 바뀐 것만">📓 노트와 주고받기</button>':''}</div>`;
-  /* 10-28 망령 「웹툴 던전탭에 JSON 가져오기」: 시뮬 자동 생성(toWebtool) · 다른 방에서 내보낸 던전을 붙여 넣거나 파일로 */
-  if(DG.imp)return head+top+`<div class="dg-ed-ev" style="margin-top:8px"><b>JSON 가져오기</b><p class="dg-help" style="margin:0">던전 시뮬 「자동 생성 → 웹툴로」 파일이나 「JSON 내보내기」로 받은 글을 붙여 넣는다. 여러 개면 배열 <code>[…]</code> 로. 새 던전으로 들어가고, 있던 던전은 그대로다.</p>
+  /* 11-15 망령 「제작기에서 PL 들도 던전 생성」: 제작기 「던전」 탭에서 만든 던전(공유 DB kind 'dungeon', data.d = 이 가져오기 형식)을 목록으로 불러온다 */
+  function mkListHTML() {
+    const L = DG.mk;
+    if (!L) return '<div class="dg-ed-ev" style="margin:0"><b>제작기에서 만든 던전</b> <span class="small dim">불러오는 중…</span></div>';
+    if (L.err)
+      return `<div class="dg-ed-ev" style="margin:0"><b>제작기에서 만든 던전</b> <span class="small dim">못 읽었다 — ${H(L.err)}</span> <button class="btn xs ghost" data-e="mkre">다시</button></div>`;
+    const TN = { s1: '사건 1', s2: '사건 2', s3: '사건 3' };
+    return `<div class="dg-ed-ev" style="margin:0"><b>제작기에서 만든 던전</b> <span class="small dim">${L.rows.length}개 · 제작기 「던전」 탭에서 만들고 고친다</span> <button class="btn xs ghost" data-e="mkre">새로 읽기</button>
+   ${
+     L.rows.length
+       ? `<div style="display:flex;flex-direction:column;gap:4px;margin-top:6px">${L.rows
+           .map(x => {
+             const d = x.data.d || {};
+             const nr = Object.keys(d.r || {}).length;
+             return `<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b>${H(d.n || '이름 없는 던전')}</b><span class="small dim">${H(TN[x.data.tier] || '')} · 방 ${nr} · ${H(x.data.ownerName || '이름 없음')}</span><span class="sp"></span><button class="btn xs pri" data-e="mkimp" data-id="${H(x.id)}">가져오기</button></div>`;
+           })
+           .join('')}</div>`
+       : '<p class="small dim" style="margin:4px 0 0">아직 없다.</p>'
+   }</div>`;
+  }
+  async function mkLoad() {
+    DG.mk = null;
+    edDraw();
+    try {
+      const rows = await window.OM_STORE.makerDocs('dungeon');
+      DG.mk = { rows: rows.filter(x => x && x.data && x.data.d && !x.data.del).sort((a, b) => (b.data.at || 0) - (a.data.at || 0)) };
+    } catch (e) {
+      DG.mk = { err: (e && e.message) || String(e), rows: [] };
+    }
+    edDraw();
+  }
+  function edHTML() {
+    const ds = all(),
+      ids = Object.keys(ds);
+    if (!ds[DG.ed]) DG.ed = ids[0] || '';
+    const d = edD();
+    if (d && !R(d)[DG.edSel]) DG.edSel = '';
+    const r = d && R(d)[DG.edSel],
+      t = ty(r && r.t);
+    const head = `<div class="mhead"><h2>던전 관리</h2><span class="sp"></span><button class="btn ghost" data-e="close">닫기</button></div>`;
+    const top = `<div class="dg-ed-top"><select data-dgsel>${ids.map(id => `<option value="${H(id)}" ${id === DG.ed ? 'selected' : ''}>${H(ds[id].n || '이름 없는 던전')}</option>`).join('') || '<option>던전 없음</option>'}</select><button class="btn sm pri" data-e="new">＋ 새 던전</button><button class="btn sm" data-e="sample">샘플 던전</button><button class="btn sm ${DG.imp ? 'pri' : ''}" data-e="imp">JSON 가져오기</button>${d ? `<button class="btn sm ${DG.exp ? 'pri' : ''}" data-e="exp">JSON 내보내기</button><button class="btn sm danger" data-e="del">던전 삭제</button>` : ''}${(() => {
+      const n = wildOrphans().length;
+      return n
+        ? `<button class="btn sm warn" data-e="wclean" title="어느 던전 방에도 놓이지 않은 야생 시트 — 시트 · 포켓몬 · 화자 칩을 지운다">🧹 남은 야생 시트 ${n}</button>`
+        : '';
+    })()}${window.OM_NOTES ? '<button class="btn sm" data-ntdg title="세션 노트의 던전(지도 장소에 붙은 것)과 주고받는다 — 바뀐 것만">📓 노트와 주고받기</button>' : ''}</div>`;
+    /* 10-28 망령 「웹툴 던전탭에 JSON 가져오기」: 시뮬 자동 생성(toWebtool) · 다른 방에서 내보낸 던전을 붙여 넣거나 파일로 */
+    if (DG.imp)
+      return (
+        head +
+        top +
+        `<div class="dg-ed-ev" style="margin-top:8px"><b>JSON 가져오기</b><p class="dg-help" style="margin:0">던전 시뮬 「자동 생성 → 웹툴로」 파일이나 「JSON 내보내기」로 받은 글을 붙여 넣는다. 여러 개면 배열 <code>[…]</code> 로. 새 던전으로 들어가고, 있던 던전은 그대로다.</p>
    <textarea id="dgImpTxt" rows="12" spellcheck="false" placeholder='{"n":"던전 이름","st":"entry","r":{"entry":{"n":"입구","t":"entry","x":95,"y":595}, …},"l":{"entry~b1":1, …}}' style="width:100%;font-family:ui-monospace,monospace;font-size:12px"></textarea>
    <div class="dg-acts"><label class="btn sm">파일 고르기 (.json)<input type="file" accept=".json,application/json,text/plain" data-e="impfile" hidden></label><span class="sp"></span><button class="btn sm ghost" data-e="impx">취소</button><button class="btn sm pri" data-e="impgo">가져오기</button></div>
    ${mkListHTML()}
-   <p class="dg-help" style="margin:0">받는 칸: 이름 n · 주인 o · 테마 a · 기한 d · 동행 수 wn · 경계도 끄기 noal · 시작 방 st · 방 r(이름 n · 종류 t · 좌표 x · y · GM 메모 m · 배경 b · 스킬 체크 sk · 휴식 rk · 단서 cl · 야생 e · 기습 eh · 공개 s) · 통로 l. 모르는 칸은 버리고, 좌표는 편집 판(1000×640) 안으로 맞춘다. 야생 무리(e)는 이 방 시트에 그 트레이너가 있을 때만 남긴다.</p></div>`;
-  if(!d)return head+top+'<p class="small dim">새 던전을 만들거나 샘플 던전으로 시작해 봐.</p>';
-  if(DG.exp)return head+top+`<div class="dg-ed-ev" style="margin-top:8px"><b>JSON 내보내기 · ${H(d.n||'')}</b><p class="dg-help" style="margin:0">다른 방의 「JSON 가져오기」에 붙여 넣으면 같은 던전이 생긴다. 플레이 기록(일행 위치 · 클리어 · 공개 · 경계도)은 빼고 내보낸다.</p>
-   <textarea id="dgExpTxt" rows="12" readonly spellcheck="false" style="width:100%;font-family:ui-monospace,monospace;font-size:12px">${H(JSON.stringify(dgOut(d),null,1))}</textarea>
-   <div class="dg-acts"><span class="sp"></span><button class="btn sm ghost" data-e="exp">닫기</button><button class="btn sm pri" data-e="expcopy">복사</button></div></div>`;
-  const meta=`<div class="dg-ed-meta"><label>이름<input data-dgm="n" value="${H(d.n||'')}"></label><label>주인 (던전을 만든 인물 · 보스)<input data-dgm="o" value="${H(d.o||'')}"></label><label>테마<input data-dgm="a" value="${H(d.a||'')}" placeholder="예: 안개 · 폐허"></label><label>기한<input data-dgm="d" value="${H(d.d||'')}" placeholder="예: 7세션까지"></label><label>동행 포켓몬 수 (트레이너마다)<select data-dgx="wn">${[1,2,3].map(n=>`<option value="${n}" ${WN(d)===n?'selected':''}>${n}체</option>`).join('')}</select></label><label class="dg-chk"><input type="checkbox" data-dgx="al" ${alOn(d)?'checked':''}> 경계도 쓰기 <small>(들어설 때 30 · 새 방 +5 · 휴식 −10 · 끄면 숨김)</small></label>${feEdHTML(d)}<div class="dg-gimbox"><button class="btn sm" data-dggo>⛰ 던전 기믹 · 미궁 포텐셜 편집</button><small class="dim">${(d.gim||[]).length?(d.gim||[]).map(g=>'『'+H(g.n)+'』').join(' '):'기믹 없음'} · ${(d.mq||[]).length?'미궁 '+(d.mq||[]).map(p=>'『'+H(p.name)+'』').join(' '):'미궁 포텐셜 없음'}${Object.keys(d.fl||{}).length?' · 표식 '+Object.keys(d.fl).map(H).join(', '):''}</small></div></div>`;
-  const tool=`<div class="dg-acts" style="margin:0 0 8px"><button class="btn sm ${DG.edMode==='move'?'pri':''}" data-e="mode" data-v="move">✥ 배치 · 이동</button><button class="btn sm ${DG.edMode==='link'?'pri':''}" data-e="mode" data-v="link">⟷ 통로 연결</button></div>`;
-  const sideHTML=r?`<div class="dg-ed-side"><b style="font-size:15px">${t.ic} 방 편집</b><label>이름<input data-dgr="n" value="${H(r.n||'')}"></label><label>종류<select data-dgr="t">${TORDER.map(k=>`<option value="${k}" ${k===(r.t in TY?r.t:'room')?'selected':''}>${TY[k].ic} ${TY[k].k}</option>`).join('')}</select></label><p class="dg-help" style="margin:0">${t.r}</p><label>GM 메모 (GM 화면에만)<textarea data-dgr="m" rows="3">${H(r.m||'')}</textarea></label>
-   ${(()=>{const tr=RO().trainers||{},ms=RO().mons||{},pt=new Set(party(d));const ids=Object.keys(tr).filter(id=>!pt.has(id)||id===r.e).sort((a,b)=>(tr[a].ord||0)-(tr[b].ord||0));
-    return `<label>야생 포켓몬 배치 <small class="dim">(시트의 GM 트레이너 = 야생 무리)</small><select data-dge="e"><option value="">— 없음 —</option>${ids.map(id=>{const t=tr[id],n=(t.pids||[]).filter(x=>ms[x]);return `<option value="${H(id)}" ${id===r.e?'selected':''}>${H(t.name||id)} · ${n.length}체${n.length?' ('+H(n.slice(0,3).map(x=>ms[x].name).join(', '))+(n.length>3?' …':'')+')':''}</option>`}).join('')}</select></label>${r.e?`<label class="dg-chk"><input type="checkbox" data-dge="eh" ${r.eh?'checked':''}> 플레이어 지도에 「!」 숨기기 (기습)</label>`:''}${r.w&&!r.e?`<div class="dg-acts"><button class="btn sm pri" data-e="wmake" title="시뮬레이터가 보낸 야생 설계로 시트 탭에 야생 트레이너를 만들어 이 방에 배치">야생 시트 만들기 · ${r.w.mons.length}체 (${H(r.w.mons.map(m=>m.name).join(', '))})</button></div>`:''}${r.e||r.w||r.t==='battle'||r.t==='boss'?`<div class="dg-ed-row" title="10-31: 이 방 전투가 끝나고 던전으로 돌아갈 때 오르는 경계도 (비우면 던전 기본값)"><label>이기면 경계도 +<input type="number" data-dga="aw" value="${r.aw??''}" placeholder="${awOf(d,r)}" style="width:64px"></label><label>지면 +<input type="number" data-dga="alo" value="${r.alo??''}" placeholder="${aloOf(d,r)}" style="width:64px"></label></div>`:''}<p class="dg-help" style="margin:0">야생 무리는 <b>시트</b> 탭 「+ 새 트레이너」(이름 예: 야생 · 터빈실)에 포켓몬을 넣거나 제작기에서 가져와 만든다. 플레이 중 이 방에서 「⚔ 야생 조우」를 누르면 일행 VS 이 무리로 배틀이 차려진다.</p>`})()}
-   ${(()=>{const K=SKU();const L=K&&K.presetList?K.presetList():[];const sk=r.sk&&K&&K.up?K.up(r.sk):r.sk;
-    return `<div class="dg-ed-ev"><b>🎲 스킬 체크</b><select data-dgk="pick"><option value="">${sk?'— 다른 예시로 바꾸기 —':'— 없음 —'}</option>${L.map(p=>`<option value="${H(p.id)}">${H(p.name)}</option>`).join('')}<option value="new">+ 직접 만들기</option></select>${sk?`<div class="dg-ed-row"><label>내용<input data-dgk="label" value="${H(sk.label||'')}" placeholder="예: 잠긴 문을 연다"></label><label>능력<select data-dgk="stat">${['지시','육성','통솔','능력'].map(x=>`<option ${x===sk.stat?'selected':''}>${x}</option>`).join('')}</select></label><label>종족값<select data-dgk="base">${['HP','공격','방어','특공','특방','스피드'].map((x,i)=>`<option value="${i}" ${i===+(sk.base??3)?'selected':''}>${x}</option>`).join('')}</select></label><label>목표<input type="number" min="2" max="20" data-dgk="target" value="${+sk.target||10}"></label><label title="난이도 이름으로 목표를 정한다 (쉬움 8 · 보통 10 · 어려움 12 · 매우 어려움 15)">난이도<select data-dgk="auto">${[['','직접 (목표 칸)'],['easy','쉬움 8'],['normal','보통 10'],['hard','어려움 12'],['vhard','매우 어려움 15']].map(([v,n])=>`<option value="${v}" ${(sk.auto||'')===v?'selected':''}>${n}</option>`).join('')}</select></label></div><p class="dg-help" style="margin:0">${H(skSum(sk))}${sk.pen?' · 패널티는 예시에 붙은 것':''} <button type="button" class="btn xs ghost" data-e="skdel">체크 빼기</button></p>`:'<p class="dg-help" style="margin:0">플레이 중 이 방에서 「🎲 스킬 체크 제시」를 누르면 일행에게 바로 제시된다. 예시는 스킬 체크 창에서 저장한 것까지 나온다.</p>'}</div>`})()}
-   <div class="dg-ed-ev"><b>🔍 단서</b><label>제목<input data-dgc="t" value="${H((r.cl||{}).t||'')}" placeholder="예: 찢어진 작업 일지"></label><label>설명<textarea data-dgc="d" rows="3" placeholder="공개하면 모두의 무대에 그림과 함께 뜬다">${H((r.cl||{}).d||'')}</textarea></label><label>그림 주소<input data-dgc="img" value="${H((r.cl||{}).img||'')}" placeholder="https://… (비워도 된다)"></label><div class="dg-acts"><label class="btn sm">단서 그림 올리기<input type="file" accept="image/*" data-e="climg" hidden></label>${r.cl?'<button class="btn sm ghost" data-e="cldel">단서 빼기</button>':''}</div></div>
-   <div class="dg-ed-ev"><b>✦ 보상 표식</b> <small class="dim">(이 방을 떠날 때 얻는다 — 던전 기믹의 「이 표식이면 꺼짐」 · 「표식이 있을 때」에 쓴다)</small><div class="dg-ed-row"><label>표식<input data-dgw="flag" value="${H((r.rw||{}).flag||'')}" placeholder="예: 냉각 장치" maxlength="20"></label><label>보상 글<input data-dgw="memo" value="${H((r.rw||{}).memo||'')}" placeholder="예: 고장 난 냉각기를 고쳤다 · 인질을 구했다" maxlength="200"></label></div></div>
-   ${r.t==='safe'?`<div class="dg-ed-ev"><b>☗ 휴식처</b><label>휴식 단계<select data-dgs="rk">${RKO.map(x=>`<option value="${x[0]}" ${x[0]===rkOf(r)[0]?'selected':''}>${x[1]} (${x[2]})</option>`).join('')}</select></label><label class="dg-chk"><input type="checkbox" data-dgs="rmany" ${r.rmany?'checked':''}> 여러 번 쉴 수 있다 (끄면 한 번만)</label><p class="dg-help" style="margin:0">단계마다 회복하는 것은 스킬 체크 창 「휴식」 탭 설정 그대로(HP · 부활 · 상태 · 지침 · 돌봄 · 이능 · 부상). 플레이 중 고를 때 다른 단계로 바꿀 수도 있다.</p></div>`:''}
-   <label>배경 그림 주소<input data-dgr="b" value="${H(r.b||'')}" placeholder="https://… (비우면 종류에 맞는 입체 공간)"></label>
-   <div class="dg-acts"><label class="btn sm">그림 올리기<input type="file" accept="image/*" data-e="img" hidden></label>${r.b?'<button class="btn sm" data-e="imgdel">배경 빼기</button>':''}<button class="btn sm" data-e="start" ${d.st===DG.edSel?'disabled':''}>시작 방으로</button><button class="btn sm" data-e="seen">${r.s?'안개로 숨기기':'미리 공개'}</button><button class="btn sm danger" data-e="rdel">방 삭제</button></div></div>`
-   :`<div class="dg-ed-side"><b>사용법</b><p class="dg-help" style="margin:0">• <b>배치 · 이동</b>: 빈 곳을 누르면 방 추가(고른 방에 통로로 이어 붙는다), 방을 끌어 옮기기, 누르면 편집.<br>• <b>통로 연결</b>: 방 두 개를 차례로 누르면 통로가 생기고, 다시 누르면 끊긴다.<br>• START 표시가 있는 방이 입구.<br>• 흐린 방은 안개 속(플레이어에게 안 보임). 일행이 들어가면 저절로 공개된다.<br>• 플레이 화면에서는 이 배치가 입체 지도로 보인다.</p></div>`;
-  return head+top+meta+tool+`<div class="dg-ed-grid"><div>${edSVG(d)}</div>${sideHTML}</div>`}
- function openEd(){const m=A().openModal(`<div class="dg-ed" id="dgEd">${edHTML()}</div>`);if(m)m.classList.add('dg-ed-dialog');DG.edOpen=true;edBind()}
- function edDraw(){const box=$('#dgEd');if(!box){DG.edOpen=false;return}box.innerHTML=edHTML();edBind()}
- function edBind(){const box=$('#dgEd');if(!box)return;
-  box.querySelectorAll('[data-e]').forEach(b=>{if(b.type==='file'){b.onchange=()=>edAct(b.dataset.e,b);return}b.onclick=()=>edAct(b.dataset.e,b)});
-  box.querySelectorAll('[data-dgsel]').forEach(s=>s.onchange=()=>{DG.ed=s.value;DG.edSel='';DG.edFrom='';edDraw()});
-  box.querySelectorAll('[data-dgm]').forEach(i=>i.onchange=()=>{const d=edD();if(d)upd({[P0(d.id)+i.dataset.dgm]:i.value.trim().slice(0,60)||null})});
-  {const fb=box.querySelector('.dg-febox');if(fb)fb.querySelectorAll('[data-dgfe]').forEach(i=>i.onchange=()=>{const d=edD();if(!d)return;const q=k=>fb.querySelector(`[data-dgfe="${k}"]`).value;const old=feNorm(d.fe)||{};
-   const fe=feNorm({type:q('type'),name:q('name'),loc:q('loc'),count:q('count'),color:q('color'),h:q('h'),img:q('img'),eff:q('eff'),auto:old.auto});upd({[P0(d.id)+'fe']:fe})})}   /* 11-16 필드 효과 */
-  {const gb=box.querySelector('[data-dggo]');if(gb)gb.onclick=()=>{const d=edD();const G=window.OM_DG_GIM;if(d&&G)G.open(d.id);else A().toast('기믹 편집기를 못 불러왔다')}}
-  box.querySelectorAll('[data-dgx]').forEach(i=>i.onchange=()=>{const d=edD();if(!d)return;const f=i.dataset.dgx;if(f==='wn')upd({[P0(d.id)+'wn']:+i.value===2?null:+i.value});if(f==='al')upd({[P0(d.id)+'noal']:i.checked?null:1})});
-  box.querySelectorAll('[data-dgk]').forEach(i=>i.onchange=async()=>{const d=edD();if(!d||!R(d)[DG.edSel])return;const p=P0(d.id)+'r/'+DG.edSel+'/sk';const f=i.dataset.dgk;
-   if(f==='pick'){if(!i.value)return;let o;if(i.value==='new')o={v:4,label:'',stat:'지시',base:3,target:10};else{const P=(SKU()&&SKU().presetList?SKU().presetList():[]).find(x=>x.id===i.value);if(!P)return;o=Object.assign(JSON.parse(JSON.stringify(SKU().up?SKU().up(P.o||{}):P.o||{})),{name:P.name})}await upd({[p]:o});return edDraw()}
-   let sk=Object.assign({},R(d)[DG.edSel].sk||{});if(SKU()&&SKU().up)sk=SKU().up(sk);if(f==='base')sk.base=Math.max(0,Math.min(5,+i.value||0));else if(f==='target')sk.target=Math.max(2,Math.min(20,+i.value||10));else if(f==='auto'){if(i.value)sk.auto=i.value;else delete sk.auto}else sk[f]=i.value.trim().slice(0,60);await upd({[p]:sk});edDraw()});
-  box.querySelectorAll('[data-dgc]').forEach(i=>i.onchange=async()=>{const d=edD();if(!d||!R(d)[DG.edSel])return;const cl=Object.assign({},R(d)[DG.edSel].cl||{});const f=i.dataset.dgc;cl[f]=i.value.trim().slice(0,f==='d'?1200:f==='img'?600:60);Object.keys(cl).forEach(k=>{if(!cl[k])delete cl[k]});await upd({[P0(d.id)+'r/'+DG.edSel+'/cl']:Object.keys(cl).length?cl:null});edDraw()});
-  box.querySelectorAll('[data-dgw]').forEach(i=>i.onchange=async()=>{const d=edD();if(!d||!R(d)[DG.edSel])return;const r=R(d)[DG.edSel];const w=Object.assign({},r.rw||{});const v=i.value.trim();if(v)w[i.dataset.dgw]=v.slice(0,i.dataset.dgw==='flag'?20:200);else delete w[i.dataset.dgw];await upd({[P0(d.id)+'r/'+DG.edSel+'/rw']:Object.keys(w).length?w:null});edDraw()});
-  box.querySelectorAll('[data-dgs]').forEach(i=>i.onchange=async()=>{const d=edD();if(!d||!R(d)[DG.edSel])return;const f=i.dataset.dgs,p=P0(d.id)+'r/'+DG.edSel+'/';if(f==='rk')await upd({[p+'rk']:i.value==='mid'?null:i.value});else await upd({[p+'rmany']:i.checked?1:null});edDraw()});
-  box.querySelectorAll('[data-dga]').forEach(i=>i.onchange=async()=>{const d=edD();if(!d||!R(d)[DG.edSel])return;const v=i.value.trim();await upd({[P0(d.id)+'r/'+DG.edSel+'/'+i.dataset.dga]:v===''||!Number.isFinite(+v)?null:clamp(Math.round(+v),-100,100)});edDraw()});
-  box.querySelectorAll('[data-dge]').forEach(i=>i.onchange=async()=>{const d=edD();if(!d||!R(d)[DG.edSel])return;const f=i.dataset.dge,p=P0(d.id)+'r/'+DG.edSel+'/';if(f==='e'){const o={[p+'e']:i.value||null};if(!i.value)o[p+'eh']=null;await upd(o);const t=i.value&&(RO().trainers||{})[i.value];if(t&&t.wild&&t.wdg!==d.id)await A().set(['roster','trainers',t.id,'wdg'],d.id)}else await upd({[p+'eh']:i.checked?1:null});edDraw()});
-  box.querySelectorAll('[data-dgr]').forEach(i=>i.onchange=()=>{const d=edD();if(d&&R(d)[DG.edSel]){const f=i.dataset.dgr;upd({[P0(d.id)+'r/'+DG.edSel+'/'+f]:i.value.trim().slice(0,f==='m'?400:f==='b'?600:40)||null})}});
-  const svg=$('#dgEdSvg',box);if(svg)svgBind(svg);
-  const bg=box.closest('.modalbg');if(bg&&!bg._dg){bg._dg=1;new MutationObserver((ms,ob)=>{if(!bg.isConnected){DG.edOpen=false;ob.disconnect();A().renderScene()}}).observe(document.body,{childList:true})}}
- function svgPt(svg,e){const p=new DOMPoint(e.clientX,e.clientY).matrixTransform(svg.getScreenCTM().inverse());return{x:Math.round(clamp(p.x,30,970)),y:Math.round(clamp(p.y,30,600))}}
- async function edAdd(pt){const d=edD();if(!d)return;const id=rid(d),first=!Object.keys(R(d)).length,o={[P0(d.id)+'r/'+id]:{n:first?'입구':'방 '+(Object.keys(R(d)).length+1),t:first?'entry':'room',x:pt.x,y:pt.y}};if(first)o[P0(d.id)+'st']=id;
-  if(DG.edSel&&R(d)[DG.edSel])o[P0(d.id)+'l/'+lk(DG.edSel,id)]=1;   /* 새 방은 고른 방에 이어 붙는다 */
-  DG.edSel=id;await upd(o);edDraw()}
- async function edLink(id){const d=edD();if(!d)return;if(!DG.edFrom||DG.edFrom===id){DG.edFrom=DG.edFrom===id?'':id;edDraw();return}const k=lk(DG.edFrom,id);DG.edFrom='';await upd({[P0(d.id)+'l/'+k]:(d.l||{})[k]?null:1});edDraw()}
- function svgBind(svg){
-  svg.addEventListener('pointerdown',e=>{if(e.button!==0)return;const node=e.target.closest('.dg-ed-node'),pt=svgPt(svg,e);DG.drag={rid:node?node.dataset.r:'',x:pt.x,y:pt.y,moved:false,svg,node};try{svg.setPointerCapture(e.pointerId)}catch(err){}e.preventDefault()});
-  svg.addEventListener('pointermove',e=>{const g=DG.drag;if(!g||!g.rid||DG.edMode!=='move')return;const pt=svgPt(g.svg,e);if(!g.moved&&Math.hypot(pt.x-g.x,pt.y-g.y)<6)return;g.moved=true;g.pt=pt;g.node.setAttribute('transform',`translate(${pt.x} ${pt.y})`);
-   g.svg.querySelectorAll('.dg-ed-ln').forEach(l=>{if(l.dataset.a1===g.rid){l.setAttribute('x1',pt.x);l.setAttribute('y1',pt.y)}if(l.dataset.b1===g.rid){l.setAttribute('x2',pt.x);l.setAttribute('y2',pt.y)}})});
-  svg.addEventListener('pointerup',async()=>{const g=DG.drag;if(!g)return;DG.drag=null;const d=edD();if(!d)return;
-   if(g.moved&&g.pt){DG.edSel=g.rid;await upd({[P0(d.id)+'r/'+g.rid+'/x']:g.pt.x,[P0(d.id)+'r/'+g.rid+'/y']:g.pt.y});return edDraw()}
-   if(g.rid){if(DG.edMode==='link')return edLink(g.rid);DG.edSel=DG.edSel===g.rid?'':g.rid;return edDraw()}
-   if(DG.edMode==='move')return edAdd({x:g.x,y:g.y});DG.edFrom='';edDraw()});
-  svg.addEventListener('pointercancel',()=>{DG.drag=null})}
- /* 10-26 용량 점검: 방 배경은 원본(수 MB PNG)을 그대로 올리지 않고 1920×1080 안으로 줄여 webp 로 — 방에 들어올 때마다 모두가 받으니 Supabase 전송량(무료 월 5GB)을 아낀다 */
- async function shrinkImg(f,W,Hh){try{if(!/^image\/(png|jpe?g|webp|bmp)$/i.test(f.type||''))return f;const bmp=await createImageBitmap(f);const sc=Math.min(1,W/bmp.width,Hh/bmp.height);const cv=document.createElement('canvas');cv.width=Math.max(1,Math.round(bmp.width*sc));cv.height=Math.max(1,Math.round(bmp.height*sc));cv.getContext('2d').drawImage(bmp,0,0,cv.width,cv.height);
-  const bl=await new Promise(r=>cv.toBlob(r,'image/webp',.85));return bl&&bl.size<f.size?bl:f}catch(e){return f}}
- async function edAct(k,b){const d=edD();
-  if(k==='close'){A().closeModal();DG.edOpen=false;return A().renderScene()}
-  if(k==='mode'){DG.edMode=b.dataset.v;DG.edFrom='';return edDraw()}
-  if(k==='wmake'){const r=d&&R(d)[DG.edSel];if(!r||!r.w)return;const ops=[];let tid;try{tid=wMake(r.w,DG.edSel,ops)}catch(e){return A().toast('야생 시트를 못 만들었다 — '+e.message)}if(!await A().setMany(ops))return;await upd({[P0(d.id)+'r/'+DG.edSel+'/e']:tid,[P0(d.id)+'r/'+DG.edSel+'/w']:null});A().toast(`야생 시트를 만들었다 — ${r.w.name}`);return edDraw()}
-  if(k==='imp'){DG.imp=!DG.imp;DG.exp=false;if(DG.imp&&!DG.mk)mkLoad();return edDraw()}
-  if(k==='mkre')return mkLoad();
-  if(k==='mkimp'){const x=((DG.mk||{}).rows||[]).find(q=>q.id===b.dataset.id);if(!x)return;try{const res=await dgImport(JSON.stringify(x.data.d));if(!res)return;DG.imp=false;DG.ed=res.last;DG.edSel='';edDraw();A().toast(`「${x.data.d.n||'던전'}」 을 가져왔다${res.warn.length?' · 알림 '+res.warn.length+'개':''}`);if(res.warn.length)notice('[던전 가져오기] '+res.warn.join(' / '))}catch(e){A().toast(e.message||String(e))}return}
-  if(k==='impx'){DG.imp=false;return edDraw()}
-  if(k==='impfile'){const f=b.files&&b.files[0];if(!f)return;if(f.size>2e6)return A().toast('파일이 너무 크다 (2MB 까지)');try{const t=await f.text();const ta=$('#dgImpTxt');if(ta)ta.value=t}catch(e){A().toast('파일을 읽지 못했다')}return}
-  if(k==='impgo'){const ta=$('#dgImpTxt');try{const res=await dgImport(ta?ta.value:'');if(!res)return;DG.imp=false;DG.ed=res.last;DG.edSel='';edDraw();
-    A().toast(`던전 ${res.n}개를 가져왔다${res.warn.length?' · 알림 '+res.warn.length+'개':''}`);if(res.warn.length)notice('[던전 가져오기] '+res.warn.join(' / '))}catch(e){A().toast('가져오기 실패: '+e.message)}return}
-  if(k==='exp'){DG.exp=!DG.exp;DG.imp=false;return edDraw()}
-  if(k==='expcopy'){const ta=$('#dgExpTxt');if(!ta)return;try{await navigator.clipboard.writeText(ta.value);A().toast('복사했다')}catch(e){ta.select();A().toast('글을 골라 두었다 — Ctrl+C')}return}
-  if(k==='new'){const n=prompt('던전 이름','');if(n===null)return;const id=Math.random().toString(36).slice(2,8),e=Math.random().toString(36).slice(2,7);
-   if(await upd({['list/'+id]:{n:n.trim()||'이름 없는 던전',al:0,st:e,r:{[e]:{n:'입구',t:'entry',x:120,y:320}}}})){DG.ed=id;DG.edSel=e;edDraw()}return}
-  if(k==='sample'){const id=Math.random().toString(36).slice(2,8);
-   const r={e:['정문','entry',110,520],a:['녹슨 복도','room',270,520],b:['터빈실','battle',440,520],s:['관리실','safe',440,350],c:['감전 복도','trap',620,350],p:['배전반 퍼즐','puzzle',440,170],t:['잠긴 창고','treasure',260,170],f:['고압 통로','battle',790,350],z:['제어실','boss',890,150]},o={};
-   Object.entries(r).forEach(([k2,[n,t,x,y]])=>o[k2]={n,t,x,y});
-   if(await upd({['list/'+id]:{n:'샘플: 버려진 발전소',o:'(예시) 발전소의 주인',a:'전기 · 폐허',al:0,st:'e',r:o,l:Object.fromEntries(['e~a','a~b','b~s','s~c','p~s','p~t','c~f','f~z'].map(x=>[x,1]))}})){DG.ed=id;DG.edSel='';edDraw();A().toast('샘플 던전을 만들었다 — 마음대로 고쳐 써')}return}
-  if(!d)return;
-  if(k==='wclean'){const W=wildOrphans();if(!W.length)return;const T=RO().trainers||{};if(!confirm(`어느 던전에도 놓이지 않은 야생 시트 ${W.length}개를 지울까?\n${W.slice(0,12).map(id=>T[id].name).join(', ')}${W.length>12?' …':''}`))return;const n=await wildDrop(W);A().toast(n?`야생 시트 ${n}개를 지웠다`:'지우지 못했다 (배틀에 나가 있는 것은 남긴다)');edDraw();return}
-  if(k==='del'){const W=wildOf(d.id);if(!confirm(`「${d.n||'이름 없는 던전'}」 던전을 지울까? 방과 통로가 모두 지워진다.${W.length?`\n이 던전의 야생 시트 ${W.length}개(포켓몬 · 화자 칩 포함)도 같이 지운다.`:''}`))return;const o={['list/'+d.id]:null};if(W.length){const n=await wildDrop(W);if(n)A().toast(`야생 시트 ${n}개를 같이 지웠다`)}if(field().did===d.id&&field().mode==='dungeon'){o['field/mode']='';o['field/t']=Date.now()}if(await upd(o)){DG.ed='';DG.edSel='';edDraw()}return}
-  const id=DG.edSel,r=R(d)[id];if(!r)return;
-  if(k==='rdel'){if(!confirm(`「${r.n||'방'}」 방을 지울까?`))return;const p=P0(d.id),o={[p+'r/'+id]:null};Object.keys(d.l||{}).forEach(x=>{if(x.split('~').includes(id))o[p+'l/'+x]=null});
-   const rest=Object.keys(R(d)).filter(x=>x!==id);if(d.st===id)o[p+'st']=rest[0]||null;if(d.at===id)o[p+'at']=(d.st!==id&&d.st)||rest[0]||null;if(await upd(o)){DG.edSel='';edDraw()}return}
-  if(k==='start'){await upd({[P0(d.id)+'st']:id});return edDraw()}
-  if(k==='seen'){await upd({[P0(d.id)+'r/'+id+'/s']:r.s?null:1});return edDraw()}
-  if(k==='imgdel'){await upd({[P0(d.id)+'r/'+id+'/b']:null});return edDraw()}
-  if(k==='skdel'){await upd({[P0(d.id)+'r/'+id+'/sk']:null});return edDraw()}
-  if(k==='cldel'){if(!confirm('이 방의 단서를 지울까?'))return;await upd({[P0(d.id)+'r/'+id+'/cl']:null,[P0(d.id)+'r/'+id+'/cs']:null});return edDraw()}
-  if(k==='climg'){const f=b.files&&b.files[0];if(!f)return;A().toast('올리는 중…');try{const u=await DBS().uploadImage(`rooms/${ST().room}/dgcl_${d.id}_${id}_${Date.now().toString(36)}`,await shrinkImg(f,1600,1600));if(u)await upd({[P0(d.id)+'r/'+id+'/cl/img']:u});edDraw()}catch(e){A().toast('그림을 올리지 못했다: '+e.message)}return}
-  if(k==='img'){const f=b.files&&b.files[0];if(!f)return;A().toast('올리는 중…');try{const u=await DBS().uploadImage(`rooms/${ST().room}/dg_${d.id}_${id}_${Date.now().toString(36)}`,await shrinkImg(f,1920,1080));if(u&&await upd({[P0(d.id)+'r/'+id+'/b']:u}))A().toast('방 배경을 바꿨다');edDraw()}catch(e){A().toast('그림을 올리지 못했다: '+e.message)}}}
+   <p class="dg-help" style="margin:0">받는 칸: 이름 n · 주인 o · 테마 a · 기한 d · 동행 수 wn · 경계도 끄기 noal · 시작 방 st · 방 r(이름 n · 종류 t · 좌표 x · y · GM 메모 m · 배경 b · 스킬 체크 sk · 휴식 rk · 단서 cl · 야생 e · 기습 eh · 공개 s) · 통로 l. 모르는 칸은 버리고, 좌표는 편집 판(1000×640) 안으로 맞춘다. 야생 무리(e)는 이 방 시트에 그 트레이너가 있을 때만 남긴다.</p></div>`
+      );
+    if (!d) return head + top + '<p class="small dim">새 던전을 만들거나 샘플 던전으로 시작해 봐.</p>';
+    if (DG.exp)
+      return (
+        head +
+        top +
+        `<div class="dg-ed-ev" style="margin-top:8px"><b>JSON 내보내기 · ${H(d.n || '')}</b><p class="dg-help" style="margin:0">다른 방의 「JSON 가져오기」에 붙여 넣으면 같은 던전이 생긴다. 플레이 기록(일행 위치 · 클리어 · 공개 · 경계도)은 빼고 내보낸다.</p>
+   <textarea id="dgExpTxt" rows="12" readonly spellcheck="false" style="width:100%;font-family:ui-monospace,monospace;font-size:12px">${H(JSON.stringify(dgOut(d), null, 1))}</textarea>
+   <div class="dg-acts"><span class="sp"></span><button class="btn sm ghost" data-e="exp">닫기</button><button class="btn sm pri" data-e="expcopy">복사</button></div></div>`
+      );
+    const meta = `<div class="dg-ed-meta"><label>이름<input data-dgm="n" value="${H(d.n || '')}"></label><label>주인 (던전을 만든 인물 · 보스)<input data-dgm="o" value="${H(d.o || '')}"></label><label>테마<input data-dgm="a" value="${H(d.a || '')}" placeholder="예: 안개 · 폐허"></label><label>기한<input data-dgm="d" value="${H(d.d || '')}" placeholder="예: 7세션까지"></label><label>동행 포켓몬 수 (트레이너마다)<select data-dgx="wn">${[1, 2, 3].map(n => `<option value="${n}" ${WN(d) === n ? 'selected' : ''}>${n}체</option>`).join('')}</select></label><label class="dg-chk"><input type="checkbox" data-dgx="al" ${alOn(d) ? 'checked' : ''}> 경계도 쓰기 <small>(들어설 때 30 · 새 방 +5 · 휴식 −10 · 끄면 숨김)</small></label>${feEdHTML(d)}<div class="dg-gimbox"><button class="btn sm" data-dggo>⛰ 던전 기믹 · 미궁 포텐셜 편집</button><small class="dim">${(d.gim || []).length ? (d.gim || []).map(g => '『' + H(g.n) + '』').join(' ') : '기믹 없음'} · ${(d.mq || []).length ? '미궁 ' + (d.mq || []).map(p => '『' + H(p.name) + '』').join(' ') : '미궁 포텐셜 없음'}${Object.keys(d.fl || {}).length ? ' · 표식 ' + Object.keys(d.fl).map(H).join(', ') : ''}</small></div></div>`;
+    const tool = `<div class="dg-acts" style="margin:0 0 8px"><button class="btn sm ${DG.edMode === 'move' ? 'pri' : ''}" data-e="mode" data-v="move">✥ 배치 · 이동</button><button class="btn sm ${DG.edMode === 'link' ? 'pri' : ''}" data-e="mode" data-v="link">⟷ 통로 연결</button></div>`;
+    const sideHTML = r
+      ? `<div class="dg-ed-side"><b style="font-size:15px">${t.ic} 방 편집</b><label>이름<input data-dgr="n" value="${H(r.n || '')}"></label><label>종류<select data-dgr="t">${TORDER.map(k => `<option value="${k}" ${k === (r.t in TY ? r.t : 'room') ? 'selected' : ''}>${TY[k].ic} ${TY[k].k}</option>`).join('')}</select></label><p class="dg-help" style="margin:0">${t.r}</p><label>GM 메모 (GM 화면에만)<textarea data-dgr="m" rows="3">${H(r.m || '')}</textarea></label>
+   ${(() => {
+     const tr = RO().trainers || {},
+       ms = RO().mons || {},
+       pt = new Set(party(d));
+     const ids = Object.keys(tr)
+       .filter(id => !pt.has(id) || id === r.e)
+       .sort((a, b) => (tr[a].ord || 0) - (tr[b].ord || 0));
+     return `<label>야생 포켓몬 배치 <small class="dim">(시트의 GM 트레이너 = 야생 무리)</small><select data-dge="e"><option value="">— 없음 —</option>${ids
+       .map(id => {
+         const t = tr[id],
+           n = (t.pids || []).filter(x => ms[x]);
+         return `<option value="${H(id)}" ${id === r.e ? 'selected' : ''}>${H(t.name || id)} · ${n.length}체${
+           n.length
+             ? ' (' +
+               H(
+                 n
+                   .slice(0, 3)
+                   .map(x => ms[x].name)
+                   .join(', ')
+               ) +
+               (n.length > 3 ? ' …' : '') +
+               ')'
+             : ''
+         }</option>`;
+       })
+       .join(
+         ''
+       )}</select></label>${r.e ? `<label class="dg-chk"><input type="checkbox" data-dge="eh" ${r.eh ? 'checked' : ''}> 플레이어 지도에 「!」 숨기기 (기습)</label>` : ''}${r.w && !r.e ? `<div class="dg-acts"><button class="btn sm pri" data-e="wmake" title="시뮬레이터가 보낸 야생 설계로 시트 탭에 야생 트레이너를 만들어 이 방에 배치">야생 시트 만들기 · ${r.w.mons.length}체 (${H(r.w.mons.map(m => m.name).join(', '))})</button></div>` : ''}${r.e || r.w || r.t === 'battle' || r.t === 'boss' ? `<div class="dg-ed-row" title="10-31: 이 방 전투가 끝나고 던전으로 돌아갈 때 오르는 경계도 (비우면 던전 기본값)"><label>이기면 경계도 +<input type="number" data-dga="aw" value="${r.aw ?? ''}" placeholder="${awOf(d, r)}" style="width:64px"></label><label>지면 +<input type="number" data-dga="alo" value="${r.alo ?? ''}" placeholder="${aloOf(d, r)}" style="width:64px"></label></div>` : ''}<p class="dg-help" style="margin:0">야생 무리는 <b>시트</b> 탭 「+ 새 트레이너」(이름 예: 야생 · 터빈실)에 포켓몬을 넣거나 제작기에서 가져와 만든다. 플레이 중 이 방에서 「⚔ 야생 조우」를 누르면 일행 VS 이 무리로 배틀이 차려진다.</p>`;
+   })()}
+   ${(() => {
+     const K = SKU();
+     const L = K && K.presetList ? K.presetList() : [];
+     const sk = r.sk && K && K.up ? K.up(r.sk) : r.sk;
+     return `<div class="dg-ed-ev"><b>🎲 스킬 체크</b><select data-dgk="pick"><option value="">${sk ? '— 다른 예시로 바꾸기 —' : '— 없음 —'}</option>${L.map(p => `<option value="${H(p.id)}">${H(p.name)}</option>`).join('')}<option value="new">+ 직접 만들기</option></select>${
+       sk
+         ? `<div class="dg-ed-row"><label>내용<input data-dgk="label" value="${H(sk.label || '')}" placeholder="예: 잠긴 문을 연다"></label><label>능력<select data-dgk="stat">${['지시', '육성', '통솔', '능력'].map(x => `<option ${x === sk.stat ? 'selected' : ''}>${x}</option>`).join('')}</select></label><label>종족값<select data-dgk="base">${['HP', '공격', '방어', '특공', '특방', '스피드'].map((x, i) => `<option value="${i}" ${i === +(sk.base ?? 3) ? 'selected' : ''}>${x}</option>`).join('')}</select></label><label>목표<input type="number" min="2" max="20" data-dgk="target" value="${+sk.target || 10}"></label><label title="난이도 이름으로 목표를 정한다 (쉬움 8 · 보통 10 · 어려움 12 · 매우 어려움 15)">난이도<select data-dgk="auto">${[
+             ['', '직접 (목표 칸)'],
+             ['easy', '쉬움 8'],
+             ['normal', '보통 10'],
+             ['hard', '어려움 12'],
+             ['vhard', '매우 어려움 15']
+           ]
+             .map(([v, n]) => `<option value="${v}" ${(sk.auto || '') === v ? 'selected' : ''}>${n}</option>`)
+             .join(
+               ''
+             )}</select></label></div><p class="dg-help" style="margin:0">${H(skSum(sk))}${sk.pen ? ' · 패널티는 예시에 붙은 것' : ''} <button type="button" class="btn xs ghost" data-e="skdel">체크 빼기</button></p>`
+         : '<p class="dg-help" style="margin:0">플레이 중 이 방에서 「🎲 스킬 체크 제시」를 누르면 일행에게 바로 제시된다. 예시는 스킬 체크 창에서 저장한 것까지 나온다.</p>'
+     }</div>`;
+   })()}
+   <div class="dg-ed-ev"><b>🔍 단서</b><label>제목<input data-dgc="t" value="${H((r.cl || {}).t || '')}" placeholder="예: 찢어진 작업 일지"></label><label>설명<textarea data-dgc="d" rows="3" placeholder="공개하면 모두의 무대에 그림과 함께 뜬다">${H((r.cl || {}).d || '')}</textarea></label><label>그림 주소<input data-dgc="img" value="${H((r.cl || {}).img || '')}" placeholder="https://… (비워도 된다)"></label><div class="dg-acts"><label class="btn sm">단서 그림 올리기<input type="file" accept="image/*" data-e="climg" hidden></label>${r.cl ? '<button class="btn sm ghost" data-e="cldel">단서 빼기</button>' : ''}</div></div>
+   <div class="dg-ed-ev"><b>✦ 보상 표식</b> <small class="dim">(이 방을 떠날 때 얻는다 — 던전 기믹의 「이 표식이면 꺼짐」 · 「표식이 있을 때」에 쓴다)</small><div class="dg-ed-row"><label>표식<input data-dgw="flag" value="${H((r.rw || {}).flag || '')}" placeholder="예: 냉각 장치" maxlength="20"></label><label>보상 글<input data-dgw="memo" value="${H((r.rw || {}).memo || '')}" placeholder="예: 고장 난 냉각기를 고쳤다 · 인질을 구했다" maxlength="200"></label></div></div>
+   ${r.t === 'safe' ? `<div class="dg-ed-ev"><b>☗ 휴식처</b><label>휴식 단계<select data-dgs="rk">${RKO.map(x => `<option value="${x[0]}" ${x[0] === rkOf(r)[0] ? 'selected' : ''}>${x[1]} (${x[2]})</option>`).join('')}</select></label><label class="dg-chk"><input type="checkbox" data-dgs="rmany" ${r.rmany ? 'checked' : ''}> 여러 번 쉴 수 있다 (끄면 한 번만)</label><p class="dg-help" style="margin:0">단계마다 회복하는 것은 스킬 체크 창 「휴식」 탭 설정 그대로(HP · 부활 · 상태 · 지침 · 돌봄 · 이능 · 부상). 플레이 중 고를 때 다른 단계로 바꿀 수도 있다.</p></div>` : ''}
+   <label>배경 그림 주소<input data-dgr="b" value="${H(r.b || '')}" placeholder="https://… (비우면 종류에 맞는 입체 공간)"></label>
+   <div class="dg-acts"><label class="btn sm">그림 올리기<input type="file" accept="image/*" data-e="img" hidden></label>${r.b ? '<button class="btn sm" data-e="imgdel">배경 빼기</button>' : ''}<button class="btn sm" data-e="start" ${d.st === DG.edSel ? 'disabled' : ''}>시작 방으로</button><button class="btn sm" data-e="seen">${r.s ? '안개로 숨기기' : '미리 공개'}</button><button class="btn sm danger" data-e="rdel">방 삭제</button></div></div>`
+      : `<div class="dg-ed-side"><b>사용법</b><p class="dg-help" style="margin:0">• <b>배치 · 이동</b>: 빈 곳을 누르면 방 추가(고른 방에 통로로 이어 붙는다), 방을 끌어 옮기기, 누르면 편집.<br>• <b>통로 연결</b>: 방 두 개를 차례로 누르면 통로가 생기고, 다시 누르면 끊긴다.<br>• START 표시가 있는 방이 입구.<br>• 흐린 방은 안개 속(플레이어에게 안 보임). 일행이 들어가면 저절로 공개된다.<br>• 플레이 화면에서는 이 배치가 입체 지도로 보인다.</p></div>`;
+    return head + top + meta + tool + `<div class="dg-ed-grid"><div>${edSVG(d)}</div>${sideHTML}</div>`;
+  }
+  function openEd() {
+    const m = A().openModal(`<div class="dg-ed" id="dgEd">${edHTML()}</div>`);
+    if (m) m.classList.add('dg-ed-dialog');
+    DG.edOpen = true;
+    edBind();
+  }
+  function edDraw() {
+    const box = $('#dgEd');
+    if (!box) {
+      DG.edOpen = false;
+      return;
+    }
+    box.innerHTML = edHTML();
+    edBind();
+  }
+  function edBind() {
+    const box = $('#dgEd');
+    if (!box) return;
+    box.querySelectorAll('[data-e]').forEach(b => {
+      if (b.type === 'file') {
+        b.onchange = () => edAct(b.dataset.e, b);
+        return;
+      }
+      b.onclick = () => edAct(b.dataset.e, b);
+    });
+    box.querySelectorAll('[data-dgsel]').forEach(
+      s =>
+        (s.onchange = () => {
+          DG.ed = s.value;
+          DG.edSel = '';
+          DG.edFrom = '';
+          edDraw();
+        })
+    );
+    box.querySelectorAll('[data-dgm]').forEach(
+      i =>
+        (i.onchange = () => {
+          const d = edD();
+          if (d) upd({ [P0(d.id) + i.dataset.dgm]: i.value.trim().slice(0, 60) || null });
+        })
+    );
+    {
+      const fb = box.querySelector('.dg-febox');
+      if (fb)
+        fb.querySelectorAll('[data-dgfe]').forEach(
+          i =>
+            (i.onchange = () => {
+              const d = edD();
+              if (!d) return;
+              const q = k => fb.querySelector(`[data-dgfe="${k}"]`).value;
+              const old = feNorm(d.fe) || {};
+              const fe = feNorm({
+                type: q('type'),
+                name: q('name'),
+                loc: q('loc'),
+                count: q('count'),
+                color: q('color'),
+                h: q('h'),
+                img: q('img'),
+                eff: q('eff'),
+                auto: old.auto
+              });
+              upd({ [P0(d.id) + 'fe']: fe });
+            })
+        );
+    } /* 11-16 필드 효과 */
+    {
+      const gb = box.querySelector('[data-dggo]');
+      if (gb)
+        gb.onclick = () => {
+          const d = edD();
+          const G = window.OM_DG_GIM;
+          if (d && G) G.open(d.id);
+          else A().toast('기믹 편집기를 못 불러왔다');
+        };
+    }
+    box.querySelectorAll('[data-dgx]').forEach(
+      i =>
+        (i.onchange = () => {
+          const d = edD();
+          if (!d) return;
+          const f = i.dataset.dgx;
+          if (f === 'wn') upd({ [P0(d.id) + 'wn']: +i.value === 2 ? null : +i.value });
+          if (f === 'al') upd({ [P0(d.id) + 'noal']: i.checked ? null : 1 });
+        })
+    );
+    box.querySelectorAll('[data-dgk]').forEach(
+      i =>
+        (i.onchange = async () => {
+          const d = edD();
+          if (!d || !R(d)[DG.edSel]) return;
+          const p = P0(d.id) + 'r/' + DG.edSel + '/sk';
+          const f = i.dataset.dgk;
+          if (f === 'pick') {
+            if (!i.value) return;
+            let o;
+            if (i.value === 'new') o = { v: 4, label: '', stat: '지시', base: 3, target: 10 };
+            else {
+              const P = (SKU() && SKU().presetList ? SKU().presetList() : []).find(x => x.id === i.value);
+              if (!P) return;
+              o = Object.assign(JSON.parse(JSON.stringify(SKU().up ? SKU().up(P.o || {}) : P.o || {})), { name: P.name });
+            }
+            await upd({ [p]: o });
+            return edDraw();
+          }
+          let sk = Object.assign({}, R(d)[DG.edSel].sk || {});
+          if (SKU() && SKU().up) sk = SKU().up(sk);
+          if (f === 'base') sk.base = Math.max(0, Math.min(5, +i.value || 0));
+          else if (f === 'target') sk.target = Math.max(2, Math.min(20, +i.value || 10));
+          else if (f === 'auto') {
+            if (i.value) sk.auto = i.value;
+            else delete sk.auto;
+          } else sk[f] = i.value.trim().slice(0, 60);
+          await upd({ [p]: sk });
+          edDraw();
+        })
+    );
+    box.querySelectorAll('[data-dgc]').forEach(
+      i =>
+        (i.onchange = async () => {
+          const d = edD();
+          if (!d || !R(d)[DG.edSel]) return;
+          const cl = Object.assign({}, R(d)[DG.edSel].cl || {});
+          const f = i.dataset.dgc;
+          cl[f] = i.value.trim().slice(0, f === 'd' ? 1200 : f === 'img' ? 600 : 60);
+          Object.keys(cl).forEach(k => {
+            if (!cl[k]) delete cl[k];
+          });
+          await upd({ [P0(d.id) + 'r/' + DG.edSel + '/cl']: Object.keys(cl).length ? cl : null });
+          edDraw();
+        })
+    );
+    box.querySelectorAll('[data-dgw]').forEach(
+      i =>
+        (i.onchange = async () => {
+          const d = edD();
+          if (!d || !R(d)[DG.edSel]) return;
+          const r = R(d)[DG.edSel];
+          const w = Object.assign({}, r.rw || {});
+          const v = i.value.trim();
+          if (v) w[i.dataset.dgw] = v.slice(0, i.dataset.dgw === 'flag' ? 20 : 200);
+          else delete w[i.dataset.dgw];
+          await upd({ [P0(d.id) + 'r/' + DG.edSel + '/rw']: Object.keys(w).length ? w : null });
+          edDraw();
+        })
+    );
+    box.querySelectorAll('[data-dgs]').forEach(
+      i =>
+        (i.onchange = async () => {
+          const d = edD();
+          if (!d || !R(d)[DG.edSel]) return;
+          const f = i.dataset.dgs,
+            p = P0(d.id) + 'r/' + DG.edSel + '/';
+          if (f === 'rk') await upd({ [p + 'rk']: i.value === 'mid' ? null : i.value });
+          else await upd({ [p + 'rmany']: i.checked ? 1 : null });
+          edDraw();
+        })
+    );
+    box.querySelectorAll('[data-dga]').forEach(
+      i =>
+        (i.onchange = async () => {
+          const d = edD();
+          if (!d || !R(d)[DG.edSel]) return;
+          const v = i.value.trim();
+          await upd({
+            [P0(d.id) + 'r/' + DG.edSel + '/' + i.dataset.dga]: v === '' || !Number.isFinite(+v) ? null : clamp(Math.round(+v), -100, 100)
+          });
+          edDraw();
+        })
+    );
+    box.querySelectorAll('[data-dge]').forEach(
+      i =>
+        (i.onchange = async () => {
+          const d = edD();
+          if (!d || !R(d)[DG.edSel]) return;
+          const f = i.dataset.dge,
+            p = P0(d.id) + 'r/' + DG.edSel + '/';
+          if (f === 'e') {
+            const o = { [p + 'e']: i.value || null };
+            if (!i.value) o[p + 'eh'] = null;
+            await upd(o);
+            const t = i.value && (RO().trainers || {})[i.value];
+            if (t && t.wild && t.wdg !== d.id) await A().set(['roster', 'trainers', t.id, 'wdg'], d.id);
+          } else await upd({ [p + 'eh']: i.checked ? 1 : null });
+          edDraw();
+        })
+    );
+    box.querySelectorAll('[data-dgr]').forEach(
+      i =>
+        (i.onchange = () => {
+          const d = edD();
+          if (d && R(d)[DG.edSel]) {
+            const f = i.dataset.dgr;
+            upd({ [P0(d.id) + 'r/' + DG.edSel + '/' + f]: i.value.trim().slice(0, f === 'm' ? 400 : f === 'b' ? 600 : 40) || null });
+          }
+        })
+    );
+    const svg = $('#dgEdSvg', box);
+    if (svg) svgBind(svg);
+    const bg = box.closest('.modalbg');
+    if (bg && !bg._dg) {
+      bg._dg = 1;
+      new MutationObserver((ms, ob) => {
+        if (!bg.isConnected) {
+          DG.edOpen = false;
+          ob.disconnect();
+          A().renderScene();
+        }
+      }).observe(document.body, { childList: true });
+    }
+  }
+  function svgPt(svg, e) {
+    const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(svg.getScreenCTM().inverse());
+    return { x: Math.round(clamp(p.x, 30, 970)), y: Math.round(clamp(p.y, 30, 600)) };
+  }
+  async function edAdd(pt) {
+    const d = edD();
+    if (!d) return;
+    const id = rid(d),
+      first = !Object.keys(R(d)).length,
+      o = { [P0(d.id) + 'r/' + id]: { n: first ? '입구' : '방 ' + (Object.keys(R(d)).length + 1), t: first ? 'entry' : 'room', x: pt.x, y: pt.y } };
+    if (first) o[P0(d.id) + 'st'] = id;
+    if (DG.edSel && R(d)[DG.edSel]) o[P0(d.id) + 'l/' + lk(DG.edSel, id)] = 1; /* 새 방은 고른 방에 이어 붙는다 */
+    DG.edSel = id;
+    await upd(o);
+    edDraw();
+  }
+  async function edLink(id) {
+    const d = edD();
+    if (!d) return;
+    if (!DG.edFrom || DG.edFrom === id) {
+      DG.edFrom = DG.edFrom === id ? '' : id;
+      edDraw();
+      return;
+    }
+    const k = lk(DG.edFrom, id);
+    DG.edFrom = '';
+    await upd({ [P0(d.id) + 'l/' + k]: (d.l || {})[k] ? null : 1 });
+    edDraw();
+  }
+  function svgBind(svg) {
+    svg.addEventListener('pointerdown', e => {
+      if (e.button !== 0) return;
+      const node = e.target.closest('.dg-ed-node'),
+        pt = svgPt(svg, e);
+      DG.drag = { rid: node ? node.dataset.r : '', x: pt.x, y: pt.y, moved: false, svg, node };
+      try {
+        svg.setPointerCapture(e.pointerId);
+      } catch (err) {}
+      e.preventDefault();
+    });
+    svg.addEventListener('pointermove', e => {
+      const g = DG.drag;
+      if (!g || !g.rid || DG.edMode !== 'move') return;
+      const pt = svgPt(g.svg, e);
+      if (!g.moved && Math.hypot(pt.x - g.x, pt.y - g.y) < 6) return;
+      g.moved = true;
+      g.pt = pt;
+      g.node.setAttribute('transform', `translate(${pt.x} ${pt.y})`);
+      g.svg.querySelectorAll('.dg-ed-ln').forEach(l => {
+        if (l.dataset.a1 === g.rid) {
+          l.setAttribute('x1', pt.x);
+          l.setAttribute('y1', pt.y);
+        }
+        if (l.dataset.b1 === g.rid) {
+          l.setAttribute('x2', pt.x);
+          l.setAttribute('y2', pt.y);
+        }
+      });
+    });
+    svg.addEventListener('pointerup', async () => {
+      const g = DG.drag;
+      if (!g) return;
+      DG.drag = null;
+      const d = edD();
+      if (!d) return;
+      if (g.moved && g.pt) {
+        DG.edSel = g.rid;
+        await upd({ [P0(d.id) + 'r/' + g.rid + '/x']: g.pt.x, [P0(d.id) + 'r/' + g.rid + '/y']: g.pt.y });
+        return edDraw();
+      }
+      if (g.rid) {
+        if (DG.edMode === 'link') return edLink(g.rid);
+        DG.edSel = DG.edSel === g.rid ? '' : g.rid;
+        return edDraw();
+      }
+      if (DG.edMode === 'move') return edAdd({ x: g.x, y: g.y });
+      DG.edFrom = '';
+      edDraw();
+    });
+    svg.addEventListener('pointercancel', () => {
+      DG.drag = null;
+    });
+  }
+  /* 10-26 용량 점검: 방 배경은 원본(수 MB PNG)을 그대로 올리지 않고 1920×1080 안으로 줄여 webp 로 — 방에 들어올 때마다 모두가 받으니 Supabase 전송량(무료 월 5GB)을 아낀다 */
+  async function shrinkImg(f, W, Hh) {
+    try {
+      if (!/^image\/(png|jpe?g|webp|bmp)$/i.test(f.type || '')) return f;
+      const bmp = await createImageBitmap(f);
+      const sc = Math.min(1, W / bmp.width, Hh / bmp.height);
+      const cv = document.createElement('canvas');
+      cv.width = Math.max(1, Math.round(bmp.width * sc));
+      cv.height = Math.max(1, Math.round(bmp.height * sc));
+      cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
+      const bl = await new Promise(r => cv.toBlob(r, 'image/webp', 0.85));
+      return bl && bl.size < f.size ? bl : f;
+    } catch (e) {
+      return f;
+    }
+  }
+  async function edAct(k, b) {
+    const d = edD();
+    if (k === 'close') {
+      A().closeModal();
+      DG.edOpen = false;
+      return A().renderScene();
+    }
+    if (k === 'mode') {
+      DG.edMode = b.dataset.v;
+      DG.edFrom = '';
+      return edDraw();
+    }
+    if (k === 'wmake') {
+      const r = d && R(d)[DG.edSel];
+      if (!r || !r.w) return;
+      const ops = [];
+      let tid;
+      try {
+        tid = wMake(r.w, DG.edSel, ops);
+      } catch (e) {
+        return A().toast('야생 시트를 못 만들었다 — ' + e.message);
+      }
+      if (!(await A().setMany(ops))) return;
+      await upd({ [P0(d.id) + 'r/' + DG.edSel + '/e']: tid, [P0(d.id) + 'r/' + DG.edSel + '/w']: null });
+      A().toast(`야생 시트를 만들었다 — ${r.w.name}`);
+      return edDraw();
+    }
+    if (k === 'imp') {
+      DG.imp = !DG.imp;
+      DG.exp = false;
+      if (DG.imp && !DG.mk) mkLoad();
+      return edDraw();
+    }
+    if (k === 'mkre') return mkLoad();
+    if (k === 'mkimp') {
+      const x = ((DG.mk || {}).rows || []).find(q => q.id === b.dataset.id);
+      if (!x) return;
+      try {
+        const res = await dgImport(JSON.stringify(x.data.d));
+        if (!res) return;
+        DG.imp = false;
+        DG.ed = res.last;
+        DG.edSel = '';
+        edDraw();
+        A().toast(`「${x.data.d.n || '던전'}」 을 가져왔다${res.warn.length ? ' · 알림 ' + res.warn.length + '개' : ''}`);
+        if (res.warn.length) notice('[던전 가져오기] ' + res.warn.join(' / '));
+      } catch (e) {
+        A().toast(e.message || String(e));
+      }
+      return;
+    }
+    if (k === 'impx') {
+      DG.imp = false;
+      return edDraw();
+    }
+    if (k === 'impfile') {
+      const f = b.files && b.files[0];
+      if (!f) return;
+      if (f.size > 2e6) return A().toast('파일이 너무 크다 (2MB 까지)');
+      try {
+        const t = await f.text();
+        const ta = $('#dgImpTxt');
+        if (ta) ta.value = t;
+      } catch (e) {
+        A().toast('파일을 읽지 못했다');
+      }
+      return;
+    }
+    if (k === 'impgo') {
+      const ta = $('#dgImpTxt');
+      try {
+        const res = await dgImport(ta ? ta.value : '');
+        if (!res) return;
+        DG.imp = false;
+        DG.ed = res.last;
+        DG.edSel = '';
+        edDraw();
+        A().toast(`던전 ${res.n}개를 가져왔다${res.warn.length ? ' · 알림 ' + res.warn.length + '개' : ''}`);
+        if (res.warn.length) notice('[던전 가져오기] ' + res.warn.join(' / '));
+      } catch (e) {
+        A().toast('가져오기 실패: ' + e.message);
+      }
+      return;
+    }
+    if (k === 'exp') {
+      DG.exp = !DG.exp;
+      DG.imp = false;
+      return edDraw();
+    }
+    if (k === 'expcopy') {
+      const ta = $('#dgExpTxt');
+      if (!ta) return;
+      try {
+        await navigator.clipboard.writeText(ta.value);
+        A().toast('복사했다');
+      } catch (e) {
+        ta.select();
+        A().toast('글을 골라 두었다 — Ctrl+C');
+      }
+      return;
+    }
+    if (k === 'new') {
+      const n = prompt('던전 이름', '');
+      if (n === null) return;
+      const id = Math.random().toString(36).slice(2, 8),
+        e = Math.random().toString(36).slice(2, 7);
+      if (await upd({ ['list/' + id]: { n: n.trim() || '이름 없는 던전', al: 0, st: e, r: { [e]: { n: '입구', t: 'entry', x: 120, y: 320 } } } })) {
+        DG.ed = id;
+        DG.edSel = e;
+        edDraw();
+      }
+      return;
+    }
+    if (k === 'sample') {
+      const id = Math.random().toString(36).slice(2, 8);
+      const r = {
+          e: ['정문', 'entry', 110, 520],
+          a: ['녹슨 복도', 'room', 270, 520],
+          b: ['터빈실', 'battle', 440, 520],
+          s: ['관리실', 'safe', 440, 350],
+          c: ['감전 복도', 'trap', 620, 350],
+          p: ['배전반 퍼즐', 'puzzle', 440, 170],
+          t: ['잠긴 창고', 'treasure', 260, 170],
+          f: ['고압 통로', 'battle', 790, 350],
+          z: ['제어실', 'boss', 890, 150]
+        },
+        o = {};
+      Object.entries(r).forEach(([k2, [n, t, x, y]]) => (o[k2] = { n, t, x, y }));
+      if (
+        await upd({
+          ['list/' + id]: {
+            n: '샘플: 버려진 발전소',
+            o: '(예시) 발전소의 주인',
+            a: '전기 · 폐허',
+            al: 0,
+            st: 'e',
+            r: o,
+            l: Object.fromEntries(['e~a', 'a~b', 'b~s', 's~c', 'p~s', 'p~t', 'c~f', 'f~z'].map(x => [x, 1]))
+          }
+        })
+      ) {
+        DG.ed = id;
+        DG.edSel = '';
+        edDraw();
+        A().toast('샘플 던전을 만들었다 — 마음대로 고쳐 써');
+      }
+      return;
+    }
+    if (!d) return;
+    if (k === 'wclean') {
+      const W = wildOrphans();
+      if (!W.length) return;
+      const T = RO().trainers || {};
+      if (
+        !confirm(
+          `어느 던전에도 놓이지 않은 야생 시트 ${W.length}개를 지울까?\n${W.slice(0, 12)
+            .map(id => T[id].name)
+            .join(', ')}${W.length > 12 ? ' …' : ''}`
+        )
+      )
+        return;
+      const n = await wildDrop(W);
+      A().toast(n ? `야생 시트 ${n}개를 지웠다` : '지우지 못했다 (배틀에 나가 있는 것은 남긴다)');
+      edDraw();
+      return;
+    }
+    if (k === 'del') {
+      const W = wildOf(d.id);
+      if (
+        !confirm(
+          `「${d.n || '이름 없는 던전'}」 던전을 지울까? 방과 통로가 모두 지워진다.${W.length ? `\n이 던전의 야생 시트 ${W.length}개(포켓몬 · 화자 칩 포함)도 같이 지운다.` : ''}`
+        )
+      )
+        return;
+      const o = { ['list/' + d.id]: null };
+      if (W.length) {
+        const n = await wildDrop(W);
+        if (n) A().toast(`야생 시트 ${n}개를 같이 지웠다`);
+      }
+      if (field().did === d.id && field().mode === 'dungeon') {
+        o['field/mode'] = '';
+        o['field/t'] = Date.now();
+      }
+      if (await upd(o)) {
+        DG.ed = '';
+        DG.edSel = '';
+        edDraw();
+      }
+      return;
+    }
+    const id = DG.edSel,
+      r = R(d)[id];
+    if (!r) return;
+    if (k === 'rdel') {
+      if (!confirm(`「${r.n || '방'}」 방을 지울까?`)) return;
+      const p = P0(d.id),
+        o = { [p + 'r/' + id]: null };
+      Object.keys(d.l || {}).forEach(x => {
+        if (x.split('~').includes(id)) o[p + 'l/' + x] = null;
+      });
+      const rest = Object.keys(R(d)).filter(x => x !== id);
+      if (d.st === id) o[p + 'st'] = rest[0] || null;
+      if (d.at === id) o[p + 'at'] = (d.st !== id && d.st) || rest[0] || null;
+      if (await upd(o)) {
+        DG.edSel = '';
+        edDraw();
+      }
+      return;
+    }
+    if (k === 'start') {
+      await upd({ [P0(d.id) + 'st']: id });
+      return edDraw();
+    }
+    if (k === 'seen') {
+      await upd({ [P0(d.id) + 'r/' + id + '/s']: r.s ? null : 1 });
+      return edDraw();
+    }
+    if (k === 'imgdel') {
+      await upd({ [P0(d.id) + 'r/' + id + '/b']: null });
+      return edDraw();
+    }
+    if (k === 'skdel') {
+      await upd({ [P0(d.id) + 'r/' + id + '/sk']: null });
+      return edDraw();
+    }
+    if (k === 'cldel') {
+      if (!confirm('이 방의 단서를 지울까?')) return;
+      await upd({ [P0(d.id) + 'r/' + id + '/cl']: null, [P0(d.id) + 'r/' + id + '/cs']: null });
+      return edDraw();
+    }
+    if (k === 'climg') {
+      const f = b.files && b.files[0];
+      if (!f) return;
+      A().toast('올리는 중…');
+      try {
+        const u = await DBS().uploadImage(`rooms/${ST().room}/dgcl_${d.id}_${id}_${Date.now().toString(36)}`, await shrinkImg(f, 1600, 1600));
+        if (u) await upd({ [P0(d.id) + 'r/' + id + '/cl/img']: u });
+        edDraw();
+      } catch (e) {
+        A().toast('그림을 올리지 못했다: ' + e.message);
+      }
+      return;
+    }
+    if (k === 'img') {
+      const f = b.files && b.files[0];
+      if (!f) return;
+      A().toast('올리는 중…');
+      try {
+        const u = await DBS().uploadImage(`rooms/${ST().room}/dg_${d.id}_${id}_${Date.now().toString(36)}`, await shrinkImg(f, 1920, 1080));
+        if (u && (await upd({ [P0(d.id) + 'r/' + id + '/b']: u }))) A().toast('방 배경을 바꿨다');
+        edDraw();
+      } catch (e) {
+        A().toast('그림을 올리지 못했다: ' + e.message);
+      }
+    }
+  }
 
- /* ---------- 동행 포켓몬 고르기 (본인 · GM) ---------- */
+  /* ---------- 동행 포켓몬 고르기 (본인 · GM) ---------- */
 
- /* ---------- 탐사 중 포켓몬 손보기 (10-26 망령): PT 칸의 동행 포켓몬을 누르면 HP ± · 상태 이상 · 랭크 · 회복 — 시트(로스터) 값을 바로 고친다.
+  /* ---------- 탐사 중 포켓몬 손보기 (10-26 망령): PT 칸의 동행 포켓몬을 누르면 HP ± · 상태 이상 · 랭크 · 회복 — 시트(로스터) 값을 바로 고친다.
     랭크는 다음 배틀에 들고 들어가고(「결과 정리」 때 0), HP · 상태는 sheetHp · sheetStates (배틀 결과 정리와 같은 자리) ---------- */
- const ME_RK=[['attack','공격'],['defense','방어'],['specialattack','특공'],['specialdefense','특방'],['speed','스피드'],['accuracy','명중'],['evasion','회피']];
- const ME_ST=[['Poison','독'],['Toxic','맹독'],['Burn','화상'],['Paralysis','마비'],['Freeze','얼음'],['Sleep','잠듦'],['Confusion','혼란']];
- const ME_MAJOR=['Poison','Toxic','Burn','Paralysis','Freeze','Sleep'];
- function rkTxt(m){const rk=(m&&m.rank)||{};return ME_RK.filter(([k])=>+rk[k]).map(([k,n])=>n+(+rk[k]>0?'+':'')+(+rk[k])).join(' ')}
- function stCount(k){const d=((((window.OM_DB||{}).states||{}).st||{})[k])||{};return d.min>=1000||!d.min?1000:(+d.max>+d.min&&+d.max<1000?+d.min+Math.floor(Math.random()*(+d.max-+d.min+1)):+d.min)}
- function monEdit(mid){const m0=(RO().mons||{})[mid];if(!m0||!(gm()||canWalk(m0.tid)))return;const t=(RO().trainers||{})[m0.tid]||{};
-  const md=A().openModal('<div id="dgMe"></div>');const P=k=>['roster','mons',mid,k];
-  const draw=()=>{const m=(RO().mons||{})[mid];if(!m)return;const h=monHp(m),p=h.c/h.mx,ss=m.sheetStates||{},rk=m.rank||{};
-   md.querySelector('#dgMe').innerHTML=`<div class="mhead"><h2>${H(m.name)} <small class="dim">${H(t.name||'')} · 탐사 중</small></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
-   <div class="dgme"><div class="dgme-top"><span class="dgpt-img" style="${m.image?`background-image:url('${cssu(m.image)}')`:''}"></span><div class="dgme-hp"><b class="mono">${h.dead?'빈사':'HP '+h.c+' / '+h.mx}</b><span class="dgpt-hp ${p<=.25?'low':p<=.5?'mid':''}"><i style="width:${Math.round(p*100)}%"></i></span></div></div>
-   <div class="dgme-sec"><small>HP <span class="dim">(최대 HP 기준)</span></small><div class="dgme-row">${[['-1/2','−1/2'],['-1/4','−1/4'],['-1/8','−1/8'],['+1/8','+1/8'],['+1/4','+1/4'],['+1/2','+1/2']].map(([v,l])=>`<button class="btn sm ${v[0]==='-'?'':'ok'}" data-me-hp="${v}">${l}</button>`).join('')}<span class="dgme-set"><input type="number" id="dgMeHp" value="${h.c}" min="0" max="${h.mx}"><button class="btn sm" data-me-hp="set">로 정하기</button></span></div></div>
-   <div class="dgme-sec"><small>상태 이상 <span class="dim">(누르면 걸고 · 다시 누르면 푼다)</span></small><div class="dgme-row">${ME_ST.map(([k,n])=>`<button class="btn sm ${ss[k]?'pri':''}" data-me-st="${k}">${n}</button>`).join('')}</div></div>
-   <div class="dgme-sec"><small>랭크 <span class="dim">(다음 배틀로 들고 간다)</span></small><div class="dgme-rk">${ME_RK.map(([k,n])=>{const v=+rk[k]||0;return `<span class="${v>0?'up':v<0?'dn':''}"><b>${n}</b><button class="btn xs" data-me-rk="${k}" data-d="-1">−</button><em>${v>0?'+':''}${v}</em><button class="btn xs" data-me-rk="${k}" data-d="1">＋</button></span>`}).join('')}</div><button class="btn xs ghost" data-me-rk="reset">랭크 모두 0</button></div>
-   <div class="dgme-sec"><small>회복</small><div class="dgme-row"><button class="btn sm pri" data-me-heal="full">전부 회복 · HP 가득 · 상태 풀림 · 랭크 0</button>${h.dead?'<button class="btn sm" data-me-heal="revive">빈사에서 일으키기 (HP 1/4)</button>':''}</div></div></div>`};
-  const log=line=>A().sysLog(`【탐사】 ${(RO().mons[mid]||{}).name||''} — ${line}`,'battle',{mid,img:(RO().mons[mid]||{}).image||''});
-  const setHp=async(v,why)=>{const m=RO().mons[mid];const h=monHp(m);v=clamp(Math.round(v),0,h.mx);const ss=Object.assign({},m.sheetStates||{});if(v<=0)ss.Dead=1;else delete ss.Dead;
-   await A().set(P('sheetHp'),v);await A().set(P('sheetStates'),Object.keys(ss).length?ss:null);log(`HP ${h.dead?0:h.c} → ${v}/${h.mx}${why?' · '+why:''}${v<=0?' · 빈사':''}`)};
-  draw();
-  md.addEventListener('click',async e=>{if(e.target.closest('[data-x]'))return A().closeModal();const b=e.target.closest('[data-me-hp],[data-me-st],[data-me-rk],[data-me-heal]');if(!b)return;const m=RO().mons[mid];if(!m)return;const h=monHp(m);
-   if(b.dataset.meHp){const v=b.dataset.meHp;if(v==='set')await setHp(+(md.querySelector('#dgMeHp')||{}).value||0,'직접');else{const [n,dd]=v.slice(1).split('/').map(Number);const amt=Math.max(1,Math.floor(h.mx*n/dd));await setHp((h.dead?0:h.c)+(v[0]==='-'?-amt:amt),v)}}
-   else if(b.dataset.meSt){const k=b.dataset.meSt;const ss=Object.assign({},m.sheetStates||{});let line;if(ss[k]){delete ss[k];line=`「${stKo(k)}」 풀림`}else{if(ME_MAJOR.includes(k))ME_MAJOR.forEach(x=>delete ss[x]);ss[k]=stCount(k);line=`「${stKo(k)}」`}await A().set(P('sheetStates'),Object.keys(ss).length?ss:null);log(line)}
-   else if(b.dataset.meRk){const rk=Object.assign({attack:0,defense:0,specialattack:0,specialdefense:0,speed:0,accuracy:0,evasion:0,critical:0},m.rank||{});
-    if(b.dataset.meRk==='reset'){for(const k in rk)rk[k]=0;await A().set(P('rank'),rk);log('랭크 모두 0')}
-    else{const k=b.dataset.meRk,dd=+b.dataset.d;rk[k]=clamp((+rk[k]||0)+dd,-6,6);await A().set(P('rank'),rk);log(`${(ME_RK.find(x=>x[0]===k)||[k,k])[1]} ${dd>0?'+1':'−1'} (지금 ${rk[k]>0?'+':''}${rk[k]})`)}}
-   else if(b.dataset.meHeal==='full'){await A().set(P('sheetHp'),h.mx);await A().set(P('sheetStates'),null);await A().set(P('rank'),{attack:0,defense:0,specialattack:0,specialdefense:0,speed:0,accuracy:0,evasion:0,critical:0});log(`전부 회복 — HP ${h.mx}/${h.mx} · 상태 풀림 · 랭크 0`)}
-   else if(b.dataset.meHeal==='revive')await setHp(Math.max(1,Math.floor(h.mx/4)),'빈사에서 일으킴');
-   draw()})}
- function walkPick(tid){const d=cur();const t=(RO().trainers||{})[tid];if(!t||!canWalk(tid))return;const ms=RO().mons||{},n=WN(d);let sel=walkOf(tid);
-  const pids=tPids(t).filter(id=>ms[id]);
-  const m=A().openModal(`<div class="mhead"><h2>${H(t.name||'')} — 동행 포켓몬${t.two?' <small class="dim">2체 기준</small>':''}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small dim" style="margin:0 0 8px">탐색하며 데리고 다닐 포켓몬 <b>최대 ${n}체</b>. 야생 조우 때 이 순서대로 먼저 나간다.</p><ul class="pick dgwk" id="dgWk"></ul><div class="row" style="margin-top:10px"><button class="btn ghost" id="dgWkClr">모두 빼기</button><span class="sp"></span><button class="btn pri" id="dgWkOk">정하기</button></div>`);
-  const draw=()=>{m.querySelector('#dgWk').innerHTML=pids.map(id=>{const x=ms[id],h=monHp(x),i=sel.indexOf(id),p=h.c/h.mx;return `<li class="${i>=0?'on':''}${h.dead?' ko':''}" data-id="${H(id)}"><span class="dgpt-img" style="${x.image?`background-image:url('${cssu(x.image)}')`:''}"></span><span class="dgpt-mi"><b>${H(x.name)}</b> <small class="dim">Lv.${H(x.lv||'?')}</small><span class="dgpt-hp ${p<=.25?'low':p<=.5?'mid':''}"><i style="width:${Math.round(p*100)}%"></i></span><small>${h.dead?'빈사 — 데려갈 수 없다':h.c+'/'+h.mx}</small></span><span class="sp"></span><b class="dgwk-n">${i>=0?i+1:''}</b></li>`}).join('')||'<li class="dim">포켓몬이 없다</li>'};
-  draw();
-  m.querySelector('#dgWk').onclick=e=>{const li=e.target.closest('li[data-id]');if(!li||li.classList.contains('ko'))return;const id=li.dataset.id;const i=sel.indexOf(id);if(i>=0)sel.splice(i,1);else{if(sel.length>=n)sel.shift();sel.push(id)}draw()};
-  m.querySelector('#dgWkClr').onclick=()=>{sel=[];draw()};
-  m.querySelector('#dgWkOk').onclick=async()=>{A().closeModal();if(await A().set(['roster','trainers',tid,'walk'],sel.length?sel:null))A().toast(sel.length?`동행: ${sel.map(id=>ms[id].name).join(' · ')}`:'동행 포켓몬을 모두 뺐다')}}
- /* 일행 편성 (GM): 비우면 좌석 트레이너 전원 */
- function ptSet(d){const tr=RO().trainers||{},seats=SEATS(),cur0=new Set(party(d));const ids=Object.keys(tr).sort((a,b)=>(tr[a].ord||0)-(tr[b].ord||0));
-  const m=A().openModal(`<div class="mhead"><h2>일행 편성</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small dim" style="margin:0 0 8px">야생 조우 때 좌측에 서는 트레이너. 동행 NPC 를 넣거나 빠진 플레이어를 뺄 때.</p><ul class="pick">${ids.map(id=>`<li><label class="row" style="gap:8px;flex:1"><input type="checkbox" value="${H(id)}" ${cur0.has(id)?'checked':''}><b>${H(tr[id].name||id)}</b>${seats[id]?'<span class="tag">좌석</span>':''}</label></li>`).join('')}</ul><div class="row" style="margin-top:10px"><button class="btn ghost" id="dgPtDef">좌석 트레이너로 되돌리기</button><span class="sp"></span><button class="btn pri" id="dgPtOk">정하기</button></div>`);
-  m.querySelector('#dgPtDef').onclick=async()=>{A().closeModal();await upd({[P0(d.id)+'pt']:null})};
-  m.querySelector('#dgPtOk').onclick=async()=>{const v=[...m.querySelectorAll('input[type=checkbox]:checked')].map(x=>x.value);A().closeModal();await upd({[P0(d.id)+'pt']:v.length?Object.fromEntries(v.map(x=>[x,1])):null})}}
- /* ---------- 야생 조우 → 배틀 (app.js encounter) · 돌아오기 ---------- */
- async function startEnc(d,rid0){if(!gm())return;const id=rid0||d.at,r=R(d)[id];const e=encOf(r);if(!e)return A().toast('이 방에는 야생 포켓몬을 두지 않았다 — 던전 관리에서 배치');if(!e.t)return A().toast('이 방의 야생 무리 트레이너가 시트에 없다');
-  await gimEvent('battle',{rid:id});
-  const L=party(d),walk={};L.forEach(t=>walk[t]=walkOf(t));
-  const ok=await A().encounter({left:L,right:[r.e],walk,wn:WN(d),dg:{did:d.id,rid:id},title:`${d.n||'던전'} · ${r.n||ty(r.t).k}`});if(ok&&(+((d.gx||{}).foe)||0))await upd({[P0(d.id)+'gx/foe']:0});}
- {const st=document.createElement('style');st.textContent='.dgpt-two{font:inherit;font-size:11px;line-height:1;padding:3px 7px;margin:0 4px;border-radius:999px;border:1px solid currentColor;background:transparent;color:inherit;opacity:.65;cursor:pointer}.dgpt-two.on{opacity:1;font-weight:700;background:color-mix(in srgb,currentColor 14%,transparent)}.dgpt-two[disabled]{cursor:default}';document.head.appendChild(st)}
- /* 10-30: 일행 줄의 「6체 / 2체」 칩 — 줄을 누르면 열리는 동행 고르기보다 먼저 받는다 */
- document.addEventListener('click',async e=>{const b=e.target&&e.target.closest&&e.target.closest('[data-dgtwo]');if(!b)return;e.stopPropagation();e.preventDefault();const t=(RO().trainers||{})[b.dataset.dgtwo];if(t&&A().setTwo)await A().setTwo(t.id,!t.two)},true);
- document.addEventListener('click',e=>{if(e.target&&e.target.closest&&e.target.closest('button[data-s]'))setTimeout(()=>{try{retSync()}catch(_){}},60)});
- function retSync(){let el=document.getElementById('dgRet');const b=ST().state.battle||{},d=cur();/* 10-26 망령: RP 화면에서도 떠 있어 아래 줄과 겹쳤다 — 배틀 탭을 보고 있을 때만 */const want=gm()&&!!d&&ST().state.scene==='battle'&&!!b.dg&&b.dg.did===d.id&&!!document.querySelector('button[data-s="battle"].on');
-  if(!want){if(el)el.remove();return}
-  if(!el){el=document.createElement('button');el.id='dgRet';el.type='button';el.className='dg-ret';el.textContent='⛩ 던전으로 돌아가기';el.title='배틀을 마치고 던전 방으로 (결과 정리 · 클리어 표시)';el.onclick=retOpen;document.body.append(el)}}
- /* 10-31 망령 개수: 「9. 결과 정리를 했는데도 『결과 정리 먼저』」 — battle.resultAt(battle_ui 결과 정리)로 이미 했는지 본다.
+  const ME_RK = [
+    ['attack', '공격'],
+    ['defense', '방어'],
+    ['specialattack', '특공'],
+    ['specialdefense', '특방'],
+    ['speed', '스피드'],
+    ['accuracy', '명중'],
+    ['evasion', '회피']
+  ];
+  const ME_ST = [
+    ['Poison', '독'],
+    ['Toxic', '맹독'],
+    ['Burn', '화상'],
+    ['Paralysis', '마비'],
+    ['Freeze', '얼음'],
+    ['Sleep', '잠듦'],
+    ['Confusion', '혼란']
+  ];
+  const ME_MAJOR = ['Poison', 'Toxic', 'Burn', 'Paralysis', 'Freeze', 'Sleep'];
+  function rkTxt(m) {
+    const rk = (m && m.rank) || {};
+    return ME_RK.filter(([k]) => +rk[k])
+      .map(([k, n]) => n + (+rk[k] > 0 ? '+' : '') + +rk[k])
+      .join(' ');
+  }
+  function stCount(k) {
+    const d = (((window.OM_DB || {}).states || {}).st || {})[k] || {};
+    return d.min >= 1000 || !d.min ? 1000 : +d.max > +d.min && +d.max < 1000 ? +d.min + Math.floor(Math.random() * (+d.max - +d.min + 1)) : +d.min;
+  }
+  function monEdit(mid) {
+    const m0 = (RO().mons || {})[mid];
+    if (!m0 || !(gm() || canWalk(m0.tid))) return;
+    const t = (RO().trainers || {})[m0.tid] || {};
+    const md = A().openModal('<div id="dgMe"></div>');
+    const P = k => ['roster', 'mons', mid, k];
+    const draw = () => {
+      const m = (RO().mons || {})[mid];
+      if (!m) return;
+      const h = monHp(m),
+        p = h.c / h.mx,
+        ss = m.sheetStates || {},
+        rk = m.rank || {};
+      md.querySelector('#dgMe').innerHTML =
+        `<div class="mhead"><h2>${H(m.name)} <small class="dim">${H(t.name || '')} · 탐사 중</small></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+   <div class="dgme"><div class="dgme-top"><span class="dgpt-img" style="${m.image ? `background-image:url('${cssu(m.image)}')` : ''}"></span><div class="dgme-hp"><b class="mono">${h.dead ? '빈사' : 'HP ' + h.c + ' / ' + h.mx}</b><span class="dgpt-hp ${p <= 0.25 ? 'low' : p <= 0.5 ? 'mid' : ''}"><i style="width:${Math.round(p * 100)}%"></i></span></div></div>
+   <div class="dgme-sec"><small>HP <span class="dim">(최대 HP 기준)</span></small><div class="dgme-row">${[
+     ['-1/2', '−1/2'],
+     ['-1/4', '−1/4'],
+     ['-1/8', '−1/8'],
+     ['+1/8', '+1/8'],
+     ['+1/4', '+1/4'],
+     ['+1/2', '+1/2']
+   ]
+     .map(([v, l]) => `<button class="btn sm ${v[0] === '-' ? '' : 'ok'}" data-me-hp="${v}">${l}</button>`)
+     .join(
+       ''
+     )}<span class="dgme-set"><input type="number" id="dgMeHp" value="${h.c}" min="0" max="${h.mx}"><button class="btn sm" data-me-hp="set">로 정하기</button></span></div></div>
+   <div class="dgme-sec"><small>상태 이상 <span class="dim">(누르면 걸고 · 다시 누르면 푼다)</span></small><div class="dgme-row">${ME_ST.map(([k, n]) => `<button class="btn sm ${ss[k] ? 'pri' : ''}" data-me-st="${k}">${n}</button>`).join('')}</div></div>
+   <div class="dgme-sec"><small>랭크 <span class="dim">(다음 배틀로 들고 간다)</span></small><div class="dgme-rk">${ME_RK.map(([k, n]) => {
+     const v = +rk[k] || 0;
+     return `<span class="${v > 0 ? 'up' : v < 0 ? 'dn' : ''}"><b>${n}</b><button class="btn xs" data-me-rk="${k}" data-d="-1">−</button><em>${v > 0 ? '+' : ''}${v}</em><button class="btn xs" data-me-rk="${k}" data-d="1">＋</button></span>`;
+   }).join('')}</div><button class="btn xs ghost" data-me-rk="reset">랭크 모두 0</button></div>
+   <div class="dgme-sec"><small>회복</small><div class="dgme-row"><button class="btn sm pri" data-me-heal="full">전부 회복 · HP 가득 · 상태 풀림 · 랭크 0</button>${h.dead ? '<button class="btn sm" data-me-heal="revive">빈사에서 일으키기 (HP 1/4)</button>' : ''}</div></div></div>`;
+    };
+    const log = line =>
+      A().sysLog(`【탐사】 ${(RO().mons[mid] || {}).name || ''} — ${line}`, 'battle', { mid, img: (RO().mons[mid] || {}).image || '' });
+    const setHp = async (v, why) => {
+      const m = RO().mons[mid];
+      const h = monHp(m);
+      v = clamp(Math.round(v), 0, h.mx);
+      const ss = Object.assign({}, m.sheetStates || {});
+      if (v <= 0) ss.Dead = 1;
+      else delete ss.Dead;
+      await A().set(P('sheetHp'), v);
+      await A().set(P('sheetStates'), Object.keys(ss).length ? ss : null);
+      log(`HP ${h.dead ? 0 : h.c} → ${v}/${h.mx}${why ? ' · ' + why : ''}${v <= 0 ? ' · 빈사' : ''}`);
+    };
+    draw();
+    md.addEventListener('click', async e => {
+      if (e.target.closest('[data-x]')) return A().closeModal();
+      const b = e.target.closest('[data-me-hp],[data-me-st],[data-me-rk],[data-me-heal]');
+      if (!b) return;
+      const m = RO().mons[mid];
+      if (!m) return;
+      const h = monHp(m);
+      if (b.dataset.meHp) {
+        const v = b.dataset.meHp;
+        if (v === 'set') await setHp(+(md.querySelector('#dgMeHp') || {}).value || 0, '직접');
+        else {
+          const [n, dd] = v.slice(1).split('/').map(Number);
+          const amt = Math.max(1, Math.floor((h.mx * n) / dd));
+          await setHp((h.dead ? 0 : h.c) + (v[0] === '-' ? -amt : amt), v);
+        }
+      } else if (b.dataset.meSt) {
+        const k = b.dataset.meSt;
+        const ss = Object.assign({}, m.sheetStates || {});
+        let line;
+        if (ss[k]) {
+          delete ss[k];
+          line = `「${stKo(k)}」 풀림`;
+        } else {
+          if (ME_MAJOR.includes(k)) ME_MAJOR.forEach(x => delete ss[x]);
+          ss[k] = stCount(k);
+          line = `「${stKo(k)}」`;
+        }
+        await A().set(P('sheetStates'), Object.keys(ss).length ? ss : null);
+        log(line);
+      } else if (b.dataset.meRk) {
+        const rk = Object.assign(
+          { attack: 0, defense: 0, specialattack: 0, specialdefense: 0, speed: 0, accuracy: 0, evasion: 0, critical: 0 },
+          m.rank || {}
+        );
+        if (b.dataset.meRk === 'reset') {
+          for (const k in rk) rk[k] = 0;
+          await A().set(P('rank'), rk);
+          log('랭크 모두 0');
+        } else {
+          const k = b.dataset.meRk,
+            dd = +b.dataset.d;
+          rk[k] = clamp((+rk[k] || 0) + dd, -6, 6);
+          await A().set(P('rank'), rk);
+          log(`${(ME_RK.find(x => x[0] === k) || [k, k])[1]} ${dd > 0 ? '+1' : '−1'} (지금 ${rk[k] > 0 ? '+' : ''}${rk[k]})`);
+        }
+      } else if (b.dataset.meHeal === 'full') {
+        await A().set(P('sheetHp'), h.mx);
+        await A().set(P('sheetStates'), null);
+        await A().set(P('rank'), { attack: 0, defense: 0, specialattack: 0, specialdefense: 0, speed: 0, accuracy: 0, evasion: 0, critical: 0 });
+        log(`전부 회복 — HP ${h.mx}/${h.mx} · 상태 풀림 · 랭크 0`);
+      } else if (b.dataset.meHeal === 'revive') await setHp(Math.max(1, Math.floor(h.mx / 4)), '빈사에서 일으킴');
+      draw();
+    });
+  }
+  function walkPick(tid) {
+    const d = cur();
+    const t = (RO().trainers || {})[tid];
+    if (!t || !canWalk(tid)) return;
+    const ms = RO().mons || {},
+      n = WN(d);
+    let sel = walkOf(tid);
+    const pids = tPids(t).filter(id => ms[id]);
+    const m = A().openModal(
+      `<div class="mhead"><h2>${H(t.name || '')} — 동행 포켓몬${t.two ? ' <small class="dim">2체 기준</small>' : ''}</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small dim" style="margin:0 0 8px">탐색하며 데리고 다닐 포켓몬 <b>최대 ${n}체</b>. 야생 조우 때 이 순서대로 먼저 나간다.</p><ul class="pick dgwk" id="dgWk"></ul><div class="row" style="margin-top:10px"><button class="btn ghost" id="dgWkClr">모두 빼기</button><span class="sp"></span><button class="btn pri" id="dgWkOk">정하기</button></div>`
+    );
+    const draw = () => {
+      m.querySelector('#dgWk').innerHTML =
+        pids
+          .map(id => {
+            const x = ms[id],
+              h = monHp(x),
+              i = sel.indexOf(id),
+              p = h.c / h.mx;
+            return `<li class="${i >= 0 ? 'on' : ''}${h.dead ? ' ko' : ''}" data-id="${H(id)}"><span class="dgpt-img" style="${x.image ? `background-image:url('${cssu(x.image)}')` : ''}"></span><span class="dgpt-mi"><b>${H(x.name)}</b> <small class="dim">Lv.${H(x.lv || '?')}</small><span class="dgpt-hp ${p <= 0.25 ? 'low' : p <= 0.5 ? 'mid' : ''}"><i style="width:${Math.round(p * 100)}%"></i></span><small>${h.dead ? '빈사 — 데려갈 수 없다' : h.c + '/' + h.mx}</small></span><span class="sp"></span><b class="dgwk-n">${i >= 0 ? i + 1 : ''}</b></li>`;
+          })
+          .join('') || '<li class="dim">포켓몬이 없다</li>';
+    };
+    draw();
+    m.querySelector('#dgWk').onclick = e => {
+      const li = e.target.closest('li[data-id]');
+      if (!li || li.classList.contains('ko')) return;
+      const id = li.dataset.id;
+      const i = sel.indexOf(id);
+      if (i >= 0) sel.splice(i, 1);
+      else {
+        if (sel.length >= n) sel.shift();
+        sel.push(id);
+      }
+      draw();
+    };
+    m.querySelector('#dgWkClr').onclick = () => {
+      sel = [];
+      draw();
+    };
+    m.querySelector('#dgWkOk').onclick = async () => {
+      A().closeModal();
+      if (await A().set(['roster', 'trainers', tid, 'walk'], sel.length ? sel : null))
+        A().toast(sel.length ? `동행: ${sel.map(id => ms[id].name).join(' · ')}` : '동행 포켓몬을 모두 뺐다');
+    };
+  }
+  /* 일행 편성 (GM): 비우면 좌석 트레이너 전원 */
+  function ptSet(d) {
+    const tr = RO().trainers || {},
+      seats = SEATS(),
+      cur0 = new Set(party(d));
+    const ids = Object.keys(tr).sort((a, b) => (tr[a].ord || 0) - (tr[b].ord || 0));
+    const m = A().openModal(
+      `<div class="mhead"><h2>일행 편성</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small dim" style="margin:0 0 8px">야생 조우 때 좌측에 서는 트레이너. 동행 NPC 를 넣거나 빠진 플레이어를 뺄 때.</p><ul class="pick">${ids.map(id => `<li><label class="row" style="gap:8px;flex:1"><input type="checkbox" value="${H(id)}" ${cur0.has(id) ? 'checked' : ''}><b>${H(tr[id].name || id)}</b>${seats[id] ? '<span class="tag">좌석</span>' : ''}</label></li>`).join('')}</ul><div class="row" style="margin-top:10px"><button class="btn ghost" id="dgPtDef">좌석 트레이너로 되돌리기</button><span class="sp"></span><button class="btn pri" id="dgPtOk">정하기</button></div>`
+    );
+    m.querySelector('#dgPtDef').onclick = async () => {
+      A().closeModal();
+      await upd({ [P0(d.id) + 'pt']: null });
+    };
+    m.querySelector('#dgPtOk').onclick = async () => {
+      const v = [...m.querySelectorAll('input[type=checkbox]:checked')].map(x => x.value);
+      A().closeModal();
+      await upd({ [P0(d.id) + 'pt']: v.length ? Object.fromEntries(v.map(x => [x, 1])) : null });
+    };
+  }
+  /* ---------- 야생 조우 → 배틀 (app.js encounter) · 돌아오기 ---------- */
+  async function startEnc(d, rid0) {
+    if (!gm()) return;
+    const id = rid0 || d.at,
+      r = R(d)[id];
+    const e = encOf(r);
+    if (!e) return A().toast('이 방에는 야생 포켓몬을 두지 않았다 — 던전 관리에서 배치');
+    if (!e.t) return A().toast('이 방의 야생 무리 트레이너가 시트에 없다');
+    await gimEvent('battle', { rid: id });
+    const L = party(d),
+      walk = {};
+    L.forEach(t => (walk[t] = walkOf(t)));
+    const ok = await A().encounter({
+      left: L,
+      right: [r.e],
+      walk,
+      wn: WN(d),
+      dg: { did: d.id, rid: id },
+      title: `${d.n || '던전'} · ${r.n || ty(r.t).k}`
+    });
+    if (ok && (+(d.gx || {}).foe || 0)) await upd({ [P0(d.id) + 'gx/foe']: 0 });
+  }
+  {
+    const st = document.createElement('style');
+    st.textContent =
+      '.dgpt-two{font:inherit;font-size:11px;line-height:1;padding:3px 7px;margin:0 4px;border-radius:999px;border:1px solid currentColor;background:transparent;color:inherit;opacity:.65;cursor:pointer}.dgpt-two.on{opacity:1;font-weight:700;background:color-mix(in srgb,currentColor 14%,transparent)}.dgpt-two[disabled]{cursor:default}';
+    document.head.appendChild(st);
+  }
+  /* 10-30: 일행 줄의 「6체 / 2체」 칩 — 줄을 누르면 열리는 동행 고르기보다 먼저 받는다 */
+  document.addEventListener(
+    'click',
+    async e => {
+      const b = e.target && e.target.closest && e.target.closest('[data-dgtwo]');
+      if (!b) return;
+      e.stopPropagation();
+      e.preventDefault();
+      const t = (RO().trainers || {})[b.dataset.dgtwo];
+      if (t && A().setTwo) await A().setTwo(t.id, !t.two);
+    },
+    true
+  );
+  document.addEventListener('click', e => {
+    if (e.target && e.target.closest && e.target.closest('button[data-s]'))
+      setTimeout(() => {
+        try {
+          retSync();
+        } catch (_) {}
+      }, 60);
+  });
+  function retSync() {
+    let el = document.getElementById('dgRet');
+    const b = ST().state.battle || {},
+      d = cur();
+    /* 10-26 망령: RP 화면에서도 떠 있어 아래 줄과 겹쳤다 — 배틀 탭을 보고 있을 때만 */ const want =
+      gm() && !!d && ST().state.scene === 'battle' && !!b.dg && b.dg.did === d.id && !!document.querySelector('button[data-s="battle"].on');
+    if (!want) {
+      if (el) el.remove();
+      return;
+    }
+    if (!el) {
+      el = document.createElement('button');
+      el.id = 'dgRet';
+      el.type = 'button';
+      el.className = 'dg-ret';
+      el.textContent = '⛩ 던전으로 돌아가기';
+      el.title = '배틀을 마치고 던전 방으로 (결과 정리 · 클리어 표시)';
+      el.onclick = retOpen;
+      document.body.append(el);
+    }
+  }
+  /* 10-31 망령 개수: 「9. 결과 정리를 했는데도 『결과 정리 먼저』」 — battle.resultAt(battle_ui 결과 정리)로 이미 했는지 본다.
     「4. 배틀 승/패 경계도를 전투마다」 — 방 r.aw(이김) · r.alo(짐), 없으면 던전 d.aw · d.alo. 이김/짐/올리지 않음을 고르고 수치를 고칠 수 있다.
     「4식 · 6령」 — 배틀에서 쓴 횟수(배틀 쪽 사본)를 시트에 돌려 적고 배틀을 done 으로 (파티 현황 · 체크 · 휴식이 시트 쪽을 본다) */
- /* 10-31 망령 「예전 던전도 지면 +10」: 방 값 → 던전 값 → 시뮬 자동 생성 던전(d.src)이면 시뮬 규칙 기본값(이기면 +5 · 보스방 0 · 지면 +10) → 0 */
- const isAuto=d=>!!(d&&d.src&&(d.src.tier||d.src.seed));
- const awOf=(d,r)=>r.aw??(r.t==='boss'?0:(d.aw??(isAuto(d)?5:0))),aloOf=(d,r)=>r.alo??d.alo??(isAuto(d)?10:0);
- function retOpen(){const d=cur(),b=ST().state.battle||{};if(!d||!b.dg)return;const rid0=b.dg.rid,r=R(d)[rid0]||{};const MS=Object.values(b.mons||{});const foes=MS.filter(m=>m.side==='right'),mine=MS.filter(m=>m.side==='left');const dead=m=>((m.hp||{}).cur||0)<=0;
-  const win=foes.length>0&&foes.every(dead),lose=!win&&mine.length>0&&mine.every(dead);const res=!!b.resultAt;const al=alOn(d);
-  const aw=awOf(d,r),alo=aloOf(d,r);const pick=win?'w':lose?'l':'n';
-  const m=A().openModal(`<div class="mhead"><h2>⛩ 던전으로 돌아가기</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small" style="margin:0 0 8px">${win?'야생 포켓몬을 모두 쓰러뜨렸다.':lose?'일행의 포켓몬이 모두 쓰러졌다.':'아직 서 있는 포켓몬이 있다 (도망 · 포획 · 중단).'} ${res?'<b>결과 정리를 마쳤다</b> — 일행의 HP · 상태가 시트에 남았다.':'일행의 HP · 상태를 시트에 남기려면 먼저 <b>결과 정리</b>를 한다.'}</p><label class="row" style="gap:6px"><input type="checkbox" id="dgRetClr" ${win?'checked':''}> 「${H(r.n||ty(r.t).k)}」 클리어 표시 (야생 기척 없애기)</label>
-   <label class="row" style="gap:6px;margin-top:6px" title="11-05 망령: 배틀이 끝나면 숨돌리기 하나 — 트레이너마다 가장 다친 1체 HP 1/4 · 빈사는 HP 1 (경계도 30 미만이면 HP 회복이 일행 전원 · 「붕대와 진통제」를 썼으면 빈사 1체를 HP 3/4)"><input type="checkbox" id="dgRetBr" ${(win||lose)&&r.t!=='boss'?'checked':''} ${res?'':'disabled'}> 🌬 숨돌리기 (배틀이 끝난 뒤)${res?'':' <span class="small dim">— 결과 정리를 한 뒤에</span>'}</label>
-   ${al?`<div class="row" style="gap:6px;margin-top:8px;align-items:center"><span class="small">경계도</span><select id="dgRetAl"><option value="w" ${pick==='w'?'selected':''}>이겼다 (+${aw})</option><option value="l" ${pick==='l'?'selected':''}>졌다 (+${alo})</option><option value="n" ${pick==='n'?'selected':''}>올리지 않음</option></select><span class="small">+</span><input type="number" id="dgRetAlN" value="${pick==='w'?aw:pick==='l'?alo:0}" style="width:64px"><span class="small dim">지금 ${clamp(+d.al||0,0,100)}%</span></div>`:''}
-   <div class="row" style="margin-top:12px"><button class="btn ${res?'ghost':''}" id="dgRetRes">${res?'📋 결과 정리 다시':'📋 결과 정리 먼저'}</button><span class="sp"></span><button class="btn pri" id="dgRetGo">⛩ 던전으로</button></div>`);
-  const sel=m.querySelector('#dgRetAl'),num=m.querySelector('#dgRetAlN');if(sel)sel.onchange=()=>{num.value=sel.value==='w'?aw:sel.value==='l'?alo:0};
-  m.querySelector('#dgRetRes').onclick=()=>{A().closeModal();try{window.OM_BATTLE_UI.action({act:'result'})}catch(e){}};
-  m.querySelector('#dgRetGo').onclick=async()=>{const clr=m.querySelector('#dgRetClr').checked;const ak=sel?sel.value:'n',an=num?Math.round(+num.value||0):0;A().closeModal();
-   /* 배틀에서 쓴 4식 · 6령 → 시트 */{const RT=RO().trainers||{};const ops=[];const seen=new Set();for(const tid of ((b.sides||{}).left||{}).trainers||[]){const bt=(b.trainers||{})[tid];if(!bt||!bt.orderCount)continue;const id=RT[tid]?tid:(bt.srcTid&&RT[bt.srcTid]?bt.srcTid:'');if(!id||seen.has(id))continue;seen.add(id);const oc=Object.assign({},RT[id].orderCount||{});let ch=false;for(const [k,v] of Object.entries(bt.orderCount))if(/^(order|command)_/.test(k)&&!/@/.test(k)&&(+oc[k]||0)!==(+v||0)){oc[k]=Math.max(0,+v||0);ch=true}if(ch)ops.push([['roster','trainers',id,'orderCount'],oc])}
-    ops.push([['battle','done'],1]);await A().setMany(ops)}
-   if(clr&&R(d)[rid0])await upd({[P0(d.id)+'r/'+rid0+'/c']:1});
-   /* 11-05 망령 「배틀이 끝나면 숨돌리기 하나 줘」: 결과 정리 뒤(시트 HP 기준) · 휴식 경계도 −10 은 없음 · 경계도 30 미만이면 한 단계 위(세이프룸과 같음) */
-   {const br=m.querySelector('#dgRetBr');if(br&&br.checked&&res){const K=SKU();if(K&&K.applyRest){try{await restGo(d,'breath',party(d),`${d.n||'던전'} · 배틀 뒤`)}catch(e){console.warn('배틀 뒤 숨돌리기',e)}}}}
-   let alTxt='';if(al&&ak!=='n'&&an)alTxt=await alAdd(an,ak==='w'?'배틀 승리':'배틀 패배');if(ak==='w'||ak==='l')try{await gimEvent(ak==='w'?'win':'lose',{})}catch(e){}
-   await A().set(['battle','dg'],null);await A().set(['scene'],'rp');notice(`⛩ ${ro(d.n||'던전')} 돌아왔다${clr?` — 「${r.n||ty(r.t).k}」 클리어`:''}`);try{A().goView('rp')}catch(e){}}}
+  /* 10-31 망령 「예전 던전도 지면 +10」: 방 값 → 던전 값 → 시뮬 자동 생성 던전(d.src)이면 시뮬 규칙 기본값(이기면 +5 · 보스방 0 · 지면 +10) → 0 */
+  const isAuto = d => !!(d && d.src && (d.src.tier || d.src.seed));
+  const awOf = (d, r) => r.aw ?? (r.t === 'boss' ? 0 : (d.aw ?? (isAuto(d) ? 5 : 0))),
+    aloOf = (d, r) => r.alo ?? d.alo ?? (isAuto(d) ? 10 : 0);
+  function retOpen() {
+    const d = cur(),
+      b = ST().state.battle || {};
+    if (!d || !b.dg) return;
+    const rid0 = b.dg.rid,
+      r = R(d)[rid0] || {};
+    const MS = Object.values(b.mons || {});
+    const foes = MS.filter(m => m.side === 'right'),
+      mine = MS.filter(m => m.side === 'left');
+    const dead = m => ((m.hp || {}).cur || 0) <= 0;
+    const win = foes.length > 0 && foes.every(dead),
+      lose = !win && mine.length > 0 && mine.every(dead);
+    const res = !!b.resultAt;
+    const al = alOn(d);
+    const aw = awOf(d, r),
+      alo = aloOf(d, r);
+    const pick = win ? 'w' : lose ? 'l' : 'n';
+    const m = A()
+      .openModal(`<div class="mhead"><h2>⛩ 던전으로 돌아가기</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small" style="margin:0 0 8px">${win ? '야생 포켓몬을 모두 쓰러뜨렸다.' : lose ? '일행의 포켓몬이 모두 쓰러졌다.' : '아직 서 있는 포켓몬이 있다 (도망 · 포획 · 중단).'} ${res ? '<b>결과 정리를 마쳤다</b> — 일행의 HP · 상태가 시트에 남았다.' : '일행의 HP · 상태를 시트에 남기려면 먼저 <b>결과 정리</b>를 한다.'}</p><label class="row" style="gap:6px"><input type="checkbox" id="dgRetClr" ${win ? 'checked' : ''}> 「${H(r.n || ty(r.t).k)}」 클리어 표시 (야생 기척 없애기)</label>
+   <label class="row" style="gap:6px;margin-top:6px" title="11-05 망령: 배틀이 끝나면 숨돌리기 하나 — 트레이너마다 가장 다친 1체 HP 1/4 · 빈사는 HP 1 (경계도 30 미만이면 HP 회복이 일행 전원 · 「붕대와 진통제」를 썼으면 빈사 1체를 HP 3/4)"><input type="checkbox" id="dgRetBr" ${(win || lose) && r.t !== 'boss' ? 'checked' : ''} ${res ? '' : 'disabled'}> 🌬 숨돌리기 (배틀이 끝난 뒤)${res ? '' : ' <span class="small dim">— 결과 정리를 한 뒤에</span>'}</label>
+   ${al ? `<div class="row" style="gap:6px;margin-top:8px;align-items:center"><span class="small">경계도</span><select id="dgRetAl"><option value="w" ${pick === 'w' ? 'selected' : ''}>이겼다 (+${aw})</option><option value="l" ${pick === 'l' ? 'selected' : ''}>졌다 (+${alo})</option><option value="n" ${pick === 'n' ? 'selected' : ''}>올리지 않음</option></select><span class="small">+</span><input type="number" id="dgRetAlN" value="${pick === 'w' ? aw : pick === 'l' ? alo : 0}" style="width:64px"><span class="small dim">지금 ${clamp(+d.al || 0, 0, 100)}%</span></div>` : ''}
+   <div class="row" style="margin-top:12px"><button class="btn ${res ? 'ghost' : ''}" id="dgRetRes">${res ? '📋 결과 정리 다시' : '📋 결과 정리 먼저'}</button><span class="sp"></span><button class="btn pri" id="dgRetGo">⛩ 던전으로</button></div>`);
+    const sel = m.querySelector('#dgRetAl'),
+      num = m.querySelector('#dgRetAlN');
+    if (sel)
+      sel.onchange = () => {
+        num.value = sel.value === 'w' ? aw : sel.value === 'l' ? alo : 0;
+      };
+    m.querySelector('#dgRetRes').onclick = () => {
+      A().closeModal();
+      try {
+        window.OM_BATTLE_UI.action({ act: 'result' });
+      } catch (e) {}
+    };
+    m.querySelector('#dgRetGo').onclick = async () => {
+      const clr = m.querySelector('#dgRetClr').checked;
+      const ak = sel ? sel.value : 'n',
+        an = num ? Math.round(+num.value || 0) : 0;
+      A().closeModal();
+      /* 배틀에서 쓴 4식 · 6령 → 시트 */ {
+        const RT = RO().trainers || {};
+        const ops = [];
+        const seen = new Set();
+        for (const tid of ((b.sides || {}).left || {}).trainers || []) {
+          const bt = (b.trainers || {})[tid];
+          if (!bt || !bt.orderCount) continue;
+          const id = RT[tid] ? tid : bt.srcTid && RT[bt.srcTid] ? bt.srcTid : '';
+          if (!id || seen.has(id)) continue;
+          seen.add(id);
+          const oc = Object.assign({}, RT[id].orderCount || {});
+          let ch = false;
+          for (const [k, v] of Object.entries(bt.orderCount))
+            if (/^(order|command)_/.test(k) && !/@/.test(k) && (+oc[k] || 0) !== (+v || 0)) {
+              oc[k] = Math.max(0, +v || 0);
+              ch = true;
+            }
+          if (ch) ops.push([['roster', 'trainers', id, 'orderCount'], oc]);
+        }
+        ops.push([['battle', 'done'], 1]);
+        await A().setMany(ops);
+      }
+      if (clr && R(d)[rid0]) await upd({ [P0(d.id) + 'r/' + rid0 + '/c']: 1 });
+      /* 11-05 망령 「배틀이 끝나면 숨돌리기 하나 줘」: 결과 정리 뒤(시트 HP 기준) · 휴식 경계도 −10 은 없음 · 경계도 30 미만이면 한 단계 위(세이프룸과 같음) */
+      {
+        const br = m.querySelector('#dgRetBr');
+        if (br && br.checked && res) {
+          const K = SKU();
+          if (K && K.applyRest) {
+            try {
+              await restGo(d, 'breath', party(d), `${d.n || '던전'} · 배틀 뒤`);
+            } catch (e) {
+              console.warn('배틀 뒤 숨돌리기', e);
+            }
+          }
+        }
+      }
+      let alTxt = '';
+      if (al && ak !== 'n' && an) alTxt = await alAdd(an, ak === 'w' ? '배틀 승리' : '배틀 패배');
+      if (ak === 'w' || ak === 'l')
+        try {
+          await gimEvent(ak === 'w' ? 'win' : 'lose', {});
+        } catch (e) {}
+      await A().set(['battle', 'dg'], null);
+      await A().set(['scene'], 'rp');
+      notice(`⛩ ${ro(d.n || '던전')} 돌아왔다${clr ? ` — 「${r.n || ty(r.t).k}」 클리어` : ''}`);
+      try {
+        A().goView('rp');
+      } catch (e) {}
+    };
+  }
 
- /* 지도 연계 (10-26 망령): 지도 장소에 던전을 걸어 두고 그 핀에서 바로 진입 — rp_ui 의 지도 메뉴가 부른다 */
- function list(){return Object.entries(all()).map(([id,d])=>({id,n:d.n||'이름 없는 던전',rooms:Object.keys(R(d)).length,opts:startOptions(d)}))}
- async function enter(id,s,from){const d=all()[id];if(!d||!gm())return false;const o=startOptions(d);s=s&&R(d)[s]?s:(o[0]||[])[0];if(!s)return A().toast('던전에 방이 없다 — 던전 관리에서 만든다'),false;
-  const p=P0(id);if(await upd({field:{mode:'dungeon',did:id,t:Date.now()},[p+'at']:s,[p+'r/'+s+'/s']:1,[p+'al']:alOn(d)?AL0:0,[p+'restUp']:null,[p+'bossDn']:null,[p+'guide']:null})){notice(`⚔ 던전 진입 — ${d.n||'던전'}${from?' ('+from+')':''}${alOn(d)?` · 경계도 ${AL0}%`:''}`);skStart(d);return true}return false}
- /* 11-01 은열쇠: 던전 시작 — 손패가 빈 일행은 덱 설정 「시작 손패」만큼 뽑는다 */
- /* 11-04 05:12 망령 「응 가득 채워. 물론 대가로 빼 둔 걸 제외하고」: 던전에 들어갈 때 일행의 4식 · 6령을 가득으로(fullOf = 2체 기준 고른 것 · 각성체 대가 0) */
- async function ordFill(d){const RT=RO().trainers||{};const ops=[],L=[];for(const tid of party(d)){const t=RT[tid];if(!t)continue;const F=fullOf(tid,t);if(!F||!Object.keys(F).length)continue;const cur=t.orderCount||{};const nx=Object.assign({},cur,F);let up=0;for(const k in F)if((+cur[k]||0)!==(+F[k]||0))up++;if(!up)continue;ops.push([['roster','trainers',tid,'orderCount'],nx]);L.push(t.name||tid)}
-  if(!ops.length)return;try{if(await A().setMany(ops))notice(`【4식 · 6령】 던전 진입 — 가득 채움 (각성체 대가 칸 제외): ${L.join(' · ')}`)}catch(e){console.warn('ordFill',e)}}
- function skStart(d){ordFill(d).catch(e=>console.warn(e));setTimeout(()=>gimEvent('enter',{}).catch(e=>console.warn(e)),300);try{const DK=window.OM_DECK_UI;if(DK&&DK.beat)DK.beat('start',party(d)).catch(e=>console.warn(e))}catch(e){}}
- function nameOf(id){const d=all()[id];return d?(d.n||'이름 없는 던전'):''}
- /* ---------- 11-04 던전 기믹 (망령 「던전 기믹도 로직화 시키고 시스템에 넣을 방법」 · 노트 27) ----------
+  /* 지도 연계 (10-26 망령): 지도 장소에 던전을 걸어 두고 그 핀에서 바로 진입 — rp_ui 의 지도 메뉴가 부른다 */
+  function list() {
+    return Object.entries(all()).map(([id, d]) => ({ id, n: d.n || '이름 없는 던전', rooms: Object.keys(R(d)).length, opts: startOptions(d) }));
+  }
+  async function enter(id, s, from) {
+    const d = all()[id];
+    if (!d || !gm()) return false;
+    const o = startOptions(d);
+    s = s && R(d)[s] ? s : (o[0] || [])[0];
+    if (!s) return (A().toast('던전에 방이 없다 — 던전 관리에서 만든다'), false);
+    const p = P0(id);
+    if (
+      await upd({
+        field: { mode: 'dungeon', did: id, t: Date.now() },
+        [p + 'at']: s,
+        [p + 'r/' + s + '/s']: 1,
+        [p + 'al']: alOn(d) ? AL0 : 0,
+        [p + 'restUp']: null,
+        [p + 'bossDn']: null,
+        [p + 'guide']: null
+      })
+    ) {
+      notice(`⚔ 던전 진입 — ${d.n || '던전'}${from ? ' (' + from + ')' : ''}${alOn(d) ? ` · 경계도 ${AL0}%` : ''}`);
+      skStart(d);
+      return true;
+    }
+    return false;
+  }
+  /* 11-01 은열쇠: 던전 시작 — 손패가 빈 일행은 덱 설정 「시작 손패」만큼 뽑는다 */
+  /* 11-04 05:12 망령 「응 가득 채워. 물론 대가로 빼 둔 걸 제외하고」: 던전에 들어갈 때 일행의 4식 · 6령을 가득으로(fullOf = 2체 기준 고른 것 · 각성체 대가 0) */
+  async function ordFill(d) {
+    const RT = RO().trainers || {};
+    const ops = [],
+      L = [];
+    for (const tid of party(d)) {
+      const t = RT[tid];
+      if (!t) continue;
+      const F = fullOf(tid, t);
+      if (!F || !Object.keys(F).length) continue;
+      const cur = t.orderCount || {};
+      const nx = Object.assign({}, cur, F);
+      let up = 0;
+      for (const k in F) if ((+cur[k] || 0) !== (+F[k] || 0)) up++;
+      if (!up) continue;
+      ops.push([['roster', 'trainers', tid, 'orderCount'], nx]);
+      L.push(t.name || tid);
+    }
+    if (!ops.length) return;
+    try {
+      if (await A().setMany(ops)) notice(`【4식 · 6령】 던전 진입 — 가득 채움 (각성체 대가 칸 제외): ${L.join(' · ')}`);
+    } catch (e) {
+      console.warn('ordFill', e);
+    }
+  }
+  function skStart(d) {
+    ordFill(d).catch(e => console.warn(e));
+    setTimeout(() => gimEvent('enter', {}).catch(e => console.warn(e)), 300);
+    try {
+      const DK = window.OM_DECK_UI;
+      if (DK && DK.beat) DK.beat('start', party(d)).catch(e => console.warn(e));
+    } catch (e) {}
+  }
+  function nameOf(id) {
+    const d = all()[id];
+    return d ? d.n || '이름 없는 던전' : '';
+  }
+  /* ---------- 11-04 던전 기믹 (망령 「던전 기믹도 로직화 시키고 시스템에 넣을 방법」 · 노트 27) ----------
     d.gim = [{id, n 이름, on 'room'(처음 들어가는 방) | 'rest'(세이프룸 휴식) | 'check'(던전 체크 실패) | 'battle'(조우 직전), every N번째마다, where [방 종류 · 방 id], to 'all' | 'healthiest' | 'lead' | 'random',
               do {step 상태 단계 · al 경계도 · hp 동행 HP 비율 · foeLv 다음 조우 Lv · bossLv 보스방 Lv · rest 휴식 단계 −}, unless {type 동행 타입 · flag 표식}, memo}]
     방 r.rw = {flag, memo}: 그 방을 떠날 때 표식을 얻는다(d.fl) → unless.flag 가 그 표식이면 기믹이 꺼진다. 『미궁 포텐셜』(던전 배틀 안의 고유)은 이것과 다르다 — 야생 트레이너 시트의 고유 · 효과 엔진 */
- const GIM_ON=['room','rest','check','battle'],GIM_TO=['all','healthiest','lead','random'];
- function gimNorm(L){return (L||[]).slice(0,12).map((g,i)=>{if(!g||typeof g!=='object')return null;const o={id:sKey(String(g.id||'g'+(i+1)))||('g'+(i+1)),n:sTxt(g.n||g.name||g.id||'기믹',30),on:GIM_ON.includes(g.on)?g.on:'room'};if(+g.every>1)o.every=clamp(Math.round(+g.every),2,9);if(Array.isArray(g.where)&&g.where.length)o.where=g.where.slice(0,12).map(x=>sTxt(x,20));if(GIM_TO.includes(g.to))o.to=g.to;
-  const d=g.do||{},q={};for(const f of ['step','al','foeLv','bossLv','rest'])if(+d[f])q[f]=clamp(Math.round(+d[f]),-50,50);if(d.hp&&/^\d+\/\d+$/.test(String(d.hp)))q.hp=String(d.hp);o.do=q;const u=g.unless||{},uu={};if(u.type)uu.type=sTxt(u.type,10);if(u.flag)uu.flag=sTxt(u.flag,20);if(Object.keys(uu).length)o.unless=uu;if(g.cond&&g.cond.fail)o.cond={fail:1};if(g.memo)o.memo=sTxt(g.memo,120);return o}).filter(Boolean)}
- async function gimEvent(on,ctx){ctx=ctx||{};const G=window.OM_DG_GIM;const d=cur();if(!G||!d||!gm())return ctx;return G.run(on,ctx,{d,R,party,walkOf,alAdd,upd,P0,notice})}
- /* 방을 떠날 때 그 방의 곁방 보상 표식을 얻는다 */
- async function gimLeave(d,rid){const r=R(d)[rid];if(!r||!r.rw||!r.rw.flag||(d.fl||{})[r.rw.flag])return;if(await upd({[P0(d.id)+'fl/'+r.rw.flag]:1}))notice(`[${d.n||'던전'}] ✦ 표식 「${r.rw.flag}」 을 얻었다${r.rw.memo?' — '+r.rw.memo:''}`)}
- /* 10-28: 스킬 체크 패널티의 경계도(skill_ui pen.al) — 탐색 중인 던전의 경계도를 올린다. 경계도를 끈 던전 · 던전 밖이면 아무 일도 안 한다 */
- async function alAdd(delta,why,opt){opt=opt||{};const d=cur();if(!d||!alOn(d)||!(+delta))return '';const before=clamp(+d.al||0,0,100),after=clamp(before+(+delta),0,100);if(after===before)return '';if(!await upd({[P0(d.id)+'al']:after}))return '';if(!opt.quiet)notice(`[${d.n||'던전'}] 경계도 ${after>before?'+':''}${after-before}${why?' ('+why+')':''} → ${after}%`);
-  /* 11-04 기믹 「경계도가 기준을 넘을 때」 — 기믹 자신이 올린 경계도(quiet)는 다시 걸지 않는다 */if(!opt.quiet&&after>before)try{await gimEvent('alert',{from:before,to:after})}catch(e){}
-  return `경계도 ${after>before?'+':''}${after-before} → ${after}%`}
- /* 11-04: 조우 때 야생 Lv — 경계도 50 이상 보스방 +5 · 70 이상 +5 (app.js encounter 가 쓴다) */
- function alFoe(did,rid){const d=all()[did];if(!d)return 0;const a=clamp(+d.al||0,0,100);const boss=((R(d)[rid]||{}).t==='boss');const gx=d.gx||{};return (alOn(d)?Math.max(0,(a>=70?5:0)+(boss&&a>=50?5:0)-(boss&&d.bossDn&&a>=50?5:0)):0)+(+gx.foe||0)+(boss?(+gx.boss||0):0)}
- /* 예전에 가져온 야생 시트에 던전 표시(wdg)를 단다 — GM 화면에서 한 번씩 */
- async function wildTag(){if(!gm())return 0;const T=RO().trainers||{};const ops=[];for(const [did,d] of Object.entries(all()))for(const r of Object.values(R(d))){const t=r&&r.e&&T[r.e];if(t&&t.wild&&!t.wdg&&!ops.some(o=>o[0][2]===t.id))ops.push([['roster','trainers',t.id,'wdg'],did])}if(ops.length)await A().setMany(ops);return ops.length}
- return {feField,feNorm,wildTag,wildOf,wildOrphans,wildDrop,alFoe,gimEvent,gimNorm,render,rpSync,onState,on,cur,TY,LV,lvOf,list,enter,nameOf,party,walkOf,startEnc,alAdd,dgNorm,dgOut,wMake,dgAll:all,dgUpd:upd,edOpen:id=>{DG.ed=id}};   /* 10-29 dgNorm · dgOut · dgAll · dgUpd: 세션 노트와 던전 주고받기(notes_link.js) */
+  const GIM_ON = ['room', 'rest', 'check', 'battle'],
+    GIM_TO = ['all', 'healthiest', 'lead', 'random'];
+  function gimNorm(L) {
+    return (L || [])
+      .slice(0, 12)
+      .map((g, i) => {
+        if (!g || typeof g !== 'object') return null;
+        const o = {
+          id: sKey(String(g.id || 'g' + (i + 1))) || 'g' + (i + 1),
+          n: sTxt(g.n || g.name || g.id || '기믹', 30),
+          on: GIM_ON.includes(g.on) ? g.on : 'room'
+        };
+        if (+g.every > 1) o.every = clamp(Math.round(+g.every), 2, 9);
+        if (Array.isArray(g.where) && g.where.length) o.where = g.where.slice(0, 12).map(x => sTxt(x, 20));
+        if (GIM_TO.includes(g.to)) o.to = g.to;
+        const d = g.do || {},
+          q = {};
+        for (const f of ['step', 'al', 'foeLv', 'bossLv', 'rest']) if (+d[f]) q[f] = clamp(Math.round(+d[f]), -50, 50);
+        if (d.hp && /^\d+\/\d+$/.test(String(d.hp))) q.hp = String(d.hp);
+        o.do = q;
+        const u = g.unless || {},
+          uu = {};
+        if (u.type) uu.type = sTxt(u.type, 10);
+        if (u.flag) uu.flag = sTxt(u.flag, 20);
+        if (Object.keys(uu).length) o.unless = uu;
+        if (g.cond && g.cond.fail) o.cond = { fail: 1 };
+        if (g.memo) o.memo = sTxt(g.memo, 120);
+        return o;
+      })
+      .filter(Boolean);
+  }
+  async function gimEvent(on, ctx) {
+    ctx = ctx || {};
+    const G = window.OM_DG_GIM;
+    const d = cur();
+    if (!G || !d || !gm()) return ctx;
+    return G.run(on, ctx, { d, R, party, walkOf, alAdd, upd, P0, notice });
+  }
+  /* 방을 떠날 때 그 방의 곁방 보상 표식을 얻는다 */
+  async function gimLeave(d, rid) {
+    const r = R(d)[rid];
+    if (!r || !r.rw || !r.rw.flag || (d.fl || {})[r.rw.flag]) return;
+    if (await upd({ [P0(d.id) + 'fl/' + r.rw.flag]: 1 }))
+      notice(`[${d.n || '던전'}] ✦ 표식 「${r.rw.flag}」 을 얻었다${r.rw.memo ? ' — ' + r.rw.memo : ''}`);
+  }
+  /* 10-28: 스킬 체크 패널티의 경계도(skill_ui pen.al) — 탐색 중인 던전의 경계도를 올린다. 경계도를 끈 던전 · 던전 밖이면 아무 일도 안 한다 */
+  async function alAdd(delta, why, opt) {
+    opt = opt || {};
+    const d = cur();
+    if (!d || !alOn(d) || !+delta) return '';
+    const before = clamp(+d.al || 0, 0, 100),
+      after = clamp(before + +delta, 0, 100);
+    if (after === before) return '';
+    if (!(await upd({ [P0(d.id) + 'al']: after }))) return '';
+    if (!opt.quiet) notice(`[${d.n || '던전'}] 경계도 ${after > before ? '+' : ''}${after - before}${why ? ' (' + why + ')' : ''} → ${after}%`);
+    /* 11-04 기믹 「경계도가 기준을 넘을 때」 — 기믹 자신이 올린 경계도(quiet)는 다시 걸지 않는다 */ if (!opt.quiet && after > before)
+      try {
+        await gimEvent('alert', { from: before, to: after });
+      } catch (e) {}
+    return `경계도 ${after > before ? '+' : ''}${after - before} → ${after}%`;
+  }
+  /* 11-04: 조우 때 야생 Lv — 경계도 50 이상 보스방 +5 · 70 이상 +5 (app.js encounter 가 쓴다) */
+  function alFoe(did, rid) {
+    const d = all()[did];
+    if (!d) return 0;
+    const a = clamp(+d.al || 0, 0, 100);
+    const boss = (R(d)[rid] || {}).t === 'boss';
+    const gx = d.gx || {};
+    return (
+      (alOn(d) ? Math.max(0, (a >= 70 ? 5 : 0) + (boss && a >= 50 ? 5 : 0) - (boss && d.bossDn && a >= 50 ? 5 : 0)) : 0) +
+      (+gx.foe || 0) +
+      (boss ? +gx.boss || 0 : 0)
+    );
+  }
+  /* 예전에 가져온 야생 시트에 던전 표시(wdg)를 단다 — GM 화면에서 한 번씩 */
+  async function wildTag() {
+    if (!gm()) return 0;
+    const T = RO().trainers || {};
+    const ops = [];
+    for (const [did, d] of Object.entries(all()))
+      for (const r of Object.values(R(d))) {
+        const t = r && r.e && T[r.e];
+        if (t && t.wild && !t.wdg && !ops.some(o => o[0][2] === t.id)) ops.push([['roster', 'trainers', t.id, 'wdg'], did]);
+      }
+    if (ops.length) await A().setMany(ops);
+    return ops.length;
+  }
+  return {
+    feField,
+    feNorm,
+    wildTag,
+    wildOf,
+    wildOrphans,
+    wildDrop,
+    alFoe,
+    gimEvent,
+    gimNorm,
+    render,
+    rpSync,
+    onState,
+    on,
+    cur,
+    TY,
+    LV,
+    lvOf,
+    list,
+    enter,
+    nameOf,
+    party,
+    walkOf,
+    startEnc,
+    alAdd,
+    dgNorm,
+    dgOut,
+    wMake,
+    dgAll: all,
+    dgUpd: upd,
+    edOpen: id => {
+      DG.ed = id;
+    }
+  }; /* 10-29 dgNorm · dgOut · dgAll · dgUpd: 세션 노트와 던전 주고받기(notes_link.js) */
 })();

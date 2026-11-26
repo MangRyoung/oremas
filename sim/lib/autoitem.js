@@ -3,51 +3,228 @@
    기준 = 배틀 진행 지침 1-6 「소지품을 내가 고를 때」: 밴 목록 빼기 · 역할에 맞추기(에이스 · 어태커 = 화력, 블로커 = 버티기, 러너 = 열매) · 같은 소지품은 한 파티에 하나만.
    소켓: 2체 기준(룰북 「1인 기준 (2체)」 소지품 소켓 = 지시 D 2.5 · C 3 · B 3.5 · A 4 · AA 4.5) 안에서. 넘치면 싼 것으로 내린다.
    구문(auto)이 있는 소지품만 쓴다 — 시뮬 엔진이 효과를 걸 수 있는 것. */
-"use strict";
-const BAN=new Set(['구애스카프','생명의구슬','구애머리띠','구애안경','흉내허브']);
-const SOCK2={D:2.5,C:3,B:3.5,A:4,AA:4.5};
-const BOOST={노말:null,불꽃:'목탄',물:'신비의물방울',풀:'기적의씨',전기:'자석',얼음:'녹지않는얼음',격투:'검은띠',독:'독바늘',땅:'부드러운모래',비행:'예리한부리',에스퍼:'휘어진스푼',벌레:'은빛가루',바위:'딱딱한돌',고스트:null,드래곤:'용의이빨',악:'검은안경',강철:'금속코트',페어리:'요정의깃털'};
-const rankKey=v=>{const s=String(v||'').toUpperCase();return s.startsWith('AA')?'AA':s.startsWith('A')?'A':s.startsWith('B')?'B':s.startsWith('C')?'C':'D'};
+'use strict';
+const BAN = new Set(['구애스카프', '생명의구슬', '구애머리띠', '구애안경', '흉내허브']);
+const SOCK2 = { D: 2.5, C: 3, B: 3.5, A: 4, AA: 4.5 };
+const BOOST = {
+  노말: null,
+  불꽃: '목탄',
+  물: '신비의물방울',
+  풀: '기적의씨',
+  전기: '자석',
+  얼음: '녹지않는얼음',
+  격투: '검은띠',
+  독: '독바늘',
+  땅: '부드러운모래',
+  비행: '예리한부리',
+  에스퍼: '휘어진스푼',
+  벌레: '은빛가루',
+  바위: '딱딱한돌',
+  고스트: null,
+  드래곤: '용의이빨',
+  악: '검은안경',
+  강철: '금속코트',
+  페어리: '요정의깃털'
+};
+const rankKey = v => {
+  const s = String(v || '').toUpperCase();
+  return s.startsWith('AA') ? 'AA' : s.startsWith('A') ? 'A' : s.startsWith('B') ? 'B' : s.startsWith('C') ? 'C' : 'D';
+};
 /* 이 포켓몬이 가장 세게 치는 기술 타입 (자속 1.5 · 위력 · 공격/특공 종족값) */
-function mainType(m){const b=(m.base||[]).map(Number);const tk=(m.typesKo||[]).filter(t=>t&&t!=='-');let best=null,bv=-1;
- for(const mv of m.moves||[]){if(!mv||!(+mv.pow>0)||mv.cat==='변화')continue;const st=mv.cat==='특수'?b[3]:b[1];const v=+mv.pow*(tk.includes(mv.type)?1.5:1)*(st||80);if(v>bv){bv=v;best=mv.type}}return best||tk[0]||null}
-function roleOf(m){const r=String(m.role||'');const b=(m.base||[]).map(Number);const atk=Math.max(b[1]||0,b[3]||0),bulk=(b[0]||0)+(b[2]||0)+(b[4]||0);
- if(/블로커|어시스트|서포터/.test(r))return 'wall';if(/러너/.test(r))return 'runner';if(/에이스|어태커|킬러/.test(r))return 'atk';
- if(atk>=100||atk>=bulk/3+10)return 'atk';if(bulk>=290)return 'wall';return 'atk'}
-function choices(m,role,DBI,win){const L=[];const T=mainType(m);const bo=T&&BOOST[T];const tk=(m.typesKo||[]);const noSt=!(m.moves||[]).some(x=>x&&x.cat==='변화');const punch=(m.moves||[]).some(x=>x&&/펀치/.test(String(x.tag||'')+(x.tags||[]).join(',')));
- if(process.env.OLDITEM){if(role==='atk'){if(bo)L.push(bo);L.push('자뭉열매','하양허브')}else if(role==='wall'){L.push('자뭉열매','먹다남은음식','울퉁불퉁멧','하양허브');if(bo)L.push(bo)}else{L.push('자뭉열매');if(bo)L.push(bo);L.push('하양허브')}return L.filter(n=>DBI[n]&&DBI[n].auto&&!BAN.has(n))}   /* 비교용: 11-15 이전 후보 */
- if(role==='atk'){if(bo)L.push(bo);if(punch)L.push('펀치글러브');L.push('자뭉열매','약점보험','기합의띠','하양허브','초점렌즈','멘탈허브')}
- else if(role==='wall'){if(tk.includes('독'))L.push('검은진흙');L.push('먹다남은음식','울퉁불퉁멧','자뭉열매');if(noSt)L.push('돌격조끼');L.push('방진고글','하양허브','멘탈허브');if(bo)L.push(bo)}
- else{L.push('자뭉열매');if(bo)L.push(bo);L.push('기합의띠','초점렌즈','하양허브','멘탈허브')}
- /* 11-15: 「구문」 칸이 비어도(제작기 DB 수정이 비운 하양허브 등) 소지품 규칙(itemrule)이 효과 글에서 풀면 쓴다 */
- const ok=n=>{const d=DBI[n];if(!d||BAN.has(n))return false;if(d.auto)return true;try{const r=win&&win.OM_ITEMS&&win.OM_ITEMS.rule?win.OM_ITEMS.rule(n):null;return !!r&&Object.keys(r).some(k=>!['name','eff','src','once','own'].includes(k))}catch(e){return false}};
- return L.filter(ok)}
+function mainType(m) {
+  const b = (m.base || []).map(Number);
+  const tk = (m.typesKo || []).filter(t => t && t !== '-');
+  let best = null,
+    bv = -1;
+  for (const mv of m.moves || []) {
+    if (!mv || !(+mv.pow > 0) || mv.cat === '변화') continue;
+    const st = mv.cat === '특수' ? b[3] : b[1];
+    const v = +mv.pow * (tk.includes(mv.type) ? 1.5 : 1) * (st || 80);
+    if (v > bv) {
+      bv = v;
+      best = mv.type;
+    }
+  }
+  return best || tk[0] || null;
+}
+function roleOf(m) {
+  const r = String(m.role || '');
+  const b = (m.base || []).map(Number);
+  const atk = Math.max(b[1] || 0, b[3] || 0),
+    bulk = (b[0] || 0) + (b[2] || 0) + (b[4] || 0);
+  if (/블로커|어시스트|서포터/.test(r)) return 'wall';
+  if (/러너/.test(r)) return 'runner';
+  if (/에이스|어태커|킬러/.test(r)) return 'atk';
+  if (atk >= 100 || atk >= bulk / 3 + 10) return 'atk';
+  if (bulk >= 290) return 'wall';
+  return 'atk';
+}
+function choices(m, role, DBI, win) {
+  const L = [];
+  const T = mainType(m);
+  const bo = T && BOOST[T];
+  const tk = m.typesKo || [];
+  const noSt = !(m.moves || []).some(x => x && x.cat === '변화');
+  const punch = (m.moves || []).some(x => x && /펀치/.test(String(x.tag || '') + (x.tags || []).join(',')));
+  if (process.env.OLDITEM) {
+    if (role === 'atk') {
+      if (bo) L.push(bo);
+      L.push('자뭉열매', '하양허브');
+    } else if (role === 'wall') {
+      L.push('자뭉열매', '먹다남은음식', '울퉁불퉁멧', '하양허브');
+      if (bo) L.push(bo);
+    } else {
+      L.push('자뭉열매');
+      if (bo) L.push(bo);
+      L.push('하양허브');
+    }
+    return L.filter(n => DBI[n] && DBI[n].auto && !BAN.has(n));
+  } /* 비교용: 11-15 이전 후보 */
+  if (role === 'atk') {
+    if (bo) L.push(bo);
+    if (punch) L.push('펀치글러브');
+    L.push('자뭉열매', '약점보험', '기합의띠', '하양허브', '초점렌즈', '멘탈허브');
+  } else if (role === 'wall') {
+    if (tk.includes('독')) L.push('검은진흙');
+    L.push('먹다남은음식', '울퉁불퉁멧', '자뭉열매');
+    if (noSt) L.push('돌격조끼');
+    L.push('방진고글', '하양허브', '멘탈허브');
+    if (bo) L.push(bo);
+  } else {
+    L.push('자뭉열매');
+    if (bo) L.push(bo);
+    L.push('기합의띠', '초점렌즈', '하양허브', '멘탈허브');
+  }
+  /* 11-15: 「구문」 칸이 비어도(제작기 DB 수정이 비운 하양허브 등) 소지품 규칙(itemrule)이 효과 글에서 풀면 쓴다 */
+  const ok = n => {
+    const d = DBI[n];
+    if (!d || BAN.has(n)) return false;
+    if (d.auto) return true;
+    try {
+      const r = win && win.OM_ITEMS && win.OM_ITEMS.rule ? win.OM_ITEMS.rule(n) : null;
+      return !!r && Object.keys(r).some(k => !['name', 'eff', 'src', 'once', 'own'].includes(k));
+    } catch (e) {
+      return false;
+    }
+  };
+  return L.filter(ok);
+}
 /* r = P.build 결과 {trainer, mons}. 빈 칸만 채운다. 돌려주는 값 = [{mon, item, why}] */
 /* 11-15 망령 「여태 소지품을 시트 기준으로만? 안 껴 놓은 것도 있겠네」: 6체는 2체 소켓(3 안팎)이 아니라 6체 소켓(캠페인 상수 limit_item_socket — 지시 D 8 · C 9 · B 10 · A 11 · AA 12)으로 채운다.
    【준비】 「소지품 소켓 : +N」(『황금신부의 혼수품』 — 「타입 : X」가 K체 이상일 경우)도 더한다 */
-function sockCap(win,r){const t=r.trainer;const rk=rankKey((t.ranks||{})['지시']);if(t.two||r.mons.length<=2)return SOCK2[rk]||3;const L=(((win.OM_DB||{}).const||{}).campaign||{}).limit_item_socket||{};let cap=+L[rk]||({D:8,C:9,B:10,A:11,AA:12})[rk]||9;
- const TY=win.OM_STATS&&win.OM_STATS.typeEn?win.OM_STATS.typeEn:(x=>x);for(const m of r.mons)for(const p of [...(m.pots||[]),...(m.excl?[m.excl]:[]),...(m.exclX||[])]){const e=String(p&&p.eff||'').replace(/<br\s*\/?>/g,'\n');const x=e.match(/【\s*준비\s*】[^\n]*?「소지품\s*소켓\s*:\s*\+\s*([\d.]+)\s*」/);if(!x)continue;const c=e.match(/「타입\s*:\s*([^」]+)」\s*(?:이|가)\s*(\d+)\s*체\s*이상/);if(c){const en=TY(c[1].trim());if(r.mons.filter(q=>(q.types||[]).includes(en)).length<+c[2])continue}cap+=+x[1]}
- return cap}
-function equip(win,r){const DBI=((win.OM_DB||{}).items)||{};const t=r.trainer;const cap=sockCap(win,r);
- /* 11-15 망령 「같은 TO 소지품은 1개만」: 룰북 「PT 내에 같은 TO 소지품은 중복시킬 수 없다」 — 비고의 【TO (그룹, 그룹)】 */const TOs=n=>{const m=String((DBI[n]||{}).note||'').match(/【\s*TO\s*\(([^)]*)\)\s*】/);return m?m[1].split(/[,，]/).map(x=>x.trim()).filter(Boolean):[]};const usedTO=new Set();for(const m of r.mons)for(const n of [m.item,...((m.items2||[]).map(x=>x&&x.item))])if(n)TOs(n).forEach(g=>usedTO.add(g));
- const used=new Set(r.mons.map(m=>m.item).filter(Boolean));let spent=r.mons.reduce((a,m)=>a+(m.item&&DBI[m.item]?+DBI[m.item].sock||0:0),0);const out=[];
- const RK=process.env.OLDITEM?{atk:0,wall:1,runner:1}:{wall:0,atk:1,runner:2};const order=r.mons.filter(m=>!m.item).map(m=>({m,role:roleOf(m)})).sort((a,b)=>(RK[a.role]??1)-(RK[b.role]??1));   /* 11-15 13시 망령 「메이링이 훌쩍 내려온 이유」: 공격수부터 비싼 것(기합의띠 · 초점렌즈)을 쥐어 벽이 먹다남은음식 · 울퉁불퉁멧을 못 받았다 → 벽 먼저 */
- order.forEach(({m,role},i)=>{const left=order.length-i-1;const keep=left*1;   /* 뒤에 남은 포켓몬 몫으로 1소켓씩은 남겨 둔다 */
-  const c=choices(m,role,DBI,win).find(n=>!used.has(n)&&!TOs(n).some(g=>usedTO.has(g))&&spent+(+DBI[n].sock||0)<=cap-keep+1e-9);if(!c)return;TOs(c).forEach(g=>usedTO.add(g));
-  m.item=c;m.itemEff=String(DBI[c].eff||'').replace(/<br\s*\/?>/g,'\n');m.itemAuto=1;used.add(c);spent+=+DBI[c].sock||0;out.push({mon:m.name,item:c,why:role})});
- t.autoItems=out;t.itemSock={cap,spent};return out}
+function sockCap(win, r) {
+  const t = r.trainer;
+  const rk = rankKey((t.ranks || {})['지시']);
+  if (t.two || r.mons.length <= 2) return SOCK2[rk] || 3;
+  const L = (((win.OM_DB || {}).const || {}).campaign || {}).limit_item_socket || {};
+  let cap = +L[rk] || { D: 8, C: 9, B: 10, A: 11, AA: 12 }[rk] || 9;
+  const TY = win.OM_STATS && win.OM_STATS.typeEn ? win.OM_STATS.typeEn : x => x;
+  for (const m of r.mons)
+    for (const p of [...(m.pots || []), ...(m.excl ? [m.excl] : []), ...(m.exclX || [])]) {
+      const e = String((p && p.eff) || '').replace(/<br\s*\/?>/g, '\n');
+      const x = e.match(/【\s*준비\s*】[^\n]*?「소지품\s*소켓\s*:\s*\+\s*([\d.]+)\s*」/);
+      if (!x) continue;
+      const c = e.match(/「타입\s*:\s*([^」]+)」\s*(?:이|가)\s*(\d+)\s*체\s*이상/);
+      if (c) {
+        const en = TY(c[1].trim());
+        if (r.mons.filter(q => (q.types || []).includes(en)).length < +c[2]) continue;
+      }
+      cap += +x[1];
+    }
+  return cap;
+}
+function equip(win, r) {
+  const DBI = (win.OM_DB || {}).items || {};
+  const t = r.trainer;
+  const cap = sockCap(win, r);
+  /* 11-15 망령 「같은 TO 소지품은 1개만」: 룰북 「PT 내에 같은 TO 소지품은 중복시킬 수 없다」 — 비고의 【TO (그룹, 그룹)】 */ const TOs = n => {
+    const m = String((DBI[n] || {}).note || '').match(/【\s*TO\s*\(([^)]*)\)\s*】/);
+    return m
+      ? m[1]
+          .split(/[,，]/)
+          .map(x => x.trim())
+          .filter(Boolean)
+      : [];
+  };
+  const usedTO = new Set();
+  for (const m of r.mons) for (const n of [m.item, ...(m.items2 || []).map(x => x && x.item)]) if (n) TOs(n).forEach(g => usedTO.add(g));
+  const used = new Set(r.mons.map(m => m.item).filter(Boolean));
+  let spent = r.mons.reduce((a, m) => a + (m.item && DBI[m.item] ? +DBI[m.item].sock || 0 : 0), 0);
+  const out = [];
+  const RK = process.env.OLDITEM ? { atk: 0, wall: 1, runner: 1 } : { wall: 0, atk: 1, runner: 2 };
+  const order = r.mons
+    .filter(m => !m.item)
+    .map(m => ({ m, role: roleOf(m) }))
+    .sort(
+      (a, b) => (RK[a.role] ?? 1) - (RK[b.role] ?? 1)
+    ); /* 11-15 13시 망령 「메이링이 훌쩍 내려온 이유」: 공격수부터 비싼 것(기합의띠 · 초점렌즈)을 쥐어 벽이 먹다남은음식 · 울퉁불퉁멧을 못 받았다 → 벽 먼저 */
+  order.forEach(({ m, role }, i) => {
+    const left = order.length - i - 1;
+    const keep = left * 1; /* 뒤에 남은 포켓몬 몫으로 1소켓씩은 남겨 둔다 */
+    const c = choices(m, role, DBI, win).find(
+      n => !used.has(n) && !TOs(n).some(g => usedTO.has(g)) && spent + (+DBI[n].sock || 0) <= cap - keep + 1e-9
+    );
+    if (!c) return;
+    TOs(c).forEach(g => usedTO.add(g));
+    m.item = c;
+    m.itemEff = String(DBI[c].eff || '').replace(/<br\s*\/?>/g, '\n');
+    m.itemAuto = 1;
+    used.add(c);
+    spent += +DBI[c].sock || 0;
+    out.push({ mon: m.name, item: c, why: role });
+  });
+  t.autoItems = out;
+  t.itemSock = { cap, spent };
+  return out;
+}
 /* 11-04 망령 「2체일 땐 2체 소지품 TO 중에서 장착하고 다 같이 합쳐야지」: 던전 일행 = 한 파티.
    소켓 상한 = 트레이너마다 1인 기준(2체) 상한을 더한 값, 같은 소지품은 일행 전체에서 하나만.
    equip 은 트레이너마다 따로 채우므로, 일행이 모인 뒤 여기서 겹친 것 · 넘친 것을 다시 맞춘다.
    겹치면 뒤의 포켓몬을 다른 것으로(없으면 뗀다), 넘치면 자동으로 채운 것부터 뗀다. parties = makeParty 결과(트레이너 · 동행) */
-function pool(win,parties){const DBI=((win.OM_DB||{}).items)||{};const sk=n=>(n&&DBI[n]?+DBI[n].sock||0:0);
- const cap=parties.reduce((a,p)=>a+(SOCK2[rankKey(((p.trainer||{}).ranks||{})['지시'])]||3),0);const used=new Set();const log=[];let spent=0;
- const all=[];parties.forEach(p=>p.mons.forEach(m=>all.push({p,m})));
- for(const {p,m} of all){const it=m.item;if(!it)continue;
-  if(used.has(it)){const alt=choices(m,roleOf(m),DBI,win).find(n=>!used.has(n));const was=it;if(alt){m.item=alt;m.itemEff=String(DBI[alt].eff||'').replace(/<br\s*\/?>/g,'\n');m.itemAuto=1;log.push(`${m.name}: ${was} 겹침 → ${alt}`)}else{m.item='';m.itemEff='';log.push(`${m.name}: ${was} 겹침 → 뗌`)}}
-  if(m.item){used.add(m.item);spent+=sk(m.item)}}
- /* 넘치면 자동으로 채운 것 중 소켓이 큰 것부터 뗀다 */
- const auto=all.filter(x=>x.m.item&&x.m.itemAuto).sort((a,b)=>sk(b.m.item)-sk(a.m.item));
- for(const {m} of auto){if(spent<=cap+1e-9)break;spent-=sk(m.item);log.push(`${m.name}: ${m.item} 뗌 (일행 소켓 넘침)`);m.item='';m.itemEff=''}
- const r={cap,spent:Math.round(spent*10)/10,over:spent>cap+1e-9,log};parties.forEach(p=>{p.trainer.partySock=r});return r}
-module.exports={equip,pool,roleOf,mainType,SOCK2,BAN};
+function pool(win, parties) {
+  const DBI = (win.OM_DB || {}).items || {};
+  const sk = n => (n && DBI[n] ? +DBI[n].sock || 0 : 0);
+  const cap = parties.reduce((a, p) => a + (SOCK2[rankKey(((p.trainer || {}).ranks || {})['지시'])] || 3), 0);
+  const used = new Set();
+  const log = [];
+  let spent = 0;
+  const all = [];
+  parties.forEach(p => p.mons.forEach(m => all.push({ p, m })));
+  for (const { p, m } of all) {
+    const it = m.item;
+    if (!it) continue;
+    if (used.has(it)) {
+      const alt = choices(m, roleOf(m), DBI, win).find(n => !used.has(n));
+      const was = it;
+      if (alt) {
+        m.item = alt;
+        m.itemEff = String(DBI[alt].eff || '').replace(/<br\s*\/?>/g, '\n');
+        m.itemAuto = 1;
+        log.push(`${m.name}: ${was} 겹침 → ${alt}`);
+      } else {
+        m.item = '';
+        m.itemEff = '';
+        log.push(`${m.name}: ${was} 겹침 → 뗌`);
+      }
+    }
+    if (m.item) {
+      used.add(m.item);
+      spent += sk(m.item);
+    }
+  }
+  /* 넘치면 자동으로 채운 것 중 소켓이 큰 것부터 뗀다 */
+  const auto = all.filter(x => x.m.item && x.m.itemAuto).sort((a, b) => sk(b.m.item) - sk(a.m.item));
+  for (const { m } of auto) {
+    if (spent <= cap + 1e-9) break;
+    spent -= sk(m.item);
+    log.push(`${m.name}: ${m.item} 뗌 (일행 소켓 넘침)`);
+    m.item = '';
+    m.itemEff = '';
+  }
+  const r = { cap, spent: Math.round(spent * 10) / 10, over: spent > cap + 1e-9, log };
+  parties.forEach(p => {
+    p.trainer.partySock = r;
+  });
+  return r;
+}
+module.exports = { equip, pool, roleOf, mainType, SOCK2, BAN };

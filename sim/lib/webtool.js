@@ -5,82 +5,537 @@
    · OM_APP(화면 · 저장소)는 상태 객체 하나에 쓰는 가짜로, 화면 그리기 · 컷인 · 소리는 아무 일도 안 하는 가짜 DOM 으로.
    · 난수: Math.random 을 배틀마다 씨앗 난수로 바꿔 끼운다(같은 씨앗 = 같은 결과). setTimeout 은 바로(setImmediate) 돈다.
    쓰는 법: const H=require('./webtool.js').load(W); H.reset(battle); await H.fn.enterMon(...); H.state.battle … */
-"use strict";
-const fs=require('fs'),path=require('path'),vm=require('vm');
-const {ROOT}=require('./env.js');
+'use strict';
+const fs = require('fs'),
+  path = require('path'),
+  vm = require('vm');
+const { ROOT } = require('./env.js');
 
 /* 무엇이든 받아 주는 가짜 DOM 요소: 속성은 다시 가짜, 호출해도 가짜, 값으로 쓰면 빈 글자 */
-function dummy(){const f=function(){};let P;const H={get:(t,k)=>{if(k===Symbol.toPrimitive)return ()=>'';if(k===Symbol.iterator)return function*(){};if(k==='then')return undefined;if(k==='length')return 0;if(k==='checked'||k==='disabled'||k==='hidden')return false;if(k==='value'||k==='textContent'||k==='innerHTML'||k==='className'||k==='id')return '';if(k==='dataset'||k==='style')return {};if(k==='classList')return {add(){},remove(){},toggle(){},contains(){return false}};if(k==='querySelectorAll'||k==='getElementsByClassName'||k==='getElementsByTagName')return ()=>[];if(k==='querySelector'||k==='getElementById'||k==='closest')return ()=>P;return P},set:()=>true,apply:()=>P,construct:()=>P};P=new Proxy(f,H);return P}
+function dummy() {
+  const f = function () {};
+  let P;
+  const H = {
+    get: (t, k) => {
+      if (k === Symbol.toPrimitive) return () => '';
+      if (k === Symbol.iterator) return function* () {};
+      if (k === 'then') return undefined;
+      if (k === 'length') return 0;
+      if (k === 'checked' || k === 'disabled' || k === 'hidden') return false;
+      if (k === 'value' || k === 'textContent' || k === 'innerHTML' || k === 'className' || k === 'id') return '';
+      if (k === 'dataset' || k === 'style') return {};
+      if (k === 'classList')
+        return {
+          add() {},
+          remove() {},
+          toggle() {},
+          contains() {
+            return false;
+          }
+        };
+      if (k === 'querySelectorAll' || k === 'getElementsByClassName' || k === 'getElementsByTagName') return () => [];
+      if (k === 'querySelector' || k === 'getElementById' || k === 'closest') return () => P;
+      return P;
+    },
+    set: () => true,
+    apply: () => P,
+    construct: () => P
+  };
+  P = new Proxy(f, H);
+  return P;
+}
 
 /* 웹툴 원문에 바꿔 끼울 것 — [찾을 글, 바꿀 글]. 못 찾으면 오류 */
-const PATCH=[
- /* 내부 함수 꺼내기 (IIFE 끝의 return 앞) */
- [" return {illuMask,concealLog,", " window.__BUI_GET=n=>{try{return eval(n)}catch(e){return undefined}};\n return {illuMask,concealLog,"]   /* 11-23: 웹툴이 concealLog 를 사이에 넣음 */,   /* 11-11: 웹툴이 illuMask 를 앞에 붙임 */   /* 10-28: 웹툴 main 에서 askYes 뒤가 canSeeStx 로 바뀌어 앞부분만 잡는다 */
- /* 확인 창: 시뮬이 답한다 (기본 = 예) */
- [" function askYes(q,yes,no){return new Promise(res=>{", " function askYes(q,yes,no){if(window.__SIM&&window.__SIM.ask)return Promise.resolve(window.__SIM.ask(q,yes,no));return new Promise(res=>{"],
- /* 효과 엔진 문맥: 대상 고르기 · 조건 확인 · 선택지 — 시뮬이 답한다 */
- [" function uiCtx(b,self,name,area){const L=localUi(b,self,name,area);", " function uiCtx(b,self,name,area){if(window.__SIM&&window.__SIM.uiCtx)return window.__SIM.uiCtx(b,self,name,area);const L=localUi(b,self,name,area);"]];
+const PATCH = [
+  /* 11-26 코드 정리: 웹툴 원문의 줄 바꿈 · 띄어쓰기가 바뀌어도 찾도록 정규식으로 — [찾을 꼴, 그 뒤(또는 앞)에 끼울 글, 'before'|'after'] */
+  /* 내부 함수 꺼내기 (IIFE 끝의 return 앞) */
+  [/return\s*\{\s*illuMask,\s*concealLog,/, 'window.__BUI_GET=n=>{try{return eval(n)}catch(e){return undefined}};\n', 'before'],
+  /* 확인 창: 시뮬이 답한다 (기본 = 예) */
+  [/function askYes\(q,\s*yes,\s*no\)\s*\{/, 'if(window.__SIM&&window.__SIM.ask)return Promise.resolve(window.__SIM.ask(q,yes,no));', 'after'],
+  /* 효과 엔진 문맥: 대상 고르기 · 조건 확인 · 선택지 — 시뮬이 답한다 */
+  [/function uiCtx\(b,\s*self,\s*name,\s*area\)\s*\{/, 'if(window.__SIM&&window.__SIM.uiCtx)return window.__SIM.uiCtx(b,self,name,area);', 'after']
+];
 
 /* 바뀐 칸 찾기 (웹툴 app.js diffOps 와 같은 뜻) — JSON 글자 비교 대신 빠른 깊은 비교 */
-function deq(a,b){if(a===b)return true;if(a==null||b==null)return (a==null)&&(b==null);const ta=typeof a,tb=typeof b;if(ta!=='object'||tb!=='object')return a===b;const aa=Array.isArray(a),ab=Array.isArray(b);if(aa!==ab)return false;
- if(aa){if(a.length!==b.length)return false;for(let i=0;i<a.length;i++)if(!deq(a[i],b[i]))return false;return true}
- const ka=Object.keys(a).filter(k=>a[k]!==undefined),kb=Object.keys(b).filter(k=>b[k]!==undefined);if(ka.length!==kb.length)return false;for(const k of ka)if(!deq(a[k],b[k]))return false;return true}
-const sameJ=(a,b)=>deq(a===undefined?null:a,b===undefined?null:b);
-const isObj=v=>!!v&&typeof v==='object'&&!Array.isArray(v);
-function diffOps(p,before,after,depth,out){out=out||[];if(sameJ(before,after))return out;if(!(depth>0)||!isObj(before)||!isObj(after)){out.push([p,after===undefined?null:after]);return out}
- for(const k of new Set([...Object.keys(before),...Object.keys(after)]))diffOps(p.concat(k),before[k],after[k],depth-1,out);return out}
+function deq(a, b) {
+  if (a === b) return true;
+  if (a == null || b == null) return a == null && b == null;
+  const ta = typeof a,
+    tb = typeof b;
+  if (ta !== 'object' || tb !== 'object') return a === b;
+  const aa = Array.isArray(a),
+    ab = Array.isArray(b);
+  if (aa !== ab) return false;
+  if (aa) {
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) if (!deq(a[i], b[i])) return false;
+    return true;
+  }
+  const ka = Object.keys(a).filter(k => a[k] !== undefined),
+    kb = Object.keys(b).filter(k => b[k] !== undefined);
+  if (ka.length !== kb.length) return false;
+  for (const k of ka) if (!deq(a[k], b[k])) return false;
+  return true;
+}
+const sameJ = (a, b) => deq(a === undefined ? null : a, b === undefined ? null : b);
+const isObj = v => !!v && typeof v === 'object' && !Array.isArray(v);
+function diffOps(p, before, after, depth, out) {
+  out = out || [];
+  if (sameJ(before, after)) return out;
+  if (!(depth > 0) || !isObj(before) || !isObj(after)) {
+    out.push([p, after === undefined ? null : after]);
+    return out;
+  }
+  for (const k of new Set([...Object.keys(before), ...Object.keys(after)])) diffOps(p.concat(k), before[k], after[k], depth - 1, out);
+  return out;
+}
 
-function load(W){if(W.__H)return W.__H;
- const ST={state:{battle:{},rp:{},roster:{trainers:{},mons:{}},seats:{},skill:{}},role:'gm',seat:'',room:'sim',secret:''};
- const H={ST,state:ST.state,logs:[],fn:{}};
- const setPath=(p,v)=>{if(!p||!p.length){ST.state=v||{};H.state=ST.state;return}let o=ST.state;for(let i=0;i<p.length-1;i++){if(typeof o[p[i]]!=='object'||o[p[i]]==null)o[p[i]]={};o=o[p[i]]}if(v===null||v===undefined)delete o[p[p.length-1]];else o[p[p.length-1]]=v};
- const D=dummy();const ok=Promise.resolve(true);
- const contactOf=mv=>{const c=mv&&mv.contact;if(c==='O'||c==='X')return c;const d=((W.OM_DB||{}).moves||{})[mv&&mv.name];return d&&d.contact||'-'};
- W.OM_APP={ST,
-  set:(p,v)=>{setPath(p,v);return ok},setMany:ops=>{for(const [p,v] of ops)setPath(p,v);return ok},setDiff:(p,a,b,d)=>{for(const [q,v] of diffOps(p,a,b,d==null?1:d))setPath(q,v);return ok},diffOps,
-  sysLog:(t,k)=>{if(H.logOn)H.logs.push(String(t))},selfLog:()=>{},toast:()=>{},openModal:()=>D,closeModal:()=>{},renderScene:()=>{},presList:()=>[],online:()=>false,
-  contactOf,acctKey:()=>'',typeChip:()=>'',dupItems:()=>[],dupItemText:()=>'',unloadTrainer:()=>{},auto:()=>{},parse:x=>x,openMon:()=>{},openLoadParty:()=>{},openHatch:()=>{},describe:()=>''};
- W.OM_STORE={secretGet:()=>Promise.resolve([]),setState:()=>Promise.resolve(true)};
- /* 가짜 DOM · 타이머 · 난수 */
- const doc=W.document;doc.querySelector=()=>D;doc.querySelectorAll=()=>[];doc.getElementById=()=>D;doc.createElement=()=>D;doc.body=D;doc.addEventListener=()=>{};doc.head=D;
- W.matchMedia=()=>({matches:false,addEventListener(){},addListener(){}});W.CSS={escape:s=>String(s)};W.getComputedStyle=()=>({});W.innerWidth=1280;W.Audio=function(){return D};W.Image=function(){return D};
- W.setTimeout=(f)=>{if(typeof f!=='function')return 0;return setImmediate(()=>{try{f()}catch(e){if(H.onErr)H.onErr(e)}})};W.clearTimeout=h=>{if(h)clearImmediate(h)};W.setInterval=()=>0;W.clearInterval=()=>{};
- W.requestAnimationFrame=f=>W.setTimeout(f);
- const M=Object.create(Math);M.random=Math.random;W.Math=M;H.setRng=r=>{M.random=r};
- W.confirm=()=>true;W.alert=()=>{};
- /* battle_ui.js 원문 + 바꿔 끼우기 */
- const file=path.join(ROOT,'js','battle_ui.js');let src=fs.readFileSync(file,'utf8');
- for(const [a,b] of PATCH){const i=src.indexOf(a);if(i<0)throw new Error('웹툴 battle_ui.js 가 바뀌어 바꿔 끼울 자리를 못 찾았다: '+a.slice(0,60));if(src.indexOf(a,i+1)>=0)throw new Error('바꿔 끼울 자리가 여럿: '+a.slice(0,60));src=src.slice(0,i)+b+src.slice(i+a.length)}
- vm.runInContext(src,W,{filename:file});
- H.get=n=>W.__BUI_GET(n);
- const NAMES=['redirectOf','protRiderFire','protRider','fieldHOk','faHoldOps','fieldAuto','semiOf','stKoU','chargeVanish','wxNow','HAS','itemConsume','ctx','snap','pName','pN','pMates','saveBattle','startBattle','enterMon','exitMon','forcedSwitch','autoEntryAll','autoOnEntry','computeOrder','turnEnd','applyOrder','tempRank','fireAuto','abilityHitReact','itemHitReact','itemConsume','itemSweep','faintOff','faintSweep',
-  'entered','allEntered','fieldOf','skinOf','hitShield','hsOpt','moveQuery','specialPowFor','powStepOf','rollGroup','secRolls','tgtFor','foulAtk','iuIgnore','critMulOf','crAdj','orderCrit','itemCrit','protMove','protBypass','raidFloor','raidPhase','spMulOf','grd','tysOf','IT','MVS','moveAuto',
-  'CHARGE_ST','movesDown','WEATHER_MUL','WALLS','wallNames','catEn','isPursuit','mode','sameT','potSrc','outReset','auraOff','perOf','leadAcc','CRR','chanceLive','secAdd0','secSure0','endCands','END_T','STATWORD','FOUL_RE','protMove','passable','applyBatton','isExcl','uniqList','limOf','abTxt','abNm','hitRules','resultOf','formSet','hpFormWatch','futureFire','raidExtra','condNow','passiveOps','gradeCond','SIDES','AREAS','SIDE_KO','OBJ_CAT','objCat','TERRAIN','ROOMS','ETC','setPhase','autoTurnStart','fireOrder','noOrdWhy','defaultTargets','pursuitX2','switchGuard','preCharge','slotEff','enterMon','exitMon','faintWatch','ACTFX','hitAuto','evReact','evFlush','deferFire','limManual','bondBand','potMark','coverFire','chainAfterAct','doForm','formsOf','areaSwap','areaMovedAuto','aceDef','stanceXact','syncLock','ordAtk','actedB4','rolesOf','aptOn','mvModAfter','mvModOf','mvNameEq','mvBan','resortOrder','orderSig'];
- for(const n of NAMES){const v=H.get(n);if(v!==undefined)H.fn[n]=v}
- /* 11-15: 지금 낼 수 없는 기술(사슬묶기 · 앙코르 · 트집 · 도발 … 웹툴 mvBan)은 시뮬 후보에서 뺀다 */
- {const M0=H.fn.MVS,BAN=H.fn.mvBan;if(M0&&BAN)H.fn.MVS=m=>{const L=M0(m);try{return L.filter(mv=>!BAN(m,mv))}catch(e){return L}}}
- H.missing=NAMES.filter(n=>H.fn[n]===undefined);
- /* 배틀 상태를 통째로 바꾼다 */
- H.reset=b=>{ST.state.battle=b;H.logs.length=0};
- /* 사람이 답하던 곳 — 시뮬 기본 답 (H.answer 로 바꿀 수 있다). 물은 것은 H.asked 에 센다 */
- H.asked={};const note=(k,q)=>{const key=k+': '+String(q||'').slice(0,120);H.asked[key]=(H.asked[key]||0)+1};
- H.answer={
-  ask:(q)=>{note('확인',q);return !/배턴터치/.test(String(q||''))},
-  /* 효과 엔진 「조건을 만족하는가?」: HP 조건만 읽고 나머지는 「아니요」(모르는 조건으로 효과가 나가지 않게) — 물은 글은 H.asked 로 모아 고친다 */
-  confirm:(q,self,b)=>{note('조건',q);const t=String(q||'');let m=t.match(/HP\s*[:：]?\s*(\d+)\s*\/\s*(\d+)\s*이하/);if(m&&self)return self.hp.cur<=self.hp.max*(+m[1])/(+m[2]);m=t.match(/HP\s*[:：]?\s*(\d+)\s*\/\s*(\d+)\s*이상/);if(m&&self)return self.hp.cur>=self.hp.max*(+m[1])/(+m[2]);if(/HP\s*[:：]?\s*가득/.test(t)&&self)return self.hp.cur>=self.hp.max;return false},
-  /* 11-15 날씨 지정(「날씨 : X」 줄): 우리 편(필드 · 벤치) 기술이 얼마나 세지나 − 상대 필드 쪽 (웨더볼은 타입 · 위력 2배, 눈 · 모래는 얼음 · 바위 내구) — 덕이 없으면 「무작위로 둔다」 */
-  choose:(labels,multi,self,b)=>{note('선택',labels.join(' / '));if(self&&b&&labels.some(l=>/^날씨 : /.test(l))){const WM=H.get('WEATHER_MUL')||{};const WB={맑음:'Fire',비:'Water',모래바람:'Rock',눈:'Ice'};const mons=Object.values(b.mons||{}).filter(x=>x&&x.hp&&x.hp.cur>0&&(x.side===self.side||x.entry));
-    const sc=w=>{const wm=WM[w]||{};let v=0;for(const x of mons){const sg=x.side===self.side?1:-0.7;const ty0=x.types||[];let base=0,best=0;for(const mv of (x.moves||[])){if(!mv||mv.cat==='변화'||!(+mv.pow))continue;const st=t=>ty0.includes(t)?1.5:1;const b0=+mv.pow*st(mv.typeEn);let ty=mv.typeEn,pw=+mv.pow;if(/웨더볼/.test(mv.name||'')&&WB[w]){ty=WB[w];pw*=2}base=Math.max(base,b0);best=Math.max(best,pw*st(ty)*(+wm[ty]||1))}if(base)v+=sg*(best/base-1);if((w==='눈'&&ty0.includes('Ice'))||(w==='모래바람'&&ty0.includes('Rock')))v+=sg*0.3}return v};
-    let bi=labels.length-1,bv=0.05;labels.forEach((l,i)=>{const m=l.match(/^날씨 : (.+)$/);if(!m)return;const v=sc(m[1]);if(v>bv){bv=v;bi=i}});return [bi]}
-   /* 11-15 05시 『변환술』 등 「능력치 +1」 고르기: 그 포켓몬이 실제로 쓰는 공격 쪽(물리 · 특수 중 위력 합이 큰 쪽)을 올린다 — 이미 그쪽이면 그대로 */
-   if(self&&labels.length>1&&labels.every(l=>/^(공격|방어|특공|특방|스피드|명중|회피|급소)\s*\+\d/.test(l))){const mv=(self.moves||[]).filter(q=>q&&q.cat!=='변화'&&+q.pow>0);const ph=mv.filter(q=>q.cat==='물리').reduce((a,q)=>a+(+q.pow),0)*(+(self.stats||[])[1]||1),sp=mv.filter(q=>q.cat==='특수').reduce((a,q)=>a+(+q.pow),0)*(+(self.stats||[])[3]||1);const want=ph>=sp?'공격':'특공';const i=labels.findIndex(l=>l.startsWith(want+' '));return [i>=0?i:0]}
-   return [0]},
-  /* 대상 고르기: 상대 쪽이면 가장 위협적인(공격 · 특공 높은) 상대, 같은 편이면 HP 비율이 가장 낮은 아군 */
-  pick:(list,label,self,b)=>{note('대상',label);if(!list.length)return null;if(H.pickHint){const h=list.find(x=>x&&x.id===H.pickHint);if(h)return h}   /* 11-15: 지시 로직이 정해 둔 대상 (찰나의 모작) */const foe=self&&list.every(x=>x.side!==self.side);if(foe)return list.slice().sort((a,c)=>Math.max(c.stats[1],c.stats[3])-Math.max(a.stats[1],a.stats[3]))[0];return list.slice().sort((a,c)=>a.hp.cur/a.hp.max-c.hp.cur/c.hp.max)[0]}};
- W.__SIM={ask:(q,y,n)=>H.answer.ask(q,y,n),uiCtx:(b,self,name,area)=>({b,self,name,area,viewer:'',
-  /* 11-15 이계 전개 (웹툴 stageOpen 의 필드 전개 창 없는 갈래와 같게): 《이계/이름》을 이름만으로 편다 */stageOpen:async(me,sname,turns,nm)=>{b.field=b.field||{};b.field.stage={type:2,name:String(sname).replace(/^(이계|필드|스타디움)\//,''),count:turns>0?turns:1000,owner:me.name,tid:me.tid,ownerMid:me.id,src:'fx:'+me.id,at:0};return `${me.name} 「${nm}」 — 《이계/${b.field.stage.name}》 전개${turns?' '+turns+'턴':''}`},
-  /* 11-15 에리어 이동 (웹툴 areaMove — 2체면 옮길 자리가 하나라 바로) */areaMove:(m,nm)=>{setTimeout(()=>H.fn.areaSwap(m.id).catch(()=>{}),0);return `${m.name} 「${nm}」 — 에리어 이동`},
-  /* 11-15 폼체인지 구문 (웹툴 formTo 와 같게 — 창 없이 바로): 『무관, 무능의 멍에를 벗고』 → 나굴닌자 */formTo:(m,fname,nm)=>{const fs=H.fn.formsOf?H.fn.formsOf(m):[];const n=x=>String(x||'').replace(/\s/g,'');if(!fname||/^(원래|복귀|해제|원래대로)$/.test(n(fname))){if(!m.form0)return `${m.name} 「${nm}」 — 이미 원래 모습이다`;setTimeout(()=>H.fn.doForm(m.id,-1,nm).catch(()=>{}),0);return `${m.name} 「${nm}」 — 원래 모습으로`}let k=fname?fs.findIndex(f=>f&&(n(f.name)===n(fname)||n(f.name).includes(n(fname))||n(f.label).includes(n(fname)))):-1;if(!fname&&fs.length===1)k=0;if(k<0)return `${m.name} 「${nm}」 — 「${fname||''}」 폼을 찾지 못했다`;setTimeout(()=>H.fn.doForm(m.id,k,nm).catch(()=>{}),0);return `${m.name} 「${nm}」 — 「${(fs[k]||{}).name||fname}」(으)로 폼체인지`},
-  pick:(list,label)=>Promise.resolve(H.answer.pick(list,label,self,b)),confirm:q=>Promise.resolve(!!H.answer.confirm(q,self,b)),choose:(labels,multi)=>Promise.resolve(H.answer.choose(labels,multi,self,b))})};
- W.__H=H;return H}
-module.exports={load,PATCH,diffOps,dummy};
+function load(W) {
+  if (W.__H) return W.__H;
+  const ST = {
+    state: { battle: {}, rp: {}, roster: { trainers: {}, mons: {} }, seats: {}, skill: {} },
+    role: 'gm',
+    seat: '',
+    room: 'sim',
+    secret: ''
+  };
+  const H = { ST, state: ST.state, logs: [], fn: {} };
+  const setPath = (p, v) => {
+    if (!p || !p.length) {
+      ST.state = v || {};
+      H.state = ST.state;
+      return;
+    }
+    let o = ST.state;
+    for (let i = 0; i < p.length - 1; i++) {
+      if (typeof o[p[i]] !== 'object' || o[p[i]] == null) o[p[i]] = {};
+      o = o[p[i]];
+    }
+    if (v === null || v === undefined) delete o[p[p.length - 1]];
+    else o[p[p.length - 1]] = v;
+  };
+  const D = dummy();
+  const ok = Promise.resolve(true);
+  const contactOf = mv => {
+    const c = mv && mv.contact;
+    if (c === 'O' || c === 'X') return c;
+    const d = ((W.OM_DB || {}).moves || {})[mv && mv.name];
+    return (d && d.contact) || '-';
+  };
+  W.OM_APP = {
+    ST,
+    set: (p, v) => {
+      setPath(p, v);
+      return ok;
+    },
+    setMany: ops => {
+      for (const [p, v] of ops) setPath(p, v);
+      return ok;
+    },
+    setDiff: (p, a, b, d) => {
+      for (const [q, v] of diffOps(p, a, b, d == null ? 1 : d)) setPath(q, v);
+      return ok;
+    },
+    diffOps,
+    sysLog: (t, k) => {
+      if (H.logOn) H.logs.push(String(t));
+    },
+    selfLog: () => {},
+    toast: () => {},
+    openModal: () => D,
+    closeModal: () => {},
+    renderScene: () => {},
+    presList: () => [],
+    online: () => false,
+    contactOf,
+    acctKey: () => '',
+    typeChip: () => '',
+    dupItems: () => [],
+    dupItemText: () => '',
+    unloadTrainer: () => {},
+    auto: () => {},
+    parse: x => x,
+    openMon: () => {},
+    openLoadParty: () => {},
+    openHatch: () => {},
+    describe: () => ''
+  };
+  W.OM_STORE = { secretGet: () => Promise.resolve([]), setState: () => Promise.resolve(true) };
+  /* 가짜 DOM · 타이머 · 난수 */
+  const doc = W.document;
+  doc.querySelector = () => D;
+  doc.querySelectorAll = () => [];
+  doc.getElementById = () => D;
+  doc.createElement = () => D;
+  doc.body = D;
+  doc.addEventListener = () => {};
+  doc.head = D;
+  W.matchMedia = () => ({ matches: false, addEventListener() {}, addListener() {} });
+  W.CSS = { escape: s => String(s) };
+  W.getComputedStyle = () => ({});
+  W.innerWidth = 1280;
+  W.Audio = function () {
+    return D;
+  };
+  W.Image = function () {
+    return D;
+  };
+  W.setTimeout = f => {
+    if (typeof f !== 'function') return 0;
+    return setImmediate(() => {
+      try {
+        f();
+      } catch (e) {
+        if (H.onErr) H.onErr(e);
+      }
+    });
+  };
+  W.clearTimeout = h => {
+    if (h) clearImmediate(h);
+  };
+  W.setInterval = () => 0;
+  W.clearInterval = () => {};
+  W.requestAnimationFrame = f => W.setTimeout(f);
+  const M = Object.create(Math);
+  M.random = Math.random;
+  W.Math = M;
+  H.setRng = r => {
+    M.random = r;
+  };
+  W.confirm = () => true;
+  W.alert = () => {};
+  /* battle_ui.js 원문 + 바꿔 끼우기 */
+  const file = path.join(ROOT, 'js', 'battle_ui.js');
+  let src = fs.readFileSync(file, 'utf8');
+  for (const [re, add, where] of PATCH) {
+    const g = new RegExp(re.source, 'g');
+    const ms = [...src.matchAll(g)];
+    if (!ms.length) throw new Error('웹툴 battle_ui.js 가 바뀌어 바꿔 끼울 자리를 못 찾았다: ' + re.source.slice(0, 60));
+    if (ms.length > 1) throw new Error('바꿔 끼울 자리가 여럿: ' + re.source.slice(0, 60));
+    const m = ms[0],
+      at = where === 'before' ? m.index : m.index + m[0].length;
+    src = src.slice(0, at) + add + src.slice(at);
+  }
+  vm.runInContext(src, W, { filename: file });
+  H.get = n => W.__BUI_GET(n);
+  const NAMES = [
+    'redirectOf',
+    'protRiderFire',
+    'protRider',
+    'fieldHOk',
+    'faHoldOps',
+    'fieldAuto',
+    'semiOf',
+    'stKoU',
+    'chargeVanish',
+    'wxNow',
+    'HAS',
+    'itemConsume',
+    'ctx',
+    'snap',
+    'pName',
+    'pN',
+    'pMates',
+    'saveBattle',
+    'startBattle',
+    'enterMon',
+    'exitMon',
+    'forcedSwitch',
+    'autoEntryAll',
+    'autoOnEntry',
+    'computeOrder',
+    'turnEnd',
+    'applyOrder',
+    'tempRank',
+    'fireAuto',
+    'abilityHitReact',
+    'itemHitReact',
+    'itemConsume',
+    'itemSweep',
+    'faintOff',
+    'faintSweep',
+    'entered',
+    'allEntered',
+    'fieldOf',
+    'skinOf',
+    'hitShield',
+    'hsOpt',
+    'moveQuery',
+    'specialPowFor',
+    'powStepOf',
+    'rollGroup',
+    'secRolls',
+    'tgtFor',
+    'foulAtk',
+    'iuIgnore',
+    'critMulOf',
+    'crAdj',
+    'orderCrit',
+    'itemCrit',
+    'protMove',
+    'protBypass',
+    'raidFloor',
+    'raidPhase',
+    'spMulOf',
+    'grd',
+    'tysOf',
+    'IT',
+    'MVS',
+    'moveAuto',
+    'CHARGE_ST',
+    'movesDown',
+    'WEATHER_MUL',
+    'WALLS',
+    'wallNames',
+    'catEn',
+    'isPursuit',
+    'mode',
+    'sameT',
+    'potSrc',
+    'outReset',
+    'auraOff',
+    'perOf',
+    'leadAcc',
+    'CRR',
+    'chanceLive',
+    'secAdd0',
+    'secSure0',
+    'endCands',
+    'END_T',
+    'STATWORD',
+    'FOUL_RE',
+    'protMove',
+    'passable',
+    'applyBatton',
+    'isExcl',
+    'uniqList',
+    'limOf',
+    'abTxt',
+    'abNm',
+    'hitRules',
+    'resultOf',
+    'formSet',
+    'hpFormWatch',
+    'futureFire',
+    'raidExtra',
+    'condNow',
+    'passiveOps',
+    'gradeCond',
+    'SIDES',
+    'AREAS',
+    'SIDE_KO',
+    'OBJ_CAT',
+    'objCat',
+    'TERRAIN',
+    'ROOMS',
+    'ETC',
+    'setPhase',
+    'autoTurnStart',
+    'fireOrder',
+    'noOrdWhy',
+    'defaultTargets',
+    'pursuitX2',
+    'switchGuard',
+    'preCharge',
+    'slotEff',
+    'enterMon',
+    'exitMon',
+    'faintWatch',
+    'ACTFX',
+    'hitAuto',
+    'evReact',
+    'evFlush',
+    'deferFire',
+    'limManual',
+    'bondBand',
+    'potMark',
+    'coverFire',
+    'chainAfterAct',
+    'doForm',
+    'formsOf',
+    'areaSwap',
+    'areaMovedAuto',
+    'aceDef',
+    'stanceXact',
+    'syncLock',
+    'ordAtk',
+    'actedB4',
+    'rolesOf',
+    'aptOn',
+    'mvModAfter',
+    'mvModOf',
+    'mvNameEq',
+    'mvBan',
+    'resortOrder',
+    'orderSig'
+  ];
+  for (const n of NAMES) {
+    const v = H.get(n);
+    if (v !== undefined) H.fn[n] = v;
+  }
+  /* 11-15: 지금 낼 수 없는 기술(사슬묶기 · 앙코르 · 트집 · 도발 … 웹툴 mvBan)은 시뮬 후보에서 뺀다 */
+  {
+    const M0 = H.fn.MVS,
+      BAN = H.fn.mvBan;
+    if (M0 && BAN)
+      H.fn.MVS = m => {
+        const L = M0(m);
+        try {
+          return L.filter(mv => !BAN(m, mv));
+        } catch (e) {
+          return L;
+        }
+      };
+  }
+  H.missing = NAMES.filter(n => H.fn[n] === undefined);
+  /* 배틀 상태를 통째로 바꾼다 */
+  H.reset = b => {
+    ST.state.battle = b;
+    H.logs.length = 0;
+  };
+  /* 사람이 답하던 곳 — 시뮬 기본 답 (H.answer 로 바꿀 수 있다). 물은 것은 H.asked 에 센다 */
+  H.asked = {};
+  const note = (k, q) => {
+    const key = k + ': ' + String(q || '').slice(0, 120);
+    H.asked[key] = (H.asked[key] || 0) + 1;
+  };
+  H.answer = {
+    ask: q => {
+      note('확인', q);
+      return !/배턴터치/.test(String(q || ''));
+    },
+    /* 효과 엔진 「조건을 만족하는가?」: HP 조건만 읽고 나머지는 「아니요」(모르는 조건으로 효과가 나가지 않게) — 물은 글은 H.asked 로 모아 고친다 */
+    confirm: (q, self, b) => {
+      note('조건', q);
+      const t = String(q || '');
+      let m = t.match(/HP\s*[:：]?\s*(\d+)\s*\/\s*(\d+)\s*이하/);
+      if (m && self) return self.hp.cur <= (self.hp.max * +m[1]) / +m[2];
+      m = t.match(/HP\s*[:：]?\s*(\d+)\s*\/\s*(\d+)\s*이상/);
+      if (m && self) return self.hp.cur >= (self.hp.max * +m[1]) / +m[2];
+      if (/HP\s*[:：]?\s*가득/.test(t) && self) return self.hp.cur >= self.hp.max;
+      return false;
+    },
+    /* 11-15 날씨 지정(「날씨 : X」 줄): 우리 편(필드 · 벤치) 기술이 얼마나 세지나 − 상대 필드 쪽 (웨더볼은 타입 · 위력 2배, 눈 · 모래는 얼음 · 바위 내구) — 덕이 없으면 「무작위로 둔다」 */
+    choose: (labels, multi, self, b) => {
+      note('선택', labels.join(' / '));
+      if (self && b && labels.some(l => /^날씨 : /.test(l))) {
+        const WM = H.get('WEATHER_MUL') || {};
+        const WB = { 맑음: 'Fire', 비: 'Water', 모래바람: 'Rock', 눈: 'Ice' };
+        const mons = Object.values(b.mons || {}).filter(x => x && x.hp && x.hp.cur > 0 && (x.side === self.side || x.entry));
+        const sc = w => {
+          const wm = WM[w] || {};
+          let v = 0;
+          for (const x of mons) {
+            const sg = x.side === self.side ? 1 : -0.7;
+            const ty0 = x.types || [];
+            let base = 0,
+              best = 0;
+            for (const mv of x.moves || []) {
+              if (!mv || mv.cat === '변화' || !+mv.pow) continue;
+              const st = t => (ty0.includes(t) ? 1.5 : 1);
+              const b0 = +mv.pow * st(mv.typeEn);
+              let ty = mv.typeEn,
+                pw = +mv.pow;
+              if (/웨더볼/.test(mv.name || '') && WB[w]) {
+                ty = WB[w];
+                pw *= 2;
+              }
+              base = Math.max(base, b0);
+              best = Math.max(best, pw * st(ty) * (+wm[ty] || 1));
+            }
+            if (base) v += sg * (best / base - 1);
+            if ((w === '눈' && ty0.includes('Ice')) || (w === '모래바람' && ty0.includes('Rock'))) v += sg * 0.3;
+          }
+          return v;
+        };
+        let bi = labels.length - 1,
+          bv = 0.05;
+        labels.forEach((l, i) => {
+          const m = l.match(/^날씨 : (.+)$/);
+          if (!m) return;
+          const v = sc(m[1]);
+          if (v > bv) {
+            bv = v;
+            bi = i;
+          }
+        });
+        return [bi];
+      }
+      /* 11-15 05시 『변환술』 등 「능력치 +1」 고르기: 그 포켓몬이 실제로 쓰는 공격 쪽(물리 · 특수 중 위력 합이 큰 쪽)을 올린다 — 이미 그쪽이면 그대로 */
+      if (self && labels.length > 1 && labels.every(l => /^(공격|방어|특공|특방|스피드|명중|회피|급소)\s*\+\d/.test(l))) {
+        const mv = (self.moves || []).filter(q => q && q.cat !== '변화' && +q.pow > 0);
+        const ph = mv.filter(q => q.cat === '물리').reduce((a, q) => a + +q.pow, 0) * (+(self.stats || [])[1] || 1),
+          sp = mv.filter(q => q.cat === '특수').reduce((a, q) => a + +q.pow, 0) * (+(self.stats || [])[3] || 1);
+        const want = ph >= sp ? '공격' : '특공';
+        const i = labels.findIndex(l => l.startsWith(want + ' '));
+        return [i >= 0 ? i : 0];
+      }
+      return [0];
+    },
+    /* 대상 고르기: 상대 쪽이면 가장 위협적인(공격 · 특공 높은) 상대, 같은 편이면 HP 비율이 가장 낮은 아군 */
+    pick: (list, label, self, b) => {
+      note('대상', label);
+      if (!list.length) return null;
+      if (H.pickHint) {
+        const h = list.find(x => x && x.id === H.pickHint);
+        if (h) return h;
+      }
+      /* 11-15: 지시 로직이 정해 둔 대상 (찰나의 모작) */ const foe = self && list.every(x => x.side !== self.side);
+      if (foe) return list.slice().sort((a, c) => Math.max(c.stats[1], c.stats[3]) - Math.max(a.stats[1], a.stats[3]))[0];
+      return list.slice().sort((a, c) => a.hp.cur / a.hp.max - c.hp.cur / c.hp.max)[0];
+    }
+  };
+  W.__SIM = {
+    ask: (q, y, n) => H.answer.ask(q, y, n),
+    uiCtx: (b, self, name, area) => ({
+      b,
+      self,
+      name,
+      area,
+      viewer: '',
+      /* 11-15 이계 전개 (웹툴 stageOpen 의 필드 전개 창 없는 갈래와 같게): 《이계/이름》을 이름만으로 편다 */ stageOpen: async (
+        me,
+        sname,
+        turns,
+        nm
+      ) => {
+        b.field = b.field || {};
+        b.field.stage = {
+          type: 2,
+          name: String(sname).replace(/^(이계|필드|스타디움)\//, ''),
+          count: turns > 0 ? turns : 1000,
+          owner: me.name,
+          tid: me.tid,
+          ownerMid: me.id,
+          src: 'fx:' + me.id,
+          at: 0
+        };
+        return `${me.name} 「${nm}」 — 《이계/${b.field.stage.name}》 전개${turns ? ' ' + turns + '턴' : ''}`;
+      },
+      /* 11-15 에리어 이동 (웹툴 areaMove — 2체면 옮길 자리가 하나라 바로) */ areaMove: (m, nm) => {
+        setTimeout(() => H.fn.areaSwap(m.id).catch(() => {}), 0);
+        return `${m.name} 「${nm}」 — 에리어 이동`;
+      },
+      /* 11-15 폼체인지 구문 (웹툴 formTo 와 같게 — 창 없이 바로): 『무관, 무능의 멍에를 벗고』 → 나굴닌자 */ formTo: (m, fname, nm) => {
+        const fs = H.fn.formsOf ? H.fn.formsOf(m) : [];
+        const n = x => String(x || '').replace(/\s/g, '');
+        if (!fname || /^(원래|복귀|해제|원래대로)$/.test(n(fname))) {
+          if (!m.form0) return `${m.name} 「${nm}」 — 이미 원래 모습이다`;
+          setTimeout(() => H.fn.doForm(m.id, -1, nm).catch(() => {}), 0);
+          return `${m.name} 「${nm}」 — 원래 모습으로`;
+        }
+        let k = fname ? fs.findIndex(f => f && (n(f.name) === n(fname) || n(f.name).includes(n(fname)) || n(f.label).includes(n(fname)))) : -1;
+        if (!fname && fs.length === 1) k = 0;
+        if (k < 0) return `${m.name} 「${nm}」 — 「${fname || ''}」 폼을 찾지 못했다`;
+        setTimeout(() => H.fn.doForm(m.id, k, nm).catch(() => {}), 0);
+        return `${m.name} 「${nm}」 — 「${(fs[k] || {}).name || fname}」(으)로 폼체인지`;
+      },
+      pick: (list, label) => Promise.resolve(H.answer.pick(list, label, self, b)),
+      confirm: q => Promise.resolve(!!H.answer.confirm(q, self, b)),
+      choose: (labels, multi) => Promise.resolve(H.answer.choose(labels, multi, self, b))
+    })
+  };
+  W.__H = H;
+  return H;
+}
+module.exports = { load, PATCH, diffOps, dummy };

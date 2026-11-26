@@ -1,27 +1,149 @@
 /* 기록(records/*.summary.json) → report/index.html + report/report.md. 시나리오(변형)마다 한 줄 요약 + 체크 결과 분포 */
-"use strict";
-const fs=require('fs'),path=require('path');
-const REC=path.resolve(__dirname,'..','records'),PRIV=path.join(REC,'private'),OUT=path.resolve(__dirname,'..','report');
+'use strict';
+const fs = require('fs'),
+  path = require('path');
+const REC = path.resolve(__dirname, '..', 'records'),
+  PRIV = path.join(REC, 'private'),
+  OUT = path.resolve(__dirname, '..', 'report');
 /* 비공개 기록(무진처럼 비공개 트레이너 · 던전이 들어간 것)은 records/private/ 에 두고 git 에 올리지 않는다. 리포트도 index.html(공개분) · private.html(전부, git 제외) 둘로 */
-const recDir=priv=>priv?PRIV:REC;
-function findRec(id){for(const d of [REC,PRIV]){const f=path.join(d,id+'.summary.json');if(fs.existsSync(f))return d}return null}
-const pct=x=>(x*100).toFixed(0)+'%';const f2=x=>(+x).toFixed(2);const KO=require('./ko.js');
-const nameOf=s=>s.name||s.id;const lineOf=s=>`${KO.dungeonName(s.dungeon)} · ${KO.partyKo(s.party).join('·')} · ${KO.describe(s.adjust,s.policy)}`;
-function summaries(){const out=[];for(const [d,priv] of [[REC,false],[PRIV,true]]){if(!fs.existsSync(d))continue;for(const f of fs.readdirSync(d).filter(f=>f.endsWith('.summary.json')).sort())out.push(Object.assign({file:f,private:priv},JSON.parse(fs.readFileSync(path.join(d,f),'utf8'))))}return out}
-function aggregate(rows){const n=rows.length;const S=(k,fn)=>rows.reduce((a,r)=>a+fn(r),0);const cn=S('c',r=>r.checks.n)||1;
- return {n,wipe:S('w',r=>r.wipe?1:0)/n,boss:S('b',r=>r.boss?1:0)/n,endHp:S('h',r=>r.endHpAvg)/n,fainted:S('f',r=>r.faintedEnd)/n,monsTotal:rows[0]?rows[0].monsTotal:0,
-  checks:cn/n,ok:S('o',r=>r.checks.ok)/cn,crit:S('o',r=>r.checks.crit)/cn,cost:S('o',r=>r.checks.cost)/cn,fail:S('o',r=>r.checks.fail)/cn,fumble:S('o',r=>r.checks.fumble)/cn,alone:S('o',r=>r.checks.alone)/cn,covers:S('o',r=>r.checks.covers)/n,inou:S('o',r=>r.checks.inou)/n,
-  injuries:S('i',r=>r.injuryEvents)/n,injAny:S('i',r=>r.injuries.some(x=>x>0)?1:0)/n,injSevere:S('i',r=>r.injuries.some(x=>x>=2)?1:0)/n,penDmg:S('p',r=>r.penDmg)/n,
-  perCheck:(()=>{const o={};for(const r of rows)for(const c of (r.checkRows||[])){const k=c.l+' ('+c.t+')';const x=o[k]=o[k]||{n:0,ok:0,cost:0,fail:0,alone:0,inou:0,cover:0,who:{}};x.n++;if(c.ri>=3)x.ok++;else if(c.ri===2)x.cost++;else x.fail++;if(c.p==='혼자')x.alone++;if(c.m==='inou')x.inou++;if(c.cv)x.cover++;x.who[c.w]=(x.who[c.w]||0)+1}return o})(),
-  bossReach:S('r',r=>r.bossBattle?1:0)/n,bossWin:S('r',r=>r.bossBattle&&r.bossBattle.win?1:0)/Math.max(1,S('r',r=>r.bossBattle?1:0)),bossTurns:S('r',r=>r.bossBattle?r.bossBattle.turns:0)/Math.max(1,S('r',r=>r.bossBattle?1:0)),bossKos:S('r',r=>r.bossBattle?r.bossBattle.kos:0)/Math.max(1,S('r',r=>r.bossBattle?1:0)),bossPhases:S('r',r=>r.bossBattle?r.bossBattle.phases:0)/Math.max(1,S('r',r=>r.bossBattle?1:0)),bossFoes:(rows.find(r=>r.bossBattle)||{bossBattle:{}}).bossBattle.foes||0,bossRaid:(rows.find(r=>r.bossBattle)||{bossBattle:{}}).bossBattle.raidX||0,
-  battles:S('b',r=>r.battles.n)/n,bturns:S('b',r=>r.battles.turns)/Math.max(1,S('b',r=>r.battles.n)),bkos:S('b',r=>r.battles.kos)/n,orders:S('b',r=>r.battles.orders)/n,commands:S('b',r=>r.battles.commands)/n}}
-function md(list){const L=['# 던전 · 스킬 체크 시뮬 리포트','',`만든 때 ${new Date().toISOString().slice(0,16).replace('T',' ')} · 시나리오 ${list.length}개`,'',
- '| 시나리오 | 던전 | 일행 | 조정 | 판 | 전멸 | 보스 | 끝 HP | 끝 빈사/체 | 체크/판 | 성공 | 대성공 | 대가 | 실패 | 대실패 | 혼자 | 커버/판 | 부상 사건/판 | 부상자 있는 판 | 중상 판 | 패널티 HP/판 | 배틀/판 | 턴/배틀 | 아군 빈사/판 | 4식/판 | 6령/판 |','|'+'---|'.repeat(26)];
- for(const s of list){const a=s.agg;L.push(`| ${nameOf(s)} | ${KO.dungeonName(s.dungeon)} | ${KO.partyKo(s.party).join('·')} | ${KO.describe(s.adjust,s.policy)} | ${a.n} | ${pct(a.wipe)} | ${pct(a.boss)} | ${pct(a.endHp)} | ${f2(a.fainted)}/${a.monsTotal} | ${f2(a.checks)} | ${pct(a.ok)} | ${pct(a.crit)} | ${pct(a.cost)} | ${pct(a.fail)} | ${pct(a.fumble)} | ${pct(a.alone)} | ${f2(a.covers)} | ${f2(a.injuries)} | ${pct(a.injAny)} | ${pct(a.injSevere)} | ${f2(a.penDmg)} | ${f2(a.battles)} | ${f2(a.bturns)} | ${f2(a.bkos)} | ${f2(a.orders)} | ${f2(a.commands)} |`)}
- L.push('','읽는 법: 「성공」은 대성공 포함, 「실패」는 대실패 포함. 「끝 HP」 = 던전이 끝났을 때 일행 포켓몬 HP 비율 평균. 「혼자」 = 상황에 맞는(안 지친) 포켓몬이 없어 d4 로 굴린 비율. 커버는 실패를 받친 횟수(정책대로) — 커버 한 번 = 부상 한 번.');
- return L.join('\n')}
-function html(list,mdText,jr){jr=jr||[];const rows=list.map(s=>{const a=s.agg;return `<tr><td><b>${esc(nameOf(s))}</b><div class="small">${esc(lineOf(s))}</div>${s.comment?`<div class="cmt">${esc(s.comment)}</div>`:''}${s.name&&s.name!==s.id?`<div class="small mono">${esc(s.id)}</div>`:''}</td><td>${a.n}</td><td class="${a.wipe>0.1?'bad':''}">${pct(a.wipe)}</td><td>${pct(a.boss)}</td><td>${bar(a.endHp)}</td><td>${f2(a.fainted)}/${a.monsTotal}</td><td>${f2(a.checks)}</td><td>${stack(a)}</td><td>${pct(a.alone)}</td><td>${f2(a.covers)}</td><td class="${a.injAny>0.6?'bad':''}">${pct(a.injAny)} <span class="small">(중상 ${pct(a.injSevere)})</span></td><td>${f2(a.penDmg)}</td><td>${f2(a.battles)} · ${f2(a.bturns)}턴</td><td>${f2(a.bkos)}</td><td>${f2(a.orders)} / ${f2(a.commands)}</td></tr>`}).join('');
- return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>던전 시뮬 리포트</title>
+const recDir = priv => (priv ? PRIV : REC);
+function findRec(id) {
+  for (const d of [REC, PRIV]) {
+    const f = path.join(d, id + '.summary.json');
+    if (fs.existsSync(f)) return d;
+  }
+  return null;
+}
+const pct = x => (x * 100).toFixed(0) + '%';
+const f2 = x => (+x).toFixed(2);
+const KO = require('./ko.js');
+const nameOf = s => s.name || s.id;
+const lineOf = s => `${KO.dungeonName(s.dungeon)} · ${KO.partyKo(s.party).join('·')} · ${KO.describe(s.adjust, s.policy)}`;
+function summaries() {
+  const out = [];
+  for (const [d, priv] of [
+    [REC, false],
+    [PRIV, true]
+  ]) {
+    if (!fs.existsSync(d)) continue;
+    for (const f of fs
+      .readdirSync(d)
+      .filter(f => f.endsWith('.summary.json'))
+      .sort())
+      out.push(Object.assign({ file: f, private: priv }, JSON.parse(fs.readFileSync(path.join(d, f), 'utf8'))));
+  }
+  return out;
+}
+function aggregate(rows) {
+  const n = rows.length;
+  const S = (k, fn) => rows.reduce((a, r) => a + fn(r), 0);
+  const cn = S('c', r => r.checks.n) || 1;
+  return {
+    n,
+    wipe: S('w', r => (r.wipe ? 1 : 0)) / n,
+    boss: S('b', r => (r.boss ? 1 : 0)) / n,
+    endHp: S('h', r => r.endHpAvg) / n,
+    fainted: S('f', r => r.faintedEnd) / n,
+    monsTotal: rows[0] ? rows[0].monsTotal : 0,
+    checks: cn / n,
+    ok: S('o', r => r.checks.ok) / cn,
+    crit: S('o', r => r.checks.crit) / cn,
+    cost: S('o', r => r.checks.cost) / cn,
+    fail: S('o', r => r.checks.fail) / cn,
+    fumble: S('o', r => r.checks.fumble) / cn,
+    alone: S('o', r => r.checks.alone) / cn,
+    covers: S('o', r => r.checks.covers) / n,
+    inou: S('o', r => r.checks.inou) / n,
+    injuries: S('i', r => r.injuryEvents) / n,
+    injAny: S('i', r => (r.injuries.some(x => x > 0) ? 1 : 0)) / n,
+    injSevere: S('i', r => (r.injuries.some(x => x >= 2) ? 1 : 0)) / n,
+    penDmg: S('p', r => r.penDmg) / n,
+    perCheck: (() => {
+      const o = {};
+      for (const r of rows)
+        for (const c of r.checkRows || []) {
+          const k = c.l + ' (' + c.t + ')';
+          const x = (o[k] = o[k] || { n: 0, ok: 0, cost: 0, fail: 0, alone: 0, inou: 0, cover: 0, who: {} });
+          x.n++;
+          if (c.ri >= 3) x.ok++;
+          else if (c.ri === 2) x.cost++;
+          else x.fail++;
+          if (c.p === '혼자') x.alone++;
+          if (c.m === 'inou') x.inou++;
+          if (c.cv) x.cover++;
+          x.who[c.w] = (x.who[c.w] || 0) + 1;
+        }
+      return o;
+    })(),
+    bossReach: S('r', r => (r.bossBattle ? 1 : 0)) / n,
+    bossWin:
+      S('r', r => (r.bossBattle && r.bossBattle.win ? 1 : 0)) /
+      Math.max(
+        1,
+        S('r', r => (r.bossBattle ? 1 : 0))
+      ),
+    bossTurns:
+      S('r', r => (r.bossBattle ? r.bossBattle.turns : 0)) /
+      Math.max(
+        1,
+        S('r', r => (r.bossBattle ? 1 : 0))
+      ),
+    bossKos:
+      S('r', r => (r.bossBattle ? r.bossBattle.kos : 0)) /
+      Math.max(
+        1,
+        S('r', r => (r.bossBattle ? 1 : 0))
+      ),
+    bossPhases:
+      S('r', r => (r.bossBattle ? r.bossBattle.phases : 0)) /
+      Math.max(
+        1,
+        S('r', r => (r.bossBattle ? 1 : 0))
+      ),
+    bossFoes: (rows.find(r => r.bossBattle) || { bossBattle: {} }).bossBattle.foes || 0,
+    bossRaid: (rows.find(r => r.bossBattle) || { bossBattle: {} }).bossBattle.raidX || 0,
+    battles: S('b', r => r.battles.n) / n,
+    bturns:
+      S('b', r => r.battles.turns) /
+      Math.max(
+        1,
+        S('b', r => r.battles.n)
+      ),
+    bkos: S('b', r => r.battles.kos) / n,
+    orders: S('b', r => r.battles.orders) / n,
+    commands: S('b', r => r.battles.commands) / n
+  };
+}
+function md(list) {
+  const L = [
+    '# 던전 · 스킬 체크 시뮬 리포트',
+    '',
+    `만든 때 ${new Date().toISOString().slice(0, 16).replace('T', ' ')} · 시나리오 ${list.length}개`,
+    '',
+    '| 시나리오 | 던전 | 일행 | 조정 | 판 | 전멸 | 보스 | 끝 HP | 끝 빈사/체 | 체크/판 | 성공 | 대성공 | 대가 | 실패 | 대실패 | 혼자 | 커버/판 | 부상 사건/판 | 부상자 있는 판 | 중상 판 | 패널티 HP/판 | 배틀/판 | 턴/배틀 | 아군 빈사/판 | 4식/판 | 6령/판 |',
+    '|' + '---|'.repeat(26)
+  ];
+  for (const s of list) {
+    const a = s.agg;
+    L.push(
+      `| ${nameOf(s)} | ${KO.dungeonName(s.dungeon)} | ${KO.partyKo(s.party).join('·')} | ${KO.describe(s.adjust, s.policy)} | ${a.n} | ${pct(a.wipe)} | ${pct(a.boss)} | ${pct(a.endHp)} | ${f2(a.fainted)}/${a.monsTotal} | ${f2(a.checks)} | ${pct(a.ok)} | ${pct(a.crit)} | ${pct(a.cost)} | ${pct(a.fail)} | ${pct(a.fumble)} | ${pct(a.alone)} | ${f2(a.covers)} | ${f2(a.injuries)} | ${pct(a.injAny)} | ${pct(a.injSevere)} | ${f2(a.penDmg)} | ${f2(a.battles)} | ${f2(a.bturns)} | ${f2(a.bkos)} | ${f2(a.orders)} | ${f2(a.commands)} |`
+    );
+  }
+  L.push(
+    '',
+    '읽는 법: 「성공」은 대성공 포함, 「실패」는 대실패 포함. 「끝 HP」 = 던전이 끝났을 때 일행 포켓몬 HP 비율 평균. 「혼자」 = 상황에 맞는(안 지친) 포켓몬이 없어 d4 로 굴린 비율. 커버는 실패를 받친 횟수(정책대로) — 커버 한 번 = 부상 한 번.'
+  );
+  return L.join('\n');
+}
+function html(list, mdText, jr) {
+  jr = jr || [];
+  const rows = list
+    .map(s => {
+      const a = s.agg;
+      return `<tr><td><b>${esc(nameOf(s))}</b><div class="small">${esc(lineOf(s))}</div>${s.comment ? `<div class="cmt">${esc(s.comment)}</div>` : ''}${s.name && s.name !== s.id ? `<div class="small mono">${esc(s.id)}</div>` : ''}</td><td>${a.n}</td><td class="${a.wipe > 0.1 ? 'bad' : ''}">${pct(a.wipe)}</td><td>${pct(a.boss)}</td><td>${bar(a.endHp)}</td><td>${f2(a.fainted)}/${a.monsTotal}</td><td>${f2(a.checks)}</td><td>${stack(a)}</td><td>${pct(a.alone)}</td><td>${f2(a.covers)}</td><td class="${a.injAny > 0.6 ? 'bad' : ''}">${pct(a.injAny)} <span class="small">(중상 ${pct(a.injSevere)})</span></td><td>${f2(a.penDmg)}</td><td>${f2(a.battles)} · ${f2(a.bturns)}턴</td><td>${f2(a.bkos)}</td><td>${f2(a.orders)} / ${f2(a.commands)}</td></tr>`;
+    })
+    .join('');
+  return `<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>던전 시뮬 리포트</title>
 <style>:root{--bg:#fbf7ee;--fg:#1d1a14;--mut:#6b6457;--line:#d9d1bf;--ok:#1f7a4a;--cost:#b8860b;--bad:#9b1c2b;--acc:#c0392b}@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#16140f;--fg:#efe8d8;--mut:#a39a86;--line:#3a352a;color-scheme:dark}}:root[data-theme=dark]{--bg:#16140f;--fg:#efe8d8;--mut:#a39a86;--line:#3a352a;color-scheme:dark}
 body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,"Noto Sans KR",sans-serif;padding-block:20px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}h1{font-size:20px;margin:0 0 4px}.small{font-size:11px;color:var(--mut)}.mono{font-family:ui-monospace,monospace}
 .wrap{overflow-x:auto}table{border-collapse:collapse;min-width:1100px}th,td{border-bottom:1px solid var(--line);padding:6px 8px;text-align:right;vertical-align:top;white-space:nowrap}th:first-child,td:first-child{text-align:left}th{font-size:12px;color:var(--mut);position:sticky;top:0;background:var(--bg)}
@@ -29,19 +151,84 @@ body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,"Noto
 .st{display:inline-flex;width:140px;height:10px;border-radius:5px;overflow:hidden;vertical-align:middle}.st i{display:block;height:100%}.st .o{background:var(--ok)}.st .c{background:var(--cost)}.st .f{background:var(--bad)}
 pre{white-space:pre-wrap;font-size:12px;color:var(--mut)}h2{font-size:16px;margin:18px 0 6px}.cmt{white-space:normal;max-width:420px;font-size:12px;margin-top:3px;padding:3px 7px;border-left:3px solid var(--acc);background:rgba(192,57,43,.06)}
 .jr{border:1px solid var(--line);border-left:4px solid var(--k,var(--mut));border-radius:8px;padding:8px 12px;margin:6px 0;max-width:900px}.jr h3{font-size:14px;margin:0 0 3px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}.jr .k{font-size:11px;padding:1px 8px;border-radius:999px;color:#fff;background:var(--k)}.jr p{margin:4px 0 0;white-space:pre-wrap;line-height:1.6}.jr.done{opacity:.6}</style></head><body>
-<h1>던전 · 스킬 체크 시뮬 리포트</h1><div class="small">만든 때 ${new Date().toISOString().slice(0,16).replace('T',' ')} · 시나리오 ${list.length}개 · 자료: sim/records/*.summary.json</div>
+<h1>던전 · 스킬 체크 시뮬 리포트</h1><div class="small">만든 때 ${new Date().toISOString().slice(0, 16).replace('T', ' ')} · 시나리오 ${list.length}개 · 자료: sim/records/*.summary.json</div>
 ${journalHtml(jr)}
 <h2>기록</h2><div class="wrap"><table><thead><tr><th>시나리오</th><th>판</th><th>전멸</th><th>보스</th><th>끝 HP</th><th>끝 빈사</th><th>체크/판</th><th>성공 · 대가 · 실패</th><th>혼자</th><th>커버/판</th><th>부상자 있는 판</th><th>패널티 HP/판</th><th>배틀 · 턴</th><th>아군 빈사/판</th><th>4식 / 6령 사용/판</th></tr></thead><tbody>${rows}</tbody></table></div>
 <p class="small">성공 막대: 초록 성공(대성공 포함) · 노랑 대가를 치르고 성공 · 빨강 실패(대실패 포함). 「혼자」 = 상황에 맞는 안 지친 포켓몬이 없어 d4 로 굴린 비율. 커버 한 번 = 부상 한 번.</p>
-${list.map(s=>`<details><summary><b>${esc(nameOf(s))}</b> <span class="small">${esc(lineOf(s))}</span> — 체크별 결과</summary><div class="wrap"><table><thead><tr><th>체크 (목표)</th><th>판</th><th>성공 · 대가 · 실패</th><th>혼자</th><th>이능</th><th>커버</th><th>누가 굴렸나</th></tr></thead><tbody>${Object.entries(s.agg.perCheck||{}).map(([k,x])=>`<tr><td>${esc(k)}</td><td>${x.n}</td><td>${stack({ok:x.ok/x.n,cost:x.cost/x.n,fail:x.fail/x.n})}</td><td>${pct(x.alone/x.n)}</td><td>${pct(x.inou/x.n)}</td><td>${pct(x.cover/x.n)}</td><td class="small">${esc(Object.entries(x.who).sort((a,b)=>b[1]-a[1]).map(([w,c])=>w+' '+pct(c/x.n)).join(' · '))}</td></tr>`).join('')}</tbody></table></div></details>`).join('')}
-<details><summary class="small">같은 내용 (Markdown)</summary><pre>${esc(mdText)}</pre></details></body></html>`}
-const esc=s=>String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-const bar=x=>`<span class="bar"><i style="width:${Math.round(x*100)}%"></i></span>${pct(x)}`;
-const stack=a=>`<span class="st"><i class="o" style="width:${a.ok*100}%"></i><i class="c" style="width:${a.cost*100}%"></i><i class="f" style="width:${(a.fail)*100}%"></i></span> ${pct(a.ok)} · ${pct(a.cost)} · ${pct(a.fail)}`;
-const KCOL={'실험':'#2B5FB4','발견':'#B07A00','개선안':'#1E8A62','결정':'#C8362B','할 일':'#6A6FA8'};
-function journalHtml(jr){if(!jr.length)return '';return `<h2>실험 일지</h2>`+jr.map(e=>`<div class="jr${e.done?' done':''}" style="--k:${KCOL[e.kind]||'#888'}"><h3><span class="k">${esc(e.kind)}</span>${e.kind==='할 일'?(e.done?'☑ ':'☐ '):''}${esc(e.title||'')}<span class="small">${esc(e.at||'')}${e.who?' · '+esc(e.who):''}${e.refs&&e.refs.length?' · 기록 '+esc(e.refs.join(', ')):''}</span></h3>${e.text?`<p>${esc(e.text)}</p>`:''}</div>`).join('')}
-function journalMd(jr){if(!jr.length)return '';return ['','## 실험 일지',''].concat(jr.map(e=>`- **[${e.kind}] ${e.title||''}** (${e.at||''}${e.who?' · '+e.who:''})${e.kind==='할 일'?(e.done?' ☑':' ☐'):''}${e.text?'\n  '+String(e.text).replace(/\n/g,'\n  '):''}`)).join('\n')}
-function build(){KO.reset();const JA=(()=>{try{return require('./journal.js').all()}catch(e){return []}})();const A=summaries(),L=A.filter(s=>!s.private);fs.mkdirSync(OUT,{recursive:true});const JP=JA.filter(e=>!e.private);const m=md(L)+journalMd(JP);fs.writeFileSync(path.join(OUT,'report.md'),m);fs.writeFileSync(path.join(OUT,'index.html'),html(L,m,JP));
- const priv=A.length>L.length||JA.length>JP.length;if(priv){const m2=md(A)+journalMd(JA);fs.writeFileSync(path.join(OUT,'private.md'),m2);fs.writeFileSync(path.join(OUT,'private.html'),html(A,m2,JA))}
- return {n:L.length,nAll:A.length,md:path.join(OUT,'report.md'),html:priv?path.join(OUT,'private.html'):path.join(OUT,'index.html')}}
-module.exports={summaries,aggregate,build,REC,PRIV,OUT,recDir,findRec};
+${list
+  .map(
+    s =>
+      `<details><summary><b>${esc(nameOf(s))}</b> <span class="small">${esc(lineOf(s))}</span> — 체크별 결과</summary><div class="wrap"><table><thead><tr><th>체크 (목표)</th><th>판</th><th>성공 · 대가 · 실패</th><th>혼자</th><th>이능</th><th>커버</th><th>누가 굴렸나</th></tr></thead><tbody>${Object.entries(
+        s.agg.perCheck || {}
+      )
+        .map(
+          ([k, x]) =>
+            `<tr><td>${esc(k)}</td><td>${x.n}</td><td>${stack({ ok: x.ok / x.n, cost: x.cost / x.n, fail: x.fail / x.n })}</td><td>${pct(x.alone / x.n)}</td><td>${pct(x.inou / x.n)}</td><td>${pct(x.cover / x.n)}</td><td class="small">${esc(
+              Object.entries(x.who)
+                .sort((a, b) => b[1] - a[1])
+                .map(([w, c]) => w + ' ' + pct(c / x.n))
+                .join(' · ')
+            )}</td></tr>`
+        )
+        .join('')}</tbody></table></div></details>`
+  )
+  .join('')}
+<details><summary class="small">같은 내용 (Markdown)</summary><pre>${esc(mdText)}</pre></details></body></html>`;
+}
+const esc = s =>
+  String(s ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+const bar = x => `<span class="bar"><i style="width:${Math.round(x * 100)}%"></i></span>${pct(x)}`;
+const stack = a =>
+  `<span class="st"><i class="o" style="width:${a.ok * 100}%"></i><i class="c" style="width:${a.cost * 100}%"></i><i class="f" style="width:${a.fail * 100}%"></i></span> ${pct(a.ok)} · ${pct(a.cost)} · ${pct(a.fail)}`;
+const KCOL = { '실험': '#2B5FB4', '발견': '#B07A00', '개선안': '#1E8A62', '결정': '#C8362B', '할 일': '#6A6FA8' };
+function journalHtml(jr) {
+  if (!jr.length) return '';
+  return (
+    `<h2>실험 일지</h2>` +
+    jr
+      .map(
+        e =>
+          `<div class="jr${e.done ? ' done' : ''}" style="--k:${KCOL[e.kind] || '#888'}"><h3><span class="k">${esc(e.kind)}</span>${e.kind === '할 일' ? (e.done ? '☑ ' : '☐ ') : ''}${esc(e.title || '')}<span class="small">${esc(e.at || '')}${e.who ? ' · ' + esc(e.who) : ''}${e.refs && e.refs.length ? ' · 기록 ' + esc(e.refs.join(', ')) : ''}</span></h3>${e.text ? `<p>${esc(e.text)}</p>` : ''}</div>`
+      )
+      .join('')
+  );
+}
+function journalMd(jr) {
+  if (!jr.length) return '';
+  return ['', '## 실험 일지', '']
+    .concat(
+      jr.map(
+        e =>
+          `- **[${e.kind}] ${e.title || ''}** (${e.at || ''}${e.who ? ' · ' + e.who : ''})${e.kind === '할 일' ? (e.done ? ' ☑' : ' ☐') : ''}${e.text ? '\n  ' + String(e.text).replace(/\n/g, '\n  ') : ''}`
+      )
+    )
+    .join('\n');
+}
+function build() {
+  KO.reset();
+  const JA = (() => {
+    try {
+      return require('./journal.js').all();
+    } catch (e) {
+      return [];
+    }
+  })();
+  const A = summaries(),
+    L = A.filter(s => !s.private);
+  fs.mkdirSync(OUT, { recursive: true });
+  const JP = JA.filter(e => !e.private);
+  const m = md(L) + journalMd(JP);
+  fs.writeFileSync(path.join(OUT, 'report.md'), m);
+  fs.writeFileSync(path.join(OUT, 'index.html'), html(L, m, JP));
+  const priv = A.length > L.length || JA.length > JP.length;
+  if (priv) {
+    const m2 = md(A) + journalMd(JA);
+    fs.writeFileSync(path.join(OUT, 'private.md'), m2);
+    fs.writeFileSync(path.join(OUT, 'private.html'), html(A, m2, JA));
+  }
+  return { n: L.length, nAll: A.length, md: path.join(OUT, 'report.md'), html: priv ? path.join(OUT, 'private.html') : path.join(OUT, 'index.html') };
+}
+module.exports = { summaries, aggregate, build, REC, PRIV, OUT, recDir, findRec };

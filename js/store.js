@@ -1,201 +1,663 @@
 /* ---------- 오레마스 공유 DB 어댑터 (Supabase) ----------
    방(om_rooms) · 상태(om_state) · 로그(om_log) · 비밀(om_secret) 을 다룬다.
    쓰기는 전부 RPC(schema.sql 의 om_* 함수)로 간다. 비밀값(GM 또는 좌석)은 호출 때마다 같이 보낸다. */
-"use strict";
+'use strict';
 /* 그림 주소를 style="background-image:url('…')" 에 넣을 때 쓰는 전역 도우미: 따옴표·괄호·꺾쇠·역슬래시·공백을 %XX 로 바꿔 속성·CSS 문자열을 못 깨게 한다 (주소로서는 같은 뜻) */
-function cssu(s){return String(s??'').replace(/[\s"'()\\<>]/g,c=>'%'+c.charCodeAt(0).toString(16).padStart(2,'0').toUpperCase())}
-window.OM_STORE=(()=>{
- const cfg=()=>window.OM_CONFIG||{};
- let client=null;
- function sb(){
-  if(client)return client;
-  if(!window.supabase||!window.supabase.createClient)throw new Error('supabase-js를 불러오지 못했습니다');
-  client=window.supabase.createClient(cfg().supabaseUrl,cfg().supabaseKey,{realtime:{params:{eventsPerSecond:20}}});
-  return client}
- function err(e){const m=(e&&(e.message||e.details))||String(e);const x=new Error(m.replace(/^.*?: /,''));x.raw=e;return x}
- async function rpc(fn,args){const r=await sb().rpc(fn,args);if(r.error)throw err(r.error);return r.data}
+function cssu(s) {
+  return String(s ?? '').replace(/[\s"'()\\<>]/g, c => '%' + c.charCodeAt(0).toString(16).padStart(2, '0').toUpperCase());
+}
+window.OM_STORE = (() => {
+  const cfg = () => window.OM_CONFIG || {};
+  let client = null;
+  function sb() {
+    if (client) return client;
+    if (!window.supabase || !window.supabase.createClient) throw new Error('supabase-js를 불러오지 못했습니다');
+    client = window.supabase.createClient(cfg().supabaseUrl, cfg().supabaseKey, { realtime: { params: { eventsPerSecond: 20 } } });
+    return client;
+  }
+  function err(e) {
+    const m = (e && (e.message || e.details)) || String(e);
+    const x = new Error(m.replace(/^.*?: /, ''));
+    x.raw = e;
+    return x;
+  }
+  async function rpc(fn, args) {
+    const r = await sb().rpc(fn, args);
+    if (r.error) throw err(r.error);
+    return r.data;
+  }
 
- /* ----- 방 ----- */
- async function createRoom(name,gmSecret){return rpc('om_create_room',{p_name:name,p_gm_secret:gmSecret})}
- async function getRoom(id){const r=await sb().from('om_rooms').select('*').eq('id',id).maybeSingle();if(r.error)throw err(r.error);return r.data}
- async function whoami(room,secret){return rpc('om_whoami',{p_room:room,p_secret:secret||''})}
- /* 계정 (2026-10-23): 아이디 · 비밀번호 로그인 → 로그인 표(token). 방에서는 비밀값 자리에 'u:'+token 을 쓴다 (supabase/patch_2026-10-23_계정.sql) */
- const acct={signup:(id,pw,name)=>rpc('om_signup',{p_id:id,p_pw:pw,p_name:name||''}),login:(id,pw,dev)=>rpc('om_login',{p_id:id,p_pw:pw,p_device:dev||''}),logout:t=>rpc('om_logout',{p_token:t}),
-  me:t=>rpc('om_me',{p_token:t}),meUpdate:(t,name,oldPw,newPw)=>rpc('om_me_update',{p_token:t,p_name:name??null,p_old:oldPw??null,p_new:newPw??null}),roomNew:(t,name)=>rpc('om_room_new',{p_token:t,p_name:name}),roomCopy:(t,room,name,opts)=>rpc('om_room_copy',{p_token:t,p_room:room,p_name:name,p_opts:opts||{}}),join:(t,room)=>rpc('om_room_join',{p_token:t,p_room:room}),
-  adminList:t=>rpc('om_admin_list',{p_token:t}),adminMember:(t,uid,room,role,seat)=>rpc('om_admin_member',{p_token:t,p_uid:uid,p_room:room,p_role:role??null,p_seat:seat??null}),
-  adminUser:(t,uid,o)=>rpc('om_admin_user',{p_token:t,p_uid:uid,p_admin:o.admin??null,p_pw:o.pw??null,p_delete:!!o.del}),
-  /* 10-22: 관리자 설정 (방 기본값 등) — supabase/patch_2026-10-22_방기본값.sql */
-  configGet:(t,k)=>rpc('om_config_get',{p_token:t,p_key:k}),configSet:(t,k,v)=>rpc('om_config_set',{p_token:t,p_key:k,p_v:v??null})};
- async function claimSeat(room,seat,secret,name){return rpc('om_claim_seat',{p_room:room,p_seat:seat,p_secret:secret,p_name:name})}
- /* 11-08 망령 「웹툴에서도 자리 더 앉기」: 한 계정이 여러 자리에 (supabase/patch_2026-11-08_여러자리.sql). mySeats 는 함수가 없으면 null = 예전처럼 한 자리 */
- const NOMULTI='서버에 여러 자리 기능이 아직 없다 — GM 이 supabase/patch_2026-11-08_여러자리.sql 을 돌려야 한다';
- async function seatRpc(fn,args){const r=await sb().rpc(fn,args);if(r.error){const m=String(r.error.message||r.error.details||r.error.code||'');if(r.error.code==='PGRST202'||/PGRST202|Could not find the function|function .* does not exist/i.test(m))throw new Error(NOMULTI);throw err(r.error)}return r.data}
- async function claimMore(room,seat,secret,name){return seatRpc('om_claim_more',{p_room:room,p_seat:seat,p_secret:secret,p_name:name})}
- async function seatUse(room,secret,seat){return seatRpc('om_seat_use',{p_room:room,p_secret:secret,p_seat:seat})}
- async function seatLeave(room,secret,seat){return seatRpc('om_seat_leave',{p_room:room,p_secret:secret,p_seat:seat})}
- async function mySeats(room,secret){try{return await seatRpc('om_my_seats',{p_room:room,p_secret:secret})}catch(e){if(e.message===NOMULTI)return null;throw e}}
- async function roomUpdate(room,secret,name,settings){return rpc('om_room_update',{p_room:room,p_secret:secret,p_name:name??null,p_settings:settings??null})}
- async function roomDel(room,secret){return rpc('om_room_del',{p_room:room,p_secret:secret})}   /* 10-24: supabase/patch_2026-10-24_방삭제.sql */
+  /* ----- 방 ----- */
+  async function createRoom(name, gmSecret) {
+    return rpc('om_create_room', { p_name: name, p_gm_secret: gmSecret });
+  }
+  async function getRoom(id) {
+    const r = await sb().from('om_rooms').select('*').eq('id', id).maybeSingle();
+    if (r.error) throw err(r.error);
+    return r.data;
+  }
+  async function whoami(room, secret) {
+    return rpc('om_whoami', { p_room: room, p_secret: secret || '' });
+  }
+  /* 계정 (2026-10-23): 아이디 · 비밀번호 로그인 → 로그인 표(token). 방에서는 비밀값 자리에 'u:'+token 을 쓴다 (supabase/patch_2026-10-23_계정.sql) */
+  const acct = {
+    signup: (id, pw, name) => rpc('om_signup', { p_id: id, p_pw: pw, p_name: name || '' }),
+    login: (id, pw, dev) => rpc('om_login', { p_id: id, p_pw: pw, p_device: dev || '' }),
+    logout: t => rpc('om_logout', { p_token: t }),
+    me: t => rpc('om_me', { p_token: t }),
+    meUpdate: (t, name, oldPw, newPw) => rpc('om_me_update', { p_token: t, p_name: name ?? null, p_old: oldPw ?? null, p_new: newPw ?? null }),
+    roomNew: (t, name) => rpc('om_room_new', { p_token: t, p_name: name }),
+    roomCopy: (t, room, name, opts) => rpc('om_room_copy', { p_token: t, p_room: room, p_name: name, p_opts: opts || {} }),
+    join: (t, room) => rpc('om_room_join', { p_token: t, p_room: room }),
+    adminList: t => rpc('om_admin_list', { p_token: t }),
+    adminMember: (t, uid, room, role, seat) =>
+      rpc('om_admin_member', { p_token: t, p_uid: uid, p_room: room, p_role: role ?? null, p_seat: seat ?? null }),
+    adminUser: (t, uid, o) => rpc('om_admin_user', { p_token: t, p_uid: uid, p_admin: o.admin ?? null, p_pw: o.pw ?? null, p_delete: !!o.del }),
+    /* 10-22: 관리자 설정 (방 기본값 등) — supabase/patch_2026-10-22_방기본값.sql */
+    configGet: (t, k) => rpc('om_config_get', { p_token: t, p_key: k }),
+    configSet: (t, k, v) => rpc('om_config_set', { p_token: t, p_key: k, p_v: v ?? null })
+  };
+  async function claimSeat(room, seat, secret, name) {
+    return rpc('om_claim_seat', { p_room: room, p_seat: seat, p_secret: secret, p_name: name });
+  }
+  /* 11-08 망령 「웹툴에서도 자리 더 앉기」: 한 계정이 여러 자리에 (supabase/patch_2026-11-08_여러자리.sql). mySeats 는 함수가 없으면 null = 예전처럼 한 자리 */
+  const NOMULTI = '서버에 여러 자리 기능이 아직 없다 — GM 이 supabase/patch_2026-11-08_여러자리.sql 을 돌려야 한다';
+  async function seatRpc(fn, args) {
+    const r = await sb().rpc(fn, args);
+    if (r.error) {
+      const m = String(r.error.message || r.error.details || r.error.code || '');
+      if (r.error.code === 'PGRST202' || /PGRST202|Could not find the function|function .* does not exist/i.test(m)) throw new Error(NOMULTI);
+      throw err(r.error);
+    }
+    return r.data;
+  }
+  async function claimMore(room, seat, secret, name) {
+    return seatRpc('om_claim_more', { p_room: room, p_seat: seat, p_secret: secret, p_name: name });
+  }
+  async function seatUse(room, secret, seat) {
+    return seatRpc('om_seat_use', { p_room: room, p_secret: secret, p_seat: seat });
+  }
+  async function seatLeave(room, secret, seat) {
+    return seatRpc('om_seat_leave', { p_room: room, p_secret: secret, p_seat: seat });
+  }
+  async function mySeats(room, secret) {
+    try {
+      return await seatRpc('om_my_seats', { p_room: room, p_secret: secret });
+    } catch (e) {
+      if (e.message === NOMULTI) return null;
+      throw e;
+    }
+  }
+  async function roomUpdate(room, secret, name, settings) {
+    return rpc('om_room_update', { p_room: room, p_secret: secret, p_name: name ?? null, p_settings: settings ?? null });
+  }
+  async function roomDel(room, secret) {
+    return rpc('om_room_del', { p_room: room, p_secret: secret });
+  } /* 10-24: supabase/patch_2026-10-24_방삭제.sql */
 
- /* ----- 상태 ----- */
- /* 10-26 상태 나누기 (supabase/patch_2026-10-26_상태나누기.sql): 배틀 · 포켓몬은 따로 담겨 있어 om_get_state 로 합쳐 읽고, 쓰기는 om_put.
+  /* ----- 상태 ----- */
+  /* 10-26 상태 나누기 (supabase/patch_2026-10-26_상태나누기.sql): 배틀 · 포켓몬은 따로 담겨 있어 om_get_state 로 합쳐 읽고, 쓰기는 om_put.
     SQL 을 아직 안 돌린 DB 면 함수가 없다 — 그때는 예전 방식(om_state 표 · om_set_state)으로 */
- let SPLIT=null;   /* null 모름 · true 새 방식 · false 옛 방식 */
- const noFn=e=>{const m=String((e&&(e.message||e.details||e.code))||'');return /PGRST202|Could not find the function|function .* does not exist/i.test(m)||(e&&e.code==='PGRST202')};
- async function getState(room){
-  if(SPLIT!==false){const r=await sb().rpc('om_get_state',{p_room:room});if(!r.error){SPLIT=true;return r.data&&r.data.data?r.data:null}if(!noFn(r.error))throw err(r.error);SPLIT=false}
-  const r=await sb().from('om_state').select('data,v').eq('room',room).maybeSingle();if(r.error)throw err(r.error);return r.data}
- /* 10-23 이그레스: 버전만 (가볍게 확인하고, 앞서 있을 때만 전체를 읽는다) */
- /* 11-07 방 따라가기: 다른 방의 DB(dbx) · rp 만 가볍게 (나눈 상태에서도 둘은 om_state 에 있다) */
- async function roomPick(room){const r=await sb().from('om_state').select('dbx:data->dbx,rp:data->rp').eq('room',room).maybeSingle();if(r.error)throw err(r.error);return r.data}
- async function getStateV(room){const r=await sb().from('om_state').select('v').eq('room',room).maybeSingle();if(r.error)throw err(r.error);return r.data}
- /* 10-28 이그레스 (supabase/patch_2026-10-28_이어받기.sql): after 다음 버전부터 놓친 신호들만. 이어 붙일 수 없으면 null — 그때는 전체를 읽는다.
+  let SPLIT = null; /* null 모름 · true 새 방식 · false 옛 방식 */
+  const noFn = e => {
+    const m = String((e && (e.message || e.details || e.code)) || '');
+    return /PGRST202|Could not find the function|function .* does not exist/i.test(m) || (e && e.code === 'PGRST202');
+  };
+  async function getState(room) {
+    if (SPLIT !== false) {
+      const r = await sb().rpc('om_get_state', { p_room: room });
+      if (!r.error) {
+        SPLIT = true;
+        return r.data && r.data.data ? r.data : null;
+      }
+      if (!noFn(r.error)) throw err(r.error);
+      SPLIT = false;
+    }
+    const r = await sb().from('om_state').select('data,v').eq('room', room).maybeSingle();
+    if (r.error) throw err(r.error);
+    return r.data;
+  }
+  /* 10-23 이그레스: 버전만 (가볍게 확인하고, 앞서 있을 때만 전체를 읽는다) */
+  /* 11-07 방 따라가기: 다른 방의 DB(dbx) · rp 만 가볍게 (나눈 상태에서도 둘은 om_state 에 있다) */
+  async function roomPick(room) {
+    const r = await sb().from('om_state').select('dbx:data->dbx,rp:data->rp').eq('room', room).maybeSingle();
+    if (r.error) throw err(r.error);
+    return r.data;
+  }
+  async function getStateV(room) {
+    const r = await sb().from('om_state').select('v').eq('room', room).maybeSingle();
+    if (r.error) throw err(r.error);
+    return r.data;
+  }
+  /* 10-28 이그레스 (supabase/patch_2026-10-28_이어받기.sql): after 다음 버전부터 놓친 신호들만. 이어 붙일 수 없으면 null — 그때는 전체를 읽는다.
     함수가 없는 DB 면 한 번 알고 나서는 묻지 않는다 */
- let PATCHES=null;
- async function patchesSince(room,after){if(PATCHES===false)return null;const r=await sb().rpc('om_patches',{p_room:room,p_after:after||0});
-  if(r.error){if(noFn(r.error)){PATCHES=false;return null}throw err(r.error)}PATCHES=true;return Array.isArray(r.data)?r.data:null}
- /* 10-22 로비 방 카드: 방마다 배경 · 첫 화면 · 마지막 변경만 (상태 전체는 무겁다) */
- async function roomsPeek(ids){if(!ids.length)return [];const r=await sb().from('om_state').select('room,updated_at,bg:data->rp->bg,scene:data->scene').in('room',ids);if(r.error)throw err(r.error);return r.data||[]}
- async function setState(room,secret,path,value){const args={p_room:room,p_secret:secret,p_path:path||null,p_value:value===undefined?null:value};
-  if(SPLIT!==false){const r=await sb().rpc('om_put',args);if(!r.error){SPLIT=true;return r.data}if(!noFn(r.error))throw err(r.error);SPLIT=false}
-  return rpc('om_set_state',args)}
- /* 11-03 감우 「여러 칸 한 번에」 (supabase/patch_2026-11-03_배틀.sql om_jset_many): patches = [{path:[..],value}] 를 한 트랜잭션에.
+  let PATCHES = null;
+  async function patchesSince(room, after) {
+    if (PATCHES === false) return null;
+    const r = await sb().rpc('om_patches', { p_room: room, p_after: after || 0 });
+    if (r.error) {
+      if (noFn(r.error)) {
+        PATCHES = false;
+        return null;
+      }
+      throw err(r.error);
+    }
+    PATCHES = true;
+    return Array.isArray(r.data) ? r.data : null;
+  }
+  /* 10-22 로비 방 카드: 방마다 배경 · 첫 화면 · 마지막 변경만 (상태 전체는 무겁다) */
+  async function roomsPeek(ids) {
+    if (!ids.length) return [];
+    const r = await sb().from('om_state').select('room,updated_at,bg:data->rp->bg,scene:data->scene').in('room', ids);
+    if (r.error) throw err(r.error);
+    return r.data || [];
+  }
+  async function setState(room, secret, path, value) {
+    const args = { p_room: room, p_secret: secret, p_path: path || null, p_value: value === undefined ? null : value };
+    if (SPLIT !== false) {
+      const r = await sb().rpc('om_put', args);
+      if (!r.error) {
+        SPLIT = true;
+        return r.data;
+      }
+      if (!noFn(r.error)) throw err(r.error);
+      SPLIT = false;
+    }
+    return rpc('om_set_state', args);
+  }
+  /* 11-03 감우 「여러 칸 한 번에」 (supabase/patch_2026-11-03_배틀.sql om_jset_many): patches = [{path:[..],value}] 를 한 트랜잭션에.
     함수가 없는 DB 면 null 을 돌려주고 (한 번 알고 나서는 묻지 않는다) 호출한 쪽이 칸마다 setState 로 쓴다 */
- let MANY=null;
- async function setStateMany(room,secret,patches){if(MANY===false)return null;const r=await sb().rpc('om_jset_many',{p_room:room,p_secret:secret,p_patches:patches});
-  if(r.error){if(noFn(r.error)){MANY=false;return null}throw err(r.error)}MANY=true;return r.data}
- /* 11-03 감우 「턴 체크포인트 · 배틀 저장」 (같은 패치 om_snap): 방 상태 밖 표. 함수가 없으면 noFn 으로 알아채 이 브라우저에만 남긴다 (battle_ui snapStore) */
- const snap={put:(room,secret,id,kind,name,turn,data)=>rpc('om_snap_put',{p_room:room,p_secret:secret,p_id:id,p_kind:kind,p_name:name||'',p_turn:+turn||0,p_data:data}),
-  list:(room,secret,kind)=>rpc('om_snap_list',{p_room:room,p_secret:secret,p_kind:kind||null}),get:(room,secret,id)=>rpc('om_snap_get',{p_room:room,p_secret:secret,p_id:id}),
-  del:(room,secret,id)=>rpc('om_snap_del',{p_room:room,p_secret:secret,p_id:id}),noFn};
+  let MANY = null;
+  async function setStateMany(room, secret, patches) {
+    if (MANY === false) return null;
+    const r = await sb().rpc('om_jset_many', { p_room: room, p_secret: secret, p_patches: patches });
+    if (r.error) {
+      if (noFn(r.error)) {
+        MANY = false;
+        return null;
+      }
+      throw err(r.error);
+    }
+    MANY = true;
+    return r.data;
+  }
+  /* 11-03 감우 「턴 체크포인트 · 배틀 저장」 (같은 패치 om_snap): 방 상태 밖 표. 함수가 없으면 noFn 으로 알아채 이 브라우저에만 남긴다 (battle_ui snapStore) */
+  const snap = {
+    put: (room, secret, id, kind, name, turn, data) =>
+      rpc('om_snap_put', { p_room: room, p_secret: secret, p_id: id, p_kind: kind, p_name: name || '', p_turn: +turn || 0, p_data: data }),
+    list: (room, secret, kind) => rpc('om_snap_list', { p_room: room, p_secret: secret, p_kind: kind || null }),
+    get: (room, secret, id) => rpc('om_snap_get', { p_room: room, p_secret: secret, p_id: id }),
+    del: (room, secret, id) => rpc('om_snap_del', { p_room: room, p_secret: secret, p_id: id }),
+    noFn
+  };
 
- /* ----- 로그 ----- */
- async function getLog(room,after,limit){
-  let q=sb().from('om_log').select('*').eq('room',room).order('id',{ascending:true}).limit(limit||300);
-  if(after)q=q.gt('id',after);
-  const r=await q;if(r.error)throw err(r.error);return r.data||[]}
- async function getLogTail(room,limit){
-  const r=await sb().from('om_log').select('*').eq('room',room).order('id',{ascending:false}).limit(limit||200);
-  if(r.error)throw err(r.error);return (r.data||[]).reverse()}
- /* 11-03: 대화 기록 창 — 뒤에서부터 한 쪽씩 (before 보다 작은 id, 오래된 순으로 돌려준다) */
- async function getLogBefore(room,before,limit){
-  let q=sb().from('om_log').select('*').eq('room',room).order('id',{ascending:false}).limit(limit||500);
-  if(before)q=q.lt('id',before);
-  const r=await q;if(r.error)throw err(r.error);return (r.data||[]).reverse()}
- /* 10-26 덱 시험: 내가 쓴 로그가 실시간으로 되돌아오지 않아 화면에서 빠지는 일이 잦았다 — 쓰고 나면 2.5초 뒤 서버를 한 번 더 읽어 채운다 (app.logFill) */
- async function addLog(room,secret,kind,who,data){return rpc('om_log_add',{p_room:room,p_secret:secret,p_kind:kind,p_who:who,p_data:data||{}}).then(r=>{try{const A=window.OM_APP;if(A&&A.logFill)A.logFill()}catch(e){}return r})}
- async function logClear(room,secret,keepSms){return rpc('om_log_clear',{p_room:room,p_secret:secret,p_keep_sms:!!keepSms})}
- async function logClearRange(room,secret,from,to,keepSms){return rpc('om_log_clear_range',{p_room:room,p_secret:secret,p_from:+from||0,p_to:+to||0,p_keep_sms:!!keepSms})}   /* 11-06 구역별 지우기 */
- async function whispers(room,secret,after){return rpc('om_whispers',{p_room:room,p_secret:secret,p_after:after||0})}
+  /* ----- 로그 ----- */
+  async function getLog(room, after, limit) {
+    let q = sb()
+      .from('om_log')
+      .select('*')
+      .eq('room', room)
+      .order('id', { ascending: true })
+      .limit(limit || 300);
+    if (after) q = q.gt('id', after);
+    const r = await q;
+    if (r.error) throw err(r.error);
+    return r.data || [];
+  }
+  async function getLogTail(room, limit) {
+    const r = await sb()
+      .from('om_log')
+      .select('*')
+      .eq('room', room)
+      .order('id', { ascending: false })
+      .limit(limit || 200);
+    if (r.error) throw err(r.error);
+    return (r.data || []).reverse();
+  }
+  /* 11-03: 대화 기록 창 — 뒤에서부터 한 쪽씩 (before 보다 작은 id, 오래된 순으로 돌려준다) */
+  async function getLogBefore(room, before, limit) {
+    let q = sb()
+      .from('om_log')
+      .select('*')
+      .eq('room', room)
+      .order('id', { ascending: false })
+      .limit(limit || 500);
+    if (before) q = q.lt('id', before);
+    const r = await q;
+    if (r.error) throw err(r.error);
+    return (r.data || []).reverse();
+  }
+  /* 10-26 덱 시험: 내가 쓴 로그가 실시간으로 되돌아오지 않아 화면에서 빠지는 일이 잦았다 — 쓰고 나면 2.5초 뒤 서버를 한 번 더 읽어 채운다 (app.logFill) */
+  async function addLog(room, secret, kind, who, data) {
+    return rpc('om_log_add', { p_room: room, p_secret: secret, p_kind: kind, p_who: who, p_data: data || {} }).then(r => {
+      try {
+        const A = window.OM_APP;
+        if (A && A.logFill) A.logFill();
+      } catch (e) {}
+      return r;
+    });
+  }
+  async function logClear(room, secret, keepSms) {
+    return rpc('om_log_clear', { p_room: room, p_secret: secret, p_keep_sms: !!keepSms });
+  }
+  async function logClearRange(room, secret, from, to, keepSms) {
+    return rpc('om_log_clear_range', { p_room: room, p_secret: secret, p_from: +from || 0, p_to: +to || 0, p_keep_sms: !!keepSms });
+  } /* 11-06 구역별 지우기 */
+  async function whispers(room, secret, after) {
+    return rpc('om_whispers', { p_room: room, p_secret: secret, p_after: after || 0 });
+  }
 
- /* ----- 비밀 ----- */
- async function secretPut(room,secret,kind,id,data){return rpc('om_secret_put',{p_room:room,p_secret:secret,p_kind:kind,p_id:id,p_data:data||{}})}
- async function secretGet(room,secret,kind){return rpc('om_secret_get',{p_room:room,p_secret:secret,p_kind:kind})}
+  /* ----- 비밀 ----- */
+  async function secretPut(room, secret, kind, id, data) {
+    return rpc('om_secret_put', { p_room: room, p_secret: secret, p_kind: kind, p_id: id, p_data: data || {} });
+  }
+  async function secretGet(room, secret, kind) {
+    return rpc('om_secret_get', { p_room: room, p_secret: secret, p_kind: kind });
+  }
 
- /* ----- 실시간 ----- */
- let CH=null;
- function subscribe(room,{onState,onPatch,onLog,onStatus,onEvent}){
-  const ch=sb().channel('om:'+room)
-   /* 10-23 이그레스: om_state 는 실시간 목록에서 빠졌다 — 없는 표를 구독하면 채널 전체(채팅 포함)가 실패하므로 구독하지 않는다. 상태는 아래 'st' 신호로 */
-   .on('broadcast',{event:'st'},p=>{if(onPatch&&p.payload)onPatch(p.payload)})   /* 10-23 이그레스: 바뀐 칸만 (supabase/patch_2026-10-23_이그레스.sql) */
-   .on('postgres_changes',{event:'INSERT',schema:'public',table:'om_log',filter:'room=eq.'+room},p=>{if(onLog&&p.new)onLog(p.new)})
-   .on('broadcast',{event:'ev'},p=>{if(onEvent&&p.payload)onEvent(p.payload)})
-   .subscribe(st=>{if(CH===ch&&onStatus)onStatus(st)});   /* 10-25: 바꿔 붙인 뒤 옛 채널의 CLOSED 는 무시 */
-  CH=ch;return ()=>{if(CH===ch)CH=null;try{return Promise.resolve(sb().removeChannel(ch)).catch(()=>{})}catch(e){return Promise.resolve()}}}
- /* 10-25 망령: 폰이 잠들었다 깨면 소켓이 열린 척 죽어 있을 수 있다 — 소켓을 끊고 다시 붙인다 (채널 subscribe 가 다시 연결한다) */
- function rtReset(){try{const rt=sb().realtime;if(rt&&rt.disconnect)rt.disconnect()}catch(e){}}
- /* 저장하지 않는 신호 (입력 중 표시 등): 같은 방의 모두에게 바로 */
- function broadcast(payload){if(!CH)return;try{CH.send({type:'broadcast',event:'ev',payload})}catch(e){}}
+  /* ----- 실시간 ----- */
+  let CH = null;
+  function subscribe(room, { onState, onPatch, onLog, onStatus, onEvent }) {
+    const ch = sb()
+      .channel('om:' + room)
+      /* 10-23 이그레스: om_state 는 실시간 목록에서 빠졌다 — 없는 표를 구독하면 채널 전체(채팅 포함)가 실패하므로 구독하지 않는다. 상태는 아래 'st' 신호로 */
+      .on('broadcast', { event: 'st' }, p => {
+        if (onPatch && p.payload) onPatch(p.payload);
+      }) /* 10-23 이그레스: 바뀐 칸만 (supabase/patch_2026-10-23_이그레스.sql) */
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'om_log', filter: 'room=eq.' + room }, p => {
+        if (onLog && p.new) onLog(p.new);
+      })
+      .on('broadcast', { event: 'ev' }, p => {
+        if (onEvent && p.payload) onEvent(p.payload);
+      })
+      .subscribe(st => {
+        if (CH === ch && onStatus) onStatus(st);
+      }); /* 10-25: 바꿔 붙인 뒤 옛 채널의 CLOSED 는 무시 */
+    CH = ch;
+    return () => {
+      if (CH === ch) CH = null;
+      try {
+        return Promise.resolve(sb().removeChannel(ch)).catch(() => {});
+      } catch (e) {
+        return Promise.resolve();
+      }
+    };
+  }
+  /* 10-25 망령: 폰이 잠들었다 깨면 소켓이 열린 척 죽어 있을 수 있다 — 소켓을 끊고 다시 붙인다 (채널 subscribe 가 다시 연결한다) */
+  function rtReset() {
+    try {
+      const rt = sb().realtime;
+      if (rt && rt.disconnect) rt.disconnect();
+    } catch (e) {}
+  }
+  /* 저장하지 않는 신호 (입력 중 표시 등): 같은 방의 모두에게 바로 */
+  function broadcast(payload) {
+    if (!CH) return;
+    try {
+      CH.send({ type: 'broadcast', event: 'ev', payload });
+    } catch (e) {}
+  }
 
- /* ----- 제작기 시트 (읽기) ----- */
- async function makerDocs(kind){
-  const out=[];let from=0;const PAGE=1000;
-  for(;;){const r=await sb().from(cfg().makerTable||'docs').select('id,data').eq('kind',kind).order('id').range(from,from+PAGE-1);
-   /* 10-23 망령: 서버가 한 번에 주는 줄 수(max rows)가 PAGE 보다 적으면 거기서 끊겨 뒤쪽 문서(포켓몬)가 빠졌다 — 빈 쪽이 올 때까지 받은 만큼씩 넘긴다 */
-   if(r.error)throw err(r.error);const rows=r.data||[];out.push(...rows);if(!rows.length)break;from+=rows.length}
-  return out}
- /* 10-24 망령: since 이후에 바뀐 문서만 (updated_at). 바뀐 게 없으면 빈 줄 하나 — 제작기 DB 자동 반영이 쓴다 */
- async function makerDocsSince(kind,since){const out=[];let from=0;
-  for(;;){let q=sb().from(cfg().makerTable||'docs').select('id,data,updated_at').eq('kind',kind);if(since)q=q.gt('updated_at',since);const r=await q.order('updated_at').range(from,from+999);
-   if(r.error)throw err(r.error);const rows=r.data||[];out.push(...rows);if(!rows.length)break;from+=rows.length}
-  return out}
- /* 10-30 망령 「그림 줄이기」: 제작기 문서 한 장 읽기 · 쓰기 (관리자 패널의 그림 주소 바꿔 끼우기에서만) */
- async function makerOne(kind,id){const r=await sb().from(cfg().makerTable||'docs').select('id,data').eq('kind',kind).eq('id',id).maybeSingle();if(r.error)throw err(r.error);return r.data||null}
- async function makerPut(kind,id,data){const r=await sb().from(cfg().makerTable||'docs').upsert({kind,id,data},{onConflict:'kind,id'});if(r.error)throw err(r.error);return true}
- /* 트레이너 하나와 그 포켓몬만 (pids + data.tid) — 고를 때 전체를 다시 받지 않게 (10-23 이그레스) */
- async function makerParty(tid){const T=cfg().makerTable||'docs';const t=await sb().from(T).select('id,data').eq('kind','trainers').eq('id',tid);if(t.error)throw err(t.error);const tr=(t.data||[])[0];if(!tr)return {trainer:null,pokemon:[]};
-  const d=(tr.data&&tr.data.data)||tr.data||{};const pids=(Array.isArray(d.pids)?d.pids:[]).filter(x=>typeof x==='string'&&x);
-  const [a,b]=await Promise.all([pids.length?sb().from(T).select('id,data').eq('kind','pokemon').in('id',pids):{data:[]},sb().from(T).select('id,data').eq('kind','pokemon').eq('data->>tid',tid)]);if(a.error)throw err(a.error);if(b.error)throw err(b.error);
-  const m=new Map();for(const x of [...(a.data||[]),...(b.data||[])])m.set(x.id,x);return {trainer:tr,pokemon:[...m.values()]}}
+  /* ----- 제작기 시트 (읽기) ----- */
+  async function makerDocs(kind) {
+    const out = [];
+    let from = 0;
+    const PAGE = 1000;
+    for (;;) {
+      const r = await sb()
+        .from(cfg().makerTable || 'docs')
+        .select('id,data')
+        .eq('kind', kind)
+        .order('id')
+        .range(from, from + PAGE - 1);
+      /* 10-23 망령: 서버가 한 번에 주는 줄 수(max rows)가 PAGE 보다 적으면 거기서 끊겨 뒤쪽 문서(포켓몬)가 빠졌다 — 빈 쪽이 올 때까지 받은 만큼씩 넘긴다 */
+      if (r.error) throw err(r.error);
+      const rows = r.data || [];
+      out.push(...rows);
+      if (!rows.length) break;
+      from += rows.length;
+    }
+    return out;
+  }
+  /* 10-24 망령: since 이후에 바뀐 문서만 (updated_at). 바뀐 게 없으면 빈 줄 하나 — 제작기 DB 자동 반영이 쓴다 */
+  async function makerDocsSince(kind, since) {
+    const out = [];
+    let from = 0;
+    for (;;) {
+      let q = sb()
+        .from(cfg().makerTable || 'docs')
+        .select('id,data,updated_at')
+        .eq('kind', kind);
+      if (since) q = q.gt('updated_at', since);
+      const r = await q.order('updated_at').range(from, from + 999);
+      if (r.error) throw err(r.error);
+      const rows = r.data || [];
+      out.push(...rows);
+      if (!rows.length) break;
+      from += rows.length;
+    }
+    return out;
+  }
+  /* 10-30 망령 「그림 줄이기」: 제작기 문서 한 장 읽기 · 쓰기 (관리자 패널의 그림 주소 바꿔 끼우기에서만) */
+  async function makerOne(kind, id) {
+    const r = await sb()
+      .from(cfg().makerTable || 'docs')
+      .select('id,data')
+      .eq('kind', kind)
+      .eq('id', id)
+      .maybeSingle();
+    if (r.error) throw err(r.error);
+    return r.data || null;
+  }
+  async function makerPut(kind, id, data) {
+    const r = await sb()
+      .from(cfg().makerTable || 'docs')
+      .upsert({ kind, id, data }, { onConflict: 'kind,id' });
+    if (r.error) throw err(r.error);
+    return true;
+  }
+  /* 트레이너 하나와 그 포켓몬만 (pids + data.tid) — 고를 때 전체를 다시 받지 않게 (10-23 이그레스) */
+  async function makerParty(tid) {
+    const T = cfg().makerTable || 'docs';
+    const t = await sb().from(T).select('id,data').eq('kind', 'trainers').eq('id', tid);
+    if (t.error) throw err(t.error);
+    const tr = (t.data || [])[0];
+    if (!tr) return { trainer: null, pokemon: [] };
+    const d = (tr.data && tr.data.data) || tr.data || {};
+    const pids = (Array.isArray(d.pids) ? d.pids : []).filter(x => typeof x === 'string' && x);
+    const [a, b] = await Promise.all([
+      pids.length ? sb().from(T).select('id,data').eq('kind', 'pokemon').in('id', pids) : { data: [] },
+      sb().from(T).select('id,data').eq('kind', 'pokemon').eq('data->>tid', tid)
+    ]);
+    if (a.error) throw err(a.error);
+    if (b.error) throw err(b.error);
+    const m = new Map();
+    for (const x of [...(a.data || []), ...(b.data || [])]) m.set(x.id, x);
+    return { trainer: tr, pokemon: [...m.values()] };
+  }
 
+  /* ----- 이미지 올리기 (Storage 버킷 oremas). dataUrl(base64) 또는 Blob → 공개 주소 ----- */
+  /* 10-26 용량 점검: 올리는 그림은 전부 webp 로 줄인다 (긴 변 2048 · 품질 .86 · 투명 배경 유지). gif · svg 는 그대로. 줄인 게 더 크면 원본 */
+  async function shrinkUpload(blob, maxSide) {
+    try {
+      if (!/^image\/(png|jpe?g|webp|bmp)$/i.test(blob.type || '')) return blob;
+      const bmp = await createImageBitmap(blob);
+      const sc = Math.min(1, (maxSide || 2048) / Math.max(bmp.width, bmp.height));
+      if (sc >= 1 && blob.type === 'image/webp') return blob;
+      const cv = document.createElement('canvas');
+      cv.width = Math.max(1, Math.round(bmp.width * sc));
+      cv.height = Math.max(1, Math.round(bmp.height * sc));
+      cv.getContext('2d').drawImage(bmp, 0, 0, cv.width, cv.height);
+      const out = await new Promise(r => cv.toBlob(r, 'image/webp', 0.86));
+      return out && out.size < blob.size ? out : blob;
+    } catch (e) {
+      return blob;
+    }
+  }
+  async function uploadImage(path, src) {
+    let blob = src;
+    if (typeof src === 'string') {
+      const r = await fetch(src);
+      blob = await r.blob();
+    }
+    blob = await shrinkUpload(blob, 2048); /* 10-26 용량 점검: 스탠딩 · 배경 PNG 원본(2~3MB)이 저장소의 8할이었다 */
+    const ext = (blob.type || '').includes('png')
+      ? 'png'
+      : (blob.type || '').includes('webp')
+        ? 'webp'
+        : (blob.type || '').includes('gif')
+          ? 'gif'
+          : 'jpg';
+    /* 10-23 이그레스: 올릴 때마다 새 이름 → 브라우저가 1년 동안 다시 받지 않아도 된다 */
+    const full = path + '_' + Date.now().toString(36) + '.' + ext;
+    const r = await sb()
+      .storage.from('oremas')
+      .upload(full, blob, { upsert: false, contentType: blob.type || 'image/jpeg', cacheControl: '31536000' });
+    if (r.error) {
+      const m = String(r.error.message || r.error);
+      if (/bucket not found|NoSuchBucket/i.test(m))
+        throw new Error('그림 저장소(버킷 oremas)가 아직 없다 — Supabase SQL Editor 에서 supabase/schema.sql 을 다시 실행해 줘');
+      throw err(r.error);
+    }
+    return sb().storage.from('oremas').getPublicUrl(full).data.publicUrl;
+  }
 
- /* ----- 이미지 올리기 (Storage 버킷 oremas). dataUrl(base64) 또는 Blob → 공개 주소 ----- */
-/* 10-26 용량 점검: 올리는 그림은 전부 webp 로 줄인다 (긴 변 2048 · 품질 .86 · 투명 배경 유지). gif · svg 는 그대로. 줄인 게 더 크면 원본 */
-async function shrinkUpload(blob,maxSide){try{if(!/^image\/(png|jpe?g|webp|bmp)$/i.test(blob.type||''))return blob;const bmp=await createImageBitmap(blob);const sc=Math.min(1,(maxSide||2048)/Math.max(bmp.width,bmp.height));if(sc>=1&&blob.type==='image/webp')return blob;const cv=document.createElement('canvas');cv.width=Math.max(1,Math.round(bmp.width*sc));cv.height=Math.max(1,Math.round(bmp.height*sc));cv.getContext('2d').drawImage(bmp,0,0,cv.width,cv.height);const out=await new Promise(r=>cv.toBlob(r,'image/webp',.86));return out&&out.size<blob.size?out:blob}catch(e){return blob}}
- async function uploadImage(path,src){
-  let blob=src;
-  if(typeof src==='string'){const r=await fetch(src);blob=await r.blob()}
-  blob=await shrinkUpload(blob,2048);   /* 10-26 용량 점검: 스탠딩 · 배경 PNG 원본(2~3MB)이 저장소의 8할이었다 */
-  const ext=(blob.type||'').includes('png')?'png':(blob.type||'').includes('webp')?'webp':(blob.type||'').includes('gif')?'gif':'jpg';
-  /* 10-23 이그레스: 올릴 때마다 새 이름 → 브라우저가 1년 동안 다시 받지 않아도 된다 */
-  const full=path+'_'+Date.now().toString(36)+'.'+ext;
-  const r=await sb().storage.from('oremas').upload(full,blob,{upsert:false,contentType:blob.type||'image/jpeg',cacheControl:'31536000'});
-  if(r.error){const m=String(r.error.message||r.error);if(/bucket not found|NoSuchBucket/i.test(m))throw new Error('그림 저장소(버킷 oremas)가 아직 없다 — Supabase SQL Editor 에서 supabase/schema.sql 을 다시 실행해 줘');throw err(r.error)}
-  return sb().storage.from('oremas').getPublicUrl(full).data.publicUrl}
-
- /* 10-26 망령: 세션 노트(nt_*) 읽기 — 공개 문서는 표에서, GM 비밀구가 있으면 nt_all 로 전부 */
- async function ntCampUpdate(camp,secret,data){return rpc('nt_camp_update',{p_camp:camp,p_secret:secret,p_name:null,p_data:data})}   /* 10-29: 방 ↔ 세션 노트 캠페인 잇기 (캠페인 data.om.room) */
- /* 11-03 감우: 캠페인 설정을 칸 단위로 합친다(노트 patch_2026-11-03_노트.sql 의 nt_camp_patch · null 이면 그 칸 지움). 함수가 없으면 지금 DB 값을 받아 1단계 키만 합쳐 통째 쓰기 */
- async function ntCampPatch(camp,secret,patch){const r=await sb().rpc('nt_camp_patch',{p_camp:camp,p_secret:secret,p_patch:patch||{},p_name:null});if(!r.error)return r.data;if(!noFn(r.error))throw err(r.error);
-  const c=await sb().from('nt_camp').select('data').eq('id',camp).maybeSingle();if(c.error)throw err(c.error);const d=Object.assign({},(c.data&&c.data.data)||{});for(const k in patch||{}){if(patch[k]===null)delete d[k];else if(patch[k]&&typeof patch[k]==='object'&&!Array.isArray(patch[k])&&d[k]&&typeof d[k]==='object')d[k]=Object.assign({},d[k],patch[k]);else d[k]=patch[k]}await ntCampUpdate(camp,secret,d);return d}
- async function ntCamps(){const r=await sb().from('nt_camp').select('id,name,data,created_at').order('created_at');if(r.error)throw err(r.error);return r.data||[]}
- /* 10-29 망령 「변동 사항만 주고받게」: 세션 노트 문서를 이 브라우저에 사본으로 두고(캠페인 · GM/공개 따로) 다음에는 그 뒤에 바뀐 것만 받는다.
+  /* 10-26 망령: 세션 노트(nt_*) 읽기 — 공개 문서는 표에서, GM 비밀구가 있으면 nt_all 로 전부 */
+  async function ntCampUpdate(camp, secret, data) {
+    return rpc('nt_camp_update', { p_camp: camp, p_secret: secret, p_name: null, p_data: data });
+  } /* 10-29: 방 ↔ 세션 노트 캠페인 잇기 (캠페인 data.om.room) */
+  /* 11-03 감우: 캠페인 설정을 칸 단위로 합친다(노트 patch_2026-11-03_노트.sql 의 nt_camp_patch · null 이면 그 칸 지움). 함수가 없으면 지금 DB 값을 받아 1단계 키만 합쳐 통째 쓰기 */
+  async function ntCampPatch(camp, secret, patch) {
+    const r = await sb().rpc('nt_camp_patch', { p_camp: camp, p_secret: secret, p_patch: patch || {}, p_name: null });
+    if (!r.error) return r.data;
+    if (!noFn(r.error)) throw err(r.error);
+    const c = await sb().from('nt_camp').select('data').eq('id', camp).maybeSingle();
+    if (c.error) throw err(c.error);
+    const d = Object.assign({}, (c.data && c.data.data) || {});
+    for (const k in patch || {}) {
+      if (patch[k] === null) delete d[k];
+      else if (patch[k] && typeof patch[k] === 'object' && !Array.isArray(patch[k]) && d[k] && typeof d[k] === 'object')
+        d[k] = Object.assign({}, d[k], patch[k]);
+      else d[k] = patch[k];
+    }
+    await ntCampUpdate(camp, secret, d);
+    return d;
+  }
+  async function ntCamps() {
+    const r = await sb().from('nt_camp').select('id,name,data,created_at').order('created_at');
+    if (r.error) throw err(r.error);
+    return r.data || [];
+  }
+  /* 10-29 망령 「변동 사항만 주고받게」: 세션 노트 문서를 이 브라우저에 사본으로 두고(캠페인 · GM/공개 따로) 다음에는 그 뒤에 바뀐 것만 받는다.
     지워진 것 · 안 보이게 바뀐 것은 id 목록(nt_ids · 내용 없음)으로 걸러 낸다. 7일 지나면 한 번 전부 새로 받는다 */
- const NTSYNC={last:null};
- async function ntSync(camp,secret){const key='om_ntc_'+camp+(secret?'_g':'_p');let c=null;try{c=JSON.parse(localStorage.getItem(key)||'null')}catch(e){}if(!c||c.v!==1||Date.now()-c.t>7*864e5)c={v:1,t:Date.now(),since:null,docs:{}};
-  const had=Object.keys(c.docs).length&&c.since;const ids=had?await rpc('nt_ids',{p_camp:camp,p_secret:secret||''}):null;let rows;
-  if(secret)rows=(await rpc('nt_all',{p_camp:camp,p_secret:secret,p_since:had?c.since:null}))||[];
-  else{let q=sb().from('nt_docs').select('kind,id,data,vis,updated_at').eq('camp',camp);if(had)q=q.gt('updated_at',c.since);const r=await q;if(r.error)throw err(r.error);rows=r.data||[]}
-  for(const x of rows){c.docs[x.kind+'/'+x.id]={kind:x.kind,id:x.id,data:x.data,vis:x.vis,updated_at:x.updated_at};if(!c.since||x.updated_at>c.since)c.since=x.updated_at}
-  if(ids){const have=new Set(ids.map(x=>x.kind+'/'+x.id).concat(rows.map(x=>x.kind+'/'+x.id)));for(const k of Object.keys(c.docs))if(!have.has(k))delete c.docs[k]}
-  try{const s=JSON.stringify(c);if(s.length<3e6)localStorage.setItem(key,s);else localStorage.removeItem(key)}catch(e){try{localStorage.removeItem(key)}catch(e2){}}
-  NTSYNC.last={camp,got:rows.length,all:Object.keys(c.docs).length,at:Date.now()};return Object.values(c.docs)}
- async function ntDocs(camp,secret,kinds){const all=await ntSync(camp,secret||'');return all.filter(x=>!kinds||kinds.includes(x.kind))}
- /* 문서 하나만 (던전 주고받기) · 쓰기 (GM 비밀구) */
- async function ntGet(camp,secret,kind,id){if(secret){const r=await rpc('nt_get',{p_camp:camp,p_secret:secret,p_kind:kind,p_id:id});return (r||[])[0]||null}const r=await sb().from('nt_docs').select('kind,id,data,vis,updated_at').eq('camp',camp).eq('kind',kind).eq('id',id).maybeSingle();if(r.error)throw err(r.error);return r.data||null}
- const ntPut=(camp,secret,kind,id,data,vis)=>rpc('nt_put',{p_camp:camp,p_secret:secret,p_kind:kind,p_id:id,p_data:data,p_vis:vis||null});
- const ntPutMany=(camp,secret,rows)=>rpc('nt_put_many',{p_camp:camp,p_secret:secret,p_rows:rows});
- /* 10-30 망령 「노트 지도 ↔ 웹툴 지도 연동」: 노트 문서 지우기 · 노트 캠페인 실시간 신호(노트와 같은 채널 nt:<캠페인> — postgres_changes + 노트의 ping) */
- const ntDel=(camp,secret,kind,id)=>rpc('nt_del',{p_camp:camp,p_secret:secret,p_kind:kind,p_id:id});
- function ntWatch(camp,cb){const ch=sb().channel('nt:'+camp,{config:{broadcast:{self:false}}});
-  ch.on('postgres_changes',{event:'*',schema:'public',table:'nt_docs',filter:'camp=eq.'+camp},p=>{try{cb(p)}catch(e){}}).on('broadcast',{event:'nt'},p=>{try{cb(p)}catch(e){}}).subscribe();
-  return {stop(){try{sb().removeChannel(ch)}catch(e){}},ping(msg){try{ch.send({type:'broadcast',event:'nt',payload:msg})}catch(e){}}}}
- /* 10-27 망령: 전당 (supabase/patch_2026-10-27_전당.sql) — 방 상태 밖 om_hall 표. 목록은 요약만, 로그는 한 판을 열 때만 */
- const hall={list:(room,before,limit)=>rpc('om_hall_list',{p_room:room,p_before:before||null,p_limit:limit||60}),get:(room,id)=>rpc('om_hall_get',{p_room:room,p_id:id}),
-  put:(room,secret,id,head,log)=>rpc('om_hall_put',{p_room:room,p_secret:secret,p_id:id,p_head:head,p_log:log??null}),
-  del:(room,secret,id)=>rpc('om_hall_del',{p_room:room,p_secret:secret,p_id:id}),
-  cm:(room,secret,id,by,t,del)=>rpc('om_hall_cm',{p_room:room,p_secret:secret,p_id:id,p_by:by||'',p_t:t??null,p_del:del??null}),noFn};
- /* 11-02 망령: 학교 게시판 (supabase/patch_2026-11-02_게시판.sql) — 방 상태 밖 om_bbs · om_bbs_board 표. feed 는 ver 뒤에 바뀐 줄만 */
- const bbs={boards:(room,secret)=>rpc('om_bbs_boards',{p_room:room,p_secret:secret||''}),
-  boardPut:(room,secret,id,o)=>rpc('om_bbs_board_put',{p_room:room,p_secret:secret,p_id:id,p_name:o.name??null,p_descr:o.descr??null,p_hidden:o.hidden??null,p_ord:o.ord??null,p_del:!!o.del}),
-  feed:(room,secret,after)=>rpc('om_bbs_feed',{p_room:room,p_secret:secret||'',p_after:after||0}),
-  post:(room,secret,board,parent,who,anon,body,img)=>rpc('om_bbs_post',{p_room:room,p_secret:secret,p_board:board,p_parent:parent||null,p_who:who||{},p_anon:!!anon,p_body:body||'',p_img:img||''}),
-  del:(room,secret,id)=>rpc('om_bbs_del',{p_room:room,p_secret:secret,p_id:id}),
-  like:(room,secret,id)=>rpc('om_bbs_like',{p_room:room,p_secret:secret,p_id:id}),
-  /* 11-02 디스코드 (supabase/patch_2026-11-02_게시판_디스코드.sql) — GM 만. 웹후크 주소는 보내기만 하고 돌려받지 않는다(끝 4자) */
-  hookGet:(room,secret)=>rpc('om_bbs_hook_get',{p_room:room,p_secret:secret}),
-  hookPut:(room,secret,o)=>rpc('om_bbs_hook_put',{p_room:room,p_secret:secret,p_url:o.url??null,p_thread:o.thread??'',p_tname:o.tname??'',p_boards:o.boards??null,p_cm:o.cm??null,p_on:o.on??null,p_cthread:o.cthread??''}),
-  hookTest:(room,secret)=>rpc('om_bbs_hook_test',{p_room:room,p_secret:secret}),
-  /* 11-07 따라가는 방: 주 방의 디스코드 연동을 그대로 (supabase/patch_2026-11-07_디코따라가기.sql) */
-  hookFollow:(room,secret,from)=>rpc('om_bbs_hook_follow',{p_room:room,p_secret:secret,p_from:from}),
-  shareSet:(room,secret,from)=>rpc('om_bbs_share_set',{p_room:room,p_secret:secret,p_from:from||''}),   /* 11-07: 따라가는 방은 주 방 게시판을 함께 (patch_2026-11-07_게시판_따라가기.sql) */
-  hookResult:(room,secret,id)=>rpc('om_bbs_hook_result',{p_room:room,p_secret:secret,p_id:id}),
-  /* 11-02 시트 「한 장 요약」 → 디코로 (방에 앉은 사람) */
-  dcCard:(room,secret,o)=>rpc('om_dc_card',{p_room:room,p_secret:secret,p_title:o.title||'',p_sub:o.sub||'',p_img:o.img,p_who:o.who||{}}),
-  dcCardResult:(room,secret,id)=>rpc('om_dc_card_result',{p_room:room,p_secret:secret,p_id:id}),
-  /* 11-02 밤 전당 → 디코로 (supabase/patch_2026-11-02_전당_디스코드.sql) */
-  dcHall:(room,secret,o)=>rpc('om_dc_hall',{p_room:room,p_secret:secret,p_title:o.title||'',p_sub:o.sub||'',p_img:o.img,p_who:o.who||{}}),
-  hallGet:(room,secret)=>rpc('om_dc_hall_get',{p_room:room,p_secret:secret}),
-  hallPut:(room,secret,o)=>rpc('om_dc_hall_put',{p_room:room,p_secret:secret,p_url:o.url??null,p_thread:o.thread??''}),noFn};
- return {roomPick,patchesSince,setStateMany,snap,hall,bbs,shrinkUpload,ntCamps,ntCampUpdate,ntCampPatch,ntDocs,ntSync,NTSYNC,ntGet,ntPut,ntPutMany,ntDel,ntWatch,rtReset,getStateV,roomsPeek,acct,logClear,logClearRange,broadcast,uploadImage,createRoom,getRoom,whoami,claimSeat,claimMore,seatUse,seatLeave,mySeats,roomUpdate,roomDel,getState,setState,getLog,getLogTail,getLogBefore,addLog,whispers,secretPut,secretGet,subscribe,makerDocs,makerDocsSince,makerParty,makerOne,makerPut};
+  const NTSYNC = { last: null };
+  async function ntSync(camp, secret) {
+    const key = 'om_ntc_' + camp + (secret ? '_g' : '_p');
+    let c = null;
+    try {
+      c = JSON.parse(localStorage.getItem(key) || 'null');
+    } catch (e) {}
+    if (!c || c.v !== 1 || Date.now() - c.t > 7 * 864e5) c = { v: 1, t: Date.now(), since: null, docs: {} };
+    const had = Object.keys(c.docs).length && c.since;
+    const ids = had ? await rpc('nt_ids', { p_camp: camp, p_secret: secret || '' }) : null;
+    let rows;
+    if (secret) rows = (await rpc('nt_all', { p_camp: camp, p_secret: secret, p_since: had ? c.since : null })) || [];
+    else {
+      let q = sb().from('nt_docs').select('kind,id,data,vis,updated_at').eq('camp', camp);
+      if (had) q = q.gt('updated_at', c.since);
+      const r = await q;
+      if (r.error) throw err(r.error);
+      rows = r.data || [];
+    }
+    for (const x of rows) {
+      c.docs[x.kind + '/' + x.id] = { kind: x.kind, id: x.id, data: x.data, vis: x.vis, updated_at: x.updated_at };
+      if (!c.since || x.updated_at > c.since) c.since = x.updated_at;
+    }
+    if (ids) {
+      const have = new Set(ids.map(x => x.kind + '/' + x.id).concat(rows.map(x => x.kind + '/' + x.id)));
+      for (const k of Object.keys(c.docs)) if (!have.has(k)) delete c.docs[k];
+    }
+    try {
+      const s = JSON.stringify(c);
+      if (s.length < 3e6) localStorage.setItem(key, s);
+      else localStorage.removeItem(key);
+    } catch (e) {
+      try {
+        localStorage.removeItem(key);
+      } catch (e2) {}
+    }
+    NTSYNC.last = { camp, got: rows.length, all: Object.keys(c.docs).length, at: Date.now() };
+    return Object.values(c.docs);
+  }
+  async function ntDocs(camp, secret, kinds) {
+    const all = await ntSync(camp, secret || '');
+    return all.filter(x => !kinds || kinds.includes(x.kind));
+  }
+  /* 문서 하나만 (던전 주고받기) · 쓰기 (GM 비밀구) */
+  async function ntGet(camp, secret, kind, id) {
+    if (secret) {
+      const r = await rpc('nt_get', { p_camp: camp, p_secret: secret, p_kind: kind, p_id: id });
+      return (r || [])[0] || null;
+    }
+    const r = await sb().from('nt_docs').select('kind,id,data,vis,updated_at').eq('camp', camp).eq('kind', kind).eq('id', id).maybeSingle();
+    if (r.error) throw err(r.error);
+    return r.data || null;
+  }
+  const ntPut = (camp, secret, kind, id, data, vis) =>
+    rpc('nt_put', { p_camp: camp, p_secret: secret, p_kind: kind, p_id: id, p_data: data, p_vis: vis || null });
+  const ntPutMany = (camp, secret, rows) => rpc('nt_put_many', { p_camp: camp, p_secret: secret, p_rows: rows });
+  /* 10-30 망령 「노트 지도 ↔ 웹툴 지도 연동」: 노트 문서 지우기 · 노트 캠페인 실시간 신호(노트와 같은 채널 nt:<캠페인> — postgres_changes + 노트의 ping) */
+  const ntDel = (camp, secret, kind, id) => rpc('nt_del', { p_camp: camp, p_secret: secret, p_kind: kind, p_id: id });
+  function ntWatch(camp, cb) {
+    const ch = sb().channel('nt:' + camp, { config: { broadcast: { self: false } } });
+    ch.on('postgres_changes', { event: '*', schema: 'public', table: 'nt_docs', filter: 'camp=eq.' + camp }, p => {
+      try {
+        cb(p);
+      } catch (e) {}
+    })
+      .on('broadcast', { event: 'nt' }, p => {
+        try {
+          cb(p);
+        } catch (e) {}
+      })
+      .subscribe();
+    return {
+      stop() {
+        try {
+          sb().removeChannel(ch);
+        } catch (e) {}
+      },
+      ping(msg) {
+        try {
+          ch.send({ type: 'broadcast', event: 'nt', payload: msg });
+        } catch (e) {}
+      }
+    };
+  }
+  /* 10-27 망령: 전당 (supabase/patch_2026-10-27_전당.sql) — 방 상태 밖 om_hall 표. 목록은 요약만, 로그는 한 판을 열 때만 */
+  const hall = {
+    list: (room, before, limit) => rpc('om_hall_list', { p_room: room, p_before: before || null, p_limit: limit || 60 }),
+    get: (room, id) => rpc('om_hall_get', { p_room: room, p_id: id }),
+    put: (room, secret, id, head, log) => rpc('om_hall_put', { p_room: room, p_secret: secret, p_id: id, p_head: head, p_log: log ?? null }),
+    del: (room, secret, id) => rpc('om_hall_del', { p_room: room, p_secret: secret, p_id: id }),
+    cm: (room, secret, id, by, t, del) =>
+      rpc('om_hall_cm', { p_room: room, p_secret: secret, p_id: id, p_by: by || '', p_t: t ?? null, p_del: del ?? null }),
+    noFn
+  };
+  /* 11-02 망령: 학교 게시판 (supabase/patch_2026-11-02_게시판.sql) — 방 상태 밖 om_bbs · om_bbs_board 표. feed 는 ver 뒤에 바뀐 줄만 */
+  const bbs = {
+    boards: (room, secret) => rpc('om_bbs_boards', { p_room: room, p_secret: secret || '' }),
+    boardPut: (room, secret, id, o) =>
+      rpc('om_bbs_board_put', {
+        p_room: room,
+        p_secret: secret,
+        p_id: id,
+        p_name: o.name ?? null,
+        p_descr: o.descr ?? null,
+        p_hidden: o.hidden ?? null,
+        p_ord: o.ord ?? null,
+        p_del: !!o.del
+      }),
+    feed: (room, secret, after) => rpc('om_bbs_feed', { p_room: room, p_secret: secret || '', p_after: after || 0 }),
+    post: (room, secret, board, parent, who, anon, body, img) =>
+      rpc('om_bbs_post', {
+        p_room: room,
+        p_secret: secret,
+        p_board: board,
+        p_parent: parent || null,
+        p_who: who || {},
+        p_anon: !!anon,
+        p_body: body || '',
+        p_img: img || ''
+      }),
+    del: (room, secret, id) => rpc('om_bbs_del', { p_room: room, p_secret: secret, p_id: id }),
+    like: (room, secret, id) => rpc('om_bbs_like', { p_room: room, p_secret: secret, p_id: id }),
+    /* 11-02 디스코드 (supabase/patch_2026-11-02_게시판_디스코드.sql) — GM 만. 웹후크 주소는 보내기만 하고 돌려받지 않는다(끝 4자) */
+    hookGet: (room, secret) => rpc('om_bbs_hook_get', { p_room: room, p_secret: secret }),
+    hookPut: (room, secret, o) =>
+      rpc('om_bbs_hook_put', {
+        p_room: room,
+        p_secret: secret,
+        p_url: o.url ?? null,
+        p_thread: o.thread ?? '',
+        p_tname: o.tname ?? '',
+        p_boards: o.boards ?? null,
+        p_cm: o.cm ?? null,
+        p_on: o.on ?? null,
+        p_cthread: o.cthread ?? ''
+      }),
+    hookTest: (room, secret) => rpc('om_bbs_hook_test', { p_room: room, p_secret: secret }),
+    /* 11-07 따라가는 방: 주 방의 디스코드 연동을 그대로 (supabase/patch_2026-11-07_디코따라가기.sql) */
+    hookFollow: (room, secret, from) => rpc('om_bbs_hook_follow', { p_room: room, p_secret: secret, p_from: from }),
+    shareSet: (room, secret, from) =>
+      rpc('om_bbs_share_set', {
+        p_room: room,
+        p_secret: secret,
+        p_from: from || ''
+      }) /* 11-07: 따라가는 방은 주 방 게시판을 함께 (patch_2026-11-07_게시판_따라가기.sql) */,
+    hookResult: (room, secret, id) => rpc('om_bbs_hook_result', { p_room: room, p_secret: secret, p_id: id }),
+    /* 11-02 시트 「한 장 요약」 → 디코로 (방에 앉은 사람) */
+    dcCard: (room, secret, o) =>
+      rpc('om_dc_card', { p_room: room, p_secret: secret, p_title: o.title || '', p_sub: o.sub || '', p_img: o.img, p_who: o.who || {} }),
+    dcCardResult: (room, secret, id) => rpc('om_dc_card_result', { p_room: room, p_secret: secret, p_id: id }),
+    /* 11-02 밤 전당 → 디코로 (supabase/patch_2026-11-02_전당_디스코드.sql) */
+    dcHall: (room, secret, o) =>
+      rpc('om_dc_hall', { p_room: room, p_secret: secret, p_title: o.title || '', p_sub: o.sub || '', p_img: o.img, p_who: o.who || {} }),
+    hallGet: (room, secret) => rpc('om_dc_hall_get', { p_room: room, p_secret: secret }),
+    hallPut: (room, secret, o) => rpc('om_dc_hall_put', { p_room: room, p_secret: secret, p_url: o.url ?? null, p_thread: o.thread ?? '' }),
+    noFn
+  };
+  return {
+    roomPick,
+    patchesSince,
+    setStateMany,
+    snap,
+    hall,
+    bbs,
+    shrinkUpload,
+    ntCamps,
+    ntCampUpdate,
+    ntCampPatch,
+    ntDocs,
+    ntSync,
+    NTSYNC,
+    ntGet,
+    ntPut,
+    ntPutMany,
+    ntDel,
+    ntWatch,
+    rtReset,
+    getStateV,
+    roomsPeek,
+    acct,
+    logClear,
+    logClearRange,
+    broadcast,
+    uploadImage,
+    createRoom,
+    getRoom,
+    whoami,
+    claimSeat,
+    claimMore,
+    seatUse,
+    seatLeave,
+    mySeats,
+    roomUpdate,
+    roomDel,
+    getState,
+    setState,
+    getLog,
+    getLogTail,
+    getLogBefore,
+    addLog,
+    whispers,
+    secretPut,
+    secretGet,
+    subscribe,
+    makerDocs,
+    makerDocsSince,
+    makerParty,
+    makerOne,
+    makerPut
+  };
 })();
