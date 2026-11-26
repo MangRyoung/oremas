@@ -359,6 +359,42 @@ window.OM_BATTLE_UI = (() => {
       .sort((x, y) => (x.slot || 0) - (y.slot || 0));
     return L.length ? L[L.length - 1] : null;
   }
+  /* 변장할 수 있는 모습 목록: 일루젼 폼(있으면) + 같은 트레이너의 벤치 아군(쓰러지지 않은) — 카드의 🎭 창과 등장 전 예약이 같이 쓴다 */
+  function illuCands(b, m) {
+    return formsOf(m)
+      .map((f, k) => (f && f.kind === '일루젼' ? illuOf(b, Object.assign({}, m, { disg: '@f' + k })) : null))
+      .filter(Boolean)
+      .concat(
+        Object.values((b && b.mons) || {})
+          .filter(x => x && x.tid === m.tid && x.id !== m.id && x.hp && x.hp.cur > 0 && !x.entry)
+          .sort((x, y) => (x.slot || 0) - (y.slot || 0))
+      );
+  }
+  /* 11-26 PL 제보 「일루젼 모습은 등장 전에 선택이 가능하도록 — 지금은 필드에 나와야만 바꿀 수 있다」:
+    m.disgPre = 벤치에서 미리 정해 둔 모습 ('@f<k>' 일루젼 폼 · 아군 mid · 'none' = 변장 없이 등장). 등장할 때 그 모습이 아직 되면(벤치 · 쓰러지지 않음)
+    그대로 쓰고, 안 되면 원래 규칙(일루젼 폼 → 벤치 맨 뒤)으로 돌아간다. 한 번 정하면 바꿀 때까지 남는다. 주인 · GM 화면의 벤치 카드에만 보인다.
+    돌려주는 값: null = 정해 둔 것 없음(또는 지금은 못 씀) · 'none' = 변장 없이 · 그 밖 = 그 모습(illuCands 의 한 칸) */
+  function illuPreOf(b, m) {
+    const v = m && m.disgPre;
+    if (!v) return null;
+    if (v === 'none') return 'none';
+    return illuCands(b, m).find(x => String(x.dv || x.id) === String(v)) || null;
+  }
+  function illuPreChip(c, m) {
+    if (!m || m.entry || !canEdit(c, m) || !hasIllu(m)) return '';
+    const p = illuPreOf(c.b, m);
+    const lost = !!m.disgPre && !p;
+    const nm = p === 'none' ? '변장 없이' : p ? esc(p.name) : '자동';
+    const tip =
+      p === 'none'
+        ? '변장하지 않고 진짜 모습으로 등장한다'
+        : p
+          ? `등장하면 상대 화면에는 「${esc(p.name)}」(으)로 보인다`
+          : lost
+            ? '정해 둔 모습을 지금은 쓸 수 없다(쓰러졌거나 필드에 나와 있다) — 등장하면 자동으로 정한다'
+            : '등장하면 자동으로 정한다 (일루젼 폼, 없으면 벤치 맨 뒤)';
+    return `<button class="btn xs ghost illupre" data-act="illu" data-mid="${m.id}" title="일루젼 — ${tip} · 눌러서 미리 고르기">🎭 ${nm}</button>`;
+  }
   function illuMask(x, b) {
     b = b || ctx().b;
     const P = [];
@@ -2667,7 +2703,7 @@ window.OM_BATTLE_UI = (() => {
          )
        : ''
    }">${esc(m.name)}${out ? ` <span class="tag">${m.entry.toUpperCase()}</span>` : ''}</div></div><div class="ty">${tyHtml(c, m)}</div>${hpBar(m, full)}
-   ${!out && full && m.hp.cur > 0 ? (simOn(c.b, m.tid) && ((+c.b.phase || 0) < 2 || m.pend) ? `<button class="btn xs ${m.pend ? 'pri' : ''}" data-act="pend" data-mid="${m.id}">${m.pend ? '예약 ' + String(m.pend).toUpperCase() + ' ✓' : '내밀기 예약'}</button>` : `<button class="btn xs" data-act="enter" data-mid="${m.id}">등장</button>`) : ''}${!out && full && m.hp.cur <= 0 ? `<button class="btn xs ghost" data-act="edit" data-mid="${m.id}" title="잘못 쓰러진 포켓몬의 HP 를 되돌린다 (랭크·상태 창의 HP 칸)">HP 되돌리기</button>` : ''}</div>`;
+   ${!out && full && m.hp.cur > 0 ? (simOn(c.b, m.tid) && ((+c.b.phase || 0) < 2 || m.pend) ? `<button class="btn xs ${m.pend ? 'pri' : ''}" data-act="pend" data-mid="${m.id}">${m.pend ? '예약 ' + String(m.pend).toUpperCase() + ' ✓' : '내밀기 예약'}</button>` : `<button class="btn xs" data-act="enter" data-mid="${m.id}">등장</button>`) : ''}${!out && full && m.hp.cur > 0 ? illuPreChip(c, m) : ''}${!out && full && m.hp.cur <= 0 ? `<button class="btn xs ghost" data-act="edit" data-mid="${m.id}" title="잘못 쓰러진 포켓몬의 HP 를 되돌린다 (랭크·상태 창의 HP 칸)">HP 되돌리기</button>` : ''}</div>`;
   }
 
   /* 【N/시】 포텐셜 횟수. potUses[name] = 남은 횟수 */
@@ -6157,14 +6193,8 @@ window.OM_BATTLE_UI = (() => {
       case 'illu': {
         const m = b.mons[d.mid];
         if (!m || !canEdit(c, m)) return;
-        const L = formsOf(m)
-          .map((f, k) => (f && f.kind === '일루젼' ? illuOf(b, Object.assign({}, m, { disg: '@f' + k })) : null))
-          .filter(Boolean)
-          .concat(
-            Object.values(b.mons || {})
-              .filter(x => x && x.tid === m.tid && x.id !== m.id && x.hp && x.hp.cur > 0 && !x.entry)
-              .sort((x, y) => (x.slot || 0) - (y.slot || 0))
-          );
+        if (!m.entry) return illuPreOpen(m);
+        const L = illuCands(b, m);
         const cur = illuOf(b, m);
         const md = A().openModal(
           `<div class="mhead"><h2>🎭 ${esc(m.name)} · 일루젼</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small" style="margin-top:0">상대 화면에 누구의 모습으로 보일지 골라요. 기술의 대미지를 받으면 풀려요.</p><div class="firelist">${L.map(x => `<label class="firerow ${cur && cur.id === x.id ? 'on' : ''}" data-il="${x.dv || x.id}"><b>${esc(x.name)}</b>${x.fake ? '<span class="small dim">일루젼 폼</span>' : ''}${cur && cur.id === x.id ? '<span class="small dim">지금</span>' : ''}</label>`).join('') || '<div class="small dim">변장할 수 있는 아군(벤치 · 쓰러지지 않음)이 없다</div>'}${cur ? '<label class="firerow" data-il=""><b>변장 풀기</b><span class="small dim">진짜 모습으로 — 로그에 남는다</span></label>' : ''}</div>`
@@ -7002,7 +7032,11 @@ window.OM_BATTLE_UI = (() => {
     /* inT: 필드에 나온 턴 (【지연】 셈 — 나온 턴이 1턴째) */ if (m.lastMove) await A().set(['battle', 'mons', mid, 'lastMove'], null);
     if (m.metro) await A().set(['battle', 'mons', mid, 'metro'], null);
     /* 11-06 스케치: 새로 나오면 마지막 기술 기록을 비운다 */ let DSG = null;
-    if (hasIllu(m)) {
+    const illuPre = hasIllu(m) ? illuPreOf(b, m) : null; /* 11-26 등장 전에 정해 둔 모습 */
+    if (illuPre) {
+      DSG = illuPre === 'none' ? null : illuPre.dv || illuPre.id;
+      await A().set(['battle', 'mons', mid, 'disg'], DSG);
+    } else if (hasIllu(m)) {
       const fk = illuFk(m);
       let it = fk >= 0 ? null : illuPick(b, m);
       if (fk < 0 && it) {
@@ -7882,6 +7916,27 @@ window.OM_BATTLE_UI = (() => {
       if (tr && sameT({ tid, side: tr.side }, atk, b)) return true;
     }
     return false;
+  }
+  /* 11-26 등장 전(벤치)에 일루젼 모습을 미리 고르는 창 — 고른 값은 m.disgPre (illuPreOf 가 읽는다) */
+  function illuPreOpen(m) {
+    const b = ctx().b;
+    const L = illuCands(b, m);
+    const cur = illuPreOf(b, m);
+    const row = (v, name, note, on) =>
+      `<label class="firerow ${on ? 'on' : ''}" data-ilp="${esc(v)}"><b>${esc(name)}</b>${note ? `<span class="small dim">${note}</span>` : ''}${on ? '<span class="small dim">지금</span>' : ''}</label>`;
+    const md = A().openModal(
+      `<div class="mhead"><h2>🎭 ${esc(m.name)} · 일루젼 (등장 전)</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><p class="small" style="margin-top:0">등장했을 때 상대 화면에 누구의 모습으로 보일지 미리 골라 둬요. 상대에게는 보이지 않아요. 고른 모습이 그때 쓰러졌거나 필드에 나와 있으면 자동으로 정해요.</p><div class="firelist">${row('', '자동', '일루젼 폼, 없으면 벤치 맨 뒤', !cur)}${L.map(x => row(x.dv || x.id, x.name, x.fake ? '일루젼 폼' : '', cur && cur !== 'none' && cur.id === x.id)).join('')}${row('none', '변장 없이', '진짜 모습으로 등장', cur === 'none')}</div>`
+    );
+    md.querySelectorAll('[data-ilp]').forEach(
+      el =>
+        (el.onclick = async () => {
+          const v = el.dataset.ilp;
+          A().closeModal();
+          await A().set(['battle', 'mons', m.id, 'disgPre'], v || null);
+          const p = illuPreOf(ctx().b, Object.assign({}, m, { disgPre: v || null }));
+          A().toast(p === 'none' ? '변장 없이 등장해요' : p ? `등장하면 상대 화면에는 「${p.name}」(으)로 보여요` : '등장할 때 자동으로 정해요');
+        })
+    );
   }
   async function illuChoose(m, L, nm) {
     const c = ctx();

@@ -262,7 +262,7 @@
          )
        : ''
    }">${esc(m.name)}${out ? ` <span class="tag">${m.entry.toUpperCase()}</span>` : ''}</div></div><div class="ty">${tyHtml(c, m)}</div>${hpBar(m, full)}
-   ${!out && full && m.hp.cur > 0 ? (simOn(c.b, m.tid) && ((+c.b.phase || 0) < 2 || m.pend) ? `<button class="btn xs ${m.pend ? 'pri' : ''}" data-act="pend" data-mid="${m.id}">${m.pend ? '예약 ' + String(m.pend).toUpperCase() + ' ✓' : '내밀기 예약'}</button>` : `<button class="btn xs" data-act="enter" data-mid="${m.id}">등장</button>`) : ''}${!out && full && m.hp.cur <= 0 ? `<button class="btn xs ghost" data-act="edit" data-mid="${m.id}" title="잘못 쓰러진 포켓몬의 HP 를 되돌린다 (랭크·상태 창의 HP 칸)">HP 되돌리기</button>` : ''}</div>`;
+   ${!out && full && m.hp.cur > 0 ? (simOn(c.b, m.tid) && ((+c.b.phase || 0) < 2 || m.pend) ? `<button class="btn xs ${m.pend ? 'pri' : ''}" data-act="pend" data-mid="${m.id}">${m.pend ? '예약 ' + String(m.pend).toUpperCase() + ' ✓' : '내밀기 예약'}</button>` : `<button class="btn xs" data-act="enter" data-mid="${m.id}">등장</button>`) : ''}${!out && full && m.hp.cur > 0 ? illuPreChip(c, m) : ''}${!out && full && m.hp.cur <= 0 ? `<button class="btn xs ghost" data-act="edit" data-mid="${m.id}" title="잘못 쓰러진 포켓몬의 HP 를 되돌린다 (랭크·상태 창의 HP 칸)">HP 되돌리기</button>` : ''}</div>`;
   }
 
   /* 【N/시】 포텐셜 횟수. potUses[name] = 남은 횟수 */

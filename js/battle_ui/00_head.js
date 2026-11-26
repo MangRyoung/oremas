@@ -358,6 +358,42 @@ window.OM_BATTLE_UI = (() => {
       .sort((x, y) => (x.slot || 0) - (y.slot || 0));
     return L.length ? L[L.length - 1] : null;
   }
+  /* 변장할 수 있는 모습 목록: 일루젼 폼(있으면) + 같은 트레이너의 벤치 아군(쓰러지지 않은) — 카드의 🎭 창과 등장 전 예약이 같이 쓴다 */
+  function illuCands(b, m) {
+    return formsOf(m)
+      .map((f, k) => (f && f.kind === '일루젼' ? illuOf(b, Object.assign({}, m, { disg: '@f' + k })) : null))
+      .filter(Boolean)
+      .concat(
+        Object.values((b && b.mons) || {})
+          .filter(x => x && x.tid === m.tid && x.id !== m.id && x.hp && x.hp.cur > 0 && !x.entry)
+          .sort((x, y) => (x.slot || 0) - (y.slot || 0))
+      );
+  }
+  /* 11-26 PL 제보 「일루젼 모습은 등장 전에 선택이 가능하도록 — 지금은 필드에 나와야만 바꿀 수 있다」:
+    m.disgPre = 벤치에서 미리 정해 둔 모습 ('@f<k>' 일루젼 폼 · 아군 mid · 'none' = 변장 없이 등장). 등장할 때 그 모습이 아직 되면(벤치 · 쓰러지지 않음)
+    그대로 쓰고, 안 되면 원래 규칙(일루젼 폼 → 벤치 맨 뒤)으로 돌아간다. 한 번 정하면 바꿀 때까지 남는다. 주인 · GM 화면의 벤치 카드에만 보인다.
+    돌려주는 값: null = 정해 둔 것 없음(또는 지금은 못 씀) · 'none' = 변장 없이 · 그 밖 = 그 모습(illuCands 의 한 칸) */
+  function illuPreOf(b, m) {
+    const v = m && m.disgPre;
+    if (!v) return null;
+    if (v === 'none') return 'none';
+    return illuCands(b, m).find(x => String(x.dv || x.id) === String(v)) || null;
+  }
+  function illuPreChip(c, m) {
+    if (!m || m.entry || !canEdit(c, m) || !hasIllu(m)) return '';
+    const p = illuPreOf(c.b, m);
+    const lost = !!m.disgPre && !p;
+    const nm = p === 'none' ? '변장 없이' : p ? esc(p.name) : '자동';
+    const tip =
+      p === 'none'
+        ? '변장하지 않고 진짜 모습으로 등장한다'
+        : p
+          ? `등장하면 상대 화면에는 「${esc(p.name)}」(으)로 보인다`
+          : lost
+            ? '정해 둔 모습을 지금은 쓸 수 없다(쓰러졌거나 필드에 나와 있다) — 등장하면 자동으로 정한다'
+            : '등장하면 자동으로 정한다 (일루젼 폼, 없으면 벤치 맨 뒤)';
+    return `<button class="btn xs ghost illupre" data-act="illu" data-mid="${m.id}" title="일루젼 — ${tip} · 눌러서 미리 고르기">🎭 ${nm}</button>`;
+  }
   function illuMask(x, b) {
     b = b || ctx().b;
     const P = [];
