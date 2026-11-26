@@ -1263,12 +1263,9 @@
       case 'dex': {
         if (!window.OM_DEX_UI) return;
         {
-          const dm0 = (c.b.mons || {})[d.mid];
-          const it = illuOf(c.b, dm0);
-          if (it && !illuTrue(c, dm0)) {
-            if (it.fake) return A().toast(`「${it.name}」 — 공개된 도감 없음`);
-            d = Object.assign({}, d, { mid: it.id });
-          }
+          const v = illuDexOf(c, d.mid);
+          if (!v.mid) return A().toast(`「${v.name}」 — 공개된 도감 없음`);
+          if (v.mid !== d.mid) d = Object.assign({}, d, { mid: v.mid });
         }
         /* 11-05 일루젼: 변장 중이면 변장한 아군의 도감 */ const dm = (c.b.mons || {})[d.mid];
         if (plView(c) && dm && !canEdit(c, dm)) {

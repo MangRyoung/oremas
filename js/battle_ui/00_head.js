@@ -346,6 +346,14 @@ window.OM_BATTLE_UI = (() => {
       illuFake: t.id
     });
   }
+  /* 11-26 PL 제보 「(카드를) 클릭하면 일루젼이 아닌 모습으로 나온다」: 이 화면에서 도감을 열 때 보여 줄 포켓몬.
+    변장이 통하는 화면이면 변장한 아군의 mid, 일루젼 폼(따로 도감이 없는 모습)이면 mid 가 비고 name 만. 도감 단추 · 카드 누르기(app.js openMon)가 같이 쓴다 */
+  function illuDexOf(c, mid) {
+    const m = ((c.b && c.b.mons) || {})[mid];
+    const it = illuOf(c.b, m);
+    if (!it || illuTrue(c, m)) return { mid };
+    return it.fake ? { mid: '', name: it.name } : { mid: it.id };
+  }
   function illuChip(c, m, full) {
     if (!m || !illuTrue(c, m)) return '';
     const t = illuOf(c.b, m);

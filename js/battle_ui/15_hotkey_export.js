@@ -548,6 +548,7 @@
   return {
     illuMask,
     concealLog,
+    illuDex: mid => illuDexOf(ctx(), mid),
     concealName: (mid, nm) => {
       try {
         const b = ctx().b;

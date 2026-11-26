@@ -4969,7 +4969,12 @@
         window.OM_BATTLE_UI.canEditMon(mid)
       ); /* 10-25: 함께 지시(co · 합치기) 중이면 같이 쓰는 포켓몬도 상세 창 */
     /* 내 것이 아니면 상세 창 대신 도감 — 해석한 만큼만 보인다 (같은 편은 도감 규칙대로 전부) */
-    if (!full && window.OM_DEX_UI) return window.OM_DEX_UI.open(mid, ST.seat || '_view');
+    if (!full && window.OM_DEX_UI) {
+      /* 11-26 PL 제보 「클릭하면 일루젼이 아닌 모습으로 나온다」: 변장 중이면 변장한 모습의 도감 (battle_ui illuDexOf) */
+      const v = window.OM_BATTLE_UI && window.OM_BATTLE_UI.illuDex ? window.OM_BATTLE_UI.illuDex(mid) : { mid };
+      if (!v.mid) return toast(`「${v.name}」 — 공개된 도감 없음`);
+      return window.OM_DEX_UI.open(v.mid, ST.seat || '_view');
+    }
     const K = S().STATS_KO;
     const pct = m.hp.cur > 0 ? Math.max(1, Math.round((m.hp.cur / m.hp.max) * 100)) : 0;
     const stat6 = `<div class="dxst wide">${m.ranks.map((r, i) => `<div><small>${K[i]}</small><b>${esc(r)}</b>${full ? `<em title="종족치 · 실수치">${m.base[i]} · ${m.stats[i]}</em>` : ''}</div>`).join('')}</div>`;

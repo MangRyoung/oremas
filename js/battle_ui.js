@@ -347,6 +347,14 @@ window.OM_BATTLE_UI = (() => {
       illuFake: t.id
     });
   }
+  /* 11-26 PL 제보 「(카드를) 클릭하면 일루젼이 아닌 모습으로 나온다」: 이 화면에서 도감을 열 때 보여 줄 포켓몬.
+    변장이 통하는 화면이면 변장한 아군의 mid, 일루젼 폼(따로 도감이 없는 모습)이면 mid 가 비고 name 만. 도감 단추 · 카드 누르기(app.js openMon)가 같이 쓴다 */
+  function illuDexOf(c, mid) {
+    const m = ((c.b && c.b.mons) || {})[mid];
+    const it = illuOf(c.b, m);
+    if (!it || illuTrue(c, m)) return { mid };
+    return it.fake ? { mid: '', name: it.name } : { mid: it.id };
+  }
   function illuChip(c, m, full) {
     if (!m || !illuTrue(c, m)) return '';
     const t = illuOf(c.b, m);
@@ -6223,12 +6231,9 @@ window.OM_BATTLE_UI = (() => {
       case 'dex': {
         if (!window.OM_DEX_UI) return;
         {
-          const dm0 = (c.b.mons || {})[d.mid];
-          const it = illuOf(c.b, dm0);
-          if (it && !illuTrue(c, dm0)) {
-            if (it.fake) return A().toast(`「${it.name}」 — 공개된 도감 없음`);
-            d = Object.assign({}, d, { mid: it.id });
-          }
+          const v = illuDexOf(c, d.mid);
+          if (!v.mid) return A().toast(`「${v.name}」 — 공개된 도감 없음`);
+          if (v.mid !== d.mid) d = Object.assign({}, d, { mid: v.mid });
         }
         /* 11-05 일루젼: 변장 중이면 변장한 아군의 도감 */ const dm = (c.b.mons || {})[d.mid];
         if (plView(c) && dm && !canEdit(c, dm)) {
@@ -26173,6 +26178,7 @@ ${(() => {
   return {
     illuMask,
     concealLog,
+    illuDex: mid => illuDexOf(ctx(), mid),
     concealName: (mid, nm) => {
       try {
         const b = ctx().b;
