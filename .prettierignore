@@ -1,0 +1,9 @@
+# 정렬(prettier)은 js 코드만 — 데이터 · 만들어지는 조각 · 글자로 읽히는 파일은 뺀다
+/*
+!/js
+!/sim
+/sim/*
+!/sim/lib
+!/sim/bin
+/js/config.js
+/js/battle_ui/
