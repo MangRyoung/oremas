@@ -175,7 +175,7 @@ window.OM_SHEET_UI=(()=>{
   if(!mons.find(m=>m.id===UI.mid))UI.mid=mons[0]?mons[0].id:'';
   const base=t.base||{};
   const SK=itemSock(t,mons);
-  const tiles=[['포켓몬',mons.length],['메인',base['메인']??'-'],['통솔점',base['통솔점']??'-'],['분배레벨',base['분배레벨']??'-'],['할인점',base['「기술 할인점」']??'-'],['1/시',base['【1/시】']??'-']];
+  const tiles=[['포켓몬',mons.length],['메인',base['메인']??'-'],...((c.r.rp||{}).noLead===true?[]:[['통솔점',base['통솔점']??'-']]),['분배레벨',base['분배레벨']??'-'],['할인점',base['「기술 할인점」']??'-'],['1/시',base['【1/시】']??'-']];
   /* 소지품 소켓 (10-24 망령): 랭크 줄 바로 아래 막대로 */
   const sockH=`<div class="hsock${SK.over?' over':''}" title="${esc(SK.tip)}"><span class="hsk">소지품 소켓</span><span class="hsbar"><i style="width:${SK.cap?Math.min(100,Math.round(SK.used/SK.cap*100)):0}%"></i></span><b>${esc(SK.cap!=null?`${SK.used} / ${SK.cap}`:String(SK.used))}</b></div>`;
   return `<div class="hero">
