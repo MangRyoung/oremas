@@ -605,7 +605,9 @@ window.OM_BATTLE_UI=(()=>{
     const g1=me?me.g.find(g=>has(u.n,u.x,g)):null;if(g1)return `이번 턴에 『${u.n}』을(를) 썼다 — 【공유 (『${g1}』)】 라 같이 못 쓴다`;
     const g2=(u.g||[]).find(g=>has(N,ex,g));if(g2)return `이번 턴에 『${u.n}』(【공유 (『${g2}』)】)를 썼다 — 『${g2}』이(가) 들어간 효과는 턴 끝까지 못 쓴다`}return ''}catch(e){return ''}}
  async function shareMark(mid,name){try{const m=((ctx().b||{}).mons||{})[mid];if(!m)return;const nn=String(name||'').replace(/[『』]/g,'').trim();const p=potSrc(m).find(q=>q&&(q.name===name||q.name===nn));if(!p)return;const T=+ctx().b.turn||0;const S0=(m.potTurn||{})._share;const u=(S0&&+S0.t===T&&Array.isArray(S0.u))?S0.u.slice():[];if(u.some(x=>x&&x.n===p.name))return;
-   const tg=shareTag(p.eff);u.push({n:p.name,p:tg&&tg.p?1:0,g:tg?tg.g:[],x:isExcl(m,p)?1:0});await A().set(['battle','mons',mid,'potTurn','_share'],{t:T,u,ex:potSrc(m).filter(q=>isExcl(m,q)).map(q=>q.name)})}catch(e){console.warn('shareMark',e)}}
+   const tg=shareTag(p.eff);u.push({n:p.name,p:tg&&tg.p?1:0,g:tg?tg.g:[],x:isExcl(m,p)?1:0});await A().set(['battle','mons',mid,'potTurn','_share'],{t:T,u,ex:potSrc(m).filter(q=>isExcl(m,q)).map(q=>q.name)});
+   {const pn=p.name;setTimeout(()=>{try{evReact('pot',{mid,name:pn,key:pn}).catch(e=>console.warn('evReact pot',e))}catch(e){}},60)}   /* 11-26 「『X』가 발동했을 때 · 발동한 턴」 계기 — 이 턴에 처음 발동한 때 한 번 */
+  }catch(e){console.warn('shareMark',e)}}
  function specialPots(m){const u=m.potUses||{};return potSrc(m).filter(p=>isExcl(m,p)).map(p=>{const L=limOf(p,u,m.potTurn||{});const max=L.max,left=L.left,sw=L.sw||'';const a=FX()&&FX().autoOf(m,'pot',p.name);return {p,kind:p.unique?'고유':'전용',max,left,sw,mmax:L.mmax,ml:L.ml,per:L.per,auto:!!(a&&a.ops&&a.ops.length&&!a.manual)}})}
  /* 11-03 21:36 망령 「일반 포텐셜도 【탈진】 · 【소진】을 세자 — 칸 길이는 그대로」: 쓴 턴을 potTurn 에 적고(손으로 누른 발동 · 사용만), 못 쓰는 턴엔 발동 자리에 같은 크기의 「탈진」 · 「소진」 칩 */
  /* 11-04 20:34 망령 「웹툴 배틀에서 유대가 자동화 안 되어 있는 것 같대」: 『사랑의 유대』 · 『영혼의 유대』(【탈진】/저확률로 기술 대미지로 「빈사」 상태가 되지 않는다)를
@@ -3555,6 +3557,12 @@ for(const q of (b.xq||[])){if(!q||+q.t!==(+b.turn||0))continue;const s=slots.fin
           weather (「날씨 : X」가 되었을 때) · shout (【함성(기술)】 — 그 기술을 쓴 뒤) · use (아군이 「소지품 : X」를 소모했을 때) */
  const EV_DONE={};let EVQ=[];
  const EVM={
+   /* 11-26 09:45 망령 「특정 포텐셜 명을 지정해서 ~가 발동한 턴, ~가 발동했을 때 — 이런 건 계기화」: 포텐셜 X 가 발동하면(shareMark 가 그 턴에 처음 적을 때 → evReact('pot'))
+      글에 「(자신의|아군의|상대의) 『X』(이/가) 발동했을 때 · 발동한 턴」이 있는 포텐셜 · 특성 · 소지품 · 고유가 반응한다. 주어 없으면 자신. 「발동한 턴」은 구문에 이번턴 을 붙여 쓴다.
+      다른 장치가 이미 맡는 꼴은 뺀다: 「… 발동했을 때 「태그」 기술에 의한 추가 행동」(stanceXact) · 「… 발동한 턴 「기능 확장 : X」를 내보낼 수 있다」(famFired) */
+   pot:(t,mm,o,b,selfName)=>{const re=/(자신의|아군의|상대의|적의)?\s*『\s*([^』]+?)\s*』\s*(?:이|가)\s*(?:발동\s*(?:했을|하였을|되었을|됐을)\s*때|발동\s*(?:한|된)\s*턴)/g;const src=b.mons[o.mid];if(!src)return null;const nq=x=>String(x||'').replace(/[『』\s]/g,'');if(nq(selfName)===nq(o.name))return null;let r;
+    while((r=re.exec(t))){if(nq(r[2])!==nq(o.name))continue;const cl=clauseAt(t,r.index);if(XACT_RE.test(cl)||/기능\s*확장/.test(cl))continue;const w=r[1]||'';const rel=w==='아군의'?'ally':(w==='상대의'||w==='적의')?'foe':'self';if(rel==='self'&&mm.id!==o.mid)continue;if(rel==='ally'&&(mm.id===o.mid||!sameT(mm,src,b)))continue;if(rel==='foe'&&sameT(mm,src,b))continue;
+     return {why:`${src.name} 『${String(o.name).replace(/[『』]/g,'')}』 발동`,pick:rel==='self'?null:o.mid,cl}}return null},
    /* 11-26 366 「자신의 「HP」가 회복했을 때 …」(가름 『마랑황신의 화옥』 · 『작열』 · 레밀리아 『뱀피릭』): 필드 포켓몬의 HP 가 늘면 (healWatch) — 주어 없으면 자신 · 「아군의」 · 「상대의」 */
    healed:(t,mm,o,b)=>{const re=/(자신의|아군의|상대의|적의)?\s*「\s*HP\s*」\s*(?:가|를|이)?\s*회복\s*(?:했을|하였을|되었을|됐을)\s*때/g;const src=b.mons[o.mid];if(!src)return null;let r;while((r=re.exec(t))){const w=r[1]||'';const rel=w==='아군의'?'ally':(w==='상대의'||w==='적의')?'foe':'self';if(rel==='self'&&mm.id!==o.mid)continue;if(rel==='ally'&&(mm.id===o.mid||!sameT(mm,src,b)))continue;if(rel==='foe'&&sameT(mm,src,b))continue;return {why:`${src.name} 「HP」 회복 (+${o.amt})`,pick:rel==='self'?null:o.mid,cl:clauseAt(t,r.index)}}return null},
    made:(t,mm,o,b)=>{if(mm.id!==o.by)return null;const re=/(?:(?:상대|대상|적)(?:을|를)\s*)?「([^」]+)」\s*상태로\s*만들었을\s*때|「([^」]+)」\s*상태가\s*된\s*(?:상대|대상)/g;let r;while((r=re.exec(t))){const w=(r[1]||r[2]||'').split(/[\/,·]/).map(x=>x.trim());const ks=w.map(x=>stEnL(x)).flat();const S2=o.sts.includes('Toxic')?o.sts.concat(['Poison']):o.sts;if(!ks.some(k=>S2.includes(k)))continue;
