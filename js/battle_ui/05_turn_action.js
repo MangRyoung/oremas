@@ -1255,6 +1255,7 @@
                 });
               }
               await A().set(['battle', 'mons', m.id, 'disg'], v);
+              await illuBenchMarks(m.id, v);
               A().toast(`상대 화면에는 「${(illuOf(ctx().b, Object.assign({}, m, { disg: v })) || {}).name || '?'}」(으)로 보여요`);
             })
         );
@@ -2092,6 +2093,7 @@
       await A().set(['battle', 'mons', mid, 'disg'], DSG);
     } else if (m.disg) await A().set(['battle', 'mons', mid, 'disg'], null);
     /* 11-05 일루젼 */ if (!m.seen && !DSG) await A().set(['battle', 'mons', mid, 'seen'], true);
+    await illuBenchMarks(mid, DSG);
     if (m.pend) await A().set(['battle', 'mons', mid, 'pend'], null);
     /* 11-20 23:04 망령 「지시 전에 죽어내밀기로 짝이 서면 패널티가 아니잖아 — 한 번 행동 불능 상태가 걸리면 교대하던가 움직일 수 없어야지」:
      11-13 에 넣었던 「지시 전에 아군이 서면 A-1 잠금 해제」를 뺐다. 턴 종료 때 걸린 A-1 은 그 다음 턴 내내 간다 (교대는 된다) */
@@ -2953,6 +2955,16 @@
       if (tr && sameT({ tid, side: tr.side }, atk, b)) return true;
     }
     return false;
+  }
+  /* 11-27 벤치 표시(benchView)가 기대는 두 가지를 등장 · 모습 바꾸기 때 맞춘다:
+    ① 빌린 모습(진짜 아군)은 상대가 이미 본 것 → seen ② 이 포켓몬이 진짜로 나오면, 예전에 이 모습을 쓰고 빠져 있는 아군의 변장 표시는 지운다 */
+  async function illuBenchMarks(mid, dsg) {
+    const b = ctx().b;
+    const m = (b.mons || {})[mid];
+    const t = dsg && !/^@f\d+$/.test(String(dsg)) ? (b.mons || {})[dsg] : null;
+    if (t && !t.seen) await A().set(['battle', 'mons', t.id, 'seen'], true);
+    for (const x of Object.values(b.mons || {}))
+      if (m && x && x.id !== mid && x.tid === m.tid && !x.entry && x.disg === mid) await A().set(['battle', 'mons', x.id, 'disg'], null);
   }
   /* 11-26 등장 전(벤치)에 일루젼 모습을 미리 고르는 창 — 고른 값은 m.disgPre (illuPreOf 가 읽는다) */
   function illuPreOpen(m) {

@@ -244,7 +244,7 @@
     return !my || !sameT(mt, m, c.b);
   }
   function benchCard(c, m) {
-    m = V(c, m);
+    m = benchView(c, m);
     const full = canEdit(c, m);
     const out = !!m.entry;
     const sec = secret(c, m);

@@ -346,6 +346,26 @@ window.OM_BATTLE_UI = (() => {
       illuFake: t.id
     });
   }
+  /* 11-27 망령 「이미 나갔던 포켓몬은 자리에 표시되고 … 일루젼이 풀리기 전엔 변신한 대상 쪽을 참조해서 보이게」:
+    변장이 통하는 화면의 벤치는 「변장한 모습이 나갔다」로 보여야 한다. illuWearer = 이 아군(t)의 모습을 쓰고 있는(풀리지 않은) 포켓몬.
+    benchView 가 벤치 카드에 그릴 포켓몬을 정한다 — ① 모습을 빌려준 쪽 자리: 쓰고 있는 쪽의 자리 표시 · HP 를 대신 보여 준다(빠진 뒤에도 풀리기 전까지)
+    ② 쓰고 있는 쪽 자리: 나와 있다는 표시 없이(나온 적 없으면 「비공개」 그대로 · 쓰러졌으면 진짜 모습으로 공개) ③ 일루젼 폼(따로 자리가 없는 모습): 자기 자리가 그 모습으로 공개 */
+  function illuWearer(c, t) {
+    if (!t || t.entry) return null;
+    const L = Object.values((c.b && c.b.mons) || {}).filter(
+      x => x && x.id !== t.id && x.tid === t.tid && x.disg === t.id && x.hp.cur > 0 && !illuTrue(c, x)
+    );
+    return L.find(x => x.entry) || L[0] || null;
+  }
+  function benchView(c, m) {
+    const w = illuWearer(c, m);
+    if (w) return Object.assign({}, m, { entry: w.entry || '', hp: w.hp, seen: true });
+    const t = illuOf(c.b, m);
+    if (!t || illuTrue(c, m)) return m;
+    if (m.hp.cur <= 0) return Object.assign({}, m, { seen: true });
+    if (t.fake) return Object.assign(V(c, m), { seen: true });
+    return t.entry ? V(c, m) : Object.assign({}, m, { entry: '' });
+  }
   /* 11-26 PL 제보 「(카드를) 클릭하면 일루젼이 아닌 모습으로 나온다」: 이 화면에서 도감을 열 때 보여 줄 포켓몬.
     변장이 통하는 화면이면 변장한 아군의 mid, 일루젼 폼(따로 도감이 없는 모습)이면 mid 가 비고 name 만. 도감 단추 · 카드 누르기(app.js openMon)가 같이 쓴다 */
   function illuDexOf(c, mid) {

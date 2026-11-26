@@ -347,6 +347,26 @@ window.OM_BATTLE_UI = (() => {
       illuFake: t.id
     });
   }
+  /* 11-27 망령 「이미 나갔던 포켓몬은 자리에 표시되고 … 일루젼이 풀리기 전엔 변신한 대상 쪽을 참조해서 보이게」:
+    변장이 통하는 화면의 벤치는 「변장한 모습이 나갔다」로 보여야 한다. illuWearer = 이 아군(t)의 모습을 쓰고 있는(풀리지 않은) 포켓몬.
+    benchView 가 벤치 카드에 그릴 포켓몬을 정한다 — ① 모습을 빌려준 쪽 자리: 쓰고 있는 쪽의 자리 표시 · HP 를 대신 보여 준다(빠진 뒤에도 풀리기 전까지)
+    ② 쓰고 있는 쪽 자리: 나와 있다는 표시 없이(나온 적 없으면 「비공개」 그대로 · 쓰러졌으면 진짜 모습으로 공개) ③ 일루젼 폼(따로 자리가 없는 모습): 자기 자리가 그 모습으로 공개 */
+  function illuWearer(c, t) {
+    if (!t || t.entry) return null;
+    const L = Object.values((c.b && c.b.mons) || {}).filter(
+      x => x && x.id !== t.id && x.tid === t.tid && x.disg === t.id && x.hp.cur > 0 && !illuTrue(c, x)
+    );
+    return L.find(x => x.entry) || L[0] || null;
+  }
+  function benchView(c, m) {
+    const w = illuWearer(c, m);
+    if (w) return Object.assign({}, m, { entry: w.entry || '', hp: w.hp, seen: true });
+    const t = illuOf(c.b, m);
+    if (!t || illuTrue(c, m)) return m;
+    if (m.hp.cur <= 0) return Object.assign({}, m, { seen: true });
+    if (t.fake) return Object.assign(V(c, m), { seen: true });
+    return t.entry ? V(c, m) : Object.assign({}, m, { entry: '' });
+  }
   /* 11-26 PL 제보 「(카드를) 클릭하면 일루젼이 아닌 모습으로 나온다」: 이 화면에서 도감을 열 때 보여 줄 포켓몬.
     변장이 통하는 화면이면 변장한 아군의 mid, 일루젼 폼(따로 도감이 없는 모습)이면 mid 가 비고 name 만. 도감 단추 · 카드 누르기(app.js openMon)가 같이 쓴다 */
   function illuDexOf(c, mid) {
@@ -2693,7 +2713,7 @@ window.OM_BATTLE_UI = (() => {
     return !my || !sameT(mt, m, c.b);
   }
   function benchCard(c, m) {
-    m = V(c, m);
+    m = benchView(c, m);
     const full = canEdit(c, m);
     const out = !!m.entry;
     const sec = secret(c, m);
@@ -6223,6 +6243,7 @@ window.OM_BATTLE_UI = (() => {
                 });
               }
               await A().set(['battle', 'mons', m.id, 'disg'], v);
+              await illuBenchMarks(m.id, v);
               A().toast(`상대 화면에는 「${(illuOf(ctx().b, Object.assign({}, m, { disg: v })) || {}).name || '?'}」(으)로 보여요`);
             })
         );
@@ -7060,6 +7081,7 @@ window.OM_BATTLE_UI = (() => {
       await A().set(['battle', 'mons', mid, 'disg'], DSG);
     } else if (m.disg) await A().set(['battle', 'mons', mid, 'disg'], null);
     /* 11-05 일루젼 */ if (!m.seen && !DSG) await A().set(['battle', 'mons', mid, 'seen'], true);
+    await illuBenchMarks(mid, DSG);
     if (m.pend) await A().set(['battle', 'mons', mid, 'pend'], null);
     /* 11-20 23:04 망령 「지시 전에 죽어내밀기로 짝이 서면 패널티가 아니잖아 — 한 번 행동 불능 상태가 걸리면 교대하던가 움직일 수 없어야지」:
      11-13 에 넣었던 「지시 전에 아군이 서면 A-1 잠금 해제」를 뺐다. 턴 종료 때 걸린 A-1 은 그 다음 턴 내내 간다 (교대는 된다) */
@@ -7921,6 +7943,16 @@ window.OM_BATTLE_UI = (() => {
       if (tr && sameT({ tid, side: tr.side }, atk, b)) return true;
     }
     return false;
+  }
+  /* 11-27 벤치 표시(benchView)가 기대는 두 가지를 등장 · 모습 바꾸기 때 맞춘다:
+    ① 빌린 모습(진짜 아군)은 상대가 이미 본 것 → seen ② 이 포켓몬이 진짜로 나오면, 예전에 이 모습을 쓰고 빠져 있는 아군의 변장 표시는 지운다 */
+  async function illuBenchMarks(mid, dsg) {
+    const b = ctx().b;
+    const m = (b.mons || {})[mid];
+    const t = dsg && !/^@f\d+$/.test(String(dsg)) ? (b.mons || {})[dsg] : null;
+    if (t && !t.seen) await A().set(['battle', 'mons', t.id, 'seen'], true);
+    for (const x of Object.values(b.mons || {}))
+      if (m && x && x.id !== mid && x.tid === m.tid && !x.entry && x.disg === mid) await A().set(['battle', 'mons', x.id, 'disg'], null);
   }
   /* 11-26 등장 전(벤치)에 일루젼 모습을 미리 고르는 창 — 고른 값은 m.disgPre (illuPreOf 가 읽는다) */
   function illuPreOpen(m) {
