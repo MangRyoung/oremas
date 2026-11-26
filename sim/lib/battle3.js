@@ -204,7 +204,6 @@ async function runBattle(W,opt){
     G1 「HP : a/b 이하」일 때 상시 효과(맹화 꼴): 그 HP 가 되면 효과 엔진 구문을 한 번 건다(퇴장하면 웹툴이 fxDone 을 지워 다시 걸 수 있다)
     G2 「S」 상태일 때 턴 종료 시 「HP」를 a/b 회복(포이즌힐 꼴): 턴 종료 전에 그 상태면 회복
     G3 아군 빈사 상시 · 【자동】 포텐셜 = 웹툴 faintWatch */
- const srcList=m=>{const L=[];if(m.ability)L.push(['trait',m.ability,m.abilityEff||'']);if(m.item)L.push(['item',m.item,m.itemEff||'']);for(const p of FN.potSrc(m))L.push(['pot',p.name,p.eff||''])};
  const srcOf=m=>{const L=[];if(m.ability)L.push(['trait',m.ability,m.abilityEff||'']);if(m.item&&!m.itemUsed)L.push(['item',m.item,m.itemEff||'']);for(const p of FN.potSrc(m))L.push(['pot',p.name,p.eff||'']);return L};
  const gmHp=async()=>{for(const m0 of Object.values(C().mons)){if(!m0.entry||!alive(m0))continue;for(const [kind,name] of srcOf(m0)){const m=C().mons[m0.id];if(!m||!m.entry)break;const au=FX.autoOf(m,kind,name);if(!au||!au.ops||!au.ops.length||au.ops[0].k!=='cond'||au.ops[0].c!=='hp_le')continue;if((m.fxDone||{})[name])continue;
    const fr=String(au.ops[0].frac||'1/3').split('/');if(m.hp.cur>Math.floor(m.hp.max*(+fr[0]||1)/(+fr[1]||3)))continue;if(await FN.fireAuto(m.id,kind,name,{quiet:true,noRoll:true})){const d=Object.assign({},(C().mons[m.id]||{}).fxDone||{});d[name]=1;await W.OM_APP.set(['battle','mons',m.id,'fxDone'],d)}}}};
@@ -394,7 +393,6 @@ async function runBattle(W,opt){
  const mo=m=>({id:m._oid||m.id,tid:m.tid,name:m.name,hp:Math.max(0,m.hp.cur),max:m.hp.max,states:Object.keys(m.states||{}).filter(k=>m.states[k]),item:m.item||'',itemUsed:m.itemUsed||null,potUses:m.potUses||null,dealt:0,taken:0});
  const to=sd=>Object.fromEntries(Object.values(fb.trainers).filter(t=>t.side===sd).map(t=>[t.id,{name:t.name,pol:POLS[t.id],used:used[t.id]||{order:0,command:0},oc:t.orderCount||{}}]));
  const raid=Object.values(fb.mons).filter(m=>m.raid&&+m.raid.phase>0).flatMap(m=>Array.from({length:+m.raid.phase},(_,i)=>({name:m.name,phase:i+1})));
- const orig=sd=>{const src=opt[sd];return (src.parties||[src]).flatMap(p=>p.mons||[])};
  /* 왼쪽 결과는 원래 id 로 (던전이 시트에 되돌려 쓴다) */
  const left=Object.values(fb.mons).filter(m=>m.side==='left').map(mo);
  return {winner,turns:turn,kos,raid,left,right:Object.values(fb.mons).filter(m=>m.side==='right').map(mo),trainers:{left:to('left'),right:to('right')},log:opt.log?H.logs.slice():[],asked:H.asked}}

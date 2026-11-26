@@ -253,7 +253,7 @@ function statusPick(H,W,c){const FN=H.fn,MA=W.OM_MOVEAUTO,B=W.OM_BATTLE;const {m
  /* 11-15 09시 망령 「순풍 · 벽 · 날씨 · 트릭룸과 약점 찌르기는 기초 택틱 — 그걸 안개제거 · 웨더클리너 · 윈드브레이커로 막는다」: 판의 값을 「남은 턴 × 이번 판에서 바뀌는 몫」으로 센다
     점수 단위는 다른 후보와 같다(상대 HP 몇 할을 깎는 것과 같은가). 남은 턴은 길어야 3턴까지만 친다(교대 · 쓰러짐으로 줄어드니까) */
  const LEFT=n=>Math.max(0,Math.min(3,(+n||0)-1));const WMUL=FN.WEATHER_MUL||{};const curW=String((f.weather||{}).type||'');
- const myAct=[m,...c.allies].filter(x=>x&&x.hp.cur>0);const sideOf=x=>x.side;const foeSide=fs[0]?fs[0].side:(m.side==='left'?'right':'left');
+ const myAct=[m,...c.allies].filter(x=>x&&x.hp.cur>0);const foeSide=fs[0]?fs[0].side:(m.side==='left'?'right':'left');
  const atkFr=(x,vs,mul)=>{let bv=0;for(const q of FN.MVS(x)){if(!q||q.cat==='변화'||!(+q.pow>0))continue;const k=mul?mul(q):1;if(!k)continue;for(const tg of vs){const v=c.expect(x,q,tg)*k/Math.max(1,tg.hp.cur);if(v>bv)bv=v}}return Math.min(1,bv)};
  /* 날씨 w 가 지금 날씨 대신이면 한쪽(자기 편 attackers → 상대 vs)의 가장 센 공격이 얼마나 바뀌나 */
  const wxGain=(atks,vs,w)=>atks.reduce((a,x)=>{const now=atkFr(x,vs);const nw=atkFr(x,vs,q=>{const t=q.typeEn;const cur=(WMUL[curW]||{})[t]||1,to=(WMUL[w]||{})[t]||1;return to/cur});return a+(Math.min(1,nw)-now)},0);

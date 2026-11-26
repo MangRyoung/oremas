@@ -104,7 +104,7 @@ function walkGrid(rng,n,turn){const C=GRID.cols,Rw=GRID.rows,key=(c,r)=>c+','+r,
   if(go(-1))return {path,used}}
  return null}
 const isChk=r=>r&&['puzzle','trap','room'].includes(r.t)&&r.check;
-function addBranches(rng,dg,donor,n,th){const pick=a=>a[Math.floor(rng()*a.length)];const main=dg.rooms.filter(r=>!r.side&&!r.alt);dg.branches=[];if(!(n>0))return;
+function addBranches(rng,dg,donor,n,th){const main=dg.rooms.filter(r=>!r.side&&!r.alt);dg.branches=[];if(!(n>0))return;
  const spare={battle:donor.rooms.filter(r=>r.t==='battle'),check:donor.rooms.filter(isChk)};const taken=new Set();
  for(let g=1;g<=n;g++){const C=[];for(let i=0;i<main.length;i++)for(const L of [1,2,3]){const j=i+L+1;if(j>=main.length)continue;const seg=main.slice(i+1,j);if(seg.some(r=>taken.has(r.id)||!(r.t==='battle'||isChk(r))))continue;if(taken.has(main[i].id)&&taken.has(main[j].id))continue;C.push([i,j,seg])}   /* 11-02: 구간 1~2 → 1~3방 */
   if(!C.length)break;/* 11-02: 짧은 구간을 더 자주(1방 3 : 2방 2 : 3방 1) — 긴 구간 하나가 본길을 다 차지해 갈림길이 하나로 끝나던 것 */const Wt=C.map(c=>({c,w:[0,3,2,1][c[2].length]*rng()}));const [i,j,seg]=Wt.sort((a,b)=>b.w-a.w)[0].c;const alt=[];
