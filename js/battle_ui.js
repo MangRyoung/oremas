@@ -42,6 +42,16 @@ window.OM_BATTLE_UI=(()=>{
  const objCat=name=>OBJ_CAT.find(c=>c[4].includes(name))||OBJ_CAT[4];
  const WALLS={리플렉터:'reflector',빛의장막:'lightscreen',얼음의장벽:'icewall',오로라베일:'aurora'};
  /* 11-11 망령 「익스펜션 : 격투」: 자신의 「단일기 : 격투」가 적진의 「장벽」(리플렉터 · 빛의장막 · 얼음의장벽 · 오로라베일)을 무시한다 */
+ /* 11-26 09:20 망령 (권수아 『마음의 양식』 「【탈진】/대상의 공격을 받으면 「우드혼」의 「드레인」을 강화(1/2→3/4)한다」): 쓰는 쪽 포텐셜 글 — 그 기술의 드레인 분수가 앞 분수와 같으면 뒤 분수로 (글로 읽는다 · 구문 없음).
+    앞에 붙는 조건은 「대상(상대)의 공격을 받으면」만 안다 — 이번 턴에 그 대상에게 맞았을 때(mons[].hitBy = {t:턴, by:[때린 포켓몬]} · 공격을 적용할 때 적는다). 모르는 조건이 붙은 줄은 손으로.
+    횟수(【탈진】 · 【N/시】 …)가 남았을 때만 · 적용하면 drainUpPot 로 potMark */
+ const DRUP_RE=/「\s*([^」]+?)\s*」\s*의\s*「?\s*드레인\s*」?(?:량)?\s*(?:을|를|이)\s*강화\s*\(\s*(\d+\s*\/\s*\d+)\s*(?:→|->|⇒)\s*(\d+\s*\/\s*\d+)\s*\)/;
+ function drainUp(atk,mv,MAU,targets,b){try{if(!MAU||!MAU.drain||!atk||!mv)return MAU;const fr=x=>String(x).replace(/\s/g,'');const T=+b.turn||0;
+   for(const p of potSrc(atk)){if(!p||!p.name)continue;for(const cl of String(p.eff||'').replace(/<br\s*\/?>/g,'\n').split(/(?=[①②③④⑤⑥⑦⑧⑨])|\n/)){const x=cl.match(DRUP_RE);if(!x||!mvNameEq(x[1],mv.name)||fr(x[2])!==fr(MAU.drain))continue;
+     const pre=cl.slice(0,x.index).replace(/【[^】]*】/g,'').replace(/^[\s\/①②③④⑤⑥⑦⑧⑨]+|\s+$/g,'');
+     if(pre){if(!/^(?:대상|상대)의\s*공격을\s*(?:받으면|받았을\s*때|받은\s*턴(?:에)?)$/.test(pre))continue;const ids=(targets||[]).map(t=>{const [sd,ar]=String(t).split('_');const d=(entered(b,sd)||{})[ar];return d&&d.id}).filter(Boolean);const hb=atk.hitBy&&+atk.hitBy.t===T?(atk.hitBy.by||[]):[];if(!ids.some(id=>hb.includes(id)))continue}
+     if(!potLive(atk,p))continue;const L=limOf(p,atk.potUses||{},atk.potTurn||{});if(L.left!==null&&L.left<=0)continue;
+     return Object.assign({},MAU,{drain:fr(x[3]),drainBy:`${String(p.name).replace(/[『』]/g,'')} (${fr(x[2])}→${fr(x[3])})`,drainUpPot:p.name})}}}catch(e){console.warn('drainUp',e)}return MAU}
  const wallIgn=(atk,mv,tys)=>!!atk&&String((mv||{}).range||'')==='1체'&&(mv||{}).cat!=='변화'&&(tys||[]).includes('Fighting')&&potSrc(atk).some(p=>p&&String(p.name||'').replace(/[『』\s]/g,'')==='익스펜션:격투');
  /* 10-25 망령: 지금 걸리는 벽 이름 (물리 · 특수 · 불꽃이면 얼음의장벽 빠짐) */
  const wallNames=(objs,cat,ty)=>Object.keys(WALLS).filter(k=>(objs||{})[k]>0&&(k==='리플렉터'?cat==='physical':k==='빛의장막'?cat==='special':k==='얼음의장벽'?ty!=='Fire':true));
@@ -4285,7 +4295,7 @@ const slots=allEntered(b);const tg=(x0.tm?tgNow(b,x0,atk):(x0.targets||[]));cons
    const moveTypes=mtys(mv);SECX=spL(atk,'secx').filter(e=>spHit(e,mv,moveTypes)&&!e.mode&&!(FX()&&FX().hasCond&&FX().hasCond(Object.assign({},e,{types:[],tg:[]})))).reduce((a,e)=>a*(+e.v||1),1);SECXM={};
    const atkTypes=proteanTys(atk,mv)||(atk.teraActive&&atk.teraEn!=='-'?[...atk.types,atk.teraEn]:atk.types);
    const res=[];const multiTarget=targets.length>1;const SPW=specialPowFor(mv.name,atk);const ACCX=d=>{const au=moveAuto(mv);return au&&au.accNot&&d&&!tysOf(d).includes(au.accNot.ty)?au.accNot.acc:mv.acc};const MAU0=moveAuto(mv),MAU1=MA()&&MA().auto(MAU0)?MAU0:null;   /* 11-22 망령 카밀라 특성 『흡정』 「자신의 「단일기」에 「드레인 : 1/2」의 추가 효과를 부여한다」: 특성 · 포텐셜 글에 그 꼴이 있으면 「단일기」(범위 1체 · 변화 아님)에 드레인을 붙인다 — 기술에 이미 드레인이 있으면 그대로 */
-    const MAU=(()=>{if(mv.cat==='변화'||String(mv.range||'')!=='1체'||(MAU1&&MAU1.drain))return MAU1;const SRC=[[atk.ability,abTxt(atk)],...((atk.pots||[]).map(p=>[p&&p.name,p&&p.eff]))];for(const [nm,tx] of SRC){const mm=String(tx||'').match(/자신의\s*「\s*단일기\s*」\s*에\s*「\s*드레인\s*[:：]\s*(\d+\s*\/\s*\d+)\s*」\s*의?\s*추가\s*효과를\s*부여/);if(mm)return Object.assign({groups:[],notes:[],src:'grant'},MAU1||{},{drain:mm[1].replace(/\s/g,''),drainBy:String(nm||'').replace(/[『』]/g,'')})}return MAU1})();   /* 변칙 위력 기술: 대상마다 위력 자동 (매그니튜드 같은 무작위는 한 번만 굴림) */
+    const MAU2=(()=>{if(mv.cat==='변화'||String(mv.range||'')!=='1체'||(MAU1&&MAU1.drain))return MAU1;const SRC=[[atk.ability,abTxt(atk)],...((atk.pots||[]).map(p=>[p&&p.name,p&&p.eff]))];for(const [nm,tx] of SRC){const mm=String(tx||'').match(/자신의\s*「\s*단일기\s*」\s*에\s*「\s*드레인\s*[:：]\s*(\d+\s*\/\s*\d+)\s*」\s*의?\s*추가\s*효과를\s*부여/);if(mm)return Object.assign({groups:[],notes:[],src:'grant'},MAU1||{},{drain:mm[1].replace(/\s/g,''),drainBy:String(nm||'').replace(/[『』]/g,'')})}return MAU1})();const MAU=drainUp(atk,mv,MAU2,targets,b);   /* 11-26 376 「X」의 「드레인」을 강화(a/b→c/d) */   /* 변칙 위력 기술: 대상마다 위력 자동 (매그니튜드 같은 무작위는 한 번만 굴림) */
    /* 11-04 망령 (관사 · 도모에 『활솜씨』): 「N할로 자신의 기술이 필중한다」 특성 · 포텐셜은 굴릴 때 한 번 굴려 필중으로 */
    let abSure=false,abNote='';if(mv.cat!=='변화'&&!ck('asure')){const SRC=[[atk.ability,abTxt(atk)],...((atk.pots||[]).map(p=>[p&&p.name,p&&p.eff]))];for(const [nm,tx] of SRC){const mm=String(tx||'').match(/(\d+)할(?:의 확률)?로\s*자신의\s*기술이\s*필중/);if(!mm)continue;const N=+mm[1];const r0=1+Math.floor(Math.random()*10);abSure=r0<=N;abNote=`『${nm||'특성'}』 ${N}할 필중 — 굴림 ${r0}/${N} ${abSure?'발동! 이번 기술은 필중':'불발'}`;break}}
    let MCLU=false;for(const slot of targets){if(ACCKEEP&&ACCKEEP[slot]){res.push(ACCKEEP[slot]);continue}/* 11-05 은열쇠 명중 다시: 다른 대상 결과는 그대로 */const [side,area]=slot.split('_');const def=entered(b,side)[area];if(!def)continue;
@@ -4467,6 +4477,7 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【(?:[^【】]
     /* 10-27 제보: HP 창에 감쇄 요소가 다 안 보였다 — 기본 대미지에 이미 들어간 배율을 적어 둔다. pub = 누구나 봐도 되는 것(전체기 · 화상 · 날씨 · 필드 · 벽 · 받는 쪽 완화 …), atk = 공격 쪽 보정(소지품 · 특성 · 자속 …, 공격 쪽을 다룰 수 있는 사람만) */
     const hfx=mulParts(r,md);
     if(RESULT.mv.cat!=='변화')def.hitT=+nb.turn||0;   /* 11-09 감우 55: 이번 턴 공격을 받았다 (힘껏펀치류 실패) */
+    {const T0=+ctx().b.turn||0;const HB=def.hitBy&&+def.hitBy.t===T0?(def.hitBy.by||[]).slice():[];if(!HB.includes(atk.id))HB.push(atk.id);def.hitBy={t:T0,by:HB}}   /* 11-26 이번 턴 누구에게 맞았나 (drainUp 「대상의 공격을 받으면」) */
     def.lastHit={hfx,from:atk.name,fromId:atk.id,move:RESULT.mv.name,moveType:(rndOf(RESULT.mv)?S().typeKo(rndOf(RESULT.mv)):RESULT.mv.type)||'',eff:r.eff.value,effType:r.eff.type||'',total:Math.floor(r.dmg.total*am),min:Math.floor(r.dmg.min*am),max:Math.floor(r.dmg.max*am),hits:r.hits.length,crit,per:perOf(r.dmg,am),perCrit:r.hits.map(h=>h.v===2),...(r.dmgAlt?{alt:{total:Math.floor(r.dmgAlt.total*am),min:Math.floor(r.dmgAlt.min*am),max:Math.floor(r.dmgAlt.max*am),crit:!crit,per:perOf(r.dmgAlt,am)}}:{}),guard:r.guardU??r.guard,guardCrit:r.guardCritU??r.guardCrit,guardNote:[(r.mods&&r.mods.names.filter(x=>x.who===def.id).map(x=>x.txt).join(' · '))||'',r.guardU!=null&&r.guardU!==r.guard?'공격 창에서 ×'+r.guardU:''].filter(Boolean).join(' · '),endure:r.endU??r.endure,defer:(r.mods&&r.mods.defer)||'',deferAll:r.mods&&r.mods.deferAll?1:0,manual:r.manU||1,berry:!!r.berryU,expect:r.hp?r.hp.final:0,at:Date.now(),turn:+nb.turn||0,mt:RESULT.moveTypes||[],cat:RESULT.mv.cat||'',ct:!!(A().contactOf&&A().contactOf(RESULT.mv)==='O')&&!HAS(atk,'방호패드')&&!farOf(atk),...(HAS(atk,'방호패드')&&A().contactOf&&A().contactOf(RESULT.mv)==='O'?{pad:1}:{}),multi:RESULT.targets.length>1};
     if(FX()&&r.mods)FX().consume(nb,r.mods.names);if(def.flags&&def.flags.endure)def.flags.endureUsed=1;
     sumL.push(`${def.name} ≈ ${r.hp?r.hp.final:0}${r.eff.value!==1?' ×'+r.eff.value:''}${crit?' 급소':''}${r.acc.multi?' '+r.hits.length+'타':''}`)}
@@ -4569,7 +4580,7 @@ ${(()=>{const t=(($('#amef',md)||{}).textContent||'').match(/^(?:【(?:[^【】]
    await coverFire(mid,RESULT);
    if(!RF){await chainAfterAct(mid);
    await mvModAfter(mid,RESULT);
-   await comboXact(mid,RESULT);await sleepTalkAfter(mid,RESULT);await thirdToneAfter(mid,RESULT);await orderUpAfter(mid,RESULT);await extraAtkAfter(mid,RESULT)}   /* 11-22 「아군의 「소리」 기술에 뒤이어」 */
+   await comboXact(mid,RESULT);await sleepTalkAfter(mid,RESULT);await thirdToneAfter(mid,RESULT);await orderUpAfter(mid,RESULT);if(RESULT.auto&&RESULT.auto.drainUpPot)await potMark(mid,RESULT.auto.drainUpPot);await extraAtkAfter(mid,RESULT)}   /* 11-22 「아군의 「소리」 기술에 뒤이어」 */
    /* 11-07 망령 「닌자 자동화가 없어요」: 「자신이 행동한 뒤 …」 포텐셜(닌자 ① 회피 ×1.33 턴 종료까지)은 공격을 적용한 뒤 저절로 건다 — 구문이 있고 횟수(【N/시】) 없는 것만 · 한 턴에 한 번 */
    {const a2=RF?null:ctx().b.mons[mid];const T=+ctx().b.turn||0;if(a2&&a2.entry&&a2.hp.cur>0&&FX())for(const p of potSrc(a2)){if(!p||!p.name||(p.ph&&!p.apt)||!/자신이\s*행동한\s*(?:뒤|후)/.test(String(p.eff||'')))continue;const k=mid+'|'+p.name;if(ACTFX[k]===T)continue;
      const au=FX().autoOf(a2,'pot',p.name);if(!au||!au.ops||!au.ops.length||au.manual||limManual(a2,'pot',p.name,p.eff))continue;ACTFX[k]=T;const okN=await fireAuto(mid,'pot',p.name,{quiet:true,noRoll:true,head:`【포텐셜】 ${a2.name} 『${p.name}』 — 행동한 뒤 자동`});
