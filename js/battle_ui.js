@@ -1071,6 +1071,22 @@ window.OM_BATTLE_UI = (() => {
       if (nf) nf._h = cmdH;
     }
     stickyWatch(el);
+    el.querySelectorAll('[data-phase]').forEach(bt => (bt.onclick = () => setPhase(+bt.dataset.phase)));
+    el.querySelectorAll('[data-tstepb]').forEach(
+      bt =>
+        (bt.onclick = () => {
+          const b2 = ctx().b;
+          if ((+b2.phase || 0) !== 1) return A().toast('턴 개시 뒤에 — 「턴 진행 ▶」으로 들어간다');
+          if ((+b2.tstep || 0) >= +bt.dataset.tstepb) return;
+          return stepTurn();
+        })
+    );
+    autoAdvance();
+    try {
+      if (window.OM_RP_UI && window.OM_RP_UI.bspkBind) window.OM_RP_UI.bspkBind(el);
+    } catch (e) {
+      console.warn(e);
+    }
     if (window.OM_RP_UI && window.OM_RP_UI.bindBgmWidget) window.OM_RP_UI.bindBgmWidget(el);
     {
       const fb = el.querySelector('[data-bfold]');
