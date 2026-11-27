@@ -9182,7 +9182,7 @@ window.OM_BATTLE_UI = (() => {
                const ck = (kind === 'order' ? 'order_' : 'command_') + k;
                const n = pN(b, tid, ck);
                const done = fired[kind] === k;
-               return `<div class="firerow ${done ? 'done' : ''}" data-fk="${k}" data-kind="${kind}"><b class="fnm">『${esc(nm(k))}』</b>${OO().ownerOf(t, k) ? `<i class="oown">${esc(OO().ownerOf(t, k))} 몫</i>` : ''}<span class="fcnt">남은 <b>${n}</b></span><span class="sp"></span>
+               return `<div class="firerow ${n > 0 ? 'has' : 'zero'} ${done ? 'done' : ''}" data-fk="${k}" data-kind="${kind}"><b class="fnm">『${esc(nm(k))}』</b>${OO().ownerOf(t, k) ? `<i class="oown">${esc(OO().ownerOf(t, k))} 몫</i>` : ''}<span class="fcnt">남은 <b>${n}</b></span><span class="sp"></span>
      <button class="btn sm pri" data-fire="pre" data-kind="${kind}" data-k="${k}" hidden>선행 발동</button><button class="btn sm" data-fire="free" data-kind="${kind}" data-k="${k}" ${n > 0 && (ph >= 1 || preTag(nm(k)) || rinneOK(b, tid, k, kind)) ? '' : 'disabled'} title="남은 횟수 1을 써서 바로 발동${preTag(nm(k)) ? ' · 【사전】 — 지시 준비 중에도' : ''}${rinneOK(b, tid, k, kind) ? ' · ② — 지난 턴 종료에 【임의】' : ''}">${rinneOK(b, tid, k, kind) ? '임의 발동 ②' : '임의 발동'}</button>${c.gm ? `<button class="btn sm ghost" data-fire="force" data-kind="${kind}" data-k="${k}" title="횟수·입력과 상관없이 발동">강제</button>` : ''}</div>`;
              })
              .join('') || '<div class="small dim">쓰는 항목이 없다</div>'
