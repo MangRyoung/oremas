@@ -115,7 +115,20 @@
     document.addEventListener('visibilitychange', back);
     titleT = setTimeout(back, 60000);
   }
+  /* 11-27 망령 「둘 다 지시 완료 상태가 되었을 때에도 알림」: 배틀 로그 「【준비 완료】 양측 모두 …」가 들어오면 모두에게 토스트 + 알림음 + 탭 제목 (막 들어온 줄만 · 알림음은 내 설정의 「화면 볼 땐 조용히」를 따른다) */
+  function notifyReady(r) {
+    if (!r || r.kind !== 'battle' || !r.data || !/^【준비 완료】/.test(String(r.data.t || ''))) return false;
+    if (r.at && Date.now() - new Date(r.at).getTime() > 15000) return true;
+    toast('양측 모두 지시 준비 완료');
+    try {
+      if (window.OM_PREFS) window.OM_PREFS.notify('chat');
+      else if (window.OM_RP_UI) window.OM_RP_UI.playSe('Ping', true);
+    } catch (e) {}
+    flashTitle('양측 준비 완료');
+    return true;
+  }
   function notifyLog(r) {
+    if (notifyReady(r)) return;
     if (!r || r.kind !== 'chat' || !r.data || r.data.sms || !r.data.t) return;
     if (isMineLog(r)) return;
     if (r.at && Date.now() - new Date(r.at).getTime() > 15000) return;
