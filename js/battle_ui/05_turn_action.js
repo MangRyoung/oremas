@@ -3568,9 +3568,14 @@
       const R = Object.assign({}, c.ST.state.ready || {});
       R[path[1]] = true;
       const seats = c.ST.state.seats || {};
-      const T = Object.keys(c.b.trainers || {}).filter(t => seats[t] || baseSeat(c, t));
-      if (T.length >= 2 && T.every(t => R[t]))
+      /* 11-28 망령 「지시 완료 둘 다 해도 알림이 안 뜬다」: 자리에 앉은 트레이너만 세어서, GM 이 모는 트레이너(자리 없음)가 끼면 2명이 안 돼 줄이 안 나왔다 — 배틀의 트레이너 전부를 센다.
+        자리 있는 쪽이 다 끝났는데 GM 쪽만 남았으면 그것도 알린다 (GM 이 준비를 안 누르고 바로 턴을 여는 일이 많다) */
+      const all = Object.keys(c.b.trainers || {});
+      const T = all.filter(t => seats[t] || baseSeat(c, t));
+      if (all.length >= 2 && all.every(t => R[t]))
         A().sysLog(`【준비 완료】 양측 모두 지시 준비를 마쳤다${c.mgr ? '' : ' — GM 의 「턴 개시」를 기다린다'}`, 'battle');
+      else if (T.length && T.length < all.length && T.includes(path[1]) && T.every(t => R[t]))
+        A().sysLog('【준비 완료】 플레이어 모두 지시 준비를 마쳤다 — GM 쪽 지시가 남았다', 'battle');
     }
   }
   /* 11-04 망령 「2체 기준 들고 가는 4식 6령 — 합산 아니니?」 → 「나」: 던전 배틀(b.dg)은 같은 진영 일행의 4식 · 6령을 합쳐 쓴다.

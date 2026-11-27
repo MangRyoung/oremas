@@ -119,9 +119,9 @@
   function notifyReady(r) {
     if (!r || r.kind !== 'battle' || !r.data || !/^【준비 완료】/.test(String(r.data.t || ''))) return false;
     if (r.at && Date.now() - new Date(r.at).getTime() > 15000) return true;
-    toast('양측 모두 지시 준비 완료');
+    toast(/플레이어 모두/.test(String(r.data.t)) ? '플레이어 모두 지시 준비 완료' : '양측 모두 지시 준비 완료', 5000);
     try {
-      if (window.OM_PREFS) window.OM_PREFS.notify('chat');
+      if (window.OM_PREFS) window.OM_PREFS.alert('chat');
       else if (window.OM_RP_UI) window.OM_RP_UI.playSe('Ping', true);
     } catch (e) {}
     flashTitle('양측 준비 완료');
@@ -140,13 +140,13 @@
     flashTitle('새 메시지');
   } /* 부드러운 알림음 · 화면을 보고 있으면 울리지 않는다 (내 설정) */
   let toastT = null;
-  function toast(m) {
+  function toast(m, ms) {
     if (window.OM_REPORT_UI) window.OM_REPORT_UI.note('toast', m);
     const t = $('#toast');
     t.textContent = m;
     t.classList.add('on');
     clearTimeout(toastT);
-    toastT = setTimeout(() => t.classList.remove('on'), 2400);
+    toastT = setTimeout(() => t.classList.remove('on'), ms || 2400);
   }
   /* 11-03 망령 「첫 로딩 줄이기」: 창을 열 때만 쓰는 모듈(튜토리얼 · 관계도 · 던전 · 전당 · 휴대폰 · 게시판 · 둘러보기 · 그림 줄이기)은 index.html 의 OM_LAZY 표를 보고 그때 불러온다.
    ensure('guide') 처럼 쓴다 — 이미 있으면 바로, 없으면 <script> 를 붙이고 기다린다. 실패하면 토스트 + 다시 시도할 수 있게 기억을 지운다 */
