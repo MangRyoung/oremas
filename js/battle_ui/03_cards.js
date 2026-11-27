@@ -171,12 +171,14 @@
     const st = m.states || {};
     const db = (DB().states || {}).st || {};
     return (
-      (+m.stock > 0 ? `<span class="stc" data-stinfo="Stockpile" title="비축 카운터 — 그만큼 방어/특방이 올라 있다">비축 ${+m.stock}</span>` : '') +
+      (+m.stock > 0 && !st.Stockpile
+        ? `<span class="stc" data-stinfo="Stockpile" title="비축 카운터 — 그만큼 방어/특방이 올라 있다">비축 ${+m.stock}</span>`
+        : '') /* 11-18 옛 칸 m.stock (11-27 부터 상태 Stockpile 의 수) */ +
       Object.keys(st)
         .filter(k => st[k])
         .map(k => {
           const im = simg(k);
-          return `<span class="stc ${db[k] && db[k].abn ? 'abn' : ''}" data-stinfo="${esc(k)}" title="${esc(((db[k] && db[k].desc) || []).join(' '))}">${im ? `<img src="${esc(im)}" alt="">` : ''}${esc(db[k] ? db[k].ko : k)}${+st[k] > 1 && +st[k] < 1000 ? ' ' + st[k] : ''}</span>`;
+          return `<span class="stc ${db[k] && db[k].abn ? 'abn' : ''}" data-stinfo="${esc(k)}" title="${esc(((db[k] && db[k].desc) || []).join(' '))}">${im ? `<img src="${esc(im)}" alt="">` : ''}${k === 'Stockpile' ? `비축 ${FX() && FX().stockOf ? FX().stockOf(m) : +st[k]}` : esc(db[k] ? db[k].ko : k) + (+st[k] > 1 && +st[k] < 1000 ? ' ' + st[k] : '')}</span>`; /* 11-27 비축 카운터는 늘 수를 보인다 */
         })
         .join('')
     );

@@ -2795,7 +2795,7 @@
         const v = +st[k];
         const def = db[k] || {};
         if (KS.includes(k)) continue;
-        if ((def.prog === 'turn' || def.prog === 'once') && !movesDown(k, def) && v > 0 && v < 1000) {
+        if ((def.prog === 'turn' || def.prog === 'once') && !movesDown(k, def) && !cntSt(k, def) && v > 0 && v < 1000) {
           /* 10-23 망령: 「다음 기술 한 번」 상태(악인 · 송전 · 자세잡기 …)도 행동 안 했으면 턴 종료에 준다 */ st[k] = v - 1;
           if (st[k] <= 0) {
             delete st[k];

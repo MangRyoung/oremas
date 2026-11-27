@@ -1101,7 +1101,7 @@
           : { pow: 0, fixed: 1, note: `변칙 위력 ${name}: 판정 ${r} → 대상 HP 1/2 회복 (손으로)` };
     }
     if (k === 'spit') {
-      const n = Math.max(0, Math.min(3, +atk.stock || 0));
+      const n = FX() && FX().stockOf ? FX().stockOf(atk) : Math.max(0, Math.min(3, +atk.stock || 0));
       return () =>
         n
           ? { pow: 100 * n, note: `변칙 위력 ${name}: 비축 카운터 ${n} → 위력 ${100 * n}` }

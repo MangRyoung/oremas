@@ -1143,7 +1143,7 @@
              const d = sdb.st[k] || { ko: k };
              const v = (m.states || {})[k];
              const im = simg(k);
-             return `<label class="stt ${v ? 'on' : ''} ${d.abn ? 'abn' : ''}" data-stq="${esc((d.ko + ' ' + k + ' ' + (d.desc || []).join(' ')).toLowerCase())}" title="${esc((d.desc || []).join(' '))}"><input type="checkbox" data-st="${k}" ${v ? 'checked' : ''}>${im ? `<img src="${esc(im)}" alt="">` : `<span class="sti0">${esc(String(d.ko || k).slice(0, 1))}</span>`}<span class="stn">${esc(d.ko)}</span>${d.prog === 'turn' || d.prog === 'move' ? `<input type="number" class="n xs" data-stc="${k}" value="${v && v < 1000 ? v : d.min < 1000 ? d.min : ''}" placeholder="T">` : ''}</label>`;
+             return `<label class="stt ${v ? 'on' : ''} ${d.abn ? 'abn' : ''}" data-stq="${esc((d.ko + ' ' + k + ' ' + (d.desc || []).join(' ')).toLowerCase())}" title="${esc((d.desc || []).join(' '))}"><input type="checkbox" data-st="${k}" ${v ? 'checked' : ''}>${im ? `<img src="${esc(im)}" alt="">` : `<span class="sti0">${esc(String(d.ko || k).slice(0, 1))}</span>`}<span class="stn">${esc(d.ko)}</span>${d.prog === 'turn' || d.prog === 'move' || cntSt(k, d) ? `<input type="number" class="n xs" data-stc="${k}" value="${v && v < 1000 ? v : d.min < 1000 ? d.min : cntSt(k, d) ? 1 : ''}" placeholder="${cntSt(k, d) ? '수' : 'T'}">` : ''}</label>`;
            })
            .join('')}</div>`
      )
@@ -1227,7 +1227,10 @@
           (x.onclick = () => {
             const ci = md.querySelector(`[data-stc="${x.dataset.sd}"]`);
             if (!ci) return;
-            ci.value = Math.max(1, Math.min(999, (+ci.value || 0) + +x.dataset.d));
+            ci.value = Math.max(
+              1,
+              Math.min(x.dataset.sd === 'Stockpile' ? 3 : 999, (+ci.value || 0) + +x.dataset.d)
+            ); /* 11-27 비축 카운터는 3 까지 */
             updOn();
           })
       );
@@ -1328,6 +1331,7 @@
         else delete nm.seedFrom;
       }
       if (nm.hp.cur <= 0) nm.entry = '';
+      const STK = stockFix(m, nm);
       A().closeModal();
       if (await saveMon(m, mid, nm)) {
         const SC = stLog(m, nm, fcMan('랭크·상태 창'));
@@ -1338,6 +1342,7 @@
           if (a !== b2) ch.push(`${STAT_KO[k]} ${a}→${b2 > 0 ? '+' : ''}${b2}`);
         }
         ch.push(...RKAB);
+        if (STK) ch.push(STK);
         const sa = Object.keys(m.states || {}).filter(k => m.states[k]),
           sb = Object.keys(nm.states);
         const on = sb.filter(k => !sa.includes(k)).map(k => (sdb.st[k] || {}).ko || k),

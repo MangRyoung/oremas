@@ -635,6 +635,21 @@ window.OM_BATTLE_UI = (() => {
   async function deferAll(when) {
     for (const id of Object.keys(ctx().b.mons || {})) if (((ctx().b.mons || {})[id] || {}).defer) await deferFire(id, when);
   }
+  /* 11-27 망령 「비축하기가 스톡이 안 된다 — 턴이 아니라 카운터로, 필드를 떠나기 전까지 그대로 · 추가 · 감소 · 초기화」:
+    비축 카운터 = 상태 「Stockpile」의 수(1~3). 손으로 고친 값(랭크·상태 창 · 상세 창)을 1~3 으로 맞추고, 바뀐 만큼 방어/특방 랭크도 같이 옮긴다 (구문 「비축 ±N」과 같은 셈) */
+  const cntSt = (k, d) => !!(FX() && FX().isCountSt && FX().isCountSt(k, d)); /* 턴으로 줄지 않는 카운터 상태 */
+  function stockFix(m0, nm) {
+    if (!FX() || !FX().stockOf) return '';
+    const st = nm.states || {};
+    if (st.Stockpile) st.Stockpile = +st.Stockpile >= 1000 ? 1 : Math.max(1, Math.min(3, +st.Stockpile || 1));
+    const a = FX().stockOf(m0);
+    const z = FX().stockOf(nm);
+    FX().setStock(nm, z);
+    if (a === z) return '';
+    nm.rank = Object.assign({}, nm.rank || {});
+    for (const k of ['defense', 'specialdefense']) nm.rank[k] = Math.max(-6, Math.min(6, (+nm.rank[k] || 0) + z - a));
+    return `비축 카운터 ${a} → ${z} (방어/특방 ${z > a ? '+' : ''}${z - a})`;
+  }
   function saveMon(m0, mid, nm) {
     preSave(nm);
     return A()
@@ -2030,7 +2045,7 @@ window.OM_BATTLE_UI = (() => {
           : { pow: 0, fixed: 1, note: `변칙 위력 ${name}: 판정 ${r} → 대상 HP 1/2 회복 (손으로)` };
     }
     if (k === 'spit') {
-      const n = Math.max(0, Math.min(3, +atk.stock || 0));
+      const n = FX() && FX().stockOf ? FX().stockOf(atk) : Math.max(0, Math.min(3, +atk.stock || 0));
       return () =>
         n
           ? { pow: 100 * n, note: `변칙 위력 ${name}: 비축 카운터 ${n} → 위력 ${100 * n}` }
@@ -2640,12 +2655,14 @@ window.OM_BATTLE_UI = (() => {
     const st = m.states || {};
     const db = (DB().states || {}).st || {};
     return (
-      (+m.stock > 0 ? `<span class="stc" data-stinfo="Stockpile" title="비축 카운터 — 그만큼 방어/특방이 올라 있다">비축 ${+m.stock}</span>` : '') +
+      (+m.stock > 0 && !st.Stockpile
+        ? `<span class="stc" data-stinfo="Stockpile" title="비축 카운터 — 그만큼 방어/특방이 올라 있다">비축 ${+m.stock}</span>`
+        : '') /* 11-18 옛 칸 m.stock (11-27 부터 상태 Stockpile 의 수) */ +
       Object.keys(st)
         .filter(k => st[k])
         .map(k => {
           const im = simg(k);
-          return `<span class="stc ${db[k] && db[k].abn ? 'abn' : ''}" data-stinfo="${esc(k)}" title="${esc(((db[k] && db[k].desc) || []).join(' '))}">${im ? `<img src="${esc(im)}" alt="">` : ''}${esc(db[k] ? db[k].ko : k)}${+st[k] > 1 && +st[k] < 1000 ? ' ' + st[k] : ''}</span>`;
+          return `<span class="stc ${db[k] && db[k].abn ? 'abn' : ''}" data-stinfo="${esc(k)}" title="${esc(((db[k] && db[k].desc) || []).join(' '))}">${im ? `<img src="${esc(im)}" alt="">` : ''}${k === 'Stockpile' ? `비축 ${FX() && FX().stockOf ? FX().stockOf(m) : +st[k]}` : esc(db[k] ? db[k].ko : k) + (+st[k] > 1 && +st[k] < 1000 ? ' ' + st[k] : '')}</span>`; /* 11-27 비축 카운터는 늘 수를 보인다 */
         })
         .join('')
     );
@@ -11642,7 +11659,7 @@ window.OM_BATTLE_UI = (() => {
         const v = +st[k];
         const def = db[k] || {};
         if (KS.includes(k)) continue;
-        if ((def.prog === 'turn' || def.prog === 'once') && !movesDown(k, def) && v > 0 && v < 1000) {
+        if ((def.prog === 'turn' || def.prog === 'once') && !movesDown(k, def) && !cntSt(k, def) && v > 0 && v < 1000) {
           /* 10-23 망령: 「다음 기술 한 번」 상태(악인 · 송전 · 자세잡기 …)도 행동 안 했으면 턴 종료에 준다 */ st[k] = v - 1;
           if (st[k] <= 0) {
             delete st[k];
@@ -14406,7 +14423,7 @@ window.OM_BATTLE_UI = (() => {
              const d = sdb.st[k] || { ko: k };
              const v = (m.states || {})[k];
              const im = simg(k);
-             return `<label class="stt ${v ? 'on' : ''} ${d.abn ? 'abn' : ''}" data-stq="${esc((d.ko + ' ' + k + ' ' + (d.desc || []).join(' ')).toLowerCase())}" title="${esc((d.desc || []).join(' '))}"><input type="checkbox" data-st="${k}" ${v ? 'checked' : ''}>${im ? `<img src="${esc(im)}" alt="">` : `<span class="sti0">${esc(String(d.ko || k).slice(0, 1))}</span>`}<span class="stn">${esc(d.ko)}</span>${d.prog === 'turn' || d.prog === 'move' ? `<input type="number" class="n xs" data-stc="${k}" value="${v && v < 1000 ? v : d.min < 1000 ? d.min : ''}" placeholder="T">` : ''}</label>`;
+             return `<label class="stt ${v ? 'on' : ''} ${d.abn ? 'abn' : ''}" data-stq="${esc((d.ko + ' ' + k + ' ' + (d.desc || []).join(' ')).toLowerCase())}" title="${esc((d.desc || []).join(' '))}"><input type="checkbox" data-st="${k}" ${v ? 'checked' : ''}>${im ? `<img src="${esc(im)}" alt="">` : `<span class="sti0">${esc(String(d.ko || k).slice(0, 1))}</span>`}<span class="stn">${esc(d.ko)}</span>${d.prog === 'turn' || d.prog === 'move' || cntSt(k, d) ? `<input type="number" class="n xs" data-stc="${k}" value="${v && v < 1000 ? v : d.min < 1000 ? d.min : cntSt(k, d) ? 1 : ''}" placeholder="${cntSt(k, d) ? '수' : 'T'}">` : ''}</label>`;
            })
            .join('')}</div>`
      )
@@ -14490,7 +14507,10 @@ window.OM_BATTLE_UI = (() => {
           (x.onclick = () => {
             const ci = md.querySelector(`[data-stc="${x.dataset.sd}"]`);
             if (!ci) return;
-            ci.value = Math.max(1, Math.min(999, (+ci.value || 0) + +x.dataset.d));
+            ci.value = Math.max(
+              1,
+              Math.min(x.dataset.sd === 'Stockpile' ? 3 : 999, (+ci.value || 0) + +x.dataset.d)
+            ); /* 11-27 비축 카운터는 3 까지 */
             updOn();
           })
       );
@@ -14591,6 +14611,7 @@ window.OM_BATTLE_UI = (() => {
         else delete nm.seedFrom;
       }
       if (nm.hp.cur <= 0) nm.entry = '';
+      const STK = stockFix(m, nm);
       A().closeModal();
       if (await saveMon(m, mid, nm)) {
         const SC = stLog(m, nm, fcMan('랭크·상태 창'));
@@ -14601,6 +14622,7 @@ window.OM_BATTLE_UI = (() => {
           if (a !== b2) ch.push(`${STAT_KO[k]} ${a}→${b2 > 0 ? '+' : ''}${b2}`);
         }
         ch.push(...RKAB);
+        if (STK) ch.push(STK);
         const sa = Object.keys(m.states || {}).filter(k => m.states[k]),
           sb = Object.keys(nm.states);
         const on = sb.filter(k => !sa.includes(k)).map(k => (sdb.st[k] || {}).ko || k),
@@ -25971,6 +25993,15 @@ ${(() => {
     const o = { sel: '', temp: false, pk: false, q: '' };
     const mon = () => (ctx().b.mons || {})[mid];
     const P = k => ['battle', 'mons', mid, k];
+    /* 11-27 상태 쓰기 — 비축 카운터(Stockpile)가 바뀌면 방어/특방도 같이 (stockFix) */
+    const stSave = async (m, ns) => {
+      const nm = JSON.parse(JSON.stringify(m));
+      nm.states = ns;
+      const t = stockFix(m, nm);
+      if (!t) return A().set(P('states'), ns);
+      await saveMon(m, mid, nm);
+      A().sysLog(`【비축】 ${m.name} ${t}`, 'battle', { mid, img: m.image || '' });
+    };
     const redraw = focusQ => {
       const m = mon();
       if (!m) return;
@@ -26170,7 +26201,7 @@ ${(() => {
               k = b.dataset.nsoff;
             const ns = Object.assign({}, m.states || {});
             delete ns[k];
-            await A().set(P('states'), ns);
+            await stSave(m, ns);
             if (!stLog(m, Object.assign({}, m, { states: ns })))
               A().sysLog(`【상태】 ${m.name}의 「${stName(k)}」이(가) 풀렸다`, 'battle', { mid, img: m.image || '' });
             redraw();
@@ -26207,7 +26238,7 @@ ${(() => {
             const v = Math.round(+inp.value);
             const c = v > 0 ? Math.min(v, 999) : 1000;
             if (+(m.states || {})[k] === c) return;
-            await A().set(P('states'), Object.assign({}, m.states || {}, { [k]: c }));
+            await stSave(m, Object.assign({}, m.states || {}, { [k]: c }));
             A().sysLog(`【상태】 ${m.name}의 「${stName(k)}」 남은 턴 → ${c < 1000 ? c + '턴' : '계속'}`, 'battle', { mid, img: m.image || '' });
             redraw();
           })
@@ -26231,7 +26262,7 @@ ${(() => {
                     ? +d.min + Math.floor(Math.random() * (+d.max - +d.min + 1))
                     : +d.min;
             const ns = Object.assign({}, m.states || {}, { [k]: c });
-            await A().set(P('states'), ns);
+            await stSave(m, ns);
             if (k === 'LeechSeed') await A().set(P('seedFrom'), seedSrc(ctx().b, m));
             const ds = stDesc(k);
             /* 11-01 망령 「상태 변화도 효과 로그」: 상태 카드가 되면 예전 줄은 남기지 않는다 */ if (

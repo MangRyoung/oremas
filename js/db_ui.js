@@ -436,6 +436,7 @@ window.OM_DB_UI = (() => {
     <label><b>진행</b><select id="se_prog">${[
       ['turn', '턴 감소'],
       ['move', '기술 사용 시 감소'],
+      ['count', '카운터 (턴으로 안 줄고 필드를 떠나면 사라짐)'],
       ['', '유지']
     ]
       .map(([v, n]) => `<option value="${v}" ${(cur.prog || '') === v ? 'selected' : ''}>${n}</option>`)

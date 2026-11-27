@@ -253,6 +253,15 @@
     const o = { sel: '', temp: false, pk: false, q: '' };
     const mon = () => (ctx().b.mons || {})[mid];
     const P = k => ['battle', 'mons', mid, k];
+    /* 11-27 상태 쓰기 — 비축 카운터(Stockpile)가 바뀌면 방어/특방도 같이 (stockFix) */
+    const stSave = async (m, ns) => {
+      const nm = JSON.parse(JSON.stringify(m));
+      nm.states = ns;
+      const t = stockFix(m, nm);
+      if (!t) return A().set(P('states'), ns);
+      await saveMon(m, mid, nm);
+      A().sysLog(`【비축】 ${m.name} ${t}`, 'battle', { mid, img: m.image || '' });
+    };
     const redraw = focusQ => {
       const m = mon();
       if (!m) return;
@@ -452,7 +461,7 @@
               k = b.dataset.nsoff;
             const ns = Object.assign({}, m.states || {});
             delete ns[k];
-            await A().set(P('states'), ns);
+            await stSave(m, ns);
             if (!stLog(m, Object.assign({}, m, { states: ns })))
               A().sysLog(`【상태】 ${m.name}의 「${stName(k)}」이(가) 풀렸다`, 'battle', { mid, img: m.image || '' });
             redraw();
@@ -489,7 +498,7 @@
             const v = Math.round(+inp.value);
             const c = v > 0 ? Math.min(v, 999) : 1000;
             if (+(m.states || {})[k] === c) return;
-            await A().set(P('states'), Object.assign({}, m.states || {}, { [k]: c }));
+            await stSave(m, Object.assign({}, m.states || {}, { [k]: c }));
             A().sysLog(`【상태】 ${m.name}의 「${stName(k)}」 남은 턴 → ${c < 1000 ? c + '턴' : '계속'}`, 'battle', { mid, img: m.image || '' });
             redraw();
           })
@@ -513,7 +522,7 @@
                     ? +d.min + Math.floor(Math.random() * (+d.max - +d.min + 1))
                     : +d.min;
             const ns = Object.assign({}, m.states || {}, { [k]: c });
-            await A().set(P('states'), ns);
+            await stSave(m, ns);
             if (k === 'LeechSeed') await A().set(P('seedFrom'), seedSrc(ctx().b, m));
             const ds = stDesc(k);
             /* 11-01 망령 「상태 변화도 효과 로그」: 상태 카드가 되면 예전 줄은 남기지 않는다 */ if (
