@@ -554,7 +554,7 @@ async function attack(H, W, mid, idx, targets, o) {
     const eff = dmg ? B.effectiveness(moveTypes, def, { multiMode: 0, atkTypes, force: null, floating }) : effPre || null;
     const stab = eff ? eff.stab : false;
     const DFl = def.flags || {};
-    const guard0 = (DFl.endure ? 0.5 : 1) * (mods.guard || 1);
+    const guard0 = (DFl.endure && !DFl.endureUsed ? 0.5 : 1) * (mods.guard || 1); /* 11-27 버텨라! 반감은 다음 공격 1회 (웹툴 endHalf) */
     const endure0 = ((!!DFl.endure && !DFl.endureUsed) || !!mods.endure) && !AF.noEndure;
     res.push({
       slot,

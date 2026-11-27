@@ -638,6 +638,8 @@ window.OM_BATTLE_UI = (() => {
   /* 11-27 망령 「비축하기가 스톡이 안 된다 — 턴이 아니라 카운터로, 필드를 떠나기 전까지 그대로 · 추가 · 감소 · 초기화」:
     비축 카운터 = 상태 「Stockpile」의 수(1~3). 손으로 고친 값(랭크·상태 창 · 상세 창)을 1~3 으로 맞춘다.
     19:20 망령 「방/특방 +1은 기술로 낼 때만 — 카운터 자체로는 안 오른다」: 늘려도 랭크는 그대로, 줄이면 기술로 올린 몫(stockUp) 안에서만 내린다 (fx stockRank) */
+  /* 11-27 20:09 망령 「버텨라!는 턴 종료 시까지 반감이 아니라 다음 공격 1회만 반감」: ② 반감은 ③(빈사 안 됨)과 같이 첫 공격에 쓰이면 끝 (flags.endureUsed) — ① 회피율 0 은 턴 종료까지 그대로 */
+  const endHalf = m => !!(m && m.flags && m.flags.endure && !m.flags.endureUsed);
   const cntSt = (k, d) => !!(FX() && FX().isCountSt && FX().isCountSt(k, d)); /* 턴으로 줄지 않는 카운터 상태 */
   function stockFix(m0, nm) {
     if (!FX() || !FX().stockOf) return '';
@@ -11502,7 +11504,7 @@ window.OM_BATTLE_UI = (() => {
         ? OI().resist(m, { mt: r.typeEn ? [r.typeEn] : [], cat: cat === 'physical' ? '물리' : '특수', eff: eff.value, multi: false })
         : '';
     /* 11-10 망령 「벌레침략 공격에 버텨라 반감 적용된다고 했는데 자동화엔 안 된다」: 받는 쪽이 『버텨라!』(flags.endure — 턴 종료 처리에서 플래그가 지워지기 전에 m._fe 로 옮겨 둔다)면 ×0.5 */
-    const endu = !!((m.flags || {}).endure || m._fe);
+    const endu = endHalf(m) || !!m._fe;
     delete m._fe;
     const hd = B().hpDamage(m, amt, eff.value, { stab: eff.stab, berryHalf: !!berry, guard: endu ? 0.5 : 1 });
     m.hp.cur = Math.max(0, m.hp.cur - hd.final);
@@ -11691,7 +11693,7 @@ window.OM_BATTLE_UI = (() => {
       }
       if (m.fx && m.fx.mults && m.fx.mults.some(e => e.temp)) m.fx.mults = m.fx.mults.filter(e => !e.temp);
       if (m.flags) {
-        if (m.flags.endure && m.futRsv) m._fe = 1;
+        if (endHalf(m) && m.futRsv) m._fe = 1;
         delete m.flags;
       }
       m.started = false;
@@ -19860,7 +19862,7 @@ window.OM_BATTLE_UI = (() => {
     /* 11-07 23:5x 망령 「두꺼운지방 같은 완화가 로그에 안 뜬다」 → 「자속은 숨기는 게 맞고, 공격 쪽도 소지품이나 특성 같은 건 발동하는 건 공개」: 11-04 결정(공개 배율만)을 바꿈.
         공격 쪽 특성 · 포텐셜 · 소지품 · 충전 · 생명의구슬 · 달인의띠는 pub(모두 보는 로그), 받는 쪽 완화(grd)도 HP 적용 로그에 이름까지. atk 에는 자속 · 자유 칸만 남는다 */
     for (const x of (r.mods && r.mods.names) || []) (x.who === def.id ? gd : pub).push(x.txt);
-    if ((def.flags || {}).endure && r.dmg)
+    if ((r.endHalf ?? endHalf(def)) && r.dmg)
       gd.unshift(
         '『버텨라!』 ×0.5'
       ); /* 11-08 20:56 망령 「대미지 로그에 버텨라 0.5배 같은 건 왜 안 떠?」: guard0 에 곱해져 있었지만 이름이 없었다 */ /* 받는 쪽 완화(블로커 등)는 기본 대미지가 아니라 HP 창의 「위력 완화」로 곱한다 */
@@ -22678,7 +22680,7 @@ window.OM_BATTLE_UI = (() => {
             stab: eff.stab,
             adaptability: g('aadapt').checked,
             expertBelt: g('abelt').checked,
-            guard: (mods.guard || 1) * ((def.flags || {}).endure ? 0.5 : 1)
+            guard: (mods.guard || 1) * (endHalf(def) ? 0.5 : 1)
           };
           const lo = Math.max(eff.value > 0 ? 1 : 0, B().hpDamage(def, d.min, eff.value, o).raw),
             hi = Math.max(lo, B().hpDamage(def, d.max, eff.value, o).raw);
@@ -23874,8 +23876,8 @@ window.OM_BATTLE_UI = (() => {
             txt: `${def.name} 「${wallNames(objs, catEn(mv.cat), tyOf(mv)).join('·') || '벽'}」 피해 ×${dmg.wall}${mode(b) >= 2 ? ' (더블)' : ''} · 급소면 무시`
           });
         }
-        const guard0 = (DF.endure ? 0.5 : 1) * (mods.guard || 1),
-          guardC0 = (DF.endure ? 0.5 : 1) * Math.max(1, mods.guard || 1);
+        const guard0 = (endHalf(def) ? 0.5 : 1) * (mods.guard || 1),
+          guardC0 = (endHalf(def) ? 0.5 : 1) * Math.max(1, mods.guard || 1);
         const endure0 = ((!!DF.endure && !DF.endureUsed) || !!mods.endure) && !AF.noEndure;
         /* 11-17 시노비 「강철의도끼 반동이 보코열매 적용 전 대미지 기준」: 반감열매 칸은 처음부터 켜져 보이는데 첫 계산(이 줄)에는 안 들어가 예상 대미지 · 반동 · 드레인이 열매 전 값이었다 — 처음부터 같이 건다 */ const berry0 =
           !!(dmg && OI() && OI().resist(def, { mt: moveTypes, cat: mv.cat, eff: eff.value, multi: multiTarget }));
@@ -23889,6 +23891,7 @@ window.OM_BATTLE_UI = (() => {
               guardCrit: guardC0,
               crit: hits.map(h => h.v === 2),
               berryHalf: berry0,
+              endHalf: endHalf(def),
               endure: endure0,
               hpFloor: raidFloor(def)
             })
@@ -23931,6 +23934,7 @@ window.OM_BATTLE_UI = (() => {
           hp,
           guard: guard0,
           guardCrit: guardC0,
+          endHalf: endHalf(def),
           endure: endure0,
           berryU: berry0,
           manual: 1,

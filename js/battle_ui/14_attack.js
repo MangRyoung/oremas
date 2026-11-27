@@ -1898,7 +1898,7 @@
             stab: eff.stab,
             adaptability: g('aadapt').checked,
             expertBelt: g('abelt').checked,
-            guard: (mods.guard || 1) * ((def.flags || {}).endure ? 0.5 : 1)
+            guard: (mods.guard || 1) * (endHalf(def) ? 0.5 : 1)
           };
           const lo = Math.max(eff.value > 0 ? 1 : 0, B().hpDamage(def, d.min, eff.value, o).raw),
             hi = Math.max(lo, B().hpDamage(def, d.max, eff.value, o).raw);
@@ -3094,8 +3094,8 @@
             txt: `${def.name} 「${wallNames(objs, catEn(mv.cat), tyOf(mv)).join('·') || '벽'}」 피해 ×${dmg.wall}${mode(b) >= 2 ? ' (더블)' : ''} · 급소면 무시`
           });
         }
-        const guard0 = (DF.endure ? 0.5 : 1) * (mods.guard || 1),
-          guardC0 = (DF.endure ? 0.5 : 1) * Math.max(1, mods.guard || 1);
+        const guard0 = (endHalf(def) ? 0.5 : 1) * (mods.guard || 1),
+          guardC0 = (endHalf(def) ? 0.5 : 1) * Math.max(1, mods.guard || 1);
         const endure0 = ((!!DF.endure && !DF.endureUsed) || !!mods.endure) && !AF.noEndure;
         /* 11-17 시노비 「강철의도끼 반동이 보코열매 적용 전 대미지 기준」: 반감열매 칸은 처음부터 켜져 보이는데 첫 계산(이 줄)에는 안 들어가 예상 대미지 · 반동 · 드레인이 열매 전 값이었다 — 처음부터 같이 건다 */ const berry0 =
           !!(dmg && OI() && OI().resist(def, { mt: moveTypes, cat: mv.cat, eff: eff.value, multi: multiTarget }));
@@ -3109,6 +3109,7 @@
               guardCrit: guardC0,
               crit: hits.map(h => h.v === 2),
               berryHalf: berry0,
+              endHalf: endHalf(def),
               endure: endure0,
               hpFloor: raidFloor(def)
             })
@@ -3151,6 +3152,7 @@
           hp,
           guard: guard0,
           guardCrit: guardC0,
+          endHalf: endHalf(def),
           endure: endure0,
           berryU: berry0,
           manual: 1,

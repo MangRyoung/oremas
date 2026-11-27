@@ -2636,7 +2636,7 @@
         ? OI().resist(m, { mt: r.typeEn ? [r.typeEn] : [], cat: cat === 'physical' ? '물리' : '특수', eff: eff.value, multi: false })
         : '';
     /* 11-10 망령 「벌레침략 공격에 버텨라 반감 적용된다고 했는데 자동화엔 안 된다」: 받는 쪽이 『버텨라!』(flags.endure — 턴 종료 처리에서 플래그가 지워지기 전에 m._fe 로 옮겨 둔다)면 ×0.5 */
-    const endu = !!((m.flags || {}).endure || m._fe);
+    const endu = endHalf(m) || !!m._fe;
     delete m._fe;
     const hd = B().hpDamage(m, amt, eff.value, { stab: eff.stab, berryHalf: !!berry, guard: endu ? 0.5 : 1 });
     m.hp.cur = Math.max(0, m.hp.cur - hd.final);
@@ -2825,7 +2825,7 @@
       }
       if (m.fx && m.fx.mults && m.fx.mults.some(e => e.temp)) m.fx.mults = m.fx.mults.filter(e => !e.temp);
       if (m.flags) {
-        if (m.flags.endure && m.futRsv) m._fe = 1;
+        if (endHalf(m) && m.futRsv) m._fe = 1;
         delete m.flags;
       }
       m.started = false;

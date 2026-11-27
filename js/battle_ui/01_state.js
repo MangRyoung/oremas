@@ -154,6 +154,8 @@
   /* 11-27 망령 「비축하기가 스톡이 안 된다 — 턴이 아니라 카운터로, 필드를 떠나기 전까지 그대로 · 추가 · 감소 · 초기화」:
     비축 카운터 = 상태 「Stockpile」의 수(1~3). 손으로 고친 값(랭크·상태 창 · 상세 창)을 1~3 으로 맞춘다.
     19:20 망령 「방/특방 +1은 기술로 낼 때만 — 카운터 자체로는 안 오른다」: 늘려도 랭크는 그대로, 줄이면 기술로 올린 몫(stockUp) 안에서만 내린다 (fx stockRank) */
+  /* 11-27 20:09 망령 「버텨라!는 턴 종료 시까지 반감이 아니라 다음 공격 1회만 반감」: ② 반감은 ③(빈사 안 됨)과 같이 첫 공격에 쓰이면 끝 (flags.endureUsed) — ① 회피율 0 은 턴 종료까지 그대로 */
+  const endHalf = m => !!(m && m.flags && m.flags.endure && !m.flags.endureUsed);
   const cntSt = (k, d) => !!(FX() && FX().isCountSt && FX().isCountSt(k, d)); /* 턴으로 줄지 않는 카운터 상태 */
   function stockFix(m0, nm) {
     if (!FX() || !FX().stockOf) return '';
