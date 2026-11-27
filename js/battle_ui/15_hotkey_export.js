@@ -173,7 +173,7 @@
       .map(k => {
         const d = sdb[k] || { ko: k };
         const im = simg(k);
-        return `<span class="dxs1 ${d.abn ? 'abn' : ''}" title="${esc((d.desc || []).join(' '))}">${im ? `<img src="${esc(im)}" alt="">` : ''}<b>${esc(d.ko || k)}</b>${full ? `<input type="number" class="dxsn" data-nst="${esc(k)}" min="1" max="99" value="${+st[k] < 1000 ? +st[k] : ''}" placeholder="∞" title="남은 턴 (비우면 계속)"><i>턴</i>` : +st[k] > 1 && +st[k] < 1000 ? `<i>${st[k]}턴</i>` : ''}${full ? `<button type="button" class="dxsx" data-nsoff="${esc(k)}" title="「${esc(d.ko || k)}」 풀기">✕</button>` : ''}</span>`;
+        return `<span class="dxs1 ${d.abn ? 'abn' : ''}" title="${esc((d.desc || []).join(' '))}">${im ? `<img src="${esc(im)}" alt="">` : ''}<b>${esc(d.ko || k)}</b>${full ? `<input type="number" class="dxsn" data-nst="${esc(k)}" min="1" max="99" value="${+st[k] < 1000 ? +st[k] : ''}" placeholder="∞" title="${k === 'Stockpile' ? '비축 카운터 (1~3)' : '남은 턴 (비우면 계속)'}"><i>${k === 'Stockpile' ? '개' : '턴'}</i>` : +st[k] > 1 && +st[k] < 1000 ? `<i>${st[k]}턴</i>` : ''}${full ? `<button type="button" class="dxsx" data-nsoff="${esc(k)}" title="「${esc(d.ko || k)}」 풀기">✕</button>` : ''}</span>`;
       })
       .join('');
     const fx =

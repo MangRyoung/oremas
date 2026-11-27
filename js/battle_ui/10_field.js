@@ -565,10 +565,11 @@
       col: add.length ? add[0].col : '#6f8fa8'
     };
     if (who) sc.by = who;
-    const dur = c => (!c || c >= 1000 ? '계속' : c + '턴');
+    const dur = (c, k) =>
+      k === 'Stockpile' ? '카운터 ' + (+c >= 1000 ? 1 : +c) : !c || c >= 1000 ? '계속' : c + '턴'; /* 11-27 비축 카운터는 턴이 아니라 수 */
     const t = [
       `【${tag}】 ${m1.name}${at ? ' (' + at + ')' : ''}`,
-      ...add.map(x => `「${x.ko}」 ${x.g || ''}${x.g ? ' · ' : ''}${dur(x.c)}`),
+      ...add.map(x => `「${x.ko}」 ${x.g || ''}${x.g ? ' · ' : ''}${dur(x.c, x.k)}`),
       ...(off.length ? [`${off.map(x => '「' + x.ko + '」').join(' ')} 풀림`] : []),
       ...(who ? [`원인: ${who.n}${who.s ? ' 『' + who.s + '』' : ''}`] : [])
     ].join('\n');
@@ -616,11 +617,11 @@
       : '';
     if (!add.length)
       return `<div class="bcard scard end" style="--tc:${col};--tf:${tf}"><div class="fch">${head}<span class="sp"></span>${offL}</div></div>`;
-    const dur = c => (!+c || +c >= 1000 ? '계속' : +c + '턴');
+    const dur = (c, k) => (k === 'Stockpile' ? '카운터 ' + (+c >= 1000 ? 1 : +c) : !+c || +c >= 1000 ? '계속' : +c + '턴');
     const rows = add
       .map(
         a =>
-          `<div class="scr" style="--sc:${hex(a.col)}">${ic(a.k)}<div class="scm"><div class="sct"><b>「${esc(a.ko)}」</b>${a.g && a.g !== '상태 이상' ? `<span class="scg">${esc(a.g)}</span>` : ''}<span class="sp"></span><span class="fcd">${esc(dur(a.c))}</span></div>${(Array.isArray(a.L) ? a.L : []).map(l => `<div class="scd">${esc(l)}</div>`).join('')}</div></div>`
+          `<div class="scr" style="--sc:${hex(a.col)}">${ic(a.k)}<div class="scm"><div class="sct"><b>「${esc(a.ko)}」</b>${a.g && a.g !== '상태 이상' ? `<span class="scg">${esc(a.g)}</span>` : ''}<span class="sp"></span><span class="fcd">${esc(dur(a.c, a.k))}</span></div>${(Array.isArray(a.L) ? a.L : []).map(l => `<div class="scd">${esc(l)}</div>`).join('')}</div></div>`
       )
       .join('');
     const by =
