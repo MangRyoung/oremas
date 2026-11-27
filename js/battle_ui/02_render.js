@@ -116,7 +116,7 @@
       .join('')}</div>`
        : ''
    }
-   ${c.gm && window.OM_RP_UI && window.OM_RP_UI.bspkHtml ? `<details class="bspkfold" data-bspkfold ${BSPKF.open ? 'open' : ''}><summary title="배틀 탭에서는 화자 칩 줄을 접어 둔다 — 열고 닫은 건 이 브라우저에 기억">화자 · 스탠딩 ${BSPKF.open ? '▾' : '▸'}</summary>${window.OM_RP_UI.bspkHtml()}</details>` : ''}
+   ${c.gm && window.OM_RP_UI && window.OM_RP_UI.bspkHtml ? `<div class="bspkfold">${window.OM_RP_UI.bspkHtml()}</div>` : ''}
   </div>
   ${revealStrip(c, ready)}${endPanel(c)}
   <div class="stadium">
@@ -134,34 +134,6 @@
       if (nf) nf._h = cmdH;
     }
     stickyWatch(el);
-    {
-      const d = el.querySelector('[data-bspkfold]');
-      if (d)
-        d.addEventListener('toggle', () => {
-          BSPKF.open = d.open;
-          try {
-            localStorage.setItem('om_bspkfold', d.open ? '1' : '0');
-          } catch (e) {}
-          const sm = d.querySelector('summary');
-          if (sm) sm.textContent = '화자 · 스탠딩 ' + (d.open ? '▾' : '▸');
-        });
-    }
-    el.querySelectorAll('[data-phase]').forEach(bt => (bt.onclick = () => setPhase(+bt.dataset.phase)));
-    el.querySelectorAll('[data-tstepb]').forEach(
-      bt =>
-        (bt.onclick = () => {
-          const b2 = ctx().b;
-          if ((+b2.phase || 0) !== 1) return A().toast('턴 개시 뒤에 — 「턴 진행 ▶」으로 들어간다');
-          if ((+b2.tstep || 0) >= +bt.dataset.tstepb) return;
-          return stepTurn();
-        })
-    );
-    autoAdvance();
-    try {
-      if (window.OM_RP_UI && window.OM_RP_UI.bspkBind) window.OM_RP_UI.bspkBind(el);
-    } catch (e) {
-      console.warn(e);
-    }
     if (window.OM_RP_UI && window.OM_RP_UI.bindBgmWidget) window.OM_RP_UI.bindBgmWidget(el);
     {
       const fb = el.querySelector('[data-bfold]');

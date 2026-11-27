@@ -35,16 +35,6 @@ window.OM_BATTLE_UI = (() => {
       }
     })()
   };
-  /* 11-03 감우 (검토 15-②): 배틀 탭의 화자 칩 줄(rp_ui bspkHtml)은 기본 접힘 — 토글은 브라우저마다 기억 */
-  const BSPKF = {
-    open: (() => {
-      try {
-        return localStorage.getItem('om_bspkfold') === '1';
-      } catch (e) {
-        return false;
-      }
-    })()
-  };
   /* 11-03 감우 (검토 15-①): 조작판(.bstat)이 스크롤로 화면 밖에 나가면 얇은 sticky 바(#bsticky)를 보인다 */
   let STKIO = null,
     STKON = false;

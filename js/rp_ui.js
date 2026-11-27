@@ -8628,6 +8628,7 @@ window.OM_RP_UI = (() => {
   function battleSpkKeys(have) {
     const b = A().ST.state.battle || {};
     const out = [];
+    const bench = [];
     const field = new Set();
     for (const side of ['left', 'right'])
       for (const tid of ((b.sides || {})[side] || {}).trainers || []) {
@@ -8635,17 +8636,19 @@ window.OM_RP_UI = (() => {
         if (!t) continue;
         const tk = have.has('as:' + t.name) ? 'as:' + t.name : have.has('npc:' + t.name) ? 'npc:' + t.name : '';
         if (tk) out.push(tk);
-        const ms = Object.values(b.mons || {})
-          .filter(m => m.tid === tid)
-          .sort((x, y) => (y.entry && y.hp && y.hp.cur > 0 ? 1 : 0) - (x.entry && x.hp && x.hp.cur > 0 ? 1 : 0));
-        for (const m of ms) {
+        for (const m of Object.values(b.mons || {}).filter(x => x.tid === tid)) {
           const k = 'pm:' + (m.rid || m.id);
           if (!have.has(k)) continue;
-          out.push(k);
-          if (m.entry && m.hp && m.hp.cur > 0) field.add(k);
+          if (m.entry && m.hp && m.hp.cur > 0) {
+            out.push(k);
+            field.add(k);
+          } else bench.push(k);
         }
       }
-    return { keys: [...new Set(out)], field };
+    /* 11-27 망령 「트레이너랑 필드에 있는 애들이 우선적으로」: front = 트레이너 + 필드 위 포켓몬 · bench = 나머지 (keys 는 둘을 이은 것) */
+    const front = [...new Set(out)];
+    const rest = [...new Set(bench)].filter(k => !front.includes(k));
+    return { keys: [...front, ...rest], field, front, bench: rest };
   }
   function pickSections() {
     const ST = A().ST;
@@ -8824,15 +8827,15 @@ window.OM_RP_UI = (() => {
     const have = new Set(all.map(x => x.key));
     const C = spkConf();
     const bs = battleSpkKeys(have);
-    const pins = bspkPins().filter(k => have.has(k));
+    const pins = bspkPins().filter(k => have.has(k) && !bs.keys.includes(k)); /* 배틀에 나온 사람은 앞 칸에 이미 있다 */
     const cur = ST.chatAs || 'gm';
     const chip = (k, pin) => {
       const i = spkInfo(k);
       return `<button type="button" class="spk ${k === cur ? 'on' : ''}${pin ? ' pin' : ''}" data-bspk-k="${esc(k)}" title="${esc(i.name)}${i.sub ? ' — ' + esc(i.sub) : ''}${pin ? ' · × 로 이 줄에서 빼기' : ''}">${pin ? `<u class="bspk-x" data-bspk-x="${esc(k)}" title="이 줄에서 빼기">×</u>` : ''}<i style="${i.av ? `background-image:url('${cssu(i.av)}')` : ''}">${i.av ? '' : esc(k === 'gm' ? 'GM' : [...i.name].slice(0, 2).join(''))}</i><span>${esc(k === 'gm' ? 'GM (나레이션)' : i.name)}</span>${bs.field.has(k) ? '<em class="bspk-fd">필드</em>' : ''}</button>`;
     };
     const sep = t => `<span class="bspk-sep">${t}</span>`;
-    return `<div class="bspk ${BSP.open ? '' : 'shut'}"><div class="bspk-h"><button type="button" class="btn sm ghost" data-bspk="fold" title="화자 줄 접기 · 펴기">🎭 화자 ${BSP.open ? '▴' : '▾'}</button>${BSP.open ? `<span class="bspk-opt"><label title="배틀 말풍선의 스탠딩 크기 — 이 브라우저에만">스탠딩 크기 <input type="range" min="60" max="200" step="10" value="${BSP.sc}" data-bspk="sc"><b data-bspk-v>${BSP.sc}%</b></label><button type="button" class="btn xs ghost" data-bspk="test" title="지금 화자로 말풍선 미리보기 (나만 보인다)">미리보기</button></span>` : `<span class="small dim bspk-now">지금 화자: <b>${esc(spkInfo(cur).name)}</b></span>`}</div>
-   ${BSP.open ? `<div class="spkbar bspk-row">${chip('gm')}${bs.keys.length ? sep('⚔ 배틀') + bs.keys.map(k => chip(k)).join('') : ''}${sep('📌 고정')}${pins.map(k => chip(k, true)).join('')}<button type="button" class="spk add" data-bspk="pin" title="이 줄에 늘 둘 인물 고르기 (방 전체 · GM)"><i>＋</i><span>인물 추가</span></button><button type="button" class="spk add" data-bspk="more" title="모든 화자에서 찾아 이번만 말하기"><i>⋯</i><span>더 찾기</span></button></div>` : ''}</div>`;
+    return `<div class="bspk ${BSP.open ? '' : 'shut'}"><div class="bspk-h"><button type="button" class="btn sm ghost" data-bspk="fold" title="화자 줄 접기 · 펴기 (스탠딩 크기 · 미리보기도 여기)">🎭 화자 · 스탠딩 ${BSP.open ? '▴' : '▾'}</button>${BSP.open ? `<span class="bspk-opt"><label title="배틀 말풍선의 스탠딩 크기 — 이 브라우저에만">스탠딩 크기 <input type="range" min="60" max="200" step="10" value="${BSP.sc}" data-bspk="sc"><b data-bspk-v>${BSP.sc}%</b></label><button type="button" class="btn xs ghost" data-bspk="test" title="지금 화자로 말풍선 미리보기 (나만 보인다)">미리보기</button></span>` : `<span class="small dim bspk-now">지금 화자: <b>${esc(spkInfo(cur).name)}</b></span>`}</div>
+   ${BSP.open ? `<div class="spkbar bspk-row">${chip('gm')}<button type="button" class="spk add" data-bspk="pin" title="배틀에 안 나온 인물을 이 줄에 늘 두기 (방 전체 · GM)"><i>＋</i><span>인물 추가</span></button><button type="button" class="spk add" data-bspk="more" title="모든 화자에서 찾아 이번만 말하기"><i>⋯</i><span>더 찾기</span></button>${bs.front.length ? sep('⚔ 필드') + bs.front.map(k => chip(k)).join('') : ''}${pins.length ? sep('📌 고정') + pins.map(k => chip(k, true)).join('') : ''}${bs.bench.length ? sep('벤치') + bs.bench.map(k => chip(k)).join('') : ''}</div>` : ''}</div>`;
   }
   function bspkSet(k, el) {
     const ST = A().ST;
