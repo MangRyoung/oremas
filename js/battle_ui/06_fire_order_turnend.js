@@ -307,7 +307,7 @@
        const n = x.p.name;
        const done = !!fp[(sk === 'uq' ? 'u:' : 'e:') + n];
        const can = x.left === null || x.left > 0;
-       return `<div class="firerow ${done ? 'done' : ''}" data-sk="${sk}" data-sn="${esc(n)}"><b class="fnm"><span class="tag ${sk === 'uq' ? 'uqt' : 'ext'}"${(() => {
+       return `<div class="firerow ${x.max == null ? '' : can ? 'has' : 'zero'} ${done ? 'done' : ''}" data-sk="${sk}" data-sn="${esc(n)}"><b class="fnm"><span class="tag ${sk === 'uq' ? 'uqt' : 'ext'}"${(() => {
          const cc = sk === 'uq' ? hexOk(x.p.color) : exColOf(m, n);
          return cc ? ` style="background:${cc};color:${fgOn(cc)};border-color:${cc}"` : '';
        })()}>${sk === 'uq' ? '고유' : '전용'}</span> 『${esc(n)}』</b><span class="fcnt">${x.max != null ? pipsL(x) : '횟수 없음'}</span><span class="sp"></span>
