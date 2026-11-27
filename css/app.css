@@ -5087,7 +5087,7 @@ html[data-vt="mm"] .memon .medet{border-color:rgba(20,16,12,.4)}
 .bstat .bspkfold>summary{cursor:pointer;list-style:none;font-family:var(--lab);font-size:12px;color:var(--mute);padding:2px 0;user-select:none}
 .bstat .bspkfold>summary::-webkit-details-marker{display:none}
 .bstat .bspkfold[open]>summary{color:#fff;margin-bottom:4px}
-.bstat.fold .bspkfold{display:none}
+@media (max-width:760px){.bstat.fold .bspkfold{display:none}}   /* 11-27 망령 「배틀일 때 화자 고르는 줄이 없어졌다」: 접힌 판은 휴대폰 것인데 이 줄이 넓은 화면에서도 화자 줄을 숨겼다 — 휴대폰에서만 (펼치면 보인다) */
 /* 15-③ (11-03 13:18 망령 「원래 느낌 괜찮았는데 왜 줄였냐」) 벤치를 150~185px 로 좁히던 규칙은 뺐다 — 원래대로 벤치 양옆 250px(컨테이너 ≤1180 은 210px, ≤960 만 한 줄). 위에 붙는 진행 바(15-①)만 둔다 */
 /* 16. 공격 창 — 휴대폰 sticky 요약 줄 */
 .asum1{display:none}
