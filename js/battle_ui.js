@@ -2239,7 +2239,12 @@ window.OM_BATTLE_UI = (() => {
           .sort((x, y) => (x.slot || 0) - (y.slot || 0));
         const cmdDone = !!(b.cmds || {})[tid];
         const rd = !!ready[tid];
-        return `<div class="tblock"><div class="trainer"><div class="tpic" style="${t.image ? `background-image:url('${cssu(t.image)}')` : ''}"></div><div class="tinfo"><div class="tn">${esc(t.name)}${tid === c.seat ? ' <span class="tag me">ME</span>' : ownT(c, tid) ? ' <span class="tag me co" title="함께 지시하는 트레이너">함께</span>' : ''}${rd ? ' <span class="tag ok">READY</span>' : cmdDone ? ' <span class="tag">공개됨</span>' : ''}${soloTag(c, tid, ids)}${(() => {
+        /* 11-27 망령 「여기도 누르면 요약 나오게」: 트레이너 칸(그림 · 이름 · 자질)을 누르면 요약 창 — 볼 수 있는 사람만 (안의 필드 · SP 단추는 제 일을 한다) */
+        const sx =
+          stxOk(c, tid) && window.OM_STATUS_UI
+            ? ` data-act="stx" data-tid="${tid}" title="누르면 요약 — 자질 · 고유 · 포켓몬 · 소지품" style="cursor:pointer"`
+            : '';
+        return `<div class="tblock"><div class="trainer"${sx}><div class="tpic" style="${t.image ? `background-image:url('${cssu(t.image)}')` : ''}"></div><div class="tinfo"><div class="tn">${esc(t.name)}${tid === c.seat ? ' <span class="tag me">ME</span>' : ownT(c, tid) ? ' <span class="tag me co" title="함께 지시하는 트레이너">함께</span>' : ''}${rd ? ' <span class="tag ok">READY</span>' : cmdDone ? ' <span class="tag">공개됨</span>' : ''}${soloTag(c, tid, ids)}${(() => {
           /* 10-26 망령: 필드 전개 · SP 는 자주 안 쓰니 이름 줄 빈 곳으로 작게 올리고, 그 자리(아래 줄)엔 카드 */ const own =
             c.gm || tid === c.seat || ownT(c, tid);
           if (!own) return '';
@@ -26354,6 +26359,7 @@ ${(() => {
     },
     askYes,
     canSeeStx: tid => stxOk(ctx(), tid),
+    uniqOf: tid => uniqList((ctx().b.trainers || {})[tid]) /* 요약 창: 고유 + 남은 횟수 */,
     canForceTid: tid => {
       const c = ctx();
       return !!tid && (ownT(c, tid) || (c.gm && !fairOff(c, tid)));

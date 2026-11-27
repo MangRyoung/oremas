@@ -155,7 +155,16 @@ window.OM_STATUS_UI = (() => {
           return `<div class="stx-sock${SK.over ? ' over' : ''}"><div class="stx-sockh"><span>소지품 소켓</span><b>${SK.cap != null ? `${SK.used} / ${SK.cap}` : SK.used}</b>${left != null ? `<span class="${left < 0 ? 'stx-bad' : 'dim'}">${left < 0 ? `${-left} 넘음` : `${left} 남음`}</span>` : ''}<span class="sp"></span><small class="dim">${byOv ? `상한 = 제작기 포인트 「소지품 소켓」 ${esc(ov)}` : SK.cap != null ? `지시 ${esc(rk)}${t.solo == 3 ? ' · 1인 기준 (3체)' : t.solo ? ' · 1인 기준 (2체)' : ''}` : '지시 랭크로 상한을 못 정함'}${SK.adj ? ` · 조정 ${SK.adj > 0 ? '+' : ''}${SK.adj}${SK.note ? ' (' + esc(SK.note) + ')' : ''}` : ''}</small></div><div class="stx-bar"><i style="width:${pct}%"></i></div></div>`;
         })()
       : '';
-    return `<div class="stx-top">${sockH}<div class="stx-tiles"><div class="stx-tile"><b>${mons.length}</b><span>포켓몬</span></div><div class="stx-tile"><b>${alive} / ${mons.length}</b><span>싸울 수 있음</span></div><div class="stx-tile"><b>${tot}${unk ? '+?' : ''}</b><span>기술 소켓 합</span></div></div></div>
+    /* 11-27 망령 「요약에 트레이너 자질이랑 고유도」 */
+    const rkH = `<div class="rk4 stx-rk">${['지시', '육성', '통솔', '능력'].map(k => `<span><small>${k}</small><b>${esc((t.ranks || {})[k] || '-')}</b></span>`).join('')}</div>`;
+    const UL = (window.OM_BATTLE_UI && window.OM_BATTLE_UI.uniqOf ? window.OM_BATTLE_UI.uniqOf(TID) : []) || [];
+    const uqH = UL.length
+      ? `<div class="stx-uq">${UL.map(
+          x =>
+            `<div class="stx-uq1"><div class="stx-uqh"><b>『${esc(nmI(x.p.name))}』</b>${x.max ? `<small class="${x.left <= 0 ? 'stx-bad' : 'dim'}">남은 ${x.left} / ${x.max}</small>` : ''}</div><div class="stx-uqe">${esc(String(x.p.eff || '').replace(/<br\s*\/?>/g, '\n'))}</div></div>`
+        ).join('')}</div>`
+      : '';
+    return `<div class="stx-tr">${rkH}${uqH}</div><div class="stx-top">${sockH}<div class="stx-tiles"><div class="stx-tile"><b>${mons.length}</b><span>포켓몬</span></div><div class="stx-tile"><b>${alive} / ${mons.length}</b><span>싸울 수 있음</span></div><div class="stx-tile"><b>${tot}${unk ? '+?' : ''}</b><span>기술 소켓 합</span></div></div></div>
    ${dup.length ? `<div class="stx-warn">⚠ 같은 소지품이 겹친다 (한 파티에 하나만): ${dup.map(([it, ns]) => `「${esc(it)}」 ${ns.map(esc).join(' · ')}`).join(' / ')}</div>` : ''}
    <div class="stx-grid">${cards || '<div class="dim">포켓몬 없음</div>'}</div>
    <div class="small dim" style="margin-top:8px">HP · 상태 · 소지품은 지금 배틀 값. 소지품을 바꾸면 지금 배틀의 이 포켓몬만 바뀐다 (시트는 그대로, 상세 창 소지품 바꾸기와 같다). 기술 소켓은 기술 DB 소켓(할인 −0.5) 합이라 제작기 PT 기술점(『올드 타입』 고정값 등)과 다를 수 있다.</div>`;

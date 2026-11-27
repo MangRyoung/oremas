@@ -4627,6 +4627,15 @@ html[data-vt="p5"] .phone .ptitle{padding-bottom:12px!important}
 
 /* ---------- 요약 창 (10-27 망령): 소지품 소켓 · 포켓몬 카드 · 소지품 착용 ---------- */
 .stx{display:flex;flex-direction:column;gap:10px}
+/* 11-27 요약 창: 트레이너 자질 · 고유 */
+.stx-tr{display:flex;flex-direction:column;gap:8px}
+.stx-rk{max-width:320px;margin:0}
+.stx-rk small{font-size:11px}.stx-rk b{font-size:15px}
+.stx-uq{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px}
+.stx-uq1{border:1px solid var(--line2);background:#15161a;padding:6px 8px}
+.stx-uqh{display:flex;gap:8px;align-items:baseline;justify-content:space-between;margin-bottom:2px}
+.stx-uqh b{color:var(--yel2)}
+.stx-uqe{font-size:12.5px;line-height:1.5;white-space:pre-wrap;color:var(--fg2)}
 .stx-top{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:8px;align-items:stretch}
 .stx-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
 .stx-tile{background:var(--bg2);border:1px solid var(--line);padding:8px 10px;display:flex;flex-direction:column;gap:2px;min-width:0;justify-content:center}

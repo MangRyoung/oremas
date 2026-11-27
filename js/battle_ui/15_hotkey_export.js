@@ -568,6 +568,7 @@
     },
     askYes,
     canSeeStx: tid => stxOk(ctx(), tid),
+    uniqOf: tid => uniqList((ctx().b.trainers || {})[tid]) /* 요약 창: 고유 + 남은 횟수 */,
     canForceTid: tid => {
       const c = ctx();
       return !!tid && (ownT(c, tid) || (c.gm && !fairOff(c, tid)));
