@@ -4,7 +4,9 @@
     상태 m.syncOn = 이 포켓몬 기준 대치가 이미 성립해 물어봤다 (새로고침 · 다른 창에서 또 묻지 않게) */
   const SYNC_RE = /【동조(?:\s*\(상대\))?】/;
   function syncP(b, m) {
-    return FX() && FX().syncPairs ? FX().syncPairs(b, m, rolesOf) : { a: new Set(), e: new Set(), pairs: [] };
+    if (!FX() || !FX().syncPairs) return { a: new Set(), e: new Set(), pairs: [] };
+    if (FX().syncRoles) FX().syncRoles(rolesOf); /* 조건 낱말 「동조중」도 같은 역할 읽기로 */
+    return FX().syncPairs(b, m, rolesOf);
   }
   const syncLock = (b, m, eff) => SYNC_RE.test(String(eff || '')) && !syncP(b, m).pairs.length;
   function syncEffs(m) {
@@ -27,6 +29,80 @@
       out.push({ kind, name, auto: !!(a && a.ops && a.ops.length && !a.manual), tx });
     }
     return out;
+  }
+  /* 동조 성립 때 발동 여부 묻기 — 주인(접속 중이면 그 자리) · GM · 자기 것만. 남의 포켓몬은 묻지 않고 알림만 (11-06 망령 「동조 발동 창이 상대한테도 뜬다」)
+    주인이 2분 안에 답하지 않아도 상대 화면에는 띄우지 않는다. 돌려주는 값: true = 발동 · false = 안 함(또는 알림만) */
+  async function syncAsk(c, m, who, K, name, tx, pr) {
+    const q = `【동조】 ${who}같은 『역할』 대치가 성립했다\n${pr}\n\n${K} 『${name}』을(를) 발동할까?`;
+    const seats = c.ST.state.seats || {};
+    const so = seats[m.tid] ? m.tid : baseSeat(c, m.tid);
+    const to = m.tid && so && (A().online(so) || coOf(c, m.tid).some(s2 => A().online(s2))) && !ownT(c, m.tid) ? 'seat:' + m.tid : '';
+    if (!to && !c.gm && !ownT(c, m.tid)) {
+      A().sysLog(`【동조】 ${who}같은 역할 대치 성립 (${pr})\n${K} 『${name}』 — 주인이 「발동」 단추로 쓸 수 있다`, 'battle', {
+        mid: m.id,
+        img: m.image || '',
+        eff: String(tx || '')
+          .replace(/<br\s*\/?>/g, '\n')
+          .slice(0, 300)
+      });
+      return false;
+    }
+    const yes = await remoteAsk(
+      m,
+      'confirm',
+      { name, q },
+      () => (c.gm || ownT(c, m.tid) ? askYes(q, '발동한다', '안 한다') : Promise.resolve(false)),
+      to
+    );
+    if (!yes) A().sysLog(`【동조】 ${who}『${name}』 — 발동하지 않았다`, 'battle');
+    return !!yes;
+  }
+  /* 11-27 망령 (미궁 포텐셜 「①【동조】/아군의 기술의 대미지를 강화」): 트레이너 고유(던전의 미궁 포텐셜 포함) 중 【동조】 글 + 구문이 있는 것 — 그 트레이너의 포켓몬 하나라도 대치가 성립하면 한 번 묻는다 (상태 t.syncOn) */
+  function syncUniq(t, tid) {
+    return uniqList(t).filter(x => {
+      if (!SYNC_RE.test(String(x.p.eff || ''))) return false;
+      if (x.left !== null && x.left <= 0) return false;
+      const a = FX().autoOf({ tid }, 'pot', x.p.name);
+      return !!(a && a.ops && a.ops.length && !a.manual);
+    });
+  }
+  async function syncWatchUniq(c, b) {
+    for (const [tid, t] of Object.entries(b.trainers || {})) {
+      if (!t) continue;
+      const mine = Object.values(b.mons || {}).filter(m => m && m.tid === tid && m.entry && m.hp.cur > 0);
+      let on = null;
+      let base = null;
+      for (const m of mine) {
+        const r = syncP(b, m);
+        const hit = r.pairs.find(([a]) => (b.mons[a] || {}).tid === tid);
+        if (hit) {
+          on = r;
+          base = b.mons[hit[0]];
+          break;
+        }
+      }
+      if (!on) {
+        if (t.syncOn) await A().set(['battle', 'trainers', tid, 'syncOn'], null);
+        continue;
+      }
+      if (t.syncOn) continue;
+      await A().set(['battle', 'trainers', tid, 'syncOn'], 1);
+      const U = syncUniq(t, tid);
+      if (!U.length) continue;
+      const pr = on.pairs
+        .map(([a, e, r]) => `『${r}』 ${((b.mons || {})[a] || {}).name || '?'} ↔ ${((b.mons || {})[e] || {}).name || '?'}`)
+        .join(' · ');
+      for (const x of U) {
+        const yes = await syncAsk(c, base, `${t.name || '야생'} — `, x.p.mq ? '미궁 포텐셜' : '고유', x.p.name, x.p.eff, pr);
+        if (!yes) continue;
+        const m2 = (ctx().b.mons || {})[base.id];
+        if (!m2 || !m2.entry || !syncP(ctx().b, m2).pairs.length) {
+          A().toast('그 사이 대치가 풀렸다');
+          continue;
+        }
+        await fireSpecial(tid, base.id, 'uq', x.p.name, 'free');
+      }
+    }
   }
   let SYNC_BUSY = false;
   async function syncWatch(c, b) {
@@ -58,29 +134,8 @@
             });
             continue;
           }
-          const q = `【동조】 ${m.name} — 같은 『역할』 대치가 성립했다\n${pr}\n\n${K} 『${x.name}』을(를) 발동할까?`;
-          const seats = c.ST.state.seats || {};
-          const so = seats[m.tid] ? m.tid : baseSeat(c, m.tid);
-          const to = m.tid && so && (A().online(so) || coOf(c, m.tid).some(s2 => A().online(s2))) && !ownT(c, m.tid) ? 'seat:' + m.tid : '';
-          if (!to && !c.gm && !ownT(c, m.tid)) {
-            A().sysLog(`【동조】 ${m.name} — 같은 역할 대치 성립 (${pr})\n${K} 『${x.name}』 — 주인이 「발동」 단추로 쓸 수 있다`, 'battle', {
-              mid: m.id,
-              img: m.image || '',
-              eff: x.tx.replace(/<br\s*\/?>/g, '\n').slice(0, 300)
-            });
-            continue;
-          } /* 11-06 망령 「동조 발동 창이 상대한테도 뜬다」: 진행 화면이 PL 이고 주인이 접속 중으로 안 잡히면 그 PL(상대) 화면에 확인 창이 떴다 → 남의 포켓몬은 묻지 않고 알림만 */
-          const yes = await remoteAsk(
-            m,
-            'confirm',
-            { name: x.name, q },
-            () => (c.gm || ownT(c, m.tid) ? askYes(q, '발동한다', '안 한다') : Promise.resolve(false)),
-            to
-          );
-          /* 주인이 2분 안에 답하지 않아도 상대 화면에는 띄우지 않는다 */ if (!yes) {
-            A().sysLog(`【동조】 ${m.name} 『${x.name}』 — 발동하지 않았다`, 'battle');
-            continue;
-          }
+          const yes = await syncAsk(c, m, `${m.name} — `, K, x.name, x.tx, pr);
+          if (!yes) continue;
           const m2 = (ctx().b.mons || {})[m.id];
           if (!m2 || !m2.entry || !syncP(ctx().b, m2).pairs.length) {
             A().toast('그 사이 대치가 풀렸다');
@@ -93,6 +148,7 @@
           await fireAuto(m.id, x.kind, x.name);
         }
       }
+      await syncWatchUniq(c, ctx().b);
     } finally {
       SYNC_BUSY = false;
     }
