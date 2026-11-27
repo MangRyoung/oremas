@@ -636,7 +636,8 @@ window.OM_BATTLE_UI = (() => {
     for (const id of Object.keys(ctx().b.mons || {})) if (((ctx().b.mons || {})[id] || {}).defer) await deferFire(id, when);
   }
   /* 11-27 망령 「비축하기가 스톡이 안 된다 — 턴이 아니라 카운터로, 필드를 떠나기 전까지 그대로 · 추가 · 감소 · 초기화」:
-    비축 카운터 = 상태 「Stockpile」의 수(1~3). 손으로 고친 값(랭크·상태 창 · 상세 창)을 1~3 으로 맞추고, 바뀐 만큼 방어/특방 랭크도 같이 옮긴다 (구문 「비축 ±N」과 같은 셈) */
+    비축 카운터 = 상태 「Stockpile」의 수(1~3). 손으로 고친 값(랭크·상태 창 · 상세 창)을 1~3 으로 맞춘다.
+    19:20 망령 「방/특방 +1은 기술로 낼 때만 — 카운터 자체로는 안 오른다」: 늘려도 랭크는 그대로, 줄이면 기술로 올린 몫(stockUp) 안에서만 내린다 (fx stockRank) */
   const cntSt = (k, d) => !!(FX() && FX().isCountSt && FX().isCountSt(k, d)); /* 턴으로 줄지 않는 카운터 상태 */
   function stockFix(m0, nm) {
     if (!FX() || !FX().stockOf) return '';
@@ -647,8 +648,8 @@ window.OM_BATTLE_UI = (() => {
     FX().setStock(nm, z);
     if (a === z) return '';
     nm.rank = Object.assign({}, nm.rank || {});
-    for (const k of ['defense', 'specialdefense']) nm.rank[k] = Math.max(-6, Math.min(6, (+nm.rank[k] || 0) + z - a));
-    return `비축 카운터 ${a} → ${z} (방어/특방 ${z > a ? '+' : ''}${z - a})`;
+    const r = FX().stockRank ? FX().stockRank(nm, z - a, false) : 0;
+    return `비축 카운터 ${a} → ${z}${r ? ` (방어/특방 ${r})` : ''}`;
   }
   function saveMon(m0, mid, nm) {
     preSave(nm);
@@ -7590,6 +7591,7 @@ window.OM_BATTLE_UI = (() => {
     delete m.tempMod;
     delete m.critBuff;
     delete m.stock;
+    delete m.stockUp;
     /* 11-18 비축 카운터는 교대하면 0 */ delete m.mvMod;
     /* 11-19 사출 */ if (m.fx) m.fx.mults = [];
     delete m.metro;

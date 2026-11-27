@@ -2585,6 +2585,7 @@
     delete m.tempMod;
     delete m.critBuff;
     delete m.stock;
+    delete m.stockUp;
     /* 11-18 비축 카운터는 교대하면 0 */ delete m.mvMod;
     /* 11-19 사출 */ if (m.fx) m.fx.mults = [];
     delete m.metro;
