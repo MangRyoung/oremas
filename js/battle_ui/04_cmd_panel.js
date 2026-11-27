@@ -279,7 +279,7 @@
        const vv = v === '' || v == null ? 0 : +v;
        const base = mvSel ? (FX() && FX().prioOf ? FX().prioOf(m, mvSel) : +mvSel.prio || 0) : 0;
        const sg = n => (n > 0 ? '+' + n : String(n));
-       return `<div class="prow"><span class="pl">우선도 보정</span><span class="pqs">${[-3, -2, -1, 0, 1, 2, 3, 4, 5].map(n => `<span class="pq ${vv === n ? 'on' : ''} ${n < 0 ? 'neg' : n > 0 ? 'pos' : ''}" data-pq="${n}" data-slot="${my.slot}">${sg(n)}</span>`).join('')}</span><span class="small dim">${mvSel ? `기술 ${sg(base)}${vv ? ` → <b style="color:var(--yel2)">${sg(base + vv)}</b>` : ''}` : ''}</span></div>`;
+       return `<div class="prow"><span class="pl">우선도 보정</span><span class="pqs">${[-7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6].map(n => `<span class="pq ${vv === n ? 'on' : ''} ${n < 0 ? 'neg' : n > 0 ? 'pos' : ''}" data-pq="${n}" data-slot="${my.slot}">${sg(n)}</span>`).join('')}</span><span class="small dim">${mvSel ? `기술 ${sg(base)}${vv ? ` → <b style="color:var(--yel2)">${sg(base + vv)}</b>` : ''}` : ''}</span></div>`;
      })()}
      <details class="adv"><summary>다른 포켓몬 우선도 · 행동 순서 변경 (${esc(m.name)}의 지시로)</summary><div class="tgts">${allEntered(b)
        .map(

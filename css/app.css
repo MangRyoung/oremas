@@ -141,7 +141,7 @@ label{display:inline-flex;align-items:center;gap:4px}
 .tg.left{border-color:var(--left)}.tg.right{border-color:var(--right)}
 .adv{margin-top:4px;font-size:12px}.adv summary{cursor:pointer;color:var(--fg2)}
 .prow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:8px;font-size:12px}.prow .pl{font-weight:700;color:var(--fg2)}
-.pqs{display:inline-flex;border:1px solid var(--line,rgba(255,255,255,.18));border-radius:4px;overflow:hidden}
+.pqs{display:inline-flex;flex-wrap:wrap;max-width:100%;border:1px solid var(--line,rgba(255,255,255,.18));border-radius:4px;overflow:hidden}
 .pq{min-width:28px;padding:3px 6px;text-align:center;cursor:pointer;font-variant-numeric:tabular-nums;border-left:1px solid var(--line,rgba(255,255,255,.12));user-select:none}.pq:first-child{border-left:0}
 .pq:hover{background:rgba(255,255,255,.08)}.pq.neg{color:#8fb4ff}.pq.pos{color:#ffd76a}.pq.on{background:var(--yel2,#e8c547);color:#111;font-weight:700}
 .cmdrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px}
