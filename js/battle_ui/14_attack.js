@@ -631,6 +631,41 @@
     return openAttack(mid, SECO || undefined);
   }
   /* 맞을 때 쓰는 방어 4식 선행 발동 — SEC: 읽을 수 있는 숨은 지시(GM), 없으면 그 트레이너가 올린 순서 열쇠의 g4 */
+  /* 11-27 20:28 망령 『바꿔라!』 「【1/시】【선행】/아군이 공격의 대상이 되었을 때 이하의 효과 중 하나를 선택한다. ①「방어」 상태가 아닌 아군과 에리어를 이동한다. ②공격 받은 후 임의 교대 한다」:
+    공격 창을 열기 전 선행 발동(guard4Pre)에서 주인에게 고르게 한다 — ① 자리를 바꾸면 단일기는 그 자리에 온 아군이 맞는다(자리로 노린다) · ② flags.swapOut 를 달고 그 공격을 적용한 뒤 임의 교대 창(swapOutAfter) */
+  async function swapPick(mid, nm) {
+    const b = ctx().b;
+    const m = (b.mons || {})[mid];
+    if (!m || !m.entry) return;
+    const mates = Object.values(entered(b, m.side)).filter(x => x && x.id !== mid && x.hp.cur > 0 && !(x.states || {}).Protect);
+    const bench = Object.values(b.mons || {}).some(x => x.tid === m.tid && !x.entry && !x.pend && x.hp.cur > 0);
+    const L = [];
+    if (mates.length) L.push('① 「방어」 상태가 아닌 아군과 에리어를 이동한다');
+    if (bench) L.push('② 공격받은 뒤 임의 교대한다');
+    if (!L.length) {
+      A().sysLog(`${m.name} 『${nm}』 — 자리를 바꿀 아군도, 교대해 들어올 포켓몬도 없다`, 'battle', { mid });
+      return;
+    }
+    const r = await uiCtx(b, m, nm).choose(L);
+    if (!r || !r.length) {
+      A().sysLog(`${m.name} 『${nm}』 — 효과를 고르지 않았다`, 'battle', { mid });
+      return;
+    }
+    if (L[+r[0]].startsWith('①')) {
+      const to = mates.length === 1 ? mates[0] : await uiCtx(b, m, nm).pick(mates, '자리를 바꿀 아군');
+      if (to) await areaSwap(mid, to.entry, { force: true });
+      return;
+    }
+    await A().set(['battle', 'mons', mid, 'flags', 'swapOut'], 1);
+    A().sysLog(`${m.name} 『${nm}』 — 이 공격을 받은 뒤 임의 교대한다`, 'battle', { mid });
+  }
+  async function swapOutAfter() {
+    for (const m of Object.values(ctx().b.mons || {})) {
+      if (!m || !(m.flags || {}).swapOut) continue;
+      await A().set(['battle', 'mons', m.id, 'flags', 'swapOut'], null);
+      if (m.entry && m.hp.cur > 0) await freeSwitchUI(m.id, '바꿔라!');
+    }
+  }
   async function guard4Pre(c, atk, mv, x0, SEC) {
     const b = ctx().b;
     /* 11-20 제보 「풀죽음 상태인 상대의 지시에 대응해서 선행 입력한 피해라가 자동 발동된다」: 공격하는 쪽이 이번 턴 움직이지 못하면(풀죽음 · 각성체 대가 A-1 행동 불능) 공격이 나오지 않으니 방어 4식을 걸지 않는다 — 횟수도 안 쓴다 */
@@ -652,11 +687,14 @@
       const done = ((((ctx().b.cmds || {})[dm.tid] || {}).fired || {})[dm.id] || {}).order;
       if (done) continue;
       const nm = OO().orderName(t, okey);
-      const fit = nm === '버텨라!' || (nm === '물러나!' && mv.cat === '물리') || (nm === '피해라!' && mv.cat === '특수');
+      const fit = nm === '버텨라!' || nm === '바꿔라!' || (nm === '물러나!' && mv.cat === '물리') || (nm === '피해라!' && mv.cat === '특수');
       if (!fit) continue;
       try {
         await fireOrder(dm.tid, dm.id, 'order', okey, 'pre');
-        if (((((ctx().b.cmds || {})[dm.tid] || {}).fired || {})[dm.id] || {}).order) fired.push(`${dm.name} 『${nm}』`);
+        if (((((ctx().b.cmds || {})[dm.tid] || {}).fired || {})[dm.id] || {}).order) {
+          fired.push(`${dm.name} 『${nm}』`);
+          if (nm === '바꿔라!') await swapPick(dm.id, nm);
+        }
       } catch (e) {
         console.warn('방어 4식 선행 발동', e);
       }
@@ -4679,6 +4717,7 @@ ${(() => {
         await orderUpAfter(mid, RESULT);
         if (RESULT.auto && RESULT.auto.drainUpPot) await potMark(mid, RESULT.auto.drainUpPot);
         await extraAtkAfter(mid, RESULT);
+        await swapOutAfter();
       } /* 11-22 「아군의 「소리」 기술에 뒤이어」 */
       /* 11-07 망령 「닌자 자동화가 없어요」: 「자신이 행동한 뒤 …」 포텐셜(닌자 ① 회피 ×1.33 턴 종료까지)은 공격을 적용한 뒤 저절로 건다 — 구문이 있고 횟수(【N/시】) 없는 것만 · 한 턴에 한 번 */
       {

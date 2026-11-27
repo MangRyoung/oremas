@@ -1521,11 +1521,11 @@
 
   /* 등장: 더블(2:2)이 기본. 트레이너가 둘이면 첫 트레이너 A, 둘째 B 가 기본 자리. 빈 자리가 아니면 고른다. */
   /* 에리어 교대: 같은 편의 다른 에리어로 자리만 옮긴다(교체 아님 — 랭크·상태 그대로). 그 자리에 있던 포켓몬은 내 자리로 */
-  async function areaSwap(mid, to) {
+  async function areaSwap(mid, to, opt) {
     const c = ctx();
     const b = c.b;
     const m = b.mons[mid];
-    if (!m || !m.entry || !canEdit(c, m)) return;
+    if (!m || !m.entry || (!canEdit(c, m) && !(opt && opt.force))) return; /* force: 『바꿔라!』처럼 공격하는 쪽 화면에서 저절로 옮길 때 */
     const areas = AREAS.slice(0, mode(b)).filter(a => a !== m.entry);
     if (!areas.length) return;
     const ent = entered(b, m.side);
