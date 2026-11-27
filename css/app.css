@@ -5822,6 +5822,6 @@ button.tfsep.cl{opacity:1;border:1px dashed color-mix(in srgb,var(--yel2) 55%,tr
 }
 
 /* 포텐셜 발동 창 — 남은 횟수가 있는 줄 / 없는 줄 */
-.firerow.has{border-left:3px solid var(--yel2);background:#1d1b12}
-.firerow.zero{border-left:3px solid #3a3c42;background:#0f1012}
+.firerow.has{border-left:3px solid var(--yel2);background:#262210}.firerow.has .fcnt b{font-size:14px}
+.modal .firerow.zero,.firerow.zero{border-color:#2c2e33;border-left:3px solid #3a3c42;background:#0b0c0e}
 .firerow.zero .fnm{color:var(--mute)}.firerow.zero .fcnt,.firerow.zero .fcnt b{color:#6b6e76}
