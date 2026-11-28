@@ -96,14 +96,17 @@ window.OM_LP_UI = (() => {
     const r = ST().state.roster || { trainers: {}, mons: {} };
     const trs = r.trainers || {};
     const ms = r.mons || {};
-    return Object.keys(trs).map(id => {
-      const t = trs[id];
-      const pids = (t.pids || []).filter(x => ms[x]);
-      const inc = new Set(A().twoPids(t));
-      const mons = pids.map(x => ms[x]);
-      const lvs = mons.map(monLv).filter(Boolean);
-      return { id, t, f: foldOf(t), mons, inc, avg: lvs.length ? Math.round(lvs.reduce((a, b) => a + b, 0) / lvs.length) : 0, n: inc.size };
-    });
+    const can = A().seatCanLoad || (() => true);
+    return Object.keys(trs)
+      .filter(can)
+      .map(id => {
+        const t = trs[id];
+        const pids = (t.pids || []).filter(x => ms[x]);
+        const inc = new Set(A().twoPids(t));
+        const mons = pids.map(x => ms[x]);
+        const lvs = mons.map(monLv).filter(Boolean);
+        return { id, t, f: foldOf(t), mons, inc, avg: lvs.length ? Math.round(lvs.reduce((a, b) => a + b, 0) / lvs.length) : 0, n: inc.size };
+      });
   }
 
   function monChip(m, on) {

@@ -3970,7 +3970,9 @@
   async function openLoadParty(side) {
     if (window.OM_LP_UI) return window.OM_LP_UI.open(side); /* 11-09 망령: 새 불러오기 창 (js/lp_ui.js) — 아래는 못 읽었을 때 */
     const r = roster();
-    const ids = Object.keys(r.trainers).sort((a, b) => (r.trainers[a].ord || 0) - (r.trainers[b].ord || 0));
+    const ids = Object.keys(r.trainers)
+      .filter(seatCanLoad)
+      .sort((a, b) => (r.trainers[a].ord || 0) - (r.trainers[b].ord || 0));
     const inB = B().trainers || {};
     const m =
       openModal(`<div class="mhead"><h2>${side === 'left' ? '좌측' : '우측'} 진영에 파티 불러오기</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
@@ -4415,6 +4417,19 @@
    미사그 대학 트레이너(각성체가 있는 로스터 트레이너)는 roster.trainers.<id>.two 를 켜면 각성체 2체만 배틀 · 던전에 들어간다.
    지시는 제작기 지시 체계 「2체 기준」에서 고른 것(twoPick)만 남기고 나머지 횟수는 0 — 0 으로 만든 값은 twoSave 에 두었다가 끄면 돌려준다.
    시트(로스터)의 포켓몬 목록은 그대로 6체. */
+  /* 11-28 망령 「파티 불러오기 할 때 GM 파티들도 대여 가능으로 뜬다 — 그러면 안 되지」: 좌석(PL)이 불러올 수 있는 파티 =
+     내 자리(추가 파티 X~n 포함) · 함께 지시(co)에 든 파티 · 다른 PL 자리의 파티(빌려 쓰기). 아무도 앉지 않은 GM 파티 · NPC · 야생은 안 된다 */
+  function seatCanLoad(tid) {
+    if (ST.role === 'gm') return true;
+    const t = (roster().trainers || {})[tid];
+    if (!t) return false;
+    const seat = ST.seat || '';
+    const base = String(tid).split('~')[0];
+    const mine = new Set([seat, ...(ST.mySeats || [])].filter(Boolean));
+    if (mine.has(tid) || mine.has(base) || (t.co || []).includes(seat)) return true;
+    if (t.wild || t.kind === 'npc') return false;
+    return !!(ST.state.seats || {})[base];
+  }
   function twoAble(t) {
     const ms = roster().mons || {};
     return !!t && (t.pids || []).some(id => ms[id] && ms[id].awaken);
@@ -4472,6 +4487,7 @@
     const r = roster();
     const t = r.trainers[tid];
     if (!t) return toast('로스터에 없는 트레이너다');
+    if (!seatCanLoad(tid)) return toast('GM 파티는 불러올 수 없다');
     const trainer = JSON.parse(JSON.stringify(t));
     const mons = twoPids(t)
       .map(id => r.mons[id])
@@ -7021,6 +7037,7 @@
     openAddMon,
     ensure,
     loadScript,
+    seatCanLoad,
     twoAble,
     twoPids,
     twoApply,
