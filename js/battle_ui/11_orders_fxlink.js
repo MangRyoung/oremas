@@ -123,7 +123,8 @@
     const nm = nmMv(mv.name);
     const lm = m.lastMove && nmMv(m.lastMove.name);
     if (st.Encore && lm && nm !== lm) return `「앙코르」 — 『${lm}』만 내보낼 수 있다`;
-    if (st.Disable && lm && nm === lm) return `「사슬묶기」 — 『${lm}』는 내보낼 수 없다`;
+    const dm = st.Disable && nmMv(m.disableMove || (m.lastMove && m.lastMove.name) || '');
+    if (dm && nm === dm) return `「사슬묶기」 — 『${dm}』는 내보낼 수 없다`;
     if (st.Torrment && lm && nm === lm) return `「트집」 — 『${lm}』를 연속으로 내보낼 수 없다`;
     if (st.Silence && /소리/.test(String(mv.tag || ''))) return '「침묵」 — 「소리」 기술은 내보낼 수 없다';
     if (st.HealBlock) {

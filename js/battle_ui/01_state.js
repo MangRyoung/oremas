@@ -32,16 +32,31 @@
   /* 바뀐 칸만 쓴다 (점검 2-4) — 배틀을 통째로 쓰면 그 사이 남이 바꾼 칸(다른 포켓몬의 피해, 지시 공개 …)이 지워진다.
     nb0 = 사본을 뜰 때의 배틀, nb = 고친 사본 (f 를 주면 필드도 그걸로). 포켓몬은 칸(hp · states …) 하나 단위로, 턴·페이즈는 맨 끝에 쓴다 */
   const snap = x => JSON.parse(JSON.stringify(x === undefined ? ctx().b : x));
-  function preSave(m) {
+  /* 11-28 망령 「사슬묶기가 트집 효과로 작동하는 오류」: 사슬묶기는 걸린 때의 마지막 기술을 지속 동안 묶는다.
+    걸린 때 기술 이름을 disableMove 에 적어 두고 판정은 그 기술로 한다 (전에는 매번 lastMove 를 봐서, 다른 기술을 쓰면 묶이는 기술이 바뀌는 트집처럼 움직였다).
+    m0 = 이번 저장 전 모습 — 이미 사슬묶기였으면 그때의 lastMove(이번 저장에서 새 기술을 썼어도 묶인 건 앞 기술) */
+  function stampDisable(m, m0) {
+    const st = m.states || {};
+    if (!st.Disable) {
+      if (m.disableMove) delete m.disableMove;
+      return;
+    }
+    if (m.disableMove) return;
+    const had = m0 && (m0.states || {}).Disable;
+    const lm = had ? m0.disableMove || (m0.lastMove && m0.lastMove.name) : m.lastMove && m.lastMove.name;
+    if (lm) m.disableMove = lm;
+  }
+  function preSave(m, m0) {
     if (!m) return;
     if (FX() && FX().abSync) FX().abSync(m);
     const st = m.states || {};
     if (st.Grudge && !m.grudgeMove && m.lastMove && m.lastMove.name) m.grudgeMove = m.lastMove.name;
     else if (!st.Grudge && m.grudgeMove) delete m.grudgeMove;
+    stampDisable(m, m0);
   } /* 11-08 51-2 ㉓ · ㉔ */
   function saveBattle(nb0, nb, f, by, extra) {
     if (f !== undefined) nb.field = f;
-    for (const x of Object.values((nb && nb.mons) || {})) preSave(x);
+    for (const x of Object.values((nb && nb.mons) || {})) preSave(x, ((nb0 && nb0.mons) || {})[x.id]);
     const FL = faintSweep(nb0, nb);
     const ops = A().diffOps(['battle'], nb0, nb, 3);
     const last = p => (p[1] === 'turn' || p[1] === 'phase' ? 1 : 0);
@@ -170,7 +185,7 @@
     return `비축 카운터 ${a} → ${z}${r ? ` (방어/특방 ${r})` : ''}`;
   }
   function saveMon(m0, mid, nm) {
-    preSave(nm);
+    preSave(nm, m0);
     return A()
       .setDiff(['battle', 'mons', mid], m0, nm, 2)
       .then(r => {
