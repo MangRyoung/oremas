@@ -473,7 +473,8 @@ window.OM_SHEET_UI = (() => {
     b.style.cssText = lab.style.cssText;
     b.onclick = async e => {
       e.stopPropagation();
-      const fs = await window.OM_CUTTER.open({ label: kind === 'tr' ? '트레이너 그림' : '포켓몬 그림' });
+      const now = (((kind === 'tr' ? c.r.trainers : c.r.mons) || {})[id] || {}).image || '';
+      const fs = await window.OM_CUTTER.open({ label: kind === 'tr' ? '트레이너 그림' : '포켓몬 그림', src: now });
       if (fs.length) upRosterImage(c, kind, id, fs[0]);
     };
     lab.after(b);

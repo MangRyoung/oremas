@@ -7858,7 +7858,7 @@ window.OM_RP_UI = (() => {
       e.preventDefault();
       e.stopPropagation();
       const lab = ((z.querySelector('b') || {}).textContent || '').replace(/\s*끌어 놓기.*$/, '');
-      const fs = await window.OM_CUTTER.open({ label: lab, multi: !!multi });
+      const fs = await window.OM_CUTTER.open({ label: lab, multi: !!multi, src: window.OM_CUTTER.srcIn(z) });
       if (fs.length) run(fs);
     };
     z.append(b);
