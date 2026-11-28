@@ -18166,7 +18166,12 @@ window.OM_BATTLE_UI = (() => {
     const head = `【포텐셜】 ${m.name} 『${p.name}』 — 「트리거 : 페이즈 체인지」(${have}번째)`;
     const a = FX().autoOf(m, 'pot', p.name);
     if (!a || !realOps(a) || a.manual) {
-      A().sysLog(`${head}\n→ 효과는 손으로`, 'battle', { mid: m.id, eff: String(p.eff || '').replace(/<br\s*\/?>/g, '\n').slice(0, 300) });
+      A().sysLog(`${head}\n→ 효과는 손으로`, 'battle', {
+        mid: m.id,
+        eff: String(p.eff || '')
+          .replace(/<br\s*\/?>/g, '\n')
+          .slice(0, 300)
+      });
       return;
     }
     const ex = (m.excl && m.excl.name === p.name) || (m.exclX || []).some(q => q && q.name === p.name);
