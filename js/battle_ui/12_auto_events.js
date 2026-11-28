@@ -3016,11 +3016,21 @@
       }
     }
   }
+  /* 11-28 망령 「해일예보 다음에 턴 종료 시에 트리거 체인지가 안 터진 듯」: 레이드 자동 설정(app.js raidInit)이 배틀을 차릴 때만이라, 그 전에 차린 배틀의 그란돈 · 가이오가는 배리어가 없었다 — 나올 때도 없으면 건다 */
+  async function raidOnEntry(m) {
+    if (m.raid || !A().raidInit) return;
+    const x = snap(m);
+    A().raidInit(x);
+    if (!x.raid) return;
+    await A().set(['battle', 'mons', m.id, 'raid'], x.raid);
+    m.raid = x.raid;
+  }
   async function autoOnEntry(mid, o2) {
     o2 = o2 || {};
     const c = ctx();
     const m = c.b.mons[mid];
     if (!m || !FX()) return;
+    await raidOnEntry(m);
     yejiShow(mid);
     await traitAsk(mid);
     const list = [];

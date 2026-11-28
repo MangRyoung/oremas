@@ -7048,6 +7048,7 @@
     ensure,
     loadScript,
     seatCanLoad,
+    raidInit,
     twoAble,
     twoPids,
     twoApply,
