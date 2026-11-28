@@ -13048,6 +13048,9 @@ window.OM_BATTLE_UI = (() => {
             let bondForce = false,
               gmEnd = false,
               deferIt = false;
+            /* 11-28 망령 「GM 판정이라고 뜨면 좀 짜치니까 다이스 굴린 척 나오게」: GM 이 고른 결과도 로그엔 굴림처럼 (성공이면 확률 안, 실패면 밖의 수) */
+            const fakeRoll = (pct, ok) => (ok ? 1 + Math.floor(Math.random() * pct) : pct + 1 + Math.floor(Math.random() * (100 - pct)));
+            let endTxt = '';
             {
               const bm = (A().ST.state.rp || {}).bondMode || '';
               const dying = !g('h_endure').checked && r.after <= 0 && m.hp.cur > 0 && !m.defer;
@@ -13068,27 +13071,28 @@ window.OM_BATTLE_UI = (() => {
                 const ix = Array.isArray(ans) && ans.length ? +ans[0] : 0;
                 if (bond) {
                   if (ix === 2) {
-                    mods.push(`「${bond.name}」 — GM 판정: 발동 안 함`);
+                    mods.push(`「${bond.name}」 실패 (${fakeRoll(+bond.pct || 20, false)}/${+bond.pct || 20})`);
                     sashX = null;
                   } else if (ix === 1) {
                     bondForce = true;
-                    mods.push(`「${bond.name}」 — GM 판정: 확정 발동`);
                   } else if (ix === 3) {
                     deferIt = true;
                     sashX = null;
-                    mods.push('GM 판정: 대미지를 자신의 행동 뒤로 미룸');
+                    mods.push('대미지를 자신의 행동 뒤로 미룸');
                   }
                 } else {
-                  if (ix === 1) gmEnd = true;
-                  else if (ix === 2) {
+                  if (ix === 1) {
+                    gmEnd = true;
+                    endTxt = `「유대」로 버팀 (${fakeRoll(bondPct, true)}/${bondPct})`;
+                  } else if (ix === 2) {
                     deferIt = true;
-                    mods.push('GM 판정: 대미지를 자신의 행동 뒤로 미룸');
+                    mods.push('대미지를 자신의 행동 뒤로 미룸');
                   } else if (ix === 3) {
                     const roll = 1 + Math.floor(Math.random() * 100);
                     if (roll <= bondPct) {
                       gmEnd = true;
-                      mods.push(`GM 판정: 유대 굴림 성공 (${roll}/${bondPct})`);
-                    } else mods.push(`GM 판정: 유대 굴림 실패 (${roll}/${bondPct})`);
+                      endTxt = `「유대」로 버팀 (${roll}/${bondPct})`;
+                    } else mods.push(`「유대」 실패 (${roll}/${bondPct})`);
                   }
                 }
               }
@@ -13114,13 +13118,13 @@ window.OM_BATTLE_UI = (() => {
               ec.checked = true;
               r = calc();
               ec.checked = false;
-              mods.push('GM 판정: 유대로 버팀 (HP 1)');
+              mods.push(endTxt || '「유대」로 버팀');
             } else if (bondForce && sashX) {
               const ec = g('h_endure');
               ec.checked = true;
               r = calc();
               ec.checked = false;
-              mods.push(`「${sashX.name}」로 버팀`);
+              mods.push(`「${sashX.name}」로 버팀 (${fakeRoll(+sashX.pct || 20, true)}/${+sashX.pct || 20})`);
               await potMark(mid, sashX.name);
             } else if (sashX && sashX.pct && !g('h_endure').checked && r.after <= 0 && m.hp.cur > 1) {
               r = calc(true);
