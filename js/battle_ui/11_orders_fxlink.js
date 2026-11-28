@@ -117,6 +117,21 @@
         .filter(Boolean)
         .map(x => S().typeEn(x))
     ].filter(Boolean);
+  /* 11-28 망령 「슬렌더 맨의 전용을 지시창에서 선택 시 괴상한촉수/카미카쿠시 선택이 가능해지도록」:
+    구문 「실패무시 기술:X [미해석 …]」 — 걸려 있거나(sp nofail) 이번 턴 지시에 그 포텐셜을 선행 입력했으면 X 의 실패 조건(나온 뒤 첫 기술 · 나무열매 · 상태)을 넘긴다 */
+  const nmSq = x => String(x || '').replace(/\s/g, '');
+  const nofailHits = (m, e, mv) => (!e.mv || !e.mv.length || e.mv.some(x => nmSq(x) === nmSq(mv && mv.name))) && (!FX().xOk || FX().xOk(e, m));
+  function nofailDecl(m, mv) {
+    const x = ((cmdNow(m.tid, ctx().b) || {}).mons || {})[m.id];
+    if (!x || !(x.pots || []).length) return false;
+    return potSrc(m).some(
+      p => p && x.pots.includes(p.name) && ((p.auto || {}).ops || []).some(o => o && o.k === 'sp' && o.sp === 'nofail' && nofailHits(m, o, mv))
+    );
+  }
+  function nofailOk(m, mv) {
+    if (!m || !mv) return false;
+    return spL(m, 'nofail').some(e => nofailHits(m, e, mv)) || nofailDecl(m, mv);
+  }
   function mvBan(m, mv) {
     if (!m || !mv || mv.virt || mv.ext) return '';
     const st = m.states || {};
@@ -135,7 +150,7 @@
     if (st.Grudge && gm && nm === gm) return `「원념」 — 『${gm}』는 내보낼 수 없다`;
     if (m.lastMove) {
       const au = moveAuto(mv);
-      if (au && au.firstOnly) return '나온 뒤 첫 기술이 아니라 실패한다';
+      if (au && au.firstOnly && !nofailOk(m, mv)) return '나온 뒤 첫 기술이 아니라 실패한다';
     }
     /* 11-15 망령 「오토나시 승률이 왜 다시 30%」: 어린애속이기 · 만나자마자 류를 첫 턴 뒤에도 고르던 것 */ return '';
   }

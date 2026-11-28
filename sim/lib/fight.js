@@ -91,16 +91,16 @@ async function attack(H, W, mid, idx, targets, o) {
       return (FN.entered(b, sd) || {})[ar] || null;
     })();
     let why = '';
-    if (au.firstOnly && atk0.lastMove) why = '필드에 나와 처음 내보낸 기술이 아니라';
+    /* 11-28 망령: 구문 「실패무시 기술:X」는 「나온 뒤 첫 기술」 실패도 넘긴다 (웹툴 nofailOk 와 같은 판정) */
+    const noFail = FN.nofailOk ? FN.nofailOk(atk0, mv) : false;
+    if (au.firstOnly && atk0.lastMove && !noFail) why = '필드에 나와 처음 내보낸 기술이 아니라';
     else if (au.failHit && (+atk0.hitT === T1 || (atk0.lastTaken && atk0.lastTaken.hit && +atk0.lastTaken.turn === T1))) why = '이번 턴 공격을 받아';
     else if (au.failNoAtk && d0 && d0 !== atk0 && FN.ordAtk && !FN.ordAtk(b, d0)) why = `${d0.name}이(가) 공격하지 않아`;
     else if (au.failLate && d0 && d0 !== atk0 && FN.actedB4 && FN.actedB4(b, d0)) why = `${d0.name}이(가) 먼저 행동해서`;
     else if (
       (au.failNoBerry || au.failNoSt) &&
       (() => {
-        const nm = x => String(x || '').replace(/\s/g, '');
-        const nf = ((atk0.fx || {}).sp || []).find(e => e && e.sp === 'nofail' && (!e.mv || !e.mv.length || e.mv.some(x => nm(x) === nm(mv.name))));
-        if (nf) return false;
+        if (noFail) return false;
         if (au.failNoBerry && !(atk0.ateBerry || (atk0.itemUsed && /열매$/.test(String(atk0.itemUsed.name || '').trim())))) {
           why = '「나무열매」를 소모한 상태가 아니라';
           return true;

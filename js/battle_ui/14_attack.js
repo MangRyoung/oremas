@@ -2202,7 +2202,7 @@
         })();
         let why = '';
         if (RF) {
-        } else if (au.firstOnly && atk.lastMove) why = '필드에 나와 처음 내보낸 기술이 아니라';
+        } else if (au.firstOnly && atk.lastMove && !nofailOk(atk, mv)) why = '필드에 나와 처음 내보낸 기술이 아니라';
         else if (au.failHit && (+atk.hitT === T || (atk.lastTaken && atk.lastTaken.hit && +atk.lastTaken.turn === T))) why = '이번 턴 공격을 받아';
         else if (au.failNoAtk && d0 && d0 !== atk && !ordAtk(b, d0)) why = `${d0.name}이(가) 공격하지 않아`;
         else if (au.failLate && d0 && d0 !== atk && actedB4(b, d0)) why = `${d0.name}이(가) 먼저 행동해서`;
@@ -2210,9 +2210,7 @@
         else if (
           (au.failNoBerry || au.failNoSt) &&
           (() => {
-            const nm = x => String(x || '').replace(/\s/g, '');
-            const nf = spL(atk, 'nofail').find(e => !e.mv || !e.mv.length || e.mv.some(x => nm(x) === nm(mv.name)));
-            if (nf) return false;
+            if (nofailOk(atk, mv)) return false;
             if (au.failNoBerry && !(atk.ateBerry || (atk.itemUsed && /열매$/.test(String(atk.itemUsed.name || '').trim())))) {
               why = '「나무열매」를 소모한 상태가 아니라';
               return true;

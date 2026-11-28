@@ -366,6 +366,7 @@ function load(W) {
     'mvModOf',
     'mvNameEq',
     'mvBan',
+    'nofailOk',
     'resortOrder',
     'orderSig'
   ];

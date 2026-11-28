@@ -3079,6 +3079,8 @@
         const hx = String(etx2)
           .split(/[②③④⑤]/)[0]
           .match(/【등장\s*\(([^)]+)\)】/);
+        /* 11-28 망령 「슬렌더 맨의 행방불명이 자신이 강제 교대로 등장했을 때 발동 체크 — 수정 필요」: 【등장 (상대, …)】 은 상대가 나올 때(foeInTrig) 몫 — 자신이 나올 때는 건너뛴다 */
+        if (hx && tagHit(etx2, 'foeIn')) continue;
         if (hx && !tm.entry && !(a.ops.length === 1 && a.ops[0].k === 'choice')) {
           const abX = hx[1].match(/「특성\s*:\s*([^」]+)」/);
           /* 11-09 감우 55: 【등장 (「특성 : X」)】 = 그 특성일 때 나오면 (엔터프라이즈 『고스트 레기온』) */ const tyX =

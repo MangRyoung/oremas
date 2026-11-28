@@ -15582,6 +15582,21 @@ window.OM_BATTLE_UI = (() => {
         .filter(Boolean)
         .map(x => S().typeEn(x))
     ].filter(Boolean);
+  /* 11-28 망령 「슬렌더 맨의 전용을 지시창에서 선택 시 괴상한촉수/카미카쿠시 선택이 가능해지도록」:
+    구문 「실패무시 기술:X [미해석 …]」 — 걸려 있거나(sp nofail) 이번 턴 지시에 그 포텐셜을 선행 입력했으면 X 의 실패 조건(나온 뒤 첫 기술 · 나무열매 · 상태)을 넘긴다 */
+  const nmSq = x => String(x || '').replace(/\s/g, '');
+  const nofailHits = (m, e, mv) => (!e.mv || !e.mv.length || e.mv.some(x => nmSq(x) === nmSq(mv && mv.name))) && (!FX().xOk || FX().xOk(e, m));
+  function nofailDecl(m, mv) {
+    const x = ((cmdNow(m.tid, ctx().b) || {}).mons || {})[m.id];
+    if (!x || !(x.pots || []).length) return false;
+    return potSrc(m).some(
+      p => p && x.pots.includes(p.name) && ((p.auto || {}).ops || []).some(o => o && o.k === 'sp' && o.sp === 'nofail' && nofailHits(m, o, mv))
+    );
+  }
+  function nofailOk(m, mv) {
+    if (!m || !mv) return false;
+    return spL(m, 'nofail').some(e => nofailHits(m, e, mv)) || nofailDecl(m, mv);
+  }
   function mvBan(m, mv) {
     if (!m || !mv || mv.virt || mv.ext) return '';
     const st = m.states || {};
@@ -15600,7 +15615,7 @@ window.OM_BATTLE_UI = (() => {
     if (st.Grudge && gm && nm === gm) return `「원념」 — 『${gm}』는 내보낼 수 없다`;
     if (m.lastMove) {
       const au = moveAuto(mv);
-      if (au && au.firstOnly) return '나온 뒤 첫 기술이 아니라 실패한다';
+      if (au && au.firstOnly && !nofailOk(m, mv)) return '나온 뒤 첫 기술이 아니라 실패한다';
     }
     /* 11-15 망령 「오토나시 승률이 왜 다시 30%」: 어린애속이기 · 만나자마자 류를 첫 턴 뒤에도 고르던 것 */ return '';
   }
@@ -19568,6 +19583,8 @@ window.OM_BATTLE_UI = (() => {
         const hx = String(etx2)
           .split(/[②③④⑤]/)[0]
           .match(/【등장\s*\(([^)]+)\)】/);
+        /* 11-28 망령 「슬렌더 맨의 행방불명이 자신이 강제 교대로 등장했을 때 발동 체크 — 수정 필요」: 【등장 (상대, …)】 은 상대가 나올 때(foeInTrig) 몫 — 자신이 나올 때는 건너뛴다 */
+        if (hx && tagHit(etx2, 'foeIn')) continue;
         if (hx && !tm.entry && !(a.ops.length === 1 && a.ops[0].k === 'choice')) {
           const abX = hx[1].match(/「특성\s*:\s*([^」]+)」/);
           /* 11-09 감우 55: 【등장 (「특성 : X」)】 = 그 특성일 때 나오면 (엔터프라이즈 『고스트 레기온』) */ const tyX =
@@ -23025,7 +23042,7 @@ window.OM_BATTLE_UI = (() => {
         })();
         let why = '';
         if (RF) {
-        } else if (au.firstOnly && atk.lastMove) why = '필드에 나와 처음 내보낸 기술이 아니라';
+        } else if (au.firstOnly && atk.lastMove && !nofailOk(atk, mv)) why = '필드에 나와 처음 내보낸 기술이 아니라';
         else if (au.failHit && (+atk.hitT === T || (atk.lastTaken && atk.lastTaken.hit && +atk.lastTaken.turn === T))) why = '이번 턴 공격을 받아';
         else if (au.failNoAtk && d0 && d0 !== atk && !ordAtk(b, d0)) why = `${d0.name}이(가) 공격하지 않아`;
         else if (au.failLate && d0 && d0 !== atk && actedB4(b, d0)) why = `${d0.name}이(가) 먼저 행동해서`;
@@ -23033,9 +23050,7 @@ window.OM_BATTLE_UI = (() => {
         else if (
           (au.failNoBerry || au.failNoSt) &&
           (() => {
-            const nm = x => String(x || '').replace(/\s/g, '');
-            const nf = spL(atk, 'nofail').find(e => !e.mv || !e.mv.length || e.mv.some(x => nm(x) === nm(mv.name)));
-            if (nf) return false;
+            if (nofailOk(atk, mv)) return false;
             if (au.failNoBerry && !(atk.ateBerry || (atk.itemUsed && /열매$/.test(String(atk.itemUsed.name || '').trim())))) {
               why = '「나무열매」를 소모한 상태가 아니라';
               return true;
