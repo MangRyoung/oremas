@@ -4204,6 +4204,14 @@
     return true;
   }
   /* 배틀에 올릴 포켓몬 초기화: 시트의 남은 HP·상태 이상·빈사(결과 정리로 돌려받은 것)로 시작 */
+  /* 11-04 망령 「레이드 배틀 자동화가 안되있어?」: 「레이드 배틀 : X」 포텐셜이 있는 야생은 조우 때 배리어를 바로 건다 (상세 창 「레이드」 칸과 같은 기본값). 예전엔 포텐셜 글만 실리고 m.raid 가 비어 GM 이 손으로 넣어야 했다 — 봉인 서고 보스가 배리어 없이 한 방에 쓰러진 것 */
+  /* 11-28 망령 「『레이드 배틀』의 대미지 컷도 적용이 안 되고 있는데」(3재앙): 야생 조우만 걸던 것을 배틀에 올리는 모든 포켓몬(prepMon)으로 — 제작기 트레이너 파티로 부른 보스도 */
+  function raidInit(mon) {
+    const p = (mon.pots || []).find(p => p && /레이드 배틀\s*:\s*\d+/.test(String(p.name || '')));
+    if (!p || (mon.raid && +mon.raid.segments > 0)) return;
+    const X = +String(p.name).match(/레이드 배틀\s*:\s*(\d+)/)[1];
+    if (X > 0) mon.raid = { cure: 1, cstat: 1, rup: 1, rmod: 0, cond: 'cap', segments: X, broken: 0, phase: 1, brk: 0 };
+  }
   function prepMon(mon, side, i) {
     mon.side = side;
     mon.slot = i;
@@ -4221,6 +4229,7 @@
     delete mon.form0;
     delete mon.formIdx;
     mon.hp = { max: mon.stats[0], cur: mon.states.Dead ? 0 : mon.sheetHp == null ? mon.stats[0] : Math.min(mon.sheetHp, mon.stats[0]) };
+    raidInit(mon);
   }
   /* ---------- 함께 지시하기 · 합치기 (10-23 망령): 같은 진영에 트레이너가 있으면 「+ 파티」로 부른 파티를 그 트레이너에 합친다.
    포켓몬 목록 · 고유 · 전용(포켓몬에 붙어 옴) · 4식 6령이 한 트레이너로 모이고 지시 창 하나를 같이 쓴다. 손님 좌석은 시트의 co(함께 지시)에 적는다 ---------- */
@@ -4749,14 +4758,6 @@
             m.pots.push({ slot: m.pots.length, name: nm, kind: '', eff: m.boss ? '모든 능력치 ×1.5' : '모든 능력치 ×1.25', ph: false });
             if (!m.role) m.role = nm;
           }
-        });
-      /* 11-04 망령 「레이드 배틀 자동화가 안되있어?」: 「레이드 배틀 : X」 포텐셜이 있는 야생은 조우 때 배리어를 바로 건다 (상세 창 「레이드」 칸과 같은 기본값). 예전엔 포텐셜 글만 실리고 m.raid 가 비어 GM 이 손으로 넣어야 했다 — 봉인 서고 보스가 배리어 없이 한 방에 쓰러진 것 */
-      if (side === 'right' && t.wild)
-        ms.forEach(m => {
-          const p = (m.pots || []).find(p => p && /레이드 배틀\s*:\s*\d+/.test(String(p.name || '')));
-          if (!p || (m.raid && +m.raid.segments > 0)) return;
-          const X = +String(p.name).match(/레이드 배틀\s*:\s*(\d+)/)[1];
-          if (X > 0) m.raid = { cure: 1, cstat: 1, rup: 1, rmod: 0, cond: 'cap', segments: X, broken: 0, phase: 1, brk: 0 };
         });
       delete t.walk;
       delete t.solo;

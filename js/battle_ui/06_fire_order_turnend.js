@@ -2901,11 +2901,15 @@
       console.warn('돌재생 · 픽업', e);
     }
     const raidL = [];
+    const pcMids = [];
     for (const mid in b.mons) {
       const m = b.mons[mid];
       const R = m.raid;
       if (!R || !(+R.segments > 0)) continue;
-      if (m.hp.cur > 0 && (R.brk || R.cond === 'every')) raidL.push(...raidPhase(b, m, '턴 종료 이후'));
+      if (m.hp.cur > 0 && (R.brk || R.cond === 'every')) {
+        raidL.push(...raidPhase(b, m, '턴 종료 이후'));
+        pcMids.push(mid);
+      }
       delete R.brk;
     }
     for (const mid in b.mons) {
@@ -3038,5 +3042,6 @@
       'battle',
       seq.length ? { seq } : undefined
     );
+    if (pcMids.length) await phaseReact(pcMids);
   }
 

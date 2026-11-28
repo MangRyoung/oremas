@@ -3183,7 +3183,7 @@ window.OM_BATTLE_UI = (() => {
   }
   function potSrc(m, all) {
     const L = [...(m.pots || []).filter(p => p && p.name && (!p.ph || (p.apt && aptOn(m, p.name)))), ...(m.excl ? [m.excl] : []), ...(m.exclX || [])];
-    return all ? L : L.filter(p => supLive(m, p) && !priGated(m, p));
+    return all ? L : L.filter(p => supLive(m, p) && !priGated(m, p) && !phaseOffWhy(m, p));
   }
   /* 11-23 망령 「【프라이드 : X】 = 자신이 프라이드 X일 때」: 효과(또는 ① · ② 줄) 머리 태그에 【프라이드 : X】가 있으면 그 포켓몬의 프라이드(시트 · 자동 계산값 + 배틀 중 올린 단계 priUp)로 판정.
     「【프라이드 : A】 태그가 발동한다」(티아마트 전용)처럼 태그를 켜 주는 효과를 쓰면 m.priTag 에 등급을 적어 그 등급으로도 통과. 【함성 (【프라이드 : A】)】 안쪽은 머리 태그가 아니라 상대 조건이라 여기서 안 본다.
@@ -11784,11 +11784,15 @@ window.OM_BATTLE_UI = (() => {
       console.warn('돌재생 · 픽업', e);
     }
     const raidL = [];
+    const pcMids = [];
     for (const mid in b.mons) {
       const m = b.mons[mid];
       const R = m.raid;
       if (!R || !(+R.segments > 0)) continue;
-      if (m.hp.cur > 0 && (R.brk || R.cond === 'every')) raidL.push(...raidPhase(b, m, '턴 종료 이후'));
+      if (m.hp.cur > 0 && (R.brk || R.cond === 'every')) {
+        raidL.push(...raidPhase(b, m, '턴 종료 이후'));
+        pcMids.push(mid);
+      }
       delete R.brk;
     }
     for (const mid in b.mons) {
@@ -11921,6 +11925,7 @@ window.OM_BATTLE_UI = (() => {
       'battle',
       seq.length ? { seq } : undefined
     );
+    if (pcMids.length) await phaseReact(pcMids);
   }
 
   /* ── 조각 07_time.js — 타임(묘수) ── */
@@ -18121,7 +18126,52 @@ window.OM_BATTLE_UI = (() => {
           ? '【지원】은 볼 안에서만 — 필드 위에선 작동하지 않는다'
           : '빈사라 【지원】이 작동하지 않는다';
     }
-    return privOffWhy(m, nm) || roleNullWhy(m, nm);
+    return phaseOffWhy(m, p) || privOffWhy(m, nm) || roleNullWhy(m, nm);
+  }
+  /* 11-28 망령 「페이즈 체인지 : 1 은 페이즈 체인지가 한 번 발동한 이후, 2 는 2번, 3 은 3번 발동한 이후에 켤 수 있다」:
+     【페이즈 체인지 : N】 태그가 붙은 포텐셜 · 전용은 그 포켓몬의 「트리거 : 페이즈 체인지」가 N 번 일어나기 전엔 꺼져 있다 (m.raid.phase 는 1 에서 시작해 한 번마다 +1) */
+  function phaseOffWhy(m, p) {
+    const t = String((p && p.eff) || '').match(/【\s*페이즈\s*체인지\s*[:：]\s*(\d+)\s*】/);
+    if (!t) return '';
+    const need = +t[1],
+      have = m && m.raid ? Math.max(0, (+m.raid.phase || 1) - 1) : 0;
+    return have >= need ? '' : `【페이즈 체인지 : ${need}】 — 페이즈 체인지 ${need}번 뒤부터 (지금 ${have}번)`;
+  }
+  /* 11-28 「트리거 : 페이즈 체인지」가 일어난 뒤(턴 종료 · 수동): ① 이번에 막 켜진(【페이즈 체인지 : N】 = 지금 횟수) 상시 포텐셜을 건다
+     ② 「「트리거 : 페이즈 체인지」가 발동했을 때」 글이 있는 켜진 포텐셜 · 전용은 바로 발동(11-28 망령 「자동으로 되게」) (레이드 배틀 ③ ④ 는 raidPhase 가 이미 처리) */
+  const PC_TRIG = /「?\s*트리거\s*[:：]\s*페이즈\s*체인지\s*」?\s*(?:가|이)?\s*발동(?:했을|하였을|할)\s*때/;
+  async function phaseReact(mids) {
+    const c = ctx();
+    if (!c.mgr || !FX()) return;
+    for (const mid of mids || []) {
+      const m = (c.b.mons || {})[mid];
+      if (!m || !m.raid || !(m.hp && m.hp.cur > 0)) continue;
+      const have = Math.max(0, (+m.raid.phase || 1) - 1);
+      const fresh = [],
+        trig = [];
+      for (const p of potSrc(m, 1)) {
+        if (!p || !p.name || /레이드\s*배틀/.test(p.name) || potOffWhy(m, p.name)) continue;
+        const tg = String(p.eff || '').match(/【\s*페이즈\s*체인지\s*[:：]\s*(\d+)\s*】/);
+        if (PC_TRIG.test(String(p.eff || ''))) trig.push(p);
+        else if (tg && +tg[1] === have) fresh.push(p.name);
+      }
+      if (fresh.length) {
+        A().sysLog(`【페이즈 체인지 ${have}】 ${m.name} — 켜짐: 『${fresh.join('』 『')}』`, 'battle', { mid });
+        await autoOnEntry(mid, { passiveOnly: 1, only: fresh });
+      }
+      for (const p of trig) await phaseTrigFire(m, p, have);
+    }
+  }
+  async function phaseTrigFire(m, p, have) {
+    const head = `【포텐셜】 ${m.name} 『${p.name}』 — 「트리거 : 페이즈 체인지」(${have}번째)`;
+    const a = FX().autoOf(m, 'pot', p.name);
+    if (!a || !realOps(a) || a.manual) {
+      A().sysLog(`${head}\n→ 효과는 손으로`, 'battle', { mid: m.id, eff: String(p.eff || '').replace(/<br\s*\/?>/g, '\n').slice(0, 300) });
+      return;
+    }
+    const ex = (m.excl && m.excl.name === p.name) || (m.exclX || []).some(q => q && q.name === p.name);
+    if (ex) await fireSpecial(m.tid, m.id, 'ex', p.name, 'free');
+    else await fireAuto(m.id, 'pot', p.name, { auto: a, manual: 1, head, eff: String(p.eff || '') });
   }
   /* 11-09 감우 54-F: 다른 포켓몬 · 트레이너 고유가 주는 「PT 전원이 「기능 확장 : X」를 내보낼 수 있다」 */
   function partyExtSrc(m) {
@@ -19517,15 +19567,18 @@ window.OM_BATTLE_UI = (() => {
     yejiShow(mid);
     await traitAsk(mid);
     const list = [];
-    if (m.ability) list.push(['trait', m.ability]);
-    if (m.item && !IOFF(m)) list.push(['item', m.item]);
-    for (const x of m.items2 || [])
+    /* 11-28 o2.only = 이 포텐셜 이름들만 (페이즈 체인지로 막 켜진 상시 포텐셜을 그때 건다 — phaseReact) */
+    const only = o2.only || null;
+    if (m.ability && !only) list.push(['trait', m.ability]);
+    if (m.item && !IOFF(m) && !only) list.push(['item', m.item]);
+    for (const x of only ? [] : m.items2 || [])
       if (x && x.item && !IOFF(m) && !list.some(([k, n]) => k === 'item' && n === x.item))
         list.push(['item', x.item]); /* 11-08 23:12: 소지품 2 · 3번 칸의 상시 · 등장 효과도 */
     for (const p of [...(m.pots || []), ...(m.excl ? [m.excl] : []), ...(m.exclX || [])])
-      if (p && p.name && !p.ph && !potOffWhy(m, p.name)) list.push(['pot', p.name]); /* 11-09 감우 54-G: 【준비】 불충족은 빼고 */
+      if (p && p.name && !p.ph && !potOffWhy(m, p.name) && (!only || only.includes(p.name)))
+        list.push(['pot', p.name]); /* 11-09 감우 54-G: 【준비】 불충족은 빼고 */
     /* 11-03 감우: 트레이너 고유 포텐셜도 같은 길로 — 【등장】 · 【상시】 이고 구문이 있으면 그 트레이너의 포켓몬이 나올 때 건다 (autoOf 가 m.tid 로 고유 구문을 읽는다). 횟수(【N/시】)가 있는 고유는 손으로(선행 · 임의 발동) */
-    {
+    if (!only) {
       const t = (c.b.trainers || {})[m.tid];
       for (const u of (t && t.unique) || [])
         if (u && u.name && !/【\s*\d+\s*\/\s*(시|턴)\s*】/.test(String(u.eff || '')) && !list.some(([k, n]) => k === 'pot' && n === u.name))
@@ -20704,7 +20757,9 @@ window.OM_BATTLE_UI = (() => {
     if (!m || !m.raid) return;
     const L = raidPhase(b, m, why || '수동 발동');
     delete m.raid.brk;
-    if (await saveBattle(b0, b)) A().sysLog(`【레이드】 ${L.join('\n')}`, 'battle', { mid, img: m.image || '' });
+    if (!(await saveBattle(b0, b))) return;
+    A().sysLog(`【레이드】 ${L.join('\n')}`, 'battle', { mid, img: m.image || '' });
+    await phaseReact([mid]);
   }
   /* 「레이드 배틀 : 4」 ②: 「3」 배수 턴의 가장 마지막에 추가 행동 (【사전】 공개) — 맵툴처럼 손으로 하되 알려 준다 */
   function raidExtra(b) {

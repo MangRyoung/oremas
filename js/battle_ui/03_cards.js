@@ -696,7 +696,7 @@
   }
   function potSrc(m, all) {
     const L = [...(m.pots || []).filter(p => p && p.name && (!p.ph || (p.apt && aptOn(m, p.name)))), ...(m.excl ? [m.excl] : []), ...(m.exclX || [])];
-    return all ? L : L.filter(p => supLive(m, p) && !priGated(m, p));
+    return all ? L : L.filter(p => supLive(m, p) && !priGated(m, p) && !phaseOffWhy(m, p));
   }
   /* 11-23 망령 「【프라이드 : X】 = 자신이 프라이드 X일 때」: 효과(또는 ① · ② 줄) 머리 태그에 【프라이드 : X】가 있으면 그 포켓몬의 프라이드(시트 · 자동 계산값 + 배틀 중 올린 단계 priUp)로 판정.
     「【프라이드 : A】 태그가 발동한다」(티아마트 전용)처럼 태그를 켜 주는 효과를 쓰면 m.priTag 에 등급을 적어 그 등급으로도 통과. 【함성 (【프라이드 : A】)】 안쪽은 머리 태그가 아니라 상대 조건이라 여기서 안 본다.

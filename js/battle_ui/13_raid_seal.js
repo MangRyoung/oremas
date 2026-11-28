@@ -140,7 +140,9 @@
     if (!m || !m.raid) return;
     const L = raidPhase(b, m, why || '수동 발동');
     delete m.raid.brk;
-    if (await saveBattle(b0, b)) A().sysLog(`【레이드】 ${L.join('\n')}`, 'battle', { mid, img: m.image || '' });
+    if (!(await saveBattle(b0, b))) return;
+    A().sysLog(`【레이드】 ${L.join('\n')}`, 'battle', { mid, img: m.image || '' });
+    await phaseReact([mid]);
   }
   /* 「레이드 배틀 : 4」 ②: 「3」 배수 턴의 가장 마지막에 추가 행동 (【사전】 공개) — 맵툴처럼 손으로 하되 알려 준다 */
   function raidExtra(b) {
