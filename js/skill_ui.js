@@ -273,6 +273,12 @@ window.OM_SKILL_UI = (() => {
     const b = A().ST.state.battle || {};
     return b.done ? {} : b.mons || {};
   }; /* 10-31: 던전으로 돌아온 배틀(done)은 끝난 것 */
+  /* 11-28 배틀에서 바로 휴식: 빌려 쓴 파티의 배틀 포켓몬은 id 가 「자리~시트 id」(rid = 시트 id) — 시트 id 로 배틀 쪽 칸을 찾는다 */
+  const bmKey = mid => {
+    const B = bmons();
+    return B[mid] ? mid : Object.keys(B).find(k => B[k] && B[k].rid === mid) || '';
+  };
+  const bmOf = mid => bmons()[bmKey(mid)];
   const liveB = () => {
     const b = A().ST.state.battle || {};
     return b.started && !b.done ? b : null;
@@ -360,11 +366,12 @@ window.OM_SKILL_UI = (() => {
     const nm = JSON.parse(JSON.stringify(m));
     fn(nm, false);
     await A().setDiff(['roster', 'mons', mid], m, nm, 1);
-    const bm = JSON.parse(JSON.stringify(bmons()[mid] || null));
+    const bk = bmKey(mid);
+    const bm = JSON.parse(JSON.stringify(bmons()[bk] || null));
     if (bm) {
       const nb = JSON.parse(JSON.stringify(bm));
       fn(nb, true);
-      await A().setDiff(['battle', 'mons', mid], bm, nb, 1);
+      await A().setDiff(['battle', 'mons', bk], bm, nb, 1);
     }
     return nm;
   }
@@ -1060,7 +1067,7 @@ window.OM_SKILL_UI = (() => {
         let best = 2,
           pick = '';
         for (const m0 of Object.values(mons()).filter(m => m.tid === tid0)) {
-          const b0 = bmons()[m0.id];
+          const b0 = bmOf(m0.id);
           const x0 = b0 || m0;
           const c0 = HP(x0, !!b0);
           if (c0 <= 0 || c0 >= x0.hp.max) continue;
@@ -1077,7 +1084,7 @@ window.OM_SKILL_UI = (() => {
       const dead = [];
       for (const tid0 of ids)
         for (const m0 of Object.values(mons()).filter(m => m.tid === tid0)) {
-          const b0 = bmons()[m0.id];
+          const b0 = bmOf(m0.id);
           const x0 = b0 || m0;
           if (HP(x0, !!b0) <= 0 || STS(x0, !!b0).Dead) dead.push(m0);
         }

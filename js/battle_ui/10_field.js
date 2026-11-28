@@ -631,6 +631,43 @@
     return `<div class="bcard scard" style="--tc:${col};--tf:${tf}"><div class="fch">${head}</div><div class="scb">${rows}</div>${off.length ? `<div class="scfoot">${offL}</div>` : ''}${by}</div>`;
   }
 
+  /* 11-28 망령 「배틀 맵에서 곧바로 휴식 처리를 할 수 있는 기능 없어?」: 배틀 단추 줄 「휴식」 — 스킬 체크 「휴식」 탭과 같은 단계(OM_SKILL_UI.applyRest)를
+     배틀에 선 트레이너(빌려 쓴 파티는 시트 쪽 · 함께 지시 파티 포함)에게 바로 건다. 배틀 중이면 applyRest 가 배틀 쪽 HP · 상태 · 4식 6령을 고친다 */
+  function battleRosterIds(b) {
+    const R = (A().ST.state.roster || {}).trainers || {};
+    const out = new Set();
+    for (const s of ['left', 'right']) {
+      for (const tid of ((b.sides || {})[s] || {}).trainers || []) {
+        const t = (b.trainers || {})[tid] || {};
+        for (const id of [t.srcTid || tid, ...(t.mates || []).map(x => x && x.id)]) if (id && R[id]) out.add(id);
+      }
+    }
+    return [...out];
+  }
+  function openRest() {
+    const c = ctx();
+    const K = window.OM_SKILL_UI;
+    if (!c.mgr) return;
+    if (!K || !K.applyRest) return A().toast('휴식 기능을 불러오지 못했다');
+    const ids = battleRosterIds(c.b);
+    const R = (A().ST.state.roster || {}).trainers || {};
+    const names = ids.map(id => (R[id] || {}).name || id);
+    const md = A().openModal(
+      `<div class="mhead"><h2>휴식</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+  <div class="small dim" style="margin-bottom:8px">단계 내용은 스킬 체크 「휴식」 탭 설정 그대로 · 대상 ${ids.length ? esc(names.join(' · ')) : '<b>배틀에 선 트레이너 없음</b>'}</div>
+  <label class="small" style="display:block;margin-bottom:10px"><input type="checkbox" id="brAll"> 배틀에 없는 로스터 트레이너까지 모두</label>
+  <div class="mmenu">${K.KINDS.map(k => `<button class="btn" data-brk="${k[0]}">${esc(k[1])} <small class="dim">${esc(k[2])}</small></button>`).join('')}</div>`
+    );
+    md.querySelectorAll('[data-brk]').forEach(
+      bt =>
+        (bt.onclick = async () => {
+          const all = md.querySelector('#brAll').checked;
+          if (!all && !ids.length) return A().toast('배틀에 선 트레이너가 없다');
+          A().closeModal();
+          await K.applyRest(bt.dataset.brk, all ? null : ids, { by: '배틀' });
+        })
+    );
+  }
   /* ---------- 필드 (GM) ---------- */
   const fcMan = s => ({
     n: ctx().gm ? 'GM' : A().ST.name || '',

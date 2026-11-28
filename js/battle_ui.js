@@ -1056,7 +1056,7 @@ window.OM_BATTLE_UI = (() => {
             return `<button class="btn sm ${np ? 'pri' : 'ghost'}" data-act="pendgo" ${np ? '' : 'disabled'} title="예약한 포켓몬을 양쪽 동시에 내보낸다">동시 내밀기 실행${np ? ' (' + np + ')' : ''}</button>`;
           })()
         : ''
-    }${c.gm && (+b.phase || 0) === 1 ? '<button class="btn sm ghost" data-act="reveal" title="아직 안 연 지시를 한꺼번에">모두 공개</button>' : ''}<button class="btn sm" data-act="field" title="날씨 · 그래스필드 등 · 룸 · 필드의 상태">필드</button>
+    }${c.gm && (+b.phase || 0) === 1 ? '<button class="btn sm ghost" data-act="reveal" title="아직 안 연 지시를 한꺼번에">모두 공개</button>' : ''}<button class="btn sm" data-act="field" title="날씨 · 그래스필드 등 · 룸 · 필드의 상태">필드</button><button class="btn sm ghost" data-act="rest" title="배틀에 선 트레이너에게 휴식(긴 · 중간 · 숨돌리기)을 바로 건다 — 단계 내용은 스킬 체크 「휴식」 탭">휴식</button>
     <button class="btn sm ghost" data-act="resetcmd" title="모든 지시 · 준비 완료 · 행동 순서를 지운다">초기화</button>${(+b.phase || 0) === 0 ? `<label class="dlset" title="지시 입력 제한 시간(분) — 비우면 제한 없음. 시간이 지나면 「준비 안 된 자리를 행동 없음으로 두고 진행」 단추가 뜬다">⏱ <input type="number" id="dlmin" min="0" max="180" data-act="deadline" value="${+b.deadline > Date.now() ? Math.max(1, Math.ceil((+b.deadline - Date.now()) / 60000)) : ''}" placeholder="분"></label>` : ''}<span class="snapbtns">${canRewind(c) ? `<button class="btn sm ghost" data-act="rewind" title="이 턴의 턴 개시 직후(체크포인트)로 배틀을 되돌린다 — 턴 개시 때마다 남는다 (최근 3턴)">↶ 턴 처음</button>` : ''}<button class="btn sm ghost" data-act="bresume" title="배틀 저장 · 이어서 하기 — 지금 배틀을 이름 붙여 저장하거나, 저장한 배틀을 불러온다">저장 ▾</button></span><span class="gmbr" aria-hidden="true"></span>${c.gm ? '<button class="btn sm" data-act="result" title="HP·빈사·상태 이상·포텐셜 횟수·쓴 소지품을 시트에 돌려준다">결과 정리</button>' : ''}<button class="btn sm ghost danger" data-act="clear" title="배틀을 비운다 (전당에 남길지 먼저 묻는다)">비우기</button>${window.OM_RP_UI && window.OM_RP_UI.bsayToggleHtml ? window.OM_RP_UI.bsayToggleHtml() : ''}${c.mgr ? `<button class="btn sm pvpb ${b.pvp ? 'pri' : 'ghost'}" data-act="pvp" title="${b.pvp ? 'PVP 모드 중 — 양쪽 도감 · 비공개 벤치가 모두에게 공개된다. 누르면 해제(해석한 만큼만 보이게)' : 'PVP 설정 — 켜면 서로의 도감 정보(타입 · 약점 · 종족치 · 기술 · 특성 · 포텐셜)와 비공개 벤치가 모두에게 공개된다 (해석 횟수는 안 쓴다)'}">PVP</button>` : ''}${c.gm ? `<button class="btn sm gmh ${c.fair ? 'pri' : 'ghost'}" data-act="gmhands" title="켜면 GM 도 플레이어처럼 — 플레이어가 올린 트레이너의 지시·준비·HP·상태는 그 플레이어만. GM 이 불러온 파티·NPC 는 GM 이 그대로 지시하고 진행한다 — 이 GM(계정 · 닉)에게만 적용 (방 설정 「GM 불간섭」은 모든 GM)"><span class="lbl">${c.fair ? '↩ GM 권한' : 'PL 권한'}</span><span class="sh">${c.fair ? '↩ GM' : 'PL'}</span></button>` : ''}${c.gm || (c.role === 'seat' && c.seat) ? `<button class="btn sm ghost aihandb gmai" data-aihand title="AI 에게 맡기기 — 지침 주소 · 이 방 · 정해 둔 것을 한 번에 복사해 아무 AI 대화창에 붙여 넣어요${c.gm ? '' : ' (PL: 내 트레이너 지시 · 대사)'} (js/ai_ui.js)">🤖 AI</button>` : ''}
     <span class="gmty"><span id="typingBat" class="typingslot">${window.OM_RP_UI && window.OM_RP_UI.typingHtml ? window.OM_RP_UI.typingHtml() : ''}</span></span>
     ${Object.entries(c.ST.state.pub || {})
@@ -6054,6 +6054,8 @@ window.OM_BATTLE_UI = (() => {
         return areaSwap(d.mid);
       case 'field':
         return openField();
+      case 'rest':
+        return openRest();
       case 'stage':
         return window.OM_STAGE_UI && window.OM_STAGE_UI.info();
       case 'spmgr':
@@ -15309,6 +15311,43 @@ window.OM_BATTLE_UI = (() => {
     return `<div class="bcard scard" style="--tc:${col};--tf:${tf}"><div class="fch">${head}</div><div class="scb">${rows}</div>${off.length ? `<div class="scfoot">${offL}</div>` : ''}${by}</div>`;
   }
 
+  /* 11-28 망령 「배틀 맵에서 곧바로 휴식 처리를 할 수 있는 기능 없어?」: 배틀 단추 줄 「휴식」 — 스킬 체크 「휴식」 탭과 같은 단계(OM_SKILL_UI.applyRest)를
+     배틀에 선 트레이너(빌려 쓴 파티는 시트 쪽 · 함께 지시 파티 포함)에게 바로 건다. 배틀 중이면 applyRest 가 배틀 쪽 HP · 상태 · 4식 6령을 고친다 */
+  function battleRosterIds(b) {
+    const R = (A().ST.state.roster || {}).trainers || {};
+    const out = new Set();
+    for (const s of ['left', 'right']) {
+      for (const tid of ((b.sides || {})[s] || {}).trainers || []) {
+        const t = (b.trainers || {})[tid] || {};
+        for (const id of [t.srcTid || tid, ...(t.mates || []).map(x => x && x.id)]) if (id && R[id]) out.add(id);
+      }
+    }
+    return [...out];
+  }
+  function openRest() {
+    const c = ctx();
+    const K = window.OM_SKILL_UI;
+    if (!c.mgr) return;
+    if (!K || !K.applyRest) return A().toast('휴식 기능을 불러오지 못했다');
+    const ids = battleRosterIds(c.b);
+    const R = (A().ST.state.roster || {}).trainers || {};
+    const names = ids.map(id => (R[id] || {}).name || id);
+    const md = A().openModal(
+      `<div class="mhead"><h2>휴식</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+  <div class="small dim" style="margin-bottom:8px">단계 내용은 스킬 체크 「휴식」 탭 설정 그대로 · 대상 ${ids.length ? esc(names.join(' · ')) : '<b>배틀에 선 트레이너 없음</b>'}</div>
+  <label class="small" style="display:block;margin-bottom:10px"><input type="checkbox" id="brAll"> 배틀에 없는 로스터 트레이너까지 모두</label>
+  <div class="mmenu">${K.KINDS.map(k => `<button class="btn" data-brk="${k[0]}">${esc(k[1])} <small class="dim">${esc(k[2])}</small></button>`).join('')}</div>`
+    );
+    md.querySelectorAll('[data-brk]').forEach(
+      bt =>
+        (bt.onclick = async () => {
+          const all = md.querySelector('#brAll').checked;
+          if (!all && !ids.length) return A().toast('배틀에 선 트레이너가 없다');
+          A().closeModal();
+          await K.applyRest(bt.dataset.brk, all ? null : ids, { by: '배틀' });
+        })
+    );
+  }
   /* ---------- 필드 (GM) ---------- */
   const fcMan = s => ({
     n: ctx().gm ? 'GM' : A().ST.name || '',

@@ -1038,6 +1038,8 @@
         return areaSwap(d.mid);
       case 'field':
         return openField();
+      case 'rest':
+        return openRest();
       case 'stage':
         return window.OM_STAGE_UI && window.OM_STAGE_UI.info();
       case 'spmgr':
