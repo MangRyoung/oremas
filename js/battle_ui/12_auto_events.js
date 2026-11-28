@@ -3759,6 +3759,19 @@
     } catch (e) {}
     return q;
   }
+  /* 11-29 망령 「변칙 기술이 신시아에게 위력이 0으로 나와서 익스펜션 : 바위로 무효화」: 위력 조건(위력≤N · 위력≥N)은 변칙 위력 기술이면 이 대상에 대한 위력으로 본다 (굴림이 있는 매그니튜드 · 프레젠트 · 사이코웨이브는 빼고) */
+  const MQ_ROLL = new Set(['mag', 'present', 'psywave']);
+  function mqPow(atk, def, mv) {
+    const p = +mv.pow || 0;
+    const k = SPMAP[String(mv.name || '').trim()];
+    if (p || !k || MQ_ROLL.has(k) || !atk || !def) return p;
+    try {
+      const r = specialPowFor(mv.name, atk)(def);
+      return r && r.pow != null ? +r.pow || 0 : 0;
+    } catch (e) {
+      return 0;
+    }
+  }
   function moveQuery0(atk, def, mv, moveTypes, eff, single) {
     const b = ctx().b;
     return {
@@ -3827,8 +3840,11 @@
       })(),
       /* 11-15 【방호】 무시(폭식죄의 추격) */ tmv: !!(mv.ext && mv.ext.item && /기술머신/.test(String(mv.ext.item))),
       xmv: !!mv.ext,
-      /* 11-09 감우 54: 필중기 · 맞는 쪽(비례무시 조건) */ /* 11-08 망령 「특정 기술일 때는 웹툴 손봐서」: 기술 이름(기술:) · 「#…」 태그 · 상대 타입(상대타입:) 조건 */ pow:
-        +mv.pow || 0,
+      /* 11-09 감우 54: 필중기 · 맞는 쪽(비례무시 조건) */ /* 11-08 망령 「특정 기술일 때는 웹툴 손봐서」: 기술 이름(기술:) · 「#…」 태그 · 상대 타입(상대타입:) 조건 */ pow: mqPow(
+        atk,
+        def,
+        mv
+      ),
       recoil: (() => {
         try {
           const a = moveAuto(mv);
