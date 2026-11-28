@@ -1539,7 +1539,7 @@
         if ((+c.b.phase || 0) === 2) await A().set(['battle', 'phase'], 3);
         if (n < (c.b.order || []).length) {
           const On = c.b.order[n];
-          A().sysLog(
+          await A().sysLog(
             On.xact
               ? `▶ ${On.name}의 추가 행동 — 『${On.xact}』 「${On.move || '?'}」 (카드의 「공격」을 누르면 그 기술로 열린다)`
               : `▶ ${On.name}의 행동`,
