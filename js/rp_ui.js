@@ -7196,12 +7196,93 @@ window.OM_RP_UI = (() => {
   const BG = {
     g: '',
     q: '',
-    ed: null
+    ed: null,
+    pull: null
   }; /* ed = 곡 추가 · 수정 입력 칸 {g, sn0(고치는 곡 · 새 곡이면 ''), t, u} — 11-25 망령 「제목 넣고 링크 긁으러 유튜브 열면 창이 꺼진다」: prompt 두 번 대신 창 안의 칸. 다른 탭에 다녀와도 남는다 */
   const gshort = g => String(g).replace(/^[0-9.]+\s*/, '');
   function bgmMeta(g) {
     const M = (DB().bgm || {}).meta || {};
     return M[g] || { b: '', d: '' };
+  }
+  /* 11-28 망령 「브금 방마다 꼭 나누기보단 원하면 다른 방에 추가된 곡들 불러와서 통합」: 다른 방의 rp.bgmX.add(그 방에서 더한 곡 · 그룹)를 이 방에 합친다.
+    BG.pull = { rows: [{id, name, n(가져올 곡 수), err}] | null(읽는 중) }. 이 기기의 최근 방 목록(om_rooms)에서 고르거나 방 코드 · 링크를 적는다 */
+  function bgmPullPlan(other) {
+    const G = bgmGroups();
+    const del = (R().bgmX || {}).del || {};
+    const plan = { add: {}, n: 0, same: 0, cut: 0 };
+    const add = (other && other.add) || {};
+    for (const g in add) {
+      if (del[g]) {
+        plan.cut += Object.keys(add[g]).length;
+        continue;
+      }
+      for (const sn in add[g]) {
+        if ((G[g] || {})[sn]) plan.same++;
+        else if (del[g + '\u0001' + sn]) plan.cut++;
+        else {
+          (plan.add[g] = plan.add[g] || {})[sn] = add[g][sn];
+          plan.n++;
+        }
+      }
+      if (!G[g] && !plan.add[g]) plan.add[g] = {};
+    }
+    return plan;
+  }
+  const bgmPullId = v => {
+    const m = String(v || '').match(/(?:#r=|^)([0-9a-f]{10})\b/);
+    return m ? m[1] : '';
+  };
+  async function bgmPullRead(id) {
+    const pick = await window.OM_STORE.roomPick(id);
+    if (!pick) throw new Error('그런 방이 없다');
+    return bgmPullPlan((pick.rp || {}).bgmX || {});
+  }
+  async function bgmPullLoad(re) {
+    let recent = [];
+    try {
+      recent = JSON.parse(localStorage.getItem('om_rooms') || '[]');
+    } catch (e) {}
+    const rows = recent.filter(x => x && x.id && x.id !== A().ST.room).slice(0, 12);
+    await Promise.all(
+      rows.map(async x => {
+        try {
+          x.n = (await bgmPullRead(x.id)).n;
+        } catch (e) {
+          x.err = 1;
+        }
+      })
+    );
+    if (!BG.pull) return;
+    BG.pull.rows = rows.filter(x => !x.err).sort((a, b) => b.n - a.n);
+    re();
+  }
+  async function bgmPullRun(id, name, re) {
+    let plan;
+    try {
+      plan = await bgmPullRead(id);
+    } catch (e) {
+      return A().toast('그 방을 읽지 못했다 — ' + ((e && e.message) || e));
+    }
+    const skip = [plan.same ? `이미 있는 ${plan.same}곡` : '', plan.cut ? `이 방에서 지운 ${plan.cut}곡` : ''].filter(Boolean).join(' · ');
+    if (!plan.n && !Object.keys(plan.add).length) return A().toast(`가져올 새 곡이 없다${skip ? ' (' + skip + '은 건너뜀)' : ''}`);
+    const X = bgmX();
+    for (const g in plan.add) X.add[g] = Object.assign({}, X.add[g] || {}, plan.add[g]);
+    await A().set(['rp', 'bgmX'], X);
+    BG.pull = null;
+    A().toast(`「${name || id}」에서 ${plan.n}곡을 가져왔다${skip ? ' (' + skip + '은 건너뜀)' : ''}`);
+    re();
+  }
+  function bgmPullHtml() {
+    const rows = BG.pull.rows;
+    const list = !rows
+      ? '<span class="small dim">방을 읽는 중…</span>'
+      : rows
+          .map(
+            x =>
+              `<button class="btn sm ${x.n ? '' : 'ghost'}" data-bq="pullgo" data-g="${esc(x.id)}" data-s="${esc(x.name || x.id)}" ${x.n ? '' : 'disabled'}>${esc(x.name || x.id)} <b>${x.n}</b>곡</button>`
+          )
+          .join('') || '<span class="small dim">이 기기에 최근 방이 없다 — 아래에 방 코드를 적는다</span>';
+    return `<div class="bgmed" id="bgmpull"><b class="small">다른 방 곡 가져오기</b><span class="sp"></span><button class="btn sm ghost" data-bq="pullx">닫기</button><div class="row bgmedn" style="gap:6px;flex-wrap:wrap">${list}</div><input type="text" id="bgpullc" placeholder="또는 방 코드 · 방 링크" autocomplete="off"><button class="btn sm" data-bq="pullcode">이 방에서 가져오기</button><span class="small dim bgmedn">숫자는 이 방에 없는 곡 수 · 그 방에서 더한 곡과 그룹만 가져온다 · 이미 있는 곡과 이 방에서 지운 곡은 건너뛴다</span></div>`;
   }
   function bgmPanelHtml() {
     const r = R();
@@ -7235,7 +7316,7 @@ window.OM_RP_UI = (() => {
   }`;
     if (!BG.g) {
       const tot = gs.reduce((a, g) => a + Object.keys(G[g]).length, 0);
-      head = `<div class="sec"><b>그룹 ${gs.length}개 · ${tot}곡</b><span class="note">▶ 랜덤은 그 그룹에서 아무 곡이나 모두에게</span><span class="sp"></span>${Object.keys((r.bgmX || {}).del || {}).length ? '<button class="btn xs ghost" data-bq="undel">지운 것 되살리기</button>' : ''}<button class="btn xs" data-bq="gadd">＋ 그룹 추가</button></div><div class="row" style="margin-bottom:6px"><input type="text" id="bgq" placeholder="전체 곡 검색 (곡 이름 일부나 그룹 이름)" value="${esc(BG.q)}" style="flex:1"></div>`;
+      head = `<div class="sec"><b>그룹 ${gs.length}개 · ${tot}곡</b><span class="note">▶ 랜덤은 그 그룹에서 아무 곡이나 모두에게</span><span class="sp"></span>${Object.keys((r.bgmX || {}).del || {}).length ? '<button class="btn xs ghost" data-bq="undel">지운 것 되살리기</button>' : ''}<button class="btn xs" data-bq="gadd">＋ 그룹 추가</button>${gm() ? '<button class="btn xs" data-bq="pull" title="다른 방에서 더해 둔 곡을 이 방 목록에 합친다 (이미 있는 곡 · 이 방에서 지운 곡은 건너뛴다)">⇣ 다른 방 곡 가져오기</button>' : ''}</div>${gm() && BG.pull ? bgmPullHtml() : ''}<div class="row" style="margin-bottom:6px"><input type="text" id="bgq" placeholder="전체 곡 검색 (곡 이름 일부나 그룹 이름)" value="${esc(BG.q)}" style="flex:1"></div>`;
       if (q) {
         let n = 0;
         for (const g of gs) {
@@ -7547,6 +7628,23 @@ window.OM_RP_UI = (() => {
             else X.del[g + '\u0001' + sn] = 1;
             await A().set(['rp', 'bgmX'], X);
             return re();
+          }
+          if (k === 'pull') {
+            BG.pull = BG.pull ? null : { rows: null };
+            re();
+            if (BG.pull) bgmPullLoad(re);
+            return;
+          }
+          if (k === 'pullx') {
+            BG.pull = null;
+            return re();
+          }
+          if (k === 'pullgo') return bgmPullRun(g, sn, re);
+          if (k === 'pullcode') {
+            const id = bgmPullId(($('#bgpullc', md) || {}).value);
+            if (!id) return A().toast('방 코드(10글자)나 방 링크를 적어 줘');
+            if (id === A().ST.room) return A().toast('지금 이 방이다');
+            return bgmPullRun(id, '', re);
           }
           if (k === 'gadd') {
             const n = prompt('새 그룹 이름 (예: 20. 무진 · 항구)');
