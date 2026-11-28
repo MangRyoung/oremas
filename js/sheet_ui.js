@@ -439,26 +439,44 @@ window.OM_SHEET_UI = (() => {
           A().renderScene();
         })
     );
-    el.querySelectorAll('[data-up]').forEach(
-      inp =>
-        (inp.onchange = async () => {
-          const f = inp.files[0];
-          if (!f) return;
-          if (f.size > 5 * 1024 * 1024) return A().toast('5MB 이하만');
-          A().toast('그림을 올리는 중…');
-          try {
-            const url = await DBS().uploadImage(`rooms/${c.ST.room}/${inp.dataset.up === 'tr' ? 't_' : 'm_'}${inp.dataset.id}`, f);
-            await A().set(['roster', inp.dataset.up === 'tr' ? 'trainers' : 'mons', inp.dataset.id, 'image'], url);
-            A().toast('올렸다');
-          } catch (e) {
-            A().toast('올리지 못했다: ' + e.message);
-          }
-        })
-    );
+    el.querySelectorAll('[data-up]').forEach(inp => bindUp(inp, c));
     if (window.OM_SK3) window.OM_SK3.bind(el);
     bindAuto(el, c);
     bindEdits(el, c);
     bindQuick(el, c);
+  }
+  /* 시트 탭의 「파일 올리기」 · 「그림 바꾸기」: 고른 그림을 방 저장소에 올려 트레이너 · 포켓몬 그림으로 */
+  async function upRosterImage(c, kind, id, f) {
+    if (!f) return;
+    if (f.size > 5 * 1024 * 1024) return A().toast('5MB 이하만');
+    A().toast('그림을 올리는 중…');
+    try {
+      const url = await DBS().uploadImage(`rooms/${c.ST.room}/${kind === 'tr' ? 't_' : 'm_'}${id}`, f);
+      await A().set(['roster', kind === 'tr' ? 'trainers' : 'mons', id, 'image'], url);
+      A().toast('올렸다');
+    } catch (e) {
+      A().toast('올리지 못했다: ' + e.message);
+    }
+  }
+  /* 11-28 망령 「포트레이트 따기 … 곧바로 연계」: 시트 탭의 그림 올리는 단추 옆에도 「✂ 자르기」 — 포트레이트 따기(OM_CUTTER)에서 자른 그림을 같은 길로 올린다 */
+  function bindUp(inp, c) {
+    const kind = inp.dataset.up,
+      id = inp.dataset.id;
+    inp.onchange = () => upRosterImage(c, kind, id, inp.files[0]);
+    const lab = inp.closest('label');
+    if (!window.OM_CUTTER || !lab || (lab.nextElementSibling && lab.nextElementSibling.classList.contains('upcut'))) return;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn xs ghost upcut';
+    b.textContent = '✂ 자르기';
+    b.title = '포트레이트 따기를 열어 얼굴 쪽으로 자르거나 배경을 지운 뒤 이 그림으로 올린다';
+    b.style.cssText = lab.style.cssText;
+    b.onclick = async e => {
+      e.stopPropagation();
+      const fs = await window.OM_CUTTER.open({ label: kind === 'tr' ? '트레이너 그림' : '포켓몬 그림' });
+      if (fs.length) upRosterImage(c, kind, id, fs[0]);
+    };
+    lab.after(b);
   }
   function bindQuick(el, c) {
     el.querySelectorAll('[data-qe]').forEach(
