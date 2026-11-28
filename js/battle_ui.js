@@ -1116,11 +1116,13 @@ window.OM_BATTLE_UI = (() => {
           fb.textContent = BFOLD.open ? '접기 ▴' : '펼치기 ▾';
         };
     }
+    /* 11-28 망령 「필드랑 SP 버튼이 따로 안 눌리는데」: 트레이너 칸(data-act=stx) 안의 단추를 누르면 칸의 요약까지 같이 열려 창을 덮었다 — 안쪽 단추를 누른 클릭은 바깥 칸이 받지 않는다 */
+    const ownClick = (bt, e) => !e || !e.target.closest || e.target.closest('[data-act]') === bt;
     el.querySelectorAll('[data-act]').forEach(bt => {
       if (bt.tagName === 'SELECT') bt.onchange = () => action(bt.dataset, bt.value);
       else if (bt.type === 'checkbox') bt.onchange = () => action(bt.dataset, bt.checked);
       else if (bt.tagName === 'INPUT') bt.onchange = () => action(bt.dataset, bt.value);
-      else bt.onclick = () => action(bt.dataset);
+      else bt.onclick = e => ownClick(bt, e) && action(bt.dataset);
     });
     el.querySelectorAll('[data-mon]').forEach(
       cd =>
