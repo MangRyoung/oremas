@@ -5803,9 +5803,9 @@ button.tfsep.cl{opacity:1;border:1px dashed color-mix(in srgb,var(--yel2) 55%,tr
 .bgmro .bgmed{display:none!important}
 .bgmed .bgmeds{color:var(--yel2)}
 /* 11-28 곡 추가 칸의 「받은 곡」 (드롭박스 업로더가 보낸 것) */
-.bgmed .bgmin{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.bgmed .bgmin{display:flex;flex-wrap:wrap;gap:4px;align-items:center;min-width:0;max-width:100%}
 .bgmed .bgmin:empty{display:none}
-.bgmed .bgmin .btn{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bgmed .bgmin .btn{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 @media (max-width:760px){.bgmed input[type=text],.bgmed #bgedu{flex:1 1 100%}}
 
 /* 11-26 369 휴대폰 공격 창: 굴린 뒤 결과 표(#ares 바로 아래 table.t — 7칸)가 683px 라 창이 가로로 밀렸다.
