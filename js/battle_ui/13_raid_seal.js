@@ -162,6 +162,13 @@
         });
     }
   }
+  /* 배리어가 깨졌다 — 기술 대미지(HP 창) · 턴 종료 비례 대미지(field.js opt.floor)가 같이 쓴다. 페이즈 체인지는 깨진 턴이 끝난 뒤 */
+  function raidBreak(m, fl) {
+    m.raid.broken = (+m.raid.broken || 0) + 1;
+    m.raid.brk = 1;
+    return `◆ ${m.name}의 배리어(${fl})가 깨졌다! — 턴 종료 이후 「트리거 : 페이즈 체인지」`;
+  }
+  const RAID_FLOOR = { of: m => raidFloor(m), hit: (m, fl, lines) => lines.push(raidBreak(m, fl)) };
   function raidFloor(m) {
     if (!m || !m.raid || !(+m.raid.segments > 0)) return 0;
     const X = +m.raid.segments,

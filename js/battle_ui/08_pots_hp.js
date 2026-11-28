@@ -591,9 +591,7 @@
         line += `\n${x.name}은(는) 쓰러졌다!`;
       }
       if (x.raid && x.raid.segments > 0 && opt.floor && x.hp.cur <= opt.floor && delta < 0 && x.hp.cur > 0) {
-        x.raid.broken = (x.raid.broken || 0) + 1;
-        x.raid.brk = 1;
-        line += `\n◆ ${x.name}의 배리어(${opt.floor})가 깨졌다! — 턴 종료 이후 「트리거 : 페이즈 체인지」`;
+        line += '\n' + raidBreak(x, opt.floor);
       } /* 10-25 망령: 맵툴처럼 페이즈 체인지는 깨진 턴이 끝난 뒤 */
       const LX = Object.assign(
         { mid, img: x.image || '' },

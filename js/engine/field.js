@@ -100,6 +100,18 @@ window.OM_FIELD = (() => {
       return null;
     }
   }
+  /* 11-29 망령 「조이기 대미지로 트리거 체인지 배리어 안 먹은 듯」: 턴 종료 비례 대미지도 레이드 배리어에서 멈춘다 —
+    turnEndStates · turnEndField 의 opt.floor = { of(m) → 배리어 HP, hit(m, 배리어, lines) → 깨짐 처리 } 를 부르는 동안만 FLOOR 에 둔다 */
+  let FLOOR = null;
+  const withFloor = (opt, run) => {
+    const was = FLOOR;
+    FLOOR = (opt && opt.floor) || null;
+    try {
+      return run();
+    } finally {
+      FLOOR = was;
+    }
+  };
   const dmg = (m, v, lines, why, kind) => {
     v = +v;
     if (!isFinite(v)) return 0;
@@ -107,14 +119,22 @@ window.OM_FIELD = (() => {
       lines.push(`${m.name} ${why} — 비례 대미지를 받지 않는다`);
       return 0;
     }
-    /* 11-25 kind: burn · poison = 「비례무시 화상 / 독」 */ const floor = noind(m, 'noko') ? 1 : 0;
+    const hv = FX() && FX().indHalf ? FX().indHalf(m, v) : null;
+    if (hv) {
+      v = hv.v;
+      why += ` (「${hv.name}」 반감)`;
+    }
+    const rf = FLOOR ? +FLOOR.of(m) || 0 : 0;
+    /* 11-25 kind: burn · poison = 「비례무시 화상 / 독」 */ const floor = Math.max(noind(m, 'noko') ? 1 : 0, rf);
     const d = Math.max(0, Math.min(m.hp.cur - floor, v));
     if (d <= 0) {
       if (floor) lines.push(`${m.name} ${why} — 비례 대미지로는 빈사가 되지 않는다`);
       return 0;
     }
     m.hp.cur -= d;
-    lines.push(`${m.name} ${why} −${d} (HP ${m.hp.cur}/${m.hp.max})`);
+    const stop = rf > 0 && m.hp.cur <= rf;
+    lines.push(`${m.name} ${why} −${d}${stop && d < v ? ` (배리어 ${rf} 에서 멈춤)` : ''} (HP ${m.hp.cur}/${m.hp.max})`);
+    if (stop) FLOOR.hit(m, rf, lines);
     return d;
   };
   const heal = (m, v, lines, why) => {
@@ -399,7 +419,9 @@ window.OM_FIELD = (() => {
   /* 11-07 23:37 망령 「턴 종료 시 HP 회복은 중첩 안 돼. 가장 높은 것만」: 희망사항 · 아쿠아링 · 뿌리박기 · 환희의노래 · 회복 소지품 · 그래스필드 중 가장 큰 것 하나만.
     opt.field 를 주면 그래스필드도 여기서 견준다(turnEndField 는 opt.noGrass). 턴 종료 단계에서 특성 · 포텐셜로 먼저 회복한 몫(m.teHeal {t,v})이 있으면 그보다 큰 만큼만 더 준다 */
   function turnEndStates(mons, slots, opt) {
-    opt = opt || {};
+    return withFloor(opt, () => turnEndStatesRun(mons, slots, opt || {}));
+  }
+  function turnEndStatesRun(mons, slots, opt) {
     const lines = [];
     const dead = [];
     const fld = opt.field || null;
@@ -615,6 +637,9 @@ window.OM_FIELD = (() => {
 
   /* ----- 필드 턴 종료 (field_turnend): 그래스필드 1/16 회복(땅 위), 불바다 1/8(불꽃 제외) ----- */
   function turnEndField(mons, field, opt) {
+    return withFloor(opt, () => turnEndFieldRun(mons, field, opt));
+  }
+  function turnEndFieldRun(mons, field, opt) {
     const lines = [];
     const f = field || {};
     if ((f.terrain || {}).type === '그래스필드' && !(opt && opt.noGrass)) {

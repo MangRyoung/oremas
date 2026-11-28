@@ -179,6 +179,11 @@ window.OM_ITEMS = (() => {
       lines.push(`${m.name} ${why} — 비례 대미지를 받지 않는다`);
       return 0;
     }
+    const hv = FX() && FX().indHalf ? FX().indHalf(m, v) : null;
+    if (hv) {
+      v = hv.v;
+      why += ` (「${hv.name}」 반감)`;
+    }
     const d = Math.min(v, m.hp.cur);
     if (d <= 0) return 0;
     m.hp.latest = m.hp.cur;

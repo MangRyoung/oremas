@@ -2718,9 +2718,12 @@
         const e = entered(b, s);
         for (const a in e) slots[s + '_' + a] = e[a];
       }
-      /* 11-13 22:16 망령: 룰북 순서 — 날씨 · 불바다(슬립 대미지)를 회복보다 먼저 */ const r2 = F().turnEndField(b.mons, f, { noGrass: 1 });
+      /* 11-13 22:16 망령: 룰북 순서 — 날씨 · 불바다(슬립 대미지)를 회복보다 먼저 */ const r2 = F().turnEndField(b.mons, f, {
+        noGrass: 1,
+        floor: RAID_FLOOR
+      });
       fieldL.push(...r2.lines);
-      const r1 = F().turnEndStates(b.mons, slots, { field: f, turn: +b.turn || 0 });
+      const r1 = F().turnEndStates(b.mons, slots, { field: f, turn: +b.turn || 0, floor: RAID_FLOOR });
       lines.push(...r1.lines);
       for (const mid in b.mons) {
         const m = b.mons[mid];

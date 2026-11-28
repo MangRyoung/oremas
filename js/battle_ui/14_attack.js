@@ -4056,7 +4056,8 @@ ${(() => {
             if (NR) lines.push(`${a.name} 반동을 받지 않는다 (「${NR}」)`);
             else {
               const [p, q] = R2.frac.split('/').map(Number);
-              const v = Math.max(1, Math.floor((base * p) / q));
+              const hv = FX().indHalf ? FX().indHalf(a, Math.max(1, Math.floor((base * p) / q))) : null;
+              const v = hv ? hv.v : Math.max(1, Math.floor((base * p) / q));
               a.hp.latest = a.hp.cur;
               a.hp.cur = Math.max(0, a.hp.cur - v);
               let ko = '';
@@ -4065,7 +4066,7 @@ ${(() => {
                 if (ko) a.hp.cur = 1;
               }
               lines.push(
-                `${a.name} 반동 −${v}${R2.basis === 'max' ? '' : ' (예상 대미지 ' + dealt + '의 ' + R2.frac + ')'} → ${a.hp.cur}${ko ? ' (「' + ko + '」 반동으로는 빈사가 되지 않는다)' : ''}`
+                `${a.name} 반동 −${v}${R2.basis === 'max' ? '' : ' (예상 대미지 ' + dealt + '의 ' + R2.frac + ')'}${hv ? ` (「${hv.name}」 반감)` : ''} → ${a.hp.cur}${ko ? ' (「' + ko + '」 반동으로는 빈사가 되지 않는다)' : ''}`
               );
             }
           }

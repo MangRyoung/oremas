@@ -11654,9 +11654,12 @@ window.OM_BATTLE_UI = (() => {
         const e = entered(b, s);
         for (const a in e) slots[s + '_' + a] = e[a];
       }
-      /* 11-13 22:16 망령: 룰북 순서 — 날씨 · 불바다(슬립 대미지)를 회복보다 먼저 */ const r2 = F().turnEndField(b.mons, f, { noGrass: 1 });
+      /* 11-13 22:16 망령: 룰북 순서 — 날씨 · 불바다(슬립 대미지)를 회복보다 먼저 */ const r2 = F().turnEndField(b.mons, f, {
+        noGrass: 1,
+        floor: RAID_FLOOR
+      });
       fieldL.push(...r2.lines);
-      const r1 = F().turnEndStates(b.mons, slots, { field: f, turn: +b.turn || 0 });
+      const r1 = F().turnEndStates(b.mons, slots, { field: f, turn: +b.turn || 0, floor: RAID_FLOOR });
       lines.push(...r1.lines);
       for (const mid in b.mons) {
         const m = b.mons[mid];
@@ -13011,9 +13014,7 @@ window.OM_BATTLE_UI = (() => {
         line += `\n${x.name}은(는) 쓰러졌다!`;
       }
       if (x.raid && x.raid.segments > 0 && opt.floor && x.hp.cur <= opt.floor && delta < 0 && x.hp.cur > 0) {
-        x.raid.broken = (x.raid.broken || 0) + 1;
-        x.raid.brk = 1;
-        line += `\n◆ ${x.name}의 배리어(${opt.floor})가 깨졌다! — 턴 종료 이후 「트리거 : 페이즈 체인지」`;
+        line += '\n' + raidBreak(x, opt.floor);
       } /* 10-25 망령: 맵툴처럼 페이즈 체인지는 깨진 턴이 끝난 뒤 */
       const LX = Object.assign(
         { mid, img: x.image || '' },
@@ -20856,6 +20857,13 @@ window.OM_BATTLE_UI = (() => {
         });
     }
   }
+  /* 배리어가 깨졌다 — 기술 대미지(HP 창) · 턴 종료 비례 대미지(field.js opt.floor)가 같이 쓴다. 페이즈 체인지는 깨진 턴이 끝난 뒤 */
+  function raidBreak(m, fl) {
+    m.raid.broken = (+m.raid.broken || 0) + 1;
+    m.raid.brk = 1;
+    return `◆ ${m.name}의 배리어(${fl})가 깨졌다! — 턴 종료 이후 「트리거 : 페이즈 체인지」`;
+  }
+  const RAID_FLOOR = { of: m => raidFloor(m), hit: (m, fl, lines) => lines.push(raidBreak(m, fl)) };
   function raidFloor(m) {
     if (!m || !m.raid || !(+m.raid.segments > 0)) return 0;
     const X = +m.raid.segments,
@@ -25072,7 +25080,8 @@ ${(() => {
             if (NR) lines.push(`${a.name} 반동을 받지 않는다 (「${NR}」)`);
             else {
               const [p, q] = R2.frac.split('/').map(Number);
-              const v = Math.max(1, Math.floor((base * p) / q));
+              const hv = FX().indHalf ? FX().indHalf(a, Math.max(1, Math.floor((base * p) / q))) : null;
+              const v = hv ? hv.v : Math.max(1, Math.floor((base * p) / q));
               a.hp.latest = a.hp.cur;
               a.hp.cur = Math.max(0, a.hp.cur - v);
               let ko = '';
@@ -25081,7 +25090,7 @@ ${(() => {
                 if (ko) a.hp.cur = 1;
               }
               lines.push(
-                `${a.name} 반동 −${v}${R2.basis === 'max' ? '' : ' (예상 대미지 ' + dealt + '의 ' + R2.frac + ')'} → ${a.hp.cur}${ko ? ' (「' + ko + '」 반동으로는 빈사가 되지 않는다)' : ''}`
+                `${a.name} 반동 −${v}${R2.basis === 'max' ? '' : ' (예상 대미지 ' + dealt + '의 ' + R2.frac + ')'}${hv ? ` (「${hv.name}」 반감)` : ''} → ${a.hp.cur}${ko ? ' (「' + ko + '」 반동으로는 빈사가 되지 않는다)' : ''}`
               );
             }
           }
