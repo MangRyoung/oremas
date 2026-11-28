@@ -5140,7 +5140,7 @@ window.OM_BATTLE_UI = (() => {
       ...(x.move === 'switch' && x.switch ? { st: String(x.switch) } : {}),
       pm,
       om,
-      pr: mv ? (FX() ? FX().prioOf(m, mv) : +mv.prio || 0) : 0,
+      pr: mv ? (FX() ? FX().prioOf(m, mv, tselMon(ctx().b, tgNow(ctx().b, x, m)[0])) : +mv.prio || 0) : 0,
       mv: mv ? 1 : 0,
       atk: mv && mv.cat !== '변화' ? 1 : 0
     }; /* atk: 공격을 지시받았나 (【수세】 · 【공세】 — 숨은 지시를 못 읽는 화면용, 11-07) */
@@ -11048,9 +11048,13 @@ window.OM_BATTLE_UI = (() => {
   };
   /* 366: 【등장 (…)】/턴 가장 마지막에 「X」 추가 행동(방칠낭 『비상하는 학의 자세』 ①)도 등장 때의 것 */ const tmulNs = t =>
     [...String(t || '').matchAll(TMUL_RE)].map(x => +x[1]).filter(n => n > 1);
+  /* 11-28 망령 「12턴 째 끝에 한번만」(선녀 『되찾은 날개옷』 「「12T」 턴 종료 시」): 「NT」 = N번째 턴에만 — 배수 턴과 같은 마디 판정에 같이 */
+  const TAT_RE = /「\s*(\d+)\s*T\s*」/g;
+  const tatNs = t => [...String(t || '').matchAll(TAT_RE)].map(x => +x[1]).filter(n => n > 0);
   function tmulOk(t, T) {
     const ns = tmulNs(t);
-    return !ns.length || (+T > 0 && ns.every(n => +T % n === 0));
+    const at = tatNs(t);
+    return (!ns.length || (+T > 0 && ns.every(n => +T % n === 0))) && (!at.length || at.every(n => +T === n));
   }
   const segsOf = t => {
     const L = String(t || '')
@@ -11063,7 +11067,7 @@ window.OM_BATTLE_UI = (() => {
   function tmulStart(t, T) {
     return segsOf(t).some(
       x =>
-        tmulNs(x).length &&
+        (tmulNs(x).length || tatNs(x).length) &&
         tmulOk(x, T) &&
         !XACTN_RE.test(x) &&
         !END_T.last.test(x) &&

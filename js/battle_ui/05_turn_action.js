@@ -149,7 +149,7 @@
       ...(x.move === 'switch' && x.switch ? { st: String(x.switch) } : {}),
       pm,
       om,
-      pr: mv ? (FX() ? FX().prioOf(m, mv) : +mv.prio || 0) : 0,
+      pr: mv ? (FX() ? FX().prioOf(m, mv, tselMon(ctx().b, tgNow(ctx().b, x, m)[0])) : +mv.prio || 0) : 0,
       mv: mv ? 1 : 0,
       atk: mv && mv.cat !== '변화' ? 1 : 0
     }; /* atk: 공격을 지시받았나 (【수세】 · 【공세】 — 숨은 지시를 못 읽는 화면용, 11-07) */
