@@ -16343,13 +16343,18 @@ window.OM_BATTLE_UI = (() => {
         String(x || '')
           .replace(/[『』]/g, '')
           .trim();
+      /* 11-29 망령 「이조 에이스 꺼질 때 양월 에이스도 같이 꺼졌네」: 같은 이름이라도 다른 포켓몬이 스스로 건 것(양월의 『에이스』)은 빼고, 이 포켓몬이 건 것만 */
+      const mine = ch => {
+        const src = String(ch.id || '').split(' ← ')[1];
+        return src == null || src === m0.name || src.startsWith(m0.name + ' ');
+      };
       const on = Object.values(b0.mons || {}).filter(
         x =>
           x &&
           x.entry &&
           FX()
             .chips(x)
-            .some(ch => nn(ch.name) === nn(name))
+            .some(ch => nn(ch.name) === nn(name) && mine(ch))
       );
       if (on.length) {
         const pick = await new Promise(res => {
@@ -16361,7 +16366,7 @@ window.OM_BATTLE_UI = (() => {
                   ': ' +
                   FX()
                     .chips(x)
-                    .filter(ch => nn(ch.name) === nn(name))
+                    .filter(ch => nn(ch.name) === nn(name) && mine(ch))
                     .map(ch => esc(ch.t))
                     .join(' · ')
               )
