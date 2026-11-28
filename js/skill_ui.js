@@ -1099,6 +1099,7 @@ window.OM_SKILL_UI = (() => {
         let heal = 0,
           rev = false,
           cured = [];
+        /* 11-28 배틀에서 바로 휴식: 시트 칸 다음에 배틀 칸을 고치므로 배틀에 있으면 배틀 쪽 회복이 로그에 남는다 (전에는 시트 쪽만 적어 배틀 회복이 안 보였다) */
         await putMon(m.id, (x, b) => {
           const was = HP(x, b);
           let cur = was;
@@ -1112,12 +1113,12 @@ window.OM_SKILL_UI = (() => {
                 RV1.used = m.name;
               }
               delete XS.Dead;
-              if (!b) rev = true;
+              rev = true;
             }
           } else if (R.hp && R.hp !== '0' && (!+R.hp_one || oneIds.has(m.id))) {
             const h = frac(x.hp.max, R.hp);
             cur = Math.min(x.hp.max, cur + h);
-            if (!b) heal = cur - was;
+            heal = cur - was;
           }
           setHP(x, b, cur);
           for (const st0 in XS) {
@@ -1125,7 +1126,8 @@ window.OM_SKILL_UI = (() => {
             const abn = !!(SD[st0] || {}).abn;
             if ((abn && +R.cure_ab) || (!abn && +R.cure_sp)) {
               delete XS[st0];
-              if (!b) cured.push(SD[st0] ? SD[st0].ko : st0);
+              const ko = SD[st0] ? SD[st0].ko : st0;
+              if (!cured.includes(ko)) cured.push(ko);
             }
           }
           tidyST(x, b);
