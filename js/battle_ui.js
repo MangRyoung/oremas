@@ -11138,6 +11138,8 @@ window.OM_BATTLE_UI = (() => {
     }
   };
   const NO_SWT = ['가속']; /* 교대로 나온 턴 종료엔 발동 안 하는 특성 */
+  /* 11-28 망령 「배리어 안 깨진 턴에도 레이드 배틀 발동 여부를 끝날 때 자꾸 물어보네」: 「레이드 배틀 : X」의 턴 종료 · 페이즈 체인지는 레이드 엔진(raidPhase)이 맡는다 — 턴 마무리 후보에서 뺀다 */
+  const engineOwned = p => /레이드\s*배틀\s*[:：]/.test(String((p && p.name) || ''));
   function endCands(b, step) {
     const out = [];
     const ok0 = t => {
@@ -11156,7 +11158,7 @@ window.OM_BATTLE_UI = (() => {
     for (const m of Object.values(b.mons || {})) {
       if (!m.entry || m.hp.cur <= 0) continue;
       for (const p of potSrc(m))
-        if (ok(p.eff, m) && !spent(p, m.potUses, m.potTurn))
+        if (!engineOwned(p) && ok(p.eff, m) && !spent(p, m.potUses, m.potTurn))
           out.push({ m, kind: 'pot', name: p.name, eff: p.eff, tag: isExcl(m, p) ? '전용' : '포텐셜' });
       /* 11-07 망령 「가속 특성 턴 종료 시에 왜 확인 문구 안 뜨냐」: 후보를 포텐셜 · 고유에서만 찾아서 특성은 빠져 있었다 — 특성 글(시트 → 특성 DB)에 그 타이밍이 적혀 있으면 같이 묻는다. 소지품 턴 종료(먹다남은음식 등)는 items.js 가 저절로 하므로 넣지 않는다 */
       /* 11-07 23:37 망령 「가속은 교대로 나온 턴 종료 시에는 발동 안 해」 */
@@ -11173,7 +11175,7 @@ window.OM_BATTLE_UI = (() => {
     for (const m of Object.values(b.mons || {})) {
       if (m.entry || m.pend) continue;
       for (const p of potSrc(m))
-        if (supKind(p.eff) && ok(p.eff, m) && !spent(p, m.potUses, m.potTurn))
+        if (supKind(p.eff) && !engineOwned(p) && ok(p.eff, m) && !spent(p, m.potUses, m.potTurn))
           out.push({ m, kind: 'pot', name: p.name, eff: p.eff, tag: isExcl(m, p) ? '전용' : '포텐셜' });
     }
     const seen = new Set();
