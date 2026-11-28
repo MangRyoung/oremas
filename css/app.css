@@ -5800,6 +5800,7 @@ button.tfsep.cl{opacity:1;border:1px dashed color-mix(in srgb,var(--yel2) 55%,tr
 .bgmed{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 8px;padding:8px;border:1px solid var(--yel2);background:#15161a}
 .bgmed input[type=text]{flex:1 1 180px;min-width:0}.bgmed #bgedu{flex:2 1 260px}.bgmed .bgmedn{flex-basis:100%}
 .bgmro .bgmed{display:none!important}
+.bgmed .bgmeds{color:var(--yel2)}
 @media (max-width:760px){.bgmed input[type=text],.bgmed #bgedu{flex:1 1 100%}}
 
 /* 11-26 369 휴대폰 공격 창: 굴린 뒤 결과 표(#ares 바로 아래 table.t — 7칸)가 683px 라 창이 가로로 밀렸다.

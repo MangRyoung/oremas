@@ -7268,7 +7268,7 @@ window.OM_RP_UI = (() => {
       const g = BG.g;
       const S = Object.keys(G[g] || {}).sort();
       const m = bgmMeta(g);
-      head = `<div class="sec gh"><a class="back" data-bq="home">◂ 그룹 목록</a><div style="flex:1;min-width:0"><b>${esc(gshort(g))} <span class="small dim">${S.length}곡</span></b><div class="small dim">${esc(m.d || '')}</div></div><button class="btn sm pri" data-bq="rand" data-g="${esc(g)}">▶ 랜덤 재생</button>${gm() ? `<button class="btn sm" data-bq="sadd" data-g="${esc(g)}">＋ 곡 추가</button><button class="btn sm ghost" data-bq="check" data-g="${esc(g)}" title="그룹의 곡을 차례로 불러 보며 죽은 링크를 찾는다 (재생은 안 한다)">${BGCK.g === g && BGCK.busy ? '■ 점검 중단' : '🔗 링크 점검'}</button>` : ''}</div>${BGCK.g === g && (BGCK.busy || BGCK.msg) ? `<div class="small bgck">${esc(BGCK.msg)}</div>` : ''}<div class="row" style="margin-bottom:6px"><input type="text" id="bgq" placeholder="이 그룹에서 곡 검색" value="${esc(BG.q)}" style="flex:1"></div>${gm() && BG.ed && BG.ed.g === g ? `<div class="bgmed" id="bgmed"><b class="small">${BG.ed.sn0 ? '곡 수정' : '곡 추가'}</b><input type="text" id="bgedt" placeholder="곡 제목" value="${esc(BG.ed.t || '')}" autocomplete="off"><input type="text" id="bgedu" placeholder="주소 (Dropbox 공유 링크도 됨)" value="${esc(BG.ed.u || '')}" autocomplete="off"><button class="btn sm pri" data-bq="edok">${BG.ed.sn0 ? '저장' : '추가'}</button>${BG.ed.sn0 ? '' : '<button class="btn sm" data-bq="edmore" title="넣고 칸을 비워 다음 곡을 이어서 적는다">추가하고 계속</button>'}<button class="btn sm ghost" data-bq="edx">취소</button><span class="small dim bgmedn">적어 둔 것은 다른 탭에 다녀와도 그대로 남는다 · Enter 저장 · Esc 취소</span></div>` : ''}`;
+      head = `<div class="sec gh"><a class="back" data-bq="home">◂ 그룹 목록</a><div style="flex:1;min-width:0"><b>${esc(gshort(g))} <span class="small dim">${S.length}곡</span></b><div class="small dim">${esc(m.d || '')}</div></div><button class="btn sm pri" data-bq="rand" data-g="${esc(g)}">▶ 랜덤 재생</button>${gm() ? `<button class="btn sm" data-bq="sadd" data-g="${esc(g)}">＋ 곡 추가</button><button class="btn sm ghost" data-bq="check" data-g="${esc(g)}" title="그룹의 곡을 차례로 불러 보며 죽은 링크를 찾는다 (재생은 안 한다)">${BGCK.g === g && BGCK.busy ? '■ 점검 중단' : '🔗 링크 점검'}</button>` : ''}</div>${BGCK.g === g && (BGCK.busy || BGCK.msg) ? `<div class="small bgck">${esc(BGCK.msg)}</div>` : ''}<div class="row" style="margin-bottom:6px"><input type="text" id="bgq" placeholder="이 그룹에서 곡 검색" value="${esc(BG.q)}" style="flex:1"></div>${gm() && BG.ed && BG.ed.g === g ? `<div class="bgmed" id="bgmed"><b class="small">${BG.ed.sn0 ? '곡 수정' : '곡 추가'}</b><input type="text" id="bgedt" placeholder="곡 제목" value="${esc(BG.ed.t || '')}" autocomplete="off"><input type="text" id="bgedu" placeholder="주소 (Dropbox 공유 링크도 됨)" value="${esc(BG.ed.u || '')}" autocomplete="off"><button class="btn sm pri" data-bq="edok">${BG.ed.sn0 ? '저장' : '추가'}</button>${BG.ed.sn0 ? '' : '<button class="btn sm" data-bq="edmore" title="넣고 칸을 비워 다음 곡을 이어서 적는다">추가하고 계속</button>'}<button class="btn sm ghost" data-bq="edx">취소</button><span class="small dim bgmedn">적어 둔 것은 다른 탭에 다녀와도 그대로 남는다 · Enter 저장 · Esc 취소</span><span class="small bgmedn bgmeds" id="bgeds">${esc(BG.ed.st || '유튜브 주소를 넣거나 음악 파일을 이 칸에 끌어 놓으면 PC 의 「드롭박스 업로더」가 받아 올린다 (업로더가 켜져 있을 때)')}</span></div>` : ''}`;
       const rows = S.filter(sn => !q || sn.toLowerCase().includes(q))
         .map(sn => row(g, sn, false))
         .join('');
@@ -7332,11 +7332,52 @@ window.OM_RP_UI = (() => {
           }
         }
       };
+    /* 11-28 망령 「드롭박스 업로더 … 곧바로 연계」: 곡 추가 칸에서 유튜브 주소 · 음악 파일을 PC 의 드롭박스 업로더(OM_DBXHELP)로 받아 주소 칸을 채운다.
+      제목이 이미 적혀 있었으면 바로 넣고, 비어 있었으면 파일 이름을 제목 칸에 넣어 두고 기다린다 */
+    const edState = msg => {
+      if (BG.ed) BG.ed.st = msg;
+      const n = $('#bgeds');
+      if (n) n.textContent = msg;
+    };
+    const edFetch = async (job, more) => {
+      const E = BG.ed;
+      if (!E || E.busy) return;
+      E.busy = true;
+      edState('드롭박스 업로더를 부르는 중…');
+      try {
+        const r = await job(window.OM_DBXHELP);
+        if (BG.ed !== E) return;
+        E.u = r.url;
+        const had = !!String(E.t || '').trim();
+        if (!had) E.t = window.OM_DBXHELP.titleOf(r.name);
+        E.st = `「${r.name}」 드롭박스에 올렸다${had ? '' : ' — 제목을 확인하고 「추가」'}`;
+        E.busy = false;
+        if (had) return edSave(more);
+        re();
+        const f = $('#bgedt');
+        if (f) f.select();
+      } catch (e) {
+        E.busy = false;
+        edState('✕ ' + ((e && e.message) || e));
+      }
+    };
+    const edZone = $('#bgmed', md);
+    if (edZone) {
+      edZone.ondragover = e => e.preventDefault();
+      edZone.ondrop = e => {
+        const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (!f) return;
+        e.preventDefault();
+        e.stopPropagation();
+        edFetch(h => h.fromFile(f, edState), false);
+      };
+    }
     const edSave = async more => {
       const E = BG.ed;
       if (!E) return;
       const t = String(E.t || '').trim(),
         u = String(E.u || '').trim();
+      if (window.OM_DBXHELP.isYoutube(u)) return edFetch(h => h.fromUrl(u, edState), more);
       if (!t) {
         A().toast('곡 제목을 적어 줘');
         const f = $('#bgedt');
