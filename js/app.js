@@ -4011,6 +4011,28 @@
         })
     );
   }
+  /* 버튼 하나를 고르는 작은 창 — 누른 버튼의 data-<attr> 값, 그냥 닫으면 null */
+  function modalAnswer(html, attr) {
+    return new Promise(res => {
+      const md = openModal(html);
+      let done = false;
+      md.querySelectorAll(`[data-${attr}]`).forEach(
+        x =>
+          (x.onclick = () => {
+            done = true;
+            closeModal();
+            res(x.dataset[attr]);
+          })
+      );
+      const bg = md.closest('.modalbg');
+      new MutationObserver((_, o) => {
+        if (!bg.isConnected) {
+          o.disconnect();
+          if (!done) res(null);
+        }
+      }).observe(document.body, { childList: true });
+    });
+  }
   /* ---------- 지원 포켓몬 (11-05 23:52 망령 「PT 추가가 아니라 포켓몬만 따로 도중에 부르는」 · 「캠페인마다 지원용 폴더를 따로 만들어서 거기에 연동」) ----------
    이 방과 이어진 세션 노트 캠페인의 지원 폴더(camp.data.mk.support · 아래 폴더 포함) 트레이너의 포켓몬을 골라 진영에 부른다 (GM).
    부른 포켓몬은 이 진영의 기존 PT(고른 트레이너)에 더해진다 — id = 트레이너id~원래id, rid = 제작기 id, sup.from = 지원 폴더 트레이너 이름 (11-06 망령). 내미는 건 평소처럼 */
@@ -4089,27 +4111,10 @@
       const tid =
         T.length === 1
           ? T[0].id
-          : await new Promise(res => {
-              const m2 = openModal(
-                `<div class="mhead"><h2>어느 PT 에 더할까</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="row" style="gap:6px;flex-wrap:wrap">${T.map(t => `<button class="btn" data-tt="${esc(t.id)}">${esc(t.name || t.id)} <small class="dim">${Object.values(b.mons || {}).filter(x => x.tid === t.id).length}체</small></button>`).join('')}</div>`
-              );
-              let done = false;
-              m2.querySelectorAll('[data-tt]').forEach(
-                x =>
-                  (x.onclick = () => {
-                    done = true;
-                    closeModal();
-                    res(x.dataset.tt);
-                  })
-              );
-              const bg = m2.closest('.modalbg');
-              new MutationObserver((_, o) => {
-                if (!bg.isConnected) {
-                  o.disconnect();
-                  if (!done) res(null);
-                }
-              }).observe(document.body, { childList: true });
-            });
+          : await modalAnswer(
+              `<div class="mhead"><h2>어느 PT 에 더할까</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div><div class="row" style="gap:6px;flex-wrap:wrap">${T.map(t => `<button class="btn" data-tt="${esc(t.id)}">${esc(t.name || t.id)} <small class="dim">${Object.values(b.mons || {}).filter(x => x.tid === t.id).length}체</small></button>`).join('')}</div>`,
+              'tt'
+            );
       if (!tid) return;
       for (const G of groups) {
         const ms = G.mons.filter(m => sel.has(m.id));
@@ -4478,28 +4483,13 @@
       const mine = (B().trainers || {})[ST.seat];
       /* 11-04 23:17 망령 「PL 이 파티 여러 개 쓰기」: 내 자리 트레이너가 이미 있으면 「추가 파티」(id = 내 좌석~2 · ~3 …, 내 것으로 지시 · 조작) 또는 바꾸기 */
       if (mine) {
-        const pick = await new Promise(res => {
-          const md = openModal(`<div class="mhead"><h2>파티 하나 더?</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+        const pick = await modalAnswer(
+          `<div class="mhead"><h2>파티 하나 더?</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
     <p class="small">내 자리로 「${esc(mine.name)}」가 이미 배틀에 있다.</p>
     <div class="row" style="gap:6px;margin-top:10px;flex-wrap:wrap"><span class="sp"></span><button class="btn" data-pk="swap">「${esc(t.name)}」 로 바꾸기</button><button class="btn pri" data-pk="add">추가 파티로 함께 불러오기</button></div>
-    <p class="small dim" style="margin-top:8px">추가 파티는 내가 같이 지시한다 (지시 창 · 준비 · 포켓몬 조작). 「자기 것만」 방은 서버 패치(여러 파티)가 들어가 있어야 한다.</p>`);
-          let done = false;
-          md.querySelectorAll('[data-pk]').forEach(
-            x =>
-              (x.onclick = () => {
-                done = true;
-                closeModal();
-                res(x.dataset.pk);
-              })
-          );
-          const bg = md.closest('.modalbg');
-          new MutationObserver((_, o) => {
-            if (!bg.isConnected) {
-              o.disconnect();
-              if (!done) res(null);
-            }
-          }).observe(document.body, { childList: true });
-        });
+    <p class="small dim" style="margin-top:8px">추가 파티는 내가 같이 지시한다 (지시 창 · 준비 · 포켓몬 조작). 「자기 것만」 방은 서버 패치(여러 파티)가 들어가 있어야 한다.</p>`,
+          'pk'
+        );
         if (!pick) return;
         if (pick === 'add') {
           const trs = B().trainers || {};
