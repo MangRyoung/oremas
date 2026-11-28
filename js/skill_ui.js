@@ -279,6 +279,21 @@ window.OM_SKILL_UI = (() => {
     return B[mid] ? mid : Object.keys(B).find(k => B[k] && B[k].rid === mid) || '';
   };
   const bmOf = mid => bmons()[bmKey(mid)];
+  /* 11-28 망령 「4식 6령은 파티 단위로 묶여 있을 땐 같이 회복을 공유」: 시트 트레이너 → 배틀에서 그 4식 6령을 쥔 트레이너 (빌려 쓴 파티 srcTid · 함께 지시 mates) */
+  const bTrOf = tid => {
+    const T2 = (liveB() || {}).trainers || {};
+    if (T2[tid]) return tid;
+    const h = Object.values(T2).find(x => x && (x.srcTid === tid || (x.mates || []).some(m => m && m.id === tid)));
+    return h ? h.id : '';
+  };
+  /* 파티 4식 · 6령(ord_po · ord_pc)을 나눠 쓰는 묶음 — 배틀이면 그 배틀 트레이너, 아니면 휴대폰 파티(방 코드), 둘 다 없으면 쉬는 일행 전체 */
+  const poolKey = tid => {
+    const bid = bTrOf(tid);
+    if (bid) return 'b:' + bid;
+    const PP = window.OM_PPOOL;
+    const code = PP && PP.codeOf ? PP.codeOf(tid) : '';
+    return code ? 'p:' + code : '*';
+  };
   const liveB = () => {
     const b = A().ST.state.battle || {};
     return b.started && !b.done ? b : null;
@@ -1091,6 +1106,7 @@ window.OM_SKILL_UI = (() => {
       const pk = dead.find(m => m.tid === RV1.tid) || dead[0];
       RV1.mid = pk ? pk.id : '';
     }
+    const ordDone = new Set();
     for (const tid of ids) {
       const t = T[tid];
       const k = tsk(tid);
@@ -1158,12 +1174,15 @@ window.OM_SKILL_UI = (() => {
         if (+R.pot_pk_n - n) lines.push(`전용 포텐셜 횟수 +${+R.pot_pk_n - n}`);
       }
       /* 10-31 망령 「휴식이 2체에서 안 고른 6령까지 채운다」: 가득 값 = ordMax (2체면 고른 것만). 배틀 밖(던전 휴식처)이면 시트 쪽을 채운다 */
-      if (R.ord_n && R.ord_n !== '0') {
-        const inB = !!bt[tid];
-        const src0 = inB ? bt[tid] : t;
+      const bid = bTrOf(tid);
+      if (R.ord_n && R.ord_n !== '0' && bid && ordDone.has(bid)) lines.push(`4식 6령은 ${bt[bid].name || ''} 와(과) 같이`);
+      else if (R.ord_n && R.ord_n !== '0') {
+        const inB = !!bid;
+        if (inB) ordDone.add(bid);
+        const src0 = inB ? bt[bid] : t;
         const nt = JSON.parse(JSON.stringify(src0));
         nt.orderCount = nt.orderCount || {};
-        const MX = ordMax(tid, src0);
+        const MX = ordMax(inB ? bid : tid, src0);
         if (R.ord_n === 'all') {
           for (const kk of Object.keys(Object.assign({}, MX, nt.orderCount)))
             if (/^(order|command)_/.test(kk)) nt.orderCount[kk] = Math.max(0, +MX[kk] || 0);
@@ -1178,7 +1197,7 @@ window.OM_SKILL_UI = (() => {
           }
           lines.push(`4식 6령 +${+R.ord_n - n}`);
         }
-        if (inB) await A().setDiff(['battle', 'trainers', tid], bt[tid], nt, 2);
+        if (inB) await A().setDiff(['battle', 'trainers', bid], bt[bid], nt, 2);
         else await A().set(['roster', 'trainers', tid, 'orderCount'], nt.orderCount);
       }
       const patch = {};
@@ -1199,12 +1218,17 @@ window.OM_SKILL_UI = (() => {
       const OO = window.OM_ORDERS;
       const B = A().ST.state.battle || {};
       const LP = [];
-      for (const [pre, n0, lab] of [
-        ['order_', +R.ord_po || 0, '4식'],
-        ['command_', +R.ord_pc || 0, '6령']
-      ]) {
+      const groups = new Map();
+      for (const tid of ids) {
+        const key = poolKey(tid);
+        const owner = bTrOf(tid) || tid;
+        const G = groups.get(key) || [];
+        if (!G.includes(owner)) G.push(owner);
+        groups.set(key, G);
+      }
+      const partyOrd = async (owners, pre, n0, lab) => {
         let n = n0;
-        for (const tid of ids) {
+        for (const tid of owners) {
           if (n <= 0) break;
           const bT = (B.trainers || {})[tid];
           const inB = !!(bT && bT.orderCount && B.started && !B.done);
@@ -1227,7 +1251,12 @@ window.OM_SKILL_UI = (() => {
             LP.push(`${src.name || ''} ${lab} +${ch}`);
           }
         }
-      }
+      };
+      for (const [pre, n0, lab] of [
+        ['order_', +R.ord_po || 0, '4식'],
+        ['command_', +R.ord_pc || 0, '6령']
+      ])
+        for (const owners of groups.values()) await partyOrd(owners, pre, n0, lab);
       if (LP.length) L.push('파티: ' + LP.join(' · '));
     }
     /* 10-29 망령: 은열쇠 회복 — 덱 자원 「은열쇠」 (덱은 GM 화면만 쓴다) */

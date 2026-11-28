@@ -4286,6 +4286,14 @@
       m.querySelectorAll('[data-x]').forEach(x => x.addEventListener('click', () => res(null)));
     });
   }
+  /* 11-28 망령 「4식 6령은 파티 단위로 묶여 있을 땐 같이 회복을 공유」: 합친 트레이너의 가득 값 = 남은 횟수와 같은 방식(OD.merge)으로 양쪽 가득 값을 합친 것.
+     휴식(skill_ui applyRest)이 이 값까지 채운다 — 없으면 주인 혼자 몫으로 채워서 합친 횟수가 줄었다 */
+  function mergedOrdFull(H, g, ord) {
+    const OD = window.OM_ORDERS;
+    const hFull = H.ordFull || OD.fill(H, H.orderBase == null ? 1 : H.orderBase);
+    const gFull = OD.fill(g, g.orderBase == null ? 1 : g.orderBase);
+    return OD.merge(Object.assign({}, H, { orderCount: hFull }), Object.assign({}, g, { orderCount: gFull }), ord).orderCount;
+  }
   async function mergeInto(hostId, g, mons, ord, gT) {
     const b0 = JSON.parse(JSON.stringify(B())),
       nb = JSON.parse(JSON.stringify(b0));
@@ -4325,7 +4333,9 @@
         })
     );
     if (g.uUses) H.uUses = Object.assign({}, g.uUses, H.uUses || {});
+    const ordFull = mergedOrdFull(H, gT || g, ord);
     Object.assign(H, window.OM_ORDERS.merge(H, gT || g, ord));
+    H.ordFull = ordFull;
     let ops = diffOps(['battle'], b0, nb, 3);
     const rk = { trainers: 0, sides: 1, mons: 2 };
     if (ST.role !== 'gm') ops = ops.filter(o => o[0][1] in rk);

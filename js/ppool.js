@@ -28,9 +28,24 @@ window.OM_PPOOL = (() => {
   }; /* 10-31: 던전으로 돌아온 배틀(done)은 끝난 것 — 시트 쪽 횟수를 본다 */
   /* 10-31 망령 「2체 3파티가 디폴트」: 2체 기준 트레이너는 제작기에서 고른 4식 · 6령(twoPick)만 가득 값이 있다 (1인 4식 1 · 6령 2). 나머지 항목은 0 */
   /* 11-04 망령 「아니스는 각성체 패널티 아냐?」: 미사그 각성체 대가(지시)로 0회가 된 종류(misag.ordOff)는 가득 값도 0 — 쉼터 휴식이 대가로 뺀 4식 · 6령을 다시 채우던 것 */
+  /* ordFull 을 남기기 전(11-28 전)에 합친 트레이너: 가득 값을 모르니 주인 몫과 지금 남은 수 중 큰 쪽 — 휴식이 합친 횟수를 깎지 않게 */
+  function mergedGuess(src) {
+    let FL = {};
+    try {
+      FL = OO().fill(src, src.orderBase || 1) || {};
+    } catch (e) {
+      FL = {};
+    }
+    const cur = src.orderCount || {};
+    for (const k of Object.keys(cur)) if (/^(order|command)_/.test(k)) FL[k] = Math.max(+FL[k] || 0, +cur[k] || 0);
+    return FL;
+  }
   function maxOf(tid, src) {
     const t = RT()[tid] || {};
     src = src || t;
+    /* 11-28 망령 「4식 6령은 파티 단위로 묶여 있을 땐 같이 회복을 공유」: 함께 지시로 합친 배틀 트레이너는 합칠 때 남긴 가득 값(ordFull) */
+    if (src.ordFull) return Object.assign({}, src.ordFull);
+    if ((src.mates || []).length) return mergedGuess(src);
     let FL = {};
     try {
       FL = OO().fill(src, src.orderBase || 1) || {};
