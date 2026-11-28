@@ -4418,7 +4418,7 @@
    지시는 제작기 지시 체계 「2체 기준」에서 고른 것(twoPick)만 남기고 나머지 횟수는 0 — 0 으로 만든 값은 twoSave 에 두었다가 끄면 돌려준다.
    시트(로스터)의 포켓몬 목록은 그대로 6체. */
   /* 11-28 망령 「파티 불러오기 할 때 GM 파티들도 대여 가능으로 뜬다 — 그러면 안 되지」: 좌석(PL)이 불러올 수 있는 파티 =
-     내 자리(추가 파티 X~n 포함) · 함께 지시(co)에 든 파티 · 다른 PL 자리의 파티(빌려 쓰기). 아무도 앉지 않은 GM 파티 · NPC · 야생은 안 된다 */
+     내 자리(추가 파티 X~n 포함) · 함께 지시(co)에 든 파티 · 다른 PL 이 앉은 자리의 파티(빌려 쓰기 — 제작기 종류가 NPC 여도). 아무도 앉지 않은 GM 파티 · 야생은 안 된다 */
   function seatCanLoad(tid) {
     if (ST.role === 'gm') return true;
     const t = (roster().trainers || {})[tid];
@@ -4427,8 +4427,7 @@
     const base = String(tid).split('~')[0];
     const mine = new Set([seat, ...(ST.mySeats || [])].filter(Boolean));
     if (mine.has(tid) || mine.has(base) || (t.co || []).includes(seat)) return true;
-    if (t.wild || t.kind === 'npc') return false;
-    return !!(ST.state.seats || {})[base];
+    return !t.wild && !!(ST.state.seats || {})[base];
   }
   function twoAble(t) {
     const ms = roster().mons || {};
