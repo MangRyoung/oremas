@@ -1847,7 +1847,7 @@
             def,
             mvO
           ).mv; /* 11-11 분류 (손 · 셸암즈 꼴) */ /* 11-05 일루젼: 변장한 상대는 변장한 모습(타입)으로 미리보기 — 굴리면 진짜로 */
-          const tyK = dexSees(c, def, 'type');
+          const tyK = !seenTypes(c, def).rest;
           const eff0 = B().effectiveness(moveTypes, def, {
             scrappy: scrL(atk, def),
             multiMode: +g('amulti').value,
@@ -1946,14 +1946,7 @@
           const nk = lo > 0 ? Math.ceil(cur / lo) : 0;
           out.push(
             `<div class="apv"><div class="apvh"><b>${esc(def.name)}</b> <span class="small dim">${
-              tyK
-                ? esc(
-                    (def.types || [])
-                      .filter(t => t !== '-')
-                      .map(t => S().typeKo(t))
-                      .join(' · ')
-                  )
-                : '타입 ?'
+              seenTypesKo(c, def).length ? esc(seenTypesKo(c, def).join(' · ')) : '타입 ?'
             }</span></div><div class="apbar"><i style="width:${pc(Math.max(0, cur - hi))}%"></i><b style="left:${pc(Math.max(0, cur - hi))}%;width:${Math.max(0, pc(cur) - pc(Math.max(0, cur - hi)))}%"></b><u style="left:${pc(Math.max(0, cur - lo))}%"></u></div><div><span class="apn">${lo} ~ ${hi}</span> <span class="small dim">/ 남은 HP ${cur}</span></div><div class="small dim">HP의 ${pc(lo)}~${pc(hi)}% · ${tyK || g('aforce').value !== '' ? '상성 ×' + eff.value : '상성 ? (×1 가정)'}${eff.stab ? ' · 자속' : ''}${d && d.wall < 1 ? ` · <span style="color:var(--yel2)">${esc(wallNames(objs, catEn(mv.cat), tyOf(mv)).join('·'))} ×${d.wall}</span>` : ''}${nk === 1 ? ' · <b style="color:var(--red)">확정 1타</b>' : nk ? ' · 확정 ' + nk + '타' : ''}${mv.max > 1 ? ' · 1회 기준' : ''}</div></div>`
           );
         }

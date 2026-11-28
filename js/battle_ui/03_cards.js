@@ -254,15 +254,7 @@
       return `<div class="mon small secret"><div class="btop"><div class="pic"></div><div class="nm">비공개</div></div><div class="hpbar"><i style="width:100%"></i></div><div class="hpnum">?</div></div>`;
     return `<div class="mon small ${m.hp.cur <= 0 ? 'fainted' : ''} ${out ? 'onfield' : ''}" data-mon="${m.id}">
    <div class="btop"><div class="pic" style="${m.image ? `background-image:url('${cssu(m.image)}')` : ''}"></div><div class="nm" title="${esc(m.name)}${
-     dexSees(c, m, 'type')
-       ? ' · ' +
-         esc(
-           m.types
-             .filter(t => t !== '-')
-             .map(t => S().typeKo(t))
-             .join('/')
-         )
-       : ''
+     seenTypesKo(c, m).length ? ' · ' + esc(seenTypesKo(c, m).join('/')) : ''
    }">${esc(m.name)}${out ? ` <span class="tag">${m.entry.toUpperCase()}</span>` : ''}</div></div><div class="ty">${tyHtml(c, m)}</div>${hpBar(m, full)}
    ${!out && full && m.hp.cur > 0 ? (simOn(c.b, m.tid) && ((+c.b.phase || 0) < 2 || m.pend) ? `<button class="btn xs ${m.pend ? 'pri' : ''}" data-act="pend" data-mid="${m.id}">${m.pend ? '예약 ' + String(m.pend).toUpperCase() + ' ✓' : '내밀기 예약'}</button>` : `<button class="btn xs" data-act="enter" data-mid="${m.id}">등장</button>`) : ''}${!out && full && m.hp.cur > 0 ? illuPreChip(c, m) : ''}${!out && full && m.hp.cur <= 0 ? `<button class="btn xs ghost" data-act="edit" data-mid="${m.id}" title="잘못 쓰러진 포켓몬의 HP 를 되돌린다 (랭크·상태 창의 HP 칸)">HP 되돌리기</button>` : ''}</div>`;
   }
@@ -1188,12 +1180,28 @@
       : D.scope(m.id, c.seat || '');
     return sc === 'all' || (part !== 'all' && Array.isArray(sc) && sc.includes(part));
   }
+  /* 11-28 망령 「배틀 할 때 상대의 타입이 변경, 추가 되어서 확정 정보가 되면 타입 ? 가 아니라 표기」:
+    도감 미해석이어도 타입 변경 · 추가(typesOrig — fx 「타입 변경」 · 직접 변경이 같은 꼴로 남김)로 드러난 타입은 보인다.
+    원래 타입이 모두 남은 「추가」는 더해진 타입만 보이고 나머지는 「?」 */
+  function seenTypes(c, m) {
+    const cur = (m.types || []).filter(t => t !== '-');
+    if (dexSees(c, m, 'type')) return { types: cur, rest: false };
+    if (!m.typesOrig) return { types: [], rest: true };
+    const orig = m.typesOrig.filter(t => t !== '-');
+    const kept = orig.every(t => cur.includes(t));
+    return kept ? { types: cur.filter(t => !orig.includes(t)), rest: true } : { types: cur, rest: false };
+  }
+  function seenTypesKo(c, m) {
+    const s = seenTypes(c, m);
+    const ko = s.types.map(t => S().typeKo(t));
+    return s.rest ? (ko.length ? ko.concat('?') : []) : ko;
+  }
   function tyHtml(c, m) {
-    return dexSees(c, m, 'type')
-      ? m.types
-          .filter(t => t !== '-')
-          .map(typeChip)
-          .join('')
+    const s = seenTypes(c, m);
+    const chips = s.types.map(typeChip).join('');
+    if (!s.rest) return chips;
+    return chips.length
+      ? chips + '<span class="tyq" title="더해진 타입만 확정 — 원래 타입은 도감으로 해석하면 보인다">+ ?</span>'
       : '<span class="tyq" title="타입 미해석 — 도감으로 해석하면 보인다">타입 ?</span>';
   }
   /* 11-04 19:29 망령 「선행 포텐셜은 입력하기 전에 곧바로 『사용』으로 돼 있어서 무심코 쓰는 경우가 많다 — 지시 때엔 카드에서 선행 입력하게 · 쓸 때 선행 입력 안 됐으면 경고창으로 강제 발동할지 묻게」
