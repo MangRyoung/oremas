@@ -53,6 +53,8 @@
     if (st.Grudge && !m.grudgeMove && m.lastMove && m.lastMove.name) m.grudgeMove = m.lastMove.name;
     else if (!st.Grudge && m.grudgeMove) delete m.grudgeMove;
     stampDisable(m, m0);
+    /* 11-28 쓰러진 순간(살아 있던 → HP 0) 남아 있던 랭크 · 배율 · 효과 · 상태를 지운다 — 부활해 다시 나와도 안 남게 (volReset) */
+    if (m0 && m0.hp && +m0.hp.cur > 0 && m.hp && +m.hp.cur <= 0) volReset(m, false);
   } /* 11-08 51-2 ㉓ · ㉔ */
   function saveBattle(nb0, nb, f, by, extra) {
     if (f !== undefined) nb.field = f;

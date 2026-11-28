@@ -218,16 +218,18 @@
     return n;
   }
   /* 턴 개시 자동 (10-24 망령): 「턴 개시 시」 · 【턴 개시】 가 적힌 특성 · 소지품 · 포텐셜 — 구문이 있으면 (확률을 굴려) 발동, 없으면 확률만 굴려 손으로 할 일을 알린다 */
-  async function autoTurnStart() {
+  /* 11-28 망령 「애슈는 교대 처리 다음」: kinds — 턴을 열 때는 특성 · 포텐셜, 소지품(애슈열매 …)은 교대를 마친 뒤(stepTurn 선행 단계 머리)에 */
+  async function autoTurnStart(kinds) {
     if (!FX()) return;
+    const K0 = kinds || ['trait', 'item', 'pot'];
     const b = ctx().b;
     for (const m of Object.values(b.mons || {})) {
       if (!m.entry || m.hp.cur <= 0) continue;
       const list = [];
-      if (m.ability) list.push(['trait', m.ability]);
-      if (m.item && !IOFF(m)) list.push(['item', m.item]);
-      for (const x of m.items2 || []) if (x && x.item && !IOFF(m)) list.push(['item', x.item]);
-      for (const p of potSrc(m)) if (p && p.name && !p.ph) list.push(['pot', p.name]);
+      if (m.ability && K0.includes('trait')) list.push(['trait', m.ability]);
+      if (m.item && !IOFF(m) && K0.includes('item')) list.push(['item', m.item]);
+      for (const x of K0.includes('item') ? m.items2 || [] : []) if (x && x.item && !IOFF(m)) list.push(['item', x.item]);
+      for (const p of K0.includes('pot') ? potSrc(m) : []) if (p && p.name && !p.ph) list.push(['pot', p.name]);
       for (const [kind, name] of list) {
         const tx0 = slotEff(m, kind, name);
         const TSR = /턴\s*개시\s*시|【턴\s*개시】/;

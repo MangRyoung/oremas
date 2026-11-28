@@ -70,7 +70,7 @@
         'battle'
       );
       try {
-        await autoTurnStart();
+        await autoTurnStart(['trait', 'pot']);
       } catch (e) {
         console.warn('턴 개시 자동', e);
       }
@@ -439,6 +439,18 @@
     }
     return '';
   }
+  /* 11-28 망령 「애슈는 교대 처리 다음」: 소지품의 「턴 개시 시」 효과는 교대를 마친 뒤 한 번 (턴마다 itemTs 로 한 번만) */
+  async function itemTurnStart() {
+    const b = ctx().b;
+    const T = +b.turn || 0;
+    if (+b.itemTs === T) return;
+    await A().set(['battle', 'itemTs'], T);
+    try {
+      await autoTurnStart(['item']);
+    } catch (e) {
+      console.warn('턴 개시 소지품', e);
+    }
+  }
   async function stepTurn() {
     const c = ctx();
     if (!c.mgr) return;
@@ -654,6 +666,7 @@
       }
     }
     if (st < 2) {
+      await itemTurnStart();
       let tids = Object.keys(I.PRE).filter(t => (b.trainers || {})[t]);
       /* 10-31 망령 「4식 · 6령 쓰는 방식이 시뮬과 다르다 — 꼭 고쳐」: 선행 입력한 지령(6령)은 턴 개시 때 저절로 「선행 발동」 (시뮬과 같다 — 시뮬은 지시 때 정한 지령을 그 자리에서 건다).
       횟수는 이미 턴 개시에서 깎였으니 효과만 건다. 4식은 맞을 때 공격 창이 쓰고(버텨라 · 피해라 …), 선행 포텐셜 · 「턴 개시」 4식은 그대로 「포텐셜 발동」에서 */
@@ -2565,36 +2578,19 @@
     const bs = Object.keys(m.states || {}).filter(k => m.states[k] && (st[k] || {}).bat);
     return rk || bs.length > 0 || !!+m.critBuff;
   }
-  function outReset(nb, m, opt) {
-    opt = opt || {};
+  /* 11-28 망령 「빈사 때 남아 있는 정보들이 초기화 안 되는 것 같네 — 부활하고 돌아오니 걸려 있는 거 보면」: 필드를 떠날 때 지우는 것을 한 곳에.
+     keepAbn = 교대(상태 이상 · 원념 · 빈사 · 봉인은 남김) / 빈사(빈사 표시만 남기고 상태를 모두 푼다 — preSave 가 쓰러진 순간에 부른다) */
+  function volReset(m, keepAbn) {
     const st = (DB().states || {}).st || {};
     const L = [];
-    const t = nb.trainers[m.tid];
-    if (m.fxDone) delete m.fxDone;
-    if (m.hitOnce) delete m.hitOnce;
-    if (m.rnull) delete m.rnull;
-    if (m.rnOff) delete m.rnOff;
-    if (m.treatX) delete m.treatX;
-    if (m.tagHit) delete m.tagHit;
-    if (m.noCharge) delete m.noCharge;
-    /* 11-23 257b 퀄러: 필드를 떠나면 무효화도 끝 · 무효 표시도 지운다 */ if (m.hpHi) delete m.hpHi;
+    for (const k of ['fxDone', 'hitOnce', 'rnull', 'rnOff', 'treatX', 'tagHit', 'noCharge', 'hpHi', 'charge', 'thrashOn']) delete m[k];
+    /* 11-23 257b 퀄러: 필드를 떠나면 무효화도 끝 · 11-14: 「차지」 중에 떠나면 모은 것도 풀림 · 10-26: 다시 나오면 상시 효과를 다시 건다 */
     if (m.hpTrig) {
       const k = {};
       for (const n in m.hpTrig) if (m.hpTrig[n] === 'u') k[n] = 'u';
       if (Object.keys(k).length) m.hpTrig = k;
       else delete m.hpTrig;
-    }
-    /* 11-23 「HP 이하가 되었을 때」 계기: 교대하면 다시 (【유일】만 남긴다) */ if (m.charge) delete m.charge;
-    /* 11-14: 「차지」 중에 필드를 떠나면 모은 것도 풀린다 (다시 나와서 그 기술로 열리지 않게) */ if (m.thrashOn)
-      delete m.thrashOn; /* 10-26: 다시 나오면 상시 효과를 다시 건다 · 난동 표시도 정리 */
-    if (opt.batton && t) {
-      const states = {};
-      for (const k in m.states || {}) if (m.states[k] && (st[k] || {}).bat) states[k] = m.states[k];
-      t.batton = { rank: Object.assign({}, m.rank || {}), states, critBuff: +m.critBuff || 0, from: m.name };
-      L.push(`${m.name} 「배턴터치」 — 랭크·상태를 다음 포켓몬에게 넘긴다`);
-    }
-    /* 효과(배율 출처 포함)를 먼저 풀고 나서 랭크·배율을 비운다 — 순서가 바뀌면 배율이 역으로 나뉘어 0.75 같은 값이 남는다 */
-    if (FX() && FX().release) L.push(...FX().release(nb, m));
+    } /* 11-23 「HP 이하가 되었을 때」 계기: 교대하면 다시 (【유일】만 남긴다) */
     if (FX()) {
       const n = FX().chips(m).length;
       FX().removeAll(m);
@@ -2613,9 +2609,9 @@
     delete m.bindFrom; /* 51-2 ⑬ 메트로놈 · ⑪ 조이기 건 쪽 */
     const gone = [];
     for (const k in m.states || {}) {
-      if (!m.states[k]) continue;
+      if (!m.states[k] || k === 'Dead') continue;
       const d = st[k] || {};
-      if (d.abn || k === 'Grudge' || k === 'Dead' || k === 'Seal') continue;
+      if (keepAbn && (d.abn || k === 'Grudge' || k === 'Seal')) continue;
       delete m.states[k];
       gone.push(d.ko || k);
     } /* 11-05 망령: 「봉인」은 교대해도 풀리지 않는다 */
@@ -2628,15 +2624,29 @@
     if (m.stance) delete m.stance; /* 11-23 10:36 망령 「교대 때 지우게 해」: 필드를 떠나면 자세가 풀린다 */
     delete m.flags;
     delete m.prioDown;
-    delete m.fxDone;
     delete m.futRsv;
     if (m.statsOrig) {
       m.stats = m.statsOrig;
       delete m.statsOrig;
-    }
-    /* 11-02: 배틀 실수치 변경(실수치변경 구문)은 교대하면 원래대로 */ /* 11-02 망령: 「테라스탈」은 교대해도 풀리지 않는다 (상태 DB 설명) — 배틀을 차릴 때(prepMon)만 끈다 */ m.entry =
-      '';
+    } /* 11-02: 배틀 실수치 변경(실수치변경 구문)은 교대하면 원래대로 · 11-02 망령: 「테라스탈」은 교대해도 풀리지 않는다 (배틀을 차릴 때 prepMon 만 끈다) */
     if (gone.length) L.push(`${m.name} 상태 해제: ${gone.join('·')}`);
+    return L;
+  }
+  function outReset(nb, m, opt) {
+    opt = opt || {};
+    const st = (DB().states || {}).st || {};
+    const L = [];
+    const t = nb.trainers[m.tid];
+    if (opt.batton && t) {
+      const states = {};
+      for (const k in m.states || {}) if (m.states[k] && (st[k] || {}).bat) states[k] = m.states[k];
+      t.batton = { rank: Object.assign({}, m.rank || {}), states, critBuff: +m.critBuff || 0, from: m.name };
+      L.push(`${m.name} 「배턴터치」 — 랭크·상태를 다음 포켓몬에게 넘긴다`);
+    }
+    /* 효과(배율 출처 포함)를 먼저 풀고 나서 랭크·배율을 비운다 — 순서가 바뀌면 배율이 역으로 나뉘어 0.75 같은 값이 남는다 */
+    if (FX() && FX().release) L.push(...FX().release(nb, m));
+    L.push(...volReset(m, true));
+    m.entry = '';
     return L;
   }
   /* 10-22 망령: 나가는 포켓몬이 다른 포켓몬에게 걸어 둔 포텐셜·특성 효과(옵저버 같은 아군 배율)도 같이 꺼진다. 기술로 건 효과는 남긴다 */
