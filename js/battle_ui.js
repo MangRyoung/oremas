@@ -5932,6 +5932,24 @@ window.OM_BATTLE_UI = (() => {
       console.warn('[배틀 로그 구역]', e);
     }
   }
+  /* 11-28 망령 「방어 상태가 공격을 못 막은 듯? 대미지랑 혼란이 나오네」: 양월이 「방어」를 공개하고 실행하기 전에 「다음 행동」으로 넘어가 방어가 안 걸렸다 —
+     지금 차례 포켓몬이 지시한 기술을 이번 턴에 아직 안 썼으면(lastMove.turn) 넘기기 전에 묻는다. 교대 · 추가 행동(따로 물음) · 쓰러짐 · 필드 밖은 묻지 않는다 */
+  async function unactedOk(c) {
+    const b = c.b;
+    if ((+b.phase || 0) !== 3) return true;
+    const X = (b.order || [])[+b.orderIdx || 0];
+    const m = X && (b.mons || {})[X.mid];
+    if (!X || X.xact || X.change || !m || !m.entry || !(m.hp && m.hp.cur > 0)) return true;
+    if (m.lastMove && +m.lastMove.turn === (+b.turn || 0)) return true;
+    const x = (((b.cmds || {})[m.tid] || {}).mons || {})[m.id];
+    if (!x || x.move == null || x.move === '' || x.move === 'switch') return true;
+    const mv = MVS(m)[+x.move];
+    return askYes(
+      `${m.name}이(가) 지시한 「${mv ? mv.name : '기술'}」을(를) 아직 쓰지 않았다.\n(${m.name} 카드의 「공격」으로 낸다)\n\n그래도 넘길까?`,
+      '넘긴다',
+      '기다린다'
+    );
+  }
   async function action(d, val) {
     const c = ctx();
     const b = c.b;
@@ -6477,6 +6495,7 @@ window.OM_BATTLE_UI = (() => {
           )
             return;
         } /* 11-11 망령 「드래곤옐 추가 행동 — 표시창엔 넣어 놓고 차례가 되니 넘겨버린다」: 추가 행동 차례를 공격 없이 넘기려 하면 묻는다 */
+        if (!(await unactedOk(c))) return;
         const O = c.b.order || [];
         let n = Math.min(O.length, (+c.b.orderIdx || 0) + 1);
         const skipped = [],
