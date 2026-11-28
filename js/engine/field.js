@@ -150,6 +150,11 @@ window.OM_FIELD = (() => {
         return 0;
       }
     }
+    const hc = FX() && FX().healCut ? FX().healCut(m, v) : null;
+    if (hc) {
+      v = hc.v;
+      why += ` (${hc.why})`;
+    }
     /* 11-18 맥 콘 글린의 환상 */ const h = Math.min(v, m.hp.max - m.hp.cur);
     if (h <= 0) return 0;
     m.hp.cur += h;

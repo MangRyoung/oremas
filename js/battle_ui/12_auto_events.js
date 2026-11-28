@@ -668,7 +668,7 @@
         const b0 = snap(),
           nb = snap(b0);
         const kk = nb.mons[k.id];
-        const v = Math.min(kk.hp.max - kk.hp.cur, Math.max(1, Math.floor((kk.hp.max * p) / q)));
+        const v = Math.min(kk.hp.max - kk.hp.cur, HEALCUT(kk, Math.max(1, Math.floor((kk.hp.max * p) / q)))[0]);
         kk.hp.latest = kk.hp.cur;
         kk.hp.cur += v;
         if (await saveBattle(b0, nb, undefined, { n: k.name, s: lh.move, img: k.image || '' }))

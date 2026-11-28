@@ -674,6 +674,11 @@
   } /* 11-15 임명된 동안 (fx appoint) */
   /* 11-18 망령 「맥 콘 글린의 환상」: 필드 위 누군가의 「「필드 : X」일 때 필드 위의 모든 포켓몬의 「회복」「드레인」 효과가 발동하지 않는다」 — 제작기 fx.noHeal */
   const NOHEAL = (m, kind) => (FX() && FX().noHeal ? FX().noHeal(m, kind, ctx().b) : '');
+  /* 회복량 v → [줄인 값, 로그 꼬리] — 레이드 보스 회복 반감(fx healCut) */
+  const HEALCUT = (m, v) => {
+    const r = FX() && FX().healCut ? FX().healCut(m, v) : null;
+    return r ? [r.v, ` (${r.why})`] : [v, ''];
+  };
   /* 11-21 망령 「【지원】은 볼에서만 발동 — 필드 위에선 발동하지 않는다. 필드에서도 발동하는 계열은 【지원 (상위)】」:
     글 머리 태그로 가른다 — 'sup' = 【지원】(볼 안 · 빈사면 안 됨) · 'ko' = 【지원 (빈사)】(볼 안 · 빈사여도) · 'up' = 【지원 (상위)】(필드 · 볼 둘 다) */
   function supKind(eff) {

@@ -1406,9 +1406,9 @@
           return out;
         }
         if (tgt) {
-          const v = Math.max(1, Math.floor(tgt.hp.max / 4));
+          const [v, hx] = HEALCUT(tgt, Math.max(1, Math.floor(tgt.hp.max / 4)));
           tgt.hp.cur = Math.min(tgt.hp.max, tgt.hp.cur + v);
-          out.push(`${tgt.name} HP +${v}`);
+          out.push(`${tgt.name} HP +${v}${hx}`);
         }
         return out;
       }
@@ -1456,7 +1456,7 @@
     }
     if (n === '치유의 법계') {
       for (const a of allies) {
-        const v = Math.max(1, Math.floor(a.hp.max / 4));
+        const v = HEALCUT(a, Math.max(1, Math.floor(a.hp.max / 4)))[0];
         a.hp.cur = Math.min(a.hp.max, a.hp.cur + v);
       }
       out.push('아군 전체 HP 1/4 회복');
@@ -1481,7 +1481,7 @@
         out.push('「주인의 호령 : 회복」 (대상 없음)');
         return out;
       }
-      const v = Math.max(1, Math.floor(tgt.hp.max / 3));
+      const [v, hx] = HEALCUT(tgt, Math.max(1, Math.floor(tgt.hp.max / 3)));
       const nh0 = NOHEAL(tgt, 'heal');
       const h = nh0 || (tgt.states || {}).HealBlock ? 0 : Math.min(v, tgt.hp.max - tgt.hp.cur);
       if (nh0) out.push(`${tgt.name} ${nh0} — 회복이 발동하지 않는다`);
@@ -1492,7 +1492,7 @@
           delete tgt.states[k];
           cured.push(k);
         }
-      out.push(`${tgt.name} HP +${h} (1/3)${cured.length ? ` · 상태 이상 ${cured.length}개 치유` : ''}`);
+      out.push(`${tgt.name} HP +${h} (1/3)${hx}${cured.length ? ` · 상태 이상 ${cured.length}개 치유` : ''}`);
       return out;
     } /* 「능력」(강화 1.5배)은 레디메이드 「주인의 호령 / 능력」이 돈다 */
     /* 4식: 플래그 */

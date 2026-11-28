@@ -262,9 +262,10 @@
       a.hp.cur -= v;
       lines.push(`${a.name} −${v} (1/8) → ${a.hp.cur}/${a.hp.max}`);
       if (R.extra === 'drain8' && d.hp.cur > 0) {
-        const h = Math.min(v, d.hp.max - d.hp.cur);
+        const [hv, hx] = HEALCUT(d, v);
+        const h = Math.min(hv, d.hp.max - d.hp.cur);
         d.hp.cur += h;
-        lines.push(`${d.name} +${h} 회복`);
+        lines.push(`${d.name} +${h} 회복${hx}`);
       }
       if (a.hp.cur <= 0) lines.push(`${a.name}은(는) 쓰러졌다!`);
     } else {
@@ -4122,10 +4123,11 @@ ${(() => {
               const [p, q] = AU.drain.split('/').map(Number);
               let v = Math.max(1, Math.floor((dealtD * p) / q));
               if (HAS(dA, '큰뿌리')) v = Math.floor(v * 1.3);
-              const h = Math.min(v, dA.hp.max - dA.hp.cur);
+              const [hv, hx] = HEALCUT(dA, v);
+              const h = Math.min(hv, dA.hp.max - dA.hp.cur);
               dA.hp.latest = dA.hp.cur;
               dA.hp.cur += h;
-              lines.push(`${dA.name} 드레인 +${h} (예상 대미지 ${dealtD}의 ${AU.drain}) → ${dA.hp.cur}`);
+              lines.push(`${dA.name} 드레인 +${h} (예상 대미지 ${dealtD}의 ${AU.drain})${hx} → ${dA.hp.cur}`);
               if (h > 0) EVQ.push(['drain', { mid: dA.id, key: 'd' + Date.now() }]);
             }
           }

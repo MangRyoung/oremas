@@ -167,6 +167,11 @@ window.OM_ITEMS = (() => {
         return 0;
       }
     }
+    const hc = FX() && FX().healCut ? FX().healCut(m, v) : null;
+    if (hc) {
+      v = hc.v;
+      why += ` (${hc.why})`;
+    }
     const h = Math.min(v, m.hp.max - m.hp.cur);
     if (h <= 0) return 0;
     m.hp.latest = m.hp.cur;

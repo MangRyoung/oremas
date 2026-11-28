@@ -3163,6 +3163,11 @@ window.OM_BATTLE_UI = (() => {
   } /* 11-15 임명된 동안 (fx appoint) */
   /* 11-18 망령 「맥 콘 글린의 환상」: 필드 위 누군가의 「「필드 : X」일 때 필드 위의 모든 포켓몬의 「회복」「드레인」 효과가 발동하지 않는다」 — 제작기 fx.noHeal */
   const NOHEAL = (m, kind) => (FX() && FX().noHeal ? FX().noHeal(m, kind, ctx().b) : '');
+  /* 회복량 v → [줄인 값, 로그 꼬리] — 레이드 보스 회복 반감(fx healCut) */
+  const HEALCUT = (m, v) => {
+    const r = FX() && FX().healCut ? FX().healCut(m, v) : null;
+    return r ? [r.v, ` (${r.why})`] : [v, ''];
+  };
   /* 11-21 망령 「【지원】은 볼에서만 발동 — 필드 위에선 발동하지 않는다. 필드에서도 발동하는 계열은 【지원 (상위)】」:
     글 머리 태그로 가른다 — 'sup' = 【지원】(볼 안 · 빈사면 안 됨) · 'ko' = 【지원 (빈사)】(볼 안 · 빈사여도) · 'up' = 【지원 (상위)】(필드 · 볼 둘 다) */
   function supKind(eff) {
@@ -10342,9 +10347,9 @@ window.OM_BATTLE_UI = (() => {
           return out;
         }
         if (tgt) {
-          const v = Math.max(1, Math.floor(tgt.hp.max / 4));
+          const [v, hx] = HEALCUT(tgt, Math.max(1, Math.floor(tgt.hp.max / 4)));
           tgt.hp.cur = Math.min(tgt.hp.max, tgt.hp.cur + v);
-          out.push(`${tgt.name} HP +${v}`);
+          out.push(`${tgt.name} HP +${v}${hx}`);
         }
         return out;
       }
@@ -10392,7 +10397,7 @@ window.OM_BATTLE_UI = (() => {
     }
     if (n === '치유의 법계') {
       for (const a of allies) {
-        const v = Math.max(1, Math.floor(a.hp.max / 4));
+        const v = HEALCUT(a, Math.max(1, Math.floor(a.hp.max / 4)))[0];
         a.hp.cur = Math.min(a.hp.max, a.hp.cur + v);
       }
       out.push('아군 전체 HP 1/4 회복');
@@ -10417,7 +10422,7 @@ window.OM_BATTLE_UI = (() => {
         out.push('「주인의 호령 : 회복」 (대상 없음)');
         return out;
       }
-      const v = Math.max(1, Math.floor(tgt.hp.max / 3));
+      const [v, hx] = HEALCUT(tgt, Math.max(1, Math.floor(tgt.hp.max / 3)));
       const nh0 = NOHEAL(tgt, 'heal');
       const h = nh0 || (tgt.states || {}).HealBlock ? 0 : Math.min(v, tgt.hp.max - tgt.hp.cur);
       if (nh0) out.push(`${tgt.name} ${nh0} — 회복이 발동하지 않는다`);
@@ -10428,7 +10433,7 @@ window.OM_BATTLE_UI = (() => {
           delete tgt.states[k];
           cured.push(k);
         }
-      out.push(`${tgt.name} HP +${h} (1/3)${cured.length ? ` · 상태 이상 ${cured.length}개 치유` : ''}`);
+      out.push(`${tgt.name} HP +${h} (1/3)${hx}${cured.length ? ` · 상태 이상 ${cured.length}개 치유` : ''}`);
       return out;
     } /* 「능력」(강화 1.5배)은 레디메이드 「주인의 호령 / 능력」이 돈다 */
     /* 4식: 플래그 */
@@ -17284,7 +17289,7 @@ window.OM_BATTLE_UI = (() => {
         const b0 = snap(),
           nb = snap(b0);
         const kk = nb.mons[k.id];
-        const v = Math.min(kk.hp.max - kk.hp.cur, Math.max(1, Math.floor((kk.hp.max * p) / q)));
+        const v = Math.min(kk.hp.max - kk.hp.cur, HEALCUT(kk, Math.max(1, Math.floor((kk.hp.max * p) / q)))[0]);
         kk.hp.latest = kk.hp.cur;
         kk.hp.cur += v;
         if (await saveBattle(b0, nb, undefined, { n: k.name, s: lh.move, img: k.image || '' }))
@@ -21307,9 +21312,10 @@ window.OM_BATTLE_UI = (() => {
       a.hp.cur -= v;
       lines.push(`${a.name} −${v} (1/8) → ${a.hp.cur}/${a.hp.max}`);
       if (R.extra === 'drain8' && d.hp.cur > 0) {
-        const h = Math.min(v, d.hp.max - d.hp.cur);
+        const [hv, hx] = HEALCUT(d, v);
+        const h = Math.min(hv, d.hp.max - d.hp.cur);
         d.hp.cur += h;
-        lines.push(`${d.name} +${h} 회복`);
+        lines.push(`${d.name} +${h} 회복${hx}`);
       }
       if (a.hp.cur <= 0) lines.push(`${a.name}은(는) 쓰러졌다!`);
     } else {
@@ -25167,10 +25173,11 @@ ${(() => {
               const [p, q] = AU.drain.split('/').map(Number);
               let v = Math.max(1, Math.floor((dealtD * p) / q));
               if (HAS(dA, '큰뿌리')) v = Math.floor(v * 1.3);
-              const h = Math.min(v, dA.hp.max - dA.hp.cur);
+              const [hv, hx] = HEALCUT(dA, v);
+              const h = Math.min(hv, dA.hp.max - dA.hp.cur);
               dA.hp.latest = dA.hp.cur;
               dA.hp.cur += h;
-              lines.push(`${dA.name} 드레인 +${h} (예상 대미지 ${dealtD}의 ${AU.drain}) → ${dA.hp.cur}`);
+              lines.push(`${dA.name} 드레인 +${h} (예상 대미지 ${dealtD}의 ${AU.drain})${hx} → ${dA.hp.cur}`);
               if (h > 0) EVQ.push(['drain', { mid: dA.id, key: 'd' + Date.now() }]);
             }
           }
