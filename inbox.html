@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>받은 것 — 오레마스</title>
+<!-- 11-28 망령 「업로더에서 보내기」: PC 의 드롭박스 업로더 화면(localhost:5078)이 이 장을 새 창으로 열고 곡 · 그림을 넘긴다.
+     받은 것은 js/inbox.js(OM_INBOX)에 담기고, 열려 있는 웹툴 · 세션 노트 · 로그 정리기가 「받은 것」으로 꺼내 쓴다.
+     업로더 화면에서 온 말만 듣는다(SENDERS). 그 밖의 창이 보낸 것은 버린다. -->
+<style>
+body{font:15px/1.7 system-ui,sans-serif;margin:0;padding:28px 20px;background:#14161b;color:#e8eaf0;text-align:center}
+h1{font-size:18px;font-weight:600;margin:0 0 8px}
+p{margin:4px 0;color:#aab}
+#list{margin:14px auto 0;max-width:420px;text-align:left;padding:0;list-style:none}
+#list li{padding:6px 10px;border:1px solid #2a2e38;border-radius:8px;margin-top:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+</style>
+</head>
+<body>
+<h1>받은 것</h1>
+<p id="msg">드롭박스 업로더에서 보내기를 기다리는 중…</p>
+<ul id="list"></ul>
+<script src="js/inbox.js?v=202611281300ib"></script>
+<script>
+(() => {
+  const SENDERS = ['http://localhost:5078', 'http://127.0.0.1:5078'];
+  const msg = document.getElementById('msg');
+  const list = document.getElementById('list');
+
+  /* 보낸 것 하나를 보관함에 맞는 모양으로. 곡은 제목 + http 주소, 그림은 파일이어야 한다 */
+  function clean(x) {
+    if (!x) return null;
+    const title = String(x.title || x.name || '').slice(0, 200);
+    if (x.kind === 'song' && /^https?:\/\//.test(String(x.url || ''))) return { kind: 'song', title, url: String(x.url) };
+    if (x.kind === 'image' && x.blob instanceof Blob && /^image\//.test(x.blob.type)) return { kind: 'image', title, blob: x.blob };
+    return null;
+  }
+  async function take(items) {
+    const good = (Array.isArray(items) ? items : []).map(clean).filter(Boolean);
+    for (const it of good) {
+      await window.OM_INBOX.add(it);
+      const li = document.createElement('li');
+      li.textContent = (it.kind === 'song' ? '♪ ' : '🖼 ') + (it.title || '(이름 없음)');
+      list.append(li);
+    }
+    msg.textContent = good.length
+      ? `${good.length}개를 받았어요. 웹툴 · 세션 노트 · 로그 정리기에서 「받은 것」으로 꺼내 쓰면 돼요. 이 창은 닫아도 돼요.`
+      : '받을 수 있는 것이 없었어요.';
+    return good.length;
+  }
+
+  window.addEventListener('message', async e => {
+    if (!SENDERS.includes(e.origin) || !e.data || e.data.src !== 'om-uploader') return;
+    const n = await take(e.data.items);
+    e.source.postMessage({ src: 'om-inbox', t: 'saved', n }, e.origin);
+  });
+  if (window.opener) SENDERS.forEach(o => window.opener.postMessage({ src: 'om-inbox', t: 'ready' }, o));
+  else msg.textContent = '이 장은 드롭박스 업로더의 「보내기」가 여는 창이에요. 직접 열면 받을 것이 없어요.';
+})();
+</script>
+</body>
+</html>
