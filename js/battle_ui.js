@@ -26185,6 +26185,9 @@ ${(() => {
   }
   const NOW_K = ['attack', 'defense', 'specialattack', 'specialdefense', 'speed', 'accuracy', 'evasion', 'critical'];
   const NOW_MODS = [0.5, 0.67, 0.75, 1, 1.33, 1.5, 2];
+  /* 11-29 망령 「여기서 전 능력치 건드리는 게 없네」: 「전 능력치」 칸 = 공격 · 방어 · 특공 · 특방 · 스피드 다섯을 한 번에 (랭크 ±1 · 곱하기) */
+  const NOW_ALL = ['attack', 'defense', 'specialattack', 'specialdefense', 'speed'];
+  const nowKeys = sel => (sel === 'all' ? NOW_ALL : [sel]);
   const fmtR = v => (v > 0 ? '+' : '') + v;
   const LOGQ = {};
   /* 랭크·배율은 여러 번 누르니 잠깐 모았다가 한 줄로 (바꾸기 전 값을 처음 한 번만 잡아 둔다) */
@@ -26280,6 +26283,11 @@ ${(() => {
     <div class="dxrkl dxmadd"><span class="small dim">곱하기</span>${[0.5, 0.67, 0.75, 1.2, 1.33, 1.5, 2].map(z => `<button type="button" class="btn xs ${o.temp ? 'tmp' : ''}" data-nmul="${z}">×${z}</button>`).join('')}<input type="text" class="n xs" data-nmulx placeholder="1.2*1.5" title="곱할 값 · 곱셈도 된다"><input type="text" class="n xs dxmemo" data-nmemo value="${esc(o.memo || '')}" placeholder="출처 (선택)" maxlength="30"><button type="button" class="btn xs pri" data-nmulgo>곱하기</button></div>
     <details class="dxmset"><summary class="small dim">총 배율 직접 맞추기</summary><span class="dxrkm">${NOW_MODS.map(z => `<button type="button" class="btn xs ${z === x ? 'pri' : 'ghost'}" data-nmod="${z}">×${z}</button>`).join('')}<input type="text" class="n xs" data-nmodi value="${x}" title="배율 직접 입력 · 곱셈도 된다 (1.2*1.5) · ×1.5 처럼 ×/* 로 시작하면 지금 배율에 곱한다"></span><div class="small dim">한 값으로 맞추면 이 능력의 출처 기록은 지워진다</div></details></div>`;
     };
+    const barAll = () =>
+      `<div class="dxrkb"><div class="dxrkh"><b class="dxrkt">전 능력치</b><span class="small dim">공격 · 방어 · 특공 · 특방 · 스피드</span><label class="dxtg ${o.temp ? 'on' : ''}" title="켜 두면 여기서 올리고 곱한 것은 턴 종료 때 저절로 풀린다"><input type="checkbox" data-ntemp ${o.temp ? 'checked' : ''}> 임시 (턴 종료까지)</label></div>
+    <div class="dxrkl"><span class="small dim">랭크</span><span class="dxrkr"><button type="button" class="btn sm" data-nrd="-1">−1</button><b class="mono">다섯 모두</b><button type="button" class="btn sm" data-nrd="1">+1</button></span></div>
+    <div class="dxrkl dxmadd"><span class="small dim">곱하기</span>${[0.5, 0.67, 0.75, 1.2, 1.33, 1.5, 2].map(z => `<button type="button" class="btn xs ${o.temp ? 'tmp' : ''}" data-nmul="${z}">×${z}</button>`).join('')}<input type="text" class="n xs" data-nmulx placeholder="1.2*1.5" title="곱할 값 · 곱셈도 된다"><input type="text" class="n xs dxmemo" data-nmemo value="${esc(o.memo || '')}" placeholder="출처 (선택)" maxlength="30"><button type="button" class="btn xs pri" data-nmulgo>곱하기</button></div>
+    <div class="small dim">한 능력만 떼거나 맞추려면 그 칸을 누른다</div></div>`;
     const rng = d => (!d.min || d.min >= 1000 ? '계속' : d.max && d.max !== d.min ? `${d.min}~${d.max}턴` : `${d.min}턴`);
     const list = () => {
       const q = (o.q || '').toLowerCase();
@@ -26307,7 +26315,7 @@ ${(() => {
     if (o.listOnly) return list();
     const pick = () =>
       `<div class="dxspk"><div class="dxspr"><input type="text" data-nsq value="${esc(o.q || '')}" placeholder="상태 검색 (이름·설명)"><label class="small dxspn" title="붙일 때의 턴 수. 비우면 상태 DB 의 기본 턴">턴 <input type="number" data-nsn min="1" max="99" value="${esc(o.n || '')}" placeholder="기본"></label></div><div class="dxspg">${list()}</div></div>`;
-    return `<div class="dxnow"><div class="k dxk">랭크 · 배율${full ? '<span class="small dim">칸을 눌러 조절</span><span class="sp"></span><button type="button" class="btn xs ghost" data-nrk0 title="랭크·배율을 전부 원래대로">초기화</button>' : ''}</div><div class="dxrkg">${NOW_K.map(cell).join('')}</div>${full && o.sel ? bar() : ''}</div>
+    return `<div class="dxnow"><div class="k dxk">랭크 · 배율${full ? '<span class="small dim">칸을 눌러 조절</span><span class="sp"></span><button type="button" class="btn xs ghost" data-nrk0 title="랭크·배율을 전부 원래대로">초기화</button>' : ''}</div><div class="dxrkg">${NOW_K.map(cell).join('')}${full ? `<button type="button" class="dxrk dxrkall ${o.sel === 'all' ? 'sel' : ''}" data-nrk="all"><small>전 능력치</small><em>공격 · 방어 · 특공 · 특방 · 스피드 한 번에</em></button>` : ''}</div>${full && o.sel ? (o.sel === 'all' ? barAll() : bar()) : ''}</div>
    <div class="dxnow"><div class="k dxk">상태${full ? `<span class="sp"></span><button type="button" class="btn xs ${o.pk ? 'pri' : ''}" data-nsadd>${o.pk ? '닫기' : '+ 상태'}</button>` : ''}</div><div class="dxstl">${chips || '<span class="small dim">없음</span>'}</div>${full && o.pk ? pick() : ''}</div>
    ${fx ? `<div class="dxnow"><div class="k">효과</div><div class="rks">${fx}</div></div>` : ''}`;
   }
@@ -26374,17 +26382,19 @@ ${(() => {
     const addMul = async v => {
       v = Math.round(+v * 1000) / 1000;
       if (!(v > 0) || v === 1) return;
-      const m0 = mon(),
-        k = o.sel;
-      if (!m0 || !k) return;
+      const m0 = mon();
+      if (!m0 || !o.sel) return;
+      const ks = nowKeys(o.sel);
       nowQueue(m0);
       const x = snap(m0);
       x.mod = x.mod || {};
-      x.mod[k] = Math.round((+x.mod[k] || 1) * v * 1000) / 1000;
-      if (Math.abs(x.mod[k] - 1) < 0.002) delete x.mod[k];
-      if (o.temp) {
-        x.tempMod = x.tempMod || {};
-        x.tempMod[k] = Math.round((+x.tempMod[k] || 1) * v * 1000) / 1000;
+      for (const k of ks) {
+        x.mod[k] = Math.round((+x.mod[k] || 1) * v * 1000) / 1000;
+        if (Math.abs(x.mod[k] - 1) < 0.002) delete x.mod[k];
+        if (o.temp) {
+          x.tempMod = x.tempMod || {};
+          x.tempMod[k] = Math.round((+x.tempMod[k] || 1) * v * 1000) / 1000;
+        }
       }
       x.fx = x.fx || {};
       x.fx.mults = x.fx.mults || [];
@@ -26392,7 +26402,13 @@ ${(() => {
         String(o.memo || '')
           .trim()
           .slice(0, 30) || '손 조정';
-      x.fx.mults.push({ key: nm + ' · ' + Date.now().toString(36), name: nm, stats: { [k]: v }, temp: !!o.temp, hand: 1 });
+      x.fx.mults.push({
+        key: nm + ' · ' + Date.now().toString(36),
+        name: nm,
+        stats: Object.fromEntries(ks.map(k => [k, v])),
+        temp: !!o.temp,
+        hand: 1
+      });
       o.memo = '';
       await saveMults(x);
       redraw();
@@ -26408,20 +26424,24 @@ ${(() => {
       box.querySelectorAll('[data-nrd]').forEach(
         b =>
           (b.onclick = async () => {
-            const m = mon(),
-              k = o.sel;
-            const lim = k === 'critical' ? 4 : 6;
-            const v0 = +(m.rank || {})[k] || 0;
-            const v = Math.max(-lim, Math.min(lim, v0 + +b.dataset.nrd));
-            if (v === v0) return;
-            nowQueue(m);
-            await A().set(P('rank'), Object.assign({}, m.rank || {}, { [k]: v }));
-            if (o.temp) {
-              const tr = Object.assign({}, m.tempRank || {});
+            const m = mon();
+            const nr = Object.assign({}, m.rank || {}),
+              tr = Object.assign({}, m.tempRank || {});
+            let moved = false;
+            for (const k of nowKeys(o.sel)) {
+              const lim = k === 'critical' ? 4 : 6;
+              const v0 = +nr[k] || 0;
+              const v = Math.max(-lim, Math.min(lim, v0 + +b.dataset.nrd));
+              if (v === v0) continue;
+              moved = true;
+              nr[k] = v;
               tr[k] = (+tr[k] || 0) + (v - v0);
               if (!tr[k]) delete tr[k];
-              await A().set(P('tempRank'), tr);
             }
+            if (!moved) return;
+            nowQueue(m);
+            await A().set(P('rank'), nr);
+            if (o.temp) await A().set(P('tempRank'), tr);
             redraw();
           })
       );

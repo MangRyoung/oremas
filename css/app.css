@@ -2129,6 +2129,7 @@ span.iedit{display:inline-block;min-width:3em}
 /* 상세 창 랭크·배율·상태 — 항목별 칸 · 바로 조절 */
 .dxk{display:flex;align-items:center;gap:6px}.dxk .small{font-family:var(--body,inherit);letter-spacing:0;text-transform:none}
 .dxrkg{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px}
+.dxrk.dxrkall{grid-column:1/-1;flex-direction:row;justify-content:center;gap:8px;padding:5px 6px}.dxrk.dxrkall em{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dxrk{background:#101114;border:1px solid var(--line);border-radius:6px;padding:4px 2px 3px;display:flex;flex-direction:column;align-items:center;gap:0;cursor:pointer;color:var(--fg);min-width:0}
 .dxrk small{font-size:10.5px;color:var(--mute);white-space:nowrap}
 .dxrk b{font-family:var(--mono);font-size:16px;line-height:1.2;color:var(--fg2)}
