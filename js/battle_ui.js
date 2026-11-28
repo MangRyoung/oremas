@@ -5949,6 +5949,27 @@ window.OM_BATTLE_UI = (() => {
   }
   /* 11-28 망령 「방어 상태가 공격을 못 막은 듯? 대미지랑 혼란이 나오네」: 양월이 「방어」를 공개하고 실행하기 전에 「다음 행동」으로 넘어가 방어가 안 걸렸다 —
      지금 차례 포켓몬이 지시한 기술을 이번 턴에 아직 안 썼으면(lastMove.turn) 넘기기 전에 묻는다. 교대 · 추가 행동(따로 물음) · 쓰러짐 · 필드 밖은 묻지 않는다 */
+  function cmdMoveOf(b, m) {
+    const x = (((b.cmds || {})[m.tid] || {}).mons || {})[m.id];
+    if (!x || x.move == null || x.move === '' || x.move === 'switch') return null;
+    return MVS(m)[+x.move] || null;
+  }
+  /* 11-28 망령 「사슬묶기가 지난턴에 내보낸 기술을 못 묶은거 같은데?」: 같은 턴에 묶였어도 아직 행동하지 않았다면 실패 —
+    차례가 와서 지시가 공개되면 묶인 기술인지 보고, 그렇다면 실패로 적고 행동을 마친 것으로 친다(banT) */
+  async function disableFailAtTurn(mid) {
+    const b = ctx().b;
+    if ((+b.phase || 0) !== 3) return;
+    const X = (b.order || [])[+b.orderIdx || 0];
+    const m = (b.mons || {})[mid];
+    if (!X || X.mid !== mid || X.xact || X.change || !m || !m.entry || !(m.hp && m.hp.cur > 0)) return;
+    if (!(m.states || {}).Disable) return;
+    const T = +b.turn || 0;
+    if (+m.banT === T || (m.lastMove && +m.lastMove.turn === T)) return;
+    const mv = cmdMoveOf(b, m);
+    if (!mv || !/사슬묶기/.test(mvBan(m, mv))) return;
+    await A().set(['battle', 'mons', mid, 'banT'], T);
+    A().sysLog(`【공격】 ${m.name} 『${mv.name}』 — 「사슬묶기」 상태라 내보낼 수 없어 실패했다`, 'battle', { mid, img: m.image || '' });
+  }
   async function unactedOk(c) {
     const b = c.b;
     if ((+b.phase || 0) !== 3) return true;
@@ -5956,9 +5977,9 @@ window.OM_BATTLE_UI = (() => {
     const m = X && (b.mons || {})[X.mid];
     if (!X || X.xact || X.change || !m || !m.entry || !(m.hp && m.hp.cur > 0)) return true;
     if (m.lastMove && +m.lastMove.turn === (+b.turn || 0)) return true;
-    const x = (((b.cmds || {})[m.tid] || {}).mons || {})[m.id];
-    if (!x || x.move == null || x.move === '' || x.move === 'switch') return true;
-    const mv = MVS(m)[+x.move];
+    if (+m.banT === (+b.turn || 0)) return true;
+    const mv = cmdMoveOf(b, m);
+    if (!mv) return true;
     return askYes(
       `${m.name}이(가) 지시한 「${mv ? mv.name : '기술'}」을(를) 아직 쓰지 않았다.\n(${m.name} 카드의 「공격」으로 낸다)\n\n그래도 넘길까?`,
       '넘긴다',
@@ -6542,6 +6563,7 @@ window.OM_BATTLE_UI = (() => {
               : `▶ ${On.name}의 행동`,
             'battle'
           );
+          await disableFailAtTurn(On.mid);
         } else {
           if ((+c.b.orderIdx || 0) < n) A().sysLog('행동 순서 끝 — 턴 종료 처리', 'battle');
           if (c.b.endq && c.b.endq.step) return endFlow();
@@ -10049,6 +10071,7 @@ window.OM_BATTLE_UI = (() => {
     }
     if (cm.detail && !((b.cmds || {})[tid] || {}).detail) await A().set(['battle', 'cmds', tid, 'detail'], cm.detail);
     A().sysLog('【공개】 ' + revealCardText(b, t, m, x), 'battle', { rv: [revealData(b, t, m, x)] });
+    await disableFailAtTurn(part);
   }
   async function reveal(npcOnly) {
     const c = ctx();

@@ -1135,6 +1135,7 @@
     }
     if (cm.detail && !((b.cmds || {})[tid] || {}).detail) await A().set(['battle', 'cmds', tid, 'detail'], cm.detail);
     A().sysLog('【공개】 ' + revealCardText(b, t, m, x), 'battle', { rv: [revealData(b, t, m, x)] });
+    await disableFailAtTurn(part);
   }
   async function reveal(npcOnly) {
     const c = ctx();
