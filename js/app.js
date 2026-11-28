@@ -4036,15 +4036,39 @@
   /* ---------- 지원 포켓몬 (11-05 23:52 망령 「PT 추가가 아니라 포켓몬만 따로 도중에 부르는」 · 「캠페인마다 지원용 폴더를 따로 만들어서 거기에 연동」) ----------
    이 방과 이어진 세션 노트 캠페인의 지원 폴더(camp.data.mk.support · 아래 폴더 포함) 트레이너의 포켓몬을 골라 진영에 부른다 (GM).
    부른 포켓몬은 이 진영의 기존 PT(고른 트레이너)에 더해진다 — id = 트레이너id~원래id, rid = 제작기 id, sup.from = 지원 폴더 트레이너 이름 (11-06 망령). 내미는 건 평소처럼 */
-  async function openAddMon(side) {
-    if (ST.role !== 'gm') return toast('GM 만 부를 수 있다');
+  /* 11-28 망령 「망령 방 포켓몬 추가 제작기의 포켓 아일랜드 폴더랑 연동」: 세션 노트 캠페인과 안 이어진 방도 쓰게 —
+    방 설정 rp.mkSupport(제작기 폴더 id)가 있으면 그 폴더, 없으면 이어진 캠페인의 지원 폴더, 둘 다 없으면 이 방에 쓸 폴더를 고른다 */
+  const makerFd = x => (x.data && x.data.data) || x.data || {};
+  async function supportFolder() {
+    const own = (ST.state.rp || {}).mkSupport;
+    if (own) return own;
     const NL = window.OM_NOTES;
     const L = NL && NL.linked ? await NL.linked(true) : null;
     const sup = L && ((L.data || {}).mk || {}).support;
-    if (!L) return toast('이 방이 세션 노트 캠페인과 이어져 있지 않다 (위 「📓 노트」에서 잇기)');
-    if (!sup) return toast(`「${L.name}」 캠페인에 지원 폴더가 없다 — 세션 노트 시트 탭의 제작기 막대 「🛟 지원」에서 고른다`);
+    if (sup) return sup;
+    return pickSupportFolder();
+  }
+  async function pickSupportFolder() {
     const MKD = await loadMaker(true);
-    const fd = x => (x.data && x.data.data) || x.data || {};
+    const cur = (ST.state.rp || {}).mkSupport || '';
+    const fs = MKD.folders
+      .map(f => ({ id: f.id, name: makerFd(f).name || f.id }))
+      .sort((a, b) => a.name.localeCompare(b.name, 'ko', { numeric: true }));
+    const id = await modalAnswer(
+      `<div class="mhead"><h2>이 방의 지원 폴더 <small class="dim">「+ 포켓몬」이 읽는 제작기 폴더</small></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+  <div class="row" style="gap:6px;flex-wrap:wrap">${fs.map(f => `<button class="btn${f.id === cur ? ' pri' : ''}" data-sf="${esc(f.id)}">${esc(f.name)}</button>`).join('')}</div>`,
+      'sf'
+    );
+    if (!id) return '';
+    set(['rp', 'mkSupport'], id);
+    return id;
+  }
+  async function openAddMon(side) {
+    if (ST.role !== 'gm') return toast('GM 만 부를 수 있다');
+    const sup = await supportFolder();
+    if (!sup) return;
+    const MKD = await loadMaker(true);
+    const fd = makerFd;
     const under = new Set([sup]);
     for (let g = 1; g;) {
       g = 0;
@@ -4072,11 +4096,15 @@
       }
       if (P.mons.length) groups.push(P);
     }
-    if (!groups.length) return toast(`지원 폴더 「${fname}」에 포켓몬이 없다`);
+    if (!groups.length) {
+      toast(`지원 폴더 「${fname}」에 포켓몬이 없다 — 다른 폴더를 고른다`);
+      if (await pickSupportFolder()) openAddMon(side);
+      return;
+    }
     const inB = B().mons || {};
     const sel = new Set();
     const md =
-      openModal(`<div class="mhead"><h2>${side === 'left' ? '좌측' : '우측'} 진영에 포켓몬 부르기 <small class="dim">🛟 ${esc(fname)}</small></h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
+      openModal(`<div class="mhead"><h2>${side === 'left' ? '좌측' : '우측'} 진영에 포켓몬 부르기 <small class="dim">🛟 ${esc(fname)}</small></h2><span class="sp"></span><button class="btn ghost xs" id="amSf" title="이 방에서 「+ 포켓몬」이 읽는 제작기 폴더를 바꾼다">폴더 바꾸기</button><button class="btn ghost" data-x>닫기</button></div>
   <p class="small dim" style="margin-top:0">고른 포켓몬이 이 진영의 PT(트레이너)에 더해진다 — PT 가 여럿이면 다음에 고른다. 그 PT 주인이 지시하고, 내미는 건 평소처럼 등장 · 교대로.</p>
   ${groups
     .map(
@@ -4090,6 +4118,10 @@
     )
     .join('')}
   <div class="row" style="margin-top:10px"><span class="sp"></span><button class="btn pri" id="amGo" disabled>고른 <b id="amN">0</b>체 부르기</button></div>`);
+    $('#amSf', md).onclick = async () => {
+      closeModal();
+      if (await pickSupportFolder()) openAddMon(side);
+    };
     md.querySelectorAll('[data-am]').forEach(
       x =>
         (x.onclick = () => {
