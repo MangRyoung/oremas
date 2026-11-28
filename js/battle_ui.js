@@ -15336,7 +15336,7 @@ window.OM_BATTLE_UI = (() => {
       `<div class="mhead"><h2>휴식</h2><span class="sp"></span><button class="btn ghost" data-x>닫기</button></div>
   <div class="small dim" style="margin-bottom:8px">단계 내용은 스킬 체크 「휴식」 탭 설정 그대로 · 대상 ${ids.length ? esc(names.join(' · ')) : '<b>배틀에 선 트레이너 없음</b>'}</div>
   <label class="small" style="display:block;margin-bottom:10px"><input type="checkbox" id="brAll"> 배틀에 없는 로스터 트레이너까지 모두</label>
-  <div class="mmenu">${K.KINDS.map(k => `<button class="btn" data-brk="${k[0]}">${esc(k[1])} <small class="dim">${esc(k[2])}</small></button>`).join('')}</div>`
+  <div class="row" style="gap:8px;flex-wrap:wrap">${K.KINDS.map(k => `<button class="btn" data-brk="${k[0]}">${esc(k[1])} <small class="dim">${esc(k[2])}</small></button>`).join('')}</div>`
     );
     md.querySelectorAll('[data-brk]').forEach(
       bt =>
