@@ -2208,6 +2208,7 @@ span.iedit{display:inline-block;min-width:3em}
 .updz:hover{border-color:var(--fg2)}.updz.over{border-color:var(--yel2);background:#1d1b10}.updz.busy{opacity:.6;pointer-events:none}
 .updz.mini{flex-direction:row;gap:6px;min-height:0;padding:5px 10px;border-width:1px;border-radius:6px;flex:none;white-space:nowrap}
 .updz.sm{min-height:0;padding:8px 12px;width:170px;flex:none}
+.updz .dzcut{margin-top:4px;pointer-events:auto}
 .gmimgpv{width:96px;height:96px}
 /* 배경 고르기 창 */
 .qbmodal{width:min(1100px,96vw)!important;max-width:none}

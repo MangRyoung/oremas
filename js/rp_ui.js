@@ -7845,6 +7845,24 @@ window.OM_RP_UI = (() => {
   /* 그림 올리기 칸 (스탠딩 창과 같은 방식): 끌어 놓기 · 클릭해서 고르기 · Ctrl+V. 한 창에 여러 칸이면 마지막으로 마우스를 올린 칸이 붙여넣기를 받는다 */
   const upImg = (f, tag) =>
     DBS().uploadImage(`rooms/${A().ST.room}/${tag || 'img'}_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 5)}`, f);
+  /* 11-28 망령 「포트레이트 따기 … 곧바로 연계」: 그림 올리는 칸마다 「✂ 자르기」 — 포트레이트 따기(OM_CUTTER)를 띄워 거기서 자른 그림을 이 칸에 그대로 올린다.
+    칸 이름은 칸의 굵은 글(b)에서 읽는다. 한 줄짜리 작은 칸(.mini)에는 자리가 없어 붙이지 않는다 */
+  function dzCutBtn(z, multi, run) {
+    if (!window.OM_CUTTER || z.classList.contains('mini') || z.querySelector('.dzcut')) return;
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn xs ghost dzcut';
+    b.textContent = '✂ 자르기';
+    b.title = '포트레이트 따기를 열어 얼굴 쪽으로 자르거나 배경을 지운 뒤 이 칸에 올린다';
+    b.onclick = async e => {
+      e.preventDefault();
+      e.stopPropagation();
+      const lab = ((z.querySelector('b') || {}).textContent || '').replace(/\s*끌어 놓기.*$/, '');
+      const fs = await window.OM_CUTTER.open({ label: lab, multi: !!multi });
+      if (fs.length) run(fs);
+    };
+    z.append(b);
+  }
   function bindDz(md, sel, onFiles, multi) {
     const z = typeof sel === 'string' ? $(sel, md) : sel;
     if (!z) return;
@@ -7879,6 +7897,7 @@ window.OM_RP_UI = (() => {
         run(fs);
       };
     }
+    dzCutBtn(z, multi, run);
     let d = 0;
     z.addEventListener('dragenter', e => {
       if (!hasF(e)) return;
