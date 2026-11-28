@@ -12988,9 +12988,11 @@ window.OM_BATTLE_UI = (() => {
                 mods.push(`「${lh.defer}」 — 대미지를 자신의 행동 뒤로 미룸`);
               } else if (dying && !ctx().b.pvp && (bm === 'all' || (bm === 'gm' && bond))) {
                 const DF = '자신의 행동 이후로 대미지를 미룬다';
+                /* 11-28 망령 「GM 이 정하는 설정일 때 나오는 항목 중에 확률로 굴리기도 있긴 해야지」: 유대 포텐셜이 없는 빈사(모든 빈사에 묻기)에도 굴림 — 유대와 같은 저확률 */
+                const bondPct = Math.round((FX() && FX().percentOf && FX().percentOf('저확률')) || 20);
                 const L3 = bond
                   ? ['굴린다 (' + bond.pct + '%)', '확정 발동 — 버틴다', '발동 안 함 — 쓰러진다', DF]
-                  : ['쓰러진다', '유대 — HP 1 로 버틴다', DF];
+                  : ['쓰러진다', '유대 — HP 1 로 버틴다', DF, '유대 — 확률로 굴린다 (' + bondPct + '%)'];
                 const nm = bond ? bond.name : `${m.name} 빈사`;
                 const pick = async () => localUi(ctx().b, m, nm).choose(L3);
                 const ans = ctx().gm ? await pick() : await remoteAsk(m, 'choose', { name: nm, labels: L3 }, pick, 'gm');
@@ -13012,6 +13014,12 @@ window.OM_BATTLE_UI = (() => {
                   else if (ix === 2) {
                     deferIt = true;
                     mods.push('GM 판정: 대미지를 자신의 행동 뒤로 미룸');
+                  } else if (ix === 3) {
+                    const roll = 1 + Math.floor(Math.random() * 100);
+                    if (roll <= bondPct) {
+                      gmEnd = true;
+                      mods.push(`GM 판정: 유대 굴림 성공 (${roll}/${bondPct})`);
+                    } else mods.push(`GM 판정: 유대 굴림 실패 (${roll}/${bondPct})`);
                   }
                 }
               }
@@ -18443,13 +18451,30 @@ window.OM_BATTLE_UI = (() => {
       }
       return null;
     },
+    /* 11-28 「「X의자세」가 되었을 때」(호시미 미야비 『잔설』): 「자세」 기술로 자세가 바뀐 순간. 「자세」만 적으면 어느 자세든. 「아군이 …」면 같은 편의 다른 포켓몬, 없으면 자신 */
+    stance: (t, mm, o, b) => {
+      const d = b.mons[o.tgt];
+      if (!d || !o.name) return null;
+      const re =
+        /(?:(자신|아군|상대)(?:\s*포켓몬)?(?:이|가)?\s*)?「\s*([^」:：]*자세)\s*」\s*(?:이|가|로|으로)?\s*(?:되었을|됐을|바뀌었을|변경\s*되었을|변경\s*했을)\s*때/g;
+      let r;
+      while ((r = re.exec(t))) {
+        const w = r[1] || '자신';
+        const rel = d.id === mm.id ? 'self' : sameT(mm, d, b) ? 'ally' : 'foe';
+        if ((w === '자신' ? 'self' : w === '아군' ? 'ally' : 'foe') !== rel) continue;
+        const nm = r[2].replace(/\s/g, '');
+        if (nm !== '자세' && nm !== String(o.name).replace(/\s/g, '')) continue;
+        return { why: `${d.name}이(가) 「${o.name}」가 되었다`, pick: o.tgt, cl: clauseAt(t, r.index) };
+      }
+      return null;
+    },
     /* 11-10 망령 「방어 상태로 무시했을 때 ~ 는 있어?」: 「기술 방어」(방어 · 판별 …)로 상대 기술을 막은 순간 — 「「방어」 상태로 (상대의) (접촉기 · 기술 · 공격을) 무시했을 때 / 막았을 때」. 「아군이 …」면 같은 편의 다른 포켓몬이 막았을 때. 대상(pick) · 구문의 「상대」 = 막힌 쪽(공격한 포켓몬) */
     guard: (t, mm, o, b) => {
       const atk = b.mons[o.mid],
         def = b.mons[o.tgt];
       if (!atk || !def) return null;
       const re =
-        /(?:「(?:기술\s*)?방어」\s*(?:상태)?|방어\s*등의\s*기술)\s*(?:로|으로)\s*([^.\/\n①②③]{0,26}?)(?:무시했을|무시하였을|막았을|막아냈을|무효화\s*했을|무효로\s*했을)\s*때/g;
+        /(?:「(?:기술\s*)?방어」\s*(?:상태|등의\s*기술)?|방어\s*등의\s*기술)\s*(?:로|으로)\s*([^.\/\n①②③]{0,26}?)(?:무시했을|무시하였을|막았을|막아냈을|무효화\s*했을|무효로\s*했을)\s*때/g;
       /* 11-22 바이올렛 『대필기의 유술』 「방어 등의 기술로 상대의 「접촉기」를 무효화 했을 때」 */ let r;
       while ((r = re.exec(t))) {
         const pre = t.slice(Math.max(0, r.index - 12), r.index);
@@ -25573,6 +25598,21 @@ ${(() => {
           }
       } catch (e) {
         console.warn('evReact used', e);
+      }
+      /* 11-28 망령 「호시미 미야비도 자동화」(『잔설』 「「어스름의자세」가 되었을 때 …」): 「자세」 기술로 자세가 바뀌었으면 그 포켓몬 · 같은 편의 「「X의자세」가 되었을 때」 글이 본다 */
+      try {
+        const sm = ctx().b.mons[mid];
+        if (
+          !RESULT.check &&
+          sm &&
+          RESULT.mv.cat === '변화' &&
+          /(^|[,\s])자세($|[,\s])/.test(String(RESULT.mv.tag || '')) &&
+          sm.stance &&
+          sm.stance === RESULT.mv.name
+        )
+          await evReact('stance', { mid, tgt: mid, name: sm.stance, key: 's' + mid + ':' + sm.stance + ':' + (+ctx().b.orderIdx || 0) });
+      } catch (e) {
+        console.warn('evReact stance', e);
       }
       /* 11-09 감우 55: 맞은 쪽의 「공격을 받았을 때」 포텐셜 · 고유 */ try {
         if (!RESULT.check)

@@ -660,9 +660,11 @@
                 mods.push(`「${lh.defer}」 — 대미지를 자신의 행동 뒤로 미룸`);
               } else if (dying && !ctx().b.pvp && (bm === 'all' || (bm === 'gm' && bond))) {
                 const DF = '자신의 행동 이후로 대미지를 미룬다';
+                /* 11-28 망령 「GM 이 정하는 설정일 때 나오는 항목 중에 확률로 굴리기도 있긴 해야지」: 유대 포텐셜이 없는 빈사(모든 빈사에 묻기)에도 굴림 — 유대와 같은 저확률 */
+                const bondPct = Math.round((FX() && FX().percentOf && FX().percentOf('저확률')) || 20);
                 const L3 = bond
                   ? ['굴린다 (' + bond.pct + '%)', '확정 발동 — 버틴다', '발동 안 함 — 쓰러진다', DF]
-                  : ['쓰러진다', '유대 — HP 1 로 버틴다', DF];
+                  : ['쓰러진다', '유대 — HP 1 로 버틴다', DF, '유대 — 확률로 굴린다 (' + bondPct + '%)'];
                 const nm = bond ? bond.name : `${m.name} 빈사`;
                 const pick = async () => localUi(ctx().b, m, nm).choose(L3);
                 const ans = ctx().gm ? await pick() : await remoteAsk(m, 'choose', { name: nm, labels: L3 }, pick, 'gm');
@@ -684,6 +686,12 @@
                   else if (ix === 2) {
                     deferIt = true;
                     mods.push('GM 판정: 대미지를 자신의 행동 뒤로 미룸');
+                  } else if (ix === 3) {
+                    const roll = 1 + Math.floor(Math.random() * 100);
+                    if (roll <= bondPct) {
+                      gmEnd = true;
+                      mods.push(`GM 판정: 유대 굴림 성공 (${roll}/${bondPct})`);
+                    } else mods.push(`GM 판정: 유대 굴림 실패 (${roll}/${bondPct})`);
                   }
                 }
               }

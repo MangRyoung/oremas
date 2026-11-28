@@ -1990,13 +1990,30 @@
       }
       return null;
     },
+    /* 11-28 「「X의자세」가 되었을 때」(호시미 미야비 『잔설』): 「자세」 기술로 자세가 바뀐 순간. 「자세」만 적으면 어느 자세든. 「아군이 …」면 같은 편의 다른 포켓몬, 없으면 자신 */
+    stance: (t, mm, o, b) => {
+      const d = b.mons[o.tgt];
+      if (!d || !o.name) return null;
+      const re =
+        /(?:(자신|아군|상대)(?:\s*포켓몬)?(?:이|가)?\s*)?「\s*([^」:：]*자세)\s*」\s*(?:이|가|로|으로)?\s*(?:되었을|됐을|바뀌었을|변경\s*되었을|변경\s*했을)\s*때/g;
+      let r;
+      while ((r = re.exec(t))) {
+        const w = r[1] || '자신';
+        const rel = d.id === mm.id ? 'self' : sameT(mm, d, b) ? 'ally' : 'foe';
+        if ((w === '자신' ? 'self' : w === '아군' ? 'ally' : 'foe') !== rel) continue;
+        const nm = r[2].replace(/\s/g, '');
+        if (nm !== '자세' && nm !== String(o.name).replace(/\s/g, '')) continue;
+        return { why: `${d.name}이(가) 「${o.name}」가 되었다`, pick: o.tgt, cl: clauseAt(t, r.index) };
+      }
+      return null;
+    },
     /* 11-10 망령 「방어 상태로 무시했을 때 ~ 는 있어?」: 「기술 방어」(방어 · 판별 …)로 상대 기술을 막은 순간 — 「「방어」 상태로 (상대의) (접촉기 · 기술 · 공격을) 무시했을 때 / 막았을 때」. 「아군이 …」면 같은 편의 다른 포켓몬이 막았을 때. 대상(pick) · 구문의 「상대」 = 막힌 쪽(공격한 포켓몬) */
     guard: (t, mm, o, b) => {
       const atk = b.mons[o.mid],
         def = b.mons[o.tgt];
       if (!atk || !def) return null;
       const re =
-        /(?:「(?:기술\s*)?방어」\s*(?:상태)?|방어\s*등의\s*기술)\s*(?:로|으로)\s*([^.\/\n①②③]{0,26}?)(?:무시했을|무시하였을|막았을|막아냈을|무효화\s*했을|무효로\s*했을)\s*때/g;
+        /(?:「(?:기술\s*)?방어」\s*(?:상태|등의\s*기술)?|방어\s*등의\s*기술)\s*(?:로|으로)\s*([^.\/\n①②③]{0,26}?)(?:무시했을|무시하였을|막았을|막아냈을|무효화\s*했을|무효로\s*했을)\s*때/g;
       /* 11-22 바이올렛 『대필기의 유술』 「방어 등의 기술로 상대의 「접촉기」를 무효화 했을 때」 */ let r;
       while ((r = re.exec(t))) {
         const pre = t.slice(Math.max(0, r.index - 12), r.index);

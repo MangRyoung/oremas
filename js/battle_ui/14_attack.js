@@ -4804,6 +4804,21 @@ ${(() => {
       } catch (e) {
         console.warn('evReact used', e);
       }
+      /* 11-28 망령 「호시미 미야비도 자동화」(『잔설』 「「어스름의자세」가 되었을 때 …」): 「자세」 기술로 자세가 바뀌었으면 그 포켓몬 · 같은 편의 「「X의자세」가 되었을 때」 글이 본다 */
+      try {
+        const sm = ctx().b.mons[mid];
+        if (
+          !RESULT.check &&
+          sm &&
+          RESULT.mv.cat === '변화' &&
+          /(^|[,\s])자세($|[,\s])/.test(String(RESULT.mv.tag || '')) &&
+          sm.stance &&
+          sm.stance === RESULT.mv.name
+        )
+          await evReact('stance', { mid, tgt: mid, name: sm.stance, key: 's' + mid + ':' + sm.stance + ':' + (+ctx().b.orderIdx || 0) });
+      } catch (e) {
+        console.warn('evReact stance', e);
+      }
       /* 11-09 감우 55: 맞은 쪽의 「공격을 받았을 때」 포텐셜 · 고유 */ try {
         if (!RESULT.check)
           for (const r of RESULT.targets || []) {
