@@ -6,6 +6,8 @@
     if (!m.raid) return 0;
     const R = m.raid;
     const was = !!(m0 && m0.raid && +m0.raid.segments > 0);
+    /* 11-28 망령 「이건 왜 모든 매크로마다 출력하는 거야?」: 이미 레이드인 포켓몬의 다른 효과를 낼 때마다 레이드 설명이 붙었다 — 설명은 처음 걸 때와 레이드 배틀 포텐셜을 낼 때만 */
+    if (was && !/레이드\s*배틀/.test(String(name || ''))) return 0;
     if (!(+R.segments > 0)) {
       let X = +(String(name || '').match(/(\d+)/) || [])[1] || 0; /* X 가 비어 있으면 포텐셜 이름 속 숫자 (레이드 배틀 : 4 → 4) */
       if (!X) {
@@ -70,7 +72,8 @@
   function raidPhase(b, m, why) {
     const R = m.raid;
     R.phase = (+R.phase || 1) + 1;
-    const out = [`「트리거 : 페이즈 체인지」 ${m.name} · 페이즈 ${R.phase}${why ? ' (' + why + ')' : ''}`];
+    /* 11-28 「페이즈 2」만 적으면 【페이즈 체인지 : 2】(2번 일어난 뒤)와 헷갈린다 — 몇 번째인지를 앞에 */
+    const out = [`「트리거 : 페이즈 체인지」 ${m.name} · ${R.phase - 1}번째 (페이즈 ${R.phase})${why ? ' (' + why + ')' : ''}`];
     const RK = Object.assign({}, STAT_KO, { critical: '급소' });
     const on = (k, d) => (R[k] == null || R[k] === '' ? d : +R[k]);
     if (on('cure', 1)) {

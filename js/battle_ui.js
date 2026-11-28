@@ -14449,7 +14449,7 @@ window.OM_BATTLE_UI = (() => {
      .join('')}</div>
    <div class="row small" style="margin:6px 0"><label><input type="checkbox" id="etemp"> 이번 변경을 임시 랭크로 (턴 종료 때 해제)</label><button class="btn xs ghost" id="erk0">랭크 전부 0</button></div>
    <div class="row" style="margin:8px 0"><b>소지품</b> <input type="text" id="eitem" list="itemlist" value="${esc(m.item || '')}" style="flex:1"><button class="btn sm" id="eitemdb" type="button">DB</button><datalist id="itemlist">${items.map(i => `<option value="${esc(i)}">`).join('')}</datalist>
-    ${c.mgr ? `<b>레이드</b> <input type="number" class="n" id="eraid" value="${(m.raid && m.raid.segments) || ''}" placeholder="구간 X" title="최대 HP 를 X 등분한 자리마다 배리어"><span class="small dim">${m.raid && m.raid.segments ? `페이즈 ${m.raid.phase || 1} · 깨짐 ${m.raid.broken || 0}${raidFloor(m) ? ' · 다음 배리어 ' + raidFloor(m) : ''}${m.raid.brk ? ' · 이번 턴 깨짐' : ''}` : ''}</span>${m.raid && m.raid.segments ? '<button class="btn xs ghost" type="button" id="eraidpc" title="「트리거 : 페이즈 체인지」를 지금 발동 (자신의 부정적인 상태 · 적진 능력치 상승 초기화)">페이즈 체인지</button>' : ''}` : ''}</div>
+    ${c.mgr ? `<b>레이드</b> <input type="number" class="n" id="eraid" value="${(m.raid && m.raid.segments) || ''}" placeholder="구간 X" title="최대 HP 를 X 등분한 자리마다 배리어"><span class="small dim">${m.raid && m.raid.segments ? `페이즈 체인지 ${(m.raid.phase || 1) - 1}번 (페이즈 ${m.raid.phase || 1}) · 깨짐 ${m.raid.broken || 0}${raidFloor(m) ? ' · 다음 배리어 ' + raidFloor(m) : ''}${m.raid.brk ? ' · 이번 턴 깨짐' : ''}` : ''}</span>${m.raid && m.raid.segments ? '<button class="btn xs ghost" type="button" id="eraidpc" title="「트리거 : 페이즈 체인지」를 지금 발동 (자신의 부정적인 상태 · 적진 능력치 상승 초기화)">페이즈 체인지</button>' : ''}` : ''}</div>
    <div class="sec" style="margin-top:10px">걸린 상태</div><div class="ston" id="ston"></div><div class="row" style="margin-top:8px"><b>눌러서 걸기</b><input type="text" id="stq" placeholder="상태 검색 (이름·설명)" style="flex:1"></div>
    <div class="stgroups" id="stgroups">${(sdb.groups || [])
      .map(
@@ -20628,6 +20628,8 @@ window.OM_BATTLE_UI = (() => {
     if (!m.raid) return 0;
     const R = m.raid;
     const was = !!(m0 && m0.raid && +m0.raid.segments > 0);
+    /* 11-28 망령 「이건 왜 모든 매크로마다 출력하는 거야?」: 이미 레이드인 포켓몬의 다른 효과를 낼 때마다 레이드 설명이 붙었다 — 설명은 처음 걸 때와 레이드 배틀 포텐셜을 낼 때만 */
+    if (was && !/레이드\s*배틀/.test(String(name || ''))) return 0;
     if (!(+R.segments > 0)) {
       let X = +(String(name || '').match(/(\d+)/) || [])[1] || 0; /* X 가 비어 있으면 포텐셜 이름 속 숫자 (레이드 배틀 : 4 → 4) */
       if (!X) {
@@ -20692,7 +20694,8 @@ window.OM_BATTLE_UI = (() => {
   function raidPhase(b, m, why) {
     const R = m.raid;
     R.phase = (+R.phase || 1) + 1;
-    const out = [`「트리거 : 페이즈 체인지」 ${m.name} · 페이즈 ${R.phase}${why ? ' (' + why + ')' : ''}`];
+    /* 11-28 「페이즈 2」만 적으면 【페이즈 체인지 : 2】(2번 일어난 뒤)와 헷갈린다 — 몇 번째인지를 앞에 */
+    const out = [`「트리거 : 페이즈 체인지」 ${m.name} · ${R.phase - 1}번째 (페이즈 ${R.phase})${why ? ' (' + why + ')' : ''}`];
     const RK = Object.assign({}, STAT_KO, { critical: '급소' });
     const on = (k, d) => (R[k] == null || R[k] === '' ? d : +R[k]);
     if (on('cure', 1)) {
